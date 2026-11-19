@@ -1,0 +1,81 @@
+# Betriebssystem
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Editor & IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Node.js / Build-Tooling
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dist/
+build/
+out/
+.cache/
+.parcel-cache/
+.vite/
+
+# Go
+/schnapp
+*.test
+*.out
+coverage.html
+
+# Umgebungsvariablen & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs & Temporäres
+logs/
+*.log
+tmp/
+temp/
+.tmp/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Claude Code (lokal)
+.claude/settings.local.json
+# Laufzeit-Marken der aBoard-Hooks (u. a. Sitzungsmodell, F-1537) — an der git-Wurzel
+.claude/cache/
+
+# aBoard: Board-Dateien gehören nicht ins öffentliche Repo (E-11, Andi 19.11.2026)
+aboard.html
+aboard.html.bak-*
+aboard-sync.json
+aboard-sync.*.json
+aboard-sync.offen.json.tmp-*
+aboard-sync.inbox/
+aboard-sync.chat-tail.*
+
+# aBoard Anhänge (Screenshots können Geheimnisse zeigen)
+/attachments/
+
+# Testaufnahmen: echte Screenshots nie versionieren (öffentliches Repo)
+/aufnahmen/
+
+# Interne Angaben (F-1): nie versionieren
+CLAUDE.local.md
