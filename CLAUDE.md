@@ -135,7 +135,8 @@ Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung) — ADR
   Oberflächentexte nur als Literal über `sprache.T/TK/N`; der Test verlangt für jeden Text einen fertigen Eintrag in
   `po/de.po`. `aufnahme` ist die Aufnahmeschicht (`Quelle`, KWin über D-Bus: ScreenShot3/memfd bevorzugt, sonst
   ScreenShot2/Pipe; Tests mit Attrappe, keine echte Aufnahme in `go test`). `data/schnapp.desktop.in` ist die Vorlage der Desktop-Datei (ADR-0017). `tmp/go.mod` trennt `tmp/` vom
-  Wurzelmodul.
+  Wurzelmodul. `bibliothek` ist die Bibliothek (ADR-0016: Ablage `<Bilderordner>/schnapp/<JJJJ-MM>/…png`, Index-Cache
+  als JSON-Zeilen, Suche, Aufräumen über den freedesktop-Papierkorb); Tests nur mit eigener Umgebung unter `t.TempDir()`.
 
 ## Marke
 
