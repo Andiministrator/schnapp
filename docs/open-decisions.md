@@ -34,7 +34,8 @@ Stand 19.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 ## E-06: Lizenzvariante — ENTSCHIEDEN 19.11.2026: GPL-3.0-or-later (ADR-0009)
 - Rechte an den Zeichenpaketen liegen beim Maintainer; Veröffentlichung unter GPL-3.0 erlaubt (Andi, 19.11.2026).
 
-## E-07: Englische Oberfläche und README
+## E-07: Englische Oberfläche und README — ENTSCHIEDEN 19.11.2026 (ADR-0014)
+- Oberfläche Englisch + Deutsch ab Start, Systemsprache erkennen, sonst Englisch; Nutzer-Doku zweisprachig.
 - **Frage:** Ab wann zweisprachig? Englische README für GitHub/Flathub?
 - **Impact:** niedrig.
 - **Tendenz:** Texte von Anfang an übersetzbar, englisch vor der ersten Veröffentlichung.

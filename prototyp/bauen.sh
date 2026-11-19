@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Baut den Prototyp mit gepatchtem Gio (gio-ausgabe.patch: Vollbild auf gewählter Wayland-Ausgabe,
 # Ausgaben auflisten). Die gepatchte Kopie liegt in tmp/gio-gepatcht (gitignoriert); go.mod bleibt unverändert,
 # die Ersetzung steht nur in einer erzeugten Modul-Datei unter tmp/.

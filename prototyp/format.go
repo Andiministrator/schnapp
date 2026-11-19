@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Umwandlung der rohen Pixel, die KWin ScreenShot2 über die Pipe liefert.
 package main
 

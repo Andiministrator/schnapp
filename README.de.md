@@ -1,0 +1,48 @@
+# Schnapp
+
+*[English](README.md) · Deutsch*
+
+Screenshot- und Beschriftungswerkzeug für Linux/Wayland — KDE Plasma zuerst. Vorbild ist die Arbeitsweise von Snagit:
+schnell aufnehmen, beschriften (gerade und gebogene Pfeile, Kästen, Schritt-Nummern, Stempel), wirklich schwärzen, die
+Mitte langer Seiten herausschneiden, teilen. Nebenbei ein einfaches Bildbearbeitungsprogramm.
+
+## Stand
+
+Frühe Arbeit — **noch nichts benutzbar**. Ein Prototyp hat die Oberflächen-Bibliothek bestätigt: Schnapp entsteht in Go
+mit [Gio](https://gioui.org), dazu ein kleiner Patch an Gio (ein Vollbild-Overlay je Monitor, gebrochene Skalierung).
+Die erste Fassung (0.1.0) wird geplant.
+
+## Geplante Funktionen
+
+- Bereich, Fenster oder Bildschirm unter KDE Plasma (KWin) aufnehmen, mit eingefrorenem Vollbild-Overlay auf jedem
+  Monitor.
+- Beschriften mit Vektorebenen: Pfeile (auch gebogen), Kästen, Text, Schritt-Nummern, Stempel.
+- **Wirklich** schwärzen und verpixeln — geschwärzte Pixel fehlen in jeder gespeicherten oder exportierten Datei.
+- Lange Screenshots stauchen, indem die Mitte herausgeschnitten wird, ohne das Original zu zerstören.
+- Bibliothek mit automatischem Speichern, Suche und Schlagworten.
+- Oberfläche auf Englisch und Deutsch; sie folgt der Systemsprache, sonst Englisch.
+
+## Bauen
+
+Ein Programm zum Bauen gibt es noch nicht. Vorhanden sind:
+
+| Pfad | Was es ist | Prüfen |
+|---|---|---|
+| `zeichnen/` | Go-Modul `github.com/Andiministrator/schnapp/zeichnen`: SVG lesen, Rasterer mit Kantenglättung, Rechenhilfen (nur Standardbibliothek) | `cd zeichnen && go vet ./... && go test ./...` |
+| `prototyp/` | Wegwerf-Prototyp, der Gio geprüft hat (braucht Go ≥ 1.27, cgo, `libwayland-client`, `libEGL`, `libxkbcommon`) | `prototyp/bauen.sh`, siehe [`prototyp/README.md`](prototyp/README.md) |
+
+## Dokumentation
+
+Die Dokumente für Nutzer und Beitragende (diese README, `CONTRIBUTING.de.md`) gibt es auf Englisch und Deutsch. Die
+Arbeitsdokumente des Projekts — Anforderungen, Architektur-Entscheidungen (`docs/adr/`), QA-Listen, Befunde und
+Recherchen (`knowledge/`) — sind auf Deutsch.
+
+## Hinweis zu KI
+
+Der größte Teil von Code und Doku in diesem Repository wird von einem KI-Modell (Anthropic Claude) unter Anleitung und
+Prüfung des Maintainers geschrieben. Entscheidungen stehen in `docs/adr/`. Siehe [`CONTRIBUTING.de.md`](CONTRIBUTING.de.md).
+
+## Lizenz
+
+GPL-3.0-or-later, siehe [`LICENSE`](LICENSE). Fremder Code behält seine Lizenz: Der Gio-Patch
+(`prototyp/gio-ausgabe.patch`) gilt für Gio (Unlicense OR MIT) und enthält aus wayland-protocols erzeugten Code (MIT).

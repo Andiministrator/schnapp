@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > Verweise auf ADR-0043, ADR-0062, ADR-0067, F-Nummern über F-100 und Pfade unter `~/.aboard-framework/` oder
 > `~/.claude/` beziehen sich auf das Arbeits-Framework (aBoard) des Maintainers, nicht auf dieses Repo. Projekteigene
-> ADRs liegen unter `docs/adr/` (0001–0013), projekteigene Findings in `docs/findings.md`.
+> ADRs liegen unter `docs/adr/` (0001–0014), projekteigene Findings in `docs/findings.md`.
 
 ## Vor jeder Antwort — Pflicht
 
@@ -70,7 +70,9 @@ QA-Checks, Kritiker-Läufe und aufwendige Analysen werden als **Sub-Agents** aus
 
 ## Sprache
 
-Deutsch für Doku, Kommentare, Commits, ADRs und Oberflächentexte (ADR-0002). Go-Bezeichner (Pakete, Typen,
+Deutsch für projektinterne Doku, Kommentare, Commits und ADRs (ADR-0002). **Oberfläche und Nutzer-Doku zweisprachig**
+(ADR-0014): Oberflächentexte englisch als Ausgangssprache, Übersetzung Deutsch über PO-Dateien, Sprache vom System,
+sonst Englisch; `README.md`/`CONTRIBUTING.md` englisch, deutsche Fassung als `*.de.md`, beide im selben Commit pflegen. Go-Bezeichner (Pakete, Typen,
 Funktionen) dürfen deutsch oder englisch sein, innerhalb eines Pakets einheitlich; Fremd-APIs (Gio, KWin, D-Bus)
 behalten ihre Namen. Die Oberfläche ist von Anfang an übersetzbar anzulegen (Texte nicht im Code verstreuen), weil das
 Repo öffentlich wird.

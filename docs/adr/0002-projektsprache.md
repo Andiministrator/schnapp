@@ -1,7 +1,9 @@
 # ADR-0002: Projektsprache
 
 ## Status
-Akzeptiert (19.11.2026)
+Akzeptiert (19.11.2026). **Teilweise überholt durch ADR-0014** (19.11.2026): Oberfläche Englisch und Deutsch,
+Englisch als Ausgangssprache; Nutzer-Doku zweisprachig. Für projektinterne Doku, Commits und Code-Kommentare gilt
+weiter Deutsch.
 
 ## Kontext
 Andi arbeitet auf Deutsch (maschinenweite Festlegung). Schnapp wird öffentlich (GitHub, GPL-3.0); Beiträge von

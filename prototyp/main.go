@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Wegwerf-Prototyp: Prüft, ob Gio für Schnapp trägt (ADR-0003, Kriterien in Nachtrag 1).
 // Kein Produktcode; wird nach der Entscheidung gelöscht oder ersetzt.
 //
