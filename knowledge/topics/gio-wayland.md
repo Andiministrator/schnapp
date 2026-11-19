@@ -83,3 +83,10 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
     geschätzten Skala geladen, der Hotspot später mit der aktuellen geteilt. Das Overlay blendet den Zeiger aus
     (`pointer.CursorNone`) und zeichnet ein eigenes Fadenkreuz; nach `pointer.Leave` neu zeichnen lassen
     (`op.InvalidateCmd`), sonst bleibt es am Rand des alten Monitors stehen.
+  - **Kein `pointer.Leave` beim Verlassen des Fensters:** `gio_onPointerLeave` schickt nur bei Compositor-Zügen ein
+    `Cancel`, sonst nichts. Wer wissen muss, dass der Zeiger auf ein anderes Fenster gewechselt ist, koordiniert das
+    selbst (Overlay: gemeinsamer „aktiver Monitor“, das alte Fenster per `Window.Invalidate` neu zeichnen lassen —
+    `Invalidate` ist aus jeder Goroutine erlaubt, `Perform` nicht).
+  - Diagnose bei echten Läufen: `SCHNAPP_DEBUG=1` schreibt Fenstergröße, PxPerDp, Abbildung, Druck/Loslassen je
+    Monitor auf stderr (ohne Monitornamen). Gemessen 19.11.2026: auf allen drei Monitoren Fenster = Bild, Zoom 1,
+    auch bei Skala 1,6 (PxPerDp 1,600).

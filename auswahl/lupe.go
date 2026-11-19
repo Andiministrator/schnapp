@@ -20,7 +20,7 @@ const (
 	// LupePixel ist die Kantenlänge der Lupe in Bildpixeln (ungerade, damit es ein Mittelpixel gibt).
 	LupePixel = 17
 	// LupeFaktor ist die Vergrößerung.
-	LupeFaktor = 8
+	LupeFaktor = 12
 	// lupeAbstand: Abstand der Lupe vom Zeiger in Fensterpixeln.
 	lupeAbstand = 24
 )

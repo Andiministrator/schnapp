@@ -6,8 +6,10 @@ import (
 	"errors"
 	"image"
 	"image/color"
+	"log"
 	"os"
 	"sync"
+	"sync/atomic"
 
 	"gioui.org/app"
 	"gioui.org/f32"
@@ -50,6 +52,13 @@ type OverlayErgebnis struct {
 // ErrAbgebrochen: Der Nutzer hat das Overlay mit Esc verlassen.
 var ErrAbgebrochen = errors.New("overlay: abgebrochen")
 
+// diagnose schreibt nur mit gesetztem SCHNAPP_DEBUG auf stderr (Fehlersuche bei echten Läufen, ohne Monitornamen).
+func diagnose(format string, args ...any) {
+	if os.Getenv("SCHNAPP_DEBUG") != "" {
+		log.Printf("[overlay] "+format, args...)
+	}
+}
+
 // Farben laut marke/corporate-design.md.
 var (
 	farbeAbdunkeln = color.NRGBA{R: 0x16, G: 0x18, B: 0x1B, A: 0x99} // grau-950, durchscheinend
@@ -72,6 +81,7 @@ func Overlay(bilder []MonitorBild, m auswahl.Modus) (OverlayErgebnis, error) {
 		return OverlayErgebnis{}, errors.New("overlay: keine Bilder")
 	}
 	g := &gruppe{fertig: make(chan ergebnis, 1)}
+	g.aktiv.Store(-1)
 	for i, b := range bilder {
 		// Jedes Fenster läuft in einer eigenen Goroutine; text.Shaper ist nicht nebenläufig nutzbar, darum je
 		// Fenster ein eigenes Thema (sonst Absturz im Text-Setzer, erster echter Lauf 19.11.2026).
@@ -104,6 +114,17 @@ type gruppe struct {
 	fenster []*overlayFenster
 	fertig  chan ergebnis
 	einmal  sync.Once
+	// aktiv ist der Monitor, auf dem der Zeiger zuletzt war (-1: noch keiner). Gio meldet das Verlassen eines
+	// Fensters nicht (gio_onPointerLeave schickt nur bei Compositor-Zügen ein Cancel), darum erfährt das alte Fenster
+	// es über die Gruppe — sonst bliebe Fadenkreuz und Lupe dort stehen.
+	aktiv atomic.Int32
+}
+
+// zeigerAuf meldet, dass der Zeiger auf Monitor i ist, und lässt das zuvor aktive Fenster neu zeichnen.
+func (g *gruppe) zeigerAuf(i int) {
+	if alt := int(g.aktiv.Swap(int32(i))); alt != i && alt >= 0 && alt < len(g.fenster) {
+		g.fenster[alt].w.Invalidate() // Invalidate ist aus jeder Goroutine erlaubt
+	}
 }
 
 // melde nimmt nur das erste Ergebnis an (zwei Fenster können fast gleichzeitig fertig werden).
@@ -145,9 +166,14 @@ func (f *overlayFenster) frame(gtx layout.Context) {
 	if gtx.Constraints.Max != f.groesse {
 		f.groesse = gtx.Constraints.Max
 		f.z.SetzeAbbildung(f.groesse) // der erste Frame kommt oft in falscher Skala (gio-wayland.md)
+		diagnose("Monitor %d: Fenster %v px, PxPerDp %.3f, Bild %v, Zoom %.4f, Versatz %.1f,%.1f",
+			f.index+1, f.groesse, gtx.Metric.PxPerDp, f.z.Groesse, f.z.Abb.Zoom, f.z.Abb.Versatz.X, f.z.Abb.Versatz.Y)
 	}
 	f.tasten(gtx)
 	f.zeiger(gtx)
+	if int(f.gruppe.aktiv.Load()) != f.index {
+		f.z.Verlassen()
+	}
 
 	paint.Fill(gtx.Ops, farbeGrund)
 	f.zeichneBild(gtx)
@@ -205,16 +231,24 @@ func (f *overlayFenster) zeiger(gtx layout.Context) {
 		p := auswahl.Punkt{X: e.Position.X, Y: e.Position.Y}
 		switch e.Kind {
 		case pointer.Move, pointer.Drag, pointer.Enter:
+			if int(f.gruppe.aktiv.Load()) != f.index {
+				diagnose("Monitor %d: Zeiger kommt an bei %.2f,%.2f", f.index+1, p.X, p.Y)
+			}
+			f.gruppe.zeigerAuf(f.index)
 			f.z.Bewegt(p)
 		case pointer.Leave:
 			f.z.Verlassen()
 			gtx.Execute(op.InvalidateCmd{}) // Fadenkreuz und Lupe sofort entfernen, nicht erst beim nächsten Ereignis
 		case pointer.Press:
 			if e.Buttons == pointer.ButtonPrimary {
+				f.gruppe.zeigerAuf(f.index)
 				f.z.Gedrueckt(p)
+				diagnose("Monitor %d: Druck bei %.2f,%.2f → Pixel %v", f.index+1, p.X, p.Y, f.z.Abb.Pixel(p, f.z.Groesse))
 			}
 		case pointer.Release:
-			f.fertig(f.z.Losgelassen(p))
+			e := f.z.Losgelassen(p)
+			diagnose("Monitor %d: Loslassen bei %.2f,%.2f → fertig %v, Bereich %v", f.index+1, p.X, p.Y, e.Fertig, e.Bereich)
+			f.fertig(e)
 		case pointer.Cancel:
 			f.z.Abgebrochen()
 		}
@@ -303,6 +337,16 @@ func (f *overlayFenster) zeichneLupe(gtx layout.Context, p auswahl.Punkt) {
 	}
 	h := auswahl.LupePixel / 2 * l.Faktor
 	mitte := image.Rect(l.Ziel.Min.X+h, l.Ziel.Min.Y+h, l.Ziel.Min.X+h+l.Faktor, l.Ziel.Min.Y+h+l.Faktor)
+	// Fadenkreuz in der Lupe: Linien durch die Mitte des Mittelpixels, das Mittelpixel selbst bleibt frei.
+	mx, my := mitte.Min.X+l.Faktor/2, mitte.Min.Y+l.Faktor/2
+	saum := color.NRGBA{R: 0x16, G: 0x18, B: 0x1B, A: 0xC0}
+	for _, r := range []image.Rectangle{
+		image.Rect(l.Ziel.Min.X, my, mitte.Min.X-2, my+1), image.Rect(mitte.Max.X+2, my, l.Ziel.Max.X, my+1),
+		image.Rect(mx, l.Ziel.Min.Y, mx+1, mitte.Min.Y-2), image.Rect(mx, mitte.Max.Y+2, mx+1, l.Ziel.Max.Y),
+	} {
+		paint.FillShape(gtx.Ops, saum, clip.Rect(r.Inset(-1)).Op())
+		paint.FillShape(gtx.Ops, farbeText, clip.Rect(r).Op())
+	}
 	rahmen(gtx.Ops, mitte.Inset(-1), 2, farbeAkzent)
 	c.Pop()
 	rahmen(gtx.Ops, l.Ziel.Inset(-1), 1, farbeLinie)
