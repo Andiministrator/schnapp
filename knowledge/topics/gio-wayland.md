@@ -77,7 +77,7 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
     Text-Setzer ab (`bidi … slice bounds out of range`). Je Fenster ein eigenes Thema samt Shaper.
   - `Window.Perform(system.ActionClose)` aus einer **fremden** Goroutine läuft in v0.10.3 in einen Datenwettlauf
     (`processEvent` gegen `nextEvent`, `go build -race`), danach kam kein `DestroyEvent` mehr — das Programm hing.
-    Das Overlay schließt seine Fenster deshalb nicht selbst, sie enden mit dem Prozess (F-77).
+    Unter Wayland führt Gio `Perform` aber im aufrufenden Goroutine aus (`window.Run` ruft `f()` direkt): Jedes Fenster schließt sich deshalb **selbst** in seiner eigenen Ereignisschleife (Flag setzen, `Invalidate`, im nächsten `FrameEvent` `Perform(ActionClose)`) — wettlauffrei, gemessen mit `-race` (F-77 behoben).
   - Echte Läufe mit `go build -race` bauen und fahren: Der Detector fand den Wettlauf im ersten Versuch.
   - **Zeigerbild versetzt bei gemischter Skala (F-78):** Das Cursor-Thema wird beim Anlegen des Fensters in der vorab
     geschätzten Skala geladen, der Hotspot später mit der aktuellen geteilt. Das Overlay blendet den Zeiger aus
@@ -90,3 +90,5 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
   - Diagnose bei echten Läufen: `SCHNAPP_DEBUG=1` schreibt Fenstergröße, PxPerDp, Abbildung, Druck/Loslassen je
     Monitor auf stderr (ohne Monitornamen). Gemessen 19.11.2026: auf allen drei Monitoren Fenster = Bild, Zoom 1,
     auch bei Skala 1,6 (PxPerDp 1,600).
+  - Gemessen 19.11.2026 (ohne `-race`): drei Monitore aufnehmen 71 ms, Bereich speichern (Arbeitsdatei, Vorschau,
+    Index) 56 ms. Mit `-race` 1,2 s bzw. 1,8 s — Zeiten nie mit dem Race-Build messen.

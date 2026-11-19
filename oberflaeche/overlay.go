@@ -10,6 +10,7 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"gioui.org/app"
 	"gioui.org/f32"
@@ -18,6 +19,7 @@ import (
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
+	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -72,15 +74,15 @@ var (
 
 // Overlay zeigt je Monitor sein eingefrorenes Bild im randlosen Vollbild und lässt einen Bereich wählen (im
 // Monitor-Modus auch einen ganzen Monitor per Klick). Es kehrt zurück, sobald gewählt oder mit Esc abgebrochen ist.
-// Die Fenster schließt es nicht: Window.Perform(ActionClose) aus einer fremden Goroutine läuft in Gio v0.10.3 in
-// einen Datenwettlauf und wartet danach ewig auf das Ende der Fenster (erster echter Lauf 19.11.2026, F-77). Die
-// Fenster zeigen weiter das eingefrorene Bild und verschwinden mit dem Programmende. Muss neben app.Main laufen
-// (Starte); ein zweites Overlay im selben Prozess ist so nicht vorgesehen.
+// Vorher schließen sich alle Fenster, jedes in seiner eigenen Ereignisschleife: Window.Perform(ActionClose) aus
+// einer fremden Goroutine läuft in Gio v0.10.3 in einen Datenwettlauf und hängt (F-77); unter Wayland führt Gio
+// Perform im aufrufenden Goroutine aus, in der eigenen Schleife ist es also wettlauffrei. Muss neben app.Main laufen
+// (Starte).
 func Overlay(bilder []MonitorBild, m auswahl.Modus) (OverlayErgebnis, error) {
 	if len(bilder) == 0 {
 		return OverlayErgebnis{}, errors.New("overlay: keine Bilder")
 	}
-	g := &gruppe{fertig: make(chan ergebnis, 1)}
+	g := &gruppe{fertig: make(chan ergebnis, 1), zu: make(chan struct{}, len(bilder))}
 	g.aktiv.Store(-1)
 	for i, b := range bilder {
 		// Jedes Fenster läuft in einer eigenen Goroutine; text.Shaper ist nicht nebenläufig nutzbar, darum je
@@ -102,8 +104,25 @@ func Overlay(bilder []MonitorBild, m auswahl.Modus) (OverlayErgebnis, error) {
 		}()
 	}
 	e := <-g.fertig
+	// Alle Fenster anstoßen; jedes schließt sich beim nächsten Frame selbst. Kurz warten, bis sie weg sind, damit
+	// das Overlay vor dem Speichern verschwindet — aber nie hängen bleiben.
+	for _, f := range g.fenster {
+		f.w.Invalidate()
+	}
+	frist := time.After(fensterFrist)
+	for range g.fenster {
+		select {
+		case <-g.zu:
+		case <-frist:
+			diagnose("Fenster nicht in %v geschlossen", fensterFrist)
+			return e.OverlayErgebnis, e.err
+		}
+	}
 	return e.OverlayErgebnis, e.err
 }
+
+// fensterFrist: so lange wartet Overlay höchstens auf das Schließen der Fenster.
+const fensterFrist = time.Second
 
 type ergebnis struct {
 	OverlayErgebnis
@@ -114,6 +133,8 @@ type gruppe struct {
 	fenster []*overlayFenster
 	fertig  chan ergebnis
 	einmal  sync.Once
+	beendet atomic.Bool   // gesetzt, sobald ein Ergebnis da ist: die Fenster schließen sich
+	zu      chan struct{} // je geschlossenem Fenster ein Wert
 	// aktiv ist der Monitor, auf dem der Zeiger zuletzt war (-1: noch keiner). Gio meldet das Verlassen eines
 	// Fensters nicht (gio_onPointerLeave schickt nur bei Compositor-Zügen ein Cancel), darum erfährt das alte Fenster
 	// es über die Gruppe — sonst bliebe Fadenkreuz und Lupe dort stehen.
@@ -128,7 +149,12 @@ func (g *gruppe) zeigerAuf(i int) {
 }
 
 // melde nimmt nur das erste Ergebnis an (zwei Fenster können fast gleichzeitig fertig werden).
-func (g *gruppe) melde(e ergebnis) { g.einmal.Do(func() { g.fertig <- e }) }
+func (g *gruppe) melde(e ergebnis) {
+	g.einmal.Do(func() {
+		g.beendet.Store(true)
+		g.fertig <- e
+	})
+}
 
 type overlayFenster struct {
 	gruppe  *gruppe
@@ -148,14 +174,20 @@ func (f *overlayFenster) laufen() error {
 	for {
 		switch e := f.w.Event().(type) {
 		case app.DestroyEvent:
+			f.gruppe.zu <- struct{}{}
 			if e.Err != nil {
 				return e.Err
 			}
-			// Vom Compositor oder Nutzer geschlossen, ohne dass gewählt wurde: wie Esc.
+			// Vom Compositor oder Nutzer geschlossen, ohne dass gewählt wurde: wie Esc (nach einem Ergebnis wirkungslos).
 			f.gruppe.melde(ergebnis{err: ErrAbgebrochen})
 			return nil
 		case app.FrameEvent:
 			gtx := app.NewContext(&ops, e)
+			if f.gruppe.beendet.Load() {
+				e.Frame(gtx.Ops)
+				f.w.Perform(system.ActionClose) // in der eigenen Schleife, siehe Overlay
+				continue
+			}
 			f.frame(gtx)
 			e.Frame(gtx.Ops)
 		}

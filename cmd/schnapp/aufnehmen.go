@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/Andiministrator/schnapp/aufnahme"
 	"github.com/Andiministrator/schnapp/auswahl"
@@ -129,6 +130,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		return exitFehler
 	}
 	// Erst alle Monitore aufnehmen, dann im eingefrorenen Bild wählen (knowledge/topics/kwin-screenshot.md).
+	start := time.Now()
 	bilder := make([]oberflaeche.MonitorBild, 0, len(monitore))
 	pixel := make([]*image.NRGBA, 0, len(monitore))
 	for _, m := range monitore {
@@ -139,7 +141,10 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		bilder = append(bilder, oberflaeche.MonitorBild{Name: m.Name, Bild: b.Pixel})
 		pixel = append(pixel, b.Pixel)
 	}
+	diagnose(fehler, "Aufnahme aller Monitore: %v", time.Since(start).Round(time.Millisecond))
+	start = time.Now()
 	e, err := an.overlay(bilder, modus)
+	diagnose(fehler, "Overlay bis Ergebnis und Fenster zu: %v", time.Since(start).Round(time.Millisecond))
 	if errors.Is(err, oberflaeche.ErrAbgebrochen) {
 		return exitAbgebrochen
 	}
@@ -158,6 +163,8 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 // der Arbeitsdatei ist nur der gewählte Bereich, nicht der ganze Monitor: Was der Nutzer nicht gewählt hat, gehört
 // nicht in die Datei (Kernprinzip 3).
 func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, aus, fehler io.Writer) int {
+	start := time.Now()
+	defer func() { diagnose(fehler, "Speichern: %v", time.Since(start).Round(time.Millisecond)) }()
 	d, err := dokument.Neu(b.SubImage(bereich))
 	if err != nil {
 		return meldeFehler(fehler, err)
@@ -176,6 +183,13 @@ func (an anschluesse) merke(monitor string, b *image.NRGBA, bereich image.Rectan
 	l := auswahl.Letzter{Monitor: monitor, Groesse: b.Bounds().Size(), Bereich: bereich}
 	if err := auswahl.SpeichereLetzten(an.letzterPfad, l); err != nil {
 		fmt.Fprintf(fehler, sprache.T("Could not remember the area for --repeat: %v")+"\n", err)
+	}
+}
+
+// diagnose schreibt nur mit gesetztem SCHNAPP_DEBUG (Fehlersuche bei echten Läufen).
+func diagnose(fehler io.Writer, format string, args ...any) {
+	if os.Getenv("SCHNAPP_DEBUG") != "" {
+		fmt.Fprintf(fehler, "[schnapp] "+format+"\n", args...)
 	}
 }
 
