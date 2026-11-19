@@ -421,3 +421,34 @@ func TestSchluesselUndAbschnittGekuerzt(t *testing.T) {
 		}
 	}
 }
+
+// F-106: Auch der Fehlertext von os (er enthält den Pfad) wird maskiert, und ein überlanger Schlüssel außerhalb eines
+// Abschnitts wird gekürzt.
+func TestOsFehlertextMaskiert(t *testing.T) {
+	sprache.Setze(nil)
+	wurzel := t.TempDir()
+	konfig := filepath.Join(wurzel, "k\x1b[2J")
+	t.Setenv("HOME", filepath.Join(wurzel, "heim"))
+	t.Setenv("XDG_CONFIG_HOME", konfig)
+	pfad := filepath.Join(konfig, "schnapp", "settings.ini")
+	schreibe(t, pfad, "[capture]\n")
+	if err := os.Chmod(pfad, 0); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(pfad, 0o600) //nolint:errcheck // TempDir räumt ohnehin ab
+	if _, err := os.ReadFile(pfad); err == nil {
+		t.Skip("Datei trotz Rechte 000 lesbar (root?)")
+	}
+	_, warn := Lade()
+	if len(warn) != 1 || !keineSteuerzeichen(warn[0]) || strings.Count(warn[0], `k\x1b[2J`) != 2 {
+		t.Errorf("Pfad und os-Fehlertext müssen maskiert sein: %q", warn)
+	}
+}
+
+func TestSchluesselAusserhalbGekuerzt(t *testing.T) {
+	sprache.Setze(nil)
+	_, warn := Parse("p", strings.Repeat("y", 200)+" = 1\n")
+	if len(warn) != 1 || strings.Contains(warn[0], strings.Repeat("y", 81)) || !strings.Contains(warn[0], "…") {
+		t.Errorf("nicht gekürzt: %q", warn)
+	}
+}
