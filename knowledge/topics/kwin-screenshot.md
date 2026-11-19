@@ -67,8 +67,16 @@ Zeile ≤ 262144 Bytes, Rohdaten ≤ 1 GiB (die Pipe wird vor der Antwort gelese
 10 s je Aufruf, 5 min bei `CaptureInteractive` (der Nutzer klickt). Fehlerwerte: `ErrNichtBerechtigt` (NoAuthorized),
 `ErrAbgebrochen` (`org.kde.KWin.ScreenShot2.Error.Cancelled`), `ErrKeineSchnittstelle`. ScreenShot3 meldet dieselben
 Fehler unter eigenem Namensraum (`org.kde.KWin.ScreenShot3.Error.Cancelled`, laut `screenshotdbusinterface3.cpp`);
-die Schicht erkennt beide (F-49). Gegen echtes KWin noch nicht
-gelaufen (Stand Karte #27).
+die Schicht erkennt beide (F-49).
+
+**Gegen echtes KWin gelaufen (19.11.2026, Karte #27, KWin 6.8.3, drei Monitore):** Wegwerf-Probe mit
+`aufnahme.NeuKWin()` und `oberflaeche.Monitore()`. ScreenShot3 fehlt, die Schicht fiel wie vorgesehen auf
+ScreenShot2 (Pipe) zurück. Je Monitor mit und ohne Mauszeiger: Bildgröße gleich dem Wayland-Modus (physische
+Pixel), Alpha überall 255, Bild nicht einfarbig, `Bild.Bildschirm` gesetzt; 11–35 ms je Aufnahme (4K-Breitbild
+31–35 ms). Der Monitor mit gebrochener Skala liefert `Bild.Skala` 1,6, während `oberflaeche.Monitore()` dort die
+ganzzahlige Pufferskala 2 meldet — **für Koordinaten gilt `Bild.Skala`**, nie `Monitor.Skala`. Ein unbekannter
+Monitorname ergibt sofort (1 ms) den Fehler „Invalid screen requested“, kein Hänger. **Ungeprüft bleibt der
+memfd-Weg** (ScreenShot3), bis ein Plasma-Release ihn mitbringt (F-56).
 
 ## Gemessen im Prototyp (19.11.2026, Plasma 6.8, drei Monitore, einer mit Skala 1,6)
 
