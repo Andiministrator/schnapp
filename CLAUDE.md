@@ -230,6 +230,8 @@ verbrauchen andere Karten Nummern.
 - **Keine echten Screenshots von Andis Bildschirm** als Testdaten oder Doku-Bilder im Repo — sie zeigen Mails, Pfade,
   Namen. Testbilder synthetisch erzeugen oder bewusst ausgewählte, geprüfte Bilder nehmen.
 - **Keine Pfade, Benutzer- oder Rechnernamen** in Code, Tests, Metadaten, Golden-Dateien (`/home/<name>` & Co.).
+- **„Schnapp“ in Pfaden oder eigenen Dateinamen** — dort immer klein `schnapp` (`~/Bilder/schnapp/`, `schnapp.desktop`);
+  im Fließtext und in der Oberfläche „Schnapp“ (Andi, 19.11.2026, ADR-0016).
 - **X11-Wege** (xdotool, XGetImage, `import`) — Schnapp ist nur Wayland (ADR-0007).
 - **Schwärzen als Vektorebene über dem Original** — dann steht das Geschwärzte im eingebetteten Original im Klartext.
 - **Neue Python-Werkzeuge im Repo** — Python wird schrittweise entfernt (Andi, 19.11.2026): Logos und Grafiken

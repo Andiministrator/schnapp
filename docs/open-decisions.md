@@ -18,7 +18,8 @@ Stand 19.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
   ADR-0007.
 - **Vor:** Prototyp Schritt 4 (Aufnahme).
 
-## E-03: Name und Aufbau des PNG-Blocks
+## E-03: Name und Aufbau des PNG-Blocks — ENTSCHIEDEN 19.11.2026 (ADR-0008 Nachtrag 1)
+- Zwei Blöcke: `snAP` (SVG, komprimiert), `snAO` (Original binär); nicht kopiersicher (4. Buchstabe groß).
 - **Frage:** Chunk-Name (privat, nicht sicherheitskritisch, kopierbar?: Groß-/Kleinschreibung der vier Buchstaben
   bestimmt das), komprimiert oder nicht, Original als eingebettetes PNG im SVG oder als eigener Chunk?
 - **Impact:** mittel — einmal veröffentlicht, schwer zu ändern.
@@ -47,14 +48,17 @@ Stand 19.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 - **Tendenz:** Prüfung kurz vor dem ersten öffentlichen Push, Ergebnis in Spurensicherung.
 - **Vor:** Flathub-Einreichung.
 
-## E-09: Bibliothek — Ort und Format
+## E-09: Bibliothek — Ort und Format — ENTSCHIEDEN 19.11.2026 (ADR-0016)
+- `~/Bilder/schnapp/JJJJ-MM/`, Index `~/.local/share/schnapp/bibliothek.jsonl` als Cache, Aufräumen nach einstellbaren
+  Tagen in den Papierkorb (abschaltbar, Voreinstellung 90 Tage, nur ohne Schlagworte/Bearbeitung). `schnapp` in Pfaden klein.
 - **Frage:** Wo liegen Aufnahmen (`~/Bilder/Schnapp`? XDG-Datenverzeichnis?), Index als Datei oder SQLite (cgo!),
   wie werden Quellprogramm und Schlagworte gespeichert, Aufbewahrung/Aufräumen?
 - **Impact:** mittel — Datenschutz (Aufnahmen enthalten oft Vertrauliches), Rechte 0600/0700.
 - **Tendenz:** Bilder als Arbeitsdateien unter XDG-Bilderordner, Index als JSON-Zeilen-Datei, kein cgo.
 - **Vor:** erste Fassung, Bibliothek.
 
-## E-10: Globales Tastenkürzel unter KDE
+## E-10: Globales Tastenkürzel unter KDE — ENTSCHIEDEN 19.11.2026 (ADR-0017)
+- `.desktop`-Aktionen, Voreinstellung Druck für „Bereich“ (Spectacle-Kürzel abschalten); Portal später.
 - **Frage:** Über KGlobalAccel (D-Bus), das Portal `GlobalShortcuts` oder eine `.desktop`-Aktion, die der Nutzer in
   den Systemeinstellungen bindet?
 - **Impact:** mittel — Kern der Bedienung („schnell zur Hand").
