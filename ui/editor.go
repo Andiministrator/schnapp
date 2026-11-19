@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"log"
 	"math"
+	"os"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -84,6 +86,13 @@ type editor struct {
 	}
 }
 
+// diagnoseEditor schreibt nur mit gesetztem SCHNAPP_DEBUG (echte Läufe).
+func diagnoseEditor(format string, args ...any) {
+	if os.Getenv("SCHNAPP_DEBUG") != "" {
+		log.Printf("[editor] "+format, args...)
+	}
+}
+
 func (e *editor) bildNeu() { e.bildOp = paint.NewImageOp(e.s.D.Ansichtsbild()) }
 
 func (e *editor) laufen() error {
@@ -93,6 +102,7 @@ func (e *editor) laufen() error {
 	for {
 		switch ev := e.w.Event().(type) {
 		case app.DestroyEvent:
+			diagnoseEditor("Fenster zu: Fehler %v, geändert %v, Zug %v", ev.Err, e.s.Geaendert, e.s.Zieht())
 			if ev.Err != nil {
 				return ev.Err
 			}
@@ -100,7 +110,9 @@ func (e *editor) laufen() error {
 				e.s.Abbrechen()
 			}
 			if e.s.Geaendert {
-				return e.speichern(e.s.D)
+				err := e.speichern(e.s.D)
+				diagnoseEditor("Speichern beim Schließen: %v", err)
+				return err
 			}
 			return nil
 		case app.FrameEvent:
@@ -214,6 +226,7 @@ func (e *editor) zeiger(gtx layout.Context) {
 			e.s.Ziehen(p)
 		case pointer.Release:
 			e.s.Loslassen(p)
+			diagnoseEditor("Loslassen: Auswahl %d, geändert %v", e.s.Auswahl, e.s.Geaendert)
 		case pointer.Cancel:
 			e.s.Abbrechen()
 		case pointer.Scroll:
@@ -382,6 +395,7 @@ func (e *editor) tasten(gtx layout.Context) {
 		case "1":
 			e.s.EinsZuEins()
 		case "W":
+			diagnoseEditor("Strg+W")
 			e.w.Perform(system.ActionClose) // in der eigenen Schleife, wie im Overlay (F-77)
 		}
 	}

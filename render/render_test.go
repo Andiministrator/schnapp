@@ -162,3 +162,20 @@ func TestOhneObjekte(t *testing.T) {
 		t.Errorf("%v %v", b.Bounds(), b.NRGBAAt(3, 3))
 	}
 }
+
+// BenchmarkGrossesBild: 4K mit einer Handvoll Objekten (Maß für Speichern im Editor).
+func BenchmarkGrossesBild(b *testing.B) {
+	bild := image.NewNRGBA(image.Rect(0, 0, 3840, 2160))
+	d, _ := document.Neu(bild)
+	for i := 0; i < 10; i++ {
+		f := float64(i * 300)
+		_, _ = d.Hinzufuegen(document.GeraderPfeil(document.Pt(100+f, 100), document.Pt(300+f, 900), document.Strich{Farbe: rot, Breite: 6}))
+		_, _ = d.Hinzufuegen(document.Kasten{Bereich: document.R(document.Pt(f, 1200), document.Pt(f+250, 1500)), Strich: document.Strich{Farbe: blau, Breite: 4}})
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := Bild(d); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

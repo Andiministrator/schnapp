@@ -114,10 +114,29 @@ func (z zeichner) fuelle(polys [][]document.Punkt, farbe color.NRGBA) {
 	if farbe.A == 0 {
 		return
 	}
-	b := z.bild.Bounds()
-	r := vector.NewRasterizer(b.Dx(), b.Dy())
+	// Nur das umschließende Rechteck der Polygone rastern (sonst kostet jedes Objekt das ganze Bild).
+	minX, minY := math.Inf(1), math.Inf(1)
+	maxX, maxY := math.Inf(-1), math.Inf(-1)
+	for _, p := range polys {
+		if len(p) < 3 {
+			continue
+		}
+		for _, q := range p {
+			minX, minY = math.Min(minX, q.X), math.Min(minY, q.Y)
+			maxX, maxY = math.Max(maxX, q.X), math.Max(maxY, q.Y)
+		}
+	}
+	if minX > maxX {
+		return
+	}
+	ausschnitt := image.Rect(int(math.Floor(minX)), int(math.Floor(minY)), int(math.Ceil(maxX))+1, int(math.Ceil(maxY))+1).
+		Intersect(z.bild.Bounds())
+	if ausschnitt.Empty() {
+		return
+	}
+	ox, oy := float64(ausschnitt.Min.X), float64(ausschnitt.Min.Y)
+	r := vector.NewRasterizer(ausschnitt.Dx(), ausschnitt.Dy())
 	r.DrawOp = draw.Over
-	leer := true
 	for _, p := range polys {
 		if len(p) < 3 {
 			continue
@@ -125,16 +144,13 @@ func (z zeichner) fuelle(polys [][]document.Punkt, farbe color.NRGBA) {
 		if flaeche(p) < 0 {
 			p = umgekehrt(p)
 		}
-		r.MoveTo(float32(p[0].X), float32(p[0].Y))
+		r.MoveTo(float32(p[0].X-ox), float32(p[0].Y-oy))
 		for _, q := range p[1:] {
-			r.LineTo(float32(q.X), float32(q.Y))
+			r.LineTo(float32(q.X-ox), float32(q.Y-oy))
 		}
 		r.ClosePath()
-		leer = false
 	}
-	if !leer {
-		r.Draw(z.bild, b, image.NewUniform(farbe), image.Point{})
-	}
+	r.Draw(z.bild, ausschnitt, image.NewUniform(farbe), image.Point{})
 }
 
 // strich zieht einen Linienzug der Breite s.Breite mit runden Enden und Ecken: je Strecke ein Viereck, je Punkt ein
