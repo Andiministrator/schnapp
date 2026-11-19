@@ -38,8 +38,8 @@ für Flächen, Linien, Symbole (Grenze dort 3:1). Grün und Orange unterscheiden
 
 ## Regeln
 
-- Logo: höchstens Grün + Orange auf Grau (dunkel) bzw. gruen-700 + orange-700 auf Weiß (hell). Einfarbig muss es
-  auch gehen.
+- Logo: höchstens Grün + Orange auf Grau (dunkel) bzw. gruen-700 + Orange auf Weiß (hell). Im hellen Logo sind Maul
+  und Zähne `#E0893A` (nur Schmuck, kein Text); Text in Orange auf Weiß immer orange-700. Einfarbig muss es auch gehen.
 - **Grün und Orange nie als einziges Unterscheidungsmerkmal** (für Rot-Grün-Schwäche trotzdem schwer zu trennen):
   immer Form, Symbol oder Text dazu.
 - Beschriftungsfarben im Editor (Pfeile, Kästen) sind eine eigene Auswahl für Bilder, nicht diese Palette.
