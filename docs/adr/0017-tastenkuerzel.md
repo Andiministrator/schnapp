@@ -55,9 +55,12 @@ deutschen Namen oben (`--bereich` usw.) gelten nicht mehr.
 
 **Status:** Akzeptiert (Andi, 19.11.2026: „dann folge ich deinem Vorschlag“).
 
-**Stand 19.11.2026:** Kommandozeile umgesetzt (Karte #47): `--list-screens` listet, `--screen` ohne Wert meldet wie
-die übrigen Aufnahme-Modi „noch nicht umgesetzt“. Der Monitor-Modus kommt mit dem Overlay (Karte #34), die
-Einstellungsdatei mit ADR-0018 (Karte #52).
+**Stand 19.11.2026 (nach #47, #52, #34):** umgesetzt. `--list-screens` listet; `--screen` ohne Wert folgt
+`[capture] screen` in der Einstellungsdatei (ADR-0018): `pick` öffnet das Overlay im Monitor-Modus, `pointer` nimmt
+den aktiven Monitor sofort, `all` meldet noch „nicht umgesetzt“. Enter im Overlay nimmt den Monitor **unter dem
+Zeiger** (nicht den mit dem Tastaturfokus), Esc oder Rechtsklick bricht ab (Exit 3). `--repeat` wiederholt den
+zuletzt im Overlay oder mit `--screen=NAME` gewählten Bereich; `pointer` und `--window` merken keinen (KWin nennt
+dabei keinen Monitornamen bzw. es ist kein Bereich).
 
 Die Desktop-Aktion `Screen` („Bildschirm aufnehmen“, per Menü oder frei belegbarer Taste; `Print` bleibt an `Region`)
 ruft `schnapp --screen` ohne Wert. Was dieser Aufruf tut, legt eine **Einstellung** fest:
@@ -71,7 +74,7 @@ ruft `schnapp --screen` ohne Wert. Was dieser Aufruf tut, legt eine **Einstellun
 - `--screen=NAME` nimmt immer genau diesen Monitor, unabhängig von der Einstellung.
 - Die Monitorliste gibt künftig `--list-screens` aus; `--screen` allein listet nicht mehr (Nachtrag 1, „Vorläufig“,
   ist damit überholt).
-- Die Einstellung ist die erste in Schnapp. Ort und Format der Einstellungsdatei legt ein eigener ADR fest, bevor sie
-  umgesetzt wird. Bis dahin gilt fest die Voreinstellung.
+- Die Einstellung ist die erste in Schnapp. Ort und Format der Einstellungsdatei legt ADR-0018 fest (umgesetzt mit
+  Karte #52).
 - Umsetzung: Kommandozeile (`--list-screens`, `--screen` ohne Liste) mit dem Rest von F-58; Monitor-Modus mit dem
   Overlay.

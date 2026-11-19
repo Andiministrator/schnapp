@@ -137,8 +137,8 @@ msgid "Could not remember the area for --repeat: %v"
 msgstr "Der Bereich für --repeat ließ sich nicht merken: %v"
 
 # oberflaeche: Overlay
-msgid "Click a monitor or drag an area · Enter: this monitor · Esc: cancel"
-msgstr "Monitor anklicken oder Bereich aufziehen · Enter: dieser Monitor · Esc: abbrechen"
+msgid "Click a monitor or drag an area · Enter: monitor under the pointer · Esc or right-click: cancel"
+msgstr "Monitor anklicken oder Bereich aufziehen · Enter: Monitor unter dem Zeiger · Esc oder Rechtsklick: abbrechen"
 
-msgid "Drag an area · Enter: whole monitor · Esc: cancel"
-msgstr "Bereich aufziehen · Enter: ganzer Monitor · Esc: abbrechen"
+msgid "Drag an area · Enter: whole monitor under the pointer · Esc or right-click: cancel"
+msgstr "Bereich aufziehen · Enter: ganzer Monitor unter dem Zeiger · Esc oder Rechtsklick: abbrechen"

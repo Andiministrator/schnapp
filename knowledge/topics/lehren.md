@@ -81,3 +81,11 @@ Stand: 2026-11-19 (ergänzt nach Sprint 1). Kurze Regeln aus Fehlern und Befunde
 - **Rechte-Prüfung lehnt ab, was Berechtigungen erweitert** (z. B. eine `.desktop`-Datei mit
   ScreenShot2-Freigabe): nicht umgehen, Vorlage im Repo ablegen und Andi fragen.
 - **Board:** alles selbst erledigen (auch Sprints anlegen) — nie „Andi: im Browser anlegen“.
+- **Echte Läufe mit Andi (Overlay, Sprint 4):** selbst starten mit `timeout 90 … > tmp/…out 2> tmp/…err` statt ihn
+  einen `!`-Befehl tippen zu lassen — dessen Ausgabe kommt erst am Ende, nach 120 s wandert er in den Hintergrund und
+  hängt dort unbemerkt weiter. Vorher in einem Satz sagen, **was** er tun und **worauf** er achten soll (je Lauf eine
+  Sache); sonst übersieht er Einzelheiten und der Lauf muss wiederholt werden. Inhalte seiner Aufnahmen nie ansehen,
+  nur Größe (`file`).
+- **Nebenläufigkeit erst im echten Lauf sichtbar:** Unit-Tests ohne Fenster fanden weder den geteilten Text-Setzer
+  noch den Wettlauf beim Schließen; ein `go build -race`-Lauf fand ihn sofort. Zeiten aber nie mit `-race` messen
+  (Faktor 10–30).

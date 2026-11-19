@@ -228,3 +228,72 @@ func TestLetzterSpeichernLaden(t *testing.T) {
 		t.Errorf("kaputte Datei: %v", err)
 	}
 }
+
+// F-83: Wer zieht und zum Startpunkt zurückkehrt, klickt — kein 1×1-Bereich in der Bibliothek.
+func TestZurueckZumStartIstKlick(t *testing.T) {
+	z := Neu(ModusBereich, image.Pt(200, 100))
+	z.Gedrueckt(Punkt{50, 50})
+	z.Bewegt(Punkt{80, 70}) // über der Schwelle
+	if e := z.Losgelassen(Punkt{51, 51}); e.Fertig {
+		t.Fatalf("Bereich-Modus: zurück zum Start darf nichts wählen: %+v", e)
+	}
+	z = Neu(ModusMonitor, image.Pt(200, 100))
+	z.Gedrueckt(Punkt{50, 50})
+	z.Bewegt(Punkt{80, 70})
+	if e := z.Losgelassen(Punkt{50, 50}); !e.Fertig || e.Bereich != image.Rect(0, 0, 200, 100) {
+		t.Fatalf("Monitor-Modus: zurück zum Start ist ein Klick auf den Monitor: %+v", e)
+	}
+	// Knapp über der Schwelle ist ein Bereich.
+	z = Neu(ModusBereich, image.Pt(200, 100))
+	if e := ziehe(z, Punkt{50, 50}, Punkt{54, 50}); !e.Fertig || e.Bereich != image.Rect(50, 50, 55, 51) {
+		t.Errorf("4 px gezogen: %+v", e)
+	}
+}
+
+// F-84: Fenster größer als das Bild (eingepasst, mittig): Rahmen, Pixel und Lupe rechnen in Bildpixeln.
+func TestEingepasstRahmenUndLupe(t *testing.T) {
+	z := Neu(ModusBereich, image.Pt(100, 100))
+	z.SetzeAbbildung(image.Pt(300, 200)) // Zoom 2, Versatz 50,0
+	z.Gedrueckt(Punkt{60, 20})           // Bild 5,10
+	z.Bewegt(Punkt{120, 60})             // Bild 35,30
+	if r, ok := z.Rahmen(); !ok || r != image.Rect(5, 10, 36, 31) {
+		t.Errorf("Rahmen eingepasst: %v %v", r, ok)
+	}
+	// Druck im Rand links neben dem Bild wird aufs Bild beschnitten.
+	z = Neu(ModusBereich, image.Pt(100, 100))
+	z.SetzeAbbildung(image.Pt(300, 200))
+	if e := ziehe(z, Punkt{10, 10}, Punkt{70, 30}); !e.Fertig || e.Bereich != image.Rect(0, 5, 11, 16) {
+		t.Errorf("Rand beschnitten: %+v", e)
+	}
+	l := z.LupeAn(Punkt{150, 100}, image.Pt(300, 200)) // Bild 50,50
+	if l.Mitte != image.Pt(50, 50) || l.Quelle != image.Rect(42, 42, 59, 59) {
+		t.Errorf("Lupe eingepasst: %+v", l)
+	}
+}
+
+// Verlassen während des Ziehens beendet das Ziehen nicht (der Zeiger kann über den Rand hinaus).
+func TestVerlassenWaehrendZiehen(t *testing.T) {
+	z := Neu(ModusBereich, image.Pt(200, 100))
+	z.Gedrueckt(Punkt{10, 10})
+	z.Bewegt(Punkt{40, 40})
+	z.Verlassen()
+	if e := z.Losgelassen(Punkt{60, 50}); !e.Fertig || e.Bereich != image.Rect(10, 10, 61, 51) {
+		t.Errorf("Loslassen nach Verlassen: %+v", e)
+	}
+}
+
+func TestLetzterRechteUndOrt(t *testing.T) {
+	if err := SpeichereLetzten("", Letzter{Monitor: "x", Groesse: image.Pt(2, 2), Bereich: image.Rect(0, 0, 1, 1)}); !errors.Is(err, ErrKeinZustandsordner) {
+		t.Errorf("ohne Pfad: %v", err)
+	}
+	ordner := filepath.Join(t.TempDir(), "schnapp")
+	if err := os.Mkdir(ordner, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := SpeichereLetzten(filepath.Join(ordner, "last-area.json"), Letzter{Monitor: "x", Groesse: image.Pt(2, 2), Bereich: image.Rect(0, 0, 1, 1)}); err != nil {
+		t.Fatal(err)
+	}
+	if fi, err := os.Stat(ordner); err != nil || fi.Mode().Perm() != 0o700 {
+		t.Errorf("vorhandener Ordner 0755 wird auf 0700 gebracht: %v", fi.Mode().Perm())
+	}
+}

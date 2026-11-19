@@ -5,7 +5,9 @@
 # Nachtrag 3) an den Programmpfad bindet. Die Exec-Zeilen setzen @EXEC@ in doppelte Anführungszeichen, damit ein Pfad
 # mit Leerzeichen funktioniert. Pfade mit ", `, $ oder \ sind nicht unterstützt: Sie müssten nach der Desktop-Entry-
 # Spezifikation (Abschnitt "The Exec key") mit Backslash maskiert und in der Datei jeder Backslash noch einmal
-# verdoppelt werden. Beispiel (Pfad ohne diese Zeichen):
+# verdoppelt werden. Ein % im Pfad muss als %% stehen (sonst ein ungültiger Feldcode). Das sed-Beispiel versagt
+# zusätzlich bei | (Trennzeichen) und & (fügt @EXEC@ erneut ein). Beispiel (Pfad ohne diese Zeichen; das künftige
+# Installationsskript, Karte #42, maskiert selbst):
 #   sed 's|@EXEC@|/home/<nutzer>/.local/bin/schnapp|' data/schnapp.desktop.in > ~/.local/share/applications/schnapp.desktop
 # Icon=schnapp: Der Name des App-Symbols (marke/logo/svg/schnapp-symbol-*.svg); das Installieren ins Symbolthema
 # folgt mit dem Installationsskript, bis dahin zeigt KDE ein Ersatzsymbol.

@@ -121,7 +121,9 @@ func Overlay(bilder []MonitorBild, m auswahl.Modus) (OverlayErgebnis, error) {
 	return e.OverlayErgebnis, e.err
 }
 
-// fensterFrist: so lange wartet Overlay höchstens auf das Schließen der Fenster.
+// fensterFrist: so lange wartet Overlay höchstens auf das Schließen der Fenster. Läuft sie ab, kehrt Overlay
+// trotzdem mit dem Ergebnis zurück; noch offene Fenster schließen sich, sobald sie einen Frame bekommen, oder enden
+// mit dem Prozess. Wer danach im selben Prozess ein Fenster öffnet (Editor, #35), muss damit rechnen (F-82).
 const fensterFrist = time.Second
 
 type ergebnis struct {
@@ -203,6 +205,12 @@ func (f *overlayFenster) frame(gtx layout.Context) {
 	}
 	f.tasten(gtx)
 	f.zeiger(gtx)
+	if f.gruppe.beendet.Load() {
+		// Ergebnis kam in diesem Frame (Loslassen, Esc, Enter): Ein Invalidate aus Overlay verpufft, solange dieses
+		// Fenster einen Frame bearbeitet (Gio setzt mayInvalidate erst danach). Darum den nächsten Frame selbst
+		// anfordern — in ihm schließt sich das Fenster (F-79).
+		gtx.Execute(op.InvalidateCmd{})
+	}
 	if int(f.gruppe.aktiv.Load()) != f.index {
 		f.z.Verlassen()
 	}
@@ -242,7 +250,12 @@ func (f *overlayFenster) tasten(gtx layout.Context) {
 		case key.NameEscape:
 			f.gruppe.melde(ergebnis{err: ErrAbgebrochen})
 		case key.NameReturn, key.NameEnter:
-			f.fertig(f.z.Ganz())
+			// Tasten kommen im Fenster mit dem Tastaturfokus an; gemeint ist aber der Monitor unter dem Zeiger
+			// (Hinweisleiste, grüner Rand). Ohne bekannten Zeigermonitor tut Enter nichts (F-80).
+			if i := int(f.gruppe.aktiv.Load()); i >= 0 && i < len(f.gruppe.fenster) {
+				ziel := f.gruppe.fenster[i]
+				f.gruppe.melde(ergebnis{OverlayErgebnis: OverlayErgebnis{Monitor: i, Bereich: image.Rectangle{Max: ziel.z.Groesse}}})
+			}
 		}
 	}
 }
@@ -272,6 +285,11 @@ func (f *overlayFenster) zeiger(gtx layout.Context) {
 			f.z.Verlassen()
 			gtx.Execute(op.InvalidateCmd{}) // Fadenkreuz und Lupe sofort entfernen, nicht erst beim nächsten Ereignis
 		case pointer.Press:
+			if e.Buttons == pointer.ButtonSecondary {
+				// Ausweg per Maus, falls kein Overlay-Fenster den Tastaturfokus hat (F-81).
+				f.gruppe.melde(ergebnis{err: ErrAbgebrochen})
+				continue
+			}
 			if e.Buttons == pointer.ButtonPrimary {
 				f.gruppe.zeigerAuf(f.index)
 				f.z.Gedrueckt(p)
@@ -397,9 +415,9 @@ func (f *overlayFenster) zeichneLupe(gtx layout.Context, p auswahl.Punkt) {
 func (f *overlayFenster) zeichneHinweis(gtx layout.Context) {
 	var s string
 	if f.modus == auswahl.ModusMonitor {
-		s = sprache.T("Click a monitor or drag an area · Enter: this monitor · Esc: cancel")
+		s = sprache.T("Click a monitor or drag an area · Enter: monitor under the pointer · Esc or right-click: cancel")
 	} else {
-		s = sprache.T("Drag an area · Enter: whole monitor · Esc: cancel")
+		s = sprache.T("Drag an area · Enter: whole monitor under the pointer · Esc or right-click: cancel")
 	}
 	call, groesse := f.schild(gtx, s, false)
 	t := op.Offset(image.Pt((f.groesse.X-groesse.X)/2, gtx.Dp(16))).Push(gtx.Ops)

@@ -67,7 +67,8 @@ func (z *Zustand) Gedrueckt(p Punkt) {
 }
 
 // Losgelassen meldet das Loslassen und liefert das Ergebnis: ein aufgezogener Bereich, im Monitor-Modus bei einem
-// Klick der ganze Monitor, sonst nichts (Fertig false, die Auswahl geht weiter).
+// Klick der ganze Monitor, sonst nichts (Fertig false, die Auswahl geht weiter). Liegt der Loslass-Punkt näher als
+// KlickSchwelle am Startpunkt, gilt es als Klick, auch wenn zwischendurch gezogen wurde.
 func (z *Zustand) Losgelassen(p Punkt) Ergebnis {
 	z.Bewegt(p)
 	if !z.gedrueckt {
@@ -80,8 +81,15 @@ func (z *Zustand) Losgelassen(p Punkt) Ergebnis {
 		}
 		return Ergebnis{}
 	}
-	r := z.rahmen(z.start, p)
 	z.gezogen = false
+	if abstand(p, z.start) < KlickSchwelle {
+		// Gezogen und zum Startpunkt zurück: kein Zwerg-Bereich, sondern wie ein Klick (F-83).
+		if z.Modus == ModusMonitor {
+			return Ergebnis{Fertig: true, Bereich: image.Rectangle{Max: z.Groesse}}
+		}
+		return Ergebnis{}
+	}
+	r := z.rahmen(z.start, p)
 	if r.Empty() {
 		return Ergebnis{}
 	}

@@ -104,8 +104,9 @@ Herkunft: Anforderungen und Entscheidungen des Maintainers vom 18.11.2026, über
 
 ## Architektur
 
-Produktcode seit Sprint 3 (Stand 19.11.2026): `aufnahme`, `dokument`, `datei`, `bibliothek` stehen mit Tests, die
-Oberfläche fehlt noch; daneben der Wegwerf-Prototyp `prototyp/`. Schichten:
+Produktcode (Stand 19.11.2026, Sprint 4): `aufnahme`, `dokument`, `datei`, `bibliothek`, `einstellungen`, `auswahl`
+und das Overlay in `oberflaeche` stehen mit Tests; Schnapp nimmt auf und legt in der Bibliothek ab, der Editor fehlt
+noch. Daneben der Wegwerf-Prototyp `prototyp/`. Schichten:
 
 - **aufnahme** — Schnittstelle + KWin-Umsetzung (D-Bus), später Portal.
 - **dokument** — Ebenenmodell (Pixelebene, Vektorebenen, Original, Stauchangaben), Rückgängig-Verlauf.
@@ -113,7 +114,9 @@ Oberfläche fehlt noch; daneben der Wegwerf-Prototyp `prototyp/`. Schichten:
 - **zeichnen** — die aus einem Schwesterprojekt übernommenen Pakete `svg`, `raster`, `geo` (eigenes Go-Modul, das
   das Schwesterprojekt wieder einbindet, ADR-0012), ergänzt um Schrift, `<image>`, Weichzeichnen, Verpixeln.
 - **bibliothek** — Autospeichern, Vorschau, Suche, Schlagworte.
-- **oberflaeche** — Gio: Vollbild-Overlay zur Auswahl, Editor, Bibliothek.
+- **einstellungen** — `settings.ini` lesen (ADR-0018); Warnungen statt Abbruch.
+- **auswahl** — Logik des Overlays ohne Gio (Abbildung, Bereich, Monitor per Klick, Lupe, letzter Bereich).
+- **oberflaeche** — Gio: Vollbild-Overlay zur Auswahl (fertig), Editor, Bibliothek.
 
 Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung) — ADR-0003 Nachtrag 2.
 
@@ -131,8 +134,11 @@ Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung) — ADR
   `libwayland-dev libegl-dev libxkbcommon-dev`. Die Tags kommen über die Umgebungsvariable, nicht über `go env -w`:
   `export GOFLAGS=-tags=novulkan,nox11`, dann `go vet ./... && go test ./...`; Programm `go build -trimpath -o schnapp
   ./cmd/schnapp`. Pakete: `sprache` (Sprachwahl, PO-Leser, `sprache.T/TK/N`), `po` (eingebettete `po/*.po`, ADR-0014
-  Nachtrag 1), `oberflaeche` (Schicht zu Gio), `cmd/schnapp` (Argumente `--region` [Voreinstellung], `--screen`,
-  `--window`, `--repeat`, `--version`, `--help`; die Aufnahme-Modi melden vorerst „noch nicht umgesetzt“).
+  Nachtrag 1), `oberflaeche` (Schicht zu Gio; `Starte` hält die Gio-Hauptschleife, `Overlay` je Monitor),
+  `cmd/schnapp` (Argumente `--region` [Voreinstellung], `--screen[=NAME]`, `--list-screens`, `--window`, `--repeat`,
+  `--version`, `--help`; `aufnehmen.go` nimmt auf und legt in der Bibliothek ab, Pfad auf stdout, Exit 3 bei Abbruch;
+  `--screen` mit `[capture] screen = all` ist noch nicht umgesetzt). Echte Läufe öffnen Vollbild auf allen Monitoren:
+  nur nach Rückfrage, mit `go build -race`, Diagnose mit `SCHNAPP_DEBUG=1` (`knowledge/topics/gio-wayland.md`).
   Oberflächentexte nur als Literal über `sprache.T/TK/N`; der Test verlangt für jeden Text einen fertigen Eintrag in
   `po/de.po`. `aufnahme` ist die Aufnahmeschicht (`Quelle`, KWin über D-Bus: ScreenShot3/memfd bevorzugt, sonst
   ScreenShot2/Pipe; Tests mit Attrappe, keine echte Aufnahme in `go test`). `data/schnapp.desktop.in` ist die Vorlage der Desktop-Datei (ADR-0017). `tmp/go.mod` trennt `tmp/` vom

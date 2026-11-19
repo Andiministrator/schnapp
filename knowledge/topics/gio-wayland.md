@@ -87,6 +87,13 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
     `Cancel`, sonst nichts. Wer wissen muss, dass der Zeiger auf ein anderes Fenster gewechselt ist, koordiniert das
     selbst (Overlay: gemeinsamer „aktiver Monitor“, das alte Fenster per `Window.Invalidate` neu zeichnen lassen —
     `Invalidate` ist aus jeder Goroutine erlaubt, `Perform` nicht).
+  - **`Invalidate` verpufft während eines Frames:** `Window.Invalidate` tut nichts, solange das Fenster gerade ein
+    Ereignis bearbeitet (`mayInvalidate` false, `app/window.go`). Wer im eigenen Frame etwas auslöst, das einen
+    weiteren Frame braucht, fordert ihn mit `gtx.Execute(op.InvalidateCmd{})` an (Overlay: Schließen des
+    auslösenden Fensters, F-79, Kritiker Sitzungs-QA Sprint 4).
+  - **Tasten kommen im Fenster mit dem Tastaturfokus an,** nicht in dem unter dem Zeiger. Bei mehreren Vollbild-
+    Fenstern bezieht sich Enter deshalb auf den gemeinsamen „aktiven Monitor“ (F-80); Rechtsklick bricht ab, falls
+    kein Fenster den Fokus hat (F-81).
   - Diagnose bei echten Läufen: `SCHNAPP_DEBUG=1` schreibt Fenstergröße, PxPerDp, Abbildung, Druck/Loslassen je
     Monitor auf stderr (ohne Monitornamen). Gemessen 19.11.2026: auf allen drei Monitoren Fenster = Bild, Zoom 1,
     auch bei Skala 1,6 (PxPerDp 1,600).
