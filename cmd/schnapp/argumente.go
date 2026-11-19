@@ -14,9 +14,9 @@ type Modus int
 
 const (
 	ModusBereich     Modus = iota // Voreinstellung ohne Argument (ADR-0017)
-	ModusBildschirm               // --bildschirm[=NAME]
-	ModusFenster                  // --fenster
-	ModusWiederholen              // --wiederholen
+	ModusBildschirm               // --screen[=NAME]
+	ModusFenster                  // --window
+	ModusWiederholen              // --repeat
 	ModusVersion                  // --version
 	ModusHilfe                    // --help
 )
@@ -24,7 +24,7 @@ const (
 // Aufruf ist das ausgewertete Ergebnis der Kommandozeile.
 type Aufruf struct {
 	Modus Modus
-	// Bildschirm ist der Name des gewählten Monitors bei --bildschirm=NAME; leer bei --bildschirm ohne Wert
+	// Bildschirm ist der Name des gewählten Monitors bei --screen=NAME; leer bei --screen ohne Wert
 	// (dann: Monitorliste ausgeben).
 	Bildschirm string
 }
@@ -33,17 +33,17 @@ type Aufruf struct {
 func (m Modus) Option() string {
 	switch m {
 	case ModusBildschirm:
-		return "--bildschirm"
+		return "--screen"
 	case ModusFenster:
-		return "--fenster"
+		return "--window"
 	case ModusWiederholen:
-		return "--wiederholen"
+		return "--repeat"
 	case ModusVersion:
 		return "--version"
 	case ModusHilfe:
 		return "--help"
 	}
-	return "--bereich"
+	return "--region"
 }
 
 // Fehler ist ein Fehler in der Kommandozeile. Er trägt schon den übersetzten Text.
@@ -51,10 +51,10 @@ type Fehler struct{ Text string }
 
 func (f *Fehler) Error() string { return f.Text }
 
-// Auswerten liest die Argumente (ohne Programmnamen). Ohne Argument gilt --bereich. Es gibt genau einen Modus;
+// Auswerten liest die Argumente (ohne Programmnamen). Ohne Argument gilt --region. Es gibt genau einen Modus;
 // zwei verschiedene oder unbekannte Optionen, Werte an Optionen ohne Wert und Positionsargumente sind Fehler.
-// Nur --bildschirm nimmt einen Wert (--bildschirm=NAME); die Form „--bildschirm NAME“ gibt es nicht, damit
-// „--bildschirm“ allein eindeutig die Monitorliste meint.
+// Nur --screen nimmt einen Wert (--screen=NAME); die Form „--screen NAME“ gibt es nicht, damit
+// „--screen“ allein eindeutig die Monitorliste meint.
 func Auswerten(args []string) (Aufruf, error) {
 	var (
 		a       Aufruf
@@ -64,13 +64,13 @@ func Auswerten(args []string) (Aufruf, error) {
 		name, wert, hatWert := strings.Cut(arg, "=")
 		var m Modus
 		switch name {
-		case "--bereich":
+		case "--region":
 			m = ModusBereich
-		case "--bildschirm":
+		case "--screen":
 			m = ModusBildschirm
-		case "--fenster":
+		case "--window":
 			m = ModusFenster
-		case "--wiederholen":
+		case "--repeat":
 			m = ModusWiederholen
 		case "--version", "-V":
 			m = ModusVersion
@@ -86,7 +86,7 @@ func Auswerten(args []string) (Aufruf, error) {
 			return Aufruf{}, &Fehler{fmt.Sprintf(sprache.T("Option %s takes no value."), m.Option())}
 		}
 		if hatWert && wert == "" {
-			return Aufruf{}, &Fehler{sprache.T("Option --bildschirm needs a monitor name after the equals sign.")}
+			return Aufruf{}, &Fehler{sprache.T("Option --screen needs a monitor name after the equals sign.")}
 		}
 		if gesehen && !(a.Modus == m && m != ModusBildschirm) {
 			return Aufruf{}, &Fehler{fmt.Sprintf(sprache.T("Options %s and %s cannot be combined."), a.Modus.Option(), m.Option())}

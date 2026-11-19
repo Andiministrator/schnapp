@@ -21,26 +21,26 @@ Icon=schnapp
 Terminal=false
 StartupNotify=false
 Categories=Graphics;Utility;
-Actions=Bereich;Bildschirm;Fenster;LetztenBereich;
+Actions=Region;Screen;Window;Repeat;
 X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2
 
-[Desktop Action Bereich]
+[Desktop Action Region]
 Name=Capture Area
 Name[de]=Bereich aufnehmen
-Exec=@EXEC@ --bereich
+Exec=@EXEC@ --region
 X-KDE-Shortcuts=Print
 
-[Desktop Action Bildschirm]
+[Desktop Action Screen]
 Name=Capture Monitor
 Name[de]=Bildschirm aufnehmen
-Exec=@EXEC@ --bildschirm
+Exec=@EXEC@ --screen
 
-[Desktop Action Fenster]
+[Desktop Action Window]
 Name=Capture Window
 Name[de]=Fenster aufnehmen
-Exec=@EXEC@ --fenster
+Exec=@EXEC@ --window
 
-[Desktop Action LetztenBereich]
+[Desktop Action Repeat]
 Name=Repeat Last Area
 Name[de]=Letzten Bereich wiederholen
-Exec=@EXEC@ --wiederholen
+Exec=@EXEC@ --repeat

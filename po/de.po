@@ -23,8 +23,8 @@ msgstr "Unerwartetes Argument: %s"
 msgid "Option %s takes no value."
 msgstr "Die Option %s nimmt keinen Wert."
 
-msgid "Option --bildschirm needs a monitor name after the equals sign."
-msgstr "Die Option --bildschirm braucht nach dem Gleichheitszeichen einen Monitornamen."
+msgid "Option --screen needs a monitor name after the equals sign."
+msgstr "Die Option --screen braucht nach dem Gleichheitszeichen einen Monitornamen."
 
 msgid "Options %s and %s cannot be combined."
 msgstr "Die Optionen %s und %s lassen sich nicht kombinieren."
@@ -41,8 +41,8 @@ msgstr "Der Aufnahmemodus %s ist noch nicht umgesetzt."
 msgid "Usage: schnapp [option]"
 msgstr "Aufruf: schnapp [Option]"
 
-msgid "Take a screenshot. Without an option, you select an area (--bereich)."
-msgstr "Nimmt einen Screenshot auf. Ohne Option wird ein Bereich gewählt (--bereich)."
+msgid "Take a screenshot. Without an option, you select an area (--region)."
+msgstr "Nimmt einen Screenshot auf. Ohne Option wird ein Bereich gewählt (--region)."
 
 msgid "Select an area"
 msgstr "Bereich auswählen"

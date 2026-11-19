@@ -40,5 +40,14 @@ auch GNOME), oder Aktionen in der `.desktop`-Datei, die KDE mit Kürzeln verbind
   Aufnahme-Berechtigung daran, ADR-0007 Nachtrag 3). Spectacle belegt `Print` ebenfalls: gleichzeitig installiert,
   meldet KDE einen Konflikt, der Nutzer entscheidet in den Systemeinstellungen (Hinweis in README/Installation, sobald
   es ein Installationsskript gibt).
-- **Vorläufig:** Die Aktion `Bildschirm` ruft `schnapp --bildschirm` ohne Wert; das gibt die Monitorliste aus. Mit der
+- **Vorläufig:** Die Aktion `Bildschirm` ruft `schnapp --screen` ohne Wert; das gibt die Monitorliste aus. Mit der
   Umsetzung der Aufnahme wählt der Aufruf den Monitor selbst (Karte im Board).
+
+## Nachtrag 2 (19.11.2026): Optionen und Aktionen englisch
+
+**Status:** Akzeptiert (Andi, 19.11.2026: „englisch“). Schnapp ist öffentlich und englisch-zuerst (ADR-0014); die
+Kommandozeile ist Teil der Oberfläche und nach einer Veröffentlichung nur unter Bruch von Kürzeln und Skripten zu
+ändern. Darum: `--region` (Voreinstellung), `--screen[=NAME]`, `--window`, `--repeat`, `--version`, `--help`; die
+Desktop-Aktionen heißen `Region`, `Screen`, `Window`, `Repeat` (ihre angezeigten Namen bleiben übersetzt). Die
+deutschen Namen oben (`--bereich` usw.) gelten nicht mehr.
+

@@ -60,14 +60,14 @@ func laufe(args []string, aus, fehler io.Writer, monitore func() ([]oberflaeche.
 // hilfe liefert den Hilfetext.
 func hilfe() string {
 	return sprache.T("Usage: schnapp [option]") + "\n\n" +
-		sprache.T("Take a screenshot. Without an option, you select an area (--bereich).") + "\n\n" +
-		"  --bereich          " + sprache.T("Select an area") + "\n" +
-		"  --bildschirm       " + sprache.T("List the monitors") + "\n" +
-		"  --bildschirm=NAME  " + sprache.T("Capture the monitor NAME") + "\n" +
-		"  --fenster          " + sprache.T("Select a window") + "\n" +
-		"  --wiederholen      " + sprache.T("Repeat the last area") + "\n" +
-		"  -V, --version      " + sprache.T("Show the version") + "\n" +
-		"  -h, --help         " + sprache.T("Show this help") + "\n"
+		sprache.T("Take a screenshot. Without an option, you select an area (--region).") + "\n\n" +
+		"  --region       " + sprache.T("Select an area") + "\n" +
+		"  --screen       " + sprache.T("List the monitors") + "\n" +
+		"  --screen=NAME  " + sprache.T("Capture the monitor NAME") + "\n" +
+		"  --window       " + sprache.T("Select a window") + "\n" +
+		"  --repeat       " + sprache.T("Repeat the last area") + "\n" +
+		"  -V, --version  " + sprache.T("Show the version") + "\n" +
+		"  -h, --help     " + sprache.T("Show this help") + "\n"
 }
 
 // gibMonitoreAus schreibt die Monitorliste nach aus.
