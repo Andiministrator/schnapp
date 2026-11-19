@@ -34,6 +34,7 @@ func main() {
 	bildPfad := flag.String("bild", "", "PNG-Datei laden statt aufzunehmen")
 	testbild := flag.Bool("testbild", false, "synthetisches 4K-Bild im Editor öffnen")
 	messen := flag.Float64("messen", 0, "Sekunden automatischer Biege-Messung auf 4K-Testbild (0 = aus)")
+	flag.BoolVar(&fensterModus, "fenster", false, "normales, verschiebbares Fenster statt Vollbild (Zeigertest F-78)")
 	flag.Parse()
 	log.SetFlags(log.Ltime | log.Lmicroseconds)
 	log.SetPrefix("[prototyp] ")

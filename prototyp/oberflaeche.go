@@ -24,6 +24,7 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/text"
+	"gioui.org/unit"
 	"gioui.org/widget/material"
 )
 
@@ -105,8 +106,15 @@ func (a *ansicht) setzeBild(b *image.RGBA) {
 	a.gesetzt = false
 }
 
+// fensterModus: normales Fenster statt Vollbild, damit es sich zwischen Monitoren verschieben lässt (F-78).
+var fensterModus bool
+
 func (a *ansicht) laufen() error {
-	a.fenster.Option(app.Title("Schnapp-Prototyp"), app.FullscreenOn(a.ausgabe), app.Fullscreen.Option())
+	if fensterModus {
+		a.fenster.Option(app.Title("Schnapp-Prototyp"), app.Size(unit.Dp(900), unit.Dp(600)))
+	} else {
+		a.fenster.Option(app.Title("Schnapp-Prototyp"), app.FullscreenOn(a.ausgabe), app.Fullscreen.Option())
+	}
 	var ops op.Ops
 	for {
 		switch e := a.fenster.Event().(type) {
