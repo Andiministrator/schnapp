@@ -153,6 +153,9 @@ func (t Text) pruefe() error {
 	if !utf8.ValidString(t.Inhalt) {
 		return fmt.Errorf("Text ist kein gültiges UTF-8")
 	}
+	if utf8.RuneCountInString(t.Inhalt) > MaxTextZeichen {
+		return fmt.Errorf("Text hat mehr als %d Zeichen", MaxTextZeichen)
+	}
 	for _, r := range t.Inhalt {
 		if (r < 0x20 && r != '\n' && r != '\t' && r != '\r') || r == 0xfffe || r == 0xffff {
 			return fmt.Errorf("Text enthält das Steuerzeichen U+%04X", r)

@@ -3,9 +3,14 @@
 package render
 
 import (
+	"bytes"
 	"image"
 	"image/color"
+	"strings"
 	"testing"
+	"time"
+
+	"golang.org/x/image/font"
 
 	"github.com/Andiministrator/schnapp/document"
 )
@@ -190,5 +195,55 @@ func TestSteuerzeichenOhneKaestchen(t *testing.T) {
 		if a.Pix[i] != b.Pix[i] {
 			t.Fatal("Tabulator/Wagenrücklauf zeichnen etwas")
 		}
+	}
+}
+
+// F-118: Text weit außerhalb des Bildes wird nicht gerastert — schnell, und das Bild bleibt unverändert.
+func TestTextAusserhalbWirdNichtGerastert(t *testing.T) {
+	for _, ort := range []document.Punkt{document.Pt(50000, 50000), document.Pt(-50000, 5), document.Pt(5, -50000), document.Pt(500000, 5)} {
+		d := weissesDokument(t, 10, 10)
+		hinzu(t, d, document.Text{Ort: ort, Inhalt: strings.Repeat("Wg", 500), Schriftgrad: 4096, Farbe: rot})
+		vor := append([]byte(nil), d.Ansichtsbild().Pix...)
+		start := time.Now()
+		b := bild(t, d)
+		if dauer := time.Since(start); dauer > 200*time.Millisecond {
+			t.Errorf("Text bei %v: %v gebraucht, soll unter 200 ms bleiben", ort, dauer)
+		}
+		if !bytes.Equal(b.Pix, vor) {
+			t.Errorf("Text bei %v verändert das Bild", ort)
+		}
+	}
+}
+
+// Ein langer Text, der links aus dem Bild ragt, zeigt seine sichtbaren Glyphen an derselben Stelle wie ohne Überspringen:
+// Beginnt der Text weit links, steht an Position x dieselbe Glyphe wie bei einem Text, der um eine Zeichenfolge kürzer ist.
+func TestTextAnschnittLinksBleibtAmSelbenOrt(t *testing.T) {
+	d := weissesDokument(t, 60, 30)
+	hinzu(t, d, document.Text{Ort: document.Pt(-300, 2), Inhalt: strings.Repeat("H", 20) + "AB", Schriftgrad: 20, Farbe: rot})
+	b := bild(t, d)
+	// Sollwert: ohne Überspringen der Text ab der 20. Glyphe (H, A, B), um den Vorschub der 19 H davor nach rechts versetzt, ergibt dieselben Pixel.
+	adv := float64(0)
+	{
+		z := zeichner{d: d, faces: map[faceSchluessel]font.Face{}}
+		defer z.schliessen()
+		f, err := z.schrift(false, 20)
+		if err != nil {
+			t.Fatal(err)
+		}
+		adv = float64(font.MeasureString(f, strings.Repeat("H", 19))) / 64
+	}
+	e := weissesDokument(t, 60, 30)
+	hinzu(t, e, document.Text{Ort: document.Pt(-300+adv, 2), Inhalt: "HAB", Schriftgrad: 20, Farbe: rot})
+	if !bytes.Equal(b.Pix, bild(t, e).Pix) {
+		t.Error("sichtbarer Textrest weicht ab")
+	}
+	rot := 0
+	for i := 0; i < len(b.Pix); i += 4 {
+		if b.Pix[i+1] < 200 {
+			rot++
+		}
+	}
+	if rot < 20 {
+		t.Errorf("Textrest fehlt: %d rote Pixel", rot)
 	}
 }

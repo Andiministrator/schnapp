@@ -689,3 +689,38 @@ func TestRundlaufCRLF(t *testing.T) {
 		t.Errorf("Inhalt %q, want %q", o.Inhalt, text.Inhalt)
 	}
 }
+
+// F-118: Eine Arbeitsdatei mit zu langem Text wird beim Lesen abgelehnt (die Prüfung sitzt in document und greift über
+// Hinzufuegen); genau MaxTextZeichen bleibt lesbar.
+func TestLesenZuLangerText(t *testing.T) {
+	d, err := document.Neu(testbild(80, 60))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.Hinzufuegen(document.Text{Ort: document.Pt(1, 1), Inhalt: "QQQ", Schriftgrad: 10,
+		Farbe: color.NRGBA{0, 0, 0, 255}}); err != nil {
+		t.Fatal(err)
+	}
+	gut := schreibe(t, d, meta)
+	zr, err := zlib.NewReader(bytes.NewReader(blockDaten(t, gut, blockSVG)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	svg, err := io.ReadAll(zr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Count(svg, []byte("QQQ")) < 1 {
+		t.Fatalf("Platzhalter fehlt im SVG: %s", svg)
+	}
+	mit := func(n int) []byte {
+		neu := bytes.Replace(svg, []byte("QQQ"), bytes.Repeat([]byte("Q"), n), -1)
+		return ersetzeBlock(t, gut, blockSVG, zlibVon(string(neu)))
+	}
+	if _, err := LeseArbeitsdatei(bytes.NewReader(mit(document.MaxTextZeichen))); err != nil {
+		t.Errorf("Text mit genau MaxTextZeichen abgelehnt: %v", err)
+	}
+	if _, err := LeseArbeitsdatei(bytes.NewReader(mit(document.MaxTextZeichen + 1))); err == nil {
+		t.Error("Text mit MaxTextZeichen+1 ohne Fehler gelesen")
+	}
+}

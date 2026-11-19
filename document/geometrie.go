@@ -65,6 +65,11 @@ const (
 	// MaxSchrift begrenzt Schriftgrad und Nummer-Radius: Der Renderer rastert jede Glyphe vollständig, der Speicher
 	// wächst quadratisch mit der Größe — eine präparierte Datei mit 1e5 bräuchte Dutzende GiB (Kritik A-2, [S]).
 	MaxSchrift = 4096
+	// MaxTextZeichen begrenzt die Zeichen (Runen) eines Textes, MaxObjekte die Objekte eines Dokuments (F-118): Jede
+	// Glyphe kostet beim Rastern Millisekunden, eine präparierte Arbeitsdatei mit Millionen Zeichen fröre den
+	// Editor beim Speichern ein. Überschreitung ist ein Fehler, kein stilles Kürzen.
+	MaxTextZeichen = 10_000
+	MaxObjekte     = 10_000
 )
 
 // endlich meldet, ob alle Werte endliche Zahlen im Koordinatenbereich sind.

@@ -107,6 +107,9 @@ func (d *Dokument) Hinzufuegen(o Objekt) (int, error) {
 	if d.zug != nil {
 		return 0, ErrZugLaeuft
 	}
+	if len(d.objekte) >= MaxObjekte {
+		return 0, fmt.Errorf("dokument: mehr als %d Objekte", MaxObjekte)
+	}
 	if err := o.pruefe(); err != nil {
 		return 0, err
 	}
@@ -166,6 +169,9 @@ func (d *Dokument) BeginneNeuenZug(o Objekt) (int, error) {
 	}
 	if d.zug != nil {
 		return 0, ErrZugLaeuft
+	}
+	if len(d.objekte) >= MaxObjekte {
+		return 0, fmt.Errorf("dokument: mehr als %d Objekte", MaxObjekte)
 	}
 	if err := o.pruefe(); err != nil {
 		return 0, err

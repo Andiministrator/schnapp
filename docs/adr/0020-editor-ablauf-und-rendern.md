@@ -51,6 +51,8 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
 - Fehlt die Bibliotheksdatei beim Speichern, ist sie fremd oder neuer, weicht Speichern auf eine neue Aufnahme aus,
   statt die Bearbeitung zu verlieren.
 - Bildschirm und Renderer nutzen dieselben Go-Schriften (keine Systemschriften); Tabulator wird als vier Leerzeichen
-  gezeichnet. Schriftgrad und Nummer-Radius sind auf `document.MaxSchrift` = 4096 begrenzt ([S], Speicher).
+  gezeichnet. Schriftgrad und Nummer-Radius sind auf `document.MaxSchrift` = 4096 begrenzt ([S], Speicher); Zeichen je Text (`MaxTextZeichen` = 10000) und Objekte je Dokument (`MaxObjekte` = 10000)
+  sind begrenzt, Überschreitung ist ein Fehler auch beim Lesen einer Arbeitsdatei ([S], Rechenzeit, F-118); der Renderer
+  rastert Zeilen und Glyphen nicht, die das Bild nicht schneiden.
 - Offen (eigene Karten): Speichern bei Signal/Absturz und Konflikt zweier Editoren (F-107, F-110), Angleichen der
   Maße an den SVG-Export (F-108).

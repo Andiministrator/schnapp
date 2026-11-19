@@ -92,7 +92,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 		for i, zeile := range strings.Split(v.Inhalt, "\n") {
 			// Tabulator als vier Leerzeichen, Wagenrücklauf weg: die Go-Schrift hat für beide keine Glyphe (Kritik A-3).
 			zeile = document.Zeichenbar(zeile)
-			z.text(face, zeile, ort.X, ort.Y+v.Schriftgrad*(1+1.3*float64(i)), v.Farbe)
+			z.text(face, zeile, ort.X, ort.Y+v.Schriftgrad*(1+1.3*float64(i)), v.Farbe, v.Schriftgrad)
 		}
 	case document.Nummer:
 		m := z.ansicht(v.Mitte)
@@ -105,7 +105,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 		breite := float64(font.MeasureString(face, s)) / 64
 		// Senkrecht mittig wie dominant-baseline="central": Grundlinie um die halbe Ziffernhöhe unter der Mitte.
 		hoehe := float64(face.Metrics().CapHeight) / 64
-		z.text(face, s, m.X-breite/2, m.Y+hoehe/2, color.NRGBA{R: 255, G: 255, B: 255, A: 255})
+		z.text(face, s, m.X-breite/2, m.Y+hoehe/2, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, v.Radius*1.2)
 	}
 	return nil
 }
@@ -184,10 +184,35 @@ func (z zeichner) strich(pts []document.Punkt, geschlossen bool, s document.Stri
 	z.fuelle(polys, s.Farbe)
 }
 
-func (z zeichner) text(face font.Face, s string, x, grundlinie float64, farbe color.NRGBA) {
-	dr := font.Drawer{Dst: z.bild, Src: image.NewUniform(farbe), Face: face,
-		Dot: fixed.Point26_6{X: fixed.Int26_6(math.Round(x * 64)), Y: fixed.Int26_6(math.Round(grundlinie * 64))}}
-	dr.DrawString(s)
+// text zeichnet eine Zeile. Was das Bild nicht schneidet, wird nicht gerastert (F-118): eine Zeile, deren Höhe ganz
+// über oder unter dem Bild liegt, entfällt, ebenso jede Glyphe, die um mehr als einen Schriftgrad links oder rechts
+// vom Bild liegt (Vorschub und Unterschneidung laufen weiter, damit sichtbare Glyphen am selben Ort stehen).
+func (z zeichner) text(face font.Face, s string, x, grundlinie float64, farbe color.NRGBA, grad float64) {
+	rand := z.bild.Bounds()
+	if grundlinie-grad*1.5 > float64(rand.Max.Y) || grundlinie+grad < float64(rand.Min.Y) {
+		return
+	}
+	dr := font.Drawer{Dst: z.bild, Src: image.NewUniform(farbe), Face: face}
+	dot := fixed.Point26_6{X: fixed.Int26_6(math.Round(x * 64)), Y: fixed.Int26_6(math.Round(grundlinie * 64))}
+	links, rechts := float64(rand.Min.X)-grad, float64(rand.Max.X)+grad
+	vorher := rune(-1)
+	for _, c := range s {
+		if vorher >= 0 {
+			dot.X += face.Kern(vorher, c)
+		}
+		vorher = c
+		if px := float64(dot.X) / 64; px > rechts {
+			return // alles Weitere liegt rechts vom Bild
+		} else if px < links {
+			if adv, ok := face.GlyphAdvance(c); ok {
+				dot.X += adv
+			}
+			continue
+		}
+		dr.Dot = dot
+		dr.DrawString(string(c))
+		dot = dr.Dot
+	}
 }
 
 // kreis nähert einen Kreis mit genug Ecken für glatte Ränder an.

@@ -8,6 +8,7 @@ import (
 	"image/color"
 	"math"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -492,5 +493,39 @@ func TestWertebereiche(t *testing.T) {
 	// Seiten je für sich erlaubt, Fläche zu groß.
 	if _, err := Neu(image.NewNRGBA(image.Rect(0, 0, MaxSeite, MaxPixel/MaxSeite+1))); !errors.Is(err, ErrBildGroesse) {
 		t.Errorf("Fläche über MaxPixel: %v", err)
+	}
+}
+
+// F-118: Zeichen je Text und Objekte je Dokument sind begrenzt; Überschreitung ist ein Fehler, kein Kürzen.
+func TestGrenzeTextZeichen(t *testing.T) {
+	d := neu(t, 10, 10)
+	zeichen := func(n int) string { return strings.Repeat("ä", n) } // Runen zählen, nicht Bytes
+	if _, err := d.Hinzufuegen(Text{Ort: Pt(0, 0), Schriftgrad: 10, Inhalt: zeichen(MaxTextZeichen)}); err != nil {
+		t.Errorf("Text mit genau MaxTextZeichen abgelehnt: %v", err)
+	}
+	if _, err := d.Hinzufuegen(Text{Ort: Pt(0, 0), Schriftgrad: 10, Inhalt: zeichen(MaxTextZeichen + 1)}); err == nil {
+		t.Error("Text mit MaxTextZeichen+1 ohne Fehler")
+	}
+	id, _ := d.Hinzufuegen(Text{Ort: Pt(0, 0), Schriftgrad: 10, Inhalt: "x"})
+	if err := d.Ersetzen(Text{ID: id, Ort: Pt(0, 0), Schriftgrad: 10, Inhalt: zeichen(MaxTextZeichen + 1)}); err == nil {
+		t.Error("Ersetzen mit zu langem Text ohne Fehler")
+	}
+}
+
+func TestGrenzeObjekte(t *testing.T) {
+	d := neu(t, 10, 10)
+	for i := 0; i < MaxObjekte; i++ {
+		if _, err := d.Hinzufuegen(Nummer{Radius: 3, Wert: 1}); err != nil {
+			t.Fatalf("Objekt %d abgelehnt: %v", i+1, err)
+		}
+	}
+	if _, err := d.Hinzufuegen(Nummer{Radius: 3, Wert: 1}); err == nil {
+		t.Error("Objekt Nr. MaxObjekte+1 ohne Fehler")
+	}
+	if _, err := d.BeginneNeuenZug(Nummer{Radius: 3, Wert: 1}); err == nil {
+		t.Error("BeginneNeuenZug über MaxObjekte ohne Fehler")
+	}
+	if len(d.Objekte()) != MaxObjekte {
+		t.Errorf("%d Objekte, soll %d", len(d.Objekte()), MaxObjekte)
 	}
 }
