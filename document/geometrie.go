@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package dokument hält eine Aufnahme mit ihren Beschriftungen: das unbeschnittene Original als einzige Pixelquelle,
+// Package document hält eine Aufnahme mit ihren Beschriftungen: das unbeschnittene Original als einzige Pixelquelle,
 // Vektorobjekte darüber, Zuschnitt und Stauchen als Angaben und den Rückgängig-Verlauf (ADR-0008, Kernprinzip 1).
 //
 // Koordinaten: Alle Objekte, der Zuschnitt und die Streifen liegen in Pixeln des Originals. Die Ansicht (was nach

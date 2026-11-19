@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Paket aufnahme ist die austauschbare Aufnahmeschicht (ADR-0007): Der Rest des Programms kennt nur die
+// Package capture ist die austauschbare Aufnahmeschicht (ADR-0007): Der Rest des Programms kennt nur die
 // Schnittstelle Quelle. Die erste Umsetzung (KWin) spricht über D-Bus mit org.kde.KWin.ScreenShot3 (memfd,
 // bevorzugt) bzw. ScreenShot2 (Pipe); ein Portal-Weg für andere Desktops kommt später als weitere Quelle.
 package capture

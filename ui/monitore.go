@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package oberflaeche ist die Schicht zu Gio (Fenster, Overlay, Editor; ADR-0003). Sie bindet das gepatchte Gio aus
+// Package ui ist die Schicht zu Gio (Fenster, Overlay, Editor; ADR-0003). Sie bindet das gepatchte Gio aus
 // third_party/gio ein (ADR-0015); alles andere im Programm kennt Gio nicht.
 package ui
 

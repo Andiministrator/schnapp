@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package auswahl ist die Logik des Vollbild-Overlays (Karte #34, ADR-0017): Abbildung zwischen eingefrorenem Bild
+// Package selection ist die Logik des Vollbild-Overlays (Karte #34, ADR-0017): Abbildung zwischen eingefrorenem Bild
 // und Fenster, Bereich aufziehen, Monitor per Klick, Lupe, Maßanzeige, letzter Bereich. Das Paket kennt Gio nicht;
-// die Oberfläche (Paket oberflaeche) übersetzt Ereignisse und zeichnet nur.
+// die Oberfläche (Paket ui) übersetzt Ereignisse und zeichnet nur.
 //
 // Koordinaten: Fensterpunkte in Pixeln des Fensterpuffers (float32, wie Gio sie liefert), Bildpunkte in Pixeln des
 // aufgenommenen Bildes. Mit dem Gio-Patch (ADR-0015) ist der Puffer so groß wie der Monitor in echten Pixeln, und

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package datei liest und schreibt Schnapps Arbeitsdatei — ein PNG, das überall als fertiges Bild erscheint und in
+// Package fileformat liest und schreibt Schnapps Arbeitsdatei — ein PNG, das überall als fertiges Bild erscheint und in
 // zwei privaten Blöcken alle Ebenen mitführt (ADR-0008 mit Nachtrag 1) — und die Exporte PNG, JPG und SVG.
 //
 // Blöcke: "snAP" trägt ein zlib-komprimiertes SVG mit Objekten, Zuschnitt, Stauch-Streifen und Metadaten; "snAO"

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package einstellungen liest die Einstellungsdatei `settings.ini` (ADR-0018) und liefert typisierte Werte.
+// Package settings liest die Einstellungsdatei `settings.ini` (ADR-0018) und liefert typisierte Werte.
 //
 // Der Leser schreibt nichts und beendet nie das Programm: Eine fehlende Datei ergibt die Voreinstellungen ohne
 // Warnung; eine unlesbare Datei, kaputte Zeilen, unbekannte Schlüssel und ungültige Werte ergeben Warnungen, die

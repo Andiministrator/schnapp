@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package sprache wählt die Oberflächensprache und übersetzt Texte aus gettext-PO-Dateien (ADR-0014).
+// Package i18n wählt die Oberflächensprache und übersetzt Texte aus gettext-PO-Dateien (ADR-0014).
 //
 // Ausgangssprache ist Englisch: der englische Text ist zugleich der Schlüssel (msgid) und der Rückfall, wenn eine
 // Übersetzung fehlt.

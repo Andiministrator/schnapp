@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package bibliothek verwaltet die Ablage der Aufnahmen (ADR-0016): Dateien im Bilderordner, einen Index als
+// Package library verwaltet die Ablage der Aufnahmen (ADR-0016): Dateien im Bilderordner, einen Index als
 // Cache (JSON-Zeilen) mit Vorschaubildern, Suche und das Aufräumen alter, unbeachteter Aufnahmen über den
 // freedesktop-Papierkorb. Nur Standardbibliothek, kein cgo.
 package library
