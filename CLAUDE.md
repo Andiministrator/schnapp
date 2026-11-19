@@ -130,8 +130,8 @@ Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung) — ADR
   `libwayland-dev libegl-dev libxkbcommon-dev`. Die Tags kommen über die Umgebungsvariable, nicht über `go env -w`:
   `export GOFLAGS=-tags=novulkan,nox11`, dann `go vet ./... && go test ./...`; Programm `go build -trimpath -o schnapp
   ./cmd/schnapp`. Pakete: `sprache` (Sprachwahl, PO-Leser, `sprache.T/TK/N`), `po` (eingebettete `po/*.po`, ADR-0014
-  Nachtrag 1), `oberflaeche` (Schicht zu Gio), `cmd/schnapp` (Argumente `--bereich` [Voreinstellung], `--bildschirm`,
-  `--fenster`, `--wiederholen`, `--version`, `--help`; die Aufnahme-Modi melden vorerst „noch nicht umgesetzt“).
+  Nachtrag 1), `oberflaeche` (Schicht zu Gio), `cmd/schnapp` (Argumente `--region` [Voreinstellung], `--screen`,
+  `--window`, `--repeat`, `--version`, `--help`; die Aufnahme-Modi melden vorerst „noch nicht umgesetzt“).
   Oberflächentexte nur als Literal über `sprache.T/TK/N`; der Test verlangt für jeden Text einen fertigen Eintrag in
   `po/de.po`. `aufnahme` ist die Aufnahmeschicht (`Quelle`, KWin über D-Bus: ScreenShot3/memfd bevorzugt, sonst
   ScreenShot2/Pipe; Tests mit Attrappe, keine echte Aufnahme in `go test`). `data/schnapp.desktop.in` ist die Vorlage der Desktop-Datei (ADR-0017). `tmp/go.mod` trennt `tmp/` vom
