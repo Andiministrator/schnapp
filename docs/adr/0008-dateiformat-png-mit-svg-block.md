@@ -36,11 +36,26 @@ man überall verschicken kann und die in Schnapp voll bearbeitbar bleibt.
   - `snAP` — das SVG mit allen Ebenen, zlib-komprimiert (wie `zTXt`), mit Formatversion.
   - `snAO` — das Original als PNG-Daten (binär, unverändert komprimiert); das SVG verweist auf diesen Block statt das
     Original als Base64 einzubetten. Spart rund ein Drittel der Originalgröße (Base64 vergrößert bereits komprimierte
-    Daten um 4/3, zlib holt das nicht zurück). Fehlt `snAO` (unbeschnittenes, ungestauchtes Bild), ist das sichtbare
-    Bild ohne Beschriftungen das Original — ob das trägt, klärt die Umsetzung (ADR-0008 Konsequenzen).
+    Daten um 4/3, zlib holt das nicht zurück). Umgesetzt: Schnapp schreibt immer beide Blöcke; fehlt einer, gilt die
+    Datei als beschädigt und lässt sich nur als Bild öffnen (Nachtrag 2).
 - **Groß-/Kleinschreibung nach PNG-Spezifikation:** 1. Buchstabe klein = zusätzlicher Block (Betrachter ignorieren
   ihn, das Bild erscheint überall), 2. klein = privat, 3. groß = vorgeschrieben, 4. **groß = nicht kopiersicher**:
   Ein fremdes Programm, das die Pixel ändert, muss die Blöcke verwerfen — sonst lägen beim Öffnen in Schnapp alte
   Ebenen über einem fremd bearbeiteten Bild.
 - Export als reines SVG bettet das Original als Daten-URI ein. Schwärzen überschreibt die Pixel im `snAO`-Original
   wie zuvor im eingebetteten (Kernprinzip 2); der [S]-Test deckt beide Blöcke ab.
+
+## Nachtrag 2 (19.11.2026): Umsetzung und Kritiker-Befunde (Sprint 3, `datei/`)
+
+**Status:** Akzeptiert (Umsetzung Karte #32, Nacharbeit Sitzungs-QA F-59, F-60, F-63, F-64).
+
+- **Immer beide Blöcke.** Ein Verzicht auf `snAO` bei unbeschnittenen Bildern ist nicht umgesetzt: das sichtbare Bild
+  trägt die gerenderten Beschriftungen und taugt nicht als Original. Fehlt ein Block, ist er doppelt oder stehen Daten
+  nach `IEND`, ist die Datei beschädigt (`ErrBeschaedigt`); eine neuere Formatversion meldet `ErrFormatNeuer`. Beides
+  lässt sich mit `LeseBild` als einfaches Bild öffnen.
+- **Grenzen beim Lesen:** Seite ≤ 32768, Fläche ≤ 2^28 Pixel (1 GiB als NRGBA, wie die Aufnahmeschicht), Block ≤ 512
+  MiB, Datei ≤ 1 GiB, entpacktes SVG ≤ 64 MiB, SVG-Tiefe ≤ 64, ≤ 200 000 Elemente, XML streng ohne Entitäten.
+- **SVG-Export ohne Weggeschnittenes:** Der Export bettet je sichtbarer Kachel nur deren Pixelausschnitt ein, nie das
+  ganze Original — Zuschnitt und Stauchen sind beim Weitergeben endgültig (die Arbeitsdatei bleibt nicht zerstörend).
+  Wer die Arbeitsdatei weitergibt, gibt das ganze Original mit; die Oberfläche weist darauf hin (Karte Export, #39).
+- **PDF-Export:** noch nicht umgesetzt (Karte #39).

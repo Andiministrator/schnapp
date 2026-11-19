@@ -404,7 +404,7 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 	case version < 0:
 		return nil, fmt.Errorf("%w: Formatversion fehlt", ErrBeschaedigt)
 	case version > FormatVersion:
-		return nil, fmt.Errorf("datei: Formatversion %d ist neuer als diese Fassung von Schnapp (%d)", version, FormatVersion)
+		return nil, fmt.Errorf("%w: %d > %d", ErrFormatNeuer, version, FormatVersion)
 	case !hatZuschnitt:
 		return nil, fmt.Errorf("%w: Ansicht fehlt", ErrBeschaedigt)
 	}

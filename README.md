@@ -41,7 +41,7 @@ What exists:
 
 | Path | What it is | How to check it |
 |---|---|---|
-| `.` (root) | Go module `github.com/Andiministrator/schnapp`: the program `cmd/schnapp` (options only), `oberflaeche` (layer to Gio), `sprache` (language choice, gettext PO reader) and `po` (embedded translations, `po/de.po`); `data/` holds the desktop file template | `go vet ./... && go test ./...` (with `GOFLAGS` as above) |
+| `.` (root) | Go module `github.com/Andiministrator/schnapp`: the program `cmd/schnapp` (options only so far), `aufnahme` (capture via KWin), `dokument` (layers, crop, redaction, undo), `datei` (working file and exports), `bibliothek` (library), `oberflaeche` (layer to Gio), `sprache` (language choice, gettext PO reader) and `po` (embedded translations, `po/de.po`); `data/` holds the desktop file template | `go vet ./... && go test ./...` (with `GOFLAGS` as above) |
 | `zeichnen/` | Go module `github.com/Andiministrator/schnapp/zeichnen`: SVG parsing, an anti-aliased rasterizer, numeric helpers (standard library only) | `cd zeichnen && go vet ./... && go test ./...` |
 | `marke/` | Logo, colours and corporate design ([`marke/corporate-design.md`](marke/corporate-design.md), German, with PDF) | `python3 marke/werkzeug/paket.py` rebuilds the logo files |
 | `extern/gio/` | Gio with our patch (multi-monitor fullscreen, fractional scaling), used via `replace` in `go.mod` | `extern/gio-patch.sh pruefen`, see [`extern/README.md`](extern/README.md) (German) |

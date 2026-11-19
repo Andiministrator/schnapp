@@ -26,9 +26,12 @@ type Einstellung struct {
 // Voreinstellung: an, 90 Tage.
 var Voreinstellung = Einstellung{An: true, Tage: 90}
 
+// maxTage ist die längste einstellbare Frist (100 Jahre).
+const maxTage = 36500
+
 // Fehler des Aufräumens.
 var (
-	ErrFrist              = errors.New("bibliothek: Frist muss mindestens 1 Tag betragen")
+	ErrFrist              = errors.New("bibliothek: Frist muss zwischen 1 und 36500 Tagen liegen")
 	ErrAnderesDateisystem = errors.New("bibliothek: Ablage und Papierkorb liegen auf verschiedenen Dateisystemen")
 	ErrGeschuetzt         = errors.New("bibliothek: Datei trägt Schlagworte oder ist bearbeitet (laut Datei)")
 )
@@ -61,7 +64,9 @@ func (b *Bibliothek) Aufraeumen(jetzt time.Time, e Einstellung) (AufraeumErgebni
 	if !e.An {
 		return erg, nil
 	}
-	if e.Tage < 1 {
+	// Obergrenze: 100 Jahre. Darüber liefe time.Duration über und die Frist würde negativ — dann gingen auch
+	// frische Aufnahmen in den Papierkorb (F-50).
+	if e.Tage < 1 || e.Tage > maxTage {
 		return erg, ErrFrist
 	}
 	b.mu.Lock()
@@ -76,7 +81,7 @@ func (b *Bibliothek) Aufraeumen(jetzt time.Time, e Einstellung) (AufraeumErgebni
 		if len(ein.Schlagworte) > 0 || ein.Bearbeitet || jetzt.Sub(ein.Erstellt) <= frist {
 			continue
 		}
-		v, err := b.inPapierkorb(ein, jetzt)
+		v, err := b.inPapierkorb(ein, jetzt, frist)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
 				continue // Datei fehlt: Sache des Abgleichs, nicht melden
@@ -86,6 +91,7 @@ func (b *Bibliothek) Aufraeumen(jetzt time.Time, e Einstellung) (AufraeumErgebni
 		}
 		weg[ein.Pfad] = true
 		erg.Verschoben = append(erg.Verschoben, v)
+		_ = b.entferneVorschau(ein.Pfad) // keine Kopie im Cache zurücklassen (F-51)
 	}
 	if len(weg) == 0 {
 		return erg, nil
@@ -103,7 +109,7 @@ func (b *Bibliothek) Aufraeumen(jetzt time.Time, e Einstellung) (AufraeumErgebni
 }
 
 // inPapierkorb prüft die Datei und verschiebt sie samt .trashinfo in den Papierkorb.
-func (b *Bibliothek) inPapierkorb(ein Eintrag, jetzt time.Time) (Verschoben, error) {
+func (b *Bibliothek) inPapierkorb(ein Eintrag, jetzt time.Time, frist time.Duration) (Verschoben, error) {
 	quelle := filepath.Join(b.Orte.Ablage, filepath.FromSlash(ein.Pfad))
 	st, err := os.Lstat(quelle)
 	if err != nil {
@@ -128,6 +134,14 @@ func (b *Bibliothek) inPapierkorb(ein Eintrag, jetzt time.Time) (Verschoben, err
 	if len(gel.Meta.Schlagworte) > 0 || gel.Meta.Bearbeitet {
 		return Verschoben{}, ErrGeschuetzt
 	}
+	// Auch das Alter zählt aus der Datei (Erstellt im snAP-Block, sonst Änderungszeit), nicht aus dem Index (F-54).
+	erstellt := gel.Meta.Erstellt
+	if erstellt.IsZero() {
+		erstellt = st.ModTime()
+	}
+	if jetzt.Sub(erstellt) <= frist {
+		return Verschoben{}, ErrGeschuetzt
+	}
 
 	dateien := filepath.Join(b.Orte.Papierkorb, "files")
 	infos := filepath.Join(b.Orte.Papierkorb, "info")
@@ -142,12 +156,35 @@ func (b *Bibliothek) inPapierkorb(ein Eintrag, jetzt time.Time) (Verschoben, err
 	}
 	basis := filepath.Base(quelle)
 	stamm, endung := strings.TrimSuffix(basis, filepath.Ext(basis)), filepath.Ext(basis)
-	name := basis
+	pfadUrl := (&url.URL{Path: absolut}).EscapedPath()
+	inhalt := "[Trash Info]\nPath=" + pfadUrl + "\nDeletionDate=" + jetzt.In(b.Zone).Format("2006-01-02T15:04:05") + "\n"
+	// Nach der freedesktop-Spezifikation reserviert die .trashinfo den Namen: zuerst exklusiv anlegen (O_EXCL),
+	// dann die Datei verschieben. So überschreibt Schnapp keinen Eintrag, den ein anderes Programm gleichzeitig
+	// anlegt (F-53).
+	name, infoPfad := basis, ""
 	for n := 2; ; n++ {
-		_, e1 := os.Lstat(filepath.Join(dateien, name))
-		_, e2 := os.Lstat(filepath.Join(infos, name+".trashinfo"))
-		if errors.Is(e1, fs.ErrNotExist) && errors.Is(e2, fs.ErrNotExist) {
-			break
+		kandidat := filepath.Join(infos, name+".trashinfo")
+		_, belegt := os.Lstat(filepath.Join(dateien, name))
+		if errors.Is(belegt, fs.ErrNotExist) {
+			f, err := os.OpenFile(kandidat, os.O_WRONLY|os.O_CREATE|os.O_EXCL, rechteDatei)
+			if err == nil {
+				_, err = io.WriteString(f, inhalt)
+				if err == nil {
+					err = f.Sync()
+				}
+				if cerr := f.Close(); err == nil {
+					err = cerr
+				}
+				if err != nil {
+					entferneEigeneInfo(infos, kandidat)
+					return Verschoben{}, err
+				}
+				infoPfad = kandidat
+				break
+			}
+			if !errors.Is(err, fs.ErrExist) {
+				return Verschoben{}, err
+			}
 		}
 		if n > 10000 {
 			return Verschoben{}, errors.New("bibliothek: kein freier Name im Papierkorb")
@@ -156,23 +193,20 @@ func (b *Bibliothek) inPapierkorb(ein Eintrag, jetzt time.Time) (Verschoben, err
 	}
 	ziel := filepath.Join(dateien, name)
 	if err := umbenenne(quelle, ziel); err != nil {
+		// Verschieben gescheitert: nur die eben selbst angelegte Reservierung zurücknehmen; die Aufnahme bleibt liegen.
+		entferneEigeneInfo(infos, infoPfad)
 		if errors.Is(err, syscall.EXDEV) {
 			return Verschoben{}, ErrAnderesDateisystem
 		}
 		return Verschoben{}, err
 	}
-	pfadUrl := (&url.URL{Path: absolut}).EscapedPath()
-	info := "[Trash Info]\nPath=" + pfadUrl + "\nDeletionDate=" + jetzt.In(b.Zone).Format("2006-01-02T15:04:05") + "\n"
-	err = schreibeAtomar(filepath.Join(infos, name+".trashinfo"), func(w io.Writer) error {
-		_, err := io.WriteString(w, info)
-		return err
-	})
-	if err != nil {
-		// Ohne .trashinfo ließe sich die Aufnahme nicht wiederherstellen: zurücklegen, nichts löschen.
-		if rueck := umbenenne(ziel, quelle); rueck != nil {
-			return Verschoben{}, fmt.Errorf("%w; Rücklegen scheiterte, Datei liegt in %s: %v", err, ziel, rueck)
-		}
-		return Verschoben{}, err
-	}
 	return Verschoben{Pfad: ein.Pfad, Papierkorb: ziel}, nil
+}
+
+// entferneEigeneInfo löscht eine .trashinfo, die dieser Lauf eben selbst exklusiv angelegt hat (Reservierung
+// zurücknehmen). Nur Dateien im info-Ordner mit der Endung .trashinfo.
+func entferneEigeneInfo(infos, pfad string) {
+	if pfad != "" && filepath.Dir(pfad) == filepath.Clean(infos) && strings.HasSuffix(pfad, ".trashinfo") {
+		os.Remove(pfad)
+	}
 }

@@ -51,15 +51,12 @@ func intervalle(von, bis int, st []dokument.Streifen, zeilen bool) [][2]int {
 	return res
 }
 
-// ExportiereSVG schreibt die Ansicht als eigenständiges SVG: das Original als eingebettetes PNG (mit allen
-// Schwärzungen) und die Objekte als Vektoren. Zuschnitt und Stauchen werden als Ausschnitte dargestellt — je
-// sichtbarer Kachel ein verschachteltes <svg> mit viewBox, das auf einen gemeinsamen Inhalt verweist.
+// ExportiereSVG schreibt die Ansicht als eigenständiges SVG. Je sichtbarer Kachel (Zuschnitt und Stauchen teilen
+// die Ansicht in Rechtecke) steht ein verschachteltes <svg> mit viewBox, das nur den Pixelausschnitt dieser Kachel als
+// eingebettetes PNG trägt und die Objekte als Vektoren zeigt. Weggeschnittene oder weggestauchte Bereiche sind in
+// der Datei nicht enthalten (F-60) — anders als in der Arbeitsdatei, die nicht zerstörend das ganze Original mitführt.
 func ExportiereSVG(w io.Writer, d *dokument.Dokument) error {
-	var orig bytes.Buffer
-	if err := png.Encode(&orig, d.Original()); err != nil {
-		return err
-	}
-	o := d.Original().Rect
+	original := d.Original()
 	g := d.Groesse()
 	var s schreiber
 	s.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n" + `<svg xmlns="http://www.w3.org/2000/svg"`)
@@ -67,13 +64,7 @@ func ExportiereSVG(w io.Writer, d *dokument.Dokument) error {
 	s.attr("width", strconv.Itoa(g.X))
 	s.attr("height", strconv.Itoa(g.Y))
 	s.attr("viewBox", fmt.Sprintf("0 0 %d %d", g.X, g.Y))
-	s.WriteString(`><defs><g id="inhalt"><image`)
-	s.attr("x", "0")
-	s.attr("y", "0")
-	s.attr("width", strconv.Itoa(o.Dx()))
-	s.attr("height", strconv.Itoa(o.Dy()))
-	s.attr("href", "data:image/png;base64,"+base64.StdEncoding.EncodeToString(orig.Bytes()))
-	s.WriteString(`/>`)
+	s.WriteString(`><defs><g id="objekte">`)
 	s.objekte(d)
 	s.WriteString(`</g></defs>`)
 	z := d.Zuschnitt()
@@ -83,13 +74,23 @@ func ExportiereSVG(w io.Writer, d *dokument.Dokument) error {
 		ax := 0
 		for _, zx := range intervalle(z.Min.X, z.Max.X, st, false) {
 			b, h := zx[1]-zx[0], zy[1]-zy[0]
+			var kachel bytes.Buffer
+			if err := png.Encode(&kachel, original.SubImage(image.Rect(zx[0], zy[0], zx[1], zy[1]))); err != nil {
+				return err
+			}
 			s.WriteString(`<svg`)
 			s.attr("x", strconv.Itoa(ax))
 			s.attr("y", strconv.Itoa(ay))
 			s.attr("width", strconv.Itoa(b))
 			s.attr("height", strconv.Itoa(h))
 			s.attr("viewBox", fmt.Sprintf("%d %d %d %d", zx[0], zy[0], b, h))
-			s.WriteString(`><use href="#inhalt"/></svg>`)
+			s.WriteString(`><image`)
+			s.attr("x", strconv.Itoa(zx[0]))
+			s.attr("y", strconv.Itoa(zy[0]))
+			s.attr("width", strconv.Itoa(b))
+			s.attr("height", strconv.Itoa(h))
+			s.attr("href", "data:image/png;base64,"+base64.StdEncoding.EncodeToString(kachel.Bytes()))
+			s.WriteString(`/><use href="#objekte"/></svg>`)
 			ax += b
 		}
 		ay += zy[1] - zy[0]

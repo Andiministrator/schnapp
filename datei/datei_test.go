@@ -17,6 +17,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -256,10 +257,16 @@ func TestBeschaedigt(t *testing.T) {
 		"Entität":           svg(`<!DOCTYPE svg [<!ENTITY x "y">]>` + kopf + ansicht + text + `"&x;"/></svg>`),
 		"Original zu groß":  ersetzeBlock(t, gut, blockOriginal, riesig.Bytes()),
 		"Original kein PNG": ersetzeBlock(t, gut, blockOriginal, []byte("x")),
+		"Block doppelt":     doppelt(t, gut),
+		"Daten nach IEND":   append(append([]byte(nil), gut...), 'x'),
 	} {
 		if _, err := LeseArbeitsdatei(bytes.NewReader(daten)); err == nil {
 			t.Errorf("%s: kein Fehler", name)
-		} else if !IstBeschaedigt(err) && name != "Version neuer" {
+		} else if name == "Version neuer" {
+			if !errors.Is(err, ErrFormatNeuer) || IstBeschaedigt(err) {
+				t.Errorf("%s: %v ist nicht ErrFormatNeuer", name, err)
+			}
+		} else if !IstBeschaedigt(err) {
 			t.Errorf("%s: Fehler %v nicht als beschädigt erkennbar", name, err)
 		}
 	}
@@ -327,6 +334,31 @@ func enthaeltFarbe(b image.Image, c color.NRGBA) bool {
 
 // alleBilder liefert jedes Bild, das in einer der Ausgaben steckt: sichtbares PNG, snAO-Original, flaches PNG und
 // das im SVG-Export eingebettete Original. JPG wird verlustbehaftet geprüft (kein Pixel nahe am Muster).
+// svgKacheln liefert alle im SVG eingebetteten PNG-Bilder.
+func svgKacheln(t *testing.T, s string) []image.Image {
+	t.Helper()
+	const kopf = "data:image/png;base64,"
+	var res []image.Image
+	for {
+		i := strings.Index(s, kopf)
+		if i < 0 {
+			return res
+		}
+		s = s[i+len(kopf):]
+		j := strings.Index(s, `"`)
+		roh, err := base64.StdEncoding.DecodeString(s[:j])
+		if err != nil {
+			t.Fatal(err)
+		}
+		b, err := png.Decode(bytes.NewReader(roh))
+		if err != nil {
+			t.Fatal(err)
+		}
+		res = append(res, b)
+		s = s[j:]
+	}
+}
+
 func alleBilder(t *testing.T, d *dokument.Dokument) map[string]image.Image {
 	t.Helper()
 	res := map[string]image.Image{}
@@ -338,14 +370,9 @@ func alleBilder(t *testing.T, d *dokument.Dokument) map[string]image.Image {
 	res["flach"], _ = png.Decode(&flach)
 	var exp bytes.Buffer
 	ExportiereSVG(&exp, d)
-	s := exp.String()
-	i := strings.Index(s, "data:image/png;base64,")
-	j := strings.Index(s[i:], `"`)
-	roh, err := base64.StdEncoding.DecodeString(s[i+len("data:image/png;base64,") : i+j])
-	if err != nil {
-		t.Fatal(err)
+	for i, k := range svgKacheln(t, exp.String()) {
+		res["svg-"+strconv.Itoa(i)] = k
 	}
-	res["svg"], _ = png.Decode(bytes.NewReader(roh))
 	var jpg bytes.Buffer
 	ExportiereJPG(&jpg, d.Ansichtsbild(), 100)
 	res["jpg"], _ = jpeg.Decode(&jpg)
@@ -428,11 +455,16 @@ func TestSchwaerzenUeberAlleWege(t *testing.T) {
 		if err := d.Schwaerzen(image.Rect(60, 10, 75, 20), f.s); err != nil {
 			t.Fatal(err)
 		}
-		// Geschwärzter Bereich zusätzlich aus der Ansicht genommen: das Original darf ihn trotzdem nicht zeigen.
-		d.SetzeStreifen([]dokument.Streifen{{Zeilen: true, Von: 5, Bis: 25}})
-		for name, b := range alleBilder(t, d) {
-			if pruefe(name, b) {
-				t.Errorf("%s: Muster in %s noch vorhanden", f.name, name)
+		// Erst mit sichtbarem Bereich (alle Wege zeigen ihn, keiner darf das Muster tragen), dann mit weggestauchtem
+		// Bereich (das mitgespeicherte Original darf es trotzdem nicht zeigen).
+		for _, st := range [][]dokument.Streifen{nil, {{Zeilen: true, Von: 5, Bis: 25}}} {
+			if err := d.SetzeStreifen(st); err != nil {
+				t.Fatal(err)
+			}
+			for name, b := range alleBilder(t, d) {
+				if pruefe(name, b) {
+					t.Errorf("%s, Streifen %v: Muster in %s noch vorhanden", f.name, st, name)
+				}
 			}
 		}
 	}
@@ -498,5 +530,53 @@ func TestLeseBloeckeGrenzen(t *testing.T) {
 	buf.WriteString("IDAT")
 	if _, err := leseBloecke(&buf); !errors.Is(err, ErrZuGross) {
 		t.Errorf("übergroßer Block: %v", err)
+	}
+}
+
+// doppelt liefert die Datei mit einem zweiten snAP-Block.
+func doppelt(t *testing.T, daten []byte) []byte {
+	t.Helper()
+	bl, _ := leseBloecke(bytes.NewReader(daten))
+	var neu []block
+	for _, b := range bl {
+		neu = append(neu, b)
+		if b.typ == blockSVG {
+			neu = append(neu, b)
+		}
+	}
+	var buf bytes.Buffer
+	schreibeBloecke(&buf, neu)
+	return buf.Bytes()
+}
+
+// F-60: Der SVG-Export enthält keine weggeschnittenen oder weggestauchten Pixel; die Kacheln decken genau die Ansicht.
+func TestExportSVGOhneWeggeschnittenes(t *testing.T) {
+	quelle := testbild(80, 60)
+	for _, p := range []image.Point{{1, 1}, {40, 30}} { // (1,1) weggeschnitten, (40,30) weggestaucht
+		quelle.SetNRGBA(p.X, p.Y, muster)
+	}
+	d, err := dokument.Neu(quelle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := d.SetzeZuschnitt(image.Rect(10, 10, 70, 50)); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.SetzeStreifen([]dokument.Streifen{{Zeilen: true, Von: 28, Bis: 33}}); err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	if err := ExportiereSVG(&buf, d); err != nil {
+		t.Fatal(err)
+	}
+	flaeche := 0
+	for _, k := range svgKacheln(t, buf.String()) {
+		if enthaeltFarbe(k, muster) {
+			t.Error("Kachel enthält weggeschnittenen oder weggestauchten Inhalt")
+		}
+		flaeche += k.Bounds().Dx() * k.Bounds().Dy()
+	}
+	if g := d.Groesse(); flaeche != g.X*g.Y {
+		t.Errorf("Kacheln decken %d Pixel, Ansicht hat %d", flaeche, g.X*g.Y)
 	}
 }

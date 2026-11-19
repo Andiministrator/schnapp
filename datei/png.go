@@ -40,6 +40,8 @@ var (
 	ErrKeinPNG     = errors.New("datei: kein PNG")
 	ErrBeschaedigt = errors.New("datei: Datei beschädigt")
 	ErrZuGross     = errors.New("datei: Datei oder Block zu groß")
+	// ErrFormatNeuer: die Arbeitsdatei stammt aus einer neueren Fassung von Schnapp.
+	ErrFormatNeuer = errors.New("datei: Formatversion neuer als diese Fassung")
 )
 
 type block struct {
@@ -85,6 +87,9 @@ func leseBloecke(r io.Reader) ([]block, error) {
 		}
 		bloecke = append(bloecke, block{typ, daten})
 		if typ == "IEND" {
+			if n, _ := r.Read(make([]byte, 1)); n > 0 {
+				return nil, fmt.Errorf("%w: Daten nach IEND", ErrBeschaedigt)
+			}
 			return bloecke, nil
 		}
 	}

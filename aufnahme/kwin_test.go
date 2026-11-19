@@ -186,13 +186,22 @@ func TestNichtBerechtigt(t *testing.T) {
 }
 
 func TestAbgebrochenUndSonstigeFehler(t *testing.T) {
-	a := &attrappe{version3: true, fehler: dbus.Error{Name: "org.kde.KWin.ScreenShot2.Error.Cancelled"}}
-	_, err := neu(a).Fenster(context.Background(), Optionen{})
-	if !errors.Is(err, ErrAbgebrochen) {
-		t.Errorf("Fehler %v, Soll ErrAbgebrochen", err)
+	// Jede Schnittstelle meldet unter ihrem eigenen Namen (F-49).
+	for _, f := range []struct {
+		v3   bool
+		name string
+	}{{true, "org.kde.KWin.ScreenShot3.Error.Cancelled"}, {false, "org.kde.KWin.ScreenShot2.Error.Cancelled"}} {
+		b := &attrappe{version3: f.v3, version2: !f.v3, fehler: dbus.Error{Name: f.name}}
+		if _, err := neu(b).Fenster(context.Background(), Optionen{}); !errors.Is(err, ErrAbgebrochen) {
+			t.Errorf("%s: %v, Soll ErrAbgebrochen", f.name, err)
+		}
+	}
+	a := &attrappe{version3: true, fehler: dbus.Error{Name: "org.kde.KWin.ScreenShot3.Error.NoAuthorized"}}
+	if _, err := neu(a).Fenster(context.Background(), Optionen{}); !errors.Is(err, ErrNichtBerechtigt) {
+		t.Errorf("ScreenShot3 NoAuthorized: %v", err)
 	}
 	a.fehler = dbus.Error{Name: "org.kde.KWin.ScreenShot2.Error.InvalidArea"}
-	_, err = neu(a).Fenster(context.Background(), Optionen{})
+	_, err := neu(a).Fenster(context.Background(), Optionen{})
 	if err == nil || errors.Is(err, ErrAbgebrochen) || errors.Is(err, ErrNichtBerechtigt) {
 		t.Errorf("sonstiger Fehler falsch eingeordnet: %v", err)
 	}

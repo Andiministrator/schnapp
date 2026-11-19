@@ -65,7 +65,9 @@ Umsetzung (`aufnahme/`, Karte #27): beim ersten Aufruf `Version` von ScreenShot3
 per fstat prüfen und genau stride×(height−1)+width×4 Bytes per ReadAt lesen (kein mmap). Grenzen: Seite ≤ 32768,
 Zeile ≤ 262144 Bytes, Rohdaten ≤ 1 GiB (die Pipe wird vor der Antwort gelesen, darum feste Obergrenze); Zeitgrenze
 10 s je Aufruf, 5 min bei `CaptureInteractive` (der Nutzer klickt). Fehlerwerte: `ErrNichtBerechtigt` (NoAuthorized),
-`ErrAbgebrochen` (`org.kde.KWin.ScreenShot2.Error.Cancelled`), `ErrKeineSchnittstelle`. Gegen echtes KWin noch nicht
+`ErrAbgebrochen` (`org.kde.KWin.ScreenShot2.Error.Cancelled`), `ErrKeineSchnittstelle`. ScreenShot3 meldet dieselben
+Fehler unter eigenem Namensraum (`org.kde.KWin.ScreenShot3.Error.Cancelled`, laut `screenshotdbusinterface3.cpp`);
+die Schicht erkennt beide (F-49). Gegen echtes KWin noch nicht
 gelaufen (Stand Karte #27).
 
 ## Gemessen im Prototyp (19.11.2026, Plasma 6.8, drei Monitore, einer mit Skala 1,6)

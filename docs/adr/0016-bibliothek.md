@@ -33,3 +33,19 @@ Schlagworte). Aufnahmen zeigen oft Vertrauliches. SQLite bräuchte cgo (ADR-0011
   fallen beim nächsten Abgleich heraus.
 - Der Papierkorb-Weg braucht die freedesktop-Trash-Spezifikation (Ordner `~/.local/share/Trash/` mit `.trashinfo`);
   Aufnahmen auf anderen Dateisystemen erst bei Bedarf.
+
+## Nachtrag 1 (19.11.2026): Umsetzung und Kritiker-Befunde (Sprint 3, `bibliothek/`)
+
+**Status:** Akzeptiert (Umsetzung Karte #33, Nacharbeit Sitzungs-QA F-50 bis F-55).
+
+- **Frist** 1 bis 36500 Tage (darüber liefe die Zeitrechnung über, F-50). Ob eine Aufnahme erfasst wird, entscheidet
+  die Datei selbst (Schlagworte, Bearbeitet, Erstellt aus dem `snAP`-Block, sonst Änderungszeit), nie allein der Index
+  (F-54).
+- **Papierkorb nach freedesktop-Spezifikation:** zuerst die `.trashinfo` exklusiv anlegen (reserviert den Namen),
+  dann die Aufnahme verschieben; scheitert das, nimmt Schnapp nur die eigene Reservierung zurück, die Aufnahme bleibt
+  liegen. Fremde Einträge werden nie überschrieben (F-53).
+- **Vorschaubilder** verlassen die Bibliothek mit ihrer Aufnahme (Aufräumen, Abgleich) und werden beim Neuaufbau
+  nachgezogen, wenn sie fehlen (F-51, F-52). Das Löschen trifft nur die eigene Cache-Datei.
+- **Rechte:** auch schon vorhandene eigene Ordner (Ablage, Index, Vorschau) werden auf 0700 gebracht (F-55); Bilder-
+  und Papierkorb-Ordner des Nutzers bleiben unberührt.
+- Offen: F-48 (zwei Prozesse gleichzeitig), schneller Neuaufbau nur aus `snAP` (Karte #45).

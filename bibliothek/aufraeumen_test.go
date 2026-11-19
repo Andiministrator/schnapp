@@ -297,11 +297,13 @@ func TestAufraeumenAnderesDateisystemBleibtLiegen(t *testing.T) {
 	}
 }
 
-func TestAufraeumenOhneTrashinfoWirdZurueckgelegt(t *testing.T) {
+// Nach der Spezifikation entsteht die .trashinfo zuerst; scheitert danach das Verschieben, bleibt die Aufnahme
+// liegen und die eigene Reservierung wird zurückgenommen — der Papierkorb bleibt leer (F-53).
+func TestAufraeumenVerschiebenScheitertOhneReste(t *testing.T) {
 	a := neuerBestand(t)
 	ersetzeUmbenenne(t, func(von, nach string) error {
-		if strings.HasSuffix(nach, ".trashinfo") {
-			return errors.New("Attrappe: .trashinfo nicht schreibbar")
+		if strings.Contains(nach, string(filepath.Separator)+"files"+string(filepath.Separator)) {
+			return errors.New("Attrappe: Verschieben scheitert")
 		}
 		return os.Rename(von, nach)
 	})
@@ -310,10 +312,34 @@ func TestAufraeumenOhneTrashinfoWirdZurueckgelegt(t *testing.T) {
 		t.Fatalf("%+v %v", erg, err)
 	}
 	if !a.dateiDa(t, a.alt) {
-		t.Error("Aufnahme nicht zurückgelegt")
+		t.Error("Aufnahme nicht mehr in der Ablage")
 	}
 	pk := a.b.Orte.Papierkorb
 	if n := append(namen(t, filepath.Join(pk, "files")), namen(t, filepath.Join(pk, "info"))...); len(n) != 0 {
 		t.Errorf("Papierkorb enthält Reste: %v", n)
+	}
+}
+
+// Eine fremde .trashinfo mit gleichem Namen (ein anderes Programm hat den Namen reserviert, seine Datei kommt
+// gleich) wird nie überschrieben; Schnapp weicht auf den nächsten Namen aus (F-53).
+func TestAufraeumenFremdeReservierungBleibt(t *testing.T) {
+	a := neuerBestand(t)
+	info := filepath.Join(a.b.Orte.Papierkorb, "info")
+	if err := os.MkdirAll(info, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	fremd := filepath.Join(info, filepath.Base(a.alt.Pfad)+".trashinfo")
+	if err := os.WriteFile(fremd, []byte("fremd"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	erg, err := a.b.Aufraeumen(a.jetzt, Voreinstellung)
+	if err != nil || len(erg.Verschoben) != 1 {
+		t.Fatalf("%+v %v", erg, err)
+	}
+	if inhalt, _ := os.ReadFile(fremd); string(inhalt) != "fremd" {
+		t.Errorf("fremde Reservierung überschrieben: %q", inhalt)
+	}
+	if got := filepath.Base(erg.Verschoben[0].Papierkorb); !strings.HasSuffix(strings.TrimSuffix(got, ".png"), "-2") {
+		t.Errorf("Ausweichname %q, want …-2.png", got)
 	}
 }

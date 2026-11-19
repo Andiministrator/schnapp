@@ -20,8 +20,8 @@ const kwinDienst = "org.kde.KWin"
 const (
 	zeitgrenze            = 10 * time.Second
 	zeitgrenzeInteraktiv  = 5 * time.Minute
-	fehlerNichtBerechtigt = "org.kde.KWin.ScreenShot2.Error.NoAuthorized"
-	fehlerAbgebrochen     = "org.kde.KWin.ScreenShot2.Error.Cancelled"
+	fehlerNichtBerechtigt = ".Error.NoAuthorized" // hinter dem Schnittstellennamen
+	fehlerAbgebrochen     = ".Error.Cancelled"
 )
 
 // schnittstelle beschreibt eine der beiden KWin-Schnittstellen.
@@ -129,11 +129,15 @@ func (k *KWin) aufnehmen(ctx context.Context, methode string, args []any, opt Op
 func fehlerUebersetzen(methode string, err error) error {
 	var de dbus.Error
 	if errors.As(err, &de) {
-		switch de.Name {
-		case fehlerNichtBerechtigt:
-			return &nutzerFehler{sentinel: ErrNichtBerechtigt, ursache: err}
-		case fehlerAbgebrochen:
-			return &nutzerFehler{sentinel: ErrAbgebrochen, ursache: err}
+		// ScreenShot2 und ScreenShot3 melden dieselben Fehler unter eigenem Namensraum
+		// (org.kde.KWin.ScreenShot2.Error.Cancelled bzw. org.kde.KWin.ScreenShot3.Error.Cancelled, F-49).
+		for _, ns := range []string{schnittstelle2.name, schnittstelle3.name} {
+			switch de.Name {
+			case ns + fehlerNichtBerechtigt:
+				return &nutzerFehler{sentinel: ErrNichtBerechtigt, ursache: err}
+			case ns + fehlerAbgebrochen:
+				return &nutzerFehler{sentinel: ErrAbgebrochen, ursache: err}
+			}
 		}
 	}
 	return fmt.Errorf("%s: %w", methode, err)

@@ -55,9 +55,9 @@ type Quelle interface {
 // Erkennbare Fehler (mit errors.Is prüfen). Ihre Meldungen sind für Nutzer gedacht.
 var (
 	// ErrNichtBerechtigt: KWin (Plasma bis 6.7) lehnt den Aufruf ab, weil das Programm nicht als Aufnahmeprogramm
-	// eingetragen ist (org.kde.KWin.ScreenShot2.Error.NoAuthorized).
+	// eingetragen ist (…ScreenShot2.Error.NoAuthorized bzw. …ScreenShot3.Error.NoAuthorized).
 	ErrNichtBerechtigt = errors.New("not authorized")
-	// ErrAbgebrochen: Der Nutzer hat die Auswahl abgebrochen (org.kde.KWin.ScreenShot2.Error.Cancelled).
+	// ErrAbgebrochen: Der Nutzer hat die Auswahl abgebrochen (…ScreenShot2.Error.Cancelled bzw. …ScreenShot3.Error.Cancelled).
 	ErrAbgebrochen = errors.New("cancelled")
 	// ErrKeineSchnittstelle: Weder ScreenShot3 noch ScreenShot2 sind erreichbar (kein KWin, kein Wayland-KDE).
 	ErrKeineSchnittstelle = errors.New("no screenshot interface")

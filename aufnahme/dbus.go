@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"syscall"
 
 	"github.com/godbus/dbus/v5"
 )
@@ -44,8 +45,11 @@ func (t *dbusTransport) capture(ctx context.Context, s schnittstelle, methode st
 	aufruf := append(append([]any{}, args...), opt)
 	var antwort map[string]dbus.Variant
 	if s.memfd {
-		var fd dbus.UnixFD
+		fd := dbus.UnixFD(-1)
 		if err := obj.CallWithContext(ctx, s.name+"."+methode, 0, aufruf...).Store(&fd, &antwort); err != nil {
+			if fd >= 0 { // FD kam an, die übrige Antwort nicht: nicht offen liegen lassen (F-56)
+				syscall.Close(int(fd))
+			}
 			return nil, nil, err
 		}
 		if fd < 0 {

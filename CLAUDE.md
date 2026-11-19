@@ -104,11 +104,12 @@ Herkunft: Anforderungen und Entscheidungen des Maintainers vom 18.11.2026, über
 
 ## Architektur
 
-Geplant, Produktcode noch nicht begonnen (Stand 19.11.2026; es gibt den Wegwerf-Prototyp `prototyp/`). Grobe Schichten:
+Produktcode seit Sprint 3 (Stand 19.11.2026): `aufnahme`, `dokument`, `datei`, `bibliothek` stehen mit Tests, die
+Oberfläche fehlt noch; daneben der Wegwerf-Prototyp `prototyp/`. Schichten:
 
 - **aufnahme** — Schnittstelle + KWin-Umsetzung (D-Bus), später Portal.
 - **dokument** — Ebenenmodell (Pixelebene, Vektorebenen, Original, Stauchangaben), Rückgängig-Verlauf.
-- **datei** — PNG mit eingebettetem SVG-Block lesen/schreiben; Exporte SVG, PDF, PNG/JPG.
+- **datei** — Arbeitsdatei PNG mit Blöcken `snAP`/`snAO` lesen/schreiben; Exporte SVG, PNG/JPG (PDF noch offen).
 - **zeichnen** — die aus einem Schwesterprojekt übernommenen Pakete `svg`, `raster`, `geo` (eigenes Go-Modul, das
   das Schwesterprojekt wieder einbindet, ADR-0012), ergänzt um Schrift, `<image>`, Weichzeichnen, Verpixeln.
 - **bibliothek** — Autospeichern, Vorschau, Suche, Schlagworte.

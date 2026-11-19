@@ -78,12 +78,13 @@ func gibMonitoreAus(aus, fehler io.Writer, monitore func() ([]oberflaeche.Monito
 		return exitFehler
 	}
 	if len(liste) == 0 {
-		fmt.Fprintln(aus, sprache.T("No monitors found."))
+		fmt.Fprintln(fehler, sprache.T("No monitors found."))
 		return exitFehler
 	}
 	fmt.Fprintf(aus, sprache.N("%d monitor found:", "%d monitors found:", len(liste))+"\n", len(liste))
 	for _, m := range liste {
-		fmt.Fprintf(aus, sprache.T("  %s: %d × %d pixels, scale %d")+"\n", m.Name, m.Breite, m.Hoehe, m.Skala)
+		// Ohne Skala: die ganzzahlige Pufferskala (2 bei 1,6) führte in die Irre (F-57).
+		fmt.Fprintf(aus, sprache.T("  %s: %d × %d pixels")+"\n", m.Name, m.Breite, m.Hoehe)
 	}
 	return exitOK
 }

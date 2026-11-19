@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -24,8 +25,9 @@ func TestMemfdQuelle(t *testing.T) {
 	if d, err := m.lies(4); err != nil || string(d) != "0123" {
 		t.Errorf("lies(4) = %q, %v", d, err)
 	}
-	if _, err := m.lies(11); err == nil {
-		t.Error("größer als die Datei ohne Fehler")
+	// Die Größenprüfung meldet sich selbst, bevor gelesen wird (F-56: sonst prüfte der Test nur ReadFull).
+	if _, err := m.lies(11); err == nil || !strings.Contains(err.Error(), "memfd hat 10 Bytes") {
+		t.Errorf("größer als die Datei: %v", err)
 	}
 }
 

@@ -101,7 +101,7 @@ func TestMonitorliste(t *testing.T) {
 		return []oberflaeche.Monitor{{Name: "A", Breite: 1920, Hoehe: 1080, Skala: 1}, {Name: "B", Breite: 3840, Hoehe: 2160, Skala: 2}}, nil
 	}
 	code, aus, _ := fuehre(t, zwei, "--screen")
-	want := "2 monitors found:\n  A: 1920 × 1080 pixels, scale 1\n  B: 3840 × 2160 pixels, scale 2\n"
+	want := "2 monitors found:\n  A: 1920 × 1080 pixels\n  B: 3840 × 2160 pixels\n"
 	if code != exitOK || aus != want {
 		t.Errorf("Code %d, Ausgabe %q, erwartet %q", code, aus, want)
 	}
@@ -114,7 +114,7 @@ func TestMonitorliste(t *testing.T) {
 		t.Errorf("Fehlerfall: Code %d, Fehler %q", code, fehler)
 	}
 	leer := func() ([]oberflaeche.Monitor, error) { return nil, nil }
-	if code, aus, _ = fuehre(t, leer, "--screen"); code != exitFehler || !strings.Contains(aus, "No monitors found.") {
+	if code, _, fehler = fuehre(t, leer, "--screen"); code != exitFehler || !strings.Contains(fehler, "No monitors found.") {
 		t.Errorf("leer: Code %d, Ausgabe %q", code, aus)
 	}
 }
@@ -135,7 +135,7 @@ func TestLaufeDeutsch(t *testing.T) {
 		return []oberflaeche.Monitor{{Name: "A", Breite: 1, Hoehe: 2, Skala: 1}, {Name: "B"}}, nil
 	}
 	_, aus, _ = fuehre(t, zwei, "--screen")
-	if !strings.HasPrefix(aus, "2 Monitore gefunden:\n  A: 1 × 2 Pixel, Skalierung 1\n") {
+	if !strings.HasPrefix(aus, "2 Monitore gefunden:\n  A: 1 × 2 Pixel\n") {
 		t.Errorf("Monitorliste deutsch: %q", aus)
 	}
 	_, _, fehler := fuehre(t, keineMonitore, "--window")

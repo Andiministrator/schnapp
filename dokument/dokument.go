@@ -11,9 +11,13 @@ import (
 	"sort"
 )
 
-// MaxSeite begrenzt Breite und Höhe des Originals (größer als jede Bildschirmaufnahme, klein genug gegen
-// Speicherüberlauf durch fremde Dateien).
-const MaxSeite = 1 << 15
+// MaxSeite begrenzt Breite und Höhe des Originals, MaxPixel die Fläche: größer als jede Bildschirmaufnahme
+// (drei 4K-Monitore haben rund 25 Mio. Pixel), klein genug, dass eine kleine fremde Datei nicht viele GiB Speicher
+// anfordert (F-59; 1<<28 Pixel × 4 Byte = 1 GiB, wie die Grenze der Aufnahmeschicht).
+const (
+	MaxSeite = 1 << 15
+	MaxPixel = 1 << 28
+)
 
 // Streifen ist ein herausgeschnittener Bereich beim Stauchen: Zeilen [Von, Bis) bei Zeilen = true (das Bild wird
 // niedriger), sonst Spalten [Von, Bis) (das Bild wird schmaler). Angaben in Pixeln des Originals.
@@ -45,7 +49,7 @@ var (
 // Neu legt ein Dokument mit einer Kopie von bild als Original an.
 func Neu(bild image.Image) (*Dokument, error) {
 	b := bild.Bounds()
-	if b.Dx() < 1 || b.Dy() < 1 || b.Dx() > MaxSeite || b.Dy() > MaxSeite {
+	if b.Dx() < 1 || b.Dy() < 1 || b.Dx() > MaxSeite || b.Dy() > MaxSeite || b.Dx()*b.Dy() > MaxPixel {
 		return nil, fmt.Errorf("%w: %dx%d", ErrBildGroesse, b.Dx(), b.Dy())
 	}
 	o := image.NewNRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
@@ -252,9 +256,9 @@ func (d *Dokument) schwaerze(r image.Rectangle, s Schwaerzung) {
 		}
 		return
 	}
-	for by := r.Min.Y; by < r.Max.Y; by += s.Block {
-		for bx := r.Min.X; bx < r.Max.X; bx += s.Block {
-			blk := image.Rect(bx, by, min(bx+s.Block, r.Max.X), min(by+s.Block, r.Max.Y))
+	for _, ys := range bloecke(r.Min.Y, r.Max.Y, s.Block) {
+		for _, xs := range bloecke(r.Min.X, r.Max.X, s.Block) {
+			blk := image.Rect(xs[0], ys[0], xs[1], ys[1])
 			var sum [4]int
 			for y := blk.Min.Y; y < blk.Max.Y; y++ {
 				for x := blk.Min.X; x < blk.Max.X; x++ {
@@ -273,4 +277,19 @@ func (d *Dokument) schwaerze(r image.Rectangle, s Schwaerzung) {
 			}
 		}
 	}
+}
+
+// bloecke teilt [von, bis) in Blöcke der Länge block; ein Rest kürzer als MinBlock wird dem letzten Block
+// zugeschlagen, damit kein schmaler Streifen nur in einer Richtung gemittelt wird (F-61). Der Bereich ist
+// mindestens MinBlock lang (geprüft in Schwaerzen).
+func bloecke(von, bis, block int) [][2]int {
+	var res [][2]int
+	for a := von; a < bis; a += block {
+		res = append(res, [2]int{a, min(a+block, bis)})
+	}
+	if n := len(res); n > 1 && res[n-1][1]-res[n-1][0] < MinBlock {
+		res[n-2][1] = res[n-1][1]
+		res = res[:n-1]
+	}
+	return res
 }

@@ -391,14 +391,93 @@ func TestVerpixeln(t *testing.T) {
 		t.Fatal(err)
 	}
 	o := d.Original()
-	// Block (0..8, 0..8): Mittel von x 0..7 = 3 (3,5 abgerundet), y 0..7 = 3; alle Pixel gleich.
-	// Randblock (16..20, 8..10): Mittel x 16..19 = 17, y 8..9 = 8.
+	// Restblöcke unter MinBlock werden dem Nachbarn zugeschlagen (F-61): Spalten 0..8 und 8..20 (Rest 16..20
+	// verschmolzen), Zeilen 0..10 (Rest 8..10 verschmolzen). Block (0..8, 0..10): Mittel x 0..7 = 3 (3,5 abgerundet),
+	// y 0..9 = 4. Block (8..20, 0..10): Mittel x 8..19 = 13, y = 4.
 	for _, f := range []struct {
 		x, y int
 		r, g uint8
-	}{{0, 0, 3, 3}, {7, 7, 3, 3}, {8, 0, 11, 3}, {19, 9, 17, 8}} {
+	}{{0, 0, 3, 4}, {7, 9, 3, 4}, {8, 0, 13, 4}, {19, 9, 13, 4}} {
 		if c := o.NRGBAAt(f.x, f.y); c.R != f.r || c.G != f.g {
 			t.Errorf("Pixel (%d,%d) = %v, want R %d G %d", f.x, f.y, c, f.r, f.g)
 		}
+	}
+}
+
+// F-61: Kein Pixel eines verpixelten Bereichs bleibt im Original stehen, auch bei 8k+1 Pixeln Kantenlänge; zu
+// schmale Bereiche und durchsichtige Füllungen werden abgelehnt.
+func TestVerpixelnOhneRestpixel(t *testing.T) {
+	d := neu(t, 40, 40)
+	vorher := d.Original()
+	if err := d.Schwaerzen(image.Rect(3, 5, 12, 14), Schwaerzung{Block: MinBlock}); err != nil { // 9×9
+		t.Fatal(err)
+	}
+	nachher := d.Original()
+	// Ein 9×9-Bereich wird ein einziger Block (Rest 1 verschmolzen): keine Reststruktur, eine Farbe. Die frühere
+	// Restecke (11,13) blieb unverändert stehen.
+	farbe := nachher.NRGBAAt(3, 5)
+	for y := 5; y < 14; y++ {
+		for x := 3; x < 12; x++ {
+			if nachher.NRGBAAt(x, y) != farbe {
+				t.Errorf("Pixel (%d,%d) = %v, Block hat %v", x, y, nachher.NRGBAAt(x, y), farbe)
+			}
+		}
+	}
+	if nachher.NRGBAAt(11, 13) == vorher.NRGBAAt(11, 13) {
+		t.Error("Restecke (11,13) unverändert")
+	}
+	for name, s := range map[string]struct {
+		r image.Rectangle
+		s Schwaerzung
+	}{
+		"zu schmal":        {image.Rect(0, 0, 7, 20), Schwaerzung{Block: MinBlock}},
+		"1×1":              {image.Rect(0, 0, 1, 1), Schwaerzung{Block: MinBlock}},
+		"durchsichtig":     {image.Rect(0, 0, 10, 10), Schwaerzung{}},
+		"halbdurchsichtig": {image.Rect(0, 0, 10, 10), Schwaerzung{Farbe: color.NRGBA{0, 0, 0, 128}}},
+	} {
+		if d.Schwaerzen(s.r, s.s) == nil {
+			t.Errorf("%s: kein Fehler", name)
+		}
+	}
+}
+
+// F-62: nil, riesige Werte, Steuerzeichen und überlaufende Nummern werden abgewiesen; F-59: Pixelzahl begrenzt.
+func TestWertebereiche(t *testing.T) {
+	d := neu(t, 10, 10)
+	if _, err := d.Hinzufuegen(nil); err == nil {
+		t.Error("nil hinzugefügt")
+	}
+	if d.Ersetzen(nil) == nil {
+		t.Error("nil ersetzt")
+	}
+	if _, err := d.BeginneNeuenZug(nil); err == nil {
+		t.Error("nil-Zug begonnen")
+	}
+	id, _ := d.BeginneNeuenZug(Nummer{Radius: 3, Wert: 1})
+	if d.ZugSetze(nil) == nil {
+		t.Error("ZugSetze(nil) ohne Fehler")
+	}
+	d.BrecheZugAb()
+	_ = id
+	for _, o := range []Objekt{
+		Kasten{Bereich: R(Pt(-1e308, 0), Pt(1e308, 1))},
+		Kasten{Bereich: R(Pt(0, 0), Pt(1, 1)), Eckradius: 1e6},
+		GeraderPfeil(Pt(0, 0), Pt(MaxKoordinate+1, 0), rot),
+		Text{Ort: Pt(0, 0), Schriftgrad: 10, Inhalt: "a\x00b"},
+		Text{Ort: Pt(0, 0), Schriftgrad: 10, Inhalt: "a\xffb"},
+		Text{Ort: Pt(0, 0), Schriftgrad: MaxGroesse + 1, Inhalt: "x"},
+		Nummer{Radius: 3, Wert: MaxNummer + 1},
+		Nummer{Radius: 3, Wert: -1},
+	} {
+		if _, err := d.Hinzufuegen(o); err == nil {
+			t.Errorf("%#v ohne Fehler", o)
+		}
+	}
+	if _, err := d.Hinzufuegen(Text{Ort: Pt(0, 0), Schriftgrad: 10, Inhalt: "Zeile 1\n\tZeile 2 ÄÖÜ"}); err != nil {
+		t.Errorf("gültiger Text abgelehnt: %v", err)
+	}
+	// Seiten je für sich erlaubt, Fläche zu groß.
+	if _, err := Neu(image.NewNRGBA(image.Rect(0, 0, MaxSeite, MaxPixel/MaxSeite+1))); !errors.Is(err, ErrBildGroesse) {
+		t.Errorf("Fläche über MaxPixel: %v", err)
 	}
 }

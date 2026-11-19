@@ -5,6 +5,7 @@ package dokument
 import (
 	"fmt"
 	"image/color"
+	"unicode/utf8"
 )
 
 // Objekt ist eine Beschriftung über dem Bild. Objekte sind Werte: Ändern heißt, ein geändertes Objekt mit derselben
@@ -27,7 +28,7 @@ type Strich struct {
 }
 
 func (s Strich) pruefe() error {
-	if !endlich(s.Breite) || s.Breite < 0 {
+	if !groesse(s.Breite) {
 		return fmt.Errorf("Strichbreite ungültig: %v", s.Breite)
 	}
 	return nil
@@ -100,8 +101,7 @@ func (k Kasten) Grenzen() Rechteck        { return aufgeweitet(k.Bereich, k.Stri
 func (k Kasten) mitKennung(id int) Objekt { k.ID = id; return k }
 func (k Kasten) pruefe() error {
 	b := k.Bereich
-	if !endlich(b.Min.X, b.Min.Y, b.Max.X, b.Max.Y, k.Eckradius) || b.Max.X < b.Min.X || b.Max.Y < b.Min.Y ||
-		k.Eckradius < 0 {
+	if !endlich(b.Min.X, b.Min.Y, b.Max.X, b.Max.Y) || !groesse(k.Eckradius) || b.Max.X < b.Min.X || b.Max.Y < b.Min.Y {
 		return fmt.Errorf("Kasten mit ungültigen Werten")
 	}
 	return k.Strich.pruefe()
@@ -141,8 +141,18 @@ func (t Text) Grenzen() Rechteck {
 }
 func (t Text) mitKennung(id int) Objekt { t.ID = id; return t }
 func (t Text) pruefe() error {
-	if !endlich(t.Ort.X, t.Ort.Y, t.Schriftgrad, t.BreiteGrenze) || t.Schriftgrad <= 0 || t.BreiteGrenze < 0 {
+	if !endlich(t.Ort.X, t.Ort.Y) || !groesse(t.Schriftgrad, t.BreiteGrenze) || t.Schriftgrad <= 0 {
 		return fmt.Errorf("Text mit ungültigen Werten")
+	}
+	// Steuerzeichen und ungültiges UTF-8 überstehen das Speichern (XML) nicht unverändert (F-62); erlaubt sind
+	// Zeilenumbruch und Tabulator.
+	if !utf8.ValidString(t.Inhalt) {
+		return fmt.Errorf("Text ist kein gültiges UTF-8")
+	}
+	for _, r := range t.Inhalt {
+		if (r < 0x20 && r != '\n' && r != '\t') || r == 0x7f || (r >= 0x80 && r < 0xa0) || r == 0xfffe || r == 0xffff {
+			return fmt.Errorf("Text enthält das Steuerzeichen U+%04X", r)
+		}
 	}
 	return nil
 }
@@ -162,7 +172,7 @@ func (n Nummer) Grenzen() Rechteck {
 }
 func (n Nummer) mitKennung(id int) Objekt { n.ID = id; return n }
 func (n Nummer) pruefe() error {
-	if !endlich(n.Mitte.X, n.Mitte.Y, n.Radius) || n.Radius <= 0 {
+	if !endlich(n.Mitte.X, n.Mitte.Y) || !groesse(n.Radius) || n.Radius <= 0 || n.Wert < 0 || n.Wert > MaxNummer {
 		return fmt.Errorf("Nummer mit ungültigen Werten")
 	}
 	return nil

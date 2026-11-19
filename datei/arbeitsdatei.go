@@ -64,8 +64,14 @@ func LeseArbeitsdatei(r io.Reader) (*Gelesen, error) {
 	for _, b := range bloecke {
 		switch b.typ {
 		case blockSVG:
+			if hatSVG {
+				return nil, fmt.Errorf("%w: Block %s doppelt", ErrBeschaedigt, blockSVG)
+			}
 			svgDaten, hatSVG = b.daten, true
 		case blockOriginal:
+			if hatOrig {
+				return nil, fmt.Errorf("%w: Block %s doppelt", ErrBeschaedigt, blockOriginal)
+			}
 			origDaten, hatOrig = b.daten, true
 		}
 	}
@@ -147,7 +153,8 @@ func decodiere(daten []byte) (image.Image, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrBeschaedigt, err)
 	}
-	if cfg.Width < 1 || cfg.Height < 1 || cfg.Width > dokument.MaxSeite || cfg.Height > dokument.MaxSeite {
+	if cfg.Width < 1 || cfg.Height < 1 || cfg.Width > dokument.MaxSeite || cfg.Height > dokument.MaxSeite ||
+		cfg.Width*cfg.Height > dokument.MaxPixel {
 		return nil, fmt.Errorf("%w: Bild %dx%d", ErrZuGross, cfg.Width, cfg.Height)
 	}
 	bild, err := png.Decode(bytes.NewReader(daten))
@@ -157,7 +164,8 @@ func decodiere(daten []byte) (image.Image, error) {
 	return bild, nil
 }
 
-// IstBeschaedigt meldet, ob err auf eine beschädigte oder zu große Datei zurückgeht.
+// IstBeschaedigt meldet, ob err auf eine beschädigte oder zu große Datei zurückgeht. Eine Arbeitsdatei aus einer
+// neueren Fassung (ErrFormatNeuer) ist nicht beschädigt; beide Fälle lassen sich mit LeseBild als Bild öffnen.
 func IstBeschaedigt(err error) bool {
 	return errors.Is(err, ErrBeschaedigt) || errors.Is(err, ErrZuGross) || errors.Is(err, ErrKeinPNG)
 }

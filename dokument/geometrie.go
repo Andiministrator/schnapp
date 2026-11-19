@@ -56,10 +56,28 @@ func (r Rechteck) Vereint(s Rechteck) Rechteck {
 		Punkt{math.Max(r.Max.X, s.Max.X), math.Max(r.Max.Y, s.Max.Y)}}
 }
 
-// endlich meldet, ob alle Werte endliche Zahlen sind (kein NaN, kein ±Inf).
+// Wertebereiche für Objekte (F-62): Koordinaten bis ±MaxKoordinate, Größen (Breiten, Radien, Schriftgrad) bis
+// MaxGroesse — weit über jedem Bild, aber endlich genug, dass Export und Rendern keine Inf erzeugen oder hängen.
+const (
+	MaxKoordinate = 1e6
+	MaxGroesse    = 1e5
+	MaxNummer     = 1_000_000
+)
+
+// endlich meldet, ob alle Werte endliche Zahlen im Koordinatenbereich sind.
 func endlich(werte ...float64) bool {
 	for _, w := range werte {
-		if math.IsNaN(w) || math.IsInf(w, 0) {
+		if math.IsNaN(w) || math.IsInf(w, 0) || math.Abs(w) > MaxKoordinate {
+			return false
+		}
+	}
+	return true
+}
+
+// groesse meldet, ob alle Werte gültige Größen sind (0 ≤ w ≤ MaxGroesse).
+func groesse(werte ...float64) bool {
+	for _, w := range werte {
+		if !endlich(w) || w < 0 || w > MaxGroesse {
 			return false
 		}
 	}

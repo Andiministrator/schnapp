@@ -123,8 +123,10 @@ func (b *Bibliothek) Ablegen(d *dokument.Dokument, sichtbar image.Image, m datei
 
 	monat, name := b.zeitname(m.Erstellt)
 	ordner := filepath.Join(b.Orte.Ablage, monat)
-	if err := os.MkdirAll(ordner, rechteOrdner); err != nil {
-		return Eintrag{}, err
+	for _, o := range []string{b.Orte.Ablage, ordner} {
+		if err := eigenerOrdner(o); err != nil {
+			return Eintrag{}, err
+		}
 	}
 	rel := ""
 	for n := 1; ; n++ {
@@ -196,7 +198,7 @@ func (e Eintrag) gueltig() bool {
 
 // haengeAn hängt eine Zeile an den Index an (Ordner 0700, Datei 0600).
 func (b *Bibliothek) haengeAn(e Eintrag) error {
-	if err := os.MkdirAll(filepath.Dir(b.Orte.Index), rechteOrdner); err != nil {
+	if err := eigenerOrdner(filepath.Dir(b.Orte.Index)); err != nil {
 		return err
 	}
 	zeile, err := json.Marshal(e)
@@ -267,7 +269,7 @@ func (b *Bibliothek) lade() (Geladen, error) {
 
 // schreibeIndex ersetzt den Index atomar.
 func (b *Bibliothek) schreibeIndex(es []Eintrag) error {
-	if err := os.MkdirAll(filepath.Dir(b.Orte.Index), rechteOrdner); err != nil {
+	if err := eigenerOrdner(filepath.Dir(b.Orte.Index)); err != nil {
 		return err
 	}
 	return schreibeAtomar(b.Orte.Index, func(w io.Writer) error {
@@ -326,6 +328,7 @@ func (b *Bibliothek) Neuaufbau() (NeuaufbauErgebnis, error) {
 			return nil
 		}
 		es = append(es, e)
+		b.heileVorschau(pfad, e.Pfad) // fehlende Vorschau nachziehen (F-52); scheitert das, bleibt nur die Vorschau aus
 		return nil
 	})
 	if err != nil {
@@ -375,6 +378,7 @@ func (b *Bibliothek) Abgleich() (int, error) {
 	for _, e := range g.Eintraege {
 		_, err := os.Lstat(filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad)))
 		if errors.Is(err, fs.ErrNotExist) {
+			_ = b.entferneVorschau(e.Pfad) // Vorschau der verschwundenen Aufnahme nicht liegen lassen (F-51)
 			continue
 		}
 		behalten = append(behalten, e) // andere Fehler (Rechte): im Zweifel behalten
@@ -506,4 +510,19 @@ func (b *Bibliothek) SetzeSchlagworte(pfad string, worte []string) (Eintrag, err
 		return neu, fmt.Errorf("%w: %v", ErrIndex, err)
 	}
 	return neu, nil
+}
+
+// heileVorschau schreibt das Vorschaubild einer Arbeitsdatei neu, wenn es fehlt.
+func (b *Bibliothek) heileVorschau(pfad, rel string) {
+	if _, err := os.Stat(b.VorschauPfad(rel)); err == nil {
+		return
+	}
+	f, err := os.Open(pfad)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	if bild, err := datei.LeseBild(f); err == nil {
+		_ = b.schreibeVorschau(rel, bild)
+	}
 }

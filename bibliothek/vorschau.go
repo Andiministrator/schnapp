@@ -5,10 +5,13 @@ package bibliothek
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -24,7 +27,7 @@ func (b *Bibliothek) VorschauPfad(rel string) string {
 }
 
 func (b *Bibliothek) schreibeVorschau(rel string, bild image.Image) error {
-	if err := os.MkdirAll(b.Orte.Vorschau, rechteOrdner); err != nil {
+	if err := eigenerOrdner(b.Orte.Vorschau); err != nil {
 		return err
 	}
 	klein := verkleinere(bild, VorschauSeite)
@@ -61,4 +64,29 @@ func verkleinere(bild image.Image, seite int) *image.NRGBA {
 		}
 	}
 	return aus
+}
+
+// entferneVorschau löscht das Vorschaubild zu rel, wenn die Aufnahme die Bibliothek verlassen hat (Papierkorb,
+// Abgleich): sonst bliebe eine verkleinerte Kopie eines womöglich vertraulichen Bildes im Cache (F-51). Gelöscht
+// wird nur genau die eigene Cache-Datei (Ordner und Namensform geprüft); fehlt sie, ist nichts zu tun.
+func (b *Bibliothek) entferneVorschau(rel string) error {
+	pfad := b.VorschauPfad(rel)
+	name := filepath.Base(pfad)
+	if filepath.Dir(pfad) != filepath.Clean(b.Orte.Vorschau) || len(name) != 24+len(".png") || filepath.Ext(name) != ".png" {
+		return fmt.Errorf("bibliothek: unerwarteter Vorschaupfad %q", pfad)
+	}
+	if err := os.Remove(pfad); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	return nil
+}
+
+// eigenerOrdner legt einen Ordner von Schnapp an und bringt auch einen schon vorhandenen auf 0700 (ADR-0016;
+// MkdirAll allein lässt vorhandene Rechte stehen, F-55). Nur für Schnapps eigene Ordner, nie für Bilder- oder
+// Papierkorb-Ordner des Nutzers.
+func eigenerOrdner(pfad string) error {
+	if err := os.MkdirAll(pfad, rechteOrdner); err != nil {
+		return err
+	}
+	return os.Chmod(pfad, rechteOrdner)
 }

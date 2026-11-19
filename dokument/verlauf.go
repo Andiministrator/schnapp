@@ -101,6 +101,9 @@ func (b ersetzen) zuruecknehmen(d *Dokument) { d.objekte[d.index(b.alt.Kennung()
 
 // Hinzufuegen legt o zuoberst ab und liefert seine Kennung.
 func (d *Dokument) Hinzufuegen(o Objekt) (int, error) {
+	if o == nil {
+		return 0, ErrUnbekannt
+	}
 	if d.zug != nil {
 		return 0, ErrZugLaeuft
 	}
@@ -128,6 +131,9 @@ func (d *Dokument) Entfernen(id int) error {
 
 // Ersetzen setzt neu an die Stelle des Objekts mit derselben Kennung (Eigenschaften ändern).
 func (d *Dokument) Ersetzen(neu Objekt) error {
+	if neu == nil {
+		return ErrUnbekannt
+	}
 	if d.zug != nil {
 		return ErrZugLaeuft
 	}
@@ -155,6 +161,9 @@ type zug struct {
 // BeginneNeuenZug fügt o für die Dauer des Zugs ein (z. B. einen Pfeil, der gerade aufgezogen wird) und liefert
 // seine Kennung.
 func (d *Dokument) BeginneNeuenZug(o Objekt) (int, error) {
+	if o == nil {
+		return 0, ErrUnbekannt
+	}
 	if d.zug != nil {
 		return 0, ErrZugLaeuft
 	}
@@ -183,6 +192,9 @@ func (d *Dokument) BeginneZug(id int) error {
 
 // ZugSetze setzt den aktuellen Stand des gezogenen Objekts (gleiche Kennung).
 func (d *Dokument) ZugSetze(o Objekt) error {
+	if o == nil {
+		return ErrUnbekannt
+	}
 	if d.zug == nil {
 		return ErrKeinZug
 	}
@@ -309,9 +321,17 @@ func (d *Dokument) Schwaerzen(r image.Rectangle, s Schwaerzung) error {
 	if s.Block > 0 && s.Block < MinBlock {
 		return fmt.Errorf("dokument: Blockgröße %d kleiner als %d", s.Block, MinBlock)
 	}
+	if s.Block <= 0 && s.Farbe.A != 255 {
+		// Eine durchsichtige Füllung (etwa der Nullwert) hinterließe ein Loch statt einer Schwärzung.
+		return fmt.Errorf("dokument: Schwärzungsfarbe muss deckend sein")
+	}
 	r = r.Canon().Intersect(d.original.Rect)
 	if r.Empty() {
 		return fmt.Errorf("dokument: Bereich zum Schwärzen liegt außerhalb des Bilds")
+	}
+	if s.Block > 0 && (r.Dx() < MinBlock || r.Dy() < MinBlock) {
+		// Ein schmaler Bereich lässt sich nicht wirksam verpixeln (ein Block über 1 Pixel ändert nichts).
+		return fmt.Errorf("dokument: Bereich zum Verpixeln kleiner als %d Pixel — schwärzen statt verpixeln", MinBlock)
 	}
 	d.fuehreAus(&schwaerzen{r: r, s: s})
 	return nil

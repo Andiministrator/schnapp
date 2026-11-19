@@ -69,6 +69,9 @@ und Englisch auf „vor der Veröffentlichung“ verschoben (E-07). Nachträglic
   printf-Platzhalter zwischen Original und Übersetzung.
   Jeder Text braucht in jeder `po/*.po` einen fertigen Eintrag (nicht `fuzzy`, nicht leer, passende Mehrzahl), jeder
   Eintrag einen Text im Code (sonst veraltet), und jedes Argument muss ein Zeichenketten-Literal sein.
+- **Fehlertexte der Pakete** (`dokument`, `datei`, `bibliothek` …) sind Entwicklertexte (Deutsch, für Protokoll und
+  Tests). Die Oberfläche zeigt nie `err.Error()`, sondern ordnet die Fehlerwerte per `errors.Is` übersetzten Meldungen
+  über `sprache.T` zu (wie `aufnahme` es schon tut). Kritiker-Befund F-63.
 - **Noch nicht umgesetzt:** Vorlage `po/schnapp.pot` für Übersetzer und Weblate (aus derselben Code-Durchsuchung zu
   erzeugen, sobald es Texte gibt), Zahlen- und Datumsformate je Sprache, die Einstellung in Schnapp (Parameter
   `einstellung` ist vorgesehen). Karte im Board.
