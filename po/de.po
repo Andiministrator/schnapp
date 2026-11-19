@@ -78,3 +78,13 @@ msgstr[1] "%d Monitore gefunden:"
 
 msgid "  %s: %d × %d pixels, scale %d"
 msgstr "  %s: %d × %d Pixel, Skalierung %d"
+
+# aufnahme: Aufnahmeschicht
+msgid "Schnapp is not registered as a screenshot program. Install its desktop file and try again."
+msgstr "Schnapp ist nicht als Aufnahmeprogramm eingetragen. Die Programmdatei (.desktop) muss installiert sein."
+
+msgid "The capture was cancelled."
+msgstr "Die Aufnahme wurde abgebrochen."
+
+msgid "KWin offers no screenshot interface. Schnapp needs KDE Plasma on Wayland."
+msgstr "KWin bietet keine Aufnahmeschnittstelle an. Schnapp braucht KDE Plasma unter Wayland."
