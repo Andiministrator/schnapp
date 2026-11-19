@@ -1,7 +1,7 @@
 # ADR-0020: Editor — wann er öffnet, wie er gebaut ist, wer die Pixel rendert
 
 ## Status
-Vorgeschlagen (19.11.2026) — Punkt 1 wartet auf Andi; Punkte 2 und 3 sind technisch und gelten als Arbeitsgrundlage.
+Akzeptiert (Andi, 19.11.2026: „ja zu deinem vorschlag“)
 
 ## Kontext
 Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #35) fehlt. Offen sind drei Dinge:
@@ -14,7 +14,7 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
    `zeichnen/raster` kann Pfade, Rechtecke, Kreise und Linien, aber weder Text noch `<image>`.
 
 ## Entscheidung
-1. **Ablauf (Vorschlag, Andi entscheidet):**
+1. **Ablauf:**
    - Nach einer interaktiven Aufnahme (`--region`, `--screen`, `--window`) öffnet der Editor im selben Prozess,
      nachdem die Aufnahme schon in der Bibliothek liegt und ihr Pfad auf stdout steht. Abschaltbar mit der
      Einstellung `[capture] open-editor = false` (Voreinstellung `true`) und für einen Aufruf mit `--no-editor`.
@@ -35,6 +35,7 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
 
 ## Konsequenzen
 - Neue Karte „Renderer“ vor dem Speichern mit Objekten; der Editor kann vorher öffnen, zoomen und auswählen.
-- `--no-editor` und `[capture] open-editor` als Nachtrag zu ADR-0017/ADR-0018, sobald Punkt 1 entschieden ist.
+- `--no-editor` gehört zur Kommandozeile (ADR-0017), `[capture] open-editor` zu den Einstellungen (ADR-0018); beide
+  kommen mit dem Editor (#35).
 - Für Skripte bleibt der Pfad auf stdout das Erste, was Schnapp ausgibt; ohne Bildschirm (kein Wayland) öffnet kein
   Editor.
