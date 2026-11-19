@@ -27,11 +27,14 @@ def h_unten(x):
             f"M{x},{100+R} A{R},{R} 0 0 1 {x+R},100 H{x+W-R} A{R},{R} 0 0 1 {x+W},{100+R} V200"]
 
 
-def schriftzug(f, h_haengt=False):
+def schriftzug(f, h_haengt=False, h_tief=False):
     teile, x = [s_mit_auge(40, f, blick=1.0)], 40 + LAUF
     for z in "chnapp":
         pfade = h_unten(x) if (z == "h" and h_haengt) else buchstabe(z, x)
-        teile += [zug(d, f["schrift"]) for d in pfade]
+        neu = [zug(d, f["schrift"]) for d in pfade]
+        if z == "h" and h_tief:  # ganzes h tiefer: Fuß auf Höhe der p-Unterlängen
+            neu = [f'<g transform="translate(0,62)">{"".join(neu)}</g>']
+        teile += neu
         x += LAUF
     return "".join(teile), x - 40
 
@@ -62,6 +65,8 @@ def main():
     for art, f in (("dunkel", DUNKEL), ("hell", HELL)):
         zugtext, ende = schriftzug(f, h_haengt=True)
         schreibe(f"e-h-haengt-{art}.svg", bild(640, zugtext, f["grund"], f"0 20 {ende + 60} 270"))
+        zugtext, ende = schriftzug(f, h_tief=True)
+        schreibe(f"e2-h-tief-{art}.svg", bild(640, zugtext, f["grund"], f"0 20 {ende + 60} 270"))
         varianten = (("linux screenshots", "f-klein", 34), ("LINUX SCREENSHOTS", "f-versal", 28),
                      ("screenshots for linux", "f-for-linux", 32))
         for text, name, groesse in varianten:

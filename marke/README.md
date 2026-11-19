@@ -17,6 +17,7 @@ Logo, Symbol und Farben. Stand 19.11.2026: **Runde 6, Entwürfe** — noch nicht
 - Runde 5 (Andi): Krokodil weg, nur das orange „s“ mit Auge als Besonderheit.
 - **Festgelegt (Andi, 19.11.2026): Runde 5 b** — oranges „s“ mit Auge, Pupille blickt nach rechts auf „chnapp“.
 - Runde 6 (Andi): „h“ auf die Höhe der „pp“ herunter oder eine kurze Unterzeile („Linux Screenshots“) unter „schna“.
+- Unterzeile gewählt (Andi, 19.11.2026): **f3 „screenshots for linux“**. Probe e2: ganzes „h“ tiefer.
 - Unterzeile als Pfade aus Open Sans SemiBold (SIL OFL 1.1), damit das SVG keine Schriftdatei braucht.
 
 ## Festlegungen der Entwürfe
