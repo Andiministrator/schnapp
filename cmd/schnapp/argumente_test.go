@@ -80,8 +80,12 @@ type merkeAuftrag struct {
 
 func (m *merkeAuftrag) ausfuehren(t Auftrag, _, _ io.Writer) int {
 	m.auftraege = append(m.auftraege, t)
-	return exitFehler
+	return exitStub
 }
+
+// exitStub ist ein Exit-Code, den laufe nie selbst liefert: Kommt er an, hat laufe den Code der Ausführung
+// unverändert durchgereicht (F-104).
+const exitStub = 42
 
 // keineEinstellungen liefert Voreinstellungen ohne Warnung und zählt die Aufrufe nicht.
 func keineEinstellungen(t *testing.T) Ladefunktion {
@@ -129,7 +133,7 @@ func TestLaufeGibtAuftragWeiter(t *testing.T) {
 		m := &merkeAuftrag{}
 		var aus, fehler bytes.Buffer
 		code := laufe(tc.args, &aus, &fehler, abfrage, lade, m.ausfuehren)
-		if code != exitFehler || aus.Len() != 0 || fehler.Len() != 0 {
+		if code != exitStub || aus.Len() != 0 || fehler.Len() != 0 {
 			t.Errorf("%q: Code %d, Ausgabe %q, Fehler %q", tc.args, code, aus.String(), fehler.String())
 		}
 		if len(m.auftraege) != 1 || m.auftraege[0] != tc.want {
@@ -232,7 +236,7 @@ func TestLaufeWarnungenWeiter(t *testing.T) {
 	var aus, fehler bytes.Buffer
 	m := &merkeAuftrag{}
 	code := laufe([]string{"--window"}, &aus, &fehler, keineMonitore, lade, m.ausfuehren)
-	if code != exitFehler || fehler.String() != "w1\nw2\n" || len(m.auftraege) != 1 || m.auftraege[0].Modus != ModusFenster {
+	if code != exitStub || fehler.String() != "w1\nw2\n" || len(m.auftraege) != 1 || m.auftraege[0].Modus != ModusFenster {
 		t.Errorf("Code %d, stderr %q, Aufträge %+v", code, fehler.String(), m.auftraege)
 	}
 }

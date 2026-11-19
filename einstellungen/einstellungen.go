@@ -151,7 +151,7 @@ func Parse(name, inhalt string) (Einstellungen, []string) {
 		}
 		if zeile[0] == '[' {
 			if !strings.HasSuffix(zeile, "]") {
-				melde(nr, "%s", sprache.T("Broken section header; line ignored."))
+				melde(nr, "%s", sprache.T("Broken section header; its settings up to the next section are ignored."))
 				abschnitt, bekannt, imAbschnitt = "", false, true // Folgezeilen still übergehen (F-92)
 				continue
 			}

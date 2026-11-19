@@ -30,7 +30,7 @@ scaling). The first version (0.1.0) is being planned.
 
 ## Building
 
-The program is a skeleton so far: it parses its options, but the capture modes are not implemented yet. Gio needs cgo (`libwayland-dev`, `libegl-dev`, `libxkbcommon-dev` or your distribution's equivalent) and the build tags `novulkan,nox11`, which you pass through `GOFLAGS` (no need to change your Go environment):
+So far Schnapp captures an area, a monitor or a window on KDE Plasma (frozen full-screen overlay with magnifier) and saves the screenshot to the library; the editor is not there yet. Gio needs cgo (`libwayland-dev`, `libegl-dev`, `libxkbcommon-dev` or your distribution's equivalent) and the build tags `novulkan,nox11`, which you pass through `GOFLAGS` (no need to change your Go environment):
 
 ```sh
 export GOFLAGS=-tags=novulkan,nox11

@@ -87,10 +87,11 @@ func SpeichereLetzten(pfad string, l Letzter) error {
 	return err
 }
 
-// LadeLetzten liest den gemerkten Bereich. Fehlt die Datei oder ist sie unbrauchbar, kommt ErrKeinLetzter.
+// LadeLetzten liest den gemerkten Bereich. Fehlt die Datei oder ist sie unbrauchbar, kommt ErrKeinLetzter; ohne
+// Pfad (kein Zustandsordner) ErrKeinZustandsordner.
 func LadeLetzten(pfad string) (Letzter, error) {
 	if pfad == "" {
-		return Letzter{}, ErrKeinLetzter
+		return Letzter{}, ErrKeinZustandsordner
 	}
 	daten, err := os.ReadFile(pfad)
 	if errors.Is(err, os.ErrNotExist) {

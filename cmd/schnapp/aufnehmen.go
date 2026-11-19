@@ -79,6 +79,10 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 	case t.Modus == ModusWiederholen:
 		l, err := auswahl.LadeLetzten(an.letzterPfad)
 		if err != nil {
+			if errors.Is(err, auswahl.ErrKeinZustandsordner) {
+				fmt.Fprintln(fehler, sprache.T("No state directory (HOME is not set), so there is no last area to repeat."))
+				return exitFehler
+			}
 			if errors.Is(err, auswahl.ErrKeinLetzter) {
 				fmt.Fprintln(fehler, sprache.T("No area to repeat yet. Select one with --region first."))
 				return exitFehler
@@ -181,7 +185,12 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, aus, fe
 // merke speichert den Bereich für --repeat. Scheitert das, ist die Aufnahme trotzdem gelungen: nur eine Warnung.
 func (an anschluesse) merke(monitor string, b *image.NRGBA, bereich image.Rectangle, fehler io.Writer) {
 	l := auswahl.Letzter{Monitor: monitor, Groesse: b.Bounds().Size(), Bereich: bereich}
-	if err := auswahl.SpeichereLetzten(an.letzterPfad, l); err != nil {
+	err := auswahl.SpeichereLetzten(an.letzterPfad, l)
+	switch {
+	case errors.Is(err, auswahl.ErrKeinZustandsordner):
+		// Fehlertexte des Pakets sind nicht übersetzt; den bekannten Fall übersetzt hier (F-100).
+		fmt.Fprintln(fehler, sprache.T("Could not remember the area for --repeat: no state directory (HOME is not set)."))
+	case err != nil:
 		fmt.Fprintf(fehler, sprache.T("Could not remember the area for --repeat: %v")+"\n", err)
 	}
 }

@@ -96,8 +96,8 @@ msgstr "Die Einstellungsdatei ist nicht auffindbar (%v); es gelten die Voreinste
 msgid "%s: cannot read the settings file (%v); using the defaults."
 msgstr "%s: Die Einstellungsdatei ist nicht lesbar (%v); es gelten die Voreinstellungen."
 
-msgid "Broken section header; line ignored."
-msgstr "Abschnittskopf ist unvollständig; Zeile ignoriert."
+msgid "Broken section header; its settings up to the next section are ignored."
+msgstr "Abschnittskopf ist unvollständig; seine Einstellungen bis zum nächsten Abschnitt werden ignoriert."
 
 msgid "Unknown section [%s]; its keys are ignored."
 msgstr "Unbekannter Abschnitt [%s]; seine Schlüssel werden ignoriert."
@@ -157,3 +157,10 @@ msgstr[1] "… und %d weitere Warnungen"
 
 msgid "Option --screen cannot be given more than once with different monitor names."
 msgstr "Die Option --screen lässt sich nicht mehrfach mit verschiedenen Monitornamen angeben."
+
+# cmd/schnapp: ohne Zustandsordner (F-100)
+msgid "No state directory (HOME is not set), so there is no last area to repeat."
+msgstr "Kein Zustandsordner (HOME ist nicht gesetzt), darum gibt es keinen letzten Bereich zum Wiederholen."
+
+msgid "Could not remember the area for --repeat: no state directory (HOME is not set)."
+msgstr "Der Bereich für --repeat ließ sich nicht merken: kein Zustandsordner (HOME ist nicht gesetzt)."

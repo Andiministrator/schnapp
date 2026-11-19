@@ -389,3 +389,35 @@ func TestWarnungenUebersetzt(t *testing.T) {
 		t.Errorf("deutsch: %q, erwartet %q", warn, want)
 	}
 }
+
+// F-103: Auch die Lese-Fehlerpfade maskieren Pfad und Fehlertext; Abschnittsname und Schlüssel werden gekürzt.
+func TestLadeFehlerpfadMaskiert(t *testing.T) {
+	sprache.Setze(nil)
+	wurzel := t.TempDir()
+	konfig := filepath.Join(wurzel, "k\x1b]0;X\x07")
+	t.Setenv("HOME", filepath.Join(wurzel, "heim"))
+	t.Setenv("XDG_CONFIG_HOME", konfig)
+	pfad := filepath.Join(konfig, "schnapp", "settings.ini")
+	// Verzeichnis statt Datei: Pfad steht in der Warnung.
+	if err := os.MkdirAll(pfad, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	_, warn := Lade()
+	if len(warn) != 1 || !keineSteuerzeichen(warn[0]) || !strings.Contains(warn[0], `k\x1b]0;X\a`) {
+		t.Errorf("Pfad im Lesefehler nicht maskiert: %q", warn)
+	}
+}
+
+func TestSchluesselUndAbschnittGekuerzt(t *testing.T) {
+	sprache.Setze(nil)
+	lang := strings.Repeat("x", 200)
+	_, warn := Parse("p", "["+lang+"]\n[capture]\n"+lang+" = 1\n")
+	if len(warn) != 2 {
+		t.Fatalf("Warnungen %q", warn)
+	}
+	for _, w := range warn {
+		if strings.Contains(w, strings.Repeat("x", 81)) || !strings.Contains(w, "…") {
+			t.Errorf("nicht gekürzt: %d Zeichen in %q", len(w), w[:min(len(w), 120)])
+		}
+	}
+}

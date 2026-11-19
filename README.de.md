@@ -31,7 +31,7 @@ Die erste Fassung (0.1.0) wird geplant.
 
 ## Bauen
 
-Das Programm ist bisher ein Gerüst: Es wertet seine Optionen aus, die Aufnahme-Modi sind noch nicht umgesetzt. Gio braucht cgo (`libwayland-dev`, `libegl-dev`, `libxkbcommon-dev` oder das Entsprechende deiner Distribution) und die Build-Tags `novulkan,nox11`; sie werden über `GOFLAGS` übergeben (die Go-Umgebung bleibt unverändert):
+Bisher nimmt Schnapp unter KDE Plasma einen Bereich, einen Monitor oder ein Fenster auf (eingefrorenes Vollbild-Overlay mit Lupe) und legt den Screenshot in der Bibliothek ab; der Editor fehlt noch. Gio braucht cgo (`libwayland-dev`, `libegl-dev`, `libxkbcommon-dev` oder das Entsprechende deiner Distribution) und die Build-Tags `novulkan,nox11`; sie werden über `GOFLAGS` übergeben (die Go-Umgebung bleibt unverändert):
 
 ```sh
 export GOFLAGS=-tags=novulkan,nox11

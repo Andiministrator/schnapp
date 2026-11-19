@@ -104,15 +104,23 @@ func Overlay(bilder []MonitorBild, m auswahl.Modus) (OverlayErgebnis, error) {
 		}()
 	}
 	e := <-g.fertig
-	// Alle Fenster anstoßen; jedes schließt sich beim nächsten Frame selbst. Kurz warten, bis sie weg sind, damit
-	// das Overlay vor dem Speichern verschwindet — aber nie hängen bleiben.
+	// Alle Fenster anstoßen; jedes schließt sich beim nächsten Frame selbst. Ein Invalidate verpufft, solange ein
+	// Fenster gerade einen Frame bearbeitet (F-79, F-99) — darum bis zum Schließen alle 50 ms erneut anstoßen. Kurz
+	// warten, damit das Overlay vor dem Speichern verschwindet, aber nie hängen bleiben.
+	frist := time.After(fensterFrist)
+	takt := time.NewTicker(50 * time.Millisecond)
+	defer takt.Stop()
 	for _, f := range g.fenster {
 		f.w.Invalidate()
 	}
-	frist := time.After(fensterFrist)
-	for range g.fenster {
+	for offen := len(g.fenster); offen > 0; {
 		select {
 		case <-g.zu:
+			offen--
+		case <-takt.C:
+			for _, f := range g.fenster {
+				f.w.Invalidate() // auf geschlossenen Fenstern wirkungslos
+			}
 		case <-frist:
 			diagnose("Fenster nicht in %v geschlossen", fensterFrist)
 			return e.OverlayErgebnis, e.err

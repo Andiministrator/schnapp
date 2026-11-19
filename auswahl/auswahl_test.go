@@ -286,6 +286,9 @@ func TestLetzterRechteUndOrt(t *testing.T) {
 	if err := SpeichereLetzten("", Letzter{Monitor: "x", Groesse: image.Pt(2, 2), Bereich: image.Rect(0, 0, 1, 1)}); !errors.Is(err, ErrKeinZustandsordner) {
 		t.Errorf("ohne Pfad: %v", err)
 	}
+	if _, err := LadeLetzten(""); !errors.Is(err, ErrKeinZustandsordner) {
+		t.Errorf("Laden ohne Pfad (F-100): %v", err)
+	}
 	ordner := filepath.Join(t.TempDir(), "schnapp")
 	if err := os.Mkdir(ordner, 0o755); err != nil {
 		t.Fatal(err)

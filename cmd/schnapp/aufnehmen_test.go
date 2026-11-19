@@ -269,3 +269,18 @@ func TestAblegenUndQuelleScheitern(t *testing.T) {
 		t.Errorf("Quelle: Code %d, fehler %q", code, fehler)
 	}
 }
+
+// F-100: Ohne Zustandsordner sagt --repeat das, statt zu einem --region zu raten; das Merken warnt übersetzbar.
+func TestOhneZustandsordner(t *testing.T) {
+	sprache.Setze(nil)
+	l := neuerLauf(t)
+	l.an.letzterPfad = ""
+	if code, _, fehler := l.fuehre(Auftrag{Modus: ModusWiederholen}); code != exitFehler || !strings.Contains(fehler, "No state directory") {
+		t.Errorf("--repeat: Code %d, fehler %q", code, fehler)
+	}
+	l.overlayErg = oberflaeche.OverlayErgebnis{Monitor: 0, Bereich: image.Rect(0, 0, 2, 2)}
+	code, _, fehler := l.fuehre(Auftrag{Modus: ModusBereich})
+	if code != exitOK || !strings.Contains(fehler, "Could not remember the area for --repeat: no state directory") {
+		t.Errorf("merken: Code %d, fehler %q", code, fehler)
+	}
+}
