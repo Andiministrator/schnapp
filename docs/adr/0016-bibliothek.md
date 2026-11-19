@@ -49,3 +49,14 @@ Schlagworte). Aufnahmen zeigen oft Vertrauliches. SQLite bräuchte cgo (ADR-0011
 - **Rechte:** auch schon vorhandene eigene Ordner (Ablage, Index, Vorschau) werden auf 0700 gebracht (F-55); Bilder-
   und Papierkorb-Ordner des Nutzers bleiben unberührt.
 - Offen: F-48 (zwei Prozesse gleichzeitig), schneller Neuaufbau nur aus `snAP` (Karte #45).
+
+## Nachtrag 2 (19.11.2026): Wann aufgeräumt wird (F-88)
+
+**Status:** Akzeptiert (Andi, 19.11.2026: „ja“).
+
+Das automatische Aufräumen läuft, wenn Schnapp zum Aufnehmen startet, **nach dem Speichern** der neuen Aufnahme und
+**höchstens einmal am Tag**; den Zeitpunkt des letzten Laufs merkt sich Schnapp im Zustandsordner
+(`$XDG_STATE_HOME/schnapp/`, wie der letzte Bereich). Kein Timer, kein Hintergrunddienst. Einstellungen
+`[library] cleanup` und `cleanup-days` (ADR-0018). Scheitert das Aufräumen, gibt es nur eine Warnung — die Aufnahme ist
+dann schon gespeichert. Umsetzung: Karte #54.
+
