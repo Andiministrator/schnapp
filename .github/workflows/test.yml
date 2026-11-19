@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  # Wurzelmodul (Programm, oberflaeche, sprache, po) gegen das gepatchte Gio (cgo, nur Wayland)
+  # Wurzelmodul (Programm, ui, i18n, po) gegen das gepatchte Gio (cgo, nur Wayland)
   wurzel:
     runs-on: ubuntu-latest
     env:
@@ -41,27 +41,27 @@ jobs:
       - run: go vet ./...
       - run: go test ./...
 
-  # Gepatchtes Gio (ADR-0015): extern/gio muss genau Gio + extern/gio-ausgabe.patch sein.
+  # Gepatchtes Gio (ADR-0015): third_party/gio muss genau Gio + third_party/gio-ausgabe.patch sein.
   gio-patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: prototyp/go.mod
-      - run: extern/gio-patch.sh pruefen
+          go-version-file: prototype/go.mod
+      - run: third_party/gio-patch.sh pruefen
 
   # Prototyp gegen das gepatchte Gio bauen und testen (cgo, nur Wayland).
-  prototyp:
+  prototype:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: prototyp
+        working-directory: prototype
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: prototyp/go.mod
+          go-version-file: prototype/go.mod
       - name: Bibliotheken für Gio (Wayland, EGL, xkbcommon)
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwayland-dev libegl-dev libxkbcommon-dev
       - name: gofmt

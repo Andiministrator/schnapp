@@ -12,12 +12,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Andiministrator/schnapp/aufnahme"
-	"github.com/Andiministrator/schnapp/auswahl"
-	"github.com/Andiministrator/schnapp/dokument"
-	"github.com/Andiministrator/schnapp/einstellungen"
-	"github.com/Andiministrator/schnapp/oberflaeche"
-	"github.com/Andiministrator/schnapp/sprache"
+	"github.com/Andiministrator/schnapp/capture"
+	"github.com/Andiministrator/schnapp/document"
+	"github.com/Andiministrator/schnapp/i18n"
+	"github.com/Andiministrator/schnapp/selection"
+	"github.com/Andiministrator/schnapp/settings"
+	"github.com/Andiministrator/schnapp/ui"
 )
 
 // testbild: jedes Pixel trägt seine Lage (R = x, G = y) und eine Kennung des Monitors (B).
@@ -41,26 +41,26 @@ type quelleAttrappe struct {
 	geschlossen bool
 }
 
-func (q *quelleAttrappe) Bildschirm(_ context.Context, name string, _ aufnahme.Optionen) (*aufnahme.Bild, error) {
+func (q *quelleAttrappe) Bildschirm(_ context.Context, name string, _ capture.Optionen) (*capture.Bild, error) {
 	q.aufrufe = append(q.aufrufe, "Bildschirm "+name)
 	b, ok := q.bilder[name]
 	if !ok {
 		return nil, errors.New("CaptureScreen: Invalid screen requested")
 	}
-	return &aufnahme.Bild{Pixel: b, Skala: 1, Bildschirm: name}, nil
+	return &capture.Bild{Pixel: b, Skala: 1, Bildschirm: name}, nil
 }
 
-func (q *quelleAttrappe) AktiverBildschirm(context.Context, aufnahme.Optionen) (*aufnahme.Bild, error) {
+func (q *quelleAttrappe) AktiverBildschirm(context.Context, capture.Optionen) (*capture.Bild, error) {
 	q.aufrufe = append(q.aufrufe, "Aktiv")
-	return &aufnahme.Bild{Pixel: q.aktiv, Skala: 1}, nil
+	return &capture.Bild{Pixel: q.aktiv, Skala: 1}, nil
 }
 
-func (q *quelleAttrappe) Fenster(context.Context, aufnahme.Optionen) (*aufnahme.Bild, error) {
+func (q *quelleAttrappe) Fenster(context.Context, capture.Optionen) (*capture.Bild, error) {
 	q.aufrufe = append(q.aufrufe, "Fenster")
 	if q.fensterErr != nil {
 		return nil, q.fensterErr
 	}
-	return &aufnahme.Bild{Pixel: q.fenster, Skala: 1}, nil
+	return &capture.Bild{Pixel: q.fenster, Skala: 1}, nil
 }
 
 func (q *quelleAttrappe) Close() error { q.geschlossen = true; return nil }
@@ -68,10 +68,10 @@ func (q *quelleAttrappe) Close() error { q.geschlossen = true; return nil }
 type lauf struct {
 	q          *quelleAttrappe
 	an         anschluesse
-	overlayMod []auswahl.Modus
-	overlayErg oberflaeche.OverlayErgebnis
+	overlayMod []selection.Modus
+	overlayErg ui.OverlayErgebnis
 	overlayErr error
-	abgelegt   []*dokument.Dokument
+	abgelegt   []*document.Dokument
 	ablegenErr error
 }
 
@@ -82,18 +82,18 @@ func neuerLauf(t *testing.T) *lauf {
 		fenster: testbild(2, 2, 4),
 	}}
 	l.an = anschluesse{
-		quelle: func() (aufnahme.Quelle, error) { return l.q, nil },
-		monitore: func() ([]oberflaeche.Monitor, error) {
-			return []oberflaeche.Monitor{{Name: "A", Breite: 4, Hoehe: 3}, {Name: "B", Breite: 6, Hoehe: 4}}, nil
+		quelle: func() (capture.Quelle, error) { return l.q, nil },
+		monitore: func() ([]ui.Monitor, error) {
+			return []ui.Monitor{{Name: "A", Breite: 4, Hoehe: 3}, {Name: "B", Breite: 6, Hoehe: 4}}, nil
 		},
-		overlay: func(b []oberflaeche.MonitorBild, m auswahl.Modus) (oberflaeche.OverlayErgebnis, error) {
+		overlay: func(b []ui.MonitorBild, m selection.Modus) (ui.OverlayErgebnis, error) {
 			l.overlayMod = append(l.overlayMod, m)
 			if len(b) != 2 || b[0].Name != "A" || b[1].Name != "B" {
 				t.Errorf("Overlay bekommt %d Bilder", len(b))
 			}
 			return l.overlayErg, l.overlayErr
 		},
-		ablegen: func(d *dokument.Dokument) (string, error) {
+		ablegen: func(d *document.Dokument) (string, error) {
 			if l.ablegenErr != nil {
 				return "", l.ablegenErr
 			}
@@ -132,9 +132,9 @@ func pruefeAbgelegt(t *testing.T, l *lauf, kennung uint8, bereich image.Rectangl
 }
 
 func TestBereichUeberOverlay(t *testing.T) {
-	sprache.Setze(nil)
+	i18n.Setze(nil)
 	l := neuerLauf(t)
-	l.overlayErg = oberflaeche.OverlayErgebnis{Monitor: 1, Bereich: image.Rect(1, 1, 4, 3)}
+	l.overlayErg = ui.OverlayErgebnis{Monitor: 1, Bereich: image.Rect(1, 1, 4, 3)}
 	code, aus, fehler := l.fuehre(Auftrag{Modus: ModusBereich})
 	if code != exitOK || aus != "/ablage/2026-11/datei.png\n" || fehler != "" {
 		t.Fatalf("Code %d, aus %q, fehler %q", code, aus, fehler)
@@ -142,37 +142,37 @@ func TestBereichUeberOverlay(t *testing.T) {
 	if strings.Join(l.q.aufrufe, ",") != "Bildschirm A,Bildschirm B" || !l.q.geschlossen {
 		t.Errorf("erst alle Monitore aufnehmen, dann wählen: %v, geschlossen %v", l.q.aufrufe, l.q.geschlossen)
 	}
-	if len(l.overlayMod) != 1 || l.overlayMod[0] != auswahl.ModusBereich {
+	if len(l.overlayMod) != 1 || l.overlayMod[0] != selection.ModusBereich {
 		t.Errorf("Overlay-Modus %v", l.overlayMod)
 	}
 	pruefeAbgelegt(t, l, 2, image.Rect(1, 1, 4, 3))
-	letzter, err := auswahl.LadeLetzten(l.an.letzterPfad)
-	if err != nil || letzter != (auswahl.Letzter{Monitor: "B", Groesse: image.Pt(6, 4), Bereich: image.Rect(1, 1, 4, 3)}) {
+	letzter, err := selection.LadeLetzten(l.an.letzterPfad)
+	if err != nil || letzter != (selection.Letzter{Monitor: "B", Groesse: image.Pt(6, 4), Bereich: image.Rect(1, 1, 4, 3)}) {
 		t.Errorf("letzter Bereich %+v, %v", letzter, err)
 	}
 }
 
 func TestBildschirmPerKlickUndAbbruch(t *testing.T) {
 	l := neuerLauf(t)
-	l.overlayErr = oberflaeche.ErrAbgebrochen
-	code, aus, fehler := l.fuehre(Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Wahl: einstellungen.WahlKlick}})
+	l.overlayErr = ui.ErrAbgebrochen
+	code, aus, fehler := l.fuehre(Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Wahl: settings.WahlKlick}})
 	if code != exitAbgebrochen || aus != "" || fehler != "" {
 		t.Fatalf("Esc: Code %d, aus %q, fehler %q", code, aus, fehler)
 	}
-	if len(l.overlayMod) != 1 || l.overlayMod[0] != auswahl.ModusMonitor {
+	if len(l.overlayMod) != 1 || l.overlayMod[0] != selection.ModusMonitor {
 		t.Errorf("--screen mit pick muss das Overlay im Monitor-Modus öffnen: %v", l.overlayMod)
 	}
 	if len(l.abgelegt) != 0 {
 		t.Error("nach Abbruch nichts ablegen")
 	}
-	if _, err := auswahl.LadeLetzten(l.an.letzterPfad); !errors.Is(err, auswahl.ErrKeinLetzter) {
+	if _, err := selection.LadeLetzten(l.an.letzterPfad); !errors.Is(err, selection.ErrKeinLetzter) {
 		t.Error("nach Abbruch keinen Bereich merken")
 	}
 }
 
 func TestOverlayErgebnisAusserhalb(t *testing.T) {
-	sprache.Setze(nil)
-	for _, e := range []oberflaeche.OverlayErgebnis{
+	i18n.Setze(nil)
+	for _, e := range []ui.OverlayErgebnis{
 		{Monitor: 2, Bereich: image.Rect(0, 0, 1, 1)},
 		{Monitor: 0, Bereich: image.Rect(0, 0, 5, 1)}, // A ist nur 4 breit
 		{Monitor: 0, Bereich: image.Rectangle{}},
@@ -188,12 +188,12 @@ func TestOverlayErgebnisAusserhalb(t *testing.T) {
 
 func TestBildschirmMitNamen(t *testing.T) {
 	l := neuerLauf(t)
-	code, _, _ := l.fuehre(Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Name: "A", Wahl: einstellungen.WahlAlle}})
+	code, _, _ := l.fuehre(Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Name: "A", Wahl: settings.WahlAlle}})
 	if code != exitOK || strings.Join(l.q.aufrufe, ",") != "Bildschirm A" || len(l.overlayMod) != 0 {
 		t.Fatalf("Name geht vor der Einstellung: Code %d, Aufrufe %v, Overlay %v", code, l.q.aufrufe, l.overlayMod)
 	}
 	pruefeAbgelegt(t, l, 1, image.Rect(0, 0, 4, 3))
-	if letzter, err := auswahl.LadeLetzten(l.an.letzterPfad); err != nil || letzter.Monitor != "A" {
+	if letzter, err := selection.LadeLetzten(l.an.letzterPfad); err != nil || letzter.Monitor != "A" {
 		t.Errorf("letzter Bereich %+v, %v", letzter, err)
 	}
 	// Unbekannter Name: Fehler von KWin, nichts abgelegt.
@@ -204,16 +204,16 @@ func TestBildschirmMitNamen(t *testing.T) {
 }
 
 func TestBildschirmUnterZeigerUndAlle(t *testing.T) {
-	sprache.Setze(nil)
+	i18n.Setze(nil)
 	l := neuerLauf(t)
-	code, _, _ := l.fuehre(Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Wahl: einstellungen.WahlZeiger}})
+	code, _, _ := l.fuehre(Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Wahl: settings.WahlZeiger}})
 	if code != exitOK || strings.Join(l.q.aufrufe, ",") != "Aktiv" || len(l.overlayMod) != 0 {
 		t.Fatalf("pointer: Code %d, Aufrufe %v", code, l.q.aufrufe)
 	}
 	pruefeAbgelegt(t, l, 3, image.Rect(0, 0, 5, 5))
 
 	l = neuerLauf(t)
-	code, _, fehler := l.fuehre(Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Wahl: einstellungen.WahlAlle}})
+	code, _, fehler := l.fuehre(Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Wahl: settings.WahlAlle}})
 	if code != exitFehler || !strings.Contains(fehler, "all monitors") || len(l.q.aufrufe) != 0 {
 		t.Errorf("all: Code %d, fehler %q, Aufrufe %v", code, fehler, l.q.aufrufe)
 	}
@@ -225,24 +225,24 @@ func TestFenster(t *testing.T) {
 		t.Fatalf("Code %d", code)
 	}
 	pruefeAbgelegt(t, l, 4, image.Rect(0, 0, 2, 2))
-	if _, err := auswahl.LadeLetzten(l.an.letzterPfad); !errors.Is(err, auswahl.ErrKeinLetzter) {
+	if _, err := selection.LadeLetzten(l.an.letzterPfad); !errors.Is(err, selection.ErrKeinLetzter) {
 		t.Error("Fensteraufnahme merkt keinen Bereich (--repeat wiederholt Bereiche)")
 	}
 	l = neuerLauf(t)
-	l.q.fensterErr = aufnahme.ErrAbgebrochen
+	l.q.fensterErr = capture.ErrAbgebrochen
 	if code, aus, fehler := l.fuehre(Auftrag{Modus: ModusFenster}); code != exitAbgebrochen || aus != "" || fehler != "" {
 		t.Errorf("abgebrochene Fensterwahl: Code %d, aus %q, fehler %q", code, aus, fehler)
 	}
 }
 
 func TestWiederholen(t *testing.T) {
-	sprache.Setze(nil)
+	i18n.Setze(nil)
 	l := neuerLauf(t)
 	code, _, fehler := l.fuehre(Auftrag{Modus: ModusWiederholen})
 	if code != exitFehler || !strings.Contains(fehler, "No area to repeat yet") || len(l.q.aufrufe) != 0 {
 		t.Fatalf("ohne letzten Bereich: Code %d, fehler %q, Aufrufe %v", code, fehler, l.q.aufrufe)
 	}
-	if err := auswahl.SpeichereLetzten(l.an.letzterPfad, auswahl.Letzter{Monitor: "B", Groesse: image.Pt(6, 4), Bereich: image.Rect(2, 0, 5, 2)}); err != nil {
+	if err := selection.SpeichereLetzten(l.an.letzterPfad, selection.Letzter{Monitor: "B", Groesse: image.Pt(6, 4), Bereich: image.Rect(2, 0, 5, 2)}); err != nil {
 		t.Fatal(err)
 	}
 	if code, _, _ = l.fuehre(Auftrag{Modus: ModusWiederholen}); code != exitOK || strings.Join(l.q.aufrufe, ",") != "Bildschirm B" {
@@ -257,14 +257,14 @@ func TestWiederholen(t *testing.T) {
 }
 
 func TestAblegenUndQuelleScheitern(t *testing.T) {
-	sprache.Setze(nil)
+	i18n.Setze(nil)
 	l := neuerLauf(t)
 	l.ablegenErr = errors.New("Platte voll")
 	if code, aus, fehler := l.fuehre(Auftrag{Modus: ModusFenster}); code != exitFehler || aus != "" || !strings.Contains(fehler, "Could not save the screenshot: Platte voll") {
 		t.Errorf("Ablegen: Code %d, aus %q, fehler %q", code, aus, fehler)
 	}
 	l = neuerLauf(t)
-	l.an.quelle = func() (aufnahme.Quelle, error) { return nil, errors.New("kein Session-Bus") }
+	l.an.quelle = func() (capture.Quelle, error) { return nil, errors.New("kein Session-Bus") }
 	if code, _, fehler := l.fuehre(Auftrag{Modus: ModusBereich}); code != exitFehler || !strings.Contains(fehler, "kein Session-Bus") {
 		t.Errorf("Quelle: Code %d, fehler %q", code, fehler)
 	}
@@ -272,13 +272,13 @@ func TestAblegenUndQuelleScheitern(t *testing.T) {
 
 // F-100: Ohne Zustandsordner sagt --repeat das, statt zu einem --region zu raten; das Merken warnt übersetzbar.
 func TestOhneZustandsordner(t *testing.T) {
-	sprache.Setze(nil)
+	i18n.Setze(nil)
 	l := neuerLauf(t)
 	l.an.letzterPfad = ""
 	if code, _, fehler := l.fuehre(Auftrag{Modus: ModusWiederholen}); code != exitFehler || !strings.Contains(fehler, "No state directory") {
 		t.Errorf("--repeat: Code %d, fehler %q", code, fehler)
 	}
-	l.overlayErg = oberflaeche.OverlayErgebnis{Monitor: 0, Bereich: image.Rect(0, 0, 2, 2)}
+	l.overlayErg = ui.OverlayErgebnis{Monitor: 0, Bereich: image.Rect(0, 0, 2, 2)}
 	code, _, fehler := l.fuehre(Auftrag{Modus: ModusBereich})
 	if code != exitOK || !strings.Contains(fehler, "Could not remember the area for --repeat: no state directory") {
 		t.Errorf("merken: Code %d, fehler %q", code, fehler)

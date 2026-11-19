@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="marke/logo/svg/schnapp-logo-dunkel.svg">
-    <img alt="schnapp — screenshots for Linux" src="marke/logo/svg/schnapp-logo-hell.svg" width="520">
+    <source media="(prefers-color-scheme: dark)" srcset="brand/logo/svg/schnapp-logo-dunkel.svg">
+    <img alt="schnapp — screenshots for Linux" src="brand/logo/svg/schnapp-logo-hell.svg" width="520">
   </picture>
 </p>
 
@@ -42,17 +42,17 @@ Vorhanden ist:
 
 | Pfad | Was es ist | Prüfen |
 |---|---|---|
-| `.` (Wurzel) | Go-Modul `github.com/Andiministrator/schnapp`: das Programm `cmd/schnapp` (bisher nur Optionen), `aufnahme` (Aufnahme über KWin), `dokument` (Ebenen, Zuschnitt, Schwärzen, Rückgängig), `datei` (Arbeitsdatei und Exporte), `bibliothek` (Bibliothek), `oberflaeche` (Schicht zu Gio), `sprache` (Sprachwahl, gettext-PO-Leser) und `po` (eingebettete Übersetzungen, `po/de.po`); `data/` enthält die Vorlage der Desktop-Datei | `go vet ./... && go test ./...` (mit `GOFLAGS` wie oben) |
+| `.` (Wurzel) | Go-Modul `github.com/Andiministrator/schnapp`: das Programm `cmd/schnapp` (bisher nur Optionen), `capture` (Aufnahme über KWin), `document` (Ebenen, Zuschnitt, Schwärzen, Rückgängig), `fileformat` (Arbeitsdatei und Exporte), `library` (Bibliothek), `ui` (Schicht zu Gio), `i18n` (Sprachwahl, gettext-PO-Leser) und `po` (eingebettete Übersetzungen, `po/de.po`); `data/` enthält die Vorlage der Desktop-Datei | `go vet ./... && go test ./...` (mit `GOFLAGS` wie oben) |
 | `zeichnen/` | Go-Modul `github.com/Andiministrator/schnapp/zeichnen`: SVG lesen, Rasterer mit Kantenglättung, Rechenhilfen (nur Standardbibliothek) | `cd zeichnen && go vet ./... && go test ./...` |
-| `marke/` | Logo, Farben und Corporate Design ([`marke/corporate-design.md`](marke/corporate-design.md), mit PDF) | `python3 marke/werkzeug/paket.py` erzeugt die Logo-Dateien neu |
-| `extern/gio/` | Gio mit unserem Patch (Vollbild auf gewähltem Monitor, gebrochene Skalierung), eingebunden per `replace` in `go.mod` | `extern/gio-patch.sh pruefen`, siehe [`extern/README.md`](extern/README.md) |
-| `prototyp/` | Wegwerf-Prototyp, der Gio geprüft hat (braucht Go ≥ 1.27, cgo, `libwayland-client`, `libwayland-egl`, `libwayland-cursor`, `libEGL`, `libxkbcommon`) | `prototyp/bauen.sh`, siehe [`prototyp/README.md`](prototyp/README.md) |
+| `brand/` | Logo, Farben und Corporate Design ([`brand/corporate-design.md`](brand/corporate-design.md), mit PDF) | `python3 brand/werkzeug/paket.py` erzeugt die Logo-Dateien neu |
+| `third_party/gio/` | Gio mit unserem Patch (Vollbild auf gewähltem Monitor, gebrochene Skalierung), eingebunden per `replace` in `go.mod` | `third_party/gio-patch.sh pruefen`, siehe [`third_party/README.md`](third_party/README.md) |
+| `prototype/` | Wegwerf-Prototyp, der Gio geprüft hat (braucht Go ≥ 1.27, cgo, `libwayland-client`, `libwayland-egl`, `libwayland-cursor`, `libEGL`, `libxkbcommon`) | `prototype/bauen.sh`, siehe [`prototype/README.md`](prototype/README.md) |
 
 ## Dokumentation
 
 Die Dokumente für Nutzer und Beitragende (diese README, `CONTRIBUTING.de.md`) gibt es auf Englisch und Deutsch. Die
 Arbeitsdokumente des Projekts — Anforderungen, Architektur-Entscheidungen (`docs/adr/`), QA-Listen, Befunde,
-Recherchen (`knowledge/`) und das Corporate Design (`marke/`) — sind auf Deutsch.
+Recherchen (`knowledge/`) und das Corporate Design (`brand/`) — sind auf Deutsch.
 
 ## Hinweis zu KI
 
@@ -62,4 +62,4 @@ Prüfung des Maintainers geschrieben. Entscheidungen stehen in `docs/adr/`. Sieh
 ## Lizenz
 
 GPL-3.0-or-later, siehe [`LICENSE`](LICENSE). Das Logo verwendet Umrisse von Open Sans (SIL Open Font License 1.1). Fremder Code behält seine Lizenz: Der Gio-Patch
-(`extern/gio-ausgabe.patch`, angewendet in `extern/gio/`) gilt für Gio (Unlicense OR MIT) und enthält aus wayland-protocols erzeugten Code (MIT).
+(`third_party/gio-ausgabe.patch`, angewendet in `third_party/gio/`) gilt für Gio (Unlicense OR MIT) und enthält aus wayland-protocols erzeugten Code (MIT).

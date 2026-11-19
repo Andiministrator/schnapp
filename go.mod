@@ -17,5 +17,5 @@ require (
 	golang.org/x/text v0.32.0 // indirect
 )
 
-// Gepatchtes Gio im Repo (ADR-0015, extern/gio-patch.sh).
-replace gioui.org => ./extern/gio
+// Gepatchtes Gio im Repo (ADR-0015, third_party/gio-patch.sh).
+replace gioui.org => ./third_party/gio

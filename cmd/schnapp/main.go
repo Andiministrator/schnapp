@@ -11,11 +11,11 @@ import (
 	"io"
 	"os"
 
-	"github.com/Andiministrator/schnapp/bibliothek"
-	"github.com/Andiministrator/schnapp/einstellungen"
-	"github.com/Andiministrator/schnapp/oberflaeche"
+	"github.com/Andiministrator/schnapp/i18n"
+	"github.com/Andiministrator/schnapp/library"
 	"github.com/Andiministrator/schnapp/po"
-	"github.com/Andiministrator/schnapp/sprache"
+	"github.com/Andiministrator/schnapp/settings"
+	"github.com/Andiministrator/schnapp/ui"
 )
 
 // version wird beim Bau gesetzt: go build -ldflags "-X main.version=0.1.0".
@@ -30,27 +30,27 @@ const (
 )
 
 func main() {
-	// Scheitert das Laden der Sprache, bleibt Englisch aktiv; das Programm läuft trotzdem (sprache.Starte).
-	_, _ = sprache.Starte(po.Dateien, "")
+	// Scheitert das Laden der Sprache, bleibt Englisch aktiv; das Programm läuft trotzdem (i18n.Starte).
+	_, _ = i18n.Starte(po.Dateien, "")
 	// Gio braucht die Hauptschleife auf dem Haupt-Goroutine, sobald das Overlay ein Fenster öffnet.
-	oberflaeche.Starte(func() int {
-		return laufe(os.Args[1:], os.Stdout, os.Stderr, oberflaeche.Monitore, einstellungen.Lade, echteAnschluesse().Ausfuehren)
+	ui.Starte(func() int {
+		return laufe(os.Args[1:], os.Stdout, os.Stderr, ui.Monitore, settings.Lade, echteAnschluesse().Ausfuehren)
 	})
 }
 
-// Ladefunktion lädt die Einstellungen und liefert die Warnungen dazu (einstellungen.Lade); sie kommt von außen, damit
+// Ladefunktion lädt die Einstellungen und liefert die Warnungen dazu (settings.Lade); sie kommt von außen, damit
 // der Test ohne echte Datei auskommt.
-type Ladefunktion func() (einstellungen.Einstellungen, []string)
+type Ladefunktion func() (settings.Einstellungen, []string)
 
 // laufe führt einen Aufruf aus und liefert den Exit-Code. Die Monitorabfrage und das Laden der Einstellungen kommen
 // von außen, damit der Test ohne Wayland und ohne echte Datei auskommt. --version, --help und --list-screens lesen
 // die Einstellungsdatei nicht (und warnen nicht über sie); nur die Aufnahme-Modi laden sie, geben jede Warnung als
 // eine Zeile auf fehler aus und machen weiter (ADR-0018).
-func laufe(args []string, aus, fehler io.Writer, monitore func() ([]oberflaeche.Monitor, error), lade Ladefunktion, ausfuehren Ausfuehrung) int {
+func laufe(args []string, aus, fehler io.Writer, monitore func() ([]ui.Monitor, error), lade Ladefunktion, ausfuehren Ausfuehrung) int {
 	a, err := Auswerten(args)
 	if err != nil {
 		fmt.Fprintln(fehler, err)
-		fmt.Fprintln(fehler, sprache.T("Try --help for the available options."))
+		fmt.Fprintln(fehler, i18n.T("Try --help for the available options."))
 		return exitAufruf
 	}
 	switch a.Modus {
@@ -58,7 +58,7 @@ func laufe(args []string, aus, fehler io.Writer, monitore func() ([]oberflaeche.
 		fmt.Fprint(aus, hilfe())
 		return exitOK
 	case ModusVersion:
-		fmt.Fprintf(aus, sprache.T("Schnapp %s")+"\n", version)
+		fmt.Fprintf(aus, i18n.T("Schnapp %s")+"\n", version)
 		return exitOK
 	case ModusMonitorliste:
 		return gibMonitoreAus(aus, fehler, monitore)
@@ -78,18 +78,18 @@ type Auftrag struct {
 	Ziel Bildschirmziel
 	// Aufraeumen ist [library] cleanup/cleanup-days; es läuft nach dem Speichern, höchstens einmal am Tag
 	// (ADR-0016 Nachtrag 2).
-	Aufraeumen bibliothek.Einstellung
+	Aufraeumen library.Einstellung
 }
 
 // Bildschirmziel sagt, welcher Monitor aufgenommen wird.
 type Bildschirmziel struct {
-	Name string                       // --screen=NAME; leer = laut Einstellung
-	Wahl einstellungen.Bildschirmwahl // nur bei leerem Namen maßgeblich
+	Name string                  // --screen=NAME; leer = laut Einstellung
+	Wahl settings.Bildschirmwahl // nur bei leerem Namen maßgeblich
 }
 
 // plane löst den Aufruf mit den Einstellungen auf. Vorrang: Kommandozeile vor Datei vor Voreinstellung
 // (ADR-0018): --screen=NAME ignoriert [capture] screen, --screen ohne Wert folgt ihr.
-func plane(a Aufruf, e einstellungen.Einstellungen) Auftrag {
+func plane(a Aufruf, e settings.Einstellungen) Auftrag {
 	t := Auftrag{Modus: a.Modus, Aufraeumen: e.Bibliothek}
 	if a.Modus == ModusBildschirm {
 		if a.Bildschirm != "" {
@@ -103,33 +103,33 @@ func plane(a Aufruf, e einstellungen.Einstellungen) Auftrag {
 
 // hilfe liefert den Hilfetext.
 func hilfe() string {
-	return sprache.T("Usage: schnapp [option]") + "\n\n" +
-		sprache.T("Take a screenshot. Without an option, you select an area (--region).") + "\n\n" +
-		"  --region       " + sprache.T("Select an area") + "\n" +
-		"  --screen       " + sprache.T("Capture a monitor, as set in the settings (default: pick by click)") + "\n" +
-		"  --screen=NAME  " + sprache.T("Capture the monitor NAME") + "\n" +
-		"  --list-screens " + sprache.T("List the monitors") + "\n" +
-		"  --window       " + sprache.T("Select a window") + "\n" +
-		"  --repeat       " + sprache.T("Repeat the last area") + "\n" +
-		"  -V, --version  " + sprache.T("Show the version") + "\n" +
-		"  -h, --help     " + sprache.T("Show this help") + "\n"
+	return i18n.T("Usage: schnapp [option]") + "\n\n" +
+		i18n.T("Take a screenshot. Without an option, you select an area (--region).") + "\n\n" +
+		"  --region       " + i18n.T("Select an area") + "\n" +
+		"  --screen       " + i18n.T("Capture a monitor, as set in the settings (default: pick by click)") + "\n" +
+		"  --screen=NAME  " + i18n.T("Capture the monitor NAME") + "\n" +
+		"  --list-screens " + i18n.T("List the monitors") + "\n" +
+		"  --window       " + i18n.T("Select a window") + "\n" +
+		"  --repeat       " + i18n.T("Repeat the last area") + "\n" +
+		"  -V, --version  " + i18n.T("Show the version") + "\n" +
+		"  -h, --help     " + i18n.T("Show this help") + "\n"
 }
 
 // gibMonitoreAus schreibt die Monitorliste nach aus.
-func gibMonitoreAus(aus, fehler io.Writer, monitore func() ([]oberflaeche.Monitor, error)) int {
+func gibMonitoreAus(aus, fehler io.Writer, monitore func() ([]ui.Monitor, error)) int {
 	liste, err := monitore()
 	if err != nil {
-		fmt.Fprintf(fehler, sprache.T("Could not query the monitors: %v")+"\n", err)
+		fmt.Fprintf(fehler, i18n.T("Could not query the monitors: %v")+"\n", err)
 		return exitFehler
 	}
 	if len(liste) == 0 {
-		fmt.Fprintln(fehler, sprache.T("No monitors found."))
+		fmt.Fprintln(fehler, i18n.T("No monitors found."))
 		return exitFehler
 	}
-	fmt.Fprintf(aus, sprache.N("%d monitor found:", "%d monitors found:", len(liste))+"\n", len(liste))
+	fmt.Fprintf(aus, i18n.N("%d monitor found:", "%d monitors found:", len(liste))+"\n", len(liste))
 	for _, m := range liste {
 		// Ohne Skala: die ganzzahlige Pufferskala (2 bei 1,6) führte in die Irre (F-57).
-		fmt.Fprintf(aus, sprache.T("  %s: %d × %d pixels")+"\n", m.Name, m.Breite, m.Hoehe)
+		fmt.Fprintf(aus, i18n.T("  %s: %d × %d pixels")+"\n", m.Name, m.Breite, m.Hoehe)
 	}
 	return exitOK
 }

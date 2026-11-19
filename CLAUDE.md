@@ -73,7 +73,8 @@ QA-Checks, Kritiker-Läufe und aufwendige Analysen werden als **Sub-Agents** aus
 
 Deutsch für projektinterne Doku, Kommentare, Commits und ADRs (ADR-0002). **Oberfläche und Nutzer-Doku zweisprachig**
 (ADR-0014): Oberflächentexte englisch als Ausgangssprache, Übersetzung Deutsch über PO-Dateien, Sprache vom System,
-sonst Englisch; `README.md`/`CONTRIBUTING.md` englisch, deutsche Fassung als `*.de.md`, beide im selben Commit pflegen. Go-Bezeichner (Pakete, Typen,
+sonst Englisch; `README.md`/`CONTRIBUTING.md` englisch, deutsche Fassung als `*.de.md`, beide im selben Commit pflegen. **Verzeichnisse und Go-Pakete sind englisch**
+(ADR-0019; `zeichnen` folgt nach Abstimmung, Karte #57). Go-Bezeichner (Typen,
 Funktionen) dürfen deutsch oder englisch sein, innerhalb eines Pakets einheitlich; Fremd-APIs (Gio, KWin, D-Bus)
 behalten ihre Namen. Die Oberfläche ist von Anfang an übersetzbar anzulegen (Texte nicht im Code verstreuen), weil das
 Repo öffentlich wird.
@@ -104,19 +105,19 @@ Herkunft: Anforderungen und Entscheidungen des Maintainers vom 18.11.2026, über
 
 ## Architektur
 
-Produktcode (Stand 19.11.2026, Sprint 4): `aufnahme`, `dokument`, `datei`, `bibliothek`, `einstellungen`, `auswahl`
-und das Overlay in `oberflaeche` stehen mit Tests; Schnapp nimmt auf und legt in der Bibliothek ab, der Editor fehlt
-noch. Daneben der Wegwerf-Prototyp `prototyp/`. Schichten:
+Produktcode (Stand 19.11.2026, Sprint 4): `capture`, `document`, `fileformat`, `library`, `settings`, `selection`
+und das Overlay in `ui` stehen mit Tests; Schnapp nimmt auf und legt in der Bibliothek ab, der Editor fehlt
+noch. Daneben der Wegwerf-Prototyp `prototype/`. Schichten:
 
-- **aufnahme** — Schnittstelle + KWin-Umsetzung (D-Bus), später Portal.
-- **dokument** — Ebenenmodell (Pixelebene, Vektorebenen, Original, Stauchangaben), Rückgängig-Verlauf.
-- **datei** — Arbeitsdatei PNG mit Blöcken `snAP`/`snAO` lesen/schreiben; Exporte SVG, PNG/JPG (PDF noch offen).
+- **capture** — Schnittstelle + KWin-Umsetzung (D-Bus), später Portal.
+- **document** — Ebenenmodell (Pixelebene, Vektorebenen, Original, Stauchangaben), Rückgängig-Verlauf.
+- **fileformat** — Arbeitsdatei PNG mit Blöcken `snAP`/`snAO` lesen/schreiben; Exporte SVG, PNG/JPG (PDF noch offen).
 - **zeichnen** — die aus einem Schwesterprojekt übernommenen Pakete `svg`, `raster`, `geo` (eigenes Go-Modul, das
   das Schwesterprojekt wieder einbindet, ADR-0012), ergänzt um Schrift, `<image>`, Weichzeichnen, Verpixeln.
-- **bibliothek** — Autospeichern, Vorschau, Suche, Schlagworte.
-- **einstellungen** — `settings.ini` lesen (ADR-0018); Warnungen statt Abbruch.
-- **auswahl** — Logik des Overlays ohne Gio (Abbildung, Bereich, Monitor per Klick, Lupe, letzter Bereich).
-- **oberflaeche** — Gio: Vollbild-Overlay zur Auswahl (fertig), Editor, Bibliothek.
+- **library** — Autospeichern, Vorschau, Suche, Schlagworte.
+- **settings** — `settings.ini` lesen (ADR-0018); Warnungen statt Abbruch.
+- **selection** — Logik des Overlays ohne Gio (Abbildung, Bereich, Monitor per Klick, Lupe, letzter Bereich).
+- **ui** — Gio: Vollbild-Overlay zur Auswahl (fertig), Editor, Bibliothek.
 
 Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung) — ADR-0003 Nachtrag 2.
 
@@ -125,30 +126,30 @@ Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung) — ADR
 - **Zeichenpakete** (eigenes Modul `github.com/Andiministrator/schnapp/zeichnen`, ADR-0012):
   `cd zeichnen && go vet ./... && go test ./...`. Ein Schwesterprojekt bindet dieses Modul ein — öffentliche Schnittstellen nur nach
   Abstimmung ändern (wer, steht in `CLAUDE.local.md`).
-- **Gepatchtes Gio** `extern/gio/` (ADR-0015): eigenes Modul, eingebunden per `replace gioui.org => …/extern/gio`.
-  Änderungen dort, dann `extern/gio-patch.sh erzeugen` (Patch im selben Commit); Prüfung `extern/gio-patch.sh pruefen`.
-- **Prototyp** `prototyp/` (Wegwerf-Code, eigenes Modul): `prototyp/bauen.sh` baut (`-trimpath`), Tests
-  `cd prototyp && go test -tags novulkan,nox11 ./...`.
-- **Wurzelmodul** `github.com/Andiministrator/schnapp` (bindet Gio per `replace gioui.org => ./extern/gio`, ADR-0015):
+- **Gepatchtes Gio** `third_party/gio/` (ADR-0015): eigenes Modul, eingebunden per `replace gioui.org => …/third_party/gio`.
+  Änderungen dort, dann `third_party/gio-patch.sh erzeugen` (Patch im selben Commit); Prüfung `third_party/gio-patch.sh pruefen`.
+- **Prototyp** `prototype/` (Wegwerf-Code, eigenes Modul): `prototype/bauen.sh` baut (`-trimpath`), Tests
+  `cd prototype && go test -tags novulkan,nox11 ./...`.
+- **Wurzelmodul** `github.com/Andiministrator/schnapp` (bindet Gio per `replace gioui.org => ./third_party/gio`, ADR-0015):
   Gio braucht unter Linux die Build-Tags `novulkan,nox11` (keine Vulkan-Header, nur Wayland) und die cgo-Bibliotheken
   `libwayland-dev libegl-dev libxkbcommon-dev`. Die Tags kommen über die Umgebungsvariable, nicht über `go env -w`:
   `export GOFLAGS=-tags=novulkan,nox11`, dann `go vet ./... && go test ./...`; Programm `go build -trimpath -o schnapp
-  ./cmd/schnapp`. Pakete: `sprache` (Sprachwahl, PO-Leser, `sprache.T/TK/N`), `po` (eingebettete `po/*.po`, ADR-0014
-  Nachtrag 1), `oberflaeche` (Schicht zu Gio; `Starte` hält die Gio-Hauptschleife, `Overlay` je Monitor),
+  ./cmd/schnapp`. Pakete: `i18n` (Sprachwahl, PO-Leser, `i18n.T/TK/N`), `po` (eingebettete `po/*.po`, ADR-0014
+  Nachtrag 1), `ui` (Schicht zu Gio; `Starte` hält die Gio-Hauptschleife, `Overlay` je Monitor),
   `cmd/schnapp` (Argumente `--region` [Voreinstellung], `--screen[=NAME]`, `--list-screens`, `--window`, `--repeat`,
   `--version`, `--help`; `aufnehmen.go` nimmt auf und legt in der Bibliothek ab, Pfad auf stdout, Exit 3 bei Abbruch;
   `--screen` mit `[capture] screen = all` ist noch nicht umgesetzt). Echte Läufe öffnen Vollbild auf allen Monitoren:
   nur nach Rückfrage, mit `go build -race`, Diagnose mit `SCHNAPP_DEBUG=1` (`knowledge/topics/gio-wayland.md`).
-  Oberflächentexte nur als Literal über `sprache.T/TK/N`; der Test verlangt für jeden Text einen fertigen Eintrag in
-  `po/de.po`. `aufnahme` ist die Aufnahmeschicht (`Quelle`, KWin über D-Bus: ScreenShot3/memfd bevorzugt, sonst
+  Oberflächentexte nur als Literal über `i18n.T/TK/N`; der Test verlangt für jeden Text einen fertigen Eintrag in
+  `po/de.po`. `capture` ist die Aufnahmeschicht (`Quelle`, KWin über D-Bus: ScreenShot3/memfd bevorzugt, sonst
   ScreenShot2/Pipe; Tests mit Attrappe, keine echte Aufnahme in `go test`). `data/schnapp.desktop.in` ist die Vorlage der Desktop-Datei (ADR-0017). `tmp/go.mod` trennt `tmp/` vom
-  Wurzelmodul. `bibliothek` ist die Bibliothek (ADR-0016: Ablage `<Bilderordner>/schnapp/<JJJJ-MM>/…png`, Index-Cache
+  Wurzelmodul. `library` ist die Bibliothek (ADR-0016: Ablage `<Bilderordner>/schnapp/<JJJJ-MM>/…png`, Index-Cache
   als JSON-Zeilen, Suche, Aufräumen über den freedesktop-Papierkorb); Tests nur mit eigener Umgebung unter `t.TempDir()`.
 
 ## Marke
 
-Logo, Farben, Schrift und Regeln für Oberfläche und Doku: [`marke/corporate-design.md`](marke/corporate-design.md) —
-verbindlich für alles Sichtbare. Logo-Dateien sind erzeugt (`marke/werkzeug/paket.py`, `cd.py`), nie von Hand ändern.
+Logo, Farben, Schrift und Regeln für Oberfläche und Doku: [`brand/corporate-design.md`](brand/corporate-design.md) —
+verbindlich für alles Sichtbare. Logo-Dateien sind erzeugt (`brand/werkzeug/paket.py`, `cd.py`), nie von Hand ändern.
 
 ## Glossar & Offene Entscheidungen
 
@@ -249,7 +250,7 @@ verbrauchen andere Karten Nummern.
 - **X11-Wege** (xdotool, XGetImage, `import`) — Schnapp ist nur Wayland (ADR-0007).
 - **Schwärzen als Vektorebene über dem Original** — dann steht das Geschwärzte im eingebetteten Original im Klartext.
 - **Neue Python-Werkzeuge im Repo** — Python wird schrittweise entfernt (Andi, 19.11.2026): Logos und Grafiken
-  später mit Schnapp selbst oder per Go erzeugen; bestehende `marke/werkzeug/*.py` nur noch pflegen, bis sie ersetzt
+  später mit Schnapp selbst oder per Go erzeugen; bestehende `brand/werkzeug/*.py` nur noch pflegen, bis sie ersetzt
   sind (Karte im Board). Wegwerf-Einzeiler während der Arbeit bleiben erlaubt, landen aber nie im Repo.
 - **`cgo`-Abhängigkeiten ohne Not** — erschwert Flatpak und Kreuzbau; vorher ADR (für Gio samt Patch: ADR-0003 Nachtrag 2).
 

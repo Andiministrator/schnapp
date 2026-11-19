@@ -17,13 +17,13 @@ muss.
 - **Öffentliches Repo:** keine Kunden-/Firmenbezüge, keine lokalen Pfade, Mailadressen, Hausnetz-Angaben, echten Screenshots; Internes in `CLAUDE.local.md`.
 - **Technik:** Go + Gio mit Patch (ADR-0003 Nachtrag 2, `topics/gio-wayland.md`), nur Wayland, KDE zuerst (ADR-0007),
   Fremdpakete nur mit Nutzen (ADR-0011), cgo nur für Gio. **Kein neues Python** im Repo (wird schrittweise entfernt).
-- **Gestaltung:** `marke/corporate-design.md` ist verbindlich (Farben, Schrift Open Sans, Oberflächen-Regeln);
-  Logo-Dateien sind erzeugt (`marke/werkzeug/`), nie von Hand ändern.
+- **Gestaltung:** `brand/corporate-design.md` ist verbindlich (Farben, Schrift Open Sans, Oberflächen-Regeln);
+  Logo-Dateien sind erzeugt (`brand/werkzeug/`), nie von Hand ändern.
 - **Dateiformat:** PNG mit zwei privaten Blöcken `snAP` (SVG) und `snAO` (Original), ADR-0008 mit Nachträgen 1 und 2 (beide Blöcke Pflicht, Grenzen, Export ohne Weggeschnittenes);
   Schwärzen überschreibt das Original — `[S]`-Pfad. Öffentliche Spezifikation folgt (E-15, englisch).
 - **Bauen und Testen** im Wurzelmodul immer mit `GOFLAGS=-tags=novulkan,nox11` (Gio; sonst fehlt `vulkan/vulkan.h`),
-  Programme mit `-trimpath`. Pakete: `sprache`, `po`, `dokument`, `datei`, `aufnahme`, `bibliothek`, `oberflaeche`,
-  `cmd/schnapp`; eigene Module `zeichnen/`, `prototyp/`, `extern/gio/`, `tmp/` (trennt den Arbeitsordner ab).
+  Programme mit `-trimpath`. Pakete: `i18n`, `po`, `document`, `fileformat`, `capture`, `library`, `ui`,
+  `cmd/schnapp`; eigene Module `zeichnen/`, `prototype/`, `third_party/gio/`, `tmp/` (trennt den Arbeitsordner ab).
 - **Pfade und eigene Dateinamen:** `schnapp` immer klein (`~/Bilder/schnapp/`, `schnapp.desktop`), im Text „Schnapp“.
 - **Kommandozeile englisch:** `--region` (Voreinstellung), `--screen[=NAME]`, `--window`, `--repeat` (ADR-0017
   Nachtrag 2); sie ist Oberfläche und künftig auch Schnittstelle für Agenten (E-14).

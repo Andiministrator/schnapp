@@ -21,8 +21,8 @@ coverage.html
 __pycache__/
 *.pyc
 
-# Zwischenstand von marke/werkzeug/cd.py (wird nach tmp/ verschoben; falls ein Lauf abbricht)
-/marke/corporate-design.tmp.html
+# Zwischenstand von brand/werkzeug/cd.py (wird nach tmp/ verschoben; falls ein Lauf abbricht)
+/brand/corporate-design.tmp.html
 
 # Reste von patch/git apply
 *.orig

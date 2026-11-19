@@ -75,7 +75,7 @@ Stand: 2026-11-19 (ergänzt nach Sprint 1). Kurze Regeln aus Fehlern und Befunde
 ## Arbeiten am Rechner des Maintainers
 
 - **Löschen:** eigener Werkzeugaufruf, vorher `ls`, Ziel im Chat nennen, `rm -rv --one-file-system -- /voller/pfad`
-  (nicht `-rf`); in Skripten statt Löschen nach `tmp/papierkorb/` verschieben (`extern/gio-patch.sh`).
+  (nicht `-rf`); in Skripten statt Löschen nach `tmp/papierkorb/` verschieben (`third_party/gio-patch.sh`).
 - **Vollbild- und Aufnahme-Tests** vorher ankündigen — sie liegen über allen Monitoren und nehmen echte Inhalte auf;
   Aufnahmen nur im Speicher oder unter `tmp/`, nie im Repo.
 - **Rechte-Prüfung lehnt ab, was Berechtigungen erweitert** (z. B. eine `.desktop`-Datei mit

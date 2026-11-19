@@ -6,13 +6,13 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Andiministrator/schnapp/i18n"
 	"github.com/Andiministrator/schnapp/po"
-	"github.com/Andiministrator/schnapp/sprache"
 )
 
 // Die eingebetteten Dateien sind lesbar und tragen die erwarteten Sprachen und Mehrzahlregeln.
 func TestEingebettet(t *testing.T) {
-	sprachen, err := sprache.Sprachen(po.Dateien)
+	sprachen, err := i18n.Sprachen(po.Dateien)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -20,7 +20,7 @@ func TestEingebettet(t *testing.T) {
 		t.Fatalf("Sprachen = %v, want %v", sprachen, want)
 	}
 	for _, s := range sprachen {
-		if _, err := sprache.Lade(po.Dateien, s); err != nil {
+		if _, err := i18n.Lade(po.Dateien, s); err != nil {
 			t.Errorf("%s.po: %v", s, err)
 		}
 	}

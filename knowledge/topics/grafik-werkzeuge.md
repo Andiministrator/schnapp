@@ -1,6 +1,6 @@
 # Grafik-Werkzeuge für Logo und Corporate Design
 
-Stand: 2026-11-19. Gilt für `marke/werkzeug/` (Python, wird später durch Go oder Schnapp selbst ersetzt — Karte
+Stand: 2026-11-19. Gilt für `brand/werkzeug/` (Python, wird später durch Go oder Schnapp selbst ersetzt — Karte
 im Board, CLAUDE.md „Was zu vermeiden ist“).
 
 ## Kette

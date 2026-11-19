@@ -1,6 +1,6 @@
 # Gio unter Wayland (KDE): Grenzen, Patch, Messen
 
-Stand: 2026-11-19 — aus dem Prototyp (`prototyp/`, ADR-0003 Nachtrag 2), Gio v0.10.3, Plasma 6.8. Quelle ist der
+Stand: 2026-11-19 — aus dem Prototyp (`prototype/`, ADR-0003 Nachtrag 2), Gio v0.10.3, Plasma 6.8. Quelle ist der
 Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene Messung.
 
 ## Was Gio unter Wayland nicht kann (v0.10.3)
@@ -13,7 +13,7 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
 - **Jedes Fenster hat eine eigene Wayland-Verbindung** (`newWLWindow` → `newWLDisplay`); Ausgaben vor dem ersten
   Fenster aufzulisten heißt: eine kurze eigene Verbindung öffnen.
 
-## Der Patch (`extern/gio-ausgabe.patch`, angewendet in `extern/gio/`)
+## Der Patch (`third_party/gio-ausgabe.patch`, angewendet in `third_party/gio/`)
 
 - `app.FullscreenOn(name)` (Feld `Config.Output`) und `app.WaylandOutputs()`; `wl_output` in Version `min(v, 4)`,
   Ereignisse `name`/`description` (braucht wayland-client ≥ 1.20).
@@ -27,13 +27,13 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
   compositor chooses the output` ins Log und überlässt die Wahl dem Compositor; ein leerer Name bleibt ohne Meldung
   (F-33, 19.11.2026).
 - Umfang (Stand 19.11.2026, nach F-33): von Hand 5 Dateien +203/−26 Zeilen (einschließlich 30 Zeilen Test), erzeugt
-  4 Dateien +811 Zeilen — zählen mit `git apply --numstat extern/gio-ausgabe.patch`.
-- Ablage (ADR-0015, seit 19.11.2026): gepatchte Kopie als Modul `extern/gio/` im Repo, `replace gioui.org =>
-  ../extern/gio` im `go.mod` jedes Nutzers; `extern/gio-patch.sh pruefen|erzeugen|anlegen` hält Kopie und Patch
+  4 Dateien +811 Zeilen — zählen mit `git apply --numstat third_party/gio-ausgabe.patch`.
+- Ablage (ADR-0015, seit 19.11.2026): gepatchte Kopie als Modul `third_party/gio/` im Repo, `replace gioui.org =>
+  ../third_party/gio` im `go.mod` jedes Nutzers; `third_party/gio-patch.sh pruefen|erzeugen|anlegen` hält Kopie und Patch
   zusammen, die CI prüft beides. Vorher (Sprint 1) lag die Kopie gitignoriert unter `tmp/` — frische Klone und die CI
   bauten nicht.
 - **Falle `-o` nach `cd`:** ein Bauskript, das erst in sein Verzeichnis wechselt, muss den Zielpfad vorher absolut
-  machen (`realpath -m`), sonst landet das Programm unter `prototyp/tmp/…` und man prüft die alte Datei.
+  machen (`realpath -m`), sonst landet das Programm unter `prototype/tmp/…` und man prüft die alte Datei.
 - **`-trimpath`** gehört in jeden Bau: ohne stehen Modulcache- und Projektpfade des Rechners im Programm.
 
 ## Bauen und Abhängigkeiten

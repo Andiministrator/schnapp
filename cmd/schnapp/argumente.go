@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Andiministrator/schnapp/sprache"
+	"github.com/Andiministrator/schnapp/i18n"
 )
 
 // Modus ist, was der Aufruf verlangt.
@@ -84,21 +84,21 @@ func Auswerten(args []string) (Aufruf, error) {
 			m = ModusHilfe
 		default:
 			if strings.HasPrefix(arg, "-") && arg != "-" {
-				return Aufruf{}, &Fehler{fmt.Sprintf(sprache.T("Unknown option: %s"), name)}
+				return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Unknown option: %s"), name)}
 			}
-			return Aufruf{}, &Fehler{fmt.Sprintf(sprache.T("Unexpected argument: %s"), arg)}
+			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Unexpected argument: %s"), arg)}
 		}
 		if hatWert && m != ModusBildschirm {
-			return Aufruf{}, &Fehler{fmt.Sprintf(sprache.T("Option %s takes no value."), m.Option())}
+			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Option %s takes no value."), m.Option())}
 		}
 		if hatWert && wert == "" {
-			return Aufruf{}, &Fehler{sprache.T("Option --screen needs a monitor name after the equals sign.")}
+			return Aufruf{}, &Fehler{i18n.T("Option --screen needs a monitor name after the equals sign.")}
 		}
 		if gesehen && a.Modus == ModusBildschirm && m == ModusBildschirm && a.Bildschirm != wert {
-			return Aufruf{}, &Fehler{sprache.T("Option --screen cannot be given more than once with different monitor names.")}
+			return Aufruf{}, &Fehler{i18n.T("Option --screen cannot be given more than once with different monitor names.")}
 		}
 		if gesehen && a.Modus != m {
-			return Aufruf{}, &Fehler{fmt.Sprintf(sprache.T("Options %s and %s cannot be combined."), a.Modus.Option(), m.Option())}
+			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Options %s and %s cannot be combined."), a.Modus.Option(), m.Option())}
 		}
 		a = Aufruf{Modus: m, Bildschirm: wert}
 		gesehen = true

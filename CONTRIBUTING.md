@@ -25,18 +25,18 @@ request.
 
 ## Languages
 
-- User interface texts: English is the source language. Write them as literals through `sprache.T("…")`,
-  `sprache.TK("context", "…")` or `sprache.N("one …", "many …", n)`; every new text also needs a German entry in
+- User interface texts: English is the source language. Write them as literals through `i18n.T("…")`,
+  `i18n.TK("context", "…")` or `i18n.N("one …", "many …", n)`; every new text also needs a German entry in
   `po/de.po` — `go test ./...` fails otherwise (`docs/adr/0014-*`). Use only these package functions in program code (no
-  dot import of `sprache`, no calls through a `*Katalog`), so the check can find every text. Further languages are welcome as `po/<lang>.po`.
+  dot import of `i18n`, no calls through a `*Katalog`), so the check can find every text. Further languages are welcome as `po/<lang>.po`.
 - User documents (README, CONTRIBUTING) exist in English and German — update both in the same pull request.
 - Working documents (`docs/`, `knowledge/`), commit messages and code comments are in German. English is fine in your
   pull request; the maintainer will adapt it.
 
 ## Design
 
-Logo, colours, type and UI rules: [`marke/corporate-design.md`](marke/corporate-design.md) (German, PDF alongside);
-logo files in [`marke/logo/`](marke/logo/README.md).
+Logo, colours, type and UI rules: [`brand/corporate-design.md`](brand/corporate-design.md) (German, PDF alongside);
+logo files in [`brand/logo/`](brand/logo/README.md).
 
 ## Commits and checks
 
@@ -46,8 +46,8 @@ logo files in [`marke/logo/`](marke/logo/README.md).
   `novulkan,nox11` (no Vulkan headers, Wayland only). Pass them through the environment, e.g.
   `export GOFLAGS=-tags=novulkan,nox11`; do not use `go env -w`, which changes your global Go setup. Build the program
   with `go build -trimpath -o schnapp ./cmd/schnapp` (`-trimpath` keeps local paths out of the binary).
-- `extern/gio/` is Gio with our patch (`docs/adr/0015-*`). If you change it, run `extern/gio-patch.sh erzeugen` and
-  commit the updated `extern/gio-ausgabe.patch` together with it; CI checks that both match.
+- `third_party/gio/` is Gio with our patch (`docs/adr/0015-*`). If you change it, run `third_party/gio-patch.sh erzeugen` and
+  commit the updated `third_party/gio-ausgabe.patch` together with it; CI checks that both match.
 - Every source file we write starts with `SPDX-License-Identifier: GPL-3.0-or-later` (as a comment). Patches to
   third-party code (e.g. Gio) keep the upstream licence.
 

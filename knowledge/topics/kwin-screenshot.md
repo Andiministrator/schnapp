@@ -47,12 +47,12 @@ Folgen für Schnapp:
 - Unter Plasma ≥ 6.8 braucht die Aufnahme keine Berechtigung; `go run` geht.
 - Für Plasma 6.7 und älter installiert Schnapp seine `.desktop`-Datei mit absolutem `Exec=` und der Zeile
   `X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2` — die Datei braucht es ohnehin (Programmmenü,
-  Tastenkürzel E-10), der Eintrag schadet ab 6.8 nicht. Vorlage: `prototyp/schnapp-prototyp.desktop.in`.
+  Tastenkürzel E-10), der Eintrag schadet ab 6.8 nicht. Vorlage: `prototype/schnapp-prototype.desktop.in`.
 - Fehlerweg `org.kde.KWin.ScreenShot2.Error.NoAuthorized` behandeln: verständliche Meldung („Schnapp ist nicht als
   Aufnahmeprogramm eingetragen …“) statt stillem Scheitern.
 - Flatpak später: eigener Weg (Portal), siehe ADR-0007.
 
-## ScreenShot3 mit memfd (nur KWin-master, Stand 19.11.2026; umgesetzt in `aufnahme/`)
+## ScreenShot3 mit memfd (nur KWin-master, Stand 19.11.2026; umgesetzt in `capture/`)
 
 KWin-Commit `5be04288` vom 17.11.2026 („plugins/screenshot: Share screenshots with memfd“): Objekt
 `/org/kde/KWin/ScreenShot3`, Interface `org.kde.KWin.ScreenShot3`, Property `Version` (u). Dieselben Methoden und
@@ -61,7 +61,7 @@ Optionen wie ScreenShot2, aber ohne `pipe h` als Eingabe — die Methoden **gebe
 je Aufnahme. **In keinem Release-Tag enthalten** (vermutlich Plasma 6.9); auf dem Laptop (Plasma 6.8.3) fehlt das
 Objekt, ScreenShot2 meldet Version 5.
 
-Umsetzung (`aufnahme/`, Karte #27): beim ersten Aufruf `Version` von ScreenShot3 abfragen, sonst ScreenShot2; memfd
+Umsetzung (`capture/`, Karte #27): beim ersten Aufruf `Version` von ScreenShot3 abfragen, sonst ScreenShot2; memfd
 per fstat prüfen und genau stride×(height−1)+width×4 Bytes per ReadAt lesen (kein mmap). Grenzen: Seite ≤ 32768,
 Zeile ≤ 262144 Bytes, Rohdaten ≤ 1 GiB (die Pipe wird vor der Antwort gelesen, darum feste Obergrenze); Zeitgrenze
 10 s je Aufruf, 5 min bei `CaptureInteractive` (der Nutzer klickt). Fehlerwerte: `ErrNichtBerechtigt` (NoAuthorized),
@@ -70,13 +70,13 @@ Fehler unter eigenem Namensraum (`org.kde.KWin.ScreenShot3.Error.Cancelled`, lau
 die Schicht erkennt beide (F-49).
 
 **Gegen echtes KWin gelaufen (19.11.2026, Karte #27, KWin 6.8.3, drei Monitore):** Wegwerf-Probe (nicht
-versioniert) mit `aufnahme.NeuKWin()` und `oberflaeche.Monitore()`. Per Introspektion fehlt ScreenShot3, ScreenShot2
+versioniert) mit `capture.NeuKWin()` und `ui.Monitore()`. Per Introspektion fehlt ScreenShot3, ScreenShot2
 ist da; daraus abgeleitet (die Probe gibt die Wahl nicht aus) fiel die Schicht wie vorgesehen auf
 ScreenShot2 (Pipe) zurück. Je Monitor mit und ohne Mauszeiger: Bildgröße gleich dem Wayland-Modus (physische
 Pixel), Bild nicht einfarbig (RGB weicht vom ersten Pixel ab), `Bild.Bildschirm` gesetzt; Alpha war überall 255,
-das sagt aber nichts über KWin, weil `aufnahme/roh.go` bei RGBX8888/RGB32 Alpha fest auf 255 setzt (das Rohformat
+das sagt aber nichts über KWin, weil `capture/roh.go` bei RGBX8888/RGB32 Alpha fest auf 255 setzt (das Rohformat
 hat die Probe nicht ausgegeben, F-71); 11–35 ms je Aufnahme (4K-Breitbild
-31–35 ms). Der Monitor mit gebrochener Skala liefert `Bild.Skala` 1,6, während `oberflaeche.Monitore()` dort die
+31–35 ms). Der Monitor mit gebrochener Skala liefert `Bild.Skala` 1,6, während `ui.Monitore()` dort die
 ganzzahlige Pufferskala 2 meldet — **für Koordinaten gilt `Bild.Skala`**, nie `Monitor.Skala`. Ein unbekannter
 Monitorname ergibt sofort (1 ms) den Fehler „Invalid screen requested“, kein Hänger. **`CaptureActiveScreen` folgt dem Mauszeiger**
 (gemessen 19.11.2026, F-72, Wegwerf-Probe): Terminal mit Fokus auf Monitor 1, Mauszeiger ohne Klick auf Monitor 2 →
@@ -92,7 +92,7 @@ memfd-Weg** (ScreenShot3), bis ein Plasma-Release ihn mitbringt (F-56).
   liefert `CaptureWorkspace` bei gemischter Skalierung ein Bild in der **größten** Skala (Monitore mit Skala 1
   werden hochgerechnet) — für das Overlay deshalb je Bildschirm einzeln aufnehmen.
 - Das Format kam als QImage-Format 16 (RGBX8888, Byte-Reihenfolge R G B x); Umwandlung aller sechs
-  32-Bit-Formate in `prototyp/format.go`.
+  32-Bit-Formate in `prototype/format.go`.
 
 ## Folgerungen für den Entwurf
 

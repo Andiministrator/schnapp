@@ -25,10 +25,10 @@ Pull Request.
 
 ## Sprachen
 
-- Oberflächentexte: Englisch ist die Ausgangssprache. Texte als Literal über `sprache.T("…")`,
-  `sprache.TK("Kontext", "…")` oder `sprache.N("one …", "many …", n)` schreiben; jeder neue Text braucht einen
+- Oberflächentexte: Englisch ist die Ausgangssprache. Texte als Literal über `i18n.T("…")`,
+  `i18n.TK("Kontext", "…")` oder `i18n.N("one …", "many …", n)` schreiben; jeder neue Text braucht einen
   deutschen Eintrag in `po/de.po` — sonst schlägt `go test ./...` fehl (`docs/adr/0014-*`). Im Programmcode nur diese
-  Paketfunktionen nutzen (kein Punkt-Import von `sprache`, keine Aufrufe über einen `*Katalog`), damit die Prüfung
+  Paketfunktionen nutzen (kein Punkt-Import von `i18n`, keine Aufrufe über einen `*Katalog`), damit die Prüfung
   jeden Text findet. Weitere Sprachen sind als
   `po/<sprache>.po` willkommen.
 - Nutzer-Dokumente (README, CONTRIBUTING) gibt es auf Englisch und Deutsch — beide im selben Pull Request pflegen.
@@ -37,8 +37,8 @@ Pull Request.
 
 ## Gestaltung
 
-Logo, Farben, Schrift und Regeln für die Oberfläche: [`marke/corporate-design.md`](marke/corporate-design.md) (auch als
-PDF); Logo-Dateien in [`marke/logo/`](marke/logo/README.md).
+Logo, Farben, Schrift und Regeln für die Oberfläche: [`brand/corporate-design.md`](brand/corporate-design.md) (auch als
+PDF); Logo-Dateien in [`brand/logo/`](brand/logo/README.md).
 
 ## Commits und Prüfungen
 
@@ -48,8 +48,8 @@ PDF); Logo-Dateien in [`marke/logo/`](marke/logo/README.md).
   `novulkan,nox11` (keine Vulkan-Header, nur Wayland). Sie kommen über die Umgebung, etwa
   `export GOFLAGS=-tags=novulkan,nox11`; kein `go env -w`, das ändert die globale Go-Einstellung. Das Programm baut
   `go build -trimpath -o schnapp ./cmd/schnapp` (`-trimpath` hält lokale Pfade aus der Programmdatei).
-- `extern/gio/` ist Gio mit unserem Patch (`docs/adr/0015-*`). Wer dort ändert, ruft `extern/gio-patch.sh erzeugen` auf
-  und committet den neuen `extern/gio-ausgabe.patch` mit; die CI prüft, dass beides zusammenpasst.
+- `third_party/gio/` ist Gio mit unserem Patch (`docs/adr/0015-*`). Wer dort ändert, ruft `third_party/gio-patch.sh erzeugen` auf
+  und committet den neuen `third_party/gio-ausgabe.patch` mit; die CI prüft, dass beides zusammenpasst.
 - Jede selbst geschriebene Quelldatei beginnt mit `SPDX-License-Identifier: GPL-3.0-or-later` (als Kommentar).
   Patches an fremdem Code (z. B. Gio) behalten dessen Lizenz.
 

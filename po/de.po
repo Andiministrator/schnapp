@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # Source language is English; every text in the code that goes through sprache.T, sprache.TK or sprache.N needs an
-# entry here (checked by the tests in sprache/). Address the user without a form of address where possible,
+# entry here (checked by the tests in i18n/). Address the user without a form of address where possible,
 # otherwise use "du" (decision E-13).
 msgid ""
 msgstr ""
@@ -143,7 +143,7 @@ msgstr "Monitor anklicken oder Bereich aufziehen · Enter: Monitor unter dem Zei
 msgid "Drag an area · Enter: whole monitor under the pointer · Esc or right-click: cancel"
 msgstr "Bereich aufziehen · Enter: ganzer Monitor unter dem Zeiger · Esc oder Rechtsklick: abbrechen"
 
-# einstellungen/argumente: Härtung
+# settings/argumente: Härtung
 msgid "%s: the settings file is not a regular file; using the defaults."
 msgstr "%s: Die Einstellungsdatei ist keine reguläre Datei; es gelten die Voreinstellungen."
 

@@ -9,7 +9,7 @@
 # zusätzlich bei | (Trennzeichen) und & (fügt @EXEC@ erneut ein). Beispiel (Pfad ohne diese Zeichen; das künftige
 # Installationsskript, Karte #42, maskiert selbst):
 #   sed 's|@EXEC@|/home/<nutzer>/.local/bin/schnapp|' data/schnapp.desktop.in > ~/.local/share/applications/schnapp.desktop
-# Icon=schnapp: Der Name des App-Symbols (marke/logo/svg/schnapp-symbol-*.svg); das Installieren ins Symbolthema
+# Icon=schnapp: Der Name des App-Symbols (brand/logo/svg/schnapp-symbol-*.svg); das Installieren ins Symbolthema
 # folgt mit dem Installationsskript, bis dahin zeigt KDE ein Ersatzsymbol.
 [Desktop Entry]
 Type=Application

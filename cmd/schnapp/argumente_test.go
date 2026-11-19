@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Andiministrator/schnapp/bibliothek"
-	"github.com/Andiministrator/schnapp/einstellungen"
-	"github.com/Andiministrator/schnapp/oberflaeche"
+	"github.com/Andiministrator/schnapp/i18n"
+	"github.com/Andiministrator/schnapp/library"
 	"github.com/Andiministrator/schnapp/po"
-	"github.com/Andiministrator/schnapp/sprache"
+	"github.com/Andiministrator/schnapp/settings"
+	"github.com/Andiministrator/schnapp/ui"
 )
 
 func TestAuswerten(t *testing.T) {
@@ -64,9 +64,9 @@ func TestAuswerten(t *testing.T) {
 	}
 }
 
-func keineMonitore() ([]oberflaeche.Monitor, error) { return nil, errors.New("keine Verbindung") }
+func keineMonitore() ([]ui.Monitor, error) { return nil, errors.New("keine Verbindung") }
 
-func fuehre(t *testing.T, monitore func() ([]oberflaeche.Monitor, error), args ...string) (int, string, string) {
+func fuehre(t *testing.T, monitore func() ([]ui.Monitor, error), args ...string) (int, string, string) {
 	t.Helper()
 	var aus, fehler bytes.Buffer
 	code := laufe(args, &aus, &fehler, monitore, keineEinstellungen(t), (&merkeAuftrag{}).ausfuehren)
@@ -90,11 +90,11 @@ const exitStub = 42
 
 // keineEinstellungen liefert Voreinstellungen ohne Warnung und zählt die Aufrufe nicht.
 func keineEinstellungen(t *testing.T) Ladefunktion {
-	return func() (einstellungen.Einstellungen, []string) { return einstellungen.Voreinstellungen(), nil }
+	return func() (settings.Einstellungen, []string) { return settings.Voreinstellungen(), nil }
 }
 
 func TestLaufeEnglisch(t *testing.T) {
-	sprache.Setze(nil)
+	i18n.Setze(nil)
 	code, aus, _ := fuehre(t, keineMonitore, "--version")
 	if code != exitOK || aus != "Schnapp "+version+"\n" {
 		t.Errorf("--version: Code %d, Ausgabe %q", code, aus)
@@ -112,15 +112,15 @@ func TestLaufeEnglisch(t *testing.T) {
 // laufe gibt den ausgewerteten und mit den Einstellungen aufgelösten Auftrag an die Ausführung weiter, ohne Monitore
 // abzufragen; der Exit-Code der Ausführung kommt unverändert zurück.
 func TestLaufeGibtAuftragWeiter(t *testing.T) {
-	sprache.Setze(nil)
-	abfrage := func() ([]oberflaeche.Monitor, error) {
+	i18n.Setze(nil)
+	abfrage := func() ([]ui.Monitor, error) {
 		t.Error("Monitorabfrage darf hier nicht laufen")
 		return nil, nil
 	}
-	alle := einstellungen.Voreinstellungen()
-	alle.Bildschirm = einstellungen.WahlAlle
-	alle.Bibliothek = bibliothek.Einstellung{An: true, Tage: 7} // F-88: cleanup-days kommt im Auftrag an
-	lade := func() (einstellungen.Einstellungen, []string) { return alle, nil }
+	alle := settings.Voreinstellungen()
+	alle.Bildschirm = settings.WahlAlle
+	alle.Bibliothek = library.Einstellung{An: true, Tage: 7} // F-88: cleanup-days kommt im Auftrag an
+	lade := func() (settings.Einstellungen, []string) { return alle, nil }
 	for _, tc := range []struct {
 		args []string
 		want Auftrag
@@ -129,7 +129,7 @@ func TestLaufeGibtAuftragWeiter(t *testing.T) {
 		{[]string{"--region"}, Auftrag{Modus: ModusBereich}},
 		{[]string{"--window"}, Auftrag{Modus: ModusFenster}},
 		{[]string{"--repeat"}, Auftrag{Modus: ModusWiederholen}},
-		{[]string{"--screen"}, Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Wahl: einstellungen.WahlAlle}}},
+		{[]string{"--screen"}, Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Wahl: settings.WahlAlle}}},
 		{[]string{"--screen=X"}, Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Name: "X"}}},
 	} {
 		tc.want.Aufraeumen = alle.Bibliothek
@@ -146,16 +146,16 @@ func TestLaufeGibtAuftragWeiter(t *testing.T) {
 }
 
 func TestMonitorliste(t *testing.T) {
-	sprache.Setze(nil)
-	zwei := func() ([]oberflaeche.Monitor, error) {
-		return []oberflaeche.Monitor{{Name: "A", Breite: 1920, Hoehe: 1080, Skala: 1}, {Name: "B", Breite: 3840, Hoehe: 2160, Skala: 2}}, nil
+	i18n.Setze(nil)
+	zwei := func() ([]ui.Monitor, error) {
+		return []ui.Monitor{{Name: "A", Breite: 1920, Hoehe: 1080, Skala: 1}, {Name: "B", Breite: 3840, Hoehe: 2160, Skala: 2}}, nil
 	}
 	code, aus, _ := fuehre(t, zwei, "--list-screens")
 	want := "2 monitors found:\n  A: 1920 × 1080 pixels\n  B: 3840 × 2160 pixels\n"
 	if code != exitOK || aus != want {
 		t.Errorf("Code %d, Ausgabe %q, erwartet %q", code, aus, want)
 	}
-	eins := func() ([]oberflaeche.Monitor, error) { return []oberflaeche.Monitor{{Name: "A"}}, nil }
+	eins := func() ([]ui.Monitor, error) { return []ui.Monitor{{Name: "A"}}, nil }
 	if _, aus, _ = fuehre(t, eins, "--list-screens"); !strings.HasPrefix(aus, "1 monitor found:") {
 		t.Errorf("Einzahl: %q", aus)
 	}
@@ -163,7 +163,7 @@ func TestMonitorliste(t *testing.T) {
 	if code != exitFehler || !strings.Contains(fehler, "Could not query the monitors: keine Verbindung") {
 		t.Errorf("Fehlerfall: Code %d, Fehler %q", code, fehler)
 	}
-	leer := func() ([]oberflaeche.Monitor, error) { return nil, nil }
+	leer := func() ([]ui.Monitor, error) { return nil, nil }
 	if code, _, fehler = fuehre(t, leer, "--list-screens"); code != exitFehler || !strings.Contains(fehler, "No monitors found.") {
 		t.Errorf("leer: Code %d, Ausgabe %q", code, aus)
 	}
@@ -171,18 +171,18 @@ func TestMonitorliste(t *testing.T) {
 
 // Mit deutschem Katalog erscheinen die Texte auf Deutsch (Platzhalter und Mehrzahl eingeschlossen).
 func TestLaufeDeutsch(t *testing.T) {
-	k, err := sprache.Lade(po.Dateien, "de")
+	k, err := i18n.Lade(po.Dateien, "de")
 	if err != nil {
 		t.Fatal(err)
 	}
-	sprache.Setze(k)
-	t.Cleanup(func() { sprache.Setze(nil) })
+	i18n.Setze(k)
+	t.Cleanup(func() { i18n.Setze(nil) })
 	_, aus, _ := fuehre(t, keineMonitore, "--help")
 	if !strings.HasPrefix(aus, "Aufruf: schnapp [Option]\n") {
 		t.Errorf("--help deutsch: %q", aus)
 	}
-	zwei := func() ([]oberflaeche.Monitor, error) {
-		return []oberflaeche.Monitor{{Name: "A", Breite: 1, Hoehe: 2, Skala: 1}, {Name: "B"}}, nil
+	zwei := func() ([]ui.Monitor, error) {
+		return []ui.Monitor{{Name: "A", Breite: 1, Hoehe: 2, Skala: 1}, {Name: "B"}}, nil
 	}
 	_, aus, _ = fuehre(t, zwei, "--list-screens")
 	if !strings.HasPrefix(aus, "2 Monitore gefunden:\n  A: 1 × 2 Pixel\n") {
@@ -197,7 +197,7 @@ func TestLaufeDeutsch(t *testing.T) {
 
 // Nur die Aufnahme-Modi lesen die Einstellungen; --version, --help, --list-screens und Aufruffehler nicht.
 func TestLaufeLadetEinstellungenNurFuerAufnahme(t *testing.T) {
-	sprache.Setze(nil)
+	i18n.Setze(nil)
 	for _, tc := range []struct {
 		args  []string
 		laedt bool
@@ -214,12 +214,12 @@ func TestLaufeLadetEinstellungenNurFuerAufnahme(t *testing.T) {
 		{[]string{"--repeat"}, true},
 	} {
 		aufrufe := 0
-		lade := func() (einstellungen.Einstellungen, []string) {
+		lade := func() (settings.Einstellungen, []string) {
 			aufrufe++
-			return einstellungen.Voreinstellungen(), []string{"settings.ini:3: Warnung"}
+			return settings.Voreinstellungen(), []string{"settings.ini:3: Warnung"}
 		}
 		var aus, fehler bytes.Buffer
-		laufe(tc.args, &aus, &fehler, func() ([]oberflaeche.Monitor, error) { return nil, nil }, lade, (&merkeAuftrag{}).ausfuehren)
+		laufe(tc.args, &aus, &fehler, func() ([]ui.Monitor, error) { return nil, nil }, lade, (&merkeAuftrag{}).ausfuehren)
 		if (aufrufe == 1) != tc.laedt || aufrufe > 1 {
 			t.Errorf("%q: Einstellungen %d-mal geladen, erwartet geladen=%v", tc.args, aufrufe, tc.laedt)
 		}
@@ -232,9 +232,9 @@ func TestLaufeLadetEinstellungenNurFuerAufnahme(t *testing.T) {
 // Jede Warnung steht in einer eigenen Zeile auf stderr, die Aufnahme läuft weiter (hier: die Ausführung bekommt
 // den Auftrag trotzdem).
 func TestLaufeWarnungenWeiter(t *testing.T) {
-	sprache.Setze(nil)
-	lade := func() (einstellungen.Einstellungen, []string) {
-		return einstellungen.Voreinstellungen(), []string{"w1", "w2"}
+	i18n.Setze(nil)
+	lade := func() (settings.Einstellungen, []string) {
+		return settings.Voreinstellungen(), []string{"w1", "w2"}
 	}
 	var aus, fehler bytes.Buffer
 	m := &merkeAuftrag{}
@@ -246,17 +246,17 @@ func TestLaufeWarnungenWeiter(t *testing.T) {
 
 // Vorrang: --screen=NAME vor Datei, --screen ohne Wert folgt der Datei, sonst Voreinstellung.
 func TestPlaneVorrang(t *testing.T) {
-	alle := einstellungen.Voreinstellungen()
-	alle.Bildschirm = einstellungen.WahlAlle
+	alle := settings.Voreinstellungen()
+	alle.Bildschirm = settings.WahlAlle
 	tests := []struct {
 		name string
 		a    Aufruf
-		e    einstellungen.Einstellungen
+		e    settings.Einstellungen
 		want Bildschirmziel
 	}{
 		{"Name schlägt Datei", Aufruf{Modus: ModusBildschirm, Bildschirm: "HDMI-1"}, alle, Bildschirmziel{Name: "HDMI-1"}},
-		{"ohne Wert folgt Datei", Aufruf{Modus: ModusBildschirm}, alle, Bildschirmziel{Wahl: einstellungen.WahlAlle}},
-		{"ohne Datei Voreinstellung", Aufruf{Modus: ModusBildschirm}, einstellungen.Voreinstellungen(), Bildschirmziel{Wahl: einstellungen.WahlKlick}},
+		{"ohne Wert folgt Datei", Aufruf{Modus: ModusBildschirm}, alle, Bildschirmziel{Wahl: settings.WahlAlle}},
+		{"ohne Datei Voreinstellung", Aufruf{Modus: ModusBildschirm}, settings.Voreinstellungen(), Bildschirmziel{Wahl: settings.WahlKlick}},
 		{"anderer Modus ohne Ziel", Aufruf{Modus: ModusBereich}, alle, Bildschirmziel{}},
 	}
 	for _, tc := range tests {
