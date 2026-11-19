@@ -56,7 +56,10 @@ git -C "$basis" -c user.name=schnapp -c user.email=schnapp@invalid -c commit.gpg
 case "$befehl" in
 pruefen)
 	git -C "$basis" apply --whitespace=nowarn "$patchdatei"
-	if diff -r --exclude=.git "$basis" "$kopie" >"$lauf/abweichung"; then
+	# diff -r vergleicht keine Dateirechte; Ausführbits deshalb getrennt als Liste vergleichen.
+	ausfuehrbar() { (cd "$1" && find . -path ./.git -prune -o -type f -perm -u+x -print | sort); }
+	if diff -r --exclude=.git "$basis" "$kopie" >"$lauf/abweichung" &&
+		diff <(ausfuehrbar "$basis") <(ausfuehrbar "$kopie") >>"$lauf/abweichung"; then
 		echo "extern/gio entspricht Gio $GIO_VERSION + extern/gio-ausgabe.patch"
 	else
 		echo "extern/gio weicht von Gio $GIO_VERSION + Patch ab:" >&2
@@ -71,8 +74,12 @@ erzeugen)
 	cp -r "$kopie" "$neu"
 	mv "$basis/.git" "$neu/.git"
 	git -C "$neu" add -A
-	git -C "$neu" diff --cached --binary >"$patchdatei"
-	git apply --whitespace=nowarn --numstat "$patchdatei"
+	# Feste Diff-Form unabhängig von der git-Konfiguration des Nutzers (Präfixe, Farbe, externe Diff-Programme,
+	# Umbenennungen); erst in tmp/ schreiben, dann ersetzen — bricht git ab, bleibt der alte Patch stehen.
+	git -C "$neu" -c diff.noprefix=false -c diff.mnemonicPrefix=false -c color.ui=never -c core.quotePath=false \
+		diff --cached --binary --no-ext-diff --no-color --no-renames --src-prefix=a/ --dst-prefix=b/ >"$lauf/neu.patch"
+	git apply --whitespace=nowarn --numstat "$lauf/neu.patch"
+	mv "$lauf/neu.patch" "$patchdatei"
 	echo "geschrieben: extern/gio-ausgabe.patch"
 	;;
 anlegen)

@@ -18,8 +18,9 @@ Möglichkeiten:
 2. **Fork auf GitHub** (`replace gioui.org => github.com/…/gio vX`): sauber für Go, aber ein zweites öffentliches Repo
    zu pflegen, Veröffentlichung unter dem Konto des Maintainers, und jede Patch-Änderung braucht dort einen Tag.
 3. **Gepatchte Kopie im Repo** als eigenes Modul (`extern/gio`) mit `replace gioui.org => ../extern/gio`: `go build`
-   geht in jedem Klon ohne Vorlauf und ohne Netz für Gio; Flatpak-Bau braucht keinen Patch-Schritt. Kosten: 3 MB und
-   rund 300 Dateien fremder Code im Repo.
+   geht in jedem Klon ohne Vorlauf, und der Gio-Quelltext kommt aus dem Repo statt aus dem Netz (Gios eigene
+   Abhängigkeiten wie `gioui.org/shader` lädt Go weiter aus dem Modulcache bzw. Netz); Flatpak-Bau braucht keinen
+   Patch-Schritt. Kosten: 3 MB und rund 300 Dateien fremder Code im Repo.
 
 ## Entscheidung
 

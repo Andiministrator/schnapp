@@ -2,7 +2,10 @@
 
 package sprache
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestMehrzahlregel(t *testing.T) {
 	faelle := []struct {
@@ -61,5 +64,21 @@ func TestMehrzahlregelFehler(t *testing.T) {
 		if _, err := LeseMehrzahlregel(kopf); err == nil {
 			t.Errorf("%q: kein Fehler", kopf)
 		}
+	}
+}
+
+// Sehr tiefe Klammerung bricht mit Fehler ab statt mit Stapelüberlauf (F-36); der Nullwert stürzt nicht ab.
+func TestMehrzahlregelGrenzen(t *testing.T) {
+	tief := "nplurals=2; plural=" + strings.Repeat("(", 1_000_000) + "n" + strings.Repeat(")", 1_000_000) + ";"
+	if _, err := LeseMehrzahlregel(tief); err == nil {
+		t.Error("tiefe Klammerung ohne Fehler")
+	}
+	grenze := "nplurals=2; plural=" + strings.Repeat("(", 500) + "n" + strings.Repeat(")", 500) + ";"
+	if _, err := LeseMehrzahlregel(grenze); err != nil {
+		t.Errorf("1001 Zeichen: %v", err)
+	}
+	var r Mehrzahlregel
+	if r.Index(1) != 0 || r.Index(2) != 1 {
+		t.Errorf("Nullwert: Index(1)=%d Index(2)=%d", r.Index(1), r.Index(2))
 	}
 }

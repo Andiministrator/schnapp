@@ -10,9 +10,9 @@
 //	schnapp-prototyp -testbild          synthetisches 4K-Bild → Editor
 //	schnapp-prototyp -messen 10         synthetisches 4K-Bild, Pfeil biegt sich 10 s selbst, Bildrate ausgeben
 //
-// Laut KWin-Doku braucht die Aufnahme eine installierte .desktop-Datei mit
-// X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2 (Vorlage schnapp-prototyp.desktop.in). Im Prototyp
-// klappte sie auch ohne — Ursache offen (F-15, knowledge/topics/kwin-screenshot.md).
+// Bis Plasma 6.7 braucht die Aufnahme eine installierte .desktop-Datei mit
+// X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2 (Vorlage schnapp-prototyp.desktop.in); ab Plasma 6.8
+// prüft KWin das nicht mehr (F-15, knowledge/topics/kwin-screenshot.md).
 package main
 
 import (

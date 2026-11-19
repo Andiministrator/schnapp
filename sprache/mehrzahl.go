@@ -14,14 +14,21 @@ type Mehrzahlregel struct {
 	wurzel knoten
 }
 
-// Index liefert die Mehrzahlform für n, begrenzt auf [0, Formen-1].
+// Index liefert die Mehrzahlform für n, begrenzt auf [0, Formen-1]. Der Nullwert verhält sich wie die Regel des
+// Englischen.
 func (r Mehrzahlregel) Index(n int) int {
+	if r.wurzel == nil {
+		return englischeRegel.Index(n)
+	}
 	i := r.wurzel.wert(n)
 	if i < 0 || i >= r.Formen {
 		return 0
 	}
 	return i
 }
+
+// maxAusdruck ist die größte erlaubte Länge des plural-Ausdrucks.
+const maxAusdruck = 1024
 
 // englischeRegel gilt ohne Plural-Forms-Kopf: Einzahl nur bei n == 1.
 var englischeRegel = Mehrzahlregel{Formen: 2, wurzel: vergleich{"!=", variable{}, zahl(1)}}
@@ -50,6 +57,11 @@ func LeseMehrzahlregel(kopf string) (Mehrzahlregel, error) {
 	}
 	if formen == 0 || strings.TrimSpace(ausdruck) == "" {
 		return Mehrzahlregel{}, fmt.Errorf("Plural-Forms unvollständig: %q", kopf)
+	}
+	// Die Länge begrenzt zugleich die Tiefe von Lesen und Auswerten (Rekursion); echte Formeln sind kürzer als
+	// 300 Zeichen. Ohne Grenze bringt eine Datei mit einer Million Klammern das Programm zum Absturz (F-36).
+	if len(ausdruck) > maxAusdruck {
+		return Mehrzahlregel{}, fmt.Errorf("Plural-Forms länger als %d Zeichen", maxAusdruck)
 	}
 	l := &leser{text: ausdruck}
 	w, err := l.bedingung()

@@ -13,13 +13,16 @@ const Ausgangssprache = "en"
 
 // Waehle bestimmt die Oberflächensprache.
 //
-// Reihenfolge (ADR-0014):
+// Reihenfolge (ADR-0014, Nachtrag 1; wie GNU gettext):
 //  1. einstellung (Einstellung in Schnapp), falls gesetzt und verfügbar,
-//  2. jeder Eintrag der Liste LANGUAGE (z. B. "de:en_US") der Reihe nach,
-//  3. die erste nicht leere der Variablen LC_ALL, LC_MESSAGES, LANG — nur diese eine zählt, wie bei POSIX,
-//  4. sonst Englisch.
+//  2. die Locale ist die erste nicht leere der Variablen LC_ALL, LC_MESSAGES, LANG — nur diese eine zählt; ist sie
+//     leer, "C" oder "C.<Kodierung>", gilt Englisch und LANGUAGE wird nicht beachtet (glibc intl/dcigettext.c,
+//     guess_category_value; bei "POSIX" gilt LANGUAGE dort weiter),
+//  3. sonst jeder Eintrag der Liste LANGUAGE (z. B. "de:en_US") der Reihe nach; ein Eintrag "C" oder "POSIX"
+//     beendet die Liste mit Englisch,
+//  4. sonst die Locale selbst, sonst Englisch.
 //
-// "C" und "POSIX" bedeuten „keine Angabe“. Aus "de_DE.UTF-8@euro" wird zuerst "de_DE", dann "de" gesucht.
+// Aus "de_DE.UTF-8@euro" wird zuerst "de_DE", dann "de" gesucht.
 // umgebung liefert den Wert einer Variablen (im Programm os.Getenv, im Test eine Tabelle). verfuegbar nennt die
 // Sprachen mit PO-Datei; Englisch ist immer verfügbar.
 func Waehle(umgebung func(string) string, einstellung string, verfuegbar []string) string {
@@ -37,18 +40,25 @@ func Waehle(umgebung func(string) string, einstellung string, verfuegbar []strin
 	if s := passend(einstellung, gibt); s != "" {
 		return s
 	}
+	locale := ""
+	for _, name := range []string{"LC_ALL", "LC_MESSAGES", "LANG"} {
+		if locale = umgebung(name); locale != "" {
+			break
+		}
+	}
+	if l := strings.TrimSpace(locale); l == "" || l == "C" || strings.HasPrefix(l, "C.") {
+		return Ausgangssprache
+	}
 	for _, eintrag := range strings.Split(umgebung("LANGUAGE"), ":") {
+		if istC(eintrag) {
+			return Ausgangssprache
+		}
 		if s := passend(eintrag, gibt); s != "" {
 			return s
 		}
 	}
-	for _, name := range []string{"LC_ALL", "LC_MESSAGES", "LANG"} {
-		if wert := umgebung(name); wert != "" {
-			if s := passend(wert, gibt); s != "" {
-				return s
-			}
-			break
-		}
+	if s := passend(locale, gibt); s != "" {
+		return s
 	}
 	return Ausgangssprache
 }
@@ -77,4 +87,13 @@ func Kandidaten(angabe string) []string {
 		return []string{s, s[:i]}
 	}
 	return []string{s}
+}
+
+// istC meldet, ob eine Locale-Angabe die C-Locale ist ("C", "C.UTF-8", "POSIX").
+func istC(angabe string) bool {
+	s := strings.TrimSpace(angabe)
+	if i := strings.IndexAny(s, ".@"); i >= 0 {
+		s = s[:i]
+	}
+	return s == "C" || s == "POSIX"
 }

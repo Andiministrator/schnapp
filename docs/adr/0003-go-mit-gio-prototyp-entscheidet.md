@@ -78,7 +78,8 @@ erzeugter Protokoll-Code; nachzählen mit `git apply --numstat prototyp/gio-ausg
 
 ### Weitere Befunde
 
-- Die Aufnahme klappte **ohne** installierte `.desktop`-Datei. Ursache offen (F-15); nicht darauf verlassen.
+- Die Aufnahme klappte **ohne** installierte `.desktop`-Datei. Ursache seit 19.11.2026 geklärt: ab Plasma 6.8 prüft KWin
+  nicht mehr (F-15, ADR-0007 Nachtrag 3).
 - `CaptureWorkspace` rechnet bei gemischter Skalierung alles auf die größte Skala hoch — je Bildschirm einzeln
   aufnehmen (`knowledge/topics/kwin-screenshot.md`).
 

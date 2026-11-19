@@ -25,9 +25,9 @@ Stand: 2026-11-19 (ergänzt nach Sprint 1). Kurze Regeln aus Fehlern und Befunde
 
 ## Recherche
 
-- **KWin ScreenShot2** gibt Pixel roh über eine Pipe; die Berechtigung hängt laut Doku an einer installierten `.desktop`-Datei
-  (im Prototyp ging es ohne, F-15)
-  mit absolutem `Exec=` (`topics/kwin-screenshot.md`).
+- **KWin ScreenShot2** gibt Pixel roh über eine Pipe; eine Berechtigung (installierte `.desktop`-Datei mit absolutem
+  `Exec=`) verlangt KWin nur bis Plasma 6.7 — ab 6.8 ist die Prüfung entfernt (F-15, `topics/kwin-screenshot.md`).
+  Lehre: Weicht ein Messwert von der Doku ab, im Quelltext-Verlauf (Commits, Tags) suchen, nicht nur in der Doku.
 - **Plattformregeln zu KI-Code ändern sich schnell** (Codeberg Verbot Juli 2026, Flathub Offenlegung Okt. 2026) — vor
   jeder neuen Plattform aktuell prüfen (`topics/plattformen-und-ki-regeln.md`).
 

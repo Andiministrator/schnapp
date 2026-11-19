@@ -27,7 +27,9 @@ Pull Request.
 
 - Oberflächentexte: Englisch ist die Ausgangssprache. Texte als Literal über `sprache.T("…")`,
   `sprache.TK("Kontext", "…")` oder `sprache.N("one …", "many …", n)` schreiben; jeder neue Text braucht einen
-  deutschen Eintrag in `po/de.po` — sonst schlägt `go test ./...` fehl (`docs/adr/0014-*`). Weitere Sprachen sind als
+  deutschen Eintrag in `po/de.po` — sonst schlägt `go test ./...` fehl (`docs/adr/0014-*`). Im Programmcode nur diese
+  Paketfunktionen nutzen (kein Punkt-Import von `sprache`, keine Aufrufe über einen `*Katalog`), damit die Prüfung
+  jeden Text findet. Weitere Sprachen sind als
   `po/<sprache>.po` willkommen.
 - Nutzer-Dokumente (README, CONTRIBUTING) gibt es auf Englisch und Deutsch — beide im selben Pull Request pflegen.
 - Arbeitsdokumente (`docs/`, `knowledge/`), Commit-Nachrichten und Code-Kommentare sind deutsch. Englisch ist im Pull

@@ -37,4 +37,4 @@ Editor: Pfeil ziehen, am blauen Griff biegen, Enden verschieben, Strg+Z, Mausrad
 Das Protokoll geht nach stderr.
 
 `schnapp-prototyp.desktop.in` ist die Vorlage für die Berechtigung über eine `.desktop`-Datei
-(`@EXEC@` durch den absoluten Pfad ersetzen), falls KWin die Aufnahme ohne sie ablehnt.
+(`@EXEC@` durch den absoluten Pfad ersetzen) — nötig nur bis Plasma 6.7; ab 6.8 prüft KWin nicht mehr (F-15).

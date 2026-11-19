@@ -44,3 +44,12 @@ Einzelheiten: `knowledge/topics/kwin-screenshot.md`. Festgelegt:
   geklärt ist.
 - **Overlay:** randlose Vollbildfenster je Monitor über `xdg_toplevel.set_fullscreen` mit Ausgabe (Gio-Patch),
   keine Layer-Shell nötig.
+
+## Nachtrag 3 (19.11.2026): Berechtigung geklärt (F-15)
+
+KWin hat die Prüfung über `X-KDE-DBUS-Restricted-Interfaces` mit Commit `0ea31ae7` (18.06.2026) entfernt; enthalten ab
+KWin 6.7.90, also **ab Plasma 6.8 braucht die Aufnahme keine Berechtigung** — das erklärt den Prototyp. Bis Plasma 6.7
+gilt die Regel aus Nachtrag 1. Damit ersetzt: die Konsequenz oben („vermutlich eine installierte `.desktop`-Datei“)
+und die Vorsichtsannahme in Nachtrag 2. Schnapp installiert seine `.desktop`-Datei trotzdem mit dem Eintrag
+(Programmmenü, Tastenkürzel, ältere Plasma-Versionen) und meldet den Fehler `NoAuthorized` verständlich (Karte im
+Board). Quelle: `knowledge/sources/kwin-screenshot-berechtigung.md`.

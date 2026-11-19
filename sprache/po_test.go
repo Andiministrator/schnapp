@@ -85,3 +85,35 @@ func TestLesePOFehler(t *testing.T) {
 		}
 	}
 }
+
+// Byte-Order-Mark und alle C-Escapes (F-37).
+func TestLesePOEscapesUndBOM(t *testing.T) {
+	text := "\uFEFFmsgid \"a\"\nmsgstr \"\\r\\a\\b\\f\\v|\\101\\0|\\x41\\x4a\\x041|\\7z\"\n"
+	got, err := LesePO(strings.NewReader(text))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "\r\a\b\f\v|A\x00|AJA|\x07z"; len(got) != 1 || got[0].Texte[0] != want {
+		t.Errorf("got %#v, want %q", got, want)
+	}
+}
+
+func TestLesePOFehlerStreng(t *testing.T) {
+	for name, text := range map[string]string{
+		"doppelt":                      "msgid \"a\"\nmsgstr \"b\"\n\nmsgid \"a\"\nmsgstr \"c\"\n",
+		"doppelt mit Kontext":          "msgctxt \"k\"\nmsgid \"a\"\nmsgstr \"b\"\n\nmsgctxt \"k\"\nmsgid \"a\"\nmsgstr \"c\"\n",
+		"Mehrzahl mit msgstr ohne [n]": "msgid \"a\"\nmsgid_plural \"b\"\nmsgstr \"c\"\n",
+		"Oktal zu groß":                "msgid \"a\"\nmsgstr \"\\777\"\n",
+		"\\x ohne Ziffer":              "msgid \"a\"\nmsgstr \"\\xg\"\n",
+		"Hex zu groß (drei Ziffern)":   "msgid \"a\"\nmsgstr \"\\x414\"\n",
+		"zu groß":                      "msgid \"a\"\nmsgstr \"\"\n" + strings.Repeat("\""+strings.Repeat("x", 1000)+"\"\n", 9000),
+	} {
+		if _, err := LesePO(strings.NewReader(text)); err == nil {
+			t.Errorf("%s: kein Fehler", name)
+		}
+	}
+	// Gleicher Text in verschiedenen Kontexten ist erlaubt.
+	if _, err := LesePO(strings.NewReader("msgid \"a\"\nmsgstr \"b\"\n\nmsgctxt \"k\"\nmsgid \"a\"\nmsgstr \"c\"\n")); err != nil {
+		t.Error(err)
+	}
+}

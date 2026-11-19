@@ -20,8 +20,10 @@ type Eintrag struct {
 }
 
 // LesePO liest eine PO-Datei. Veraltete Einträge ("#~") werden übergangen, der Kopfeintrag (leere msgid) bleibt
-// in der Liste. Unterstützt werden msgctxt, msgid, msgid_plural, msgstr, msgstr[n], mehrzeilige Zeichenketten und
-// die C-Escapes \n \t \" \\.
+// in der Liste. Unterstützt werden msgctxt, msgid, msgid_plural, msgstr, msgstr[n], mehrzeilige Zeichenketten, die
+// C-Escapes (\n \t \r \a \b \f \v \" \\, oktal, \x) und ein Byte-Order-Mark am Anfang. Strenger als msgfmt:
+// Kommentare stehen nur vor einem Eintrag, nicht zwischen msgid und msgstr. Fehler sind außerdem doppelte Einträge,
+// msgid_plural ohne msgstr[n] und Dateien über 8 MiB.
 func LesePO(r io.Reader) ([]Eintrag, error) {
 	var (
 		eintraege []Eintrag
@@ -30,12 +32,19 @@ func LesePO(r io.Reader) ([]Eintrag, error) {
 		feld      string // zuletzt gelesenes Schlüsselwort, für Fortsetzungszeilen
 		index     int    // Index bei msgstr[n]
 		unscharf  bool   // "#, fuzzy" vor dem nächsten Eintrag
+		gesehen   = map[[2]string]bool{}
+		groesse   int
 	)
 	abschliessen := func() error {
 		if begonnen {
 			if feld != "msgstr" {
 				return fmt.Errorf("Eintrag %q ohne msgstr", akt.ID)
 			}
+			s := [2]string{akt.Kontext, akt.ID}
+			if gesehen[s] {
+				return fmt.Errorf("Eintrag %q (Kontext %q) doppelt", akt.ID, akt.Kontext)
+			}
+			gesehen[s] = true
 			eintraege = append(eintraege, akt)
 		}
 		akt, begonnen, feld = Eintrag{}, false, ""
@@ -63,7 +72,14 @@ func LesePO(r io.Reader) ([]Eintrag, error) {
 	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 64*1024), 1024*1024)
 	for nr := 1; sc.Scan(); nr++ {
-		zeile := strings.TrimSpace(sc.Text())
+		roh := sc.Text()
+		if groesse += len(roh) + 1; groesse > maxPO {
+			return nil, fmt.Errorf("Datei größer als %d Bytes", maxPO)
+		}
+		if nr == 1 {
+			roh = strings.TrimPrefix(roh, "\uFEFF") // Byte-Order-Mark mancher Editoren
+		}
+		zeile := strings.TrimSpace(roh)
 		if strings.HasPrefix(zeile, "#") {
 			// Kommentare stehen nur vor einem Eintrag; sie beenden den vorigen.
 			if feld != "veraltet" {
@@ -122,7 +138,7 @@ func LesePO(r io.Reader) ([]Eintrag, error) {
 			neu = wort
 		case wort == "msgid_plural" && feld == "msgid":
 			neu = wort
-		case wort == "msgstr" && (feld == "msgid" || feld == "msgid_plural"):
+		case wort == "msgstr" && feld == "msgid":
 			neu, index = "msgstr", 0
 		case strings.HasPrefix(wort, "msgstr[") && strings.HasSuffix(wort, "]") &&
 			(feld == "msgid_plural" || feld == "msgstr"):
@@ -185,9 +201,61 @@ func zeichenkette(s string) (string, error) {
 			b.WriteByte('"')
 		case '\\':
 			b.WriteByte('\\')
+		case 'r':
+			b.WriteByte('\r')
+		case 'a':
+			b.WriteByte('\a')
+		case 'b':
+			b.WriteByte('\b')
+		case 'f':
+			b.WriteByte('\f')
+		case 'v':
+			b.WriteByte('\v')
+		case '0', '1', '2', '3', '4', '5', '6', '7':
+			// Oktal, höchstens drei Ziffern (C).
+			wert, n := 0, 0
+			for n < 3 && i+n < len(innen) && innen[i+n] >= '0' && innen[i+n] <= '7' {
+				wert = wert*8 + int(innen[i+n]-'0')
+				n++
+			}
+			if wert > 0xff {
+				return "", fmt.Errorf("Oktal-Escape zu groß in %q", s)
+			}
+			b.WriteByte(byte(wert))
+			i += n - 1
+		case 'x':
+			// Hexadezimal, beliebig viele Ziffern wie in C; der Wert muss in ein Byte passen.
+			wert, n := 0, 0
+			for i+1+n < len(innen) && hexwert(innen[i+1+n]) >= 0 {
+				if wert = wert*16 + hexwert(innen[i+1+n]); wert > 0xff {
+					return "", fmt.Errorf("Hex-Escape zu groß in %q", s)
+				}
+				n++
+			}
+			if n == 0 {
+				return "", fmt.Errorf("\\x ohne Ziffer in %q", s)
+			}
+			b.WriteByte(byte(wert))
+			i += n
 		default:
 			return "", fmt.Errorf("unbekanntes Escape \\%c in %q", innen[i], s)
 		}
 	}
 	return b.String(), nil
 }
+
+// hexwert liefert den Wert einer Hex-Ziffer oder -1.
+func hexwert(c byte) int {
+	switch {
+	case c >= '0' && c <= '9':
+		return int(c - '0')
+	case c >= 'a' && c <= 'f':
+		return int(c-'a') + 10
+	case c >= 'A' && c <= 'F':
+		return int(c-'A') + 10
+	}
+	return -1
+}
+
+// maxPO ist die größte erlaubte PO-Datei (eingebettete Dateien sind weit kleiner; schützt vor fremden Dateien).
+const maxPO = 8 << 20
