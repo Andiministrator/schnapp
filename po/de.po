@@ -189,3 +189,28 @@ msgstr "Nach der Aufnahme keinen Editor öffnen"
 
 msgid "Open FILE in the editor"
 msgstr "DATEI im Editor öffnen"
+
+# ui: Editor (#35, ADR-0020)
+msgid "Could not save: %v"
+msgstr "Speichern gescheitert: %v"
+
+msgid "Saved to the library"
+msgstr "In der Bibliothek gespeichert"
+
+msgid "Select"
+msgstr "Auswählen"
+
+msgid "Undo"
+msgstr "Rückgängig"
+
+msgid "Redo"
+msgstr "Wiederholen"
+
+msgid "Fit"
+msgstr "Einpassen"
+
+msgid "Save"
+msgstr "Speichern"
+
+msgid "The editor could not be opened or saved: %v"
+msgstr "Der Editor ließ sich nicht öffnen oder nicht speichern: %v"

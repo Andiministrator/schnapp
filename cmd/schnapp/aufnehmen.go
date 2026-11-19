@@ -41,6 +41,8 @@ type anschluesse struct {
 	// aufraeumen (nil) entfällt das Aufräumen.
 	aufraeumen func(e library.Einstellung, jetzt time.Time) (library.AufraeumErgebnis, error)
 	tagesmarke string
+	// editor öffnet eine Datei im Editor und kehrt nach dem Schließen zurück (ADR-0020); nil = kein Editor.
+	editor func(pfad string) error
 }
 
 func echteAnschluesse() anschluesse {
@@ -73,11 +75,22 @@ func echteAnschluesse() anschluesse {
 			return library.Neu(orte).Aufraeumen(jetzt, e)
 		},
 		tagesmarke: library.TagesmarkePfad(os.Getenv),
+		editor:     oeffneImEditor,
 	}
 }
 
 // Ausfuehren ist die echte Ausführung.
 func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
+	if t.Modus == ModusOeffnen {
+		if an.editor == nil {
+			return exitFehler
+		}
+		if err := an.editor(t.Datei); err != nil {
+			fmt.Fprintln(fehler, err)
+			return exitFehler
+		}
+		return exitOK
+	}
 	q, err := an.quelle()
 	if err != nil {
 		return meldeFehler(fehler, err)
@@ -91,7 +104,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		if err != nil {
 			return meldeFehler(fehler, err)
 		}
-		return an.speichere(b.Pixel, b.Pixel.Bounds(), t.Aufraeumen, aus, fehler)
+		return an.speichere(b.Pixel, b.Pixel.Bounds(), t, aus, fehler)
 
 	case t.Modus == ModusWiederholen:
 		l, err := selection.LadeLetzten(an.letzterPfad)
@@ -114,7 +127,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 			fmt.Fprintln(fehler, i18n.T("The monitor of the last area has changed its size. Select a new area with --region."))
 			return exitFehler
 		}
-		return an.speichere(b.Pixel, l.Bereich, t.Aufraeumen, aus, fehler)
+		return an.speichere(b.Pixel, l.Bereich, t, aus, fehler)
 
 	case t.Modus == ModusBildschirm && t.Ziel.Name != "":
 		b, err := q.Bildschirm(ctx, t.Ziel.Name, capture.Optionen{})
@@ -122,14 +135,14 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 			return meldeFehler(fehler, err)
 		}
 		an.merke(t.Ziel.Name, b.Pixel, b.Pixel.Bounds(), fehler)
-		return an.speichere(b.Pixel, b.Pixel.Bounds(), t.Aufraeumen, aus, fehler)
+		return an.speichere(b.Pixel, b.Pixel.Bounds(), t, aus, fehler)
 
 	case t.Modus == ModusBildschirm && t.Ziel.Wahl == settings.WahlZeiger:
 		b, err := q.AktiverBildschirm(ctx, capture.Optionen{})
 		if err != nil {
 			return meldeFehler(fehler, err)
 		}
-		return an.speichere(b.Pixel, b.Pixel.Bounds(), t.Aufraeumen, aus, fehler)
+		return an.speichere(b.Pixel, b.Pixel.Bounds(), t, aus, fehler)
 
 	case t.Modus == ModusBildschirm && t.Ziel.Wahl == settings.WahlAlle:
 		fmt.Fprintln(fehler, i18n.T("Capturing all monitors at once is not implemented yet."))
@@ -177,13 +190,13 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		return exitFehler
 	}
 	an.merke(monitore[e.Monitor].Name, pixel[e.Monitor], e.Bereich, fehler)
-	return an.speichere(pixel[e.Monitor], e.Bereich, t.Aufraeumen, aus, fehler)
+	return an.speichere(pixel[e.Monitor], e.Bereich, t, aus, fehler)
 }
 
 // speichere legt den Bereich als neue Aufnahme in der Bibliothek ab und schreibt den Pfad nach aus. Das Original
 // der Arbeitsdatei ist nur der gewählte Bereich, nicht der ganze Monitor: Was der Nutzer nicht gewählt hat, gehört
 // nicht in die Datei (Kernprinzip 3).
-func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, e library.Einstellung, aus, fehler io.Writer) int {
+func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftrag, aus, fehler io.Writer) int {
 	start := time.Now()
 	defer func() { diagnose(fehler, "Speichern: %v", time.Since(start).Round(time.Millisecond)) }()
 	d, err := document.Neu(b.SubImage(bereich))
@@ -196,7 +209,14 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, e libra
 		return exitFehler
 	}
 	fmt.Fprintln(aus, pfad)
-	an.raeumeAuf(e, time.Now(), fehler)
+	an.raeumeAuf(t.Aufraeumen, time.Now(), fehler)
+	if t.Editor && an.editor != nil {
+		// Die Aufnahme liegt schon in der Bibliothek, der Pfad steht auf stdout: Was der Editor meldet, ist nur noch
+		// eine Warnung (ADR-0020).
+		if err := an.editor(pfad); err != nil {
+			fmt.Fprintf(fehler, i18n.T("The editor could not be opened or saved: %v")+"\n", err)
+		}
+	}
 	return exitOK
 }
 

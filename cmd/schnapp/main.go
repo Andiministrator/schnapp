@@ -79,6 +79,10 @@ type Auftrag struct {
 	// Aufraeumen ist [library] cleanup/cleanup-days; es läuft nach dem Speichern, höchstens einmal am Tag
 	// (ADR-0016 Nachtrag 2).
 	Aufraeumen library.Einstellung
+	// Editor: nach der Aufnahme den Editor öffnen ([capture] open-editor, außer --no-editor; ADR-0020).
+	Editor bool
+	// Datei: bei ModusOeffnen die zu öffnende Datei.
+	Datei string
 }
 
 // Bildschirmziel sagt, welcher Monitor aufgenommen wird.
@@ -90,7 +94,8 @@ type Bildschirmziel struct {
 // plane löst den Aufruf mit den Einstellungen auf. Vorrang: Kommandozeile vor Datei vor Voreinstellung
 // (ADR-0018): --screen=NAME ignoriert [capture] screen, --screen ohne Wert folgt ihr.
 func plane(a Aufruf, e settings.Einstellungen) Auftrag {
-	t := Auftrag{Modus: a.Modus, Aufraeumen: e.Bibliothek}
+	t := Auftrag{Modus: a.Modus, Aufraeumen: e.Bibliothek, Editor: a.Modus.Aufnahme() && e.Editor && !a.OhneEditor,
+		Datei: a.Datei}
 	if a.Modus == ModusBildschirm {
 		if a.Bildschirm != "" {
 			t.Ziel = Bildschirmziel{Name: a.Bildschirm}

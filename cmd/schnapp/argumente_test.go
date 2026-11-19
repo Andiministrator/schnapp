@@ -144,6 +144,7 @@ func TestLaufeGibtAuftragWeiter(t *testing.T) {
 		{[]string{"--screen=X"}, Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Name: "X"}}},
 	} {
 		tc.want.Aufraeumen = alle.Bibliothek
+		tc.want.Editor = tc.want.Modus.Aufnahme() // Voreinstellung open-editor = true
 		m := &merkeAuftrag{}
 		var aus, fehler bytes.Buffer
 		code := laufe(tc.args, &aus, &fehler, abfrage, lade, m.ausfuehren)

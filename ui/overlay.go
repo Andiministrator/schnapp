@@ -97,6 +97,7 @@ func Overlay(bilder []MonitorBild, m selection.Modus) (OverlayErgebnis, error) {
 		})
 	}
 	for _, f := range g.fenster {
+		offeneOverlays.Add(1) // zurück beim DestroyEvent; der Editor wartet darauf (F-82)
 		go func() {
 			if err := f.laufen(); err != nil {
 				g.melde(ergebnis{err: err})
@@ -131,7 +132,8 @@ func Overlay(bilder []MonitorBild, m selection.Modus) (OverlayErgebnis, error) {
 
 // fensterFrist: so lange wartet Overlay höchstens auf das Schließen der Fenster. Läuft sie ab, kehrt Overlay
 // trotzdem mit dem Ergebnis zurück; noch offene Fenster schließen sich, sobald sie einen Frame bekommen, oder enden
-// mit dem Prozess. Wer danach im selben Prozess ein Fenster öffnet (Editor, #35), muss damit rechnen (F-82).
+// mit dem Prozess. Der Editor im selben Prozess wartet deshalb, bis offeneOverlays null ist, und öffnet sonst nicht
+// (ErrOverlayOffen, F-82).
 const fensterFrist = time.Second
 
 type ergebnis struct {
@@ -184,6 +186,7 @@ func (f *overlayFenster) laufen() error {
 	for {
 		switch e := f.w.Event().(type) {
 		case app.DestroyEvent:
+			offeneOverlays.Add(-1)
 			f.gruppe.zu <- struct{}{}
 			if e.Err != nil {
 				return e.Err
