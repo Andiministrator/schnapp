@@ -141,7 +141,7 @@ func (t Text) Grenzen() Rechteck {
 }
 func (t Text) mitKennung(id int) Objekt { t.ID = id; return t }
 func (t Text) pruefe() error {
-	if !endlich(t.Ort.X, t.Ort.Y) || !groesse(t.Schriftgrad, t.BreiteGrenze) || t.Schriftgrad <= 0 {
+	if !endlich(t.Ort.X, t.Ort.Y) || !groesse(t.Schriftgrad, t.BreiteGrenze) || t.Schriftgrad <= 0 || t.Schriftgrad > MaxSchrift {
 		return fmt.Errorf("Text mit ungültigen Werten")
 	}
 	// Zeichen, die XML nicht tragen kann, überstehen das Speichern nicht unverändert (F-62): ungültiges UTF-8 und
@@ -174,7 +174,8 @@ func (n Nummer) Grenzen() Rechteck {
 }
 func (n Nummer) mitKennung(id int) Objekt { n.ID = id; return n }
 func (n Nummer) pruefe() error {
-	if !endlich(n.Mitte.X, n.Mitte.Y) || !groesse(n.Radius) || n.Radius <= 0 || n.Wert < 0 || n.Wert > MaxNummer {
+	if !endlich(n.Mitte.X, n.Mitte.Y) || !groesse(n.Radius) || n.Radius <= 0 || n.Radius > MaxSchrift ||
+		n.Wert < 0 || n.Wert > MaxNummer {
 		return fmt.Errorf("Nummer mit ungültigen Werten")
 	}
 	return nil

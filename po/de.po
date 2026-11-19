@@ -214,3 +214,31 @@ msgstr "Speichern"
 
 msgid "The editor could not be opened or saved: %v"
 msgstr "Der Editor ließ sich nicht öffnen oder nicht speichern: %v"
+
+# cmd/schnapp: Fehler beim Öffnen (Kritik A-9)
+msgid "Cannot open %s: %s"
+msgstr "%s lässt sich nicht öffnen: %s"
+
+msgid "The file does not exist."
+msgstr "Die Datei gibt es nicht."
+
+msgid "No permission to read the file."
+msgstr "Keine Berechtigung, die Datei zu lesen."
+
+msgid "This is not a regular file."
+msgstr "Das ist keine gewöhnliche Datei."
+
+msgid "This is neither a PNG nor a JPEG image."
+msgstr "Das ist weder ein PNG- noch ein JPEG-Bild."
+
+msgid "The image is too large."
+msgstr "Das Bild ist zu groß."
+
+msgid "The image is damaged."
+msgstr "Das Bild ist beschädigt."
+
+msgid "The selection overlay did not close in time."
+msgstr "Das Auswahl-Overlay hat sich nicht rechtzeitig geschlossen."
+
+msgid "No home directory (HOME is not set)."
+msgstr "Kein Heimverzeichnis (HOME ist nicht gesetzt)."

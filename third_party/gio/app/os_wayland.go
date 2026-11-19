@@ -203,9 +203,12 @@ type window struct {
 		// surf were set for. The hotspot is divided by scale,
 		// never by the current window scale, so image and
 		// hotspot always agree.
-		size    int
-		scale   int
-		cursors struct {
+		size  int
+		scale int
+		// failedScale is a scale for which loading the theme failed;
+		// it is not tried again until the scale changes.
+		failedScale int
+		cursors     struct {
 			pointer         *C.struct_wl_cursor
 			resizeNorth     *C.struct_wl_cursor
 			resizeSouth     *C.struct_wl_cursor
@@ -476,21 +479,26 @@ func (w *window) loadCursors() {
 // If loading fails, the old theme stays in use.
 func (w *window) reloadCursorTheme() {
 	scale := max(1, w.scale)
-	if scale == w.cursor.scale || w.cursor.theme == nil {
+	if scale == w.cursor.scale || scale == w.cursor.failedScale || w.cursor.theme == nil {
 		return
 	}
 	themeName := C.CString(os.Getenv("XCURSOR_THEME"))
 	defer C.free(unsafe.Pointer(themeName))
 	theme := C.wl_cursor_theme_load(themeName, C.int(w.cursor.size*scale), w.disp.shm)
 	if theme == nil {
+		w.cursor.failedScale = scale
 		return
 	}
 	oldTheme, oldCursors, oldSystem := w.cursor.theme, w.cursor.cursors, w.cursor.system
 	w.cursor.theme = theme
+	// loadCursor falls back to cursors.pointer; clear it so a missing
+	// default cursor in the new theme cannot pick the old theme's pointer.
+	w.cursor.cursors.pointer = nil
 	w.loadCursors()
 	if w.cursor.cursors.pointer == nil {
 		w.cursor.theme, w.cursor.cursors = oldTheme, oldCursors
 		C.wl_cursor_theme_destroy(theme)
+		w.cursor.failedScale = scale
 		return
 	}
 	w.cursor.cursor = w.loadCursor(w.cursor.name)
@@ -516,9 +524,13 @@ func (w *window) reloadCursorTheme() {
 			}
 		}
 	}
+	// The cursor surface may still show a buffer of the old theme; detach
+	// it before the theme (and its buffers) is destroyed.
+	C.wl_surface_attach(w.cursor.surf, nil, 0, 0)
+	C.wl_surface_commit(w.cursor.surf)
 	C.wl_cursor_theme_destroy(oldTheme)
 	w.cursor.scale = scale
-	C.wl_surface_set_buffer_scale(w.cursor.surf, C.int32_t(scale))
+	w.cursor.failedScale = 0
 }
 
 func (w *window) loadCursor(name pointer.Cursor) *C.struct_wl_cursor {
@@ -1375,7 +1387,15 @@ func (w *window) setCursor(pointer *C.struct_wl_pointer, serial C.uint32_t) {
 	if buf == nil {
 		return
 	}
-	C.wl_pointer_set_cursor(pointer, serial, w.cursor.surf, C.int32_t(img.hotspot_x/C.uint(w.cursor.scale)), C.int32_t(img.hotspot_y/C.uint(w.cursor.scale)))
+	// The theme may not have the requested size; Wayland requires the
+	// buffer size to be a multiple of the buffer scale (invalid_size is a
+	// protocol error). Fall back to scale 1 for such an image.
+	bs := C.uint(max(1, w.cursor.scale))
+	if img.width%bs != 0 || img.height%bs != 0 {
+		bs = 1
+	}
+	C.wl_surface_set_buffer_scale(w.cursor.surf, C.int32_t(bs))
+	C.wl_pointer_set_cursor(pointer, serial, w.cursor.surf, C.int32_t(img.hotspot_x/bs), C.int32_t(img.hotspot_y/bs))
 	C.wl_surface_attach(w.cursor.surf, buf, 0, 0)
 	C.wl_surface_damage(w.cursor.surf, 0, 0, C.int32_t(img.width), C.int32_t(img.height))
 	C.wl_surface_commit(w.cursor.surf)

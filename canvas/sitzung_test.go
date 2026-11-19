@@ -183,3 +183,23 @@ func TestMittlereTaste(t *testing.T) {
 		t.Errorf("Auswahl %d, Versatz %v", s.Auswahl, s.Abb.Versatz)
 	}
 }
+
+// Während eines Zugs ändern Zoom und Einpassen die Abbildung nicht — sonst spränge das gezogene Objekt (Kritik A-6).
+func TestKeinZoomImZug(t *testing.T) {
+	s, k, _ := sitzung(t)
+	s.Druecken(f(30, 30), TastePrimaer)
+	s.Ziehen(f(60, 30))
+	vorher := s.Abb
+	s.Scrollen(f(60, 30), -3)
+	s.Einpassen()
+	s.EinsZuEins()
+	s.SetzeFenster(image.Pt(500, 500))
+	if s.Abb != vorher {
+		t.Errorf("Abbildung im Zug geändert: %+v → %+v", vorher, s.Abb)
+	}
+	s.Loslassen(f(60, 30))
+	o, _ := s.D.Objekt(k)
+	if b := o.(document.Kasten).Bereich; !nah(b.Min, document.Pt(40, 10)) {
+		t.Errorf("Kasten bei %v, Soll (40,10)", b.Min)
+	}
+}

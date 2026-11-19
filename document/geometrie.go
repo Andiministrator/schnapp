@@ -62,6 +62,9 @@ const (
 	MaxKoordinate = 1e6
 	MaxGroesse    = 1e5
 	MaxNummer     = 1_000_000
+	// MaxSchrift begrenzt Schriftgrad und Nummer-Radius: Der Renderer rastert jede Glyphe vollständig, der Speicher
+	// wächst quadratisch mit der Größe — eine präparierte Datei mit 1e5 bräuchte Dutzende GiB (Kritik A-2, [S]).
+	MaxSchrift = 4096
 )
 
 // endlich meldet, ob alle Werte endliche Zahlen im Koordinatenbereich sind.

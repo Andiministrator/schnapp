@@ -86,7 +86,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 			return exitFehler
 		}
 		if err := an.editor(t.Datei); err != nil {
-			fmt.Fprintln(fehler, err)
+			fmt.Fprintf(fehler, i18n.T("Cannot open %s: %s")+"\n", t.Datei, nutzerFehler(err))
 			return exitFehler
 		}
 		return exitOK
@@ -214,7 +214,7 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 		// Die Aufnahme liegt schon in der Bibliothek, der Pfad steht auf stdout: Was der Editor meldet, ist nur noch
 		// eine Warnung (ADR-0020).
 		if err := an.editor(pfad); err != nil {
-			fmt.Fprintf(fehler, i18n.T("The editor could not be opened or saved: %v")+"\n", err)
+			fmt.Fprintf(fehler, i18n.T("The editor could not be opened or saved: %v")+"\n", nutzerFehler(err))
 		}
 	}
 	return exitOK

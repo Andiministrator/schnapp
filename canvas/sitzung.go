@@ -66,26 +66,32 @@ func NeueSitzung(d *document.Dokument) *Sitzung {
 // eingepasst (der erste Frame kommt unter Wayland oft in falscher Größe).
 func (s *Sitzung) SetzeFenster(g image.Point) {
 	s.fenster = g
-	if s.eingepasst {
+	if s.eingepasst && s.zug == keinZug {
 		s.Abb = Einpassen(s.D.Groesse(), g, Rand)
 	}
 }
 
 // Einpassen zeigt die ganze Ansicht im Fenster (Strg+0).
 func (s *Sitzung) Einpassen() {
+	if s.zug != keinZug {
+		return // während eines Zugs bliebe der Startpunkt in der alten Abbildung (Kritik A-6)
+	}
 	s.eingepasst = true
 	s.Abb = Einpassen(s.D.Groesse(), s.fenster, Rand)
 }
 
 // EinsZuEins zeigt die Ansicht 1:1 um die Fenstermitte (Strg+1).
 func (s *Sitzung) EinsZuEins() {
+	if s.zug != keinZug {
+		return
+	}
 	s.eingepasst = false
 	s.Abb = s.Abb.Eins(document.Pt(float64(s.fenster.X)/2, float64(s.fenster.Y)/2))
 }
 
 // Scrollen zoomt zum Zeiger: dy < 0 vergrößert (Rad nach oben). Ein Rastschritt (dy = ±1) ändert um 10 %.
 func (s *Sitzung) Scrollen(p document.Punkt, dy float64) {
-	if dy == 0 || math.IsNaN(dy) || math.IsInf(dy, 0) {
+	if dy == 0 || math.IsNaN(dy) || math.IsInf(dy, 0) || s.zug != keinZug {
 		return
 	}
 	s.eingepasst = false

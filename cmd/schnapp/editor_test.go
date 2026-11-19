@@ -65,7 +65,7 @@ func TestOeffnenOhneAufnahme(t *testing.T) {
 		t.Errorf("Code %d, aus %q, fehler %q, geöffnet %q", code, aus, fehler, geoeffnet)
 	}
 	l.an.editor = func(string) error { return errors.New("gibt es nicht") }
-	if code, _, fehler := l.fuehre(Auftrag{Modus: ModusOeffnen, Datei: "x"}); code != exitFehler || !strings.Contains(fehler, "gibt es nicht") {
+	if code, _, fehler := l.fuehre(Auftrag{Modus: ModusOeffnen, Datei: "x"}); code != exitFehler || !strings.Contains(fehler, "Cannot open x: gibt es nicht") {
 		t.Errorf("Fehlerfall: Code %d, fehler %q", code, fehler)
 	}
 }
@@ -160,5 +160,70 @@ func TestSpeichernAufnahmeDerBibliothek(t *testing.T) {
 	}
 	if neu, _ := fileformat.Oeffne(abs); len(neu.Dokument.Objekte()) != 1 {
 		t.Error("Objekt nicht gespeichert")
+	}
+}
+
+// Verschwindet die Bibliotheksdatei, während der Editor offen ist, landet die Bearbeitung als neue Aufnahme
+// (Kritik A-1) — nichts geht verloren.
+func TestSpeichernDateiWegWaehrendEditor(t *testing.T) {
+	b := testBibliothek(t)
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 5, 5)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, err := b.Ablegen(d, d.Ansichtsbild(), fileformat.Metadaten{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	abs := filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad))
+	g, err := fileformat.Oeffne(abs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	speichern := speichernIn(b, abs, g)
+	if err := os.Rename(abs, abs+".weg"); err != nil {
+		t.Fatal(err)
+	}
+	mitKasten(t, g.Dokument)
+	if err := speichern(g.Dokument); err != nil {
+		t.Fatalf("Speichern: %v", err)
+	}
+	idx, _ := b.Laden()
+	gefunden := false
+	for _, ein := range idx.Eintraege {
+		if !ein.Bearbeitet {
+			continue
+		}
+		neu, err := fileformat.Oeffne(filepath.Join(b.Orte.Ablage, filepath.FromSlash(ein.Pfad)))
+		if err == nil && len(neu.Dokument.Objekte()) == 1 {
+			gefunden = true
+		}
+	}
+	if !gefunden {
+		t.Errorf("keine neue Aufnahme im Index: %+v", idx.Eintraege)
+	}
+}
+
+// Bekannte Fehler erscheinen übersetzt statt als Paketfehler (Kritik A-9).
+func TestNutzerFehler(t *testing.T) {
+	i18n.Setze(nil)
+	dir := t.TempDir()
+	_, fehlt := fileformat.Oeffne(filepath.Join(dir, "fehlt.png"))
+	_, ordner := fileformat.Oeffne(dir)
+	text := filepath.Join(dir, "a.txt")
+	if err := os.WriteFile(text, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, keinBild := fileformat.Oeffne(text)
+	for err, soll := range map[error]string{
+		fehlt:              "The file does not exist.",
+		ordner:             "This is not a regular file.",
+		keinBild:           "This is neither a PNG nor a JPEG image.",
+		ui.ErrOverlayOffen: "The selection overlay did not close in time.",
+		errors.New("x"):    "x",
+	} {
+		if got := nutzerFehler(err); got != soll {
+			t.Errorf("%v: %q, Soll %q", err, got, soll)
+		}
 	}
 }

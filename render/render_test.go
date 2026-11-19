@@ -179,3 +179,16 @@ func BenchmarkGrossesBild(b *testing.B) {
 		}
 	}
 }
+
+// Tabulator und Wagenrücklauf erscheinen nicht als Ersatzkästchen (Kritik A-3).
+func TestSteuerzeichenOhneKaestchen(t *testing.T) {
+	leer := weissesDokument(t, 120, 40)
+	mitTab := weissesDokument(t, 120, 40)
+	hinzu(t, mitTab, document.Text{Ort: document.Pt(5, 5), Inhalt: "\t\r", Schriftgrad: 20, Farbe: rot})
+	a, b := bild(t, leer), bild(t, mitTab)
+	for i := range a.Pix {
+		if a.Pix[i] != b.Pix[i] {
+			t.Fatal("Tabulator/Wagenrücklauf zeichnen etwas")
+		}
+	}
+}

@@ -466,12 +466,17 @@ func TestWertebereiche(t *testing.T) {
 		Text{Ort: Pt(0, 0), Schriftgrad: 10, Inhalt: "a\x00b"},
 		Text{Ort: Pt(0, 0), Schriftgrad: 10, Inhalt: "a\xffb"},
 		Text{Ort: Pt(0, 0), Schriftgrad: MaxGroesse + 1, Inhalt: "x"},
+		Text{Ort: Pt(0, 0), Schriftgrad: MaxSchrift + 1, Inhalt: "x"}, // Kritik A-2: Speicher beim Rendern
+		Nummer{Radius: MaxSchrift + 1, Wert: 1},
 		Nummer{Radius: 3, Wert: MaxNummer + 1},
 		Nummer{Radius: 3, Wert: -1},
 	} {
 		if _, err := d.Hinzufuegen(o); err == nil {
 			t.Errorf("%#v ohne Fehler", o)
 		}
+	}
+	if _, err := d.Hinzufuegen(Text{Ort: Pt(0, 0), Schriftgrad: MaxSchrift, Inhalt: "x"}); err != nil {
+		t.Errorf("Schriftgrad an der Grenze abgelehnt: %v", err)
 	}
 	// Erlaubt ist, was XML trägt: auch CRLF, DEL und C1 (F-68); abgelehnt nur U+0001 und Ähnliches.
 	for _, inhalt := range []string{"Zeile 1\n\tZeile 2 ÄÖÜ", "Windows\r\nZeile", "a\x7fb", "a\u0085b"} {

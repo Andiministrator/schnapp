@@ -64,7 +64,9 @@ func Editor(titel string, d *document.Dokument, speichern Speichern) error {
 		time.Sleep(20 * time.Millisecond)
 	}
 	th := material.NewTheme()
-	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
+	// Nur die Go-Schriften, wie im Renderer: sonst zeigte der Bildschirm Zeichen aus Systemschriften, die in der
+	// gespeicherten Datei als Kästchen erscheinen (Kritik A-3).
+	th.Shaper = text.NewShaper(text.NoSystemFonts(), text.WithCollection(gofont.Collection()))
 	e := &editor{w: new(app.Window), thema: th, s: canvas.NeueSitzung(d), titel: titel, speichern: speichern}
 	e.bildNeu()
 	return e.laufen()
@@ -103,18 +105,17 @@ func (e *editor) laufen() error {
 		switch ev := e.w.Event().(type) {
 		case app.DestroyEvent:
 			diagnoseEditor("Fenster zu: Fehler %v, geändert %v, Zug %v", ev.Err, e.s.Geaendert, e.s.Zieht())
-			if ev.Err != nil {
-				return ev.Err
-			}
 			if e.s.Zieht() {
 				e.s.Abbrechen()
 			}
+			// Auch wenn das Fenster mit Fehler endet (Wayland weg), liegt das Dokument noch im Speicher: speichern
+			// (Kritik A-4).
+			var err error
 			if e.s.Geaendert {
-				err := e.speichern(e.s.D)
+				err = e.speichern(e.s.D)
 				diagnoseEditor("Speichern beim Schließen: %v", err)
-				return err
 			}
-			return nil
+			return errors.Join(ev.Err, err)
 		case app.FrameEvent:
 			gtx := app.NewContext(&ops, ev)
 			e.frame(gtx)
@@ -185,11 +186,12 @@ func (e *editor) leinwand(gtx layout.Context) {
 	if a.Zoom >= 2 {
 		b.Filter = paint.FilterNearest // einzelne Pixel sichtbar
 	}
+	// Objekte im selben Ausschnitt wie das Bild: Was außerhalb liegt, fehlt auch in der gespeicherten Datei (Kritik A-7).
 	bc := clip.Rect(image.Rectangle{Max: e.s.D.Groesse()}).Push(gtx.Ops)
 	b.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
-	bc.Pop()
 	e.zeichneObjekte(gtx)
+	bc.Pop()
 	af.Pop()
 	e.zeichneAuswahl(gtx)
 
@@ -297,6 +299,7 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 			}
 			ort := an(v.Ort)
 			for i, zeile := range strings.Split(v.Inhalt, "\n") {
+				zeile = strings.ReplaceAll(strings.ReplaceAll(zeile, "\r", ""), "\t", "    ") // wie im Renderer
 				p := ort.Add(f32.Pt(0, float32(v.Schriftgrad*1.3*float64(i))))
 				e.textBei(gtx, zeile, float32(v.Schriftgrad), p, false, v.Farbe)
 			}

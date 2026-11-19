@@ -4,11 +4,13 @@ package main
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 
 	"github.com/Andiministrator/schnapp/document"
 	"github.com/Andiministrator/schnapp/fileformat"
+	"github.com/Andiministrator/schnapp/i18n"
 	"github.com/Andiministrator/schnapp/library"
 	"github.com/Andiministrator/schnapp/render"
 	"github.com/Andiministrator/schnapp/ui"
@@ -47,10 +49,16 @@ func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen) ui.Sp
 		}
 		if inBibliothek {
 			_, err := b.Speichern(rel, d, sichtbar)
-			if err == nil || errors.Is(err, library.ErrIndex) || errors.Is(err, library.ErrVorschau) {
+			switch {
+			case err == nil || errors.Is(err, library.ErrIndex) || errors.Is(err, library.ErrVorschau):
 				return nil
+			case errors.Is(err, fs.ErrNotExist) || errors.Is(err, library.ErrFremd) ||
+				errors.Is(err, library.ErrPfad) || errors.Is(err, fileformat.ErrFormatNeuer):
+				// Die Datei ist weg, ersetzt oder nicht mehr unsere (gelöscht, aufgeräumt, neuere Fassung): nicht
+				// verlieren, sondern als neue Aufnahme ablegen (Kritik A-1).
+			default:
+				return err
 			}
-			return err
 		}
 		m := meta
 		m.Bearbeitet = true
@@ -62,4 +70,28 @@ func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen) ui.Sp
 		rel, inBibliothek = e.Pfad, true
 		return nil
 	}
+}
+
+// nutzerFehler übersetzt bekannte Fehler beim Öffnen und im Editor für die Ausgabe; Unbekanntes bleibt, wie es ist
+// (Paketfehler sind nicht übersetzt, Kritik A-9).
+func nutzerFehler(err error) string {
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		return i18n.T("The file does not exist.")
+	case errors.Is(err, fs.ErrPermission):
+		return i18n.T("No permission to read the file.")
+	case errors.Is(err, fileformat.ErrKeineDatei):
+		return i18n.T("This is not a regular file.")
+	case errors.Is(err, fileformat.ErrKeinPNG):
+		return i18n.T("This is neither a PNG nor a JPEG image.")
+	case errors.Is(err, fileformat.ErrZuGross):
+		return i18n.T("The image is too large.")
+	case errors.Is(err, fileformat.ErrBeschaedigt):
+		return i18n.T("The image is damaged.")
+	case errors.Is(err, ui.ErrOverlayOffen):
+		return i18n.T("The selection overlay did not close in time.")
+	case errors.Is(err, library.ErrKeinHeim):
+		return i18n.T("No home directory (HOME is not set).")
+	}
+	return err.Error()
 }
