@@ -1,7 +1,7 @@
 # ADR-0018: Einstellungen — Ort, Format, Vorrang
 
 ## Status
-Vorgeschlagen (19.11.2026, Karte #49; wartet auf Andis Zustimmung)
+Akzeptiert (Andi, 19.11.2026: „passt“; Karte #49)
 
 ## Kontext
 Mit ADR-0017 Nachtrag 3 bekommt Schnapp seine erste Einstellung: was „Bildschirm aufnehmen“ ohne Monitornamen tut.
