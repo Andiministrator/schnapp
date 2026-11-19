@@ -8,7 +8,8 @@ Prüft, ob Gio für Schnapp trägt (ADR-0003, Kriterien in Nachtrag 1). Kein Pro
 prototyp/bauen.sh            # baut nach ~/.local/bin/schnapp-prototyp
 ```
 
-Das Skript legt eine Kopie von Gio unter `tmp/gio-gepatcht` an und wendet `gio-ausgabe.patch` an:
+Gio kommt gepatcht aus `../extern/gio` (`replace` in `go.mod`, ADR-0015); ein gewöhnliches
+`go build -tags novulkan,nox11 .` geht also auch. Der Patch (`extern/gio-ausgabe.patch`, siehe `extern/README.md`):
 
 - `app.FullscreenOn(name)` — Vollbildfenster auf einer bestimmten Wayland-Ausgabe (`xdg_toplevel.set_fullscreen`
   mit Ausgabe statt `nil`),
@@ -17,8 +18,7 @@ Das Skript legt eine Kopie von Gio unter `tmp/gio-gepatcht` an und wendet `gio-a
   Pixelgröße statt Ganzzahl-Skala, die KWin herunterrechnet. Protokoll-Code mit wayland-scanner aus
   wayland-protocols 1.45 erzeugt (`knowledge/sources-visited.md`).
 
-Die Kopie trägt eine Marke mit Gio-Version und Prüfsumme des Patches; passt sie nicht (Patch geändert, Lauf
-abgebrochen), verschiebt `bauen.sh` die alte Kopie nach `tmp/papierkorb/` und legt sie neu an. Der Patch braucht
+`bauen.sh` setzt Build-Tags und `-trimpath` (keine lokalen Pfade im Programm). Der Patch braucht
 wayland-client ≥ 1.20 (`wl_output.name`).
 
 Build-Tags: `novulkan` (keine Vulkan-Header nötig, OpenGL ES über EGL), `nox11` (nur Wayland, ADR-0007).

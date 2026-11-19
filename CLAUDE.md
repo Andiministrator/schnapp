@@ -121,8 +121,10 @@ Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung) — ADR
 - **Zeichenpakete** (eigenes Modul `github.com/Andiministrator/schnapp/zeichnen`, ADR-0012):
   `cd zeichnen && go vet ./... && go test ./...`. Ein Schwesterprojekt bindet dieses Modul ein — öffentliche Schnittstellen nur nach
   Abstimmung ändern (wer, steht in `CLAUDE.local.md`).
-- **Prototyp** `prototyp/` (Wegwerf-Code, eigenes Modul): `prototyp/bauen.sh` baut mit gepatchtem Gio, Tests
-  `cd prototyp && go test -modfile=../tmp/prototyp-gepatcht.mod -tags novulkan,nox11 ./...` (Modul-Datei entsteht beim Bau).
+- **Gepatchtes Gio** `extern/gio/` (ADR-0015): eigenes Modul, eingebunden per `replace gioui.org => …/extern/gio`.
+  Änderungen dort, dann `extern/gio-patch.sh erzeugen` (Patch im selben Commit); Prüfung `extern/gio-patch.sh pruefen`.
+- **Prototyp** `prototyp/` (Wegwerf-Code, eigenes Modul): `prototyp/bauen.sh` baut (`-trimpath`), Tests
+  `cd prototyp && go test -tags novulkan,nox11 ./...`.
 - Programm Schnapp: noch kein Produktcode. Geplant `go build ./...`, `go test ./...`, `go run ./cmd/schnapp` im Wurzelmodul.
 
 ## Marke

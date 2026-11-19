@@ -1,0 +1,53 @@
+# ADR-0015: Gepatchtes Gio als Kopie im Repo (`extern/gio`)
+
+## Status
+Akzeptiert (Claude Opus 5.5, 19.11.2026, Karte #16 in Sprint 2; Andi hatte Sprint 2 freigegeben, ohne diese Weiche
+vorzugeben). Leicht umkehrbar: eine `replace`-Zeile je Modul und ein Ordner. Setzt die Konsequenz aus ADR-0003
+Nachtrag 2 um („vor der ersten Fassung festlegen, wie der Patch ins Repo und in die CI kommt“).
+
+## Kontext
+Schnapp braucht Gio mit einem Patch (Monitorwahl, gebrochene Skalierung; ADR-0003 Nachtrag 2), bis Gio beides selbst
+kann. Im Prototyp lag die gepatchte Kopie gitignoriert unter `tmp/gio-gepatcht`, und `prototyp/bauen.sh` schrieb die
+Ersetzung in eine erzeugte Modul-Datei unter `tmp/`. Damit bauten nur das Skript und nur dieser Rechner. Ein frischer
+Klon, `go build ./...`, `go test ./...` und die CI kannten den Patch nicht.
+
+Möglichkeiten:
+
+1. **Patch + Bauskript** (wie im Prototyp): kleines Repo, aber `go build` geht nur nach einem Vorlauf; `replace` auf
+   einen gitignorierten Pfad bricht fremde Klone.
+2. **Fork auf GitHub** (`replace gioui.org => github.com/…/gio vX`): sauber für Go, aber ein zweites öffentliches Repo
+   zu pflegen, Veröffentlichung unter dem Konto des Maintainers, und jede Patch-Änderung braucht dort einen Tag.
+3. **Gepatchte Kopie im Repo** als eigenes Modul (`extern/gio`) mit `replace gioui.org => ../extern/gio`: `go build`
+   geht in jedem Klon ohne Vorlauf und ohne Netz für Gio; Flatpak-Bau braucht keinen Patch-Schritt. Kosten: 3 MB und
+   rund 300 Dateien fremder Code im Repo.
+
+## Entscheidung
+
+Möglichkeit 3.
+
+- `extern/gio/` ist Gio in der Version aus `extern/gio-patch.sh` (`GIO_VERSION`, derzeit v0.10.3) mit
+  angewendetem Patch. Ein eigenes Go-Modul (`module gioui.org`); `go build ./...` im Wurzelmodul greift deshalb nicht
+  hinein.
+- `extern/gio-ausgabe.patch` bleibt die maßgebliche Beschreibung der Änderung (für Prüfung, Gio-Updates und die
+  Einreichung bei Gio, Karte #17).
+- `extern/gio-patch.sh` hält beides zusammen: `pruefen` (unverändertes Gio aus dem Modulcache + Patch = `extern/gio`,
+  läuft in der CI), `erzeugen` (Patch nach einer Änderung in `extern/gio` neu schreiben), `anlegen` (Kopie neu aufbauen,
+  etwa nach einem Gio-Update).
+- Jedes Modul, das Gio nutzt, trägt `replace gioui.org => <relativer Pfad>/extern/gio` in seinem `go.mod` — heute
+  `prototyp/`, später das Wurzelmodul (#10). Die `require`-Zeile nennt dieselbe Version wie `GIO_VERSION`.
+- Programme bauen mit `-trimpath` und den Tags `novulkan,nox11` (ADR-0003 Nachtrag 2, ADR-0007). Ohne `-trimpath`
+  stehen die lokalen Pfade des Bau-Rechners im Programm (Kernprinzip „keine Spuren nach außen“).
+- Die CI (`.github/workflows/test.yml`) prüft den Patch (Job `gio-patch`) und baut und testet den Prototyp gegen
+  `extern/gio` mit den cgo-Bibliotheken des Runners (Job `prototyp`).
+
+## Konsequenzen
+
+- Änderungen am Patch werden in `extern/gio` gemacht und mit `extern/gio-patch.sh erzeugen` in den Patch übertragen;
+  beides gehört in denselben Commit, sonst schlägt die CI fehl.
+- Gio-Update: `GIO_VERSION` und die `require`-Zeilen anheben, alte Kopie nach `tmp/papierkorb/` verschieben,
+  `extern/gio-patch.sh anlegen` — schlägt das Anwenden fehl, den Patch nachziehen. Dabei prüfen, ob Gio die
+  Fähigkeiten inzwischen selbst hat (ADR-0003 Nachtrag 2).
+- Lizenz: `extern/gio/LICENSE` (Unlicense OR MIT) bleibt unverändert im Ordner; erzeugter Protokoll-Code trägt seine
+  MIT-Kopfzeilen. GPL-3.0-verträglich (ADR-0009).
+- Gofmt- und Vet-Läufe des Projekts gelten nicht für `extern/gio` (fremder Code im Stil von Gio).
+- Der Prototyp braucht `tmp/gio-gepatcht` und `tmp/prototyp-gepatcht.mod` nicht mehr.

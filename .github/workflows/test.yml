@@ -22,3 +22,32 @@ jobs:
         run: test -z "$(gofmt -l .)"
       - run: go vet ./...
       - run: go test ./...
+
+  # Gepatchtes Gio (ADR-0015): extern/gio muss genau Gio + extern/gio-ausgabe.patch sein.
+  gio-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: prototyp/go.mod
+      - run: extern/gio-patch.sh pruefen
+
+  # Prototyp gegen das gepatchte Gio bauen und testen (cgo, nur Wayland).
+  prototyp:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: prototyp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: prototyp/go.mod
+      - name: Bibliotheken für Gio (Wayland, EGL, xkbcommon)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwayland-dev libegl-dev libxkbcommon-dev
+      - name: gofmt
+        run: test -z "$(gofmt -l .)"
+      - run: go vet -tags novulkan,nox11 ./...
+      - run: go test -tags novulkan,nox11 ./...
+      - run: go build -trimpath -tags novulkan,nox11 -o /dev/null .

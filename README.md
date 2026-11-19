@@ -36,6 +36,7 @@ There is no program to build yet. What exists:
 |---|---|---|
 | `zeichnen/` | Go module `github.com/Andiministrator/schnapp/zeichnen`: SVG parsing, an anti-aliased rasterizer, numeric helpers (standard library only) | `cd zeichnen && go vet ./... && go test ./...` |
 | `marke/` | Logo, colours and corporate design ([`marke/corporate-design.md`](marke/corporate-design.md), German, with PDF) | `python3 marke/werkzeug/paket.py` rebuilds the logo files |
+| `extern/gio/` | Gio with our patch (multi-monitor fullscreen, fractional scaling), used via `replace` in `go.mod` | `extern/gio-patch.sh pruefen`, see [`extern/README.md`](extern/README.md) (German) |
 | `prototyp/` | Throw-away prototype that checked Gio (needs Go ≥ 1.27, cgo, `libwayland-client`, `libwayland-egl`, `libwayland-cursor`, `libEGL`, `libxkbcommon`) | `prototyp/bauen.sh`, see [`prototyp/README.md`](prototyp/README.md) |
 
 ## Documentation
@@ -52,5 +53,5 @@ direction and review of the maintainer. Decisions are recorded in `docs/adr/`. S
 ## Licence
 
 GPL-3.0-or-later, see [`LICENSE`](LICENSE). The logo uses outlines of Open Sans (SIL Open Font License 1.1). Bundled third-party code keeps its own licence: the Gio patch
-(`prototyp/gio-ausgabe.patch`) applies to Gio (Unlicense OR MIT) and contains code generated from
+(`extern/gio-ausgabe.patch`, applied in `extern/gio/`) applies to Gio (Unlicense OR MIT) and contains code generated from
 wayland-protocols (MIT).

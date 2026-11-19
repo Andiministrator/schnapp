@@ -13,7 +13,7 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
 - **Jedes Fenster hat eine eigene Wayland-Verbindung** (`newWLWindow` → `newWLDisplay`); Ausgaben vor dem ersten
   Fenster aufzulisten heißt: eine kurze eigene Verbindung öffnen.
 
-## Der Patch (`prototyp/gio-ausgabe.patch`)
+## Der Patch (`extern/gio-ausgabe.patch`, angewendet in `extern/gio/`)
 
 - `app.FullscreenOn(name)` (Feld `Config.Output`) und `app.WaylandOutputs()`; `wl_output` in Version `min(v, 4)`,
   Ereignisse `name`/`description` (braucht wayland-client ≥ 1.20).
@@ -22,9 +22,14 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
   über `pxScale()`. Fehlen die Protokolle, bleibt alles wie vorher.
 - Protokoll-Code mit `wayland-scanner` aus wayland-protocols 1.45 (XML aus dem öffentlichen Repo, das Paket
   `wayland-protocols` war nicht installiert). Upstream erzeugt Gio solchen Code per `go:generate`.
-- Umfang: von Hand +153/−26 Zeilen, erzeugt 811 Zeilen — zählen mit `git apply --numstat prototyp/gio-ausgabe.patch`.
-- Bauen: `prototyp/bauen.sh` (gepatchte Kopie unter `tmp/gio-gepatcht` mit Marke aus Version und Prüfsumme,
-  `replace` nur in einer erzeugten Modul-Datei unter `tmp/`; `go.mod` bleibt unberührt).
+- Umfang: von Hand +153/−26 Zeilen, erzeugt 811 Zeilen — zählen mit `git apply --numstat extern/gio-ausgabe.patch`.
+- Ablage (ADR-0015, seit 19.11.2026): gepatchte Kopie als Modul `extern/gio/` im Repo, `replace gioui.org =>
+  ../extern/gio` im `go.mod` jedes Nutzers; `extern/gio-patch.sh pruefen|erzeugen|anlegen` hält Kopie und Patch
+  zusammen, die CI prüft beides. Vorher (Sprint 1) lag die Kopie gitignoriert unter `tmp/` — frische Klone und die CI
+  bauten nicht.
+- **Falle `-o` nach `cd`:** ein Bauskript, das erst in sein Verzeichnis wechselt, muss den Zielpfad vorher absolut
+  machen (`realpath -m`), sonst landet das Programm unter `prototyp/tmp/…` und man prüft die alte Datei.
+- **`-trimpath`** gehört in jeden Bau: ohne stehen Modulcache- und Projektpfade des Rechners im Programm.
 
 ## Bauen und Abhängigkeiten
 

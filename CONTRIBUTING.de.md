@@ -40,6 +40,8 @@ PDF); Logo-Dateien in [`marke/logo/`](marke/logo/README.md).
 
 - Conventional Commits: `<typ>(<bereich>): <beschreibung>`, Typen `feat fix docs refactor chore style test perf`.
 - Vor einem Pull Request: `gofmt`, `go vet ./...` und `go test ./...` in jedem berührten Modul.
+- `extern/gio/` ist Gio mit unserem Patch (`docs/adr/0015-*`). Wer dort ändert, ruft `extern/gio-patch.sh erzeugen` auf
+  und committet den neuen `extern/gio-ausgabe.patch` mit; die CI prüft, dass beides zusammenpasst.
 - Jede selbst geschriebene Quelldatei beginnt mit `SPDX-License-Identifier: GPL-3.0-or-later` (als Kommentar).
   Patches an fremdem Code (z. B. Gio) behalten dessen Lizenz.
 

@@ -94,3 +94,7 @@ Schnapp bleibt bei **Go mit Gio**. Kein Wechsel zu Rust.
 - Jede Gio-Aktualisierung prüft, ob der Patch noch passt und noch nötig ist.
 - Der Prototyp-Code ist Wegwerf-Code. Übernommen werden Erkenntnisse und Teile mit Tests (`format.go`, `pfeil.go`),
   nicht die Oberfläche.
+
+**Umgesetzt durch ADR-0015 (19.11.2026):** Patch und gepatchte Kopie liegen jetzt unter `extern/`
+(`extern/gio-ausgabe.patch`, `extern/gio/`); die Pfade `prototyp/gio-ausgabe.patch` oben sind der Stand vom 19.11.2026
+vor dem Umzug.
