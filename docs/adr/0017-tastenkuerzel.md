@@ -51,3 +51,23 @@ Kommandozeile ist Teil der Oberfläche und nach einer Veröffentlichung nur unte
 Desktop-Aktionen heißen `Region`, `Screen`, `Window`, `Repeat` (ihre angezeigten Namen bleiben übersetzt). Die
 deutschen Namen oben (`--bereich` usw.) gelten nicht mehr.
 
+## Nachtrag 3 (19.11.2026): `--screen` ohne Wert und die Einstellung dazu (F-58)
+
+**Status:** Akzeptiert (Andi, 19.11.2026: „dann folge ich deinem Vorschlag“).
+
+Die Desktop-Aktion `Screen` („Bildschirm aufnehmen“, per Menü oder frei belegbarer Taste; `Print` bleibt an `Region`)
+ruft `schnapp --screen` ohne Wert. Was dieser Aufruf tut, legt eine **Einstellung** fest:
+
+| Wert | Verhalten |
+|---|---|
+| **Monitor per Klick wählen** (Voreinstellung) | Overlay wie bei `--region`, aber im Monitor-Modus: der Monitor unter dem Mauszeiger ist hervorgehoben, ein Klick nimmt ihn ganz, Ziehen wählt doch einen Bereich, Esc bricht ab |
+| Monitor unter dem Mauszeiger sofort | ohne Overlay; KWin `CaptureActiveScreen` (Wayland gibt Programmen keine globale Zeigerposition, der aktive Bildschirm kommt von KWin) |
+| Alle Monitore | ein Bild über alle Monitore; je Bildschirm aufnehmen und zusammensetzen, nicht `CaptureWorkspace` (rechnet bei gemischter Skala hoch, `knowledge/topics/kwin-screenshot.md`) |
+
+- `--screen=NAME` nimmt immer genau diesen Monitor, unabhängig von der Einstellung.
+- Die Monitorliste gibt künftig `--list-screens` aus; `--screen` allein listet nicht mehr (Nachtrag 1, „Vorläufig“,
+  ist damit überholt).
+- Die Einstellung ist die erste in Schnapp. Ort und Format der Einstellungsdatei legt ein eigener ADR fest, bevor sie
+  umgesetzt wird. Bis dahin gilt fest die Voreinstellung.
+- Umsetzung: Kommandozeile (`--list-screens`, `--screen` ohne Liste) mit dem Rest von F-58; Monitor-Modus mit dem
+  Overlay.
