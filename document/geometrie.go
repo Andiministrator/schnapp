@@ -70,6 +70,9 @@ const (
 	// Editor beim Speichern ein. Überschreitung ist ein Fehler, kein stilles Kürzen.
 	MaxTextZeichen = 10_000
 	MaxObjekte     = 10_000
+	// MaxStreifen begrenzt die Stauch-Streifen eines Dokuments (F-136). Echte Dokumente haben eine Handvoll; die
+	// Grenze liegt weit darüber und hält Prüfen, Rendern und Export auch bei einer präparierten Datei kurz.
+	MaxStreifen = 1024
 )
 
 // endlich meldet, ob alle Werte endliche Zahlen im Koordinatenbereich sind.

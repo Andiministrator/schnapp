@@ -263,8 +263,8 @@ type ansichtAendern struct {
 	altSt, neuSt []Streifen
 }
 
-func (b ansichtAendern) ausfuehren(d *Dokument)    { d.zuschnitt, d.streifen = b.neuZ, b.neuSt }
-func (b ansichtAendern) zuruecknehmen(d *Dokument) { d.zuschnitt, d.streifen = b.altZ, b.altSt }
+func (b ansichtAendern) ausfuehren(d *Dokument)    { d.setzeAnsicht(b.neuZ, b.neuSt) }
+func (b ansichtAendern) zuruecknehmen(d *Dokument) { d.setzeAnsicht(b.altZ, b.altSt) }
 
 // SetzeZuschnitt setzt den sichtbaren Ausschnitt (im Original); das ganze Bild hebt den Zuschnitt auf.
 func (d *Dokument) SetzeZuschnitt(z image.Rectangle) error {

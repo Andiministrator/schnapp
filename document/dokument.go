@@ -33,6 +33,7 @@ type Dokument struct {
 	naechsteID int
 	zuschnitt  image.Rectangle // im Original; immer gesetzt, ganzes Bild = keine Beschneidung
 	streifen   []Streifen
+	abbX, abbY abbildung // aus zuschnitt und streifen abgeleitet, nur über setzeAnsicht ändern
 	verlauf    verlauf
 	zug        *zug
 }
@@ -54,7 +55,9 @@ func Neu(bild image.Image) (*Dokument, error) {
 	}
 	o := image.NewNRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
 	draw.Draw(o, o.Bounds(), bild, b.Min, draw.Src)
-	return &Dokument{original: o, naechsteID: 1, zuschnitt: o.Bounds()}, nil
+	d := &Dokument{original: o, naechsteID: 1}
+	d.setzeAnsicht(o.Bounds(), nil)
+	return d, nil
 }
 
 // Original liefert eine Kopie des unbeschnittenen Originals (mit allen Schwärzungen).
@@ -103,69 +106,83 @@ func (d *Dokument) index(id int) int {
 
 // --- Ansicht: Zuschnitt und Stauchen ---
 
-// achse liefert für die Ansicht die entfernten Bereiche einer Achse, auf den Zuschnitt begrenzt und sortiert.
-func (d *Dokument) achse(zeilen bool) (von, bis int, weg [][2]int) {
-	von, bis = d.zuschnitt.Min.X, d.zuschnitt.Max.X
+// abbildung ist die fertig berechnete Umrechnung einer Achse (F-136): die entfernten Bereiche, auf den Zuschnitt
+// begrenzt, und ihre Präfixsummen. Sie wird beim Ändern von Zuschnitt oder Streifen einmal aufgebaut (setzeAnsicht)
+// und danach nur gelesen — so bleibt das Dokument auch bei nebenläufigem Lesen frei von Schreibzugriffen, und jede
+// Umrechnung kostet O(log n) ohne Allokation.
+type abbildung struct {
+	von, bis int
+	weg      [][2]int // sortiert, überlappungsfrei, nicht leer
+	kum      []int    // kum[i] = Summe der Längen von weg[0..i-1]; len(kum) = len(weg)+1
+}
+
+func baueAbbildung(z image.Rectangle, st []Streifen, zeilen bool) abbildung {
+	m := abbildung{von: z.Min.X, bis: z.Max.X}
 	if zeilen {
-		von, bis = d.zuschnitt.Min.Y, d.zuschnitt.Max.Y
+		m.von, m.bis = z.Min.Y, z.Max.Y
 	}
-	for _, s := range d.streifen {
+	m.kum = []int{0}
+	for _, s := range st {
 		if s.Zeilen != zeilen {
 			continue
 		}
-		a, b := max(s.Von, von), min(s.Bis, bis)
+		a, b := max(s.Von, m.von), min(s.Bis, m.bis)
 		if a < b {
-			weg = append(weg, [2]int{a, b})
+			m.weg = append(m.weg, [2]int{a, b}) // st ist sortiert, also auch weg
+			m.kum = append(m.kum, m.kum[len(m.kum)-1]+b-a)
 		}
 	}
-	return von, bis, weg // d.streifen ist sortiert, also auch weg
+	return m
+}
+
+func (m abbildung) groesse() int { return m.bis - m.von - m.kum[len(m.weg)] }
+
+// zuAnsicht: Punkte in einem Streifen fallen auf dessen Kante.
+func (m abbildung) zuAnsicht(v float64) float64 {
+	// k = Anzahl der Streifen, die v ganz hinter sich hat (Ende <= v)
+	k := sort.Search(len(m.weg), func(i int) bool { return float64(m.weg[i][1]) > v })
+	r := v - float64(m.von) - float64(m.kum[k])
+	if k < len(m.weg) && v > float64(m.weg[k][0]) {
+		r -= v - float64(m.weg[k][0])
+	}
+	return r
+}
+
+// zuOriginal: Eine Schnittkante gehört zum Bereich nach dem Streifen.
+func (m abbildung) zuOriginal(v float64) float64 {
+	r := v + float64(m.von)
+	// Streifen i wirkt, wenn r + kum[i] >= weg[i][0]; a_i - kum[i] wächst mit i, die Bedingung gilt also für ein Präfix.
+	k := sort.Search(len(m.weg), func(i int) bool { return r < float64(m.weg[i][0]-m.kum[i]) })
+	return r + float64(m.kum[k])
+}
+
+// setzeAnsicht setzt Zuschnitt und Streifen und baut die Abbildungen neu auf. Jede Stelle, die einen der beiden
+// ändert (Verlauf, Rückgängig, Wiederholen, Laden über SetzeStreifen), geht hierüber (F-136).
+func (d *Dokument) setzeAnsicht(z image.Rectangle, st []Streifen) {
+	d.zuschnitt, d.streifen = z, st
+	d.abbX, d.abbY = baueAbbildung(z, st, false), baueAbbildung(z, st, true)
+}
+
+// achse liefert für die Ansicht die entfernten Bereiche einer Achse, auf den Zuschnitt begrenzt und sortiert.
+func (d *Dokument) achse(zeilen bool) (von, bis int, weg [][2]int) {
+	m := d.abbX
+	if zeilen {
+		m = d.abbY
+	}
+	return m.von, m.bis, m.weg
 }
 
 // Groesse ist die Größe der Ansicht in Pixeln.
-func (d *Dokument) Groesse() image.Point {
-	g := func(zeilen bool) int {
-		von, bis, weg := d.achse(zeilen)
-		n := bis - von
-		for _, w := range weg {
-			n -= w[1] - w[0]
-		}
-		return n
-	}
-	return image.Pt(g(false), g(true))
-}
+func (d *Dokument) Groesse() image.Point { return image.Pt(d.abbX.groesse(), d.abbY.groesse()) }
 
 // ZuAnsicht rechnet einen Punkt des Originals in die Ansicht um. Punkte in einem Streifen fallen auf dessen Kante.
 func (d *Dokument) ZuAnsicht(p Punkt) Punkt {
-	um := func(v float64, zeilen bool) float64 {
-		von, _, weg := d.achse(zeilen)
-		r := v - float64(von)
-		for _, w := range weg {
-			a, b := float64(w[0]), float64(w[1])
-			switch {
-			case v >= b:
-				r -= b - a
-			case v > a:
-				r -= v - a
-			}
-		}
-		return r
-	}
-	return Punkt{um(p.X, false), um(p.Y, true)}
+	return Punkt{d.abbX.zuAnsicht(p.X), d.abbY.zuAnsicht(p.Y)}
 }
 
 // ZuOriginal rechnet einen Punkt der Ansicht ins Original um. Eine Schnittkante gehört zum Bereich nach dem Streifen.
 func (d *Dokument) ZuOriginal(p Punkt) Punkt {
-	um := func(v float64, zeilen bool) float64 {
-		von, _, weg := d.achse(zeilen)
-		r := v + float64(von)
-		for _, w := range weg {
-			if r >= float64(w[0]) {
-				r += float64(w[1] - w[0])
-			}
-		}
-		return r
-	}
-	return Punkt{um(p.X, false), um(p.Y, true)}
+	return Punkt{d.abbX.zuOriginal(p.X), d.abbY.zuOriginal(p.Y)}
 }
 
 // Ansichtsbild liefert die Pixel der Ansicht: Original, beschnitten und gestaucht, ohne Objekte.
@@ -202,6 +219,9 @@ func (d *Dokument) pruefeAnsicht(z image.Rectangle, st []Streifen) error {
 	if z.Empty() || !z.In(d.original.Rect) {
 		return fmt.Errorf("dokument: Zuschnitt %v außerhalb des Bilds %v", z, d.original.Rect)
 	}
+	if len(st) > MaxStreifen {
+		return fmt.Errorf("dokument: mehr als %d Streifen", MaxStreifen)
+	}
 	grenze := map[bool]int{false: d.original.Rect.Dx(), true: d.original.Rect.Dy()}
 	for i, s := range st {
 		if s.Von < 0 || s.Bis > grenze[s.Zeilen] || s.Von >= s.Bis {
@@ -212,11 +232,7 @@ func (d *Dokument) pruefeAnsicht(z image.Rectangle, st []Streifen) error {
 		}
 	}
 	// Die Ansicht darf nicht leer werden.
-	alt, altSt := d.zuschnitt, d.streifen
-	d.zuschnitt, d.streifen = z, st
-	g := d.Groesse()
-	d.zuschnitt, d.streifen = alt, altSt
-	if g.X < 1 || g.Y < 1 {
+	if baueAbbildung(z, st, false).groesse() < 1 || baueAbbildung(z, st, true).groesse() < 1 {
 		return fmt.Errorf("dokument: Ansicht wäre leer")
 	}
 	return nil
