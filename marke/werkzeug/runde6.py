@@ -27,13 +27,15 @@ def h_unten(x):
             f"M{x},{100+R} A{R},{R} 0 0 1 {x+R},100 H{x+W-R} A{R},{R} 0 0 1 {x+W},{100+R} V200"]
 
 
-def schriftzug(f, h_haengt=False, h_tief=False):
+def schriftzug(f, h_haengt=False, h_tief=False, versatz=None):
+    """versatz: {buchstabe: dy} verschiebt einzelne Buchstaben senkrecht (überschreibt h_tief)."""
     teile, x = [s_mit_auge(40, f, blick=1.0)], 40 + LAUF
     for z in "chnapp":
         pfade = h_unten(x) if (z == "h" and h_haengt) else buchstabe(z, x)
         neu = [zug(d, f["schrift"]) for d in pfade]
-        if z == "h" and h_tief:  # ganzes h tiefer: Fuß auf Höhe der p-Unterlängen
-            neu = [f'<g transform="translate(0,62)">{"".join(neu)}</g>']
+        dy = (versatz or {}).get(z, 62 if (z == "h" and h_tief) else 0)
+        if dy:  # z. B. ganzes h tiefer: Fuß auf Höhe der p-Unterlängen
+            neu = [f'<g transform="translate(0,{dy})">{"".join(neu)}</g>']
         teile += neu
         x += LAUF
     return "".join(teile), x - 40
@@ -71,6 +73,17 @@ def main():
         sc = (40 - 11, 40 + LAUF + W + 11)              # Außenkanten von s und c
         na = (40 + 3 * LAUF - 11, 40 + 4 * LAUF + W + 11)  # Außenkanten von n und a
         groesse = 28
+        for wort in ("SHOTS", "CAPTURE"):
+            _, nat1 = text_als_pfad(wort, 0, 0, groesse, "#000", sperrung=0)
+            t1, _ = text_als_pfad(wort, sc[0], 262, groesse, NEBEN[art],
+                                  sperrung=(sc[1] - sc[0] - nat1) / (len(wort) - 1) / groesse)
+            _, nat2 = text_als_pfad("FOR LINUX", 0, 0, groesse, "#000", sperrung=0)
+            t2, _ = text_als_pfad("FOR LINUX", na[0], 262, groesse, NEBEN[art],
+                                  sperrung=(na[1] - na[0] - nat2) / 8 / groesse)
+            schreibe(f"e3-{wort.lower()}-{art}.svg", bild(640, zugtext + t1 + t2, f["grund"], f"0 20 {ende + 60} 270"))
+        # e4: ohne Unterzeile; h um 30 tiefer, pp um 31 höher → beide ragen oben und unten gleich weit heraus
+        mitte, ende4 = schriftzug(f, versatz={"h": 30, "p": -31})
+        schreibe(f"e4-mittig-{art}.svg", bild(640, mitte, f["grund"], f"0 20 {ende4 + 60} 250"))
         for name, gleich in (("e3-voll", False), ("e3-gleich", True)):
             teile = []
             _, nat1 = text_als_pfad("SCREENSHOTS", 0, 0, groesse, "#000", sperrung=0)
