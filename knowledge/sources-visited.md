@@ -62,7 +62,12 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | URL | Letzter Besuch | Erstbesuch | Status | Weg | Inhalt | Zieldatei |
 |---|---|---|---|---|---|---|
 | https://invent.kde.org/plasma/kwin/-/raw/master/src/plugins/screenshot/org.kde.KWin.ScreenShot2.xml | 2026-11-19 | 2026-11-19 | live | WebFetch | Methoden, Optionen, Rückgabe, Pipe | topics/kwin-screenshot.md |
-| https://invent.kde.org/plasma/kwin/-/raw/master/src/plugins/screenshot/screenshotdbusinterface2.cpp | 2026-11-19 | 2026-11-19 | live | WebFetch | Pipe, raw-Format; Berechtigungsprüfung nicht in dieser Datei | topics/kwin-screenshot.md |
+| https://invent.kde.org/plasma/kwin/-/raw/master/src/plugins/screenshot/screenshotdbusinterface2.cpp | 2026-11-19 | 2026-11-19 | live | WebFetch, curl | Pipe, raw-Format; Prüfung entfernt (nur noch determineCallerPid für hide-caller-windows) | topics/kwin-screenshot.md |
+| https://invent.kde.org/api/v4/projects/plasma%2Fkwin/repository/commits?path=src/plugins/screenshot/screenshotdbusinterface2.cpp | 2026-11-19 | 2026-11-19 | live | curl | Commit-Geschichte: 0ea31ae7 „Drop X-KDE-DBUS-Restricted-Interfaces“, 5be04288 „memfd“ | topics/kwin-screenshot.md |
+| https://invent.kde.org/api/v4/projects/plasma%2Fkwin/repository/commits/0ea31ae7 (auch /diff, /refs?type=tag) | 2026-11-19 | 2026-11-19 | live | curl | Prüfung entfernt 18.06.2026, Tags v6.7.90–v6.8.3; alter Code checkPermissions, KWIN_SCREENSHOT_NO_PERMISSION_CHECKS | sources/kwin-screenshot-berechtigung.md |
+| https://invent.kde.org/api/v4/projects/plasma%2Fkwin/repository/commits/5be04288 (auch /diff, /refs?type=tag) | 2026-11-19 | 2026-11-19 | live | curl | ScreenShot3 mit memfd, 17.11.2026, in keinem Tag | sources/kwin-screenshot-berechtigung.md |
+| https://invent.kde.org/plasma/kwin/-/raw/master/src/plugins/screenshot/org.kde.KWin.ScreenShot3.xml | 2026-11-19 | 2026-11-19 | live | curl | Methoden wie ScreenShot2, fd h als Ausgabe | topics/kwin-screenshot.md |
+| https://invent.kde.org/api/v4/projects/plasma%2Fkwin/search?scope=blobs | 2026-11-19 | 2026-11-19 | blocked | curl | 401, Codesuche nur angemeldet | — |
 | https://bugs.kde.org/show_bug.cgi?id=435696 | 2026-11-19 | 2026-11-19 | indirect | WebSearch | Exec-Pfad muss absolut sein | topics/kwin-screenshot.md |
 | https://mail.kde.org/pipermail/kde-frameworks-devel/2020-June/111948.html | 2026-11-19 | 2026-11-19 | indirect | WebSearch | Einführung X-KDE-DBUS-Restricted-Interfaces | topics/kwin-screenshot.md |
 | https://gitlab.freedesktop.org/wayland/wayland-protocols/-/raw/1.45/staging/fractional-scale/fractional-scale-v1.xml | 2026-11-19 | 2026-11-19 | live | curl | Protokoll gebrochene Skalierung (preferred_scale in 1/120) | extern/gio-ausgabe.patch (erzeugter Code) |
