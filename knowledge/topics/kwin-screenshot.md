@@ -78,7 +78,10 @@ das sagt aber nichts über KWin, weil `aufnahme/roh.go` bei RGBX8888/RGB32 Alpha
 hat die Probe nicht ausgegeben, F-71); 11–35 ms je Aufnahme (4K-Breitbild
 31–35 ms). Der Monitor mit gebrochener Skala liefert `Bild.Skala` 1,6, während `oberflaeche.Monitore()` dort die
 ganzzahlige Pufferskala 2 meldet — **für Koordinaten gilt `Bild.Skala`**, nie `Monitor.Skala`. Ein unbekannter
-Monitorname ergibt sofort (1 ms) den Fehler „Invalid screen requested“, kein Hänger. **Ungeprüft bleibt der
+Monitorname ergibt sofort (1 ms) den Fehler „Invalid screen requested“, kein Hänger. **`CaptureActiveScreen` folgt dem Mauszeiger**
+(gemessen 19.11.2026, F-72, Wegwerf-Probe): Terminal mit Fokus auf Monitor 1, Mauszeiger ohne Klick auf Monitor 2 →
+KWin nahm Monitor 2. Gilt für die KWin-Voreinstellung (in `kwinrc` war `[Windows] ActiveMouseScreen` nicht gesetzt);
+ob diese Option das Verhalten umschaltet, ist nicht gemessen. **Ungeprüft bleibt der
 memfd-Weg** (ScreenShot3), bis ein Plasma-Release ihn mitbringt (F-56).
 
 ## Gemessen im Prototyp (19.11.2026, Plasma 6.8, drei Monitore, einer mit Skala 1,6)

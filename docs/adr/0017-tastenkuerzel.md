@@ -64,7 +64,7 @@ ruft `schnapp --screen` ohne Wert. Was dieser Aufruf tut, legt eine **Einstellun
 | Wert | Verhalten |
 |---|---|
 | **Monitor per Klick wählen** (Voreinstellung) | Overlay wie bei `--region`, aber im Monitor-Modus: der Monitor unter dem Mauszeiger ist hervorgehoben, ein Klick nimmt ihn ganz, Ziehen wählt doch einen Bereich, Esc bricht ab |
-| Aktiver Monitor sofort | ohne Overlay; KWin `CaptureActiveScreen` (Wayland gibt Programmen keine globale Zeigerposition). Ob KWins „aktiver Bildschirm“ dem Mauszeiger oder dem Fenster mit Fokus folgt, ist **unbelegt** und wird vor der Umsetzung gemessen (F-72); erst danach bekommt der Wert seinen endgültigen Namen |
+| Monitor unter dem Mauszeiger sofort | ohne Overlay; KWin `CaptureActiveScreen` (Wayland gibt Programmen keine globale Zeigerposition). KWins „aktiver Bildschirm“ folgt in der Voreinstellung dem Mauszeiger, nicht dem Fenster mit Fokus (gemessen 19.11.2026, F-72, `knowledge/topics/kwin-screenshot.md`) |
 | Alle Monitore | ein Bild über alle Monitore; je Bildschirm aufnehmen und zusammensetzen, nicht `CaptureWorkspace` (rechnet bei gemischter Skala hoch, `knowledge/topics/kwin-screenshot.md`) |
 
 - `--screen=NAME` nimmt immer genau diesen Monitor, unabhängig von der Einstellung.
