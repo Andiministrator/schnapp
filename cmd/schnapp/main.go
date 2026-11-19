@@ -48,10 +48,8 @@ func laufe(args []string, aus, fehler io.Writer, monitore func() ([]oberflaeche.
 	case ModusVersion:
 		fmt.Fprintf(aus, sprache.T("Schnapp %s")+"\n", version)
 		return exitOK
-	case ModusBildschirm:
-		if a.Bildschirm == "" {
-			return gibMonitoreAus(aus, fehler, monitore)
-		}
+	case ModusMonitorliste:
+		return gibMonitoreAus(aus, fehler, monitore)
 	}
 	fmt.Fprintf(fehler, sprache.T("The capture mode %s is not implemented yet.")+"\n", a.Modus.Option())
 	return exitFehler
@@ -62,8 +60,9 @@ func hilfe() string {
 	return sprache.T("Usage: schnapp [option]") + "\n\n" +
 		sprache.T("Take a screenshot. Without an option, you select an area (--region).") + "\n\n" +
 		"  --region       " + sprache.T("Select an area") + "\n" +
-		"  --screen       " + sprache.T("List the monitors") + "\n" +
+		"  --screen       " + sprache.T("Capture a monitor, as set in the settings (default: pick by click)") + "\n" +
 		"  --screen=NAME  " + sprache.T("Capture the monitor NAME") + "\n" +
+		"  --list-screens " + sprache.T("List the monitors") + "\n" +
 		"  --window       " + sprache.T("Select a window") + "\n" +
 		"  --repeat       " + sprache.T("Repeat the last area") + "\n" +
 		"  -V, --version  " + sprache.T("Show the version") + "\n" +

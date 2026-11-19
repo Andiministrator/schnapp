@@ -13,19 +13,20 @@ import (
 type Modus int
 
 const (
-	ModusBereich     Modus = iota // Voreinstellung ohne Argument (ADR-0017)
-	ModusBildschirm               // --screen[=NAME]
-	ModusFenster                  // --window
-	ModusWiederholen              // --repeat
-	ModusVersion                  // --version
-	ModusHilfe                    // --help
+	ModusBereich      Modus = iota // Voreinstellung ohne Argument (ADR-0017)
+	ModusBildschirm                // --screen[=NAME]; ohne Namen gilt die Einstellung (ADR-0017 Nachtrag 3)
+	ModusMonitorliste              // --list-screens
+	ModusFenster                   // --window
+	ModusWiederholen               // --repeat
+	ModusVersion                   // --version
+	ModusHilfe                     // --help
 )
 
 // Aufruf ist das ausgewertete Ergebnis der Kommandozeile.
 type Aufruf struct {
 	Modus Modus
 	// Bildschirm ist der Name des gewählten Monitors bei --screen=NAME; leer bei --screen ohne Wert
-	// (dann: Monitorliste ausgeben).
+	// (dann gilt das Verhalten laut Einstellung, vorerst fest „Monitor per Klick wählen“).
 	Bildschirm string
 }
 
@@ -34,6 +35,8 @@ func (m Modus) Option() string {
 	switch m {
 	case ModusBildschirm:
 		return "--screen"
+	case ModusMonitorliste:
+		return "--list-screens"
 	case ModusFenster:
 		return "--window"
 	case ModusWiederholen:
@@ -54,7 +57,7 @@ func (f *Fehler) Error() string { return f.Text }
 // Auswerten liest die Argumente (ohne Programmnamen). Ohne Argument gilt --region. Es gibt genau einen Modus;
 // zwei verschiedene oder unbekannte Optionen, Werte an Optionen ohne Wert und Positionsargumente sind Fehler.
 // Nur --screen nimmt einen Wert (--screen=NAME); die Form „--screen NAME“ gibt es nicht, damit
-// „--screen“ allein eindeutig die Monitorliste meint.
+// „--screen“ allein eindeutig „Monitor laut Einstellung“ meint. Die Monitorliste gibt --list-screens aus.
 func Auswerten(args []string) (Aufruf, error) {
 	var (
 		a       Aufruf
@@ -68,6 +71,8 @@ func Auswerten(args []string) (Aufruf, error) {
 			m = ModusBereich
 		case "--screen":
 			m = ModusBildschirm
+		case "--list-screens":
+			m = ModusMonitorliste
 		case "--window":
 			m = ModusFenster
 		case "--repeat":

@@ -47,6 +47,9 @@ msgstr "Nimmt einen Screenshot auf. Ohne Option wird ein Bereich gewählt (--reg
 msgid "Select an area"
 msgstr "Bereich auswählen"
 
+msgid "Capture a monitor, as set in the settings (default: pick by click)"
+msgstr "Nimmt einen Monitor auf, laut Einstellung (Voreinstellung: per Klick wählen)"
+
 msgid "List the monitors"
 msgstr "Monitore auflisten"
 

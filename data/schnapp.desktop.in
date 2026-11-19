@@ -2,7 +2,10 @@
 #
 # Vorlage der Desktop-Datei (ADR-0017). @EXEC@ ist der absolute Pfad der Programmdatei; er muss in der installierten
 # Datei stehen, weil KWin die Aufnahme-Berechtigung (X-KDE-DBUS-Restricted-Interfaces, Plasma <= 6.7, ADR-0007
-# Nachtrag 3) an den Programmpfad bindet. Beispiel:
+# Nachtrag 3) an den Programmpfad bindet. Die Exec-Zeilen setzen @EXEC@ in doppelte Anführungszeichen, damit ein Pfad
+# mit Leerzeichen funktioniert. Pfade mit ", `, $ oder \ sind nicht unterstützt: Sie müssten nach der Desktop-Entry-
+# Spezifikation (Abschnitt "The Exec key") mit Backslash maskiert und in der Datei jeder Backslash noch einmal
+# verdoppelt werden. Beispiel (Pfad ohne diese Zeichen):
 #   sed 's|@EXEC@|/home/<nutzer>/.local/bin/schnapp|' data/schnapp.desktop.in > ~/.local/share/applications/schnapp.desktop
 # Icon=schnapp: Der Name des App-Symbols (marke/logo/svg/schnapp-symbol-*.svg); das Installieren ins Symbolthema
 # folgt mit dem Installationsskript, bis dahin zeigt KDE ein Ersatzsymbol.
@@ -16,7 +19,7 @@ GenericName=Screenshot tool
 GenericName[de]=Screenshot-Werkzeug
 Keywords=screenshot;capture;annotate;snip;print;
 Keywords[de]=Screenshot;Bildschirmfoto;Aufnahme;Beschriften;Druck;
-Exec=@EXEC@
+Exec="@EXEC@"
 Icon=schnapp
 Terminal=false
 StartupNotify=false
@@ -27,20 +30,20 @@ X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2
 [Desktop Action Region]
 Name=Capture Area
 Name[de]=Bereich aufnehmen
-Exec=@EXEC@ --region
+Exec="@EXEC@" --region
 X-KDE-Shortcuts=Print
 
 [Desktop Action Screen]
 Name=Capture Monitor
 Name[de]=Bildschirm aufnehmen
-Exec=@EXEC@ --screen
+Exec="@EXEC@" --screen
 
 [Desktop Action Window]
 Name=Capture Window
 Name[de]=Fenster aufnehmen
-Exec=@EXEC@ --window
+Exec="@EXEC@" --window
 
 [Desktop Action Repeat]
 Name=Repeat Last Area
 Name[de]=Letzten Bereich wiederholen
-Exec=@EXEC@ --repeat
+Exec="@EXEC@" --repeat
