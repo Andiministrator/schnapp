@@ -87,7 +87,8 @@ Stand 19.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
   passt zur Haltung im Corporate Design).
 - **Vor:** erste Oberflächentexte (Karte Übersetzbarkeit).
 
-## E-14: Schnittstelle für Agenten und lokale KI (Kommandozeile, MCP-Server)
+## E-14: Schnittstelle für Agenten und lokale KI (Kommandozeile, MCP-Server) — ENTSCHIEDEN 19.11.2026 (Andi folgt der Tendenz)
+- Kommandozeile mit `--output`/`--json` in der ersten Fassung, `schnapp mcp` (nur stdio, Einwilligung getrennt für Aufnehmen und Bibliothek-Lesen, Hinweis bei jeder MCP-Aufnahme) in der zweiten, kurze englische `docs/agents.md`. Umsetzung: ADR zuerst (Karte #43).
 - **Frage:** Bekommt Schnapp von Anfang an eine Schnittstelle, über die KI-Agenten und lokale Modelle aufnehmen,
   beschriften, schwärzen, exportieren und die Bibliothek durchsuchen können — als skriptfähige Kommandozeile, als
   MCP-Server, beides? Braucht es dafür eine eigene Doku für Agenten? (Andi, 19.11.2026)
@@ -106,7 +107,8 @@ Stand 19.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
      englische `docs/agents.md` (Kommandozeile, MCP, Beispiele, Grenzen) für Menschen und Agenten.
 - **Vor:** Zuschnitt der Fassung 2; die Kommandozeilen-Form vor der ersten Veröffentlichung (sie ist Oberfläche).
 
-## E-15: Dokumentation des Bildformats (intern und öffentlich)
+## E-15: Dokumentation des Bildformats (intern und öffentlich) — ENTSCHIEDEN 19.11.2026 (Andi folgt der Tendenz)
+- Eine öffentliche, normative englische Spezifikation `docs/format.md` (ohne deutsche Fassung) mit Beispieldateien und Konformitätstest; intern bleibt ADR-0008 die Entscheidung (Karte #44).
 - **Frage:** Brauchen wir eine Beschreibung des Arbeitsdatei-Formats (PNG mit `snAP`/`snAO`), intern und/oder
   öffentlich? (Andi, 19.11.2026)
 - **Impact:** mittel — Dateien gehen nach außen; ohne Spezifikation kann niemand sie verlässlich lesen, und spätere
