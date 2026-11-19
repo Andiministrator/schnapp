@@ -22,7 +22,7 @@ abgebrochen), verschiebt `bauen.sh` die alte Kopie nach `tmp/papierkorb/` und le
 wayland-client ≥ 1.20 (`wl_output.name`).
 
 Build-Tags: `novulkan` (keine Vulkan-Header nötig, OpenGL ES über EGL), `nox11` (nur Wayland, ADR-0007).
-Gio braucht unter Linux cgo (libwayland-client, libEGL, libxkbcommon).
+Gio braucht unter Linux cgo (libwayland-client ≥ 1.20, libwayland-egl, libwayland-cursor, libEGL, libxkbcommon).
 
 ## Aufrufe
 

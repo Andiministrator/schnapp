@@ -25,7 +25,8 @@ Stand: 2026-11-19 (ergänzt nach Sprint 1). Kurze Regeln aus Fehlern und Befunde
 
 ## Recherche
 
-- **KWin ScreenShot2** gibt Pixel roh über eine Pipe; die Berechtigung hängt an einer installierten `.desktop`-Datei
+- **KWin ScreenShot2** gibt Pixel roh über eine Pipe; die Berechtigung hängt laut Doku an einer installierten `.desktop`-Datei
+  (im Prototyp ging es ohne, F-15)
   mit absolutem `Exec=` (`topics/kwin-screenshot.md`).
 - **Plattformregeln zu KI-Code ändern sich schnell** (Codeberg Verbot Juli 2026, Flathub Offenlegung Okt. 2026) — vor
   jeder neuen Plattform aktuell prüfen (`topics/plattformen-und-ki-regeln.md`).
