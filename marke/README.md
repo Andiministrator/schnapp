@@ -34,5 +34,6 @@ Logo, Symbol und Farben. Stand 19.11.2026: **entschieden — Entwurf e6** (Andi)
 
 ## Entwürfe
 
-`entwuerfe/runde-6/vergleich.html` (aktuell), ältere Runden daneben. Neu erzeugen: `python3 marke/werkzeug/runde6.py`
+`entwuerfe/runde-6/vergleich.html` (aktuell), ältere Runden daneben. Die Werkzeuge in `werkzeug/` sind Python und sollen später durch Go oder Schnapp selbst ersetzt werden (Andi,
+19.11.2026). Neu erzeugen: `python3 marke/werkzeug/runde6.py`
 (entsprechend `runde1.py` bis `runde5.py`; `runde6.py` braucht Python-fontTools und Open Sans).

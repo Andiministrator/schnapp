@@ -226,6 +226,9 @@ verbrauchen andere Karten Nummern.
 - **Keine Pfade, Benutzer- oder Rechnernamen** in Code, Tests, Metadaten, Golden-Dateien (`/home/<name>` & Co.).
 - **X11-Wege** (xdotool, XGetImage, `import`) — Schnapp ist nur Wayland (ADR-0007).
 - **Schwärzen als Vektorebene über dem Original** — dann steht das Geschwärzte im eingebetteten Original im Klartext.
+- **Neue Python-Werkzeuge im Repo** — Python wird schrittweise entfernt (Andi, 19.11.2026): Logos und Grafiken
+  später mit Schnapp selbst oder per Go erzeugen; bestehende `marke/werkzeug/*.py` nur noch pflegen, bis sie ersetzt
+  sind (Karte im Board). Wegwerf-Einzeiler während der Arbeit bleiben erlaubt, landen aber nie im Repo.
 - **`cgo`-Abhängigkeiten ohne Not** — erschwert Flatpak und Kreuzbau; vorher ADR (für Gio samt Patch: ADR-0003 Nachtrag 2).
 
 ## Board-Felder (aBoard)
