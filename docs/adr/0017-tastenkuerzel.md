@@ -24,3 +24,21 @@ auch GNOME), oder Aktionen in der `.desktop`-Datei, die KDE mit Kürzeln verbind
 - Die `.desktop`-Datei trägt zugleich die Berechtigungszeile für Plasma ≤ 6.7 (ADR-0007 Nachtrag 3) und die
   Übersetzungen `Name[de]=…` (ADR-0014).
 - „Letzten Bereich wiederholen“ braucht den zuletzt gewählten Bereich auf Platte (`~/.local/state/schnapp/`).
+
+## Nachtrag 1 (19.11.2026): Voreinstellung Druck belegt, Umsetzung der Desktop-Datei (Karte #30)
+
+- **Belegt:** Spectacle trägt seine Voreinstellungen als `X-KDE-Shortcuts` in der `.desktop`-Datei, im Hauptteil
+  (`X-KDE-Shortcuts=Print,Meta+Shift+S`) und je Aktion (etwa `[Desktop Action FullScreenScreenShot]` mit
+  `X-KDE-Shortcuts=Shift+Print`). Quelle: `desktop/org.kde.spectacle.desktop.cmake` im Spectacle-Quelltext
+  (https://invent.kde.org/plasma/spectacle/-/raw/master/desktop/org.kde.spectacle.desktop.cmake, gelesen am 19.11.2026);
+  `src/ShortcutActions.cpp` benennt die globalen Kürzel ausdrücklich „to match the jumplist actions in our .desktop
+  file“. Dass KDE (nicht Spectacle) die Zeile auswertet, folgt daraus, dass Spectacles Code keine Voreinstellung
+  setzt; den Quelltext von KGlobalAccel haben wir nicht gelesen. Ein Test auf einer echten Plasma-Sitzung steht aus
+  (Andi, bei der ersten Installation).
+- **Umgesetzt:** `data/schnapp.desktop.in` mit den Aktionen `Bereich`, `Bildschirm`, `Fenster`, `LetztenBereich`;
+  `X-KDE-Shortcuts=Print` nur an `Bereich`. `@EXEC@` ist der absolute Pfad der Programmdatei (KWin bindet die
+  Aufnahme-Berechtigung daran, ADR-0007 Nachtrag 3). Spectacle belegt `Print` ebenfalls: gleichzeitig installiert,
+  meldet KDE einen Konflikt, der Nutzer entscheidet in den Systemeinstellungen (Hinweis in README/Installation, sobald
+  es ein Installationsskript gibt).
+- **Vorläufig:** Die Aktion `Bildschirm` ruft `schnapp --bildschirm` ohne Wert; das gibt die Monitorliste aus. Mit der
+  Umsetzung der Aufnahme wählt der Aufruf den Monitor selbst (Karte im Board).

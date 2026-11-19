@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Vorlage der Desktop-Datei (ADR-0017). @EXEC@ ist der absolute Pfad der Programmdatei; er muss in der installierten
+# Datei stehen, weil KWin die Aufnahme-Berechtigung (X-KDE-DBUS-Restricted-Interfaces, Plasma <= 6.7, ADR-0007
+# Nachtrag 3) an den Programmpfad bindet. Beispiel:
+#   sed 's|@EXEC@|/home/<nutzer>/.local/bin/schnapp|' data/schnapp.desktop.in > ~/.local/share/applications/schnapp.desktop
+# Icon=schnapp: Der Name des App-Symbols (marke/logo/svg/schnapp-symbol-*.svg); das Installieren ins Symbolthema
+# folgt mit dem Installationsskript, bis dahin zeigt KDE ein Ersatzsymbol.
+[Desktop Entry]
+Type=Application
+Name=Schnapp
+Name[de]=Schnapp
+Comment=Take screenshots, annotate and share them
+Comment[de]=Screenshots aufnehmen, beschriften und teilen
+GenericName=Screenshot tool
+GenericName[de]=Screenshot-Werkzeug
+Keywords=screenshot;capture;annotate;snip;print;
+Keywords[de]=Screenshot;Bildschirmfoto;Aufnahme;Beschriften;Druck;
+Exec=@EXEC@
+Icon=schnapp
+Terminal=false
+StartupNotify=false
+Categories=Graphics;Utility;
+Actions=Bereich;Bildschirm;Fenster;LetztenBereich;
+X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2
+
+[Desktop Action Bereich]
+Name=Capture Area
+Name[de]=Bereich aufnehmen
+Exec=@EXEC@ --bereich
+X-KDE-Shortcuts=Print
+
+[Desktop Action Bildschirm]
+Name=Capture Monitor
+Name[de]=Bildschirm aufnehmen
+Exec=@EXEC@ --bildschirm
+
+[Desktop Action Fenster]
+Name=Capture Window
+Name[de]=Fenster aufnehmen
+Exec=@EXEC@ --fenster
+
+[Desktop Action LetztenBereich]
+Name=Repeat Last Area
+Name[de]=Letzten Bereich wiederholen
+Exec=@EXEC@ --wiederholen

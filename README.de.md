@@ -31,11 +31,18 @@ Die erste Fassung (0.1.0) wird geplant.
 
 ## Bauen
 
-Ein Programm zum Bauen gibt es noch nicht. Vorhanden sind:
+Das Programm ist bisher ein Gerüst: Es wertet seine Optionen aus, die Aufnahme-Modi sind noch nicht umgesetzt. Gio braucht cgo (`libwayland-dev`, `libegl-dev`, `libxkbcommon-dev` oder das Entsprechende deiner Distribution) und die Build-Tags `novulkan,nox11`; sie werden über `GOFLAGS` übergeben (die Go-Umgebung bleibt unverändert):
+
+```sh
+export GOFLAGS=-tags=novulkan,nox11
+go build -trimpath -o schnapp ./cmd/schnapp
+```
+
+Vorhanden ist:
 
 | Pfad | Was es ist | Prüfen |
 |---|---|---|
-| `.` (Wurzel) | Go-Modul `github.com/Andiministrator/schnapp`: bisher `sprache` (Sprachwahl, gettext-PO-Leser) und `po` (eingebettete Übersetzungen, `po/de.po`) | `go vet ./... && go test ./...` |
+| `.` (Wurzel) | Go-Modul `github.com/Andiministrator/schnapp`: das Programm `cmd/schnapp` (bisher nur Optionen), `oberflaeche` (Schicht zu Gio), `sprache` (Sprachwahl, gettext-PO-Leser) und `po` (eingebettete Übersetzungen, `po/de.po`); `data/` enthält die Vorlage der Desktop-Datei | `go vet ./... && go test ./...` (mit `GOFLAGS` wie oben) |
 | `zeichnen/` | Go-Modul `github.com/Andiministrator/schnapp/zeichnen`: SVG lesen, Rasterer mit Kantenglättung, Rechenhilfen (nur Standardbibliothek) | `cd zeichnen && go vet ./... && go test ./...` |
 | `marke/` | Logo, Farben und Corporate Design ([`marke/corporate-design.md`](marke/corporate-design.md), mit PDF) | `python3 marke/werkzeug/paket.py` erzeugt die Logo-Dateien neu |
 | `extern/gio/` | Gio mit unserem Patch (Vollbild auf gewähltem Monitor, gebrochene Skalierung), eingebunden per `replace` in `go.mod` | `extern/gio-patch.sh pruefen`, siehe [`extern/README.md`](extern/README.md) |

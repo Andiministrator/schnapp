@@ -42,6 +42,10 @@ logo files in [`marke/logo/`](marke/logo/README.md).
 
 - Conventional Commits: `<type>(<scope>): <description>`, types `feat fix docs refactor chore style test perf`.
 - Before a pull request: `gofmt`, `go vet ./...` and `go test ./...` in every module you touched.
+- The root module links Gio, which needs cgo (`libwayland-dev`, `libegl-dev`, `libxkbcommon-dev`) and the build tags
+  `novulkan,nox11` (no Vulkan headers, Wayland only). Pass them through the environment, e.g.
+  `export GOFLAGS=-tags=novulkan,nox11`; do not use `go env -w`, which changes your global Go setup. Build the program
+  with `go build -trimpath -o schnapp ./cmd/schnapp` (`-trimpath` keeps local paths out of the binary).
 - `extern/gio/` is Gio with our patch (`docs/adr/0015-*`). If you change it, run `extern/gio-patch.sh erzeugen` and
   commit the updated `extern/gio-ausgabe.patch` together with it; CI checks that both match.
 - Every source file we write starts with `SPDX-License-Identifier: GPL-3.0-or-later` (as a comment). Patches to

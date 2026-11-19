@@ -12,3 +12,69 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# cmd/schnapp: Kommandozeile
+msgid "Unknown option: %s"
+msgstr "Unbekannte Option: %s"
+
+msgid "Unexpected argument: %s"
+msgstr "Unerwartetes Argument: %s"
+
+msgid "Option %s takes no value."
+msgstr "Die Option %s nimmt keinen Wert."
+
+msgid "Option --bildschirm needs a monitor name after the equals sign."
+msgstr "Die Option --bildschirm braucht nach dem Gleichheitszeichen einen Monitornamen."
+
+msgid "Options %s and %s cannot be combined."
+msgstr "Die Optionen %s und %s lassen sich nicht kombinieren."
+
+msgid "Try --help for the available options."
+msgstr "Die verfügbaren Optionen zeigt --help."
+
+msgid "Schnapp %s"
+msgstr "Schnapp %s"
+
+msgid "The capture mode %s is not implemented yet."
+msgstr "Der Aufnahmemodus %s ist noch nicht umgesetzt."
+
+msgid "Usage: schnapp [option]"
+msgstr "Aufruf: schnapp [Option]"
+
+msgid "Take a screenshot. Without an option, you select an area (--bereich)."
+msgstr "Nimmt einen Screenshot auf. Ohne Option wird ein Bereich gewählt (--bereich)."
+
+msgid "Select an area"
+msgstr "Bereich auswählen"
+
+msgid "List the monitors"
+msgstr "Monitore auflisten"
+
+msgid "Capture the monitor NAME"
+msgstr "Monitor NAME aufnehmen"
+
+msgid "Select a window"
+msgstr "Fenster auswählen"
+
+msgid "Repeat the last area"
+msgstr "Letzten Bereich wiederholen"
+
+msgid "Show the version"
+msgstr "Version anzeigen"
+
+msgid "Show this help"
+msgstr "Diese Hilfe anzeigen"
+
+msgid "Could not query the monitors: %v"
+msgstr "Die Monitore ließen sich nicht abfragen: %v"
+
+msgid "No monitors found."
+msgstr "Keine Monitore gefunden."
+
+msgid "%d monitor found:"
+msgid_plural "%d monitors found:"
+msgstr[0] "%d Monitor gefunden:"
+msgstr[1] "%d Monitore gefunden:"
+
+msgid "  %s: %d × %d pixels, scale %d"
+msgstr "  %s: %d × %d Pixel, Skalierung %d"

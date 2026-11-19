@@ -8,18 +8,23 @@ permissions:
   contents: read
 
 jobs:
-  # Wurzelmodul (sprache, po; später das Programm)
+  # Wurzelmodul (Programm, oberflaeche, sprache, po) gegen das gepatchte Gio (cgo, nur Wayland)
   wurzel:
     runs-on: ubuntu-latest
+    env:
+      GOFLAGS: -tags=novulkan,nox11
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Bibliotheken für Gio (Wayland, EGL, xkbcommon)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwayland-dev libegl-dev libxkbcommon-dev
       - name: gofmt
         run: test -z "$(gofmt -l $(go list -f '{{.Dir}}' ./...))"
       - run: go vet ./...
       - run: go test ./...
+      - run: go build -trimpath -o /dev/null ./cmd/schnapp
 
   zeichnen:
     runs-on: ubuntu-latest

@@ -30,11 +30,18 @@ scaling). The first version (0.1.0) is being planned.
 
 ## Building
 
-There is no program to build yet. What exists:
+The program is a skeleton so far: it parses its options, but the capture modes are not implemented yet. Gio needs cgo (`libwayland-dev`, `libegl-dev`, `libxkbcommon-dev` or your distribution's equivalent) and the build tags `novulkan,nox11`, which you pass through `GOFLAGS` (no need to change your Go environment):
+
+```sh
+export GOFLAGS=-tags=novulkan,nox11
+go build -trimpath -o schnapp ./cmd/schnapp
+```
+
+What exists:
 
 | Path | What it is | How to check it |
 |---|---|---|
-| `.` (root) | Go module `github.com/Andiministrator/schnapp`: so far `sprache` (language choice, gettext PO reader) and `po` (embedded translations, `po/de.po`) | `go vet ./... && go test ./...` |
+| `.` (root) | Go module `github.com/Andiministrator/schnapp`: the program `cmd/schnapp` (options only), `oberflaeche` (layer to Gio), `sprache` (language choice, gettext PO reader) and `po` (embedded translations, `po/de.po`); `data/` holds the desktop file template | `go vet ./... && go test ./...` (with `GOFLAGS` as above) |
 | `zeichnen/` | Go module `github.com/Andiministrator/schnapp/zeichnen`: SVG parsing, an anti-aliased rasterizer, numeric helpers (standard library only) | `cd zeichnen && go vet ./... && go test ./...` |
 | `marke/` | Logo, colours and corporate design ([`marke/corporate-design.md`](marke/corporate-design.md), German, with PDF) | `python3 marke/werkzeug/paket.py` rebuilds the logo files |
 | `extern/gio/` | Gio with our patch (multi-monitor fullscreen, fractional scaling), used via `replace` in `go.mod` | `extern/gio-patch.sh pruefen`, see [`extern/README.md`](extern/README.md) (German) |
