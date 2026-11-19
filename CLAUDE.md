@@ -4,7 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > Verweise auf ADR-0043, ADR-0062, ADR-0067, F-Nummern über F-100 und Pfade unter `~/.aboard-framework/` oder
 > `~/.claude/` beziehen sich auf das Arbeits-Framework (aBoard) des Maintainers, nicht auf dieses Repo. Projekteigene
-> ADRs liegen unter `docs/adr/` (0001–0014), projekteigene Findings in `docs/findings.md`.
+> ADRs liegen unter `docs/adr/` (0001–0014), projekteigene Findings in `docs/findings.md` (erledigte
+> in `docs/findings.archive.md`).
 
 ## Vor jeder Antwort — Pflicht
 
@@ -103,7 +104,7 @@ Herkunft: Anforderungen und Entscheidungen des Maintainers vom 18.11.2026, über
 
 ## Architektur
 
-Geplant, noch nichts gebaut (Stand 19.11.2026). Grobe Schichten:
+Geplant, Produktcode noch nicht begonnen (Stand 19.11.2026; es gibt den Wegwerf-Prototyp `prototyp/`). Grobe Schichten:
 
 - **aufnahme** — Schnittstelle + KWin-Umsetzung (D-Bus), später Portal.
 - **dokument** — Ebenenmodell (Pixelebene, Vektorebenen, Original, Stauchangaben), Rückgängig-Verlauf.
@@ -113,14 +114,16 @@ Geplant, noch nichts gebaut (Stand 19.11.2026). Grobe Schichten:
 - **bibliothek** — Autospeichern, Vorschau, Suche, Schlagworte.
 - **oberflaeche** — Gio: Vollbild-Overlay zur Auswahl, Editor, Bibliothek.
 
-Ob Gio trägt, entscheidet der Prototyp (ADR-0003).
+Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung) — ADR-0003 Nachtrag 2.
 
 ## Entwicklungsstand
 
 - **Zeichenpakete** (eigenes Modul `github.com/Andiministrator/schnapp/zeichnen`, ADR-0012):
   `cd zeichnen && go vet ./... && go test ./...`. Ein Schwesterprojekt bindet dieses Modul ein — öffentliche Schnittstellen nur nach
   Abstimmung ändern (wer, steht in `CLAUDE.local.md`).
-- Programm Schnapp: noch kein Code. Geplant `go build ./...`, `go test ./...`, `go run ./cmd/schnapp` im Wurzelmodul.
+- **Prototyp** `prototyp/` (Wegwerf-Code, eigenes Modul): `prototyp/bauen.sh` baut mit gepatchtem Gio, Tests
+  `cd prototyp && go test -modfile=../tmp/prototyp-gepatcht.mod -tags novulkan,nox11 ./...` (Modul-Datei entsteht beim Bau).
+- Programm Schnapp: noch kein Produktcode. Geplant `go build ./...`, `go test ./...`, `go run ./cmd/schnapp` im Wurzelmodul.
 
 ## Marke
 
@@ -223,7 +226,7 @@ verbrauchen andere Karten Nummern.
 - **Keine Pfade, Benutzer- oder Rechnernamen** in Code, Tests, Metadaten, Golden-Dateien (`/home/<name>` & Co.).
 - **X11-Wege** (xdotool, XGetImage, `import`) — Schnapp ist nur Wayland (ADR-0007).
 - **Schwärzen als Vektorebene über dem Original** — dann steht das Geschwärzte im eingebetteten Original im Klartext.
-- **`cgo`-Abhängigkeiten ohne Not** — erschwert Flatpak und Kreuzbau; vorher ADR.
+- **`cgo`-Abhängigkeiten ohne Not** — erschwert Flatpak und Kreuzbau; vorher ADR (für Gio samt Patch: ADR-0003 Nachtrag 2).
 
 ## Board-Felder (aBoard)
 

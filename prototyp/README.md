@@ -17,6 +17,10 @@ Das Skript legt eine Kopie von Gio unter `tmp/gio-gepatcht` an und wendet `gio-a
   Pixelgröße statt Ganzzahl-Skala, die KWin herunterrechnet. Protokoll-Code mit wayland-scanner aus
   wayland-protocols 1.45 erzeugt (`knowledge/sources-visited.md`).
 
+Die Kopie trägt eine Marke mit Gio-Version und Prüfsumme des Patches; passt sie nicht (Patch geändert, Lauf
+abgebrochen), verschiebt `bauen.sh` die alte Kopie nach `tmp/papierkorb/` und legt sie neu an. Der Patch braucht
+wayland-client ≥ 1.20 (`wl_output.name`).
+
 Build-Tags: `novulkan` (keine Vulkan-Header nötig, OpenGL ES über EGL), `nox11` (nur Wayland, ADR-0007).
 Gio braucht unter Linux cgo (libwayland-client, libEGL, libxkbcommon).
 

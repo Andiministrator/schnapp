@@ -76,7 +76,7 @@ markante Gegenfarbe, **Rot** nur für Fehler und Unumkehrbares.
 | Tiefster Grund (Overlay-Abdunklung, Bildfläche) | grau-950 | `#16181B` |
 | Leisten, Karten, Dialoge | grau-800 | `#2A2E33` |
 | Linien, Ränder, Trenner | grau-700 | `#3A3F45` |
-| Nebentext, deaktiviert | grau-400 | `#8E949B` |
+| Nebentext, deaktiviert | grau-400 | `#92989F` |
 | Text | grau-100 | `#ECEAE5` |
 | Hauptaktion, Auswahl, aktives Werkzeug | gruen-500 | `#4F9479` |
 | grüner Text, Hover auf Grün | gruen-300 | `#86C2A6` |
@@ -84,14 +84,16 @@ markante Gegenfarbe, **Rot** nur für Fehler und Unumkehrbares.
 | oranger Text | orange-300 | `#F9C894` |
 | Fehler, Gefahr, unumkehrbare Aktion (Schwärzen) | rot-500 | `#E67873` |
 | Auf weißem Grund: Grün / Orange / Rot | gruen-700 / orange-700 / rot-700 | `#3B7A5F` / `#A85F22` / `#B4433E` |
+| Logo hell: das „s“ (nur im Logo, nie für Text) | Logo-Orange hell | `#E0893A` |
 
 **Kontraste** (WCAG, gerechnet): Text grau-100 auf grau-900 13,5:1; gruen-500 4,5:1; orange-500 8,1:1; rot-500
-5,6:1; grau-400 5,3:1. Grüner **Text** auf dunklem Grund immer in gruen-300; gruen-500 für Flächen, Linien und
+5,6:1; grau-400 5,6:1 (auf grau-800 4,7:1). Grüner **Text** auf dunklem Grund immer in gruen-300; gruen-500 für Flächen, Linien und
 Symbole.
 
 **Regeln**
 
 - Höchstens eine Akzentfarbe je Bereich; Grün und Orange nie gleich stark nebeneinander.
+- Grün nie auf grau-700-Flächen (2,96:1).
 - **Farbe nie als einziges Merkmal**: Grün, Orange und Rot sind für Menschen mit Rot-Grün-Schwäche schwer zu
   trennen — immer Symbol, Form oder Text dazu.
 - Die **Beschriftungsfarben im Editor** (Pfeile, Kästen, Text auf dem Bild) sind eine eigene Auswahl für Bilder und
@@ -106,8 +108,8 @@ Symbole.
 | Unterzeile, Abschnittsmarken | Open Sans SemiBold, GROSSBUCHSTABEN, gesperrt (+ 10 – 20 %) |
 | Code, Pfade, Maße | die Monospace-Schrift des Systems |
 
-Open Sans steht unter der SIL Open Font License und wird mit dem Programm ausgeliefert (gleiche Darstellung auf
-jedem System). Größen in der Oberfläche: Grundtext 14 px, Nebentext 12 px, Überschriften 18 / 16 px; Zeilenhöhe 1,4.
+Open Sans steht unter der SIL Open Font License 1.1 und soll mit dem Programm ausgeliefert werden (gleiche Darstellung
+auf jedem System); dann gehören OFL-Text und Urhebervermerk unter `licenses/` ins Repo. Größen in der Oberfläche: Grundtext 14 px, Nebentext 12 px, Überschriften 18 / 16 px; Zeilenhöhe 1,4.
 
 ## 5. Formen
 
@@ -155,4 +157,5 @@ Das Auge ist die einzige Figur von Schnapp. Es wird **sparsam** eingesetzt — n
 | Erzeugung | `marke/werkzeug/paket.py` (Logo-Paket), `cd.py` (Bilder und PDF dieses Dokuments) |
 | Entwürfe und Herleitung | `marke/entwuerfe/runde-1` … `runde-6` |
 
-Neu bauen: `python3 marke/werkzeug/paket.py && python3 marke/werkzeug/cd.py`.
+Neu bauen: `python3 marke/werkzeug/paket.py && python3 marke/werkzeug/cd.py`. Braucht Python mit fontTools, Open Sans
+SemiBold (Pfad über `SCHNAPP_SCHRIFT`, Vorgabe Arch), `rsvg-convert`, ImageMagick, `chromium` und `qpdf`.

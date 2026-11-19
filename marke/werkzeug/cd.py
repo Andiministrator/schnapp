@@ -3,7 +3,9 @@
 
 Aufruf: python3 marke/werkzeug/cd.py
   → marke/cd/*.svg|png (Farbfelder, Schutzraum, Oberflächen-Beispiel)
-  → marke/corporate-design.pdf (über HTML, gedruckt mit Chromium im Headless-Modus, eigenes Profil unter tmp/)
+  → marke/corporate-design.pdf (über HTML, gedruckt mit Chromium im Headless-Modus, eigenes Profil unter tmp/;
+    Metadaten danach mit qpdf entfernt)
+Braucht: chromium, qpdf, rsvg-convert, Python mit fontTools, Open Sans SemiBold (SCHNAPP_SCHRIFT).
 
 Der Markdown-Umwandler kann genau das, was corporate-design.md benutzt: Überschriften, Absätze, Listen,
 Tabellen, Bilder, Zitate, Code, fett, Links.
@@ -22,7 +24,7 @@ CD = MARKE / "cd"
 
 FARBEN = [  # Name, Hex, Schrift darauf
     ("grau-950", "#16181B", "#ECEAE5"), ("grau-900", "#1E2124", "#ECEAE5"), ("grau-800", "#2A2E33", "#ECEAE5"),
-    ("grau-700", "#3A3F45", "#ECEAE5"), ("grau-400", "#8E949B", "#1E2124"), ("grau-100", "#ECEAE5", "#1E2124"),
+    ("grau-700", "#3A3F45", "#ECEAE5"), ("grau-400", "#92989F", "#1E2124"), ("grau-100", "#ECEAE5", "#1E2124"),
     ("gruen-300", "#86C2A6", "#1E2124"), ("gruen-500", "#4F9479", "#1E2124"), ("gruen-700", "#3B7A5F", "#FFFFFF"),
     ("orange-300", "#F9C894", "#1E2124"), ("orange-500", "#F5A65B", "#1E2124"), ("orange-700", "#A85F22", "#FFFFFF"),
     ("rot-500", "#E67873", "#1E2124"), ("rot-700", "#B4433E", "#FFFFFF"),
@@ -56,7 +58,7 @@ def schutzraum():
             f'<rect x="{aussen[0]}" y="{aussen[1]}" width="{aussen[2]}" height="{aussen[3]}" fill="none" '
             f'stroke="#F5A65B" stroke-width="3" stroke-dasharray="12 8"/>'
             f'<rect x="{innen[0]}" y="{innen[1]}" width="{innen[2]}" height="{innen[3]}" fill="none" '
-            f'stroke="#8E949B" stroke-width="1.5" stroke-dasharray="4 6"/>'
+            f'stroke="#92989F" stroke-width="1.5" stroke-dasharray="4 6"/>'
             f'{logo_inhalt}</svg>\n')
 
 
@@ -73,7 +75,7 @@ body{margin:0;background:#1E2124;color:#ECEAE5;font:15px/1.5 'Open Sans',sans-se
 .aw{position:relative;height:100px;margin:14px 0;background:#16181B;border-radius:6px}
 .aw div{position:absolute;left:30%;top:20px;width:40%;height:58px;border:2px solid #4F9479}
 .aw i{position:absolute;width:12px;height:12px;border:3px solid #F5A65B}
-.n{color:#8E949B;margin-left:auto}
+.n{color:#92989F;margin-left:auto}
 </style></head><body><div class="ui">
 <div class="l"><button class="k wz a">Pfeil</button><button class="k wz">Kasten</button><button class="k wz fokus">Text</button>
 <button class="k gefahr">Schwärzen</button><span class="n">Fokus: oranger Ring</span></div>
@@ -111,8 +113,10 @@ def md_zu_html(md):
         z = zeilen[i]
         if z.startswith("```"):
             j = i + 1
-            while not zeilen[j].startswith("```"):
+            while j < len(zeilen) and not zeilen[j].startswith("```"):
                 j += 1
+            if j == len(zeilen):
+                raise ValueError(f"Code-Zaun ab Zeile {i + 1} wird nicht geschlossen")
             aus.append("<pre><code>" + html.escape("\n".join(zeilen[i + 1:j])) + "</code></pre>")
             i = j + 1
         elif m := re.match(r"(#{1,4}) (.*)", z):
@@ -180,10 +184,16 @@ def pdf():
              f'<style>{CSS}</style></head><body>{md_zu_html(md)}</body></html>')
     zwischen = MARKE / "corporate-design.tmp.html"   # liegt neben der md, damit relative Bildpfade stimmen
     zwischen.write_text(seite, encoding="utf-8")
-    chromium("--no-pdf-header-footer", f"--print-to-pdf={MARKE / 'corporate-design.pdf'}", zwischen.as_uri())
-    ziel = WURZEL / "tmp" / "marke" / "corporate-design.html"  # Zwischenstand aufheben statt löschen
-    ziel.parent.mkdir(parents=True, exist_ok=True)
-    zwischen.replace(ziel)
+    ablage = WURZEL / "tmp" / "marke"
+    ablage.mkdir(parents=True, exist_ok=True)
+    roh, sauber = ablage / "corporate-design.roh.pdf", ablage / "corporate-design.pdf"
+    try:
+        chromium("--no-pdf-header-footer", f"--print-to-pdf={roh}", zwischen.as_uri())
+        # Keine Spuren (Kernprinzip 3): Chromium schreibt Programm- und Systemnamen in Creator/Producer — entfernen.
+        subprocess.run(["qpdf", "--remove-info", "--remove-metadata", str(roh), str(sauber)], check=True)
+        sauber.replace(MARKE / "corporate-design.pdf")  # erst ersetzen, wenn alles geklappt hat
+    finally:
+        zwischen.replace(ablage / "corporate-design.html")  # Zwischenstand aufheben statt löschen, auch bei Fehler
 
 
 def main():

@@ -20,7 +20,8 @@ Pull Request.
 - **Keine echten Screenshots** in Tests oder Doku — sie zeigen private Daten. Testbilder synthetisch erzeugen.
 - **Neue Abhängigkeiten** nur mit spürbarem Nutzen; Zweck, Lizenz (GPL-3.0-verträglich) und Alternative in der
   Commit-Nachricht nennen (`docs/adr/0011-*`).
-- **Kein cgo** über das hinaus, was Gio braucht, außer per Architektur-Entscheidung vereinbart.
+- **Kein cgo** über das hinaus, was Gio (mit unserem Patch) braucht — diese Ausnahme ist `docs/adr/0003-*` Nachtrag 2;
+  alles andere braucht eine eigene Architektur-Entscheidung (`docs/adr/0011-*`).
 
 ## Sprachen
 
@@ -39,6 +40,7 @@ PDF); Logo-Dateien in [`marke/logo/`](marke/logo/README.md).
 
 - Conventional Commits: `<typ>(<bereich>): <beschreibung>`, Typen `feat fix docs refactor chore style test perf`.
 - Vor einem Pull Request: `gofmt`, `go vet ./...` und `go test ./...` in jedem berührten Modul.
-- Jede Quelldatei beginnt mit `// SPDX-License-Identifier: GPL-3.0-or-later`.
+- Jede selbst geschriebene Quelldatei beginnt mit `SPDX-License-Identifier: GPL-3.0-or-later` (als Kommentar).
+  Patches an fremdem Code (z. B. Gio) behalten dessen Lizenz.
 
 Mit einem Beitrag stimmst du zu, dass er unter GPL-3.0-or-later steht.

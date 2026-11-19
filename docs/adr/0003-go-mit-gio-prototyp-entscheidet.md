@@ -59,15 +59,16 @@ Monitore (zwei mit Skala 1, einer mit Skala 1,6). Gio v0.10.3, Go 1.27. Protokol
 |---|---|
 | Muss 1 Aufnahme | ✅ `CaptureScreen` je Bildschirm 17–38 ms, ohne Dialog, native Auflösung; Bild 1:1 auf allen drei Monitoren (Fenster in Pixeln = Aufnahme). |
 | Muss 2 Overlay | ✅ **nur mit Patch**: ein randloses Vollbildfenster je Monitor, auch bei Skala 1,6 pixelgenau ab dem ersten Frame; Sichtprüfung Andi: alles da, keine Lücke, keine Taskleiste. |
-| Muss 3 Zeichnen | ✅ 4K-Testbild, Pfeil biegt sich selbst: 73,5 fps, p95 13,9 ms. Von Hand: Ops-Aufbau ≤ 2,5 ms je Frame, höchstens 3–4 Mausbewegungen je Frame (Zusammenfassen bei ~95 Hz Maus und 60 Hz Bild); Andi: „kein Stocken“. |
-| Muss 4 Reaktionszeit | ✅ Programmstart → erster Frame 122–131 ms, einschließlich drei Aufnahmen (Ziel ≤ 500 ms). |
+| Muss 3 Zeichnen | ✅ **Messmodus** (`-messen`, 4K-Testbild, der Pfeil biegt sich selbst, ohne Pause): 73,5 fps, p95 13,9 ms — das ist die Bildwiederholrate des Monitors, auf dem das Fenster lag (Hz-Zahl nicht gemessen; Gio zeichnet im Takt der Wayland-Frame-Callbacks). **Von Hand** (Andis Handtests 2 und 3 am 19.11.2026 — Protokolle in `tmp/`, nicht versioniert, weil sie Monitornamen tragen; Ausschnitt bis 1511×850): 44–55 fps über ganze Ziehvorgänge, Pausen der Maus eingerechnet; Ops-Aufbau ≤ 2,5 ms je Frame; höchstens 3–4 Mausbewegungen in einem Frame (kein Stau, also kein Ruckeln); Andi: „kein Stocken“. Kantenglättung: Gio rastert Pfade auf der GPU geglättet; geprüft nur durch Ansehen. |
+| Muss 4 Reaktionszeit | ✅ Start von `main` → erster an den Compositor übergebener Frame 122–131 ms, einschließlich drei Aufnahmen (Ziel ≤ 500 ms). Laden des Programms vor `main` und die Darstellung durch KWin sind nicht mitgemessen. |
 | Muss 5 Eingabe | ✅ Maus, Esc, Enter, Strg+Z, Mausrad-Zoom unter Wayland. |
-| Muss 6 cgo | ✅ begründet und klein: Gio braucht unter Linux cgo für libwayland-client, libEGL, libxkbcommon (alle in Flatpak-Laufzeiten). Mit Build-Tags `nox11,novulkan` keine weiteren Bibliotheken. |
+| Muss 6 cgo | ✅ begründet: Gio braucht unter Linux cgo für libwayland-client (≥ 1.20 wegen `wl_output.name` im Patch), libEGL, libxkbcommon (alle in Flatpak-Laufzeiten). Mit Build-Tags `nox11,novulkan` keine weiteren Bibliotheken. **Dieser Nachtrag ist die cgo-Ausnahme nach ADR-0011** — sie gilt für Gio samt Patch, nicht für weiteren eigenen C-Code. |
 | Soll | nicht geprüft: Systemschrift, Zwischenablage, Speicher im Leerlauf. |
 
 ### Was Gio nicht kann und der Patch nachrüstet
 
-`prototyp/gio-ausgabe.patch` (rund 120 Zeilen von Hand, dazu erzeugter Protokoll-Code):
+`prototyp/gio-ausgabe.patch` (von Hand +153/−26 Zeilen in vier Gio-Dateien, dazu 811 Zeilen mit wayland-scanner
+erzeugter Protokoll-Code; nachzählen mit `git apply --numstat prototyp/gio-ausgabe.patch`):
 
 1. **Monitor wählen:** Gio ruft `xdg_toplevel.set_fullscreen` ohne Ausgabe auf und bindet `wl_output` nur in
    Version 2 (ohne Namen). Patch: `app.FullscreenOn(name)`, `app.WaylandOutputs()`.

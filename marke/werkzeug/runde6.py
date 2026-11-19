@@ -6,6 +6,7 @@ f: Unterzeile unter „schna“, als Pfade aus Open Sans (fontTools; keine Schri
 
 Aufruf: python3 marke/werkzeug/runde6.py  → marke/entwuerfe/runde-6/*.svg
 """
+import os
 from pathlib import Path
 
 from fontTools.pens.svgPathPen import SVGPathPen
@@ -17,8 +18,9 @@ from runde4 import DUNKEL, HELL
 from runde5 import bild, s_mit_auge, zug
 
 ZIEL = Path(__file__).resolve().parent.parent / "entwuerfe" / "runde-6"
-SCHRIFT = Path("/usr/share/fonts/TTF/OpenSans-SemiBold.ttf")  # OFL; nur Umrisse landen im SVG
-NEBEN = {"dunkel": "#8E949B", "hell": "#5E646B"}  # grau-400 auf dunkel; auf Weiß dunkler für Kontrast
+# OFL; nur Umrisse landen im SVG. Pfad je System verschieden: SCHNAPP_SCHRIFT setzt ihn (Vorgabe: Arch-Pfad).
+SCHRIFT = Path(os.environ.get("SCHNAPP_SCHRIFT", "/usr/share/fonts/TTF/OpenSans-SemiBold.ttf"))
+NEBEN = {"dunkel": "#92989F", "hell": "#5E646B"}  # grau-400 auf dunkel; auf Weiß dunkler für Kontrast
 
 
 def h_unten(x):

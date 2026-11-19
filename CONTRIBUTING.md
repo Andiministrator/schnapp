@@ -20,7 +20,8 @@ request.
 - **No real screenshots** in tests or documentation — they show private data. Generate test images instead.
 - **New dependencies** only with a clear benefit; name the purpose, the licence (GPL-3.0 compatible) and the
   alternative in the commit message (`docs/adr/0011-*`).
-- **No cgo** beyond what Gio needs, unless agreed in an architecture decision.
+- **No cgo** beyond what Gio (with our patch) needs — that exception is `docs/adr/0003-*` addendum 2; anything else
+  needs its own architecture decision (`docs/adr/0011-*`).
 
 ## Languages
 
@@ -39,6 +40,7 @@ logo files in [`marke/logo/`](marke/logo/README.md).
 
 - Conventional Commits: `<type>(<scope>): <description>`, types `feat fix docs refactor chore style test perf`.
 - Before a pull request: `gofmt`, `go vet ./...` and `go test ./...` in every module you touched.
-- Every source file starts with `// SPDX-License-Identifier: GPL-3.0-or-later`.
+- Every source file we write starts with `SPDX-License-Identifier: GPL-3.0-or-later` (as a comment). Patches to
+  third-party code (e.g. Gio) keep the upstream licence.
 
 By contributing you agree that your contribution is licensed under GPL-3.0-or-later.

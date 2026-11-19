@@ -37,9 +37,9 @@ einer installierten `.desktop`-Datei mit **absolutem** `Exec=`-Pfad steht und do
 
 Folgen für Schnapp:
 - `go run` bekommt keine Aufnahme (Binärdatei liegt in einem Cache-Ordner). Für Entwicklung: bauen nach festen Pfad
-  (z. B. `~/.local/bin/schnapp`) und `~/.local/share/applications/<id>.desktop` mit diesem absoluten Pfad. **Im
-  Prototyp prüfen**, ob KWin `.desktop`-Dateien unter `~/.local/share/applications` dafür anerkennt (es gab
-  Diskussionen, den Ort auf root-eigene Pfade zu beschränken).
+  (z. B. `~/.local/bin/schnapp`) und `~/.local/share/applications/<id>.desktop` mit diesem absoluten Pfad. Im
+  Prototyp ging die Aufnahme **ganz ohne** `.desktop`-Datei (Abschnitt unten, F-15) — ob KWin einen Eintrag unter
+  `~/.local/share/applications` anerkennt, ist damit nicht beantwortet.
 - Wrapper-Skripte zählen nicht, es zählt die tatsächlich laufende Binärdatei.
 - Flatpak später: eigener Weg (Portal), siehe ADR-0007.
 
@@ -48,7 +48,7 @@ Folgen für Schnapp:
 - **Aufnahme ging ohne installierte `.desktop`-Datei** — die Binärdatei unter `~/.local/bin` bekam ScreenShot2
   ohne Berechtigungseintrag. Ursache nicht geklärt (keine Prozess-Introspektion). Nicht darauf verlassen: auf anderen
   Systemen kann die Sperre greifen; Vorlage `prototyp/schnapp-prototyp.desktop.in`.
-- `CaptureScreen` je Bildschirm 17–34 ms, `CaptureWorkspace` über alle drei 127 ms. Mit `native-resolution`
+- `CaptureScreen` je Bildschirm 17–38 ms, `CaptureWorkspace` über alle drei 127 ms. Mit `native-resolution`
   liefert `CaptureWorkspace` bei gemischter Skalierung ein Bild in der **größten** Skala (Monitore mit Skala 1
   werden hochgerechnet) — für das Overlay deshalb je Bildschirm einzeln aufnehmen.
 - Das Format kam als QImage-Format 16 (RGBX8888, Byte-Reihenfolge R G B x); Umwandlung aller sechs

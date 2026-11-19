@@ -13,7 +13,7 @@ das hilft auch bei Rot-Grün-Schwäche.
 | grau-900 | `#1E2124` | **Grund** (Fenster, Logo dunkel) |
 | grau-800 | `#2A2E33` | Flächen darüber (Leisten, Karten) |
 | grau-700 | `#3A3F45` | Linien, Ränder |
-| grau-400 | `#8E949B` | Nebentext, deaktiviert |
+| grau-400 | `#92989F` | Nebentext, deaktiviert (aufgehellt von `#8E949B`, damit es auch auf grau-800 reicht — F-22) |
 | grau-100 | `#ECEAE5` | **Schrift** auf dunkel |
 | gruen-300 | `#86C2A6` | Grün auf dunkel als Text/Hover |
 | gruen-500 | `#4F9479` | **Hauptfarbe**: Auswahl, aktives Werkzeug, Hauptaktion („Speichern“) |
@@ -29,20 +29,23 @@ das hilft auch bei Rot-Grün-Schwäche.
 | Vordergrund | Grund | Kontrast |
 |---|---|---|
 | grau-100 | grau-900 | 13,45 |
-| grau-400 | grau-900 | 5,28 |
+| grau-400 | grau-900 | 5,56 |
+| grau-400 | grau-800 | 4,69 |
 | gruen-500 | grau-900 | 4,50 |
 | orange-500 | grau-900 | 8,08 |
 | gruen-500 / orange-500 | grau-800 | 3,80 / 6,82 |
 | grau-900 auf gruen-500 / orange-500 (Schrift auf Schaltfläche) | — | 4,50 / 8,08 |
 | gruen-700 / orange-700 | weiß | 5,08 / 4,86 |
+| gruen-500 | grau-700 | 2,96 — zu wenig: Grün nie auf grau-700-Flächen |
 
 gruen-500 erreicht auf grau-900 genau AA (4,5:1); für **Text** in Grün auf dunklem Grund gruen-300 nehmen, gruen-500
 für Flächen, Linien, Symbole (Grenze dort 3:1). Grün und Orange unterscheiden sich in der Helligkeit (≈ 1,8:1).
 
 ## Regeln
 
-- Logo: höchstens Grün + Orange auf Grau (dunkel) bzw. gruen-700 + Orange auf Weiß (hell). Im hellen Logo sind Maul
-  und Zähne `#E0893A` (nur Schmuck, kein Text); Text in Orange auf Weiß immer orange-700. Einfarbig muss es auch gehen.
+- Logo dunkel: „s“ in orange-500, Schriftzug grau-100, Unterzeile grau-400. Logo hell: „s“ in **Logo-Orange hell
+  `#E0893A`** (2,69:1 auf Weiß — gilt als Teil des Logos, nicht als Text), Schriftzug grau-900, Unterzeile `#5E646B`.
+  Text in Orange auf Weiß immer orange-700. Einfarbig muss es auch gehen.
 - **Grün und Orange nie als einziges Unterscheidungsmerkmal** (für Rot-Grün-Schwäche trotzdem schwer zu trennen):
   immer Form, Symbol oder Text dazu.
 - Beschriftungsfarben im Editor (Pfeile, Kästen) sind eine eigene Auswahl für Bilder, nicht diese Palette.

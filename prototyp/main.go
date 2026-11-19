@@ -10,8 +10,9 @@
 //	schnapp-prototyp -testbild          synthetisches 4K-Bild → Editor
 //	schnapp-prototyp -messen 10         synthetisches 4K-Bild, Pfeil biegt sich 10 s selbst, Bildrate ausgeben
 //
-// Die Aufnahme klappt nur, wenn die laufende Binärdatei in einer installierten .desktop-Datei mit
-// X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2 steht (siehe knowledge/topics/kwin-screenshot.md).
+// Laut KWin-Doku braucht die Aufnahme eine installierte .desktop-Datei mit
+// X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2 (Vorlage schnapp-prototyp.desktop.in). Im Prototyp
+// klappte sie auch ohne — Ursache offen (F-15, knowledge/topics/kwin-screenshot.md).
 package main
 
 import (
@@ -104,8 +105,8 @@ func main() {
 	app.Main()
 }
 
-// exitNachLog beendet das Programm; Protokollzeilen sind ungepuffert schon geschrieben.
-func exitNachLog() { os.Exit(0) }
+// beenden beendet das Programm sofort (alle Fenster). log schreibt ungepuffert nach stderr, es geht nichts verloren.
+func beenden() { os.Exit(0) }
 
 func ladePNG(pfad string) (*image.RGBA, error) {
 	f, err := os.Open(pfad)

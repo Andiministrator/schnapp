@@ -32,3 +32,15 @@ Einzelheiten: `knowledge/topics/kwin-screenshot.md`. Festgelegt:
   `X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2`. Ob ein Eintrag unter `~/.local/share/applications`
   genügt, klärt der Prototyp; sonst Installation nach `/usr/local` (Andi, root).
 - D-Bus über `github.com/godbus/dbus/v5` (ADR-0011: spart FD-Übergabe und Protokoll).
+
+## Nachtrag 2 (19.11.2026): Ergebnis des Prototyps (ADR-0003 Nachtrag 2)
+
+- ScreenShot2 Version 5 auf Plasma 6.8; Aufnahme ohne Dialog, je Bildschirm `CaptureScreen` mit
+  `native-resolution` (17–38 ms). Pixel kamen als QImage-Format 16 (RGBX8888).
+- `CaptureWorkspace` rechnet bei gemischter Skalierung alles auf die größte Skala hoch — für das Overlay deshalb je
+  Bildschirm einzeln aufnehmen.
+- **Berechtigung:** Die Aufnahme klappte **ohne** installierte `.desktop`-Datei; Ursache offen (F-15). Die
+  Konsequenz oben („vermutlich eine installierte `.desktop`-Datei“) bleibt als Vorsichtsannahme stehen, bis F-15
+  geklärt ist.
+- **Overlay:** randlose Vollbildfenster je Monitor über `xdg_toplevel.set_fullscreen` mit Ausgabe (Gio-Patch),
+  keine Layer-Shell nötig.

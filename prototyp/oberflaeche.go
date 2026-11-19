@@ -214,7 +214,7 @@ func (a *ansicht) tasten(gtx layout.Context) {
 		switch {
 		case k.Name == key.NameEscape:
 			log.Printf("Esc: beendet")
-			exitNachLog()
+			beenden()
 		case (k.Name == key.NameReturn || k.Name == key.NameEnter) && a.modus == modusAuswahl:
 			a.inEditor()
 		case k.Name == "Z" && a.modus == modusEditor:
@@ -508,7 +508,7 @@ func (a *ansicht) messSchritt(gtx layout.Context, jetzt time.Time) {
 	a.pfeile[0].setzeGriff(m.Add(f32.Pt(r*float32(math.Cos(t*3)), r*float32(math.Sin(t*3)))))
 	if jetzt.Sub(a.messStart) >= a.messDauer {
 		auswerten(a.zugFrames, a.zugArbeit, "Messung 4K")
-		exitNachLog()
+		beenden()
 	}
 	gtx.Execute(op.InvalidateCmd{})
 }

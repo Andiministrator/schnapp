@@ -10,7 +10,8 @@ stehen im Corporate Design: [`../corporate-design.md`](../corporate-design.md) (
 > python3 marke/werkzeug/paket.py
 > ```
 >
-> Braucht Python mit `fontTools`, die Schrift Open Sans SemiBold, `rsvg-convert` und ImageMagick (`magick`).
+> Braucht Python mit `fontTools`, die Schrift Open Sans SemiBold (Pfad über `SCHNAPP_SCHRIFT`, Vorgabe
+> `/usr/share/fonts/TTF/OpenSans-SemiBold.ttf`), `rsvg-convert` und ImageMagick (`magick`).
 
 ## Das Logo
 
