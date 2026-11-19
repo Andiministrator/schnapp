@@ -69,7 +69,8 @@ Stand 19.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 - Board-Dateien und interne Angaben (`CLAUDE.local.md`) stehen in `.gitignore`; das Board ist über die Sicherung des
   Arbeitsrechners gesichert.
 
-## E-12: Lizenz und Nutzungsregeln für Logo und Symbol
+## E-12: Lizenz und Nutzungsregeln für Logo und Symbol — ENTSCHIEDEN 19.11.2026 (Andi folgt der Tendenz)
+- Code GPL; Logo mit kurzer Markenregel. Umsetzung: Markenregel in `marke/` und README vor der ersten Paket-Veröffentlichung.
 - **Frage:** Bleiben Logo und Symbol unter GPL-3.0 wie der Code (jeder darf sie ändern und weiterverwenden), oder
   bekommen sie eine eigene Lizenz (z. B. CC BY-SA) bzw. Regeln zur Markennutzung (Abwandlungen dürfen nicht
   „Schnapp“ heißen)?
@@ -78,7 +79,8 @@ Stand 19.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
   als Schnapp ausgeben) — wie bei vielen freien Projekten.
 - **Vor:** erste Veröffentlichung eines Pakets (Flathub).
 
-## E-13: Ansprache in der deutschen Oberfläche — du oder Sie?
+## E-13: Ansprache in der deutschen Oberfläche — ENTSCHIEDEN 19.11.2026 (Andi folgt der Tendenz)
+- Möglichst ohne Anrede formulieren; wo nötig „du“.
 - **Frage:** Spricht die deutsche Übersetzung den Nutzer mit „du“ oder „Sie“ an?
 - **Impact:** niedrig, aber durchgängig; spätere Umstellung betrifft jeden Text.
 - **Tendenz:** möglichst ohne Anrede formulieren („Bild gespeichert“, „Bereich wählen“); wo nötig „du“ (freundlich,

@@ -143,7 +143,7 @@ Das Auge ist die einzige Figur von Schnapp. Es wird **sparsam** eingesetzt — n
 - **Englisch** ist die Ausgangssprache, **Deutsch** die erste Übersetzung (ADR-0014).
 - Kurz, aktiv, freundlich: „Saved to library“ / „In der Bibliothek gespeichert“ statt Fachsprache.
 - Schaltflächen nennen die Handlung („Save“, „Speichern“), nicht „OK“.
-- Ansprache im Deutschen: noch offen (E-13).
+- Ansprache im Deutschen: möglichst ohne Anrede („Bild gespeichert“, „Bereich wählen“); wo nötig **„du“** (E-13).
 
 ## 9. Dateien und Werkzeuge
 

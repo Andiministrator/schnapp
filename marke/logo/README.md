@@ -49,13 +49,14 @@ Grund durchsichtig; **mit-grund** hat die passende Fläche dahinter (Dunkelgrau 
 |---|---|
 | README, Webseite (dunkles oder helles Thema) | `svg/schnapp-logo-dunkel.svg` bzw. `-hell.svg` |
 | Dokumente, Folien | `png/schnapp-logo-hell-mit-grund-1200.png` oder SVG |
-| App-Symbol unter Linux (hicolor) | `svg/schnapp-symbol-dunkel.svg` (scalable) und PNGs 16–512 |
+| App-Symbol unter Linux (hicolor) | `svg/schnapp-symbol-dunkel.svg` (scalable) und PNGs 16–512 — ohne Auswahlrahmen (Andi, 19.11.2026) |
 | Webseite | `favicon/` komplett |
 | GitHub → Settings → Social preview | `sozial/schnapp-sozial-1280x640.png` |
 | klein (unter 320 px Breite) | `schnapp-logo-ohne-unterzeile-…`; unter 100 px nur das Symbol |
 
 ## Lizenz
 
-Logo und Symbol stehen vorerst wie das ganze Repository unter GPL-3.0-or-later; ob sie eine eigene Lizenz oder
-Regeln zur Markennutzung bekommen, ist offen (E-12 in `docs/open-decisions.md`). Die Unterzeile verwendet Umrisse der Schrift Open Sans
+Logo und Symbol stehen vorerst wie das ganze Repository unter GPL-3.0-or-later; dazu kommt eine kurze
+Markenregel (E-12, entschieden: frei nutzbar, um auf Schnapp zu verweisen; Abwandlungen nicht als Schnapp ausgeben;
+der Wortlaut folgt vor der ersten Paket-Veröffentlichung). Die Unterzeile verwendet Umrisse der Schrift Open Sans
 (SIL Open Font License 1.1); als Grafik eingebettete Umrisse sind damit erlaubt.
