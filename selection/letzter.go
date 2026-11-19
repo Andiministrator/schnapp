@@ -13,6 +13,10 @@ import (
 
 // Letzter ist der zuletzt gewählte Bereich für `--repeat` (ADR-0017). Er liegt im Zustandsordner, nicht in den
 // Einstellungen (ADR-0018): Schnapp merkt ihn sich selbst.
+//
+// Wiedererkannt wird der Monitor an Name, Größe und Skala (F-85). Ein baugleicher Monitor am selben Anschluss
+// gilt bewusst als derselbe (F-121, akzeptiert): KWin liefert keine Geräte-Kennung, und `ui.Monitor` kennt keine
+// Lage. Aufgenommen wird dann nur der früher gewählte Bereich dieses Anschlusses — kein Datenleck.
 type Letzter struct {
 	Monitor string          `json:"monitor"` // Name der Wayland-Ausgabe
 	Groesse image.Point     `json:"size"`    // Bildgröße des Monitors bei der Wahl, in Pixeln
