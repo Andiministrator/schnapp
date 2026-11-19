@@ -11,24 +11,30 @@ muss.
 - `/init-projekt`, `/retrofit-projekt` — Projekt anlegen bzw. nachrüsten.
 
 ## Konventionen
-- **Sprache:** Deutsch (ADR-0002); Go-Bezeichner je Paket einheitlich deutsch oder englisch.
+- **Sprache:** projektinterne Doku, Commits, Kommentare Deutsch (ADR-0002); Oberfläche Englisch als Ausgangssprache +
+  Deutsch (PO-Dateien), README/CONTRIBUTING englisch mit `*.de.md` (ADR-0014); deutsche Oberfläche ohne Anrede, sonst „du“ (E-13).
+  Go-Bezeichner je Paket einheitlich deutsch oder englisch.
 - **Öffentliches Repo:** keine Kunden-/Firmenbezüge, keine lokalen Pfade, Mailadressen, Hausnetz-Angaben, echten Screenshots; Internes in `CLAUDE.local.md`.
-- **Technik:** Go + Gio (ADR-0003), nur Wayland, KDE zuerst (ADR-0007), Fremdpakete nur mit Nutzen (ADR-0011).
+- **Technik:** Go + Gio mit Patch (ADR-0003 Nachtrag 2, `topics/gio-wayland.md`), nur Wayland, KDE zuerst (ADR-0007),
+  Fremdpakete nur mit Nutzen (ADR-0011), cgo nur für Gio. **Kein neues Python** im Repo (wird schrittweise entfernt).
+- **Gestaltung:** `marke/corporate-design.md` ist verbindlich (Farben, Schrift Open Sans, Oberflächen-Regeln);
+  Logo-Dateien sind erzeugt (`marke/werkzeug/`), nie von Hand ändern.
 - **Dateiformat:** PNG mit SVG-Block; Schwärzen überschreibt auch das Original (ADR-0008) — `[S]`-Pfad.
 - **Autonomie:** selbst entscheiden; fragen nur bei den 3 K's (kritische Entscheidung, kritische Auffälligkeit,
   Klärungsbedarf). Vor jedem Push Diff auf Internes prüfen.
 - **ADR-first:** Entscheidungen erst als ADR unter `docs/adr/`; nächste Nummer aus dem Verzeichnis.
 - **QA:** Schritt-QA nach jedem Schritt, Sprint-Abschluss mit Kritiker- und Verify-Sub-Agent (`docs/qa/`).
 - **Spurensicherung:** jede URL in `knowledge/sources-visited.md`.
-- **Findings:** in `docs/findings.md`, jeder mit Board-Karte. Sub-Agents schreiben Findings nur als Text mit
+- **Findings:** offene in `docs/findings.md` (Abschnitt `## Offen`), erledigte in `docs/findings.archive.md`
+  (`findings-rotate.mjs`); jedes offene mit Board-Karte; schreiben nur über `register-schreiben.mjs`. Sub-Agents schreiben Findings nur als Text mit
   Kartenvorschlag in ihren Bericht, nie in die Datei.
-- **Board:** nie `aboard-sync.json` direkt schreiben; Ops über `node ~/.aboard-framework/tools/aboard-op.mjs … --dir .`.
+- **Board:** alles selbst erledigen, auch Sprints anlegen (Andi); nie `aboard-sync.json` direkt schreiben; Ops über `node ~/.aboard-framework/tools/aboard-op.mjs … --dir .`.
 - **Commits:** Conventional Commits, deutsch, `Co-Authored-By` für jedes beteiligte Modell (ADR-0005).
 - **Sub-Agents:** kein Memory; Auflagen-Block wörtlich; keine gemeinsamen Dateien, kein `git stash/reset/checkout`,
   kein Build bei mehreren Strängen.
 - **Board-Checkpoints:** Board neu lesen bei Sitzungsstart, nach Kartenabschluss, vor „los", beim Sprint-Abschluss.
 - **AKTION VOR ANTWORT:** Hook-Blöcke dieses Namens zuerst ausführen.
 - **Dateien:** Arbeitsdateien nach `tmp/<lauf>/` im Projekt, nie `/tmp`. Kein `rm` außer mit ausgeschriebenem Pfad.
-  Testdaten nie per Heredoc.
+  Testdaten nie per Heredoc. Vor jedem Push auch Binärdateien mit `strings` prüfen (F-16); Python mit `-B`.
 - **Remotes:** GitHub `origin` (öffentlich) + privates Zweit-Repo als zweite Push-URL (Einzelheiten nur in
   `CLAUDE.local.md`).
