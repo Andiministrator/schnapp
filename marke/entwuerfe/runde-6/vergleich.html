@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schnapp Logo Runde 6</title>
+<style>
+  :root {
+    --g950: #16181B; --g900: #1E2124; --g800: #2A2E33; --g700: #3A3F45; --g400: #8E949B; --g100: #ECEAE5;
+    --gr3: #86C2A6; --gr5: #4F9479; --gr7: #3B7A5F; --or3: #F9C894; --or5: #F5A65B; --or7: #A85F22;
+  }
+  body { margin: 0; padding: 24px 16px; background: var(--g900); color: var(--g100); font: 15px/1.5 system-ui, sans-serif; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 18px; }
+  p { max-width: 70ch; color: var(--g100); }
+  small, .neben { color: var(--g400); }
+  section { border-top: 1px solid var(--g700); padding: 20px 0; }
+  .reihe { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+  .wort img { width: 560px; max-width: 100%; display: block; border-radius: 8px; }
+  .hellgrund { background: #fff; padding: 8px; border-radius: 8px; }
+  .farben { display: flex; flex-wrap: wrap; gap: 6px; }
+  .farben span { width: 96px; padding: 34px 6px 6px; border-radius: 6px; font-size: 12px; }
+  .ui { background: var(--g800); border: 1px solid var(--g700); border-radius: 10px; padding: 16px; max-width: 560px; }
+  .leiste { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .knopf { border: 0; border-radius: 6px; padding: 7px 14px; font: inherit; }
+  .haupt { background: var(--gr5); color: var(--g900); }
+  .zweit { background: transparent; color: var(--g100); border: 1px solid var(--g700); }
+  .werkzeug { background: var(--g900); color: var(--g100); border: 1px solid var(--g700); }
+  .werkzeug.aktiv { border-color: var(--gr5); color: var(--gr3); }
+  .hinweis { border-left: 4px solid var(--or5); background: var(--g900); padding: 8px 12px; border-radius: 4px; }
+  .hinweis b { color: var(--or3); }
+  .auswahl { position: relative; height: 90px; margin: 14px 0; background: var(--g950); border-radius: 6px; }
+  .auswahl div { position: absolute; left: 30%; top: 18px; width: 40%; height: 54px; border: 2px dashed var(--gr5); }
+</style>
+</head>
+<body>
+<h1>Schnapp — Logo, Runde 6</h1>
+<p>Grundlage Runde 5 b (oranges s, Blick nach rechts). Neu: Unterzeile unter „schna“ oder ein hängendes „h“. Farben wie Runde 3, aufeinander abgestimmt und in der Oberfläche nutzbar
+(<code>marke/farben.md</code>). Schriftzug wie Runde 1. Quelle: <code>marke/werkzeug/runde6.py</code>.</p>
+<div class="farben">
+  <span style="background:var(--g950)">grau-950<br>#16181B</span>
+  <span style="background:var(--g800)">grau-800<br>#2A2E33</span>
+  <span style="background:var(--g700)">grau-700<br>#3A3F45</span>
+  <span style="background:var(--g400);color:var(--g900)">grau-400<br>#8E949B</span>
+  <span style="background:var(--g100);color:var(--g900)">grau-100<br>#ECEAE5</span>
+  <span style="background:var(--gr5);color:var(--g900)">gruen-500<br>#4F9479</span>
+  <span style="background:var(--gr3);color:var(--g900)">gruen-300<br>#86C2A6</span>
+  <span style="background:var(--or5);color:var(--g900)">orange-500<br>#F5A65B</span>
+  <span style="background:var(--or3);color:var(--g900)">orange-300<br>#F9C894</span>
+</div>
+
+<section>
+  <h2>f1 — Unterzeile in Großbuchstaben, gesperrt</h2>
+  <p>„LINUX SCREENSHOTS“, Open Sans als Pfade, füllt genau die Breite unter „schna“. Empfehlung.</p>
+  <div class="reihe">
+    <div class="wort"><img src="f-versal-dunkel.svg" alt="f1 — Unterzeile in Großbuchstaben, gesperrt dunkel"></div>
+    <div class="wort hellgrund"><img src="f-versal-hell.svg" alt="f1 — Unterzeile in Großbuchstaben, gesperrt hell"></div>
+  </div>
+</section>
+<section>
+  <h2>f2 — Unterzeile klein</h2>
+  <p>„linux screenshots“ in Kleinbuchstaben, gesperrt.</p>
+  <div class="reihe">
+    <div class="wort"><img src="f-klein-dunkel.svg" alt="f2 — Unterzeile klein dunkel"></div>
+    <div class="wort hellgrund"><img src="f-klein-hell.svg" alt="f2 — Unterzeile klein hell"></div>
+  </div>
+</section>
+<section>
+  <h2>f3 — „screenshots for linux“</h2>
+  <p>Längere Fassung, enger gesperrt.</p>
+  <div class="reihe">
+    <div class="wort"><img src="f-for-linux-dunkel.svg" alt="f3 — „screenshots for linux“ dunkel"></div>
+    <div class="wort hellgrund"><img src="f-for-linux-hell.svg" alt="f3 — „screenshots for linux“ hell"></div>
+  </div>
+</section>
+<section>
+  <h2>e — „h“ hängt nach unten</h2>
+  <p>Der Stamm des h hängt wie die pp. Liest sich wie „scɲapp“ — nicht empfohlen.</p>
+  <div class="reihe">
+    <div class="wort"><img src="e-h-haengt-dunkel.svg" alt="e — „h“ hängt nach unten dunkel"></div>
+    <div class="wort hellgrund"><img src="e-h-haengt-hell.svg" alt="e — „h“ hängt nach unten hell"></div>
+  </div>
+</section>
+<section>
+  <h2>Palette in der Oberfläche (Beispiel)</h2>
+  <div class="ui">
+    <div class="leiste">
+      <button class="knopf werkzeug aktiv">Pfeil</button>
+      <button class="knopf werkzeug">Kasten</button>
+      <button class="knopf werkzeug">Text</button>
+      <button class="knopf werkzeug">Schwärzen</button>
+    </div>
+    <div class="auswahl"><div></div></div>
+    <div class="hinweis"><b>Hinweis:</b> Geschwärzte Bereiche lassen sich nach dem Speichern nicht wiederherstellen.</div>
+    <div class="leiste" style="margin:14px 0 0">
+      <button class="knopf haupt">Speichern</button>
+      <button class="knopf zweit">Abbrechen</button>
+      <span class="neben" style="align-self:center">1920 × 1080 · 100 %</span>
+    </div>
+  </div>
+</section>
+</body>
+</html>
