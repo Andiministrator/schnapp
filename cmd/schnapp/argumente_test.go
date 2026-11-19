@@ -5,7 +5,6 @@ package main
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -42,7 +41,12 @@ func TestAuswerten(t *testing.T) {
 		{[]string{"--window", "--list-screens"}, Aufruf{}, "Options --window and --list-screens cannot be combined"},
 		{[]string{"--screen="}, Aufruf{}, "needs a monitor name"},
 		{[]string{"--region", "--window"}, Aufruf{}, "Options --region and --window cannot be combined"},
-		{[]string{"--screen", "--screen=x"}, Aufruf{}, "cannot be combined"},
+		{[]string{"--screen", "--screen"}, Aufruf{Modus: ModusBildschirm}, ""},
+		{[]string{"--screen=A", "--screen=A"}, Aufruf{Modus: ModusBildschirm, Bildschirm: "A"}, ""},
+		{[]string{"--screen=A", "--screen=B"}, Aufruf{}, "Option --screen cannot be given more than once with different monitor names."},
+		{[]string{"--screen", "--screen=x"}, Aufruf{}, "different monitor names"},
+		{[]string{"--screen=x", "--screen"}, Aufruf{}, "different monitor names"},
+		{[]string{"--screen", "--window"}, Aufruf{}, "Options --screen and --window cannot be combined"},
 		{[]string{"datei.png"}, Aufruf{}, "Unexpected argument: datei.png"},
 		{[]string{"--screen", "x"}, Aufruf{}, "Unexpected argument: x"},
 	}
@@ -64,14 +68,18 @@ func keineMonitore() ([]oberflaeche.Monitor, error) { return nil, errors.New("ke
 func fuehre(t *testing.T, monitore func() ([]oberflaeche.Monitor, error), args ...string) (int, string, string) {
 	t.Helper()
 	var aus, fehler bytes.Buffer
-	code := laufe(args, &aus, &fehler, monitore, keineEinstellungen(t), nichtUmgesetzt)
+	code := laufe(args, &aus, &fehler, monitore, keineEinstellungen(t), (&merkeAuftrag{}).ausfuehren)
 	return code, aus.String(), fehler.String()
 }
 
-// nichtUmgesetzt ersetzt in den Tests von laufe die Ausführung: keine echte Aufnahme, nur die Meldung, welcher Modus
-// angekommen wäre (die Ausführung selbst prüft aufnehmen_test.go).
-func nichtUmgesetzt(t Auftrag, _, fehler io.Writer) int {
-	fmt.Fprintf(fehler, "The capture mode %s is not implemented yet.\n", t.Modus.Option())
+// merkeAuftrag ersetzt in den Tests von laufe die Ausführung: keine echte Aufnahme, nur der übergebene Auftrag wird
+// festgehalten (die Ausführung selbst prüft aufnehmen_test.go).
+type merkeAuftrag struct {
+	auftraege []Auftrag
+}
+
+func (m *merkeAuftrag) ausfuehren(t Auftrag, _, _ io.Writer) int {
+	m.auftraege = append(m.auftraege, t)
 	return exitFehler
 }
 
@@ -96,26 +104,37 @@ func TestLaufeEnglisch(t *testing.T) {
 	}
 }
 
-// Die Aufnahme-Modi gibt es noch nicht: sie melden das und enden mit Code ungleich 0, ohne Monitore abzufragen.
-func TestLaufeModiNochNichtUmgesetzt(t *testing.T) {
+// laufe gibt den ausgewerteten und mit den Einstellungen aufgelösten Auftrag an die Ausführung weiter, ohne Monitore
+// abzufragen; der Exit-Code der Ausführung kommt unverändert zurück.
+func TestLaufeGibtAuftragWeiter(t *testing.T) {
 	sprache.Setze(nil)
 	abfrage := func() ([]oberflaeche.Monitor, error) {
 		t.Error("Monitorabfrage darf hier nicht laufen")
 		return nil, nil
 	}
-	for _, args := range [][]string{nil, {"--region"}, {"--window"}, {"--repeat"}, {"--screen"}, {"--screen=x"}} {
-		code, aus, fehler := fuehre(t, abfrage, args...)
-		if code != exitFehler || aus != "" || !strings.Contains(fehler, "not implemented yet") {
-			t.Errorf("%q: Code %d, Ausgabe %q, Fehler %q", args, code, aus, fehler)
+	alle := einstellungen.Voreinstellungen()
+	alle.Bildschirm = einstellungen.WahlAlle
+	lade := func() (einstellungen.Einstellungen, []string) { return alle, nil }
+	for _, tc := range []struct {
+		args []string
+		want Auftrag
+	}{
+		{nil, Auftrag{Modus: ModusBereich}},
+		{[]string{"--region"}, Auftrag{Modus: ModusBereich}},
+		{[]string{"--window"}, Auftrag{Modus: ModusFenster}},
+		{[]string{"--repeat"}, Auftrag{Modus: ModusWiederholen}},
+		{[]string{"--screen"}, Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Wahl: einstellungen.WahlAlle}}},
+		{[]string{"--screen=X"}, Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Name: "X"}}},
+	} {
+		m := &merkeAuftrag{}
+		var aus, fehler bytes.Buffer
+		code := laufe(tc.args, &aus, &fehler, abfrage, lade, m.ausfuehren)
+		if code != exitFehler || aus.Len() != 0 || fehler.Len() != 0 {
+			t.Errorf("%q: Code %d, Ausgabe %q, Fehler %q", tc.args, code, aus.String(), fehler.String())
 		}
-	}
-	_, _, fehler := fuehre(t, abfrage, "--window")
-	if !strings.Contains(fehler, "--window") {
-		t.Errorf("Meldung nennt den Modus nicht: %q", fehler)
-	}
-	// --screen ohne Wert listet nicht mehr (F-58), sondern meldet sich als Bildschirm-Modus.
-	if _, _, fehler = fuehre(t, abfrage, "--screen"); !strings.Contains(fehler, "mode --screen is not") {
-		t.Errorf("--screen ohne Wert: Meldung %q", fehler)
+		if len(m.auftraege) != 1 || m.auftraege[0] != tc.want {
+			t.Errorf("%q: Aufträge %+v, erwartet genau %+v", tc.args, m.auftraege, tc.want)
+		}
 	}
 }
 
@@ -193,7 +212,7 @@ func TestLaufeLadetEinstellungenNurFuerAufnahme(t *testing.T) {
 			return einstellungen.Voreinstellungen(), []string{"settings.ini:3: Warnung"}
 		}
 		var aus, fehler bytes.Buffer
-		laufe(tc.args, &aus, &fehler, func() ([]oberflaeche.Monitor, error) { return nil, nil }, lade, nichtUmgesetzt)
+		laufe(tc.args, &aus, &fehler, func() ([]oberflaeche.Monitor, error) { return nil, nil }, lade, (&merkeAuftrag{}).ausfuehren)
 		if (aufrufe == 1) != tc.laedt || aufrufe > 1 {
 			t.Errorf("%q: Einstellungen %d-mal geladen, erwartet geladen=%v", tc.args, aufrufe, tc.laedt)
 		}
@@ -203,16 +222,18 @@ func TestLaufeLadetEinstellungenNurFuerAufnahme(t *testing.T) {
 	}
 }
 
-// Jede Warnung steht in einer eigenen Zeile auf stderr, die Aufnahme läuft weiter (hier: dieselbe Meldung wie sonst).
+// Jede Warnung steht in einer eigenen Zeile auf stderr, die Aufnahme läuft weiter (hier: die Ausführung bekommt
+// den Auftrag trotzdem).
 func TestLaufeWarnungenWeiter(t *testing.T) {
 	sprache.Setze(nil)
 	lade := func() (einstellungen.Einstellungen, []string) {
 		return einstellungen.Voreinstellungen(), []string{"w1", "w2"}
 	}
 	var aus, fehler bytes.Buffer
-	code := laufe([]string{"--window"}, &aus, &fehler, keineMonitore, lade, nichtUmgesetzt)
-	if code != exitFehler || !strings.HasPrefix(fehler.String(), "w1\nw2\n") || !strings.Contains(fehler.String(), "not implemented yet") {
-		t.Errorf("Code %d, stderr %q", code, fehler.String())
+	m := &merkeAuftrag{}
+	code := laufe([]string{"--window"}, &aus, &fehler, keineMonitore, lade, m.ausfuehren)
+	if code != exitFehler || fehler.String() != "w1\nw2\n" || len(m.auftraege) != 1 || m.auftraege[0].Modus != ModusFenster {
+		t.Errorf("Code %d, stderr %q, Aufträge %+v", code, fehler.String(), m.auftraege)
 	}
 }
 

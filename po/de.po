@@ -142,3 +142,18 @@ msgstr "Monitor anklicken oder Bereich aufziehen · Enter: Monitor unter dem Zei
 
 msgid "Drag an area · Enter: whole monitor under the pointer · Esc or right-click: cancel"
 msgstr "Bereich aufziehen · Enter: ganzer Monitor unter dem Zeiger · Esc oder Rechtsklick: abbrechen"
+
+# einstellungen/argumente: Härtung
+msgid "%s: the settings file is not a regular file; using the defaults."
+msgstr "%s: Die Einstellungsdatei ist keine reguläre Datei; es gelten die Voreinstellungen."
+
+msgid "%s: the settings file is larger than 64 KiB; using the defaults."
+msgstr "%s: Die Einstellungsdatei ist größer als 64 KiB; es gelten die Voreinstellungen."
+
+msgid "… and %d more warning"
+msgid_plural "… and %d more warnings"
+msgstr[0] "… und %d weitere Warnung"
+msgstr[1] "… und %d weitere Warnungen"
+
+msgid "Option --screen cannot be given more than once with different monitor names."
+msgstr "Die Option --screen lässt sich nicht mehrfach mit verschiedenen Monitornamen angeben."

@@ -26,7 +26,8 @@ const (
 type Aufruf struct {
 	Modus Modus
 	// Bildschirm ist der Name des gewählten Monitors bei --screen=NAME; leer bei --screen ohne Wert
-	// (dann gilt das Verhalten laut Einstellung, vorerst fest „Monitor per Klick wählen“).
+	// (dann gilt das Verhalten laut Einstellung `[capture] screen`: Monitor per Klick, unter dem Zeiger oder alle,
+	// ADR-0018).
 	Bildschirm string
 }
 
@@ -93,7 +94,10 @@ func Auswerten(args []string) (Aufruf, error) {
 		if hatWert && wert == "" {
 			return Aufruf{}, &Fehler{sprache.T("Option --screen needs a monitor name after the equals sign.")}
 		}
-		if gesehen && !(a.Modus == m && m != ModusBildschirm) {
+		if gesehen && a.Modus == ModusBildschirm && m == ModusBildschirm && a.Bildschirm != wert {
+			return Aufruf{}, &Fehler{sprache.T("Option --screen cannot be given more than once with different monitor names.")}
+		}
+		if gesehen && a.Modus != m {
 			return Aufruf{}, &Fehler{fmt.Sprintf(sprache.T("Options %s and %s cannot be combined."), a.Modus.Option(), m.Option())}
 		}
 		a = Aufruf{Modus: m, Bildschirm: wert}

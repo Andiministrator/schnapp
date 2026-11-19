@@ -3,12 +3,16 @@
 package einstellungen
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/Andiministrator/schnapp/bibliothek"
+	"github.com/Andiministrator/schnapp/po"
 	"github.com/Andiministrator/schnapp/sprache"
 )
 
@@ -209,6 +213,132 @@ func TestDoppelterSchluessel(t *testing.T) {
 	if e.Bibliothek.Tage != 10 || len(warn) != 1 || !strings.Contains(warn[0], ":3: Invalid value") {
 		t.Errorf("doppelt ungültig: Tage %d, Warnungen %q", e.Bibliothek.Tage, warn)
 	}
+	// Erster Wert ungültig, zweiter gültig: nur die Warnung „ungültig“, kein „is set again“ (F-93).
+	schreibe(t, pfad, "[library]\ncleanup-days = 0\ncleanup-days = 30\n")
+	e, warn = Lade()
+	if e.Bibliothek.Tage != 30 || len(warn) != 1 || !strings.Contains(warn[0], ":2: Invalid value") || strings.Contains(warn[0], "set again") {
+		t.Errorf("erst ungültig: Tage %d, Warnungen %q", e.Bibliothek.Tage, warn)
+	}
+}
+
+func keineSteuerzeichen(s string) bool {
+	for _, r := range s {
+		if r < 0x20 || r == 0x7f || (r >= 0x80 && r <= 0x9f) || r == 0x202e {
+			return false
+		}
+	}
+	return true
+}
+
+// Steuerzeichen und Terminal-Escapes aus der Datei erscheinen nie roh in den Warnungen (F-89).
+func TestWarnungenOhneSteuerzeichen(t *testing.T) {
+	pfad := umgebung(t)
+	schreibe(t, pfad, "[a\x1b]0;X\x07b]\nk = 1\n[capture]\nsc\x1b[2Jreen = 1\nscreen = \x1b]0;Y\x07\xc2\x85\n[library]\ncleanup-days = \x9b31m\n")
+	_, warn := Lade()
+	if len(warn) != 4 {
+		t.Fatalf("Warnungen %q, erwartet 4", warn)
+	}
+	for _, w := range warn {
+		if !keineSteuerzeichen(w) {
+			t.Errorf("rohe Steuerzeichen in %q", w)
+		}
+	}
+	if !strings.Contains(warn[0], `Unknown section [a\x1b]0;X\ab]`) {
+		t.Errorf("Abschnittsname nicht maskiert: %q", warn[0])
+	}
+	// Auch Parse mit Steuerzeichen im Namen (Pfad).
+	_, w := Parse("pfad\x1b[31m", "x\n")
+	if len(w) != 1 || !keineSteuerzeichen(w[0]) || !strings.HasPrefix(w[0], `pfad\x1b[31m:1: `) {
+		t.Errorf("Pfad nicht maskiert: %q", w)
+	}
+}
+
+// Ein FIFO als Einstellungsdatei hängt nicht, sondern ergibt Voreinstellungen mit Warnung (F-90).
+func TestFifoStattDatei(t *testing.T) {
+	pfad := umgebung(t)
+	if err := os.MkdirAll(filepath.Dir(pfad), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := syscall.Mkfifo(pfad, 0o600); err != nil {
+		t.Skip("kein FIFO möglich:", err)
+	}
+	type ergebnis struct {
+		e    Einstellungen
+		warn []string
+	}
+	c := make(chan ergebnis, 1)
+	go func() {
+		e, warn := Lade()
+		c <- ergebnis{e, warn}
+	}()
+	select {
+	case r := <-c:
+		if r.e != Voreinstellungen() || len(r.warn) != 1 || !strings.Contains(r.warn[0], "not a regular file") {
+			t.Errorf("FIFO: %+v, %q", r.e, r.warn)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Lade hängt an einem FIFO")
+	}
+}
+
+// Eine Datei über 64 KiB wird nicht ausgewertet (F-90); genau 64 KiB noch.
+func TestZuGrosseDatei(t *testing.T) {
+	pfad := umgebung(t)
+	kopf := "[capture]\nscreen = all\n"
+	schreibe(t, pfad, kopf+"#"+strings.Repeat("x", 64<<10-len(kopf)-1-1)+"\n")
+	if info, _ := os.Stat(pfad); info.Size() != 64<<10 {
+		t.Fatalf("Testdatei %d Bytes", info.Size())
+	}
+	if e, warn := Lade(); e.Bildschirm != WahlAlle || len(warn) != 0 {
+		t.Errorf("genau 64 KiB: %+v, %q", e, warn)
+	}
+	schreibe(t, pfad, kopf+"#"+strings.Repeat("x", 64<<10)+"\n")
+	e, warn := Lade()
+	if e != Voreinstellungen() || len(warn) != 1 || !strings.Contains(warn[0], "larger than 64 KiB") {
+		t.Errorf("zu groß: %+v, %q", e, warn)
+	}
+}
+
+// Höchstens 20 Warnungen, danach eine Zählzeile; Werte werden gekürzt (F-91).
+func TestWarnungenBegrenzt(t *testing.T) {
+	pfad := umgebung(t)
+	var b strings.Builder
+	b.WriteString("[capture]\n")
+	for i := 0; i < 25; i++ {
+		fmt.Fprintf(&b, "k%d = 1\n", i)
+	}
+	schreibe(t, pfad, b.String())
+	_, warn := Lade()
+	if len(warn) != 21 || warn[20] != "… and 5 more warnings" {
+		t.Fatalf("%d Warnungen, letzte %q", len(warn), warn[len(warn)-1])
+	}
+	b.Reset()
+	b.WriteString("[capture]\n")
+	for i := 0; i < 21; i++ {
+		fmt.Fprintf(&b, "k%d = 1\n", i)
+	}
+	schreibe(t, pfad, b.String())
+	if _, warn = Lade(); len(warn) != 21 || warn[20] != "… and 1 more warning" {
+		t.Errorf("Einzahl: %d Warnungen, letzte %q", len(warn), warn[len(warn)-1])
+	}
+	schreibe(t, pfad, "[capture]\nscreen = "+strings.Repeat("a", 200)+"\n")
+	_, warn = Lade()
+	if len(warn) != 1 || !strings.Contains(warn[0], `Invalid value "`+strings.Repeat("a", 80)+`…" for key`) {
+		t.Errorf("Wert nicht auf 80 Zeichen gekürzt: %q", warn)
+	}
+}
+
+// Nach einem kaputten oder leeren Abschnittskopf werden die Folgezeilen still übergangen (F-92).
+func TestUngueltigerAbschnittStill(t *testing.T) {
+	pfad := umgebung(t)
+	schreibe(t, pfad, "[capture\nscreen = all\nx = 1\n[]\ny = 2\nz = 3\n[library]\ncleanup = false\n")
+	e, warn := Lade()
+	if len(warn) != 2 || !strings.Contains(warn[0], ":1: Broken section header") || !strings.Contains(warn[1], ":4: Unknown section []") {
+		t.Errorf("Warnungen %q", warn)
+	}
+	if e.Bibliothek.An || e.Bildschirm != WahlKlick {
+		t.Errorf("Werte %+v", e)
+	}
 }
 
 func TestNichtLesbar(t *testing.T) {
@@ -246,5 +376,16 @@ func TestWarnungenUebersetzt(t *testing.T) {
 	_, warn := Lade()
 	if len(warn) != 1 || !strings.Contains(warn[0], "Invalid value") {
 		t.Errorf("englisch: %q", warn)
+	}
+	k, err := sprache.Lade(po.Dateien, "de")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sprache.Setze(k)
+	t.Cleanup(func() { sprache.Setze(nil) })
+	_, warn = Lade()
+	want := pfad + ":2: Ungültiger Wert \"0\" für den Schlüssel \"cleanup-days\" im Abschnitt [library]; ignoriert."
+	if len(warn) != 1 || warn[0] != want {
+		t.Errorf("deutsch: %q, erwartet %q", warn, want)
 	}
 }
