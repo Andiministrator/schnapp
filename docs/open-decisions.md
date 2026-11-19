@@ -86,3 +86,35 @@ Stand 19.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 - **Tendenz:** möglichst ohne Anrede formulieren („Bild gespeichert“, „Bereich wählen“); wo nötig „du“ (freundlich,
   passt zur Haltung im Corporate Design).
 - **Vor:** erste Oberflächentexte (Karte Übersetzbarkeit).
+
+## E-14: Schnittstelle für Agenten und lokale KI (Kommandozeile, MCP-Server)
+- **Frage:** Bekommt Schnapp von Anfang an eine Schnittstelle, über die KI-Agenten und lokale Modelle aufnehmen,
+  beschriften, schwärzen, exportieren und die Bibliothek durchsuchen können — als skriptfähige Kommandozeile, als
+  MCP-Server, beides? Braucht es dafür eine eigene Doku für Agenten? (Andi, 19.11.2026)
+- **Impact:** hoch — prägt die Architektur (Kern ohne Oberfläche) und ist sicherheitsrelevant: Wer die Schnittstelle
+  bedienen darf, sieht den Bildschirm und die Bibliothek.
+- **Tendenz:**
+  1. **Architektur ab jetzt API-fähig** (ist schon so: dokument, datei, aufnahme, bibliothek kennen Gio nicht).
+  2. **Erste Fassung: skriptfähige Kommandozeile** als erste Schnittstelle, ohne Fenster, z. B.
+     `schnapp --screen=NAME --output bild.png`, `schnapp export`, `schnapp redact --area x,y,b,h`; Ausgabe
+     maschinenlesbar mit `--json`. Kostet wenig, nützt Skripten und Agenten gleichermaßen.
+  3. **MCP-Server als `schnapp mcp`** (nur stdio, nie Netz) in der zweiten Fassung, auf derselben Kernschicht:
+     Werkzeuge aufnehmen, Bibliothek suchen/lesen, Objekte hinzufügen, schwärzen, exportieren. Eigene ADR davor:
+     **Einwilligung** (in den Einstellungen ausdrücklich einschalten, getrennt für Aufnehmen und Bibliothek-Lesen),
+     sichtbarer Hinweis bei jeder Aufnahme über MCP, Fremdpaket für MCP nach ADR-0011 abwägen.
+  4. **Doku für Agenten:** keine getrennte große Doku. Die MCP-Werkzeuge beschreiben sich selbst; dazu eine kurze
+     englische `docs/agents.md` (Kommandozeile, MCP, Beispiele, Grenzen) für Menschen und Agenten.
+- **Vor:** Zuschnitt der Fassung 2; die Kommandozeilen-Form vor der ersten Veröffentlichung (sie ist Oberfläche).
+
+## E-15: Dokumentation des Bildformats (intern und öffentlich)
+- **Frage:** Brauchen wir eine Beschreibung des Arbeitsdatei-Formats (PNG mit `snAP`/`snAO`), intern und/oder
+  öffentlich? (Andi, 19.11.2026)
+- **Impact:** mittel — Dateien gehen nach außen; ohne Spezifikation kann niemand sie verlässlich lesen, und spätere
+  Formatversionen brauchen einen festen Bezugspunkt (ADR-0006).
+- **Tendenz:** **eine** öffentliche, normative Spezifikation `docs/format.md` (englisch, für Entwickler — Ausnahme
+  von der Zweisprachigkeit nach ADR-0014, weil Fachdoku; deutsche Fassung nur auf Wunsch) mit Formatversion,
+  Blöcken, SVG-Elementen und -Attributen, Grenzen, Regeln für Leser („unbekannte Version ablehnen“) und kleinen
+  Beispieldateien unter `testdata/`; ein Test prüft, dass der Schreiber den Beispielen entspricht. Intern bleibt
+  ADR-0008 (mit Nachtrag) die Entscheidung; keine zweite interne Beschreibung, die auseinanderläuft.
+- **Vor:** erste Veröffentlichung eines Pakets; jede Formatänderung danach ändert Spezifikation und Version im selben
+  Commit.
