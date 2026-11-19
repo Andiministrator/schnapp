@@ -81,7 +81,7 @@ msgstr "  %s: %d × %d Pixel, Skalierung %d"
 
 # aufnahme: Aufnahmeschicht
 msgid "Schnapp is not registered as a screenshot program. Install its desktop file and try again."
-msgstr "Schnapp ist nicht als Aufnahmeprogramm eingetragen. Die Programmdatei (.desktop) muss installiert sein."
+msgstr "Schnapp ist nicht als Aufnahmeprogramm eingetragen. Die Desktop-Datei von Schnapp muss installiert sein."
 
 msgid "The capture was cancelled."
 msgstr "Die Aufnahme wurde abgebrochen."

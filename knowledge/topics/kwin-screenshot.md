@@ -52,14 +52,21 @@ Folgen für Schnapp:
   Aufnahmeprogramm eingetragen …“) statt stillem Scheitern.
 - Flatpak später: eigener Weg (Portal), siehe ADR-0007.
 
-## Ausblick: ScreenShot3 mit memfd (nur KWin-master, Stand 19.11.2026)
+## ScreenShot3 mit memfd (nur KWin-master, Stand 19.11.2026; umgesetzt in `aufnahme/`)
 
-KWin-Commit `5be04288` vom 17.11.2026 („plugins/screenshot: Share screenshots with memfd“) führt
-`org.kde.KWin.ScreenShot3` ein: dieselben Methoden, aber KWin **gibt** einen memfd zurück (`fd h` als Ausgabe) statt in
-eine übergebene Pipe zu schreiben; Ergebnis-Schlüssel wie bei ScreenShot2 (u. a. `format` als `QImage::Format`). Laut
-Commit spart das 4–13 ms Kopieren je Aufnahme. **In keinem Release-Tag enthalten** (vermutlich Plasma 6.9).
-ScreenShot2 bleibt bestehen. Für Schnapp: Aufnahmeschicht so bauen, dass sie ScreenShot3 nutzt, wenn KWin es
-anbietet, sonst ScreenShot2 (Karte im Board).
+KWin-Commit `5be04288` vom 17.11.2026 („plugins/screenshot: Share screenshots with memfd“): Objekt
+`/org/kde/KWin/ScreenShot3`, Interface `org.kde.KWin.ScreenShot3`, Property `Version` (u). Dieselben Methoden und
+Optionen wie ScreenShot2, aber ohne `pipe h` als Eingabe — die Methoden **geben** `fd h` (memfd) und danach
+`results a{sv}` zurück, in dieser Reihenfolge; Schlüssel wie bei ScreenShot2. Laut Commit spart das 4–13 ms Kopieren
+je Aufnahme. **In keinem Release-Tag enthalten** (vermutlich Plasma 6.9); auf dem Laptop (Plasma 6.8.3) fehlt das
+Objekt, ScreenShot2 meldet Version 5.
+
+Umsetzung (`aufnahme/`, Karte #27): beim ersten Aufruf `Version` von ScreenShot3 abfragen, sonst ScreenShot2; memfd
+per fstat prüfen und genau stride×(height−1)+width×4 Bytes per ReadAt lesen (kein mmap). Grenzen: Seite ≤ 32768,
+Zeile ≤ 262144 Bytes, Rohdaten ≤ 1 GiB (die Pipe wird vor der Antwort gelesen, darum feste Obergrenze); Zeitgrenze
+10 s je Aufruf, 5 min bei `CaptureInteractive` (der Nutzer klickt). Fehlerwerte: `ErrNichtBerechtigt` (NoAuthorized),
+`ErrAbgebrochen` (`org.kde.KWin.ScreenShot2.Error.Cancelled`), `ErrKeineSchnittstelle`. Gegen echtes KWin noch nicht
+gelaufen (Stand Karte #27).
 
 ## Gemessen im Prototyp (19.11.2026, Plasma 6.8, drei Monitore, einer mit Skala 1,6)
 
