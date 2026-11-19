@@ -96,6 +96,8 @@ def main():
         t1, _ = gesperrt("CAPTURE", *sc, g5, fuss)
         t2, _ = gesperrt("FOR LINUX", *na, g5, fuss)
         schreibe(f"e5-geteilt-{art}.svg", bild(640, mitte + t1 + t2, f["grund"], f"0 20 {ende4 + 60} 250"))
+        t1, _ = gesperrt("SCREENSHOTS", *sc, g5, fuss)
+        schreibe(f"e5-screenshots-{art}.svg", bild(640, mitte + t1 + t2, f["grund"], f"0 20 {ende4 + 60} 250"))
         t2, sp = gesperrt("FOR LINUX", *na, g5, fuss)
         t1, _ = gesperrt("CAPTURE", *sc, g5, fuss, mitte=True, sperrung=sp)
         schreibe(f"e5-mittig-{art}.svg", bild(640, mitte + t1 + t2, f["grund"], f"0 20 {ende4 + 60} 250"))
