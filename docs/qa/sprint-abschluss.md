@@ -36,6 +36,17 @@ Code-Änderung triagiert wurden (im Recap vermerken). Ein **zweiter** Durchlauf 
 - Alle Findings triagieren: sofort · eingeplant · backlog · akzeptiert. Jedes offene Finding hat eine Board-Karte.
 
 ## Freigabekriterien
-Alle P0 behoben · alle `[S]` behoben (jede Priorität; Ausnahmepfad siehe `/sprint-abschluss`) · alle `[K]` P0/P1
+Alle P0 behoben · alle `[S]` behoben (jede Priorität; Ausnahmepfad unten) · alle `[K]` P0/P1
 behoben · alle `[B]` behoben · Sprint-Definition erfüllt. Maßgeblich: `~/.claude/commands/sprint-abschluss.md`
 §Sprint-Release-Check.
+
+## Ausnahmepfad für `[S]` P2/P3
+
+**Ausnahmepfad für `[S]` P2/P3** — ein offenes `[S]`-Finding blockiert den Sprint-Release ausnahmsweise nicht, wenn ALLE vier Bedingungen erfüllt sind:
+
+1. Es ist eine bewusste Design-Entscheidung (kein vergessener Fehler) — mit Verweis auf das ADR oder den Nachtrag, der sie trägt.
+2. Priorität P2 oder P3. `[S]` P0/P1 blockiert ausnahmslos.
+3. Die Begründung steht am Fundort im Register (Status-Spalte des Findings in `docs/findings.md`: „Ausnahmepfad Sprint N“ plus Grund, und bis wann bzw. mit welcher Karte es gelöst wird).
+4. Das Finding wird im Recap der 🏁-Sprint-Abschluss-Karte unter „Ausnahmepfad [S]“ namentlich genannt.
+
+Fehlt eine Bedingung, blockiert das Finding.
