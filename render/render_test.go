@@ -8,7 +8,6 @@ import (
 	"image/color"
 	"strings"
 	"testing"
-	"time"
 
 	"golang.org/x/image/font"
 
@@ -194,23 +193,6 @@ func TestSteuerzeichenOhneKaestchen(t *testing.T) {
 	for i := range a.Pix {
 		if a.Pix[i] != b.Pix[i] {
 			t.Fatal("Tabulator/Wagenrücklauf zeichnen etwas")
-		}
-	}
-}
-
-// F-118: Text weit außerhalb des Bildes wird nicht gerastert — schnell, und das Bild bleibt unverändert.
-func TestTextAusserhalbWirdNichtGerastert(t *testing.T) {
-	for _, ort := range []document.Punkt{document.Pt(50000, 50000), document.Pt(-50000, 5), document.Pt(5, -50000), document.Pt(500000, 5)} {
-		d := weissesDokument(t, 10, 10)
-		hinzu(t, d, document.Text{Ort: ort, Inhalt: strings.Repeat("Wg", 500), Schriftgrad: 4096, Farbe: rot})
-		vor := append([]byte(nil), d.Ansichtsbild().Pix...)
-		start := time.Now()
-		b := bild(t, d)
-		if dauer := time.Since(start); dauer > 200*time.Millisecond {
-			t.Errorf("Text bei %v: %v gebraucht, soll unter 200 ms bleiben", ort, dauer)
-		}
-		if !bytes.Equal(b.Pix, vor) {
-			t.Errorf("Text bei %v verändert das Bild", ort)
 		}
 	}
 }

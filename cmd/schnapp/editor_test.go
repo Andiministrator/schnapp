@@ -19,6 +19,7 @@ import (
 	"github.com/Andiministrator/schnapp/fileformat"
 	"github.com/Andiministrator/schnapp/i18n"
 	"github.com/Andiministrator/schnapp/library"
+	"github.com/Andiministrator/schnapp/render"
 	"github.com/Andiministrator/schnapp/ui"
 )
 
@@ -233,6 +234,7 @@ func TestNutzerFehler(t *testing.T) {
 		ui.ErrOverlayOffen: "The selection overlay did not close in time.",
 		speicherFehler(fmt.Errorf("x: %w", os.ErrPermission)):                             "No permission to write the file.",
 		speicherFehler(errors.Join(errors.New("a"), fmt.Errorf("b: %w", syscall.ENOSPC))): "Not enough disk space.",
+		speicherFehler(fmt.Errorf("x: %w", render.ErrZuAufwendig)):                        "The image has too many or too large annotations to save.",
 		speicherFehler(errors.New("/irgendwo/datei.png: kaputt")):                         "The file could not be written.",
 		errors.New("x"): "x",
 	} {

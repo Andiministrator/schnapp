@@ -8,6 +8,7 @@
 package render
 
 import (
+	"errors"
 	"image"
 	"image/color"
 	"image/draw"
@@ -29,21 +30,60 @@ import (
 // Bild liefert die Ansicht des Dokuments mit allen Objekten. Objekte liegen im Original und werden über
 // Dokument.ZuAnsicht abgebildet; was außerhalb der Ansicht liegt, fällt weg.
 func Bild(d *document.Dokument) (*image.NRGBA, error) {
+	b, _, err := bildMitAufwand(d)
+	return b, err
+}
+
+// ErrZuAufwendig meldet, dass das Rastern das Rechenbudget (Budget) überschreiten würde (F-125): zu viele oder zu große
+// Beschriftungen, etwa in einer präparierten Arbeitsdatei. Statt minutenlang zu rechnen, liefert Bild diesen Fehler.
+var ErrZuAufwendig = errors.New("render: Bild zu aufwendig zu rastern")
+
+// Budget ist die Obergrenze des Rasteraufwands je Bild (F-125), in Einheiten „Glyphenpixel“: eine gerasterte Glyphe
+// zählt Schriftgrad², eine Füllung das Hundertfache der Fläche ihres (aufs Bild beschnittenen) Rechtecks
+// (fuellGewicht). Das Gewicht stammt aus der Messung: Glyphen rastern mit rund 0,3 ns je Einheit, Füllungen über
+// den allgemeinen NRGBA-Weg von x/draw mit rund 36 ns je Pixel. Stand 19.11.2026, Entwicklungsrechner, ein Kern:
+// 100 Texte „W“ Grad 4096 auf 10×10 brauchten ohne Budget 0,53 s, 100 Nummern Radius 4096 0,41 s (hochgerechnet auf
+// 10000 Objekte ~53 s), 20 Kästen mit Füllung und Rand auf 8000×8000 46 s. Mit Budget bricht jeder dieser Fälle nach
+// höchstens etwa 6 s mit ErrZuAufwendig ab (ein einzelnes Objekt kann das Budget um seine Fläche überschreiten). Ein
+// realistisches Dokument (200 Texte à 50 Zeichen Grad 24 auf 3840×2160, 100 Nummern) kostet gut 20 Mio. Einheiten
+// (48 ms), das Budget ist also rund 600-mal so groß.
+const (
+	Budget       = 14_000_000_000.0
+	fuellGewicht = 100.0
+)
+
+// aufwand zählt, was bisher gerastert wurde.
+type aufwand struct {
+	summe   float64 // Pixel-Aufwand, siehe Budget
+	glyphen int     // Anzahl gerasterter Glyphen (Zählnahtstelle für Tests)
+}
+
+// budget ist die wirksame Obergrenze; nur Tests setzen sie kleiner, damit sie nicht Sekunden rechnen.
+var budget = Budget
+
+func (a *aufwand) ueber() bool { return a.summe > budget }
+
+// bildMitAufwand ist Bild und liefert zusätzlich den Aufwand (für Tests).
+func bildMitAufwand(d *document.Dokument) (*image.NRGBA, aufwand, error) {
 	b := d.Ansichtsbild()
-	z := zeichner{bild: b, d: d, faces: map[faceSchluessel]font.Face{}}
+	z := zeichner{bild: b, d: d, faces: map[faceSchluessel]font.Face{}, auf: &aufwand{}}
 	defer z.schliessen()
 	for _, o := range d.Objekte() {
 		if err := z.objekt(o); err != nil {
-			return nil, err
+			return nil, *z.auf, err
+		}
+		if z.auf.ueber() {
+			return nil, *z.auf, ErrZuAufwendig
 		}
 	}
-	return b, nil
+	return b, *z.auf, nil
 }
 
 type zeichner struct {
 	bild  *image.NRGBA
 	d     *document.Dokument
 	faces map[faceSchluessel]font.Face
+	auf   *aufwand
 }
 
 func (z zeichner) schliessen() {
@@ -113,7 +153,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 // fuelle füllt Polygone (Ansichtskoordinaten) mit Kantenglättung. Alle Polygone werden gleich ausgerichtet, damit
 // Überlappungen sich addieren statt aufzuheben.
 func (z zeichner) fuelle(polys [][]document.Punkt, farbe color.NRGBA) {
-	if farbe.A == 0 {
+	if farbe.A == 0 || z.auf.ueber() {
 		return
 	}
 	// Nur das umschließende Rechteck der Polygone rastern (sonst kostet jedes Objekt das ganze Bild).
@@ -136,6 +176,7 @@ func (z zeichner) fuelle(polys [][]document.Punkt, farbe color.NRGBA) {
 	if ausschnitt.Empty() {
 		return
 	}
+	z.auf.summe += fuellGewicht * float64(ausschnitt.Dx()) * float64(ausschnitt.Dy())
 	ox, oy := float64(ausschnitt.Min.X), float64(ausschnitt.Min.Y)
 	r := vector.NewRasterizer(ausschnitt.Dx(), ausschnitt.Dy())
 	r.DrawOp = draw.Over
@@ -186,7 +227,8 @@ func (z zeichner) strich(pts []document.Punkt, geschlossen bool, s document.Stri
 
 // text zeichnet eine Zeile. Was das Bild nicht schneidet, wird nicht gerastert (F-118): eine Zeile, deren Höhe ganz
 // über oder unter dem Bild liegt, entfällt, ebenso jede Glyphe, die um mehr als einen Schriftgrad links oder rechts
-// vom Bild liegt (Vorschub und Unterschneidung laufen weiter, damit sichtbare Glyphen am selben Ort stehen).
+// vom Bild liegt (Vorschub und Unterschneidung laufen weiter, damit sichtbare Glyphen am selben Ort stehen). Jede
+// gerasterte Glyphe zählt Schriftgrad² zum Aufwand (F-125); über dem Budget wird nicht weiter gerastert.
 func (z zeichner) text(face font.Face, s string, x, grundlinie float64, farbe color.NRGBA, grad float64) {
 	rand := z.bild.Bounds()
 	if grundlinie-grad*1.5 > float64(rand.Max.Y) || grundlinie+grad < float64(rand.Min.Y) {
@@ -194,7 +236,8 @@ func (z zeichner) text(face font.Face, s string, x, grundlinie float64, farbe co
 	}
 	dr := font.Drawer{Dst: z.bild, Src: image.NewUniform(farbe), Face: face}
 	dot := fixed.Point26_6{X: fixed.Int26_6(math.Round(x * 64)), Y: fixed.Int26_6(math.Round(grundlinie * 64))}
-	links, rechts := float64(rand.Min.X)-grad, float64(rand.Max.X)+grad
+	// Rand 1,25 Schriftgrad: Glyphen sind bis gut 1,07 em breit (z. B. U+20A7), ihr Ursprung liegt links der Zeichenfläche.
+	links, rechts := float64(rand.Min.X)-1.25*grad, float64(rand.Max.X)+1.25*grad
 	vorher := rune(-1)
 	for _, c := range s {
 		if vorher >= 0 {
@@ -204,11 +247,16 @@ func (z zeichner) text(face font.Face, s string, x, grundlinie float64, farbe co
 		if px := float64(dot.X) / 64; px > rechts {
 			return // alles Weitere liegt rechts vom Bild
 		} else if px < links {
-			if adv, ok := face.GlyphAdvance(c); ok {
-				dot.X += adv
-			}
+			// Vorschub wie font.Drawer.DrawString: auch ohne Glyphe (ok = false) zählt der Vorschub des Ersatzkästchens.
+			adv, _ := face.GlyphAdvance(c)
+			dot.X += adv
 			continue
 		}
+		if z.auf.ueber() {
+			return
+		}
+		z.auf.summe += grad * grad
+		z.auf.glyphen++
 		dr.Dot = dot
 		dr.DrawString(string(c))
 		dot = dr.Dot

@@ -83,7 +83,9 @@ func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen) ui.Sp
 		name := filepath.Base(filepath.FromSlash(e.Pfad))
 		erg := ui.Gespeichert{Datei: name, Hinweis: fmt.Sprintf(i18n.T("Saved as a new capture: %s"), name)}
 		if versucht {
-			// Die bisherige Datei wurde nicht aktualisiert; liegt sie noch, enthält sie den alten Stand.
+			// Die bisherige Datei wurde nicht aktualisiert; liegt sie noch, enthält sie den alten Stand. Bewusst so
+			// (ADR-0020 Nachtrag 1: Ausweichen statt Verlust). Mit dem Schwärzen darf dort kein ungeschwärzter Stand
+			// stehen bleiben — offen als F-126 (Ausnahmepfad Sprint 4, Lösung vor oder mit der Schwärzen-Karte).
 			erg.Hinweis = fmt.Sprintf(i18n.T("The previous file could not be updated; saved as a new capture: %s"), name)
 			erg.Warnung = true
 		}
@@ -114,6 +116,8 @@ func speicherFehler(err error) error {
 		text = i18n.T("Not enough disk space.")
 	case errors.Is(err, library.ErrKeinHeim):
 		text = i18n.T("No home directory (HOME is not set).")
+	case errors.Is(err, render.ErrZuAufwendig):
+		text = i18n.T("The image has too many or too large annotations to save.")
 	default:
 		text = i18n.T("The file could not be written.")
 	}

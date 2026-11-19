@@ -212,6 +212,9 @@ msgstr "Die alte Vorschau ließ sich nicht entfernen."
 msgid "No permission to write the file."
 msgstr "Keine Berechtigung, die Datei zu schreiben."
 
+msgid "The image has too many or too large annotations to save."
+msgstr "Das Bild hat zu viele oder zu große Beschriftungen zum Speichern."
+
 msgid "Not enough disk space."
 msgstr "Nicht genug Speicherplatz."
 
