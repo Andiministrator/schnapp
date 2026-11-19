@@ -45,6 +45,8 @@ tmp/*
 .claude/settings.local.json
 # Laufzeit-Marken der aBoard-Hooks (u. a. Sitzungsmodell, F-1537) — an der git-Wurzel
 .claude/cache/
+# Worktrees der Sub-Agents (Claude Code), Ergebnis wird per Cherry-Pick übernommen
+.claude/worktrees/
 
 # aBoard: Board-Dateien gehören nicht ins öffentliche Repo (E-11, Andi 19.11.2026)
 aboard.html
