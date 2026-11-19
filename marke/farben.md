@@ -1,6 +1,7 @@
 # Farben Schnapp
 
-Stand 19.11.2026, Entwurf (Logo-Runde 3: Grün dunkler und ruhiger, Orange heller und markanter — Andi). Eine Palette für Logo **und** Oberfläche: dunkelgrauer Grund, dezentes
+Stand 19.11.2026, festgelegt mit dem Logo e6 (Grün dunkler und ruhiger, Orange heller und markanter — Andi; Rot für
+Fehler ergänzt). Rollen in der Oberfläche: [`corporate-design.md`](corporate-design.md) Abschnitt 3. Eine Palette für Logo **und** Oberfläche: dunkelgrauer Grund, dezentes
 Grün als ruhige Hauptfarbe, helleres Orange als markante Gegenfarbe. Gleiche Sättigungsfamilie, aber verschieden hell —
 das hilft auch bei Rot-Grün-Schwäche.
 
@@ -15,11 +16,13 @@ das hilft auch bei Rot-Grün-Schwäche.
 | grau-400 | `#8E949B` | Nebentext, deaktiviert |
 | grau-100 | `#ECEAE5` | **Schrift** auf dunkel |
 | gruen-300 | `#86C2A6` | Grün auf dunkel als Text/Hover |
-| gruen-500 | `#4F9479` | **Hauptfarbe**: Krokodil, Auswahl, Schaltfläche „Speichern“ |
+| gruen-500 | `#4F9479` | **Hauptfarbe**: Auswahl, aktives Werkzeug, Hauptaktion („Speichern“) |
 | gruen-700 | `#3B7A5F` | Grün auf hellem Grund (Logo hell) |
 | orange-300 | `#F9C894` | Orange auf dunkel als Text/Hover |
-| orange-500 | `#F5A65B` | **Akzent**: Auge, Zähne, Hinweise, Auswahlecken |
+| orange-500 | `#F5A65B` | **Akzent**: Logo-„s“, Tastaturfokus, Hinweise, Auswahlecken |
 | orange-700 | `#A85F22` | Orange auf hellem Grund |
+| rot-500 | `#E67873` | Fehler, Gefahr, unumkehrbare Aktion (5,62:1 auf grau-900, 4,75:1 auf grau-800) |
+| rot-700 | `#B4433E` | Rot auf hellem Grund (5,51:1 auf Weiß) |
 
 ## Kontraste (WCAG, gerechnet)
 

@@ -122,6 +122,11 @@ Ob Gio trägt, entscheidet der Prototyp (ADR-0003).
   Abstimmung ändern (wer, steht in `CLAUDE.local.md`).
 - Programm Schnapp: noch kein Code. Geplant `go build ./...`, `go test ./...`, `go run ./cmd/schnapp` im Wurzelmodul.
 
+## Marke
+
+Logo, Farben, Schrift und Regeln für Oberfläche und Doku: [`marke/corporate-design.md`](marke/corporate-design.md) —
+verbindlich für alles Sichtbare. Logo-Dateien sind erzeugt (`marke/werkzeug/paket.py`, `cd.py`), nie von Hand ändern.
+
 ## Glossar & Offene Entscheidungen
 
 Projektspezifische Begriffe: [`docs/glossar.md`](docs/glossar.md)

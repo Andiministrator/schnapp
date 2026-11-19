@@ -30,6 +30,11 @@ Pull Request.
 - Arbeitsdokumente (`docs/`, `knowledge/`), Commit-Nachrichten und Code-Kommentare sind deutsch. Englisch ist im Pull
   Request in Ordnung; der Maintainer passt es an.
 
+## Gestaltung
+
+Logo, Farben, Schrift und Regeln für die Oberfläche: [`marke/corporate-design.md`](marke/corporate-design.md) (auch als
+PDF); Logo-Dateien in [`marke/logo/`](marke/logo/README.md).
+
 ## Commits und Prüfungen
 
 - Conventional Commits: `<typ>(<bereich>): <beschreibung>`, Typen `feat fix docs refactor chore style test perf`.

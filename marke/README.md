@@ -1,6 +1,8 @@
 # Marke Schnapp
 
-Logo, Symbol und Farben. Stand 19.11.2026: **Runde 6, Entwürfe** — noch nichts entschieden.
+Logo, Symbol und Farben. Stand 19.11.2026: **entschieden — Entwurf e6** (Andi). Einsatzregeln:
+[`corporate-design.md`](corporate-design.md) (auch als PDF), Dateien: [`logo/`](logo/README.md), Farben:
+[`farben.md`](farben.md). Die Abschnitte unten sind die Herleitung.
 
 ## Vorgaben (Andi, 19.11.2026)
 

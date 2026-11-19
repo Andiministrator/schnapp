@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="marke/logo/svg/schnapp-logo-dunkel.svg">
+    <img alt="schnapp — screenshots for Linux" src="marke/logo/svg/schnapp-logo-hell.svg" width="520">
+  </picture>
+</p>
+
 # Schnapp
 
 *English · [Deutsch](README.de.md)*
@@ -28,13 +35,14 @@ There is no program to build yet. What exists:
 | Path | What it is | How to check it |
 |---|---|---|
 | `zeichnen/` | Go module `github.com/Andiministrator/schnapp/zeichnen`: SVG parsing, an anti-aliased rasterizer, numeric helpers (standard library only) | `cd zeichnen && go vet ./... && go test ./...` |
+| `marke/` | Logo, colours and corporate design ([`marke/corporate-design.md`](marke/corporate-design.md), German, with PDF) | `python3 marke/werkzeug/paket.py` rebuilds the logo files |
 | `prototyp/` | Throw-away prototype that checked Gio (needs Go ≥ 1.27, cgo, `libwayland-client`, `libEGL`, `libxkbcommon`) | `prototyp/bauen.sh`, see [`prototyp/README.md`](prototyp/README.md) |
 
 ## Documentation
 
 User-facing documents (this README, `CONTRIBUTING.md`) exist in English and German. The project's working documents
-— requirements, architecture decisions (`docs/adr/`), QA checklists, findings and research notes (`knowledge/`) — are
-written in German.
+— requirements, architecture decisions (`docs/adr/`), QA checklists, findings, research notes (`knowledge/`) and the
+corporate design (`marke/`) — are written in German.
 
 ## AI disclosure
 
@@ -43,6 +51,6 @@ direction and review of the maintainer. Decisions are recorded in `docs/adr/`. S
 
 ## Licence
 
-GPL-3.0-or-later, see [`LICENSE`](LICENSE). Bundled third-party code keeps its own licence: the Gio patch
+GPL-3.0-or-later, see [`LICENSE`](LICENSE). The logo uses outlines of Open Sans (SIL Open Font License 1.1). Bundled third-party code keeps its own licence: the Gio patch
 (`prototyp/gio-ausgabe.patch`) applies to Gio (Unlicense OR MIT) and contains code generated from
 wayland-protocols (MIT).

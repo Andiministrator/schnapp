@@ -30,6 +30,11 @@ request.
 - Working documents (`docs/`, `knowledge/`), commit messages and code comments are in German. English is fine in your
   pull request; the maintainer will adapt it.
 
+## Design
+
+Logo, colours, type and UI rules: [`marke/corporate-design.md`](marke/corporate-design.md) (German, PDF alongside);
+logo files in [`marke/logo/`](marke/logo/README.md).
+
 ## Commits and checks
 
 - Conventional Commits: `<type>(<scope>): <description>`, types `feat fix docs refactor chore style test perf`.

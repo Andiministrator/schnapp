@@ -68,3 +68,19 @@ Stand 19.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 ## E-11: Board-Dateien im öffentlichen Repo? — ENTSCHIEDEN 19.11.2026: nein
 - Board-Dateien und interne Angaben (`CLAUDE.local.md`) stehen in `.gitignore`; das Board ist über die Sicherung des
   Arbeitsrechners gesichert.
+
+## E-12: Lizenz und Nutzungsregeln für Logo und Symbol
+- **Frage:** Bleiben Logo und Symbol unter GPL-3.0 wie der Code (jeder darf sie ändern und weiterverwenden), oder
+  bekommen sie eine eigene Lizenz (z. B. CC BY-SA) bzw. Regeln zur Markennutzung (Abwandlungen dürfen nicht
+  „Schnapp“ heißen)?
+- **Impact:** mittel — betrifft Forks und Pakete in Distributionen; nachträglich schwer zurückzuholen.
+- **Tendenz:** Code GPL, Logo mit kurzer Markenregel (frei nutzbar, um auf Schnapp zu verweisen; Abwandlungen nicht
+  als Schnapp ausgeben) — wie bei vielen freien Projekten.
+- **Vor:** erste Veröffentlichung eines Pakets (Flathub).
+
+## E-13: Ansprache in der deutschen Oberfläche — du oder Sie?
+- **Frage:** Spricht die deutsche Übersetzung den Nutzer mit „du“ oder „Sie“ an?
+- **Impact:** niedrig, aber durchgängig; spätere Umstellung betrifft jeden Text.
+- **Tendenz:** möglichst ohne Anrede formulieren („Bild gespeichert“, „Bereich wählen“); wo nötig „du“ (freundlich,
+  passt zur Haltung im Corporate Design).
+- **Vor:** erste Oberflächentexte (Karte Übersetzbarkeit).

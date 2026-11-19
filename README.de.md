@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="marke/logo/svg/schnapp-logo-dunkel.svg">
+    <img alt="schnapp — screenshots for Linux" src="marke/logo/svg/schnapp-logo-hell.svg" width="520">
+  </picture>
+</p>
+
 # Schnapp
 
 *[English](README.md) · Deutsch*
@@ -29,13 +36,14 @@ Ein Programm zum Bauen gibt es noch nicht. Vorhanden sind:
 | Pfad | Was es ist | Prüfen |
 |---|---|---|
 | `zeichnen/` | Go-Modul `github.com/Andiministrator/schnapp/zeichnen`: SVG lesen, Rasterer mit Kantenglättung, Rechenhilfen (nur Standardbibliothek) | `cd zeichnen && go vet ./... && go test ./...` |
+| `marke/` | Logo, Farben und Corporate Design ([`marke/corporate-design.md`](marke/corporate-design.md), mit PDF) | `python3 marke/werkzeug/paket.py` erzeugt die Logo-Dateien neu |
 | `prototyp/` | Wegwerf-Prototyp, der Gio geprüft hat (braucht Go ≥ 1.27, cgo, `libwayland-client`, `libEGL`, `libxkbcommon`) | `prototyp/bauen.sh`, siehe [`prototyp/README.md`](prototyp/README.md) |
 
 ## Dokumentation
 
 Die Dokumente für Nutzer und Beitragende (diese README, `CONTRIBUTING.de.md`) gibt es auf Englisch und Deutsch. Die
-Arbeitsdokumente des Projekts — Anforderungen, Architektur-Entscheidungen (`docs/adr/`), QA-Listen, Befunde und
-Recherchen (`knowledge/`) — sind auf Deutsch.
+Arbeitsdokumente des Projekts — Anforderungen, Architektur-Entscheidungen (`docs/adr/`), QA-Listen, Befunde,
+Recherchen (`knowledge/`) und das Corporate Design (`marke/`) — sind auf Deutsch.
 
 ## Hinweis zu KI
 
@@ -44,5 +52,5 @@ Prüfung des Maintainers geschrieben. Entscheidungen stehen in `docs/adr/`. Sieh
 
 ## Lizenz
 
-GPL-3.0-or-later, siehe [`LICENSE`](LICENSE). Fremder Code behält seine Lizenz: Der Gio-Patch
+GPL-3.0-or-later, siehe [`LICENSE`](LICENSE). Das Logo verwendet Umrisse von Open Sans (SIL Open Font License 1.1). Fremder Code behält seine Lizenz: Der Gio-Patch
 (`prototyp/gio-ausgabe.patch`) gilt für Gio (Unlicense OR MIT) und enthält aus wayland-protocols erzeugten Code (MIT).

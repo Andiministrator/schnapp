@@ -9,6 +9,10 @@ Stand: 2026-11-19. Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/
   macht spätere Korrekturen unmöglich — dort erst pushen, wenn die Geschichte veröffentlichungsreif ist.
 - **Interne Angaben gehören in `CLAUDE.local.md`** (gitignoriert), nicht in versionierte Dateien. Auch Namen anderer
   eigener Projekte zählen dazu (F-6).
+- **Binärdateien vor dem Push eigens prüfen** (F-16): `git diff` zeigt sie nur als „Binary files differ“, ein `grep`
+  über den Diff findet darin nichts. Python-Bytecode (`.pyc`), PDFs und Bilder können Pfade und Namen tragen —
+  `git diff --cached --name-only` ansehen, Binäres mit `strings` gegen die Begriffsliste prüfen; Bytecode und
+  Build-Reste gehören in `.gitignore`.
 - **`git filter-branch` hinterlässt `refs/original/…`** mit der alten Geschichte (F-2). Push-Varianten `--all`,
   `--mirror`, `--tags`, Force und Refspecs sind in `.claude/settings.json` gesperrt (F-3).
 

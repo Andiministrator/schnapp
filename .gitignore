@@ -17,6 +17,10 @@ Desktop.ini
 *.out
 coverage.html
 
+# Python (Bytecode enthält absolute Pfade — F-16)
+__pycache__/
+*.pyc
+
 # Reste von patch/git apply
 *.orig
 *.rej
