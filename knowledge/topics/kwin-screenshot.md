@@ -47,7 +47,15 @@ Folgen für Schnapp:
 - Unter Plasma ≥ 6.8 braucht die Aufnahme keine Berechtigung; `go run` geht.
 - Für Plasma 6.7 und älter installiert Schnapp seine `.desktop`-Datei mit absolutem `Exec=` und der Zeile
   `X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2` — die Datei braucht es ohnehin (Programmmenü,
-  Tastenkürzel E-10), der Eintrag schadet ab 6.8 nicht. Vorlage: `prototype/schnapp-prototype.desktop.in`.
+  Tastenkürzel E-10), der Eintrag schadet ab 6.8 nicht. Vorlage: `data/schnapp.desktop.in`, installiert von
+  `install.sh` (#42).
+- **`Exec` in Anführungszeichen ist unter 6.7 kein Problem (F-76, Quelltext gelesen 19.11.2026):** `checkPermissions`
+  in `src/plugins/screenshot/screenshotdbusinterface2.cpp` ruft `fetchRestrictedDBusInterfacesFromPid` aus
+  `src/utils/serviceutils.h`; dort wird `service->exec()` mit `QProcess::splitCommand` zerlegt (entfernt doppelte
+  Anführungszeichen) und `QFileInfo(erstesToken).canonicalFilePath()` mit dem Pfad des laufenden Programms
+  verglichen. Ein Pfad mit Leerzeichen geht also nur **mit** Anführungszeichen; Symlinks werden aufgelöst. Quellen:
+  invent.kde.org/plasma/kwin, Zweig `Plasma/6.7`, beide Dateien (serviceutils.h nur als Zusammenfassung des
+  Abrufwerkzeugs gelesen). Noch nicht unter echtem Plasma 6.7 geprüft.
 - Fehlerweg `org.kde.KWin.ScreenShot2.Error.NoAuthorized` behandeln: verständliche Meldung („Schnapp ist nicht als
   Aufnahmeprogramm eingetragen …“) statt stillem Scheitern.
 - Flatpak später: eigener Weg (Portal), siehe ADR-0007.
