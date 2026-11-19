@@ -23,6 +23,7 @@ import (
 const (
 	blockSVG      = "snAP"
 	blockOriginal = "snAO"
+	nachIEND      = "" // Pseudo-Block: hinter IEND folgen noch Daten
 )
 
 var pngSignatur = []byte("\x89PNG\r\n\x1a\n")
@@ -87,8 +88,10 @@ func leseBloecke(r io.Reader) ([]block, error) {
 		}
 		bloecke = append(bloecke, block{typ, daten})
 		if typ == "IEND" {
+			// Daten nach IEND als eigener Pseudo-Block: nur die Arbeitsdatei behandelt sie als Fehler; fremde PNG
+			// und LeseBild bleiben lesbar wie in jedem Bildbetrachter (F-65).
 			if n, _ := r.Read(make([]byte, 1)); n > 0 {
-				return nil, fmt.Errorf("%w: Daten nach IEND", ErrBeschaedigt)
+				bloecke = append(bloecke, block{typ: nachIEND})
 			}
 			return bloecke, nil
 		}

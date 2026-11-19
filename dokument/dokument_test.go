@@ -473,8 +473,16 @@ func TestWertebereiche(t *testing.T) {
 			t.Errorf("%#v ohne Fehler", o)
 		}
 	}
-	if _, err := d.Hinzufuegen(Text{Ort: Pt(0, 0), Schriftgrad: 10, Inhalt: "Zeile 1\n\tZeile 2 ÄÖÜ"}); err != nil {
-		t.Errorf("gültiger Text abgelehnt: %v", err)
+	// Erlaubt ist, was XML trägt: auch CRLF, DEL und C1 (F-68); abgelehnt nur U+0001 und Ähnliches.
+	for _, inhalt := range []string{"Zeile 1\n\tZeile 2 ÄÖÜ", "Windows\r\nZeile", "a\x7fb", "a\u0085b"} {
+		if _, err := d.Hinzufuegen(Text{Ort: Pt(0, 0), Schriftgrad: 10, Inhalt: inhalt}); err != nil {
+			t.Errorf("gültiger Text %q abgelehnt: %v", inhalt, err)
+		}
+	}
+	for _, inhalt := range []string{"a\x01b", "a\ufffeb", "a\uffffb"} {
+		if _, err := d.Hinzufuegen(Text{Ort: Pt(0, 0), Schriftgrad: 10, Inhalt: inhalt}); err == nil {
+			t.Errorf("%q nicht abgelehnt", inhalt)
+		}
 	}
 	// Seiten je für sich erlaubt, Fläche zu groß.
 	if _, err := Neu(image.NewNRGBA(image.Rect(0, 0, MaxSeite, MaxPixel/MaxSeite+1))); !errors.Is(err, ErrBildGroesse) {

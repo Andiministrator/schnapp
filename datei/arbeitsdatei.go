@@ -60,9 +60,11 @@ func LeseArbeitsdatei(r io.Reader) (*Gelesen, error) {
 		return nil, err
 	}
 	var svgDaten, origDaten []byte
-	var hatSVG, hatOrig bool
+	var hatSVG, hatOrig, hatNachIEND bool
 	for _, b := range bloecke {
 		switch b.typ {
+		case nachIEND:
+			hatNachIEND = true
 		case blockSVG:
 			if hatSVG {
 				return nil, fmt.Errorf("%w: Block %s doppelt", ErrBeschaedigt, blockSVG)
@@ -77,7 +79,7 @@ func LeseArbeitsdatei(r io.Reader) (*Gelesen, error) {
 	}
 	if !hatSVG && !hatOrig {
 		var buf bytes.Buffer
-		if err := schreibeBloecke(&buf, bloecke); err != nil {
+		if err := schreibeBloecke(&buf, ohneBloecke(bloecke, nachIEND)); err != nil {
 			return nil, err
 		}
 		bild, err := decodiere(buf.Bytes())
@@ -89,6 +91,9 @@ func LeseArbeitsdatei(r io.Reader) (*Gelesen, error) {
 			return nil, err
 		}
 		return &Gelesen{Dokument: d, Fremd: true}, nil
+	}
+	if hatNachIEND {
+		return nil, fmt.Errorf("%w: Daten nach IEND", ErrBeschaedigt)
 	}
 	if !hatSVG || !hatOrig {
 		return nil, fmt.Errorf("%w: nur einer der Blöcke %s/%s vorhanden", ErrBeschaedigt, blockSVG, blockOriginal)
@@ -141,7 +146,7 @@ func LeseBild(r io.Reader) (image.Image, error) {
 		return nil, err
 	}
 	var buf bytes.Buffer
-	if err := schreibeBloecke(&buf, ohneBloecke(bloecke, blockSVG, blockOriginal)); err != nil {
+	if err := schreibeBloecke(&buf, ohneBloecke(bloecke, blockSVG, blockOriginal, nachIEND)); err != nil {
 		return nil, err
 	}
 	return decodiere(buf.Bytes())

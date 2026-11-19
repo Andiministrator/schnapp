@@ -51,11 +51,13 @@ man überall verschicken kann und die in Schnapp voll bearbeitbar bleibt.
 
 - **Immer beide Blöcke.** Ein Verzicht auf `snAO` bei unbeschnittenen Bildern ist nicht umgesetzt: das sichtbare Bild
   trägt die gerenderten Beschriftungen und taugt nicht als Original. Fehlt ein Block, ist er doppelt oder stehen Daten
-  nach `IEND`, ist die Datei beschädigt (`ErrBeschaedigt`); eine neuere Formatversion meldet `ErrFormatNeuer`. Beides
-  lässt sich mit `LeseBild` als einfaches Bild öffnen.
+  nach `IEND`, ist die Arbeitsdatei beschädigt (`ErrBeschaedigt`); eine neuere Formatversion meldet `ErrFormatNeuer`.
+  Beides lässt sich mit `LeseBild` als einfaches Bild öffnen; fremde PNG mit Daten nach `IEND` liest Schnapp wie jeder
+  Bildbetrachter (F-65).
 - **Grenzen beim Lesen:** Seite ≤ 32768, Fläche ≤ 2^28 Pixel (1 GiB als NRGBA, wie die Aufnahmeschicht), Block ≤ 512
   MiB, Datei ≤ 1 GiB, entpacktes SVG ≤ 64 MiB, SVG-Tiefe ≤ 64, ≤ 200 000 Elemente, XML streng ohne Entitäten.
 - **SVG-Export ohne Weggeschnittenes:** Der Export bettet je sichtbarer Kachel nur deren Pixelausschnitt ein, nie das
-  ganze Original — Zuschnitt und Stauchen sind beim Weitergeben endgültig (die Arbeitsdatei bleibt nicht zerstörend).
+  ganze Original, und Beschriftungen ganz außerhalb der Ansicht entfallen (F-66) — Zuschnitt und Stauchen sind beim
+  Weitergeben endgültig (die Arbeitsdatei bleibt nicht zerstörend).
   Wer die Arbeitsdatei weitergibt, gibt das ganze Original mit; die Oberfläche weist darauf hin (Karte Export, #39).
 - **PDF-Export:** noch nicht umgesetzt (Karte #39).

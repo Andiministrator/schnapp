@@ -88,5 +88,11 @@ func eigenerOrdner(pfad string) error {
 	if err := os.MkdirAll(pfad, rechteOrdner); err != nil {
 		return err
 	}
-	return os.Chmod(pfad, rechteOrdner)
+	// Scheitert das Nachziehen der Rechte (Ordner auf einem NAS, vfat, fremder Besitzer), bleibt Ablegen möglich:
+	// eine Aufnahme zu verlieren wäre schlimmer als ein zu offener Ordner, den Schnapp nicht ändern darf (F-67).
+	_ = aendereRechte(pfad, rechteOrdner)
+	return nil
 }
+
+// aendereRechte ist os.Chmod; Tests ersetzen es, um einen scheiternden Chmod nachzubauen (F-67).
+var aendereRechte = os.Chmod

@@ -64,11 +64,28 @@ func ExportiereSVG(w io.Writer, d *dokument.Dokument) error {
 	s.attr("width", strconv.Itoa(g.X))
 	s.attr("height", strconv.Itoa(g.Y))
 	s.attr("viewBox", fmt.Sprintf("0 0 %d %d", g.X, g.Y))
-	s.WriteString(`><defs><g id="objekte">`)
-	s.objekte(d)
-	s.WriteString(`</g></defs>`)
 	z := d.Zuschnitt()
 	st := d.Streifen()
+	// Objekte, die ganz außerhalb aller sichtbaren Kacheln liegen (weggeschnitten oder weggestaucht), kommen nicht in
+	// die Datei — sonst stünde etwa ein Text dort im Klartext im XML (F-66).
+	var kacheln []dokument.Rechteck
+	for _, zy := range intervalle(z.Min.Y, z.Max.Y, st, true) {
+		for _, zx := range intervalle(z.Min.X, z.Max.X, st, false) {
+			kacheln = append(kacheln, dokument.Rechteck{Min: dokument.Pt(float64(zx[0]), float64(zy[0])),
+				Max: dokument.Pt(float64(zx[1]), float64(zy[1]))})
+		}
+	}
+	inAnsicht := func(g dokument.Rechteck) bool {
+		for _, k := range kacheln {
+			if g.Min.X < k.Max.X && g.Max.X > k.Min.X && g.Min.Y < k.Max.Y && g.Max.Y > k.Min.Y {
+				return true
+			}
+		}
+		return false
+	}
+	s.WriteString(`><defs><g id="objekte">`)
+	s.objekte(d, inAnsicht)
+	s.WriteString(`</g></defs>`)
 	ay := 0
 	for _, zy := range intervalle(z.Min.Y, z.Max.Y, st, true) {
 		ax := 0

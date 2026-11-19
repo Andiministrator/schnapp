@@ -19,7 +19,7 @@ muss.
   Fremdpakete nur mit Nutzen (ADR-0011), cgo nur für Gio. **Kein neues Python** im Repo (wird schrittweise entfernt).
 - **Gestaltung:** `marke/corporate-design.md` ist verbindlich (Farben, Schrift Open Sans, Oberflächen-Regeln);
   Logo-Dateien sind erzeugt (`marke/werkzeug/`), nie von Hand ändern.
-- **Dateiformat:** PNG mit zwei privaten Blöcken `snAP` (SVG) und `snAO` (Original), ADR-0008 mit Nachtrag 1;
+- **Dateiformat:** PNG mit zwei privaten Blöcken `snAP` (SVG) und `snAO` (Original), ADR-0008 mit Nachträgen 1 und 2 (beide Blöcke Pflicht, Grenzen, Export ohne Weggeschnittenes);
   Schwärzen überschreibt das Original — `[S]`-Pfad. Öffentliche Spezifikation folgt (E-15, englisch).
 - **Bauen und Testen** im Wurzelmodul immer mit `GOFLAGS=-tags=novulkan,nox11` (Gio; sonst fehlt `vulkan/vulkan.h`),
   Programme mit `-trimpath`. Pakete: `sprache`, `po`, `dokument`, `datei`, `aufnahme`, `bibliothek`, `oberflaeche`,

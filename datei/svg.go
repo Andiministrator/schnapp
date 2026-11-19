@@ -62,10 +62,14 @@ func (s *schreiber) farbeSVG(art string, c color.NRGBA) {
 
 func strich(st dokument.Strich) string { return farbeHex(st.Farbe) + " " + zahl(st.Breite) }
 
-// objekte schreibt alle Objekte in Original-Koordinaten.
-func (s *schreiber) objekte(d *dokument.Dokument) {
+// objekte schreibt die Objekte in Original-Koordinaten; mit behalten != nil nur die, für deren Grenzen behalten
+// true liefert (Export: nur Objekte, die in die Ansicht reichen).
+func (s *schreiber) objekte(d *dokument.Dokument, behalten func(dokument.Rechteck) bool) {
 	s.WriteString(`<g s:ebene="objekte">`)
 	for _, o := range d.Objekte() {
+		if behalten != nil && !behalten(o.Grenzen()) {
+			continue
+		}
 		switch o := o.(type) {
 		case dokument.Pfeil:
 			s.WriteString(`<g`)
@@ -212,7 +216,7 @@ func svgArbeitsdatei(d *dokument.Dokument, m Metadaten) []byte {
 	s.attr("height", strconv.Itoa(o.Dy()))
 	s.attr("href", "schnapp:original") // steht im Block snAO
 	s.WriteString(`/>`)
-	s.objekte(d)
+	s.objekte(d, nil)
 	s.WriteString("</svg>\n")
 	return []byte(s.String())
 }

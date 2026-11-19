@@ -343,3 +343,15 @@ func TestAufraeumenFremdeReservierungBleibt(t *testing.T) {
 		t.Errorf("Ausweichname %q, want …-2.png", got)
 	}
 }
+
+// F-67: Scheitert das Nachziehen der Rechte (NAS, vfat, fremder Besitzer), wird die Aufnahme trotzdem abgelegt.
+func TestAblegenTrotzScheiterndemChmod(t *testing.T) {
+	alt := aendereRechte
+	aendereRechte = func(string, os.FileMode) error { return errors.New("Attrappe: chmod nicht erlaubt") }
+	t.Cleanup(func() { aendereRechte = alt })
+	b, _ := neueBibliothek(t)
+	e := ablegen(t, b, datei.Metadaten{})
+	if _, err := os.Stat(filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad))); err != nil {
+		t.Errorf("Aufnahme nicht abgelegt: %v", err)
+	}
+}

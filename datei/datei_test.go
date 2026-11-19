@@ -580,3 +580,112 @@ func TestExportSVGOhneWeggeschnittenes(t *testing.T) {
 		t.Errorf("Kacheln decken %d Pixel, Ansicht hat %d", flaeche, g.X*g.Y)
 	}
 }
+
+// F-66: Beschriftungen ganz außerhalb der Ansicht stehen nicht im SVG-Export; angeschnittene bleiben.
+func TestExportSVGOhneObjekteAusserhalb(t *testing.T) {
+	d, err := dokument.Neu(testbild(80, 60))
+	if err != nil {
+		t.Fatal(err)
+	}
+	schwarz := color.NRGBA{0, 0, 0, 255}
+	for _, o := range []dokument.Objekt{
+		dokument.Text{Ort: dokument.Pt(2, 2), Inhalt: "GEHEIMTEXT", Schriftgrad: 5, Farbe: schwarz},
+		dokument.Text{Ort: dokument.Pt(30, 30), Inhalt: "WEGGESTAUCHT", Schriftgrad: 4, Farbe: schwarz},
+		dokument.Text{Ort: dokument.Pt(45, 12), Inhalt: "SICHTBAR", Schriftgrad: 5, Farbe: schwarz},
+		// Angeschnitten: beginnt links außerhalb des Zuschnitts (x 10) und reicht hinein — muss bleiben.
+		dokument.Text{Ort: dokument.Pt(6, 20), Inhalt: "ANGESCHNITTEN", Schriftgrad: 5, Farbe: schwarz},
+	} {
+		if _, err := d.Hinzufuegen(o); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := d.SetzeZuschnitt(image.Rect(10, 10, 70, 50)); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.SetzeStreifen([]dokument.Streifen{{Zeilen: true, Von: 28, Bis: 40}}); err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	if err := ExportiereSVG(&buf, d); err != nil {
+		t.Fatal(err)
+	}
+	s := buf.String()
+	for _, weg := range []string{"GEHEIMTEXT", "WEGGESTAUCHT"} {
+		if strings.Contains(s, weg) {
+			t.Errorf("%s steht im Export", weg)
+		}
+	}
+	for _, da := range []string{"SICHTBAR", "ANGESCHNITTEN"} {
+		if !strings.Contains(s, da) {
+			t.Errorf("%s fehlt im Export", da)
+		}
+	}
+}
+
+// F-69: Die Pixelgrenze greift schon vor dem Dekodieren (PNG-Kopf 32768×16384, beide Seiten erlaubt, Fläche nicht);
+// ein doppelter snAO ist so beschädigt wie ein doppelter snAP.
+func TestGrenzenVorDemDekodieren(t *testing.T) {
+	var buf bytes.Buffer
+	png.Encode(&buf, testbild(2, 2))
+	roh := buf.Bytes()
+	ihdr := roh[8+8 : 8+8+13]
+	binary.BigEndian.PutUint32(ihdr[0:4], dokument.MaxSeite)
+	binary.BigEndian.PutUint32(ihdr[4:8], dokument.MaxPixel/dokument.MaxSeite+1)
+	crc := crc32.NewIEEE()
+	crc.Write([]byte("IHDR"))
+	crc.Write(ihdr)
+	binary.BigEndian.PutUint32(roh[8+8+13:], crc.Sum32())
+	if _, err := decodiere(roh); !errors.Is(err, ErrZuGross) {
+		t.Errorf("Fläche über MaxPixel: %v", err)
+	}
+	gut := schreibe(t, volles(t), Metadaten{})
+	bl, _ := leseBloecke(bytes.NewReader(gut))
+	var neu []block
+	for _, b := range bl {
+		neu = append(neu, b)
+		if b.typ == blockOriginal {
+			neu = append(neu, b)
+		}
+	}
+	var d bytes.Buffer
+	schreibeBloecke(&d, neu)
+	if _, err := LeseArbeitsdatei(&d); !IstBeschaedigt(err) {
+		t.Errorf("doppelter snAO: %v", err)
+	}
+}
+
+// F-65: Daten nach IEND machen nur eine Arbeitsdatei beschädigt; fremde PNG und LeseBild bleiben lesbar.
+func TestDatenNachIEND(t *testing.T) {
+	var fremd bytes.Buffer
+	png.Encode(&fremd, testbild(5, 4))
+	fremd.WriteString("\n")
+	if g, err := LeseArbeitsdatei(bytes.NewReader(fremd.Bytes())); err != nil || !g.Fremd {
+		t.Errorf("fremdes PNG mit Anhang: %v", err)
+	}
+	if _, err := LeseBild(bytes.NewReader(fremd.Bytes())); err != nil {
+		t.Errorf("LeseBild fremd mit Anhang: %v", err)
+	}
+	arbeit := append(schreibe(t, volles(t), Metadaten{}), '\n')
+	if _, err := LeseArbeitsdatei(bytes.NewReader(arbeit)); !IstBeschaedigt(err) {
+		t.Errorf("Arbeitsdatei mit Anhang: %v", err)
+	}
+	if _, err := LeseBild(bytes.NewReader(arbeit)); err != nil {
+		t.Errorf("LeseBild Arbeitsdatei mit Anhang: %v", err)
+	}
+}
+
+// F-68: Text mit CRLF übersteht den Rundlauf unverändert.
+func TestRundlaufCRLF(t *testing.T) {
+	d, _ := dokument.Neu(testbild(10, 10))
+	text := dokument.Text{Ort: dokument.Pt(1, 1), Inhalt: "Windows\r\nZeile\x7f", Schriftgrad: 8, Farbe: color.NRGBA{0, 0, 0, 255}}
+	if _, err := d.Hinzufuegen(text); err != nil {
+		t.Fatal(err)
+	}
+	g, err := LeseArbeitsdatei(bytes.NewReader(schreibe(t, d, Metadaten{})))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if o := g.Dokument.Objekte()[0].(dokument.Text); o.Inhalt != text.Inhalt {
+		t.Errorf("Inhalt %q, want %q", o.Inhalt, text.Inhalt)
+	}
+}

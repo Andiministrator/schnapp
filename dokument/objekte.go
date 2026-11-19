@@ -144,13 +144,15 @@ func (t Text) pruefe() error {
 	if !endlich(t.Ort.X, t.Ort.Y) || !groesse(t.Schriftgrad, t.BreiteGrenze) || t.Schriftgrad <= 0 {
 		return fmt.Errorf("Text mit ungültigen Werten")
 	}
-	// Steuerzeichen und ungültiges UTF-8 überstehen das Speichern (XML) nicht unverändert (F-62); erlaubt sind
-	// Zeilenumbruch und Tabulator.
+	// Zeichen, die XML nicht tragen kann, überstehen das Speichern nicht unverändert (F-62): ungültiges UTF-8 und
+	// Steuerzeichen unter U+0020 außer Tabulator, Zeilenumbruch und Wagenrücklauf sowie U+FFFE/U+FFFF. Alles, was
+	// XML 1.0 erlaubt, bleibt erlaubt — sonst würden Texte (etwa mit CRLF) beim Lesen strenger behandelt als beim
+	// Schreiben (F-68).
 	if !utf8.ValidString(t.Inhalt) {
 		return fmt.Errorf("Text ist kein gültiges UTF-8")
 	}
 	for _, r := range t.Inhalt {
-		if (r < 0x20 && r != '\n' && r != '\t') || r == 0x7f || (r >= 0x80 && r < 0xa0) || r == 0xfffe || r == 0xffff {
+		if (r < 0x20 && r != '\n' && r != '\t' && r != '\r') || r == 0xfffe || r == 0xffff {
 			return fmt.Errorf("Text enthält das Steuerzeichen U+%04X", r)
 		}
 	}
