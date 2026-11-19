@@ -10,10 +10,12 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"log"
 	"math"
 	"os"
 	"os/exec"
 	"runtime"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -648,7 +650,10 @@ func gio_onOutputName(data unsafe.Pointer, output *C.struct_wl_output, name *C.c
 	d.outputConfig[output].name = C.GoString(name)
 }
 
-// outputByName returns the output with the given name, or nil.
+// outputByName returns the output with the given name. It returns nil if
+// name is empty, which lets the compositor choose. If no output has the
+// requested name, nil is returned too and the fallback is logged, so the
+// caller is not silently placed on an arbitrary output.
 func (d *wlDisplay) outputByName(name string) *C.struct_wl_output {
 	if name == "" {
 		return nil
@@ -658,6 +663,7 @@ func (d *wlDisplay) outputByName(name string) *C.struct_wl_output {
 			return o
 		}
 	}
+	log.Printf("app: Wayland output %q not found, the compositor chooses the output", name)
 	return nil
 }
 
@@ -668,7 +674,21 @@ type WaylandOutput struct {
 	Scale         int // integer buffer scale
 }
 
-// WaylandOutputs connects to the Wayland display and lists its outputs.
+// sortedOutputs drops outputs without a name, which can't be addressed by
+// FullscreenOn, and sorts the rest by name for a stable order.
+func sortedOutputs(outs []WaylandOutput) []WaylandOutput {
+	var res []WaylandOutput
+	for _, o := range outs {
+		if o.Name != "" {
+			res = append(res, o)
+		}
+	}
+	sort.Slice(res, func(i, j int) bool { return res[i].Name < res[j].Name })
+	return res
+}
+
+// WaylandOutputs connects to the Wayland display and lists its named
+// outputs, sorted by name.
 func WaylandOutputs() ([]WaylandOutput, error) {
 	d, err := newWLDisplay()
 	if err != nil {
@@ -679,7 +699,7 @@ func WaylandOutputs() ([]WaylandOutput, error) {
 	for _, c := range d.outputConfig {
 		out = append(out, WaylandOutput{Name: c.name, Width: c.width, Height: c.height, Scale: c.scale})
 	}
-	return out, nil
+	return sortedOutputs(out), nil
 }
 
 //export gio_onOutputGeometry

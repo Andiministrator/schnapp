@@ -97,4 +97,5 @@ Schnapp bleibt bei **Go mit Gio**. Kein Wechsel zu Rust.
 
 **Umgesetzt durch ADR-0015 (19.11.2026):** Patch und gepatchte Kopie liegen jetzt unter `extern/`
 (`extern/gio-ausgabe.patch`, `extern/gio/`); die Pfade `prototyp/gio-ausgabe.patch` oben sind der Stand vom 19.11.2026
-vor dem Umzug.
+vor dem Umzug. Nach F-33 (Meldung bei unbekanntem Ausgabenamen, Ausgaben gefiltert und sortiert, mit Test) misst der
+Patch von Hand 5 Dateien +203/−26 Zeilen, erzeugt weiter 811 Zeilen (`git apply --numstat extern/gio-ausgabe.patch`).

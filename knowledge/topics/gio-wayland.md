@@ -22,7 +22,12 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
   über `pxScale()`. Fehlen die Protokolle, bleibt alles wie vorher.
 - Protokoll-Code mit `wayland-scanner` aus wayland-protocols 1.45 (XML aus dem öffentlichen Repo, das Paket
   `wayland-protocols` war nicht installiert). Upstream erzeugt Gio solchen Code per `go:generate`.
-- Umfang: von Hand +153/−26 Zeilen, erzeugt 811 Zeilen — zählen mit `git apply --numstat extern/gio-ausgabe.patch`.
+- `WaylandOutputs()` liefert nur benannte Ausgaben, stabil nach Name sortiert (`sortedOutputs`, Test
+  `os_wayland_test.go`). `FullscreenOn` mit unbekanntem Namen schreibt `app: Wayland output "X" not found, the
+  compositor chooses the output` ins Log und überlässt die Wahl dem Compositor; ein leerer Name bleibt ohne Meldung
+  (F-33, 19.11.2026).
+- Umfang (Stand 19.11.2026, nach F-33): von Hand 5 Dateien +203/−26 Zeilen (einschließlich 30 Zeilen Test), erzeugt
+  4 Dateien +811 Zeilen — zählen mit `git apply --numstat extern/gio-ausgabe.patch`.
 - Ablage (ADR-0015, seit 19.11.2026): gepatchte Kopie als Modul `extern/gio/` im Repo, `replace gioui.org =>
   ../extern/gio` im `go.mod` jedes Nutzers; `extern/gio-patch.sh pruefen|erzeugen|anlegen` hält Kopie und Patch
   zusammen, die CI prüft beides. Vorher (Sprint 1) lag die Kopie gitignoriert unter `tmp/` — frische Klone und die CI
