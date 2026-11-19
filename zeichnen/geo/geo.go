@@ -178,7 +178,7 @@ func F2(v float64) string { return strconv.FormatFloat(v, 'f', 2, 64) }
 // F1 schreibt wie f"{v:.1f}".
 func F1(v float64) string { return strconv.FormatFloat(v, 'f', 1, 64) }
 
-// Zahl wie skin.zahl: zwei Nachkommastellen, Nullen am Ende weg, "-0" wird "0".
+// Zahl: zwei Nachkommastellen, Nullen am Ende weg, "-0" wird "0".
 func Zahl(v float64) string {
 	s := strings.TrimRight(F2(v), "0")
 	s = strings.TrimRight(s, ".")

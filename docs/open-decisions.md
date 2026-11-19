@@ -29,7 +29,7 @@ Stand 19.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 - Eigenes Modul `github.com/Andiministrator/schnapp/zeichnen` im Ordner `zeichnen/`.
 
 ## E-05: CI — ENTSCHIEDEN 19.11.2026: GitHub Actions (ADR-0010)
-- Einrichten mit dem ersten Programmcode (Karte #8).
+- Eingerichtet 19.11.2026: `.github/workflows/test.yml` (gofmt, vet, test für `zeichnen/`), grün.
 
 ## E-06: Lizenzvariante — ENTSCHIEDEN 19.11.2026: GPL-3.0-or-later (ADR-0009)
 - Rechte an den Zeichenpaketen liegen beim Maintainer; Veröffentlichung unter GPL-3.0 erlaubt (Andi, 19.11.2026).

@@ -25,4 +25,7 @@ Maintainer; die Veröffentlichung unter GPL-3.0 ist erlaubt (Andi, 19.11.2026).
   dessen Python-Werkzeuge entfernt, Testfarben neutralisiert. Eine Zahlformatierung (`geo.Repr`, wie Python `repr()`)
   ersetzt eine Abhängigkeit; an 4 Mio. Zahlen ohne Abweichung zur Vorgängerfunktion geprüft. Sonst ist der Code
   unverändert; das Schwesterprojekt hat den byte-gleichen Neubau aller Ausgaben bestätigt.
-- Die 13 Randfall-Proben liegen unter `zeichnen/raster/testdata/rasterproben/`; `TestRasterproben` zeichnet jede.
+- Die 13 Randfall-Proben liegen unter `zeichnen/raster/testdata/rasterproben/`; `TestRasterproben` zeichnet jede und
+  vergleicht Pixelzahl und Kanalsummen mit Sollwerten vom 19.11.2026 (Regressionsschutz, kein rsvg-Vergleich).
+- Die 4-Mio.-Vergleichsprüfung von `geo.Repr` lief einmalig außerhalb des Repos; im Repo sichert `TestRepr` die Regeln
+  mit Sollwerten aus Python `repr()` ab.

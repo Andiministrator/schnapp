@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> Verweise auf ADR-0043, ADR-0062, ADR-0067, F-Nummern über F-100 und Pfade unter `~/.aboard-framework/` oder
+> `~/.claude/` beziehen sich auf das Arbeits-Framework (aBoard) des Maintainers, nicht auf dieses Repo. Projekteigene
+> ADRs liegen unter `docs/adr/` (0001–0013), projekteigene Findings in `docs/findings.md`.
+
 ## Vor jeder Antwort — Pflicht
 
 **Hook-Output auf `AKTION VOR ANTWORT`-Blöcke scannen — falls vorhanden: zuerst ausführen, DANN antworten.**
@@ -78,7 +82,7 @@ schnell aufnehmen, beschriften (Pfeile auch gebogen, Kästen, Schritt-Nummern, S
 und nebenbei ein einfaches Bildbearbeitungsprogramm. Zielgruppe zuerst Andi selbst (KDE), später öffentlich
 (GPL-3.0, GitHub, ggf. Flathub). ksnip und Spectacle sind zu umständlich und können zu wenig.
 
-Herkunft: Anforderungen und Entscheidungen des Maintainers vom 18.11.2026, übernommen in [`docs/anforderungen.md`](docs/anforderungen.md), ADR-0003 und ADR-0007 bis ADR-0013).
+Herkunft: Anforderungen und Entscheidungen des Maintainers vom 18.11.2026, übernommen in [`docs/anforderungen.md`](docs/anforderungen.md) sowie ADR-0003 und ADR-0007 bis ADR-0013.
 
 ## Kernprinzipien
 
@@ -140,6 +144,8 @@ Aktueller Entwicklungsstand: Board (`aboard-sync.json`, nicht versioniert).
 
 Conventional Commits mit deutschen Beschreibungen: `<typ>(<bereich>): <beschreibung>`
 
+Typen: `feat` · `fix` · `docs` · `refactor` · `chore` · `style` · `test` · `perf` — Details in ADR-0005.
+
 **`Co-Authored-By` nennt, wer die Arbeit gemacht hat — nicht nur, wer committet.** Sonst ist der Owner-/Modell-Abgleich (ADR-0043 Check 1) aus dem Repo nicht nachprüfbar. Vier Fälle, und der zweite ist der, den man übersieht:
 
 | Wer hat gearbeitet oder geprüft? | Trailer-Zeilen |
@@ -152,7 +158,6 @@ Conventional Commits mit deutschen Beschreibungen: `<typ>(<bereich>): <beschreib
 Als „Arbeit" zählt auch das reine **Prüfen**: Ein Kritiker- oder Verify-Lauf ist Arbeit am Commit, und die Auflage „anderes Modell" ist ohne Trailer nicht nachprüfbar.
 
 ⚠️ **Kontext-Varianten desselben Basismodells sind dasselbe Modell** — „Opus 5" und „Opus 5 (1M context)" ergeben **eine** Zeile, nicht zwei; die Kontextgröße ist eine Eigenschaft der Sitzung, kein anderes Modell. Und für den Verify-Lauf heißt das: **eine größere Kontextgröße erfüllt die Auflage „anderes Modell" nicht** — dafür wechselt man die Familie, nicht die Variante.
-Typen: `feat` · `fix` · `docs` · `refactor` · `chore` · `style` · `test` · `perf` — Details in ADR-0005.
 
 ## Versionierung
 

@@ -38,7 +38,7 @@ oder Abschnitt `## Quellen`). Jede Topic-Datei steht im Topic-Index `knowledge/R
 
 - **Belegt vs. vermutet trennen:** Unbelegtes als „⚠️ unbelegt" markieren, nie als Tatsache formulieren.
 - **WebFetch-Zusammenfassungen sind keine Zitate:** Wortlaut per `curl` oder im Browser gegenprüfen, bevor er in ein
-  ADR oder in Code-Kommentare geht (bei PDFs halluziniert WebFetch nachweislich, Erfahrung aus easywk).
+  ADR oder in Code-Kommentare geht (bei PDFs halluziniert WebFetch nachweislich, Erfahrung aus einem anderen Projekt).
 - **Öffentliches Repo:** `knowledge/` wird mit veröffentlicht. Keine Pfade, Namen, Hausnetz- oder Kundenangaben.
 - Aussagen über Software immer mit Version (z. B. KWin 6.8.3).
 - Nur öffentliche Seiten; nichts anmelden, keine Formulare absenden. Quelltext über öffentliche Repos oder
