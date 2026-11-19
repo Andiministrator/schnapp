@@ -67,6 +67,24 @@ def main():
         schreibe(f"e-h-haengt-{art}.svg", bild(640, zugtext, f["grund"], f"0 20 {ende + 60} 270"))
         zugtext, ende = schriftzug(f, h_tief=True)
         schreibe(f"e2-h-tief-{art}.svg", bild(640, zugtext, f["grund"], f"0 20 {ende + 60} 270"))
+        # e3: Unterzeile in zwei Teilen links und rechts des tiefen h: „SCREENSHOTS“ unter „sc“, „FOR LINUX“ unter „na“.
+        sc = (40 - 11, 40 + LAUF + W + 11)              # Außenkanten von s und c
+        na = (40 + 3 * LAUF - 11, 40 + 4 * LAUF + W + 11)  # Außenkanten von n und a
+        groesse = 28
+        for name, gleich in (("e3-voll", False), ("e3-gleich", True)):
+            teile = []
+            _, nat1 = text_als_pfad("SCREENSHOTS", 0, 0, groesse, "#000", sperrung=0)
+            sp1 = (sc[1] - sc[0] - nat1) / 10 / groesse
+            t1, _ = text_als_pfad("SCREENSHOTS", sc[0], 262, groesse, NEBEN[art], sperrung=sp1)
+            _, nat2 = text_als_pfad("FOR LINUX", 0, 0, groesse, "#000", sperrung=0)
+            if gleich:
+                breite2 = nat2 + 8 * sp1 * groesse
+                t2, _ = text_als_pfad("FOR LINUX", na[0] + (na[1] - na[0] - breite2) / 2, 262, groesse, NEBEN[art],
+                                      sperrung=sp1)
+            else:
+                t2, _ = text_als_pfad("FOR LINUX", na[0], 262, groesse, NEBEN[art],
+                                      sperrung=(na[1] - na[0] - nat2) / 8 / groesse)
+            schreibe(f"{name}-{art}.svg", bild(640, zugtext + t1 + t2, f["grund"], f"0 20 {ende + 60} 270"))
         varianten = (("linux screenshots", "f-klein", 34), ("LINUX SCREENSHOTS", "f-versal", 28),
                      ("screenshots for linux", "f-for-linux", 32))
         for text, name, groesse in varianten:
