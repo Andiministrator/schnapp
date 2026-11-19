@@ -5,6 +5,8 @@ package document
 import (
 	"fmt"
 	"image/color"
+	"strings"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -184,4 +186,17 @@ func (n Nummer) pruefe() error {
 func aufgeweitet(r Rechteck, um float64) Rechteck {
 	h := um / 2
 	return Rechteck{r.Min.Minus(Punkt{h, h}), r.Max.Plus(Punkt{h, h})}
+}
+
+// Zeichenbar liefert eine Textzeile so, wie Renderer und Editor sie zeichnen: Tabulator als vier Leerzeichen,
+// andere Steuerzeichen (Wagenrücklauf, DEL, C1) weg — die Schrift hat für sie keine Glyphe und zeigte Ersatzkästchen
+// (Kritik A-3, Verify V-3). Der gespeicherte Text bleibt unverändert.
+func Zeichenbar(zeile string) string {
+	zeile = strings.ReplaceAll(zeile, "\t", "    ")
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return -1
+		}
+		return r
+	}, zeile)
 }

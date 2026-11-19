@@ -47,6 +47,7 @@ func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen) ui.Sp
 		if err != nil {
 			return err
 		}
+		var zurueck error // Fehler beim Zurückschreiben, falls auch das Ausweichen scheitert
 		if inBibliothek {
 			_, err := b.Speichern(rel, d, sichtbar)
 			switch {
@@ -57,7 +58,9 @@ func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen) ui.Sp
 				// Die Datei ist weg, ersetzt oder nicht mehr unsere (gelöscht, aufgeräumt, neuere Fassung): nicht
 				// verlieren, sondern als neue Aufnahme ablegen (Kritik A-1).
 			default:
-				return err
+				// Anderer Fehler (z. B. keine Schreibberechtigung): trotzdem eine neue Aufnahme versuchen, statt die
+				// Bearbeitung zu verlieren (Verify V-1).
+				zurueck = err
 			}
 		}
 		m := meta
@@ -65,7 +68,7 @@ func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen) ui.Sp
 		m.Erstellt = b.Jetzt() // neue Aufnahme der Bibliothek, Zeitpunkt des Speicherns
 		e, err := b.Ablegen(d, sichtbar, m)
 		if e.Pfad == "" {
-			return err
+			return errors.Join(zurueck, err)
 		}
 		rel, inBibliothek = e.Pfad, true
 		return nil

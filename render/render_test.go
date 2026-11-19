@@ -184,7 +184,7 @@ func BenchmarkGrossesBild(b *testing.B) {
 func TestSteuerzeichenOhneKaestchen(t *testing.T) {
 	leer := weissesDokument(t, 120, 40)
 	mitTab := weissesDokument(t, 120, 40)
-	hinzu(t, mitTab, document.Text{Ort: document.Pt(5, 5), Inhalt: "\t\r", Schriftgrad: 20, Farbe: rot})
+	hinzu(t, mitTab, document.Text{Ort: document.Pt(5, 5), Inhalt: "\t\r\x7f\u0085", Schriftgrad: 20, Farbe: rot})
 	a, b := bild(t, leer), bild(t, mitTab)
 	for i := range a.Pix {
 		if a.Pix[i] != b.Pix[i] {

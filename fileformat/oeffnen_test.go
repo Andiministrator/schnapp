@@ -108,3 +108,19 @@ func TestOeffneFehler(t *testing.T) {
 		t.Errorf("Text: %v", err)
 	}
 }
+
+// Eine Datei über MaxDatei wird abgelehnt, ohne sie zu lesen (Kritik A-13, Verify V-2): dünn besetzte Datei.
+func TestOeffneZuGrosseDatei(t *testing.T) {
+	pfad := filepath.Join(t.TempDir(), "riesig.png")
+	f, err := os.Create(pfad)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Truncate(MaxDatei + 1); err != nil {
+		t.Fatal(err)
+	}
+	f.Close()
+	if _, err := Oeffne(pfad); !errors.Is(err, ErrZuGross) {
+		t.Errorf("Fehler %v, Soll ErrZuGross", err)
+	}
+}

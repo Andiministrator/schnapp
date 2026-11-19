@@ -91,7 +91,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 		ort := z.ansicht(v.Ort)
 		for i, zeile := range strings.Split(v.Inhalt, "\n") {
 			// Tabulator als vier Leerzeichen, Wagenrücklauf weg: die Go-Schrift hat für beide keine Glyphe (Kritik A-3).
-			zeile = strings.ReplaceAll(strings.ReplaceAll(zeile, "\r", ""), "\t", "    ")
+			zeile = document.Zeichenbar(zeile)
 			z.text(face, zeile, ort.X, ort.Y+v.Schriftgrad*(1+1.3*float64(i)), v.Farbe)
 		}
 	case document.Nummer:

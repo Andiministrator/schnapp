@@ -299,7 +299,7 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 			}
 			ort := an(v.Ort)
 			for i, zeile := range strings.Split(v.Inhalt, "\n") {
-				zeile = strings.ReplaceAll(strings.ReplaceAll(zeile, "\r", ""), "\t", "    ") // wie im Renderer
+				zeile = document.Zeichenbar(zeile) // wie im Renderer
 				p := ort.Add(f32.Pt(0, float32(v.Schriftgrad*1.3*float64(i))))
 				e.textBei(gtx, zeile, float32(v.Schriftgrad), p, false, v.Farbe)
 			}
