@@ -28,8 +28,11 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
    Objekte mit Gio-Vektorpfaden und übersetzt Eingaben. Der Editor öffnet erst, wenn alle Overlay-Fenster zu sind
    (F-82).
 3. **Rendern:** ein Go-Renderer ohne GPU, der Ansichtsbild und Objekte zu einem `image.NRGBA` zusammensetzt — für
-   Arbeitsdatei, PNG/JPG-Export und Zwischenablage. Formen über `zeichnen/raster` (Füllen, Strich), Schrift über
-   `golang.org/x/image/font` mit den Go-Schriften (steckt über Gio schon im Abhängigkeitsbaum, ADR-0011). Das
+   Arbeitsdatei, PNG/JPG-Export und Zwischenablage. Formen über `golang.org/x/image/vector`, Schrift über
+   `golang.org/x/image/font` mit den Go-Schriften (beides steckt über Gio schon im Abhängigkeitsbaum, BSD-Lizenz,
+   ADR-0011). *Geändert bei der Umsetzung (#58):* nicht `zeichnen/raster` — das Wurzelmodul müsste dafür das eigene
+   Modul `zeichnen` einbinden (require + replace), kurz vor dessen Umbenennung (#57), und dessen Strich-Funktionen
+   sind nicht öffentlich. Das
    Bild auf dem Bildschirm zeichnet Gio; Abweichungen in Kantenglättung sind erlaubt, Lage und Größe nicht (Test:
    Treffer und Grenzen gleich).
 

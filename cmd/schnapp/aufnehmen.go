@@ -17,6 +17,7 @@ import (
 	"github.com/Andiministrator/schnapp/fileformat"
 	"github.com/Andiministrator/schnapp/i18n"
 	"github.com/Andiministrator/schnapp/library"
+	"github.com/Andiministrator/schnapp/render"
 	"github.com/Andiministrator/schnapp/selection"
 	"github.com/Andiministrator/schnapp/settings"
 	"github.com/Andiministrator/schnapp/ui"
@@ -52,7 +53,11 @@ func echteAnschluesse() anschluesse {
 			if err != nil {
 				return "", err
 			}
-			e, err := library.Neu(orte).Ablegen(d, d.Ansichtsbild(), fileformat.Metadaten{})
+			sichtbar, err := render.Bild(d)
+			if err != nil {
+				return "", err
+			}
+			e, err := library.Neu(orte).Ablegen(d, sichtbar, fileformat.Metadaten{})
 			if e.Pfad == "" {
 				return "", err
 			}
