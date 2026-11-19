@@ -25,8 +25,9 @@ request.
 
 ## Languages
 
-- User interface texts: English is the source language; every new text also needs a German translation (`po/de.po`
-  once it exists). Further languages are welcome.
+- User interface texts: English is the source language. Write them as literals through `sprache.T("…")`,
+  `sprache.TK("context", "…")` or `sprache.N("one …", "many …", n)`; every new text also needs a German entry in
+  `po/de.po` — `go test ./...` fails otherwise (`docs/adr/0014-*`). Further languages are welcome as `po/<lang>.po`.
 - User documents (README, CONTRIBUTING) exist in English and German — update both in the same pull request.
 - Working documents (`docs/`, `knowledge/`), commit messages and code comments are in German. English is fine in your
   pull request; the maintainer will adapt it.

@@ -8,6 +8,19 @@ permissions:
   contents: read
 
 jobs:
+  # Wurzelmodul (sprache, po; später das Programm)
+  wurzel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: gofmt
+        run: test -z "$(gofmt -l $(go list -f '{{.Dir}}' ./...))"
+      - run: go vet ./...
+      - run: go test ./...
+
   zeichnen:
     runs-on: ubuntu-latest
     defaults:

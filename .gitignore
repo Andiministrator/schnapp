@@ -36,7 +36,9 @@ __pycache__/
 *.key
 
 # Arbeitsdateien (Projektregel: nichts nach /tmp, alles nach tmp/)
-tmp/
+tmp/*
+# tmp/go.mod trennt tmp/ vom Wurzelmodul, sonst bauen go build/test ./... abgelegte .go-Dateien mit
+!tmp/go.mod
 *.log
 
 # Claude Code (lokal)

@@ -40,3 +40,23 @@ und Englisch auf „vor der Veröffentlichung“ verschoben (E-07). Nachträglic
 - Neue Oberflächentexte brauchen in jedem Commit beide Sprachen; ein Test prüft, dass `de.po` keinen Schlüssel
   vermisst.
 - CLAUDE.md, ADR-0002 und E-07 werden angepasst.
+
+## Nachtrag 1 (19.11.2026): Umsetzung — eigener PO-Leser (Karte #19)
+
+**Status:** Akzeptiert (Claude Opus 5.5 im Rahmen von Karte #19; die Wahl war der Umsetzung überlassen).
+
+- **Eigener kleiner PO-Leser statt `gotext`** (ADR-0011): Schnapp braucht nur PO lesen, Kontext, Mehrzahl und die
+  Sprachwahl — rund 400 Zeilen mit Standardbibliothek, voll getestet. `gotext` bringt MO-Dateien, Locale-Ordner und
+  eigene Sprachwahl mit, die Schnapp nicht nutzt; ein Paket weniger zu prüfen und zu pflegen.
+- **Pakete im Wurzelmodul** `github.com/Andiministrator/schnapp`: `sprache` (Sprachwahl `Waehle`, PO-Leser `LesePO`,
+  Mehrzahlregel aus `Plural-Forms` mit allen C-Ausdrücken, die gettext dort kennt, `Katalog` mit `T`, `TK` für
+  Kontext, `N` für Mehrzahl; Paketfunktionen `sprache.T/TK/N` nach `sprache.Starte`) und `po` (bettet `po/*.po` ein).
+- **Sprachwahl genauer als oben:** aus `LC_ALL`, `LC_MESSAGES`, `LANG` zählt — wie bei POSIX — nur die erste gesetzte
+  Variable; ist sie `C`, `POSIX` oder eine Sprache ohne PO-Datei, gilt Englisch (kein Weiterfallen auf `LANG`).
+  `LANGUAGE` ist dagegen eine Liste, deren Einträge der Reihe nach probiert werden. Je Eintrag erst `ll_CC`, dann `ll`.
+- **Prüfung:** Ein Test durchsucht alle `.go`-Dateien des Wurzelmoduls nach `sprache.T`, `sprache.TK`, `sprache.N`.
+  Jeder Text braucht in jeder `po/*.po` einen fertigen Eintrag (nicht `fuzzy`, nicht leer, passende Mehrzahl), jeder
+  Eintrag einen Text im Code (sonst veraltet), und jedes Argument muss ein Zeichenketten-Literal sein.
+- **Noch nicht umgesetzt:** Vorlage `po/schnapp.pot` für Übersetzer und Weblate (aus derselben Code-Durchsuchung zu
+  erzeugen, sobald es Texte gibt), Zahlen- und Datumsformate je Sprache, die Einstellung in Schnapp (Parameter
+  `einstellung` ist vorgesehen). Karte im Board.

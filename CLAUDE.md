@@ -125,7 +125,11 @@ Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung) — ADR
   Änderungen dort, dann `extern/gio-patch.sh erzeugen` (Patch im selben Commit); Prüfung `extern/gio-patch.sh pruefen`.
 - **Prototyp** `prototyp/` (Wegwerf-Code, eigenes Modul): `prototyp/bauen.sh` baut (`-trimpath`), Tests
   `cd prototyp && go test -tags novulkan,nox11 ./...`.
-- Programm Schnapp: noch kein Produktcode. Geplant `go build ./...`, `go test ./...`, `go run ./cmd/schnapp` im Wurzelmodul.
+- **Wurzelmodul** `github.com/Andiministrator/schnapp`: `go vet ./... && go test ./...`. Bisher `sprache` (Sprachwahl,
+  PO-Leser, `sprache.T/TK/N`) und `po` (eingebettete `po/*.po`), ADR-0014 Nachtrag 1. Oberflächentexte nur als Literal
+  über `sprache.T/TK/N`; der Test verlangt für jeden Text einen fertigen Eintrag in `po/de.po`. `tmp/go.mod` trennt
+  `tmp/` vom Wurzelmodul. Programm (`cmd/schnapp`) noch nicht begonnen; braucht Gio, dann `replace gioui.org =>
+  ./extern/gio` (ADR-0015).
 
 ## Marke
 

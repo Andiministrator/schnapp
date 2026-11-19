@@ -34,6 +34,7 @@ There is no program to build yet. What exists:
 
 | Path | What it is | How to check it |
 |---|---|---|
+| `.` (root) | Go module `github.com/Andiministrator/schnapp`: so far `sprache` (language choice, gettext PO reader) and `po` (embedded translations, `po/de.po`) | `go vet ./... && go test ./...` |
 | `zeichnen/` | Go module `github.com/Andiministrator/schnapp/zeichnen`: SVG parsing, an anti-aliased rasterizer, numeric helpers (standard library only) | `cd zeichnen && go vet ./... && go test ./...` |
 | `marke/` | Logo, colours and corporate design ([`marke/corporate-design.md`](marke/corporate-design.md), German, with PDF) | `python3 marke/werkzeug/paket.py` rebuilds the logo files |
 | `extern/gio/` | Gio with our patch (multi-monitor fullscreen, fractional scaling), used via `replace` in `go.mod` | `extern/gio-patch.sh pruefen`, see [`extern/README.md`](extern/README.md) (German) |

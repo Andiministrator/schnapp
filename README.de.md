@@ -35,6 +35,7 @@ Ein Programm zum Bauen gibt es noch nicht. Vorhanden sind:
 
 | Pfad | Was es ist | Prüfen |
 |---|---|---|
+| `.` (Wurzel) | Go-Modul `github.com/Andiministrator/schnapp`: bisher `sprache` (Sprachwahl, gettext-PO-Leser) und `po` (eingebettete Übersetzungen, `po/de.po`) | `go vet ./... && go test ./...` |
 | `zeichnen/` | Go-Modul `github.com/Andiministrator/schnapp/zeichnen`: SVG lesen, Rasterer mit Kantenglättung, Rechenhilfen (nur Standardbibliothek) | `cd zeichnen && go vet ./... && go test ./...` |
 | `marke/` | Logo, Farben und Corporate Design ([`marke/corporate-design.md`](marke/corporate-design.md), mit PDF) | `python3 marke/werkzeug/paket.py` erzeugt die Logo-Dateien neu |
 | `extern/gio/` | Gio mit unserem Patch (Vollbild auf gewähltem Monitor, gebrochene Skalierung), eingebunden per `replace` in `go.mod` | `extern/gio-patch.sh pruefen`, siehe [`extern/README.md`](extern/README.md) |
