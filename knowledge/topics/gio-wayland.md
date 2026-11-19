@@ -72,3 +72,10 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
 - Der erste Frame kommt oft noch in der Skala, die Gio vorab aus allen Ausgaben schätzt (ungepatcht: die größte der von
   allen Ausgaben gemeldeten Ganzzahl-Skalen — hier 2, weil 1,6 als 2 gemeldet wird; Handtest 1: 7680×3200 px für einen 3840×1600-Monitor mit Skala 1); erst die Konfiguration danach
   stimmt. Abbildungen deshalb bei jeder Größenänderung neu berechnen.
+- **Mehrere Fenster, je eine Goroutine** (Overlay, Karte #34, erster echter Lauf 19.11.2026):
+  - `text.Shaper` ist nicht nebenläufig nutzbar. Ein gemeinsames `material.Theme` für alle Fenster stürzt im
+    Text-Setzer ab (`bidi … slice bounds out of range`). Je Fenster ein eigenes Thema samt Shaper.
+  - `Window.Perform(system.ActionClose)` aus einer **fremden** Goroutine läuft in v0.10.3 in einen Datenwettlauf
+    (`processEvent` gegen `nextEvent`, `go build -race`), danach kam kein `DestroyEvent` mehr — das Programm hing.
+    Das Overlay schließt seine Fenster deshalb nicht selbst, sie enden mit dem Prozess (F-77).
+  - Echte Läufe mit `go build -race` bauen und fahren: Der Detector fand den Wettlauf im ersten Versuch.
