@@ -1,7 +1,7 @@
 # German translation of Schnapp.
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Source language is English; every text in the code that goes through sprache.T, sprache.TK or sprache.N needs an
+# Source language is English; every text in the code that goes through i18n.T, i18n.TK or i18n.N needs an
 # entry here (checked by the tests in i18n/). Address the user without a form of address where possible,
 # otherwise use "du" (decision E-13).
 msgid ""
@@ -136,7 +136,7 @@ msgstr "Der Screenshot ließ sich nicht speichern: %v"
 msgid "Could not remember the area for --repeat: %v"
 msgstr "Der Bereich für --repeat ließ sich nicht merken: %v"
 
-# oberflaeche: Overlay
+# ui: Overlay
 msgid "Click a monitor or drag an area · Enter: monitor under the pointer · Esc or right-click: cancel"
 msgstr "Monitor anklicken oder Bereich aufziehen · Enter: Monitor unter dem Zeiger · Esc oder Rechtsklick: abbrechen"
 

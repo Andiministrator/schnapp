@@ -17,7 +17,7 @@ import (
 // Grenzen für Angaben aus der Antwort der Gegenstelle. KWin ist vertrauenswürdig, aber ein Fehler dort oder ein
 // untergeschobener Dienst darf Schnapp nicht zum Absturz oder zu einer Riesenzuteilung bringen.
 const (
-	// MaxSeite begrenzt Breite und Höhe (gleich dokument.MaxSeite; hier eigene Konstante, damit die Schicht das
+	// MaxSeite begrenzt Breite und Höhe (gleich document.MaxSeite; hier eigene Konstante, damit die Schicht das
 	// Dokumentmodell nicht kennen muss).
 	MaxSeite = 1 << 15
 	// MaxBytes begrenzt die Rohdaten einer Aufnahme (1 GiB; ein 8K-Bild hat rund 140 MB).

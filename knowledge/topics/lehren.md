@@ -90,3 +90,15 @@ Stand: 2026-11-19 (ergänzt nach Sprint 1). Kurze Regeln aus Fehlern und Befunde
 - **Nebenläufigkeit erst im echten Lauf sichtbar:** Unit-Tests ohne Fenster fanden weder den geteilten Text-Setzer
   noch den Wettlauf beim Schließen; ein `go build -race`-Lauf fand ihn sofort. Zeiten aber nie mit `-race` messen
   (Faktor 10–30).
+- **Rastern nur im Ausschnitt** (Renderer #58, 19.11.2026): `vector.NewRasterizer` in Bildgröße je Objekt kostete
+  beim Speichern Sekunden; das umschließende Rechteck je Füllung reicht (4K, 20 Objekte ~80 ms). Ein Benchmark
+  (`BenchmarkGrossesBild`) hält das fest. Speichern beim Schließen läuft nach dem Fensterschluss weiter — ein zu
+  knapper `timeout` im Testbefehl bricht es ab, ohne dass man es sieht.
+- **Worktree-Agenten können `HOME` nicht setzen** (Sandbox): Installations- und Bibliothekstests dort über
+  `PREFIX`/`XDG_DATA_HOME` bzw. eigene Umgebung im Testcode, Läufe mit Test-HOME macht der Orchestrator.
+- **Register-Status nur aus dem Vokabular** (`sofort`, `eingeplant`, `backlog`, `akzeptiert`, `behoben`):
+  `findings-rotate.mjs` rotiert „widerlegt“ nicht; die Nuance gehört in den Text. Senkrechte Striche im Prüfbefehl
+  zerreißen die Tabelle — umformulieren.
+- **Kritiker mit anderem Modell lohnt sich** (Fable, Sitzungs-QA Sprint 4 Teil 2): fand einen Datenverlust (Datei
+  während des Editierens weg) und eine Speicherfalle (Schriftgrad 1e5) trotz grüner Tests — Proben im eigenen
+  `tmp/`-Modul mit `GOPROXY=off` statt Änderungen im Repo.

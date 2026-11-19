@@ -42,3 +42,15 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   kommen mit dem Editor (#35).
 - Für Skripte bleibt der Pfad auf stdout das Erste, was Schnapp ausgibt; ohne Bildschirm (kein Wayland) öffnet kein
   Editor.
+
+## Nachtrag 1 (19.11.2026): Speichern beim Schließen, Ausweichen (Kritik B-8, A-1, A-4)
+
+- Ungespeicherte Änderungen werden beim Schließen ohne Rückfrage gespeichert (Claudes Entscheidung, Andi informiert)
+  — auch wenn das Fenster mit Fehler endet. Bei einer Datei außerhalb der Bibliothek entsteht dabei eine neue
+  Aufnahme der Bibliothek.
+- Fehlt die Bibliotheksdatei beim Speichern, ist sie fremd oder neuer, weicht Speichern auf eine neue Aufnahme aus,
+  statt die Bearbeitung zu verlieren.
+- Bildschirm und Renderer nutzen dieselben Go-Schriften (keine Systemschriften); Tabulator wird als vier Leerzeichen
+  gezeichnet. Schriftgrad und Nummer-Radius sind auf `document.MaxSchrift` = 4096 begrenzt ([S], Speicher).
+- Offen (eigene Karten): Speichern bei Signal/Absturz und Konflikt zweier Editoren (F-107, F-110), Angleichen der
+  Maße an den SVG-Export (F-108).

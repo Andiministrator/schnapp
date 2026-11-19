@@ -82,7 +82,11 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
   - **Zeigerbild versetzt bei gemischter Skala (F-78, im Patch behoben 19.11.2026):** Ungepatcht lädt Gio das
     Cursor-Thema einmal in der vorab geschätzten Skala (größte Monitorskala) und teilt den Hotspot später durch die
     aktuelle. Der Patch merkt sich die Skala des Themas, lädt es bei Skalenwechsel neu (`reloadCursorTheme`, auch
-    sofort aus `updateOutputs`) und teilt den Hotspot durch die Skala des Themas. Das Overlay blendet den Zeiger aus
+    sofort aus `updateOutputs`) und teilt den Hotspot durch die Skala des Themas. Fallen beim Nachladen (Kritik
+    B-1/B-2/B-13): `loadCursor` fällt auf `cursors.pointer` zurück — vor dem Laden leeren, sonst zeigt der Zeiger ins
+    zerstörte alte Thema; Wayland verlangt Puffergröße teilbar durch die Puffer-Skala (sonst Protokollfehler, das
+    Thema liefert nicht immer die angeforderte Größe → dann Skala 1); alten Puffer vor dem Zerstören lösen. Das
+    Overlay blendet den Zeiger aus
     (`pointer.CursorNone`) und zeichnet ein eigenes Fadenkreuz; nach `pointer.Leave` neu zeichnen lassen
     (`op.InvalidateCmd`), sonst bleibt es am Rand des alten Monitors stehen.
   - **Kein `pointer.Leave` beim Verlassen des Fensters:** `gio_onPointerLeave` schickt nur bei Compositor-Zügen ein

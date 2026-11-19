@@ -105,9 +105,11 @@ Herkunft: Anforderungen und Entscheidungen des Maintainers vom 18.11.2026, über
 
 ## Architektur
 
-Produktcode (Stand 19.11.2026, Sprint 4): `capture`, `document`, `fileformat`, `library`, `settings`, `selection`
-und das Overlay in `ui` stehen mit Tests; Schnapp nimmt auf und legt in der Bibliothek ab, der Editor fehlt
-noch. Daneben der Wegwerf-Prototyp `prototype/`. Schichten:
+Produktcode (Stand 19.11.2026, Sprint 4): `capture`, `document`, `fileformat`, `library`, `settings`, `selection`,
+`canvas`, `render` stehen mit Tests, dazu Overlay und Editor in `ui` (ohne Tests, Logik liegt in `selection`/`canvas`);
+Schnapp nimmt auf, legt in der Bibliothek ab und öffnet den Editor (Auswählen, Verschieben, Griffe, Zoom, Rückgängig,
+Speichern — Zeichenwerkzeuge folgen). Installation per `install.sh` (`~/.local`, Version aus `git describe`). Daneben
+der Wegwerf-Prototyp `prototype/`. Schichten:
 
 - **capture** — Schnittstelle + KWin-Umsetzung (D-Bus), später Portal.
 - **document** — Ebenenmodell (Pixelebene, Vektorebenen, Original, Stauchangaben), Rückgängig-Verlauf.
@@ -121,7 +123,8 @@ noch. Daneben der Wegwerf-Prototyp `prototype/`. Schichten:
 - **render** — Ansichtsbild + Objekte zu Pixeln ohne GPU (`golang.org/x/image` vector/font, Go-Schriften; ADR-0020).
 - **ui** — Gio: Vollbild-Overlay zur Auswahl (fertig), Editor, Bibliothek.
 
-Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung) — ADR-0003 Nachtrag 2.
+Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung, Mauszeiger bei gemischter Skala F-78) —
+ADR-0003 Nachtrag 2, ADR-0015.
 
 ## Entwicklungsstand
 
@@ -139,9 +142,11 @@ Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung) — ADR
   ./cmd/schnapp`. Pakete: `i18n` (Sprachwahl, PO-Leser, `i18n.T/TK/N`), `po` (eingebettete `po/*.po`, ADR-0014
   Nachtrag 1), `ui` (Schicht zu Gio; `Starte` hält die Gio-Hauptschleife, `Overlay` je Monitor),
   `cmd/schnapp` (Argumente `--region` [Voreinstellung], `--screen[=NAME]`, `--list-screens`, `--window`, `--repeat`,
-  `--version`, `--help`; `aufnehmen.go` nimmt auf und legt in der Bibliothek ab, Pfad auf stdout, Exit 3 bei Abbruch;
-  `--screen` mit `[capture] screen = all` ist noch nicht umgesetzt). Echte Läufe öffnen Vollbild auf allen Monitoren:
-  nur nach Rückfrage, mit `go build -race`, Diagnose mit `SCHNAPP_DEBUG=1` (`knowledge/topics/gio-wayland.md`).
+  `--no-editor`, `DATEI`, `--version`, `--help`; `aufnehmen.go` nimmt auf und legt in der Bibliothek ab, Pfad auf
+  stdout, dann Editor (ADR-0020), Exit 3 bei Abbruch; `editor.go` öffnet Dateien und speichert in die Bibliothek;
+  `--screen` mit `[capture] screen = all` ist noch nicht umgesetzt). Echte Läufe (Overlay, Editor) startet Andi selbst
+  per `!`-Befehl, Anleitung davor (`knowledge/topics/lehren.md`); vorher mit `go build -race` nach `tmp/` bauen,
+  Diagnose mit `SCHNAPP_DEBUG=1` (`[overlay]`/`[editor]`-Zeilen, `knowledge/topics/gio-wayland.md`).
   Oberflächentexte nur als Literal über `i18n.T/TK/N`; der Test verlangt für jeden Text einen fertigen Eintrag in
   `po/de.po`. `capture` ist die Aufnahmeschicht (`Quelle`, KWin über D-Bus: ScreenShot3/memfd bevorzugt, sonst
   ScreenShot2/Pipe; Tests mit Attrappe, keine echte Aufnahme in `go test`). `data/schnapp.desktop.in` ist die Vorlage der Desktop-Datei (ADR-0017). `tmp/go.mod` trennt `tmp/` vom

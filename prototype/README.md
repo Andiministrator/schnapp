@@ -31,6 +31,7 @@ Gio braucht unter Linux cgo (libwayland-client ≥ 1.20, libwayland-egl, libwayl
 | `schnapp-prototype` | jeden Bildschirm über KWin ScreenShot2 aufnehmen, je Monitor ein Vollbild-Overlay, Bereich aufziehen → Editor |
 | `schnapp-prototype -bild datei.png` | Bild laden → Overlay → Editor |
 | `schnapp-prototype -testbild` | synthetisches 4K-Bild im Editor |
+| `schnapp-prototype -testbild -fenster` | dasselbe in einem verschiebbaren Fenster statt Vollbild (Zeigertest F-78) |
 | `schnapp-prototype -messen 8` | 4K-Testbild, der Pfeil biegt sich 8 s selbst, Bildrate ins Protokoll |
 
 Editor: Pfeil ziehen, am blauen Griff biegen, Enden verschieben, Strg+Z, Mausrad zoomt, Esc beendet.

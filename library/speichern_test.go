@@ -3,6 +3,7 @@
 package library
 
 import (
+	"bytes"
 	"errors"
 	"image/color"
 	"image/png"
@@ -107,5 +108,35 @@ func TestRelativ(t *testing.T) {
 	}
 	if _, ok := b.Relativ(b.Orte.Ablage); ok {
 		t.Error("Ablage selbst gilt als Aufnahme")
+	}
+}
+
+// Ein Monatsordner, der als Verweis aus der Ablage hinausführt, wird nicht beschrieben (Kritik A-11).
+func TestSpeichernNichtDurchOrdnerVerweis(t *testing.T) {
+	b, heim := neueBibliothek(t)
+	aussen := filepath.Join(heim, "aussen")
+	if err := os.MkdirAll(aussen, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	d := neuesDokument(t, 4, 4)
+	var buf bytes.Buffer
+	if err := fileformat.SchreibeArbeitsdatei(&buf, d, d.Ansichtsbild(), fileformat.Metadaten{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(aussen, "x.png"), buf.Bytes(), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(b.Orte.Ablage, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(aussen, filepath.Join(b.Orte.Ablage, "2026-11")); err != nil {
+		t.Fatal(err)
+	}
+	vorher, _ := os.ReadFile(filepath.Join(aussen, "x.png"))
+	if _, err := b.Speichern("2026-11/x.png", d, d.Ansichtsbild()); !errors.Is(err, ErrPfad) {
+		t.Fatalf("Fehler %v, Soll ErrPfad", err)
+	}
+	if nachher, _ := os.ReadFile(filepath.Join(aussen, "x.png")); !bytes.Equal(nachher, vorher) {
+		t.Error("Datei außerhalb der Ablage verändert")
 	}
 }

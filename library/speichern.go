@@ -57,6 +57,10 @@ func (b *Bibliothek) Speichern(rel string, d *document.Dokument, sichtbar image.
 	if !st.Mode().IsRegular() {
 		return Eintrag{}, fmt.Errorf("%w: %q", ErrPfad, rel)
 	}
+	// Auch die Ordner auf dem Weg dürfen nicht aus der Ablage hinausführen (Monatsordner als Symlink, Kritik A-11).
+	if echt, ok := b.Relativ(voll); !ok || echt != rel {
+		return Eintrag{}, fmt.Errorf("%w: %q", ErrPfad, rel)
+	}
 	f, err := os.Open(voll)
 	if err != nil {
 		return Eintrag{}, err

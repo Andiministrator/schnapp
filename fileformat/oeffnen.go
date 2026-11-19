@@ -14,8 +14,8 @@ import (
 	"github.com/Andiministrator/schnapp/document"
 )
 
-// MaxDatei begrenzt, wie viel Oeffne liest (größer als jedes erlaubte Bild samt Original und Ebenen).
-const MaxDatei = 1 << 30
+// MaxDatei begrenzt, wie viel Oeffne liest (wie die Arbeitsdatei, größer als jedes erlaubte Bild samt Ebenen).
+const MaxDatei = maxDatei
 
 // ErrKeineDatei meldet einen Pfad, der keine gewöhnliche Datei ist.
 var ErrKeineDatei = errors.New("datei: keine gewöhnliche Datei")
@@ -31,6 +31,10 @@ func Oeffne(pfad string) (*Gelesen, error) {
 	}
 	if !st.Mode().IsRegular() {
 		return nil, fmt.Errorf("%w: %s", ErrKeineDatei, pfad)
+	}
+	// Erst die Größe, dann lesen: sonst kostet eine riesige Datei Gigabytes, bevor eine Prüfung greift (Kritik A-13).
+	if st.Size() > MaxDatei {
+		return nil, fmt.Errorf("%w: Datei größer als %d Bytes", ErrZuGross, MaxDatei)
 	}
 	f, err := os.Open(pfad)
 	if err != nil {

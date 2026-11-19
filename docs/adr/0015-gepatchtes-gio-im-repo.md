@@ -52,3 +52,9 @@ Möglichkeit 3.
   MIT-Kopfzeilen. GPL-3.0-verträglich (ADR-0009).
 - Gofmt- und Vet-Läufe des Projekts gelten nicht für `extern/gio` (fremder Code im Stil von Gio).
 - Der Prototyp braucht `tmp/gio-gepatcht` und `tmp/prototyp-gepatcht.mod` nicht mehr.
+
+## Nachtrag 1 (19.11.2026): Mauszeiger bei wechselnder Skala (F-78)
+
+Der Patch umfasst zusätzlich das Neuladen des Cursor-Themas bei Skalenwechsel samt Hotspot in der Skala des Themas
+und Puffer-Skala 1 für nicht teilbare Bildgrößen (Kritik B-1, B-2, B-13 der Sitzungs-QA). Einzelheiten:
+`third_party/README.md`, `knowledge/topics/gio-wayland.md`. Pfade dieses ADR lauten seit ADR-0019 `third_party/…`.

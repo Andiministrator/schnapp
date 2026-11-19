@@ -15,9 +15,11 @@ pages, share. Also meant as a simple image editor.
 
 ## Status
 
-Early work — **nothing usable yet**. A prototype has confirmed the toolkit: Schnapp is written in Go with the
-[Gio](https://gioui.org) UI library, plus a small patch to Gio (one full-screen overlay per monitor, fractional
-scaling). The first version (0.1.0) is being planned.
+Early work. Schnapp already captures on KDE Plasma (area, monitor, window; **Print** key), saves every screenshot to
+the library and opens it in an editor where existing annotations can be selected, moved and resized — the drawing
+tools (arrows, boxes, text, redaction) come next. It is written in Go with the [Gio](https://gioui.org) UI library,
+plus a small patch to Gio (one full-screen overlay per monitor, fractional scaling, cursor at mixed scales). The first
+version (0.1.0) is being built.
 
 ## Planned features
 
@@ -30,7 +32,7 @@ scaling). The first version (0.1.0) is being planned.
 
 ## Building
 
-So far Schnapp captures an area, a monitor or a window on KDE Plasma (frozen full-screen overlay with magnifier) and saves the screenshot to the library; the editor is not there yet. Gio needs cgo (`libwayland-dev`, `libegl-dev`, `libxkbcommon-dev` or your distribution's equivalent) and the build tags `novulkan,nox11`, which you pass through `GOFLAGS` (no need to change your Go environment):
+Gio needs cgo (`libwayland-dev`, `libegl-dev`, `libxkbcommon-dev` or your distribution's equivalent) and the build tags `novulkan,nox11`, which you pass through `GOFLAGS` (no need to change your Go environment):
 
 ```sh
 export GOFLAGS=-tags=novulkan,nox11
@@ -41,11 +43,31 @@ What exists:
 
 | Path | What it is | How to check it |
 |---|---|---|
-| `.` (root) | Go module `github.com/Andiministrator/schnapp`: the program `cmd/schnapp` (options only so far), `capture` (capture via KWin), `document` (layers, crop, redaction, undo), `fileformat` (working file and exports), `library` (library), `ui` (layer to Gio), `i18n` (language choice, gettext PO reader) and `po` (embedded translations, `po/de.po`); `data/` holds the desktop file template | `go vet ./... && go test ./...` (with `GOFLAGS` as above) |
+| `.` (root) | Go module `github.com/Andiministrator/schnapp`: the program `cmd/schnapp`, `capture` (capture via KWin), `selection` (overlay logic), `canvas` (editor logic), `document` (layers, crop, redaction, undo), `fileformat` (working file and exports), `render` (layers to pixels), `library` (library), `settings` (`settings.ini`), `ui` (overlay and editor in Gio), `i18n` (language choice, gettext PO reader) and `po` (embedded translations, `po/de.po`); `data/` holds the desktop file template | `go vet ./... && go test ./...` (with `GOFLAGS` as above) |
 | `zeichnen/` | Go module `github.com/Andiministrator/schnapp/zeichnen`: SVG parsing, an anti-aliased rasterizer, numeric helpers (standard library only) | `cd zeichnen && go vet ./... && go test ./...` |
 | `brand/` | Logo, colours and corporate design ([`brand/corporate-design.md`](brand/corporate-design.md), German, with PDF) | `python3 brand/werkzeug/paket.py` rebuilds the logo files |
-| `third_party/gio/` | Gio with our patch (multi-monitor fullscreen, fractional scaling), used via `replace` in `go.mod` | `third_party/gio-patch.sh pruefen`, see [`third_party/README.md`](third_party/README.md) (German) |
+| `third_party/gio/` | Gio with our patch (multi-monitor fullscreen, fractional scaling, cursor at mixed scales), used via `replace` in `go.mod` | `third_party/gio-patch.sh pruefen`, see [`third_party/README.md`](third_party/README.md) (German) |
 | `prototype/` | Throw-away prototype that checked Gio (needs Go ≥ 1.27, cgo, `libwayland-client`, `libwayland-egl`, `libwayland-cursor`, `libEGL`, `libxkbcommon`) | `prototype/bauen.sh`, see [`prototype/README.md`](prototype/README.md) |
+
+## Usage
+
+| Command | What it does |
+|---|---|
+| `schnapp` or `schnapp --region` | select an area in a frozen full-screen overlay (default, **Print**) |
+| `schnapp --screen[=NAME]` | capture a monitor (without a name as set in the settings; `--list-screens` lists the names) |
+| `schnapp --window` | select a window |
+| `schnapp --repeat` | capture the last area again |
+| `schnapp --no-editor …` | capture without opening the editor afterwards |
+| `schnapp FILE` | open a PNG or JPEG in the editor |
+
+Every capture is saved to the library (`~/Pictures/schnapp/YYYY-MM/`) and its path printed on standard output before
+the editor opens. Settings live in `~/.config/schnapp/settings.ini`, for example `[capture] open-editor = false`.
+
+In the editor: drag an annotation to move it, drag its handles to resize or bend it; mouse wheel zooms at the pointer,
+dragging empty space or the middle button moves the view. Keys: **Ctrl+Z** undo, **Ctrl+Shift+Z**/**Ctrl+Y** redo,
+**Del** delete, **Esc** deselect, **Ctrl+S** save, **Ctrl+0** fit, **Ctrl+1** 100 %, **Ctrl+W** close. Changes are
+saved when the editor closes; a file from outside the library becomes a new screenshot in the library and the file
+itself stays untouched.
 
 ## Install
 
@@ -59,7 +81,7 @@ What exists:
 
 The desktop file carries the absolute path of the program (KDE Plasma 6.7 and older bind the screenshot permission to it) and the default shortcut **Print** for "Capture Area". Spectacle uses **Print** as well: if both are installed, turn off Spectacle's shortcut in the system settings (Shortcuts). Make sure `~/.local/bin` is in your `PATH`.
 
-Remove it again with `./install.sh --uninstall` (deletes only these three files). `./install.sh --help` lists the options.
+Desktop tools may update their caches as well (menu database; the icon cache only if one exists). Remove it again with `./install.sh --uninstall` (deletes only these three files). `./install.sh --help` lists the options.
 
 ## Documentation
 

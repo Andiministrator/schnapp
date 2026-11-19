@@ -15,9 +15,11 @@ Mitte langer Seiten herausschneiden, teilen. Nebenbei ein einfaches Bildbearbeit
 
 ## Stand
 
-Frühe Arbeit — **noch nichts benutzbar**. Ein Prototyp hat die Oberflächen-Bibliothek bestätigt: Schnapp entsteht in Go
-mit [Gio](https://gioui.org), dazu ein kleiner Patch an Gio (ein Vollbild-Overlay je Monitor, gebrochene Skalierung).
-Die erste Fassung (0.1.0) wird geplant.
+Frühe Arbeit. Schnapp nimmt unter KDE Plasma schon auf (Bereich, Monitor, Fenster; Taste **Druck**), legt jeden
+Screenshot in der Bibliothek ab und öffnet ihn in einem Editor, in dem vorhandene Beschriftungen ausgewählt, verschoben
+und in der Größe geändert werden können — die Zeichenwerkzeuge (Pfeile, Kästen, Text, Schwärzen) folgen als Nächstes.
+Schnapp entsteht in Go mit [Gio](https://gioui.org), dazu ein kleiner Patch an Gio (ein Vollbild-Overlay je Monitor,
+gebrochene Skalierung, Mauszeiger bei gemischten Skalen). Die erste Fassung (0.1.0) ist in Arbeit.
 
 ## Geplante Funktionen
 
@@ -31,7 +33,7 @@ Die erste Fassung (0.1.0) wird geplant.
 
 ## Bauen
 
-Bisher nimmt Schnapp unter KDE Plasma einen Bereich, einen Monitor oder ein Fenster auf (eingefrorenes Vollbild-Overlay mit Lupe) und legt den Screenshot in der Bibliothek ab; der Editor fehlt noch. Gio braucht cgo (`libwayland-dev`, `libegl-dev`, `libxkbcommon-dev` oder das Entsprechende deiner Distribution) und die Build-Tags `novulkan,nox11`; sie werden über `GOFLAGS` übergeben (die Go-Umgebung bleibt unverändert):
+Gio braucht cgo (`libwayland-dev`, `libegl-dev`, `libxkbcommon-dev` oder das Entsprechende deiner Distribution) und die Build-Tags `novulkan,nox11`; sie werden über `GOFLAGS` übergeben (die Go-Umgebung bleibt unverändert):
 
 ```sh
 export GOFLAGS=-tags=novulkan,nox11
@@ -42,11 +44,31 @@ Vorhanden ist:
 
 | Pfad | Was es ist | Prüfen |
 |---|---|---|
-| `.` (Wurzel) | Go-Modul `github.com/Andiministrator/schnapp`: das Programm `cmd/schnapp` (bisher nur Optionen), `capture` (Aufnahme über KWin), `document` (Ebenen, Zuschnitt, Schwärzen, Rückgängig), `fileformat` (Arbeitsdatei und Exporte), `library` (Bibliothek), `ui` (Schicht zu Gio), `i18n` (Sprachwahl, gettext-PO-Leser) und `po` (eingebettete Übersetzungen, `po/de.po`); `data/` enthält die Vorlage der Desktop-Datei | `go vet ./... && go test ./...` (mit `GOFLAGS` wie oben) |
+| `.` (Wurzel) | Go-Modul `github.com/Andiministrator/schnapp`: das Programm `cmd/schnapp`, `capture` (Aufnahme über KWin), `selection` (Logik des Overlays), `canvas` (Logik des Editors), `document` (Ebenen, Zuschnitt, Schwärzen, Rückgängig), `fileformat` (Arbeitsdatei und Exporte), `render` (Ebenen zu Pixeln), `library` (Bibliothek), `settings` (`settings.ini`), `ui` (Overlay und Editor in Gio), `i18n` (Sprachwahl, gettext-PO-Leser) und `po` (eingebettete Übersetzungen, `po/de.po`); `data/` enthält die Vorlage der Desktop-Datei | `go vet ./... && go test ./...` (mit `GOFLAGS` wie oben) |
 | `zeichnen/` | Go-Modul `github.com/Andiministrator/schnapp/zeichnen`: SVG lesen, Rasterer mit Kantenglättung, Rechenhilfen (nur Standardbibliothek) | `cd zeichnen && go vet ./... && go test ./...` |
 | `brand/` | Logo, Farben und Corporate Design ([`brand/corporate-design.md`](brand/corporate-design.md), mit PDF) | `python3 brand/werkzeug/paket.py` erzeugt die Logo-Dateien neu |
-| `third_party/gio/` | Gio mit unserem Patch (Vollbild auf gewähltem Monitor, gebrochene Skalierung), eingebunden per `replace` in `go.mod` | `third_party/gio-patch.sh pruefen`, siehe [`third_party/README.md`](third_party/README.md) |
+| `third_party/gio/` | Gio mit unserem Patch (Vollbild auf gewähltem Monitor, gebrochene Skalierung, Mauszeiger bei gemischten Skalen), eingebunden per `replace` in `go.mod` | `third_party/gio-patch.sh pruefen`, siehe [`third_party/README.md`](third_party/README.md) |
 | `prototype/` | Wegwerf-Prototyp, der Gio geprüft hat (braucht Go ≥ 1.27, cgo, `libwayland-client`, `libwayland-egl`, `libwayland-cursor`, `libEGL`, `libxkbcommon`) | `prototype/bauen.sh`, siehe [`prototype/README.md`](prototype/README.md) |
+
+## Benutzung
+
+| Aufruf | Was passiert |
+|---|---|
+| `schnapp` oder `schnapp --region` | Bereich in einem eingefrorenen Vollbild-Overlay wählen (Voreinstellung, **Druck**) |
+| `schnapp --screen[=NAME]` | einen Monitor aufnehmen (ohne Namen laut Einstellung; `--list-screens` nennt die Namen) |
+| `schnapp --window` | ein Fenster wählen |
+| `schnapp --repeat` | den letzten Bereich noch einmal aufnehmen |
+| `schnapp --no-editor …` | aufnehmen, ohne danach den Editor zu öffnen |
+| `schnapp DATEI` | ein PNG oder JPEG im Editor öffnen |
+
+Jede Aufnahme landet in der Bibliothek (`~/Bilder/schnapp/JJJJ-MM/`), ihr Pfad steht auf der Standardausgabe, bevor
+der Editor öffnet. Einstellungen stehen in `~/.config/schnapp/settings.ini`, etwa `[capture] open-editor = false`.
+
+Im Editor: Beschriftung ziehen verschiebt sie, ihre Griffe ändern Größe oder Biegung; das Mausrad zoomt zum Zeiger,
+Ziehen auf freier Fläche oder mit der mittleren Taste verschiebt die Ansicht. Tasten: **Strg+Z** rückgängig,
+**Strg+Umschalt+Z**/**Strg+Y** wiederholen, **Entf** löschen, **Esc** Auswahl aufheben, **Strg+S** speichern,
+**Strg+0** einpassen, **Strg+1** 100 %, **Strg+W** schließen. Änderungen werden beim Schließen gespeichert; eine Datei
+außerhalb der Bibliothek wird dabei zu einer neuen Aufnahme der Bibliothek, die Datei selbst bleibt unverändert.
 
 ## Installation
 
@@ -60,7 +82,7 @@ Vorhanden ist:
 
 Die Desktop-Datei trägt den absoluten Pfad des Programms (KDE Plasma 6.7 und älter binden die Aufnahme-Berechtigung daran) und das Standardkürzel **Druck** für „Bereich aufnehmen“. Spectacle belegt **Druck** ebenfalls: Sind beide installiert, schalte das Kürzel von Spectacle in den Systemeinstellungen (Kurzbefehle) ab. `~/.local/bin` muss in deinem `PATH` liegen.
 
-Entfernen mit `./install.sh --uninstall` (löscht nur diese drei Dateien). `./install.sh --help` listet die Optionen.
+Desktop-Werkzeuge aktualisieren dabei gegebenenfalls ihre Caches (Menü-Datenbank; den Symbol-Cache nur, wenn es schon einen gibt). Entfernen mit `./install.sh --uninstall` (löscht nur diese drei Dateien). `./install.sh --help` listet die Optionen.
 
 ## Dokumentation
 

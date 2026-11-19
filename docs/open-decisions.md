@@ -70,7 +70,7 @@ Stand 19.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
   Arbeitsrechners gesichert.
 
 ## E-12: Lizenz und Nutzungsregeln für Logo und Symbol — ENTSCHIEDEN 19.11.2026 (Andi folgt der Tendenz)
-- Code GPL; Logo mit kurzer Markenregel. Umsetzung: Markenregel in `marke/` und README vor der ersten Paket-Veröffentlichung.
+- Code GPL; Logo mit kurzer Markenregel. Umsetzung: Markenregel in `brand/` und README vor der ersten Paket-Veröffentlichung.
 - **Frage:** Bleiben Logo und Symbol unter GPL-3.0 wie der Code (jeder darf sie ändern und weiterverwenden), oder
   bekommen sie eine eigene Lizenz (z. B. CC BY-SA) bzw. Regeln zur Markennutzung (Abwandlungen dürfen nicht
   „Schnapp“ heißen)?

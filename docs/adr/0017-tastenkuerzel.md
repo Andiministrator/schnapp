@@ -86,3 +86,10 @@ ruft `schnapp --screen` ohne Wert. Was dieser Aufruf tut, legt eine **Einstellun
   Modi kombinieren, mit keinem anderen.
 - `schnapp DATEI` (genau ein Positionsargument, ohne weitere Option) öffnet die Datei im Editor; ein
   Argument, das mit `-` beginnt, bleibt eine Option. Den Pfad gibt Schnapp dabei nicht aus.
+
+## Nachtrag 5 (19.11.2026): Tasten im Editor (#35, Kritik B-8)
+
+Strg+Z rückgängig; Strg+Umschalt+Z und Strg+Y wiederholen; Entf und Rücktaste löschen die Auswahl; Esc bricht einen
+Zug ab, sonst hebt es die Auswahl auf; Strg+S speichern; Strg+0 einpassen; Strg+1 100 %; Strg+W schließen. Maus: Rad
+zoomt zum Zeiger, Ziehen auf freier Fläche oder mit der mittleren Taste verschiebt die Ansicht. Während eines Zugs
+sind Rückgängig, Löschen, Speichern und Zoomen gesperrt (F-18, Kritik A-6). Nutzer-Doku: README.md/README.de.md.

@@ -8,11 +8,19 @@
 #   ./install.sh --help       zeigt diese Hilfe
 #
 # Umgebung: PREFIX (Vorgabe $HOME/.local), XDG_DATA_HOME (Vorgabe $HOME/.local/share).
-# Installiert werden genau drei Dateien:
+# Installiert werden drei Dateien:
 #   $PREFIX/bin/schnapp
 #   $XDG_DATA_HOME/applications/schnapp.desktop
 #   $XDG_DATA_HOME/icons/hicolor/scalable/apps/schnapp.svg
+# Dazu aktualisieren vorhandene Desktop-Werkzeuge ihre Caches (Menü-Datenbank; den Symbol-Cache nur, wenn es ihn
+# schon gibt). --uninstall entfernt nur die drei Dateien.
+#
+# Löschregel (Projekt): rm nur mit nicht leerem Ziel, das genau Präfix + wörtlich ausgeschriebenes Suffix ist. Das
+# Präfix selbst kommt aus PREFIX/XDG_DATA_HOME und ist damit Sache des Aufrufers — wer PREFIX=/usr als root setzt,
+# entfernt /usr/bin/schnapp. Mehr als diese drei fest benannten Dateien kann das Skript nicht löschen.
 set -eu
+
+case "${1:-}" in -h | --help) ;; *) [ "$#" -le 1 ] || { echo "install.sh: zu viele Argumente" >&2; exit 2; } ;; esac
 
 hilfe() {
 	cat <<'EOF'
@@ -27,6 +35,10 @@ Environment:
   XDG_DATA_HOME  data directory (default: $HOME/.local/share)
 EOF
 }
+
+case "${1:-}" in
+	-h | --help) hilfe; exit 0 ;;
+esac
 
 # --- Ziele ------------------------------------------------------------------
 [ -n "${HOME:-}" ] || { echo "install.sh: HOME ist nicht gesetzt" >&2; exit 1; }
@@ -64,7 +76,9 @@ cache_aktualisieren() {
 		update-desktop-database "$DATEN/applications" >/dev/null 2>&1 \
 			|| echo "Warnung: update-desktop-database fehlgeschlagen" >&2
 	fi
-	if command -v gtk-update-icon-cache >/dev/null 2>&1 && [ -d "$DATEN/icons/hicolor" ]; then
+	# Nur einen vorhandenen Symbol-Cache auffrischen: einen neuen anzulegen, ließe GTK später Symbole anderer
+	# Programme übersehen, solange der Cache nicht neu gebaut wird (Kritik B-3).
+	if command -v gtk-update-icon-cache >/dev/null 2>&1 && [ -f "$DATEN/icons/hicolor/icon-theme.cache" ]; then
 		gtk-update-icon-cache -f -t "$DATEN/icons/hicolor" >/dev/null 2>&1 \
 			|| echo "Warnung: gtk-update-icon-cache fehlgeschlagen" >&2
 	fi
@@ -119,7 +133,12 @@ installieren() {
 	exec_pfad="${PROGRAMM//%/%%}"
 	tmp="$DESKTOP.neu"
 	: > "$tmp"
+	im_eintrag=0
 	while IFS= read -r zeile || [ -n "$zeile" ]; do
+		# Die Kommentare vor [Desktop Entry] sind Doku der Vorlage, nicht der installierten Datei (Kritik B-7).
+		if [ "$im_eintrag" = 0 ]; then
+			case "$zeile" in '[Desktop Entry]') im_eintrag=1 ;; *) continue ;; esac
+		fi
 		while :; do
 			case "$zeile" in
 				*@EXEC@*) zeile="${zeile%%@EXEC@*}$exec_pfad${zeile#*@EXEC@}" ;;
