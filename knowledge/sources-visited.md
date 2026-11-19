@@ -73,6 +73,8 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | https://api.github.com/search/repositories?q=schnapp+in:name | 2026-11-19 | 2026-11-19 | live | curl | 129 Treffer, pricerc/schnapp ähnlich | docs/open-decisions.md (E-08) |
 | https://aur.archlinux.org/rpc/v5/search/schnapp | 2026-11-19 | 2026-11-19 | live | curl | 0 Treffer | docs/open-decisions.md (E-08) |
 | https://flathub.org/api/v2/search?q=schnapp | 2026-11-19 | 2026-11-19 | blocked | curl | HTTP 405 | — |
+| https://api.github.com/repos/Andiministrator/schnapp/commits/main | 2026-11-19 | 2026-11-19 | live | curl | Autor/Committer = noreply-Adresse | docs/findings.md (F-1) |
+| https://api.github.com/repos/Andiministrator/schnapp/actions/runs | 2026-11-19 | 2026-11-19 | live | curl | CI-Lauf test: success | — |
 | https://www.gnu.org/licenses/gpl-3.0.txt | 2026-11-19 | 2026-11-19 | live | curl | GPL-3.0-Text | LICENSE |
 
 ## Suchanfragen
