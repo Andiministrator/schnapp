@@ -48,6 +48,20 @@ Vorhanden ist:
 | `third_party/gio/` | Gio mit unserem Patch (Vollbild auf gewähltem Monitor, gebrochene Skalierung), eingebunden per `replace` in `go.mod` | `third_party/gio-patch.sh pruefen`, siehe [`third_party/README.md`](third_party/README.md) |
 | `prototype/` | Wegwerf-Prototyp, der Gio geprüft hat (braucht Go ≥ 1.27, cgo, `libwayland-client`, `libwayland-egl`, `libwayland-cursor`, `libEGL`, `libxkbcommon`) | `prototype/bauen.sh`, siehe [`prototype/README.md`](prototype/README.md) |
 
+## Installation
+
+`./install.sh` baut Schnapp (gleiche Voraussetzungen wie unter „Bauen“; die Version kommt aus `git describe`) und installiert es für den aktuellen Benutzer:
+
+| Datei | Ort |
+|---|---|
+| Programm | `$PREFIX/bin/schnapp` (Vorgabe `~/.local/bin/schnapp`) |
+| Desktop-Datei | `$XDG_DATA_HOME/applications/schnapp.desktop` (Vorgabe `~/.local/share/applications/`) |
+| Symbol | `$XDG_DATA_HOME/icons/hicolor/scalable/apps/schnapp.svg` |
+
+Die Desktop-Datei trägt den absoluten Pfad des Programms (KDE Plasma 6.7 und älter binden die Aufnahme-Berechtigung daran) und das Standardkürzel **Druck** für „Bereich aufnehmen“. Spectacle belegt **Druck** ebenfalls: Sind beide installiert, schalte das Kürzel von Spectacle in den Systemeinstellungen (Kurzbefehle) ab. `~/.local/bin` muss in deinem `PATH` liegen.
+
+Entfernen mit `./install.sh --uninstall` (löscht nur diese drei Dateien). `./install.sh --help` listet die Optionen.
+
 ## Dokumentation
 
 Die Dokumente für Nutzer und Beitragende (diese README, `CONTRIBUTING.de.md`) gibt es auf Englisch und Deutsch. Die

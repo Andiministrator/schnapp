@@ -6,11 +6,11 @@
 # mit Leerzeichen funktioniert. Pfade mit ", `, $ oder \ sind nicht unterstützt: Sie müssten nach der Desktop-Entry-
 # Spezifikation (Abschnitt "The Exec key") mit Backslash maskiert und in der Datei jeder Backslash noch einmal
 # verdoppelt werden. Ein % im Pfad muss als %% stehen (sonst ein ungültiger Feldcode). Das sed-Beispiel versagt
-# zusätzlich bei | (Trennzeichen) und & (fügt @EXEC@ erneut ein). Beispiel (Pfad ohne diese Zeichen; das künftige
-# Installationsskript, Karte #42, maskiert selbst):
+# zusätzlich bei | (Trennzeichen) und & (fügt @EXEC@ erneut ein). Beispiel (Pfad ohne diese Zeichen; install.sh
+# ersetzt @EXEC@ ohne sed, verdoppelt % und lehnt " ` $ \ ab):
 #   sed 's|@EXEC@|/home/<nutzer>/.local/bin/schnapp|' data/schnapp.desktop.in > ~/.local/share/applications/schnapp.desktop
-# Icon=schnapp: Der Name des App-Symbols (brand/logo/svg/schnapp-symbol-*.svg); das Installieren ins Symbolthema
-# folgt mit dem Installationsskript, bis dahin zeigt KDE ein Ersatzsymbol.
+# Icon=schnapp: Name des App-Symbols; install.sh legt brand/logo/svg/schnapp-symbol-dunkel.svg als schnapp.svg ins
+# hicolor-Thema.
 [Desktop Entry]
 Type=Application
 Name=Schnapp

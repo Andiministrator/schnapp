@@ -47,6 +47,20 @@ What exists:
 | `third_party/gio/` | Gio with our patch (multi-monitor fullscreen, fractional scaling), used via `replace` in `go.mod` | `third_party/gio-patch.sh pruefen`, see [`third_party/README.md`](third_party/README.md) (German) |
 | `prototype/` | Throw-away prototype that checked Gio (needs Go ≥ 1.27, cgo, `libwayland-client`, `libwayland-egl`, `libwayland-cursor`, `libEGL`, `libxkbcommon`) | `prototype/bauen.sh`, see [`prototype/README.md`](prototype/README.md) |
 
+## Install
+
+`./install.sh` builds Schnapp (same requirements as under "Building"; the version comes from `git describe`) and installs it for the current user:
+
+| File | Location |
+|---|---|
+| Program | `$PREFIX/bin/schnapp` (default `~/.local/bin/schnapp`) |
+| Desktop file | `$XDG_DATA_HOME/applications/schnapp.desktop` (default `~/.local/share/applications/`) |
+| Icon | `$XDG_DATA_HOME/icons/hicolor/scalable/apps/schnapp.svg` |
+
+The desktop file carries the absolute path of the program (KDE Plasma 6.7 and older bind the screenshot permission to it) and the default shortcut **Print** for "Capture Area". Spectacle uses **Print** as well: if both are installed, turn off Spectacle's shortcut in the system settings (Shortcuts). Make sure `~/.local/bin` is in your `PATH`.
+
+Remove it again with `./install.sh --uninstall` (deletes only these three files). `./install.sh --help` lists the options.
+
 ## Documentation
 
 User-facing documents (this README, `CONTRIBUTING.md`) exist in English and German. The project's working documents
