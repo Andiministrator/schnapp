@@ -82,6 +82,8 @@ type ansicht struct {
 	ersterFrame bool
 	zugFrames   []time.Time
 	zugArbeit   []time.Duration // CPU-Zeit für Aufbau der Ops je Frame
+	zugJeFrame  []int           // Zieh-Ereignisse, die ein Frame auf einmal verarbeitet hat
+	ereignisse  int             // Zieh-Ereignisse seit dem letzten Frame
 	letzteRate  string
 	messDauer   time.Duration
 	messStart   time.Time
@@ -140,7 +142,9 @@ func (a *ansicht) frame(gtx layout.Context, jetzt time.Time) {
 		a.messSchritt(gtx, jetzt)
 	} else if a.zug != nichts {
 		a.zugFrames = append(a.zugFrames, jetzt)
+		a.zugJeFrame = append(a.zugJeFrame, a.ereignisse)
 	}
+	a.ereignisse = 0
 
 	paint.Fill(gtx.Ops, color.NRGBA{R: 0x20, G: 0x20, B: 0x20, A: 0xFF})
 	a.zeichneBild(gtx)
@@ -238,6 +242,7 @@ func (a *ansicht) zeiger(gtx layout.Context) {
 			}
 			a.drueck(e.Position)
 		case pointer.Drag:
+			a.ereignisse++
 			a.zieh(e.Position)
 		case pointer.Release, pointer.Cancel:
 			a.loslassen()
@@ -252,6 +257,7 @@ func (a *ansicht) zeiger(gtx layout.Context) {
 func (a *ansicht) drueck(p f32.Point) {
 	a.zugFrames = a.zugFrames[:0]
 	a.zugArbeit = a.zugArbeit[:0]
+	a.zugJeFrame = a.zugJeFrame[:0]
 	if a.modus == modusAuswahl {
 		a.auswahlA, a.auswahlB, a.hatAuswahl = p, p, true
 		a.zug = auswahlRahmen
@@ -319,6 +325,7 @@ func (a *ansicht) loslassen() {
 		}
 	}
 	a.letzteRate = auswerten(a.zugFrames, a.zugArbeit, "Ziehen")
+	stauAuswerten(a.zugJeFrame)
 	a.zug, a.aktiv = nichts, -1
 }
 
@@ -373,6 +380,7 @@ func (a *ansicht) zoomen(um f32.Point, scroll float32) {
 	b := a.zuBild(um)
 	a.zoom = neu
 	a.versatz = um.Sub(b.Mul(neu))
+	log.Printf("Zoom %.0f %%", neu*100)
 }
 
 func (a *ansicht) zeichneBild(gtx layout.Context) {
@@ -531,4 +539,25 @@ func auswerten(frames []time.Time, arbeit []time.Duration, was string) string {
 		was, len(frames), gesamt.Round(time.Millisecond), rate, p95.Round(100*time.Microsecond),
 		abst[len(abst)-1].Round(100*time.Microsecond), mittel.Round(10*time.Microsecond), maxArbeit.Round(10*time.Microsecond))
 	return fmt.Sprintf("%.0f fps (p95 %.1f ms)", rate, float64(p95.Microseconds())/1000)
+}
+
+// stauAuswerten trennt Ruckeln von Mauspausen: Hält das Zeichnen mit, verarbeitet jeder Frame höchstens
+// ein bis zwei Zieh-Ereignisse. Stauen sich mehr, war ein Frame zu langsam. Frames ohne Ereignis (Maus
+// stand still, Gio zeichnet trotzdem) werden mitgezählt, sagen aber nichts über Ruckeln.
+func stauAuswerten(jeFrame []int) {
+	var summe, maxJe, ueber2, leer int
+	for _, n := range jeFrame {
+		summe += n
+		if n > maxJe {
+			maxJe = n
+		}
+		if n > 2 {
+			ueber2++
+		}
+		if n == 0 {
+			leer++
+		}
+	}
+	log.Printf("Stau: %d Zieh-Ereignisse in %d Frames; je Frame max %d; Frames mit >2 Ereignissen: %d; ohne Ereignis: %d",
+		summe, len(jeFrame), maxJe, ueber2, leer)
 }
