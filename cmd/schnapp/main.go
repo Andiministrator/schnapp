@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/Andiministrator/schnapp/bibliothek"
 	"github.com/Andiministrator/schnapp/einstellungen"
 	"github.com/Andiministrator/schnapp/oberflaeche"
 	"github.com/Andiministrator/schnapp/po"
@@ -75,6 +76,9 @@ type Auftrag struct {
 	// Ziel gilt nur bei ModusBildschirm: Name != "" ist ein bestimmter Monitor (--screen=NAME), sonst entscheidet
 	// Wahl (Einstellung [capture] screen).
 	Ziel Bildschirmziel
+	// Aufraeumen ist [library] cleanup/cleanup-days; es läuft nach dem Speichern, höchstens einmal am Tag
+	// (ADR-0016 Nachtrag 2).
+	Aufraeumen bibliothek.Einstellung
 }
 
 // Bildschirmziel sagt, welcher Monitor aufgenommen wird.
@@ -86,7 +90,7 @@ type Bildschirmziel struct {
 // plane löst den Aufruf mit den Einstellungen auf. Vorrang: Kommandozeile vor Datei vor Voreinstellung
 // (ADR-0018): --screen=NAME ignoriert [capture] screen, --screen ohne Wert folgt ihr.
 func plane(a Aufruf, e einstellungen.Einstellungen) Auftrag {
-	t := Auftrag{Modus: a.Modus}
+	t := Auftrag{Modus: a.Modus, Aufraeumen: e.Bibliothek}
 	if a.Modus == ModusBildschirm {
 		if a.Bildschirm != "" {
 			t.Ziel = Bildschirmziel{Name: a.Bildschirm}

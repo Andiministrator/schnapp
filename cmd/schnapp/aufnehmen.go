@@ -36,6 +36,10 @@ type anschluesse struct {
 	overlay     func([]oberflaeche.MonitorBild, auswahl.Modus) (oberflaeche.OverlayErgebnis, error)
 	ablegen     func(d *dokument.Dokument) (string, error) // liefert den absoluten Pfad der Datei
 	letzterPfad string
+	// aufraeumen räumt die Bibliothek auf; tagesmarke ist die Marke für „höchstens einmal am Tag“. Ohne
+	// aufraeumen (nil) entfällt das Aufräumen.
+	aufraeumen func(e bibliothek.Einstellung, jetzt time.Time) (bibliothek.AufraeumErgebnis, error)
+	tagesmarke string
 }
 
 func echteAnschluesse() anschluesse {
@@ -56,6 +60,14 @@ func echteAnschluesse() anschluesse {
 			return filepath.Join(orte.Ablage, filepath.FromSlash(e.Pfad)), nil
 		},
 		letzterPfad: auswahl.LetzterPfad(os.Getenv),
+		aufraeumen: func(e bibliothek.Einstellung, jetzt time.Time) (bibliothek.AufraeumErgebnis, error) {
+			orte, err := bibliothek.OrteAus(os.Getenv)
+			if err != nil {
+				return bibliothek.AufraeumErgebnis{}, err
+			}
+			return bibliothek.Neu(orte).Aufraeumen(jetzt, e)
+		},
+		tagesmarke: bibliothek.TagesmarkePfad(os.Getenv),
 	}
 }
 
@@ -74,7 +86,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		if err != nil {
 			return meldeFehler(fehler, err)
 		}
-		return an.speichere(b.Pixel, b.Pixel.Bounds(), aus, fehler)
+		return an.speichere(b.Pixel, b.Pixel.Bounds(), t.Aufraeumen, aus, fehler)
 
 	case t.Modus == ModusWiederholen:
 		l, err := auswahl.LadeLetzten(an.letzterPfad)
@@ -97,7 +109,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 			fmt.Fprintln(fehler, sprache.T("The monitor of the last area has changed its size. Select a new area with --region."))
 			return exitFehler
 		}
-		return an.speichere(b.Pixel, l.Bereich, aus, fehler)
+		return an.speichere(b.Pixel, l.Bereich, t.Aufraeumen, aus, fehler)
 
 	case t.Modus == ModusBildschirm && t.Ziel.Name != "":
 		b, err := q.Bildschirm(ctx, t.Ziel.Name, aufnahme.Optionen{})
@@ -105,14 +117,14 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 			return meldeFehler(fehler, err)
 		}
 		an.merke(t.Ziel.Name, b.Pixel, b.Pixel.Bounds(), fehler)
-		return an.speichere(b.Pixel, b.Pixel.Bounds(), aus, fehler)
+		return an.speichere(b.Pixel, b.Pixel.Bounds(), t.Aufraeumen, aus, fehler)
 
 	case t.Modus == ModusBildschirm && t.Ziel.Wahl == einstellungen.WahlZeiger:
 		b, err := q.AktiverBildschirm(ctx, aufnahme.Optionen{})
 		if err != nil {
 			return meldeFehler(fehler, err)
 		}
-		return an.speichere(b.Pixel, b.Pixel.Bounds(), aus, fehler)
+		return an.speichere(b.Pixel, b.Pixel.Bounds(), t.Aufraeumen, aus, fehler)
 
 	case t.Modus == ModusBildschirm && t.Ziel.Wahl == einstellungen.WahlAlle:
 		fmt.Fprintln(fehler, sprache.T("Capturing all monitors at once is not implemented yet."))
@@ -160,13 +172,13 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		return exitFehler
 	}
 	an.merke(monitore[e.Monitor].Name, pixel[e.Monitor], e.Bereich, fehler)
-	return an.speichere(pixel[e.Monitor], e.Bereich, aus, fehler)
+	return an.speichere(pixel[e.Monitor], e.Bereich, t.Aufraeumen, aus, fehler)
 }
 
 // speichere legt den Bereich als neue Aufnahme in der Bibliothek ab und schreibt den Pfad nach aus. Das Original
 // der Arbeitsdatei ist nur der gewählte Bereich, nicht der ganze Monitor: Was der Nutzer nicht gewählt hat, gehört
 // nicht in die Datei (Kernprinzip 3).
-func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, aus, fehler io.Writer) int {
+func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, e bibliothek.Einstellung, aus, fehler io.Writer) int {
 	start := time.Now()
 	defer func() { diagnose(fehler, "Speichern: %v", time.Since(start).Round(time.Millisecond)) }()
 	d, err := dokument.Neu(b.SubImage(bereich))
@@ -179,7 +191,40 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, aus, fe
 		return exitFehler
 	}
 	fmt.Fprintln(aus, pfad)
+	an.raeumeAuf(e, time.Now(), fehler)
 	return exitOK
+}
+
+// raeumeAuf räumt nach dem Speichern die Bibliothek auf, höchstens einmal am Tag (ADR-0016 Nachtrag 2). Die Aufnahme
+// ist dann schon gespeichert: Was hier scheitert, ist nur eine Warnung und ändert den Exit-Code nicht. Auf stdout
+// steht weiter nur der Pfad.
+func (an anschluesse) raeumeAuf(e bibliothek.Einstellung, jetzt time.Time, fehler io.Writer) {
+	if !e.An || an.aufraeumen == nil {
+		return
+	}
+	heute, err := bibliothek.BeanspruchenHeute(an.tagesmarke, jetzt)
+	switch {
+	case errors.Is(err, bibliothek.ErrKeinZustandsordner):
+		fmt.Fprintln(fehler, sprache.T("Automatic cleanup of the library skipped: no state directory (HOME is not set)."))
+		return
+	case err != nil:
+		fmt.Fprintf(fehler, sprache.T("Automatic cleanup of the library skipped: %v")+"\n", err)
+		return
+	case !heute:
+		return
+	}
+	erg, err := an.aufraeumen(e, jetzt)
+	if err != nil {
+		fmt.Fprintf(fehler, sprache.T("Automatic cleanup of the library failed: %v")+"\n", err)
+	}
+	if n := len(erg.Uebersprungen); n > 0 {
+		fmt.Fprintf(fehler, sprache.N("Automatic cleanup could not move %d screenshot to the trash.",
+			"Automatic cleanup could not move %d screenshots to the trash.", n)+"\n", n)
+	}
+	for _, u := range erg.Uebersprungen {
+		diagnose(fehler, "Aufräumen übersprungen: %s: %v", u.Pfad, u.Grund)
+	}
+	diagnose(fehler, "Aufräumen: %d in den Papierkorb", len(erg.Verschoben))
 }
 
 // merke speichert den Bereich für --repeat. Scheitert das, ist die Aufnahme trotzdem gelungen: nur eine Warnung.

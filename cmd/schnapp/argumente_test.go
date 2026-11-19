@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Andiministrator/schnapp/bibliothek"
 	"github.com/Andiministrator/schnapp/einstellungen"
 	"github.com/Andiministrator/schnapp/oberflaeche"
 	"github.com/Andiministrator/schnapp/po"
@@ -118,6 +119,7 @@ func TestLaufeGibtAuftragWeiter(t *testing.T) {
 	}
 	alle := einstellungen.Voreinstellungen()
 	alle.Bildschirm = einstellungen.WahlAlle
+	alle.Bibliothek = bibliothek.Einstellung{An: true, Tage: 7} // F-88: cleanup-days kommt im Auftrag an
 	lade := func() (einstellungen.Einstellungen, []string) { return alle, nil }
 	for _, tc := range []struct {
 		args []string
@@ -130,6 +132,7 @@ func TestLaufeGibtAuftragWeiter(t *testing.T) {
 		{[]string{"--screen"}, Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Wahl: einstellungen.WahlAlle}}},
 		{[]string{"--screen=X"}, Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Name: "X"}}},
 	} {
+		tc.want.Aufraeumen = alle.Bibliothek
 		m := &merkeAuftrag{}
 		var aus, fehler bytes.Buffer
 		code := laufe(tc.args, &aus, &fehler, abfrage, lade, m.ausfuehren)

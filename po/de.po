@@ -164,3 +164,18 @@ msgstr "Kein Zustandsordner (HOME ist nicht gesetzt), darum gibt es keinen letzt
 
 msgid "Could not remember the area for --repeat: no state directory (HOME is not set)."
 msgstr "Der Bereich für --repeat ließ sich nicht merken: kein Zustandsordner (HOME ist nicht gesetzt)."
+
+# cmd/schnapp: automatisches Aufräumen (F-88, ADR-0016 Nachtrag 2)
+msgid "Automatic cleanup of the library skipped: no state directory (HOME is not set)."
+msgstr "Automatisches Aufräumen der Bibliothek ausgelassen: kein Zustandsordner (HOME ist nicht gesetzt)."
+
+msgid "Automatic cleanup of the library skipped: %v"
+msgstr "Automatisches Aufräumen der Bibliothek ausgelassen: %v"
+
+msgid "Automatic cleanup of the library failed: %v"
+msgstr "Automatisches Aufräumen der Bibliothek gescheitert: %v"
+
+msgid "Automatic cleanup could not move %d screenshot to the trash."
+msgid_plural "Automatic cleanup could not move %d screenshots to the trash."
+msgstr[0] "Automatisches Aufräumen konnte %d Aufnahme nicht in den Papierkorb legen."
+msgstr[1] "Automatisches Aufräumen konnte %d Aufnahmen nicht in den Papierkorb legen."
