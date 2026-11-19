@@ -1,6 +1,6 @@
 # Marke Schnapp
 
-Logo, Symbol und Farben. Stand 19.11.2026: **Runde 4, Entwürfe** — noch nichts entschieden.
+Logo, Symbol und Farben. Stand 19.11.2026: **Runde 5, Entwürfe** — noch nichts entschieden.
 
 ## Vorgaben (Andi, 19.11.2026)
 
@@ -14,6 +14,7 @@ Logo, Symbol und Farben. Stand 19.11.2026: **Runde 4, Entwürfe** — noch nicht
   Krokodil ausgemalt und runder; Grün dunkler, Orange heller.
 - Runde 4 (Andi): Richtung ausgemaltes Krokodil; Maul innen nicht orange; Orange an Buckeln, Füßen oder gar nicht
   am Krokodil; das „s“ im Schriftzug orange mit dem Krokodilauge.
+- Runde 5 (Andi): Krokodil weg, nur das orange „s“ mit Auge als Besonderheit.
 
 ## Festlegungen der Entwürfe
 
@@ -25,5 +26,5 @@ Logo, Symbol und Farben. Stand 19.11.2026: **Runde 4, Entwürfe** — noch nicht
 
 ## Entwürfe
 
-`entwuerfe/runde-4/vergleich.html` (aktuell), ältere Runden daneben. Neu erzeugen: `python3 marke/werkzeug/runde4.py`
-(entsprechend `runde1.py` bis `runde3.py`).
+`entwuerfe/runde-5/vergleich.html` (aktuell), ältere Runden daneben. Neu erzeugen: `python3 marke/werkzeug/runde5.py`
+(entsprechend `runde1.py` bis `runde4.py`).
