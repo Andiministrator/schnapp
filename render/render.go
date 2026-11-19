@@ -9,6 +9,7 @@ package render
 
 import (
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
@@ -16,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/gobold"
@@ -28,62 +30,134 @@ import (
 )
 
 // Bild liefert die Ansicht des Dokuments mit allen Objekten. Objekte liegen im Original und werden über
-// Dokument.ZuAnsicht abgebildet; was außerhalb der Ansicht liegt, fällt weg.
+// Dokument.ZuAnsicht abgebildet; was außerhalb der Ansicht liegt, fällt weg. Bild rastert immer vollständig und
+// bricht nie wegen des Aufwands ab: Eine im Editor gemachte Bearbeitung darf nicht am Speichern scheitern (F-131),
+// langsam ist besser als verloren. Gegen präparierte Dateien prüft der Editor beim Öffnen mit Pruefe (ADR-0020
+// Nachtrag 1).
 func Bild(d *document.Dokument) (*image.NRGBA, error) {
 	b, _, err := bildMitAufwand(d)
 	return b, err
 }
 
-// ErrZuAufwendig meldet, dass das Rastern das Rechenbudget (Budget) überschreiten würde (F-125): zu viele oder zu große
-// Beschriftungen, etwa in einer präparierten Arbeitsdatei. Statt minutenlang zu rechnen, liefert Bild diesen Fehler.
-var ErrZuAufwendig = errors.New("render: Bild zu aufwendig zu rastern")
+// ErrZuAufwendig meldet, dass das Rastern eines Dokuments das Rechenbudget (Budget) überschreiten würde: zu viele oder
+// zu große Beschriftungen, etwa in einer präparierten Arbeitsdatei (F-125, F-132). Nur Pruefe liefert ihn, nie Bild.
+var ErrZuAufwendig = errors.New("render: Dokument zu aufwendig zu rastern")
 
-// Budget ist die Obergrenze des Rasteraufwands je Bild (F-125), in Einheiten „Glyphenpixel“: eine gerasterte Glyphe
-// zählt Schriftgrad², eine Füllung das Hundertfache der Fläche ihres (aufs Bild beschnittenen) Rechtecks
-// (fuellGewicht). Das Gewicht stammt aus der Messung: Glyphen rastern mit rund 0,3 ns je Einheit, Füllungen über
-// den allgemeinen NRGBA-Weg von x/draw mit rund 36 ns je Pixel. Stand 19.11.2026, Entwicklungsrechner, ein Kern:
-// 100 Texte „W“ Grad 4096 auf 10×10 brauchten ohne Budget 0,53 s, 100 Nummern Radius 4096 0,41 s (hochgerechnet auf
-// 10000 Objekte ~53 s), 20 Kästen mit Füllung und Rand auf 8000×8000 46 s. Mit Budget bricht jeder dieser Fälle nach
-// höchstens etwa 6 s mit ErrZuAufwendig ab (ein einzelnes Objekt kann das Budget um seine Fläche überschreiten). Ein
-// realistisches Dokument (200 Texte à 50 Zeichen Grad 24 auf 3840×2160, 100 Nummern) kostet gut 20 Mio. Einheiten
-// (48 ms), das Budget ist also rund 600-mal so groß.
+// Kostenmodell (F-125, F-131, F-132). Einheit ist die Rechenzeit, die das Rastern einer Glyphe je Schriftgrad² braucht,
+// rund 0,3 ns (Messung 19.11.2026, Entwicklungsrechner, ein Kern, Karte #71):
+//   - je Glyphe max(Schriftgrad², glyphGrund): Auch kleine Glyphen kosten rund 0,5 µs (Gesichtsaufruf, Maske);
+//   - je Füllung fuellGewicht × Fläche ihres aufs Bild beschnittenen Rechtecks: x/image/vector zeichnet auf NRGBA
+//     über den allgemeinen Weg mit rund 30 bis 36 ns je Pixel (schneller machen: F-130);
+//   - je Polygonecke punktGewicht (Geometrie, Ausrichten, LineTo; rund 30 ns) und je Kante kantenGewicht ×
+//     Zeilenschritte (kantenSchritte, kreisSchritte): Der Rasterizer läuft jede Kante zeilenweise ab, auch die Zeilen
+//     über dem Ausschnitt, und in jeder Zeile im Ausschnitt über ihre ganze waagerechte Spanne, auch außerhalb. Breite
+//     Striche weit außerhalb des Bildes kosten so viel, obwohl der Ausschnitt winzig ist (F-132).
+//
+// Gemessen lag die Renderzeit über alle Fälle (Glyphen groß und winzig, Nummern, breite Pfeile auf winzigen, hohen
+// und breiten Bildern, Kästen mit Eckradius, bildgroße Flächen, viele kleine Objekte) bei 0,02 bis 0,5 ns je Einheit;
+// darüber nur Fälle, deren Gesamtzeit durch MaxObjekte auf Millisekunden begrenzt ist (je Schriftgrad ein neues
+// Schriftgesicht: 10000 Texte 18 ms).
 const (
-	Budget       = 14_000_000_000.0
-	fuellGewicht = 100.0
+	glyphGrund    = 1700.0
+	fuellGewicht  = 100.0
+	kantenGewicht = 3.0
+	punktGewicht  = 100.0
 )
 
-// aufwand zählt, was bisher gerastert wurde.
+// Budget, GlyphBudget und KantenBudget sind die Obergrenzen des Rechenaufwands je Dokument, die der Editor beim
+// Öffnen prüft (Pruefe): für die Summe, für die Glyphen und für Ecken und Kanten. Gemessen am 19.11.2026
+// (Entwicklungsrechner, ein Kern):
+//   - Ein alltagsnahes, großes Dokument (50 bildgroße Rahmen, 50 diagonale Pfeile, 100 Nummern, 200 Texte auf
+//     7680×2160) kostet 1,62e11 Einheiten, fast alles Fläche, und rastert in 48 s. Budget ist knapp 5-mal so groß;
+//     Glyphen (1,7e7) und Kanten (1,5e7) liegen beim 1/580 bzw. 1/650 ihrer Grenze. Eine echte Bearbeitung wird
+//     beim Wiederöffnen also nicht abgelehnt — und beim Speichern ohnehin nie (Bild bricht nicht ab).
+//   - Ein Dokument knapp unter Budget (61 gefüllte, umrandete Kästen auf 8000×8000 plus 590 Glyphen „W“ Grad 4096,
+//     7,9e11) rastert in 4 min 49 s: die längste Wartezeit, die eine präparierte Datei beim Speichern erzwingen kann.
+//     Glyphen allein knapp unter GlyphBudget rastern in 3,3 s, Kanten allein knapp unter KantenBudget in 1,5 bis 4,5 s.
+//     So werden die präparierten Fälle aus F-125 und F-132 (10000 große Glyphen oder Nummern, 10000 sehr breite
+//     Pfeile, 10000 Texte à 10000 winziger Glyphen, Hunderte bildgroßer Flächen) beim Öffnen abgelehnt.
+//
+// Kleiner lässt sich Budget nicht wählen, ohne alltagsnahe Dokumente abzulehnen: Bildgroße Flächen kosten heute rund
+// 0,6 s je Stück auf 7680×2160. Mit schnellerem Füllen (F-130) sinkt fuellGewicht, dann auch Budget.
+// Die verbleibende Wartezeit von bis zu rund 5 min ist eine bewusste Entscheidung (F-135, akzeptiert für Sprint 4):
+// lieber eine präparierte Datei langsam speichern als eine echte Bearbeitung ablehnen (F-131).
+const (
+	Budget       = 8e11
+	GlyphBudget  = 1e10
+	KantenBudget = 1e10
+)
+
+// grenzen sind die wirksamen Obergrenzen von Pruefe; nur Tests setzen sie kleiner.
+var grenzen = struct{ gesamt, glyph, kanten float64 }{Budget, GlyphBudget, KantenBudget}
+
+// aufwand zählt die Kosten nach dem Kostenmodell, getrennt nach Glyphen, Füllflächen und Kanten samt Ecken.
 type aufwand struct {
-	summe   float64 // Pixel-Aufwand, siehe Budget
-	glyphen int     // Anzahl gerasterter Glyphen (Zählnahtstelle für Tests)
+	glyph, flaeche, kanten float64
+	glyphen                int // Anzahl gerasterter Glyphen (Zählnahtstelle für Tests; im Trockenlauf 0)
 }
 
-// budget ist die wirksame Obergrenze; nur Tests setzen sie kleiner, damit sie nicht Sekunden rechnen.
-var budget = Budget
+// summe ist der ganze Rechenaufwand.
+func (a aufwand) summe() float64 { return a.glyph + a.flaeche + a.kanten }
 
-func (a *aufwand) ueber() bool { return a.summe > budget }
+// Aufwand liefert den Rechenaufwand, den Bild für d hätte, ohne zu rastern: ein Trockenlauf desselben Zeichners, der
+// die Geometrie berechnet und die Kosten zählt, aber weder Rasterizer noch Schrift aufruft. So laufen Kostenmodell
+// und echtes Rendern nicht auseinander; Bild zählt dieselbe Summe.
+func Aufwand(d *document.Dokument) float64 { return trockenlauf(d).summe() }
+
+func trockenlauf(d *document.Dokument) aufwand {
+	z := zeichner{d: d, rand: image.Rectangle{Max: d.Groesse()}, auf: &aufwand{}}
+	for _, o := range d.Objekte() {
+		_ = z.objekt(o) // ohne Schrift kein Fehler
+	}
+	return *z.auf
+}
+
+// Pruefe meldet ErrZuAufwendig, wenn das Rastern von d das Budget überschritte (F-125, F-132). Der Editor ruft es
+// beim Öffnen einer Datei auf, nicht beim Speichern.
+func Pruefe(d *document.Dokument) error {
+	a := trockenlauf(d)
+	switch {
+	case a.summe() > grenzen.gesamt:
+		return fmt.Errorf("%w (Aufwand %.3g, Budget %.3g)", ErrZuAufwendig, a.summe(), grenzen.gesamt)
+	case a.glyph > grenzen.glyph:
+		return fmt.Errorf("%w (Glyphen %.3g, Budget %.3g)", ErrZuAufwendig, a.glyph, grenzen.glyph)
+	case a.kanten > grenzen.kanten:
+		return fmt.Errorf("%w (Kanten %.3g, Budget %.3g)", ErrZuAufwendig, a.kanten, grenzen.kanten)
+	}
+	return nil
+}
 
 // bildMitAufwand ist Bild und liefert zusätzlich den Aufwand (für Tests).
 func bildMitAufwand(d *document.Dokument) (*image.NRGBA, aufwand, error) {
 	b := d.Ansichtsbild()
-	z := zeichner{bild: b, d: d, faces: map[faceSchluessel]font.Face{}, auf: &aufwand{}}
+	z := zeichner{bild: b, rand: b.Bounds(), d: d, faces: map[faceSchluessel]font.Face{}, auf: &aufwand{}}
 	defer z.schliessen()
 	for _, o := range d.Objekte() {
 		if err := z.objekt(o); err != nil {
 			return nil, *z.auf, err
 		}
-		if z.auf.ueber() {
-			return nil, *z.auf, ErrZuAufwendig
-		}
 	}
 	return b, *z.auf, nil
 }
 
+// zeichner rastert die Objekte in bild; ist bild nil, ist es der Trockenlauf (Aufwand): nur Geometrie und Kosten.
 type zeichner struct {
 	bild  *image.NRGBA
+	rand  image.Rectangle // Grenzen der Ansicht (auch im Trockenlauf)
 	d     *document.Dokument
 	faces map[faceSchluessel]font.Face
 	auf   *aufwand
+}
+
+func (z zeichner) trocken() bool { return z.bild == nil }
+
+// glyphKosten sind die Kosten von n Glyphen im Schriftgrad grad (Kostenmodell).
+func glyphKosten(n int, grad float64) float64 { return float64(n) * math.Max(grad*grad, glyphGrund) }
+
+// zeichenzahl zählt die Glyphen, die eine Zeile höchstens erzeugt: Tabulator wird zu vier Leerzeichen
+// (document.Zeichenbar), entfernte Steuerzeichen zählen mit (obere Schranke, billig ohne Umwandeln).
+func zeichenzahl(zeile string) int {
+	return utf8.RuneCountInString(zeile) + 3*strings.Count(zeile, "\t")
 }
 
 func (z zeichner) schliessen() {
@@ -108,12 +182,12 @@ func (z zeichner) objekt(o document.Objekt) error {
 		nrm := document.Pt(-r.Y, r.X)
 		fuss := v.B.Minus(r.Mal(g))
 		z.fuelle([][]document.Punkt{{z.ansicht(v.B), z.ansicht(fuss.Plus(nrm.Mal(g / 2))),
-			z.ansicht(fuss.Minus(nrm.Mal(g / 2)))}}, v.Strich.Farbe)
+			z.ansicht(fuss.Minus(nrm.Mal(g / 2)))}}, nil, v.Strich.Farbe)
 	case document.Kasten:
 		r := document.R(z.ansicht(v.Bereich.Min), z.ansicht(v.Bereich.Max))
 		umriss := rundesRechteck(r, v.Eckradius)
 		if v.Fuellung.A > 0 {
-			z.fuelle([][]document.Punkt{umriss}, v.Fuellung)
+			z.fuelle([][]document.Punkt{umriss}, nil, v.Fuellung)
 		}
 		if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
 			z.strich(umriss, true, v.Strich)
@@ -122,41 +196,123 @@ func (z zeichner) objekt(o document.Objekt) error {
 		if v.Hintergrund.A > 0 {
 			g := v.Grenzen()
 			r := document.R(z.ansicht(g.Min), z.ansicht(g.Max))
-			z.fuelle([][]document.Punkt{rundesRechteck(r, 0)}, v.Hintergrund)
+			z.fuelle([][]document.Punkt{rundesRechteck(r, 0)}, nil, v.Hintergrund)
 		}
-		face, err := z.schrift(false, v.Schriftgrad)
-		if err != nil {
-			return err
+		var face font.Face
+		if !z.trocken() {
+			var err error
+			if face, err = z.schrift(false, v.Schriftgrad); err != nil {
+				return err
+			}
 		}
 		ort := z.ansicht(v.Ort)
 		for i, zeile := range strings.Split(v.Inhalt, "\n") {
+			grundlinie := ort.Y + v.Schriftgrad*(1+1.3*float64(i))
+			if !z.zeileSichtbar(ort.X, grundlinie, v.Schriftgrad) {
+				continue
+			}
+			z.auf.glyph += glyphKosten(zeichenzahl(zeile), v.Schriftgrad)
+			if z.trocken() {
+				continue
+			}
 			// Tabulator als vier Leerzeichen, Wagenrücklauf weg: die Go-Schrift hat für beide keine Glyphe (Kritik A-3).
-			zeile = document.Zeichenbar(zeile)
-			z.text(face, zeile, ort.X, ort.Y+v.Schriftgrad*(1+1.3*float64(i)), v.Farbe, v.Schriftgrad)
+			z.text(face, document.Zeichenbar(zeile), ort.X, grundlinie, v.Farbe, v.Schriftgrad)
 		}
 	case document.Nummer:
 		m := z.ansicht(v.Mitte)
-		z.fuelle([][]document.Punkt{kreis(m, v.Radius)}, v.Farbe)
-		face, err := z.schrift(true, v.Radius*1.2)
+		z.fuelle(nil, []kreisform{{m, v.Radius}}, v.Farbe)
+		s := strconv.Itoa(v.Wert)
+		grad := v.Radius * 1.2
+		// Die Ziffern stehen mittig um m, weniger als len(s) × 0,8 em breit (Go Bold, mit Rand) und nicht höher als der
+		// Schriftgrad; was dieses Rechteck nicht ins Bild bringt, kostet nichts und wird nicht gezeichnet.
+		halb := grad * (0.4*float64(len(s)) + 1)
+		if !image.Rect(int(math.Floor(m.X-halb)), int(math.Floor(m.Y-grad)),
+			int(math.Ceil(m.X+halb)), int(math.Ceil(m.Y+grad))).Overlaps(z.rand) {
+			return nil
+		}
+		z.auf.glyph += glyphKosten(len(s), grad)
+		if z.trocken() {
+			return nil
+		}
+		face, err := z.schrift(true, grad)
 		if err != nil {
 			return err
 		}
-		s := strconv.Itoa(v.Wert)
 		breite := float64(font.MeasureString(face, s)) / 64
 		// Senkrecht mittig wie dominant-baseline="central": Grundlinie um die halbe Ziffernhöhe unter der Mitte.
 		hoehe := float64(face.Metrics().CapHeight) / 64
-		z.text(face, s, m.X-breite/2, m.Y+hoehe/2, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, v.Radius*1.2)
+		z.text(face, s, m.X-breite/2, m.Y+hoehe/2, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, grad)
 	}
 	return nil
 }
 
-// fuelle füllt Polygone (Ansichtskoordinaten) mit Kantenglättung. Alle Polygone werden gleich ausgerichtet, damit
-// Überlappungen sich addieren statt aufzuheben.
-func (z zeichner) fuelle(polys [][]document.Punkt, farbe color.NRGBA) {
-	if farbe.A == 0 || z.auf.ueber() {
+// zeileSichtbar meldet, ob eine Textzeile ab x auf dieser Grundlinie das Bild schneiden kann — dieselben Grenzen wie
+// in text (senkrecht; rechts beginnt die erste Glyphe hinter dem Rand).
+func (z zeichner) zeileSichtbar(x, grundlinie, grad float64) bool {
+	return grundlinie-grad*1.5 <= float64(z.rand.Max.Y) && grundlinie+grad >= float64(z.rand.Min.Y) &&
+		x <= float64(z.rand.Max.X)+1.25*grad
+}
+
+// kreisform ist ein Kreis, der erst beim Rastern zum Polygon wird (kreis): Der Trockenlauf zählt seine Kosten aus
+// Mitte und Radius, ohne bis zu 256 Ecken zu berechnen.
+type kreisform struct {
+	m document.Punkt
+	r float64
+}
+
+// kreisEcken ist die Eckenzahl, mit der kreis einen Kreis vom Radius r annähert.
+func kreisEcken(r float64) int { return int(math.Min(256, math.Max(16, r*2))) }
+
+// fuelle füllt Polygone und Kreise (Ansichtskoordinaten) mit Kantenglättung. Alle Polygone werden gleich
+// ausgerichtet, damit Überlappungen sich addieren statt aufzuheben; die Kreise kommen nach den Polygonen.
+func (z zeichner) fuelle(polys [][]document.Punkt, kreise []kreisform, farbe color.NRGBA) {
+	if farbe.A == 0 {
 		return
 	}
-	// Nur das umschließende Rechteck der Polygone rastern (sonst kostet jedes Objekt das ganze Bild).
+	// Kosten aus Polygonpunkten und Kreisen (Mitte ± Radius umschließt alle Ecken von kreis); Trockenlauf und
+	// Rendern rechnen dieselbe Summe.
+	minX, minY := math.Inf(1), math.Inf(1)
+	maxX, maxY := math.Inf(-1), math.Inf(-1)
+	punkte := 0
+	for _, p := range polys {
+		if len(p) < 3 {
+			continue
+		}
+		punkte += len(p)
+		for _, q := range p {
+			minX, minY = math.Min(minX, q.X), math.Min(minY, q.Y)
+			maxX, maxY = math.Max(maxX, q.X), math.Max(maxY, q.Y)
+		}
+	}
+	for _, k := range kreise {
+		punkte += kreisEcken(k.r)
+		minX, minY = math.Min(minX, k.m.X-k.r), math.Min(minY, k.m.Y-k.r)
+		maxX, maxY = math.Max(maxX, k.m.X+k.r), math.Max(maxY, k.m.Y+k.r)
+	}
+	if minX > maxX {
+		return
+	}
+	huelle := image.Rect(int(math.Floor(minX)), int(math.Floor(minY)), int(math.Ceil(maxX))+1, int(math.Ceil(maxY))+1).
+		Intersect(z.rand)
+	if huelle.Empty() {
+		return // auch das (kleinere) Rechteck der Ecken liegt dann außerhalb
+	}
+	oy := float64(huelle.Min.Y)
+	z.auf.flaeche += fuellGewicht * float64(huelle.Dx()) * float64(huelle.Dy())
+	z.auf.kanten += punktGewicht*float64(punkte) +
+		kantenGewicht*(kantenSchritte(polys, oy, huelle.Dy())+kreisSchritte(kreise, oy, huelle.Dy()))
+	if z.trocken() {
+		return
+	}
+	for _, k := range kreise {
+		polys = append(polys, kreis(k.m, k.r))
+	}
+	z.raster(polys, farbe)
+}
+
+// raster füllt die Polygone; gerastert wird nur das umschließende Rechteck ihrer Ecken (sonst kostet jedes Objekt das
+// ganze Bild).
+func (z zeichner) raster(polys [][]document.Punkt, farbe color.NRGBA) {
 	minX, minY := math.Inf(1), math.Inf(1)
 	maxX, maxY := math.Inf(-1), math.Inf(-1)
 	for _, p := range polys {
@@ -172,11 +328,10 @@ func (z zeichner) fuelle(polys [][]document.Punkt, farbe color.NRGBA) {
 		return
 	}
 	ausschnitt := image.Rect(int(math.Floor(minX)), int(math.Floor(minY)), int(math.Ceil(maxX))+1, int(math.Ceil(maxY))+1).
-		Intersect(z.bild.Bounds())
+		Intersect(z.rand)
 	if ausschnitt.Empty() {
 		return
 	}
-	z.auf.summe += fuellGewicht * float64(ausschnitt.Dx()) * float64(ausschnitt.Dy())
 	ox, oy := float64(ausschnitt.Min.X), float64(ausschnitt.Min.Y)
 	r := vector.NewRasterizer(ausschnitt.Dx(), ausschnitt.Dy())
 	r.DrawOp = draw.Over
@@ -194,6 +349,62 @@ func (z zeichner) fuelle(polys [][]document.Punkt, farbe color.NRGBA) {
 		r.ClosePath()
 	}
 	r.Draw(z.bild, ausschnitt, image.NewUniform(farbe), image.Point{})
+}
+
+// kantenSchritte zählt, wie viele Schritte der Rasterizer (x/image/vector, LineTo) für die Kanten der Polygone geht,
+// bei einem Ausschnitt der Höhe hoehe ab Zeile oy: je Kante einen Aufruf, je Zeile von ihrem oberen Ende bis zum
+// unteren Ende oder Ausschnittsrand einen Schritt (auch über dem Ausschnitt), und in den Zeilen im Ausschnitt die
+// waagerechte Spanne in Pixeln plus zwei (vector zählt sie auch außerhalb der Breite ab).
+func kantenSchritte(polys [][]document.Punkt, oy float64, hoehe int) float64 {
+	h := float64(hoehe)
+	var s float64
+	for _, p := range polys {
+		if len(p) < 3 {
+			continue
+		}
+		for i, a := range p {
+			b := p[(i+1)%len(p)]
+			s++
+			oben, unten := math.Min(a.Y, b.Y)-oy, math.Max(a.Y, b.Y)-oy
+			if unten-oben <= 1e-6 {
+				continue
+			}
+			von, bis := math.Floor(oben), math.Min(math.Ceil(unten), h)
+			if bis <= von {
+				continue
+			}
+			innen := bis - math.Max(von, 0)
+			s += bis - von
+			if innen > 0 {
+				dx := math.Abs(b.X - a.X)
+				s += 2*innen + math.Min(dx, innen*dx/(unten-oben))
+			}
+		}
+	}
+	return s
+}
+
+// kreisSchritte schätzt kantenSchritte für die Ecken von kreis nach oben ab, ohne sie zu berechnen: Jede Hälfte läuft
+// die Zeilen vom oberen Rand bis zum unteren Rand oder Ausschnittsrand ab (je Kante höchstens eine Zeile mehr), in
+// den Zeilen im Ausschnitt mit zwei Schritten je Zeile und Kante, die waagerechte Spanne beider Hälften zusammen ist
+// höchstens 4 r.
+func kreisSchritte(kreise []kreisform, oy float64, hoehe int) float64 {
+	h := float64(hoehe)
+	var s float64
+	for _, k := range kreise {
+		n := float64(kreisEcken(k.r))
+		s += 2 * n
+		von, bis := math.Floor(k.m.Y-k.r-oy), math.Min(math.Ceil(k.m.Y+k.r-oy), h)
+		if bis <= von {
+			continue
+		}
+		innen := bis - math.Max(von, 0)
+		s += 2 * (bis - von)
+		if innen > 0 {
+			s += 2*(2*innen+n) + 4*k.r
+		}
+	}
+	return s
 }
 
 // strich zieht einen Linienzug der Breite s.Breite mit runden Enden und Ecken: je Strecke ein Viereck, je Punkt ein
@@ -219,18 +430,19 @@ func (z zeichner) strich(pts []document.Punkt, geschlossen bool, s document.Stri
 		nrm := document.Pt(-d.Y/l*hw, d.X/l*hw)
 		polys = append(polys, []document.Punkt{a.Plus(nrm), b.Plus(nrm), b.Minus(nrm), a.Minus(nrm)})
 	}
-	for _, p := range pts {
-		polys = append(polys, kreis(p, hw))
+	kreise := make([]kreisform, len(pts))
+	for i, p := range pts {
+		kreise[i] = kreisform{p, hw}
 	}
-	z.fuelle(polys, s.Farbe)
+	z.fuelle(polys, kreise, s.Farbe)
 }
 
 // text zeichnet eine Zeile. Was das Bild nicht schneidet, wird nicht gerastert (F-118): eine Zeile, deren Höhe ganz
-// über oder unter dem Bild liegt, entfällt, ebenso jede Glyphe, die um mehr als einen Schriftgrad links oder rechts
-// vom Bild liegt (Vorschub und Unterschneidung laufen weiter, damit sichtbare Glyphen am selben Ort stehen). Jede
-// gerasterte Glyphe zählt Schriftgrad² zum Aufwand (F-125); über dem Budget wird nicht weiter gerastert.
+// über oder unter dem Bild liegt, entfällt, ebenso jede Glyphe, deren Ursprung mehr als 1,25 Schriftgrade links oder
+// rechts vom Bild liegt (Vorschub und Unterschneidung laufen weiter, damit sichtbare Glyphen am selben Ort stehen).
+// Die Kosten zählt der Aufrufer (glyphKosten), auch im Trockenlauf.
 func (z zeichner) text(face font.Face, s string, x, grundlinie float64, farbe color.NRGBA, grad float64) {
-	rand := z.bild.Bounds()
+	rand := z.rand
 	if grundlinie-grad*1.5 > float64(rand.Max.Y) || grundlinie+grad < float64(rand.Min.Y) {
 		return
 	}
@@ -252,10 +464,6 @@ func (z zeichner) text(face font.Face, s string, x, grundlinie float64, farbe co
 			dot.X += adv
 			continue
 		}
-		if z.auf.ueber() {
-			return
-		}
-		z.auf.summe += grad * grad
 		z.auf.glyphen++
 		dr.Dot = dot
 		dr.DrawString(string(c))
@@ -265,7 +473,7 @@ func (z zeichner) text(face font.Face, s string, x, grundlinie float64, farbe co
 
 // kreis nähert einen Kreis mit genug Ecken für glatte Ränder an.
 func kreis(m document.Punkt, r float64) []document.Punkt {
-	n := int(math.Min(256, math.Max(16, r*2)))
+	n := kreisEcken(r)
 	pts := make([]document.Punkt, n)
 	for i := range pts {
 		w := 2 * math.Pi * float64(i) / float64(n)

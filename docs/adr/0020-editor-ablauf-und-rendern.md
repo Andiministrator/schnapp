@@ -58,8 +58,19 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
 - Bildschirm und Renderer nutzen dieselben Go-Schriften (keine Systemschriften); Tabulator wird als vier Leerzeichen
   gezeichnet. Schriftgrad und Nummer-Radius sind auf `document.MaxSchrift` = 4096 begrenzt ([S], Speicher); Zeichen je Text (`MaxTextZeichen` = 10000) und Objekte je Dokument (`MaxObjekte` = 10000)
   sind begrenzt, Überschreitung ist ein Fehler auch beim Lesen einer Arbeitsdatei ([S], Rechenzeit, F-118); der Renderer
-  rastert Zeilen und Glyphen nicht, die das Bild nicht schneiden. Innerhalb dieser Grenzen deckelt ein Rechenbudget
-  (`render.Budget`, Glyphenfläche plus gewichtete Füllfläche, F-125) den Aufwand je Bild auf etwa 6 s; darüber liefert
-  `render.Bild` `ErrZuAufwendig`, der Editor meldet „zu viele oder zu große Beschriftungen“.
+  rastert Zeilen und Glyphen nicht, die das Bild nicht schneiden. Innerhalb dieser Grenzen schützt ein Rechenbudget
+  gegen präparierte Dateien (F-125, F-131, F-132, Karte #71): Beim Öffnen im Editor rechnet `render.Pruefe` den
+  Aufwand per Trockenlauf desselben Zeichners (Geometrie und Kosten, ohne Rastern, Millisekunden) und lehnt das
+  Dokument ab, wenn die Summe `render.Budget`, die Glyphen `render.GlyphBudget` oder die Kanten `render.KantenBudget`
+  überschreiten; der Editor meldet „zu viele oder zu große Beschriftungen, um sie zu öffnen“. Kostenmodell: je Glyphe
+  max(Grad², Grundkosten), je Füllung gewichtete Fläche des beschnittenen Rechtecks, je Polygonkante die Zeilenschritte
+  des Rasterizers samt Ecken. **Speichern bricht nie ab:** `render.Bild` rastert immer vollständig, eine im Editor
+  gemachte Bearbeitung geht nicht am Budget verloren (langsam ist besser als verloren). Gemessen 19.11.2026
+  (Entwicklungsrechner, ein Kern): ein alltagsnahes großes Dokument (50 bildgroße Rahmen, 50 diagonale Pfeile, 100
+  Nummern, 200 Texte auf 7680×2160) braucht 48 s und liegt bei knapp einem Fünftel des Budgets; ein
+  Dokument knapp unter dem Budget rastert in knapp 5 min — das ist die Wartezeit, die eine präparierte Datei beim
+  Speichern erzwingen kann. Glyphen und Kanten allein sind auf rund 3 bis 5 s begrenzt. Senken lässt sich das Budget
+  erst mit schnellerem Füllen (F-130). Die Wartezeit bis knapp 5 min ist bewusst hingenommen (F-135, Claudes
+  Entscheidung im Sprint-Abschluss 4, Andi informiert).
 - Offen (eigene Karten): Speichern bei Signal/Absturz und Konflikt zweier Editoren (F-107, F-110), Angleichen der
   Maße an den SVG-Export (F-108).

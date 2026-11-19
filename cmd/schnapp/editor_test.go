@@ -234,12 +234,59 @@ func TestNutzerFehler(t *testing.T) {
 		ui.ErrOverlayOffen: "The selection overlay did not close in time.",
 		speicherFehler(fmt.Errorf("x: %w", os.ErrPermission)):                             "No permission to write the file.",
 		speicherFehler(errors.Join(errors.New("a"), fmt.Errorf("b: %w", syscall.ENOSPC))): "Not enough disk space.",
-		speicherFehler(fmt.Errorf("x: %w", render.ErrZuAufwendig)):                        "The image has too many or too large annotations to save.",
+		fmt.Errorf("x: %w", render.ErrZuAufwendig):                                        "This file has too many or too large annotations to open.",
 		speicherFehler(errors.New("/irgendwo/datei.png: kaputt")):                         "The file could not be written.",
 		errors.New("x"): "x",
 	} {
 		if got := nutzerFehler(err); got != soll {
 			t.Errorf("%v: %q, Soll %q", err, got, soll)
+		}
+	}
+}
+
+// F-125, F-131, F-132: Eine Arbeitsdatei, deren Rastern das Rechenbudget überschritte, öffnet der Editor nicht
+// (Meldung übersetzt); knapp darunter öffnet sie. Geprüft wird nur beim Öffnen, nicht beim Speichern.
+func TestOeffnenLehntZuAufwendigeDateiAb(t *testing.T) {
+	i18n.Setze(nil)
+	dir := t.TempDir()
+	// Je Glyphe „W“ im Grad 4096 kostet das Rastern 4096² Einheiten; über GlyphBudget wird abgelehnt.
+	budget := render.GlyphBudget
+	grenze := int(budget / (4096 * 4096))
+	for _, fall := range []struct {
+		n         int
+		abgelehnt bool
+	}{{grenze + 1, true}, {grenze - 5, false}} {
+		d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 10, 10)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i := 0; i < fall.n; i++ {
+			if _, err := d.Hinzufuegen(document.Text{Ort: document.Pt(0, 0), Inhalt: "W", Schriftgrad: 4096,
+				Farbe: color.NRGBA{R: 255, A: 255}}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		pfad := filepath.Join(dir, fmt.Sprintf("w%d.png", fall.n))
+		f, err := os.Create(pfad)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := fileformat.SchreibeArbeitsdatei(f, d, d.Ansichtsbild(), fileformat.Metadaten{}); err != nil {
+			t.Fatal(err)
+		}
+		f.Close()
+		_, g, err := ladeFuerEditor(pfad)
+		if !fall.abgelehnt {
+			if err != nil || len(g.Dokument.Objekte()) != fall.n {
+				t.Errorf("%d Glyphen (unter dem Budget): %v", fall.n, err)
+			}
+			continue
+		}
+		if !errors.Is(err, render.ErrZuAufwendig) {
+			t.Fatalf("%d Glyphen: %v, Soll render.ErrZuAufwendig", fall.n, err)
+		}
+		if got, soll := nutzerFehler(err), "This file has too many or too large annotations to open."; got != soll {
+			t.Errorf("Meldung %q, Soll %q", got, soll)
 		}
 	}
 }

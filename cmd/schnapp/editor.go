@@ -23,11 +23,7 @@ import (
 // Speichern als neue Aufnahme in die Bibliothek, danach wird diese fortgeschrieben. Die geöffnete Datei selbst bleibt
 // dann unberührt.
 func oeffneImEditor(pfad string) error {
-	abs, err := filepath.Abs(pfad)
-	if err != nil {
-		return err
-	}
-	g, err := fileformat.Oeffne(abs)
+	abs, g, err := ladeFuerEditor(pfad)
 	if err != nil {
 		return err
 	}
@@ -36,6 +32,24 @@ func oeffneImEditor(pfad string) error {
 		return err
 	}
 	return ui.Editor(filepath.Base(abs), g.Dokument, speichernIn(library.Neu(orte), abs, g))
+}
+
+// ladeFuerEditor liest eine Datei für den Editor (von außen oder aus der Bibliothek) und lehnt ein Dokument ab, dessen
+// Rastern das Rechenbudget überschritte (render.Pruefe, F-125, F-132): Gegen präparierte Dateien wird beim Öffnen
+// geprüft, damit Speichern nie abbrechen muss (F-131, ADR-0020 Nachtrag 1).
+func ladeFuerEditor(pfad string) (string, *fileformat.Gelesen, error) {
+	abs, err := filepath.Abs(pfad)
+	if err != nil {
+		return "", nil, err
+	}
+	g, err := fileformat.Oeffne(abs)
+	if err != nil {
+		return "", nil, err
+	}
+	if err := render.Pruefe(g.Dokument); err != nil {
+		return "", nil, err
+	}
+	return abs, g, nil
 }
 
 // speichernIn liefert die Speicherfunktion für den Editor. Gescheiterte Nebenschritte (Index, Vorschau) sind kein
@@ -116,8 +130,6 @@ func speicherFehler(err error) error {
 		text = i18n.T("Not enough disk space.")
 	case errors.Is(err, library.ErrKeinHeim):
 		text = i18n.T("No home directory (HOME is not set).")
-	case errors.Is(err, render.ErrZuAufwendig):
-		text = i18n.T("The image has too many or too large annotations to save.")
 	default:
 		text = i18n.T("The file could not be written.")
 	}
@@ -148,6 +160,8 @@ func nutzerFehler(err error) string {
 		return i18n.T("The selection overlay did not close in time.")
 	case errors.Is(err, library.ErrKeinHeim):
 		return i18n.T("No home directory (HOME is not set).")
+	case errors.Is(err, render.ErrZuAufwendig):
+		return i18n.T("This file has too many or too large annotations to open.")
 	}
 	return err.Error()
 }
