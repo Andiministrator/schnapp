@@ -179,3 +179,13 @@ msgid "Automatic cleanup could not move %d screenshot to the trash."
 msgid_plural "Automatic cleanup could not move %d screenshots to the trash."
 msgstr[0] "Automatisches Aufräumen konnte %d Aufnahme nicht in den Papierkorb legen."
 msgstr[1] "Automatisches Aufräumen konnte %d Aufnahmen nicht in den Papierkorb legen."
+
+# cmd/schnapp: Editor öffnen (ADR-0020, ADR-0017 Nachtrag 4)
+msgid "A file cannot be combined with %s."
+msgstr "Eine Datei lässt sich nicht mit %s kombinieren."
+
+msgid "Do not open the editor after capturing"
+msgstr "Nach der Aufnahme keinen Editor öffnen"
+
+msgid "Open FILE in the editor"
+msgstr "DATEI im Editor öffnen"

@@ -78,10 +78,10 @@ func TestLadeRelativesXDG(t *testing.T) {
 
 func TestGueltigeDateiMitKommentaren(t *testing.T) {
 	pfad := umgebung(t)
-	schreibe(t, pfad, "\xef\xbb\xbf# Kommentar\r\n; noch einer\n\n  [capture]  \n   # eingerückt\n  screen   =   pointer  \n\n"+
+	schreibe(t, pfad, "\xef\xbb\xbf# Kommentar\r\n; noch einer\n\n  [capture]  \n   # eingerückt\n  screen   =   pointer  \nopen-editor = false\n\n"+
 		"[library]\ncleanup=false\n\tcleanup-days =\t30\r\n")
 	e, warn := Lade()
-	want := Einstellungen{Bildschirm: WahlZeiger, Bibliothek: library.Einstellung{An: false, Tage: 30}}
+	want := Einstellungen{Bildschirm: WahlZeiger, Editor: false, Bibliothek: library.Einstellung{An: false, Tage: 30}}
 	if e != want || len(warn) != 0 {
 		t.Errorf("%+v, Warnungen %q; erwartet %+v ohne Warnung", e, warn, want)
 	}
@@ -117,6 +117,26 @@ func TestCleanup(t *testing.T) {
 	e, warn := Lade()
 	if !e.Bibliothek.An || len(warn) != 1 || !strings.Contains(warn[0], ":2: Invalid value \"ja\" for key \"cleanup\"") {
 		t.Errorf("cleanup ja: %+v, %q", e, warn)
+	}
+}
+
+// [capture] open-editor: Voreinstellung an (ADR-0020), true/false, sonst Warnung und Voreinstellung.
+func TestEditorEinstellung(t *testing.T) {
+	pfad := umgebung(t)
+	for _, tc := range []struct {
+		inhalt string
+		editor bool
+		warn   int
+	}{
+		{"[capture]\n", true, 0},
+		{"[capture]\nopen-editor = false\n", false, 0},
+		{"[capture]\nopen-editor = true\n", true, 0},
+		{"[capture]\nopen-editor = nein\n", true, 1},
+	} {
+		schreibe(t, pfad, tc.inhalt)
+		if e, warn := Lade(); e.Editor != tc.editor || len(warn) != tc.warn {
+			t.Errorf("%q: Editor %v, Warnungen %q", tc.inhalt, e.Editor, warn)
+		}
 	}
 }
 
@@ -157,7 +177,7 @@ func TestUnbekanntes(t *testing.T) {
 	pfad := umgebung(t)
 	schreibe(t, pfad, "[capture]\nscreen = all\nfarbe = rot\n[quatsch]\na = 1\nb = 2\n[library]\ncleanup-days = 7\nfrist = 3\n")
 	e, warn := Lade()
-	want := Einstellungen{Bildschirm: WahlAlle, Bibliothek: library.Einstellung{An: true, Tage: 7}}
+	want := Einstellungen{Bildschirm: WahlAlle, Editor: true, Bibliothek: library.Einstellung{An: true, Tage: 7}}
 	if e != want {
 		t.Errorf("Werte %+v, erwartet %+v", e, want)
 	}

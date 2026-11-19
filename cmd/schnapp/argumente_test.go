@@ -48,8 +48,19 @@ func TestAuswerten(t *testing.T) {
 		{[]string{"--screen", "--screen=x"}, Aufruf{}, "different monitor names"},
 		{[]string{"--screen=x", "--screen"}, Aufruf{}, "different monitor names"},
 		{[]string{"--screen", "--window"}, Aufruf{}, "Options --screen and --window cannot be combined"},
-		{[]string{"datei.png"}, Aufruf{}, "Unexpected argument: datei.png"},
-		{[]string{"--screen", "x"}, Aufruf{}, "Unexpected argument: x"},
+		{[]string{"datei.png"}, Aufruf{Modus: ModusOeffnen, Datei: "datei.png"}, ""},
+		{[]string{"/pfad/mit=gleich.png"}, Aufruf{Modus: ModusOeffnen, Datei: "/pfad/mit=gleich.png"}, ""},
+		{[]string{"--screen", "x"}, Aufruf{}, "A file cannot be combined with --screen."},
+		{[]string{"x.png", "--window"}, Aufruf{}, "A file cannot be combined with --window."},
+		{[]string{"a.png", "b.png"}, Aufruf{}, "Unexpected argument: b.png"},
+		{[]string{"--no-editor"}, Aufruf{Modus: ModusBereich, OhneEditor: true}, ""},
+		{[]string{"--window", "--no-editor"}, Aufruf{Modus: ModusFenster, OhneEditor: true}, ""},
+		{[]string{"--no-editor", "--screen=A"}, Aufruf{Modus: ModusBildschirm, Bildschirm: "A", OhneEditor: true}, ""},
+		{[]string{"--no-editor", "--repeat"}, Aufruf{Modus: ModusWiederholen, OhneEditor: true}, ""},
+		{[]string{"--list-screens", "--no-editor"}, Aufruf{}, "Options --list-screens and --no-editor cannot be combined"},
+		{[]string{"--version", "--no-editor"}, Aufruf{}, "Options --version and --no-editor cannot be combined"},
+		{[]string{"x.png", "--no-editor"}, Aufruf{}, "A file cannot be combined with --no-editor."},
+		{[]string{"--no-editor=1"}, Aufruf{}, "Unknown option: --no-editor"},
 	}
 	for _, tc := range tests {
 		got, err := Auswerten(tc.args)

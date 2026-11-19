@@ -78,3 +78,11 @@ ruft `schnapp --screen` ohne Wert. Was dieser Aufruf tut, legt eine **Einstellun
   Karte #52).
 - Umsetzung: Kommandozeile (`--list-screens`, `--screen` ohne Liste) mit dem Rest von F-58; Monitor-Modus mit dem
   Overlay.
+
+## Nachtrag 4 (19.11.2026): Editor öffnen — `--no-editor` und `schnapp DATEI` (ADR-0020)
+
+- Nach `--region`, `--screen`, `--window` und `--repeat` öffnet der Editor, nachdem der Pfad auf stdout steht, außer
+  `[capture] open-editor = false` (ADR-0018 Nachtrag 1) oder `--no-editor`. `--no-editor` lässt sich mit diesen vier
+  Modi kombinieren, mit keinem anderen.
+- `schnapp DATEI` (genau ein Positionsargument, ohne weitere Option) öffnet die Datei im Editor; ein
+  Argument, das mit `-` beginnt, bleibt eine Option. Den Pfad gibt Schnapp dabei nicht aus.

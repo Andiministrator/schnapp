@@ -491,22 +491,7 @@ func (b *Bibliothek) SetzeSchlagworte(pfad string, worte []string) (Eintrag, err
 	if m.Erstellt.IsZero() {
 		neu.Erstellt = st.ModTime().UTC().Truncate(time.Second)
 	}
-	idx, err := b.lade()
-	if err != nil {
-		return neu, fmt.Errorf("%w: %v", ErrIndex, err)
-	}
-	ersetzt := false
-	for i := range idx.Eintraege {
-		if idx.Eintraege[i].Pfad == pfad {
-			idx.Eintraege[i] = neu
-			ersetzt = true
-		}
-	}
-	if !ersetzt {
-		idx.Eintraege = append(idx.Eintraege, neu)
-		sortiere(idx.Eintraege)
-	}
-	if err := b.schreibeIndex(idx.Eintraege); err != nil {
+	if err := b.ersetzeImIndex(neu); err != nil {
 		return neu, fmt.Errorf("%w: %v", ErrIndex, err)
 	}
 	return neu, nil

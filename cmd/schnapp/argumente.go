@@ -20,6 +20,7 @@ const (
 	ModusWiederholen               // --repeat
 	ModusVersion                   // --version
 	ModusHilfe                     // --help
+	ModusOeffnen                   // schnapp DATEI: Datei im Editor öffnen (ADR-0020)
 )
 
 // Aufruf ist das ausgewertete Ergebnis der Kommandozeile.
@@ -29,6 +30,15 @@ type Aufruf struct {
 	// (dann gilt das Verhalten laut Einstellung `[capture] screen`: Monitor per Klick, unter dem Zeiger oder alle,
 	// ADR-0018).
 	Bildschirm string
+	// OhneEditor ist --no-editor: nach der Aufnahme keinen Editor öffnen (ADR-0017 Nachtrag 4).
+	OhneEditor bool
+	// Datei ist bei ModusOeffnen der Pfad der Datei.
+	Datei string
+}
+
+// Aufnahme meldet, ob der Modus eine Aufnahme ist (nur diese öffnen danach den Editor und vertragen --no-editor).
+func (m Modus) Aufnahme() bool {
+	return m == ModusBereich || m == ModusBildschirm || m == ModusFenster || m == ModusWiederholen
 }
 
 // Option nennt die Bezeichnung des Modus, wie sie auf der Kommandozeile steht.
@@ -46,6 +56,8 @@ func (m Modus) Option() string {
 		return "--version"
 	case ModusHilfe:
 		return "--help"
+	case ModusOeffnen:
+		return "FILE"
 	}
 	return "--region"
 }
@@ -56,15 +68,35 @@ type Fehler struct{ Text string }
 func (f *Fehler) Error() string { return f.Text }
 
 // Auswerten liest die Argumente (ohne Programmnamen). Ohne Argument gilt --region. Es gibt genau einen Modus;
-// zwei verschiedene oder unbekannte Optionen, Werte an Optionen ohne Wert und Positionsargumente sind Fehler.
+// zwei verschiedene oder unbekannte Optionen und Werte an Optionen ohne Wert sind Fehler. Genau ein
+// Positionsargument ohne weitere Option öffnet die Datei im Editor; --no-editor gilt nur für Aufnahmen.
 // Nur --screen nimmt einen Wert (--screen=NAME); die Form „--screen NAME“ gibt es nicht, damit
 // „--screen“ allein eindeutig „Monitor laut Einstellung“ meint. Die Monitorliste gibt --list-screens aus.
 func Auswerten(args []string) (Aufruf, error) {
 	var (
-		a       Aufruf
-		gesehen bool
+		a          Aufruf
+		gesehen    bool
+		ohneEditor bool
 	)
 	for _, arg := range args {
+		if arg == "--no-editor" {
+			ohneEditor = true
+			continue
+		}
+		if !strings.HasPrefix(arg, "-") || arg == "-" {
+			if gesehen {
+				if a.Modus == ModusOeffnen {
+					return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Unexpected argument: %s"), arg)}
+				}
+				return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("A file cannot be combined with %s."), a.Modus.Option())}
+			}
+			a = Aufruf{Modus: ModusOeffnen, Datei: arg}
+			gesehen = true
+			continue
+		}
+		if gesehen && a.Modus == ModusOeffnen {
+			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("A file cannot be combined with %s."), arg)}
+		}
 		name, wert, hatWert := strings.Cut(arg, "=")
 		var m Modus
 		switch name {
@@ -83,10 +115,7 @@ func Auswerten(args []string) (Aufruf, error) {
 		case "--help", "-h":
 			m = ModusHilfe
 		default:
-			if strings.HasPrefix(arg, "-") && arg != "-" {
-				return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Unknown option: %s"), name)}
-			}
-			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Unexpected argument: %s"), arg)}
+			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Unknown option: %s"), name)}
 		}
 		if hatWert && m != ModusBildschirm {
 			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Option %s takes no value."), m.Option())}
@@ -102,6 +131,15 @@ func Auswerten(args []string) (Aufruf, error) {
 		}
 		a = Aufruf{Modus: m, Bildschirm: wert}
 		gesehen = true
+	}
+	if ohneEditor {
+		if a.Modus == ModusOeffnen {
+			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("A file cannot be combined with %s."), "--no-editor")}
+		}
+		if !a.Modus.Aufnahme() {
+			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Options %s and %s cannot be combined."), a.Modus.Option(), "--no-editor")}
+		}
+		a.OhneEditor = true
 	}
 	return a, nil
 }

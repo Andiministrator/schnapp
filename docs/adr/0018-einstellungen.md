@@ -62,3 +62,8 @@ spürbarem Nutzen (ADR-0011); Pfade klein `schnapp` (ADR-0016); die Kommandozeil
 - Die Sprache (`[interface] language`) folgt mit ihrer Karte; bis dahin gilt die Systemsprache (ADR-0014).
 - Umsetzung: Paket `einstellungen` mit Leser, Tests (fehlende Datei, Kommentare, unbekannter Schlüssel, ungültiger
   Wert, Rechte), angebunden in `cmd/schnapp` — eigene Karte; der Dialog kommt mit dem Editor.
+
+## Nachtrag 1 (19.11.2026): `[capture] open-editor` (ADR-0020)
+
+`[capture] open-editor` = `true` (Voreinstellung) | `false`: Editor nach einer interaktiven Aufnahme öffnen. Für einen
+einzelnen Aufruf schaltet `--no-editor` ihn ab (ADR-0017 Nachtrag 4).

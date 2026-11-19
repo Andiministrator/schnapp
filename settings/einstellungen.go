@@ -65,12 +65,13 @@ const (
 // Einstellungen sind die gelesenen Werte samt Voreinstellungen.
 type Einstellungen struct {
 	Bildschirm Bildschirmwahl      // [capture] screen
+	Editor     bool                // [capture] open-editor: Editor nach der Aufnahme öffnen (ADR-0020)
 	Bibliothek library.Einstellung // [library] cleanup, cleanup-days
 }
 
 // Voreinstellungen liefert die Werte, die gelten, wenn nichts eingestellt ist.
 func Voreinstellungen() Einstellungen {
-	return Einstellungen{Bildschirm: WahlKlick, Bibliothek: library.Voreinstellung}
+	return Einstellungen{Bildschirm: WahlKlick, Editor: true, Bibliothek: library.Voreinstellung}
 }
 
 // Pfad liefert den Ort der Datei: $XDG_CONFIG_HOME/schnapp/settings.ini, ohne gesetztes oder mit relativem
@@ -185,6 +186,14 @@ func Parse(name, inhalt string) (Einstellungen, []string) {
 			switch w := Bildschirmwahl(wert); w {
 			case WahlKlick, WahlZeiger, WahlAlle:
 				e.Bildschirm, gueltig = w, true
+			}
+		case "capture.open-editor":
+			bekannterSchluessel = true
+			switch wert {
+			case "true":
+				e.Editor, gueltig = true, true
+			case "false":
+				e.Editor, gueltig = false, true
 			}
 		case "library.cleanup":
 			bekannterSchluessel = true

@@ -111,6 +111,8 @@ func hilfe() string {
 		"  --list-screens " + i18n.T("List the monitors") + "\n" +
 		"  --window       " + i18n.T("Select a window") + "\n" +
 		"  --repeat       " + i18n.T("Repeat the last area") + "\n" +
+		"  --no-editor    " + i18n.T("Do not open the editor after capturing") + "\n" +
+		"  FILE           " + i18n.T("Open FILE in the editor") + "\n" +
 		"  -V, --version  " + i18n.T("Show the version") + "\n" +
 		"  -h, --help     " + i18n.T("Show this help") + "\n"
 }
