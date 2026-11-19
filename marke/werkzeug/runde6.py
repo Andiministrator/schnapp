@@ -84,6 +84,26 @@ def main():
         # e4: ohne Unterzeile; h um 30 tiefer, pp um 31 höher → beide ragen oben und unten gleich weit heraus
         mitte, ende4 = schriftzug(f, versatz={"h": 30, "p": -31})
         schreibe(f"e4-mittig-{art}.svg", bild(640, mitte, f["grund"], f"0 20 {ende4 + 60} 250"))
+        # e5: e4 mit „CAPTURE FOR LINUX“. Unterkante von h und pp liegt bei 241 (Mittellinie 230/231 + halber Strich).
+        g5, fuss = 24, 241
+        def gesperrt(text, x0, x1, groesse, grundlinie, mitte=False, sperrung=None):
+            _, nat = text_als_pfad(text, 0, 0, groesse, "#000", sperrung=0)
+            if sperrung is None:
+                sperrung = (x1 - x0 - nat) / (len(text) - 1) / groesse
+            breite = nat + (len(text) - 1) * sperrung * groesse
+            start = x0 + (x1 - x0 - breite) / 2 if mitte else x0
+            return text_als_pfad(text, start, grundlinie, groesse, NEBEN[art], sperrung=sperrung)[0], sperrung
+        t1, _ = gesperrt("CAPTURE", *sc, g5, fuss)
+        t2, _ = gesperrt("FOR LINUX", *na, g5, fuss)
+        schreibe(f"e5-geteilt-{art}.svg", bild(640, mitte + t1 + t2, f["grund"], f"0 20 {ende4 + 60} 250"))
+        t2, sp = gesperrt("FOR LINUX", *na, g5, fuss)
+        t1, _ = gesperrt("CAPTURE", *sc, g5, fuss, mitte=True, sperrung=sp)
+        schreibe(f"e5-mittig-{art}.svg", bild(640, mitte + t1 + t2, f["grund"], f"0 20 {ende4 + 60} 250"))
+        links, rechts = 40 - 11, 40 + 6 * LAUF + W + 11  # Außenkanten s bis letztes p
+        t, _ = gesperrt("CAPTURE FOR LINUX", links, rechts, 26, 290)
+        schreibe(f"e5-zeile-{art}.svg", bild(640, mitte + t, f["grund"], f"0 20 {ende4 + 60} 290"))
+        t, _ = gesperrt("CAPTURE FOR LINUX", links, rechts, 28, 292, sperrung=0.22)
+        schreibe(f"e5-kompakt-{art}.svg", bild(640, mitte + t, f["grund"], f"0 20 {ende4 + 60} 292"))
         for name, gleich in (("e3-voll", False), ("e3-gleich", True)):
             teile = []
             _, nat1 = text_als_pfad("SCREENSHOTS", 0, 0, groesse, "#000", sperrung=0)
