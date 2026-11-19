@@ -44,8 +44,12 @@ type Sitzung struct {
 	Abb Abbildung
 	// Auswahl ist die Kennung des ausgewählten Objekts, 0 = keins.
 	Auswahl int
-	// Geaendert ist wahr, sobald seit dem Öffnen oder letzten Speichern etwas am Dokument geändert wurde.
-	Geaendert bool
+
+	gespeichert uint64 // Verlaufsstand beim Öffnen oder letzten Speichern (F-109)
+	// verwerfen: Speichern beim Schließen ist bei diesem Stand gescheitert; eine weitere Schließen-Anfrage ohne neue
+	// Änderung verwirft ihn (F-107).
+	verwerfen    bool
+	verwerfenBei uint64
 
 	fenster    image.Point
 	eingepasst bool // Abbildung folgt der Fenstergröße, bis der Nutzer zoomt oder verschiebt
@@ -59,8 +63,12 @@ type Sitzung struct {
 
 // NeueSitzung beginnt mit eingepasster Ansicht und ohne Auswahl.
 func NeueSitzung(d *document.Dokument) *Sitzung {
-	return &Sitzung{D: d, Abb: Abbildung{Zoom: 1}, eingepasst: true}
+	return &Sitzung{D: d, Abb: Abbildung{Zoom: 1}, eingepasst: true, gespeichert: d.Stand()}
 }
+
+// Geaendert meldet, ob der Verlaufsstand vom gespeicherten abweicht (F-109): Rückgängig bis zum gespeicherten Stand
+// ist wieder „ungeändert“; ein laufender Zug zählt erst, wenn er losgelassen ist.
+func (s *Sitzung) Geaendert() bool { return s.D.Stand() != s.gespeichert }
 
 // SetzeFenster meldet die Fenstergröße. Solange der Nutzer nicht selbst gezoomt oder verschoben hat, wird neu
 // eingepasst (der erste Frame kommt unter Wayland oft in falscher Größe).
@@ -163,11 +171,7 @@ func (s *Sitzung) Loslassen(p document.Punkt) {
 	s.Ziehen(p)
 	if s.zug == zugObjekt || s.zug == zugGriff {
 		if s.bewegt {
-			vorher := s.startObj
-			_ = s.D.BeendeZug()
-			if jetzt, ok := s.D.Objekt(vorher.Kennung()); ok && jetzt != vorher {
-				s.Geaendert = true
-			}
+			_ = s.D.BeendeZug() // ein unveränderter Zug hinterlässt keinen neuen Stand
 		} else {
 			_ = s.D.BrecheZugAb()
 		}
@@ -200,7 +204,6 @@ func (s *Sitzung) verlauf(f func() error) bool {
 	if s.zug != keinZug || f() != nil {
 		return false
 	}
-	s.Geaendert = true
 	if _, ok := s.D.Objekt(s.Auswahl); !ok {
 		s.Auswahl = 0
 	}
@@ -212,7 +215,7 @@ func (s *Sitzung) Loeschen() bool {
 	if s.zug != keinZug || s.Auswahl == 0 || s.D.Entfernen(s.Auswahl) != nil {
 		return false
 	}
-	s.Auswahl, s.Geaendert = 0, true
+	s.Auswahl = 0
 	return true
 }
 
@@ -220,4 +223,46 @@ func (s *Sitzung) Loeschen() bool {
 func (s *Sitzung) Abwaehlen() { s.Auswahl = 0 }
 
 // Gespeichert meldet, dass der aktuelle Stand gespeichert ist.
-func (s *Sitzung) Gespeichert() { s.Geaendert = false }
+func (s *Sitzung) Gespeichert() { s.gespeichert, s.verwerfen = s.D.Stand(), false }
+
+// Ungesichert meldet, ob beim Schließen noch gespeichert werden muss: geändert und nicht schon nach einem gescheiterten
+// Speichern zum Verwerfen freigegeben (Schliessen).
+func (s *Sitzung) Ungesichert() bool {
+	return s.Geaendert() && !(s.verwerfen && s.verwerfenBei == s.D.Stand())
+}
+
+// Schluss ist der Ausgang einer Schließen-Anfrage.
+type Schluss int
+
+const (
+	// SchlussZu: Das Fenster darf schließen (nichts zu speichern, gespeichert oder Verwerfen bestätigt).
+	SchlussZu Schluss = iota
+	// SchlussFehler: Speichern ist gescheitert, das Fenster bleibt offen und zeigt den Fehler. Eine weitere Anfrage
+	// ohne neue Änderung schließt und verwirft den Stand.
+	SchlussFehler
+	// SchlussHinweis: gespeichert, aber mit einer Warnung (z. B. auf eine neue Aufnahme ausgewichen); das Fenster bleibt
+	// offen, damit sie gelesen wird. Die nächste Anfrage schließt.
+	SchlussHinweis
+)
+
+// Schliessen entscheidet über eine Schließen-Anfrage des Fensters (F-107): Ein laufender Zug wird abgebrochen,
+// ungesicherte Änderungen werden mit speichern gesichert. speichern meldet, ob ein Hinweis gelesen werden muss
+// (warnung), oder einen Fehler. Der Fehler kommt unverändert zurück.
+func (s *Sitzung) Schliessen(speichern func() (warnung bool, err error)) (Schluss, error) {
+	if s.zug != keinZug {
+		s.Abbrechen()
+	}
+	if !s.Ungesichert() {
+		return SchlussZu, nil
+	}
+	warnung, err := speichern()
+	if err != nil {
+		s.verwerfen, s.verwerfenBei = true, s.D.Stand()
+		return SchlussFehler, err
+	}
+	s.Gespeichert()
+	if warnung {
+		return SchlussHinweis, nil
+	}
+	return SchlussZu, nil
+}

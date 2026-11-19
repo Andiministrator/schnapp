@@ -10,8 +10,10 @@ import (
 	"log"
 	"math"
 	"os"
+	"os/signal"
 	"strings"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"gioui.org/app"
@@ -61,8 +63,10 @@ type Gespeichert struct {
 }
 
 // Editor öffnet das Dokument in einem Fenster und kehrt zurück, wenn es geschlossen wird. Ungespeicherte Änderungen
-// werden beim Schließen gespeichert (die Bibliothek speichert immer, Kernprinzip 4); das Ergebnis dieses letzten
-// Speicherns ist der Rückgabewert. titel ist der Dateiname für die Titelleiste. Muss neben app.Main laufen (Starte).
+// werden beim Schließen gespeichert (die Bibliothek speichert immer, Kernprinzip 4); scheitert das, bleibt das Fenster
+// mit der Meldung offen, und erst eine zweite Schließen-Anfrage verwirft (F-107, ADR-0020 Nachtrag 2). Ein Signal
+// (SIGTERM, SIGINT, SIGHUP) speichert und schließt. Rückgabewert ist ein Fehler des Fensters oder des letzten
+// Speicherns ohne Rückfrage. titel ist der Dateiname für die Titelleiste. Muss neben app.Main laufen (Starte).
 func Editor(titel string, d *document.Dokument, speichern Speichern) error {
 	frist := time.Now().Add(2 * time.Second)
 	for offeneOverlays.Load() > 0 {
@@ -77,7 +81,33 @@ func Editor(titel string, d *document.Dokument, speichern Speichern) error {
 	th.Shaper = text.NewShaper(text.NoSystemFonts(), text.WithCollection(gofont.Collection()))
 	e := &editor{w: new(app.Window), thema: th, s: canvas.NeueSitzung(d), titel: titel, speichern: speichern}
 	e.bildNeu()
+	ende := e.signaleAbfangen()
+	defer ende()
 	return e.laufen()
+}
+
+// signaleAbfangen leitet SIGTERM, SIGINT und SIGHUP (Abmelden, Strg+C im Terminal, kill) in ein geordnetes Schließen
+// mit Speichern um (F-107): Die Signal-Goroutine setzt nur eine Marke und weckt das Fenster (Invalidate ist dafür
+// gedacht); gespeichert und geschlossen wird in der eigenen Ereignisschleife (F-77). Nach dem ersten Signal gilt
+// wieder die Voreinstellung — ein zweites beendet sofort. Die Rückgabe beendet das Abfangen.
+func (e *editor) signaleAbfangen() func() {
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
+	fertig := make(chan struct{})
+	go func() {
+		select {
+		case s := <-sig:
+			signal.Stop(sig)
+			diagnoseEditor("Signal %v: speichern und schließen", s)
+			e.signal.Store(true)
+			e.w.Invalidate()
+		case <-fertig:
+		}
+	}()
+	return func() {
+		signal.Stop(sig)
+		close(fertig)
+	}
 }
 
 type editor struct {
@@ -90,6 +120,10 @@ type editor struct {
 	meldung   string // Zeile in der Statusleiste (Speichern gelungen oder gescheitert)
 	fehler    bool
 	titelSet  string
+
+	signal     atomic.Bool // ein Signal kam an (Signal-Goroutine setzt, Ereignisschleife liest)
+	erzwungen  bool        // Schließen nach Signal: kein ClosingEvent mehr abbrechen
+	schlussErr error       // Speicherfehler beim Schließen nach Signal, Rückgabe von Editor
 
 	knoepfe struct {
 		auswahl, rueck, wieder, einpassen, eins, speichern widget.Clickable
@@ -112,24 +146,29 @@ func (e *editor) laufen() error {
 	for {
 		switch ev := e.w.Event().(type) {
 		case app.DestroyEvent:
-			diagnoseEditor("Fenster zu: Fehler %v, geändert %v, Zug %v", ev.Err, e.s.Geaendert, e.s.Zieht())
+			diagnoseEditor("Fenster zu: Fehler %v, ungesichert %v, Zug %v", ev.Err, e.s.Ungesichert(), e.s.Zieht())
 			if e.s.Zieht() {
 				e.s.Abbrechen()
 			}
-			// Auch wenn das Fenster mit Fehler endet (Wayland weg), liegt das Dokument noch im Speicher: speichern
-			// (Kritik A-4).
+			// Ein geordnetes Schließen hat schon gespeichert (ClosingEvent). Endet das Fenster ohne Anfrage (Wayland
+			// weg), liegt das Dokument noch im Speicher: speichern (Kritik A-4). Nach einem gescheiterten Speichern
+			// beim Schließen hat der Nutzer das Verwerfen mit der zweiten Anfrage bestätigt.
 			var err error
-			if e.s.Geaendert {
+			if e.s.Ungesichert() {
 				var g Gespeichert
 				g, err = e.speichern(e.s.D)
-				diagnoseEditor("Speichern beim Schließen: %v", err)
-				if err == nil && g.Hinweis != "" {
-					// Das Fenster ist zu, die Statusleiste weg: Der Hinweis (z. B. neue Aufnahme statt der alten Datei)
-					// geht auf die Fehlerausgabe, damit er nicht still verloren ist (F-116).
-					fmt.Fprintln(os.Stderr, g.Hinweis)
+				diagnoseEditor("Speichern beim Zerstören: %v", err)
+				if err == nil {
+					e.s.Gespeichert()
+					hinweisAufStderr(g)
 				}
 			}
-			return errors.Join(ev.Err, err)
+			return errors.Join(ev.Err, e.schlussErr, err)
+		case *app.ClosingEvent:
+			// Gio fragt vor dem Zerstören (Fensterknopf, Strg+W, Compositor); Abort hält das Fenster offen (F-107).
+			if !e.erzwungen && !e.schliessen() {
+				ev.Abort()
+			}
 		case app.FrameEvent:
 			gtx := app.NewContext(&ops, ev)
 			e.frame(gtx)
@@ -139,12 +178,66 @@ func (e *editor) laufen() error {
 				e.w.Option(app.Title(t))
 			}
 		}
+		if e.signal.Load() && !e.erzwungen {
+			e.nachSignal()
+		}
 	}
+}
+
+// hinweisAufStderr: Das Fenster ist (gleich) zu, die Statusleiste weg — ein Hinweis (z. B. neue Aufnahme statt der
+// alten Datei) geht auf die Fehlerausgabe, damit er nicht still verloren ist (F-116).
+func hinweisAufStderr(g Gespeichert) {
+	if g.Hinweis != "" {
+		fmt.Fprintln(os.Stderr, g.Hinweis)
+	}
+}
+
+// schliessen beantwortet eine Schließen-Anfrage; false hält das Fenster offen (Entscheidung in canvas.Sitzung):
+// Scheitert das Speichern, steht der Fehler in der Statusleiste und eine zweite Anfrage verwirft; eine Warnung beim
+// Speichern (Ausweichen auf eine neue Aufnahme) hält das Fenster einmal offen, damit sie gelesen wird.
+func (e *editor) schliessen() bool {
+	z, err := e.s.Schliessen(func() (bool, error) {
+		g, err := e.speichern(e.s.D)
+		if err != nil {
+			return false, err
+		}
+		if g.Warnung {
+			e.gespeichertMelden(g)
+		} else {
+			hinweisAufStderr(g)
+		}
+		return g.Warnung, nil
+	})
+	diagnoseEditor("Schließen-Anfrage: %v, %v", z, err)
+	switch z {
+	case canvas.SchlussZu:
+		return true
+	case canvas.SchlussFehler:
+		e.meldung, e.fehler = fmt.Sprintf(i18n.T("Could not save: %v. Close again to discard the changes."), err), true
+	}
+	e.w.Invalidate() // Meldung zeigen
+	return false
+}
+
+// nachSignal speichert nach einem Signal einmal und schließt das Fenster, ohne es offen zu halten.
+func (e *editor) nachSignal() {
+	e.erzwungen = true
+	z, err := e.s.Schliessen(func() (bool, error) {
+		g, err := e.speichern(e.s.D)
+		if err == nil {
+			hinweisAufStderr(g)
+		}
+		return false, err
+	})
+	if z == canvas.SchlussFehler {
+		e.schlussErr = err
+	}
+	e.w.Perform(system.ActionClose) // in der eigenen Schleife (F-77)
 }
 
 func (e *editor) fensterTitel() string {
 	t := e.titel + " — Schnapp"
-	if e.s.Geaendert {
+	if e.s.Geaendert() {
 		t = "• " + t
 	}
 	return t
@@ -154,12 +247,22 @@ func (e *editor) speichernJetzt() {
 	if e.s.Zieht() {
 		return
 	}
+	if !e.s.Geaendert() {
+		// Nichts zu schreiben (F-109): sonst würde die Datei neu geschrieben und als bearbeitet markiert.
+		e.meldung, e.fehler = i18n.T("No changes to save."), false
+		return
+	}
 	g, err := e.speichern(e.s.D)
 	if err != nil {
 		e.meldung, e.fehler = fmt.Sprintf(i18n.T("Could not save: %v"), err), true
 		return
 	}
 	e.s.Gespeichert()
+	e.gespeichertMelden(g)
+}
+
+// gespeichertMelden zeigt ein gelungenes Speichern in Titel- und Statusleiste (F-116).
+func (e *editor) gespeichertMelden(g Gespeichert) {
 	if g.Datei != "" {
 		e.titel = g.Datei
 	}
@@ -249,7 +352,7 @@ func (e *editor) zeiger(gtx layout.Context) {
 			e.s.Ziehen(p)
 		case pointer.Release:
 			e.s.Loslassen(p)
-			diagnoseEditor("Loslassen: Auswahl %d, geändert %v", e.s.Auswahl, e.s.Geaendert)
+			diagnoseEditor("Loslassen: Auswahl %d, geändert %v", e.s.Auswahl, e.s.Geaendert())
 		case pointer.Cancel:
 			e.s.Abbrechen()
 		case pointer.Scroll:

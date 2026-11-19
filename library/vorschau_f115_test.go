@@ -42,7 +42,7 @@ func TestSpeichernEntferntVeralteteVorschau(t *testing.T) {
 		t.Fatalf("Vorschau nach Ablegen fehlt: %v", err)
 	}
 	ersetzeVorschauNaht(t, func(io.Writer, image.Image) error { return errKodieren }, nil)
-	_, err = b.Speichern(e.Pfad, d, d.Ansichtsbild())
+	_, _, err = b.Speichern(e.Pfad, standIn(t, b, e.Pfad), d, d.Ansichtsbild())
 	if !errors.Is(err, ErrVorschau) || errors.Is(err, ErrVorschauAlt) {
 		t.Fatalf("Fehler %v (Soll: ErrVorschau ohne ErrVorschauAlt)", err)
 	}
@@ -61,7 +61,7 @@ func TestSpeichernMeldetBleibendeVorschau(t *testing.T) {
 	}
 	ersetzeVorschauNaht(t, func(io.Writer, image.Image) error { return errKodieren },
 		func(string) error { return fs.ErrPermission })
-	_, err = b.Speichern(e.Pfad, d, d.Ansichtsbild())
+	_, _, err = b.Speichern(e.Pfad, standIn(t, b, e.Pfad), d, d.Ansichtsbild())
 	if !errors.Is(err, ErrVorschauAlt) || !errors.Is(err, ErrVorschau) {
 		t.Fatalf("Fehler %v (Soll: ErrVorschau und ErrVorschauAlt)", err)
 	}

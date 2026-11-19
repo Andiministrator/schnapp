@@ -86,6 +86,84 @@ func testBibliothek(t *testing.T) *library.Bibliothek {
 	return b
 }
 
+// standVon merkt den Stand einer Datei wie ladeFuerEditor.
+func standVon(t *testing.T, pfad string) library.Stand {
+	t.Helper()
+	s, err := library.StandVon(pfad)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return s
+}
+
+// F-110: Zwei Editoren auf derselben Aufnahme. Der erste schreibt zurück; der zweite überschreibt das nicht still,
+// sondern weicht auf eine neue Aufnahme aus und sagt es als Warnung. Danach schreibt jeder seine Datei fort.
+func TestZweiEditorenUeberschreibenSichNicht(t *testing.T) {
+	i18n.Setze(nil)
+	b := testBibliothek(t)
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 8, 8)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, err := b.Ablegen(d, d.Ansichtsbild(), fileformat.Metadaten{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	abs := filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad))
+	abs1, g1, s1, err := ladeFuerEditor(abs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	abs2, g2, s2, err := ladeFuerEditor(abs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	speichern1 := speichernIn(b, abs1, g1, s1)
+	speichern2 := speichernIn(b, abs2, g2, s2)
+
+	mitKasten(t, g1.Dokument)
+	if erg, err := speichern1(g1.Dokument); err != nil || erg != (ui.Gespeichert{}) {
+		t.Fatalf("erster Editor: %+v, %v (Soll: gewöhnlich zurückgeschrieben)", erg, err)
+	}
+	mitKasten(t, g2.Dokument)
+	mitKasten(t, g2.Dokument)
+	erg, err := speichern2(g2.Dokument)
+	if err != nil {
+		t.Fatalf("zweiter Editor: %v", err)
+	}
+	if erg.Datei == "" || erg.Datei == filepath.Base(abs) || !erg.Warnung ||
+		!strings.Contains(erg.Hinweis, "changed elsewhere since it was opened") || !strings.Contains(erg.Hinweis, erg.Datei) {
+		t.Fatalf("zweiter Editor: %+v (Soll: Warnung „changed elsewhere“, neue Datei)", erg)
+	}
+	if alt, err := fileformat.Oeffne(abs); err != nil || len(alt.Dokument.Objekte()) != 1 {
+		t.Errorf("Datei des ersten Editors: %v (Soll: 1 Objekt, nicht überschrieben)", err)
+	}
+	neu := filepath.Join(filepath.Dir(abs), erg.Datei)
+	if g, err := fileformat.Oeffne(neu); err != nil || len(g.Dokument.Objekte()) != 2 {
+		t.Errorf("neue Aufnahme des zweiten: %v (Soll: 2 Objekte)", err)
+	}
+
+	// Danach schreibt jeder seine eigene Datei ohne Konflikt fort.
+	mitKasten(t, g1.Dokument)
+	if erg, err := speichern1(g1.Dokument); err != nil || erg != (ui.Gespeichert{}) {
+		t.Errorf("erster Editor, zweites Speichern: %+v, %v", erg, err)
+	}
+	mitKasten(t, g2.Dokument)
+	if erg, err := speichern2(g2.Dokument); err != nil || erg != (ui.Gespeichert{}) {
+		t.Errorf("zweiter Editor, zweites Speichern: %+v, %v (Soll: in die neue Aufnahme)", erg, err)
+	}
+	if g, _ := fileformat.Oeffne(abs); g == nil || len(g.Dokument.Objekte()) != 2 {
+		t.Error("erste Datei nach dem zweiten Speichern: Soll 2 Objekte")
+	}
+	if g, _ := fileformat.Oeffne(neu); g == nil || len(g.Dokument.Objekte()) != 3 {
+		t.Error("neue Aufnahme nach dem zweiten Speichern: Soll 3 Objekte")
+	}
+	idx, err := b.Laden()
+	if err != nil || len(idx.Eintraege) != 2 {
+		t.Errorf("Index: %d Einträge, %v (Soll 2)", len(idx.Eintraege), err)
+	}
+}
+
 func mitKasten(t *testing.T, d *document.Dokument) {
 	t.Helper()
 	if _, err := d.Hinzufuegen(document.Kasten{Bereich: document.R(document.Pt(1, 1), document.Pt(3, 3)),
@@ -112,7 +190,7 @@ func TestSpeichernDateiVonAussen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	speichern := speichernIn(b, aussen, g)
+	speichern := speichernIn(b, aussen, g, standVon(t, aussen))
 	mitKasten(t, g.Dokument)
 	erg, err := speichern(g.Dokument)
 	if err != nil {
@@ -159,7 +237,7 @@ func TestSpeichernAufnahmeDerBibliothek(t *testing.T) {
 		t.Fatal(err)
 	}
 	mitKasten(t, g.Dokument)
-	if erg, err := speichernIn(b, abs, g)(g.Dokument); err != nil || erg != (ui.Gespeichert{}) {
+	if erg, err := speichernIn(b, abs, g, standVon(t, abs))(g.Dokument); err != nil || erg != (ui.Gespeichert{}) {
 		t.Fatalf("%+v, %v", erg, err)
 	}
 	idx, _ := b.Laden()
@@ -188,7 +266,7 @@ func TestSpeichernDateiWegWaehrendEditor(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	speichern := speichernIn(b, abs, g)
+	speichern := speichernIn(b, abs, g, standVon(t, abs))
 	if err := os.Rename(abs, abs+".weg"); err != nil {
 		t.Fatal(err)
 	}
@@ -275,7 +353,7 @@ func TestOeffnenLehntZuAufwendigeDateiAb(t *testing.T) {
 			t.Fatal(err)
 		}
 		f.Close()
-		_, g, err := ladeFuerEditor(pfad)
+		_, g, _, err := ladeFuerEditor(pfad)
 		if !fall.abgelehnt {
 			if err != nil || len(g.Dokument.Objekte()) != fall.n {
 				t.Errorf("%d Glyphen (unter dem Budget): %v", fall.n, err)
@@ -318,7 +396,7 @@ func TestSpeichernSchreibfehlerWeichtSichtbarAus(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = os.Chmod(monat, 0o700) })
-	speichern := speichernIn(b, abs, g)
+	speichern := speichernIn(b, abs, g, standVon(t, abs))
 	mitKasten(t, g.Dokument)
 	erg, err := speichern(g.Dokument)
 	if err != nil {

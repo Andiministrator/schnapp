@@ -13,15 +13,38 @@ type befehl interface {
 	zuruecknehmen(d *Dokument)
 }
 
-type verlauf struct {
-	erledigt, zurueckgenommen []befehl
+// schritt ist ein Befehl im Verlauf samt der Kennung des Stands, den er herstellt (F-109).
+type schritt struct {
+	b     befehl
+	stand uint64
 }
 
-// fuehreAus führt b aus, legt ihn in den Verlauf und verwirft die zurückgenommenen Befehle.
+type verlauf struct {
+	erledigt, zurueckgenommen []schritt
+	// basis ist der Stand, wenn nichts erledigt ist (nach dem Öffnen 0, nach VergissVerlauf der Stand davor).
+	basis uint64
+	// letzte ist die zuletzt vergebene Kennung; sie zählt nur aufwärts, auch über VergissVerlauf hinweg.
+	letzte uint64
+}
+
+// fuehreAus führt b aus, legt ihn mit einer neuen Standkennung in den Verlauf und verwirft die zurückgenommenen
+// Befehle.
 func (d *Dokument) fuehreAus(b befehl) {
 	b.ausfuehren(d)
-	d.verlauf.erledigt = append(d.verlauf.erledigt, b)
+	d.verlauf.letzte++
+	d.verlauf.erledigt = append(d.verlauf.erledigt, schritt{b, d.verlauf.letzte})
 	d.verlauf.zurueckgenommen = nil
+}
+
+// Stand kennzeichnet den Verlaufsstand des Dokuments (F-109): Jede neue Änderung bekommt eine neue Kennung, die nie
+// wiederkehrt; Rückgängig und Wiederholen kehren zu früheren Kennungen zurück. Gleiche Kennung heißt gleicher Inhalt
+// — so erkennt der Editor, ob der gespeicherte Stand wieder erreicht ist. Ein laufender Zug zählt nicht (er landet
+// erst mit BeendeZug im Verlauf).
+func (d *Dokument) Stand() uint64 {
+	if n := len(d.verlauf.erledigt); n > 0 {
+		return d.verlauf.erledigt[n-1].stand
+	}
+	return d.verlauf.basis
 }
 
 // KannRueckgaengig meldet, ob Rückgängig etwas tut (während eines Zugs nie).
@@ -39,10 +62,10 @@ func (d *Dokument) Rueckgaengig() error {
 	if n == 0 {
 		return ErrNichtsDa
 	}
-	b := d.verlauf.erledigt[n-1]
+	s := d.verlauf.erledigt[n-1]
 	d.verlauf.erledigt = d.verlauf.erledigt[:n-1]
-	b.zuruecknehmen(d)
-	d.verlauf.zurueckgenommen = append(d.verlauf.zurueckgenommen, b)
+	s.b.zuruecknehmen(d)
+	d.verlauf.zurueckgenommen = append(d.verlauf.zurueckgenommen, s)
 	return nil
 }
 
@@ -55,20 +78,20 @@ func (d *Dokument) Wiederholen() error {
 	if n == 0 {
 		return ErrNichtsDa
 	}
-	b := d.verlauf.zurueckgenommen[n-1]
+	s := d.verlauf.zurueckgenommen[n-1]
 	d.verlauf.zurueckgenommen = d.verlauf.zurueckgenommen[:n-1]
-	b.ausfuehren(d)
-	d.verlauf.erledigt = append(d.verlauf.erledigt, b)
+	s.b.ausfuehren(d)
+	d.verlauf.erledigt = append(d.verlauf.erledigt, s)
 	return nil
 }
 
 // VergissVerlauf leert den Verlauf, etwa nach dem Speichern, damit auch im Speicher keine geschwärzten Pixel mehr
-// zurückzuholen sind.
+// zurückzuholen sind. Der Stand bleibt, die Kennungen zählen weiter.
 func (d *Dokument) VergissVerlauf() error {
 	if d.zug != nil {
 		return ErrZugLaeuft
 	}
-	d.verlauf = verlauf{}
+	d.verlauf = verlauf{basis: d.Stand(), letzte: d.verlauf.letzte}
 	return nil
 }
 

@@ -74,4 +74,33 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   erst mit schnellerem Füllen (F-130). Die Wartezeit bis knapp 5 min ist bewusst hingenommen (F-135, Claudes
   Entscheidung im Sprint-Abschluss 4, Andi informiert).
 - Offen (eigene Karten): Speichern bei Signal/Absturz und Konflikt zweier Editoren (F-107, F-110), Angleichen der
-  Maße an den SVG-Export (F-108).
+  Maße an den SVG-Export (F-108). *Erledigt bis auf Absturz und F-108: Nachtrag 2.*
+
+## Nachtrag 2 (19.11.2026): Schließen mit Rückfrage an Gio, Signale, gespeicherter Stand, Konflikt (F-107, F-109, F-110)
+
+- **Schließen vor dem Zerstören:** Gio liefert vor dem Zerstören ein abbrechbares `app.ClosingEvent`
+  (`third_party/gio/app/system.go`; unter Wayland aus `xdg_toplevel.close` und `Perform(ActionClose)`,
+  `app/os_wayland.go` `requestClose`). Der Editor speichert dort; die Entscheidung trifft `canvas.Sitzung.Schliessen`
+  (testbar ohne Gio). Scheitert das Speichern — auch das Ausweichen auf eine neue Aufnahme —, bleibt das Fenster offen
+  und die Statusleiste sagt „Speichern gescheitert: … Erneutes Schließen verwirft die Änderungen.“ Erst eine zweite
+  Anfrage ohne neue Änderung schließt und verwirft (Claudes Entscheidung, Andi zu informieren: ohne Dialog die einzige
+  Möglichkeit, den Editor bei voller Platte überhaupt zu verlassen). Weicht Speichern mit Warnung aus (F-116, F-110),
+  bleibt das Fenster einmal offen, damit die Warnung gelesen wird; die nächste Anfrage schließt. Ein gewöhnlicher
+  Hinweis ohne Warnung geht wie bisher auf die Fehlerausgabe.
+- **Signale:** SIGTERM, SIGINT und SIGHUP lösen ein geordnetes Speichern und Schließen aus, ohne das Fenster offen zu
+  halten; die Signal-Goroutine weckt nur das Fenster (`Window.Invalidate`), gespeichert wird in der Ereignisschleife
+  (F-77). Ein zweites Signal beendet sofort (Voreinstellung).
+- **Ohne Anfrage zerstört** (Wayland-Verbindung weg): Speichern beim `DestroyEvent` bleibt (Nachtrag 1); dort gibt es
+  nur noch die Fehlerausgabe und den Rückgabewert.
+- **Kein Autospeichern, kein Wiederherstellungsort:** Gegen Absturz oder SIGKILL schützt das nicht. Bewusst so, weil
+  ein Zwischenspeichern bei großen Dokumenten bis zu Minuten rendert (Nachtrag 1) und die Bibliothek mit Zwischenständen
+  füllte; Gegenstand einer eigenen Karte, falls Abstürze auftreten.
+- **Gespeicherter Stand (F-109):** Der Verlauf vergibt je Änderung eine nie wiederkehrende Kennung
+  (`document.Dokument.Stand`); „geändert“ heißt aktuelle Kennung ≠ Kennung beim letzten Speichern. Rückgängig bis zum
+  gespeicherten Stand ist ungeändert; Strg+S ohne Änderung schreibt nicht (Statusleiste „Keine Änderungen zu
+  speichern.“). Folge: Eine Datei von außen landet erst mit der ersten Änderung in der Bibliothek.
+- **Konflikt zweier Editoren (F-110):** Beim Öffnen merkt sich der Editor den Stand der Datei (Gerät, Inode, Größe,
+  Änderungszeit; `library.Stand`, gelesen vor dem Inhalt). `library.Speichern` vergleicht ihn vor dem Lesen und noch
+  einmal kurz vor dem Umbenennen und überschreibt bei Abweichung nicht (`ErrGeaendert`); der Editor weicht auf eine
+  neue Aufnahme aus und warnt („Die Datei wurde seit dem Öffnen anderswo geändert; …“). Race-arm, nicht race-frei
+  (Millisekunden zwischen Vergleich und Umbenennen), ohne Sperrdateien.

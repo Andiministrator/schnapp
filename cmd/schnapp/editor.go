@@ -23,7 +23,7 @@ import (
 // Speichern als neue Aufnahme in die Bibliothek, danach wird diese fortgeschrieben. Die geöffnete Datei selbst bleibt
 // dann unberührt.
 func oeffneImEditor(pfad string) error {
-	abs, g, err := ladeFuerEditor(pfad)
+	abs, g, stand, err := ladeFuerEditor(pfad)
 	if err != nil {
 		return err
 	}
@@ -31,33 +31,37 @@ func oeffneImEditor(pfad string) error {
 	if err != nil {
 		return err
 	}
-	return ui.Editor(filepath.Base(abs), g.Dokument, speichernIn(library.Neu(orte), abs, g))
+	return ui.Editor(filepath.Base(abs), g.Dokument, speichernIn(library.Neu(orte), abs, g, stand))
 }
 
 // ladeFuerEditor liest eine Datei für den Editor (von außen oder aus der Bibliothek) und lehnt ein Dokument ab, dessen
 // Rastern das Rechenbudget überschritte (render.Pruefe, F-125, F-132): Gegen präparierte Dateien wird beim Öffnen
-// geprüft, damit Speichern nie abbrechen muss (F-131, ADR-0020 Nachtrag 1).
-func ladeFuerEditor(pfad string) (string, *fileformat.Gelesen, error) {
-	abs, err := filepath.Abs(pfad)
+// geprüft, damit Speichern nie abbrechen muss (F-131, ADR-0020 Nachtrag 1). stand ist der Zustand der Datei, gemerkt
+// vor dem Lesen (F-110): Ändert sie sich danach, merkt es das Speichern. Lässt er sich nicht lesen, bleibt der
+// Nullwert, und das Zurückschreiben weicht auf eine neue Aufnahme aus.
+func ladeFuerEditor(pfad string) (abs string, g *fileformat.Gelesen, stand library.Stand, err error) {
+	abs, err = filepath.Abs(pfad)
 	if err != nil {
-		return "", nil, err
+		return "", nil, library.Stand{}, err
 	}
-	g, err := fileformat.Oeffne(abs)
+	stand, _ = library.StandVon(abs)
+	g, err = fileformat.Oeffne(abs)
 	if err != nil {
-		return "", nil, err
+		return "", nil, library.Stand{}, err
 	}
 	if err := render.Pruefe(g.Dokument); err != nil {
-		return "", nil, err
+		return "", nil, library.Stand{}, err
 	}
-	return abs, g, nil
+	return abs, g, stand, nil
 }
 
 // speichernIn liefert die Speicherfunktion für den Editor. Gescheiterte Nebenschritte (Index, Vorschau) sind kein
 // Fehler: Die Datei liegt dann in der Ablage. Bleibt dabei die Vorschau des vorigen Stands liegen, sagt es ein
 // Hinweis (F-115). Weicht Speichern auf eine neue Aufnahme aus, nennt das Ergebnis die neue Datei; ist die alte
-// stehen geblieben, weil das Zurückschreiben scheiterte, als Warnung (F-116). Fehler kommen übersetzt zurück
-// (F-117).
-func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen) ui.Speichern {
+// stehen geblieben, weil das Zurückschreiben scheiterte, als Warnung (F-116). Wurde die Datei seit dem Öffnen von
+// anderer Seite geändert (stand, etwa ein zweiter Editor), wird sie nicht überschrieben, sondern ebenfalls eine neue
+// Aufnahme angelegt und als Warnung gemeldet (F-110). Fehler kommen übersetzt zurück (F-117).
+func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand) ui.Speichern {
 	rel, inBibliothek := b.Relativ(abs)
 	inBibliothek = inBibliothek && !g.Fremd
 	meta := g.Meta
@@ -68,14 +72,22 @@ func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen) ui.Sp
 		}
 		var zurueck error // Fehler beim Zurückschreiben, falls auch das Ausweichen scheitert
 		versucht := inBibliothek
+		konflikt := false
 		if inBibliothek {
-			_, err := b.Speichern(rel, d, sichtbar)
+			_, neu, err := b.Speichern(rel, stand, d, sichtbar)
+			if neu != (library.Stand{}) {
+				stand = neu // geschrieben (auch wenn Index oder Vorschau scheiterten)
+			}
 			switch {
 			case errors.Is(err, library.ErrVorschauAlt):
 				return ui.Gespeichert{Hinweis: i18n.T("Saved, but the old preview of this capture could not be removed."),
 					Warnung: true}, nil
 			case err == nil || errors.Is(err, library.ErrIndex) || errors.Is(err, library.ErrVorschau):
 				return ui.Gespeichert{}, nil
+			case errors.Is(err, library.ErrGeaendert):
+				// Ein anderer Editor oder ein anderes Programm hat die Datei inzwischen geschrieben: dessen Stand nicht
+				// still überschreiben (F-110), sondern ausweichen.
+				konflikt = true
 			case errors.Is(err, fs.ErrNotExist) || errors.Is(err, library.ErrFremd) ||
 				errors.Is(err, library.ErrPfad) || errors.Is(err, fileformat.ErrFormatNeuer):
 				// Die Datei ist weg, ersetzt oder nicht mehr unsere (gelöscht, aufgeräumt, neuere Fassung): nicht
@@ -94,9 +106,15 @@ func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen) ui.Sp
 			return ui.Gespeichert{}, speicherFehler(errors.Join(zurueck, err))
 		}
 		rel, inBibliothek = e.Pfad, true
+		// Stand der neuen Aufnahme für das nächste Speichern; unlesbar bleibt der Nullwert (dann wiederum Ausweichen).
+		stand, _ = library.StandVon(filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad)))
 		name := filepath.Base(filepath.FromSlash(e.Pfad))
 		erg := ui.Gespeichert{Datei: name, Hinweis: fmt.Sprintf(i18n.T("Saved as a new capture: %s"), name)}
-		if versucht {
+		switch {
+		case konflikt:
+			erg.Hinweis = fmt.Sprintf(i18n.T("The file was changed elsewhere since it was opened; saved as a new capture: %s"), name)
+			erg.Warnung = true
+		case versucht:
 			// Die bisherige Datei wurde nicht aktualisiert; liegt sie noch, enthält sie den alten Stand. Bewusst so
 			// (ADR-0020 Nachtrag 1: Ausweichen statt Verlust). Mit dem Schwärzen darf dort kein ungeschwärzter Stand
 			// stehen bleiben — offen als F-126 (Ausnahmepfad Sprint 4, Lösung vor oder mit der Schwärzen-Karte).

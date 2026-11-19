@@ -46,8 +46,8 @@ func TestVerschiebenEinerAenderung(t *testing.T) {
 	if b := o.(document.Kasten).Bereich; !nah(b.Min, document.Pt(30, 20)) {
 		t.Errorf("verschoben nach %v", b.Min)
 	}
-	if !s.Geaendert || s.Zieht() {
-		t.Errorf("Geaendert %v, zieht %v", s.Geaendert, s.Zieht())
+	if !s.Geaendert() || s.Zieht() {
+		t.Errorf("Geaendert %v, zieht %v", s.Geaendert(), s.Zieht())
 	}
 	// Eine Änderung im Verlauf: ein Rückgängig stellt den Anfang her.
 	if !s.Rueckgaengig() {
@@ -68,8 +68,8 @@ func TestKlickWaehltNurAus(t *testing.T) {
 	s.Druecken(f(30, 30), TastePrimaer)
 	s.Ziehen(f(31, 31)) // unter der Schwelle
 	s.Loslassen(f(31, 31))
-	if s.Auswahl != k || s.Geaendert || s.D.KannRueckgaengig() {
-		t.Errorf("Auswahl %d, Geaendert %v, Verlauf %v", s.Auswahl, s.Geaendert, s.D.KannRueckgaengig())
+	if s.Auswahl != k || s.Geaendert() || s.D.KannRueckgaengig() {
+		t.Errorf("Auswahl %d, Geaendert %v, Verlauf %v", s.Auswahl, s.Geaendert(), s.D.KannRueckgaengig())
 	}
 	// Klick ins Leere hebt die Auswahl auf.
 	s.Druecken(f(190, 90), TastePrimaer)
@@ -108,8 +108,8 @@ func TestAnsichtVerschiebenUndAbbrechen(t *testing.T) {
 		t.Errorf("Versatz %v", s.Abb.Versatz)
 	}
 	s.Abbrechen()
-	if !nah(s.Abb.Versatz, document.Pt(24, 24)) || s.Geaendert {
-		t.Errorf("nach Abbrechen %v, Geaendert %v", s.Abb.Versatz, s.Geaendert)
+	if !nah(s.Abb.Versatz, document.Pt(24, 24)) || s.Geaendert() {
+		t.Errorf("nach Abbrechen %v, Geaendert %v", s.Abb.Versatz, s.Geaendert())
 	}
 	// Abbrechen eines Objektzugs stellt das Objekt her.
 	s.Druecken(f(30, 30), TastePrimaer)
@@ -168,7 +168,7 @@ func TestLoeschenUndWiederholen(t *testing.T) {
 		t.Fatal("Wiederholen löscht nicht")
 	}
 	s.Gespeichert()
-	if s.Geaendert {
+	if s.Geaendert() {
 		t.Error("Gespeichert")
 	}
 }
@@ -179,7 +179,7 @@ func TestMittlereTaste(t *testing.T) {
 	s.Druecken(f(30, 30), TasteMitte)
 	s.Ziehen(f(40, 30))
 	s.Loslassen(f(40, 30))
-	if s.Auswahl != 0 || !nah(s.Abb.Versatz, document.Pt(34, 24)) || s.Geaendert {
+	if s.Auswahl != 0 || !nah(s.Abb.Versatz, document.Pt(34, 24)) || s.Geaendert() {
 		t.Errorf("Auswahl %d, Versatz %v", s.Auswahl, s.Abb.Versatz)
 	}
 }

@@ -28,7 +28,7 @@ func TestSpeichernSchreibtZurueck(t *testing.T) {
 		Strich: document.Strich{Farbe: color.NRGBA{R: 255, A: 255}, Breite: 2}}); err != nil {
 		t.Fatal(err)
 	}
-	neu, err := b.Speichern(e.Pfad, d, d.Ansichtsbild())
+	neu, _, err := b.Speichern(e.Pfad, standIn(t, b, e.Pfad), d, d.Ansichtsbild())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,13 +69,13 @@ func TestSpeichernUeberschreibtKeinFremdesBild(t *testing.T) {
 	f.Close()
 	vorher, _ := os.ReadFile(pfad)
 	d := neuesDokument(t, 8, 8)
-	if _, err := b.Speichern("2026-11/fremd.png", d, d.Ansichtsbild()); !errors.Is(err, ErrFremd) {
+	if _, _, err := b.Speichern("2026-11/fremd.png", standIn(t, b, "2026-11/fremd.png"), d, d.Ansichtsbild()); !errors.Is(err, ErrFremd) {
 		t.Fatalf("Fehler %v, Soll ErrFremd", err)
 	}
 	if nachher, _ := os.ReadFile(pfad); string(nachher) != string(vorher) {
 		t.Error("fremde Datei verändert")
 	}
-	if _, err := b.Speichern("../aussen.png", d, d.Ansichtsbild()); !errors.Is(err, ErrPfad) {
+	if _, _, err := b.Speichern("../aussen.png", Stand{}, d, d.Ansichtsbild()); !errors.Is(err, ErrPfad) {
 		t.Errorf("Pfad außerhalb: %v", err)
 	}
 }
@@ -133,7 +133,7 @@ func TestSpeichernNichtDurchOrdnerVerweis(t *testing.T) {
 		t.Fatal(err)
 	}
 	vorher, _ := os.ReadFile(filepath.Join(aussen, "x.png"))
-	if _, err := b.Speichern("2026-11/x.png", d, d.Ansichtsbild()); !errors.Is(err, ErrPfad) {
+	if _, _, err := b.Speichern("2026-11/x.png", Stand{}, d, d.Ansichtsbild()); !errors.Is(err, ErrPfad) {
 		t.Fatalf("Fehler %v, Soll ErrPfad", err)
 	}
 	if nachher, _ := os.ReadFile(filepath.Join(aussen, "x.png")); !bytes.Equal(nachher, vorher) {

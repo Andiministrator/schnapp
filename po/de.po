@@ -209,6 +209,16 @@ msgstr "Die bisherige Datei ließ sich nicht aktualisieren; als neue Aufnahme ge
 msgid "The old preview could not be removed."
 msgstr "Die alte Vorschau ließ sich nicht entfernen."
 
+# ui/cmd: Schließen, Konflikt, nichts zu speichern (F-107, F-109, F-110)
+msgid "Could not save: %v. Close again to discard the changes."
+msgstr "Speichern gescheitert: %v. Erneutes Schließen verwirft die Änderungen."
+
+msgid "No changes to save."
+msgstr "Keine Änderungen zu speichern."
+
+msgid "The file was changed elsewhere since it was opened; saved as a new capture: %s"
+msgstr "Die Datei wurde seit dem Öffnen anderswo geändert; als neue Aufnahme gespeichert: %s"
+
 msgid "No permission to write the file."
 msgstr "Keine Berechtigung, die Datei zu schreiben."
 
