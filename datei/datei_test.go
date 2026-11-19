@@ -1,0 +1,502 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package datei
+
+import (
+	"bytes"
+	"compress/zlib"
+	"encoding/base64"
+	"encoding/binary"
+	"encoding/xml"
+	"errors"
+	"hash/crc32"
+	"image"
+	"image/color"
+	"image/jpeg"
+	"image/png"
+	"io"
+	"os"
+	"reflect"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/Andiministrator/schnapp/dokument"
+)
+
+func testbild(b, h int) *image.NRGBA {
+	m := image.NewNRGBA(image.Rect(0, 0, b, h))
+	for y := 0; y < h; y++ {
+		for x := 0; x < b; x++ {
+			m.SetNRGBA(x, y, color.NRGBA{uint8(x * 3), uint8(y * 5), 90, 255})
+		}
+	}
+	return m
+}
+
+var rot = dokument.Strich{Farbe: color.NRGBA{220, 30, 30, 255}, Breite: 3.5}
+
+// volles baut ein Dokument mit allen Objektarten, Zuschnitt, Streifen und einer Schwärzung.
+func volles(t *testing.T) *dokument.Dokument {
+	t.Helper()
+	d, err := dokument.Neu(testbild(80, 60))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, o := range []dokument.Objekt{
+		dokument.GeraderPfeil(dokument.Pt(1, 2), dokument.Pt(70.25, 40), rot).MitGriff(dokument.Pt(30, 1e-3)),
+		dokument.Kasten{Bereich: dokument.R(dokument.Pt(5, 5), dokument.Pt(25.5, 15)), Strich: rot,
+			Fuellung: color.NRGBA{255, 255, 0, 64}, Eckradius: 2},
+		dokument.Text{Ort: dokument.Pt(10, 30), Inhalt: "Zeile <1> & \"2\"\nÄß\tTab", Schriftgrad: 14,
+			Farbe: color.NRGBA{0, 0, 0, 255}, Hintergrund: color.NRGBA{255, 255, 255, 200}, BreiteGrenze: 50},
+		dokument.Nummer{Mitte: dokument.Pt(60, 10), Wert: 3, Radius: 9, Farbe: color.NRGBA{30, 90, 200, 255}},
+	} {
+		if _, err := d.Hinzufuegen(o); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := d.Schwaerzen(image.Rect(40, 40, 50, 50), dokument.Schwaerzung{Farbe: color.NRGBA{0, 0, 0, 255}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.SetzeZuschnitt(image.Rect(2, 3, 78, 58)); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.SetzeStreifen([]dokument.Streifen{{Zeilen: true, Von: 20, Bis: 25}, {Zeilen: false, Von: 30, Bis: 33}}); err != nil {
+		t.Fatal(err)
+	}
+	return d
+}
+
+var meta = Metadaten{Autor: "Jo <Test> & \"Co\"", Erstellt: time.Date(2026, 11, 19, 14, 35, 12, 0, time.UTC),
+	Quelle: "Beispiel", Schlagworte: []string{"a&b", "<x>", "Leer zeichen"}, Bearbeitet: true}
+
+func schreibe(t *testing.T, d *dokument.Dokument, m Metadaten) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := SchreibeArbeitsdatei(&buf, d, d.Ansichtsbild(), m); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
+
+func blockDaten(t *testing.T, daten []byte, typ string) []byte {
+	t.Helper()
+	bl, err := leseBloecke(bytes.NewReader(daten))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, b := range bl {
+		if b.typ == typ {
+			return b.daten
+		}
+	}
+	t.Fatalf("Block %s fehlt", typ)
+	return nil
+}
+
+func TestRundlauf(t *testing.T) {
+	d := volles(t)
+	daten := schreibe(t, d, meta)
+	g, err := LeseArbeitsdatei(bytes.NewReader(daten))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g.Fremd {
+		t.Error("eigene Datei als fremd erkannt")
+	}
+	if !reflect.DeepEqual(g.Dokument.Objekte(), d.Objekte()) {
+		t.Errorf("Objekte:\n got %#v\nwant %#v", g.Dokument.Objekte(), d.Objekte())
+	}
+	if g.Dokument.Zuschnitt() != d.Zuschnitt() || !reflect.DeepEqual(g.Dokument.Streifen(), d.Streifen()) {
+		t.Errorf("Ansicht: %v %v", g.Dokument.Zuschnitt(), g.Dokument.Streifen())
+	}
+	if !bytes.Equal(g.Dokument.Original().Pix, d.Original().Pix) {
+		t.Error("Original verändert")
+	}
+	if !reflect.DeepEqual(g.Meta, meta) {
+		t.Errorf("Metadaten:\n got %#v\nwant %#v", g.Meta, meta)
+	}
+	if g.Dokument.KannRueckgaengig() {
+		t.Error("geladenes Dokument hat Verlauf")
+	}
+	// Zweiter Rundlauf ergibt dieselben Bytes (stabile Ausgabe).
+	if !bytes.Equal(schreibe(t, g.Dokument, g.Meta), daten) {
+		t.Error("zweiter Rundlauf schreibt andere Bytes")
+	}
+}
+
+// Das sichtbare Bild lesen alle PNG-Programme; die Blöcke sind zusätzlich, privat und nicht kopiersicher.
+func TestBloeckeNachSpezifikation(t *testing.T) {
+	d := volles(t)
+	daten := schreibe(t, d, Metadaten{})
+	bild, err := png.Decode(bytes.NewReader(daten))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !gleich(bild, d.Ansichtsbild()) {
+		t.Error("sichtbares Bild ist nicht die Ansicht")
+	}
+	bl, _ := leseBloecke(bytes.NewReader(daten))
+	var typen []string
+	for _, b := range bl {
+		typen = append(typen, b.typ)
+	}
+	n := len(typen)
+	if typen[n-3] != blockSVG || typen[n-2] != blockOriginal || typen[n-1] != "IEND" {
+		t.Errorf("Reihenfolge %v", typen)
+	}
+	for _, name := range []string{blockSVG, blockOriginal} {
+		klein := func(c byte) bool { return c&0x20 != 0 }
+		if !klein(name[0]) || !klein(name[1]) || klein(name[2]) || klein(name[3]) {
+			t.Errorf("%s: zusätzlich, privat, reserviert, nicht kopiersicher verlangt", name)
+		}
+	}
+	if b, err := LeseBild(bytes.NewReader(daten)); err != nil || b.Bounds() != d.Ansichtsbild().Bounds() {
+		t.Errorf("LeseBild: %v %v", b, err)
+	}
+}
+
+// gleich vergleicht zwei Bilder Pixel für Pixel (NRGBA), unabhängig vom Bildtyp.
+func gleich(a, b image.Image) bool {
+	if a.Bounds() != b.Bounds() {
+		return false
+	}
+	r := a.Bounds()
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		for x := r.Min.X; x < r.Max.X; x++ {
+			if color.NRGBAModel.Convert(a.At(x, y)) != color.NRGBAModel.Convert(b.At(x, y)) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func TestFremdesPNG(t *testing.T) {
+	var buf bytes.Buffer
+	png.Encode(&buf, testbild(7, 4))
+	g, err := LeseArbeitsdatei(&buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !g.Fremd || g.Dokument.Original().Rect.Dx() != 7 || len(g.Dokument.Objekte()) != 0 {
+		t.Errorf("fremdes PNG: %+v", g)
+	}
+}
+
+// ersetzeBlock tauscht die Daten eines Blocks (mit neuer, gültiger Prüfsumme).
+func ersetzeBlock(t *testing.T, daten []byte, typ string, neu []byte) []byte {
+	t.Helper()
+	bl, _ := leseBloecke(bytes.NewReader(daten))
+	for i := range bl {
+		if bl[i].typ == typ {
+			bl[i].daten = neu
+		}
+	}
+	var buf bytes.Buffer
+	schreibeBloecke(&buf, bl)
+	return buf.Bytes()
+}
+
+func zlibVon(s string) []byte {
+	var buf bytes.Buffer
+	zw := zlib.NewWriter(&buf)
+	zw.Write([]byte(s))
+	zw.Close()
+	return buf.Bytes()
+}
+
+func TestBeschaedigt(t *testing.T) {
+	d := volles(t)
+	gut := schreibe(t, d, meta)
+	svg := func(s string) []byte { return ersetzeBlock(t, gut, blockSVG, zlibVon(s)) }
+	kopf := `<svg xmlns="http://www.w3.org/2000/svg" xmlns:s="` + ns + `" s:format="1" width="80" height="60">`
+	ansicht := `<metadata><s:ansicht s:zuschnitt="0 0 80 60"/></metadata>`
+
+	falscheCRC := append([]byte(nil), gut...)
+	falscheCRC[len(falscheCRC)-5] ^= 1 // letzte Prüfsumme vor IEND gehört zu snAO
+
+	riesig := new(bytes.Buffer)
+	png.Encode(riesig, testbild(2, 2))
+	ihdr := riesig.Bytes()[8+8 : 8+8+13]
+	binary.BigEndian.PutUint32(ihdr[0:4], dokument.MaxSeite+1)
+	crc := crc32.NewIEEE()
+	crc.Write([]byte("IHDR"))
+	crc.Write(ihdr)
+	binary.BigEndian.PutUint32(riesig.Bytes()[8+8+13:], crc.Sum32())
+
+	nurSVG := func() []byte {
+		bl, _ := leseBloecke(bytes.NewReader(gut))
+		var buf bytes.Buffer
+		schreibeBloecke(&buf, ohneBloecke(bl, blockOriginal))
+		return buf.Bytes()
+	}()
+
+	// Bis auf den geprüften Punkt gültig, damit der Fall genau die Grenze trifft.
+	tief := kopf + ansicht + strings.Repeat("<g>", 100) + strings.Repeat("</g>", 100) + `</svg>`
+	text := `<g s:typ="text" s:ort="1,1" s:grad="10" s:farbe="#000000ff" s:hintergrund="#00000000" s:umbruch="0" s:inhalt=`
+
+	for name, daten := range map[string][]byte{
+		"kein PNG":          []byte("GIF89a…"),
+		"abgeschnitten":     gut[:len(gut)/2],
+		"Prüfsumme falsch":  falscheCRC,
+		"nur ein Block":     nurSVG,
+		"kein zlib":         ersetzeBlock(t, gut, blockSVG, []byte("kein zlib")),
+		"kein XML":          svg("<svg"),
+		"Wurzel falsch":     svg(`<html/>`),
+		"Version fehlt":     svg(`<svg xmlns="http://www.w3.org/2000/svg" width="80" height="60">` + ansicht + `</svg>`),
+		"Version neuer":     svg(strings.Replace(kopf, `s:format="1"`, `s:format="2"`, 1) + ansicht + `</svg>`),
+		"Ansicht fehlt":     svg(kopf + `</svg>`),
+		"unbekannter Typ":   svg(kopf + ansicht + `<g s:typ="stempel"/></svg>`),
+		"Farbe kaputt":      svg(kopf + ansicht + `<g s:typ="nummer" s:mitte="1,1" s:wert="1" s:radius="2" s:farbe="rot"/></svg>`),
+		"Zahl NaN":          svg(kopf + ansicht + `<g s:typ="nummer" s:mitte="1,1" s:wert="1" s:radius="NaN" s:farbe="#00000000"/></svg>`),
+		"Größe passt nicht": svg(strings.Replace(kopf, `width="80"`, `width="81"`, 1) + ansicht + `</svg>`),
+		"Zuschnitt außen":   svg(kopf + `<metadata><s:ansicht s:zuschnitt="0 0 99 60"/></metadata></svg>`),
+		"zu tief":           svg(tief),
+		"Entität":           svg(`<!DOCTYPE svg [<!ENTITY x "y">]>` + kopf + ansicht + text + `"&x;"/></svg>`),
+		"Original zu groß":  ersetzeBlock(t, gut, blockOriginal, riesig.Bytes()),
+		"Original kein PNG": ersetzeBlock(t, gut, blockOriginal, []byte("x")),
+	} {
+		if _, err := LeseArbeitsdatei(bytes.NewReader(daten)); err == nil {
+			t.Errorf("%s: kein Fehler", name)
+		} else if !IstBeschaedigt(err) && name != "Version neuer" {
+			t.Errorf("%s: Fehler %v nicht als beschädigt erkennbar", name, err)
+		}
+	}
+	// Gegenstücke: dieselben Fälle ohne den geprüften Fehler sind gültig.
+	for name, daten := range map[string][]byte{
+		"flach statt tief":  svg(kopf + ansicht + strings.Repeat("<g>", 60) + strings.Repeat("</g>", 60) + `</svg>`),
+		"Text ohne Entität": svg(kopf + ansicht + text + `"y"/></svg>`),
+	} {
+		if _, err := LeseArbeitsdatei(bytes.NewReader(daten)); err != nil {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	// Eine beschädigte Arbeitsdatei lässt sich als einfaches Bild öffnen.
+	if _, err := LeseBild(bytes.NewReader(nurSVG)); err != nil {
+		t.Errorf("LeseBild einer beschädigten Datei: %v", err)
+	}
+}
+
+// Keine Spuren nach außen (Kernprinzip 3, ADR-0008): weder Rechnername noch Heimatordner noch Werkzeugnamen in den
+// Bytes oder im entpackten SVG.
+func TestKeineSpuren(t *testing.T) {
+	d := volles(t)
+	daten := schreibe(t, d, Metadaten{})
+	zr, err := zlib.NewReader(bytes.NewReader(blockDaten(t, daten, blockSVG)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	svg, _ := io.ReadAll(zr)
+	var exp bytes.Buffer
+	ExportiereSVG(&exp, d)
+	verboten := []string{"golang", "Go-http", "/home/", "/tmp/", "Software", "Creator", "Producer"}
+	if h, err := os.Hostname(); err == nil && len(h) > 2 {
+		verboten = append(verboten, h)
+	}
+	if h, err := os.UserHomeDir(); err == nil && len(h) > 1 {
+		verboten = append(verboten, h)
+	}
+	for _, quelle := range map[string][]byte{"Datei": daten, "SVG": svg, "Export": exp.Bytes()} {
+		for i, v := range verboten {
+			if bytes.Contains(quelle, []byte(v)) {
+				t.Errorf("verbotene Angabe Nr. %d gefunden", i) // den Wert selbst nicht ausgeben (Rechnername)
+			}
+		}
+	}
+	// Ohne Autor und Datum stehen keine Attribute dafür im SVG.
+	if bytes.Contains(svg, []byte("s:autor")) || bytes.Contains(svg, []byte("s:erstellt")) {
+		t.Error("leere Metadaten geschrieben")
+	}
+}
+
+// muster ist eine Farbe, die nur im zu schwärzenden Bereich vorkommt.
+var muster = color.NRGBA{13, 37, 201, 255}
+
+func enthaeltFarbe(b image.Image, c color.NRGBA) bool {
+	r := b.Bounds()
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		for x := r.Min.X; x < r.Max.X; x++ {
+			if color.NRGBAModel.Convert(b.At(x, y)).(color.NRGBA) == c {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// alleBilder liefert jedes Bild, das in einer der Ausgaben steckt: sichtbares PNG, snAO-Original, flaches PNG und
+// das im SVG-Export eingebettete Original. JPG wird verlustbehaftet geprüft (kein Pixel nahe am Muster).
+func alleBilder(t *testing.T, d *dokument.Dokument) map[string]image.Image {
+	t.Helper()
+	res := map[string]image.Image{}
+	daten := schreibe(t, d, Metadaten{})
+	res["sichtbar"], _ = png.Decode(bytes.NewReader(daten))
+	res["snAO"], _ = png.Decode(bytes.NewReader(blockDaten(t, daten, blockOriginal)))
+	var flach bytes.Buffer
+	ExportierePNG(&flach, d.Ansichtsbild())
+	res["flach"], _ = png.Decode(&flach)
+	var exp bytes.Buffer
+	ExportiereSVG(&exp, d)
+	s := exp.String()
+	i := strings.Index(s, "data:image/png;base64,")
+	j := strings.Index(s[i:], `"`)
+	roh, err := base64.StdEncoding.DecodeString(s[i+len("data:image/png;base64,") : i+j])
+	if err != nil {
+		t.Fatal(err)
+	}
+	res["svg"], _ = png.Decode(bytes.NewReader(roh))
+	var jpg bytes.Buffer
+	ExportiereJPG(&jpg, d.Ansichtsbild(), 100)
+	res["jpg"], _ = jpeg.Decode(&jpg)
+	for name, b := range res {
+		if b == nil {
+			t.Fatalf("Bild %s nicht lesbar", name)
+		}
+	}
+	return res
+}
+
+func nahAmMuster(b image.Image) bool {
+	r := b.Bounds()
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		for x := r.Min.X; x < r.Max.X; x++ {
+			c := color.NRGBAModel.Convert(b.At(x, y)).(color.NRGBA)
+			if abs(int(c.R)-int(muster.R)) < 12 && abs(int(c.G)-int(muster.G)) < 12 && abs(int(c.B)-int(muster.B)) < 12 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func abs(v int) int {
+	if v < 0 {
+		return -v
+	}
+	return v
+}
+
+// [S] Geschwärzter Inhalt steckt in keiner Ausgabe — auch nicht im mitgespeicherten Original und auch dann nicht,
+// wenn der geschwärzte Bereich weggeschnitten oder weggestaucht ist (ADR-0008, Kernprinzip 2).
+//
+// Schwarz füllen: eine einfarbige Fläche (Muster) darf nirgends übrig bleiben, auch im JPG nicht annähernd.
+// Verpixeln: Eine einfarbige Fläche behielte ihre Farbe (Mittelwert), das ist kein Leck. Geprüft wird deshalb ein
+// Schachbrett aus zwei Farben wie die Kanten von Schrift: danach darf keine der beiden Farben übrig sein.
+func TestSchwaerzenUeberAlleWege(t *testing.T) {
+	zweite := color.NRGBA{240, 230, 20, 255}
+	faelle := []struct {
+		name        string
+		s           dokument.Schwaerzung
+		schachbrett bool
+	}{
+		{"schwarz", dokument.Schwaerzung{Farbe: color.NRGBA{0, 0, 0, 255}}, false},
+		{"verpixelt", dokument.Schwaerzung{Block: dokument.MinBlock}, true},
+	}
+	for _, f := range faelle {
+		quelle := testbild(80, 60)
+		for y := 10; y < 20; y++ {
+			for x := 60; x < 75; x++ {
+				c := muster
+				if f.schachbrett && (x+y)%2 == 1 {
+					c = zweite
+				}
+				quelle.SetNRGBA(x, y, c)
+			}
+		}
+		pruefe := func(name string, b image.Image) bool {
+			switch {
+			case name == "jpg" && f.schachbrett:
+				return false // Schachbrett übersteht JPG ohnehin nicht pixelgenau; geprüft in den verlustfreien Wegen
+			case name == "jpg":
+				return nahAmMuster(b)
+			case f.schachbrett:
+				return enthaeltFarbe(b, muster) || enthaeltFarbe(b, zweite)
+			}
+			return enthaeltFarbe(b, muster)
+		}
+		d, err := dokument.Neu(quelle)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Gegenprobe der Prüfung selbst: vor dem Schwärzen findet sie das Muster (außer im JPG-Sonderfall).
+		for name, b := range alleBilder(t, d) {
+			if !pruefe(name, b) && !(name == "jpg" && f.schachbrett) {
+				t.Fatalf("%s: Prüfung findet das Muster in %s nicht einmal vor dem Schwärzen", f.name, name)
+			}
+		}
+		if err := d.Schwaerzen(image.Rect(60, 10, 75, 20), f.s); err != nil {
+			t.Fatal(err)
+		}
+		// Geschwärzter Bereich zusätzlich aus der Ansicht genommen: das Original darf ihn trotzdem nicht zeigen.
+		d.SetzeStreifen([]dokument.Streifen{{Zeilen: true, Von: 5, Bis: 25}})
+		for name, b := range alleBilder(t, d) {
+			if pruefe(name, b) {
+				t.Errorf("%s: Muster in %s noch vorhanden", f.name, name)
+			}
+		}
+	}
+}
+
+func TestExportSVG(t *testing.T) {
+	d := volles(t)
+	var buf bytes.Buffer
+	if err := ExportiereSVG(&buf, d); err != nil {
+		t.Fatal(err)
+	}
+	// Gültiges XML; eine Kachel je sichtbarem Rechteck: Spalten 2..30, 33..78 × Zeilen 3..20, 25..58 = 4.
+	dec := xml.NewDecoder(&buf)
+	dec.Strict = true
+	var kacheln []string
+	for {
+		tok, err := dec.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		if e, ok := tok.(xml.StartElement); ok && e.Name.Local == "svg" {
+			for _, a := range e.Attr {
+				if a.Name.Local == "viewBox" {
+					kacheln = append(kacheln, a.Value)
+				}
+			}
+		}
+	}
+	want := []string{"0 0 73 50", "2 3 28 17", "33 3 45 17", "2 25 28 33", "33 25 45 33"}
+	if !reflect.DeepEqual(kacheln, want) {
+		t.Errorf("viewBoxen %v, want %v", kacheln, want)
+	}
+	if g := d.Groesse(); g != image.Pt(73, 50) {
+		t.Errorf("Größe %v", g)
+	}
+}
+
+func TestExportJPG(t *testing.T) {
+	for _, q := range []int{0, 101} {
+		if ExportiereJPG(io.Discard, testbild(2, 2), q) == nil {
+			t.Errorf("Qualität %d ohne Fehler", q)
+		}
+	}
+	// Transparenz wird Weiß.
+	b := image.NewNRGBA(image.Rect(0, 0, 8, 8))
+	var buf bytes.Buffer
+	if err := ExportiereJPG(&buf, b, 95); err != nil {
+		t.Fatal(err)
+	}
+	j, _ := jpeg.Decode(&buf)
+	if r, g, bb, _ := j.At(3, 3).RGBA(); r>>8 < 250 || g>>8 < 250 || bb>>8 < 250 {
+		t.Errorf("transparent → %v", j.At(3, 3))
+	}
+}
+
+func TestLeseBloeckeGrenzen(t *testing.T) {
+	var buf bytes.Buffer
+	buf.Write(pngSignatur)
+	binary.Write(&buf, binary.BigEndian, uint32(maxBlock+1))
+	buf.WriteString("IDAT")
+	if _, err := leseBloecke(&buf); !errors.Is(err, ErrZuGross) {
+		t.Errorf("übergroßer Block: %v", err)
+	}
+}
