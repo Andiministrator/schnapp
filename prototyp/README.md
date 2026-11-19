@@ -13,6 +13,9 @@ Das Skript legt eine Kopie von Gio unter `tmp/gio-gepatcht` an und wendet `gio-a
 - `app.FullscreenOn(name)` — Vollbildfenster auf einer bestimmten Wayland-Ausgabe (`xdg_toplevel.set_fullscreen`
   mit Ausgabe statt `nil`),
 - `app.WaylandOutputs()` — Ausgaben mit Namen auflisten (`wl_output` Version 4 statt 2).
+- **gebrochene Skalierung** (z. B. 1,6) über `wp_fractional_scale_v1` und `wp_viewporter`: Puffer in echter
+  Pixelgröße statt Ganzzahl-Skala, die KWin herunterrechnet. Protokoll-Code mit wayland-scanner aus
+  wayland-protocols 1.45 erzeugt (`knowledge/sources-visited.md`).
 
 Build-Tags: `novulkan` (keine Vulkan-Header nötig, OpenGL ES über EGL), `nox11` (nur Wayland, ADR-0007).
 Gio braucht unter Linux cgo (libwayland-client, libEGL, libxkbcommon).

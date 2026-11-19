@@ -65,6 +65,8 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | https://invent.kde.org/plasma/kwin/-/raw/master/src/plugins/screenshot/screenshotdbusinterface2.cpp | 2026-11-19 | 2026-11-19 | live | WebFetch | Pipe, raw-Format; Berechtigungsprüfung nicht in dieser Datei | topics/kwin-screenshot.md |
 | https://bugs.kde.org/show_bug.cgi?id=435696 | 2026-11-19 | 2026-11-19 | indirect | WebSearch | Exec-Pfad muss absolut sein | topics/kwin-screenshot.md |
 | https://mail.kde.org/pipermail/kde-frameworks-devel/2020-June/111948.html | 2026-11-19 | 2026-11-19 | indirect | WebSearch | Einführung X-KDE-DBUS-Restricted-Interfaces | topics/kwin-screenshot.md |
+| https://gitlab.freedesktop.org/wayland/wayland-protocols/-/raw/1.45/staging/fractional-scale/fractional-scale-v1.xml | 2026-11-19 | 2026-11-19 | live | curl | Protokoll gebrochene Skalierung (preferred_scale in 1/120) | prototyp/gio-ausgabe.patch (erzeugter Code) |
+| https://gitlab.freedesktop.org/wayland/wayland-protocols/-/raw/1.45/stable/viewporter/viewporter.xml | 2026-11-19 | 2026-11-19 | live | curl | Protokoll Viewport (Zielgröße der Fläche) | prototyp/gio-ausgabe.patch (erzeugter Code) |
 
 ## Name und Lizenz
 
