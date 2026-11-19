@@ -1,6 +1,6 @@
 # Marke Schnapp
 
-Logo, Symbol und Farben. Stand 19.11.2026: **Runde 2, Entwürfe** — noch nichts entschieden.
+Logo, Symbol und Farben. Stand 19.11.2026: **Runde 3, Entwürfe** — noch nichts entschieden.
 
 ## Vorgaben (Andi, 19.11.2026)
 
@@ -10,6 +10,8 @@ Logo, Symbol und Farben. Stand 19.11.2026: **Runde 2, Entwürfe** — noch nicht
 - Ideen von Andi: Filmklappe (wirkt nach Videoschnitt — verworfen), Maskottchen „Schnappi“ (Krokodil).
 - Runde 2 (Andi): dunkelgrauer Grund, dezentes Grün und Orange, auch für die Oberfläche; das S als Krokodilkopf
   oder ein langes Krokodil mit offenem Maul unter dem Schriftzug.
+- Runde 3 (Andi): S-Krokodil mit dem unteren Bogen als Maul (offen nach links), oberer Bogen als Kopf; das lange
+  Krokodil ausgemalt und runder; Grün dunkler, Orange heller.
 
 ## Festlegungen der Entwürfe
 
@@ -21,5 +23,5 @@ Logo, Symbol und Farben. Stand 19.11.2026: **Runde 2, Entwürfe** — noch nicht
 
 ## Entwürfe
 
-`entwuerfe/runde-2/vergleich.html` (aktuell) und `entwuerfe/runde-1/vergleich.html` im Browser öffnen.
-Neu erzeugen: `python3 marke/werkzeug/runde1.py` bzw. `runde2.py`.
+`entwuerfe/runde-3/vergleich.html` (aktuell), ältere Runden daneben. Neu erzeugen: `python3 marke/werkzeug/runde3.py`
+(entsprechend `runde1.py`, `runde2.py`).
