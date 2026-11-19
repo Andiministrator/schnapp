@@ -43,6 +43,17 @@ Folgen für Schnapp:
 - Wrapper-Skripte zählen nicht, es zählt die tatsächlich laufende Binärdatei.
 - Flatpak später: eigener Weg (Portal), siehe ADR-0007.
 
+## Gemessen im Prototyp (19.11.2026, Plasma 6.8, drei Monitore, einer mit Skala 1,6)
+
+- **Aufnahme ging ohne installierte `.desktop`-Datei** — die Binärdatei unter `~/.local/bin` bekam ScreenShot2
+  ohne Berechtigungseintrag. Ursache nicht geklärt (keine Prozess-Introspektion). Nicht darauf verlassen: auf anderen
+  Systemen kann die Sperre greifen; Vorlage `prototyp/schnapp-prototyp.desktop.in`.
+- `CaptureScreen` je Bildschirm 17–34 ms, `CaptureWorkspace` über alle drei 127 ms. Mit `native-resolution`
+  liefert `CaptureWorkspace` bei gemischter Skalierung ein Bild in der **größten** Skala (Monitore mit Skala 1
+  werden hochgerechnet) — für das Overlay deshalb je Bildschirm einzeln aufnehmen.
+- Das Format kam als QImage-Format 16 (RGBX8888, Byte-Reihenfolge R G B x); Umwandlung aller sechs
+  32-Bit-Formate in `prototyp/format.go`.
+
 ## Folgerungen für den Entwurf
 
 - **Erst aufnehmen, dann auswählen** (wie Spectacle): `CaptureWorkspace` oder je Bildschirm `CaptureScreen` mit

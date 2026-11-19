@@ -1,0 +1,132 @@
+diff --git a/app/os.go b/app/os.go
+index 6da6d34..9cd4084 100644
+--- a/app/os.go
++++ b/app/os.go
+@@ -49,6 +49,9 @@ type Config struct {
+ 	TopMost bool
+ 	// Focused reports whether the window is focused.
+ 	Focused bool
++	// Output names the Wayland output (wl_output name, e.g. "DP-1") a
++	// fullscreen window is placed on. Empty lets the compositor choose.
++	Output string
+ 	// decoHeight is the height of the fallback decoration for platforms such
+ 	// as Wayland that may need fallback client-side decorations.
+ 	decoHeight unit.Dp
+diff --git a/app/os_wayland.c b/app/os_wayland.c
+index 4db5b0b..58556ff 100644
+--- a/app/os_wayland.c
++++ b/app/os_wayland.c
+@@ -44,12 +44,18 @@ const struct wl_callback_listener gio_callback_listener = {
+ 	.done = gio_onFrameDone,
+ };
+ 
++static void gio_output_description(void *data, struct wl_output *output, const char *description) {
++}
++
+ const struct wl_output_listener gio_output_listener = {
+ 	// Cast away const parameter.
+ 	.geometry = (void (*)(void *, struct wl_output *, int32_t,  int32_t,  int32_t,  int32_t,  int32_t,  const char *, const char *, int32_t))gio_onOutputGeometry,
+ 	.mode = gio_onOutputMode,
+ 	.done = gio_onOutputDone,
+ 	.scale = gio_onOutputScale,
++	// Cast away const parameter.
++	.name = (void (*)(void *, struct wl_output *, const char *))gio_onOutputName,
++	.description = gio_output_description,
+ };
+ 
+ const struct wl_seat_listener gio_seat_listener = {
+diff --git a/app/os_wayland.go b/app/os_wayland.go
+index 3c893a7..b085bb0 100644
+--- a/app/os_wayland.go
++++ b/app/os_wayland.go
+@@ -233,6 +233,7 @@ type poller struct {
+ }
+ 
+ type wlOutput struct {
++	name       string
+ 	width      int
+ 	height     int
+ 	physWidth  int
+@@ -623,6 +624,46 @@ func gio_onOutputMode(data unsafe.Pointer, output *C.struct_wl_output, flags C.u
+ 	c.height = int(height)
+ }
+ 
++//export gio_onOutputName
++func gio_onOutputName(data unsafe.Pointer, output *C.struct_wl_output, name *C.char) {
++	d := callbackLoad(data).(*wlDisplay)
++	d.outputConfig[output].name = C.GoString(name)
++}
++
++// outputByName returns the output with the given name, or nil.
++func (d *wlDisplay) outputByName(name string) *C.struct_wl_output {
++	if name == "" {
++		return nil
++	}
++	for o, c := range d.outputConfig {
++		if c.name == name {
++			return o
++		}
++	}
++	return nil
++}
++
++// WaylandOutput describes a Wayland output as announced by wl_output.
++type WaylandOutput struct {
++	Name          string
++	Width, Height int // current mode in physical pixels
++	Scale         int // integer buffer scale
++}
++
++// WaylandOutputs connects to the Wayland display and lists its outputs.
++func WaylandOutputs() ([]WaylandOutput, error) {
++	d, err := newWLDisplay()
++	if err != nil {
++		return nil, err
++	}
++	defer d.destroy()
++	var out []WaylandOutput
++	for _, c := range d.outputConfig {
++		out = append(out, WaylandOutput{Name: c.name, Width: c.width, Height: c.height, Scale: c.scale})
++	}
++	return out, nil
++}
++
+ //export gio_onOutputGeometry
+ func gio_onOutputGeometry(data unsafe.Pointer, output *C.struct_wl_output, x, y, physWidth, physHeight, subpixel C.int32_t, make, model *C.char, transform C.int32_t) {
+ 	d := callbackLoad(data).(*wlDisplay)
+@@ -690,7 +731,7 @@ func gio_onRegistryGlobal(data unsafe.Pointer, reg *C.struct_wl_registry, name C
+ 	case "wl_compositor":
+ 		d.compositor = (*C.struct_wl_compositor)(C.wl_registry_bind(reg, name, &C.wl_compositor_interface, 3))
+ 	case "wl_output":
+-		output := (*C.struct_wl_output)(C.wl_registry_bind(reg, name, &C.wl_output_interface, 2))
++		output := (*C.struct_wl_output)(C.wl_registry_bind(reg, name, &C.wl_output_interface, C.uint32_t(min(version, 4))))
+ 		C.wl_output_add_listener(output, &C.gio_output_listener, unsafe.Pointer(d.disp))
+ 		d.outputMap[name] = output
+ 		d.outputConfig[output] = new(wlOutput)
+@@ -1095,7 +1136,7 @@ func (w *window) Configure(options []Option) {
+ 		default:
+ 			w.config.Mode = Fullscreen
+ 			w.wsize = w.config.Size
+-			C.xdg_toplevel_set_fullscreen(w.topLvl, nil)
++			C.xdg_toplevel_set_fullscreen(w.topLvl, w.disp.outputByName(cnf.Output))
+ 		}
+ 	case Minimized:
+ 		switch prev.Mode {
+diff --git a/app/window.go b/app/window.go
+index a5558f7..f030bfc 100644
+--- a/app/window.go
++++ b/app/window.go
+@@ -971,6 +971,13 @@ func CustomRenderer(custom bool) Option {
+ 	}
+ }
+ 
++// FullscreenOn sets the Wayland output a fullscreen window is placed on.
++func FullscreenOn(output string) Option {
++	return func(_ unit.Metric, cnf *Config) {
++		cnf.Output = output
++	}
++}
++
+ // Decorated controls whether Gio and/or the platform are responsible
+ // for drawing window decorations. Providing false indicates that
+ // the application will either be undecorated or will draw its own decorations.

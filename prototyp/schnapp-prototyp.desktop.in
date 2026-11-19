@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Schnapp-Prototyp
+Comment=Wegwerf-Prototyp für Schnapp (Aufnahme über KWin ScreenShot2)
+Exec=@EXEC@
+Icon=applets-screenshooter
+Terminal=false
+NoDisplay=true
+X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2
