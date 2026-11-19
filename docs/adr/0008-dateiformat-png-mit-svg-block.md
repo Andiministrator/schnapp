@@ -55,7 +55,8 @@ man überall verschicken kann und die in Schnapp voll bearbeitbar bleibt.
   Beides lässt sich mit `LeseBild` als einfaches Bild öffnen; fremde PNG mit Daten nach `IEND` liest Schnapp wie jeder
   Bildbetrachter (F-65).
 - **Grenzen beim Lesen:** Seite ≤ 32768, Fläche ≤ 2^28 Pixel (1 GiB als NRGBA, wie die Aufnahmeschicht), Block ≤ 512
-  MiB, Datei ≤ 1 GiB, entpacktes SVG ≤ 64 MiB, SVG-Tiefe ≤ 64, ≤ 200 000 Elemente, XML streng ohne Entitäten, ≤ 1024 Stauch-Streifen (`document.MaxStreifen`, F-136; Überschreitung ist ein Fehler, auch beim Setzen).
+  MiB, Datei ≤ 1 GiB, entpacktes SVG ≤ 64 MiB, SVG-Tiefe ≤ 64, ≤ 200 000 Elemente, XML streng ohne Entitäten, ≤ 1024 Stauch-Streifen (`document.MaxStreifen`, F-136) und (Zeilenstreifen+1)×(Spaltenstreifen+1) ≤ 4096
+  Kacheln (`document.MaxKacheln`, F-141); Überschreitung ist ein Fehler, auch beim Setzen.
 - **SVG-Export ohne Weggeschnittenes:** Der Export bettet je sichtbarer Kachel nur deren Pixelausschnitt ein, nie das
   ganze Original, und Beschriftungen ganz außerhalb der Ansicht entfallen (F-66) — Zuschnitt und Stauchen sind beim
   Weitergeben endgültig (die Arbeitsdatei bleibt nicht zerstörend).

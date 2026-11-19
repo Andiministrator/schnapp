@@ -71,8 +71,12 @@ const (
 	MaxTextZeichen = 10_000
 	MaxObjekte     = 10_000
 	// MaxStreifen begrenzt die Stauch-Streifen eines Dokuments (F-136). Echte Dokumente haben eine Handvoll; die
-	// Grenze liegt weit darüber und hält Prüfen, Rendern und Export auch bei einer präparierten Datei kurz.
+	// Grenze liegt weit darüber und hält Prüfen und Rendern auch bei einer präparierten Datei kurz.
 	MaxStreifen = 1024
+	// MaxKacheln begrenzt (Zeilenstreifen+1)×(Spaltenstreifen+1): Der SVG-Export schreibt je Kachel ein eigenes
+	// PNG (F-141); 512+512 Streifen ergäben 263 169 Kacheln und rund 14 s Export. Gezählt wird die Rohliste,
+	// auch vom Zuschnitt verdeckte Streifen (strenger, nie lockerer).
+	MaxKacheln = 4096
 )
 
 // endlich meldet, ob alle Werte endliche Zahlen im Koordinatenbereich sind.

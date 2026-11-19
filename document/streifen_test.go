@@ -137,3 +137,33 @@ func TestGrenzeStreifen(t *testing.T) {
 		t.Errorf("%d Streifen, soll %d", len(d.Streifen()), MaxStreifen)
 	}
 }
+
+// Zeilen- und Spaltenstreifen zusammen dürfen höchstens MaxKacheln Kacheln ergeben (F-141): 63+63 → 4096 erlaubt,
+// 64+63 und 63+64 → 4160 abgelehnt (beide Richtungen, Verify F-141), und eine Achse allein darf bis MaxStreifen.
+func TestGrenzeKacheln(t *testing.T) {
+	d := neu(t, 400, 400)
+	liste := func(spalten, zeilen int) []Streifen {
+		var st []Streifen
+		for i := 0; i < spalten; i++ {
+			st = append(st, Streifen{Zeilen: false, Von: 3 * i, Bis: 3*i + 1})
+		}
+		for i := 0; i < zeilen; i++ {
+			st = append(st, Streifen{Zeilen: true, Von: 3 * i, Bis: 3*i + 1})
+		}
+		return st
+	}
+	if err := d.SetzeStreifen(liste(63, 63)); err != nil {
+		t.Fatalf("63+63 Streifen (4096 Kacheln) abgelehnt: %v", err)
+	}
+	for _, f := range [][2]int{{64, 63}, {63, 64}, {100, 100}} {
+		if err := d.SetzeStreifen(liste(f[0], f[1])); err == nil {
+			t.Errorf("%d+%d Streifen ohne Fehler", f[0], f[1])
+		}
+	}
+	if n := len(d.Streifen()); n != 126 {
+		t.Errorf("%d Streifen nach Ablehnung, soll 126", n)
+	}
+	if err := d.SetzeStreifen(liste(0, 130)); err != nil {
+		t.Errorf("130 Zeilenstreifen allein abgelehnt: %v", err)
+	}
+}

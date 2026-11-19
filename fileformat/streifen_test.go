@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Andiministrator/schnapp/document"
 )
@@ -51,5 +52,36 @@ func TestLesenZuvieleStreifen(t *testing.T) {
 	}
 	if _, err := LeseArbeitsdatei(bytes.NewReader(mit(document.MaxStreifen + 1))); err == nil {
 		t.Error("MaxStreifen+1 ohne Fehler gelesen")
+	}
+}
+
+// F-141: An der Kachelgrenze (63 Spalten- und 63 Zeilenstreifen, 4096 Kacheln) bleibt der SVG-Export kurz; vor der
+// Grenze brauchten erlaubte 512+512 Streifen auf 2100×2100 rund 14 s.
+func TestExportSVGKachelgrenze(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Zeitmessung")
+	}
+	d, err := document.Neu(testbild(2100, 2100))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var st []document.Streifen
+	for i := 0; i < 63; i++ {
+		st = append(st, document.Streifen{Zeilen: false, Von: 30*i + 15, Bis: 30*i + 16},
+			document.Streifen{Zeilen: true, Von: 30*i + 15, Bis: 30*i + 16})
+	}
+	if err := d.SetzeStreifen(st); err != nil {
+		t.Fatal(err)
+	}
+	start := time.Now()
+	var b bytes.Buffer
+	if err := ExportiereSVG(&b, d); err != nil {
+		t.Fatal(err)
+	}
+	if dauer := time.Since(start); dauer > 2*time.Second {
+		t.Errorf("ExportiereSVG an der Kachelgrenze %v, soll unter 2 s", dauer)
+	}
+	if n := strings.Count(b.String(), `<use href="#objekte"/>`); n != document.MaxKacheln {
+		t.Errorf("%d Kacheln im Export, soll %d", n, document.MaxKacheln)
 	}
 }

@@ -222,6 +222,15 @@ func (d *Dokument) pruefeAnsicht(z image.Rectangle, st []Streifen) error {
 	if len(st) > MaxStreifen {
 		return fmt.Errorf("dokument: mehr als %d Streifen", MaxStreifen)
 	}
+	zeilen := 0
+	for _, s := range st {
+		if s.Zeilen {
+			zeilen++
+		}
+	}
+	if (zeilen+1)*(len(st)-zeilen+1) > MaxKacheln {
+		return fmt.Errorf("dokument: Streifen ergeben mehr als %d Kacheln", MaxKacheln)
+	}
 	grenze := map[bool]int{false: d.original.Rect.Dx(), true: d.original.Rect.Dy()}
 	for i, s := range st {
 		if s.Von < 0 || s.Bis > grenze[s.Zeilen] || s.Von >= s.Bis {
