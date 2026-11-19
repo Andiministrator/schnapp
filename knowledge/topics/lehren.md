@@ -102,3 +102,25 @@ Stand: 2026-11-19 (ergänzt nach Sprint 1). Kurze Regeln aus Fehlern und Befunde
 - **Kritiker mit anderem Modell lohnt sich** (Fable, Sitzungs-QA Sprint 4 Teil 2): fand einen Datenverlust (Datei
   während des Editierens weg) und eine Speicherfalle (Schriftgrad 1e5) trotz grüner Tests — Proben im eigenen
   `tmp/`-Modul mit `GOPROXY=off` statt Änderungen im Repo.
+
+## Sprint-Abschluss 4 (19.11.2026)
+
+- **Ein Schutz darf keine echte Arbeit blockieren:** Ein Rechenbudget gegen präparierte Dateien, das beim *Speichern*
+  abbrach, lehnte schon 9 lange Pfeile auf zwei 4K-Monitoren ab — mit dem Speichern beim Schließen (F-107) drohte
+  Verlust (F-131). Schutz gegen fremde Eingaben gehört an den Eingang (Öffnen), nie an den Ausgang einer Bearbeitung.
+  Testfälle für „realistisch“ müssen alle Objektarten enthalten, nicht nur die billigen.
+- **Ein Kostenmodell braucht Grundkosten:** Grad² je Glyphe und Fläche je Füllung übersehen feste Kosten (winzige
+  Glyphen ~0,5 µs, Polygone mit riesigen Koordinaten). Kostenmodell und Rendern über denselben Code (Trockenlauf)
+  führen, sonst laufen sie auseinander.
+- **Jede Nacharbeit an [S]/[K] braucht einen eigenen Verify-Lauf:** Kritiker → Nacharbeit → Verify → Nacharbeit →
+  Verify fand in jeder Runde echte Fehler in der *Nacharbeit* (Vorschub bei Emoji, Budget-Lücken, zu enges Budget).
+  Die Kette endet erst, wenn eine Runde nur Doku/Tests anfasst.
+- **„Gegenproben rot“ je Fix-Zeile belegen:** Ein Sammelsatz im Commit deckte drei von sieben Fix-Zeilen nicht
+  (Verify V-4, V2-6). Gegenprobe heißt: genau die eine Zeile zurückbauen, prüfen, dass der Test den Zweig betritt.
+- **`Co-Authored-By` ohne Leerzeile dazwischen:** Eine Leerzeile beendet den Trailer-Block; git liest dann nur die
+  letzte Zeile. Prüfen: `git log -1 --format='%(trailers:key=Co-Authored-By,valueonly)'`. Ungepushte Commits lassen
+  sich mit gleichem Baum per `git commit-tree` neu bauen.
+- **`eigenerOrdner` heilt Rechte:** Ein Test, der einen Monatsordner auf 0500 setzt, um das Zurückschreiben scheitern
+  zu lassen, sieht das Ausweichen trotzdem gelingen — `Ablegen` bringt den Ordner wieder auf 0700 (ADR-0016).
+- **Agenten schreiben Testdateien gern per Heredoc** (`cat > datei <<EOF`), obwohl der Prompt es verbietet: Das
+  Verbot ausdrücklich auch für Quelltext nennen und den Weg (Write-Werkzeug) dazu.
