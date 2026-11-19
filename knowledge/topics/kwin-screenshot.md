@@ -69,10 +69,13 @@ Zeile ≤ 262144 Bytes, Rohdaten ≤ 1 GiB (die Pipe wird vor der Antwort gelese
 Fehler unter eigenem Namensraum (`org.kde.KWin.ScreenShot3.Error.Cancelled`, laut `screenshotdbusinterface3.cpp`);
 die Schicht erkennt beide (F-49).
 
-**Gegen echtes KWin gelaufen (19.11.2026, Karte #27, KWin 6.8.3, drei Monitore):** Wegwerf-Probe mit
-`aufnahme.NeuKWin()` und `oberflaeche.Monitore()`. ScreenShot3 fehlt, die Schicht fiel wie vorgesehen auf
+**Gegen echtes KWin gelaufen (19.11.2026, Karte #27, KWin 6.8.3, drei Monitore):** Wegwerf-Probe (nicht
+versioniert) mit `aufnahme.NeuKWin()` und `oberflaeche.Monitore()`. Per Introspektion fehlt ScreenShot3, ScreenShot2
+ist da; daraus abgeleitet (die Probe gibt die Wahl nicht aus) fiel die Schicht wie vorgesehen auf
 ScreenShot2 (Pipe) zurück. Je Monitor mit und ohne Mauszeiger: Bildgröße gleich dem Wayland-Modus (physische
-Pixel), Alpha überall 255, Bild nicht einfarbig, `Bild.Bildschirm` gesetzt; 11–35 ms je Aufnahme (4K-Breitbild
+Pixel), Bild nicht einfarbig (RGB weicht vom ersten Pixel ab), `Bild.Bildschirm` gesetzt; Alpha war überall 255,
+das sagt aber nichts über KWin, weil `aufnahme/roh.go` bei RGBX8888/RGB32 Alpha fest auf 255 setzt (das Rohformat
+hat die Probe nicht ausgegeben, F-71); 11–35 ms je Aufnahme (4K-Breitbild
 31–35 ms). Der Monitor mit gebrochener Skala liefert `Bild.Skala` 1,6, während `oberflaeche.Monitore()` dort die
 ganzzahlige Pufferskala 2 meldet — **für Koordinaten gilt `Bild.Skala`**, nie `Monitor.Skala`. Ein unbekannter
 Monitorname ergibt sofort (1 ms) den Fehler „Invalid screen requested“, kein Hänger. **Ungeprüft bleibt der

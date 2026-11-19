@@ -40,8 +40,8 @@ auch GNOME), oder Aktionen in der `.desktop`-Datei, die KDE mit Kürzeln verbind
   Aufnahme-Berechtigung daran, ADR-0007 Nachtrag 3). Spectacle belegt `Print` ebenfalls: gleichzeitig installiert,
   meldet KDE einen Konflikt, der Nutzer entscheidet in den Systemeinstellungen (Hinweis in README/Installation, sobald
   es ein Installationsskript gibt).
-- **Vorläufig:** Die Aktion `Bildschirm` ruft `schnapp --screen` ohne Wert; das gibt die Monitorliste aus. Mit der
-  Umsetzung der Aufnahme wählt der Aufruf den Monitor selbst (Karte im Board).
+- **Vorläufig (überholt durch Nachtrag 3):** Die Aktion `Bildschirm` ruft `schnapp --screen` ohne Wert; das gibt
+  die Monitorliste aus. Mit der Umsetzung der Aufnahme wählt der Aufruf den Monitor selbst (Karte im Board).
 
 ## Nachtrag 2 (19.11.2026): Optionen und Aktionen englisch
 
@@ -55,13 +55,16 @@ deutschen Namen oben (`--bereich` usw.) gelten nicht mehr.
 
 **Status:** Akzeptiert (Andi, 19.11.2026: „dann folge ich deinem Vorschlag“).
 
+**Stand 19.11.2026: noch nicht umgesetzt.** `--screen` ohne Wert listet derzeit noch die Monitore, `--list-screens`
+gibt es noch nicht (Karte #47); die Einstellung wartet auf ihren ADR (Karte #49).
+
 Die Desktop-Aktion `Screen` („Bildschirm aufnehmen“, per Menü oder frei belegbarer Taste; `Print` bleibt an `Region`)
 ruft `schnapp --screen` ohne Wert. Was dieser Aufruf tut, legt eine **Einstellung** fest:
 
 | Wert | Verhalten |
 |---|---|
 | **Monitor per Klick wählen** (Voreinstellung) | Overlay wie bei `--region`, aber im Monitor-Modus: der Monitor unter dem Mauszeiger ist hervorgehoben, ein Klick nimmt ihn ganz, Ziehen wählt doch einen Bereich, Esc bricht ab |
-| Monitor unter dem Mauszeiger sofort | ohne Overlay; KWin `CaptureActiveScreen` (Wayland gibt Programmen keine globale Zeigerposition, der aktive Bildschirm kommt von KWin) |
+| Aktiver Monitor sofort | ohne Overlay; KWin `CaptureActiveScreen` (Wayland gibt Programmen keine globale Zeigerposition). Ob KWins „aktiver Bildschirm“ dem Mauszeiger oder dem Fenster mit Fokus folgt, ist **unbelegt** und wird vor der Umsetzung gemessen (F-72); erst danach bekommt der Wert seinen endgültigen Namen |
 | Alle Monitore | ein Bild über alle Monitore; je Bildschirm aufnehmen und zusammensetzen, nicht `CaptureWorkspace` (rechnet bei gemischter Skala hoch, `knowledge/topics/kwin-screenshot.md`) |
 
 - `--screen=NAME` nimmt immer genau diesen Monitor, unabhängig von der Einstellung.
