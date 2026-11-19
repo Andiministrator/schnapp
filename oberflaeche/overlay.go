@@ -153,12 +153,15 @@ func (f *overlayFenster) frame(gtx layout.Context) {
 	f.zeichneBild(gtx)
 	f.zeichneAuswahl(gtx)
 	if p, ok := f.z.Zeiger(); ok {
+		f.zeichneFadenkreuz(gtx, p)
 		f.zeichneLupe(gtx, p)
 	}
 	f.zeichneHinweis(gtx)
 
 	bereich := clip.Rect(image.Rectangle{Max: f.groesse}).Push(gtx.Ops)
-	pointer.CursorCrosshair.Add(gtx.Ops)
+	// Eigenes Fadenkreuz statt System-Zeiger: Gio lädt das Zeigerbild in der vorab geschätzten Skala und setzt den
+	// Hotspot mit der späteren, sodass Zeigerbild und Klickpunkt bei gemischten Skalen auseinanderfallen (F-78).
+	pointer.CursorNone.Add(gtx.Ops)
 	event.Op(gtx.Ops, f)
 	bereich.Pop()
 }
@@ -205,6 +208,7 @@ func (f *overlayFenster) zeiger(gtx layout.Context) {
 			f.z.Bewegt(p)
 		case pointer.Leave:
 			f.z.Verlassen()
+			gtx.Execute(op.InvalidateCmd{}) // Fadenkreuz und Lupe sofort entfernen, nicht erst beim nächsten Ereignis
 		case pointer.Press:
 			if e.Buttons == pointer.ButtonPrimary {
 				f.z.Gedrueckt(p)
@@ -261,6 +265,18 @@ func (f *overlayFenster) zeichneAuswahl(gtx layout.Context) {
 	t := op.Offset(ecke).Push(gtx.Ops)
 	call.Add(gtx.Ops)
 	t.Pop()
+}
+
+// zeichneFadenkreuz: waagerechte und senkrechte Linie durch das Pixel unter dem Zeiger, hell mit dunklem Saum,
+// damit sie auf jedem Grund sichtbar ist.
+func (f *overlayFenster) zeichneFadenkreuz(gtx layout.Context, p auswahl.Punkt) {
+	x, y := int(p.X), int(p.Y)
+	g := f.groesse
+	saum := color.NRGBA{R: 0x16, G: 0x18, B: 0x1B, A: 0xC0}
+	paint.FillShape(gtx.Ops, saum, clip.Rect(image.Rect(0, y-1, g.X, y+2)).Op())
+	paint.FillShape(gtx.Ops, saum, clip.Rect(image.Rect(x-1, 0, x+2, g.Y)).Op())
+	paint.FillShape(gtx.Ops, farbeText, clip.Rect(image.Rect(0, y, g.X, y+1)).Op())
+	paint.FillShape(gtx.Ops, farbeText, clip.Rect(image.Rect(x, 0, x+1, g.Y)).Op())
 }
 
 // zeichneLupe: vergrößerter Ausschnitt mit Pixelraster und markiertem Mittelpixel, darunter die Position.

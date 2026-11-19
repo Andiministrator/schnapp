@@ -79,3 +79,7 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
     (`processEvent` gegen `nextEvent`, `go build -race`), danach kam kein `DestroyEvent` mehr — das Programm hing.
     Das Overlay schließt seine Fenster deshalb nicht selbst, sie enden mit dem Prozess (F-77).
   - Echte Läufe mit `go build -race` bauen und fahren: Der Detector fand den Wettlauf im ersten Versuch.
+  - **Zeigerbild versetzt bei gemischter Skala (F-78):** Das Cursor-Thema wird beim Anlegen des Fensters in der vorab
+    geschätzten Skala geladen, der Hotspot später mit der aktuellen geteilt. Das Overlay blendet den Zeiger aus
+    (`pointer.CursorNone`) und zeichnet ein eigenes Fadenkreuz; nach `pointer.Leave` neu zeichnen lassen
+    (`op.InvalidateCmd`), sonst bleibt es am Rand des alten Monitors stehen.
