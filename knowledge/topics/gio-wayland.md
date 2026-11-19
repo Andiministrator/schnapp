@@ -79,8 +79,10 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
     (`processEvent` gegen `nextEvent`, `go build -race`), danach kam kein `DestroyEvent` mehr — das Programm hing.
     Unter Wayland führt Gio `Perform` aber im aufrufenden Goroutine aus (`window.Run` ruft `f()` direkt): Jedes Fenster schließt sich deshalb **selbst** in seiner eigenen Ereignisschleife (Flag setzen, `Invalidate`, im nächsten `FrameEvent` `Perform(ActionClose)`) — wettlauffrei, gemessen mit `-race` (F-77 behoben).
   - Echte Läufe mit `go build -race` bauen und fahren: Der Detector fand den Wettlauf im ersten Versuch.
-  - **Zeigerbild versetzt bei gemischter Skala (F-78):** Das Cursor-Thema wird beim Anlegen des Fensters in der vorab
-    geschätzten Skala geladen, der Hotspot später mit der aktuellen geteilt. Das Overlay blendet den Zeiger aus
+  - **Zeigerbild versetzt bei gemischter Skala (F-78, im Patch behoben 19.11.2026):** Ungepatcht lädt Gio das
+    Cursor-Thema einmal in der vorab geschätzten Skala (größte Monitorskala) und teilt den Hotspot später durch die
+    aktuelle. Der Patch merkt sich die Skala des Themas, lädt es bei Skalenwechsel neu (`reloadCursorTheme`, auch
+    sofort aus `updateOutputs`) und teilt den Hotspot durch die Skala des Themas. Das Overlay blendet den Zeiger aus
     (`pointer.CursorNone`) und zeichnet ein eigenes Fadenkreuz; nach `pointer.Leave` neu zeichnen lassen
     (`op.InvalidateCmd`), sonst bleibt es am Rand des alten Monitors stehen.
   - **Kein `pointer.Leave` beim Verlassen des Fensters:** `gio_onPointerLeave` schickt nur bei Compositor-Zügen ein

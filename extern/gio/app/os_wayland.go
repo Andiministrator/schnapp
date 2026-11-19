@@ -193,8 +193,18 @@ type window struct {
 		// such as border resizes and window moves. It
 		// is nil if the pointer is not in a system gesture
 		// area.
-		system  *C.struct_wl_cursor
-		surf    *C.struct_wl_surface
+		system *C.struct_wl_cursor
+		surf   *C.struct_wl_surface
+		// name is the cursor requested through SetCursor; it
+		// selects cursor again when the theme is reloaded.
+		name pointer.Cursor
+		// size is the unscaled theme size (XCURSOR_SIZE), scale
+		// the integer scale the theme and the buffer scale of
+		// surf were set for. The hotspot is divided by scale,
+		// never by the current window scale, so image and
+		// hotspot always agree.
+		size    int
+		scale   int
 		cursors struct {
 			pointer         *C.struct_wl_cursor
 			resizeNorth     *C.struct_wl_cursor
@@ -414,7 +424,9 @@ func (d *wlDisplay) createNativeWindow(options []Option) (*window, error) {
 		}
 	}
 
-	w.cursor.theme = C.wl_cursor_theme_load(cursorTheme, C.int(cursorSize*w.scale), d.shm)
+	w.cursor.size = cursorSize
+	w.cursor.scale = max(1, w.scale)
+	w.cursor.theme = C.wl_cursor_theme_load(cursorTheme, C.int(cursorSize*w.cursor.scale), d.shm)
 	if w.cursor.theme == nil {
 		w.destroy()
 		return nil, errors.New("wayland: wl_cursor_theme_load failed")
@@ -430,7 +442,7 @@ func (d *wlDisplay) createNativeWindow(options []Option) (*window, error) {
 		w.destroy()
 		return nil, errors.New("wayland: wl_compositor_create_surface failed")
 	}
-	C.wl_surface_set_buffer_scale(w.cursor.surf, C.int32_t(w.scale))
+	C.wl_surface_set_buffer_scale(w.cursor.surf, C.int32_t(w.cursor.scale))
 	C.xdg_wm_base_add_listener(d.wm, &C.gio_xdg_wm_base_listener, unsafe.Pointer(w.surf))
 	C.wl_surface_add_listener(w.surf, &C.gio_surface_listener, unsafe.Pointer(w.surf))
 	C.xdg_surface_add_listener(w.wmSurf, &C.gio_xdg_surface_listener, unsafe.Pointer(w.surf))
@@ -454,6 +466,59 @@ func (w *window) loadCursors() {
 	w.cursor.cursors.resizeSouthEast = w.loadCursor(pointer.CursorSouthEastResize)
 	w.cursor.cursors.resizeNorthWest = w.loadCursor(pointer.CursorNorthWestResize)
 	w.cursor.cursors.resizeNorthEast = w.loadCursor(pointer.CursorNorthEastResize)
+}
+
+// reloadCursorTheme loads the cursor theme again when the window scale
+// differs from the scale the theme was loaded for. The window scale is only
+// an estimate when the window is created (the largest output scale) and
+// changes as the window enters and leaves outputs; without the reload, the
+// image keeps the old scale while the hotspot used the new one (schnapp F-78).
+// If loading fails, the old theme stays in use.
+func (w *window) reloadCursorTheme() {
+	scale := max(1, w.scale)
+	if scale == w.cursor.scale || w.cursor.theme == nil {
+		return
+	}
+	themeName := C.CString(os.Getenv("XCURSOR_THEME"))
+	defer C.free(unsafe.Pointer(themeName))
+	theme := C.wl_cursor_theme_load(themeName, C.int(w.cursor.size*scale), w.disp.shm)
+	if theme == nil {
+		return
+	}
+	oldTheme, oldCursors, oldSystem := w.cursor.theme, w.cursor.cursors, w.cursor.system
+	w.cursor.theme = theme
+	w.loadCursors()
+	if w.cursor.cursors.pointer == nil {
+		w.cursor.theme, w.cursor.cursors = oldTheme, oldCursors
+		C.wl_cursor_theme_destroy(theme)
+		return
+	}
+	w.cursor.cursor = w.loadCursor(w.cursor.name)
+	// The system cursor points into the old theme; map it to the same
+	// cursor in the new one.
+	w.cursor.system = nil
+	if oldSystem != nil {
+		pairs := [...][2]*C.struct_wl_cursor{
+			{oldCursors.pointer, w.cursor.cursors.pointer},
+			{oldCursors.resizeNorth, w.cursor.cursors.resizeNorth},
+			{oldCursors.resizeSouth, w.cursor.cursors.resizeSouth},
+			{oldCursors.resizeWest, w.cursor.cursors.resizeWest},
+			{oldCursors.resizeEast, w.cursor.cursors.resizeEast},
+			{oldCursors.resizeNorthWest, w.cursor.cursors.resizeNorthWest},
+			{oldCursors.resizeNorthEast, w.cursor.cursors.resizeNorthEast},
+			{oldCursors.resizeSouthWest, w.cursor.cursors.resizeSouthWest},
+			{oldCursors.resizeSouthEast, w.cursor.cursors.resizeSouthEast},
+		}
+		for _, p := range pairs {
+			if p[0] == oldSystem {
+				w.cursor.system = p[1]
+				break
+			}
+		}
+	}
+	C.wl_cursor_theme_destroy(oldTheme)
+	w.cursor.scale = scale
+	C.wl_surface_set_buffer_scale(w.cursor.surf, C.int32_t(scale))
 }
 
 func (w *window) loadCursor(name pointer.Cursor) *C.struct_wl_cursor {
@@ -1280,6 +1345,7 @@ func (w *window) resize(serial, edge C.uint32_t) {
 }
 
 func (w *window) SetCursor(cursor pointer.Cursor) {
+	w.cursor.name = cursor
 	w.cursor.cursor = w.loadCursor(cursor)
 	w.updateCursor()
 }
@@ -1294,6 +1360,7 @@ func (w *window) updateCursor() {
 }
 
 func (w *window) setCursor(pointer *C.struct_wl_pointer, serial C.uint32_t) {
+	w.reloadCursorTheme()
 	c := w.cursor.system
 	if c == nil {
 		c = w.cursor.cursor
@@ -1308,7 +1375,7 @@ func (w *window) setCursor(pointer *C.struct_wl_pointer, serial C.uint32_t) {
 	if buf == nil {
 		return
 	}
-	C.wl_pointer_set_cursor(pointer, serial, w.cursor.surf, C.int32_t(img.hotspot_x/C.uint(w.scale)), C.int32_t(img.hotspot_y/C.uint(w.scale)))
+	C.wl_pointer_set_cursor(pointer, serial, w.cursor.surf, C.int32_t(img.hotspot_x/C.uint(w.cursor.scale)), C.int32_t(img.hotspot_y/C.uint(w.cursor.scale)))
 	C.wl_surface_attach(w.cursor.surf, buf, 0, 0)
 	C.wl_surface_damage(w.cursor.surf, 0, 0, C.int32_t(img.width), C.int32_t(img.height))
 	C.wl_surface_commit(w.cursor.surf)
@@ -2033,6 +2100,9 @@ func (w *window) updateOutputs() {
 		if w.viewport == nil {
 			C.wl_surface_set_buffer_scale(w.surf, C.int32_t(w.scale))
 		}
+		// Bring the cursor image to the new scale while the
+		// pointer is inside (schnapp F-78).
+		w.updateCursor()
 		w.draw(true)
 	}
 	if found {

@@ -48,7 +48,7 @@ index 4db5b0b..e3b37fc 100644
  
  const struct wl_seat_listener gio_seat_listener = {
 diff --git a/app/os_wayland.go b/app/os_wayland.go
-index 3c893a7..2a08399 100644
+index 3c893a7..825eedf 100644
 --- a/app/os_wayland.go
 +++ b/app/os_wayland.go
 @@ -10,10 +10,12 @@ import (
@@ -114,7 +114,28 @@ index 3c893a7..2a08399 100644
  	ppdp, ppsp float32
  	scroll     struct {
  		time  time.Duration
-@@ -233,6 +245,7 @@ type poller struct {
+@@ -181,8 +193,18 @@ type window struct {
+ 		// such as border resizes and window moves. It
+ 		// is nil if the pointer is not in a system gesture
+ 		// area.
+-		system  *C.struct_wl_cursor
+-		surf    *C.struct_wl_surface
++		system *C.struct_wl_cursor
++		surf   *C.struct_wl_surface
++		// name is the cursor requested through SetCursor; it
++		// selects cursor again when the theme is reloaded.
++		name pointer.Cursor
++		// size is the unscaled theme size (XCURSOR_SIZE), scale
++		// the integer scale the theme and the buffer scale of
++		// surf were set for. The hotspot is divided by scale,
++		// never by the current window scale, so image and
++		// hotspot always agree.
++		size    int
++		scale   int
+ 		cursors struct {
+ 			pointer         *C.struct_wl_cursor
+ 			resizeNorth     *C.struct_wl_cursor
+@@ -233,6 +255,7 @@ type poller struct {
  }
  
  type wlOutput struct {
@@ -122,7 +143,7 @@ index 3c893a7..2a08399 100644
  	width      int
  	height     int
  	physWidth  int
-@@ -366,8 +379,16 @@ func (d *wlDisplay) createNativeWindow(options []Option) (*window, error) {
+@@ -366,8 +389,16 @@ func (d *wlDisplay) createNativeWindow(options []Option) (*window, error) {
  		w.destroy()
  		return nil, errors.New("wayland: wl_compositor_create_surface failed")
  	}
@@ -140,7 +161,87 @@ index 3c893a7..2a08399 100644
  	w.wmSurf = C.xdg_wm_base_get_xdg_surface(d.wm, w.surf)
  	if w.wmSurf == nil {
  		w.destroy()
-@@ -623,6 +644,64 @@ func gio_onOutputMode(data unsafe.Pointer, output *C.struct_wl_output, flags C.u
+@@ -393,7 +424,9 @@ func (d *wlDisplay) createNativeWindow(options []Option) (*window, error) {
+ 		}
+ 	}
+ 
+-	w.cursor.theme = C.wl_cursor_theme_load(cursorTheme, C.int(cursorSize*w.scale), d.shm)
++	w.cursor.size = cursorSize
++	w.cursor.scale = max(1, w.scale)
++	w.cursor.theme = C.wl_cursor_theme_load(cursorTheme, C.int(cursorSize*w.cursor.scale), d.shm)
+ 	if w.cursor.theme == nil {
+ 		w.destroy()
+ 		return nil, errors.New("wayland: wl_cursor_theme_load failed")
+@@ -409,7 +442,7 @@ func (d *wlDisplay) createNativeWindow(options []Option) (*window, error) {
+ 		w.destroy()
+ 		return nil, errors.New("wayland: wl_compositor_create_surface failed")
+ 	}
+-	C.wl_surface_set_buffer_scale(w.cursor.surf, C.int32_t(w.scale))
++	C.wl_surface_set_buffer_scale(w.cursor.surf, C.int32_t(w.cursor.scale))
+ 	C.xdg_wm_base_add_listener(d.wm, &C.gio_xdg_wm_base_listener, unsafe.Pointer(w.surf))
+ 	C.wl_surface_add_listener(w.surf, &C.gio_surface_listener, unsafe.Pointer(w.surf))
+ 	C.xdg_surface_add_listener(w.wmSurf, &C.gio_xdg_surface_listener, unsafe.Pointer(w.surf))
+@@ -435,6 +468,59 @@ func (w *window) loadCursors() {
+ 	w.cursor.cursors.resizeNorthEast = w.loadCursor(pointer.CursorNorthEastResize)
+ }
+ 
++// reloadCursorTheme loads the cursor theme again when the window scale
++// differs from the scale the theme was loaded for. The window scale is only
++// an estimate when the window is created (the largest output scale) and
++// changes as the window enters and leaves outputs; without the reload, the
++// image keeps the old scale while the hotspot used the new one (schnapp F-78).
++// If loading fails, the old theme stays in use.
++func (w *window) reloadCursorTheme() {
++	scale := max(1, w.scale)
++	if scale == w.cursor.scale || w.cursor.theme == nil {
++		return
++	}
++	themeName := C.CString(os.Getenv("XCURSOR_THEME"))
++	defer C.free(unsafe.Pointer(themeName))
++	theme := C.wl_cursor_theme_load(themeName, C.int(w.cursor.size*scale), w.disp.shm)
++	if theme == nil {
++		return
++	}
++	oldTheme, oldCursors, oldSystem := w.cursor.theme, w.cursor.cursors, w.cursor.system
++	w.cursor.theme = theme
++	w.loadCursors()
++	if w.cursor.cursors.pointer == nil {
++		w.cursor.theme, w.cursor.cursors = oldTheme, oldCursors
++		C.wl_cursor_theme_destroy(theme)
++		return
++	}
++	w.cursor.cursor = w.loadCursor(w.cursor.name)
++	// The system cursor points into the old theme; map it to the same
++	// cursor in the new one.
++	w.cursor.system = nil
++	if oldSystem != nil {
++		pairs := [...][2]*C.struct_wl_cursor{
++			{oldCursors.pointer, w.cursor.cursors.pointer},
++			{oldCursors.resizeNorth, w.cursor.cursors.resizeNorth},
++			{oldCursors.resizeSouth, w.cursor.cursors.resizeSouth},
++			{oldCursors.resizeWest, w.cursor.cursors.resizeWest},
++			{oldCursors.resizeEast, w.cursor.cursors.resizeEast},
++			{oldCursors.resizeNorthWest, w.cursor.cursors.resizeNorthWest},
++			{oldCursors.resizeNorthEast, w.cursor.cursors.resizeNorthEast},
++			{oldCursors.resizeSouthWest, w.cursor.cursors.resizeSouthWest},
++			{oldCursors.resizeSouthEast, w.cursor.cursors.resizeSouthEast},
++		}
++		for _, p := range pairs {
++			if p[0] == oldSystem {
++				w.cursor.system = p[1]
++				break
++			}
++		}
++	}
++	C.wl_cursor_theme_destroy(oldTheme)
++	w.cursor.scale = scale
++	C.wl_surface_set_buffer_scale(w.cursor.surf, C.int32_t(scale))
++}
++
+ func (w *window) loadCursor(name pointer.Cursor) *C.struct_wl_cursor {
+ 	if name == pointer.CursorNone {
+ 		return nil
+@@ -623,6 +709,64 @@ func gio_onOutputMode(data unsafe.Pointer, output *C.struct_wl_output, flags C.u
  	c.height = int(height)
  }
  
@@ -205,7 +306,7 @@ index 3c893a7..2a08399 100644
  //export gio_onOutputGeometry
  func gio_onOutputGeometry(data unsafe.Pointer, output *C.struct_wl_output, x, y, physWidth, physHeight, subpixel C.int32_t, make, model *C.char, transform C.int32_t) {
  	d := callbackLoad(data).(*wlDisplay)
-@@ -689,8 +768,12 @@ func gio_onRegistryGlobal(data unsafe.Pointer, reg *C.struct_wl_registry, name C
+@@ -689,8 +833,12 @@ func gio_onRegistryGlobal(data unsafe.Pointer, reg *C.struct_wl_registry, name C
  	switch C.GoString(cintf) {
  	case "wl_compositor":
  		d.compositor = (*C.struct_wl_compositor)(C.wl_registry_bind(reg, name, &C.wl_compositor_interface, 3))
@@ -219,7 +320,7 @@ index 3c893a7..2a08399 100644
  		C.wl_output_add_listener(output, &C.gio_output_listener, unsafe.Pointer(d.disp))
  		d.outputMap[name] = output
  		d.outputConfig[output] = new(wlOutput)
-@@ -811,8 +894,8 @@ func gio_onTouchDown(data unsafe.Pointer, touch *C.struct_wl_touch, serial, t C.
+@@ -811,8 +959,8 @@ func gio_onTouchDown(data unsafe.Pointer, touch *C.struct_wl_touch, serial, t C.
  	w := callbackLoad(unsafe.Pointer(surf)).(*window)
  	s.touchFoci[id] = w
  	w.lastTouch = f32.Point{
@@ -230,7 +331,7 @@ index 3c893a7..2a08399 100644
  	}
  	w.ProcessEvent(pointer.Event{
  		Kind:      pointer.Press,
-@@ -845,8 +928,8 @@ func gio_onTouchMotion(data unsafe.Pointer, touch *C.struct_wl_touch, t C.uint32
+@@ -845,8 +993,8 @@ func gio_onTouchMotion(data unsafe.Pointer, touch *C.struct_wl_touch, t C.uint32
  	s := callbackLoad(data).(*wlSeat)
  	w := s.touchFoci[id]
  	w.lastTouch = f32.Point{
@@ -241,7 +342,7 @@ index 3c893a7..2a08399 100644
  	}
  	w.ProcessEvent(pointer.Event{
  		Kind:      pointer.Move,
-@@ -1095,7 +1178,7 @@ func (w *window) Configure(options []Option) {
+@@ -1095,7 +1243,7 @@ func (w *window) Configure(options []Option) {
  		default:
  			w.config.Mode = Fullscreen
  			w.wsize = w.config.Size
@@ -250,7 +351,7 @@ index 3c893a7..2a08399 100644
  		}
  	case Minimized:
  		switch prev.Mode {
-@@ -1117,20 +1200,20 @@ func (w *window) Configure(options []Option) {
+@@ -1117,20 +1265,20 @@ func (w *window) Configure(options []Option) {
  		switch prev.Mode {
  		case Fullscreen:
  			w.config.Mode = Windowed
@@ -275,7 +376,7 @@ index 3c893a7..2a08399 100644
  		}
  		w.config.MinSize = cnf.MinSize
  		w.config.MaxSize = cnf.MaxSize
-@@ -1141,10 +1224,10 @@ func (w *window) Configure(options []Option) {
+@@ -1141,10 +1289,10 @@ func (w *window) Configure(options []Option) {
  
  func (w *window) setWindowConstraints() {
  	decoHeight := w.decoHeight()
@@ -288,7 +389,32 @@ index 3c893a7..2a08399 100644
  		C.xdg_toplevel_set_max_size(w.topLvl, C.int32_t(scaled.X), C.int32_t(scaled.Y+decoHeight))
  	}
  }
-@@ -1579,6 +1662,12 @@ func (w *window) destroy() {
+@@ -1197,6 +1345,7 @@ func (w *window) resize(serial, edge C.uint32_t) {
+ }
+ 
+ func (w *window) SetCursor(cursor pointer.Cursor) {
++	w.cursor.name = cursor
+ 	w.cursor.cursor = w.loadCursor(cursor)
+ 	w.updateCursor()
+ }
+@@ -1211,6 +1360,7 @@ func (w *window) updateCursor() {
+ }
+ 
+ func (w *window) setCursor(pointer *C.struct_wl_pointer, serial C.uint32_t) {
++	w.reloadCursorTheme()
+ 	c := w.cursor.system
+ 	if c == nil {
+ 		c = w.cursor.cursor
+@@ -1225,7 +1375,7 @@ func (w *window) setCursor(pointer *C.struct_wl_pointer, serial C.uint32_t) {
+ 	if buf == nil {
+ 		return
+ 	}
+-	C.wl_pointer_set_cursor(pointer, serial, w.cursor.surf, C.int32_t(img.hotspot_x/C.uint(w.scale)), C.int32_t(img.hotspot_y/C.uint(w.scale)))
++	C.wl_pointer_set_cursor(pointer, serial, w.cursor.surf, C.int32_t(img.hotspot_x/C.uint(w.cursor.scale)), C.int32_t(img.hotspot_y/C.uint(w.cursor.scale)))
+ 	C.wl_surface_attach(w.cursor.surf, buf, 0, 0)
+ 	C.wl_surface_damage(w.cursor.surf, 0, 0, C.int32_t(img.width), C.int32_t(img.height))
+ 	C.wl_surface_commit(w.cursor.surf)
+@@ -1579,6 +1729,12 @@ func (w *window) destroy() {
  	if w.cursor.theme != nil {
  		C.wl_cursor_theme_destroy(w.cursor.theme)
  	}
@@ -301,7 +427,7 @@ index 3c893a7..2a08399 100644
  	if w.topLvl != nil {
  		C.xdg_toplevel_destroy(w.topLvl)
  	}
-@@ -1653,7 +1742,7 @@ func (s *wlSeat) sendCursorRectangle(w *window) {
+@@ -1653,7 +1809,7 @@ func (s *wlSeat) sendCursorRectangle(w *window) {
  	sel := w.w.EditorState().Selection
  	top := sel.Transform.Transform(sel.Caret.Pos.Sub(f32.Pt(0, sel.Caret.Ascent)))
  	bottom := sel.Transform.Transform(sel.Caret.Pos.Add(f32.Pt(0, sel.Caret.Descent)))
@@ -310,7 +436,7 @@ index 3c893a7..2a08399 100644
  	minX, maxX := min(top.X, bottom.X)/scale, max(top.X, bottom.X)/scale
  	minY, maxY := min(top.Y, bottom.Y)/scale, max(top.Y, bottom.Y)/scale
  	x, y := math.Floor(float64(minX)), math.Floor(float64(minY))
-@@ -1863,8 +1952,8 @@ func (w *window) flushScroll() {
+@@ -1863,8 +2019,8 @@ func (w *window) flushScroll() {
  func (w *window) onPointerMotion(x, y C.wl_fixed_t, t C.uint32_t) {
  	w.flushScroll()
  	w.lastPos = f32.Point{
@@ -321,7 +447,7 @@ index 3c893a7..2a08399 100644
  	}
  	w.ProcessEvent(pointer.Event{
  		Kind:      pointer.Move,
-@@ -1941,7 +2030,9 @@ func (w *window) updateOutputs() {
+@@ -1941,7 +2097,12 @@ func (w *window) updateOutputs() {
  	}
  	if found && scale != w.scale {
  		w.scale = scale
@@ -329,10 +455,13 @@ index 3c893a7..2a08399 100644
 +		if w.viewport == nil {
 +			C.wl_surface_set_buffer_scale(w.surf, C.int32_t(w.scale))
 +		}
++		// Bring the cursor image to the new scale while the
++		// pointer is inside (schnapp F-78).
++		w.updateCursor()
  		w.draw(true)
  	}
  	if found {
-@@ -1950,10 +2041,42 @@ func (w *window) updateOutputs() {
+@@ -1950,10 +2111,42 @@ func (w *window) updateOutputs() {
  }
  
  func (w *window) getConfig() (image.Point, unit.Metric) {
@@ -378,7 +507,7 @@ index 3c893a7..2a08399 100644
  	}
  }
  
-@@ -1966,6 +2089,9 @@ func (w *window) draw(sync bool) {
+@@ -1966,6 +2159,9 @@ func (w *window) draw(sync bool) {
  	if cfg == (unit.Metric{}) {
  		return
  	}
