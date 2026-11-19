@@ -123,8 +123,8 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		if err != nil {
 			return meldeFehler(fehler, err)
 		}
-		if b.Pixel.Bounds().Size() != l.Groesse {
-			fmt.Fprintln(fehler, i18n.T("The monitor of the last area has changed its size. Select a new area with --region."))
+		if b.Pixel.Bounds().Size() != l.Groesse || !l.SkalaPasst(b.Skala) {
+			fmt.Fprintln(fehler, i18n.T("The monitor of the last area has changed. Select a new area with --region."))
 			return exitFehler
 		}
 		return an.speichere(b.Pixel, l.Bereich, t, aus, fehler)
@@ -134,7 +134,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		if err != nil {
 			return meldeFehler(fehler, err)
 		}
-		an.merke(t.Ziel.Name, b.Pixel, b.Pixel.Bounds(), fehler)
+		an.merke(t.Ziel.Name, b.Pixel, b.Skala, b.Pixel.Bounds(), fehler)
 		return an.speichere(b.Pixel, b.Pixel.Bounds(), t, aus, fehler)
 
 	case t.Modus == ModusBildschirm && t.Ziel.Wahl == settings.WahlZeiger:
@@ -167,6 +167,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 	start := time.Now()
 	bilder := make([]ui.MonitorBild, 0, len(monitore))
 	pixel := make([]*image.NRGBA, 0, len(monitore))
+	skalen := make([]float64, 0, len(monitore))
 	for _, m := range monitore {
 		b, err := q.Bildschirm(ctx, m.Name, capture.Optionen{})
 		if err != nil {
@@ -174,6 +175,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		}
 		bilder = append(bilder, ui.MonitorBild{Name: m.Name, Bild: b.Pixel})
 		pixel = append(pixel, b.Pixel)
+		skalen = append(skalen, b.Skala)
 	}
 	diagnose(fehler, "Aufnahme aller Monitore: %v", time.Since(start).Round(time.Millisecond))
 	start = time.Now()
@@ -189,7 +191,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		fmt.Fprintln(fehler, i18n.T("The selection is outside the captured image."))
 		return exitFehler
 	}
-	an.merke(monitore[e.Monitor].Name, pixel[e.Monitor], e.Bereich, fehler)
+	an.merke(monitore[e.Monitor].Name, pixel[e.Monitor], skalen[e.Monitor], e.Bereich, fehler)
 	return an.speichere(pixel[e.Monitor], e.Bereich, t, aus, fehler)
 }
 
@@ -253,8 +255,8 @@ func (an anschluesse) raeumeAuf(e library.Einstellung, jetzt time.Time, fehler i
 }
 
 // merke speichert den Bereich für --repeat. Scheitert das, ist die Aufnahme trotzdem gelungen: nur eine Warnung.
-func (an anschluesse) merke(monitor string, b *image.NRGBA, bereich image.Rectangle, fehler io.Writer) {
-	l := selection.Letzter{Monitor: monitor, Groesse: b.Bounds().Size(), Bereich: bereich}
+func (an anschluesse) merke(monitor string, b *image.NRGBA, skala float64, bereich image.Rectangle, fehler io.Writer) {
+	l := selection.Letzter{Monitor: monitor, Groesse: b.Bounds().Size(), Skala: skala, Bereich: bereich}
 	err := selection.SpeichereLetzten(an.letzterPfad, l)
 	switch {
 	case errors.Is(err, selection.ErrKeinZustandsordner):

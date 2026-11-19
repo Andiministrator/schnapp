@@ -121,8 +121,8 @@ msgstr "Schlüssel %q im Abschnitt [%s] ist mehrfach gesetzt; der letzte Wert gi
 msgid "No area to repeat yet. Select one with --region first."
 msgstr "Noch kein Bereich zum Wiederholen. Zuerst einen mit --region wählen."
 
-msgid "The monitor of the last area has changed its size. Select a new area with --region."
-msgstr "Der Monitor des letzten Bereichs hat seine Größe geändert. Mit --region einen neuen Bereich wählen."
+msgid "The monitor of the last area has changed. Select a new area with --region."
+msgstr "Der Monitor des letzten Bereichs hat sich geändert. Mit --region einen neuen Bereich wählen."
 
 msgid "Capturing all monitors at once is not implemented yet."
 msgstr "Alle Monitore auf einmal aufzunehmen ist noch nicht umgesetzt."

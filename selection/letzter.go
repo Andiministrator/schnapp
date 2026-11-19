@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"image"
+	"math"
 	"os"
 	"path/filepath"
 )
@@ -15,6 +16,7 @@ import (
 type Letzter struct {
 	Monitor string          `json:"monitor"` // Name der Wayland-Ausgabe
 	Groesse image.Point     `json:"size"`    // Bildgröße des Monitors bei der Wahl, in Pixeln
+	Skala   float64         `json:"scale"`   // Skalierung des Monitors bei der Wahl (F-85); fehlt in alten Dateien
 	Bereich image.Rectangle `json:"area"`    // in Bildpixeln
 }
 
@@ -37,9 +39,18 @@ func LetzterPfad(umgebung func(string) string) string {
 	return filepath.Join(filepath.Clean(heim), ".local", "state", "schnapp", "last-area.json")
 }
 
-// Gueltig prüft, ob der Bereich zu einem Bild der Größe groesse passt.
+// skalaToleranz ist der erlaubte Unterschied beim Vergleich der Skala (Gleitkomma, kein ==).
+const skalaToleranz = 0.001
+
+// SkalaPasst vergleicht die gemerkte Skala mit der jetzigen (F-85).
+func (l Letzter) SkalaPasst(skala float64) bool {
+	return math.Abs(l.Skala-skala) < skalaToleranz
+}
+
+// Gueltig prüft, ob der Bereich zu einem Bild der Größe groesse passt. Eine Datei ohne Skala (Format vor F-85)
+// gilt als unbrauchbar: Der Nutzer wählt einmal neu, statt dass ein Monitor mit geänderter Skala unbemerkt passt.
 func (l Letzter) Gueltig() bool {
-	return l.Monitor != "" && l.Groesse.X > 0 && l.Groesse.Y > 0 && !l.Bereich.Empty() &&
+	return l.Monitor != "" && l.Groesse.X > 0 && l.Groesse.Y > 0 && l.Skala > 0 && !l.Bereich.Empty() &&
 		l.Bereich.In(image.Rectangle{Max: l.Groesse})
 }
 

@@ -39,6 +39,7 @@ type quelleAttrappe struct {
 	fensterErr  error
 	aufrufe     []string
 	geschlossen bool
+	skala       float64 // 0 = 1
 }
 
 func (q *quelleAttrappe) Bildschirm(_ context.Context, name string, _ capture.Optionen) (*capture.Bild, error) {
@@ -47,7 +48,11 @@ func (q *quelleAttrappe) Bildschirm(_ context.Context, name string, _ capture.Op
 	if !ok {
 		return nil, errors.New("CaptureScreen: Invalid screen requested")
 	}
-	return &capture.Bild{Pixel: b, Skala: 1, Bildschirm: name}, nil
+	skala := q.skala
+	if skala == 0 {
+		skala = 1
+	}
+	return &capture.Bild{Pixel: b, Skala: skala, Bildschirm: name}, nil
 }
 
 func (q *quelleAttrappe) AktiverBildschirm(context.Context, capture.Optionen) (*capture.Bild, error) {
@@ -147,7 +152,7 @@ func TestBereichUeberOverlay(t *testing.T) {
 	}
 	pruefeAbgelegt(t, l, 2, image.Rect(1, 1, 4, 3))
 	letzter, err := selection.LadeLetzten(l.an.letzterPfad)
-	if err != nil || letzter != (selection.Letzter{Monitor: "B", Groesse: image.Pt(6, 4), Bereich: image.Rect(1, 1, 4, 3)}) {
+	if err != nil || letzter != (selection.Letzter{Monitor: "B", Groesse: image.Pt(6, 4), Skala: 1, Bereich: image.Rect(1, 1, 4, 3)}) {
 		t.Errorf("letzter Bereich %+v, %v", letzter, err)
 	}
 }
@@ -242,7 +247,7 @@ func TestWiederholen(t *testing.T) {
 	if code != exitFehler || !strings.Contains(fehler, "No area to repeat yet") || len(l.q.aufrufe) != 0 {
 		t.Fatalf("ohne letzten Bereich: Code %d, fehler %q, Aufrufe %v", code, fehler, l.q.aufrufe)
 	}
-	if err := selection.SpeichereLetzten(l.an.letzterPfad, selection.Letzter{Monitor: "B", Groesse: image.Pt(6, 4), Bereich: image.Rect(2, 0, 5, 2)}); err != nil {
+	if err := selection.SpeichereLetzten(l.an.letzterPfad, selection.Letzter{Monitor: "B", Groesse: image.Pt(6, 4), Skala: 1, Bereich: image.Rect(2, 0, 5, 2)}); err != nil {
 		t.Fatal(err)
 	}
 	if code, _, _ = l.fuehre(Auftrag{Modus: ModusWiederholen}); code != exitOK || strings.Join(l.q.aufrufe, ",") != "Bildschirm B" {
@@ -251,8 +256,30 @@ func TestWiederholen(t *testing.T) {
 	pruefeAbgelegt(t, l, 2, image.Rect(2, 0, 5, 2))
 	// Monitor hat jetzt eine andere Größe: nicht blind ausschneiden.
 	l.q.bilder["B"] = testbild(8, 8, 2)
-	if code, _, fehler = l.fuehre(Auftrag{Modus: ModusWiederholen}); code != exitFehler || !strings.Contains(fehler, "changed its size") {
+	if code, _, fehler = l.fuehre(Auftrag{Modus: ModusWiederholen}); code != exitFehler || !strings.Contains(fehler, "has changed.") {
 		t.Errorf("Größe geändert: Code %d, fehler %q", code, fehler)
+	}
+}
+
+// F-85: Gleicher Name, gleiche Größe, aber andere Skala: Meldung statt Aufnahme auf falschem Inhalt.
+func TestWiederholenAndereSkala(t *testing.T) {
+	i18n.Setze(nil)
+	l := neuerLauf(t)
+	if err := selection.SpeichereLetzten(l.an.letzterPfad, selection.Letzter{Monitor: "B", Groesse: image.Pt(6, 4), Skala: 1, Bereich: image.Rect(2, 0, 5, 2)}); err != nil {
+		t.Fatal(err)
+	}
+	l.q.skala = 2
+	code, aus, fehler := l.fuehre(Auftrag{Modus: ModusWiederholen})
+	if code != exitFehler || aus != "" || !strings.Contains(fehler, "The monitor of the last area has changed. Select a new area with --region.") {
+		t.Errorf("andere Skala: Code %d, aus %q, fehler %q", code, aus, fehler)
+	}
+	if len(l.abgelegt) != 0 {
+		t.Errorf("%d Dokumente trotz geänderter Skala abgelegt", len(l.abgelegt))
+	}
+	// Gegenprobe: gleiche Skala (mit Rundungsrest) nimmt auf.
+	l.q.skala = 1.0000001
+	if code, _, fehler = l.fuehre(Auftrag{Modus: ModusWiederholen}); code != exitOK {
+		t.Errorf("gleiche Skala: Code %d, fehler %q", code, fehler)
 	}
 }
 

@@ -198,7 +198,7 @@ func TestLetzterSpeichernLaden(t *testing.T) {
 	if _, err := LadeLetzten(pfad); !errors.Is(err, ErrKeinLetzter) {
 		t.Fatalf("fehlende Datei: %v", err)
 	}
-	l := Letzter{Monitor: "Ausgabe-1", Groesse: image.Pt(1920, 1080), Bereich: image.Rect(10, 20, 110, 220)}
+	l := Letzter{Monitor: "Ausgabe-1", Groesse: image.Pt(1920, 1080), Skala: 1, Bereich: image.Rect(10, 20, 110, 220)}
 	if err := SpeichereLetzten(pfad, l); err != nil {
 		t.Fatal(err)
 	}
@@ -283,7 +283,7 @@ func TestVerlassenWaehrendZiehen(t *testing.T) {
 }
 
 func TestLetzterRechteUndOrt(t *testing.T) {
-	if err := SpeichereLetzten("", Letzter{Monitor: "x", Groesse: image.Pt(2, 2), Bereich: image.Rect(0, 0, 1, 1)}); !errors.Is(err, ErrKeinZustandsordner) {
+	if err := SpeichereLetzten("", Letzter{Monitor: "x", Groesse: image.Pt(2, 2), Skala: 1, Bereich: image.Rect(0, 0, 1, 1)}); !errors.Is(err, ErrKeinZustandsordner) {
 		t.Errorf("ohne Pfad: %v", err)
 	}
 	if _, err := LadeLetzten(""); !errors.Is(err, ErrKeinZustandsordner) {
@@ -293,7 +293,7 @@ func TestLetzterRechteUndOrt(t *testing.T) {
 	if err := os.Mkdir(ordner, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := SpeichereLetzten(filepath.Join(ordner, "last-area.json"), Letzter{Monitor: "x", Groesse: image.Pt(2, 2), Bereich: image.Rect(0, 0, 1, 1)}); err != nil {
+	if err := SpeichereLetzten(filepath.Join(ordner, "last-area.json"), Letzter{Monitor: "x", Groesse: image.Pt(2, 2), Skala: 1, Bereich: image.Rect(0, 0, 1, 1)}); err != nil {
 		t.Fatal(err)
 	}
 	if fi, err := os.Stat(ordner); err != nil || fi.Mode().Perm() != 0o700 {
