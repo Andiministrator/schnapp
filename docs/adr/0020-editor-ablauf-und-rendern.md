@@ -48,8 +48,13 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
 - Ungespeicherte Änderungen werden beim Schließen ohne Rückfrage gespeichert (Claudes Entscheidung, Andi informiert)
   — auch wenn das Fenster mit Fehler endet. Bei einer Datei außerhalb der Bibliothek entsteht dabei eine neue
   Aufnahme der Bibliothek.
-- Fehlt die Bibliotheksdatei beim Speichern, ist sie fremd oder neuer, weicht Speichern auf eine neue Aufnahme aus,
-  statt die Bearbeitung zu verlieren.
+- Scheitert das Zurückschreiben in die Bibliotheksdatei — sie fehlt, ist fremd oder neuer, oder das Schreiben
+  scheitert aus einem anderen Grund (Rechte, Datenträger; Verify V-1) —, weicht Speichern auf eine neue Aufnahme aus,
+  statt die Bearbeitung zu verlieren. Das Ausweichen ist sichtbar (F-116): Titelleiste und Statusleiste nennen die
+  neue Datei; ist die alte stehen geblieben, als Warnung, beim Schließen auf der Fehlerausgabe. Mit dem Schwärzen
+  (eigene Karte) ist zu entscheiden, was mit einem stehen gebliebenen ungeschwärzten Stand geschieht.
+- Scheitert das Vorschaubild, wird das alte entfernt; bleibt es trotzdem liegen, meldet der Editor das (F-115).
+  Fehler beim Speichern erscheinen übersetzt und ohne Pfad (F-117).
 - Bildschirm und Renderer nutzen dieselben Go-Schriften (keine Systemschriften); Tabulator wird als vier Leerzeichen
   gezeichnet. Schriftgrad und Nummer-Radius sind auf `document.MaxSchrift` = 4096 begrenzt ([S], Speicher); Zeichen je Text (`MaxTextZeichen` = 10000) und Objekte je Dokument (`MaxObjekte` = 10000)
   sind begrenzt, Überschreitung ist ein Fehler auch beim Lesen einer Arbeitsdatei ([S], Rechenzeit, F-118); der Renderer

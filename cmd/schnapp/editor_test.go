@@ -4,12 +4,14 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -111,12 +113,17 @@ func TestSpeichernDateiVonAussen(t *testing.T) {
 	}
 	speichern := speichernIn(b, aussen, g)
 	mitKasten(t, g.Dokument)
-	if err := speichern(g.Dokument); err != nil {
+	erg, err := speichern(g.Dokument)
+	if err != nil {
 		t.Fatal(err)
 	}
+	// Erstes Speichern einer Datei von außen: neue Aufnahme, sichtbar genannt, keine Warnung (F-116).
+	if erg.Datei == "" || erg.Warnung || !strings.Contains(erg.Hinweis, erg.Datei) {
+		t.Errorf("Ergebnis %+v (Soll: neuer Name im Hinweis, keine Warnung)", erg)
+	}
 	mitKasten(t, g.Dokument)
-	if err := speichern(g.Dokument); err != nil {
-		t.Fatal(err)
+	if erg, err := speichern(g.Dokument); err != nil || erg != (ui.Gespeichert{}) {
+		t.Fatalf("zweites Speichern: %+v, %v (Soll: gewöhnlich zurückgeschrieben)", erg, err)
 	}
 	if nachher, _ := os.ReadFile(aussen); string(nachher) != string(vorher) {
 		t.Error("Datei außerhalb verändert")
@@ -151,8 +158,8 @@ func TestSpeichernAufnahmeDerBibliothek(t *testing.T) {
 		t.Fatal(err)
 	}
 	mitKasten(t, g.Dokument)
-	if err := speichernIn(b, abs, g)(g.Dokument); err != nil {
-		t.Fatal(err)
+	if erg, err := speichernIn(b, abs, g)(g.Dokument); err != nil || erg != (ui.Gespeichert{}) {
+		t.Fatalf("%+v, %v", erg, err)
 	}
 	idx, _ := b.Laden()
 	if len(idx.Eintraege) != 1 || idx.Eintraege[0].Pfad != e.Pfad || !idx.Eintraege[0].Bearbeitet {
@@ -185,8 +192,12 @@ func TestSpeichernDateiWegWaehrendEditor(t *testing.T) {
 		t.Fatal(err)
 	}
 	mitKasten(t, g.Dokument)
-	if err := speichern(g.Dokument); err != nil {
+	erg, err := speichern(g.Dokument)
+	if err != nil {
 		t.Fatalf("Speichern: %v", err)
+	}
+	if erg.Datei == "" || !erg.Warnung || !strings.Contains(erg.Hinweis, erg.Datei) {
+		t.Errorf("Ergebnis %+v (Soll: Warnung mit neuem Namen, F-116)", erg)
 	}
 	idx, _ := b.Laden()
 	gefunden := false
@@ -220,10 +231,55 @@ func TestNutzerFehler(t *testing.T) {
 		ordner:             "This is not a regular file.",
 		keinBild:           "This is neither a PNG nor a JPEG image.",
 		ui.ErrOverlayOffen: "The selection overlay did not close in time.",
-		errors.New("x"):    "x",
+		speicherFehler(fmt.Errorf("x: %w", os.ErrPermission)):                             "No permission to write the file.",
+		speicherFehler(errors.Join(errors.New("a"), fmt.Errorf("b: %w", syscall.ENOSPC))): "Not enough disk space.",
+		speicherFehler(errors.New("/irgendwo/datei.png: kaputt")):                         "The file could not be written.",
+		errors.New("x"): "x",
 	} {
 		if got := nutzerFehler(err); got != soll {
 			t.Errorf("%v: %q, Soll %q", err, got, soll)
 		}
+	}
+}
+
+// Scheitert das Zurückschreiben aus anderem Grund als „Datei weg“ (hier: Monatsordner nicht beschreibbar), weicht
+// Speichern auf eine neue Aufnahme aus und sagt es als Warnung mit dem neuen Namen (V-1, F-116); die alte Datei
+// bleibt unverändert. Das Ausweichen bringt den eigenen Monatsordner dabei wieder auf 0700 (ADR-0016).
+func TestSpeichernSchreibfehlerWeichtSichtbarAus(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("als root wirken Ordnerrechte nicht")
+	}
+	i18n.Setze(nil)
+	b := testBibliothek(t)
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 5, 5)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, err := b.Ablegen(d, d.Ansichtsbild(), fileformat.Metadaten{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	abs := filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad))
+	g, err := fileformat.Oeffne(abs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	monat := filepath.Dir(abs)
+	if err := os.Chmod(monat, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(monat, 0o700) })
+	speichern := speichernIn(b, abs, g)
+	mitKasten(t, g.Dokument)
+	erg, err := speichern(g.Dokument)
+	if err != nil {
+		t.Fatalf("Speichern: %v", err)
+	}
+	if erg.Datei == "" || erg.Datei == filepath.Base(abs) || !erg.Warnung ||
+		!strings.Contains(erg.Hinweis, "previous file could not be updated") || !strings.Contains(erg.Hinweis, erg.Datei) {
+		t.Errorf("Ergebnis %+v (Soll: Warnung, neuer Name)", erg)
+	}
+	if alt, err := fileformat.Oeffne(abs); err != nil || len(alt.Dokument.Objekte()) != 0 {
+		t.Errorf("alte Datei: %v (Soll: unverändert ohne Objekte)", err)
 	}
 }

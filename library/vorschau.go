@@ -26,12 +26,32 @@ func (b *Bibliothek) VorschauPfad(rel string) string {
 	return filepath.Join(b.Orte.Vorschau, hex.EncodeToString(h[:12])+".png")
 }
 
+// kodiereVorschau und entferneDatei sind Nahtstellen für Tests (Schreib- und Löschfehler nachbauen).
+var (
+	kodiereVorschau = png.Encode
+	entferneDatei   = os.Remove
+)
+
 func (b *Bibliothek) schreibeVorschau(rel string, bild image.Image) error {
 	if err := eigenerOrdner(b.Orte.Vorschau); err != nil {
 		return err
 	}
 	klein := verkleinere(bild, VorschauSeite)
-	return schreibeAtomar(b.VorschauPfad(rel), func(w io.Writer) error { return png.Encode(w, klein) })
+	return schreibeAtomar(b.VorschauPfad(rel), func(w io.Writer) error { return kodiereVorschau(w, klein) })
+}
+
+// erneuereVorschau schreibt das Vorschaubild zu rel neu. Scheitert das, wird das alte entfernt: Sonst zeigte die
+// Vorschau weiter einen früheren Stand — nach dem Schwärzen den ungeschwärzten (Kernprinzip 2, F-115). Liefert
+// ErrVorschau, wenn nur das Schreiben scheiterte, und zusätzlich ErrVorschauAlt, wenn das alte Bild bleibt.
+func (b *Bibliothek) erneuereVorschau(rel string, bild image.Image) error {
+	err := b.schreibeVorschau(rel, bild)
+	if err == nil {
+		return nil
+	}
+	if ferr := b.entferneVorschau(rel); ferr != nil {
+		return fmt.Errorf("%w: %v; %w: %v", ErrVorschau, err, ErrVorschauAlt, ferr)
+	}
+	return fmt.Errorf("%w: %v", ErrVorschau, err)
 }
 
 // verkleinere skaliert das Bild so, dass die längste Seite höchstens seite Pixel misst (nie vergrößern), durch
@@ -66,7 +86,7 @@ func verkleinere(bild image.Image, seite int) *image.NRGBA {
 	return aus
 }
 
-// entferneVorschau löscht das Vorschaubild zu rel, wenn die Aufnahme die Bibliothek verlassen hat (Papierkorb,
+// entferneVorschau löscht das Vorschaubild zu rel, wenn es nicht erneuert werden konnte (F-115) oder die Aufnahme die Bibliothek verlassen hat (Papierkorb,
 // Abgleich): sonst bliebe eine verkleinerte Kopie eines womöglich vertraulichen Bildes im Cache (F-51). Gelöscht
 // wird nur genau die eigene Cache-Datei (Ordner und Namensform geprüft); fehlt sie, ist nichts zu tun.
 func (b *Bibliothek) entferneVorschau(rel string) error {
@@ -75,7 +95,7 @@ func (b *Bibliothek) entferneVorschau(rel string) error {
 	if filepath.Dir(pfad) != filepath.Clean(b.Orte.Vorschau) || len(name) != 24+len(".png") || filepath.Ext(name) != ".png" {
 		return fmt.Errorf("bibliothek: unerwarteter Vorschaupfad %q", pfad)
 	}
-	if err := os.Remove(pfad); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if err := entferneDatei(pfad); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
 	return nil

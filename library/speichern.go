@@ -41,7 +41,7 @@ func (b *Bibliothek) Relativ(abs string) (rel string, ok bool) {
 // Speichern schreibt ein bearbeitetes Dokument an den Platz einer Aufnahme der Bibliothek zurück (ADR-0020):
 // Erstellzeit, Schlagworte, Quelle und Autor bleiben aus der Datei, Bearbeitet wird wahr. sichtbar ist das fertige
 // Bild (render.Bild). Danach folgen Index und Vorschau; scheitert nur einer davon, kommt der Eintrag mit ErrIndex
-// bzw. ErrVorschau. Eine fremde oder beschädigte Datei an diesem Platz wird nicht überschrieben (ErrFremd) — der
+// bzw. ErrVorschau (und ErrVorschauAlt, wenn das alte Vorschaubild bleibt). Eine fremde oder beschädigte Datei an diesem Platz wird nicht überschrieben (ErrFremd) — der
 // Aufrufer legt dann mit Ablegen eine neue Aufnahme an.
 func (b *Bibliothek) Speichern(rel string, d *document.Dokument, sichtbar image.Image) (Eintrag, error) {
 	b.mu.Lock()
@@ -94,8 +94,8 @@ func (b *Bibliothek) Speichern(rel string, d *document.Dokument, sichtbar image.
 	if err := b.ersetzeImIndex(neu); err != nil {
 		folge = fmt.Errorf("%w: %v", ErrIndex, err)
 	}
-	if err := b.schreibeVorschau(rel, sichtbar); err != nil {
-		folge = errors.Join(folge, fmt.Errorf("%w: %v", ErrVorschau, err))
+	if err := b.erneuereVorschau(rel, sichtbar); err != nil {
+		folge = errors.Join(folge, err)
 	}
 	return neu, folge
 }

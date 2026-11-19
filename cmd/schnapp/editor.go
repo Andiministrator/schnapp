@@ -4,9 +4,11 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"syscall"
 
 	"github.com/Andiministrator/schnapp/document"
 	"github.com/Andiministrator/schnapp/fileformat"
@@ -37,22 +39,29 @@ func oeffneImEditor(pfad string) error {
 }
 
 // speichernIn liefert die Speicherfunktion für den Editor. Gescheiterte Nebenschritte (Index, Vorschau) sind kein
-// Fehler: Die Datei liegt dann in der Ablage.
+// Fehler: Die Datei liegt dann in der Ablage. Bleibt dabei die Vorschau des vorigen Stands liegen, sagt es ein
+// Hinweis (F-115). Weicht Speichern auf eine neue Aufnahme aus, nennt das Ergebnis die neue Datei; ist die alte
+// stehen geblieben, weil das Zurückschreiben scheiterte, als Warnung (F-116). Fehler kommen übersetzt zurück
+// (F-117).
 func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen) ui.Speichern {
 	rel, inBibliothek := b.Relativ(abs)
 	inBibliothek = inBibliothek && !g.Fremd
 	meta := g.Meta
-	return func(d *document.Dokument) error {
+	return func(d *document.Dokument) (ui.Gespeichert, error) {
 		sichtbar, err := render.Bild(d)
 		if err != nil {
-			return err
+			return ui.Gespeichert{}, speicherFehler(err)
 		}
 		var zurueck error // Fehler beim Zurückschreiben, falls auch das Ausweichen scheitert
+		versucht := inBibliothek
 		if inBibliothek {
 			_, err := b.Speichern(rel, d, sichtbar)
 			switch {
+			case errors.Is(err, library.ErrVorschauAlt):
+				return ui.Gespeichert{Hinweis: i18n.T("Saved, but the old preview of this capture could not be removed."),
+					Warnung: true}, nil
 			case err == nil || errors.Is(err, library.ErrIndex) || errors.Is(err, library.ErrVorschau):
-				return nil
+				return ui.Gespeichert{}, nil
 			case errors.Is(err, fs.ErrNotExist) || errors.Is(err, library.ErrFremd) ||
 				errors.Is(err, library.ErrPfad) || errors.Is(err, fileformat.ErrFormatNeuer):
 				// Die Datei ist weg, ersetzt oder nicht mehr unsere (gelöscht, aufgeräumt, neuere Fassung): nicht
@@ -68,16 +77,56 @@ func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen) ui.Sp
 		m.Erstellt = b.Jetzt() // neue Aufnahme der Bibliothek, Zeitpunkt des Speicherns
 		e, err := b.Ablegen(d, sichtbar, m)
 		if e.Pfad == "" {
-			return errors.Join(zurueck, err)
+			return ui.Gespeichert{}, speicherFehler(errors.Join(zurueck, err))
 		}
 		rel, inBibliothek = e.Pfad, true
-		return nil
+		name := filepath.Base(filepath.FromSlash(e.Pfad))
+		erg := ui.Gespeichert{Datei: name, Hinweis: fmt.Sprintf(i18n.T("Saved as a new capture: %s"), name)}
+		if versucht {
+			// Die bisherige Datei wurde nicht aktualisiert; liegt sie noch, enthält sie den alten Stand.
+			erg.Hinweis = fmt.Sprintf(i18n.T("The previous file could not be updated; saved as a new capture: %s"), name)
+			erg.Warnung = true
+		}
+		if errors.Is(err, library.ErrVorschauAlt) {
+			erg.Hinweis += " " + i18n.T("The old preview could not be removed.")
+			erg.Warnung = true
+		}
+		return erg, nil
 	}
 }
 
-// nutzerFehler übersetzt bekannte Fehler beim Öffnen und im Editor für die Ausgabe; Unbekanntes bleibt, wie es ist
+// uebersetzt trägt einen fertig übersetzten Text für die Ausgabe und behält den ursprünglichen Fehler (errors.Is).
+type uebersetzt struct {
+	text string
+	err  error
+}
+
+func (u uebersetzt) Error() string { return u.text }
+func (u uebersetzt) Unwrap() error { return u.err }
+
+// speicherFehler übersetzt einen Fehler beim Speichern (F-117): ohne Pfad und ohne Paketpräfix, Schreiben statt Lesen.
+func speicherFehler(err error) error {
+	var text string
+	switch {
+	case errors.Is(err, fs.ErrPermission):
+		text = i18n.T("No permission to write the file.")
+	case errors.Is(err, syscall.ENOSPC):
+		text = i18n.T("Not enough disk space.")
+	case errors.Is(err, library.ErrKeinHeim):
+		text = i18n.T("No home directory (HOME is not set).")
+	default:
+		text = i18n.T("The file could not be written.")
+	}
+	return uebersetzt{text: text, err: err}
+}
+
+// nutzerFehler übersetzt bekannte Fehler beim Öffnen für die Ausgabe; Fehler des Speicherns sind schon übersetzt; Unbekanntes bleibt, wie es ist
 // (Paketfehler sind nicht übersetzt, Kritik A-9).
 func nutzerFehler(err error) string {
+	var u uebersetzt
+	if errors.As(err, &u) {
+		return u.text // schon übersetzt (Speichern, F-117)
+	}
 	switch {
 	case errors.Is(err, fs.ErrNotExist):
 		return i18n.T("The file does not exist.")

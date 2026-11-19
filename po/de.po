@@ -197,6 +197,27 @@ msgstr "Speichern gescheitert: %v"
 msgid "Saved to the library"
 msgstr "In der Bibliothek gespeichert"
 
+msgid "Saved, but the old preview of this capture could not be removed."
+msgstr "Gespeichert, aber die alte Vorschau dieser Aufnahme ließ sich nicht entfernen."
+
+msgid "Saved as a new capture: %s"
+msgstr "Als neue Aufnahme gespeichert: %s"
+
+msgid "The previous file could not be updated; saved as a new capture: %s"
+msgstr "Die bisherige Datei ließ sich nicht aktualisieren; als neue Aufnahme gespeichert: %s"
+
+msgid "The old preview could not be removed."
+msgstr "Die alte Vorschau ließ sich nicht entfernen."
+
+msgid "No permission to write the file."
+msgstr "Keine Berechtigung, die Datei zu schreiben."
+
+msgid "Not enough disk space."
+msgstr "Nicht genug Speicherplatz."
+
+msgid "The file could not be written."
+msgstr "Die Datei ließ sich nicht schreiben."
+
 msgid "Select"
 msgstr "Auswählen"
 

@@ -23,12 +23,14 @@ import (
 )
 
 // Fehler der Bibliothek. Nach ErrIndex und ErrVorschau liegt die Aufnahme trotzdem in der Ablage; der Index
-// heilt sich beim nächsten Neuaufbau, das Vorschaubild beim nächsten Ablegen oder Neuaufbau.
+// heilt sich beim nächsten Neuaufbau, das Vorschaubild beim nächsten Ablegen oder Neuaufbau. Nach ErrVorschauAlt
+// liegt zusätzlich noch das Vorschaubild des vorigen Stands im Cache (F-115) — das muss der Aufrufer melden.
 var (
-	ErrIndex    = errors.New("bibliothek: Index nicht aktualisiert")
-	ErrVorschau = errors.New("bibliothek: Vorschaubild nicht geschrieben")
-	ErrFremd    = errors.New("bibliothek: keine Arbeitsdatei von Schnapp")
-	ErrPfad     = errors.New("bibliothek: Pfad liegt nicht in der Ablage")
+	ErrIndex       = errors.New("bibliothek: Index nicht aktualisiert")
+	ErrVorschau    = errors.New("bibliothek: Vorschaubild nicht geschrieben")
+	ErrVorschauAlt = errors.New("bibliothek: altes Vorschaubild nicht entfernt")
+	ErrFremd       = errors.New("bibliothek: keine Arbeitsdatei von Schnapp")
+	ErrPfad        = errors.New("bibliothek: Pfad liegt nicht in der Ablage")
 )
 
 // Eintrag ist eine Aufnahme im Index. Alle Angaben stehen auch im snAP-Block der Datei (ADR-0008).
@@ -158,8 +160,8 @@ func (b *Bibliothek) Ablegen(d *document.Dokument, sichtbar image.Image, m filef
 	if err := b.haengeAn(e); err != nil {
 		folge = fmt.Errorf("%w: %v", ErrIndex, err)
 	}
-	if err := b.schreibeVorschau(e.Pfad, sichtbar); err != nil {
-		folge = errors.Join(folge, fmt.Errorf("%w: %v", ErrVorschau, err))
+	if err := b.erneuereVorschau(e.Pfad, sichtbar); err != nil {
+		folge = errors.Join(folge, err)
 	}
 	return e, folge
 }

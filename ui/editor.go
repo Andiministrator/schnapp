@@ -49,8 +49,16 @@ var offeneOverlays atomic.Int32
 // ErrOverlayOffen: Nach der Frist waren noch Overlay-Fenster offen; der Editor öffnet dann nicht (F-82).
 var ErrOverlayOffen = errors.New("editor: Overlay-Fenster noch offen")
 
-// Speichern speichert das Dokument (Aufrufer: Bibliothek, ADR-0020) und liefert einen Fehlertext für die Leiste.
-type Speichern func(d *document.Dokument) error
+// Speichern speichert das Dokument (Aufrufer: Bibliothek, ADR-0020). Der Fehlertext erscheint in der Statusleiste und
+// muss schon übersetzt sein.
+type Speichern func(d *document.Dokument) (Gespeichert, error)
+
+// Gespeichert beschreibt ein gelungenes Speichern, das der Nutzer erfahren muss (F-116).
+type Gespeichert struct {
+	Datei   string // neuer Dateiname für die Titelleiste (nur Name, kein Ordner); leer = unverändert
+	Hinweis string // übersetzter Text für die Statusleiste statt „Saved to the library“; leer = gewöhnlich
+	Warnung bool   // Hinweis als Warnung zeigen (z. B. Datei nicht aktualisiert, alter Stand liegt noch)
+}
 
 // Editor öffnet das Dokument in einem Fenster und kehrt zurück, wenn es geschlossen wird. Ungespeicherte Änderungen
 // werden beim Schließen gespeichert (die Bibliothek speichert immer, Kernprinzip 4); das Ergebnis dieses letzten
@@ -112,8 +120,14 @@ func (e *editor) laufen() error {
 			// (Kritik A-4).
 			var err error
 			if e.s.Geaendert {
-				err = e.speichern(e.s.D)
+				var g Gespeichert
+				g, err = e.speichern(e.s.D)
 				diagnoseEditor("Speichern beim Schließen: %v", err)
+				if err == nil && g.Hinweis != "" {
+					// Das Fenster ist zu, die Statusleiste weg: Der Hinweis (z. B. neue Aufnahme statt der alten Datei)
+					// geht auf die Fehlerausgabe, damit er nicht still verloren ist (F-116).
+					fmt.Fprintln(os.Stderr, g.Hinweis)
+				}
 			}
 			return errors.Join(ev.Err, err)
 		case app.FrameEvent:
@@ -140,12 +154,19 @@ func (e *editor) speichernJetzt() {
 	if e.s.Zieht() {
 		return
 	}
-	if err := e.speichern(e.s.D); err != nil {
+	g, err := e.speichern(e.s.D)
+	if err != nil {
 		e.meldung, e.fehler = fmt.Sprintf(i18n.T("Could not save: %v"), err), true
 		return
 	}
 	e.s.Gespeichert()
+	if g.Datei != "" {
+		e.titel = g.Datei
+	}
 	e.meldung, e.fehler = i18n.T("Saved to the library"), false
+	if g.Hinweis != "" {
+		e.meldung, e.fehler = g.Hinweis, g.Warnung
+	}
 }
 
 func (e *editor) frame(gtx layout.Context) {

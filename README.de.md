@@ -68,7 +68,9 @@ Im Editor: Beschriftung ziehen verschiebt sie, ihre Griffe ändern Größe oder 
 Ziehen auf freier Fläche oder mit der mittleren Taste verschiebt die Ansicht. Tasten: **Strg+Z** rückgängig,
 **Strg+Umschalt+Z**/**Strg+Y** wiederholen, **Entf** löschen, **Esc** Auswahl aufheben, **Strg+S** speichern,
 **Strg+0** einpassen, **Strg+1** 100 %, **Strg+W** schließen. Änderungen werden beim Schließen gespeichert; eine Datei
-außerhalb der Bibliothek wird dabei zu einer neuen Aufnahme der Bibliothek, die Datei selbst bleibt unverändert.
+außerhalb der Bibliothek wird dabei zu einer neuen Aufnahme der Bibliothek, die Datei selbst bleibt unverändert. Lässt
+sich eine Datei der Bibliothek nicht aktualisieren (gelöscht, ersetzt oder nicht beschreibbar), landen die Änderungen
+als neue Aufnahme; die Statusleiste nennt die neue Datei.
 
 ## Installation
 

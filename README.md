@@ -67,7 +67,8 @@ In the editor: drag an annotation to move it, drag its handles to resize or bend
 dragging empty space or the middle button moves the view. Keys: **Ctrl+Z** undo, **Ctrl+Shift+Z**/**Ctrl+Y** redo,
 **Del** delete, **Esc** deselect, **Ctrl+S** save, **Ctrl+0** fit, **Ctrl+1** 100 %, **Ctrl+W** close. Changes are
 saved when the editor closes; a file from outside the library becomes a new screenshot in the library and the file
-itself stays untouched.
+itself stays untouched. If a library file cannot be updated (deleted, replaced or not writable), the changes are saved
+as a new screenshot instead; the status bar names the new file.
 
 ## Install
 
