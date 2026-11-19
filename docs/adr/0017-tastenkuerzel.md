@@ -55,8 +55,9 @@ deutschen Namen oben (`--bereich` usw.) gelten nicht mehr.
 
 **Status:** Akzeptiert (Andi, 19.11.2026: „dann folge ich deinem Vorschlag“).
 
-**Stand 19.11.2026: noch nicht umgesetzt.** `--screen` ohne Wert listet derzeit noch die Monitore, `--list-screens`
-gibt es noch nicht (Karte #47); die Einstellung wartet auf ihren ADR (Karte #49).
+**Stand 19.11.2026:** Kommandozeile umgesetzt (Karte #47): `--list-screens` listet, `--screen` ohne Wert meldet wie
+die übrigen Aufnahme-Modi „noch nicht umgesetzt“. Der Monitor-Modus kommt mit dem Overlay (Karte #34), die
+Einstellungsdatei mit ADR-0018 (vorgeschlagen).
 
 Die Desktop-Aktion `Screen` („Bildschirm aufnehmen“, per Menü oder frei belegbarer Taste; `Print` bleibt an `Region`)
 ruft `schnapp --screen` ohne Wert. Was dieser Aufruf tut, legt eine **Einstellung** fest:
