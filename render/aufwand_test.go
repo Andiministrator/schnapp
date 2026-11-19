@@ -266,8 +266,8 @@ func TestAlltagsdokumentWeitUnterDemBudget(t *testing.T) {
 	if f := Budget / a.summe(); f < 4.5 {
 		t.Errorf("Budget nur %.2f-mal so groß wie das Alltagsdokument (%.3g), Soll mindestens 4,5", f, a.summe())
 	}
-	if f := GlyphBudget / a.glyph; f < 100 {
-		t.Errorf("GlyphBudget nur %.1f-mal so groß wie die Glyphen (%.3g), Soll mindestens 100", f, a.glyph)
+	if f := GlyphBudget / a.glyph; f < 50 {
+		t.Errorf("GlyphBudget nur %.1f-mal so groß wie die Glyphen (%.3g), Soll mindestens 50", f, a.glyph)
 	}
 	if f := KantenBudget / a.kanten; f < 100 {
 		t.Errorf("KantenBudget nur %.1f-mal so groß wie die Kanten (%.3g), Soll mindestens 100", f, a.kanten)

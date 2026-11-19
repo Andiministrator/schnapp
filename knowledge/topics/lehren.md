@@ -114,7 +114,8 @@ Stand: 2026-11-19 (ergänzt nach Sprint 1). Kurze Regeln aus Fehlern und Befunde
   führen, sonst laufen sie auseinander.
 - **Jede Nacharbeit an [S]/[K] braucht einen eigenen Verify-Lauf:** Kritiker → Nacharbeit → Verify → Nacharbeit →
   Verify fand in jeder Runde echte Fehler in der *Nacharbeit* (Vorschub bei Emoji, Budget-Lücken, zu enges Budget).
-  Die Kette endet erst, wenn eine Runde nur Doku/Tests anfasst.
+  Die Kette endet erst, wenn eine Runde nur Doku/Tests anfasst — im Sprint-Abschluss 4 brauchte es vier Runden
+  und eine offene fünfte (F-136).
 - **„Gegenproben rot“ je Fix-Zeile belegen:** Ein Sammelsatz im Commit deckte drei von sieben Fix-Zeilen nicht
   (Verify V-4, V2-6). Gegenprobe heißt: genau die eine Zeile zurückbauen, prüfen, dass der Test den Zweig betritt.
 - **`Co-Authored-By` ohne Leerzeile dazwischen:** Eine Leerzeile beendet den Trailer-Block; git liest dann nur die
@@ -122,5 +123,10 @@ Stand: 2026-11-19 (ergänzt nach Sprint 1). Kurze Regeln aus Fehlern und Befunde
   sich mit gleichem Baum per `git commit-tree` neu bauen.
 - **`eigenerOrdner` heilt Rechte:** Ein Test, der einen Monatsordner auf 0500 setzt, um das Zurückschreiben scheitern
   zu lassen, sieht das Ausweichen trotzdem gelingen — `Ablegen` bringt den Ordner wieder auf 0700 (ADR-0016).
+- **Messfälle auf winzigen Bildern unterschätzen sichtbare Arbeit:** Glyphen auf 10×10 kosten nur das Rastern der
+  Maske; sichtbar aufs Bild gezeichnet kosten sie bis 20- bis 30-mal mehr (Sitzungs-QA). Kostenmodelle immer auch mit
+  sichtbaren Objekten auf großem Bild messen.
+- **Ein Trockenlauf zählt nur, was im Zeichner liegt:** Die Abbildung `ZuAnsicht` mit vielen Streifen kostet je Punkt
+  O(Streifen) und taucht im Modell nicht auf (F-136). Kosten vorgelagerter Schritte gesondert prüfen.
 - **Agenten schreiben Testdateien gern per Heredoc** (`cat > datei <<EOF`), obwohl der Prompt es verbietet: Das
   Verbot ausdrücklich auch für Quelltext nennen und den Weg (Write-Werkzeug) dazu.

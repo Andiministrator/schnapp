@@ -2,9 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> Verweise auf ADR-0043, ADR-0062, ADR-0067, F-Nummern über F-100 und Pfade unter `~/.aboard-framework/` oder
+> Verweise auf ADR-0043, ADR-0062, ADR-0067, F-Nummern, die weder in `docs/findings.md` noch in
+> `docs/findings.archive.md` stehen, und Pfade unter `~/.aboard-framework/` oder
 > `~/.claude/` beziehen sich auf das Arbeits-Framework (aBoard) des Maintainers, nicht auf dieses Repo. Projekteigene
-> ADRs liegen unter `docs/adr/` (0001–0014), projekteigene Findings in `docs/findings.md` (erledigte
+> ADRs liegen unter `docs/adr/` (0001–0020), projekteigene Findings in `docs/findings.md` (erledigte
 > in `docs/findings.archive.md`).
 
 ## Vor jeder Antwort — Pflicht
@@ -120,7 +121,9 @@ der Wegwerf-Prototyp `prototype/`. Schichten:
 - **settings** — `settings.ini` lesen (ADR-0018); Warnungen statt Abbruch.
 - **selection** — Logik des Overlays ohne Gio (Abbildung, Bereich, Monitor per Klick, Lupe, letzter Bereich).
 - **canvas** — Logik der Editor-Leinwand ohne Gio (Zoom zum Zeiger, Einpassen, Treffer, Griffe, Verschieben; ADR-0020).
-- **render** — Ansichtsbild + Objekte zu Pixeln ohne GPU (`golang.org/x/image` vector/font, Go-Schriften; ADR-0020).
+- **render** — Ansichtsbild + Objekte zu Pixeln ohne GPU (`golang.org/x/image` vector/font, Go-Schriften; ADR-0020);
+  `render.Pruefe` schätzt den Aufwand per Trockenlauf, der Editor lehnt präparierte Dateien beim Öffnen ab
+  (`ladeFuerEditor`), Speichern bricht nie ab (ADR-0020 Nachtrag 1).
 - **ui** — Gio: Vollbild-Overlay zur Auswahl (fertig), Editor, Bibliothek.
 
 Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung, Mauszeiger bei gemischter Skala F-78) —

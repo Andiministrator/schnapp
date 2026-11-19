@@ -53,10 +53,10 @@ var ErrZuAufwendig = errors.New("render: Dokument zu aufwendig zu rastern")
 //     über dem Ausschnitt, und in jeder Zeile im Ausschnitt über ihre ganze waagerechte Spanne, auch außerhalb. Breite
 //     Striche weit außerhalb des Bildes kosten so viel, obwohl der Ausschnitt winzig ist (F-132).
 //
-// Gemessen lag die Renderzeit über alle Fälle (Glyphen groß und winzig, Nummern, breite Pfeile auf winzigen, hohen
-// und breiten Bildern, Kästen mit Eckradius, bildgroße Flächen, viele kleine Objekte) bei 0,02 bis 0,5 ns je Einheit;
-// darüber nur Fälle, deren Gesamtzeit durch MaxObjekte auf Millisekunden begrenzt ist (je Schriftgrad ein neues
-// Schriftgesicht: 10000 Texte 18 ms).
+// Gemessen lag die Renderzeit bei Fällen auf kleinen Bildern bei 0,02 bis 0,5 ns je Einheit. Glyphen, die SICHTBAR
+// aufs Bild gezeichnet werden, kosten mehr, als das Modell zählt (Übertragen der Maske): bis rund 9 ns je Einheit
+// (Grad 24 bis 64 auf breitem Bild; „W“ Grad 4096 auf 8000×8000 5,5 ns, Sitzungs-QA 19.11.2026). Deshalb ist
+// GlyphBudget eng gewählt (siehe unten).
 const (
 	glyphGrund    = 1700.0
 	fuellGewicht  = 100.0
@@ -72,8 +72,10 @@ const (
 //     Glyphen (1,7e7) und Kanten (1,5e7) liegen beim 1/580 bzw. 1/650 ihrer Grenze. Eine echte Bearbeitung wird
 //     beim Wiederöffnen also nicht abgelehnt — und beim Speichern ohnehin nie (Bild bricht nicht ab).
 //   - Ein Dokument knapp unter Budget (61 gefüllte, umrandete Kästen auf 8000×8000 plus 590 Glyphen „W“ Grad 4096,
-//     7,9e11) rastert in 4 min 49 s: die längste Wartezeit, die eine präparierte Datei beim Speichern erzwingen kann.
-//     Glyphen allein knapp unter GlyphBudget rastern in 3,3 s, Kanten allein knapp unter KantenBudget in 1,5 bis 4,5 s.
+//     7,9e11) rastert in 4 min 49 s — die Größenordnung der Wartezeit, die eine präparierte Datei beim Speichern
+//     erzwingen kann (sichtbare Glyphen bis GlyphBudget kommen höchstens rund 9 s hinzu). GlyphBudget = 1e9: auf
+//     kleinem Bild rund 0,3 s, sichtbar im ungünstigsten gemessenen Grad rund 9 s; das Alltagsdokument liegt 58-fach
+//     darunter. Kanten allein knapp unter KantenBudget rastern in 1,5 bis 4,5 s.
 //     So werden die präparierten Fälle aus F-125 und F-132 (10000 große Glyphen oder Nummern, 10000 sehr breite
 //     Pfeile, 10000 Texte à 10000 winziger Glyphen, Hunderte bildgroßer Flächen) beim Öffnen abgelehnt.
 //
@@ -83,7 +85,7 @@ const (
 // lieber eine präparierte Datei langsam speichern als eine echte Bearbeitung ablehnen (F-131).
 const (
 	Budget       = 8e11
-	GlyphBudget  = 1e10
+	GlyphBudget  = 1e9
 	KantenBudget = 1e10
 )
 

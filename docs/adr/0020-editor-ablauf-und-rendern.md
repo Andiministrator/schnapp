@@ -60,7 +60,7 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   sind begrenzt, Überschreitung ist ein Fehler auch beim Lesen einer Arbeitsdatei ([S], Rechenzeit, F-118); der Renderer
   rastert Zeilen und Glyphen nicht, die das Bild nicht schneiden. Innerhalb dieser Grenzen schützt ein Rechenbudget
   gegen präparierte Dateien (F-125, F-131, F-132, Karte #71): Beim Öffnen im Editor rechnet `render.Pruefe` den
-  Aufwand per Trockenlauf desselben Zeichners (Geometrie und Kosten, ohne Rastern, Millisekunden) und lehnt das
+  Aufwand per Trockenlauf desselben Zeichners (Geometrie und Kosten, ohne Rastern; Millisekunden, außer bei sehr vielen Streifen — F-136) und lehnt das
   Dokument ab, wenn die Summe `render.Budget`, die Glyphen `render.GlyphBudget` oder die Kanten `render.KantenBudget`
   überschreiten; der Editor meldet „zu viele oder zu große Beschriftungen, um sie zu öffnen“. Kostenmodell: je Glyphe
   max(Grad², Grundkosten), je Füllung gewichtete Fläche des beschnittenen Rechtecks, je Polygonkante die Zeilenschritte
@@ -69,7 +69,8 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   (Entwicklungsrechner, ein Kern): ein alltagsnahes großes Dokument (50 bildgroße Rahmen, 50 diagonale Pfeile, 100
   Nummern, 200 Texte auf 7680×2160) braucht 48 s und liegt bei knapp einem Fünftel des Budgets; ein
   Dokument knapp unter dem Budget rastert in knapp 5 min — das ist die Wartezeit, die eine präparierte Datei beim
-  Speichern erzwingen kann. Glyphen und Kanten allein sind auf rund 3 bis 5 s begrenzt. Senken lässt sich das Budget
+  Speichern erzwingen kann (bis rund 5 min). Glyphen allein (`GlyphBudget` = 1e9) bringen höchstens rund 9 s, wenn sie
+  sichtbar gezeichnet werden; Kanten allein 1,5 bis 4,5 s. Senken lässt sich das Budget
   erst mit schnellerem Füllen (F-130). Die Wartezeit bis knapp 5 min ist bewusst hingenommen (F-135, Claudes
   Entscheidung im Sprint-Abschluss 4, Andi informiert).
 - Offen (eigene Karten): Speichern bei Signal/Absturz und Konflikt zweier Editoren (F-107, F-110), Angleichen der
