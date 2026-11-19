@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Andiministrator/schnapp/einstellungen"
 	"github.com/Andiministrator/schnapp/oberflaeche"
 	"github.com/Andiministrator/schnapp/po"
 	"github.com/Andiministrator/schnapp/sprache"
@@ -61,8 +62,13 @@ func keineMonitore() ([]oberflaeche.Monitor, error) { return nil, errors.New("ke
 func fuehre(t *testing.T, monitore func() ([]oberflaeche.Monitor, error), args ...string) (int, string, string) {
 	t.Helper()
 	var aus, fehler bytes.Buffer
-	code := laufe(args, &aus, &fehler, monitore)
+	code := laufe(args, &aus, &fehler, monitore, keineEinstellungen(t))
 	return code, aus.String(), fehler.String()
+}
+
+// keineEinstellungen liefert Voreinstellungen ohne Warnung und zählt die Aufrufe nicht.
+func keineEinstellungen(t *testing.T) Ladefunktion {
+	return func() (einstellungen.Einstellungen, []string) { return einstellungen.Voreinstellungen(), nil }
 }
 
 func TestLaufeEnglisch(t *testing.T) {
@@ -150,5 +156,74 @@ func TestLaufeDeutsch(t *testing.T) {
 	_, _, fehler := fuehre(t, keineMonitore, "--window")
 	if !strings.Contains(fehler, "noch nicht umgesetzt") {
 		t.Errorf("Modus deutsch: %q", fehler)
+	}
+}
+
+// Nur die Aufnahme-Modi lesen die Einstellungen; --version, --help, --list-screens und Aufruffehler nicht.
+func TestLaufeLadetEinstellungenNurFuerAufnahme(t *testing.T) {
+	sprache.Setze(nil)
+	for _, tc := range []struct {
+		args  []string
+		laedt bool
+	}{
+		{[]string{"--version"}, false},
+		{[]string{"--help"}, false},
+		{[]string{"--list-screens"}, false},
+		{[]string{"--quatsch"}, false},
+		{nil, true},
+		{[]string{"--region"}, true},
+		{[]string{"--screen"}, true},
+		{[]string{"--screen=x"}, true},
+		{[]string{"--window"}, true},
+		{[]string{"--repeat"}, true},
+	} {
+		aufrufe := 0
+		lade := func() (einstellungen.Einstellungen, []string) {
+			aufrufe++
+			return einstellungen.Voreinstellungen(), []string{"settings.ini:3: Warnung"}
+		}
+		var aus, fehler bytes.Buffer
+		laufe(tc.args, &aus, &fehler, func() ([]oberflaeche.Monitor, error) { return nil, nil }, lade)
+		if (aufrufe == 1) != tc.laedt || aufrufe > 1 {
+			t.Errorf("%q: Einstellungen %d-mal geladen, erwartet geladen=%v", tc.args, aufrufe, tc.laedt)
+		}
+		if got := strings.Contains(fehler.String(), "settings.ini:3: Warnung\n"); got != tc.laedt {
+			t.Errorf("%q: Warnung auf stderr = %v, erwartet %v (stderr %q)", tc.args, got, tc.laedt, fehler.String())
+		}
+	}
+}
+
+// Jede Warnung steht in einer eigenen Zeile auf stderr, die Aufnahme läuft weiter (hier: dieselbe Meldung wie sonst).
+func TestLaufeWarnungenWeiter(t *testing.T) {
+	sprache.Setze(nil)
+	lade := func() (einstellungen.Einstellungen, []string) {
+		return einstellungen.Voreinstellungen(), []string{"w1", "w2"}
+	}
+	var aus, fehler bytes.Buffer
+	code := laufe([]string{"--window"}, &aus, &fehler, keineMonitore, lade)
+	if code != exitFehler || !strings.HasPrefix(fehler.String(), "w1\nw2\n") || !strings.Contains(fehler.String(), "not implemented yet") {
+		t.Errorf("Code %d, stderr %q", code, fehler.String())
+	}
+}
+
+// Vorrang: --screen=NAME vor Datei, --screen ohne Wert folgt der Datei, sonst Voreinstellung.
+func TestPlaneVorrang(t *testing.T) {
+	alle := einstellungen.Voreinstellungen()
+	alle.Bildschirm = einstellungen.WahlAlle
+	tests := []struct {
+		name string
+		a    Aufruf
+		e    einstellungen.Einstellungen
+		want Bildschirmziel
+	}{
+		{"Name schlägt Datei", Aufruf{Modus: ModusBildschirm, Bildschirm: "HDMI-1"}, alle, Bildschirmziel{Name: "HDMI-1"}},
+		{"ohne Wert folgt Datei", Aufruf{Modus: ModusBildschirm}, alle, Bildschirmziel{Wahl: einstellungen.WahlAlle}},
+		{"ohne Datei Voreinstellung", Aufruf{Modus: ModusBildschirm}, einstellungen.Voreinstellungen(), Bildschirmziel{Wahl: einstellungen.WahlKlick}},
+		{"anderer Modus ohne Ziel", Aufruf{Modus: ModusBereich}, alle, Bildschirmziel{}},
+	}
+	for _, tc := range tests {
+		if got := plane(tc.a, tc.e); got.Ziel != tc.want || got.Modus != tc.a.Modus {
+			t.Errorf("%s: %+v, erwartet Ziel %+v", tc.name, got, tc.want)
+		}
 	}
 }

@@ -91,3 +91,31 @@ msgstr "Die Aufnahme wurde abgebrochen."
 
 msgid "KWin offers no screenshot interface. Schnapp needs KDE Plasma on Wayland."
 msgstr "KWin bietet keine Aufnahmeschnittstelle an. Schnapp braucht KDE Plasma unter Wayland."
+
+# einstellungen: Einstellungsdatei (settings.ini)
+msgid "Cannot locate the settings file (%v); using the defaults."
+msgstr "Die Einstellungsdatei ist nicht auffindbar (%v); es gelten die Voreinstellungen."
+
+msgid "%s: cannot read the settings file (%v); using the defaults."
+msgstr "%s: Die Einstellungsdatei ist nicht lesbar (%v); es gelten die Voreinstellungen."
+
+msgid "Broken section header; line ignored."
+msgstr "Abschnittskopf ist unvollständig; Zeile ignoriert."
+
+msgid "Unknown section [%s]; its keys are ignored."
+msgstr "Unbekannter Abschnitt [%s]; seine Schlüssel werden ignoriert."
+
+msgid "Line is neither a section, a comment nor \"key = value\"; ignored."
+msgstr "Die Zeile ist weder Abschnitt noch Kommentar noch „Schlüssel = Wert“; ignoriert."
+
+msgid "Setting %q is outside of any section; ignored."
+msgstr "Einstellung %q steht außerhalb eines Abschnitts; ignoriert."
+
+msgid "Unknown key %q in section [%s]; ignored."
+msgstr "Unbekannter Schlüssel %q im Abschnitt [%s]; ignoriert."
+
+msgid "Invalid value %q for key %q in section [%s]; ignored."
+msgstr "Ungültiger Wert %q für den Schlüssel %q im Abschnitt [%s]; ignoriert."
+
+msgid "Key %q in section [%s] is set again; the last value counts."
+msgstr "Schlüssel %q im Abschnitt [%s] ist mehrfach gesetzt; der letzte Wert gilt."

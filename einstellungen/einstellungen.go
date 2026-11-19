@@ -1,0 +1,166 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+// Package einstellungen liest die Einstellungsdatei `settings.ini` (ADR-0018) und liefert typisierte Werte.
+//
+// Der Leser schreibt nichts und beendet nie das Programm: Eine fehlende Datei ergibt die Voreinstellungen ohne
+// Warnung; eine unlesbare Datei, kaputte Zeilen, unbekannte Schlüssel und ungültige Werte ergeben Warnungen, die
+// als Liste zurückkommen (fertig übersetzt, eine pro Befund). Die Aufnahme darf an einer kaputten Datei nie
+// scheitern. Die übrigen Pakete bekommen die Werte übergeben und lesen die Datei nie selbst.
+//
+// Format: Abschnitte `[name]`, Zeilen `schlüssel = wert`, Kommentare mit `#` oder `;` am Zeilenanfang (nach
+// führendem Leerraum), Leerzeilen, UTF-8; Groß-/Kleinschreibung zählt. Wird ein Schlüssel im selben Abschnitt
+// mehrfach gesetzt, gilt der letzte gültige Wert (mit Warnung); ein ungültiger späterer Wert lässt den bisherigen
+// Stand (Voreinstellung oder früherer gültiger Wert) unverändert.
+package einstellungen
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/Andiministrator/schnapp/bibliothek"
+	"github.com/Andiministrator/schnapp/sprache"
+)
+
+// Bildschirmwahl ist die Einstellung `[capture] screen`: was „Bildschirm aufnehmen“ ohne Monitornamen tut
+// (ADR-0017 Nachtrag 3).
+type Bildschirmwahl string
+
+// Werte von Bildschirmwahl.
+const (
+	WahlKlick  Bildschirmwahl = "pick"    // Monitor per Klick im Overlay wählen (Voreinstellung)
+	WahlZeiger Bildschirmwahl = "pointer" // Monitor unter dem Mauszeiger, sofort
+	WahlAlle   Bildschirmwahl = "all"     // alle Monitore
+)
+
+// Einstellungen sind die gelesenen Werte samt Voreinstellungen.
+type Einstellungen struct {
+	Bildschirm Bildschirmwahl         // [capture] screen
+	Bibliothek bibliothek.Einstellung // [library] cleanup, cleanup-days
+}
+
+// Voreinstellungen liefert die Werte, die gelten, wenn nichts eingestellt ist.
+func Voreinstellungen() Einstellungen {
+	return Einstellungen{Bildschirm: WahlKlick, Bibliothek: bibliothek.Voreinstellung}
+}
+
+// Pfad liefert den Ort der Datei: $XDG_CONFIG_HOME/schnapp/settings.ini, ohne gesetztes oder mit relativem
+// XDG_CONFIG_HOME (laut Spezifikation ignoriert) $HOME/.config/schnapp/settings.ini. Ist auch das Heimverzeichnis
+// unbekannt, kommt ein Fehler.
+func Pfad() (string, error) {
+	if w := os.Getenv("XDG_CONFIG_HOME"); filepath.IsAbs(w) {
+		return filepath.Join(filepath.Clean(w), "schnapp", "settings.ini"), nil
+	}
+	heim, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(heim, ".config", "schnapp", "settings.ini"), nil
+}
+
+// Lade liest die Einstellungsdatei am Ort von Pfad. Es gibt immer brauchbare Einstellungen zurück; die Warnungen
+// sind fertig übersetzte Zeilen, die der Aufrufer ausgibt (der Leser selbst schreibt nichts).
+func Lade() (Einstellungen, []string) {
+	pfad, err := Pfad()
+	if err != nil {
+		return Voreinstellungen(), []string{fmt.Sprintf(sprache.T("Cannot locate the settings file (%v); using the defaults."), err)}
+	}
+	return LadeDatei(pfad)
+}
+
+// LadeDatei liest die Einstellungsdatei pfad. Fehlt sie, gelten die Voreinstellungen ohne Warnung.
+func LadeDatei(pfad string) (Einstellungen, []string) {
+	daten, err := os.ReadFile(pfad)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return Voreinstellungen(), nil
+		}
+		return Voreinstellungen(), []string{fmt.Sprintf(sprache.T("%s: cannot read the settings file (%v); using the defaults."), pfad, err)}
+	}
+	return Parse(pfad, string(daten))
+}
+
+// Parse wertet den Inhalt einer Einstellungsdatei aus; name erscheint in den Warnungen.
+func Parse(name, inhalt string) (Einstellungen, []string) {
+	e := Voreinstellungen()
+	var warn []string
+	melde := func(zeile int, format string, a ...any) {
+		warn = append(warn, fmt.Sprintf("%s:%d: ", name, zeile)+fmt.Sprintf(format, a...))
+	}
+
+	abschnitt := ""              // aktueller Abschnitt; "" = noch keiner
+	bekannt := false             // ist der aktuelle Abschnitt bekannt?
+	gesetzt := map[string]bool{} // "abschnitt\x00schlüssel" bereits gesehen
+	inhalt = strings.TrimPrefix(inhalt, "\xef\xbb\xbf")
+	for i, zeile := range strings.Split(inhalt, "\n") {
+		nr := i + 1
+		zeile = strings.TrimSpace(zeile)
+		if zeile == "" || zeile[0] == '#' || zeile[0] == ';' {
+			continue
+		}
+		if zeile[0] == '[' {
+			if !strings.HasSuffix(zeile, "]") {
+				melde(nr, "%s", sprache.T("Broken section header; line ignored."))
+				abschnitt, bekannt = "", false
+				continue
+			}
+			abschnitt = strings.TrimSpace(zeile[1 : len(zeile)-1])
+			bekannt = abschnitt == "capture" || abschnitt == "library"
+			if !bekannt {
+				melde(nr, sprache.T("Unknown section [%s]; its keys are ignored."), abschnitt)
+			}
+			continue
+		}
+		schluessel, wert, ok := strings.Cut(zeile, "=")
+		schluessel, wert = strings.TrimSpace(schluessel), strings.TrimSpace(wert)
+		if !ok || schluessel == "" {
+			melde(nr, "%s", sprache.T("Line is neither a section, a comment nor \"key = value\"; ignored."))
+			continue
+		}
+		if abschnitt == "" {
+			melde(nr, sprache.T("Setting %q is outside of any section; ignored."), schluessel)
+			continue
+		}
+		if !bekannt {
+			continue // schon mit dem Abschnitt gemeldet
+		}
+		kennung := abschnitt + "\x00" + schluessel
+		wiederholt := gesetzt[kennung]
+		var gueltig, bekannterSchluessel bool
+		switch abschnitt + "." + schluessel {
+		case "capture.screen":
+			bekannterSchluessel = true
+			switch w := Bildschirmwahl(wert); w {
+			case WahlKlick, WahlZeiger, WahlAlle:
+				e.Bildschirm, gueltig = w, true
+			}
+		case "library.cleanup":
+			bekannterSchluessel = true
+			switch wert {
+			case "true":
+				e.Bibliothek.An, gueltig = true, true
+			case "false":
+				e.Bibliothek.An, gueltig = false, true
+			}
+		case "library.cleanup-days":
+			bekannterSchluessel = true
+			if n, err := strconv.Atoi(wert); err == nil && n >= 1 && n <= bibliothek.MaxTage {
+				e.Bibliothek.Tage, gueltig = n, true
+			}
+		}
+		switch {
+		case !bekannterSchluessel:
+			melde(nr, sprache.T("Unknown key %q in section [%s]; ignored."), schluessel, abschnitt)
+		case !gueltig:
+			melde(nr, sprache.T("Invalid value %q for key %q in section [%s]; ignored."), wert, schluessel, abschnitt)
+		case wiederholt:
+			melde(nr, sprache.T("Key %q in section [%s] is set again; the last value counts."), schluessel, abschnitt)
+		}
+		if bekannterSchluessel {
+			gesetzt[kennung] = true
+		}
+	}
+	return e, warn
+}

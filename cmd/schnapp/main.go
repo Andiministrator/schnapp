@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/Andiministrator/schnapp/einstellungen"
 	"github.com/Andiministrator/schnapp/oberflaeche"
 	"github.com/Andiministrator/schnapp/po"
 	"github.com/Andiministrator/schnapp/sprache"
@@ -29,12 +30,18 @@ const (
 func main() {
 	// Scheitert das Laden der Sprache, bleibt Englisch aktiv; das Programm läuft trotzdem (sprache.Starte).
 	_, _ = sprache.Starte(po.Dateien, "")
-	os.Exit(laufe(os.Args[1:], os.Stdout, os.Stderr, oberflaeche.Monitore))
+	os.Exit(laufe(os.Args[1:], os.Stdout, os.Stderr, oberflaeche.Monitore, einstellungen.Lade))
 }
 
-// laufe führt einen Aufruf aus und liefert den Exit-Code. Die Monitorabfrage kommt von außen, damit der Test ohne
-// Wayland auskommt.
-func laufe(args []string, aus, fehler io.Writer, monitore func() ([]oberflaeche.Monitor, error)) int {
+// Ladefunktion lädt die Einstellungen und liefert die Warnungen dazu (einstellungen.Lade); sie kommt von außen, damit
+// der Test ohne echte Datei auskommt.
+type Ladefunktion func() (einstellungen.Einstellungen, []string)
+
+// laufe führt einen Aufruf aus und liefert den Exit-Code. Die Monitorabfrage und das Laden der Einstellungen kommen
+// von außen, damit der Test ohne Wayland und ohne echte Datei auskommt. --version, --help und --list-screens lesen
+// die Einstellungsdatei nicht (und warnen nicht über sie); nur die Aufnahme-Modi laden sie, geben jede Warnung als
+// eine Zeile auf fehler aus und machen weiter (ADR-0018).
+func laufe(args []string, aus, fehler io.Writer, monitore func() ([]oberflaeche.Monitor, error), lade Ladefunktion) int {
 	a, err := Auswerten(args)
 	if err != nil {
 		fmt.Fprintln(fehler, err)
@@ -51,8 +58,41 @@ func laufe(args []string, aus, fehler io.Writer, monitore func() ([]oberflaeche.
 	case ModusMonitorliste:
 		return gibMonitoreAus(aus, fehler, monitore)
 	}
-	fmt.Fprintf(fehler, sprache.T("The capture mode %s is not implemented yet.")+"\n", a.Modus.Option())
+	einst, warnungen := lade()
+	for _, w := range warnungen {
+		fmt.Fprintln(fehler, w)
+	}
+	auftrag := plane(a, einst)
+	fmt.Fprintf(fehler, sprache.T("The capture mode %s is not implemented yet.")+"\n", auftrag.Modus.Option())
 	return exitFehler
+}
+
+// Auftrag ist der Aufruf samt aufgelöstem Bildschirmziel: das, was ein Aufnahme-Modus später ausführt.
+type Auftrag struct {
+	Modus Modus
+	// Ziel gilt nur bei ModusBildschirm: Name != "" ist ein bestimmter Monitor (--screen=NAME), sonst entscheidet
+	// Wahl (Einstellung [capture] screen).
+	Ziel Bildschirmziel
+}
+
+// Bildschirmziel sagt, welcher Monitor aufgenommen wird.
+type Bildschirmziel struct {
+	Name string                       // --screen=NAME; leer = laut Einstellung
+	Wahl einstellungen.Bildschirmwahl // nur bei leerem Namen maßgeblich
+}
+
+// plane löst den Aufruf mit den Einstellungen auf. Vorrang: Kommandozeile vor Datei vor Voreinstellung
+// (ADR-0018): --screen=NAME ignoriert [capture] screen, --screen ohne Wert folgt ihr.
+func plane(a Aufruf, e einstellungen.Einstellungen) Auftrag {
+	t := Auftrag{Modus: a.Modus}
+	if a.Modus == ModusBildschirm {
+		if a.Bildschirm != "" {
+			t.Ziel = Bildschirmziel{Name: a.Bildschirm}
+		} else {
+			t.Ziel = Bildschirmziel{Wahl: e.Bildschirm}
+		}
+	}
+	return t
 }
 
 // hilfe liefert den Hilfetext.

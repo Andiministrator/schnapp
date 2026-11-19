@@ -26,8 +26,8 @@ type Einstellung struct {
 // Voreinstellung: an, 90 Tage.
 var Voreinstellung = Einstellung{An: true, Tage: 90}
 
-// maxTage ist die längste einstellbare Frist (100 Jahre).
-const maxTage = 36500
+// MaxTage ist die längste einstellbare Frist (100 Jahre).
+const MaxTage = 36500
 
 // Fehler des Aufräumens.
 var (
@@ -66,7 +66,7 @@ func (b *Bibliothek) Aufraeumen(jetzt time.Time, e Einstellung) (AufraeumErgebni
 	}
 	// Obergrenze: 100 Jahre. Darüber liefe time.Duration über und die Frist würde negativ — dann gingen auch
 	// frische Aufnahmen in den Papierkorb (F-50).
-	if e.Tage < 1 || e.Tage > maxTage {
+	if e.Tage < 1 || e.Tage > MaxTage {
 		return erg, ErrFrist
 	}
 	b.mu.Lock()
