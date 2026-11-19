@@ -45,6 +45,9 @@ type Bild struct {
 type Quelle interface {
 	// Bildschirm nimmt den Bildschirm mit dem Namen name (z. B. "DP-1") in Originalauflösung auf.
 	Bildschirm(ctx context.Context, name string, opt Optionen) (*Bild, error)
+	// AktiverBildschirm nimmt den Bildschirm auf, den der Compositor für aktiv hält (bei KWin in der Voreinstellung
+	// der unter dem Mauszeiger).
+	AktiverBildschirm(ctx context.Context, opt Optionen) (*Bild, error)
 	// Fenster lässt den Nutzer ein Fenster anklicken und nimmt es auf (KWin übernimmt die Auswahl). Bricht der
 	// Nutzer ab, kommt ErrAbgebrochen.
 	Fenster(ctx context.Context, opt Optionen) (*Bild, error)

@@ -35,9 +35,6 @@ msgstr "Die verfügbaren Optionen zeigt --help."
 msgid "Schnapp %s"
 msgstr "Schnapp %s"
 
-msgid "The capture mode %s is not implemented yet."
-msgstr "Der Aufnahmemodus %s ist noch nicht umgesetzt."
-
 msgid "Usage: schnapp [option]"
 msgstr "Aufruf: schnapp [Option]"
 
@@ -119,3 +116,29 @@ msgstr "Ungültiger Wert %q für den Schlüssel %q im Abschnitt [%s]; ignoriert.
 
 msgid "Key %q in section [%s] is set again; the last value counts."
 msgstr "Schlüssel %q im Abschnitt [%s] ist mehrfach gesetzt; der letzte Wert gilt."
+
+# cmd/schnapp: Aufnahme (aufnehmen.go)
+msgid "No area to repeat yet. Select one with --region first."
+msgstr "Noch kein Bereich zum Wiederholen. Zuerst einen mit --region wählen."
+
+msgid "The monitor of the last area has changed its size. Select a new area with --region."
+msgstr "Der Monitor des letzten Bereichs hat seine Größe geändert. Mit --region einen neuen Bereich wählen."
+
+msgid "Capturing all monitors at once is not implemented yet."
+msgstr "Alle Monitore auf einmal aufzunehmen ist noch nicht umgesetzt."
+
+msgid "The selection is outside the captured image."
+msgstr "Die Auswahl liegt außerhalb des aufgenommenen Bildes."
+
+msgid "Could not save the screenshot: %v"
+msgstr "Der Screenshot ließ sich nicht speichern: %v"
+
+msgid "Could not remember the area for --repeat: %v"
+msgstr "Der Bereich für --repeat ließ sich nicht merken: %v"
+
+# oberflaeche: Overlay
+msgid "Click a monitor or drag an area · Enter: this monitor · Esc: cancel"
+msgstr "Monitor anklicken oder Bereich aufziehen · Enter: dieser Monitor · Esc: abbrechen"
+
+msgid "Drag an area · Enter: whole monitor · Esc: cancel"
+msgstr "Bereich aufziehen · Enter: ganzer Monitor · Esc: abbrechen"

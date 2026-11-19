@@ -100,6 +100,14 @@ func (k *KWin) Bildschirm(ctx context.Context, name string, opt Optionen) (*Bild
 	return k.aufnehmen(ctx, "CaptureScreen", []any{name}, opt, name)
 }
 
+// AktiverBildschirm nimmt den Bildschirm auf, den KWin für aktiv hält (CaptureActiveScreen). In der
+// KWin-Voreinstellung ist das der Monitor unter dem Mauszeiger (gemessen, F-72, knowledge/topics/kwin-screenshot.md).
+func (k *KWin) AktiverBildschirm(ctx context.Context, opt Optionen) (*Bild, error) {
+	ctx, abbruch := context.WithTimeout(ctx, zeitgrenze)
+	defer abbruch()
+	return k.aufnehmen(ctx, "CaptureActiveScreen", nil, opt, "")
+}
+
 // Fenster lässt KWin ein Fenster per Klick wählen (CaptureInteractive, kind 0).
 func (k *KWin) Fenster(ctx context.Context, opt Optionen) (*Bild, error) {
 	ctx, abbruch := context.WithTimeout(ctx, zeitgrenzeInteraktiv)

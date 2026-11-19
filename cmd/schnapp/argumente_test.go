@@ -5,6 +5,8 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"io"
 	"strings"
 	"testing"
 
@@ -62,8 +64,15 @@ func keineMonitore() ([]oberflaeche.Monitor, error) { return nil, errors.New("ke
 func fuehre(t *testing.T, monitore func() ([]oberflaeche.Monitor, error), args ...string) (int, string, string) {
 	t.Helper()
 	var aus, fehler bytes.Buffer
-	code := laufe(args, &aus, &fehler, monitore, keineEinstellungen(t))
+	code := laufe(args, &aus, &fehler, monitore, keineEinstellungen(t), nichtUmgesetzt)
 	return code, aus.String(), fehler.String()
+}
+
+// nichtUmgesetzt ersetzt in den Tests von laufe die Ausführung: keine echte Aufnahme, nur die Meldung, welcher Modus
+// angekommen wäre (die Ausführung selbst prüft aufnehmen_test.go).
+func nichtUmgesetzt(t Auftrag, _, fehler io.Writer) int {
+	fmt.Fprintf(fehler, "The capture mode %s is not implemented yet.\n", t.Modus.Option())
+	return exitFehler
 }
 
 // keineEinstellungen liefert Voreinstellungen ohne Warnung und zählt die Aufrufe nicht.
@@ -153,9 +162,10 @@ func TestLaufeDeutsch(t *testing.T) {
 	if !strings.HasPrefix(aus, "2 Monitore gefunden:\n  A: 1 × 2 Pixel\n") {
 		t.Errorf("Monitorliste deutsch: %q", aus)
 	}
-	_, _, fehler := fuehre(t, keineMonitore, "--window")
-	if !strings.Contains(fehler, "noch nicht umgesetzt") {
-		t.Errorf("Modus deutsch: %q", fehler)
+	l := neuerLauf(t)
+	_, _, fehler := l.fuehre(Auftrag{Modus: ModusWiederholen})
+	if !strings.Contains(fehler, "Noch kein Bereich") {
+		t.Errorf("Aufnahme-Meldung deutsch: %q", fehler)
 	}
 }
 
@@ -183,7 +193,7 @@ func TestLaufeLadetEinstellungenNurFuerAufnahme(t *testing.T) {
 			return einstellungen.Voreinstellungen(), []string{"settings.ini:3: Warnung"}
 		}
 		var aus, fehler bytes.Buffer
-		laufe(tc.args, &aus, &fehler, func() ([]oberflaeche.Monitor, error) { return nil, nil }, lade)
+		laufe(tc.args, &aus, &fehler, func() ([]oberflaeche.Monitor, error) { return nil, nil }, lade, nichtUmgesetzt)
 		if (aufrufe == 1) != tc.laedt || aufrufe > 1 {
 			t.Errorf("%q: Einstellungen %d-mal geladen, erwartet geladen=%v", tc.args, aufrufe, tc.laedt)
 		}
@@ -200,7 +210,7 @@ func TestLaufeWarnungenWeiter(t *testing.T) {
 		return einstellungen.Voreinstellungen(), []string{"w1", "w2"}
 	}
 	var aus, fehler bytes.Buffer
-	code := laufe([]string{"--window"}, &aus, &fehler, keineMonitore, lade)
+	code := laufe([]string{"--window"}, &aus, &fehler, keineMonitore, lade, nichtUmgesetzt)
 	if code != exitFehler || !strings.HasPrefix(fehler.String(), "w1\nw2\n") || !strings.Contains(fehler.String(), "not implemented yet") {
 		t.Errorf("Code %d, stderr %q", code, fehler.String())
 	}

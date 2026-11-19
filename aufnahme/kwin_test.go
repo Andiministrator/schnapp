@@ -273,3 +273,17 @@ func TestClose(t *testing.T) {
 		t.Errorf("Close: %v, geschlossen=%v", err, a.geschlossen)
 	}
 }
+
+func TestAktiverBildschirm(t *testing.T) {
+	a := &attrappe{version2: true, antwort: gueltigeAntwort(), daten: gueltigeDaten()}
+	k := neu(a)
+	if _, err := k.AktiverBildschirm(context.Background(), Optionen{}); err != nil {
+		t.Fatal(err)
+	}
+	if a.letzteMethode != "CaptureActiveScreen" || len(a.letzteArgs) != 0 {
+		t.Errorf("Aufruf %s %v", a.letzteMethode, a.letzteArgs)
+	}
+	if v, _ := a.letzteOpt["native-resolution"].Value().(bool); !v {
+		t.Error("native-resolution fehlt")
+	}
+}

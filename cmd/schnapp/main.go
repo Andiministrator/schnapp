@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Command schnapp ist das Screenshot- und Beschriftungswerkzeug (siehe README). Dieses Gerüst wertet die Argumente aus;
-// die Aufnahme-Modi folgen mit den nächsten Karten.
+// Command schnapp ist das Screenshot- und Beschriftungswerkzeug (siehe README). Es wertet die Argumente aus, nimmt
+// auf (Overlay für Bereich und Monitor, aufnehmen.go) und legt die Aufnahme in der Bibliothek ab.
 //
 // Bauen mit den Gio-Build-Tags novulkan und nox11, siehe CONTRIBUTING.md.
 package main
@@ -25,12 +25,16 @@ const (
 	exitOK     = 0
 	exitFehler = 1 // Laufzeitfehler oder Modus noch nicht umgesetzt
 	exitAufruf = 2 // Fehler in der Kommandozeile
+	// exitAbgebrochen = 3 (aufnehmen.go): vom Nutzer abgebrochen
 )
 
 func main() {
 	// Scheitert das Laden der Sprache, bleibt Englisch aktiv; das Programm läuft trotzdem (sprache.Starte).
 	_, _ = sprache.Starte(po.Dateien, "")
-	os.Exit(laufe(os.Args[1:], os.Stdout, os.Stderr, oberflaeche.Monitore, einstellungen.Lade))
+	// Gio braucht die Hauptschleife auf dem Haupt-Goroutine, sobald das Overlay ein Fenster öffnet.
+	oberflaeche.Starte(func() int {
+		return laufe(os.Args[1:], os.Stdout, os.Stderr, oberflaeche.Monitore, einstellungen.Lade, echteAnschluesse().Ausfuehren)
+	})
 }
 
 // Ladefunktion lädt die Einstellungen und liefert die Warnungen dazu (einstellungen.Lade); sie kommt von außen, damit
@@ -41,7 +45,7 @@ type Ladefunktion func() (einstellungen.Einstellungen, []string)
 // von außen, damit der Test ohne Wayland und ohne echte Datei auskommt. --version, --help und --list-screens lesen
 // die Einstellungsdatei nicht (und warnen nicht über sie); nur die Aufnahme-Modi laden sie, geben jede Warnung als
 // eine Zeile auf fehler aus und machen weiter (ADR-0018).
-func laufe(args []string, aus, fehler io.Writer, monitore func() ([]oberflaeche.Monitor, error), lade Ladefunktion) int {
+func laufe(args []string, aus, fehler io.Writer, monitore func() ([]oberflaeche.Monitor, error), lade Ladefunktion, ausfuehren Ausfuehrung) int {
 	a, err := Auswerten(args)
 	if err != nil {
 		fmt.Fprintln(fehler, err)
@@ -62,9 +66,7 @@ func laufe(args []string, aus, fehler io.Writer, monitore func() ([]oberflaeche.
 	for _, w := range warnungen {
 		fmt.Fprintln(fehler, w)
 	}
-	auftrag := plane(a, einst)
-	fmt.Fprintf(fehler, sprache.T("The capture mode %s is not implemented yet.")+"\n", auftrag.Modus.Option())
-	return exitFehler
+	return ausfuehren(plane(a, einst), aus, fehler)
 }
 
 // Auftrag ist der Aufruf samt aufgelöstem Bildschirmziel: das, was ein Aufnahme-Modus später ausführt.
