@@ -61,6 +61,8 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 
 | URL | Letzter Besuch | Erstbesuch | Status | Weg | Inhalt | Zieldatei |
 |---|---|---|---|---|---|---|
+| https://invent.kde.org/libraries/plasma-wayland-protocols/-/raw/master/src/protocols/fake-input.xml | 2026-11-20 | 2026-11-20 | live | curl | org_kde_kwin_fake_input v6, Requests und Opcodes | topics/lehren.md |
+| https://invent.kde.org/plasma/kwin/-/raw/master/src/backends/fakeinput/fakeinputbackend.cpp | 2026-11-20 | 2026-11-20 | live | curl (Pfad über GitLab-API tree) | authenticate setzt authenticated ohne Prüfung („TODO: make secure“) | topics/lehren.md |
 | https://invent.kde.org/plasma/plasma-workspace/-/raw/master/klipper/klipper.kcfg | 2026-11-20 | 2026-11-20 | live | curl | `SaveImages` „Save images“, Voreinstellung false | topics/gio-wayland.md |
 | https://invent.kde.org/plasma/plasma-workspace/-/raw/master/klipper/configdialog.cpp | 2026-11-20 | 2026-11-20 | live | curl | Bezeichnung „Image data copied explicitly“ unter „Include in history“ | topics/gio-wayland.md |
 | https://invent.kde.org/plasma/plasma-workspace/-/raw/master/klipper/historymodel.cpp | 2026-11-20 | 2026-11-20 | live | curl | Bild ohne Text nur mit SaveImages oder `x-kde-force-image-copy` in den Verlauf | topics/gio-wayland.md |
