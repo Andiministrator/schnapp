@@ -193,8 +193,13 @@ func (e *editor) bildNeu() { e.bildOp = paint.NewImageOp(e.s.D.Ansichtsbild()) }
 
 func (e *editor) laufen() error {
 	e.w.Option(app.Title(e.fensterTitel()), app.Size(unit.Dp(1200), unit.Dp(800)), app.MinSize(unit.Dp(480), unit.Dp(320)))
+	if probeAutoWahl {
+		// Probe-Build: Vollbild, damit Fensterkoordinaten gleich Bildschirmkoordinaten sind (Fernbedienung, Karte #95).
+		e.w.Option(app.Fullscreen.Option())
+	}
 	e.titelSet = e.fensterTitel()
 	var ops op.Ops
+	var letzteGroesse image.Point
 	for {
 		switch ev := e.w.Event().(type) {
 		case app.DestroyEvent:
@@ -223,6 +228,10 @@ func (e *editor) laufen() error {
 				ev.Abort()
 			}
 		case app.FrameEvent:
+			if ev.Size != letzteGroesse { // probe.sh wartet auf diese Zeile, bis das Fenster steht
+				letzteGroesse = ev.Size
+				diagnoseEditor("Fenstergröße %dx%d", ev.Size.X, ev.Size.Y)
+			}
 			gtx := app.NewContext(&ops, ev)
 			e.frame(gtx)
 			ev.Frame(gtx.Ops)
