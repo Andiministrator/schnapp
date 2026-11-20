@@ -262,3 +262,74 @@ func TestURIZuPfad(t *testing.T) {
 		}
 	}
 }
+
+func signalAn(pfad dbus.ObjectPath, sender string) *dbus.Signal {
+	return &dbus.Signal{
+		Sender: sender, Path: pfad, Name: schnittstelleReq + "." + signalAntwort,
+		Body: []interface{}{uint32(0), map[string]dbus.Variant{}},
+	}
+}
+
+// Der Signalfilter nimmt nur passende Antworten des Portals an; ein geschlossener Kanal endet mit ErrVerbindung (A-2, A-7).
+func TestWertSignal(t *testing.T) {
+	pfad := dbus.ObjectPath("/org/freedesktop/portal/desktop/request/1_7/tok")
+	pruefe := absenderPruefung(":1.99")
+
+	if r, art := wertSignal(nil, false, pfad, pruefe); art != signalEnde || !errors.Is(r.Err, ErrVerbindung) {
+		t.Errorf("geschlossener Kanal: %v, %v", art, r.Err)
+	}
+	// Ein geschlossener Kanal liefert nil mit ok=false; nil mit ok=true wird verworfen, nicht als Ende gewertet.
+	if _, art := wertSignal(nil, true, pfad, pruefe); art != signalVerwerfen {
+		t.Errorf("nil-Signal: %v", art)
+	}
+	if _, art := wertSignal(signalAn(pfad, dienst), true, pfad, pruefe); art != signalPassend {
+		t.Errorf("Name des Dienstes: %v", art)
+	}
+	if _, art := wertSignal(signalAn(pfad, ":1.99"), true, pfad, pruefe); art != signalPassend {
+		t.Errorf("Besitzer des Dienstes: %v", art)
+	}
+	if _, art := wertSignal(signalAn(pfad, ":1.5"), true, pfad, pruefe); art != signalVerwerfen {
+		t.Errorf("fremder Absender: %v", art)
+	}
+	// Besitzer unbekannt: nur der Name zählt.
+	if _, art := wertSignal(signalAn(pfad, ":1.99"), true, pfad, absenderPruefung("")); art != signalVerwerfen {
+		t.Errorf("ohne Besitzer: %v", art)
+	}
+	if _, art := wertSignal(signalAn("/anderer/pfad", dienst), true, pfad, pruefe); art != signalVerwerfen {
+		t.Errorf("anderer Pfad: %v", art)
+	}
+	falsch := signalAn(pfad, dienst)
+	falsch.Body = []interface{}{"kein uint32", map[string]dbus.Variant{}}
+	if _, art := wertSignal(falsch, true, pfad, pruefe); art != signalVerwerfen {
+		t.Errorf("falscher Körper: %v", art)
+	}
+	falsch = signalAn(pfad, dienst)
+	falsch.Name = "x.y.Z"
+	if _, art := wertSignal(falsch, true, pfad, pruefe); art != signalVerwerfen {
+		t.Errorf("anderer Name: %v", art)
+	}
+}
+
+// Meldet der Transport einen Fehler statt einer Antwort (Verbindung getrennt), kehrt Speichern mit diesem Fehler zurück.
+func TestVerbindungGetrennt(t *testing.T) {
+	a := &attrappe{name: ":1.7", antwort: &Antwort{Err: ErrVerbindung}}
+	_, err := neuerDialog(a).Speichern(mitFrist(t), anfrage())
+	if !errors.Is(err, ErrVerbindung) {
+		t.Errorf("Fehler %v, soll ErrVerbindung", err)
+	}
+}
+
+// Scheitert SaveFile, weil der Kontext endete, wird die Anfrage unter dem erwarteten Pfad geschlossen (A-8).
+func TestKontextEndeWaehrendSaveFile(t *testing.T) {
+	a := &attrappe{name: ":1.7", fehler: context.Canceled}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := neuerDialog(a).Speichern(ctx, anfrage())
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("Fehler %v", err)
+	}
+	soll := RequestPfad(":1.7", "tok_1")
+	if len(a.geschlossen) != 1 || a.geschlossen[0] != soll {
+		t.Errorf("geschlossen: %v, soll [%s]", a.geschlossen, soll)
+	}
+}

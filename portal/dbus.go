@@ -25,10 +25,53 @@ func (t *dbusTransport) Close() error { return t.conn.Close() }
 
 func (t *dbusTransport) Name() string { return t.conn.Names()[0] }
 
+// signalArt sagt, was mit einem Wert aus dem Signalkanal geschieht.
+type signalArt int
+
+const (
+	signalVerwerfen signalArt = iota // fremdes oder fehlerhaftes Signal
+	signalPassend                    // passende Antwort
+	signalEnde                       // Kanal geschlossen: Verbindung weg
+)
+
+// wertSignal ist der Filter der Abo-Goroutine, ohne Bus prüfbar: Es nimmt nur Request.Response auf pfad an, mit
+// zwei Werten (u, a{sv}) und von einem Absender, den absenderOK zulässt (A-7). ok=false heißt: Kanal geschlossen (A-2).
+func wertSignal(s *dbus.Signal, ok bool, pfad dbus.ObjectPath, absenderOK func(string) bool) (Antwort, signalArt) {
+	if !ok {
+		return Antwort{Err: ErrVerbindung}, signalEnde
+	}
+	if s == nil || s.Path != pfad || s.Name != schnittstelleReq+"."+signalAntwort || len(s.Body) != 2 {
+		return Antwort{}, signalVerwerfen
+	}
+	if absenderOK != nil && !absenderOK(s.Sender) {
+		return Antwort{}, signalVerwerfen
+	}
+	code, ok1 := s.Body[0].(uint32)
+	erg, ok2 := s.Body[1].(map[string]dbus.Variant)
+	if !ok1 || !ok2 {
+		return Antwort{}, signalVerwerfen
+	}
+	return Antwort{Code: code, Ergebnisse: erg}, signalPassend
+}
+
+// absenderPruefung lässt den Namen des Portals und dessen eindeutigen Besitzer zu; ist der Besitzer unbekannt
+// (leer), nur den Namen.
+func absenderPruefung(besitzer string) func(string) bool {
+	return func(sender string) bool {
+		return sender == dienst || (besitzer != "" && sender == besitzer)
+	}
+}
+
 func (t *dbusTransport) Abonniere(pfad dbus.ObjectPath) (<-chan Antwort, func(), error) {
+	var besitzer string
+	if err := t.conn.BusObject().Call("org.freedesktop.DBus.GetNameOwner", 0, dienst).Store(&besitzer); err != nil {
+		besitzer = "" // nur der Name
+	}
+	pruefe := absenderPruefung(besitzer)
 	sig := make(chan *dbus.Signal, 8)
 	t.conn.Signal(sig)
 	opt := []dbus.MatchOption{
+		dbus.WithMatchSender(dienst),
 		dbus.WithMatchObjectPath(pfad),
 		dbus.WithMatchInterface(schnittstelleReq),
 		dbus.WithMatchMember(signalAntwort),
@@ -42,18 +85,20 @@ func (t *dbusTransport) Abonniere(pfad dbus.ObjectPath) (<-chan Antwort, func(),
 	go func() {
 		for {
 			select {
-			case s := <-sig:
-				if s == nil || s.Path != pfad || s.Name != schnittstelleReq+"."+signalAntwort || len(s.Body) != 2 {
-					continue
-				}
-				code, ok1 := s.Body[0].(uint32)
-				erg, ok2 := s.Body[1].(map[string]dbus.Variant)
-				if !ok1 || !ok2 {
-					continue
-				}
-				select {
-				case aus <- Antwort{code, erg}:
-				default:
+			case s, ok := <-sig:
+				r, art := wertSignal(s, ok, pfad, pruefe)
+				switch art {
+				case signalEnde: // geschlossener Kanal liefert endlos nil: melden und beenden, nicht drehen
+					select {
+					case aus <- r:
+					default:
+					}
+					return
+				case signalPassend:
+					select {
+					case aus <- r:
+					default:
+					}
 				}
 			case <-fertig:
 				return

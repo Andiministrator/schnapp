@@ -33,6 +33,12 @@ var (
 	ErrAbgebrochen = errors.New("Dialog abgebrochen")
 	// ErrKeinPortal: Es gibt keinen Sitzungsbus oder keinen Portal-Dienst mit FileChooser.
 	ErrKeinPortal = errors.New("kein Desktop-Portal verfügbar")
+	// ErrVerbindung: Die Busverbindung wurde getrennt, bevor eine Antwort kam (A-2).
+	ErrVerbindung = errors.New("Busverbindung getrennt")
+	// ErrAntwort: Das Portal beendete den Dialog mit einem Fehlercode (Antwort weder 0 noch 1).
+	ErrAntwort = errors.New("Dialog endete ohne Ergebnis")
+	// ErrOhneDatei: Antwort ohne lesbare Datei-Adresse.
+	ErrOhneDatei = errors.New("Antwort ohne Datei")
 )
 
 // Filter ist ein Dateifilter des Dialogs (Name, dazu Globs und MIME-Typen).
@@ -60,6 +66,7 @@ type Ergebnis struct {
 type Antwort struct {
 	Code       uint32
 	Ergebnisse map[string]dbus.Variant
+	Err        error // gesetzt, wenn statt eines Signals ein Fehler eintrifft (getrennte Verbindung, A-2)
 }
 
 // transport ist der Busaufruf. Die echte Umsetzung steht in dbus.go, die Tests nehmen eine Attrappe.
@@ -163,6 +170,9 @@ func (d *Dialog) Speichern(ctx context.Context, a Anfrage) (Ergebnis, error) {
 	defer ab()
 	handle, err := d.t.SaveFile(ctx, "", a.Titel, baueOptionen(token, a))
 	if err != nil {
+		if ctx.Err() != nil { // der Kontext endete während des Aufrufs: das Portal kann die Anfrage schon angelegt haben (A-8)
+			d.t.Schliesse(pfad)
+		}
 		return Ergebnis{}, err
 	}
 	var ch2 <-chan Antwort
@@ -179,6 +189,9 @@ func (d *Dialog) Speichern(ctx context.Context, a Anfrage) (Ergebnis, error) {
 	case r := <-ch2:
 		return auswerten(r, a)
 	case <-ctx.Done():
+		if handle == "" {
+			handle = pfad
+		}
 		d.t.Schliesse(handle)
 		return Ergebnis{}, ctx.Err()
 	}
@@ -186,21 +199,24 @@ func (d *Dialog) Speichern(ctx context.Context, a Anfrage) (Ergebnis, error) {
 
 // auswerten übersetzt Request.Response: 0 = Wahl, 1 = abgebrochen, sonst Fehler.
 func auswerten(r Antwort, a Anfrage) (Ergebnis, error) {
+	if r.Err != nil {
+		return Ergebnis{}, r.Err
+	}
 	switch r.Code {
 	case antwortAbgebrochen:
 		return Ergebnis{}, ErrAbgebrochen
 	case antwortOK:
 	default:
-		return Ergebnis{}, fmt.Errorf("Dialog endete ohne Ergebnis (Antwort %d)", r.Code)
+		return Ergebnis{}, fmt.Errorf("%w (Antwort %d)", ErrAntwort, r.Code)
 	}
 	var uris []string
 	if v, ok := r.Ergebnisse["uris"]; ok {
 		if err := v.Store(&uris); err != nil {
-			return Ergebnis{}, fmt.Errorf("Antwort ohne lesbare Adressen: %w", err)
+			return Ergebnis{}, fmt.Errorf("%w: %v", ErrOhneDatei, err)
 		}
 	}
 	if len(uris) == 0 {
-		return Ergebnis{}, errors.New("Antwort ohne Datei")
+		return Ergebnis{}, ErrOhneDatei
 	}
 	erg := Ergebnis{URI: uris[0], Filter: -1}
 	if v, ok := r.Ergebnisse["current_filter"]; ok {
