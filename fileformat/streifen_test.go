@@ -82,8 +82,8 @@ func TestExportSVGKachelgrenze(t *testing.T) {
 	if err := ExportiereSVG(&b, d); err != nil {
 		t.Fatal(err)
 	}
-	if dauer := time.Since(start); dauer > 2*time.Second {
-		t.Errorf("ExportiereSVG an der Kachelgrenze %v, soll unter 2 s", dauer)
+	if dauer := time.Since(start); kachelgrenzeZeit > 0 && dauer > kachelgrenzeZeit {
+		t.Errorf("ExportiereSVG an der Kachelgrenze %v, soll unter %v", dauer, kachelgrenzeZeit)
 	}
 	if n := strings.Count(b.String(), `<use href="#objekte"/>`); n != document.MaxKacheln {
 		t.Errorf("%d Kacheln im Export, soll %d", n, document.MaxKacheln)
