@@ -158,7 +158,9 @@ installieren() {
 	echo "installiert: $SYMBOL"
 
 	cache_aktualisieren
-	echo "Fertig. Hinweis: Das Kürzel Druck belegt auch Spectacle; dessen Kürzel in den Systemeinstellungen abschalten."
+	echo "Fertig."
+	# Der Hinweis gilt nur bei der Ersteinrichtung; wer Druck schon umgestellt hat, kann ihn übergehen (Echtlauf 20.11.2026).
+	echo "Hinweis (nur falls Druck noch Spectacle startet): dessen Kürzel in den Systemeinstellungen (Kurzbefehle) abschalten."
 	case ":$PATH:" in *":$PREFIX/bin:"*) ;; *) echo "Hinweis: $PREFIX/bin liegt nicht in PATH." ;; esac
 }
 
