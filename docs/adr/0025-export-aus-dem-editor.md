@@ -69,3 +69,18 @@ fremd; `zenity`/`kdialog` wären Laufzeit-Fremdprogramme (ADR-0011).
   nur Schreibrecht auf die gewählte Datei. Die temporäre Datei daneben und die angehängte Endung liegen außerhalb
   dessen; Punkt 5 funktioniert dort so nicht und braucht dann einen anderen Weg (etwa direkt in die gewählte Datei
   schreiben oder den Dateideskriptor des Portals nutzen).
+
+## Nachtrag 2 (20.11.2026): Verify der Nacharbeit (Fable)
+
+- **Besitzer des Portals nachschlagen (N-1):** Der Bus nennt als Absender eines Signals immer den eindeutigen Namen
+  (`:1.x`), nie `org.freedesktop.portal.Desktop`. Ist der Besitzer beim Anmelden noch unbekannt (das Portal startet
+  erst mit `SaveFile` per Aktivierung), fragt die Prüfung ihn beim ersten fremden Absender erneut ab; sonst verwürfe
+  sie die echte Antwort, und der Export hinge. Ersetzt den Satz „scheitert das, gilt nur der Name“ aus Nachtrag 1.
+- **Rechte vor dem Schreiben (N-2):** Ersetzt der Export eine vorhandene Datei, bekommt die temporäre Datei deren
+  Rechte, bevor der Inhalt geschrieben wird — sie ist nie offener als das Ziel.
+- **Symbolischer Link als Ziel (N-3):** Geschrieben wird in die Datei, auf die der Link zeigt, mit deren Rechten; der
+  Link bleibt. Ein Link ins Leere wird abgelehnt.
+- **Angehängte Endung ohne Ersetzen (N-4):** Hat der Editor die Endung angehängt, legt er die Datei per hartem Link an,
+  der an einem inzwischen entstandenen Ziel scheitert (`ErrZielVorhanden`), statt nur vorher zu prüfen. Kann das
+  Dateisystem keine harten Links, wird bestmöglich vorher geprüft. Ein Prüffehler außer „nicht vorhanden“ (etwa keine
+  Rechte) erscheint als solcher, nicht als „vorhanden“.

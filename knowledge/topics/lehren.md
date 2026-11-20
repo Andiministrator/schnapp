@@ -210,3 +210,7 @@ Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden;
     anhängt, muss selbst prüfen (F-190). Feste Dateirechte (`Chmod 0644`) umgehen die umask (F-192).
   - *Geschlossene Kanäle aus Bibliotheken* (godbus schließt Signalkanäle beim Verbindungsende) mit `v, ok := <-ch`
     lesen, sonst Dauerschleife (F-191).
+  - *D-Bus-Signale tragen als Absender immer den eindeutigen Namen* (`:1.x`), nie den Wellknown-Namen — eine
+    Absenderprüfung braucht den Besitzer, und der kann beim Anmelden noch fehlen (Aktivierung erst durch den Aufruf):
+    nachschlagen statt verwerfen (F-209). Der Verify-Lauf nach der Nacharbeit fand 6 neue Befunde in 16 Behebungen —
+    er ist nicht verzichtbar.
