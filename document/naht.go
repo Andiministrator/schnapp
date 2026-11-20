@@ -122,8 +122,8 @@ func (d *Dokument) ObjektSichtbar(o Objekt) bool { return d.Sichtbar(Reichweite(
 // Reichweite ist die Fläche, die Renderer, Editor und SVG von o zeichnen (Original), knapp nach oben abgeschätzt.
 // Text: die echte Tinte der Glyphen in Go Regular (textTinte, F-181) plus 1 Pixel Kantenglättung, mit Hintergrund
 // zusätzlich dessen Fläche (Grenzen); ohne Tinte (nur Leerraum) und ohne Hintergrund der Ort. Nummer: der Kreis
-// (Grenzen) und die Tinte der Ziffern in Go Bold (nummerTinte) — Ziffern können breiter sein als der Kreis. Pfeil: die
-// Spitze (max(8, 4·Breite)) um B. Nur wenn die Schrift nicht zu laden ist, gilt die alte grobe Schätzung (schaetzung).
+// (Grenzen) und die Tinte der Ziffern in Go Bold (nummerTinte) — Ziffern können breiter sein als der Kreis. Pfeil: das
+// Dreieck der Spitze (Ecken wie beim Zeichnen) plus halbe Strichbreite und 1 Pixel. Nur wenn die Schrift nicht zu laden ist, gilt die alte grobe Schätzung (schaetzung).
 func Reichweite(o Objekt) Rechteck {
 	g := o.Grenzen()
 	switch v := o.(type) {
@@ -149,8 +149,20 @@ func Reichweite(o Objekt) Rechteck {
 		}
 		return g
 	case Pfeil:
-		s := math.Max(8, 4*v.Strich.Breite)
-		return g.Vereint(Rechteck{Min: v.B.Minus(Punkt{s, s}), Max: v.B.Plus(Punkt{s, s})})
+		// Die Ecken der Spitze genau wie Renderer und SVG: B, Fuß ± Normale·g/2 mit Fuß = B − r·g (g = max(8, 4·Breite)).
+		// Dazu die halbe Strichbreite (Rand der gefüllten Fläche, Kantenglättung) und 1 Pixel Reserve.
+		gr := math.Max(8, 4*v.Strich.Breite)
+		r := v.RichtungAmEnde()
+		n := Pt(-r.Y, r.X)
+		fuss := v.B.Minus(r.Mal(gr))
+		rand := v.Strich.Breite/2 + 1
+		sp := Rechteck{Min: v.B, Max: v.B}
+		for _, e := range []Punkt{fuss.Plus(n.Mal(gr / 2)), fuss.Minus(n.Mal(gr / 2))} {
+			sp.Min = Punkt{math.Min(sp.Min.X, e.X), math.Min(sp.Min.Y, e.Y)}
+			sp.Max = Punkt{math.Max(sp.Max.X, e.X), math.Max(sp.Max.Y, e.Y)}
+		}
+		sp = Rechteck{Min: sp.Min.Minus(Pt(rand, rand)), Max: sp.Max.Plus(Pt(rand, rand))}
+		return g.Vereint(sp)
 	}
 	return g
 }
@@ -177,8 +189,9 @@ func schaetzung(o Objekt, g Rechteck) Rechteck {
 			laengste = max(laengste, akt)
 		}
 		s := v.Schriftgrad
-		return g.Vereint(Rechteck{Min: v.Ort.Minus(Punkt{0.25 * s, 0.2 * s}),
-			Max: v.Ort.Plus(Punkt{(1.1*float64(laengste) + 0.25) * s, s*(1+1.3*float64(zeilen-1)) + 0.3*s})})
+		// 1 Pixel Reserve rundum: ein Obermaß auch für Zeichen wie U+2044 und U+21A8, deren Tinte weiter reicht.
+		return g.Vereint(Rechteck{Min: v.Ort.Minus(Punkt{0.25*s + 1, 0.2*s + 1}),
+			Max: v.Ort.Plus(Punkt{(1.1*float64(laengste)+0.25)*s + 1, s*(1+1.3*float64(zeilen-1)) + 0.3*s + 1})})
 	case Nummer:
 		grad := 1.2 * v.Radius
 		halb := grad * (0.4*float64(len(fmt.Sprint(v.Wert))) + 1)

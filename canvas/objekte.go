@@ -27,7 +27,17 @@ func trifft(o document.Objekt, p document.Punkt, tol float64) bool {
 			return true
 		}
 		// Die Spitze ragt über B hinaus (Länge wie beim Zeichnen, mindestens 8 px).
-		return p.Minus(v.B).Laenge() <= spitzenLaenge(v.Strich.Breite)+tol
+		g := spitzenLaenge(v.Strich.Breite)
+		if p.Minus(v.B).Laenge() <= g+tol {
+			return true
+		}
+		// Die Ecken der Spitze liegen bis g·√5/2 von B: die Kanten des Dreiecks zählen mit.
+		r := v.RichtungAmEnde()
+		n := document.Pt(-r.Y, r.X)
+		fuss := v.B.Minus(r.Mal(g))
+		e1, e2 := fuss.Plus(n.Mal(g/2)), fuss.Minus(n.Mal(g/2))
+		return abstandZurStrecke(p, v.B, e1) <= tol || abstandZurStrecke(p, v.B, e2) <= tol ||
+			abstandZurStrecke(p, e1, e2) <= tol
 	case document.Kasten:
 		r := v.Bereich
 		halb := v.Strich.Breite/2 + tol

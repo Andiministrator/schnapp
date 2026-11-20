@@ -110,8 +110,8 @@ func TestReichweite(t *testing.T) {
 		o    Objekt
 		soll Rechteck
 	}{
-		// Spitze max(8, 4) um B
-		"pfeil": {GeraderPfeil(Pt(0, 50), Pt(50, 50), rot), Rechteck{Pt(-0.5, 42), Pt(58, 58)}},
+		// Spitze max(8, 4): Dreieck B, (B−8, B.y±4), dazu halbe Breite und 1 Pixel
+		"pfeil": {GeraderPfeil(Pt(0, 50), Pt(50, 50), rot), Rechteck{Pt(-0.5, 44.5), Pt(51.5, 55.5)}},
 		"kasten": {Kasten{Bereich: R(Pt(10, 10), Pt(20, 20)), Strich: Strich{Breite: 2}},
 			Rechteck{Pt(9, 9), Pt(21, 21)}},
 		// nur Leerraum, kein Hintergrund: keine Tinte, nur der Ort
