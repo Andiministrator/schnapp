@@ -25,11 +25,13 @@ type Wecker struct {
 	laeuft  bool // Wiederholungs-Goroutine aktiv
 	beendet bool
 	gen     uint64 // zählt Anforderungen; eine neue verlängert die Obergrenze
+
+	neu chan struct{} // meldet der Wiederholungs-Goroutine eine neue Anforderung (Takt zurück auf voll, F-258)
 }
 
 // NeuerWecker liefert einen Wecker, der wecke je takt aufruft, höchstens grenze lang je Anforderung.
 func NeuerWecker(wecke func(), takt, grenze time.Duration) *Wecker {
-	return &Wecker{wecke: wecke, takt: takt, grenz: grenze}
+	return &Wecker{wecke: wecke, takt: takt, grenz: grenze, neu: make(chan struct{}, 1)}
 }
 
 // Anfordern weckt sofort und wiederholt das Wecken, bis Quittieren oder Ende kommt. Aus jeder Goroutine erlaubt. Die
@@ -45,6 +47,10 @@ func (w *Wecker) Anfordern() {
 	start := !w.laeuft
 	w.laeuft = true
 	w.mu.Unlock()
+	select { // eine laufende Wiederholung weckt wieder im vollen Takt, auch wenn sie schon zurückgefallen war
+	case w.neu <- struct{}{}:
+	default:
+	}
 	w.wecke()
 	if start {
 		go w.wiederhole()
@@ -74,14 +80,38 @@ func (w *Wecker) Ende() {
 	w.mu.Unlock()
 }
 
+// Rückfall des Takts (F-258): Kommt die Schleife nicht (Fenster unsichtbar, Gio liefert kein Bild), weckt der Wecker
+// die ersten schnelleTakte Male im vollen Takt — das deckt den Fall, für den er da ist: ein Bild ist schon im Gang —
+// und verdoppelt den Abstand danach bis höchstens maxFaktor mal dem Takt. Wird das Fenster wieder sichtbar, liefert
+// Gio von sich aus ein Bild, und die Schleife holt die Antwort dort ab; der Abstand bestimmt also nur, wie oft ins
+// Leere geweckt wird, nicht, wie spät die Antwort ankommt. Eine neue Anforderung beginnt wieder im vollen Takt.
+const (
+	schnelleTakte = 20
+	maxFaktor     = 16
+)
+
 func (w *Wecker) wiederhole() {
-	t := time.NewTicker(w.takt)
+	t := time.NewTimer(w.takt)
 	defer t.Stop()
 	w.mu.Lock()
 	gen := w.gen
 	w.mu.Unlock()
 	ablauf := time.Now().Add(w.grenz)
-	for range t.C {
+	abstand, tick := w.takt, 0
+	for {
+		select {
+		case <-t.C:
+		case <-w.neu: // neue Anforderung: Takt zurück auf voll, der nächste Ruf folgt nach einem Takt
+			if !t.Stop() {
+				select {
+				case <-t.C:
+				default:
+				}
+			}
+			t.Reset(w.takt)
+			abstand, tick = w.takt, 0
+			continue
+		}
 		w.mu.Lock()
 		if w.beendet || !w.offen {
 			w.laeuft = false
@@ -100,5 +130,9 @@ func (w *Wecker) wiederhole() {
 		}
 		w.mu.Unlock()
 		w.wecke()
+		if tick++; tick >= schnelleTakte && abstand < w.takt*maxFaktor {
+			abstand = min(abstand*2, w.takt*maxFaktor)
+		}
+		t.Reset(abstand)
 	}
 }
