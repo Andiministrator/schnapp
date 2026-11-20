@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 
@@ -389,7 +390,8 @@ func speicherFehler(err error) error {
 }
 
 // sammleOhneUebersetzt geht einen Join-Baum durch und legt die Ausgabe aller Blätter ab, die keinen übersetzten
-// Speicherfehler tragen (F-129); texte merkt sich die übersetzten Texte, damit keiner doppelt vorkommt.
+// Speicherfehler tragen (F-129); texte sammelt die übersetzten Texte aller Speicherfehler in Baumreihenfolge, auch
+// Dubletten (die entfernt nutzerFehler bei der Ausgabe).
 func sammleOhneUebersetzt(err error, teile, texte *[]string) {
 	if err == nil {
 		return
@@ -422,13 +424,18 @@ func ursacheSpeicherfehler(err error) string {
 // (Paketfehler sind nicht übersetzt, Kritik A-9).
 func nutzerFehler(err error) string {
 	var u uebersetzt
-	if errors.As(err, &u) {
+	if errors.As(err, &u) { // nur die Weiche: irgendwo im Baum steht ein übersetzter Speicherfehler
 		// Schon übersetzt (Speichern, F-117). Steht der Speicherfehler in einem Join mit anderen Fehlern (Fenster,
-		// F-129), stehen sie vor dem übersetzten Text; der Text erscheint nur einmal, die Ursache mit ihren Pfaden nie.
-		var teile []string
-		var texte []string
+		// F-129), stehen sie vor den übersetzten Texten; jeder verschiedene Text erscheint einmal (Reihenfolge wie im
+		// Baum), die Ursache mit ihren Pfaden nie.
+		var teile, texte []string
 		sammleOhneUebersetzt(err, &teile, &texte)
-		return strings.Join(append(teile, u.text), "; ")
+		for _, t := range texte {
+			if !slices.Contains(teile, t) {
+				teile = append(teile, t)
+			}
+		}
+		return strings.Join(teile, "; ")
 	}
 	switch {
 	case errors.Is(err, fs.ErrNotExist):

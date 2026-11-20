@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/Andiministrator/schnapp/i18n"
@@ -36,6 +37,26 @@ func TestNutzerFehlerJoinFensterUndSpeichern(t *testing.T) {
 	}
 	if got, soll := nutzerFehler(cases["Fenster zuerst"]), "Fenster: Verbindung verloren; No permission to write the file."; got != soll {
 		t.Errorf("Join: %q, Soll %q", got, soll)
+	}
+}
+
+// Wie ui/editor.go: errors.Join(fensterErr, schlussErr, err) mit zwei übersetzten Speicherfehlern. Verschiedene Texte
+// stehen alle da, gleiche nur einmal.
+func TestNutzerFehlerZweiSpeicherfehler(t *testing.T) {
+	i18n.Setze(nil)
+	fenster := errors.New("Fenster: Verbindung verloren")
+	a := speicherFehler(fmt.Errorf("open /geheim/a.png: %w", fs.ErrPermission))
+	b := speicherFehler(fmt.Errorf("write /geheim/b.png: %w", syscall.ENOSPC))
+	got := nutzerFehler(errors.Join(fenster, a, b))
+	soll := "Fenster: Verbindung verloren; No permission to write the file.; Not enough disk space."
+	if got != soll {
+		t.Errorf("verschiedene Texte: %q, Soll %q", got, soll)
+	}
+	a2 := speicherFehler(fmt.Errorf("open /geheim/c.png: %w", fs.ErrPermission))
+	got = nutzerFehler(errors.Join(fenster, a, a2))
+	soll = "Fenster: Verbindung verloren; No permission to write the file."
+	if got != soll {
+		t.Errorf("gleiche Texte: %q, Soll %q", got, soll)
 	}
 }
 
