@@ -12,7 +12,8 @@ ziehe 800 700 800 990 12
 warte 300
 foto 02-band-am-rand
 # 2) Knopf „Ganzes Bild“ in der Leiste bei (1247,28), Leiste bei 1600 px zweizeilig. Erst den Zeiger hinbewegen:
-#    ein Druck direkt nach einem Zeigersprung kommt beim Knopf nicht an (Fernbedienung, schon vor Sprint 7 so)
+#    Vorsorge aus Sprint 7 (F-251): Ein Klick ohne vorherige Bewegung wirkte dort einmal nicht; heute wirkt er
+#    (rueckfall-klick-ohne-zeiger.txt, vier von vier), die Bewegung davor bleibt harmlos
 zeiger 1247 28
 warte 200
 klick 1247 28
