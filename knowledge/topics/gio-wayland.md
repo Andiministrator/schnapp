@@ -114,3 +114,7 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
   bleibt); gespeichert wird in der eigenen Ereignisschleife (F-77, F-152, `canvas/signal.go`).
 - **Texteingabe:** `key.EditEvent` geht nur an den fokussierten Bereich. Tab muss während der Eingabe im Tastenfilter
   abgefangen werden, sonst wandert der Fokus und Zeichen verschwinden; Enter sonst vor den Knöpfen verbraucht (F-153).
+- **Zwischenablage mit Bild (Karte #39):** Gio v0.10.3 bot unter Wayland beim Schreiben nur Text-MIME-Typen an und
+  ignorierte `clipboard.WriteCmd.Type`. Der Patch (`app/os_wayland.go`, ADR-0015 Nachtrag 2) bietet bei `image/…` genau
+  diesen Typ an. Der Inhalt gehört dem Fenster: nach dem Schließen des Editors nur über Klipper erhalten. Prüfen:
+  `wl-paste --list-types` im Terminal zeigt `image/png`.

@@ -3,10 +3,12 @@
 package ui
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"image"
 	"image/color"
+	"io"
 	"log"
 	"math"
 	"os"
@@ -19,6 +21,7 @@ import (
 	"gioui.org/app"
 	"gioui.org/f32"
 	"gioui.org/font/gofont"
+	"gioui.org/io/clipboard"
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
@@ -35,6 +38,7 @@ import (
 	"github.com/Andiministrator/schnapp/canvas"
 	"github.com/Andiministrator/schnapp/document"
 	"github.com/Andiministrator/schnapp/i18n"
+	"github.com/Andiministrator/schnapp/render"
 )
 
 // Weitere Farben laut brand/corporate-design.md.
@@ -274,6 +278,18 @@ func (e *editor) speichernJetzt() {
 	}
 	e.s.Gespeichert()
 	e.gespeichertMelden(g)
+}
+
+// kopieren legt das fertig gerenderte Bild als PNG (ohne Bearbeitungsdaten) in die Zwischenablage (Karte #39). Es
+// rendert wie das Speichern im Fensterthread (F-143). Unter Wayland gehört der Inhalt dem Fenster (ADR-0015 Nachtrag 2).
+func (e *editor) kopieren(gtx layout.Context) {
+	daten, err := render.PNG(e.s.D)
+	if err != nil {
+		e.melde(fmt.Sprintf(i18n.T("Could not copy: %v"), err), true)
+		return
+	}
+	gtx.Execute(clipboard.WriteCmd{Type: "image/png", Data: io.NopCloser(bytes.NewReader(daten))})
+	e.melde(i18n.T("Copied to clipboard"), false)
 }
 
 // gespeichertMelden zeigt ein gelungenes Speichern in Titel- und Statusleiste (F-116).
@@ -583,6 +599,7 @@ func (e *editor) tasten(gtx layout.Context) {
 			key.Filter{Name: "Z", Required: key.ModShortcut, Optional: key.ModShift},
 			key.Filter{Name: "Y", Required: key.ModShortcut},
 			key.Filter{Name: "S", Required: key.ModShortcut},
+			key.Filter{Name: "C", Required: key.ModShortcut},
 			key.Filter{Name: "0", Required: key.ModShortcut},
 			key.Filter{Name: "1", Required: key.ModShortcut},
 			key.Filter{Name: "W", Required: key.ModShortcut},
@@ -655,6 +672,10 @@ func (e *editor) tasten(gtx layout.Context) {
 			e.wiederholen()
 		case "S":
 			e.speichernJetzt()
+		case "C":
+			if e.s.KopierenErlaubt() { // in der Texteingabe bleibt Strg+C wie bisher ohne Wirkung
+				e.kopieren(gtx)
+			}
 		case "0":
 			e.s.Einpassen()
 		case "1":

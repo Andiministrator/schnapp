@@ -13,6 +13,11 @@ erweitert um `gio-ausgabe.patch`:
   ein Bild, dessen Größe nicht durch die Skala teilbar ist, bekommt Puffer-Skala 1 (sonst Wayland-Protokollfehler).
   Beim Gio-Update prüfen, ob Gio das inzwischen selbst kann (`wp_cursor_shape_v1`).
 
+- **Bild-Typ in der Zwischenablage (Karte #39, ADR-0015 Nachtrag 2):** `wlDisplay.writeClipboard` in `app/os_wayland.go`
+  wertet `clipboard.WriteCmd.Type` aus. Bei `image/…` bietet die `wl_data_source` genau diesen Typ an und liefert die Bytes
+  bei `send`; Text bleibt unverändert. Der Inhalt gehört dem Fenster: Nach dem Schließen bleibt er nur erhalten, wenn ein
+  Zwischenablage-Verwalter (unter KDE Klipper) ihn übernommen hat. Beim Gio-Update prüfen, ob Gio das selbst kann.
+
 Warum eine Kopie im Repo und kein Fork: `docs/adr/0015-gepatchtes-gio-im-repo.md`. Hintergrund:
 `knowledge/topics/gio-wayland.md`.
 

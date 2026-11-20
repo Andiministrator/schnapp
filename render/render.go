@@ -8,11 +8,13 @@
 package render
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
+	"image/png"
 	"math"
 	"strconv"
 	"strings"
@@ -37,6 +39,21 @@ import (
 func Bild(d *document.Dokument) (*image.NRGBA, error) {
 	b, _, err := bildMitAufwand(d)
 	return b, err
+}
+
+// PNG rendert das Dokument wie Bild und kodiert es als reines PNG für die Zwischenablage: nur IHDR, IDAT und IEND,
+// ohne Bearbeitungsdaten (kein snAP/snAO) und ohne Metadaten (kein tEXt, iTXt, tIME), Kernprinzip 3. Wie Bild bricht es
+// nie wegen des Aufwands ab. Der Aufrufer rendert im Fensterthread, wie beim Speichern (F-143).
+func PNG(d *document.Dokument) ([]byte, error) {
+	b, err := Bild(d)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, b); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 // ErrZuAufwendig meldet, dass das Rastern eines Dokuments das Rechenbudget (Budget) überschreiten würde: zu viele oder

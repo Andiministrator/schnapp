@@ -311,6 +311,10 @@ func (s *Sitzung) beendeNeu() {
 
 // --- Texteingabe ---
 
+// KopierenErlaubt meldet, ob Strg+C das Bild in die Zwischenablage legen darf: nicht während einer Texteingabe, dort
+// bleibt die Taste dem Text vorbehalten (Karte #39).
+func (s *Sitzung) KopierenErlaubt() bool { return !s.TextLaeuft() }
+
 // TextLaeuft meldet eine laufende Texteingabe.
 func (s *Sitzung) TextLaeuft() bool { return s.zug == zugText }
 

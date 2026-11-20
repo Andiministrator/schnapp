@@ -194,6 +194,12 @@ msgstr "DATEI im Editor öffnen"
 msgid "Could not save: %v"
 msgstr "Speichern gescheitert: %v"
 
+msgid "Copied to clipboard"
+msgstr "In die Zwischenablage kopiert"
+
+msgid "Could not copy: %v"
+msgstr "Kopieren gescheitert: %v"
+
 msgid "Saved to the library"
 msgstr "In der Bibliothek gespeichert"
 

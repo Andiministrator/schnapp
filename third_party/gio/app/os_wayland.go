@@ -17,6 +17,7 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 	"unsafe"
@@ -313,7 +314,7 @@ func newWLWindow(callbacks *callbacks, options []Option) error {
 	return nil
 }
 
-func (d *wlDisplay) writeClipboard(content []byte) error {
+func (d *wlDisplay) writeClipboard(mime string, content []byte) error {
 	s := d.seat
 	if s == nil {
 		return nil
@@ -330,8 +331,15 @@ func (d *wlDisplay) writeClipboard(content []byte) error {
 	s.content = content
 	s.source = C.wl_data_device_manager_create_data_source(d.dataDeviceManager)
 	C.wl_data_source_add_listener(s.source, &C.gio_data_source_listener, unsafe.Pointer(s.seat))
-	for _, mime := range clipboardMimeTypes {
-		C.wl_data_source_offer(s.source, C.CString(mime))
+	// Schnapp patch: image types are offered as exactly that type.
+	offerTypes := clipboardMimeTypes
+	if strings.HasPrefix(mime, "image/") {
+		offerTypes = []string{mime}
+	}
+	for _, m := range offerTypes {
+		cm := C.CString(m)
+		C.wl_data_source_offer(s.source, cm)
+		C.free(unsafe.Pointer(cm))
 	}
 	C.wl_data_device_set_selection(s.dataDev, s.source, s.serial)
 	return nil
@@ -1238,7 +1246,7 @@ func (w *window) ReadClipboard() {
 }
 
 func (w *window) WriteClipboard(mime string, s []byte) {
-	w.disp.writeClipboard(s)
+	w.disp.writeClipboard(mime, s)
 }
 
 func (w *window) Configure(options []Option) {
