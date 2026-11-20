@@ -147,10 +147,23 @@ func ZeichenZuTaste(r rune) (code uint32, umschalt bool, ok bool) {
 	return 0, false, false
 }
 
-// Keysym liefert das X11-Keysym eines Zeichens: Latin-1 unverändert, sonst 0x01000000 + Codepunkt.
-func Keysym(r rune) uint32 {
-	if (r >= 0x20 && r <= 0x7e) || (r >= 0xa0 && r <= 0xff) {
-		return uint32(r)
+// Keysym liefert das X11-Keysym eines Zeichens: Latin-1 unverändert, sonst 0x01000000 + Codepunkt. Steuerzeichen haben
+// keinen Unicode-Keysym: Tab, Zeilenende (\n und \r) und Rücktaste (0x08) werden zu den Tasten-Keysyms, alle anderen
+// Steuerzeichen (unter 0x20, 0x7f bis 0x9f) sind ein Fehler.
+func Keysym(r rune) (uint32, error) {
+	switch {
+	case r == '\t':
+		return 0xff09, nil
+	case r == '\n' || r == '\r':
+		return 0xff0d, nil
+	case r == 0x08:
+		return 0xff08, nil
+	case r < 0x20 || (r >= 0x7f && r <= 0x9f):
+		return 0, fmt.Errorf("Steuerzeichen U+%04X lässt sich nicht schreiben", r)
+	case r > 0x10ffff || (r >= 0xd800 && r <= 0xdfff):
+		return 0, fmt.Errorf("ungültiges Zeichen U+%04X", r)
+	case r <= 0x7e || (r >= 0xa0 && r <= 0xff):
+		return uint32(r), nil
 	}
-	return 0x01000000 + uint32(r)
+	return 0x01000000 + uint32(r), nil
 }

@@ -20,10 +20,25 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Andiministrator/schnapp/capture"
 )
+
+// nurVirtuell lässt die Fernbedienung nur im virtuellen KWin von scripts/probe.sh zu: Wayland-Socket „schnapp-probe“ und
+// Laufzeitordner tmp/probe/run. Das Werkzeug bleibt nach einem Lauf in tmp/probe liegen; von Hand in der echten Sitzung
+// gestartet, würde es sich sonst mit dem echten KWin verbinden (KWin winkt die Anmeldung durch) und Eingaben einspeisen.
+// Geprüft wird vor jedem Verbindungsversuch (Wayland und D-Bus für foto).
+func nurVirtuell(getenv func(string) string) error {
+	if d := getenv("WAYLAND_DISPLAY"); d != "schnapp-probe" {
+		return fmt.Errorf("WAYLAND_DISPLAY ist %q, erwartet \"schnapp-probe\" — nur im virtuellen KWin von scripts/probe.sh", d)
+	}
+	if r := getenv("XDG_RUNTIME_DIR"); !strings.HasSuffix(r, "/tmp/probe/run") {
+		return fmt.Errorf("XDG_RUNTIME_DIR endet nicht auf /tmp/probe/run — nur im virtuellen KWin von scripts/probe.sh")
+	}
+	return nil
+}
 
 func main() { os.Exit(lauf(os.Args[1:], os.Stdout, os.Stderr)) }
 
@@ -47,6 +62,10 @@ func lauf(args []string, aus, fehler io.Writer) int {
 	if err != nil {
 		fmt.Fprintln(fehler, "Drehbuch:", err)
 		return 2
+	}
+	if err := nurVirtuell(os.Getenv); err != nil {
+		fmt.Fprintln(fehler, "Abbruch:", err)
+		return 1
 	}
 	e, err := VerbindeEingabe()
 	if err != nil {
@@ -184,7 +203,10 @@ func (a *abspieler) taste(k Kombi) error {
 func (a *abspieler) schreibe(text string) error {
 	for _, r := range text {
 		if a.e.Version >= 6 {
-			s := Keysym(r)
+			s, err := Keysym(r)
+			if err != nil {
+				return err
+			}
 			if err := a.e.Keysym(s, gedrueckt); err != nil {
 				return err
 			}
@@ -230,6 +252,9 @@ func (a *abspieler) rad(x, y, schritte int) error {
 
 // foto nimmt den Bildschirm unter dem Zeiger auf (bildschirm leer) oder den benannten und legt ihn als PNG ab.
 func (a *abspieler) foto(name, bildschirm string) error {
+	if err := nurVirtuell(os.Getenv); err != nil {
+		return err
+	}
 	if a.fotos == "" {
 		return fmt.Errorf("Umgebungsvariable FOTOS (Ordner für Fotos) nicht gesetzt")
 	}

@@ -141,7 +141,19 @@ func TestJedesAsciiZeichenHatEineTaste(t *testing.T) {
 }
 
 func TestKeysym(t *testing.T) {
-	if Keysym('A') != 0x41 || Keysym('ä') != 0xe4 || Keysym('€') != 0x010020ac {
-		t.Errorf("%x %x %x", Keysym('A'), Keysym('ä'), Keysym('€'))
+	for _, f := range []struct {
+		r    rune
+		want uint32
+		fehl bool
+	}{
+		{'A', 0x41, false}, {'ä', 0xe4, false}, {'€', 0x010020ac, false}, {' ', 0x20, false}, {'~', 0x7e, false},
+		{'\t', 0xff09, false}, {'\n', 0xff0d, false}, {'\r', 0xff0d, false}, {0x08, 0xff08, false},
+		{0x00, 0, true}, {0x1b, 0, true}, {0x7f, 0, true}, {0x85, 0, true}, {0x9f, 0, true},
+		{0xa0, 0xa0, false}, {0xd800, 0, true}, {0x110000, 0, true},
+	} {
+		got, err := Keysym(f.r)
+		if (err != nil) != f.fehl || got != f.want {
+			t.Errorf("Keysym(%U) = %#x, %v; erwartet %#x, Fehler %v", f.r, got, err, f.want, f.fehl)
+		}
 	}
 }
