@@ -159,7 +159,7 @@ func (s *Sitzung) KannGanzesBild() bool {
 
 // ganzesBild liefert Zuschnitt und Streifen für „Ganzes Bild“ und ob sie vom jetzigen Stand abweichen.
 func (s *Sitzung) ganzesBild() (image.Rectangle, []document.Streifen, bool) {
-	ganz := s.D.Original().Rect
+	ganz := image.Rectangle{Max: s.D.OriginalGroesse()}
 	var bleiben []document.Streifen
 	for _, st := range s.D.Streifen() {
 		lo, hi := ganz.Min.X, ganz.Max.X
@@ -213,6 +213,17 @@ func (s *Sitzung) staucheRahmen() {
 		return
 	}
 	g := s.D.Groesse()
+	// Mindestrest je Seite (ADR-0023 Nachtrag 4, F-226): Zwischen Naht und Bildrand müssen mindestens die halbe Bandhöhe
+	// bleiben, sonst bestünde die Seite nur aus Zackenband. Ein kleinerer Rest ginge ohnehin im Band unter; das Band
+	// reicht dann bis an den Rand (und wird, wie jedes Band am Rand, zum Zuschnitt, F-222).
+	laengeAchse := map[bool]int{false: g.X, true: g.Y}[zeilen]
+	halb := s.D.ZackenFaktor() * document.ZackenBandHalb
+	if von < halb {
+		von = 0
+	}
+	if laengeAchse-bis < halb {
+		bis = laengeAchse
+	}
 	// Bleibt weniger als die Mindestgröße eines Rahmens übrig, gilt das wie „nichts übrig“: Ein Zug kann nur im Bild
 	// beginnen (F-150) und trifft die erste Zeile selten genau; ein Rest von 4 Pixeln war kein gewolltes Ergebnis
 	// (Echtlauf #92).

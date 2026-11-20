@@ -79,6 +79,7 @@ type Sitzung struct {
 	rahmen           bool
 	rahmenA, rahmenB document.Punkt
 	ersatzSchwarz    bool   // letzter Verpixeln-Rahmen war zu schmal und wurde geschwärzt
+	rahmenZuKlein    bool   // letzter Schwärzungsrahmen lag unter der Mindestgröße und tat nichts (F-227)
 	bildAenderung    uint64 // zählt Änderungen am Ansichtsbild: Schwärzungen, Zuschnitt, Streifen
 	ansichtMeldung   AnsichtMeldung
 }
@@ -140,7 +141,7 @@ func (s *Sitzung) toleranz() float64 { return Toleranz / s.Abb.Zoom }
 // (ADR-0021), sonst an einem Objekt (wählt es aus) oder auf leerer Fläche bzw. mit der mittleren Taste an der Ansicht.
 // Eine laufende Texteingabe wird vorher bestätigt. Während eines Zugs ist ein weiterer Druck wirkungslos.
 func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
-	s.abgelehnt, s.ersatzSchwarz, s.ansichtMeldung = AblehnungKeine, false, AnsichtKeine
+	s.abgelehnt, s.ersatzSchwarz, s.rahmenZuKlein, s.ansichtMeldung = AblehnungKeine, false, false, AnsichtKeine
 	if s.pan {
 		return
 	}

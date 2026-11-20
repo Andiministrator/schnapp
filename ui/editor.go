@@ -688,6 +688,9 @@ func (e *editor) zeiger(gtx layout.Context) {
 			if e.s.NimmVerpixelnErsetzt() {
 				e.melde(i18n.T("Too narrow to pixelate; the area was blacked out instead."), false)
 			}
+			if e.s.NimmRahmenZuKlein() {
+				e.melde(i18n.T("The area is too small to redact at this zoom; zoom in or draw a larger area."), false)
+			}
 			e.meldeAnsicht()
 			diagnoseEditor("Loslassen: Auswahl %d, geändert %v", e.s.Auswahl, e.s.Geaendert())
 		case pointer.Cancel:

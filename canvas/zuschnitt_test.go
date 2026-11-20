@@ -178,8 +178,8 @@ func TestStauchenVerschmilzt(t *testing.T) {
 	if st := s.D.Streifen(); !reflect.DeepEqual(st, []document.Streifen{{Zeilen: true, Von: 15, Bis: 45}}) {
 		t.Errorf("überlappend: %v", st)
 	}
-	zieh(s, fv(s, 50, 5), fv(s, 52, 15)) // endet an der Naht: Original 5 bis 15, stößt an
-	if st := s.D.Streifen(); !reflect.DeepEqual(st, []document.Streifen{{Zeilen: true, Von: 5, Bis: 45}}) {
+	zieh(s, fv(s, 50, 8), fv(s, 52, 15)) // endet an der Naht: Original 8 bis 15, stößt an (Rest oben ≥ Bandhalbhöhe 7)
+	if st := s.D.Streifen(); !reflect.DeepEqual(st, []document.Streifen{{Zeilen: true, Von: 8, Bis: 45}}) {
 		t.Errorf("anstoßend: %v", st)
 	}
 	if n := s.D.Naehte(); len(n) != 1 {
@@ -204,14 +204,15 @@ func TestStauchenAbgelehnt(t *testing.T) {
 	if s.NimmAnsichtMeldung() != AnsichtKeine {
 		t.Error("Meldung nicht einmalig")
 	}
-	// Ein Rest unter MinObjekt (hier 4 von 100 Zeilen bei Zoom 1) zählt wie nichts (Echtlauf #92); 6 Zeilen bleiben.
+	// Ein Rest unter MinObjekt (hier 4 von 100 Zeilen bei Zoom 1) zählt wie nichts (Echtlauf #92); 18 Zeilen bleiben
+	// (je Seite mindestens die Bandhalbhöhe 7, ADR-0023 Nachtrag 4).
 	zieh(s, f(5, 2), f(6, 98))
 	if m := s.NimmAnsichtMeldung(); m != AnsichtLeer || s.Geaendert() {
 		t.Errorf("Rest 4: Meldung %v, geändert %v", m, s.Geaendert())
 	}
-	zieh(s, f(5, 3), f(6, 97))
+	zieh(s, f(5, 8), f(6, 90))
 	if m := s.NimmAnsichtMeldung(); m == AnsichtLeer || !s.Geaendert() {
-		t.Errorf("Rest 6: Meldung %v, geändert %v", m, s.Geaendert())
+		t.Errorf("Rest 18: Meldung %v, geändert %v", m, s.Geaendert())
 	}
 	if err := s.D.Rueckgaengig(); err != nil {
 		t.Fatal(err)
@@ -313,7 +314,7 @@ func TestVerborgeneObjekte(t *testing.T) {
 	s.Auswahl = k
 	s.SetzeWerkzeug(WerkzeugStauchen)
 	// Zeilen 5 bis 55: der Kasten liegt ganz darin. Begonnen wird weit weg von seinen Griffen (die gingen vor).
-	zieh(s, f(75, 5), f(76, 55))
+	zieh(s, f(75, 8), f(76, 55))
 	if st := s.D.Streifen(); len(st) != 1 {
 		t.Fatalf("Streifen %v", st)
 	}
@@ -332,8 +333,8 @@ func TestVerborgeneObjekte(t *testing.T) {
 	if s.Auswahl != 0 {
 		t.Errorf("verborgener Kasten getroffen (Auswahl %d)", s.Auswahl)
 	}
-	s.Druecken(fv(s, 140, 5), TastePrimaer) // der Pfeil (y 50 → Ansicht 5) bleibt greifbar
-	s.Loslassen(fv(s, 140, 5))
+	s.Druecken(fv(s, 140, 8), TastePrimaer) // der Pfeil (y 50 → Ansicht 8) bleibt greifbar
+	s.Loslassen(fv(s, 140, 8))
 	if s.Auswahl != p {
 		t.Errorf("Pfeil nicht getroffen (Auswahl %d)", s.Auswahl)
 	}
@@ -511,5 +512,52 @@ func TestGriffeGehenNichtVorRahmen(t *testing.T) {
 				t.Errorf("%d Streifen, Soll 1", n)
 			}
 		}
+	}
+}
+
+// F-226 (ADR-0023 Nachtrag 4): Zwischen Naht und Bildrand bleibt mindestens die halbe Bandhöhe (Faktor 1: 7 Pixel). Ein
+// Band, das weniger übrig ließe, reicht bis an den Rand und wird dort zum Zuschnitt; ab genau 7 bleibt es eine Naht.
+func TestStauchenMindestrestJeSeite(t *testing.T) {
+	neu := func() *Sitzung {
+		s := verlaufSitzung(t) // 200×100, Faktor 1
+		s.SetzeWerkzeug(WerkzeugStauchen)
+		return s
+	}
+	s := neu()
+	zieh(s, f(5, 6), f(6, 60)) // oben bleiben 6 < 7
+	if st := s.D.Streifen(); len(st) != 0 || s.D.Zuschnitt().Min.Y != 60 {
+		t.Errorf("Rest 6 oben: Streifen %v, Zuschnitt %v, Soll Zuschnitt ab Zeile 60", st, s.D.Zuschnitt())
+	}
+	s = neu()
+	zieh(s, f(5, 40), f(6, 94)) // unten bleiben 6 < 7
+	if st := s.D.Streifen(); len(st) != 0 || s.D.Zuschnitt().Max.Y != 40 {
+		t.Errorf("Rest 6 unten: Streifen %v, Zuschnitt %v, Soll Zuschnitt bis Zeile 40", st, s.D.Zuschnitt())
+	}
+	s = neu()
+	zieh(s, f(5, 7), f(6, 40)) // oben genau 7: bleibt eine Naht
+	if st := s.D.Streifen(); !reflect.DeepEqual(st, []document.Streifen{{Zeilen: true, Von: 7, Bis: 40}}) {
+		t.Errorf("Rest 7: Streifen %v", st)
+	}
+}
+
+// F-227: Ein Schwärzungsrahmen unter der Mindestgröße tut nichts, sagt das aber einmal; ein bloßer Klick nicht.
+func TestSchwaerzenRahmenZuKleinMeldung(t *testing.T) {
+	s := verlaufSitzung(t)
+	s.SetzeWerkzeug(WerkzeugSchwaerzen)
+	zieh(s, f(10, 10), f(14, 40))
+	if !s.NimmRahmenZuKlein() || s.NimmRahmenZuKlein() {
+		t.Error("Meldung „Rahmen zu klein“ fehlt oder kommt mehrfach")
+	}
+	if s.Geaendert() {
+		t.Error("zu kleiner Rahmen hat geschwärzt")
+	}
+	s.Druecken(f(50, 50), TastePrimaer)
+	s.Loslassen(f(50, 50))
+	if s.NimmRahmenZuKlein() {
+		t.Error("ein bloßer Klick meldet „zu klein“")
+	}
+	zieh(s, f(10, 10), f(80, 60))
+	if s.NimmRahmenZuKlein() || !s.Geaendert() {
+		t.Error("ausreichender Rahmen: Meldung oder nicht geschwärzt")
 	}
 }

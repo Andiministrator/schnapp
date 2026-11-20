@@ -120,3 +120,27 @@ im Rahmen von F-173 (leicht umkehrbar, Andi informiert).
 - **Probe:** `scripts/drehbuecher/rueckfall-randband-f222.txt` (virtueller KWin, Fotos 02 bis 05).
 - **Folge:** Die Leiste bricht im Probelauf bei 1600 px Fensterbreite in zwei Zeilen um (F-148 regelt das
   Umbrechen); Karte #104 prüft die übrigen Tastenfunktionen und ob Menüs die Leiste entlasten.
+
+## Nachtrag 4 (20.11.2026): Zackenband gedeckelt durch die Ansicht, Mindestrest je Seite (F-226)
+
+**Status:** Akzeptiert (Claude Sonnet 5.5, Karte #100).
+
+Anlass: Der Faktor nach dem Original (Nachtrag 2) ließ bei einer 7680×4320-Aufnahme, die auf 300×80 zugeschnitten
+wird, ein Band von ±28 Pixeln auf 80 Pixeln Höhe stehen; der Mindestrest aus F-215 (6 Pixel) lag unter der halben
+Bandhöhe, es konnten zwei Splitter von je 3 Pixeln neben der Naht übrig bleiben.
+
+- **Punkt 6 genauer:** `Dokument.ZackenFaktor` ist das Minimum aus dem Faktor nach dem **Original** (Nachtrag 2) und
+  `max(1, kurze Seite der aktuellen Ansicht / 56)`. Die Bandhöhe (`2·ZackenBandHalb·Faktor`, `ZackenBandHalb` = 7 =
+  Zackenhöhe + halber Rand) bleibt damit höchstens ein Viertel der kurzen Ansichtsseite; bei Faktor 1 ist das die
+  Untergrenze. Eine ganze 4K- oder 8K-Aufnahme behält ihren Faktor (Nachtrag 2); nur eine sehr kleine Ansicht
+  verkleinert das Band. Der Faktor kann sich dadurch beim Zuschneiden und Stauchen ändern; Renderer, SVG-Export, Editor
+  und Trefferweite holen ihn weiter aus derselben Methode und zeichnen gleich.
+- **Punkt 3 ergänzt:** Beim Stauchen bleibt je Seite der Naht mindestens die halbe Bandhöhe (`Faktor·ZackenBandHalb`
+  Ansichtspixel, bei Faktor 1 also 7). Bliebe auf einer Seite weniger, reicht das Band bis an den Rand dieser Seite und
+  wird dort wie jedes Randband zum Zuschnitt (Nachtrag 3, F-222). Die Regel gilt vor der Prüfung auf den Gesamtrest
+  (F-215, Mindestgröße eines Rahmens).
+- Technische Folge: `Dokument.OriginalGroesse` und `Dokument.OriginalBild` liefern Größe bzw. Original ohne Kopie
+  (F-227); `Original` bleibt die Kopie für alles, was ändert oder aufbewahrt.
+- Mit F-225 mitentschieden (ADR-0025 Punkt 4 gilt unverändert): Der SVG-Export schreibt keine `s:`-Attribute und keinen
+  Programm-Namensraum; die Kacheln tragen `viewBox="0 0 B H"` und verschieben ihren Inhalt per `transform`, damit die Lage
+  des Zuschnitts im Original nicht in der Datei steht. Die Arbeitsdatei (snAP) behält die Attribute für den Rundlauf.

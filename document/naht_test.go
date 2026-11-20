@@ -206,3 +206,42 @@ func TestZackenbandFaktor(t *testing.T) {
 		t.Errorf("Faktor 2:\n got %v\nwant %v", got, want)
 	}
 }
+
+// F-226 (ADR-0023 Nachtrag 4): Der Faktor nach dem Original wird durch die kurze Seite der Ansicht gedeckelt: Die
+// Bandhöhe (2·ZackenBandHalb·Faktor) bleibt höchstens ein Viertel der kurzen Ansichtsseite (bei Faktor 1 ist das die
+// Untergrenze).
+func TestZackenFaktorGedeckeltDurchAnsicht(t *testing.T) {
+	d := leeresDokument(t, 7680, 4320)
+	if f := d.ZackenFaktor(); f != 4 {
+		t.Fatalf("ganze 8K-Aufnahme: Faktor %d, Soll 4", f)
+	}
+	// Das Beispiel des Befunds: auf 300×80 zugeschnitten. Vorher ±28 Pixel Band auf 80 Pixeln Höhe.
+	if err := d.SetzeZuschnitt(image.Rect(1000, 1000, 1300, 1080)); err != nil {
+		t.Fatal(err)
+	}
+	if f := d.ZackenFaktor(); f != 1 {
+		t.Errorf("auf 300×80: Faktor %d, Soll 1", f)
+	}
+	for _, c := range []struct{ kurz, soll int }{{112, 2}, {111, 1}, {224, 4}, {223, 3}, {1000, 4}} {
+		if err := d.SetzeZuschnitt(image.Rect(0, 0, 3000, c.kurz)); err != nil {
+			t.Fatal(err)
+		}
+		f := d.ZackenFaktor()
+		if f != c.soll {
+			t.Errorf("kurze Seite %d: Faktor %d, Soll %d", c.kurz, f, c.soll)
+		}
+		if band := 2 * int(ZackenBandHalb) * f; f > 1 && band > c.kurz/4 {
+			t.Errorf("kurze Seite %d: Band %d höher als ein Viertel", c.kurz, band)
+		}
+	}
+}
+
+func TestOriginalGroesseOhneKopie(t *testing.T) {
+	d := leeresDokument(t, 40, 30)
+	if g := d.OriginalGroesse(); g != image.Pt(40, 30) {
+		t.Errorf("Größe %v", g)
+	}
+	if d.OriginalBild() != d.OriginalBild() {
+		t.Error("OriginalBild kopiert")
+	}
+}

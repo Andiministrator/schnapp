@@ -18,7 +18,7 @@ type Naht struct {
 
 // Grundmaße und Farben der Zackenkante (ADR-0023 Punkt 6), in Pixeln der Ansicht bei Faktor 1: Zacken ±ZackenHoehe um
 // die Naht, eine Zahnbreite ZackenWeite; außen ein helles Band der Dicke 2·ZackenRandHalb, darin eine dunkle Linie der
-// Dicke 2·ZackenLinieHalb. Alle vier Maße werden mit ZackenFaktor der Ansicht multipliziert (ADR-0023 Nachtrag 1,
+// Dicke 2·ZackenLinieHalb. Alle vier Maße werden mit dem Zackenfaktor des Dokuments multipliziert (ADR-0023 Nachtrag 1, 4,
 // F-173). Renderer, SVG-Export und Editor zeichnen dieselben Vielecke (Zackenband).
 const (
 	ZackenHoehe     = 4.0
@@ -39,10 +39,21 @@ const ZackenReferenz = 1080
 // ganzzahlig geteilt (F-173). So bleibt die Kante bei HiDPI-Aufnahmen und kleinem Zoom erkennbar.
 func ZackenFaktor(g image.Point) int { return max(1, min(g.X, g.Y)/ZackenReferenz) }
 
-// ZackenFaktor ist ZackenFaktor der Größe des Originals, nicht der Ansicht (ADR-0023 Nachtrag 2): Eine 4K-Aufnahme hat
-// genau 2160 Pixel kurze Seite, jedes Stauchen in dieser Richtung drückte den Faktor nach der Ansicht auf 1 — gerade
-// dort, wo Zacken entstehen. Der Faktor bleibt damit für ein Dokument fest.
-func (d *Dokument) ZackenFaktor() int { return ZackenFaktor(d.original.Rect.Size()) }
+// ZackenFaktor ist der Zackenfaktor des Dokuments (ADR-0023 Nachtrag 2 und 4): der Faktor nach der Größe des
+// **Originals** (Nachtrag 2: eine gestauchte 4K-Aufnahme behält ihre Pixeldichte), gedeckelt durch die kurze Seite der
+// **aktuellen Ansicht** (Nachtrag 4, F-226): Die Bandhöhe (2·ZackenBandHalb) bleibt höchstens ein Viertel der kurzen
+// Ansichtsseite, mindestens aber bei Faktor 1. Eine 8K-Aufnahme, die auf 300×80 zugeschnitten wird, trägt so kein
+// ±28-Pixel-Band auf 80 Pixeln Höhe. Renderer, SVG-Export, Editor und Trefferweite holen den Wert von hier.
+func (d *Dokument) ZackenFaktor() int {
+	kurz := min(d.abbX.groesse(), d.abbY.groesse())
+	return min(ZackenFaktor(d.original.Rect.Size()), max(1, kurz/(8*ZackenBandHalb)))
+}
+
+// ZackenBandHalb ist die halbe Höhe des Zackenbandes bei Faktor 1: Zacken und heller Rand ragen so weit über die Naht.
+const ZackenBandHalb = ZackenHoehe + ZackenRandHalb
+
+// OriginalGroesse liefert die Größe des unbeschnittenen Originals, ohne es zu kopieren (anders als Original).
+func (d *Dokument) OriginalGroesse() image.Point { return d.original.Rect.Size() }
 
 // Naehte liefert die Stauch-Nähte der Ansicht, je Achse nach Lage sortiert. Eine Naht am Rand der Ansicht (der
 // Streifen schließt an den Zuschnitt an) zählt nicht, mehrere Streifen an derselben Stelle ergeben eine Naht.

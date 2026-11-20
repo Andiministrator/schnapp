@@ -496,7 +496,8 @@ func TestExportSVG(t *testing.T) {
 			}
 		}
 	}
-	want := []string{"0 0 73 50", "2 3 28 17", "33 3 45 17", "2 25 28 33", "33 25 45 33"}
+	// Kacheln ab 0,0, ohne Lage im Original (F-225); die Verschiebung steht in einem transform.
+	want := []string{"0 0 73 50", "0 0 28 17", "0 0 45 17", "0 0 28 33", "0 0 45 33"}
 	if !reflect.DeepEqual(kacheln, want) {
 		t.Errorf("viewBoxen %v, want %v", kacheln, want)
 	}

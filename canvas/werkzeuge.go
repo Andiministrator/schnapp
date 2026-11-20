@@ -374,6 +374,7 @@ func (s *Sitzung) schwaerzeRahmen() {
 	r := document.R(s.rahmenA, s.rahmenB)
 	grenze := MinObjekt / s.Abb.Zoom
 	if r.Breite() < grenze || r.Hoehe() < grenze {
+		s.rahmenZuKlein = r.Breite() > 0 || r.Hoehe() > 0 // ein bloßer Klick meldet nichts; nicht still ignorieren: bei Zoom 0,1 sind das 60 Originalpixel (F-227)
 		return
 	}
 	// Nach außen auf ganze Ansichtspixel, auf die Ansicht begrenzt (ADR-0023 Punkt 8), dann je Achse wie beim
@@ -411,6 +412,14 @@ func (s *Sitzung) schwaerzeRahmen() {
 func (s *Sitzung) NimmVerpixelnErsetzt() bool {
 	e := s.ersatzSchwarz
 	s.ersatzSchwarz = false
+	return e
+}
+
+// NimmRahmenZuKlein meldet einmal, dass der letzte Schwärzungs- oder Verpixelungsrahmen unter der Mindestgröße lag und
+// nichts getan hat; danach ist die Marke gelöscht (F-227).
+func (s *Sitzung) NimmRahmenZuKlein() bool {
+	e := s.rahmenZuKlein
+	s.rahmenZuKlein = false
 	return e
 }
 
@@ -558,7 +567,7 @@ func (s *Sitzung) Enter(umschalt bool) bool {
 // ein Druck der linken Taste (der erste Klick hat dann schon gewirkt, ADR-0021).
 func (s *Sitzung) Doppelklick(p document.Punkt) {
 	s.TextBestaetigen()
-	s.abgelehnt, s.ersatzSchwarz, s.ansichtMeldung = AblehnungKeine, false, AnsichtKeine
+	s.abgelehnt, s.ersatzSchwarz, s.rahmenZuKlein, s.ansichtMeldung = AblehnungKeine, false, false, AnsichtKeine
 	switch {
 	case s.Werkzeug == WerkzeugZuschneiden && s.HebeZuschnittAuf():
 		return

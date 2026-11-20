@@ -33,7 +33,7 @@ func TestExportSVGZackenkante(t *testing.T) {
 	// Je Achse ein Band bei Lage 0 in <defs> (F-183), je Naht ein <use>, das es auf die Lage verschiebt.
 	baender := regexp.MustCompile(`<g id="naht-(zeilen|spalten)"><path d="([^"]*)" fill="#([0-9a-f]{6})"/><path d="([^"]*)" fill="#([0-9a-f]{6})"/></g>`).
 		FindAllStringSubmatch(s, -1)
-	verweise := regexp.MustCompile(`<use href="#naht-(zeilen|spalten)" (x|y)="(-?\d+)" s:naht="(zeilen|spalten)"/>`).
+	verweise := regexp.MustCompile(`<use href="#naht-(zeilen|spalten)" (x|y)="(-?\d+)"/>`).
 		FindAllStringSubmatch(s, -1)
 	if len(baender) != 2 || len(verweise) != 2 {
 		t.Fatalf("%d Bänder, %d Nähte im Export, Soll 2 und 2:\n%s", len(baender), len(verweise), s)
@@ -44,7 +44,7 @@ func TestExportSVGZackenkante(t *testing.T) {
 		if n.Zeilen {
 			art, achse, laenge = "zeilen", "y", g.X
 		}
-		if v := verweise[i]; v[1] != art || v[2] != achse || v[3] != strconv.Itoa(n.Lage) || v[4] != art {
+		if v := verweise[i]; v[1] != art || v[2] != achse || v[3] != strconv.Itoa(n.Lage) {
 			t.Errorf("Naht %d: %v", i, v[0])
 		}
 		m := baender[0]
@@ -77,7 +77,7 @@ func TestExportSVGZackenkante(t *testing.T) {
 			}
 		}
 	}
-	if strings.LastIndex(s, `<use href="#objekte"/>`) > strings.Index(s, `s:naht=`) {
+	if strings.LastIndex(s, `<use href="#objekte"/>`) > strings.Index(s, `<use href="#naht-`) {
 		t.Error("Zackenkante liegt unter einer Kachel")
 	}
 }

@@ -122,7 +122,7 @@ func (s *schreiber) naehte(d *document.Dokument) {
 // eingebettetes PNG trägt und die Objekte als Vektoren zeigt. Weggeschnittene oder weggestauchte Bereiche sind in
 // der Datei nicht enthalten (F-60) — anders als in der Arbeitsdatei, die nicht zerstörend das ganze Original mitführt.
 func ExportiereSVG(w io.Writer, d *document.Dokument) error {
-	original := d.Original()
+	original := d.OriginalBild()
 	g := d.Groesse()
 	var s schreiber
 	s.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n" + `<svg xmlns="http://www.w3.org/2000/svg"`)
@@ -152,14 +152,18 @@ func ExportiereSVG(w io.Writer, d *document.Dokument) error {
 			s.attr("y", strconv.Itoa(ay))
 			s.attr("width", strconv.Itoa(b))
 			s.attr("height", strconv.Itoa(h))
-			s.attr("viewBox", fmt.Sprintf("%d %d %d %d", zx[0], zy[0], b, h))
+			// viewBox ab 0,0 und Verschiebung statt viewBox in Original-Koordinaten: die Lage des Zuschnitts im
+			// Original steht so nicht in der Datei (F-225).
+			s.attr("viewBox", fmt.Sprintf("0 0 %d %d", b, h))
+			s.WriteString(`><g`)
+			s.attr("transform", fmt.Sprintf("translate(%d %d)", -zx[0], -zy[0]))
 			s.WriteString(`><image`)
 			s.attr("x", strconv.Itoa(zx[0]))
 			s.attr("y", strconv.Itoa(zy[0]))
 			s.attr("width", strconv.Itoa(b))
 			s.attr("height", strconv.Itoa(h))
 			s.attr("href", "data:image/png;base64,"+base64.StdEncoding.EncodeToString(kachel.Bytes()))
-			s.WriteString(`/><use href="#objekte"/></svg>`)
+			s.WriteString(`/><use href="#objekte"/></g></svg>`)
 			ax += b
 		}
 		ay += zy[1] - zy[0]

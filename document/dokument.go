@@ -75,6 +75,10 @@ func (d *Dokument) Original() *image.NRGBA {
 	return k
 }
 
+// OriginalBild liefert das Original ohne Kopie, nur zum Lesen (Kodieren, Ausschnitte): Wer es verändert oder
+// festhält, während das Dokument sich ändert, verfälscht den Stand. Für alles, was ändert oder aufbewahrt, gilt Original.
+func (d *Dokument) OriginalBild() *image.NRGBA { return d.original }
+
 // Objekte liefert die Objekte in Zeichenreihenfolge (unten zuerst).
 func (d *Dokument) Objekte() []Objekt { return append([]Objekt(nil), d.objekte...) }
 

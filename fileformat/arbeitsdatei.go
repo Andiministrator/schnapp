@@ -23,7 +23,7 @@ func SchreibeArbeitsdatei(w io.Writer, d *document.Dokument, sichtbar image.Imag
 	if err := png.Encode(&sicht, sichtbar); err != nil {
 		return err
 	}
-	if err := png.Encode(&orig, d.Original()); err != nil {
+	if err := png.Encode(&orig, d.OriginalBild()); err != nil {
 		return err
 	}
 	var svg bytes.Buffer

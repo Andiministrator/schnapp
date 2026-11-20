@@ -34,9 +34,18 @@ type Metadaten struct {
 
 // --- Schreiben ---
 
-type schreiber struct{ strings.Builder }
+// schreiber baut SVG-Text. Mit rundlauf (Arbeitsdatei, snAP-Block) stehen die Bearbeitungsattribute im Namensraum
+// ns dabei, damit die Datei wieder lesbar ist; ohne (Export, ADR-0025 Punkt 4, F-225) fehlen Namensraum und alle
+// Attribute mit Präfix `s:` — der Export ist ein gewöhnliches SVG ohne Spuren des Programms.
+type schreiber struct {
+	strings.Builder
+	rundlauf bool
+}
 
 func (s *schreiber) attr(name, wert string) {
+	if !s.rundlauf && (strings.HasPrefix(name, "s:") || name == "xmlns:s") {
+		return
+	}
 	s.WriteString(" " + name + `="`)
 	xml.EscapeText(s, []byte(wert))
 	s.WriteString(`"`)
@@ -65,7 +74,9 @@ func strich(st document.Strich) string { return farbeHex(st.Farbe) + " " + zahl(
 // objekte schreibt die Objekte in Original-Koordinaten; mit behalten != nil nur die, für die behalten true liefert
 // (Export: nur Objekte, die in die Ansicht reichen).
 func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt) bool) {
-	s.WriteString(`<g s:ebene="objekte">`)
+	s.WriteString(`<g`)
+	s.attr("s:ebene", "objekte")
+	s.WriteString(`>`)
 	for _, o := range d.Objekte() {
 		if behalten != nil && !behalten(o) {
 			continue
@@ -173,8 +184,8 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 // svgArbeitsdatei erzeugt das SVG des snAP-Blocks: Original (Verweis auf snAO) und Objekte in Original-Koordinaten,
 // Ansicht und Metadaten in <metadata>.
 func svgArbeitsdatei(d *document.Dokument, m Metadaten) []byte {
-	o := d.Original().Rect
-	var s schreiber
+	o := image.Rectangle{Max: d.OriginalGroesse()}
+	s := schreiber{rundlauf: true}
 	s.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n" + `<svg xmlns="http://www.w3.org/2000/svg"`)
 	s.attr("xmlns:s", ns)
 	s.attr("s:format", strconv.Itoa(FormatVersion))
