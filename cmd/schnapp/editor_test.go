@@ -323,7 +323,7 @@ func TestNutzerFehler(t *testing.T) {
 }
 
 // F-125, F-131, F-132: Eine Arbeitsdatei, deren Rastern das Rechenbudget überschritte, öffnet der Editor nicht
-// (Meldung übersetzt); knapp darunter öffnet sie. Geprüft wird nur beim Öffnen, nicht beim Speichern.
+// (Meldung übersetzt); knapp darunter öffnet sie. Abgelehnt wird nur beim Öffnen; Speichern warnt nur (F-138).
 func TestOeffnenLehntZuAufwendigeDateiAb(t *testing.T) {
 	i18n.Setze(nil)
 	dir := t.TempDir()
@@ -408,5 +408,90 @@ func TestSpeichernSchreibfehlerWeichtSichtbarAus(t *testing.T) {
 	}
 	if alt, err := fileformat.Oeffne(abs); err != nil || len(alt.Dokument.Objekte()) != 0 {
 		t.Errorf("alte Datei: %v (Soll: unverändert ohne Objekte)", err)
+	}
+}
+
+// F-138: Wächst ein Dokument im Editor über das Rechenbudget, wird es trotzdem gespeichert (F-131), aber mit Warnung,
+// weil ladeFuerEditor es beim nächsten Öffnen ablehnte. Knapp darunter speichert es ohne Hinweis und öffnet wieder.
+func TestSpeichernUeberDemBudgetWarnt(t *testing.T) {
+	i18n.Setze(nil)
+	warnung := "Saved, but the file has too many or too large annotations to be opened again. Remove some before closing."
+	// Je Glyphe „W“ im Grad 4096 kostet das Rastern 4096² Einheiten; über GlyphBudget lehnt Pruefe ab.
+	budget := render.GlyphBudget
+	grenze := int(budget / (4096 * 4096))
+	w := document.Text{Ort: document.Pt(0, 0), Inhalt: "W", Schriftgrad: 4096, Farbe: color.NRGBA{R: 255, A: 255}}
+	for _, fall := range []struct {
+		n      int
+		warnen bool
+	}{{grenze - 5, false}, {grenze + 1, true}} {
+		b := testBibliothek(t)
+		d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 10, 10)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		e, err := b.Ablegen(d, d.Ansichtsbild(), fileformat.Metadaten{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		abs := filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad))
+		abs, g, stand, err := ladeFuerEditor(abs)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i := 0; i < fall.n; i++ {
+			if _, err := g.Dokument.Hinzufuegen(w); err != nil {
+				t.Fatal(err)
+			}
+		}
+		erg, err := speichernIn(b, abs, g, stand)(g.Dokument)
+		if err != nil {
+			t.Fatalf("%d Glyphen: Speichern %v", fall.n, err)
+		}
+		_, wieder, _, oeffnen := ladeFuerEditor(abs)
+		if !fall.warnen {
+			if erg != (ui.Gespeichert{}) || oeffnen != nil || len(wieder.Dokument.Objekte()) != fall.n {
+				t.Errorf("%d Glyphen (unter dem Budget): %+v, Öffnen %v (Soll: ohne Hinweis, öffnet wieder)", fall.n, erg, oeffnen)
+			}
+			continue
+		}
+		if erg.Hinweis != warnung || !erg.Warnung || erg.Datei != "" {
+			t.Errorf("%d Glyphen: %+v, Soll Warnung %q ohne neue Datei", fall.n, erg, warnung)
+		}
+		// Gespeichert ist es (F-131) — nur das Öffnen lehnt ab, wie die Warnung sagt.
+		if !errors.Is(oeffnen, render.ErrZuAufwendig) {
+			t.Errorf("%d Glyphen: Öffnen %v, Soll render.ErrZuAufwendig", fall.n, oeffnen)
+		}
+		if neu, err := fileformat.Oeffne(abs); err != nil || len(neu.Dokument.Objekte()) != fall.n {
+			t.Errorf("%d Glyphen: nicht gespeichert (%v)", fall.n, err)
+		}
+	}
+	// Muss Speichern ausweichen, steht die Budget-Warnung hinter dem Hinweis auf die neue Aufnahme.
+	b := testBibliothek(t)
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 10, 10)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	aussen := filepath.Join(t.TempDir(), "aussen.png")
+	f, err := os.Create(aussen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := png.Encode(f, d.Ansichtsbild()); err != nil {
+		t.Fatal(err)
+	}
+	f.Close()
+	g, err := fileformat.Oeffne(aussen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i <= grenze; i++ {
+		if _, err := g.Dokument.Hinzufuegen(w); err != nil {
+			t.Fatal(err)
+		}
+	}
+	erg, err := speichernIn(b, aussen, g, standVon(t, aussen))(g.Dokument)
+	if err != nil || erg.Datei == "" || !erg.Warnung ||
+		erg.Hinweis != fmt.Sprintf("Saved as a new capture: %s", erg.Datei)+" "+warnung {
+		t.Errorf("von außen: %+v, %v", erg, err)
 	}
 }

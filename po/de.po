@@ -200,6 +200,9 @@ msgstr "In der Bibliothek gespeichert"
 msgid "Saved, but the old preview of this capture could not be removed."
 msgstr "Gespeichert, aber die alte Vorschau dieser Aufnahme ließ sich nicht entfernen."
 
+msgid "Saved, but the file has too many or too large annotations to be opened again. Remove some before closing."
+msgstr "Gespeichert, aber die Datei hat zu viele oder zu große Beschriftungen, um sie wieder zu öffnen. Vor dem Schließen einige entfernen."
+
 msgid "Saved as a new capture: %s"
 msgstr "Als neue Aufnahme gespeichert: %s"
 

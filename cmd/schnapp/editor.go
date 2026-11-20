@@ -61,7 +61,28 @@ func ladeFuerEditor(pfad string) (abs string, g *fileformat.Gelesen, stand libra
 // stehen geblieben, weil das Zurückschreiben scheiterte, als Warnung (F-116). Wurde die Datei seit dem Öffnen von
 // anderer Seite geändert (stand, etwa ein zweiter Editor), wird sie nicht überschrieben, sondern ebenfalls eine neue
 // Aufnahme angelegt und als Warnung gemeldet (F-110). Fehler kommen übersetzt zurück (F-117).
+//
+// Überschreitet das gespeicherte Dokument das Rechenbudget (render.Pruefe), warnt das Ergebnis zusätzlich (F-138):
+// Gespeichert ist es trotzdem (F-131), aber ladeFuerEditor lehnte es beim nächsten Öffnen ab. Die Warnung hält das
+// Fenster beim Schließen einmal offen (ADR-0020 Nachtrag 2), sodass sich Beschriftungen noch entfernen lassen.
 func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand) ui.Speichern {
+	speichern := ablegenIn(b, abs, g, stand)
+	return func(d *document.Dokument) (ui.Gespeichert, error) {
+		erg, err := speichern(d)
+		if err != nil || render.Pruefe(d) == nil {
+			return erg, err
+		}
+		text := i18n.T("Saved, but the file has too many or too large annotations to be opened again. Remove some before closing.")
+		if erg.Hinweis != "" {
+			text = erg.Hinweis + " " + text
+		}
+		erg.Hinweis, erg.Warnung = text, true
+		return erg, nil
+	}
+}
+
+// ablegenIn ist speichernIn ohne die Prüfung des Budgets.
+func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand) ui.Speichern {
 	rel, inBibliothek := b.Relativ(abs)
 	inBibliothek = inBibliothek && !g.Fremd
 	meta := g.Meta
