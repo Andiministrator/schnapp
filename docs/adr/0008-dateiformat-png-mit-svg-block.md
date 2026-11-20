@@ -61,4 +61,8 @@ man überall verschicken kann und die in Schnapp voll bearbeitbar bleibt.
   ganze Original, und Beschriftungen ganz außerhalb der Ansicht entfallen (F-66) — Zuschnitt und Stauchen sind beim
   Weitergeben endgültig (die Arbeitsdatei bleibt nicht zerstörend).
   Wer die Arbeitsdatei weitergibt, gibt das ganze Original mit; die Oberfläche weist darauf hin (Karte Export, #39).
+- **Lesen großer Blöcke wächst mit dem Gelieferten (F-273, Z-5):** `leseDaten` reserviert die angekündigte Länge nie vorab;
+  oberhalb von 1 MiB liest es in Stücken zu 1 MiB und kopiert am Ende in einen Puffer genau der Länge. Spitzenbedarf bei
+  einem wirklich vorhandenen Block: höchstens das Doppelte seiner Länge (früher das 2,6- bis 4-Fache), behalten wird genau
+  die Länge.
 - **PDF-Export:** noch nicht umgesetzt (Karte #39).

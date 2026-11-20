@@ -199,19 +199,34 @@ func originalGroesse(kopf []byte) (b, h int, err error) {
 // angekündigten 500 MB kostet so nur ihre eigene Größe (F-273, F-59, ADR-0008).
 func leseDaten(r io.Reader, laenge uint32) ([]byte, error) {
 	const sofort = 1 << 20
+	const stueck = 1 << 20
 	if laenge <= sofort {
 		daten := make([]byte, laenge)
 		_, err := io.ReadFull(r, daten)
 		return daten, err
 	}
-	var buf bytes.Buffer
-	if _, err := io.CopyN(&buf, r, int64(laenge)); err != nil {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
+	// Wachstum in festen Stücken mit genauem Endpuffer (Z-5): Ein bytes.Buffer verdoppelt und forderte bei großen echten
+	// Blöcken das 2,6- bis 4-Fache an und behielt bis zur doppelten Kapazität. Hier wächst nur die Liste der Stücke mit
+	// den gelieferten Bytes; am Ende steht ein Puffer genau der Länge, die Stücke werden frei. Spitzenbedarf: das
+	// Doppelte der Länge, behalten wird genau sie.
+	var stuecke [][]byte
+	for rest := int64(laenge); rest > 0; {
+		p := make([]byte, min(rest, int64(stueck)))
+		if _, err := io.ReadFull(r, p); err != nil {
+			if err == io.EOF {
+				err = io.ErrUnexpectedEOF
+			}
+			return nil, err
 		}
-		return nil, err
+		stuecke = append(stuecke, p)
+		rest -= int64(len(p))
 	}
-	return buf.Bytes(), nil
+	daten := make([]byte, 0, laenge)
+	for i, p := range stuecke {
+		daten = append(daten, p...)
+		stuecke[i] = nil
+	}
+	return daten, nil
 }
 
 // ihdrGroesse liest Breite und Höhe aus einem Blockstück, das mit dem 8-Byte-Blockkopf des IHDR beginnt (Länge,
