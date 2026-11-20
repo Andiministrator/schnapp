@@ -110,8 +110,8 @@ Produktcode (Stand 20.11.2026, Sprint 6): `capture`, `document`, `fileformat`, `
 `canvas`, `render` stehen mit Tests, dazu Overlay und Editor in `ui` (ohne Tests, Logik liegt in `selection`/`canvas`);
 Schnapp nimmt auf, legt in der Bibliothek ab und öffnet den Editor (Auswählen, Verschieben, Griffe, Zoom, Rückgängig,
 Speichern, Zeichenwerkzeuge Pfeil/Kasten/Text/Schritt-Nummer mit Farbwahl, ADR-0021; Schwärzen/Verpixeln ADR-0022;
-Zwischenablage Strg+C, ADR-0015 Nachtrag 2, bleibt nach dem Schließen über den Halter `wlclip`, ADR-0024; Zuschneiden C und Stauchen X mit Zackenkante, ADR-0023 — Exporte aus dem
-Editor folgen). Probeläufe ohne Andi: `scripts/probe.sh`
+Zwischenablage Strg+C, ADR-0015 Nachtrag 2, bleibt nach dem Schließen über den Halter `wlclip`, ADR-0024; Zuschneiden C und Stauchen X mit Zackenkante, ADR-0023; Export PNG/JPG/SVG über den Portal-Dialog, Strg+Umschalt+E,
+ADR-0025). Probeläufe ohne Andi: `scripts/probe.sh`
 (virtueller KWin, `knowledge/topics/lehren.md`). Installation per `install.sh` (`~/.local`, Version aus `git describe`). Daneben
 der Wegwerf-Prototyp `prototype/`. Schichten:
 
@@ -133,6 +133,10 @@ der Wegwerf-Prototyp `prototype/`. Schichten:
   warnt über dem Budget.
 - **wlclip** — Halter der Zwischenablage ohne Fenster (data-control, reines Go ohne libwayland, ADR-0024): Strg+C
   startet `schnapp --internal-keep-clipboard` abgelöst; endet bei neuem Inhalt oder nach 12 Stunden.
+- **portal** — Desktop-Portal über D-Bus ohne Gio: Dateidialog `FileChooser.SaveFile` (Abo vor dem Aufruf, Attrappe im
+  Test), `file://`-URI zu Pfad (ADR-0025).
+- **export** — Export aus dem Editor: Format aus Endung oder Filter, PNG/JPG aus `render`, SVG aus `fileformat`,
+  atomares Schreiben (ADR-0025).
 - **ui** — Gio: Vollbild-Overlay zur Auswahl (fertig), Editor, Bibliothek.
 
 Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung, Mauszeiger bei gemischter Skala F-78, Bild-Typ in
