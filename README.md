@@ -82,6 +82,7 @@ recolours the selected annotation. A drawing tool stays active; **Esc** steps ba
 select tool. Drag an annotation or its handles to move, resize or bend it; it always stays partly inside the image.
 The mouse wheel zooms at the pointer; with the select tool dragging empty space moves the view, the middle button does
 so with every tool. Keys: **Ctrl+Z** undo, **Ctrl+Shift+Z**/**Ctrl+Y** redo, **Del** delete, **Ctrl+S** save,
+**Ctrl+Shift+E** (button "Export…") export as PNG, JPG or SVG through the desktop file dialog (no editing data inside, redacted content stays gone),
 **Ctrl+C** copy the finished image to the clipboard (on compositors with the data-control protocol, such as KDE Plasma, it stays after the editor closes until something else is copied, for at most 12 hours; elsewhere only while the editor is open), **Ctrl+0** fit, **Ctrl+1** 100 %, **Ctrl+W** close.
 
 Changes are saved when the editor closes; **Ctrl+S** without changes writes nothing. A file from outside the library

@@ -11,6 +11,7 @@ import (
 	"image/color"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/Andiministrator/schnapp/canvas"
 	"github.com/Andiministrator/schnapp/document"
+	"github.com/Andiministrator/schnapp/export"
 	"github.com/Andiministrator/schnapp/fileformat"
 	"github.com/Andiministrator/schnapp/i18n"
 	"github.com/Andiministrator/schnapp/library"
@@ -153,6 +155,35 @@ func TestSchwaerzenInKeinemAusgang(t *testing.T) {
 				}
 				if m["Zwischenablage"], err = png.Decode(bytes.NewReader(zw)); err != nil {
 					t.Fatal(err)
+				}
+				// Export aus dem Editor (ADR-0025 Punkt 4): derselbe Weg wie im Editor, mit echter Datei im Zielordner.
+				ziel := t.TempDir()
+				ex := func(f export.Format) []byte {
+					t.Helper()
+					pfad := filepath.Join(ziel, "ex"+f.Endung())
+					if err := export.SchreibeAtomar(pfad, func(w io.Writer) error { return export.Schreibe(d, f, w) }); err != nil {
+						t.Fatal(err)
+					}
+					roh, err := os.ReadFile(pfad)
+					if err != nil {
+						t.Fatal(err)
+					}
+					return roh
+				}
+				if m["Export PNG"], err = png.Decode(bytes.NewReader(ex(export.PNG))); err != nil {
+					t.Fatal(err)
+				}
+				if m["Export JPG"], err = jpeg.Decode(bytes.NewReader(ex(export.JPG))); err != nil {
+					t.Fatal(err)
+				}
+				for i, k := range datenURI.FindAllStringSubmatch(string(ex(export.SVG)), -1) {
+					daten, err := base64.StdEncoding.DecodeString(k[1])
+					if err != nil {
+						t.Fatal(err)
+					}
+					if m["SVG-Kachel Export "+string(rune('0'+i))], err = png.Decode(bytes.NewReader(daten)); err != nil {
+						t.Fatal(err)
+					}
 				}
 				return m
 			}

@@ -4,6 +4,7 @@ package ui
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"image"
@@ -13,6 +14,7 @@ import (
 	"math"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync/atomic"
@@ -38,7 +40,9 @@ import (
 
 	"github.com/Andiministrator/schnapp/canvas"
 	"github.com/Andiministrator/schnapp/document"
+	"github.com/Andiministrator/schnapp/export"
 	"github.com/Andiministrator/schnapp/i18n"
+	"github.com/Andiministrator/schnapp/portal"
 	"github.com/Andiministrator/schnapp/render"
 	"github.com/Andiministrator/schnapp/wlclip"
 )
@@ -102,6 +106,9 @@ func Editor(titel string, d *document.Dokument, speichern Speichern) error {
 		zwischenablageFehlt.Store(true)
 	}
 	e.bildNeu()
+	ctx, abbruch := context.WithCancel(context.Background())
+	defer abbruch() // schließt einen offenen Exportdialog mit dem Fenster
+	e.exportCtx = ctx
 	ende := e.signaleAbfangen()
 	defer ende()
 	return e.laufen()
@@ -136,14 +143,20 @@ type editor struct {
 	meldung   canvas.Meldung // Zeile in der Statusleiste (Speichern, Hinweis, Fehler); Vorrang regelt canvas.StatusZeile (F-151)
 	titelSet  string
 
-	wache      *canvas.Signalwache // nimmt Signale an (eigene Goroutine), Ereignisschleife fragt Angekommen
-	erzwungen  bool                // Schließen nach Signal: kein ClosingEvent mehr abbrechen
-	schlussErr error               // Speicherfehler beim Schließen nach Signal, Rückgabe von Editor
+	wache *canvas.Signalwache // nimmt Signale an (eigene Goroutine), Ereignisschleife fragt Angekommen
+	// Export (ADR-0025): Der Dialog läuft in einer Goroutine, die Antwort kommt über exportAntwort in die Ereignisschleife.
+	exportCtx     context.Context
+	exportOffen   bool // ein Dialog läuft (nur einer zugleich); nur die Ereignisschleife liest und setzt es
+	exportAntwort chan exportErgebnis
+
+	erzwungen  bool  // Schließen nach Signal: kein ClosingEvent mehr abbrechen
+	schlussErr error // Speicherfehler beim Schließen nach Signal, Rückgabe von Editor
 
 	knoepfe struct {
 		auswahl, pfeil, kasten, text, nummer, farbe  widget.Clickable
 		schwaerzen, verpixeln, zuschneiden, stauchen widget.Clickable
 		rueck, wieder, einpassen, eins, speichern    widget.Clickable
+		export                                       widget.Clickable
 	}
 
 	// Doppelklick erkennen (ADR-0021: Text bearbeiten): Zeit und Ort des letzten Drucks der linken Taste.
@@ -225,6 +238,7 @@ func (e *editor) laufen() error {
 			e.melde(i18n.T("Could not copy: no clipboard is available."), true) // statt „Copied“ (F-177)
 			e.w.Invalidate()
 		}
+		e.exportAbholen()
 		if e.wache.Angekommen() && !e.erzwungen {
 			e.nachSignal()
 		}
@@ -325,6 +339,91 @@ func (e *editor) kopieren(gtx layout.Context) {
 		gtx.Execute(clipboard.WriteCmd{Type: wlclip.MIME, Data: io.NopCloser(bytes.NewReader(daten))})
 	}
 	e.melde(i18n.T("Copied to clipboard"), false)
+}
+
+// exportErgebnis ist die Antwort des Dateidialogs auf dem Weg in die Ereignisschleife.
+type exportErgebnis struct {
+	ergebnis portal.Ergebnis
+	err      error
+}
+
+// exportStarten öffnet den Dateidialog des Desktop-Portals (ADR-0025). Er läuft in einer eigenen Goroutine, denn die
+// Antwort kommt erst nach der Wahl des Nutzers; sie weckt das Fenster, geschrieben wird in der Ereignisschleife
+// (exportAbholen), wie bei der Signalwache (F-77). Nur ein Dialog zugleich.
+func (e *editor) exportStarten() {
+	if e.exportOffen || e.s.Zieht() {
+		return
+	}
+	e.exportOffen = true
+	if e.exportAntwort == nil {
+		e.exportAntwort = make(chan exportErgebnis, 1)
+	}
+	name := strings.TrimSuffix(e.titel, filepath.Ext(e.titel)) + export.PNG.Endung()
+	anfrage := portal.Anfrage{
+		Titel:     i18n.T("Export…"),
+		Dateiname: name,
+		Filter: []portal.Filter{
+			dialogFilter(i18n.T("PNG image"), export.PNG),
+			dialogFilter(i18n.T("JPEG image"), export.JPG),
+			dialogFilter(i18n.T("SVG image"), export.SVG),
+		},
+		Aktuell: 0,
+	}
+	ctx, ch, w := e.exportCtx, e.exportAntwort, e.w
+	go func() {
+		var r exportErgebnis
+		d, err := portal.Neu()
+		if err == nil {
+			r.ergebnis, r.err = d.Speichern(ctx, anfrage)
+			d.Close()
+		} else {
+			r.err = err
+		}
+		ch <- r
+		w.Invalidate()
+	}()
+}
+
+// dialogFilter beschreibt den Filter eines Formats (Glob und MIME-Typ).
+func dialogFilter(name string, f export.Format) portal.Filter {
+	return portal.Filter{Name: name, Globs: []string{f.Glob()}, MIMEs: []string{f.MIME()}}
+}
+
+// exportAbholen nimmt die Antwort des Dialogs an (Ereignisschleife) und schreibt die Datei.
+func (e *editor) exportAbholen() {
+	select {
+	case r := <-e.exportAntwort: // ein nil-Kanal blockiert für immer: dann gilt default
+		e.exportOffen = false
+		e.exportFertig(r)
+	default:
+	}
+}
+
+// exportFertig wertet die Antwort aus: Abbruch tut nichts, Fehler und Erfolg erscheinen in der Statusleiste.
+func (e *editor) exportFertig(r exportErgebnis) {
+	switch {
+	case errors.Is(r.err, portal.ErrAbgebrochen), errors.Is(r.err, context.Canceled):
+		return
+	case errors.Is(r.err, portal.ErrKeinPortal):
+		diagnoseEditor("Export: %v", r.err)
+		e.melde(i18n.T("No file dialog available (desktop portal missing)."), true)
+		return
+	case r.err != nil:
+		e.melde(fmt.Sprintf(i18n.T("Could not export: %v"), r.err), true)
+		return
+	}
+	pfad, err := portal.URIZuPfad(r.ergebnis.URI)
+	if err != nil {
+		e.melde(i18n.T("Could not export: only local files can be written."), true)
+		return
+	}
+	f, pfad := export.Waehle(pfad, export.AusIndex(r.ergebnis.Filter))
+	err = export.SchreibeAtomar(pfad, func(w io.Writer) error { return export.Schreibe(e.s.D, f, w) })
+	if err != nil {
+		e.melde(fmt.Sprintf(i18n.T("Could not export: %v"), err), true)
+		return
+	}
+	e.melde(fmt.Sprintf(i18n.T("Exported to %s"), filepath.Base(pfad)), false)
 }
 
 // ohneDataControl merkt sich, dass der Compositor kein data-control anbietet: Weitere Strg+C starten dann keinen
@@ -767,6 +866,7 @@ func (e *editor) tasten(gtx layout.Context) {
 			key.Filter{Name: "Y", Required: key.ModShortcut},
 			key.Filter{Name: "S", Required: key.ModShortcut},
 			key.Filter{Name: "C", Required: key.ModShortcut},
+			key.Filter{Name: "E", Required: key.ModShortcut | key.ModShift},
 			key.Filter{Name: "0", Required: key.ModShortcut},
 			key.Filter{Name: "1", Required: key.ModShortcut},
 			key.Filter{Name: "W", Required: key.ModShortcut},
@@ -850,6 +950,10 @@ func (e *editor) tasten(gtx layout.Context) {
 			} else if e.s.KopierenErlaubt() { // in der Texteingabe bleibt Strg+C wie bisher ohne Wirkung
 				e.kopieren(gtx)
 			}
+		case "E": // Strg+Umschalt+E: Export (ADR-0025); in der Texteingabe wie Strg+C ohne Wirkung
+			if k.Modifiers.Contain(key.ModShortcut|key.ModShift) && e.s.KopierenErlaubt() {
+				e.exportStarten()
+			}
 		case "X":
 			e.s.SetzeWerkzeug(canvas.WerkzeugStauchen)
 		case "0":
@@ -866,7 +970,7 @@ func (e *editor) tasten(gtx layout.Context) {
 // fokussierterKnopf liefert den Knopf der Leiste, der gerade den Tastaturfokus hat (nil: keiner).
 func (e *editor) fokussierterKnopf(gtx layout.Context) *widget.Clickable {
 	k := &e.knoepfe
-	alle := []*widget.Clickable{&k.rueck, &k.wieder, &k.einpassen, &k.eins, &k.speichern, &k.farbe}
+	alle := []*widget.Clickable{&k.rueck, &k.wieder, &k.einpassen, &k.eins, &k.export, &k.speichern, &k.farbe}
 	for _, w := range e.werkzeugKnoepfe() {
 		alle = append(alle, w.c)
 	}
@@ -905,6 +1009,10 @@ func (e *editor) knoepfeAuswerten(gtx layout.Context) {
 	}
 	if k.eins.Clicked(gtx) {
 		e.s.EinsZuEins()
+	}
+	if k.export.Clicked(gtx) {
+		e.s.TextBestaetigen() // wie Speichern: ein laufender Text kommt mit
+		e.exportStarten()
 	}
 	if k.speichern.Clicked(gtx) {
 		e.speichernJetzt()
@@ -978,6 +1086,7 @@ func (e *editor) leistenKnoepfe() []leistenKnopf {
 		leistenKnopf{c: &k.wieder, text: i18n.T("Redo"), an: e.s.D.KannWiederholen()},
 		leistenKnopf{c: &k.einpassen, text: i18n.T("Fit"), an: true, gruppe: true},
 		leistenKnopf{c: &k.eins, text: "1:1", an: true},
+		leistenKnopf{c: &k.export, text: i18n.T("Export…"), an: !e.exportOffen, gruppe: true},
 	)
 }
 

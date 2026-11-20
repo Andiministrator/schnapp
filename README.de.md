@@ -84,6 +84,7 @@ aktiv; **Esc** geht stufenweise zurück: Texteingabe → Ziehen → Auswahl → 
 verschiebt, ändert die Größe oder biegt; sie bleibt dabei immer teilweise im Bild. Das Mausrad zoomt zum Zeiger; mit
 Auswählen verschiebt Ziehen auf freier Fläche die Ansicht, die mittlere Taste in jedem Werkzeug. Tasten: **Strg+Z**
 rückgängig, **Strg+Umschalt+Z**/**Strg+Y** wiederholen, **Entf** löschen, **Strg+S** speichern,
+**Strg+Umschalt+E** (Knopf „Exportieren …“) als PNG, JPG oder SVG über den Dateidialog des Desktops weitergeben (ohne Bearbeitungsdaten, Geschwärztes bleibt weg),
 **Strg+C** fertiges Bild in die Zwischenablage (mit dem data-control-Protokoll, etwa unter KDE Plasma, bleibt
 es nach dem Schließen des Editors, bis etwas anderes kopiert wird, höchstens 12 Stunden; sonst nur, solange der Editor offen ist), **Strg+0** einpassen,
 **Strg+1** 100 %, **Strg+W** schließen.

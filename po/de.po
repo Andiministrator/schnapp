@@ -200,6 +200,30 @@ msgstr "Speichern gescheitert: %v"
 msgid "Copied to clipboard"
 msgstr "In die Zwischenablage kopiert"
 
+msgid "Export…"
+msgstr "Exportieren …"
+
+msgid "PNG image"
+msgstr "PNG-Bild"
+
+msgid "JPEG image"
+msgstr "JPEG-Bild"
+
+msgid "SVG image"
+msgstr "SVG-Bild"
+
+msgid "Exported to %s"
+msgstr "Exportiert nach %s"
+
+msgid "Could not export: %v"
+msgstr "Export nicht möglich: %v"
+
+msgid "Could not export: only local files can be written."
+msgstr "Export nicht möglich: Es lassen sich nur lokale Dateien schreiben."
+
+msgid "No file dialog available (desktop portal missing)."
+msgstr "Kein Dateidialog verfügbar (Desktop-Portal fehlt)."
+
 msgid "Could not copy: %v"
 msgstr "Kopieren gescheitert: %v"
 
