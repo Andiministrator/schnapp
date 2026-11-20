@@ -4,34 +4,33 @@
 // (ext-data-control-v1, sonst wlr-data-control-unstable-v1), das Zwischenablage-Verwalter wie Klipper benutzen. So
 // bleibt ein im Editor kopiertes Bild erhalten, nachdem der Editor geschlossen ist (ADR-0024, E-19).
 //
-// Der Halter spricht das Wayland-Leitungsformat selbst (wire.go), ohne libwayland und ohne cgo. Er bietet genau einen
+// Der Halter spricht das Wayland-Leitungsformat selbst (Paket internal/wlwire), ohne libwayland und ohne cgo. Er bietet genau einen
 // MIME-Typ an, liefert die Bytes an jeden, der einfügt, und endet, sobald eine andere Anwendung die Zwischenablage
 // übernimmt, der Compositor die Verbindung schließt oder die Zeitgrenze erreicht ist. Er greift in nichts ein.
 package wlclip
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/Andiministrator/schnapp/internal/wlwire"
 )
 
 // Objekt-IDs und Opcodes der benutzten Schnittstellen. ext_data_control_v1 und zwlr_data_control_v1 haben dieselben
 // Nachrichten in derselben Reihenfolge.
 const (
-	idDisplay = 1
+	idDisplay            = wlwire.IDDisplay
+	opDisplaySync        = wlwire.OpDisplaySync
+	opDisplayGetRegistry = wlwire.OpDisplayGetRegistry
+	evDisplayError       = wlwire.EvDisplayError
 
-	opDisplaySync        = 0 // wl_display.sync(new_id callback)
-	opDisplayGetRegistry = 1 // wl_display.get_registry(new_id registry)
-	evDisplayError       = 0 // wl_display.error(object, code, message)
-	evDisplayDeleteID    = 1
+	opRegistryBind   = wlwire.OpRegistryBind
+	evRegistryGlobal = wlwire.EvRegistryGlobal
 
-	opRegistryBind   = 0 // wl_registry.bind(name, interface, version, new_id)
-	evRegistryGlobal = 0 // wl_registry.global(name, interface, version)
-
-	evCallbackDone = 0
+	evCallbackDone = wlwire.EvCallbackDone
 
 	opManagerCreateSource = 0 // create_data_source(new_id)
 	opManagerGetDevice    = 1 // get_data_device(new_id, seat)
@@ -54,6 +53,8 @@ const (
 
 // Fehler, die der Aufrufer unterscheiden kann.
 var (
+	// ErrVerbindungZu: Der Compositor hat die Verbindung geschlossen.
+	ErrVerbindungZu = wlwire.ErrVerbindungZu
 	// ErrKeinDataControl: Der Compositor bietet keines der beiden data-control-Protokolle an.
 	ErrKeinDataControl = errors.New("wlclip: Compositor bietet kein data-control an")
 	// ErrKeinSitz: Der Compositor nennt keinen wl_seat.
@@ -78,7 +79,7 @@ var scheibe = time.Minute
 
 // Halter bietet einen Inhalt in der Zwischenablage an.
 type Halter struct {
-	v       *verbindung
+	v       *wlwire.Verbindung
 	daten   []byte
 	mime    string
 	quelle  uint32
@@ -90,7 +91,7 @@ type Halter struct {
 // Biete verbindet sich mit dem Compositor der Sitzung und setzt daten mit dem MIME-Typ mime als Zwischenablage. Es
 // kehrt zurück, wenn der Compositor das Setzen verarbeitet hat; danach liefert Diene die Bytes aus.
 func Biete(daten []byte, mime string) (*Halter, error) {
-	v, err := verbinde()
+	v, err := wlwire.Verbinde()
 	if err != nil {
 		return nil, err
 	}
@@ -102,9 +103,9 @@ func Biete(daten []byte, mime string) (*Halter, error) {
 	return h, nil
 }
 
-func biete(v *verbindung, daten []byte, mime string) (*Halter, error) {
-	registry := v.neueID()
-	if err := v.sende(idDisplay, opDisplayGetRegistry, new(nachricht).u32(registry)); err != nil {
+func biete(v *wlwire.Verbindung, daten []byte, mime string) (*Halter, error) {
+	registry := v.NeueID()
+	if err := v.Sende(idDisplay, opDisplayGetRegistry, new(wlwire.Nachricht).U32(registry)); err != nil {
 		return nil, err
 	}
 	type global struct {
@@ -113,12 +114,12 @@ func biete(v *verbindung, daten []byte, mime string) (*Halter, error) {
 	globals := map[string]global{}
 	sitzGefunden := false
 	var sitz global
-	err := v.rundlauf(func(e ereignis) error {
-		if e.obj == registry && e.op == evRegistryGlobal {
-			l := leser{b: e.args}
-			name, schnitt, version := l.u32(), l.str(), l.u32()
-			if l.err != nil {
-				return l.err
+	err := v.Rundlauf(Stau, func(e wlwire.Ereignis) error {
+		if e.Obj == registry && e.Op == evRegistryGlobal {
+			l := wlwire.Leser{B: e.Args}
+			name, schnitt, version := l.U32(), l.Str(), l.U32()
+			if l.Err != nil {
+				return l.Err
 			}
 			if schnitt == "wl_seat" {
 				if !sitzGefunden { // erster Sitz; mehrere Sitze kennt KDE nicht
@@ -147,31 +148,31 @@ func biete(v *verbindung, daten []byte, mime string) (*Halter, error) {
 	if !sitzGefunden {
 		return nil, ErrKeinSitz
 	}
-	sitzID, mgrID := v.neueID(), v.neueID()
-	if err := v.sende(registry, opRegistryBind, new(nachricht).u32(sitz.name).str("wl_seat").u32(1).u32(sitzID)); err != nil {
+	sitzID, mgrID := v.NeueID(), v.NeueID()
+	if err := v.Sende(registry, opRegistryBind, new(wlwire.Nachricht).U32(sitz.name).Str("wl_seat").U32(1).U32(sitzID)); err != nil {
 		return nil, err
 	}
-	if err := v.sende(registry, opRegistryBind, new(nachricht).u32(mgr.name).str(h.Manager).u32(1).u32(mgrID)); err != nil {
+	if err := v.Sende(registry, opRegistryBind, new(wlwire.Nachricht).U32(mgr.name).Str(h.Manager).U32(1).U32(mgrID)); err != nil {
 		return nil, err
 	}
-	h.quelle = v.neueID()
-	if err := v.sende(mgrID, opManagerCreateSource, new(nachricht).u32(h.quelle)); err != nil {
+	h.quelle = v.NeueID()
+	if err := v.Sende(mgrID, opManagerCreateSource, new(wlwire.Nachricht).U32(h.quelle)); err != nil {
 		return nil, err
 	}
 	for _, m := range []string{mime, MarkeKlipper} {
-		if err := v.sende(h.quelle, opSourceOffer, new(nachricht).str(m)); err != nil {
+		if err := v.Sende(h.quelle, opSourceOffer, new(wlwire.Nachricht).Str(m)); err != nil {
 			return nil, err
 		}
 	}
-	h.geraet = v.neueID()
-	if err := v.sende(mgrID, opManagerGetDevice, new(nachricht).u32(h.geraet).u32(sitzID)); err != nil {
+	h.geraet = v.NeueID()
+	if err := v.Sende(mgrID, opManagerGetDevice, new(wlwire.Nachricht).U32(h.geraet).U32(sitzID)); err != nil {
 		return nil, err
 	}
-	if err := v.sende(h.geraet, opDeviceSetSelection, new(nachricht).u32(h.quelle)); err != nil {
+	if err := v.Sende(h.geraet, opDeviceSetSelection, new(wlwire.Nachricht).U32(h.quelle)); err != nil {
 		return nil, err
 	}
 	abgeloest := false
-	err = v.rundlauf(func(e ereignis) error {
+	err = v.Rundlauf(Stau, func(e wlwire.Ereignis) error {
 		ende, err := h.verarbeite(e)
 		if ende && err == nil {
 			abgeloest = true
@@ -187,55 +188,17 @@ func biete(v *verbindung, daten []byte, mime string) (*Halter, error) {
 	return h, nil
 }
 
-// rundlauf schickt wl_display.sync und verarbeitet Ereignisse mit je, bis die Antwort da ist. Ein wl_display.error
-// beendet mit Fehler.
-func (v *verbindung) rundlauf(je func(ereignis) error) error {
-	cb := v.neueID()
-	if err := v.sende(idDisplay, opDisplaySync, new(nachricht).u32(cb)); err != nil {
-		return err
-	}
-	if err := v.c.SetReadDeadline(time.Now().Add(Stau)); err != nil {
-		return err
-	}
-	defer v.c.SetReadDeadline(time.Time{})
-	for {
-		e, err := v.lies()
-		if err != nil {
-			return err
-		}
-		if e.obj == cb && e.op == evCallbackDone {
-			return nil
-		}
-		if err := pruefeDisplay(e); err != nil {
-			return err
-		}
-		if err := je(e); err != nil {
-			return err
-		}
-	}
-}
-
-// pruefeDisplay wandelt wl_display.error in einen Fehler.
-func pruefeDisplay(e ereignis) error {
-	if e.obj != idDisplay || e.op != evDisplayError {
-		return nil
-	}
-	l := leser{b: e.args}
-	obj, code, text := l.u32(), l.u32(), l.str()
-	return fmt.Errorf("wlclip: Protokollfehler an Objekt %d (Code %d): %s", obj, code, text)
-}
-
 // verarbeite behandelt ein Ereignis der eigenen Objekte. ende meldet, dass der Halter fertig ist (abgelöst oder
 // Gerät beendet).
-func (h *Halter) verarbeite(e ereignis) (ende bool, err error) {
+func (h *Halter) verarbeite(e wlwire.Ereignis) (ende bool, err error) {
 	switch {
-	case e.obj == h.quelle && e.op == evSourceSend:
-		l := leser{b: e.args}
-		mime := l.str()
-		if l.err != nil {
-			return false, l.err
+	case e.Obj == h.quelle && e.Op == evSourceSend:
+		l := wlwire.Leser{B: e.Args}
+		mime := l.Str()
+		if l.Err != nil {
+			return false, l.Err
 		}
-		fd, err := h.v.nimmFD()
+		fd, err := h.v.NimmFD()
 		if err != nil {
 			return false, err
 		}
@@ -248,17 +211,17 @@ func (h *Halter) verarbeite(e ereignis) (ende bool, err error) {
 			defer h.senden.Done()
 			_ = schreibe(fd, h.daten, Stau)
 		}()
-	case e.obj == h.quelle && e.op == evSourceCancel:
+	case e.Obj == h.quelle && e.Op == evSourceCancel:
 		return true, nil
-	case e.obj == h.geraet && e.op == evDeviceDataOffer:
+	case e.Obj == h.geraet && e.Op == evDeviceDataOffer:
 		// Angebote (auch das eigene, als Echo) liest der Halter nicht: gleich wieder freigeben.
-		l := leser{b: e.args}
-		angebot := l.u32()
-		if l.err != nil {
-			return false, l.err
+		l := wlwire.Leser{B: e.Args}
+		angebot := l.U32()
+		if l.Err != nil {
+			return false, l.Err
 		}
-		return false, h.v.sende(angebot, opOfferDestroy, nil)
-	case e.obj == h.geraet && e.op == evDeviceFinished:
+		return false, h.v.Sende(angebot, opOfferDestroy, nil)
+	case e.Obj == h.geraet && e.Op == evDeviceFinished:
 		return true, nil
 	}
 	return false, nil
@@ -280,17 +243,17 @@ func (h *Halter) Diene(grenze time.Duration) error {
 		if rest <= 0 {
 			return ErrZeitgrenze
 		}
-		if err := h.v.c.SetDeadline(time.Now().Add(min(rest, scheibe))); err != nil {
+		if err := h.v.SetDeadline(time.Now().Add(min(rest, scheibe))); err != nil {
 			return err
 		}
-		e, err := h.v.lies()
+		e, err := h.v.Lies()
 		if err != nil {
 			if errors.Is(err, os.ErrDeadlineExceeded) {
 				continue // Scheibe abgelaufen; Grenze oben prüfen
 			}
 			return err
 		}
-		if err := pruefeDisplay(e); err != nil {
+		if err := wlwire.PruefeDisplay(e); err != nil {
 			return err
 		}
 		ende, err := h.verarbeite(e)

@@ -5,6 +5,7 @@ package wlclip
 import (
 	"bytes"
 	"errors"
+	"github.com/Andiministrator/schnapp/internal/wlwire"
 	"io"
 	"math/rand/v2"
 	"net"
@@ -16,7 +17,7 @@ import (
 )
 
 // paar liefert zwei verbundene Enden: Client (wie zum Compositor) und Server (der nachgebaute Compositor).
-func paar(t *testing.T) (client, server *verbindung) {
+func paar(t *testing.T) (client, server *wlwire.Verbindung) {
 	t.Helper()
 	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM|syscall.SOCK_CLOEXEC, 0)
 	if err != nil {
@@ -31,7 +32,7 @@ func paar(t *testing.T) (client, server *verbindung) {
 		}
 		return c.(*net.UnixConn)
 	}
-	client, server = neueVerbindung(ende(fds[0])), neueVerbindung(ende(fds[1]))
+	client, server = wlwire.Neue(ende(fds[0])), wlwire.Neue(ende(fds[1]))
 	t.Cleanup(func() { client.Close(); server.Close() })
 	return client, server
 }
@@ -39,25 +40,25 @@ func paar(t *testing.T) (client, server *verbindung) {
 // compositor ist der nachgebaute Compositor im Test. Fehler meldet er über t.Error (läuft in einer Goroutine).
 type compositor struct {
 	t *testing.T
-	v *verbindung
+	v *wlwire.Verbindung
 }
 
 // erwarte liest die nächste Anfrage und prüft Objekt und Opcode.
-func (c *compositor) erwarte(obj uint32, op uint16, was string) *leser {
-	c.v.c.SetReadDeadline(time.Now().Add(5 * time.Second))
-	e, err := c.v.lies()
+func (c *compositor) erwarte(obj uint32, op uint16, was string) *wlwire.Leser {
+	c.v.SetReadDeadline(time.Now().Add(5 * time.Second))
+	e, err := c.v.Lies()
 	if err != nil {
 		c.t.Errorf("%s: %v", was, err)
-		return &leser{err: err}
+		return &wlwire.Leser{Err: err}
 	}
-	if (obj != 0 && e.obj != obj) || e.op != op {
-		c.t.Errorf("%s: Anfrage an Objekt %d Opcode %d, erwartet Objekt %d Opcode %d", was, e.obj, e.op, obj, op)
+	if (obj != 0 && e.Obj != obj) || e.Op != op {
+		c.t.Errorf("%s: Anfrage an Objekt %d Opcode %d, erwartet Objekt %d Opcode %d", was, e.Obj, e.Op, obj, op)
 	}
-	return &leser{b: e.args}
+	return &wlwire.Leser{B: e.Args}
 }
 
-func (c *compositor) sende(obj uint32, op uint16, n *nachricht) {
-	if err := c.v.sende(obj, op, n); err != nil {
+func (c *compositor) Sende(obj uint32, op uint16, n *wlwire.Nachricht) {
+	if err := c.v.Sende(obj, op, n); err != nil {
 		c.t.Errorf("senden an %d/%d: %v", obj, op, err)
 	}
 }
@@ -70,12 +71,12 @@ type globalImTest struct {
 
 // anmeldung spielt get_registry und den ersten Rundlauf mit den Globals; liefert die Registry-ID.
 func (c *compositor) anmeldung(globals []globalImTest) uint32 {
-	reg := c.erwarte(idDisplay, opDisplayGetRegistry, "get_registry").u32()
-	cb := c.erwarte(idDisplay, opDisplaySync, "sync 1").u32()
+	reg := c.erwarte(idDisplay, opDisplayGetRegistry, "get_registry").U32()
+	cb := c.erwarte(idDisplay, opDisplaySync, "sync 1").U32()
 	for _, g := range globals {
-		c.sende(reg, evRegistryGlobal, new(nachricht).u32(g.name).str(g.schnitt).u32(g.version))
+		c.Sende(reg, evRegistryGlobal, new(wlwire.Nachricht).U32(g.name).Str(g.schnitt).U32(g.version))
 	}
-	c.sende(cb, evCallbackDone, new(nachricht).u32(1))
+	c.Sende(cb, evCallbackDone, new(wlwire.Nachricht).U32(1))
 	return reg
 }
 
@@ -87,34 +88,34 @@ type ids struct{ sitz, mgr, quelle, geraet uint32 }
 func (c *compositor) setzen(reg, sitzName, mgrName uint32, mgr, mime string, vorAntwort func(ids, uint32)) ids {
 	var i ids
 	l := c.erwarte(reg, opRegistryBind, "bind wl_seat")
-	if n, s, v := l.u32(), l.str(), l.u32(); n != sitzName || s != "wl_seat" || v != 1 {
+	if n, s, v := l.U32(), l.Str(), l.U32(); n != sitzName || s != "wl_seat" || v != 1 {
 		c.t.Errorf("bind Sitz: %d %q v%d", n, s, v)
 	}
-	i.sitz = l.u32()
+	i.sitz = l.U32()
 	l = c.erwarte(reg, opRegistryBind, "bind Manager")
-	if n, s, v := l.u32(), l.str(), l.u32(); n != mgrName || s != mgr || v != 1 {
+	if n, s, v := l.U32(), l.Str(), l.U32(); n != mgrName || s != mgr || v != 1 {
 		c.t.Errorf("bind Manager: %d %q v%d, erwartet %d %q v1", n, s, v, mgrName, mgr)
 	}
-	i.mgr = l.u32()
-	i.quelle = c.erwarte(i.mgr, opManagerCreateSource, "create_data_source").u32()
+	i.mgr = l.U32()
+	i.quelle = c.erwarte(i.mgr, opManagerCreateSource, "create_data_source").U32()
 	for _, want := range []string{mime, MarkeKlipper} {
-		if m := c.erwarte(i.quelle, opSourceOffer, "offer").str(); m != want {
+		if m := c.erwarte(i.quelle, opSourceOffer, "offer").Str(); m != want {
 			c.t.Errorf("offer %q, erwartet %q", m, want)
 		}
 	}
 	l = c.erwarte(i.mgr, opManagerGetDevice, "get_data_device")
-	i.geraet = l.u32()
-	if s := l.u32(); s != i.sitz {
+	i.geraet = l.U32()
+	if s := l.U32(); s != i.sitz {
 		c.t.Errorf("get_data_device mit Sitz %d, erwartet %d", s, i.sitz)
 	}
-	if q := c.erwarte(i.geraet, opDeviceSetSelection, "set_selection").u32(); q != i.quelle {
+	if q := c.erwarte(i.geraet, opDeviceSetSelection, "set_selection").U32(); q != i.quelle {
 		c.t.Errorf("set_selection mit Quelle %d, erwartet %d", q, i.quelle)
 	}
-	cb := c.erwarte(idDisplay, opDisplaySync, "sync 2").u32()
+	cb := c.erwarte(idDisplay, opDisplaySync, "sync 2").U32()
 	if vorAntwort != nil {
 		vorAntwort(i, cb)
 	}
-	c.sende(cb, evCallbackDone, new(nachricht).u32(2))
+	c.Sende(cb, evCallbackDone, new(wlwire.Nachricht).U32(2))
 	return i
 }
 
@@ -142,13 +143,13 @@ func TestBieteUndDiene(t *testing.T) {
 		defer close(fertig)
 		reg := c.anmeldung(normaleGlobals)
 		i := c.setzen(reg, 3, 5, ManagerExt, "image/png", func(i ids, _ uint32) {
-			c.sende(i.geraet, evDeviceDataOffer, new(nachricht).u32(0xff000001))
+			c.Sende(i.geraet, evDeviceDataOffer, new(wlwire.Nachricht).U32(0xff000001))
 		})
 		c.erwarte(0xff000001, opOfferDestroy, "Angebot freigeben")
 		// fremder MIME-Typ und die Klipper-Marke: Pipe wird ohne Daten geschlossen
 		for _, fremd := range []string{"text/plain", MarkeKlipper} {
 			r, w, _ := os.Pipe()
-			c.sende(i.quelle, evSourceSend, new(nachricht).str(fremd).fd(int(w.Fd())))
+			c.Sende(i.quelle, evSourceSend, new(wlwire.Nachricht).Str(fremd).FD(int(w.Fd())))
 			w.Close()
 			if b, _ := io.ReadAll(r); len(b) != 0 {
 				t.Errorf("%s bekam %d Byte", fremd, len(b))
@@ -157,14 +158,14 @@ func TestBieteUndDiene(t *testing.T) {
 		}
 		// Einfügen
 		r, w, _ := os.Pipe()
-		c.sende(i.quelle, evSourceSend, new(nachricht).str("image/png").fd(int(w.Fd())))
+		c.Sende(i.quelle, evSourceSend, new(wlwire.Nachricht).Str("image/png").FD(int(w.Fd())))
 		w.Close()
 		b, _ := io.ReadAll(r)
 		r.Close()
 		if !bytes.Equal(b, daten) {
 			t.Errorf("eingefügt %d Byte, erwartet %d gleiche", len(b), len(daten))
 		}
-		c.sende(i.quelle, evSourceCancel, nil)
+		c.Sende(i.quelle, evSourceCancel, nil)
 	}()
 	h, err := biete(client, daten, "image/png")
 	if err != nil {
@@ -227,7 +228,7 @@ func TestProtokollfehler(t *testing.T) {
 		defer close(fertig)
 		reg := c.anmeldung(normaleGlobals)
 		c.setzen(reg, 3, 5, ManagerExt, "image/png", func(i ids, _ uint32) {
-			c.sende(idDisplay, evDisplayError, new(nachricht).u32(i.geraet).u32(1).str("used source"))
+			c.Sende(idDisplay, evDisplayError, new(wlwire.Nachricht).U32(i.geraet).U32(1).Str("used source"))
 		})
 	}()
 	_, err := biete(client, []byte{1}, "image/png")
@@ -246,7 +247,7 @@ func TestSofortAbgeloest(t *testing.T) {
 		defer close(fertig)
 		reg := c.anmeldung(normaleGlobals)
 		c.setzen(reg, 3, 5, ManagerExt, "image/png", func(i ids, _ uint32) {
-			c.sende(i.quelle, evSourceCancel, nil)
+			c.Sende(i.quelle, evSourceCancel, nil)
 		})
 	}()
 	if _, err := biete(client, []byte{1}, "image/png"); !errors.Is(err, ErrAbgeloest) {
@@ -298,7 +299,7 @@ func TestCompositorWeg(t *testing.T) {
 // TestGeraetBeendet: finished am Gerät beendet Diene ohne Fehler.
 func TestGeraetBeendet(t *testing.T) {
 	h, c, i := bereit(t)
-	c.sende(i.geraet, evDeviceFinished, nil)
+	c.Sende(i.geraet, evDeviceFinished, nil)
 	if err := h.Diene(5 * time.Second); err != nil {
 		t.Errorf("Fehler %v, erwartet nil", err)
 	}
@@ -331,36 +332,5 @@ func TestSchreibeStau(t *testing.T) {
 	r2.Close()
 	if err := schreibe(fd2, zufall(1<<20), time.Second); err == nil {
 		t.Error("kein Fehler bei geschlossenem Leser")
-	}
-}
-
-// TestSocketPfad: WAYLAND_DISPLAY absolut, relativ zu XDG_RUNTIME_DIR, Voreinstellung wayland-0, Fehler ohne Ordner.
-func TestSocketPfad(t *testing.T) {
-	for _, fall := range []struct {
-		display, run, want string
-		fehler             bool
-	}{
-		{"/x/sock", "", "/x/sock", false},
-		{"wayland-1", "/run/u", "/run/u/wayland-1", false},
-		{"", "/run/u", "/run/u/wayland-0", false},
-		{"wayland-1", "", "", true},
-	} {
-		env := map[string]string{"WAYLAND_DISPLAY": fall.display, "XDG_RUNTIME_DIR": fall.run}
-		got, err := socketPfad(func(k string) string { return env[k] })
-		if (err != nil) != fall.fehler || got != fall.want {
-			t.Errorf("%q/%q: %q, %v; erwartet %q, Fehler %v", fall.display, fall.run, got, err, fall.want, fall.fehler)
-		}
-	}
-}
-
-// TestLeserKurz: abgeschnittene Argumente sind Fehler, keine Panik.
-func TestLeserKurz(t *testing.T) {
-	l := leser{b: []byte{9, 0, 0, 0, 'a', 'b'}}
-	if l.str(); l.err == nil {
-		t.Error("abgeschnittene Zeichenkette ohne Fehler")
-	}
-	l = leser{b: []byte{1, 2}}
-	if l.u32(); l.err == nil {
-		t.Error("abgeschnittenes Wort ohne Fehler")
 	}
 }
