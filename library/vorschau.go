@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 // VorschauSeite ist die längste Seite eines Vorschaubilds in Pixeln.
@@ -45,15 +46,25 @@ func (b *Bibliothek) schreibeVorschau(rel string, bild image.Image) error {
 // erneuereVorschau schreibt das Vorschaubild zu rel neu. Scheitert das, wird das alte entfernt: Sonst zeigte die
 // Vorschau weiter einen früheren Stand — nach dem Schwärzen den ungeschwärzten (Kernprinzip 2, F-115). Liefert
 // ErrVorschau, wenn nur das Schreiben scheiterte, und zusätzlich ErrVorschauAlt, wenn das alte Bild bleibt.
+//
+// Vorher räumt es liegen gebliebene eigene temporäre Dateien im Vorschau-Ordner (Z-3): Ein Absturz zwischen Schreiben
+// und Umbenennen ließe sonst ein verkleinertes Bild des alten Stands für immer liegen. Es gelten die Regeln von
+// raeumeTempReste (nur Präfix, nur reguläre Dateien, nie ein Symlink; Altersgrenze oder gleicher Inode wie das zu
+// ersetzende Vorschaubild); was bleibt oder sich nicht entfernen lässt, kommt als ErrTempRest zurück.
 func (b *Bibliothek) erneuereVorschau(rel string, bild image.Image) error {
+	var alt os.FileInfo
+	if fi, err := os.Lstat(b.VorschauPfad(rel)); err == nil && fi.Mode().IsRegular() {
+		alt = fi
+	}
+	_, restFehler := raeumeTempReste(b.Orte.Vorschau, time.Now(), false, alt)
 	err := b.schreibeVorschau(rel, bild)
 	if err == nil {
-		return nil
+		return restFehler
 	}
 	if ferr := b.entferneVorschau(rel); ferr != nil {
-		return fmt.Errorf("%w: %v; %w: %v", ErrVorschau, err, ErrVorschauAlt, ferr)
+		return errors.Join(restFehler, fmt.Errorf("%w: %v; %w: %v", ErrVorschau, err, ErrVorschauAlt, ferr))
 	}
-	return fmt.Errorf("%w: %v", ErrVorschau, err)
+	return errors.Join(restFehler, fmt.Errorf("%w: %v", ErrVorschau, err))
 }
 
 // verkleinere skaliert das Bild so, dass die längste Seite höchstens seite Pixel misst (nie vergrößern), durch

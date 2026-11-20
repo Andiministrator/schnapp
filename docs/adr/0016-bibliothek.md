@@ -94,3 +94,27 @@ dann schon gespeichert. Umsetzung: Karte #54.
 - **`VerwaisteVorschauen` listet nur**, zu welchen Vorschaubildern keine Aufnahme mehr gehört; gelöscht wird dort
   nichts, ein Aufräumen ist eine eigene, freizugebende Aktion.
 
+## Nachtrag 5 (20.11.2026): Temporäre Reste ohne Altersgrenze, beim Entfernen und im Vorschau-Ordner (Verify zu #114)
+
+**Status:** Akzeptiert (Claude Sonnet 5.5, Nacharbeit Verify Fable zu #114). Ergänzt Nachtrag 3 Punkt 3.
+
+1. **Gleicher Inode geht ohne Altersgrenze (Z-1).** Ein Rest aus dem Link-Weg trägt die Änderungszeit der Aufnahme: Wer
+   binnen einer Minute nach dem Ablegen schwärzt, hätte ihn behalten, bei verstellter Uhr nie. `Speichern` und
+   `Entfernen` entfernen deshalb jede eigene temporäre Datei im Ordner, die denselben Inode hat wie die Datei, die
+   ersetzt oder entfernt wird (`os.SameFile`); sonst bleibt es bei „älter als eine Minute“. Weiterhin nur reguläre Dateien
+   mit dem Präfix `.schnapp-tmp-` im selben Ordner, nie ein Symlink, nie eine Aufnahme, nie ein Vorschaubild. Was bleibt,
+   weil es jünger ist, oder eine Zeit weit in der Zukunft trägt, wird nicht gelöscht, sondern als `ErrTempRest` gemeldet;
+   der Neuaufbau meldet zukunftsdatierte Reste in `NeuaufbauErgebnis.TempReste`.
+2. **`Entfernen` räumt mit (Z-2).** Nach dem Löschen der Aufnahme wären die Kopien mit gleichem Inode ihr letzter Name.
+   `Entfernen` räumt sie nach Punkt 1 und meldet, was bleibt, als `ErrTempRest`; die Datei gilt dann trotzdem als entfernt.
+   Der Editor nennt die Kopie zusätzlich im Hinweis (auch im Rückblick nach ADR-0022 Nachtrag 2).
+3. **Vorschau-Ordner (Z-3).** `erneuereVorschau` (also Ablegen und Speichern) räumt dort eigene temporäre Dateien nach
+   denselben Regeln (Altersgrenze, gleicher Inode wie das zu ersetzende Vorschaubild); ein Absturz zwischen Schreiben und
+   Umbenennen ließ sonst ein verkleinertes Bild des alten Stands für immer liegen. Anders als im Ordner der Aufnahmen
+   werden junge fremde Reste dort **nicht** gemeldet (jedes Ablegen eines zweiten Prozesses schreibt kurz eine solche
+   Datei); gemeldet werden Reste mit Zeit weit in der Zukunft und solche, die sich nicht entfernen lassen (`ErrTempRest`).
+4. **Aufrufer melden (Z-4).** Die Aufnahme (`cmd/schnapp`) warnt auf stderr, der Editor nennt die Kopie beim Speichern
+   (auch zusammen mit der alten Vorschau), beim Ausweichen und beim Entfernen. `NeuaufbauErgebnis.TempReste` liest kein
+   Programmteil: Es gibt keinen Befehl, der den Neuaufbau auslöst (nur die Bibliothek, für Tests und eine spätere
+   Prüfroutine); bewusst kein Verbraucher, bis es einen Aufrufer gibt.
+

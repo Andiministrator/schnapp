@@ -308,7 +308,9 @@ type NeuaufbauErgebnis struct {
 }
 
 // Neuaufbau liest alle PNG-Dateien unter der Ablage, übernimmt die Arbeitsdateien von Schnapp und schreibt den
-// Index atomar neu. Fremde und beschädigte Dateien werden übersprungen, nie verändert oder gelöscht.
+// Index atomar neu. Fremde und beschädigte Dateien werden übersprungen, nie verändert oder gelöscht. Das einzige, was
+// Neuaufbau entfernt, sind liegen gebliebene eigene temporäre Dateien (`.schnapp-tmp-*`, reguläre Dateien, älter als
+// eine Minute, F-274); Zukunftsdatierte meldet er in TempReste, ohne sie zu löschen.
 func (b *Bibliothek) Neuaufbau() (NeuaufbauErgebnis, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -331,8 +333,14 @@ func (b *Bibliothek) Neuaufbau() (NeuaufbauErgebnis, error) {
 		if d.Type().IsRegular() && strings.HasPrefix(d.Name(), tempPraefix) {
 			// Liegen gebliebene eigene temporäre Datei (F-274): nach dem Link-Weg ein zweiter Name einer Aufnahme.
 			dir := filepath.Dir(pfad)
-			if fi, err := d.Info(); err == nil && jetzt.Sub(fi.ModTime()) >= tempAlter {
-				if err := entferneEigeneTemp(dir, pfad); err != nil {
+			if fi, err := d.Info(); err == nil && fi.Mode().IsRegular() {
+				if jetzt.Sub(fi.ModTime()) >= tempAlter {
+					if err := entferneEigeneTemp(dir, pfad); err != nil {
+						rel, _ := filepath.Rel(wurzel, pfad)
+						erg.TempReste = append(erg.TempReste, filepath.ToSlash(rel))
+					}
+				} else if fi.ModTime().After(jetzt) {
+					// Zeit in der Zukunft (verstellte Uhr): nie alt genug, bliebe sonst für immer unbemerkt (Z-1).
 					rel, _ := filepath.Rel(wurzel, pfad)
 					erg.TempReste = append(erg.TempReste, filepath.ToSlash(rel))
 				}

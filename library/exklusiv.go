@@ -57,7 +57,7 @@ func schreibeTemp(ziel string, schreibe func(io.Writer) error) (tmpPfad string, 
 
 // ErrTempRest: Die Aufnahme ist abgelegt (oder gespeichert), aber eine temporäre Datei von Schnapp mit demselben
 // Inhalt ließ sich nicht entfernen. Nach dem Link-Weg ist so ein Rest ein zweiter Name derselben Aufnahme; er zeigt
-// nach einem späteren Schwärzen weiter den ungeschwärzten Stand (F-274, ADR-0022 Punkt 4). Der Aufrufer meldet es,
+// nach einem späteren Schwärzen weiter den ungeschwärzten Stand (F-274, Kernprinzip 2; ADR-0022 Nachtrag 2). Der Aufrufer meldet es,
 // die Aufnahme selbst bleibt gültig.
 var ErrTempRest = errors.New("bibliothek: temporäre Datei nicht entfernt")
 
@@ -91,12 +91,21 @@ func syncOrdner(ordner string) {
 	f.Close()
 }
 
-// raeumeTempReste entfernt liegen gebliebene temporäre Dateien von Schnapp (Präfix tempPraefix) im Ordner, die älter
-// als tempAlter sind. Nur reguläre Dateien im genannten Ordner, nie ein Symlink, nie eine Aufnahme (anderer Name),
-// nie ein Vorschaubild. Gewählt statt „nur Reste mit gleichem Inode wie eine Aufnahme“: Auch ein Rest mit halb
-// geschriebenem Inhalt trägt Bildpunkte einer Aufnahme, und die Inode-Prüfung fände ihn nicht. Scheitert das Entfernen,
-// kommt ErrTempRest mit den Namen zurück; das Aufräumen läuft für die übrigen weiter.
-func raeumeTempReste(ordner string, jetzt time.Time) (entfernt int, fehler error) {
+// raeumeTempReste entfernt liegen gebliebene temporäre Dateien von Schnapp (Präfix tempPraefix) im Ordner: erstens
+// jede mit demselben Inode wie eine der Dateien in gleich, ohne Altersgrenze (nach dem Link-Weg ist sie ein zweiter
+// Name der Aufnahme, die gleich ersetzt oder entfernt wird; ihre Änderungszeit ist die der Aufnahme, also oft jünger
+// als eine Minute oder, bei verstellter Uhr, in der Zukunft, Z-1); zweitens jede, die älter als tempAlter ist. Nur
+// reguläre Dateien im genannten Ordner, nie ein Symlink, nie eine Aufnahme (anderer Name), nie ein Vorschaubild. Die
+// Altersgrenze schützt die gerade laufende Ablage eines zweiten Schnapp-Prozesses. Gewählt statt „nur Reste mit
+// gleichem Inode wie eine Aufnahme“: Auch ein Rest mit halb geschriebenem Inhalt trägt Bildpunkte einer Aufnahme, und
+// die Inode-Prüfung fände ihn nicht.
+//
+// Reste, die danach bleiben, weil sie eine Zeit weit in der Zukunft tragen, werden nicht gelöscht, aber als
+// ErrTempRest gemeldet; ebenso, wenn meldeJunge gesetzt ist, die zu jungen, und Reste, deren Entfernen scheitert.
+// meldeJunge gilt für den Ordner der Aufnahme (Speichern, Entfernen): Ein junger fremder Rest dort ist halb
+// geschrieben oder gehört einem zweiten Prozess. Im Vorschau-Ordner bleibt es aus, denn dort schreibt jedes Ablegen
+// eines zweiten Prozesses kurz eine solche Datei. Das Aufräumen läuft für die übrigen weiter.
+func raeumeTempReste(ordner string, jetzt time.Time, meldeJunge bool, gleich ...os.FileInfo) (entfernt int, fehler error) {
 	eintraege, err := os.ReadDir(ordner)
 	if err != nil {
 		return 0, nil // kein Ordner, nichts zu räumen
@@ -106,7 +115,24 @@ func raeumeTempReste(ordner string, jetzt time.Time) (entfernt int, fehler error
 			continue
 		}
 		fi, err := e.Info()
-		if err != nil || !fi.Mode().IsRegular() || jetzt.Sub(fi.ModTime()) < tempAlter {
+		if err != nil || !fi.Mode().IsRegular() {
+			continue
+		}
+		eigen := false
+		for _, g := range gleich {
+			if g != nil && os.SameFile(fi, g) {
+				eigen = true
+			}
+		}
+		if !eigen && jetzt.Sub(fi.ModTime()) < tempAlter {
+			grund := "zu jung"
+			zukunft := fi.ModTime().After(jetzt.Add(tempAlter))
+			if zukunft {
+				grund = "Änderungszeit in der Zukunft"
+			}
+			if meldeJunge || zukunft {
+				fehler = errors.Join(fehler, fmt.Errorf("%w: %s: %s, nicht entfernt", ErrTempRest, e.Name(), grund))
+			}
 			continue
 		}
 		if err := entferneEigeneTemp(ordner, filepath.Join(ordner, e.Name())); err != nil {
@@ -144,7 +170,7 @@ func legeExklusivAn(tmp, ziel string) error {
 	err := verknuepfe(tmp, ziel)
 	if err == nil {
 		// Ab hier ist tmp ein zweiter Name der Aufnahme (F-274): Scheitert das Entfernen, ist sie abgelegt, aber der
-		// Rest bleibt — das darf der Aufrufer nicht verschlucken (ADR-0022 Punkt 4).
+		// Rest bleibt — das darf der Aufrufer nicht verschlucken (Kernprinzip 2; ADR-0022 Nachtrag 2).
 		ordner := filepath.Dir(ziel)
 		rest := entferneEigeneTemp(ordner, tmp)
 		syncOrdner(ordner)

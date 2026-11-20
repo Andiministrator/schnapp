@@ -145,24 +145,31 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 				stand = neu // geschrieben (auch wenn Index oder Vorschau scheiterten)
 			}
 			switch {
-			case errors.Is(err, library.ErrVorschauAlt):
+			case errors.Is(err, library.ErrVorschauAlt) || errors.Is(err, library.ErrTempRest):
+				// Gespeichert, aber die alte Vorschau blieb (F-127) und/oder eine liegen gebliebene temporäre Kopie dieser
+				// Aufnahme ließ sich nicht entfernen: Beides kann den alten Stand zeigen (F-274, Kernprinzip 2;
+				// ADR-0022 Nachtrag 2). Treffen beide zusammen, nennt der Hinweis beide (Z-4).
 				geschriebenBei = d.SchwaerzStand()
-				if neuGeschwaerzt {
-					return ui.Gespeichert{Hinweis: i18n.T("Saved, but the old preview of this capture could not be removed and still shows the unredacted content."),
-						Warnung: true}, nil, nil
+				vorschau, kopie := errors.Is(err, library.ErrVorschauAlt), errors.Is(err, library.ErrTempRest)
+				var hinweis string
+				switch {
+				case vorschau && neuGeschwaerzt:
+					hinweis = i18n.T("Saved, but the old preview of this capture could not be removed and still shows the unredacted content.")
+				case vorschau:
+					hinweis = i18n.T("Saved, but the old preview of this capture could not be removed.")
+				case neuGeschwaerzt:
+					hinweis = i18n.T("Saved, but a leftover temporary copy of this capture could not be removed and may still show the unredacted content.")
+				default:
+					hinweis = i18n.T("Saved, but a leftover temporary copy of this capture could not be removed.")
 				}
-				return ui.Gespeichert{Hinweis: i18n.T("Saved, but the old preview of this capture could not be removed."),
-					Warnung: true}, nil, nil
-			case errors.Is(err, library.ErrTempRest):
-				// Gespeichert, aber eine liegen gebliebene temporäre Kopie dieser Aufnahme ließ sich nicht entfernen:
-				// Sie kann den alten Stand zeigen (F-274, ADR-0022 Punkt 4).
-				geschriebenBei = d.SchwaerzStand()
-				if neuGeschwaerzt {
-					return ui.Gespeichert{Hinweis: i18n.T("Saved, but a leftover temporary copy of this capture could not be removed and may still show the unredacted content."),
-						Warnung: true}, nil, nil
+				if vorschau && kopie {
+					if neuGeschwaerzt {
+						hinweis += " " + i18n.T("Also, a leftover temporary copy of this capture could not be removed and may still show the unredacted content.")
+					} else {
+						hinweis += " " + i18n.T("Also, a leftover temporary copy of this capture could not be removed.")
+					}
 				}
-				return ui.Gespeichert{Hinweis: i18n.T("Saved, but a leftover temporary copy of this capture could not be removed."),
-					Warnung: true}, nil, nil
+				return ui.Gespeichert{Hinweis: hinweis, Warnung: true}, nil, nil
 			case err == nil || errors.Is(err, library.ErrIndex) || errors.Is(err, library.ErrVorschau):
 				geschriebenBei = d.SchwaerzStand()
 				return ui.Gespeichert{}, nil, nil
@@ -218,13 +225,13 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 			case geloescht && errors.Is(fe, library.ErrVorschauAlt):
 				// Datei weg, Vorschaubild nicht (F-164): das Bild nennen, nicht die Datei.
 				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file could not be updated and was removed, but its preview could not be removed and still shows the unredacted content. Saved as a new capture: %s"), ort)
-			case geloescht && (fe == nil || errors.Is(fe, library.ErrIndex)):
+			case geloescht && nurNebenwirkung(fe):
 				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file could not be updated and still showed the unredacted content, so it was removed. Saved as a new capture: %s"), ort)
 			case errors.Is(fe, library.ErrVorschauAlt):
 				// Die Datei fehlte schon, ihr Vorschaubild ließ sich nicht entfernen (F-186): beides sagen, nicht „Delete
 				// it yourself“ für eine Datei, die es nicht gibt.
 				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file %s was no longer there; wherever it is now, it still shows the unredacted content. Its preview could not be removed and still shows it too. Saved as a new capture: %s"), altOrt, ort)
-			case fe == nil || errors.Is(fe, library.ErrIndex):
+			case nurNebenwirkung(fe):
 				// Die Datei fehlte schon (verschoben, Papierkorb): nicht „entfernt“ behaupten (F-167). Scheiterte nur der
 				// Index, ist das für den Nutzer dasselbe; der Abgleich holt ihn nach (F-186).
 				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file %s was no longer there; wherever it is now, it still shows the unredacted content. Saved as a new capture: %s"), altOrt, ort)
@@ -232,6 +239,10 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file could not be updated and still shows the unredacted content: %s. Delete it yourself. Saved as a new capture: %s"), altOrt, ort)
 				// Bleibt liegen: eine weitere Schwärzung versucht das Entfernen erneut (F-221).
 				neue = append(neue, rest{rel: altRel, stand: altStand, ort: altOrt, bei: gezeigt})
+			}
+			if errors.Is(fe, library.ErrTempRest) {
+				// Z-2: Die alte Datei ist weg, eine temporäre Kopie von ihr nicht.
+				erg.Hinweis += " " + i18n.T("A temporary copy of the previous file could not be removed and may still show the unredacted content.")
 			}
 			erg.Warnung = true
 		case versucht:
@@ -257,6 +268,11 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 			if neuGeschwaerzt {
 				erg.Hinweis += " " + i18n.T("It still shows the unredacted content.")
 			}
+			erg.Warnung = true
+		}
+		if errors.Is(err, library.ErrTempRest) {
+			// Z-4: Auch beim Ablegen der neuen Aufnahme kann eine temporäre Kopie bleiben, neben der Vorschau-Meldung.
+			erg.Hinweis += " " + i18n.T("A temporary copy of the new capture could not be removed.")
 			erg.Warnung = true
 		}
 		return erg, neue, nil
@@ -317,11 +333,11 @@ func rueckblick(b *library.Bibliothek, d *document.Dokument, reste []rest, aktue
 		switch {
 		case geloescht && vorschau:
 			sage(fmt.Sprintf(i18n.T("The earlier file %s, left behind when saving failed, was removed, but its preview could not be removed and still shows the unredacted content."), r.ort))
-		case geloescht && (fe == nil || errors.Is(fe, library.ErrIndex)):
+		case geloescht && nurNebenwirkung(fe):
 			sage(fmt.Sprintf(i18n.T("The earlier file %s, left behind when saving failed, still showed the unredacted content and was removed."), r.ort))
 		case vorschau:
 			sage(fmt.Sprintf(i18n.T("The earlier file %s was no longer there; wherever it is now, it still shows the unredacted content. Its preview could not be removed and still shows it too."), r.ort))
-		case fe == nil || errors.Is(fe, library.ErrIndex):
+		case nurNebenwirkung(fe):
 			sage(fmt.Sprintf(i18n.T("The earlier file %s was no longer there; wherever it is now, it still shows the unredacted content."), r.ort))
 		default:
 			// Geändert oder nicht entfernbar: bleibt vorgemerkt, eine weitere Schwärzung versucht es erneut.
@@ -329,8 +345,17 @@ func rueckblick(b *library.Bibliothek, d *document.Dokument, reste []rest, aktue
 			r.bei = jetzt
 			bleiben = append(bleiben, r)
 		}
+		if errors.Is(fe, library.ErrTempRest) {
+			sage(fmt.Sprintf(i18n.T("A temporary copy of the earlier file %s could not be removed and may still show the unredacted content."), r.ort))
+		}
 	}
 	return erg, bleiben
+}
+
+// nurNebenwirkung: Entfernen meldet nichts, nur den Index (der Abgleich holt ihn nach, F-186) und/oder eine liegen
+// gebliebene temporäre Kopie (Z-2, wird gesondert genannt). Die Datei ist dann entfernt oder war schon weg.
+func nurNebenwirkung(fe error) bool {
+	return fe == nil || errors.Is(fe, library.ErrIndex) || errors.Is(fe, library.ErrTempRest)
 }
 
 // uebersetzt trägt einen fertig übersetzten Text für die Ausgabe und behält den ursprünglichen Fehler (errors.Is).

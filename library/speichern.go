@@ -126,8 +126,10 @@ func (b *Bibliothek) Speichern(rel string, erwartet Stand, d *document.Dokument,
 	}
 	// Liegen gebliebene temporäre Dateien im Ordner vorher räumen (F-274): Ein Rest aus dem Link-Weg ist ein zweiter
 	// Name dieser Aufnahme und zeigte nach dem Ersetzen (neuer Inode) weiter den alten, womöglich ungeschwärzten
-	// Stand (ADR-0022 Punkt 4). Scheitert das Entfernen, wird gespeichert und mit ErrTempRest gewarnt.
-	_, restFehler := raeumeTempReste(filepath.Dir(voll), time.Now())
+	// Stand (Kernprinzip 2; ADR-0022 Nachtrag 2). Reste mit demselben Inode wie diese Datei gehen ohne Altersgrenze
+	// (Z-1); junge oder zukunftsdatierte andere bleiben und werden gemeldet. Scheitert das Entfernen, wird gespeichert
+	// und mit ErrTempRest gewarnt.
+	_, restFehler := raeumeTempReste(filepath.Dir(voll), time.Now(), true, st)
 	err = schreibeAtomar(voll, func(w io.Writer) error {
 		if err := fileformat.SchreibeArbeitsdatei(w, d, sichtbar, m); err != nil {
 			return err
@@ -182,7 +184,7 @@ func (b *Bibliothek) ersetzeImIndex(neu Eintrag) error {
 
 // Entfernen löscht die Aufnahme rel endgültig samt Vorschau und Index-Eintrag — nicht in den Papierkorb, denn dort läge
 // der Inhalt weiter. Gedacht für eine Datei, die nach dem Schwärzen nicht mehr aktualisiert werden konnte und noch den
-// ungeschwärzten Stand zeigt (ADR-0022 Punkt 4, F-126).
+// ungeschwärzten Stand zeigt (Kernprinzip 2; ADR-0022 Nachtrag 2, F-126).
 //
 // geloescht meldet, ob diese Datei hier entfernt wurde; fehlte sie schon (verschoben, im Papierkorb), ist es false
 // ohne Fehler — der Aufrufer darf dann nicht „entfernt“ melden (F-167). Fehler:
@@ -190,6 +192,8 @@ func (b *Bibliothek) ersetzeImIndex(neu Eintrag) error {
 //     andere.
 //   - ErrVorschauAlt (mit ErrVorschau): Die Datei ist weg, aber das Vorschaubild ließ sich nicht entfernen und zeigt
 //     noch den alten Inhalt (F-164).
+//   - ErrTempRest: Eine temporäre Kopie derselben Aufnahme (gleicher Inode) im Ordner ließ sich nicht entfernen; sie
+//     zeigt noch den alten Inhalt (Z-2). Reste mit gleichem Inode räumt Entfernen ohne Altersgrenze, übrige alte auch.
 //   - ErrIndex: Datei und Vorschau sind weg, nur der Index ist nicht nachgeführt (Abgleich holt das nach).
 //   - sonst: Die Datei ließ sich nicht entfernen.
 func (b *Bibliothek) Entfernen(rel string, erwartet Stand) (geloescht bool, fehler error) {
@@ -212,8 +216,13 @@ func (b *Bibliothek) Entfernen(rel string, erwartet Stand) (geloescht bool, fehl
 	case !errors.Is(err, fs.ErrNotExist):
 		return false, err
 	}
+	// Temporäre Kopien derselben Aufnahme räumen (Z-2): Sie wären nach dem Löschen der Datei ihr letzter Name und
+	// zeigten weiter den ungeschwärzten Stand. Auch ohne die Datei räumt das alte Reste (nur nach Alter).
+	if _, rest := raeumeTempReste(filepath.Dir(abs), time.Now(), true, fi); rest != nil {
+		fehler = rest
+	}
 	if err := b.entferneVorschau(rel); err != nil {
-		fehler = fmt.Errorf("%w: %w: %v", ErrVorschau, ErrVorschauAlt, err)
+		fehler = errors.Join(fehler, fmt.Errorf("%w: %w: %v", ErrVorschau, ErrVorschauAlt, err))
 	}
 	idx, err := b.lade()
 	if err == nil {

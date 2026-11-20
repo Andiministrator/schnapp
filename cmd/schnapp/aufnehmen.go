@@ -77,6 +77,11 @@ func echteAnschluesse() anschluesse {
 			// Aufnahme aus.
 			pfad := filepath.Join(orte.Ablage, filepath.FromSlash(e.Pfad))
 			stand, _ := library.StandVon(pfad)
+			// Eine liegen gebliebene temporäre Kopie (F-274, Z-4) ist kein Fehler der Aufnahme, aber der Aufrufer
+			// meldet sie: Zusammen mit dem Pfad kommt nur ErrTempRest zurück (alle anderen Folgefehler bleiben still).
+			if errors.Is(err, library.ErrTempRest) {
+				return pfad, stand, err
+			}
 			return pfad, stand, nil
 		},
 		letzterPfad: selection.LetzterPfad(os.Getenv),
@@ -256,9 +261,14 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 	}
 	pfad, stand, err := an.ablegen(d)
 	diagnose(fehler, "Ablegen in der Bibliothek: %v", time.Since(start).Round(time.Millisecond))
-	if err != nil {
+	if err != nil && !(pfad != "" && errors.Is(err, library.ErrTempRest)) {
 		fmt.Fprintf(fehler, i18n.T("Could not save the screenshot: %v")+"\n", err)
 		return exitFehler, nil
+	}
+	if err != nil {
+		// Abgelegt, aber eine temporäre Kopie blieb liegen (F-274, Z-4): Sie zeigt nach einem späteren Schwärzen noch
+		// den alten Stand. Warnen, der Weg geht weiter.
+		fmt.Fprintf(fehler, i18n.T("Warning: a temporary copy of the screenshot could not be removed and may still show it after you redact it later: %v")+"\n", err)
 	}
 	if _, err := fmt.Fprintln(aus, pfad); err != nil {
 		// Die Aufnahme liegt in der Bibliothek; nur die Pfadzeile ging verloren (F-162). Nicht verschlucken: Skripte
