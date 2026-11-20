@@ -51,3 +51,5 @@ unverändert. Übergangsweise zeigt ein Symlink `zeichnen → draw` auf den neue
 Schwesterprojekts weiter auflösen; er wird entfernt, sobald es „steht auf draw“ meldet. Go prüft beim `replace` die
 `module`-Zeile, der Symlink allein hält das Schwesterprojekt also nicht baubar — es stellt `require`, `replace` und
 Importe im selben Zug um.
+
+Symlink entfernt am 20.11.2026, nachdem das Schwesterprojekt „steht auf draw“ gemeldet hatte (dort require, replace und Importe umgestellt, Bilder bytegleich).

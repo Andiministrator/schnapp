@@ -131,7 +131,7 @@ ADR-0003 Nachtrag 2, ADR-0015.
 
 ## Entwicklungsstand
 
-- **Zeichenpakete** (eigenes Modul `github.com/Andiministrator/schnapp/draw`, Ordner `draw/`; Übergangs-Symlink `zeichnen → draw`, bis das Schwesterprojekt umgestellt hat, ADR-0012):
+- **Zeichenpakete** (eigenes Modul `github.com/Andiministrator/schnapp/draw`, Ordner `draw/`, ADR-0012):
   `cd draw && go vet ./... && go test ./...`. Ein Schwesterprojekt bindet dieses Modul ein — öffentliche Schnittstellen nur nach
   Abstimmung ändern (wer, steht in `CLAUDE.local.md`).
 - **Gepatchtes Gio** `third_party/gio/` (ADR-0015): eigenes Modul, eingebunden per `replace gioui.org => …/third_party/gio`.
