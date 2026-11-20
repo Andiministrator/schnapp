@@ -19,7 +19,8 @@ Early work. Schnapp already captures on KDE Plasma (area, monitor, window; **Pri
 the library and opens it in an editor where you draw arrows (straight or bent), boxes, text labels and step numbers
 and select, move and resize them, black out or pixelate areas for good, crop, cut out the middle of a long screenshot
 and copy the result to the clipboard. It is written in Go with the [Gio](https://gioui.org) UI library,
-plus a small patch to Gio (one full-screen overlay per monitor, fractional scaling, cursor at mixed scales). The first
+plus a small patch to Gio (one full-screen overlay per monitor, fractional scaling, cursor at mixed scales,
+images on the clipboard). The first
 version (0.1.0) is being built.
 
 ## Planned features
@@ -47,7 +48,7 @@ What exists:
 | `.` (root) | Go module `github.com/Andiministrator/schnapp`: the program `cmd/schnapp`, `capture` (capture via KWin), `selection` (overlay logic), `canvas` (editor logic), `document` (layers, crop, redaction, undo), `fileformat` (working file and exports), `render` (layers to pixels), `library` (library), `settings` (`settings.ini`), `ui` (overlay and editor in Gio), `i18n` (language choice, gettext PO reader) and `po` (embedded translations, `po/de.po`); `data/` holds the desktop file template | `go vet ./... && go test ./...` (with `GOFLAGS` as above) |
 | `draw/` | Go module `github.com/Andiministrator/schnapp/draw`: SVG parsing, an anti-aliased rasterizer, numeric helpers (standard library only) | `cd draw && go vet ./... && go test ./...` |
 | `brand/` | Logo, colours and corporate design ([`brand/corporate-design.md`](brand/corporate-design.md), German, with PDF) | `python3 brand/werkzeug/paket.py` rebuilds the logo files |
-| `third_party/gio/` | Gio with our patch (multi-monitor fullscreen, fractional scaling, cursor at mixed scales), used via `replace` in `go.mod` | `third_party/gio-patch.sh pruefen`, see [`third_party/README.md`](third_party/README.md) (German) |
+| `third_party/gio/` | Gio with our patch (multi-monitor fullscreen, fractional scaling, cursor at mixed scales, images on the clipboard), used via `replace` in `go.mod` | `third_party/gio-patch.sh pruefen`, see [`third_party/README.md`](third_party/README.md) (German) |
 | `prototype/` | Throw-away prototype that checked Gio (needs Go ≥ 1.27, cgo, `libwayland-client`, `libwayland-egl`, `libwayland-cursor`, `libEGL`, `libxkbcommon`) | `prototype/bauen.sh`, see [`prototype/README.md`](prototype/README.md) |
 
 ## Usage

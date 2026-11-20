@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-20 (ergänzt nach Sprint 5). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -89,11 +89,21 @@ Stand: 2026-11-20 (ergänzt nach Sprint 5). Kurze Regeln aus Fehlern und Befunde
   Aufnahmen nie ansehen, nur Größe (`file`).
 - **Probeläufe ohne Andi (20.11.2026, Andi: „ich muss eigentlich arbeiten“):** Was ohne Augen prüfbar ist (Aufnahme
   über D-Bus, Overlay-Weg, Ablegen, stdout/stderr, Exit-Codes, Bibliothek), fährt Claude selbst mit
-  `scripts/probe.sh [--monitore N] [--skala S] [-- ARGUMENTE]`: virtueller KWin auf privatem D-Bus, eigenes HOME unter
-  `tmp/probe/`, Build-Tag `probe` (Overlay wählt den ersten Monitor ohne Eingabe), Zeitgrenze 90 s. Der echte Desktop
-  wird dabei nie aufgenommen. Andi bleibt für das, was nur auf seinem Rechner geht: Aussehen, echte Monitore mit
-  gemischter Skala, Klipper, Tastatur im Editor. Grenze heute: der Editor schließt im Probe-Build nicht von selbst,
-  also Editor-Läufe weiter mit Andi.
+  `scripts/probe.sh [--monitore N] [--skala S] [-- ARGUMENTE]`: virtueller KWin auf privatem D-Bus; KWin und Schnapp
+  mit HOME, XDG-Ordnern und Laufzeitordner unter `tmp/probe/` (die echte KWin-Konfiguration bleibt unberührt), Build-Tag
+  `probe` (Overlay wählt den ersten Monitor ohne Eingabe; nie ausliefern), Zeitgrenze `timeout -k 5 90`. Der echte
+  Desktop wird dabei nie aufgenommen; der innere Teil bricht ab, wenn er nicht auf dem privaten Bus läuft. Ergebnisse
+  werden vor jedem Lauf geleert — ein Ergebnis ohne frischen Lauf war ein angreifbarer Beleg (Kritik Fable, F-175).
+  Andi bleibt für das, was nur auf seinem Rechner geht: Aussehen, echte Monitore mit gemischter Skala, Klipper,
+  Tastatur im Editor — gebündelt (Karte #92), nicht Lauf für Lauf. Grenze heute: der Editor schließt im Probe-Build
+  nicht von selbst, also Editor-Läufe weiter mit Andi.
+- **Schutz messen, nicht annehmen (Sprint 6, F-163):** Verpixeln mit Blockmittel plus Zufallsrauschen sah sicher aus;
+  der Kritiker hat es mit einem Toleranzvergleich gegen Kandidaten nachgerechnet und eine vierstellige Zahl in 193 von
+  200 Läufen zurückgewonnen. Was vertraulichen Inhalt unkenntlich machen soll, trägt keine Information des Inhalts
+  (Mosaik aus dem Gesamtmittel, ADR-0022 Nachtrag 1) — und der Test belegt das (gleiches Mittel → gleiches Mosaik).
+- **Löschen nur nach Stand-Prüfung (Sprint 6, F-167):** Mit fester Uhr bekam eine neue Aufnahme den Namen einer
+  verschobenen alten Datei; nur der Vergleich von Gerät, Inode, Größe und Zeit hat verhindert, dass `Entfernen` die neue
+  Datei löscht. Wer löscht, prüft die Identität der Datei, nicht ihren Namen.
 - **Nebenläufigkeit erst im echten Lauf sichtbar:** Unit-Tests ohne Fenster fanden weder den geteilten Text-Setzer
   noch den Wettlauf beim Schließen; ein `go build -race`-Lauf fand ihn sofort. Zeiten aber nie mit `-race` messen
   (Faktor 10–30).

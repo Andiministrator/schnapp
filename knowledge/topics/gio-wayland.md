@@ -1,6 +1,6 @@
 # Gio unter Wayland (KDE): Grenzen, Patch, Messen
 
-Stand: 2026-11-20 (Editor-Abschnitt nach Sprint 5) — aus dem Prototyp (`prototype/`, ADR-0003 Nachtrag 2), Gio v0.10.3, Plasma 6.8. Quelle ist der
+Stand: 2026-11-20 (Editor-Abschnitt Sprint 5/6, Zwischenablage im Patch) — aus dem Prototyp (`prototype/`, ADR-0003 Nachtrag 2), Gio v0.10.3, Plasma 6.8. Quelle ist der
 Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene Messung.
 
 ## Was Gio unter Wayland nicht kann (v0.10.3)
@@ -26,7 +26,10 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
   `os_wayland_test.go`). `FullscreenOn` mit unbekanntem Namen schreibt `app: Wayland output "X" not found, the
   compositor chooses the output` ins Log und überlässt die Wahl dem Compositor; ein leerer Name bleibt ohne Meldung
   (F-33, 19.11.2026).
-- Umfang (Stand 19.11.2026, nach F-33): von Hand 5 Dateien +203/−26 Zeilen (einschließlich 30 Zeilen Test), erzeugt
+- Zeigerbild bei wechselnder Skala neu laden (F-78, ADR-0015 Nachtrag 1); Bild-MIME-Typen in der Zwischenablage
+  (`writeClipboard` bietet bei `image/…` genau diesen Typ an, `gio_onDataSourceSend` schreibt in einer Schleife bis
+  alles übergeben ist, ADR-0015 Nachtrag 2).
+- Umfang (Stand 20.11.2026): von Hand 5 Dateien +311/−36 Zeilen (einschließlich 30 Zeilen Test), erzeugt
   4 Dateien +811 Zeilen — zählen mit `git apply --numstat third_party/gio-ausgabe.patch`.
 - Ablage (ADR-0015, seit 19.11.2026): gepatchte Kopie als Modul `third_party/gio/` im Repo, `replace gioui.org =>
   ../third_party/gio` im `go.mod` jedes Nutzers; `third_party/gio-patch.sh pruefen|erzeugen|anlegen` hält Kopie und Patch
@@ -106,7 +109,7 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
   - Gemessen 19.11.2026 (ohne `-race`): drei Monitore aufnehmen 71 ms, Bereich speichern (Arbeitsdatei, Vorschau,
     Index) 56 ms. Mit `-race` 1,2 s bzw. 1,8 s — Zeiten nie mit dem Race-Build messen.
 
-## Editor (Sprint 5)
+## Editor (Sprint 5/6)
 
 - **`app.ClosingEvent` kommt vor dem Zerstören und ist abbrechbar** (`Abort()`; unter Wayland aus `xdg_toplevel.close`
   und `Perform(ActionClose)`). Dort speichern, nicht erst im `DestroyEvent` (F-107, ADR-0020 Nachtrag 2).
@@ -116,5 +119,7 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
   abgefangen werden, sonst wandert der Fokus und Zeichen verschwinden; Enter sonst vor den Knöpfen verbraucht (F-153).
 - **Zwischenablage mit Bild (Karte #39):** Gio v0.10.3 bot unter Wayland beim Schreiben nur Text-MIME-Typen an und
   ignorierte `clipboard.WriteCmd.Type`. Der Patch (`app/os_wayland.go`, ADR-0015 Nachtrag 2) bietet bei `image/…` genau
-  diesen Typ an. Der Inhalt gehört dem Fenster: nach dem Schließen des Editors nur über Klipper erhalten. Prüfen:
+  diesen Typ an. Der Inhalt gehört dem Fenster; nach dem Schließen des Editors bleibt er nur, wenn ein
+  Zwischenablage-Verwalter ihn übernimmt — mit Klipper von Andi bestätigt (Echtlauf 20.11.2026). Ein PNG ist größer
+  als der Pipe-Puffer: das Senden muss Teilschreiben fortsetzen (Kritik Fable, F-176). Prüfen:
   `wl-paste --list-types` im Terminal zeigt `image/png`.

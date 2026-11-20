@@ -138,3 +138,17 @@ Stand 20.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 - **Entscheidung:** Form halten — entlang der Richtung kürzen, gerastet wird in Ansichtskoordinaten, damit kein
   Endpunkt in einem herausgeschnittenen Streifen liegt (Karte #84).
 
+## E-19: Soll ein kopiertes Bild das Schließen des Editors überdauern? — OFFEN (Andi)
+- **Frage:** Unter Wayland gehört der Inhalt der Zwischenablage dem Fenster, das ihn anbietet (ADR-0015 Nachtrag 2). Mit
+  Klipper bleibt das Bild nach dem Schließen erhalten (Andi, Echtlauf 20.11.2026); ohne Zwischenablage-Verwalter ist es
+  weg. Ebenso nötig für „Aufnahme direkt in die Zwischenablage“ ohne Editor.
+- **Wege:** data-control-Protokoll (`ext-data-control-v1`) oder ein kurzlebiger Hilfsprozess, der das Bild hält.
+- **Tendenz:** nicht vor 0.1.0 — unter KDE übernimmt Klipper; Karte #91 im Backlog. Entscheidung Andi.
+
+## E-20: Claudes Entscheidungen aus Sprint 6 — ENTSCHIEDEN 20.11.2026 (Claude, Andi informiert)
+- Bild-Typ in der Zwischenablage per Gio-Patch statt `wl-copy` (ADR-0015 Nachtrag 2).
+- Schwärzen (B) und Verpixeln (P) überschreiben die Pixel; Verpixeln ist ein Mosaik ohne Inhaltsbezug (ADR-0022 mit
+  Nachtrag 1; Andi: „klingt doch gut (sicher)“). Nach einem gescheiterten Zurückschreiben wird die alte, ungeschwärzte
+  Datei endgültig entfernt (F-126).
+- Zuschneiden (C) und Stauchen (X) mit Zackenkante an Stauch-Nähten; der Schwärzungsrahmen bleibt auf die Ansicht
+  begrenzt, Weggeschnittenes bleibt im Original — vorher schwärzen (ADR-0023).

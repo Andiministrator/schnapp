@@ -21,7 +21,7 @@ und Schritt-Nummern zeichnen sowie auswählen, verschieben und in der Größe ä
 oder verpixeln, zuschneiden, die Mitte eines langen Screenshots herausnehmen und das Ergebnis in die Zwischenablage
 kopieren.
 Schnapp entsteht in Go mit [Gio](https://gioui.org), dazu ein kleiner Patch an Gio (ein Vollbild-Overlay je Monitor,
-gebrochene Skalierung, Mauszeiger bei gemischten Skalen). Die erste Fassung (0.1.0) ist in Arbeit.
+gebrochene Skalierung, Mauszeiger bei gemischten Skalen, Bilder in der Zwischenablage). Die erste Fassung (0.1.0) ist in Arbeit.
 
 ## Geplante Funktionen
 
@@ -49,7 +49,7 @@ Vorhanden ist:
 | `.` (Wurzel) | Go-Modul `github.com/Andiministrator/schnapp`: das Programm `cmd/schnapp`, `capture` (Aufnahme über KWin), `selection` (Logik des Overlays), `canvas` (Logik des Editors), `document` (Ebenen, Zuschnitt, Schwärzen, Rückgängig), `fileformat` (Arbeitsdatei und Exporte), `render` (Ebenen zu Pixeln), `library` (Bibliothek), `settings` (`settings.ini`), `ui` (Overlay und Editor in Gio), `i18n` (Sprachwahl, gettext-PO-Leser) und `po` (eingebettete Übersetzungen, `po/de.po`); `data/` enthält die Vorlage der Desktop-Datei | `go vet ./... && go test ./...` (mit `GOFLAGS` wie oben) |
 | `draw/` | Go-Modul `github.com/Andiministrator/schnapp/draw`: SVG lesen, Rasterer mit Kantenglättung, Rechenhilfen (nur Standardbibliothek) | `cd draw && go vet ./... && go test ./...` |
 | `brand/` | Logo, Farben und Corporate Design ([`brand/corporate-design.md`](brand/corporate-design.md), mit PDF) | `python3 brand/werkzeug/paket.py` erzeugt die Logo-Dateien neu |
-| `third_party/gio/` | Gio mit unserem Patch (Vollbild auf gewähltem Monitor, gebrochene Skalierung, Mauszeiger bei gemischten Skalen), eingebunden per `replace` in `go.mod` | `third_party/gio-patch.sh pruefen`, siehe [`third_party/README.md`](third_party/README.md) |
+| `third_party/gio/` | Gio mit unserem Patch (Vollbild auf gewähltem Monitor, gebrochene Skalierung, Mauszeiger bei gemischten Skalen, Bilder in der Zwischenablage), eingebunden per `replace` in `go.mod` | `third_party/gio-patch.sh pruefen`, siehe [`third_party/README.md`](third_party/README.md) |
 | `prototype/` | Wegwerf-Prototyp, der Gio geprüft hat (braucht Go ≥ 1.27, cgo, `libwayland-client`, `libwayland-egl`, `libwayland-cursor`, `libEGL`, `libxkbcommon`) | `prototype/bauen.sh`, siehe [`prototype/README.md`](prototype/README.md) |
 
 ## Benutzung
