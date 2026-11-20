@@ -94,6 +94,8 @@ Zug ab, sonst hebt es die Auswahl auf; Strg+S speichern; Strg+0 einpassen; Strg+
 zoomt zum Zeiger, Ziehen auf freier Fläche oder mit der mittleren Taste verschiebt die Ansicht. Während eines Zugs
 sind Rückgängig, Löschen, Speichern und Zoomen gesperrt (F-18, Kritik A-6). Nutzer-Doku: README.md/README.de.md.
 
+*Ergänzt durch ADR-0021: Werkzeugkürzel V/A/R/T/N, Esc in Stufen, Tab und Enter bei Texteingabe (Nachtrag 1).*
+
 ## Nachtrag 6 (20.11.2026): `--ignore-limit` öffnet Dateien über dem Rechenbudget (F-146)
 
 **Status:** Akzeptiert (Andi, 20.11.2026: Umgehungsweg ja).

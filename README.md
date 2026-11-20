@@ -16,8 +16,8 @@ pages, share. Also meant as a simple image editor.
 ## Status
 
 Early work. Schnapp already captures on KDE Plasma (area, monitor, window; **Print** key), saves every screenshot to
-the library and opens it in an editor where existing annotations can be selected, moved and resized — the drawing
-tools (arrows, boxes, text, redaction) come next. It is written in Go with the [Gio](https://gioui.org) UI library,
+the library and opens it in an editor where you draw arrows (straight or bent), boxes, text labels and step numbers
+and select, move and resize them — redaction, cropping and the clipboard come next. It is written in Go with the [Gio](https://gioui.org) UI library,
 plus a small patch to Gio (one full-screen overlay per monitor, fractional scaling, cursor at mixed scales). The first
 version (0.1.0) is being built.
 
@@ -64,12 +64,21 @@ What exists:
 Every capture is saved to the library (`~/Pictures/schnapp/YYYY-MM/`) and its path printed on standard output before
 the editor opens. Settings live in `~/.config/schnapp/settings.ini`, for example `[capture] open-editor = false`.
 
-In the editor: drag an annotation to move it, drag its handles to resize or bend it; mouse wheel zooms at the pointer,
-dragging empty space or the middle button moves the view. Keys: **Ctrl+Z** undo, **Ctrl+Shift+Z**/**Ctrl+Y** redo,
-**Del** delete, **Esc** deselect, **Ctrl+S** save, **Ctrl+0** fit, **Ctrl+1** 100 %, **Ctrl+W** close. Changes are
-saved when the editor closes; a file from outside the library becomes a new screenshot in the library and the file
-itself stays untouched. If a library file cannot be updated (deleted, replaced or not writable), the changes are saved
-as a new screenshot instead; the status bar names the new file.
+In the editor, tools: **V** select, **A** arrow (drag; **Shift** snaps to 45°; drag the middle handle to bend it),
+**R** box (**Shift**: square), **T** text (click, type, **Enter** confirms, **Shift+Enter** new line, **Esc** discards;
+double-click a text to edit it), **N** step number (counts up by itself). The *Colour* button cycles four colours and
+recolours the selected annotation. A drawing tool stays active; **Esc** steps back: text input → drag → selection →
+select tool. Drag an annotation or its handles to move, resize or bend it; it always stays partly inside the image.
+The mouse wheel zooms at the pointer; with the select tool dragging empty space moves the view, the middle button does
+so with every tool. Keys: **Ctrl+Z** undo, **Ctrl+Shift+Z**/**Ctrl+Y** redo, **Del** delete, **Ctrl+S** save,
+**Ctrl+0** fit, **Ctrl+1** 100 %, **Ctrl+W** close.
+
+Changes are saved when the editor closes; **Ctrl+S** without changes writes nothing. A file from outside the library
+becomes a new screenshot in the library on the first save (the file itself stays untouched; the status bar names the new
+file, which is saved to from then on). If a library file cannot be updated (deleted, replaced or not writable), the
+changes are saved as a new screenshot instead. If saving fails, the window stays open and says so; closing a second time
+discards the changes. Ctrl+C in the terminal or logging out saves first. A file that is too costly to render is refused
+when opening; `--ignore-limit FILE` opens it anyway.
 
 ## Install
 

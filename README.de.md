@@ -16,8 +16,9 @@ Mitte langer Seiten herausschneiden, teilen. Nebenbei ein einfaches Bildbearbeit
 ## Stand
 
 Frühe Arbeit. Schnapp nimmt unter KDE Plasma schon auf (Bereich, Monitor, Fenster; Taste **Druck**), legt jeden
-Screenshot in der Bibliothek ab und öffnet ihn in einem Editor, in dem vorhandene Beschriftungen ausgewählt, verschoben
-und in der Größe geändert werden können — die Zeichenwerkzeuge (Pfeile, Kästen, Text, Schwärzen) folgen als Nächstes.
+Screenshot in der Bibliothek ab und öffnet ihn in einem Editor, in dem sich Pfeile (gerade oder gebogen), Kästen, Text
+und Schritt-Nummern zeichnen sowie auswählen, verschieben und in der Größe ändern lassen — Schwärzen, Zuschneiden und
+Zwischenablage folgen als Nächstes.
 Schnapp entsteht in Go mit [Gio](https://gioui.org), dazu ein kleiner Patch an Gio (ein Vollbild-Overlay je Monitor,
 gebrochene Skalierung, Mauszeiger bei gemischten Skalen). Die erste Fassung (0.1.0) ist in Arbeit.
 
@@ -65,13 +66,23 @@ Vorhanden ist:
 Jede Aufnahme landet in der Bibliothek (`~/Bilder/schnapp/JJJJ-MM/`), ihr Pfad steht auf der Standardausgabe, bevor
 der Editor öffnet. Einstellungen stehen in `~/.config/schnapp/settings.ini`, etwa `[capture] open-editor = false`.
 
-Im Editor: Beschriftung ziehen verschiebt sie, ihre Griffe ändern Größe oder Biegung; das Mausrad zoomt zum Zeiger,
-Ziehen auf freier Fläche oder mit der mittleren Taste verschiebt die Ansicht. Tasten: **Strg+Z** rückgängig,
-**Strg+Umschalt+Z**/**Strg+Y** wiederholen, **Entf** löschen, **Esc** Auswahl aufheben, **Strg+S** speichern,
-**Strg+0** einpassen, **Strg+1** 100 %, **Strg+W** schließen. Änderungen werden beim Schließen gespeichert; eine Datei
-außerhalb der Bibliothek wird dabei zu einer neuen Aufnahme der Bibliothek, die Datei selbst bleibt unverändert. Lässt
-sich eine Datei der Bibliothek nicht aktualisieren (gelöscht, ersetzt oder nicht beschreibbar), landen die Änderungen
-als neue Aufnahme; die Statusleiste nennt die neue Datei.
+Im Editor, Werkzeuge: **V** Auswählen, **A** Pfeil (ziehen; **Umschalt** rastet auf 45°; mittleren Griff ziehen
+biegt ihn), **R** Kasten (**Umschalt**: Quadrat), **T** Text (klicken, tippen, **Enter** bestätigt, **Umschalt+Enter**
+neue Zeile, **Esc** verwirft; Doppelklick auf einen Text bearbeitet ihn), **N** Schritt-Nummer (zählt selbst hoch). Der
+Knopf *Farbe* schaltet reihum durch vier Farben und färbt die ausgewählte Beschriftung um. Ein Zeichenwerkzeug bleibt
+aktiv; **Esc** geht stufenweise zurück: Texteingabe → Ziehen → Auswahl → Auswählen. Beschriftung oder Griffe ziehen
+verschiebt, ändert die Größe oder biegt; sie bleibt dabei immer teilweise im Bild. Das Mausrad zoomt zum Zeiger; mit
+Auswählen verschiebt Ziehen auf freier Fläche die Ansicht, die mittlere Taste in jedem Werkzeug. Tasten: **Strg+Z**
+rückgängig, **Strg+Umschalt+Z**/**Strg+Y** wiederholen, **Entf** löschen, **Strg+S** speichern, **Strg+0** einpassen,
+**Strg+1** 100 %, **Strg+W** schließen.
+
+Änderungen werden beim Schließen gespeichert; **Strg+S** ohne Änderung schreibt nichts. Eine Datei außerhalb der
+Bibliothek wird beim ersten Speichern zu einer neuen Aufnahme der Bibliothek (die Datei selbst bleibt unverändert; die
+Statusleiste nennt die neue Datei, in die danach gespeichert wird). Lässt sich eine Datei der Bibliothek nicht
+aktualisieren (gelöscht, ersetzt oder nicht beschreibbar), landen die Änderungen als neue Aufnahme. Scheitert das
+Speichern, bleibt das Fenster offen und sagt es; erneutes Schließen verwirft die Änderungen. Strg+C im Terminal oder
+Abmelden speichert vorher. Eine Datei, die zu aufwendig zu rendern ist, wird beim Öffnen abgelehnt; `--ignore-limit
+DATEI` öffnet sie trotzdem.
 
 ## Installation
 

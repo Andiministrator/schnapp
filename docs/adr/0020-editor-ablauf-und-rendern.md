@@ -131,7 +131,8 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   Budget, warnt der Editor („Gespeichert, aber die Datei hat zu viele oder zu große Beschriftungen, um sie wieder zu
   öffnen. Vor dem Schließen einige entfernen.“); die Warnung hält das Fenster beim Schließen einmal offen (Nachtrag 2).
   Eigene Dateien beim Öffnen auszunehmen, scheidet aus: Eine Arbeitsdatei der Bibliothek ist von einer präparierten
-  nicht zu unterscheiden. Ein Öffnen trotz Überschreitung (Rückfrage oder Schalter) bleibt offen.
+  nicht zu unterscheiden. Ein Öffnen trotz Überschreitung (Rückfrage oder Schalter) bleibt offen. *Erledigt: `--ignore-limit`, ADR-0017
+  Nachtrag 6 (F-146).*
 - **Messungen (F-140):** `BenchmarkAufwand…` in `render/render_test.go` (Alltag, Füllen, knapp unter den drei
   Grenzen) laufen nur mit `-bench`.
 

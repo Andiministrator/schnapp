@@ -15,3 +15,8 @@ Bereiche nach Paket bzw. Schicht, z. B. `aufnahme`, `dokument`, `datei`, `raster
 
 ## Konsequenzen
 - Commit-Nachrichten enthalten keine Kunden-, Firmen- oder lokalen Pfadangaben (öffentliches Repo).
+
+## Nachtrag 1 (20.11.2026): Bereiche englisch
+Seit ADR-0019 heißen die Bereiche wie die Pakete (`capture`, `document`, `fileformat`, `render`, `canvas`, `library`,
+`ui`, `cmd`, `draw`); zusätzlich `editor` (paketübergreifend ui/canvas/cmd), `findings`, `adr`, `qa`, `knowledge`. Ohne
+Bereich nur bei paketübergreifenden Tests oder Doku über viele Stellen.

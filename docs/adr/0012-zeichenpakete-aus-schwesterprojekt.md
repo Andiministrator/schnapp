@@ -1,7 +1,7 @@
 # ADR-0012: Zeichenpakete aus einem Schwesterprojekt
 
 ## Status
-Akzeptiert (Andi, 18. und 19.11.2026)
+Akzeptiert (Andi, 18. und 19.11.2026). *Das Modul heißt seit 20.11.2026 `draw` (ADR-0019 Nachtrag 1).*
 
 ## Kontext
 Ein privates Schwesterprojekt des Maintainers hatte die Go-Pakete `svg` (SVG lesen, Pfade zerlegen), `raster` (eigener

@@ -35,8 +35,8 @@ msgstr "Die verfügbaren Optionen zeigt --help."
 msgid "Schnapp %s"
 msgstr "Schnapp %s"
 
-msgid "Usage: schnapp [option]"
-msgstr "Aufruf: schnapp [Option]"
+msgid "Usage: schnapp [option] | schnapp [--ignore-limit] FILE"
+msgstr "Aufruf: schnapp [Option] | schnapp [--ignore-limit] DATEI"
 
 msgid "Take a screenshot. Without an option, you select an area (--region)."
 msgstr "Nimmt einen Screenshot auf. Ohne Option wird ein Bereich gewählt (--region)."

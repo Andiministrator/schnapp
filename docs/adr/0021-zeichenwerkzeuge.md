@@ -1,7 +1,8 @@
 # ADR-0021: Zeichenwerkzeuge im Editor — Pfeil, Kasten, Text, Schritt-Nummer
 
 ## Status
-Akzeptiert (Claudes Entscheidung bei der Umsetzung von Karte #36, 20.11.2026; Andi wird informiert)
+Akzeptiert (Claudes Entscheidung bei der Umsetzung von Karte #36, 20.11.2026; Andi im Echtlauf am 20.11.2026: alle
+Werkzeuge gehen; Farbwahl von Andi bestätigt, Nachtrag 1; Nachtrag 2 Claudes Entscheidung, Andi informiert)
 
 ## Kontext
 Der Editor (ADR-0020, Karte #35) kann öffnen, zoomen, auswählen, verschieben, Griffe ziehen und speichern, hat aber
