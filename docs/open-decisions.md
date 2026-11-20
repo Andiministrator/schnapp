@@ -138,12 +138,13 @@ Stand 20.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 - **Entscheidung:** Form halten — entlang der Richtung kürzen, gerastet wird in Ansichtskoordinaten, damit kein
   Endpunkt in einem herausgeschnittenen Streifen liegt (Karte #84).
 
-## E-19: Soll ein kopiertes Bild das Schließen des Editors überdauern? — OFFEN (Andi)
-- **Frage:** Unter Wayland gehört der Inhalt der Zwischenablage dem Fenster, das ihn anbietet (ADR-0015 Nachtrag 2). Mit
-  Klipper bleibt das Bild nach dem Schließen erhalten (Andi, Echtlauf 20.11.2026); ohne Zwischenablage-Verwalter ist es
-  weg. Ebenso nötig für „Aufnahme direkt in die Zwischenablage“ ohne Editor.
-- **Wege:** data-control-Protokoll (`ext-data-control-v1`) oder ein kurzlebiger Hilfsprozess, der das Bild hält.
-- **Tendenz:** nicht vor 0.1.0 — unter KDE übernimmt Klipper; Karte #91 im Backlog. Entscheidung Andi.
+## E-19: Soll ein kopiertes Bild das Schließen des Editors überdauern? — ENTSCHIEDEN 20.11.2026 (Andi): ja
+- **Frage:** Unter Wayland gehört der Inhalt der Zwischenablage dem Fenster, das ihn anbietet (ADR-0015 Nachtrag 2).
+- **Befund:** Bei Andi ist das Bild nach dem Schließen des Editors weg — Klipper übernimmt es nicht (Andi, 20.11.2026;
+  der frühere Eindruck „Klipper hält es“ kam von einem noch offenen Editor).
+- **Entscheidung (Andi):** „ich würde das schon gern komplett in der zwischenablage haben und behalten, wenn man den
+  editor schließt“. Umsetzung in Sprint 6, Karte #91; der Weg (z. B. Prozess hält die Auswahl ohne Fenster weiter, bis
+  eine andere Anwendung sie übernimmt, mit harter Zeitgrenze; oder data-control-Protokoll) erst per ADR.
 
 ## E-20: Claudes Entscheidungen aus Sprint 6 — ENTSCHIEDEN 20.11.2026 (Claude, Andi informiert)
 - Bild-Typ in der Zwischenablage per Gio-Patch statt `wl-copy` (ADR-0015 Nachtrag 2).

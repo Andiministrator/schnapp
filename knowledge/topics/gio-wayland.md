@@ -120,6 +120,7 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
 - **Zwischenablage mit Bild (Karte #39):** Gio v0.10.3 bot unter Wayland beim Schreiben nur Text-MIME-Typen an und
   ignorierte `clipboard.WriteCmd.Type`. Der Patch (`app/os_wayland.go`, ADR-0015 Nachtrag 2) bietet bei `image/…` genau
   diesen Typ an. Der Inhalt gehört dem Fenster; nach dem Schließen des Editors bleibt er nur, wenn ein
-  Zwischenablage-Verwalter ihn übernimmt — mit Klipper von Andi bestätigt (Echtlauf 20.11.2026). Ein PNG ist größer
+  Zwischenablage-Verwalter ihn übernimmt — **bei Andi tut Klipper das nicht**: nach dem Schließen war das Bild weg
+  (20.11.2026; ein früherer Test lief bei noch offenem Editor). Abhilfe Karte #91 (E-19). Ein PNG ist größer
   als der Pipe-Puffer: das Senden muss Teilschreiben fortsetzen (Kritik Fable, F-176). Prüfen:
   `wl-paste --list-types` im Terminal zeigt `image/png`.
