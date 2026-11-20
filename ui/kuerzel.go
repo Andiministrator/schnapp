@@ -52,8 +52,11 @@ func strg(name key.Name, a aktion) taste {
 	return taste{filter: key.Filter{Name: name, Required: key.ModShortcut}, akt: a}
 }
 
-// tastenTabelle ist jede Taste, die der Editor annimmt. Die Tastenfilter entstehen daraus (tastenFilter); der Test
-// verlangt für jede einen Knopf, einen Menüeintrag oder eine begründete Ausnahme (E-21).
+// tastenTabelle sind die Tasten des Editors mit eigener Handlung (Kürzel, Werkzeuge, Esc, Enter). Die Tastenfilter
+// entstehen daraus (tastenFilter); der Test verlangt für jede einen Knopf, einen Menüeintrag oder eine begründete
+// Ausnahme (E-21). Nicht hier stehen die Tasten, mit denen sich das offene Menü bedienen lässt (Pfeile hoch und runter,
+// Pos1, Ende, Leertaste am Menüknopf; ADR-0026 Nachträge 2 und 3): Ihre Filter setzt tasten selbst, und sie wirken nur
+// im Menü.
 func tastenTabelle() []taste {
 	return []taste{
 		{filter: key.Filter{Name: key.NameEscape}, akt: aktEsc,

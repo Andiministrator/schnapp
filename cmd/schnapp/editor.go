@@ -403,6 +403,8 @@ func nutzerFehler(err error) string {
 		return i18n.T("The image is too large.")
 	case errors.Is(err, fileformat.ErrBeschaedigt):
 		return i18n.T("The image is damaged.")
+	case errors.Is(err, ui.ErrSpeichernHaengt):
+		return i18n.T("Saving did not respond; the changes may not have been saved.")
 	case errors.Is(err, ui.ErrOverlayOffen):
 		return i18n.T("The selection overlay did not close in time.")
 	case errors.Is(err, library.ErrKeinHeim):

@@ -249,8 +249,10 @@ func (e *editor) knopfPerTaste(c *widget.Clickable) {
 // menueAuswerten verarbeitet Klicks auf den Menüknopf, die Einträge und daneben.
 func (e *editor) menueAuswerten(gtx layout.Context) {
 	m := &e.menue
-	an := !e.s.SpeichernLaeuft() // während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6)
-	if m.knopf.Clicked(gtx) && an {
+	// Während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6); je Klick neu gefragt, denn ein Eintrag im selben
+	// Bild kann das Speichern starten (F-280).
+	an := func() bool { return !e.s.SpeichernLaeuft() }
+	if m.knopf.Clicked(gtx) && an() {
 		e.menueUmschalten(false) // ein Klick des Knopfes ist die Maus; Enter und Leertaste laufen in tasten
 	}
 	for {
@@ -268,7 +270,7 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 		}
 	}
 	for i, en := range e.menueEintraege() {
-		if m.eintraege[i].Clicked(gtx) && m.offen && en.an && an {
+		if m.eintraege[i].Clicked(gtx) && m.offen && en.an && an() {
 			e.menueSchliesse(gtx, false) // Fokus an die Leinwand: getippter Text nach „Text bearbeiten“ kommt an
 			e.fuehreAus(gtx, en.akt, true)
 		}

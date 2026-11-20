@@ -67,6 +67,23 @@ var zwischenablageFehlt atomic.Bool
 // ErrOverlayOffen: Nach der Frist waren noch Overlay-Fenster offen; der Editor öffnet dann nicht (F-82).
 var ErrOverlayOffen = errors.New("editor: Overlay-Fenster noch offen")
 
+// ErrSpeichernHaengt: Das Speichern antwortete nicht innerhalb der Frist, und der Nutzer hat das Fenster trotzdem
+// geschlossen (zweite Anfrage oder weiteres Signal); die Änderungen sind womöglich nicht gesichert (F-283, ADR-0020
+// Nachtrag 7).
+var ErrSpeichernHaengt = errors.New("editor: Speichern antwortet nicht")
+
+// Fristen der Arbeit im Hintergrund (ADR-0020 Nachtrag 7); Variablen, damit Tests sie verkürzen.
+var (
+	// speichernFrist: Antwortet ein Speichern so lange nicht, sagt die Statusleiste es, und eine weitere
+	// Schließen-Anfrage oder ein weiteres Signal schließt ohne seine Antwort (F-283).
+	speichernFrist = 15 * time.Second
+	// zerstoerenFrist: So lange wartet der Editor beim Zerstören des Fensters ohne Anfrage (Wayland weg) höchstens auf
+	// ein laufendes Speichern — länger als ein Dokument am Budget braucht (rund 45 s, Nachtrag 3).
+	zerstoerenFrist = 2 * time.Minute
+	// kopierFrist: So lange warten Schließen und Zerstören höchstens auf ein laufendes Kopieren (F-281).
+	kopierFrist = 10 * time.Second
+)
+
 // Speichern speichert das Dokument (Aufrufer: Bibliothek, ADR-0020). Der Fehlertext erscheint in der Statusleiste und
 // muss schon übersetzt sein.
 type Speichern func(d *document.Dokument) (Gespeichert, error)
@@ -112,6 +129,7 @@ func Editor(titel string, d *document.Dokument, speichern Speichern) error {
 	ctx, abbruch := context.WithCancel(context.Background())
 	defer abbruch() // schließt einen offenen Exportdialog mit dem Fenster
 	e.exportCtx = ctx
+	e.weitereSignale = make(chan struct{}, 1)
 	ende := e.signaleAbfangen()
 	defer ende()
 	return e.laufen()
@@ -127,7 +145,14 @@ func (e *editor) signaleAbfangen() func() {
 	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
 	e.wache = canvas.NeueSignalwache(sig, func() { signal.Stop(sig) }, func(s os.Signal, erstes bool) {
 		if !erstes {
-			diagnoseEditor("weiteres Signal %v: abgefangen, Speichern und Schließen laufen weiter", s)
+			// Hängt ein Speichern länger als die Frist, schließt ein weiteres Signal ohne seine Antwort (F-283); sonst
+			// läuft es weiter (F-152). Entschieden wird in der Ereignisschleife.
+			diagnoseEditor("weiteres Signal %v: abgefangen", s)
+			select {
+			case e.weitereSignale <- struct{}{}:
+			default:
+			}
+			e.wecker.Anfordern()
 			return
 		}
 		diagnoseEditor("Signal %v: speichern und schließen", s)
@@ -166,6 +191,16 @@ type editor struct {
 	speicherAntwort chan speicherErgebnis
 	kopierAntwort   chan kopierErgebnis
 	kopierLaeuft    bool
+	kopierStart     time.Time // Beginn des laufenden Kopierens (Frist beim Schließen, F-281)
+	kopierStand     uint64    // Dokumentstand des Abzugs, den das laufende Kopieren ablegt (Meldung, F-285)
+	// schliessenNachKopie: Eine Schließen-Anfrage kam während des Kopierens; das Fenster bleibt offen, bis die Antwort
+	// da ist oder die Frist um ist, dann fragt es erneut (F-281).
+	schliessenNachKopie bool
+
+	speicherStart       time.Time     // Beginn des laufenden Speicherns (F-283)
+	haengtGemeldet      bool          // die Statusleiste sagt schon, dass das Speichern nicht antwortet
+	speichernAufgegeben bool          // geschlossen ohne Antwort des Speicherns; beim Zerstören nicht mehr warten
+	weitereSignale      chan struct{} // jedes weitere Signal nach dem ersten (Wach-Goroutine), F-283
 
 	knoepfe struct {
 		auswahl, pfeil, kasten, text, nummer, farbe  widget.Clickable
@@ -241,27 +276,7 @@ func (e *editor) laufen() error {
 			diagnoseEditor("Fenster zu: Fehler %v, ungesichert %v, Zug %v", ev.Err, e.s.Ungesichert(), e.s.Zieht())
 			// Zählung für Messungen wie F-235 (knowledge/messungen/f-235.md)
 			diagnoseEditor("Bilder gezeichnet: %d", e.bilder)
-			// Läuft noch ein Speichern im Hintergrund, auf seine Antwort warten (ADR-0020 Nachtrag 6); ein weiterer
-			// Versuch nach einem Signal läuft dann hier im Vordergrund.
-			e.speichernAbwarten()
-			e.s.TextBestaetigen() // getippter Text geht nicht verloren (ADR-0021 Punkt 6)
-			if e.s.Zieht() {
-				e.s.Abbrechen()
-			}
-			// Ein geordnetes Schließen hat schon gespeichert (ClosingEvent). Endet das Fenster ohne Anfrage (Wayland
-			// weg), liegt das Dokument noch im Speicher: speichern (Kritik A-4). Nach einem gescheiterten Speichern
-			// beim Schließen hat der Nutzer das Verwerfen mit der zweiten Anfrage bestätigt.
-			var err error
-			if e.s.Ungesichert() {
-				var g Gespeichert
-				g, err = e.speichern(e.s.D)
-				diagnoseEditor("Speichern beim Zerstören: %v", err)
-				if err == nil {
-					e.s.Gespeichert()
-					hinweisAufStderr(g)
-				}
-			}
-			return errors.Join(ev.Err, e.schlussErr, err)
+			return e.zerstoert(ev.Err)
 		case *app.ClosingEvent:
 			// Gio fragt vor dem Zerstören (Fensterknopf, Strg+W, Compositor); Abort hält das Fenster offen (F-107).
 			if !e.erzwungen && !e.schliessen() {
@@ -300,7 +315,44 @@ func (e *editor) laufen() error {
 		if e.wache.Angekommen() && !e.erzwungen && !e.s.SignalVorgemerkt() {
 			e.nachSignal()
 		}
+		if e.weiteresSignalSchliesst() {
+			e.schliessenFrei()
+		}
+		if e.speichernHaengtMelden() {
+			e.w.Invalidate()
+		}
+		if e.nachKopieSchliessen() {
+			e.w.Perform(system.ActionClose) // erneut anfragen; schliessen entscheidet wie sonst (F-281)
+		}
 	}
+}
+
+// zerstoert räumt beim Zerstören des Fensters auf und liefert den Rückgabewert von Editor. Läuft noch ein Speichern im
+// Hintergrund, wartet es auf seine Antwort (ADR-0020 Nachtrag 6), höchstens zerstoerenFrist lang (Nachtrag 7); ein
+// weiterer Versuch nach einem Signal läuft ebenso. Ein laufendes Kopieren bekommt seine Frist, damit der Halter der
+// Zwischenablage noch startet (F-281).
+func (e *editor) zerstoert(fensterErr error) error {
+	e.speichernAbwarten()
+	e.kopierenAbwarten()
+	e.s.TextBestaetigen() // getippter Text geht nicht verloren (ADR-0021 Punkt 6)
+	if e.s.Zieht() {
+		e.s.Abbrechen()
+	}
+	// Ein geordnetes Schließen hat schon gespeichert (ClosingEvent). Endet das Fenster ohne Anfrage (Wayland weg),
+	// liegt das Dokument noch im Speicher: speichern (Kritik A-4). Nach einem gescheiterten Speichern beim Schließen
+	// hat der Nutzer das Verwerfen mit der zweiten Anfrage bestätigt. Hängt ein Speichern (aufgegeben), gibt es keinen
+	// zweiten Versuch daneben: Die Speicherfunktion führt Zustand und darf nicht zweimal zugleich laufen.
+	var err error
+	if e.s.Ungesichert() && !e.speichernAufgegeben {
+		var g Gespeichert
+		g, err = e.speichern(e.s.D)
+		diagnoseEditor("Speichern beim Zerstören: %v", err)
+		if err == nil {
+			e.s.Gespeichert()
+			hinweisAufStderr(g)
+		}
+	}
+	return errors.Join(fensterErr, e.schlussErr, err)
 }
 
 // hinweisAufStderr: Das Fenster ist (gleich) zu, die Statusleiste weg — ein Hinweis (z. B. neue Aufnahme statt der
@@ -314,20 +366,28 @@ func hinweisAufStderr(g Gespeichert) {
 // schliessen beantwortet eine Schließen-Anfrage; false hält das Fenster offen (Entscheidung in canvas.Sitzung). Ist
 // etwas zu speichern, läuft es im Hintergrund (ADR-0020 Nachtrag 6): Das Fenster bleibt offen und zeichnet weiter, die
 // Antwort entscheidet in speichernFertig wie bisher — zu; einmal offen mit Hinweis; offen mit Fehler, und die nächste
-// Anfrage verwirft.
+// Anfrage verwirft. Hängt ein Speichern über die Frist und sagt die Statusleiste das schon, schließt die Anfrage ohne
+// seine Antwort (F-283, ADR-0020 Nachtrag 7). Wäre zu schließen, läuft aber noch ein Kopieren, bleibt das Fenster bis
+// zu dessen Antwort offen (höchstens kopierFrist), sonst startete der Halter der Zwischenablage nie (F-281).
 func (e *editor) schliessen() bool {
+	if e.s.SpeichernLaeuft() && e.haengtGemeldet {
+		e.speichernAufgeben()
+		return true
+	}
 	z, abzug := e.s.SchliessenAnfrage()
 	diagnoseEditor("Schließen-Anfrage: %v, Speichern beginnt %v", z, abzug != nil)
 	switch z {
 	case canvas.SchlussZu:
-		return true
+		return !e.kopierenHaeltOffen()
 	case canvas.SchlussFehler:
 		e.melde(i18n.T("Could not save. Close again to discard the changes."), true)
 	}
 	if abzug != nil {
 		e.speichernStarten(abzug)
 	}
-	e.w.Invalidate() // Meldung zeigen
+	if e.w != nil { // ohne Fenster nur im Test
+		e.w.Invalidate() // Meldung zeigen
+	}
 	return false
 }
 
@@ -368,6 +428,10 @@ func (e *editor) speichernStarten(abzug *document.Dokument) {
 	}
 	speichern, ch, wecker := e.speichern, e.speicherAntwort, e.wecker
 	start := time.Now()
+	e.speicherStart, e.haengtGemeldet = start, false
+	if wecker != nil {
+		time.AfterFunc(speichernFrist, wecker.Anfordern) // zur Frist nachsehen, ob es hängt (speichernHaengtMelden)
+	}
 	go func() {
 		g, err := speichern(abzug)
 		diagnoseEditor("Speichern im Hintergrund: %v, %v", time.Since(start).Round(time.Millisecond), err)
@@ -390,18 +454,69 @@ func (e *editor) speichernAbholen() bool {
 }
 
 // speichernAbwarten wartet beim Zerstören des Fensters auf ein laufendes Speichern; ein weiterer Versuch nach einem
-// Signal läuft dann im Vordergrund, denn die Schleife endet gleich.
+// Signal läuft ebenso im Hintergrund und wird abgewartet. Gewartet wird höchstens zerstoerenFrist ab Beginn des
+// jeweiligen Speicherns; ein weiteres Signal nach speichernFrist beendet das Warten ebenso (ADR-0020 Nachtrag 7).
 func (e *editor) speichernAbwarten() {
-	for e.s.SpeichernLaeuft() {
-		r := <-e.speicherAntwort
-		ende := e.s.SpeichernEnde(r.g.HaeltOffen(), r.err)
-		e.speichernMelden(r, ende)
-		if ende.Erneut != nil {
-			g, err := e.speichern(ende.Erneut)
-			ende = e.s.SpeichernEnde(g.HaeltOffen(), err)
-			e.speichernMelden(speicherErgebnis{g, err}, ende)
+	for e.s.SpeichernLaeuft() && !e.speichernAufgegeben {
+		frist := time.NewTimer(max(0, time.Until(e.speicherStart.Add(zerstoerenFrist))))
+		select {
+		case r := <-e.speicherAntwort:
+			frist.Stop()
+			ende := e.s.SpeichernEnde(r.g.HaeltOffen(), r.err)
+			e.speichernMelden(r, ende)
+			if ende.Erneut != nil {
+				e.speichernStarten(ende.Erneut)
+			}
+		case <-e.weitereSignale:
+			frist.Stop()
+			if e.speichernHaengt() {
+				e.speichernAufgeben()
+			}
+		case <-frist.C:
+			e.speichernAufgeben()
 		}
 	}
+}
+
+// speichernHaengt meldet, ob das laufende Speichern länger als speichernFrist nicht antwortet.
+func (e *editor) speichernHaengt() bool {
+	return e.s.SpeichernLaeuft() && time.Since(e.speicherStart) >= speichernFrist
+}
+
+// speichernHaengtMelden sagt in der Statusleiste, dass das Speichern nicht antwortet und das Schließen jetzt ohne seine
+// Antwort geht (F-283); einmal je Speichern. Liefert, ob die Meldung neu ist.
+func (e *editor) speichernHaengtMelden() bool {
+	if e.haengtGemeldet || !e.speichernHaengt() {
+		return false
+	}
+	e.haengtGemeldet = true
+	e.melde(i18n.T("Saving does not respond. Closing the window now quits without waiting; changes may be lost."), true)
+	return true
+}
+
+// speichernAufgeben schließt ohne die Antwort des Speicherns (F-283): Die Goroutine läuft weiter, bis der Prozess
+// endet; Editor liefert ErrSpeichernHaengt, damit Fehlerausgabe und Exit-Code es sagen.
+func (e *editor) speichernAufgeben() {
+	diagnoseEditor("Speichern antwortet seit %v nicht: aufgegeben", time.Since(e.speicherStart).Round(time.Millisecond))
+	e.speichernAufgegeben, e.erzwungen = true, true
+	if e.schlussErr == nil {
+		e.schlussErr = ErrSpeichernHaengt
+	}
+}
+
+// weiteresSignalSchliesst nimmt ein weiteres Signal an (nach dem ersten): Hängt das Speichern über die Frist, gibt der
+// Editor es auf und das Fenster schließt (F-283); sonst bleibt es beim Abfangen (F-152).
+func (e *editor) weiteresSignalSchliesst() bool {
+	select {
+	case <-e.weitereSignale:
+	default:
+		return false
+	}
+	if !e.speichernHaengt() || e.erzwungen {
+		return false
+	}
+	e.speichernAufgeben()
+	return true
 }
 
 // speichernFertig wertet die Antwort aus (canvas.Sitzung.SpeichernEnde): Meldung, weiterer Versuch nach einem Signal,
@@ -471,6 +586,8 @@ type kopierErgebnis struct {
 // überdauert (ADR-0024, E-19). Bietet der Compositor das nicht an oder meldet sich der Halter nicht, bietet das Fenster
 // selbst an wie bisher (ADR-0015 Nachtrag 2), in der Ereignisschleife (kopierenAbholen) — dann gehört der Inhalt dem
 // Fenster. Kann auch Gio das Bild nicht anbieten, ersetzt die Ereignisschleife die Meldung (zwischenablageFehlt, F-177).
+// Kopieren geht auch während eines Speicherns (F-285): Es ändert nichts am Dokument, und während des Speicherns läuft
+// kein Zug. Schließen und Zerstören warten auf ein laufendes Kopieren (F-281).
 func (e *editor) kopieren(gtx layout.Context) {
 	if e.kopierLaeuft {
 		e.melde(i18n.T("Copying is already in progress."), false)
@@ -481,7 +598,8 @@ func (e *editor) kopieren(gtx layout.Context) {
 		e.melde(i18n.T("Could not copy: finish the current action first."), true)
 		return
 	}
-	e.kopierLaeuft = true
+	e.kopierLaeuft, e.kopierStart, e.kopierStand = true, time.Now(), e.s.D.Stand()
+	e.melde(i18n.T("Copying…"), false) // ein 4K-Bild braucht spürbar; ohne Hinweis wirkte Strg+C wie ohne Wirkung (F-285)
 	if e.kopierAntwort == nil {
 		e.kopierAntwort = make(chan kopierErgebnis, 1)
 	}
@@ -517,8 +635,73 @@ func (e *editor) kopierenAbholen(gtx layout.Context) {
 		if r.daten != nil {
 			gtx.Execute(clipboard.WriteCmd{Type: wlclip.MIME, Data: io.NopCloser(bytes.NewReader(r.daten))})
 		}
-		e.melde(i18n.T("Copied to clipboard"), false)
+		// Die Zwischenablage trägt den Stand beim Tastendruck. Wurde seitdem bearbeitet, sagt die Meldung das, statt
+		// den Eindruck zu wecken, das jetzt Sichtbare (etwa eine neue Schwärzung) sei kopiert (F-285).
+		if e.s.D.Stand() == e.kopierStand {
+			e.melde(i18n.T("Copied to clipboard"), false)
+		} else {
+			e.melde(i18n.T("Copied to clipboard as it was when copying began; later changes are not included."), false)
+		}
 	default:
+	}
+}
+
+// kopierenHaeltOffen entscheidet bei einer Schließen-Anfrage, die schließen dürfte, ob ein laufendes Kopieren das
+// Fenster offen hält (F-281): ja bis zur Antwort, höchstens bis kopierFrist ab Beginn. Danach fragt nachKopieSchliessen
+// erneut; ist die Frist schon um, schließt die Anfrage, und zerstoert meldet das unfertige Kopieren.
+func (e *editor) kopierenHaeltOffen() bool {
+	if !e.kopierLaeuft {
+		return false
+	}
+	rest := time.Until(e.kopierStart.Add(kopierFrist))
+	if rest <= 0 {
+		return false
+	}
+	if !e.schliessenNachKopie && e.wecker != nil {
+		time.AfterFunc(rest, e.wecker.Anfordern) // zur Frist nachsehen, falls die Antwort ausbleibt
+	}
+	e.schliessenNachKopie = true
+	diagnoseEditor("Schließen wartet auf das Kopieren (höchstens %v)", rest.Round(time.Millisecond))
+	return true
+}
+
+// nachKopieSchliessen meldet, ob eine wegen des Kopierens angehaltene Schließen-Anfrage jetzt erneut zu stellen ist:
+// Die Antwort des Kopierens ist angenommen oder die Frist um.
+func (e *editor) nachKopieSchliessen() bool {
+	if !e.schliessenNachKopie || (e.kopierLaeuft && time.Now().Before(e.kopierStart.Add(kopierFrist))) {
+		return false
+	}
+	e.schliessenNachKopie = false
+	return true
+}
+
+// kopierenAbwarten wartet beim Zerstören des Fensters auf ein laufendes Kopieren, höchstens bis kopierFrist ab Beginn
+// (F-281): Der Halter der Zwischenablage startet in der Goroutine; endete der Prozess vorher, bliebe die Zwischenablage
+// still leer. Was das Fenster selbst hätte anbieten müssen (kein Halter möglich), geht mit dem Fenster verloren; das
+// steht wie eine abgelaufene Frist auf der Fehlerausgabe, denn die Statusleiste ist weg.
+func (e *editor) kopierenAbwarten() {
+	if !e.kopierLaeuft {
+		return
+	}
+	frist := time.NewTimer(max(0, time.Until(e.kopierStart.Add(kopierFrist))))
+	defer frist.Stop()
+	var r kopierErgebnis
+	select {
+	case r = <-e.kopierAntwort:
+	case <-frist.C:
+		select { // Antwort und Frist zugleich: die Antwort gilt
+		case r = <-e.kopierAntwort:
+		default:
+			fmt.Fprintln(os.Stderr, i18n.T("Copying was not finished when the window closed; the clipboard may be empty."))
+			return
+		}
+	}
+	e.kopierLaeuft = false
+	switch {
+	case r.err != nil:
+		fmt.Fprintf(os.Stderr, i18n.T("Could not copy: %v")+"\n", r.err)
+	case r.daten != nil:
+		fmt.Fprintln(os.Stderr, i18n.T("Copying was not finished when the window closed; the clipboard may be empty."))
 	}
 }
 
@@ -1103,11 +1286,18 @@ func (e *editor) tasten(gtx layout.Context) {
 		}
 		if e.s.SpeichernLaeuft() {
 			// Während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6): abholen, damit Filter und Fokus
-			// bestehen bleiben, und verwerfen.
+			// bestehen bleiben, und verwerfen. Nur Strg+C wirkt: Kopieren ändert nichts am Dokument, und während des
+			// Speicherns läuft kein Zug, der Abzug gelingt (F-285).
+			if k, ok := ev.(key.Event); ok && k.State == key.Press && !e.menue.offen {
+				if t, ok := findeTaste(k.Name, k.Modifiers, e.s.TextLaeuft()); ok && !t.hatWerkzeug && t.akt == aktKopieren {
+					e.fuehreAus(gtx, aktKopieren, false)
+				}
+			}
 			continue
 		}
 		if ed, ok := ev.(key.EditEvent); ok {
-			// Bei offenem Menü wirken nur Esc und Enter (ADR-0026 Nachtrag 1, F-261): auch getippte Zeichen nicht.
+			// Bei offenem Menü wirkt getippter Text nicht (ADR-0026 Nachtrag 1, F-261); die Tasten des Menüs regelt
+			// der Zweig unten.
 			if e.s.TextLaeuft() && !e.menue.offen {
 				e.s.Tippe(ed.Text)
 			}
@@ -1124,9 +1314,10 @@ func (e *editor) tasten(gtx layout.Context) {
 			continue
 		}
 		if e.menue.offen {
-			// Offenes Menü (ADR-0026 Punkt 1): Esc schließt es, Enter löst einen Knopf oder Eintrag mit Tastaturfokus
-			// aus; alle anderen Tasten wirken nicht, damit Entf oder ein Buchstabe nicht unbemerkt hinter der Liste die
-			// Leinwand ändert (F-257).
+			// Offenes Menü (ADR-0026 Punkt 1, Nachträge 2 und 3): Esc schließt es, Enter löst einen Knopf oder Eintrag
+			// mit Tastaturfokus aus, Pfeile hoch und runter, Pos1 und Ende wählen den Eintrag; die Leertaste am
+			// Menüknopf ist oben behandelt, Tab fährt den Fokus wie sonst (Gio). Alle anderen Tasten wirken nicht,
+			// damit Entf oder ein Buchstabe nicht unbemerkt hinter der Liste die Leinwand ändert (F-257).
 			switch k.Name {
 			case key.NameEscape:
 				// Fokus zurück an den Menüknopf nur, wenn per Tastatur geöffnet wurde und kein Text läuft; sonst an die
@@ -1215,35 +1406,36 @@ func (e *editor) wiederholen() {
 func (e *editor) knoepfeAuswerten(gtx layout.Context) {
 	k := &e.knoepfe
 	// Während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6): Clicked holt die Klicks ab (zuerst
-	// ausgewertet), an verwirft sie.
-	an := !e.s.SpeichernLaeuft()
-	if k.rueck.Clicked(gtx) && an {
+	// ausgewertet), an verwirft sie. an fragt je Klick neu: Liegen mehrere Klicks in einem Bild und startet einer das
+	// Speichern, wirken die folgenden nicht mehr (F-280; canvas sperrt zusätzlich).
+	an := func() bool { return !e.s.SpeichernLaeuft() }
+	if k.rueck.Clicked(gtx) && an() {
 		e.rueckgaengig()
 	}
-	if k.wieder.Clicked(gtx) && an {
+	if k.wieder.Clicked(gtx) && an() {
 		e.wiederholen()
 	}
-	if k.einpassen.Clicked(gtx) && an {
+	if k.einpassen.Clicked(gtx) && an() {
 		e.s.Einpassen()
 	}
-	if k.ganz.Clicked(gtx) && an {
+	if k.ganz.Clicked(gtx) && an() {
 		e.fuehreAus(gtx, aktGanzesBild, true)
 	}
-	if k.eins.Clicked(gtx) && an {
+	if k.eins.Clicked(gtx) && an() {
 		e.s.EinsZuEins()
 	}
-	if k.export.Clicked(gtx) && an {
+	if k.export.Clicked(gtx) && an() {
 		e.fuehreAus(gtx, aktExport, true) // wie Speichern: ein laufender Text kommt mit
 	}
-	if k.speichern.Clicked(gtx) && an {
+	if k.speichern.Clicked(gtx) && an() {
 		e.speichernJetzt()
 	}
 	for _, w := range e.werkzeugKnoepfe() {
-		if w.c.Clicked(gtx) && an {
+		if w.c.Clicked(gtx) && an() {
 			e.s.SetzeWerkzeug(w.w)
 		}
 	}
-	if k.farbe.Clicked(gtx) && an {
+	if k.farbe.Clicked(gtx) && an() {
 		e.s.NaechsteFarbe()
 	}
 }

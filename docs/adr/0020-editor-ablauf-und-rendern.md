@@ -81,7 +81,8 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
 - **Schließen vor dem Zerstören:** Gio liefert vor dem Zerstören ein abbrechbares `app.ClosingEvent`
   (`third_party/gio/app/system.go`; unter Wayland aus `xdg_toplevel.close` und `Perform(ActionClose)`,
   `app/os_wayland.go` `requestClose`). Der Editor speichert dort; die Entscheidung trifft `canvas.Sitzung.Schliessen`
-  (testbar ohne Gio). Scheitert das Speichern — auch das Ausweichen auf eine neue Aufnahme —, bleibt das Fenster offen
+  (testbar ohne Gio). *Seit Nachtrag 6 in zwei Schritten: `SchliessenAnfrage` und `SpeichernEnde`; `Schliessen` ist die
+  synchrone Hülle.* Scheitert das Speichern — auch das Ausweichen auf eine neue Aufnahme —, bleibt das Fenster offen
   und die Statusleiste sagt „Speichern gescheitert: … Erneutes Schließen verwirft die Änderungen.“ Erst eine zweite
   Anfrage ohne neue Änderung schließt und verwirft (Claudes Entscheidung, von Andi am 20.11.2026 bestätigt: ohne Dialog die einzige
   Möglichkeit, den Editor bei voller Platte überhaupt zu verlassen). Weicht Speichern mit Warnung aus (F-116, F-110),
@@ -89,7 +90,7 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   Hinweis ohne Warnung geht wie bisher auf die Fehlerausgabe.
 - **Signale:** SIGTERM, SIGINT und SIGHUP lösen ein geordnetes Speichern und Schließen aus, ohne das Fenster offen zu
   halten; die Signal-Goroutine weckt nur das Fenster (`Window.Invalidate`), gespeichert wird in der Ereignisschleife
-  (F-77). *Geändert 20.11.2026 (F-152, Andis Entscheidung):* Weitere Signale (SIGTERM, SIGINT, SIGHUP) werden
+  (F-77). *Seit Nachtrag 6 in einer eigenen Goroutine; in der Schleife wird nur die Antwort angenommen.* *Geändert 20.11.2026 (F-152, Andis Entscheidung):* Weitere Signale (SIGTERM, SIGINT, SIGHUP) werden
   abgefangen, bis der Editor zurückkehrt — ein zweites Strg+C oder SIGHUP nach SIGTERM beim Abmelden bricht ein
   laufendes Speichern (bis rund 45 s, Nachtrag 3) nicht mehr ab; danach beendet sich der Editor geordnet. Erst nach der
   Rückkehr gilt wieder die Voreinstellung. SIGKILL bleibt unabfangbar. Die Wache (`canvas.Signalwache`) ist ohne echte
@@ -203,4 +204,49 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
 - **Kopieren (F-178):** Strg+C rendert und kodiert den Abzug ebenfalls in einer Goroutine und übergibt dort an den
   Halter der Zwischenablage (ADR-0024); nur der Rückfall auf das Fenster selbst (ADR-0015 Nachtrag 2) läuft danach in
   der Ereignisschleife. Kopieren ändert nichts am Dokument und sperrt das Bearbeiten nicht; ein zweites Strg+C während
-  eines laufenden wartet nicht, sondern wird mit „Kopieren läuft schon“ beantwortet.
+  eines laufenden wartet nicht, sondern wird mit „Kopieren läuft schon“ beantwortet. *Ergänzt 20.11.2026 (F-285, Claudes
+  Entscheidung, Karte #62):* **Strg+C wirkt auch während eines Speicherns** — als einzige Taste. Kopieren ändert nichts
+  am Dokument, und während des Speicherns läuft kein Zug, der Abzug gelingt also; es still zu verwerfen oder nur zu
+  melden, hieße nach Strg+S bei einem großen Bild warten zu müssen, ohne dass es etwas schützt. Die Statusleiste sagt
+  beim Start „Kopieren …“. Die Meldung am Ende ist an den Stand des Abzugs gebunden: Wurde inzwischen bearbeitet, sagt
+  sie „Kopiert mit dem Stand beim Kopieren; spätere Änderungen sind nicht enthalten.“, statt den Eindruck zu wecken,
+  das jetzt Sichtbare (etwa eine neue Schwärzung) liege in der Zwischenablage. Schließen und Zerstören warten auf ein
+  laufendes Kopieren (F-281, Nachtrag 7).
+- **Sperre auch in der Sitzung (F-280, ergänzt 20.11.2026):** Die Sperre liegt nicht nur in der Oberfläche: Jeder
+  Einstieg von `canvas.Sitzung`, der das Dokument ändert (Züge, Rückgängig/Wiederholen, Löschen, Farbe, Werkzeug,
+  Texteingabe, Esc, Enter, Doppelklick, Ganzes Bild, Nähte), tut während des Speicherns nichts. Die Oberfläche fragt je
+  Klick neu, denn mehrere Klicks können in einem Bild liegen (Speichern und Farbe). `SpeichernEnde` leert nach einem
+  gelungenen Speichern mit Schwärzung den Verlauf ohne Bedingung an den Stand: Hätte sich das Dokument doch geändert,
+  holte ein Rückgängig sonst das Geschwärzte zurück (ADR-0022 Punkt 3); der Verlust des Verlaufs ist der kleinere
+  Schaden.
+
+## Nachtrag 7 (20.11.2026): Fristen beim Schließen — hängendes Speichern, laufendes Kopieren (F-281, F-283)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #62; Claudes Entscheidung im Rahmen des freigegebenen Sprints 8).
+
+- **Problem (F-283):** Antwortet das Speichern im Hintergrund nie (hängender Netzordner, blockierte Platte), hielt jede
+  Schließen-Anfrage das Fenster offen, ein Signal wurde nur vorgemerkt, und das Warten beim Zerstören hatte keine
+  Frist. Weil das Fenster weiter die Pings des Compositors beantwortet, bietet KWin kein „Beenden erzwingen“ an; ein
+  Signal fängt die Wache ab (Nachtrag 2). Übrig blieb nur SIGKILL.
+- **Entscheidung:** Antwortet ein Speichern **15 Sekunden** nach seinem Beginn nicht, sagt die Statusleiste als Fehler
+  „Speichern antwortet nicht. Schließen beendet jetzt ohne zu warten; Änderungen gehen womöglich verloren.“ Danach
+  schließt die **nächste Schließen-Anfrage** oder ein **weiteres Signal** das Fenster ohne die Antwort. Vor der Frist
+  bleibt es wie bisher (Anfrage angehalten, weitere Signale abgefangen) — ein Alltagsdokument braucht Bruchteile einer
+  Sekunde, und wer die Meldung nicht sieht, wird nicht überrascht. Der Editor kehrt mit `ui.ErrSpeichernHaengt` zurück:
+  Die Fehlerausgabe sagt „Speichern hat nicht geantwortet; die Änderungen sind womöglich nicht gesichert.“, der
+  Exit-Code ist ein Fehler. Beim Zerstören wird dann nicht gewartet und **nicht noch einmal im Vordergrund
+  gespeichert**: Die hängende Goroutine hält die Speicherfunktion, und die darf nicht zweimal zugleich laufen
+  (Nachtrag 6).
+- **Zerstören ohne Anfrage** (Wayland weg) wartet höchstens **2 Minuten** auf ein laufendes Speichern — länger als ein
+  Dokument am Budget braucht (rund 45 s, Nachtrag 3), damit ein langsames, aber gesundes Speichern nicht verloren geht;
+  ein weiteres Signal nach den 15 Sekunden beendet das Warten ebenso. Ein weiterer Versuch nach einem Signal läuft
+  hier jetzt ebenfalls in der Goroutine, mit derselben Frist.
+- **Kopieren (F-281):** Strg+C und gleich schließen verlor die Kopie: Der Prozess endete, bevor die Goroutine den Halter
+  der Zwischenablage gestartet hatte. Jetzt hält eine Schließen-Anfrage, die schließen dürfte, das Fenster offen, bis
+  die Antwort des Kopierens angenommen ist, und fragt dann von selbst erneut; Zerstören (auch nach Signal oder
+  Speichern) wartet ebenso. Beides höchstens **10 Sekunden** ab Beginn des Kopierens (ein 4K-Bild braucht rund eine
+  Sekunde); danach geht es weiter, und die Fehlerausgabe sagt „Kopieren war beim Schließen des Fensters nicht fertig;
+  die Zwischenablage ist womöglich leer.“ Dasselbe steht dort, wenn das Fenster selbst hätte anbieten müssen (kein
+  Halter möglich, ADR-0015 Nachtrag 2): Mit dem Fenster geht dieser Inhalt verloren.
+- **Fristen als Paketvariablen** (`speichernFrist`, `zerstoerenFrist`, `kopierFrist` in `ui/editor.go`), damit Tests
+  sie verkürzen; Test mit einer Speicherfunktion, die nie zurückkehrt.

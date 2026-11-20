@@ -209,6 +209,21 @@ msgstr "Kopieren nicht möglich: Erst die laufende Aktion beenden."
 msgid "Saving…"
 msgstr "Speichern …"
 
+msgid "Copying…"
+msgstr "Kopieren …"
+
+msgid "Copied to clipboard as it was when copying began; later changes are not included."
+msgstr "Kopiert mit dem Stand beim Kopieren; spätere Änderungen sind nicht enthalten."
+
+msgid "Copying was not finished when the window closed; the clipboard may be empty."
+msgstr "Kopieren war beim Schließen des Fensters nicht fertig; die Zwischenablage ist womöglich leer."
+
+msgid "Saving does not respond. Closing the window now quits without waiting; changes may be lost."
+msgstr "Speichern antwortet nicht. Schließen beendet jetzt ohne zu warten; Änderungen gehen womöglich verloren."
+
+msgid "Saving did not respond; the changes may not have been saved."
+msgstr "Speichern hat nicht geantwortet; die Änderungen sind womöglich nicht gesichert."
+
 msgid "Could not save. Close again to discard the changes."
 msgstr "Speichern gescheitert. Erneutes Schließen verwirft die Änderungen."
 

@@ -43,7 +43,8 @@ func Bild(d *document.Dokument) (*image.NRGBA, error) {
 
 // PNG rendert das Dokument wie Bild und kodiert es als reines PNG für die Zwischenablage: nur IHDR, IDAT und IEND,
 // ohne Bearbeitungsdaten (kein snAP/snAO) und ohne Metadaten (kein tEXt, iTXt, tIME), Kernprinzip 3. Wie Bild bricht es
-// nie wegen des Aufwands ab. Der Aufrufer rendert im Fensterthread, wie beim Speichern (F-143).
+// nie wegen des Aufwands ab. Der Editor ruft es in einer eigenen Goroutine auf einem Abzug des Dokuments auf, nicht im
+// Fensterthread (F-178, ADR-0020 Nachtrag 6); das Dokument darf daneben nicht verändert werden.
 func PNG(d *document.Dokument) ([]byte, error) {
 	b, err := Bild(d)
 	if err != nil {
