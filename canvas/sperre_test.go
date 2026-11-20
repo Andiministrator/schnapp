@@ -228,9 +228,9 @@ func TestKeinRueckgaengigNachSpeichernMitSchwaerzung(t *testing.T) {
 			s.SpeichernEnde(false, nil)
 			return e.Erneut
 		},
-		"synchron Schliessen": func(s *Sitzung) *document.Dokument {
+		"Schließen mit Abzug aus der Speicherfunktion": func(s *Sitzung) *document.Dokument {
 			var a *document.Dokument
-			s.Schliessen(func() (bool, error) { a, _ = s.D.Abzug(); return true, nil })
+			schliesse(s, func() (bool, error) { a, _ = s.D.Abzug(); return true, nil })
 			return a
 		},
 	}

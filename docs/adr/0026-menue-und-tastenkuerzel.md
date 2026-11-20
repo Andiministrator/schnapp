@@ -114,3 +114,20 @@ wenig Code (ADR-0011).
 - **V-4, Fokusring mit Abstand:** Leistenknöpfe: Ring 2 px breit, 2 px Abstand zur Randlinie (im Probelauf gemessen).
   Menüeintrag, **begründete Ausnahme**: Die Zeilen stoßen aneinander und an den Rand der Liste, außen ist kein Platz;
   der Ring liegt innen, 2 px breit mit 2 px Abstand zum Zeilenrand.
+
+## Nachtrag 4 (20.11.2026): Menü-Navigation als benannte Ausnahme von der Tastentabelle (F-286)
+
+**Status:** Akzeptiert (Claude Sonnet 5.5, Karte #116).
+
+- **Pfeil hoch, Pfeil runter, Pos1, Ende und die Leertaste am Menüknopf** (Nachträge 2 und 3) stehen nicht in
+  `tastenTabelle`. Sie sind keine Kürzel mit eigener Handlung, sondern die Bedienung der offenen Liste; ein Knopf oder
+  Menüeintrag, den der Test aus Punkt 6 verlangt, wäre für sie sinnlos (der Menüeintrag *ist* ihr Ziel). Sie werden in
+  `ui/kuerzel.go` (`menueNavigationsFilter`) als einzige Tasten außerhalb der Tabelle angemeldet. Das ist die sechste
+  begründete Ausnahme neben den Punkt-5-Ausnahmen.
+- **Der Test hält die Ausnahme eng:** `TestTastenfilterNurTabelleUndMenueNavigation` verlangt, dass die Tastenschleife
+  (`editor.alleTastenFilter`) genau die Filter der Tabelle, den Fokus der Leinwand und diese fünf Navigationsfilter
+  anmeldet, und dass kein Navigationsfilter zugleich in der Tabelle steht. Eine weitere Taste außerhalb der Tabelle
+  macht ihn rot; sie gehört dann in die Tabelle (mit Knopf, Menüeintrag oder begründeter Ausnahme) oder bekommt einen
+  eigenen Nachtrag.
+- **Verworfen:** die fünf Tasten über die Tabelle führen. Dafür bräuchte die Tabelle ein Feld „Navigation“, und die
+  Leertaste mit Tag (`Focus`) passt nicht zur Form der Einträge; die Tabelle zählte dann Tasten ohne Handlung mit.

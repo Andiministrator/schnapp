@@ -88,3 +88,47 @@ func TestAbzugNichtWaehrendZug(t *testing.T) {
 		t.Errorf("Abzug im Zug: %v", err)
 	}
 }
+
+// F-282: Der Abzug teilt kein Feld des Objekte-Slices mit dem Dokument. Entfernen und Rückgängig schieben Elemente im
+// Slice des Dokuments; teilte der Abzug dessen Feld, sähe die Speicher-Goroutine einen verschobenen Inhalt (und
+// umgekehrt).
+func TestAbzugTeiltKeinenObjekteSlice(t *testing.T) {
+	d, err := Neu(image.NewNRGBA(image.Rect(0, 0, 40, 40)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rot := Strich{Farbe: color.NRGBA{R: 255, A: 255}, Breite: 1}
+	var ids []int
+	for i := 0; i < 4; i++ {
+		id, err := d.Hinzufuegen(Kasten{Bereich: R(Pt(float64(i*8), 1), Pt(float64(i*8+6), 7)), Strich: rot})
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, id)
+	}
+	a, err := d.Abzug()
+	if err != nil {
+		t.Fatal(err)
+	}
+	vorher := a.Objekte()
+	if err := d.Entfernen(ids[0]); err != nil { // schiebt die übrigen im Slice des Dokuments nach vorn
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(a.Objekte(), vorher) {
+		t.Error("Entfernen im Dokument verändert die Objekte des Abzugs")
+	}
+	if err := d.Rueckgaengig(); err != nil { // fügt es an der alten Stelle wieder ein
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(a.Objekte(), vorher) {
+		t.Error("Rückgängig im Dokument verändert die Objekte des Abzugs")
+	}
+	// Umgekehrt: Der Abzug schiebt Elemente, das Dokument bleibt.
+	soll := d.Objekte()
+	if err := a.Entfernen(ids[1]); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(d.Objekte(), soll) {
+		t.Error("Entfernen im Abzug verändert die Objekte des Dokuments")
+	}
+}

@@ -1260,26 +1260,28 @@ func (e *editor) zeichneAuswahl(gtx layout.Context) {
 
 // --- Tasten ---
 
+// alleTastenFilter sind die Filter der Tastenschleife: die Tasten der Tabelle (tastenFilter), der Fokus der Leinwand und
+// die Navigation im Menü (menueNavigationsFilter, ADR-0026 Nachtrag 4). Mehr meldet der Editor nicht an; der Test
+// TestTastenfilterNurTabelleUndMenueNavigation hält das fest.
+func (e *editor) alleTastenFilter() []event.Filter {
+	var filter []event.Filter
+	for _, f := range tastenFilter(e.s.TextLaeuft()) {
+		filter = append(filter, f)
+	}
+	filter = append(filter, key.FocusFilter{Target: e})
+	for _, f := range menueNavigationsFilter(&e.menue.knopf) {
+		filter = append(filter, f)
+	}
+	return filter
+}
+
 func (e *editor) tasten(gtx layout.Context) {
 	for {
 		// Die Tasten stehen in tastenTabelle (ADR-0026): Jede hat einen Knopf, einen Menüeintrag oder eine begründete
 		// Ausnahme. Während der Texteingabe fängt der Editor Tab ab (ohne Wirkung, ADR-0021 Nachtrag 1): Sonst wanderte
 		// der Fokus auf einen Knopf, und weitere Zeichen gingen still verloren (F-153). Sonst bleibt Tab die Fokusfahrt.
 		// Getippte Zeichen kommen als key.EditEvent an die fokussierte Leinwand.
-		var filter []event.Filter
-		for _, f := range tastenFilter(e.s.TextLaeuft()) {
-			filter = append(filter, f)
-		}
-		filter = append(filter, key.FocusFilter{Target: e})
-		// Pfeile, Pos1, Ende wählen im offenen Menü den Eintrag (F-255). Der Filter steht immer, nicht erst nach dem
-		// Öffnen: Kommen Enter und Runter ohne Bild dazwischen, ginge Runter sonst verloren (F-255 V-3). Bei
-		// geschlossenem Menü bleibt er ohne Wirkung; Gio fährt den Fokus nur per Tab, Pfeile gehören sonst niemandem.
-		for _, n := range []key.Name{key.NameUpArrow, key.NameDownArrow, key.NameHome, key.NameEnd} {
-			filter = append(filter, key.Filter{Name: n})
-		}
-		// Leertaste am Menüknopf wirkt wie Enter und gilt als Tastatur (F-255 V-2; der Klick des Knopfes trägt keine
-		// Quelle). Auf den Menüknopf begrenzt, damit Leertaste im Text weiter als Zeichen ankommt.
-		filter = append(filter, key.Filter{Focus: &e.menue.knopf, Name: key.NameSpace})
+		filter := e.alleTastenFilter()
 		ev, ok := gtx.Event(filter...)
 		if !ok {
 			return

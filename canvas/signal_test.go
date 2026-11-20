@@ -80,7 +80,7 @@ func TestSignalWaehrendSpeichernAbgefangen(t *testing.T) {
 
 	// Die Ereignisschleife sieht die Marke und speichert; währenddessen kommen SIGHUP (logind) und Strg+C.
 	aufrufe := 0
-	err := s.SchliessenNachSignal(func() error {
+	err := schliesseNachSignal(s, func() error {
 		aufrufe++
 		w.senden(t, syscall.SIGHUP)
 		w.senden(t, syscall.SIGINT)
@@ -146,11 +146,11 @@ func TestSignalNachGescheitertemSpeichern(t *testing.T) {
 		t.Run(fall.name, func(t *testing.T) {
 			s, _, _ := sitzung(t)
 			verschiebe(t, s, 10)
-			if z, err := s.Schliessen(func() (bool, error) { return false, kaputt }); z != SchlussFehler || err == nil {
+			if z, err := schliesse(s, func() (bool, error) { return false, kaputt }); z != SchlussFehler || err == nil {
 				t.Fatalf("Schließen: %v, %v (Soll SchlussFehler)", z, err)
 			}
 			aufrufe := 0
-			err := s.SchliessenNachSignal(func() error { aufrufe++; return fall.zweites })
+			err := schliesseNachSignal(s, func() error { aufrufe++; return fall.zweites })
 			if aufrufe != 1 {
 				t.Fatalf("Speichern nach Signal: %d Aufrufe (Soll 1, trotz vorher gescheitertem Speichern)", aufrufe)
 			}
@@ -172,7 +172,7 @@ func TestSignalNachGescheitertemSpeichern(t *testing.T) {
 func TestSignalOhneAenderungSpeichertNicht(t *testing.T) {
 	s, _, _ := sitzung(t)
 	aufrufe := 0
-	if err := s.SchliessenNachSignal(func() error { aufrufe++; return nil }); err != nil || aufrufe != 0 {
+	if err := schliesseNachSignal(s, func() error { aufrufe++; return nil }); err != nil || aufrufe != 0 {
 		t.Errorf("%v, %d Aufrufe (Soll nil, 0)", err, aufrufe)
 	}
 }
@@ -184,7 +184,7 @@ func TestSignalSpeichernScheitertDanachNichtUngesichert(t *testing.T) {
 	verschiebe(t, s, 10)
 	voll := errors.New("voll")
 	aufrufe := 0
-	if err := s.SchliessenNachSignal(func() error { aufrufe++; return voll }); !errors.Is(err, voll) || aufrufe != 1 {
+	if err := schliesseNachSignal(s, func() error { aufrufe++; return voll }); !errors.Is(err, voll) || aufrufe != 1 {
 		t.Fatalf("%v, %d Aufrufe (Soll voll, 1)", err, aufrufe)
 	}
 	if s.Ungesichert() {

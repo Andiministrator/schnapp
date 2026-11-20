@@ -54,21 +54,3 @@ func (w *Signalwache) Ende() {
 		<-w.beendet
 	})
 }
-
-// SchliessenNachSignal speichert nach einem Signal und gibt das Fenster zum Schließen frei, ohne es offen zu halten
-// (ADR-0020 Nachtrag 2): Ein Signal heißt Abmelden oder Beenden, ein offenes Fenster mit Fehlermeldung hinge sonst bis
-// zum SIGKILL. Gespeichert wird jeder geänderte Stand, auch einer, dessen Speichern beim Schließen schon gescheitert
-// ist — das Verwerfen hat nur eine zweite Schließen-Anfrage bestätigt, kein Signal, und die Ursache (z. B. volle
-// Platte) kann inzwischen behoben sein. speichern weicht wie beim Schließen selbst auf eine neue Aufnahme aus.
-// Scheitert es, kommt der Fehler zurück und der Stand gilt als verworfen (kein weiterer Versuch beim Zerstören).
-// Synchrone Form von SignalAnfrage und SpeichernEnde (hintergrund.go) mit derselben Entscheidung; der Editor nutzt die
-// zweistufige.
-func (s *Sitzung) SchliessenNachSignal(speichern func() error) error {
-	_, abzug := s.SignalAnfrage()
-	if abzug == nil {
-		return nil
-	}
-	err := speichern()
-	s.SpeichernEnde(false, err)
-	return err
-}

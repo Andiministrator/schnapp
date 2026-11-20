@@ -371,16 +371,3 @@ const (
 	// offen, damit sie gelesen wird. Die nächste Anfrage schließt.
 	SchlussHinweis
 )
-
-// Schliessen entscheidet über eine Schließen-Anfrage des Fensters (F-107), in einem Schritt: Ein laufender Zug wird
-// abgebrochen, ungesicherte Änderungen werden mit speichern gesichert. speichern meldet, ob ein Hinweis gelesen werden
-// muss (warnung), oder einen Fehler. Der Fehler kommt unverändert zurück. Es ist die synchrone Form von
-// SchliessenAnfrage und SpeichernEnde (hintergrund.go) mit derselben Entscheidung; der Editor nutzt die zweistufige.
-func (s *Sitzung) Schliessen(speichern func() (warnung bool, err error)) (Schluss, error) {
-	z, abzug := s.SchliessenAnfrage()
-	if abzug == nil {
-		return z, nil
-	}
-	warnung, err := speichern()
-	return s.SpeichernEnde(warnung, err).Schluss, err
-}

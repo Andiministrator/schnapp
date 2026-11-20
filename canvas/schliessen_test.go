@@ -20,6 +20,56 @@ func verschiebe(t *testing.T, s *Sitzung, dx float64) {
 	}
 }
 
+// schliesse führt eine Schließen-Anfrage auf dem Weg der Oberfläche aus (F-284): SchliessenAnfrage, dann die
+// Speicherfunktion mit dem Abzug (hier nur als Zeitpunkt, gespeichert wird nichts), dann SpeichernEnde. Zurück kommt der
+// Schluss und der Fehler der Speicherfunktion.
+func schliesse(s *Sitzung, speichern func() (warnung bool, err error)) (Schluss, error) {
+	z, abzug := s.SchliessenAnfrage()
+	if abzug == nil {
+		return z, nil
+	}
+	warnung, err := speichern()
+	return s.SpeichernEnde(warnung, err).Schluss, err
+}
+
+// schliesseNachSignal führt ein Signal auf dem Weg der Oberfläche aus (F-284): SignalAnfrage, Speicherfunktion,
+// SpeichernEnde. Ein weiterer Versuch (Ende.Erneut) nach einem gescheiterten Strg+S oder Schließen läuft ebenso. Zurück
+// kommt der Fehler des letzten Versuchs.
+func schliesseNachSignal(s *Sitzung, speichern func() error) error {
+	_, abzug := s.SignalAnfrage()
+	var err error
+	for abzug != nil {
+		err = speichern()
+		abzug = s.SpeichernEnde(false, err).Erneut
+	}
+	return err
+}
+
+// F-284: Ein angenommenes Signal bleibt vorgemerkt, auch nachdem sein Speichern entschieden ist: Die Oberfläche fragt
+// SignalVorgemerkt nach jedem Ereignis, um das Signal nicht noch einmal anzunehmen, und schließt in jedem Fall. Ein
+// späteres Schließen kommt nicht mehr vor; der Test hält fest, was die Sitzung dann täte (kein Verwerfen vortäuschen,
+// sondern ein weiterer Versuch als Signal), damit eine Änderung daran auffällt.
+func TestSignalBleibtNachEntscheidungVorgemerkt(t *testing.T) {
+	voll := errors.New("voll")
+	s, _, _ := sitzung(t)
+	verschiebe(t, s, 10)
+	if err := schliesseNachSignal(s, func() error { return voll }); !errors.Is(err, voll) {
+		t.Fatalf("Signal: %v", err)
+	}
+	if !s.SignalVorgemerkt() || s.SpeichernLaeuft() {
+		t.Errorf("nach dem Signal: vorgemerkt %v, läuft %v (Soll true, false)", s.SignalVorgemerkt(), s.SpeichernLaeuft())
+	}
+	verschiebe(t, s, 10)
+	z, abzug := s.SchliessenAnfrage()
+	if z != SchlussWarten || abzug == nil {
+		t.Fatalf("Schließen nach dem Signal: %v, Abzug %v", z, abzug != nil)
+	}
+	e := s.SpeichernEnde(false, voll)
+	if e.Schluss == SchlussFehler || e.Erneut == nil {
+		t.Errorf("Ende nach Signal: %+v (Soll weiterer Versuch als Signal, kein SchlussFehler)", e)
+	}
+}
+
 // F-109: Geaendert folgt dem Verlaufsstand, nicht der bloßen Tatsache, dass etwas geschah.
 func TestGeaendertFolgtVerlaufsstand(t *testing.T) {
 	s, _, _ := sitzung(t)
@@ -84,11 +134,11 @@ func TestSchliessenSpeichertNurGeaendertes(t *testing.T) {
 	s, _, _ := sitzung(t)
 	aufrufe := 0
 	speichern := func() (bool, error) { aufrufe++; return false, nil }
-	if z, err := s.Schliessen(speichern); z != SchlussZu || err != nil || aufrufe != 0 {
+	if z, err := schliesse(s, speichern); z != SchlussZu || err != nil || aufrufe != 0 {
 		t.Errorf("ungeändert: %v, %v, %d Aufrufe (Soll SchlussZu, nil, 0)", z, err, aufrufe)
 	}
 	verschiebe(t, s, 10)
-	if z, err := s.Schliessen(speichern); z != SchlussZu || err != nil || aufrufe != 1 {
+	if z, err := schliesse(s, speichern); z != SchlussZu || err != nil || aufrufe != 1 {
 		t.Errorf("geändert: %v, %v, %d Aufrufe (Soll SchlussZu, nil, 1)", z, err, aufrufe)
 	}
 	if s.Geaendert() || s.Ungesichert() {
@@ -104,7 +154,7 @@ func TestSchliessenMitScheiterndemSpeichern(t *testing.T) {
 	kaputt := errors.New("Platte voll")
 	aufrufe := 0
 	scheitert := func() (bool, error) { aufrufe++; return false, kaputt }
-	z, err := s.Schliessen(scheitert)
+	z, err := schliesse(s, scheitert)
 	if z != SchlussFehler || !errors.Is(err, kaputt) || aufrufe != 1 {
 		t.Fatalf("erste Anfrage: %v, %v, %d (Soll SchlussFehler, Platte voll, 1)", z, err, aufrufe)
 	}
@@ -114,7 +164,7 @@ func TestSchliessenMitScheiterndemSpeichern(t *testing.T) {
 	if s.Ungesichert() {
 		t.Error("Ungesichert nach der Fehlermeldung (Soll: zum Verwerfen freigegeben)")
 	}
-	z, err = s.Schliessen(scheitert)
+	z, err = schliesse(s, scheitert)
 	if z != SchlussZu || err != nil || aufrufe != 1 {
 		t.Errorf("zweite Anfrage: %v, %v, %d (Soll SchlussZu, nil, kein weiterer Versuch)", z, err, aufrufe)
 	}
@@ -123,11 +173,11 @@ func TestSchliessenMitScheiterndemSpeichern(t *testing.T) {
 	if !s.Ungesichert() {
 		t.Fatal("neue Änderung nicht ungesichert")
 	}
-	if z, _ := s.Schliessen(scheitert); z != SchlussFehler || aufrufe != 2 {
+	if z, _ := schliesse(s, scheitert); z != SchlussFehler || aufrufe != 2 {
 		t.Errorf("nach neuer Änderung: %v, %d Aufrufe (Soll SchlussFehler, 2)", z, aufrufe)
 	}
 	// Gelingt es danach, ist alles gesichert.
-	if z, err := s.Schliessen(func() (bool, error) { return false, nil }); z != SchlussZu || err != nil {
+	if z, err := schliesse(s, func() (bool, error) { return false, nil }); z != SchlussZu || err != nil {
 		t.Errorf("gelungenes Speichern: %v, %v (Soll SchlussZu, nil)", z, err)
 	}
 	o, _ := s.D.Objekt(k)
@@ -164,7 +214,7 @@ func TestVerwerfenMarkeNachBearbeitungUndRueckgaengig(t *testing.T) {
 		verschiebe(t, s, 10)
 		aufrufe := 0
 		fehl := func() (bool, error) { aufrufe++; return false, errors.New("voll") }
-		if z, _ := s.Schliessen(fehl); z != SchlussFehler {
+		if z, _ := schliesse(s, fehl); z != SchlussFehler {
 			t.Fatalf("%s: Schluss %v", name, z)
 		}
 		bearbeite(s, k)
@@ -174,7 +224,7 @@ func TestVerwerfenMarkeNachBearbeitungUndRueckgaengig(t *testing.T) {
 		if !s.Ungesichert() {
 			t.Errorf("%s: Marke überlebt Bearbeitung + Rückgängig (Ungesichert false)", name)
 		}
-		if z, _ := s.Schliessen(fehl); z != SchlussFehler || aufrufe != 2 {
+		if z, _ := schliesse(s, fehl); z != SchlussFehler || aufrufe != 2 {
 			t.Errorf("%s: Schluss %v, %d Aufrufe (Soll SchlussFehler, 2)", name, z, aufrufe)
 		}
 	}
@@ -182,7 +232,7 @@ func TestVerwerfenMarkeNachBearbeitungUndRueckgaengig(t *testing.T) {
 	s, _, _ := sitzung(t)
 	verschiebe(t, s, 10)
 	fehl := func() (bool, error) { return false, errors.New("voll") }
-	s.Schliessen(fehl)
+	schliesse(s, fehl)
 	s.Rueckgaengig()
 	s.Wiederholen()
 	if s.Ungesichert() {
@@ -194,14 +244,14 @@ func TestVerwerfenMarkeNachBearbeitungUndRueckgaengig(t *testing.T) {
 func TestSchliessenMitHinweis(t *testing.T) {
 	s, _, _ := sitzung(t)
 	verschiebe(t, s, 10)
-	if z, err := s.Schliessen(func() (bool, error) { return true, nil }); z != SchlussHinweis || err != nil {
+	if z, err := schliesse(s, func() (bool, error) { return true, nil }); z != SchlussHinweis || err != nil {
 		t.Fatalf("%v, %v (Soll SchlussHinweis, nil)", z, err)
 	}
 	if s.Geaendert() {
 		t.Error("nach Speichern mit Hinweis noch geändert")
 	}
 	aufrufe := 0
-	if z, _ := s.Schliessen(func() (bool, error) { aufrufe++; return true, nil }); z != SchlussZu || aufrufe != 0 {
+	if z, _ := schliesse(s, func() (bool, error) { aufrufe++; return true, nil }); z != SchlussZu || aufrufe != 0 {
 		t.Errorf("zweite Anfrage: %v, %d Aufrufe (Soll SchlussZu, 0)", z, aufrufe)
 	}
 }
@@ -212,7 +262,7 @@ func TestSchliessenBrichtZugAb(t *testing.T) {
 	s.Druecken(f(30, 30), TastePrimaer)
 	s.Ziehen(f(60, 30))
 	aufrufe := 0
-	if z, _ := s.Schliessen(func() (bool, error) { aufrufe++; return false, nil }); z != SchlussZu || aufrufe != 0 {
+	if z, _ := schliesse(s, func() (bool, error) { aufrufe++; return false, nil }); z != SchlussZu || aufrufe != 0 {
 		t.Errorf("%v, %d Aufrufe (Soll SchlussZu, 0)", z, aufrufe)
 	}
 	o, _ := s.D.Objekt(k)

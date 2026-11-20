@@ -397,7 +397,7 @@ func TestSchliessenBestaetigtText(t *testing.T) {
 	s.Druecken(f(60, 60), TastePrimaer)
 	s.Tippe("bleibt")
 	gespeichert := false
-	z, err := s.Schliessen(func() (bool, error) { gespeichert = true; return false, nil })
+	z, err := schliesse(s, func() (bool, error) { gespeichert = true; return false, nil })
 	if z != SchlussZu || err != nil || !gespeichert {
 		t.Fatalf("Schluss %v, %v, gespeichert %v", z, err, gespeichert)
 	}

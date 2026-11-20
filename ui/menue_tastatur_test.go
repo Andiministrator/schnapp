@@ -294,7 +294,7 @@ func TestMenueMausOeffnenLaesstFokus(t *testing.T) {
 	// Tastaturklick; die Mausart wird deshalb über einen echten Klick auf den Knopf geprüft.
 	l.klick(image.Pt(l.fenst.X-12-70-8-30, 28)) // Menüknopf liegt links neben „Speichern“ rechts oben
 	if !l.e.menue.offen {
-		t.Skip("Menüknopf nicht getroffen (Lage geschätzt)")
+		t.Fatal("Menüknopf nicht getroffen: Klick öffnet das Menü nicht (ADR-0026 Nachtrag 2)")
 	}
 	for i := range l.e.menueEintraege() {
 		if l.fokus(&l.e.menue.eintraege[i]) {

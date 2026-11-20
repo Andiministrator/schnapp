@@ -5,6 +5,7 @@ package ui
 import (
 	"strings"
 
+	"gioui.org/io/event"
 	"gioui.org/io/key"
 
 	"github.com/Andiministrator/schnapp/canvas"
@@ -99,6 +100,23 @@ func tastenFilter(textLaeuft bool) []key.Filter {
 		}
 	}
 	return f
+}
+
+// menueNavigationsFilter sind die Filter für die Navigation im Menü; sie stehen bewusst nicht in tastenTabelle
+// (ADR-0026 Nachtrag 4, F-286): Es sind keine Kürzel mit eigener Handlung, sondern die Bedienung der offenen Liste, und
+// sie haben keinen Knopf und keinen Menüeintrag zu spiegeln.
+//
+// Pfeile, Pos1 und Ende wählen im offenen Menü den Eintrag (F-255). Der Filter steht immer, nicht erst nach dem
+// Öffnen: Kommen Enter und Runter ohne Bild dazwischen, ginge Runter sonst verloren (F-255 V-3). Bei geschlossenem Menü
+// bleibt er ohne Wirkung; Gio fährt den Fokus nur per Tab, Pfeile gehören sonst niemandem. Die Leertaste am Menüknopf
+// wirkt wie Enter und gilt als Tastatur (F-255 V-2; der Klick des Knopfes trägt keine Quelle); sie ist auf den
+// Menüknopf begrenzt, damit sie im Text weiter als Zeichen ankommt.
+func menueNavigationsFilter(menueKnopf event.Tag) []key.Filter {
+	var f []key.Filter
+	for _, n := range []key.Name{key.NameUpArrow, key.NameDownArrow, key.NameHome, key.NameEnd} {
+		f = append(f, key.Filter{Name: n})
+	}
+	return append(f, key.Filter{Focus: menueKnopf, Name: key.NameSpace})
 }
 
 // passt meldet, ob das Ereignis zum Filter gehört: Name gleich, alle verlangten Umschalter gedrückt und keine

@@ -3,6 +3,7 @@
 package ui
 
 import (
+	"context"
 	"errors"
 	"image"
 	"image/color"
@@ -96,6 +97,12 @@ func TestSperreZeigerKnoepfeMenue(t *testing.T) {
 	v := neuerSperrSpeicher()
 	l.e.speichern = v.speichern
 	l.fokusiere(l.e)
+	// Bräche die Sperre des Export-Knopfs, ginge der Dialog auf; ohne Kontext und mit einem Bus, den es nicht gibt,
+	// scheitert er still, statt den Testlauf mit einer Panik zu beenden (F-282: die Prüfung sagt dann „Export offen“).
+	t.Setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path="+t.TempDir()+"/kein-bus")
+	l.e.exportCtx = context.Background()
+	l.e.wecker = canvas.NeuerWecker(func() {}, weckTakt, weckGrenze)
+	defer l.e.wecker.Ende()
 
 	// Kontrolle: Ein Kasten-Zug legt ohne Speichern ein Objekt an.
 	l.e.s.SetzeWerkzeug(canvas.WerkzeugKasten)
@@ -136,9 +143,9 @@ func TestSperreZeigerKnoepfeMenue(t *testing.T) {
 	l.taste("E", key.ModShortcut|key.ModShift)
 	l.taste(key.NameEscape, 0)
 	if len(l.e.s.D.Objekte()) != n1 || l.e.s.D.Stand() != stand || l.e.s.Abb.Zoom != zoom ||
-		l.e.s.Werkzeug != canvas.WerkzeugKasten || l.e.s.Zieht() || l.e.exportOffen {
+		l.e.s.Werkzeug != canvas.WerkzeugKasten || l.e.s.Zieht() || l.e.exportOffen || l.e.exportAntwort != nil {
 		t.Errorf("während des Speicherns: Objekte %d (Soll %d), Stand %d/%d, Zoom %v/%v, Werkzeug %v, zieht %v, Export %v",
-			len(l.e.s.D.Objekte()), n1, l.e.s.D.Stand(), stand, l.e.s.Abb.Zoom, zoom, l.e.s.Werkzeug, l.e.s.Zieht(), l.e.exportOffen)
+			len(l.e.s.D.Objekte()), n1, l.e.s.D.Stand(), stand, l.e.s.Abb.Zoom, zoom, l.e.s.Werkzeug, l.e.s.Zieht(), l.e.exportOffen || l.e.exportAntwort != nil)
 	}
 	// Strg+C wirkt auch während des Speicherns (F-285).
 	l.taste("C", key.ModShortcut)

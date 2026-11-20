@@ -272,7 +272,7 @@ func TestMenueArtDesKlicksAusEreignis(t *testing.T) {
 		l.r.Queue(pointer.Event{Kind: pointer.Release, Source: pointer.Touch, PointerID: 1, Position: pos})
 		l.setle()
 		if !l.e.menue.offen {
-			t.Skip("Fingertipp öffnet in dieser Attrappe nicht")
+			t.Fatal("Fingertipp öffnet das Menü nicht (ADR-0026 Nachtrag 2)")
 		}
 		if i := menueFokusNr(l); i >= 0 {
 			t.Errorf("Fingertipp gilt als Tastatur: Fokusring auf Eintrag %d", i)

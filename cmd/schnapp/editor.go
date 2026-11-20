@@ -18,6 +18,10 @@ import (
 	"github.com/Andiministrator/schnapp/ui"
 )
 
+// editorStarten öffnet das Editorfenster. Eine Variable, damit Tests das Fenster durch eine Attrappe ersetzen und die
+// Speicherfunktion prüfen können, die oeffneImEditor und bearbeiteNeu dem Editor übergeben (F-282).
+var editorStarten = ui.Editor
+
 // oeffneImEditor öffnet eine Datei im Editor (ADR-0020). Speichern schreibt eine Aufnahme der Bibliothek an ihren
 // Platz zurück; alles andere (Datei außerhalb, fremdes oder beschädigtes Bild, neuere Fassung) kommt beim ersten
 // Speichern als neue Aufnahme in die Bibliothek, danach wird diese fortgeschrieben. Die geöffnete Datei selbst bleibt
@@ -33,7 +37,7 @@ func oeffneImEditor(pfad string, ohneGrenze bool) error {
 	if err != nil {
 		return err
 	}
-	return ui.Editor(filepath.Base(abs), g.Dokument, speichernIn(library.Neu(orte), abs, g, stand))
+	return editorStarten(filepath.Base(abs), g.Dokument, speichernIn(library.Neu(orte), abs, g, stand))
 }
 
 // bearbeiteNeu öffnet eine eben abgelegte Aufnahme im Editor (F-112): mit dem Dokument aus dem Speicher, ohne die
@@ -51,7 +55,7 @@ func bearbeiteNeu(a abgelegt) error {
 		return err
 	}
 	g := &fileformat.Gelesen{Dokument: a.d}
-	return ui.Editor(filepath.Base(abs), a.d, speichernIn(library.Neu(orte), abs, g, a.stand))
+	return editorStarten(filepath.Base(abs), a.d, speichernIn(library.Neu(orte), abs, g, a.stand))
 }
 
 // ladeFuerEditor liest eine Datei für den Editor (von außen oder aus der Bibliothek) und lehnt ein Dokument ab, dessen
