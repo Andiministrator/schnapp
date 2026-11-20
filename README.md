@@ -45,7 +45,7 @@ What exists:
 
 | Path | What it is | How to check it |
 |---|---|---|
-| `.` (root) | Go module `github.com/Andiministrator/schnapp`: the program `cmd/schnapp`, `capture` (capture via KWin), `selection` (overlay logic), `canvas` (editor logic), `document` (layers, crop, redaction, undo), `fileformat` (working file and exports), `render` (layers to pixels), `library` (library), `settings` (`settings.ini`), `ui` (overlay and editor in Gio), `i18n` (language choice, gettext PO reader) and `po` (embedded translations, `po/de.po`); `data/` holds the desktop file template | `go vet ./... && go test ./...` (with `GOFLAGS` as above) |
+| `.` (root) | Go module `github.com/Andiministrator/schnapp`: the program `cmd/schnapp`, `capture` (capture via KWin), `selection` (overlay logic), `canvas` (editor logic), `document` (layers, crop, redaction, undo), `fileformat` (working file and exports), `render` (layers to pixels), `library` (library), `settings` (`settings.ini`), `ui` (overlay and editor in Gio), `wlclip` (keeps a copied image on the clipboard after the editor closes), `i18n` (language choice, gettext PO reader) and `po` (embedded translations, `po/de.po`); `data/` holds the desktop file template | `go vet ./... && go test ./...` (with `GOFLAGS` as above) |
 | `draw/` | Go module `github.com/Andiministrator/schnapp/draw`: SVG parsing, an anti-aliased rasterizer, numeric helpers (standard library only) | `cd draw && go vet ./... && go test ./...` |
 | `brand/` | Logo, colours and corporate design ([`brand/corporate-design.md`](brand/corporate-design.md), German, with PDF) | `python3 brand/werkzeug/paket.py` rebuilds the logo files |
 | `third_party/gio/` | Gio with our patch (multi-monitor fullscreen, fractional scaling, cursor at mixed scales, images on the clipboard), used via `replace` in `go.mod` | `third_party/gio-patch.sh pruefen`, see [`third_party/README.md`](third_party/README.md) (German) |
@@ -82,7 +82,7 @@ recolours the selected annotation. A drawing tool stays active; **Esc** steps ba
 select tool. Drag an annotation or its handles to move, resize or bend it; it always stays partly inside the image.
 The mouse wheel zooms at the pointer; with the select tool dragging empty space moves the view, the middle button does
 so with every tool. Keys: **Ctrl+Z** undo, **Ctrl+Shift+Z**/**Ctrl+Y** redo, **Del** delete, **Ctrl+S** save,
-**Ctrl+C** copy the finished image to the clipboard (it stays after the editor closes, until something else is copied, for at most 12 hours), **Ctrl+0** fit, **Ctrl+1** 100 %, **Ctrl+W** close.
+**Ctrl+C** copy the finished image to the clipboard (on compositors with the data-control protocol, such as KDE Plasma, it stays after the editor closes until something else is copied, for at most 12 hours; elsewhere only while the editor is open), **Ctrl+0** fit, **Ctrl+1** 100 %, **Ctrl+W** close.
 
 Changes are saved when the editor closes; **Ctrl+S** without changes writes nothing. A file from outside the library
 becomes a new screenshot in the library on the first save (the file itself stays untouched; the status bar names the new

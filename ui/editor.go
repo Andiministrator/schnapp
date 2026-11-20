@@ -327,14 +327,29 @@ func (e *editor) kopieren(gtx layout.Context) {
 	e.melde(i18n.T("Copied to clipboard"), false)
 }
 
-// halteZwischenablage übergibt das Bild an einen Halter-Prozess (dasselbe Programm, wlclip.Uebergib).
+// ohneDataControl merkt sich, dass der Compositor kein data-control anbietet: Weitere Strg+C starten dann keinen
+// vergeblichen Halter mehr (Kritik Fable, Befund 6).
+var ohneDataControl atomic.Bool
+
+// halteZwischenablage übergibt das Bild an einen Halter-Prozess (dasselbe Programm, wlclip.Uebergib). Mit
+// WAYLAND_SOCKET (geerbte Verbindung, etwa in verschachtelten Sitzungen) fände der Halter nicht sicher denselben
+// Compositor; dann bietet das Fenster selbst an (Befund 5).
 func halteZwischenablage(daten []byte) error {
+	if os.Getenv("WAYLAND_SOCKET") != "" {
+		return errors.New("WAYLAND_SOCKET gesetzt")
+	}
+	if ohneDataControl.Load() {
+		return wlclip.ErrKeinDataControl
+	}
 	programm, err := os.Executable()
 	if err != nil {
 		return err
 	}
 	pid, manager, err := wlclip.Uebergib(programm, daten, wlclip.Frist)
 	if err != nil {
+		if strings.Contains(err.Error(), wlclip.ErrKeinDataControl.Error()) {
+			ohneDataControl.Store(true)
+		}
 		return err
 	}
 	diagnoseEditor("Zwischenablage an Halter übergeben: PID %d, %s, %d Byte, endet bei neuem Inhalt oder nach %v",

@@ -72,9 +72,21 @@ func Helfer(ein io.Reader, meldung io.WriteCloser, grenze time.Duration) int {
 	}
 }
 
-// HelferLauf ist Helfer für main: Standardeingabe, Dateideskriptor 3, Haltezeit.
+// HelferLauf ist Helfer für main: Standardeingabe, Dateideskriptor 3, Haltezeit. Fd 3 gilt nur als Meldeweg, wenn er
+// beim Start eine Pipe ist; sonst (Aufruf von Hand ohne fd 3) bekäme der erste Socket die Nummer 3, und die Meldung
+// landete in der Wayland-Verbindung (Kritik Fable, Befund 1).
 func HelferLauf() int {
-	return Helfer(os.Stdin, os.NewFile(3, "wlclip-meldung"), Haltezeit)
+	var meldung io.WriteCloser
+	if istPipe(3) {
+		meldung = os.NewFile(3, "wlclip-meldung")
+	}
+	return Helfer(os.Stdin, meldung, Haltezeit)
+}
+
+// istPipe meldet, ob fd offen und eine Pipe ist.
+func istPipe(fd int) bool {
+	var st syscall.Stat_t
+	return syscall.Fstat(fd, &st) == nil && st.Mode&syscall.S_IFMT == syscall.S_IFIFO
 }
 
 // Uebergib startet programm mit HelferArgument als abgelösten Prozess (eigene Sitzung, Arbeitsordner /, ohne

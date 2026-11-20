@@ -33,6 +33,23 @@ func attrappe(art, ordner string) int {
 		os.WriteFile(filepath.Join(ordner, "daten"), daten, 0o600)
 		wd, _ := os.Getwd()
 		os.WriteFile(filepath.Join(ordner, "ordner"), []byte(wd), 0o600)
+		// Ablösung: eigene Sitzung, stdout und stderr auf /dev/null, fd 3 eine Pipe (Kritik Fable, Befund 4)
+		var abgeloest []string
+		if sid, _, _ := syscall.RawSyscall(syscall.SYS_GETSID, 0, 0, 0); int(sid) == os.Getpid() {
+			abgeloest = append(abgeloest, "sitzung")
+		}
+		var null syscall.Stat_t
+		syscall.Stat("/dev/null", &null)
+		for _, fd := range []int{1, 2} {
+			var st syscall.Stat_t
+			if syscall.Fstat(fd, &st) == nil && st.Rdev == null.Rdev && st.Mode&syscall.S_IFMT == syscall.S_IFCHR {
+				abgeloest = append(abgeloest, "null"+strconv.Itoa(fd))
+			}
+		}
+		if istPipe(3) {
+			abgeloest = append(abgeloest, "pipe3")
+		}
+		os.WriteFile(filepath.Join(ordner, "abgeloest"), []byte(strings.Join(abgeloest, " ")), 0o600)
 		io.WriteString(meldung, "ok "+ManagerExt+"\n")
 		meldung.Close()
 		return 0
@@ -77,6 +94,9 @@ func TestUebergibOK(t *testing.T) {
 	if b, _ := os.ReadFile(filepath.Join(ordner, "ordner")); string(b) != "/" {
 		t.Errorf("Arbeitsordner %q, erwartet /", b)
 	}
+	if b, _ := os.ReadFile(filepath.Join(ordner, "abgeloest")); string(b) != "sitzung null1 null2 pipe3" {
+		t.Errorf("Ablösung %q, erwartet „sitzung null1 null2 pipe3“", b)
+	}
 }
 
 // TestUebergibFehler: Fehlertext des Halters und fehlende Meldung werden zum Fehler.
@@ -92,11 +112,11 @@ func TestUebergibFehler(t *testing.T) {
 // TestUebergibStumm: meldet sich der Halter nicht, beendet Uebergib nach der Frist das eigene Kind.
 func TestUebergibStumm(t *testing.T) {
 	start := time.Now()
-	ordner, _, _, err := uebergibMit(t, "stumm", 300*time.Millisecond)
+	ordner, _, _, err := uebergibMit(t, "stumm", 2*time.Second)
 	if err == nil {
 		t.Fatal("kein Fehler bei stummem Halter")
 	}
-	if d := time.Since(start); d > 5*time.Second {
+	if d := time.Since(start); d > 8*time.Second {
 		t.Errorf("Uebergib kehrte nach %v zurück", d)
 	}
 	b, _ := os.ReadFile(filepath.Join(ordner, "pid"))
@@ -135,5 +155,26 @@ func TestHelferLeereEingabe(t *testing.T) {
 	var m meldePuffer
 	if code := Helfer(strings.NewReader(""), &m, time.Second); code != 1 || !strings.HasPrefix(m.String(), "fehler: ") {
 		t.Errorf("Exit %d, Meldung %q", code, m.String())
+	}
+}
+
+// TestIstPipe: nur eine offene Pipe gilt als Meldeweg; ein Socket oder eine Datei nicht (Befund 1).
+func TestIstPipe(t *testing.T) {
+	r, w, _ := os.Pipe()
+	defer r.Close()
+	defer w.Close()
+	if !istPipe(int(w.Fd())) {
+		t.Error("Pipe nicht erkannt")
+	}
+	fds, _ := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM|syscall.SOCK_CLOEXEC, 0)
+	defer syscall.Close(fds[0])
+	defer syscall.Close(fds[1])
+	if istPipe(fds[0]) {
+		t.Error("Socket als Pipe erkannt")
+	}
+	f, _ := os.Create(filepath.Join(t.TempDir(), "datei"))
+	defer f.Close()
+	if istPipe(int(f.Fd())) {
+		t.Error("Datei als Pipe erkannt")
 	}
 }

@@ -68,6 +68,9 @@ var (
 // Gio-Patch, F-176).
 const Stau = 10 * time.Second
 
+// scheibe ist, wie oft Diene die Wanduhr gegen die Grenze prüft (im Test kürzer).
+var scheibe = time.Minute
+
 // Halter bietet einen Inhalt in der Zwischenablage an.
 type Halter struct {
 	v       *verbindung
@@ -257,17 +260,26 @@ func (h *Halter) verarbeite(e ereignis) (ende bool, err error) {
 // Diene liefert die Bytes an jeden aus, der einfügt, bis eine andere Anwendung die Zwischenablage übernimmt (nil),
 // der Compositor die Verbindung schließt (ErrVerbindungZu) oder grenze verstrichen ist (ErrZeitgrenze). Danach ist die
 // Verbindung geschlossen und jedes begonnene Senden beendet (ein Einfügen, das gerade läuft, bricht nicht ab).
+//
+// Die Grenze gilt nach der Wanduhr: Fristen in Go laufen auf der monotonen Uhr, die im Standby steht. Diene setzt die
+// Frist deshalb in Scheiben neu und vergleicht mit der Wanduhr (Kritik Fable, Befund 2). Die Frist gilt auch für das
+// Schreiben an den Compositor, damit ein hängender Compositor den Halter nicht festhält.
 func (h *Halter) Diene(grenze time.Duration) error {
 	defer h.senden.Wait()
 	defer h.v.Close()
-	if err := h.v.c.SetReadDeadline(time.Now().Add(grenze)); err != nil {
-		return err
-	}
+	ende := time.Now().Round(0).Add(grenze) // Round(0): ohne monotonen Anteil, Vergleich nach der Wanduhr
 	for {
+		rest := ende.Sub(time.Now().Round(0))
+		if rest <= 0 {
+			return ErrZeitgrenze
+		}
+		if err := h.v.c.SetDeadline(time.Now().Add(min(rest, scheibe))); err != nil {
+			return err
+		}
 		e, err := h.v.lies()
 		if err != nil {
 			if errors.Is(err, os.ErrDeadlineExceeded) {
-				return ErrZeitgrenze
+				continue // Scheibe abgelaufen; Grenze oben prüfen
 			}
 			return err
 		}

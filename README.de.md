@@ -46,7 +46,7 @@ Vorhanden ist:
 
 | Pfad | Was es ist | Prüfen |
 |---|---|---|
-| `.` (Wurzel) | Go-Modul `github.com/Andiministrator/schnapp`: das Programm `cmd/schnapp`, `capture` (Aufnahme über KWin), `selection` (Logik des Overlays), `canvas` (Logik des Editors), `document` (Ebenen, Zuschnitt, Schwärzen, Rückgängig), `fileformat` (Arbeitsdatei und Exporte), `render` (Ebenen zu Pixeln), `library` (Bibliothek), `settings` (`settings.ini`), `ui` (Overlay und Editor in Gio), `i18n` (Sprachwahl, gettext-PO-Leser) und `po` (eingebettete Übersetzungen, `po/de.po`); `data/` enthält die Vorlage der Desktop-Datei | `go vet ./... && go test ./...` (mit `GOFLAGS` wie oben) |
+| `.` (Wurzel) | Go-Modul `github.com/Andiministrator/schnapp`: das Programm `cmd/schnapp`, `capture` (Aufnahme über KWin), `selection` (Logik des Overlays), `canvas` (Logik des Editors), `document` (Ebenen, Zuschnitt, Schwärzen, Rückgängig), `fileformat` (Arbeitsdatei und Exporte), `render` (Ebenen zu Pixeln), `library` (Bibliothek), `settings` (`settings.ini`), `ui` (Overlay und Editor in Gio), `wlclip` (hält ein kopiertes Bild nach dem Schließen des Editors in der Zwischenablage), `i18n` (Sprachwahl, gettext-PO-Leser) und `po` (eingebettete Übersetzungen, `po/de.po`); `data/` enthält die Vorlage der Desktop-Datei | `go vet ./... && go test ./...` (mit `GOFLAGS` wie oben) |
 | `draw/` | Go-Modul `github.com/Andiministrator/schnapp/draw`: SVG lesen, Rasterer mit Kantenglättung, Rechenhilfen (nur Standardbibliothek) | `cd draw && go vet ./... && go test ./...` |
 | `brand/` | Logo, Farben und Corporate Design ([`brand/corporate-design.md`](brand/corporate-design.md), mit PDF) | `python3 brand/werkzeug/paket.py` erzeugt die Logo-Dateien neu |
 | `third_party/gio/` | Gio mit unserem Patch (Vollbild auf gewähltem Monitor, gebrochene Skalierung, Mauszeiger bei gemischten Skalen, Bilder in der Zwischenablage), eingebunden per `replace` in `go.mod` | `third_party/gio-patch.sh pruefen`, siehe [`third_party/README.md`](third_party/README.md) |
@@ -84,8 +84,8 @@ aktiv; **Esc** geht stufenweise zurück: Texteingabe → Ziehen → Auswahl → 
 verschiebt, ändert die Größe oder biegt; sie bleibt dabei immer teilweise im Bild. Das Mausrad zoomt zum Zeiger; mit
 Auswählen verschiebt Ziehen auf freier Fläche die Ansicht, die mittlere Taste in jedem Werkzeug. Tasten: **Strg+Z**
 rückgängig, **Strg+Umschalt+Z**/**Strg+Y** wiederholen, **Entf** löschen, **Strg+S** speichern,
-**Strg+C** fertiges Bild in die Zwischenablage (es bleibt nach dem Schließen des Editors, bis etwas anderes
-kopiert wird, höchstens 12 Stunden), **Strg+0** einpassen,
+**Strg+C** fertiges Bild in die Zwischenablage (mit dem data-control-Protokoll, etwa unter KDE Plasma, bleibt
+es nach dem Schließen des Editors, bis etwas anderes kopiert wird, höchstens 12 Stunden; sonst nur, solange der Editor offen ist), **Strg+0** einpassen,
 **Strg+1** 100 %, **Strg+W** schließen.
 
 Änderungen werden beim Schließen gespeichert; **Strg+S** ohne Änderung schreibt nichts. Eine Datei außerhalb der

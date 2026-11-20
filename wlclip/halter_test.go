@@ -217,7 +217,10 @@ func TestOhneDataControlOderSitz(t *testing.T) {
 func TestProtokollfehler(t *testing.T) {
 	client, server := paar(t)
 	c := &compositor{t: t, v: server}
+	fertig := make(chan struct{})
+	defer func() { <-fertig }() // Compositor-Goroutine endet vor dem Test (kein t.Errorf nach Testende)
 	go func() {
+		defer close(fertig)
 		reg := c.anmeldung(normaleGlobals)
 		c.setzen(reg, 3, 5, ManagerExt, "image/png", func(i ids, _ uint32) {
 			c.sende(idDisplay, evDisplayError, new(nachricht).u32(i.geraet).u32(1).str("used source"))
@@ -233,7 +236,10 @@ func TestProtokollfehler(t *testing.T) {
 func TestSofortAbgeloest(t *testing.T) {
 	client, server := paar(t)
 	c := &compositor{t: t, v: server}
+	fertig := make(chan struct{})
+	defer func() { <-fertig }()
 	go func() {
+		defer close(fertig)
 		reg := c.anmeldung(normaleGlobals)
 		c.setzen(reg, 3, 5, ManagerExt, "image/png", func(i ids, _ uint32) {
 			c.sende(i.quelle, evSourceCancel, nil)
@@ -263,6 +269,9 @@ func bereit(t *testing.T) (*Halter, *compositor, ids) {
 
 // TestZeitgrenze: ohne Ereignis endet Diene nach der Grenze mit ErrZeitgrenze.
 func TestZeitgrenze(t *testing.T) {
+	alt := scheibe
+	scheibe = 20 * time.Millisecond // mehrere Scheiben bis zur Grenze
+	defer func() { scheibe = alt }()
 	h, _, _ := bereit(t)
 	start := time.Now()
 	if err := h.Diene(100 * time.Millisecond); !errors.Is(err, ErrZeitgrenze) {

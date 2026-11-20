@@ -43,7 +43,7 @@ Einfüge-Anfragen:
 
 - **Ziel beim Start fest:** nur die eigene Auswahl; er sucht keine Prozesse und beendet keine. Der Editor beendet nur
   sein eigenes Kind über das Prozess-Handle, bevor es abgeholt ist (die PID kann nicht wiederverwendet sein).
-- **Harte Zeitgrenze:** 12 Stunden (`wlclip.Haltezeit`); danach gibt er die Zwischenablage frei und endet.
+- **Harte Zeitgrenze:** 12 Stunden nach der Wanduhr (`wlclip.Haltezeit`, Nachtrag 1); danach gibt er die Zwischenablage frei und endet.
 - **Genau ein Werkzeug:** Bytes in die Pipe eines Einfügenden schreiben (höchstens 10 s ohne Fortschritt, wie F-176).
   Er schreibt keine Dateien und löscht nichts.
 - **Endet von selbst**, sobald eine andere Anwendung etwas kopiert (`cancelled`), das Gerät endet (`finished`), der
@@ -65,3 +65,16 @@ Je Strg+C entsteht ein neuer Halter; der vorige wird dabei abgelöst und endet. 
 - Grundlage für „Aufnahme direkt in die Zwischenablage“ (ohne Editor): derselbe Halter.
 - Unter einem Compositor ohne data-control (etwa GNOME) bleibt es beim bisherigen Verhalten; das Portal-Thema
   (ADR-0007) entscheidet dort später.
+
+## Nachtrag 1 (20.11.2026): Nacharbeit aus der Kritik (Fable)
+
+- **Zeitgrenze nach der Wanduhr:** Fristen in Go laufen auf der monotonen Uhr, die im Standby steht. `Diene` setzt die
+  Frist in Scheiben von einer Minute neu und vergleicht mit der Wanduhr; die Frist gilt für Lesen und Schreiben (ein
+  hängender Compositor hält den Halter nicht fest). Ein Einfügen, das bei Ablauf gerade läuft, darf zu Ende laufen
+  (je 64-KiB-Stück höchstens 10 s ohne Fortschritt).
+- **Meldeweg nur über eine Pipe:** Der Halter schreibt auf fd 3 nur, wenn fd 3 beim Start eine Pipe ist. Von Hand ohne
+  fd 3 aufgerufen, bekäme sonst der Wayland-Socket die Nummer 3 und die Meldung landete darin.
+- **Rückfall auf Gio ohne Halter**, wenn `WAYLAND_SOCKET` gesetzt ist (geerbte Verbindung; der Halter fände nicht
+  sicher denselben Compositor), und für den Rest der Editor-Sitzung, sobald der Halter „kein data-control“ meldet.
+- README nennt die Einschränkung „mit data-control, etwa KDE Plasma“. Offen als F-189 (Karte #94): geerbte
+  Deskriptoren ohne CLOEXEC und das Verhalten in einer systemd-Scope.

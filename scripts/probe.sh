@@ -47,17 +47,19 @@ if [ "${PROBE_INNEN:-}" = 1 ]; then
 		bild="$(cat "$probe/ablage.txt")"
 		{
 			echo "== Halter der Zwischenablage mit $(basename "$bild") ($(stat -c %s "$bild") Byte)"
-			setsid "$probe/schnapp" --internal-keep-clipboard < "$bild" 3> "$probe/meldung.txt" > /dev/null 2>&1 &
+			# fd 3 als Pipe (der Halter meldet nur über eine Pipe, ADR-0024)
+			setsid "$probe/schnapp" --internal-keep-clipboard < "$bild" 3> >(cat > "$probe/meldung.txt") > /dev/null 2>&1 &
 			halter=$!
 			for _ in $(seq 1 50); do grep -q . "$probe/meldung.txt" && break; sleep 0.1; done
 			echo "meldung: $(cat "$probe/meldung.txt")"
+			grep -q '^ok ' "$probe/meldung.txt" || echo "probe.sh: Halter meldet kein ok"
 			echo "typen: $(timeout 10 wl-paste --list-types | tr '\n' ' ')"
 			timeout 10 wl-paste --type image/png > "$probe/eingefuegt.png"
-			cmp -s "$bild" "$probe/eingefuegt.png" && echo "eingefuegt: gleich" || echo "eingefuegt: VERSCHIEDEN ($(stat -c %s "$probe/eingefuegt.png") Byte)"
+			cmp -s "$bild" "$probe/eingefuegt.png" && echo "eingefuegt: gleich" || echo "probe.sh: eingefuegt VERSCHIEDEN ($(stat -c %s "$probe/eingefuegt.png") Byte)"
 			kill -0 "$halter" 2> /dev/null && echo "halter: läuft" || echo "halter: beendet"
 			timeout 10 wl-copy "anderer Inhalt"
 			for _ in $(seq 1 50); do kill -0 "$halter" 2> /dev/null || break; sleep 0.1; done
-			kill -0 "$halter" 2> /dev/null && echo "nach wl-copy: halter läuft NOCH" || echo "nach wl-copy: halter beendet"
+			kill -0 "$halter" 2> /dev/null && echo "probe.sh: nach wl-copy läuft der Halter NOCH" || echo "nach wl-copy: halter beendet"
 			echo "jetzt: $(timeout 10 wl-paste --no-newline)"
 		} > "$probe/ergebnis.txt" 2>&1
 		exit 0

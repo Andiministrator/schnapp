@@ -127,7 +127,10 @@ func (v *verbindung) sende(obj uint32, op uint16, n *nachricht) error {
 	if len(n.fds) > 0 {
 		oob = syscall.UnixRights(n.fds...)
 	}
-	_, _, err := v.c.WriteMsgUnix(buf, oob, nil)
+	geschrieben, _, err := v.c.WriteMsgUnix(buf, oob, nil)
+	if err == nil && geschrieben != len(buf) {
+		err = fmt.Errorf("wlclip: Nachricht nur teilweise gesendet (%d von %d Byte)", geschrieben, len(buf))
+	}
 	return err
 }
 
