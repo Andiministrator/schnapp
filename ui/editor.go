@@ -954,7 +954,8 @@ func (e *editor) tasten(gtx layout.Context) {
 			return
 		}
 		if ed, ok := ev.(key.EditEvent); ok {
-			if e.s.TextLaeuft() {
+			// Bei offenem Menü wirken nur Esc und Enter (ADR-0026 Nachtrag 1, F-261): auch getippte Zeichen nicht.
+			if e.s.TextLaeuft() && !e.menue.offen {
 				e.s.Tippe(ed.Text)
 			}
 			continue

@@ -202,7 +202,7 @@ func (e *editor) zeichneMenue(gtx layout.Context, rechts, y int) {
 	}
 	if hoehe > mx.Y {
 		trenn = 0
-		zeile = max(gtx.Dp(20), (mx.Y-gtx.Dp(6)*2)/len(eintraege))
+		zeile = menueZeilenhoehe(mx.Y, gtx.Dp(6), gtx.Dp(20), gtx.Dp(32), len(eintraege))
 		hoehe = gtx.Dp(6)*2 + zeile*len(eintraege)
 		y = 0
 	}
@@ -229,6 +229,13 @@ func (e *editor) zeichneMenue(gtx layout.Context, rechts, y int) {
 		oy += zeile
 	}
 	t.Pop()
+}
+
+// menueZeilenhoehe ist die Zeilenhöhe, wenn das Fenster niedriger ist als die Liste: der Platz nach Abzug des
+// Randes, geteilt durch die Zeilen, nie unter kleinst und nie über groesst (F-262: sonst würden die Zeilen bei
+// Fenstern knapp unter der Listenhöhe höher statt niedriger). Alles in Pixeln.
+func menueZeilenhoehe(fensterHoehe, rand, kleinst, groesst, zeilen int) int {
+	return min(groesst, max(kleinst, (fensterHoehe-rand*2)/zeilen))
 }
 
 // menueZeile zeichnet einen Eintrag: Text links, Kürzel rechts, grau wenn nicht bedienbar.

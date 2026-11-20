@@ -70,5 +70,5 @@ wenig Code (ADR-0011).
   nicht als Kopieren des Bilds gemeint sein muss. Einträge, die eine abgeschlossene Eingabe brauchen (Löschen,
   Text bearbeiten, Ganzes Bild, Gestauchtes zurückholen), sind während der Eingabe grau.
 - **Niedrige Fenster (F-252):** Passt die Liste nicht unter den Knopf, rückt sie nach oben; ist das Fenster niedriger
-  als die Liste, entfallen die Gruppenabstände und die Zeilen werden niedriger (mindestens 20 dp).
+  als die Liste, entfallen die Gruppenabstände und die Zeilen werden niedriger (mindestens 20 dp, höchstens 32 dp).
 - **Offen (Karte):** Bedienung der Liste allein per Tastatur (Fokus in die Liste, Pfeiltasten, Fokusring), F-255.
