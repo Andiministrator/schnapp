@@ -118,6 +118,9 @@ func (s *Sitzung) SetzeWerkzeug(w Werkzeug) bool {
 		return false
 	}
 	s.TextBestaetigen()
+	if ohneGriffe(w) {
+		s.Auswahl = 0 // F-174: sonst zöge ein Zug nahe einem Griff den Griff statt den Rahmen
+	}
 	s.Werkzeug = w
 	return true
 }

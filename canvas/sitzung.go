@@ -160,7 +160,7 @@ func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
 	}
 	o := s.sichtbareObjekte() // Verborgenes ist nicht zu greifen (ADR-0023 Punkt 7)
 	q := s.original(p)
-	if sel, ok := s.D.Objekt(s.Auswahl); ok {
+	if sel, ok := s.D.Objekt(s.Auswahl); ok && !ohneGriffe(s.Werkzeug) {
 		if art, ok := GriffTreffer(sel, q, s.toleranz()); ok && s.D.BeginneZug(sel.Kennung()) == nil {
 			s.zug, s.griff, s.startObj = zugGriff, art, sel
 			return

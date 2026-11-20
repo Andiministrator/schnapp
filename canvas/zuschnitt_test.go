@@ -429,3 +429,40 @@ func TestZuschnittUndStreifenNichtZerstoerend(t *testing.T) {
 		t.Error("Stand nach Rückgängig weicht ab")
 	}
 }
+
+// F-174: Mit Zuschneiden oder Stauchen zieht ein Zug an der Ecke des zuvor ausgewählten Kastens einen Rahmen statt den
+// Griff. Der Werkzeugwechsel hebt die Auswahl auf; Druecken wertet bei diesen Werkzeugen auch dann keine Griffe aus,
+// wenn die Auswahl trotzdem gesetzt ist.
+func TestGriffeGehenNichtVorRahmen(t *testing.T) {
+	for _, w := range []Werkzeug{WerkzeugZuschneiden, WerkzeugStauchen} {
+		for _, spaeter := range []bool{false, true} {
+			s, k, _ := sitzung(t)
+			s.Druecken(f(30, 30), TastePrimaer) // Kasten (10,10)-(50,50) auswählen
+			s.Loslassen(f(30, 30))
+			if s.Auswahl != k {
+				t.Fatalf("Auswahl %d, Soll %d", s.Auswahl, k)
+			}
+			vorher, _ := s.D.Objekt(k)
+			if !s.SetzeWerkzeug(w) {
+				t.Fatal("Werkzeug")
+			}
+			if s.Auswahl != 0 {
+				t.Errorf("Werkzeug %v: Auswahl %d blieb, Soll 0", w, s.Auswahl)
+			}
+			if spaeter {
+				s.Auswahl = k
+			}
+			zieh(s, f(50, 50), f(100, 80)) // an der Ecke unten rechts
+			if o, _ := s.D.Objekt(k); !reflect.DeepEqual(o, vorher) {
+				t.Errorf("Werkzeug %v: Kasten verändert: %v, vorher %v", w, o, vorher)
+			}
+			if w == WerkzeugZuschneiden {
+				if z := s.D.Zuschnitt(); z != image.Rect(50, 50, 100, 80) {
+					t.Errorf("Zuschnitt %v, Soll (50,50)-(100,80)", z)
+				}
+			} else if n := len(s.D.Streifen()); n != 1 {
+				t.Errorf("%d Streifen, Soll 1", n)
+			}
+		}
+	}
+}

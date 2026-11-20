@@ -27,6 +27,10 @@ func rahmenWerkzeug(w Werkzeug) bool {
 	return schwaerzt(w) || w == WerkzeugZuschneiden || w == WerkzeugStauchen
 }
 
+// ohneGriffe meldet, ob bei w die Griffe eines ausgewählten Objekts nicht gelten: Zuschneiden und Stauchen ziehen
+// immer einen Rahmen (F-174). SetzeWerkzeug hebt die Auswahl auf, Druecken wertet dann auch keine Griffe aus.
+func ohneGriffe(w Werkzeug) bool { return w == WerkzeugZuschneiden || w == WerkzeugStauchen }
+
 // NimmAnsichtMeldung liefert einmal die Meldung des letzten Zuschneidens oder Stauchens; danach ist sie gelöscht.
 func (s *Sitzung) NimmAnsichtMeldung() AnsichtMeldung {
 	m := s.ansichtMeldung
