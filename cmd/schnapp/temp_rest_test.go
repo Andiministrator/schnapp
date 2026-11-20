@@ -220,8 +220,8 @@ func TestAufnahmeWarntBeiTempRest(t *testing.T) {
 	if code != exitOK || aus != "/ablage/2026-11/datei.png\n" {
 		t.Errorf("Code %d, aus %q (Soll: Aufnahme gilt)", code, aus)
 	}
-	if !strings.Contains(fehler, "Warning: a temporary copy of the screenshot could not be removed") || !strings.Contains(fehler, "Entfernen scheitert") {
-		t.Errorf("stderr %q (Soll: Warnung mit dem Grund)", fehler)
+	if !strings.Contains(fehler, "Warning: a temporary copy of the screenshot could not be removed") || strings.Contains(fehler, "Entfernen scheitert") {
+		t.Errorf("stderr %q (Soll: Warnung ohne rohe Ursache, F-303)", fehler)
 	}
 	if strings.Contains(fehler, "Could not save the screenshot") {
 		t.Errorf("stderr %q: Soll kein Speicherfehler sein", fehler)

@@ -14,6 +14,7 @@ import (
 	"gioui.org/f32"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
+	"gioui.org/io/system"
 	"gioui.org/layout"
 
 	"github.com/Andiministrator/schnapp/canvas"
@@ -210,6 +211,18 @@ func TestMenueOffenWaehrendSpeichern(t *testing.T) {
 	l.taste(key.NameReturn, 0)
 	if l.e.s.D.Stand() != stand || l.inhalt() != "Hallo" {
 		t.Errorf("Menü wirkt während des Speicherns: Stand %d/%d, Inhalt %q", l.e.s.D.Stand(), stand, l.inhalt())
+	}
+	// „Schließen“ ist eine Schließen-Anfrage wie der Fensterknopf und geht weiter (F-299, ADR-0020 Nachtrag 6).
+	var anfragen int
+	l.e.perform = func(a system.Action) {
+		if a == system.ActionClose {
+			anfragen++
+		}
+	}
+	l.e.menue.eintraege[l.index(aktSchliessen)].Click()
+	l.setle()
+	if anfragen != 1 {
+		t.Errorf("Menüeintrag „Schließen“ während des Speicherns: %d Schließen-Anfragen, erwartet 1", anfragen)
 	}
 }
 

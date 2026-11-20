@@ -48,6 +48,16 @@ func (e *editor) menueEintraege() []menueEintrag {
 	}
 }
 
+// schliessenEintrag ist der Knopf des Menüeintrags „Schließen“ (nil, wenn es ihn nicht gibt).
+func (e *editor) schliessenEintrag() *widget.Clickable {
+	for i, en := range e.menueEintraege() {
+		if en.akt == aktSchliessen {
+			return &e.menue.eintraege[i]
+		}
+	}
+	return nil
+}
+
 // menueKuerzel ist das angezeigte Kürzel eines Eintrags; „Text bearbeiten“ geht mit Enter.
 func menueKuerzel(a aktion) string {
 	if a == aktTextBearbeiten {
@@ -213,7 +223,13 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 	case aktSchliessen:
 		return func(layout.Context) {
 			diagnoseEditor("Schließen über Taste oder Menü")
-			e.w.Perform(system.ActionClose) // in der eigenen Schleife, wie im Overlay (F-77)
+			// In der eigenen Schleife, wie im Overlay (F-77): Die Anfrage kommt als ClosingEvent zurück und geht durch
+			// schliessen; läuft ein Speichern, merkt SchliessenAnfrage sie vor (F-299).
+			if e.perform != nil {
+				e.perform(system.ActionClose)
+				return
+			}
+			e.w.Perform(system.ActionClose)
 		}
 	}
 	return nil
@@ -270,7 +286,8 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 		}
 	}
 	for i, en := range e.menueEintraege() {
-		if m.eintraege[i].Clicked(gtx) && m.offen && en.an && an() {
+		// Schließen wirkt auch während des Speicherns wie der Fensterknopf: Die Anfrage wird vorgemerkt (F-299).
+		if m.eintraege[i].Clicked(gtx) && m.offen && en.an && (an() || en.akt == aktSchliessen) {
 			e.menueSchliesse(gtx, false) // Fokus an die Leinwand: getippter Text nach „Text bearbeiten“ kommt an
 			e.fuehreAus(gtx, en.akt, true)
 		}

@@ -353,7 +353,7 @@ func (s *Sitzung) Gespeichert() {
 }
 
 // Ungesichert meldet, ob beim Schließen noch gespeichert werden muss: geändert und nicht schon nach einem gescheiterten
-// Speichern zum Verwerfen freigegeben (Schliessen).
+// Speichern zum Verwerfen freigegeben (SchliessenAnfrage, SpeichernEnde).
 func (s *Sitzung) Ungesichert() bool {
 	return s.Geaendert() && !(s.verwerfen && s.verwerfenBei == s.D.Stand())
 }

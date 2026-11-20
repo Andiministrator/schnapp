@@ -113,6 +113,11 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		}
 		if err := an.editor(t.Datei, t.OhneGrenze); err != nil {
 			diagnoseUrsache(fehler, err)
+			if ungesichert(err) {
+				// Geöffnet war die Datei; gescheitert ist das Speichern beim Schließen (F-302).
+				fmt.Fprintf(fehler, i18n.T("The editor could not be opened or saved: %v")+"\n", nutzerFehler(err))
+				return exitFehler
+			}
 			fmt.Fprintf(fehler, i18n.T("Cannot open %s: %s")+"\n", t.Datei, nutzerFehler(err))
 			return exitFehler
 		}
@@ -130,6 +135,11 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		if err != nil {
 			diagnoseUrsache(fehler, err)
 			fmt.Fprintf(fehler, i18n.T("The editor could not be opened or saved: %v")+"\n", nutzerFehler(err))
+			// Die Aufnahme liegt in der Bibliothek, ein Fensterfehler allein bleibt eine Warnung (Exit 0). Gingen aber
+			// Änderungen verloren, ist es ein Fehler (ADR-0020 Nachtrag 7, F-302).
+			if code == exitOK && ungesichert(err) {
+				code = exitFehler
+			}
 		}
 	}
 	return code
@@ -264,13 +274,21 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 	pfad, stand, err := an.ablegen(d)
 	diagnose(fehler, "Ablegen in der Bibliothek: %v", time.Since(start).Round(time.Millisecond))
 	if err != nil && !(pfad != "" && errors.Is(err, library.ErrTempRest)) {
+		if errors.Is(err, library.ErrTempRest) {
+			// Ohne Pfad und ohne Paketpräfix wie beim Editor (F-117, F-303); die Ursache nur mit SCHNAPP_DEBUG.
+			diagnose(fehler, "Ursache der temporären Kopie: %v", err)
+			fmt.Fprintf(fehler, i18n.T("Could not save the screenshot: %v")+"\n", i18n.T("A temporary copy of the new capture could not be removed."))
+			return exitFehler, nil
+		}
 		fmt.Fprintf(fehler, i18n.T("Could not save the screenshot: %v")+"\n", err)
 		return exitFehler, nil
 	}
 	if err != nil {
 		// Abgelegt, aber eine temporäre Kopie blieb liegen (F-274, Z-4): Sie zeigt nach einem späteren Schwärzen noch
-		// den alten Stand. Warnen, der Weg geht weiter.
-		fmt.Fprintf(fehler, i18n.T("Warning: a temporary copy of the screenshot could not be removed and may still show it after you redact it later: %v")+"\n", err)
+		// den alten Stand. Warnen, der Weg geht weiter. Der Text trägt weder Pfad noch Paketpräfix noch rohe Ursache
+		// (F-303, wie F-117 beim Editor); die Ursache steht nur mit SCHNAPP_DEBUG im Debug-Log.
+		diagnose(fehler, "Ursache der temporären Kopie: %v", err)
+		fmt.Fprintln(fehler, i18n.T("Warning: a temporary copy of the screenshot could not be removed and may still show it after you redact it later."))
 	}
 	if _, err := fmt.Fprintln(aus, pfad); err != nil {
 		// Die Aufnahme liegt in der Bibliothek; nur die Pfadzeile ging verloren (F-162). Nicht verschlucken: Skripte

@@ -407,7 +407,7 @@ func sammleOhneUebersetzt(err error, teile, texte *[]string) {
 		*texte = append(*texte, u.text)
 		return
 	}
-	*teile = append(*teile, nutzerFehler(err))
+	*teile = append(*teile, nutzerFehlerBlatt(err))
 }
 
 // ursacheSpeicherfehler liefert die ursprüngliche Ursache hinter einem übersetzten Fehler (nur für das Debug-Log:
@@ -423,20 +423,31 @@ func ursacheSpeicherfehler(err error) string {
 // nutzerFehler übersetzt bekannte Fehler beim Öffnen für die Ausgabe; Fehler des Speicherns sind schon übersetzt; Unbekanntes bleibt, wie es ist
 // (Paketfehler sind nicht übersetzt, Kritik A-9).
 func nutzerFehler(err error) string {
-	var u uebersetzt
-	if errors.As(err, &u) { // nur die Weiche: irgendwo im Baum steht ein übersetzter Speicherfehler
-		// Schon übersetzt (Speichern, F-117). Steht der Speicherfehler in einem Join mit anderen Fehlern (Fenster,
-		// F-129), stehen sie vor den übersetzten Texten; jeder verschiedene Text erscheint einmal (Reihenfolge wie im
-		// Baum), die Ursache mit ihren Pfaden nie.
-		var teile, texte []string
-		sammleOhneUebersetzt(err, &teile, &texte)
-		for _, t := range texte {
-			if !slices.Contains(teile, t) {
-				teile = append(teile, t)
-			}
+	// Jeder Join wird durchlaufen, nicht nur einer mit übersetztem Speicherfehler (F-301): Sonst nähme die Weiche des
+	// Blatts den ersten passenden Fall, und ein Teil — etwa der Hinweis auf ungesicherte Änderungen neben einem
+	// Fensterfehler — fehlte. Schon übersetzte Speicherfehler (F-117) stehen hinter den übrigen Teilen (Fenster, F-129);
+	// jeder verschiedene Text erscheint einmal (Reihenfolge wie im Baum), die Ursache mit ihren Pfaden nie.
+	var teile, texte []string
+	sammleOhneUebersetzt(err, &teile, &texte)
+	for _, t := range texte {
+		if !slices.Contains(teile, t) {
+			teile = append(teile, t)
 		}
-		return strings.Join(teile, "; ")
 	}
+	return strings.Join(teile, "; ")
+}
+
+// ungesichert meldet, ob ein Fehler des Editors ungesicherte Änderungen bedeutet: das Speichern hat nicht geantwortet
+// (ui.ErrSpeichernHaengt) oder ist gescheitert, ohne dass der Nutzer es verworfen hat (übersetzter Speicherfehler,
+// auch beim Zerstören des Fensters, F-300). Nur dann ist der Exit-Code ein Fehler (ADR-0020 Nachtrag 7, F-302); ein
+// Fensterfehler allein (kein Wayland, Overlay offen) lässt eine schon abgelegte Aufnahme unberührt.
+func ungesichert(err error) bool {
+	var u uebersetzt
+	return errors.Is(err, ui.ErrSpeichernHaengt) || errors.As(err, &u)
+}
+
+// nutzerFehlerBlatt übersetzt einen einzelnen Fehler (kein Join, kein übersetzter Speicherfehler).
+func nutzerFehlerBlatt(err error) string {
 	switch {
 	case errors.Is(err, fs.ErrNotExist):
 		return i18n.T("The file does not exist.")

@@ -174,7 +174,7 @@ func (s *Sitzung) SpeichernEnde(warnung bool, err error) Ende {
 			}
 			return Ende{Schliessen: true, Schluss: SchlussZu, SignalFehler: err != nil}
 		}
-		// Ein Strg+S oder Schließen ist gescheitert, das Signal versucht es noch einmal (wie SchliessenNachSignal).
+		// Ein Strg+S oder Schließen ist gescheitert, das Signal versucht es noch einmal (Ende.Erneut: ein neues Speichern).
 		abzug, e := s.beginne(AnlassSignal)
 		if e != nil {
 			return Ende{Schliessen: true, Schluss: SchlussZu, SignalFehler: true}

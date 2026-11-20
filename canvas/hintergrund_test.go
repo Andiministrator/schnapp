@@ -130,7 +130,7 @@ func TestSchliessenWaehrendStrgS(t *testing.T) {
 }
 
 // Ein Signal speichert und schließt in jedem Fall; kommt es während eines Strg+S, das scheitert, versucht es ein
-// weiteres Speichern (wie SchliessenNachSignal nach einem gescheiterten Schließen).
+// weiteres Speichern (Ende.Erneut, auch nach einem gescheiterten Schließen).
 func TestSignalImHintergrund(t *testing.T) {
 	s, _, _ := sitzung(t)
 	if zu, a := s.SignalAnfrage(); !zu || a != nil {

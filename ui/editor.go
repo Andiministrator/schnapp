@@ -97,7 +97,7 @@ type Gespeichert struct {
 
 // HaeltOffen meldet, ob das Fenster beim Schließen einmal offen bleiben soll, damit der Hinweis gelesen wird: bei jeder
 // Warnung und bei jedem Hinweis, etwa dem Ablageort einer neuen Aufnahme (F-158, ADR-0020 Nachtrag 4). Die nächste
-// Schließen-Anfrage schließt (canvas.Sitzung.Schliessen).
+// Schließen-Anfrage schließt (zweistufig: canvas.Sitzung.SchliessenAnfrage, dann SpeichernEnde).
 func (g Gespeichert) HaeltOffen() bool { return g.Warnung || g.Hinweis != "" }
 
 // Editor öffnet das Dokument in einem Fenster und kehrt zurück, wenn es geschlossen wird. Ungespeicherte Änderungen
@@ -183,6 +183,9 @@ type editor struct {
 	exportCtx     context.Context
 	exportOffen   bool // ein Dialog läuft (nur einer zugleich); nur die Ereignisschleife liest und setzt es
 	exportAntwort chan exportErgebnis
+
+	// perform setzt eine Fensteraktion ab; nil heißt e.w.Perform. Naht für Tests ohne Fenster (F-299).
+	perform func(system.Action)
 
 	erzwungen  bool  // Schließen freigegeben (Signal, Speichern zurück): kein ClosingEvent mehr abbrechen
 	schlussErr error // Speicherfehler beim Schließen nach Signal, Rückgabe von Editor
@@ -474,6 +477,12 @@ func (e *editor) speichernAbwarten() {
 			frist.Stop()
 			ende := e.s.SpeichernEnde(r.g.HaeltOffen(), r.err)
 			e.speichernMelden(r, ende)
+			// Eine Schließen-Anfrage, deren Fehler erst jetzt ankommt, hat niemand gesehen: Die Statusleiste verschwindet
+			// mit dem Fenster, und der Stand gilt schon als verworfen. Also in die Rückgabe, nicht still verlieren (F-300).
+			// Anders in speichernFertig: Dort zeigt ein Bild den Fehler, und die nächste Anfrage verwirft.
+			if ende.Schluss == canvas.SchlussFehler && e.schlussErr == nil {
+				e.schlussErr = r.err
+			}
 			if ende.Erneut != nil {
 				e.speichernStarten(ende.Erneut)
 			}
@@ -1305,10 +1314,18 @@ func (e *editor) tasten(gtx layout.Context) {
 		if e.s.SpeichernLaeuft() {
 			// Während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6): abholen, damit Filter und Fokus
 			// bestehen bleiben, und verwerfen. Nur Strg+C wirkt: Kopieren ändert nichts am Dokument, und während des
-			// Speicherns läuft kein Zug, der Abzug gelingt (F-285).
-			if k, ok := ev.(key.Event); ok && k.State == key.Press && !e.menue.offen {
-				if t, ok := findeTaste(k.Name, k.Modifiers, e.s.TextLaeuft()); ok && !t.hatWerkzeug && t.akt == aktKopieren {
-					e.fuehreAus(gtx, aktKopieren, false)
+			// Speicherns läuft kein Zug, der Abzug gelingt (F-285). Ebenso Strg+W und Enter auf dem Menüeintrag
+			// „Schließen“: Sie sind eine Schließen-Anfrage wie der Fensterknopf, die SchliessenAnfrage vormerkt (F-299).
+			if k, ok := ev.(key.Event); ok && k.State == key.Press {
+				if e.menue.offen {
+					if k.Name == key.NameReturn || k.Name == key.NameEnter {
+						if c := e.fokussierterKnopf(gtx); c != nil && c == e.schliessenEintrag() {
+							e.knopfPerTaste(c)
+						}
+					}
+				} else if t, ok := findeTaste(k.Name, k.Modifiers, e.s.TextLaeuft()); ok && !t.hatWerkzeug &&
+					(t.akt == aktKopieren || t.akt == aktSchliessen) {
+					e.fuehreAus(gtx, t.akt, false)
 				}
 			}
 			continue
