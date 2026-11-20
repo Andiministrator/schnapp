@@ -94,6 +94,10 @@ Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden;
   `probe` (Overlay wählt den ersten Monitor ohne Eingabe; nie ausliefern), Zeitgrenze `timeout -k 5 90`. Der echte
   Desktop wird dabei nie aufgenommen; der innere Teil bricht ab, wenn er nicht auf dem privaten Bus läuft. Ergebnisse
   werden vor jedem Lauf geleert — ein Ergebnis ohne frischen Lauf war ein angreifbarer Beleg (Kritik Fable, F-175).
+  Die Probe-Programme selbst (Schnapp mit Tag `probe`, Fernbedienung) verweigern außerhalb des virtuellen KWin den
+  Start (`internal/probeschutz.NurVirtuell`: Marke, privater Bus, Socket `schnapp-probe`, Laufzeitordner unter
+  `tmp/probe/run`, alle zugleich; F-229) — ein liegen gebliebenes `tmp/probe/schnapp` nimmt so nie den echten Monitor
+  auf. Trotzdem nie von Hand starten. `probe.sh` biegt auch `XDG_STATE_HOME` um und entfernt `WAYLAND_SOCKET` (F-230).
   Andi bleibt für das, was nur auf seinem Rechner geht: Aussehen, echte Monitore mit gemischter Skala, Klipper,
   Tastatur im Editor — gebündelt (Karte #92), nicht Lauf für Lauf.
 - **Tests, die Claude selbst fahren kann, fährt Claude selbst (Andi, 20.11.2026, zum zweiten Mal gefragt: „kannst du

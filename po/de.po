@@ -474,4 +474,4 @@ msgid "The part reached the edge and was cropped off; “Whole image” brings i
 msgstr "Der Teil reichte bis an den Rand und wurde abgeschnitten; „Ganzes Bild“ holt ihn zurück."
 
 msgid "The area is too small to redact at this zoom; zoom in or draw a larger area."
-msgstr "Der Bereich ist bei diesem Zoom zu klein zum Schwärzen; zoome hinein oder zieh einen größeren Bereich."
+msgstr "Der Bereich ist bei diesem Zoom zu klein zum Schwärzen; hineinzoomen oder einen größeren Bereich ziehen."
