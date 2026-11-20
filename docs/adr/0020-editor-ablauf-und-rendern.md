@@ -148,3 +148,10 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   steht nur der Pfad einer neuen Aufnahme vor dem Editor). Der Pfad der neuen Aufnahme entsteht erst beim Speichern,
   mitten in der Sitzung; eine Ausgabe beim Schließen wäre ein neues Verhalten ohne Bedarf. Die Meldung geht bei
   geschlossenem Fenster auf die Fehlerausgabe (Nachtrag 2).
+- **Ablageort beim Schließen (F-158; Claudes Entscheidung, Andi informiert):** Wer eine Datei von außen ohne Strg+S
+  schließt, bekommt dieselbe Meldung wie bei Strg+S: Beim Schließen wird wie bisher als neue Aufnahme abgelegt, und der
+  Hinweis mit dem Ablageort hält das Fenster **einmal** offen — wie ein Ausweichen mit Warnung (Nachtrag 2); die
+  zweite Schließen-Anfrage schließt. Dafür hält jeder Hinweis das Fenster einmal offen (`ui.Gespeichert.HaeltOffen`:
+  Warnung oder nicht leerer Hinweis), die Entscheidung selbst bleibt in `canvas.Sitzung.Schliessen`. Die Ausgabe auf der
+  Fehlerausgabe bleibt zusätzlich bestehen (Start aus Terminal, Fenster dennoch zu). Ein weiteres Strg+S oder Schließen
+  danach hat keinen Hinweis mehr und schließt sofort.

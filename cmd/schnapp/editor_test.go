@@ -257,6 +257,13 @@ func TestSpeichernDateiVonAussenArbeitsziel(t *testing.T) {
 	if erg.Hinweis != soll || strings.Contains(erg.Hinweis, b.Orte.Ablage) || erg.Warnung {
 		t.Errorf("Hinweis %q (Soll %q, relativ, keine Warnung)", erg.Hinweis, soll)
 	}
+	// F-158: Der Hinweis mit dem Ablageort hält das Fenster beim Schließen einmal offen (Warnung ist er nicht).
+	if !erg.HaeltOffen() {
+		t.Error("der Hinweis auf die neue Aufnahme hält das Fenster nicht offen (F-158)")
+	}
+	if (ui.Gespeichert{}).HaeltOffen() {
+		t.Error("ein gewöhnliches Speichern hält das Fenster offen")
+	}
 	for i := 0; i < 2; i++ { // zweites und drittes Strg+S
 		mitKasten(t, g.Dokument)
 		if erg, err := speichern(g.Dokument); err != nil || erg != (ui.Gespeichert{}) {

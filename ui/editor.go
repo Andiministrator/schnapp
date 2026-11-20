@@ -62,6 +62,11 @@ type Gespeichert struct {
 	Warnung bool   // Hinweis als Warnung zeigen (z. B. Datei nicht aktualisiert, alter Stand liegt noch)
 }
 
+// HaeltOffen meldet, ob das Fenster beim Schließen einmal offen bleiben soll, damit der Hinweis gelesen wird: bei jeder
+// Warnung und bei jedem Hinweis, etwa dem Ablageort einer neuen Aufnahme (F-158, ADR-0020 Nachtrag 4). Die nächste
+// Schließen-Anfrage schließt (canvas.Sitzung.Schliessen).
+func (g Gespeichert) HaeltOffen() bool { return g.Warnung || g.Hinweis != "" }
+
 // Editor öffnet das Dokument in einem Fenster und kehrt zurück, wenn es geschlossen wird. Ungespeicherte Änderungen
 // werden beim Schließen gespeichert (die Bibliothek speichert immer, Kernprinzip 4); scheitert das, bleibt das Fenster
 // mit der Meldung offen, und erst eine zweite Schließen-Anfrage verwirft (F-107, ADR-0020 Nachtrag 2). Ein Signal
@@ -185,6 +190,9 @@ func (e *editor) laufen() error {
 				e.w.Option(app.Title(t))
 			}
 		}
+		// Nach jedem Ereignis nachsehen, ob die Meldung noch gilt: Eine abgelöste kehrt nicht zurück (F-160), auch wenn
+		// Ändern und Rückgängig in einem Bild liegen.
+		e.meldung.Frisch(e.s.D.Stand(), e.s.Werkzeug)
 		if e.wache.Angekommen() && !e.erzwungen {
 			e.nachSignal()
 		}
@@ -208,12 +216,11 @@ func (e *editor) schliessen() bool {
 		if err != nil {
 			return false, err
 		}
-		if g.Warnung {
+		hinweisAufStderr(g) // zusätzlich zur Statusleiste, falls das Fenster trotzdem zugeht (ADR-0020 Nachtrag 4)
+		if g.HaeltOffen() {
 			e.gespeichertMelden(g)
-		} else {
-			hinweisAufStderr(g)
 		}
-		return g.Warnung, nil
+		return g.HaeltOffen(), nil
 	})
 	diagnoseEditor("Schließen-Anfrage: %v, %v", z, err)
 	switch z {
@@ -861,7 +868,7 @@ func (e *editor) zeichneStatus(gtx layout.Context, hoehe int) {
 	rechts := fmt.Sprintf("%d × %d · %d %%", g.X, g.Y, int(math.Round(e.s.Abb.Zoom*100)))
 	e.statusText(gtx, rechts, farbeNebentext, mx.Y-hoehe, false)
 	// Eine frische Meldung geht vor dem Bedienhinweis des Werkzeugs, danach zeigt die Leiste wieder den Hinweis (F-151).
-	links, fehler, meldung := canvas.StatusZeile(e.meldung, e.s.D.Stand(), e.s.Werkzeug, e.hinweis())
+	links, fehler, meldung := canvas.StatusZeile(&e.meldung, e.s.D.Stand(), e.s.Werkzeug, e.hinweis(), e.s.TextLaeuft())
 	c := farbeNebentext
 	switch {
 	case fehler:

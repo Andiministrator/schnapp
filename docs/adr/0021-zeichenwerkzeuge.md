@@ -109,3 +109,27 @@ Bedienung vor Funktionsfülle).
 - **Entschieden (F-154, Punkt 4; Andi, 20.11.2026):** Die Farbwahl färbt das ausgewählte, eben gezeichnete Objekt um
   (Punkt 5 dieser ADR) und gilt zugleich für die nächsten Objekte — wie in Snagit. Das neue Objekt bleibt ausgewählt,
   damit sein Griff sofort greift.
+
+## Nachtrag 2 (20.11.2026): Umschalt am Rand, Rasten mit Streifen, Objekte im Bild, Statusleiste (F-156, F-157, F-160)
+
+*Entscheidungen von Claude, Andi informiert (Karten #84, #85).*
+
+- **Umschalt am Bildrand (F-156):** Mit Umschalt wird nicht je Achse geklemmt (das verbog Pfeil und Kasten), sondern
+  entlang der Richtung gekürzt: Der Pfeil bleibt auf 45° und endet am Bildrand, der Kasten bleibt ein Quadrat mit der
+  Seite, die der Platz in beiden Richtungen zulässt. Nachtrag 1 („auch nach dem Einrasten mit Umschalt“) gilt weiter,
+  nur ohne Formverlust.
+- **Rasten in der Ansicht (F-157):** Einrasten und Quadrat rechnen in Ansichtskoordinaten (nach Zuschnitt und
+  Stauch-Streifen) und gehen danach zurück ins Original. Die Spitze liegt so nie in einem herausgeschnittenen Streifen;
+  in der Ansicht bleibt der Pfeil 45°. Im Original ist der Winkel über einen Streifen hinweg dann nicht mehr 45° — was
+  zählt, ist, was der Nutzer sieht.
+- **Objekte bleiben im Bild (F-160, Punkt 1):** Verschieben und Griffe dürfen ein Objekt nicht ganz aus dem sichtbaren
+  Bild bringen. Die Grenzen des Objekts müssen das Bild (Ansicht) je Achse um mindestens `canvas.MinSichtbar` = 8
+  Fensterpixel schneiden (ein kleineres Objekt: um seine ganze Ausdehnung). Beim Ziehen wird die Verschiebung je Achse
+  entsprechend gekürzt, sodass das Objekt am Rand entlanggleitet; bei Griffen wird die Zeigerposition je Achse zum
+  Ausgangsort des Griffs zurückgenommen. Ein Objekt, das schon beim Öffnen anders liegt, wird nicht verändert, ein
+  Zug in Richtung Bild bleibt erlaubt. Damit bleibt jedes Objekt greifbar und ein Rückgängig nicht der einzige Ausweg.
+- **Statusleiste (F-160, Punkte 2 bis 4):** Eine Meldung, die einmal abgelöst war (Standwechsel, bei gewöhnlichen
+  Meldungen auch Werkzeugwechsel), kehrt nicht zurück — weder nach Ändern und Rückgängig noch nach Werkzeugwechsel
+  hin und zurück (`Meldung` merkt es sich, die Oberfläche fragt nach jedem Ereignis). Während einer Texteingabe geht
+  der Werkzeughinweis vor „Gespeichert“; ein Fehler bleibt sichtbar. `canvas.StatusZeile` nimmt dafür `*Meldung` und
+  die Angabe, ob eine Texteingabe läuft.

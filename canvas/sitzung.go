@@ -201,9 +201,9 @@ func (s *Sitzung) Ziehen(p document.Punkt) {
 		s.Abb = s.startAbb.Verschoben(p.Minus(s.start))
 	case zugObjekt:
 		d := s.original(p).Minus(s.original(s.start))
-		_ = s.D.ZugSetze(Verschiebe(s.startObj, d))
+		_ = s.D.ZugSetze(Verschiebe(s.startObj, s.begrenzeVerschieben(s.startObj, d)))
 	case zugGriff:
-		_ = s.D.ZugSetze(ZieheGriff(s.startObj, s.griff, s.original(p)))
+		_ = s.D.ZugSetze(s.begrenzeGriff(s.startObj, s.griff, s.original(p)))
 	case zugNeu:
 		s.zieheNeu(p)
 	}
