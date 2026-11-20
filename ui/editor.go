@@ -680,6 +680,8 @@ func (e *editor) zeiger(gtx layout.Context) {
 		}
 		// Leiste und Statuszeile sind in diesem Bild schon gezeichnet; ein Folgebild zeigt, was der Zeiger an ihnen
 		// ändert (etwa „Rückgängig“ nach einem Klick, der einen Zug abbricht — Echtlauf #92).
+		// Gemessen (F-235, 4K-Aufnahme auf 4K-Probebildschirm, 1209 Zeigerereignisse): mit und ohne Folgebild bei Drag
+		// gleich viele Bilder (788 gegen 782) und gleiche Bildzeit; Gio fasst die Anforderungen zusammen. Bleibt so.
 		gtx.Execute(op.InvalidateCmd{})
 		pe, ok := ev.(pointer.Event)
 		if !ok {
