@@ -75,7 +75,7 @@ QA-Checks, Kritiker-Läufe und aufwendige Analysen werden als **Sub-Agents** aus
 Deutsch für projektinterne Doku, Kommentare, Commits und ADRs (ADR-0002). **Oberfläche und Nutzer-Doku zweisprachig**
 (ADR-0014): Oberflächentexte englisch als Ausgangssprache, Übersetzung Deutsch über PO-Dateien, Sprache vom System,
 sonst Englisch; `README.md`/`CONTRIBUTING.md` englisch, deutsche Fassung als `*.de.md`, beide im selben Commit pflegen. **Verzeichnisse und Go-Pakete sind englisch**
-(ADR-0019; `zeichnen` folgt nach Abstimmung, Karte #57). Go-Bezeichner (Typen,
+(ADR-0019; `zeichnen` → `draw` seit 20.11.2026, Nachtrag 1). Go-Bezeichner (Typen,
 Funktionen) dürfen deutsch oder englisch sein, innerhalb eines Pakets einheitlich; Fremd-APIs (Gio, KWin, D-Bus)
 behalten ihre Namen. Die Oberfläche ist von Anfang an übersetzbar anzulegen (Texte nicht im Code verstreuen), weil das
 Repo öffentlich wird.
@@ -115,7 +115,7 @@ der Wegwerf-Prototyp `prototype/`. Schichten:
 - **capture** — Schnittstelle + KWin-Umsetzung (D-Bus), später Portal.
 - **document** — Ebenenmodell (Pixelebene, Vektorebenen, Original, Stauchangaben), Rückgängig-Verlauf.
 - **fileformat** — Arbeitsdatei PNG mit Blöcken `snAP`/`snAO` lesen/schreiben; Exporte SVG, PNG/JPG (PDF noch offen).
-- **zeichnen** — die aus einem Schwesterprojekt übernommenen Pakete `svg`, `raster`, `geo` (eigenes Go-Modul, das
+- **draw** (früher `zeichnen`) — die aus einem Schwesterprojekt übernommenen Pakete `svg`, `raster`, `geo` (eigenes Go-Modul, das
   das Schwesterprojekt wieder einbindet, ADR-0012), ergänzt um Schrift, `<image>`, Weichzeichnen, Verpixeln.
 - **library** — Autospeichern, Vorschau, Suche, Schlagworte.
 - **settings** — `settings.ini` lesen (ADR-0018); Warnungen statt Abbruch.
@@ -131,8 +131,8 @@ ADR-0003 Nachtrag 2, ADR-0015.
 
 ## Entwicklungsstand
 
-- **Zeichenpakete** (eigenes Modul `github.com/Andiministrator/schnapp/zeichnen`, ADR-0012):
-  `cd zeichnen && go vet ./... && go test ./...`. Ein Schwesterprojekt bindet dieses Modul ein — öffentliche Schnittstellen nur nach
+- **Zeichenpakete** (eigenes Modul `github.com/Andiministrator/schnapp/draw`, Ordner `draw/`; Übergangs-Symlink `zeichnen → draw`, bis das Schwesterprojekt umgestellt hat, ADR-0012):
+  `cd draw && go vet ./... && go test ./...`. Ein Schwesterprojekt bindet dieses Modul ein — öffentliche Schnittstellen nur nach
   Abstimmung ändern (wer, steht in `CLAUDE.local.md`).
 - **Gepatchtes Gio** `third_party/gio/` (ADR-0015): eigenes Modul, eingebunden per `replace gioui.org => …/third_party/gio`.
   Änderungen dort, dann `third_party/gio-patch.sh erzeugen` (Patch im selben Commit); Prüfung `third_party/gio-patch.sh pruefen`.

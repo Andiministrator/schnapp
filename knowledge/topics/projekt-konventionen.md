@@ -23,7 +23,7 @@ muss.
   Schwärzen überschreibt das Original — `[S]`-Pfad. Öffentliche Spezifikation folgt (E-15, englisch).
 - **Bauen und Testen** im Wurzelmodul immer mit `GOFLAGS=-tags=novulkan,nox11` (Gio; sonst fehlt `vulkan/vulkan.h`),
   Programme mit `-trimpath`. Pakete: `i18n`, `po`, `document`, `fileformat`, `capture`, `library`, `ui`,
-  `cmd/schnapp`; eigene Module `zeichnen/`, `prototype/`, `third_party/gio/`, `tmp/` (trennt den Arbeitsordner ab).
+  `cmd/schnapp`; eigene Module `draw/` (früher `zeichnen/`), `prototype/`, `third_party/gio/`, `tmp/` (trennt den Arbeitsordner ab).
 - **Pfade und eigene Dateinamen:** `schnapp` immer klein (`~/Bilder/schnapp/`, `schnapp.desktop`), im Text „Schnapp“.
 - **Kommandozeile englisch:** `--region` (Voreinstellung), `--screen[=NAME]`, `--window`, `--repeat` (ADR-0017
   Nachtrag 2); sie ist Oberfläche und künftig auch Schnittstelle für Agenten (E-14).

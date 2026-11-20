@@ -1,6 +1,6 @@
-# zeichnen
+# draw
 
-Go-Modul `github.com/Andiministrator/schnapp/zeichnen` — SVG lesen und rastern, nur Standardbibliothek.
+Go-Modul `github.com/Andiministrator/schnapp/draw` — SVG lesen und rastern, nur Standardbibliothek.
 
 - `svg` — SVG-Dateien und Pfaddaten lesen, Pfade in dichte Punktfolgen zerlegen.
 - `raster` — eigener Rasterer mit Kantenglättung: Flächen, Striche (Enden, Ecken, Strichelung), Masken, clipPath,

@@ -42,3 +42,12 @@ Unverändert, weil schon englisch: `cmd`, `data`, `docs`, `knowledge`, `po`, `tm
 - Historische Texte (ältere ADRs, Finding-Archiv, Commit-Nachrichten) behalten die alten Namen; diese Tabelle ist die
   Übersetzung.
 - Neue Pakete bekommen englische Namen.
+
+## Nachtrag 1 (20.11.2026): `zeichnen` → `draw`
+
+Nach Abstimmung mit dem Schwesterprojekt (es meldete „bereit für draw“) ist das Modul umbenannt: Ordner `draw/`,
+Modulpfad `github.com/Andiministrator/schnapp/draw`, Pakete `…/draw/svg`, `…/draw/raster`, `…/draw/geo`, Schnittstellen
+unverändert. Übergangsweise zeigt ein Symlink `zeichnen → draw` auf den neuen Ordner, damit relative Pfade des
+Schwesterprojekts weiter auflösen; er wird entfernt, sobald es „steht auf draw“ meldet. Go prüft beim `replace` die
+`module`-Zeile, der Symlink allein hält das Schwesterprojekt also nicht baubar — es stellt `require`, `replace` und
+Importe im selben Zug um.

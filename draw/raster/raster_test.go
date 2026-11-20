@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/Andiministrator/schnapp/zeichnen/svg"
+	"github.com/Andiministrator/schnapp/draw/svg"
 )
 
 func zeichne(t *testing.T, text string) *svg.Element {

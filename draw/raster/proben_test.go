@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Andiministrator/schnapp/zeichnen/svg"
+	"github.com/Andiministrator/schnapp/draw/svg"
 )
 
 // Sollwerte der Randfall-Proben (testdata/rasterproben) bei Breite 200: Pixelzahl und Summen der Kanäle

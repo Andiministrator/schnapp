@@ -27,7 +27,7 @@ Stand 19.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 - **Vor:** erste Fassung, Dateiformat.
 
 ## E-04: Modulpfad und Ort der Zeichenpakete — ENTSCHIEDEN 19.11.2026 (ADR-0012)
-- Eigenes Modul `github.com/Andiministrator/schnapp/zeichnen` im Ordner `zeichnen/`.
+- Eigenes Modul `github.com/Andiministrator/schnapp/zeichnen` im Ordner `zeichnen/` (seit 20.11.2026 `…/schnapp/draw` im Ordner `draw/`, ADR-0019 Nachtrag 1).
 
 ## E-05: CI — ENTSCHIEDEN 19.11.2026: GitHub Actions (ADR-0010)
 - Eingerichtet 19.11.2026: `.github/workflows/test.yml` (gofmt, vet, test für `zeichnen/`), grün.

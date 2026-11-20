@@ -26,16 +26,16 @@ jobs:
       - run: go test ./...
       - run: go build -trimpath -o /dev/null ./cmd/schnapp
 
-  zeichnen:
+  draw:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: zeichnen
+        working-directory: draw
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: zeichnen/go.mod
+          go-version-file: draw/go.mod
       - name: gofmt
         run: test -z "$(gofmt -l .)"
       - run: go vet ./...

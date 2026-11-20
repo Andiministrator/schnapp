@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Andiministrator/schnapp/zeichnen/geo"
+	"github.com/Andiministrator/schnapp/draw/geo"
 )
 
 // Schritt: größter Abstand zweier Punkte einer zerlegten Kurve (in viewBox-Einheiten).

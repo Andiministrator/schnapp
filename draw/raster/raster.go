@@ -19,8 +19,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Andiministrator/schnapp/zeichnen/geo"
-	"github.com/Andiministrator/schnapp/zeichnen/svg"
+	"github.com/Andiministrator/schnapp/draw/geo"
+	"github.com/Andiministrator/schnapp/draw/svg"
 )
 
 // Feinheit: größter Abstand zweier Punkte auf zerlegten Kurven, in Gerätepixeln.

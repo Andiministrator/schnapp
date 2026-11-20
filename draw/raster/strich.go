@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/Andiministrator/schnapp/zeichnen/geo"
-	"github.com/Andiministrator/schnapp/zeichnen/svg"
+	"github.com/Andiministrator/schnapp/draw/geo"
+	"github.com/Andiministrator/schnapp/draw/svg"
 )
 
 // strichArt: wie ein Strich gezogen wird (SVG stroke-*).

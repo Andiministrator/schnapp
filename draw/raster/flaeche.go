@@ -6,7 +6,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/Andiministrator/schnapp/zeichnen/geo"
+	"github.com/Andiministrator/schnapp/draw/geo"
 )
 
 // Unterzeilen je Bildzeile. Waagerecht wird die Deckung exakt gerechnet, senkrecht an Unterzeilen abgetastet; so
