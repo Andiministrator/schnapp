@@ -61,6 +61,10 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 
 | URL | Letzter Besuch | Erstbesuch | Status | Weg | Inhalt | Zieldatei |
 |---|---|---|---|---|---|---|
+| https://invent.kde.org/plasma/plasma-workspace/-/raw/master/klipper/klipper.kcfg | 2026-11-20 | 2026-11-20 | live | curl | `SaveImages` „Save images“, Voreinstellung false | topics/gio-wayland.md |
+| https://invent.kde.org/plasma/plasma-workspace/-/raw/master/klipper/configdialog.cpp | 2026-11-20 | 2026-11-20 | live | curl | Bezeichnung „Image data copied explicitly“ unter „Include in history“ | topics/gio-wayland.md |
+| https://invent.kde.org/plasma/plasma-workspace/-/raw/master/klipper/historymodel.cpp | 2026-11-20 | 2026-11-20 | live | curl | Bild ohne Text nur mit SaveImages oder `x-kde-force-image-copy` in den Verlauf | topics/gio-wayland.md |
+| https://invent.kde.org/graphics/spectacle/-/raw/master/src/ExportManager.cpp | 2026-11-20 | 2026-11-20 | live | curl | Spectacle setzt `x-kde-force-image-copy` (leer) | topics/gio-wayland.md |
 | https://invent.kde.org/plasma/kwin/-/raw/master/src/plugins/screenshot/org.kde.KWin.ScreenShot2.xml | 2026-11-19 | 2026-11-19 | live | WebFetch | Methoden, Optionen, Rückgabe, Pipe | topics/kwin-screenshot.md |
 | https://invent.kde.org/plasma/kwin/-/raw/master/src/plugins/screenshot/screenshotdbusinterface2.cpp | 2026-11-19 | 2026-11-19 | live | WebFetch, curl | Pipe, raw-Format; Prüfung entfernt (nur noch determineCallerPid für hide-caller-windows) | topics/kwin-screenshot.md |
 | https://invent.kde.org/plasma/kwin/-/raw/Plasma/6.7/src/plugins/screenshot/screenshotdbusinterface2.cpp | 2026-11-19 | 2026-11-19 | live | WebFetch (Sonnet-Agent #42) | checkPermissions ruft fetchRestrictedDBusInterfacesFromPid (F-76) | topics/kwin-screenshot.md |

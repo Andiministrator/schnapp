@@ -78,3 +78,17 @@ Je Strg+C entsteht ein neuer Halter; der vorige wird dabei abgelöst und endet. 
   sicher denselben Compositor), und für den Rest der Editor-Sitzung, sobald der Halter „kein data-control“ meldet.
 - README nennt die Einschränkung „mit data-control, etwa KDE Plasma“. Offen als F-189 (Karte #94): geerbte
   Deskriptoren ohne CLOEXEC und das Verhalten in einer systemd-Scope.
+
+## Nachtrag 2 (20.11.2026): Bild im Klipper-Verlauf (Meta+V)
+
+Andi fragte, warum das Bild nicht im Verlauf der Zwischenablage (Meta+V) erscheint. Ursache in Klipper
+(`plasma-workspace/klipper/historymodel.cpp`): Ein Inhalt mit Bild und ohne Text kommt nur in den Verlauf, wenn die
+Einstellung „Include in history: Image data copied explicitly“ (`SaveImages`, Voreinstellung **aus**) eingeschaltet
+ist **oder** der Inhalt den MIME-Typ `x-kde-force-image-copy` trägt. Spectacle setzt diesen Typ
+(`spectacle/src/ExportManager.cpp`, Kommentar „ensures that the image is copied to Klipper even when … is not
+checked“).
+
+Entscheidung: Der Halter bietet zusätzlich `x-kde-force-image-copy` an und liefert dafür null Byte (wie Spectacle
+einen leeren Wert setzt). Damit erscheint das kopierte Bild im Klipper-Verlauf, ohne dass Andi eine Einstellung ändern
+muss. Der Rückfall über Gio bietet weiter nur `image/png` an (ADR-0015 Nachtrag 2) — dort erscheint es im Verlauf nur
+mit eingeschalteter Einstellung.

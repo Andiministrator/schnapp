@@ -97,8 +97,10 @@ func (c *compositor) setzen(reg, sitzName, mgrName uint32, mgr, mime string, vor
 	}
 	i.mgr = l.u32()
 	i.quelle = c.erwarte(i.mgr, opManagerCreateSource, "create_data_source").u32()
-	if m := c.erwarte(i.quelle, opSourceOffer, "offer").str(); m != mime {
-		c.t.Errorf("offer %q, erwartet %q", m, mime)
+	for _, want := range []string{mime, MarkeKlipper} {
+		if m := c.erwarte(i.quelle, opSourceOffer, "offer").str(); m != want {
+			c.t.Errorf("offer %q, erwartet %q", m, want)
+		}
 	}
 	l = c.erwarte(i.mgr, opManagerGetDevice, "get_data_device")
 	i.geraet = l.u32()
@@ -143,16 +145,18 @@ func TestBieteUndDiene(t *testing.T) {
 			c.sende(i.geraet, evDeviceDataOffer, new(nachricht).u32(0xff000001))
 		})
 		c.erwarte(0xff000001, opOfferDestroy, "Angebot freigeben")
-		// fremder MIME-Typ: Pipe wird ohne Daten geschlossen
-		r, w, _ := os.Pipe()
-		c.sende(i.quelle, evSourceSend, new(nachricht).str("text/plain").fd(int(w.Fd())))
-		w.Close()
-		if b, _ := io.ReadAll(r); len(b) != 0 {
-			t.Errorf("fremder MIME bekam %d Byte", len(b))
+		// fremder MIME-Typ und die Klipper-Marke: Pipe wird ohne Daten geschlossen
+		for _, fremd := range []string{"text/plain", MarkeKlipper} {
+			r, w, _ := os.Pipe()
+			c.sende(i.quelle, evSourceSend, new(nachricht).str(fremd).fd(int(w.Fd())))
+			w.Close()
+			if b, _ := io.ReadAll(r); len(b) != 0 {
+				t.Errorf("%s bekam %d Byte", fremd, len(b))
+			}
+			r.Close()
 		}
-		r.Close()
 		// Einfügen
-		r, w, _ = os.Pipe()
+		r, w, _ := os.Pipe()
 		c.sende(i.quelle, evSourceSend, new(nachricht).str("image/png").fd(int(w.Fd())))
 		w.Close()
 		b, _ := io.ReadAll(r)

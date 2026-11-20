@@ -131,3 +131,6 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
   Falle: `net.UnixConn.ReadMsgUnix` liefert bei Fehler (etwa abgelaufener Lesefrist) `n = -1` — vor dem Schneiden
   auf 0 setzen. Prüfen ohne Andis Sitzung: `scripts/probe.sh --zwischenablage BILD.png` (wl-paste/wl-copy nur gegen
   den virtuellen KWin).
+- **Klipper-Verlauf (Meta+V):** Klipper übernimmt ein reines Bild (ohne Text) nur mit „Image data copied explicitly“
+  (`SaveImages`, Voreinstellung aus) oder wenn der Inhalt zusätzlich den leeren MIME-Typ `x-kde-force-image-copy`
+  anbietet — so macht es Spectacle. Der Halter bietet ihn an (ADR-0024 Nachtrag 2).

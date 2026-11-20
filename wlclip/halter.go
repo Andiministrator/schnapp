@@ -64,6 +64,11 @@ var (
 	ErrZeitgrenze = errors.New("wlclip: Haltezeit abgelaufen")
 )
 
+// MarkeKlipper ist der leere MIME-Typ, mit dem Klipper ein Bild auch dann in den Verlauf (Meta+V) übernimmt, wenn
+// „Image data copied explicitly“ (SaveImages, Voreinstellung aus) nicht eingeschaltet ist — wie Spectacle (ADR-0024
+// Nachtrag 2). Der Halter bietet ihn zusätzlich an und liefert dafür null Byte.
+const MarkeKlipper = "x-kde-force-image-copy"
+
 // Stau ist, wie lange das Senden an einen Leser ohne Fortschritt wartet, bevor es aufgibt (wie writeAllFD im
 // Gio-Patch, F-176).
 const Stau = 10 * time.Second
@@ -153,8 +158,10 @@ func biete(v *verbindung, daten []byte, mime string) (*Halter, error) {
 	if err := v.sende(mgrID, opManagerCreateSource, new(nachricht).u32(h.quelle)); err != nil {
 		return nil, err
 	}
-	if err := v.sende(h.quelle, opSourceOffer, new(nachricht).str(mime)); err != nil {
-		return nil, err
+	for _, m := range []string{mime, MarkeKlipper} {
+		if err := v.sende(h.quelle, opSourceOffer, new(nachricht).str(m)); err != nil {
+			return nil, err
+		}
 	}
 	h.geraet = v.neueID()
 	if err := v.sende(mgrID, opManagerGetDevice, new(nachricht).u32(h.geraet).u32(sitzID)); err != nil {
@@ -232,7 +239,7 @@ func (h *Halter) verarbeite(e ereignis) (ende bool, err error) {
 		if err != nil {
 			return false, err
 		}
-		if mime != h.mime {
+		if mime != h.mime { // auch MarkeKlipper: leer, der Leser sieht sofort das Ende
 			syscall.Close(fd)
 			return false, nil
 		}
