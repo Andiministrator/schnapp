@@ -96,15 +96,17 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
     `Cancel`, sonst nichts. Wer wissen muss, dass der Zeiger auf ein anderes Fenster gewechselt ist, koordiniert das
     selbst (Overlay: gemeinsamer „aktiver Monitor“, das alte Fenster per `Window.Invalidate` neu zeichnen lassen —
     `Invalidate` ist aus jeder Goroutine erlaubt, `Perform` nicht).
-  - **`Invalidate` verpufft während eines Frames:** `Window.Invalidate` tut nichts, solange das Fenster gerade ein
-    Ereignis bearbeitet (`mayInvalidate` false, `app/window.go`). Wer im eigenen Frame etwas auslöst, das einen
-    weiteren Frame braucht, fordert ihn mit `gtx.Execute(op.InvalidateCmd{})` an (Overlay: Schließen des
-    auslösenden Fensters, F-79, Kritiker Sitzungs-QA Sprint 4). Das gilt auch **nach** `ev.Frame` bis zum nächsten
-    `Event()`-Aufruf mit leerer Schlange: Wer die Antwort einer Goroutine erst nach dem Bild abholt, das deren
-    `Invalidate` angestoßen hat, und dann `Invalidate` ruft, bekommt kein Bild — abholen am **Anfang** des Frames
-    (F-216). Und was im Frame **nach** dem Zeichnen eines Widgets geändert wird (Zeigerereignisse der Leinwand ändern
-    den Zustand der schon gezeichneten Leiste), braucht ein `op.InvalidateCmd`, sonst zeigt die Leiste den alten Stand
-    (F-217). Beide fielen erst im Probelauf mit Fotos auf, nicht in Tests.
+  - **Ein zweites `Invalidate` verpufft bis zur leeren Ereignisschlange:** `mayInvalidate` wird wahr, sobald die
+    Schlange leer ist (`app/window.go` um Z. 604), und ein angenommenes `Window.Invalidate` setzt es wieder falsch
+    (Z. 287). Verworfen wird also jedes **weitere** `Invalidate`, nachdem seit der letzten leeren Schlange schon eines
+    angenommen wurde — in einem Bild, das eine Eingabe ausgelöst hat, wirkt `Invalidate` dagegen (der Editor nutzt das
+    nach Meldungen). Wer im eigenen Frame etwas auslöst, das einen weiteren Frame braucht, fordert ihn mit
+    `gtx.Execute(op.InvalidateCmd{})` an (Overlay: Schließen des auslösenden Fensters, F-79). Die Antwort einer
+    Goroutine, die selbst per `Invalidate` geweckt hat, gehört an den **Anfang** des Frames, den sie anstößt — danach
+    abgeholt, wäre ein erneutes `Invalidate` das zweite und verpuffte (F-216). Was im Frame **nach** dem Zeichnen eines
+    Widgets geändert wird (Zeigerereignisse der Leinwand ändern die schon gezeichnete Leiste), braucht ein
+    `op.InvalidateCmd` (F-217). Beide fielen erst im Probelauf mit Fotos auf, nicht in Tests; die Drehbücher dazu liegen
+    unter `scripts/drehbuecher/` (Rückfallprobe, kein automatischer Test).
   - **Tasten kommen im Fenster mit dem Tastaturfokus an,** nicht in dem unter dem Zeiger. Bei mehreren Vollbild-
     Fenstern bezieht sich Enter deshalb auf den gemeinsamen „aktiven Monitor“ (F-80); Rechtsklick bricht ab, falls
     kein Fenster den Fokus hat (F-81).

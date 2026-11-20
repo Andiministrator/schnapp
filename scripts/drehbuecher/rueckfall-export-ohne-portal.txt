@@ -1,0 +1,12 @@
+# Rückfallprobe (Echtlauf #92, kein automatischer Test): F-216: ohne Portal erscheint „Kein Dateidialog verfügbar“ ohne weitere Eingabe (Foto 01)
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-export-ohne-portal.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 480 --hoehe 800
+# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
+# Lauf 8d: Export ohne Portal, danach Taste R — stimmt der Zustand und fehlt nur das Neuzeichnen?
+warte 800
+klick 236 159
+warte 6000
+foto 01-nach-6s
+warte 10
+warte 500
+foto 02-nach-taste-R
+taste Strg+W

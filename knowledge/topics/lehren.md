@@ -113,7 +113,9 @@ Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden;
   ⚠️ Der virtuelle KWin erbt sonst das Tastaturlayout des Rechners (de: Y/Z vertauscht, Strg+Z blieb still wirkungslos);
   `probe.sh` setzt `XKB_DEFAULT_LAYOUT=us`, die Codes der Fernbedienung sind US-evdev. Die Oberfläche erscheint in der
   Sprache des Rechners. Kein Portal-Dialog, keine fremden Programme im virtuellen KWin.
-  **Drehbuch-Fallen (Echtlauf #92):** ein Zug, der außerhalb des Bilds beginnt, startet absichtlich nichts (F-150) —
+  **Rückfallproben:** die Drehbücher des Echtlaufs #92 liegen als `scripts/drehbuecher/rueckfall-*.txt` mit dem
+  synthetischen `testbild-1200x800.png` im Repo (Aufruf steht im Kopf jeder Datei) — nach Umbauten an `frame()`,
+  `zeiger()` oder der Statusleiste fahren. **Drehbuch-Fallen (Echtlauf #92):** ein Zug, der außerhalb des Bilds beginnt, startet absichtlich nichts (F-150) —
   Bänder und Rahmen im Bild beginnen; `taste Esc` verwirft einen laufenden Text, bestätigt wird mit `taste Enter`;
   Rahmen unter 6 Fensterpixeln tun nichts (`MinObjekt`); im 4K-Lauf (Race-Build) braucht ein Neuaufbau über eine
   Sekunde — `warte 3000` vor dem Foto, sonst zeigt es den alten Stand. Ein „falsches“ Foto erst gegen das Drehbuch

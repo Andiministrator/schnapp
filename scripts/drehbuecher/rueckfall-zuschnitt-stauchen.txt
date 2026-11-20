@@ -1,0 +1,61 @@
+# Rückfallprobe (Echtlauf #92, kein automatischer Test): Zuschneiden und Stauchen, Punkte 1–8 aus #38
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-zuschnitt-stauchen.txt --bild scripts/drehbuecher/testbild-1200x800.png --zeit 120
+# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
+# Lauf 5: Zuschneiden (C) und Stauchen (X), Punkte 1-8 aus #38 und F-185
+# Bild 1200x800 bei 100 % ab (200,114); Bildpunkt = Bildschirm - (200,114)
+warte 800
+# 1) Zuschneiden: Bildausschnitt (100,86)-(1100,686)
+taste C
+ziehe 300 200 1300 800 12
+warte 300
+foto 01-zugeschnitten
+# 2) Doppelklick mit C: ganzes Bild, Strg+Z: wieder zugeschnitten
+doppelklick 800 500
+warte 300
+foto 02-ganzes-bild
+taste Strg+Z
+warte 300
+foto 03-wieder-zugeschnitten
+# 3) Strg+C kopiert, Werkzeug bleibt
+taste Strg+C
+warte 1500
+foto 04-kopiert
+# zurück zum ganzen Bild
+taste Strg+Z
+warte 300
+foto 05-original
+# 4) X senkrecht über den Mittelteil: Zeilen 286-486 fallen weg
+taste X
+ziehe 800 400 800 600 12
+warte 300
+foto 06-gestaucht-zeilen
+# 6) Doppelklick auf die Naht (Bild 600 hoch, oben bei 214, Naht bei 214+286=500)
+doppelklick 800 500
+warte 300
+foto 07-naht-zurueck
+# 5) X waagrecht: Spalten 300-500 fallen weg
+ziehe 500 600 700 600 12
+warte 300
+foto 08-gestaucht-spalten
+taste Strg+Z
+warte 300
+foto 09-spalten-zurueck
+# 8) Band über das ganze Bild: rote Meldung, keine Änderung
+ziehe 800 90 800 960 12
+warte 300
+foto 10-ganzes-band
+# 7) Pfeil ganz im gestauchten Teil, dann stauchen: Pfeil verborgen, Meldung; Strg+Z bringt ihn zurück
+taste A
+ziehe 1100 450 1300 500 12
+warte 300
+taste X
+ziehe 800 400 800 600 12
+warte 300
+foto 11-pfeil-verborgen
+taste Strg+Z
+warte 300
+foto 12-pfeil-zurueck
+taste Strg+Z
+taste Strg+Z
+warte 300
+foto 13-alles-zurueck

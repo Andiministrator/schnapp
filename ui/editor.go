@@ -520,9 +520,9 @@ func (e *editor) grenzText(a canvas.Ablehnung) string {
 
 func (e *editor) frame(gtx layout.Context) {
 	// Die Antwort des Dateidialogs wird zu Beginn des Bildes abgeholt, das die Goroutine per Invalidate angestoßen hat,
-	// damit dieses Bild sie schon zeigt. Nach dem Bild wäre es zu spät: Gio verwirft ein Invalidate, bis die
+	// damit dieses Bild sie schon zeigt. Nach dem Bild wäre es zu spät: Gio verwirft ein zweites Invalidate, bis die
 	// Ereignisschlange leer ist (app.Window.mayInvalidate) — „Dateidialog geöffnet“ und der graue Knopf blieben bis
-	// zum nächsten Ereignis stehen (Echtlauf #92).
+	// zum nächsten Ereignis stehen (F-216).
 	e.exportAbholen()
 	e.tasten(gtx)
 	e.knoepfeAuswerten(gtx)

@@ -1,0 +1,33 @@
+# Rückfallprobe (Echtlauf #92, kein automatischer Test): Band über das ganze Bild → rote Meldung, F-174, Zuschnitt + Naht speichern
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-band-f174.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
+# Lauf 6b: Punkt 8 mit Zug ab der ersten Bildzeile (y=114) bis unter das Bild, F-174, Zuschnitt + Naht speichern (Punkt 9)
+warte 800
+taste X
+ziehe 800 114 800 960 12
+warte 300
+foto 01-band-ganz-rot
+taste R
+ziehe 300 600 500 750 12
+warte 300
+foto 02-kasten-ausgewaehlt
+taste C
+warte 300
+foto 03-nach-C-auswahl-weg
+ziehe 500 750 1300 880 12
+warte 300
+foto 04-zug-an-ecke-schneidet-zu
+taste Strg+Z
+warte 300
+foto 05-zuschnitt-zurueck
+ziehe 250 164 1350 864 12
+warte 300
+foto 06-zugeschnitten
+taste X
+ziehe 800 450 800 600 12
+warte 300
+foto 07-zugeschnitten-gestaucht
+taste Strg+S
+warte 1500
+foto 08-gespeichert
+taste Strg+W

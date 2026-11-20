@@ -87,7 +87,7 @@ Die Maße der Zackenkante (Punkt 6: Höhe 4, Zahnbreite 16, Rand ±3, Linie ±1)
 Ansicht von 1080 Pixeln. Darüber werden alle vier mit dem ganzzahligen Faktor `max(1, kurze Seite / 1080)`
 multipliziert (Ganzzahldivision; 1920×1080 → 1, 3840×2160 → 2, 1000×5000 → 1, 7680×4320 → 4), damit die Kante bei
 HiDPI-Aufnahmen und kleinem Zoom erkennbar bleibt. Die kurze Seite ist die der Ansicht nach Zuschnitt und Stauchen;
-beides kann den Faktor ändern. Renderer, SVG-Export (`<defs>`-Band) und Editor holen ihn aus `Dokument.ZackenFaktor`;
+beides kann den Faktor ändern. *(Überholt durch Nachtrag 2: maßgeblich ist die Größe des Originals.)* Renderer, SVG-Export (`<defs>`-Band) und Editor holen ihn aus `Dokument.ZackenFaktor`;
 der Zwischenspeicher des Editors ist über die Ansichtsgröße schon richtig geschlüsselt. Die Trefferweite von
 `EntferneNaht` wächst mit.
 

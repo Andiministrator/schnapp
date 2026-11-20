@@ -163,6 +163,6 @@ Stand 20.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
   gespeichert. Umsetzung Karte #99 mit ADR-0023-Nachtrag.
 - **Grundsatz dazu (Andi):** „alles was mit tastenkürzeln geht, muss auch über die werkzeugleiste oder das menü gehen.“
   Das gilt auch für das Aufheben des Zuschnitts (heute nur Doppelklick mit C) und für das Entfernen einer Naht. Bestand
-  prüfen und nachrüsten: Karte „Jede Tastenfunktion auch über Leiste oder Menü“ (Backlog); neue Funktionen bekommen
+  prüfen und nachrüsten: Karte #104 „Jede Tastenfunktion auch über Leiste oder Menü“ (Backlog); neue Funktionen bekommen
   Knopf oder Menüeintrag im selben Zug.
 

@@ -1,0 +1,34 @@
+# Rückfallprobe (Echtlauf #92, kein automatischer Test): Schwärzen/Verpixeln, Rückgängig vor und nach Strg+S (#92)
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-schwaerzen.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
+# Lauf 2: Schwärzen (B) und Verpixeln (P), schmaler Rahmen, Rückgängig vor und nach Strg+S
+warte 800
+taste B
+warte 100
+foto 01-B-hinweis
+ziehe 690 405 910 460 12
+warte 300
+foto 02-geschwaerzt
+taste P
+warte 100
+foto 03-P-hinweis
+ziehe 290 205 510 285 12
+warte 300
+foto 04-verpixelt
+# schmaler Rahmen mit P: 4 px breit -> schwarz statt Mosaik, Meldung
+ziehe 1100 300 1104 500 8
+warte 300
+foto 05-schmal
+ziehe 1200 300 1204 500 8
+warte 300
+foto 06-schmal-zweites-mal
+taste Strg+Z
+warte 300
+foto 07-rueckgaengig-eins
+taste Strg+S
+warte 1500
+foto 08-gespeichert
+taste Strg+Z
+warte 300
+foto 09-rueckgaengig-nach-speichern
+taste Strg+W

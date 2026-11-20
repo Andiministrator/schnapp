@@ -73,7 +73,9 @@ keine Metadaten, Kernprinzip 3); Geschwärztes ist darin wie in jedem Export end
 
 Ergänzung (F-176, F-177): Bei `send` schreibt der Patch die Bytes in einer Schleife (`writeAllFD`) ganz in die Pipe —
 ein PNG ist größer als ihr Puffer (64 KiB): `EINTR` wiederholen, `EAGAIN` per `poll` abwarten (nach 10 s ohne
-Fortschritt aufgeben), `EPIPE` und andere Fehler beenden still. Fehlen dem Compositor Sitz oder Datengerät, meldet der
+Fortschritt aufgeben), `EPIPE` und andere Fehler beenden still. Weil Empfänger meist eine blockierende Pipe übergeben, schaltet
+der Patch den Deskriptor vorher nicht blockierend (F-228; betrifft nur die Dateibeschreibung des Schreib-Endes, der
+Leser bleibt blockierend) — sonst griffe die Frist nie. Fehlen dem Compositor Sitz oder Datengerät, meldet der
 Patch das über `app.ClipboardWriteError` (upstream hat `clipboard.WriteCmd` keinen Rückgabewert); der Editor zeigt dann
 einen Fehler statt „Copied to clipboard“ und schreibt ihn ins Debug-Log.
 
