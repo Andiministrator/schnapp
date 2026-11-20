@@ -187,17 +187,23 @@ func TestSchwaerzenInKeinemAusgang(t *testing.T) {
 				}
 				return m
 			}
-			svg := 0 // die Kacheln unter dem Stauch-Streifen enthalten das Muster nicht; zusammen schon
+			svg, svgEx := 0, 0 // die Kacheln unter dem Stauch-Streifen enthalten das Muster nicht; zusammen schon
 			for a, bild := range ausgaenge() {
 				n := geheimePixel(bild)
-				if strings.HasPrefix(a, "SVG-Kachel") {
+				switch {
+				case strings.HasPrefix(a, "SVG-Kachel Export"):
+					svgEx += n
+				case strings.HasPrefix(a, "SVG-Kachel"):
 					svg += n
-				} else if n == 0 {
+				case n == 0:
 					t.Errorf("Gegenprobe: Muster fehlt schon vor dem Schwärzen in %s", a)
 				}
 			}
 			if svg == 0 {
 				t.Error("Gegenprobe: Muster fehlt schon vor dem Schwärzen im SVG")
+			}
+			if svgEx == 0 { // sonst bliebe der Test grün, auch wenn der Export keine Kacheln schriebe
+				t.Error("Gegenprobe: Muster fehlt schon vor dem Schwärzen in den Kacheln des SVG-Exports")
 			}
 			if err := d.Schwaerzen(image.Rect(28, 18, 92, 62), sw); err != nil {
 				t.Fatal(err)

@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/Andiministrator/schnapp/document"
@@ -35,9 +36,12 @@ func TestWaehle(t *testing.T) {
 		{"/x/a.txt", SVG, SVG, "/x/a.txt.svg"}, // unbekannte Endung: Filter, Endung angehängt
 		{"/x/v1.2", JPG, JPG, "/x/v1.2.jpg"},
 	} {
-		f, p := Waehle(c.pfad, c.filter)
+		f, p, ang := Waehle(c.pfad, c.filter)
 		if f != c.f || p != c.soll {
 			t.Errorf("Waehle(%q, %v) = %v, %q; soll %v, %q", c.pfad, c.filter, f, p, c.f, c.soll)
+		}
+		if ang != (p != c.pfad) {
+			t.Errorf("Waehle(%q): angehängt %v, Pfad %q", c.pfad, ang, p)
 		}
 	}
 }
@@ -88,6 +92,11 @@ func TestSchreibeFormateOhneMetadaten(t *testing.T) {
 			t.Errorf("PNG enthält Block %s", kennung)
 		}
 	}
+	for n, marke := range map[string]string{"APP1/EXIF": "\xff\xe1", "COM": "\xff\xfe"} {
+		if bytes.Contains(j.Bytes(), []byte(marke)) {
+			t.Errorf("JPG enthält %s", n)
+		}
+	}
 	for _, spur := range []string{"/home", "/tmp", "/Users", "C:\\"} {
 		for n, b := range map[string][]byte{"PNG": p.Bytes(), "JPG": j.Bytes(), "SVG": s.Bytes()} {
 			if bytes.Contains(b, []byte(spur)) {
@@ -108,6 +117,8 @@ func TestSchreibeFormateOhneMetadaten(t *testing.T) {
 }
 
 func TestSchreibeAtomarNeueDatei(t *testing.T) {
+	alt := syscall.Umask(0o027)
+	defer syscall.Umask(alt)
 	ordner := t.TempDir()
 	ziel := filepath.Join(ordner, "neu.png")
 	if err := SchreibeAtomar(ziel, func(w io.Writer) error { _, err := w.Write([]byte("inhalt")); return err }); err != nil {
@@ -117,8 +128,8 @@ func TestSchreibeAtomarNeueDatei(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if st.Mode().Perm() != 0o644 {
-		t.Errorf("Rechte %v, soll 0644", st.Mode().Perm())
+	if st.Mode().Perm() != 0o640 {
+		t.Errorf("Rechte %v, soll 0640 (0666 ohne die umask 027)", st.Mode().Perm())
 	}
 	if b, _ := os.ReadFile(ziel); string(b) != "inhalt" {
 		t.Errorf("Inhalt %q", b)
@@ -180,4 +191,72 @@ func eintraege(t *testing.T, ordner string) int {
 		t.Fatal(err)
 	}
 	return len(l)
+}
+
+// Eine ersetzte Datei behält ihre Rechte (0600 wird nicht auf 0644 geöffnet), unabhängig von der umask (A-3).
+func TestSchreibeAtomarBehaeltRechteDerErsetzten(t *testing.T) {
+	alt := syscall.Umask(0o022)
+	defer syscall.Umask(alt)
+	ziel := filepath.Join(t.TempDir(), "a.png")
+	if err := os.WriteFile(ziel, []byte("alt"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(ziel, 0o600); err != nil { // WriteFile unterliegt der umask nur nach unten; sicher ist sicher
+		t.Fatal(err)
+	}
+	if err := SchreibeAtomar(ziel, func(w io.Writer) error { _, err := w.Write([]byte("neu")); return err }); err != nil {
+		t.Fatal(err)
+	}
+	st, err := os.Stat(ziel)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Mode().Perm() != 0o600 {
+		t.Errorf("Rechte %v, soll 0600", st.Mode().Perm())
+	}
+}
+
+// Eine neue Datei folgt der umask, nicht einem festen Wert (A-3).
+func TestSchreibeAtomarNeueDateiFolgtUmask(t *testing.T) {
+	alt := syscall.Umask(0o077)
+	defer syscall.Umask(alt)
+	ziel := filepath.Join(t.TempDir(), "neu.png")
+	if err := SchreibeAtomar(ziel, func(w io.Writer) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	st, err := os.Stat(ziel)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Mode().Perm() != 0o600 {
+		t.Errorf("Rechte %v, soll 0600 (umask 077)", st.Mode().Perm())
+	}
+}
+
+// Hängt Waehle die Endung an und das Ziel gibt es schon, wird nichts geschrieben (A-1).
+func TestPruefeAngehaengt(t *testing.T) {
+	ordner := t.TempDir()
+	vorhanden := filepath.Join(ordner, "bericht.png")
+	if err := os.WriteFile(vorhanden, []byte("alt"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, ziel, ang := Waehle(filepath.Join(ordner, "bericht"), PNG)
+	if !ang || ziel != vorhanden {
+		t.Fatalf("Waehle: %q %v", ziel, ang)
+	}
+	err := PruefeAngehaengt(ziel, ang)
+	if !errors.Is(err, ErrZielVorhanden) {
+		t.Fatalf("Fehler %v, soll ErrZielVorhanden", err)
+	}
+	if b, _ := os.ReadFile(vorhanden); string(b) != "alt" {
+		t.Errorf("Datei verändert: %q", b)
+	}
+	// Der Dialog hat den vollen Namen bestätigt: Ersetzen ist gewollt.
+	if err := PruefeAngehaengt(vorhanden, false); err != nil {
+		t.Errorf("nicht angehängt: %v", err)
+	}
+	// Ziel gibt es nicht: frei.
+	if err := PruefeAngehaengt(filepath.Join(ordner, "neu.png"), true); err != nil {
+		t.Errorf("neues Ziel: %v", err)
+	}
 }

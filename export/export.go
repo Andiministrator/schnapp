@@ -6,6 +6,9 @@
 package export
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -79,12 +82,28 @@ func ausEndung(pfad string) (Format, bool) {
 }
 
 // Waehle bestimmt Format und endgültigen Pfad (ADR-0025 Punkt 3): Eine bekannte Endung entscheidet; sonst gilt der
-// gewählte Filter und seine Endung wird angehängt.
-func Waehle(pfad string, filter Format) (Format, string) {
+// gewählte Filter und seine Endung wird angehängt. angehaengt meldet das: Der Dialog hat dann nur den Namen ohne die
+// Endung bestätigt, ein schon vorhandenes Ziel darf nicht still ersetzt werden (ErsetzeNichtStill, ADR-0025 Nachtrag 1).
+func Waehle(pfad string, filter Format) (f Format, ziel string, angehaengt bool) {
 	if f, ok := ausEndung(pfad); ok {
-		return f, pfad
+		return f, pfad, false
 	}
-	return filter, pfad + filter.Endung()
+	return filter, pfad + filter.Endung(), true
+}
+
+// ErrZielVorhanden: Das Ziel mit angehängter Endung gibt es schon; der Dialog hat nur den Namen ohne Endung bestätigt.
+var ErrZielVorhanden = errors.New("Ziel vorhanden")
+
+// PruefeAngehaengt lehnt ein schon vorhandenes Ziel ab, wenn Waehle die Endung angehängt hat (A-1). Fehler beim
+// Prüfen außer „nicht vorhanden“ gelten als vorhanden (im Zweifel nichts ersetzen).
+func PruefeAngehaengt(pfad string, angehaengt bool) error {
+	if !angehaengt {
+		return nil
+	}
+	if _, err := os.Lstat(pfad); errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return ErrZielVorhanden
 }
 
 // Schreibe schreibt das Dokument im Format f nach w: PNG und JPG aus dem fertig gerenderten Bild (render.Bild, das
@@ -104,10 +123,11 @@ func Schreibe(d *document.Dokument, f Format, w io.Writer) error {
 	return fileformat.ExportierePNG(w, b)
 }
 
-// SchreibeAtomar legt die Datei über eine temporäre Datei im Zielordner an und benennt sie um (ADR-0025 Punkt 5): Am
-// Ziel steht nie eine halbe Datei, bei einem Fehler bleibt eine vorhandene Datei unberührt. Rechte 0644.
+// SchreibeAtomar legt die Datei über eine temporäre Datei im Zielordner an und benennt sie um (ADR-0025 Punkt 5, Nachtrag
+// 1): Am Ziel steht nie eine halbe Datei, bei einem Fehler bleibt eine vorhandene Datei unberührt. Die Rechte folgen
+// der umask des Prozesses; ersetzt die Datei eine vorhandene reguläre Datei, übernimmt sie deren Rechte.
 func SchreibeAtomar(pfad string, schreibe func(io.Writer) error) (fehler error) {
-	tmp, err := os.CreateTemp(filepath.Dir(pfad), ".schnapp-export-*")
+	tmp, err := tempDatei(filepath.Dir(pfad))
 	if err != nil {
 		return err
 	}
@@ -121,8 +141,11 @@ func SchreibeAtomar(pfad string, schreibe func(io.Writer) error) (fehler error) 
 	if err := schreibe(tmp); err != nil {
 		return err
 	}
-	if err := tmp.Chmod(0o644); err != nil {
-		return err
+	if st, err := os.Lstat(pfad); err == nil && st.Mode().IsRegular() {
+		// Ein Fehler (etwa exFAT ohne Rechte) bricht nicht ab: Die Datei bleibt mit den umask-Rechten gültig.
+		if err := tmp.Chmod(st.Mode().Perm()); err != nil {
+			Diagnose("Rechte der ersetzten Datei nicht übernommen: %v", err)
+		}
 	}
 	if err := tmp.Sync(); err != nil {
 		return err
@@ -131,4 +154,23 @@ func SchreibeAtomar(pfad string, schreibe func(io.Writer) error) (fehler error) 
 		return fmt.Errorf("schließen: %w", err)
 	}
 	return os.Rename(name, pfad)
+}
+
+// Diagnose nimmt Meldungen, die nur im Debug-Log erscheinen sollen; die Oberfläche setzt sie, sonst bleibt sie leer.
+var Diagnose = func(format string, a ...any) {}
+
+// tempDatei legt die temporäre Datei exklusiv mit Modus 0666 an (der Kern wendet die umask an) und zufälligem Namen.
+func tempDatei(ordner string) (*os.File, error) {
+	for versuch := 0; ; versuch++ {
+		var z [8]byte
+		if _, err := rand.Read(z[:]); err != nil {
+			return nil, err
+		}
+		name := filepath.Join(ordner, ".schnapp-export-"+hex.EncodeToString(z[:]))
+		f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o666)
+		if errors.Is(err, os.ErrExist) && versuch < 10 {
+			continue
+		}
+		return f, err
+	}
 }
