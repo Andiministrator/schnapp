@@ -83,7 +83,7 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   `app/os_wayland.go` `requestClose`). Der Editor speichert dort; die Entscheidung trifft `canvas.Sitzung.Schliessen`
   (testbar ohne Gio). Scheitert das Speichern — auch das Ausweichen auf eine neue Aufnahme —, bleibt das Fenster offen
   und die Statusleiste sagt „Speichern gescheitert: … Erneutes Schließen verwirft die Änderungen.“ Erst eine zweite
-  Anfrage ohne neue Änderung schließt und verwirft (Claudes Entscheidung, Andi zu informieren: ohne Dialog die einzige
+  Anfrage ohne neue Änderung schließt und verwirft (Claudes Entscheidung, von Andi am 20.11.2026 bestätigt: ohne Dialog die einzige
   Möglichkeit, den Editor bei voller Platte überhaupt zu verlassen). Weicht Speichern mit Warnung aus (F-116, F-110),
   bleibt das Fenster einmal offen, damit die Warnung gelesen wird; die nächste Anfrage schließt. Ein gewöhnlicher
   Hinweis ohne Warnung geht wie bisher auf die Fehlerausgabe.
@@ -98,7 +98,8 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
 - **Gespeicherter Stand (F-109):** Der Verlauf vergibt je Änderung eine nie wiederkehrende Kennung
   (`document.Dokument.Stand`); „geändert“ heißt aktuelle Kennung ≠ Kennung beim letzten Speichern. Rückgängig bis zum
   gespeicherten Stand ist ungeändert; Strg+S ohne Änderung schreibt nicht (Statusleiste „Keine Änderungen zu
-  speichern.“). Folge: Eine Datei von außen landet erst mit der ersten Änderung in der Bibliothek.
+  speichern.“). Folge: Eine Datei von außen landet erst mit der ersten Änderung in der Bibliothek (von Andi am 20.11.2026
+  zur Kenntnis genommen).
 - **Konflikt zweier Editoren (F-110):** Beim Öffnen merkt sich der Editor den Stand der Datei (Gerät, Inode, Größe,
   Änderungszeit; `library.Stand`, gelesen vor dem Inhalt). `library.Speichern` vergleicht ihn vor dem Lesen und noch
   einmal kurz vor dem Umbenennen und überschreibt bei Abweichung nicht (`ErrGeaendert`); der Editor weicht auf eine
