@@ -242,9 +242,11 @@ Stand: 2026-11-20 (ergänzt in Sprint 8). Kurze Regeln aus Fehlern und Befunden;
     Test grün, ohne dass er wertlos wäre. Dann gegen den Stand vor dem Fix zurückbauen (`git show <fix>`), nicht gegen
     eine einzelne Zeile. Und: Ein Zug, der außerhalb des Fensters beginnt, startet nicht — Drehbuch und Test drücken im
     Bild und ziehen hinaus, nicht umgekehrt.
-  - *Im Drehbuch vor jedem Klick auf einen Knopf den Zeiger hinbewegen* (`zeiger X Y`, `warte 200`): Ein Druck direkt
-    nach einem Zeigersprung kommt an einem Leistenknopf nicht an (F-251, schon vor Sprint 7 so). Ein „wirkungsloser“
-    Knopf im Foto ist deshalb zuerst ein Drehbuchfehler; die Eingrenzung gegen den alten Stand geht per
+  - *Ein „wirkungsloser“ Knopf im Foto ist zuerst ein Drehbuchfehler:* In Sprint 7 schien ein Druck direkt nach einem
+    Zeigersprung an einem Leistenknopf nicht anzukommen (F-251); in Sprint 8 war das nicht mehr nachzustellen
+    (`scripts/drehbuecher/rueckfall-klick-ohne-zeiger.txt`, 5 von 5, `knowledge/messungen/f-251.md`) — `klick X Y`
+    sendet selbst eine Bewegung vor dem Druck. `zeiger X Y` vor dem Klick schadet nicht und bleibt in den älteren
+    Drehbüchern. Die Eingrenzung gegen den alten Stand geht per
     `git worktree add --detach tmp/<sprint>/<lauf>/alt <commit>` und dessen eigenem `scripts/probe.sh`.
   - *Eine Sperre prüft jeden Eingabeweg* (Sprint 7, F-257/F-261/F-263): Die Nacharbeit sperrte bei offenem Menü die
     Tasten (`key.Event`), der Zweig für getippten Text (`key.EditEvent`) lag davor und blieb offen; gefunden hat es erst
