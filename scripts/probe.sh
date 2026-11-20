@@ -14,7 +14,8 @@
 #     Probe-Build den ersten Monitor nimmt) im Vollbild des virtuellen KWin, wartet auf die Zeile „[editor] Fenstergröße“
 #     im Debug-Log, spielt dann das Drehbuch mit tmp/probe/fernbedienung ab (Zeiger-/Tasteneingaben über
 #     org_kde_kwin_fake_input, nur im virtuellen KWin) und beendet Schnapp danach (nur die eigene PID, SIGTERM, nach 5 s
-#     SIGKILL; vorher Startzeit und Programmname wie beim Start). Fotos als PNG in tmp/probe/fotos/<Zeitstempel>/ (je
+#     SIGKILL; vorher Startzeit und Programmname wie beim Start, der Name muss „schnapp“ sein; ist die Identität nicht
+#     prüfbar, greift das Skript nicht ein und meldet es im Ergebnis). Fotos als PNG in tmp/probe/fotos/<Zeitstempel>/ (je
 #     Lauf ein neuer Ordner, nichts wird gelöscht). Größe des virtuellen Bildschirms: --breite/--hoehe (Voreinstellung
 #     1600x1000), die Zeitgrenze des Laufs --zeit SEK (Voreinstellung 90, höchstens 600).
 #     Drehbuch, eine Zeile je Befehl, # = Kommentar (Beispiel: scripts/drehbuecher/beispiel-schwaerzen.txt):
@@ -23,7 +24,7 @@
 #       schreibe TEXT | rad X Y SCHRITTE (negativ = hoch) | foto NAME [BILDSCHIRM]
 #     Koordinaten sind logische Pixel des virtuellen Bildschirms (Fenster im Vollbild: gleich Fensterkoordinaten).
 #     foto nimmt den Bildschirm unter dem Zeiger auf, bei mehreren Monitoren BILDSCHIRM (Name) angeben.
-#   scripts/probe.sh --zwischenablage BILD.png
+#   scripts/probe.sh --zwischenablage BILD.png   (--innen, --drehbuch und --zwischenablage schließen sich aus)
 #     prüft den Halter der Zwischenablage (ADR-0024): setzt BILD als image/png, liest es mit wl-paste zurück (nur aus
 #     der Zwischenablage des virtuellen KWin), ersetzt sie mit wl-copy und prüft, dass der Halter endet.
 #
@@ -56,7 +57,13 @@ while [ $# -gt 0 ]; do
 	esac
 done
 [ $# -gt 0 ] || set -- --no-editor
-case "$breite$hoehe$zeit" in *[!0-9]* | "") echo "probe.sh: --breite, --hoehe und --zeit sind ganze Zahlen" >&2; exit 2 ;; esac
+# --innen, --drehbuch und --zwischenablage sind verschiedene Betriebsarten und schließen sich gegenseitig aus.
+arten=0
+for a in "$innen" "$drehbuch" "$ablage"; do [ -z "$a" ] || arten=$((arten + 1)); done
+[ "$arten" -le 1 ] || { echo "probe.sh: --innen, --drehbuch und --zwischenablage schließen sich gegenseitig aus" >&2; exit 2; }
+case "$breite$hoehe$zeit$monitore" in *[!0-9]* | "") echo "probe.sh: --breite, --hoehe, --zeit und --monitore sind ganze Zahlen" >&2; exit 2 ;; esac
+case "$skala" in *[!0-9.]* | "" | . | .* | *. | *.*.*) echo "probe.sh: --skala ist eine Zahl (etwa 1 oder 1.5)" >&2; exit 2 ;; esac
+[ "$monitore" -ge 1 ] && [ "$breite" -ge 1 ] && [ "$hoehe" -ge 1 ] || { echo "probe.sh: --monitore, --breite und --hoehe sind mindestens 1" >&2; exit 2; }
 [ "$zeit" -ge 1 ] && [ "$zeit" -le 600 ] || { echo "probe.sh: --zeit liegt zwischen 1 und 600" >&2; exit 2; }
 
 probe="$PWD/tmp/probe"
@@ -75,6 +82,15 @@ identitaet() {
 	printf '%s %s\n' "${20}" "$name"
 }
 
+# Wahr, wenn die PID noch dieselbe Schnapp-Instanz ist wie beim Start: gleiche Startzeit und gleicher Name wie in id0
+# (gesetzt in drehbuch_innen) und der Name ist wörtlich „schnapp“. Unlesbar oder abweichend heißt: nicht eingreifen.
+ist_schnapp() {
+	local jetzt
+	[ -n "${id0:-}" ] || return 1
+	jetzt="$(identitaet "$1")" || return 1
+	[ "$jetzt" = "$id0" ] && [ "${jetzt#* }" = schnapp ]
+}
+
 # Drehbuch-Lauf (innerer Teil, Sitzung des virtuellen KWin): Schnapp im Hintergrund, Fernbedienung im Vordergrund.
 drehbuch_innen() {
 	local skript fotos bildpfad pid id0 id1 fb
@@ -91,6 +107,15 @@ drehbuch_innen() {
 		SCHNAPP_DEBUG=1 "$probe/schnapp" --region > "$probe/stdout.txt" 2> "$probe/stderr.txt" &
 	fi
 	pid=$!
+	# Identität sofort festhalten, bevor die PID wiederverwendet sein kann: bis zu 2 s warten, bis der Prozess nach dem
+	# exec „schnapp“ heißt (davor trägt er den Namen der Shell), dann Startzeit und Namen merken. Gelingt das nicht,
+	# greift das Skript später nie ein.
+	id0=""
+	for _ in $(seq 1 20); do
+		if id1="$(identitaet "$pid")" && [ "${id1#* }" = schnapp ]; then id0="$id1"; break; fi
+		kill -0 "$pid" 2> /dev/null || break
+		sleep 0.1
+	done
 	# Fenster steht, wenn der Editor die erste Größe meldet (Zeile „[editor] Fenstergröße“); danach 1 s Ruhe, weil
 	# das Vollbild erst nach dem ersten Bild greift und die Größe dann noch einmal wechseln kann.
 	for _ in $(seq 1 300); do
@@ -99,8 +124,6 @@ drehbuch_innen() {
 		sleep 0.1
 	done
 	sleep 1
-	# Identität jetzt festhalten (nach dem exec ist der Programmname stabil); ist sie unlesbar, greift das Skript nie ein.
-	id0="$(identitaet "$pid")" || id0=""
 	{
 		echo "== Drehbuch $(basename "$skript"), Schnapp-PID $pid, Identität beim Start: ${id0:-unlesbar}"
 		FOTOS="$fotos" "$probe/fernbedienung" "$skript" 2>&1
@@ -108,28 +131,33 @@ drehbuch_innen() {
 		echo "fernbedienung exit $fb"
 		for _ in $(seq 1 100); do kill -0 "$pid" 2> /dev/null || break; sleep 0.1; done
 		if kill -0 "$pid" 2> /dev/null; then
-			id1="$(identitaet "$pid")" || id1=""
-			if [ -n "$id0" ] && [ "$id0" = "$id1" ]; then
+			if ist_schnapp "$pid"; then
 				echo "schnapp läuft nach dem Drehbuch noch: SIGTERM an die eigene PID $pid"
 				kill -TERM "$pid" 2> /dev/null
 				for _ in $(seq 1 50); do kill -0 "$pid" 2> /dev/null || break; sleep 0.1; done
 				if kill -0 "$pid" 2> /dev/null; then
-					id1="$(identitaet "$pid")" || id1=""
-					if [ -n "$id0" ] && [ "$id0" = "$id1" ]; then
+					if ist_schnapp "$pid"; then
 						echo "schnapp reagiert nicht auf SIGTERM: SIGKILL an PID $pid"
 						kill -KILL "$pid" 2> /dev/null
+						for _ in $(seq 1 20); do kill -0 "$pid" 2> /dev/null || break; sleep 0.1; done
 					else
 						echo "probe.sh: Identität der PID $pid hat sich geändert — kein SIGKILL"
 					fi
 				fi
 			else
-				echo "probe.sh: Identität der PID $pid nicht bestätigt (vorher '${id0:-unlesbar}', jetzt '${id1:-unlesbar}') — nicht eingegriffen"
+				echo "probe.sh: Identität nicht prüfbar, Schnapp läuft weiter (beim Start '${id0:-unlesbar}', jetzt '$(identitaet "$pid" || echo unlesbar)') — nicht eingegriffen"
 			fi
 		else
 			echo "schnapp hat sich selbst beendet"
 		fi
-		wait "$pid"
-		echo "schnapp exit $?"
+		# Nur auf ein beendetes Schnapp warten: ein weiterlaufendes würde wait bis zur äußeren Zeitgrenze blockieren
+		# (der äußere timeout beendet KWin samt Sitzung).
+		if kill -0 "$pid" 2> /dev/null; then
+			echo "probe.sh: schnapp läuft noch — kein Exit-Code; die äußere Zeitgrenze beendet KWin samt Sitzung"
+		else
+			wait "$pid"
+			echo "schnapp exit $?"
+		fi
 		echo "-- stdout von schnapp:"; cat "$probe/stdout.txt"
 		echo "-- stderr von schnapp:"; cat "$probe/stderr.txt"
 		echo "-- Fotos in $fotos:"; find "$fotos" -name '*.png' | sort
