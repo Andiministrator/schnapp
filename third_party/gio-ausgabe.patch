@@ -48,7 +48,7 @@ index 4db5b0b..e3b37fc 100644
  
  const struct wl_seat_listener gio_seat_listener = {
 diff --git a/app/os_wayland.go b/app/os_wayland.go
-index 3c893a7..d2e5271 100644
+index 3c893a7..1d1e781 100644
 --- a/app/os_wayland.go
 +++ b/app/os_wayland.go
 @@ -10,11 +10,14 @@ import (
@@ -150,16 +150,36 @@ index 3c893a7..d2e5271 100644
  	width      int
  	height     int
  	physWidth  int
-@@ -287,7 +314,7 @@ func newWLWindow(callbacks *callbacks, options []Option) error {
+@@ -287,10 +314,20 @@ func newWLWindow(callbacks *callbacks, options []Option) error {
  	return nil
  }
  
 -func (d *wlDisplay) writeClipboard(content []byte) error {
++// ErrClipboardUnavailable reports a clipboard write that could not be offered
++// because the compositor gave no seat or data device (Schnapp patch, F-177).
++var ErrClipboardUnavailable = errors.New("app: no clipboard available (no seat or data device)")
++
++// ClipboardWriteError, if set, receives the error of a clipboard write that
++// could not be offered (Schnapp patch, F-177). clipboard.WriteCmd has no result
++// upstream; set it once before any window opens. It is called on the window's
++// event goroutine.
++var ClipboardWriteError func(error)
++
 +func (d *wlDisplay) writeClipboard(mime string, content []byte) error {
  	s := d.seat
  	if s == nil {
- 		return nil
-@@ -304,8 +331,15 @@ func (d *wlDisplay) writeClipboard(content []byte) error {
+-		return nil
++		return ErrClipboardUnavailable
+ 	}
+ 	// Clear old offer.
+ 	if s.source != nil {
+@@ -299,13 +336,20 @@ func (d *wlDisplay) writeClipboard(content []byte) error {
+ 		s.content = nil
+ 	}
+ 	if d.dataDeviceManager == nil || s.dataDev == nil {
+-		return nil
++		return ErrClipboardUnavailable
+ 	}
  	s.content = content
  	s.source = C.wl_data_device_manager_create_data_source(d.dataDeviceManager)
  	C.wl_data_source_add_listener(s.source, &C.gio_data_source_listener, unsafe.Pointer(s.seat))
@@ -177,7 +197,7 @@ index 3c893a7..d2e5271 100644
  	}
  	C.wl_data_device_set_selection(s.dataDev, s.source, s.serial)
  	return nil
-@@ -366,8 +400,16 @@ func (d *wlDisplay) createNativeWindow(options []Option) (*window, error) {
+@@ -366,8 +410,16 @@ func (d *wlDisplay) createNativeWindow(options []Option) (*window, error) {
  		w.destroy()
  		return nil, errors.New("wayland: wl_compositor_create_surface failed")
  	}
@@ -195,7 +215,7 @@ index 3c893a7..d2e5271 100644
  	w.wmSurf = C.xdg_wm_base_get_xdg_surface(d.wm, w.surf)
  	if w.wmSurf == nil {
  		w.destroy()
-@@ -393,7 +435,9 @@ func (d *wlDisplay) createNativeWindow(options []Option) (*window, error) {
+@@ -393,7 +445,9 @@ func (d *wlDisplay) createNativeWindow(options []Option) (*window, error) {
  		}
  	}
  
@@ -206,7 +226,7 @@ index 3c893a7..d2e5271 100644
  	if w.cursor.theme == nil {
  		w.destroy()
  		return nil, errors.New("wayland: wl_cursor_theme_load failed")
-@@ -409,7 +453,7 @@ func (d *wlDisplay) createNativeWindow(options []Option) (*window, error) {
+@@ -409,7 +463,7 @@ func (d *wlDisplay) createNativeWindow(options []Option) (*window, error) {
  		w.destroy()
  		return nil, errors.New("wayland: wl_compositor_create_surface failed")
  	}
@@ -215,7 +235,7 @@ index 3c893a7..d2e5271 100644
  	C.xdg_wm_base_add_listener(d.wm, &C.gio_xdg_wm_base_listener, unsafe.Pointer(w.surf))
  	C.wl_surface_add_listener(w.surf, &C.gio_surface_listener, unsafe.Pointer(w.surf))
  	C.xdg_surface_add_listener(w.wmSurf, &C.gio_xdg_surface_listener, unsafe.Pointer(w.surf))
-@@ -435,6 +479,68 @@ func (w *window) loadCursors() {
+@@ -435,6 +489,68 @@ func (w *window) loadCursors() {
  	w.cursor.cursors.resizeNorthEast = w.loadCursor(pointer.CursorNorthEastResize)
  }
  
@@ -284,7 +304,7 @@ index 3c893a7..d2e5271 100644
  func (w *window) loadCursor(name pointer.Cursor) *C.struct_wl_cursor {
  	if name == pointer.CursorNone {
  		return nil
-@@ -623,6 +729,64 @@ func gio_onOutputMode(data unsafe.Pointer, output *C.struct_wl_output, flags C.u
+@@ -623,6 +739,64 @@ func gio_onOutputMode(data unsafe.Pointer, output *C.struct_wl_output, flags C.u
  	c.height = int(height)
  }
  
@@ -349,7 +369,7 @@ index 3c893a7..d2e5271 100644
  //export gio_onOutputGeometry
  func gio_onOutputGeometry(data unsafe.Pointer, output *C.struct_wl_output, x, y, physWidth, physHeight, subpixel C.int32_t, make, model *C.char, transform C.int32_t) {
  	d := callbackLoad(data).(*wlDisplay)
-@@ -689,8 +853,12 @@ func gio_onRegistryGlobal(data unsafe.Pointer, reg *C.struct_wl_registry, name C
+@@ -689,8 +863,12 @@ func gio_onRegistryGlobal(data unsafe.Pointer, reg *C.struct_wl_registry, name C
  	switch C.GoString(cintf) {
  	case "wl_compositor":
  		d.compositor = (*C.struct_wl_compositor)(C.wl_registry_bind(reg, name, &C.wl_compositor_interface, 3))
@@ -363,7 +383,7 @@ index 3c893a7..d2e5271 100644
  		C.wl_output_add_listener(output, &C.gio_output_listener, unsafe.Pointer(d.disp))
  		d.outputMap[name] = output
  		d.outputConfig[output] = new(wlOutput)
-@@ -811,8 +979,8 @@ func gio_onTouchDown(data unsafe.Pointer, touch *C.struct_wl_touch, serial, t C.
+@@ -811,8 +989,8 @@ func gio_onTouchDown(data unsafe.Pointer, touch *C.struct_wl_touch, serial, t C.
  	w := callbackLoad(unsafe.Pointer(surf)).(*window)
  	s.touchFoci[id] = w
  	w.lastTouch = f32.Point{
@@ -374,7 +394,7 @@ index 3c893a7..d2e5271 100644
  	}
  	w.ProcessEvent(pointer.Event{
  		Kind:      pointer.Press,
-@@ -845,8 +1013,8 @@ func gio_onTouchMotion(data unsafe.Pointer, touch *C.struct_wl_touch, t C.uint32
+@@ -845,8 +1023,8 @@ func gio_onTouchMotion(data unsafe.Pointer, touch *C.struct_wl_touch, t C.uint32
  	s := callbackLoad(data).(*wlSeat)
  	w := s.touchFoci[id]
  	w.lastTouch = f32.Point{
@@ -385,16 +405,19 @@ index 3c893a7..d2e5271 100644
  	}
  	w.ProcessEvent(pointer.Event{
  		Kind:      pointer.Move,
-@@ -1078,7 +1246,7 @@ func (w *window) ReadClipboard() {
+@@ -1078,7 +1256,10 @@ func (w *window) ReadClipboard() {
  }
  
  func (w *window) WriteClipboard(mime string, s []byte) {
 -	w.disp.writeClipboard(s)
-+	w.disp.writeClipboard(mime, s)
++	// Schnapp patch (F-177): report a write that could not be offered.
++	if err := w.disp.writeClipboard(mime, s); err != nil && ClipboardWriteError != nil {
++		ClipboardWriteError(err)
++	}
  }
  
  func (w *window) Configure(options []Option) {
-@@ -1095,7 +1263,7 @@ func (w *window) Configure(options []Option) {
+@@ -1095,7 +1276,7 @@ func (w *window) Configure(options []Option) {
  		default:
  			w.config.Mode = Fullscreen
  			w.wsize = w.config.Size
@@ -403,7 +426,7 @@ index 3c893a7..d2e5271 100644
  		}
  	case Minimized:
  		switch prev.Mode {
-@@ -1117,20 +1285,20 @@ func (w *window) Configure(options []Option) {
+@@ -1117,20 +1298,20 @@ func (w *window) Configure(options []Option) {
  		switch prev.Mode {
  		case Fullscreen:
  			w.config.Mode = Windowed
@@ -428,7 +451,7 @@ index 3c893a7..d2e5271 100644
  		}
  		w.config.MinSize = cnf.MinSize
  		w.config.MaxSize = cnf.MaxSize
-@@ -1141,10 +1309,10 @@ func (w *window) Configure(options []Option) {
+@@ -1141,10 +1322,10 @@ func (w *window) Configure(options []Option) {
  
  func (w *window) setWindowConstraints() {
  	decoHeight := w.decoHeight()
@@ -441,7 +464,7 @@ index 3c893a7..d2e5271 100644
  		C.xdg_toplevel_set_max_size(w.topLvl, C.int32_t(scaled.X), C.int32_t(scaled.Y+decoHeight))
  	}
  }
-@@ -1197,6 +1365,7 @@ func (w *window) resize(serial, edge C.uint32_t) {
+@@ -1197,6 +1378,7 @@ func (w *window) resize(serial, edge C.uint32_t) {
  }
  
  func (w *window) SetCursor(cursor pointer.Cursor) {
@@ -449,7 +472,7 @@ index 3c893a7..d2e5271 100644
  	w.cursor.cursor = w.loadCursor(cursor)
  	w.updateCursor()
  }
-@@ -1211,6 +1380,7 @@ func (w *window) updateCursor() {
+@@ -1211,6 +1393,7 @@ func (w *window) updateCursor() {
  }
  
  func (w *window) setCursor(pointer *C.struct_wl_pointer, serial C.uint32_t) {
@@ -457,7 +480,7 @@ index 3c893a7..d2e5271 100644
  	c := w.cursor.system
  	if c == nil {
  		c = w.cursor.cursor
-@@ -1225,7 +1395,15 @@ func (w *window) setCursor(pointer *C.struct_wl_pointer, serial C.uint32_t) {
+@@ -1225,7 +1408,15 @@ func (w *window) setCursor(pointer *C.struct_wl_pointer, serial C.uint32_t) {
  	if buf == nil {
  		return
  	}
@@ -474,7 +497,7 @@ index 3c893a7..d2e5271 100644
  	C.wl_surface_attach(w.cursor.surf, buf, 0, 0)
  	C.wl_surface_damage(w.cursor.surf, 0, 0, C.int32_t(img.width), C.int32_t(img.height))
  	C.wl_surface_commit(w.cursor.surf)
-@@ -1579,6 +1757,12 @@ func (w *window) destroy() {
+@@ -1579,6 +1770,12 @@ func (w *window) destroy() {
  	if w.cursor.theme != nil {
  		C.wl_cursor_theme_destroy(w.cursor.theme)
  	}
@@ -487,7 +510,7 @@ index 3c893a7..d2e5271 100644
  	if w.topLvl != nil {
  		C.xdg_toplevel_destroy(w.topLvl)
  	}
-@@ -1653,7 +1837,7 @@ func (s *wlSeat) sendCursorRectangle(w *window) {
+@@ -1653,7 +1850,7 @@ func (s *wlSeat) sendCursorRectangle(w *window) {
  	sel := w.w.EditorState().Selection
  	top := sel.Transform.Transform(sel.Caret.Pos.Sub(f32.Pt(0, sel.Caret.Ascent)))
  	bottom := sel.Transform.Transform(sel.Caret.Pos.Add(f32.Pt(0, sel.Caret.Descent)))
@@ -496,7 +519,59 @@ index 3c893a7..d2e5271 100644
  	minX, maxX := min(top.X, bottom.X)/scale, max(top.X, bottom.X)/scale
  	minY, maxY := min(top.Y, bottom.Y)/scale, max(top.Y, bottom.Y)/scale
  	x, y := math.Floor(float64(minX)), math.Floor(float64(minY))
-@@ -1863,8 +2047,8 @@ func (w *window) flushScroll() {
+@@ -1795,10 +1992,50 @@ func gio_onDataSourceSend(data unsafe.Pointer, source *C.struct_wl_data_source,
+ 	content := s.content
+ 	go func() {
+ 		defer syscall.Close(int(fd))
+-		syscall.Write(int(fd), content)
++		// Schnapp patch (F-176): an image is larger than the pipe buffer; write all of it.
++		_ = writeAllFD(int(fd), content, clipboardStall)
+ 	}()
+ }
+ 
++// clipboardStall is how long writeAllFD waits for a reader that does not read before it gives up.
++const clipboardStall = 10 * time.Second
++
++// errWriteStalled reports that the reader did not take any data for the stall time.
++var errWriteStalled = errors.New("app: clipboard reader stalled")
++
++// writeAllFD writes all of content to fd (Schnapp patch, F-176). A single write
++// ends after the pipe buffer (64 KiB) on a non-blocking pipe. It retries EINTR,
++// waits with poll on EAGAIN and gives up after stall without progress, and
++// returns any other error (EPIPE when the reader closed its end).
++func writeAllFD(fd int, content []byte, stall time.Duration) error {
++	for len(content) > 0 {
++		n, err := syscall.Write(fd, content)
++		if n > 0 {
++			content = content[n:]
++		}
++		switch {
++		case err == nil:
++			if n <= 0 {
++				return io.ErrShortWrite
++			}
++		case errors.Is(err, syscall.EINTR):
++		case errors.Is(err, syscall.EAGAIN):
++			pfd := []syscall.PollFd{{Fd: int32(fd), Events: syscall.POLLOUT}}
++			ready, perr := syscall.Poll(pfd, int(stall/time.Millisecond))
++			switch {
++			case errors.Is(perr, syscall.EINTR):
++			case perr != nil:
++				return perr
++			case ready == 0:
++				return errWriteStalled
++			}
++		default:
++			return err
++		}
++	}
++	return nil
++}
++
+ //export gio_onDataSourceCancelled
+ func gio_onDataSourceCancelled(data unsafe.Pointer, source *C.struct_wl_data_source) {
+ 	s := callbackLoad(data).(*wlSeat)
+@@ -1863,8 +2100,8 @@ func (w *window) flushScroll() {
  func (w *window) onPointerMotion(x, y C.wl_fixed_t, t C.uint32_t) {
  	w.flushScroll()
  	w.lastPos = f32.Point{
@@ -507,7 +582,7 @@ index 3c893a7..d2e5271 100644
  	}
  	w.ProcessEvent(pointer.Event{
  		Kind:      pointer.Move,
-@@ -1941,7 +2125,12 @@ func (w *window) updateOutputs() {
+@@ -1941,7 +2178,12 @@ func (w *window) updateOutputs() {
  	}
  	if found && scale != w.scale {
  		w.scale = scale
@@ -521,7 +596,7 @@ index 3c893a7..d2e5271 100644
  		w.draw(true)
  	}
  	if found {
-@@ -1950,10 +2139,42 @@ func (w *window) updateOutputs() {
+@@ -1950,10 +2192,42 @@ func (w *window) updateOutputs() {
  }
  
  func (w *window) getConfig() (image.Point, unit.Metric) {
@@ -567,7 +642,7 @@ index 3c893a7..d2e5271 100644
  	}
  }
  
-@@ -1966,6 +2187,9 @@ func (w *window) draw(sync bool) {
+@@ -1966,6 +2240,9 @@ func (w *window) draw(sync bool) {
  	if cfg == (unit.Metric{}) {
  		return
  	}
@@ -579,10 +654,10 @@ index 3c893a7..d2e5271 100644
  		w.ProcessEvent(ConfigEvent{Config: w.config})
 diff --git a/app/os_wayland_test.go b/app/os_wayland_test.go
 new file mode 100644
-index 0000000..bc0eabf
+index 0000000..a1c4cc3
 --- /dev/null
 +++ b/app/os_wayland_test.go
-@@ -0,0 +1,30 @@
+@@ -0,0 +1,104 @@
 +// SPDX-License-Identifier: Unlicense OR MIT
 +
 +//go:build ((linux && !android) || freebsd) && !nowayland
@@ -590,9 +665,83 @@ index 0000000..bc0eabf
 +package app
 +
 +import (
++	"bytes"
++	"errors"
++	"os"
 +	"reflect"
 +	"testing"
++	"time"
++
++	syscall "golang.org/x/sys/unix"
 +)
++
++// Schnapp patch (F-176): writeAllFD writes several MB through a non-blocking
++// pipe whose reader is slow, ends with EPIPE when the reader is gone and gives
++// up when the reader never reads.
++func TestWriteAllFD(t *testing.T) {
++	pipe := func(t *testing.T) (r *os.File, w int) {
++		var p [2]int
++		if err := syscall.Pipe2(p[:], syscall.O_NONBLOCK|syscall.O_CLOEXEC); err != nil {
++			t.Fatal(err)
++		}
++		return os.NewFile(uintptr(p[0]), "r"), p[1]
++	}
++	data := make([]byte, 5<<20)
++	for i := range data {
++		data[i] = byte(i * 7)
++	}
++
++	t.Run("complete", func(t *testing.T) {
++		r, w := pipe(t)
++		defer r.Close()
++		got := make(chan []byte)
++		go func() {
++			var buf bytes.Buffer
++			chunk := make([]byte, 4096)
++			for {
++				n, err := r.Read(chunk)
++				buf.Write(chunk[:n])
++				if err != nil {
++					got <- buf.Bytes()
++					return
++				}
++				if buf.Len()%(256<<10) < 4096 {
++					time.Sleep(time.Millisecond) // slow reader: the writer meets EAGAIN
++				}
++			}
++		}()
++		err := writeAllFD(w, data, 5*time.Second)
++		syscall.Close(w)
++		if err != nil {
++			t.Fatal(err)
++		}
++		if b := <-got; !bytes.Equal(b, data) {
++			t.Errorf("read %d bytes, want %d identical bytes", len(b), len(data))
++		}
++	})
++
++	t.Run("reader closed", func(t *testing.T) {
++		r, w := pipe(t)
++		defer syscall.Close(w)
++		r.Close()
++		if err := writeAllFD(w, data, time.Second); !errors.Is(err, syscall.EPIPE) {
++			t.Errorf("err %v, want EPIPE", err)
++		}
++	})
++
++	t.Run("reader stalls", func(t *testing.T) {
++		r, w := pipe(t)
++		defer r.Close()
++		defer syscall.Close(w)
++		start := time.Now()
++		if err := writeAllFD(w, data, 50*time.Millisecond); !errors.Is(err, errWriteStalled) {
++			t.Errorf("err %v, want errWriteStalled", err)
++		}
++		if d := time.Since(start); d > 2*time.Second {
++			t.Errorf("gave up after %v", d)
++		}
++	})
++}
 +
 +func TestSortedOutputs(t *testing.T) {
 +	in := []WaylandOutput{

@@ -52,6 +52,12 @@ var (
 // offeneOverlays zählt Overlay-Fenster, die noch nicht zerstört sind (F-82: der Editor öffnet erst danach).
 var offeneOverlays atomic.Int32
 
+// zwischenablageFehlt setzt der Gio-Patch (app.ClipboardWriteError, F-177), wenn ein Kopieren mangels Sitz oder
+// Datengerät des Compositors still nichts tat. clipboard.WriteCmd hat upstream keinen Rückgabewert, und Gio führt
+// den Befehl erst beim Abschluss des Bilds aus; die Ereignisschleife des Editors ersetzt danach die Meldung
+// „Copied to clipboard“ durch einen Fehler.
+var zwischenablageFehlt atomic.Bool
+
 // ErrOverlayOffen: Nach der Frist waren noch Overlay-Fenster offen; der Editor öffnet dann nicht (F-82).
 var ErrOverlayOffen = errors.New("editor: Overlay-Fenster noch offen")
 
@@ -89,6 +95,10 @@ func Editor(titel string, d *document.Dokument, speichern Speichern) error {
 	// gespeicherten Datei als Kästchen erscheinen (Kritik A-3).
 	th.Shaper = text.NewShaper(text.NoSystemFonts(), text.WithCollection(gofont.Collection()))
 	e := &editor{w: new(app.Window), thema: th, s: canvas.NeueSitzung(d), titel: titel, speichern: speichern}
+	app.ClipboardWriteError = func(err error) { // vor dem ersten Fenster (F-177)
+		diagnoseEditor("Zwischenablage nicht geschrieben: %v", err)
+		zwischenablageFehlt.Store(true)
+	}
 	e.bildNeu()
 	ende := e.signaleAbfangen()
 	defer ende()
@@ -199,6 +209,10 @@ func (e *editor) laufen() error {
 		// Nach jedem Ereignis nachsehen, ob die Meldung noch gilt: Eine abgelöste kehrt nicht zurück (F-160), auch wenn
 		// Ändern und Rückgängig in einem Bild liegen.
 		e.meldung.Frisch(e.s.D.Stand(), e.s.Werkzeug)
+		if zwischenablageFehlt.Swap(false) {
+			e.melde(i18n.T("Could not copy: no clipboard is available."), true) // statt „Copied“ (F-177)
+			e.w.Invalidate()
+		}
 		if e.wache.Angekommen() && !e.erzwungen {
 			e.nachSignal()
 		}
@@ -284,6 +298,7 @@ func (e *editor) speichernJetzt() {
 
 // kopieren legt das fertig gerenderte Bild als PNG (ohne Bearbeitungsdaten) in die Zwischenablage (Karte #39). Es
 // rendert wie das Speichern im Fensterthread (F-143). Unter Wayland gehört der Inhalt dem Fenster (ADR-0015 Nachtrag 2).
+// Kann Gio das Bild nicht anbieten, ersetzt die Ereignisschleife die Meldung (zwischenablageFehlt, F-177).
 func (e *editor) kopieren(gtx layout.Context) {
 	daten, err := render.PNG(e.s.D)
 	if err != nil {

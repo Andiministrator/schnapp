@@ -314,10 +314,20 @@ func newWLWindow(callbacks *callbacks, options []Option) error {
 	return nil
 }
 
+// ErrClipboardUnavailable reports a clipboard write that could not be offered
+// because the compositor gave no seat or data device (Schnapp patch, F-177).
+var ErrClipboardUnavailable = errors.New("app: no clipboard available (no seat or data device)")
+
+// ClipboardWriteError, if set, receives the error of a clipboard write that
+// could not be offered (Schnapp patch, F-177). clipboard.WriteCmd has no result
+// upstream; set it once before any window opens. It is called on the window's
+// event goroutine.
+var ClipboardWriteError func(error)
+
 func (d *wlDisplay) writeClipboard(mime string, content []byte) error {
 	s := d.seat
 	if s == nil {
-		return nil
+		return ErrClipboardUnavailable
 	}
 	// Clear old offer.
 	if s.source != nil {
@@ -326,7 +336,7 @@ func (d *wlDisplay) writeClipboard(mime string, content []byte) error {
 		s.content = nil
 	}
 	if d.dataDeviceManager == nil || s.dataDev == nil {
-		return nil
+		return ErrClipboardUnavailable
 	}
 	s.content = content
 	s.source = C.wl_data_device_manager_create_data_source(d.dataDeviceManager)
@@ -1246,7 +1256,10 @@ func (w *window) ReadClipboard() {
 }
 
 func (w *window) WriteClipboard(mime string, s []byte) {
-	w.disp.writeClipboard(mime, s)
+	// Schnapp patch (F-177): report a write that could not be offered.
+	if err := w.disp.writeClipboard(mime, s); err != nil && ClipboardWriteError != nil {
+		ClipboardWriteError(err)
+	}
 }
 
 func (w *window) Configure(options []Option) {
@@ -1979,8 +1992,48 @@ func gio_onDataSourceSend(data unsafe.Pointer, source *C.struct_wl_data_source, 
 	content := s.content
 	go func() {
 		defer syscall.Close(int(fd))
-		syscall.Write(int(fd), content)
+		// Schnapp patch (F-176): an image is larger than the pipe buffer; write all of it.
+		_ = writeAllFD(int(fd), content, clipboardStall)
 	}()
+}
+
+// clipboardStall is how long writeAllFD waits for a reader that does not read before it gives up.
+const clipboardStall = 10 * time.Second
+
+// errWriteStalled reports that the reader did not take any data for the stall time.
+var errWriteStalled = errors.New("app: clipboard reader stalled")
+
+// writeAllFD writes all of content to fd (Schnapp patch, F-176). A single write
+// ends after the pipe buffer (64 KiB) on a non-blocking pipe. It retries EINTR,
+// waits with poll on EAGAIN and gives up after stall without progress, and
+// returns any other error (EPIPE when the reader closed its end).
+func writeAllFD(fd int, content []byte, stall time.Duration) error {
+	for len(content) > 0 {
+		n, err := syscall.Write(fd, content)
+		if n > 0 {
+			content = content[n:]
+		}
+		switch {
+		case err == nil:
+			if n <= 0 {
+				return io.ErrShortWrite
+			}
+		case errors.Is(err, syscall.EINTR):
+		case errors.Is(err, syscall.EAGAIN):
+			pfd := []syscall.PollFd{{Fd: int32(fd), Events: syscall.POLLOUT}}
+			ready, perr := syscall.Poll(pfd, int(stall/time.Millisecond))
+			switch {
+			case errors.Is(perr, syscall.EINTR):
+			case perr != nil:
+				return perr
+			case ready == 0:
+				return errWriteStalled
+			}
+		default:
+			return err
+		}
+	}
+	return nil
 }
 
 //export gio_onDataSourceCancelled

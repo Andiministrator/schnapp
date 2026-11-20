@@ -203,6 +203,9 @@ msgstr "In die Zwischenablage kopiert"
 msgid "Could not copy: %v"
 msgstr "Kopieren gescheitert: %v"
 
+msgid "Could not copy: no clipboard is available."
+msgstr "Kopieren gescheitert: Keine Zwischenablage verfügbar."
+
 msgid "Saved to the library"
 msgstr "In der Bibliothek gespeichert"
 

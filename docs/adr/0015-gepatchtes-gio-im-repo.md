@@ -71,6 +71,12 @@ Bytes bei `send`; Text bleibt unverändert. Kein externes Programm (`wl-copy` w�
 kein X11-Weg (ADR-0007). Schnapp legt das gerenderte Bild als PNG ohne Bearbeitungsdaten ab (keine `snAP`/`snAO`-Blöcke,
 keine Metadaten, Kernprinzip 3); Geschwärztes ist darin wie in jedem Export endgültig (ADR-0008).
 
+Ergänzung (F-176, F-177): Bei `send` schreibt der Patch die Bytes in einer Schleife (`writeAllFD`) ganz in die Pipe —
+ein PNG ist größer als ihr Puffer (64 KiB): `EINTR` wiederholen, `EAGAIN` per `poll` abwarten (nach 10 s ohne
+Fortschritt aufgeben), `EPIPE` und andere Fehler beenden still. Fehlen dem Compositor Sitz oder Datengerät, meldet der
+Patch das über `app.ClipboardWriteError` (upstream hat `clipboard.WriteCmd` keinen Rückgabewert); der Editor zeigt dann
+einen Fehler statt „Copied to clipboard“ und schreibt ihn ins Debug-Log.
+
 Konsequenz: Unter Wayland gehört der Inhalt der Zwischenablage dem Fenster, das ihn anbietet. Schließt der Editor, bleibt
 das Bild nur erhalten, wenn ein Zwischenablage-Verwalter (unter KDE Klipper) es übernommen hat. Ein Weg, der das Schließen
 überdauert (data-control-Protokoll oder ein kurzlebiger Hilfsprozess), ist eine spätere Entscheidung.
