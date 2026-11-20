@@ -108,10 +108,12 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
     `op.InvalidateCmd` (F-217). Beide fielen erst im Probelauf mit Fotos auf, nicht in Tests; die Drehbücher dazu liegen
     unter `scripts/drehbuecher/` (Rückfallprobe, kein automatischer Test). Für Antworten aus Goroutinen und Signale
     genügt ein einzelnes `Invalidate` nie sicher (F-231): `canvas.Wecker` wiederholt das Wecken (Takt 50 ms, höchstens
-    1 min), bis die Ereignisschleife quittiert — Antwort vorher ablegen, dann `Anfordern`; die Schleife quittiert am
-    Anfang jedes Ereignisses und holt zusätzlich nach jedem Ereignis ab (Weckereignisse ohne Bild kommen nicht durch
-    `frame()`). Das Folgebild je Zeigerereignis (F-217) kostet nichts Messbares: 4K, 1209 Ereignisse, 788 gegen 782
-    Bilder (F-235).
+    1 min), bis die Ereignisschleife quittiert — Antwort vorher ablegen, dann `Anfordern`; die Schleife quittiert nur bei
+    einem `FrameEvent` (`ui.quittiere`; ein Fokus-`ConfigEvent` ohne Bild nähme sonst die Antwort an, ohne dass ein Bild
+    sie zeigt, F-239) und holt zusätzlich nach jedem Ereignis ab (Weckereignisse ohne Bild kommen nicht durch
+    `frame()`). Das Folgebild je Zeigerereignis (F-217) kostet nichts Messbares: 4K, rund 1200 Ereignisse, mit und ohne
+    Folgebild je rund 840 Bilder, Streuung größer als der Unterschied; Protokoll in
+    [`../messungen/f-235.md`](../messungen/f-235.md) (F-235, F-246).
   - **Tasten kommen im Fenster mit dem Tastaturfokus an,** nicht in dem unter dem Zeiger. Bei mehreren Vollbild-
     Fenstern bezieht sich Enter deshalb auf den gemeinsamen „aktiven Monitor“ (F-80); Rechtsklick bricht ab, falls
     kein Fenster den Fokus hat (F-81).

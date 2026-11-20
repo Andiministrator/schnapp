@@ -1,0 +1,19 @@
+# Messung F-235 (knowledge/messungen/f-235.md): Folgebild je Zeigerereignis, 4K-Fenster, 6 Schwärzen-Drags zu je 200 Schritten
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/messung-f235-drag.txt --bild <4K-Testbild> --breite 3840 --hoehe 2160 --zeit 200
+#   (ohne Folgebild: SCHNAPP_PROBE_OHNE_FOLGEBILD=1 davor; Testbild und Auswertung siehe Protokoll)
+# F-235: 4K-Fenster, Drag-Läufe mit Schwärzen (B), je 200 Zeigerschritte
+warte 800
+taste B
+warte 200
+ziehe 400 300 3200 420 200
+warte 300
+ziehe 400 550 3200 670 200
+warte 300
+ziehe 400 800 3200 920 200
+warte 300
+ziehe 400 1050 3200 1170 200
+warte 300
+ziehe 400 1300 3200 1420 200
+warte 300
+ziehe 400 1550 3200 1670 200
+warte 300
