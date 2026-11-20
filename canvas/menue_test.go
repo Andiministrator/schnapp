@@ -72,3 +72,22 @@ func TestKannLoeschenUndTextBearbeiten(t *testing.T) {
 		t.Error("während der Texteingabe an")
 	}
 }
+
+// Während eines Zugs ist „Gestauchtes zurückholen“ aus (F-253): Es änderte sonst die Ansicht unter dem Zug.
+func TestKannZurueckholenNichtImZug(t *testing.T) {
+	s := randSitzung(t)
+	if err := s.D.SetzeStreifen([]document.Streifen{{Zeilen: true, Von: 50, Bis: 60}}); err != nil {
+		t.Fatal(err)
+	}
+	s.Einpassen()
+	s.SetzeWerkzeug(WerkzeugKasten)
+	s.Druecken(fv(s, 20, 20), TastePrimaer)
+	s.Ziehen(fv(s, 80, 80))
+	if s.KannZurueckholen() || s.HoleGestauchtesZurueck() {
+		t.Error("im Zug an")
+	}
+	s.Loslassen(fv(s, 80, 80))
+	if !s.KannZurueckholen() {
+		t.Error("nach dem Zug aus")
+	}
+}

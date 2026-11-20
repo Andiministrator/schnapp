@@ -90,7 +90,7 @@ rückgängig, **Strg+Umschalt+Z**/**Strg+Y** wiederholen, **Entf** löschen, **S
 **Strg+Umschalt+E** (Knopf „Exportieren …“) als PNG, JPG oder SVG über den Dateidialog des Desktops weitergeben (ohne Bearbeitungsdaten, Geschwärztes bleibt weg),
 **Strg+C** fertiges Bild in die Zwischenablage (mit dem data-control-Protokoll, etwa unter KDE Plasma, bleibt
 es nach dem Schließen des Editors, bis etwas anderes kopiert wird, höchstens 12 Stunden; sonst nur, solange der Editor offen ist), **Strg+0** einpassen,
-**Strg+1** 100 %, **Strg+W** schließen. Jede Taste geht auch mit der Maus: Der Knopf **Menü** neben Speichern führt alle Aktionen mit ihren Kürzeln (darunter **Gestauchtes zurückholen**, das alles Gestauchte wieder zeigt), und über einem Werkzeugknopf erscheint sein Buchstabe.
+**Strg+1** 100 %, **Strg+W** schließen. Jedes Kürzel geht auch mit der Maus (nur Umschalt beim Ziehen, für Pfeile in 45°-Schritten und Quadrate, bleibt eine Taste): Der Knopf **Menü** neben Speichern führt alle Aktionen mit ihren Kürzeln (darunter **Gestauchtes zurückholen**, das alles Gestauchte wieder zeigt), und über einem Werkzeugknopf erscheint sein Buchstabe.
 
 Änderungen werden beim Schließen gespeichert; **Strg+S** ohne Änderung schreibt nichts. Eine Datei außerhalb der
 Bibliothek wird beim ersten Speichern zu einer neuen Aufnahme der Bibliothek (die Datei selbst bleibt unverändert; die

@@ -10,19 +10,20 @@ import (
 // F-243: Eine neue Anforderung, während der Wecker noch wiederholt, zählt die Obergrenze neu. Sonst endete das
 // Wecken für die zweite Antwort mit der Frist der ersten.
 func TestWeckerNeueAnforderungVerlaengertGrenze(t *testing.T) {
-	const takt, grenze = 5 * time.Millisecond, 200 * time.Millisecond
+	const takt, grenze = 5 * time.Millisecond, time.Second
 	w := NeuerWecker(func() {}, takt, grenze)
 	t.Cleanup(w.Ende)
 	w.Anfordern()
-	time.Sleep(140 * time.Millisecond)
-	w.Anfordern() // läuft schon: dieselbe Goroutine, neue Frist bis etwa 340 ms
-	time.Sleep(120 * time.Millisecond)
-	// Bei etwa 260 ms: Die erste Frist (200 ms) ist vorbei, die zweite nicht.
+	time.Sleep(700 * time.Millisecond)
+	w.Anfordern() // läuft schon: dieselbe Goroutine, neue Frist bis etwa 1,7 s
+	time.Sleep(600 * time.Millisecond)
+	// Bei etwa 1,3 s: Die erste Frist (1 s) ist vorbei, die zweite nicht. Je rund 300 ms Luft, auch unter -race auf
+	// belasteter Maschine (F-259).
 	if !w.Offen() {
 		t.Fatal("Wecker endete mit der Frist der ersten Anforderung")
 	}
-	time.Sleep(200 * time.Millisecond)
-	// Bei etwa 460 ms: auch die zweite Frist ist vorbei.
+	time.Sleep(time.Second)
+	// Bei etwa 2,3 s: auch die zweite Frist ist vorbei.
 	if w.Offen() {
 		t.Error("Wecker läuft über die verlängerte Obergrenze hinaus")
 	}

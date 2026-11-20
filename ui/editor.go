@@ -963,21 +963,33 @@ func (e *editor) tasten(gtx layout.Context) {
 		if !ok || k.State != key.Press {
 			continue
 		}
-		if e.menue.offen && k.Name == key.NameEscape {
-			e.menue.offen = false // Esc schließt zuerst das Menü (ADR-0026 Punkt 1)
+		if e.menue.offen {
+			// Offenes Menü (ADR-0026 Punkt 1): Esc schließt es, Enter löst einen Knopf oder Eintrag mit Tastaturfokus
+			// aus; alle anderen Tasten wirken nicht, damit Entf oder ein Buchstabe nicht unbemerkt hinter der Liste die
+			// Leinwand ändert (F-257).
+			switch k.Name {
+			case key.NameEscape:
+				e.menue.offen = false
+			case key.NameReturn, key.NameEnter:
+				if c := e.fokussierterKnopf(gtx); c != nil {
+					c.Click()
+				}
+			}
 			continue
 		}
+		t, ok := findeTaste(k.Name, k.Modifiers, e.s.TextLaeuft())
 		if e.s.TextLaeuft() {
-			// Während der Texteingabe sind Buchstaben Text (kommt als EditEvent), keine Kürzel.
-			switch k.Name {
-			case "V", "A", "R", "T", "N", "B", "P", "C", "X", key.NameDeleteForward, key.NameTab:
-				continue // Tab: ohne Wirkung (F-153)
-			case key.NameDeleteBackward:
+			// Während der Texteingabe sind Buchstaben Text (kommt als EditEvent), keine Kürzel: Werkzeugtasten aus der
+			// Tabelle, Entf und Tab wirken nicht (Tab: F-153), die Rücktaste löscht im Text. Die Werkzeugtasten kommen aus der Tabelle,
+			// nicht aus einer eigenen Liste (F-256).
+			switch {
+			case k.Name == key.NameDeleteBackward:
 				e.s.TextZurueck()
+				continue
+			case ok && t.hatWerkzeug, k.Name == key.NameDeleteForward, k.Name == key.NameTab:
 				continue
 			}
 		}
-		t, ok := findeTaste(k.Name, k.Modifiers, e.s.TextLaeuft())
 		switch {
 		case !ok:
 		case t.hatWerkzeug:

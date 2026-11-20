@@ -69,44 +69,65 @@ func (e *editor) fuehreAus(gtx layout.Context, a aktion, vonMaus bool) {
 	if vonMaus {
 		e.s.TextBestaetigen()
 	}
+	if w := e.wirkung(a); w != nil {
+		w(gtx)
+	}
+}
+
+// aktionAusfuehrbar meldet, ob fuehreAus für a etwas tut (Test: kein Menüeintrag ohne Wirkung, F-253).
+func aktionAusfuehrbar(a aktion) bool { return (&editor{}).wirkung(a) != nil }
+
+// wirkung ist die Handlung zu a; nil für aktKeine und die Tasten mit eigener Behandlung (aktEsc, aktEnter).
+func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 	switch a {
 	case aktKopieren:
-		if e.s.KopierenErlaubt() {
-			e.kopieren(gtx)
+		return func(gtx layout.Context) {
+			if e.s.KopierenErlaubt() {
+				e.kopieren(gtx)
+			}
 		}
 	case aktExport:
-		if e.s.KopierenErlaubt() {
-			e.exportStarten()
+		return func(layout.Context) {
+			if e.s.KopierenErlaubt() {
+				e.exportStarten()
+			}
 		}
 	case aktSpeichern:
-		e.speichernJetzt()
+		return func(layout.Context) { e.speichernJetzt() }
 	case aktRueckgaengig:
-		e.rueckgaengig()
+		return func(layout.Context) { e.rueckgaengig() }
 	case aktWiederholen:
-		e.wiederholen()
+		return func(layout.Context) { e.wiederholen() }
 	case aktTextBearbeiten:
-		e.s.TextBearbeiten()
+		return func(layout.Context) { e.s.TextBearbeiten() }
 	case aktLoeschen:
-		e.s.Loeschen()
+		return func(layout.Context) { e.s.Loeschen() }
 	case aktGanzesBild:
 		// Zuschnitt aufheben und Randstreifen zurückholen, wie Doppelklick mit Zuschneiden (E-21, F-222).
-		if e.s.HebeZuschnittAuf() {
-			e.bildNeu()
-			e.meldeAnsicht()
+		return func(layout.Context) {
+			if e.s.HebeZuschnittAuf() {
+				e.bildNeu()
+				e.meldeAnsicht()
+			}
 		}
 	case aktZurueckholen:
-		if e.s.HoleGestauchtesZurueck() {
-			e.bildNeu()
-			e.meldeAnsicht()
+		return func(layout.Context) {
+			if e.s.HoleGestauchtesZurueck() {
+				e.bildNeu()
+				e.meldeAnsicht()
+			}
 		}
 	case aktEinpassen:
-		e.s.Einpassen()
+		return func(layout.Context) { e.s.Einpassen() }
 	case aktEins:
-		e.s.EinsZuEins()
+		return func(layout.Context) { e.s.EinsZuEins() }
 	case aktSchliessen:
-		diagnoseEditor("Schließen über Taste oder Menü")
-		e.w.Perform(system.ActionClose) // in der eigenen Schleife, wie im Overlay (F-77)
+		return func(layout.Context) {
+			diagnoseEditor("Schließen über Taste oder Menü")
+			e.w.Perform(system.ActionClose) // in der eigenen Schleife, wie im Overlay (F-77)
+		}
 	}
+	return nil
 }
 
 // menueAuswerten verarbeitet Klicks auf den Menüknopf, die Einträge und daneben.
@@ -173,6 +194,18 @@ func (e *editor) zeichneMenue(gtx layout.Context, rechts, y int) {
 		}
 	}
 	breite := innen + textB + gtx.Dp(32) + kuerzelB + innen
+	// Passt die Liste nicht unter den Knopf, rückt sie nach oben (über die Leiste); ist das Fenster niedriger als die
+	// Liste, fallen die Abstände der Gruppen weg und die Zeilen werden niedriger, bis zur Höhe einer Textzeile
+	// (F-252: bei der Mindesthöhe 320 dp wären sonst die unteren Einträge nicht erreichbar).
+	if y+hoehe > mx.Y {
+		y = max(0, mx.Y-hoehe)
+	}
+	if hoehe > mx.Y {
+		trenn = 0
+		zeile = max(gtx.Dp(20), (mx.Y-gtx.Dp(6)*2)/len(eintraege))
+		hoehe = gtx.Dp(6)*2 + zeile*len(eintraege)
+		y = 0
+	}
 	ecke := image.Pt(max(0, rechts-breite), y)
 	t := op.Offset(ecke).Push(gtx.Ops)
 	flaeche := image.Rectangle{Max: image.Pt(breite, hoehe)}

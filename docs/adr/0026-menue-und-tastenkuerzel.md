@@ -54,3 +54,21 @@ wenig Code (ADR-0011).
   (`knowledge/topics/lehren.md`).
 - Neue Funktionen bekommen künftig im selben Zug einen Menüeintrag (E-21).
 - Tooltips über einem Text oder einer Nummer auf der Leinwand gibt es weiter nicht.
+
+## Nachtrag 1 (20.11.2026): Nacharbeit aus der Kritik zu Sprint 7 (Fable)
+
+- **Punkt 4 genauer (F-260):** „Gestauchtes zurückholen“ hebt die Stauch-Streifen auf, die den Zuschnitt schneiden.
+  Streifen ganz außerhalb des Zuschnitts sind ohnehin nicht zu sehen und bleiben; „Ganzes Bild“ zeigt sie danach
+  wieder mit Naht, und der Eintrag wird wieder bedienbar.
+- **Punkt 5 ergänzt (F-254):** Umschalt beim Ziehen (Pfeil in 45°-Schritten, Kasten als Quadrat) bleibt eine Taste ohne
+  Menüeintrag. Ohne Umschalt entsteht dieselbe Form frei gezogen; die Einrastung ist eine Hilfe, keine eigene Funktion.
+- **Offenes Menü (F-257):** Solange die Liste offen ist, wirken nur Esc (schließt) und Enter (löst den Knopf oder
+  Eintrag mit Tastaturfokus aus). Andere Tasten tun nichts, damit nicht unbemerkt hinter der Liste gelöscht oder das
+  Werkzeug gewechselt wird.
+- **Maus und Taste in der Texteingabe (F-257):** Ein Menüeintrag bestätigt einen laufenden Text und führt dann aus
+  (wie die Knöpfe der Leiste). Per Taste wirken Kopieren und Export während der Texteingabe nicht, weil Strg+C dort
+  nicht als Kopieren des Bilds gemeint sein muss. Einträge, die eine abgeschlossene Eingabe brauchen (Löschen,
+  Text bearbeiten, Ganzes Bild, Gestauchtes zurückholen), sind während der Eingabe grau.
+- **Niedrige Fenster (F-252):** Passt die Liste nicht unter den Knopf, rückt sie nach oben; ist das Fenster niedriger
+  als die Liste, entfallen die Gruppenabstände und die Zeilen werden niedriger (mindestens 20 dp).
+- **Offen (Karte):** Bedienung der Liste allein per Tastatur (Fokus in die Liste, Pfeiltasten, Fokusring), F-255.
