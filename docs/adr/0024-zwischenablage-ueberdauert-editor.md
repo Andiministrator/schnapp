@@ -92,3 +92,15 @@ Entscheidung: Der Halter bietet zusätzlich `x-kde-force-image-copy` an und lief
 einen leeren Wert setzt). Damit erscheint das kopierte Bild im Klipper-Verlauf, ohne dass Andi eine Einstellung ändern
 muss. Der Rückfall über Gio bietet weiter nur `image/png` an (ADR-0015 Nachtrag 2) — dort erscheint es im Verlauf nur
 mit eingeschalteter Einstellung.
+
+## Nachtrag 3 (20.11.2026): Nacharbeit aus der Sitzungs-QA (Kritik Fable, Teil B)
+
+- Die Haltezeit gilt nach der Wanduhr in Scheiben; die Scheibe ist nur eine Lesefrist. Für das Antworten an den
+  Compositor gilt je Ereignis eine eigene Schreibfrist `Stau` (10 s), damit ein gesunder Halter nach Ablauf einer
+  Scheibe nicht an einem `destroy` scheitert.
+- Nach dem Ende wartet der Halter auf laufende Sendungen höchstens `Stau`; die Frist gilt je 64-KiB-Stück, nicht für
+  das Ganze.
+- Die Rückfall-Entscheidung des Editors ist testbar: `wlclip.HalterMoeglich` (Fehler bei `WAYLAND_SOCKET`) und
+  `errors.Is(err, wlclip.ErrKeinDataControl)` (`Uebergib` bildet den Text des Halters auf den Sentinel ab).
+- Die Wayland-Leitung liegt seit Karte #95 in `internal/wlwire` (gemeinsam mit der Probe-Fernbedienung).
+- `TestZeitgrenze` prüft Unter- und Obergrenze mit einspeisbarer Uhr, einschließlich Wanduhr-Sprung (Standby).

@@ -23,7 +23,9 @@ Schritt.
       Schwesterprojekt nutzt (ADR-0012)? Dann vorher abstimmen (`CLAUDE.local.md`).
 
 ## 5. Code-Qualität
-- [ ] `go vet ./...` und `go test ./...` grün; `gofmt` angewendet.
+- [ ] `go vet ./...` und `go test ./...` grün; `gofmt` angewendet. Bei Änderungen an `cmd/schnapp-fernbedienung` oder
+      Probe-Code zusätzlich mit Tag `probe` (`GOFLAGS=-tags=novulkan,nox11,probe go vet … && go test …`).
+- [ ] Sichtbares Verhalten selbst geprüft, soweit der virtuelle KWin es kann (`scripts/probe.sh --drehbuch`)?
 - [ ] Keine Hacks, kein toter Code, keine `// TODO` ohne Finding.
 - [ ] Kein `cgo` ohne ADR.
 

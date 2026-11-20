@@ -155,16 +155,21 @@ ADR-0003 Nachtrag 2, ADR-0015.
 - **Wurzelmodul** `github.com/Andiministrator/schnapp` (bindet Gio per `replace gioui.org => ./third_party/gio`, ADR-0015):
   Gio braucht unter Linux die Build-Tags `novulkan,nox11` (keine Vulkan-Header, nur Wayland) und die cgo-Bibliotheken
   `libwayland-dev libegl-dev libxkbcommon-dev`. Die Tags kommen über die Umgebungsvariable, nicht über `go env -w`:
-  `export GOFLAGS=-tags=novulkan,nox11`, dann `go vet ./... && go test ./...`; Programm `go build -trimpath -o schnapp
+  `export GOFLAGS=-tags=novulkan,nox11`, dann `go vet ./... && go test ./...`, zusätzlich mit Tag `probe`
+  `GOFLAGS=-tags=novulkan,nox11,probe go vet ./cmd/schnapp-fernbedienung ./ui && GOFLAGS=-tags=novulkan,nox11,probe go test ./cmd/schnapp-fernbedienung`
+  (der Normalbau sieht das Paket nicht); Programm `go build -trimpath -o schnapp
   ./cmd/schnapp`. Pakete: `i18n` (Sprachwahl, PO-Leser, `i18n.T/TK/N`), `po` (eingebettete `po/*.po`, ADR-0014
   Nachtrag 1), `ui` (Schicht zu Gio; `Starte` hält die Gio-Hauptschleife, `Overlay` je Monitor),
   `cmd/schnapp` (Argumente `--region` [Voreinstellung], `--screen[=NAME]`, `--list-screens`, `--window`, `--repeat`,
   `--no-editor`, `DATEI`, `--ignore-limit DATEI`, `--version`, `--help`; der Editor fängt SIGTERM/SIGINT/SIGHUP bis zur
   Rückkehr ab und speichert (ADR-0020 Nachtrag 2), Strg+C-Proben nur im eigenen Terminal; `aufnehmen.go` nimmt auf und legt in der Bibliothek ab, Pfad auf
   stdout, dann Editor (ADR-0020), Exit 3 bei Abbruch; `editor.go` öffnet Dateien und speichert in die Bibliothek;
-  `--screen` mit `[capture] screen = all` ist noch nicht umgesetzt). Was ohne Augen prüfbar ist, fährt Claude selbst mit `scripts/probe.sh`
-  (virtueller KWin, Build-Tag `probe`, nie ausliefern). Echte Läufe (Overlay, Editor) startet Andi selbst
-  per `!`-Befehl, Anleitung davor (`knowledge/topics/lehren.md`); vorher mit `go build -race` nach `tmp/` bauen,
+  `--screen` mit `[capture] screen = all` ist noch nicht umgesetzt). **Tests, die Claude selbst fahren kann, fährt
+  Claude selbst** (Andi, 20.11.2026): `scripts/probe.sh` (virtueller KWin, Build-Tag `probe`, nie ausliefern), auch den
+  Editor per Drehbuch (`--drehbuch DATEI --bild BILD`, Fernbedienung `cmd/schnapp-fernbedienung` über
+  `org_kde_kwin_fake_input`, Fotos mit Read ansehen; `internal/wlwire` ist der gemeinsame Wayland-Client von `wlclip`
+  und Fernbedienung). Nur was der virtuelle KWin nicht kann (Portal-Dialog, Klipper, fremde Programme, echte Monitore)
+  startet Andi selbst per `!`-Befehl, gebündelt, Anleitung davor (`knowledge/topics/lehren.md`); vorher mit `go build -race` nach `tmp/` bauen,
   Diagnose mit `SCHNAPP_DEBUG=1` (`[overlay]`/`[editor]`-Zeilen, `knowledge/topics/gio-wayland.md`).
   Oberflächentexte nur als Literal über `i18n.T/TK/N`; der Test verlangt für jeden Text einen fertigen Eintrag in
   `po/de.po`. `capture` ist die Aufnahmeschicht (`Quelle`, KWin über D-Bus: ScreenShot3/memfd bevorzugt, sonst

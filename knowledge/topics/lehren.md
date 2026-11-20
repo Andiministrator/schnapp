@@ -197,3 +197,16 @@ Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden;
   Eintragen prüfen, ob [K] oder eher [V]/[D], und `schulden-grenze.mjs` nach jedem Register-Commit laufen lassen.
 - **Lange verkettete Bash-Befehle mit Push oder Löschen** lehnt die Berechtigungsprüfung ab: Push und Löschen je in
   einem eigenen Aufruf, vor dem Push die Heikle-Begriffe-Prüfung.
+- **Sitzungs-QA Sprint 6, zweiter Teil (20.11.2026, Kritik Fable A/B, F-190 bis F-208):**
+  - *Worktree-Agenten starten vom gepushten Stand* (origin/main), nicht vom lokalen HEAD: vor jedem Worktree-Agenten
+    pushen, sonst fehlt ihm der eigene letzte Commit (#95, erster Anlauf abgebrochen).
+  - *Eine Gegenprobe deckt nur den Fehlerweg, den sie nachbaut.* „Scheibe rot“ prüfte die Obergrenze; das vorzeitige
+    Ende des Halters (1 min statt 12 h) blieb grün (F-199). Zeitgrenzen immer mit Unter- und Obergrenze und
+    einspeisbarer Uhr testen.
+  - *Wächter: Identität beim Start, nicht nach der Wartezeit,* und vor jedem Eingriff den Namen gegen das Literal
+    prüfen (F-200). Ein Werkzeug, das Eingaben einspeist, prüft selbst, dass es im virtuellen KWin läuft — der Schutz
+    der Hülle allein reicht nicht, das gebaute Programm bleibt liegen (F-201).
+  - *„Der Dialog bestätigt das Überschreiben“ gilt nur für den Namen, den er zurückgibt* — wer danach eine Endung
+    anhängt, muss selbst prüfen (F-190). Feste Dateirechte (`Chmod 0644`) umgehen die umask (F-192).
+  - *Geschlossene Kanäle aus Bibliotheken* (godbus schließt Signalkanäle beim Verbindungsende) mit `v, ok := <-ch`
+    lesen, sonst Dauerschleife (F-191).
