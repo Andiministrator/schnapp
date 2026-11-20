@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/Andiministrator/schnapp/document"
@@ -154,7 +155,8 @@ func TestAblegenAtomarKeineRestdatei(t *testing.T) {
 	ordner := filepath.Join(b.Orte.Ablage, "2026-11")
 	vorher := namen(t, ordner)
 
-	// Fehlschlag im letzten Schritt (Umbenennen).
+	// Fehlschlag im letzten Schritt (Umbenennen) auf dem Rückfallweg ohne Hardlinks (F-48).
+	ersetzeVerknuepfe(t, func(string, string) error { return syscall.EPERM })
 	ersetzeUmbenenne(t, func(string, string) error { return errors.New("Attrappe: Umbenennen scheitert") })
 	d := neuesDokument(t, 40, 30)
 	_, err := b.Ablegen(d, d.Original(), fileformat.Metadaten{Erstellt: zeit("2026-11-19T13:00:00Z")})

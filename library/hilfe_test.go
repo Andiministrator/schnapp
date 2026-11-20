@@ -101,3 +101,11 @@ func ersetzeUmbenenne(t *testing.T, f func(von, nach string) error) {
 	umbenenne = f
 	t.Cleanup(func() { umbenenne = alt })
 }
+
+// ersetzeVerknuepfe tauscht verknuepfe für die Dauer des Tests (Attrappe: Dateisystem ohne Hardlinks o. ä.).
+func ersetzeVerknuepfe(t *testing.T, f func(von, nach string) error) {
+	t.Helper()
+	alt := verknuepfe
+	verknuepfe = f
+	t.Cleanup(func() { verknuepfe = alt })
+}

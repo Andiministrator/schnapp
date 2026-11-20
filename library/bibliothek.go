@@ -130,28 +130,19 @@ func (b *Bibliothek) Ablegen(d *document.Dokument, sichtbar image.Image, m filef
 			return Eintrag{}, err
 		}
 	}
-	rel := ""
-	for n := 1; ; n++ {
-		dn := name + ".png"
-		if n > 1 {
-			dn = fmt.Sprintf("%s-%d.png", name, n)
+	// Neuer Name: exklusiv anlegen, nie überschreiben — auch nicht gegen einen zweiten Schnapp-Prozess (F-48).
+	dn, err := schreibeNeu(ordner, func(n int) string {
+		if n == 1 {
+			return name + ".png"
 		}
-		_, err := os.Lstat(filepath.Join(ordner, dn))
-		if errors.Is(err, fs.ErrNotExist) {
-			rel = monat + "/" + dn
-			break
-		}
-		if err != nil {
-			return Eintrag{}, err
-		}
-	}
-	ziel := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))
-	err := schreibeAtomar(ziel, func(w io.Writer) error {
+		return fmt.Sprintf("%s-%d.png", name, n)
+	}, func(w io.Writer) error {
 		return fileformat.SchreibeArbeitsdatei(w, d, sichtbar, m)
 	})
 	if err != nil {
 		return Eintrag{}, err
 	}
+	rel := monat + "/" + dn
 	g := d.Groesse()
 	e := Eintrag{Pfad: rel, Erstellt: m.Erstellt, Breite: g.X, Hoehe: g.Y, Schlagworte: m.Schlagworte,
 		Quelle: m.Quelle, Bearbeitet: m.Bearbeitet}
@@ -342,14 +333,15 @@ func (b *Bibliothek) Neuaufbau() (NeuaufbauErgebnis, error) {
 }
 
 // liesEintrag liest die Angaben einer Arbeitsdatei; ok ist falsch bei fremden, beschädigten oder unlesbaren
-// Dateien.
+// Dateien. Gelesen werden nur snAP und IHDR (fileformat.LeseMetadaten), die Pixel bleiben undekodiert: Der
+// Neuaufbau über viele Aufnahmen bleibt schnell und braucht keinen Speicher für Bilder.
 func (b *Bibliothek) liesEintrag(pfad, rel string) (Eintrag, bool) {
 	f, err := os.Open(pfad)
 	if err != nil {
 		return Eintrag{}, false
 	}
 	defer f.Close()
-	g, err := fileformat.LeseArbeitsdatei(f)
+	g, err := fileformat.LeseMetadaten(f)
 	if err != nil || g.Fremd {
 		return Eintrag{}, false
 	}
@@ -361,8 +353,7 @@ func (b *Bibliothek) liesEintrag(pfad, rel string) (Eintrag, bool) {
 		}
 		erstellt = st.ModTime().UTC().Truncate(time.Second)
 	}
-	s := g.Dokument.Groesse()
-	e := Eintrag{Pfad: rel, Erstellt: erstellt, Breite: s.X, Hoehe: s.Y, Schlagworte: bereinige(g.Meta.Schlagworte),
+	e := Eintrag{Pfad: rel, Erstellt: erstellt, Breite: g.Breite, Hoehe: g.Hoehe, Schlagworte: bereinige(g.Meta.Schlagworte),
 		Quelle: g.Meta.Quelle, Bearbeitet: g.Meta.Bearbeitet}
 	return e, e.gueltig()
 }

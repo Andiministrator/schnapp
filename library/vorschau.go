@@ -14,6 +14,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 )
 
 // VorschauSeite ist die längste Seite eines Vorschaubilds in Pixeln.
@@ -116,3 +118,66 @@ func eigenerOrdner(pfad string) error {
 
 // aendereRechte ist os.Chmod; Tests ersetzen es, um einen scheiternden Chmod nachzubauen (F-67).
 var aendereRechte = os.Chmod
+
+// VerwaisteVorschauen listet die Vorschaubilder im Cache, zu denen keine Aufnahme in der Ablage mehr gehört (absolute
+// Pfade, sortiert). Sie löscht nichts: Aufräumen ist eine eigene, ausdrücklich freigegebene Aktion.
+//
+// Maßgeblich ist die Ablage, nicht der Index: Zu jeder PNG-Datei dort wird der erwartete Vorschaupfad gebildet
+// (VorschauPfad); alles im Vorschau-Ordner, was die Namensform eines Vorschaubilds hat (24 Hexzeichen, .png) und
+// nicht dazugehört, ist verwaist. Andere Dateien im Ordner (fremde, temporäre) werden nicht gemeldet. Ist die
+// Ablage nicht lesbar oder fehlt sie (etwa ein nicht eingehängtes Laufwerk), kommt ein Fehler statt einer Liste, in
+// der fälschlich alles verwaist wäre. Ein fehlender Vorschau-Ordner ergibt eine leere Liste.
+func (b *Bibliothek) VerwaisteVorschauen() ([]string, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	erwartet := map[string]bool{}
+	err := filepath.WalkDir(b.Orte.Ablage, func(pfad string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.Type().IsRegular() || !strings.EqualFold(filepath.Ext(pfad), ".png") {
+			return nil
+		}
+		rel, err := filepath.Rel(b.Orte.Ablage, pfad)
+		if err != nil {
+			return err
+		}
+		erwartet[b.VorschauPfad(filepath.ToSlash(rel))] = true
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("bibliothek: Ablage nicht lesbar: %w", err)
+	}
+	eintraege, err := os.ReadDir(b.Orte.Vorschau)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var verwaist []string
+	for _, e := range eintraege {
+		name := e.Name()
+		if !e.Type().IsRegular() || !istVorschauName(name) {
+			continue
+		}
+		if pfad := filepath.Join(b.Orte.Vorschau, name); !erwartet[pfad] {
+			verwaist = append(verwaist, pfad)
+		}
+	}
+	sort.Strings(verwaist)
+	return verwaist, nil
+}
+
+// istVorschauName prüft die Namensform eines Vorschaubilds: 24 Kleinbuchstaben-Hexzeichen und „.png“.
+func istVorschauName(name string) bool {
+	if len(name) != 24+len(".png") || !strings.HasSuffix(name, ".png") {
+		return false
+	}
+	for _, c := range name[:24] {
+		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f') {
+			return false
+		}
+	}
+	return true
+}
