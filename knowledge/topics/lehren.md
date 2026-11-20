@@ -106,6 +106,13 @@ Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden;
   Einzeiler. `wl-paste`/`wl-copy` gehen gegen die Zwischenablage des virtuellen KWin (`--zwischenablage`), eigene
   Prüfskripte laufen mit `--innen SKRIPT`. Für Andi bleibt, was der virtuelle KWin nicht hat: Desktop-Portal-Dialoge,
   Klipper und Plasma, Einfügen in andere Programme, seine echten Monitore und Skalen, rein subjektives Aussehen.
+  **Fernbedienung (Karte #95):** `scripts/probe.sh --drehbuch DATEI [--bild BILD] [--breite W --hoehe H] [--zeit S]`
+  spielt ein Drehbuch (`warte`, `zeiger`, `klick`, `doppelklick`, `ziehe`, `taste Strg+Z`, `schreibe`, `rad`, `foto`;
+  Beispiel `scripts/drehbuecher/beispiel-schwaerzen.txt`) gegen den Editor, der im Probe-Build im Vollbild öffnet
+  (Fensterkoordinaten = Bildschirmkoordinaten, Bild bei 100 % mittig); Fotos unter `tmp/probe/fotos/<Zeitstempel>/`.
+  ⚠️ Der virtuelle KWin erbt sonst das Tastaturlayout des Rechners (de: Y/Z vertauscht, Strg+Z blieb still wirkungslos);
+  `probe.sh` setzt `XKB_DEFAULT_LAYOUT=us`, die Codes der Fernbedienung sind US-evdev. Die Oberfläche erscheint in der
+  Sprache des Rechners. Kein Portal-Dialog, keine fremden Programme im virtuellen KWin.
 - **Schutz messen, nicht annehmen (Sprint 6, F-163):** Verpixeln mit Blockmittel plus Zufallsrauschen sah sicher aus;
   der Kritiker hat es mit einem Toleranzvergleich gegen Kandidaten nachgerechnet und eine vierstellige Zahl in 193 von
   200 Läufen zurückgewonnen. Was vertraulichen Inhalt unkenntlich machen soll, trägt keine Information des Inhalts
