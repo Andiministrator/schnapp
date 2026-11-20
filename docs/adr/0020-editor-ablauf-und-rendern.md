@@ -81,8 +81,8 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
 - **Schließen vor dem Zerstören:** Gio liefert vor dem Zerstören ein abbrechbares `app.ClosingEvent`
   (`third_party/gio/app/system.go`; unter Wayland aus `xdg_toplevel.close` und `Perform(ActionClose)`,
   `app/os_wayland.go` `requestClose`). Der Editor speichert dort; die Entscheidung trifft `canvas.Sitzung.Schliessen`
-  (testbar ohne Gio). *Seit Nachtrag 6 in zwei Schritten: `SchliessenAnfrage` und `SpeichernEnde`; `Schliessen` ist die
-  synchrone Hülle.* Scheitert das Speichern — auch das Ausweichen auf eine neue Aufnahme —, bleibt das Fenster offen
+  (testbar ohne Gio). *Seit Nachtrag 6 in zwei Schritten: `SchliessenAnfrage` und `SpeichernEnde`; die synchrone Hülle
+  `Schliessen` ist seit F-284 entfernt, Tests fahren die zwei Schritte über den Helfer `schliesse`.* Scheitert das Speichern — auch das Ausweichen auf eine neue Aufnahme —, bleibt das Fenster offen
   und die Statusleiste sagt „Speichern gescheitert: … Erneutes Schließen verwirft die Änderungen.“ Erst eine zweite
   Anfrage ohne neue Änderung schließt und verwirft (Claudes Entscheidung, von Andi am 20.11.2026 bestätigt: ohne Dialog die einzige
   Möglichkeit, den Editor bei voller Platte überhaupt zu verlassen). Weicht Speichern mit Warnung aus (F-116, F-110),
@@ -98,7 +98,8 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   Fehlermeldung offen steht, speichert der Editor noch einmal (samt Ausweichen auf eine neue Aufnahme) — das Verwerfen
   bestätigt nur eine zweite Schließen-Anfrage, kein Signal — und schließt danach in jedem Fall, statt bis zum SIGKILL
   offen zu hängen; scheitert es wieder, bleiben Fehlerausgabe und Rückgabewert, beim Zerstören folgt kein weiterer
-  Versuch (`canvas.Sitzung.SchliessenNachSignal`).
+  Versuch (`canvas.Sitzung.SignalAnfrage` und `SpeichernEnde`; die frühere Hülle `SchliessenNachSignal` ist seit F-284
+  entfernt).
 - **Ohne Anfrage zerstört** (Wayland-Verbindung weg): Speichern beim `DestroyEvent` bleibt (Nachtrag 1); dort gibt es
   nur noch die Fehlerausgabe und den Rückgabewert.
 - **Kein Autospeichern, kein Wiederherstellungsort:** Gegen Absturz oder SIGKILL schützt das nicht. Bewusst so, weil
@@ -154,7 +155,7 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   schließt, bekommt dieselbe Meldung wie bei Strg+S: Beim Schließen wird wie bisher als neue Aufnahme abgelegt, und der
   Hinweis mit dem Ablageort hält das Fenster **einmal** offen — wie ein Ausweichen mit Warnung (Nachtrag 2); die
   zweite Schließen-Anfrage schließt. Dafür hält jeder Hinweis das Fenster einmal offen (`ui.Gespeichert.HaeltOffen`:
-  Warnung oder nicht leerer Hinweis), die Entscheidung selbst bleibt in `canvas.Sitzung.Schliessen`. Die Ausgabe auf der
+  Warnung oder nicht leerer Hinweis), die Entscheidung selbst bleibt in canvas (heute `SchliessenAnfrage` und `SpeichernEnde`). Die Ausgabe auf der
   Fehlerausgabe bleibt zusätzlich bestehen (Start aus Terminal, Fenster dennoch zu). Ein weiteres Strg+S oder Schließen
   danach hat keinen Hinweis mehr und schließt sofort.
 
