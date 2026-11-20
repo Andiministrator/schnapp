@@ -149,6 +149,8 @@ type editor struct {
 	wache *canvas.Signalwache // nimmt Signale an (eigene Goroutine), Ereignisschleife fragt Angekommen
 	// wecker weckt die Ereignisschleife für Signal und Dateidialog, bis sie ein Ereignis bearbeitet (F-231).
 	wecker *canvas.Wecker
+	// bilder zählt die gezeichneten Bilder (Diagnose mit SCHNAPP_DEBUG, Messung F-235).
+	bilder int
 	// Export (ADR-0025): Der Dialog läuft in einer Goroutine, die Antwort kommt über exportAntwort in die Ereignisschleife.
 	exportCtx     context.Context
 	exportOffen   bool // ein Dialog läuft (nur einer zugleich); nur die Ereignisschleife liest und setzt es
@@ -203,6 +205,17 @@ func diagnoseEditor(format string, args ...any) {
 
 func (e *editor) bildNeu() { e.bildOp = paint.NewImageOp(e.s.D.Ansichtsbild()) }
 
+// quittiere meldet dem Wecker, dass die Schleife ein Ereignis bearbeitet, das ein Bild trägt. Ab einem FrameEvent sieht
+// die Schleife alles, was vor dem letzten Anfordern abgelegt wurde (Marke, Dialogantwort), und zeigt es im selben Bild;
+// der Wecker darf ruhen, eine spätere Anforderung bleibt offen (F-231). Ein Ereignis ohne Bild (Fokuswechsel als
+// ConfigEvent) quittiert nicht: Es nähme die Antwort an, aber nichts zeigte sie, und „Dateidialog geöffnet“ bliebe bis
+// zum nächsten Ereignis stehen (F-239). Der Wecker weckt dann weiter, bis ein Bild kommt (oder die Obergrenze greift).
+func quittiere(w *canvas.Wecker, ereignis event.Event) {
+	if _, ok := ereignis.(app.FrameEvent); ok {
+		w.Quittieren()
+	}
+}
+
 func (e *editor) laufen() error {
 	e.w.Option(app.Title(e.fensterTitel()), app.Size(unit.Dp(1200), unit.Dp(800)), app.MinSize(unit.Dp(480), unit.Dp(320)))
 	if probeAutoWahl {
@@ -214,12 +227,12 @@ func (e *editor) laufen() error {
 	var letzteGroesse image.Point
 	for {
 		ereignis := e.w.Event()
-		// Ab hier sieht die Schleife alles, was vor dem letzten Anfordern abgelegt wurde (Marke, Dialogantwort): Der
-		// Wecker darf ruhen; eine spätere Anforderung bleibt offen (F-231).
-		e.wecker.Quittieren()
+		quittiere(e.wecker, ereignis)
 		switch ev := ereignis.(type) {
 		case app.DestroyEvent:
 			diagnoseEditor("Fenster zu: Fehler %v, ungesichert %v, Zug %v", ev.Err, e.s.Ungesichert(), e.s.Zieht())
+			// Zählung für Messungen wie F-235 (knowledge/messungen/f-235.md)
+			diagnoseEditor("Bilder gezeichnet: %d", e.bilder)
 			e.s.TextBestaetigen() // getippter Text geht nicht verloren (ADR-0021 Punkt 6)
 			if e.s.Zieht() {
 				e.s.Abbrechen()
@@ -244,6 +257,7 @@ func (e *editor) laufen() error {
 				ev.Abort()
 			}
 		case app.FrameEvent:
+			e.bilder++
 			if ev.Size != letzteGroesse { // probe.sh wartet auf diese Zeile, bis das Fenster steht
 				letzteGroesse = ev.Size
 				diagnoseEditor("Fenstergröße %dx%d", ev.Size.X, ev.Size.Y)
@@ -682,8 +696,10 @@ func (e *editor) zeiger(gtx layout.Context) {
 		// ändert (etwa „Rückgängig“ nach einem Klick, der einen Zug abbricht — Echtlauf #92).
 		// Gemessen (F-235, 4K-Aufnahme auf 4K-Probebildschirm, 1209 Zeigerereignisse): mit und ohne Folgebild bei Drag
 		// gleich viele Bilder (788 gegen 782) und gleiche Bildzeit; Gio fasst die Anforderungen zusammen. Bleibt so.
-		gtx.Execute(op.InvalidateCmd{})
 		pe, ok := ev.(pointer.Event)
+		if !(probeOhneFolgebildBeiZug && ok && pe.Kind == pointer.Drag) {
+			gtx.Execute(op.InvalidateCmd{})
+		}
 		if !ok {
 			continue
 		}
@@ -719,7 +735,7 @@ func (e *editor) zeiger(gtx layout.Context) {
 				e.melde(i18n.T("The area is too small to redact at this zoom; zoom in or draw a larger area."), false)
 			}
 			e.meldeAnsicht()
-			diagnoseEditor("Loslassen: Auswahl %d, geändert %v", e.s.Auswahl, e.s.Geaendert())
+			diagnoseEditor("Loslassen: Auswahl %d, geändert %v, Bilder bisher %d", e.s.Auswahl, e.s.Geaendert(), e.bilder)
 		case pointer.Cancel:
 			e.s.Abbrechen()
 		case pointer.Scroll:

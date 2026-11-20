@@ -7,3 +7,6 @@ const probeAutoWahl = false
 
 // ProbeBuild meldet den Probe-Build (probe_an.go); schnapp --version hängt dann „+probe“ an (F-179).
 const ProbeBuild = probeAutoWahl
+
+// probeOhneFolgebildBeiZug gibt es nur im Probe-Build (probe_an.go); hier fällt der Zweig beim Übersetzen weg.
+const probeOhneFolgebildBeiZug = false

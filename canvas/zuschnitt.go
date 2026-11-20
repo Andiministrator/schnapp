@@ -188,7 +188,19 @@ func (s *Sitzung) stauchBand() (zeilen bool, von, bis int, ok bool) {
 	}
 	von = max(0, min(g, int(math.Round(lo))))
 	bis = max(0, min(g, int(math.Round(hi))))
-	return zeilen, von, bis, hi-lo >= MinObjekt/s.Abb.Zoom && bis > von
+	ok = hi-lo >= MinObjekt/s.Abb.Zoom && bis > von
+	// Mindestrest je Seite (ADR-0023 Nachtrag 4, F-226): Zwischen Naht und Bildrand müssen mindestens die halbe Bandhöhe
+	// bleiben, sonst bestünde die Seite nur aus Zackenband. Ein kleinerer Rest ginge ohnehin im Band unter; das Band
+	// reicht dann bis an den Rand (und wird, wie jedes Band am Rand, zum Zuschnitt, F-222). Vorschau (bandRahmen) und
+	// Ergebnis (staucheRahmen) lesen dasselbe Band (F-240).
+	halb := s.D.ZackenFaktor() * document.ZackenBandHalb
+	if ok && von < halb {
+		von = 0
+	}
+	if ok && g-bis < halb {
+		bis = g
+	}
+	return zeilen, von, bis, ok
 }
 
 // bandRahmen ist das Band als Rechteck der Ansicht über die ganze Breite bzw. Höhe (Vorschau beim Ziehen).
@@ -213,17 +225,7 @@ func (s *Sitzung) staucheRahmen() {
 		return
 	}
 	g := s.D.Groesse()
-	// Mindestrest je Seite (ADR-0023 Nachtrag 4, F-226): Zwischen Naht und Bildrand müssen mindestens die halbe Bandhöhe
-	// bleiben, sonst bestünde die Seite nur aus Zackenband. Ein kleinerer Rest ginge ohnehin im Band unter; das Band
-	// reicht dann bis an den Rand (und wird, wie jedes Band am Rand, zum Zuschnitt, F-222).
-	laengeAchse := map[bool]int{false: g.X, true: g.Y}[zeilen]
-	halb := s.D.ZackenFaktor() * document.ZackenBandHalb
-	if von < halb {
-		von = 0
-	}
-	if laengeAchse-bis < halb {
-		bis = laengeAchse
-	}
+	// Das Band trägt den Mindestrest schon (stauchBand, F-226/F-240).
 	// Bleibt weniger als die Mindestgröße eines Rahmens übrig, gilt das wie „nichts übrig“: Ein Zug kann nur im Bild
 	// beginnen (F-150) und trifft die erste Zeile selten genau; ein Rest von 4 Pixeln war kein gewolltes Ergebnis
 	// (Echtlauf #92).
