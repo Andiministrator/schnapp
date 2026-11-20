@@ -154,3 +154,15 @@ Stand 20.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
   Datei endgültig entfernt (F-126).
 - Zuschneiden (C) und Stauchen (X) mit Zackenkante an Stauch-Nähten; der Schwärzungsrahmen bleibt auf die Ansicht
   begrenzt, Weggeschnittenes bleibt im Original — vorher schwärzen (ADR-0023).
+
+## E-21: Stauch-Streifen am Bildrand und Bedienung ohne Tastatur — ENTSCHIEDEN 20.11.2026 (Andi)
+- **Frage (F-222):** Ein Stauch-Band, das bis an den Bildrand reicht, hat keine Naht; nach dem Speichern mit Schwärzung
+  oder Wiederöffnen gibt es keinen Rückweg. Optionen: (1) Rand-Band wird zum Zuschnitt, zurück wie jeder Zuschnitt,
+  (2) Doppelklick mit X nahe dem Rand, (3) eigene Aktion „Alles Herausgenommene wieder zeigen“.
+- **Entscheidung (Andi):** „ich folge deiner empfehlung“ — (1): ein X-Band bis an den Bildrand wird als Zuschnitt
+  gespeichert. Umsetzung Karte #99 mit ADR-0023-Nachtrag.
+- **Grundsatz dazu (Andi):** „alles was mit tastenkürzeln geht, muss auch über die werkzeugleiste oder das menü gehen.“
+  Das gilt auch für das Aufheben des Zuschnitts (heute nur Doppelklick mit C) und für das Entfernen einer Naht. Bestand
+  prüfen und nachrüsten: Karte „Jede Tastenfunktion auch über Leiste oder Menü“ (Backlog); neue Funktionen bekommen
+  Knopf oder Menüeintrag im selben Zug.
+
