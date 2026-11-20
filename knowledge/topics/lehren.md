@@ -237,3 +237,8 @@ Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden;
     Absenderprüfung braucht den Besitzer, und der kann beim Anmelden noch fehlen (Aktivierung erst durch den Aufruf):
     nachschlagen statt verwerfen (F-209). Der Verify-Lauf nach der Nacharbeit fand 6 neue Befunde in 16 Behebungen —
     er ist nicht verzichtbar.
+  - *Doppelter Schutz macht den Rückbau einer Zeile grün* (Sprint 7, #106): Beim Schwärzen klemmen `klemmeAnsicht` und
+    die Rundung in `schwaerzeRahmen` den Rahmen beide auf die Ansicht; nimmt die Gegenprobe nur eine zurück, bleibt der
+    Test grün, ohne dass er wertlos wäre. Dann gegen den Stand vor dem Fix zurückbauen (`git show <fix>`), nicht gegen
+    eine einzelne Zeile. Und: Ein Zug, der außerhalb des Fensters beginnt, startet nicht — Drehbuch und Test drücken im
+    Bild und ziehen hinaus, nicht umgekehrt.

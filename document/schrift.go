@@ -148,14 +148,27 @@ type tintenSchluessel struct {
 // tintenSpeicher hält die gemessenen Zeilen je Inhalt und Grad (F-224): Editor, Renderer und Trefferprüfung fragen die
 // Reichweite jedes Textes bei jedem Bild ab, auch ganz verborgener; ohne Zwischenspeicher würde jede Glyphe jedes Mal
 // neu vermessen. Die Schlüssel teilen sich den Speicher mit dem Text; damit alte Fassungen (Tippen, Verlauf) nicht
-// unbegrenzt am Leben bleiben, wird er geleert, sobald die Inhalte zusammen tintenSpeicherMax Bytes übersteigen.
-// Nur mit schriftMu.
+// unbegrenzt am Leben bleiben, wird er geleert, sobald die geschätzte Belegung tintenSpeicherMax Bytes übersteigt.
+// Gezählt werden Inhalt, Eintrag und jede gemessene Zeile (F-241): Zeilenreiche Texte belegen sonst ein Vielfaches
+// ihres Inhalts, und ein leerer Inhalt zählte gar nicht. Nur mit schriftMu.
 var (
 	tintenSpeicher      = map[tintenSchluessel][]zeilenTinte{}
 	tintenSpeicherBytes int
+	tintenSpeicherMax   = 64 << 20 // Variable nur für den Test des Leerens
 )
 
-const tintenSpeicherMax = 64 << 20
+const (
+	// tintenEintrag schätzt, was ein Eintrag ohne Inhalt und Zeilen belegt: Schlüssel (Zeichenkettenkopf und Grad,
+	// 24 Byte), Slice-Kopf (24 Byte) und den Anteil der Map an Steuerbytes und Reserve.
+	tintenEintrag = 96
+	// tintenZeile ist die Größe einer zeilenTinte (zwei int, vier float64; der Test vergleicht mit unsafe.Sizeof).
+	tintenZeile = 48
+)
+
+// tintenKosten schätzt die Belegung eines Eintrags mit Inhalt inhalt und zeilen gemessenen Zeilen (Kapazität).
+func tintenKosten(inhalt string, zeilen int) int {
+	return len(inhalt) + tintenEintrag + zeilen*tintenZeile
+}
 
 // textZeilen liefert die Zeilen von Inhalt mit Tinte, gemessen in Grad (aus dem Zwischenspeicher). Nur mit schriftMu.
 func textZeilen(s *schriftMass, inhalt string, grad float64) []zeilenTinte {
@@ -170,12 +183,13 @@ func textZeilen(s *schriftMass, inhalt string, grad float64) []zeilenTinte {
 			zeilen = append(zeilen, zeilenTinte{i: i, n: utf8.RuneCountInString(z), tinte: tinte})
 		}
 	}
-	if tintenSpeicherBytes+len(inhalt) > tintenSpeicherMax {
+	kosten := tintenKosten(inhalt, cap(zeilen))
+	if tintenSpeicherBytes+kosten > tintenSpeicherMax {
 		clear(tintenSpeicher)
 		tintenSpeicherBytes = 0
 	}
 	tintenSpeicher[k] = zeilen
-	tintenSpeicherBytes += len(inhalt)
+	tintenSpeicherBytes += kosten
 	return zeilen
 }
 

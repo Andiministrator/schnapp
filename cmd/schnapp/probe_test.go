@@ -11,6 +11,7 @@ import (
 
 	"github.com/Andiministrator/schnapp/capture"
 	"github.com/Andiministrator/schnapp/internal/probeschutz"
+	"github.com/Andiministrator/schnapp/wlclip"
 )
 
 // echteAusfuehrungOhneAufnahme baut die echte Ausführung (echteAnschluesse, samt echter Schutzprüfung), ersetzt aber
@@ -86,5 +87,30 @@ func TestProbeschutzIstDerGeteilte(t *testing.T) {
 	t.Setenv("PROBE_INNEN", "")
 	if (probeSchutz() == nil) != (probeschutz.NurVirtuell(func(k string) string { return "" }) == nil) {
 		t.Error("probeSchutz weicht von probeschutz.NurVirtuell ab")
+	}
+}
+
+// TestProbeHalterEndetVorDerZwischenablage (F-244): Der Halter der Zwischenablage (--internal-keep-clipboard) im
+// Probe-Build endet in der echten Sitzung mit Exit 1, ohne die Zwischenablage zu berühren; im virtuellen KWin läuft er.
+func TestProbeHalterEndetVorDerZwischenablage(t *testing.T) {
+	t.Setenv("PROBE_INNEN", "")
+	t.Setenv("PROBE_AUSSENBUS", "")
+	t.Setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/run/user/1000/bus")
+	t.Setenv("WAYLAND_DISPLAY", "wayland-0")
+	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
+	gerufen := 0
+	lauf := func() int { gerufen++; return exitOK }
+	var fehler bytes.Buffer
+	code, ok := halter([]string{wlclip.HelferArgument}, &fehler, lauf)
+	if !ok || code != exitFehler || gerufen != 0 || fehler.Len() == 0 {
+		t.Errorf("echte Sitzung: ok %v, Exit %d, Halter %d-mal gerufen, stderr %q", ok, code, gerufen, fehler.String())
+	}
+	t.Setenv("PROBE_INNEN", "1")
+	t.Setenv("PROBE_AUSSENBUS", "unix:path=/run/user/1000/bus")
+	t.Setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/a/privat")
+	t.Setenv("WAYLAND_DISPLAY", "schnapp-probe")
+	t.Setenv("XDG_RUNTIME_DIR", "/a/tmp/probe/run")
+	if code, ok := halter([]string{wlclip.HelferArgument}, &fehler, lauf); !ok || code != exitOK || gerufen != 1 {
+		t.Errorf("virtueller KWin: ok %v, Exit %d, Halter %d-mal gerufen", ok, code, gerufen)
 	}
 }
