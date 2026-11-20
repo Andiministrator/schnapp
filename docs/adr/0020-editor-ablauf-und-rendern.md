@@ -263,8 +263,8 @@ Nachtrag 6 und 7; die 15-s-Frist selbst ist offen (F-298, Karte #119, Entscheidu
 - **„Der Exit-Code ist ein Fehler“ (Nachtrag 7) gilt, wenn Änderungen ungesichert bleiben:** `ui.ErrSpeichernHaengt`
   und ein gescheitertes Speichern, das der Nutzer nicht verworfen hat — auf dem Weg `schnapp DATEI` und nach einer
   Aufnahme (F-302). Auf dem DATEI-Weg heißt die Meldung dann „Der Editor ließ sich nicht öffnen oder nicht speichern“, nicht
-  „Kann … nicht öffnen“. Ein Fensterfehler allein (kein Wayland usw.) bleibt nach einer Aufnahme eine Warnung mit
-  Exit 0, weil die Aufnahme abgelegt ist (F-180).
+  „… lässt sich nicht öffnen“. Ein Fensterfehler allein (kein Wayland usw.) bleibt nach einer Aufnahme eine Warnung mit
+  Exit 0, weil die Aufnahme abgelegt ist — ein Fehler-Code ließe ein Skript die Aufnahme wiederholen (wie bei F-180).
 - **Fehler beim Zerstören:** Scheitert das Speichern einer Schließen-Anfrage und wird das Fenster zerstört, bevor ein
   Bild den Fehler gezeigt hat, geht der Fehler in die Rückgabe des Editors (F-300). Hat ein Bild ihn gezeigt, verwirft
   die nächste Anfrage wie bisher.
