@@ -3,6 +3,7 @@
 package canvas
 
 import (
+	"image"
 	"image/color"
 	"math"
 	"strings"
@@ -16,12 +17,26 @@ import (
 type Werkzeug int
 
 const (
-	WerkzeugAuswahl Werkzeug = iota // auswählen, verschieben, Griffe
-	WerkzeugPfeil                   // Ziehen vom Anfang zur Spitze
-	WerkzeugKasten                  // Ziehen von Ecke zu Ecke
-	WerkzeugText                    // Klick setzt ein Textfeld
-	WerkzeugNummer                  // Klick setzt eine Schritt-Nummer
+	WerkzeugAuswahl    Werkzeug = iota // auswählen, verschieben, Griffe
+	WerkzeugPfeil                      // Ziehen vom Anfang zur Spitze
+	WerkzeugKasten                     // Ziehen von Ecke zu Ecke
+	WerkzeugText                       // Klick setzt ein Textfeld
+	WerkzeugNummer                     // Klick setzt eine Schritt-Nummer
+	WerkzeugSchwaerzen                 // Rahmen ziehen: Pixel schwarz überschreiben (ADR-0022)
+	WerkzeugVerpixeln                  // Rahmen ziehen: Pixel verpixeln mit Rauschen (ADR-0022)
 )
+
+// Werte des Verpixelns (ADR-0022 Punkt 2), Größen in Pixeln des Originals.
+const (
+	VerpixelnBlock    = 12
+	VerpixelnRauschen = 24
+)
+
+// Schwaerzfarbe füllt beim Schwärzen.
+var Schwaerzfarbe = color.NRGBA{A: 0xFF}
+
+// schwaerzt meldet, ob w ein Werkzeug ist, das Pixel überschreibt statt ein Objekt anzulegen.
+func schwaerzt(w Werkzeug) bool { return w == WerkzeugSchwaerzen || w == WerkzeugVerpixeln }
 
 // MinObjekt ist die Mindestgröße eines neuen Pfeils (Länge) oder Kastens (jede Seite) in Fensterpixeln: Kleiner
 // bleibt beim Loslassen nichts liegen — ein versehentlicher Klick legt kein leeres Objekt an (ADR-0021).
@@ -166,6 +181,8 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 	switch s.Werkzeug {
 	case WerkzeugPfeil, WerkzeugKasten:
 		s.zug = zugNeu
+	case WerkzeugSchwaerzen, WerkzeugVerpixeln:
+		s.zug, s.rahmen = zugNeu, false
 	case WerkzeugNummer:
 		n := document.Nummer{Mitte: q, Wert: s.D.NaechsteNummer(), Radius: s.Stil.Radius, Farbe: s.Stil.Farbe}
 		id, err := s.D.BeginneNeuenZug(n)
@@ -199,8 +216,8 @@ const (
 // Die Statusleiste verspricht damit keine Nummer, die nicht kommt.
 func (s *Sitzung) Voll() Ablehnung {
 	switch {
-	case s.Werkzeug == WerkzeugAuswahl:
-		return AblehnungKeine
+	case s.Werkzeug == WerkzeugAuswahl, schwaerzt(s.Werkzeug):
+		return AblehnungKeine // Schwärzen legt kein Objekt an
 	case len(s.D.Objekte()) >= document.MaxObjekte:
 		return AblehnungObjekte
 	case s.Werkzeug == WerkzeugNummer && s.D.NaechsteNummer() > document.MaxNummer:
@@ -233,6 +250,11 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 		o = document.Kasten{ID: s.neuID, Bereich: document.R(a, b), Strich: s.Stil.strich(), Eckradius: s.Stil.Eckradius}
 	case WerkzeugNummer:
 		o = Verschiebe(s.startObj, b.Minus(a))
+	case WerkzeugSchwaerzen, WerkzeugVerpixeln:
+		s.rahmen = true
+		s.rahmenA = s.klemmeAnsicht(s.Abb.ZuAnsicht(s.start))
+		s.rahmenB = s.klemmeAnsicht(s.Abb.ZuAnsicht(p))
+		return
 	default:
 		return
 	}
@@ -288,6 +310,10 @@ func platzAchse(d, a, max float64) float64 {
 // beendeNeu übernimmt das neue Objekt als einen Schritt in den Verlauf und wählt es aus — Pfeil und Kasten nur, wenn
 // sie die Mindestgröße erreichen.
 func (s *Sitzung) beendeNeu() {
+	if schwaerzt(s.neuArt) {
+		s.schwaerzeRahmen()
+		return
+	}
 	if s.neuID == 0 {
 		return // Klick ohne Ziehen: kein Pfeil, kein Kasten
 	}
@@ -308,6 +334,56 @@ func (s *Sitzung) beendeNeu() {
 		s.Auswahl = s.neuID
 	}
 }
+
+// --- Schwärzen (ADR-0022) ---
+
+// Rahmen liefert den gerade gezogenen Schwärzungsrahmen in Fensterpunkten (ok = false, wenn keiner gezogen wird).
+func (s *Sitzung) Rahmen() (a, b document.Punkt, ok bool) {
+	if s.zug != zugNeu || !s.rahmen {
+		return document.Punkt{}, document.Punkt{}, false
+	}
+	return s.Abb.ZuFenster(s.rahmenA), s.Abb.ZuFenster(s.rahmenB), true
+}
+
+// schwaerzeRahmen überschreibt beim Loslassen die Pixel im Rahmen. Der Rahmen gilt in der Ansicht; seine Ecken werden
+// ins Original umgerechnet und nach außen auf ganze Pixel gerundet, ein verborgener Stauch-Streifen dazwischen wird
+// mitgeschwärzt. Unter der Mindestgröße passiert nichts.
+func (s *Sitzung) schwaerzeRahmen() {
+	if !s.rahmen {
+		return
+	}
+	s.rahmen = false
+	r := document.R(s.rahmenA, s.rahmenB)
+	grenze := MinObjekt / s.Abb.Zoom
+	if r.Breite() < grenze || r.Hoehe() < grenze {
+		return
+	}
+	o1, o2 := s.D.ZuOriginal(document.Pt(r.Min.X, r.Min.Y)), s.D.ZuOriginal(document.Pt(r.Max.X, r.Max.Y))
+	px := image.Rect(int(math.Floor(math.Min(o1.X, o2.X))), int(math.Floor(math.Min(o1.Y, o2.Y))),
+		int(math.Ceil(math.Max(o1.X, o2.X))), int(math.Ceil(math.Max(o1.Y, o2.Y))))
+	sw := document.Schwaerzung{Farbe: Schwaerzfarbe}
+	if s.neuArt == WerkzeugVerpixeln {
+		kurz := min(px.Dx(), px.Dy())
+		switch {
+		case kurz >= VerpixelnBlock:
+			sw = document.Schwaerzung{Block: VerpixelnBlock, Rauschen: VerpixelnRauschen}
+		case kurz >= document.MinBlock:
+			sw = document.Schwaerzung{Block: document.MinBlock, Rauschen: VerpixelnRauschen}
+		default:
+			s.ersatzSchwarz = true // zu schmal zum Verpixeln: schwärzen (ADR-0022 Punkt 2)
+		}
+	}
+	if s.D.Schwaerzen(px, sw) == nil {
+		s.bildAenderung++
+	}
+}
+
+// VerpixelnErsetzt meldet, dass der letzte Rahmen zu schmal zum Verpixeln war und geschwärzt wurde.
+func (s *Sitzung) VerpixelnErsetzt() bool { return s.ersatzSchwarz }
+
+// BildAenderung zählt die Änderungen an den Pixeln des Originals durch Schwärzen; die Oberfläche baut ihr Bild neu,
+// wenn sich der Wert ändert.
+func (s *Sitzung) BildAenderung() uint64 { return s.bildAenderung }
 
 // --- Texteingabe ---
 

@@ -89,6 +89,9 @@ func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand
 	}
 }
 
+// entfernen löscht eine Bibliotheksaufnahme endgültig; Tests lassen es scheitern.
+var entfernen = (*library.Bibliothek).Entfernen
+
 // ablegenIn ist speichernIn ohne die Prüfung des Budgets.
 func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand) ui.Speichern {
 	rel, inBibliothek := b.Relativ(abs)
@@ -101,6 +104,7 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 		}
 		var zurueck error // Fehler beim Zurückschreiben, falls auch das Ausweichen scheitert
 		versucht := inBibliothek
+		altRel, altStand := rel, stand // bisherige Datei, falls nach dem Schwärzen ausgewichen wird (F-126)
 		konflikt := false
 		if inBibliothek {
 			_, neu, err := b.Speichern(rel, stand, d, sichtbar)
@@ -144,12 +148,29 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 		switch {
 		case konflikt:
 			erg.Hinweis = fmt.Sprintf(i18n.T("The file was changed elsewhere since it was opened; saved as a new capture: %s"), name)
+			if d.Geschwaerzt() {
+				// Die andere Fassung gehört nicht Schnapp allein: nicht entfernen, aber sagen (ADR-0022 Punkt 4).
+				erg.Hinweis += " " + i18n.T("The other version may still show the unredacted content.")
+			}
+			erg.Warnung = true
+		case versucht && d.Geschwaerzt():
+			// Die bisherige Datei zeigt noch den ungeschwärzten Stand. Die neue Aufnahme enthält alles außer den
+			// geschwärzten Pixeln: die alte endgültig entfernen (ADR-0022 Punkt 4, F-126), sonst laut warnen.
+			altOrt := filepath.Base(b.Orte.Ablage) + "/" + altRel
+			if fe := entfernen(b, altRel, altStand); fe == nil {
+				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file could not be updated and still showed the unredacted content, so it was removed. Saved as a new capture: %s"), ort)
+			} else {
+				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file could not be updated and still shows the unredacted content: %s. Delete it yourself. Saved as a new capture: %s"), altOrt, ort)
+			}
 			erg.Warnung = true
 		case versucht:
 			// Die bisherige Datei wurde nicht aktualisiert; liegt sie noch, enthält sie den alten Stand. Bewusst so
-			// (ADR-0020 Nachtrag 1: Ausweichen statt Verlust). Mit dem Schwärzen darf dort kein ungeschwärzter Stand
-			// stehen bleiben — offen als F-126 (Ausnahmepfad Sprint 4, Lösung vor oder mit der Schwärzen-Karte).
+			// (ADR-0020 Nachtrag 1: Ausweichen statt Verlust); ohne Schwärzung ist darin nichts Vertrauliches.
 			erg.Hinweis = fmt.Sprintf(i18n.T("The previous file could not be updated; saved as a new capture: %s"), name)
+			erg.Warnung = true
+		case d.Geschwaerzt():
+			// Datei von außen: Sie bleibt, wie sie ist (ADR-0020), zeigt aber noch, was geschwärzt wurde.
+			erg.Hinweis = fmt.Sprintf(i18n.T("Saved as a new capture in the library: %s. The original file is unchanged and still shows the unredacted content."), ort)
 			erg.Warnung = true
 		}
 		if errors.Is(err, library.ErrVorschauAlt) {

@@ -130,10 +130,12 @@ type editor struct {
 
 	knoepfe struct {
 		auswahl, pfeil, kasten, text, nummer, farbe widget.Clickable
+		schwaerzen, verpixeln                       widget.Clickable
 		rueck, wieder, einpassen, eins, speichern   widget.Clickable
 	}
 
 	// Doppelklick erkennen (ADR-0021: Text bearbeiten): Zeit und Ort des letzten Drucks der linken Taste.
+	bildStand    uint64 // canvas.Sitzung.BildAenderung beim letzten bildNeu (Schwärzen ändert die Pixel)
 	letzterDruck time.Duration
 	letzterOrt   document.Punkt
 	hatDruck     bool
@@ -358,6 +360,10 @@ func (e *editor) leinwand(gtx layout.Context) {
 	groesse := gtx.Constraints.Max
 	e.s.SetzeFenster(groesse)
 	e.zeiger(gtx)
+	if n := e.s.BildAenderung(); n != e.bildStand {
+		e.bildStand = n
+		e.bildNeu() // geschwärzte Pixel sofort zeigen (ADR-0022)
+	}
 
 	c := clip.Rect(image.Rectangle{Max: groesse}).Push(gtx.Ops)
 	paint.Fill(gtx.Ops, farbeGrund)
@@ -376,6 +382,7 @@ func (e *editor) leinwand(gtx layout.Context) {
 	bc.Pop()
 	af.Pop()
 	e.zeichneAuswahl(gtx)
+	e.zeichneRahmen(gtx)
 	e.zeichneEinfuegemarke(gtx)
 
 	switch e.s.Werkzeug {
@@ -388,6 +395,24 @@ func (e *editor) leinwand(gtx layout.Context) {
 	}
 	event.Op(gtx.Ops, e)
 	c.Pop()
+}
+
+// zeichneRahmen zeigt den gerade gezogenen Schwärzungsrahmen in Fensterpixeln: halbdurchsichtig dunkel mit hellem Rand,
+// damit er auf hellen wie dunklen Bildern sichtbar ist (ADR-0022).
+func (e *editor) zeichneRahmen(gtx layout.Context) {
+	a, b, ok := e.s.Rahmen()
+	if !ok {
+		return
+	}
+	r := image.Rect(int(math.Round(a.X)), int(math.Round(a.Y)), int(math.Round(b.X)), int(math.Round(b.Y))).Canon()
+	paint.FillShape(gtx.Ops, color.NRGBA{A: 0x99}, clip.Rect(r).Op())
+	w := gtx.Dp(1)
+	for _, k := range []image.Rectangle{
+		{r.Min, image.Pt(r.Max.X, r.Min.Y+w)}, {image.Pt(r.Min.X, r.Max.Y-w), r.Max},
+		{r.Min, image.Pt(r.Min.X+w, r.Max.Y)}, {image.Pt(r.Max.X-w, r.Min.Y), r.Max},
+	} {
+		paint.FillShape(gtx.Ops, color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xCC}, clip.Rect(k).Op())
+	}
 }
 
 // zeichneEinfuegemarke zeigt während der Texteingabe die Einfügemarke am Ende der letzten Zeile (orange wie der
@@ -446,6 +471,9 @@ func (e *editor) zeiger(gtx layout.Context) {
 			e.s.Ziehen(p)
 		case pointer.Release:
 			e.s.Loslassen(p)
+			if e.s.VerpixelnErsetzt() {
+				e.melde(i18n.T("Too narrow to pixelate; the area was blacked out instead."), false)
+			}
 			diagnoseEditor("Loslassen: Auswahl %d, geändert %v", e.s.Auswahl, e.s.Geaendert())
 		case pointer.Cancel:
 			e.s.Abbrechen()
@@ -605,7 +633,7 @@ func (e *editor) tasten(gtx layout.Context) {
 			key.Filter{Name: "W", Required: key.ModShortcut},
 			// Werkzeuge (ADR-0021) und Texteingabe; getippte Zeichen kommen als key.EditEvent an die fokussierte Leinwand.
 			key.Filter{Name: "V"}, key.Filter{Name: "A"}, key.Filter{Name: "R"}, key.Filter{Name: "T"},
-			key.Filter{Name: "N"},
+			key.Filter{Name: "N"}, key.Filter{Name: "B"}, key.Filter{Name: "P"},
 			key.Filter{Name: key.NameReturn, Optional: key.ModShift},
 			key.Filter{Name: key.NameEnter, Optional: key.ModShift},
 			key.FocusFilter{Target: e},
@@ -630,7 +658,7 @@ func (e *editor) tasten(gtx layout.Context) {
 		if e.s.TextLaeuft() {
 			// Während der Texteingabe sind Buchstaben Text (kommt als EditEvent), keine Kürzel.
 			switch k.Name {
-			case "V", "A", "R", "T", "N", key.NameDeleteForward, key.NameTab:
+			case "V", "A", "R", "T", "N", "B", "P", key.NameDeleteForward, key.NameTab:
 				continue // Tab: ohne Wirkung (F-153)
 			case key.NameDeleteBackward:
 				e.s.TextZurueck()
@@ -660,6 +688,10 @@ func (e *editor) tasten(gtx layout.Context) {
 			e.s.SetzeWerkzeug(canvas.WerkzeugText)
 		case "N":
 			e.s.SetzeWerkzeug(canvas.WerkzeugNummer)
+		case "B":
+			e.s.SetzeWerkzeug(canvas.WerkzeugSchwaerzen)
+		case "P":
+			e.s.SetzeWerkzeug(canvas.WerkzeugVerpixeln)
 		case key.NameDeleteForward, key.NameDeleteBackward:
 			e.s.Loeschen()
 		case "Z":
@@ -749,7 +781,7 @@ type werkzeugKnopf struct {
 	text string
 }
 
-// werkzeugKnoepfe sind die Knöpfe der Werkzeuggruppe in Reihenfolge der Leiste (Kürzel V, A, R, T, N, ADR-0021).
+// werkzeugKnoepfe sind die Knöpfe der Werkzeuggruppe in Reihenfolge der Leiste (Kürzel V, A, R, T, N, B, P; ADR-0021, ADR-0022).
 func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
 	k := &e.knoepfe
 	return []werkzeugKnopf{
@@ -758,6 +790,8 @@ func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
 		{&k.kasten, canvas.WerkzeugKasten, i18n.T("Rectangle")},
 		{&k.text, canvas.WerkzeugText, i18n.T("Text")},
 		{&k.nummer, canvas.WerkzeugNummer, i18n.T("Step")},
+		{&k.schwaerzen, canvas.WerkzeugSchwaerzen, i18n.T("Redact")},
+		{&k.verpixeln, canvas.WerkzeugVerpixeln, i18n.T("Pixelate")},
 	}
 }
 
@@ -919,6 +953,10 @@ func (e *editor) hinweis() string {
 			return e.grenzText(a) // keine Nummer versprechen, die nicht kommt (F-154)
 		}
 		return fmt.Sprintf(i18n.T("Click to place step number %d."), e.s.D.NaechsteNummer())
+	case canvas.WerkzeugSchwaerzen:
+		return i18n.T("Drag over the area to black out. The pixels are overwritten for good once saved.")
+	case canvas.WerkzeugVerpixeln:
+		return i18n.T("Drag over the area to pixelate. The pixels are overwritten for good once saved.")
 	}
 	return ""
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -173,4 +174,42 @@ func (b *Bibliothek) ersetzeImIndex(neu Eintrag) error {
 		sortiere(idx.Eintraege)
 	}
 	return b.schreibeIndex(idx.Eintraege)
+}
+
+// Entfernen löscht die Aufnahme rel endgültig samt Vorschau und Index-Eintrag — nicht in den Papierkorb, denn dort läge
+// der Inhalt weiter. Gedacht für eine Datei, die nach dem Schwärzen nicht mehr aktualisiert werden konnte und noch den
+// ungeschwärzten Stand zeigt (ADR-0022 Punkt 4, F-126). Hat die Datei nicht mehr den Stand erwartet (von anderer Seite
+// geändert oder ersetzt), bleibt sie stehen: ErrGeaendert. Fehlt sie schon, werden nur Vorschau und Eintrag entfernt.
+func (b *Bibliothek) Entfernen(rel string, erwartet Stand) error {
+	if !(Eintrag{Pfad: rel, Breite: 1, Hoehe: 1}).gueltig() {
+		return fmt.Errorf("%w: %q", ErrPfad, rel)
+	}
+	abs := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))
+	fi, err := os.Lstat(abs)
+	switch {
+	case err == nil:
+		if !fi.Mode().IsRegular() || standAus(fi) != erwartet {
+			return ErrGeaendert
+		}
+		if err := entferneDatei(abs); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+	case !errors.Is(err, fs.ErrNotExist):
+		return err
+	}
+	folge := b.entferneVorschau(rel)
+	idx, err := b.lade()
+	if err == nil {
+		rest := idx.Eintraege[:0]
+		for _, e := range idx.Eintraege {
+			if e.Pfad != rel {
+				rest = append(rest, e)
+			}
+		}
+		err = b.schreibeIndex(rest)
+	}
+	if err != nil {
+		folge = errors.Join(folge, fmt.Errorf("%w: %v", ErrIndex, err))
+	}
+	return folge
 }

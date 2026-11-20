@@ -74,6 +74,11 @@ type Sitzung struct {
 	textNeu    bool     // die Eingabe gilt einem neuen Text (Abbrechen entfernt ihn)
 	pan        bool     // mittlere Taste verschiebt die Ansicht, während die Texteingabe weiterläuft (F-154)
 	abgelehnt  Ablehnung
+	// Schwärzen (ADR-0022): Rahmen in Ansichtspunkten, solange gezogen wird.
+	rahmen           bool
+	rahmenA, rahmenB document.Punkt
+	ersatzSchwarz    bool   // letzter Verpixeln-Rahmen war zu schmal und wurde geschwärzt
+	bildAenderung    uint64 // zählt Schwärzungen (Pixel des Originals geändert)
 }
 
 // NeueSitzung beginnt mit eingepasster Ansicht, ohne Auswahl, mit dem Werkzeug Auswählen und dem Standardstil.
@@ -133,7 +138,7 @@ func (s *Sitzung) toleranz() float64 { return Toleranz / s.Abb.Zoom }
 // (ADR-0021), sonst an einem Objekt (wählt es aus) oder auf leerer Fläche bzw. mit der mittleren Taste an der Ansicht.
 // Eine laufende Texteingabe wird vorher bestätigt. Während eines Zugs ist ein weiterer Druck wirkungslos.
 func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
-	s.abgelehnt = AblehnungKeine
+	s.abgelehnt, s.ersatzSchwarz = AblehnungKeine, false
 	if s.pan {
 		return
 	}
@@ -274,6 +279,7 @@ func (s *Sitzung) Abbrechen() {
 		if s.neuID != 0 {
 			_ = s.D.BrecheZugAb()
 		}
+		s.rahmen = false
 	case zugAnsicht:
 		s.Abb = s.startAbb
 	}
@@ -317,8 +323,15 @@ func (s *Sitzung) Loeschen() bool {
 // Abwaehlen hebt die Auswahl auf (Esc ohne Zug).
 func (s *Sitzung) Abwaehlen() { s.Auswahl = 0 }
 
-// Gespeichert meldet, dass der aktuelle Stand gespeichert ist.
-func (s *Sitzung) Gespeichert() { s.gespeichert, s.verwerfen = s.D.Stand(), false }
+// Gespeichert meldet, dass der aktuelle Stand gespeichert ist. Hält der Verlauf eine Schwärzung, wird er geleert:
+// Nach dem Speichern holt kein Rückgängig ungeschwärzte Pixel zurück, die ein weiteres Speichern auf die Platte
+// brächte (ADR-0022 Punkt 3).
+func (s *Sitzung) Gespeichert() {
+	s.gespeichert, s.verwerfen = s.D.Stand(), false
+	if s.D.VerlaufMitSchwaerzung() {
+		_ = s.D.VergissVerlauf() // während eines Zugs nicht möglich; gespeichert wird ohne Zug
+	}
+}
 
 // Ungesichert meldet, ob beim Schließen noch gespeichert werden muss: geändert und nicht schon nach einem gescheiterten
 // Speichern zum Verwerfen freigegeben (Schliessen).

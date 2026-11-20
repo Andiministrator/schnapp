@@ -106,11 +106,12 @@ Herkunft: Anforderungen und Entscheidungen des Maintainers vom 18.11.2026, über
 
 ## Architektur
 
-Produktcode (Stand 20.11.2026, Sprint 5): `capture`, `document`, `fileformat`, `library`, `settings`, `selection`,
+Produktcode (Stand 20.11.2026, Sprint 6): `capture`, `document`, `fileformat`, `library`, `settings`, `selection`,
 `canvas`, `render` stehen mit Tests, dazu Overlay und Editor in `ui` (ohne Tests, Logik liegt in `selection`/`canvas`);
 Schnapp nimmt auf, legt in der Bibliothek ab und öffnet den Editor (Auswählen, Verschieben, Griffe, Zoom, Rückgängig,
-Speichern, Zeichenwerkzeuge Pfeil/Kasten/Text/Schritt-Nummer mit Farbwahl, ADR-0021 — Schwärzen, Zuschneiden,
-Zwischenablage folgen). Installation per `install.sh` (`~/.local`, Version aus `git describe`). Daneben
+Speichern, Zeichenwerkzeuge Pfeil/Kasten/Text/Schritt-Nummer mit Farbwahl, ADR-0021; Schwärzen/Verpixeln ADR-0022;
+Zwischenablage Strg+C, ADR-0015 Nachtrag 2 — Zuschneiden folgt). Probeläufe ohne Andi: `scripts/probe.sh`
+(virtueller KWin, `knowledge/topics/lehren.md`). Installation per `install.sh` (`~/.local`, Version aus `git describe`). Daneben
 der Wegwerf-Prototyp `prototype/`. Schichten:
 
 - **capture** — Schnittstelle + KWin-Umsetzung (D-Bus), später Portal.

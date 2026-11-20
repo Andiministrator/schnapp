@@ -3,6 +3,7 @@
 package document
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"image"
@@ -36,6 +37,9 @@ type Dokument struct {
 	abbX, abbY abbildung // aus zuschnitt und streifen abgeleitet, nur über setzeAnsicht ändern
 	verlauf    verlauf
 	zug        *zug
+	// geschwaerzt zählt die wirksamen Schwärzungen seit Neu bzw. dem Laden (Rückgängig zieht ab); VergissVerlauf
+	// lässt ihn stehen (ADR-0022 Punkt 4).
+	geschwaerzt int
 }
 
 // Fehler der Änderungen.
@@ -277,7 +281,16 @@ type Schwaerzung struct {
 	// Block > 0 verpixelt mit Blöcken dieser Kantenlänge (Mittelwert je Block); sonst wird mit Farbe gefüllt.
 	Block int
 	Farbe color.NRGBA
+	// Rauschen > 0 verschiebt beim Verpixeln jeden Farbkanal eines Blocks zufällig um bis zu ±Rauschen (ADR-0022):
+	// Die Blockfarben stimmen dann nicht mehr mit einem nachgerechneten Kandidatentext überein (Angriffe wie Depix).
+	Rauschen int
 }
+
+// MaxRauschen begrenzt Schwaerzung.Rauschen.
+const MaxRauschen = 64
+
+// zufall liefert Zufallsbytes für das Rauschen; Tests ersetzen ihn.
+var zufall = func(b []byte) { _, _ = rand.Read(b) }
 
 // MinBlock ist die kleinste Blockgröße beim Verpixeln; kleinere Blöcke lassen Text lesbar.
 const MinBlock = 8
@@ -307,6 +320,9 @@ func (d *Dokument) schwaerze(r image.Rectangle, s Schwaerzung) {
 			}
 			n := blk.Dx() * blk.Dy()
 			c := color.NRGBA{uint8(sum[0] / n), uint8(sum[1] / n), uint8(sum[2] / n), uint8(sum[3] / n)}
+			if s.Rauschen > 0 {
+				c = verrauscht(c, s.Rauschen)
+			}
 			for y := blk.Min.Y; y < blk.Max.Y; y++ {
 				for x := blk.Min.X; x < blk.Max.X; x++ {
 					o.SetNRGBA(x, y, c)
@@ -314,6 +330,18 @@ func (d *Dokument) schwaerze(r image.Rectangle, s Schwaerzung) {
 			}
 		}
 	}
+}
+
+// verrauscht verschiebt R, G und B von c je um einen Zufallswert in [-r, r] (Alpha bleibt).
+func verrauscht(c color.NRGBA, r int) color.NRGBA {
+	var z [3]byte
+	zufall(z[:])
+	k := []*uint8{&c.R, &c.G, &c.B}
+	for i, p := range k {
+		v := int(*p) + int(z[i])%(2*r+1) - r
+		*p = uint8(max(0, min(255, v)))
+	}
+	return c
 }
 
 // bloecke teilt [von, bis) in Blöcke der Länge block; ein Rest kürzer als MinBlock wird dem letzten Block

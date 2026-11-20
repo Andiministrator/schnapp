@@ -331,6 +331,7 @@ func (b *schwaerzen) ausfuehren(d *Dokument) {
 		copy(b.vorher.Pix[z:z+4*b.r.Dx()], d.original.Pix[q:q+4*b.r.Dx()])
 	}
 	d.schwaerze(b.r, b.s)
+	d.geschwaerzt++
 }
 
 func (b *schwaerzen) zuruecknehmen(d *Dokument) {
@@ -339,6 +340,24 @@ func (b *schwaerzen) zuruecknehmen(d *Dokument) {
 		z := d.original.PixOffset(b.r.Min.X, y)
 		copy(d.original.Pix[z:z+4*b.r.Dx()], b.vorher.Pix[q:q+4*b.r.Dx()])
 	}
+	d.geschwaerzt--
+}
+
+// Geschwaerzt meldet, ob seit dem Anlegen bzw. Laden mindestens eine Schwärzung wirksam ist (auch nach
+// VergissVerlauf). Der Aufrufer weiß damit, dass eine ältere Fassung der Datei ungeschwärzte Pixel enthalten kann.
+func (d *Dokument) Geschwaerzt() bool { return d.geschwaerzt > 0 }
+
+// VerlaufMitSchwaerzung meldet, ob der Rückgängig-Verlauf (erledigt oder zurückgenommen) eine Schwärzung enthält und
+// damit ungeschwärzte Pixel im Speicher hält.
+func (d *Dokument) VerlaufMitSchwaerzung() bool {
+	for _, l := range [][]schritt{d.verlauf.erledigt, d.verlauf.zurueckgenommen} {
+		for _, s := range l {
+			if _, ok := s.b.(*schwaerzen); ok {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Schwaerzen macht den Bereich r (im Original, wird aufs Bild begrenzt) unkenntlich, indem es die Pixel des
@@ -346,6 +365,9 @@ func (b *schwaerzen) zuruecknehmen(d *Dokument) {
 func (d *Dokument) Schwaerzen(r image.Rectangle, s Schwaerzung) error {
 	if d.zug != nil {
 		return ErrZugLaeuft
+	}
+	if s.Rauschen < 0 || s.Rauschen > MaxRauschen {
+		return fmt.Errorf("dokument: Rauschen %d außerhalb 0..%d", s.Rauschen, MaxRauschen)
 	}
 	if s.Block > 0 && s.Block < MinBlock {
 		return fmt.Errorf("dokument: Blockgröße %d kleiner als %d", s.Block, MinBlock)

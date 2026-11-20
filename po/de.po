@@ -331,3 +331,30 @@ msgstr "Das Auswahl-Overlay hat sich nicht rechtzeitig geschlossen."
 
 msgid "No home directory (HOME is not set)."
 msgstr "Kein Heimverzeichnis (HOME ist nicht gesetzt)."
+
+msgid "Redact"
+msgstr "Schwärzen"
+
+msgid "Pixelate"
+msgstr "Verpixeln"
+
+msgid "Too narrow to pixelate; the area was blacked out instead."
+msgstr "Zu schmal zum Verpixeln; der Bereich wurde stattdessen geschwärzt."
+
+msgid "Drag over the area to black out. The pixels are overwritten for good once saved."
+msgstr "Über den Bereich ziehen, der geschwärzt werden soll. Nach dem Speichern sind die Pixel endgültig überschrieben."
+
+msgid "Drag over the area to pixelate. The pixels are overwritten for good once saved."
+msgstr "Über den Bereich ziehen, der verpixelt werden soll. Nach dem Speichern sind die Pixel endgültig überschrieben."
+
+msgid "The previous file could not be updated and still showed the unredacted content, so it was removed. Saved as a new capture: %s"
+msgstr "Die bisherige Datei ließ sich nicht aktualisieren und zeigte noch den ungeschwärzten Inhalt; sie wurde entfernt. Als neue Aufnahme gespeichert: %s"
+
+msgid "The previous file could not be updated and still shows the unredacted content: %s. Delete it yourself. Saved as a new capture: %s"
+msgstr "Die bisherige Datei ließ sich nicht aktualisieren und zeigt noch den ungeschwärzten Inhalt: %s. Bitte selbst löschen. Als neue Aufnahme gespeichert: %s"
+
+msgid "Saved as a new capture in the library: %s. The original file is unchanged and still shows the unredacted content."
+msgstr "Als neue Aufnahme in der Bibliothek gespeichert: %s. Die ursprüngliche Datei ist unverändert und zeigt noch den ungeschwärzten Inhalt."
+
+msgid "The other version may still show the unredacted content."
+msgstr "Die andere Fassung zeigt womöglich noch den ungeschwärzten Inhalt."

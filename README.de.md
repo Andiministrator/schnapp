@@ -17,8 +17,8 @@ Mitte langer Seiten herausschneiden, teilen. Nebenbei ein einfaches Bildbearbeit
 
 Frühe Arbeit. Schnapp nimmt unter KDE Plasma schon auf (Bereich, Monitor, Fenster; Taste **Druck**), legt jeden
 Screenshot in der Bibliothek ab und öffnet ihn in einem Editor, in dem sich Pfeile (gerade oder gebogen), Kästen, Text
-und Schritt-Nummern zeichnen sowie auswählen, verschieben und in der Größe ändern lassen — Schwärzen, Zuschneiden und
-Zwischenablage folgen als Nächstes.
+und Schritt-Nummern zeichnen sowie auswählen, verschieben und in der Größe ändern lassen, Bereiche endgültig schwärzen
+oder verpixeln und das Ergebnis in die Zwischenablage kopieren — Zuschneiden folgt als Nächstes.
 Schnapp entsteht in Go mit [Gio](https://gioui.org), dazu ein kleiner Patch an Gio (ein Vollbild-Overlay je Monitor,
 gebrochene Skalierung, Mauszeiger bei gemischten Skalen). Die erste Fassung (0.1.0) ist in Arbeit.
 
@@ -68,12 +68,17 @@ der Editor öffnet. Einstellungen stehen in `~/.config/schnapp/settings.ini`, et
 
 Im Editor, Werkzeuge: **V** Auswählen, **A** Pfeil (ziehen; **Umschalt** rastet auf 45°; mittleren Griff ziehen
 biegt ihn), **R** Kasten (**Umschalt**: Quadrat), **T** Text (klicken, tippen, **Enter** bestätigt, **Umschalt+Enter**
-neue Zeile, **Esc** verwirft; Doppelklick auf einen Text bearbeitet ihn), **N** Schritt-Nummer (zählt selbst hoch). Der
+neue Zeile, **Esc** verwirft; Doppelklick auf einen Text bearbeitet ihn), **N** Schritt-Nummer (zählt selbst hoch), **B** Schwärzen (über einen Bereich ziehen: schwarz),
+**P** Verpixeln (ziehen; Blöcke mit Zufallsrauschen, damit sich der Text nicht zurückrechnen lässt). Schwärzen
+überschreibt die Pixel des Bildes selbst: Bis zum Speichern lässt es sich zurücknehmen, danach ist es endgültig, und
+keine gespeicherte oder exportierte Datei enthält den verdeckten Inhalt. Der
 Knopf *Farbe* schaltet reihum durch vier Farben und färbt die ausgewählte Beschriftung um. Ein Zeichenwerkzeug bleibt
 aktiv; **Esc** geht stufenweise zurück: Texteingabe → Ziehen → Auswahl → Auswählen. Beschriftung oder Griffe ziehen
 verschiebt, ändert die Größe oder biegt; sie bleibt dabei immer teilweise im Bild. Das Mausrad zoomt zum Zeiger; mit
 Auswählen verschiebt Ziehen auf freier Fläche die Ansicht, die mittlere Taste in jedem Werkzeug. Tasten: **Strg+Z**
-rückgängig, **Strg+Umschalt+Z**/**Strg+Y** wiederholen, **Entf** löschen, **Strg+S** speichern, **Strg+0** einpassen,
+rückgängig, **Strg+Umschalt+Z**/**Strg+Y** wiederholen, **Entf** löschen, **Strg+S** speichern,
+**Strg+C** fertiges Bild in die Zwischenablage (verfügbar, solange der Editor offen ist, länger mit einem
+Zwischenablage-Verwalter wie Klipper), **Strg+0** einpassen,
 **Strg+1** 100 %, **Strg+W** schließen.
 
 Änderungen werden beim Schließen gespeichert; **Strg+S** ohne Änderung schreibt nichts. Eine Datei außerhalb der

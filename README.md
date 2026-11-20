@@ -17,7 +17,8 @@ pages, share. Also meant as a simple image editor.
 
 Early work. Schnapp already captures on KDE Plasma (area, monitor, window; **Print** key), saves every screenshot to
 the library and opens it in an editor where you draw arrows (straight or bent), boxes, text labels and step numbers
-and select, move and resize them — redaction, cropping and the clipboard come next. It is written in Go with the [Gio](https://gioui.org) UI library,
+and select, move and resize them, black out or pixelate areas for good and copy the result to the clipboard —
+cropping comes next. It is written in Go with the [Gio](https://gioui.org) UI library,
 plus a small patch to Gio (one full-screen overlay per monitor, fractional scaling, cursor at mixed scales). The first
 version (0.1.0) is being built.
 
@@ -66,12 +67,16 @@ the editor opens. Settings live in `~/.config/schnapp/settings.ini`, for example
 
 In the editor, tools: **V** select, **A** arrow (drag; **Shift** snaps to 45°; drag the middle handle to bend it),
 **R** box (**Shift**: square), **T** text (click, type, **Enter** confirms, **Shift+Enter** new line, **Esc** discards;
-double-click a text to edit it), **N** step number (counts up by itself). The *Colour* button cycles four colours and
+double-click a text to edit it), **N** step number (counts up by itself), **B** redact (drag over an area: black),
+**P** pixelate (drag; blocks with random noise so the text cannot be recomputed). Redacting overwrites the pixels of
+the image itself: it can be undone until you save, after that it is final and no saved or exported file contains the
+hidden content. The *Colour* button cycles four colours and
 recolours the selected annotation. A drawing tool stays active; **Esc** steps back: text input → drag → selection →
 select tool. Drag an annotation or its handles to move, resize or bend it; it always stays partly inside the image.
 The mouse wheel zooms at the pointer; with the select tool dragging empty space moves the view, the middle button does
 so with every tool. Keys: **Ctrl+Z** undo, **Ctrl+Shift+Z**/**Ctrl+Y** redo, **Del** delete, **Ctrl+S** save,
-**Ctrl+0** fit, **Ctrl+1** 100 %, **Ctrl+W** close.
+**Ctrl+C** copy the finished image to the clipboard (stays available while the editor is open, longer with a
+clipboard manager such as Klipper), **Ctrl+0** fit, **Ctrl+1** 100 %, **Ctrl+W** close.
 
 Changes are saved when the editor closes; **Ctrl+S** without changes writes nothing. A file from outside the library
 becomes a new screenshot in the library on the first save (the file itself stays untouched; the status bar names the new
