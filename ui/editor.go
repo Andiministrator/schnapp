@@ -399,7 +399,8 @@ func (e *editor) frame(gtx layout.Context) {
 	e.tasten(gtx)
 	e.knoepfeAuswerten(gtx)
 	paint.Fill(gtx.Ops, farbeFenster)
-	leiste := gtx.Dp(56)
+	knoepfe := e.leistenKnoepfe()
+	pos, leiste := e.ordneLeiste(gtx, knoepfe) // Höhe folgt dem Umbruch (F-148), nie eine feste Größe
 	status := gtx.Dp(28)
 	flaeche := image.Rect(0, leiste, gtx.Constraints.Max.X, gtx.Constraints.Max.Y-status)
 	if flaeche.Dy() < 1 {
@@ -413,7 +414,7 @@ func (e *editor) frame(gtx layout.Context) {
 	e.leinwand(g)
 	t.Pop()
 
-	e.zeichneLeiste(gtx, leiste)
+	e.zeichneLeiste(gtx, knoepfe, pos, leiste)
 	e.zeichneStatus(gtx, status)
 }
 
@@ -949,50 +950,73 @@ const (
 	knopfHaupt           // Hauptaktion: grüne Fläche
 )
 
-func (e *editor) zeichneLeiste(gtx layout.Context, hoehe int) {
-	breite := gtx.Constraints.Max.X
-	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(image.Rect(0, 0, breite, hoehe)).Op())
-	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(image.Rect(0, hoehe-gtx.Dp(1), breite, hoehe)).Op())
+// leistenKnopf ist ein Eintrag der Werkzeugleiste links von „Speichern“.
+type leistenKnopf struct {
+	c      *widget.Clickable
+	text   string
+	art    knopfArt
+	an     bool
+	muster color.NRGBA // Farbfeld vor dem Text (A = 0: keins)
+	gruppe bool        // beginnt eine neue Gruppe (zusätzlicher Abstand)
+}
+
+// leistenKnoepfe liefert die Knöpfe der Leiste in Reihenfolge.
+func (e *editor) leistenKnoepfe() []leistenKnopf {
 	k := &e.knoepfe
-	x := gtx.Dp(12)
-	y := gtx.Dp(10)
-	abstand := gtx.Dp(8)
-	type eintrag struct {
-		c      *widget.Clickable
-		text   string
-		art    knopfArt
-		an     bool
-		muster color.NRGBA // Farbfeld vor dem Text (A = 0: keins)
-		gruppe bool        // beginnt eine neue Gruppe (zusätzlicher Abstand)
-	}
-	var links []eintrag
+	var links []leistenKnopf
 	for _, w := range e.werkzeugKnoepfe() {
 		art := knopfNormal
 		if e.s.Werkzeug == w.w {
 			art = knopfAktiv
 		}
-		links = append(links, eintrag{c: w.c, text: w.text, art: art, an: true})
+		links = append(links, leistenKnopf{c: w.c, text: w.text, art: art, an: true})
 	}
 	// Gruppen: Werkzeuge | Farbe | Verlauf | Ansicht. Während der Texteingabe sperrt der Zug den Verlauf (F-18).
-	links = append(links,
-		eintrag{c: &k.farbe, text: i18n.T("Color"), an: true, muster: e.s.Stil.Farbe, gruppe: true},
-		eintrag{c: &k.rueck, text: i18n.T("Undo"), an: e.s.D.KannRueckgaengig(), gruppe: true},
-		eintrag{c: &k.wieder, text: i18n.T("Redo"), an: e.s.D.KannWiederholen()},
-		eintrag{c: &k.einpassen, text: i18n.T("Fit"), an: true, gruppe: true},
-		eintrag{c: &k.eins, text: "1:1", an: true},
+	return append(links,
+		leistenKnopf{c: &k.farbe, text: i18n.T("Color"), an: true, muster: e.s.Stil.Farbe, gruppe: true},
+		leistenKnopf{c: &k.rueck, text: i18n.T("Undo"), an: e.s.D.KannRueckgaengig(), gruppe: true},
+		leistenKnopf{c: &k.wieder, text: i18n.T("Redo"), an: e.s.D.KannWiederholen()},
+		leistenKnopf{c: &k.einpassen, text: i18n.T("Fit"), an: true, gruppe: true},
+		leistenKnopf{c: &k.eins, text: "1:1", an: true},
 	)
-	for _, kn := range links {
-		if kn.gruppe {
-			x += abstand
-		}
-		w := e.knopf(gtx, kn.c, kn.text, kn.art, kn.an, image.Pt(x, y), kn.muster)
-		x += w + abstand
-	}
-	// Speichern rechts.
+}
+
+// messeKnopf liefert die Breite eines Knopfs, ohne etwas zu zeichnen. Der Knopf wird in einen Makro aufgenommen, der
+// nie abgespielt wird, und zwar als nicht bedienbarer (an = false): So legt die Messung weder Klickflächen an noch
+// verbraucht sie Ereignisse des Clickable, die das echte Zeichnen danach noch braucht. Die Breite hängt nur von Text
+// und Farbfeld ab, nicht von an oder art. Zwei Durchgänge mit echtem Zeichnen hätten die Ereignisse doppelt gelesen.
+func (e *editor) messeKnopf(gtx layout.Context, c *widget.Clickable, text string, muster color.NRGBA) int {
 	m := op.Record(gtx.Ops)
-	w := e.knopf(gtx, &k.speichern, i18n.T("Save"), knopfHaupt, true, image.Point{}, color.NRGBA{})
+	w := e.knopf(gtx, c, text, knopfNormal, false, image.Point{}, muster)
+	m.Stop()
+	return w
+}
+
+// ordneLeiste misst die Knöpfe und bricht sie um, wenn sie nicht neben „Speichern“ passen (F-148). Liefert die Ecken
+// und die Höhe der Leiste in Pixeln; die Leinwand beginnt darunter.
+func (e *editor) ordneLeiste(gtx layout.Context, links []leistenKnopf) ([]image.Point, int) {
+	kn := make([]canvas.LeistenKnopf, len(links))
+	for i, l := range links {
+		kn[i] = canvas.LeistenKnopf{Breite: e.messeKnopf(gtx, l.c, l.text, l.muster), Gruppe: l.gruppe}
+	}
+	m := canvas.LeistenMass{RandX: gtx.Dp(12), RandY: gtx.Dp(10), Abstand: gtx.Dp(8), KnopfHoehe: gtx.Dp(36),
+		Speichern: e.messeKnopf(gtx, &e.knoepfe.speichern, i18n.T("Save"), color.NRGBA{}), Breite: gtx.Constraints.Max.X}
+	pos, hoehe, _ := canvas.LeisteAnordnen(kn, m)
+	return pos, hoehe
+}
+
+func (e *editor) zeichneLeiste(gtx layout.Context, links []leistenKnopf, pos []image.Point, hoehe int) {
+	breite := gtx.Constraints.Max.X
+	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(image.Rect(0, 0, breite, hoehe)).Op())
+	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(image.Rect(0, hoehe-gtx.Dp(1), breite, hoehe)).Op())
+	for i, kn := range links {
+		e.knopf(gtx, kn.c, kn.text, kn.art, kn.an, pos[i], kn.muster)
+	}
+	// Speichern rechts in der ersten Zeile.
+	m := op.Record(gtx.Ops)
+	w := e.knopf(gtx, &e.knoepfe.speichern, i18n.T("Save"), knopfHaupt, true, image.Point{}, color.NRGBA{})
 	call := m.Stop()
-	t := op.Offset(image.Pt(breite-gtx.Dp(12)-w, y)).Push(gtx.Ops)
+	t := op.Offset(image.Pt(breite-gtx.Dp(12)-w, gtx.Dp(10))).Push(gtx.Ops)
 	call.Add(gtx.Ops)
 	t.Pop()
 }
