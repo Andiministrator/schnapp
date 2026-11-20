@@ -255,6 +255,37 @@ msgstr "Einpassen"
 msgid "Save"
 msgstr "Speichern"
 
+# ui/editor.go: Zeichenwerkzeuge (ADR-0021)
+msgid "Arrow"
+msgstr "Pfeil"
+
+msgid "Rectangle"
+msgstr "Rechteck"
+
+msgid "Text"
+msgstr "Text"
+
+msgid "Step"
+msgstr "Nummer"
+
+msgid "Color"
+msgstr "Farbe"
+
+msgid "Type the text. Enter: done, Shift+Enter: new line, Esc: discard."
+msgstr "Text eingeben. Enter: fertig, Umschalt+Enter: neue Zeile, Esc: verwerfen."
+
+msgid "Drag to draw an arrow. Shift: 45° steps. Drag the middle handle to bend it."
+msgstr "Ziehen zeichnet einen Pfeil. Umschalt: 45°-Schritte. Am mittleren Griff ziehen biegt ihn."
+
+msgid "Drag to draw a rectangle. Shift: square."
+msgstr "Ziehen zeichnet ein Rechteck. Umschalt: Quadrat."
+
+msgid "Click to place text, or click a text to edit it."
+msgstr "Klick setzt einen Text, Klick auf einen Text bearbeitet ihn."
+
+msgid "Click to place step number %d."
+msgstr "Klick setzt die Schritt-Nummer %d."
+
 msgid "The editor could not be opened or saved: %v"
 msgstr "Der Editor ließ sich nicht öffnen oder nicht speichern: %v"
 

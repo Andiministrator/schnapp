@@ -126,9 +126,21 @@ type editor struct {
 	schlussErr error       // Speicherfehler beim Schließen nach Signal, Rückgabe von Editor
 
 	knoepfe struct {
-		auswahl, rueck, wieder, einpassen, eins, speichern widget.Clickable
+		auswahl, pfeil, kasten, text, nummer, farbe widget.Clickable
+		rueck, wieder, einpassen, eins, speichern   widget.Clickable
 	}
+
+	// Doppelklick erkennen (ADR-0021: Text bearbeiten): Zeit und Ort des letzten Drucks der linken Taste.
+	letzterDruck time.Duration
+	letzterOrt   document.Punkt
+	hatDruck     bool
 }
+
+// Doppelklick: zweiter Druck innerhalb dieser Zeit und dieses Abstands (Fensterpixel).
+const (
+	doppelklickZeit    = 400 * time.Millisecond
+	doppelklickAbstand = 6.0
+)
 
 // diagnoseEditor schreibt nur mit gesetztem SCHNAPP_DEBUG (echte Läufe).
 func diagnoseEditor(format string, args ...any) {
@@ -147,6 +159,7 @@ func (e *editor) laufen() error {
 		switch ev := e.w.Event().(type) {
 		case app.DestroyEvent:
 			diagnoseEditor("Fenster zu: Fehler %v, ungesichert %v, Zug %v", ev.Err, e.s.Ungesichert(), e.s.Zieht())
+			e.s.TextBestaetigen() // getippter Text geht nicht verloren (ADR-0021 Punkt 6)
 			if e.s.Zieht() {
 				e.s.Abbrechen()
 			}
@@ -244,6 +257,7 @@ func (e *editor) fensterTitel() string {
 }
 
 func (e *editor) speichernJetzt() {
+	e.s.TextBestaetigen() // Strg+S nimmt den getippten Text mit (ADR-0021 Punkt 6)
 	if e.s.Zieht() {
 		return
 	}
@@ -318,10 +332,36 @@ func (e *editor) leinwand(gtx layout.Context) {
 	bc.Pop()
 	af.Pop()
 	e.zeichneAuswahl(gtx)
+	e.zeichneEinfuegemarke(gtx)
 
-	pointer.CursorDefault.Add(gtx.Ops)
+	switch e.s.Werkzeug {
+	case canvas.WerkzeugAuswahl:
+		pointer.CursorDefault.Add(gtx.Ops)
+	case canvas.WerkzeugText:
+		pointer.CursorText.Add(gtx.Ops)
+	default:
+		pointer.CursorCrosshair.Add(gtx.Ops)
+	}
 	event.Op(gtx.Ops, e)
 	c.Pop()
+}
+
+// zeichneEinfuegemarke zeigt während der Texteingabe die Einfügemarke am Ende der letzten Zeile (orange wie der
+// Tastaturfokus, Corporate Design §6), in Fensterpixeln. Die Zeilenbreite misst derselbe Textsatz wie zeichneObjekte.
+func (e *editor) zeichneEinfuegemarke(gtx layout.Context) {
+	t, ok := e.s.TextObjekt()
+	if !ok {
+		return
+	}
+	zeilen := strings.Split(t.Inhalt, "\n")
+	i := len(zeilen) - 1
+	breite := e.textBreite(gtx, document.Zeichenbar(zeilen[i]), float32(t.Schriftgrad))
+	ort := e.s.D.ZuAnsicht(t.Ort).Plus(document.Pt(float64(breite), t.Schriftgrad*1.3*float64(i)))
+	oben := e.s.Abb.ZuFenster(ort)
+	unten := e.s.Abb.ZuFenster(ort.Plus(document.Pt(0, t.Schriftgrad*1.25)))
+	x := int(math.Round(oben.X))
+	r := image.Rect(x, int(math.Round(oben.Y)), x+gtx.Dp(2), int(math.Round(unten.Y)))
+	paint.FillShape(gtx.Ops, farbeAkzent, clip.Rect(r).Op())
 }
 
 func (e *editor) zeiger(gtx layout.Context) {
@@ -339,14 +379,23 @@ func (e *editor) zeiger(gtx layout.Context) {
 			continue
 		}
 		p := document.Pt(float64(pe.Position.X), float64(pe.Position.Y))
+		e.s.Umschalt = pe.Modifiers.Contain(key.ModShift) // Pfeil 45°, Quadrat (ADR-0021)
 		switch pe.Kind {
 		case pointer.Press:
 			switch {
 			case pe.Buttons.Contain(pointer.ButtonTertiary):
 				e.s.Druecken(p, canvas.TasteMitte)
 			case pe.Buttons.Contain(pointer.ButtonPrimary):
-				e.s.Druecken(p, canvas.TastePrimaer)
+				if e.hatDruck && pe.Time-e.letzterDruck <= doppelklickZeit &&
+					p.Minus(e.letzterOrt).Laenge() <= doppelklickAbstand {
+					e.hatDruck = false // ein dritter Klick zählt wieder einfach
+					e.s.Doppelklick(p)
+				} else {
+					e.hatDruck, e.letzterDruck, e.letzterOrt = true, pe.Time, p
+					e.s.Druecken(p, canvas.TastePrimaer)
+				}
 			}
+			// Tastaturfokus auf die Leinwand: Tastenkürzel und getippter Text (key.EditEvent) kommen hier an.
 			gtx.Execute(key.FocusCmd{Tag: e})
 		case pointer.Drag:
 			e.s.Ziehen(p)
@@ -431,6 +480,22 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 	}
 }
 
+// textBreite misst eine Zeile in Ansichtspixeln mit demselben Textsatz wie textBei (normaler Schnitt).
+func (e *editor) textBreite(gtx layout.Context, s string, groesse float32) float32 {
+	if s == "" {
+		return 0
+	}
+	g := gtx
+	g.Metric = unit.Metric{PxPerDp: 1, PxPerSp: 1}
+	g.Constraints = layout.Constraints{Max: image.Pt(1<<20, 1<<20)}
+	lbl := material.Label(e.thema, unit.Sp(groesse), s)
+	lbl.MaxLines = 1
+	m := op.Record(gtx.Ops)
+	dims := lbl.Layout(g)
+	m.Stop() // nur messen, nicht zeichnen
+	return float32(dims.Size.X)
+}
+
 // textBei setzt Text in Ansichtspixeln: mittig um p (mitte) oder mit der linken oberen Ecke bei p.
 func (e *editor) textBei(gtx layout.Context, s string, groesse float32, p f32.Point, mitte bool, c color.NRGBA) {
 	g := gtx
@@ -490,21 +555,51 @@ func (e *editor) tasten(gtx layout.Context) {
 			key.Filter{Name: "0", Required: key.ModShortcut},
 			key.Filter{Name: "1", Required: key.ModShortcut},
 			key.Filter{Name: "W", Required: key.ModShortcut},
+			// Werkzeuge (ADR-0021) und Texteingabe; getippte Zeichen kommen als key.EditEvent an die fokussierte Leinwand.
+			key.Filter{Name: "V"}, key.Filter{Name: "A"}, key.Filter{Name: "R"}, key.Filter{Name: "T"},
+			key.Filter{Name: "N"},
+			key.Filter{Name: key.NameReturn, Optional: key.ModShift},
+			key.Filter{Name: key.NameEnter, Optional: key.ModShift},
+			key.FocusFilter{Target: e},
 		)
 		if !ok {
 			return
+		}
+		if ed, ok := ev.(key.EditEvent); ok {
+			if e.s.TextLaeuft() {
+				e.s.Tippe(ed.Text)
+			}
+			continue
 		}
 		k, ok := ev.(key.Event)
 		if !ok || k.State != key.Press {
 			continue
 		}
+		if e.s.TextLaeuft() {
+			// Während der Texteingabe sind Buchstaben Text (kommt als EditEvent), keine Kürzel.
+			switch k.Name {
+			case "V", "A", "R", "T", "N", key.NameDeleteForward:
+				continue
+			case key.NameDeleteBackward:
+				e.s.TextZurueck()
+				continue
+			}
+		}
 		switch k.Name {
 		case key.NameEscape:
-			if e.s.Zieht() {
-				e.s.Abbrechen()
-			} else {
-				e.s.Abwaehlen()
-			}
+			e.s.Esc() // in Stufen: Text verwerfen, Ziehen abbrechen, abwählen, zurück zu Auswählen
+		case key.NameReturn, key.NameEnter:
+			e.s.Enter(k.Modifiers.Contain(key.ModShift))
+		case "V":
+			e.s.SetzeWerkzeug(canvas.WerkzeugAuswahl)
+		case "A":
+			e.s.SetzeWerkzeug(canvas.WerkzeugPfeil)
+		case "R":
+			e.s.SetzeWerkzeug(canvas.WerkzeugKasten)
+		case "T":
+			e.s.SetzeWerkzeug(canvas.WerkzeugText)
+		case "N":
+			e.s.SetzeWerkzeug(canvas.WerkzeugNummer)
 		case key.NameDeleteForward, key.NameDeleteBackward:
 			e.s.Loeschen()
 		case "Z":
@@ -559,7 +654,32 @@ func (e *editor) knoepfeAuswerten(gtx layout.Context) {
 	if k.speichern.Clicked(gtx) {
 		e.speichernJetzt()
 	}
-	k.auswahl.Clicked(gtx) // einziges Werkzeug bis zur Werkzeug-Karte; immer aktiv
+	for _, w := range e.werkzeugKnoepfe() {
+		if w.c.Clicked(gtx) {
+			e.s.SetzeWerkzeug(w.w)
+		}
+	}
+	if k.farbe.Clicked(gtx) {
+		e.s.NaechsteFarbe()
+	}
+}
+
+type werkzeugKnopf struct {
+	c    *widget.Clickable
+	w    canvas.Werkzeug
+	text string
+}
+
+// werkzeugKnoepfe sind die Knöpfe der Werkzeuggruppe in Reihenfolge der Leiste (Kürzel V, A, R, T, N, ADR-0021).
+func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
+	k := &e.knoepfe
+	return []werkzeugKnopf{
+		{&k.auswahl, canvas.WerkzeugAuswahl, i18n.T("Select")},
+		{&k.pfeil, canvas.WerkzeugPfeil, i18n.T("Arrow")},
+		{&k.kasten, canvas.WerkzeugKasten, i18n.T("Rectangle")},
+		{&k.text, canvas.WerkzeugText, i18n.T("Text")},
+		{&k.nummer, canvas.WerkzeugNummer, i18n.T("Step")},
+	}
 }
 
 type knopfArt int
@@ -578,36 +698,51 @@ func (e *editor) zeichneLeiste(gtx layout.Context, hoehe int) {
 	x := gtx.Dp(12)
 	y := gtx.Dp(10)
 	abstand := gtx.Dp(8)
-	links := []struct {
-		c    *widget.Clickable
-		text string
-		art  knopfArt
-		an   bool
-	}{
-		{&k.auswahl, i18n.T("Select"), knopfAktiv, true},
-		{&k.rueck, i18n.T("Undo"), knopfNormal, e.s.D.KannRueckgaengig()},
-		{&k.wieder, i18n.T("Redo"), knopfNormal, e.s.D.KannWiederholen()},
-		{&k.einpassen, i18n.T("Fit"), knopfNormal, true},
-		{&k.eins, "1:1", knopfNormal, true},
+	type eintrag struct {
+		c      *widget.Clickable
+		text   string
+		art    knopfArt
+		an     bool
+		muster color.NRGBA // Farbfeld vor dem Text (A = 0: keins)
+		gruppe bool        // beginnt eine neue Gruppe (zusätzlicher Abstand)
 	}
-	for i, kn := range links {
-		if i == 1 || i == 3 {
-			x += abstand // Gruppen trennen: Werkzeuge | Verlauf | Ansicht
+	var links []eintrag
+	for _, w := range e.werkzeugKnoepfe() {
+		art := knopfNormal
+		if e.s.Werkzeug == w.w {
+			art = knopfAktiv
 		}
-		w := e.knopf(gtx, kn.c, kn.text, kn.art, kn.an, image.Pt(x, y))
+		links = append(links, eintrag{c: w.c, text: w.text, art: art, an: true})
+	}
+	// Gruppen: Werkzeuge | Farbe | Verlauf | Ansicht. Während der Texteingabe sperrt der Zug den Verlauf (F-18).
+	links = append(links,
+		eintrag{c: &k.farbe, text: i18n.T("Color"), an: true, muster: e.s.Stil.Farbe, gruppe: true},
+		eintrag{c: &k.rueck, text: i18n.T("Undo"), an: e.s.D.KannRueckgaengig(), gruppe: true},
+		eintrag{c: &k.wieder, text: i18n.T("Redo"), an: e.s.D.KannWiederholen()},
+		eintrag{c: &k.einpassen, text: i18n.T("Fit"), an: true, gruppe: true},
+		eintrag{c: &k.eins, text: "1:1", an: true},
+	)
+	for _, kn := range links {
+		if kn.gruppe {
+			x += abstand
+		}
+		w := e.knopf(gtx, kn.c, kn.text, kn.art, kn.an, image.Pt(x, y), kn.muster)
 		x += w + abstand
 	}
 	// Speichern rechts.
 	m := op.Record(gtx.Ops)
-	w := e.knopf(gtx, &k.speichern, i18n.T("Save"), knopfHaupt, true, image.Point{})
+	w := e.knopf(gtx, &k.speichern, i18n.T("Save"), knopfHaupt, true, image.Point{}, color.NRGBA{})
 	call := m.Stop()
 	t := op.Offset(image.Pt(breite-gtx.Dp(12)-w, y)).Push(gtx.Ops)
 	call.Add(gtx.Ops)
 	t.Pop()
 }
 
-// knopf zeichnet eine Schaltfläche (Radius 6, Höhe 36 dp) bei ecke und liefert ihre Breite.
-func (e *editor) knopf(gtx layout.Context, c *widget.Clickable, s string, art knopfArt, an bool, ecke image.Point) int {
+// knopf zeichnet eine Schaltfläche (Radius 6, Höhe 36 dp) bei ecke und liefert ihre Breite. Ein muster mit A > 0
+// erscheint als rundes Farbfeld vor dem Text (Knopf „Farbe“; der Text nennt die Handlung, die Farbe ist nicht das
+// einzige Merkmal, Corporate Design §3).
+func (e *editor) knopf(gtx layout.Context, c *widget.Clickable, s string, art knopfArt, an bool, ecke image.Point,
+	muster color.NRGBA) int {
 	lbl := material.Label(e.thema, unit.Sp(14), s)
 	lbl.Color = farbeText
 	switch {
@@ -625,6 +760,11 @@ func (e *editor) knopf(gtx layout.Context, c *widget.Clickable, s string, art kn
 	textCall := m.Stop()
 	innen := image.Pt(gtx.Dp(14), (gtx.Dp(36)-dims.Size.Y)/2)
 	groesse := image.Pt(dims.Size.X+2*innen.X, gtx.Dp(36))
+	feld := 0 // Breite des Farbfelds samt Abstand
+	if muster.A > 0 {
+		feld = gtx.Dp(16 + 8)
+		groesse.X += feld
+	}
 
 	t := op.Offset(ecke).Push(gtx.Ops)
 	r := image.Rectangle{Max: groesse}
@@ -644,7 +784,14 @@ func (e *editor) knopf(gtx layout.Context, c *widget.Clickable, s string, art kn
 		paint.FillShape(gtx.Ops, farbeAkzent, clip.Stroke{Path: clip.UniformRRect(r.Inset(-gtx.Dp(2)), gtx.Dp(8)).Path(gtx.Ops),
 			Width: float32(gtx.Dp(2))}.Op())
 	}
-	tt := op.Offset(innen).Push(gtx.Ops)
+	if feld > 0 {
+		d := gtx.Dp(16)
+		oy := (groesse.Y - d) / 2
+		kr := image.Rect(innen.X, oy, innen.X+d, oy+d)
+		paint.FillShape(gtx.Ops, muster, clip.Ellipse(kr).Op(gtx.Ops))
+		paint.FillShape(gtx.Ops, farbeText, clip.Stroke{Path: clip.Ellipse(kr).Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
+	}
+	tt := op.Offset(innen.Add(image.Pt(feld, 0))).Push(gtx.Ops)
 	textCall.Add(gtx.Ops)
 	tt.Pop()
 	if an {
@@ -662,13 +809,33 @@ func (e *editor) zeichneStatus(gtx layout.Context, hoehe int) {
 	g := e.s.D.Groesse()
 	rechts := fmt.Sprintf("%d × %d · %d %%", g.X, g.Y, int(math.Round(e.s.Abb.Zoom*100)))
 	e.statusText(gtx, rechts, farbeNebentext, mx.Y-hoehe, false)
-	if e.meldung != "" {
-		c := farbeGruenText
-		if e.fehler {
-			c = color.NRGBA{R: 0xE6, G: 0x78, B: 0x73, A: 0xFF} // rot-500
-		}
-		e.statusText(gtx, e.meldung, c, mx.Y-hoehe, true)
+	links, c := e.meldung, farbeGruenText
+	if e.fehler {
+		c = color.NRGBA{R: 0xE6, G: 0x78, B: 0x73, A: 0xFF} // rot-500
+	} else if h := e.hinweis(); h != "" {
+		links, c = h, farbeNebentext // Bedienhinweis des Werkzeugs; Fehler und Warnungen gehen vor
 	}
+	if links != "" {
+		e.statusText(gtx, links, c, mx.Y-hoehe, true)
+	}
+}
+
+// hinweis ist die Bedienung des aktiven Werkzeugs bzw. der Texteingabe für die Statusleiste (ADR-0021).
+func (e *editor) hinweis() string {
+	if e.s.TextLaeuft() {
+		return i18n.T("Type the text. Enter: done, Shift+Enter: new line, Esc: discard.")
+	}
+	switch e.s.Werkzeug {
+	case canvas.WerkzeugPfeil:
+		return i18n.T("Drag to draw an arrow. Shift: 45° steps. Drag the middle handle to bend it.")
+	case canvas.WerkzeugKasten:
+		return i18n.T("Drag to draw a rectangle. Shift: square.")
+	case canvas.WerkzeugText:
+		return i18n.T("Click to place text, or click a text to edit it.")
+	case canvas.WerkzeugNummer:
+		return fmt.Sprintf(i18n.T("Click to place step number %d."), e.s.D.NaechsteNummer())
+	}
+	return ""
 }
 
 func (e *editor) statusText(gtx layout.Context, s string, c color.NRGBA, y int, links bool) {
