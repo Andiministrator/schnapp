@@ -13,6 +13,7 @@ import (
 	"math"
 	"os"
 	"os/signal"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"syscall"
@@ -149,6 +150,16 @@ type editor struct {
 	letzterDruck time.Duration
 	letzterOrt   document.Punkt
 	hatDruck     bool
+
+	// naht hält die Zackenkanten als aufgezeichnete Ops (Ansichtskoordinaten), bis sich Ansichtsgröße oder Nähte
+	// ändern (F-183): Bei vielen Nähten in einem breiten Bild baute der Editor sonst jedes Bild alle Pfade neu.
+	naht struct {
+		groesse image.Point
+		naehte  []document.Naht
+		ops     op.Ops
+		aufruf  op.CallOp
+		gueltig bool
+	}
 }
 
 // Doppelklick: zweiter Druck innerhalb dieser Zeit und dieses Abstands (Fensterpixel).
@@ -592,32 +603,41 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 }
 
 // zeichneNaehte legt die Zackenkanten der Stauch-Nähte über Bild und Objekte, in Ansichtskoordinaten und mit denselben
-// Vielecken wie Renderer und SVG-Export (ADR-0023 Punkt 6).
+// Vielecken wie Renderer und SVG-Export (ADR-0023 Punkt 6). Die Pfade werden nur neu gebaut, wenn sich Ansichtsgröße
+// oder Nähte ändern; sonst spielt der Editor die Aufzeichnung ab (F-183, e.naht).
 func (e *editor) zeichneNaehte(gtx layout.Context) {
-	g := e.s.D.Groesse()
-	for _, n := range e.s.D.Naehte() {
-		laenge := g.X
-		if !n.Zeilen {
-			laenge = g.Y
-		}
-		for _, band := range []struct {
-			halb  float64
-			farbe color.NRGBA
-		}{{document.ZackenRandHalb, document.ZackenRand}, {document.ZackenLinieHalb, document.ZackenLinie}} {
-			var p clip.Path
-			p.Begin(gtx.Ops)
-			for i, q := range document.Zackenband(n, laenge, band.halb) {
-				pt := f32.Pt(float32(q.X), float32(q.Y))
-				if i == 0 {
-					p.MoveTo(pt)
-				} else {
-					p.LineTo(pt)
-				}
+	g, naehte := e.s.D.Groesse(), e.s.D.Naehte()
+	c := &e.naht
+	if !c.gueltig || c.groesse != g || !slices.Equal(c.naehte, naehte) {
+		c.ops.Reset()
+		aufnahme := op.Record(&c.ops)
+		for _, n := range naehte {
+			laenge := g.X
+			if !n.Zeilen {
+				laenge = g.Y
 			}
-			p.Close()
-			paint.FillShape(gtx.Ops, band.farbe, clip.Outline{Path: p.End()}.Op())
+			for _, band := range []struct {
+				halb  float64
+				farbe color.NRGBA
+			}{{document.ZackenRandHalb, document.ZackenRand}, {document.ZackenLinieHalb, document.ZackenLinie}} {
+				var p clip.Path
+				p.Begin(&c.ops)
+				for i, q := range document.Zackenband(n, laenge, band.halb) {
+					pt := f32.Pt(float32(q.X), float32(q.Y))
+					if i == 0 {
+						p.MoveTo(pt)
+					} else {
+						p.LineTo(pt)
+					}
+				}
+				p.Close()
+				paint.FillShape(&c.ops, band.farbe, clip.Outline{Path: p.End()}.Op())
+			}
 		}
+		c.aufruf = aufnahme.Stop()
+		c.groesse, c.naehte, c.gueltig = g, naehte, true
 	}
+	c.aufruf.Add(gtx.Ops)
 }
 
 // meldeAnsicht zeigt einmal, was das letzte Zuschneiden oder Stauchen zu sagen hat (ADR-0023 Punkte 3 und 7).

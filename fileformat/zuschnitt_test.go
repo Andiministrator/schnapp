@@ -7,6 +7,7 @@ import (
 	"image"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -29,33 +30,87 @@ func TestExportSVGZackenkante(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := buf.String()
-	naehte := regexp.MustCompile(`<g s:naht="(zeilen|spalten)"><path d="([^"]*)" fill="#([0-9a-f]{6})"/><path d="([^"]*)" fill="#([0-9a-f]{6})"/></g>`).
+	// Je Achse ein Band bei Lage 0 in <defs> (F-183), je Naht ein <use>, das es auf die Lage verschiebt.
+	baender := regexp.MustCompile(`<g id="naht-(zeilen|spalten)"><path d="([^"]*)" fill="#([0-9a-f]{6})"/><path d="([^"]*)" fill="#([0-9a-f]{6})"/></g>`).
 		FindAllStringSubmatch(s, -1)
-	if len(naehte) != 2 {
-		t.Fatalf("%d Nähte im Export, Soll 2:\n%s", len(naehte), s)
+	verweise := regexp.MustCompile(`<use href="#naht-(zeilen|spalten)" (x|y)="(-?\d+)" s:naht="(zeilen|spalten)"/>`).
+		FindAllStringSubmatch(s, -1)
+	if len(baender) != 2 || len(verweise) != 2 {
+		t.Fatalf("%d Bänder, %d Nähte im Export, Soll 2 und 2:\n%s", len(baender), len(verweise), s)
 	}
 	g := d.Groesse()
 	for i, n := range d.Naehte() {
-		m := naehte[i]
-		art, laenge := "spalten", g.Y
+		art, achse, laenge := "spalten", "x", g.Y
 		if n.Zeilen {
-			art, laenge = "zeilen", g.X
+			art, achse, laenge = "zeilen", "y", g.X
+		}
+		if v := verweise[i]; v[1] != art || v[2] != achse || v[3] != strconv.Itoa(n.Lage) || v[4] != art {
+			t.Errorf("Naht %d: %v", i, v[0])
+		}
+		m := baender[0]
+		if m[1] != art {
+			m = baender[1]
 		}
 		if m[1] != art || m[3] != "ffffff" || m[5] != "4a5057" {
-			t.Errorf("Naht %d: %v %v %v", i, m[1], m[3], m[5])
+			t.Errorf("Band %s: %v %v %v", art, m[1], m[3], m[5])
 		}
+		// Das Band bei Lage 0, um die Lage verschoben, ist das Band des Renderers an der Naht.
 		for j, halb := range []float64{document.ZackenRandHalb, document.ZackenLinieHalb} {
 			var soll []string
-			for _, p := range document.Zackenband(n, laenge, halb) {
+			for _, p := range document.Zackenband(document.Naht{Zeilen: n.Zeilen}, laenge, halb) {
 				soll = append(soll, punkt(p))
 			}
 			if got := m[2+2*j]; got != "M"+strings.Join(soll, " L")+" Z" {
-				t.Errorf("Naht %d Band %d: %s", i, j, got)
+				t.Errorf("Band %s %d: %s", art, j, got)
+			}
+			verschoben := document.Zackenband(document.Naht{Zeilen: n.Zeilen}, laenge, halb)
+			for k, p := range document.Zackenband(n, laenge, halb) {
+				q := verschoben[k]
+				if n.Zeilen {
+					q.Y += float64(n.Lage)
+				} else {
+					q.X += float64(n.Lage)
+				}
+				if p != q {
+					t.Fatalf("Naht %d Band %d Punkt %d: %v, verschoben %v", i, j, k, p, q)
+				}
 			}
 		}
 	}
 	if strings.LastIndex(s, `<use href="#objekte"/>`) > strings.Index(s, `s:naht=`) {
 		t.Error("Zackenkante liegt unter einer Kachel")
+	}
+}
+
+// F-183: 1023 Zeilen-Nähte in 8192 px Breite kosten im SVG wenige hundert Kilobyte (vorher 41 MB): ein Band je Achse
+// in <defs>, je Naht ein <use>.
+func TestExportSVGVieleNaehteKompakt(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 8192, 2047)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var st []document.Streifen
+	for i := 0; i < 1023; i++ {
+		st = append(st, document.Streifen{Zeilen: true, Von: 1 + 2*i, Bis: 2 + 2*i})
+	}
+	if err := d.SetzeStreifen(st); err != nil {
+		t.Fatal(err)
+	}
+	if n := len(d.Naehte()); n != 1023 {
+		t.Fatalf("%d Nähte, Soll 1023", n)
+	}
+	var buf bytes.Buffer
+	if err := ExportiereSVG(&buf, d); err != nil {
+		t.Fatal(err)
+	}
+	s := buf.String()
+	start := strings.Index(s, `<defs><g id="naht-`)
+	if start < 0 {
+		t.Fatal("keine Nähte im Export")
+	}
+	const soll = 256 << 10
+	if anteil := len(s) - start; anteil > soll {
+		t.Errorf("Nähte belegen %d Byte, Soll höchstens %d", anteil, soll)
 	}
 }
 

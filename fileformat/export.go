@@ -12,6 +12,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -53,27 +54,40 @@ func intervalle(von, bis int, st []document.Streifen, zeilen bool) [][2]int {
 }
 
 // naehte schreibt die Zackenkanten der Stauch-Nähte in Ansichtskoordinaten über alle Kacheln (ADR-0023 Punkt 6):
-// dieselben Vielecke wie im Renderer (document.Zackenband), hell außen, dunkel innen.
+// dieselben Vielecke wie im Renderer (document.Zackenband), hell außen, dunkel innen. Das Band jeder Achse steht einmal
+// in <defs> (Naht bei Lage 0 über die ganze Länge, id naht-zeilen bzw. naht-spalten); jede Naht verweist darauf mit
+// <use> und verschiebt es auf ihre Lage. So wächst die Datei je Naht um eine kurze Zeile statt um zwei Bänder über die
+// ganze Bildbreite (F-183: vorher 41 MB nur für 1023 Nähte in 8192 px Breite).
 func (s *schreiber) naehte(d *document.Dokument) {
 	g := d.Groesse()
-	for _, n := range d.Naehte() {
-		laenge := g.X
-		if !n.Zeilen {
-			laenge = g.Y
+	naehte := d.Naehte()
+	if len(naehte) == 0 {
+		return
+	}
+	art := func(zeilen bool) string {
+		if zeilen {
+			return "zeilen"
+		}
+		return "spalten"
+	}
+	s.WriteString(`<defs>`)
+	for _, zeilen := range []bool{false, true} {
+		if !slices.ContainsFunc(naehte, func(n document.Naht) bool { return n.Zeilen == zeilen }) {
+			continue
+		}
+		laenge := g.Y
+		if zeilen {
+			laenge = g.X
 		}
 		s.WriteString(`<g`)
-		art := "spalten"
-		if n.Zeilen {
-			art = "zeilen"
-		}
-		s.attr("s:naht", art)
+		s.attr("id", "naht-"+art(zeilen))
 		s.WriteString(`>`)
 		for _, band := range []struct {
 			halb  float64
 			farbe color.NRGBA
 		}{{document.ZackenRandHalb, document.ZackenRand}, {document.ZackenLinieHalb, document.ZackenLinie}} {
 			var pfad strings.Builder
-			for i, p := range document.Zackenband(n, laenge, band.halb) {
+			for i, p := range document.Zackenband(document.Naht{Zeilen: zeilen}, laenge, band.halb) {
 				if i == 0 {
 					pfad.WriteString("M")
 				} else {
@@ -88,6 +102,18 @@ func (s *schreiber) naehte(d *document.Dokument) {
 			s.WriteString(`/>`)
 		}
 		s.WriteString(`</g>`)
+	}
+	s.WriteString(`</defs>`)
+	for _, n := range naehte {
+		s.WriteString(`<use`)
+		s.attr("href", "#naht-"+art(n.Zeilen))
+		if n.Zeilen {
+			s.attr("y", strconv.Itoa(n.Lage))
+		} else {
+			s.attr("x", strconv.Itoa(n.Lage))
+		}
+		s.attr("s:naht", art(n.Zeilen))
+		s.WriteString(`/>`)
 	}
 }
 
