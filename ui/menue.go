@@ -64,11 +64,12 @@ type menue struct {
 	aussen    int                  // Ziel für Klicks neben die offene Liste (schließt sie)
 
 	// Tastatur (F-255): fokusNach ist der Eintrag, der beim Zeichnen den Fokus bekommt (die Klickfläche gibt es erst
-	// dort); cursor der zuletzt per Taste angesteuerte Eintrag (-1: keiner). perTaste: Der Knopf wurde per Enter
-	// ausgelöst, nicht per Maus.
+	// dort); cursor der zuletzt per Taste angesteuerte Eintrag (-1: keiner).
 	fokusNach *widget.Clickable
 	cursor    int
-	perTaste  bool
+	// perTasteOffen: Die Liste wurde per Tastatur geöffnet (Esc gibt den Fokus dann an den Menüknopf zurück, sonst an
+	// die Leinwand).
+	perTasteOffen bool
 
 	// rahmen: Lage der Zeilen im Fenster beim letzten Zeichnen (Tests und Drehbuch-Koordinaten, F-265).
 	rahmen [16]image.Rectangle
@@ -218,21 +219,39 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 	return nil
 }
 
+// menueUmschalten öffnet oder schließt die Liste. Per Tastatur geöffnet: Fokus auf den ersten bedienbaren Eintrag (F-255).
+// Per Maus bleibt der Fokus unberührt, damit kein Ring ohne Tastatur erscheint. Die Art kommt vom Aufrufer, nicht aus
+// dem Klick: Gio meldet bei einem Knopfklick keine Quelle, und der Zeigerort sagt nichts (Leertaste bei ruhendem Zeiger,
+// F-255 V-2). Enter und Leertaste öffnen sofort statt erst im nächsten Bild, damit eine gleich folgende Pfeiltaste
+// die Liste schon findet (F-255 V-3).
+func (e *editor) menueUmschalten(perTaste bool) {
+	m := &e.menue
+	m.offen = !m.offen
+	m.cursor = -1
+	m.perTasteOffen = m.offen && perTaste
+	if m.perTasteOffen {
+		if i := menueErster(e.menueEintraege()); i >= 0 {
+			m.cursor, m.fokusNach = i, &m.eintraege[i]
+		}
+	}
+}
+
+// knopfPerTaste löst einen per Tastatur fokussierten Knopf aus (Enter): der Menüknopf über menueUmschalten, die
+// übrigen als Klick.
+func (e *editor) knopfPerTaste(c *widget.Clickable) {
+	if c == &e.menue.knopf {
+		e.menueUmschalten(true)
+		return
+	}
+	c.Click()
+}
+
 // menueAuswerten verarbeitet Klicks auf den Menüknopf, die Einträge und daneben.
 func (e *editor) menueAuswerten(gtx layout.Context) {
 	m := &e.menue
 	an := !e.s.SpeichernLaeuft() // während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6)
 	if m.knopf.Clicked(gtx) && an {
-		m.offen = !m.offen
-		m.cursor = -1
-		if m.offen && (m.perTaste || !m.knopf.Hovered()) {
-			// Per Tastatur geöffnet: Fokus auf den ersten bedienbaren Eintrag (F-255). Per Maus bleibt der Fokus
-			// unberührt, damit kein Ring ohne Tastatur erscheint.
-			if i := menueErster(e.menueEintraege()); i >= 0 {
-				m.cursor, m.fokusNach = i, &m.eintraege[i]
-			}
-		}
-		m.perTaste = false
+		e.menueUmschalten(false) // ein Klick des Knopfes ist die Maus; Enter und Leertaste laufen in tasten
 	}
 	for {
 		ev, ok := gtx.Event(pointer.Filter{Target: &m.aussen, Kinds: pointer.Press})
@@ -349,8 +368,9 @@ func (e *editor) menueZeile(gtx layout.Context, c *widget.Clickable, en menueEin
 	if en.an && (c.Hovered() || fokus) {
 		paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(image.Rectangle{Max: groesse}).Op())
 	}
-	if fokus { // Tastaturfokus immer sichtbar: 2 px orangener Ring (corporate-design.md §6), innen, damit er nicht abgeschnitten wird
-		r := image.Rectangle{Max: groesse}.Inset(gtx.Dp(2))
+	if fokus { // Tastaturfokus immer sichtbar: 2 px orangener Ring (corporate-design.md §6). Die Zeilen stoßen aneinander,
+		// außen ist kein Platz: Der Ring liegt innen mit 2 px Abstand zum Zeilenrand (ADR-0026 Nachtrag 3).
+		r := image.Rectangle{Max: groesse}.Inset(gtx.Dp(3))
 		paint.FillShape(gtx.Ops, farbeAkzent, clip.Stroke{Path: clip.UniformRRect(r, gtx.Dp(4)).Path(gtx.Ops),
 			Width: float32(gtx.Dp(2))}.Op())
 	}

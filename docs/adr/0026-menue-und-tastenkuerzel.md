@@ -88,3 +88,23 @@ wenig Code (ADR-0011).
   nur die Hover-Fläche.
 - **Werkzeug-Hinweis** (Name und Buchstabe) erscheint auch bei Tastaturfokus auf dem Werkzeugknopf, nicht nur beim
   Zeiger; ist ein Knopf fokussiert, zeigt nur er den Hinweis.
+
+## Nachtrag 3 (20.11.2026): Nacharbeit aus dem Verify-Lauf zu Nachtrag 2 (Fable)
+
+- **Leertaste** führt am fokussierten Menüknopf wie Enter aus (öffnet mit Fokus auf dem ersten Eintrag); am
+  fokussierten Eintrag löst sie ihn aus (Gio-Knopf). Die Art des Öffnens kommt aus der Taste, nicht aus dem Zeigerort:
+  Ein ruhender Zeiger über dem Knopf machte die Leertaste sonst zur Maus. Enter und Leertaste öffnen sofort, nicht
+  erst im nächsten Bild.
+- **Tab** fährt bei offenem Menü weiter wie sonst (Einträge, Leinwand, Leistenknöpfe); das Menü bleibt offen und
+  bedienbar. Wer von einem Leistenknopf aus Pfeil runter drückt, landet wieder in der Liste.
+- **V-1, Fokus nach Esc:** Esc gibt den Fokus nur dann an den Menüknopf, wenn die Liste per Tastatur geöffnet wurde und
+  keine Texteingabe läuft; sonst geht er an die Leinwand. Sonst gingen nach einem per Maus geöffneten Menü getippte
+  Zeichen verloren, die Leertaste öffnete das Menü (Tab ist während der Texteingabe gesperrt, F-153), und Enter öffnete
+  es statt „Text bearbeiten“.
+- **V-3, Pfeile sofort:** Die Filter für Pfeile, Pos1 und Ende stehen immer, nicht erst im Bild nach dem Öffnen; kommen
+  Enter und Runter ohne Bild dazwischen, geht Runter nicht mehr verloren. Bei geschlossenem Menü bleiben sie ohne
+  Wirkung. Begründung, dass nichts verschluckt wird: Gio fährt den Fokus nur per Tab (`MoveFocus`), Pfeiltasten
+  verarbeitet dort nur die mobile Fensterschicht; im Editor hatten sie keine Bedeutung.
+- **V-4, Fokusring mit Abstand:** Leistenknöpfe: Ring 2 px breit, 2 px Abstand zur Randlinie (im Probelauf gemessen).
+  Menüeintrag, **begründete Ausnahme**: Die Zeilen stoßen aneinander und an den Rand der Liste, außen ist kein Platz;
+  der Ring liegt innen, 2 px breit mit 2 px Abstand zum Zeilenrand.

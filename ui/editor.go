@@ -1088,11 +1088,15 @@ func (e *editor) tasten(gtx layout.Context) {
 			filter = append(filter, f)
 		}
 		filter = append(filter, key.FocusFilter{Target: e})
-		if e.menue.offen { // Pfeile, Pos1, Ende wählen im offenen Menü den Eintrag (F-255); sonst bleiben sie frei
-			for _, n := range []key.Name{key.NameUpArrow, key.NameDownArrow, key.NameHome, key.NameEnd} {
-				filter = append(filter, key.Filter{Name: n})
-			}
+		// Pfeile, Pos1, Ende wählen im offenen Menü den Eintrag (F-255). Der Filter steht immer, nicht erst nach dem
+		// Öffnen: Kommen Enter und Runter ohne Bild dazwischen, ginge Runter sonst verloren (F-255 V-3). Bei
+		// geschlossenem Menü bleibt er ohne Wirkung; Gio fährt den Fokus nur per Tab, Pfeile gehören sonst niemandem.
+		for _, n := range []key.Name{key.NameUpArrow, key.NameDownArrow, key.NameHome, key.NameEnd} {
+			filter = append(filter, key.Filter{Name: n})
 		}
+		// Leertaste am Menüknopf wirkt wie Enter und gilt als Tastatur (F-255 V-2; der Klick des Knopfes trägt keine
+		// Quelle). Auf den Menüknopf begrenzt, damit Leertaste im Text weiter als Zeichen ankommt.
+		filter = append(filter, key.Filter{Focus: &e.menue.knopf, Name: key.NameSpace})
 		ev, ok := gtx.Event(filter...)
 		if !ok {
 			return
@@ -1113,19 +1117,26 @@ func (e *editor) tasten(gtx layout.Context) {
 		if !ok || k.State != key.Press {
 			continue
 		}
+		if k.Name == key.NameSpace { // nur am Menüknopf angemeldet; wirkt wie Enter
+			if gtx.Focused(&e.menue.knopf) {
+				e.menueUmschalten(true)
+			}
+			continue
+		}
 		if e.menue.offen {
 			// Offenes Menü (ADR-0026 Punkt 1): Esc schließt es, Enter löst einen Knopf oder Eintrag mit Tastaturfokus
 			// aus; alle anderen Tasten wirken nicht, damit Entf oder ein Buchstabe nicht unbemerkt hinter der Liste die
 			// Leinwand ändert (F-257).
 			switch k.Name {
 			case key.NameEscape:
-				e.menueSchliesse(gtx, true) // Fokus zurück an den Menüknopf (F-255)
+				// Fokus zurück an den Menüknopf nur, wenn per Tastatur geöffnet wurde und kein Text läuft; sonst an die
+				// Leinwand, sonst gingen getippte Zeichen verloren (F-255 V-1).
+				e.menueSchliesse(gtx, e.menue.perTasteOffen && !e.s.TextLaeuft())
 			case key.NameUpArrow, key.NameDownArrow, key.NameHome, key.NameEnd:
 				e.menueTaste(gtx, k.Name)
 			case key.NameReturn, key.NameEnter:
 				if c := e.fokussierterKnopf(gtx); c != nil {
-					e.menue.perTaste = c == &e.menue.knopf
-					c.Click()
+					e.knopfPerTaste(c)
 				}
 			}
 			continue
@@ -1154,8 +1165,7 @@ func (e *editor) tasten(gtx layout.Context) {
 			// verbraucht zu werden (F-153).
 			if !e.s.TextLaeuft() {
 				if c := e.fokussierterKnopf(gtx); c != nil {
-					e.menue.perTaste = c == &e.menue.knopf
-					c.Click()
+					e.knopfPerTaste(c)
 					continue
 				}
 			}
@@ -1400,8 +1410,8 @@ func (e *editor) knopf(gtx layout.Context, c *widget.Clickable, s string, art kn
 		}
 		paint.FillShape(gtx.Ops, rand, clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
 	}
-	if gtx.Focused(c) {
-		paint.FillShape(gtx.Ops, farbeAkzent, clip.Stroke{Path: clip.UniformRRect(r.Inset(-gtx.Dp(2)), gtx.Dp(8)).Path(gtx.Ops),
+	if gtx.Focused(c) { // 2 px Ring mit 2 px Abstand zur Randlinie (corporate-design.md §6; gemessen, ADR-0026 Nachtrag 3)
+		paint.FillShape(gtx.Ops, farbeAkzent, clip.Stroke{Path: clip.UniformRRect(r.Inset(-gtx.Dp(4)), gtx.Dp(8)).Path(gtx.Ops),
 			Width: float32(gtx.Dp(2))}.Op())
 	}
 	if feld > 0 {
