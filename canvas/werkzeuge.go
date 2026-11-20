@@ -221,14 +221,14 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 	switch s.neuArt {
 	case WerkzeugPfeil:
 		if s.Umschalt {
-			b = s.klemmeOriginal(Rasten45(a, b))
+			b = s.umschaltEnde(WerkzeugPfeil, p)
 		}
 		pf := document.GeraderPfeil(a, b, s.Stil.strich())
 		pf.ID = s.neuID
 		o = pf
 	case WerkzeugKasten:
 		if s.Umschalt {
-			b = s.klemmeOriginal(Quadrat(a, b))
+			b = s.umschaltEnde(WerkzeugKasten, p)
 		}
 		o = document.Kasten{ID: s.neuID, Bereich: document.R(a, b), Strich: s.Stil.strich(), Eckradius: s.Stil.Eckradius}
 	case WerkzeugNummer:
@@ -244,6 +244,45 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 		return
 	}
 	_ = s.D.ZugSetze(o)
+}
+
+// umschaltEnde liefert den Endpunkt (Original) eines Pfeils oder Kastens mit gedrückter Umschalttaste. Gerastet wird in
+// der Ansicht (nach Zuschnitt und Stauchen), nicht im Original: Der Endpunkt liegt so nie in einem herausgeschnittenen
+// Streifen (F-157, ADR-0021 Nachtrag 1). Am Bildrand wird nicht je Achse geklemmt, sondern entlang der Richtung
+// gekürzt (F-156): Der Pfeil bleibt auf 45°, der Kasten ein Quadrat mit der Seite, die der Platz zulässt.
+func (s *Sitzung) umschaltEnde(art Werkzeug, p document.Punkt) document.Punkt {
+	g := s.D.Groesse()
+	w, h := float64(g.X), float64(g.Y)
+	a := s.klemmeAnsicht(s.Abb.ZuAnsicht(s.start))
+	b := s.klemmeAnsicht(s.Abb.ZuAnsicht(p))
+	var e document.Punkt
+	if art == WerkzeugPfeil {
+		e = Rasten45(a, b)
+		d := e.Minus(a)
+		t := math.Min(1, math.Min(platzAchse(d.X, a.X, w), platzAchse(d.Y, a.Y, h)))
+		e = a.Plus(d.Mal(t))
+	} else {
+		e = Quadrat(a, b)
+		d := e.Minus(a)
+		if d.X == 0 || d.Y == 0 {
+			return s.D.ZuOriginal(a)
+		}
+		seite := math.Min(math.Abs(d.X), math.Abs(d.Y))
+		seite = math.Min(seite, math.Min(platzAchse(d.X, a.X, w)*math.Abs(d.X), platzAchse(d.Y, a.Y, h)*math.Abs(d.Y)))
+		e = a.Plus(document.Pt(math.Copysign(seite, d.X), math.Copysign(seite, d.Y)))
+	}
+	return s.D.ZuOriginal(s.klemmeAnsicht(e))
+}
+
+// platzAchse liefert, wie oft die Schrittweite d von a aus bis zum Rand [0, max] passt (+Inf bei d = 0).
+func platzAchse(d, a, max float64) float64 {
+	switch {
+	case d > 0:
+		return (max - a) / d
+	case d < 0:
+		return a / -d
+	}
+	return math.Inf(1)
 }
 
 // beendeNeu übernimmt das neue Objekt als einen Schritt in den Verlauf und wählt es aus — Pfeil und Kasten nur, wenn

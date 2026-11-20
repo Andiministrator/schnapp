@@ -176,3 +176,25 @@ func TestSignalOhneAenderungSpeichertNicht(t *testing.T) {
 		t.Errorf("%v, %d Aufrufe (Soll nil, 0)", err, aufrufe)
 	}
 }
+
+// F-159: Signal ohne vorheriges Schließen, Speichern scheitert: Der Stand gilt als verworfen, das Zerstören speichert
+// nicht noch einmal (ADR-0020 Nachtrag 2); jede neue Bearbeitung verlangt wieder einen Versuch.
+func TestSignalSpeichernScheitertDanachNichtUngesichert(t *testing.T) {
+	s, _, _ := sitzung(t)
+	verschiebe(t, s, 10)
+	voll := errors.New("voll")
+	aufrufe := 0
+	if err := s.SchliessenNachSignal(func() error { aufrufe++; return voll }); !errors.Is(err, voll) || aufrufe != 1 {
+		t.Fatalf("%v, %d Aufrufe (Soll voll, 1)", err, aufrufe)
+	}
+	if s.Ungesichert() {
+		t.Error("nach gescheitertem Speichern per Signal noch ungesichert: Zerstören speicherte ein zweites Mal")
+	}
+	if !s.Geaendert() {
+		t.Error("der Stand gilt als gespeichert, obwohl Speichern scheiterte")
+	}
+	verschiebe(t, s, 20)
+	if !s.Ungesichert() {
+		t.Error("neue Bearbeitung nach dem Scheitern verlangt keinen neuen Speicherversuch")
+	}
+}

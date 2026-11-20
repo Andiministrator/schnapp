@@ -258,15 +258,6 @@ func (s *Sitzung) klemmeAnsicht(a document.Punkt) document.Punkt {
 	return document.Pt(math.Max(0, math.Min(float64(g.X), a.X)), math.Max(0, math.Min(float64(g.Y), a.Y)))
 }
 
-// klemmeOriginal begrenzt einen Originalpunkt auf das sichtbare Bild; liegt er schon darin, bleibt er unverändert.
-func (s *Sitzung) klemmeOriginal(q document.Punkt) document.Punkt {
-	a := s.D.ZuAnsicht(q)
-	if k := s.klemmeAnsicht(a); k != a {
-		return s.D.ZuOriginal(k)
-	}
-	return q
-}
-
 // Abbrechen stellt den Stand vor dem Zug wieder her (Esc während des Ziehens, Zeiger-Cancel). Eine Texteingabe bleibt
 // (sie verwirft nur TextAbbrechen).
 func (s *Sitzung) Abbrechen() {
