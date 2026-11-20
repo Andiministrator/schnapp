@@ -121,7 +121,7 @@ func TestAblegenWarntBeiBleibenderVorschau(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Speichern: %v", err)
 	}
-	soll := "Saved as a new capture: " + filepath.Base(filepath.FromSlash(pe.Pfad)) + " The old preview could not be removed."
+	soll := "Saved as a new capture in the library: schnapp/" + pe.Pfad + " (the original file is unchanged) The old preview could not be removed."
 	if !erg.Warnung || erg.Hinweis != soll || erg.Datei != filepath.Base(filepath.FromSlash(pe.Pfad)) {
 		t.Errorf("Ergebnis %+v, Soll Warnung mit %q", erg, soll)
 	}

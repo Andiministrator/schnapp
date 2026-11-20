@@ -134,3 +134,17 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   nicht zu unterscheiden. Ein Öffnen trotz Überschreitung (Rückfrage oder Schalter) bleibt offen.
 - **Messungen (F-140):** `BenchmarkAufwand…` in `render/render_test.go` (Alltag, Füllen, knapp unter den drei
   Grenzen) laufen nur mit `-bench`.
+
+## Nachtrag 4 (20.11.2026): Arbeitsziel nach dem Speichern einer Datei von außen (F-155)
+
+- **Neues Arbeitsziel:** Das erste Speichern einer Datei außerhalb der Bibliothek legt eine neue Aufnahme an (die
+  Ausgangsdatei bleibt unberührt, ADR-0016). Diese Aufnahme ist danach das Arbeitsziel: Die Titelleiste nennt ihren
+  Namen, jedes weitere Strg+S und das Speichern beim Schließen schreiben in genau diese Datei, nie in eine dritte
+  (das war schon so, jetzt per Test `TestSpeichernDateiVonAussenArbeitsziel` festgehalten).
+- **Meldung:** „Saved as a new capture in the library: schnapp/JJJJ-MM/<Name>.png (the original file is unchanged)“ —
+  Pfad relativ zum Bilderordner, ohne Benutzernamen. Wer die Ausgangsdatei erneut öffnet, findet die Zeichnung dort
+  nicht; die Meldung sagt, wo sie liegt.
+- **Kein Pfad auf stdout:** Die Kommandozeile `schnapp DATEI` gibt wie bisher nichts auf stdout aus (ADR-0017: dort
+  steht nur der Pfad einer neuen Aufnahme vor dem Editor). Der Pfad der neuen Aufnahme entsteht erst beim Speichern,
+  mitten in der Sitzung; eine Ausgabe beim Schließen wäre ein neues Verhalten ohne Bedarf. Die Meldung geht bei
+  geschlossenem Fenster auf die Fehlerausgabe (Nachtrag 2).

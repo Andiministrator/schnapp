@@ -138,7 +138,9 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 		// Stand der neuen Aufnahme für das nächste Speichern; unlesbar bleibt der Nullwert (dann wiederum Ausweichen).
 		stand, _ = library.StandVon(filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad)))
 		name := filepath.Base(filepath.FromSlash(e.Pfad))
-		erg := ui.Gespeichert{Datei: name, Hinweis: fmt.Sprintf(i18n.T("Saved as a new capture: %s"), name)}
+		// Pfad relativ zum Bilderordner (schnapp/JJJJ-MM/…), ohne Benutzernamen (F-155).
+		ort := filepath.Base(b.Orte.Ablage) + "/" + e.Pfad
+		erg := ui.Gespeichert{Datei: name, Hinweis: fmt.Sprintf(i18n.T("Saved as a new capture in the library: %s (the original file is unchanged)"), ort)}
 		switch {
 		case konflikt:
 			erg.Hinweis = fmt.Sprintf(i18n.T("The file was changed elsewhere since it was opened; saved as a new capture: %s"), name)

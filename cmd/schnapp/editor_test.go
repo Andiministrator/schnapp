@@ -220,6 +220,62 @@ func TestSpeichernDateiVonAussen(t *testing.T) {
 	}
 }
 
+// F-155: Nach dem ersten Speichern einer Datei von außen ist die neue Bibliotheksdatei das Arbeitsziel: Der Titel
+// bekommt ihren Namen, die Meldung nennt den Ort (relativ zum Bilderordner, ohne Benutzernamen), und jedes weitere
+// Speichern schreibt in dieselbe Datei — keine zweite und dritte Aufnahme, die Ausgangsdatei bleibt unberührt.
+func TestSpeichernDateiVonAussenArbeitsziel(t *testing.T) {
+	b := testBibliothek(t)
+	aussen := filepath.Join(t.TempDir(), "fremd.png")
+	f, err := os.Create(aussen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := png.Encode(f, image.NewNRGBA(image.Rect(0, 0, 6, 4))); err != nil {
+		t.Fatal(err)
+	}
+	f.Close()
+	vorher, _ := os.ReadFile(aussen)
+	g, err := fileformat.Oeffne(aussen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	speichern := speichernIn(b, aussen, g, standVon(t, aussen))
+	mitKasten(t, g.Dokument)
+	erg, err := speichern(g.Dokument)
+	if err != nil {
+		t.Fatal(err)
+	}
+	idx, err := b.Laden()
+	if err != nil || len(idx.Eintraege) != 1 {
+		t.Fatalf("Index %+v, %v", idx.Eintraege, err)
+	}
+	pfad := idx.Eintraege[0].Pfad
+	if erg.Datei != filepath.Base(filepath.FromSlash(pfad)) {
+		t.Errorf("Titel %q, Soll Name der neuen Datei", erg.Datei)
+	}
+	soll := "Saved as a new capture in the library: schnapp/" + pfad + " (the original file is unchanged)"
+	if erg.Hinweis != soll || strings.Contains(erg.Hinweis, b.Orte.Ablage) || erg.Warnung {
+		t.Errorf("Hinweis %q (Soll %q, relativ, keine Warnung)", erg.Hinweis, soll)
+	}
+	for i := 0; i < 2; i++ { // zweites und drittes Strg+S
+		mitKasten(t, g.Dokument)
+		if erg, err := speichern(g.Dokument); err != nil || erg != (ui.Gespeichert{}) {
+			t.Fatalf("weiteres Speichern %d: %+v, %v", i, erg, err)
+		}
+	}
+	idx, err = b.Laden()
+	if err != nil || len(idx.Eintraege) != 1 || idx.Eintraege[0].Pfad != pfad {
+		t.Fatalf("Index %+v, %v (Soll: weiter genau die eine Aufnahme)", idx.Eintraege, err)
+	}
+	neu, err := fileformat.Oeffne(filepath.Join(b.Orte.Ablage, filepath.FromSlash(pfad)))
+	if err != nil || len(neu.Dokument.Objekte()) != 3 {
+		t.Errorf("neue Aufnahme: %v (Soll: 3 Objekte)", err)
+	}
+	if nachher, _ := os.ReadFile(aussen); string(nachher) != string(vorher) {
+		t.Error("Datei außerhalb verändert")
+	}
+}
+
 // Eine Aufnahme der Bibliothek wird an ihren Platz zurückgeschrieben, kein zweiter Eintrag.
 func TestSpeichernAufnahmeDerBibliothek(t *testing.T) {
 	b := testBibliothek(t)
@@ -491,7 +547,8 @@ func TestSpeichernUeberDemBudgetWarnt(t *testing.T) {
 	}
 	erg, err := speichernIn(b, aussen, g, standVon(t, aussen))(g.Dokument)
 	if err != nil || erg.Datei == "" || !erg.Warnung ||
-		erg.Hinweis != fmt.Sprintf("Saved as a new capture: %s", erg.Datei)+" "+warnung {
+		!strings.HasPrefix(erg.Hinweis, "Saved as a new capture in the library: schnapp/20") ||
+		!strings.HasSuffix(erg.Hinweis, erg.Datei+" (the original file is unchanged) "+warnung) {
 		t.Errorf("von außen: %+v, %v", erg, err)
 	}
 }
