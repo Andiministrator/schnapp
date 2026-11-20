@@ -332,6 +332,7 @@ func (b *schwaerzen) ausfuehren(d *Dokument) {
 	}
 	d.schwaerze(b.r, b.s)
 	d.geschwaerzt++
+	d.schwaerzStand++
 }
 
 func (b *schwaerzen) zuruecknehmen(d *Dokument) {
@@ -341,7 +342,13 @@ func (b *schwaerzen) zuruecknehmen(d *Dokument) {
 		copy(d.original.Pix[z:z+4*b.r.Dx()], b.vorher.Pix[q:q+4*b.r.Dx()])
 	}
 	d.geschwaerzt--
+	d.schwaerzStand++
 }
+
+// SchwaerzStand ändert sich mit jeder Schwärzung und jedem Zurücknehmen einer Schwärzung. Wer sich den Wert beim
+// Schreiben merkt, weiß später, ob seitdem geschwärzt wurde (F-169: eine längst geschwärzte Datei ist kein Grund zum
+// Entfernen).
+func (d *Dokument) SchwaerzStand() uint64 { return d.schwaerzStand }
 
 // Geschwaerzt meldet, ob seit dem Anlegen bzw. Laden mindestens eine Schwärzung wirksam ist (auch nach
 // VergissVerlauf). Der Aufrufer weiß damit, dass eine ältere Fassung der Datei ungeschwärzte Pixel enthalten kann.
@@ -366,8 +373,8 @@ func (d *Dokument) Schwaerzen(r image.Rectangle, s Schwaerzung) error {
 	if d.zug != nil {
 		return ErrZugLaeuft
 	}
-	if s.Rauschen < 0 || s.Rauschen > MaxRauschen {
-		return fmt.Errorf("dokument: Rauschen %d außerhalb 0..%d", s.Rauschen, MaxRauschen)
+	if s.Mosaik < 0 || s.Mosaik > MaxMosaik {
+		return fmt.Errorf("dokument: Mosaik %d außerhalb 0..%d", s.Mosaik, MaxMosaik)
 	}
 	if s.Block > 0 && s.Block < MinBlock {
 		return fmt.Errorf("dokument: Blockgröße %d kleiner als %d", s.Block, MinBlock)

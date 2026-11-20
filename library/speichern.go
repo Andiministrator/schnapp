@@ -178,26 +178,39 @@ func (b *Bibliothek) ersetzeImIndex(neu Eintrag) error {
 
 // Entfernen löscht die Aufnahme rel endgültig samt Vorschau und Index-Eintrag — nicht in den Papierkorb, denn dort läge
 // der Inhalt weiter. Gedacht für eine Datei, die nach dem Schwärzen nicht mehr aktualisiert werden konnte und noch den
-// ungeschwärzten Stand zeigt (ADR-0022 Punkt 4, F-126). Hat die Datei nicht mehr den Stand erwartet (von anderer Seite
-// geändert oder ersetzt), bleibt sie stehen: ErrGeaendert. Fehlt sie schon, werden nur Vorschau und Eintrag entfernt.
-func (b *Bibliothek) Entfernen(rel string, erwartet Stand) error {
+// ungeschwärzten Stand zeigt (ADR-0022 Punkt 4, F-126).
+//
+// geloescht meldet, ob diese Datei hier entfernt wurde; fehlte sie schon (verschoben, im Papierkorb), ist es false
+// ohne Fehler — der Aufrufer darf dann nicht „entfernt“ melden (F-167). Fehler:
+//   - ErrGeaendert: Die Datei hat nicht mehr den Stand erwartet (von anderer Seite geändert); sie bleibt, wie alles
+//     andere.
+//   - ErrVorschauAlt (mit ErrVorschau): Die Datei ist weg, aber das Vorschaubild ließ sich nicht entfernen und zeigt
+//     noch den alten Inhalt (F-164).
+//   - ErrIndex: Datei und Vorschau sind weg, nur der Index ist nicht nachgeführt (Abgleich holt das nach).
+//   - sonst: Die Datei ließ sich nicht entfernen.
+func (b *Bibliothek) Entfernen(rel string, erwartet Stand) (geloescht bool, fehler error) {
+	b.mu.Lock() // liest und schreibt den Index wie Speichern (F-165)
+	defer b.mu.Unlock()
 	if !(Eintrag{Pfad: rel, Breite: 1, Hoehe: 1}).gueltig() {
-		return fmt.Errorf("%w: %q", ErrPfad, rel)
+		return false, fmt.Errorf("%w: %q", ErrPfad, rel)
 	}
 	abs := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))
 	fi, err := os.Lstat(abs)
 	switch {
 	case err == nil:
 		if !fi.Mode().IsRegular() || standAus(fi) != erwartet {
-			return ErrGeaendert
+			return false, ErrGeaendert
 		}
 		if err := entferneDatei(abs); err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return err
+			return false, err
 		}
+		geloescht = true
 	case !errors.Is(err, fs.ErrNotExist):
-		return err
+		return false, err
 	}
-	folge := b.entferneVorschau(rel)
+	if err := b.entferneVorschau(rel); err != nil {
+		fehler = fmt.Errorf("%w: %w: %v", ErrVorschau, ErrVorschauAlt, err)
+	}
 	idx, err := b.lade()
 	if err == nil {
 		rest := idx.Eintraege[:0]
@@ -209,7 +222,7 @@ func (b *Bibliothek) Entfernen(rel string, erwartet Stand) error {
 		err = b.schreibeIndex(rest)
 	}
 	if err != nil {
-		folge = errors.Join(folge, fmt.Errorf("%w: %v", ErrIndex, err))
+		fehler = errors.Join(fehler, fmt.Errorf("%w: %v", ErrIndex, err))
 	}
-	return folge
+	return geloescht, fehler
 }

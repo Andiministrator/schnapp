@@ -68,9 +68,10 @@ the editor opens. Settings live in `~/.config/schnapp/settings.ini`, for example
 In the editor, tools: **V** select, **A** arrow (drag; **Shift** snaps to 45°; drag the middle handle to bend it),
 **R** box (**Shift**: square), **T** text (click, type, **Enter** confirms, **Shift+Enter** new line, **Esc** discards;
 double-click a text to edit it), **N** step number (counts up by itself), **B** redact (drag over an area: black),
-**P** pixelate (drag; blocks with random noise so the text cannot be recomputed). Redacting overwrites the pixels of
-the image itself: it can be undone until you save, after that it is final and no saved or exported file contains the
-hidden content. The *Colour* button cycles four colours and
+**P** pixelate (drag; a mosaic made only from the area's average colour and random noise, so it carries nothing of
+what was there). Both overwrite the pixels of the image itself: they can be undone until you save, after that they are
+final and no saved or exported file contains the hidden content. An image copied with **Ctrl+C** before redacting
+stays in the clipboard as it was. The *Colour* button cycles four colours and
 recolours the selected annotation. A drawing tool stays active; **Esc** steps back: text input → drag → selection →
 select tool. Drag an annotation or its handles to move, resize or bend it; it always stays partly inside the image.
 The mouse wheel zooms at the pointer; with the select tool dragging empty space moves the view, the middle button does

@@ -358,3 +358,15 @@ msgstr "Als neue Aufnahme in der Bibliothek gespeichert: %s. Die ursprüngliche 
 
 msgid "The other version may still show the unredacted content."
 msgstr "Die andere Fassung zeigt womöglich noch den ungeschwärzten Inhalt."
+
+msgid "Saved, but the old preview of this capture could not be removed and still shows the unredacted content."
+msgstr "Gespeichert, aber das alte Vorschaubild dieser Aufnahme ließ sich nicht entfernen und zeigt noch den ungeschwärzten Inhalt."
+
+msgid "The previous file could not be updated and was removed, but its preview could not be removed and still shows the unredacted content. Saved as a new capture: %s"
+msgstr "Die bisherige Datei ließ sich nicht aktualisieren und wurde entfernt, ihr Vorschaubild aber nicht; es zeigt noch den ungeschwärzten Inhalt. Als neue Aufnahme gespeichert: %s"
+
+msgid "The previous file %s was no longer there; wherever it is now, it still shows the unredacted content. Saved as a new capture: %s"
+msgstr "Die bisherige Datei %s war nicht mehr da; wo immer sie jetzt liegt, zeigt sie noch den ungeschwärzten Inhalt. Als neue Aufnahme gespeichert: %s"
+
+msgid "It still shows the unredacted content."
+msgstr "Es zeigt noch den ungeschwärzten Inhalt."

@@ -69,9 +69,10 @@ der Editor öffnet. Einstellungen stehen in `~/.config/schnapp/settings.ini`, et
 Im Editor, Werkzeuge: **V** Auswählen, **A** Pfeil (ziehen; **Umschalt** rastet auf 45°; mittleren Griff ziehen
 biegt ihn), **R** Kasten (**Umschalt**: Quadrat), **T** Text (klicken, tippen, **Enter** bestätigt, **Umschalt+Enter**
 neue Zeile, **Esc** verwirft; Doppelklick auf einen Text bearbeitet ihn), **N** Schritt-Nummer (zählt selbst hoch), **B** Schwärzen (über einen Bereich ziehen: schwarz),
-**P** Verpixeln (ziehen; Blöcke mit Zufallsrauschen, damit sich der Text nicht zurückrechnen lässt). Schwärzen
-überschreibt die Pixel des Bildes selbst: Bis zum Speichern lässt es sich zurücknehmen, danach ist es endgültig, und
-keine gespeicherte oder exportierte Datei enthält den verdeckten Inhalt. Der
+**P** Verpixeln (ziehen; ein Mosaik nur aus der Durchschnittsfarbe des Bereichs und Zufall, es trägt nichts vom
+Inhalt). Beides überschreibt die Pixel des Bildes selbst: Bis zum Speichern lässt es sich zurücknehmen, danach ist es
+endgültig, und keine gespeicherte oder exportierte Datei enthält den verdeckten Inhalt. Ein vor dem Schwärzen mit
+**Strg+C** kopiertes Bild bleibt, wie es war, in der Zwischenablage. Der
 Knopf *Farbe* schaltet reihum durch vier Farben und färbt die ausgewählte Beschriftung um. Ein Zeichenwerkzeug bleibt
 aktiv; **Esc** geht stufenweise zurück: Texteingabe → Ziehen → Auswahl → Auswählen. Beschriftung oder Griffe ziehen
 verschiebt, ändert die Größe oder biegt; sie bleibt dabei immer teilweise im Bild. Das Mausrad zoomt zum Zeiger; mit

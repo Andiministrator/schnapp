@@ -97,7 +97,11 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 	rel, inBibliothek := b.Relativ(abs)
 	inBibliothek = inBibliothek && !g.Fremd
 	meta := g.Meta
+	// Schwärzungsstand beim letzten gelungenen Schreiben: Nur was danach geschwärzt wurde, steht in der bisherigen
+	// Datei noch im Klartext (F-169).
+	geschriebenBei := g.Dokument.SchwaerzStand()
 	return func(d *document.Dokument) (ui.Gespeichert, error) {
+		neuGeschwaerzt := d.Geschwaerzt() && d.SchwaerzStand() != geschriebenBei
 		sichtbar, err := render.Bild(d)
 		if err != nil {
 			return ui.Gespeichert{}, speicherFehler(err)
@@ -113,9 +117,15 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 			}
 			switch {
 			case errors.Is(err, library.ErrVorschauAlt):
+				geschriebenBei = d.SchwaerzStand()
+				if neuGeschwaerzt {
+					return ui.Gespeichert{Hinweis: i18n.T("Saved, but the old preview of this capture could not be removed and still shows the unredacted content."),
+						Warnung: true}, nil
+				}
 				return ui.Gespeichert{Hinweis: i18n.T("Saved, but the old preview of this capture could not be removed."),
 					Warnung: true}, nil
 			case err == nil || errors.Is(err, library.ErrIndex) || errors.Is(err, library.ErrVorschau):
+				geschriebenBei = d.SchwaerzStand()
 				return ui.Gespeichert{}, nil
 			case errors.Is(err, library.ErrGeaendert):
 				// Ein anderer Editor oder ein anderes Programm hat die Datei inzwischen geschrieben: dessen Stand nicht
@@ -139,6 +149,7 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 			return ui.Gespeichert{}, speicherFehler(errors.Join(zurueck, err))
 		}
 		rel, inBibliothek = e.Pfad, true
+		geschriebenBei = d.SchwaerzStand()
 		// Stand der neuen Aufnahme für das nächste Speichern; unlesbar bleibt der Nullwert (dann wiederum Ausweichen).
 		stand, _ = library.StandVon(filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad)))
 		name := filepath.Base(filepath.FromSlash(e.Pfad))
@@ -148,18 +159,30 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 		switch {
 		case konflikt:
 			erg.Hinweis = fmt.Sprintf(i18n.T("The file was changed elsewhere since it was opened; saved as a new capture: %s"), name)
-			if d.Geschwaerzt() {
+			if neuGeschwaerzt {
 				// Die andere Fassung gehört nicht Schnapp allein: nicht entfernen, aber sagen (ADR-0022 Punkt 4).
 				erg.Hinweis += " " + i18n.T("The other version may still show the unredacted content.")
 			}
 			erg.Warnung = true
-		case versucht && d.Geschwaerzt():
-			// Die bisherige Datei zeigt noch den ungeschwärzten Stand. Die neue Aufnahme enthält alles außer den
-			// geschwärzten Pixeln: die alte endgültig entfernen (ADR-0022 Punkt 4, F-126), sonst laut warnen.
+		case versucht && neuGeschwaerzt:
+			// Die bisherige Datei zeigt noch, was seit ihrem Schreiben geschwärzt wurde. Die neue Aufnahme enthält alles
+			// außer den geschwärzten Pixeln: die alte endgültig entfernen (ADR-0022 Punkt 4, F-126), sonst laut warnen.
 			altOrt := filepath.Base(b.Orte.Ablage) + "/" + altRel
-			if fe := entfernen(b, altRel, altStand); fe == nil {
+			var geloescht bool
+			var fe error
+			if altRel != rel {
+				geloescht, fe = entfernen(b, altRel, altStand)
+			} // sonst trägt die neue Aufnahme den Namen der alten: Die alte war schon weg (nie die neue entfernen)
+			switch {
+			case geloescht && errors.Is(fe, library.ErrVorschauAlt):
+				// Datei weg, Vorschaubild nicht (F-164): das Bild nennen, nicht die Datei.
+				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file could not be updated and was removed, but its preview could not be removed and still shows the unredacted content. Saved as a new capture: %s"), ort)
+			case geloescht && (fe == nil || errors.Is(fe, library.ErrIndex)):
 				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file could not be updated and still showed the unredacted content, so it was removed. Saved as a new capture: %s"), ort)
-			} else {
+			case fe == nil:
+				// Die Datei fehlte schon (verschoben, Papierkorb): nicht „entfernt“ behaupten (F-167).
+				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file %s was no longer there; wherever it is now, it still shows the unredacted content. Saved as a new capture: %s"), altOrt, ort)
+			default:
 				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file could not be updated and still shows the unredacted content: %s. Delete it yourself. Saved as a new capture: %s"), altOrt, ort)
 			}
 			erg.Warnung = true
@@ -168,13 +191,16 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 			// (ADR-0020 Nachtrag 1: Ausweichen statt Verlust); ohne Schwärzung ist darin nichts Vertrauliches.
 			erg.Hinweis = fmt.Sprintf(i18n.T("The previous file could not be updated; saved as a new capture: %s"), name)
 			erg.Warnung = true
-		case d.Geschwaerzt():
+		case neuGeschwaerzt:
 			// Datei von außen: Sie bleibt, wie sie ist (ADR-0020), zeigt aber noch, was geschwärzt wurde.
 			erg.Hinweis = fmt.Sprintf(i18n.T("Saved as a new capture in the library: %s. The original file is unchanged and still shows the unredacted content."), ort)
 			erg.Warnung = true
 		}
 		if errors.Is(err, library.ErrVorschauAlt) {
 			erg.Hinweis += " " + i18n.T("The old preview could not be removed.")
+			if neuGeschwaerzt {
+				erg.Hinweis += " " + i18n.T("It still shows the unredacted content.")
+			}
 			erg.Warnung = true
 		}
 		return erg, nil

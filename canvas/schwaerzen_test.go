@@ -84,7 +84,7 @@ func TestVerpixelnWerkzeug(t *testing.T) {
 	vorher := s.D.Original()
 	s.SetzeWerkzeug(WerkzeugVerpixeln)
 	zieh(s, f(20, 20), f(80, 60))
-	if s.VerpixelnErsetzt() {
+	if s.NimmVerpixelnErsetzt() {
 		t.Error("großer Bereich als zu schmal gemeldet")
 	}
 	o := s.D.Original()
@@ -96,14 +96,17 @@ func TestVerpixelnWerkzeug(t *testing.T) {
 			}
 		}
 	}
-	// Der Verlauf hat in jedem Block verschiedene Farben; ein unverändertes Pixel wäre Zufall (Mittel plus Rauschen
+	// Der Verlauf hat in jedem Block verschiedene Farben; ein unverändertes Pixel wäre Zufall (Mosaikfarbe
 	// trifft es), mehr als eine Handvoll ein Fehler.
 	if gleich > 10 {
 		t.Errorf("%d Pixel unverändert", gleich)
 	}
 	zieh(s, f(100, 10), f(106, 90)) // 6 px breit: zu schmal zum Verpixeln, aber über MinObjekt
-	if !s.VerpixelnErsetzt() {
+	if !s.NimmVerpixelnErsetzt() {
 		t.Error("schmaler Bereich nicht als ersetzt gemeldet")
+	}
+	if s.NimmVerpixelnErsetzt() {
+		t.Error("Meldung „zu schmal“ kommt ein zweites Mal (F-170)")
 	}
 	if c := s.D.Original().NRGBAAt(103, 50); c != Schwaerzfarbe {
 		t.Errorf("schmaler Bereich nicht geschwärzt: %v", c)

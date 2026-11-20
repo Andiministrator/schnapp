@@ -3,56 +3,68 @@
 package document
 
 import (
+	"bytes"
 	"image"
 	"image/color"
 	"testing"
 )
 
-// ADR-0022 Punkt 2: Rauschen verschiebt jeden Block um höchstens ±Rauschen, Alpha bleibt; Werte außerhalb werden
-// abgelehnt.
-func TestVerpixelnMitRauschen(t *testing.T) {
+// ADR-0022 Nachtrag 1 (F-163): Das Mosaik hängt nur vom Mittel des ganzen Bereichs ab, nicht vom Inhalt. Zwei Bilder
+// mit gleichem Mittel und vertauschtem Muster ergeben bei gleichem Zufall dasselbe Ergebnis; jede Blockfarbe liegt
+// höchstens 2·Mosaik vom Mittel entfernt. Werte außerhalb 0..MaxMosaik werden abgelehnt.
+func TestMosaikOhneInhalt(t *testing.T) {
 	alt := zufall
 	defer func() { zufall = alt }()
-	// Bytes 0 → -r, 2r → +r: abwechselnd größte Verschiebung nach unten und oben.
-	n := 0
-	zufall = func(b []byte) {
-		for i := range b {
-			if n%2 == 0 {
-				b[i] = 0
-			} else {
-				b[i] = 2 * 24
-			}
-			n++
-		}
-	}
-	d := neu(t, 16, 8)
-	ohne := image.NewNRGBA(image.Rect(0, 0, 16, 8))
-	copy(ohne.Pix, d.Original().Pix)
-	d2 := neu(t, 16, 8)
-	if err := d2.Schwaerzen(image.Rect(0, 0, 16, 8), Schwaerzung{Block: 8}); err != nil {
-		t.Fatal(err)
-	}
-	if err := d.Schwaerzen(image.Rect(0, 0, 16, 8), Schwaerzung{Block: 8, Rauschen: 24}); err != nil {
-		t.Fatal(err)
-	}
-	mit, mittel := d.Original(), d2.Original()
-	for _, p := range []image.Point{{0, 0}, {8, 0}} {
-		a, b := mit.NRGBAAt(p.X, p.Y), mittel.NRGBAAt(p.X, p.Y)
-		if a == b {
-			t.Errorf("Block bei %v ohne Rauschen: %v", p, a)
-		}
-		for _, k := range [][2]uint8{{a.R, b.R}, {a.G, b.G}, {a.B, b.B}} {
-			if diff := int(k[0]) - int(k[1]); diff < -24 || diff > 24 {
-				t.Errorf("Block bei %v: Abweichung %d über 24", p, diff)
+	muster := func(tausch bool) *Dokument {
+		b := image.NewNRGBA(image.Rect(0, 0, 48, 24))
+		for y := 0; y < 24; y++ {
+			for x := 0; x < 48; x++ {
+				hell := (x/3+y/5)%2 == 0
+				if tausch {
+					hell = !hell
+				}
+				c := color.NRGBA{20, 20, 20, 255}
+				if hell {
+					c = color.NRGBA{220, 220, 220, 255}
+				}
+				b.SetNRGBA(x, y, c)
 			}
 		}
-		if a.A != b.A {
-			t.Errorf("Alpha bei %v verändert: %d statt %d", p, a.A, b.A)
+		d, err := Neu(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return d
+	}
+	ergebnis := func(d *Dokument) *image.NRGBA {
+		n := 0
+		zufall = func(m int) int { n++; return (n * 7) % m } // fest, aber je Block verschieden
+		if err := d.Schwaerzen(image.Rect(0, 0, 48, 24), Schwaerzung{Block: 8, Mosaik: 24}); err != nil {
+			t.Fatal(err)
+		}
+		return d.Original()
+	}
+	a, b := ergebnis(muster(false)), ergebnis(muster(true))
+	if !bytes.Equal(a.Pix, b.Pix) {
+		t.Error("Mosaik hängt vom Inhalt ab")
+	}
+	verschieden := map[color.NRGBA]bool{}
+	for y := 0; y < 24; y++ {
+		for x := 0; x < 48; x++ {
+			c := a.NRGBAAt(x, y)
+			verschieden[c] = true
+			if d := int(c.R) - 120; d < -48 || d > 48 || c.R != c.G || c.G != c.B {
+				t.Fatalf("Pixel (%d,%d) = %v, Soll Grau 120±48", x, y, c)
+			}
 		}
 	}
-	for _, r := range []int{-1, MaxRauschen + 1} {
-		if d.Schwaerzen(image.Rect(0, 0, 16, 8), Schwaerzung{Block: 8, Rauschen: r}) == nil {
-			t.Errorf("Rauschen %d ohne Fehler", r)
+	if len(verschieden) < 2 {
+		t.Error("Mosaik ohne Blockstruktur")
+	}
+	d := muster(false)
+	for _, m := range []int{-1, MaxMosaik + 1} {
+		if d.Schwaerzen(image.Rect(0, 0, 16, 8), Schwaerzung{Block: 8, Mosaik: m}) == nil {
+			t.Errorf("Mosaik %d ohne Fehler", m)
 		}
 	}
 }

@@ -23,13 +23,14 @@ const (
 	WerkzeugText                       // Klick setzt ein Textfeld
 	WerkzeugNummer                     // Klick setzt eine Schritt-Nummer
 	WerkzeugSchwaerzen                 // Rahmen ziehen: Pixel schwarz überschreiben (ADR-0022)
-	WerkzeugVerpixeln                  // Rahmen ziehen: Pixel verpixeln mit Rauschen (ADR-0022)
+	WerkzeugVerpixeln                  // Rahmen ziehen: Mosaik ohne Bezug zum Inhalt (ADR-0022 Nachtrag 1)
 )
 
-// Werte des Verpixelns (ADR-0022 Punkt 2), Größen in Pixeln des Originals.
+// Werte des Verpixelns (ADR-0022 Nachtrag 1), Größen in Pixeln des Originals. Die Blockgröße ist nur noch Optik: Die
+// Blockfarben hängen nicht vom Inhalt ab.
 const (
-	VerpixelnBlock    = 12
-	VerpixelnRauschen = 24
+	VerpixelnBlock  = 12
+	VerpixelnMosaik = 24
 )
 
 // Schwaerzfarbe füllt beim Schwärzen.
@@ -366,9 +367,9 @@ func (s *Sitzung) schwaerzeRahmen() {
 		kurz := min(px.Dx(), px.Dy())
 		switch {
 		case kurz >= VerpixelnBlock:
-			sw = document.Schwaerzung{Block: VerpixelnBlock, Rauschen: VerpixelnRauschen}
+			sw = document.Schwaerzung{Block: VerpixelnBlock, Mosaik: VerpixelnMosaik}
 		case kurz >= document.MinBlock:
-			sw = document.Schwaerzung{Block: document.MinBlock, Rauschen: VerpixelnRauschen}
+			sw = document.Schwaerzung{Block: document.MinBlock, Mosaik: VerpixelnMosaik}
 		default:
 			s.ersatzSchwarz = true // zu schmal zum Verpixeln: schwärzen (ADR-0022 Punkt 2)
 		}
@@ -378,8 +379,13 @@ func (s *Sitzung) schwaerzeRahmen() {
 	}
 }
 
-// VerpixelnErsetzt meldet, dass der letzte Rahmen zu schmal zum Verpixeln war und geschwärzt wurde.
-func (s *Sitzung) VerpixelnErsetzt() bool { return s.ersatzSchwarz }
+// NimmVerpixelnErsetzt meldet einmal, dass der letzte Rahmen zu schmal zum Verpixeln war und geschwärzt wurde; danach
+// ist die Marke gelöscht (sonst zeigte jedes weitere Loslassen die Meldung erneut, F-170).
+func (s *Sitzung) NimmVerpixelnErsetzt() bool {
+	e := s.ersatzSchwarz
+	s.ersatzSchwarz = false
+	return e
+}
 
 // BildAenderung zählt die Änderungen an den Pixeln des Originals durch Schwärzen; die Oberfläche baut ihr Bild neu,
 // wenn sich der Wert ändert.

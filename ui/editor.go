@@ -471,7 +471,7 @@ func (e *editor) zeiger(gtx layout.Context) {
 			e.s.Ziehen(p)
 		case pointer.Release:
 			e.s.Loslassen(p)
-			if e.s.VerpixelnErsetzt() {
+			if e.s.NimmVerpixelnErsetzt() {
 				e.melde(i18n.T("Too narrow to pixelate; the area was blacked out instead."), false)
 			}
 			diagnoseEditor("Loslassen: Auswahl %d, geändert %v", e.s.Auswahl, e.s.Geaendert())

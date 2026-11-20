@@ -9,6 +9,7 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	"math/big"
 	"sort"
 )
 
@@ -39,7 +40,8 @@ type Dokument struct {
 	zug        *zug
 	// geschwaerzt zählt die wirksamen Schwärzungen seit Neu bzw. dem Laden (Rückgängig zieht ab); VergissVerlauf
 	// lässt ihn stehen (ADR-0022 Punkt 4).
-	geschwaerzt int
+	geschwaerzt   int
+	schwaerzStand uint64 // zählt Schwärzen und Zurücknehmen (SchwaerzStand)
 }
 
 // Fehler der Änderungen.
@@ -281,16 +283,24 @@ type Schwaerzung struct {
 	// Block > 0 verpixelt mit Blöcken dieser Kantenlänge (Mittelwert je Block); sonst wird mit Farbe gefüllt.
 	Block int
 	Farbe color.NRGBA
-	// Rauschen > 0 verschiebt beim Verpixeln jeden Farbkanal eines Blocks zufällig um bis zu ±Rauschen (ADR-0022):
-	// Die Blockfarben stimmen dann nicht mehr mit einem nachgerechneten Kandidatentext überein (Angriffe wie Depix).
-	Rauschen int
+	// Mosaik > 0 verpixelt ohne Bezug zum Inhalt (ADR-0022 Nachtrag 1): Jeder Block bekommt das Mittel des ganzen
+	// Bereichs, verschoben um einen Zufallswert in [-Mosaik, Mosaik] (für R, G und B derselbe, damit es nach Mosaik
+	// aussieht und nicht nach Konfetti). Das Blockmittel je Block (Mosaik = 0) lässt sich bei mittlerer Schriftgröße
+	// zurückrechnen, auch mit Rauschen je Block (Kritik Fable zu Karte #37, F-163).
+	Mosaik int
 }
 
-// MaxRauschen begrenzt Schwaerzung.Rauschen.
-const MaxRauschen = 64
+// MaxMosaik begrenzt Schwaerzung.Mosaik.
+const MaxMosaik = 64
 
-// zufall liefert Zufallsbytes für das Rauschen; Tests ersetzen ihn.
-var zufall = func(b []byte) { _, _ = rand.Read(b) }
+// zufall liefert eine gleichverteilte Zahl in [0, n); Tests ersetzen ihn.
+var zufall = func(n int) int {
+	v, err := rand.Int(rand.Reader, big.NewInt(int64(n)))
+	if err != nil {
+		panic(err) // crypto/rand scheitert unter Linux nicht (getrandom); ohne Zufall kein sicheres Mosaik
+	}
+	return int(v.Int64())
+}
 
 // MinBlock ist die kleinste Blockgröße beim Verpixeln; kleinere Blöcke lassen Text lesbar.
 const MinBlock = 8
@@ -299,16 +309,23 @@ const MinBlock = 8
 func (d *Dokument) schwaerze(r image.Rectangle, s Schwaerzung) {
 	o := d.original
 	if s.Block <= 0 {
-		for y := r.Min.Y; y < r.Max.Y; y++ {
-			for x := r.Min.X; x < r.Max.X; x++ {
-				o.SetNRGBA(x, y, s.Farbe)
-			}
-		}
+		fuelle(o, r, s.Farbe)
 		return
+	}
+	var gesamt color.NRGBA
+	if s.Mosaik > 0 {
+		gesamt = mittel(o, r)
+		// Auch das Gesamtmittel trägt etwas Information (Tintenmenge); einmal verschieben (Schritt 2 unten je Block).
+		gesamt = verschoben(gesamt, zufall(2*s.Mosaik+1)-s.Mosaik)
 	}
 	for _, ys := range bloecke(r.Min.Y, r.Max.Y, s.Block) {
 		for _, xs := range bloecke(r.Min.X, r.Max.X, s.Block) {
 			blk := image.Rect(xs[0], ys[0], xs[1], ys[1])
+			if s.Mosaik > 0 {
+				c := verschoben(gesamt, zufall(2*s.Mosaik+1)-s.Mosaik)
+				fuelle(o, blk, c)
+				continue
+			}
 			var sum [4]int
 			for y := blk.Min.Y; y < blk.Max.Y; y++ {
 				for x := blk.Min.X; x < blk.Max.X; x++ {
@@ -319,27 +336,39 @@ func (d *Dokument) schwaerze(r image.Rectangle, s Schwaerzung) {
 				}
 			}
 			n := blk.Dx() * blk.Dy()
-			c := color.NRGBA{uint8(sum[0] / n), uint8(sum[1] / n), uint8(sum[2] / n), uint8(sum[3] / n)}
-			if s.Rauschen > 0 {
-				c = verrauscht(c, s.Rauschen)
-			}
-			for y := blk.Min.Y; y < blk.Max.Y; y++ {
-				for x := blk.Min.X; x < blk.Max.X; x++ {
-					o.SetNRGBA(x, y, c)
-				}
-			}
+			fuelle(o, blk, color.NRGBA{uint8(sum[0] / n), uint8(sum[1] / n), uint8(sum[2] / n), uint8(sum[3] / n)})
 		}
 	}
 }
 
-// verrauscht verschiebt R, G und B von c je um einen Zufallswert in [-r, r] (Alpha bleibt).
-func verrauscht(c color.NRGBA, r int) color.NRGBA {
-	var z [3]byte
-	zufall(z[:])
-	k := []*uint8{&c.R, &c.G, &c.B}
-	for i, p := range k {
-		v := int(*p) + int(z[i])%(2*r+1) - r
-		*p = uint8(max(0, min(255, v)))
+// mittel liefert die mittlere Farbe von r in o.
+func mittel(o *image.NRGBA, r image.Rectangle) color.NRGBA {
+	var sum [4]int
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		for x := r.Min.X; x < r.Max.X; x++ {
+			i := o.PixOffset(x, y)
+			for k := 0; k < 4; k++ {
+				sum[k] += int(o.Pix[i+k])
+			}
+		}
+	}
+	n := r.Dx() * r.Dy()
+	return color.NRGBA{uint8(sum[0] / n), uint8(sum[1] / n), uint8(sum[2] / n), uint8(sum[3] / n)}
+}
+
+// fuelle setzt alle Pixel von r in o auf c.
+func fuelle(o *image.NRGBA, r image.Rectangle, c color.NRGBA) {
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		for x := r.Min.X; x < r.Max.X; x++ {
+			o.SetNRGBA(x, y, c)
+		}
+	}
+}
+
+// verschoben addiert v zu R, G und B von c, begrenzt auf 0..255 (Alpha bleibt).
+func verschoben(c color.NRGBA, v int) color.NRGBA {
+	for _, p := range []*uint8{&c.R, &c.G, &c.B} {
+		*p = uint8(max(0, min(255, int(*p)+v)))
 	}
 	return c
 }

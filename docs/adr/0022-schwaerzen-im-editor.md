@@ -19,7 +19,7 @@ ihn mit demselben Raster und vergleichen die Blockfarben.
    (`canvas.MinObjekt`) passiert nichts. Der Rahmen wird in der Ansicht gezogen und nach außen auf ganze Pixel des
    Originals gerundet, damit kein angeschnittenes Pixel stehen bleibt; liegt ein Stauch-Streifen darin, wird der
    verborgene Teil mitgeschwärzt.
-2. **Verpixeln mit Rauschen.** Jeder Block bekommt sein Mittel plus ein zufälliges Rauschen je Farbkanal (±24, aus
+2. **Verpixeln mit Rauschen.** *(Ersetzt durch Nachtrag 1: Mosaik ohne Inhalt.)* Jeder Block bekommt sein Mittel plus ein zufälliges Rauschen je Farbkanal (±24, aus
    `crypto/rand`, auf 0–255 begrenzt); die Blockgröße ist 12 Pixel, bei kleinen Bereichen mindestens `MinBlock`.
    Damit stimmen die Blockfarben nicht mehr mit einem nachgerechneten Kandidaten überein. Ist der Bereich schmaler als
    `MinBlock`, wird geschwärzt statt verpixelt, mit Hinweis in der Statusleiste.
@@ -44,3 +44,23 @@ ihn mit demselben Raster und vergleichen die Blockfarben.
   verschlüsselt den Datenträger.
 - Eine Arbeitsdatei, die vor dem Schwärzen schon weitergegeben oder anderswo kopiert wurde, bleibt ungeschwärzt;
   Schnapp kann nur die eigenen Dateien schützen.
+
+## Nachtrag 1 (20.11.2026): Verpixeln ohne Inhalt, Nacharbeit aus der Kritik (F-163 bis F-170)
+
+**Status:** Akzeptiert (Claude Opus 5.5, nach dem Kritiker-Lauf Fable zu Karte #37).
+
+- **Punkt 2 ersetzt.** Blockmittel plus Rauschen ±24 hielt nicht: Mit Toleranzvergleich war eine vierstellige
+  Ziffernfolge ab etwa 20×28 Pixeln Zifferngröße in 193 von 200 Läufen eindeutig rekonstruierbar (F-163). Verpixeln
+  ist jetzt ein **Mosaik ohne Bezug zum Inhalt**: Jeder Block bekommt das Mittel des ganzen Bereichs, einmal und je
+  Block um einen Zufallswert in [−24, 24] verschoben (für R, G und B derselbe Wert, gleichverteilt aus `crypto/rand`).
+  Zwei Bereiche mit gleichem Mittel ergeben bei gleichem Zufall dasselbe Mosaik — es verrät nur noch die ungefähre
+  mittlere Farbe. Die Blockgröße (12, mindestens 8) ist nur noch Optik.
+- **Punkt 4 genauer.** Entfernt wird die alte Datei nur, wenn seit ihrem letzten gelungenen Schreiben geschwärzt wurde
+  (`Dokument.SchwaerzStand`, F-169). `library.Entfernen` sperrt wie `Speichern` (F-165), meldet, ob es die Datei selbst
+  entfernt hat, und unterscheidet „Datei bleibt“ von „nur die Vorschau bleibt“ (F-164); eine schon fehlende Datei
+  heißt in der Meldung „nicht mehr da“, nicht „entfernt“ (F-167). Trägt die neue Aufnahme den Namen der alten (die alte
+  war schon weg), wird nichts entfernt. Bleibt beim Zurückschreiben die alte Vorschau stehen, sagt die Warnung nach
+  einer Schwärzung, dass sie den Inhalt noch zeigt (F-166).
+- **Zuschnitt:** Der Rahmen bleibt auf die Ansicht begrenzt; was jenseits der Zuschnittkante liegt, steht weiter im
+  Original (Zuschneiden ist nicht zerstörend, ADR-0008). Wie das mit dem Schwärzen zusammengeht, entscheidet Karte #38.
+- Ein vor dem Schwärzen mit Strg+C kopiertes Bild bleibt, wie es war, in der Zwischenablage (README).
