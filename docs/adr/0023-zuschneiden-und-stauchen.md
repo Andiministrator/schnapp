@@ -90,3 +90,11 @@ HiDPI-Aufnahmen und kleinem Zoom erkennbar bleibt. Die kurze Seite ist die der A
 beides kann den Faktor ändern. Renderer, SVG-Export (`<defs>`-Band) und Editor holen ihn aus `Dokument.ZackenFaktor`;
 der Zwischenspeicher des Editors ist über die Ansichtsgröße schon richtig geschlüsselt. Die Trefferweite von
 `EntferneNaht` wächst mit.
+
+## Nachtrag 2 (20.11.2026): Zackenfaktor nach dem Original, nicht nach der Ansicht (F-219)
+Der Faktor aus Nachtrag 1 gilt für die Größe des **Originals**, nicht der Ansicht nach Zuschnitt und Stauchen. Anlass:
+Eine 4K-Aufnahme hat genau 2160 Pixel kurze Seite; jedes Stauchen in dieser Richtung — also gerade der Fall, in dem
+Zacken entstehen — drückte den Faktor nach der Ansicht auf 1 (Probelauf Karte #92: 13 statt 26 Pixel Bandhöhe). Der
+Faktor misst die Pixeldichte der Aufnahme, und die ändert sich durch Schneiden nicht. Er bleibt damit für ein Dokument
+fest; Renderer, SVG-Export, Editor und Trefferweite holen ihn weiter aus `Dokument.ZackenFaktor`. Entschieden von Claude
+im Rahmen von F-173 (leicht umkehrbar, Andi informiert).

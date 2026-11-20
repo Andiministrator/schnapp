@@ -204,6 +204,18 @@ func TestStauchenAbgelehnt(t *testing.T) {
 	if s.NimmAnsichtMeldung() != AnsichtKeine {
 		t.Error("Meldung nicht einmalig")
 	}
+	// Ein Rest unter MinObjekt (hier 4 von 100 Zeilen bei Zoom 1) zählt wie nichts (Echtlauf #92); 6 Zeilen bleiben.
+	zieh(s, f(5, 2), f(6, 98))
+	if m := s.NimmAnsichtMeldung(); m != AnsichtLeer || s.Geaendert() {
+		t.Errorf("Rest 4: Meldung %v, geändert %v", m, s.Geaendert())
+	}
+	zieh(s, f(5, 3), f(6, 97))
+	if m := s.NimmAnsichtMeldung(); m == AnsichtLeer || !s.Geaendert() {
+		t.Errorf("Rest 6: Meldung %v, geändert %v", m, s.Geaendert())
+	}
+	if err := s.D.Rueckgaengig(); err != nil {
+		t.Fatal(err)
+	}
 
 	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 400, 400)))
 	if err != nil {

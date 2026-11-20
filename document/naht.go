@@ -35,13 +35,14 @@ var (
 // ZackenReferenz ist die kurze Seite der Ansicht, bis zu der die Zackenkante in den Grundmaßen bleibt (Faktor 1).
 const ZackenReferenz = 1080
 
-// ZackenFaktor ist der ganzzahlige Faktor der Zackenmaße für eine Ansicht der Größe g: max(1, kurze Seite / 1080),
-// ganzzahlig geteilt (F-173). So bleibt die Kante bei HiDPI-Aufnahmen und kleinem Zoom erkennbar. Er hängt nur von der
-// Ansichtsgröße ab; Zwischenspeicher, die diese Größe als Schlüssel führen, sind damit schon richtig geschlüsselt.
+// ZackenFaktor ist der ganzzahlige Faktor der Zackenmaße für ein Bild der Größe g: max(1, kurze Seite / 1080),
+// ganzzahlig geteilt (F-173). So bleibt die Kante bei HiDPI-Aufnahmen und kleinem Zoom erkennbar.
 func ZackenFaktor(g image.Point) int { return max(1, min(g.X, g.Y)/ZackenReferenz) }
 
-// ZackenFaktor ist ZackenFaktor(d.Groesse()).
-func (d *Dokument) ZackenFaktor() int { return ZackenFaktor(d.Groesse()) }
+// ZackenFaktor ist ZackenFaktor der Größe des Originals, nicht der Ansicht (ADR-0023 Nachtrag 2): Eine 4K-Aufnahme hat
+// genau 2160 Pixel kurze Seite, jedes Stauchen in dieser Richtung drückte den Faktor nach der Ansicht auf 1 — gerade
+// dort, wo Zacken entstehen. Der Faktor bleibt damit für ein Dokument fest.
+func (d *Dokument) ZackenFaktor() int { return ZackenFaktor(d.original.Rect.Size()) }
 
 // Naehte liefert die Stauch-Nähte der Ansicht, je Achse nach Lage sortiert. Eine Naht am Rand der Ansicht (der
 // Streifen schließt an den Zuschnitt an) zählt nicht, mehrere Streifen an derselben Stelle ergeben eine Naht.

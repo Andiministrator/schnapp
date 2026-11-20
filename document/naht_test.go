@@ -182,12 +182,19 @@ func TestZackenFaktor(t *testing.T) {
 	if f := d.ZackenFaktor(); f != 2 {
 		t.Errorf("Dokument 3840×2160: %d, Soll 2", f)
 	}
-	// Zuschnitt ändert die kurze Seite und damit den Faktor.
+	// Stauchen und Zuschnitt ändern den Faktor nicht: Er gilt für das Original (ADR-0023 Nachtrag 2, Echtlauf #92 —
+	// nach der Ansicht fiel eine gestauchte 4K-Aufnahme auf Faktor 1).
+	if err := d.SetzeStreifen([]Streifen{{Zeilen: true, Von: 800, Bis: 1200}}); err != nil {
+		t.Fatal(err)
+	}
+	if f := d.ZackenFaktor(); f != 2 {
+		t.Errorf("4K nach Stauchen auf Höhe 1760: %d, Soll 2", f)
+	}
 	if err := d.SetzeZuschnitt(image.Rect(0, 0, 3840, 1000)); err != nil {
 		t.Fatal(err)
 	}
-	if f := d.ZackenFaktor(); f != 1 {
-		t.Errorf("nach Zuschnitt auf Höhe 1000: %d, Soll 1", f)
+	if f := d.ZackenFaktor(); f != 2 {
+		t.Errorf("nach Zuschnitt auf Höhe 1000: %d, Soll 2", f)
 	}
 }
 

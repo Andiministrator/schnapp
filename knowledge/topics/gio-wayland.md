@@ -99,7 +99,12 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
   - **`Invalidate` verpufft während eines Frames:** `Window.Invalidate` tut nichts, solange das Fenster gerade ein
     Ereignis bearbeitet (`mayInvalidate` false, `app/window.go`). Wer im eigenen Frame etwas auslöst, das einen
     weiteren Frame braucht, fordert ihn mit `gtx.Execute(op.InvalidateCmd{})` an (Overlay: Schließen des
-    auslösenden Fensters, F-79, Kritiker Sitzungs-QA Sprint 4).
+    auslösenden Fensters, F-79, Kritiker Sitzungs-QA Sprint 4). Das gilt auch **nach** `ev.Frame` bis zum nächsten
+    `Event()`-Aufruf mit leerer Schlange: Wer die Antwort einer Goroutine erst nach dem Bild abholt, das deren
+    `Invalidate` angestoßen hat, und dann `Invalidate` ruft, bekommt kein Bild — abholen am **Anfang** des Frames
+    (F-216). Und was im Frame **nach** dem Zeichnen eines Widgets geändert wird (Zeigerereignisse der Leinwand ändern
+    den Zustand der schon gezeichneten Leiste), braucht ein `op.InvalidateCmd`, sonst zeigt die Leiste den alten Stand
+    (F-217). Beide fielen erst im Probelauf mit Fotos auf, nicht in Tests.
   - **Tasten kommen im Fenster mit dem Tastaturfokus an,** nicht in dem unter dem Zeiger. Bei mehreren Vollbild-
     Fenstern bezieht sich Enter deshalb auf den gemeinsamen „aktiven Monitor“ (F-80); Rechtsklick bricht ab, falls
     kein Fenster den Fokus hat (F-81).

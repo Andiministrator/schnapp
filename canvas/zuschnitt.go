@@ -186,7 +186,10 @@ func (s *Sitzung) staucheRahmen() {
 		return
 	}
 	g := s.D.Groesse()
-	if laenge := map[bool]int{false: g.X, true: g.Y}[zeilen]; von == 0 && bis == laenge {
+	// Bleibt weniger als die Mindestgröße eines Rahmens übrig, gilt das wie „nichts übrig“: Ein Zug kann nur im Bild
+	// beginnen (F-150) und trifft die erste Zeile selten genau; ein Rest von 4 Pixeln war kein gewolltes Ergebnis
+	// (Echtlauf #92).
+	if laenge := map[bool]int{false: g.X, true: g.Y}[zeilen]; float64(laenge-(bis-von)) < MinObjekt/s.Abb.Zoom {
 		s.ansichtMeldung = AnsichtLeer
 		return
 	}

@@ -247,7 +247,6 @@ func (e *editor) laufen() error {
 			e.melde(i18n.T("Could not copy: no clipboard is available."), true) // statt „Copied“ (F-177)
 			e.w.Invalidate()
 		}
-		e.exportAbholen()
 		if e.wache.Angekommen() && !e.erzwungen {
 			e.nachSignal()
 		}
@@ -520,6 +519,11 @@ func (e *editor) grenzText(a canvas.Ablehnung) string {
 }
 
 func (e *editor) frame(gtx layout.Context) {
+	// Die Antwort des Dateidialogs wird zu Beginn des Bildes abgeholt, das die Goroutine per Invalidate angestoßen hat,
+	// damit dieses Bild sie schon zeigt. Nach dem Bild wäre es zu spät: Gio verwirft ein Invalidate, bis die
+	// Ereignisschlange leer ist (app.Window.mayInvalidate) — „Dateidialog geöffnet“ und der graue Knopf blieben bis
+	// zum nächsten Ereignis stehen (Echtlauf #92).
+	e.exportAbholen()
 	e.tasten(gtx)
 	e.knoepfeAuswerten(gtx)
 	paint.Fill(gtx.Ops, farbeFenster)
@@ -649,6 +653,9 @@ func (e *editor) zeiger(gtx layout.Context) {
 		if !ok {
 			return
 		}
+		// Leiste und Statuszeile sind in diesem Bild schon gezeichnet; ein Folgebild zeigt, was der Zeiger an ihnen
+		// ändert (etwa „Rückgängig“ nach einem Klick, der einen Zug abbricht — Echtlauf #92).
+		gtx.Execute(op.InvalidateCmd{})
 		pe, ok := ev.(pointer.Event)
 		if !ok {
 			continue
@@ -1225,7 +1232,7 @@ func (e *editor) zeichneStatus(gtx layout.Context, hoehe int) {
 	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(image.Rect(0, mx.Y-hoehe, mx.X, mx.Y)).Op())
 	g := e.s.D.Groesse()
 	rechts := fmt.Sprintf("%d × %d · %d %%", g.X, g.Y, int(math.Round(e.s.Abb.Zoom*100)))
-	e.statusText(gtx, rechts, farbeNebentext, mx.Y-hoehe, false)
+	rb := e.statusText(gtx, rechts, farbeNebentext, mx.Y-hoehe, false, mx.X)
 	// Eine frische Meldung geht vor dem Bedienhinweis des Werkzeugs, danach zeigt die Leiste wieder den Hinweis (F-151).
 	links, fehler, meldung := canvas.StatusZeile(&e.meldung, e.s.D.Stand(), e.s.Werkzeug, e.hinweis(), e.s.TextLaeuft())
 	c := farbeNebentext
@@ -1236,7 +1243,9 @@ func (e *editor) zeichneStatus(gtx layout.Context, hoehe int) {
 		c = farbeGruenText
 	}
 	if links != "" {
-		e.statusText(gtx, links, c, mx.Y-hoehe, true)
+		// Links bleibt Platz bis vor die Größenangabe; ein längerer Hinweis wird im schmalen Fenster gekürzt, statt
+		// über die Größenangabe zu laufen (Echtlauf #92).
+		e.statusText(gtx, links, c, mx.Y-hoehe, true, mx.X-rb-gtx.Dp(36))
 	}
 }
 
@@ -1274,12 +1283,15 @@ func (e *editor) hinweis() string {
 	return ""
 }
 
-func (e *editor) statusText(gtx layout.Context, s string, c color.NRGBA, y int, links bool) {
+// statusText schreibt s einzeilig in die Statusleiste (links oder rechtsbündig), höchstens breite Pixel breit, und
+// liefert die gezeichnete Breite.
+func (e *editor) statusText(gtx layout.Context, s string, c color.NRGBA, y int, links bool, breite int) int {
 	lbl := material.Label(e.thema, unit.Sp(12), s)
 	lbl.Color = c
-	lbl.MaxLines = 1
+	lbl.MaxLines = 1 // kürzt mit „…“, wenn breite nicht reicht
 	g := gtx
 	g.Constraints.Min = image.Point{}
+	g.Constraints.Max.X = max(0, breite)
 	m := op.Record(gtx.Ops)
 	dims := lbl.Layout(g)
 	call := m.Stop()
@@ -1290,4 +1302,5 @@ func (e *editor) statusText(gtx layout.Context, s string, c color.NRGBA, y int, 
 	t := op.Offset(image.Pt(x, y+(gtx.Dp(28)-dims.Size.Y)/2)).Push(gtx.Ops)
 	call.Add(gtx.Ops)
 	t.Pop()
+	return dims.Size.X
 }
