@@ -387,8 +387,8 @@ msgstr "Stauchen"
 msgid "Drag a frame to crop. Double-click: whole image again. Cropped parts stay in the working file; redact what must go."
 msgstr "Rahmen ziehen zum Zuschneiden. Doppelklick: wieder das ganze Bild. Weggeschnittenes bleibt in der Arbeitsdatei; Heikles schwärzen."
 
-msgid "Drag across the part to cut out: vertically for rows, horizontally for columns. Double-click a seam to restore it."
-msgstr "Über den Teil ziehen, der wegfallen soll: senkrecht für Zeilen, waagrecht für Spalten. Doppelklick auf eine Naht holt ihn zurück."
+msgid "Drag across the part to cut out: vertically for rows, horizontally for columns. Double-click a seam to restore it. Cut-out parts stay in the working file; redact what must go."
+msgstr "Über den Teil ziehen, der wegfallen soll: senkrecht für Zeilen, waagrecht für Spalten. Doppelklick auf eine Naht holt ihn zurück. Herausgenommenes bleibt in der Arbeitsdatei; Heikles schwärzen."
 
 msgid "%d annotation is now hidden outside the visible area; it returns when the crop or cut is removed."
 msgid_plural "%d annotations are now hidden outside the visible area; they return when the crop or cut is removed."

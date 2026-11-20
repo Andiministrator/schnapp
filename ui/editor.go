@@ -1070,7 +1070,8 @@ func (e *editor) hinweis() string {
 		// Zuschneiden ist kein Schwärzen: Das Weggeschnittene bleibt im Original der Arbeitsdatei (ADR-0023 Punkt 8).
 		return i18n.T("Drag a frame to crop. Double-click: whole image again. Cropped parts stay in the working file; redact what must go.")
 	case canvas.WerkzeugStauchen:
-		return i18n.T("Drag across the part to cut out: vertically for rows, horizontally for columns. Double-click a seam to restore it.")
+		// Wie beim Zuschneiden bleibt das Herausgenommene im Original der Arbeitsdatei (ADR-0023 Punkt 8, F-185).
+		return i18n.T("Drag across the part to cut out: vertically for rows, horizontally for columns. Double-click a seam to restore it. Cut-out parts stay in the working file; redact what must go.")
 	}
 	return ""
 }

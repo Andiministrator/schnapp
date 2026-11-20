@@ -21,7 +21,9 @@ zusammengedrückt, der SVG-Export ließ sie weg (F-66) — drei Ausgänge, zwei 
    Rahmen; **beim Loslassen** gilt er (wie Schwärzen, ADR-0022 — kein Enter nötig), **Esc** während des Ziehens bricht
    ab. Unter der Mindestgröße (`canvas.MinObjekt`) passiert nichts. Der Rahmen wird auf ganze Ansichtspixel gerundet
    und ins Original umgerechnet (letztes enthaltenes Pixel + 1 als rechte/untere Kante, so endet ein Zuschnitt nie
-   mitten in einem Streifen). Zuschneiden verkleinert immer innerhalb der aktuellen Ansicht.
+   mitten in einem Streifen). Zuschneiden verkleinert immer innerhalb der aktuellen Ansicht. Ein Rahmen über die
+   ganze Ansicht tut nichts — geprüft an der Ansicht, nicht am umgerechneten Zuschnitt, der bei einem Streifen am Rand
+   abweichen kann (F-182).
 2. **Zuschnitt aufheben: Doppelklick mit dem Werkzeug Zuschneiden** zeigt wieder das ganze Original (ein
    Rückgängig-Schritt). Die Statusleiste nennt das. Rückgängig nimmt jeden einzelnen Zuschnitt zurück.
 3. **Stauchen: Werkzeug mit Kürzel X** („Cut out“). Man zieht quer über den Teil, der herausfallen soll; die
@@ -38,24 +40,37 @@ zusammengedrückt, der SVG-Export ließ sie weg (F-66) — drei Ausgänge, zwei 
 6. **Zackenkante nur an Stauch-Nähten**, nicht an Zuschnittkanten: Ein Zuschnitt ist ein gewollter Rahmen, eine
    Stauch-Naht verbirgt etwas mitten im Bild — nur dort muss der Betrachter sehen, dass etwas fehlt. Eine Naht am Rand
    der Ansicht (Streifen schließt an den Zuschnitt an) bekommt keine Kante. Die Kante ist ein Zackenband in
-   Ansichtspixeln (Höhe ±4 px, Zahnweite 16 px): ein weißes Band (Dicke 6 px) mit dunkelgrauer Linie (2 px) darin,
-   **über** Bild und Beschriftungen, im Editor, im gerenderten Bild (Arbeitsdatei, PNG/JPG, Zwischenablage) und im
-   SVG-Export gleich. Die Geometrie steht einmal in `document` (`Naehte`, `Zackenband`). Das Band verdeckt an der Naht
-   einige Pixel; das ist gewollt. Der Renderer zählt das Band im Kostenmodell (`render.Pruefe`) wie jede Füllung.
+   Ansichtspixeln: Die Zackenlinie pendelt ±4 px quer zur Naht, ein Zahn ist entlang der Naht 16 px weit. Darum liegt
+   ein weißes Band, darin eine dunkelgraue Linie; ihre Dicken (6 px bzw. 2 px) sind **quer zur Naht** gemessen (die
+   Zackenlinie wird senkrecht zur Naht um ±3 px bzw. ±1 px verschoben, nicht senkrecht zur schrägen Zackenlinie — an
+   den Flanken wirkt das Band deshalb etwas schmaler). Das Band liegt **über** Bild und Beschriftungen, im Editor, im
+   gerenderten Bild (Arbeitsdatei, PNG/JPG, Zwischenablage) und im SVG-Export gleich. Die Geometrie steht einmal in
+   `document` (`Naehte`, `Zackenband`). Der SVG-Export schreibt das Band je Achse einmal in `<defs>` und jede Naht als
+   `<use>`, der Editor zeichnet die Pfade einmal auf und baut sie erst nach einer Änderung der Nähte neu (F-183). Das
+   Band verdeckt an der Naht einige Pixel; das ist gewollt. Der Renderer zählt das Band im Kostenmodell
+   (`render.Pruefe`) wie jede Füllung.
 7. **Beschriftungen und Nähte/Zuschnitt:** Zuschneiden und Stauchen ändern keine Beschriftung (nicht zerstörend).
    Eine Beschriftung, die über eine Naht läuft, wird mit dem Bild gestaucht abgebildet (ihre Punkte folgen der
    Abbildung; Teile im Streifen liegen auf der Naht). Eine Beschriftung, die **ganz** im Verborgenen liegt
-   (außerhalb des Zuschnitts oder ganz in einem Streifen), ist **überall unsichtbar**: Editor, Renderer, SVG-Export
-   und Trefferprüfung folgen derselben Regel `Dokument.Sichtbar` (die bisherige Regel des SVG-Exports, F-66). Sie
-   bleibt im Dokument und kehrt zurück, wenn der Zuschnitt aufgehoben oder der Streifen entfernt wird. Damit das
-   nicht unbemerkt geschieht, meldet die Statusleiste nach jedem Zuschneiden oder Stauchen, wie viele Beschriftungen
-   jetzt verborgen sind; eine verborgene Auswahl wird aufgehoben.
-8. **Schwärzen und Zuschnitt:** Der Schwärzungsrahmen bleibt auf die Ansicht begrenzt — man schwärzt, was man sieht.
-   Was jenseits der Zuschnittkante liegt, bleibt im Original der Arbeitsdatei (`snAO`); ein Zuschnitt ist kein
-   Schwärzen. Ausgänge, die das Bild weitergeben (SVG/PNG/JPG-Export, Zwischenablage, sichtbares Bild der
-   Arbeitsdatei), enthalten Weggeschnittenes nicht (ADR-0008 Nachtrag 2). Die Statusleiste des Werkzeugs
-   Zuschneiden und die README sagen: Wer etwas sicher entfernen will, schwärzt es, bevor er zuschneidet. Ein Test legt
-   ein Muster jenseits der Kante und belegt beides (bleibt im `snAO`, fehlt in jedem Ausgang).
+   (außerhalb des Zuschnitts oder ganz in einem Streifen), ist **überall unsichtbar**: Editor, Renderer, SVG-Export,
+   Trefferprüfung und der Zähler der verborgenen Beschriftungen folgen derselben Regel `Dokument.ObjektSichtbar`
+   (die bisherige Regel des SVG-Exports, F-66): `Sichtbar` für die `Reichweite` des Objekts. Bei Text und
+   Schritt-Nummer ist die Reichweite die **echte Tinte der Glyphen** (Go Regular bzw. Go Bold aus denselben
+   Schriftdateien wie Renderer und Editor, plus 1 px Kantenglättung), mit Hintergrund zusätzlich dessen Fläche, bei der
+   Nummer zusätzlich der Kreis — keine Schätzung je Zeichen, sonst stünde ein unsichtbarer Text im SVG (F-181). Die
+   Messung liegt in `document`, damit die Regel nicht davon abhängt, welches Paket gebunden ist. Ein verborgenes Objekt
+   bleibt im Dokument und kehrt zurück, wenn der Zuschnitt aufgehoben oder der Streifen entfernt wird. Damit das nicht
+   unbemerkt geschieht, meldet die Statusleiste, wie viele Beschriftungen jetzt verborgen sind, sobald es nach
+   Zuschneiden, Stauchen, Rückgängig oder Wiederholen **mehr** sind als vorher (F-184); eine verborgene Auswahl wird
+   aufgehoben.
+8. **Schwärzen, Zuschnitt und Stauchen:** Der Schwärzungsrahmen bleibt auf die Ansicht begrenzt — man schwärzt, was
+   man sieht. Was jenseits der Zuschnittkante oder in einem Stauch-Streifen liegt, bleibt im Original der Arbeitsdatei
+   (`snAO`); weder Zuschnitt noch Stauchen ist Schwärzen. Ausgänge, die das Bild weitergeben (SVG/PNG/JPG-Export,
+   Zwischenablage, sichtbares Bild der Arbeitsdatei), enthalten Weggeschnittenes und Herausgenommenes nicht (ADR-0008
+   Nachtrag 2). Die Statusleiste der Werkzeuge Zuschneiden **und** Stauchen sagt: Das Entfernte bleibt in der
+   Arbeitsdatei, Heikles schwärzen (F-185); die README sagt: Wer etwas sicher entfernen will, schwärzt es, bevor er
+   zuschneidet. Ein Test legt ein Muster jenseits der Kante und belegt beides (bleibt im `snAO`, fehlt in jedem
+   Ausgang).
 
 ## Konsequenzen
 - Die Werkzeugleiste wird um zwei Knöpfe breiter; F-148 (Leiste in schmalen Fenstern, Karte #80) wird dringlicher.
