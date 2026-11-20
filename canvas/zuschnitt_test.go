@@ -259,6 +259,40 @@ func TestNahtEntfernen(t *testing.T) {
 	}
 }
 
+// ADR-0023 Nachtrag 1: Die Trefferweite einer Naht wächst mit dem Zackenfaktor. Bei einem Dokument von 2200 × 2200
+// (Faktor 2) trifft ein Doppelklick 15 Pixel neben der Naht (Weite 6 + 2·7 = 20); mit der Weite des Faktors 1
+// (6 + 7 = 13) läge er außerhalb. 22 Pixel daneben trifft auch bei Faktor 2 nicht.
+func TestNahtEntfernenZackenFaktor2(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 2200, 2200)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := d.SetzeStreifen([]document.Streifen{{Von: 1000, Bis: 1010}}); err != nil {
+		t.Fatal(err)
+	}
+	if got := d.ZackenFaktor(); got != 2 {
+		t.Fatalf("Zackenfaktor %d, Soll 2", got)
+	}
+	s := NeueSitzung(d)
+	s.SetzeFenster(image.Pt(2400, 2400))
+	s.EinsZuEins()
+	if s.Abb.Zoom != 1 {
+		t.Fatalf("Zoom %v, Soll 1", s.Abb.Zoom)
+	}
+	s.SetzeWerkzeug(WerkzeugStauchen)
+	// Die Naht liegt in der Ansicht bei x = 1000.
+	s.Doppelklick(fv(s, 1022, 500))
+	s.Loslassen(fv(s, 1022, 500))
+	if len(s.D.Streifen()) != 1 {
+		t.Fatalf("22 Pixel neben der Naht hat sie entfernt: %v", s.D.Streifen())
+	}
+	s.Doppelklick(fv(s, 1015, 500))
+	s.Loslassen(fv(s, 1015, 500))
+	if len(s.D.Streifen()) != 0 {
+		t.Errorf("15 Pixel neben der Naht bei Faktor 2 hat sie nicht entfernt: %v", s.D.Streifen())
+	}
+}
+
 // ADR-0023 Punkt 7: Ein Objekt ganz im Verborgenen ist nicht zu greifen, eine verborgene Auswahl endet, die Meldung
 // nennt es; Rückgängig bringt es zurück. Das Objekt selbst bleibt unverändert.
 func TestVerborgeneObjekte(t *testing.T) {
