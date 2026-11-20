@@ -77,6 +77,12 @@ const Stau = 10 * time.Second
 // scheibe ist, wie oft Diene die Wanduhr gegen die Grenze prüft (im Test kürzer).
 var scheibe = time.Minute
 
+// jetzt ist die Uhr, nach der Diene die Grenze misst (im Test einspeisbar, um einen Standby-Sprung nachzustellen).
+var jetzt = time.Now
+
+// nachLies wird im Test zwischen Lesen und Verarbeiten eines Ereignisses gerufen (in Produktion nil).
+var nachLies func()
+
 // Halter bietet einen Inhalt in der Zwischenablage an.
 type Halter struct {
 	v       *wlwire.Verbindung
@@ -173,8 +179,8 @@ func biete(v *wlwire.Verbindung, daten []byte, mime string) (*Halter, error) {
 	}
 	abgeloest := false
 	err = v.Rundlauf(Stau, func(e wlwire.Ereignis) error {
-		ende, err := h.verarbeite(e)
-		if ende && err == nil {
+		fertig, err := h.verarbeite(e)
+		if fertig && err == nil {
 			abgeloest = true
 		}
 		return err
@@ -229,21 +235,23 @@ func (h *Halter) verarbeite(e wlwire.Ereignis) (ende bool, err error) {
 
 // Diene liefert die Bytes an jeden aus, der einfügt, bis eine andere Anwendung die Zwischenablage übernimmt (nil),
 // der Compositor die Verbindung schließt (ErrVerbindungZu) oder grenze verstrichen ist (ErrZeitgrenze). Danach ist die
-// Verbindung geschlossen und jedes begonnene Senden beendet (ein Einfügen, das gerade läuft, bricht nicht ab).
+// Verbindung geschlossen und jedes begonnene Senden beendet (ein Einfügen, das gerade läuft, bricht nicht ab; Diene
+// wartet darauf aber höchstens Stau).
 //
 // Die Grenze gilt nach der Wanduhr: Fristen in Go laufen auf der monotonen Uhr, die im Standby steht. Diene setzt die
-// Frist deshalb in Scheiben neu und vergleicht mit der Wanduhr (Kritik Fable, Befund 2). Die Frist gilt auch für das
-// Schreiben an den Compositor, damit ein hängender Compositor den Halter nicht festhält.
+// Lesefrist deshalb in Scheiben neu und vergleicht mit der Wanduhr (Kritik Fable, Befund 2). Die Scheibe ist nur eine
+// Lesefrist; für das Schreiben an den Compositor gilt je Ereignis eine eigene Frist von Stau, damit ein hängender
+// Compositor den Halter nicht festhält, eine abgelaufene Scheibe aber auch kein gesundes Antworten verhindert.
 func (h *Halter) Diene(grenze time.Duration) error {
-	defer h.senden.Wait()
+	defer warteSenden(&h.senden, Stau)
 	defer h.v.Close()
-	ende := time.Now().Round(0).Add(grenze) // Round(0): ohne monotonen Anteil, Vergleich nach der Wanduhr
+	grenzzeit := jetzt().Round(0).Add(grenze) // Round(0): ohne monotonen Anteil, Vergleich nach der Wanduhr
 	for {
-		rest := ende.Sub(time.Now().Round(0))
+		rest := grenzzeit.Sub(jetzt().Round(0))
 		if rest <= 0 {
 			return ErrZeitgrenze
 		}
-		if err := h.v.SetDeadline(time.Now().Add(min(rest, scheibe))); err != nil {
+		if err := h.v.SetReadDeadline(time.Now().Add(min(rest, scheibe))); err != nil {
 			return err
 		}
 		e, err := h.v.Lies()
@@ -256,18 +264,41 @@ func (h *Halter) Diene(grenze time.Duration) error {
 		if err := wlwire.PruefeDisplay(e); err != nil {
 			return err
 		}
-		ende, err := h.verarbeite(e)
+		if nachLies != nil {
+			nachLies()
+		}
+		if err := h.v.SetWriteDeadline(time.Now().Add(Stau)); err != nil {
+			return err
+		}
+		fertig, err := h.verarbeite(e)
 		if err != nil {
 			return err
 		}
-		if ende {
+		if fertig {
 			return nil
 		}
 	}
 }
 
-// schreibe schreibt daten ganz in fd und schließt ihn. Stockt der Leser länger als stau ohne Fortschritt, gibt es auf;
-// ein geschlossener Leser (EPIPE) beendet still.
+// warteSenden wartet auf laufende Sendungen, höchstens max. Die Frist je 64-KiB-Stück in schreibe gilt nicht für die
+// Gesamtdauer; ein Leser, der Stück für Stück weiterliest, hielte sonst den Halter nach seinem Ende fest. Der Prozess
+// endet danach ohnehin.
+func warteSenden(wg *sync.WaitGroup, max time.Duration) {
+	fertig := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(fertig)
+	}()
+	t := time.NewTimer(max)
+	defer t.Stop()
+	select {
+	case <-fertig:
+	case <-t.C:
+	}
+}
+
+// schreibe schreibt daten ganz in fd und schließt ihn. Stockt der Leser bei einem 64-KiB-Stück länger als stau, gibt es
+// auf (die Frist gilt je Stück, nicht für das Ganze); ein geschlossener Leser (EPIPE) beendet still.
 func schreibe(fd int, daten []byte, stau time.Duration) error {
 	if err := syscall.SetNonblock(fd, true); err != nil {
 		syscall.Close(fd)

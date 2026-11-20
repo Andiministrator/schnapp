@@ -89,6 +89,18 @@ func istPipe(fd int) bool {
 	return syscall.Fstat(fd, &st) == nil && st.Mode&syscall.S_IFMT == syscall.S_IFIFO
 }
 
+// ErrWaylandSocket: Die Sitzung hat ihre Wayland-Verbindung über WAYLAND_SOCKET geerbt; der Halter als eigener Prozess
+// hätte keine zweite.
+var ErrWaylandSocket = errors.New("wlclip: WAYLAND_SOCKET gesetzt")
+
+// HalterMoeglich meldet, ob ein Halter-Prozess sich verbinden könnte: Bei WAYLAND_SOCKET (geerbter Socket) nicht.
+func HalterMoeglich(getenv func(string) string) error {
+	if getenv("WAYLAND_SOCKET") != "" {
+		return ErrWaylandSocket
+	}
+	return nil
+}
+
 // Uebergib startet programm mit HelferArgument als abgelösten Prozess (eigene Sitzung, Arbeitsordner /, ohne
 // Terminal-Ausgaben), schreibt daten auf seine Standardeingabe und wartet bis zu frist auf seine Meldung. Bei Erfolg
 // hält der Halter die Zwischenablage, und Uebergib liefert seine PID und die benutzte Manager-Schnittstelle. Sonst beendet Uebergib den eigenen, noch nicht
@@ -121,6 +133,9 @@ func Uebergib(programm string, daten []byte, frist time.Duration) (pid int, mana
 		err = errors.New(strings.TrimPrefix(text, "fehler: "))
 		if text == "" {
 			err = errors.New("wlclip: Halter ohne Meldung beendet")
+		}
+		if strings.Contains(text, ErrKeinDataControl.Error()) {
+			err = ErrKeinDataControl // der Text des Halters, auf den Sentinel abgebildet
 		}
 	}
 	if err != nil {

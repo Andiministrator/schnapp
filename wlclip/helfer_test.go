@@ -56,6 +56,9 @@ func attrappe(art, ordner string) int {
 	case "fehler":
 		io.WriteString(meldung, "fehler: kaputt\n")
 		return 1
+	case "keindc":
+		io.WriteString(meldung, "fehler: "+ErrKeinDataControl.Error()+"\n")
+		return 1
 	case "stumm":
 		time.Sleep(30 * time.Second)
 		return 0
@@ -176,5 +179,28 @@ func TestIstPipe(t *testing.T) {
 	defer f.Close()
 	if istPipe(int(f.Fd())) {
 		t.Error("Datei als Pipe erkannt")
+	}
+}
+
+// TestUebergibKeinDataControl: meldet der Halter, dass der Compositor kein data-control bietet, liefert Uebergib
+// einen Fehler, für den errors.Is(err, ErrKeinDataControl) gilt (der Editor merkt sich das und startet keinen Halter mehr).
+func TestUebergibKeinDataControl(t *testing.T) {
+	_, _, _, err := uebergibMit(t, "keindc", 10*time.Second)
+	if !errors.Is(err, ErrKeinDataControl) {
+		t.Errorf("Fehler %v, erwartet ErrKeinDataControl", err)
+	}
+	if _, _, _, err := uebergibMit(t, "fehler", 10*time.Second); errors.Is(err, ErrKeinDataControl) {
+		t.Errorf("anderer Fehler %v gilt als ErrKeinDataControl", err)
+	}
+}
+
+// TestHalterMoeglich: mit geerbtem WAYLAND_SOCKET ist kein Halter-Prozess möglich.
+func TestHalterMoeglich(t *testing.T) {
+	env := func(m map[string]string) func(string) string { return func(k string) string { return m[k] } }
+	if err := HalterMoeglich(env(map[string]string{"WAYLAND_SOCKET": "7"})); !errors.Is(err, ErrWaylandSocket) {
+		t.Errorf("Fehler %v, erwartet ErrWaylandSocket", err)
+	}
+	if err := HalterMoeglich(env(map[string]string{"WAYLAND_DISPLAY": "wayland-0"})); err != nil {
+		t.Errorf("Fehler %v, erwartet nil", err)
 	}
 }

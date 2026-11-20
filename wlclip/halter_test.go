@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -272,18 +273,104 @@ func bereit(t *testing.T) (*Halter, *compositor, ids) {
 	return h, c, <-ch
 }
 
-// TestZeitgrenze: ohne Ereignis endet Diene nach der Grenze mit ErrZeitgrenze.
+// uhr ist eine einspeisbare Wanduhr für Diene.
+type uhr struct {
+	mu sync.Mutex
+	t  time.Time
+}
+
+func (u *uhr) jetzt() time.Time { u.mu.Lock(); defer u.mu.Unlock(); return u.t }
+func (u *uhr) springe(d time.Duration) {
+	u.mu.Lock()
+	u.t = u.t.Add(d)
+	u.mu.Unlock()
+}
+
+// TestZeitgrenze: Diene endet nicht vor der Grenze (mehrere abgelaufene Scheiben beenden es nicht), und ein Sprung der
+// Wanduhr über die Grenze (Standby) beendet es mit ErrZeitgrenze, obwohl die Scheibe noch läuft.
 func TestZeitgrenze(t *testing.T) {
+	alt, altJetzt := scheibe, jetzt
+	scheibe = 20 * time.Millisecond
+	u := &uhr{t: time.Now()}
+	jetzt = u.jetzt
+	defer func() { scheibe, jetzt = alt, altJetzt }()
+	h, _, _ := bereit(t)
+	fertig := make(chan error, 1)
+	go func() { fertig <- h.Diene(time.Hour) }()
+	select {
+	case err := <-fertig:
+		t.Fatalf("Diene endete nach mehreren Scheiben vor der Grenze: %v", err)
+	case <-time.After(250 * time.Millisecond): // gut zehn Scheiben
+	}
+	u.springe(2 * time.Hour) // Standby: die Wanduhr springt, die Lesefrist ist erst eine Scheibe alt
+	select {
+	case err := <-fertig:
+		if !errors.Is(err, ErrZeitgrenze) {
+			t.Errorf("Fehler %v, erwartet ErrZeitgrenze", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Diene endete nach dem Wanduhr-Sprung nicht")
+	}
+}
+
+// TestZeitgrenzeKurz: mit echter Uhr endet Diene ohne Ereignis kurz nach der Grenze, nicht vorher.
+func TestZeitgrenzeKurz(t *testing.T) {
 	alt := scheibe
-	scheibe = 20 * time.Millisecond // mehrere Scheiben bis zur Grenze
+	scheibe = 20 * time.Millisecond
 	defer func() { scheibe = alt }()
 	h, _, _ := bereit(t)
 	start := time.Now()
-	if err := h.Diene(100 * time.Millisecond); !errors.Is(err, ErrZeitgrenze) {
+	if err := h.Diene(150 * time.Millisecond); !errors.Is(err, ErrZeitgrenze) {
 		t.Errorf("Fehler %v, erwartet ErrZeitgrenze", err)
 	}
-	if d := time.Since(start); d > 2*time.Second {
-		t.Errorf("Diene endete nach %v", d)
+	if d := time.Since(start); d < 150*time.Millisecond || d > 2*time.Second {
+		t.Errorf("Diene endete nach %v, erwartet etwas über 150ms", d)
+	}
+}
+
+// TestAntwortNachScheibe: Die Scheibe ist nur eine Lesefrist. Läuft sie ab, während ein Ereignis verarbeitet wird, gelingt
+// die Antwort (destroy des Angebots) trotzdem, und der gesunde Halter läuft weiter.
+func TestAntwortNachScheibe(t *testing.T) {
+	alt, altHaken := scheibe, nachLies
+	scheibe = 30 * time.Millisecond
+	gerufen := false
+	nachLies = func() {
+		if !gerufen {
+			gerufen = true
+			time.Sleep(3 * scheibe) // die Scheibe läuft ab, bevor Diene antwortet
+		}
+	}
+	defer func() { scheibe, nachLies = alt, altHaken }()
+	h, c, i := bereit(t)
+	fertig := make(chan error, 1)
+	go func() { fertig <- h.Diene(time.Hour) }()
+	c.Sende(i.geraet, evDeviceDataOffer, new(wlwire.Nachricht).U32(0xff000002))
+	c.erwarte(0xff000002, opOfferDestroy, "Angebot freigeben nach abgelaufener Scheibe")
+	select {
+	case err := <-fertig:
+		t.Fatalf("Diene endete wegen der abgelaufenen Scheibe: %v", err)
+	case <-time.After(100 * time.Millisecond):
+	}
+	c.Sende(i.quelle, evSourceCancel, nil)
+	if err := <-fertig; err != nil {
+		t.Errorf("Fehler %v, erwartet nil", err)
+	}
+}
+
+// TestWarteSenden: eine hängende Sendung hält Diene nach dem Ende höchstens die übergebene Frist fest.
+func TestWarteSenden(t *testing.T) {
+	var wg sync.WaitGroup
+	wg.Add(1) // wird nie fertig
+	start := time.Now()
+	warteSenden(&wg, 50*time.Millisecond)
+	if d := time.Since(start); d < 50*time.Millisecond || d > 2*time.Second {
+		t.Errorf("warteSenden kehrte nach %v zurück", d)
+	}
+	var wg2 sync.WaitGroup
+	start = time.Now()
+	warteSenden(&wg2, 5*time.Second)
+	if d := time.Since(start); d > time.Second {
+		t.Errorf("ohne Sendung dauerte warteSenden %v", d)
 	}
 }
 

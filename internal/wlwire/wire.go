@@ -243,6 +243,9 @@ func (n *Nachricht) Fixed(v float64) *Nachricht {
 // SetReadDeadline setzt die Lesefrist der Verbindung.
 func (v *Verbindung) SetReadDeadline(t time.Time) error { return v.c.SetReadDeadline(t) }
 
+// SetWriteDeadline setzt die Schreibfrist der Verbindung.
+func (v *Verbindung) SetWriteDeadline(t time.Time) error { return v.c.SetWriteDeadline(t) }
+
 // SetDeadline setzt Lese- und Schreibfrist der Verbindung.
 func (v *Verbindung) SetDeadline(t time.Time) error { return v.c.SetDeadline(t) }
 

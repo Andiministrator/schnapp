@@ -455,8 +455,8 @@ var ohneDataControl atomic.Bool
 // WAYLAND_SOCKET (geerbte Verbindung, etwa in verschachtelten Sitzungen) fände der Halter nicht sicher denselben
 // Compositor; dann bietet das Fenster selbst an (Befund 5).
 func halteZwischenablage(daten []byte) error {
-	if os.Getenv("WAYLAND_SOCKET") != "" {
-		return errors.New("WAYLAND_SOCKET gesetzt")
+	if err := wlclip.HalterMoeglich(os.Getenv); err != nil {
+		return err
 	}
 	if ohneDataControl.Load() {
 		return wlclip.ErrKeinDataControl
@@ -467,7 +467,7 @@ func halteZwischenablage(daten []byte) error {
 	}
 	pid, manager, err := wlclip.Uebergib(programm, daten, wlclip.Frist)
 	if err != nil {
-		if strings.Contains(err.Error(), wlclip.ErrKeinDataControl.Error()) {
+		if errors.Is(err, wlclip.ErrKeinDataControl) {
 			ohneDataControl.Store(true)
 		}
 		return err
