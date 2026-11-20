@@ -232,7 +232,9 @@ if [ "${PROBE_INNEN:-}" = 1 ]; then
 			echo "typen: $(timeout 10 wl-paste --list-types | tr '\n' ' ')"
 			timeout 10 wl-paste --type image/png > "$probe/eingefuegt.png"
 			cmp -s "$bild" "$probe/eingefuegt.png" && echo "eingefuegt: gleich" || echo "probe.sh: eingefuegt VERSCHIEDEN ($(stat -c %s "$probe/eingefuegt.png") Byte)"
-			echo "halter: $(zustand "$halter" "$idh")"
+			z="$(zustand "$halter" "$idh")"
+			echo "halter: $z"
+			[ "$z" = unklar ] && echo "probe.sh: Identität des Halters weicht ab oder ist nicht prüfbar"
 			timeout 10 wl-copy "anderer Inhalt"
 			for _ in $(seq 1 50); do [ "$(zustand "$halter" "$idh")" = läuft ] || break; sleep 0.1; done
 			case "$(zustand "$halter" "$idh")" in

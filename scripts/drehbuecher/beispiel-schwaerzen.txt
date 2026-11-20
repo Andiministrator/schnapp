@@ -1,14 +1,14 @@
 # Beispiel-Drehbuch für scripts/probe.sh --drehbuch (Fernbedienung, Karte #95).
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/beispiel-schwaerzen.txt --bild TESTBILD.png
 # Annahmen: virtueller Bildschirm 1600x1000 (Voreinstellung), Testbild 1200x800 und im Editor eingepasst auf 100 %,
-# also mittig bei (200,114); ein helles Rechteck liegt im Bild bei (500,300)-(700,340), auf dem Bildschirm bei
-# (700,414)-(900,454).
+# also mittig bei (200,136); ein helles Rechteck liegt im Bild bei (500,300)-(700,340), auf dem Bildschirm bei
+# (700,436)-(900,476).
 warte 500
 foto 1-vor-allem
 
 # Schwärzen-Werkzeug wählen (Taste B) und einen Bereich über das Rechteck ziehen
 taste B
-ziehe 650 400 950 470 12
+ziehe 650 422 950 492 12
 warte 200
 foto 2-geschwaerzt
 

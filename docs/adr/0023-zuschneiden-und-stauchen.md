@@ -142,5 +142,8 @@ Bandhöhe, es konnten zwei Splitter von je 3 Pixeln neben der Naht übrig bleibe
 - Technische Folge: `Dokument.OriginalGroesse` und `Dokument.OriginalBild` liefern Größe bzw. Original ohne Kopie
   (F-227); `Original` bleibt die Kopie für alles, was ändert oder aufbewahrt.
 - Mit F-225 mitentschieden (ADR-0025 Punkt 4 gilt unverändert): Der SVG-Export schreibt keine `s:`-Attribute und keinen
-  Programm-Namensraum; die Kacheln tragen `viewBox="0 0 B H"` und verschieben ihren Inhalt per `transform`, damit die Lage
-  des Zuschnitts im Original nicht in der Datei steht. Die Arbeitsdatei (snAP) behält die Attribute für den Rundlauf.
+  Programm-Namensraum; die Kacheln tragen `viewBox="0 0 B H"` und verschieben ihren Inhalt per `transform`. Die Lage
+  des Zuschnitts im Original steht damit weiter in der Datei (im `transform`, im x/y des Bilds und in den Objekt-
+  Koordinaten, die Original-Koordinaten sind) — berichtigt nach dem Verify-Lauf (V-5, F-242): Sie ist keine Spur im Sinn
+  von Kernprinzip 3 (keine Pfade, Programm- oder Rechnernamen); sie ganz zu entfernen hieße alle Objekte umzurechnen.
+  Die Arbeitsdatei (snAP) behält die Attribute für den Rundlauf.

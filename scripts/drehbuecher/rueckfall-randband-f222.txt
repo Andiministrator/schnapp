@@ -2,10 +2,10 @@
 # zurück; Schwärzen über den Rand hinaus trifft nichts Verborgenes.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-randband-f222.txt --bild scripts/drehbuecher/testbild-1200x800.png --zeit 120
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
-# Bild 1200x800 bei 100 % ab (200,114); Bildpunkt = Bildschirm - (200,114)
+# Bild 1200x800 bei 100 % ab (200,136); Bildpunkt = Bildschirm - (200,136)
 warte 800
 foto 01-vorher
-# 1) X senkrecht von Bildzeile 586 bis unter den Bildrand: unten abgeschnitten, Meldung nennt „Ganzes Bild“,
+# 1) X senkrecht von Bildzeile 564 bis unter den Bildrand: unten abgeschnitten, Meldung nennt „Ganzes Bild“,
 #    der Knopf „Ganzes Bild“ ist aktiv
 taste X
 ziehe 800 700 800 990 12

@@ -152,8 +152,9 @@ func ExportiereSVG(w io.Writer, d *document.Dokument) error {
 			s.attr("y", strconv.Itoa(ay))
 			s.attr("width", strconv.Itoa(b))
 			s.attr("height", strconv.Itoa(h))
-			// viewBox ab 0,0 und Verschiebung statt viewBox in Original-Koordinaten: die Lage des Zuschnitts im
-			// Original steht so nicht in der Datei (F-225).
+			// viewBox ab 0,0 und Verschiebung per transform statt viewBox in Original-Koordinaten (F-225). Die Lage
+			// des Zuschnitts im Original steht damit weiter in transform, im x/y des Bilds und in den Koordinaten der
+			// Objekte (Original-Koordinaten); entfernt sind nur Programm-Namensraum und Bearbeitungsattribute.
 			s.attr("viewBox", fmt.Sprintf("0 0 %d %d", b, h))
 			s.WriteString(`><g`)
 			s.attr("transform", fmt.Sprintf("translate(%d %d)", -zx[0], -zy[0]))

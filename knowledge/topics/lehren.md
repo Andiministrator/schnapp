@@ -95,7 +95,8 @@ Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden;
   Desktop wird dabei nie aufgenommen; der innere Teil bricht ab, wenn er nicht auf dem privaten Bus läuft. Ergebnisse
   werden vor jedem Lauf geleert — ein Ergebnis ohne frischen Lauf war ein angreifbarer Beleg (Kritik Fable, F-175).
   Die Probe-Programme selbst (Schnapp mit Tag `probe`, Fernbedienung) verweigern außerhalb des virtuellen KWin den
-  Start (`internal/probeschutz.NurVirtuell`: Marke, privater Bus, Socket `schnapp-probe`, Laufzeitordner unter
+  Start vor Aufnahme, Editor und Zwischenablage-Halter (`--version`, `--help` und `--list-screens` laufen ohne Prüfung;
+  `--list-screens` fragt dann den echten Compositor nach Monitornamen, nimmt aber nichts auf) (`internal/probeschutz.NurVirtuell`: Marke, privater Bus, Socket `schnapp-probe`, Laufzeitordner unter
   `tmp/probe/run`, alle zugleich; F-229) — ein liegen gebliebenes `tmp/probe/schnapp` nimmt so nie den echten Monitor
   auf. Trotzdem nie von Hand starten. `probe.sh` biegt auch `XDG_STATE_HOME` um und entfernt `WAYLAND_SOCKET` (F-230).
   Andi bleibt für das, was nur auf seinem Rechner geht: Aussehen, echte Monitore mit gemischter Skala, Klipper,
@@ -127,8 +128,9 @@ Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden;
   Neuzeichnen (F-216, F-217). Was die Fernbedienung nicht kann: Maustaste halten und fotografieren (Rahmen beim
   Ziehen). Ein `rad`-Schritt zoomt nur um rund 3,5 % (30 Schritte: 99 % → 34 %). **Feste Klickkoordinaten veralten
   mit jeder Änderung an der Leiste** (nach „Ganzes Bild“ trafen zwei Drehbücher „Einpassen“ statt „Exportieren“): nach
-  einem neuen Knopf alle `klick`-Zeilen in `scripts/drehbuecher/` fahren und per Foto prüfen, dass der gemeinte Knopf
-  getroffen wird.
+  einem neuen Knopf alle Drehbücher in `scripts/drehbuecher/` fahren und per Foto prüfen — die `klick`-Zeilen auf
+  Knöpfe ebenso wie `ziehe`/`doppelklick` auf der Leinwand: Bricht die Leiste in eine weitere Zeile um, rückt das Bild
+  nach unten (1600 px: 22 px, Bild ab y=136), und ein Zug über der ersten Bildzeile startet still nichts (F-150, F-238).
 - **Schutz messen, nicht annehmen (Sprint 6, F-163):** Verpixeln mit Blockmittel plus Zufallsrauschen sah sicher aus;
   der Kritiker hat es mit einem Toleranzvergleich gegen Kandidaten nachgerechnet und eine vierstellige Zahl in 193 von
   200 Läufen zurückgewonnen. Was vertraulichen Inhalt unkenntlich machen soll, trägt keine Information des Inhalts
