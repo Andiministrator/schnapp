@@ -370,3 +370,27 @@ msgstr "Die bisherige Datei %s war nicht mehr da; wo immer sie jetzt liegt, zeig
 
 msgid "It still shows the unredacted content."
 msgstr "Es zeigt noch den ungeschwärzten Inhalt."
+
+# ui: Zuschneiden und Stauchen (ADR-0023)
+msgid "Crop"
+msgstr "Zuschneiden"
+
+msgid "Cut out"
+msgstr "Stauchen"
+
+msgid "Drag a frame to crop. Double-click: whole image again. Cropped parts stay in the working file; redact what must go."
+msgstr "Rahmen ziehen zum Zuschneiden. Doppelklick: wieder das ganze Bild. Weggeschnittenes bleibt in der Arbeitsdatei; Heikles schwärzen."
+
+msgid "Drag across the part to cut out: vertically for rows, horizontally for columns. Double-click a seam to restore it."
+msgstr "Über den Teil ziehen, der wegfallen soll: senkrecht für Zeilen, waagrecht für Spalten. Doppelklick auf eine Naht holt ihn zurück."
+
+msgid "%d annotation is now hidden outside the visible area; it returns when the crop or cut is removed."
+msgid_plural "%d annotations are now hidden outside the visible area; they return when the crop or cut is removed."
+msgstr[0] "%d Beschriftung liegt jetzt verborgen außerhalb des sichtbaren Bereichs; sie kehrt zurück, wenn Zuschnitt oder Stauchung entfallen."
+msgstr[1] "%d Beschriftungen liegen jetzt verborgen außerhalb des sichtbaren Bereichs; sie kehren zurück, wenn Zuschnitt oder Stauchung entfallen."
+
+msgid "Nothing of the image would remain; cut out a smaller part."
+msgstr "Vom Bild bliebe nichts übrig; einen kleineren Teil herausnehmen."
+
+msgid "Too many cuts; undo or remove one first."
+msgstr "Zu viele Stauch-Streifen; erst einen entfernen oder rückgängig machen."

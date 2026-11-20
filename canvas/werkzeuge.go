@@ -17,13 +17,15 @@ import (
 type Werkzeug int
 
 const (
-	WerkzeugAuswahl    Werkzeug = iota // auswählen, verschieben, Griffe
-	WerkzeugPfeil                      // Ziehen vom Anfang zur Spitze
-	WerkzeugKasten                     // Ziehen von Ecke zu Ecke
-	WerkzeugText                       // Klick setzt ein Textfeld
-	WerkzeugNummer                     // Klick setzt eine Schritt-Nummer
-	WerkzeugSchwaerzen                 // Rahmen ziehen: Pixel schwarz überschreiben (ADR-0022)
-	WerkzeugVerpixeln                  // Rahmen ziehen: Mosaik ohne Bezug zum Inhalt (ADR-0022 Nachtrag 1)
+	WerkzeugAuswahl     Werkzeug = iota // auswählen, verschieben, Griffe
+	WerkzeugPfeil                       // Ziehen vom Anfang zur Spitze
+	WerkzeugKasten                      // Ziehen von Ecke zu Ecke
+	WerkzeugText                        // Klick setzt ein Textfeld
+	WerkzeugNummer                      // Klick setzt eine Schritt-Nummer
+	WerkzeugSchwaerzen                  // Rahmen ziehen: Pixel schwarz überschreiben (ADR-0022)
+	WerkzeugVerpixeln                   // Rahmen ziehen: Mosaik ohne Bezug zum Inhalt (ADR-0022 Nachtrag 1)
+	WerkzeugZuschneiden                 // Rahmen ziehen: sichtbarer Ausschnitt (ADR-0023)
+	WerkzeugStauchen                    // Band ziehen: Zeilen oder Spalten herausnehmen (ADR-0023)
 )
 
 // Werte des Verpixelns (ADR-0022 Nachtrag 1), Größen in Pixeln des Originals. Die Blockgröße ist nur noch Optik: Die
@@ -167,7 +169,7 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 	s.neuArt, s.neuID = s.Werkzeug, 0
 	// Klick auf einen vorhandenen Text bearbeitet ihn auch bei vollem Dokument (kein neues Objekt nötig).
 	if s.Werkzeug == WerkzeugText {
-		if id, ok := Treffer(s.D.Objekte(), q, s.toleranz()); ok {
+		if id, ok := Treffer(s.sichtbareObjekte(), q, s.toleranz()); ok {
 			if o, _ := s.D.Objekt(id); isText(o) {
 				s.Auswahl = id
 				s.TextBearbeiten()
@@ -182,7 +184,7 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 	switch s.Werkzeug {
 	case WerkzeugPfeil, WerkzeugKasten:
 		s.zug = zugNeu
-	case WerkzeugSchwaerzen, WerkzeugVerpixeln:
+	case WerkzeugSchwaerzen, WerkzeugVerpixeln, WerkzeugZuschneiden, WerkzeugStauchen:
 		s.zug, s.rahmen = zugNeu, false
 	case WerkzeugNummer:
 		n := document.Nummer{Mitte: q, Wert: s.D.NaechsteNummer(), Radius: s.Stil.Radius, Farbe: s.Stil.Farbe}
@@ -217,8 +219,8 @@ const (
 // Die Statusleiste verspricht damit keine Nummer, die nicht kommt.
 func (s *Sitzung) Voll() Ablehnung {
 	switch {
-	case s.Werkzeug == WerkzeugAuswahl, schwaerzt(s.Werkzeug):
-		return AblehnungKeine // Schwärzen legt kein Objekt an
+	case s.Werkzeug == WerkzeugAuswahl, rahmenWerkzeug(s.Werkzeug):
+		return AblehnungKeine // Schwärzen, Zuschneiden und Stauchen legen kein Objekt an
 	case len(s.D.Objekte()) >= document.MaxObjekte:
 		return AblehnungObjekte
 	case s.Werkzeug == WerkzeugNummer && s.D.NaechsteNummer() > document.MaxNummer:
@@ -251,7 +253,7 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 		o = document.Kasten{ID: s.neuID, Bereich: document.R(a, b), Strich: s.Stil.strich(), Eckradius: s.Stil.Eckradius}
 	case WerkzeugNummer:
 		o = Verschiebe(s.startObj, b.Minus(a))
-	case WerkzeugSchwaerzen, WerkzeugVerpixeln:
+	case WerkzeugSchwaerzen, WerkzeugVerpixeln, WerkzeugZuschneiden, WerkzeugStauchen:
 		s.rahmen = true
 		s.rahmenA = s.klemmeAnsicht(s.Abb.ZuAnsicht(s.start))
 		s.rahmenB = s.klemmeAnsicht(s.Abb.ZuAnsicht(p))
@@ -311,8 +313,15 @@ func platzAchse(d, a, max float64) float64 {
 // beendeNeu übernimmt das neue Objekt als einen Schritt in den Verlauf und wählt es aus — Pfeil und Kasten nur, wenn
 // sie die Mindestgröße erreichen.
 func (s *Sitzung) beendeNeu() {
-	if schwaerzt(s.neuArt) {
+	switch {
+	case schwaerzt(s.neuArt):
 		s.schwaerzeRahmen()
+		return
+	case s.neuArt == WerkzeugZuschneiden:
+		s.zuschneideRahmen()
+		return
+	case s.neuArt == WerkzeugStauchen:
+		s.staucheRahmen()
 		return
 	}
 	if s.neuID == 0 {
@@ -338,10 +347,15 @@ func (s *Sitzung) beendeNeu() {
 
 // --- Schwärzen (ADR-0022) ---
 
-// Rahmen liefert den gerade gezogenen Schwärzungsrahmen in Fensterpunkten (ok = false, wenn keiner gezogen wird).
+// Rahmen liefert den gerade gezogenen Rahmen (Schwärzen, Verpixeln, Zuschneiden) in Fensterpunkten, beim Stauchen das
+// Band über die ganze Breite bzw. Höhe des Bilds (ok = false, wenn keiner gezogen wird).
 func (s *Sitzung) Rahmen() (a, b document.Punkt, ok bool) {
 	if s.zug != zugNeu || !s.rahmen {
 		return document.Punkt{}, document.Punkt{}, false
+	}
+	if s.neuArt == WerkzeugStauchen {
+		a, b := s.bandRahmen()
+		return s.Abb.ZuFenster(a), s.Abb.ZuFenster(b), true
 	}
 	return s.Abb.ZuFenster(s.rahmenA), s.Abb.ZuFenster(s.rahmenB), true
 }
@@ -387,8 +401,8 @@ func (s *Sitzung) NimmVerpixelnErsetzt() bool {
 	return e
 }
 
-// BildAenderung zählt die Änderungen an den Pixeln des Originals durch Schwärzen; die Oberfläche baut ihr Bild neu,
-// wenn sich der Wert ändert.
+// BildAenderung zählt die Änderungen am Ansichtsbild (Schwärzen, Zuschneiden, Stauchen, ADR-0023); die Oberfläche
+// baut ihr Bild neu, wenn sich der Wert ändert.
 func (s *Sitzung) BildAenderung() uint64 { return s.bildAenderung }
 
 // --- Texteingabe ---
@@ -526,12 +540,20 @@ func (s *Sitzung) Enter(umschalt bool) bool {
 	return s.TextBearbeiten()
 }
 
-// Doppelklick am Fensterpunkt p: Mit dem Werkzeug Auswählen bearbeitet er den getroffenen Text; sonst und daneben
-// wirkt er wie ein Druck der linken Taste (der erste Klick hat dann schon gewirkt, ADR-0021).
+// Doppelklick am Fensterpunkt p: Mit dem Werkzeug Auswählen bearbeitet er den getroffenen Text; mit Zuschneiden hebt er
+// den Zuschnitt auf, mit Stauchen entfernt er die Naht unter dem Zeiger (ADR-0023). Sonst und daneben wirkt er wie
+// ein Druck der linken Taste (der erste Klick hat dann schon gewirkt, ADR-0021).
 func (s *Sitzung) Doppelklick(p document.Punkt) {
 	s.TextBestaetigen()
+	s.abgelehnt, s.ersatzSchwarz, s.ansichtMeldung = AblehnungKeine, false, AnsichtKeine
+	switch {
+	case s.Werkzeug == WerkzeugZuschneiden && s.HebeZuschnittAuf():
+		return
+	case s.Werkzeug == WerkzeugStauchen && s.EntferneNaht(p):
+		return
+	}
 	if s.Werkzeug == WerkzeugAuswahl && s.zug == keinZug && !s.D.ZugLaeuft() {
-		if id, ok := Treffer(s.D.Objekte(), s.original(p), s.toleranz()); ok {
+		if id, ok := Treffer(s.sichtbareObjekte(), s.original(p), s.toleranz()); ok {
 			if o, _ := s.D.Objekt(id); isText(o) {
 				s.Auswahl = id
 				s.TextBearbeiten()

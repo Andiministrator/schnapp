@@ -17,8 +17,8 @@ pages, share. Also meant as a simple image editor.
 
 Early work. Schnapp already captures on KDE Plasma (area, monitor, window; **Print** key), saves every screenshot to
 the library and opens it in an editor where you draw arrows (straight or bent), boxes, text labels and step numbers
-and select, move and resize them, black out or pixelate areas for good and copy the result to the clipboard —
-cropping comes next. It is written in Go with the [Gio](https://gioui.org) UI library,
+and select, move and resize them, black out or pixelate areas for good, crop, cut out the middle of a long screenshot
+and copy the result to the clipboard. It is written in Go with the [Gio](https://gioui.org) UI library,
 plus a small patch to Gio (one full-screen overlay per monitor, fractional scaling, cursor at mixed scales). The first
 version (0.1.0) is being built.
 
@@ -71,7 +71,12 @@ double-click a text to edit it), **N** step number (counts up by itself), **B** 
 **P** pixelate (drag; a mosaic made only from the area's average colour and random noise, so it carries nothing of
 what was there). Both overwrite the pixels of the image itself: they can be undone until you save, after that they are
 final and no saved or exported file contains the hidden content. An image copied with **Ctrl+C** before redacting
-stays in the clipboard as it was. The *Colour* button cycles four colours and
+stays in the clipboard as it was. **C** crop (drag a frame; double-click with the tool shows the whole image again),
+**X** cut out (drag across the part to remove — vertically to remove rows, horizontally for columns; the seam shows a
+zigzag edge; double-click a seam to bring the part back). Both only hide: the original stays complete in the working
+file, so redact anything secret before cropping it away — exports and the clipboard contain only the visible part.
+Annotations lying entirely in a hidden part are hidden too (the status bar says how many) and come back with it.
+The *Colour* button cycles four colours and
 recolours the selected annotation. A drawing tool stays active; **Esc** steps back: text input → drag → selection →
 select tool. Drag an annotation or its handles to move, resize or bend it; it always stays partly inside the image.
 The mouse wheel zooms at the pointer; with the select tool dragging empty space moves the view, the middle button does

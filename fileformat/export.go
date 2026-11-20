@@ -13,6 +13,7 @@ import (
 	"image/png"
 	"io"
 	"strconv"
+	"strings"
 
 	"github.com/Andiministrator/schnapp/document"
 )
@@ -51,6 +52,45 @@ func intervalle(von, bis int, st []document.Streifen, zeilen bool) [][2]int {
 	return res
 }
 
+// naehte schreibt die Zackenkanten der Stauch-Nähte in Ansichtskoordinaten über alle Kacheln (ADR-0023 Punkt 6):
+// dieselben Vielecke wie im Renderer (document.Zackenband), hell außen, dunkel innen.
+func (s *schreiber) naehte(d *document.Dokument) {
+	g := d.Groesse()
+	for _, n := range d.Naehte() {
+		laenge := g.X
+		if !n.Zeilen {
+			laenge = g.Y
+		}
+		s.WriteString(`<g`)
+		art := "spalten"
+		if n.Zeilen {
+			art = "zeilen"
+		}
+		s.attr("s:naht", art)
+		s.WriteString(`>`)
+		for _, band := range []struct {
+			halb  float64
+			farbe color.NRGBA
+		}{{document.ZackenRandHalb, document.ZackenRand}, {document.ZackenLinieHalb, document.ZackenLinie}} {
+			var pfad strings.Builder
+			for i, p := range document.Zackenband(n, laenge, band.halb) {
+				if i == 0 {
+					pfad.WriteString("M")
+				} else {
+					pfad.WriteString(" L")
+				}
+				pfad.WriteString(punkt(p))
+			}
+			pfad.WriteString(" Z")
+			s.WriteString(`<path`)
+			s.attr("d", pfad.String())
+			s.farbeSVG("fill", band.farbe)
+			s.WriteString(`/>`)
+		}
+		s.WriteString(`</g>`)
+	}
+}
+
 // ExportiereSVG schreibt die Ansicht als eigenständiges SVG. Je sichtbarer Kachel (Zuschnitt und Stauchen teilen
 // die Ansicht in Rechtecke) steht ein verschachteltes <svg> mit viewBox, das nur den Pixelausschnitt dieser Kachel als
 // eingebettetes PNG trägt und die Objekte als Vektoren zeigt. Weggeschnittene oder weggestauchte Bereiche sind in
@@ -67,24 +107,10 @@ func ExportiereSVG(w io.Writer, d *document.Dokument) error {
 	z := d.Zuschnitt()
 	st := d.Streifen()
 	// Objekte, die ganz außerhalb aller sichtbaren Kacheln liegen (weggeschnitten oder weggestaucht), kommen nicht in
-	// die Datei — sonst stünde etwa ein Text dort im Klartext im XML (F-66).
-	var kacheln []document.Rechteck
-	for _, zy := range intervalle(z.Min.Y, z.Max.Y, st, true) {
-		for _, zx := range intervalle(z.Min.X, z.Max.X, st, false) {
-			kacheln = append(kacheln, document.Rechteck{Min: document.Pt(float64(zx[0]), float64(zy[0])),
-				Max: document.Pt(float64(zx[1]), float64(zy[1]))})
-		}
-	}
-	inAnsicht := func(g document.Rechteck) bool {
-		for _, k := range kacheln {
-			if g.Min.X < k.Max.X && g.Max.X > k.Min.X && g.Min.Y < k.Max.Y && g.Max.Y > k.Min.Y {
-				return true
-			}
-		}
-		return false
-	}
+	// die Datei — sonst stünde etwa ein Text dort im Klartext im XML (F-66). Dieselbe Regel gilt im Renderer und im
+	// Editor (Dokument.ObjektSichtbar, ADR-0023 Punkt 7).
 	s.WriteString(`><defs><g id="objekte">`)
-	s.objekte(d, inAnsicht)
+	s.objekte(d, d.ObjektSichtbar)
 	s.WriteString(`</g></defs>`)
 	ay := 0
 	for _, zy := range intervalle(z.Min.Y, z.Max.Y, st, true) {
@@ -112,6 +138,7 @@ func ExportiereSVG(w io.Writer, d *document.Dokument) error {
 		}
 		ay += zy[1] - zy[0]
 	}
+	s.naehte(d)
 	s.WriteString("</svg>\n")
 	_, err := io.WriteString(w, s.String())
 	return err

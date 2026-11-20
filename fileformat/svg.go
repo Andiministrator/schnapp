@@ -62,12 +62,12 @@ func (s *schreiber) farbeSVG(art string, c color.NRGBA) {
 
 func strich(st document.Strich) string { return farbeHex(st.Farbe) + " " + zahl(st.Breite) }
 
-// objekte schreibt die Objekte in Original-Koordinaten; mit behalten != nil nur die, für deren Grenzen behalten
-// true liefert (Export: nur Objekte, die in die Ansicht reichen).
-func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Rechteck) bool) {
+// objekte schreibt die Objekte in Original-Koordinaten; mit behalten != nil nur die, für die behalten true liefert
+// (Export: nur Objekte, die in die Ansicht reichen).
+func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt) bool) {
 	s.WriteString(`<g s:ebene="objekte">`)
 	for _, o := range d.Objekte() {
-		if behalten != nil && !behalten(o.Grenzen()) {
+		if behalten != nil && !behalten(o) {
 			continue
 		}
 		switch o := o.(type) {

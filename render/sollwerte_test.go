@@ -98,10 +98,11 @@ func TestStreifenVerschiebenObjekte(t *testing.T) {
 	if b.Bounds().Size() != image.Pt(80, 35) {
 		t.Fatalf("Größe %v, Soll 80×35", b.Bounds().Size())
 	}
+	// Über der Naht bei x = 20 liegt die Zackenkante (ADR-0023, x 13 bis 27); sie prüft TestZackenkanteSollwerte.
 	pruefe(t, b, map[image.Point]color.NRGBA{
 		{40, 15}: rot, {69, 15}: rot, {39, 15}: weiss, {70, 15}: weiss, {55, 0}: rot, {55, 29}: rot, {55, 30}: weiss,
-		{10, 7}: blau, {29, 7}: blau, {9, 7}: weiss, {30, 7}: weiss, {20, 7}: blau, {20, 16}: weiss,
-		{19, 28}: weiss, {20, 28}: weiss, {21, 28}: weiss, // der Kasten im Streifen zeichnet nichts
+		{10, 7}: blau, {29, 7}: blau, {9, 7}: weiss, {30, 7}: weiss, {12, 16}: weiss, {28, 16}: weiss,
+		{12, 28}: weiss, {28, 28}: weiss, // der Kasten im Streifen zeichnet nichts
 	})
 	// Das Grüne darf nirgends auftauchen.
 	for y := 0; y < 35; y++ {

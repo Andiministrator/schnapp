@@ -31,8 +31,8 @@ import (
 	"github.com/Andiministrator/schnapp/document"
 )
 
-// Bild liefert die Ansicht des Dokuments mit allen Objekten. Objekte liegen im Original und werden über
-// Dokument.ZuAnsicht abgebildet; was außerhalb der Ansicht liegt, fällt weg. Bild rastert immer vollständig und
+// Bild liefert die Ansicht des Dokuments mit allen Objekten und den Zackenkanten der Stauch-Nähte (ADR-0023). Objekte
+// liegen im Original und werden über Dokument.ZuAnsicht abgebildet; was außerhalb der Ansicht liegt, fällt weg. Bild rastert immer vollständig und
 // bricht nie wegen des Aufwands ab: Eine im Editor gemachte Bearbeitung darf nicht am Speichern scheitern (F-131),
 // langsam ist besser als verloren. Gegen präparierte Dateien prüft der Editor beim Öffnen mit Pruefe (ADR-0020
 // Nachtrag 1).
@@ -125,10 +125,31 @@ func Aufwand(d *document.Dokument) float64 { return trockenlauf(d).summe() }
 
 func trockenlauf(d *document.Dokument) aufwand {
 	z := zeichner{d: d, rand: image.Rectangle{Max: d.Groesse()}, auf: &aufwand{}}
-	for _, o := range d.Objekte() {
-		_ = z.objekt(o) // ohne Schrift kein Fehler
-	}
+	_ = z.alles() // ohne Schrift kein Fehler
 	return *z.auf
+}
+
+// alles zeichnet die sichtbaren Objekte und darüber die Zackenkanten der Stauch-Nähte (ADR-0023 Punkte 6 und 7).
+// Objekte ganz im Verborgenen (Dokument.ObjektSichtbar) fallen weg, wie im SVG-Export und im Editor.
+func (z zeichner) alles() error {
+	for _, o := range z.d.Objekte() {
+		if !z.d.ObjektSichtbar(o) {
+			continue
+		}
+		if err := z.objekt(o); err != nil {
+			return err
+		}
+	}
+	g := z.d.Groesse()
+	for _, n := range z.d.Naehte() {
+		laenge := g.X
+		if !n.Zeilen {
+			laenge = g.Y
+		}
+		z.fuelle([][]document.Punkt{document.Zackenband(n, laenge, document.ZackenRandHalb)}, nil, document.ZackenRand)
+		z.fuelle([][]document.Punkt{document.Zackenband(n, laenge, document.ZackenLinieHalb)}, nil, document.ZackenLinie)
+	}
+	return nil
 }
 
 // Pruefe meldet ErrZuAufwendig, wenn das Rastern von d das Budget überschritte (F-125, F-132). Der Editor lehnt damit
@@ -152,10 +173,8 @@ func bildMitAufwand(d *document.Dokument) (*image.NRGBA, aufwand, error) {
 	z := zeichner{bild: b, rand: b.Bounds(), d: d, faces: map[faceSchluessel]font.Face{}, auf: &aufwand{},
 		ras: &vector.Rasterizer{}}
 	defer z.schliessen()
-	for _, o := range d.Objekte() {
-		if err := z.objekt(o); err != nil {
-			return nil, *z.auf, err
-		}
+	if err := z.alles(); err != nil {
+		return nil, *z.auf, err
 	}
 	return b, *z.auf, nil
 }

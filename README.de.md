@@ -18,7 +18,8 @@ Mitte langer Seiten herausschneiden, teilen. Nebenbei ein einfaches Bildbearbeit
 Frühe Arbeit. Schnapp nimmt unter KDE Plasma schon auf (Bereich, Monitor, Fenster; Taste **Druck**), legt jeden
 Screenshot in der Bibliothek ab und öffnet ihn in einem Editor, in dem sich Pfeile (gerade oder gebogen), Kästen, Text
 und Schritt-Nummern zeichnen sowie auswählen, verschieben und in der Größe ändern lassen, Bereiche endgültig schwärzen
-oder verpixeln und das Ergebnis in die Zwischenablage kopieren — Zuschneiden folgt als Nächstes.
+oder verpixeln, zuschneiden, die Mitte eines langen Screenshots herausnehmen und das Ergebnis in die Zwischenablage
+kopieren.
 Schnapp entsteht in Go mit [Gio](https://gioui.org), dazu ein kleiner Patch an Gio (ein Vollbild-Overlay je Monitor,
 gebrochene Skalierung, Mauszeiger bei gemischten Skalen). Die erste Fassung (0.1.0) ist in Arbeit.
 
@@ -72,7 +73,12 @@ neue Zeile, **Esc** verwirft; Doppelklick auf einen Text bearbeitet ihn), **N** 
 **P** Verpixeln (ziehen; ein Mosaik nur aus der Durchschnittsfarbe des Bereichs und Zufall, es trägt nichts vom
 Inhalt). Beides überschreibt die Pixel des Bildes selbst: Bis zum Speichern lässt es sich zurücknehmen, danach ist es
 endgültig, und keine gespeicherte oder exportierte Datei enthält den verdeckten Inhalt. Ein vor dem Schwärzen mit
-**Strg+C** kopiertes Bild bleibt, wie es war, in der Zwischenablage. Der
+**Strg+C** kopiertes Bild bleibt, wie es war, in der Zwischenablage. **C** Zuschneiden (Rahmen ziehen; Doppelklick mit
+dem Werkzeug zeigt wieder das ganze Bild), **X** Stauchen (quer über den Teil ziehen, der wegfallen soll — senkrecht
+für Zeilen, waagrecht für Spalten; die Naht zeigt eine Zackenkante; Doppelklick auf eine Naht holt den Teil zurück).
+Beides verbirgt nur: Das Original bleibt in der Arbeitsdatei vollständig, Geheimes also vor dem Wegschneiden
+schwärzen — Exporte und Zwischenablage enthalten nur den sichtbaren Teil. Beschriftungen, die ganz in einem
+verborgenen Teil liegen, sind mit verborgen (die Statusleiste nennt ihre Zahl) und kehren mit ihm zurück. Der
 Knopf *Farbe* schaltet reihum durch vier Farben und färbt die ausgewählte Beschriftung um. Ein Zeichenwerkzeug bleibt
 aktiv; **Esc** geht stufenweise zurück: Texteingabe → Ziehen → Auswahl → Auswählen. Beschriftung oder Griffe ziehen
 verschiebt, ändert die Größe oder biegt; sie bleibt dabei immer teilweise im Bild. Das Mausrad zoomt zum Zeiger; mit

@@ -129,9 +129,9 @@ type editor struct {
 	schlussErr error               // Speicherfehler beim Schließen nach Signal, Rückgabe von Editor
 
 	knoepfe struct {
-		auswahl, pfeil, kasten, text, nummer, farbe widget.Clickable
-		schwaerzen, verpixeln                       widget.Clickable
-		rueck, wieder, einpassen, eins, speichern   widget.Clickable
+		auswahl, pfeil, kasten, text, nummer, farbe  widget.Clickable
+		schwaerzen, verpixeln, zuschneiden, stauchen widget.Clickable
+		rueck, wieder, einpassen, eins, speichern    widget.Clickable
 	}
 
 	// Doppelklick erkennen (ADR-0021: Text bearbeiten): Zeit und Ort des letzten Drucks der linken Taste.
@@ -379,6 +379,7 @@ func (e *editor) leinwand(gtx layout.Context) {
 	b.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
 	e.zeichneObjekte(gtx)
+	e.zeichneNaehte(gtx)
 	bc.Pop()
 	af.Pop()
 	e.zeichneAuswahl(gtx)
@@ -397,15 +398,32 @@ func (e *editor) leinwand(gtx layout.Context) {
 	c.Pop()
 }
 
-// zeichneRahmen zeigt den gerade gezogenen Schwärzungsrahmen in Fensterpixeln: halbdurchsichtig dunkel mit hellem Rand,
-// damit er auf hellen wie dunklen Bildern sichtbar ist (ADR-0022).
+// zeichneRahmen zeigt den gerade gezogenen Rahmen in Fensterpixeln: beim Schwärzen und beim Stauchen-Band (ADR-0022,
+// ADR-0023) halbdurchsichtig dunkel, beim Zuschneiden ist das Bild außerhalb des Rahmens abgedunkelt; immer mit hellem
+// Rand, damit er auf hellen wie dunklen Bildern sichtbar ist.
 func (e *editor) zeichneRahmen(gtx layout.Context) {
 	a, b, ok := e.s.Rahmen()
 	if !ok {
 		return
 	}
-	r := image.Rect(int(math.Round(a.X)), int(math.Round(a.Y)), int(math.Round(b.X)), int(math.Round(b.Y))).Canon()
-	paint.FillShape(gtx.Ops, color.NRGBA{A: 0x99}, clip.Rect(r).Op())
+	rund := func(p document.Punkt) image.Point { return image.Pt(int(math.Round(p.X)), int(math.Round(p.Y))) }
+	r := image.Rectangle{Min: rund(a), Max: rund(b)}.Canon()
+	dunkel := color.NRGBA{A: 0x99}
+	if e.s.Werkzeug == canvas.WerkzeugZuschneiden {
+		g := e.s.D.Groesse()
+		bild := image.Rectangle{Min: rund(e.s.Abb.ZuFenster(document.Pt(0, 0))),
+			Max: rund(e.s.Abb.ZuFenster(document.Pt(float64(g.X), float64(g.Y))))}
+		for _, k := range []image.Rectangle{
+			{bild.Min, image.Pt(bild.Max.X, r.Min.Y)}, {image.Pt(bild.Min.X, r.Max.Y), bild.Max},
+			{image.Pt(bild.Min.X, r.Min.Y), image.Pt(r.Min.X, r.Max.Y)}, {image.Pt(r.Max.X, r.Min.Y), image.Pt(bild.Max.X, r.Max.Y)},
+		} {
+			if k = k.Canon(); !k.Empty() {
+				paint.FillShape(gtx.Ops, dunkel, clip.Rect(k).Op())
+			}
+		}
+	} else {
+		paint.FillShape(gtx.Ops, dunkel, clip.Rect(r).Op())
+	}
 	w := gtx.Dp(1)
 	for _, k := range []image.Rectangle{
 		{r.Min, image.Pt(r.Max.X, r.Min.Y+w)}, {image.Pt(r.Min.X, r.Max.Y-w), r.Max},
@@ -465,6 +483,7 @@ func (e *editor) zeiger(gtx layout.Context) {
 				}
 			}
 			e.meldeAbgelehnt() // Grenze erreicht: sichtbar sagen, warum nichts entstand (F-154)
+			e.meldeAnsicht()   // Doppelklick mit Zuschneiden/Stauchen
 			// Tastaturfokus auf die Leinwand: Tastenkürzel und getippter Text (key.EditEvent) kommen hier an.
 			gtx.Execute(key.FocusCmd{Tag: e})
 		case pointer.Drag:
@@ -474,6 +493,7 @@ func (e *editor) zeiger(gtx layout.Context) {
 			if e.s.NimmVerpixelnErsetzt() {
 				e.melde(i18n.T("Too narrow to pixelate; the area was blacked out instead."), false)
 			}
+			e.meldeAnsicht()
 			diagnoseEditor("Loslassen: Auswahl %d, geändert %v", e.s.Auswahl, e.s.Geaendert())
 		case pointer.Cancel:
 			e.s.Abbrechen()
@@ -498,6 +518,9 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 		return f32.Pt(float32(q.X), float32(q.Y))
 	}
 	for _, o := range d.Objekte() {
+		if !d.ObjektSichtbar(o) {
+			continue // ganz im Verborgenen: wie Renderer und SVG-Export (ADR-0023 Punkt 7)
+		}
 		switch v := o.(type) {
 		case document.Pfeil:
 			var pfad clip.Path
@@ -550,6 +573,49 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 				e.textBei(gtx, zeile, float32(v.Schriftgrad), p, false, v.Farbe)
 			}
 		}
+	}
+}
+
+// zeichneNaehte legt die Zackenkanten der Stauch-Nähte über Bild und Objekte, in Ansichtskoordinaten und mit denselben
+// Vielecken wie Renderer und SVG-Export (ADR-0023 Punkt 6).
+func (e *editor) zeichneNaehte(gtx layout.Context) {
+	g := e.s.D.Groesse()
+	for _, n := range e.s.D.Naehte() {
+		laenge := g.X
+		if !n.Zeilen {
+			laenge = g.Y
+		}
+		for _, band := range []struct {
+			halb  float64
+			farbe color.NRGBA
+		}{{document.ZackenRandHalb, document.ZackenRand}, {document.ZackenLinieHalb, document.ZackenLinie}} {
+			var p clip.Path
+			p.Begin(gtx.Ops)
+			for i, q := range document.Zackenband(n, laenge, band.halb) {
+				pt := f32.Pt(float32(q.X), float32(q.Y))
+				if i == 0 {
+					p.MoveTo(pt)
+				} else {
+					p.LineTo(pt)
+				}
+			}
+			p.Close()
+			paint.FillShape(gtx.Ops, band.farbe, clip.Outline{Path: p.End()}.Op())
+		}
+	}
+}
+
+// meldeAnsicht zeigt einmal, was das letzte Zuschneiden oder Stauchen zu sagen hat (ADR-0023 Punkte 3 und 7).
+func (e *editor) meldeAnsicht() {
+	switch e.s.NimmAnsichtMeldung() {
+	case canvas.AnsichtVerborgen:
+		n := e.s.VerborgeneObjekte()
+		e.melde(fmt.Sprintf(i18n.N("%d annotation is now hidden outside the visible area; it returns when the crop or cut is removed.",
+			"%d annotations are now hidden outside the visible area; they return when the crop or cut is removed.", n), n), false)
+	case canvas.AnsichtLeer:
+		e.melde(i18n.T("Nothing of the image would remain; cut out a smaller part."), true)
+	case canvas.AnsichtZuviele:
+		e.melde(i18n.T("Too many cuts; undo or remove one first."), true)
 	}
 }
 
@@ -634,6 +700,7 @@ func (e *editor) tasten(gtx layout.Context) {
 			// Werkzeuge (ADR-0021) und Texteingabe; getippte Zeichen kommen als key.EditEvent an die fokussierte Leinwand.
 			key.Filter{Name: "V"}, key.Filter{Name: "A"}, key.Filter{Name: "R"}, key.Filter{Name: "T"},
 			key.Filter{Name: "N"}, key.Filter{Name: "B"}, key.Filter{Name: "P"},
+			key.Filter{Name: "C"}, key.Filter{Name: "X"}, // Zuschneiden ohne Strg (Strg+C bleibt Kopieren), Stauchen (ADR-0023)
 			key.Filter{Name: key.NameReturn, Optional: key.ModShift},
 			key.Filter{Name: key.NameEnter, Optional: key.ModShift},
 			key.FocusFilter{Target: e},
@@ -658,7 +725,7 @@ func (e *editor) tasten(gtx layout.Context) {
 		if e.s.TextLaeuft() {
 			// Während der Texteingabe sind Buchstaben Text (kommt als EditEvent), keine Kürzel.
 			switch k.Name {
-			case "V", "A", "R", "T", "N", "B", "P", key.NameDeleteForward, key.NameTab:
+			case "V", "A", "R", "T", "N", "B", "P", "C", "X", key.NameDeleteForward, key.NameTab:
 				continue // Tab: ohne Wirkung (F-153)
 			case key.NameDeleteBackward:
 				e.s.TextZurueck()
@@ -705,9 +772,13 @@ func (e *editor) tasten(gtx layout.Context) {
 		case "S":
 			e.speichernJetzt()
 		case "C":
-			if e.s.KopierenErlaubt() { // in der Texteingabe bleibt Strg+C wie bisher ohne Wirkung
+			if !k.Modifiers.Contain(key.ModShortcut) {
+				e.s.SetzeWerkzeug(canvas.WerkzeugZuschneiden)
+			} else if e.s.KopierenErlaubt() { // in der Texteingabe bleibt Strg+C wie bisher ohne Wirkung
 				e.kopieren(gtx)
 			}
+		case "X":
+			e.s.SetzeWerkzeug(canvas.WerkzeugStauchen)
 		case "0":
 			e.s.Einpassen()
 		case "1":
@@ -781,7 +852,8 @@ type werkzeugKnopf struct {
 	text string
 }
 
-// werkzeugKnoepfe sind die Knöpfe der Werkzeuggruppe in Reihenfolge der Leiste (Kürzel V, A, R, T, N, B, P; ADR-0021, ADR-0022).
+// werkzeugKnoepfe sind die Knöpfe der Werkzeuggruppe in Reihenfolge der Leiste (Kürzel V, A, R, T, N, B, P, C, X;
+// ADR-0021, ADR-0022, ADR-0023).
 func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
 	k := &e.knoepfe
 	return []werkzeugKnopf{
@@ -792,6 +864,8 @@ func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
 		{&k.nummer, canvas.WerkzeugNummer, i18n.T("Step")},
 		{&k.schwaerzen, canvas.WerkzeugSchwaerzen, i18n.T("Redact")},
 		{&k.verpixeln, canvas.WerkzeugVerpixeln, i18n.T("Pixelate")},
+		{&k.zuschneiden, canvas.WerkzeugZuschneiden, i18n.T("Crop")},
+		{&k.stauchen, canvas.WerkzeugStauchen, i18n.T("Cut out")},
 	}
 }
 
@@ -957,6 +1031,11 @@ func (e *editor) hinweis() string {
 		return i18n.T("Drag over the area to black out. The pixels are overwritten for good once saved.")
 	case canvas.WerkzeugVerpixeln:
 		return i18n.T("Drag over the area to pixelate. The pixels are overwritten for good once saved.")
+	case canvas.WerkzeugZuschneiden:
+		// Zuschneiden ist kein Schwärzen: Das Weggeschnittene bleibt im Original der Arbeitsdatei (ADR-0023 Punkt 8).
+		return i18n.T("Drag a frame to crop. Double-click: whole image again. Cropped parts stay in the working file; redact what must go.")
+	case canvas.WerkzeugStauchen:
+		return i18n.T("Drag across the part to cut out: vertically for rows, horizontally for columns. Double-click a seam to restore it.")
 	}
 	return ""
 }

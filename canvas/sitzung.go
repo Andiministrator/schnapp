@@ -78,7 +78,8 @@ type Sitzung struct {
 	rahmen           bool
 	rahmenA, rahmenB document.Punkt
 	ersatzSchwarz    bool   // letzter Verpixeln-Rahmen war zu schmal und wurde geschwärzt
-	bildAenderung    uint64 // zählt Schwärzungen (Pixel des Originals geändert)
+	bildAenderung    uint64 // zählt Änderungen am Ansichtsbild: Schwärzungen, Zuschnitt, Streifen
+	ansichtMeldung   AnsichtMeldung
 }
 
 // NeueSitzung beginnt mit eingepasster Ansicht, ohne Auswahl, mit dem Werkzeug Auswählen und dem Standardstil.
@@ -138,7 +139,7 @@ func (s *Sitzung) toleranz() float64 { return Toleranz / s.Abb.Zoom }
 // (ADR-0021), sonst an einem Objekt (wählt es aus) oder auf leerer Fläche bzw. mit der mittleren Taste an der Ansicht.
 // Eine laufende Texteingabe wird vorher bestätigt. Während eines Zugs ist ein weiterer Druck wirkungslos.
 func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
-	s.abgelehnt, s.ersatzSchwarz = AblehnungKeine, false
+	s.abgelehnt, s.ersatzSchwarz, s.ansichtMeldung = AblehnungKeine, false, AnsichtKeine
 	if s.pan {
 		return
 	}
@@ -156,7 +157,7 @@ func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
 		s.zug = zugAnsicht
 		return
 	}
-	o := s.D.Objekte()
+	o := s.sichtbareObjekte() // Verborgenes ist nicht zu greifen (ADR-0023 Punkt 7)
 	q := s.original(p)
 	if sel, ok := s.D.Objekt(s.Auswahl); ok {
 		if art, ok := GriffTreffer(sel, q, s.toleranz()); ok && s.D.BeginneZug(sel.Kennung()) == nil {
@@ -297,11 +298,18 @@ func (s *Sitzung) Rueckgaengig() bool { return s.verlauf(s.D.Rueckgaengig) }
 func (s *Sitzung) Wiederholen() bool { return s.verlauf(s.D.Wiederholen) }
 
 func (s *Sitzung) verlauf(f func() error) bool {
-	if s.zug != keinZug || f() != nil {
+	if s.zug != keinZug {
+		return false
+	}
+	z, g := s.D.Zuschnitt(), s.D.Groesse()
+	if f() != nil {
 		return false
 	}
 	if _, ok := s.D.Objekt(s.Auswahl); !ok {
 		s.Auswahl = 0
+	}
+	if s.D.Zuschnitt() != z || s.D.Groesse() != g {
+		s.ansichtGeaendert() // Zuschnitt oder Streifen zurückgenommen: neu einpassen (ADR-0023 Punkt 5)
 	}
 	return true
 }
