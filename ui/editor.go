@@ -149,6 +149,7 @@ type editor struct {
 	wache *canvas.Signalwache // nimmt Signale an (eigene Goroutine), Ereignisschleife fragt Angekommen
 	// wecker weckt die Ereignisschleife für Signal und Dateidialog, bis sie ein Ereignis bearbeitet (F-231).
 	wecker *canvas.Wecker
+	menue  menue // Menü der Leiste (ADR-0026)
 	// bilder zählt die gezeichneten Bilder (Diagnose mit SCHNAPP_DEBUG, Messung F-235).
 	bilder int
 	// Export (ADR-0025): Der Dialog läuft in einer Goroutine, die Antwort kommt über exportAntwort in die Ereignisschleife.
@@ -565,6 +566,7 @@ func (e *editor) frame(gtx layout.Context) {
 	_ = e.exportAbholen()
 	e.tasten(gtx)
 	e.knoepfeAuswerten(gtx)
+	e.menueAuswerten(gtx)
 	paint.Fill(gtx.Ops, farbeFenster)
 	knoepfe := e.leistenKnoepfe()
 	pos, leiste := e.ordneLeiste(gtx, knoepfe) // Höhe folgt dem Umbruch (F-148), nie eine feste Größe
@@ -581,8 +583,10 @@ func (e *editor) frame(gtx layout.Context) {
 	e.leinwand(g)
 	t.Pop()
 
-	e.zeichneLeiste(gtx, knoepfe, pos, leiste)
+	menueRechts := e.zeichneLeiste(gtx, knoepfe, pos, leiste)
 	e.zeichneStatus(gtx, status)
+	e.zeichneWerkzeugHinweis(gtx, knoepfe, pos)
+	e.zeichneMenue(gtx, menueRechts, gtx.Dp(10)+gtx.Dp(36)+gtx.Dp(4)) // über allem, unter dem Menüknopf
 }
 
 // --- Leinwand ---
@@ -936,31 +940,15 @@ func (e *editor) zeichneAuswahl(gtx layout.Context) {
 
 func (e *editor) tasten(gtx layout.Context) {
 	for {
-		// Während der Texteingabe fängt der Editor Tab ab (ohne Wirkung, ADR-0021 Nachtrag 1): Sonst wanderte der
-		// Fokus auf einen Knopf, und weitere Zeichen gingen still verloren (F-153). Sonst bleibt Tab die Fokusfahrt.
-		filter := []event.Filter{
-			key.Filter{Name: key.NameEscape},
-			key.Filter{Name: key.NameDeleteForward},
-			key.Filter{Name: key.NameDeleteBackward},
-			key.Filter{Name: "Z", Required: key.ModShortcut, Optional: key.ModShift},
-			key.Filter{Name: "Y", Required: key.ModShortcut},
-			key.Filter{Name: "S", Required: key.ModShortcut},
-			key.Filter{Name: "C", Required: key.ModShortcut},
-			key.Filter{Name: "E", Required: key.ModShortcut | key.ModShift},
-			key.Filter{Name: "0", Required: key.ModShortcut},
-			key.Filter{Name: "1", Required: key.ModShortcut},
-			key.Filter{Name: "W", Required: key.ModShortcut},
-			// Werkzeuge (ADR-0021) und Texteingabe; getippte Zeichen kommen als key.EditEvent an die fokussierte Leinwand.
-			key.Filter{Name: "V"}, key.Filter{Name: "A"}, key.Filter{Name: "R"}, key.Filter{Name: "T"},
-			key.Filter{Name: "N"}, key.Filter{Name: "B"}, key.Filter{Name: "P"},
-			key.Filter{Name: "C"}, key.Filter{Name: "X"}, // Zuschneiden ohne Strg (Strg+C bleibt Kopieren), Stauchen (ADR-0023)
-			key.Filter{Name: key.NameReturn, Optional: key.ModShift},
-			key.Filter{Name: key.NameEnter, Optional: key.ModShift},
-			key.FocusFilter{Target: e},
+		// Die Tasten stehen in tastenTabelle (ADR-0026): Jede hat einen Knopf, einen Menüeintrag oder eine begründete
+		// Ausnahme. Während der Texteingabe fängt der Editor Tab ab (ohne Wirkung, ADR-0021 Nachtrag 1): Sonst wanderte
+		// der Fokus auf einen Knopf, und weitere Zeichen gingen still verloren (F-153). Sonst bleibt Tab die Fokusfahrt.
+		// Getippte Zeichen kommen als key.EditEvent an die fokussierte Leinwand.
+		var filter []event.Filter
+		for _, f := range tastenFilter(e.s.TextLaeuft()) {
+			filter = append(filter, f)
 		}
-		if e.s.TextLaeuft() {
-			filter = append(filter, key.Filter{Name: key.NameTab, Optional: key.ModShift})
-		}
+		filter = append(filter, key.FocusFilter{Target: e})
 		ev, ok := gtx.Event(filter...)
 		if !ok {
 			return
@@ -975,6 +963,10 @@ func (e *editor) tasten(gtx layout.Context) {
 		if !ok || k.State != key.Press {
 			continue
 		}
+		if e.menue.offen && k.Name == key.NameEscape {
+			e.menue.offen = false // Esc schließt zuerst das Menü (ADR-0026 Punkt 1)
+			continue
+		}
 		if e.s.TextLaeuft() {
 			// Während der Texteingabe sind Buchstaben Text (kommt als EditEvent), keine Kürzel.
 			switch k.Name {
@@ -985,10 +977,14 @@ func (e *editor) tasten(gtx layout.Context) {
 				continue
 			}
 		}
-		switch k.Name {
-		case key.NameEscape:
+		t, ok := findeTaste(k.Name, k.Modifiers, e.s.TextLaeuft())
+		switch {
+		case !ok:
+		case t.hatWerkzeug:
+			e.s.SetzeWerkzeug(t.werkzeug)
+		case t.akt == aktEsc:
 			e.s.Esc() // in Stufen: Text verwerfen, Ziehen abbrechen, abwählen, zurück zu Auswählen
-		case key.NameReturn, key.NameEnter:
+		case t.akt == aktEnter:
 			// Ohne Texteingabe löst Enter einen per Tastatur fokussierten Knopf aus, statt von der Leinwand
 			// verbraucht zu werden (F-153).
 			if !e.s.TextLaeuft() {
@@ -998,51 +994,9 @@ func (e *editor) tasten(gtx layout.Context) {
 				}
 			}
 			e.s.Enter(k.Modifiers.Contain(key.ModShift))
-		case "V":
-			e.s.SetzeWerkzeug(canvas.WerkzeugAuswahl)
-		case "A":
-			e.s.SetzeWerkzeug(canvas.WerkzeugPfeil)
-		case "R":
-			e.s.SetzeWerkzeug(canvas.WerkzeugKasten)
-		case "T":
-			e.s.SetzeWerkzeug(canvas.WerkzeugText)
-		case "N":
-			e.s.SetzeWerkzeug(canvas.WerkzeugNummer)
-		case "B":
-			e.s.SetzeWerkzeug(canvas.WerkzeugSchwaerzen)
-		case "P":
-			e.s.SetzeWerkzeug(canvas.WerkzeugVerpixeln)
-		case key.NameDeleteForward, key.NameDeleteBackward:
-			e.s.Loeschen()
-		case "Z":
-			if k.Modifiers.Contain(key.ModShift) {
-				e.wiederholen()
-			} else {
-				e.rueckgaengig()
-			}
-		case "Y":
-			e.wiederholen()
-		case "S":
-			e.speichernJetzt()
-		case "C":
-			if !k.Modifiers.Contain(key.ModShortcut) {
-				e.s.SetzeWerkzeug(canvas.WerkzeugZuschneiden)
-			} else if e.s.KopierenErlaubt() { // in der Texteingabe bleibt Strg+C wie bisher ohne Wirkung
-				e.kopieren(gtx)
-			}
-		case "E": // Strg+Umschalt+E: Export (ADR-0025); in der Texteingabe wie Strg+C ohne Wirkung
-			if k.Modifiers.Contain(key.ModShortcut|key.ModShift) && e.s.KopierenErlaubt() {
-				e.exportStarten()
-			}
-		case "X":
-			e.s.SetzeWerkzeug(canvas.WerkzeugStauchen)
-		case "0":
-			e.s.Einpassen()
-		case "1":
-			e.s.EinsZuEins()
-		case "W":
-			diagnoseEditor("Strg+W")
-			e.w.Perform(system.ActionClose) // in der eigenen Schleife, wie im Overlay (F-77)
+		default:
+			// Per Taste wirken Kopieren und Export in der Texteingabe nicht (wie Strg+C bisher).
+			e.fuehreAus(gtx, t.akt, false)
 		}
 	}
 }
@@ -1050,7 +1004,13 @@ func (e *editor) tasten(gtx layout.Context) {
 // fokussierterKnopf liefert den Knopf der Leiste, der gerade den Tastaturfokus hat (nil: keiner).
 func (e *editor) fokussierterKnopf(gtx layout.Context) *widget.Clickable {
 	k := &e.knoepfe
-	alle := []*widget.Clickable{&k.rueck, &k.wieder, &k.einpassen, &k.eins, &k.export, &k.speichern, &k.farbe}
+	alle := []*widget.Clickable{&k.rueck, &k.wieder, &k.ganz, &k.einpassen, &k.eins, &k.export, &k.speichern, &k.farbe,
+		&e.menue.knopf}
+	if e.menue.offen {
+		for i := range e.menueEintraege() {
+			alle = append(alle, &e.menue.eintraege[i])
+		}
+	}
 	for _, w := range e.werkzeugKnoepfe() {
 		alle = append(alle, w.c)
 	}
@@ -1088,19 +1048,13 @@ func (e *editor) knoepfeAuswerten(gtx layout.Context) {
 		e.s.Einpassen()
 	}
 	if k.ganz.Clicked(gtx) {
-		// Zuschnitt aufheben und Randstreifen zurückholen, wie Doppelklick mit Zuschneiden (E-21, F-222).
-		e.s.TextBestaetigen()
-		if e.s.HebeZuschnittAuf() {
-			e.bildNeu()
-			e.meldeAnsicht()
-		}
+		e.fuehreAus(gtx, aktGanzesBild, true)
 	}
 	if k.eins.Clicked(gtx) {
 		e.s.EinsZuEins()
 	}
 	if k.export.Clicked(gtx) {
-		e.s.TextBestaetigen() // wie Speichern: ein laufender Text kommt mit
-		e.exportStarten()
+		e.fuehreAus(gtx, aktExport, true) // wie Speichern: ein laufender Text kommt mit
 	}
 	if k.speichern.Clicked(gtx) {
 		e.speichernJetzt()
@@ -1198,12 +1152,19 @@ func (e *editor) ordneLeiste(gtx layout.Context, links []leistenKnopf) ([]image.
 		kn[i] = canvas.LeistenKnopf{Breite: e.messeKnopf(gtx, l.c, l.text, l.muster), Gruppe: l.gruppe}
 	}
 	m := canvas.LeistenMass{RandX: gtx.Dp(12), RandY: gtx.Dp(10), Abstand: gtx.Dp(8), KnopfHoehe: gtx.Dp(36),
-		Speichern: e.messeKnopf(gtx, &e.knoepfe.speichern, i18n.T("Save"), color.NRGBA{}), Breite: gtx.Constraints.Max.X}
+		Speichern: e.rechterBlock(gtx), Breite: gtx.Constraints.Max.X}
 	pos, hoehe, _ := canvas.LeisteAnordnen(kn, m)
 	return pos, hoehe
 }
 
-func (e *editor) zeichneLeiste(gtx layout.Context, links []leistenKnopf, pos []image.Point, hoehe int) {
+// rechterBlock ist die Breite rechts in der ersten Zeile: „Menü“, Abstand, „Speichern“ (ADR-0026 Punkt 1).
+func (e *editor) rechterBlock(gtx layout.Context) int {
+	return e.messeKnopf(gtx, &e.menue.knopf, i18n.T("Menu"), color.NRGBA{}) + gtx.Dp(8) +
+		e.messeKnopf(gtx, &e.knoepfe.speichern, i18n.T("Save"), color.NRGBA{})
+}
+
+// zeichneLeiste zeichnet die Leiste und liefert die rechte Kante des Menüknopfs (dort schließt die Liste an).
+func (e *editor) zeichneLeiste(gtx layout.Context, links []leistenKnopf, pos []image.Point, hoehe int) int {
 	breite := gtx.Constraints.Max.X
 	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(image.Rect(0, 0, breite, hoehe)).Op())
 	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(image.Rect(0, hoehe-gtx.Dp(1), breite, hoehe)).Op())
@@ -1217,6 +1178,15 @@ func (e *editor) zeichneLeiste(gtx layout.Context, links []leistenKnopf, pos []i
 	t := op.Offset(image.Pt(breite-gtx.Dp(12)-w, gtx.Dp(10))).Push(gtx.Ops)
 	call.Add(gtx.Ops)
 	t.Pop()
+	// „Menü“ links neben „Speichern“; offen wie ein aktives Werkzeug hervorgehoben.
+	art := knopfNormal
+	if e.menue.offen {
+		art = knopfAktiv
+	}
+	rechts := breite - gtx.Dp(12) - w - gtx.Dp(8)
+	mb := e.messeKnopf(gtx, &e.menue.knopf, i18n.T("Menu"), color.NRGBA{})
+	e.knopf(gtx, &e.menue.knopf, i18n.T("Menu"), art, true, image.Pt(rechts-mb, gtx.Dp(10)), color.NRGBA{})
+	return rechts
 }
 
 // knopf zeichnet eine Schaltfläche (Radius 6, Höhe 36 dp) bei ecke und liefert ihre Breite. Ein muster mit A > 0

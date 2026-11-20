@@ -242,3 +242,7 @@ Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden;
     Test grün, ohne dass er wertlos wäre. Dann gegen den Stand vor dem Fix zurückbauen (`git show <fix>`), nicht gegen
     eine einzelne Zeile. Und: Ein Zug, der außerhalb des Fensters beginnt, startet nicht — Drehbuch und Test drücken im
     Bild und ziehen hinaus, nicht umgekehrt.
+  - *Im Drehbuch vor jedem Klick auf einen Knopf den Zeiger hinbewegen* (`zeiger X Y`, `warte 200`): Ein Druck direkt
+    nach einem Zeigersprung kommt an einem Leistenknopf nicht an (F-251, schon vor Sprint 7 so). Ein „wirkungsloser“
+    Knopf im Foto ist deshalb zuerst ein Drehbuchfehler; die Eingrenzung gegen den alten Stand geht per
+    `git worktree add --detach tmp/<sprint>/<lauf>/alt <commit>` und dessen eigenem `scripts/probe.sh`.

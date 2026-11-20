@@ -475,3 +475,36 @@ msgstr "Der Teil reichte bis an den Rand und wurde abgeschnitten; „Ganzes Bild
 
 msgid "The area is too small to redact at this zoom; zoom in or draw a larger area."
 msgstr "Der Bereich ist bei diesem Zoom zu klein zum Schwärzen; hineinzoomen oder einen größeren Bereich ziehen."
+
+msgid "Menu"
+msgstr "Menü"
+
+msgid "Copy"
+msgstr "Kopieren"
+
+msgid "Delete"
+msgstr "Löschen"
+
+msgid "Edit text"
+msgstr "Text bearbeiten"
+
+msgid "Restore cut-out areas"
+msgstr "Gestauchtes zurückholen"
+
+msgid "Close"
+msgstr "Schließen"
+
+msgid "Ctrl"
+msgstr "Strg"
+
+msgid "Shift"
+msgstr "Umschalt"
+
+msgid "Del"
+msgstr "Entf"
+
+msgid "Backspace"
+msgstr "Rücktaste"
+
+msgid "Enter"
+msgstr "Eingabe"

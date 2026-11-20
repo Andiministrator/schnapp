@@ -1,15 +1,22 @@
 # Rückfallprobe (Echtlauf #92, kein automatischer Test): F-148/F-218: Leiste bricht um, Knöpfe unten klickbar, Statusleiste gekürzt statt überlagert
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-leiste-schmal.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 480 --hoehe 800
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
+# Koordinaten seit ADR-0026 (Knopf „Menü“, Leiste fünfzeilig): Stauchen (172,115), Schwärzen (214,71), Export (70,203)
 # Lauf 8 (480x800): Punkt 12 Stauchen-Hinweis im schmalen Fenster, Knopf der zweiten/dritten Zeile klickbar, Export-Knopf ohne Portal
 warte 800
-klick 55 115
+zeiger 172 115
+warte 200
+klick 172 115
 warte 300
 foto 01-stauchen-per-knopf
-klick 150 71
+zeiger 214 71
+warte 200
+klick 214 71
 warte 300
 foto 02-schwaerzen-per-knopf
-klick 358 160
+zeiger 70 203
+warte 200
+klick 70 203
 warte 2500
 foto 03-export-knopf
 taste Esc
