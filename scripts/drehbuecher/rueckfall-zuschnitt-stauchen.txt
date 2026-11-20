@@ -29,7 +29,7 @@ taste X
 ziehe 800 422 800 622 12
 warte 300
 foto 06-gestaucht-zeilen
-# 6) Doppelklick auf die Naht (Bild 600 hoch, oben bei 214, Naht bei 214+286=500)
+# 6) Doppelklick auf die Naht (Bild 600 hoch, oben bei 236, Naht bei 236+286=522)
 doppelklick 800 522
 warte 300
 foto 07-naht-zurueck
@@ -40,8 +40,8 @@ foto 08-gestaucht-spalten
 taste Strg+Z
 warte 300
 foto 09-spalten-zurueck
-# 8) Band über das ganze Bild: rote Meldung, keine Änderung
-ziehe 800 112 800 982 12
+# 8) Band über das ganze Bild ab der ersten Bildzeile (y=136): rote Meldung, keine Änderung
+ziehe 800 136 800 982 12
 warte 300
 foto 10-ganzes-band
 # 7) Pfeil ganz im gestauchten Teil, dann stauchen: Pfeil verborgen, Meldung; Strg+Z bringt ihn zurück

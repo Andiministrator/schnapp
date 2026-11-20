@@ -15,13 +15,13 @@ pages, share. Also meant as a simple image editor.
 
 ## Status
 
-Early work. Schnapp already captures on KDE Plasma (area, monitor, window; **Print** key), saves every screenshot to
+Version 0.1.0 is the first version (KDE Plasma only). Schnapp captures on KDE Plasma (area, monitor, window; **Print** key), saves every screenshot to
 the library and opens it in an editor where you draw arrows (straight or bent), boxes, text labels and step numbers
 and select, move and resize them, black out or pixelate areas for good, crop, cut out the middle of a long screenshot
 and copy the result to the clipboard. It is written in Go with the [Gio](https://gioui.org) UI library,
 plus a small patch to Gio (one full-screen overlay per monitor, fractional scaling, cursor at mixed scales,
-images on the clipboard). The first
-version (0.1.0) is being built.
+images on the clipboard). A part that
+reaches the edge of the image is cropped off and comes back with the *Whole image* button.
 
 ## Planned features
 

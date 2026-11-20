@@ -15,13 +15,14 @@ Mitte langer Seiten herausschneiden, teilen. Nebenbei ein einfaches Bildbearbeit
 
 ## Stand
 
-Frühe Arbeit. Schnapp nimmt unter KDE Plasma schon auf (Bereich, Monitor, Fenster; Taste **Druck**), legt jeden
+Version 0.1.0 ist die erste Fassung (nur KDE Plasma). Schnapp nimmt unter KDE Plasma schon auf (Bereich, Monitor, Fenster; Taste **Druck**), legt jeden
 Screenshot in der Bibliothek ab und öffnet ihn in einem Editor, in dem sich Pfeile (gerade oder gebogen), Kästen, Text
 und Schritt-Nummern zeichnen sowie auswählen, verschieben und in der Größe ändern lassen, Bereiche endgültig schwärzen
 oder verpixeln, zuschneiden, die Mitte eines langen Screenshots herausnehmen und das Ergebnis in die Zwischenablage
 kopieren.
 Schnapp entsteht in Go mit [Gio](https://gioui.org), dazu ein kleiner Patch an Gio (ein Vollbild-Overlay je Monitor,
-gebrochene Skalierung, Mauszeiger bei gemischten Skalen, Bilder in der Zwischenablage). Die erste Fassung (0.1.0) ist in Arbeit.
+gebrochene Skalierung, Mauszeiger bei gemischten Skalen, Bilder in der Zwischenablage). Ein Teil bis an
+den Bildrand wird abgeschnitten und kommt mit dem Knopf *Ganzes Bild* zurück.
 
 ## Geplante Funktionen
 

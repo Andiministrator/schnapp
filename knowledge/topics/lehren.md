@@ -130,7 +130,12 @@ Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden;
   mit jeder Änderung an der Leiste** (nach „Ganzes Bild“ trafen zwei Drehbücher „Einpassen“ statt „Exportieren“): nach
   einem neuen Knopf alle Drehbücher in `scripts/drehbuecher/` fahren und per Foto prüfen — die `klick`-Zeilen auf
   Knöpfe ebenso wie `ziehe`/`doppelklick` auf der Leinwand: Bricht die Leiste in eine weitere Zeile um, rückt das Bild
-  nach unten (1600 px: 22 px, Bild ab y=136), und ein Zug über der ersten Bildzeile startet still nichts (F-150, F-238).
+  nach unten (1600 px: 22 px, Bild ab y=136), und ein Zug über der ersten Bildzeile startet still nichts (F-150, F-238). Beim Verschieben nicht mechanisch
+  aufschlagen: Ein Zug, der schon vorher außerhalb lag, bleibt es (Schritt 8 von `rueckfall-zuschnitt-stauchen`, F-248);
+  zwei byte-gleiche Fotos hintereinander (`cmp`) zeigen, dass ein Schritt nichts bewirkt hat.
+- **Belege aus Sub-Agent-Worktrees sichern, bevor der Worktree abgeräumt wird (F-246, 20.11.2026):** `git worktree
+  remove` nimmt das gitignorierte `tmp/` des Worktrees mit — Messprotokolle, Fotos, Gegenproben. Vor dem Abräumen
+  nach `tmp/<sprint>/` im Hauptbaum kopieren oder den Agenten anweisen, Belege dort abzulegen.
 - **Schutz messen, nicht annehmen (Sprint 6, F-163):** Verpixeln mit Blockmittel plus Zufallsrauschen sah sicher aus;
   der Kritiker hat es mit einem Toleranzvergleich gegen Kandidaten nachgerechnet und eine vierstellige Zahl in 193 von
   200 Läufen zurückgewonnen. Was vertraulichen Inhalt unkenntlich machen soll, trägt keine Information des Inhalts

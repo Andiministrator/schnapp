@@ -106,11 +106,11 @@ Herkunft: Anforderungen und Entscheidungen des Maintainers vom 18.11.2026, über
 
 ## Architektur
 
-Produktcode (Stand 20.11.2026, Sprint 6): `capture`, `document`, `fileformat`, `library`, `settings`, `selection`,
+Produktcode (Stand 20.11.2026, v0.1.0 nach Sprint 6): `capture`, `document`, `fileformat`, `library`, `settings`, `selection`,
 `canvas`, `render` stehen mit Tests, dazu Overlay und Editor in `ui` (wenige Tests, Logik liegt in `selection`/`canvas`);
 Schnapp nimmt auf, legt in der Bibliothek ab und öffnet den Editor (Auswählen, Verschieben, Griffe, Zoom, Rückgängig,
 Speichern, Zeichenwerkzeuge Pfeil/Kasten/Text/Schritt-Nummer mit Farbwahl, ADR-0021; Schwärzen/Verpixeln ADR-0022;
-Zwischenablage Strg+C, ADR-0015 Nachtrag 2, bleibt nach dem Schließen über den Halter `wlclip`, ADR-0024; Zuschneiden C und Stauchen X mit Zackenkante, ADR-0023; Export PNG/JPG/SVG über den Portal-Dialog, Strg+Umschalt+E,
+Zwischenablage Strg+C, ADR-0015 Nachtrag 2, bleibt nach dem Schließen über den Halter `wlclip`, ADR-0024; Zuschneiden C und Stauchen X mit Zackenkante, Band bis an den Rand wird Zuschnitt, zurück über den Knopf „Ganzes Bild“, ADR-0023; Export PNG/JPG/SVG über den Portal-Dialog, Strg+Umschalt+E,
 ADR-0025). Probeläufe ohne Andi: `scripts/probe.sh`
 (virtueller KWin, `knowledge/topics/lehren.md`). Installation per `install.sh` (`~/.local`, Version aus `git describe`). Daneben
 der Wegwerf-Prototyp `prototype/`. Schichten:
@@ -125,7 +125,8 @@ der Wegwerf-Prototyp `prototype/`. Schichten:
 - **selection** — Logik des Overlays ohne Gio (Abbildung, Bereich, Monitor per Klick, Lupe, letzter Bereich).
 - **canvas** — Logik der Editor-Leinwand ohne Gio (Zoom zum Zeiger, Einpassen, Treffer, Griffe, Verschieben;
   Zeichenwerkzeuge, Schwärzen und Texteingabe `werkzeuge.go`; Zuschneiden/Stauchen `zuschnitt.go`; Statusleiste `status.go` `StatusZeile`; Schließen
-  `Sitzung.Schliessen`, Signalwache `signal.go`; ADR-0020 bis ADR-0023).
+  `Sitzung.Schliessen`, Signalwache `signal.go`; `Wecker` (`wecker.go`) weckt die Gio-Schleife wiederholt, bis sie eine
+  Antwort abholt, F-231; ADR-0020 bis ADR-0023).
 - **render** — Ansichtsbild + Objekte zu Pixeln ohne GPU (`golang.org/x/image` vector/font, Go-Schriften; ADR-0020);
   Füllen über eigenen `einmischer` (bitgleich zu `draw.Over`, rund 4-mal schneller); `render.Pruefe` zählt die Textzeichen (`ZeichenBudget` 1e6, F-224) und schätzt den
   Aufwand per Trockenlauf (`Budget` 1,25e11, ADR-0020 Nachtrag 3), der Editor lehnt präparierte Dateien beim Öffnen ab
@@ -138,6 +139,8 @@ der Wegwerf-Prototyp `prototype/`. Schichten:
 - **export** — Export aus dem Editor: Format aus Endung oder Filter, PNG/JPG aus `render`, SVG aus `fileformat`,
   atomares Schreiben (ADR-0025).
 - **ui** — Gio: Vollbild-Overlay zur Auswahl (fertig), Editor, Bibliothek.
+- **internal/probeschutz** — `NurVirtuell`: Probe-Builds (Tag `probe`, Schnapp und Fernbedienung) laufen nur im
+  virtuellen KWin von `scripts/probe.sh` (F-229); das Paket selbst hat kein Build-Tag.
 
 Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung, Mauszeiger bei gemischter Skala F-78, Bild-Typ in
 der Zwischenablage ADR-0015 Nachtrag 2) —
@@ -157,7 +160,7 @@ ADR-0003 Nachtrag 2, ADR-0015.
   `libwayland-dev libegl-dev libxkbcommon-dev`. Die Tags kommen über die Umgebungsvariable, nicht über `go env -w`:
   `export GOFLAGS=-tags=novulkan,nox11`, dann `go vet ./... && go test ./...`, zusätzlich mit Tag `probe`
   `GOFLAGS=-tags=novulkan,nox11,probe go vet ./cmd/... ./ui && GOFLAGS=-tags=novulkan,nox11,probe go test ./cmd/schnapp-fernbedienung ./cmd/schnapp ./internal/probeschutz`
-  (der Normalbau sieht das Paket nicht); Programm `go build -trimpath -o schnapp
+  (der Normalbau sieht `cmd/schnapp-fernbedienung` und `cmd/schnapp/probe_test.go` nicht); Programm `go build -trimpath -o schnapp
   ./cmd/schnapp`. Pakete: `i18n` (Sprachwahl, PO-Leser, `i18n.T/TK/N`), `po` (eingebettete `po/*.po`, ADR-0014
   Nachtrag 1), `ui` (Schicht zu Gio; `Starte` hält die Gio-Hauptschleife, `Overlay` je Monitor),
   `cmd/schnapp` (Argumente `--region` [Voreinstellung], `--screen[=NAME]`, `--list-screens`, `--window`, `--repeat`,
