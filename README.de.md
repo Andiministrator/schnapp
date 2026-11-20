@@ -84,7 +84,8 @@ aktiv; **Esc** geht stufenweise zurück: Texteingabe → Ziehen → Auswahl → 
 verschiebt, ändert die Größe oder biegt; sie bleibt dabei immer teilweise im Bild. Das Mausrad zoomt zum Zeiger; mit
 Auswählen verschiebt Ziehen auf freier Fläche die Ansicht, die mittlere Taste in jedem Werkzeug. Tasten: **Strg+Z**
 rückgängig, **Strg+Umschalt+Z**/**Strg+Y** wiederholen, **Entf** löschen, **Strg+S** speichern,
-**Strg+C** fertiges Bild in die Zwischenablage (vorerst nur, solange der Editor offen ist), **Strg+0** einpassen,
+**Strg+C** fertiges Bild in die Zwischenablage (es bleibt nach dem Schließen des Editors, bis etwas anderes
+kopiert wird, höchstens 12 Stunden), **Strg+0** einpassen,
 **Strg+1** 100 %, **Strg+W** schließen.
 
 Änderungen werden beim Schließen gespeichert; **Strg+S** ohne Änderung schreibt nichts. Eine Datei außerhalb der

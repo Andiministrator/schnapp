@@ -40,6 +40,7 @@ import (
 	"github.com/Andiministrator/schnapp/document"
 	"github.com/Andiministrator/schnapp/i18n"
 	"github.com/Andiministrator/schnapp/render"
+	"github.com/Andiministrator/schnapp/wlclip"
 )
 
 // Weitere Farben laut brand/corporate-design.md.
@@ -308,16 +309,37 @@ func (e *editor) speichernJetzt() {
 }
 
 // kopieren legt das fertig gerenderte Bild als PNG (ohne Bearbeitungsdaten) in die Zwischenablage (Karte #39). Es
-// rendert wie das Speichern im Fensterthread (F-143). Unter Wayland gehört der Inhalt dem Fenster (ADR-0015 Nachtrag 2).
-// Kann Gio das Bild nicht anbieten, ersetzt die Ereignisschleife die Meldung (zwischenablageFehlt, F-177).
+// rendert wie das Speichern im Fensterthread (F-143). Das Bild übernimmt ein abgelöster Halter-Prozess über das
+// data-control-Protokoll, damit es das Schließen des Editors überdauert (ADR-0024, E-19). Bietet der Compositor das
+// nicht an oder meldet sich der Halter nicht, bietet das Fenster selbst an wie bisher (ADR-0015 Nachtrag 2) — dann
+// gehört der Inhalt dem Fenster. Kann auch Gio das Bild nicht anbieten, ersetzt die Ereignisschleife die Meldung
+// (zwischenablageFehlt, F-177).
 func (e *editor) kopieren(gtx layout.Context) {
 	daten, err := render.PNG(e.s.D)
 	if err != nil {
 		e.melde(fmt.Sprintf(i18n.T("Could not copy: %v"), err), true)
 		return
 	}
-	gtx.Execute(clipboard.WriteCmd{Type: "image/png", Data: io.NopCloser(bytes.NewReader(daten))})
+	if err := halteZwischenablage(daten); err != nil {
+		diagnoseEditor("Halter der Zwischenablage nicht gestartet, Fenster bietet selbst an: %v", err)
+		gtx.Execute(clipboard.WriteCmd{Type: wlclip.MIME, Data: io.NopCloser(bytes.NewReader(daten))})
+	}
 	e.melde(i18n.T("Copied to clipboard"), false)
+}
+
+// halteZwischenablage übergibt das Bild an einen Halter-Prozess (dasselbe Programm, wlclip.Uebergib).
+func halteZwischenablage(daten []byte) error {
+	programm, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	pid, manager, err := wlclip.Uebergib(programm, daten, wlclip.Frist)
+	if err != nil {
+		return err
+	}
+	diagnoseEditor("Zwischenablage an Halter übergeben: PID %d, %s, %d Byte, endet bei neuem Inhalt oder nach %v",
+		pid, manager, len(daten), wlclip.Haltezeit)
+	return nil
 }
 
 // gespeichertMelden zeigt ein gelungenes Speichern in Titel- und Statusleiste (F-116).

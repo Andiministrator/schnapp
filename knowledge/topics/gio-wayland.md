@@ -121,6 +121,13 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
   ignorierte `clipboard.WriteCmd.Type`. Der Patch (`app/os_wayland.go`, ADR-0015 Nachtrag 2) bietet bei `image/…` genau
   diesen Typ an. Der Inhalt gehört dem Fenster; nach dem Schließen des Editors bleibt er nur, wenn ein
   Zwischenablage-Verwalter ihn übernimmt — **bei Andi tut Klipper das nicht**: nach dem Schließen war das Bild weg
-  (20.11.2026; ein früherer Test lief bei noch offenem Editor). Abhilfe Karte #91 (E-19). Ein PNG ist größer
+  (20.11.2026; ein früherer Test lief bei noch offenem Editor). Abhilfe ADR-0024: Halter-Prozess `wlclip` über
+  `ext_data_control_manager_v1` (KWin 6.8 bietet es jedem Client an), Gio nur noch als Rückfall. Ein PNG ist größer
   als der Pipe-Puffer: das Senden muss Teilschreiben fortsetzen (Kritik Fable, F-176). Prüfen:
   `wl-paste --list-types` im Terminal zeigt `image/png`.
+- **Wayland ohne libwayland (`wlclip`, ADR-0024):** Für einen Client ohne Fenster reicht das Leitungsformat in Go
+  (Kopf Objekt-ID + Größe<<16|Opcode, Zeichenketten mit Nullbyte auf 4 Byte gepolstert, Dateideskriptoren per
+  SCM_RIGHTS). Eine Auswahl ohne Fokus setzt nur data-control; `wl_data_device.set_selection` braucht ein Eingabe-Serial.
+  Falle: `net.UnixConn.ReadMsgUnix` liefert bei Fehler (etwa abgelaufener Lesefrist) `n = -1` — vor dem Schneiden
+  auf 0 setzen. Prüfen ohne Andis Sitzung: `scripts/probe.sh --zwischenablage BILD.png` (wl-paste/wl-copy nur gegen
+  den virtuellen KWin).

@@ -16,6 +16,7 @@ import (
 	"github.com/Andiministrator/schnapp/po"
 	"github.com/Andiministrator/schnapp/settings"
 	"github.com/Andiministrator/schnapp/ui"
+	"github.com/Andiministrator/schnapp/wlclip"
 )
 
 // version wird beim Bau gesetzt: go build -ldflags "-X main.version=0.1.0".
@@ -39,6 +40,10 @@ const (
 )
 
 func main() {
+	// Halter der Zwischenablage (ADR-0024): vom Editor gestartet, ohne Gio, ohne Einstellungen, ohne Sprache.
+	if len(os.Args) == 2 && os.Args[1] == wlclip.HelferArgument {
+		os.Exit(wlclip.HelferLauf())
+	}
 	// Scheitert das Laden der Sprache, bleibt Englisch aktiv; das Programm läuft trotzdem (i18n.Starte).
 	_, _ = i18n.Starte(po.Dateien, "")
 	// Gio braucht die Hauptschleife auf dem Haupt-Goroutine, sobald das Overlay ein Fenster öffnet.

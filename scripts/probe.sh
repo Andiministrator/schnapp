@@ -5,6 +5,9 @@
 # unter tmp/probe/ — die echte Konfiguration wird weder gelesen noch beschrieben.
 #
 #   scripts/probe.sh [--monitore N] [--skala S] [-- SCHNAPP-ARGUMENTE]   (Voreinstellung: --no-editor)
+#   scripts/probe.sh --zwischenablage BILD.png
+#     prüft den Halter der Zwischenablage (ADR-0024): setzt BILD als image/png, liest es mit wl-paste zurück (nur aus
+#     der Zwischenablage des virtuellen KWin), ersetzt sie mit wl-copy und prüft, dass der Halter endet.
 #
 # Ergebnis: tmp/probe/ergebnis.txt (stdout und stderr getrennt, Exit-Code, in diesem Lauf abgelegte Dateien). Harte
 # Zeitgrenze 90 s (danach SIGKILL nach weiteren 5 s). Exit: 0 Lauf durch, 1 Fehler, 124 Zeitgrenze.
@@ -12,10 +15,12 @@ set -u
 cd "$(dirname "$0")/.." || exit 1
 monitore=1
 skala=1
+ablage=""
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--monitore) monitore="$2"; shift 2 ;;
 	--skala) skala="$2"; shift 2 ;;
+	--zwischenablage) ablage="$(realpath -e -- "$2")" || exit 2; shift 2 ;;
 	--) shift; break ;;
 	*) echo "unbekannt: $1" >&2; exit 2 ;;
 	esac
@@ -37,6 +42,25 @@ if [ "${PROBE_INNEN:-}" = 1 ]; then
 	if [ ! -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]; then
 		echo "probe.sh: Socket des virtuellen KWin fehlt — Abbruch" > "$probe/ergebnis.txt"
 		exit 1
+	fi
+	if [ -s "$probe/ablage.txt" ]; then
+		bild="$(cat "$probe/ablage.txt")"
+		{
+			echo "== Halter der Zwischenablage mit $(basename "$bild") ($(stat -c %s "$bild") Byte)"
+			setsid "$probe/schnapp" --internal-keep-clipboard < "$bild" 3> "$probe/meldung.txt" > /dev/null 2>&1 &
+			halter=$!
+			for _ in $(seq 1 50); do grep -q . "$probe/meldung.txt" && break; sleep 0.1; done
+			echo "meldung: $(cat "$probe/meldung.txt")"
+			echo "typen: $(timeout 10 wl-paste --list-types | tr '\n' ' ')"
+			timeout 10 wl-paste --type image/png > "$probe/eingefuegt.png"
+			cmp -s "$bild" "$probe/eingefuegt.png" && echo "eingefuegt: gleich" || echo "eingefuegt: VERSCHIEDEN ($(stat -c %s "$probe/eingefuegt.png") Byte)"
+			kill -0 "$halter" 2> /dev/null && echo "halter: läuft" || echo "halter: beendet"
+			timeout 10 wl-copy "anderer Inhalt"
+			for _ in $(seq 1 50); do kill -0 "$halter" 2> /dev/null || break; sleep 0.1; done
+			kill -0 "$halter" 2> /dev/null && echo "nach wl-copy: halter läuft NOCH" || echo "nach wl-copy: halter beendet"
+			echo "jetzt: $(timeout 10 wl-paste --no-newline)"
+		} > "$probe/ergebnis.txt" 2>&1
+		exit 0
 	fi
 	mapfile -t argumente < "$probe/argumente.txt"
 	set -- "${argumente[@]}"
@@ -62,6 +86,7 @@ chmod 0700 "$probe/run"
 touch "$probe/start"
 GOFLAGS= go build -race -trimpath -tags novulkan,nox11,probe -o "$probe/schnapp" ./cmd/schnapp || exit 1
 printf '%s\n' "$@" > "$probe/argumente.txt"
+printf '%s' "$ablage" > "$probe/ablage.txt"
 env -u WAYLAND_DISPLAY -u DISPLAY PROBE_INNEN=1 PROBE_AUSSENBUS="${DBUS_SESSION_BUS_ADDRESS:-}" \
 	HOME="$probe/home" XDG_CONFIG_HOME="$probe/home/.config" XDG_DATA_HOME="$probe/home/.local/share" \
 	XDG_CACHE_HOME="$probe/home/.cache" XDG_RUNTIME_DIR="$probe/run" \

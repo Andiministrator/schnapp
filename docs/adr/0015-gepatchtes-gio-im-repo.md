@@ -80,4 +80,5 @@ einen Fehler statt „Copied to clipboard“ und schreibt ihn ins Debug-Log.
 Konsequenz: Unter Wayland gehört der Inhalt der Zwischenablage dem Fenster, das ihn anbietet. Schließt der Editor, bleibt
 das Bild nur erhalten, wenn ein Zwischenablage-Verwalter (unter KDE Klipper) es übernommen hat. Ein Weg, der das Schließen
 überdauert (data-control-Protokoll oder ein kurzlebiger Hilfsprozess), ist eine spätere Entscheidung. **Stand 20.11.2026:** Klipper übernimmt das Bild bei Andi nicht; Andi will, dass es das Schließen
-überdauert (E-19) — eigener ADR mit Karte #91.
+überdauert (E-19). **Umgesetzt in ADR-0024:** Strg+C übergibt das Bild an einen Halter-Prozess (data-control); der Weg
+über Gio bleibt als Rückfall, wenn der Compositor data-control nicht anbietet.

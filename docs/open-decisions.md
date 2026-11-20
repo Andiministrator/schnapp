@@ -145,6 +145,7 @@ Stand 20.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 - **Entscheidung (Andi):** „ich würde das schon gern komplett in der zwischenablage haben und behalten, wenn man den
   editor schließt“. Umsetzung in Sprint 6, Karte #91; der Weg (z. B. Prozess hält die Auswahl ohne Fenster weiter, bis
   eine andere Anwendung sie übernimmt, mit harter Zeitgrenze; oder data-control-Protokoll) erst per ADR.
+- **Umgesetzt 20.11.2026:** ADR-0024 — Halter-Prozess über data-control, höchstens 12 Stunden, Rückfall auf Gio.
 
 ## E-20: Claudes Entscheidungen aus Sprint 6 — ENTSCHIEDEN 20.11.2026 (Claude, Andi informiert)
 - Bild-Typ in der Zwischenablage per Gio-Patch statt `wl-copy` (ADR-0015 Nachtrag 2).
