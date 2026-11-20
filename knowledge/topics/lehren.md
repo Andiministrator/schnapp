@@ -95,8 +95,17 @@ Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden;
   Desktop wird dabei nie aufgenommen; der innere Teil bricht ab, wenn er nicht auf dem privaten Bus läuft. Ergebnisse
   werden vor jedem Lauf geleert — ein Ergebnis ohne frischen Lauf war ein angreifbarer Beleg (Kritik Fable, F-175).
   Andi bleibt für das, was nur auf seinem Rechner geht: Aussehen, echte Monitore mit gemischter Skala, Klipper,
-  Tastatur im Editor — gebündelt (Karte #92), nicht Lauf für Lauf. Grenze heute: der Editor schließt im Probe-Build
-  nicht von selbst, also Editor-Läufe weiter mit Andi.
+  Tastatur im Editor — gebündelt (Karte #92), nicht Lauf für Lauf.
+- **Tests, die Claude selbst fahren kann, fährt Claude selbst (Andi, 20.11.2026, zum zweiten Mal gefragt: „kannst du
+  die tests nicht selbst machen?“ — „merke dir mal, dass das geht“):** Vor jeder Prüfliste für Andi jeden Punkt
+  einteilen in „fahre ich selbst“ und „braucht Andi“; die eigenen zuerst fahren und auswerten, Andi bekommt nur den
+  Rest. Auch der Editor ist selbst prüfbar: Der virtuelle KWin bietet `org_kde_kwin_fake_input` an, und KWin winkt
+  `authenticate` ohne Prüfung durch (`kwin/src/backends/fakeinput/fakeinputbackend.cpp`, „TODO: make secure“). Damit
+  spielt die Probe-Fernbedienung (Karte #95, `scripts/probe.sh --drehbuch`) Zeiger, Klicks, Ziehen, Tasten und Text
+  gegen den echten Editor; Bildschirmfotos (ScreenShot2) sieht Claude mit dem Read-Werkzeug an und prüft Pixel per
+  Einzeiler. `wl-paste`/`wl-copy` gehen gegen die Zwischenablage des virtuellen KWin (`--zwischenablage`), eigene
+  Prüfskripte laufen mit `--innen SKRIPT`. Für Andi bleibt, was der virtuelle KWin nicht hat: Desktop-Portal-Dialoge,
+  Klipper und Plasma, Einfügen in andere Programme, seine echten Monitore und Skalen, rein subjektives Aussehen.
 - **Schutz messen, nicht annehmen (Sprint 6, F-163):** Verpixeln mit Blockmittel plus Zufallsrauschen sah sicher aus;
   der Kritiker hat es mit einem Toleranzvergleich gegen Kandidaten nachgerechnet und eine vierstellige Zahl in 193 von
   200 Läufen zurückgewonnen. Was vertraulichen Inhalt unkenntlich machen soll, trägt keine Information des Inhalts
