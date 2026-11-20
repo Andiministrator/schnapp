@@ -124,6 +124,10 @@ func (b *Bibliothek) Speichern(rel string, erwartet Stand, d *document.Dokument,
 	if m.Erstellt.IsZero() {
 		m.Erstellt = st.ModTime().UTC().Truncate(time.Second)
 	}
+	// Liegen gebliebene temporäre Dateien im Ordner vorher räumen (F-274): Ein Rest aus dem Link-Weg ist ein zweiter
+	// Name dieser Aufnahme und zeigte nach dem Ersetzen (neuer Inode) weiter den alten, womöglich ungeschwärzten
+	// Stand (ADR-0022 Punkt 4). Scheitert das Entfernen, wird gespeichert und mit ErrTempRest gewarnt.
+	_, restFehler := raeumeTempReste(filepath.Dir(voll), time.Now())
 	err = schreibeAtomar(voll, func(w io.Writer) error {
 		if err := fileformat.SchreibeArbeitsdatei(w, d, sichtbar, m); err != nil {
 			return err
@@ -146,9 +150,9 @@ func (b *Bibliothek) Speichern(rel string, erwartet Stand, d *document.Dokument,
 	gr := d.Groesse()
 	neu := Eintrag{Pfad: rel, Erstellt: m.Erstellt.UTC(), Breite: gr.X, Hoehe: gr.Y, Schlagworte: m.Schlagworte,
 		Quelle: m.Quelle, Bearbeitet: true}
-	var folge error
+	folge := restFehler
 	if err := b.ersetzeImIndex(neu); err != nil {
-		folge = fmt.Errorf("%w: %v", ErrIndex, err)
+		folge = errors.Join(folge, fmt.Errorf("%w: %v", ErrIndex, err))
 	}
 	if err := b.erneuereVorschau(rel, sichtbar); err != nil {
 		folge = errors.Join(folge, err)

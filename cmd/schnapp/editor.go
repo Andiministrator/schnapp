@@ -153,6 +153,16 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 				}
 				return ui.Gespeichert{Hinweis: i18n.T("Saved, but the old preview of this capture could not be removed."),
 					Warnung: true}, nil, nil
+			case errors.Is(err, library.ErrTempRest):
+				// Gespeichert, aber eine liegen gebliebene temporäre Kopie dieser Aufnahme ließ sich nicht entfernen:
+				// Sie kann den alten Stand zeigen (F-274, ADR-0022 Punkt 4).
+				geschriebenBei = d.SchwaerzStand()
+				if neuGeschwaerzt {
+					return ui.Gespeichert{Hinweis: i18n.T("Saved, but a leftover temporary copy of this capture could not be removed and may still show the unredacted content."),
+						Warnung: true}, nil, nil
+				}
+				return ui.Gespeichert{Hinweis: i18n.T("Saved, but a leftover temporary copy of this capture could not be removed."),
+					Warnung: true}, nil, nil
 			case err == nil || errors.Is(err, library.ErrIndex) || errors.Is(err, library.ErrVorschau):
 				geschriebenBei = d.SchwaerzStand()
 				return ui.Gespeichert{}, nil, nil

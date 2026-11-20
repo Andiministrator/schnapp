@@ -60,3 +60,18 @@ Das automatische Aufräumen läuft, wenn Schnapp zum Aufnehmen startet, **nach d
 `[library] cleanup` und `cleanup-days` (ADR-0018). Scheitert das Aufräumen, gibt es nur eine Warnung — die Aufnahme ist
 dann schon gespeichert. Umsetzung: Karte #54.
 
+## Nachtrag 3 (20.11.2026): Symlink-Ablage, leerer Einhängepunkt, liegen gebliebene temporäre Dateien (F-270, F-271, F-274)
+
+**Status:** Akzeptiert (Umsetzung Karte #114).
+
+1. **Ablage wird vor dem Ablaufen aufgelöst** (`filepath.EvalSymlinks`, wie `Relativ`): Neuaufbau und
+   `VerwaisteVorschauen` laufen sonst bei einer Ablage als Symlink gar nicht ab (F-271, F-270).
+2. **`VerwaisteVorschauen` liefert `ErrAblageLeer` statt einer Liste**, wenn die Ablage keine einzige Aufnahme enthält,
+   der Cache aber Vorschaubilder (leerer Einhängepunkt, verschobener Ordner). Gelöscht wird dort nichts.
+3. **Temporäre Dateien (`.schnapp-tmp-*`)** sind nach dem Link-Weg ein zweiter Name der Aufnahme (ADR-0022 Punkt 4):
+   Ein Fehler beim Entfernen nach dem Link wird als `ErrTempRest` gemeldet (Aufnahme bleibt gültig); Neuaufbau und
+   Speichern räumen eigene Reste im Ordner, die älter als eine Minute sind (nur reguläre Dateien mit eigenem Präfix,
+   nie Symlinks, nie Aufnahmen oder Vorschaubilder). Gewählt wurde das Entfernen nach Alter statt nur der Reste mit
+   Aufnahme-Inode, weil auch ein halb geschriebener Rest Bildpunkte einer Aufnahme trägt. Nach Link und rename wird der
+   Ordner gesynct (Best Effort).
+

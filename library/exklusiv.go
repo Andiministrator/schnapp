@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 )
 
 // verknuepfe ist os.Link; Tests ersetzen es, um einen Fehlschlag (kein Hardlink-Support) nachzubauen.
@@ -54,11 +55,67 @@ func schreibeTemp(ziel string, schreibe func(io.Writer) error) (tmpPfad string, 
 	return name, nil
 }
 
+// ErrTempRest: Die Aufnahme ist abgelegt (oder gespeichert), aber eine temporäre Datei von Schnapp mit demselben
+// Inhalt ließ sich nicht entfernen. Nach dem Link-Weg ist so ein Rest ein zweiter Name derselben Aufnahme; er zeigt
+// nach einem späteren Schwärzen weiter den ungeschwärzten Stand (F-274, ADR-0022 Punkt 4). Der Aufrufer meldet es,
+// die Aufnahme selbst bleibt gültig.
+var ErrTempRest = errors.New("bibliothek: temporäre Datei nicht entfernt")
+
+// entferneTemp ist os.Remove für temporäre Dateien; Tests ersetzen es, um ein scheiterndes Entfernen nachzubauen.
+var entferneTemp = os.Remove
+
+// tempAlter: Erst temporäre Dateien, die älter sind, gelten als liegen geblieben. Ein Schreibvorgang dauert
+// Sekunden; eine Minute Abstand schützt die gerade laufende Ablage eines zweiten Schnapp-Prozesses.
+const tempAlter = time.Minute
+
 // entferneEigeneTemp löscht eine temporäre Datei dieses Laufs: nur im genannten Ordner und mit eigenem Präfix.
-func entferneEigeneTemp(ordner, name string) {
-	if filepath.Dir(name) == filepath.Clean(ordner) && strings.HasPrefix(filepath.Base(name), tempPraefix) {
-		os.Remove(name)
+// Liefert den Fehler (fehlende Datei zählt nicht).
+func entferneEigeneTemp(ordner, name string) error {
+	if filepath.Dir(name) != filepath.Clean(ordner) || !strings.HasPrefix(filepath.Base(name), tempPraefix) {
+		return nil
 	}
+	if err := entferneTemp(name); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	return nil
+}
+
+// syncOrdner schreibt die Verzeichniseinträge eines Ordners auf den Datenträger (nach Link und rename, F-274 c).
+// Best Effort: Nicht jedes Dateisystem kann das, und die Datei selbst ist schon gesichert.
+func syncOrdner(ordner string) {
+	f, err := os.Open(ordner)
+	if err != nil {
+		return
+	}
+	_ = f.Sync()
+	f.Close()
+}
+
+// raeumeTempReste entfernt liegen gebliebene temporäre Dateien von Schnapp (Präfix tempPraefix) im Ordner, die älter
+// als tempAlter sind. Nur reguläre Dateien im genannten Ordner, nie ein Symlink, nie eine Aufnahme (anderer Name),
+// nie ein Vorschaubild. Gewählt statt „nur Reste mit gleichem Inode wie eine Aufnahme“: Auch ein Rest mit halb
+// geschriebenem Inhalt trägt Bildpunkte einer Aufnahme, und die Inode-Prüfung fände ihn nicht. Scheitert das Entfernen,
+// kommt ErrTempRest mit den Namen zurück; das Aufräumen läuft für die übrigen weiter.
+func raeumeTempReste(ordner string, jetzt time.Time) (entfernt int, fehler error) {
+	eintraege, err := os.ReadDir(ordner)
+	if err != nil {
+		return 0, nil // kein Ordner, nichts zu räumen
+	}
+	for _, e := range eintraege {
+		if !e.Type().IsRegular() || !strings.HasPrefix(e.Name(), tempPraefix) {
+			continue
+		}
+		fi, err := e.Info()
+		if err != nil || !fi.Mode().IsRegular() || jetzt.Sub(fi.ModTime()) < tempAlter {
+			continue
+		}
+		if err := entferneEigeneTemp(ordner, filepath.Join(ordner, e.Name())); err != nil {
+			fehler = errors.Join(fehler, fmt.Errorf("%w: %s: %v", ErrTempRest, e.Name(), err))
+			continue
+		}
+		entfernt++
+	}
+	return entfernt, fehler
 }
 
 // keinHardlink meldet Fehler, die heißen „dieses Dateisystem oder diese Stelle kann keine Hardlinks“ — im Gegensatz
@@ -86,7 +143,14 @@ func keinHardlink(err error) bool {
 func legeExklusivAn(tmp, ziel string) error {
 	err := verknuepfe(tmp, ziel)
 	if err == nil {
-		entferneEigeneTemp(filepath.Dir(ziel), tmp)
+		// Ab hier ist tmp ein zweiter Name der Aufnahme (F-274): Scheitert das Entfernen, ist sie abgelegt, aber der
+		// Rest bleibt — das darf der Aufrufer nicht verschlucken (ADR-0022 Punkt 4).
+		ordner := filepath.Dir(ziel)
+		rest := entferneEigeneTemp(ordner, tmp)
+		syncOrdner(ordner)
+		if rest != nil {
+			return fmt.Errorf("%w: %v", ErrTempRest, rest)
+		}
 		return nil
 	}
 	if errors.Is(err, fs.ErrExist) {
@@ -110,6 +174,7 @@ func legeExklusivAn(tmp, ziel string) error {
 		os.Remove(ziel) // die eigene Reservierung; die Aufnahme bleibt in tmp, das der Aufrufer entfernt
 		return err
 	}
+	syncOrdner(filepath.Dir(ziel))
 	return nil
 }
 
@@ -134,6 +199,9 @@ func schreibeNeu(ordner string, name func(n int) string, schreibe func(io.Writer
 		err := legeExklusivAn(tmp, filepath.Join(ordner, dn))
 		if err == nil {
 			return dn, nil
+		}
+		if errors.Is(err, ErrTempRest) {
+			return dn, err // die Datei liegt unter dn; der Rest wird gemeldet (der Aufrufer behandelt ihn)
 		}
 		if !errors.Is(err, fs.ErrExist) {
 			return "", err

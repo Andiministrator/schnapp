@@ -131,14 +131,19 @@ func (b *Bibliothek) VerwaisteVorschauen() ([]string, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	erwartet := map[string]bool{}
-	err := filepath.WalkDir(b.Orte.Ablage, func(pfad string, d fs.DirEntry, err error) error {
+	// Wurzel auflösen: WalkDir steigt an einer Symlink-Wurzel nicht ab, dann gälte alles als verwaist (F-270).
+	wurzel, err := filepath.EvalSymlinks(b.Orte.Ablage)
+	if err != nil {
+		return nil, fmt.Errorf("bibliothek: Ablage nicht lesbar: %w", err)
+	}
+	err = filepath.WalkDir(wurzel, func(pfad string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if !d.Type().IsRegular() || !strings.EqualFold(filepath.Ext(pfad), ".png") {
 			return nil
 		}
-		rel, err := filepath.Rel(b.Orte.Ablage, pfad)
+		rel, err := filepath.Rel(wurzel, pfad)
 		if err != nil {
 			return err
 		}
@@ -156,6 +161,18 @@ func (b *Bibliothek) VerwaisteVorschauen() ([]string, error) {
 		return nil, err
 	}
 	var verwaist []string
+	vorhanden := 0
+	for _, e := range eintraege {
+		if e.Type().IsRegular() && istVorschauName(e.Name()) {
+			vorhanden++
+		}
+	}
+	// Eine Ablage ganz ohne Aufnahme bei gefülltem Cache ist fast sicher ein leerer Einhängepunkt oder ein
+	// verschobener Ordner, nicht „alles verwaist“ (F-270): Fehler statt Liste, damit ein Aufräumen auf dieser Liste
+	// nie den ganzen Cache trifft.
+	if len(erwartet) == 0 && vorhanden > 0 {
+		return nil, fmt.Errorf("%w: %d Vorschaubild(er) im Cache", ErrAblageLeer, vorhanden)
+	}
 	for _, e := range eintraege {
 		name := e.Name()
 		if !e.Type().IsRegular() || !istVorschauName(name) {

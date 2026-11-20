@@ -31,6 +31,9 @@ var (
 	ErrVorschauAlt = errors.New("bibliothek: altes Vorschaubild nicht entfernt")
 	ErrFremd       = errors.New("bibliothek: keine Arbeitsdatei von Schnapp")
 	ErrPfad        = errors.New("bibliothek: Pfad liegt nicht in der Ablage")
+	// ErrAblageLeer: Die Ablage enthält keine einzige Aufnahme, der Vorschau-Cache aber Vorschaubilder (leerer
+	// Einhängepunkt, verschobener Ordner). VerwaisteVorschauen liefert dann keine Liste (F-270).
+	ErrAblageLeer = errors.New("bibliothek: Ablage ohne Aufnahmen, Cache nicht leer")
 )
 
 // Eintrag ist eine Aufnahme im Index. Alle Angaben stehen auch im snAP-Block der Datei (ADR-0008).
@@ -101,7 +104,11 @@ func schreibeAtomar(ziel string, schreibe func(io.Writer) error) (fehler error) 
 	if err := tmp.Close(); err != nil {
 		return err
 	}
-	return umbenenne(name, ziel)
+	if err := umbenenne(name, ziel); err != nil {
+		return err
+	}
+	syncOrdner(ordner) // Verzeichniseintrag sichern (F-274 c)
+	return nil
 }
 
 // zeitname liefert Ordner und Dateiname (ohne Endung) zu einer Erstellzeit.
@@ -139,17 +146,20 @@ func (b *Bibliothek) Ablegen(d *document.Dokument, sichtbar image.Image, m filef
 	}, func(w io.Writer) error {
 		return fileformat.SchreibeArbeitsdatei(w, d, sichtbar, m)
 	})
+	var folge error
 	if err != nil {
-		return Eintrag{}, err
+		if !errors.Is(err, ErrTempRest) || dn == "" {
+			return Eintrag{}, err
+		}
+		folge = err // abgelegt, aber eine temporäre Kopie blieb liegen (F-274): gilt als Erfolg mit Warnung
 	}
 	rel := monat + "/" + dn
 	g := d.Groesse()
 	e := Eintrag{Pfad: rel, Erstellt: m.Erstellt, Breite: g.X, Hoehe: g.Y, Schlagworte: m.Schlagworte,
 		Quelle: m.Quelle, Bearbeitet: m.Bearbeitet}
 
-	var folge error
 	if err := b.haengeAn(e); err != nil {
-		folge = fmt.Errorf("%w: %v", ErrIndex, err)
+		folge = errors.Join(folge, fmt.Errorf("%w: %v", ErrIndex, err))
 	}
 	if err := b.erneuereVorschau(e.Pfad, sichtbar); err != nil {
 		folge = errors.Join(folge, err)
@@ -292,6 +302,9 @@ func sortiere(es []Eintrag) {
 type NeuaufbauErgebnis struct {
 	Aufgenommen   int      // Aufnahmen im neuen Index
 	Uebersprungen []string // Pfade (relativ zur Ablage) fremder oder beschädigter PNG-Dateien; sie bleiben unberührt
+	// TempReste: liegen gebliebene temporäre Dateien von Schnapp, die sich nicht entfernen ließen (F-274); jede ist
+	// womöglich ein zweiter Name einer Aufnahme und zeigt nach dem Schwärzen noch den alten Stand.
+	TempReste []string
 }
 
 // Neuaufbau liest alle PNG-Dateien unter der Ablage, übernimmt die Arbeitsdateien von Schnapp und schreibt den
@@ -301,17 +314,35 @@ func (b *Bibliothek) Neuaufbau() (NeuaufbauErgebnis, error) {
 	defer b.mu.Unlock()
 	var erg NeuaufbauErgebnis
 	var es []Eintrag
-	err := filepath.WalkDir(b.Orte.Ablage, func(pfad string, d fs.DirEntry, err error) error {
+	// Ablage vor dem Ablaufen auflösen: WalkDir steigt an einer Wurzel, die ein Symlink ist, nicht ab, der Index
+	// bliebe leer (F-271). Fehlt die Ablage ganz, gibt es noch keine Aufnahme.
+	wurzel, err := filepath.EvalSymlinks(b.Orte.Ablage)
+	if errors.Is(err, fs.ErrNotExist) {
+		return erg, b.schreibeIndex(nil)
+	}
+	if err != nil {
+		return erg, err
+	}
+	jetzt := time.Now()
+	err = filepath.WalkDir(wurzel, func(pfad string, d fs.DirEntry, err error) error {
 		if err != nil {
-			if pfad == b.Orte.Ablage && errors.Is(err, fs.ErrNotExist) {
-				return nil // noch keine Aufnahme
-			}
 			return err
+		}
+		if d.Type().IsRegular() && strings.HasPrefix(d.Name(), tempPraefix) {
+			// Liegen gebliebene eigene temporäre Datei (F-274): nach dem Link-Weg ein zweiter Name einer Aufnahme.
+			dir := filepath.Dir(pfad)
+			if fi, err := d.Info(); err == nil && jetzt.Sub(fi.ModTime()) >= tempAlter {
+				if err := entferneEigeneTemp(dir, pfad); err != nil {
+					rel, _ := filepath.Rel(wurzel, pfad)
+					erg.TempReste = append(erg.TempReste, filepath.ToSlash(rel))
+				}
+			}
+			return nil
 		}
 		if !d.Type().IsRegular() || !strings.EqualFold(filepath.Ext(pfad), ".png") {
 			return nil
 		}
-		rel, err := filepath.Rel(b.Orte.Ablage, pfad)
+		rel, err := filepath.Rel(wurzel, pfad)
 		if err != nil {
 			return err
 		}
