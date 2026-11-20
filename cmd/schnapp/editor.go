@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/Andiministrator/schnapp/document"
@@ -387,12 +388,47 @@ func speicherFehler(err error) error {
 	return uebersetzt{text: text, err: err}
 }
 
+// sammleOhneUebersetzt geht einen Join-Baum durch und legt die Ausgabe aller Blätter ab, die keinen übersetzten
+// Speicherfehler tragen (F-129); texte merkt sich die übersetzten Texte, damit keiner doppelt vorkommt.
+func sammleOhneUebersetzt(err error, teile, texte *[]string) {
+	if err == nil {
+		return
+	}
+	if j, ok := err.(interface{ Unwrap() []error }); ok {
+		for _, e := range j.Unwrap() {
+			sammleOhneUebersetzt(e, teile, texte)
+		}
+		return
+	}
+	var u uebersetzt
+	if errors.As(err, &u) {
+		*texte = append(*texte, u.text)
+		return
+	}
+	*teile = append(*teile, nutzerFehler(err))
+}
+
+// ursacheSpeicherfehler liefert die ursprüngliche Ursache hinter einem übersetzten Fehler (nur für das Debug-Log:
+// sie kann Pfade enthalten, F-129); ohne übersetzten Fehler ist es leer.
+func ursacheSpeicherfehler(err error) string {
+	var u uebersetzt
+	if errors.As(err, &u) && u.err != nil {
+		return u.err.Error()
+	}
+	return ""
+}
+
 // nutzerFehler übersetzt bekannte Fehler beim Öffnen für die Ausgabe; Fehler des Speicherns sind schon übersetzt; Unbekanntes bleibt, wie es ist
 // (Paketfehler sind nicht übersetzt, Kritik A-9).
 func nutzerFehler(err error) string {
 	var u uebersetzt
 	if errors.As(err, &u) {
-		return u.text // schon übersetzt (Speichern, F-117)
+		// Schon übersetzt (Speichern, F-117). Steht der Speicherfehler in einem Join mit anderen Fehlern (Fenster,
+		// F-129), stehen sie vor dem übersetzten Text; der Text erscheint nur einmal, die Ursache mit ihren Pfaden nie.
+		var teile []string
+		var texte []string
+		sammleOhneUebersetzt(err, &teile, &texte)
+		return strings.Join(append(teile, u.text), "; ")
 	}
 	switch {
 	case errors.Is(err, fs.ErrNotExist):

@@ -112,6 +112,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 			return exitFehler
 		}
 		if err := an.editor(t.Datei, t.OhneGrenze); err != nil {
+			diagnoseUrsache(fehler, err)
 			fmt.Fprintf(fehler, i18n.T("Cannot open %s: %s")+"\n", t.Datei, nutzerFehler(err))
 			return exitFehler
 		}
@@ -127,6 +128,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		err := an.bearbeiten(*neu)
 		diagnose(fehler, "Editor-Sitzung bis Fenster zu: %v", time.Since(start).Round(time.Millisecond))
 		if err != nil {
+			diagnoseUrsache(fehler, err)
 			fmt.Fprintf(fehler, i18n.T("The editor could not be opened or saved: %v")+"\n", nutzerFehler(err))
 		}
 	}
@@ -331,6 +333,14 @@ func (an anschluesse) merke(monitor string, b *image.NRGBA, skala float64, berei
 func diagnose(fehler io.Writer, format string, args ...any) {
 	if os.Getenv("SCHNAPP_DEBUG") != "" {
 		fmt.Fprintf(fehler, "[schnapp] "+format+"\n", args...)
+	}
+}
+
+// diagnoseUrsache schreibt mit gesetztem SCHNAPP_DEBUG die ursprüngliche Ursache eines übersetzten Speicherfehlers
+// (F-129). Sie kann Pfade enthalten und steht deshalb nie in der normalen Ausgabe.
+func diagnoseUrsache(fehler io.Writer, err error) {
+	if u := ursacheSpeicherfehler(err); u != "" {
+		diagnose(fehler, "Ursache des Speicherfehlers: %s", u)
 	}
 }
 
