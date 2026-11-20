@@ -133,6 +133,9 @@ msgstr "Die Auswahl liegt außerhalb des aufgenommenen Bildes."
 msgid "Could not save the screenshot: %v"
 msgstr "Der Screenshot ließ sich nicht speichern: %v"
 
+msgid "Could not write the path to standard output: %v"
+msgstr "Der Pfad ließ sich nicht auf die Standardausgabe schreiben: %v"
+
 msgid "Could not remember the area for --repeat: %v"
 msgstr "Der Bereich für --repeat ließ sich nicht merken: %v"
 

@@ -216,6 +216,11 @@ func (f *overlayFenster) frame(gtx layout.Context) {
 	}
 	f.tasten(gtx)
 	f.zeiger(gtx)
+	if probeAutoWahl && f.index == 0 && f.groesse.X > 0 {
+		// Nur im Probe-Build (Tag probe, probe_an.go): wählt ohne Eingabe den ganzen ersten Monitor, damit ein
+		// virtueller KWin den Weg Overlay → Ablegen → Editor ohne Nutzer durchläuft.
+		f.gruppe.melde(ergebnis{OverlayErgebnis: OverlayErgebnis{Monitor: 0, Bereich: image.Rectangle{Max: f.z.Groesse}}})
+	}
 	if f.gruppe.beendet.Load() {
 		// Ergebnis kam in diesem Frame (Loslassen, Esc, Enter): Ein Invalidate aus Overlay verpufft, solange dieses
 		// Fenster einen Frame bearbeitet (Gio setzt mayInvalidate erst danach). Darum den nächsten Frame selbst

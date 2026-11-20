@@ -213,7 +213,11 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 		fmt.Fprintf(fehler, i18n.T("Could not save the screenshot: %v")+"\n", err)
 		return exitFehler
 	}
-	fmt.Fprintln(aus, pfad)
+	if _, err := fmt.Fprintln(aus, pfad); err != nil {
+		// Die Aufnahme liegt in der Bibliothek; nur die Pfadzeile ging verloren (F-162). Nicht verschlucken: Skripte
+		// verlassen sich auf sie.
+		fmt.Fprintf(fehler, i18n.T("Could not write the path to standard output: %v")+"\n", err)
+	}
 	an.raeumeAuf(t.Aufraeumen, time.Now(), fehler)
 	if t.Editor && an.editor != nil {
 		// Die Aufnahme liegt schon in der Bibliothek, der Pfad steht auf stdout: Was der Editor meldet, ist nur noch

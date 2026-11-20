@@ -87,6 +87,13 @@ Stand: 2026-11-20 (ergänzt nach Sprint 5). Kurze Regeln aus Fehlern und Befunde
   Ergebnis blieb unsicher (F-78). Weil ein `!`-Befehl nach 120 s in den Hintergrund wandert, den Lauf mit
   `timeout 110` begrenzen und stderr in eine Datei unter `tmp/` leiten; die wertet Claude danach aus. Inhalte seiner
   Aufnahmen nie ansehen, nur Größe (`file`).
+- **Probeläufe ohne Andi (20.11.2026, Andi: „ich muss eigentlich arbeiten“):** Was ohne Augen prüfbar ist (Aufnahme
+  über D-Bus, Overlay-Weg, Ablegen, stdout/stderr, Exit-Codes, Bibliothek), fährt Claude selbst mit
+  `scripts/probe.sh [--monitore N] [--skala S] [-- ARGUMENTE]`: virtueller KWin auf privatem D-Bus, eigenes HOME unter
+  `tmp/probe/`, Build-Tag `probe` (Overlay wählt den ersten Monitor ohne Eingabe), Zeitgrenze 90 s. Der echte Desktop
+  wird dabei nie aufgenommen. Andi bleibt für das, was nur auf seinem Rechner geht: Aussehen, echte Monitore mit
+  gemischter Skala, Klipper, Tastatur im Editor. Grenze heute: der Editor schließt im Probe-Build nicht von selbst,
+  also Editor-Läufe weiter mit Andi.
 - **Nebenläufigkeit erst im echten Lauf sichtbar:** Unit-Tests ohne Fenster fanden weder den geteilten Text-Setzer
   noch den Wettlauf beim Schließen; ein `go build -race`-Lauf fand ihn sofort. Zeiten aber nie mit `-race` messen
   (Faktor 10–30).
