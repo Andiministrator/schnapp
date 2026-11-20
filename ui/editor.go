@@ -949,6 +949,11 @@ func (e *editor) tasten(gtx layout.Context) {
 			filter = append(filter, f)
 		}
 		filter = append(filter, key.FocusFilter{Target: e})
+		if e.menue.offen { // Pfeile, Pos1, Ende wählen im offenen Menü den Eintrag (F-255); sonst bleiben sie frei
+			for _, n := range []key.Name{key.NameUpArrow, key.NameDownArrow, key.NameHome, key.NameEnd} {
+				filter = append(filter, key.Filter{Name: n})
+			}
+		}
 		ev, ok := gtx.Event(filter...)
 		if !ok {
 			return
@@ -970,9 +975,12 @@ func (e *editor) tasten(gtx layout.Context) {
 			// Leinwand ändert (F-257).
 			switch k.Name {
 			case key.NameEscape:
-				e.menue.offen = false
+				e.menueSchliesse(gtx, true) // Fokus zurück an den Menüknopf (F-255)
+			case key.NameUpArrow, key.NameDownArrow, key.NameHome, key.NameEnd:
+				e.menueTaste(gtx, k.Name)
 			case key.NameReturn, key.NameEnter:
 				if c := e.fokussierterKnopf(gtx); c != nil {
+					e.menue.perTaste = c == &e.menue.knopf
 					c.Click()
 				}
 			}
@@ -1002,6 +1010,7 @@ func (e *editor) tasten(gtx layout.Context) {
 			// verbraucht zu werden (F-153).
 			if !e.s.TextLaeuft() {
 				if c := e.fokussierterKnopf(gtx); c != nil {
+					e.menue.perTaste = c == &e.menue.knopf
 					c.Click()
 					continue
 				}

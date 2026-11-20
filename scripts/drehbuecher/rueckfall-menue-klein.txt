@@ -1,0 +1,17 @@
+# Rückfallprobe ADR-0026 Nachtrag 1/2 (Karte #110, F-265, F-252): Menü im kleinsten Fenster — Liste passt hinein, der unterste Eintrag
+# „Schließen“ ist per Klick erreichbar.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-menue-klein.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 480 --hoehe 320
+# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen. Das Menü wird per Tastatur geöffnet (Umschalt+Tab, Enter), weil die
+# Lage des Knopfes „Menü“ im schmalen Fenster vom Umbruch der Leiste abhängt.
+warte 800
+taste Umschalt+Tab
+warte 200
+taste Enter
+warte 300
+foto 01-menue-klein
+# „Schließen“ liegt bei y=294 (Foto 01); der Klick muss ankommen: Der Editor beendet sich (Probe-Skript meldet Exit 0) oder zeigt den Hinweis.
+zeiger 200 294
+warte 200
+klick 200 294
+warte 1500
+foto 02-nach-klick-auf-schliessen

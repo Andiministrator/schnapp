@@ -1,0 +1,36 @@
+# Rückfallprobe ADR-0026 Nachtrag 2 (Karte #110, F-255): Menü allein per Tastatur — Text-Werkzeug, Text setzen, Umschalt+Tab bis „Menü“,
+# Enter (Fokus in die Liste), Pfeile bis „Text bearbeiten“, Enter, tippen: der Text erscheint (Fokus liegt danach auf der Leinwand).
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-menue-tastatur.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
+warte 800
+zeiger 600 400
+warte 200
+taste T
+warte 200
+klick 600 400
+warte 300
+schreibe Hallo
+warte 200
+taste Enter
+warte 300
+foto 01-text-gesetzt
+# Umschalt+Tab läuft rückwärts durch die Knöpfe; der Menüknopf kommt vor Speichern (Fokusring im Foto prüfen).
+taste Umschalt+Tab
+warte 300
+foto 02-fokus-auf-knopf
+taste Enter
+warte 300
+foto 03-menue-fokus-erster-eintrag
+taste Runter
+taste Runter
+taste Runter
+warte 200
+foto 04-pfeile-ueberspringen-nichts-ausgefuehrt
+taste Runter
+warte 300
+foto 05-text-bearbeiten-fokussiert
+taste Enter
+warte 300
+schreibe XY
+warte 300
+foto 06-text-bearbeiten-getippt

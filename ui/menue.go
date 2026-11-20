@@ -7,6 +7,7 @@ import (
 	"image/color"
 
 	"gioui.org/io/event"
+	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/io/system"
 	"gioui.org/layout"
@@ -61,6 +62,93 @@ type menue struct {
 	offen     bool
 	eintraege [16]widget.Clickable // je Eintrag einer; mehr als genug für menueEintraege
 	aussen    int                  // Ziel für Klicks neben die offene Liste (schließt sie)
+
+	// Tastatur (F-255): fokusNach ist der Eintrag, der beim Zeichnen den Fokus bekommt (die Klickfläche gibt es erst
+	// dort); cursor der zuletzt per Taste angesteuerte Eintrag (-1: keiner). perTaste: Der Knopf wurde per Enter
+	// ausgelöst, nicht per Maus.
+	fokusNach *widget.Clickable
+	cursor    int
+	perTaste  bool
+
+	// rahmen: Lage der Zeilen im Fenster beim letzten Zeichnen (Tests und Drehbuch-Koordinaten, F-265).
+	rahmen [16]image.Rectangle
+}
+
+// menueNaechster liefert den Index des nächsten bedienbaren Eintrags von von aus in Richtung dir (+1 abwärts, -1
+// aufwärts), die Liste läuft an den Enden um (wie die Menüs in KDE/Qt); graue Einträge werden übersprungen. von = -1:
+// keiner angesteuert, dann der erste (abwärts) bzw. letzte (aufwärts). -1, wenn nichts bedienbar ist.
+func menueNaechster(en []menueEintrag, von, dir int) int {
+	n := len(en)
+	if n == 0 {
+		return -1
+	}
+	start := von
+	if von < 0 {
+		start = -1
+		if dir < 0 {
+			start = n
+		}
+	}
+	for k := 1; k <= n; k++ {
+		i := ((start+dir*k)%n + n) % n
+		if en[i].an {
+			return i
+		}
+	}
+	return -1
+}
+
+// menueErster und menueLetzter: der erste bzw. letzte bedienbare Eintrag (-1: keiner).
+func menueErster(en []menueEintrag) int  { return menueNaechster(en, -1, 1) }
+func menueLetzter(en []menueEintrag) int { return menueNaechster(en, -1, -1) }
+
+// menueFokusIndex ist der Eintrag mit Tastaturfokus (-1: keiner).
+func (e *editor) menueFokusIndex(gtx layout.Context) int {
+	for i := range e.menueEintraege() {
+		if gtx.Focused(&e.menue.eintraege[i]) {
+			return i
+		}
+	}
+	return -1
+}
+
+// menueTaste verarbeitet Pfeile, Pos1 und Ende bei offenem Menü (F-255, ADR-0026 Nachtrag 2): Der Fokus wandert zum
+// nächsten bedienbaren Eintrag; die Wirkung folgt beim Zeichnen (menueFokusSetzen).
+func (e *editor) menueTaste(gtx layout.Context, name key.Name) {
+	m := &e.menue
+	en := e.menueEintraege()
+	cur := m.cursor
+	if m.fokusNach == nil {
+		if i := e.menueFokusIndex(gtx); i >= 0 {
+			cur = i
+		}
+	}
+	neu := -1
+	switch name {
+	case key.NameDownArrow:
+		neu = menueNaechster(en, cur, 1)
+	case key.NameUpArrow:
+		neu = menueNaechster(en, cur, -1)
+	case key.NameHome:
+		neu = menueErster(en)
+	case key.NameEnd:
+		neu = menueLetzter(en)
+	}
+	if neu >= 0 {
+		m.cursor, m.fokusNach = neu, &m.eintraege[neu]
+	}
+}
+
+// menueSchliesse schließt die Liste und gibt den Fokus zurück: per Esc an den Menüknopf, nach einer Handlung oder
+// einem Klick daneben an die Leinwand (F-255; sonst fiele der Fokus auf nil, getippter Text ginge verloren).
+func (e *editor) menueSchliesse(gtx layout.Context, zuKnopf bool) {
+	m := &e.menue
+	m.offen, m.fokusNach = false, nil
+	if zuKnopf {
+		gtx.Execute(key.FocusCmd{Tag: &m.knopf})
+	} else {
+		gtx.Execute(key.FocusCmd{Tag: e})
+	}
 }
 
 // fuehreAus führt eine Handlung aus, gleich ob per Taste, Knopf oder Menü. vonMaus: Ein laufender Text wird vorher
@@ -135,14 +223,23 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 	m := &e.menue
 	if m.knopf.Clicked(gtx) {
 		m.offen = !m.offen
+		m.cursor = -1
+		if m.offen && (m.perTaste || !m.knopf.Hovered()) {
+			// Per Tastatur geöffnet: Fokus auf den ersten bedienbaren Eintrag (F-255). Per Maus bleibt der Fokus
+			// unberührt, damit kein Ring ohne Tastatur erscheint.
+			if i := menueErster(e.menueEintraege()); i >= 0 {
+				m.cursor, m.fokusNach = i, &m.eintraege[i]
+			}
+		}
+		m.perTaste = false
 	}
 	for {
 		ev, ok := gtx.Event(pointer.Filter{Target: &m.aussen, Kinds: pointer.Press})
 		if !ok {
 			break
 		}
-		if p, ok := ev.(pointer.Event); ok && p.Kind == pointer.Press {
-			m.offen = false
+		if p, ok := ev.(pointer.Event); ok && p.Kind == pointer.Press && m.offen {
+			e.menueSchliesse(gtx, false)
 		}
 	}
 	for { // Klicks auf die Fläche zwischen den Einträgen: abholen und nichts tun
@@ -152,7 +249,7 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 	}
 	for i, en := range e.menueEintraege() {
 		if m.eintraege[i].Clicked(gtx) && m.offen && en.an {
-			m.offen = false
+			e.menueSchliesse(gtx, false) // Fokus an die Leinwand: getippter Text nach „Text bearbeiten“ kommt an
 			e.fuehreAus(gtx, en.akt, true)
 		}
 	}
@@ -225,10 +322,16 @@ func (e *editor) zeichneMenue(gtx layout.Context, rechts, y int) {
 		if en.gruppe {
 			oy += trenn
 		}
+		m.rahmen[i] = image.Rectangle{Min: ecke.Add(image.Pt(0, oy)), Max: ecke.Add(image.Pt(breite, oy+zeile))}
 		e.menueZeile(gtx, &m.eintraege[i], en, image.Pt(0, oy), image.Pt(breite, zeile), innen)
 		oy += zeile
 	}
 	t.Pop()
+	if m.fokusNach != nil { // die Klickflächen sind jetzt angemeldet: Fokus in die Liste (F-255)
+		gtx.Execute(key.FocusCmd{Tag: m.fokusNach})
+		gtx.Execute(op.InvalidateCmd{})
+		m.fokusNach = nil
+	}
 }
 
 // menueZeilenhoehe ist die Zeilenhöhe, wenn das Fenster niedriger ist als die Liste: der Platz nach Abzug des
@@ -241,8 +344,14 @@ func menueZeilenhoehe(fensterHoehe, rand, kleinst, groesst, zeilen int) int {
 // menueZeile zeichnet einen Eintrag: Text links, Kürzel rechts, grau wenn nicht bedienbar.
 func (e *editor) menueZeile(gtx layout.Context, c *widget.Clickable, en menueEintrag, ecke, groesse image.Point, innen int) {
 	t := op.Offset(ecke).Push(gtx.Ops)
-	if en.an && (c.Hovered() || gtx.Focused(c)) {
+	fokus := en.an && gtx.Focused(c)
+	if en.an && (c.Hovered() || fokus) {
 		paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(image.Rectangle{Max: groesse}).Op())
+	}
+	if fokus { // Tastaturfokus immer sichtbar: 2 px orangener Ring (corporate-design.md §6), innen, damit er nicht abgeschnitten wird
+		r := image.Rectangle{Max: groesse}.Inset(gtx.Dp(2))
+		paint.FillShape(gtx.Ops, farbeAkzent, clip.Stroke{Path: clip.UniformRRect(r, gtx.Dp(4)).Path(gtx.Ops),
+			Width: float32(gtx.Dp(2))}.Op())
 	}
 	farbe, neben := farbeText, farbeNebentext
 	if !en.an {
@@ -276,15 +385,29 @@ func (e *editor) menueZeile(gtx layout.Context, c *widget.Clickable, en menueEin
 	t.Pop()
 }
 
+// hinweisKnoepfe sind die Werkzeugknöpfe, über denen ein Hinweis steht: bei Zeiger und bei Tastaturfokus; ist ein
+// Knopf fokussiert, nur dieser, damit nicht zwei Hinweise zugleich stehen (F-255).
+func (e *editor) hinweisKnoepfe(gtx layout.Context) []werkzeugKnopf {
+	var fokus, hover []werkzeugKnopf
+	for _, w := range e.werkzeugKnoepfe() {
+		if gtx.Focused(w.c) {
+			fokus = append(fokus, w)
+		} else if w.c.Hovered() {
+			hover = append(hover, w)
+		}
+	}
+	if len(fokus) > 0 {
+		return fokus
+	}
+	return hover
+}
+
 // zeichneWerkzeugHinweis zeigt unter dem Werkzeugknopf, über dem der Zeiger steht, Namen und Kürzel (ADR-0026 Punkt 3).
 func (e *editor) zeichneWerkzeugHinweis(gtx layout.Context, links []leistenKnopf, pos []image.Point) {
 	if e.menue.offen {
 		return
 	}
-	for _, w := range e.werkzeugKnoepfe() {
-		if !w.c.Hovered() {
-			continue
-		}
+	for _, w := range e.hinweisKnoepfe(gtx) {
 		for i, l := range links {
 			if l.c != w.c {
 				continue

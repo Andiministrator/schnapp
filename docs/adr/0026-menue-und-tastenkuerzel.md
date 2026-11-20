@@ -71,4 +71,20 @@ wenig Code (ADR-0011).
   Text bearbeiten, Ganzes Bild, Gestauchtes zurückholen), sind während der Eingabe grau.
 - **Niedrige Fenster (F-252):** Passt die Liste nicht unter den Knopf, rückt sie nach oben; ist das Fenster niedriger
   als die Liste, entfallen die Gruppenabstände und die Zeilen werden niedriger (mindestens 20 dp, höchstens 32 dp).
-- **Offen (Karte):** Bedienung der Liste allein per Tastatur (Fokus in die Liste, Pfeiltasten, Fokusring), F-255.
+- **Offen (Karte):** Bedienung der Liste allein per Tastatur (Fokus in die Liste, Pfeiltasten, Fokusring), F-255 — erledigt in Nachtrag 2.
+
+## Nachtrag 2 (20.11.2026): Menü allein per Tastatur bedienbar (F-255)
+
+- **Öffnen per Tastatur** (Tab bis „Menü“, Enter oder Leertaste) setzt den Fokus auf den ersten bedienbaren Eintrag.
+  Per Maus geöffnet bleibt der Fokus unberührt, damit kein Fokusring ohne Tastatur erscheint.
+- **Bei offenem Menü wirken zusätzlich zu Esc und Enter** die Pfeile hoch und runter, Pos1 und Ende: Sie wählen den
+  Eintrag, ohne etwas auszuführen. Graue Einträge werden übersprungen. An den Enden **läuft die Liste um** (wie die
+  Menüs in KDE und Qt); bei zwölf Einträgen ist das schneller als Anhalten, und der Umlauf ist umkehrbar. Alle anderen
+  Tasten und getippter Text wirken weiter nicht (Nachtrag 1).
+- **Der Fokus kehrt immer zurück:** Esc schließt und gibt ihn an den Menüknopf; nach einem ausgeführten Eintrag oder
+  einem Klick daneben liegt er auf der Leinwand. Ohne das fiele er auf nichts, und nach „Text bearbeiten“ ginge
+  getippter Text verloren.
+- **Fokusring:** 2 px orange (Corporate Design §6) an Knöpfen, am Menüknopf und am fokussierten Menüeintrag, nicht
+  nur die Hover-Fläche.
+- **Werkzeug-Hinweis** (Name und Buchstabe) erscheint auch bei Tastaturfokus auf dem Werkzeugknopf, nicht nur beim
+  Zeiger; ist ein Knopf fokussiert, zeigt nur er den Hinweis.
