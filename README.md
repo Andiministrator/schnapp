@@ -15,7 +15,7 @@ pages, share. Also meant as a simple image editor.
 
 ## Status
 
-Version 0.1.0 is the first version (KDE Plasma only). Schnapp captures on KDE Plasma (area, monitor, window; **Print** key), saves every screenshot to
+Version 0.2.0 (KDE Plasma only) adds a menu with all actions and their shortcuts, tool-key hints and Restore cut-out areas. Schnapp captures on KDE Plasma (area, monitor, window; **Print** key), saves every screenshot to
 the library and opens it in an editor where you draw arrows (straight or bent), boxes, text labels and step numbers
 and select, move and resize them, black out or pixelate areas for good, crop, cut out the middle of a long screenshot
 and copy the result to the clipboard. It is written in Go with the [Gio](https://gioui.org) UI library,

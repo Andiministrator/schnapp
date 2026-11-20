@@ -165,4 +165,6 @@ Stand 20.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
   Das gilt auch für das Aufheben des Zuschnitts (heute nur Doppelklick mit C) und für das Entfernen einer Naht. Bestand
   prüfen und nachrüsten: Karte #104 „Jede Tastenfunktion auch über Leiste oder Menü“ (Backlog); neue Funktionen bekommen
   Knopf oder Menüeintrag im selben Zug.
+- **Umgesetzt 20.11.2026:** ADR-0026 samt Nachtrag 1 (Menü mit allen Aktionen und Kürzeln, Tastentabelle
+  `ui/kuerzel.go`, „Gestauchtes zurückholen“), Karte #104, Commits 24bc96d und 34dd5ee. Rest: F-255 (Karte #110).
 

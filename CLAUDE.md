@@ -124,7 +124,7 @@ der Wegwerf-Prototyp `prototype/`. Schichten:
 - **settings** — `settings.ini` lesen (ADR-0018); Warnungen statt Abbruch.
 - **selection** — Logik des Overlays ohne Gio (Abbildung, Bereich, Monitor per Klick, Lupe, letzter Bereich).
 - **canvas** — Logik der Editor-Leinwand ohne Gio (Zoom zum Zeiger, Einpassen, Treffer, Griffe, Verschieben;
-  Zeichenwerkzeuge, Schwärzen und Texteingabe `werkzeuge.go`; Zuschneiden/Stauchen `zuschnitt.go`; Statusleiste `status.go` `StatusZeile`; Schließen
+  Zeichenwerkzeuge, Schwärzen und Texteingabe `werkzeuge.go`; Zuschneiden/Stauchen `zuschnitt.go`; Menü-Aktionen ohne Werkzeug `menue.go` (Gestauchtes zurückholen, ADR-0026); Statusleiste `status.go` `StatusZeile`; Schließen
   `Sitzung.Schliessen`, Signalwache `signal.go`; `Wecker` (`wecker.go`) weckt die Gio-Schleife wiederholt, bis sie eine
   Antwort abholt, F-231; ADR-0020 bis ADR-0023).
 - **render** — Ansichtsbild + Objekte zu Pixeln ohne GPU (`golang.org/x/image` vector/font, Go-Schriften; ADR-0020);

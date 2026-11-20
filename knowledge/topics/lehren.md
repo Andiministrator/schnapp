@@ -246,3 +246,7 @@ Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden;
     nach einem Zeigersprung kommt an einem Leistenknopf nicht an (F-251, schon vor Sprint 7 so). Ein „wirkungsloser“
     Knopf im Foto ist deshalb zuerst ein Drehbuchfehler; die Eingrenzung gegen den alten Stand geht per
     `git worktree add --detach tmp/<sprint>/<lauf>/alt <commit>` und dessen eigenem `scripts/probe.sh`.
+  - *Eine Sperre prüft jeden Eingabeweg* (Sprint 7, F-257/F-261/F-263): Die Nacharbeit sperrte bei offenem Menü die
+    Tasten (`key.Event`), der Zweig für getippten Text (`key.EditEvent`) lag davor und blieb offen; gefunden hat es erst
+    der Verify-Lauf. Wer eine Eingabe sperrt, testet Taste, getippten Text und Maus einzeln; Gio-Tastenlogik ist mit
+    `input.Router` ohne Fenster testbar (Vorlage `tmp/sprint7/verify/zz_verify_test.go`, Karte #110).
