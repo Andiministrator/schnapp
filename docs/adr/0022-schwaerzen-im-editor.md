@@ -65,3 +65,25 @@ ihn mit demselben Raster und vergleichen die Blockfarben.
   Original (Zuschneiden ist nicht zerstörend, ADR-0008). Wie das mit dem Schwärzen zusammengeht, entscheidet Karte #38.
   *(Entschieden in ADR-0023 Punkt 8: Der Rahmen bleibt auf die Ansicht begrenzt.)*
 - Ein vor dem Schwärzen mit Strg+C kopiertes Bild bleibt, wie es war, in der Zwischenablage (README).
+
+## Nachtrag 2 (20.11.2026): Liegen gebliebene Fassungen bei späterer Schwärzung (F-221)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Nacharbeit zum Kritiker-Lauf Sprint-Abschluss 6, Karte #98).
+
+- **Punkt 4 gilt über die ganze Sitzung, nicht nur für ein Speichern.** Bisher griff Entfernen oder Warnen nur, wenn
+  Ausweichen und Schwärzen im selben Speichern zusammenfielen. Wer erst ausweicht (Zurückschreiben scheitert, ohne
+  Schwärzung) und später schwärzt, ließ die alte Aufnahme ungeschwärzt liegen; ebenso blieb die Datei von außen ohne
+  Warnung, wenn erst nach dem ersten Speichern geschwärzt wurde.
+- **Umsetzung:** Die Speicherfunktion (`cmd/schnapp/editor.go`, `ablegenIn`) merkt sich jede Fassung, die neben der
+  aktuellen Datei liegen bleibt, mit dem Schwärzungsstand, den sie zeigt (`SchwaerzStand`, F-169/F-187): die Datei von
+  außen, die andere Fassung eines Konflikts und eine Aufnahme, deren Zurückschreiben scheiterte. Nach jedem gelungenen
+  Speichern prüft `rueckblick`, ob seitdem geschwärzt wurde:
+  - eigene Aufnahme der Bibliothek: entfernen wie F-126 (endgültig, mit Vorschau und Index, nur bei unverändertem
+    Stand), Meldungen wie dort („entfernt“, „nicht mehr da“, „Vorschau bleibt“); scheitert das Entfernen, Warnung
+    „Bitte selbst löschen“, und die Fassung bleibt vorgemerkt — eine weitere Schwärzung versucht es erneut;
+  - Datei von außen: nie anfassen (ADR-0020), Warnung mit ihrem Namen ohne Ordner (F-155);
+  - andere Fassung eines Konflikts: nie entfernen (gehört nicht Schnapp allein), Warnung.
+  Gewarnt wird einmal je neuer Schwärzung, nicht bei jedem Speichern. Eine Schwärzung, die vor dem Speichern
+  zurückgenommen wurde, löst nichts aus. Die gerade geschriebene Aufnahme wird nie entfernt.
+- **Grenze:** Vorgemerkt wird nur innerhalb einer Editor-Sitzung. Wer den Editor schließt und dieselbe Aufnahme später
+  wieder öffnet, hat nur noch diese Datei; was in einer früheren Sitzung liegen blieb, nannte schon deren Warnung.

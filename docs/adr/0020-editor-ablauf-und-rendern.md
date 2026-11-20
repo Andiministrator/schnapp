@@ -156,3 +156,20 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   Warnung oder nicht leerer Hinweis), die Entscheidung selbst bleibt in `canvas.Sitzung.Schliessen`. Die Ausgabe auf der
   Fehlerausgabe bleibt zusätzlich bestehen (Start aus Terminal, Fenster dennoch zu). Ein weiteres Strg+S oder Schließen
   danach hat keinen Hinweis mehr und schließt sofort.
+
+## Nachtrag 5 (20.11.2026): Verborgene Texte im Budget, Tinte zwischengespeichert (F-224)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Nacharbeit zum Kritiker-Lauf Sprint-Abschluss 6, Karte #98).
+
+- **Befund:** Ob ein Text in die Ansicht reicht, entscheidet seine vermessene Tinte (`document.Reichweite`, F-181).
+  Editor, Renderer, Trefferprüfung und `render.Pruefe` fragen das für jedes Objekt bei jedem Bild ab; ganz verborgene
+  Texte rastert niemand, also zählte das Kostenmodell sie nicht. Eine präparierte Datei mit 400 Texten à 10 000 Zeichen
+  außerhalb der Ansicht hatte Aufwand 0 und kostete rund 0,2 s je Durchlauf, an der Grenze der Dateigröße Sekunden je
+  Bild und Klick.
+- **Zwischenspeicher:** `document` merkt sich die Tinte je Zeile für Inhalt und Schriftgrad (die Lage relativ zum Ort
+  hängt nur davon ab); geleert wird er, sobald die Inhalte zusammen 64 MiB übersteigen. Jedes weitere Bild kostet
+  damit nur noch die Rechnung je Zeile. Die Werte sind bitgleich zur bisherigen Rechnung (Sollwert-Tests unverändert).
+- **ZeichenBudget:** `render.Pruefe` zählt vor dem Trockenlauf die Zeichen (Runen) aller Texte, sichtbar oder nicht,
+  und lehnt über `ZeichenBudget` = 1 000 000 ab, ohne zu vermessen (unter 1 ms). Am Budget dauert das erste Vermessen
+  rund 45 ms (Entwicklungsrechner). Ein echtes Dokument eines Bildschirmfotos kommt nicht in die Nähe; über dem Budget
+  gilt wie für die anderen Grenzen: Öffnen lehnt ab (`--ignore-limit` überspringt es), Speichern warnt nur (F-138).

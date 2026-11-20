@@ -100,14 +100,25 @@ const (
 // Kleiner lässt sich Budget nicht wählen, ohne den Abstand 3 zum Alltagsdokument aufzugeben: Für rund 30 s müsste es
 // auf rund 1e11 sinken, das Alltagsdokument läge dann nur 2,5-fach darunter. Lieber eine präparierte Datei etwas
 // länger speichern als eine echte Bearbeitung ablehnen (F-131).
+//
+// ZeichenBudget begrenzt die Zeichen aller Texte, sichtbar oder nicht (F-224): Ob ein Text in die Ansicht reicht,
+// entscheidet seine vermessene Tinte (document.Reichweite), und Vermessen kostet rund 50 ns je Zeichen. Ganz
+// verborgene Texte zählt das Kostenmodell sonst nicht (sie werden nicht gerastert); 400 Texte à 10 000 Zeichen außerhalb
+// der Ansicht kosteten beim ersten Vermessen rund 0,2 s, an der Grenze der Dateigröße Sekunden. Der Zwischenspeicher
+// der Tinte hält jedes weitere Bild kurz; die Grenze hält das erste Vermessen unter rund 0,05 s. Kein echtes Dokument
+// eines Bildschirmfotos trägt eine Million Zeichen.
 const (
-	Budget       = 1.25e11
-	GlyphBudget  = 1e9
-	KantenBudget = 1e10
+	Budget        = 1.25e11
+	GlyphBudget   = 1e9
+	KantenBudget  = 1e10
+	ZeichenBudget = 1_000_000
 )
 
 // grenzen sind die wirksamen Obergrenzen von Pruefe; nur Tests setzen sie kleiner.
-var grenzen = struct{ gesamt, glyph, kanten float64 }{Budget, GlyphBudget, KantenBudget}
+var grenzen = struct {
+	gesamt, glyph, kanten float64
+	zeichen               int
+}{Budget, GlyphBudget, KantenBudget, ZeichenBudget}
 
 // aufwand zählt die Kosten nach dem Kostenmodell, getrennt nach Glyphen, Füllflächen und Kanten samt Ecken.
 type aufwand struct {
@@ -155,6 +166,10 @@ func (z zeichner) alles() error {
 // Pruefe meldet ErrZuAufwendig, wenn das Rastern von d das Budget überschritte (F-125, F-132). Der Editor lehnt damit
 // beim Öffnen ab; nach dem Speichern warnt er damit nur (F-138), abgebrochen wird das Speichern nie.
 func Pruefe(d *document.Dokument) error {
+	// Zuerst die Zeichen zählen, ohne zu vermessen: Der Trockenlauf fragt die Sichtbarkeit jedes Textes ab (F-224).
+	if n := textZeichen(d); n > grenzen.zeichen {
+		return fmt.Errorf("%w (Zeichen %d, Budget %d)", ErrZuAufwendig, n, grenzen.zeichen)
+	}
 	a := trockenlauf(d)
 	switch {
 	case a.summe() > grenzen.gesamt:
@@ -165,6 +180,17 @@ func Pruefe(d *document.Dokument) error {
 		return fmt.Errorf("%w (Kanten %.3g, Budget %.3g)", ErrZuAufwendig, a.kanten, grenzen.kanten)
 	}
 	return nil
+}
+
+// textZeichen zählt die Zeichen (Runen) aller Texte von d.
+func textZeichen(d *document.Dokument) int {
+	n := 0
+	for _, o := range d.Objekte() {
+		if t, ok := o.(document.Text); ok {
+			n += utf8.RuneCountInString(t.Inhalt)
+		}
+	}
+	return n
 }
 
 // bildMitAufwand ist Bild und liefert zusätzlich den Aufwand (für Tests).

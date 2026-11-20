@@ -445,3 +445,24 @@ msgstr "Vom Bild bliebe nichts übrig; einen kleineren Teil herausnehmen."
 
 msgid "Too many cuts; undo or remove one first."
 msgstr "Zu viele Stauch-Streifen; erst einen entfernen oder rückgängig machen."
+
+msgid "The original file %s is unchanged and still shows the unredacted content."
+msgstr "Die ursprüngliche Datei %s ist unverändert und zeigt noch den ungeschwärzten Inhalt."
+
+msgid "The other version %s may still show the unredacted content."
+msgstr "Die andere Fassung %s zeigt womöglich noch den ungeschwärzten Inhalt."
+
+msgid "The earlier file %s, left behind when saving failed, was removed, but its preview could not be removed and still shows the unredacted content."
+msgstr "Die frühere Datei %s, die bei einem gescheiterten Speichern liegen blieb, wurde entfernt, ihr Vorschaubild aber nicht; es zeigt noch den ungeschwärzten Inhalt."
+
+msgid "The earlier file %s, left behind when saving failed, still showed the unredacted content and was removed."
+msgstr "Die frühere Datei %s, die bei einem gescheiterten Speichern liegen blieb, zeigte noch den ungeschwärzten Inhalt und wurde entfernt."
+
+msgid "The earlier file %s was no longer there; wherever it is now, it still shows the unredacted content. Its preview could not be removed and still shows it too."
+msgstr "Die frühere Datei %s war nicht mehr da; wo immer sie jetzt liegt, zeigt sie noch den ungeschwärzten Inhalt. Ihr Vorschaubild ließ sich nicht entfernen und zeigt ihn ebenfalls."
+
+msgid "The earlier file %s was no longer there; wherever it is now, it still shows the unredacted content."
+msgstr "Die frühere Datei %s war nicht mehr da; wo immer sie jetzt liegt, zeigt sie noch den ungeschwärzten Inhalt."
+
+msgid "The earlier file %s still shows the unredacted content. Delete it yourself."
+msgstr "Die frühere Datei %s zeigt noch den ungeschwärzten Inhalt. Bitte selbst löschen."

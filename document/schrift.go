@@ -133,6 +133,52 @@ func mitRand(r Rechteck, n int) Rechteck {
 	return Rechteck{Min: r.Min.Minus(Pt(d, tintenRand)), Max: r.Max.Plus(Pt(d, tintenRand))}
 }
 
+// zeilenTinte ist die Tinte einer Zeile relativ zu ihrer Grundlinie: i ist die Zeilennummer, n die Zahl der Runen.
+type zeilenTinte struct {
+	i, n  int
+	tinte Rechteck
+}
+
+// tintenSchluessel ist Inhalt und Grad eines Textes: Die Tinte relativ zum Ort hängt nur davon ab.
+type tintenSchluessel struct {
+	inhalt string
+	grad   float64
+}
+
+// tintenSpeicher hält die gemessenen Zeilen je Inhalt und Grad (F-224): Editor, Renderer und Trefferprüfung fragen die
+// Reichweite jedes Textes bei jedem Bild ab, auch ganz verborgener; ohne Zwischenspeicher würde jede Glyphe jedes Mal
+// neu vermessen. Die Schlüssel teilen sich den Speicher mit dem Text; damit alte Fassungen (Tippen, Verlauf) nicht
+// unbegrenzt am Leben bleiben, wird er geleert, sobald die Inhalte zusammen tintenSpeicherMax Bytes übersteigen.
+// Nur mit schriftMu.
+var (
+	tintenSpeicher      = map[tintenSchluessel][]zeilenTinte{}
+	tintenSpeicherBytes int
+)
+
+const tintenSpeicherMax = 64 << 20
+
+// textZeilen liefert die Zeilen von Inhalt mit Tinte, gemessen in Grad (aus dem Zwischenspeicher). Nur mit schriftMu.
+func textZeilen(s *schriftMass, inhalt string, grad float64) []zeilenTinte {
+	k := tintenSchluessel{inhalt, grad}
+	if z, ok := tintenSpeicher[k]; ok {
+		return z
+	}
+	zeilen := []zeilenTinte{}
+	for i, z := range strings.Split(inhalt, "\n") {
+		z = Zeichenbar(z)
+		if _, tinte, hat := s.zeile(z, grad); hat {
+			zeilen = append(zeilen, zeilenTinte{i: i, n: utf8.RuneCountInString(z), tinte: tinte})
+		}
+	}
+	if tintenSpeicherBytes+len(inhalt) > tintenSpeicherMax {
+		clear(tintenSpeicher)
+		tintenSpeicherBytes = 0
+	}
+	tintenSpeicher[k] = zeilen
+	tintenSpeicherBytes += len(inhalt)
+	return zeilen
+}
+
 // textTinte ist die Fläche, die Renderer und Editor von t mit Tinte füllen (Original, mit Rand), ohne Hintergrund.
 // Zeilen wie im Renderer: Grundlinie Ort.Y + Grad·(1 + 1,3·i), Zeichenbar. ok ist false, wenn der Text keine Tinte hat
 // (nur Leerraum); geschaetzt, wenn die Schrift nicht zu laden war.
@@ -143,14 +189,9 @@ func textTinte(t Text) (r Rechteck, ok, geschaetzt bool) {
 	if s == nil {
 		return Rechteck{}, false, true
 	}
-	for i, z := range strings.Split(t.Inhalt, "\n") {
-		z = Zeichenbar(z)
-		_, tinte, hat := s.zeile(z, t.Schriftgrad)
-		if !hat {
-			continue
-		}
-		grund := Pt(t.Ort.X, t.Ort.Y+t.Schriftgrad*(1+1.3*float64(i)))
-		g := mitRand(Rechteck{Min: grund.Plus(tinte.Min), Max: grund.Plus(tinte.Max)}, utf8.RuneCountInString(z))
+	for _, z := range textZeilen(s, t.Inhalt, t.Schriftgrad) {
+		grund := Pt(t.Ort.X, t.Ort.Y+t.Schriftgrad*(1+1.3*float64(z.i)))
+		g := mitRand(Rechteck{Min: grund.Plus(z.tinte.Min), Max: grund.Plus(z.tinte.Max)}, z.n)
 		if ok {
 			r = r.Vereint(g)
 		} else {

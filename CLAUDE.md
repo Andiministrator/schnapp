@@ -127,7 +127,7 @@ der Wegwerf-Prototyp `prototype/`. Schichten:
   Zeichenwerkzeuge, Schwärzen und Texteingabe `werkzeuge.go`; Zuschneiden/Stauchen `zuschnitt.go`; Statusleiste `status.go` `StatusZeile`; Schließen
   `Sitzung.Schliessen`, Signalwache `signal.go`; ADR-0020 bis ADR-0023).
 - **render** — Ansichtsbild + Objekte zu Pixeln ohne GPU (`golang.org/x/image` vector/font, Go-Schriften; ADR-0020);
-  Füllen über eigenen `einmischer` (bitgleich zu `draw.Over`, rund 4-mal schneller); `render.Pruefe` schätzt den
+  Füllen über eigenen `einmischer` (bitgleich zu `draw.Over`, rund 4-mal schneller); `render.Pruefe` zählt die Textzeichen (`ZeichenBudget` 1e6, F-224) und schätzt den
   Aufwand per Trockenlauf (`Budget` 1,25e11, ADR-0020 Nachtrag 3), der Editor lehnt präparierte Dateien beim Öffnen ab
   (`ladeFuerEditor`; `--ignore-limit` überspringt nur diese Prüfung, ADR-0017 Nachtrag 6), Speichern bricht nie ab und
   warnt über dem Budget.
