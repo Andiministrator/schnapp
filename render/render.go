@@ -140,14 +140,14 @@ func (z zeichner) alles() error {
 			return err
 		}
 	}
-	g := z.d.Groesse()
+	g, f := z.d.Groesse(), z.d.ZackenFaktor()
 	for _, n := range z.d.Naehte() {
 		laenge := g.X
 		if !n.Zeilen {
 			laenge = g.Y
 		}
-		z.fuelle([][]document.Punkt{document.Zackenband(n, laenge, document.ZackenRandHalb)}, nil, document.ZackenRand)
-		z.fuelle([][]document.Punkt{document.Zackenband(n, laenge, document.ZackenLinieHalb)}, nil, document.ZackenLinie)
+		z.fuelle([][]document.Punkt{document.Zackenband(n, laenge, f, document.ZackenRandHalb)}, nil, document.ZackenRand)
+		z.fuelle([][]document.Punkt{document.Zackenband(n, laenge, f, document.ZackenLinieHalb)}, nil, document.ZackenLinie)
 	}
 	return nil
 }

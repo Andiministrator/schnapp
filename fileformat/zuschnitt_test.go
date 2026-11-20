@@ -57,14 +57,14 @@ func TestExportSVGZackenkante(t *testing.T) {
 		// Das Band bei Lage 0, um die Lage verschoben, ist das Band des Renderers an der Naht.
 		for j, halb := range []float64{document.ZackenRandHalb, document.ZackenLinieHalb} {
 			var soll []string
-			for _, p := range document.Zackenband(document.Naht{Zeilen: n.Zeilen}, laenge, halb) {
+			for _, p := range document.Zackenband(document.Naht{Zeilen: n.Zeilen}, laenge, d.ZackenFaktor(), halb) {
 				soll = append(soll, punkt(p))
 			}
 			if got := m[2+2*j]; got != "M"+strings.Join(soll, " L")+" Z" {
 				t.Errorf("Band %s %d: %s", art, j, got)
 			}
-			verschoben := document.Zackenband(document.Naht{Zeilen: n.Zeilen}, laenge, halb)
-			for k, p := range document.Zackenband(n, laenge, halb) {
+			verschoben := document.Zackenband(document.Naht{Zeilen: n.Zeilen}, laenge, d.ZackenFaktor(), halb)
+			for k, p := range document.Zackenband(n, laenge, d.ZackenFaktor(), halb) {
 				q := verschoben[k]
 				if n.Zeilen {
 					q.Y += float64(n.Lage)
@@ -149,5 +149,27 @@ func TestRundlaufZuschnittUndStreifen(t *testing.T) {
 	}
 	if !gleich(sichtbar, d.Ansichtsbild()) {
 		t.Error("sichtbares Bild der Datei weicht ab")
+	}
+}
+
+// F-173: Bei 2200×2200 Ansicht gilt Faktor 2; das Band in <defs> hat doppelte Zackenhöhe und Randbreite (Naht bei
+// Lage 0: erster Punkt der Randkante bei x = -8 - 6 = -14 statt -4 - 3 = -7).
+func TestExportSVGZackenkanteFaktor2(t *testing.T) {
+	d, err := document.Neu(testbild(2200, 2200))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := d.SetzeStreifen([]document.Streifen{{Von: 100, Bis: 110}}); err != nil {
+		t.Fatal(err)
+	}
+	if f := d.ZackenFaktor(); f != 2 {
+		t.Fatalf("Faktor %d, Soll 2", f)
+	}
+	var buf bytes.Buffer
+	if err := ExportiereSVG(&buf, d); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), `<g id="naht-spalten"><path d="M-14,0 L2,16 `) {
+		t.Errorf("Band bei Faktor 2 nicht gefunden:\n%.600s", buf.String())
 	}
 }

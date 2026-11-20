@@ -4,6 +4,7 @@ package document
 
 import (
 	"fmt"
+	"image"
 	"image/color"
 	"math"
 )
@@ -15,9 +16,10 @@ type Naht struct {
 	Lage   int
 }
 
-// Maße und Farben der Zackenkante (ADR-0023 Punkt 6), in Pixeln der Ansicht: Zacken ±ZackenHoehe um die Naht, eine
-// Zahnbreite ZackenWeite; außen ein helles Band der Dicke 2·ZackenRandHalb, darin eine dunkle Linie der Dicke
-// 2·ZackenLinieHalb. Renderer, SVG-Export und Editor zeichnen dieselben Vielecke (Zackenband).
+// Grundmaße und Farben der Zackenkante (ADR-0023 Punkt 6), in Pixeln der Ansicht bei Faktor 1: Zacken ±ZackenHoehe um
+// die Naht, eine Zahnbreite ZackenWeite; außen ein helles Band der Dicke 2·ZackenRandHalb, darin eine dunkle Linie der
+// Dicke 2·ZackenLinieHalb. Alle vier Maße werden mit ZackenFaktor der Ansicht multipliziert (ADR-0023 Nachtrag 1,
+// F-173). Renderer, SVG-Export und Editor zeichnen dieselben Vielecke (Zackenband).
 const (
 	ZackenHoehe     = 4.0
 	ZackenWeite     = 16.0
@@ -29,6 +31,17 @@ var (
 	ZackenRand  = color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 	ZackenLinie = color.NRGBA{R: 0x4A, G: 0x50, B: 0x57, A: 0xFF}
 )
+
+// ZackenReferenz ist die kurze Seite der Ansicht, bis zu der die Zackenkante in den Grundmaßen bleibt (Faktor 1).
+const ZackenReferenz = 1080
+
+// ZackenFaktor ist der ganzzahlige Faktor der Zackenmaße für eine Ansicht der Größe g: max(1, kurze Seite / 1080),
+// ganzzahlig geteilt (F-173). So bleibt die Kante bei HiDPI-Aufnahmen und kleinem Zoom erkennbar. Er hängt nur von der
+// Ansichtsgröße ab; Zwischenspeicher, die diese Größe als Schlüssel führen, sind damit schon richtig geschlüsselt.
+func ZackenFaktor(g image.Point) int { return max(1, min(g.X, g.Y)/ZackenReferenz) }
+
+// ZackenFaktor ist ZackenFaktor(d.Groesse()).
+func (d *Dokument) ZackenFaktor() int { return ZackenFaktor(d.Groesse()) }
 
 // Naehte liefert die Stauch-Nähte der Ansicht, je Achse nach Lage sortiert. Eine Naht am Rand der Ansicht (der
 // Streifen schließt an den Zuschnitt an) zählt nicht, mehrere Streifen an derselben Stelle ergeben eine Naht.
@@ -54,17 +67,22 @@ func (d *Dokument) Naehte() []Naht {
 
 // Zackenband liefert ein Vieleck (Ansicht) entlang der Naht n über die Länge laenge (Breite bzw. Höhe der Ansicht):
 // eine Zickzacklinie mit Zacken ±ZackenHoehe, quer zur Naht um ±halb aufgeweitet. Die Zacken beginnen bei 0 und
-// reichen höchstens eine halbe Zahnbreite über laenge hinaus (Renderer und SVG beschneiden auf die Ansicht).
-func Zackenband(n Naht, laenge int, halb float64) []Punkt {
-	schritt := ZackenWeite / 2
+// reichen höchstens eine halbe Zahnbreite über laenge hinaus (Renderer und SVG beschneiden auf die Ansicht). Zacken-
+// höhe, Zahnbreite und halb (ein Grundmaß, z. B. ZackenRandHalb) werden mit faktor (ZackenFaktor, mindestens 1)
+// multipliziert.
+func Zackenband(n Naht, laenge, faktor int, halb float64) []Punkt {
+	f := float64(max(faktor, 1))
+	halb *= f
+	hoehe := ZackenHoehe * f
+	schritt := ZackenWeite * f / 2
 	k := int(math.Ceil(float64(max(laenge, 1)) / schritt))
 	oben := make([]Punkt, 0, 2*(k+1))
 	unten := make([]Punkt, 0, k+1)
 	for i := 0; i <= k; i++ {
 		t := float64(i) * schritt
-		q := float64(n.Lage) - ZackenHoehe
+		q := float64(n.Lage) - hoehe
 		if i%2 == 1 {
-			q = float64(n.Lage) + ZackenHoehe
+			q = float64(n.Lage) + hoehe
 		}
 		oben = append(oben, quer(n, t, q-halb))
 		unten = append(unten, quer(n, t, q+halb))

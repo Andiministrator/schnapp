@@ -228,7 +228,7 @@ func (s *Sitzung) EntferneNaht(p document.Punkt) bool {
 		return false
 	}
 	a := s.Abb.ZuAnsicht(p)
-	tol := Toleranz/s.Abb.Zoom + document.ZackenHoehe + document.ZackenRandHalb
+	tol := Toleranz/s.Abb.Zoom + float64(s.D.ZackenFaktor())*(document.ZackenHoehe+document.ZackenRandHalb)
 	best, gefunden := math.Inf(1), document.Naht{}
 	for _, n := range s.D.Naehte() {
 		v := a.X

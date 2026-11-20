@@ -87,7 +87,7 @@ func (s *schreiber) naehte(d *document.Dokument) {
 			farbe color.NRGBA
 		}{{document.ZackenRandHalb, document.ZackenRand}, {document.ZackenLinieHalb, document.ZackenLinie}} {
 			var pfad strings.Builder
-			for i, p := range document.Zackenband(document.Naht{Zeilen: zeilen}, laenge, band.halb) {
+			for i, p := range document.Zackenband(document.Naht{Zeilen: zeilen}, laenge, d.ZackenFaktor(), band.halb) {
 				if i == 0 {
 					pfad.WriteString("M")
 				} else {

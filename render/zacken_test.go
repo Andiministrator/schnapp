@@ -114,3 +114,18 @@ func TestVerborgeneBeschriftungNichtGezeichnet(t *testing.T) {
 		t.Errorf("angeschnittener Kasten fehlt: %v", c)
 	}
 }
+
+// F-173: Ab 2160 Pixeln kurzer Seite gilt Faktor 2. Spalten 100 bis 120 heraus, Naht bei x = 100: Die Zickzacklinie
+// läuft von x 92 (y 0) nach x 108 (y 16) und zurück (Zahnbreite 32, Höhe ±8); in Zeile 8 liegt sie bei x 100 bis 101.
+// Dort ist das Pixel ganz von der dunklen Linie (±2) bedeckt, vier Pixel links davon ganz vom hellen Rand (±6).
+func TestZackenkanteFaktor2(t *testing.T) {
+	d := grauesDokument(t, 2200, 2200)
+	streifen(t, d, document.Streifen{Von: 100, Bis: 120})
+	if f := d.ZackenFaktor(); f != 2 {
+		t.Fatalf("Faktor %d, Soll 2", f)
+	}
+	b := bild(t, d)
+	pruefe(t, b, map[image.Point]color.NRGBA{
+		{100, 8}: document.ZackenLinie, {96, 8}: document.ZackenRand, {60, 8}: grau,
+	})
+}

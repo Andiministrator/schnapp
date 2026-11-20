@@ -759,7 +759,7 @@ func (e *editor) zeichneNaehte(gtx layout.Context) {
 			}{{document.ZackenRandHalb, document.ZackenRand}, {document.ZackenLinieHalb, document.ZackenLinie}} {
 				var p clip.Path
 				p.Begin(&c.ops)
-				for i, q := range document.Zackenband(n, laenge, band.halb) {
+				for i, q := range document.Zackenband(n, laenge, e.s.D.ZackenFaktor(), band.halb) {
 					pt := f32.Pt(float32(q.X), float32(q.Y))
 					if i == 0 {
 						p.MoveTo(pt)

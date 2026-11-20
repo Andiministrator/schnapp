@@ -51,19 +51,19 @@ func TestNaehte(t *testing.T) {
 // Zackenband: Zacken abwechselnd −4 und +4 um die Naht, Zahnbreite 16, quer um halb aufgeweitet; erst die eine Kante
 // vorwärts, dann die andere rückwärts.
 func TestZackenband(t *testing.T) {
-	got := Zackenband(Naht{Zeilen: true, Lage: 10}, 20, 1)
+	got := Zackenband(Naht{Zeilen: true, Lage: 10}, 20, 1, 1)
 	want := []Punkt{{0, 5}, {8, 13}, {16, 5}, {24, 13}, {24, 15}, {16, 7}, {8, 15}, {0, 7}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("waagrecht:\n got %v\nwant %v", got, want)
 	}
-	got = Zackenband(Naht{Zeilen: false, Lage: 10}, 20, 1)
+	got = Zackenband(Naht{Zeilen: false, Lage: 10}, 20, 1, 1)
 	for i := range want {
 		want[i] = Punkt{want[i].Y, want[i].X}
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("senkrecht:\n got %v\nwant %v", got, want)
 	}
-	if n := len(Zackenband(Naht{Lage: 3}, 0, 1)); n != 4 {
+	if n := len(Zackenband(Naht{Lage: 3}, 0, 1, 1)); n != 4 {
 		t.Errorf("Länge 0: %d Punkte, Soll 4 (ein Zahn)", n)
 	}
 }
@@ -162,5 +162,40 @@ func TestObjektSichtbar(t *testing.T) {
 	}
 	if d.ObjektSichtbar(Text{Ort: Pt(40, 33), Inhalt: "x", Schriftgrad: 10}) { // y 31 bis 46
 		t.Error("Text ganz im Zeilenstreifen sichtbar")
+	}
+}
+
+// F-173: Der Faktor der Zackenmaße ist max(1, kurze Seite / 1080), ganzzahlig geteilt.
+func TestZackenFaktor(t *testing.T) {
+	for _, c := range []struct {
+		g    image.Point
+		want int
+	}{
+		{image.Pt(1920, 1080), 1}, {image.Pt(3840, 2160), 2}, {image.Pt(1000, 5000), 1}, {image.Pt(7680, 4320), 4},
+		{image.Pt(100, 60), 1}, {image.Pt(5000, 1079), 1}, {image.Pt(2159, 5000), 1}, {image.Pt(2160, 5000), 2},
+	} {
+		if got := ZackenFaktor(c.g); got != c.want {
+			t.Errorf("ZackenFaktor(%v) = %d, Soll %d", c.g, got, c.want)
+		}
+	}
+	d := leeresDokument(t, 3840, 2160)
+	if f := d.ZackenFaktor(); f != 2 {
+		t.Errorf("Dokument 3840×2160: %d, Soll 2", f)
+	}
+	// Zuschnitt ändert die kurze Seite und damit den Faktor.
+	if err := d.SetzeZuschnitt(image.Rect(0, 0, 3840, 1000)); err != nil {
+		t.Fatal(err)
+	}
+	if f := d.ZackenFaktor(); f != 1 {
+		t.Errorf("nach Zuschnitt auf Höhe 1000: %d, Soll 1", f)
+	}
+}
+
+// F-173: Bei Faktor 2 sind Zackenhöhe, Zahnbreite und Bandbreite doppelt so groß (vgl. TestZackenband bei Faktor 1).
+func TestZackenbandFaktor(t *testing.T) {
+	got := Zackenband(Naht{Zeilen: true, Lage: 10}, 40, 2, 1)
+	want := []Punkt{{0, 0}, {16, 16}, {32, 0}, {48, 16}, {48, 20}, {32, 4}, {16, 20}, {0, 4}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Faktor 2:\n got %v\nwant %v", got, want)
 	}
 }
