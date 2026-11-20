@@ -156,7 +156,7 @@ type editor struct {
 		auswahl, pfeil, kasten, text, nummer, farbe  widget.Clickable
 		schwaerzen, verpixeln, zuschneiden, stauchen widget.Clickable
 		rueck, wieder, einpassen, eins, speichern    widget.Clickable
-		export                                       widget.Clickable
+		export, ganz                                 widget.Clickable
 	}
 
 	// Doppelklick erkennen (ADR-0021: Text bearbeiten): Zeit und Ort des letzten Drucks der linken Taste.
@@ -820,6 +820,8 @@ func (e *editor) meldeAnsicht() {
 		e.melde(i18n.T("Nothing of the image would remain; cut out a smaller part."), true)
 	case canvas.AnsichtZuviele:
 		e.melde(i18n.T("Too many cuts; undo or remove one first."), true)
+	case canvas.AnsichtRand:
+		e.melde(i18n.T("The part reached the edge and was cropped off; “Whole image” brings it back."), false)
 	}
 }
 
@@ -1039,6 +1041,14 @@ func (e *editor) knoepfeAuswerten(gtx layout.Context) {
 	if k.einpassen.Clicked(gtx) {
 		e.s.Einpassen()
 	}
+	if k.ganz.Clicked(gtx) {
+		// Zuschnitt aufheben und Randstreifen zurückholen, wie Doppelklick mit Zuschneiden (E-21, F-222).
+		e.s.TextBestaetigen()
+		if e.s.HebeZuschnittAuf() {
+			e.bildNeu()
+			e.meldeAnsicht()
+		}
+	}
 	if k.eins.Clicked(gtx) {
 		e.s.EinsZuEins()
 	}
@@ -1116,6 +1126,7 @@ func (e *editor) leistenKnoepfe() []leistenKnopf {
 		leistenKnopf{c: &k.farbe, text: i18n.T("Color"), an: true, muster: e.s.Stil.Farbe, gruppe: true},
 		leistenKnopf{c: &k.rueck, text: i18n.T("Undo"), an: e.s.D.KannRueckgaengig(), gruppe: true},
 		leistenKnopf{c: &k.wieder, text: i18n.T("Redo"), an: e.s.D.KannWiederholen()},
+		leistenKnopf{c: &k.ganz, text: i18n.T("Whole image"), an: e.s.KannGanzesBild(), gruppe: true},
 		leistenKnopf{c: &k.einpassen, text: i18n.T("Fit"), an: true, gruppe: true},
 		leistenKnopf{c: &k.eins, text: "1:1", an: true},
 		leistenKnopf{c: &k.export, text: i18n.T("Export…"), an: !e.exportOffen, gruppe: true},

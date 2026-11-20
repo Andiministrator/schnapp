@@ -98,3 +98,25 @@ Zacken entstehen — drückte den Faktor nach der Ansicht auf 1 (Probelauf Karte
 Faktor misst die Pixeldichte der Aufnahme, und die ändert sich durch Schneiden nicht. Er bleibt damit für ein Dokument
 fest; Renderer, SVG-Export, Editor und Trefferweite holen ihn weiter aus `Dokument.ZackenFaktor`. Entschieden von Claude
 im Rahmen von F-173 (leicht umkehrbar, Andi informiert).
+
+## Nachtrag 3 (20.11.2026): Band am Bildrand wird Zuschnitt, Knopf „Ganzes Bild“, Schwärzen an Naht und Kante (F-222, F-223)
+
+**Status:** Akzeptiert (Entscheidung Andi E-21; umgesetzt von Claude Opus 5.5, Karte #99).
+
+- **Punkt 3 ergänzt (F-222):** Ein Stauch-Band, das bis an den Rand der Ansicht reicht, wird **kein Streifen**,
+  sondern ein Zuschnitt der betroffenen Achse (`canvas` `randZuschnitt`); die andere Achse behält ihren Zuschnitt. Am
+  Rand gäbe es keine Naht, über die sich der Streifen zurückholen ließe — nach dem Leeren des Verlaufs (Speichern mit
+  Schwärzung, Wiederöffnen) war er verloren, entgegen Kernprinzip 1. Die Statusleiste sagt es einmal („Der Teil reichte
+  bis an den Rand …; ‚Ganzes Bild‘ holt ihn zurück“), sofern nicht schon die Meldung über verborgene Beschriftungen gilt.
+- **Punkt 2 ergänzt:** Neuer Knopf **„Ganzes Bild“** in der Leiste (eigene Gruppe vor „Einpassen“, grau, wenn schon
+  alles zu sehen ist), gleichwertig mit dem Doppelklick des Werkzeugs Zuschneiden (E-21: jede Tastenfunktion auch über
+  die Leiste). „Ganzes Bild“ setzt den Zuschnitt auf das ganze Original und entfernt dabei Streifen, die dann am Rand
+  des Originals anliegen (ohne Naht; so entstanden sie vor diesem Nachtrag, ältere Dateien können sie tragen), in einem
+  Rückgängig-Schritt (`Dokument.SetzeAnsicht`). Streifen mit Naht bleiben.
+- **Punkt 8 genauer (F-223):** Der Schwärzungsrahmen wird nach außen auf ganze Ansichtspixel gerundet, auf die Ansicht
+  begrenzt und je Achse wie beim Zuschneiden ins Original umgerechnet (erstes Pixel bis hinter das letzte). Endet oder
+  beginnt er genau an einer Naht oder an der Kante der Ansicht, bleibt der verborgene Streifen dahinter unberührt; ein
+  Streifen mitten im Rahmen wird weiter mitgeschwärzt.
+- **Probe:** `scripts/drehbuecher/rueckfall-randband-f222.txt` (virtueller KWin, Fotos 02 bis 05).
+- **Folge:** Die Leiste bricht im Probelauf bei 1600 px Fensterbreite in zwei Zeilen um (F-148 regelt das
+  Umbrechen); Karte #104 prüft die übrigen Tastenfunktionen und ob Menüs die Leiste entlasten.

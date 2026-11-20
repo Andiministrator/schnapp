@@ -1,0 +1,33 @@
+# Rückfallprobe F-222/F-223 (Karte #99, E-21): Stauch-Band bis an den Bildrand wird Zuschnitt, „Ganzes Bild“ holt es
+# zurück; Schwärzen über den Rand hinaus trifft nichts Verborgenes.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-randband-f222.txt --bild scripts/drehbuecher/testbild-1200x800.png --zeit 120
+# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
+# Bild 1200x800 bei 100 % ab (200,114); Bildpunkt = Bildschirm - (200,114)
+warte 800
+foto 01-vorher
+# 1) X senkrecht von Bildzeile 586 bis unter den Bildrand: unten abgeschnitten, Meldung nennt „Ganzes Bild“,
+#    der Knopf „Ganzes Bild“ ist aktiv
+taste X
+ziehe 800 700 800 990 12
+warte 300
+foto 02-band-am-rand
+# 2) Knopf „Ganzes Bild“ in der Leiste bei (1247,28), Leiste bei 1600 px zweizeilig
+klick 1247 28
+warte 300
+foto 03-ganzes-bild
+# 3) wieder unten weg, dann Schwärzen über den unteren Rand hinaus; „Ganzes Bild“ zeigt den Streifen darunter
+#    ungeschwärzt
+ziehe 800 700 800 990 12
+warte 300
+taste B
+ziehe 400 500 600 990 12
+warte 300
+foto 04-geschwaerzt-am-rand
+klick 1247 28
+warte 300
+foto 05-ganz-mit-schwaerzung
+taste Strg+Z
+taste Strg+Z
+taste Strg+Z
+warte 300
+foto 06-alles-zurueck

@@ -466,3 +466,9 @@ msgstr "Die frühere Datei %s war nicht mehr da; wo immer sie jetzt liegt, zeigt
 
 msgid "The earlier file %s still shows the unredacted content. Delete it yourself."
 msgstr "Die frühere Datei %s zeigt noch den ungeschwärzten Inhalt. Bitte selbst löschen."
+
+msgid "Whole image"
+msgstr "Ganzes Bild"
+
+msgid "The part reached the edge and was cropped off; “Whole image” brings it back."
+msgstr "Der Teil reichte bis an den Rand und wurde abgeschnitten; „Ganzes Bild“ holt ihn zurück."

@@ -20,6 +20,7 @@ const (
 	AnsichtVerborgen                // danach liegen Beschriftungen ganz im Verborgenen (Anzahl: VerborgeneObjekte)
 	AnsichtLeer                     // das Band hätte die ganze Ansicht genommen; nichts geändert
 	AnsichtZuviele                  // zu viele Streifen (document.MaxStreifen, document.MaxKacheln); nichts geändert
+	AnsichtRand                     // das Band reichte bis an den Rand und wurde zum Zuschnitt (F-222, E-21)
 )
 
 // rahmenWerkzeug meldet, ob w mit einem gezogenen Rahmen arbeitet statt ein Objekt anzulegen.
@@ -128,23 +129,49 @@ func (s *Sitzung) zuschneideRahmen() {
 	}
 }
 
-// HebeZuschnittAuf zeigt wieder das ganze Original (Doppelklick mit dem Werkzeug Zuschneiden, ADR-0023 Punkt 2), ein
-// Rückgängig-Schritt. Die Streifen bleiben. Liefert, ob sich etwas geändert hat.
+// HebeZuschnittAuf zeigt wieder das ganze Bild (Knopf „Ganzes Bild“, Doppelklick mit dem Werkzeug Zuschneiden;
+// ADR-0023 Punkt 2 und Nachtrag 3), ein Rückgängig-Schritt: Der Zuschnitt wird das ganze Original, und Streifen, die
+// dann am Rand des Originals anliegen, fallen weg — sie hätten keine Naht und wären sonst nicht mehr zurückzuholen
+// (F-222; so entstanden sie vor dem Nachtrag, etwa in älteren Dateien). Alle anderen Streifen bleiben. Liefert, ob sich
+// etwas geändert hat.
 func (s *Sitzung) HebeZuschnittAuf() bool {
 	if s.zug != keinZug {
 		return false
 	}
-	ganz := s.D.Original().Rect
-	if s.D.Zuschnitt() == ganz {
+	ganz, st, ok := s.ganzesBild()
+	if !ok {
 		return false
 	}
 	vor, verborgen := s.D.Stand(), s.VerborgeneObjekte()
-	if s.D.SetzeZuschnitt(ganz) != nil {
+	if s.D.SetzeAnsicht(ganz, st) != nil {
 		return false
 	}
 	s.merkeAenderung(vor)
 	s.ansichtGeaendert(verborgen)
 	return true
+}
+
+// KannGanzesBild meldet, ob HebeZuschnittAuf etwas ändern würde (Knopf „Ganzes Bild“ an oder grau).
+func (s *Sitzung) KannGanzesBild() bool {
+	_, _, ok := s.ganzesBild()
+	return ok && s.zug == keinZug
+}
+
+// ganzesBild liefert Zuschnitt und Streifen für „Ganzes Bild“ und ob sie vom jetzigen Stand abweichen.
+func (s *Sitzung) ganzesBild() (image.Rectangle, []document.Streifen, bool) {
+	ganz := s.D.Original().Rect
+	var bleiben []document.Streifen
+	for _, st := range s.D.Streifen() {
+		lo, hi := ganz.Min.X, ganz.Max.X
+		if st.Zeilen {
+			lo, hi = ganz.Min.Y, ganz.Max.Y
+		}
+		if st.Von <= lo || st.Bis >= hi {
+			continue // liegt am Rand des Originals an: ohne Naht
+		}
+		bleiben = append(bleiben, st)
+	}
+	return ganz, bleiben, s.D.Zuschnitt() != ganz || len(bleiben) != len(s.D.Streifen())
 }
 
 // stauchBand liefert das Band des laufenden Stauchen-Zugs in ganzen Ansichtspixeln (ADR-0023 Punkt 3): die Achse aus
@@ -193,6 +220,10 @@ func (s *Sitzung) staucheRahmen() {
 		s.ansichtMeldung = AnsichtLeer
 		return
 	}
+	if laenge := map[bool]int{false: g.X, true: g.Y}[zeilen]; von == 0 || bis == laenge {
+		s.randZuschnitt(zeilen, von, bis, laenge)
+		return
+	}
 	neu := document.Streifen{Zeilen: zeilen}
 	neu.Von, neu.Bis = s.originalBereich(von, bis, zeilen)
 	st := Verschmolzen(s.D.Streifen(), neu)
@@ -225,6 +256,34 @@ func Verschmolzen(st []document.Streifen, neu document.Streifen) []document.Stre
 		}
 	}
 	return append(rest, neu)
+}
+
+// randZuschnitt nimmt ein Band, das bis an den Rand der Ansicht reicht, als Zuschnitt weg statt als Streifen (F-222,
+// E-21, ADR-0023 Nachtrag 3): Am Rand gäbe es keine Naht, über die es zurückzuholen wäre; den Zuschnitt hebt „Ganzes
+// Bild“ auf. Die andere Achse behält ihren Zuschnitt. laenge ist die Länge der Ansicht auf der Achse des Bands.
+func (s *Sitzung) randZuschnitt(zeilen bool, von, bis, laenge int) {
+	rv, rb := bis, laenge // was bleibt: hinter dem Band (Band am Anfang) …
+	if von > 0 {
+		rv, rb = 0, von // … oder davor (Band am Ende)
+	}
+	a, b := s.originalBereich(rv, rb, zeilen)
+	z := s.D.Zuschnitt()
+	if zeilen {
+		z.Min.Y, z.Max.Y = a, b
+	} else {
+		z.Min.X, z.Max.X = a, b
+	}
+	if z == s.D.Zuschnitt() {
+		return
+	}
+	verborgen := s.VerborgeneObjekte()
+	if s.D.SetzeZuschnitt(z) != nil {
+		return
+	}
+	s.ansichtGeaendert(verborgen)
+	if s.ansichtMeldung == AnsichtKeine {
+		s.ansichtMeldung = AnsichtRand
+	}
 }
 
 // EntferneNaht nimmt am Fensterpunkt p die nächste Stauch-Naht zurück (Doppelklick mit dem Werkzeug Stauchen,

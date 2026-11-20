@@ -349,7 +349,7 @@ func TestVerborgeneObjekte(t *testing.T) {
 }
 
 // F-182: Liegt ein Streifen am Rand der Ansicht, ist ein Rahmen über die ganze Ansicht trotzdem „nichts zu tun“ — kein
-// unsichtbarer Rückgängig-Schritt, kein Zuschnitt, den der Doppelklick danach aufheben könnte.
+// unsichtbarer Rückgängig-Schritt, kein Zuschnitt. „Ganzes Bild“ entfernt den Randstreifen (F-222).
 func TestZuschneidenGanzeAnsichtMitRandstreifen(t *testing.T) {
 	for _, st := range []document.Streifen{{Von: 0, Bis: 10}, {Zeilen: true, Von: 90, Bis: 100}} {
 		s := verlaufSitzung(t)
@@ -367,8 +367,9 @@ func TestZuschneidenGanzeAnsichtMitRandstreifen(t *testing.T) {
 		if s.D.Stand() != vor || s.D.Zuschnitt() != z || s.BildAenderung() != 0 {
 			t.Errorf("Streifen %v: Stand geändert %v, Zuschnitt %v (Soll %v)", st, s.D.Stand() != vor, s.D.Zuschnitt(), z)
 		}
-		if s.HebeZuschnittAuf() {
-			t.Errorf("Streifen %v: Zuschnitt zum Aufheben entstanden", st)
+		// „Ganzes Bild“ holt den Randstreifen zurück: Er hat keine Naht und wäre sonst verloren (F-222).
+		if !s.HebeZuschnittAuf() || len(s.D.Streifen()) != 0 || s.D.Zuschnitt() != z {
+			t.Errorf("Streifen %v: Ganzes Bild ließ %v, Zuschnitt %v", st, s.D.Streifen(), s.D.Zuschnitt())
 		}
 	}
 }

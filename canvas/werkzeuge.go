@@ -363,9 +363,9 @@ func (s *Sitzung) Rahmen() (a, b document.Punkt, ok bool) {
 	return s.Abb.ZuFenster(s.rahmenA), s.Abb.ZuFenster(s.rahmenB), true
 }
 
-// schwaerzeRahmen überschreibt beim Loslassen die Pixel im Rahmen. Der Rahmen gilt in der Ansicht; seine Ecken werden
-// ins Original umgerechnet und nach außen auf ganze Pixel gerundet, ein verborgener Stauch-Streifen dazwischen wird
-// mitgeschwärzt. Unter der Mindestgröße passiert nichts.
+// schwaerzeRahmen überschreibt beim Loslassen die Pixel im Rahmen. Der Rahmen gilt in der Ansicht und wird nach außen
+// auf ganze Ansichtspixel gerundet und ins Original umgerechnet; ein verborgener Stauch-Streifen mitten darin wird
+// mitgeschwärzt, einer hinter seinem Rand nicht (F-223). Unter der Mindestgröße passiert nichts.
 func (s *Sitzung) schwaerzeRahmen() {
 	if !s.rahmen {
 		return
@@ -376,9 +376,19 @@ func (s *Sitzung) schwaerzeRahmen() {
 	if r.Breite() < grenze || r.Hoehe() < grenze {
 		return
 	}
-	o1, o2 := s.D.ZuOriginal(document.Pt(r.Min.X, r.Min.Y)), s.D.ZuOriginal(document.Pt(r.Max.X, r.Max.Y))
-	px := image.Rect(int(math.Floor(math.Min(o1.X, o2.X))), int(math.Floor(math.Min(o1.Y, o2.Y))),
-		int(math.Ceil(math.Max(o1.X, o2.X))), int(math.Ceil(math.Max(o1.Y, o2.Y))))
+	// Nach außen auf ganze Ansichtspixel, auf die Ansicht begrenzt (ADR-0023 Punkt 8), dann je Achse wie beim
+	// Zuschneiden ins Original: vom ersten bis hinter das letzte Pixel. So endet der Rahmen an einer Naht oder an der
+	// Kante der Ansicht vor dem verborgenen Streifen dahinter (F-223); ein Streifen mitten im Rahmen wird mitgeschwärzt.
+	g := s.D.Groesse()
+	k := func(v float64, m int) int { return max(0, min(m, int(v))) }
+	a := image.Rect(k(math.Floor(r.Min.X), g.X), k(math.Floor(r.Min.Y), g.Y), k(math.Ceil(r.Max.X), g.X),
+		k(math.Ceil(r.Max.Y), g.Y))
+	if a.Empty() {
+		return
+	}
+	x0, x1 := s.originalBereich(a.Min.X, a.Max.X, false)
+	y0, y1 := s.originalBereich(a.Min.Y, a.Max.Y, true)
+	px := image.Rect(x0, y0, x1, y1)
 	sw := document.Schwaerzung{Farbe: Schwaerzfarbe}
 	if s.neuArt == WerkzeugVerpixeln {
 		kurz := min(px.Dx(), px.Dy())

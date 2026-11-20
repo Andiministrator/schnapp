@@ -315,6 +315,19 @@ func (d *Dokument) SetzeStreifen(st []Streifen) error {
 	return nil
 }
 
+// SetzeAnsicht setzt Zuschnitt und Streifen zusammen in einem Rückgängig-Schritt („Ganzes Bild“, F-222).
+func (d *Dokument) SetzeAnsicht(z image.Rectangle, st []Streifen) error {
+	if d.zug != nil {
+		return ErrZugLaeuft
+	}
+	z, st = z.Canon(), sortiert(st)
+	if err := d.pruefeAnsicht(z, st); err != nil {
+		return err
+	}
+	d.fuehreAus(ansichtAendern{d.zuschnitt, z, d.streifen, st})
+	return nil
+}
+
 type schwaerzen struct {
 	r      image.Rectangle
 	s      Schwaerzung
