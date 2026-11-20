@@ -179,8 +179,13 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file could not be updated and was removed, but its preview could not be removed and still shows the unredacted content. Saved as a new capture: %s"), ort)
 			case geloescht && (fe == nil || errors.Is(fe, library.ErrIndex)):
 				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file could not be updated and still showed the unredacted content, so it was removed. Saved as a new capture: %s"), ort)
-			case fe == nil:
-				// Die Datei fehlte schon (verschoben, Papierkorb): nicht „entfernt“ behaupten (F-167).
+			case errors.Is(fe, library.ErrVorschauAlt):
+				// Die Datei fehlte schon, ihr Vorschaubild ließ sich nicht entfernen (F-186): beides sagen, nicht „Delete
+				// it yourself“ für eine Datei, die es nicht gibt.
+				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file %s was no longer there; wherever it is now, it still shows the unredacted content. Its preview could not be removed and still shows it too. Saved as a new capture: %s"), altOrt, ort)
+			case fe == nil || errors.Is(fe, library.ErrIndex):
+				// Die Datei fehlte schon (verschoben, Papierkorb): nicht „entfernt“ behaupten (F-167). Scheiterte nur der
+				// Index, ist das für den Nutzer dasselbe; der Abgleich holt ihn nach (F-186).
 				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file %s was no longer there; wherever it is now, it still shows the unredacted content. Saved as a new capture: %s"), altOrt, ort)
 			default:
 				erg.Hinweis = fmt.Sprintf(i18n.T("The previous file could not be updated and still shows the unredacted content: %s. Delete it yourself. Saved as a new capture: %s"), altOrt, ort)

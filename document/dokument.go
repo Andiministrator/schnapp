@@ -40,8 +40,10 @@ type Dokument struct {
 	zug        *zug
 	// geschwaerzt zählt die wirksamen Schwärzungen seit Neu bzw. dem Laden (Rückgängig zieht ab); VergissVerlauf
 	// lässt ihn stehen (ADR-0022 Punkt 4).
-	geschwaerzt   int
-	schwaerzStand uint64 // zählt Schwärzen und Zurücknehmen (SchwaerzStand)
+	geschwaerzt int
+	// schwaerzStand ist die Kennung der zuletzt wirksamen Schwärzung (0: keine seit Neu bzw. Laden), schwaerzKennungen
+	// die zuletzt vergebene Kennung (SchwaerzStand, F-187).
+	schwaerzStand, schwaerzKennungen uint64
 }
 
 // Fehler der Änderungen.

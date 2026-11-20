@@ -371,6 +371,9 @@ msgstr "Die bisherige Datei ließ sich nicht aktualisieren und wurde entfernt, i
 msgid "The previous file %s was no longer there; wherever it is now, it still shows the unredacted content. Saved as a new capture: %s"
 msgstr "Die bisherige Datei %s war nicht mehr da; wo immer sie jetzt liegt, zeigt sie noch den ungeschwärzten Inhalt. Als neue Aufnahme gespeichert: %s"
 
+msgid "The previous file %s was no longer there; wherever it is now, it still shows the unredacted content. Its preview could not be removed and still shows it too. Saved as a new capture: %s"
+msgstr "Die bisherige Datei %s war nicht mehr da; wo immer sie jetzt liegt, zeigt sie noch den ungeschwärzten Inhalt. Ihr Vorschaubild ließ sich nicht entfernen und zeigt ihn ebenfalls. Als neue Aufnahme gespeichert: %s"
+
 msgid "It still shows the unredacted content."
 msgstr "Es zeigt noch den ungeschwärzten Inhalt."
 

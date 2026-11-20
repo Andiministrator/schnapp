@@ -108,3 +108,48 @@ func TestGeschwaerztUndVerlauf(t *testing.T) {
 		t.Error("nach VergissVerlauf: Geschwaerzt muss bleiben, der Verlauf leer sein")
 	}
 }
+
+// F-187: SchwaerzStand kennzeichnet die wirksamen Schwärzungen. Schwärzen und Rückgängig führt zum alten Wert zurück,
+// Wiederholen zum selben wie zuvor, eine neue Schwärzung zu einem neuen; VergissVerlauf ändert nichts.
+func TestSchwaerzStandMitRueckgaengig(t *testing.T) {
+	d := neu(t, 20, 20)
+	schwarz := Schwaerzung{Farbe: color.NRGBA{A: 255}}
+	schwaerze := func() {
+		t.Helper()
+		if err := d.Schwaerzen(image.Rect(0, 0, 5, 5), schwarz); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if d.SchwaerzStand() != 0 {
+		t.Fatalf("frisch: %d", d.SchwaerzStand())
+	}
+	schwaerze()
+	a := d.SchwaerzStand()
+	if err := d.VergissVerlauf(); err != nil { // wie nach dem Speichern
+		t.Fatal(err)
+	}
+	schwaerze()
+	b := d.SchwaerzStand()
+	if b == a {
+		t.Fatal("neue Schwärzung ohne neue Kennung")
+	}
+	if err := d.Rueckgaengig(); err != nil {
+		t.Fatal(err)
+	}
+	if d.SchwaerzStand() != a {
+		t.Errorf("nach Rückgängig %d, Soll %d (Stand A)", d.SchwaerzStand(), a)
+	}
+	if err := d.Wiederholen(); err != nil {
+		t.Fatal(err)
+	}
+	if d.SchwaerzStand() != b {
+		t.Errorf("nach Wiederholen %d, Soll %d", d.SchwaerzStand(), b)
+	}
+	if err := d.Rueckgaengig(); err != nil {
+		t.Fatal(err)
+	}
+	schwaerze()
+	if c := d.SchwaerzStand(); c == a || c == b {
+		t.Errorf("Schwärzung C nach Rückgängig B hat alte Kennung %d", c)
+	}
+}

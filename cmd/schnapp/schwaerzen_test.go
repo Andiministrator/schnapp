@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -442,6 +443,80 @@ func TestF126AlteDateiSchonGeschwaerzt(t *testing.T) {
 	}
 	if _, err := os.Stat(abs); err != nil {
 		t.Errorf("schon geschwärzte alte Datei entfernt: %v", err)
+	}
+}
+
+// F-187: Schwärzen A, Speichern, Schwärzen B, Rückgängig B — die Datei entspricht dem Stand (A ist darin geschwärzt).
+// Scheitert dann das Zurückschreiben, bleibt sie stehen, und die Meldung nennt keinen ungeschwärzten Inhalt.
+func TestF126SchwaerzenRueckgaengigVorAusweichen(t *testing.T) {
+	_, _, abs, g, speichern := bibliotheksAufnahme(t)
+	d := g.Dokument
+	if err := d.Schwaerzen(geheimRahmen, schwarz); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := speichern(d); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Schwaerzen(image.Rect(0, 0, 10, 10), schwarz); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Rueckgaengig(); err != nil {
+		t.Fatal(err)
+	}
+	mitKasten(t, d)
+	sperre(t, abs)
+	erg, err := speichern(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(erg.Hinweis, "unredacted") || !strings.Contains(erg.Hinweis, "previous file could not be updated") {
+		t.Errorf("Ergebnis %+v", erg)
+	}
+	if _, err := os.Stat(abs); err != nil {
+		t.Errorf("Datei mit dem geschwärzten Stand entfernt: %v", err)
+	}
+}
+
+// F-186: Fehlte die alte Datei schon und scheitert nur das Entfernen der Vorschau bzw. nur der Index, nennt die
+// Meldung die Vorschau bzw. sagt „nicht mehr da“ — nie „Delete it yourself“ für eine Datei, die es nicht gibt.
+func TestF126DateiWegNebenschrittScheitert(t *testing.T) {
+	for name, fall := range map[string]struct {
+		err        error
+		soll       []string
+		vorschauDa bool
+	}{
+		"Vorschau bleibt": {fmt.Errorf("%w: %w: x", library.ErrVorschau, library.ErrVorschauAlt),
+			[]string{"no longer there", "preview could not be removed", "unredacted"}, true},
+		"nur Index": {fmt.Errorf("%w: x", library.ErrIndex), []string{"no longer there", "unredacted"}, false},
+		"Index und Vorschau": {errors.Join(fmt.Errorf("%w: %w: x", library.ErrVorschau, library.ErrVorschauAlt),
+			fmt.Errorf("%w: x", library.ErrIndex)), []string{"no longer there", "preview could not be removed"}, true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, alt, abs, g, speichern := bibliotheksAufnahme(t)
+			vorher := entfernen
+			entfernen = func(*library.Bibliothek, string, library.Stand) (bool, error) { return false, fall.err }
+			t.Cleanup(func() { entfernen = vorher })
+			if err := g.Dokument.Schwaerzen(geheimRahmen, schwarz); err != nil {
+				t.Fatal(err)
+			}
+			sperre(t, abs)
+			erg, err := speichern(g.Dokument)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !erg.Warnung || strings.Contains(erg.Hinweis, "Delete it yourself") || strings.Contains(erg.Hinweis, "was removed") ||
+				!strings.Contains(erg.Hinweis, alt) {
+				t.Errorf("Ergebnis %+v", erg)
+			}
+			for _, s := range fall.soll {
+				if !strings.Contains(erg.Hinweis, s) {
+					t.Errorf("Hinweis ohne %q: %q", s, erg.Hinweis)
+				}
+			}
+			if !fall.vorschauDa && strings.Contains(erg.Hinweis, "preview") {
+				t.Errorf("Hinweis nennt eine Vorschau: %q", erg.Hinweis)
+			}
+		})
 	}
 }
 

@@ -319,6 +319,9 @@ type schwaerzen struct {
 	r      image.Rectangle
 	s      Schwaerzung
 	vorher *image.NRGBA // alte Pixel, nur im Speicher
+	// kennung ist die eigene Schwärzungs-Kennung (beim ersten Ausführen vergeben, beim Wiederholen dieselbe), davor
+	// der SchwaerzStand vor dem Ausführen (F-187).
+	kennung, davor uint64
 }
 
 func (b *schwaerzen) ausfuehren(d *Dokument) {
@@ -332,7 +335,11 @@ func (b *schwaerzen) ausfuehren(d *Dokument) {
 	}
 	d.schwaerze(b.r, b.s)
 	d.geschwaerzt++
-	d.schwaerzStand++
+	if b.kennung == 0 {
+		d.schwaerzKennungen++
+		b.kennung = d.schwaerzKennungen
+	}
+	b.davor, d.schwaerzStand = d.schwaerzStand, b.kennung
 }
 
 func (b *schwaerzen) zuruecknehmen(d *Dokument) {
@@ -342,12 +349,14 @@ func (b *schwaerzen) zuruecknehmen(d *Dokument) {
 		copy(d.original.Pix[z:z+4*b.r.Dx()], b.vorher.Pix[q:q+4*b.r.Dx()])
 	}
 	d.geschwaerzt--
-	d.schwaerzStand++
+	d.schwaerzStand = b.davor
 }
 
-// SchwaerzStand ändert sich mit jeder Schwärzung und jedem Zurücknehmen einer Schwärzung. Wer sich den Wert beim
-// Schreiben merkt, weiß später, ob seitdem geschwärzt wurde (F-169: eine längst geschwärzte Datei ist kein Grund zum
-// Entfernen).
+// SchwaerzStand ist die Kennung der zuletzt wirksamen Schwärzung (0: keine seit Neu bzw. Laden). Jede neue Schwärzung
+// bekommt eine neue Kennung; Rückgängig stellt die Kennung davor wieder her, Wiederholen dieselbe wie zuvor. Da
+// Schwärzungen nur in Verlaufsreihenfolge zurückgenommen werden, bestimmt die Kennung die Menge der wirksamen
+// Schwärzungen. Wer sich den Wert beim Schreiben merkt, weiß später, ob seitdem etwas geschwärzt wurde, das die
+// geschriebene Datei nicht enthält (F-169) — auch wenn dazwischen geschwärzt und wieder zurückgenommen wurde (F-187).
 func (d *Dokument) SchwaerzStand() uint64 { return d.schwaerzStand }
 
 // Geschwaerzt meldet, ob seit dem Anlegen bzw. Laden mindestens eine Schwärzung wirksam ist (auch nach
