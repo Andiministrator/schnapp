@@ -5,6 +5,7 @@ package canvas
 import (
 	"image"
 	"math"
+	"slices"
 
 	"github.com/Andiministrator/schnapp/document"
 )
@@ -301,15 +302,18 @@ func (s *Sitzung) verlauf(f func() error) bool {
 	if s.zug != keinZug {
 		return false
 	}
-	z, g := s.D.Zuschnitt(), s.D.Groesse()
+	z, g, st := s.D.Zuschnitt(), s.D.Groesse(), s.D.Streifen()
+	verborgen := s.VerborgeneObjekte()
 	if f() != nil {
 		return false
 	}
 	if _, ok := s.D.Objekt(s.Auswahl); !ok {
 		s.Auswahl = 0
 	}
-	if s.D.Zuschnitt() != z || s.D.Groesse() != g {
-		s.ansichtGeaendert() // Zuschnitt oder Streifen zurückgenommen: neu einpassen (ADR-0023 Punkt 5)
+	if s.D.Zuschnitt() != z || s.D.Groesse() != g || !slices.Equal(s.D.Streifen(), st) {
+		// Zuschnitt oder Streifen zurückgenommen bzw. wiederholt: neu einpassen (ADR-0023 Punkt 5), wie nach dem
+		// Zuschneiden melden, wenn mehr verborgen ist (F-184).
+		s.ansichtGeaendert(verborgen)
 	}
 	return true
 }

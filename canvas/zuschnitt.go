@@ -58,20 +58,17 @@ func (s *Sitzung) sichtbareObjekte() []document.Objekt {
 }
 
 // ansichtGeaendert folgt einer geänderten Ansicht: Bild neu bauen, neu einpassen, eine verborgene Auswahl aufheben.
-func (s *Sitzung) ansichtGeaendert() {
+// verborgenVorher ist VerborgeneObjekte vor der Änderung: Liegen danach mehr Beschriftungen im Verborgenen, meldet
+// die Statusleiste es (ADR-0023 Punkt 7: nicht unbemerkt) — nach Zuschneiden, Stauchen, Rückgängig und Wiederholen
+// gleich, und nur bei Zuwachs (F-184).
+func (s *Sitzung) ansichtGeaendert(verborgenVorher int) {
 	s.bildAenderung++
 	s.eingepasst = true
 	s.Abb = Einpassen(s.D.Groesse(), s.fenster, Rand)
 	if o, ok := s.D.Objekt(s.Auswahl); ok && !s.D.ObjektSichtbar(o) {
 		s.Auswahl = 0
 	}
-}
-
-// nachAnsichtAenderung setzt nach einem gelungenen Zuschneiden oder Stauchen die Meldung, wenn Beschriftungen
-// verborgen sind (ADR-0023 Punkt 7: nicht unbemerkt).
-func (s *Sitzung) nachAnsichtAenderung() {
-	s.ansichtGeaendert()
-	if s.VerborgeneObjekte() > 0 {
+	if s.VerborgeneObjekte() > verborgenVorher {
 		s.ansichtMeldung = AnsichtVerborgen
 	}
 }
@@ -110,17 +107,20 @@ func (s *Sitzung) zuschneideRahmen() {
 		return
 	}
 	a := s.ganzzahlig(r)
-	if a.Empty() {
+	if a.Empty() || a == (image.Rectangle{Max: s.D.Groesse()}) {
+		// Rahmen über die ganze Ansicht: nichts zu tun. An der Ansicht geprüft, nicht am Zuschnitt — liegt ein Streifen
+		// am Rand, wiche der umgerechnete Zuschnitt vom alten ab, ohne dass sich etwas Sichtbares ändert (F-182).
 		return
 	}
 	x0, x1 := s.originalBereich(a.Min.X, a.Max.X, false)
 	y0, y1 := s.originalBereich(a.Min.Y, a.Max.Y, true)
 	z := image.Rect(x0, y0, x1, y1)
 	if z == s.D.Zuschnitt() {
-		return // Rahmen über die ganze Ansicht: nichts zu tun
+		return
 	}
+	verborgen := s.VerborgeneObjekte()
 	if s.D.SetzeZuschnitt(z) == nil {
-		s.nachAnsichtAenderung()
+		s.ansichtGeaendert(verborgen)
 	}
 }
 
@@ -134,12 +134,12 @@ func (s *Sitzung) HebeZuschnittAuf() bool {
 	if s.D.Zuschnitt() == ganz {
 		return false
 	}
-	vor := s.D.Stand()
+	vor, verborgen := s.D.Stand(), s.VerborgeneObjekte()
 	if s.D.SetzeZuschnitt(ganz) != nil {
 		return false
 	}
 	s.merkeAenderung(vor)
-	s.ansichtGeaendert()
+	s.ansichtGeaendert(verborgen)
 	return true
 }
 
@@ -189,11 +189,12 @@ func (s *Sitzung) staucheRahmen() {
 	neu := document.Streifen{Zeilen: zeilen}
 	neu.Von, neu.Bis = s.originalBereich(von, bis, zeilen)
 	st := Verschmolzen(s.D.Streifen(), neu)
+	verborgen := s.VerborgeneObjekte()
 	if s.D.SetzeStreifen(st) != nil {
 		s.ansichtMeldung = AnsichtZuviele
 		return
 	}
-	s.nachAnsichtAenderung()
+	s.ansichtGeaendert(verborgen)
 }
 
 // Verschmolzen liefert st mit neu, wobei alle Streifen derselben Achse, die neu überlappen oder an ihn stoßen, in ihm
@@ -258,11 +259,11 @@ func (s *Sitzung) EntferneNaht(p document.Punkt) bool {
 		}
 		bleiben = append(bleiben, st)
 	}
-	vor := s.D.Stand()
+	vor, verborgen := s.D.Stand(), s.VerborgeneObjekte()
 	if s.D.SetzeStreifen(bleiben) != nil {
 		return false
 	}
 	s.merkeAenderung(vor)
-	s.ansichtGeaendert()
+	s.ansichtGeaendert(verborgen)
 	return true
 }

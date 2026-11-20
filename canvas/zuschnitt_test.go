@@ -301,6 +301,68 @@ func TestVerborgeneObjekte(t *testing.T) {
 	}
 }
 
+// F-182: Liegt ein Streifen am Rand der Ansicht, ist ein Rahmen über die ganze Ansicht trotzdem „nichts zu tun“ — kein
+// unsichtbarer Rückgängig-Schritt, kein Zuschnitt, den der Doppelklick danach aufheben könnte.
+func TestZuschneidenGanzeAnsichtMitRandstreifen(t *testing.T) {
+	for _, st := range []document.Streifen{{Von: 0, Bis: 10}, {Zeilen: true, Von: 90, Bis: 100}} {
+		s := verlaufSitzung(t)
+		if err := s.D.SetzeStreifen([]document.Streifen{st}); err != nil {
+			t.Fatal(err)
+		}
+		if err := s.D.VergissVerlauf(); err != nil {
+			t.Fatal(err)
+		}
+		s.Einpassen()
+		vor, z := s.D.Stand(), s.D.Zuschnitt()
+		g := s.D.Groesse()
+		s.SetzeWerkzeug(WerkzeugZuschneiden)
+		zieh(s, fv(s, 0, 0), fv(s, float64(g.X), float64(g.Y)))
+		if s.D.Stand() != vor || s.D.Zuschnitt() != z || s.BildAenderung() != 0 {
+			t.Errorf("Streifen %v: Stand geändert %v, Zuschnitt %v (Soll %v)", st, s.D.Stand() != vor, s.D.Zuschnitt(), z)
+		}
+		if s.HebeZuschnittAuf() {
+			t.Errorf("Streifen %v: Zuschnitt zum Aufheben entstanden", st)
+		}
+	}
+}
+
+// F-184: Die Meldung „verborgen“ kommt nur, wenn mehr Beschriftungen verborgen sind als vorher — nach Zuschneiden und
+// Stauchen wie nach Wiederholen; ein Zuschnitt, der nichts Neues verbirgt, meldet nichts.
+func TestMeldungVerborgenNurBeiZuwachs(t *testing.T) {
+	s := verlaufSitzung(t) // 200×100, ohne Objekte
+	if _, err := s.D.Hinzufuegen(document.Kasten{Bereich: document.R(document.Pt(150, 70), document.Pt(180, 90)),
+		Strich: document.Strich{Farbe: color.NRGBA{R: 255, A: 255}, Breite: 2}}); err != nil {
+		t.Fatal(err)
+	}
+	s.SetzeWerkzeug(WerkzeugZuschneiden)
+	zieh(s, fv(s, 0, 0), fv(s, 120, 60)) // verbirgt den Kasten
+	if m := s.NimmAnsichtMeldung(); m != AnsichtVerborgen || s.VerborgeneObjekte() != 1 {
+		t.Fatalf("1. Zuschnitt: Meldung %v, verborgen %d", m, s.VerborgeneObjekte())
+	}
+	zieh(s, fv(s, 0, 0), fv(s, 80, 40)) // verbirgt nichts Neues
+	if m := s.NimmAnsichtMeldung(); m != AnsichtKeine {
+		t.Errorf("2. Zuschnitt ohne Zuwachs: Meldung %v", m)
+	}
+	if !s.Rueckgaengig() || !s.Rueckgaengig() || s.VerborgeneObjekte() != 0 {
+		t.Fatalf("2× Rückgängig: verborgen %d", s.VerborgeneObjekte())
+	}
+	if m := s.NimmAnsichtMeldung(); m != AnsichtKeine {
+		t.Errorf("Rückgängig macht sichtbar, meldet aber %v", m)
+	}
+	if !s.Wiederholen() {
+		t.Fatal("Wiederholen")
+	}
+	if m := s.NimmAnsichtMeldung(); m != AnsichtVerborgen || s.VerborgeneObjekte() != 1 {
+		t.Errorf("Wiederholen: Meldung %v, verborgen %d", m, s.VerborgeneObjekte())
+	}
+	if !s.Wiederholen() {
+		t.Fatal("2. Wiederholen")
+	}
+	if m := s.NimmAnsichtMeldung(); m != AnsichtKeine {
+		t.Errorf("2. Wiederholen ohne Zuwachs: Meldung %v", m)
+	}
+}
+
 // Die Zackenkante und die neue Sichtbarkeitsregel ändern nichts am Original: Zuschneiden und Stauchen bleiben über
 // Rückgängig und Wiederholen bitgleich zum Stand davor.
 func TestZuschnittUndStreifenNichtZerstoerend(t *testing.T) {
