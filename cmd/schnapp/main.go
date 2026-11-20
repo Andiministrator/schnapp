@@ -42,6 +42,10 @@ const (
 func main() {
 	// Halter der Zwischenablage (ADR-0024): vom Editor gestartet, ohne Gio, ohne Einstellungen, ohne Sprache.
 	if len(os.Args) == 2 && os.Args[1] == wlclip.HelferArgument {
+		if err := probeSchutz(); err != nil { // Probe-Build nur im virtuellen KWin (F-229)
+			fmt.Fprintln(os.Stderr, "schnapp (Probe-Build):", err)
+			os.Exit(exitFehler)
+		}
 		os.Exit(wlclip.HelferLauf())
 	}
 	// Scheitert das Laden der Sprache, bleibt Englisch aktiv; das Programm läuft trotzdem (i18n.Starte).

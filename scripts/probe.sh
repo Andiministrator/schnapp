@@ -2,7 +2,7 @@
 # Probelauf in einem virtuellen KWin: baut Schnapp mit dem Tag „probe“ (Overlay wählt ohne Eingabe den ersten Monitor)
 # und startet es in kwin_wayland --virtual auf einem privaten D-Bus (dbus-run-session). Aufgenommen wird nur der leere
 # virtuelle Bildschirm, nie der echte Desktop. KWin und Schnapp laufen beide mit HOME, XDG-Ordnern und Laufzeitordner
-# unter tmp/probe/ — die echte Konfiguration wird weder gelesen noch beschrieben. Die Tastenbelegung ist fest US
+# unter tmp/probe/ (auch XDG_STATE_HOME) — die echte Konfiguration wird weder gelesen noch beschrieben. Die Tastenbelegung ist fest US
 # (XKB_DEFAULT_LAYOUT=us), damit die evdev-Codes der Fernbedienung unabhängig vom Rechner dieselben Tasten treffen.
 #
 #   scripts/probe.sh [--monitore N] [--skala S] [-- SCHNAPP-ARGUMENTE]   (Voreinstellung: --no-editor)
@@ -27,6 +27,8 @@
 #   scripts/probe.sh --zwischenablage BILD.png   (--innen, --drehbuch und --zwischenablage schließen sich aus)
 #     prüft den Halter der Zwischenablage (ADR-0024): setzt BILD als image/png, liest es mit wl-paste zurück (nur aus
 #     der Zwischenablage des virtuellen KWin), ersetzt sie mit wl-copy und prüft, dass der Halter endet.
+#     Der Halter wird nur beobachtet, nie beendet: Startzeit und Programmname (comm) der PID werden beim Start festgehalten
+#     und bei jeder Beobachtung verglichen; weicht die Identität ab oder ist sie nicht prüfbar, steht „unklar“ im Ergebnis.
 #
 # Ergebnis: tmp/probe/ergebnis.txt (stdout und stderr getrennt, Exit-Code, in diesem Lauf abgelegte Dateien). Harte
 # Zeitgrenze 90 s, bei --drehbuch mit --zeit verlängerbar (danach SIGKILL nach weiteren 5 s). Exit: 0 Lauf durch, 1 Fehler, 124 Zeitgrenze.
@@ -82,13 +84,32 @@ identitaet() {
 	printf '%s %s\n' "${20}" "$name"
 }
 
-# Wahr, wenn die PID noch dieselbe Schnapp-Instanz ist wie beim Start: gleiche Startzeit und gleicher Name wie in id0
-# (gesetzt in drehbuch_innen) und der Name ist wörtlich „schnapp“. Unlesbar oder abweichend heißt: nicht eingreifen.
-ist_schnapp() {
+# Wahr, wenn die PID noch dieselbe Instanz ist wie beim Start: gleiche Startzeit und gleicher Name wie in $2 (Ausgabe von
+# identitaet beim Start). Leeres $2, unlesbar oder abweichend heißt: nein.
+gleiche_identitaet() {
 	local jetzt
-	[ -n "${id0:-}" ] || return 1
+	[ -n "${2:-}" ] || return 1
 	jetzt="$(identitaet "$1")" || return 1
-	[ "$jetzt" = "$id0" ] && [ "${jetzt#* }" = schnapp ]
+	[ "$jetzt" = "$2" ]
+}
+
+# Wahr, wenn die PID noch dieselbe Schnapp-Instanz ist wie beim Start (id0, gesetzt in drehbuch_innen) und der Name
+# wörtlich „schnapp“ ist. Unlesbar oder abweichend heißt: nicht eingreifen.
+ist_schnapp() {
+	gleiche_identitaet "$1" "${id0:-}" && [ "${id0#* }" = schnapp ]
+}
+
+# Zustand eines beobachteten Prozesses ($1 PID, $2 Identität beim Start): „läuft“ (gleiche Startzeit und gleicher Name),
+# „beendet“ (PID gibt es nicht mehr) oder „unklar“ (PID lebt, aber Identität fehlt oder weicht ab — PID wiederverwendet
+# oder nicht prüfbar). Reine Beobachtung, kein Eingriff (F-208).
+zustand() {
+	if gleiche_identitaet "$1" "$2"; then
+		echo "läuft"
+	elif ! kill -0 "$1" 2> /dev/null; then
+		echo "beendet"
+	else
+		echo "unklar"
+	fi
 }
 
 # Drehbuch-Lauf (innerer Teil, Sitzung des virtuellen KWin): Schnapp im Hintergrund, Fernbedienung im Vordergrund.
@@ -195,16 +216,30 @@ if [ "${PROBE_INNEN:-}" = 1 ]; then
 			# fd 3 als Pipe (der Halter meldet nur über eine Pipe, ADR-0024)
 			setsid "$probe/schnapp" --internal-keep-clipboard < "$bild" 3> >(cat > "$probe/meldung.txt") > /dev/null 2>&1 &
 			halter=$!
+			# Identität sofort festhalten (wie bei --drehbuch): setsid ersetzt sich per exec durch Schnapp, bis dahin trägt die
+			# PID einen anderen Namen; bis zu 2 s warten, bis der Name „schnapp“ ist. Gelingt das nicht, meldet der Lauf
+			# „unklar“ statt „läuft“/„beendet“ (F-208).
+			idh=""
+			for _ in $(seq 1 20); do
+				if idx="$(identitaet "$halter")" && [ "${idx#* }" = schnapp ]; then idh="$idx"; break; fi
+				kill -0 "$halter" 2> /dev/null || break
+				sleep 0.1
+			done
+			echo "halter: PID $halter, Identität beim Start: ${idh:-unlesbar}"
 			for _ in $(seq 1 50); do grep -q . "$probe/meldung.txt" && break; sleep 0.1; done
 			echo "meldung: $(cat "$probe/meldung.txt")"
 			grep -q '^ok ' "$probe/meldung.txt" || echo "probe.sh: Halter meldet kein ok"
 			echo "typen: $(timeout 10 wl-paste --list-types | tr '\n' ' ')"
 			timeout 10 wl-paste --type image/png > "$probe/eingefuegt.png"
 			cmp -s "$bild" "$probe/eingefuegt.png" && echo "eingefuegt: gleich" || echo "probe.sh: eingefuegt VERSCHIEDEN ($(stat -c %s "$probe/eingefuegt.png") Byte)"
-			kill -0 "$halter" 2> /dev/null && echo "halter: läuft" || echo "halter: beendet"
+			echo "halter: $(zustand "$halter" "$idh")"
 			timeout 10 wl-copy "anderer Inhalt"
-			for _ in $(seq 1 50); do kill -0 "$halter" 2> /dev/null || break; sleep 0.1; done
-			kill -0 "$halter" 2> /dev/null && echo "probe.sh: nach wl-copy läuft der Halter NOCH" || echo "nach wl-copy: halter beendet"
+			for _ in $(seq 1 50); do [ "$(zustand "$halter" "$idh")" = läuft ] || break; sleep 0.1; done
+			case "$(zustand "$halter" "$idh")" in
+			läuft) echo "probe.sh: nach wl-copy läuft der Halter NOCH" ;;
+			beendet) echo "nach wl-copy: halter beendet" ;;
+			*) echo "probe.sh: nach wl-copy ist der Zustand des Halters unklar (Identität nicht prüfbar oder PID wiederverwendet)" ;;
+			esac
 			echo "jetzt: $(timeout 10 wl-paste --no-newline)"
 		} > "$probe/ergebnis.txt" 2>&1
 		exit 0
@@ -224,7 +259,7 @@ if [ "${PROBE_INNEN:-}" = 1 ]; then
 	exit 0
 fi
 
-mkdir -p "$probe/home/.config" "$probe/home/.local/share" "$probe/home/.cache" "$probe/run"
+mkdir -p "$probe/home/.config" "$probe/home/.local/share" "$probe/home/.local/state" "$probe/home/.cache" "$probe/run"
 chmod 0700 "$probe/run"
 # Ergebnisse des vorigen Laufs überschreiben, damit nie ein altes Ergebnis als neues erscheint.
 : > "$probe/ergebnis.txt"
@@ -242,9 +277,13 @@ if [ -n "$drehbuch" ]; then
 	printf '%s' "$fotos" > "$probe/fotos.txt"
 	GOFLAGS= go build -race -trimpath -tags novulkan,nox11,probe -o "$probe/fernbedienung" ./cmd/schnapp-fernbedienung || exit 1
 fi
-env -u WAYLAND_DISPLAY -u DISPLAY PROBE_INNEN=1 PROBE_AUSSENBUS="${DBUS_SESSION_BUS_ADDRESS:-}" \
+# Alle Ordner, in die Schnapp schreibt (settings: XDG_CONFIG_HOME; Bibliothek: XDG_DATA_HOME, XDG_CACHE_HOME; letzter Bereich
+# und Tagesmarke: XDG_STATE_HOME; Bilderordner aus $XDG_CONFIG_HOME/user-dirs.dirs), liegen unter tmp/probe/home. Ein
+# geerbter WAYLAND_SOCKET (fertig verbundener Socket der echten Sitzung) und ein gesetztes XDG_PICTURES_DIR werden entfernt
+# (F-230).
+env -u WAYLAND_DISPLAY -u WAYLAND_SOCKET -u DISPLAY -u XDG_PICTURES_DIR PROBE_INNEN=1 PROBE_AUSSENBUS="${DBUS_SESSION_BUS_ADDRESS:-}" \
 	HOME="$probe/home" XDG_CONFIG_HOME="$probe/home/.config" XDG_DATA_HOME="$probe/home/.local/share" \
-	XDG_CACHE_HOME="$probe/home/.cache" XDG_RUNTIME_DIR="$probe/run" \
+	XDG_STATE_HOME="$probe/home/.local/state" XDG_CACHE_HOME="$probe/home/.cache" XDG_RUNTIME_DIR="$probe/run" \
 	XKB_DEFAULT_LAYOUT=us XKB_DEFAULT_VARIANT= XKB_DEFAULT_MODEL= XKB_DEFAULT_OPTIONS= \
 	timeout -k 5 "$zeit" dbus-run-session -- \
 	kwin_wayland --virtual --socket schnapp-probe --width "$breite" --height "$hoehe" --output-count "$monitore" \

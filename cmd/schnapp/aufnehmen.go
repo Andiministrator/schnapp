@@ -44,6 +44,9 @@ type anschluesse struct {
 	// editor öffnet eine Datei im Editor und kehrt nach dem Schließen zurück (ADR-0020); nil = kein Editor.
 	// ohneGrenze ist --ignore-limit (nur bei schnapp DATEI, ADR-0017 Nachtrag 6).
 	editor func(pfad string, ohneGrenze bool) error
+	// schutz prüft vor jeder Aufnahme und vor dem Editor, ob der Lauf erlaubt ist (Probe-Build nur im virtuellen KWin,
+	// F-229); ein Fehler beendet den Lauf mit exitFehler, bevor etwas aufgenommen oder geöffnet wird. nil = keine Prüfung.
+	schutz func() error
 }
 
 func echteAnschluesse() anschluesse {
@@ -77,11 +80,18 @@ func echteAnschluesse() anschluesse {
 		},
 		tagesmarke: library.TagesmarkePfad(os.Getenv),
 		editor:     oeffneImEditor,
+		schutz:     probeSchutz,
 	}
 }
 
 // Ausfuehren ist die echte Ausführung.
 func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
+	if an.schutz != nil {
+		if err := an.schutz(); err != nil {
+			fmt.Fprintln(fehler, "schnapp (Probe-Build):", err)
+			return exitFehler
+		}
+	}
 	if t.Modus == ModusOeffnen {
 		if an.editor == nil {
 			return exitFehler
