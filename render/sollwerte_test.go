@@ -174,13 +174,15 @@ func TestTextRechterRand(t *testing.T) {
 }
 
 // F-133: Die Ziffern einer Nummer kosten nichts, wenn ihr Kasten das Bild nicht schneidet. Kasten: halbe Breite
-// Schriftgrad·(0,4·Stellen + 1), Schriftgrad 1,2·Radius. Radius 20, eine Stelle: halbe Breite 33,6 — Mitte bei −30
-// schneidet das Bild (Kosten 1700), bei −40 nicht (Kosten 0, auch wenn der Kreis selbst nichts mehr zeichnet).
+// Schriftgrad·(0,4·Stellen + 1), Schriftgrad 1,2·Radius. Seit F-181 fällt eine Nummer, deren Kreis und Ziffern ganz
+// neben dem Bild liegen, schon vorher weg (ObjektSichtbar nach der echten Tinte): Radius 20, eine Stelle — Mitte bei
+// −15 reicht der Kreis ins Bild (Kosten 1700, obere Schranke), ab −20 liegt alles daneben (Kosten 0; vor F-181 zählte
+// der Kasten bis −33 noch Kosten für Ziffern, die nichts zeichneten).
 func TestNummerZiffernKostenNurImBild(t *testing.T) {
 	for _, fall := range []struct {
 		mitte float64
 		soll  float64
-	}{{-30, glyphGrund}, {-33, glyphGrund}, {-35, 0}, {-40, 0}, {-1e6, 0}, {50, glyphGrund}} {
+	}{{-15, glyphGrund}, {-19, glyphGrund}, {-20, 0}, {-30, 0}, {-33, 0}, {-40, 0}, {-1e6, 0}, {50, glyphGrund}} {
 		d := weissesDokument(t, 100, 100)
 		hinzu(t, d, document.Nummer{Mitte: document.Pt(fall.mitte, 50), Radius: 20, Wert: 7, Farbe: blau})
 		if a := trockenlauf(d); a.glyph != fall.soll {
@@ -191,11 +193,12 @@ func TestNummerZiffernKostenNurImBild(t *testing.T) {
 			t.Errorf("Mitte %v: Rendern zählt Kosten %v und %d Ziffern", fall.mitte, a.glyph, a.glyphen)
 		}
 	}
-	// Zwei Stellen: halbe Breite 24·(0,8+1) = 43,2 — Mitte bei −40 schneidet noch, bei −50 nicht.
+	// Zwei Stellen: halbe Breite 24·(0,8+1) = 43,2 — bei −19 reicht der Kreis ins Bild und der Kasten schneidet es, bei
+	// −40 und −50 liegt die Nummer ganz daneben.
 	for _, fall := range []struct {
 		mitte float64
 		soll  float64
-	}{{-40, 2 * glyphGrund}, {-50, 0}} {
+	}{{-19, 2 * glyphGrund}, {-40, 0}, {-50, 0}} {
 		d := weissesDokument(t, 100, 100)
 		hinzu(t, d, document.Nummer{Mitte: document.Pt(fall.mitte, 50), Radius: 20, Wert: 77, Farbe: blau})
 		if a := trockenlauf(d); a.glyph != fall.soll {

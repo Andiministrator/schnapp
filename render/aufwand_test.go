@@ -290,8 +290,10 @@ func TestPraeparierteDokumenteUeberDemBudget(t *testing.T) {
 	}
 	w := strings.Repeat("W", document.MaxTextZeichen)
 	for name, d := range map[string]*document.Dokument{
+		// Grundlinie bei y = 6, Tinte (beginnt rund 49 px rechts vom Ort) reicht ins Bild; bei Ort (0, 0) läge das W
+		// ganz unter und neben dem Bild und wäre unsichtbar (F-181).
 		"10000 W Grad 4096": viele(10, 10, document.MaxObjekte,
-			document.Text{Ort: document.Pt(0, 0), Inhalt: "W", Schriftgrad: 4096, Farbe: rot}),
+			document.Text{Ort: document.Pt(-45, 6-4096), Inhalt: "W", Schriftgrad: 4096, Farbe: rot}),
 		"10000 Nummern Radius 4096": viele(10, 10, document.MaxObjekte,
 			document.Nummer{Mitte: document.Pt(5, 5), Radius: 4096, Wert: 7, Farbe: blau}),
 		"10000 Pfeile Breite 1e5": viele(10, 10, document.MaxObjekte,
