@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-19 (ergänzt nach Sprint 1). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-20 (ergänzt nach Sprint 5). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -130,3 +130,32 @@ Stand: 2026-11-19 (ergänzt nach Sprint 1). Kurze Regeln aus Fehlern und Befunde
   O(Streifen) und taucht im Modell nicht auf (F-136). Kosten vorgelagerter Schritte gesondert prüfen.
 - **Agenten schreiben Testdateien gern per Heredoc** (`cat > datei <<EOF`), obwohl der Prompt es verbietet: Das
   Verbot ausdrücklich auch für Quelltext nennen und den Weg (Write-Werkzeug) dazu.
+- **… und `sed -i` auf Quelltext ebenso** (Sprint 5: in fast jedem Agentenlauf trotz Verbot). Im Prompt beides
+  nennen samt erlaubtem Weg (Edit/Write), im Bericht den Abschnitt „Lokale Befehle“ daraufhin lesen.
+
+## Sprint 5 (20.11.2026)
+
+- **Ein Echtlauf belegt nur den Stand, auf dem er lief.** Nach einer Nacharbeit an der Gio-Schicht (Tasten, Fokus,
+  Statusleiste) den Lauf wiederholen oder den Prüfpunkt als Karte führen — „behoben, Echtlauf offen“ im Archiv geht
+  verloren (F-151, F-153).
+- **Belege offener Befunde gehören ins Repo.** Ein Prüfbefehl, der auf `tmp/…` zeigt, ist nach dem Aufräumen wertlos
+  (F-140, wieder F-150/F-156/F-157/F-159). Roten Beleg-Test eines Kritikers im Fix-Commit als Test übernehmen oder den
+  Prüfbefehl als Verhalten formulieren; kein `<Name>`-Platzhalter.
+- **`git cherry` zeigt „+“ nach Zusammenführen.** Musste der Cherry-Pick mit anderer Arbeit zusammengeführt werden,
+  bleibt die Patch-ID anders. Nachweis dann: geänderte Zeilen beider Commits vergleichen
+  (`diff <(git show --format= ALT | grep '^[+-]' | grep -v '^+++\|^---') <(… NEU …)` leer).
+- **Echtlauf-Anleitung: stderr nicht verstecken.** `2> tmp/…log` verbirgt genau die Meldungen, die der Lauf prüfen soll
+  (Ablageort, Warnungen). Dann `2>&1 | tee tmp/…log` nehmen oder Andi sagen, dass die Meldung in der Datei steht.
+- **Strg+C-Proben nur im eigenen Terminal.** Ein per `!` gestartetes Programm hat kein eigenes Terminal; Signalproben
+  (F-152) fährt Andi in einer eigenen Konsole. Im Test: injizierter Kanal statt echter Signale.
+- **Speichern an anderem Ort muss am Ort der Handlung sichtbar sein.** „Datei von außen wird neue Aufnahme“ stand in
+  ADR und README und verwirrte trotzdem („Bild war weg“, F-155). Jeden Speicherweg (Strg+S, Schließen, Signal) einzeln
+  durchgehen (F-158).
+- **Register-Werkzeug und `|`:** `register-schreiben.mjs` bricht bei unmaskiertem `|` in einer Zelle ab (auch in
+  `-run 'A|B'`). `\|` schreiben; neuen Text als Datei unter `tmp/` ablegen (`--neu @datei`), nie über die Shell quoten.
+- **Eine Karte, die auf eine Entscheidung wartet, startet nicht** — oder die Entscheidung wird ausdrücklich getroffen
+  und in ADR und `docs/open-decisions.md` als „Claudes Entscheidung, Andi informiert“ vermerkt (#85).
+- **Schulden-Grenze im Blick:** Kritiker- und Verify-Läufe erzeugen P3-[K] im Dutzend (Sprint 5: Stand 10/10). Vor dem
+  Eintragen prüfen, ob [K] oder eher [V]/[D], und `schulden-grenze.mjs` nach jedem Register-Commit laufen lassen.
+- **Lange verkettete Bash-Befehle mit Push oder Löschen** lehnt die Berechtigungsprüfung ab: Push und Löschen je in
+  einem eigenen Aufruf, vor dem Push die Heikle-Begriffe-Prüfung.

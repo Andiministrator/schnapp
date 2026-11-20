@@ -1,6 +1,6 @@
 # Offene Entscheidungen
 
-Stand 19.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sein vor.
+Stand 20.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sein vor.
 
 ## E-01: Wann hat der Gio-Prototyp bestanden? — ENTSCHIEDEN 19.11.2026 (ADR-0003 Nachtrag 1)
 - **Frage:** Messbare Kriterien für „Gio trägt" (ADR-0003): z. B. Pfeil biegen ohne sichtbares Ruckeln auf 4K, Overlay
@@ -30,7 +30,7 @@ Stand 19.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 - Eigenes Modul `github.com/Andiministrator/schnapp/zeichnen` im Ordner `zeichnen/` (seit 20.11.2026 `…/schnapp/draw` im Ordner `draw/`, ADR-0019 Nachtrag 1).
 
 ## E-05: CI — ENTSCHIEDEN 19.11.2026: GitHub Actions (ADR-0010)
-- Eingerichtet 19.11.2026: `.github/workflows/test.yml` (gofmt, vet, test für `zeichnen/`), grün.
+- Eingerichtet 19.11.2026: `.github/workflows/test.yml` (gofmt, vet, test für `zeichnen/`), grün. Heute Jobs Wurzelmodul, `draw`, `gio-patch`, `prototype`.
 
 ## E-06: Lizenzvariante — ENTSCHIEDEN 19.11.2026: GPL-3.0-or-later (ADR-0009)
 - Rechte an den Zeichenpaketen liegen beim Maintainer; Veröffentlichung unter GPL-3.0 erlaubt (Andi, 19.11.2026).
@@ -120,3 +120,21 @@ Stand 19.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
   ADR-0008 (mit Nachtrag) die Entscheidung; keine zweite interne Beschreibung, die auseinanderläuft.
 - **Vor:** erste Veröffentlichung eines Pakets; jede Formatänderung danach ändert Spezifikation und Version im selben
   Commit.
+
+## E-16: Ablageort beim Schließen einer Datei von außen — ENTSCHIEDEN 20.11.2026 (Claude, Andi informiert)
+- **Frage:** Wird eine Datei von außen ohne Strg+S geschlossen, landet die Arbeit als neue Aufnahme in der Bibliothek.
+  Reicht die Meldung auf stderr, oder muss der Ablageort sichtbar werden (F-158)?
+- **Entscheidung:** sichtbar — der Hinweis mit dem Ablageort hält das Fenster einmal offen, wie ein Ausweichen mit
+  Warnung (ADR-0020 Nachtrag 4, Karte #85).
+
+## E-17: Dürfen Verschieben und Griffe ein Objekt ganz aus dem Bild bringen? — ENTSCHIEDEN 20.11.2026 (Claude, Andi informiert)
+- **Frage:** F-150 verhindert nur die Neuanlage außerhalb; ein vorhandenes Objekt ließ sich ganz aus dem Bild ziehen
+  (unsichtbar, aber gespeichert, F-160).
+- **Entscheidung:** nein — das Objekt muss das sichtbare Bild um einige Pixel schneiden; die Verschiebung wird begrenzt
+  (ADR-0021 Nachtrag 2, Karte #85).
+
+## E-18: Umschalt am Bildrand — Form oder Begrenzung? — ENTSCHIEDEN 20.11.2026 (Claude, Andi informiert)
+- **Frage:** Am Rand je Achse begrenzt, verliert der Pfeil seine 45° und der Kasten sein Quadrat (F-156, F-157).
+- **Entscheidung:** Form halten — entlang der Richtung kürzen, gerastet wird in Ansichtskoordinaten, damit kein
+  Endpunkt in einem herausgeschnittenen Streifen liegt (Karte #84).
+

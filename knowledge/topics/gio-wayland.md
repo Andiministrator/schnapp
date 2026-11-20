@@ -1,6 +1,6 @@
 # Gio unter Wayland (KDE): Grenzen, Patch, Messen
 
-Stand: 2026-11-19 — aus dem Prototyp (`prototype/`, ADR-0003 Nachtrag 2), Gio v0.10.3, Plasma 6.8. Quelle ist der
+Stand: 2026-11-20 (Editor-Abschnitt nach Sprint 5) — aus dem Prototyp (`prototype/`, ADR-0003 Nachtrag 2), Gio v0.10.3, Plasma 6.8. Quelle ist der
 Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene Messung.
 
 ## Was Gio unter Wayland nicht kann (v0.10.3)
@@ -105,3 +105,12 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
     auch bei Skala 1,6 (PxPerDp 1,600).
   - Gemessen 19.11.2026 (ohne `-race`): drei Monitore aufnehmen 71 ms, Bereich speichern (Arbeitsdatei, Vorschau,
     Index) 56 ms. Mit `-race` 1,2 s bzw. 1,8 s — Zeiten nie mit dem Race-Build messen.
+
+## Editor (Sprint 5)
+
+- **`app.ClosingEvent` kommt vor dem Zerstören und ist abbrechbar** (`Abort()`; unter Wayland aus `xdg_toplevel.close`
+  und `Perform(ActionClose)`). Dort speichern, nicht erst im `DestroyEvent` (F-107, ADR-0020 Nachtrag 2).
+- **Signale:** Die Signal-Goroutine weckt nur per `Window.Invalidate` (wirkungslos vor dem Fensteraufbau, die Marke
+  bleibt); gespeichert wird in der eigenen Ereignisschleife (F-77, F-152, `canvas/signal.go`).
+- **Texteingabe:** `key.EditEvent` geht nur an den fokussierten Bereich. Tab muss während der Eingabe im Tastenfilter
+  abgefangen werden, sonst wandert der Fokus und Zeichen verschwinden; Enter sonst vor den Knöpfen verbraucht (F-153).

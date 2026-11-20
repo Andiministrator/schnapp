@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > Verweise auf ADR-0043, ADR-0062, ADR-0067, F-Nummern, die weder in `docs/findings.md` noch in
 > `docs/findings.archive.md` stehen, und Pfade unter `~/.aboard-framework/` oder
 > `~/.claude/` beziehen sich auf das Arbeits-Framework (aBoard) des Maintainers, nicht auf dieses Repo. Projekteigene
-> ADRs liegen unter `docs/adr/` (0001–0020), projekteigene Findings in `docs/findings.md` (erledigte
+> ADRs liegen unter `docs/adr/` (0001–0021), projekteigene Findings in `docs/findings.md` (erledigte
 > in `docs/findings.archive.md`).
 
 ## Vor jeder Antwort — Pflicht
@@ -106,24 +106,29 @@ Herkunft: Anforderungen und Entscheidungen des Maintainers vom 18.11.2026, über
 
 ## Architektur
 
-Produktcode (Stand 19.11.2026, Sprint 4): `capture`, `document`, `fileformat`, `library`, `settings`, `selection`,
+Produktcode (Stand 20.11.2026, Sprint 5): `capture`, `document`, `fileformat`, `library`, `settings`, `selection`,
 `canvas`, `render` stehen mit Tests, dazu Overlay und Editor in `ui` (ohne Tests, Logik liegt in `selection`/`canvas`);
 Schnapp nimmt auf, legt in der Bibliothek ab und öffnet den Editor (Auswählen, Verschieben, Griffe, Zoom, Rückgängig,
-Speichern — Zeichenwerkzeuge folgen). Installation per `install.sh` (`~/.local`, Version aus `git describe`). Daneben
+Speichern, Zeichenwerkzeuge Pfeil/Kasten/Text/Schritt-Nummer mit Farbwahl, ADR-0021 — Schwärzen, Zuschneiden,
+Zwischenablage folgen). Installation per `install.sh` (`~/.local`, Version aus `git describe`). Daneben
 der Wegwerf-Prototyp `prototype/`. Schichten:
 
 - **capture** — Schnittstelle + KWin-Umsetzung (D-Bus), später Portal.
 - **document** — Ebenenmodell (Pixelebene, Vektorebenen, Original, Stauchangaben), Rückgängig-Verlauf.
 - **fileformat** — Arbeitsdatei PNG mit Blöcken `snAP`/`snAO` lesen/schreiben; Exporte SVG, PNG/JPG (PDF noch offen).
 - **draw** (früher `zeichnen`) — die aus einem Schwesterprojekt übernommenen Pakete `svg`, `raster`, `geo` (eigenes Go-Modul, das
-  das Schwesterprojekt wieder einbindet, ADR-0012), ergänzt um Schrift, `<image>`, Weichzeichnen, Verpixeln.
+  das Schwesterprojekt wieder einbindet, ADR-0012); geplant: Weichzeichnen, Verpixeln (Schrift liegt in `render`).
 - **library** — Autospeichern, Vorschau, Suche, Schlagworte.
 - **settings** — `settings.ini` lesen (ADR-0018); Warnungen statt Abbruch.
 - **selection** — Logik des Overlays ohne Gio (Abbildung, Bereich, Monitor per Klick, Lupe, letzter Bereich).
-- **canvas** — Logik der Editor-Leinwand ohne Gio (Zoom zum Zeiger, Einpassen, Treffer, Griffe, Verschieben; ADR-0020).
+- **canvas** — Logik der Editor-Leinwand ohne Gio (Zoom zum Zeiger, Einpassen, Treffer, Griffe, Verschieben;
+  Zeichenwerkzeuge und Texteingabe `werkzeuge.go`; Statusleiste `status.go` `StatusZeile`; Schließen
+  `Sitzung.Schliessen`, Signalwache `signal.go`; ADR-0020, ADR-0021).
 - **render** — Ansichtsbild + Objekte zu Pixeln ohne GPU (`golang.org/x/image` vector/font, Go-Schriften; ADR-0020);
-  `render.Pruefe` schätzt den Aufwand per Trockenlauf, der Editor lehnt präparierte Dateien beim Öffnen ab
-  (`ladeFuerEditor`), Speichern bricht nie ab (ADR-0020 Nachtrag 1).
+  Füllen über eigenen `einmischer` (bitgleich zu `draw.Over`, rund 4-mal schneller); `render.Pruefe` schätzt den
+  Aufwand per Trockenlauf (`Budget` 1,25e11, ADR-0020 Nachtrag 3), der Editor lehnt präparierte Dateien beim Öffnen ab
+  (`ladeFuerEditor`; `--ignore-limit` überspringt nur diese Prüfung, ADR-0017 Nachtrag 6), Speichern bricht nie ab und
+  warnt über dem Budget.
 - **ui** — Gio: Vollbild-Overlay zur Auswahl (fertig), Editor, Bibliothek.
 
 Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung, Mauszeiger bei gemischter Skala F-78) —
@@ -145,7 +150,8 @@ ADR-0003 Nachtrag 2, ADR-0015.
   ./cmd/schnapp`. Pakete: `i18n` (Sprachwahl, PO-Leser, `i18n.T/TK/N`), `po` (eingebettete `po/*.po`, ADR-0014
   Nachtrag 1), `ui` (Schicht zu Gio; `Starte` hält die Gio-Hauptschleife, `Overlay` je Monitor),
   `cmd/schnapp` (Argumente `--region` [Voreinstellung], `--screen[=NAME]`, `--list-screens`, `--window`, `--repeat`,
-  `--no-editor`, `DATEI`, `--version`, `--help`; `aufnehmen.go` nimmt auf und legt in der Bibliothek ab, Pfad auf
+  `--no-editor`, `DATEI`, `--ignore-limit DATEI`, `--version`, `--help`; der Editor fängt SIGTERM/SIGINT/SIGHUP bis zur
+  Rückkehr ab und speichert (ADR-0020 Nachtrag 2), Strg+C-Proben nur im eigenen Terminal; `aufnehmen.go` nimmt auf und legt in der Bibliothek ab, Pfad auf
   stdout, dann Editor (ADR-0020), Exit 3 bei Abbruch; `editor.go` öffnet Dateien und speichert in die Bibliothek;
   `--screen` mit `[capture] screen = all` ist noch nicht umgesetzt). Echte Läufe (Overlay, Editor) startet Andi selbst
   per `!`-Befehl, Anleitung davor (`knowledge/topics/lehren.md`); vorher mit `go build -race` nach `tmp/` bauen,
