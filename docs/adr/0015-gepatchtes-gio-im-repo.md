@@ -58,3 +58,19 @@ Möglichkeit 3.
 Der Patch umfasst zusätzlich das Neuladen des Cursor-Themas bei Skalenwechsel samt Hotspot in der Skala des Themas
 und Puffer-Skala 1 für nicht teilbare Bildgrößen (Kritik B-1, B-2, B-13 der Sitzungs-QA). Einzelheiten:
 `third_party/README.md`, `knowledge/topics/gio-wayland.md`. Pfade dieses ADR lauten seit ADR-0019 `third_party/…`.
+
+## Nachtrag 2 (20.11.2026): Bilder in die Wayland-Zwischenablage (Karte #39)
+
+Gio v0.10.3 bietet beim Schreiben in die Wayland-Zwischenablage nur Text-MIME-Typen an (`clipboardMimeTypes` in
+`app/os_wayland.go`); `clipboard.WriteCmd.Type` wird dort nicht ausgewertet. Andi braucht das fertige Bild in der
+Zwischenablage (Echtlauf 20.11.2026).
+
+Entscheidung (Claude Opus 5.5, im Rahmen von Karte #39, die einen Patch ausdrücklich vorsah): Der Patch wertet
+`WriteCmd.Type` aus. Ist er ein Bild-Typ (`image/…`), bietet die `wl_data_source` genau diesen Typ an und liefert die
+Bytes bei `send`; Text bleibt unverändert. Kein externes Programm (`wl-copy` wäre ein Laufzeit-Fremdpaket, ADR-0011),
+kein X11-Weg (ADR-0007). Schnapp legt das gerenderte Bild als PNG ohne Bearbeitungsdaten ab (keine `snAP`/`snAO`-Blöcke,
+keine Metadaten, Kernprinzip 3); Geschwärztes ist darin wie in jedem Export endgültig (ADR-0008).
+
+Konsequenz: Unter Wayland gehört der Inhalt der Zwischenablage dem Fenster, das ihn anbietet. Schließt der Editor, bleibt
+das Bild nur erhalten, wenn ein Zwischenablage-Verwalter (unter KDE Klipper) es übernommen hat. Ein Weg, der das Schließen
+überdauert (data-control-Protokoll oder ein kurzlebiger Hilfsprozess), ist eine spätere Entscheidung.
