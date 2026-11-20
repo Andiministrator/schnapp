@@ -34,6 +34,8 @@ const (
 	zugObjekt
 	zugGriff
 	zugAnsicht
+	zugNeu  // neues Objekt mit einem Zeichenwerkzeug (ADR-0021)
+	zugText // Texteingabe: läuft über Druck und Loslassen hinaus bis Bestätigen oder Abbrechen
 )
 
 // Sitzung ist der Zustand des Editors ohne Gio (ADR-0020 Punkt 2): Dokument, Abbildung, Auswahl und laufender Zug.
@@ -44,6 +46,13 @@ type Sitzung struct {
 	Abb Abbildung
 	// Auswahl ist die Kennung des ausgewählten Objekts, 0 = keins.
 	Auswahl int
+	// Werkzeug ist das aktive Werkzeug; Wechsel über SetzeWerkzeug (bestätigt eine Texteingabe).
+	Werkzeug Werkzeug
+	// Stil gilt für neue Objekte; Farbe über SetzeFarbe (färbt auch die Auswahl um).
+	Stil Stil
+	// Umschalt: Die Umschalttaste ist gedrückt (die Oberfläche setzt es je Zeigerereignis): Pfeil rastet auf 45°,
+	// Kasten wird ein Quadrat.
+	Umschalt bool
 
 	gespeichert uint64 // Verlaufsstand beim Öffnen oder letzten Speichern (F-109)
 	// verwerfen: Speichern beim Schließen ist bei diesem Stand gescheitert; eine weitere Schließen-Anfrage ohne neue
@@ -59,11 +68,15 @@ type Sitzung struct {
 	startObj   document.Objekt // Objekt beim Drücken (ZieheGriff/Verschiebe wirken immer darauf)
 	startAbb   Abbildung
 	bewegt     bool
+	neuArt     Werkzeug // Werkzeug beim Beginn eines zugNeu
+	neuID      int      // Kennung des neuen Objekts im Zug, 0 = noch nicht angelegt (unter der Ziehschwelle)
+	textID     int      // Kennung des Texts in der Eingabe
+	textNeu    bool     // die Eingabe gilt einem neuen Text (Abbrechen entfernt ihn)
 }
 
-// NeueSitzung beginnt mit eingepasster Ansicht und ohne Auswahl.
+// NeueSitzung beginnt mit eingepasster Ansicht, ohne Auswahl, mit dem Werkzeug Auswählen und dem Standardstil.
 func NeueSitzung(d *document.Dokument) *Sitzung {
-	return &Sitzung{D: d, Abb: Abbildung{Zoom: 1}, eingepasst: true, gespeichert: d.Stand()}
+	return &Sitzung{D: d, Abb: Abbildung{Zoom: 1}, eingepasst: true, gespeichert: d.Stand(), Stil: StandardStil()}
 }
 
 // Geaendert meldet, ob der Verlaufsstand vom gespeicherten abweicht (F-109): Rückgängig bis zum gespeicherten Stand
@@ -74,14 +87,14 @@ func (s *Sitzung) Geaendert() bool { return s.D.Stand() != s.gespeichert }
 // eingepasst (der erste Frame kommt unter Wayland oft in falscher Größe).
 func (s *Sitzung) SetzeFenster(g image.Point) {
 	s.fenster = g
-	if s.eingepasst && s.zug == keinZug {
+	if s.eingepasst && !s.Zieht() {
 		s.Abb = Einpassen(s.D.Groesse(), g, Rand)
 	}
 }
 
 // Einpassen zeigt die ganze Ansicht im Fenster (Strg+0).
 func (s *Sitzung) Einpassen() {
-	if s.zug != keinZug {
+	if s.Zieht() {
 		return // während eines Zugs bliebe der Startpunkt in der alten Abbildung (Kritik A-6)
 	}
 	s.eingepasst = true
@@ -90,7 +103,7 @@ func (s *Sitzung) Einpassen() {
 
 // EinsZuEins zeigt die Ansicht 1:1 um die Fenstermitte (Strg+1).
 func (s *Sitzung) EinsZuEins() {
-	if s.zug != keinZug {
+	if s.Zieht() {
 		return
 	}
 	s.eingepasst = false
@@ -99,7 +112,7 @@ func (s *Sitzung) EinsZuEins() {
 
 // Scrollen zoomt zum Zeiger: dy < 0 vergrößert (Rad nach oben). Ein Rastschritt (dy = ±1) ändert um 10 %.
 func (s *Sitzung) Scrollen(p document.Punkt, dy float64) {
-	if dy == 0 || math.IsNaN(dy) || math.IsInf(dy, 0) || s.zug != keinZug {
+	if dy == 0 || math.IsNaN(dy) || math.IsInf(dy, 0) || s.Zieht() {
 		return
 	}
 	s.eingepasst = false
@@ -114,9 +127,11 @@ func (s *Sitzung) original(p document.Punkt) document.Punkt {
 // toleranz ist die Fenster-Toleranz in Pixeln des Originals.
 func (s *Sitzung) toleranz() float64 { return Toleranz / s.Abb.Zoom }
 
-// Druecken beginnt einen Zug: an einem Griff des ausgewählten Objekts, an einem Objekt (wählt es aus) oder auf leerer
-// Fläche bzw. mit der mittleren Taste an der Ansicht. Während eines Zugs ist ein weiterer Druck wirkungslos.
+// Druecken beginnt einen Zug: an einem Griff des ausgewählten Objekts, mit einem Zeichenwerkzeug ein neues Objekt
+// (ADR-0021), sonst an einem Objekt (wählt es aus) oder auf leerer Fläche bzw. mit der mittleren Taste an der Ansicht.
+// Eine laufende Texteingabe wird vorher bestätigt. Während eines Zugs ist ein weiterer Druck wirkungslos.
 func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
+	s.TextBestaetigen()
 	if s.zug != keinZug || s.D.ZugLaeuft() {
 		return
 	}
@@ -133,6 +148,10 @@ func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
 			return
 		}
 	}
+	if s.Werkzeug != WerkzeugAuswahl {
+		s.beginneNeu(q)
+		return
+	}
 	if id, ok := Treffer(o, q, s.toleranz()); ok {
 		s.Auswahl = id
 		obj, _ := s.D.Objekt(id)
@@ -147,7 +166,7 @@ func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
 
 // Ziehen führt den Zug zum Fensterpunkt p.
 func (s *Sitzung) Ziehen(p document.Punkt) {
-	if s.zug == keinZug {
+	if s.zug == keinZug || s.zug == zugText {
 		return
 	}
 	if !s.bewegt && p.Minus(s.start).Laenge() < Ziehschwelle {
@@ -163,35 +182,51 @@ func (s *Sitzung) Ziehen(p document.Punkt) {
 		_ = s.D.ZugSetze(Verschiebe(s.startObj, d))
 	case zugGriff:
 		_ = s.D.ZugSetze(ZieheGriff(s.startObj, s.griff, s.original(p)))
+	case zugNeu:
+		s.zieheNeu(p)
 	}
 }
 
-// Loslassen beendet den Zug; ein Objektzug landet als eine Änderung im Verlauf (ohne Bewegung als keine).
+// Loslassen beendet den Zug; ein Objektzug landet als eine Änderung im Verlauf (ohne Bewegung als keine), ein neues
+// Objekt als eine Änderung, wenn es groß genug ist. Eine Texteingabe läuft weiter.
 func (s *Sitzung) Loslassen(p document.Punkt) {
+	if s.zug == zugText {
+		return
+	}
 	s.Ziehen(p)
-	if s.zug == zugObjekt || s.zug == zugGriff {
+	switch s.zug {
+	case zugObjekt, zugGriff:
 		if s.bewegt {
 			_ = s.D.BeendeZug() // ein unveränderter Zug hinterlässt keinen neuen Stand
 		} else {
 			_ = s.D.BrecheZugAb()
 		}
+	case zugNeu:
+		s.beendeNeu()
 	}
 	s.zug = keinZug
 }
 
-// Abbrechen stellt den Stand vor dem Zug wieder her (Esc während des Ziehens, Zeiger-Cancel).
+// Abbrechen stellt den Stand vor dem Zug wieder her (Esc während des Ziehens, Zeiger-Cancel). Eine Texteingabe bleibt
+// (sie verwirft nur TextAbbrechen).
 func (s *Sitzung) Abbrechen() {
 	switch s.zug {
+	case zugText:
+		return
 	case zugObjekt, zugGriff:
 		_ = s.D.BrecheZugAb()
+	case zugNeu:
+		if s.neuID != 0 {
+			_ = s.D.BrecheZugAb()
+		}
 	case zugAnsicht:
 		s.Abb = s.startAbb
 	}
 	s.zug = keinZug
 }
 
-// Zieht meldet einen laufenden Zug.
-func (s *Sitzung) Zieht() bool { return s.zug != keinZug }
+// Zieht meldet einen laufenden Zug mit der Maus (nicht die Texteingabe, dafür TextLaeuft).
+func (s *Sitzung) Zieht() bool { return s.zug != keinZug && s.zug != zugText }
 
 // Rueckgaengig nimmt die letzte Änderung zurück (nicht während eines Zugs, F-18). Verschwindet dabei das
 // ausgewählte Objekt, endet die Auswahl.
@@ -249,6 +284,7 @@ const (
 // ungesicherte Änderungen werden mit speichern gesichert. speichern meldet, ob ein Hinweis gelesen werden muss
 // (warnung), oder einen Fehler. Der Fehler kommt unverändert zurück.
 func (s *Sitzung) Schliessen(speichern func() (warnung bool, err error)) (Schluss, error) {
+	s.TextBestaetigen() // getippter Text geht nicht verloren (ADR-0021 Punkt 6)
 	if s.zug != keinZug {
 		s.Abbrechen()
 	}
