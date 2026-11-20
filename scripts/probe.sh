@@ -5,6 +5,9 @@
 # unter tmp/probe/ — die echte Konfiguration wird weder gelesen noch beschrieben.
 #
 #   scripts/probe.sh [--monitore N] [--skala S] [-- SCHNAPP-ARGUMENTE]   (Voreinstellung: --no-editor)
+#   scripts/probe.sh --innen SKRIPT
+#     führt SKRIPT (bash) als Sitzung des virtuellen KWin aus statt Schnapp; Ausgabe nach tmp/probe/ergebnis.txt.
+#     Das Programm liegt als tmp/probe/schnapp bereit.
 #   scripts/probe.sh --zwischenablage BILD.png
 #     prüft den Halter der Zwischenablage (ADR-0024): setzt BILD als image/png, liest es mit wl-paste zurück (nur aus
 #     der Zwischenablage des virtuellen KWin), ersetzt sie mit wl-copy und prüft, dass der Halter endet.
@@ -16,10 +19,12 @@ cd "$(dirname "$0")/.." || exit 1
 monitore=1
 skala=1
 ablage=""
+innen=""
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--monitore) monitore="$2"; shift 2 ;;
 	--skala) skala="$2"; shift 2 ;;
+	--innen) innen="$(realpath -e -- "$2")" || exit 2; shift 2 ;;
 	--zwischenablage) ablage="$(realpath -e -- "$2")" || exit 2; shift 2 ;;
 	--) shift; break ;;
 	*) echo "unbekannt: $1" >&2; exit 2 ;;
@@ -42,6 +47,11 @@ if [ "${PROBE_INNEN:-}" = 1 ]; then
 	if [ ! -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]; then
 		echo "probe.sh: Socket des virtuellen KWin fehlt — Abbruch" > "$probe/ergebnis.txt"
 		exit 1
+	fi
+	if [ -s "$probe/innen.txt" ]; then
+		bash "$(cat "$probe/innen.txt")" > "$probe/ergebnis.txt" 2>&1
+		echo "exit $?" >> "$probe/ergebnis.txt"
+		exit 0
 	fi
 	if [ -s "$probe/ablage.txt" ]; then
 		bild="$(cat "$probe/ablage.txt")"
@@ -89,6 +99,7 @@ touch "$probe/start"
 GOFLAGS= go build -race -trimpath -tags novulkan,nox11,probe -o "$probe/schnapp" ./cmd/schnapp || exit 1
 printf '%s\n' "$@" > "$probe/argumente.txt"
 printf '%s' "$ablage" > "$probe/ablage.txt"
+printf '%s' "$innen" > "$probe/innen.txt"
 env -u WAYLAND_DISPLAY -u DISPLAY PROBE_INNEN=1 PROBE_AUSSENBUS="${DBUS_SESSION_BUS_ADDRESS:-}" \
 	HOME="$probe/home" XDG_CONFIG_HOME="$probe/home/.config" XDG_DATA_HOME="$probe/home/.local/share" \
 	XDG_CACHE_HOME="$probe/home/.cache" XDG_RUNTIME_DIR="$probe/run" \
