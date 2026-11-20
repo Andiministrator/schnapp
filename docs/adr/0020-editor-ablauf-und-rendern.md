@@ -89,7 +89,15 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   Hinweis ohne Warnung geht wie bisher auf die Fehlerausgabe.
 - **Signale:** SIGTERM, SIGINT und SIGHUP lösen ein geordnetes Speichern und Schließen aus, ohne das Fenster offen zu
   halten; die Signal-Goroutine weckt nur das Fenster (`Window.Invalidate`), gespeichert wird in der Ereignisschleife
-  (F-77). Ein zweites Signal beendet sofort (Voreinstellung).
+  (F-77). *Geändert 20.11.2026 (F-152, Andis Entscheidung):* Weitere Signale (SIGTERM, SIGINT, SIGHUP) werden
+  abgefangen, bis der Editor zurückkehrt — ein zweites Strg+C oder SIGHUP nach SIGTERM beim Abmelden bricht ein
+  laufendes Speichern (bis rund 45 s, Nachtrag 3) nicht mehr ab; danach beendet sich der Editor geordnet. Erst nach der
+  Rückkehr gilt wieder die Voreinstellung. SIGKILL bleibt unabfangbar. Die Wache (`canvas.Signalwache`) ist ohne echte
+  Signale getestet (eigener Kanal). Kommt das Signal, während das Fenster nach einem gescheiterten Speichern mit der
+  Fehlermeldung offen steht, speichert der Editor noch einmal (samt Ausweichen auf eine neue Aufnahme) — das Verwerfen
+  bestätigt nur eine zweite Schließen-Anfrage, kein Signal — und schließt danach in jedem Fall, statt bis zum SIGKILL
+  offen zu hängen; scheitert es wieder, bleiben Fehlerausgabe und Rückgabewert, beim Zerstören folgt kein weiterer
+  Versuch (`canvas.Sitzung.SchliessenNachSignal`).
 - **Ohne Anfrage zerstört** (Wayland-Verbindung weg): Speichern beim `DestroyEvent` bleibt (Nachtrag 1); dort gibt es
   nur noch die Fehlerausgabe und den Rückgabewert.
 - **Kein Autospeichern, kein Wiederherstellungsort:** Gegen Absturz oder SIGKILL schützt das nicht. Bewusst so, weil

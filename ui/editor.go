@@ -65,8 +65,8 @@ type Gespeichert struct {
 // Editor öffnet das Dokument in einem Fenster und kehrt zurück, wenn es geschlossen wird. Ungespeicherte Änderungen
 // werden beim Schließen gespeichert (die Bibliothek speichert immer, Kernprinzip 4); scheitert das, bleibt das Fenster
 // mit der Meldung offen, und erst eine zweite Schließen-Anfrage verwirft (F-107, ADR-0020 Nachtrag 2). Ein Signal
-// (SIGTERM, SIGINT, SIGHUP) speichert und schließt. Rückgabewert ist ein Fehler des Fensters oder des letzten
-// Speicherns ohne Rückfrage. titel ist der Dateiname für die Titelleiste. Muss neben app.Main laufen (Starte).
+// (SIGTERM, SIGINT, SIGHUP) speichert und schließt; weitere Signale bis zur Rückkehr werden abgefangen (F-152).
+// Rückgabewert ist ein Fehler des Fensters oder des letzten Speicherns ohne Rückfrage. titel ist der Dateiname für die Titelleiste. Muss neben app.Main laufen (Starte).
 func Editor(titel string, d *document.Dokument, speichern Speichern) error {
 	frist := time.Now().Add(2 * time.Second)
 	for offeneOverlays.Load() > 0 {
@@ -87,27 +87,22 @@ func Editor(titel string, d *document.Dokument, speichern Speichern) error {
 }
 
 // signaleAbfangen leitet SIGTERM, SIGINT und SIGHUP (Abmelden, Strg+C im Terminal, kill) in ein geordnetes Schließen
-// mit Speichern um (F-107): Die Signal-Goroutine setzt nur eine Marke und weckt das Fenster (Invalidate ist dafür
-// gedacht); gespeichert und geschlossen wird in der eigenen Ereignisschleife (F-77). Nach dem ersten Signal gilt
-// wieder die Voreinstellung — ein zweites beendet sofort. Die Rückgabe beendet das Abfangen.
+// mit Speichern um (F-107): Die Wache (canvas.Signalwache) setzt nur eine Marke und weckt das Fenster (Invalidate ist
+// dafür gedacht); gespeichert und geschlossen wird in der eigenen Ereignisschleife (F-77). Weitere Signale fängt sie ab,
+// bis der Editor zurückkehrt — ein zweites Signal bricht das Speichern nicht ab (F-152, ADR-0020 Nachtrag 2). Die
+// Rückgabe beendet das Abfangen; danach gilt wieder die Voreinstellung.
 func (e *editor) signaleAbfangen() func() {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
-	fertig := make(chan struct{})
-	go func() {
-		select {
-		case s := <-sig:
-			signal.Stop(sig)
-			diagnoseEditor("Signal %v: speichern und schließen", s)
-			e.signal.Store(true)
-			e.w.Invalidate()
-		case <-fertig:
+	e.wache = canvas.NeueSignalwache(sig, func() { signal.Stop(sig) }, func(s os.Signal, erstes bool) {
+		if !erstes {
+			diagnoseEditor("weiteres Signal %v: abgefangen, Speichern und Schließen laufen weiter", s)
+			return
 		}
-	}()
-	return func() {
-		signal.Stop(sig)
-		close(fertig)
-	}
+		diagnoseEditor("Signal %v: speichern und schließen", s)
+		e.w.Invalidate()
+	})
+	return e.wache.Ende
 }
 
 type editor struct {
@@ -120,9 +115,9 @@ type editor struct {
 	meldung   canvas.Meldung // Zeile in der Statusleiste (Speichern, Hinweis, Fehler); Vorrang regelt canvas.StatusZeile (F-151)
 	titelSet  string
 
-	signal     atomic.Bool // ein Signal kam an (Signal-Goroutine setzt, Ereignisschleife liest)
-	erzwungen  bool        // Schließen nach Signal: kein ClosingEvent mehr abbrechen
-	schlussErr error       // Speicherfehler beim Schließen nach Signal, Rückgabe von Editor
+	wache      *canvas.Signalwache // nimmt Signale an (eigene Goroutine), Ereignisschleife fragt Angekommen
+	erzwungen  bool                // Schließen nach Signal: kein ClosingEvent mehr abbrechen
+	schlussErr error               // Speicherfehler beim Schließen nach Signal, Rückgabe von Editor
 
 	knoepfe struct {
 		auswahl, pfeil, kasten, text, nummer, farbe widget.Clickable
@@ -190,7 +185,7 @@ func (e *editor) laufen() error {
 				e.w.Option(app.Title(t))
 			}
 		}
-		if e.signal.Load() && !e.erzwungen {
+		if e.wache.Angekommen() && !e.erzwungen {
 			e.nachSignal()
 		}
 	}
@@ -231,19 +226,19 @@ func (e *editor) schliessen() bool {
 	return false
 }
 
-// nachSignal speichert nach einem Signal einmal und schließt das Fenster, ohne es offen zu halten.
+// nachSignal speichert nach einem Signal einmal und schließt das Fenster, ohne es offen zu halten — auch nach einem
+// vorher gescheiterten Speichern (canvas.Sitzung.SchliessenNachSignal). Weitere Signale während des Speicherns fängt
+// die Wache ab (F-152).
 func (e *editor) nachSignal() {
 	e.erzwungen = true
-	z, err := e.s.Schliessen(func() (bool, error) {
+	e.schlussErr = e.s.SchliessenNachSignal(func() error {
 		g, err := e.speichern(e.s.D)
 		if err == nil {
 			hinweisAufStderr(g)
 		}
-		return false, err
+		return err
 	})
-	if z == canvas.SchlussFehler {
-		e.schlussErr = err
-	}
+	diagnoseEditor("Speichern nach Signal: %v", e.schlussErr)
 	e.w.Perform(system.ActionClose) // in der eigenen Schleife (F-77)
 }
 
