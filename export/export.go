@@ -100,8 +100,12 @@ func PruefeAngehaengt(pfad string, angehaengt bool) error {
 	if !angehaengt {
 		return nil
 	}
-	if _, err := os.Lstat(pfad); errors.Is(err, os.ErrNotExist) {
+	_, err := os.Lstat(pfad)
+	switch {
+	case errors.Is(err, os.ErrNotExist):
 		return nil
+	case err != nil:
+		return err // etwa keine Rechte: als solcher melden, nicht als „vorhanden“ (Verify N-4)
 	}
 	return ErrZielVorhanden
 }
@@ -124,9 +128,30 @@ func Schreibe(d *document.Dokument, f Format, w io.Writer) error {
 }
 
 // SchreibeAtomar legt die Datei über eine temporäre Datei im Zielordner an und benennt sie um (ADR-0025 Punkt 5, Nachtrag
-// 1): Am Ziel steht nie eine halbe Datei, bei einem Fehler bleibt eine vorhandene Datei unberührt. Die Rechte folgen
-// der umask des Prozesses; ersetzt die Datei eine vorhandene reguläre Datei, übernimmt sie deren Rechte.
-func SchreibeAtomar(pfad string, schreibe func(io.Writer) error) (fehler error) {
+// 1 und 2): Am Ziel steht nie eine halbe Datei, bei einem Fehler bleibt eine vorhandene Datei unberührt. Die Rechte
+// folgen der umask des Prozesses; ersetzt die Datei eine vorhandene reguläre Datei, übernimmt sie deren Rechte schon vor
+// dem Schreiben (die temporäre Datei ist nie offener als das Ziel). Ist das Ziel ein symbolischer Link, wird dorthin
+// geschrieben, wohin er zeigt (der Link bleibt).
+func SchreibeAtomar(pfad string, schreibe func(io.Writer) error) error {
+	return schreibeAtomar(pfad, false, schreibe)
+}
+
+// SchreibeOhneErsetzen ist SchreibeAtomar, legt die Datei aber nur an, wenn es das Ziel noch nicht gibt — geprüft beim
+// Anlegen selbst (harter Link), nicht vorher: Entsteht das Ziel während des Renderns, gilt ErrZielVorhanden (Verify N-4).
+// Für eine angehängte Endung, die der Dialog nicht bestätigt hat. Kann das Dateisystem keine harten Links, wird vorher
+// geprüft und umbenannt (bestmöglich).
+func SchreibeOhneErsetzen(pfad string, schreibe func(io.Writer) error) error {
+	return schreibeAtomar(pfad, true, schreibe)
+}
+
+func schreibeAtomar(pfad string, ohneErsetzen bool, schreibe func(io.Writer) error) (fehler error) {
+	if st, err := os.Lstat(pfad); err == nil && st.Mode()&os.ModeSymlink != 0 {
+		echt, err := filepath.EvalSymlinks(pfad)
+		if err != nil {
+			return err // Link ins Leere: nichts anlegen, wohin der Name nicht zeigt
+		}
+		pfad = echt
+	}
 	tmp, err := tempDatei(filepath.Dir(pfad))
 	if err != nil {
 		return err
@@ -138,20 +163,36 @@ func SchreibeAtomar(pfad string, schreibe func(io.Writer) error) (fehler error) 
 			os.Remove(name)
 		}
 	}()
-	if err := schreibe(tmp); err != nil {
-		return err
-	}
 	if st, err := os.Lstat(pfad); err == nil && st.Mode().IsRegular() {
-		// Ein Fehler (etwa exFAT ohne Rechte) bricht nicht ab: Die Datei bleibt mit den umask-Rechten gültig.
+		// Vor dem Schreiben (Verify N-2). Ein Fehler (etwa exFAT ohne Rechte) bricht nicht ab.
 		if err := tmp.Chmod(st.Mode().Perm()); err != nil {
 			Diagnose("Rechte der ersetzten Datei nicht übernommen: %v", err)
 		}
+	}
+	if err := schreibe(tmp); err != nil {
+		return err
 	}
 	if err := tmp.Sync(); err != nil {
 		return err
 	}
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("schließen: %w", err)
+	}
+	if !ohneErsetzen {
+		return os.Rename(name, pfad)
+	}
+	switch err := os.Link(name, pfad); {
+	case err == nil:
+		os.Remove(name)
+		return nil
+	case errors.Is(err, os.ErrExist):
+		return ErrZielVorhanden
+	}
+	if _, err := os.Lstat(pfad); !errors.Is(err, os.ErrNotExist) {
+		if err == nil {
+			return ErrZielVorhanden
+		}
+		return err
 	}
 	return os.Rename(name, pfad)
 }

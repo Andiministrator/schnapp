@@ -439,7 +439,11 @@ func (e *editor) exportFertig(r exportErgebnis) {
 		e.melde(i18n.T("Could not export: finish the current action first."), true)
 		return
 	}
-	err = export.SchreibeAtomar(pfad, func(w io.Writer) error { return export.Schreibe(e.s.D, f, w) })
+	schreibe := export.SchreibeAtomar
+	if angehaengt {
+		schreibe = export.SchreibeOhneErsetzen // Ziel könnte während des Renderns entstehen (Verify N-4)
+	}
+	err = schreibe(pfad, func(w io.Writer) error { return export.Schreibe(e.s.D, f, w) })
 	if err != nil {
 		e.melde(fmt.Sprintf(i18n.T("Could not export: %v"), exportFehlerText(err, "")), true)
 		return

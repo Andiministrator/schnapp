@@ -29,8 +29,17 @@ import (
 // nurVirtuell lässt die Fernbedienung nur im virtuellen KWin von scripts/probe.sh zu: Wayland-Socket „schnapp-probe“ und
 // Laufzeitordner tmp/probe/run. Das Werkzeug bleibt nach einem Lauf in tmp/probe liegen; von Hand in der echten Sitzung
 // gestartet, würde es sich sonst mit dem echten KWin verbinden (KWin winkt die Anmeldung durch) und Eingaben einspeisen.
-// Geprüft wird vor jedem Verbindungsversuch (Wayland und D-Bus für foto).
+// Geprüft wird vor jedem Verbindungsversuch (Wayland und D-Bus für foto). Für den D-Bus-Weg zusätzlich: probe.sh
+// setzt PROBE_INNEN=1 und den privaten Bus (dbus-run-session); dessen Adresse muss gesetzt sein und sich von der des
+// äußeren Aufrufs (PROBE_AUSSENBUS) unterscheiden. Ohne Busadresse fiele godbus auf den Bus der echten Sitzung zurück
+// (Verify N-5).
 func nurVirtuell(getenv func(string) string) error {
+	if getenv("PROBE_INNEN") != "1" {
+		return fmt.Errorf("PROBE_INNEN ist nicht 1 — nur im virtuellen KWin von scripts/probe.sh")
+	}
+	if b := getenv("DBUS_SESSION_BUS_ADDRESS"); b == "" || b == getenv("PROBE_AUSSENBUS") {
+		return fmt.Errorf("kein privater D-Bus (DBUS_SESSION_BUS_ADDRESS leer oder gleich dem äußeren Bus) — nur im virtuellen KWin von scripts/probe.sh")
+	}
 	if d := getenv("WAYLAND_DISPLAY"); d != "schnapp-probe" {
 		return fmt.Errorf("WAYLAND_DISPLAY ist %q, erwartet \"schnapp-probe\" — nur im virtuellen KWin von scripts/probe.sh", d)
 	}

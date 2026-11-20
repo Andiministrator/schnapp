@@ -27,9 +27,27 @@ func TestNurVirtuell(t *testing.T) {
 		{"alles leer", "", "", true},
 		{"Ordner ähnlich", "schnapp-probe", "/a/tmp/probe/runx", true},
 	} {
-		env := map[string]string{"WAYLAND_DISPLAY": f.display, "XDG_RUNTIME_DIR": f.run}
+		env := map[string]string{"WAYLAND_DISPLAY": f.display, "XDG_RUNTIME_DIR": f.run, "PROBE_INNEN": "1",
+			"DBUS_SESSION_BUS_ADDRESS": "unix:path=/a/privat", "PROBE_AUSSENBUS": "unix:path=/run/user/1000/bus"}
 		if err := nurVirtuell(func(k string) string { return env[k] }); (err != nil) != f.fehler {
 			t.Errorf("%s: Fehler %v, erwartet Fehler=%v", f.name, err, f.fehler)
+		}
+	}
+	// D-Bus-Weg (Verify N-5): ohne Marke, ohne Busadresse oder mit dem äußeren Bus wird abgelehnt.
+	basis := map[string]string{"WAYLAND_DISPLAY": "schnapp-probe", "XDG_RUNTIME_DIR": "/a/tmp/probe/run", "PROBE_INNEN": "1",
+		"DBUS_SESSION_BUS_ADDRESS": "unix:path=/a/privat", "PROBE_AUSSENBUS": "unix:path=/run/user/1000/bus"}
+	for name, aendern := range map[string]func(map[string]string){
+		"ohne PROBE_INNEN": func(m map[string]string) { delete(m, "PROBE_INNEN") },
+		"ohne Busadresse":  func(m map[string]string) { m["DBUS_SESSION_BUS_ADDRESS"] = "" },
+		"äußerer Bus":      func(m map[string]string) { m["DBUS_SESSION_BUS_ADDRESS"] = m["PROBE_AUSSENBUS"] },
+	} {
+		env := map[string]string{}
+		for k, v := range basis {
+			env[k] = v
+		}
+		aendern(env)
+		if err := nurVirtuell(func(k string) string { return env[k] }); err == nil {
+			t.Errorf("%s: angenommen", name)
 		}
 	}
 }

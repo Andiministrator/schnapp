@@ -273,7 +273,7 @@ func signalAn(pfad dbus.ObjectPath, sender string) *dbus.Signal {
 // Der Signalfilter nimmt nur passende Antworten des Portals an; ein geschlossener Kanal endet mit ErrVerbindung (A-2, A-7).
 func TestWertSignal(t *testing.T) {
 	pfad := dbus.ObjectPath("/org/freedesktop/portal/desktop/request/1_7/tok")
-	pruefe := absenderPruefung(":1.99")
+	pruefe := absenderPruefung(":1.99", nil)
 
 	if r, art := wertSignal(nil, false, pfad, pruefe); art != signalEnde || !errors.Is(r.Err, ErrVerbindung) {
 		t.Errorf("geschlossener Kanal: %v, %v", art, r.Err)
@@ -292,7 +292,7 @@ func TestWertSignal(t *testing.T) {
 		t.Errorf("fremder Absender: %v", art)
 	}
 	// Besitzer unbekannt: nur der Name zählt.
-	if _, art := wertSignal(signalAn(pfad, ":1.99"), true, pfad, absenderPruefung("")); art != signalVerwerfen {
+	if _, art := wertSignal(signalAn(pfad, ":1.99"), true, pfad, absenderPruefung("", nil)); art != signalVerwerfen {
 		t.Errorf("ohne Besitzer: %v", art)
 	}
 	if _, art := wertSignal(signalAn("/anderer/pfad", dienst), true, pfad, pruefe); art != signalVerwerfen {
@@ -331,5 +331,25 @@ func TestKontextEndeWaehrendSaveFile(t *testing.T) {
 	soll := RequestPfad(":1.7", "tok_1")
 	if len(a.geschlossen) != 1 || a.geschlossen[0] != soll {
 		t.Errorf("geschlossen: %v, soll [%s]", a.geschlossen, soll)
+	}
+}
+
+// TestAbsenderSpaeterBekannt: Ist der Besitzer beim Anmelden unbekannt (Portal noch nicht gestartet), schlägt die
+// Prüfung ihn nach und lässt die echte Antwort durch; ein fremder Absender bleibt draußen (Verify N-1).
+func TestAbsenderSpaeterBekannt(t *testing.T) {
+	besitzer := ""
+	pruefe := absenderPruefung("", func() string { return besitzer })
+	if pruefe(":1.99") {
+		t.Error("ohne Besitzer zugelassen")
+	}
+	besitzer = ":1.99" // das Portal ist inzwischen gestartet
+	if !pruefe(":1.99") {
+		t.Error("echte Antwort nach dem Start verworfen")
+	}
+	if pruefe(":1.5") {
+		t.Error("fremder Absender zugelassen")
+	}
+	if !pruefe(":1.99") {
+		t.Error("Besitzer nicht gemerkt")
 	}
 }

@@ -260,3 +260,93 @@ func TestPruefeAngehaengt(t *testing.T) {
 		t.Errorf("neues Ziel: %v", err)
 	}
 }
+
+// TestRechteVorDemSchreiben: Ersetzt der Export eine 0600-Datei, ist schon die temporäre Datei während des Schreibens
+// nicht offener als das Ziel (Verify N-2).
+func TestRechteVorDemSchreiben(t *testing.T) {
+	alt := syscall.Umask(0o022)
+	defer syscall.Umask(alt)
+	ziel := filepath.Join(t.TempDir(), "x.png")
+	if err := os.WriteFile(ziel, []byte("alt"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var waehrend os.FileMode
+	err := SchreibeAtomar(ziel, func(w io.Writer) error {
+		st, err := w.(*os.File).Stat()
+		if err != nil {
+			return err
+		}
+		waehrend = st.Mode().Perm()
+		_, err = io.WriteString(w, "neu")
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if waehrend != 0o600 {
+		t.Errorf("temporäre Datei während des Schreibens %o, soll 600", waehrend)
+	}
+}
+
+// TestSymlinkZiel: Ein symbolischer Link als Ziel bleibt ein Link; geschrieben wird in die Datei, auf die er zeigt,
+// mit deren Rechten (Verify N-3). Ein Link ins Leere wird abgelehnt.
+func TestSymlinkZiel(t *testing.T) {
+	dir := t.TempDir()
+	echt := filepath.Join(dir, "echt.png")
+	link := filepath.Join(dir, "link.png")
+	if err := os.WriteFile(echt, []byte("alt"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("echt.png", link); err != nil {
+		t.Fatal(err)
+	}
+	if err := SchreibeAtomar(link, func(w io.Writer) error { _, err := io.WriteString(w, "neu"); return err }); err != nil {
+		t.Fatal(err)
+	}
+	if st, err := os.Lstat(link); err != nil || st.Mode()&os.ModeSymlink == 0 {
+		t.Errorf("Link ersetzt: %v %v", st, err)
+	}
+	if b, _ := os.ReadFile(echt); string(b) != "neu" {
+		t.Errorf("Ziel des Links hat %q", b)
+	}
+	if st, _ := os.Stat(echt); st.Mode().Perm() != 0o600 {
+		t.Errorf("Rechte %o, soll 600", st.Mode().Perm())
+	}
+	leer := filepath.Join(dir, "leer.png")
+	if err := os.Symlink("gibtsnicht/x.png", leer); err != nil {
+		t.Fatal(err)
+	}
+	if err := SchreibeAtomar(leer, func(w io.Writer) error { return nil }); err == nil {
+		t.Error("Link ins Leere angenommen")
+	}
+}
+
+// TestOhneErsetzen: Entsteht das Ziel während des Schreibens, legt SchreibeOhneErsetzen nichts an und meldet
+// ErrZielVorhanden; die fremde Datei bleibt, keine temporäre Datei bleibt liegen (Verify N-4). Ohne Ziel legt es an.
+func TestOhneErsetzen(t *testing.T) {
+	dir := t.TempDir()
+	ziel := filepath.Join(dir, "a.png")
+	err := SchreibeOhneErsetzen(ziel, func(w io.Writer) error {
+		if err := os.WriteFile(ziel, []byte("fremd"), 0o644); err != nil {
+			return err
+		}
+		_, err := io.WriteString(w, "meins")
+		return err
+	})
+	if !errors.Is(err, ErrZielVorhanden) {
+		t.Fatalf("Fehler %v, soll ErrZielVorhanden", err)
+	}
+	if b, _ := os.ReadFile(ziel); string(b) != "fremd" {
+		t.Errorf("fremde Datei überschrieben: %q", b)
+	}
+	if e, _ := os.ReadDir(dir); len(e) != 1 {
+		t.Errorf("%d Einträge im Ordner, soll 1 (temporäre Datei liegen geblieben?)", len(e))
+	}
+	neu := filepath.Join(dir, "b.png")
+	if err := SchreibeOhneErsetzen(neu, func(w io.Writer) error { _, err := io.WriteString(w, "x"); return err }); err != nil {
+		t.Fatal(err)
+	}
+	if e, _ := os.ReadDir(dir); len(e) != 2 {
+		t.Errorf("%d Einträge, soll 2", len(e))
+	}
+}

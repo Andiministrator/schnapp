@@ -54,20 +54,36 @@ func wertSignal(s *dbus.Signal, ok bool, pfad dbus.ObjectPath, absenderOK func(s
 	return Antwort{Code: code, Ergebnisse: erg}, signalPassend
 }
 
-// absenderPruefung lässt den Namen des Portals und dessen eindeutigen Besitzer zu; ist der Besitzer unbekannt
-// (leer), nur den Namen.
-func absenderPruefung(besitzer string) func(string) bool {
+// absenderPruefung lässt den Namen des Portals und dessen eindeutigen Besitzer zu. Der Bus trägt als Absender eines
+// Signals immer den eindeutigen Namen (:1.x); ist der Besitzer beim Anmelden noch unbekannt (das Portal startet erst mit
+// SaveFile per D-Bus-Aktivierung), schlägt die Prüfung ihn beim ersten fremden Absender nach (nachschlagen darf nil
+// sein). Sonst verwürfe sie jede echte Antwort, und der Export hinge (Verify N-1).
+func absenderPruefung(besitzer string, nachschlagen func() string) func(string) bool {
 	return func(sender string) bool {
-		return sender == dienst || (besitzer != "" && sender == besitzer)
+		if sender == dienst || (besitzer != "" && sender == besitzer) {
+			return true
+		}
+		if nachschlagen != nil {
+			if neu := nachschlagen(); neu != "" && neu != besitzer {
+				besitzer = neu
+				return sender == besitzer
+			}
+		}
+		return false
 	}
 }
 
-func (t *dbusTransport) Abonniere(pfad dbus.ObjectPath) (<-chan Antwort, func(), error) {
+// besitzerVon fragt den eindeutigen Namen, dem dienst gerade gehört; leer, wenn niemandem.
+func (t *dbusTransport) besitzerVon() string {
 	var besitzer string
 	if err := t.conn.BusObject().Call("org.freedesktop.DBus.GetNameOwner", 0, dienst).Store(&besitzer); err != nil {
-		besitzer = "" // nur der Name
+		return ""
 	}
-	pruefe := absenderPruefung(besitzer)
+	return besitzer
+}
+
+func (t *dbusTransport) Abonniere(pfad dbus.ObjectPath) (<-chan Antwort, func(), error) {
+	pruefe := absenderPruefung(t.besitzerVon(), t.besitzerVon)
 	sig := make(chan *dbus.Signal, 8)
 	t.conn.Signal(sig)
 	opt := []dbus.MatchOption{
