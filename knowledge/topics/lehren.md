@@ -101,6 +101,11 @@ Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden;
   der Kritiker hat es mit einem Toleranzvergleich gegen Kandidaten nachgerechnet und eine vierstellige Zahl in 193 von
   200 Läufen zurückgewonnen. Was vertraulichen Inhalt unkenntlich machen soll, trägt keine Information des Inhalts
   (Mosaik aus dem Gesamtmittel, ADR-0022 Nachtrag 1) — und der Test belegt das (gleiches Mittel → gleiches Mosaik).
+- **Großzügig ist nicht immer die sichere Seite (Sprint 6, F-181):** Eine zu große Schätzung der Textfläche ist sicher
+  fürs Rechenbudget, aber unsicher fürs Weglassen — der SVG-Export hielt einen unsichtbaren Text für sichtbar und schrieb
+  ihn im Klartext hinein. Wo eine Grenze über Weglassen entscheidet, die echte Fläche messen (`document/schrift.go`).
+- **Sub-Agent-Karten bekommen einen Kritiker (Sprint 6):** #38 kam grün und mit vielen Tests zurück und hatte trotzdem
+  einen [S]-Rückschritt (F-181); erst der Fable-Lauf fand ihn. Grün heißt nicht geprüft.
 - **Löschen nur nach Stand-Prüfung (Sprint 6, F-167):** Mit fester Uhr bekam eine neue Aufnahme den Namen einer
   verschobenen alten Datei; nur der Vergleich von Gerät, Inode, Größe und Zeit hat verhindert, dass `Entfernen` die neue
   Datei löscht. Wer löscht, prüft die Identität der Datei, nicht ihren Namen.
