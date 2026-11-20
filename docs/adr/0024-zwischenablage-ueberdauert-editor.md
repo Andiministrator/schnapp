@@ -104,3 +104,11 @@ mit eingeschalteter Einstellung.
   `errors.Is(err, wlclip.ErrKeinDataControl)` (`Uebergib` bildet den Text des Halters auf den Sentinel ab).
 - Die Wayland-Leitung liegt seit Karte #95 in `internal/wlwire` (gemeinsam mit der Probe-Fernbedienung).
 - `TestZeitgrenze` prüft Unter- und Obergrenze mit einspeisbarer Uhr, einschließlich Wanduhr-Sprung (Standby).
+
+## Nachtrag 4 (20.11.2026): Haltezeit auch nach der monotonen Uhr (F-232)
+
+**Status:** Akzeptiert (umgesetzt von Claude Sonnet 5.5, Karte #102; übernommen von Claude Opus 5.5).
+
+- Die 12-Stunden-Grenze des Halters galt nur nach der Wanduhr; eine zurückgestellte Uhr verlängerte sie um den Sprung.
+  `Diene` rechnet jetzt mit der früheren von Wanduhr- und monotoner Grenze (`monoSeit`, im Test einspeisbar); ein
+  Vorstellen der Uhr verkürzt sie wie bisher. Test `TestZeitgrenzeUhrZurueck` (Gegenprobe ohne monotone Grenze rot).

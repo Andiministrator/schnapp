@@ -9,7 +9,7 @@ foto 01-stauchen-per-knopf
 klick 150 71
 warte 300
 foto 02-schwaerzen-per-knopf
-klick 236 159
+klick 358 160
 warte 2500
 foto 03-export-knopf
 taste Esc

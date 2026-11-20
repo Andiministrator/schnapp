@@ -106,7 +106,12 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
     abgeholt, wäre ein erneutes `Invalidate` das zweite und verpuffte (F-216). Was im Frame **nach** dem Zeichnen eines
     Widgets geändert wird (Zeigerereignisse der Leinwand ändern die schon gezeichnete Leiste), braucht ein
     `op.InvalidateCmd` (F-217). Beide fielen erst im Probelauf mit Fotos auf, nicht in Tests; die Drehbücher dazu liegen
-    unter `scripts/drehbuecher/` (Rückfallprobe, kein automatischer Test).
+    unter `scripts/drehbuecher/` (Rückfallprobe, kein automatischer Test). Für Antworten aus Goroutinen und Signale
+    genügt ein einzelnes `Invalidate` nie sicher (F-231): `canvas.Wecker` wiederholt das Wecken (Takt 50 ms, höchstens
+    1 min), bis die Ereignisschleife quittiert — Antwort vorher ablegen, dann `Anfordern`; die Schleife quittiert am
+    Anfang jedes Ereignisses und holt zusätzlich nach jedem Ereignis ab (Weckereignisse ohne Bild kommen nicht durch
+    `frame()`). Das Folgebild je Zeigerereignis (F-217) kostet nichts Messbares: 4K, 1209 Ereignisse, 788 gegen 782
+    Bilder (F-235).
   - **Tasten kommen im Fenster mit dem Tastaturfokus an,** nicht in dem unter dem Zeiger. Bei mehreren Vollbild-
     Fenstern bezieht sich Enter deshalb auf den gemeinsamen „aktiven Monitor“ (F-80); Rechtsklick bricht ab, falls
     kein Fenster den Fokus hat (F-81).

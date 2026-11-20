@@ -125,7 +125,10 @@ Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden;
   Sekunde — `warte 3000` vor dem Foto, sonst zeigt es den alten Stand. Ein „falsches“ Foto erst gegen das Drehbuch
   prüfen, dann gegen den Code; umgekehrt zeigt ein Foto, das nach einer Taste plötzlich stimmt, ein fehlendes
   Neuzeichnen (F-216, F-217). Was die Fernbedienung nicht kann: Maustaste halten und fotografieren (Rahmen beim
-  Ziehen). Ein `rad`-Schritt zoomt nur um rund 3,5 % (30 Schritte: 99 % → 34 %).
+  Ziehen). Ein `rad`-Schritt zoomt nur um rund 3,5 % (30 Schritte: 99 % → 34 %). **Feste Klickkoordinaten veralten
+  mit jeder Änderung an der Leiste** (nach „Ganzes Bild“ trafen zwei Drehbücher „Einpassen“ statt „Exportieren“): nach
+  einem neuen Knopf alle `klick`-Zeilen in `scripts/drehbuecher/` fahren und per Foto prüfen, dass der gemeinte Knopf
+  getroffen wird.
 - **Schutz messen, nicht annehmen (Sprint 6, F-163):** Verpixeln mit Blockmittel plus Zufallsrauschen sah sicher aus;
   der Kritiker hat es mit einem Toleranzvergleich gegen Kandidaten nachgerechnet und eine vierstellige Zahl in 193 von
   200 Läufen zurückgewonnen. Was vertraulichen Inhalt unkenntlich machen soll, trägt keine Information des Inhalts
