@@ -177,6 +177,8 @@ type editor struct {
 	menue  menue // Menü der Leiste (ADR-0026)
 	// bilder zählt die gezeichneten Bilder (Diagnose mit SCHNAPP_DEBUG, Messung F-235).
 	bilder int
+	// zug sammelt die Bildzeiten des laufenden Zeigerzugs (nur mit SCHNAPP_DEBUG, F-250, ui/bildzeit.go).
+	zug zugZeiten
 	// Export (ADR-0025): Der Dialog läuft in einer Goroutine, die Antwort kommt über exportAntwort in die Ereignisschleife.
 	exportCtx     context.Context
 	exportOffen   bool // ein Dialog läuft (nur einer zugleich); nur die Ereignisschleife liest und setzt es
@@ -284,6 +286,11 @@ func (e *editor) laufen() error {
 			}
 		case app.FrameEvent:
 			e.bilder++
+			var bildStart time.Time
+			messeZug := e.zug.aktiv // nur mit SCHNAPP_DEBUG während eines Zugs; sonst keine Uhr (F-250)
+			if messeZug {
+				bildStart = time.Now()
+			}
 			if ev.Size != letzteGroesse { // probe.sh wartet auf diese Zeile, bis das Fenster steht
 				letzteGroesse = ev.Size
 				diagnoseEditor("Fenstergröße %dx%d", ev.Size.X, ev.Size.Y)
@@ -291,6 +298,9 @@ func (e *editor) laufen() error {
 			gtx := app.NewContext(&ops, ev)
 			e.frame(gtx)
 			ev.Frame(gtx.Ops)
+			if messeZug {
+				e.zug.bild(time.Since(bildStart))
+			}
 			if t := e.fensterTitel(); t != e.titelSet {
 				e.titelSet = t
 				e.w.Option(app.Title(t))
@@ -1033,6 +1043,9 @@ func (e *editor) zeiger(gtx layout.Context) {
 		e.s.Umschalt = pe.Modifiers.Contain(key.ModShift) // Pfeil 45°, Quadrat (ADR-0021)
 		switch pe.Kind {
 		case pointer.Press:
+			if os.Getenv("SCHNAPP_DEBUG") != "" {
+				e.zug.beginne() // Bildzeiten dieses Zugs sammeln (F-250)
+			}
 			switch {
 			case pe.Buttons.Contain(pointer.ButtonTertiary):
 				e.s.Druecken(p, canvas.TasteMitte)
@@ -1062,6 +1075,9 @@ func (e *editor) zeiger(gtx layout.Context) {
 			}
 			e.meldeAnsicht()
 			diagnoseEditor("Loslassen: Auswahl %d, geändert %v, Bilder bisher %d", e.s.Auswahl, e.s.Geaendert(), e.bilder)
+			if n, mittel, laengste, ok := e.zug.beende(); ok {
+				diagnoseEditor("Zug: %d Bilder, Bildzeit mittel %.2f ms, längste %.2f ms", n, ms(mittel), ms(laengste))
+			}
 		case pointer.Cancel:
 			e.s.Abbrechen()
 		case pointer.Scroll:
