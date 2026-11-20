@@ -387,6 +387,11 @@ func TestNutzerFehler(t *testing.T) {
 
 // F-125, F-131, F-132: Eine Arbeitsdatei, deren Rastern das Rechenbudget überschritte, öffnet der Editor nicht
 // (Meldung übersetzt); knapp darunter öffnet sie. Abgelehnt wird nur beim Öffnen; Speichern warnt nur (F-138).
+// wOrt setzt ein „W“ im Grad 4096 so, dass seine Grundlinie bei y = 6 liegt und seine Tinte (sie beginnt rund 49 Pixel
+// rechts vom Ort) ins Bild (10×10) reicht. Bei Ort (0, 0) läge sie ganz unter und rechts neben dem Bild, wäre
+// unsichtbar (ObjektSichtbar nach der echten Tinte, F-181) und kostete nichts.
+var wOrt = document.Pt(-45, 6-4096)
+
 func TestOeffnenLehntZuAufwendigeDateiAb(t *testing.T) {
 	i18n.Setze(nil)
 	dir := t.TempDir()
@@ -402,7 +407,7 @@ func TestOeffnenLehntZuAufwendigeDateiAb(t *testing.T) {
 			t.Fatal(err)
 		}
 		for i := 0; i < fall.n; i++ {
-			if _, err := d.Hinzufuegen(document.Text{Ort: document.Pt(0, 0), Inhalt: "W", Schriftgrad: 4096,
+			if _, err := d.Hinzufuegen(document.Text{Ort: wOrt, Inhalt: "W", Schriftgrad: 4096,
 				Farbe: color.NRGBA{R: 255, A: 255}}); err != nil {
 				t.Fatal(err)
 			}
@@ -482,7 +487,7 @@ func TestSpeichernUeberDemBudgetWarnt(t *testing.T) {
 	// Je Glyphe „W“ im Grad 4096 kostet das Rastern 4096² Einheiten; über GlyphBudget lehnt Pruefe ab.
 	budget := render.GlyphBudget
 	grenze := int(budget / (4096 * 4096))
-	w := document.Text{Ort: document.Pt(0, 0), Inhalt: "W", Schriftgrad: 4096, Farbe: color.NRGBA{R: 255, A: 255}}
+	w := document.Text{Ort: wOrt, Inhalt: "W", Schriftgrad: 4096, Farbe: color.NRGBA{R: 255, A: 255}}
 	for _, fall := range []struct {
 		n      int
 		warnen bool

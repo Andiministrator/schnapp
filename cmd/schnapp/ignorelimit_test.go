@@ -50,7 +50,7 @@ func ueberBudget(t *testing.T, dir string) (pfad string, n int) {
 		t.Fatal(err)
 	}
 	for i := 0; i < n; i++ {
-		if _, err := d.Hinzufuegen(document.Text{Ort: document.Pt(0, 0), Inhalt: "W", Schriftgrad: 4096,
+		if _, err := d.Hinzufuegen(document.Text{Ort: wOrt, Inhalt: "W", Schriftgrad: 4096,
 			Farbe: color.NRGBA{R: 255, A: 255}}); err != nil {
 			t.Fatal(err)
 		}

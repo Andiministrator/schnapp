@@ -83,18 +83,53 @@ func quer(n Naht, t, q float64) Punkt {
 	return Punkt{q, t}
 }
 
-// ObjektSichtbar meldet, ob o in die Ansicht reicht (ADR-0023 Punkt 7): Sichtbar für seine Reichweite. Ein Objekt, für
-// das es nicht gilt, liegt ganz im Verborgenen (außerhalb des Zuschnitts, ganz in einem Streifen oder neben dem Bild);
-// Editor, Renderer, SVG-Export und Trefferprüfung lassen es aus.
+// ObjektSichtbar meldet, ob o in die Ansicht reicht (ADR-0023 Punkt 7): Sichtbar für seine Reichweite (bei Text und
+// Nummer die echte Tinte der Glyphen, F-181). Ein Objekt, für das es nicht gilt, liegt ganz im Verborgenen (außerhalb
+// des Zuschnitts, ganz in einem Streifen oder neben dem Bild); Editor, Renderer, SVG-Export, Trefferprüfung und der
+// Zähler der verborgenen Beschriftungen lassen es aus.
 func (d *Dokument) ObjektSichtbar(o Objekt) bool { return d.Sichtbar(Reichweite(o)) }
 
-// Reichweite ist eine obere Schranke dessen, was Renderer, Editor und SVG von o zeichnen (Original): Grenzen schätzt
-// Text und Nummer zu knapp (die echte Breite kennt erst die Schrift), und die Pfeilspitze ragt über die Grenzen
-// hinaus. Text: je Zeichen höchstens 1,1 Schriftgrad (Tabulator vier Zeichen), Glyphen bis 0,25 Schriftgrad links
-// und rechts über, von 0,2 Schriftgrad über der Zeile bis 0,3 unter der letzten Grundlinie. Nummer: die Ziffernbox des
-// Renderers (halbe Breite Grad·(0,4·Stellen + 1), Grad 1,2·Radius). Pfeil: die Spitze (max(8, 4·Breite)) um B.
+// Reichweite ist die Fläche, die Renderer, Editor und SVG von o zeichnen (Original), knapp nach oben abgeschätzt.
+// Text: die echte Tinte der Glyphen in Go Regular (textTinte, F-181) plus 1 Pixel Kantenglättung, mit Hintergrund
+// zusätzlich dessen Fläche (Grenzen); ohne Tinte (nur Leerraum) und ohne Hintergrund der Ort. Nummer: der Kreis
+// (Grenzen) und die Tinte der Ziffern in Go Bold (nummerTinte) — Ziffern können breiter sein als der Kreis. Pfeil: die
+// Spitze (max(8, 4·Breite)) um B. Nur wenn die Schrift nicht zu laden ist, gilt die alte grobe Schätzung (schaetzung).
 func Reichweite(o Objekt) Rechteck {
 	g := o.Grenzen()
+	switch v := o.(type) {
+	case Text:
+		r, ok, geschaetzt := textTinte(v)
+		switch {
+		case geschaetzt:
+			return schaetzung(v, g)
+		case !ok:
+			r = Rechteck{Min: v.Ort, Max: v.Ort}
+		}
+		if v.Hintergrund.A > 0 {
+			r = r.Vereint(g)
+		}
+		return r
+	case Nummer:
+		r, ok, geschaetzt := nummerTinte(v)
+		switch {
+		case geschaetzt:
+			return schaetzung(v, g)
+		case ok:
+			return g.Vereint(r)
+		}
+		return g
+	case Pfeil:
+		s := math.Max(8, 4*v.Strich.Breite)
+		return g.Vereint(Rechteck{Min: v.B.Minus(Punkt{s, s}), Max: v.B.Plus(Punkt{s, s})})
+	}
+	return g
+}
+
+// schaetzung ist die grobe obere Schranke für Text und Nummer ohne Schrift (sollte nie gebraucht werden): Text je
+// Zeichen höchstens 1,1 Schriftgrad (Tabulator vier Zeichen), Glyphen bis 0,25 Schriftgrad links und rechts über, von
+// 0,2 Schriftgrad über der Zeile bis 0,3 unter der letzten Grundlinie; Nummer die Ziffernbox des Renderers (halbe
+// Breite Grad·(0,4·Stellen + 1), Grad 1,2·Radius).
+func schaetzung(o Objekt, g Rechteck) Rechteck {
 	switch v := o.(type) {
 	case Text:
 		zeilen, laengste, akt := 1, 0, 0
@@ -118,9 +153,6 @@ func Reichweite(o Objekt) Rechteck {
 		grad := 1.2 * v.Radius
 		halb := grad * (0.4*float64(len(fmt.Sprint(v.Wert))) + 1)
 		return g.Vereint(Rechteck{Min: v.Mitte.Minus(Punkt{halb, grad}), Max: v.Mitte.Plus(Punkt{halb, grad})})
-	case Pfeil:
-		s := math.Max(8, 4*v.Strich.Breite)
-		return g.Vereint(Rechteck{Min: v.B.Minus(Punkt{s, s}), Max: v.B.Plus(Punkt{s, s})})
 	}
 	return g
 }

@@ -102,37 +102,51 @@ func TestSichtbar(t *testing.T) {
 	}
 }
 
-// Reichweite: obere Schranke dessen, was gezeichnet wird (Text, Nummer, Pfeilspitze); Kasten wie Grenzen.
+// Reichweite: Pfeilspitze und Kasten fest; Text und Nummer aus der Schrift (die Übereinstimmung mit den gerasterten
+// Pixeln prüft render, TestReichweiteWieGerastert).
 func TestReichweite(t *testing.T) {
 	rot := Strich{Farbe: color.NRGBA{R: 255, A: 255}, Breite: 1}
 	for name, fall := range map[string]struct {
 		o    Objekt
 		soll Rechteck
 	}{
-		// 7 Zeichen (Tabulator zählt 4): rechts (1,1·7 + 0,25)·10; oben 0,2·10, unten Grundlinie + 0,3·10.
-		"text": {Text{Ort: Pt(0, 0), Inhalt: "ab\tc", Schriftgrad: 10}, Rechteck{Pt(-2.5, -2), Pt(79.5, 13)}},
-		// zwei Zeilen: letzte Grundlinie 10·(1 + 1,3)
-		"text2": {Text{Ort: Pt(0, 0), Inhalt: "a\nb", Schriftgrad: 10}, Rechteck{Pt(-2.5, -2), Pt(13.5, 26)}},
-		// Wert 77, Radius 10: Grad 12, halbe Breite 12·(0,8 + 1) = 21,6
-		"nummer": {Nummer{Mitte: Pt(50, 50), Wert: 77, Radius: 10}, Rechteck{Pt(28.4, 38), Pt(71.6, 62)}},
 		// Spitze max(8, 4) um B
 		"pfeil": {GeraderPfeil(Pt(0, 50), Pt(50, 50), rot), Rechteck{Pt(-0.5, 42), Pt(58, 58)}},
 		"kasten": {Kasten{Bereich: R(Pt(10, 10), Pt(20, 20)), Strich: Strich{Breite: 2}},
 			Rechteck{Pt(9, 9), Pt(21, 21)}},
+		// nur Leerraum, kein Hintergrund: keine Tinte, nur der Ort
+		"leer": {Text{Ort: Pt(5, 7), Inhalt: " \t ", Schriftgrad: 10}, Rechteck{Pt(5, 7), Pt(5, 7)}},
+		// Ziffern im Kreis: der Kreis
+		"nummer": {Nummer{Mitte: Pt(50, 50), Wert: 7, Radius: 10}, Rechteck{Pt(40, 40), Pt(60, 60)}},
 	} {
 		got := Reichweite(fall.o)
 		if d := got.Min.Minus(fall.soll.Min).Laenge() + got.Max.Minus(fall.soll.Max).Laenge(); d > 1e-9 {
 			t.Errorf("%s: Reichweite %v, Soll %v", name, got, fall.soll)
 		}
-		g := fall.o.Grenzen()
-		if got.Vereint(g) != got {
-			t.Errorf("%s: Reichweite %v enthält Grenzen %v nicht", name, got, g)
-		}
+	}
+	// Mit Hintergrund gehört dessen Fläche (Grenzen) dazu.
+	mit := Text{Ort: Pt(0, 0), Inhalt: "ii", Schriftgrad: 10, Hintergrund: color.NRGBA{A: 255}}
+	if r := Reichweite(mit); r.Vereint(mit.Grenzen()) != r {
+		t.Errorf("Hintergrund: Reichweite %v ohne Grenzen %v", r, mit.Grenzen())
+	}
+	// Fünf Ziffern sind breiter als ein kleiner Kreis (F-181).
+	n := Nummer{Mitte: Pt(50, 50), Wert: 88888, Radius: 6}
+	if r := Reichweite(n); r.Min.X >= 44 || r.Max.X <= 56 {
+		t.Errorf("Nummer 88888: Reichweite %v nicht breiter als der Kreis", r)
 	}
 }
 
-// Ein Text, dessen geschätzte Grenzen ganz links vom Zuschnitt enden, dessen Glyphen aber hineinreichen können, gilt
-// als sichtbar; ein Text ganz in einem Zeilenstreifen nicht.
+// F-181: 30 Zeichen im Grad 20 ab x = 20 enden vor x = 400 (die alte Schätzung, 1,1 Grad je Zeichen, reichte bis 685).
+func TestReichweiteTextBreite(t *testing.T) {
+	txt := Text{Ort: Pt(20, 50), Inhalt: "Kennwort hunter2 nicht zeigen!", Schriftgrad: 20}
+	r := Reichweite(txt)
+	if r.Max.X >= 400 || r.Max.X <= 200 || r.Min.X < 18 || r.Min.X > 22 {
+		t.Errorf("Reichweite %v, Soll links ≈ 20, rechts zwischen 200 und 400", r)
+	}
+}
+
+// Ein Text, dessen geschätzte Grenzen ganz links vom Zuschnitt enden, dessen Glyphen aber hineinreichen, gilt als
+// sichtbar; ein Text ganz in einem Zeilenstreifen nicht.
 func TestObjektSichtbar(t *testing.T) {
 	d := leeresDokument(t, 100, 60)
 	if err := d.SetzeZuschnitt(image.Rect(20, 0, 100, 60)); err != nil {
@@ -141,7 +155,7 @@ func TestObjektSichtbar(t *testing.T) {
 	if err := d.SetzeStreifen([]Streifen{{Zeilen: true, Von: 30, Bis: 50}}); err != nil {
 		t.Fatal(err)
 	}
-	// 2 Zeichen à 0,6·10 = 12 geschätzt (bis 17), Reichweite (1,1·2 + 0,25)·10 = 24,5 (bis 29,5).
+	// 2 Zeichen à 0,6·10 = 12 geschätzt (bis 17); „WW“ in Go Regular ist breiter und reicht über x = 20.
 	knapp := Text{Ort: Pt(5, 5), Inhalt: "WW", Schriftgrad: 10}
 	if d.Sichtbar(knapp.Grenzen()) || !d.ObjektSichtbar(knapp) {
 		t.Error("Text am Zuschnitt: Grenzen sollen außerhalb, Reichweite innerhalb liegen")

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/Andiministrator/schnapp/document"
+	"github.com/Andiministrator/schnapp/fileformat"
 )
 
 // fv rechnet einen Ansichtspunkt mit der aktuellen Abbildung der Sitzung ins Fenster (nach Zuschneiden und Stauchen
@@ -360,6 +361,44 @@ func TestMeldungVerborgenNurBeiZuwachs(t *testing.T) {
 	}
 	if m := s.NimmAnsichtMeldung(); m != AnsichtKeine {
 		t.Errorf("2. Wiederholen ohne Zuwachs: Meldung %v", m)
+	}
+}
+
+// F-181 (Sollwert): Ein Text mit 30 Zeichen im Grad 20 bei x = 20 endet weit vor x = 400. Zuschnitt ab x = 400: Er
+// fehlt im SVG-Export und zählt als verborgen. Gegenprobe Zuschnitt ab x = 200: Er steht im SVG, nichts verborgen.
+func TestUnsichtbarerTextNichtImSVG(t *testing.T) {
+	for _, fall := range []struct {
+		ab        int
+		imSVG     bool
+		verborgen int
+	}{{400, false, 1}, {200, true, 0}} {
+		b := image.NewNRGBA(image.Rect(0, 0, 1000, 200))
+		for i := range b.Pix {
+			b.Pix[i] = 0xFF
+		}
+		d, err := document.Neu(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := d.Hinzufuegen(document.Text{Ort: document.Pt(20, 50), Inhalt: "Kennwort hunter2 nicht zeigen!",
+			Schriftgrad: 20, Farbe: color.NRGBA{A: 255}}); err != nil {
+			t.Fatal(err)
+		}
+		s := NeueSitzung(d)
+		s.SetzeFenster(image.Pt(1200, 400))
+		s.SetzeWerkzeug(WerkzeugZuschneiden)
+		zieh(s, fv(s, float64(fall.ab), 0), fv(s, 1000, 200))
+		if z := d.Zuschnitt(); z.Min.X != fall.ab {
+			t.Fatalf("Zuschnitt %v, Soll ab x = %d", z, fall.ab)
+		}
+		var svg bytes.Buffer
+		if err := fileformat.ExportiereSVG(&svg, d); err != nil {
+			t.Fatal(err)
+		}
+		if im := bytes.Contains(svg.Bytes(), []byte("hunter2")); im != fall.imSVG || s.VerborgeneObjekte() != fall.verborgen {
+			t.Errorf("Zuschnitt ab %d: im SVG %v (Soll %v), verborgen %d (Soll %d)", fall.ab, im, fall.imSVG,
+				s.VerborgeneObjekte(), fall.verborgen)
+		}
 	}
 }
 
