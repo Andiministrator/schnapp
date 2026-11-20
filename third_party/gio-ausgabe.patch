@@ -48,7 +48,7 @@ index 4db5b0b..e3b37fc 100644
  
  const struct wl_seat_listener gio_seat_listener = {
 diff --git a/app/os_wayland.go b/app/os_wayland.go
-index 3c893a7..1d1e781 100644
+index 3c893a7..4015fc6 100644
 --- a/app/os_wayland.go
 +++ b/app/os_wayland.go
 @@ -10,11 +10,14 @@ import (
@@ -519,7 +519,7 @@ index 3c893a7..1d1e781 100644
  	minX, maxX := min(top.X, bottom.X)/scale, max(top.X, bottom.X)/scale
  	minY, maxY := min(top.Y, bottom.Y)/scale, max(top.Y, bottom.Y)/scale
  	x, y := math.Floor(float64(minX)), math.Floor(float64(minY))
-@@ -1795,10 +1992,50 @@ func gio_onDataSourceSend(data unsafe.Pointer, source *C.struct_wl_data_source,
+@@ -1795,10 +1992,55 @@ func gio_onDataSourceSend(data unsafe.Pointer, source *C.struct_wl_data_source,
  	content := s.content
  	go func() {
  		defer syscall.Close(int(fd))
@@ -538,8 +538,13 @@ index 3c893a7..1d1e781 100644
 +// writeAllFD writes all of content to fd (Schnapp patch, F-176). A single write
 +// ends after the pipe buffer (64 KiB) on a non-blocking pipe. It retries EINTR,
 +// waits with poll on EAGAIN and gives up after stall without progress, and
-+// returns any other error (EPIPE when the reader closed its end).
++// returns any other error (EPIPE when the reader closed its end). The receiver
++// usually hands over a blocking pipe; fd is switched to non-blocking first, or
++// a reader that never reads would hold the write forever (Sprint 6 critic B-1).
 +func writeAllFD(fd int, content []byte, stall time.Duration) error {
++	if err := syscall.SetNonblock(fd, true); err != nil {
++		return err
++	}
 +	for len(content) > 0 {
 +		n, err := syscall.Write(fd, content)
 +		if n > 0 {
@@ -571,7 +576,7 @@ index 3c893a7..1d1e781 100644
  //export gio_onDataSourceCancelled
  func gio_onDataSourceCancelled(data unsafe.Pointer, source *C.struct_wl_data_source) {
  	s := callbackLoad(data).(*wlSeat)
-@@ -1863,8 +2100,8 @@ func (w *window) flushScroll() {
+@@ -1863,8 +2105,8 @@ func (w *window) flushScroll() {
  func (w *window) onPointerMotion(x, y C.wl_fixed_t, t C.uint32_t) {
  	w.flushScroll()
  	w.lastPos = f32.Point{
@@ -582,7 +587,7 @@ index 3c893a7..1d1e781 100644
  	}
  	w.ProcessEvent(pointer.Event{
  		Kind:      pointer.Move,
-@@ -1941,7 +2178,12 @@ func (w *window) updateOutputs() {
+@@ -1941,7 +2183,12 @@ func (w *window) updateOutputs() {
  	}
  	if found && scale != w.scale {
  		w.scale = scale
@@ -596,7 +601,7 @@ index 3c893a7..1d1e781 100644
  		w.draw(true)
  	}
  	if found {
-@@ -1950,10 +2192,42 @@ func (w *window) updateOutputs() {
+@@ -1950,10 +2197,42 @@ func (w *window) updateOutputs() {
  }
  
  func (w *window) getConfig() (image.Point, unit.Metric) {
@@ -642,7 +647,7 @@ index 3c893a7..1d1e781 100644
  	}
  }
  
-@@ -1966,6 +2240,9 @@ func (w *window) draw(sync bool) {
+@@ -1966,6 +2245,9 @@ func (w *window) draw(sync bool) {
  	if cfg == (unit.Metric{}) {
  		return
  	}
@@ -654,10 +659,10 @@ index 3c893a7..1d1e781 100644
  		w.ProcessEvent(ConfigEvent{Config: w.config})
 diff --git a/app/os_wayland_test.go b/app/os_wayland_test.go
 new file mode 100644
-index 0000000..a1c4cc3
+index 0000000..b856c71
 --- /dev/null
 +++ b/app/os_wayland_test.go
-@@ -0,0 +1,104 @@
+@@ -0,0 +1,123 @@
 +// SPDX-License-Identifier: Unlicense OR MIT
 +
 +//go:build ((linux && !android) || freebsd) && !nowayland
@@ -690,6 +695,25 @@ index 0000000..a1c4cc3
 +	for i := range data {
 +		data[i] = byte(i * 7)
 +	}
++
++	t.Run("blocking pipe without reader gives up", func(t *testing.T) {
++		var p [2]int
++		if err := syscall.Pipe2(p[:], syscall.O_CLOEXEC); err != nil { // blocking, as most receivers create it
++			t.Fatal(err)
++		}
++		defer syscall.Close(p[0])
++		defer syscall.Close(p[1])
++		done := make(chan error, 1)
++		go func() { done <- writeAllFD(p[1], data, 200*time.Millisecond) }()
++		select {
++		case err := <-done:
++			if !errors.Is(err, errWriteStalled) {
++				t.Errorf("err = %v, want errWriteStalled", err)
++			}
++		case <-time.After(5 * time.Second):
++			t.Fatal("writeAllFD still blocked after 5 s")
++		}
++	})
 +
 +	t.Run("complete", func(t *testing.T) {
 +		r, w := pipe(t)

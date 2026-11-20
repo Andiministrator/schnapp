@@ -2006,8 +2006,13 @@ var errWriteStalled = errors.New("app: clipboard reader stalled")
 // writeAllFD writes all of content to fd (Schnapp patch, F-176). A single write
 // ends after the pipe buffer (64 KiB) on a non-blocking pipe. It retries EINTR,
 // waits with poll on EAGAIN and gives up after stall without progress, and
-// returns any other error (EPIPE when the reader closed its end).
+// returns any other error (EPIPE when the reader closed its end). The receiver
+// usually hands over a blocking pipe; fd is switched to non-blocking first, or
+// a reader that never reads would hold the write forever (Sprint 6 critic B-1).
 func writeAllFD(fd int, content []byte, stall time.Duration) error {
+	if err := syscall.SetNonblock(fd, true); err != nil {
+		return err
+	}
 	for len(content) > 0 {
 		n, err := syscall.Write(fd, content)
 		if n > 0 {

@@ -31,6 +31,25 @@ func TestWriteAllFD(t *testing.T) {
 		data[i] = byte(i * 7)
 	}
 
+	t.Run("blocking pipe without reader gives up", func(t *testing.T) {
+		var p [2]int
+		if err := syscall.Pipe2(p[:], syscall.O_CLOEXEC); err != nil { // blocking, as most receivers create it
+			t.Fatal(err)
+		}
+		defer syscall.Close(p[0])
+		defer syscall.Close(p[1])
+		done := make(chan error, 1)
+		go func() { done <- writeAllFD(p[1], data, 200*time.Millisecond) }()
+		select {
+		case err := <-done:
+			if !errors.Is(err, errWriteStalled) {
+				t.Errorf("err = %v, want errWriteStalled", err)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("writeAllFD still blocked after 5 s")
+		}
+	})
+
 	t.Run("complete", func(t *testing.T) {
 		r, w := pipe(t)
 		defer r.Close()
