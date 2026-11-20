@@ -81,3 +81,30 @@ Bedienung vor Funktionsfülle).
 - **Später** (eigene Karten): Ellipse, Linie, Freihand, Textmarker, Sprechblasen (Rest von A-20/A-21); Wahl von
   Strichstärke, Schriftgrad, Füllung und „Text ohne Schild“; Schnellstile (A-22); Einfügemarke in der Zeile
   (Pfeiltasten, Auswahl im Text), Einfügen aus der Zwischenablage; Umnummerieren; Open Sans (F-108).
+
+## Nachtrag 1 (20.11.2026): Nacharbeit nach dem Kritiker-Lauf (F-150, F-151, F-153, F-154)
+
+- **Nur im Bild anlegen (F-150):** Ein Zeichenwerkzeug beginnt ein Objekt nur, wenn der Druckpunkt im sichtbaren Bild
+  liegt (Ansicht nach Zuschnitt und Stauchen, Bildkante eingeschlossen). Im grauen Rand passiert nichts: kein Objekt,
+  kein Verlaufsschritt, keine Änderung, bei Text kein unsichtbares Textfeld. Beim Ziehen über den Rand hinaus wird der
+  Endpunkt auf das Bild begrenzt (Pfeil-Spitze, Kasten-Ecke, Nummer; auch nach dem Einrasten mit Umschalt). Die
+  Griffe des ausgewählten Objekts gehen weiter vor und bleiben im Rand greifbar (Griff vor Neuanlage, Punkt 1).
+- **Meldungen vor Hinweis (F-151):** Eine frische Meldung der Statusleiste (Speichern, „Keine Änderungen“, Fehler,
+  Grenze erreicht) hat Vorrang vor dem Werkzeughinweis, bis das Dokument sich ändert (anderer Verlaufsstand) oder das
+  Werkzeug wechselt; danach zeigt die Leiste wieder den Hinweis. Ein **Fehler** überdeckt der Werkzeugwechsel nicht, er
+  bleibt bis zur nächsten Änderung oder bis eine neue Meldung (etwa ein gelungenes Speichern) ihn ablöst. Die
+  Entscheidung ist die reine Funktion `canvas.StatusZeile`.
+- **Tab während der Texteingabe (F-153):** Tab wird abgefangen und hat **keine Wirkung** (kein Leerzeichen, kein
+  Tabulator im Text, kein Fokuswechsel) — in der ersten Fassung ist ein Zeichen, das nur Wirkung auf den Fokus hat,
+  mehr Schaden als Nutzen. Ohne Texteingabe bleibt Tab die Fokusfahrt der Leiste. **Enter** löst ohne Texteingabe
+  einen per Tastatur fokussierten Knopf aus (statt von der Leinwand verbraucht zu werden).
+- **Grenzen sichtbar (F-154, Punkt 1):** Ist `document.MaxObjekte` erreicht oder die nächste Nummer größer als
+  `document.MaxNummer`, legt das Werkzeug nichts an und die Statusleiste sagt es (rote Meldung); der Nummer-Hinweis
+  verspricht dann keine Nummer mehr. Ein Klick auf einen vorhandenen Text bearbeitet ihn auch bei vollem Dokument.
+- **Mittlere Taste im Text (F-154, Punkt 2):** Sie verschiebt nur die Ansicht, die Texteingabe läuft weiter (Punkt 1
+  dieser ADR galt schon, nur die Umsetzung bestätigte den Text).
+- **Verwerfen-Marke (F-154, Punkt 3):** Jede neue Bearbeitung nach einem gescheiterten Speichern (Zeichnen,
+  Verschieben, Löschen, Umfärben, Text bestätigen) hebt die Marke auf, auch wenn Rückgängig danach denselben Stand
+  wieder herstellt; Rückgängig und Wiederholen allein heben sie nicht auf.
+- **Offen (F-154, Punkt 4):** Die Farbwahl färbt das ausgewählte, eben gezeichnete Objekt um (Punkt 5 dieser ADR); ob
+  das so bleibt, entscheidet Andi — unverändert.

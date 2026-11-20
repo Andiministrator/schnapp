@@ -125,7 +125,10 @@ func (s *Sitzung) SetzeFarbe(c color.NRGBA) bool {
 	if neu == o {
 		return false
 	}
-	return s.D.Ersetzen(neu) == nil
+	vor := s.D.Stand()
+	ok = s.D.Ersetzen(neu) == nil
+	s.merkeAenderung(vor)
+	return ok
 }
 
 // NaechsteFarbe schaltet reihum zur nächsten Beschriftungsfarbe (Knopf „Farbe“).
@@ -146,6 +149,20 @@ func (s *Sitzung) NaechsteFarbe() bool {
 // Schwelle, Nummer und Text sofort.
 func (s *Sitzung) beginneNeu(q document.Punkt) {
 	s.neuArt, s.neuID = s.Werkzeug, 0
+	// Klick auf einen vorhandenen Text bearbeitet ihn auch bei vollem Dokument (kein neues Objekt nötig).
+	if s.Werkzeug == WerkzeugText {
+		if id, ok := Treffer(s.D.Objekte(), q, s.toleranz()); ok {
+			if o, _ := s.D.Objekt(id); isText(o) {
+				s.Auswahl = id
+				s.TextBearbeiten()
+				return
+			}
+		}
+	}
+	if a := s.Voll(); a != AblehnungKeine {
+		s.abgelehnt = a // sichtbare Meldung statt stillem Scheitern (F-154)
+		return
+	}
 	switch s.Werkzeug {
 	case WerkzeugPfeil, WerkzeugKasten:
 		s.zug = zugNeu
@@ -158,13 +175,6 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 		n.ID = id
 		s.zug, s.neuID, s.startObj = zugNeu, id, n
 	case WerkzeugText:
-		if id, ok := Treffer(s.D.Objekte(), q, s.toleranz()); ok {
-			if o, _ := s.D.Objekt(id); isText(o) {
-				s.Auswahl = id
-				s.TextBearbeiten()
-				return
-			}
-		}
 		t := document.Text{Ort: q, Schriftgrad: s.Stil.Schriftgrad, Farbe: Weiss, Hintergrund: s.Stil.Farbe}
 		id, err := s.D.BeginneNeuenZug(t)
 		if err != nil {
@@ -176,21 +186,49 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 
 func isText(o document.Objekt) bool { _, ok := o.(document.Text); return ok }
 
-// zieheNeu setzt das neue Objekt auf den Fensterpunkt p.
+// Ablehnung nennt den Grund, aus dem ein Zeichenwerkzeug nichts anlegt (F-154).
+type Ablehnung int
+
+const (
+	AblehnungKeine   Ablehnung = iota
+	AblehnungObjekte           // das Dokument hat document.MaxObjekte Objekte
+	AblehnungNummer            // die nächste Nummer wäre größer als document.MaxNummer
+)
+
+// Voll meldet, warum das aktive Zeichenwerkzeug jetzt kein neues Objekt anlegen kann (AblehnungKeine, wenn es geht).
+// Die Statusleiste verspricht damit keine Nummer, die nicht kommt.
+func (s *Sitzung) Voll() Ablehnung {
+	switch {
+	case s.Werkzeug == WerkzeugAuswahl:
+		return AblehnungKeine
+	case len(s.D.Objekte()) >= document.MaxObjekte:
+		return AblehnungObjekte
+	case s.Werkzeug == WerkzeugNummer && s.D.NaechsteNummer() > document.MaxNummer:
+		return AblehnungNummer
+	}
+	return AblehnungKeine
+}
+
+// Abgelehnt liefert den Grund, aus dem der letzte Druck kein Objekt angelegt hat (AblehnungKeine sonst). Die
+// Oberfläche zeigt dazu eine Meldung.
+func (s *Sitzung) Abgelehnt() Ablehnung { return s.abgelehnt }
+
+// zieheNeu setzt das neue Objekt auf den Fensterpunkt p. Der Endpunkt bleibt im sichtbaren Bild (F-150).
 func (s *Sitzung) zieheNeu(p document.Punkt) {
-	a, b := s.original(s.start), s.original(p)
+	a := s.original(s.start)
+	b := s.original(s.Abb.ZuFenster(s.klemmeAnsicht(s.Abb.ZuAnsicht(p))))
 	var o document.Objekt
 	switch s.neuArt {
 	case WerkzeugPfeil:
 		if s.Umschalt {
-			b = Rasten45(a, b)
+			b = s.klemmeOriginal(Rasten45(a, b))
 		}
 		pf := document.GeraderPfeil(a, b, s.Stil.strich())
 		pf.ID = s.neuID
 		o = pf
 	case WerkzeugKasten:
 		if s.Umschalt {
-			b = Quadrat(a, b)
+			b = s.klemmeOriginal(Quadrat(a, b))
 		}
 		o = document.Kasten{ID: s.neuID, Bereich: document.R(a, b), Strich: s.Stil.strich(), Eckradius: s.Stil.Eckradius}
 	case WerkzeugNummer:
@@ -306,6 +344,8 @@ func (s *Sitzung) TextBestaetigen() bool {
 		return false
 	}
 	s.zug = keinZug
+	vor := s.D.Stand()
+	defer s.merkeAenderung(vor)
 	if strings.TrimSpace(t.Inhalt) != "" {
 		if s.D.BeendeZug() == nil {
 			s.Auswahl = s.textID

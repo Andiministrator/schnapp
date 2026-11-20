@@ -231,8 +231,8 @@ msgstr "Die Datei hat zu viele oder zu große Beschriftungen, um sie zu öffnen.
 msgid "Option --ignore-limit works only together with a file."
 msgstr "Die Option --ignore-limit gilt nur zusammen mit einer Datei."
 
-msgid "Open FILE even if it is too costly to render (with --ignore-limit)"
-msgstr "FILE auch öffnen, wenn es zu aufwendig zu rendern ist (mit --ignore-limit)"
+msgid "Open FILE even if it is too costly to render"
+msgstr "DATEI auch öffnen, wenn sie zu aufwendig zu rendern ist"
 
 msgid "Not enough disk space."
 msgstr "Nicht genug Speicherplatz."
@@ -285,6 +285,12 @@ msgstr "Klick setzt einen Text, Klick auf einen Text bearbeitet ihn."
 
 msgid "Click to place step number %d."
 msgstr "Klick setzt die Schritt-Nummer %d."
+
+msgid "The limit of %d annotations is reached. Delete some to add more."
+msgstr "Die Grenze von %d Beschriftungen ist erreicht. Zum Hinzufügen erst einige löschen."
+
+msgid "Step numbers end at %d; no further number can be placed."
+msgstr "Die Schritt-Nummern enden bei %d; eine weitere Nummer lässt sich nicht setzen."
 
 msgid "The editor could not be opened or saved: %v"
 msgstr "Der Editor ließ sich nicht öffnen oder nicht speichern: %v"

@@ -136,6 +136,60 @@ func TestSchliessenMitScheiterndemSpeichern(t *testing.T) {
 	}
 }
 
+// F-154 (3): Jede neue Bearbeitung nach dem gescheiterten Speichern hebt die Verwerfen-Marke auf — auch wenn Rückgängig
+// danach denselben Stand wieder herstellt. Das nächste Schließen versucht das Speichern erneut.
+func TestVerwerfenMarkeNachBearbeitungUndRueckgaengig(t *testing.T) {
+	bearbeitungen := map[string]func(s *Sitzung, k int){
+		"Nummer anlegen": func(s *Sitzung, k int) {
+			s.SetzeWerkzeug(WerkzeugNummer)
+			s.Druecken(f(150, 80), TastePrimaer)
+			s.Loslassen(f(150, 80))
+		},
+		"Verschieben": func(s *Sitzung, k int) { verschiebe(t, s, 7) },
+		"Löschen":     func(s *Sitzung, k int) { s.Auswahl = k; s.Loeschen() },
+		"Umfärben": func(s *Sitzung, k int) {
+			s.Auswahl = k
+			s.NaechsteFarbe()
+		},
+		"Text": func(s *Sitzung, k int) {
+			s.SetzeWerkzeug(WerkzeugText)
+			s.Druecken(f(100, 10), TastePrimaer)
+			s.Loslassen(f(100, 10))
+			s.Tippe("x")
+			s.Enter(false)
+		},
+	}
+	for name, bearbeite := range bearbeitungen {
+		s, k, _ := sitzung(t)
+		verschiebe(t, s, 10)
+		aufrufe := 0
+		fehl := func() (bool, error) { aufrufe++; return false, errors.New("voll") }
+		if z, _ := s.Schliessen(fehl); z != SchlussFehler {
+			t.Fatalf("%s: Schluss %v", name, z)
+		}
+		bearbeite(s, k)
+		if !s.Rueckgaengig() {
+			t.Fatalf("%s: Rückgängig", name)
+		}
+		if !s.Ungesichert() {
+			t.Errorf("%s: Marke überlebt Bearbeitung + Rückgängig (Ungesichert false)", name)
+		}
+		if z, _ := s.Schliessen(fehl); z != SchlussFehler || aufrufe != 2 {
+			t.Errorf("%s: Schluss %v, %d Aufrufe (Soll SchlussFehler, 2)", name, z, aufrufe)
+		}
+	}
+	// Ohne Bearbeitung bleibt es dabei: Rückgängig und Wiederholen allein heben die Marke nicht auf.
+	s, _, _ := sitzung(t)
+	verschiebe(t, s, 10)
+	fehl := func() (bool, error) { return false, errors.New("voll") }
+	s.Schliessen(fehl)
+	s.Rueckgaengig()
+	s.Wiederholen()
+	if s.Ungesichert() {
+		t.Error("Rückgängig + Wiederholen ohne Bearbeitung hebt die Marke auf")
+	}
+}
+
 // F-107/F-116: Ein Hinweis beim Speichern (Ausweichen) hält das Fenster einmal offen; gespeichert ist trotzdem.
 func TestSchliessenMitHinweis(t *testing.T) {
 	s, _, _ := sitzung(t)

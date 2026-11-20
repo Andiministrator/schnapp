@@ -72,6 +72,8 @@ type Sitzung struct {
 	neuID      int      // Kennung des neuen Objekts im Zug, 0 = noch nicht angelegt (unter der Ziehschwelle)
 	textID     int      // Kennung des Texts in der Eingabe
 	textNeu    bool     // die Eingabe gilt einem neuen Text (Abbrechen entfernt ihn)
+	pan        bool     // mittlere Taste verschiebt die Ansicht, während die Texteingabe weiterläuft (F-154)
+	abgelehnt  Ablehnung
 }
 
 // NeueSitzung beginnt mit eingepasster Ansicht, ohne Auswahl, mit dem Werkzeug Auswählen und dem Standardstil.
@@ -131,6 +133,15 @@ func (s *Sitzung) toleranz() float64 { return Toleranz / s.Abb.Zoom }
 // (ADR-0021), sonst an einem Objekt (wählt es aus) oder auf leerer Fläche bzw. mit der mittleren Taste an der Ansicht.
 // Eine laufende Texteingabe wird vorher bestätigt. Während eines Zugs ist ein weiterer Druck wirkungslos.
 func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
+	s.abgelehnt = AblehnungKeine
+	if s.pan {
+		return
+	}
+	if t == TasteMitte && s.zug == zugText {
+		// Die mittlere Taste verschiebt nur die Ansicht, die Texteingabe läuft weiter (ADR-0021 Punkt 1, F-154).
+		s.pan, s.start, s.bewegt, s.startAbb = true, p, false, s.Abb
+		return
+	}
 	s.TextBestaetigen()
 	if s.zug != keinZug || s.D.ZugLaeuft() {
 		return
@@ -149,7 +160,11 @@ func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
 		}
 	}
 	if s.Werkzeug != WerkzeugAuswahl {
-		s.beginneNeu(q)
+		// Ein neues Objekt beginnt nur im sichtbaren Bild (F-150); daneben passiert nichts. Griffe des ausgewählten
+		// Objekts sind oben schon vorgegangen und bleiben auch im Rand greifbar.
+		if s.imBild(p) {
+			s.beginneNeu(q)
+		}
 		return
 	}
 	if id, ok := Treffer(o, q, s.toleranz()); ok {
@@ -166,6 +181,13 @@ func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
 
 // Ziehen führt den Zug zum Fensterpunkt p.
 func (s *Sitzung) Ziehen(p document.Punkt) {
+	if s.pan {
+		if s.bewegt || p.Minus(s.start).Laenge() >= Ziehschwelle {
+			s.bewegt, s.eingepasst = true, false
+			s.Abb = s.startAbb.Verschoben(p.Minus(s.start))
+		}
+		return
+	}
 	if s.zug == keinZug || s.zug == zugText {
 		return
 	}
@@ -190,10 +212,16 @@ func (s *Sitzung) Ziehen(p document.Punkt) {
 // Loslassen beendet den Zug; ein Objektzug landet als eine Änderung im Verlauf (ohne Bewegung als keine), ein neues
 // Objekt als eine Änderung, wenn es groß genug ist. Eine Texteingabe läuft weiter.
 func (s *Sitzung) Loslassen(p document.Punkt) {
+	if s.pan {
+		s.Ziehen(p)
+		s.pan = false
+		return
+	}
 	if s.zug == zugText {
 		return
 	}
 	s.Ziehen(p)
+	vor := s.D.Stand()
 	switch s.zug {
 	case zugObjekt, zugGriff:
 		if s.bewegt {
@@ -204,12 +232,48 @@ func (s *Sitzung) Loslassen(p document.Punkt) {
 	case zugNeu:
 		s.beendeNeu()
 	}
+	s.merkeAenderung(vor)
 	s.zug = keinZug
+}
+
+// merkeAenderung hebt die Verwerfen-Marke auf, wenn sich der Stand seit vor geändert hat: Jede neue Bearbeitung nach
+// einem gescheiterten Speichern verlangt einen neuen Speicherversuch, auch wenn Rückgängig danach denselben Stand
+// wieder herstellt (F-154).
+func (s *Sitzung) merkeAenderung(vor uint64) {
+	if s.D.Stand() != vor {
+		s.verwerfen = false
+	}
+}
+
+// imBild meldet, ob der Fensterpunkt p im sichtbaren Bild liegt (Ansicht nach Zuschnitt und Stauchen, Rand
+// eingeschlossen).
+func (s *Sitzung) imBild(p document.Punkt) bool {
+	a, g := s.Abb.ZuAnsicht(p), s.D.Groesse()
+	return a.X >= 0 && a.Y >= 0 && a.X <= float64(g.X) && a.Y <= float64(g.Y)
+}
+
+// klemmeAnsicht begrenzt einen Ansichtspunkt auf das sichtbare Bild.
+func (s *Sitzung) klemmeAnsicht(a document.Punkt) document.Punkt {
+	g := s.D.Groesse()
+	return document.Pt(math.Max(0, math.Min(float64(g.X), a.X)), math.Max(0, math.Min(float64(g.Y), a.Y)))
+}
+
+// klemmeOriginal begrenzt einen Originalpunkt auf das sichtbare Bild; liegt er schon darin, bleibt er unverändert.
+func (s *Sitzung) klemmeOriginal(q document.Punkt) document.Punkt {
+	a := s.D.ZuAnsicht(q)
+	if k := s.klemmeAnsicht(a); k != a {
+		return s.D.ZuOriginal(k)
+	}
+	return q
 }
 
 // Abbrechen stellt den Stand vor dem Zug wieder her (Esc während des Ziehens, Zeiger-Cancel). Eine Texteingabe bleibt
 // (sie verwirft nur TextAbbrechen).
 func (s *Sitzung) Abbrechen() {
+	if s.pan {
+		s.Abb, s.pan = s.startAbb, false
+		return
+	}
 	switch s.zug {
 	case zugText:
 		return
@@ -226,7 +290,7 @@ func (s *Sitzung) Abbrechen() {
 }
 
 // Zieht meldet einen laufenden Zug mit der Maus (nicht die Texteingabe, dafür TextLaeuft).
-func (s *Sitzung) Zieht() bool { return s.zug != keinZug && s.zug != zugText }
+func (s *Sitzung) Zieht() bool { return s.pan || (s.zug != keinZug && s.zug != zugText) }
 
 // Rueckgaengig nimmt die letzte Änderung zurück (nicht während eines Zugs, F-18). Verschwindet dabei das
 // ausgewählte Objekt, endet die Auswahl.
@@ -247,9 +311,14 @@ func (s *Sitzung) verlauf(f func() error) bool {
 
 // Loeschen entfernt das ausgewählte Objekt.
 func (s *Sitzung) Loeschen() bool {
-	if s.zug != keinZug || s.Auswahl == 0 || s.D.Entfernen(s.Auswahl) != nil {
+	if s.zug != keinZug || s.Auswahl == 0 {
 		return false
 	}
+	vor := s.D.Stand()
+	if s.D.Entfernen(s.Auswahl) != nil {
+		return false
+	}
+	s.merkeAenderung(vor)
 	s.Auswahl = 0
 	return true
 }

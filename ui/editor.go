@@ -117,8 +117,7 @@ type editor struct {
 	titel     string
 	speichern Speichern
 	bildOp    paint.ImageOp
-	meldung   string // Zeile in der Statusleiste (Speichern gelungen oder gescheitert)
-	fehler    bool
+	meldung   canvas.Meldung // Zeile in der Statusleiste (Speichern, Hinweis, Fehler); Vorrang regelt canvas.StatusZeile (F-151)
 	titelSet  string
 
 	signal     atomic.Bool // ein Signal kam an (Signal-Goroutine setzt, Ereignisschleife liest)
@@ -226,7 +225,7 @@ func (e *editor) schliessen() bool {
 	case canvas.SchlussZu:
 		return true
 	case canvas.SchlussFehler:
-		e.meldung, e.fehler = fmt.Sprintf(i18n.T("Could not save: %v. Close again to discard the changes."), err), true
+		e.melde(fmt.Sprintf(i18n.T("Could not save: %v. Close again to discard the changes."), err), true)
 	}
 	e.w.Invalidate() // Meldung zeigen
 	return false
@@ -263,12 +262,12 @@ func (e *editor) speichernJetzt() {
 	}
 	if !e.s.Geaendert() {
 		// Nichts zu schreiben (F-109): sonst würde die Datei neu geschrieben und als bearbeitet markiert.
-		e.meldung, e.fehler = i18n.T("No changes to save."), false
+		e.melde(i18n.T("No changes to save."), false)
 		return
 	}
 	g, err := e.speichern(e.s.D)
 	if err != nil {
-		e.meldung, e.fehler = fmt.Sprintf(i18n.T("Could not save: %v"), err), true
+		e.melde(fmt.Sprintf(i18n.T("Could not save: %v"), err), true)
 		return
 	}
 	e.s.Gespeichert()
@@ -280,10 +279,37 @@ func (e *editor) gespeichertMelden(g Gespeichert) {
 	if g.Datei != "" {
 		e.titel = g.Datei
 	}
-	e.meldung, e.fehler = i18n.T("Saved to the library"), false
+	e.melde(i18n.T("Saved to the library"), false)
 	if g.Hinweis != "" {
-		e.meldung, e.fehler = g.Hinweis, g.Warnung
+		e.melde(g.Hinweis, g.Warnung)
 	}
+}
+
+// melde zeigt text in der Statusleiste, bis das Dokument sich ändert oder (außer bei Fehlern) das Werkzeug wechselt
+// (F-151). Ein gelungenes Speichern löst einen früheren Fehler ab.
+func (e *editor) melde(text string, fehler bool) {
+	e.meldung = canvas.NeueMeldung(text, fehler, e.s.D.Stand(), e.s.Werkzeug)
+}
+
+// meldeAbgelehnt zeigt, warum ein Druck mit einem Zeichenwerkzeug nichts angelegt hat (F-154).
+func (e *editor) meldeAbgelehnt() {
+	switch e.s.Abgelehnt() {
+	case canvas.AblehnungObjekte:
+		e.melde(e.grenzText(canvas.AblehnungObjekte), true)
+	case canvas.AblehnungNummer:
+		e.melde(e.grenzText(canvas.AblehnungNummer), true)
+	}
+}
+
+// grenzText ist die Meldung zu einer Grenze des Dokuments.
+func (e *editor) grenzText(a canvas.Ablehnung) string {
+	switch a {
+	case canvas.AblehnungObjekte:
+		return fmt.Sprintf(i18n.T("The limit of %d annotations is reached. Delete some to add more."), document.MaxObjekte)
+	case canvas.AblehnungNummer:
+		return fmt.Sprintf(i18n.T("Step numbers end at %d; no further number can be placed."), document.MaxNummer)
+	}
+	return ""
 }
 
 func (e *editor) frame(gtx layout.Context) {
@@ -395,6 +421,7 @@ func (e *editor) zeiger(gtx layout.Context) {
 					e.s.Druecken(p, canvas.TastePrimaer)
 				}
 			}
+			e.meldeAbgelehnt() // Grenze erreicht: sichtbar sagen, warum nichts entstand (F-154)
 			// Tastaturfokus auf die Leinwand: Tastenkürzel und getippter Text (key.EditEvent) kommen hier an.
 			gtx.Execute(key.FocusCmd{Tag: e})
 		case pointer.Drag:
@@ -545,7 +572,9 @@ func (e *editor) zeichneAuswahl(gtx layout.Context) {
 
 func (e *editor) tasten(gtx layout.Context) {
 	for {
-		ev, ok := gtx.Event(
+		// Während der Texteingabe fängt der Editor Tab ab (ohne Wirkung, ADR-0021 Nachtrag 1): Sonst wanderte der
+		// Fokus auf einen Knopf, und weitere Zeichen gingen still verloren (F-153). Sonst bleibt Tab die Fokusfahrt.
+		filter := []event.Filter{
 			key.Filter{Name: key.NameEscape},
 			key.Filter{Name: key.NameDeleteForward},
 			key.Filter{Name: key.NameDeleteBackward},
@@ -561,7 +590,11 @@ func (e *editor) tasten(gtx layout.Context) {
 			key.Filter{Name: key.NameReturn, Optional: key.ModShift},
 			key.Filter{Name: key.NameEnter, Optional: key.ModShift},
 			key.FocusFilter{Target: e},
-		)
+		}
+		if e.s.TextLaeuft() {
+			filter = append(filter, key.Filter{Name: key.NameTab, Optional: key.ModShift})
+		}
+		ev, ok := gtx.Event(filter...)
 		if !ok {
 			return
 		}
@@ -578,8 +611,8 @@ func (e *editor) tasten(gtx layout.Context) {
 		if e.s.TextLaeuft() {
 			// Während der Texteingabe sind Buchstaben Text (kommt als EditEvent), keine Kürzel.
 			switch k.Name {
-			case "V", "A", "R", "T", "N", key.NameDeleteForward:
-				continue
+			case "V", "A", "R", "T", "N", key.NameDeleteForward, key.NameTab:
+				continue // Tab: ohne Wirkung (F-153)
 			case key.NameDeleteBackward:
 				e.s.TextZurueck()
 				continue
@@ -589,6 +622,14 @@ func (e *editor) tasten(gtx layout.Context) {
 		case key.NameEscape:
 			e.s.Esc() // in Stufen: Text verwerfen, Ziehen abbrechen, abwählen, zurück zu Auswählen
 		case key.NameReturn, key.NameEnter:
+			// Ohne Texteingabe löst Enter einen per Tastatur fokussierten Knopf aus, statt von der Leinwand
+			// verbraucht zu werden (F-153).
+			if !e.s.TextLaeuft() {
+				if c := e.fokussierterKnopf(gtx); c != nil {
+					c.Click()
+					continue
+				}
+			}
 			e.s.Enter(k.Modifiers.Contain(key.ModShift))
 		case "V":
 			e.s.SetzeWerkzeug(canvas.WerkzeugAuswahl)
@@ -621,6 +662,21 @@ func (e *editor) tasten(gtx layout.Context) {
 			e.w.Perform(system.ActionClose) // in der eigenen Schleife, wie im Overlay (F-77)
 		}
 	}
+}
+
+// fokussierterKnopf liefert den Knopf der Leiste, der gerade den Tastaturfokus hat (nil: keiner).
+func (e *editor) fokussierterKnopf(gtx layout.Context) *widget.Clickable {
+	k := &e.knoepfe
+	alle := []*widget.Clickable{&k.rueck, &k.wieder, &k.einpassen, &k.eins, &k.speichern, &k.farbe}
+	for _, w := range e.werkzeugKnoepfe() {
+		alle = append(alle, w.c)
+	}
+	for _, c := range alle {
+		if gtx.Focused(c) {
+			return c
+		}
+	}
+	return nil
 }
 
 func (e *editor) rueckgaengig() {
@@ -809,11 +865,14 @@ func (e *editor) zeichneStatus(gtx layout.Context, hoehe int) {
 	g := e.s.D.Groesse()
 	rechts := fmt.Sprintf("%d × %d · %d %%", g.X, g.Y, int(math.Round(e.s.Abb.Zoom*100)))
 	e.statusText(gtx, rechts, farbeNebentext, mx.Y-hoehe, false)
-	links, c := e.meldung, farbeGruenText
-	if e.fehler {
+	// Eine frische Meldung geht vor dem Bedienhinweis des Werkzeugs, danach zeigt die Leiste wieder den Hinweis (F-151).
+	links, fehler, meldung := canvas.StatusZeile(e.meldung, e.s.D.Stand(), e.s.Werkzeug, e.hinweis())
+	c := farbeNebentext
+	switch {
+	case fehler:
 		c = color.NRGBA{R: 0xE6, G: 0x78, B: 0x73, A: 0xFF} // rot-500
-	} else if h := e.hinweis(); h != "" {
-		links, c = h, farbeNebentext // Bedienhinweis des Werkzeugs; Fehler und Warnungen gehen vor
+	case meldung:
+		c = farbeGruenText
 	}
 	if links != "" {
 		e.statusText(gtx, links, c, mx.Y-hoehe, true)
@@ -833,6 +892,9 @@ func (e *editor) hinweis() string {
 	case canvas.WerkzeugText:
 		return i18n.T("Click to place text, or click a text to edit it.")
 	case canvas.WerkzeugNummer:
+		if a := e.s.Voll(); a != canvas.AblehnungKeine {
+			return e.grenzText(a) // keine Nummer versprechen, die nicht kommt (F-154)
+		}
 		return fmt.Sprintf(i18n.T("Click to place step number %d."), e.s.D.NaechsteNummer())
 	}
 	return ""
