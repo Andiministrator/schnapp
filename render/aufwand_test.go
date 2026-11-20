@@ -237,7 +237,7 @@ func TestKostenmodellLueckenF132(t *testing.T) {
 
 // alltagsDokument ist ein großes, aber alltagsnahes Dokument (F-131): zwei 4K-Monitore, 50 bildgroße Rahmen, 50
 // diagonale Pfeile über das ganze Bild, 100 Nummern, 200 Texte à 50 Zeichen mit Hintergrund.
-func alltagsDokument(t *testing.T) *document.Dokument {
+func alltagsDokument(t testing.TB) *document.Dokument {
 	t.Helper()
 	d := weissesDokument(t, 7680, 2160)
 	for i := 0; i < 50; i++ {
@@ -263,8 +263,8 @@ func alltagsDokument(t *testing.T) *document.Dokument {
 func TestAlltagsdokumentWeitUnterDemBudget(t *testing.T) {
 	d := alltagsDokument(t)
 	a := trockenlauf(d)
-	if f := Budget / a.summe(); f < 4.5 {
-		t.Errorf("Budget nur %.2f-mal so groß wie das Alltagsdokument (%.3g), Soll mindestens 4,5", f, a.summe())
+	if f := Budget / a.summe(); f < 3 {
+		t.Errorf("Budget nur %.2f-mal so groß wie das Alltagsdokument (%.3g), Soll mindestens 3", f, a.summe())
 	}
 	if f := GlyphBudget / a.glyph; f < 50 {
 		t.Errorf("GlyphBudget nur %.1f-mal so groß wie die Glyphen (%.3g), Soll mindestens 50", f, a.glyph)
@@ -299,6 +299,9 @@ func TestPraeparierteDokumenteUeberDemBudget(t *testing.T) {
 		"10000 Texte à 10000 W Grad 0,01": viele(10, 10, document.MaxObjekte,
 			document.Text{Ort: document.Pt(0, 0), Inhalt: w, Schriftgrad: 0.01, Farbe: rot}),
 		"2000 Kästen 2000×2000": viele(2000, 2000, 2000,
+			document.Kasten{Bereich: document.R(document.Pt(0, 0), document.Pt(2000, 2000)), Fuellung: rot, Strich: document.Strich{Farbe: blau, Breite: 4}}),
+		// Je Kasten zwei bildgroße Füllungen (Fläche, Rand) à 2000² × fuellGewicht = 2e8: 630 Kästen = 1,26e11 > Budget.
+		"630 Kästen 2000×2000 (knapp über Budget)": viele(2000, 2000, 630,
 			document.Kasten{Bereich: document.R(document.Pt(0, 0), document.Pt(2000, 2000)), Fuellung: rot, Strich: document.Strich{Farbe: blau, Breite: 4}}),
 	} {
 		if err := Pruefe(d); !errors.Is(err, ErrZuAufwendig) {

@@ -46,8 +46,8 @@ var ErrZuAufwendig = errors.New("render: Dokument zu aufwendig zu rastern")
 // Kostenmodell (F-125, F-131, F-132). Einheit ist die Rechenzeit, die das Rastern einer Glyphe je Schriftgrad² braucht,
 // rund 0,3 ns (Messung 19.11.2026, Entwicklungsrechner, ein Kern, Karte #71):
 //   - je Glyphe max(Schriftgrad², glyphGrund): Auch kleine Glyphen kosten rund 0,5 µs (Gesichtsaufruf, Maske);
-//   - je Füllung fuellGewicht × Fläche ihres aufs Bild beschnittenen Rechtecks: x/image/vector zeichnet auf NRGBA
-//     über den allgemeinen Weg mit rund 30 bis 36 ns je Pixel (schneller machen: F-130);
+//   - je Füllung fuellGewicht × Fläche ihres aufs Bild beschnittenen Rechtecks: rund 7 ns je Pixel mit einmischer
+//     (F-130, Messung 20.11.2026; vorher rund 30 bis 36 ns über den allgemeinen Weg von x/image/vector, Gewicht 100);
 //   - je Polygonecke punktGewicht (Geometrie, Ausrichten, LineTo; rund 30 ns) und je Kante kantenGewicht ×
 //     Zeilenschritte (kantenSchritte, kreisSchritte): Der Rasterizer läuft jede Kante zeilenweise ab, auch die Zeilen
 //     über dem Ausschnitt, und in jeder Zeile im Ausschnitt über ihre ganze waagerechte Spanne, auch außerhalb. Breite
@@ -59,32 +59,32 @@ var ErrZuAufwendig = errors.New("render: Dokument zu aufwendig zu rastern")
 // GlyphBudget eng gewählt (siehe unten).
 const (
 	glyphGrund    = 1700.0
-	fuellGewicht  = 100.0
+	fuellGewicht  = 25.0
 	kantenGewicht = 3.0
 	punktGewicht  = 100.0
 )
 
 // Budget, GlyphBudget und KantenBudget sind die Obergrenzen des Rechenaufwands je Dokument, die der Editor beim
-// Öffnen prüft (Pruefe): für die Summe, für die Glyphen und für Ecken und Kanten. Gemessen am 19.11.2026
-// (Entwicklungsrechner, ein Kern):
+// Öffnen prüft (Pruefe): für die Summe, für die Glyphen und für Ecken und Kanten. Gemessen am 20.11.2026 nach F-130
+// (Entwicklungsrechner, ein Kern; Benchmarks BenchmarkAufwand… in render_test.go, F-140):
 //   - Ein alltagsnahes, großes Dokument (50 bildgroße Rahmen, 50 diagonale Pfeile, 100 Nummern, 200 Texte auf
-//     7680×2160) kostet 1,62e11 Einheiten, fast alles Fläche, und rastert in 48 s. Budget ist knapp 5-mal so groß;
-//     Glyphen (1,7e7) und Kanten (1,5e7) liegen beim 1/580 bzw. 1/650 ihrer Grenze. Eine echte Bearbeitung wird
-//     beim Wiederöffnen also nicht abgelehnt — und beim Speichern ohnehin nie (Bild bricht nicht ab).
-//   - Ein Dokument knapp unter Budget (61 gefüllte, umrandete Kästen auf 8000×8000 plus 590 Glyphen „W“ Grad 4096,
-//     7,9e11) rastert in 4 min 49 s — die Größenordnung der Wartezeit, die eine präparierte Datei beim Speichern
-//     erzwingen kann (sichtbare Glyphen bis GlyphBudget kommen höchstens rund 9 s hinzu). GlyphBudget = 1e9: auf
-//     kleinem Bild rund 0,3 s, sichtbar im ungünstigsten gemessenen Grad rund 9 s; das Alltagsdokument liegt 58-fach
-//     darunter. Kanten allein knapp unter KantenBudget rastern in 1,5 bis 4,5 s.
+//     7680×2160) kostet 4,06e10 Einheiten, fast alles Fläche, und rastert in rund 11 s (vorher 48 s). Budget ist gut
+//     3-mal so groß; Glyphen (1,7e7) und Kanten (1,5e7) liegen beim 1/58 bzw. 1/650 ihrer Grenze. Eine echte
+//     Bearbeitung wird beim Wiederöffnen also nicht abgelehnt — und beim Speichern ohnehin nie (Bild bricht nicht
+//     ab; über dem Budget warnt der Editor, F-138). Auf 8000×8000 kostet ein bildgroßer Rahmen oder diagonaler Pfeil
+//     1,6e9, ein gefüllter, umrandeter Kasten 3,2e9: Bis Budget/3 passen 26 bzw. 13 davon.
+//   - Ein Dokument knapp unter Budget (39 gefüllte, umrandete Kästen auf 8000×8000, 1,25e11) rastert in rund 35 s —
+//     die Wartezeit, die eine präparierte Datei beim Speichern erzwingen kann (vorher bis knapp 5 min, F-135).
+//     Glyphen knapp unter GlyphBudget = 1e9, sichtbar auf 8000×8000, brauchen rund 5 s (ungünstigster gemessener Grad
+//     bis rund 9 s), Kanten knapp unter KantenBudget 1,5 bis 4,5 s; zusammen also höchstens rund 45 s.
 //     So werden die präparierten Fälle aus F-125 und F-132 (10000 große Glyphen oder Nummern, 10000 sehr breite
 //     Pfeile, 10000 Texte à 10000 winziger Glyphen, Hunderte bildgroßer Flächen) beim Öffnen abgelehnt.
 //
-// Kleiner lässt sich Budget nicht wählen, ohne alltagsnahe Dokumente abzulehnen: Bildgroße Flächen kosten heute rund
-// 0,6 s je Stück auf 7680×2160. Mit schnellerem Füllen (F-130) sinkt fuellGewicht, dann auch Budget.
-// Die verbleibende Wartezeit von bis zu rund 5 min ist eine bewusste Entscheidung (F-135, akzeptiert für Sprint 4):
-// lieber eine präparierte Datei langsam speichern als eine echte Bearbeitung ablehnen (F-131).
+// Kleiner lässt sich Budget nicht wählen, ohne den Abstand 3 zum Alltagsdokument aufzugeben: Für rund 30 s müsste es
+// auf rund 1e11 sinken, das Alltagsdokument läge dann nur 2,5-fach darunter. Lieber eine präparierte Datei etwas
+// länger speichern als eine echte Bearbeitung ablehnen (F-131).
 const (
-	Budget       = 8e11
+	Budget       = 1.25e11
 	GlyphBudget  = 1e9
 	KantenBudget = 1e10
 )
@@ -114,8 +114,8 @@ func trockenlauf(d *document.Dokument) aufwand {
 	return *z.auf
 }
 
-// Pruefe meldet ErrZuAufwendig, wenn das Rastern von d das Budget überschritte (F-125, F-132). Der Editor ruft es
-// beim Öffnen einer Datei auf, nicht beim Speichern.
+// Pruefe meldet ErrZuAufwendig, wenn das Rastern von d das Budget überschritte (F-125, F-132). Der Editor lehnt damit
+// beim Öffnen ab; nach dem Speichern warnt er damit nur (F-138), abgebrochen wird das Speichern nie.
 func Pruefe(d *document.Dokument) error {
 	a := trockenlauf(d)
 	switch {
@@ -132,7 +132,8 @@ func Pruefe(d *document.Dokument) error {
 // bildMitAufwand ist Bild und liefert zusätzlich den Aufwand (für Tests).
 func bildMitAufwand(d *document.Dokument) (*image.NRGBA, aufwand, error) {
 	b := d.Ansichtsbild()
-	z := zeichner{bild: b, rand: b.Bounds(), d: d, faces: map[faceSchluessel]font.Face{}, auf: &aufwand{}}
+	z := zeichner{bild: b, rand: b.Bounds(), d: d, faces: map[faceSchluessel]font.Face{}, auf: &aufwand{},
+		ras: &vector.Rasterizer{}}
 	defer z.schliessen()
 	for _, o := range d.Objekte() {
 		if err := z.objekt(o); err != nil {
@@ -149,6 +150,9 @@ type zeichner struct {
 	d     *document.Dokument
 	faces map[faceSchluessel]font.Face
 	auf   *aufwand
+	// ras wird für jede Füllung zurückgesetzt statt neu angelegt: Seine Puffer (8 Byte je Pixel des Ausschnitts) nicht
+	// je Füllung neu anzufordern, spart bei bildgroßen Flächen rund 5 % (F-130).
+	ras *vector.Rasterizer
 }
 
 func (z zeichner) trocken() bool { return z.bild == nil }
@@ -335,8 +339,8 @@ func (z zeichner) raster(polys [][]document.Punkt, farbe color.NRGBA) {
 		return
 	}
 	ox, oy := float64(ausschnitt.Min.X), float64(ausschnitt.Min.Y)
-	r := vector.NewRasterizer(ausschnitt.Dx(), ausschnitt.Dy())
-	r.DrawOp = draw.Over
+	r := z.ras
+	r.Reset(ausschnitt.Dx(), ausschnitt.Dy())
 	for _, p := range polys {
 		if len(p) < 3 {
 			continue
@@ -350,7 +354,79 @@ func (z zeichner) raster(polys [][]document.Punkt, farbe color.NRGBA) {
 		}
 		r.ClosePath()
 	}
-	r.Draw(z.bild, ausschnitt, image.NewUniform(farbe), image.Point{})
+	einmischen(r, z.bild, ausschnitt, farbe)
+}
+
+// einmischen zeichnet die Pfade von r einfarbig in den Ausschnitt von bild (draw.Over-Semantik). Paketvariable nur
+// als Nahtstelle für den Bitgleich-Test gegen den allgemeinen Weg von vector. draw.Src mit deckender Quelle: Der
+// Rasterizer reicht die Deckung je Pixel unverändert (16 Bit) an einmischer.Set weiter, ohne vorher das Ziel zu lesen.
+var einmischen = func(r *vector.Rasterizer, bild *image.NRGBA, ausschnitt image.Rectangle, farbe color.NRGBA) {
+	r.DrawOp = draw.Src
+	r.Draw(neuerEinmischer(bild, farbe), ausschnitt, deckend, image.Point{})
+}
+
+// deckend ist die Quelle für raster: volle Deckung, damit der Rasterizer mit draw.Src genau die Deckung liefert.
+var deckend = image.NewUniform(color.Opaque)
+
+// einmischer mischt eine einfarbige Quelle in ein NRGBA-Bild, Pixel für Pixel mit der Deckung, die der Rasterizer an
+// Set übergibt (F-130). x/image/vector zeichnet auf *image.NRGBA nur über den allgemeinen Weg: je Pixel At, zwei
+// Farbumrechnungen und Set über Schnittstellen, mit zwei Speicheranforderungen — rund 36 ns. einmischer rechnet
+// dieselbe Formel (rasterizeOpOver in vector, danach color.NRGBAModel) mit denselben uint32-Ausdrücken, also bitgleich
+// zu r.Draw(bild, …, image.NewUniform(farbe), …) mit draw.Over (Test TestFuellenBitgleich), aber ohne Umwege, und
+// überspringt Pixel ohne Deckung auf deckendem Grund. Der schnelle Weg von vector über *image.Alpha taugt nicht:
+// Er rundet die Deckung auf 8 Bit, die Pixel wichen dann ab.
+type einmischer struct {
+	bild           *image.NRGBA
+	sr, sg, sb, sa uint32      // Quelle vormultipliziert, 16 Bit (color.NRGBA.RGBA)
+	voll           color.NRGBA // Ergebnis bei voller Deckung einer deckenden Quelle
+}
+
+func neuerEinmischer(b *image.NRGBA, farbe color.NRGBA) *einmischer {
+	e := &einmischer{bild: b, voll: farbe}
+	e.sr, e.sg, e.sb, e.sa = farbe.RGBA()
+	return e
+}
+
+func (e *einmischer) ColorModel() color.Model { return color.Alpha16Model }
+func (e *einmischer) Bounds() image.Rectangle { return e.bild.Rect }
+func (e *einmischer) At(x, y int) color.Color { return color.Transparent }
+
+// Set mischt die Quelle mit der Deckung c (Alpha, 16 Bit) in das Pixel (x, y).
+func (e *einmischer) Set(x, y int, c color.Color) {
+	var ma uint32
+	if v, ok := c.(*color.RGBA64); ok {
+		ma = uint32(v.A)
+	} else {
+		_, _, _, ma = c.RGBA()
+	}
+	if !(image.Point{x, y}.In(e.bild.Rect)) {
+		return
+	}
+	i := e.bild.PixOffset(x, y)
+	p := e.bild.Pix[i : i+4 : i+4]
+	switch {
+	case ma == 0 && p[3] == 0xff:
+		return // draw.Over ohne Deckung auf deckendem Pixel lässt es unverändert
+	case ma == 0xffff && e.sa == 0xffff:
+		p[0], p[1], p[2], p[3] = e.voll.R, e.voll.G, e.voll.B, 0xff
+		return
+	}
+	// Wie vector.rasterizeOpOver: Ziel und Quelle vormultipliziert, 16 Bit.
+	dr, dg, db, da := color.NRGBA{R: p[0], G: p[1], B: p[2], A: p[3]}.RGBA()
+	a := 0xffff - (e.sa * ma / 0xffff)
+	r := uint32(uint16((dr*a + e.sr*ma) / 0xffff))
+	g := uint32(uint16((dg*a + e.sg*ma) / 0xffff))
+	b := uint32(uint16((db*a + e.sb*ma) / 0xffff))
+	al := uint32(uint16((da*a + e.sa*ma) / 0xffff))
+	// Wie image.NRGBA.Set über color.NRGBAModel.
+	switch al {
+	case 0xffff:
+		p[0], p[1], p[2], p[3] = uint8(r>>8), uint8(g>>8), uint8(b>>8), 0xff
+	case 0:
+		p[0], p[1], p[2], p[3] = 0, 0, 0, 0
+	default:
+		p[0], p[1], p[2], p[3] = uint8((r*0xffff/al)>>8), uint8((g*0xffff/al)>>8), uint8((b*0xffff/al)>>8), uint8(al>>8)
+	}
 }
 
 // kantenSchritte zählt, wie viele Schritte der Rasterizer (x/image/vector, LineTo) für die Kanten der Polygone geht,

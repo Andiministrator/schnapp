@@ -72,7 +72,7 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   Speichern erzwingen kann (bis rund 5 min). Glyphen allein (`GlyphBudget` = 1e9) bringen höchstens rund 9 s, wenn sie
   sichtbar gezeichnet werden; Kanten allein 1,5 bis 4,5 s. Senken lässt sich das Budget
   erst mit schnellerem Füllen (F-130). Die Wartezeit bis knapp 5 min ist bewusst hingenommen (F-135, Claudes
-  Entscheidung im Sprint-Abschluss 4, Andi informiert).
+  Entscheidung im Sprint-Abschluss 4, Andi informiert). *Zahlen überholt durch schnelleres Füllen: Nachtrag 3.*
 - Offen (eigene Karten): Speichern bei Signal/Absturz und Konflikt zweier Editoren (F-107, F-110), Angleichen der
   Maße an den SVG-Export (F-108). *Erledigt bis auf Absturz und F-108: Nachtrag 2.*
 
@@ -105,3 +105,24 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   einmal kurz vor dem Umbenennen und überschreibt bei Abweichung nicht (`ErrGeaendert`); der Editor weicht auf eine
   neue Aufnahme aus und warnt („Die Datei wurde seit dem Öffnen anderswo geändert; …“). Race-arm, nicht race-frei
   (Millisekunden zwischen Vergleich und Umbenennen), ohne Sperrdateien.
+
+## Nachtrag 3 (20.11.2026): Schnelleres Füllen, kleineres Budget, Warnung beim Speichern (F-130, F-138, F-140)
+
+- **Füllen (F-130):** `x/image/vector` zeichnet auf `*image.NRGBA` nur über seinen allgemeinen Weg (rund 36 ns je
+  Pixel). Der Renderer lässt sich die Deckung jetzt über `draw.Src` mit deckender Quelle in ein eigenes Ziel
+  (`render.einmischer`) reichen und mischt dort mit derselben Formel wie `draw.Over` — bitgleich (Test gegen den alten
+  Weg, auch auf durchsichtigem Grund), rund 7 ns je Pixel; der Rasterizer wird je Bild wiederverwendet. Der schnelle
+  Weg von `vector` über `*image.Alpha` scheidet aus: Er rundet die Deckung auf 8 Bit, Pixel wichen um bis zu 4 ab.
+  Gemessen (Entwicklungsrechner, ein Kern): zwei gefüllte, umrandete Kästen auf 8000×8000 7,8 s → 1,9 s, ein
+  diagonaler Pfeil über 8000×8000 2,4 s → 0,55 s, das Alltagsdokument aus Nachtrag 1 48 s → 11 s.
+- **Budget:** `fuellGewicht` 100 → 25, `render.Budget` 8e11 → 1,25e11. Das Alltagsdokument liegt gut 3-fach darunter;
+  ein Dokument knapp unter dem Budget (39 gefüllte, umrandete Kästen auf 8000×8000) rastert in rund 35 s statt knapp
+  5 min, mit Glyphen und Kanten an ihren Grenzen höchstens rund 45 s. Für 30 s müsste das Budget auf rund 1e11 sinken,
+  dann läge das Alltagsdokument nur 2,5-fach darunter — der Abstand zu echter Arbeit geht vor (F-131).
+- **Speichern über dem Budget (F-138):** Speichern bricht weiter nie ab. Liegt das gespeicherte Dokument über dem
+  Budget, warnt der Editor („Gespeichert, aber die Datei hat zu viele oder zu große Beschriftungen, um sie wieder zu
+  öffnen. Vor dem Schließen einige entfernen.“); die Warnung hält das Fenster beim Schließen einmal offen (Nachtrag 2).
+  Eigene Dateien beim Öffnen auszunehmen, scheidet aus: Eine Arbeitsdatei der Bibliothek ist von einer präparierten
+  nicht zu unterscheiden. Ein Öffnen trotz Überschreitung (Rückfrage oder Schalter) bleibt offen.
+- **Messungen (F-140):** `BenchmarkAufwand…` in `render/render_test.go` (Alltag, Füllen, knapp unter den drei
+  Grenzen) laufen nur mit `-bench`.

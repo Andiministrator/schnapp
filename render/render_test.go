@@ -6,10 +6,12 @@ import (
 	"bytes"
 	"image"
 	"image/color"
+	"image/draw"
 	"strings"
 	"testing"
 
 	"golang.org/x/image/font"
+	"golang.org/x/image/vector"
 
 	"github.com/Andiministrator/schnapp/document"
 )
@@ -20,7 +22,7 @@ var (
 	blau  = color.NRGBA{B: 255, A: 255}
 )
 
-func weissesDokument(t *testing.T, w, h int) *document.Dokument {
+func weissesDokument(t testing.TB, w, h int) *document.Dokument {
 	t.Helper()
 	b := image.NewNRGBA(image.Rect(0, 0, w, h))
 	for i := range b.Pix {
@@ -33,7 +35,7 @@ func weissesDokument(t *testing.T, w, h int) *document.Dokument {
 	return d
 }
 
-func hinzu(t *testing.T, d *document.Dokument, o document.Objekt) {
+func hinzu(t testing.TB, d *document.Dokument, o document.Objekt) {
 	t.Helper()
 	if _, err := d.Hinzufuegen(o); err != nil {
 		t.Fatal(err)
@@ -180,6 +182,143 @@ func BenchmarkGrossesBild(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		if _, err := Bild(d); err != nil {
 			b.Fatal(err)
+		}
+	}
+}
+
+// Messungen hinter dem Kostenmodell und den Budget-Zahlen (F-140). Sie laufen nur mit -bench, nicht in go test, und
+// brauchen Speicher (8000×8000: 256 MB Bild plus 512 MB Puffer des Rasterizers). Jede meldet ns/Einheit (Rechenzeit je
+// Einheit des Kostenmodells) und Budget/Aufwand. Aufruf etwa:
+//
+//	GOFLAGS=-tags=novulkan,nox11 go test -run '^$' -bench 'Aufwand' -benchtime 1x ./render
+func messeAufwand(b *testing.B, d *document.Dokument) {
+	b.Helper()
+	a := Aufwand(d)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := Bild(d); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.ReportMetric(float64(b.Elapsed().Nanoseconds())/float64(b.N)/a, "ns/Einheit")
+	b.ReportMetric(Budget/a, "Budget/Aufwand")
+}
+
+// Das alltagsnahe große Dokument (alltagsDokument, F-131): Messung 20.11.2026 rund 10,5 s, Budget/Aufwand 3,1.
+func BenchmarkAufwandAlltag(b *testing.B) {
+	messeAufwand(b, alltagsDokument(b))
+}
+
+// Füllen (F-130): zwei gefüllte, umrandete Kästen auf 8000×8000. Messung 20.11.2026 rund 1,9 s (vorher 7,8 s).
+func BenchmarkAufwandZweiKaesten8000(b *testing.B) {
+	d := weissesDokument(b, 8000, 8000)
+	for i := 0; i < 2; i++ {
+		hinzu(b, d, document.Kasten{Bereich: document.R(document.Pt(0, 0), document.Pt(8000, 8000)), Fuellung: rot,
+			Strich: document.Strich{Farbe: blau, Breite: 4}})
+	}
+	messeAufwand(b, d)
+}
+
+// Ein diagonaler Pfeil über 8000×8000: Das umschließende Rechteck ist bildgroß. Messung 20.11.2026 rund 0,55 s
+// (vorher 2,4 s).
+func BenchmarkAufwandPfeilDiagonal8000(b *testing.B) {
+	d := weissesDokument(b, 8000, 8000)
+	hinzu(b, d, document.GeraderPfeil(document.Pt(5, 5), document.Pt(7990, 7990), document.Strich{Farbe: rot, Breite: 6}))
+	messeAufwand(b, d)
+}
+
+// Knapp unter Budget, fast nur Fläche: 39 gefüllte, umrandete Kästen auf 8000×8000. Die Wartezeit, die eine
+// präparierte Datei beim Speichern erzwingen kann (F-135). Messung 20.11.2026 rund 36 s.
+func BenchmarkAufwandNaheBudgetFlaeche(b *testing.B) {
+	d := weissesDokument(b, 8000, 8000)
+	for i := 0; i < 39; i++ {
+		hinzu(b, d, document.Kasten{Bereich: document.R(document.Pt(0, 0), document.Pt(8000, 8000)), Fuellung: rot,
+			Strich: document.Strich{Farbe: blau, Breite: 4}})
+	}
+	messeAufwand(b, d)
+}
+
+// Glyphen knapp unter GlyphBudget, sichtbar auf großem Bild (59 × „W“ Grad 4096 auf 8000×8000).
+func BenchmarkAufwandNaheGlyphBudget(b *testing.B) {
+	d := weissesDokument(b, 8000, 8000)
+	for i := 0; i < 59; i++ {
+		hinzu(b, d, document.Text{Ort: document.Pt(float64(i*100), 0), Inhalt: "W", Schriftgrad: 4096, Farbe: rot})
+	}
+	messeAufwand(b, d)
+}
+
+// Kanten knapp unter KantenBudget: sehr breite Pfeile weit außerhalb eines winzigen Bildes (F-132).
+func BenchmarkAufwandNaheKantenBudget(b *testing.B) {
+	d := weissesDokument(b, 10, 10)
+	for i := 0; i < 171; i++ {
+		hinzu(b, d, document.Pfeil{A: document.Pt(-50, -50+float64(i%7)), B: document.Pt(70, 70), K: document.Pt(35, 3),
+			Strich: document.Strich{Farbe: rot, Breite: 1e5}})
+	}
+	messeAufwand(b, d)
+}
+
+// referenzEinmischen ist der Weg vor F-130: vector zeichnet über den allgemeinen Weg mit draw.Over ins NRGBA-Bild.
+func referenzEinmischen(r *vector.Rasterizer, bild *image.NRGBA, ausschnitt image.Rectangle, farbe color.NRGBA) {
+	r.DrawOp = draw.Over
+	r.Draw(bild, ausschnitt, image.NewUniform(farbe), image.Point{})
+}
+
+// F-130: Der schnelle Weg (einmischer) liefert bitgleich dieselben Pixel wie vector mit draw.Over — auf deckendem und
+// auf teils durchsichtigem Grund (auch Alpha 0 mit Farbe), mit halbdurchsichtigen Farben, angeschnittenen Formen,
+// Text, Streifen und Ausschnitten über 512 Pixel (Gleitkomma-Weg von vector).
+func TestFuellenBitgleich(t *testing.T) {
+	alt := einmischen
+	defer func() { einmischen = alt }()
+	bunt := func(w, h int) *document.Dokument {
+		b := image.NewNRGBA(image.Rect(0, 0, w, h))
+		for i := range b.Pix {
+			b.Pix[i] = uint8(i*7 + i/4*13 + i/(4*w)*29)
+		}
+		d, err := document.Neu(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return d
+	}
+	gross := func(d *document.Dokument) *document.Dokument {
+		w, h := float64(d.Groesse().X), float64(d.Groesse().Y)
+		halb := color.NRGBA{R: 200, G: 30, B: 90, A: 77}
+		for i := 0; i < 8; i++ {
+			f := float64(i)
+			hinzu(t, d, document.Pfeil{A: document.Pt(-20+f*13, 3+f*31), B: document.Pt(w-f*41, h-f*7), K: document.Pt(w/2, f*40),
+				Strich: document.Strich{Farbe: []color.NRGBA{rot, halb, blau}[i%3], Breite: 0.7 + f*2.3}})
+			hinzu(t, d, document.Kasten{Bereich: document.R(document.Pt(-30+f*90, -10+f*60), document.Pt(200+f*110, 150+f*70)),
+				Eckradius: f * 7, Fuellung: []color.NRGBA{halb, rot, {G: 255, A: 1}, {A: 254}}[i%4],
+				Strich: document.Strich{Farbe: halb, Breite: f * 1.5}})
+			hinzu(t, d, document.Nummer{Mitte: document.Pt(30+f*95, 40+f*50), Radius: 4 + f*6, Wert: i * 37, Farbe: halb})
+		}
+		hinzu(t, d, document.Text{Ort: document.Pt(-10, 20), Inhalt: "Füllen\tbitgleich\nzweite Zeile", Schriftgrad: 27,
+			Farbe: halb, Hintergrund: color.NRGBA{R: 10, G: 250, B: 250, A: 130}})
+		return d
+	}
+	streifen := gross(weissesDokument(t, 900, 600))
+	if err := streifen.SetzeStreifen([]document.Streifen{{Zeilen: false, Von: 100, Bis: 180}, {Zeilen: true, Von: 50, Bis: 90}}); err != nil {
+		t.Fatal(err)
+	}
+	for name, d := range map[string]*document.Dokument{
+		"gemischt":              gemischtesDokument(t),
+		"deckend 900×600":       gross(weissesDokument(t, 900, 600)),
+		"durchsichtig 300×200":  gross(bunt(300, 200)),
+		"durchsichtig 1100×700": gross(bunt(1100, 700)),
+		"Streifen":              streifen,
+	} {
+		einmischen = referenzEinmischen
+		soll := bild(t, d)
+		einmischen = alt
+		ist := bild(t, d)
+		if !bytes.Equal(soll.Pix, ist.Pix) {
+			n := 0
+			for i := range soll.Pix {
+				if soll.Pix[i] != ist.Pix[i] {
+					n++
+				}
+			}
+			t.Errorf("%s: %d Bytes weichen von draw.Over ab", name, n)
 		}
 	}
 }
