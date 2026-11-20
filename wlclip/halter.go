@@ -80,6 +80,10 @@ var scheibe = time.Minute
 // jetzt ist die Uhr, nach der Diene die Grenze misst (im Test einspeisbar, um einen Standby-Sprung nachzustellen).
 var jetzt = time.Now
 
+// monoSeit ist die auf der monotonen Uhr vergangene Zeit seit einem mit jetzt genommenen Zeitpunkt (F-232). Die
+// monotone Uhr ist von einer zurückgestellten Wanduhr unberührt; im Test einspeisbar.
+var monoSeit = time.Since
+
 // nachLies wird im Test zwischen Lesen und Verarbeiten eines Ereignisses gerufen (in Produktion nil).
 var nachLies func()
 
@@ -239,15 +243,18 @@ func (h *Halter) verarbeite(e wlwire.Ereignis) (ende bool, err error) {
 // wartet darauf aber höchstens Stau).
 //
 // Die Grenze gilt nach der Wanduhr: Fristen in Go laufen auf der monotonen Uhr, die im Standby steht. Diene setzt die
-// Lesefrist deshalb in Scheiben neu und vergleicht mit der Wanduhr (Kritik Fable, Befund 2). Die Scheibe ist nur eine
+// Lesefrist deshalb in Scheiben neu und vergleicht mit der Wanduhr (Kritik Fable, Befund 2). Eine zurückgestellte
+// Wanduhr würde die Grenze dafür verlängern; deshalb gilt die frühere von Wanduhr- und monotoner Grenze (F-232). Die Scheibe ist nur eine
 // Lesefrist; für das Schreiben an den Compositor gilt je Ereignis eine eigene Frist von Stau, damit ein hängender
 // Compositor den Halter nicht festhält, eine abgelaufene Scheibe aber auch kein gesundes Antworten verhindert.
 func (h *Halter) Diene(grenze time.Duration) error {
 	defer warteSenden(&h.senden, Stau)
 	defer h.v.Close()
-	grenzzeit := jetzt().Round(0).Add(grenze) // Round(0): ohne monotonen Anteil, Vergleich nach der Wanduhr
+	start := jetzt()
+	grenzzeit := start.Round(0).Add(grenze) // Round(0): ohne monotonen Anteil, Vergleich nach der Wanduhr
 	for {
-		rest := grenzzeit.Sub(jetzt().Round(0))
+		// die frühere Grenze zählt: Wanduhr (Standby springt vor) oder monotone Uhr (Rückstellen der Wanduhr, F-232)
+		rest := min(grenzzeit.Sub(jetzt().Round(0)), grenze-monoSeit(start))
 		if rest <= 0 {
 			return ErrZeitgrenze
 		}

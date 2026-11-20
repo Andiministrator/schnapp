@@ -106,6 +106,9 @@ func Editor(titel string, d *document.Dokument, speichern Speichern) error {
 		zwischenablageFehlt.Store(true)
 	}
 	e.bildNeu()
+	// Wecker statt einzelnem Invalidate: Gio verwirft ein Invalidate nach einem schon angenommenen (F-231).
+	e.wecker = canvas.NeuerWecker(e.w.Invalidate, weckTakt, weckGrenze)
+	defer e.wecker.Ende()
 	ctx, abbruch := context.WithCancel(context.Background())
 	defer abbruch() // schließt einen offenen Exportdialog mit dem Fenster
 	e.exportCtx = ctx
@@ -128,7 +131,7 @@ func (e *editor) signaleAbfangen() func() {
 			return
 		}
 		diagnoseEditor("Signal %v: speichern und schließen", s)
-		e.w.Invalidate()
+		e.wecker.Anfordern() // die Marke ist gesetzt; wiederholt, bis die Schleife sie sieht (F-231)
 	})
 	return e.wache.Ende
 }
@@ -144,6 +147,8 @@ type editor struct {
 	titelSet  string
 
 	wache *canvas.Signalwache // nimmt Signale an (eigene Goroutine), Ereignisschleife fragt Angekommen
+	// wecker weckt die Ereignisschleife für Signal und Dateidialog, bis sie ein Ereignis bearbeitet (F-231).
+	wecker *canvas.Wecker
 	// Export (ADR-0025): Der Dialog läuft in einer Goroutine, die Antwort kommt über exportAntwort in die Ereignisschleife.
 	exportCtx     context.Context
 	exportOffen   bool // ein Dialog läuft (nur einer zugleich); nur die Ereignisschleife liest und setzt es
@@ -182,6 +187,13 @@ const (
 	doppelklickAbstand = 6.0
 )
 
+// Takt und Obergrenze des Weckers (F-231): Er weckt das Fenster im Takt, bis es ein Ereignis bearbeitet; spätestens
+// nach der Obergrenze gibt er auf.
+const (
+	weckTakt   = 50 * time.Millisecond
+	weckGrenze = time.Minute
+)
+
 // diagnoseEditor schreibt nur mit gesetztem SCHNAPP_DEBUG (echte Läufe).
 func diagnoseEditor(format string, args ...any) {
 	if os.Getenv("SCHNAPP_DEBUG") != "" {
@@ -201,7 +213,11 @@ func (e *editor) laufen() error {
 	var ops op.Ops
 	var letzteGroesse image.Point
 	for {
-		switch ev := e.w.Event().(type) {
+		ereignis := e.w.Event()
+		// Ab hier sieht die Schleife alles, was vor dem letzten Anfordern abgelegt wurde (Marke, Dialogantwort): Der
+		// Wecker darf ruhen; eine spätere Anforderung bleibt offen (F-231).
+		e.wecker.Quittieren()
+		switch ev := ereignis.(type) {
 		case app.DestroyEvent:
 			diagnoseEditor("Fenster zu: Fehler %v, ungesichert %v, Zug %v", ev.Err, e.s.Ungesichert(), e.s.Zieht())
 			e.s.TextBestaetigen() // getippter Text geht nicht verloren (ADR-0021 Punkt 6)
@@ -246,6 +262,11 @@ func (e *editor) laufen() error {
 		if zwischenablageFehlt.Swap(false) {
 			e.melde(i18n.T("Could not copy: no clipboard is available."), true) // statt „Copied“ (F-177)
 			e.w.Invalidate()
+		}
+		// Auch nach Ereignissen ohne Bild (Gio sendet bei inaktivem Fenster nur ein Weckereignis) die Dialogantwort
+		// annehmen, sonst läge sie bis zum nächsten Bild (F-231); ein Folgebild zeigt sie.
+		if e.exportAbholen() {
+			e.wecker.Anfordern()
 		}
 		if e.wache.Angekommen() && !e.erzwungen {
 			e.nachSignal()
@@ -378,7 +399,7 @@ func (e *editor) exportStarten() {
 		},
 		Aktuell: 0,
 	}
-	ctx, ch, w := e.exportCtx, e.exportAntwort, e.w
+	ctx, ch, wecker := e.exportCtx, e.exportAntwort, e.wecker
 	go func() {
 		var r exportErgebnis
 		d, err := portal.Neu()
@@ -389,7 +410,7 @@ func (e *editor) exportStarten() {
 			r.err = err
 		}
 		ch <- r
-		w.Invalidate()
+		wecker.Anfordern() // erst nach dem Ablegen der Antwort (F-231)
 	}()
 }
 
@@ -399,12 +420,15 @@ func dialogFilter(name string, f export.Format) portal.Filter {
 }
 
 // exportAbholen nimmt die Antwort des Dialogs an (Ereignisschleife) und schreibt die Datei.
-func (e *editor) exportAbholen() {
+// Rückgabe: ob eine Antwort angenommen wurde.
+func (e *editor) exportAbholen() bool {
 	select {
 	case r := <-e.exportAntwort: // ein nil-Kanal blockiert für immer: dann gilt default
 		e.exportOffen = false
 		e.exportFertig(r)
+		return true
 	default:
+		return false
 	}
 }
 
@@ -522,8 +546,9 @@ func (e *editor) frame(gtx layout.Context) {
 	// Die Antwort des Dateidialogs wird zu Beginn des Bildes abgeholt, das die Goroutine per Invalidate angestoßen hat,
 	// damit dieses Bild sie schon zeigt. Nach dem Bild wäre es zu spät: Gio verwirft ein zweites Invalidate, bis die
 	// Ereignisschlange leer ist (app.Window.mayInvalidate) — „Dateidialog geöffnet“ und der graue Knopf blieben bis
-	// zum nächsten Ereignis stehen (F-216).
-	e.exportAbholen()
+	// zum nächsten Ereignis stehen (F-216). Kam die Antwort erst nach diesem Abholen, weckt der Wecker weiter, bis ein
+	// Ereignis sie annimmt (F-231).
+	_ = e.exportAbholen()
 	e.tasten(gtx)
 	e.knoepfeAuswerten(gtx)
 	paint.Fill(gtx.Ops, farbeFenster)

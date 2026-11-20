@@ -313,6 +313,33 @@ func TestZeitgrenze(t *testing.T) {
 	}
 }
 
+// TestZeitgrenzeUhrZurueck (F-232): Wird die Wanduhr zurückgestellt, verlängert das die Haltezeit nicht; es gilt die
+// frühere von Wanduhr- und monotoner Grenze.
+func TestZeitgrenzeUhrZurueck(t *testing.T) {
+	alt, altJetzt := scheibe, jetzt
+	scheibe = 20 * time.Millisecond
+	u := &uhr{t: time.Now()}
+	jetzt = u.jetzt
+	defer func() { scheibe, jetzt = alt, altJetzt }()
+	h, _, _ := bereit(t)
+	fertig := make(chan error, 1)
+	start := time.Now()
+	go func() { fertig <- h.Diene(300 * time.Millisecond) }()
+	time.Sleep(60 * time.Millisecond)
+	u.springe(-2 * time.Hour) // Wanduhr zurückgestellt: nach der Wanduhr wäre die Grenze zwei Stunden weiter
+	select {
+	case err := <-fertig:
+		if !errors.Is(err, ErrZeitgrenze) {
+			t.Errorf("Fehler %v, erwartet ErrZeitgrenze", err)
+		}
+		if d := time.Since(start); d < 280*time.Millisecond || d > 3*time.Second {
+			t.Errorf("Diene endete nach %v, erwartet gut 300ms", d)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("Diene endete trotz zurückgestellter Wanduhr nicht an der monotonen Grenze")
+	}
+}
+
 // TestZeitgrenzeKurz: mit echter Uhr endet Diene ohne Ereignis kurz nach der Grenze, nicht vorher.
 func TestZeitgrenzeKurz(t *testing.T) {
 	alt := scheibe

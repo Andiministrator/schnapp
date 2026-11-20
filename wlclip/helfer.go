@@ -103,8 +103,9 @@ func HalterMoeglich(getenv func(string) string) error {
 
 // Uebergib startet programm mit HelferArgument als abgelösten Prozess (eigene Sitzung, Arbeitsordner /, ohne
 // Terminal-Ausgaben), schreibt daten auf seine Standardeingabe und wartet bis zu frist auf seine Meldung. Bei Erfolg
-// hält der Halter die Zwischenablage, und Uebergib liefert seine PID und die benutzte Manager-Schnittstelle. Sonst beendet Uebergib den eigenen, noch nicht
-// abgeholten Kindprozess (Ziel steht beim Start fest, keine Suche) und liefert den Fehler; der Aufrufer bietet dann
+// hält der Halter die Zwischenablage, und Uebergib liefert seine PID und die benutzte Manager-Schnittstelle. Sonst beendet Uebergib den eigenen Kindprozess
+// (Ziel steht beim Start fest, keine Suche; die Goroutine unten holt ihn direkt nach dem Start ab, Kill trifft also nur
+// einen noch laufenden) und liefert den Fehler; der Aufrufer bietet dann
 // selbst an.
 func Uebergib(programm string, daten []byte, frist time.Duration) (pid int, manager string, err error) {
 	r, w, err := os.Pipe()

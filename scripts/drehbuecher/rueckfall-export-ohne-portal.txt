@@ -3,7 +3,7 @@
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
 # Lauf 8d: Export ohne Portal, danach Taste R — stimmt der Zustand und fehlt nur das Neuzeichnen?
 warte 800
-klick 236 159
+klick 358 160
 warte 6000
 foto 01-nach-6s
 warte 10
