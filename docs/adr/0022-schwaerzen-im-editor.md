@@ -63,4 +63,5 @@ ihn mit demselben Raster und vergleichen die Blockfarben.
   einer Schwärzung, dass sie den Inhalt noch zeigt (F-166).
 - **Zuschnitt:** Der Rahmen bleibt auf die Ansicht begrenzt; was jenseits der Zuschnittkante liegt, steht weiter im
   Original (Zuschneiden ist nicht zerstörend, ADR-0008). Wie das mit dem Schwärzen zusammengeht, entscheidet Karte #38.
+  *(Entschieden in ADR-0023 Punkt 8: Der Rahmen bleibt auf die Ansicht begrenzt.)*
 - Ein vor dem Schwärzen mit Strg+C kopiertes Bild bleibt, wie es war, in der Zwischenablage (README).
