@@ -11,8 +11,10 @@ import (
 // Speichern im Hintergrund (ADR-0020 Nachtrag 6, F-143): Die Oberfläche fragt hier an und bekommt einen Abzug des
 // Dokuments, den sie in einer Goroutine speichert; die Antwort meldet sie mit SpeichernEnde zurück, in ihrer
 // Ereignisschleife. Bis dahin ruht das Bearbeiten (SpeichernLaeuft), damit der gespeicherte Stand der aktuelle bleibt
-// und das Leeren des Verlaufs nach einer Schwärzung (ADR-0022 Punkt 3) für genau diesen Stand gilt. Schließen-Anfragen
-// und Signale während des Speicherns werden vorgemerkt und nach der Antwort entschieden.
+// und das Leeren des Verlaufs nach einer Schwärzung (ADR-0022 Punkt 3) für genau diesen Stand gilt. Die Sperre liegt
+// nicht nur in der Oberfläche: Jeder Einstieg der Sitzung, der das Dokument ändert, fragt gesperrt und tut während des
+// Speicherns nichts (F-280). Schließen-Anfragen und Signale während des Speicherns werden vorgemerkt und nach der
+// Antwort entschieden.
 
 // Anlass sagt, wozu gespeichert wird.
 type Anlass int
@@ -41,12 +43,19 @@ type hintergrund struct {
 	laeuft     bool
 	anlass     Anlass
 	stand      uint64 // Stand des Abzugs, der gerade gespeichert wird
+	schwaerzt  bool   // der Verlauf des Abzugs enthielt eine Schwärzung (ADR-0022 Punkt 3)
 	schliessen bool   // eine Schließen-Anfrage wartet auf die Antwort
 	signal     bool   // ein Signal kam; nach der Antwort wird geschlossen
 }
 
 // SpeichernLaeuft meldet, ob ein Speichern im Hintergrund läuft. Solange ruht das Bearbeiten.
 func (s *Sitzung) SpeichernLaeuft() bool { return s.hg.laeuft }
+
+// gesperrt meldet, ob Änderungen am Dokument gerade ruhen (F-280): Während des Speicherns nimmt die Sitzung keine an,
+// gleich welcher Weg der Oberfläche sie auslöst (Zeiger, Knopf, Menü, Taste, mehrere Klicks in einem Bild). Jeder
+// ändernde Einstieg fragt das zuerst, ebenso Werkzeug- und Farbwahl (beide bestätigen eine Eingabe oder färben um).
+// Die Ansicht (Zoom, Einpassen) ändert das Dokument nicht; sie sperrt nur die Oberfläche.
+func (s *Sitzung) gesperrt() bool { return s.hg.laeuft }
 
 // SignalVorgemerkt meldet, ob ein Signal angenommen wurde: Das Fenster schließt, sobald das Speichern zurück ist.
 func (s *Sitzung) SignalVorgemerkt() bool { return s.hg.signal }
@@ -57,7 +66,7 @@ func (s *Sitzung) beginne(a Anlass) (*document.Dokument, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.hg.laeuft, s.hg.anlass, s.hg.stand = true, a, s.D.Stand()
+	s.hg.laeuft, s.hg.anlass, s.hg.stand, s.hg.schwaerzt = true, a, s.D.Stand(), s.D.VerlaufMitSchwaerzung()
 	return abzug, nil
 }
 
@@ -150,8 +159,12 @@ func (s *Sitzung) SpeichernEnde(warnung bool, err error) Ende {
 	s.hg.laeuft = false
 	if err == nil {
 		s.gespeichert, s.verwerfen = s.hg.stand, false
-		if s.D.Stand() == s.hg.stand && s.D.VerlaufMitSchwaerzung() {
-			_ = s.D.VergissVerlauf() // während des Speicherns ruht das Bearbeiten: kein Zug
+		// ADR-0022 Punkt 3: Die Datei trägt jetzt die Schwärzung; kein Rückgängig darf die alten Pixel zurückholen. Geleert
+		// wird ohne Bedingung an den Stand (F-280): Hätte sich das Dokument trotz der Sperre geändert, holte ein
+		// Rückgängig über die neue Änderung hinweg sonst das Geschwärzte zurück. Den Verlauf zu verlieren ist der
+		// kleinere Schaden. Während des Speicherns läuft kein Zug (gesperrt), VergissVerlauf gelingt.
+		if s.hg.schwaerzt || s.D.VerlaufMitSchwaerzung() {
+			_ = s.D.VergissVerlauf()
 		}
 	}
 	if s.hg.signal {

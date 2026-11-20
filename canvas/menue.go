@@ -27,7 +27,7 @@ func (s *Sitzung) sichtbareStreifen() (drin, sonst []document.Streifen) {
 // KannZurueckholen meldet, ob HoleGestauchtesZurueck etwas ändern würde (Menüeintrag an oder grau).
 func (s *Sitzung) KannZurueckholen() bool {
 	drin, _ := s.sichtbareStreifen()
-	return s.zug == keinZug && len(drin) > 0
+	return s.zug == keinZug && !s.gesperrt() && len(drin) > 0
 }
 
 // HoleGestauchtesZurueck hebt alle Stauch-Streifen im Zuschnitt in einem Rückgängig-Schritt auf, mit und ohne
@@ -47,11 +47,11 @@ func (s *Sitzung) HoleGestauchtesZurueck() bool {
 }
 
 // KannLoeschen meldet, ob Loeschen ein Objekt entfernen würde (Menüeintrag „Löschen“).
-func (s *Sitzung) KannLoeschen() bool { return s.zug == keinZug && s.Auswahl != 0 }
+func (s *Sitzung) KannLoeschen() bool { return s.zug == keinZug && s.Auswahl != 0 && !s.gesperrt() }
 
 // KannTextBearbeiten meldet, ob Enter bzw. der Menüeintrag „Text bearbeiten“ eine Eingabe am ausgewählten Text beginnt.
 func (s *Sitzung) KannTextBearbeiten() bool {
-	if s.zug != keinZug || s.Auswahl == 0 {
+	if s.zug != keinZug || s.Auswahl == 0 || s.gesperrt() {
 		return false
 	}
 	o, ok := s.D.Objekt(s.Auswahl)

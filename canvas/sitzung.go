@@ -141,8 +141,12 @@ func (s *Sitzung) toleranz() float64 { return Toleranz / s.Abb.Zoom }
 
 // Druecken beginnt einen Zug: an einem Griff des ausgewählten Objekts, mit einem Zeichenwerkzeug ein neues Objekt
 // (ADR-0021), sonst an einem Objekt (wählt es aus) oder auf leerer Fläche bzw. mit der mittleren Taste an der Ansicht.
-// Eine laufende Texteingabe wird vorher bestätigt. Während eines Zugs ist ein weiterer Druck wirkungslos.
+// Eine laufende Texteingabe wird vorher bestätigt. Während eines Zugs ist ein weiterer Druck wirkungslos, ebenso
+// während des Speicherns (F-280).
 func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
+	if s.gesperrt() {
+		return
+	}
 	s.abgelehnt, s.ersatzSchwarz, s.rahmenZuKlein, s.ansichtMeldung = AblehnungKeine, false, false, AnsichtKeine
 	if s.pan {
 		return
@@ -198,7 +202,7 @@ func (s *Sitzung) Ziehen(p document.Punkt) {
 		}
 		return
 	}
-	if s.zug == keinZug || s.zug == zugText {
+	if s.zug == keinZug || s.zug == zugText || s.gesperrt() {
 		return
 	}
 	if !s.bewegt && p.Minus(s.start).Laenge() < Ziehschwelle {
@@ -227,7 +231,7 @@ func (s *Sitzung) Loslassen(p document.Punkt) {
 		s.pan = false
 		return
 	}
-	if s.zug == zugText {
+	if s.zug == zugText || s.gesperrt() {
 		return
 	}
 	s.Ziehen(p)
@@ -302,7 +306,7 @@ func (s *Sitzung) Rueckgaengig() bool { return s.verlauf(s.D.Rueckgaengig) }
 func (s *Sitzung) Wiederholen() bool { return s.verlauf(s.D.Wiederholen) }
 
 func (s *Sitzung) verlauf(f func() error) bool {
-	if s.zug != keinZug {
+	if s.zug != keinZug || s.gesperrt() {
 		return false
 	}
 	z, g, st := s.D.Zuschnitt(), s.D.Groesse(), s.D.Streifen()
@@ -323,7 +327,7 @@ func (s *Sitzung) verlauf(f func() error) bool {
 
 // Loeschen entfernt das ausgewählte Objekt.
 func (s *Sitzung) Loeschen() bool {
-	if s.zug != keinZug || s.Auswahl == 0 {
+	if s.zug != keinZug || s.Auswahl == 0 || s.gesperrt() {
 		return false
 	}
 	vor := s.D.Stand()

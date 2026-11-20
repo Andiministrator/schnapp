@@ -114,7 +114,7 @@ func Umgefaerbt(o document.Objekt, c color.NRGBA) document.Objekt {
 
 // SetzeWerkzeug wechselt das Werkzeug. Eine Texteingabe wird vorher bestätigt; während eines Mauszugs geht es nicht.
 func (s *Sitzung) SetzeWerkzeug(w Werkzeug) bool {
-	if s.Zieht() {
+	if s.Zieht() || s.gesperrt() {
 		return false
 	}
 	s.TextBestaetigen()
@@ -128,7 +128,7 @@ func (s *Sitzung) SetzeWerkzeug(w Werkzeug) bool {
 // SetzeFarbe setzt die Farbe für folgende Objekte und färbt das ausgewählte Objekt um (ein Rückgängig-Schritt);
 // während der Texteingabe gehört das Umfärben zur Eingabe. Liefert, ob sich das Dokument geändert hat.
 func (s *Sitzung) SetzeFarbe(c color.NRGBA) bool {
-	if s.Zieht() {
+	if s.Zieht() || s.gesperrt() { // während des Speicherns auch keine neue Farbe (F-280): Bearbeiten ruht ganz
 		return false
 	}
 	s.Stil.Farbe = c
@@ -448,7 +448,7 @@ func (s *Sitzung) TextObjekt() (document.Text, bool) {
 
 // TextBearbeiten beginnt die Eingabe am ausgewählten Text (Doppelklick, Enter).
 func (s *Sitzung) TextBearbeiten() bool {
-	if s.zug != keinZug {
+	if s.zug != keinZug || s.gesperrt() {
 		return false
 	}
 	o, ok := s.D.Objekt(s.Auswahl)
@@ -486,7 +486,7 @@ func (s *Sitzung) TextZurueck() bool {
 
 func (s *Sitzung) aendereText(f func(string) string) bool {
 	t, ok := s.TextObjekt()
-	if !ok {
+	if !ok || s.gesperrt() {
 		return false
 	}
 	neu := f(t.Inhalt)
@@ -501,7 +501,7 @@ func (s *Sitzung) aendereText(f func(string) string) bool {
 // (auch nur Leerraum) wird nicht angelegt; ein vorhandener, leer bestätigter Text wird entfernt — je ein Schritt.
 func (s *Sitzung) TextBestaetigen() bool {
 	t, ok := s.TextObjekt()
-	if !ok {
+	if !ok || s.gesperrt() {
 		return false
 	}
 	s.zug = keinZug
@@ -523,7 +523,7 @@ func (s *Sitzung) TextBestaetigen() bool {
 
 // TextAbbrechen verwirft die Eingabe (Esc): Ein neuer Text verschwindet, ein vorhandener bleibt wie vorher.
 func (s *Sitzung) TextAbbrechen() bool {
-	if s.zug != zugText {
+	if s.zug != zugText || s.gesperrt() {
 		return false
 	}
 	s.zug = keinZug
@@ -537,8 +537,11 @@ func (s *Sitzung) TextAbbrechen() bool {
 // --- Tasten mit Stufen ---
 
 // Esc wirkt in Stufen (ADR-0021 Punkt 2): Texteingabe verwerfen, laufendes Ziehen abbrechen, Auswahl aufheben, zurück
-// zum Werkzeug Auswählen.
+// zum Werkzeug Auswählen. Während des Speicherns wirkt Esc nicht (F-280).
 func (s *Sitzung) Esc() {
+	if s.gesperrt() {
+		return
+	}
 	switch {
 	case s.zug == zugText:
 		s.TextAbbrechen()
@@ -553,6 +556,9 @@ func (s *Sitzung) Esc() {
 
 // Enter bestätigt die Texteingabe (mit umschalt: neue Zeile) oder beginnt sie am ausgewählten Text.
 func (s *Sitzung) Enter(umschalt bool) bool {
+	if s.gesperrt() {
+		return false
+	}
 	if s.zug == zugText {
 		if umschalt {
 			return s.TextZeilenumbruch()
@@ -566,6 +572,9 @@ func (s *Sitzung) Enter(umschalt bool) bool {
 // den Zuschnitt auf, mit Stauchen entfernt er die Naht unter dem Zeiger (ADR-0023). Sonst und daneben wirkt er wie
 // ein Druck der linken Taste (der erste Klick hat dann schon gewirkt, ADR-0021).
 func (s *Sitzung) Doppelklick(p document.Punkt) {
+	if s.gesperrt() {
+		return
+	}
 	s.TextBestaetigen()
 	s.abgelehnt, s.ersatzSchwarz, s.rahmenZuKlein, s.ansichtMeldung = AblehnungKeine, false, false, AnsichtKeine
 	switch {

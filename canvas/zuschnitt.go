@@ -135,7 +135,7 @@ func (s *Sitzung) zuschneideRahmen() {
 // (F-222; so entstanden sie vor dem Nachtrag, etwa in älteren Dateien). Alle anderen Streifen bleiben. Liefert, ob sich
 // etwas geändert hat.
 func (s *Sitzung) HebeZuschnittAuf() bool {
-	if s.zug != keinZug {
+	if s.zug != keinZug || s.gesperrt() {
 		return false
 	}
 	ganz, st, ok := s.ganzesBild()
@@ -154,7 +154,7 @@ func (s *Sitzung) HebeZuschnittAuf() bool {
 // KannGanzesBild meldet, ob HebeZuschnittAuf etwas ändern würde (Knopf „Ganzes Bild“ an oder grau).
 func (s *Sitzung) KannGanzesBild() bool {
 	_, _, ok := s.ganzesBild()
-	return ok && s.zug == keinZug
+	return ok && s.zug == keinZug && !s.gesperrt()
 }
 
 // ganzesBild liefert Zuschnitt und Streifen für „Ganzes Bild“ und ob sie vom jetzigen Stand abweichen.
@@ -303,7 +303,7 @@ func (s *Sitzung) randZuschnitt(zeilen bool, von, bis, laenge int) {
 // ADR-0023 Punkt 4): alle Streifen, die an dieser Naht verborgen sind, in einem Rückgängig-Schritt. Gefunden wird eine
 // Naht, wenn p höchstens Toleranz Fensterpixel neben ihrem Zackenband liegt. Liefert, ob sich etwas geändert hat.
 func (s *Sitzung) EntferneNaht(p document.Punkt) bool {
-	if s.zug != keinZug || !s.imBild(p) {
+	if s.zug != keinZug || s.gesperrt() || !s.imBild(p) {
 		return false
 	}
 	a := s.Abb.ZuAnsicht(p)
