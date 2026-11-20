@@ -131,6 +131,11 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
   bleibt); gespeichert wird in der eigenen Ereignisschleife (F-77, F-152, `canvas/signal.go`).
 - **Texteingabe:** `key.EditEvent` geht nur an den fokussierten Bereich. Tab muss während der Eingabe im Tastenfilter
   abgefangen werden, sonst wandert der Fokus und Zeichen verschwinden; Enter sonst vor den Knöpfen verbraucht (F-153).
+- **Fokus bleibt nur, solange das Ziel in jedem Bild seinen `key.FocusFilter` meldet:** `keyQueue.Frame`
+  (`io/input/key.go`) nimmt den Fokus weg, sobald das fokussierte Ziel in einem Bild nicht mehr „focusable“ ist.
+  Eine Sperre (Speichern läuft, Menü offen) ruft `gtx.Event` deshalb weiter mit allen Filtern auf und verwirft, was
+  kommt. Filter, die erst ein Bild nach einem Zustandswechsel angemeldet werden, verlieren die Taste dazwischen
+  (Enter, sofort Runter: F-278) — immer anmelden und beim Auswerten entscheiden.
 - **Zwischenablage mit Bild (Karte #39):** Gio v0.10.3 bot unter Wayland beim Schreiben nur Text-MIME-Typen an und
   ignorierte `clipboard.WriteCmd.Type`. Der Patch (`app/os_wayland.go`, ADR-0015 Nachtrag 2) bietet bei `image/…` genau
   diesen Typ an. Der Inhalt gehört dem Fenster; nach dem Schließen des Editors bleibt er nur, wenn ein

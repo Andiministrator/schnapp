@@ -19,7 +19,7 @@ Schlagworte). Aufnahmen zeigen oft Vertrauliches. SQLite bräuchte cgo (ADR-0011
   Aufnahme (Pfad relativ zur Ablage, Datum, Größe, Schlagworte, Quellprogramm, Bearbeitet-Kennung), Vorschaubilder
   unter `~/.cache/schnapp/vorschau/`. Alle Angaben stehen auch im `snAP`-Block der Datei; fehlt oder zerbricht der
   Index, baut Schnapp ihn aus den Dateien neu auf. Kein cgo.
-- **Rechte:** Ordner 0700, Dateien 0600; atomar schreiben (temporäre Datei im selben Ordner, dann umbenennen).
+- **Rechte:** Ordner 0700, Dateien 0600; atomar schreiben (temporäre Datei im selben Ordner, dann umbenennen). *Neue Aufnahmen seit Nachtrag 4 exklusiv per Link.*
 - **Quellprogramm:** nur verlässlich bei der Fenster-Aufnahme (KWin liefert das Fenster); bei Bereich und Bildschirm
   leer, von Hand ergänzbar.
 - **Automatisch aufräumen:** einschaltbar und komplett abschaltbar, Frist in Tagen einstellbar. Voreinstellung: an,
@@ -48,7 +48,7 @@ Schlagworte). Aufnahmen zeigen oft Vertrauliches. SQLite bräuchte cgo (ADR-0011
   nachgezogen, wenn sie fehlen (F-51, F-52). Das Löschen trifft nur die eigene Cache-Datei.
 - **Rechte:** auch schon vorhandene eigene Ordner (Ablage, Index, Vorschau) werden auf 0700 gebracht (F-55); Bilder-
   und Papierkorb-Ordner des Nutzers bleiben unberührt.
-- Offen: F-48 (zwei Prozesse gleichzeitig), schneller Neuaufbau nur aus `snAP` (Karte #45).
+- Offen: F-48 (zwei Prozesse gleichzeitig), schneller Neuaufbau nur aus `snAP` (Karte #45). *Erledigt 20.11.2026: Nachtrag 4.*
 
 ## Nachtrag 2 (19.11.2026): Wann aufgeräumt wird (F-88)
 
@@ -62,16 +62,35 @@ dann schon gespeichert. Umsetzung: Karte #54.
 
 ## Nachtrag 3 (20.11.2026): Symlink-Ablage, leerer Einhängepunkt, liegen gebliebene temporäre Dateien (F-270, F-271, F-274)
 
-**Status:** Akzeptiert (Umsetzung Karte #114).
+**Status:** Akzeptiert (Claude Sonnet 5.5, Umsetzung Karte #114; Claudes Entscheidung, das Entfernen nach Alter ist als offene Frage an Andi vermerkt: E-22).
 
 1. **Ablage wird vor dem Ablaufen aufgelöst** (`filepath.EvalSymlinks`, wie `Relativ`): Neuaufbau und
    `VerwaisteVorschauen` laufen sonst bei einer Ablage als Symlink gar nicht ab (F-271, F-270).
 2. **`VerwaisteVorschauen` liefert `ErrAblageLeer` statt einer Liste**, wenn die Ablage keine einzige Aufnahme enthält,
    der Cache aber Vorschaubilder (leerer Einhängepunkt, verschobener Ordner). Gelöscht wird dort nichts.
-3. **Temporäre Dateien (`.schnapp-tmp-*`)** sind nach dem Link-Weg ein zweiter Name der Aufnahme (ADR-0022 Punkt 4):
+3. **Temporäre Dateien (`.schnapp-tmp-*`)** sind nach dem Link-Weg ein zweiter Name der Aufnahme (Kernprinzip 2; ADR-0022 Nachtrag 2: liegen gebliebene Fassungen):
    Ein Fehler beim Entfernen nach dem Link wird als `ErrTempRest` gemeldet (Aufnahme bleibt gültig); Neuaufbau und
    Speichern räumen eigene Reste im Ordner, die älter als eine Minute sind (nur reguläre Dateien mit eigenem Präfix,
    nie Symlinks, nie Aufnahmen oder Vorschaubilder). Gewählt wurde das Entfernen nach Alter statt nur der Reste mit
    Aufnahme-Inode, weil auch ein halb geschriebener Rest Bildpunkte einer Aufnahme trägt. Nach Link und rename wird der
    Ordner gesynct (Best Effort).
+
+## Nachtrag 4 (20.11.2026, nachgetragen zu c0d5238 und 5ee6d05): Exklusives Ablegen, Neuaufbau aus Metadaten (F-48, F-272, F-273)
+
+**Status:** Akzeptiert (Claude, Umsetzung Karten #45 und #115; Verify Fable).
+
+- **Neue Aufnahmen werden exklusiv angelegt, nie überschrieben** — auch nicht gegen einen zweiten Schnapp-Prozess
+  (F-48). Die Datei wird einmal vollständig in eine temporäre Datei im selben Ordner geschrieben; der endgültige Name
+  entsteht per Hardlink (`os.Link`), der bei belegtem Namen scheitert, dann folgt `-2`, `-3` …. Kann das Dateisystem
+  oder die Stelle keine Hardlinks (FAT/exFAT, manche Netzfreigaben), reserviert ein mit `O_EXCL` angelegter leerer
+  Platzhalter den Namen, und die temporäre Datei wird darüber umbenannt; zwischen Reservierung und Umbenennen ist
+  kurz eine leere Datei sichtbar, ein Absturz genau dort lässt sie liegen (der Neuaufbau überspringt sie als
+  beschädigt, die Aufnahme steckt noch in der temporären Datei). Das Zurückschreiben einer bestehenden Aufnahme bleibt
+  beim Umbenennen.
+- **Folge des Link-Wegs:** Bis zum Entfernen ist die temporäre Datei ein zweiter Name der Aufnahme (Nachtrag 3 Punkt 3).
+- **Der Neuaufbau liest nur Metadaten** (`fileformat.LeseMetadaten`): `snAP` und die Köpfe, keine Pixel. Urteil und
+  Größe sind dieselben wie beim vollen Lesen (`document.PruefeInhalt`, F-272); was nur das Dekodieren zeigt (kaputte
+  Bilddaten), fällt erst beim Öffnen auf. Angekündigte Blocklängen reservieren keinen Speicher im Voraus (F-273).
+- **`VerwaisteVorschauen` listet nur**, zu welchen Vorschaubildern keine Aufnahme mehr gehört; gelöscht wird dort
+  nichts, ein Aufräumen ist eine eigene, freizugebende Aktion.
 

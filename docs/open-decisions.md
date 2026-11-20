@@ -166,5 +166,15 @@ Stand 20.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
   prüfen und nachrüsten: Karte #104 „Jede Tastenfunktion auch über Leiste oder Menü“ (Backlog); neue Funktionen bekommen
   Knopf oder Menüeintrag im selben Zug.
 - **Umgesetzt 20.11.2026:** ADR-0026 samt Nachtrag 1 (Menü mit allen Aktionen und Kürzeln, Tastentabelle
-  `ui/kuerzel.go`, „Gestauchtes zurückholen“), Karte #104, Commits 24bc96d und 34dd5ee. Rest: F-255 (Karte #110).
+  `ui/kuerzel.go`, „Gestauchtes zurückholen“), Karte #104, Commits 24bc96d und 34dd5ee. F-255 (Menü per Tastatur) erledigt in Sprint 8: ADR-0026 Nachträge 2 und 3, Commits 8cd134d und 0385204.
+
+## E-22: Claudes Entscheidungen aus Sprint 8 — ENTSCHIEDEN 20.11.2026 (Claude, Andi informiert), ein Punkt OFFEN
+- Speichern und Kopieren laufen im Hintergrund auf einem Abzug; während des Speicherns ruht das Bearbeiten
+  (ADR-0020 Nachtrag 6). Reste: F-280, F-281, F-283, F-285.
+- Menü allein per Tastatur: Pfeile, Pos1, Ende, Umlauf an den Enden, Leertaste wie Enter; Fokusring am Menüeintrag
+  innen statt außen (ADR-0026 Nachträge 2 und 3).
+- Neue Aufnahmen werden exklusiv per Hardlink angelegt, Rückfall O_EXCL (F-48); der Index-Neuaufbau liest nur
+  Metadaten (ADR-0016 Nachtrag 4).
+- **OFFEN (Andi):** Neuaufbau und Speichern entfernen eigene Reste `.schnapp-tmp-*`, die älter als eine Minute sind,
+  ohne Rückfrage aus der Ablage (ADR-0016 Nachtrag 3, F-274). Alternative: nur melden. Bis zur Antwort gilt Entfernen.
 

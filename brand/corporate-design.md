@@ -127,7 +127,7 @@ auf jedem System); dann gehören OFL-Text und Urhebervermerk unter `licenses/` i
 - **Hauptaktion** (z. B. Speichern) grün gefüllt mit dunkler Schrift; **Nebenaktion** nur umrandet;
   **gefährliche Aktion** (Schwärzen, Löschen) rot umrandet, mit Bestätigung, wenn sie unumkehrbar ist.
 - **Aktives Werkzeug:** grüner Rand, grüne Schrift (gruen-300).
-- **Tastaturfokus** immer sichtbar: 2 px orangener Ring mit 2 px Abstand.
+- **Tastaturfokus** immer sichtbar: 2 px orangener Ring mit 2 px Abstand. Ausnahme Menüeinträge: Ring innen, 2 px breit, 2 px vom Zeilenrand (ADR-0026 Nachtrag 3).
 - **Auswahl** auf dem Bild: grüne Linie, orange Eckgriffe, der Rest abgedunkelt mit grau-950.
 - **Hinweise:** orangener Balken links; **Fehler:** roter Balken links, immer mit Text.
 

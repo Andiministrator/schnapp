@@ -57,6 +57,8 @@ wenig Code (ADR-0011).
 
 ## Nachtrag 1 (20.11.2026): Nacharbeit aus der Kritik zu Sprint 7 (Fable)
 
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #104, Nacharbeit Kritik Sprint 7).
+
 - **Punkt 4 genauer (F-260):** „Gestauchtes zurückholen“ hebt die Stauch-Streifen auf, die den Zuschnitt schneiden.
   Streifen ganz außerhalb des Zuschnitts sind ohnehin nicht zu sehen und bleiben; „Ganzes Bild“ zeigt sie danach
   wieder mit Naht, und der Eintrag wird wieder bedienbar.
@@ -64,7 +66,7 @@ wenig Code (ADR-0011).
   Menüeintrag. Ohne Umschalt entsteht dieselbe Form frei gezogen; die Einrastung ist eine Hilfe, keine eigene Funktion.
 - **Offenes Menü (F-257):** Solange die Liste offen ist, wirken nur Esc (schließt) und Enter (löst den Knopf oder
   Eintrag mit Tastaturfokus aus). Andere Tasten tun nichts, damit nicht unbemerkt hinter der Liste gelöscht oder das
-  Werkzeug gewechselt wird.
+  Werkzeug gewechselt wird. *Erweitert: Pfeile, Pos1, Ende (Nachtrag 2), Leertaste und Tab (Nachtrag 3).*
 - **Maus und Taste in der Texteingabe (F-257):** Ein Menüeintrag bestätigt einen laufenden Text und führt dann aus
   (wie die Knöpfe der Leiste). Per Taste wirken Kopieren und Export während der Texteingabe nicht, weil Strg+C dort
   nicht als Kopieren des Bilds gemeint sein muss. Einträge, die eine abgeschlossene Eingabe brauchen (Löschen,
@@ -75,21 +77,25 @@ wenig Code (ADR-0011).
 
 ## Nachtrag 2 (20.11.2026): Menü allein per Tastatur bedienbar (F-255)
 
+**Status:** Akzeptiert (Claude Sonnet 5.5, Karte #110).
+
 - **Öffnen per Tastatur** (Tab bis „Menü“, Enter oder Leertaste) setzt den Fokus auf den ersten bedienbaren Eintrag.
   Per Maus geöffnet bleibt der Fokus unberührt, damit kein Fokusring ohne Tastatur erscheint.
 - **Bei offenem Menü wirken zusätzlich zu Esc und Enter** die Pfeile hoch und runter, Pos1 und Ende: Sie wählen den
   Eintrag, ohne etwas auszuführen. Graue Einträge werden übersprungen. An den Enden **läuft die Liste um** (wie die
   Menüs in KDE und Qt); bei zwölf Einträgen ist das schneller als Anhalten, und der Umlauf ist umkehrbar. Alle anderen
   Tasten und getippter Text wirken weiter nicht (Nachtrag 1).
-- **Der Fokus kehrt immer zurück:** Esc schließt und gibt ihn an den Menüknopf; nach einem ausgeführten Eintrag oder
+- **Der Fokus kehrt immer zurück:** Esc schließt und gibt ihn an den Menüknopf *(eingeschränkt durch Nachtrag 3, V-1: nur nach Öffnen per Tastatur und ohne laufende Texteingabe, sonst an die Leinwand)*; nach einem ausgeführten Eintrag oder
   einem Klick daneben liegt er auf der Leinwand. Ohne das fiele er auf nichts, und nach „Text bearbeiten“ ginge
   getippter Text verloren.
 - **Fokusring:** 2 px orange (Corporate Design §6) an Knöpfen, am Menüknopf und am fokussierten Menüeintrag, nicht
-  nur die Hover-Fläche.
+  nur die Hover-Fläche. *Abstand und Ausnahme am Menüeintrag: Nachtrag 3, V-4.*
 - **Werkzeug-Hinweis** (Name und Buchstabe) erscheint auch bei Tastaturfokus auf dem Werkzeugknopf, nicht nur beim
   Zeiger; ist ein Knopf fokussiert, zeigt nur er den Hinweis.
 
 ## Nachtrag 3 (20.11.2026): Nacharbeit aus dem Verify-Lauf zu Nachtrag 2 (Fable)
+
+**Status:** Akzeptiert (Claude Sonnet 5.5, Karte #110, Nacharbeit Verify Fable).
 
 - **Leertaste** führt am fokussierten Menüknopf wie Enter aus (öffnet mit Fokus auf dem ersten Eintrag); am
   fokussierten Eintrag löst sie ihn aus (Gio-Knopf). Die Art des Öffnens kommt aus der Taste, nicht aus dem Zeigerort:

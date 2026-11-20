@@ -111,21 +111,21 @@ Produktcode (Stand 20.11.2026, v0.2.0 nach Sprint 7): `capture`, `document`, `fi
 Schnapp nimmt auf, legt in der Bibliothek ab und öffnet den Editor (Auswählen, Verschieben, Griffe, Zoom, Rückgängig,
 Speichern, Zeichenwerkzeuge Pfeil/Kasten/Text/Schritt-Nummer mit Farbwahl, ADR-0021; Schwärzen/Verpixeln ADR-0022;
 Zwischenablage Strg+C, ADR-0015 Nachtrag 2, bleibt nach dem Schließen über den Halter `wlclip`, ADR-0024; Zuschneiden C und Stauchen X mit Zackenkante, Band bis an den Rand wird Zuschnitt, zurück über den Knopf „Ganzes Bild“, ADR-0023; Export PNG/JPG/SVG über den Portal-Dialog, Strg+Umschalt+E,
-ADR-0025; Menü mit allen Aktionen und Kürzeln, Tastentabelle `ui/kuerzel.go`, ADR-0026). Probeläufe ohne Andi: `scripts/probe.sh`
+ADR-0025; Menü mit allen Aktionen und Kürzeln, auch allein per Tastatur, Tastentabelle `ui/kuerzel.go`, ADR-0026 mit Nachträgen 2 und 3; seit Sprint 8, noch ohne Release: Speichern und Kopieren im Hintergrund, ADR-0020 Nachtrag 6). Probeläufe ohne Andi: `scripts/probe.sh`
 (virtueller KWin, `knowledge/topics/lehren.md`). Installation per `install.sh` (`~/.local`, Version aus `git describe`). Daneben
 der Wegwerf-Prototyp `prototype/`. Schichten:
 
 - **capture** — Schnittstelle + KWin-Umsetzung (D-Bus), später Portal.
-- **document** — Ebenenmodell (Pixelebene, Vektorebenen, Original, Stauchangaben), Rückgängig-Verlauf.
-- **fileformat** — Arbeitsdatei PNG mit Blöcken `snAP`/`snAO` lesen/schreiben; Exporte SVG, PNG/JPG (PDF noch offen).
+- **document** — Ebenenmodell (Pixelebene, Vektorebenen, Original, Stauchangaben), Rückgängig-Verlauf; `Abzug` (unabhängige Kopie mit gleichem Stand, ohne Verlauf, für Speichern und Kopieren im Hintergrund), `PruefeInhalt` (Objekte, Zuschnitt, Streifen ohne Pixel prüfen, gleiche Grenzen wie das Laden).
+- **fileformat** — Arbeitsdatei PNG mit Blöcken `snAP`/`snAO` lesen/schreiben; Exporte SVG, PNG/JPG (PDF noch offen); `LeseMetadaten` liest nur `snAP` und die Köpfe, keine Pixel (Neuaufbau des Index), mit demselben Urteil und derselben Größe wie das volle Lesen (F-272), ohne Vorabreservierung angekündigter Blocklängen (F-273).
 - **draw** (früher `zeichnen`) — die aus einem Schwesterprojekt übernommenen Pakete `svg`, `raster`, `geo` (eigenes Go-Modul, das
   das Schwesterprojekt wieder einbindet, ADR-0012); geplant: Weichzeichnen (Schrift liegt in `render`; Verpixeln ist ein Mosaik in `document`, ADR-0022 Nachtrag 1).
-- **library** — Autospeichern, Vorschau, Suche, Schlagworte.
+- **library** — Autospeichern, Vorschau, Suche, Schlagworte; neue Aufnahmen exklusiv per Hardlink, Rückfall `O_EXCL` (`exklusiv.go`, F-48); eigene Reste `.schnapp-tmp-*`, älter als eine Minute, räumen Neuaufbau und Speichern, sonst `ErrTempRest`; `VerwaisteVorschauen` listet nur und meldet `ErrAblageLeer` bei leerer Ablage (ADR-0016 Nachtrag 3).
 - **settings** — `settings.ini` lesen (ADR-0018); Warnungen statt Abbruch.
 - **selection** — Logik des Overlays ohne Gio (Abbildung, Bereich, Monitor per Klick, Lupe, letzter Bereich).
 - **canvas** — Logik der Editor-Leinwand ohne Gio (Zoom zum Zeiger, Einpassen, Treffer, Griffe, Verschieben;
-  Zeichenwerkzeuge, Schwärzen und Texteingabe `werkzeuge.go`; Zuschneiden/Stauchen `zuschnitt.go`; Menü-Aktionen ohne Werkzeug `menue.go` (Gestauchtes zurückholen, ADR-0026); Statusleiste `status.go` `StatusZeile`; Schließen
-  `Sitzung.Schliessen`, Signalwache `signal.go`; `Wecker` (`wecker.go`) weckt die Gio-Schleife wiederholt, bis sie eine
+  Zeichenwerkzeuge, Schwärzen und Texteingabe `werkzeuge.go`; Zuschneiden/Stauchen `zuschnitt.go`; Menü-Aktionen ohne Werkzeug `menue.go` (Gestauchtes zurückholen, ADR-0026); Statusleiste `status.go` `StatusZeile`; Speichern im Hintergrund
+  `hintergrund.go` (`SpeichernJetzt`, `SchliessenAnfrage`, `SignalAnfrage`, `SpeichernEnde`: die Oberfläche speichert einen Abzug in einer Goroutine, solange ruht das Bearbeiten, ADR-0020 Nachtrag 6; `Sitzung.Schliessen` und `SchliessenNachSignal` sind nur noch die synchrone Hülle für Tests, F-284), Signalwache `signal.go`; `Wecker` (`wecker.go`) weckt die Gio-Schleife wiederholt, bis sie eine
   Antwort abholt, F-231; ADR-0020 bis ADR-0023).
 - **render** — Ansichtsbild + Objekte zu Pixeln ohne GPU (`golang.org/x/image` vector/font, Go-Schriften; ADR-0020);
   Füllen über eigenen `einmischer` (bitgleich zu `draw.Over`, rund 4-mal schneller); `render.Pruefe` zählt die Textzeichen (`ZeichenBudget` 1e6, F-224) und schätzt den
@@ -165,8 +165,8 @@ ADR-0003 Nachtrag 2, ADR-0015.
   Nachtrag 1), `ui` (Schicht zu Gio; `Starte` hält die Gio-Hauptschleife, `Overlay` je Monitor),
   `cmd/schnapp` (Argumente `--region` [Voreinstellung], `--screen[=NAME]`, `--list-screens`, `--window`, `--repeat`,
   `--no-editor`, `DATEI`, `--ignore-limit DATEI`, `--version`, `--help`; der Editor fängt SIGTERM/SIGINT/SIGHUP bis zur
-  Rückkehr ab und speichert (ADR-0020 Nachtrag 2), Strg+C-Proben nur im eigenen Terminal; `aufnehmen.go` nimmt auf und legt in der Bibliothek ab, Pfad auf
-  stdout, dann Editor (ADR-0020), Exit 3 bei Abbruch; `editor.go` öffnet Dateien und speichert in die Bibliothek;
+  Rückkehr ab und speichert im Hintergrund (ADR-0020 Nachträge 2 und 6), Strg+C-Proben nur im eigenen Terminal; `aufnehmen.go` nimmt auf und legt in der Bibliothek ab, Pfad auf
+  stdout, dann Editor — erst nach der Rückkehr des Aufnahme-Aufrufs, mit dem abgelegten Dokument und dem Dateistand vom Ablegen (ADR-0020 Nachtrag 6, F-275), Exit 3 bei Abbruch; `editor.go` öffnet Dateien und speichert in die Bibliothek;
   `--screen` mit `[capture] screen = all` ist noch nicht umgesetzt). **Tests, die Claude selbst fahren kann, fährt
   Claude selbst** (Andi, 20.11.2026): `scripts/probe.sh` (virtueller KWin, Build-Tag `probe`, nie ausliefern), auch den
   Editor per Drehbuch (`--drehbuch DATEI --bild BILD`, Fernbedienung `cmd/schnapp-fernbedienung` über
@@ -178,7 +178,7 @@ ADR-0003 Nachtrag 2, ADR-0015.
   `po/de.po`. `capture` ist die Aufnahmeschicht (`Quelle`, KWin über D-Bus: ScreenShot3/memfd bevorzugt, sonst
   ScreenShot2/Pipe; Tests mit Attrappe, keine echte Aufnahme in `go test`). `data/schnapp.desktop.in` ist die Vorlage der Desktop-Datei (ADR-0017). `tmp/go.mod` trennt `tmp/` vom
   Wurzelmodul. `library` ist die Bibliothek (ADR-0016: Ablage `<Bilderordner>/schnapp/<JJJJ-MM>/…png`, Index-Cache
-  als JSON-Zeilen, Suche, Aufräumen über den freedesktop-Papierkorb); Tests nur mit eigener Umgebung unter `t.TempDir()`.
+  als JSON-Zeilen (Neuaufbau nur aus Metadaten), Suche, Aufräumen über den freedesktop-Papierkorb); Tests nur mit eigener Umgebung unter `t.TempDir()`.
 
 ## Marke
 

@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-20 (ergänzt in Sprint 8). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -250,3 +250,48 @@ Stand: 2026-11-20 (ergänzt in Sprint 6). Kurze Regeln aus Fehlern und Befunden;
     Tasten (`key.Event`), der Zweig für getippten Text (`key.EditEvent`) lag davor und blieb offen; gefunden hat es erst
     der Verify-Lauf. Wer eine Eingabe sperrt, testet Taste, getippten Text und Maus einzeln; Gio-Tastenlogik ist mit
     `input.Router` ohne Fenster testbar (Vorlage `tmp/sprint7/verify/zz_verify_test.go`, Karte #110).
+
+## Sprint 8 (20.11.2026)
+
+- **Eine Sperre in Gio holt Ereignisse ab und verwirft sie — sie hört nicht auf zu fragen** (F-143, c28c793): Wer
+  während einer Sperre `gtx.Event` gar nicht mehr aufruft, meldet in diesem Bild keine Filter. Gio nimmt einem Ziel
+  am Bildende den Tastaturfokus, wenn es keinen `key.FocusFilter` mehr gemeldet hat (`keyQueue.Frame`,
+  `third_party/gio/io/input/key.go`); nicht abgeholte Ereignisse verwirft `Router.Frame` am Bildende
+  (`third_party/gio/io/input/router.go`). Also Filter wie immer anmelden, Ereignis abholen, dann `continue`. Der Test
+  prüft nach dem Ende der Sperre, dass die Leinwand den Fokus noch hat und eine Taste wieder wirkt
+  (`ui/hintergrund_test.go`).
+- **Zustand, der je Bild einmal gelesen wird, gilt nicht für das ganze Bild** (F-280): `an := !SpeichernLaeuft()` am
+  Anfang der Knopfauswertung war schon falsch, als der erste Knopf im selben Bild das Speichern startete — der zweite
+  Knopf änderte noch. Sperren je Ereignis frisch lesen, und die Sperre gehört in die Logikschicht (`canvas`), nicht
+  nur in die Oberfläche.
+- **Arbeit im Hintergrund nur an einem Abzug, und der Verlauf entscheidet mit** (ADR-0020 Nachtrag 6, ADR-0022
+  Punkt 3): Speichern in einer Goroutine braucht eine unabhängige Kopie (`document.Dokument.Abzug`) und eine
+  Bearbeitungssperre. Nach einem Speichern mit Schwärzung wird der Verlauf geleert; liefe daneben eine Bearbeitung,
+  gälte das Leeren für einen anderen Stand, und ein Rückgängig holte das Geschwärzte zurück. Bei jedem Schritt ins
+  Nebenläufige zuerst fragen: Welche Zusage hängt am „gespeicherten Stand“?
+- **Aus synchron wird asynchron: Was wartet jetzt nicht mehr?** (F-281, F-283) Das synchrone Kopieren war vor dem
+  Schließen fertig, das asynchrone nicht — die Kopie ging still verloren. Umgekehrt wartete das Schließen ohne Frist
+  auf ein hängendes Speichern. Für jede Hintergrundarbeit festlegen: Wer wartet beim Schließen, beim Signal, beim
+  Zerstören, und wie lange?
+- **Ein Hardlink ist ein zweiter Name, kein Zwischenschritt** (F-48, F-274): Exklusives Anlegen per `os.Link` ist
+  atomar, aber bis zum Entfernen zeigt die temporäre Datei auf denselben Inhalt. Bleibt sie liegen (Absturz,
+  scheiterndes Entfernen), übersteht sie ein späteres Schwärzen, weil Speichern per Umbenennen einen neuen Inode
+  anlegt. Wer einen [K]-Befund mit einer neuen Dateisystem-Technik behebt, prüft im selben Zug den [S]-Pfad:
+  Welche Namen und Kopien des Inhalts gibt es jetzt, und wer räumt sie?
+- **Ein schneller Leser urteilt wie der volle, oder er sagt, wo nicht** (F-272, F-273): `LeseMetadaten` nahm Dateien
+  an, die das volle Lesen ablehnt, und meldete eine andere Größe. Gleiche Grenzen heißt: derselbe Prüfcode
+  (`document.PruefeInhalt`), nicht ein Nachbau. Und: Eine angekündigte Länge reserviert nie Speicher, bevor die
+  Bytes da sind — auch nicht in einem Leser, der „nur Köpfe“ liest.
+- **„Alles verwaist“ ist fast immer ein fehlender Ordner** (F-270, F-271): `filepath.WalkDir` steigt an einer Wurzel,
+  die ein Symlink ist, nicht ab, und ein ausgehängtes Laufwerk hinterlässt einen leeren Einhängepunkt. Listen, auf
+  denen später gelöscht wird, liefern bei leerer Quelle einen Fehler statt „alles“ (`ErrAblageLeer`); die Wurzel
+  vorher mit `filepath.EvalSymlinks` auflösen.
+- **Ein Test, der sich selbst überspringt, belegt nichts**: `t.Skip`, wenn die Vorbedingung nicht eintritt („Lage
+  geschätzt“), sieht in der Ausgabe wie grün aus. Die Vorbedingung herstellen (Knopfmitte messen) und mit `t.Fatal`
+  verlangen; nach neuen Tests `go test -v` nach `SKIP` durchsehen.
+- **Worktree-Agenten: Auch nach dem Push den Stand im Prompt nennen** (Ergänzung zur Lehre aus Sprint 6): Der Worktree
+  lag in dieser Sitzung nicht immer auf dem aktuellen main. Im Prompt den erwarteten Commit nennen (`git log -1`
+  als erste Handlung, bei Abweichung die genannten Commits per Cherry-Pick holen) und im Bericht die Basis ausweisen.
+- **Heredoc-Verbot: am Diff prüfen, nicht am Bericht** (Ergänzung, Sprint 8): Sonnet-Agenten haben die Auflage wieder
+  gebrochen und es selbst gemeldet. Das Verbot im Prompt zweimal nennen (Auflagen und Arbeitsweise), den Abschnitt
+  „Lokale Befehle“ nach `<<` durchsuchen und jede so entstandene Datei am Diff auf verstümmelte Zeichen prüfen.
