@@ -364,12 +364,13 @@ func (e *editor) exportStarten() {
 		return
 	}
 	e.exportOffen = true
+	e.meldung = canvas.Meldung{} // sonst verdeckte eine frische Meldung den Hinweis zum offenen Dialog (A-12)
 	if e.exportAntwort == nil {
 		e.exportAntwort = make(chan exportErgebnis, 1)
 	}
 	name := strings.TrimSuffix(e.titel, filepath.Ext(e.titel)) + export.PNG.Endung()
 	anfrage := portal.Anfrage{
-		Titel:     i18n.T("Export…"),
+		Titel:     i18n.T("Export"),
 		Dateiname: name,
 		Filter: []portal.Filter{
 			dialogFilter(i18n.T("PNG image"), export.PNG),
@@ -418,7 +419,7 @@ func (e *editor) exportFertig(r exportErgebnis) {
 		e.melde(i18n.T("No file dialog available (desktop portal missing)."), true)
 		return
 	case r.err != nil:
-		e.melde(fmt.Sprintf(i18n.T("Could not export: %v"), r.err), true)
+		e.melde(fmt.Sprintf(i18n.T("Could not export: %v"), exportFehlerText(r.err, "")), true)
 		return
 	}
 	pfad, err := portal.URIZuPfad(r.ergebnis.URI)
@@ -426,10 +427,21 @@ func (e *editor) exportFertig(r exportErgebnis) {
 		e.melde(i18n.T("Could not export: only local files can be written."), true)
 		return
 	}
-	f, pfad := export.Waehle(pfad, export.AusIndex(r.ergebnis.Filter))
+	f, pfad, angehaengt := export.Waehle(pfad, export.AusIndex(r.ergebnis.Filter))
+	// Der Dialog hat nur den Namen ohne Endung bestätigt: Ein vorhandenes Ziel nicht still ersetzen (A-1).
+	if err := export.PruefeAngehaengt(pfad, angehaengt); err != nil {
+		e.melde(exportFehlerText(err, filepath.Base(pfad)), true)
+		return
+	}
+	// Wie beim Speichern: ein laufender Text gehört mit in die Datei, ein laufendes Ziehen verschiebt den Export (A-5).
+	e.s.TextBestaetigen()
+	if e.s.Zieht() {
+		e.melde(i18n.T("Could not export: finish the current action first."), true)
+		return
+	}
 	err = export.SchreibeAtomar(pfad, func(w io.Writer) error { return export.Schreibe(e.s.D, f, w) })
 	if err != nil {
-		e.melde(fmt.Sprintf(i18n.T("Could not export: %v"), err), true)
+		e.melde(fmt.Sprintf(i18n.T("Could not export: %v"), exportFehlerText(err, "")), true)
 		return
 	}
 	e.melde(fmt.Sprintf(i18n.T("Exported to %s"), filepath.Base(pfad)), false)
@@ -1226,6 +1238,9 @@ func (e *editor) zeichneStatus(gtx layout.Context, hoehe int) {
 
 // hinweis ist die Bedienung des aktiven Werkzeugs bzw. der Texteingabe für die Statusleiste (ADR-0021).
 func (e *editor) hinweis() string {
+	if e.exportOffen {
+		return i18n.T("File dialog is open.") // der Dialog kann hinter dem Fenster liegen (A-12)
+	}
 	if e.s.TextLaeuft() {
 		return i18n.T("Type the text. Enter: done, Shift+Enter: new line, Esc: discard.")
 	}

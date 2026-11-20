@@ -203,6 +203,27 @@ msgstr "In die Zwischenablage kopiert"
 msgid "Export…"
 msgstr "Exportieren …"
 
+msgid "Export"
+msgstr "Exportieren"
+
+msgid "File dialog is open."
+msgstr "Der Dateidialog ist geöffnet."
+
+msgid "A file with this name already exists: %s"
+msgstr "Eine Datei mit diesem Namen gibt es schon: %s"
+
+msgid "Could not export: finish the current action first."
+msgstr "Export nicht möglich: Erst die laufende Aktion beenden."
+
+msgid "The connection to the desktop portal was lost."
+msgstr "Die Verbindung zum Desktop-Portal ist abgebrochen."
+
+msgid "The file dialog ended without a result."
+msgstr "Der Dateidialog endete ohne Ergebnis."
+
+msgid "The file dialog returned no file."
+msgstr "Der Dateidialog nannte keine Datei."
+
 msgid "PNG image"
 msgstr "PNG-Bild"
 

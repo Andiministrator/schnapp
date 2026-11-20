@@ -7,7 +7,8 @@ import (
 	"testing"
 )
 
-// leistenKnoepfe sind 14 Knöpfe wie im Editor: neun Werkzeuge, dann Farbe | Rückgängig, Wiederholen | Einpassen, 1:1.
+// leistenKnoepfe sind 15 Knöpfe wie im Editor: neun Werkzeuge, dann Farbe | Rückgängig, Wiederholen | Einpassen, 1:1 |
+// Export.
 // Breiten in Pixeln bei 1 dp = 1 px.
 func leistenKnoepfe() []LeistenKnopf {
 	var k []LeistenKnopf
@@ -20,6 +21,7 @@ func leistenKnoepfe() []LeistenKnopf {
 		LeistenKnopf{Breite: 70},
 		LeistenKnopf{Breite: 60, Gruppe: true},
 		LeistenKnopf{Breite: 50},
+		LeistenKnopf{Breite: 80, Gruppe: true},
 	)
 }
 
@@ -54,7 +56,8 @@ func TestLeisteSchmalUmbruch(t *testing.T) {
 	if z < 2 {
 		t.Fatalf("480 px: %d Zeile(n), soll Umbruch", z)
 	}
-	// Sollwerte: Zeile 1 bis x=480-12-90-8=370: 12,100,188,276 (Knopf 4 endet 356+... 276+80=356 ≤ 370), Knopf 4 bei 364 passt nicht.
+	// Sollwerte: Zeile 1 reicht bis x=480-12-90-8=370: Knöpfe bei 12, 100, 188, 276 (Knopf 3 endet bei 356 ≤ 370);
+	// Knopf 4 stünde bei 364 und endete bei 444 > 370, er beginnt die zweite Zeile.
 	if pos[3] != image.Pt(276, 10) || pos[4] != image.Pt(12, 54) {
 		t.Fatalf("Umbruchstelle: Knopf 3 %v, Knopf 4 %v", pos[3], pos[4])
 	}

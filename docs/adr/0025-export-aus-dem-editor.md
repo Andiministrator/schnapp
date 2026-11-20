@@ -44,3 +44,28 @@ fremd; `zenity`/`kdialog` wären Laufzeit-Fremdprogramme (ADR-0011).
 - Rendern und Schreiben laufen im Fensterthread wie Speichern und Kopieren (F-143, F-178); große Dokumente frieren das
   Fenster kurz ein, bis die Karte zu F-143 das ändert.
 - PDF-Export und ein Dateinamen-Schema bleiben offen (A-50).
+
+## Nachtrag 1 (20.11.2026): Nacharbeit aus der Kritik (Fable)
+
+- **Rechte (A-3), ersetzt Punkt 5 „Rechte 0644“:** Die temporäre Datei entsteht mit `O_EXCL` und Modus 0666; der Kern
+  wendet die umask an. Ersetzt der Export eine vorhandene reguläre Datei, übernimmt die neue deren Rechte (eine 0600-Datei
+  bleibt 0600). Ein Fehler beim Übernehmen der Rechte (etwa exFAT) bricht nicht ab, er erscheint nur im Debug-Log. Es gibt
+  keinen festen Wert mehr.
+- **Kein stilles Überschreiben bei angehängter Endung (A-1):** Hängt der Editor die Endung an (der Dialog bestätigte
+  nur den Namen ohne Endung) und gibt es das Ziel schon, schreibt er nicht, sondern meldet „A file with this name
+  already exists: <Dateiname>“. Bestätigt der Dialog den vollständigen Namen, bleibt das Ersetzen wie in Punkt 5.
+- **Getrennte Busverbindung (A-2):** Schließt der Bus die Verbindung, während der Dialog offen ist, beendet das
+  Abonnement seine Goroutine und liefert einen Fehler (`ErrVerbindung`); `Speichern` kehrt damit zurück, der
+  Export-Knopf wird wieder bedienbar. Endet der Kontext, während `SaveFile` noch läuft, wird die Anfrage unter dem
+  erwarteten Pfad geschlossen (A-8).
+- **Absenderprüfung (A-7):** Die Match-Regel für `Request.Response` nennt den Absender `org.freedesktop.portal.Desktop`;
+  zusätzlich verwirft der Filter Signale, deren Absender weder dieser Name noch dessen eindeutiger Besitzer ist
+  (`GetNameOwner` beim Anmelden; scheitert das, gilt nur der Name).
+- **Meldungen (A-6, A-12):** Fehler des Exports erscheinen übersetzt und ohne Pfad (bei Betriebssystemfehlern nur die
+  Ursache). Solange der Dialog offen ist, zeigt die Statusleiste „File dialog is open.“; der Dialogtitel heißt „Export“
+  ohne Auslassungspunkte. Ein laufender Text wird vor dem Schreiben bestätigt, ein laufendes Ziehen lehnt den Export
+  ab (A-5).
+- **Offen vor einer Flathub-Einreichung (A-9, nur Hinweis, nicht umgesetzt):** Unter Flatpak gibt das Dokumenten-Portal
+  nur Schreibrecht auf die gewählte Datei. Die temporäre Datei daneben und die angehängte Endung liegen außerhalb
+  dessen; Punkt 5 funktioniert dort so nicht und braucht dann einen anderen Weg (etwa direkt in die gewählte Datei
+  schreiben oder den Dateideskriptor des Portals nutzen).
