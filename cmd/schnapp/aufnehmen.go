@@ -200,13 +200,15 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 // der Arbeitsdatei ist nur der gewählte Bereich, nicht der ganze Monitor: Was der Nutzer nicht gewählt hat, gehört
 // nicht in die Datei (Kernprinzip 3).
 func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftrag, aus, fehler io.Writer) int {
+	// Die Messung endet mit dem Ablegen; die Editor-Sitzung misst eine eigene Zeile (sonst stand die ganze
+	// Bearbeitungszeit unter „Speichern“, Echtlauf #86).
 	start := time.Now()
-	defer func() { diagnose(fehler, "Speichern: %v", time.Since(start).Round(time.Millisecond)) }()
 	d, err := document.Neu(b.SubImage(bereich))
 	if err != nil {
 		return meldeFehler(fehler, err)
 	}
 	pfad, err := an.ablegen(d)
+	diagnose(fehler, "Ablegen in der Bibliothek: %v", time.Since(start).Round(time.Millisecond))
 	if err != nil {
 		fmt.Fprintf(fehler, i18n.T("Could not save the screenshot: %v")+"\n", err)
 		return exitFehler
@@ -216,7 +218,10 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 	if t.Editor && an.editor != nil {
 		// Die Aufnahme liegt schon in der Bibliothek, der Pfad steht auf stdout: Was der Editor meldet, ist nur noch
 		// eine Warnung (ADR-0020).
-		if err := an.editor(pfad, false); err != nil {
+		start = time.Now()
+		err := an.editor(pfad, false)
+		diagnose(fehler, "Editor-Sitzung bis Fenster zu: %v", time.Since(start).Round(time.Millisecond))
+		if err != nil {
 			fmt.Fprintf(fehler, i18n.T("The editor could not be opened or saved: %v")+"\n", nutzerFehler(err))
 		}
 	}
