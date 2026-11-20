@@ -139,7 +139,7 @@ func Uebergib(programm string, daten []byte, frist time.Duration) (pid int, mana
 		}
 	}
 	if err != nil {
-		_ = cmd.Process.Kill() // eigenes Kind, noch nicht abgeholt: die PID ist nicht wiederverwendet
+		_ = cmd.Process.Kill() // eigenes Kind; die Goroutine oben holt es ab, sobald es endet, dann schlägt Kill fehl (Fehler ignoriert)
 		<-fertig
 		return 0, "", err
 	}

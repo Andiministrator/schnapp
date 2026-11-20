@@ -107,7 +107,7 @@ Herkunft: Anforderungen und Entscheidungen des Maintainers vom 18.11.2026, über
 ## Architektur
 
 Produktcode (Stand 20.11.2026, Sprint 6): `capture`, `document`, `fileformat`, `library`, `settings`, `selection`,
-`canvas`, `render` stehen mit Tests, dazu Overlay und Editor in `ui` (ohne Tests, Logik liegt in `selection`/`canvas`);
+`canvas`, `render` stehen mit Tests, dazu Overlay und Editor in `ui` (wenige Tests, Logik liegt in `selection`/`canvas`);
 Schnapp nimmt auf, legt in der Bibliothek ab und öffnet den Editor (Auswählen, Verschieben, Griffe, Zoom, Rückgängig,
 Speichern, Zeichenwerkzeuge Pfeil/Kasten/Text/Schritt-Nummer mit Farbwahl, ADR-0021; Schwärzen/Verpixeln ADR-0022;
 Zwischenablage Strg+C, ADR-0015 Nachtrag 2, bleibt nach dem Schließen über den Halter `wlclip`, ADR-0024; Zuschneiden C und Stauchen X mit Zackenkante, ADR-0023; Export PNG/JPG/SVG über den Portal-Dialog, Strg+Umschalt+E,

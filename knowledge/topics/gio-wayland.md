@@ -29,8 +29,8 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
 - Zeigerbild bei wechselnder Skala neu laden (F-78, ADR-0015 Nachtrag 1); Bild-MIME-Typen in der Zwischenablage
   (`writeClipboard` bietet bei `image/…` genau diesen Typ an, `gio_onDataSourceSend` schreibt in einer Schleife bis
   alles übergeben ist, ADR-0015 Nachtrag 2).
-- Umfang (Stand 20.11.2026): von Hand 5 Dateien +311/−36 Zeilen (einschließlich 30 Zeilen Test), erzeugt
-  4 Dateien +811 Zeilen — zählen mit `git apply --numstat third_party/gio-ausgabe.patch`.
+- Umfang (Stand 20.11.2026): von Hand 5 Dateien +465/−39 Zeilen (einschließlich 123 Zeilen Test in
+  `app/os_wayland_test.go`), erzeugt 4 Dateien +811 Zeilen — zählen mit `git apply --numstat third_party/gio-ausgabe.patch`.
 - Ablage (ADR-0015, seit 19.11.2026): gepatchte Kopie als Modul `third_party/gio/` im Repo, `replace gioui.org =>
   ../third_party/gio` im `go.mod` jedes Nutzers; `third_party/gio-patch.sh pruefen|erzeugen|anlegen` hält Kopie und Patch
   zusammen, die CI prüft beides. Vorher (Sprint 1) lag die Kopie gitignoriert unter `tmp/` — frische Klone und die CI

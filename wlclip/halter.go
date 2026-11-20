@@ -4,8 +4,8 @@
 // (ext-data-control-v1, sonst wlr-data-control-unstable-v1), das Zwischenablage-Verwalter wie Klipper benutzen. So
 // bleibt ein im Editor kopiertes Bild erhalten, nachdem der Editor geschlossen ist (ADR-0024, E-19).
 //
-// Der Halter spricht das Wayland-Leitungsformat selbst (Paket internal/wlwire), ohne libwayland und ohne cgo. Er bietet genau einen
-// MIME-Typ an, liefert die Bytes an jeden, der einfügt, und endet, sobald eine andere Anwendung die Zwischenablage
+// Der Halter spricht das Wayland-Leitungsformat selbst (Paket internal/wlwire), ohne libwayland und ohne cgo. Er bietet den übergebenen
+// MIME-Typ an (Schnapp: image/png) und zusätzlich den leeren MarkeKlipper, liefert die Bytes an jeden, der einfügt, und endet, sobald eine andere Anwendung die Zwischenablage
 // übernimmt, der Compositor die Verbindung schließt oder die Zeitgrenze erreicht ist. Er greift in nichts ein.
 package wlclip
 

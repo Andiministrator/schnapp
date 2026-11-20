@@ -17,6 +17,10 @@ erweitert um `gio-ausgabe.patch`:
   wertet `clipboard.WriteCmd.Type` aus. Bei `image/…` bietet die `wl_data_source` genau diesen Typ an und liefert die Bytes
   bei `send`; Text bleibt unverändert. Der Inhalt gehört dem Fenster: Nach dem Schließen bleibt er nur erhalten, wenn ein
   Zwischenablage-Verwalter (unter KDE Klipper) ihn übernommen hat. Beim Gio-Update prüfen, ob Gio das selbst kann.
+- **Senden mit Frist (F-176, F-177, F-228, ADR-0015 Nachtrag 2):** `gio_onDataSourceSend` schreibt die Bytes über
+  `writeAllFD` ganz in die Pipe (PNG größer als der Pipe-Puffer). Der Deskriptor wird vorher nicht blockierend geschaltet,
+  sonst griffe die Frist nie; nach 10 s ohne Fortschritt gibt er auf. Fehlen Sitz oder Datengerät, meldet
+  `ErrClipboardUnavailable` über `ClipboardWriteError` (Editor zeigt einen Fehler statt „Copied to clipboard“).
 
 Warum eine Kopie im Repo und kein Fork: `docs/adr/0015-gepatchtes-gio-im-repo.md`. Hintergrund:
 `knowledge/topics/gio-wayland.md`.

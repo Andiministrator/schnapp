@@ -28,6 +28,8 @@ jobs:
       # Probe-Build (ui/probe_an.go, F-179): übersetzt und meldet sich mit „+probe“ in --version.
       - run: go vet -tags novulkan,nox11,probe ./ui ./cmd/...
       - run: go test -tags novulkan,nox11,probe -run TestLaufeEnglisch ./cmd/schnapp
+      # Tests der Fernbedienung (cmd/schnapp-fernbedienung, Build-Tag probe; F-233)
+      - run: go test -tags novulkan,nox11,probe ./cmd/schnapp-fernbedienung
 
   draw:
     runs-on: ubuntu-latest
