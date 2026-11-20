@@ -106,5 +106,6 @@ Bedienung vor Funktionsfülle).
 - **Verwerfen-Marke (F-154, Punkt 3):** Jede neue Bearbeitung nach einem gescheiterten Speichern (Zeichnen,
   Verschieben, Löschen, Umfärben, Text bestätigen) hebt die Marke auf, auch wenn Rückgängig danach denselben Stand
   wieder herstellt; Rückgängig und Wiederholen allein heben sie nicht auf.
-- **Offen (F-154, Punkt 4):** Die Farbwahl färbt das ausgewählte, eben gezeichnete Objekt um (Punkt 5 dieser ADR); ob
-  das so bleibt, entscheidet Andi — unverändert.
+- **Entschieden (F-154, Punkt 4; Andi, 20.11.2026):** Die Farbwahl färbt das ausgewählte, eben gezeichnete Objekt um
+  (Punkt 5 dieser ADR) und gilt zugleich für die nächsten Objekte — wie in Snagit. Das neue Objekt bleibt ausgewählt,
+  damit sein Griff sofort greift.
