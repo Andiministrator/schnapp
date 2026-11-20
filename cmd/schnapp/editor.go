@@ -22,8 +22,10 @@ import (
 // Platz zurück; alles andere (Datei außerhalb, fremdes oder beschädigtes Bild, neuere Fassung) kommt beim ersten
 // Speichern als neue Aufnahme in die Bibliothek, danach wird diese fortgeschrieben. Die geöffnete Datei selbst bleibt
 // dann unberührt.
-func oeffneImEditor(pfad string) error {
-	abs, g, stand, err := ladeFuerEditor(pfad)
+//
+// ohneGrenze ist --ignore-limit (ADR-0017 Nachtrag 6): Die Datei wird auch über dem Rechenbudget geöffnet.
+func oeffneImEditor(pfad string, ohneGrenze bool) error {
+	abs, g, stand, err := ladeFuerEditor(pfad, ohneGrenze)
 	if err != nil {
 		return err
 	}
@@ -39,7 +41,11 @@ func oeffneImEditor(pfad string) error {
 // geprüft, damit Speichern nie abbrechen muss (F-131, ADR-0020 Nachtrag 1). stand ist der Zustand der Datei, gemerkt
 // vor dem Lesen (F-110): Ändert sie sich danach, merkt es das Speichern. Lässt er sich nicht lesen, bleibt der
 // Nullwert, und das Zurückschreiben weicht auf eine neue Aufnahme aus.
-func ladeFuerEditor(pfad string) (abs string, g *fileformat.Gelesen, stand library.Stand, err error) {
+//
+// ohneGrenze (--ignore-limit, F-146) überspringt nur die Ablehnung durch render.Pruefe, etwa für eigene Arbeit, die
+// über das Budget gewachsen ist (F-138). Die Grenzen beim Lesen (Objekte, Streifen, Kacheln, Bildgröße) und die
+// Formatprüfung gelten weiter.
+func ladeFuerEditor(pfad string, ohneGrenze bool) (abs string, g *fileformat.Gelesen, stand library.Stand, err error) {
 	abs, err = filepath.Abs(pfad)
 	if err != nil {
 		return "", nil, library.Stand{}, err
@@ -49,8 +55,10 @@ func ladeFuerEditor(pfad string) (abs string, g *fileformat.Gelesen, stand libra
 	if err != nil {
 		return "", nil, library.Stand{}, err
 	}
-	if err := render.Pruefe(g.Dokument); err != nil {
-		return "", nil, library.Stand{}, err
+	if !ohneGrenze {
+		if err := render.Pruefe(g.Dokument); err != nil {
+			return "", nil, library.Stand{}, err
+		}
 	}
 	return abs, g, stand, nil
 }
@@ -200,7 +208,7 @@ func nutzerFehler(err error) string {
 	case errors.Is(err, library.ErrKeinHeim):
 		return i18n.T("No home directory (HOME is not set).")
 	case errors.Is(err, render.ErrZuAufwendig):
-		return i18n.T("This file has too many or too large annotations to open.")
+		return i18n.T("This file has too many or too large annotations to open. To open it anyway, use --ignore-limit.")
 	}
 	return err.Error()
 }

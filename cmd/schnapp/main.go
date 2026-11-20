@@ -83,6 +83,8 @@ type Auftrag struct {
 	Editor bool
 	// Datei: bei ModusOeffnen die zu öffnende Datei.
 	Datei string
+	// OhneGrenze: bei ModusOeffnen das Rechenbudget nicht prüfen (--ignore-limit, ADR-0017 Nachtrag 6).
+	OhneGrenze bool
 }
 
 // Bildschirmziel sagt, welcher Monitor aufgenommen wird.
@@ -95,7 +97,7 @@ type Bildschirmziel struct {
 // (ADR-0018): --screen=NAME ignoriert [capture] screen, --screen ohne Wert folgt ihr.
 func plane(a Aufruf, e settings.Einstellungen) Auftrag {
 	t := Auftrag{Modus: a.Modus, Aufraeumen: e.Bibliothek, Editor: a.Modus.Aufnahme() && e.Editor && !a.OhneEditor,
-		Datei: a.Datei}
+		Datei: a.Datei, OhneGrenze: a.OhneGrenze}
 	if a.Modus == ModusBildschirm {
 		if a.Bildschirm != "" {
 			t.Ziel = Bildschirmziel{Name: a.Bildschirm}
@@ -118,6 +120,7 @@ func hilfe() string {
 		"  --repeat       " + i18n.T("Repeat the last area") + "\n" +
 		"  --no-editor    " + i18n.T("Do not open the editor after capturing") + "\n" +
 		"  FILE           " + i18n.T("Open FILE in the editor") + "\n" +
+		"  --ignore-limit " + i18n.T("Open FILE even if it is too costly to render (with --ignore-limit)") + "\n" +
 		"  -V, --version  " + i18n.T("Show the version") + "\n" +
 		"  -h, --help     " + i18n.T("Show this help") + "\n"
 }

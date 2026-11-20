@@ -225,8 +225,14 @@ msgstr "Die Datei wurde seit dem Öffnen anderswo geändert; als neue Aufnahme g
 msgid "No permission to write the file."
 msgstr "Keine Berechtigung, die Datei zu schreiben."
 
-msgid "This file has too many or too large annotations to open."
-msgstr "Die Datei hat zu viele oder zu große Beschriftungen, um sie zu öffnen."
+msgid "This file has too many or too large annotations to open. To open it anyway, use --ignore-limit."
+msgstr "Die Datei hat zu viele oder zu große Beschriftungen, um sie zu öffnen. Mit --ignore-limit lässt sie sich trotzdem öffnen."
+
+msgid "Option --ignore-limit works only together with a file."
+msgstr "Die Option --ignore-limit gilt nur zusammen mit einer Datei."
+
+msgid "Open FILE even if it is too costly to render (with --ignore-limit)"
+msgstr "FILE auch öffnen, wenn es zu aufwendig zu rendern ist (mit --ignore-limit)"
 
 msgid "Not enough disk space."
 msgstr "Nicht genug Speicherplatz."

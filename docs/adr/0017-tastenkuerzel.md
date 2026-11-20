@@ -93,3 +93,19 @@ Strg+Z rückgängig; Strg+Umschalt+Z und Strg+Y wiederholen; Entf und Rücktaste
 Zug ab, sonst hebt es die Auswahl auf; Strg+S speichern; Strg+0 einpassen; Strg+1 100 %; Strg+W schließen. Maus: Rad
 zoomt zum Zeiger, Ziehen auf freier Fläche oder mit der mittleren Taste verschiebt die Ansicht. Während eines Zugs
 sind Rückgängig, Löschen, Speichern und Zoomen gesperrt (F-18, Kritik A-6). Nutzer-Doku: README.md/README.de.md.
+
+## Nachtrag 6 (20.11.2026): `--ignore-limit` öffnet Dateien über dem Rechenbudget (F-146)
+
+**Status:** Akzeptiert (Andi, 20.11.2026: Umgehungsweg ja).
+
+- `schnapp --ignore-limit DATEI` (Reihenfolge beliebig) öffnet die Datei auch dann, wenn `render.Pruefe` das Rastern
+  wegen des Rechenbudgets ablehnen würde (ADR-0020 Nachtrag 1 und 3). Anlass: Eigene Arbeit, die im Editor über das
+  Budget gewachsen ist, wird beim Speichern nur gewarnt (F-138) und ließe sich sonst nie wieder öffnen.
+- Der Schalter überspringt **nur** diese Ablehnung. Formatprüfung und Grenzen beim Lesen (Bildgröße, `MaxObjekte`,
+  `MaxStreifen`, `MaxKacheln`) gelten weiter; eine Arbeitsdatei darüber wird wie bisher nur als Bild gelesen.
+- Ohne Datei ist der Schalter ein Aufruffehler (Exit 2), auch bei Aufnahmen, `--help` und `--list-screens`: still
+  wirkungslos wäre irreführend. Mit `--no-editor` gilt weiter „Datei nicht kombinierbar“. `--ignore-limit=WERT` ist
+  unbekannt.
+- Die Ablehnung beim Öffnen nennt den Schalter („… Mit --ignore-limit lässt sie sich trotzdem öffnen.“); `--help`
+  führt ihn auf. Aufnahmen öffnen den Editor nie mit dem Schalter. Ein sehr aufwendiges Dokument kann das Rendern
+  im Editor stark verlangsamen; das nimmt der Schalter bewusst in Kauf.

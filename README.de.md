@@ -60,6 +60,7 @@ Vorhanden ist:
 | `schnapp --repeat` | den letzten Bereich noch einmal aufnehmen |
 | `schnapp --no-editor …` | aufnehmen, ohne danach den Editor zu öffnen |
 | `schnapp DATEI` | ein PNG oder JPEG im Editor öffnen |
+| `schnapp --ignore-limit DATEI` | die Datei auch öffnen, wenn ihre Beschriftungen so zahlreich oder groß sind, dass das Rendern das Rechenbudget überschreitet (für eigene Arbeit, die darüber hinausgewachsen ist) |
 
 Jede Aufnahme landet in der Bibliothek (`~/Bilder/schnapp/JJJJ-MM/`), ihr Pfad steht auf der Standardausgabe, bevor
 der Editor öffnet. Einstellungen stehen in `~/.config/schnapp/settings.ini`, etwa `[capture] open-editor = false`.

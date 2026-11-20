@@ -42,7 +42,8 @@ type anschluesse struct {
 	aufraeumen func(e library.Einstellung, jetzt time.Time) (library.AufraeumErgebnis, error)
 	tagesmarke string
 	// editor öffnet eine Datei im Editor und kehrt nach dem Schließen zurück (ADR-0020); nil = kein Editor.
-	editor func(pfad string) error
+	// ohneGrenze ist --ignore-limit (nur bei schnapp DATEI, ADR-0017 Nachtrag 6).
+	editor func(pfad string, ohneGrenze bool) error
 }
 
 func echteAnschluesse() anschluesse {
@@ -85,7 +86,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		if an.editor == nil {
 			return exitFehler
 		}
-		if err := an.editor(t.Datei); err != nil {
+		if err := an.editor(t.Datei, t.OhneGrenze); err != nil {
 			fmt.Fprintf(fehler, i18n.T("Cannot open %s: %s")+"\n", t.Datei, nutzerFehler(err))
 			return exitFehler
 		}
@@ -215,7 +216,7 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 	if t.Editor && an.editor != nil {
 		// Die Aufnahme liegt schon in der Bibliothek, der Pfad steht auf stdout: Was der Editor meldet, ist nur noch
 		// eine Warnung (ADR-0020).
-		if err := an.editor(pfad); err != nil {
+		if err := an.editor(pfad, false); err != nil {
 			fmt.Fprintf(fehler, i18n.T("The editor could not be opened or saved: %v")+"\n", nutzerFehler(err))
 		}
 	}

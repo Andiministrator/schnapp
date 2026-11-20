@@ -61,6 +61,15 @@ func TestAuswerten(t *testing.T) {
 		{[]string{"--version", "--no-editor"}, Aufruf{}, "Options --version and --no-editor cannot be combined"},
 		{[]string{"x.png", "--no-editor"}, Aufruf{}, "A file cannot be combined with --no-editor."},
 		{[]string{"--no-editor=1"}, Aufruf{}, "Unknown option: --no-editor"},
+		// F-146: --ignore-limit gilt nur beim Öffnen einer Datei, in beiden Reihenfolgen.
+		{[]string{"--ignore-limit", "a.png"}, Aufruf{Modus: ModusOeffnen, Datei: "a.png", OhneGrenze: true}, ""},
+		{[]string{"a.png", "--ignore-limit"}, Aufruf{Modus: ModusOeffnen, Datei: "a.png", OhneGrenze: true}, ""},
+		{[]string{"--ignore-limit"}, Aufruf{}, "Option --ignore-limit works only together with a file."},
+		{[]string{"--ignore-limit", "--region"}, Aufruf{}, "works only together with a file"},
+		{[]string{"--window", "--ignore-limit"}, Aufruf{}, "works only together with a file"},
+		{[]string{"--ignore-limit", "--help"}, Aufruf{}, "works only together with a file"},
+		{[]string{"--ignore-limit=1", "a.png"}, Aufruf{}, "Unknown option: --ignore-limit"},
+		{[]string{"--ignore-limit", "--no-editor", "a.png"}, Aufruf{}, "A file cannot be combined with --no-editor."},
 	}
 	for _, tc := range tests {
 		got, err := Auswerten(tc.args)

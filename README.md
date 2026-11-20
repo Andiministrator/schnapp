@@ -59,6 +59,7 @@ What exists:
 | `schnapp --repeat` | capture the last area again |
 | `schnapp --no-editor …` | capture without opening the editor afterwards |
 | `schnapp FILE` | open a PNG or JPEG in the editor |
+| `schnapp --ignore-limit FILE` | open the file even if it has so many or such large annotations that rendering exceeds the compute budget (for your own work that grew past it) |
 
 Every capture is saved to the library (`~/Pictures/schnapp/YYYY-MM/`) and its path printed on standard output before
 the editor opens. Settings live in `~/.config/schnapp/settings.ini`, for example `[capture] open-editor = false`.

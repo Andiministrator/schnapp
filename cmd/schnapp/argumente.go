@@ -34,6 +34,8 @@ type Aufruf struct {
 	OhneEditor bool
 	// Datei ist bei ModusOeffnen der Pfad der Datei.
 	Datei string
+	// OhneGrenze ist --ignore-limit: die Datei auch über dem Rechenbudget öffnen (ADR-0017 Nachtrag 6, F-146).
+	OhneGrenze bool
 }
 
 // Aufnahme meldet, ob der Modus eine Aufnahme ist (nur diese öffnen danach den Editor und vertragen --no-editor).
@@ -77,8 +79,13 @@ func Auswerten(args []string) (Aufruf, error) {
 		a          Aufruf
 		gesehen    bool
 		ohneEditor bool
+		ohneGrenze bool
 	)
 	for _, arg := range args {
+		if arg == "--ignore-limit" {
+			ohneGrenze = true
+			continue
+		}
 		if arg == "--no-editor" {
 			ohneEditor = true
 			continue
@@ -131,6 +138,13 @@ func Auswerten(args []string) (Aufruf, error) {
 		}
 		a = Aufruf{Modus: m, Bildschirm: wert}
 		gesehen = true
+	}
+	if ohneGrenze {
+		// Ohne Datei (auch bei Aufnahme, --help usw.) ist der Schalter ein Fehler, nicht still wirkungslos.
+		if a.Modus != ModusOeffnen {
+			return Aufruf{}, &Fehler{i18n.T("Option --ignore-limit works only together with a file.")}
+		}
+		a.OhneGrenze = true
 	}
 	if ohneEditor {
 		if a.Modus == ModusOeffnen {

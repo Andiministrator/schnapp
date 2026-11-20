@@ -29,7 +29,7 @@ func TestEditorNachDerAufnahme(t *testing.T) {
 	for _, mitEditor := range []bool{true, false} {
 		l := neuerLauf(t)
 		var geoeffnet []string
-		l.an.editor = func(p string) error { geoeffnet = append(geoeffnet, p); return nil }
+		l.an.editor = func(p string, _ bool) error { geoeffnet = append(geoeffnet, p); return nil }
 		l.overlayErg = ui.OverlayErgebnis{Monitor: 0, Bereich: image.Rect(0, 0, 2, 2)}
 		code, aus, fehler := l.fuehre(Auftrag{Modus: ModusBereich, Editor: mitEditor})
 		if code != exitOK || aus != "/ablage/2026-11/datei.png\n" || fehler != "" {
@@ -48,7 +48,7 @@ func TestEditorNachDerAufnahme(t *testing.T) {
 func TestEditorFehlerNachDerAufnahme(t *testing.T) {
 	i18n.Setze(nil)
 	l := neuerLauf(t)
-	l.an.editor = func(string) error { return errors.New("kein Wayland") }
+	l.an.editor = func(string, bool) error { return errors.New("kein Wayland") }
 	l.overlayErg = ui.OverlayErgebnis{Monitor: 0, Bereich: image.Rect(0, 0, 2, 2)}
 	code, aus, fehler := l.fuehre(Auftrag{Modus: ModusBereich, Editor: true})
 	if code != exitOK || aus == "" || !strings.Contains(fehler, "The editor could not be opened or saved: kein Wayland") {
@@ -62,12 +62,12 @@ func TestOeffnenOhneAufnahme(t *testing.T) {
 	l := neuerLauf(t)
 	l.an.quelle = nil // eine Aufnahme würde hier abstürzen
 	var geoeffnet string
-	l.an.editor = func(p string) error { geoeffnet = p; return nil }
+	l.an.editor = func(p string, _ bool) error { geoeffnet = p; return nil }
 	code, aus, fehler := l.fuehre(Auftrag{Modus: ModusOeffnen, Datei: "bild.png"})
 	if code != exitOK || aus != "" || fehler != "" || geoeffnet != "bild.png" {
 		t.Errorf("Code %d, aus %q, fehler %q, geöffnet %q", code, aus, fehler, geoeffnet)
 	}
-	l.an.editor = func(string) error { return errors.New("gibt es nicht") }
+	l.an.editor = func(string, bool) error { return errors.New("gibt es nicht") }
 	if code, _, fehler := l.fuehre(Auftrag{Modus: ModusOeffnen, Datei: "x"}); code != exitFehler || !strings.Contains(fehler, "Cannot open x: gibt es nicht") {
 		t.Errorf("Fehlerfall: Code %d, fehler %q", code, fehler)
 	}
@@ -110,11 +110,11 @@ func TestZweiEditorenUeberschreibenSichNicht(t *testing.T) {
 		t.Fatal(err)
 	}
 	abs := filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad))
-	abs1, g1, s1, err := ladeFuerEditor(abs)
+	abs1, g1, s1, err := ladeFuerEditor(abs, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	abs2, g2, s2, err := ladeFuerEditor(abs)
+	abs2, g2, s2, err := ladeFuerEditor(abs, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,7 +312,7 @@ func TestNutzerFehler(t *testing.T) {
 		ui.ErrOverlayOffen: "The selection overlay did not close in time.",
 		speicherFehler(fmt.Errorf("x: %w", os.ErrPermission)):                             "No permission to write the file.",
 		speicherFehler(errors.Join(errors.New("a"), fmt.Errorf("b: %w", syscall.ENOSPC))): "Not enough disk space.",
-		fmt.Errorf("x: %w", render.ErrZuAufwendig):                                        "This file has too many or too large annotations to open.",
+		fmt.Errorf("x: %w", render.ErrZuAufwendig):                                        "This file has too many or too large annotations to open. To open it anyway, use --ignore-limit.",
 		speicherFehler(errors.New("/irgendwo/datei.png: kaputt")):                         "The file could not be written.",
 		errors.New("x"): "x",
 	} {
@@ -353,7 +353,7 @@ func TestOeffnenLehntZuAufwendigeDateiAb(t *testing.T) {
 			t.Fatal(err)
 		}
 		f.Close()
-		_, g, _, err := ladeFuerEditor(pfad)
+		_, g, _, err := ladeFuerEditor(pfad, false)
 		if !fall.abgelehnt {
 			if err != nil || len(g.Dokument.Objekte()) != fall.n {
 				t.Errorf("%d Glyphen (unter dem Budget): %v", fall.n, err)
@@ -363,7 +363,7 @@ func TestOeffnenLehntZuAufwendigeDateiAb(t *testing.T) {
 		if !errors.Is(err, render.ErrZuAufwendig) {
 			t.Fatalf("%d Glyphen: %v, Soll render.ErrZuAufwendig", fall.n, err)
 		}
-		if got, soll := nutzerFehler(err), "This file has too many or too large annotations to open."; got != soll {
+		if got, soll := nutzerFehler(err), "This file has too many or too large annotations to open. To open it anyway, use --ignore-limit."; got != soll {
 			t.Errorf("Meldung %q, Soll %q", got, soll)
 		}
 	}
@@ -434,7 +434,7 @@ func TestSpeichernUeberDemBudgetWarnt(t *testing.T) {
 			t.Fatal(err)
 		}
 		abs := filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad))
-		abs, g, stand, err := ladeFuerEditor(abs)
+		abs, g, stand, err := ladeFuerEditor(abs, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -447,7 +447,7 @@ func TestSpeichernUeberDemBudgetWarnt(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%d Glyphen: Speichern %v", fall.n, err)
 		}
-		_, wieder, _, oeffnen := ladeFuerEditor(abs)
+		_, wieder, _, oeffnen := ladeFuerEditor(abs, false)
 		if !fall.warnen {
 			if erg != (ui.Gespeichert{}) || oeffnen != nil || len(wieder.Dokument.Objekte()) != fall.n {
 				t.Errorf("%d Glyphen (unter dem Budget): %+v, Öffnen %v (Soll: ohne Hinweis, öffnet wieder)", fall.n, erg, oeffnen)
