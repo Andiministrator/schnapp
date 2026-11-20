@@ -116,8 +116,12 @@ func keineEinstellungen(t *testing.T) Ladefunktion {
 func TestLaufeEnglisch(t *testing.T) {
 	i18n.Setze(nil)
 	code, aus, _ := fuehre(t, keineMonitore, "--version")
-	if code != exitOK || aus != "Schnapp "+version+"\n" {
-		t.Errorf("--version: Code %d, Ausgabe %q", code, aus)
+	soll := "Schnapp " + version + "\n"
+	if ui.ProbeBuild { // go test -tags novulkan,nox11,probe (F-179)
+		soll = "Schnapp " + version + "+probe\n"
+	}
+	if code != exitOK || aus != soll {
+		t.Errorf("--version: Code %d, Ausgabe %q, Soll %q", code, aus, soll)
 	}
 	code, aus, _ = fuehre(t, keineMonitore, "--help")
 	if code != exitOK || !strings.HasPrefix(aus, "Usage: schnapp [option] | schnapp [--ignore-limit] FILE\n") || !strings.Contains(aus, "--repeat") {

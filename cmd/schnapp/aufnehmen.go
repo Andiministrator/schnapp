@@ -215,7 +215,10 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 	}
 	if _, err := fmt.Fprintln(aus, pfad); err != nil {
 		// Die Aufnahme liegt in der Bibliothek; nur die Pfadzeile ging verloren (F-162). Nicht verschlucken: Skripte
-		// verlassen sich auf sie.
+		// verlassen sich auf sie. Der Exit-Code bleibt 0 (F-180): Die Aufnahme liegt vor, und der Editor öffnet
+		// trotzdem; ein Fehler-Code ließe ein Skript die Aufnahme wiederholen. Ist stdout eine geschlossene Pipe,
+		// beendet SIGPIPE das Programm wie jedes Go-Programm schon beim Schreiben (Go-Standard, bewusst so gelassen):
+		// Wer die Ausgabe nicht mehr liest, will auch keinen Editor.
 		fmt.Fprintf(fehler, i18n.T("Could not write the path to standard output: %v")+"\n", err)
 	}
 	an.raeumeAuf(t.Aufraeumen, time.Now(), fehler)

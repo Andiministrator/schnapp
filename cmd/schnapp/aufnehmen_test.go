@@ -157,6 +157,28 @@ func TestBereichUeberOverlay(t *testing.T) {
 	}
 }
 
+// kaputterSchreiber scheitert bei jedem Schreiben (etwa stdout auf einer vollen Platte).
+type kaputterSchreiber struct{}
+
+func (kaputterSchreiber) Write([]byte) (int, error) { return 0, errors.New("Schreiben gescheitert") }
+
+// F-180: Lässt sich der Pfad nicht auf stdout schreiben, steht das auf stderr; der Exit-Code bleibt 0, weil die
+// Aufnahme in der Bibliothek liegt.
+func TestPfadNichtGeschrieben(t *testing.T) {
+	i18n.Setze(nil)
+	l := neuerLauf(t)
+	l.overlayErg = ui.OverlayErgebnis{Monitor: 0, Bereich: image.Rect(0, 0, 2, 2)}
+	var fehler bytes.Buffer
+	code := l.an.Ausfuehren(Auftrag{Modus: ModusBereich}, kaputterSchreiber{}, &fehler)
+	soll := "Could not write the path to standard output: Schreiben gescheitert\n"
+	if code != exitOK || fehler.String() != soll {
+		t.Errorf("Code %d, fehler %q, Soll 0 und %q", code, fehler.String(), soll)
+	}
+	if len(l.abgelegt) != 1 {
+		t.Errorf("%d Aufnahmen abgelegt, Soll 1", len(l.abgelegt))
+	}
+}
+
 func TestBildschirmPerKlickUndAbbruch(t *testing.T) {
 	l := neuerLauf(t)
 	l.overlayErr = ui.ErrAbgebrochen

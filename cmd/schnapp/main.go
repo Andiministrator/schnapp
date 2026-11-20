@@ -21,6 +21,15 @@ import (
 // version wird beim Bau gesetzt: go build -ldflags "-X main.version=0.1.0".
 var version = "0.0.0-dev"
 
+// versionsText ist die Version für --version; der Probe-Build (Tag probe, ui.ProbeBuild) hängt „+probe“ an, damit er
+// nicht für ein ausgeliefertes Programm gehalten wird (F-179).
+func versionsText() string {
+	if ui.ProbeBuild {
+		return version + "+probe"
+	}
+	return version
+}
+
 // Exit-Codes.
 const (
 	exitOK     = 0
@@ -58,7 +67,7 @@ func laufe(args []string, aus, fehler io.Writer, monitore func() ([]ui.Monitor, 
 		fmt.Fprint(aus, hilfe())
 		return exitOK
 	case ModusVersion:
-		fmt.Fprintf(aus, i18n.T("Schnapp %s")+"\n", version)
+		fmt.Fprintf(aus, i18n.T("Schnapp %s")+"\n", versionsText())
 		return exitOK
 	case ModusMonitorliste:
 		return gibMonitoreAus(aus, fehler, monitore)
