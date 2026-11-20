@@ -44,6 +44,9 @@ type anschluesse struct {
 	// editor öffnet eine Datei im Editor und kehrt nach dem Schließen zurück (ADR-0020); nil = kein Editor.
 	// ohneGrenze ist --ignore-limit (nur bei schnapp DATEI, ADR-0017 Nachtrag 6).
 	editor func(pfad string, ohneGrenze bool) error
+	// bearbeiten öffnet eine eben abgelegte Aufnahme im Editor, mit dem Dokument aus dem Speicher statt die Datei neu
+	// zu lesen (F-112); pfad ist die abgelegte Datei. nil = kein Editor nach der Aufnahme.
+	bearbeiten func(pfad string, d *document.Dokument) error
 	// schutz prüft vor jeder Aufnahme und vor dem Editor, ob der Lauf erlaubt ist (Probe-Build nur im virtuellen KWin,
 	// F-229); ein Fehler beendet den Lauf mit exitFehler, bevor etwas aufgenommen oder geöffnet wird. nil = keine Prüfung.
 	schutz func() error
@@ -80,6 +83,7 @@ func echteAnschluesse() anschluesse {
 		},
 		tagesmarke: library.TagesmarkePfad(os.Getenv),
 		editor:     oeffneImEditor,
+		bearbeiten: bearbeiteNeu,
 		schutz:     probeSchutz,
 	}
 }
@@ -102,9 +106,34 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		}
 		return exitOK
 	}
+	code, neu := an.aufnehmen(t, aus, fehler)
+	if neu != nil && t.Editor && an.bearbeiten != nil {
+		// Erst hier, nach der Rückkehr aus aufnehmen: Die Verbindung zu KWin ist zu, die Monitorbilder hängen an
+		// keinem Aufruf mehr und können freigegeben werden; der Editor bekommt nur das Dokument (F-112). Die Aufnahme
+		// liegt schon in der Bibliothek, der Pfad steht auf stdout: Was der Editor meldet, ist nur noch eine Warnung
+		// (ADR-0020).
+		start := time.Now()
+		err := an.bearbeiten(neu.pfad, neu.d)
+		diagnose(fehler, "Editor-Sitzung bis Fenster zu: %v", time.Since(start).Round(time.Millisecond))
+		if err != nil {
+			fmt.Fprintf(fehler, i18n.T("The editor could not be opened or saved: %v")+"\n", nutzerFehler(err))
+		}
+	}
+	return code
+}
+
+// abgelegt ist eine eben in der Bibliothek abgelegte Aufnahme, die der Editor danach öffnet (F-112).
+type abgelegt struct {
+	pfad string             // absoluter Pfad der Datei
+	d    *document.Dokument // das abgelegte Dokument; hält nur den gewählten Bereich, nicht die Monitorbilder
+}
+
+// aufnehmen nimmt auf und legt in der Bibliothek ab. Zurück kommen der Exit-Code und bei Erfolg die abgelegte
+// Aufnahme. Alles, was die Aufnahme braucht (Verbindung zu KWin, Bilder aller Monitore), lebt nur bis zur Rückkehr.
+func (an anschluesse) aufnehmen(t Auftrag, aus, fehler io.Writer) (int, *abgelegt) {
 	q, err := an.quelle()
 	if err != nil {
-		return meldeFehler(fehler, err)
+		return meldeFehler(fehler, err), nil
 	}
 	defer q.Close()
 	ctx := context.Background()
@@ -113,7 +142,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 	case t.Modus == ModusFenster:
 		b, err := q.Fenster(ctx, capture.Optionen{})
 		if err != nil {
-			return meldeFehler(fehler, err)
+			return meldeFehler(fehler, err), nil
 		}
 		return an.speichere(b.Pixel, b.Pixel.Bounds(), t, aus, fehler)
 
@@ -122,28 +151,28 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		if err != nil {
 			if errors.Is(err, selection.ErrKeinZustandsordner) {
 				fmt.Fprintln(fehler, i18n.T("No state directory (HOME is not set), so there is no last area to repeat."))
-				return exitFehler
+				return exitFehler, nil
 			}
 			if errors.Is(err, selection.ErrKeinLetzter) {
 				fmt.Fprintln(fehler, i18n.T("No area to repeat yet. Select one with --region first."))
-				return exitFehler
+				return exitFehler, nil
 			}
-			return meldeFehler(fehler, err)
+			return meldeFehler(fehler, err), nil
 		}
 		b, err := q.Bildschirm(ctx, l.Monitor, capture.Optionen{})
 		if err != nil {
-			return meldeFehler(fehler, err)
+			return meldeFehler(fehler, err), nil
 		}
 		if b.Pixel.Bounds().Size() != l.Groesse || !l.SkalaPasst(b.Skala) {
 			fmt.Fprintln(fehler, i18n.T("The monitor of the last area has changed. Select a new area with --region."))
-			return exitFehler
+			return exitFehler, nil
 		}
 		return an.speichere(b.Pixel, l.Bereich, t, aus, fehler)
 
 	case t.Modus == ModusBildschirm && t.Ziel.Name != "":
 		b, err := q.Bildschirm(ctx, t.Ziel.Name, capture.Optionen{})
 		if err != nil {
-			return meldeFehler(fehler, err)
+			return meldeFehler(fehler, err), nil
 		}
 		an.merke(t.Ziel.Name, b.Pixel, b.Skala, b.Pixel.Bounds(), fehler)
 		return an.speichere(b.Pixel, b.Pixel.Bounds(), t, aus, fehler)
@@ -151,13 +180,13 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 	case t.Modus == ModusBildschirm && t.Ziel.Wahl == settings.WahlZeiger:
 		b, err := q.AktiverBildschirm(ctx, capture.Optionen{})
 		if err != nil {
-			return meldeFehler(fehler, err)
+			return meldeFehler(fehler, err), nil
 		}
 		return an.speichere(b.Pixel, b.Pixel.Bounds(), t, aus, fehler)
 
 	case t.Modus == ModusBildschirm && t.Ziel.Wahl == settings.WahlAlle:
 		fmt.Fprintln(fehler, i18n.T("Capturing all monitors at once is not implemented yet."))
-		return exitFehler
+		return exitFehler, nil
 	}
 
 	// Overlay: --region (Bereich) oder --screen mit der Einstellung pick (Monitor per Klick).
@@ -168,11 +197,11 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 	monitore, err := an.monitore()
 	if err != nil {
 		fmt.Fprintf(fehler, i18n.T("Could not query the monitors: %v")+"\n", err)
-		return exitFehler
+		return exitFehler, nil
 	}
 	if len(monitore) == 0 {
 		fmt.Fprintln(fehler, i18n.T("No monitors found."))
-		return exitFehler
+		return exitFehler, nil
 	}
 	// Erst alle Monitore aufnehmen, dann im eingefrorenen Bild wählen (knowledge/topics/kwin-screenshot.md).
 	start := time.Now()
@@ -182,7 +211,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 	for _, m := range monitore {
 		b, err := q.Bildschirm(ctx, m.Name, capture.Optionen{})
 		if err != nil {
-			return meldeFehler(fehler, err)
+			return meldeFehler(fehler, err), nil
 		}
 		bilder = append(bilder, ui.MonitorBild{Name: m.Name, Bild: b.Pixel})
 		pixel = append(pixel, b.Pixel)
@@ -193,14 +222,14 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 	e, err := an.overlay(bilder, modus)
 	diagnose(fehler, "Overlay bis Ergebnis und Fenster zu: %v", time.Since(start).Round(time.Millisecond))
 	if errors.Is(err, ui.ErrAbgebrochen) {
-		return exitAbgebrochen
+		return exitAbgebrochen, nil
 	}
 	if err != nil {
-		return meldeFehler(fehler, err)
+		return meldeFehler(fehler, err), nil
 	}
 	if e.Monitor < 0 || e.Monitor >= len(pixel) || !e.Bereich.In(pixel[e.Monitor].Bounds()) || e.Bereich.Empty() {
 		fmt.Fprintln(fehler, i18n.T("The selection is outside the captured image."))
-		return exitFehler
+		return exitFehler, nil
 	}
 	an.merke(monitore[e.Monitor].Name, pixel[e.Monitor], skalen[e.Monitor], e.Bereich, fehler)
 	return an.speichere(pixel[e.Monitor], e.Bereich, t, aus, fehler)
@@ -208,20 +237,21 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 
 // speichere legt den Bereich als neue Aufnahme in der Bibliothek ab und schreibt den Pfad nach aus. Das Original
 // der Arbeitsdatei ist nur der gewählte Bereich, nicht der ganze Monitor: Was der Nutzer nicht gewählt hat, gehört
-// nicht in die Datei (Kernprinzip 3).
-func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftrag, aus, fehler io.Writer) int {
+// nicht in die Datei (Kernprinzip 3). Den Editor öffnet nicht speichere, sondern Ausfuehren nach der Rückkehr (F-112);
+// zurück kommt die abgelegte Aufnahme. document.Neu kopiert den Bereich: Das Dokument hält das Monitorbild nicht fest.
+func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftrag, aus, fehler io.Writer) (int, *abgelegt) {
 	// Die Messung endet mit dem Ablegen; die Editor-Sitzung misst eine eigene Zeile (sonst stand die ganze
 	// Bearbeitungszeit unter „Speichern“, Echtlauf #86).
 	start := time.Now()
 	d, err := document.Neu(b.SubImage(bereich))
 	if err != nil {
-		return meldeFehler(fehler, err)
+		return meldeFehler(fehler, err), nil
 	}
 	pfad, err := an.ablegen(d)
 	diagnose(fehler, "Ablegen in der Bibliothek: %v", time.Since(start).Round(time.Millisecond))
 	if err != nil {
 		fmt.Fprintf(fehler, i18n.T("Could not save the screenshot: %v")+"\n", err)
-		return exitFehler
+		return exitFehler, nil
 	}
 	if _, err := fmt.Fprintln(aus, pfad); err != nil {
 		// Die Aufnahme liegt in der Bibliothek; nur die Pfadzeile ging verloren (F-162). Nicht verschlucken: Skripte
@@ -232,17 +262,7 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 		fmt.Fprintf(fehler, i18n.T("Could not write the path to standard output: %v")+"\n", err)
 	}
 	an.raeumeAuf(t.Aufraeumen, time.Now(), fehler)
-	if t.Editor && an.editor != nil {
-		// Die Aufnahme liegt schon in der Bibliothek, der Pfad steht auf stdout: Was der Editor meldet, ist nur noch
-		// eine Warnung (ADR-0020).
-		start = time.Now()
-		err := an.editor(pfad, false)
-		diagnose(fehler, "Editor-Sitzung bis Fenster zu: %v", time.Since(start).Round(time.Millisecond))
-		if err != nil {
-			fmt.Fprintf(fehler, i18n.T("The editor could not be opened or saved: %v")+"\n", nutzerFehler(err))
-		}
-	}
-	return exitOK
+	return exitOK, &abgelegt{pfad: pfad, d: d}
 }
 
 // raeumeAuf räumt nach dem Speichern die Bibliothek auf, höchstens einmal am Tag (ADR-0016 Nachtrag 2). Die Aufnahme

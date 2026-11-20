@@ -23,13 +23,24 @@ import (
 	"github.com/Andiministrator/schnapp/ui"
 )
 
-// Nach der Aufnahme öffnet der Editor mit dem abgelegten Pfad, erst nachdem der Pfad auf stdout steht.
+// Nach der Aufnahme öffnet der Editor mit dem abgelegten Pfad, erst nachdem der Pfad auf stdout steht. Er bekommt das
+// abgelegte Dokument selbst und startet erst, wenn die Verbindung zur Aufnahmequelle zu ist (F-112); den Weg über die
+// Datei (editor) nimmt er nicht.
 func TestEditorNachDerAufnahme(t *testing.T) {
 	i18n.Setze(nil)
 	for _, mitEditor := range []bool{true, false} {
 		l := neuerLauf(t)
 		var geoeffnet []string
-		l.an.editor = func(p string, _ bool) error { geoeffnet = append(geoeffnet, p); return nil }
+		var dok *document.Dokument
+		l.an.editor = func(p string, _ bool) error { t.Errorf("Editor über die Datei geöffnet: %q", p); return nil }
+		l.an.bearbeiten = func(p string, d *document.Dokument) error {
+			geoeffnet = append(geoeffnet, p)
+			dok = d
+			if !l.q.geschlossen {
+				t.Error("Editor startet, während die Aufnahmequelle noch offen ist (F-112)")
+			}
+			return nil
+		}
 		l.overlayErg = ui.OverlayErgebnis{Monitor: 0, Bereich: image.Rect(0, 0, 2, 2)}
 		code, aus, fehler := l.fuehre(Auftrag{Modus: ModusBereich, Editor: mitEditor})
 		if code != exitOK || aus != "/ablage/2026-11/datei.png\n" || fehler != "" {
@@ -38,9 +49,29 @@ func TestEditorNachDerAufnahme(t *testing.T) {
 		if mitEditor && (len(geoeffnet) != 1 || geoeffnet[0] != "/ablage/2026-11/datei.png") {
 			t.Errorf("mit Editor: %q", geoeffnet)
 		}
+		if mitEditor && (len(l.abgelegt) != 1 || dok != l.abgelegt[0]) {
+			t.Error("Editor bekommt nicht das abgelegte Dokument")
+		}
 		if !mitEditor && len(geoeffnet) != 0 {
 			t.Errorf("ohne Editor geöffnet: %q", geoeffnet)
 		}
+	}
+}
+
+// Das Dokument für den Editor hält das Monitorbild nicht fest (F-112): Sein Original ist eine eigene Kopie des
+// Bereichs, nicht ein Ausschnitt, der den ganzen Monitor im Speicher hielte.
+func TestEditorDokumentOhneMonitorbild(t *testing.T) {
+	i18n.Setze(nil)
+	l := neuerLauf(t)
+	var dok *document.Dokument
+	l.an.bearbeiten = func(_ string, d *document.Dokument) error { dok = d; return nil }
+	l.overlayErg = ui.OverlayErgebnis{Monitor: 1, Bereich: image.Rect(1, 1, 3, 3)}
+	if code, _, fehler := l.fuehre(Auftrag{Modus: ModusBereich, Editor: true}); code != exitOK || dok == nil {
+		t.Fatalf("Code %d, fehler %q", code, fehler)
+	}
+	o := dok.OriginalBild()
+	if o.Rect != image.Rect(0, 0, 2, 2) || len(o.Pix) != 2*2*4 || cap(o.Pix) != 2*2*4 {
+		t.Errorf("Original %v mit %d/%d Bytes, Soll eigene Kopie 2×2", o.Rect, len(o.Pix), cap(o.Pix))
 	}
 }
 
@@ -48,7 +79,7 @@ func TestEditorNachDerAufnahme(t *testing.T) {
 func TestEditorFehlerNachDerAufnahme(t *testing.T) {
 	i18n.Setze(nil)
 	l := neuerLauf(t)
-	l.an.editor = func(string, bool) error { return errors.New("kein Wayland") }
+	l.an.bearbeiten = func(string, *document.Dokument) error { return errors.New("kein Wayland") }
 	l.overlayErg = ui.OverlayErgebnis{Monitor: 0, Bereich: image.Rect(0, 0, 2, 2)}
 	code, aus, fehler := l.fuehre(Auftrag{Modus: ModusBereich, Editor: true})
 	if code != exitOK || aus == "" || !strings.Contains(fehler, "The editor could not be opened or saved: kein Wayland") {
@@ -94,6 +125,43 @@ func standVon(t *testing.T, pfad string) library.Stand {
 		t.Fatal(err)
 	}
 	return s
+}
+
+// F-112: Der Editor nach der Aufnahme bekommt das Dokument aus dem Speicher statt der neu gelesenen Datei. Speichern
+// verhält sich wie nach ladeFuerEditor: Es schreibt die Aufnahme an ihren Platz zurück; ist sie inzwischen weg, weicht
+// es auf eine neue Aufnahme aus.
+func TestSpeichernNachDerAufnahmeOhneNeuLesen(t *testing.T) {
+	i18n.Setze(nil)
+	b := testBibliothek(t)
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 8, 8)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, err := b.Ablegen(d, d.Ansichtsbild(), fileformat.Metadaten{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	abs := filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad))
+	speichern := speichernIn(b, abs, &fileformat.Gelesen{Dokument: d}, standVon(t, abs))
+	mitKasten(t, d)
+	if erg, err := speichern(d); err != nil || erg != (ui.Gespeichert{}) {
+		t.Fatalf("Zurückschreiben: %+v, %v (Soll: gewöhnlich an den Platz)", erg, err)
+	}
+	if g, err := fileformat.Oeffne(abs); err != nil || g.Fremd || len(g.Dokument.Objekte()) != 1 {
+		t.Fatalf("zurückgeschriebene Datei: %v", err)
+	}
+	if err := os.Remove(abs); err != nil {
+		t.Fatal(err)
+	}
+	mitKasten(t, d)
+	erg, err := speichern(d)
+	if err != nil || erg.Datei == "" || !strings.Contains(erg.Hinweis, "saved as a new capture") {
+		t.Fatalf("Ausweichen: %+v, %v", erg, err)
+	}
+	g, err := fileformat.Oeffne(filepath.Join(filepath.Dir(abs), erg.Datei))
+	if err != nil || len(g.Dokument.Objekte()) != 2 || !g.Meta.Bearbeitet || g.Meta.Erstellt.IsZero() {
+		t.Errorf("neue Aufnahme: %+v, %v", g, err)
+	}
 }
 
 // F-110: Zwei Editoren auf derselben Aufnahme. Der erste schreibt zurück; der zweite überschreibt das nicht still,

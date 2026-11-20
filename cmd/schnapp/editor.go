@@ -36,6 +36,25 @@ func oeffneImEditor(pfad string, ohneGrenze bool) error {
 	return ui.Editor(filepath.Base(abs), g.Dokument, speichernIn(library.Neu(orte), abs, g, stand))
 }
 
+// bearbeiteNeu öffnet eine eben abgelegte Aufnahme im Editor (F-112): mit dem Dokument aus dem Speicher, ohne die
+// Datei neu zu lesen. Was das Lesen sonst liefert, ist hier bekannt: eine Schnapp-Datei der Bibliothek (nicht fremd),
+// ohne Beschriftungen (keine Prüfung des Rechenbudgets nötig) und mit leeren Metadaten, wie sie abgelegt wurde (die
+// Erstellungszeit setzt ein Ausweichen beim Speichern ohnehin neu). Der Stand der Datei wird jetzt gemerkt, wie beim
+// Öffnen (F-110): Ändert sie sich während der Bearbeitung, merkt es das Speichern.
+func bearbeiteNeu(pfad string, d *document.Dokument) error {
+	abs, err := filepath.Abs(pfad)
+	if err != nil {
+		return err
+	}
+	stand, _ := library.StandVon(abs)
+	orte, err := library.OrteAus(os.Getenv)
+	if err != nil {
+		return err
+	}
+	g := &fileformat.Gelesen{Dokument: d}
+	return ui.Editor(filepath.Base(abs), d, speichernIn(library.Neu(orte), abs, g, stand))
+}
+
 // ladeFuerEditor liest eine Datei für den Editor (von außen oder aus der Bibliothek) und lehnt ein Dokument ab, dessen
 // Rastern das Rechenbudget überschritte (render.Pruefe, F-125, F-132): Gegen präparierte Dateien wird beim Öffnen
 // geprüft, damit Speichern nie abbrechen muss (F-131, ADR-0020 Nachtrag 1). stand ist der Zustand der Datei, gemerkt

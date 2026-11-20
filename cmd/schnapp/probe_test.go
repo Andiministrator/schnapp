@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/Andiministrator/schnapp/capture"
+	"github.com/Andiministrator/schnapp/document"
 	"github.com/Andiministrator/schnapp/internal/probeschutz"
 	"github.com/Andiministrator/schnapp/wlclip"
 )
@@ -22,6 +23,7 @@ func echteAusfuehrungOhneAufnahme(t *testing.T) (an anschluesse, quelleGerufen, 
 	quelleGerufen, editorGerufen = new(int), new(int)
 	an.quelle = func() (capture.Quelle, error) { *quelleGerufen++; return nil, errors.New("Attrappe") }
 	an.editor = func(string, bool) error { *editorGerufen++; return nil }
+	an.bearbeiten = func(string, *document.Dokument) error { *editorGerufen++; return nil }
 	return an, quelleGerufen, editorGerufen
 }
 
