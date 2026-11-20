@@ -135,7 +135,12 @@ func baueAbbildung(z image.Rectangle, st []Streifen, zeilen bool) abbildung {
 	return m
 }
 
-func (m abbildung) groesse() int { return m.bis - m.von - m.kum[len(m.weg)] }
+func (m abbildung) groesse() int {
+	if len(m.kum) == 0 {
+		return 0 // Nullwert Dokument{}: keine Ansicht (nur Neu liefert ein nutzbares Dokument)
+	}
+	return m.bis - m.von - m.kum[len(m.weg)]
+}
 
 // zuAnsicht: Punkte in einem Streifen fallen auf dessen Kante.
 func (m abbildung) zuAnsicht(v float64) float64 {
@@ -149,11 +154,18 @@ func (m abbildung) zuAnsicht(v float64) float64 {
 }
 
 // zuOriginal: Eine Schnittkante gehört zum Bereich nach dem Streifen.
+//
+// Festgelegtes Verhalten an der Kante (F-142): Der Vergleich rechnet exakt — v wird gegen die ganzzahlige Kante
+// weg[i][0]-kum[i]-von verglichen, nicht erst mit von verrechnet (diese Addition rundete einen Wert ein ulp vor der
+// Kante auf die Kante). Ein Ansichtswert genau auf der Kante ergibt das Streifenende (den Bereich danach), jeder
+// kleinere — auch ein ulp davor — den Streifenanfang (linksseitiger Grenzwert, nie ein Wert im Streifen). Die
+// frühere Rechnung addierte die Längen vorher in Gleitkomma und lieferte knapp vor der Kante das Streifenende; das
+// ist bewusst nicht mehr so.
 func (m abbildung) zuOriginal(v float64) float64 {
-	r := v + float64(m.von)
-	// Streifen i wirkt, wenn r + kum[i] >= weg[i][0]; a_i - kum[i] wächst mit i, die Bedingung gilt also für ein Präfix.
-	k := sort.Search(len(m.weg), func(i int) bool { return r < float64(m.weg[i][0]-m.kum[i]) })
-	return r + float64(m.kum[k])
+	// Streifen i wirkt, wenn v + von + kum[i] >= weg[i][0]; a_i - kum[i] - von wächst mit i, die Bedingung gilt also
+	// für ein Präfix.
+	k := sort.Search(len(m.weg), func(i int) bool { return v < float64(m.weg[i][0]-m.kum[i]-m.von) })
+	return v + float64(m.von) + float64(m.kum[k])
 }
 
 // setzeAnsicht setzt Zuschnitt und Streifen und baut die Abbildungen neu auf. Jede Stelle, die einen der beiden

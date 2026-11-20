@@ -3,6 +3,7 @@ package fileformat
 import (
 	"bytes"
 	"compress/zlib"
+	"errors"
 	"fmt"
 	"io"
 	"regexp"
@@ -50,8 +51,11 @@ func TestLesenZuvieleStreifen(t *testing.T) {
 	if n := len(g.Dokument.Streifen()); n != document.MaxStreifen {
 		t.Errorf("%d Streifen gelesen, soll %d", n, document.MaxStreifen)
 	}
+	// Beschädigt (F-142), nicht etwa „neuere Fassung“: Der Editor öffnet so eine Datei als einfaches Bild.
 	if _, err := LeseArbeitsdatei(bytes.NewReader(mit(document.MaxStreifen + 1))); err == nil {
 		t.Error("MaxStreifen+1 ohne Fehler gelesen")
+	} else if !errors.Is(err, ErrBeschaedigt) || errors.Is(err, ErrFormatNeuer) {
+		t.Errorf("MaxStreifen+1: Fehler %v, Soll ErrBeschaedigt", err)
 	}
 }
 
