@@ -72,8 +72,9 @@ func leseBloecke(r io.Reader) ([]block, error) {
 		if gesamt += 12 + int(laenge); gesamt > maxDatei {
 			return nil, ErrZuGross
 		}
-		daten := make([]byte, laenge)
-		if _, err := io.ReadFull(r, daten); err != nil {
+		// Keine Vorabreservierung der angekündigten Länge (F-273, F-59, ADR-0008), siehe leseDaten.
+		daten, err := leseDaten(r, laenge)
+		if err != nil {
 			return nil, fmt.Errorf("%w: Block %q: %v", ErrBeschaedigt, typ, err)
 		}
 		pruef := make([]byte, 4)

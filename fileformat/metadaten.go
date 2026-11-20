@@ -6,8 +6,10 @@ import (
 	"bytes"
 	"compress/zlib"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"hash/crc32"
+	"image"
 	"io"
 
 	"github.com/Andiministrator/schnapp/document"
@@ -17,7 +19,8 @@ import (
 type Kopfdaten struct {
 	// Meta aus dem snAP-Block; bei einem fremden PNG leer.
 	Meta Metadaten
-	// Breite und Hoehe des sichtbaren Bilds aus dem IHDR-Block.
+	// Breite und Hoehe der Ansicht, so wie das volle Lesen sie meldet (Dokument.Groesse: Originalgröße aus dem
+	// snAO-Kopf, Zuschnitt und Streifen aus dem snAP). Bei einem fremden PNG ist es die Größe aus dem IHDR.
 	Breite, Hoehe int
 	// Fremd meldet ein PNG ohne Schnapp-Blöcke (wie Gelesen.Fremd).
 	Fremd bool
@@ -29,8 +32,14 @@ type Kopfdaten struct {
 // den Neuaufbau eines Index schnell (Bibliothek).
 //
 // Die Grenzen gelten wie bei LeseArbeitsdatei (maxDatei, maxBlock, maxSVG, maxElemente); dieselben Fehler
-// kommen zurück: ErrKeinPNG, ErrBeschaedigt, ErrZuGross, ErrFormatNeuer. Was sich nur durch Dekodieren der Pixel
-// feststellen ließe (kaputte Bilddaten), bleibt unentdeckt; der Aufrufer sieht das erst beim Öffnen.
+// kommen zurück: ErrKeinPNG, ErrBeschaedigt, ErrZuGross, ErrFormatNeuer. Objekte, Zuschnitt und Streifen des snAP
+// prüft document.PruefeInhalt auf demselben Weg wie das Laden (gegen die Originalgröße aus dem snAO-Kopf), und die
+// gemeldete Größe ist die der Ansicht wie beim vollen Lesen (F-272). Restabweichung: Was sich nur durch Dekodieren der
+// Pixel feststellen ließe (kaputte Bilddaten des sichtbaren Bilds oder des Originals, ungültige Farbtiefe im IHDR),
+// bleibt unentdeckt; der Aufrufer sieht das erst beim Öffnen.
+//
+// Angekündigte Blocklängen reservieren nichts im Voraus (F-273, F-59, ADR-0008): Der IHDR hat genau 13 Bytes, der
+// snAP wächst mit den tatsächlich gelesenen Bytes.
 func LeseMetadaten(r io.Reader) (*Kopfdaten, error) {
 	r = io.LimitReader(r, maxDatei+1)
 	sig := make([]byte, len(pngSignatur))
@@ -69,6 +78,9 @@ func LeseMetadaten(r io.Reader) (*Kopfdaten, error) {
 		var halte bool
 		switch typ {
 		case "IHDR":
+			if laenge != 13 {
+				return nil, fmt.Errorf("%w: IHDR mit %d Bytes", ErrBeschaedigt, laenge)
+			}
 			halte = true
 		case blockSVG:
 			if hatSVG {
@@ -85,8 +97,8 @@ func LeseMetadaten(r io.Reader) (*Kopfdaten, error) {
 		crc.Write(kopf[4:8])
 		rest := int64(laenge)
 		if halte {
-			behalte = make([]byte, laenge)
-			if _, err := io.ReadFull(r, behalte); err != nil {
+			var err error
+			if behalte, err = leseDaten(r, laenge); err != nil {
 				return nil, fmt.Errorf("%w: Block %q: %v", ErrBeschaedigt, typ, err)
 			}
 			crc.Write(behalte)
@@ -127,11 +139,11 @@ func LeseMetadaten(r io.Reader) (*Kopfdaten, error) {
 		}
 	}
 
-	b, h, err := ihdrGroesse(ihdr)
-	if err != nil {
-		return nil, err
-	}
 	if !hatSVG && !hatOrig {
+		b, h, err := ihdrGroesse(ihdr)
+		if err != nil {
+			return nil, err
+		}
 		return &Kopfdaten{Breite: b, Hoehe: h, Fremd: true}, nil
 	}
 	if hatNachIEND {
@@ -149,16 +161,57 @@ func LeseMetadaten(r io.Reader) (*Kopfdaten, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Das Original muss zur Größe im SVG passen: IHDR steht gleich am Anfang des snAO-Blocks (Signatur + 8 Byte
-	// Blockkopf + Breite und Höhe).
-	ob, oh, err := ihdrGroesse(origKopf[min(len(pngSignatur), len(origKopf)):])
+	// Das Original muss zur Größe im SVG passen: Der snAO-Block beginnt mit einem PNG (Signatur, IHDR).
+	ob, oh, err := originalGroesse(origKopf)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", blockOriginal, err)
 	}
 	if ob != in.breite || oh != in.hoehe {
 		return nil, fmt.Errorf("%w: Original %dx%d passt nicht zu %dx%d", ErrBeschaedigt, ob, oh, in.breite, in.hoehe)
 	}
-	return &Kopfdaten{Meta: in.meta, Breite: b, Hoehe: h}, nil
+	// Objekte, Zuschnitt und Streifen wie beim Laden prüfen; die Größe ist die der Ansicht (F-272).
+	gr, err := document.PruefeInhalt(image.Pt(ob, oh), in.zuschnitt, in.streifen, in.objekte)
+	if err != nil {
+		if errors.Is(err, document.ErrBildGroesse) {
+			return nil, fmt.Errorf("%w: %v", ErrZuGross, err)
+		}
+		return nil, fmt.Errorf("%w: %v", ErrBeschaedigt, err)
+	}
+	return &Kopfdaten{Meta: in.meta, Breite: gr.X, Hoehe: gr.Y}, nil
+}
+
+// originalGroesse liest Breite und Höhe aus den ersten 33 Bytes des snAO-Blocks: PNG-Signatur, dann ein IHDR-Block
+// mit 13 Bytes Inhalt und richtiger Prüfsumme. Alles andere ist kein PNG-Original (F-272).
+func originalGroesse(kopf []byte) (b, h int, err error) {
+	const laenge = 8 + 4 + 4 + 13 + 4
+	if len(kopf) < laenge || !bytes.Equal(kopf[:8], pngSignatur) ||
+		binary.BigEndian.Uint32(kopf[8:12]) != 13 || string(kopf[12:16]) != "IHDR" {
+		return 0, 0, fmt.Errorf("%w: kein PNG mit IHDR", ErrBeschaedigt)
+	}
+	if crc32.ChecksumIEEE(kopf[12:29]) != binary.BigEndian.Uint32(kopf[29:33]) {
+		return 0, 0, fmt.Errorf("%w: IHDR-Prüfsumme falsch", ErrBeschaedigt)
+	}
+	return ihdrGroesse(kopf[16:29])
+}
+
+// leseDaten liest genau laenge Bytes, ohne die angekündigte Länge vorab zu reservieren: Eine kleine Länge
+// bekommt ihren Puffer sofort, eine große wächst mit den tatsächlich gelieferten Bytes. Eine kurze Datei mit
+// angekündigten 500 MB kostet so nur ihre eigene Größe (F-273, F-59, ADR-0008).
+func leseDaten(r io.Reader, laenge uint32) ([]byte, error) {
+	const sofort = 1 << 20
+	if laenge <= sofort {
+		daten := make([]byte, laenge)
+		_, err := io.ReadFull(r, daten)
+		return daten, err
+	}
+	var buf bytes.Buffer
+	if _, err := io.CopyN(&buf, r, int64(laenge)); err != nil {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 // ihdrGroesse liest Breite und Höhe aus einem Blockstück, das mit dem 8-Byte-Blockkopf des IHDR beginnt (Länge,

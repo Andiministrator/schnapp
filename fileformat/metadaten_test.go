@@ -22,8 +22,8 @@ func kaputtePixel(t *testing.T, daten []byte) []byte {
 		case "IDAT":
 			bl[i].daten = bytes.Repeat([]byte{0xAB}, len(bl[i].daten))
 		case blockOriginal:
-			// Signatur + Blockkopf + IHDR (8+8+13) bleiben, danach 3 MB Müll.
-			bl[i].daten = append(append([]byte{}, bl[i].daten[:8+8+13]...), bytes.Repeat([]byte{0x5A}, 3<<20)...)
+			// Signatur + Blockkopf + IHDR samt Prüfsumme (8+8+13+4) bleiben, danach 3 MB Müll.
+			bl[i].daten = append(append([]byte{}, bl[i].daten[:8+8+13+4]...), bytes.Repeat([]byte{0x5A}, 3<<20)...)
 		}
 	}
 	var buf bytes.Buffer
