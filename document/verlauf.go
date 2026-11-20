@@ -95,6 +95,27 @@ func (d *Dokument) VergissVerlauf() error {
 	return nil
 }
 
+// Abzug liefert eine unabhängige Kopie des aktuellen Inhalts zum Speichern im Hintergrund (F-143): Original mit allen
+// Schwärzungen, Objekte, Zuschnitt, Streifen, Schwärzungszähler und Stand. Der Verlauf bleibt weg (Stand bleibt
+// gleich, Rückgängig tut am Abzug nichts). Ändert sich das Dokument danach, berührt das den Abzug nicht und
+// umgekehrt. Während eines Zugs: ErrZugLaeuft — der Inhalt stünde zwischen zwei Ständen.
+func (d *Dokument) Abzug() (*Dokument, error) {
+	if d.zug != nil {
+		return nil, ErrZugLaeuft
+	}
+	a := &Dokument{
+		original:          d.Original(),
+		objekte:           append([]Objekt(nil), d.objekte...), // Objekte sind Werte ohne geteilte Felder
+		naechsteID:        d.naechsteID,
+		geschwaerzt:       d.geschwaerzt,
+		schwaerzStand:     d.schwaerzStand,
+		schwaerzKennungen: d.schwaerzKennungen,
+		verlauf:           verlauf{basis: d.Stand(), letzte: d.verlauf.letzte},
+	}
+	a.setzeAnsicht(d.zuschnitt, append([]Streifen(nil), d.streifen...))
+	return a, nil
+}
+
 // --- Objekte ---
 
 type einfuegen struct {

@@ -39,20 +39,19 @@ func oeffneImEditor(pfad string, ohneGrenze bool) error {
 // bearbeiteNeu öffnet eine eben abgelegte Aufnahme im Editor (F-112): mit dem Dokument aus dem Speicher, ohne die
 // Datei neu zu lesen. Was das Lesen sonst liefert, ist hier bekannt: eine Schnapp-Datei der Bibliothek (nicht fremd),
 // ohne Beschriftungen (keine Prüfung des Rechenbudgets nötig) und mit leeren Metadaten, wie sie abgelegt wurde (die
-// Erstellungszeit setzt ein Ausweichen beim Speichern ohnehin neu). Der Stand der Datei wird jetzt gemerkt, wie beim
-// Öffnen (F-110): Ändert sie sich während der Bearbeitung, merkt es das Speichern.
-func bearbeiteNeu(pfad string, d *document.Dokument) error {
-	abs, err := filepath.Abs(pfad)
+// Erstellungszeit setzt ein Ausweichen beim Speichern ohnehin neu). Der Stand der Datei stammt vom Ablegen, nicht vom
+// Start des Editors (F-110, Verify W-5): Ändert sie sich dazwischen oder während der Bearbeitung, merkt es das Speichern.
+func bearbeiteNeu(a abgelegt) error {
+	abs, err := filepath.Abs(a.pfad)
 	if err != nil {
 		return err
 	}
-	stand, _ := library.StandVon(abs)
 	orte, err := library.OrteAus(os.Getenv)
 	if err != nil {
 		return err
 	}
-	g := &fileformat.Gelesen{Dokument: d}
-	return ui.Editor(filepath.Base(abs), d, speichernIn(library.Neu(orte), abs, g, stand))
+	g := &fileformat.Gelesen{Dokument: a.d}
+	return ui.Editor(filepath.Base(abs), a.d, speichernIn(library.Neu(orte), abs, g, a.stand))
 }
 
 // ladeFuerEditor liest eine Datei für den Editor (von außen oder aus der Bibliothek) und lehnt ein Dokument ab, dessen

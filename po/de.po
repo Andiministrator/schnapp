@@ -200,6 +200,18 @@ msgstr "Speichern gescheitert: %v"
 msgid "Copied to clipboard"
 msgstr "In die Zwischenablage kopiert"
 
+msgid "Copying is already in progress."
+msgstr "Kopieren läuft schon."
+
+msgid "Could not copy: finish the current action first."
+msgstr "Kopieren nicht möglich: Erst die laufende Aktion beenden."
+
+msgid "Saving…"
+msgstr "Speichern …"
+
+msgid "Could not save. Close again to discard the changes."
+msgstr "Speichern gescheitert. Erneutes Schließen verwirft die Änderungen."
+
 msgid "Export…"
 msgstr "Exportieren …"
 

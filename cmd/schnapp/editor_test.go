@@ -33,9 +33,18 @@ func TestEditorNachDerAufnahme(t *testing.T) {
 		var geoeffnet []string
 		var dok *document.Dokument
 		l.an.editor = func(p string, _ bool) error { t.Errorf("Editor über die Datei geöffnet: %q", p); return nil }
-		l.an.bearbeiten = func(p string, d *document.Dokument) error {
-			geoeffnet = append(geoeffnet, p)
-			dok = d
+		// Der Stand kommt vom Ablegen, nicht vom Start des Editors (F-110, Verify W-5).
+		datei := filepath.Join(t.TempDir(), "stand.png")
+		if err := os.WriteFile(datei, []byte("x"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		l.stand = standVon(t, datei)
+		l.an.bearbeiten = func(a abgelegt) error {
+			geoeffnet = append(geoeffnet, a.pfad)
+			dok = a.d
+			if a.stand != l.stand {
+				t.Error("Editor bekommt nicht den Stand vom Ablegen")
+			}
 			if !l.q.geschlossen {
 				t.Error("Editor startet, während die Aufnahmequelle noch offen ist (F-112)")
 			}
@@ -64,7 +73,7 @@ func TestEditorDokumentOhneMonitorbild(t *testing.T) {
 	i18n.Setze(nil)
 	l := neuerLauf(t)
 	var dok *document.Dokument
-	l.an.bearbeiten = func(_ string, d *document.Dokument) error { dok = d; return nil }
+	l.an.bearbeiten = func(a abgelegt) error { dok = a.d; return nil }
 	l.overlayErg = ui.OverlayErgebnis{Monitor: 1, Bereich: image.Rect(1, 1, 3, 3)}
 	if code, _, fehler := l.fuehre(Auftrag{Modus: ModusBereich, Editor: true}); code != exitOK || dok == nil {
 		t.Fatalf("Code %d, fehler %q", code, fehler)
@@ -79,7 +88,7 @@ func TestEditorDokumentOhneMonitorbild(t *testing.T) {
 func TestEditorFehlerNachDerAufnahme(t *testing.T) {
 	i18n.Setze(nil)
 	l := neuerLauf(t)
-	l.an.bearbeiten = func(string, *document.Dokument) error { return errors.New("kein Wayland") }
+	l.an.bearbeiten = func(abgelegt) error { return errors.New("kein Wayland") }
 	l.overlayErg = ui.OverlayErgebnis{Monitor: 0, Bereich: image.Rect(0, 0, 2, 2)}
 	code, aus, fehler := l.fuehre(Auftrag{Modus: ModusBereich, Editor: true})
 	if code != exitOK || aus == "" || !strings.Contains(fehler, "The editor could not be opened or saved: kein Wayland") {
@@ -161,6 +170,44 @@ func TestSpeichernNachDerAufnahmeOhneNeuLesen(t *testing.T) {
 	g, err := fileformat.Oeffne(filepath.Join(filepath.Dir(abs), erg.Datei))
 	if err != nil || len(g.Dokument.Objekte()) != 2 || !g.Meta.Bearbeitet || g.Meta.Erstellt.IsZero() {
 		t.Errorf("neue Aufnahme: %+v, %v", g, err)
+	}
+}
+
+// Verify W-5 (F-112, F-110): Ändert ein anderer Prozess die eben abgelegte Aufnahme, bevor der Editor startet (etwa
+// ein Skript, das den Pfad von stdout liest), überschreibt Speichern sie nicht still: Der Stand stammt vom Ablegen.
+func TestAenderungZwischenAblegenUndEditor(t *testing.T) {
+	i18n.Setze(nil)
+	b := testBibliothek(t)
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 8, 8)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, err := b.Ablegen(d, d.Ansichtsbild(), fileformat.Metadaten{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	abs := filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad))
+	stand := standVon(t, abs) // wie der Anschluss ablegen, unmittelbar nach dem Schreiben
+
+	// Der andere schreibt einen Kasten in die Datei.
+	a2, g2, s2, err := ladeFuerEditor(abs, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mitKasten(t, g2.Dokument)
+	if erg, err := speichernIn(b, a2, g2, s2)(g2.Dokument); err != nil || erg != (ui.Gespeichert{}) {
+		t.Fatalf("anderer: %+v, %v", erg, err)
+	}
+
+	// Jetzt startet der Editor mit dem Dokument aus dem Speicher und speichert eine eigene Änderung.
+	mitKasten(t, d)
+	mitKasten(t, d)
+	erg, err := speichernIn(b, abs, &fileformat.Gelesen{Dokument: d}, stand)(d)
+	if err != nil || !erg.Warnung || !strings.Contains(erg.Hinweis, "changed elsewhere") {
+		t.Fatalf("Speichern: %+v, %v (Soll: Konflikt erkannt)", erg, err)
+	}
+	if g, err := fileformat.Oeffne(abs); err != nil || len(g.Dokument.Objekte()) != 1 {
+		t.Errorf("Fassung des anderen überschrieben: %v", err)
 	}
 }
 

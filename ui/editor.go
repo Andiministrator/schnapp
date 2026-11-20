@@ -157,8 +157,15 @@ type editor struct {
 	exportOffen   bool // ein Dialog läuft (nur einer zugleich); nur die Ereignisschleife liest und setzt es
 	exportAntwort chan exportErgebnis
 
-	erzwungen  bool  // Schließen nach Signal: kein ClosingEvent mehr abbrechen
+	erzwungen  bool  // Schließen freigegeben (Signal, Speichern zurück): kein ClosingEvent mehr abbrechen
 	schlussErr error // Speicherfehler beim Schließen nach Signal, Rückgabe von Editor
+
+	// Speichern und Kopieren im Hintergrund (ADR-0020 Nachtrag 6): Die Goroutine legt die Antwort in den Kanal und
+	// weckt die Schleife; angenommen wird nur in der Ereignisschleife. Höchstens je eins zugleich (canvas.Sitzung
+	// führt das Speichern, kopierLaeuft das Kopieren).
+	speicherAntwort chan speicherErgebnis
+	kopierAntwort   chan kopierErgebnis
+	kopierLaeuft    bool
 
 	knoepfe struct {
 		auswahl, pfeil, kasten, text, nummer, farbe  widget.Clickable
@@ -234,6 +241,9 @@ func (e *editor) laufen() error {
 			diagnoseEditor("Fenster zu: Fehler %v, ungesichert %v, Zug %v", ev.Err, e.s.Ungesichert(), e.s.Zieht())
 			// Zählung für Messungen wie F-235 (knowledge/messungen/f-235.md)
 			diagnoseEditor("Bilder gezeichnet: %d", e.bilder)
+			// Läuft noch ein Speichern im Hintergrund, auf seine Antwort warten (ADR-0020 Nachtrag 6); ein weiterer
+			// Versuch nach einem Signal läuft dann hier im Vordergrund.
+			e.speichernAbwarten()
 			e.s.TextBestaetigen() // getippter Text geht nicht verloren (ADR-0021 Punkt 6)
 			if e.s.Zieht() {
 				e.s.Abbrechen()
@@ -279,11 +289,15 @@ func (e *editor) laufen() error {
 			e.w.Invalidate()
 		}
 		// Auch nach Ereignissen ohne Bild (Gio sendet bei inaktivem Fenster nur ein Weckereignis) die Dialogantwort
-		// annehmen, sonst läge sie bis zum nächsten Bild (F-231); ein Folgebild zeigt sie.
+		// annehmen, sonst läge sie bis zum nächsten Bild (F-231); ein Folgebild zeigt sie. Ebenso die Antwort des
+		// Speicherns (ADR-0020 Nachtrag 6).
 		if e.exportAbholen() {
 			e.wecker.Anfordern()
 		}
-		if e.wache.Angekommen() && !e.erzwungen {
+		if e.speichernAbholen() {
+			e.wecker.Anfordern()
+		}
+		if e.wache.Angekommen() && !e.erzwungen && !e.s.SignalVorgemerkt() {
 			e.nachSignal()
 		}
 	}
@@ -297,46 +311,129 @@ func hinweisAufStderr(g Gespeichert) {
 	}
 }
 
-// schliessen beantwortet eine Schließen-Anfrage; false hält das Fenster offen (Entscheidung in canvas.Sitzung):
-// Scheitert das Speichern, steht der Fehler in der Statusleiste und eine zweite Anfrage verwirft; eine Warnung beim
-// Speichern (Ausweichen auf eine neue Aufnahme) hält das Fenster einmal offen, damit sie gelesen wird.
+// schliessen beantwortet eine Schließen-Anfrage; false hält das Fenster offen (Entscheidung in canvas.Sitzung). Ist
+// etwas zu speichern, läuft es im Hintergrund (ADR-0020 Nachtrag 6): Das Fenster bleibt offen und zeichnet weiter, die
+// Antwort entscheidet in speichernFertig wie bisher — zu; einmal offen mit Hinweis; offen mit Fehler, und die nächste
+// Anfrage verwirft.
 func (e *editor) schliessen() bool {
-	z, err := e.s.Schliessen(func() (bool, error) {
-		g, err := e.speichern(e.s.D)
-		if err != nil {
-			return false, err
-		}
-		hinweisAufStderr(g) // zusätzlich zur Statusleiste, falls das Fenster trotzdem zugeht (ADR-0020 Nachtrag 4)
-		if g.HaeltOffen() {
-			e.gespeichertMelden(g)
-		}
-		return g.HaeltOffen(), nil
-	})
-	diagnoseEditor("Schließen-Anfrage: %v, %v", z, err)
+	z, abzug := e.s.SchliessenAnfrage()
+	diagnoseEditor("Schließen-Anfrage: %v, Speichern beginnt %v", z, abzug != nil)
 	switch z {
 	case canvas.SchlussZu:
 		return true
 	case canvas.SchlussFehler:
-		e.melde(fmt.Sprintf(i18n.T("Could not save: %v. Close again to discard the changes."), err), true)
+		e.melde(i18n.T("Could not save. Close again to discard the changes."), true)
+	}
+	if abzug != nil {
+		e.speichernStarten(abzug)
 	}
 	e.w.Invalidate() // Meldung zeigen
 	return false
 }
 
-// nachSignal speichert nach einem Signal einmal und schließt das Fenster, ohne es offen zu halten — auch nach einem
-// vorher gescheiterten Speichern (canvas.Sitzung.SchliessenNachSignal). Weitere Signale während des Speicherns fängt
-// die Wache ab (F-152).
+// nachSignal nimmt ein Signal an: Es speichert im Hintergrund und schließt das Fenster danach in jedem Fall, ohne es
+// offen zu halten — auch nach einem vorher gescheiterten Speichern (canvas.Sitzung.SignalAnfrage). Weitere Signale
+// fängt die Wache ab (F-152).
 func (e *editor) nachSignal() {
+	zu, abzug := e.s.SignalAnfrage()
+	diagnoseEditor("Signal: zu %v, Speichern beginnt %v", zu, abzug != nil)
+	if abzug != nil {
+		e.speichernStarten(abzug)
+		return
+	}
+	if zu {
+		e.schliessenFrei()
+	}
+	// sonst läuft schon ein Speichern; speichernFertig schließt danach
+}
+
+// schliessenFrei gibt das Fenster zum Schließen frei und schließt es in der eigenen Schleife (F-77).
+func (e *editor) schliessenFrei() {
 	e.erzwungen = true
-	e.schlussErr = e.s.SchliessenNachSignal(func() error {
-		g, err := e.speichern(e.s.D)
-		if err == nil {
-			hinweisAufStderr(g)
+	e.w.Perform(system.ActionClose)
+}
+
+// speicherErgebnis ist die Antwort eines Speicherns im Hintergrund.
+type speicherErgebnis struct {
+	g   Gespeichert
+	err error
+}
+
+// speichernStarten speichert den Abzug in einer Goroutine (ADR-0020 Nachtrag 6). Die Speicherfunktion führt Zustand;
+// canvas.Sitzung lässt höchstens ein Speichern zugleich zu. Die Antwort holt die Ereignisschleife ab.
+func (e *editor) speichernStarten(abzug *document.Dokument) {
+	e.melde(i18n.T("Saving…"), false)
+	if e.speicherAntwort == nil {
+		e.speicherAntwort = make(chan speicherErgebnis, 1)
+	}
+	speichern, ch, wecker := e.speichern, e.speicherAntwort, e.wecker
+	start := time.Now()
+	go func() {
+		g, err := speichern(abzug)
+		diagnoseEditor("Speichern im Hintergrund: %v, %v", time.Since(start).Round(time.Millisecond), err)
+		ch <- speicherErgebnis{g, err}
+		if wecker != nil {
+			wecker.Anfordern() // erst nach dem Ablegen der Antwort (F-231)
 		}
-		return err
-	})
-	diagnoseEditor("Speichern nach Signal: %v", e.schlussErr)
-	e.w.Perform(system.ActionClose) // in der eigenen Schleife (F-77)
+	}()
+}
+
+// speichernAbholen nimmt die Antwort des Speicherns an, falls eine da ist (Ereignisschleife).
+func (e *editor) speichernAbholen() bool {
+	select {
+	case r := <-e.speicherAntwort:
+		e.speichernFertig(r)
+		return true
+	default:
+		return false
+	}
+}
+
+// speichernAbwarten wartet beim Zerstören des Fensters auf ein laufendes Speichern; ein weiterer Versuch nach einem
+// Signal läuft dann im Vordergrund, denn die Schleife endet gleich.
+func (e *editor) speichernAbwarten() {
+	for e.s.SpeichernLaeuft() {
+		r := <-e.speicherAntwort
+		ende := e.s.SpeichernEnde(r.g.HaeltOffen(), r.err)
+		e.speichernMelden(r, ende)
+		if ende.Erneut != nil {
+			g, err := e.speichern(ende.Erneut)
+			ende = e.s.SpeichernEnde(g.HaeltOffen(), err)
+			e.speichernMelden(speicherErgebnis{g, err}, ende)
+		}
+	}
+}
+
+// speichernFertig wertet die Antwort aus (canvas.Sitzung.SpeichernEnde): Meldung, weiterer Versuch nach einem Signal,
+// Schließen.
+func (e *editor) speichernFertig(r speicherErgebnis) {
+	ende := e.s.SpeichernEnde(r.g.HaeltOffen(), r.err)
+	diagnoseEditor("Speichern zurück: %v, Ende %+v", r.err, ende)
+	e.speichernMelden(r, ende)
+	switch {
+	case ende.Erneut != nil:
+		e.speichernStarten(ende.Erneut)
+	case ende.Schliessen:
+		e.schliessenFrei()
+	}
+}
+
+// speichernMelden zeigt das Ergebnis in Titel- und Statusleiste. Schließt das Fenster gleich oder bleibt es für einen
+// Hinweis offen, geht der Hinweis zusätzlich auf die Fehlerausgabe (F-116, ADR-0020 Nachtrag 4).
+func (e *editor) speichernMelden(r speicherErgebnis, ende canvas.Ende) {
+	switch {
+	case r.err == nil:
+		e.gespeichertMelden(r.g)
+		if ende.Schliessen || ende.Schluss == canvas.SchlussHinweis {
+			hinweisAufStderr(r.g)
+		}
+	case ende.SignalFehler:
+		e.schlussErr = r.err
+	case ende.Schluss == canvas.SchlussFehler:
+		e.melde(fmt.Sprintf(i18n.T("Could not save: %v. Close again to discard the changes."), r.err), true)
+	case ende.Erneut == nil:
+		e.melde(fmt.Sprintf(i18n.T("Could not save: %v"), r.err), true)
+	}
 }
 
 func (e *editor) fensterTitel() string {
@@ -347,42 +444,82 @@ func (e *editor) fensterTitel() string {
 	return t
 }
 
+// speichernJetzt speichert auf Strg+S im Hintergrund (ADR-0020 Nachtrag 6); ein getippter Text kommt mit (ADR-0021
+// Punkt 6), während eines Ziehens oder eines anderen Speicherns geschieht nichts.
 func (e *editor) speichernJetzt() {
-	e.s.TextBestaetigen() // Strg+S nimmt den getippten Text mit (ADR-0021 Punkt 6)
-	if e.s.Zieht() {
-		return
-	}
-	if !e.s.Geaendert() {
+	abzug, err := e.s.SpeichernJetzt()
+	switch {
+	case errors.Is(err, canvas.ErrNichtsZuSpeichern):
 		// Nichts zu schreiben (F-109): sonst würde die Datei neu geschrieben und als bearbeitet markiert.
 		e.melde(i18n.T("No changes to save."), false)
-		return
+	case err != nil:
+		diagnoseEditor("Strg+S: %v", err)
+	default:
+		e.speichernStarten(abzug)
 	}
-	g, err := e.speichern(e.s.D)
-	if err != nil {
-		e.melde(fmt.Sprintf(i18n.T("Could not save: %v"), err), true)
-		return
-	}
-	e.s.Gespeichert()
-	e.gespeichertMelden(g)
 }
 
-// kopieren legt das fertig gerenderte Bild als PNG (ohne Bearbeitungsdaten) in die Zwischenablage (Karte #39). Es
-// rendert wie das Speichern im Fensterthread (F-143). Das Bild übernimmt ein abgelöster Halter-Prozess über das
-// data-control-Protokoll, damit es das Schließen des Editors überdauert (ADR-0024, E-19). Bietet der Compositor das
-// nicht an oder meldet sich der Halter nicht, bietet das Fenster selbst an wie bisher (ADR-0015 Nachtrag 2) — dann
-// gehört der Inhalt dem Fenster. Kann auch Gio das Bild nicht anbieten, ersetzt die Ereignisschleife die Meldung
-// (zwischenablageFehlt, F-177).
+// kopierErgebnis ist die Antwort eines Kopierens im Hintergrund: daten nur, wenn das Fenster selbst anbieten muss.
+type kopierErgebnis struct {
+	daten []byte
+	err   error
+}
+
+// kopieren legt das fertig gerenderte Bild als PNG (ohne Bearbeitungsdaten) in die Zwischenablage (Karte #39). Rendern,
+// Kodieren und die Übergabe an den Halter laufen auf einem Abzug in einer Goroutine (F-178, ADR-0020 Nachtrag 6). Das
+// Bild übernimmt ein abgelöster Halter-Prozess über das data-control-Protokoll, damit es das Schließen des Editors
+// überdauert (ADR-0024, E-19). Bietet der Compositor das nicht an oder meldet sich der Halter nicht, bietet das Fenster
+// selbst an wie bisher (ADR-0015 Nachtrag 2), in der Ereignisschleife (kopierenAbholen) — dann gehört der Inhalt dem
+// Fenster. Kann auch Gio das Bild nicht anbieten, ersetzt die Ereignisschleife die Meldung (zwischenablageFehlt, F-177).
 func (e *editor) kopieren(gtx layout.Context) {
-	daten, err := render.PNG(e.s.D)
-	if err != nil {
-		e.melde(fmt.Sprintf(i18n.T("Could not copy: %v"), err), true)
+	if e.kopierLaeuft {
+		e.melde(i18n.T("Copying is already in progress."), false)
 		return
 	}
-	if err := halteZwischenablage(daten); err != nil {
-		diagnoseEditor("Halter der Zwischenablage nicht gestartet, Fenster bietet selbst an: %v", err)
-		gtx.Execute(clipboard.WriteCmd{Type: wlclip.MIME, Data: io.NopCloser(bytes.NewReader(daten))})
+	abzug, err := e.s.D.Abzug()
+	if err != nil {
+		e.melde(i18n.T("Could not copy: finish the current action first."), true)
+		return
 	}
-	e.melde(i18n.T("Copied to clipboard"), false)
+	e.kopierLaeuft = true
+	if e.kopierAntwort == nil {
+		e.kopierAntwort = make(chan kopierErgebnis, 1)
+	}
+	ch, wecker := e.kopierAntwort, e.wecker
+	go func() {
+		var r kopierErgebnis
+		daten, err := render.PNG(abzug)
+		switch {
+		case err != nil:
+			r.err = err
+		default:
+			if err := halteZwischenablage(daten); err != nil {
+				diagnoseEditor("Halter der Zwischenablage nicht gestartet, Fenster bietet selbst an: %v", err)
+				r.daten = daten
+			}
+		}
+		ch <- r
+		if wecker != nil {
+			wecker.Anfordern()
+		}
+	}()
+}
+
+// kopierenAbholen nimmt die Antwort des Kopierens an (zu Beginn eines Bilds, denn der Rückfall braucht gtx).
+func (e *editor) kopierenAbholen(gtx layout.Context) {
+	select {
+	case r := <-e.kopierAntwort:
+		e.kopierLaeuft = false
+		if r.err != nil {
+			e.melde(fmt.Sprintf(i18n.T("Could not copy: %v"), r.err), true)
+			return
+		}
+		if r.daten != nil {
+			gtx.Execute(clipboard.WriteCmd{Type: wlclip.MIME, Data: io.NopCloser(bytes.NewReader(r.daten))})
+		}
+		e.melde(i18n.T("Copied to clipboard"), false)
+	default:
+	}
 }
 
 // exportErgebnis ist die Antwort des Dateidialogs auf dem Weg in die Ereignisschleife.
@@ -564,6 +701,8 @@ func (e *editor) frame(gtx layout.Context) {
 	// zum nächsten Ereignis stehen (F-216). Kam die Antwort erst nach diesem Abholen, weckt der Wecker weiter, bis ein
 	// Ereignis sie annimmt (F-231).
 	_ = e.exportAbholen()
+	_ = e.speichernAbholen() // ebenso die Antwort des Speicherns und des Kopierens (ADR-0020 Nachtrag 6)
+	e.kopierenAbholen(gtx)
 	e.tasten(gtx)
 	e.knoepfeAuswerten(gtx)
 	e.menueAuswerten(gtx)
@@ -704,7 +843,7 @@ func (e *editor) zeiger(gtx layout.Context) {
 		if !(probeOhneFolgebildBeiZug && ok && pe.Kind == pointer.Drag) {
 			gtx.Execute(op.InvalidateCmd{})
 		}
-		if !ok {
+		if !ok || e.s.SpeichernLaeuft() { // während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6)
 			continue
 		}
 		p := document.Pt(float64(pe.Position.X), float64(pe.Position.Y))
@@ -958,6 +1097,11 @@ func (e *editor) tasten(gtx layout.Context) {
 		if !ok {
 			return
 		}
+		if e.s.SpeichernLaeuft() {
+			// Während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6): abholen, damit Filter und Fokus
+			// bestehen bleiben, und verwerfen.
+			continue
+		}
 		if ed, ok := ev.(key.EditEvent); ok {
 			// Bei offenem Menü wirken nur Esc und Enter (ADR-0026 Nachtrag 1, F-261): auch getippte Zeichen nicht.
 			if e.s.TextLaeuft() && !e.menue.offen {
@@ -1060,33 +1204,36 @@ func (e *editor) wiederholen() {
 
 func (e *editor) knoepfeAuswerten(gtx layout.Context) {
 	k := &e.knoepfe
-	if k.rueck.Clicked(gtx) {
+	// Während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6): Clicked holt die Klicks ab (zuerst
+	// ausgewertet), an verwirft sie.
+	an := !e.s.SpeichernLaeuft()
+	if k.rueck.Clicked(gtx) && an {
 		e.rueckgaengig()
 	}
-	if k.wieder.Clicked(gtx) {
+	if k.wieder.Clicked(gtx) && an {
 		e.wiederholen()
 	}
-	if k.einpassen.Clicked(gtx) {
+	if k.einpassen.Clicked(gtx) && an {
 		e.s.Einpassen()
 	}
-	if k.ganz.Clicked(gtx) {
+	if k.ganz.Clicked(gtx) && an {
 		e.fuehreAus(gtx, aktGanzesBild, true)
 	}
-	if k.eins.Clicked(gtx) {
+	if k.eins.Clicked(gtx) && an {
 		e.s.EinsZuEins()
 	}
-	if k.export.Clicked(gtx) {
+	if k.export.Clicked(gtx) && an {
 		e.fuehreAus(gtx, aktExport, true) // wie Speichern: ein laufender Text kommt mit
 	}
-	if k.speichern.Clicked(gtx) {
+	if k.speichern.Clicked(gtx) && an {
 		e.speichernJetzt()
 	}
 	for _, w := range e.werkzeugKnoepfe() {
-		if w.c.Clicked(gtx) {
+		if w.c.Clicked(gtx) && an {
 			e.s.SetzeWerkzeug(w.w)
 		}
 	}
-	if k.farbe.Clicked(gtx) {
+	if k.farbe.Clicked(gtx) && an {
 		e.s.NaechsteFarbe()
 	}
 }

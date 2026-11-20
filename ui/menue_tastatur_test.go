@@ -428,6 +428,7 @@ func TestMenueEintraegeVerhalten(t *testing.T) {
 	t.Run("Kopieren", func(t *testing.T) {
 		e, _ := neu(t)
 		e.fuehreAus(gtx, aktKopieren, true)
+		warteKopieren(t, e, gtx)
 		if e.meldung.Text != i18n.T("Copied to clipboard") {
 			t.Errorf("Meldung %q", e.meldung.Text)
 		}
@@ -437,6 +438,7 @@ func TestMenueEintraegeVerhalten(t *testing.T) {
 		aufrufe := 0
 		e.speichern = func(*document.Dokument) (Gespeichert, error) { aufrufe++; return Gespeichert{}, nil }
 		e.fuehreAus(gtx, aktSpeichern, true)
+		warteSpeichern(t, e)
 		if aufrufe != 1 || e.s.Geaendert() {
 			t.Errorf("Speichern: %d Aufrufe, geändert %v", aufrufe, e.s.Geaendert())
 		}

@@ -32,10 +32,12 @@ type Ausfuehrung func(t Auftrag, aus, fehler io.Writer) int
 // anschluesse sind die Außenanschlüsse eines Aufnahme-Laufs. Das Programm nimmt die echten (echteAnschluesse),
 // Tests ihre Attrappen: keine echte Aufnahme, kein Fenster, keine Datei außerhalb von t.TempDir().
 type anschluesse struct {
-	quelle      func() (capture.Quelle, error)
-	monitore    func() ([]ui.Monitor, error)
-	overlay     func([]ui.MonitorBild, selection.Modus) (ui.OverlayErgebnis, error)
-	ablegen     func(d *document.Dokument) (string, error) // liefert den absoluten Pfad der Datei
+	quelle   func() (capture.Quelle, error)
+	monitore func() ([]ui.Monitor, error)
+	overlay  func([]ui.MonitorBild, selection.Modus) (ui.OverlayErgebnis, error)
+	// ablegen liefert den absoluten Pfad der Datei und ihren Stand unmittelbar nach dem Schreiben (F-110: Ändert sie
+	// sich danach, etwa durch ein Skript, das den Pfad von stdout liest, merkt es das Speichern im Editor).
+	ablegen     func(d *document.Dokument) (string, library.Stand, error)
 	letzterPfad string
 	// aufraeumen räumt die Bibliothek auf; tagesmarke ist die Marke für „höchstens einmal am Tag“. Ohne
 	// aufraeumen (nil) entfällt das Aufräumen.
@@ -45,8 +47,8 @@ type anschluesse struct {
 	// ohneGrenze ist --ignore-limit (nur bei schnapp DATEI, ADR-0017 Nachtrag 6).
 	editor func(pfad string, ohneGrenze bool) error
 	// bearbeiten öffnet eine eben abgelegte Aufnahme im Editor, mit dem Dokument aus dem Speicher statt die Datei neu
-	// zu lesen (F-112); pfad ist die abgelegte Datei. nil = kein Editor nach der Aufnahme.
-	bearbeiten func(pfad string, d *document.Dokument) error
+	// zu lesen (F-112). nil = kein Editor nach der Aufnahme.
+	bearbeiten func(a abgelegt) error
 	// schutz prüft vor jeder Aufnahme und vor dem Editor, ob der Lauf erlaubt ist (Probe-Build nur im virtuellen KWin,
 	// F-229); ein Fehler beendet den Lauf mit exitFehler, bevor etwas aufgenommen oder geöffnet wird. nil = keine Prüfung.
 	schutz func() error
@@ -57,21 +59,25 @@ func echteAnschluesse() anschluesse {
 		quelle:   func() (capture.Quelle, error) { return capture.NeuKWin() },
 		monitore: ui.Monitore,
 		overlay:  ui.Overlay,
-		ablegen: func(d *document.Dokument) (string, error) {
+		ablegen: func(d *document.Dokument) (string, library.Stand, error) {
 			orte, err := library.OrteAus(os.Getenv)
 			if err != nil {
-				return "", err
+				return "", library.Stand{}, err
 			}
 			sichtbar, err := render.Bild(d)
 			if err != nil {
-				return "", err
+				return "", library.Stand{}, err
 			}
 			e, err := library.Neu(orte).Ablegen(d, sichtbar, fileformat.Metadaten{})
 			if e.Pfad == "" {
-				return "", err
+				return "", library.Stand{}, err
 			}
-			// Index oder Vorschau gescheitert: Die Datei liegt trotzdem in der Ablage, das ist der Erfolg.
-			return filepath.Join(orte.Ablage, filepath.FromSlash(e.Pfad)), nil
+			// Index oder Vorschau gescheitert: Die Datei liegt trotzdem in der Ablage, das ist der Erfolg. Den Stand
+			// sofort merken (F-110, Verify W-5); unlesbar bleibt der Nullwert, dann weicht Speichern auf eine neue
+			// Aufnahme aus.
+			pfad := filepath.Join(orte.Ablage, filepath.FromSlash(e.Pfad))
+			stand, _ := library.StandVon(pfad)
+			return pfad, stand, nil
 		},
 		letzterPfad: selection.LetzterPfad(os.Getenv),
 		aufraeumen: func(e library.Einstellung, jetzt time.Time) (library.AufraeumErgebnis, error) {
@@ -113,7 +119,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		// liegt schon in der Bibliothek, der Pfad steht auf stdout: Was der Editor meldet, ist nur noch eine Warnung
 		// (ADR-0020).
 		start := time.Now()
-		err := an.bearbeiten(neu.pfad, neu.d)
+		err := an.bearbeiten(*neu)
 		diagnose(fehler, "Editor-Sitzung bis Fenster zu: %v", time.Since(start).Round(time.Millisecond))
 		if err != nil {
 			fmt.Fprintf(fehler, i18n.T("The editor could not be opened or saved: %v")+"\n", nutzerFehler(err))
@@ -124,8 +130,9 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 
 // abgelegt ist eine eben in der Bibliothek abgelegte Aufnahme, die der Editor danach öffnet (F-112).
 type abgelegt struct {
-	pfad string             // absoluter Pfad der Datei
-	d    *document.Dokument // das abgelegte Dokument; hält nur den gewählten Bereich, nicht die Monitorbilder
+	pfad  string             // absoluter Pfad der Datei
+	d     *document.Dokument // das abgelegte Dokument; hält nur den gewählten Bereich, nicht die Monitorbilder
+	stand library.Stand      // Stand der Datei unmittelbar nach dem Ablegen (F-110)
 }
 
 // aufnehmen nimmt auf und legt in der Bibliothek ab. Zurück kommen der Exit-Code und bei Erfolg die abgelegte
@@ -247,7 +254,7 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 	if err != nil {
 		return meldeFehler(fehler, err), nil
 	}
-	pfad, err := an.ablegen(d)
+	pfad, stand, err := an.ablegen(d)
 	diagnose(fehler, "Ablegen in der Bibliothek: %v", time.Since(start).Round(time.Millisecond))
 	if err != nil {
 		fmt.Fprintf(fehler, i18n.T("Could not save the screenshot: %v")+"\n", err)
@@ -262,7 +269,7 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 		fmt.Fprintf(fehler, i18n.T("Could not write the path to standard output: %v")+"\n", err)
 	}
 	an.raeumeAuf(t.Aufraeumen, time.Now(), fehler)
-	return exitOK, &abgelegt{pfad: pfad, d: d}
+	return exitOK, &abgelegt{pfad: pfad, d: d, stand: stand}
 }
 
 // raeumeAuf räumt nach dem Speichern die Bibliothek auf, höchstens einmal am Tag (ADR-0016 Nachtrag 2). Die Aufnahme

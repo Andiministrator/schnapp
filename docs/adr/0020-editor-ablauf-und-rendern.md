@@ -173,3 +173,34 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   und lehnt über `ZeichenBudget` = 1 000 000 ab, ohne zu vermessen (unter 1 ms). Am Budget dauert das erste Vermessen
   rund 45 ms (Entwicklungsrechner). Ein echtes Dokument eines Bildschirmfotos kommt nicht in die Nähe; über dem Budget
   gilt wie für die anderen Grenzen: Öffnen lehnt ab (`--ignore-limit` überspringt es), Speichern warnt nur (F-138).
+
+## Nachtrag 6 (20.11.2026): Editor nach der Aufnahme, Speichern und Kopieren im Hintergrund (F-112, F-143, F-178)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #62; Claudes Entscheidung im Rahmen des freigegebenen Sprints 8).
+
+- **Editor nach der Aufnahme (F-112):** Der Editor öffnet erst, wenn der Aufnahme-Aufruf zurückgekehrt ist: Die
+  Verbindung zu KWin ist zu, die Bilder aller Monitore hängen an nichts mehr. Er bekommt das abgelegte Dokument (eine
+  eigene Kopie des gewählten Bereichs), statt die eben geschriebene Datei neu zu lesen. Der Pfad steht wie bisher vor
+  dem Editor auf stdout.
+- **Speichern im Hintergrund (F-143, Rest F-112):** Strg+S, Schließen und Signal speichern einen **Abzug** des
+  Dokuments (`document.Dokument.Abzug`, unabhängige Kopie mit gleichem Stand) in einer eigenen Goroutine. Die
+  Ereignisschleife läuft weiter: Das Fenster zeichnet, beantwortet die Pings des Compositors (kein „Beenden
+  erzwingen“) und zeigt „Speichern …“ in der Statusleiste. Die Antwort kommt wie beim Dateidialog über einen Kanal und
+  den Wecker in die Schleife (F-77, F-231); erst dort gilt der Stand als gespeichert. Es läuft höchstens ein Speichern
+  zugleich (die Speicherfunktion der Bibliothek führt Zustand: Konflikt, Ausweichen, liegen gebliebene Fassungen).
+- **Bearbeiten ruht während des Speicherns:** Eingaben auf Leinwand, Leiste, Menü und Tastatur wirken nicht, bis das
+  Speichern zurück ist; Zeichnen und Schließen-Anfragen gehen weiter. Grund ist ADR-0022 Punkt 3: Nach einem
+  Speichern mit Schwärzung wird der Verlauf geleert. Liefe daneben eine Bearbeitung (ein Zug, ein Rückgängig), gälte
+  das Leeren für einen anderen Stand als den gespeicherten, oder es fiele aus — ein Rückgängig könnte das
+  Geschwärzte zurückholen. Gespeichert dauert ein Alltagsdokument Bruchteile einer Sekunde, ein Dokument am Budget
+  Sekunden; die Pause ist der kleinere Preis.
+- **Schließen während des Speicherns:** Die Anfrage wird angehalten und nach dem Speichern so entschieden, als wäre sie
+  danach gekommen (Nachtrag 2, Nachtrag 4): gelungen ohne Hinweis → zu; mit Hinweis → einmal offen; gescheitert →
+  offen mit Fehler, die nächste Anfrage verwirft. Ein **Signal** während eines Strg+S wartet ebenso; ist jenes
+  gescheitert, versucht das Signal ein weiteres Speichern (wie bisher nach einem gescheiterten Schließen) und schließt
+  danach in jedem Fall. Endet das Fenster ohne Anfrage (Wayland weg), wartet der Editor auf ein laufendes Speichern und
+  speichert, was dann noch ungesichert ist, wie bisher im Vordergrund.
+- **Kopieren (F-178):** Strg+C rendert und kodiert den Abzug ebenfalls in einer Goroutine und übergibt dort an den
+  Halter der Zwischenablage (ADR-0024); nur der Rückfall auf das Fenster selbst (ADR-0015 Nachtrag 2) läuft danach in
+  der Ereignisschleife. Kopieren ändert nichts am Dokument und sperrt das Bearbeiten nicht; ein zweites Strg+C während
+  eines laufenden wartet nicht, sondern wird mit „Kopieren läuft schon“ beantwortet.

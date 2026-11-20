@@ -15,6 +15,7 @@ import (
 	"github.com/Andiministrator/schnapp/capture"
 	"github.com/Andiministrator/schnapp/document"
 	"github.com/Andiministrator/schnapp/i18n"
+	"github.com/Andiministrator/schnapp/library"
 	"github.com/Andiministrator/schnapp/selection"
 	"github.com/Andiministrator/schnapp/settings"
 	"github.com/Andiministrator/schnapp/ui"
@@ -78,6 +79,7 @@ type lauf struct {
 	overlayErr error
 	abgelegt   []*document.Dokument
 	ablegenErr error
+	stand      library.Stand // Stand, den die Attrappe von ablegen meldet
 }
 
 func neuerLauf(t *testing.T) *lauf {
@@ -98,12 +100,12 @@ func neuerLauf(t *testing.T) *lauf {
 			}
 			return l.overlayErg, l.overlayErr
 		},
-		ablegen: func(d *document.Dokument) (string, error) {
+		ablegen: func(d *document.Dokument) (string, library.Stand, error) {
 			if l.ablegenErr != nil {
-				return "", l.ablegenErr
+				return "", library.Stand{}, l.ablegenErr
 			}
 			l.abgelegt = append(l.abgelegt, d)
-			return "/ablage/2026-11/datei.png", nil
+			return "/ablage/2026-11/datei.png", l.stand, nil
 		},
 		letzterPfad: filepath.Join(t.TempDir(), "state", "schnapp", "last-area.json"),
 	}

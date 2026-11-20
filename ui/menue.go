@@ -221,7 +221,8 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 // menueAuswerten verarbeitet Klicks auf den Menüknopf, die Einträge und daneben.
 func (e *editor) menueAuswerten(gtx layout.Context) {
 	m := &e.menue
-	if m.knopf.Clicked(gtx) {
+	an := !e.s.SpeichernLaeuft() // während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6)
+	if m.knopf.Clicked(gtx) && an {
 		m.offen = !m.offen
 		m.cursor = -1
 		if m.offen && (m.perTaste || !m.knopf.Hovered()) {
@@ -248,7 +249,7 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 		}
 	}
 	for i, en := range e.menueEintraege() {
-		if m.eintraege[i].Clicked(gtx) && m.offen && en.an {
+		if m.eintraege[i].Clicked(gtx) && m.offen && en.an && an {
 			e.menueSchliesse(gtx, false) // Fokus an die Leinwand: getippter Text nach „Text bearbeiten“ kommt an
 			e.fuehreAus(gtx, en.akt, true)
 		}

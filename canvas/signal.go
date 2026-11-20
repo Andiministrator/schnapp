@@ -61,18 +61,14 @@ func (w *Signalwache) Ende() {
 // ist — das Verwerfen hat nur eine zweite Schließen-Anfrage bestätigt, kein Signal, und die Ursache (z. B. volle
 // Platte) kann inzwischen behoben sein. speichern weicht wie beim Schließen selbst auf eine neue Aufnahme aus.
 // Scheitert es, kommt der Fehler zurück und der Stand gilt als verworfen (kein weiterer Versuch beim Zerstören).
+// Synchrone Form von SignalAnfrage und SpeichernEnde (hintergrund.go) mit derselben Entscheidung; der Editor nutzt die
+// zweistufige.
 func (s *Sitzung) SchliessenNachSignal(speichern func() error) error {
-	s.TextBestaetigen() // getippter Text geht nicht verloren (ADR-0021 Punkt 6)
-	if s.zug != keinZug {
-		s.Abbrechen()
-	}
-	if !s.Geaendert() {
+	_, abzug := s.SignalAnfrage()
+	if abzug == nil {
 		return nil
 	}
-	if err := speichern(); err != nil {
-		s.verwerfen, s.verwerfenBei = true, s.D.Stand()
-		return err
-	}
-	s.Gespeichert()
-	return nil
+	err := speichern()
+	s.SpeichernEnde(false, err)
+	return err
 }

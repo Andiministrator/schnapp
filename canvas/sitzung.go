@@ -82,6 +82,8 @@ type Sitzung struct {
 	rahmenZuKlein    bool   // letzter Schwärzungsrahmen lag unter der Mindestgröße und tat nichts (F-227)
 	bildAenderung    uint64 // zählt Änderungen am Ansichtsbild: Schwärzungen, Zuschnitt, Streifen
 	ansichtMeldung   AnsichtMeldung
+	// hg ist das Speichern im Hintergrund (hintergrund.go, ADR-0020 Nachtrag 6).
+	hg hintergrund
 }
 
 // NeueSitzung beginnt mit eingepasster Ansicht, ohne Auswahl, mit dem Werkzeug Auswählen und dem Standardstil.
@@ -366,25 +368,15 @@ const (
 	SchlussHinweis
 )
 
-// Schliessen entscheidet über eine Schließen-Anfrage des Fensters (F-107): Ein laufender Zug wird abgebrochen,
-// ungesicherte Änderungen werden mit speichern gesichert. speichern meldet, ob ein Hinweis gelesen werden muss
-// (warnung), oder einen Fehler. Der Fehler kommt unverändert zurück.
+// Schliessen entscheidet über eine Schließen-Anfrage des Fensters (F-107), in einem Schritt: Ein laufender Zug wird
+// abgebrochen, ungesicherte Änderungen werden mit speichern gesichert. speichern meldet, ob ein Hinweis gelesen werden
+// muss (warnung), oder einen Fehler. Der Fehler kommt unverändert zurück. Es ist die synchrone Form von
+// SchliessenAnfrage und SpeichernEnde (hintergrund.go) mit derselben Entscheidung; der Editor nutzt die zweistufige.
 func (s *Sitzung) Schliessen(speichern func() (warnung bool, err error)) (Schluss, error) {
-	s.TextBestaetigen() // getippter Text geht nicht verloren (ADR-0021 Punkt 6)
-	if s.zug != keinZug {
-		s.Abbrechen()
-	}
-	if !s.Ungesichert() {
-		return SchlussZu, nil
+	z, abzug := s.SchliessenAnfrage()
+	if abzug == nil {
+		return z, nil
 	}
 	warnung, err := speichern()
-	if err != nil {
-		s.verwerfen, s.verwerfenBei = true, s.D.Stand()
-		return SchlussFehler, err
-	}
-	s.Gespeichert()
-	if warnung {
-		return SchlussHinweis, nil
-	}
-	return SchlussZu, nil
+	return s.SpeichernEnde(warnung, err).Schluss, err
 }
