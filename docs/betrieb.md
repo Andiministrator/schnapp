@@ -51,8 +51,10 @@ F-309; öffentliche Check-Run-API je Job, `knowledge/topics/lehren.md` Sprint 9)
 ./install.sh --uninstall  # entfernt genau die drei installierten Dateien
 ```
 
-Installiert werden Programm, Desktop-Datei (aus `data/schnapp.desktop.in`, ADR-0017) und Symbol. Die Version kommt aus
-`git describe`; ohne Tag ist sie bisher der nackte Commit-Hash (Soll `0.0.0-dev+<hash>`, offen: F-113).
+Installiert werden Programm, Desktop-Datei (aus `data/schnapp.desktop.in`, ADR-0017; mit `MimeType` für PNG und JPEG
+und `%f`, also „Öffnen mit“ im Dateimanager) und Symbol. Die Version kommt aus `git describe`; ohne erreichbaren Tag
+`0.0.0-dev+<Kurzhash>` (geänderter Baum `.dirty`), ohne git oder in einem fremden Repo `0.0.0-dev` (F-113). Fehlt in
+der Vorlage die Zeile `[Desktop Entry]`, bricht `install.sh` vor dem Bau ab (F-122).
 
 ## Ausliefern (Release)
 

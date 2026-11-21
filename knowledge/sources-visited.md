@@ -52,6 +52,7 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 
 | URL | Letzter Besuch | Erstbesuch | Status | Weg | Inhalt | Zieldatei |
 |---|---|---|---|---|---|---|
+| https://gioui.org/doc/contribute | 2026-11-21 | 2026-11-21 | 200 | web-fetch | Mailingliste gio-patches (Hauptweg), PRs am GitHub-Spiegel als Ersatz, Sign-off Pflicht, Präfix PATCH gio, kein SourceHut-Konto nötig, nichts zu KI-Code | topics/plattformen-und-ki-regeln.md |
 | https://codeberg.org/codeberg/org/src/branch/main/TermsOfUse.md | 2026-11-19 | 2026-11-19 | live | WebFetch | § 2 Abs. 1 Nr. 7: überwiegend KI-geschriebene Projekte verboten | topics/plattformen-und-ki-regeln.md |
 | https://linuxiac.com/codeberg-bans-projects-mostly-written-by-generative-ai/ | 2026-11-19 | 2026-11-19 | indirect | WebSearch | Codeberg-Verbot Juli 2026, Abstimmung | topics/plattformen-und-ki-regeln.md |
 | https://www.gamingonlinux.com/2026/10/flathub-walked-back-their-generative-ai-ban-replaced-with-a-disclosure-policy/ | 2026-11-19 | 2026-11-19 | indirect | WebSearch | Flathub: Offenlegung statt Verbot, Manifest/Einreichung ohne KI | topics/plattformen-und-ki-regeln.md |

@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-21 (ergänzt in Sprint 9). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-21 (ergänzt in Sprint 10). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -376,3 +376,23 @@ Stand: 2026-11-21 (ergänzt in Sprint 9). Kurze Regeln aus Fehlern und Befunden;
   aber nicht die Prüfbefehle offener Findings, Aufrufbeispiele in Kommentaren und die Kontexte der Board-Karten
   (Kritik Sitzung Sprint 9: fünf Prüfbefehle, 16 Karten). Suche nach `\./<altes paket>\b` und `<altes paket>/` ohne
   `internal/` davor gehört in jeden Umbau.
+
+## Sprint 10 (21.11.2026)
+
+- **Lange TMPDIR-Pfade sprengen die Grenze für Unix-Sockets (107 Byte).** Ein Fernbedienungs-Test und Chromium
+  brachen in Worktrees unter `.claude/worktrees/…` mit „bind: invalid argument“ bzw. SIGABRT ab. In Worktrees ein
+  kurzes `TMPDIR` nehmen (`tmp/sprint10/<k>/g`, für Chromium relativ); seit F-319 zeigt `cd.py` die Ursache.
+- **Schnapp liest keine Prozessverzeichnisse, auch nicht das eigene.** Der Halter fand geerbte Deskriptoren zuerst
+  über das proc-Dateisystem; jetzt per fcntl (F-189, f4dacbd). Der Hook lehnt schon Befehle ab, die den Pfad nur nennen.
+- **`spectacle -b -c` verliert unter Wayland die Zwischenablage**, weil das Programm sofort endet (F-220-Test). Für
+  Vergleiche das Spectacle-Fenster offen lassen — derselbe Grund, aus dem Schnapp den Halter hat.
+- **Sub-Agent-Worktrees zweigen vom gepushten Stand ab**, nicht von `main` im Arbeitsbaum. Vor dem Start pushen, sonst
+  arbeitet der Agent auf altem Stand (Sprint 10: drei Agenten auf dem Stand vor der Paket-Umbenennung).
+- **Sub-Agents setzen trotz Verbot Heredocs ab** (Sprint 10 fünfmal, harmlos). Berichte darauf lesen; das Verbot
+  steht im Prompt, wirkt aber nicht verlässlich.
+- **Wer „behoben“ schreibt, braucht den Beleg im Repo.** Eine Messung des Maintainers (F-295) oder ein Wegwerf-Prüfskript
+  unter `tmp/` (F-29, F-319) ist nach dem Aufräumen weg; Zahlen und Ablauf gehören nach `knowledge/messungen/`.
+- **Eine Quelle, die nur als Suchtreffer bekannt ist, ist nicht belegt.** Der Gio-Einreichungsweg stand zuerst nach
+  Suchschnipseln im Wissen („PR ersatzweise“ klang gleichrangig); erst die geöffnete Seite zeigte, dass die Mailingliste
+  der Hauptweg ist (Kritik Sitzungs-QA Sprint 10, C-1).
+
