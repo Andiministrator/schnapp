@@ -5,7 +5,7 @@ package fileformat
 import (
 	"encoding/binary"
 	"image"
-	"image/draw"
+	"image/color"
 )
 
 // Kleiner eigener Leser für die EXIF-Ausrichtung (Tag 0x0112) eines JPEG (F-113, ADR-0011: kein Fremdpaket für ein
@@ -98,6 +98,9 @@ func tiffAusrichtung(seg []byte) int {
 //	2 gespiegelt links-rechts   3 um 180 Grad gedreht   4 gespiegelt oben-unten
 //	5 an der Hauptdiagonale gespiegelt   6 um 90 Grad im Uhrzeigersinn   7 an der Gegendiagonale gespiegelt
 //	8 um 90 Grad gegen den Uhrzeigersinn
+//
+// Neben der Quelle entsteht genau eine Vollbild-Kopie (das Ergebnis); die Quelle wird direkt gelesen, nicht erst in
+// ein NRGBA-Zwischenbild umkopiert (F-323 a).
 func richteAus(bild image.Image, o int) image.Image {
 	if o < 2 || o > 8 {
 		return bild
@@ -107,13 +110,12 @@ func richteAus(bild image.Image, o int) image.Image {
 	if w < 1 || h < 1 {
 		return bild
 	}
-	quelle := image.NewNRGBA(image.Rect(0, 0, w, h))
-	draw.Draw(quelle, quelle.Bounds(), bild, b.Min, draw.Src)
 	dw, dh := w, h
 	if o >= 5 {
 		dw, dh = h, w
 	}
 	ziel := image.NewNRGBA(image.Rect(0, 0, dw, dh))
+	lies := pixelLeser(bild)
 	for dy := 0; dy < dh; dy++ {
 		for dx := 0; dx < dw; dx++ {
 			var sx, sy int
@@ -133,10 +135,32 @@ func richteAus(bild image.Image, o int) image.Image {
 			case 8:
 				sx, sy = w-1-dy, dx
 			}
-			s := quelle.PixOffset(sx, sy)
 			d := ziel.PixOffset(dx, dy)
-			copy(ziel.Pix[d:d+4], quelle.Pix[s:s+4])
+			lies(ziel.Pix[d:d+4:d+4], b.Min.X+sx, b.Min.Y+sy)
 		}
 	}
 	return ziel
+}
+
+// pixelLeser liefert eine Funktion, die das Pixel (x, y) der Quelle (in deren Koordinaten) als NRGBA in dst schreibt,
+// mit demselben Ergebnis wie draw.Draw mit draw.Src in ein NRGBA-Bild. Die häufigen Typen gehen ohne Schnittstellenaufruf.
+func pixelLeser(bild image.Image) func(dst []byte, x, y int) {
+	switch q := bild.(type) {
+	case *image.NRGBA:
+		return func(dst []byte, x, y int) {
+			s := q.PixOffset(x, y)
+			copy(dst, q.Pix[s:s+4])
+		}
+	case *image.YCbCr:
+		return func(dst []byte, x, y int) {
+			yi := q.YOffset(x, y)
+			ci := q.COffset(x, y)
+			dst[0], dst[1], dst[2] = color.YCbCrToRGB(q.Y[yi], q.Cb[ci], q.Cr[ci])
+			dst[3] = 255
+		}
+	}
+	return func(dst []byte, x, y int) {
+		c := color.NRGBAModel.Convert(bild.At(x, y)).(color.NRGBA)
+		dst[0], dst[1], dst[2], dst[3] = c.R, c.G, c.B, c.A
+	}
 }

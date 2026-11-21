@@ -134,6 +134,9 @@ func neuerBlockStrom(bloecke []block) io.Reader {
 }
 
 func (s *blockStrom) Read(p []byte) (int, error) {
+	if len(p) == 0 { // io.Reader: leerer Puffer ändert nichts (F-323 b)
+		return 0, nil
+	}
 	for {
 		if n, err := s.rest.Read(p); n > 0 || (err != nil && err != io.EOF) {
 			return n, err
