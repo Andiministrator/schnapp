@@ -261,7 +261,10 @@ Nachtrag 6 und 7; über die 15-s-Frist selbst entscheidet Nachtrag 9 (F-298, Kar
 
 - **Schließen-Anfragen gehen weiter (Nachtrag 6) gilt für jeden Weg:** Fensterknopf, Strg+W und der Menüeintrag
   „Schließen“ (Klick und Enter), auch während des Speicherns (F-299). `SchliessenAnfrage` merkt die Anfrage vor. Alles
-  Ändernde bleibt gesperrt; während des Speicherns wirken nur Strg+C und Schließen.
+  Ändernde bleibt gesperrt; während des Speicherns wirken nur Strg+C und Schließen. Das Menü lässt sich während des
+  Speicherns nicht neu öffnen; der Eintrag „Schließen“ wirkt also nur, wenn das Menü schon offen war. Der Weg per
+  Tastatur ist Strg+W (Probelauf `knowledge/messungen/f-299-probe.md`, Rückfall-Drehbuch
+  `scripts/drehbuecher/rueckfall-schliessen-waehrend-speichern.txt`).
 - **„Der Exit-Code ist ein Fehler“ (Nachtrag 7) gilt, wenn Änderungen ungesichert bleiben:** `ui.ErrSpeichernHaengt`
   und ein gescheitertes Speichern, das der Nutzer nicht verworfen hat — auf dem Weg `schnapp DATEI` und nach einer
   Aufnahme (F-302). Auf dem DATEI-Weg heißt die Meldung dann „Der Editor ließ sich nicht öffnen oder nicht speichern“, nicht

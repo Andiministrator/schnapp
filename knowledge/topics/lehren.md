@@ -343,4 +343,11 @@ Stand: 2026-11-20 (ergänzt in Sprint 8). Kurze Regeln aus Fehlern und Befunden;
 - **Der Tabu-Hook prüft auch Text, der nur einen Prozesspfad erwähnt:** Ein Kartentext mit dem Pfad der Befehlszeile
   eines Prozesses ließ den Aufruf ablehnen, obwohl nichts gelesen wurde. Op-Nutzlasten mit dem Write-Werkzeug anlegen
   und solche Hinweise umschreiben („keine Befehlszeile lesen“).
+- **Probelauf mit `--bild`: ein fremdes PNG hält das Fenster beim Schließen offen.** Es wird beim Speichern als neue
+  Aufnahme abgelegt, und der Hinweis darauf verlangt eine zweite Schließen-Anfrage (Nachtrag 4) — ein Drehbuch, das
+  „schließt von selbst“ prüft, braucht eine Datei aus der Probe-Bibliothek. Ein nach SIGKILL liegen gebliebenes
+  `.schnapp-tmp-*` im selben Ordner löst ebenfalls einen Hinweis aus (`scripts/drehbuecher/rueckfall-schliessen-waehrend-speichern.txt`).
+- **Messbilder bestimmen die Messung:** Ein Verlauf speicherte in 4K in 8,8 s, ein verrauschtes Bild in 19–24 s
+  (`messungen/f-249.md`, `messungen/f-299-probe.md`). Im Messprotokoll die Art des Bildes nennen und für Fristen den
+  ungünstigen Fall (Rauschen, Foto) messen.
 
