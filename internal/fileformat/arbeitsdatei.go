@@ -21,15 +21,30 @@ import (
 // Metadaten.Erstellt).
 func SchreibeArbeitsdatei(w io.Writer, d *document.Dokument, sichtbar image.Image, m Metadaten) error {
 	var sicht, orig bytes.Buffer
-	// Über saveprogress.Schreiber meldet das Kodieren Fortschritt je geschriebenem Stück (F-298).
-	if err := png.Encode(saveprogress.Schreiber(&sicht), sichtbar); err != nil {
-		return err
+	// Beide PNG-Kodierungen laufen nebenläufig (F-310): Sie lesen nur ihr Bild und schreiben je in einen eigenen
+	// Puffer; zwei gleichzeitige Kodierungen kosten kaum mehr als eine. Über saveprogress.Schreiber meldet jede
+	// Fortschritt je geschriebenem Stück (F-298; Puls und Marke sind nebenläufig sicher). Zurück kommt erst, wenn
+	// beide fertig sind, auch im Fehlerfall (kein auslaufender Schreiber); ein Fehler des Bilds geht vor.
+	original := d.OriginalBild()
+	var origFehler error
+	fertig := make(chan struct{})
+	go func() {
+		defer close(fertig)
+		if origFehler = png.Encode(saveprogress.Schreiber(&orig), original); origFehler == nil {
+			saveprogress.Marke("original-kodiert")
+		}
+	}()
+	bildFehler := png.Encode(saveprogress.Schreiber(&sicht), sichtbar)
+	if bildFehler == nil {
+		saveprogress.Marke("bild-kodiert")
 	}
-	saveprogress.Marke("bild-kodiert")
-	if err := png.Encode(saveprogress.Schreiber(&orig), d.OriginalBild()); err != nil {
-		return err
+	<-fertig
+	if bildFehler != nil {
+		return bildFehler
 	}
-	saveprogress.Marke("original-kodiert")
+	if origFehler != nil {
+		return origFehler
+	}
 	var svg bytes.Buffer
 	zw, _ := zlib.NewWriterLevel(&svg, zlib.BestCompression)
 	if _, err := zw.Write(svgArbeitsdatei(d, m)); err != nil {

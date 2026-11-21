@@ -105,6 +105,15 @@ func (b *Bibliothek) Speichern(rel string, erwartet Stand, d *document.Dokument,
 	if standAus(st) != erwartet {
 		return Eintrag{}, Stand{}, fmt.Errorf("%w: %q", ErrGeaendert, rel)
 	}
+	// Das Vorschaubild verkleinert nebenläufig zu Lesen und Kodieren (F-310); geschrieben wird es erst nach dem
+	// Ersetzen. Der Aufruf kehrt erst zurück, wenn die Goroutine fertig ist (auch bei Fehlern).
+	kleinFertig := make(chan struct{})
+	var klein *image.NRGBA
+	go func() {
+		defer close(kleinFertig)
+		klein = verkleinere(sichtbar, VorschauSeite)
+	}()
+	defer func() { <-kleinFertig }()
 	f, err := os.Open(voll)
 	if err != nil {
 		return Eintrag{}, Stand{}, err
@@ -160,7 +169,7 @@ func (b *Bibliothek) Speichern(rel string, erwartet Stand, d *document.Dokument,
 		folge = errors.Join(folge, fmt.Errorf("%w: %v", ErrIndex, err))
 	}
 	saveprogress.Marke("index")
-	if err := b.erneuereVorschau(rel, sichtbar); err != nil {
+	if err := b.erneuereVorschauKlein(rel, func() *image.NRGBA { <-kleinFertig; return klein }); err != nil {
 		folge = errors.Join(folge, err)
 	}
 	saveprogress.Marke("vorschau")

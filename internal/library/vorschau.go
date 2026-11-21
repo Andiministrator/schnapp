@@ -38,10 +38,16 @@ var (
 )
 
 func (b *Bibliothek) schreibeVorschau(rel string, bild image.Image) error {
+	return b.schreibeVorschauKlein(rel, func() *image.NRGBA { return verkleinere(bild, VorschauSeite) })
+}
+
+// schreibeVorschauKlein wie schreibeVorschau, mit dem fertig verkleinerten Bild von holeKlein (Speichern verkleinert
+// nebenläufig zum Kodieren, F-310). holeKlein wird erst nach dem Anlegen des Ordners aufgerufen.
+func (b *Bibliothek) schreibeVorschauKlein(rel string, holeKlein func() *image.NRGBA) error {
 	if err := eigenerOrdner(b.Orte.Vorschau); err != nil {
 		return err
 	}
-	klein := verkleinere(bild, VorschauSeite)
+	klein := holeKlein()
 	return schreibeAtomar(b.VorschauPfad(rel), func(w io.Writer) error { return kodiereVorschau(w, klein) })
 }
 
@@ -54,12 +60,17 @@ func (b *Bibliothek) schreibeVorschau(rel string, bild image.Image) error {
 // raeumeTempReste (nur Präfix, nur reguläre Dateien, nie ein Symlink; Altersgrenze oder gleicher Inode wie das zu
 // ersetzende Vorschaubild); was bleibt oder sich nicht entfernen lässt, kommt als ErrTempRest zurück.
 func (b *Bibliothek) erneuereVorschau(rel string, bild image.Image) error {
+	return b.erneuereVorschauKlein(rel, func() *image.NRGBA { return verkleinere(bild, VorschauSeite) })
+}
+
+// erneuereVorschauKlein wie erneuereVorschau, mit dem verkleinerten Bild von holeKlein (siehe schreibeVorschauKlein).
+func (b *Bibliothek) erneuereVorschauKlein(rel string, holeKlein func() *image.NRGBA) error {
 	var alt os.FileInfo
 	if fi, err := os.Lstat(b.VorschauPfad(rel)); err == nil && fi.Mode().IsRegular() {
 		alt = fi
 	}
 	_, restFehler := raeumeTempReste(b.Orte.Vorschau, time.Now(), false, alt)
-	err := b.schreibeVorschau(rel, bild)
+	err := b.schreibeVorschauKlein(rel, holeKlein)
 	if err == nil {
 		return restFehler
 	}
