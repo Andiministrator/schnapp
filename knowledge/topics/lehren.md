@@ -398,3 +398,22 @@ Stand: 2026-11-21 (ergänzt in Sprint 10). Kurze Regeln aus Fehlern und Befunden
   Suchschnipseln im Wissen („PR ersatzweise“ klang gleichrangig); erst die geöffnete Seite zeigte, dass die Mailingliste
   der Hauptweg ist (Kritik Sitzungs-QA Sprint 10, C-1).
 
+### Sitzung 21.11.2026 nachmittags (Karten #135, #136, #127, #125, #78, Sitzungs-QA)
+
+- **Im Register den Commit auf `main` nennen, nicht den des Worktrees.** Nach `git cherry-pick` hat der Commit einen
+  neuen Hash; der Worktree-Commit verschwindet mit dem Zweig und war nie auf `origin` (Archiv F-313, Doku-Kritik A-1).
+  Den Status erst nach dem Cherry-Pick setzen und den Hash aus `git log --oneline -1` nehmen.
+- **Backticks in `python3 -c "…"` wertet die Shell aus.** Ein ``` `O_NOFOLLOW` ``` im Ersetzungstext wurde still zu nichts.
+  Ersetzungen mit Markdown-Code gehören in eine Skriptdatei (Write nach `tmp/<sprint>/…`, dann `python3 -I -B`), mit
+  `assert s.count(alt) == 1` je Ersetzung.
+- **Bitgleich zu Fremdcode heißt: dieselbe Rechenreihenfolge.** float32-Addition ist nicht assoziativ; x/image/vector
+  akkumuliert auf amd64 per SIMD in Viererblöcken, eine skalare Nachbildung wich in einzelnen Pixeln ab (#78). Feste
+  Testfälle fingen eine vertauschte Klammer nicht, erst 600 Zufallsfälle (Code-Kritik K-4). Bei jeder Nachbildung
+  Wert-für-Wert-Test gegen die Referenz, mit Zufallsfällen, und die Mutation einer Klammer als Gegenprobe.
+- **CPU-Abfragen über `golang.org/x/sys/cpu` folgen `GODEBUG`,** Assembler-Code, der CPUID selbst fragt, nicht (K-3).
+  Wer das Verhalten eines Fremdpakets nachbildet, übernimmt dessen Bedingung, nicht eine bequemere.
+- **Kritiker im Worktree: Zusatztests als Text in den Bericht.** Dateien, die ein Kritiker unter `tmp/` seines Worktrees
+  anlegt, verschwinden mit dem Worktree, bevor der Orchestrator sie übernehmen kann (Zusatzprobe K-4).
+- **Bei mehreren parallelen Läufen messen alle schlechter.** Benchmarks des Orchestrators liefen neben den Benchmarks
+  eines Sub-Agents; die Vergleichszahlen für ADR-0028 sind deshalb auf `main` und auf dem Zweig zur selben ruhigen Zeit
+  nachgemessen worden, nicht aus verschiedenen Zwischenständen zusammengesetzt.
