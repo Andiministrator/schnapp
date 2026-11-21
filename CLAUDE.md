@@ -176,7 +176,7 @@ ADR-0003 Nachtrag 2, ADR-0015.
   Claude selbst** (Andi, 20.11.2026): `scripts/probe.sh` (virtueller KWin, Build-Tag `probe`, nie ausliefern), auch den
   Editor per Drehbuch (`--drehbuch DATEI --bild BILD`, Fernbedienung `cmd/schnapp-fernbedienung` über
   `org_kde_kwin_fake_input`, Fotos mit Read ansehen; `internal/wlwire` ist der gemeinsame Wayland-Client von `wlclip`
-  und Fernbedienung). Nur was der virtuelle KWin nicht kann (Portal-Dialog, Klipper, fremde Programme, echte Monitore)
+  und Fernbedienung; ein Teilschreiben schickt den Rest nach, statt die Verbindung zu zerreißen, F-207). Nur was der virtuelle KWin nicht kann (Portal-Dialog, Klipper, fremde Programme, echte Monitore)
   startet Andi selbst per `!`-Befehl, gebündelt, Anleitung davor (`knowledge/topics/lehren.md`); vorher mit `go build -race` nach `tmp/` bauen,
   Diagnose mit `SCHNAPP_DEBUG=1` (`[overlay]`/`[editor]`-Zeilen, `knowledge/topics/gio-wayland.md`).
   Oberflächentexte nur als Literal über `i18n.T/TK/N`; der Test verlangt für jeden Text einen fertigen Eintrag in
