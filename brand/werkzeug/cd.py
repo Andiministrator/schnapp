@@ -93,8 +93,15 @@ body{margin:0;background:#1E2124;color:#ECEAE5;font:15px/1.5 'Open Sans',sans-se
 def chromium(*args):
     profil = WURZEL / "tmp" / "chromium-profil"  # eigenes, leeres Profil — nie das des Nutzers
     profil.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["chromium", "--headless", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
-                    f"--user-data-dir={profil}", *args], check=True, capture_output=True)
+    try:
+        subprocess.run(["chromium", "--headless", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+                        f"--user-data-dir={profil}", *args], check=True, capture_output=True)
+    except subprocess.CalledProcessError as fehler:
+        # Ohne Fehlerausgabe wäre die Ursache (z. B. zu langer Socket-Pfad) nicht zu sehen.
+        zeilen = (fehler.stderr or b"").decode("utf-8", errors="replace").splitlines()
+        auszug = "\n".join(zeilen[-20:]) or "(keine Fehlerausgabe)"
+        raise SystemExit(f"Fehler: Chromium ist mit Exit {fehler.returncode} gescheitert. "
+                         f"Letzte Ausgabe:\n{auszug}") from None
 
 
 # ---- Markdown → HTML (nur der benutzte Teil) ----
