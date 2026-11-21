@@ -40,8 +40,8 @@ func biegeUm(t *testing.T, n int, huelle func(zielDatei) zielDatei) {
 	orig := oeffneDirekt
 	t.Cleanup(func() { oeffneDirekt = orig })
 	aufrufe := 0
-	oeffneDirekt = func(pfad string, flags int) (zielDatei, error) {
-		f, err := orig(pfad, flags)
+	oeffneDirekt = func(pfad string, st os.FileInfo) (zielDatei, error) {
+		f, err := orig(pfad, st)
 		aufrufe++
 		if err == nil && aufrufe <= n {
 			return huelle(f), nil
@@ -144,7 +144,7 @@ func TestRueckfallZuGrosseAltdatei(t *testing.T) {
 	orig := oeffneDirekt
 	t.Cleanup(func() { oeffneDirekt = orig })
 	aufgerufen := false
-	oeffneDirekt = func(string, int) (zielDatei, error) { aufgerufen = true; return nil, errors.New("nein") }
+	oeffneDirekt = func(string, os.FileInfo) (zielDatei, error) { aufgerufen = true; return nil, errors.New("nein") }
 	if err := schreibeDirekt(ziel, schreibeNeu, os.ErrPermission); !errors.Is(err, os.ErrPermission) {
 		t.Errorf("Fehler %v, erwartet die Ursache", err)
 	}
@@ -165,7 +165,8 @@ func TestRueckfallFolgtKeinemLink(t *testing.T) {
 	if err := os.Symlink(echt, link); err != nil {
 		t.Fatal(err)
 	}
-	if f, err := oeffneDirekt(link, os.O_WRONLY|os.O_TRUNC); err == nil {
+	linkSt, _ := os.Stat(echt)
+	if f, err := oeffneDirekt(link, linkSt); err == nil {
 		f.Close()
 		t.Error("oeffneDirekt folgte dem Link")
 	}

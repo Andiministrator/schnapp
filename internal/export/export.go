@@ -225,9 +225,28 @@ type zielDatei interface {
 	Close() error
 }
 
-// oeffneDirekt öffnet das Ziel des Rückfalls ohne einem Link zu folgen (O_NOFOLLOW). Nur Tests biegen es um.
-var oeffneDirekt = func(pfad string, flags int) (zielDatei, error) {
-	return os.OpenFile(pfad, flags|syscall.O_NOFOLLOW, 0)
+// errZielGewechselt: Unter dem Namen liegt nicht mehr die Datei, die gesichert wurde (F-330).
+var errZielGewechselt = errors.New("Ziel hat gewechselt")
+
+// oeffneDirekt öffnet das Ziel des Rückfalls zum Überschreiben, ohne einem Link zu folgen (O_NOFOLLOW) und ohne zu
+// kürzen: erst wenn die geöffnete Datei dieselbe reguläre Datei ist, die gesichert wurde (st), wird sie gekürzt
+// (F-330). O_NONBLOCK lässt ein untergeschobenes FIFO nicht blockieren (das Öffnen scheitert dann); bei regulären
+// Dateien ist es ohne Wirkung. Eine fremde Datei bleibt unverändert. Nur Tests biegen es um.
+var oeffneDirekt = func(pfad string, st os.FileInfo) (zielDatei, error) {
+	f, err := os.OpenFile(pfad, os.O_WRONLY|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0)
+	if err != nil {
+		return nil, err
+	}
+	fst, err := f.Stat()
+	if err != nil || !fst.Mode().IsRegular() || !os.SameFile(st, fst) {
+		f.Close()
+		return nil, errZielGewechselt
+	}
+	if err := f.Truncate(0); err != nil {
+		f.Close()
+		return nil, err
+	}
+	return f, nil
 }
 
 // schreibeDirekt ist der Rückfall, wenn neben dem Ziel keine temporäre Datei entstehen darf (F-196): etwa unter
@@ -249,7 +268,7 @@ func schreibeDirekt(pfad string, schreibe func(io.Writer) error, ursache error) 
 	if err != nil {
 		return ursache // ohne Sicherung nicht direkt schreiben
 	}
-	f, err := oeffneDirekt(pfad, os.O_WRONLY|os.O_TRUNC)
+	f, err := oeffneDirekt(pfad, st)
 	if err != nil {
 		return ursache // auch das Ziel nicht beschreibbar: der Fehler der temporären Datei erklärt es besser
 	}
@@ -259,7 +278,7 @@ func schreibeDirekt(pfad string, schreibe func(io.Writer) error, ursache error) 
 		return nil
 	}
 	// Wiederherstellen: der alte Inhalt, vollständig, ohne Kürzen auf halbem Weg (das Ziel ist schon gekürzt).
-	g, err := oeffneDirekt(pfad, os.O_WRONLY|os.O_TRUNC)
+	g, err := oeffneDirekt(pfad, st)
 	if err == nil {
 		err = schreibeUndSchliesse(g, alt)
 	}
@@ -291,7 +310,7 @@ func leseAlt(pfad string, st os.FileInfo) ([]byte, error) {
 	}
 	defer f.Close()
 	if fst, err := f.Stat(); err != nil || !os.SameFile(st, fst) {
-		return nil, errors.New("Ziel hat gewechselt")
+		return nil, errZielGewechselt
 	}
 	alt, err := io.ReadAll(io.LimitReader(f, MaxRueckfallAlt+1))
 	if err != nil {
