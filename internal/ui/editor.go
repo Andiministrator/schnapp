@@ -568,7 +568,7 @@ func (e *editor) speichernAbwarten() {
 		case r := <-e.speicherAntwort:
 			fristStop()
 			ende := e.s.SpeichernEnde(r.g.HaeltOffen(), r.err)
-			e.speichernMelden(r, ende)
+			e.speichernMelden(r, ende, false) // das Fenster ist schon weg: kein Halt
 			// Eine Schließen-Anfrage, deren Fehler erst jetzt ankommt, hat niemand gesehen: Die Statusleiste verschwindet
 			// mit dem Fenster, und der Stand gilt schon als verworfen. Also in die Rückgabe, nicht still verlieren (F-300).
 			// Anders in speichernFertig: Dort zeigt ein Bild den Fehler, und die nächste Anfrage verwirft.
@@ -676,16 +676,24 @@ func (e *editor) weiteresSignalSchliesst() bool {
 func (e *editor) speichernFertig(r speicherErgebnis) {
 	ende := e.s.SpeichernEnde(r.g.HaeltOffen(), r.err)
 	diagnoseEditor("Speichern zurück: %v, Ende %+v", r.err, ende)
-	e.speichernMelden(r, ende)
+	// Der Kopierfehler kam vor dem Speicher-Ende (F-341): Er hält das Fenster einmal offen wie bei F-337 — aber nur, wenn
+	// dieses Speichern schließen würde, kein Signal vorgemerkt ist (ein Signal schließt in jedem Fall, ADR-0020 Nachtrag
+	// 2, F-346) und kein neues Kopieren läuft (dessen Antwort entscheidet, F-348). Der Merker wird vorher gelesen und in
+	// jedem Ausgang ohne Erneut verbraucht (F-347); nur eine wegen des Kopierens angehaltene Anfrage behält ihn für
+	// nachKopieSchliessen.
+	halt := e.kopierFehlerHaelt && ende.Erneut == nil && ende.Schliessen && !e.s.SignalVorgemerkt() && !e.kopierLaeuft
 	if ende.Erneut == nil {
 		e.schliessenNachSpeichern = false
+		if !e.schliessenNachKopie {
+			e.kopierFehlerHaelt = false
+		}
 	}
+	e.speichernMelden(r, ende, halt)
 	switch {
 	case ende.Erneut != nil:
 		e.speichernStarten(ende.Erneut)
-	case ende.Schliessen && e.kopierFehlerHaelt && !e.kopierenHaeltOffen():
-		// Der Kopierfehler kam vor dem Speicher-Ende (F-341): Das Fenster bleibt einmal offen wie bei F-337, die Meldung
-		// „Could not copy“ bleibt stehen (gespeichertMelden lässt sie), die nächste Anfrage schließt.
+	case halt:
+		// Die Meldung „Could not copy“ bleibt stehen (speichernMelden lässt sie), die nächste Anfrage schließt.
 		e.kopierFehlerHaelt = false
 	case ende.Schliessen:
 		// Eine Schließen-Anfrage mit Speichern vorher warnt wie eine ohne (F-321); ein Signal schließt in jedem Fall.
@@ -699,11 +707,16 @@ func (e *editor) speichernFertig(r speicherErgebnis) {
 }
 
 // speichernMelden zeigt das Ergebnis in Titel- und Statusleiste. Schließt das Fenster gleich oder bleibt es für einen
-// Hinweis offen, geht der Hinweis zusätzlich auf die Fehlerausgabe (F-116, ADR-0020 Nachtrag 4).
-func (e *editor) speichernMelden(r speicherErgebnis, ende canvas.Ende) {
+// Hinweis offen, geht der Hinweis zusätzlich auf die Fehlerausgabe (F-116, ADR-0020 Nachtrag 4). Hält ein Kopierfehler
+// das Fenster offen (kopierHalt, F-341), verdrängt „Saved“ dessen Meldung nicht.
+func (e *editor) speichernMelden(r speicherErgebnis, ende canvas.Ende, kopierHalt bool) {
 	switch {
 	case r.err == nil:
-		e.gespeichertMelden(r.g)
+		if !kopierHalt {
+			e.gespeichertMelden(r.g)
+		} else if r.g.Datei != "" {
+			e.titel = r.g.Datei
+		}
 		if ende.Schliessen || ende.Schluss == canvas.SchlussHinweis {
 			hinweisAufStderr(r.g)
 		}
@@ -845,6 +858,11 @@ func (e *editor) nachKopieSchliessen() bool {
 		return false
 	}
 	e.schliessenNachKopie = false
+	if e.schliessenNachSpeichern {
+		// Eine zweite Anfrage hat ein Speichern gestartet: Dessen Ende entscheidet und verbraucht einen Kopierfehler-Halt
+		// erst dann (speichernFertig, F-348).
+		return false
+	}
 	if e.kopierFehlerHaelt { // das Kopieren ist gescheitert: einmal offen lassen, die nächste Anfrage schließt (F-337)
 		e.kopierFehlerHaelt = false
 		return false
@@ -1020,9 +1038,6 @@ func halteZwischenablage(daten []byte) error {
 func (e *editor) gespeichertMelden(g Gespeichert) {
 	if g.Datei != "" {
 		e.titel = g.Datei
-	}
-	if e.kopierFehlerHaelt && !e.schliessenNachKopie {
-		return // der Kopierfehler hält das Fenster offen (F-341); „Saved“ darf ihn nicht verdrängen
 	}
 	e.melde(i18n.T("Saved to the library"), false)
 	if g.Hinweis != "" {
