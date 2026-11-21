@@ -1,6 +1,6 @@
 # Gio unter Wayland (KDE): Grenzen, Patch, Messen
 
-Stand: 2026-11-20 (Editor-Abschnitt Sprint 5/6, Zwischenablage im Patch) — aus dem Prototyp (`prototype/`, ADR-0003 Nachtrag 2), Gio v0.10.3, Plasma 6.8. Quelle ist der
+Stand: 2026-11-20 (Editor-Abschnitt Sprint 5/6, Zwischenablage im Patch) — aus dem Prototyp (`prototype/`, ADR-0003 Nachtrag 2; entfernt in Sprint 9, letzter Stand Commit `af7598a`), Gio v0.10.3, Plasma 6.8. Quelle ist der
 Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene Messung.
 
 ## Was Gio unter Wayland nicht kann (v0.10.3)
@@ -36,7 +36,7 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
   zusammen, die CI prüft beides. Vorher (Sprint 1) lag die Kopie gitignoriert unter `tmp/` — frische Klone und die CI
   bauten nicht.
 - **Falle `-o` nach `cd`:** ein Bauskript, das erst in sein Verzeichnis wechselt, muss den Zielpfad vorher absolut
-  machen (`realpath -m`), sonst landet das Programm unter `prototype/tmp/…` und man prüft die alte Datei.
+  machen (`realpath -m`), sonst landete das Programm unter `prototype/tmp/…` (Prototyp-Zeit) und man prüft die alte Datei.
 - **`-trimpath`** gehört in jeden Bau: ohne stehen Modulcache- und Projektpfade des Rechners im Programm.
 
 ## Bauen und Abhängigkeiten
@@ -128,7 +128,7 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
 - **`app.ClosingEvent` kommt vor dem Zerstören und ist abbrechbar** (`Abort()`; unter Wayland aus `xdg_toplevel.close`
   und `Perform(ActionClose)`). Dort speichern, nicht erst im `DestroyEvent` (F-107, ADR-0020 Nachtrag 2).
 - **Signale:** Die Signal-Goroutine weckt nur per `Window.Invalidate` (wirkungslos vor dem Fensteraufbau, die Marke
-  bleibt); gespeichert wird in der eigenen Ereignisschleife (F-77, F-152, `canvas/signal.go`).
+  bleibt); gespeichert wird in der eigenen Ereignisschleife (F-77, F-152, `internal/canvas/signal.go`).
 - **Texteingabe:** `key.EditEvent` geht nur an den fokussierten Bereich. Tab muss während der Eingabe im Tastenfilter
   abgefangen werden, sonst wandert der Fokus und Zeichen verschwinden; Enter sonst vor den Knöpfen verbraucht (F-153).
 - **Fokus bleibt nur, solange das Ziel in jedem Bild seinen `key.FocusFilter` meldet:** `keyQueue.Frame`

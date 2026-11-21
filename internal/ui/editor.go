@@ -180,7 +180,7 @@ type editor struct {
 	menue  menue // Menü der Leiste (ADR-0026)
 	// bilder zählt die gezeichneten Bilder (Diagnose mit SCHNAPP_DEBUG, Messung F-235).
 	bilder int
-	// zug sammelt die Bildzeiten des laufenden Zeigerzugs (nur mit SCHNAPP_DEBUG, F-250, ui/bildzeit.go).
+	// zug sammelt die Bildzeiten des laufenden Zeigerzugs (nur mit SCHNAPP_DEBUG, F-250, internal/ui/bildzeit.go).
 	zug zugZeiten
 	// Export (ADR-0025): Der Dialog läuft in einer Goroutine, die Antwort kommt über exportAntwort in die Ereignisschleife.
 	exportCtx     context.Context

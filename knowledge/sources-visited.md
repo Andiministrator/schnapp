@@ -95,7 +95,7 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | https://aur.archlinux.org/rpc/v5/search/schnapp | 2026-11-19 | 2026-11-19 | live | curl | 0 Treffer | docs/open-decisions.md (E-08) |
 | https://flathub.org/api/v2/search?q=schnapp | 2026-11-19 | 2026-11-19 | leer | curl | HTTP 405 (falsche Methode, kein Ergebnis) | — |
 | https://api.github.com/repos/Andiministrator/schnapp/commits/main | 2026-11-19 | 2026-11-19 | live | curl | Autor/Committer = noreply-Adresse | docs/findings.md (F-1) |
-| https://api.github.com/repos/Andiministrator/schnapp/actions/runs | 2026-11-19 | 2026-11-19 | live | curl | CI-Lauf test: success | — |
+| https://api.github.com/repos/Andiministrator/schnapp/actions/runs | 2026-11-21 | 2026-11-19 | live | curl | CI-Lauf test: success; 21.11.: Status der CI-Läufe #154–#170 | — |
 | https://www.gnu.org/licenses/gpl-3.0.txt | 2026-11-19 | 2026-11-19 | live | curl | GPL-3.0-Text | LICENSE |
 
 ## GitHub Actions: Node-24-Fassungen und SHA-Pinning (Sprint 9, Karte #29, F-43/F-309)
@@ -111,7 +111,6 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | https://api.github.com/repos/actions/checkout/releases?per_page=8 | 2026-11-21 | 2026-11-21 | live | curl | Release-Notes v7.0.0, v7.0.1, v6.1.0 (Bruchänderung Fork-PR nur bei pull_request_target/workflow_run) | knowledge/sources/github-actions-node24.md |
 | https://api.github.com/repos/actions/setup-go/releases?per_page=8 | 2026-11-21 | 2026-11-21 | live | curl | Release-Notes v7.0.0 (ESM), v7.1.0, v6.2.0 | knowledge/sources/github-actions-node24.md |
 | https://api.github.com/repos/actions/checkout/releases/tags/v6.0.0 | 2026-11-21 | 2026-11-21 | live | curl | Release-Notes v6.0.0 (Zugangsdaten in separater Datei) | knowledge/sources/github-actions-node24.md |
-| https://api.github.com/repos/Andiministrator/schnapp/actions/runs | 2026-11-21 | 2026-11-21 | live | curl | Status der CI-Läufe #154–#167 (eigenes Repo) | — |
 | https://api.github.com/repos/Andiministrator/schnapp/commits/<sha>/check-runs, …/check-runs/<id>/annotations | 2026-11-21 | 2026-11-21 | live | curl | Annotationen: Lauf #158 eine („Node.js 20 is deprecated“), #159 keine (F-309) | knowledge/topics/lehren.md (Sprint 9) |
 
 ## Suchanfragen

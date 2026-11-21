@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-20 (ergänzt in Sprint 8). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-21 (ergänzt in Sprint 9). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -142,7 +142,7 @@ Stand: 2026-11-20 (ergänzt in Sprint 8). Kurze Regeln aus Fehlern und Befunden;
   (Mosaik aus dem Gesamtmittel, ADR-0022 Nachtrag 1) — und der Test belegt das (gleiches Mittel → gleiches Mosaik).
 - **Großzügig ist nicht immer die sichere Seite (Sprint 6, F-181):** Eine zu große Schätzung der Textfläche ist sicher
   fürs Rechenbudget, aber unsicher fürs Weglassen — der SVG-Export hielt einen unsichtbaren Text für sichtbar und schrieb
-  ihn im Klartext hinein. Wo eine Grenze über Weglassen entscheidet, die echte Fläche messen (`document/schrift.go`).
+  ihn im Klartext hinein. Wo eine Grenze über Weglassen entscheidet, die echte Fläche messen (`internal/document/schrift.go`).
 - **Sub-Agent-Karten bekommen einen Kritiker (Sprint 6):** #38 kam grün und mit vielen Tests zurück und hatte trotzdem
   einen [S]-Rückschritt (F-181); erst der Fable-Lauf fand ihn. Grün heißt nicht geprüft.
 - **Löschen nur nach Stand-Prüfung (Sprint 6, F-167):** Mit fester Uhr bekam eine neue Aufnahme den Namen einer
@@ -257,7 +257,7 @@ Stand: 2026-11-20 (ergänzt in Sprint 8). Kurze Regeln aus Fehlern und Befunden;
   - *Eine Sperre prüft jeden Eingabeweg* (Sprint 7, F-257/F-261/F-263): Die Nacharbeit sperrte bei offenem Menü die
     Tasten (`key.Event`), der Zweig für getippten Text (`key.EditEvent`) lag davor und blieb offen; gefunden hat es erst
     der Verify-Lauf. Wer eine Eingabe sperrt, testet Taste, getippten Text und Maus einzeln; Gio-Tastenlogik ist mit
-    `input.Router` ohne Fenster testbar (Vorbild `ui/menue_tastatur_test.go`, Karte #110).
+    `input.Router` ohne Fenster testbar (Vorbild `internal/ui/menue_tastatur_test.go`, Karte #110).
 
 ## Sprint 8 (20.11.2026)
 
@@ -267,7 +267,7 @@ Stand: 2026-11-20 (ergänzt in Sprint 8). Kurze Regeln aus Fehlern und Befunden;
   `third_party/gio/io/input/key.go`); nicht abgeholte Ereignisse verwirft `Router.Frame` am Bildende
   (`third_party/gio/io/input/router.go`). Also Filter wie immer anmelden, Ereignis abholen, dann `continue`. Der Test
   prüft nach dem Ende der Sperre, dass die Leinwand den Fokus noch hat und eine Taste wieder wirkt
-  (`ui/hintergrund_test.go`).
+  (`internal/ui/hintergrund_test.go`).
 - **Zustand, der je Bild einmal gelesen wird, gilt nicht für das ganze Bild** (F-280): `an := !SpeichernLaeuft()` am
   Anfang der Knopfauswertung war schon falsch, als der erste Knopf im selben Bild das Speichern startete — der zweite
   Knopf änderte noch. Sperren je Ereignis frisch lesen, und die Sperre gehört in die Logikschicht (`canvas`), nicht
@@ -354,15 +354,15 @@ Stand: 2026-11-20 (ergänzt in Sprint 8). Kurze Regeln aus Fehlern und Befunden;
 ## Sprint 9 (21.11.2026)
 
 - **Dauern aus `scripts/probe.sh` sind Race-Zahlen.** Der Probe-Build läuft mit `-race`; Speichern in 4K braucht dort
-  8–24 s, im Normalbau 0,4–1,5 s (Faktor 8–20, `messungen/f-297.md`). `f-249.md` nannte fälschlich „Bau ohne
-  `-race`“. Dauern im Normalbau per Go-Benchmark messen (`go test -run '^$' -bench Speichern4K ./library`) oder
+  8–24 s, im Normalbau 0,4–1,5 s (Faktor 9–22, `messungen/f-297.md`). `f-249.md` nannte fälschlich „Bau ohne
+  `-race`“. Dauern im Normalbau per Go-Benchmark messen (`go test -run '^$' -bench Speichern4K ./internal/library`) oder
   ausdrücklich als Race-Zahl führen; die Bauart steht im Messprotokoll, geprüft am Build-Befehl, nicht aus dem Gedächtnis.
 - **CI-Annotationen gibt es über die öffentliche API**, ohne Anmeldung: `commits/<sha>/check-runs`, dann
   `check-runs/<id>/annotations`. Gegenprobe gegen den Vorlauf (F-309: vorher 1, nachher 0).
 - **Fortschritt dort melden, wo die Zeit vergeht, nicht nur zwischen Schritten.** Zwischen zwei Speicher-Marken lagen im
   Probe-Build bis zu 8 s (eine PNG-Kodierung); erst Pulse aus Schreiber, Leser und Rasterschleife machen eine Frist
   von 15 s tragfähig (F-298, `messungen/f-298-probe.md`). Pulse in heißen Schleifen messen: je Pixel kostete 7 %, je
-  64 Zeilen rund 2 %.
+  64 Zeilen rund 3 % (1,87 statt 1,82 s).
 - **Ein zweiter Puls überdeckt den ersten:** Nach dem Puls je Füllung und beim Dekodieren blieben die Mutationen „kein
   Zeilenpuls“ und „kein Leser beim Lesen der Datei“ grün, obwohl beide Wege gebraucht werden (hohe Füllung, langsames
   Medium). Jede Meldestelle braucht einen Test, den nur sie grün hält. Verify F-298: 8 von 20 Mutationen grün trotz

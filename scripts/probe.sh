@@ -75,6 +75,8 @@ case "$skala" in *[!0-9.]* | "" | . | .* | *. | *.*.*) echo "probe.sh: --skala i
 [ "$zeit" -ge 1 ] && [ "$zeit" -le 600 ] || { echo "probe.sh: --zeit liegt zwischen 1 und 600" >&2; exit 2; }
 case "$ende" in *[!0-9]* | "") echo "probe.sh: --ende ist eine ganze Zahl (1 bis 300)" >&2; exit 2 ;; esac
 [ "$ende" -ge 1 ] && [ "$ende" -le 300 ] || { echo "probe.sh: --ende liegt zwischen 1 und 300" >&2; exit 2; }
+# Dezimal lesen: bash rechnet in $(( )) eine führende Null oktal („08“ ist ungültig, „010“ ist 8; Kritik Sprint 9 K9-1).
+breite=$((10#$breite)) hoehe=$((10#$hoehe)) zeit=$((10#$zeit)) monitore=$((10#$monitore)) ende=$((10#$ende))
 
 probe="$PWD/tmp/probe"
 

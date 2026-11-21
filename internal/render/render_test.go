@@ -190,7 +190,7 @@ func BenchmarkGrossesBild(b *testing.B) {
 // brauchen Speicher (8000×8000: 256 MB Bild plus 512 MB Puffer des Rasterizers). Jede meldet ns/Einheit (Rechenzeit je
 // Einheit des Kostenmodells) und Budget/Aufwand. Aufruf etwa:
 //
-//	GOFLAGS=-tags=novulkan,nox11 go test -run '^$' -bench 'Aufwand' -benchtime 1x ./render
+//	GOFLAGS=-tags=novulkan,nox11 go test -run '^$' -bench 'Aufwand' -benchtime 1x ./internal/render
 func messeAufwand(b *testing.B, d *document.Dokument) {
 	b.Helper()
 	a := Aufwand(d)

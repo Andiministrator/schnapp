@@ -21,7 +21,7 @@ import (
 // Messung F-297: Wie verteilt sich die Zeit beim Speichern eines 4K-Dokuments auf Rendern, Lesen der alten Datei,
 // PNG-Kodierung (Bild, Original), Schreiben, Index und Vorschau? Aufruf:
 //
-//	GOFLAGS=-tags=novulkan,nox11 go test -run '^$' -bench 'Speichern4K|Kodierung4K' -benchtime 3x ./library
+//	GOFLAGS=-tags=novulkan,nox11 go test -run '^$' -bench 'Speichern4K|Kodierung4K' -benchtime 3x ./internal/library
 //
 // Die Bilder sind synthetisch (nie echte Aufnahmen); die Dateien liegen unter b.TempDir().
 const (

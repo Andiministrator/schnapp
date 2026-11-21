@@ -22,11 +22,11 @@ muss.
 - **Dateiformat:** PNG mit zwei privaten Blöcken `snAP` (SVG) und `snAO` (Original), ADR-0008 mit Nachträgen 1 und 2 (beide Blöcke Pflicht, Grenzen, Export ohne Weggeschnittenes);
   Schwärzen überschreibt das Original — `[S]`-Pfad. Öffentliche Spezifikation folgt (E-15, englisch).
 - **Bauen und Testen** im Wurzelmodul immer mit `GOFLAGS=-tags=novulkan,nox11` (Gio; sonst fehlt `vulkan/vulkan.h`),
-  Programme mit `-trimpath`. Pakete: `i18n`, `po`, `document`, `fileformat`, `capture`, `library`, `settings`, `selection`,
-  `canvas`, `render`, `ui`, `wlclip` (Zwischenablage-Halter), `portal` (Dateidialog), `export`, `internal/wlwire`,
-  `internal/probeschutz`, `cmd/schnapp`, `cmd/schnapp-fernbedienung` (nur mit Tag `probe`; Tests dann
+  Programme mit `-trimpath`. Pakete unter `internal/` (ADR-0027): `i18n`, `po`, `document`, `fileformat`,
+  `capture`, `library`, `settings`, `selection`, `canvas`, `render`, `ui`, `wlclip` (Zwischenablage-Halter), `portal`
+  (Dateidialog), `export`, `wlwire`, `probeschutz`, `speicherschritt`; dazu `cmd/schnapp`, `cmd/schnapp-fernbedienung` (nur mit Tag `probe`; Tests dann
   `GOFLAGS=-tags=novulkan,nox11,probe go test ./cmd/schnapp-fernbedienung ./cmd/schnapp`). Probeläufe nur über
-  `scripts/probe.sh` (virtueller KWin), nie ein Programm aus `tmp/probe/` von Hand starten. Eigene Module `draw/` (früher `zeichnen/`), `prototype/`, `third_party/gio/`, `tmp/` (trennt den Arbeitsordner ab).
+  `scripts/probe.sh` (virtueller KWin), nie ein Programm aus `tmp/probe/` von Hand starten. Eigene Module `draw/` (früher `zeichnen/`), `third_party/gio/`, `tmp/` (trennt den Arbeitsordner ab).
 - **Pfade und eigene Dateinamen:** `schnapp` immer klein (`~/Bilder/schnapp/`, `schnapp.desktop`), im Text „Schnapp“.
 - **Kommandozeile englisch:** `--region` (Voreinstellung), `--screen[=NAME]`, `--list-screens`, `--window`, `--repeat`,
   `--no-editor`, `DATEI`, `--ignore-limit DATEI` (ADR-0017 Nachträge 2–6); sie ist Oberfläche und künftig auch Schnittstelle für Agenten (E-14).

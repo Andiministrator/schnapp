@@ -30,7 +30,7 @@ Stand 20.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 - Eigenes Modul `github.com/Andiministrator/schnapp/zeichnen` im Ordner `zeichnen/` (seit 20.11.2026 `…/schnapp/draw` im Ordner `draw/`, ADR-0019 Nachtrag 1).
 
 ## E-05: CI — ENTSCHIEDEN 19.11.2026: GitHub Actions (ADR-0010)
-- Eingerichtet 19.11.2026: `.github/workflows/test.yml` (gofmt, vet, test für `zeichnen/`), grün. Heute Jobs Wurzelmodul, `draw`, `gio-patch`, `prototype`.
+- Eingerichtet 19.11.2026: `.github/workflows/test.yml` (gofmt, vet, test für `zeichnen/`), grün. Heute Jobs Wurzelmodul, `draw`, `gio-patch` (`prototype` entfiel mit ADR-0027).
 
 ## E-06: Lizenzvariante — ENTSCHIEDEN 19.11.2026: GPL-3.0-or-later (ADR-0009)
 - Rechte an den Zeichenpaketen liegen beim Maintainer; Veröffentlichung unter GPL-3.0 erlaubt (Andi, 19.11.2026).

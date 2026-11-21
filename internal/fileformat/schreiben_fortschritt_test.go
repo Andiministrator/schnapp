@@ -4,6 +4,7 @@ package fileformat
 
 import (
 	"bytes"
+	"errors"
 	"image"
 	"io"
 	"math/rand"
@@ -115,5 +116,66 @@ func TestLeseArbeitsdateiMeldetFortschrittBeimLesen(t *testing.T) {
 	}
 	if n := len(p.stand); n < 3 || p.stand[n-1] == p.stand[0] {
 		t.Errorf("kein Fortschritt zwischen den Leseaufrufen: %d Aufrufe, Pulse %v … %v", n, p.stand[0], p.stand[n-1])
+	}
+}
+
+// stueckSchreiber merkt sich den Pulszähler bei jedem Write und scheitert ab dem Aufruf fehlerAb (0 = nie).
+type stueckSchreiber struct {
+	pulse    []uint64
+	fehlerAb int
+	fehler   error
+}
+
+func (s *stueckSchreiber) Write(b []byte) (int, error) {
+	s.pulse = append(s.pulse, speicherschritt.Pulse())
+	if s.fehlerAb > 0 && len(s.pulse) >= s.fehlerAb {
+		return 0, s.fehler
+	}
+	return len(b), nil
+}
+
+// rauschDokument liefert ein Dokument, dessen Arbeitsdatei größer als zwei Schreibstücke ist.
+func rauschDokument(t *testing.T) (*document.Dokument, *image.NRGBA) {
+	t.Helper()
+	bild := image.NewNRGBA(image.Rect(0, 0, 700, 500))
+	rand.New(rand.NewSource(298)).Read(bild.Pix)
+	for i := 3; i < len(bild.Pix); i += 4 {
+		bild.Pix[i] = 255
+	}
+	d, err := document.Neu(bild)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return d, bild
+}
+
+// Kritik Sprint 9 K9-3: Jedes geschriebene Stück meldet Fortschritt — der Pulszähler steigt zwischen zwei Stücken.
+func TestSchreibenMeldetJeStueckFortschritt(t *testing.T) {
+	d, bild := rauschDokument(t)
+	var s stueckSchreiber
+	if err := SchreibeArbeitsdatei(&s, d, bild, Metadaten{}); err != nil {
+		t.Fatal(err)
+	}
+	if len(s.pulse) < 2 {
+		t.Fatalf("nur %d Schreibaufrufe", len(s.pulse))
+	}
+	for i := 1; i < len(s.pulse); i++ {
+		if s.pulse[i] <= s.pulse[i-1] {
+			t.Errorf("kein Puls vor Stück %d (%d → %d)", i+1, s.pulse[i-1], s.pulse[i])
+		}
+	}
+}
+
+// Kritik Sprint 9 K9-2: Scheitert das Schreiben eines Stücks, liefert SchreibeArbeitsdatei genau diesen Fehler und
+// schreibt nicht weiter.
+func TestSchreibenBrichtBeimFehlerEinesStuecksAb(t *testing.T) {
+	d, bild := rauschDokument(t)
+	platteVoll := errors.New("Platte voll")
+	s := stueckSchreiber{fehlerAb: 2, fehler: platteVoll}
+	if err := SchreibeArbeitsdatei(&s, d, bild, Metadaten{}); !errors.Is(err, platteVoll) {
+		t.Errorf("Rückgabe %v, erwartet %v", err, platteVoll)
+	}
+	if len(s.pulse) != 2 {
+		t.Errorf("%d Schreibaufrufe, erwartet 2 (nach dem Fehler nicht weiter)", len(s.pulse))
 	}
 }

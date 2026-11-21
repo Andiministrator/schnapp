@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > Verweise auf ADR-0043, ADR-0062, ADR-0067, F-Nummern, die weder in `docs/findings.md` noch in
 > `docs/findings.archive.md` stehen, und Pfade unter `~/.aboard-framework/` oder
 > `~/.claude/` beziehen sich auf das Arbeits-Framework (aBoard) des Maintainers, nicht auf dieses Repo. Projekteigene
-> ADRs liegen unter `docs/adr/` (0001–0026), projekteigene Findings in `docs/findings.md` (erledigte
+> ADRs liegen unter `docs/adr/` (0001–0027), projekteigene Findings in `docs/findings.md` (erledigte
 > in `docs/findings.archive.md`).
 
 ## Vor jeder Antwort — Pflicht

@@ -82,7 +82,7 @@ versioniert) mit `capture.NeuKWin()` und `ui.Monitore()`. Per Introspektion fehl
 ist da; daraus abgeleitet (die Probe gibt die Wahl nicht aus) fiel die Schicht wie vorgesehen auf
 ScreenShot2 (Pipe) zurück. Je Monitor mit und ohne Mauszeiger: Bildgröße gleich dem Wayland-Modus (physische
 Pixel), Bild nicht einfarbig (RGB weicht vom ersten Pixel ab), `Bild.Bildschirm` gesetzt; Alpha war überall 255,
-das sagt aber nichts über KWin, weil `capture/roh.go` bei RGBX8888/RGB32 Alpha fest auf 255 setzt (das Rohformat
+das sagt aber nichts über KWin, weil `internal/capture/roh.go` bei RGBX8888/RGB32 Alpha fest auf 255 setzt (das Rohformat
 hat die Probe nicht ausgegeben, F-71); 11–35 ms je Aufnahme (4K-Breitbild
 31–35 ms). Der Monitor mit gebrochener Skala liefert `Bild.Skala` 1,6, während `ui.Monitore()` dort die
 ganzzahlige Pufferskala 2 meldet — **für Koordinaten gilt `Bild.Skala`**, nie `Monitor.Skala`. Ein unbekannter
@@ -100,7 +100,7 @@ memfd-Weg** (ScreenShot3), bis ein Plasma-Release ihn mitbringt (F-56).
   liefert `CaptureWorkspace` bei gemischter Skalierung ein Bild in der **größten** Skala (Monitore mit Skala 1
   werden hochgerechnet) — für das Overlay deshalb je Bildschirm einzeln aufnehmen.
 - Das Format kam als QImage-Format 16 (RGBX8888, Byte-Reihenfolge R G B x); Umwandlung aller sechs
-  32-Bit-Formate in `prototype/format.go`.
+  32-Bit-Formate in `prototype/format.go` (Stand `af7598a`).
 
 ## Folgerungen für den Entwurf
 

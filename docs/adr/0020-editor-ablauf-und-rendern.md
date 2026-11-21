@@ -296,8 +296,7 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
 - **Umsetzung (21.11.2026, Karte #119):**
   - **Fortschrittsquelle** ist `internal/speicherschritt`: `Marke` nach jedem benannten Schritt (gerendert,
     alte-datei-gelesen, bild-kodiert, original-kodiert, datei-geschrieben, ersetzt, index, vorschau, budget-geprueft;
-    die Schnitte der Messung F-297) und `Puls` aus langen Schleifen — je Füllung und beim Füllen alle 64 Zeilen (rund
-    2 % Mehrkosten im Füll-Benchmark `AufwandZweiKaesten8000`, 1,87 statt 1,82 s; je Pixel waren es 7 %), je
+    die Schnitte der Messung F-297) und `Puls` aus langen Schleifen — je Füllung und beim Füllen alle 64 Zeilen (rund 3 % Mehrkosten im Füll-Benchmark `AufwandZweiKaesten8000`, 1,87 statt 1,82 s; je Pixel waren es 7 %), je
     Textzeichen, je geschriebenem Stück der PNG-Kodierung (`Schreiber`), beim Lesen und Dekodieren der alten Datei
     (`Leser`), je MiB beim Schreiben der Datei, je Zeile der Vorschau. `Zuletzt` liefert den Zeitpunkt des letzten
     Fortschritts mit monotonem Anteil der Uhr (ein Sprung der Wanduhr, etwa nach dem Ruhezustand, täuscht keinen
@@ -319,10 +318,10 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
     (2 Minuten ab Beginn des Speicherns) bleibt unabhängig vom Fortschritt die äußerste Grenze. `fsync` und Umbenennen
     melden keinen Fortschritt: Ein Medium, das dort 15 s steht, gilt als hängend — gewollt, auch wenn ein sehr
     langsames, aber arbeitendes Medium (Netzordner) so aussehen kann.
-  - Tests: `ui/speichern_fortschritt_test.go` (Fortschritt nie aufgegeben, auch im Warten beim Zerstören; Meldung
+  - Tests: `internal/ui/speichern_fortschritt_test.go` (Fortschritt nie aufgegeben, auch im Warten beim Zerstören; Meldung
     zurückgenommen; Schließen nur bei gemeldetem Stillstand; doch gelungen oder gescheitert; früherer Fehler bleibt;
-    Neuversuch nach Signal; 2-Minuten-Grenze trotz Fortschritt; wiederholte Prüfung), `render/fortschritt_test.go`,
-    `fileformat/schreiben_fortschritt_test.go`, `library/speichern_fortschritt_test.go`,
+    Neuversuch nach Signal; 2-Minuten-Grenze trotz Fortschritt; wiederholte Prüfung), `internal/render/fortschritt_test.go`,
+    `internal/fileformat/schreiben_fortschritt_test.go`, `internal/library/speichern_fortschritt_test.go`,
     `internal/speicherschritt/schritt_test.go`. Verify-Lauf Fable (21.11.2026): 8 von 20 Mutationen blieben zunächst
     grün. Nach der Nacharbeit (Puls je Füllung, monotone Zeit, Schreiben in Stücken, Leser beim Lesen und Dekodieren,
     Neuversuch nach später Fehlantwort, neue Tests) werden 25 von 26 Mutationen rot; die übrige (`zerstoerenFrist` ab

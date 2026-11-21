@@ -40,7 +40,7 @@ func TestNutzerFehlerJoinFensterUndSpeichern(t *testing.T) {
 	}
 }
 
-// Wie ui/editor.go: errors.Join(fensterErr, schlussErr, err) mit zwei übersetzten Speicherfehlern. Verschiedene Texte
+// Wie internal/ui/editor.go: errors.Join(fensterErr, schlussErr, err) mit zwei übersetzten Speicherfehlern. Verschiedene Texte
 // stehen alle da, gleiche nur einmal.
 func TestNutzerFehlerZweiSpeicherfehler(t *testing.T) {
 	i18n.Setze(nil)

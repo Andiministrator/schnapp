@@ -8,10 +8,10 @@ Punkt 1 `d8a40a2`, Punkt 2 `af7598a`, Punkt 3 `be353c9`, Punkt 4 `4c97753`, Punk
 Andi, 21.11.2026: „die verzeichnis-struktur in unserem projekt sieht (für mich) ziemlich chaotisch aus“. Bestand am
 21.11.2026 (Commit 49e5f90):
 
-- **Hauptordner:** 15 Go-Pakete liegen flach neben Doku und Werkzeugen: `canvas`, `capture`, `document`, `export`,
+- **Hauptordner:** 14 Go-Pakete liegen flach neben Doku und Werkzeugen: `canvas`, `capture`, `document`, `export`,
   `fileformat`, `i18n`, `library`, `po`, `portal`, `render`, `selection`, `settings`, `ui`, `wlclip`, dazu `internal`
   (`probeschutz`, `speicherschritt`, `wlwire`) und `cmd`. Daneben `brand`, `data`, `docs`, `draw`, `knowledge`,
-  `prototype`, `scripts`, `third_party`, `tmp` und acht Dateien. Wer das Repo öffnet, sieht zuerst 24 Ordner, ohne zu
+  `prototype`, `scripts`, `third_party`, `tmp` und neun Dateien. Wer das Repo öffnet, sieht zuerst 27 Ordner (mit `.claude`, `.github`, `tmp`), ohne zu
   erkennen, was Programm, was Doku und was Werkzeug ist.
 - **Testdateien nach Prozess statt Inhalt benannt** (12 Dateien, 53 Tests): `canvas/karte84_test.go`,
   `canvas/karte85_test.go`, `canvas/luecken_test.go`, `canvas/nacharbeit_test.go`, `cmd/schnapp/editor_luecken_test.go`,
@@ -32,7 +32,7 @@ Bleibt, wie es ist: `cmd/` (Go-Konvention für Programme), `draw/` (eigenes Modu
 `replace`-Pfad einbindet, ADR-0012 — verschieben nur nach Abstimmung dort), `third_party/gio/` (`replace`-Pfad und
 `gio-patch.sh`, ADR-0015), `docs/`, `knowledge/`, `scripts/`, `data/`, `.github/`.
 
-## Vorschlag
+## Vorschlag (angenommen)
 
 ### 1. Programmpakete unter `internal/`
 Alle Pakete, die nur Schnapp selbst nutzt, ziehen nach `internal/`: `internal/canvas`, `internal/capture`, … , `internal/po`,
@@ -41,7 +41,7 @@ hier, weil nur `draw/` öffentlich eingebunden wird. Der Modulpfad bleibt `githu
 Importe werden `…/schnapp/internal/<paket>`. Paketnamen und Bezeichner bleiben (ADR-0019).
 
 Hauptordner danach: `brand/ cmd/ data/ docs/ draw/ internal/ knowledge/ scripts/ third_party/` plus `README*`,
-`CONTRIBUTING*`, `LICENSE`, `CLAUDE.md`, `install.sh`, `go.mod`, `go.sum`. Zwölf statt 24 Ordner, und die Rollen sind
+`CONTRIBUTING*`, `LICENSE`, `CLAUDE.md`, `install.sh`, `go.mod`, `go.sum`. Zwölf statt 27 Ordner (gezählt wie oben), und die Rollen sind
 erkennbar: Programm (`cmd`, `internal`), öffentliche Bibliothek (`draw`), Fremdcode (`third_party`), Doku (`docs`,
 `knowledge`), Gestaltung (`brand`), Werkzeuge (`scripts`, `data`).
 
@@ -89,7 +89,7 @@ dem Projekt entfernen“ sie ersetzt.
 `tmp/sprint4` bleibt, weil dort `behalten/` mit einer `LIESMICH.txt` liegt (Messtests aus Sprint 4, „Versionieren als
 Benchmark: F-140“). F-140 ist archiviert; ob die Messtests noch gebraucht werden, entscheidet Andi.
 
-## Umsetzung (erst nach Entscheidung)
+## Umsetzung
 Ein Commit je Punkt, jeweils `go vet`/`go test` mit `novulkan,nox11`, mit Tag `probe` und in `draw/` grün, dazu ein
 Probelauf mit `scripts/probe.sh`:
 1. `git mv` der Pakete, Importe per `gofmt -r` bzw. Ersetzen des Importpfads, `.github/workflows/test.yml`
