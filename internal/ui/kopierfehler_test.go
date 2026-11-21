@@ -83,6 +83,48 @@ func TestKopierfehlerNachSpeichernHaeltEinmalOffen(t *testing.T) {
 	}
 }
 
+// F-341: Kopierfehler trifft ein, während das vom Schließen gestartete Speichern noch läuft: Das Fenster bleibt einmal
+// offen, der Fehler steht auf der Fehlerausgabe und in der Meldung, wie bei der umgekehrten Reihenfolge (F-337).
+func TestKopierfehlerVorSpeicherEnde(t *testing.T) {
+	e, zu := editorMitFensterKopie(t)
+	e.fensterHaeltKopie, e.fensterWarnung = false, false
+	e.kopierLaeuft, e.kopierStart = true, time.Now()
+	aus := fehlerAbfangen(t)
+	if e.schliessen() {
+		t.Fatal("schloss sofort")
+	}
+	e.kopierAntwort <- kopierErgebnis{err: errors.New("kaputt")}
+	e.kopierenAbholen(layout.Context{})
+	warteSpeichern(t, e)
+	if *zu != 0 {
+		t.Errorf("Fenster schloss trotz Kopierfehler (%d)", *zu)
+	}
+	if !strings.Contains(aus.String(), "kaputt") {
+		t.Errorf("Fehlerausgabe %q ohne Fehler", aus.String())
+	}
+	if !strings.Contains(e.meldung.Text, "kaputt") {
+		t.Errorf("Meldung %q vom Speichern verdrängt", e.meldung.Text)
+	}
+	if !e.schliessen() {
+		t.Error("die nächste Anfrage schließt nicht")
+	}
+}
+
+// F-341, mit Signal: Das Fenster schließt, der Kopierfehler steht auf der Fehlerausgabe.
+func TestKopierfehlerWaehrendSignalSpeichernAufStderr(t *testing.T) {
+	e, zu := editorMitFensterKopie(t)
+	e.fensterHaeltKopie, e.fensterWarnung = false, false
+	e.kopierLaeuft, e.kopierStart = true, time.Now()
+	aus := fehlerAbfangen(t)
+	e.nachSignal()
+	e.kopierAntwort <- kopierErgebnis{err: errors.New("kaputt")}
+	e.kopierenAbholen(layout.Context{})
+	warteSpeichern(t, e)
+	if *zu != 1 || !strings.Contains(aus.String(), "kaputt") {
+		t.Errorf("Schließen-Aktionen %d, Fehlerausgabe %q", *zu, aus.String())
+	}
+}
+
 // F-337, Weg ohne Speichern (SchlussZu): derselbe Ablauf.
 func TestKopierfehlerOhneSpeichernHaeltEinmalOffen(t *testing.T) {
 	e, _ := editorMitFensterKopie(t)

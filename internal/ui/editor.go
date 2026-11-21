@@ -217,6 +217,9 @@ type editor struct {
 	schliessenNachKopie bool
 	// kopierFehlerHaelt: Das Kopieren, auf das ein Schließen wartete, ist gescheitert; das Fenster bleibt einmal offen (F-337).
 	kopierFehlerHaelt bool
+	// schliessenNachSpeichern: Eine Schließen-Anfrage wartet auf die Antwort des Speicherns (F-341); ein Kopierfehler, der
+	// dazwischen eintrifft, wird behandelt wie einer, auf den ein Schließen wartet (kopierenAbholen).
+	schliessenNachSpeichern bool
 	// fensterHaeltKopie: Die Zwischenablage trägt das Bild nur über dieses Fenster (kein Halter möglich, Rückfall,
 	// ADR-0015 Nachtrag 2); fensterWarnung: Das Schließen wurde deswegen schon einmal angehalten (F-295).
 	fensterHaeltKopie, fensterWarnung bool
@@ -440,6 +443,9 @@ func (e *editor) schliessen() bool {
 		return true
 	case canvas.SchlussFehler:
 		e.melde(i18n.T("Could not save. Close again to discard the changes."), true)
+	}
+	if z == canvas.SchlussWarten {
+		e.schliessenNachSpeichern = true
 	}
 	if abzug != nil {
 		e.speichernStarten(abzug)
@@ -671,9 +677,16 @@ func (e *editor) speichernFertig(r speicherErgebnis) {
 	ende := e.s.SpeichernEnde(r.g.HaeltOffen(), r.err)
 	diagnoseEditor("Speichern zurück: %v, Ende %+v", r.err, ende)
 	e.speichernMelden(r, ende)
+	if ende.Erneut == nil {
+		e.schliessenNachSpeichern = false
+	}
 	switch {
 	case ende.Erneut != nil:
 		e.speichernStarten(ende.Erneut)
+	case ende.Schliessen && e.kopierFehlerHaelt && !e.kopierenHaeltOffen():
+		// Der Kopierfehler kam vor dem Speicher-Ende (F-341): Das Fenster bleibt einmal offen wie bei F-337, die Meldung
+		// „Could not copy“ bleibt stehen (gespeichertMelden lässt sie), die nächste Anfrage schließt.
+		e.kopierFehlerHaelt = false
 	case ende.Schliessen:
 		// Eine Schließen-Anfrage mit Speichern vorher warnt wie eine ohne (F-321); ein Signal schließt in jedem Fall.
 		// Läuft noch ein Kopieren, wartet das Schließen auf dessen Antwort wie im Zweig SchlussZu: Erst sie sagt, ob das
@@ -782,10 +795,10 @@ func (e *editor) kopierenAbholen(gtx layout.Context) {
 		e.kopierLaeuft = false
 		if r.err != nil {
 			e.melde(fmt.Sprintf(i18n.T("Could not copy: %v"), r.err), true)
-			if e.schliessenNachKopie {
-				// Ein Schließen hat auf dieses Kopieren gewartet (F-337): Der Fehler geht zusätzlich auf die
-				// Fehlerausgabe, und das Fenster bleibt einmal offen, damit die Meldung gelesen wird; die nächste
-				// Anfrage schließt. Ein Signal schließt in jedem Fall.
+			if e.schliessenNachKopie || e.schliessenNachSpeichern || e.s.SignalVorgemerkt() {
+				// Ein Schließen hat auf dieses Kopieren gewartet (F-337) oder steht nach dem Speichern an, das noch
+				// läuft (F-341): Der Fehler geht zusätzlich auf die Fehlerausgabe, und das Fenster bleibt einmal offen,
+				// damit die Meldung gelesen wird; die nächste Anfrage schließt. Ein Signal schließt in jedem Fall.
 				fmt.Fprintf(fehlerAusgabe, i18n.T("Could not copy: %v")+"\n", r.err)
 				e.kopierFehlerHaelt = !e.s.SignalVorgemerkt() && !e.erzwungen
 			}
@@ -856,16 +869,16 @@ func (e *editor) kopierenAbwarten() {
 		select { // Antwort und Frist zugleich: die Antwort gilt
 		case r = <-e.kopierAntwort:
 		default:
-			fmt.Fprintln(os.Stderr, i18n.T("Copying was not finished when the window closed; the clipboard may be empty."))
+			fmt.Fprintln(fehlerAusgabe, i18n.T("Copying was not finished when the window closed; the clipboard may be empty."))
 			return
 		}
 	}
 	e.kopierLaeuft = false
 	switch {
 	case r.err != nil:
-		fmt.Fprintf(os.Stderr, i18n.T("Could not copy: %v")+"\n", r.err)
+		fmt.Fprintf(fehlerAusgabe, i18n.T("Could not copy: %v")+"\n", r.err)
 	case r.daten != nil:
-		fmt.Fprintln(os.Stderr, i18n.T("Copying was not finished when the window closed; the clipboard may be empty."))
+		fmt.Fprintln(fehlerAusgabe, i18n.T("Copying was not finished when the window closed; the clipboard may be empty."))
 	}
 }
 
@@ -1007,6 +1020,9 @@ func halteZwischenablage(daten []byte) error {
 func (e *editor) gespeichertMelden(g Gespeichert) {
 	if g.Datei != "" {
 		e.titel = g.Datei
+	}
+	if e.kopierFehlerHaelt && !e.schliessenNachKopie {
+		return // der Kopierfehler hält das Fenster offen (F-341); „Saved“ darf ihn nicht verdrängen
 	}
 	e.melde(i18n.T("Saved to the library"), false)
 	if g.Hinweis != "" {
@@ -1298,7 +1314,7 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 				int(math.Round(float64(m.X+rad))), int(math.Round(float64(m.Y+rad))))
 			paint.FillShape(gtx.Ops, v.Farbe, clip.Ellipse(kr).Op(gtx.Ops))
 			// Grundlinie wie im Renderer: eine halbe Versalhöhe unter der Mitte (document.Nummer.Grundlinie).
-			e.textBei(gtx, fmt.Sprint(v.Wert), float32(v.Radius*1.2), f32.Pt(m.X, m.Y+float32(v.Grundlinie()-v.Mitte.Y)), true,
+			e.textBei(gtx, fmt.Sprint(v.Wert), float32(v.Radius*1.2), f32.Pt(m.X, m.Y+nummerGrundlinieAnsicht(v)), true,
 				color.NRGBA{R: 255, G: 255, B: 255, A: 255})
 		case document.Text:
 			if v.Hintergrund.A > 0 {
@@ -1310,12 +1326,20 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 			for i, zeile := range strings.Split(v.Inhalt, "\n") {
 				zeile = document.Zeichenbar(zeile) // wie im Renderer
 				// Grundlinie wie im Renderer: ein Schriftgrad unter der Oberkante, je Zeile Zeilenabstand weiter.
-				p := ort.Add(f32.Pt(0, float32(v.Schriftgrad*(1+document.Zeilenabstand*float64(i)))))
+				p := ort.Add(f32.Pt(0, textGrundlinieAnsicht(v.Schriftgrad, i)))
 				e.textBei(gtx, zeile, float32(v.Schriftgrad), p, false, v.Farbe)
 			}
 		}
 	}
 }
+
+// textGrundlinieAnsicht ist die Grundlinie von Zeile i relativ zu Ort.Y (wie document.Text.Grundlinie, F-342).
+func textGrundlinieAnsicht(grad float64, i int) float32 {
+	return float32(grad * (1 + document.Zeilenabstand*float64(i)))
+}
+
+// nummerGrundlinieAnsicht ist der Abstand der Ziffern-Grundlinie von der Mitte (document.Nummer.Grundlinie, F-342).
+func nummerGrundlinieAnsicht(n document.Nummer) float32 { return float32(n.Grundlinie() - n.Mitte.Y) }
 
 // zeichneNaehte legt die Zackenkanten der Stauch-Nähte über Bild und Objekte, in Ansichtskoordinaten und mit denselben
 // Vielecken wie Renderer und SVG-Export (ADR-0023 Punkt 6). Die Pfade werden nur neu gebaut, wenn sich Ansichtsgröße
