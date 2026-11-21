@@ -112,3 +112,10 @@ mit eingeschalteter Einstellung.
 - Die 12-Stunden-Grenze des Halters galt nur nach der Wanduhr; eine zurückgestellte Uhr verlängerte sie um den Sprung.
   `Diene` rechnet jetzt mit der früheren von Wanduhr- und monotoner Grenze (`monoSeit`, im Test einspeisbar); ein
   Vorstellen der Uhr verkürzt sie wie bisher. Test `TestZeitgrenzeUhrZurueck` (Gegenprobe ohne monotone Grenze rot).
+
+## Nachtrag 5 (21.11.2026): Geerbte Deskriptoren (F-189, Karte #94)
+
+**Status:** Akzeptiert (Claude Sonnet 5.5).
+
+- `HelferLauf` schließt als Erstes alle Deskriptoren ab 4, die ohne `FD_CLOEXEC` geerbt wurden (`schliesseGeerbte`, Liste aus `/proc/self/fd` des eigenen Prozesses, Rückfall: Durchprobieren bis zur weichen Grenze). Die Go-Laufzeit öffnet ihre eigenen Deskriptoren immer mit CLOEXEC, ein gezieltes Schließen der Nicht-CLOEXEC-Deskriptoren trifft sie also nicht (kein pauschales `close_range`). Deskriptoren 0 bis 3 bleiben. Test `TestUebergibSchliesstGeerbte` (Gegenprobe ohne Schließen rot).
+- **systemd-Scope bleibt offen, nicht umgesetzt:** Startet KDE Schnapp in einer `app-*.scope`, bleibt der Halter trotz `setsid` in dieser cgroup (setsid löst keine cgroup). Ein Verlassen bräuchte `StartTransientUnit` über D-Bus an den Benutzer-systemd oder `systemd-run --user` als Fremdprogramm (ADR-0011) — beides eine neue Abhängigkeit; als eigenes Finding geführt.

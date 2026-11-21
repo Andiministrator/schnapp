@@ -5,6 +5,7 @@ package wlclip
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -50,6 +51,32 @@ func attrappe(art, ordner string) int {
 			abgeloest = append(abgeloest, "pipe3")
 		}
 		os.WriteFile(filepath.Join(ordner, "abgeloest"), []byte(strings.Join(abgeloest, " ")), 0o600)
+		io.WriteString(meldung, "ok "+ManagerExt+"\n")
+		meldung.Close()
+		return 0
+	case "geerbt":
+		// F-189: wie HelferLauf schließt die Attrappe geerbte Deskriptoren ab 4 ohne CLOEXEC; gezählt wird je
+		// vorher/nachher, dazu die Zahl der Deskriptoren mit CLOEXEC (Laufzeit), die bleiben müssen.
+		zaehle := func() (ohne, mit int) {
+			for _, fd := range offeneDeskriptoren() {
+				if fd < 4 {
+					continue
+				}
+				fl, _, errno := syscall.Syscall(syscall.SYS_FCNTL, uintptr(fd), syscall.F_GETFD, 0)
+				switch {
+				case errno != 0:
+				case fl&syscall.FD_CLOEXEC != 0:
+					mit++
+				default:
+					ohne++
+				}
+			}
+			return
+		}
+		o1, m1 := zaehle()
+		zu := schliesseGeerbte()
+		o2, m2 := zaehle()
+		os.WriteFile(filepath.Join(ordner, "fds"), []byte(fmt.Sprintf("%d %d %d %d %d", o1, o2, m1, m2, len(zu))), 0o600)
 		io.WriteString(meldung, "ok "+ManagerExt+"\n")
 		meldung.Close()
 		return 0
@@ -202,5 +229,38 @@ func TestHalterMoeglich(t *testing.T) {
 	}
 	if err := HalterMoeglich(env(map[string]string{"WAYLAND_DISPLAY": "wayland-0"})); err != nil {
 		t.Errorf("Fehler %v, erwartet nil", err)
+	}
+}
+
+// TestUebergibSchliesstGeerbte (F-189): Ein im Editor ohne CLOEXEC offener Deskriptor (hier fd >= 4 per
+// syscall.Open ohne O_CLOEXEC, wie `schnapp 5>datei`) kommt im Halter an und wird dort geschlossen; Deskriptoren mit
+// CLOEXEC (Laufzeit) bleiben.
+func TestUebergibSchliesstGeerbte(t *testing.T) {
+	var fds [3]int
+	for i := range fds {
+		fd, err := syscall.Open(filepath.Join(t.TempDir(), "geerbt"), syscall.O_CREAT|syscall.O_RDWR, 0o600)
+		if err != nil {
+			t.Fatal(err)
+		}
+		fds[i] = fd
+		defer syscall.Close(fd)
+	}
+	ordner, _, _, err := uebergibMit(t, "geerbt", 10*time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(filepath.Join(ordner, "fds"))
+	var o1, o2, m1, m2, zu int
+	if _, err := fmt.Sscanf(string(b), "%d %d %d %d %d", &o1, &o2, &m1, &m2, &zu); err != nil {
+		t.Fatalf("Zählung %q: %v", b, err)
+	}
+	if o1 < len(fds) {
+		t.Errorf("im Kind vorher %d Deskriptoren ohne CLOEXEC, erwartet mindestens %d (Test erreicht die Vererbung nicht)", o1, len(fds))
+	}
+	if o2 != 0 || zu != o1 {
+		t.Errorf("nachher %d offen ohne CLOEXEC, %d geschlossen (vorher %d), erwartet 0 und %d", o2, zu, o1, o1)
+	}
+	if m1 != m2 {
+		t.Errorf("Deskriptoren mit CLOEXEC: vorher %d, nachher %d, sie müssen bleiben", m1, m2)
 	}
 }

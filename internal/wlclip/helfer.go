@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -76,11 +77,59 @@ func Helfer(ein io.Reader, meldung io.WriteCloser, grenze time.Duration) int {
 // beim Start eine Pipe ist; sonst (Aufruf von Hand ohne fd 3) bekäme der erste Socket die Nummer 3, und die Meldung
 // landete in der Wayland-Verbindung (Kritik Fable, Befund 1).
 func HelferLauf() int {
+	schliesseGeerbte()
 	var meldung io.WriteCloser
 	if istPipe(3) {
 		meldung = os.NewFile(3, "wlclip-meldung")
 	}
 	return Helfer(os.Stdin, meldung, Haltezeit)
+}
+
+// schliesseGeerbte schließt alle Dateideskriptoren ab 4, die ohne FD_CLOEXEC geerbt wurden (F-189): Was der Editor
+// ohne CLOEXEC offen hatte (`schnapp 5>datei`, cgo-Bibliotheken), bliebe sonst bis zu 12 Stunden im Halter offen. Die
+// Go-Laufzeit öffnet ihre eigenen Deskriptoren (epoll, Eventfd, Pipes) immer mit CLOEXEC; geerbte ohne Flag sind also
+// nie die der Laufzeit. Deskriptoren 0 bis 3 (Eingabe, Ausgaben, Meldeweg) bleiben. Gibt die Nummern der geschlossenen
+// zurück.
+func schliesseGeerbte() []int {
+	var zu []int
+	for _, fd := range offeneDeskriptoren() {
+		if fd < 4 {
+			continue
+		}
+		flags, _, errno := syscall.Syscall(syscall.SYS_FCNTL, uintptr(fd), syscall.F_GETFD, 0)
+		if errno != 0 || flags&syscall.FD_CLOEXEC != 0 {
+			continue
+		}
+		if syscall.Close(fd) == nil {
+			zu = append(zu, fd)
+		}
+	}
+	return zu
+}
+
+// offeneDeskriptoren listet die Nummern aus /proc/self/fd (der eigene Prozess); ohne /proc werden alle Nummern bis
+// zur weichen Grenze (höchstens 65536) durchprobiert.
+func offeneDeskriptoren() []int {
+	var nr []int
+	if eintraege, err := os.ReadDir("/proc/self/fd"); err == nil {
+		for _, e := range eintraege {
+			if n, err := strconv.Atoi(e.Name()); err == nil {
+				nr = append(nr, n)
+			}
+		}
+		return nr
+	}
+	grenze := 65536
+	var rl syscall.Rlimit
+	if syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rl) == nil && rl.Cur < uint64(grenze) {
+		grenze = int(rl.Cur)
+	}
+	for fd := 0; fd < grenze; fd++ {
+		if _, _, errno := syscall.Syscall(syscall.SYS_FCNTL, uintptr(fd), syscall.F_GETFD, 0); errno == 0 {
+			nr = append(nr, fd)
+		}
+	}
+	return nr
 }
 
 // istPipe meldet, ob fd offen und eine Pipe ist.
