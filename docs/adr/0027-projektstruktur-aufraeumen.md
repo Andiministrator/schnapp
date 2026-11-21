@@ -2,7 +2,7 @@
 
 ## Status
 Akzeptiert (Andi, 21.11.2026: „ja zu allen“). Vorgeschlagen von Claude Opus 5.5 (Karte #124), umgesetzt am selben Tag:
-Punkt 1 `d8a40a2`, Punkt 2 `af7598a`, Punkt 3 `5781bcc`, Punkt 4 `4c97753`, Punkt 5 (lokal, ohne Commit) am selben Tag.
+Punkt 1 `d8a40a2`, Punkt 2 `af7598a`, Punkt 3 `be353c9`, Punkt 4 `4c97753`, Punkt 5 (lokal, ohne Commit) am selben Tag.
 
 ## Kontext
 Andi, 21.11.2026: „die verzeichnis-struktur in unserem projekt sieht (für mich) ziemlich chaotisch aus“. Bestand am
