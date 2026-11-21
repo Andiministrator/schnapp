@@ -1,6 +1,6 @@
 # Offene Entscheidungen
 
-Stand 20.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sein vor.
+Stand 21.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sein vor.
 
 ## E-01: Wann hat der Gio-Prototyp bestanden? — ENTSCHIEDEN 19.11.2026 (ADR-0003 Nachtrag 1)
 - **Frage:** Messbare Kriterien für „Gio trägt" (ADR-0003): z. B. Pfeil biegen ohne sichtbares Ruckeln auf 4K, Overlay
@@ -190,3 +190,10 @@ Stand 20.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
   sichtbar.
 - Menü-Navigationstasten stehen als benannte Ausnahme neben der Tastentabelle (ADR-0026 Nachtrag 4); der Wecker fällt
   ohne Quittung auf bis zu 800 ms zurück (F-258).
+
+## E-23: Deutsche Paketnamen unter internal/ — ENTSCHIEDEN 21.11.2026 (Claude im Auftrag Andis: „entscheide du das“)
+- **Frage:** `internal/speicherschritt` (Sprint 9) und `internal/probeschutz` widersprechen ADR-0019 (englische
+  Verzeichnis- und Paketnamen). Umbenennen oder Ausnahme als Nachtrag zu ADR-0019? (F-312)
+- **Entscheidung:** umbenennen, keine Ausnahme: `internal/saveprogress`, `internal/probeguard`. ADR-0019 regelt den
+  Fall schon; eine Ausnahme hätte keine Begründung außer dem Umbauaufwand, und der ist klein (Karte #126).
+  Exportierte Bezeichner (`Marke`, `Puls`, `Zuletzt`, `NurVirtuell`) bleiben, ADR-0019 erlaubt deutsche Bezeichner.
