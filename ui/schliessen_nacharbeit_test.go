@@ -97,6 +97,51 @@ func TestMenueEnterSchliessenWaehrendSpeichern(t *testing.T) {
 	}
 }
 
+// F-307: Enter auf einem anderen Menüeintrag oder einem fokussierten Leistenknopf bei offenem Menü ändert während des
+// Speicherns nichts: Stand und Inhalt des Dokuments bleiben, es gibt keine Schließen-Anfrage. Gemessen wird die
+// Wirkung, nicht die Zahl der Anfragen. Zwei Sperren tragen das gemeinsam: der Wächter in `tasten`
+// (`c == schliessenEintrag()`) und `an()` in `menueAuswerten`/`knoepfeAuswerten`; die Tests belegen das Ergebnis,
+// nicht, welche der beiden es hält (der Wächter allein ist von außen nicht prüfbar, siehe Bericht zu F-307).
+func TestEnterWaehrendSpeichernAendertNichts(t *testing.T) {
+	i18n.Setze(nil)
+	faelle := map[string]func(l *menueLauf) any{
+		"Menüeintrag Rückgängig": func(l *menueLauf) any { return &l.e.menue.eintraege[l.index(aktRueckgaengig)] },
+		"Menüeintrag Wiederholen": func(l *menueLauf) any {
+			return &l.e.menue.eintraege[l.index(aktWiederholen)]
+		},
+		"Leistenknopf Rückgängig bei offenem Menü": func(l *menueLauf) any { return &l.e.knoepfe.rueck },
+		"Leistenknopf Speichern bei offenem Menü":  func(l *menueLauf) any { return &l.e.knoepfe.speichern },
+	}
+	for name, ziel := range faelle {
+		l := neuerMenueLauf(t, image.Pt(1200, 800))
+		n := zaehleSchliessen(l)
+		v := neuerSperrSpeicher()
+		l.e.speichern = v.speichern
+		l.oeffneMitTaste()
+		z, abzug := l.e.s.SchliessenAnfrage()
+		if z != canvas.SchlussWarten || abzug == nil {
+			t.Fatalf("%s: kein Speichern", name)
+		}
+		l.e.speichernStarten(abzug)
+		if !l.e.s.SpeichernLaeuft() {
+			t.Fatalf("%s: Speichern läuft nicht", name)
+		}
+		stand, inhalt := l.e.s.D.Stand(), l.inhalt()
+		l.fokusiere(ziel(l))
+		l.taste(key.NameReturn, 0)
+		if got := l.e.s.D.Stand(); got != stand {
+			t.Errorf("%s: Enter änderte den Stand von %d auf %d", name, stand, got)
+		}
+		if got := l.inhalt(); got != inhalt {
+			t.Errorf("%s: Enter änderte den Inhalt von %q auf %q", name, inhalt, got)
+		}
+		if *n != 0 {
+			t.Errorf("%s: %d Schließen-Anfragen", name, *n)
+		}
+		close(v.frei)
+	}
+}
+
 // F-300: Scheitert das Speichern einer Schließen-Anfrage, und das Fenster wird zerstört, bevor ein Bild den Fehler
 // gezeigt hat, geht der Fehler in die Rückgabe von zerstoert, statt still verworfen zu werden.
 func TestSchliessenFehlerBeimZerstoeren(t *testing.T) {

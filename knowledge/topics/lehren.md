@@ -367,3 +367,6 @@ Stand: 2026-11-20 (ergänzt in Sprint 8). Kurze Regeln aus Fehlern und Befunden;
   Zeilenpuls“ und „kein Leser beim Lesen der Datei“ grün, obwohl beide Wege gebraucht werden (hohe Füllung, langsames
   Medium). Jede Meldestelle braucht einen Test, den nur sie grün hält. Verify F-298: 8 von 20 Mutationen grün trotz
   „Gegenprobe je Zweig“ im eigenen Bericht — die eigene Gegenprobe deckte nur die Zweige, an die man gedacht hatte.
+- **Vor einem Wächter-Test die Sperren dahinter zählen.** F-307: Hinter dem Enter-Wächter lagen zwei weitere Sperren
+  (`an()` und `canvas.Sitzung.gesperrt`); ein Test kann die äußerste allein nicht rot machen. Dann die Wirkung über
+  alle Ebenen prüfen und die Redundanz im Code benennen, statt eine Testnaht ins Produkt zu bauen.

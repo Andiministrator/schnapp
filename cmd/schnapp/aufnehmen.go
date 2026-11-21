@@ -274,13 +274,12 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 	pfad, stand, err := an.ablegen(d)
 	diagnose(fehler, "Ablegen in der Bibliothek: %v", time.Since(start).Round(time.Millisecond))
 	if err != nil && !(pfad != "" && errors.Is(err, library.ErrTempRest)) {
-		if errors.Is(err, library.ErrTempRest) {
-			// Ohne Pfad und ohne Paketpräfix wie beim Editor (F-117, F-303); die Ursache nur mit SCHNAPP_DEBUG.
-			diagnose(fehler, "Ursache der temporären Kopie: %v", err)
-			fmt.Fprintf(fehler, i18n.T("Could not save the screenshot: %v")+"\n", i18n.T("A temporary copy of the new capture could not be removed."))
-			return exitFehler, nil
-		}
-		fmt.Fprintf(fehler, i18n.T("Could not save the screenshot: %v")+"\n", err)
+		// Ohne Pfad und ohne Paketpräfix wie beim Editor (F-117, F-303, F-305): Der Nutzer sieht den übersetzten
+		// Grund, die rohe Ursache nur mit SCHNAPP_DEBUG. Library.Ablegen liefert ErrTempRest nie ohne Pfad; ein
+		// eigener Zweig dafür war toter Code (F-306) und entfällt, ein solcher Fall läuft hier über den
+		// allgemeinen Text.
+		diagnose(fehler, "Ursache des Ablegens: %v", err)
+		fmt.Fprintf(fehler, i18n.T("Could not save the screenshot: %v")+"\n", speicherFehler(err).Error())
 		return exitFehler, nil
 	}
 	if err != nil {

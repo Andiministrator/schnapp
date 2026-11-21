@@ -1394,6 +1394,9 @@ func (e *editor) tasten(gtx layout.Context) {
 			if k, ok := ev.(key.Event); ok && k.State == key.Press {
 				if e.menue.offen {
 					if k.Name == key.NameReturn || k.Name == key.NameEnter {
+						// Äußerste von drei Sperren (danach an() in menueAuswerten/knoepfeAuswerten und
+						// canvas.Sitzung.gesperrt): bewusst doppelt, einzeln nicht prüfbar; die Wirkung prüft
+						// TestEnterWaehrendSpeichernAendertNichts über alle drei (F-307).
 						if c := e.fokussierterKnopf(gtx); c != nil && c == e.schliessenEintrag() {
 							e.knopfPerTaste(c)
 						}

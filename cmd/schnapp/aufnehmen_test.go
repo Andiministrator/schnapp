@@ -311,7 +311,9 @@ func TestAblegenUndQuelleScheitern(t *testing.T) {
 	i18n.Setze(nil)
 	l := neuerLauf(t)
 	l.ablegenErr = errors.New("Platte voll")
-	if code, aus, fehler := l.fuehre(Auftrag{Modus: ModusFenster}); code != exitFehler || aus != "" || !strings.Contains(fehler, "Could not save the screenshot: Platte voll") {
+	// Der rohe Text erscheint nicht mehr (F-305): ein unbekannter Fehler wird zum allgemeinen Schreibfehler.
+	if code, aus, fehler := l.fuehre(Auftrag{Modus: ModusFenster}); code != exitFehler || aus != "" ||
+		!strings.Contains(fehler, "Could not save the screenshot: The file could not be written.") || strings.Contains(fehler, "Platte voll") {
 		t.Errorf("Ablegen: Code %d, aus %q, fehler %q", code, aus, fehler)
 	}
 	l = neuerLauf(t)
