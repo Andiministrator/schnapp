@@ -87,6 +87,14 @@ var (
 	kopierFrist = 10 * time.Second
 )
 
+// fristTimer startet den Timer, mit dem speichernAbwarten die äußerste Grenze zerstoerenFrist überwacht: Kanal der
+// Frist und Abbruchfunktion. Variable, damit Tests die Grenze ohne echtes Warten auslösen und die übergebene Restzeit
+// prüfen können (F-317); sie trägt keine Entscheidung, nur das Warten.
+var fristTimer = func(rest time.Duration) (<-chan time.Time, func()) {
+	t := time.NewTimer(rest)
+	return t.C, func() { t.Stop() }
+}
+
 // Speichern speichert das Dokument (Aufrufer: Bibliothek, ADR-0020). Der Fehlertext erscheint in der Statusleiste und
 // muss schon übersetzt sein.
 type Speichern func(d *document.Dokument) (Gespeichert, error)
@@ -470,7 +478,7 @@ func (e *editor) speichernStarten(abzug *document.Dokument) {
 		e.speicherAntwort = make(chan speicherErgebnis, 1)
 	}
 	speichern, ch, wecker := e.speichern, e.speicherAntwort, e.wecker
-	start := time.Now()
+	start := saveprogress.Jetzt()
 	e.speicherStart, e.haengtGemeldet = start, false
 	fertig := make(chan struct{})
 	if wecker != nil {
@@ -491,7 +499,7 @@ func (e *editor) speichernStarten(abzug *document.Dokument) {
 	}
 	go func() {
 		g, err := speichern(abzug)
-		diagnoseEditor("Speichern im Hintergrund: %v, %v", time.Since(start).Round(time.Millisecond), err)
+		diagnoseEditor("Speichern im Hintergrund: %v, %v", saveprogress.Jetzt().Sub(start).Round(time.Millisecond), err)
 		close(fertig)
 		ch <- speicherErgebnis{g, err}
 		if wecker != nil {
@@ -521,10 +529,10 @@ func (e *editor) speichernAbholen() bool {
 // speichernFrist keinen Fortschritt gemeldet hat (ADR-0020 Nachträge 7 und 9).
 func (e *editor) speichernAbwarten() {
 	for e.s.SpeichernLaeuft() && !e.speichernAufgegeben {
-		frist := time.NewTimer(max(0, time.Until(e.speicherStart.Add(zerstoerenFrist))))
+		fristC, fristStop := fristTimer(max(0, e.speicherStart.Add(zerstoerenFrist).Sub(saveprogress.Jetzt())))
 		select {
 		case r := <-e.speicherAntwort:
-			frist.Stop()
+			fristStop()
 			ende := e.s.SpeichernEnde(r.g.HaeltOffen(), r.err)
 			e.speichernMelden(r, ende)
 			// Eine Schließen-Anfrage, deren Fehler erst jetzt ankommt, hat niemand gesehen: Die Statusleiste verschwindet
@@ -537,11 +545,11 @@ func (e *editor) speichernAbwarten() {
 				e.speichernStarten(ende.Erneut)
 			}
 		case <-e.weitereSignale:
-			frist.Stop()
+			fristStop()
 			if e.speichernHaengt() {
 				e.speichernAufgeben()
 			}
-		case <-frist.C:
+		case <-fristC:
 			e.speichernAufgeben()
 		}
 	}
@@ -558,7 +566,7 @@ func (e *editor) speichernHaengt() bool {
 	if t := saveprogress.Zuletzt(); t.After(letzter) {
 		letzter = t
 	}
-	return time.Since(letzter) >= speichernFrist
+	return saveprogress.Jetzt().Sub(letzter) >= speichernFrist
 }
 
 // speichernHaengtMelden sagt in der Statusleiste, dass das Speichern nicht antwortet und das Schließen jetzt ohne seine
@@ -582,7 +590,7 @@ func (e *editor) speichernHaengtMelden() bool {
 // endet; Editor liefert ErrSpeichernHaengt, damit Fehlerausgabe und Exit-Code es sagen — es sei denn, die Antwort kommt
 // vor der Rückkehr doch noch (spaeteAntwort, F-298).
 func (e *editor) speichernAufgeben() {
-	diagnoseEditor("Speichern antwortet seit %v nicht: aufgegeben", time.Since(e.speicherStart).Round(time.Millisecond))
+	diagnoseEditor("Speichern antwortet seit %v nicht: aufgegeben", saveprogress.Jetzt().Sub(e.speicherStart).Round(time.Millisecond))
 	e.speichernAufgegeben, e.erzwungen = true, true
 	if e.schlussErr == nil {
 		e.schlussErr = ErrSpeichernHaengt
