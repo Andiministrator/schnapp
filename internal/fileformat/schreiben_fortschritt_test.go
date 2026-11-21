@@ -150,6 +150,8 @@ func rauschDokument(t *testing.T) (*document.Dokument, *image.NRGBA) {
 }
 
 // Kritik Sprint 9 K9-3: Jedes geschriebene Stück meldet Fortschritt — der Pulszähler steigt zwischen zwei Stücken.
+// Gilt für Schreiber ohne Sync (Puffer, Attrappe); bei einer Datei kommt der Puls erst nach dem Sync je Stück, damit er
+// abgeflossene Daten meldet und nicht nur den Seitencache (F-313, schreiben_sync_test.go).
 func TestSchreibenMeldetJeStueckFortschritt(t *testing.T) {
 	d, bild := rauschDokument(t)
 	var s stueckSchreiber

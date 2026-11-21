@@ -94,6 +94,8 @@ func schreibeAtomar(ziel string, schreibe func(io.Writer) error) (fehler error) 
 	if err := tmp.Chmod(rechteDatei); err != nil {
 		return err
 	}
+	// tmp geht unverpackt an schreibe: Die Arbeitsdatei synchronisiert je Stück und pulst danach (F-313); dieser
+	// letzte Sync sichert nur noch den Rest und die Metadaten.
 	if err := schreibe(tmp); err != nil {
 		return err
 	}

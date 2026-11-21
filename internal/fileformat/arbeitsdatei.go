@@ -42,15 +42,24 @@ func SchreibeArbeitsdatei(w io.Writer, d *document.Dokument, sichtbar image.Imag
 	if err != nil {
 		return err
 	}
-	// In Stücken schreiben, je Stück ein Puls: Auf einem langsamen Medium dauert eine große Datei sonst ohne Fortschritt
-	// länger als die Frist des Editors (Verify F-298 B-6). fsync und Umbenennen danach melden nichts; ein dort
-	// hängendes Medium gilt zu Recht als hängend.
+	// In Stücken schreiben. Ein Write auf eine Datei landet im Seitencache und kehrt sofort zurück; die Zeit eines
+	// langsamen Mediums vergeht erst im Sync (F-313). Kann der Schreiber synchronisieren (*os.File), folgt deshalb auf
+	// jedes Stück ein Sync und danach der Puls: Es pulst, was tatsächlich abgeflossen ist. Ein Sync, der gar nicht
+	// zurückkehrt (totes Netzlaufwerk), meldet nichts und gilt zu Recht als hängend; einen Puls aus einem Zeitgeber
+	// gibt es nicht. Ohne Sync (Puffer, Attrappe) pulst jedes Stück schon beim Schreiben.
+	sy, kannSync := w.(interface{ Sync() error })
 	for len(daten) > 0 {
 		n := min(len(daten), schreibStueck)
 		if _, err := saveprogress.Schreiber(w).Write(daten[:n]); err != nil {
 			return err
 		}
 		daten = daten[n:]
+		if kannSync {
+			if err := sy.Sync(); err != nil {
+				return err
+			}
+			saveprogress.Puls()
+		}
 	}
 	saveprogress.Marke("datei-geschrieben")
 	return nil
