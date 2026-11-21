@@ -21,11 +21,12 @@ import (
 // Metadaten.Erstellt).
 func SchreibeArbeitsdatei(w io.Writer, d *document.Dokument, sichtbar image.Image, m Metadaten) error {
 	var sicht, orig bytes.Buffer
-	if err := png.Encode(&sicht, sichtbar); err != nil {
+	// Über speicherschritt.Schreiber meldet das Kodieren Fortschritt je geschriebenem Stück (F-298).
+	if err := png.Encode(speicherschritt.Schreiber(&sicht), sichtbar); err != nil {
 		return err
 	}
 	speicherschritt.Marke("bild-kodiert")
-	if err := png.Encode(&orig, d.OriginalBild()); err != nil {
+	if err := png.Encode(speicherschritt.Schreiber(&orig), d.OriginalBild()); err != nil {
 		return err
 	}
 	speicherschritt.Marke("original-kodiert")

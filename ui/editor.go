@@ -42,6 +42,7 @@ import (
 	"github.com/Andiministrator/schnapp/document"
 	"github.com/Andiministrator/schnapp/export"
 	"github.com/Andiministrator/schnapp/i18n"
+	"github.com/Andiministrator/schnapp/internal/speicherschritt"
 	"github.com/Andiministrator/schnapp/portal"
 	"github.com/Andiministrator/schnapp/render"
 	"github.com/Andiministrator/schnapp/wlclip"
@@ -67,18 +68,20 @@ var zwischenablageFehlt atomic.Bool
 // ErrOverlayOffen: Nach der Frist waren noch Overlay-Fenster offen; der Editor öffnet dann nicht (F-82).
 var ErrOverlayOffen = errors.New("editor: Overlay-Fenster noch offen")
 
-// ErrSpeichernHaengt: Das Speichern antwortete nicht innerhalb der Frist, und der Nutzer hat das Fenster trotzdem
-// geschlossen (zweite Anfrage oder weiteres Signal); die Änderungen sind womöglich nicht gesichert (F-283, ADR-0020
-// Nachtrag 7).
+// ErrSpeichernHaengt: Das Speichern meldete eine Frist lang keinen Fortschritt, und der Nutzer hat das Fenster trotzdem
+// geschlossen (zweite Anfrage oder weiteres Signal), oder das Zerstören hat nach zerstoerenFrist aufgegeben; die
+// Änderungen sind womöglich nicht gesichert (F-283, F-298, ADR-0020 Nachträge 7 und 9).
 var ErrSpeichernHaengt = errors.New("editor: Speichern antwortet nicht")
 
 // Fristen der Arbeit im Hintergrund (ADR-0020 Nachtrag 7); Variablen, damit Tests sie verkürzen.
 var (
-	// speichernFrist: Antwortet ein Speichern so lange nicht, sagt die Statusleiste es, und eine weitere
-	// Schließen-Anfrage oder ein weiteres Signal schließt ohne seine Antwort (F-283).
+	// speichernFrist: Meldet ein Speichern so lange keinen Fortschritt (internal/speicherschritt), gilt es als hängend:
+	// Die Statusleiste sagt es, und eine weitere Schließen-Anfrage oder ein weiteres Signal schließt ohne seine Antwort
+	// (F-283). Ein Speichern mit Fortschritt wird nie aufgegeben (F-298, ADR-0020 Nachtrag 9).
 	speichernFrist = 15 * time.Second
 	// zerstoerenFrist: So lange wartet der Editor beim Zerstören des Fensters ohne Anfrage (Wayland weg) höchstens auf
-	// ein laufendes Speichern — länger als ein Dokument am Budget braucht (rund 45 s, Nachtrag 3).
+	// ein laufendes Speichern — länger als ein Dokument am Budget braucht (rund 45 s, Nachtrag 3). Äußerste Grenze, gilt
+	// auch bei Fortschritt (Andi, 21.11.2026, Nachtrag 9).
 	zerstoerenFrist = 2 * time.Minute
 	// kopierFrist: So lange warten Schließen und Zerstören höchstens auf ein laufendes Kopieren (F-281).
 	kopierFrist = 10 * time.Second
@@ -187,8 +190,11 @@ type editor struct {
 	// perform setzt eine Fensteraktion ab; nil heißt e.w.Perform. Naht für Tests ohne Fenster (F-299).
 	perform func(system.Action)
 
-	erzwungen  bool  // Schließen freigegeben (Signal, Speichern zurück): kein ClosingEvent mehr abbrechen
-	schlussErr error // Speicherfehler beim Schließen nach Signal, Rückgabe von Editor
+	erzwungen bool // Schließen freigegeben (Signal, Speichern zurück): kein ClosingEvent mehr abbrechen
+	// schlussErr geht in die Rückgabe von Editor: der Fehler des Speicherns nach einem Signal, ErrSpeichernHaengt nach
+	// dem Aufgeben (F-283, wird zurückgenommen, wenn das Speichern doch noch gelingt, F-298) und der Fehler einer
+	// Schließen-Anfrage, der erst beim Zerstören ankommt (F-300).
+	schlussErr error
 
 	// Speichern und Kopieren im Hintergrund (ADR-0020 Nachtrag 6): Die Goroutine legt die Antwort in den Kanal und
 	// weckt die Schleife; angenommen wird nur in der Ereignisschleife. Höchstens je eins zugleich (canvas.Sitzung
@@ -346,6 +352,13 @@ func (e *editor) laufen() error {
 // Zwischenablage noch startet (F-281).
 func (e *editor) zerstoert(fensterErr error) error {
 	e.speichernAbwarten()
+	if e.speichernAufgegeben {
+		select { // kam die Antwort inzwischen doch, zählt sie (F-298); gewartet wird nicht
+		case r := <-e.speicherAntwort:
+			e.spaeteAntwort(r)
+		default:
+		}
+	}
 	e.kopierenAbwarten()
 	e.s.TextBestaetigen() // getippter Text geht nicht verloren (ADR-0021 Punkt 6)
 	if e.s.Zieht() {
@@ -383,7 +396,7 @@ func hinweisAufStderr(g Gespeichert) {
 // seine Antwort (F-283, ADR-0020 Nachtrag 7). Wäre zu schließen, läuft aber noch ein Kopieren, bleibt das Fenster bis
 // zu dessen Antwort offen (höchstens kopierFrist), sonst startete der Halter der Zwischenablage nie (F-281).
 func (e *editor) schliessen() bool {
-	if e.s.SpeichernLaeuft() && e.haengtGemeldet {
+	if e.haengtGemeldet && e.speichernHaengt() {
 		e.speichernAufgeben()
 		return true
 	}
@@ -442,12 +455,27 @@ func (e *editor) speichernStarten(abzug *document.Dokument) {
 	speichern, ch, wecker := e.speichern, e.speicherAntwort, e.wecker
 	start := time.Now()
 	e.speicherStart, e.haengtGemeldet = start, false
+	fertig := make(chan struct{})
 	if wecker != nil {
-		time.AfterFunc(speichernFrist, wecker.Anfordern) // zur Frist nachsehen, ob es hängt (speichernHaengtMelden)
+		// Zur Frist und danach regelmäßig nachsehen, ob es hängt (speichernHaengtMelden): Mit Fortschritt verschiebt sich
+		// der Zeitpunkt, an dem es als hängend gilt (F-298).
+		frist := speichernFrist
+		var pruefe func()
+		pruefe = func() {
+			select {
+			case <-fertig:
+				return
+			default:
+			}
+			wecker.Anfordern()
+			time.AfterFunc(max(frist/4, time.Millisecond), pruefe)
+		}
+		time.AfterFunc(frist, pruefe)
 	}
 	go func() {
 		g, err := speichern(abzug)
 		diagnoseEditor("Speichern im Hintergrund: %v, %v", time.Since(start).Round(time.Millisecond), err)
+		close(fertig)
 		ch <- speicherErgebnis{g, err}
 		if wecker != nil {
 			wecker.Anfordern() // erst nach dem Ablegen der Antwort (F-231)
@@ -459,6 +487,10 @@ func (e *editor) speichernStarten(abzug *document.Dokument) {
 func (e *editor) speichernAbholen() bool {
 	select {
 	case r := <-e.speicherAntwort:
+		if e.speichernAufgegeben {
+			e.spaeteAntwort(r) // das Fenster schließt schon (F-298)
+			return true
+		}
 		e.speichernFertig(r)
 		return true
 	default:
@@ -468,7 +500,8 @@ func (e *editor) speichernAbholen() bool {
 
 // speichernAbwarten wartet beim Zerstören des Fensters auf ein laufendes Speichern; ein weiterer Versuch nach einem
 // Signal läuft ebenso im Hintergrund und wird abgewartet. Gewartet wird höchstens zerstoerenFrist ab Beginn des
-// jeweiligen Speicherns; ein weiteres Signal nach speichernFrist beendet das Warten ebenso (ADR-0020 Nachtrag 7).
+// jeweiligen Speicherns, auch bei Fortschritt; ein weiteres Signal beendet das Warten nur, wenn das Speichern seit
+// speichernFrist keinen Fortschritt gemeldet hat (ADR-0020 Nachträge 7 und 9).
 func (e *editor) speichernAbwarten() {
 	for e.s.SpeichernLaeuft() && !e.speichernAufgegeben {
 		frist := time.NewTimer(max(0, time.Until(e.speicherStart.Add(zerstoerenFrist))))
@@ -497,14 +530,29 @@ func (e *editor) speichernAbwarten() {
 	}
 }
 
-// speichernHaengt meldet, ob das laufende Speichern länger als speichernFrist nicht antwortet.
+// speichernHaengt meldet, ob das laufende Speichern seit speichernFrist keinen Fortschritt gemeldet hat (F-298, ADR-0020
+// Nachtrag 9): gerechnet ab dem letzten Fortschritt aus internal/speicherschritt, frühestens ab dem Beginn dieses
+// Speicherns.
 func (e *editor) speichernHaengt() bool {
-	return e.s.SpeichernLaeuft() && time.Since(e.speicherStart) >= speichernFrist
+	if !e.s.SpeichernLaeuft() {
+		return false
+	}
+	letzter := e.speicherStart
+	if t := speicherschritt.Zuletzt(); t.After(letzter) {
+		letzter = t
+	}
+	return time.Since(letzter) >= speichernFrist
 }
 
 // speichernHaengtMelden sagt in der Statusleiste, dass das Speichern nicht antwortet und das Schließen jetzt ohne seine
-// Antwort geht (F-283); einmal je Speichern. Liefert, ob die Meldung neu ist.
+// Antwort geht (F-283); einmal je Stillstand. Kommt danach wieder Fortschritt, nimmt es die Meldung zurück, und die
+// nächste Anfrage hält das Fenster wieder offen (F-298). Liefert, ob sich die Meldung geändert hat.
 func (e *editor) speichernHaengtMelden() bool {
+	if e.haengtGemeldet && e.s.SpeichernLaeuft() && !e.speichernHaengt() {
+		e.haengtGemeldet = false
+		e.melde(i18n.T("Saving…"), false)
+		return true
+	}
 	if e.haengtGemeldet || !e.speichernHaengt() {
 		return false
 	}
@@ -514,12 +562,27 @@ func (e *editor) speichernHaengtMelden() bool {
 }
 
 // speichernAufgeben schließt ohne die Antwort des Speicherns (F-283): Die Goroutine läuft weiter, bis der Prozess
-// endet; Editor liefert ErrSpeichernHaengt, damit Fehlerausgabe und Exit-Code es sagen.
+// endet; Editor liefert ErrSpeichernHaengt, damit Fehlerausgabe und Exit-Code es sagen — es sei denn, die Antwort kommt
+// vor der Rückkehr doch noch (spaeteAntwort, F-298).
 func (e *editor) speichernAufgeben() {
 	diagnoseEditor("Speichern antwortet seit %v nicht: aufgegeben", time.Since(e.speicherStart).Round(time.Millisecond))
 	e.speichernAufgegeben, e.erzwungen = true, true
 	if e.schlussErr == nil {
 		e.schlussErr = ErrSpeichernHaengt
+	}
+}
+
+// spaeteAntwort nimmt die Antwort eines schon aufgegebenen Speicherns an (F-298): Gelang es doch, gilt der Stand als
+// gesichert und ErrSpeichernHaengt steht nicht mehr in der Rückgabe; scheiterte es, steht dort sein Fehler. Das
+// Fenster schließt in beiden Fällen weiter, ein weiterer Versuch nach einem Signal unterbleibt.
+func (e *editor) spaeteAntwort(r speicherErgebnis) {
+	ende := e.s.SpeichernEnde(r.g.HaeltOffen(), r.err)
+	diagnoseEditor("Speichern nach dem Aufgeben zurück: %v, Ende %+v", r.err, ende)
+	if r.err == nil {
+		hinweisAufStderr(r.g)
+	}
+	if errors.Is(e.schlussErr, ErrSpeichernHaengt) {
+		e.schlussErr = r.err
 	}
 }
 

@@ -92,8 +92,9 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   halten; die Signal-Goroutine weckt nur das Fenster (`Window.Invalidate`), gespeichert wird in der Ereignisschleife
   (F-77). *Seit Nachtrag 6 in einer eigenen Goroutine; in der Schleife wird nur die Antwort angenommen.* *Geändert 20.11.2026 (F-152, Andis Entscheidung):* Weitere Signale (SIGTERM, SIGINT, SIGHUP) werden
   abgefangen, bis der Editor zurückkehrt — ein zweites Strg+C oder SIGHUP nach SIGTERM beim Abmelden bricht ein
-  laufendes Speichern (bis rund 45 s, Nachtrag 3) nicht mehr ab; danach beendet sich der Editor geordnet. *Seit Nachtrag 7 gilt das nur in den ersten 15 Sekunden;
-  Nachtrag 9 (entschieden, noch nicht umgesetzt) stellt es für ein Speichern mit Fortschritt wieder her.* Erst nach der
+  laufendes Speichern (bis rund 45 s, Nachtrag 3) nicht mehr ab; danach beendet sich der Editor geordnet. *Seit Nachtrag 9 (umgesetzt 21.11.2026) gilt das für jedes
+  Speichern, das Fortschritt meldet; nur ein Speichern, das 15 Sekunden lang keinen Fortschritt meldet, gibt ein
+  weiteres Signal auf (Nachtrag 7).* Erst nach der
   Rückkehr gilt wieder die Voreinstellung. SIGKILL bleibt unabfangbar. Die Wache (`canvas.Signalwache`) ist ohne echte
   Signale getestet (eigener Kanal). Kommt das Signal, während das Fenster nach einem gescheiterten Speichern mit der
   Fehlermeldung offen steht, speichert der Editor noch einmal (samt Ausweichen auf eine neue Aufnahme) — das Verwerfen
@@ -238,11 +239,11 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   Die Fehlerausgabe sagt „Speichern hat nicht geantwortet; die Änderungen sind womöglich nicht gesichert.“, der
   Exit-Code ist ein Fehler. Beim Zerstören wird dann nicht gewartet und **nicht noch einmal im Vordergrund
   gespeichert**: Die hängende Goroutine hält die Speicherfunktion, und die darf nicht zweimal zugleich laufen
-  (Nachtrag 6). *Eingeschränkt durch Nachtrag 9 (21.11.2026, Umsetzung offen): künftig nur für ein Speichern ohne
-  Fortschritt.*
+  (Nachtrag 6). *Eingeschränkt durch Nachtrag 9 (umgesetzt 21.11.2026): Die 15 Sekunden zählen ab dem letzten
+  Fortschritt, nicht ab dem Beginn; ein Speichern mit Fortschritt gilt nie als hängend.*
 - **Zerstören ohne Anfrage** (Wayland weg) wartet höchstens **2 Minuten** auf ein laufendes Speichern — länger als ein
   Dokument am Budget braucht (rund 45 s, Nachtrag 3), damit ein langsames, aber gesundes Speichern nicht verloren geht;
-  ein weiteres Signal nach den 15 Sekunden beendet das Warten ebenso. Ein weiterer Versuch nach einem Signal läuft
+  ein weiteres Signal nach 15 Sekunden ohne Fortschritt beendet das Warten ebenso (Nachtrag 9). Ein weiterer Versuch nach einem Signal läuft
   hier jetzt ebenfalls in der Goroutine, mit derselben Frist.
 - **Kopieren (F-281):** Strg+C und gleich schließen verlor die Kopie: Der Prozess endete, bevor die Goroutine den Halter
   der Zwischenablage gestartet hatte. Jetzt hält eine Schließen-Anfrage, die schließen dürfte, das Fenster offen, bis
@@ -257,7 +258,7 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
 ## Nachtrag 8 (20.11.2026): Schließen per Taste und Menü, Exit-Code, Fehler beim Zerstören (F-299, F-300, F-302)
 
 **Status:** Akzeptiert (Claude Opus 5.5, Nacharbeit des Kritiker-Laufs Sprint-Abschluss 8, Karte #120). Präzisiert
-Nachtrag 6 und 7; über die 15-s-Frist selbst entscheidet Nachtrag 9 (F-298, Karte #119).
+Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschritt (F-298, Karte #119).
 
 - **Schließen-Anfragen gehen weiter (Nachtrag 6) gilt für jeden Weg:** Fensterknopf, Strg+W und der Menüeintrag
   „Schließen“ (Klick und Enter), auch während des Speicherns (F-299). `SchliessenAnfrage` merkt die Anfrage vor. Alles
@@ -276,18 +277,39 @@ Nachtrag 6 und 7; über die 15-s-Frist selbst entscheidet Nachtrag 9 (F-298, Kar
 
 ## Nachtrag 9 (21.11.2026): Ein arbeitendes Speichern wird nie aufgegeben (F-298)
 
-**Status:** Akzeptiert (Andi, 21.11.2026: Variante b). Umsetzung offen (Karte #119); bis dahin gilt Nachtrag 7.
+**Status:** Akzeptiert (Andi, 21.11.2026: Variante b). Umgesetzt 21.11.2026 (Karte #119, Claude Opus 5.5), siehe
+„Umsetzung“ am Ende.
 
 - **Entscheidung:** Die Frist aus Nachtrag 7 unterscheidet künftig ein hängendes von einem langen Speichern. Solange
   das Speichern Fortschritt meldet (etwa nach Rendern, Kodieren, Schreiben), gilt es nicht als hängend; ein zweites
   Signal oder eine weitere Schließen-Anfrage bricht es nicht ab. Das bestätigt F-152 und Nachtrag 2 (ein zweites Signal
   bricht ein laufendes Speichern nicht ab) und schränkt Nachtrag 7 auf ein Speichern ohne Fortschritt ein.
-- **Verworfen:** Abbrechen nach festen 15 Sekunden auch bei Fortschritt (Variante a). Ein 4K-Bild braucht 8,8 s
-  (F-297), ein Dokument am Budget 35–45 s (Nachtrag 3); der Abbruch träfe gesunde Speichervorgänge.
+- **Verworfen:** Abbrechen nach festen 15 Sekunden auch bei Fortschritt (Variante a). Ein 4K-Bild braucht im
+  Probe-Build (`-race`) 8–24 s, im Normalbau 0,4–1,5 s (F-297, `knowledge/messungen/f-297.md`), ein Dokument am Budget
+  35–45 s (Nachtrag 3); der Abbruch träfe gesunde Speichervorgänge.
 - **Offen für die Umsetzung:** Wie fein die Fortschrittsmarken sind, wie lange ohne Marke als hängend gilt, und dass
   ein nach dem Aufgeben doch gelungenes Speichern `ErrSpeichernHaengt` nicht stehen lässt (Nebenbefund in F-298).
 - **Zerstören ohne Anfrage** (Wayland weg, Nachtrag 7, `zerstoerenFrist` 2 Minuten) — entschieden 21.11.2026 (Andi,
   folgt dem Vorschlag): Die 2-Minuten-Grenze bleibt als äußerste Grenze, auch bei Fortschritt. Ohne Compositor gibt es
   keinen anderen Ausweg, und ein Dokument am Budget braucht höchstens 45 s. „Nie aufgegeben“ meint das zweite Signal
   und die weitere Schließen-Anfrage.
-
+- **Umsetzung (21.11.2026, Karte #119):**
+  - **Fortschrittsquelle** ist `internal/speicherschritt`: `Marke` nach jedem benannten Schritt (gerendert,
+    alte-datei-gelesen, bild-kodiert, original-kodiert, datei-geschrieben, ersetzt, index, vorschau, budget-geprueft;
+    die Schnitte der Messung F-297) und `Puls` aus langen Schleifen — beim Füllen alle 64 Zeilen (rund 2 % Mehrkosten
+    im Füll-Benchmark), je Textzeichen, je geschriebenem Stück der PNG-Kodierung (`Schreiber`), je gelesenem Stück der
+    alten Datei (`Leser`), je Zeile der Vorschau. `Zuletzt` liefert den Zeitpunkt des letzten Fortschritts.
+  - **Hängend** heißt: Ein Speichern läuft und meldet seit `speichernFrist` (15 s) keinen Fortschritt, gerechnet ab dem
+    letzten Fortschritt, frühestens ab seinem Beginn. Nur dann sagt die Statusleiste es, und nur dann gibt die nächste
+    Schließen-Anfrage oder ein weiteres Signal es auf. Kommt danach wieder Fortschritt, nimmt die Statusleiste die
+    Meldung zurück („Saving…“). Die Prüfung weckt die Schleife zur Frist und danach alle `speichernFrist/4`, solange das
+    Speichern läuft. Der längste Abstand ohne Fortschritt liegt im Normalbau unter 1 s, im Race-Bau bei rund 4,4 s.
+  - **Doch noch gelungen:** Kommt die Antwort eines aufgegebenen Speicherns vor der Rückkehr des Editors (noch in der
+    Schleife oder beim Zerstören, dort ohne zu warten), zählt sie: Gelang es, gilt der Stand als gesichert und
+    `ErrSpeichernHaengt` entfällt; scheiterte es, steht sein Fehler in der Rückgabe.
+  - **Grenzen:** Der Zeitpunkt gilt prozessweit; ein Kopieren oder Exportieren, das nebenher rendert, meldet ebenfalls
+    Fortschritt und verzögert das Erkennen eines hängenden Speicherns höchstens um seine Dauer. `zerstoerenFrist`
+    (2 Minuten ab Beginn des Speicherns) bleibt unabhängig vom Fortschritt die äußerste Grenze.
+  - Tests: `ui/speichern_fortschritt_test.go` (Fortschritt nie aufgegeben, Meldung zurückgenommen, doch gelungen oder
+    gescheitert, wiederholte Prüfung), `render/fortschritt_test.go`, `internal/speicherschritt/schritt_test.go`; jede
+    neue Bedingung einzeln zurückgenommen macht einen Test rot.

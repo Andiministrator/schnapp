@@ -1,0 +1,17 @@
+# Rückfallprobe F-298/F-296 (Karten #119, #117): SIGTERM während eines langen Speicherns.
+# Ein Schwärzen-Zug ändert ein 4K-Rauschbild; danach endet das Drehbuch, probe.sh schickt SIGTERM. Im Probe-Build
+# (-race) dauert das Speichern rund 20 s — länger als die 15-s-Frist, aber mit Fortschritt (internal/speicherschritt).
+# Erwartet: kein „Speichern antwortet nicht“, die [speichern]-Marken im Debug-Log, „Speichern im Hintergrund: …, <nil>“,
+# „Fenster zu: Fehler <nil>, ungesichert false“, schnapp exit 0, kein SIGKILL.
+# Testbild synthetisch (Rauschen, nicht eingecheckt) und in der Probe-Bibliothek, sonst hält der Hinweis „neue Aufnahme“
+# das Fenster offen (siehe rueckfall-schliessen-waehrend-speichern.txt).
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-sigterm-langes-speichern.txt --bild <4K-Bild in
+# tmp/probe/home/Bilder/schnapp/JJJJ-MM/> --breite 3840 --hoehe 2160 --zeit 120 --ende 90
+warte 800
+zeiger 1000 600
+warte 200
+taste B
+warte 200
+ziehe 1000 600 1800 1000 20
+warte 500
+foto 01-geschwaerzt

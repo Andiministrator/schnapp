@@ -359,3 +359,7 @@ Stand: 2026-11-20 (ergänzt in Sprint 8). Kurze Regeln aus Fehlern und Befunden;
   ausdrücklich als Race-Zahl führen; die Bauart steht im Messprotokoll, geprüft am Build-Befehl, nicht aus dem Gedächtnis.
 - **CI-Annotationen gibt es über die öffentliche API**, ohne Anmeldung: `commits/<sha>/check-runs`, dann
   `check-runs/<id>/annotations`. Gegenprobe gegen den Vorlauf (F-309: vorher 1, nachher 0).
+- **Fortschritt dort melden, wo die Zeit vergeht, nicht nur zwischen Schritten.** Zwischen zwei Speicher-Marken lagen im
+  Probe-Build bis zu 8 s (eine PNG-Kodierung); erst Pulse aus Schreiber, Leser und Rasterschleife machen eine Frist
+  von 15 s tragfähig (F-298, `messungen/f-298-probe.md`). Pulse in heißen Schleifen messen: je Pixel kostete 7 %, je
+  64 Zeilen rund 2 %.

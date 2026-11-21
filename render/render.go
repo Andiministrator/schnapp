@@ -29,6 +29,7 @@ import (
 	"golang.org/x/image/vector"
 
 	"github.com/Andiministrator/schnapp/document"
+	"github.com/Andiministrator/schnapp/internal/speicherschritt"
 )
 
 // Bild liefert die Ansicht des Dokuments mit allen Objekten und den Zackenkanten der Stauch-Nähte (ADR-0023). Objekte
@@ -425,7 +426,7 @@ func (z zeichner) raster(polys [][]document.Punkt, farbe color.NRGBA) {
 // Rasterizer reicht die Deckung je Pixel unverändert (16 Bit) an einmischer.Set weiter, ohne vorher das Ziel zu lesen.
 var einmischen = func(r *vector.Rasterizer, bild *image.NRGBA, ausschnitt image.Rectangle, farbe color.NRGBA) {
 	r.DrawOp = draw.Src
-	r.Draw(neuerEinmischer(bild, farbe), ausschnitt, deckend, image.Point{})
+	r.Draw(neuerEinmischer(bild, farbe, ausschnitt.Min.X), ausschnitt, deckend, image.Point{})
 }
 
 // deckend ist die Quelle für raster: volle Deckung, damit der Rasterizer mit draw.Src genau die Deckung liefert.
@@ -442,10 +443,12 @@ type einmischer struct {
 	bild           *image.NRGBA
 	sr, sg, sb, sa uint32      // Quelle vormultipliziert, 16 Bit (color.NRGBA.RGBA)
 	voll           color.NRGBA // Ergebnis bei voller Deckung einer deckenden Quelle
+	x0             int         // linker Rand des Ausschnitts: dort beginnt jede Zeile
+	n              uint32      // gezählte Zeilen
 }
 
-func neuerEinmischer(b *image.NRGBA, farbe color.NRGBA) *einmischer {
-	e := &einmischer{bild: b, voll: farbe}
+func neuerEinmischer(b *image.NRGBA, farbe color.NRGBA, x0 int) *einmischer {
+	e := &einmischer{bild: b, voll: farbe, x0: x0}
 	e.sr, e.sg, e.sb, e.sa = farbe.RGBA()
 	return e
 }
@@ -456,6 +459,11 @@ func (e *einmischer) At(x, y int) color.Color { return color.Transparent }
 
 // Set mischt die Quelle mit der Deckung c (Alpha, 16 Bit) in das Pixel (x, y).
 func (e *einmischer) Set(x, y int, c color.Color) {
+	if x == e.x0 { // Zeilenanfang: alle 64 Zeilen ein Fortschritts-Puls fürs Speichern (F-298)
+		if e.n++; e.n&63 == 0 {
+			speicherschritt.Puls()
+		}
+	}
 	var ma uint32
 	if v, ok := c.(*color.RGBA64); ok {
 		ma = uint32(v.A)
@@ -593,6 +601,7 @@ func (z zeichner) text(face font.Face, s string, x, grundlinie float64, farbe co
 	links, rechts := float64(rand.Min.X)-1.25*grad, float64(rand.Max.X)+1.25*grad
 	vorher := rune(-1)
 	for _, c := range s {
+		speicherschritt.Puls() // je Zeichen: Glyphen kosten am Budget Sekunden (F-147, F-298)
 		if vorher >= 0 {
 			dot.X += face.Kern(vorher, c)
 		}
