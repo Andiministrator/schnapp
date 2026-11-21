@@ -2,7 +2,7 @@
 
 ## Status
 Akzeptiert (Andi, 21.11.2026: „ja zu allen“). Vorgeschlagen von Claude Opus 5.5 (Karte #124), umgesetzt am selben Tag:
-Punkt 1 `d8a40a2`, Punkt 2 `af7598a`, Punkt 3 `5781bcc`, Punkt 4 und 5 im Commit dieser Zeile und danach.
+Punkt 1 `d8a40a2`, Punkt 2 `af7598a`, Punkt 3 `5781bcc`, Punkt 4 `4c97753`, Punkt 5 (lokal, ohne Commit) am selben Tag.
 
 ## Kontext
 Andi, 21.11.2026: „die verzeichnis-struktur in unserem projekt sieht (für mich) ziemlich chaotisch aus“. Bestand am
@@ -85,7 +85,9 @@ dem Projekt entfernen“ sie ersetzt.
 `aboard.html.bak-20261119-070823Z` und unter `tmp/`: `echtlauf`, `sprint4`, `sprint7`, `k62`, `editor-test`,
 `papierkorb`, `probe-innen` (zusammen rund 36 MB). Belege daraus, die noch gebraucht werden, stehen schon unter
 `knowledge/messungen/`. Gelöscht wird je Ordner mit ausgeschriebenem Pfad nach einem Blick hinein (globale Löschregel).
-`aboard-sync.offen.json` und die `aboard-sync.base.*.json` bleiben (gehören zu aBoard).
+`aboard-sync.offen.json` und die `aboard-sync.base.*.json` bleiben (gehören zu aBoard). *Umgesetzt 21.11.2026 mit einer Ausnahme:*
+`tmp/sprint4` bleibt, weil dort `behalten/` mit einer `LIESMICH.txt` liegt (Messtests aus Sprint 4, „Versionieren als
+Benchmark: F-140“). F-140 ist archiviert; ob die Messtests noch gebraucht werden, entscheidet Andi.
 
 ## Umsetzung (erst nach Entscheidung)
 Ein Commit je Punkt, jeweils `go vet`/`go test` mit `novulkan,nox11`, mit Tag `probe` und in `draw/` grün, dazu ein
