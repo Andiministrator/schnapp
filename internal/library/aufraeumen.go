@@ -31,9 +31,9 @@ const MaxTage = 36500
 
 // Fehler des Aufräumens.
 var (
-	ErrFrist              = errors.New("bibliothek: Frist muss zwischen 1 und 36500 Tagen liegen")
-	ErrAnderesDateisystem = errors.New("bibliothek: Ablage und Papierkorb liegen auf verschiedenen Dateisystemen")
-	ErrGeschuetzt         = errors.New("bibliothek: Datei trägt Schlagworte oder ist bearbeitet (laut Datei)")
+	ErrFrist              = errors.New("library: Frist muss zwischen 1 und 36500 Tagen liegen")
+	ErrAnderesDateisystem = errors.New("library: Ablage und Papierkorb liegen auf verschiedenen Dateisystemen")
+	ErrGeschuetzt         = errors.New("library: Datei trägt Schlagworte oder ist bearbeitet (laut Datei)")
 )
 
 // Verschoben ist eine in den Papierkorb gelegte Aufnahme.
@@ -187,7 +187,7 @@ func (b *Bibliothek) inPapierkorb(ein Eintrag, jetzt time.Time, frist time.Durat
 			}
 		}
 		if n > 10000 {
-			return Verschoben{}, errors.New("bibliothek: kein freier Name im Papierkorb")
+			return Verschoben{}, errors.New("library: kein freier Name im Papierkorb")
 		}
 		name = fmt.Sprintf("%s-%d%s", stamm, n, endung)
 	}

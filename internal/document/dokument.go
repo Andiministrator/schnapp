@@ -48,11 +48,11 @@ type Dokument struct {
 
 // Fehler der Änderungen.
 var (
-	ErrZugLaeuft   = errors.New("dokument: während eines Zugs nicht möglich")
-	ErrKeinZug     = errors.New("dokument: kein Zug aktiv")
-	ErrUnbekannt   = errors.New("dokument: Objekt unbekannt")
-	ErrNichtsDa    = errors.New("dokument: nichts rückgängig zu machen oder zu wiederholen")
-	ErrBildGroesse = errors.New("dokument: Bildgröße ungültig")
+	ErrZugLaeuft   = errors.New("document: während eines Zugs nicht möglich")
+	ErrKeinZug     = errors.New("document: kein Zug aktiv")
+	ErrUnbekannt   = errors.New("document: Objekt unbekannt")
+	ErrNichtsDa    = errors.New("document: nichts rückgängig zu machen oder zu wiederholen")
+	ErrBildGroesse = errors.New("document: Bildgröße ungültig")
 )
 
 // Neu legt ein Dokument mit einer Kopie von bild als Original an.
@@ -241,10 +241,10 @@ func (d *Dokument) Ansichtsbild() *image.NRGBA {
 // pruefeAnsicht prüft Zuschnitt und Streifen gegen das Original.
 func (d *Dokument) pruefeAnsicht(z image.Rectangle, st []Streifen) error {
 	if z.Empty() || !z.In(d.original.Rect) {
-		return fmt.Errorf("dokument: Zuschnitt %v außerhalb des Bilds %v", z, d.original.Rect)
+		return fmt.Errorf("document: Zuschnitt %v außerhalb des Bilds %v", z, d.original.Rect)
 	}
 	if len(st) > MaxStreifen {
-		return fmt.Errorf("dokument: mehr als %d Streifen", MaxStreifen)
+		return fmt.Errorf("document: mehr als %d Streifen", MaxStreifen)
 	}
 	zeilen := 0
 	for _, s := range st {
@@ -253,20 +253,20 @@ func (d *Dokument) pruefeAnsicht(z image.Rectangle, st []Streifen) error {
 		}
 	}
 	if (zeilen+1)*(len(st)-zeilen+1) > MaxKacheln {
-		return fmt.Errorf("dokument: Streifen ergeben mehr als %d Kacheln", MaxKacheln)
+		return fmt.Errorf("document: Streifen ergeben mehr als %d Kacheln", MaxKacheln)
 	}
 	grenze := map[bool]int{false: d.original.Rect.Dx(), true: d.original.Rect.Dy()}
 	for i, s := range st {
 		if s.Von < 0 || s.Bis > grenze[s.Zeilen] || s.Von >= s.Bis {
-			return fmt.Errorf("dokument: Streifen %v ungültig", s)
+			return fmt.Errorf("document: Streifen %v ungültig", s)
 		}
 		if i > 0 && st[i-1].Zeilen == s.Zeilen && st[i-1].Bis > s.Von {
-			return fmt.Errorf("dokument: Streifen %v und %v überlappen", st[i-1], s)
+			return fmt.Errorf("document: Streifen %v und %v überlappen", st[i-1], s)
 		}
 	}
 	// Die Ansicht darf nicht leer werden.
 	if baueAbbildung(z, st, false).groesse() < 1 || baueAbbildung(z, st, true).groesse() < 1 {
-		return fmt.Errorf("dokument: Ansicht wäre leer")
+		return fmt.Errorf("document: Ansicht wäre leer")
 	}
 	return nil
 }

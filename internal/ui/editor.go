@@ -66,12 +66,12 @@ var offeneOverlays atomic.Int32
 var zwischenablageFehlt atomic.Bool
 
 // ErrOverlayOffen: Nach der Frist waren noch Overlay-Fenster offen; der Editor öffnet dann nicht (F-82).
-var ErrOverlayOffen = errors.New("editor: Overlay-Fenster noch offen")
+var ErrOverlayOffen = errors.New("ui: Overlay-Fenster noch offen")
 
 // ErrSpeichernHaengt: Das Speichern meldete eine Frist lang keinen Fortschritt, und der Nutzer hat das Fenster trotzdem
 // geschlossen (zweite Anfrage oder weiteres Signal), oder das Zerstören hat nach zerstoerenFrist aufgegeben; die
 // Änderungen sind womöglich nicht gesichert (F-283, F-298, ADR-0020 Nachträge 7 und 9).
-var ErrSpeichernHaengt = errors.New("editor: Speichern antwortet nicht")
+var ErrSpeichernHaengt = errors.New("ui: Speichern antwortet nicht")
 
 // Fristen der Arbeit im Hintergrund (ADR-0020 Nachtrag 7); Variablen, damit Tests sie verkürzen.
 var (

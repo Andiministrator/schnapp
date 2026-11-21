@@ -44,7 +44,7 @@ func (b *Bibliothek) Relativ(abs string) (rel string, ok bool) {
 // ErrGeaendert: Die Datei wurde seit dem Öffnen (oder letzten Speichern) von anderer Seite geändert oder ersetzt,
 // etwa von einem zweiten Editor (F-110). Speichern überschreibt sie dann nicht; der Aufrufer legt eine neue Aufnahme
 // an.
-var ErrGeaendert = errors.New("bibliothek: Datei seit dem Öffnen geändert")
+var ErrGeaendert = errors.New("library: Datei seit dem Öffnen geändert")
 
 // Stand kennzeichnet den Zustand einer Datei auf dem Datenträger: Gerät, Inode, Größe und Änderungszeit (ns). Jedes
 // Speichern der Bibliothek ersetzt die Datei per Umbenennen und damit den Inode; ein Werkzeug, das an Ort und Stelle

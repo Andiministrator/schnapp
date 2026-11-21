@@ -12,7 +12,7 @@ import (
 
 // ErrKeinZustandsordner: Ohne absolutes HOME (und ohne absolutes XDG_STATE_HOME) gibt es keinen Ort für die
 // Tagesmarke; das automatische Aufräumen entfällt dann.
-var ErrKeinZustandsordner = errors.New("bibliothek: kein Zustandsordner (HOME fehlt)")
+var ErrKeinZustandsordner = errors.New("library: kein Zustandsordner (HOME fehlt)")
 
 // TagesmarkePfad ist `$XDG_STATE_HOME/schnapp/last-cleanup`, ohne (absolutes) XDG_STATE_HOME
 // `$HOME/.local/state/schnapp/last-cleanup` (ADR-0016 Nachtrag 2). Ohne absolutes HOME ist der Pfad leer.

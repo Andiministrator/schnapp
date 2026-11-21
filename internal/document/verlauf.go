@@ -152,7 +152,7 @@ func (d *Dokument) Hinzufuegen(o Objekt) (int, error) {
 		return 0, ErrZugLaeuft
 	}
 	if len(d.objekte) >= MaxObjekte {
-		return 0, fmt.Errorf("dokument: mehr als %d Objekte", MaxObjekte)
+		return 0, fmt.Errorf("document: mehr als %d Objekte", MaxObjekte)
 	}
 	if err := o.pruefe(); err != nil {
 		return 0, err
@@ -215,7 +215,7 @@ func (d *Dokument) BeginneNeuenZug(o Objekt) (int, error) {
 		return 0, ErrZugLaeuft
 	}
 	if len(d.objekte) >= MaxObjekte {
-		return 0, fmt.Errorf("dokument: mehr als %d Objekte", MaxObjekte)
+		return 0, fmt.Errorf("document: mehr als %d Objekte", MaxObjekte)
 	}
 	if err := o.pruefe(); err != nil {
 		return 0, err
@@ -249,7 +249,7 @@ func (d *Dokument) ZugSetze(o Objekt) error {
 		return ErrKeinZug
 	}
 	if o.Kennung() != d.zug.id {
-		return fmt.Errorf("dokument: Zug gilt Objekt %d, nicht %d", d.zug.id, o.Kennung())
+		return fmt.Errorf("document: Zug gilt Objekt %d, nicht %d", d.zug.id, o.Kennung())
 	}
 	if err := o.pruefe(); err != nil {
 		return err
@@ -417,22 +417,22 @@ func (d *Dokument) Schwaerzen(r image.Rectangle, s Schwaerzung) error {
 		return ErrZugLaeuft
 	}
 	if s.Mosaik < 0 || s.Mosaik > MaxMosaik {
-		return fmt.Errorf("dokument: Mosaik %d außerhalb 0..%d", s.Mosaik, MaxMosaik)
+		return fmt.Errorf("document: Mosaik %d außerhalb 0..%d", s.Mosaik, MaxMosaik)
 	}
 	if s.Block > 0 && s.Block < MinBlock {
-		return fmt.Errorf("dokument: Blockgröße %d kleiner als %d", s.Block, MinBlock)
+		return fmt.Errorf("document: Blockgröße %d kleiner als %d", s.Block, MinBlock)
 	}
 	if s.Block <= 0 && s.Farbe.A != 255 {
 		// Eine durchsichtige Füllung (etwa der Nullwert) hinterließe ein Loch statt einer Schwärzung.
-		return fmt.Errorf("dokument: Schwärzungsfarbe muss deckend sein")
+		return fmt.Errorf("document: Schwärzungsfarbe muss deckend sein")
 	}
 	r = r.Canon().Intersect(d.original.Rect)
 	if r.Empty() {
-		return fmt.Errorf("dokument: Bereich zum Schwärzen liegt außerhalb des Bilds")
+		return fmt.Errorf("document: Bereich zum Schwärzen liegt außerhalb des Bilds")
 	}
 	if s.Block > 0 && (r.Dx() < MinBlock || r.Dy() < MinBlock) {
 		// Ein schmaler Bereich lässt sich nicht wirksam verpixeln (ein Block über 1 Pixel ändert nichts).
-		return fmt.Errorf("dokument: Bereich zum Verpixeln kleiner als %d Pixel — schwärzen statt verpixeln", MinBlock)
+		return fmt.Errorf("document: Bereich zum Verpixeln kleiner als %d Pixel — schwärzen statt verpixeln", MinBlock)
 	}
 	d.fuehreAus(&schwaerzen{r: r, s: s})
 	return nil

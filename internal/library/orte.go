@@ -28,7 +28,7 @@ type Orte struct {
 }
 
 // ErrKeinHeim meldet, dass die Umgebung kein absolutes Heimverzeichnis liefert.
-var ErrKeinHeim = errors.New("bibliothek: kein absolutes Heimverzeichnis (HOME)")
+var ErrKeinHeim = errors.New("library: kein absolutes Heimverzeichnis (HOME)")
 
 // OrteAus bestimmt die Orte aus einer Umgebung (Umgebungsvariable → Wert, leer wenn nicht gesetzt). Das Programm
 // übergibt os.Getenv, Tests ihre eigene Umgebung.

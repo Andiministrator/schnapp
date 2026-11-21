@@ -52,7 +52,7 @@ type OverlayErgebnis struct {
 }
 
 // ErrAbgebrochen: Der Nutzer hat das Overlay mit Esc verlassen.
-var ErrAbgebrochen = errors.New("overlay: abgebrochen")
+var ErrAbgebrochen = errors.New("ui: abgebrochen")
 
 // diagnose schreibt nur mit gesetztem SCHNAPP_DEBUG auf stderr (Fehlersuche bei echten Läufen, ohne Monitornamen).
 func diagnose(format string, args ...any) {
@@ -80,7 +80,7 @@ var (
 // (Starte).
 func Overlay(bilder []MonitorBild, m selection.Modus) (OverlayErgebnis, error) {
 	if len(bilder) == 0 {
-		return OverlayErgebnis{}, errors.New("overlay: keine Bilder")
+		return OverlayErgebnis{}, errors.New("ui: keine Bilder")
 	}
 	g := &gruppe{fertig: make(chan ergebnis, 1), zu: make(chan struct{}, len(bilder))}
 	g.aktiv.Store(-1)

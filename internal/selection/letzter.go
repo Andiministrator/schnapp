@@ -25,10 +25,10 @@ type Letzter struct {
 }
 
 // ErrKeinLetzter: Es gibt noch keinen gemerkten Bereich (oder er ist unbrauchbar).
-var ErrKeinLetzter = errors.New("auswahl: kein letzter Bereich gemerkt")
+var ErrKeinLetzter = errors.New("selection: kein letzter Bereich gemerkt")
 
 // ErrKeinZustandsordner: Ohne absolutes XDG_STATE_HOME oder HOME gibt es keinen Ort für den letzten Bereich (F-86).
-var ErrKeinZustandsordner = errors.New("auswahl: kein Zustandsordner (HOME fehlt)")
+var ErrKeinZustandsordner = errors.New("selection: kein Zustandsordner (HOME fehlt)")
 
 // LetzterPfad ist `$XDG_STATE_HOME/schnapp/last-area.json`, ohne (absolutes) XDG_STATE_HOME
 // `$HOME/.local/state/schnapp/last-area.json`. Ohne absolutes HOME ist der Pfad leer.
@@ -64,7 +64,7 @@ func SpeichereLetzten(pfad string, l Letzter) error {
 		return ErrKeinZustandsordner
 	}
 	if !l.Gueltig() {
-		return errors.New("auswahl: ungültiger Bereich")
+		return errors.New("selection: ungültiger Bereich")
 	}
 	ordner := filepath.Dir(pfad)
 	if err := os.MkdirAll(ordner, 0o700); err != nil {

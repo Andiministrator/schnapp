@@ -109,7 +109,7 @@ func (b *Bibliothek) entferneVorschau(rel string) error {
 	pfad := b.VorschauPfad(rel)
 	name := filepath.Base(pfad)
 	if filepath.Dir(pfad) != filepath.Clean(b.Orte.Vorschau) || len(name) != 24+len(".png") || filepath.Ext(name) != ".png" {
-		return fmt.Errorf("bibliothek: unerwarteter Vorschaupfad %q", pfad)
+		return fmt.Errorf("library: unerwarteter Vorschaupfad %q", pfad)
 	}
 	if err := entferneDatei(pfad); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
@@ -148,7 +148,7 @@ func (b *Bibliothek) VerwaisteVorschauen() ([]string, error) {
 	// Wurzel auflösen: WalkDir steigt an einer Symlink-Wurzel nicht ab, dann gälte alles als verwaist (F-270).
 	wurzel, err := filepath.EvalSymlinks(b.Orte.Ablage)
 	if err != nil {
-		return nil, fmt.Errorf("bibliothek: Ablage nicht lesbar: %w", err)
+		return nil, fmt.Errorf("library: Ablage nicht lesbar: %w", err)
 	}
 	err = filepath.WalkDir(wurzel, func(pfad string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -165,7 +165,7 @@ func (b *Bibliothek) VerwaisteVorschauen() ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("bibliothek: Ablage nicht lesbar: %w", err)
+		return nil, fmt.Errorf("library: Ablage nicht lesbar: %w", err)
 	}
 	eintraege, err := os.ReadDir(b.Orte.Vorschau)
 	if errors.Is(err, fs.ErrNotExist) {

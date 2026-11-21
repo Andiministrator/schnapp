@@ -53,3 +53,5 @@ Schwesterprojekts weiter auflösen; er wird entfernt, sobald es „steht auf dra
 Importe im selben Zug um.
 
 Symlink entfernt am 20.11.2026, nachdem das Schwesterprojekt „steht auf draw“ gemeldet hatte (dort require, replace und Importe umgestellt, Bilder bytegleich).
+
+Fehlertexte beginnen mit dem heutigen Paketnamen (F-114, Sprint 10).

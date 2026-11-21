@@ -38,11 +38,11 @@ const (
 
 // Fehler beim Lesen.
 var (
-	ErrKeinPNG     = errors.New("datei: kein PNG")
-	ErrBeschaedigt = errors.New("datei: Datei beschädigt")
-	ErrZuGross     = errors.New("datei: Datei oder Block zu groß")
+	ErrKeinPNG     = errors.New("fileformat: kein PNG")
+	ErrBeschaedigt = errors.New("fileformat: Datei beschädigt")
+	ErrZuGross     = errors.New("fileformat: Datei oder Block zu groß")
 	// ErrFormatNeuer: die Arbeitsdatei stammt aus einer neueren Fassung von Schnapp.
-	ErrFormatNeuer = errors.New("datei: Formatversion neuer als diese Fassung")
+	ErrFormatNeuer = errors.New("fileformat: Formatversion neuer als diese Fassung")
 )
 
 type block struct {

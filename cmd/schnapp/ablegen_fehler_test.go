@@ -50,7 +50,7 @@ func TestAblegenTempRestOhnePfadIstFehler(t *testing.T) {
 	i18n.Setze(nil)
 	ordner := t.TempDir()
 	l := neuerLauf(t)
-	l.ablegenErr = fmt.Errorf("bibliothek: %w: remove %s/.schnapp-tmp-1", library.ErrTempRest, ordner)
+	l.ablegenErr = fmt.Errorf("library: %w: remove %s/.schnapp-tmp-1", library.ErrTempRest, ordner)
 	t.Setenv("SCHNAPP_DEBUG", "")
 	code, aus, fehler := l.fuehre(Auftrag{Modus: ModusFenster})
 	if code != exitFehler || aus != "" {

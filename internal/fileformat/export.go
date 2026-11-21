@@ -25,7 +25,7 @@ func ExportierePNG(w io.Writer, sichtbar image.Image) error { return png.Encode(
 // ExportiereJPG schreibt das sichtbare Bild als JPG (Qualität 1–100). Transparenz wird auf Weiß gelegt.
 func ExportiereJPG(w io.Writer, sichtbar image.Image, qualitaet int) error {
 	if qualitaet < 1 || qualitaet > 100 {
-		return fmt.Errorf("datei: JPG-Qualität %d außerhalb 1–100", qualitaet)
+		return fmt.Errorf("fileformat: JPG-Qualität %d außerhalb 1–100", qualitaet)
 	}
 	b := sichtbar.Bounds()
 	flach := image.NewRGBA(b)

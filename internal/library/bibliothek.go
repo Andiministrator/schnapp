@@ -26,14 +26,14 @@ import (
 // heilt sich beim nächsten Neuaufbau, das Vorschaubild beim nächsten Ablegen oder Neuaufbau. Nach ErrVorschauAlt
 // liegt zusätzlich noch das Vorschaubild des vorigen Stands im Cache (F-115) — das muss der Aufrufer melden.
 var (
-	ErrIndex       = errors.New("bibliothek: Index nicht aktualisiert")
-	ErrVorschau    = errors.New("bibliothek: Vorschaubild nicht geschrieben")
-	ErrVorschauAlt = errors.New("bibliothek: altes Vorschaubild nicht entfernt")
-	ErrFremd       = errors.New("bibliothek: keine Arbeitsdatei von Schnapp")
-	ErrPfad        = errors.New("bibliothek: Pfad liegt nicht in der Ablage")
+	ErrIndex       = errors.New("library: Index nicht aktualisiert")
+	ErrVorschau    = errors.New("library: Vorschaubild nicht geschrieben")
+	ErrVorschauAlt = errors.New("library: altes Vorschaubild nicht entfernt")
+	ErrFremd       = errors.New("library: keine Arbeitsdatei von Schnapp")
+	ErrPfad        = errors.New("library: Pfad liegt nicht in der Ablage")
 	// ErrAblageLeer: Die Ablage enthält keine einzige Aufnahme, der Vorschau-Cache aber Vorschaubilder (leerer
 	// Einhängepunkt, verschobener Ordner). VerwaisteVorschauen liefert dann keine Liste (F-270).
-	ErrAblageLeer = errors.New("bibliothek: Ablage ohne Aufnahmen, Cache nicht leer")
+	ErrAblageLeer = errors.New("library: Ablage ohne Aufnahmen, Cache nicht leer")
 )
 
 // Eintrag ist eine Aufnahme im Index. Alle Angaben stehen auch im snAP-Block der Datei (ADR-0008).

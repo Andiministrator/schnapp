@@ -59,7 +59,7 @@ func schreibeTemp(ziel string, schreibe func(io.Writer) error) (tmpPfad string, 
 // Inhalt ließ sich nicht entfernen. Nach dem Link-Weg ist so ein Rest ein zweiter Name derselben Aufnahme; er zeigt
 // nach einem späteren Schwärzen weiter den ungeschwärzten Stand (F-274, Kernprinzip 2; ADR-0022 Nachtrag 2). Der Aufrufer meldet es,
 // die Aufnahme selbst bleibt gültig.
-var ErrTempRest = errors.New("bibliothek: temporäre Datei nicht entfernt")
+var ErrTempRest = errors.New("library: temporäre Datei nicht entfernt")
 
 // entferneTemp ist os.Remove für temporäre Dateien; Tests ersetzen es, um ein scheiterndes Entfernen nachzubauen.
 var entferneTemp = os.Remove
@@ -219,7 +219,7 @@ func schreibeNeu(ordner string, name func(n int) string, schreibe func(io.Writer
 	}()
 	for n := 1; ; n++ {
 		if n > maxNamenszusatz {
-			return "", fmt.Errorf("bibliothek: kein freier Name in %q", ordner)
+			return "", fmt.Errorf("library: kein freier Name in %q", ordner)
 		}
 		dn := name(n)
 		err := legeExklusivAn(tmp, filepath.Join(ordner, dn))

@@ -18,7 +18,7 @@ import (
 const MaxDatei = maxDatei
 
 // ErrKeineDatei meldet einen Pfad, der keine gewöhnliche Datei ist.
-var ErrKeineDatei = errors.New("datei: keine gewöhnliche Datei")
+var ErrKeineDatei = errors.New("fileformat: keine gewöhnliche Datei")
 
 // Oeffne liest eine Datei für den Editor (ADR-0020): eine Arbeitsdatei mit Original und Objekten, ein gewöhnliches
 // PNG oder ein JPEG. Was nicht als Arbeitsdatei mit Ebenen gelesen werden kann (fremdes Bild, beschädigte oder neuere
