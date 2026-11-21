@@ -14,4 +14,4 @@
 
 ## Offene Punkte
 - Die Eingabe-Standardwerte wurden nur in action.yml geprüft, nicht im Lauf einer CI-Ausführung. Der Prüfbefehl ist ein CI-Lauf ohne die Annotation „Node.js 20 is deprecated“.
-- Dependabot für `github-actions` würde künftige SHA-Hebungen automatisieren (Vorschlag, nicht umgesetzt).
+- Dependabot für `github-actions` würde künftige SHA-Hebungen automatisieren (Vorschlag, nicht umgesetzt; entschieden 21.11.2026: kein Dependabot, Prüfpunkt beim Sprint-Abschluss (F-316)).

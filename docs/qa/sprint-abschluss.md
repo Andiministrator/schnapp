@@ -34,6 +34,7 @@ Code-Änderung triagiert wurden (im Recap vermerken). Ein **zweiter** Durchlauf 
 ## Phase 3 — Aufräumen & Triage
 - `tmp/` aufgeräumt (nur ausgeschriebene Pfade), Knowledge und Glossar aktuell.
 - Alle Findings triagieren: sofort · eingeplant · backlog · akzeptiert. Jedes offene Finding hat eine Board-Karte.
+- CI-Pins prüfen (F-316): für jede gepinnte Aktion in `.github/workflows/test.yml` die neueste Version über die öffentliche API ansehen (`curl -s -A ci-pin-check https://api.github.com/repos/<besitzer>/<aktion>/releases/latest | jq -r .tag_name`, SHA des Tags über `…/git/ref/tags/<tag>`). Ist sie neuer, Pin und Versionskommentar heben, CI-Lauf abwarten, Annotationen ansehen. Ergebnis eine Zeile im Recap.
 
 ## Freigabekriterien
 Vor dem Tag-Vorschlag: `README.md`, `README.de.md` und `CLAUDE.md` nennen die neue Version, und genau dieser Commit wird

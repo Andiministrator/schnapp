@@ -42,7 +42,7 @@ GitHub Actions, `.github/workflows/test.yml` (ADR-0010), läuft bei jedem Push u
 | `gio-patch` | Patch passt zu `third_party/gio/` |
 
 Nach einem Push den Lauf ansehen, auch auf **Annotationen** (Abkündigungen kommen dort, solange der Lauf grün ist;
-F-309; öffentliche Check-Run-API je Job, `knowledge/topics/lehren.md` Sprint 9). Die Aktionen sind per Commit-SHA gepinnt (F-43).
+F-309; öffentliche Check-Run-API je Job, `knowledge/topics/lehren.md` Sprint 9). Die Aktionen sind per Commit-SHA gepinnt (F-43). Die Pins werden beim Sprint-Abschluss geprüft (Punkt „CI-Pins prüfen“ in `docs/qa/sprint-abschluss.md`, F-316). Kein Dependabot: Dessen Pull Requests würden im öffentlichen Repo auflaufen.
 
 ## Installieren
 
