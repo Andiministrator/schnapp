@@ -215,6 +215,8 @@ type editor struct {
 	// schliessenNachKopie: Eine Schließen-Anfrage kam während des Kopierens; das Fenster bleibt offen, bis die Antwort
 	// da ist oder die Frist um ist, dann fragt es erneut (F-281).
 	schliessenNachKopie bool
+	// kopierFehlerHaelt: Das Kopieren, auf das ein Schließen wartete, ist gescheitert; das Fenster bleibt einmal offen (F-337).
+	kopierFehlerHaelt bool
 	// fensterHaeltKopie: Die Zwischenablage trägt das Bild nur über dieses Fenster (kein Halter möglich, Rückfall,
 	// ADR-0015 Nachtrag 2); fensterWarnung: Das Schließen wurde deswegen schon einmal angehalten (F-295).
 	fensterHaeltKopie, fensterWarnung bool
@@ -393,6 +395,9 @@ func (e *editor) zerstoert(fensterErr error) error {
 	}
 	return errors.Join(fensterErr, e.schlussErr, err)
 }
+
+// fehlerAusgabe ist die Fehlerausgabe des Editors; Naht für Tests (F-337).
+var fehlerAusgabe io.Writer = os.Stderr
 
 // hinweisAufStderr: Das Fenster ist (gleich) zu, die Statusleiste weg — ein Hinweis (z. B. neue Aufnahme statt der
 // alten Datei) geht auf die Fehlerausgabe, damit er nicht still verloren ist (F-116).
@@ -768,6 +773,13 @@ func (e *editor) kopierenAbholen(gtx layout.Context) {
 		e.kopierLaeuft = false
 		if r.err != nil {
 			e.melde(fmt.Sprintf(i18n.T("Could not copy: %v"), r.err), true)
+			if e.schliessenNachKopie {
+				// Ein Schließen hat auf dieses Kopieren gewartet (F-337): Der Fehler geht zusätzlich auf die
+				// Fehlerausgabe, und das Fenster bleibt einmal offen, damit die Meldung gelesen wird; die nächste
+				// Anfrage schließt. Ein Signal schließt in jedem Fall.
+				fmt.Fprintf(fehlerAusgabe, i18n.T("Could not copy: %v")+"\n", r.err)
+				e.kopierFehlerHaelt = !e.s.SignalVorgemerkt() && !e.erzwungen
+			}
 			return
 		}
 		e.fensterHaeltKopie, e.fensterWarnung = r.daten != nil, false
@@ -811,6 +823,10 @@ func (e *editor) nachKopieSchliessen() bool {
 		return false
 	}
 	e.schliessenNachKopie = false
+	if e.kopierFehlerHaelt { // das Kopieren ist gescheitert: einmal offen lassen, die nächste Anfrage schließt (F-337)
+		e.kopierFehlerHaelt = false
+		return false
+	}
 	return true
 }
 
