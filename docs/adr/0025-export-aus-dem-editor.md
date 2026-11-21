@@ -91,3 +91,19 @@ fremd; `zenity`/`kdialog` wären Laufzeit-Fremdprogramme (ADR-0011).
 
 - Darf neben dem Ziel keine temporäre Datei entstehen (`EACCES`/`EPERM`/`EROFS`), schreibt `SchreibeAtomar` ein **vorhandenes, reguläres, beschreibbares** Ziel direkt (`O_TRUNC`), nachdem das Dokument vollständig in den Speicher gerendert wurde; ein Renderfehler lässt das Ziel unberührt. Das ist nicht atomar und steht im Debug-Log. `SchreibeOhneErsetzen` und neue Ziele behalten den bisherigen Fehler.
 - **Offen (nur unter Flatpak prüfbar):** Das Dokumenten-Portal gibt nur die gewählte Datei frei. Eine angehängte Endung führt zu einem anderen, nicht freigegebenen Namen. Die richtige Lösung ist, die Endung dem Dialog zu überlassen (Vorschlagsname `current_name` mit Endung je Filter) und unter `/run/user/<uid>/doc/` nie anzuhängen. Das braucht einen Flatpak-Bau zur Prüfung (Finding F-196 bleibt offen bis Flathub).
+
+## Nachtrag 4 (21.11.2026): Rückfall mit Sicherung (F-322, Karte #136)
+
+**Status:** Akzeptiert (Claude, Andi informiert).
+
+- Der direkte Schreibweg aus Nachtrag 3 kürzt das Ziel, bevor der neue Inhalt steht. Er liest deshalb die vorhandene
+  Datei vorher in den Speicher, höchstens `MaxRueckfallAlt` (256 MiB), und nur, wenn die gelesene Länge der Größe beim
+  `Lstat` gleicht und es dieselbe Datei ist. Größere oder veränderte Dateien werden nicht direkt beschrieben, es gilt der
+  ursprüngliche Fehler.
+- Scheitern `Write`, `Sync` oder `Close`, schreibt er den alten Inhalt zurück und meldet den Schreibfehler. Misslingt
+  auch das, endet der Export mit `ErrZielBeschaedigt`, und die Statusleiste nennt die Datei ausdrücklich als beschädigt.
+- Ziel und Sicherung werden mit `O_NOFOLLOW` geöffnet.
+- Der Rückfall bleibt auch im gewöhnlichen schreibgeschützten Ordner: Er greift dort nur, wenn die gewählte Datei selbst
+  beschreibbar ist, und dann ist der Wunsch, genau diese Datei zu ersetzen, erfüllbar. Unter Flatpak (Dokumenten-Portal)
+  ist er der einzige Weg.
+- Nicht abgedeckt bleibt ein Prozessabbruch oder Stromausfall zwischen Kürzen und Zurückschreiben (nicht atomar, bewusst).
