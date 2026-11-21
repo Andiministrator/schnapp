@@ -147,6 +147,7 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 				s.WriteString(`/>`)
 			}
 			s.WriteString(`<text`)
+			s.attr("xml:space", "preserve") // sonst falten Betrachter mehrere und führende Leerzeichen (F-343)
 			s.attr("font-family", svgSchrift)
 			s.attr("font-size", zahl(o.Schriftgrad))
 			s.farbeSVG("fill", o.Farbe)
@@ -156,7 +157,7 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 				s.attr("x", zahl(o.Ort.X))
 				s.attr("y", zahl(o.Grundlinie(i)))
 				s.WriteString(`>`)
-				xml.EscapeText(s, []byte(zeile))
+				xml.EscapeText(s, []byte(document.Zeichenbar(zeile))) // sichtbar wie im Renderer: Tabulator als vier Leerzeichen (F-343); s:inhalt behält das Original
 				s.WriteString(`</tspan>`)
 			}
 			s.WriteString(`</text></g>`)
