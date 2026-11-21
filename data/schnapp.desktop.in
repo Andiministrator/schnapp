@@ -9,6 +9,8 @@
 # zusätzlich bei | (Trennzeichen) und & (fügt @EXEC@ erneut ein). Beispiel (Pfad ohne diese Zeichen; install.sh
 # ersetzt @EXEC@ ohne sed, verdoppelt % und lehnt " ` $ \ ab):
 #   sed 's|@EXEC@|/home/<nutzer>/.local/bin/schnapp|' data/schnapp.desktop.in > ~/.local/share/applications/schnapp.desktop
+# %f im Haupt-Exec reicht eine gewählte Datei an `schnapp DATEI` weiter („Öffnen mit“, MimeType = die Formate von
+# fileformat.Oeffne); die Aktionen bekommen kein %f (F-113). Die Anführungszeichen um @EXEC@ bleiben (F-76).
 # Icon=schnapp: Name des App-Symbols; install.sh legt brand/logo/svg/schnapp-symbol-dunkel.svg als schnapp.svg ins
 # hicolor-Thema.
 [Desktop Entry]
@@ -21,10 +23,11 @@ GenericName=Screenshot tool
 GenericName[de]=Screenshot-Werkzeug
 Keywords=screenshot;capture;annotate;snip;print;
 Keywords[de]=Screenshot;Bildschirmfoto;Aufnahme;Beschriften;Druck;
-Exec="@EXEC@"
+Exec="@EXEC@" %f
 Icon=schnapp
 Terminal=false
 StartupNotify=false
+MimeType=image/png;image/jpeg;
 Categories=Graphics;Utility;
 Actions=Region;Screen;Window;Repeat;
 X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2
