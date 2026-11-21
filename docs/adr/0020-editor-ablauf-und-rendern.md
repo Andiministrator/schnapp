@@ -286,8 +286,8 @@ Nachtrag 6 und 7; über die 15-s-Frist selbst entscheidet Nachtrag 9 (F-298, Kar
   (F-297), ein Dokument am Budget 35–45 s (Nachtrag 3); der Abbruch träfe gesunde Speichervorgänge.
 - **Offen für die Umsetzung:** Wie fein die Fortschrittsmarken sind, wie lange ohne Marke als hängend gilt, und dass
   ein nach dem Aufgeben doch gelungenes Speichern `ErrSpeichernHaengt` nicht stehen lässt (Nebenbefund in F-298).
-- **Noch zu entscheiden: Zerstören ohne Anfrage** (Wayland weg, Nachtrag 7, `zerstoerenFrist` 2 Minuten). „Nie
-  aufgegeben“ meint das zweite Signal und die weitere Schließen-Anfrage. Ob die 2-Minuten-Grenze beim Zerstören als
-  äußerste Grenze bleibt (Vorschlag: ja — ohne Compositor gibt es keinen anderen Ausweg, ein Dokument am Budget braucht
-  höchstens 45 s) oder künftig nur ohne Fortschritt gilt, entscheidet der Maintainer vor der Umsetzung (Karte #119).
+- **Zerstören ohne Anfrage** (Wayland weg, Nachtrag 7, `zerstoerenFrist` 2 Minuten) — entschieden 21.11.2026 (Andi,
+  folgt dem Vorschlag): Die 2-Minuten-Grenze bleibt als äußerste Grenze, auch bei Fortschritt. Ohne Compositor gibt es
+  keinen anderen Ausweg, und ein Dokument am Budget braucht höchstens 45 s. „Nie aufgegeben“ meint das zweite Signal
+  und die weitere Schließen-Anfrage.
 
