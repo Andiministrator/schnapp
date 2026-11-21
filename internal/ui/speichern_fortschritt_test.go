@@ -248,6 +248,28 @@ func TestZerstoerenFristTrotzFortschritt(t *testing.T) {
 	time.Sleep(600 * time.Millisecond) // Goroutine auslaufen lassen, damit sie keinen anderen Test pulst
 }
 
+// Kritiker Sprint 9 (F-314): Wird das Fenster erst zerstört, während das Speichern schon eine Weile mit Fortschritt
+// läuft, zählt zerstoerenFrist trotzdem ab Beginn des Speicherns, nicht ab dem letzten Fortschritt. Der Test oben ruft
+// zerstoert sofort und kann beides nicht unterscheiden.
+func TestZerstoerenFristAbBeginnBeiSpaetemZerstoeren(t *testing.T) {
+	fristTest(t, 50*time.Millisecond)
+	alt := zerstoerenFrist
+	t.Cleanup(func() { zerstoerenFrist = alt })
+	zerstoerenFrist = 200 * time.Millisecond
+	e := geaenderterEditor(t)
+	var aufrufe atomic.Int32
+	e.speichern = pulsSpeicher(10*time.Millisecond, 900*time.Millisecond, &aufrufe)
+	e.speichernJetzt()
+	start := time.Now()
+	time.Sleep(150 * time.Millisecond) // das Fenster lebt noch, das Speichern meldet Fortschritt
+	err := e.zerstoert(nil)
+	// Ab Beginn: rund 200 ms nach start; ab letztem Fortschritt wären es rund 350 ms.
+	if d := time.Since(start); !errors.Is(err, ErrSpeichernHaengt) || d > 290*time.Millisecond {
+		t.Errorf("Rückgabe %v nach %v, Grenze 200 ms ab Beginn des Speicherns", err, d)
+	}
+	time.Sleep(900 * time.Millisecond) // Goroutine auslaufen lassen, damit sie keinen anderen Test pulst
+}
+
 // Verify F-298 B-2 (Mutation M6b): Eine späte Antwort ersetzt nur ErrSpeichernHaengt, keinen Fehler, der schon vorher
 // in der Rückgabe stand.
 func TestSpaeteAntwortBehaeltFruehenFehler(t *testing.T) {

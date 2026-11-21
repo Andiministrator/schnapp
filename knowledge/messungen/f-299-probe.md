@@ -37,7 +37,7 @@ nach 6 Mal Runter erreicht, ausgegraute Einträge werden übersprungen, die List
 
 - Strg+S, dann Menü per Tastatur öffnen: Der Menüknopf bleibt wirkungslos, die Liste öffnet sich nicht (Foto zeigt
   den Editor unverändert, Statusleiste „Speichern …“). Das Bearbeiten ruht während des Speicherns, Enter auf dem
-  Menüknopf wird verworfen (`ui/editor.go` `tasten`, nur Enter auf einem schon offenen Eintrag „Schließen“ wirkt).
+  Menüknopf wird verworfen (`internal/ui/editor.go` `tasten`, nur Enter auf einem schon offenen Eintrag „Schließen“ wirkt).
 - Menü offen, dann Strg+S oder Strg+W: wirkungslos, es beginnt kein Speichern (Log ohne „Speichern“ bis zum Signal).
   Bei offenem Menü gelten die Kürzel nicht.
 - Das Menü offen und das Speichern gleichzeitig zu haben, geht mit echter Tastatur-Eingabe also nicht; der Fall

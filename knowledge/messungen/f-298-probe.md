@@ -37,7 +37,7 @@ stderr, „Fenster zu: Fehler <nil>, ungesichert false“. `probe.sh`: SIGTERM, 
 - Mit der alten 5-s-Frist hätte `probe.sh` hier SIGKILL geschickt und ein ungesichertes Dokument hinterlassen (F-296);
   mit `--ende 90` endet der Lauf geordnet.
 - Ein weiteres Signal während des Speicherns kann `probe.sh` nicht schicken; diesen Weg decken die Tests in
-  `ui/speichern_fortschritt_test.go`.
+  `internal/ui/speichern_fortschritt_test.go`.
 
 ## Lauf 3: nach der Verify-Nacharbeit (Schreiben in Stücken, Leser beim Lesen und Dekodieren, Puls je Füllung)
 

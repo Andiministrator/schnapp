@@ -325,5 +325,7 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
     `internal/speicherschritt/schritt_test.go`. Verify-Lauf Fable (21.11.2026): 8 von 20 Mutationen blieben zunächst
     grün. Nach der Nacharbeit (Puls je Füllung, monotone Zeit, Schreiben in Stücken, Leser beim Lesen und Dekodieren,
     Neuversuch nach später Fehlantwort, neue Tests) werden 25 von 26 Mutationen rot; die übrige (`zerstoerenFrist` ab
-    dem letzten Fortschritt statt ab Beginn) ist gleichwertig, weil der Timer je Durchlauf einmal gestellt wird und dann
-    beide Zeitpunkte zusammenfallen.
+    dem letzten Fortschritt statt ab Beginn) galt als gleichwertig. Das stimmt nur, wenn das Fenster gleich nach dem
+    Start des Speicherns zerstört wird; bei spätem Zerstören und bei jedem weiteren Signal ohne Stillstand verschöbe sie
+    die 2-Minuten-Grenze. Der Kritiker-Lauf zum Abschluss von Sprint 9 hat das gezeigt (F-314); seither deckt
+    `TestZerstoerenFristAbBeginnBeiSpaetemZerstoeren` die Mutation ab.

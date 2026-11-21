@@ -32,7 +32,17 @@
 |---|---|
 | **Sprint** | Arbeitseinheit auf dem Board (`kind:sprint`), endet mit `/sprint-abschluss`. |
 | **Fassung** | Themenbündel aus den Anforderungen (erste, zweite, dritte Fassung); kein Prozessbegriff, wird in Sprints abgearbeitet. |
-| **Prototyp** | Wegwerf-Programm, das entscheidet, ob Gio trägt (ADR-0003). |
+| **Prototyp** | Wegwerf-Programm, das entschied, ob Gio trägt (ADR-0003); in Sprint 9 entfernt, Stand in der git-Geschichte (ADR-0027). |
 | **Meilenstein** | Erreichter Funktionsstand mit Version (MVP = erste Fassung). |
 | **Finding** | Befund in `docs/findings.md` mit Typ, Priorität und Board-Karte. |
 | **Schritt** | Eine Karte bzw. ein abgeschlossener Arbeitsgang, danach Schritt-QA. |
+
+## Speichern im Editor
+
+| Begriff | Bedeutung |
+|---|---|
+| **Abzug** | Unabhängige Kopie eines Dokuments mit gleichem Stand, ohne Rückgängig-Verlauf; wird im Hintergrund gespeichert oder kopiert, während das Bearbeiten ruht (`document`, ADR-0020 Nachtrag 6). |
+| **Marke** | Meldung eines erreichten Speicherschritts (Rendern, Kodieren, Schreiben …); zählt als Fortschritt, mit `SCHNAPP_DEBUG` mit Zeitstempel (`internal/speicherschritt`, ADR-0020 Nachtrag 9). |
+| **Puls** | Fortschrittsmeldung aus einer langen Schleife innerhalb eines Schritts (Rastern, PNG-Kodierung, Lesen, Vorschau), damit ein langer, aber arbeitender Schritt nicht als hängend gilt. |
+| **Fortschritt** | Zeitpunkt der letzten Marke oder des letzten Pulses (`speicherschritt.Zuletzt`); die Frist für hängendes Speichern zählt ab ihm, frühestens ab Beginn des Speicherns. |
+| **Hängendes Speichern** | Speichern, das seit der Frist (15 s) keinen Fortschritt gemeldet hat. Nur dann gibt eine zweite Schließen-Anfrage oder ein weiteres Signal es auf; beim Zerstören des Fensters gilt zusätzlich höchstens 2 Minuten ab Beginn (ADR-0020 Nachträge 7 und 9). |

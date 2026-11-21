@@ -166,7 +166,7 @@ Stand 20.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
   prüfen und nachrüsten: Karte #104 „Jede Tastenfunktion auch über Leiste oder Menü“ (Backlog); neue Funktionen bekommen
   Knopf oder Menüeintrag im selben Zug.
 - **Umgesetzt 20.11.2026:** ADR-0026 samt Nachtrag 1 (Menü mit allen Aktionen und Kürzeln, Tastentabelle
-  `ui/kuerzel.go`, „Gestauchtes zurückholen“), Karte #104, Commits 24bc96d und 34dd5ee. F-255 (Menü per Tastatur) erledigt in Sprint 8: ADR-0026 Nachträge 2 und 3, Commits 8cd134d und 0385204.
+  `internal/ui/kuerzel.go`, „Gestauchtes zurückholen“), Karte #104, Commits 24bc96d und 34dd5ee. F-255 (Menü per Tastatur) erledigt in Sprint 8: ADR-0026 Nachträge 2 und 3, Commits 8cd134d und 0385204.
 
 ## E-22: Claudes Entscheidungen aus Sprint 8 — ENTSCHIEDEN 20.11.2026 (Claude, Andi informiert)
 - Speichern und Kopieren laufen im Hintergrund auf einem Abzug; während des Speicherns ruht das Bearbeiten
