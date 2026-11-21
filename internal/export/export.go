@@ -6,6 +6,7 @@
 package export
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -14,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/fileformat"
@@ -154,6 +156,9 @@ func schreibeAtomar(pfad string, ohneErsetzen bool, schreibe func(io.Writer) err
 	}
 	tmp, err := tempDatei(filepath.Dir(pfad))
 	if err != nil {
+		if !ohneErsetzen && keinSchreibrechtImOrdner(err) {
+			return schreibeDirekt(pfad, schreibe, err)
+		}
 		return err
 	}
 	name := tmp.Name()
@@ -195,6 +200,40 @@ func schreibeAtomar(pfad string, ohneErsetzen bool, schreibe func(io.Writer) err
 		return err
 	}
 	return os.Rename(name, pfad)
+}
+
+// keinSchreibrechtImOrdner: Der Ordner erlaubt keine neue Datei (Rechte, schreibgeschützt).
+func keinSchreibrechtImOrdner(err error) bool {
+	return errors.Is(err, os.ErrPermission) || errors.Is(err, syscall.EROFS)
+}
+
+// schreibeDirekt ist der Rückfall, wenn neben dem Ziel keine temporäre Datei entstehen darf (F-196): etwa unter
+// Flatpak, wo das Dokumenten-Portal nur die gewählte Datei freigibt, nicht ihren Ordner. Nur für ein vorhandenes,
+// reguläres, beschreibbares Ziel; sonst gilt der ursprüngliche Fehler. Das Dokument wird erst vollständig in den
+// Speicher gerendert, damit ein Renderfehler das Ziel nicht berührt; nur ein Schreibfehler danach kann es kürzen
+// (nicht atomar, bewusst nur im Rückfall).
+func schreibeDirekt(pfad string, schreibe func(io.Writer) error, ursache error) error {
+	if st, err := os.Lstat(pfad); err != nil || !st.Mode().IsRegular() {
+		return ursache
+	}
+	var puffer bytes.Buffer
+	if err := schreibe(&puffer); err != nil {
+		return err
+	}
+	f, err := os.OpenFile(pfad, os.O_WRONLY|os.O_TRUNC, 0)
+	if err != nil {
+		return ursache // auch das Ziel nicht beschreibbar: der Fehler der temporären Datei erklärt es besser
+	}
+	Diagnose("Rückfall: direkt in %s geschrieben, keine temporäre Datei möglich: %v", filepath.Base(pfad), ursache)
+	if _, err := f.Write(puffer.Bytes()); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Sync(); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
 }
 
 // Diagnose nimmt Meldungen, die nur im Debug-Log erscheinen sollen; die Oberfläche setzt sie, sonst bleibt sie leer.
