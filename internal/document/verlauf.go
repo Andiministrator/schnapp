@@ -34,6 +34,46 @@ func (d *Dokument) fuehreAus(b befehl) {
 	d.verlauf.letzte++
 	d.verlauf.erledigt = append(d.verlauf.erledigt, schritt{b, d.verlauf.letzte})
 	d.verlauf.zurueckgenommen = nil
+	d.begrenzeVerlauf()
+}
+
+// verlaufGrenze ist die höchste Gesamtgröße der im Verlauf gehaltenen Pixelkopien in Bytes (F-64). 512 MiB sind
+// rund 15 Schwärzungen über ein ganzes 4K-Bild (3840 x 2160 x 4 = 33 MB) oder einige tausend übliche Bereiche
+// (400 x 100 Pixel = 160 KB). Paketvariable, damit Tests mit einer kleinen Grenze arbeiten.
+var verlaufGrenze int64 = 512 << 20
+
+// groessenBefehl ist ein Befehl, der Pixelkopien hält.
+type groessenBefehl interface{ pixelBytes() int64 }
+
+func (b *schwaerzen) pixelBytes() int64 {
+	if b.vorher == nil {
+		return 0
+	}
+	return int64(len(b.vorher.Pix))
+}
+
+// begrenzeVerlauf wirft die ältesten erledigten Schritte weg, solange die Pixelkopien im Verlauf die Grenze
+// überschreiten. Der jüngste Schritt bleibt immer. Verworfene Schritte lassen sich nicht mehr zurücknehmen; der
+// Stand darunter (basis) ist die Kennung des zuletzt verworfenen Schritts, damit Stand() stimmig bleibt.
+func (d *Dokument) begrenzeVerlauf() {
+	v := &d.verlauf
+	var summe int64
+	for _, s := range v.erledigt {
+		if g, ok := s.b.(groessenBefehl); ok {
+			summe += g.pixelBytes()
+		}
+	}
+	weg := 0
+	for summe > verlaufGrenze && weg < len(v.erledigt)-1 {
+		if g, ok := v.erledigt[weg].b.(groessenBefehl); ok {
+			summe -= g.pixelBytes()
+		}
+		v.basis = v.erledigt[weg].stand
+		weg++
+	}
+	if weg > 0 {
+		v.erledigt = append([]schritt(nil), v.erledigt[weg:]...) // neues Feld, damit die Kopien freigegeben werden
+	}
 }
 
 // Stand kennzeichnet den Verlaufsstand des Dokuments (F-109): Jede neue Änderung bekommt eine neue Kennung, die nie
