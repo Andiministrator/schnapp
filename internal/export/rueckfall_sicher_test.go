@@ -139,7 +139,7 @@ func TestRueckfallWiederherstellungScheitertMeldetBeschaedigt(t *testing.T) {
 func TestRueckfallZuGrosseAltdatei(t *testing.T) {
 	ziel := zielMit(t, []byte("alt"))
 	if err := os.Truncate(ziel, MaxRueckfallAlt+1); err != nil {
-		t.Skip("Sparse-Datei nicht möglich:", err)
+		t.Fatal(err)
 	}
 	orig := oeffneDirekt
 	t.Cleanup(func() { oeffneDirekt = orig })
@@ -180,4 +180,32 @@ func TestRueckfallFolgtKeinemLink(t *testing.T) {
 	if b, _ := os.ReadFile(echt); string(b) != "echt" {
 		t.Errorf("Linkziel verändert: %q", b)
 	}
+}
+
+// TestLeseAltLaengeGeaendert: Wächst die Datei zwischen Lstat und Lesen, taugt die Sicherung nicht (sonst stellte die
+// Wiederherstellung einen gekürzten oder veralteten Stand her).
+func TestLeseAltLaengeGeaendert(t *testing.T) {
+	ziel := zielMit(t, []byte("alt"))
+	st, err := os.Lstat(ziel)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(ziel, []byte("alt und mehr"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := leseAlt(ziel, st); err == nil {
+		t.Error("leseAlt nahm eine Datei an, deren Länge sich seit Lstat geändert hat")
+	}
+	if b, err := leseAlt(ziel, mustLstat(t, ziel)); err != nil || string(b) != "alt und mehr" {
+		t.Errorf("unveränderte Datei: %q, %v", b, err)
+	}
+}
+
+func mustLstat(t *testing.T, pfad string) os.FileInfo {
+	t.Helper()
+	st, err := os.Lstat(pfad)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return st
 }

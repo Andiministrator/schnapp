@@ -281,7 +281,9 @@ func schreibeUndSchliesse(f zielDatei, inhalt []byte) error {
 	return f.Close()
 }
 
-// leseAlt liest die vorhandene Datei ohne Link zu folgen; sie muss dieselbe Datei sein, die Lstat sah.
+// leseAlt liest die vorhandene Datei ohne Link zu folgen; sie muss dieselbe Datei sein, die Lstat sah, und genau so
+// lang. Hat sie sich dazwischen geändert (etwa über MaxRueckfallAlt hinaus gewachsen), wäre die Sicherung gekürzt oder
+// veraltet und taugt nicht zum Wiederherstellen.
 func leseAlt(pfad string, st os.FileInfo) ([]byte, error) {
 	f, err := os.OpenFile(pfad, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
 	if err != nil {
@@ -291,7 +293,14 @@ func leseAlt(pfad string, st os.FileInfo) ([]byte, error) {
 	if fst, err := f.Stat(); err != nil || !os.SameFile(st, fst) {
 		return nil, errors.New("Ziel hat gewechselt")
 	}
-	return io.ReadAll(io.LimitReader(f, MaxRueckfallAlt+1))
+	alt, err := io.ReadAll(io.LimitReader(f, MaxRueckfallAlt+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(alt)) != st.Size() {
+		return nil, errors.New("Ziel hat sich beim Lesen geändert")
+	}
+	return alt, nil
 }
 
 // Diagnose nimmt Meldungen, die nur im Debug-Log erscheinen sollen; die Oberfläche setzt sie, sonst bleibt sie leer.
