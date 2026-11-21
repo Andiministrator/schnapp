@@ -86,8 +86,8 @@ dem Projekt entfernen“ sie ersetzt.
 `papierkorb`, `probe-innen` (zusammen rund 36 MB). Belege daraus, die noch gebraucht werden, stehen schon unter
 `knowledge/messungen/`. Gelöscht wird je Ordner mit ausgeschriebenem Pfad nach einem Blick hinein (globale Löschregel).
 `aboard-sync.offen.json` und die `aboard-sync.base.*.json` bleiben (gehören zu aBoard). *Umgesetzt 21.11.2026 mit einer Ausnahme:*
-`tmp/sprint4` bleibt, weil dort `behalten/` mit einer `LIESMICH.txt` liegt (Messtests aus Sprint 4, „Versionieren als
-Benchmark: F-140“). F-140 ist archiviert; ob die Messtests noch gebraucht werden, entscheidet Andi.
+`tmp/sprint4` blieb zunächst, weil dort `behalten/` mit einer `LIESMICH.txt` liegt (Messtests aus Sprint 4, „Versionieren als
+Benchmark: F-140“). F-140 ist archiviert. Andi, 21.11.2026: „lösch das gern“ — gelöscht.
 
 ## Umsetzung
 Ein Commit je Punkt, jeweils `go vet`/`go test` mit `novulkan,nox11`, mit Tag `probe` und in `draw/` grün, dazu ein
