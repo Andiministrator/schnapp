@@ -15,24 +15,39 @@ import (
 // Tests zum Rückfall ohne temporäre Datei (F-322): Schreibfehler stellen den alten Inhalt wieder her. Die Fehler
 // entstehen über die Naht oeffneDirekt im eigenen Code, nicht von außen.
 
-// haelfteDatei schreibt die Hälfte wirklich und meldet dann den Fehler (Medium voll, Netzlaufwerk).
+// haelfteDatei schreibt bei den ersten *rest Aufrufen nur die Hälfte wirklich und meldet dann den Fehler (Medium voll,
+// Netzlaufwerk); danach schreibt sie normal. Seit F-338 laufen Schreiben und Wiederherstellen über denselben Deskriptor.
 type haelfteDatei struct {
 	zielDatei
 	fehler error
+	rest   *int
 }
 
+func scheitert(n int) *int { return &n }
+
 func (h haelfteDatei) Write(p []byte) (int, error) {
+	if *h.rest <= 0 {
+		return h.zielDatei.Write(p)
+	}
+	*h.rest--
 	n, _ := h.zielDatei.Write(p[:len(p)/2])
 	return n, h.fehler
 }
 
-// syncFehlerDatei lässt Write gelingen, scheitert aber beim Sync.
+// syncFehlerDatei lässt Write gelingen, scheitert aber beim ersten Sync.
 type syncFehlerDatei struct {
 	zielDatei
 	fehler error
+	rest   *int
 }
 
-func (s syncFehlerDatei) Sync() error { return s.fehler }
+func (s syncFehlerDatei) Sync() error {
+	if *s.rest <= 0 {
+		return s.zielDatei.Sync()
+	}
+	*s.rest--
+	return s.fehler
+}
 
 // biegeUm ersetzt oeffneDirekt: Die ersten n Öffnungen liefern die Hülle um die echte Datei, danach die echte.
 func biegeUm(t *testing.T, n int, huelle func(zielDatei) zielDatei) {
@@ -69,7 +84,7 @@ func TestRueckfallSchreibfehlerStelltAltWiederHer(t *testing.T) {
 	alt := []byte("\x00\x89PNG alter, deutlich längerer Inhalt\xff\x00")
 	ziel := zielMit(t, alt)
 	kaputt := errors.New("Medium voll")
-	biegeUm(t, 1, func(f zielDatei) zielDatei { return haelfteDatei{f, kaputt} })
+	biegeUm(t, 1, func(f zielDatei) zielDatei { return haelfteDatei{f, kaputt, scheitert(1)} })
 	err := schreibeDirekt(ziel, schreibeNeu, os.ErrPermission)
 	if !errors.Is(err, kaputt) {
 		t.Fatalf("Fehler %v, erwartet der Schreibfehler", err)
@@ -87,7 +102,7 @@ func TestRueckfallSyncfehlerStelltAltWiederHer(t *testing.T) {
 	alt := []byte("alt und länger als der neue Inhalt")
 	ziel := zielMit(t, alt)
 	kaputt := errors.New("Sync")
-	biegeUm(t, 1, func(f zielDatei) zielDatei { return syncFehlerDatei{f, kaputt} })
+	biegeUm(t, 1, func(f zielDatei) zielDatei { return syncFehlerDatei{f, kaputt, scheitert(1)} })
 	if err := schreibeDirekt(ziel, schreibeNeu, os.ErrPermission); !errors.Is(err, kaputt) {
 		t.Fatalf("Fehler %v", err)
 	}
@@ -101,7 +116,7 @@ func TestRueckfallSyncfehlerStelltAltWiederHer(t *testing.T) {
 func TestRueckfallLeereAltdatei(t *testing.T) {
 	ziel := zielMit(t, nil)
 	kaputt := errors.New("Medium voll")
-	biegeUm(t, 1, func(f zielDatei) zielDatei { return haelfteDatei{f, kaputt} })
+	biegeUm(t, 1, func(f zielDatei) zielDatei { return haelfteDatei{f, kaputt, scheitert(1)} })
 	if err := schreibeDirekt(ziel, schreibeNeu, os.ErrPermission); !errors.Is(err, kaputt) {
 		t.Fatalf("Fehler %v", err)
 	}
@@ -125,7 +140,7 @@ func TestRueckfallFehlendesZielBleibtFehlend(t *testing.T) {
 func TestRueckfallWiederherstellungScheitertMeldetBeschaedigt(t *testing.T) {
 	ziel := zielMit(t, []byte("alter, längerer Inhalt"))
 	kaputt := errors.New("Medium voll")
-	biegeUm(t, 2, func(f zielDatei) zielDatei { return haelfteDatei{f, kaputt} })
+	biegeUm(t, 1, func(f zielDatei) zielDatei { return haelfteDatei{f, kaputt, scheitert(2)} })
 	err := schreibeDirekt(ziel, schreibeNeu, os.ErrPermission)
 	if !errors.Is(err, ErrZielBeschaedigt) {
 		t.Fatalf("Fehler %v, erwartet ErrZielBeschaedigt", err)
@@ -170,11 +185,6 @@ func TestRueckfallFolgtKeinemLink(t *testing.T) {
 		f.Close()
 		t.Error("oeffneDirekt folgte dem Link")
 	}
-	if st, err := os.Stat(echt); err == nil {
-		if _, err := leseAlt(link, st); err == nil {
-			t.Error("leseAlt folgte dem Link")
-		}
-	}
 	if err := schreibeDirekt(link, schreibeNeu, os.ErrPermission); !errors.Is(err, os.ErrPermission) {
 		t.Errorf("Fehler %v, erwartet die Ursache", err)
 	}
@@ -194,10 +204,15 @@ func TestLeseAltLaengeGeaendert(t *testing.T) {
 	if err := os.WriteFile(ziel, []byte("alt und mehr"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := leseAlt(ziel, st); err == nil {
+	f, err := os.Open(ziel)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	if _, err := leseAlt(nurLesen{f}, st); err == nil {
 		t.Error("leseAlt nahm eine Datei an, deren Länge sich seit Lstat geändert hat")
 	}
-	if b, err := leseAlt(ziel, mustLstat(t, ziel)); err != nil || string(b) != "alt und mehr" {
+	if b, err := leseAlt(nurLesen{f}, mustLstat(t, ziel)); err != nil || string(b) != "alt und mehr" {
 		t.Errorf("unveränderte Datei: %q, %v", b, err)
 	}
 }
@@ -210,3 +225,6 @@ func mustLstat(t *testing.T, pfad string) os.FileInfo {
 	}
 	return st
 }
+
+// nurLesen macht aus einer zum Lesen geöffneten Datei eine zielDatei (für leseAlt).
+type nurLesen struct{ *os.File }

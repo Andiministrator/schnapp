@@ -60,14 +60,21 @@ type tauschBeiSchreibfehler struct {
 
 func (x tauschBeiSchreibfehler) Write(p []byte) (int, error) {
 	n, err := x.haelfteDatei.Write(p)
-	x.tausche()
+	if err != nil {
+		x.tausche() // nur nach dem gescheiterten Schreiben, nicht beim Wiederherstellen
+	}
 	return n, err
 }
 
 // TestRueckfallTauschNachSchreibfehler: Wird das Ziel nach einem Schreibfehler getauscht, überschreibt die
-// Wiederherstellung die fremde Datei nicht; der Fehler meldet die gescheiterte Wiederherstellung.
+// Wiederherstellung die fremde Datei nicht; sie schreibt den alten Inhalt über denselben Deskriptor in genau die
+// gesicherte Datei zurück (F-338), und gemeldet wird der Schreibfehler.
 func TestRueckfallTauschNachSchreibfehler(t *testing.T) {
 	ziel := zielMit(t, []byte("alt"))
+	gesichert := filepath.Join(filepath.Dir(ziel), "gesichert.png") // zweiter Name der Originaldatei
+	if err := os.Link(ziel, gesichert); err != nil {
+		t.Fatal(err)
+	}
 	fremd := filepath.Join(filepath.Dir(ziel), "fremd.png")
 	inhalt := []byte("fremder Inhalt")
 	if err := os.WriteFile(fremd, inhalt, 0o600); err != nil {
@@ -75,18 +82,21 @@ func TestRueckfallTauschNachSchreibfehler(t *testing.T) {
 	}
 	kaputt := errors.New("Platte voll")
 	biegeUm(t, 1, func(f zielDatei) zielDatei {
-		return tauschBeiSchreibfehler{haelfteDatei{f, kaputt}, func() {
+		return tauschBeiSchreibfehler{haelfteDatei{f, kaputt, scheitert(1)}, func() {
 			if err := os.Rename(fremd, ziel); err != nil {
 				t.Fatal(err)
 			}
 		}}
 	})
 	err := schreibeDirekt(ziel, schreibeNeu, os.ErrPermission)
-	if !errors.Is(err, ErrZielBeschaedigt) {
-		t.Errorf("Fehler %v, erwartet ErrZielBeschaedigt", err)
+	if !errors.Is(err, kaputt) || errors.Is(err, ErrZielBeschaedigt) {
+		t.Errorf("Fehler %v, erwartet der Schreibfehler", err)
 	}
 	if got, _ := os.ReadFile(ziel); !bytes.Equal(got, inhalt) {
 		t.Errorf("Ersatzdatei verändert: %q", got)
+	}
+	if got, _ := os.ReadFile(gesichert); string(got) != "alt" {
+		t.Errorf("gesicherte Datei nicht wiederhergestellt: %q", got)
 	}
 }
 

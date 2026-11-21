@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/fileformat"
@@ -218,22 +219,42 @@ const MaxRueckfallAlt = 256 << 20
 // können; die Zieldatei ist unvollständig (F-322).
 var ErrZielBeschaedigt = errors.New("export: Zieldatei beschädigt")
 
-// zielDatei ist, was der Rückfall von einer geöffneten Zieldatei braucht (Naht für Tests: Schreibfehler nachbauen).
+// zielDatei ist, was der Rückfall von der geöffneten Zieldatei braucht (Naht für Tests: Schreibfehler nachbauen).
 type zielDatei interface {
+	io.Reader
 	io.Writer
+	io.Seeker
+	Truncate(size int64) error
 	Sync() error
 	Close() error
 }
 
-// errZielGewechselt: Unter dem Namen liegt nicht mehr die Datei, die gesichert wurde (F-330).
+// errZielGewechselt: Unter dem Namen liegt nicht mehr die Datei, die Lstat sah (F-330).
 var errZielGewechselt = errors.New("export: Ziel hat gewechselt")
 
-// oeffneDirekt öffnet das Ziel des Rückfalls zum Überschreiben, ohne einem Link zu folgen (O_NOFOLLOW) und ohne zu
-// kürzen: erst wenn die geöffnete Datei dieselbe reguläre Datei ist, die gesichert wurde (st), wird sie gekürzt
-// (F-330). O_NONBLOCK lässt ein untergeschobenes FIFO nicht blockieren (das Öffnen scheitert dann); bei regulären
-// Dateien ist es ohne Wirkung. Eine fremde Datei bleibt unverändert. Nur Tests biegen es um.
+// Wartezeit, wenn das Öffnen an einer Lease anderer Programme scheitert (EAGAIN mit O_NONBLOCK, F-338): kurz wiederholen,
+// dann aufgeben (es gilt der Fehler der temporären Datei, die Datei bleibt unverändert).
+var (
+	leaseVersuche = 20
+	leasePause    = 50 * time.Millisecond
+)
+
+// oeffneDirekt öffnet das Ziel des Rückfalls einmal zum Lesen und Schreiben, ohne einem Link zu folgen (O_NOFOLLOW) und
+// ohne zu kürzen; Sichern, Kürzen, Schreiben und Wiederherstellen laufen danach alle über diesen einen Deskriptor
+// (F-338). Die geöffnete Datei muss dieselbe reguläre Datei sein, die Lstat sah (st), sonst bleibt sie unverändert
+// (F-330). O_NONBLOCK lässt ein untergeschobenes FIFO nicht blockieren; bei einer regulären Datei wirkt es nur beim
+// Öffnen: Hält ein anderes Programm eine Lease, scheitert das Öffnen sofort mit EAGAIN statt zu warten — dann wird
+// kurz wiederholt. Nur Tests biegen es um.
 var oeffneDirekt = func(pfad string, st os.FileInfo) (zielDatei, error) {
-	f, err := os.OpenFile(pfad, os.O_WRONLY|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0)
+	var f *os.File
+	var err error
+	for versuch := 0; ; versuch++ {
+		f, err = os.OpenFile(pfad, os.O_RDWR|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0)
+		if !errors.Is(err, syscall.EAGAIN) || versuch >= leaseVersuche {
+			break
+		}
+		time.Sleep(leasePause)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -242,18 +263,16 @@ var oeffneDirekt = func(pfad string, st os.FileInfo) (zielDatei, error) {
 		f.Close()
 		return nil, errZielGewechselt
 	}
-	if err := f.Truncate(0); err != nil {
-		f.Close()
-		return nil, err
-	}
 	return f, nil
 }
 
 // schreibeDirekt ist der Rückfall, wenn neben dem Ziel keine temporäre Datei entstehen darf (F-196): etwa unter
 // Flatpak, wo das Dokumenten-Portal nur die gewählte Datei freigibt, nicht ihren Ordner. Nur für ein vorhandenes,
 // reguläres, beschreibbares Ziel bis MaxRueckfallAlt; sonst gilt der ursprüngliche Fehler. Das Dokument wird erst
-// vollständig in den Speicher gerendert und der alte Inhalt gelesen; scheitert danach das Schreiben, wird der alte
-// Inhalt zurückgeschrieben. Nur wenn auch das misslingt, ist das Ziel beschädigt und der Fehler wickelt
+// vollständig in den Speicher gerendert; dann wird das Ziel einmal geöffnet, sein alter Inhalt über denselben
+// Deskriptor gelesen, die Datei gekürzt und neu geschrieben. Scheitert das Schreiben, wird der alte Inhalt über
+// denselben Deskriptor zurückgeschrieben — in genau die Datei, die gesichert wurde, auch wenn der Name inzwischen
+// woanders hinzeigt (F-338). Nur wenn auch das misslingt, ist das Ziel beschädigt und der Fehler wickelt
 // ErrZielBeschaedigt ein (nicht atomar, bewusst nur im Rückfall, F-322).
 func schreibeDirekt(pfad string, schreibe func(io.Writer) error, ursache error) error {
 	st, err := os.Lstat(pfad)
@@ -264,53 +283,55 @@ func schreibeDirekt(pfad string, schreibe func(io.Writer) error, ursache error) 
 	if err := schreibe(&puffer); err != nil {
 		return err
 	}
-	alt, err := leseAlt(pfad, st)
-	if err != nil {
-		return ursache // ohne Sicherung nicht direkt schreiben
-	}
 	f, err := oeffneDirekt(pfad, st)
 	if err != nil {
-		return ursache // auch das Ziel nicht beschreibbar: der Fehler der temporären Datei erklärt es besser
+		return ursache // Ziel nicht beschreibbar oder getauscht: der Fehler der temporären Datei erklärt es besser
+	}
+	alt, err := leseAlt(f, st)
+	if err != nil {
+		f.Close()
+		return ursache // ohne Sicherung nicht direkt schreiben
 	}
 	Diagnose("Rückfall: direkt in %s geschrieben, keine temporäre Datei möglich: %v", filepath.Base(pfad), ursache)
-	werr := schreibeUndSchliesse(f, puffer.Bytes())
+	werr := ersetzeInhalt(f, puffer.Bytes())
 	if werr == nil {
+		if err := f.Close(); err != nil {
+			return fmt.Errorf("export: schließen: %w", err) // nach dem Sync: der Inhalt steht, das Schließen meldet nur
+		}
 		return nil
 	}
-	// Wiederherstellen: der alte Inhalt, vollständig, ohne Kürzen auf halbem Weg (das Ziel ist schon gekürzt).
-	g, err := oeffneDirekt(pfad, st)
-	if err == nil {
-		err = schreibeUndSchliesse(g, alt)
+	// Wiederherstellen: der alte Inhalt, vollständig, in dieselbe Datei.
+	rerr := ersetzeInhalt(f, alt)
+	cerr := f.Close()
+	if rerr == nil {
+		rerr = cerr
 	}
-	if err != nil {
-		return fmt.Errorf("%w: %v; Wiederherstellung gescheitert: %v", ErrZielBeschaedigt, werr, err)
+	if rerr != nil {
+		return fmt.Errorf("%w: %v; Wiederherstellung gescheitert: %v", ErrZielBeschaedigt, werr, rerr)
 	}
 	return werr
 }
 
-func schreibeUndSchliesse(f zielDatei, inhalt []byte) error {
+// ersetzeInhalt kürzt die geöffnete Datei und schreibt inhalt vom Anfang an, mit Sync.
+func ersetzeInhalt(f zielDatei, inhalt []byte) error {
+	if err := f.Truncate(0); err != nil {
+		return err
+	}
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
 	if _, err := f.Write(inhalt); err != nil {
-		f.Close()
 		return err
 	}
-	if err := f.Sync(); err != nil {
-		f.Close()
-		return err
-	}
-	return f.Close()
+	return f.Sync()
 }
 
-// leseAlt liest die vorhandene Datei ohne Link zu folgen; sie muss dieselbe Datei sein, die Lstat sah, und genau so
-// lang. Hat sie sich dazwischen geändert (etwa über MaxRueckfallAlt hinaus gewachsen), wäre die Sicherung gekürzt oder
-// veraltet und taugt nicht zum Wiederherstellen.
-func leseAlt(pfad string, st os.FileInfo) ([]byte, error) {
-	f, err := os.OpenFile(pfad, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
-	if err != nil {
+// leseAlt liest den alten Inhalt über den geöffneten Deskriptor; er muss genau so lang sein, wie Lstat sah. Hat sich die
+// Datei dazwischen geändert (etwa über MaxRueckfallAlt hinaus gewachsen), wäre die Sicherung gekürzt oder veraltet und
+// taugt nicht zum Wiederherstellen.
+func leseAlt(f zielDatei, st os.FileInfo) ([]byte, error) {
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
 		return nil, err
-	}
-	defer f.Close()
-	if fst, err := f.Stat(); err != nil || !os.SameFile(st, fst) {
-		return nil, errZielGewechselt
 	}
 	alt, err := io.ReadAll(io.LimitReader(f, MaxRueckfallAlt+1))
 	if err != nil {

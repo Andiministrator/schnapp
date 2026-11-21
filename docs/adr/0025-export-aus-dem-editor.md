@@ -113,3 +113,10 @@ fremd; `zenity`/`kdialog` wären Laufzeit-Fremdprogramme (ADR-0011).
   dann per `Truncate(0)` gekürzt; dasselbe beim Zurückschreiben. Tauscht jemand den Namen zwischen Sichern und Öffnen,
   bleibt die fremde Datei unverändert, ein untergeschobenes FIFO blockiert nicht. Offen und nur unter Flatpak prüfbar:
   ob `Truncate` nach dem Öffnen auf dem FUSE des Dokumenten-Portals geht (F-196).
+- *Ergänzt 21.11.2026 abends (F-338, Karte #149):* Das Ziel wird **einmal** geöffnet (`O_RDWR|O_NOFOLLOW|O_NONBLOCK`);
+  Sichern, Kürzen, Schreiben und Wiederherstellen laufen über diesen einen Deskriptor. Damit sichert der Rückfall genau
+  den Inhalt, den er dann überschreibt, und stellt ihn in genau diese Datei wieder her — auch wenn der Name inzwischen
+  woanders hinzeigt oder das Dateisystem die Inode einer gelöschten Datei wiederverwendet hat. Hält ein anderes
+  Programm eine Lease, scheitert das Öffnen mit `O_NONBLOCK` sofort mit `EAGAIN`; es wird bis zu 20-mal im Abstand von
+  50 ms wiederholt, danach gilt der Fehler der temporären Datei (Datei unverändert). Offen und nur unter Flatpak
+  prüfbar: ob das Dokumenten-Portal `O_RDWR` zulässt (F-196).
