@@ -108,6 +108,15 @@ func (k *KWin) AktiverBildschirm(ctx context.Context, opt Optionen) (*Bild, erro
 	return k.aufnehmen(ctx, "CaptureActiveScreen", nil, opt, "")
 }
 
+// Alle nimmt alle Bildschirme zusammengesetzt auf (CaptureWorkspace). Mit native-resolution liefert KWin bei
+// gemischter Skalierung ein Bild in der größten Skala; Monitore mit kleinerer Skala werden hochgerechnet
+// (knowledge/topics/kwin-screenshot.md). Das gilt wie bei den Einzelaufnahmen: Originalauflösung des feinsten Monitors.
+func (k *KWin) Alle(ctx context.Context, opt Optionen) (*Bild, error) {
+	ctx, abbruch := context.WithTimeout(ctx, zeitgrenze)
+	defer abbruch()
+	return k.aufnehmen(ctx, "CaptureWorkspace", nil, opt, "")
+}
+
 // Fenster lässt KWin ein Fenster per Klick wählen (CaptureInteractive, kind 0).
 func (k *KWin) Fenster(ctx context.Context, opt Optionen) (*Bild, error) {
 	ctx, abbruch := context.WithTimeout(ctx, zeitgrenzeInteraktiv)

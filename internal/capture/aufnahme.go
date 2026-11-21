@@ -48,6 +48,9 @@ type Quelle interface {
 	// AktiverBildschirm nimmt den Bildschirm auf, den der Compositor für aktiv hält (bei KWin in der Voreinstellung
 	// der unter dem Mauszeiger).
 	AktiverBildschirm(ctx context.Context, opt Optionen) (*Bild, error)
+	// Alle nimmt alle Bildschirme zusammengesetzt als ein Bild auf (bei KWin CaptureWorkspace, ab ScreenShot2
+	// Version 3). Bildschirm ist leer; Skala ist die größte Skala der Monitore (KWin rechnet kleinere hoch).
+	Alle(ctx context.Context, opt Optionen) (*Bild, error)
 	// Fenster lässt den Nutzer ein Fenster anklicken und nimmt es auf (KWin übernimmt die Auswahl). Bricht der
 	// Nutzer ab, kommt ErrAbgebrochen.
 	Fenster(ctx context.Context, opt Optionen) (*Bild, error)

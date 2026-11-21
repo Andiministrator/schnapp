@@ -209,8 +209,12 @@ func (an anschluesse) aufnehmen(t Auftrag, aus, fehler io.Writer) (int, *abgeleg
 		return an.speichere(b.Pixel, b.Pixel.Bounds(), t, aus, fehler)
 
 	case t.Modus == ModusBildschirm && t.Ziel.Wahl == settings.WahlAlle:
-		fmt.Fprintln(fehler, i18n.T("Capturing all monitors at once is not implemented yet."))
-		return exitFehler, nil
+		// Alle Monitore zusammengesetzt (CaptureWorkspace). Ohne Monitorname gibt es keinen „letzten Bereich“ zu merken.
+		b, err := q.Alle(ctx, capture.Optionen{})
+		if err != nil {
+			return meldeFehler(fehler, err), nil
+		}
+		return an.speichere(b.Pixel, b.Pixel.Bounds(), t, aus, fehler)
 	}
 
 	// Overlay: --region (Bereich) oder --screen mit der Einstellung pick (Monitor per Klick).

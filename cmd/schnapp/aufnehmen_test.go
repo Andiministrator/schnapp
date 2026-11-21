@@ -36,6 +36,8 @@ func testbild(w, h int, kennung uint8) *image.NRGBA {
 type quelleAttrappe struct {
 	bilder      map[string]*image.NRGBA
 	aktiv       *image.NRGBA
+	alle        *image.NRGBA
+	alleErr     error
 	fenster     *image.NRGBA
 	fensterErr  error
 	aufrufe     []string
@@ -59,6 +61,14 @@ func (q *quelleAttrappe) Bildschirm(_ context.Context, name string, _ capture.Op
 func (q *quelleAttrappe) AktiverBildschirm(context.Context, capture.Optionen) (*capture.Bild, error) {
 	q.aufrufe = append(q.aufrufe, "Aktiv")
 	return &capture.Bild{Pixel: q.aktiv, Skala: 1}, nil
+}
+
+func (q *quelleAttrappe) Alle(context.Context, capture.Optionen) (*capture.Bild, error) {
+	q.aufrufe = append(q.aufrufe, "Alle")
+	if q.alleErr != nil {
+		return nil, q.alleErr
+	}
+	return &capture.Bild{Pixel: q.alle, Skala: 1}, nil
 }
 
 func (q *quelleAttrappe) Fenster(context.Context, capture.Optionen) (*capture.Bild, error) {
@@ -87,6 +97,7 @@ func neuerLauf(t *testing.T) *lauf {
 		bilder:  map[string]*image.NRGBA{"A": testbild(4, 3, 1), "B": testbild(6, 4, 2)},
 		aktiv:   testbild(5, 5, 3),
 		fenster: testbild(2, 2, 4),
+		alle:    testbild(9, 4, 5),
 	}}
 	l.an = anschluesse{
 		quelle: func() (capture.Quelle, error) { return l.q, nil },
@@ -243,8 +254,19 @@ func TestBildschirmUnterZeigerUndAlle(t *testing.T) {
 
 	l = neuerLauf(t)
 	code, _, fehler := l.fuehre(Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Wahl: settings.WahlAlle}})
-	if code != exitFehler || !strings.Contains(fehler, "all monitors") || len(l.q.aufrufe) != 0 {
-		t.Errorf("all: Code %d, fehler %q, Aufrufe %v", code, fehler, l.q.aufrufe)
+	if code != exitOK || strings.Join(l.q.aufrufe, ",") != "Alle" || len(l.overlayMod) != 0 || fehler != "" {
+		t.Fatalf("all: Code %d, fehler %q, Aufrufe %v", code, fehler, l.q.aufrufe)
+	}
+	pruefeAbgelegt(t, l, 5, image.Rect(0, 0, 9, 4))
+	if _, err := selection.LadeLetzten(l.an.letzterPfad); !errors.Is(err, selection.ErrKeinLetzter) {
+		t.Error("Aufnahme aller Monitore merkt keinen Bereich")
+	}
+
+	// Fehler von KWin: Exit-Code Fehler, nichts abgelegt.
+	l = neuerLauf(t)
+	l.q.alleErr = errors.New("CaptureWorkspace: kaputt")
+	if code, _, fehler := l.fuehre(Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Wahl: settings.WahlAlle}}); code != exitFehler || fehler == "" || len(l.abgelegt) != 0 {
+		t.Errorf("all mit Fehler: Code %d, fehler %q", code, fehler)
 	}
 }
 

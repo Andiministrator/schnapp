@@ -124,9 +124,6 @@ msgstr "Noch kein Bereich zum Wiederholen. Zuerst einen mit --region wählen."
 msgid "The monitor of the last area has changed. Select a new area with --region."
 msgstr "Der Monitor des letzten Bereichs hat sich geändert. Mit --region einen neuen Bereich wählen."
 
-msgid "Capturing all monitors at once is not implemented yet."
-msgstr "Alle Monitore auf einmal aufzunehmen ist noch nicht umgesetzt."
-
 msgid "The selection is outside the captured image."
 msgstr "Die Auswahl liegt außerhalb des aufgenommenen Bildes."
 
