@@ -14,7 +14,22 @@ import (
 
 // dbusTransport ist die echte Umsetzung von transport auf dem Session-Bus. Die Verbindung wird einmal gehalten
 // und mit Close geschlossen.
-type dbusTransport struct{ conn *dbus.Conn }
+type dbusTransport struct {
+	conn *dbus.Conn
+	// rufe ist die Naht für Tests (F-56): ruft die Methode auf und liefert den Antwortkörper. nil = echter Bus.
+	rufe func(ctx context.Context, s schnittstelle, methode string, aufruf []any) ([]any, error)
+}
+
+// pipeGrenze begrenzt die Pipe-Daten; Paketvariable, damit der Test die Grenze ohne 1 GiB prüfen kann.
+var pipeGrenze int64 = MaxBytes
+
+func (t *dbusTransport) aufruf(ctx context.Context, s schnittstelle, methode string, aufruf []any) ([]any, error) {
+	if t.rufe != nil {
+		return t.rufe(ctx, s, methode, aufruf)
+	}
+	c := t.conn.Object(kwinDienst, s.pfad).CallWithContext(ctx, s.name+"."+methode, 0, aufruf...)
+	return c.Body, c.Err
+}
 
 func neuerDBusTransport() (*dbusTransport, error) {
 	c, err := dbus.ConnectSessionBus() // eigene Verbindung (nicht SessionBus()), deshalb schließbar
@@ -41,12 +56,15 @@ func (t *dbusTransport) version(ctx context.Context, s schnittstelle) (uint32, e
 }
 
 func (t *dbusTransport) capture(ctx context.Context, s schnittstelle, methode string, args []any, opt map[string]dbus.Variant) (map[string]dbus.Variant, datenquelle, error) {
-	obj := t.conn.Object(kwinDienst, s.pfad)
 	aufruf := append(append([]any{}, args...), opt)
 	var antwort map[string]dbus.Variant
 	if s.memfd {
 		fd := dbus.UnixFD(-1)
-		if err := obj.CallWithContext(ctx, s.name+"."+methode, 0, aufruf...).Store(&fd, &antwort); err != nil {
+		body, err := t.aufruf(ctx, s, methode, aufruf)
+		if err == nil {
+			err = dbus.Store(body, &fd, &antwort)
+		}
+		if err != nil {
 			if fd >= 0 { // FD kam an, die übrige Antwort nicht: nicht offen liegen lassen (F-56)
 				syscall.Close(int(fd))
 			}
@@ -63,11 +81,14 @@ func (t *dbusTransport) capture(ctx context.Context, s schnittstelle, methode st
 	}
 	p := &pipeQuelle{r: r, fertig: make(chan gelesen, 1)}
 	go func() { // KWin schreibt erst nach der Antwort; parallel lesen, sonst blockiert die Pipe
-		d, err := liesBegrenzt(r, MaxBytes)
+		d, err := liesBegrenzt(r, pipeGrenze)
 		p.fertig <- gelesen{d, err}
 	}()
 	aufruf = append(aufruf, dbus.UnixFD(w.Fd()))
-	err = obj.CallWithContext(ctx, s.name+"."+methode, 0, aufruf...).Store(&antwort)
+	body, err := t.aufruf(ctx, s, methode, aufruf)
+	if err == nil {
+		err = dbus.Store(body, &antwort)
+	}
 	w.Close() // unsere Kopie schließen, damit das Lesen mit KWins Ende EOF bekommt
 	if err != nil {
 		p.Close()
