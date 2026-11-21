@@ -293,18 +293,25 @@ func schreibeDirekt(pfad string, schreibe func(io.Writer) error, ursache error) 
 		return ursache // ohne Sicherung nicht direkt schreiben
 	}
 	Diagnose("Rückfall: direkt in %s geschrieben, keine temporäre Datei möglich: %v", filepath.Base(pfad), ursache)
-	werr := ersetzeInhalt(f, puffer.Bytes())
+	veraendert, werr := ersetzeInhalt(f, puffer.Bytes())
 	if werr == nil {
 		if err := f.Close(); err != nil {
-			return fmt.Errorf("export: schließen: %w", err) // nach dem Sync: der Inhalt steht, das Schließen meldet nur
+			// Nach dem Sync steht der neue Inhalt vollständig: ein späterer Close-Fehler ändert daran nichts. Die
+			// Oberfläche soll keinen Fehlschlag melden, obwohl die Datei stimmt; der Fehler bleibt als Diagnose (F-344).
+			Diagnose("Rückfall: Schließen von %s nach erfolgreichem Schreiben gescheitert: %v", filepath.Base(pfad), err)
 		}
 		return nil
 	}
+	if !veraendert {
+		// Schon das Kürzen scheiterte: die Datei ist unberührt, es gibt nichts wiederherzustellen und nichts zu beklagen.
+		f.Close()
+		return werr
+	}
 	// Wiederherstellen: der alte Inhalt, vollständig, in dieselbe Datei.
-	rerr := ersetzeInhalt(f, alt)
+	_, rerr := ersetzeInhalt(f, alt)
 	cerr := f.Close()
-	if rerr == nil {
-		rerr = cerr
+	if rerr == nil && cerr != nil {
+		Diagnose("Rückfall: Schließen von %s nach der Wiederherstellung gescheitert: %v", filepath.Base(pfad), cerr)
 	}
 	if rerr != nil {
 		return fmt.Errorf("%w: %v; Wiederherstellung gescheitert: %v", ErrZielBeschaedigt, werr, rerr)
@@ -312,18 +319,19 @@ func schreibeDirekt(pfad string, schreibe func(io.Writer) error, ursache error) 
 	return werr
 }
 
-// ersetzeInhalt kürzt die geöffnete Datei und schreibt inhalt vom Anfang an, mit Sync.
-func ersetzeInhalt(f zielDatei, inhalt []byte) error {
+// ersetzeInhalt kürzt die geöffnete Datei und schreibt inhalt vom Anfang an, mit Sync. veraendert ist false, solange
+// noch nichts an der Datei geändert wurde (das Kürzen selbst scheiterte).
+func ersetzeInhalt(f zielDatei, inhalt []byte) (veraendert bool, err error) {
 	if err := f.Truncate(0); err != nil {
-		return err
+		return false, err
 	}
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		return err
+		return true, err
 	}
 	if _, err := f.Write(inhalt); err != nil {
-		return err
+		return true, err
 	}
-	return f.Sync()
+	return true, f.Sync()
 }
 
 // leseAlt liest den alten Inhalt über den geöffneten Deskriptor; er muss genau so lang sein, wie Lstat sah. Hat sich die
