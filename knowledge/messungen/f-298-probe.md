@@ -38,3 +38,8 @@ stderr, „Fenster zu: Fehler <nil>, ungesichert false“. `probe.sh`: SIGTERM, 
   mit `--ende 90` endet der Lauf geordnet.
 - Ein weiteres Signal während des Speicherns kann `probe.sh` nicht schicken; diesen Weg decken die Tests in
   `ui/speichern_fortschritt_test.go`.
+
+## Lauf 3: nach der Verify-Nacharbeit (Schreiben in Stücken, Leser beim Lesen und Dekodieren, Puls je Füllung)
+
+Wie Lauf 2: „alte-datei-gelesen +4.157s“, „Speichern im Hintergrund: 21.856s, <nil>“, „Fenster zu: Fehler <nil>,
+ungesichert false“, SIGTERM, „schnapp exit 0“, kein SIGKILL. Gleiche Dauer wie vorher, keine Meldung „antwortet nicht“.

@@ -187,3 +187,121 @@ func TestFristPruefungWiederholtSich(t *testing.T) {
 		t.Errorf("Prüfung weckt nach dem Ende weiter: %d → %d", vorher, n)
 	}
 }
+
+// Verify F-298 B-2 (Mutationen M1, M14): Die Schließen-Anfrage gibt nur auf, wenn die Statusleiste den Stillstand
+// gemeldet hat UND das Speichern jetzt noch hängt — nicht vor der Meldung und nicht, wenn seit der Meldung Fortschritt
+// kam, auch bevor die Schleife die Meldung zurückgenommen hat.
+func TestSchliessenNurBeiGemeldetemStillstand(t *testing.T) {
+	fristTest(t, 50*time.Millisecond)
+	e := geaenderterEditor(t)
+	v := neuerSperrSpeicher()
+	t.Cleanup(func() { close(v.frei) })
+	e.speichern = v.speichern
+	e.speichernJetzt()
+	time.Sleep(60 * time.Millisecond)
+	if e.schliessen() {
+		t.Fatal("gibt auf, bevor die Statusleiste den Stillstand gemeldet hat")
+	}
+	if !e.speichernHaengtMelden() {
+		t.Fatal("Stillstand nicht gemeldet")
+	}
+	speicherschritt.Puls() // Fortschritt, die Schleife hat die Meldung noch nicht zurückgenommen
+	if e.schliessen() {
+		t.Error("gibt trotz neuem Fortschritt auf")
+	}
+}
+
+// Verify F-298 B-2 (Mutation M3): Ein weiteres Signal, während speichernAbwarten beim Zerstören auf ein Speichern mit
+// Fortschritt wartet, gibt es nicht auf.
+func TestAbwartenSignalMitFortschritt(t *testing.T) {
+	fristTest(t, 50*time.Millisecond)
+	e := geaenderterEditor(t)
+	var aufrufe atomic.Int32
+	e.speichern = pulsSpeicher(10*time.Millisecond, 300*time.Millisecond, &aufrufe)
+	e.speichernJetzt()
+	time.Sleep(120 * time.Millisecond)
+	e.weitereSignale <- struct{}{} // liegt im Kanal, wenn speichernAbwarten beginnt
+	if err := e.zerstoert(nil); err != nil {
+		t.Errorf("Rückgabe %v", err)
+	}
+	if e.speichernAufgegeben || e.s.Ungesichert() {
+		t.Errorf("aufgegeben %v, ungesichert %v", e.speichernAufgegeben, e.s.Ungesichert())
+	}
+}
+
+// Verify F-298 B-2 (Mutation M12): zerstoerenFrist zählt ab dem Beginn des Speicherns und bleibt äußerste Grenze,
+// auch wenn es Fortschritt meldet (Andi, 21.11.2026, Nachtrag 9).
+func TestZerstoerenFristTrotzFortschritt(t *testing.T) {
+	fristTest(t, 50*time.Millisecond)
+	alt := zerstoerenFrist
+	t.Cleanup(func() { zerstoerenFrist = alt })
+	zerstoerenFrist = 100 * time.Millisecond
+	e := geaenderterEditor(t)
+	var aufrufe atomic.Int32
+	e.speichern = pulsSpeicher(10*time.Millisecond, 600*time.Millisecond, &aufrufe)
+	e.speichernJetzt()
+	start := time.Now()
+	err := e.zerstoert(nil)
+	if d := time.Since(start); !errors.Is(err, ErrSpeichernHaengt) || d > 400*time.Millisecond {
+		t.Errorf("Rückgabe %v nach %v", err, d)
+	}
+	time.Sleep(600 * time.Millisecond) // Goroutine auslaufen lassen, damit sie keinen anderen Test pulst
+}
+
+// Verify F-298 B-2 (Mutation M6b): Eine späte Antwort ersetzt nur ErrSpeichernHaengt, keinen Fehler, der schon vorher
+// in der Rückgabe stand.
+func TestSpaeteAntwortBehaeltFruehenFehler(t *testing.T) {
+	fristTest(t, 50*time.Millisecond)
+	frueh := errors.New("früher Fehler")
+	e := geaenderterEditor(t)
+	v := neuerSperrSpeicher()
+	e.speichern = v.speichern
+	e.speichernJetzt()
+	e.schlussErr = frueh
+	time.Sleep(60 * time.Millisecond)
+	e.weitereSignale <- struct{}{}
+	if !e.weiteresSignalSchliesst() {
+		t.Fatal("nicht aufgegeben")
+	}
+	close(v.frei)
+	for len(e.speicherAntwort) == 0 {
+		time.Sleep(2 * time.Millisecond)
+	}
+	if err := e.zerstoert(nil); !errors.Is(err, frueh) {
+		t.Errorf("Rückgabe %v, früher Fehler verloren", err)
+	}
+}
+
+// Verify F-298 B-3: Strg+S hängt, ein Signal ist vorgemerkt, ein weiteres Signal gibt auf, danach scheitert das
+// Speichern doch. Wie sonst nach einem Signal (Nachtrag 2) läuft der Neuversuch und wird abgewartet; nie zwei
+// zugleich, die Sitzung meldet danach kein laufendes Speichern.
+func TestNeuversuchNachSpaeterFehlantwort(t *testing.T) {
+	fristTest(t, 50*time.Millisecond)
+	for _, imFenster := range []bool{true, false} {
+		e := geaenderterEditor(t)
+		v := neuerSperrSpeicher()
+		v.fehler = []error{errors.New("spät gescheitert")} // der zweite Aufruf gelingt
+		e.speichern = v.speichern
+		e.speichernJetzt()
+		if zu, abzug := e.s.SignalAnfrage(); zu || abzug != nil {
+			t.Fatalf("SignalAnfrage: zu %v, Abzug %v", zu, abzug != nil)
+		}
+		time.Sleep(60 * time.Millisecond)
+		e.weitereSignale <- struct{}{}
+		if !e.weiteresSignalSchliesst() {
+			t.Fatal("nicht aufgegeben")
+		}
+		close(v.frei) // auch der Neuversuch läuft gleich durch
+		for len(e.speicherAntwort) == 0 {
+			time.Sleep(time.Millisecond)
+		}
+		if imFenster && !e.speichernAbholen() {
+			t.Fatal("Antwort nicht abgeholt")
+		}
+		err := e.zerstoert(nil)
+		if err != nil || e.s.Ungesichert() || e.s.SpeichernLaeuft() || v.aufrufe.Load() != 2 || v.doppelt.Load() {
+			t.Errorf("Fenster %v: Rückgabe %v, ungesichert %v, läuft %v, %d Aufrufe, doppelt %v", imFenster, err,
+				e.s.Ungesichert(), e.s.SpeichernLaeuft(), v.aufrufe.Load(), v.doppelt.Load())
+		}
+	}
+}

@@ -42,10 +42,22 @@ func SchreibeArbeitsdatei(w io.Writer, d *document.Dokument, sichtbar image.Imag
 	if err != nil {
 		return err
 	}
-	_, err = w.Write(daten)
+	// In Stücken schreiben, je Stück ein Puls: Auf einem langsamen Medium dauert eine große Datei sonst ohne Fortschritt
+	// länger als die Frist des Editors (Verify F-298 B-6). fsync und Umbenennen danach melden nichts; ein dort
+	// hängendes Medium gilt zu Recht als hängend.
+	for len(daten) > 0 {
+		n := min(len(daten), schreibStueck)
+		if _, err := speicherschritt.Schreiber(w).Write(daten[:n]); err != nil {
+			return err
+		}
+		daten = daten[n:]
+	}
 	speicherschritt.Marke("datei-geschrieben")
-	return err
+	return nil
 }
+
+// schreibStueck: Größe eines Schreibaufrufs der Arbeitsdatei (Fortschritt je Stück, F-298).
+const schreibStueck = 1 << 20
 
 // Gelesen ist das Ergebnis von LeseArbeitsdatei.
 type Gelesen struct {
@@ -60,7 +72,9 @@ type Gelesen struct {
 // LeseArbeitsdatei liest eine Arbeitsdatei oder ein gewöhnliches PNG. Fehlt einer der beiden Schnapp-Blöcke, ist
 // die Datei beschädigt (ErrBeschaedigt) — der Aufrufer kann sie mit LeseBild als einfaches Bild öffnen.
 func LeseArbeitsdatei(r io.Reader) (*Gelesen, error) {
-	bloecke, err := leseBloecke(r)
+	// Fortschritt je gelesenem Stück: Beim Speichern liest die Bibliothek die alte Datei, auf einem langsamen Medium
+	// dauert das (F-298).
+	bloecke, err := leseBloecke(speicherschritt.Leser(r))
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +181,7 @@ func decodiere(daten []byte) (image.Image, error) {
 		cfg.Width*cfg.Height > document.MaxPixel {
 		return nil, fmt.Errorf("%w: Bild %dx%d", ErrZuGross, cfg.Width, cfg.Height)
 	}
-	bild, err := png.Decode(bytes.NewReader(daten))
+	bild, err := png.Decode(speicherschritt.Leser(bytes.NewReader(daten))) // Fortschritt beim Dekodieren (F-298)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrBeschaedigt, err)
 	}

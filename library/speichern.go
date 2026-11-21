@@ -109,7 +109,7 @@ func (b *Bibliothek) Speichern(rel string, erwartet Stand, d *document.Dokument,
 	if err != nil {
 		return Eintrag{}, Stand{}, err
 	}
-	g, err := fileformat.LeseArbeitsdatei(speicherschritt.Leser(f)) // Fortschritt je gelesenem Stück (F-298)
+	g, err := fileformat.LeseArbeitsdatei(f) // meldet Fortschritt je gelesenem Stück (F-298)
 	f.Close()
 	speicherschritt.Marke("alte-datei-gelesen")
 	if err != nil {

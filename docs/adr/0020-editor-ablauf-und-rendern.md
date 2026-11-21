@@ -296,20 +296,35 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
 - **Umsetzung (21.11.2026, Karte #119):**
   - **Fortschrittsquelle** ist `internal/speicherschritt`: `Marke` nach jedem benannten Schritt (gerendert,
     alte-datei-gelesen, bild-kodiert, original-kodiert, datei-geschrieben, ersetzt, index, vorschau, budget-geprueft;
-    die Schnitte der Messung F-297) und `Puls` aus langen Schleifen — beim Füllen alle 64 Zeilen (rund 2 % Mehrkosten
-    im Füll-Benchmark), je Textzeichen, je geschriebenem Stück der PNG-Kodierung (`Schreiber`), je gelesenem Stück der
-    alten Datei (`Leser`), je Zeile der Vorschau. `Zuletzt` liefert den Zeitpunkt des letzten Fortschritts.
+    die Schnitte der Messung F-297) und `Puls` aus langen Schleifen — je Füllung und beim Füllen alle 64 Zeilen (rund
+    2 % Mehrkosten im Füll-Benchmark `AufwandZweiKaesten8000`, 1,87 statt 1,82 s; je Pixel waren es 7 %), je
+    Textzeichen, je geschriebenem Stück der PNG-Kodierung (`Schreiber`), beim Lesen und Dekodieren der alten Datei
+    (`Leser`), je MiB beim Schreiben der Datei, je Zeile der Vorschau. `Zuletzt` liefert den Zeitpunkt des letzten
+    Fortschritts mit monotonem Anteil der Uhr (ein Sprung der Wanduhr, etwa nach dem Ruhezustand, täuscht keinen
+    Stillstand vor).
   - **Hängend** heißt: Ein Speichern läuft und meldet seit `speichernFrist` (15 s) keinen Fortschritt, gerechnet ab dem
     letzten Fortschritt, frühestens ab seinem Beginn. Nur dann sagt die Statusleiste es, und nur dann gibt die nächste
     Schließen-Anfrage oder ein weiteres Signal es auf. Kommt danach wieder Fortschritt, nimmt die Statusleiste die
     Meldung zurück („Saving…“). Die Prüfung weckt die Schleife zur Frist und danach alle `speichernFrist/4`, solange das
-    Speichern läuft. Der längste Abstand ohne Fortschritt liegt im Normalbau unter 1 s, im Race-Bau bei rund 4,4 s.
+    Speichern läuft. Beim Speichern eines 4K-Bildschirmfotos liegt der längste Abstand ohne Fortschritt im Normalbau bei
+    rund 80 ms (Verify-Lauf, Dekodieren der alten Datei, vor dessen Puls); für größere zulässige Dokumente ist er nicht
+    gemessen.
   - **Doch noch gelungen:** Kommt die Antwort eines aufgegebenen Speicherns vor der Rückkehr des Editors (noch in der
     Schleife oder beim Zerstören, dort ohne zu warten), zählt sie: Gelang es, gilt der Stand als gesichert und
-    `ErrSpeichernHaengt` entfällt; scheiterte es, steht sein Fehler in der Rückgabe.
+    `ErrSpeichernHaengt` entfällt; scheiterte es, steht sein Fehler in der Rückgabe. War ein Signal vorgemerkt und
+    scheiterte ein Strg+S oder Schließen, läuft wie sonst der Neuversuch nach dem Signal (Nachtrag 2) und wird mit den
+    üblichen Fristen abgewartet. Ein Fehler, der schon vor dem Aufgeben in der Rückgabe stand, bleibt stehen.
   - **Grenzen:** Der Zeitpunkt gilt prozessweit; ein Kopieren oder Exportieren, das nebenher rendert, meldet ebenfalls
     Fortschritt und verzögert das Erkennen eines hängenden Speicherns höchstens um seine Dauer. `zerstoerenFrist`
-    (2 Minuten ab Beginn des Speicherns) bleibt unabhängig vom Fortschritt die äußerste Grenze.
-  - Tests: `ui/speichern_fortschritt_test.go` (Fortschritt nie aufgegeben, Meldung zurückgenommen, doch gelungen oder
-    gescheitert, wiederholte Prüfung), `render/fortschritt_test.go`, `internal/speicherschritt/schritt_test.go`; jede
-    neue Bedingung einzeln zurückgenommen macht einen Test rot.
+    (2 Minuten ab Beginn des Speicherns) bleibt unabhängig vom Fortschritt die äußerste Grenze. `fsync` und Umbenennen
+    melden keinen Fortschritt: Ein Medium, das dort 15 s steht, gilt als hängend — gewollt, auch wenn ein sehr
+    langsames, aber arbeitendes Medium (Netzordner) so aussehen kann.
+  - Tests: `ui/speichern_fortschritt_test.go` (Fortschritt nie aufgegeben, auch im Warten beim Zerstören; Meldung
+    zurückgenommen; Schließen nur bei gemeldetem Stillstand; doch gelungen oder gescheitert; früherer Fehler bleibt;
+    Neuversuch nach Signal; 2-Minuten-Grenze trotz Fortschritt; wiederholte Prüfung), `render/fortschritt_test.go`,
+    `fileformat/schreiben_fortschritt_test.go`, `library/speichern_fortschritt_test.go`,
+    `internal/speicherschritt/schritt_test.go`. Verify-Lauf Fable (21.11.2026): 8 von 20 Mutationen blieben zunächst
+    grün. Nach der Nacharbeit (Puls je Füllung, monotone Zeit, Schreiben in Stücken, Leser beim Lesen und Dekodieren,
+    Neuversuch nach später Fehlantwort, neue Tests) werden 25 von 26 Mutationen rot; die übrige (`zerstoerenFrist` ab
+    dem letzten Fortschritt statt ab Beginn) ist gleichwertig, weil der Timer je Durchlauf einmal gestellt wird und dann
+    beide Zeitpunkte zusammenfallen.

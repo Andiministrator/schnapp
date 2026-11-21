@@ -31,13 +31,19 @@ var (
 	// Lauf setzen, nicht nebenläufig ändern).
 	Haken func(schritt string)
 
-	zuletzt atomic.Int64 // Unix-Nanosekunden des letzten Fortschritts; 0 = noch keiner
+	// basis trägt den monotonen Anteil der Uhr (time.Now beim Laden des Pakets); zuletzt zählt Nanosekunden seit basis
+	// plus 1, damit 0 „noch keiner“ bleibt. So springt Zuletzt nicht mit der Wanduhr (Aufwachen, NTP; Verify F-298 B-5).
+	basis   = time.Now()
+	zuletzt atomic.Int64
+	pulse   atomic.Uint64 // Anzahl der Pulse (nicht der Marken), für Tests
 )
+
+func merke() { zuletzt.Store(int64(time.Since(basis)) + 1) }
 
 // Marke meldet, dass der Schritt schritt gerade fertig ist. Die Marke "start" setzt die Uhr der Debug-Ausgabe zurück.
 func Marke(schritt string) {
+	merke()
 	jetzt := time.Now()
-	zuletzt.Store(jetzt.UnixNano())
 	debug := os.Getenv("SCHNAPP_DEBUG") != ""
 	if !debug && Haken == nil {
 		return
@@ -58,15 +64,22 @@ func Marke(schritt string) {
 }
 
 // Puls meldet Fortschritt ohne Schrittnamen und ohne Ausgabe (aus langen Schleifen).
-func Puls() { zuletzt.Store(time.Now().UnixNano()) }
+func Puls() {
+	merke()
+	pulse.Add(1)
+}
 
-// Zuletzt liefert den Zeitpunkt des letzten Fortschritts im Prozess; der Nullwert, solange es keinen gab.
+// Pulse zählt die bisherigen Pulse im Prozess (Tests prüfen damit, dass ein Weg Fortschritt meldet).
+func Pulse() uint64 { return pulse.Load() }
+
+// Zuletzt liefert den Zeitpunkt des letzten Fortschritts im Prozess, mit monotonem Anteil (Vergleiche und time.Since
+// folgen keinem Sprung der Wanduhr); der Nullwert, solange es keinen gab.
 func Zuletzt() time.Time {
 	n := zuletzt.Load()
 	if n == 0 {
 		return time.Time{}
 	}
-	return time.Unix(0, n)
+	return basis.Add(time.Duration(n - 1))
 }
 
 // Schreiber reicht jedes Write an w weiter und meldet dabei Fortschritt (PNG-Kodierung schreibt in Stücken).

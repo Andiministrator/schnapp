@@ -356,6 +356,7 @@ func (e *editor) zerstoert(fensterErr error) error {
 		select { // kam die Antwort inzwischen doch, zählt sie (F-298); gewartet wird nicht
 		case r := <-e.speicherAntwort:
 			e.spaeteAntwort(r)
+			e.speichernAbwarten() // ein Neuversuch nach dem Signal (spaeteAntwort) wird abgewartet
 		default:
 		}
 	}
@@ -573,15 +574,26 @@ func (e *editor) speichernAufgeben() {
 }
 
 // spaeteAntwort nimmt die Antwort eines schon aufgegebenen Speicherns an (F-298): Gelang es doch, gilt der Stand als
-// gesichert und ErrSpeichernHaengt steht nicht mehr in der Rückgabe; scheiterte es, steht dort sein Fehler. Das
-// Fenster schließt in beiden Fällen weiter, ein weiterer Versuch nach einem Signal unterbleibt.
+// gesichert und ErrSpeichernHaengt steht nicht mehr in der Rückgabe; scheiterte es, steht dort sein Fehler. Scheiterte
+// ein Strg+S oder Schließen, während ein Signal vorgemerkt war, gilt wie sonst der Neuversuch nach dem Signal
+// (ADR-0020 Nachtrag 2): Er startet, das Aufgeben ist aufgehoben, und zerstoert wartet ihn mit den üblichen Fristen
+// ab (Verify F-298 B-3). Ein Fehler, der schon vor dem Aufgeben in schlussErr stand, bleibt stehen.
 func (e *editor) spaeteAntwort(r speicherErgebnis) {
 	ende := e.s.SpeichernEnde(r.g.HaeltOffen(), r.err)
 	diagnoseEditor("Speichern nach dem Aufgeben zurück: %v, Ende %+v", r.err, ende)
 	if r.err == nil {
 		hinweisAufStderr(r.g)
 	}
-	if errors.Is(e.schlussErr, ErrSpeichernHaengt) {
+	haengt := errors.Is(e.schlussErr, ErrSpeichernHaengt)
+	if ende.Erneut != nil {
+		if haengt {
+			e.schlussErr = nil
+		}
+		e.speichernAufgegeben = false
+		e.speichernStarten(ende.Erneut)
+		return
+	}
+	if haengt {
 		e.schlussErr = r.err
 	}
 }

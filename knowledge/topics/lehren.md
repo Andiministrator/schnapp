@@ -363,3 +363,7 @@ Stand: 2026-11-20 (ergänzt in Sprint 8). Kurze Regeln aus Fehlern und Befunden;
   Probe-Build bis zu 8 s (eine PNG-Kodierung); erst Pulse aus Schreiber, Leser und Rasterschleife machen eine Frist
   von 15 s tragfähig (F-298, `messungen/f-298-probe.md`). Pulse in heißen Schleifen messen: je Pixel kostete 7 %, je
   64 Zeilen rund 2 %.
+- **Ein zweiter Puls überdeckt den ersten:** Nach dem Puls je Füllung und beim Dekodieren blieben die Mutationen „kein
+  Zeilenpuls“ und „kein Leser beim Lesen der Datei“ grün, obwohl beide Wege gebraucht werden (hohe Füllung, langsames
+  Medium). Jede Meldestelle braucht einen Test, den nur sie grün hält. Verify F-298: 8 von 20 Mutationen grün trotz
+  „Gegenprobe je Zweig“ im eigenen Bericht — die eigene Gegenprobe deckte nur die Zweige, an die man gedacht hatte.

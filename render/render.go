@@ -402,6 +402,9 @@ func (z zeichner) raster(polys [][]document.Punkt, farbe color.NRGBA) {
 	if ausschnitt.Empty() {
 		return
 	}
+	// Je Füllung ein Puls: Flache Füllungen (unter 64 Zeilen) erreichen den Zeilenzähler des einmischers nie, viele davon
+	// dauern trotzdem lange (Verify F-298 B-1).
+	speicherschritt.Puls()
 	ox, oy := float64(ausschnitt.Min.X), float64(ausschnitt.Min.Y)
 	r := z.ras
 	r.Reset(ausschnitt.Dx(), ausschnitt.Dy())

@@ -36,3 +36,12 @@ func TestFortschritt(t *testing.T) {
 		}
 	}
 }
+
+// Verify F-298 B-5: Zuletzt trägt den monotonen Anteil der Uhr, Vergleiche folgen keinem Sprung der Wanduhr.
+func TestZuletztMonoton(t *testing.T) {
+	Puls()
+	z := Zuletzt()
+	if !strings.Contains(z.String(), " m=") { // time.Time.String zeigt den monotonen Anteil als „m=±…“
+		t.Errorf("Zuletzt ohne monotonen Anteil: %v", z)
+	}
+}
