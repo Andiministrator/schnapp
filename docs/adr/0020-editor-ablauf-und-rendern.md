@@ -268,3 +268,17 @@ Nachtrag 6 und 7; die 15-s-Frist selbst ist offen (F-298, Karte #119, Entscheidu
 - **Fehler beim Zerstören:** Scheitert das Speichern einer Schließen-Anfrage und wird das Fenster zerstört, bevor ein
   Bild den Fehler gezeigt hat, geht der Fehler in die Rückgabe des Editors (F-300). Hat ein Bild ihn gezeigt, verwirft
   die nächste Anfrage wie bisher.
+
+## Nachtrag 9 (21.11.2026): Ein arbeitendes Speichern wird nie aufgegeben (F-298)
+
+**Status:** Akzeptiert (Andi, 21.11.2026: Variante b). Umsetzung offen (Karte #119); bis dahin gilt Nachtrag 7.
+
+- **Entscheidung:** Die Frist aus Nachtrag 7 unterscheidet künftig ein hängendes von einem langen Speichern. Solange
+  das Speichern Fortschritt meldet (etwa nach Rendern, Kodieren, Schreiben), gilt es nicht als hängend; ein zweites
+  Signal oder eine weitere Schließen-Anfrage bricht es nicht ab. Das bestätigt F-152 und Nachtrag 2 („ein zweites Signal
+  bricht ein laufendes Speichern nicht ab“) und schränkt Nachtrag 7 auf ein Speichern ohne Fortschritt ein.
+- **Verworfen:** Abbrechen nach festen 15 Sekunden auch bei Fortschritt (Variante a). Ein 4K-Bild braucht 8,8 s
+  (F-297), ein Dokument am Budget 35–45 s (Nachtrag 3); der Abbruch träfe gesunde Speichervorgänge.
+- **Offen für die Umsetzung:** Wie fein die Fortschrittsmarken sind, wie lange ohne Marke als hängend gilt, und dass
+  ein nach dem Aufgeben doch gelungenes Speichern `ErrSpeichernHaengt` nicht stehen lässt (Nebenbefund in F-298).
+

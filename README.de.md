@@ -15,7 +15,7 @@ Mitte langer Seiten herausschneiden, teilen. Nebenbei ein einfaches Bildbearbeit
 
 ## Stand
 
-Version 0.2.0 (nur KDE Plasma) bringt ein Menü mit allen Aktionen und Kürzeln, Tasten-Hinweise an den Werkzeugen und Gestauchtes zurückholen. Schnapp nimmt unter KDE Plasma schon auf (Bereich, Monitor, Fenster; Taste **Druck**), legt jeden
+Version 0.3.0 (nur KDE Plasma) speichert und kopiert im Hintergrund, sodass der Editor auch bei großen Bildern bedienbar bleibt, und das Menü geht ganz per Tastatur. Schnapp nimmt unter KDE Plasma schon auf (Bereich, Monitor, Fenster; Taste **Druck**), legt jeden
 Screenshot in der Bibliothek ab und öffnet ihn in einem Editor, in dem sich Pfeile (gerade oder gebogen), Kästen, Text
 und Schritt-Nummern zeichnen sowie auswählen, verschieben und in der Größe ändern lassen, Bereiche endgültig schwärzen
 oder verpixeln, zuschneiden, die Mitte eines langen Screenshots herausnehmen und das Ergebnis in die Zwischenablage
