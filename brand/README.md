@@ -34,6 +34,9 @@ Logo, Symbol und Farben. Stand 19.11.2026: **entschieden — Entwurf e6** (Andi)
 
 ## Entwürfe
 
-`entwuerfe/runde-6/vergleich.html` (aktuell), ältere Runden daneben. Die Werkzeuge in `werkzeug/` sind Python und sollen später durch Go oder Schnapp selbst ersetzt werden (Andi,
-19.11.2026). Neu erzeugen: `python3 brand/werkzeug/runde6.py`
-(entsprechend `runde1.py` bis `runde5.py`; `runde6.py` braucht Python-fontTools und Open Sans).
+`entwuerfe/runde-6/vergleich.html` (aktuell). Die Bilder der Runden 1 bis 5 und die Werkzeuge `runde2.py`/`runde3.py`
+sind entfernt (ADR-0027, 21.11.2026); der letzte Stand mit ihnen ist Commit `5781bcc`. `runde1.py`, `runde4.py` und
+`runde5.py` bleiben, weil `paket.py` und `runde6.py` aus ihnen Schriftzug, Farben und das „s“ mit Auge übernehmen; als
+Skript aufgerufen erzeugen sie ihre Runde wieder unter `entwuerfe/`. Die Werkzeuge in `werkzeug/` sind Python und sollen
+später durch Go oder Schnapp selbst ersetzt werden (Andi, 19.11.2026). Neu erzeugen: `python3 brand/werkzeug/runde6.py`
+(braucht Python-fontTools und Open Sans).

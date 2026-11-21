@@ -155,7 +155,7 @@ Das Auge ist die einzige Figur von Schnapp. Es wird **sparsam** eingesetzt — n
 | Farben mit Kontrasten | `brand/farben.md` |
 | dieses Dokument | `brand/corporate-design.md` und `.pdf` |
 | Erzeugung | `brand/werkzeug/paket.py` (Logo-Paket), `cd.py` (Bilder und PDF dieses Dokuments) |
-| Entwürfe und Herleitung | `brand/entwuerfe/runde-1` … `runde-6` |
+| Entwürfe und Herleitung | `brand/entwuerfe/runde-6`; Runden 1–5 in der git-Geschichte (Commit `5781bcc`) |
 
 Neu bauen: `python3 brand/werkzeug/paket.py && python3 brand/werkzeug/cd.py`. Braucht Python mit fontTools, Open Sans
 SemiBold (Pfad über `SCHNAPP_SCHRIFT`, Vorgabe Arch), `rsvg-convert`, ImageMagick, `chromium` und `qpdf`.

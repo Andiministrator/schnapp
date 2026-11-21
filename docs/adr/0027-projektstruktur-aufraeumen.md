@@ -1,7 +1,8 @@
 # ADR-0027: Projektstruktur aufräumen
 
 ## Status
-Vorgeschlagen (Claude Opus 5.5, 21.11.2026, Karte #124). Entscheidung durch Andi steht aus; umgebaut wird erst danach.
+Akzeptiert (Andi, 21.11.2026: „ja zu allen“). Vorgeschlagen von Claude Opus 5.5 (Karte #124), umgesetzt am selben Tag:
+Punkt 1 `d8a40a2`, Punkt 2 `af7598a`, Punkt 3 `5781bcc`, Punkt 4 und 5 im Commit dieser Zeile und danach.
 
 ## Kontext
 Andi, 21.11.2026: „die verzeichnis-struktur in unserem projekt sieht (für mich) ziemlich chaotisch aus“. Bestand am
@@ -74,7 +75,8 @@ die mitgepflegt werden will.
 
 ### 4. Ältere Logo-Entwürfe entfernen
 `brand/entwuerfe/runde-1` bis `runde-5` (41 Dateien) und ihre Erzeuger `brand/werkzeug/runde1.py` bis `runde5.py`
-entfallen; in der Geschichte bleiben sie auffindbar. `runde-6` (31 Dateien) bleibt: Dort liegt der gewählte Entwurf
+entfallen *(bei der Umsetzung eingeschränkt: `runde1.py`, `runde4.py`, `runde5.py` bleiben, weil `paket.py` und
+`runde6.py` sie importieren; entfernt sind nur `runde2.py` und `runde3.py`)*; in der Geschichte bleiben sie auffindbar. `runde-6` (31 Dateien) bleibt: Dort liegt der gewählte Entwurf
 e6, auf den `brand/logo/README.md`, `brand/README.md` und `brand/corporate-design.md` verweisen; die Verweise auf
 „Runde 1 … 6“ werden auf Runde 6 und die Geschichte umgestellt. Übrige Werkzeuge bleiben, bis die Karte „Python aus
 dem Projekt entfernen“ sie ersetzt.
@@ -105,4 +107,4 @@ Aufwand: rund 2 Stunden; Punkt 1 berührt jede Go-Datei mit Importen, daher zule
 - Offene Arbeit anderer Stränge muss vor Punkt 1 committet sein (sonst Konflikte in jedem Import).
 
 ## Entscheidung
-*Steht aus.* Fragen an Andi: Punkte 1 bis 5 je einzeln annehmen oder ablehnen.
+Andi, 21.11.2026: alle fünf Punkte angenommen („ja zu allen“).
