@@ -331,3 +331,18 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
     `TestZerstoerenFristAbBeginnBeiSpaetemZerstoeren` die Mutation ab.
 
   Seit Sprint 10 heißt das Paket `internal/saveprogress` (E-23, F-312).
+
+## Nachtrag 10 (21.11.2026): Puls nach abgeflossenen Daten, nicht nach dem Seitencache (F-313, Karte #127)
+
+**Status:** Akzeptiert (Claude, Andi informiert).
+
+- `fileformat.SchreibeArbeitsdatei` schreibt in 1-MiB-Stücken. Kann der Schreiber synchronisieren (die temporäre Datei
+  der Bibliothek, unverpackt durchgereicht), folgt auf jedes Stück ein `Sync` und danach der Puls. Ohne `Sync` (Puffer,
+  Attrappe) pulst jedes Stück beim Schreiben wie bisher.
+- Auf einem Medium mit 1 MB/s zerfällt die Wartezeit eines 25-MB-Speicherns so in Abschnitte von rund 1 s, jeder unter
+  der Frist von 15 s: Das Speichern gilt nicht als hängend, solange Daten abfließen. Ein `Sync`, der nicht zurückkehrt,
+  meldet nichts und gilt weiter als hängend; einen Puls aus einem Zeitgeber gibt es nicht.
+- Kosten (Normalbau, NVMe, Rauschbild 4K rund 25 MB): Schreiben und Ersetzen 47 → 73 ms, rund 1,7 % von 1,5 s; die
+  Widerlegungsgrenze von 10 % ist nicht erreicht.
+- Nicht abgedeckt: Medien unter etwa 70 KB/s, auf denen ein einzelnes Stück länger als 15 s braucht. Schluss-`Sync` und
+  Umbenennen melden weiter nichts.
