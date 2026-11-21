@@ -99,6 +99,10 @@ installieren() {
 	quelle_symbol="$wurzel/brand/logo/svg/schnapp-symbol-dunkel.svg"
 	[ -f "$vorlage" ] || { echo "install.sh: Vorlage fehlt: $vorlage" >&2; exit 1; }
 	[ -f "$quelle_symbol" ] || { echo "install.sh: Symbol fehlt: $quelle_symbol" >&2; exit 1; }
+	# Ohne exakte Zeile [Desktop Entry] (kein Leerzeichen am Ende, kein CRLF) bliebe die Desktop-Datei leer, bei
+	# Erfolgsmeldung (F-122). Deshalb schon hier prüfen, bevor gebaut oder etwas installiert wird.
+	grep -qxF '[Desktop Entry]' "$vorlage" \
+		|| { echo "install.sh: Vorlage hat keine Zeile [Desktop Entry] (exakt, ohne Leerzeichen am Ende oder CRLF): $vorlage" >&2; exit 1; }
 	command -v go >/dev/null 2>&1 || { echo "install.sh: go wurde nicht gefunden" >&2; exit 1; }
 
 	# Der Pfad landet in Exec=. Nach der Desktop-Entry-Spezifikation müssten ", `, $ und \ maskiert werden;
@@ -149,6 +153,13 @@ installieren() {
 		done
 		printf '%s\n' "$zeile" >> "$tmp"
 	done < "$vorlage"
+	# Zweite Sicherung: Ergebnis muss den Eintrag enthalten und nicht leer sein. Sonst die Zwischendatei weg
+	# (entferne prüft Präfix und Suffix) und abbrechen; die alte Desktop-Datei bleibt unberührt.
+	if [ "$im_eintrag" != 1 ] || [ ! -s "$tmp" ]; then
+		entferne "$tmp" "$DATEN" "/applications/schnapp.desktop.neu"
+		echo "install.sh: Desktop-Datei würde leer; bestehende Datei bleibt unverändert" >&2
+		exit 1
+	fi
 	chmod 0644 "$tmp"
 	mv -f -- "$tmp" "$DESKTOP"
 	echo "installiert: $DESKTOP"
