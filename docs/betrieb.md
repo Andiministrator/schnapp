@@ -26,7 +26,6 @@ Weitere Module, je mit eigenem `go.mod`:
 |---|---|
 | `draw/` (Zeichenpakete, ADR-0012) | `cd draw && go vet ./... && go test ./...` |
 | `third_party/gio/` (gepatchtes Gio, ADR-0015) | `third_party/gio-patch.sh pruefen` |
-| `prototype/` (Wegwerf-Code) | `cd prototype && go test -tags novulkan,nox11 ./...` |
 
 **Probeläufe der Oberfläche** ohne echten Bildschirm: `scripts/probe.sh` startet einen virtuellen KWin, Drehbücher
 liegen unter `scripts/drehbuecher/` (Anleitung in `knowledge/topics/lehren.md`). Probe-Builds laufen nur dort
@@ -34,14 +33,13 @@ liegen unter `scripts/drehbuecher/` (Anleitung in `knowledge/topics/lehren.md`).
 
 ## CI
 
-GitHub Actions, `.github/workflows/test.yml` (ADR-0010), läuft bei jedem Push und Pull-Request. Vier Jobs:
+GitHub Actions, `.github/workflows/test.yml` (ADR-0010), läuft bei jedem Push und Pull-Request. Drei Jobs:
 
 | Job | Inhalt |
 |---|---|
 | `wurzel` | gofmt, vet, test, Programm bauen; dazu vet/test mit Tag `probe` |
 | `draw` | gofmt, vet, test im Modul `draw/` |
 | `gio-patch` | Patch passt zu `third_party/gio/` |
-| `prototype` | gofmt, vet, test, bauen im Prototyp |
 
 Nach einem Push den Lauf ansehen, auch auf **Annotationen** (Abkündigungen kommen dort, solange der Lauf grün ist;
 F-309). Die Aktionen sind per Commit-SHA gepinnt (F-43).

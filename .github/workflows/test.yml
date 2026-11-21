@@ -53,24 +53,5 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
-          go-version-file: prototype/go.mod
+          go-version-file: go.mod
       - run: third_party/gio-patch.sh pruefen
-
-  # Prototyp gegen das gepatchte Gio bauen und testen (cgo, nur Wayland).
-  prototype:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: prototype
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
-        with:
-          go-version-file: prototype/go.mod
-      - name: Bibliotheken für Gio (Wayland, EGL, xkbcommon)
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwayland-dev libegl-dev libxkbcommon-dev
-      - name: gofmt
-        run: test -z "$(gofmt -l .)"
-      - run: go vet -tags novulkan,nox11 ./...
-      - run: go test -tags novulkan,nox11 ./...
-      - run: go build -trimpath -tags novulkan,nox11 -o /dev/null .

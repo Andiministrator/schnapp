@@ -100,3 +100,8 @@ Schnapp bleibt bei **Go mit Gio**. Kein Wechsel zu Rust.
 (`extern/gio-ausgabe.patch`, `extern/gio/`); die Pfade `prototyp/gio-ausgabe.patch` oben sind der Stand vom 19.11.2026
 vor dem Umzug. Nach F-33 (Meldung bei unbekanntem Ausgabenamen, Ausgaben gefiltert und sortiert, mit Test) misst der
 Patch von Hand 5 Dateien +203/−26 Zeilen, erzeugt weiter 811 Zeilen (`git apply --numstat extern/gio-ausgabe.patch`).
+
+## Nachtrag 3 (21.11.2026): Prototyp entfernt (ADR-0027 Punkt 3)
+
+Der Ordner `prototype/` samt CI-Job ist entfernt (Andi, 21.11.2026: „ja zu allen“). Der letzte Stand mit Prototyp ist
+Commit `af7598a`; dort lässt er sich mit `git show af7598a:prototype/README.md` bzw. `git worktree add` nachlesen.

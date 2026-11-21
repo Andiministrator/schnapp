@@ -113,7 +113,7 @@ Speichern, Zeichenwerkzeuge Pfeil/Kasten/Text/Schritt-Nummer mit Farbwahl, ADR-0
 Zwischenablage Strg+C, ADR-0015 Nachtrag 2, bleibt nach dem Schließen über den Halter `wlclip`, ADR-0024; Zuschneiden C und Stauchen X mit Zackenkante, Band bis an den Rand wird Zuschnitt, zurück über den Knopf „Ganzes Bild“, ADR-0023; Export PNG/JPG/SVG über den Portal-Dialog, Strg+Umschalt+E,
 ADR-0025; Menü mit allen Aktionen und Kürzeln, auch allein per Tastatur, Tastentabelle `internal/ui/kuerzel.go`, ADR-0026 mit Nachträgen 2 bis 4; seit Sprint 8: Speichern und Kopieren im Hintergrund, ADR-0020 Nachträge 6 bis 8; Nachtrag 9 — Frist erkennt Fortschritt über `internal/speicherschritt`, umgesetzt in Sprint 9). Probeläufe ohne Andi: `scripts/probe.sh`
 (virtueller KWin, `knowledge/topics/lehren.md`). Installation per `install.sh` (`~/.local`, Version aus `git describe`). Daneben
-der Wegwerf-Prototyp `prototype/`. Alle Programmpakete liegen seit Sprint 9 unter `internal/` (ADR-0027; Modulpfad
+der Wegwerf-Prototyp `prototype/` (entfernt in Sprint 9, ADR-0027; Stand in der git-Geschichte). Alle Programmpakete liegen seit Sprint 9 unter `internal/` (ADR-0027; Modulpfad
 `github.com/Andiministrator/schnapp/internal/<paket>`), öffentlich ist nur das Modul `draw/`. Schichten:
 
 - **capture** — Schnittstelle + KWin-Umsetzung (D-Bus), später Portal.
@@ -157,8 +157,6 @@ ADR-0003 Nachtrag 2, ADR-0015.
   Abstimmung ändern (wer, steht in `CLAUDE.local.md`).
 - **Gepatchtes Gio** `third_party/gio/` (ADR-0015): eigenes Modul, eingebunden per `replace gioui.org => …/third_party/gio`.
   Änderungen dort, dann `third_party/gio-patch.sh erzeugen` (Patch im selben Commit); Prüfung `third_party/gio-patch.sh pruefen`.
-- **Prototyp** `prototype/` (Wegwerf-Code, eigenes Modul): `prototype/bauen.sh` baut (`-trimpath`), Tests
-  `cd prototype && go test -tags novulkan,nox11 ./...`.
 - **Wurzelmodul** `github.com/Andiministrator/schnapp` (bindet Gio per `replace gioui.org => ./third_party/gio`, ADR-0015):
   Gio braucht unter Linux die Build-Tags `novulkan,nox11` (keine Vulkan-Header, nur Wayland) und die cgo-Bibliotheken
   `libwayland-dev libegl-dev libxkbcommon-dev`. Die Tags kommen über die Umgebungsvariable, nicht über `go env -w`:
