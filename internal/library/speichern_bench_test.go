@@ -104,7 +104,7 @@ func speichern4K(b *testing.B, bild func() *image.NRGBA, schwaerzungen int) {
 	zeiten := map[string]time.Duration{}
 	var reihe []string
 	var vorig time.Time
-	saveprogress.Haken = func(s string) {
+	saveprogress.SetzeHaken(func(s string) {
 		mu.Lock()
 		defer mu.Unlock()
 		jetzt := time.Now()
@@ -114,8 +114,8 @@ func speichern4K(b *testing.B, bild func() *image.NRGBA, schwaerzungen int) {
 		zeiten[s] += jetzt.Sub(vorig)
 		vorig = jetzt
 		reihe = append(reihe, s)
-	}
-	defer func() { saveprogress.Haken = nil }()
+	})
+	defer saveprogress.SetzeHaken(nil)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

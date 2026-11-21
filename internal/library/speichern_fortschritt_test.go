@@ -56,12 +56,12 @@ func TestSpeichernMeldetFortschrittBeimLesen(t *testing.T) {
 		t.Fatal(err)
 	}
 	var beimLesen uint64
-	saveprogress.Haken = func(s string) {
+	t.Cleanup(func() { saveprogress.SetzeHaken(nil) })
+	saveprogress.SetzeHaken(func(s string) {
 		if s == "alte-datei-gelesen" {
 			beimLesen = saveprogress.Pulse()
 		}
-	}
-	t.Cleanup(func() { saveprogress.Haken = nil })
+	})
 	vorher := saveprogress.Pulse()
 	if _, _, err := bib.Speichern(e.Pfad, stand, d, sicht); err != nil {
 		t.Fatal(err)

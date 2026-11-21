@@ -39,12 +39,12 @@ func TestSchreibeArbeitsdateiMeldetFortschritt(t *testing.T) {
 		t.Fatal(err)
 	}
 	var beimKodieren uint64
-	saveprogress.Haken = func(s string) {
+	t.Cleanup(func() { saveprogress.SetzeHaken(nil) })
+	saveprogress.SetzeHaken(func(s string) {
 		if s == "bild-kodiert" {
 			beimKodieren = saveprogress.Pulse()
 		}
-	}
-	t.Cleanup(func() { saveprogress.Haken = nil })
+	})
 	vorher := saveprogress.Pulse()
 	var z zaehlSchreiber
 	if err := SchreibeArbeitsdatei(&z, d, bild, Metadaten{}); err != nil {

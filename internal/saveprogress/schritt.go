@@ -27,9 +27,11 @@ var (
 	mu    sync.Mutex
 	start time.Time
 	vorig time.Time
-	// Haken, falls gesetzt, bekommt jede Marke mit dem Namen des Schritts (nur für Tests und Benchmarks; vor dem
-	// Lauf setzen, nicht nebenläufig ändern).
-	Haken func(schritt string)
+	// haken, falls gesetzt, bekommt jede Marke mit dem Namen des Schritts; gesetzt wird er nur über SetzeHaken (Tests
+	// und Benchmarks). Atomar, weil Marke aus der Speicher-Goroutine liest (F-318).
+	haken atomic.Pointer[func(schritt string)]
+	// quelle ersetzt die Uhr (nur Tests, SetzeUhr); nil heißt echte Zeit.
+	quelle atomic.Pointer[func() time.Time]
 
 	// basis trägt den monotonen Anteil der Uhr (time.Now beim Laden des Pakets); zuletzt zählt Nanosekunden seit basis
 	// plus 1, damit 0 „noch keiner“ bleibt. So springt Zuletzt nicht mit der Wanduhr (Aufwachen, NTP; Verify F-298 B-5).
@@ -38,14 +40,55 @@ var (
 	pulse   atomic.Uint64 // Anzahl der Pulse (nicht der Marken), für Tests
 )
 
-func merke() { zuletzt.Store(int64(time.Since(basis)) + 1) }
+func merke() { zuletzt.Store(int64(Jetzt().Sub(basis)) + 1) }
+
+// Jetzt liefert die Zeit, nach der Fortschritt und Fristen gerechnet werden: die echte Uhr, in Tests eine steuerbare
+// (SetzeUhr). Der Editor nimmt seine Zeitpunkte von hier, damit sie mit Zuletzt vergleichbar bleiben (F-317).
+func Jetzt() time.Time {
+	if f := quelle.Load(); f != nil {
+		return (*f)()
+	}
+	return time.Now()
+}
+
+// SetzeUhr ersetzt die Uhr (nur für Tests) und liefert die bisherige (nil: echte Zeit), damit ein Test sie mit
+// t.Cleanup zurückgeben kann. nil stellt die echte Zeit her. Der Zeitpunkt des letzten Fortschritts wird
+// zurückgesetzt, denn er stammt aus der anderen Uhr. Eine Ersatzuhr muss Zeiten ab Basis() liefern.
+func SetzeUhr(f func() time.Time) (alt func() time.Time) {
+	var neu *func() time.Time
+	if f != nil {
+		neu = &f
+	}
+	if p := quelle.Swap(neu); p != nil {
+		alt = *p
+	}
+	zuletzt.Store(0)
+	return alt
+}
+
+// Basis ist der Nullpunkt von Zuletzt; eine Ersatzuhr rechnet von hier aus.
+func Basis() time.Time { return basis }
+
+// SetzeHaken setzt den Haken, der jede Marke mit dem Namen des Schritts bekommt (nur für Tests und Benchmarks), und
+// liefert den bisherigen (nil, wenn keiner gesetzt war), damit ein Test ihn mit t.Cleanup zurücksetzen kann.
+func SetzeHaken(f func(schritt string)) (alt func(schritt string)) {
+	var neu *func(schritt string)
+	if f != nil {
+		neu = &f
+	}
+	if p := haken.Swap(neu); p != nil {
+		alt = *p
+	}
+	return alt
+}
 
 // Marke meldet, dass der Schritt schritt gerade fertig ist. Die Marke "start" setzt die Uhr der Debug-Ausgabe zurück.
 func Marke(schritt string) {
 	merke()
 	jetzt := time.Now()
 	debug := os.Getenv("SCHNAPP_DEBUG") != ""
-	if !debug && Haken == nil {
+	h := haken.Load()
+	if !debug && h == nil {
 		return
 	}
 	mu.Lock()
@@ -58,8 +101,8 @@ func Marke(schritt string) {
 	if debug {
 		log.Printf("[speichern] %s: +%s (gesamt %s)", schritt, seit.Round(time.Millisecond), gesamt.Round(time.Millisecond))
 	}
-	if Haken != nil {
-		Haken(schritt)
+	if h != nil {
+		(*h)(schritt)
 	}
 }
 
