@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Attrappe für `go` im Test von install.sh (scripts/install-test.sh, F-324): baut nichts, hält die Argumente
+# in $STUB_LOG fest und legt das mit -o verlangte Programm an. Läuft nur im Sandkasten des Tests.
+set -eu
+[ -n "${STUB_LOG:-}" ] || { echo "go-Attrappe: STUB_LOG fehlt" >&2; exit 1; }
+printf '%s\n' "$*" >> "$STUB_LOG"
+ziel=""
+while [ "$#" -gt 0 ]; do
+	if [ "$1" = "-o" ]; then
+		ziel="$2"
+		shift
+	fi
+	shift
+done
+[ -n "$ziel" ] || exit 0
+printf '#!/bin/sh\nexit 0\n' > "$ziel"
