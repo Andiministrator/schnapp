@@ -55,11 +55,11 @@ What exists:
 | Command | What it does |
 |---|---|
 | `schnapp` or `schnapp --region` | select an area in a frozen full-screen overlay (default, **Print**) |
-| `schnapp --screen[=NAME]` | capture a monitor (without a name as set in the settings; `--list-screens` lists the names) |
+| `schnapp --screen[=NAME]` | capture a monitor (without a name as set in the settings, `[capture] screen = all` joins all monitors into one image; `--list-screens` lists the names) |
 | `schnapp --window` | select a window |
 | `schnapp --repeat` | capture the last area again |
 | `schnapp --no-editor …` | capture without opening the editor afterwards |
-| `schnapp FILE` | open a PNG or JPEG in the editor |
+| `schnapp FILE` | open a PNG or JPEG in the editor (also what "Open with" in a file manager runs; a JPEG with EXIF orientation is rotated or mirrored as image viewers show it, the EXIF data itself is not kept) |
 | `schnapp --ignore-limit FILE` | open the file even if it has so many or such large annotations that rendering exceeds the compute budget (for your own work that grew past it) |
 
 Every capture is saved to the library (`~/Pictures/schnapp/YYYY-MM/`) and its path printed on standard output before
@@ -69,7 +69,7 @@ In the editor, tools: **V** select, **A** arrow (drag; **Shift** snaps to 45°; 
 **R** box (**Shift**: square), **T** text (click, type, **Enter** confirms, **Shift+Enter** new line, **Esc** discards;
 double-click a text to edit it), **N** step number (counts up by itself), **B** redact (drag over an area: black),
 **P** pixelate (drag; a mosaic made only from the area's average colour and random noise, so it carries nothing of
-what was there). Both overwrite the pixels of the image itself: they can be undone until you save, after that they are
+what was there). Both overwrite the pixels of the image itself: they can be undone until you save (the undo history keeps at most 512 MiB of pixel copies, older steps fall away silently), after that they are
 final and no saved or exported file contains the hidden content. An image copied with **Ctrl+C** before redacting
 stays in the clipboard as it was. **C** crop (drag a frame; the *Whole image* button or a
 double-click with the tool shows the whole image again), **X** cut out (drag across the part to remove — vertically to
@@ -82,8 +82,8 @@ recolours the selected annotation. A drawing tool stays active; **Esc** steps ba
 select tool. Drag an annotation or its handles to move, resize or bend it; it always stays partly inside the image.
 The mouse wheel zooms at the pointer; with the select tool dragging empty space moves the view, the middle button does
 so with every tool. Keys: **Ctrl+Z** undo, **Ctrl+Shift+Z**/**Ctrl+Y** redo, **Del** delete, **Ctrl+S** save,
-**Ctrl+Shift+E** (button "Export…") export as PNG, JPG or SVG through the desktop file dialog (no editing data inside, redacted content stays gone),
-**Ctrl+C** copy the finished image to the clipboard (on compositors with the data-control protocol, such as KDE Plasma, it stays after the editor closes until something else is copied, for at most 12 hours; elsewhere only while the editor is open), **Ctrl+0** fit, **Ctrl+1** 100 %, **Ctrl+W** close. Every shortcut also works with the mouse (only holding Shift while dragging, for 45° arrows and squares, and Shift+Enter for a new line in text stay keys): the **Menu** button next to Save lists all actions with their shortcuts (including **Restore cut-out areas**, which brings back everything removed with Cut out), and hovering a tool button shows its key. The menu also works without a mouse: **Tab** to the Menu button, **Enter** or **Space** opens it, the arrow keys, **Home** and **End** choose an entry, **Enter** runs it, **Esc** closes.
+**Ctrl+Shift+E** (button "Export…") export as PNG, JPG or SVG through the desktop file dialog (no editing data inside, redacted content stays gone; if replacing an existing file fails halfway and the old content cannot be restored, the status bar names the file as damaged),
+**Ctrl+C** copy the finished image to the clipboard (on compositors with the data-control protocol, such as KDE Plasma, it stays after the editor closes until something else is copied, for at most 12 hours; elsewhere only while the editor is open, and closing then stops once and warns that the clipboard holds the image only while the window is open), **Ctrl+0** fit, **Ctrl+1** 100 %, **Ctrl+W** close. Every shortcut also works with the mouse (only holding Shift while dragging, for 45° arrows and squares, and Shift+Enter for a new line in text stay keys): the **Menu** button next to Save lists all actions with their shortcuts (including **Restore cut-out areas**, which brings back everything removed with Cut out), and hovering a tool button shows its key. The menu also works without a mouse: **Tab** to the Menu button, **Enter** or **Space** opens it, the arrow keys, **Home** and **End** choose an entry, **Enter** runs it, **Esc** closes.
 
 Changes are saved when the editor closes; **Ctrl+S** without changes writes nothing. Saving runs in the background: the window stays responsive and shows "Saving…", editing pauses until it is done. A file from outside the library
 becomes a new screenshot in the library on the first save (the file itself stays untouched; the status bar names the new
@@ -94,7 +94,7 @@ when opening; `--ignore-limit FILE` opens it anyway.
 
 ## Install
 
-`./install.sh` builds Schnapp (same requirements as under "Building"; the version comes from `git describe`) and installs it for the current user:
+`./install.sh` builds Schnapp (same requirements as under "Building"; the version comes from `git describe`, without a reachable tag it reads `0.0.0-dev+<hash>`, with changed files `0.0.0-dev+<hash>.dirty`) and installs it for the current user:
 
 | File | Location |
 |---|---|
@@ -102,7 +102,7 @@ when opening; `--ignore-limit FILE` opens it anyway.
 | Desktop file | `$XDG_DATA_HOME/applications/schnapp.desktop` (default `~/.local/share/applications/`) |
 | Icon | `$XDG_DATA_HOME/icons/hicolor/scalable/apps/schnapp.svg` |
 
-The desktop file carries the absolute path of the program (KDE Plasma 6.7 and older bind the screenshot permission to it) and the default shortcut **Print** for "Capture Area". Spectacle uses **Print** as well: if both are installed, turn off Spectacle's shortcut in the system settings (Shortcuts). Make sure `~/.local/bin` is in your `PATH`.
+The desktop file lists PNG and JPEG, so file managers offer Schnapp under "Open with". It carries the absolute path of the program (KDE Plasma 6.7 and older bind the screenshot permission to it) and the default shortcut **Print** for "Capture Area". Spectacle uses **Print** as well: if both are installed, turn off Spectacle's shortcut in the system settings (Shortcuts). Make sure `~/.local/bin` is in your `PATH`.
 
 Desktop tools may update their caches as well (menu database; the icon cache only if one exists). Remove it again with `./install.sh --uninstall` (deletes only these three files). `./install.sh --help` lists the options.
 

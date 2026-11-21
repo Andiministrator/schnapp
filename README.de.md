@@ -57,11 +57,11 @@ Vorhanden ist:
 | Aufruf | Was passiert |
 |---|---|
 | `schnapp` oder `schnapp --region` | Bereich in einem eingefrorenen Vollbild-Overlay wählen (Voreinstellung, **Druck**) |
-| `schnapp --screen[=NAME]` | einen Monitor aufnehmen (ohne Namen laut Einstellung; `--list-screens` nennt die Namen) |
+| `schnapp --screen[=NAME]` | einen Monitor aufnehmen (ohne Namen laut Einstellung, `[capture] screen = all` setzt alle Monitore zu einem Bild zusammen; `--list-screens` nennt die Namen) |
 | `schnapp --window` | ein Fenster wählen |
 | `schnapp --repeat` | den letzten Bereich noch einmal aufnehmen |
 | `schnapp --no-editor …` | aufnehmen, ohne danach den Editor zu öffnen |
-| `schnapp DATEI` | ein PNG oder JPEG im Editor öffnen |
+| `schnapp DATEI` | ein PNG oder JPEG im Editor öffnen (das startet auch „Öffnen mit“ im Dateimanager; ein JPEG mit EXIF-Ausrichtung wird gedreht oder gespiegelt, wie Bildbetrachter es zeigen, die EXIF-Angabe selbst bleibt nicht erhalten) |
 | `schnapp --ignore-limit DATEI` | die Datei auch öffnen, wenn ihre Beschriftungen so zahlreich oder groß sind, dass das Rendern das Rechenbudget überschreitet (für eigene Arbeit, die darüber hinausgewachsen ist) |
 
 Jede Aufnahme landet in der Bibliothek (`~/Bilder/schnapp/JJJJ-MM/`), ihr Pfad steht auf der Standardausgabe, bevor
@@ -71,7 +71,7 @@ Im Editor, Werkzeuge: **V** Auswählen, **A** Pfeil (ziehen; **Umschalt** rastet
 biegt ihn), **R** Kasten (**Umschalt**: Quadrat), **T** Text (klicken, tippen, **Enter** bestätigt, **Umschalt+Enter**
 neue Zeile, **Esc** verwirft; Doppelklick auf einen Text bearbeitet ihn), **N** Schritt-Nummer (zählt selbst hoch), **B** Schwärzen (über einen Bereich ziehen: schwarz),
 **P** Verpixeln (ziehen; ein Mosaik nur aus der Durchschnittsfarbe des Bereichs und Zufall, es trägt nichts vom
-Inhalt). Beides überschreibt die Pixel des Bildes selbst: Bis zum Speichern lässt es sich zurücknehmen, danach ist es
+Inhalt). Beides überschreibt die Pixel des Bildes selbst: Bis zum Speichern lässt es sich zurücknehmen (der Rückgängig-Verlauf hält höchstens 512 MiB Pixelkopien, ältere Schritte fallen still weg), danach ist es
 endgültig, und keine gespeicherte oder exportierte Datei enthält den verdeckten Inhalt. Ein vor dem Schwärzen mit
 **Strg+C** kopiertes Bild bleibt, wie es war, in der Zwischenablage. **C** Zuschneiden (Rahmen ziehen; der Knopf *Ganzes Bild*
 oder ein Doppelklick mit dem Werkzeug zeigt wieder das ganze Bild), **X** Stauchen (quer über den Teil ziehen, der
@@ -86,9 +86,9 @@ aktiv; **Esc** geht stufenweise zurück: Texteingabe → Ziehen → Auswahl → 
 verschiebt, ändert die Größe oder biegt; sie bleibt dabei immer teilweise im Bild. Das Mausrad zoomt zum Zeiger; mit
 Auswählen verschiebt Ziehen auf freier Fläche die Ansicht, die mittlere Taste in jedem Werkzeug. Tasten: **Strg+Z**
 rückgängig, **Strg+Umschalt+Z**/**Strg+Y** wiederholen, **Entf** löschen, **Strg+S** speichern,
-**Strg+Umschalt+E** (Knopf „Exportieren …“) als PNG, JPG oder SVG über den Dateidialog des Desktops weitergeben (ohne Bearbeitungsdaten, Geschwärztes bleibt weg),
+**Strg+Umschalt+E** (Knopf „Exportieren …“) als PNG, JPG oder SVG über den Dateidialog des Desktops weitergeben (ohne Bearbeitungsdaten, Geschwärztes bleibt weg; scheitert das Ersetzen einer vorhandenen Datei auf halbem Weg und lässt sich der alte Inhalt nicht wiederherstellen, nennt die Statusleiste die Datei als beschädigt),
 **Strg+C** fertiges Bild in die Zwischenablage (mit dem data-control-Protokoll, etwa unter KDE Plasma, bleibt
-es nach dem Schließen des Editors, bis etwas anderes kopiert wird, höchstens 12 Stunden; sonst nur, solange der Editor offen ist), **Strg+0** einpassen,
+es nach dem Schließen des Editors, bis etwas anderes kopiert wird, höchstens 12 Stunden; sonst nur, solange der Editor offen ist; das Schließen hält dann einmal an und warnt, dass die Zwischenablage das Bild nur hält, solange das Fenster offen ist), **Strg+0** einpassen,
 **Strg+1** 100 %, **Strg+W** schließen. Jedes Kürzel geht auch mit der Maus (nur Umschalt beim Ziehen, für Pfeile in 45°-Schritten und Quadrate, und Umschalt+Enter für den Zeilenumbruch im Text bleiben Tasten): Der Knopf **Menü** neben Speichern führt alle Aktionen mit ihren Kürzeln (darunter **Gestauchtes zurückholen**, das alles Gestauchte wieder zeigt), und über einem Werkzeugknopf erscheint sein Buchstabe. Das Menü geht auch ohne Maus: mit **Tab** zum Knopf Menü, **Enter** oder **Leertaste** öffnet, Pfeiltasten, **Pos1** und **Ende** wählen einen Eintrag, **Enter** führt ihn aus, **Esc** schließt.
 
 Änderungen werden beim Schließen gespeichert; **Strg+S** ohne Änderung schreibt nichts. Gespeichert wird im Hintergrund: Das Fenster reagiert weiter und zeigt „Speichern …“, das Bearbeiten ruht, bis es fertig ist. Eine Datei außerhalb der
@@ -101,7 +101,7 @@ DATEI` öffnet sie trotzdem.
 
 ## Installation
 
-`./install.sh` baut Schnapp (gleiche Voraussetzungen wie unter „Bauen“; die Version kommt aus `git describe`) und installiert es für den aktuellen Benutzer:
+`./install.sh` baut Schnapp (gleiche Voraussetzungen wie unter „Bauen“; die Version kommt aus `git describe`, ohne erreichbaren Tag lautet sie `0.0.0-dev+<Hash>`, bei geänderten Dateien `0.0.0-dev+<Hash>.dirty`) und installiert es für den aktuellen Benutzer:
 
 | Datei | Ort |
 |---|---|
@@ -109,7 +109,7 @@ DATEI` öffnet sie trotzdem.
 | Desktop-Datei | `$XDG_DATA_HOME/applications/schnapp.desktop` (Vorgabe `~/.local/share/applications/`) |
 | Symbol | `$XDG_DATA_HOME/icons/hicolor/scalable/apps/schnapp.svg` |
 
-Die Desktop-Datei trägt den absoluten Pfad des Programms (KDE Plasma 6.7 und älter binden die Aufnahme-Berechtigung daran) und das Standardkürzel **Druck** für „Bereich aufnehmen“. Spectacle belegt **Druck** ebenfalls: Sind beide installiert, schalte das Kürzel von Spectacle in den Systemeinstellungen (Kurzbefehle) ab. `~/.local/bin` muss in deinem `PATH` liegen.
+Die Desktop-Datei nennt PNG und JPEG, damit Dateimanager Schnapp unter „Öffnen mit“ anbieten. Sie trägt den absoluten Pfad des Programms (KDE Plasma 6.7 und älter binden die Aufnahme-Berechtigung daran) und das Standardkürzel **Druck** für „Bereich aufnehmen“. Spectacle belegt **Druck** ebenfalls: Sind beide installiert, schalte das Kürzel von Spectacle in den Systemeinstellungen (Kurzbefehle) ab. `~/.local/bin` muss in deinem `PATH` liegen.
 
 Desktop-Werkzeuge aktualisieren dabei gegebenenfalls ihre Caches (Menü-Datenbank; den Symbol-Cache nur, wenn es schon einen gibt). Entfernen mit `./install.sh --uninstall` (löscht nur diese drei Dateien). `./install.sh --help` listet die Optionen.
 

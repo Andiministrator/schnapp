@@ -157,7 +157,9 @@ Stand: 2026-11-21 (ergänzt in Sprint 10). Kurze Regeln aus Fehlern und Befunden
   knapper `timeout` im Testbefehl bricht es ab, ohne dass man es sieht.
 - **Worktree-Agenten können `HOME` nicht setzen** (Sandbox): Installations- und Bibliothekstests dort über
   `PREFIX`/`XDG_DATA_HOME` bzw. eigene Umgebung im Testcode, Läufe mit Test-HOME macht der Orchestrator.
-- **Register-Status nur aus dem Vokabular** (`sofort`, `eingeplant`, `backlog`, `akzeptiert`, `behoben`):
+- **Register-Status nur aus dem Vokabular** (`sofort`, `eingeplant`, `backlog`, `akzeptiert`, `behoben`; dazu
+  `teilweise behoben <Commit>: … Offen: …` für ein Finding mit benanntem Rest, das offen bleibt, sowie `hinfällig
+  <Datum>: <Grund>` und `geschlossen <Datum>, <Grund>` für Funde ohne Code-Änderung — Nachtrag Sprint 10, F-326):
   `findings-rotate.mjs` rotiert „widerlegt“ nicht; die Nuance gehört in den Text. Senkrechte Striche im Prüfbefehl
   zerreißen die Tabelle — umformulieren.
 - **Kritiker mit anderem Modell lohnt sich** (Fable, Sitzungs-QA Sprint 4 Teil 2): fand einen Datenverlust (Datei

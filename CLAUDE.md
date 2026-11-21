@@ -112,16 +112,16 @@ Schnapp nimmt auf, legt in der Bibliothek ab und öffnet den Editor (Auswählen,
 Speichern, Zeichenwerkzeuge Pfeil/Kasten/Text/Schritt-Nummer mit Farbwahl, ADR-0021; Schwärzen/Verpixeln ADR-0022;
 Zwischenablage Strg+C, ADR-0015 Nachtrag 2, bleibt nach dem Schließen über den Halter `wlclip`, ADR-0024; Zuschneiden C und Stauchen X mit Zackenkante, Band bis an den Rand wird Zuschnitt, zurück über den Knopf „Ganzes Bild“, ADR-0023; Export PNG/JPG/SVG über den Portal-Dialog, Strg+Umschalt+E,
 ADR-0025; Menü mit allen Aktionen und Kürzeln, auch allein per Tastatur, Tastentabelle `internal/ui/kuerzel.go`, ADR-0026 mit Nachträgen 2 bis 4; seit Sprint 8: Speichern und Kopieren im Hintergrund, ADR-0020 Nachträge 6 bis 8; Nachtrag 9 — Frist erkennt Fortschritt über `internal/saveprogress`, umgesetzt in Sprint 9). Probeläufe ohne Andi: `scripts/probe.sh`
-(virtueller KWin, `knowledge/topics/lehren.md`). Installation per `install.sh` (`~/.local`, Version aus `git describe`). Daneben
+(virtueller KWin, `knowledge/topics/lehren.md`). Installation per `install.sh` (`~/.local`, Version aus `git describe`, ohne erreichbaren Tag `0.0.0-dev+<Kurzhash>[.dirty]`, ADR-0006 Nachtrag 1; getestet von `scripts/install-test.sh` mit go-Attrappe, in der CI, F-324). Daneben
 der Wegwerf-Prototyp `prototype/` (entfernt in Sprint 9, ADR-0027; Stand in der git-Geschichte). Alle Programmpakete liegen seit Sprint 9 unter `internal/` (ADR-0027; Modulpfad
 `github.com/Andiministrator/schnapp/internal/<paket>`), öffentlich ist nur das Modul `draw/`. Schichten:
 
-- **capture** — Schnittstelle + KWin-Umsetzung (D-Bus), später Portal.
-- **document** — Ebenenmodell (Pixelebene, Vektorebenen, Original, Stauchangaben), Rückgängig-Verlauf; `Abzug` (unabhängige Kopie mit gleichem Stand, ohne Verlauf, für Speichern und Kopieren im Hintergrund), `PruefeInhalt` (Objekte, Zuschnitt, Streifen ohne Pixel prüfen, gleiche Grenzen wie das Laden).
-- **fileformat** — Arbeitsdatei PNG mit Blöcken `snAP`/`snAO` lesen/schreiben; Exporte SVG, PNG/JPG (PDF noch offen); `LeseMetadaten` liest nur `snAP` und die Köpfe, keine Pixel (Neuaufbau des Index), mit demselben Urteil und derselben Größe wie das volle Lesen (F-272), ohne Vorabreservierung angekündigter Blocklängen (F-273).
+- **capture** — Schnittstelle + KWin-Umsetzung (D-Bus), später Portal; Transport als Naht `dbusTransport` (Deskriptor-Ebene mit Attrappe getestet; gegen echtes KWin ist memfd/ScreenShot3 ungeprüft, F-56). `Quelle.Alle` setzt alle Monitore über KWin `CaptureWorkspace` zu einem Bild zusammen: `[capture] screen = all` ist damit umgesetzt (ADR-0017 Nachtrag 7, F-119).
+- **document** — Ebenenmodell (Pixelebene, Vektorebenen, Original, Stauchangaben), Rückgängig-Verlauf; `Abzug` (unabhängige Kopie mit gleichem Stand, ohne Verlauf, für Speichern und Kopieren im Hintergrund), `PruefeInhalt` (Objekte, Zuschnitt, Streifen ohne Pixel prüfen, gleiche Grenzen wie das Laden). Rückgängig-Verlauf höchstens `verlaufGrenze` = 512 MiB Pixelkopien, die ältesten Schritte fallen still weg, der jüngste bleibt (ADR-0022 Nachtrag 3, F-64). Text-Schild = gemessene Tinte + 0,25 Schriftgrad (`TextInnenabstand`), `WirksamerEckradius`, `Nummer.Grenzen` mit Ziffern: Renderer, SVG und Editor setzen gleich (ADR-0021 Nachtrag 3, F-108).
+- **fileformat** — Arbeitsdatei PNG mit Blöcken `snAP`/`snAO` lesen/schreiben; Exporte SVG, PNG/JPG (PDF noch offen); `LeseMetadaten` liest nur `snAP` und die Köpfe, keine Pixel (Neuaufbau des Index), mit demselben Urteil und derselben Größe wie das volle Lesen (F-272), ohne Vorabreservierung angekündigter Blocklängen (F-273). `SchreibeArbeitsdatei` schreibt in 1-MiB-Stücken (mit `Sync` und Puls je Stück, ADR-0020 Nachtrag 10) und kodiert Bild und Original nebenläufig (Nachtrag 11). Ein JPEG mit EXIF-Ausrichtung 2 bis 8 wird beim Öffnen gedreht, mit genau einer Vollbild-Kopie, die Angabe selbst fällt weg (ADR-0017 Nachtrag 7); `Ausrichten` liest über `image.RGBA64Image` (`pixelLeser`), `blockStrom.Read` mit leerem Puffer liefert 0 (F-323, F-332).
 - **draw** (früher `zeichnen`) — die aus einem Schwesterprojekt übernommenen Pakete `svg`, `raster`, `geo` (eigenes Go-Modul, das
   das Schwesterprojekt wieder einbindet, ADR-0012); geplant: Weichzeichnen (Schrift liegt in `render`; Verpixeln ist ein Mosaik in `document`, ADR-0022 Nachtrag 1).
-- **library** — Autospeichern, Vorschau, Suche, Schlagworte; neue Aufnahmen exklusiv per Hardlink, Rückfall `O_EXCL` (`exklusiv.go`, F-48); eigene Reste `.schnapp-tmp-*`, älter als eine Minute, räumen Neuaufbau und Speichern, sonst `ErrTempRest`; `VerwaisteVorschauen` listet nur und meldet `ErrAblageLeer` bei leerer Ablage (ADR-0016 Nachtrag 3).
+- **library** — Autospeichern, Vorschau, Suche, Schlagworte; neue Aufnahmen exklusiv per Hardlink, Rückfall `O_EXCL` (`exklusiv.go`, F-48; „Rückfall“ heißt in Schnapp dreierlei, siehe Glossar); Vorschau nebenläufig verkleinert und erst nach dem Ersetzen geschrieben, die Altdatei weiter voll gelesen (ADR-0020 Nachtrag 11); eigene Reste `.schnapp-tmp-*`, älter als eine Minute, räumen Neuaufbau und Speichern, sonst `ErrTempRest`; `VerwaisteVorschauen` listet nur und meldet `ErrAblageLeer` bei leerer Ablage (ADR-0016 Nachtrag 3).
 - **settings** — `settings.ini` lesen (ADR-0018); Warnungen statt Abbruch.
 - **selection** — Logik des Overlays ohne Gio (Abbildung, Bereich, Monitor per Klick, Lupe, letzter Bereich).
 - **canvas** — Logik der Editor-Leinwand ohne Gio (Zoom zum Zeiger, Einpassen, Treffer, Griffe, Verschieben;
@@ -134,15 +134,16 @@ der Wegwerf-Prototyp `prototype/` (entfernt in Sprint 9, ADR-0027; Stand in der 
   (`ladeFuerEditor`; `--ignore-limit` überspringt nur diese Prüfung, ADR-0017 Nachtrag 6), Speichern bricht nie ab und
   warnt über dem Budget.
 - **wlclip** — Halter der Zwischenablage ohne Fenster (data-control, reines Go ohne libwayland, ADR-0024): Strg+C
-  startet `schnapp --internal-keep-clipboard` abgelöst; endet bei neuem Inhalt oder nach 12 Stunden.
+  startet `schnapp --internal-keep-clipboard` abgelöst; endet bei neuem Inhalt oder nach 12 Stunden. Er schließt geerbte Deskriptoren ab 4 (`schliesseGeerbte`, ADR-0024 Nachtrag 5); mit `SCHNAPP_DEBUG` meldet er deren Zahl (im virtuellen KWin: 3), seine Fehlerausgabe geht dafür nie in eine Pipe (F-325).
 - **portal** — Desktop-Portal über D-Bus ohne Gio: Dateidialog `FileChooser.SaveFile` (Abo vor dem Aufruf, Attrappe im
   Test), `file://`-URI zu Pfad (ADR-0025).
 - **export** — Export aus dem Editor: Format aus Endung oder Filter, PNG/JPG aus `render`, SVG aus `fileformat`,
-  atomares Schreiben (ADR-0025).
-- **ui** — Gio: Vollbild-Overlay zur Auswahl (fertig), Editor, Bibliothek.
+  atomares Schreiben (ADR-0025). Darf neben dem Ziel keine temporäre Datei entstehen, schreibt der **Rückfall** ein vorhandenes reguläres Ziel direkt: das Ziel wird **einmal** mit `O_RDWR|O_NOFOLLOW|O_NONBLOCK` geöffnet, Sichern (höchstens `MaxRueckfallAlt` = 256 MiB), Kürzen, Schreiben und Wiederherstellen laufen über diesen Deskriptor, bei Lease bis zu 20 Wiederholungen; misslingt auch das Wiederherstellen, meldet `ErrZielBeschaedigt` die Datei als beschädigt (ADR-0025 Nachträge 3 und 4, F-322, F-330, F-338). Fehlertexte aller Pakete unter `internal/` beginnen mit dem Paketnamen (ADR-0019 Nachtrag 2, F-339).
+- **ui** — Gio: Vollbild-Overlay zur Auswahl (fertig), Editor, Bibliothek. Das Schließen wartet auf ein laufendes Kopieren; gibt es keinen Halter (Rückfall: das Fenster hält die Kopie), hält `fensterWarnen` es einmal an und die Statusleiste warnt; scheitert das Kopieren, bleibt das Fenster einmal offen, ein Signal schließt immer (ADR-0024 Nachtrag 6, F-295, F-329, F-337).
+- **ADR-0029** (Rettungskopie ohne Rendern) ist nur **vorgeschlagen**, nicht umgesetzt.
 - **internal/saveprogress** — Fortschritt des Speicherns: `Marke` je Schritt (Zeitstempel mit `SCHNAPP_DEBUG`),
   `Puls` aus langen Schleifen (Rastern, PNG-Kodierung, Lesen, Vorschau), `Zuletzt` für die Frist im Editor (F-297, F-298,
-  ADR-0020 Nachtrag 9).
+  ADR-0020 Nachtrag 9); die Uhr (`SetzeUhr`) und der Haken je Schritt (`SetzeHaken`) sind für Tests austauschbar, `Puls` und `Marke` nebenläufig sicher (Nachtrag 11).
 - **internal/raster16** — Rasterkern aus `golang.org/x/image/vector` v0.26.0 (BSD, `LICENSE` im Ordner) mit
   16-Bit-Maske `Maske()`/`Bloecke()`; bitgleich zu vector, geprüft durch `TestMaskeGleichVector` und `TestMaskeGleichVectorZufall` (ADR-0028).
 - **internal/probeguard** — `NurVirtuell`: Probe-Builds (Tag `probe`, Schnapp und Fernbedienung) laufen nur im
@@ -171,7 +172,7 @@ ADR-0003 Nachtrag 2, ADR-0015.
   `--no-editor`, `DATEI`, `--ignore-limit DATEI`, `--version`, `--help`; der Editor fängt SIGTERM/SIGINT/SIGHUP bis zur
   Rückkehr ab und speichert im Hintergrund (ADR-0020 Nachträge 2, 6 und 7: Fristen 15 s / 2 min / 10 s in `internal/ui/editor.go`); bleiben Änderungen ungesichert, endet Schnapp mit Fehler, auch nach einer Aufnahme (`ungesichert` in `cmd/schnapp/editor.go`, Nachtrag 8), Strg+C-Proben nur im eigenen Terminal; `aufnehmen.go` nimmt auf und legt in der Bibliothek ab, Pfad auf
   stdout, dann Editor — erst nach der Rückkehr des Aufnahme-Aufrufs, mit dem abgelegten Dokument und dem Dateistand vom Ablegen (ADR-0020 Nachtrag 6, F-275), Exit 3 bei Abbruch; `editor.go` öffnet Dateien und speichert in die Bibliothek;
-  `--screen` mit `[capture] screen = all` ist noch nicht umgesetzt). **Tests, die Claude selbst fahren kann, fährt
+  `--screen` mit `[capture] screen = all` nimmt alle Monitore als ein Bild auf, ADR-0017 Nachtrag 7; `schnapp DATEI` auch über „Öffnen mit“ im Dateimanager, `%f` und `MimeType` in `data/schnapp.desktop.in`). **Tests, die Claude selbst fahren kann, fährt
   Claude selbst** (Andi, 20.11.2026): `scripts/probe.sh` (virtueller KWin, Build-Tag `probe`, nie ausliefern), auch den
   Editor per Drehbuch (`--drehbuch DATEI --bild BILD`, Fernbedienung `cmd/schnapp-fernbedienung` über
   `org_kde_kwin_fake_input`, Fotos mit Read ansehen; `internal/wlwire` ist der gemeinsame Wayland-Client von `wlclip`
