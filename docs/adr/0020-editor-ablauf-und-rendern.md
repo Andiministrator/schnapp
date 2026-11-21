@@ -92,7 +92,8 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   halten; die Signal-Goroutine weckt nur das Fenster (`Window.Invalidate`), gespeichert wird in der Ereignisschleife
   (F-77). *Seit Nachtrag 6 in einer eigenen Goroutine; in der Schleife wird nur die Antwort angenommen.* *Geändert 20.11.2026 (F-152, Andis Entscheidung):* Weitere Signale (SIGTERM, SIGINT, SIGHUP) werden
   abgefangen, bis der Editor zurückkehrt — ein zweites Strg+C oder SIGHUP nach SIGTERM beim Abmelden bricht ein
-  laufendes Speichern (bis rund 45 s, Nachtrag 3) nicht mehr ab; danach beendet sich der Editor geordnet. Erst nach der
+  laufendes Speichern (bis rund 45 s, Nachtrag 3) nicht mehr ab; danach beendet sich der Editor geordnet. *Seit Nachtrag 7 gilt das nur in den ersten 15 Sekunden;
+  Nachtrag 9 (entschieden, noch nicht umgesetzt) stellt es für ein Speichern mit Fortschritt wieder her.* Erst nach der
   Rückkehr gilt wieder die Voreinstellung. SIGKILL bleibt unabfangbar. Die Wache (`canvas.Signalwache`) ist ohne echte
   Signale getestet (eigener Kanal). Kommt das Signal, während das Fenster nach einem gescheiterten Speichern mit der
   Fehlermeldung offen steht, speichert der Editor noch einmal (samt Ausweichen auf eine neue Aufnahme) — das Verwerfen
@@ -237,7 +238,8 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   Die Fehlerausgabe sagt „Speichern hat nicht geantwortet; die Änderungen sind womöglich nicht gesichert.“, der
   Exit-Code ist ein Fehler. Beim Zerstören wird dann nicht gewartet und **nicht noch einmal im Vordergrund
   gespeichert**: Die hängende Goroutine hält die Speicherfunktion, und die darf nicht zweimal zugleich laufen
-  (Nachtrag 6).
+  (Nachtrag 6). *Eingeschränkt durch Nachtrag 9 (21.11.2026, Umsetzung offen): künftig nur für ein Speichern ohne
+  Fortschritt.*
 - **Zerstören ohne Anfrage** (Wayland weg) wartet höchstens **2 Minuten** auf ein laufendes Speichern — länger als ein
   Dokument am Budget braucht (rund 45 s, Nachtrag 3), damit ein langsames, aber gesundes Speichern nicht verloren geht;
   ein weiteres Signal nach den 15 Sekunden beendet das Warten ebenso. Ein weiterer Versuch nach einem Signal läuft
@@ -255,7 +257,7 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
 ## Nachtrag 8 (20.11.2026): Schließen per Taste und Menü, Exit-Code, Fehler beim Zerstören (F-299, F-300, F-302)
 
 **Status:** Akzeptiert (Claude Opus 5.5, Nacharbeit des Kritiker-Laufs Sprint-Abschluss 8, Karte #120). Präzisiert
-Nachtrag 6 und 7; die 15-s-Frist selbst ist offen (F-298, Karte #119, Entscheidung des Maintainers).
+Nachtrag 6 und 7; über die 15-s-Frist selbst entscheidet Nachtrag 9 (F-298, Karte #119).
 
 - **Schließen-Anfragen gehen weiter (Nachtrag 6) gilt für jeden Weg:** Fensterknopf, Strg+W und der Menüeintrag
   „Schließen“ (Klick und Enter), auch während des Speicherns (F-299). `SchliessenAnfrage` merkt die Anfrage vor. Alles
@@ -275,10 +277,14 @@ Nachtrag 6 und 7; die 15-s-Frist selbst ist offen (F-298, Karte #119, Entscheidu
 
 - **Entscheidung:** Die Frist aus Nachtrag 7 unterscheidet künftig ein hängendes von einem langen Speichern. Solange
   das Speichern Fortschritt meldet (etwa nach Rendern, Kodieren, Schreiben), gilt es nicht als hängend; ein zweites
-  Signal oder eine weitere Schließen-Anfrage bricht es nicht ab. Das bestätigt F-152 und Nachtrag 2 („ein zweites Signal
-  bricht ein laufendes Speichern nicht ab“) und schränkt Nachtrag 7 auf ein Speichern ohne Fortschritt ein.
+  Signal oder eine weitere Schließen-Anfrage bricht es nicht ab. Das bestätigt F-152 und Nachtrag 2 (ein zweites Signal
+  bricht ein laufendes Speichern nicht ab) und schränkt Nachtrag 7 auf ein Speichern ohne Fortschritt ein.
 - **Verworfen:** Abbrechen nach festen 15 Sekunden auch bei Fortschritt (Variante a). Ein 4K-Bild braucht 8,8 s
   (F-297), ein Dokument am Budget 35–45 s (Nachtrag 3); der Abbruch träfe gesunde Speichervorgänge.
 - **Offen für die Umsetzung:** Wie fein die Fortschrittsmarken sind, wie lange ohne Marke als hängend gilt, und dass
   ein nach dem Aufgeben doch gelungenes Speichern `ErrSpeichernHaengt` nicht stehen lässt (Nebenbefund in F-298).
+- **Noch zu entscheiden: Zerstören ohne Anfrage** (Wayland weg, Nachtrag 7, `zerstoerenFrist` 2 Minuten). „Nie
+  aufgegeben“ meint das zweite Signal und die weitere Schließen-Anfrage. Ob die 2-Minuten-Grenze beim Zerstören als
+  äußerste Grenze bleibt (Vorschlag: ja — ohne Compositor gibt es keinen anderen Ausweg, ein Dokument am Budget braucht
+  höchstens 45 s) oder künftig nur ohne Fortschritt gilt, entscheidet der Maintainer vor der Umsetzung (Karte #119).
 

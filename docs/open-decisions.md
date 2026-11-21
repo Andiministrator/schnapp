@@ -180,4 +180,13 @@ Stand 20.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
   (ADR-0016 Nachtrag 3, F-274). Grund: Ein Rest kann ein zweiter Name einer später geschwärzten Aufnahme sein; nur
   melden ließe den ungeschwärzten Inhalt liegen. Getroffen werden nur reguläre Dateien mit genau diesem Präfix, nie
   Symlinks, Ordner, Aufnahmen oder Vorschaubilder.
-
+- Fristen beim Schließen: 15 s bis „Speichern antwortet nicht“, 2 min beim Zerstören ohne Anfrage, 10 s für ein
+  laufendes Kopieren (ADR-0020 Nachtrag 7). Die 15-s-Frist hat Andi am 21.11.2026 eingeschränkt (Nachtrag 9, Umsetzung
+  offen, Karte #119).
+- Strg+C wirkt auch während des Speicherns (ADR-0020 Nachtrag 6, F-285); seit Nachtrag 8 ebenso Strg+W und der
+  Menüeintrag „Schließen“ (F-299).
+- Exit-Code: Bleiben Änderungen ungesichert (Speichern hängt oder scheitert unverworfen), endet Schnapp mit Fehler —
+  auch nach einer Aufnahme; ein Fensterfehler allein bleibt dort Exit 0 (ADR-0020 Nachtrag 8, F-302). Für Skripte
+  sichtbar.
+- Menü-Navigationstasten stehen als benannte Ausnahme neben der Tastentabelle (ADR-0026 Nachtrag 4); der Wecker fällt
+  ohne Quittung auf bis zu 800 ms zurück (F-258).

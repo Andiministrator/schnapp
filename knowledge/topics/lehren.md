@@ -212,8 +212,12 @@ Stand: 2026-11-20 (ergänzt in Sprint 8). Kurze Regeln aus Fehlern und Befunden;
 - **Speichern an anderem Ort muss am Ort der Handlung sichtbar sein.** „Datei von außen wird neue Aufnahme“ stand in
   ADR und README und verwirrte trotzdem („Bild war weg“, F-155). Jeden Speicherweg (Strg+S, Schließen, Signal) einzeln
   durchgehen (F-158).
-- **Register-Werkzeug und `|`:** `register-schreiben.mjs` bricht bei unmaskiertem `|` in einer Zelle ab (auch in
-  `-run 'A|B'`). `\|` schreiben; neuen Text als Datei unter `tmp/` ablegen (`--neu @datei`), nie über die Shell quoten.
+- **Register-Werkzeug und `|`:** `register-schreiben.mjs` bricht bei unmaskiertem `|` in einer Zelle ab. Mit `\|`
+  maskiert ist die Tabelle heil, aber der Prüfbefehl falsch: Aus der Rohdatei kopiert führt `go test -run 'A\|B'` null
+  Tests aus und meldet „ok“, `grep -E 'a\|b'` sucht einen wörtlichen Strich (nachgefahren 21.11.2026 an F-284). Prüfbefehle
+  deshalb ohne Strich schreiben: gemeinsamer Test-Präfix oder zwei Aufrufe, bei grep mehrere `-e` (Hinweis im Kopf von
+  `docs/findings.archive.md` für die älteren). Neuen Text als Datei unter `tmp/` ablegen (`--neu @datei`), nie über die
+  Shell quoten.
 - **Eine Karte, die auf eine Entscheidung wartet, startet nicht** — oder die Entscheidung wird ausdrücklich getroffen
   und in ADR und `docs/open-decisions.md` als „Claudes Entscheidung, Andi informiert“ vermerkt (#85).
 - **Schulden-Grenze im Blick:** Kritiker- und Verify-Läufe erzeugen P3-[K] im Dutzend (Sprint 5: Stand 10/10). Vor dem
@@ -242,16 +246,18 @@ Stand: 2026-11-20 (ergänzt in Sprint 8). Kurze Regeln aus Fehlern und Befunden;
     Test grün, ohne dass er wertlos wäre. Dann gegen den Stand vor dem Fix zurückbauen (`git show <fix>`), nicht gegen
     eine einzelne Zeile. Und: Ein Zug, der außerhalb des Fensters beginnt, startet nicht — Drehbuch und Test drücken im
     Bild und ziehen hinaus, nicht umgekehrt.
-  - *Ein „wirkungsloser“ Knopf im Foto ist zuerst ein Drehbuchfehler:* In Sprint 7 schien ein Druck direkt nach einem
-    Zeigersprung an einem Leistenknopf nicht anzukommen (F-251); in Sprint 8 war das nicht mehr nachzustellen
-    (`scripts/drehbuecher/rueckfall-klick-ohne-zeiger.txt`, 5 von 5, `knowledge/messungen/f-251.md`) — `klick X Y`
-    sendet selbst eine Bewegung vor dem Druck. `zeiger X Y` vor dem Klick schadet nicht und bleibt in den älteren
-    Drehbüchern. Die Eingrenzung gegen den alten Stand geht per
-    `git worktree add --detach tmp/<sprint>/<lauf>/alt <commit>` und dessen eigenem `scripts/probe.sh`.
+  - *Ein einzelner „wirkungsloser“ Klick im Foto ist noch kein Befund — wiederholen und eingrenzen:* In Sprint 7
+    schien ein Druck direkt nach einem Zeigersprung an einem Leistenknopf nicht anzukommen (F-251); in Sprint 8 war das
+    nicht nachzustellen (`scripts/drehbuecher/rueckfall-klick-ohne-zeiger.txt`, 5 von 5, `knowledge/messungen/f-251.md`).
+    Die Ursache blieb unbelegt: `klick X Y` sendet selbst eine Bewegung vor dem Druck, und das schon damals (Fernbedienung
+    unverändert seit 026b4ad); offen ist der Zeitabstand (15 ms). Deshalb vor einem Register-Eintrag mehrfach fahren, bei
+    Wiederkehr zuerst `zeiger X Y` und `warte 200` vor dem Klick probieren (schadet nie, bleibt in den älteren
+    Drehbüchern) und gegen den alten Stand eingrenzen per `git worktree add --detach tmp/<sprint>/<lauf>/alt <commit>` und
+    dessen eigenem `scripts/probe.sh`.
   - *Eine Sperre prüft jeden Eingabeweg* (Sprint 7, F-257/F-261/F-263): Die Nacharbeit sperrte bei offenem Menü die
     Tasten (`key.Event`), der Zweig für getippten Text (`key.EditEvent`) lag davor und blieb offen; gefunden hat es erst
     der Verify-Lauf. Wer eine Eingabe sperrt, testet Taste, getippten Text und Maus einzeln; Gio-Tastenlogik ist mit
-    `input.Router` ohne Fenster testbar (Vorlage `tmp/sprint7/verify/zz_verify_test.go`, Karte #110).
+    `input.Router` ohne Fenster testbar (Vorbild `ui/menue_tastatur_test.go`, Karte #110).
 
 ## Sprint 8 (20.11.2026)
 
@@ -294,6 +300,47 @@ Stand: 2026-11-20 (ergänzt in Sprint 8). Kurze Regeln aus Fehlern und Befunden;
 - **Worktree-Agenten: Auch nach dem Push den Stand im Prompt nennen** (Ergänzung zur Lehre aus Sprint 6): Der Worktree
   lag in dieser Sitzung nicht immer auf dem aktuellen main. Im Prompt den erwarteten Commit nennen (`git log -1`
   als erste Handlung, bei Abweichung die genannten Commits per Cherry-Pick holen) und im Bericht die Basis ausweisen.
-- **Heredoc-Verbot: am Diff prüfen, nicht am Bericht** (Ergänzung, Sprint 8): Sonnet-Agenten haben die Auflage wieder
-  gebrochen und es selbst gemeldet. Das Verbot im Prompt zweimal nennen (Auflagen und Arbeitsweise), den Abschnitt
+- **Heredoc-Verbot: am Diff prüfen, nicht am Bericht** (Ergänzung, Sprint 8): Sonnet-Agenten haben es in drei von fünf
+  Läufen versucht, zwei haben es ausgeführt und selbst gemeldet, einen Versuch lehnte der Hook ab. Das Verbot im Prompt zweimal nennen (Auflagen und Arbeitsweise), den Abschnitt
   „Lokale Befehle“ nach `<<` durchsuchen und jede so entstandene Datei am Diff auf verstümmelte Zeichen prüfen.
+
+## Sprint-Abschluss 8 und Sitzungs-QA (21.11.2026)
+
+- **Eine Zusage im ADR gilt erst, wenn jeder Weg dorthin getestet ist:** „Schließen-Anfragen gehen weiter“ stimmte für
+  den Fensterknopf, nicht für Strg+W und den Menüeintrag (F-299); „der Exit-Code ist ein Fehler“ stimmte für
+  `schnapp DATEI`, nicht nach einer Aufnahme (F-302). Beim Schreiben eines ADR-Satzes die Wege aufzählen (Taste, Menü,
+  Fensterknopf, Signal; jeder Aufrufweg in `cmd/schnapp`) und je Weg einen Test nennen.
+- **Eine Frist gegen die schon gemessenen Höchstwerte halten:** Die 15-s-Frist für „Speichern antwortet nicht“ stand
+  zwei Nachträge unter „Dokument am Budget: 35–45 s“ (ADR-0020 Nachtrag 3); 4K braucht 8,8 s. „Hängt“ ist nicht „dauert
+  lange“ — eine Frist braucht ein Lebenszeichen (Fortschritt), keine Stoppuhr (F-298, Nachtrag 9). Vor jeder neuen Frist
+  im selben ADR nach Zeitangaben suchen.
+- **Meldet das Prüfwerkzeug einen Fehler, zuerst seine Frist gegen die Dauer halten:** „schnapp reagiert nicht auf
+  SIGTERM“ kam von der festen 5-s-Grenze in `scripts/probe.sh`, nicht von Schnapp (F-249, F-296). Erst die Dauer messen
+  (`SCHNAPP_DEBUG`, „Speichern im Hintergrund“), dann den Befund schreiben.
+- **Mutationsnachweis je Zweig, nicht je Fix:** Ein neuer Zweig, den kein Produktpfad erreicht, bleibt beim Rückbau grün
+  (F-306); ein Test, der eine Größe zählt, die der Fall nie ändert, ebenso (F-307). Für jeden neuen Zweig: Welcher
+  Aufruf erreicht ihn, und welcher Test wird rot, wenn er fehlt?
+- **Zahlen in Recap und Kartenkommentar aus dem Beleg zählen, und den Beleg aufheben:** In einer Sitzung dreimal falsch
+  (Mutationen, Heredoc-Läufe, Kartenzahl im Recap). Karten per `jq`, Commits per `git log --oneline … | wc -l`; die
+  Mutationsliste eines Verify-Laufs als Kommentar an die Folgekarte, bevor `tmp/<sprint>/` geräumt wird.
+- **Versionsangaben vor dem Tag nachziehen:** v0.2.0 und v0.3.0 tragen im getaggten Baum die README der Vorversion,
+  weil „docs: vX in README“ erst nach dem Tag kam. Reihenfolge: Sprint-Abschluss bestanden → README, README.de,
+  CLAUDE.md auf die neue Version → dieser Commit wird getaggt (`docs/qa/sprint-abschluss.md`).
+- **Anführungszeichen in ADR und Register nur für wörtlich Kopiertes:** Ein sinngemäßes „Zitat“ aus einem anderen
+  Nachtrag fiel dem Verify auf (Nachtrag 8) und stand im nächsten Nachtrag wieder (Nachtrag 9). Sinngemäß ohne
+  Anführungszeichen, wörtlich per Kopie. Ein neuer Nachtrag setzt kursive Vorwärtsmarker an den Stellen, die er ändert.
+- **Grün heißt nicht ohne Befund:** Der CI-Lauf nach v0.3.0 war grün und trug vier Abkündigungs-Annotationen (Node 20,
+  F-309). Nach einem Release-Push die Lauf-Seite auf Annotationen ansehen, nicht nur den Status (`gh` ist nicht
+  angemeldet: Andi schaut im Browser).
+- **Worktree-Agenten sehen `tmp/` des Hauptbaums nicht:** Vorlagen und Prüftests mit absolutem Pfad nennen und vor dem
+  Start schreiben. ADR-Nachträge zweier Stränge landen beide am Dateiende — beim Cherry-Pick beide behalten.
+- **Was der virtuelle KWin nicht herstellen kann, an der Logik mit Attrappe messen und das sagen:** Ein unsichtbares
+  Fenster gibt die Fernbedienung nicht her; die Weckrufe wurden am `Wecker` mit Attrappe gezählt
+  (`knowledge/messungen/f-258.md`). Die Messung nennt, was sie nicht belegt (das Verhalten von Gio bei unsichtbarem
+  Fenster).
+- **Board-JSON mit `jq` lesen, nicht mit `node -e`:** Schnapp hat kein JavaScript; die aBoard-Werkzeuge laufen mit Node,
+  weil die Anleitung es so vorgibt — eigene Einzeiler brauchen es nicht (Andi, 21.11.2026).
+- **Der Tabu-Hook prüft auch Text, der nur einen Prozesspfad erwähnt:** Ein Kartentext mit dem Pfad der Befehlszeile
+  eines Prozesses ließ den Aufruf ablehnen, obwohl nichts gelesen wurde. Op-Nutzlasten mit dem Write-Werkzeug anlegen
+  und solche Hinweise umschreiben („keine Befehlszeile lesen“).
+

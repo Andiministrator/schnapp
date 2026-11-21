@@ -36,6 +36,9 @@ Code-Änderung triagiert wurden (im Recap vermerken). Ein **zweiter** Durchlauf 
 - Alle Findings triagieren: sofort · eingeplant · backlog · akzeptiert. Jedes offene Finding hat eine Board-Karte.
 
 ## Freigabekriterien
+Vor dem Tag-Vorschlag: `README.md`, `README.de.md` und `CLAUDE.md` nennen die neue Version, und genau dieser Commit wird
+getaggt (v0.2.0 und v0.3.0 tragen im getaggten Baum noch die README der Vorversion). Prüfung:
+`git show vX.Y.Z:README.md | grep -c 'Version X.Y.Z'` → 1.
 Alle P0 behoben · alle `[S]` behoben (jede Priorität; Ausnahmepfad unten) · alle `[K]` P0/P1
 behoben · alle `[B]` behoben · Sprint-Definition erfüllt. Maßgeblich: `~/.claude/commands/sprint-abschluss.md`
 §Sprint-Release-Check.

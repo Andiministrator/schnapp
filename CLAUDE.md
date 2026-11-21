@@ -107,11 +107,11 @@ Herkunft: Anforderungen und Entscheidungen des Maintainers vom 18.11.2026, über
 ## Architektur
 
 Produktcode (Stand 21.11.2026, v0.3.0 nach Sprint 8): `capture`, `document`, `fileformat`, `library`, `settings`, `selection`,
-`canvas`, `render` stehen mit Tests, dazu Overlay und Editor in `ui` (wenige Tests, Logik liegt in `selection`/`canvas`);
+`canvas`, `render` stehen mit Tests, dazu Overlay und Editor in `ui` (Tests für Sperre, Menü, Schließen und Tastenfilter ohne Fenster über `input.Router`; Zeichnen selbst ungetestet, Logik liegt in `selection`/`canvas`);
 Schnapp nimmt auf, legt in der Bibliothek ab und öffnet den Editor (Auswählen, Verschieben, Griffe, Zoom, Rückgängig,
 Speichern, Zeichenwerkzeuge Pfeil/Kasten/Text/Schritt-Nummer mit Farbwahl, ADR-0021; Schwärzen/Verpixeln ADR-0022;
 Zwischenablage Strg+C, ADR-0015 Nachtrag 2, bleibt nach dem Schließen über den Halter `wlclip`, ADR-0024; Zuschneiden C und Stauchen X mit Zackenkante, Band bis an den Rand wird Zuschnitt, zurück über den Knopf „Ganzes Bild“, ADR-0023; Export PNG/JPG/SVG über den Portal-Dialog, Strg+Umschalt+E,
-ADR-0025; Menü mit allen Aktionen und Kürzeln, auch allein per Tastatur, Tastentabelle `ui/kuerzel.go`, ADR-0026 mit Nachträgen 2 bis 4; seit Sprint 8: Speichern und Kopieren im Hintergrund, ADR-0020 Nachträge 6 bis 8). Probeläufe ohne Andi: `scripts/probe.sh`
+ADR-0025; Menü mit allen Aktionen und Kürzeln, auch allein per Tastatur, Tastentabelle `ui/kuerzel.go`, ADR-0026 mit Nachträgen 2 bis 4; seit Sprint 8: Speichern und Kopieren im Hintergrund, ADR-0020 Nachträge 6 bis 8; Nachtrag 9 — Frist erkennt Fortschritt — ist entschieden, Umsetzung Karte #119). Probeläufe ohne Andi: `scripts/probe.sh`
 (virtueller KWin, `knowledge/topics/lehren.md`). Installation per `install.sh` (`~/.local`, Version aus `git describe`). Daneben
 der Wegwerf-Prototyp `prototype/`. Schichten:
 
@@ -165,7 +165,7 @@ ADR-0003 Nachtrag 2, ADR-0015.
   Nachtrag 1), `ui` (Schicht zu Gio; `Starte` hält die Gio-Hauptschleife, `Overlay` je Monitor),
   `cmd/schnapp` (Argumente `--region` [Voreinstellung], `--screen[=NAME]`, `--list-screens`, `--window`, `--repeat`,
   `--no-editor`, `DATEI`, `--ignore-limit DATEI`, `--version`, `--help`; der Editor fängt SIGTERM/SIGINT/SIGHUP bis zur
-  Rückkehr ab und speichert im Hintergrund (ADR-0020 Nachträge 2 und 6), Strg+C-Proben nur im eigenen Terminal; `aufnehmen.go` nimmt auf und legt in der Bibliothek ab, Pfad auf
+  Rückkehr ab und speichert im Hintergrund (ADR-0020 Nachträge 2, 6 und 7: Fristen 15 s / 2 min / 10 s in `ui/editor.go`); bleiben Änderungen ungesichert, endet Schnapp mit Fehler, auch nach einer Aufnahme (`ungesichert` in `cmd/schnapp/editor.go`, Nachtrag 8), Strg+C-Proben nur im eigenen Terminal; `aufnehmen.go` nimmt auf und legt in der Bibliothek ab, Pfad auf
   stdout, dann Editor — erst nach der Rückkehr des Aufnahme-Aufrufs, mit dem abgelegten Dokument und dem Dateistand vom Ablegen (ADR-0020 Nachtrag 6, F-275), Exit 3 bei Abbruch; `editor.go` öffnet Dateien und speichert in die Bibliothek;
   `--screen` mit `[capture] screen = all` ist noch nicht umgesetzt). **Tests, die Claude selbst fahren kann, fährt
   Claude selbst** (Andi, 20.11.2026): `scripts/probe.sh` (virtueller KWin, Build-Tag `probe`, nie ausliefern), auch den
