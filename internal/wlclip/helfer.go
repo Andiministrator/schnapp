@@ -173,8 +173,10 @@ func Uebergib(programm string, daten []byte, frist time.Duration) (pid int, mana
 	cmd.Stdin = bytes.NewReader(daten)
 	cmd.ExtraFiles = []*os.File{w} // Dateideskriptor 3 im Kind
 	cmd.Dir = "/"
-	if os.Getenv("SCHNAPP_DEBUG") != "" {
-		cmd.Stderr = os.Stderr // die Diagnose des Halters soll im Terminal erscheinen, sonst /dev/null
+	// Die Diagnose des Halters soll im Terminal oder in der Logdatei erscheinen, sonst /dev/null. Nie in eine Pipe: Der
+	// Halter lebt bis zu 12 Stunden und hielte sie offen, ein `schnapp 2>&1 | tee` endete erst mit ihm.
+	if os.Getenv("SCHNAPP_DEBUG") != "" && !istPipe(2) {
+		cmd.Stderr = os.Stderr
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	err = cmd.Start()
