@@ -31,6 +31,7 @@ func TestExportFehlerText(t *testing.T) {
 		{"Verbindung", portal.ErrVerbindung, "The connection to the desktop portal was lost."},
 		{"Antwort", fmt.Errorf("%w (Antwort 2)", portal.ErrAntwort), "The file dialog ended without a result."},
 		{"ohne Datei", portal.ErrOhneDatei, "The file dialog returned no file."},
+		{"beschädigt", fmt.Errorf("%w: x", export.ErrZielBeschaedigt), "The file bericht.png is damaged: writing failed and the old content could not be restored."},
 		{"vorhanden", export.ErrZielVorhanden, "A file with this name already exists: bericht.png"},
 	} {
 		got := exportFehlerText(c.err, "bericht.png")

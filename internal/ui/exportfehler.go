@@ -20,6 +20,8 @@ func exportFehlerText(err error, dateiname string) string {
 	switch {
 	case errors.Is(err, export.ErrZielVorhanden):
 		return fmt.Sprintf(i18n.T("A file with this name already exists: %s"), dateiname)
+	case errors.Is(err, export.ErrZielBeschaedigt):
+		return fmt.Sprintf(i18n.T("The file %s is damaged: writing failed and the old content could not be restored."), dateiname)
 	case errors.Is(err, portal.ErrVerbindung):
 		return i18n.T("The connection to the desktop portal was lost.")
 	case errors.Is(err, portal.ErrAntwort):

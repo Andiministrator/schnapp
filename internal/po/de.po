@@ -239,6 +239,9 @@ msgstr "Exportieren"
 msgid "File dialog is open."
 msgstr "Der Dateidialog ist geöffnet."
 
+msgid "The file %s is damaged: writing failed and the old content could not be restored."
+msgstr "Die Datei %s ist beschädigt: Das Schreiben ist gescheitert und der alte Inhalt ließ sich nicht wiederherstellen."
+
 msgid "A file with this name already exists: %s"
 msgstr "Eine Datei mit diesem Namen gibt es schon: %s"
 

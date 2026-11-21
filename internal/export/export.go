@@ -130,7 +130,10 @@ func Schreibe(d *document.Dokument, f Format, w io.Writer) error {
 }
 
 // SchreibeAtomar legt die Datei über eine temporäre Datei im Zielordner an und benennt sie um (ADR-0025 Punkt 5, Nachtrag
-// 1 und 2): Am Ziel steht nie eine halbe Datei, bei einem Fehler bleibt eine vorhandene Datei unberührt. Die Rechte
+// 1 und 2): Am Ziel steht nie eine halbe Datei, bei einem Fehler bleibt eine vorhandene Datei unberührt. Einzige
+// Ausnahme ist der Rückfall (schreibeDirekt): darf neben dem Ziel keine Datei entstehen, wird das vorhandene Ziel
+// direkt beschrieben; scheitert das, wird der alte Inhalt zurückgeschrieben, und nur wenn auch das scheitert, meldet
+// ErrZielBeschaedigt eine unvollständige Datei (F-322). Die Rechte
 // folgen der umask des Prozesses; ersetzt die Datei eine vorhandene reguläre Datei, übernimmt sie deren Rechte schon vor
 // dem Schreiben (die temporäre Datei ist nie offener als das Ziel). Ist das Ziel ein symbolischer Link, wird dorthin
 // geschrieben, wohin er zeigt (der Link bleibt).
@@ -207,25 +210,67 @@ func keinSchreibrechtImOrdner(err error) bool {
 	return errors.Is(err, os.ErrPermission) || errors.Is(err, syscall.EROFS)
 }
 
+// MaxRueckfallAlt ist die größte vorhandene Datei, die der Rückfall vorher in den Speicher liest, um sie bei einem
+// Schreibfehler wiederherzustellen (F-322). Ist die Datei größer, wird sie gar nicht direkt beschrieben.
+const MaxRueckfallAlt = 256 << 20
+
+// ErrZielBeschaedigt: Der Rückfall hat das Ziel beim Schreiben gekürzt und den alten Inhalt nicht wiederherstellen
+// können; die Zieldatei ist unvollständig (F-322).
+var ErrZielBeschaedigt = errors.New("Zieldatei beschädigt")
+
+// zielDatei ist, was der Rückfall von einer geöffneten Zieldatei braucht (Naht für Tests: Schreibfehler nachbauen).
+type zielDatei interface {
+	io.Writer
+	Sync() error
+	Close() error
+}
+
+// oeffneDirekt öffnet das Ziel des Rückfalls ohne einem Link zu folgen (O_NOFOLLOW). Nur Tests biegen es um.
+var oeffneDirekt = func(pfad string, flags int) (zielDatei, error) {
+	return os.OpenFile(pfad, flags|syscall.O_NOFOLLOW, 0)
+}
+
 // schreibeDirekt ist der Rückfall, wenn neben dem Ziel keine temporäre Datei entstehen darf (F-196): etwa unter
 // Flatpak, wo das Dokumenten-Portal nur die gewählte Datei freigibt, nicht ihren Ordner. Nur für ein vorhandenes,
-// reguläres, beschreibbares Ziel; sonst gilt der ursprüngliche Fehler. Das Dokument wird erst vollständig in den
-// Speicher gerendert, damit ein Renderfehler das Ziel nicht berührt; nur ein Schreibfehler danach kann es kürzen
-// (nicht atomar, bewusst nur im Rückfall).
+// reguläres, beschreibbares Ziel bis MaxRueckfallAlt; sonst gilt der ursprüngliche Fehler. Das Dokument wird erst
+// vollständig in den Speicher gerendert und der alte Inhalt gelesen; scheitert danach das Schreiben, wird der alte
+// Inhalt zurückgeschrieben. Nur wenn auch das misslingt, ist das Ziel beschädigt und der Fehler wickelt
+// ErrZielBeschaedigt ein (nicht atomar, bewusst nur im Rückfall, F-322).
 func schreibeDirekt(pfad string, schreibe func(io.Writer) error, ursache error) error {
-	if st, err := os.Lstat(pfad); err != nil || !st.Mode().IsRegular() {
+	st, err := os.Lstat(pfad)
+	if err != nil || !st.Mode().IsRegular() || st.Size() > MaxRueckfallAlt {
 		return ursache
 	}
 	var puffer bytes.Buffer
 	if err := schreibe(&puffer); err != nil {
 		return err
 	}
-	f, err := os.OpenFile(pfad, os.O_WRONLY|os.O_TRUNC, 0)
+	alt, err := leseAlt(pfad, st)
+	if err != nil {
+		return ursache // ohne Sicherung nicht direkt schreiben
+	}
+	f, err := oeffneDirekt(pfad, os.O_WRONLY|os.O_TRUNC)
 	if err != nil {
 		return ursache // auch das Ziel nicht beschreibbar: der Fehler der temporären Datei erklärt es besser
 	}
 	Diagnose("Rückfall: direkt in %s geschrieben, keine temporäre Datei möglich: %v", filepath.Base(pfad), ursache)
-	if _, err := f.Write(puffer.Bytes()); err != nil {
+	werr := schreibeUndSchliesse(f, puffer.Bytes())
+	if werr == nil {
+		return nil
+	}
+	// Wiederherstellen: der alte Inhalt, vollständig, ohne Kürzen auf halbem Weg (das Ziel ist schon gekürzt).
+	g, err := oeffneDirekt(pfad, os.O_WRONLY|os.O_TRUNC)
+	if err == nil {
+		err = schreibeUndSchliesse(g, alt)
+	}
+	if err != nil {
+		return fmt.Errorf("%w: %v; Wiederherstellung gescheitert: %v", ErrZielBeschaedigt, werr, err)
+	}
+	return werr
+}
+
+func schreibeUndSchliesse(f zielDatei, inhalt []byte) error {
+	if _, err := f.Write(inhalt); err != nil {
 		f.Close()
 		return err
 	}
@@ -234,6 +279,19 @@ func schreibeDirekt(pfad string, schreibe func(io.Writer) error, ursache error) 
 		return err
 	}
 	return f.Close()
+}
+
+// leseAlt liest die vorhandene Datei ohne Link zu folgen; sie muss dieselbe Datei sein, die Lstat sah.
+func leseAlt(pfad string, st os.FileInfo) ([]byte, error) {
+	f, err := os.OpenFile(pfad, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	if fst, err := f.Stat(); err != nil || !os.SameFile(st, fst) {
+		return nil, errors.New("Ziel hat gewechselt")
+	}
+	return io.ReadAll(io.LimitReader(f, MaxRueckfallAlt+1))
 }
 
 // Diagnose nimmt Meldungen, die nur im Debug-Log erscheinen sollen; die Oberfläche setzt sie, sonst bleibt sie leer.
