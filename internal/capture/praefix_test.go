@@ -93,9 +93,29 @@ func TestPraefixAbbruchUndAlleOhneWorkspace(t *testing.T) {
 		t.Errorf("Nutzermeldung nicht übersetzt oder roh: %q", err)
 	}
 	einmalPraefix(t, "Sentinel", ErrKeineGesamtaufnahme)
+	// F-350: die Meldung ist die für diesen Fall, nicht die Rückfallmeldung.
+	if !strings.Contains(err.Error(), "all screens") {
+		t.Errorf("Meldung für ErrKeineGesamtaufnahme falsch: %q", err)
+	}
 
 	a = &attrappe{version2: true, version2Nr: 3, antwort: gueltigeAntwort(), daten: gueltigeDaten()}
 	if _, err := neu(a).Alle(context.Background(), Optionen{}); err != nil {
 		t.Errorf("Version 3 muss gehen: %v", err)
+	}
+}
+
+// F-350: NeuKWin meldet einen Verbindungsfehler mit genau einem Präfix und hält die Ursache erreichbar.
+func TestNeuKWinVerbindungsfehlerPraefix(t *testing.T) {
+	alt := verbindeTransport
+	defer func() { verbindeTransport = alt }()
+	ursache := errors.New("kein Bus")
+	verbindeTransport = func() (transport, error) { return nil, ursache }
+	k, err := NeuKWin()
+	if k != nil {
+		t.Errorf("KWin trotz Fehler: %v", k)
+	}
+	einmalPraefix(t, "NeuKWin", err)
+	if !errors.Is(err, ursache) {
+		t.Errorf("Ursache verloren: %v", err)
 	}
 }

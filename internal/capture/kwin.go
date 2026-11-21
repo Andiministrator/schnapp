@@ -61,9 +61,18 @@ type KWin struct {
 	s  *schnittstelle // gewählte Schnittstelle, nil bis zum ersten Aufruf
 }
 
+// verbindeTransport ist die Naht für den Verbindungsaufbau zum Session-Bus; Tests setzen einen Fehler ein (F-350).
+var verbindeTransport = func() (transport, error) {
+	t, err := neuerDBusTransport()
+	if err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
 // NeuKWin verbindet mit dem Session-Bus. Die Wahl ScreenShot3/ScreenShot2 fällt beim ersten Aufruf.
 func NeuKWin() (*KWin, error) {
-	t, err := neuerDBusTransport()
+	t, err := verbindeTransport()
 	if err != nil {
 		return nil, fmt.Errorf("capture: Session-Bus: %w", err)
 	}
