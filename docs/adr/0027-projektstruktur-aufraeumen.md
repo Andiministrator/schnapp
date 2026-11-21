@@ -54,7 +54,7 @@ Reine Umbenennung mit `git mv`, Tests unverändert; Vorschlag:
 | `canvas/luecken_test.go` | `canvas/rand_streifen_test.go` |
 | `canvas/nacharbeit_test.go` | `canvas/rand_und_kante_test.go` |
 | `cmd/schnapp/editor_luecken_test.go` | `cmd/schnapp/speichern_vorschau_test.go` |
-| `cmd/schnapp/liegengeblieben_luecken_test.go` | `cmd/schnapp/liegengeblieben_test.go` |
+| `cmd/schnapp/liegengeblieben_luecken_test.go` | `cmd/schnapp/liegengeblieben_rueckblick_test.go` (`liegengeblieben_test.go` gibt es schon) |
 | `cmd/schnapp/nacharbeit_test.go` | `cmd/schnapp/ungesichert_exit_test.go` |
 | `library/kritik_test.go` | `library/vorschau_neuaufbau_test.go` |
 | `library/luecken_test.go` | `library/speichern_fehlerwege_test.go` |

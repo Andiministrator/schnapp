@@ -18,6 +18,8 @@ Pull Request.
   Datei wiederherstellbar sein. Änderungen hier brauchen einen Test, der das belegt.
 - **Keine Spuren.** Erzeugte Dateien enthalten keine lokalen Pfade, Benutzer-, Rechner- oder Programmnamen.
 - **Keine echten Screenshots** in Tests oder Doku — sie zeigen private Daten. Testbilder synthetisch erzeugen.
+- **Testdateien heißen nach dem, was sie prüfen** (`rand_streifen_test.go`), nicht nach Karte oder Arbeitsschritt;
+  Karten- und Finding-Nummern stehen im Kommentar über dem Test.
 - **Neue Abhängigkeiten** nur mit spürbarem Nutzen; Zweck, Lizenz (GPL-3.0-verträglich) und Alternative in der
   Commit-Nachricht nennen (`docs/adr/0011-*`).
 - **Kein cgo** über das hinaus, was Gio (mit unserem Patch) braucht — diese Ausnahme ist `docs/adr/0003-*` Nachtrag 2;

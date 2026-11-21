@@ -18,6 +18,8 @@ request.
   Changes in this area need a test that proves it.
 - **No traces.** Generated files must not contain local paths, user, host or program names.
 - **No real screenshots** in tests or documentation — they show private data. Generate test images instead.
+- **Test files are named after what they test** (`rand_streifen_test.go`), not after a ticket or work step; ticket and
+  finding numbers go into the comment above the test.
 - **New dependencies** only with a clear benefit; name the purpose, the licence (GPL-3.0 compatible) and the
   alternative in the commit message (`docs/adr/0011-*`).
 - **No cgo** beyond what Gio (with our patch) needs — that exception is `docs/adr/0003-*` addendum 2; anything else
