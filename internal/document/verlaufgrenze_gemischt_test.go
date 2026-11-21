@@ -88,6 +88,9 @@ func TestVerlaufGrenzeGemischteFolge(t *testing.T) {
 	if summe > verlaufGrenze {
 		t.Errorf("Pixelkopien im Verlauf %d Bytes, Grenze %d", summe, verlaufGrenze)
 	}
+	if n != 4 || d.verlauf.basis != 5 || summe != 32 {
+		t.Errorf("Verlauf hält %d Schritte, basis %d, Pixelkopien %d; erwartet 4, 5, 32", n, d.verlauf.basis, summe)
+	}
 	if d.verlauf.basis == 0 {
 		t.Error("basis blieb 0, obwohl Schritte verworfen wurden")
 	}

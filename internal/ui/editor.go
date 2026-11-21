@@ -331,9 +331,7 @@ func (e *editor) laufen() error {
 		// Nach jedem Ereignis nachsehen, ob die Meldung noch gilt: Eine abgelöste kehrt nicht zurück (F-160), auch wenn
 		// Ändern und Rückgängig in einem Bild liegen.
 		e.meldung.Frisch(e.s.D.Stand(), e.s.Werkzeug)
-		if zwischenablageFehlt.Swap(false) {
-			e.melde(i18n.T("Could not copy: no clipboard is available."), true) // statt „Copied“ (F-177)
-			e.fensterHaeltKopie = false                                         // Gio bietet nichts an: nichts, wovor zu warnen wäre (F-321)
+		if e.zwischenablageFehltMelden() {
 			e.w.Invalidate()
 		}
 		// Auch nach Ereignissen ohne Bild (Gio sendet bei inaktivem Fenster nur ein Weckereignis) die Dialogantwort
@@ -364,6 +362,17 @@ func (e *editor) laufen() error {
 // Hintergrund, wartet es auf seine Antwort (ADR-0020 Nachtrag 6), höchstens zerstoerenFrist lang (Nachtrag 7); ein
 // weiterer Versuch nach einem Signal läuft ebenso. Ein laufendes Kopieren bekommt seine Frist, damit der Halter der
 // Zwischenablage noch startet (F-281).
+// zwischenablageFehltMelden ersetzt, wenn der Gio-Patch einen Schreibfehler der Zwischenablage gemeldet hat, die Meldung
+// „Copied“ durch den Fehler und setzt die Marke zurück (F-177); liefert, ob es etwas zu zeigen gab.
+func (e *editor) zwischenablageFehltMelden() bool {
+	if !zwischenablageFehlt.Swap(false) {
+		return false
+	}
+	e.melde(i18n.T("Could not copy: no clipboard is available."), true) // statt „Copied“ (F-177)
+	e.fensterHaeltKopie = false                                         // Gio bietet nichts an: nichts, wovor zu warnen wäre (F-321)
+	return true
+}
+
 func (e *editor) zerstoert(fensterErr error) error {
 	e.speichernAbwarten()
 	if e.speichernAufgegeben {
