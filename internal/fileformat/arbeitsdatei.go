@@ -97,11 +97,8 @@ func LeseArbeitsdatei(r io.Reader) (*Gelesen, error) {
 		}
 	}
 	if !hatSVG && !hatOrig {
-		var buf bytes.Buffer
-		if err := schreibeBloecke(&buf, ohneBloecke(bloecke, nachIEND)); err != nil {
-			return nil, err
-		}
-		bild, err := decodiere(buf.Bytes())
+		fremd := ohneBloecke(bloecke, nachIEND)
+		bild, err := decodiereStrom(func() io.Reader { return neuerBlockStrom(fremd) })
 		if err != nil {
 			return nil, err
 		}
@@ -164,16 +161,20 @@ func LeseBild(r io.Reader) (image.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	var buf bytes.Buffer
-	if err := schreibeBloecke(&buf, ohneBloecke(bloecke, blockSVG, blockOriginal, nachIEND)); err != nil {
-		return nil, err
-	}
-	return decodiere(buf.Bytes())
+	sichtbar := ohneBloecke(bloecke, blockSVG, blockOriginal, nachIEND)
+	bloecke = nil // die Blöcke gehören ab hier nur noch dem Strom (F-64)
+	return decodiereStrom(func() io.Reader { return neuerBlockStrom(sichtbar) })
 }
 
 // decodiere liest ein PNG und prüft vorher die Größe, damit eine fremde Datei keinen riesigen Speicher anfordert.
 func decodiere(daten []byte) (image.Image, error) {
-	cfg, err := png.DecodeConfig(bytes.NewReader(daten))
+	return decodiereStrom(func() io.Reader { return bytes.NewReader(daten) })
+}
+
+// decodiereStrom wie decodiere, mit zwei Lesedurchgängen (Größe, dann Pixel) über oeffne, ohne die Daten vorher zu
+// einem Puffer zusammenzusetzen (F-64).
+func decodiereStrom(oeffne func() io.Reader) (image.Image, error) {
+	cfg, err := png.DecodeConfig(oeffne())
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrBeschaedigt, err)
 	}
@@ -181,7 +182,7 @@ func decodiere(daten []byte) (image.Image, error) {
 		cfg.Width*cfg.Height > document.MaxPixel {
 		return nil, fmt.Errorf("%w: Bild %dx%d", ErrZuGross, cfg.Width, cfg.Height)
 	}
-	bild, err := png.Decode(saveprogress.Leser(bytes.NewReader(daten))) // Fortschritt beim Dekodieren (F-298)
+	bild, err := png.Decode(saveprogress.Leser(oeffne())) // Fortschritt beim Dekodieren (F-298)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrBeschaedigt, err)
 	}

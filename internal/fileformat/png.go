@@ -121,6 +121,39 @@ func schreibeBloecke(w io.Writer, bloecke []block) error {
 	return nil
 }
 
+// blockStrom liefert dieselben Bytes wie schreibeBloecke, ohne den Datenstrom zusammenzusetzen: Kopf, Daten und
+// Prüfsumme je Block entstehen erst beim Lesen (F-64: keine zweite Kopie der ganzen Datei neben den Blöcken).
+type blockStrom struct {
+	rest    io.Reader
+	bloecke []block
+	i       int
+}
+
+func neuerBlockStrom(bloecke []block) io.Reader {
+	return &blockStrom{rest: bytes.NewReader(pngSignatur), bloecke: bloecke}
+}
+
+func (s *blockStrom) Read(p []byte) (int, error) {
+	for {
+		if n, err := s.rest.Read(p); n > 0 || (err != nil && err != io.EOF) {
+			return n, err
+		}
+		if s.i >= len(s.bloecke) {
+			return 0, io.EOF
+		}
+		b := s.bloecke[s.i]
+		s.i++
+		kopf := make([]byte, 8)
+		binary.BigEndian.PutUint32(kopf[:4], uint32(len(b.daten)))
+		copy(kopf[4:], b.typ)
+		crc := crc32.NewIEEE()
+		crc.Write(kopf[4:8])
+		crc.Write(b.daten)
+		pruef := binary.BigEndian.AppendUint32(nil, crc.Sum32())
+		s.rest = io.MultiReader(bytes.NewReader(kopf), bytes.NewReader(b.daten), bytes.NewReader(pruef))
+	}
+}
+
 // fuegeEin setzt zusätzliche Blöcke vor IEND in einen PNG-Datenstrom aus image/png.
 func fuegeEin(pngDaten []byte, zusatz ...block) ([]byte, error) {
 	bloecke, err := leseBloecke(bytes.NewReader(pngDaten))
