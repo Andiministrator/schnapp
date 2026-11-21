@@ -121,3 +121,6 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | 2026-11-19 | Flathub policy AI generated applications submission requirements LLM | Offenlegungspflicht seit Okt. 2026 |
 | 2026-11-19 | KWin X-KDE-DBUS-Restricted-Interfaces desktop file Exec path … | absoluter Exec-Pfad nötig |
 | 2026-11-19 | "schnapp" screenshot tool linux github OR flathub OR AUR | kein gleichnamiges Werkzeug |
+| 2026-11-21 | Gio gioui contributing patches mailing list sourcehut send-email | gio-patches auf lists.sr.ht, git send-email, --signoff Pflicht, GitHub-PR als Ersatz |
+| 2026-11-21 | gioui.org latest release version 2026 | v0.10.3 aktuell (Newsletter Sept. 2026) |
+| 2026-11-21 | gioui contribute AI generated code policy LLM patches Elias Naur | keine Gio-eigene KI-Regel gefunden |

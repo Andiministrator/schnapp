@@ -24,6 +24,19 @@ ersetzt (laut GamingOnLinux und Linuxiac; Wortlaut vor einer Einreichung in Flat
 **Folge:** Flathub bleibt möglich, aber nur mit Andis Handarbeit an Manifest und Einreichung und ohne Garantie.
 Alternative: eigenes Flatpak-Repo oder Pakete (AUR, eigene Releases).
 
+## Gio — Patch einreichen (Stand 21.11.2026, Karte #17)
+
+- Weg: Patches per `git send-email` an die Liste `gio-patches` auf lists.sr.ht (Betreff-Präfix `PATCH gio`, damit
+  die automatischen Tests greifen); kein SourceHut-Konto nötig. Ersatzweise Pull Request am GitHub-Spiegel
+  `gioui/gio`. **Jeder Commit braucht `--signoff`** (DCO) — der Sign-off läuft unter Andis Namen, also reicht Andi
+  selbst ein (Quelle: gioui.org/doc/contribute, über die Suche; die Seite selbst nicht geöffnet).
+- Eine Regel von Gio zu KI-erzeugtem Code wurde nicht gefunden (Suche 21.11.2026). Andere Go-nahe Projekte
+  verlangen, dass der Einreichende jede Zeile versteht; Offenlegung im Anschreiben ist der sichere Weg.
+- Aktuelle Gio-Fassung v0.10.3 (Newsletter September 2026) — der Patch beruht schon darauf.
+- Vorbereitung, sobald Andi freigibt: Patch in zwei Teile (FullscreenOn/WaylandOutputs; fractional-scale +
+  viewporter samt Zeiger), Protokoll-Code per `go:generate` statt erzeugter Dateien, `log.Printf` in
+  `outputByName` als offene Frage im Anschreiben.
+
 ## Für alle öffentlichen Orte
 
 KI-Anteil in der README offen nennen (passt zu Flathub-Pflicht und schafft Vertrauen). Vor jeder neuen Plattform deren
