@@ -36,6 +36,8 @@ type Verbindung struct {
 	ein      []byte // gelesene, noch nicht verarbeitete Bytes
 	fds      []int  // empfangene Dateideskriptoren in Ankunftsreihenfolge
 	naechste uint32 // nächste freie Objekt-ID des Clients (1 ist wl_display)
+	// sendeMsg ersetzt WriteMsgUnix im Test (Teilschreiben, F-207); nil ist der Normalfall.
+	sendeMsg func(b, oob []byte) (int, error)
 }
 
 // SocketPfad bestimmt den Socket des Compositors wie libwayland: WAYLAND_DISPLAY (Voreinstellung wayland-0), relativ
@@ -131,11 +133,27 @@ func (v *Verbindung) Sende(obj uint32, op uint16, n *Nachricht) error {
 	if len(n.fds) > 0 {
 		oob = syscall.UnixRights(n.fds...)
 	}
-	geschrieben, _, err := v.c.WriteMsgUnix(buf, oob, nil)
-	if err == nil && geschrieben != len(buf) {
-		err = fmt.Errorf("wlwire: Nachricht nur teilweise gesendet (%d von %d Byte)", geschrieben, len(buf))
+	var geschrieben int
+	var err error
+	if v.sendeMsg != nil {
+		geschrieben, err = v.sendeMsg(buf, oob)
+	} else {
+		geschrieben, _, err = v.c.WriteMsgUnix(buf, oob, nil)
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	// Teilschreiben (Puffer voll, Frist): die Dateideskriptoren sind mit den ersten Bytes schon beim Compositor,
+	// den Rest schickt ein gewöhnliches Write nach (F-207). Scheitert das, ist der Strom nicht mehr
+	// Nachrichten-genau, der Fehler nennt die Lage.
+	for geschrieben < len(buf) {
+		n, err := v.c.Write(buf[geschrieben:])
+		geschrieben += n
+		if err != nil {
+			return fmt.Errorf("wlwire: Nachricht nur teilweise gesendet (%d von %d Byte): %w", geschrieben, len(buf), err)
+		}
+	}
+	return nil
 }
 
 // Ereignis ist eine empfangene Nachricht.
