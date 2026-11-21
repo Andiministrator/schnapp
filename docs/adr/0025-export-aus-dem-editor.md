@@ -85,9 +85,10 @@ fremd; `zenity`/`kdialog` wären Laufzeit-Fremdprogramme (ADR-0011).
   Dateisystem keine harten Links, wird bestmöglich vorher geprüft. Ein Prüffehler außer „nicht vorhanden“ (etwa keine
   Rechte) erscheint als solcher, nicht als „vorhanden“.
 
-## Nachtrag 3 (21.11.2026): Rückfall ohne temporäre Datei (F-196, Karte #94)
+## Nachtrag 3 (21.11.2026): Rückfall ohne temporäre Datei (F-196, Karte #134)
 
-**Status:** Akzeptiert (Claude Sonnet 5.5).
+**Status:** Akzeptiert (Claude, Andi informiert; umgesetzt von Claude Sonnet 5.5). *Karte berichtigt 21.11.2026 abends
+(F-327): F-196 liegt auf #134, nicht auf #94.*
 
 - Darf neben dem Ziel keine temporäre Datei entstehen (`EACCES`/`EPERM`/`EROFS`), schreibt `SchreibeAtomar` ein **vorhandenes, reguläres, beschreibbares** Ziel direkt (`O_TRUNC`), nachdem das Dokument vollständig in den Speicher gerendert wurde; ein Renderfehler lässt das Ziel unberührt. Das ist nicht atomar und steht im Debug-Log. *Seit Nachtrag 4 mit Sicherung des alten Inhalts und `O_NOFOLLOW`.* `SchreibeOhneErsetzen` und neue Ziele behalten den bisherigen Fehler.
 - **Offen (nur unter Flatpak prüfbar):** Das Dokumenten-Portal gibt nur die gewählte Datei frei. Eine angehängte Endung führt zu einem anderen, nicht freigegebenen Namen. Die richtige Lösung ist, die Endung dem Dialog zu überlassen (Vorschlagsname `current_name` mit Endung je Filter) und unter `/run/user/<uid>/doc/` nie anzuhängen. Das braucht einen Flatpak-Bau zur Prüfung (Finding F-196 bleibt offen bis Flathub).
@@ -107,3 +108,8 @@ fremd; `zenity`/`kdialog` wären Laufzeit-Fremdprogramme (ADR-0011).
   beschreibbar ist, und dann ist der Wunsch, genau diese Datei zu ersetzen, erfüllbar. Unter Flatpak (Dokumenten-Portal)
   ist er der einzige Weg.
 - Nicht abgedeckt bleibt ein Prozessabbruch oder Stromausfall zwischen Kürzen und Zurückschreiben (nicht atomar, bewusst).
+- *Ergänzt 21.11.2026 abends (F-330, Karte #144):* Das Ziel wird ohne `O_TRUNC` geöffnet (`O_NOFOLLOW`, `O_NONBLOCK`),
+  über den geöffneten Deskriptor als reguläre Datei und mit `os.SameFile` gegen die gesicherte Datei geprüft und erst
+  dann per `Truncate(0)` gekürzt; dasselbe beim Zurückschreiben. Tauscht jemand den Namen zwischen Sichern und Öffnen,
+  bleibt die fremde Datei unverändert, ein untergeschobenes FIFO blockiert nicht. Offen und nur unter Flatpak prüfbar:
+  ob `Truncate` nach dem Öffnen auf dem FUSE des Dokumenten-Portals geht (F-196).

@@ -55,3 +55,16 @@ Importe im selben Zug um.
 Symlink entfernt am 20.11.2026, nachdem das Schwesterprojekt „steht auf draw“ gemeldet hatte (dort require, replace und Importe umgestellt, Bilder bytegleich).
 
 Fehlertexte beginnen mit dem heutigen Paketnamen (F-114, Sprint 10).
+
+## Nachtrag 2 (21.11.2026): Reichweite der Präfix-Regel für Fehlertexte (F-327)
+
+**Status:** Akzeptiert (Claude, Andi informiert).
+
+- Der Satz „Fehlertexte beginnen mit dem heutigen Paketnamen“ (F-114) gilt für **jedes** Paket unter `internal/` und
+  für die Fehler, die das Paket verlassen (exportierte Fehlerwerte und Rückgaben exportierter Funktionen). Innere
+  Fehler, die an der Paketgrenze mit `%w` und Präfix umhüllt werden, brauchen kein eigenes.
+- Umgestellt sind seit F-114 `document`, `fileformat`, `library`, `selection`, `canvas`, `wlclip`, `wlwire`.
+  **Noch nicht:** `capture`, `portal`, `probeguard`, `export`, `i18n` (Sprint 10 übersehen). Keine Ausnahme — sie
+  werden nachgezogen (F-339, Karte #150).
+- Oberflächentexte (`i18n.T`) sind keine Fehlertexte im Sinne der Regel; sie tragen kein Präfix.
+

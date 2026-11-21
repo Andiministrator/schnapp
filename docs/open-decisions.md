@@ -197,3 +197,23 @@ Stand 21.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 - **Entscheidung:** umbenennen, keine Ausnahme: `internal/saveprogress`, `internal/probeguard`. ADR-0019 regelt den
   Fall schon; eine Ausnahme hätte keine Begründung außer dem Umbauaufwand, und der ist klein (Karte #126).
   Exportierte Bezeichner (`Marke`, `Puls`, `Zuletzt`, `NurVirtuell`) bleiben, ADR-0019 erlaubt deutsche Bezeichner.
+
+## E-24: Claudes Entscheidungen aus Sprint 10 — ENTSCHIEDEN 21.11.2026 (Claude, Andi informiert)
+- **Kein Dependabot** für die CI-Aktionen: keine Bot-PRs im öffentlichen Repo; stattdessen Prüfpunkt „CI-Pins prüfen“
+  beim Sprint-Abschluss (F-316, `docs/qa/sprint-abschluss.md`).
+- **Verlaufsgrenze 512 MiB, still:** Der Rückgängig-Verlauf verwirft die ältesten Schritte ohne Meldung, sobald die
+  Pixelkopien 512 MiB übersteigen (ADR-0022 Nachtrag 3, F-64, F-323).
+- **Export-Rückfall:** Darf neben dem Ziel keine temporäre Datei entstehen, wird eine vorhandene, beschreibbare Datei
+  direkt beschrieben — mit Sicherung des alten Inhalts, ohne `O_TRUNC`, nach Identitätsprüfung (ADR-0025 Nachträge 3
+  und 4, F-196, F-322, F-330). Der Rückfall bleibt auch im gewöhnlichen schreibgeschützten Ordner.
+- **Warnung beim Schließen ohne Halter:** einmal anhalten statt Dialog, auch nach dem Speichern und bei laufendem
+  Kopieren (ADR-0024 Nachtrag 6, F-295, F-321, F-329).
+- **Gio-Patch nur als Pull Request** am GitHub-Spiegel, in zwei PRs; einreichen tut Andi (Karte #17,
+  `knowledge/topics/plattformen-und-ki-regeln.md` §Gio).
+- **EXIF:** Die Ausrichtung wird beim Öffnen angewendet, die Angabe selbst verworfen (ADR-0017 Nachtrag 7).
+- **Altdatei beim Speichern weiter voll gelesen** statt nur über `LeseMetadaten` (ADR-0020 Nachtrag 11, F-310).
+- **Eigener Rasterkern:** Fork von `golang.org/x/image/vector` mit 16-Bit-Maske statt Fremdpaket-Wechsel (ADR-0028);
+  die Viererfolge ist fest, ohne `x/sys/cpu` (ADR-0028 Punkt 2).
+- **Fehlertexte:** Präfix-Regel gilt für alle Pakete, keine Ausnahmen; fünf Pakete werden nachgezogen (ADR-0019
+  Nachtrag 2, F-339).
+- **Rettungskopie gegen Absturz:** als ADR-0029 nur **vorgeschlagen** — Andis Zustimmung steht aus (F-144, Karte #77).

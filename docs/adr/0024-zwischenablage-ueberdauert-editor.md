@@ -115,7 +115,26 @@ mit eingeschalteter Einstellung.
 
 ## Nachtrag 5 (21.11.2026): Geerbte Deskriptoren (F-189, Karte #94)
 
-**Status:** Akzeptiert (Claude Sonnet 5.5).
+**Status:** Akzeptiert (Claude, Andi informiert; umgesetzt von Claude Sonnet 5.5).
 
 - `HelferLauf` schließt als Erstes alle Deskriptoren ab 4, die ohne `FD_CLOEXEC` geerbt wurden (`schliesseGeerbte`: Nummern per fcntl bis zur weichen Grenze, höchstens 65536, durchprobiert — bewusst ohne das proc-Dateisystem, Schnapp liest keine Prozessverzeichnisse, auch nicht das eigene; Nachbesserung Opus 21.11.2026). Die Go-Laufzeit öffnet ihre eigenen Deskriptoren immer mit CLOEXEC, ein gezieltes Schließen der Nicht-CLOEXEC-Deskriptoren trifft sie also nicht (kein pauschales `close_range`). Deskriptoren 0 bis 3 bleiben. Test `TestUebergibSchliesstGeerbte` (Gegenprobe ohne Schließen rot).
-- **systemd-Scope bleibt offen, nicht umgesetzt:** Startet KDE Schnapp in einer `app-*.scope`, bleibt der Halter trotz `setsid` in dieser cgroup (setsid löst keine cgroup). Ein Verlassen bräuchte `StartTransientUnit` über D-Bus an den Benutzer-systemd oder `systemd-run --user` als Fremdprogramm (ADR-0011) — beides eine neue Abhängigkeit; als eigenes Finding geführt.
+- **systemd-Scope bleibt offen, nicht umgesetzt:** Startet KDE Schnapp in einer `app-*.scope`, bleibt der Halter trotz `setsid` in dieser cgroup (setsid löst keine cgroup). Ein Verlassen bräuchte `StartTransientUnit` über D-Bus an den Benutzer-systemd oder `systemd-run --user` als Fremdprogramm (ADR-0011) — beides eine neue Abhängigkeit; als eigenes Finding geführt (F-320, Karte #133: erst Andis Messung, dann Entscheidung).
+- *Gemessen 21.11.2026 abends (F-325):* Im virtuellen KWin (`scripts/probe.sh`) schließt der Halter nach Strg+C drei
+  geerbte Deskriptoren (20, 21, 37); das Schließen ist also nötig. Mit `SCHNAPP_DEBUG` meldet der Halter die Zahl
+  (`[wlclip] Halter: …`); seine Fehlerausgabe geht dafür nur an ein Terminal oder eine Datei, nie in eine Pipe.
+
+## Nachtrag 6 (21.11.2026): Warnung beim Schließen ohne Halter (F-295, F-321, F-329)
+
+**Status:** Akzeptiert (Claude, Andi informiert). Umgesetzt in Sprint 10 (F-295, F-321 von Claude Sonnet 5.5, F-329
+Karte #143).
+
+- Gibt es keinen Halter (kein data-control, `WAYLAND_SOCKET`, Startfehler), bietet das Fenster selbst die Kopie an
+  (Rückfall). Schließt es, ist das Bild aus der Zwischenablage weg. Das Schließen hält deshalb einmal an und sagt in
+  der Statusleiste „The clipboard holds the image only while this window is open. Close again to discard it.“
+  (deutsch: „Die Zwischenablage hält das Bild nur, solange dieses Fenster offen ist. Erneutes Schließen verwirft es.“);
+  die nächste Anfrage schließt. Ein Signal schließt immer.
+- Das gilt auch, wenn das Schließen vorher speichert (F-321), und auch, wenn beim Schließen noch ein Kopieren läuft:
+  Das Schließen wartet auf dessen Antwort (höchstens bis zur Kopierfrist), weil erst sie sagt, ob das Fenster die Kopie
+  hält (F-329).
+- Offen: Übernimmt ein anderes Programm die Zwischenablage, meldet Gio `data_source.cancelled` nicht nach außen; die
+  Warnung kommt dann unnötig (F-328, Karte #142, braucht einen Gio-Patch).

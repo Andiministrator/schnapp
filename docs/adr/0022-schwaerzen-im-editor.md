@@ -95,12 +95,19 @@ ihn mit demselben Raster und vergleichen die Blockfarben.
 - **Problem:** Jede Schwärzung hält die alten Pixel ihres Bereichs (`vorher`) im Verlauf, ohne Obergrenze. Wer sehr
   oft oder über ganze Bilder schwärzt, füllt den Speicher.
 - **Entscheidung:** Die Gesamtgröße der im Verlauf gehaltenen Pixelkopien ist auf `verlaufGrenze` begrenzt,
-  512 MiB (`internal/document/verlauf.go`). Ein ganzes 4K-Bild hat 3840 × 2160 × 4 = rund 33 MB, 512 MiB reichen also
-  für rund 15 Schwärzungen über das ganze Bild und für einige tausend übliche Bereiche (400 × 100 Pixel = 160 KB).
-  Nach jeder neuen Änderung fallen die **ältesten** erledigten Schritte weg, bis die Summe unter der Grenze liegt; der
+  512 MiB (`internal/document/verlauf.go`). Ein ganzes 4K-Bild hat 3840 × 2160 × 4 Byte = rund 31,6 MiB, 512 MiB
+  reichen also für 16 Schwärzungen über das ganze Bild und für gut 3000 übliche Bereiche (400 × 100 Pixel = rund
+  156 KiB). *Zahlen berichtigt 21.11.2026 abends (F-327): vorher „rund 33 MB“, „rund 15“, „160 KB“.*
+  Nach jeder neuen Änderung fallen die **ältesten** erledigten Schritte weg, bis die Summe nicht mehr über der Grenze
+  liegt; der
   **jüngste Schritt bleibt immer**, auch wenn er allein größer ist. Verworfene Schritte lassen sich nicht mehr
   zurücknehmen; `Stand()` bleibt stimmig (die Kennung des zuletzt verworfenen Schritts wird zur Basis).
 - **Unverändert:** Die Zug-Sperre (F-18) bleibt; der Verlauf lebt nur im Speicher und wird nie gespeichert. Auch
   `SchreibeArbeitsdatei` leert den Verlauf nicht: Rückgängig nach dem Speichern ist gewollt; die Entscheidung 3 oben
   (Verlauf mit Schwärzung leeren) regelt der Editor nach einem gelungenen Speichern. Die Grenze kappt nur, sie hält
   nichts länger, und verworfene Kopien werden freigegeben.
+- **Still, mit Absicht (Claudes Entscheidung, Andi informiert, 21.11.2026 abends, F-327):** Das Verwerfen meldet sich
+  nicht. Es trifft nur Schritte, die mindestens 16 vollflächige Schwärzungen zurückliegen; eine Meldung in der
+  Statusleiste käme bei jeder weiteren Änderung wieder und verdrängte die Hinweise zum Werkzeug. Verworfen werden auch
+  Objekt- und Zuschnittschritte, die vor dem verworfenen Pixelschritt liegen, denn der Verlauf ist eine Folge; ein
+  Test hält fest, dass Rückgängig danach nur echte frühere Stände erreicht (`TestVerlaufGrenzeGemischteFolge`, F-323).

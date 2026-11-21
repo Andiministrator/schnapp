@@ -57,7 +57,7 @@ deutschen Namen oben (`--bereich` usw.) gelten nicht mehr.
 
 **Stand 19.11.2026 (nach #47, #52, #34):** umgesetzt. `--list-screens` listet; `--screen` ohne Wert folgt
 `[capture] screen` in der Einstellungsdatei (ADR-0018): `pick` öffnet das Overlay im Monitor-Modus, `pointer` nimmt
-den aktiven Monitor sofort, `all` meldet noch „nicht umgesetzt“. Enter im Overlay nimmt den Monitor **unter dem
+den aktiven Monitor sofort, `all` meldet noch „nicht umgesetzt“ (*umgesetzt seit Nachtrag 7*). Enter im Overlay nimmt den Monitor **unter dem
 Zeiger** (nicht den mit dem Tastaturfokus), Esc oder Rechtsklick bricht ab (Exit 3). `--repeat` wiederholt den
 zuletzt im Overlay oder mit `--screen=NAME` gewählten Bereich; `pointer` und `--window` merken keinen (KWin nennt
 dabei keinen Monitornamen bzw. es ist kein Bereich).
@@ -111,3 +111,21 @@ sind Rückgängig, Löschen, Speichern und Zoomen gesperrt (F-18, Kritik A-6). N
 - Die Ablehnung beim Öffnen nennt den Schalter („… Mit --ignore-limit lässt sie sich trotzdem öffnen.“); `--help`
   führt ihn auf. Aufnahmen öffnen den Editor nie mit dem Schalter. Ein sehr aufwendiges Dokument kann das Rendern
   im Editor stark verlangsamen; das nimmt der Schalter bewusst in Kauf.
+
+## Nachtrag 7 (21.11.2026): „Öffnen mit“, EXIF-Ausrichtung, `screen = all` (F-113, F-119, F-327)
+
+**Status:** Akzeptiert (Claude, Andi informiert). Umgesetzt in Sprint 10.
+
+- **„Öffnen mit“ (F-113):** Die Desktop-Datei (`data/schnapp.desktop.in`) trägt im Haupt-`Exec` ein `%f` und
+  `MimeType=image/png;image/jpeg;`. Dateimanager bieten Schnapp damit für PNG und JPEG an; die gewählte Datei geht an
+  `schnapp DATEI` (Nachtrag 4). Die
+  Aktionen (`--region`, `--screen`, `--window`, `--repeat`) bleiben ohne Datei.
+- **EXIF-Ausrichtung (F-113):** Ein JPEG mit EXIF-Ausrichtung 2 bis 8 wird beim Öffnen so gedreht bzw. gespiegelt,
+  wie Bildbetrachter es zeigen (eigener kleiner Leser für Tag 0x0112, ADR-0011: kein Fremdpaket). Die Angabe selbst
+  wird **nicht** übernommen (sie fiele mit allen übrigen Metadaten ohnehin weg, Kernprinzip 3); die Arbeitsdatei
+  speichert das gedrehte Bild. Neben der Quelle entsteht genau eine Vollbild-Kopie (F-323).
+- **`[capture] screen = all` (F-119):** `--screen` nimmt alle Monitore als **ein** Bild über KWin `CaptureWorkspace`
+  auf (ScreenShot2, gleicher Pixeltransport wie die übrigen Aufnahmen, `native-resolution`): KWin setzt nach der
+  Anordnung der Monitore zusammen, bei gemischter Skalierung gilt die größte, kleinere Monitore werden hochgerechnet.
+  Das Bild wird als Ganzes abgelegt, `--repeat` merkt dafür keinen Bereich. Geprüft im virtuellen KWin: zwei Monitore
+  1600 × 1000 ergeben 3200 × 1000.

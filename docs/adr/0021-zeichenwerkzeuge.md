@@ -81,7 +81,8 @@ Bedienung vor Funktionsfülle).
 - Ein Objekt verschieben heißt bei aktivem Zeichenwerkzeug: erst `V`. Das ist der Preis von Punkt 3.
 - **Später** (eigene Karten): Ellipse, Linie, Freihand, Textmarker, Sprechblasen (Rest von A-20/A-21); Wahl von
   Strichstärke, Schriftgrad, Füllung und „Text ohne Schild“; Schnellstile (A-22); Einfügemarke in der Zeile
-  (Pfeiltasten, Auswahl im Text), Einfügen aus der Zwischenablage; Umnummerieren; Open Sans (F-108).
+  (Pfeiltasten, Auswahl im Text), Einfügen aus der Zwischenablage; Umnummerieren; Open Sans ausliefern (eigenes Thema,
+  seit Nachtrag 3 nicht mehr F-108).
 
 ## Nachtrag 1 (20.11.2026): Nacharbeit nach dem Kritiker-Lauf (F-150, F-151, F-153, F-154)
 
@@ -134,3 +135,23 @@ Bedienung vor Funktionsfülle).
   hin und zurück (`Meldung` merkt es sich, die Oberfläche fragt nach jedem Ereignis). Während einer Texteingabe geht
   der Werkzeughinweis vor „Gespeichert“; ein Fehler bleibt sichtbar. `canvas.StatusZeile` nimmt dafür `*Meldung` und
   die Angabe, ob eine Texteingabe läuft.
+
+## Nachtrag 3 (21.11.2026): Gleiche Maße in Renderer, SVG und Editor (F-108, F-149, F-172)
+
+**Status:** Akzeptiert (Claude, Andi informiert). Umgesetzt von Claude Sonnet 5.5 (Karte #60, Commits 6729624 und
+a9f36c1), Sichtprobe im virtuellen KWin.
+
+- **Schrift im SVG:** Der Export nennt die Go-Schrift, wie Renderer und Editor sie setzen
+  (`font-family="Go, Go Regular, sans-serif"`); der Satz zu „Open Sans, sans-serif“ unter „Schrift“ gilt nicht mehr.
+  Open Sans auszuliefern bleibt ein eigenes Thema (CD §4), nicht mehr F-108.
+- **Text-Schild:** gemessene Tinte der Glyphen plus 0,25 Schriftgrad Innenabstand rundum (`document.Text.Grenzen`,
+  `TextInnenabstand`). Renderer, SVG und Editor füllen den Hintergrund genau dort; Treffer, Auswahlrahmen und
+  Verschieben nutzen dieselbe Fläche. Ohne ladbare Schrift gilt die alte Schätzung mit demselben Rand. Ein Umbruch bei
+  `BreiteGrenze` ist nicht umgesetzt; die Fläche kappt deshalb nicht.
+- **Nummer:** `Nummer.Grenzen` umfasst Kreis und Ziffern (bei drei und mehr Stellen ragen sie hinaus); die Ziffern
+  sitzen auf derselben Grundlinie (halbe Versalhöhe unter der Mitte) in Renderer, SVG und Editor.
+- **Kasten:** Ecken rund, auch im SVG (`stroke-linejoin="round"`); der Eckradius ist überall gleich begrenzt
+  (`document.WirksamerEckradius`: höchstens die halbe kürzere Seite, nie elliptisch, unter 0,5 px keiner).
+- **Editor:** setzt Text und Ziffern auf die Grundlinie. Gios `layout.Dimensions.Baseline` zählt von der **Unterkante**
+  des Felds; die erste Fassung zog sie von der Oberkante ab und setzte den Text zu tief (in der Sichtprobe gefunden,
+  `TestEditorTextAufGrundlinie` fängt es jetzt).

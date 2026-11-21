@@ -295,7 +295,7 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
   keinen anderen Ausweg, und ein Dokument am Budget braucht höchstens 45 s. „Nie aufgegeben“ meint das zweite Signal
   und die weitere Schließen-Anfrage.
 - **Umsetzung (21.11.2026, Karte #119):**
-  - **Fortschrittsquelle** ist `internal/speicherschritt`: `Marke` nach jedem benannten Schritt (gerendert,
+  - **Fortschrittsquelle** ist `internal/speicherschritt` (*seit F-312, Sprint 10: `internal/saveprogress`*): `Marke` nach jedem benannten Schritt (gerendert,
     alte-datei-gelesen, bild-kodiert, original-kodiert, datei-geschrieben, ersetzt, index, vorschau, budget-geprueft;
     die Schnitte der Messung F-297) und `Puls` aus langen Schleifen — je Füllung und beim Füllen alle 64 Zeilen (rund 3 % Mehrkosten im Füll-Benchmark `AufwandZweiKaesten8000`, 1,87 statt 1,82 s; je Pixel waren es 7 %), je
     Textzeichen, je geschriebenem Stück der PNG-Kodierung (`Schreiber`), beim Lesen und Dekodieren der alten Datei
@@ -324,7 +324,7 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
     zurückgenommen; Schließen nur bei gemeldetem Stillstand; doch gelungen oder gescheitert; früherer Fehler bleibt;
     Neuversuch nach Signal; 2-Minuten-Grenze trotz Fortschritt; wiederholte Prüfung), `internal/render/fortschritt_test.go`,
     `internal/fileformat/schreiben_fortschritt_test.go`, `internal/library/speichern_fortschritt_test.go`,
-    `internal/speicherschritt/schritt_test.go`. Verify-Lauf Fable (21.11.2026): 8 von 20 Mutationen blieben zunächst
+    `internal/speicherschritt/schritt_test.go` (heute `internal/saveprogress`). Verify-Lauf Fable (21.11.2026): 8 von 20 Mutationen blieben zunächst
     grün. Nach der Nacharbeit (Puls je Füllung, monotone Zeit, Schreiben in Stücken, Leser beim Lesen und Dekodieren,
     Neuversuch nach später Fehlantwort, neue Tests) werden 25 von 26 Mutationen rot; die übrige (`zerstoerenFrist` ab
     dem letzten Fortschritt statt ab Beginn) galt als gleichwertig. Das stimmt nur, wenn das Fenster gleich nach dem
