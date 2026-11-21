@@ -370,3 +370,9 @@ Stand: 2026-11-21 (ergänzt in Sprint 9). Kurze Regeln aus Fehlern und Befunden;
 - **Vor einem Wächter-Test die Sperren dahinter zählen.** F-307: Hinter dem Enter-Wächter lagen zwei weitere Sperren
   (`an()` und `canvas.Sitzung.gesperrt`); ein Test kann die äußerste allein nicht rot machen. Dann die Wirkung über
   alle Ebenen prüfen und die Redundanz im Code benennen, statt eine Testnaht ins Produkt zu bauen.
+- **bash rechnet eine Zahl mit führender Null oktal.** `case … *[!0-9]*` lässt „08“ durch, `$(( ))` scheitert daran
+  oder liest „010“ als 8 (K9-1: `probe.sh --ende 08` schickte sofort SIGKILL). Nach der Prüfung `$((10#$wert))`.
+- **Nach einem Umbau der Verzeichnisse auch die Prüfbefehle umziehen.** ADR-0027 stellte Beschreibungen und Code um,
+  aber nicht die Prüfbefehle offener Findings, Aufrufbeispiele in Kommentaren und die Kontexte der Board-Karten
+  (Kritik Sitzung Sprint 9: fünf Prüfbefehle, 16 Karten). Suche nach `\./<altes paket>\b` und `<altes paket>/` ohne
+  `internal/` davor gehört in jeden Umbau.
