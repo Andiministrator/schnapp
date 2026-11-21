@@ -13,6 +13,8 @@ import (
 	"golang.org/x/image/font"
 	"golang.org/x/image/vector"
 
+	"github.com/Andiministrator/schnapp/internal/raster16"
+
 	"github.com/Andiministrator/schnapp/internal/document"
 )
 
@@ -204,12 +206,12 @@ func messeAufwand(b *testing.B, d *document.Dokument) {
 	b.ReportMetric(Budget/a, "Budget/Aufwand")
 }
 
-// Das alltagsnahe große Dokument (alltagsDokument, F-131): Messung 20.11.2026 rund 10,5 s, Budget/Aufwand 3,1.
+// Das alltagsnahe große Dokument (alltagsDokument, F-131): Messung 20.11.2026 rund 10,5 s, seit ADR-0028 rund 1,9 s; Budget/Aufwand 3,1.
 func BenchmarkAufwandAlltag(b *testing.B) {
 	messeAufwand(b, alltagsDokument(b))
 }
 
-// Füllen (F-130): zwei gefüllte, umrandete Kästen auf 8000×8000. Messung 20.11.2026 rund 1,9 s (vorher 7,8 s).
+// Füllen (F-130): zwei gefüllte, umrandete Kästen auf 8000×8000. Messung 20.11.2026 rund 1,9 s (vorher 7,8 s), seit ADR-0028 rund 0,49 s.
 func BenchmarkAufwandZweiKaesten8000(b *testing.B) {
 	d := weissesDokument(b, 8000, 8000)
 	for i := 0; i < 2; i++ {
@@ -220,7 +222,7 @@ func BenchmarkAufwandZweiKaesten8000(b *testing.B) {
 }
 
 // Ein diagonaler Pfeil über 8000×8000: Das umschließende Rechteck ist bildgroß. Messung 20.11.2026 rund 0,55 s
-// (vorher 2,4 s).
+// (vorher 2,4 s), seit ADR-0028 rund 0,21 s.
 func BenchmarkAufwandPfeilDiagonal8000(b *testing.B) {
 	d := weissesDokument(b, 8000, 8000)
 	hinzu(b, d, document.GeraderPfeil(document.Pt(5, 5), document.Pt(7990, 7990), document.Strich{Farbe: rot, Breite: 6}))
@@ -228,7 +230,7 @@ func BenchmarkAufwandPfeilDiagonal8000(b *testing.B) {
 }
 
 // Knapp unter Budget, fast nur Fläche: 39 gefüllte, umrandete Kästen auf 8000×8000. Die Wartezeit, die eine
-// präparierte Datei beim Speichern erzwingen kann (F-135). Messung 20.11.2026 rund 36 s.
+// präparierte Datei beim Speichern erzwingen kann (F-135). Messung 20.11.2026 rund 36 s, seit ADR-0028 rund 7 s.
 func BenchmarkAufwandNaheBudgetFlaeche(b *testing.B) {
 	d := weissesDokument(b, 8000, 8000)
 	for i := 0; i < 39; i++ {
@@ -258,7 +260,10 @@ func BenchmarkAufwandNaheKantenBudget(b *testing.B) {
 }
 
 // referenzEinmischen ist der Weg vor F-130: vector zeichnet über den allgemeinen Weg mit draw.Over ins NRGBA-Bild.
-func referenzEinmischen(r *vector.Rasterizer, bild *image.NRGBA, ausschnitt image.Rectangle, farbe color.NRGBA) {
+// Seit ADR-0028 baut der Test die Pfade in x/image/vector selbst nach, der Renderer nutzt raster16.
+func referenzEinmischen(_ *raster16.Rasterizer, pfade func(pfad), bild *image.NRGBA, ausschnitt image.Rectangle, farbe color.NRGBA) {
+	r := vector.NewRasterizer(ausschnitt.Dx(), ausschnitt.Dy())
+	pfade(r)
 	r.DrawOp = draw.Over
 	r.Draw(bild, ausschnitt, image.NewUniform(farbe), image.Point{})
 }

@@ -26,9 +26,9 @@ import (
 	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/math/fixed"
-	"golang.org/x/image/vector"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/raster16"
 	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
 
@@ -92,10 +92,11 @@ const (
 //     Bearbeitung wird beim Wiederöffnen also nicht abgelehnt — und beim Speichern ohnehin nie (Bild bricht nicht
 //     ab; über dem Budget warnt der Editor, F-138). Auf 8000×8000 kostet ein bildgroßer Rahmen oder diagonaler Pfeil
 //     1,6e9, ein gefüllter, umrandeter Kasten 3,2e9: Bis Budget/3 passen 26 bzw. 13 davon.
-//   - Ein Dokument knapp unter Budget (39 gefüllte, umrandete Kästen auf 8000×8000, 1,25e11) rastert in rund 35 s —
-//     die Wartezeit, die eine präparierte Datei beim Speichern erzwingen kann (vorher bis knapp 5 min, F-135).
-//     Glyphen knapp unter GlyphBudget = 1e9, sichtbar auf 8000×8000, brauchen rund 5 s (ungünstigster gemessener Grad
-//     bis rund 9 s), Kanten knapp unter KantenBudget 1,5 bis 4,5 s; zusammen also höchstens rund 45 s.
+//   - Ein Dokument knapp unter Budget (39 gefüllte, umrandete Kästen auf 8000×8000, 1,25e11) rastert in rund 7 s
+//     (vor ADR-0028 rund 35 s, vor F-135 bis knapp 5 min) — die Wartezeit, die eine präparierte Datei beim Speichern
+//     erzwingen kann. Glyphen knapp unter GlyphBudget = 1e9, sichtbar auf 8000×8000, brauchen rund 1,2 s (vorher rund
+//     5 s; andere Grade seit ADR-0028 nicht nachgemessen), Kanten knapp unter KantenBudget rund 1,5 s; zusammen also
+//     rund 10 s. Die Gewichte unten stammen aus den Messungen vor ADR-0028 und bleiben (die Grenzen sind Obergrenzen).
 //     So werden die präparierten Fälle aus F-125 und F-132 (10000 große Glyphen oder Nummern, 10000 sehr breite
 //     Pfeile, 10000 Texte à 10000 winziger Glyphen, Hunderte bildgroßer Flächen) beim Öffnen abgelehnt.
 //
@@ -199,7 +200,7 @@ func textZeichen(d *document.Dokument) int {
 func bildMitAufwand(d *document.Dokument) (*image.NRGBA, aufwand, error) {
 	b := d.Ansichtsbild()
 	z := zeichner{bild: b, rand: b.Bounds(), d: d, faces: map[faceSchluessel]font.Face{}, auf: &aufwand{},
-		ras: &vector.Rasterizer{}}
+		ras: &raster16.Rasterizer{}}
 	defer z.schliessen()
 	if err := z.alles(); err != nil {
 		return nil, *z.auf, err
@@ -216,7 +217,7 @@ type zeichner struct {
 	auf   *aufwand
 	// ras wird für jede Füllung zurückgesetzt statt neu angelegt: Seine Puffer (8 Byte je Pixel des Ausschnitts) nicht
 	// je Füllung neu anzufordern, spart bei bildgroßen Flächen rund 5 % (F-130).
-	ras *vector.Rasterizer
+	ras *raster16.Rasterizer
 }
 
 func (z zeichner) trocken() bool { return z.bild == nil }
@@ -406,78 +407,84 @@ func (z zeichner) raster(polys [][]document.Punkt, farbe color.NRGBA) {
 	// dauern trotzdem lange (Verify F-298 B-1).
 	saveprogress.Puls()
 	ox, oy := float64(ausschnitt.Min.X), float64(ausschnitt.Min.Y)
-	r := z.ras
-	r.Reset(ausschnitt.Dx(), ausschnitt.Dy())
-	for _, p := range polys {
-		if len(p) < 3 {
-			continue
+	pfade := func(r pfad) {
+		for _, p := range polys {
+			if len(p) < 3 {
+				continue
+			}
+			if flaeche(p) < 0 {
+				p = umgekehrt(p)
+			}
+			r.MoveTo(float32(p[0].X-ox), float32(p[0].Y-oy))
+			for _, q := range p[1:] {
+				r.LineTo(float32(q.X-ox), float32(q.Y-oy))
+			}
+			r.ClosePath()
 		}
-		if flaeche(p) < 0 {
-			p = umgekehrt(p)
-		}
-		r.MoveTo(float32(p[0].X-ox), float32(p[0].Y-oy))
-		for _, q := range p[1:] {
-			r.LineTo(float32(q.X-ox), float32(q.Y-oy))
-		}
-		r.ClosePath()
 	}
-	einmischen(r, z.bild, ausschnitt, farbe)
+	einmischen(z.ras, pfade, z.bild, ausschnitt, farbe)
 }
 
-// einmischen zeichnet die Pfade von r einfarbig in den Ausschnitt von bild (draw.Over-Semantik). Paketvariable nur
-// als Nahtstelle für den Bitgleich-Test gegen den allgemeinen Weg von vector. draw.Src mit deckender Quelle: Der
-// Rasterizer reicht die Deckung je Pixel unverändert (16 Bit) an einmischer.Set weiter, ohne vorher das Ziel zu lesen.
-var einmischen = func(r *vector.Rasterizer, bild *image.NRGBA, ausschnitt image.Rectangle, farbe color.NRGBA) {
-	r.DrawOp = draw.Src
-	r.Draw(neuerEinmischer(bild, farbe, ausschnitt.Min.X), ausschnitt, deckend, image.Point{})
+// pfad nimmt Strecken auf: raster16.Rasterizer, im Bitgleich-Test auch vector.Rasterizer.
+type pfad interface {
+	MoveTo(x, y float32)
+	LineTo(x, y float32)
+	ClosePath()
 }
 
-// deckend ist die Quelle für raster: volle Deckung, damit der Rasterizer mit draw.Src genau die Deckung liefert.
-var deckend = image.NewUniform(color.Opaque)
+// einmischen zeichnet die Pfade einfarbig in den Ausschnitt von bild (draw.Over-Semantik). Paketvariable nur als
+// Nahtstelle für den Bitgleich-Test gegen x/image/vector (TestFuellenBitgleich).
+var einmischen = func(ras *raster16.Rasterizer, pfade func(pfad), bild *image.NRGBA, ausschnitt image.Rectangle, farbe color.NRGBA) {
+	ras.Reset(ausschnitt.Dx(), ausschnitt.Dy())
+	pfade(ras)
+	e := neuerEinmischer(bild, farbe)
+	breite := ausschnitt.Dx()
+	sichtbar := ausschnitt.Intersect(bild.Rect)
+	// Je 64 Zeilen ein Block der Maske (bleibt im Cache) und ein Fortschritts-Puls fürs Speichern (F-298).
+	ras.Bloecke(64, func(y0 int, maske []uint32) {
+		saveprogress.Puls()
+		von := max(sichtbar.Min.Y, ausschnitt.Min.Y+y0)
+		bis := min(sichtbar.Max.Y, ausschnitt.Min.Y+y0+len(maske)/breite)
+		for y := von; y < bis; y++ {
+			zeile := maske[(y-ausschnitt.Min.Y-y0)*breite:]
+			i := bild.PixOffset(sichtbar.Min.X, y)
+			zeile = zeile[sichtbar.Min.X-ausschnitt.Min.X : sichtbar.Max.X-ausschnitt.Min.X]
+			pix := bild.Pix[i : i+4*len(zeile)]
+			for k, ma := range zeile {
+				p := pix[4*k : 4*k+4 : 4*k+4]
+				// Die häufigen Fälle ohne Aufruf (wie in misch): keine Deckung auf deckendem Grund, volle Deckung einer
+				// deckenden Quelle.
+				if ma == 0 && p[3] == 0xff {
+					continue
+				}
+				if ma == 0xffff && e.sa == 0xffff {
+					p[0], p[1], p[2], p[3] = e.voll.R, e.voll.G, e.voll.B, 0xff
+					continue
+				}
+				e.misch(p, ma)
+			}
+		}
+	})
+}
 
-// einmischer mischt eine einfarbige Quelle in ein NRGBA-Bild, Pixel für Pixel mit der Deckung, die der Rasterizer an
-// Set übergibt (F-130). x/image/vector zeichnet auf *image.NRGBA nur über den allgemeinen Weg: je Pixel At, zwei
-// Farbumrechnungen und Set über Schnittstellen, mit zwei Speicheranforderungen — rund 36 ns. einmischer rechnet
-// dieselbe Formel (rasterizeOpOver in vector, danach color.NRGBAModel) mit denselben uint32-Ausdrücken, also bitgleich
-// zu r.Draw(bild, …, image.NewUniform(farbe), …) mit draw.Over (Test TestFuellenBitgleich), aber ohne Umwege, und
-// überspringt Pixel ohne Deckung auf deckendem Grund. Der schnelle Weg von vector über *image.Alpha taugt nicht:
-// Er rundet die Deckung auf 8 Bit, die Pixel wichen dann ab.
+// einmischer mischt eine einfarbige Quelle in ein NRGBA-Bild, Pixel für Pixel mit der 16-Bit-Deckung aus
+// raster16 (F-130, F-145). Er rechnet dieselbe Formel wie x/image/vector mit draw.Over auf *image.NRGBA
+// (rasterizeOpOver, danach color.NRGBAModel) mit denselben uint32-Ausdrücken, also bitgleich (TestFuellenBitgleich),
+// aber ohne Schnittstellenaufrufe je Pixel, und überspringt Pixel ohne Deckung auf deckendem Grund. Die Deckung kommt
+// direkt aus der Maske (ADR-0028); vorher lief sie über den allgemeinen Weg von vector (At und Set je Pixel).
 type einmischer struct {
-	bild           *image.NRGBA
 	sr, sg, sb, sa uint32      // Quelle vormultipliziert, 16 Bit (color.NRGBA.RGBA)
 	voll           color.NRGBA // Ergebnis bei voller Deckung einer deckenden Quelle
-	x0             int         // linker Rand des Ausschnitts: dort beginnt jede Zeile
-	n              uint32      // gezählte Zeilen
 }
 
-func neuerEinmischer(b *image.NRGBA, farbe color.NRGBA, x0 int) *einmischer {
-	e := &einmischer{bild: b, voll: farbe, x0: x0}
+func neuerEinmischer(b *image.NRGBA, farbe color.NRGBA) einmischer {
+	e := einmischer{voll: farbe}
 	e.sr, e.sg, e.sb, e.sa = farbe.RGBA()
 	return e
 }
 
-func (e *einmischer) ColorModel() color.Model { return color.Alpha16Model }
-func (e *einmischer) Bounds() image.Rectangle { return e.bild.Rect }
-func (e *einmischer) At(x, y int) color.Color { return color.Transparent }
-
-// Set mischt die Quelle mit der Deckung c (Alpha, 16 Bit) in das Pixel (x, y).
-func (e *einmischer) Set(x, y int, c color.Color) {
-	if x == e.x0 { // Zeilenanfang: alle 64 Zeilen ein Fortschritts-Puls fürs Speichern (F-298)
-		if e.n++; e.n&63 == 0 {
-			saveprogress.Puls()
-		}
-	}
-	var ma uint32
-	if v, ok := c.(*color.RGBA64); ok {
-		ma = uint32(v.A)
-	} else {
-		_, _, _, ma = c.RGBA()
-	}
-	if !(image.Point{x, y}.In(e.bild.Rect)) {
-		return
-	}
-	i := e.bild.PixOffset(x, y)
-	p := e.bild.Pix[i : i+4 : i+4]
+// misch mischt die Quelle mit der Deckung ma (16 Bit) in das Pixel p (vier Bytes NRGBA).
+func (e *einmischer) misch(p []byte, ma uint32) {
 	switch {
 	case ma == 0 && p[3] == 0xff:
 		return // draw.Over ohne Deckung auf deckendem Pixel lässt es unverändert
@@ -598,7 +605,6 @@ func (z zeichner) text(face font.Face, s string, x, grundlinie float64, farbe co
 	if grundlinie-grad*1.5 > float64(rand.Max.Y) || grundlinie+grad < float64(rand.Min.Y) {
 		return
 	}
-	dr := font.Drawer{Dst: z.bild, Src: image.NewUniform(farbe), Face: face}
 	dot := fixed.Point26_6{X: fixed.Int26_6(math.Round(x * 64)), Y: fixed.Int26_6(math.Round(grundlinie * 64))}
 	// Rand 1,25 Schriftgrad: Glyphen sind bis gut 1,07 em breit (z. B. U+20A7), ihr Ursprung liegt links der Zeichenfläche.
 	links, rechts := float64(rand.Min.X)-1.25*grad, float64(rand.Max.X)+1.25*grad
@@ -618,9 +624,42 @@ func (z zeichner) text(face font.Face, s string, x, grundlinie float64, farbe co
 			continue
 		}
 		z.auf.glyphen++
-		dr.Dot = dot
-		dr.DrawString(string(c))
-		dot = dr.Dot
+		// Wie font.Drawer.DrawString mit einem Zeichen (ohne Kerning, das steht oben), aber mit eigenem Einmischen
+		// statt draw.DrawMask, das für *image.NRGBA nur den allgemeinen Weg kennt (F-147).
+		gr, maske, mp, adv, _ := face.Glyph(dot, c)
+		if !gr.Empty() {
+			glyphMischen(z.bild, gr, maske, mp, farbe)
+		}
+		dot.X += adv
+	}
+}
+
+// glyphMischen mischt die Glyphenmaske einfarbig in bild, bitgleich zu draw.DrawMask(bild, gr, image.NewUniform(farbe),
+// image.Point{}, maske, mp, draw.Over) (TestGlyphMischenBitgleich): gleicher Zuschnitt, Deckung 0 lässt das Pixel
+// unverändert, sonst dieselbe Formel wie einmischer.misch mit der 8-Bit-Deckung auf 16 Bit gedehnt (a·0x101, wie
+// image.Alpha.RGBA64At). Andere Maskentypen als *image.Alpha gehen über draw.DrawMask.
+func glyphMischen(bild *image.NRGBA, gr image.Rectangle, maske image.Image, mp image.Point, farbe color.NRGBA) {
+	alpha, ok := maske.(*image.Alpha)
+	if !ok {
+		draw.DrawMask(bild, gr, image.NewUniform(farbe), image.Point{}, maske, mp, draw.Over)
+		return
+	}
+	r := gr.Intersect(bild.Rect).Intersect(alpha.Rect.Add(gr.Min.Sub(mp)))
+	if r.Empty() {
+		return
+	}
+	mp = mp.Add(r.Min.Sub(gr.Min))
+	e := neuerEinmischer(bild, farbe)
+	for y := 0; y < r.Dy(); y++ {
+		m := alpha.Pix[alpha.PixOffset(mp.X, mp.Y+y):][:r.Dx()]
+		i := bild.PixOffset(r.Min.X, r.Min.Y+y)
+		pix := bild.Pix[i : i+4*r.Dx()]
+		for k, a := range m {
+			if a == 0 {
+				continue
+			}
+			e.misch(pix[4*k:4*k+4:4*k+4], uint32(a)*0x101)
+		}
 	}
 }
 
