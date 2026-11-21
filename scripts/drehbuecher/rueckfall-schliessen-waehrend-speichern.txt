@@ -1,0 +1,28 @@
+# Rückfallprobe F-299 (Karte #120, Nacharbeit 30b3b7b): Strg+W während des Speicherns wirkt.
+# Ein Schwärzen-Zug ändert das Dokument, Strg+S startet das Speichern im Hintergrund (bei 4K dauert es Sekunden),
+# sofort danach Strg+W. Erwartet: Das Fenster schließt sich von selbst, sobald das Speichern fertig ist (Exit 0), das
+# Debug-Log zeigt „Speichern im Hintergrund: …“ vor „Speichern zurück: … Schliessen:true“ und „Fenster zu“, probe.sh
+# braucht kein SIGTERM/SIGKILL („schnapp hat sich selbst beendet“); Foto 02 zeigt „Speichern …“ in der Statusleiste.
+# Testbild synthetisch (Verläufe, Farbflächen, Rauschen), wird beim Aufruf erzeugt und nicht eingecheckt: ein kleines
+# Go-Programm unter tmp/ schreibt ein 3840x2160-PNG (image/png, NRGBA); kein echter Screenshot.
+# WICHTIG: Das Bild muss eine Datei in der Bibliothek sein. Ein fremdes PNG speichert als neue Aufnahme in die
+# Bibliothek und meldet einen Hinweis; der hält das Fenster bewusst offen (SchlussHinweis), dann schließt Strg+W nicht.
+# Also zuerst ein 4K-PNG in einen Unterordner der Probe-Bibliothek legen (tmp/probe/home/Bilder/schnapp/JJJJ-MM/) —
+# am einfachsten: einen Lauf mit dem Rohbild fahren, dessen Ergebnis dort abgelegt wird, und die Kopie davon nehmen
+# (kein liegen gebliebenes .schnapp-tmp-* im selben Ordner, sonst kommt ebenfalls ein Hinweis).
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-schliessen-waehrend-speichern.txt --bild tmp/probe/home/Bilder/schnapp/JJJJ-MM/BILD.png --breite 3840 --hoehe 2160 --zeit 250
+# Das Speichern dauert bei 4K gut 20 s (Messung f-299-probe); probe.sh schickt nach dem Drehbuch SIGTERM mit 5 s Frist,
+# deshalb die lange Wartezeit am Ende. Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
+warte 800
+zeiger 1000 600
+warte 200
+taste B
+warte 200
+ziehe 1000 600 1800 1000 20
+warte 500
+foto 01-geschwaerzt
+taste Strg+S
+taste Strg+W
+warte 500
+foto 02-nach-strg-w
+warte 45000
