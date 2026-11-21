@@ -137,3 +137,40 @@ func TestWiederverwendet(t *testing.T) {
 		}
 	}
 }
+
+// TestMaskeGleichVectorZufall: viele kleine Zufallsfälle im Gleitkommaweg (Breite über 512, wenige Zeilen), damit auch
+// seltene Rundungsunterschiede der Summenfolge auffallen (Sitzungs-QA Sprint 10, K-4: eine vertauschte Klammer in p2
+// fiel den festen Fällen nicht auf).
+func TestMaskeGleichVectorZufall(t *testing.T) {
+	rnd := rand.New(rand.NewSource(4711))
+	for lauf := 0; lauf < 600; lauf++ {
+		g := image.Pt(513+rnd.Intn(300), 1+rnd.Intn(6))
+		var z Rasterizer
+		z.Reset(g.X, g.Y)
+		v := vector.NewRasterizer(g.X, g.Y)
+		v.DrawOp = draw.Src
+		for p := 0; p < 1+rnd.Intn(5); p++ {
+			for k, n := 0, 3+rnd.Intn(8); k < n; k++ {
+				x := rnd.Float32()*float32(g.X)*1.2 - float32(g.X)*0.1
+				y := rnd.Float32()*float32(g.Y)*1.6 - float32(g.Y)*0.3
+				if k == 0 {
+					z.MoveTo(x, y)
+					v.MoveTo(x, y)
+				} else {
+					z.LineTo(x, y)
+					v.LineTo(x, y)
+				}
+			}
+			z.ClosePath()
+			v.ClosePath()
+		}
+		ziel := image.NewRGBA64(image.Rect(0, 0, g.X, g.Y))
+		v.Draw(ziel, ziel.Bounds(), image.Opaque, image.Point{})
+		maske := z.Maske()
+		for i, m := range maske {
+			if uint32(ziel.RGBA64At(i%g.X, i/g.X).A) != m {
+				t.Fatalf("Lauf %d %v: Pixel %d weicht von x/image/vector ab", lauf, g, i)
+			}
+		}
+	}
+}

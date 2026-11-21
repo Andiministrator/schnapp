@@ -59,7 +59,8 @@ func SchreibeArbeitsdatei(w io.Writer, d *document.Dokument, sichtbar image.Imag
 	}
 	// In Stücken schreiben. Ein Write auf eine Datei landet im Seitencache und kehrt sofort zurück; die Zeit eines
 	// langsamen Mediums vergeht erst im Sync (F-313). Kann der Schreiber synchronisieren (*os.File), folgt deshalb auf
-	// jedes Stück ein Sync und danach der Puls: Es pulst, was tatsächlich abgeflossen ist. Ein Sync, der gar nicht
+	// jedes Stück ein Sync und danach der Puls: Es pulst, was tatsächlich abgeflossen ist (dazu, unschädlich, der Puls
+	// von saveprogress.Schreiber vor jedem Write). Ein Sync, der gar nicht
 	// zurückkehrt (totes Netzlaufwerk), meldet nichts und gilt zu Recht als hängend; einen Puls aus einem Zeitgeber
 	// gibt es nicht. Ohne Sync (Puffer, Attrappe) pulst jedes Stück schon beim Schreiben.
 	sy, kannSync := w.(interface{ Sync() error })
