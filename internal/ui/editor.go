@@ -207,6 +207,9 @@ type editor struct {
 	// schliessenNachKopie: Eine Schließen-Anfrage kam während des Kopierens; das Fenster bleibt offen, bis die Antwort
 	// da ist oder die Frist um ist, dann fragt es erneut (F-281).
 	schliessenNachKopie bool
+	// fensterHaeltKopie: Die Zwischenablage trägt das Bild nur über dieses Fenster (kein Halter möglich, Rückfall,
+	// ADR-0015 Nachtrag 2); fensterWarnung: Das Schließen wurde deswegen schon einmal angehalten (F-295).
+	fensterHaeltKopie, fensterWarnung bool
 
 	speicherStart       time.Time     // Beginn des laufenden Speicherns (F-283)
 	haengtGemeldet      bool          // die Statusleiste sagt schon, dass das Speichern nicht antwortet
@@ -405,7 +408,20 @@ func (e *editor) schliessen() bool {
 	diagnoseEditor("Schließen-Anfrage: %v, Speichern beginnt %v", z, abzug != nil)
 	switch z {
 	case canvas.SchlussZu:
-		return !e.kopierenHaeltOffen()
+		if e.kopierenHaeltOffen() {
+			return false
+		}
+		if e.fensterHaeltKopie && !e.fensterWarnung {
+			// Ohne Halter verschwindet das Bild mit dem Fenster aus der Zwischenablage; das einmal sagen, statt es nur
+			// auf der Fehlerausgabe zu verlieren (F-295). Das nächste Schließen schließt.
+			e.fensterWarnung = true
+			e.melde(i18n.T("The clipboard holds the image only while this window is open. Close again to discard it."), true)
+			if e.w != nil {
+				e.w.Invalidate()
+			}
+			return false
+		}
+		return true
 	case canvas.SchlussFehler:
 		e.melde(i18n.T("Could not save. Close again to discard the changes."), true)
 	}
@@ -726,6 +742,7 @@ func (e *editor) kopierenAbholen(gtx layout.Context) {
 			e.melde(fmt.Sprintf(i18n.T("Could not copy: %v"), r.err), true)
 			return
 		}
+		e.fensterHaeltKopie, e.fensterWarnung = r.daten != nil, false
 		if r.daten != nil {
 			gtx.Execute(clipboard.WriteCmd{Type: wlclip.MIME, Data: io.NopCloser(bytes.NewReader(r.daten))})
 		}

@@ -224,6 +224,9 @@ msgstr "Speichern antwortet nicht. Schließen beendet jetzt ohne zu warten; Änd
 msgid "Saving did not respond; the changes may not have been saved."
 msgstr "Speichern hat nicht geantwortet; die Änderungen sind womöglich nicht gesichert."
 
+msgid "The clipboard holds the image only while this window is open. Close again to discard it."
+msgstr "Die Zwischenablage hält das Bild nur, solange dieses Fenster offen ist. Erneutes Schließen verwirft es."
+
 msgid "Could not save. Close again to discard the changes."
 msgstr "Speichern gescheitert. Erneutes Schließen verwirft die Änderungen."
 

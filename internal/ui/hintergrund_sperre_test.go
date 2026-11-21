@@ -369,8 +369,12 @@ func TestSchliessenWartetAufKopieren(t *testing.T) {
 	if !e.nachKopieSchliessen() || e.nachKopieSchliessen() {
 		t.Fatal("nach der Antwort keine (oder doppelte) erneute Anfrage")
 	}
+	// Ohne Halter (WAYLAND_SOCKET) hält nur das Fenster das Bild: das erste Schließen warnt (F-295), das zweite schließt.
+	if e.schliessen() || e.meldung.Text != i18n.T("The clipboard holds the image only while this window is open. Close again to discard it.") {
+		t.Errorf("Rückfall ohne Warnung vor dem Schließen: Meldung %q", e.meldung.Text)
+	}
 	if !e.schliessen() {
-		t.Error("erneute Anfrage schließt nicht")
+		t.Error("zweite Anfrage nach der Warnung schließt nicht")
 	}
 
 	// Frist um: Die Anfrage schließt, die erneute Anfrage entfällt.
