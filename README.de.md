@@ -127,4 +127,4 @@ Prüfung des Maintainers geschrieben. Entscheidungen stehen in `docs/adr/`. Sieh
 ## Lizenz
 
 GPL-3.0-or-later, siehe [`LICENSE`](LICENSE). Das Logo verwendet Umrisse von Open Sans (SIL Open Font License 1.1). Fremder Code behält seine Lizenz: Der Gio-Patch
-(`third_party/gio-ausgabe.patch`, angewendet in `third_party/gio/`) gilt für Gio (Unlicense OR MIT) und enthält aus wayland-protocols erzeugten Code (MIT).
+(`third_party/gio-ausgabe.patch`, angewendet in `third_party/gio/`) gilt für Gio (Unlicense OR MIT) und enthält aus wayland-protocols erzeugten Code (MIT); `internal/raster16` stammt aus golang.org/x/image/vector (BSD-3-Clause, siehe `internal/raster16/LICENSE`).

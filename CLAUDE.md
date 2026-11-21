@@ -128,7 +128,7 @@ der Wegwerf-Prototyp `prototype/` (entfernt in Sprint 9, ADR-0027; Stand in der 
   Zeichenwerkzeuge, Schwärzen und Texteingabe `werkzeuge.go`; Zuschneiden/Stauchen `zuschnitt.go`; Menü-Aktionen ohne Werkzeug `menue.go` (Gestauchtes zurückholen, ADR-0026); Statusleiste `status.go` `StatusZeile`; Speichern im Hintergrund
   `hintergrund.go` (`SpeichernJetzt`, `SchliessenAnfrage`, `SignalAnfrage`, `SpeichernEnde`: die Oberfläche speichert einen Abzug in einer Goroutine, solange ruht das Bearbeiten, ADR-0020 Nachtrag 6; eine synchrone Schließen-Hülle gibt es nicht mehr, Tests fahren die zwei Schritte über die Helfer `schliesse` und `schliesseNachSignal` in `internal/canvas/schliessen_test.go`, F-284; Menü-Navigationstasten stehen als Ausnahme neben der Tastentabelle, ADR-0026 Nachtrag 4), Signalwache `signal.go`; `Wecker` (`wecker.go`) weckt die Gio-Schleife wiederholt, bis sie eine
   Antwort abholt, F-231; ADR-0020 bis ADR-0023).
-- **render** — Ansichtsbild + Objekte zu Pixeln ohne GPU (`golang.org/x/image` vector/font, Go-Schriften; ADR-0020);
+- **render** — Ansichtsbild + Objekte zu Pixeln ohne GPU (`golang.org/x/image` font, Go-Schriften; ADR-0020);
   Füllen und Glyphen über den eigenen Rasterkern `internal/raster16` (16-Bit-Maske, aus x/image/vector übernommen, bitgleich, ADR-0028) und `einmischer`; `render.Pruefe` zählt die Textzeichen (`ZeichenBudget` 1e6, F-224) und schätzt den
   Aufwand per Trockenlauf (`Budget` 1,25e11, ADR-0020 Nachtrag 3), der Editor lehnt präparierte Dateien beim Öffnen ab
   (`ladeFuerEditor`; `--ignore-limit` überspringt nur diese Prüfung, ADR-0017 Nachtrag 6), Speichern bricht nie ab und
@@ -143,6 +143,8 @@ der Wegwerf-Prototyp `prototype/` (entfernt in Sprint 9, ADR-0027; Stand in der 
 - **internal/saveprogress** — Fortschritt des Speicherns: `Marke` je Schritt (Zeitstempel mit `SCHNAPP_DEBUG`),
   `Puls` aus langen Schleifen (Rastern, PNG-Kodierung, Lesen, Vorschau), `Zuletzt` für die Frist im Editor (F-297, F-298,
   ADR-0020 Nachtrag 9).
+- **internal/raster16** — Rasterkern aus `golang.org/x/image/vector` v0.26.0 (BSD, `LICENSE` im Ordner) mit
+  16-Bit-Maske `Maske()`/`Bloecke()`; bitgleich zu vector, geprüft durch `TestMaskeGleichVector` (ADR-0028).
 - **internal/probeguard** — `NurVirtuell`: Probe-Builds (Tag `probe`, Schnapp und Fernbedienung) laufen nur im
   virtuellen KWin von `scripts/probe.sh` (F-229); das Paket selbst hat kein Build-Tag.
 

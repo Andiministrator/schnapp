@@ -129,7 +129,8 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   diagonaler Pfeil über 8000×8000 2,4 s → 0,55 s, das Alltagsdokument aus Nachtrag 1 48 s → 11 s.
 - **Budget:** `fuellGewicht` 100 → 25, `render.Budget` 8e11 → 1,25e11. Das Alltagsdokument liegt gut 3-fach darunter;
   ein Dokument knapp unter dem Budget (39 gefüllte, umrandete Kästen auf 8000×8000) rastert in rund 35 s statt knapp
-  5 min, mit Glyphen und Kanten an ihren Grenzen höchstens rund 45 s. Für 30 s müsste das Budget auf rund 1e11 sinken,
+  5 min, mit Glyphen und Kanten an ihren Grenzen höchstens rund 45 s. *Seit ADR-0028 rund 7 s bzw. zusammen rund 10 s
+  (gemessen vorher 41 s); Budget und Fristen bleiben.* Für 30 s müsste das Budget auf rund 1e11 sinken,
   dann läge das Alltagsdokument nur 2,5-fach darunter — der Abstand zu echter Arbeit geht vor (F-131).
 - **Speichern über dem Budget (F-138):** Speichern bricht weiter nie ab. Liegt das gespeicherte Dokument über dem
   Budget, warnt der Editor („Gespeichert, aber die Datei hat zu viele oder zu große Beschriftungen, um sie wieder zu
@@ -317,7 +318,8 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
     Fortschritt und verzögert das Erkennen eines hängenden Speicherns höchstens um seine Dauer. `zerstoerenFrist`
     (2 Minuten ab Beginn des Speicherns) bleibt unabhängig vom Fortschritt die äußerste Grenze. `fsync` und Umbenennen
     melden keinen Fortschritt: Ein Medium, das dort 15 s steht, gilt als hängend — gewollt, auch wenn ein sehr
-    langsames, aber arbeitendes Medium (Netzordner) so aussehen kann.
+    langsames, aber arbeitendes Medium (Netzordner) so aussehen kann. *Seit Nachtrag 10 synchronisiert das Schreiben
+    je 1-MiB-Stück und pulst danach; ohne Fortschritt bleiben nur der Schluss-Sync und das Umbenennen.*
   - Tests: `internal/ui/speichern_fortschritt_test.go` (Fortschritt nie aufgegeben, auch im Warten beim Zerstören; Meldung
     zurückgenommen; Schließen nur bei gemeldetem Stillstand; doch gelungen oder gescheitert; früherer Fehler bleibt;
     Neuversuch nach Signal; 2-Minuten-Grenze trotz Fortschritt; wiederholte Prüfung), `internal/render/fortschritt_test.go`,

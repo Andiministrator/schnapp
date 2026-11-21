@@ -89,7 +89,7 @@ fremd; `zenity`/`kdialog` wären Laufzeit-Fremdprogramme (ADR-0011).
 
 **Status:** Akzeptiert (Claude Sonnet 5.5).
 
-- Darf neben dem Ziel keine temporäre Datei entstehen (`EACCES`/`EPERM`/`EROFS`), schreibt `SchreibeAtomar` ein **vorhandenes, reguläres, beschreibbares** Ziel direkt (`O_TRUNC`), nachdem das Dokument vollständig in den Speicher gerendert wurde; ein Renderfehler lässt das Ziel unberührt. Das ist nicht atomar und steht im Debug-Log. `SchreibeOhneErsetzen` und neue Ziele behalten den bisherigen Fehler.
+- Darf neben dem Ziel keine temporäre Datei entstehen (`EACCES`/`EPERM`/`EROFS`), schreibt `SchreibeAtomar` ein **vorhandenes, reguläres, beschreibbares** Ziel direkt (`O_TRUNC`), nachdem das Dokument vollständig in den Speicher gerendert wurde; ein Renderfehler lässt das Ziel unberührt. Das ist nicht atomar und steht im Debug-Log. *Seit Nachtrag 4 mit Sicherung des alten Inhalts und `O_NOFOLLOW`.* `SchreibeOhneErsetzen` und neue Ziele behalten den bisherigen Fehler.
 - **Offen (nur unter Flatpak prüfbar):** Das Dokumenten-Portal gibt nur die gewählte Datei frei. Eine angehängte Endung führt zu einem anderen, nicht freigegebenen Namen. Die richtige Lösung ist, die Endung dem Dialog zu überlassen (Vorschlagsname `current_name` mit Endung je Filter) und unter `/run/user/<uid>/doc/` nie anzuhängen. Das braucht einen Flatpak-Bau zur Prüfung (Finding F-196 bleibt offen bis Flathub).
 
 ## Nachtrag 4 (21.11.2026): Rückfall mit Sicherung (F-322, Karte #136)
