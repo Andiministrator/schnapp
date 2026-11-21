@@ -1,6 +1,6 @@
 # Gio unter Wayland (KDE): Grenzen, Patch, Messen
 
-Stand: 2026-11-20 (Editor-Abschnitt Sprint 5/6, Zwischenablage im Patch) — aus dem Prototyp (`prototype/`, ADR-0003 Nachtrag 2; entfernt in Sprint 9, letzter Stand Commit `af7598a`), Gio v0.10.3, Plasma 6.8. Quelle ist der
+Stand: 2026-11-21 (Gio-Patch-Restpunkte F-42/F-123), 2026-11-20 (Editor-Abschnitt Sprint 5/6, Zwischenablage im Patch) — aus dem Prototyp (`prototype/`, ADR-0003 Nachtrag 2; entfernt in Sprint 9, letzter Stand Commit `af7598a`), Gio v0.10.3, Plasma 6.8. Quelle ist der
 Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene Messung.
 
 ## Was Gio unter Wayland nicht kann (v0.10.3)
@@ -22,11 +22,12 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
   über `pxScale()`. Fehlen die Protokolle, bleibt alles wie vorher.
 - Protokoll-Code mit `wayland-scanner` aus wayland-protocols 1.45 (XML aus dem öffentlichen Repo, das Paket
   `wayland-protocols` war nicht installiert). Upstream erzeugt Gio solchen Code per `go:generate`.
-- `WaylandOutputs()` liefert nur benannte Ausgaben, stabil nach Name sortiert (`sortedOutputs`, Test
-  `os_wayland_test.go`). `FullscreenOn` mit unbekanntem Namen schreibt `app: Wayland output "X" not found, the
+- `WaylandOutputs()` liefert nur benannte Ausgaben, nach Name sortiert, Ziffernfolgen nach Zahlenwert (`DP-2` vor
+  `DP-10`, `sortedOutputs`/`naturalLess`, Test `os_wayland_test.go`; F-42, Sprint 10). Jeder Aufruf öffnet eine kurze
+  eigene Verbindung (Gio hat je Fenster eine) — nicht in einer Schleife abfragen. `FullscreenOn` mit unbekanntem Namen schreibt `app: Wayland output "X" not found, the
   compositor chooses the output` ins Log und überlässt die Wahl dem Compositor; ein leerer Name bleibt ohne Meldung
   (F-33, 19.11.2026).
-- Zeigerbild bei wechselnder Skala neu laden (F-78, ADR-0015 Nachtrag 1); Bild-MIME-Typen in der Zwischenablage
+- Zeigerbild bei wechselnder Skala neu laden (F-78, ADR-0015 Nachtrag 1; jeder Skalenwechsel läuft über `updateOutputs` → `updateCursor`, auch bei ruhendem Zeiger im Fenster); ein Thema-Bild, dessen Größe nicht durch die Puffer-Skala teilbar ist, zeigt der Zeiger über einen eigenen `wp_viewport` in logischer Größe statt doppelt groß (F-123, Sprint 10; ohne Viewporter bleibt Puffer-Skala 1); `wp_viewporter` und `wp_fractional_scale_manager_v1` werden mit der Verbindung zerstört (F-42); Bild-MIME-Typen in der Zwischenablage
   (`writeClipboard` bietet bei `image/…` genau diesen Typ an, `gio_onDataSourceSend` schreibt in einer Schleife bis
   alles übergeben ist, ADR-0015 Nachtrag 2).
 - Umfang (Stand 20.11.2026): von Hand 5 Dateien +465/−39 Zeilen (einschließlich 123 Zeilen Test in

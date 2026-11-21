@@ -120,4 +120,40 @@ func TestSortedOutputs(t *testing.T) {
 	if got := sortedOutputs([]WaylandOutput{{}}); len(got) != 0 {
 		t.Errorf("unnamed output kept: %v", got)
 	}
+	// Runs of digits compare by value (schnapp F-42).
+	got := sortedOutputs([]WaylandOutput{{Name: "DP-10"}, {Name: "DP-2"}, {Name: "DP-1"}, {Name: "HDMI-A-1"}})
+	var names []string
+	for _, o := range got {
+		names = append(names, o.Name)
+	}
+	if want := []string{"DP-1", "DP-2", "DP-10", "HDMI-A-1"}; !reflect.DeepEqual(names, want) {
+		t.Errorf("sortedOutputs order = %v, want %v", names, want)
+	}
+}
+
+func TestNaturalLess(t *testing.T) {
+	tests := []struct {
+		a, b string
+		want bool
+	}{
+		{"DP-2", "DP-10", true},
+		{"DP-10", "DP-2", false},
+		{"DP-1", "DP-1", false},
+		{"DP-01", "DP-1", true}, // same value, plain order decides
+		{"DP-1", "DP-01", false},
+		{"DP", "DP-1", true},
+		{"eDP-1", "DP-1", false},
+		{"HDMI-A-2", "HDMI-A-10", true},
+		{"a9b", "a10a", true},
+		{"", "a", true},
+	}
+	for _, tc := range tests {
+		if got := naturalLess(tc.a, tc.b); got != tc.want {
+			t.Errorf("naturalLess(%q, %q) = %v, want %v", tc.a, tc.b, got, tc.want)
+		}
+		// Strict weak order: never both a<b and b<a.
+		if naturalLess(tc.a, tc.b) && naturalLess(tc.b, tc.a) {
+			t.Errorf("naturalLess(%q, %q) not antisymmetric", tc.a, tc.b)
+		}
+	}
 }

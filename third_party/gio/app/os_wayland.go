@@ -196,6 +196,9 @@ type window struct {
 		// area.
 		system *C.struct_wl_cursor
 		surf   *C.struct_wl_surface
+		// viewport scales the cursor image down when its size is not a
+		// multiple of the buffer scale (nil without wp_viewporter).
+		viewport *C.struct_wp_viewport
 		// name is the cursor requested through SetCursor; it
 		// selects cursor again when the theme is reloaded.
 		name pointer.Cursor
@@ -464,6 +467,9 @@ func (d *wlDisplay) createNativeWindow(options []Option) (*window, error) {
 		return nil, errors.New("wayland: wl_compositor_create_surface failed")
 	}
 	C.wl_surface_set_buffer_scale(w.cursor.surf, C.int32_t(w.cursor.scale))
+	if d.viewporter != nil {
+		w.cursor.viewport = C.wp_viewporter_get_viewport(d.viewporter, w.cursor.surf)
+	}
 	C.xdg_wm_base_add_listener(d.wm, &C.gio_xdg_wm_base_listener, unsafe.Pointer(w.surf))
 	C.wl_surface_add_listener(w.surf, &C.gio_surface_listener, unsafe.Pointer(w.surf))
 	C.xdg_surface_add_listener(w.wmSurf, &C.gio_xdg_surface_listener, unsafe.Pointer(w.surf))
@@ -770,7 +776,8 @@ type WaylandOutput struct {
 }
 
 // sortedOutputs drops outputs without a name, which can't be addressed by
-// FullscreenOn, and sorts the rest by name for a stable order.
+// FullscreenOn, and sorts the rest by name for a stable order. Runs of
+// digits compare by value, so DP-2 comes before DP-10.
 func sortedOutputs(outs []WaylandOutput) []WaylandOutput {
 	var res []WaylandOutput
 	for _, o := range outs {
@@ -778,12 +785,52 @@ func sortedOutputs(outs []WaylandOutput) []WaylandOutput {
 			res = append(res, o)
 		}
 	}
-	sort.Slice(res, func(i, j int) bool { return res[i].Name < res[j].Name })
+	sort.SliceStable(res, func(i, j int) bool { return naturalLess(res[i].Name, res[j].Name) })
 	return res
 }
 
+// naturalLess compares a and b byte by byte, except that runs of ASCII
+// digits compare by numeric value. Equal values with different leading
+// zeros fall back to the plain comparison, so the order stays total.
+func naturalLess(a, b string) bool {
+	i, j := 0, 0
+	for i < len(a) && j < len(b) {
+		if isDigit(a[i]) && isDigit(b[j]) {
+			si, sj := i, j
+			for i < len(a) && isDigit(a[i]) {
+				i++
+			}
+			for j < len(b) && isDigit(b[j]) {
+				j++
+			}
+			na := strings.TrimLeft(a[si:i], "0")
+			nb := strings.TrimLeft(b[sj:j], "0")
+			if len(na) != len(nb) {
+				return len(na) < len(nb)
+			}
+			if na != nb {
+				return na < nb
+			}
+			continue
+		}
+		if a[i] != b[j] {
+			return a[i] < b[j]
+		}
+		i++
+		j++
+	}
+	if len(a)-i != len(b)-j {
+		return len(a)-i < len(b)-j
+	}
+	return a < b
+}
+
+func isDigit(c byte) bool { return '0' <= c && c <= '9' }
+
 // WaylandOutputs connects to the Wayland display and lists its named
-// outputs, sorted by name.
+// outputs, sorted by name. Each call opens a short-lived connection of its
+// own, because every Gio window has its own display connection and outputs
+// may be needed before the first window exists; callers should not poll it.
 func WaylandOutputs() ([]WaylandOutput, error) {
 	d, err := newWLDisplay()
 	if err != nil {
@@ -1410,13 +1457,29 @@ func (w *window) setCursor(pointer *C.struct_wl_pointer, serial C.uint32_t) {
 	}
 	// The theme may not have the requested size; Wayland requires the
 	// buffer size to be a multiple of the buffer scale (invalid_size is a
-	// protocol error). Fall back to scale 1 for such an image.
-	bs := C.uint(max(1, w.cursor.scale))
-	if img.width%bs != 0 || img.height%bs != 0 {
+	// protocol error). For such an image, use buffer scale 1 and let the
+	// viewport scale it down to its logical size; without a viewport the
+	// cursor is shown at buffer scale 1, too large but valid.
+	scale := C.uint(max(1, w.cursor.scale))
+	bs := scale
+	hs := scale // divisor for the hotspot in surface coordinates
+	if img.width%scale != 0 || img.height%scale != 0 {
 		bs = 1
+		hs = 1
+		if w.cursor.viewport != nil {
+			hs = scale
+		}
+	}
+	if w.cursor.viewport != nil {
+		if bs == 1 && hs > 1 {
+			C.wp_viewport_set_destination(w.cursor.viewport,
+				C.int32_t(max(1, (img.width+hs/2)/hs)), C.int32_t(max(1, (img.height+hs/2)/hs)))
+		} else {
+			C.wp_viewport_set_destination(w.cursor.viewport, -1, -1)
+		}
 	}
 	C.wl_surface_set_buffer_scale(w.cursor.surf, C.int32_t(bs))
-	C.wl_pointer_set_cursor(pointer, serial, w.cursor.surf, C.int32_t(img.hotspot_x/bs), C.int32_t(img.hotspot_y/bs))
+	C.wl_pointer_set_cursor(pointer, serial, w.cursor.surf, C.int32_t(img.hotspot_x/hs), C.int32_t(img.hotspot_y/hs))
 	C.wl_surface_attach(w.cursor.surf, buf, 0, 0)
 	C.wl_surface_damage(w.cursor.surf, 0, 0, C.int32_t(img.width), C.int32_t(img.height))
 	C.wl_surface_commit(w.cursor.surf)
@@ -1763,6 +1826,9 @@ func (w *window) destroy() {
 	if w.lastFrameCallback != nil {
 		C.wl_callback_destroy(w.lastFrameCallback)
 		w.lastFrameCallback = nil
+	}
+	if w.cursor.viewport != nil {
+		C.wp_viewport_destroy(w.cursor.viewport)
 	}
 	if w.cursor.surf != nil {
 		C.wl_surface_destroy(w.cursor.surf)
@@ -2479,6 +2545,14 @@ func (d *wlDisplay) destroy() {
 	}
 	if d.wm != nil {
 		C.xdg_wm_base_destroy(d.wm)
+	}
+	if d.viewporter != nil {
+		C.wp_viewporter_destroy(d.viewporter)
+		d.viewporter = nil
+	}
+	if d.fracScaleMgr != nil {
+		C.wp_fractional_scale_manager_v1_destroy(d.fracScaleMgr)
+		d.fracScaleMgr = nil
 	}
 	for _, output := range d.outputMap {
 		C.wl_output_destroy(output)
