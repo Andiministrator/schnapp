@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Andiministrator/schnapp/i18n"
-	"github.com/Andiministrator/schnapp/library"
-	"github.com/Andiministrator/schnapp/ui"
+	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
+	"github.com/Andiministrator/schnapp/internal/ui"
 )
 
 // aufraeumAttrappe merkt sich die Aufrufe des Aufräumens; keine echte Bibliothek, kein Papierkorb.

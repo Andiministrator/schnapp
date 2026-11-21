@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Andiministrator/schnapp/capture"
+	"github.com/Andiministrator/schnapp/internal/capture"
 	"github.com/Andiministrator/schnapp/internal/probeschutz"
 )
 

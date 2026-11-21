@@ -111,9 +111,10 @@ Produktcode (Stand 21.11.2026, v0.3.0 nach Sprint 8): `capture`, `document`, `fi
 Schnapp nimmt auf, legt in der Bibliothek ab und öffnet den Editor (Auswählen, Verschieben, Griffe, Zoom, Rückgängig,
 Speichern, Zeichenwerkzeuge Pfeil/Kasten/Text/Schritt-Nummer mit Farbwahl, ADR-0021; Schwärzen/Verpixeln ADR-0022;
 Zwischenablage Strg+C, ADR-0015 Nachtrag 2, bleibt nach dem Schließen über den Halter `wlclip`, ADR-0024; Zuschneiden C und Stauchen X mit Zackenkante, Band bis an den Rand wird Zuschnitt, zurück über den Knopf „Ganzes Bild“, ADR-0023; Export PNG/JPG/SVG über den Portal-Dialog, Strg+Umschalt+E,
-ADR-0025; Menü mit allen Aktionen und Kürzeln, auch allein per Tastatur, Tastentabelle `ui/kuerzel.go`, ADR-0026 mit Nachträgen 2 bis 4; seit Sprint 8: Speichern und Kopieren im Hintergrund, ADR-0020 Nachträge 6 bis 8; Nachtrag 9 — Frist erkennt Fortschritt über `internal/speicherschritt`, umgesetzt in Sprint 9). Probeläufe ohne Andi: `scripts/probe.sh`
+ADR-0025; Menü mit allen Aktionen und Kürzeln, auch allein per Tastatur, Tastentabelle `internal/ui/kuerzel.go`, ADR-0026 mit Nachträgen 2 bis 4; seit Sprint 8: Speichern und Kopieren im Hintergrund, ADR-0020 Nachträge 6 bis 8; Nachtrag 9 — Frist erkennt Fortschritt über `internal/speicherschritt`, umgesetzt in Sprint 9). Probeläufe ohne Andi: `scripts/probe.sh`
 (virtueller KWin, `knowledge/topics/lehren.md`). Installation per `install.sh` (`~/.local`, Version aus `git describe`). Daneben
-der Wegwerf-Prototyp `prototype/`. Schichten:
+der Wegwerf-Prototyp `prototype/`. Alle Programmpakete liegen seit Sprint 9 unter `internal/` (ADR-0027; Modulpfad
+`github.com/Andiministrator/schnapp/internal/<paket>`), öffentlich ist nur das Modul `draw/`. Schichten:
 
 - **capture** — Schnittstelle + KWin-Umsetzung (D-Bus), später Portal.
 - **document** — Ebenenmodell (Pixelebene, Vektorebenen, Original, Stauchangaben), Rückgängig-Verlauf; `Abzug` (unabhängige Kopie mit gleichem Stand, ohne Verlauf, für Speichern und Kopieren im Hintergrund), `PruefeInhalt` (Objekte, Zuschnitt, Streifen ohne Pixel prüfen, gleiche Grenzen wie das Laden).
@@ -125,7 +126,7 @@ der Wegwerf-Prototyp `prototype/`. Schichten:
 - **selection** — Logik des Overlays ohne Gio (Abbildung, Bereich, Monitor per Klick, Lupe, letzter Bereich).
 - **canvas** — Logik der Editor-Leinwand ohne Gio (Zoom zum Zeiger, Einpassen, Treffer, Griffe, Verschieben;
   Zeichenwerkzeuge, Schwärzen und Texteingabe `werkzeuge.go`; Zuschneiden/Stauchen `zuschnitt.go`; Menü-Aktionen ohne Werkzeug `menue.go` (Gestauchtes zurückholen, ADR-0026); Statusleiste `status.go` `StatusZeile`; Speichern im Hintergrund
-  `hintergrund.go` (`SpeichernJetzt`, `SchliessenAnfrage`, `SignalAnfrage`, `SpeichernEnde`: die Oberfläche speichert einen Abzug in einer Goroutine, solange ruht das Bearbeiten, ADR-0020 Nachtrag 6; eine synchrone Schließen-Hülle gibt es nicht mehr, Tests fahren die zwei Schritte über die Helfer `schliesse` und `schliesseNachSignal` in `canvas/schliessen_test.go`, F-284; Menü-Navigationstasten stehen als Ausnahme neben der Tastentabelle, ADR-0026 Nachtrag 4), Signalwache `signal.go`; `Wecker` (`wecker.go`) weckt die Gio-Schleife wiederholt, bis sie eine
+  `hintergrund.go` (`SpeichernJetzt`, `SchliessenAnfrage`, `SignalAnfrage`, `SpeichernEnde`: die Oberfläche speichert einen Abzug in einer Goroutine, solange ruht das Bearbeiten, ADR-0020 Nachtrag 6; eine synchrone Schließen-Hülle gibt es nicht mehr, Tests fahren die zwei Schritte über die Helfer `schliesse` und `schliesseNachSignal` in `internal/canvas/schliessen_test.go`, F-284; Menü-Navigationstasten stehen als Ausnahme neben der Tastentabelle, ADR-0026 Nachtrag 4), Signalwache `signal.go`; `Wecker` (`wecker.go`) weckt die Gio-Schleife wiederholt, bis sie eine
   Antwort abholt, F-231; ADR-0020 bis ADR-0023).
 - **render** — Ansichtsbild + Objekte zu Pixeln ohne GPU (`golang.org/x/image` vector/font, Go-Schriften; ADR-0020);
   Füllen über eigenen `einmischer` (bitgleich zu `draw.Over`, rund 4-mal schneller); `render.Pruefe` zählt die Textzeichen (`ZeichenBudget` 1e6, F-224) und schätzt den
@@ -162,13 +163,13 @@ ADR-0003 Nachtrag 2, ADR-0015.
   Gio braucht unter Linux die Build-Tags `novulkan,nox11` (keine Vulkan-Header, nur Wayland) und die cgo-Bibliotheken
   `libwayland-dev libegl-dev libxkbcommon-dev`. Die Tags kommen über die Umgebungsvariable, nicht über `go env -w`:
   `export GOFLAGS=-tags=novulkan,nox11`, dann `go vet ./... && go test ./...`, zusätzlich mit Tag `probe`
-  `GOFLAGS=-tags=novulkan,nox11,probe go vet ./cmd/... ./ui && GOFLAGS=-tags=novulkan,nox11,probe go test ./cmd/schnapp-fernbedienung ./cmd/schnapp ./internal/probeschutz`
+  `GOFLAGS=-tags=novulkan,nox11,probe go vet ./cmd/... ./internal/ui && GOFLAGS=-tags=novulkan,nox11,probe go test ./cmd/schnapp-fernbedienung ./cmd/schnapp ./internal/probeschutz`
   (der Normalbau sieht `cmd/schnapp-fernbedienung` und `cmd/schnapp/probe_test.go` nicht); Programm `go build -trimpath -o schnapp
-  ./cmd/schnapp`. Pakete: `i18n` (Sprachwahl, PO-Leser, `i18n.T/TK/N`), `po` (eingebettete `po/*.po`, ADR-0014
+  ./cmd/schnapp`. Pakete: `i18n` (Sprachwahl, PO-Leser, `i18n.T/TK/N`), `po` (eingebettete `internal/po/*.po`, ADR-0014
   Nachtrag 1), `ui` (Schicht zu Gio; `Starte` hält die Gio-Hauptschleife, `Overlay` je Monitor),
   `cmd/schnapp` (Argumente `--region` [Voreinstellung], `--screen[=NAME]`, `--list-screens`, `--window`, `--repeat`,
   `--no-editor`, `DATEI`, `--ignore-limit DATEI`, `--version`, `--help`; der Editor fängt SIGTERM/SIGINT/SIGHUP bis zur
-  Rückkehr ab und speichert im Hintergrund (ADR-0020 Nachträge 2, 6 und 7: Fristen 15 s / 2 min / 10 s in `ui/editor.go`); bleiben Änderungen ungesichert, endet Schnapp mit Fehler, auch nach einer Aufnahme (`ungesichert` in `cmd/schnapp/editor.go`, Nachtrag 8), Strg+C-Proben nur im eigenen Terminal; `aufnehmen.go` nimmt auf und legt in der Bibliothek ab, Pfad auf
+  Rückkehr ab und speichert im Hintergrund (ADR-0020 Nachträge 2, 6 und 7: Fristen 15 s / 2 min / 10 s in `internal/ui/editor.go`); bleiben Änderungen ungesichert, endet Schnapp mit Fehler, auch nach einer Aufnahme (`ungesichert` in `cmd/schnapp/editor.go`, Nachtrag 8), Strg+C-Proben nur im eigenen Terminal; `aufnehmen.go` nimmt auf und legt in der Bibliothek ab, Pfad auf
   stdout, dann Editor — erst nach der Rückkehr des Aufnahme-Aufrufs, mit dem abgelegten Dokument und dem Dateistand vom Ablegen (ADR-0020 Nachtrag 6, F-275), Exit 3 bei Abbruch; `editor.go` öffnet Dateien und speichert in die Bibliothek;
   `--screen` mit `[capture] screen = all` ist noch nicht umgesetzt). **Tests, die Claude selbst fahren kann, fährt
   Claude selbst** (Andi, 20.11.2026): `scripts/probe.sh` (virtueller KWin, Build-Tag `probe`, nie ausliefern), auch den
@@ -178,7 +179,7 @@ ADR-0003 Nachtrag 2, ADR-0015.
   startet Andi selbst per `!`-Befehl, gebündelt, Anleitung davor (`knowledge/topics/lehren.md`); vorher mit `go build -race` nach `tmp/` bauen,
   Diagnose mit `SCHNAPP_DEBUG=1` (`[overlay]`/`[editor]`-Zeilen, `knowledge/topics/gio-wayland.md`).
   Oberflächentexte nur als Literal über `i18n.T/TK/N`; der Test verlangt für jeden Text einen fertigen Eintrag in
-  `po/de.po`. `capture` ist die Aufnahmeschicht (`Quelle`, KWin über D-Bus: ScreenShot3/memfd bevorzugt, sonst
+  `internal/po/de.po`. `capture` ist die Aufnahmeschicht (`Quelle`, KWin über D-Bus: ScreenShot3/memfd bevorzugt, sonst
   ScreenShot2/Pipe; Tests mit Attrappe, keine echte Aufnahme in `go test`). `data/schnapp.desktop.in` ist die Vorlage der Desktop-Datei (ADR-0017). `tmp/go.mod` trennt `tmp/` vom
   Wurzelmodul. `library` ist die Bibliothek (ADR-0016: Ablage `<Bilderordner>/schnapp/<JJJJ-MM>/…png`, Index-Cache
   als JSON-Zeilen (Neuaufbau nur aus Metadaten), Suche, Aufräumen über den freedesktop-Papierkorb); Tests nur mit eigener Umgebung unter `t.TempDir()`.

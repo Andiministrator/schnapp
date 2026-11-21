@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/Andiministrator/schnapp/i18n"
+	"github.com/Andiministrator/schnapp/internal/i18n"
 )
 
 // F-129 (1): Ein Join aus Fenster- und Speicherfehler nennt beide Teile, den übersetzten Text nur einmal und nie die

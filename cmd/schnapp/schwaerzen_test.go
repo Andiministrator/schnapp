@@ -19,14 +19,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Andiministrator/schnapp/canvas"
-	"github.com/Andiministrator/schnapp/document"
-	"github.com/Andiministrator/schnapp/export"
-	"github.com/Andiministrator/schnapp/fileformat"
-	"github.com/Andiministrator/schnapp/i18n"
-	"github.com/Andiministrator/schnapp/library"
-	"github.com/Andiministrator/schnapp/render"
-	"github.com/Andiministrator/schnapp/ui"
+	"github.com/Andiministrator/schnapp/internal/canvas"
+	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/export"
+	"github.com/Andiministrator/schnapp/internal/fileformat"
+	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
+	"github.com/Andiministrator/schnapp/internal/render"
+	"github.com/Andiministrator/schnapp/internal/ui"
 )
 
 // geheimBild ist ein graues Bild 120×80 mit einem „geheimen“ Schachbrett aus Magenta und Grün bei (30..90, 20..60):

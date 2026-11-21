@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Andiministrator/schnapp/document"
-	"github.com/Andiministrator/schnapp/fileformat"
-	"github.com/Andiministrator/schnapp/i18n"
-	"github.com/Andiministrator/schnapp/library"
-	"github.com/Andiministrator/schnapp/ui"
+	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/fileformat"
+	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
+	"github.com/Andiministrator/schnapp/internal/ui"
 )
 
 // Z-4 (Verify Fable zu #114): Liegen gebliebene temporäre Kopien (library.ErrTempRest, F-274) dürfen nirgends

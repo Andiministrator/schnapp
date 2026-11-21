@@ -12,13 +12,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Andiministrator/schnapp/capture"
-	"github.com/Andiministrator/schnapp/document"
-	"github.com/Andiministrator/schnapp/i18n"
-	"github.com/Andiministrator/schnapp/library"
-	"github.com/Andiministrator/schnapp/selection"
-	"github.com/Andiministrator/schnapp/settings"
-	"github.com/Andiministrator/schnapp/ui"
+	"github.com/Andiministrator/schnapp/internal/capture"
+	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
+	"github.com/Andiministrator/schnapp/internal/selection"
+	"github.com/Andiministrator/schnapp/internal/settings"
+	"github.com/Andiministrator/schnapp/internal/ui"
 )
 
 // testbild: jedes Pixel trägt seine Lage (R = x, G = y) und eine Kennung des Monitors (B).

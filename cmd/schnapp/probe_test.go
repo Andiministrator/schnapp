@@ -9,9 +9,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Andiministrator/schnapp/capture"
+	"github.com/Andiministrator/schnapp/internal/capture"
 	"github.com/Andiministrator/schnapp/internal/probeschutz"
-	"github.com/Andiministrator/schnapp/wlclip"
+	"github.com/Andiministrator/schnapp/internal/wlclip"
 )
 
 // echteAusfuehrungOhneAufnahme baut die echte Ausführung (echteAnschluesse, samt echter Schutzprüfung), ersetzt aber

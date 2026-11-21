@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Andiministrator/schnapp/i18n"
-	"github.com/Andiministrator/schnapp/library"
+	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
 )
 
 // F-305: Scheitert das Ablegen einer Aufnahme, zeigt stderr den übersetzten Grund, weder Pfad noch Paketpräfix noch

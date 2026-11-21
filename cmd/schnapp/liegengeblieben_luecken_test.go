@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Andiministrator/schnapp/document"
-	"github.com/Andiministrator/schnapp/fileformat"
-	"github.com/Andiministrator/schnapp/i18n"
-	"github.com/Andiministrator/schnapp/library"
-	"github.com/Andiministrator/schnapp/ui"
+	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/fileformat"
+	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
+	"github.com/Andiministrator/schnapp/internal/ui"
 )
 
 // F-243: Restzweige von F-221 (ADR-0022 Punkt 4) — Vormerken nach gescheitertem Entfernen im selben Speichern und

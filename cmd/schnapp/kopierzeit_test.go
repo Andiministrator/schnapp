@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Andiministrator/schnapp/document"
-	"github.com/Andiministrator/schnapp/render"
+	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/render"
 )
 
 // Messung zu F-281: Wie lange brauchen Abzug und render.PNG (Fenster für „Strg+C, sofort schließen“)? Läuft nur mit

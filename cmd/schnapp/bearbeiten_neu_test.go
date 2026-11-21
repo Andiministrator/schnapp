@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Andiministrator/schnapp/document"
-	"github.com/Andiministrator/schnapp/fileformat"
-	"github.com/Andiministrator/schnapp/i18n"
-	"github.com/Andiministrator/schnapp/library"
-	"github.com/Andiministrator/schnapp/ui"
+	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/fileformat"
+	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
+	"github.com/Andiministrator/schnapp/internal/ui"
 )
 
 // F-282: bearbeiteNeu übergibt dem Editor den Stand der Datei vom Ablegen (a.stand), nicht den Nullwert. Mit dem

@@ -15,12 +15,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Andiministrator/schnapp/document"
-	"github.com/Andiministrator/schnapp/fileformat"
-	"github.com/Andiministrator/schnapp/i18n"
-	"github.com/Andiministrator/schnapp/library"
-	"github.com/Andiministrator/schnapp/render"
-	"github.com/Andiministrator/schnapp/ui"
+	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/fileformat"
+	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
+	"github.com/Andiministrator/schnapp/internal/render"
+	"github.com/Andiministrator/schnapp/internal/ui"
 )
 
 // Nach der Aufnahme öffnet der Editor mit dem abgelegten Pfad, erst nachdem der Pfad auf stdout steht. Er bekommt das

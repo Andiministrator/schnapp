@@ -11,12 +11,12 @@ import (
 	"io"
 	"os"
 
-	"github.com/Andiministrator/schnapp/i18n"
-	"github.com/Andiministrator/schnapp/library"
-	"github.com/Andiministrator/schnapp/po"
-	"github.com/Andiministrator/schnapp/settings"
-	"github.com/Andiministrator/schnapp/ui"
-	"github.com/Andiministrator/schnapp/wlclip"
+	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
+	"github.com/Andiministrator/schnapp/internal/po"
+	"github.com/Andiministrator/schnapp/internal/settings"
+	"github.com/Andiministrator/schnapp/internal/ui"
+	"github.com/Andiministrator/schnapp/internal/wlclip"
 )
 
 // version wird beim Bau gesetzt: go build -ldflags "-X main.version=0.1.0".

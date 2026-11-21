@@ -12,15 +12,15 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Andiministrator/schnapp/capture"
-	"github.com/Andiministrator/schnapp/document"
-	"github.com/Andiministrator/schnapp/fileformat"
-	"github.com/Andiministrator/schnapp/i18n"
-	"github.com/Andiministrator/schnapp/library"
-	"github.com/Andiministrator/schnapp/render"
-	"github.com/Andiministrator/schnapp/selection"
-	"github.com/Andiministrator/schnapp/settings"
-	"github.com/Andiministrator/schnapp/ui"
+	"github.com/Andiministrator/schnapp/internal/capture"
+	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/fileformat"
+	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
+	"github.com/Andiministrator/schnapp/internal/render"
+	"github.com/Andiministrator/schnapp/internal/selection"
+	"github.com/Andiministrator/schnapp/internal/settings"
+	"github.com/Andiministrator/schnapp/internal/ui"
 )
 
 // exitAbgebrochen: Der Nutzer hat die Auswahl abgebrochen (Esc im Overlay, Abbruch der Fensterwahl).

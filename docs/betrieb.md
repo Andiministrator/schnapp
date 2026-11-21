@@ -16,7 +16,7 @@ go build -trimpath -o schnapp ./cmd/schnapp
 Probe-Builds (Fernbedienung und Probe-Tests sieht der Normalbau nicht):
 
 ```bash
-GOFLAGS=-tags=novulkan,nox11,probe go vet ./cmd/... ./ui
+GOFLAGS=-tags=novulkan,nox11,probe go vet ./cmd/... ./internal/ui
 GOFLAGS=-tags=novulkan,nox11,probe go test ./cmd/schnapp-fernbedienung ./cmd/schnapp ./internal/probeschutz
 ```
 

@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Andiministrator/schnapp/fileformat"
-	"github.com/Andiministrator/schnapp/i18n"
-	"github.com/Andiministrator/schnapp/library"
-	"github.com/Andiministrator/schnapp/ui"
+	"github.com/Andiministrator/schnapp/internal/fileformat"
+	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
+	"github.com/Andiministrator/schnapp/internal/ui"
 )
 
 // F-221: Fassungen, die bei einem früheren Speichern liegen blieben, zeigen eine spätere Schwärzung nicht. Der

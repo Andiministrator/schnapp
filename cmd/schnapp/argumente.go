@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Andiministrator/schnapp/i18n"
+	"github.com/Andiministrator/schnapp/internal/i18n"
 )
 
 // Modus ist, was der Aufruf verlangt.

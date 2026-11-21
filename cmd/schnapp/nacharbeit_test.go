@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Andiministrator/schnapp/document"
-	"github.com/Andiministrator/schnapp/i18n"
-	"github.com/Andiministrator/schnapp/library"
-	"github.com/Andiministrator/schnapp/ui"
+	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
+	"github.com/Andiministrator/schnapp/internal/ui"
 )
 
 // F-301: ui.Editor liefert errors.Join(fensterErr, schlussErr, err). Mit ui.ErrSpeichernHaengt als Teil nennt

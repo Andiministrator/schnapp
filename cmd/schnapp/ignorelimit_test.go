@@ -17,11 +17,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Andiministrator/schnapp/document"
-	"github.com/Andiministrator/schnapp/fileformat"
-	"github.com/Andiministrator/schnapp/i18n"
-	"github.com/Andiministrator/schnapp/render"
-	"github.com/Andiministrator/schnapp/settings"
+	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/fileformat"
+	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/render"
+	"github.com/Andiministrator/schnapp/internal/settings"
 )
 
 // schreibeDatei legt d als Arbeitsdatei unter name im Testordner ab und liefert den Pfad.

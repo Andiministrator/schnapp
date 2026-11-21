@@ -10,10 +10,10 @@ import (
 	"image/png"
 	"testing"
 
-	"github.com/Andiministrator/schnapp/canvas"
-	"github.com/Andiministrator/schnapp/document"
-	"github.com/Andiministrator/schnapp/fileformat"
-	"github.com/Andiministrator/schnapp/render"
+	"github.com/Andiministrator/schnapp/internal/canvas"
+	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/fileformat"
+	"github.com/Andiministrator/schnapp/internal/render"
 )
 
 // ausgaengeMitOriginal liefert alle Wege, auf denen ein Bild Schnapp zum Weitergeben verlässt, plus das sichtbare Bild

@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/Andiministrator/schnapp/wlclip"
+	"github.com/Andiministrator/schnapp/internal/wlclip"
 )
 
 // halter greift nur bei genau dem Helfer-Argument (ADR-0024); jeder andere Aufruf geht an das normale Programm.
