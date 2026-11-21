@@ -167,7 +167,7 @@ func LesePO(r io.Reader) ([]Eintrag, error) {
 		return nil, err
 	}
 	if err := abschliessen(); err != nil {
-		return nil, fmt.Errorf("Dateiende: %w", err)
+		return nil, fmt.Errorf("i18n: Dateiende: %w", err)
 	}
 	return eintraege, nil
 }
