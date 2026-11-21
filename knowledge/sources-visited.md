@@ -98,6 +98,20 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | https://api.github.com/repos/Andiministrator/schnapp/actions/runs | 2026-11-19 | 2026-11-19 | live | curl | CI-Lauf test: success | — |
 | https://www.gnu.org/licenses/gpl-3.0.txt | 2026-11-19 | 2026-11-19 | live | curl | GPL-3.0-Text | LICENSE |
 
+## GitHub Actions: Node-24-Fassungen und SHA-Pinning (Sprint 9, Karte #29, F-43/F-309)
+
+| URL | Letzter Besuch | Erstbesuch | Status | Weg | Inhalt | Zieldatei |
+|---|---|---|---|---|---|---|
+| https://api.github.com/repos/actions/checkout/releases/latest | 2026-11-21 | 2026-11-21 | live | curl | neueste Fassung v7.0.1 (veröffentlicht 2026-07-20) | knowledge/sources/github-actions-node24.md |
+| https://api.github.com/repos/actions/setup-go/releases/latest | 2026-11-21 | 2026-11-21 | live | curl | neueste Fassung v7.1.0 (veröffentlicht 2026-11-17) | knowledge/sources/github-actions-node24.md |
+| https://raw.githubusercontent.com/actions/checkout/v7.0.1/action.yml | 2026-11-21 | 2026-11-21 | live | curl | `runs.using: node24` (Zeile 116) | knowledge/sources/github-actions-node24.md |
+| https://raw.githubusercontent.com/actions/setup-go/v7.1.0/action.yml | 2026-11-21 | 2026-11-21 | live | curl | `runs.using: 'node24'` (Zeile 48); Eingabe `cache` Standard `true` | knowledge/sources/github-actions-node24.md |
+| https://api.github.com/repos/actions/checkout/git/ref/tags/v7.0.1 | 2026-11-21 | 2026-11-21 | live | curl | leichtes Tag, zeigt direkt auf Commit 3d3c42e5 | knowledge/sources/github-actions-node24.md |
+| https://api.github.com/repos/actions/setup-go/git/ref/tags/v7.1.0 | 2026-11-21 | 2026-11-21 | live | curl | leichtes Tag, zeigt direkt auf Commit d8cbb804 | knowledge/sources/github-actions-node24.md |
+| https://api.github.com/repos/actions/checkout/releases?per_page=8 | 2026-11-21 | 2026-11-21 | live | curl | Release-Notes v7.0.0, v7.0.1, v6.1.0 (Bruchänderung Fork-PR nur bei pull_request_target/workflow_run) | knowledge/sources/github-actions-node24.md |
+| https://api.github.com/repos/actions/setup-go/releases?per_page=8 | 2026-11-21 | 2026-11-21 | live | curl | Release-Notes v7.0.0 (ESM), v7.1.0, v6.2.0 | knowledge/sources/github-actions-node24.md |
+| https://api.github.com/repos/actions/checkout/releases/tags/v6.0.0 | 2026-11-21 | 2026-11-21 | live | curl | Release-Notes v6.0.0 (Zugangsdaten in separater Datei) | knowledge/sources/github-actions-node24.md |
+
 ## Suchanfragen
 
 | Datum | Anfrage | Ergebnis |

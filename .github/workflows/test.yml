@@ -14,8 +14,8 @@ jobs:
     env:
       GOFLAGS: -tags=novulkan,nox11
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: go.mod
       - name: Bibliotheken für Gio (Wayland, EGL, xkbcommon)
@@ -37,8 +37,8 @@ jobs:
       run:
         working-directory: draw
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: draw/go.mod
       - name: gofmt
@@ -50,8 +50,8 @@ jobs:
   gio-patch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: prototype/go.mod
       - run: third_party/gio-patch.sh pruefen
@@ -63,8 +63,8 @@ jobs:
       run:
         working-directory: prototype
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: prototype/go.mod
       - name: Bibliotheken für Gio (Wayland, EGL, xkbcommon)
