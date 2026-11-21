@@ -1384,7 +1384,8 @@ func (e *editor) textBei(gtx layout.Context, s string, groesse float32, p f32.Po
 
 // textEcke ist die linke obere Ecke des Textfelds, damit seine Grundlinie auf p.Y liegt (mit mitte: seine Mitte auf p.X).
 func textEcke(p f32.Point, dims layout.Dimensions, mitte bool) f32.Point {
-	ecke := p.Sub(f32.Pt(0, float32(dims.Baseline)))
+	// dims.Baseline ist der Abstand von der UNTERkante des Felds zur Grundlinie (Gio); von oben sind es Size.Y − Baseline.
+	ecke := p.Sub(f32.Pt(0, float32(dims.Size.Y-dims.Baseline)))
 	if mitte {
 		ecke.X -= float32(dims.Size.X) / 2
 	}

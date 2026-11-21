@@ -31,14 +31,18 @@ func TestEditorTextAufGrundlinie(t *testing.T) {
 		if dims.Baseline <= 0 || dims.Baseline >= dims.Size.Y {
 			t.Fatalf("Grad %v: Grundlinie %d außerhalb des Felds %v", grad, dims.Baseline, dims.Size)
 		}
-		// Die Grundlinie liegt bei Ort.Y + Schriftgrad; das Feld darf also nicht an Ort.Y beginnen.
+		// Gio misst Baseline von der Unterkante; von oben liegt die Grundlinie bei Size.Y − Baseline, und ein „H“ (0,71 em)
+		// muss darüber Platz haben. Der Fehler nach 1b9707f setzte stattdessen die Unterlänge als Abstand von oben an
+		// und schob den Text um Höhe − 2·Unterlänge zu tief.
+		oben := float32(dims.Size.Y - dims.Baseline)
+		if oben < 0.7*grad {
+			t.Fatalf("Grad %v: Grundlinie %v unter der Oberkante, kleiner als die Versalhöhe", grad, oben)
+		}
+		// Die Grundlinie liegt bei Ort.Y + Schriftgrad; das Feld beginnt darüber.
 		p := f32.Pt(10, 50+grad)
 		ecke := textEcke(p, dims, false)
-		if got := ecke.Y + float32(dims.Baseline); math.Abs(float64(got-p.Y)) > 1e-4 {
+		if got := ecke.Y + oben; math.Abs(float64(got-p.Y)) > 1e-4 {
 			t.Errorf("Grad %v: Grundlinie liegt bei %v, Soll %v", grad, got, p.Y)
-		}
-		if ecke.Y == 50 {
-			t.Errorf("Grad %v: Feld beginnt an der Oberkante wie vor F-108", grad)
 		}
 		if m := textEcke(p, dims, true); m.X != 10-float32(dims.Size.X)/2 {
 			t.Errorf("Grad %v: Mitte bei %v", grad, m.X)
