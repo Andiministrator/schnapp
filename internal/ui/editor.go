@@ -684,17 +684,26 @@ func (e *editor) speichernFertig(r speicherErgebnis) {
 	halt := e.kopierFehlerHaelt && ende.Erneut == nil && ende.Schliessen && !e.s.SignalVorgemerkt() && !e.kopierLaeuft
 	if ende.Erneut == nil {
 		e.schliessenNachSpeichern = false
+		if ende.Schluss == canvas.SchlussFehler || ende.Schluss == canvas.SchlussHinweis {
+			// Das Speicher-Ende hat die Schließen-Anfrage entschieden (offen mit Fehler oder Hinweis). Eine wegen des
+			// Kopierens angehaltene Anfrage darf danach nicht von selbst neu gestellt werden: Sie gälte als Bestätigung
+			// des Verwerfens bzw. schlösse vor dem Lesen des Hinweises (F-352).
+			e.schliessenNachKopie = false
+		}
 		if !e.schliessenNachKopie {
 			e.kopierFehlerHaelt = false
 		}
 	}
-	e.speichernMelden(r, ende, halt)
+	// Steht der Merker noch neben einer wegen des Kopierens angehaltenen Anfrage, hält gleich nachKopieSchliessen das
+	// Fenster für den Kopierfehler offen; auch dann verdrängt „Saved“ ihn nicht (F-353).
+	e.speichernMelden(r, ende, halt || (e.kopierFehlerHaelt && e.schliessenNachKopie))
 	switch {
 	case ende.Erneut != nil:
 		e.speichernStarten(ende.Erneut)
 	case halt:
-		// Die Meldung „Could not copy“ bleibt stehen (speichernMelden lässt sie), die nächste Anfrage schließt.
-		e.kopierFehlerHaelt = false
+		// Die Meldung „Could not copy“ bleibt stehen (speichernMelden lässt sie), die nächste Anfrage schließt. Der Halt
+		// beantwortet auch eine wegen des Kopierens angehaltene Anfrage (F-351).
+		e.kopierFehlerHaelt, e.schliessenNachKopie = false, false
 	case ende.Schliessen:
 		// Eine Schließen-Anfrage mit Speichern vorher warnt wie eine ohne (F-321); ein Signal schließt in jedem Fall.
 		// Läuft noch ein Kopieren, wartet das Schließen auf dessen Antwort wie im Zweig SchlussZu: Erst sie sagt, ob das
@@ -817,6 +826,8 @@ func (e *editor) kopierenAbholen(gtx layout.Context) {
 			}
 			return
 		}
+		// Die jüngste Antwort entscheidet: Ein früherer Kopierfehler hält das Fenster nicht mehr (F-354).
+		e.kopierFehlerHaelt = false
 		e.fensterHaeltKopie, e.fensterWarnung = r.daten != nil, false
 		if r.daten != nil {
 			gtx.Execute(clipboard.WriteCmd{Type: wlclip.MIME, Data: io.NopCloser(bytes.NewReader(r.daten))})
