@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -107,18 +106,11 @@ func schliesseGeerbte() []int {
 	return zu
 }
 
-// offeneDeskriptoren listet die Nummern aus /proc/self/fd (der eigene Prozess); ohne /proc werden alle Nummern bis
-// zur weichen Grenze (höchstens 65536) durchprobiert.
+// offeneDeskriptoren probiert alle Nummern bis zur weichen Grenze (höchstens 65536) per fcntl durch. Bewusst ohne
+// das proc-Dateisystem: Schnapp liest keine Prozessverzeichnisse, auch nicht das eigene (Projektregel, F-189). Ein
+// Durchlauf kostet einmal beim Start des Halters einige Millisekunden.
 func offeneDeskriptoren() []int {
 	var nr []int
-	if eintraege, err := os.ReadDir("/proc/self/fd"); err == nil {
-		for _, e := range eintraege {
-			if n, err := strconv.Atoi(e.Name()); err == nil {
-				nr = append(nr, n)
-			}
-		}
-		return nr
-	}
 	grenze := 65536
 	var rl syscall.Rlimit
 	if syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rl) == nil && rl.Cur < uint64(grenze) {
