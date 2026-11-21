@@ -51,7 +51,14 @@ func trifft(o document.Objekt, p document.Punkt, tol float64) bool {
 		innen := document.Rechteck{Min: r.Min.Plus(document.Pt(halb, halb)), Max: r.Max.Minus(document.Pt(halb, halb))}
 		return innen.Min.X >= innen.Max.X || innen.Min.Y >= innen.Max.Y || !innen.Enthaelt(p)
 	case document.Nummer:
-		return p.Minus(v.Mitte).Laenge() <= v.Radius+tol
+		if p.Minus(v.Mitte).Laenge() <= v.Radius+tol {
+			return true
+		}
+		// Ziffern, die über den Kreis hinausragen (ab drei Stellen), zählen mit (F-172).
+		if z, ok := document.NummerTinte(v); ok {
+			return document.Rechteck{Min: z.Min.Minus(document.Pt(tol, tol)), Max: z.Max.Plus(document.Pt(tol, tol))}.Enthaelt(p)
+		}
+		return false
 	default:
 		g := o.Grenzen()
 		return document.Rechteck{Min: g.Min.Minus(document.Pt(tol, tol)), Max: g.Max.Plus(document.Pt(tol, tol))}.Enthaelt(p)

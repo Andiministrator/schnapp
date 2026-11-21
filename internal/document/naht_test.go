@@ -155,10 +155,11 @@ func TestObjektSichtbar(t *testing.T) {
 	if err := d.SetzeStreifen([]Streifen{{Zeilen: true, Von: 30, Bis: 50}}); err != nil {
 		t.Fatal(err)
 	}
-	// 2 Zeichen à 0,6·10 = 12 geschätzt (bis 17); „WW“ in Go Regular ist breiter und reicht über x = 20.
+	// 2 Zeichen à 0,6·10 = 12 geschätzt (bis 17, die alte Schätzung); „WW“ in Go Regular ist breiter und reicht über
+	// x = 20. Seit F-172 messen die Grenzen die Tinte und liegen ebenfalls innerhalb.
 	knapp := Text{Ort: Pt(5, 5), Inhalt: "WW", Schriftgrad: 10}
-	if d.Sichtbar(knapp.Grenzen()) || !d.ObjektSichtbar(knapp) {
-		t.Error("Text am Zuschnitt: Grenzen sollen außerhalb, Reichweite innerhalb liegen")
+	if !d.Sichtbar(knapp.Grenzen()) || !d.ObjektSichtbar(knapp) {
+		t.Error("Text am Zuschnitt: Grenzen und Reichweite sollen innerhalb liegen")
 	}
 	if d.ObjektSichtbar(Text{Ort: Pt(40, 33), Inhalt: "x", Schriftgrad: 10}) { // y 31 bis 46
 		t.Error("Text ganz im Zeilenstreifen sichtbar")

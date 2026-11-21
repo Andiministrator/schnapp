@@ -36,11 +36,13 @@ type glyphMass struct {
 }
 
 type schriftMass struct {
-	f       *sfnt.Font
-	em      float64       // Einheiten je em
-	ppem    fixed.Int26_6 // em in Einheiten: Maße kommen in Schrifteinheiten
-	versal  float64       // Versalhöhe in em
-	glyphen map[sfnt.GlyphIndex]glyphMass
+	f      *sfnt.Font
+	em     float64       // Einheiten je em
+	ppem   fixed.Int26_6 // em in Einheiten: Maße kommen in Schrifteinheiten
+	versal float64       // Versalhöhe in em
+	// refOben und refUnten sind die Tinte der Referenzzeile relativ zur Grundlinie in em (y nach unten, refOben < 0).
+	refOben, refUnten float64
+	glyphen           map[sfnt.GlyphIndex]glyphMass
 }
 
 var (
@@ -64,6 +66,11 @@ func schriftFuer(fett bool) *schriftMass {
 			s := &schriftMass{f: f, em: em, ppem: fixed.Int26_6(f.UnitsPerEm()) << 6, glyphen: map[sfnt.GlyphIndex]glyphMass{}}
 			if m, err := f.Metrics(&schriftPuffer, s.ppem, font.HintingNone); err == nil {
 				s.versal = float64(m.CapHeight) / 64 / em
+			}
+			// Höhe der Zeile für das Schild: Oberlänge und Unterlänge der Schrift, unabhängig vom Inhalt (der Rahmen soll
+			// beim Tippen nicht springen). Referenz sind Versalien, Oberlängen und Unterlängen.
+			if _, t, ok := s.zeile("HdgjpÅ", 1); ok {
+				s.refOben, s.refUnten = t.Min.Y, t.Max.Y
 			}
 			schriftenMass[i] = s
 		}
@@ -135,8 +142,9 @@ func mitRand(r Rechteck, n int) Rechteck {
 
 // zeilenTinte ist die Tinte einer Zeile relativ zu ihrer Grundlinie: i ist die Zeilennummer, n die Zahl der Runen.
 type zeilenTinte struct {
-	i, n  int
-	tinte Rechteck
+	i, n     int
+	vorschub float64 // Breite der Zeile bis hinter das letzte Zeichen (ohne Tinte am Ende der Zeile)
+	tinte    Rechteck
 }
 
 // tintenSchluessel ist Inhalt und Grad eines Textes: Die Tinte relativ zum Ort hängt nur davon ab.
@@ -162,7 +170,7 @@ const (
 	// 24 Byte), Slice-Kopf (24 Byte) und den Anteil der Map an Steuerbytes und Reserve.
 	tintenEintrag = 96
 	// tintenZeile ist die Größe einer zeilenTinte (zwei int, vier float64; der Test vergleicht mit unsafe.Sizeof).
-	tintenZeile = 48
+	tintenZeile = 56
 )
 
 // tintenKosten schätzt die Belegung eines Eintrags mit Inhalt inhalt und zeilen gemessenen Zeilen (Kapazität).
@@ -179,8 +187,8 @@ func textZeilen(s *schriftMass, inhalt string, grad float64) []zeilenTinte {
 	zeilen := []zeilenTinte{}
 	for i, z := range strings.Split(inhalt, "\n") {
 		z = Zeichenbar(z)
-		if _, tinte, hat := s.zeile(z, grad); hat {
-			zeilen = append(zeilen, zeilenTinte{i: i, n: utf8.RuneCountInString(z), tinte: tinte})
+		if vor, tinte, hat := s.zeile(z, grad); hat {
+			zeilen = append(zeilen, zeilenTinte{i: i, n: utf8.RuneCountInString(z), vorschub: vor, tinte: tinte})
 		}
 	}
 	kosten := tintenKosten(inhalt, cap(zeilen))
@@ -204,7 +212,7 @@ func textTinte(t Text) (r Rechteck, ok, geschaetzt bool) {
 		return Rechteck{}, false, true
 	}
 	for _, z := range textZeilen(s, t.Inhalt, t.Schriftgrad) {
-		grund := Pt(t.Ort.X, t.Ort.Y+t.Schriftgrad*(1+1.3*float64(z.i)))
+		grund := Pt(t.Ort.X, t.Grundlinie(z.i))
 		g := mitRand(Rechteck{Min: grund.Plus(z.tinte.Min), Max: grund.Plus(z.tinte.Max)}, z.n)
 		if ok {
 			r = r.Vereint(g)
@@ -232,4 +240,58 @@ func nummerTinte(n Nummer) (r Rechteck, ok, geschaetzt bool) {
 	}
 	grund := Pt(n.Mitte.X-breite/2, n.Mitte.Y+s.versal*grad/2)
 	return mitRand(Rechteck{Min: grund.Plus(tinte.Min), Max: grund.Plus(tinte.Max)}, len(z)), true, false
+}
+
+// TextInnenabstand ist der Abstand zwischen Glyphen und Rand des Text-Schilds in Schriftgraden (F-149).
+const TextInnenabstand = 0.25
+
+// Zeilenabstand ist der Abstand der Grundlinien in Schriftgraden; die erste Grundlinie liegt einen Schriftgrad unter
+// Ort.Y. Renderer, SVG-Export und Editor setzen jede Zeile mit derselben Zahl (F-108).
+const Zeilenabstand = 1.3
+
+// Grundlinie ist die senkrechte Lage der Grundlinie von Zeile i (ab 0) im Original.
+func (t Text) Grundlinie(i int) float64 { return t.Ort.Y + t.Schriftgrad*(1+Zeilenabstand*float64(i)) }
+
+// Grundlinie ist die senkrechte Lage der Grundlinie der Ziffern im Original: eine halbe Versalhöhe unter der Mitte
+// (Renderer, Editor und SVG-Export setzen sie dorthin, F-108). Ohne ladbare Schrift gilt 0,36 Schriftgrad.
+func (n Nummer) Grundlinie() float64 {
+	grad := 1.2 * n.Radius
+	schriftMu.Lock()
+	defer schriftMu.Unlock()
+	if s := schriftFuer(true); s != nil {
+		return n.Mitte.Y + s.versal*grad/2
+	}
+	return n.Mitte.Y + 0.36*grad
+}
+
+// NummerTinte ist die Fläche der Ziffern einer Nummer (Original, mit Rand); ok ist false ohne ladbare Schrift.
+func NummerTinte(n Nummer) (Rechteck, bool) {
+	r, ok, _ := nummerTinte(n)
+	return r, ok
+}
+
+// textFlaeche ist das Schild eines Textes: die gemessene Tinte und die Zeilenhöhe der Schrift (Oberlänge bis
+// Unterlänge je Zeile, damit der Rahmen beim Tippen nicht springt), je Seite um TextInnenabstand Schriftgrade
+// geweitet. Eine Quelle für Hintergrund in Renderer, Editor und SVG, Treffer, Auswahlrahmen und Verschieben (F-108,
+// F-149, F-172). ok ist false, wenn die Schrift nicht zu laden war.
+func textFlaeche(t Text) (Rechteck, bool) {
+	schriftMu.Lock()
+	defer schriftMu.Unlock()
+	s := schriftFuer(false)
+	if s == nil {
+		return Rechteck{}, false
+	}
+	grad := t.Schriftgrad
+	zeilen := strings.Count(t.Inhalt, "\n") + 1
+	r := Rechteck{
+		Min: Pt(t.Ort.X, t.Grundlinie(0)+s.refOben*grad),
+		Max: Pt(t.Ort.X, t.Grundlinie(zeilen-1)+s.refUnten*grad),
+	}
+	for _, z := range textZeilen(s, t.Inhalt, grad) {
+		g := Pt(t.Ort.X, t.Grundlinie(z.i))
+		ink := Rechteck{Min: g.Plus(z.tinte.Min), Max: g.Plus(z.tinte.Max)}
+		r = r.Vereint(ink).Vereint(Rechteck{Min: Pt(t.Ort.X, ink.Min.Y), Max: Pt(t.Ort.X+z.vorschub, ink.Max.Y)})
+	}
+	d := TextInnenabstand * grad
+	return Rechteck{Min: r.Min.Minus(Pt(d, d)), Max: r.Max.Plus(Pt(d, d))}, true
 }

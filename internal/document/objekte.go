@@ -98,6 +98,16 @@ type Kasten struct {
 	Eckradius float64
 }
 
+// WirksamerEckradius ist der Radius, mit dem Renderer, Editor und SVG-Export eine Ecke wirklich runden: höchstens die
+// halbe kürzere Seite (in beiden Achsen gleich, nie elliptisch), unter einem halben Pixel gar nicht (F-108).
+func WirksamerEckradius(radius, breite, hoehe float64) float64 {
+	radius = max(0, min(radius, min(breite, hoehe)/2))
+	if radius < 0.5 {
+		return 0
+	}
+	return radius
+}
+
 func (k Kasten) Kennung() int             { return k.ID }
 func (k Kasten) Grenzen() Rechteck        { return aufgeweitet(k.Bereich, k.Strich.Breite) }
 func (k Kasten) mitKennung(id int) Objekt { k.ID = id; return k }
@@ -122,9 +132,15 @@ type Text struct {
 
 func (t Text) Kennung() int { return t.ID }
 
-// Grenzen schätzt die Fläche grob (die genaue Größe kennt erst die Schriftrasterung): je Zeile Schriftgrad × 1,3,
-// je Zeichen Schriftgrad × 0,6.
+// Grenzen ist das Schild des Textes: die gemessene Tinte der Glyphen (Go Regular, textFlaeche) mit
+// TextInnenabstand Schriftgraden Rand. Renderer, Editor und SVG füllen den Hintergrund genau hier, Treffer,
+// Auswahlrahmen und Verschieben nutzen dieselbe Fläche (F-108, F-149, F-172). Der Umbruch bei BreiteGrenze ist nicht
+// umgesetzt, die Fläche kappt deshalb nicht. Nur wenn die Schrift nicht zu laden ist, gilt die grobe Schätzung: je Zeile
+// Schriftgrad × 1,3, je Zeichen Schriftgrad × 0,6, mit demselben Rand.
 func (t Text) Grenzen() Rechteck {
+	if r, ok := textFlaeche(t); ok {
+		return r
+	}
 	zeilen, laengste, akt := 1, 0, 0
 	for _, r := range t.Inhalt {
 		if r == '\n' {
@@ -135,11 +151,9 @@ func (t Text) Grenzen() Rechteck {
 		akt++
 		laengste = max(laengste, akt)
 	}
+	d := Pt(TextInnenabstand*t.Schriftgrad, TextInnenabstand*t.Schriftgrad)
 	b := float64(laengste) * t.Schriftgrad * 0.6
-	if t.BreiteGrenze > 0 {
-		b = min(b, t.BreiteGrenze)
-	}
-	return Rechteck{t.Ort, t.Ort.Plus(Punkt{b, float64(zeilen) * t.Schriftgrad * 1.3})}
+	return Rechteck{t.Ort.Minus(d), t.Ort.Plus(Punkt{b, float64(zeilen) * t.Schriftgrad * Zeilenabstand}).Plus(d)}
 }
 func (t Text) mitKennung(id int) Objekt { t.ID = id; return t }
 func (t Text) pruefe() error {
@@ -174,8 +188,14 @@ type Nummer struct {
 }
 
 func (n Nummer) Kennung() int { return n.ID }
+
+// Grenzen umfasst den Kreis und die Ziffern: Bei drei und mehr Stellen ragen sie über den Kreis hinaus (F-172).
 func (n Nummer) Grenzen() Rechteck {
-	return Rechteck{n.Mitte.Minus(Punkt{n.Radius, n.Radius}), n.Mitte.Plus(Punkt{n.Radius, n.Radius})}
+	r := Rechteck{n.Mitte.Minus(Punkt{n.Radius, n.Radius}), n.Mitte.Plus(Punkt{n.Radius, n.Radius})}
+	if z, ok, _ := nummerTinte(n); ok {
+		r = r.Vereint(z)
+	}
+	return r
 }
 func (n Nummer) mitKennung(id int) Objekt { n.ID = id; return n }
 func (n Nummer) pruefe() error {

@@ -278,7 +278,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 		}
 		ort := z.ansicht(v.Ort)
 		for i, zeile := range strings.Split(v.Inhalt, "\n") {
-			grundlinie := ort.Y + v.Schriftgrad*(1+1.3*float64(i))
+			grundlinie := ort.Y + v.Schriftgrad*(1+document.Zeilenabstand*float64(i))
 			if !z.zeileSichtbar(ort.X, grundlinie, v.Schriftgrad) {
 				continue
 			}
@@ -676,8 +676,8 @@ func kreis(m document.Punkt, r float64) []document.Punkt {
 
 // rundesRechteck liefert den Umriss eines Rechtecks mit Eckradius (auf die halbe kürzere Seite begrenzt).
 func rundesRechteck(r document.Rechteck, radius float64) []document.Punkt {
-	radius = math.Max(0, math.Min(radius, math.Min(r.Breite(), r.Hoehe())/2))
-	if radius < 0.5 {
+	radius = document.WirksamerEckradius(radius, r.Breite(), r.Hoehe())
+	if radius == 0 {
 		return []document.Punkt{r.Min, document.Pt(r.Max.X, r.Min.Y), r.Max, document.Pt(r.Min.X, r.Max.Y)}
 	}
 	ecken := []struct {

@@ -71,6 +71,10 @@ func (s *schreiber) farbeSVG(art string, c color.NRGBA) {
 
 func strich(st document.Strich) string { return farbeHex(st.Farbe) + " " + zahl(st.Breite) }
 
+// svgSchrift ist die Schrift der Beschriftungen im SVG: Renderer und Editor setzen Go Regular und Go Bold (Familie „Go“);
+// ein Betrachter ohne diese Schrift fällt auf eine serifenlose Schrift zurück (F-108).
+const svgSchrift = "Go, Go Regular, sans-serif"
+
 // objekte schreibt die Objekte in Original-Koordinaten; mit behalten != nil nur die, für die behalten true liefert
 // (Export: nur Objekte, die in die Ansicht reichen).
 func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt) bool) {
@@ -115,10 +119,12 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			s.attr("y", zahl(b.Min.Y))
 			s.attr("width", zahl(b.Breite()))
 			s.attr("height", zahl(b.Hoehe()))
-			s.attr("rx", zahl(o.Eckradius))
+			// Rundung wie der Renderer: gleiche Begrenzung (nie elliptisch) und runde Ecken des Strichs (F-108).
+			s.attr("rx", zahl(document.WirksamerEckradius(o.Eckradius, b.Breite(), b.Hoehe())))
 			s.farbeSVG("fill", o.Fuellung)
 			s.farbeSVG("stroke", o.Strich.Farbe)
 			s.attr("stroke-width", zahl(o.Strich.Breite))
+			s.attr("stroke-linejoin", "round")
 			s.WriteString(`/>`)
 		case document.Text:
 			s.WriteString(`<g`)
@@ -141,14 +147,14 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 				s.WriteString(`/>`)
 			}
 			s.WriteString(`<text`)
-			s.attr("font-family", "Open Sans, sans-serif")
+			s.attr("font-family", svgSchrift)
 			s.attr("font-size", zahl(o.Schriftgrad))
 			s.farbeSVG("fill", o.Farbe)
 			s.WriteString(`>`)
 			for i, zeile := range strings.Split(o.Inhalt, "\n") {
 				s.WriteString(`<tspan`)
 				s.attr("x", zahl(o.Ort.X))
-				s.attr("y", zahl(o.Ort.Y+o.Schriftgrad*(1+1.3*float64(i))))
+				s.attr("y", zahl(o.Grundlinie(i)))
 				s.WriteString(`>`)
 				xml.EscapeText(s, []byte(zeile))
 				s.WriteString(`</tspan>`)
@@ -168,12 +174,11 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			s.farbeSVG("fill", o.Farbe)
 			s.WriteString(`/><text`)
 			s.attr("x", zahl(o.Mitte.X))
-			s.attr("y", zahl(o.Mitte.Y))
-			s.attr("font-family", "Open Sans, sans-serif")
+			s.attr("y", zahl(o.Grundlinie()))
+			s.attr("font-family", svgSchrift)
 			s.attr("font-size", zahl(o.Radius*1.2))
 			s.attr("font-weight", "bold")
 			s.attr("text-anchor", "middle")
-			s.attr("dominant-baseline", "central")
 			s.attr("fill", "#ffffff")
 			s.WriteString(`>` + strconv.Itoa(o.Wert) + `</text></g>`)
 		}

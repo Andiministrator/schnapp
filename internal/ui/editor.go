@@ -1139,9 +1139,10 @@ func (e *editor) zeichneEinfuegemarke(gtx layout.Context) {
 	zeilen := strings.Split(t.Inhalt, "\n")
 	i := len(zeilen) - 1
 	breite := e.textBreite(gtx, document.Zeichenbar(zeilen[i]), float32(t.Schriftgrad))
-	ort := e.s.D.ZuAnsicht(t.Ort).Plus(document.Pt(float64(breite), t.Schriftgrad*1.3*float64(i)))
+	// Von der Oberlänge (0,75 Schriftgrad über der Grundlinie) bis unter die Unterlänge (0,25 darunter).
+	ort := e.s.D.ZuAnsicht(t.Ort).Plus(document.Pt(float64(breite), t.Schriftgrad*(0.25+document.Zeilenabstand*float64(i))))
 	oben := e.s.Abb.ZuFenster(ort)
-	unten := e.s.Abb.ZuFenster(ort.Plus(document.Pt(0, t.Schriftgrad*1.25)))
+	unten := e.s.Abb.ZuFenster(ort.Plus(document.Pt(0, t.Schriftgrad)))
 	x := int(math.Round(oben.X))
 	r := image.Rect(x, int(math.Round(oben.Y)), x+gtx.Dp(2), int(math.Round(unten.Y)))
 	paint.FillShape(gtx.Ops, farbeAkzent, clip.Rect(r).Op())
@@ -1258,7 +1259,7 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 			min, max := an(v.Bereich.Min), an(v.Bereich.Max)
 			r := image.Rect(int(math.Round(float64(min.X))), int(math.Round(float64(min.Y))),
 				int(math.Round(float64(max.X))), int(math.Round(float64(max.Y))))
-			rr := clip.UniformRRect(r, int(math.Round(v.Eckradius)))
+			rr := clip.UniformRRect(r, int(math.Round(document.WirksamerEckradius(v.Eckradius, float64(r.Dx()), float64(r.Dy())))))
 			if v.Fuellung.A > 0 {
 				paint.FillShape(gtx.Ops, v.Fuellung, rr.Op(gtx.Ops))
 			}
@@ -1271,7 +1272,9 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 			kr := image.Rect(int(math.Round(float64(m.X-rad))), int(math.Round(float64(m.Y-rad))),
 				int(math.Round(float64(m.X+rad))), int(math.Round(float64(m.Y+rad))))
 			paint.FillShape(gtx.Ops, v.Farbe, clip.Ellipse(kr).Op(gtx.Ops))
-			e.textBei(gtx, fmt.Sprint(v.Wert), float32(v.Radius*1.2), m, true, color.NRGBA{R: 255, G: 255, B: 255, A: 255})
+			// Grundlinie wie im Renderer: eine halbe Versalhöhe unter der Mitte (document.Nummer.Grundlinie).
+			e.textBei(gtx, fmt.Sprint(v.Wert), float32(v.Radius*1.2), f32.Pt(m.X, m.Y+float32(v.Grundlinie()-v.Mitte.Y)), true,
+				color.NRGBA{R: 255, G: 255, B: 255, A: 255})
 		case document.Text:
 			if v.Hintergrund.A > 0 {
 				g := v.Grenzen()
@@ -1281,7 +1284,8 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 			ort := an(v.Ort)
 			for i, zeile := range strings.Split(v.Inhalt, "\n") {
 				zeile = document.Zeichenbar(zeile) // wie im Renderer
-				p := ort.Add(f32.Pt(0, float32(v.Schriftgrad*1.3*float64(i))))
+				// Grundlinie wie im Renderer: ein Schriftgrad unter der Oberkante, je Zeile Zeilenabstand weiter.
+				p := ort.Add(f32.Pt(0, float32(v.Schriftgrad*(1+document.Zeilenabstand*float64(i)))))
 				e.textBei(gtx, zeile, float32(v.Schriftgrad), p, false, v.Farbe)
 			}
 		}
@@ -1358,7 +1362,8 @@ func (e *editor) textBreite(gtx layout.Context, s string, groesse float32) float
 	return float32(dims.Size.X)
 }
 
-// textBei setzt Text in Ansichtspixeln: mittig um p (mitte) oder mit der linken oberen Ecke bei p.
+// textBei setzt Text in Ansichtspixeln auf die Grundlinie p.Y (wie der Renderer, F-108): mit dem Anfang bei p.X oder,
+// mit mitte, waagrecht mittig um p.X.
 func (e *editor) textBei(gtx layout.Context, s string, groesse float32, p f32.Point, mitte bool, c color.NRGBA) {
 	g := gtx
 	g.Metric = unit.Metric{PxPerDp: 1, PxPerSp: 1}
@@ -1372,13 +1377,18 @@ func (e *editor) textBei(gtx layout.Context, s string, groesse float32, p f32.Po
 	m := op.Record(gtx.Ops)
 	dims := lbl.Layout(g)
 	call := m.Stop()
-	ecke := p
-	if mitte {
-		ecke = p.Sub(f32.Pt(float32(dims.Size.X)/2, float32(dims.Size.Y)/2))
-	}
-	t := op.Affine(f32.Affine2D{}.Offset(ecke)).Push(gtx.Ops)
+	t := op.Affine(f32.Affine2D{}.Offset(textEcke(p, dims, mitte))).Push(gtx.Ops)
 	call.Add(gtx.Ops)
 	t.Pop()
+}
+
+// textEcke ist die linke obere Ecke des Textfelds, damit seine Grundlinie auf p.Y liegt (mit mitte: seine Mitte auf p.X).
+func textEcke(p f32.Point, dims layout.Dimensions, mitte bool) f32.Point {
+	ecke := p.Sub(f32.Pt(0, float32(dims.Baseline)))
+	if mitte {
+		ecke.X -= float32(dims.Size.X) / 2
+	}
+	return ecke
 }
 
 // zeichneAuswahl zeichnet Rahmen und Griffe des ausgewählten Objekts in Fensterpixeln (unabhängig vom Zoom).

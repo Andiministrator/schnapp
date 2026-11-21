@@ -28,7 +28,8 @@ func TestExportSVGFilterObermass(t *testing.T) {
 	weit := document.Pfeil{A: document.Pt(2, 30), B: document.Pt(1, 30), K: document.Pt(1.5, 30), Strich: st}
 	for _, o := range []document.Objekt{
 		knapp, weit,
-		// Grenzen() endet bei x = 10 (BreiteGrenze), der Export umbricht nicht: die Zeile reicht weit in die Ansicht.
+		// BreiteGrenze 10: der Export umbricht nicht, die Zeile reicht weit in die Ansicht (Grenzen() kappt seit F-172
+		// nicht mehr, die Reichweite ist unabhängig davon ein Obermaß).
 		document.Text{Ort: document.Pt(0, 12), Inhalt: "LANGERTEXTBLEIBT", Schriftgrad: 5, Farbe: schwarz, BreiteGrenze: 10},
 		document.Text{Ort: document.Pt(0, 40), Inhalt: "WEIT", Schriftgrad: 5, Farbe: schwarz},
 	} {
