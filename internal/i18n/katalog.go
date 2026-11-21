@@ -29,9 +29,9 @@ func NeuerKatalog(sprache string, eintraege []Eintrag) (*Katalog, error) {
 	for _, e := range eintraege {
 		if e.ID == "" && e.Kontext == "" {
 			if r, ok := kopffeld(e, "Plural-Forms"); ok {
-				regel, err := LeseMehrzahlregel(r)
+				regel, err := leseMehrzahlregel(r)
 				if err != nil {
-					return nil, fmt.Errorf("%s: %w", sprache, err)
+					return nil, fmt.Errorf("i18n: %s: %w", sprache, err)
 				}
 				k.regel = regel
 			}
@@ -100,7 +100,7 @@ func (k *Katalog) N(einzahl, mehrzahl string, n int) string {
 func Sprachen(dateien fs.FS) ([]string, error) {
 	namen, err := fs.Glob(dateien, "*.po")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("i18n: %w", err)
 	}
 	var res []string
 	for _, n := range namen {
@@ -117,12 +117,12 @@ func Lade(dateien fs.FS, sprache string) (*Katalog, error) {
 	}
 	f, err := dateien.Open(sprache + ".po")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("i18n: %w", err)
 	}
 	defer f.Close()
-	eintraege, err := LesePO(f)
+	eintraege, err := lesePO(f)
 	if err != nil {
-		return nil, fmt.Errorf("%s.po: %w", sprache, err)
+		return nil, fmt.Errorf("i18n: %s.po: %w", sprache, err)
 	}
 	return NeuerKatalog(sprache, eintraege)
 }

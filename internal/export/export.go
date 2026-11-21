@@ -94,7 +94,7 @@ func Waehle(pfad string, filter Format) (f Format, ziel string, angehaengt bool)
 }
 
 // ErrZielVorhanden: Das Ziel mit angehängter Endung gibt es schon; der Dialog hat nur den Namen ohne Endung bestätigt.
-var ErrZielVorhanden = errors.New("Ziel vorhanden")
+var ErrZielVorhanden = errors.New("export: Ziel vorhanden")
 
 // PruefeAngehaengt lehnt ein schon vorhandenes Ziel ab, wenn Waehle die Endung angehängt hat (A-1). Fehler beim
 // Prüfen außer „nicht vorhanden“ gelten als vorhanden (im Zweifel nichts ersetzen).
@@ -184,7 +184,7 @@ func schreibeAtomar(pfad string, ohneErsetzen bool, schreibe func(io.Writer) err
 		return err
 	}
 	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("schließen: %w", err)
+		return fmt.Errorf("export: schließen: %w", err)
 	}
 	if !ohneErsetzen {
 		return os.Rename(name, pfad)
@@ -216,7 +216,7 @@ const MaxRueckfallAlt = 256 << 20
 
 // ErrZielBeschaedigt: Der Rückfall hat das Ziel beim Schreiben gekürzt und den alten Inhalt nicht wiederherstellen
 // können; die Zieldatei ist unvollständig (F-322).
-var ErrZielBeschaedigt = errors.New("Zieldatei beschädigt")
+var ErrZielBeschaedigt = errors.New("export: Zieldatei beschädigt")
 
 // zielDatei ist, was der Rückfall von einer geöffneten Zieldatei braucht (Naht für Tests: Schreibfehler nachbauen).
 type zielDatei interface {
@@ -226,7 +226,7 @@ type zielDatei interface {
 }
 
 // errZielGewechselt: Unter dem Namen liegt nicht mehr die Datei, die gesichert wurde (F-330).
-var errZielGewechselt = errors.New("Ziel hat gewechselt")
+var errZielGewechselt = errors.New("export: Ziel hat gewechselt")
 
 // oeffneDirekt öffnet das Ziel des Rückfalls zum Überschreiben, ohne einem Link zu folgen (O_NOFOLLOW) und ohne zu
 // kürzen: erst wenn die geöffnete Datei dieselbe reguläre Datei ist, die gesichert wurde (st), wird sie gekürzt
@@ -317,7 +317,7 @@ func leseAlt(pfad string, st os.FileInfo) ([]byte, error) {
 		return nil, err
 	}
 	if int64(len(alt)) != st.Size() {
-		return nil, errors.New("Ziel hat sich beim Lesen geändert")
+		return nil, errors.New("export: Ziel hat sich beim Lesen geändert")
 	}
 	return alt, nil
 }

@@ -30,15 +30,15 @@ const (
 
 var (
 	// ErrAbgebrochen: Der Nutzer hat den Dialog abgebrochen (Antwort 1). Kein Fehler im eigentlichen Sinn.
-	ErrAbgebrochen = errors.New("Dialog abgebrochen")
+	ErrAbgebrochen = errors.New("portal: Dialog abgebrochen")
 	// ErrKeinPortal: Es gibt keinen Sitzungsbus oder keinen Portal-Dienst mit FileChooser.
-	ErrKeinPortal = errors.New("kein Desktop-Portal verfügbar")
+	ErrKeinPortal = errors.New("portal: kein Desktop-Portal verfügbar")
 	// ErrVerbindung: Die Busverbindung wurde getrennt, bevor eine Antwort kam (A-2).
-	ErrVerbindung = errors.New("Busverbindung getrennt")
+	ErrVerbindung = errors.New("portal: Busverbindung getrennt")
 	// ErrAntwort: Das Portal beendete den Dialog mit einem Fehlercode (Antwort weder 0 noch 1).
-	ErrAntwort = errors.New("Dialog endete ohne Ergebnis")
+	ErrAntwort = errors.New("portal: Dialog endete ohne Ergebnis")
 	// ErrOhneDatei: Antwort ohne lesbare Datei-Adresse.
-	ErrOhneDatei = errors.New("Antwort ohne Datei")
+	ErrOhneDatei = errors.New("portal: Antwort ohne Datei")
 )
 
 // Filter ist ein Dateifilter des Dialogs (Name, dazu Globs und MIME-Typen).

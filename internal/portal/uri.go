@@ -10,7 +10,7 @@ import (
 )
 
 // ErrKeineDatei: Die Adresse ist keine lokale Datei (kein file://), ADR-0025 Punkt 3.
-var ErrKeineDatei = errors.New("keine lokale Datei (file://)")
+var ErrKeineDatei = errors.New("portal: keine lokale Datei (file://)")
 
 // URIZuPfad wandelt eine file://-Adresse des Portals in einen Pfad (Prozentkodierung aufgelöst). Andere Schemata,
 // fremde Rechnernamen, relative und leere Pfade lehnt sie ab.

@@ -19,16 +19,16 @@ import (
 // getenv kommt von außen, damit der Test ohne echte Umgebung auskommt.
 func NurVirtuell(getenv func(string) string) error {
 	if getenv("PROBE_INNEN") != "1" {
-		return fmt.Errorf("PROBE_INNEN ist nicht 1 — nur im virtuellen KWin von scripts/probe.sh")
+		return fmt.Errorf("probeguard: PROBE_INNEN ist nicht 1 — nur im virtuellen KWin von scripts/probe.sh")
 	}
 	if b := getenv("DBUS_SESSION_BUS_ADDRESS"); b == "" || b == getenv("PROBE_AUSSENBUS") {
-		return fmt.Errorf("kein privater D-Bus (DBUS_SESSION_BUS_ADDRESS leer oder gleich dem äußeren Bus) — nur im virtuellen KWin von scripts/probe.sh")
+		return fmt.Errorf("probeguard: kein privater D-Bus (DBUS_SESSION_BUS_ADDRESS leer oder gleich dem äußeren Bus) — nur im virtuellen KWin von scripts/probe.sh")
 	}
 	if d := getenv("WAYLAND_DISPLAY"); d != "schnapp-probe" {
-		return fmt.Errorf("WAYLAND_DISPLAY ist %q, erwartet \"schnapp-probe\" — nur im virtuellen KWin von scripts/probe.sh", d)
+		return fmt.Errorf("probeguard: WAYLAND_DISPLAY ist %q, erwartet \"schnapp-probe\" — nur im virtuellen KWin von scripts/probe.sh", d)
 	}
 	if r := getenv("XDG_RUNTIME_DIR"); !strings.HasSuffix(r, "/tmp/probe/run") {
-		return fmt.Errorf("XDG_RUNTIME_DIR endet nicht auf /tmp/probe/run — nur im virtuellen KWin von scripts/probe.sh")
+		return fmt.Errorf("probeguard: XDG_RUNTIME_DIR endet nicht auf /tmp/probe/run — nur im virtuellen KWin von scripts/probe.sh")
 	}
 	return nil
 }

@@ -26,17 +26,17 @@ const maxZeile = 8 * MaxSeite
 // keine Füllbytes). Gerechnet wird in uint64 mit vorheriger Obergrenze, es gibt keinen Überlauf (F-17).
 func groesseRoh(breite, hoehe, zeile uint64) (uint64, error) {
 	if breite == 0 || hoehe == 0 || breite > MaxSeite || hoehe > MaxSeite {
-		return 0, fmt.Errorf("ungültige Bildgröße %dx%d", breite, hoehe)
+		return 0, fmt.Errorf("capture: ungültige Bildgröße %dx%d", breite, hoehe)
 	}
 	if zeile < breite*4 { // breite ≤ 2^15, kein Überlauf
-		return 0, fmt.Errorf("Zeilenlänge %d kleiner als Breite×4 (%d)", zeile, breite*4)
+		return 0, fmt.Errorf("capture: Zeilenlänge %d kleiner als Breite×4 (%d)", zeile, breite*4)
 	}
 	if zeile > maxZeile {
-		return 0, fmt.Errorf("Zeilenlänge %d über der Grenze %d", zeile, maxZeile)
+		return 0, fmt.Errorf("capture: Zeilenlänge %d über der Grenze %d", zeile, maxZeile)
 	}
 	noetig := zeile*(hoehe-1) + breite*4 // ≤ 2^18·2^15 + 2^17, passt in uint64
 	if noetig > MaxBytes {
-		return 0, fmt.Errorf("Bild mit %d Bytes über der Grenze %d", noetig, int64(MaxBytes))
+		return 0, fmt.Errorf("capture: Bild mit %d Bytes über der Grenze %d", noetig, int64(MaxBytes))
 	}
 	return noetig, nil
 }
@@ -49,7 +49,7 @@ func rohZuNRGBA(daten []byte, breite, hoehe, zeile uint64, format uint32) (*imag
 		return nil, err
 	}
 	if uint64(len(daten)) < noetig {
-		return nil, fmt.Errorf("zu wenig Pixeldaten: %d Bytes, nötig %d", len(daten), noetig)
+		return nil, fmt.Errorf("capture: zu wenig Pixeldaten: %d Bytes, nötig %d", len(daten), noetig)
 	}
 	var bgra, deckend, vormult bool
 	switch format {
@@ -65,7 +65,7 @@ func rohZuNRGBA(daten []byte, breite, hoehe, zeile uint64, format uint32) (*imag
 	case qFormatRGBA8888Pre:
 		vormult = true
 	default:
-		return nil, fmt.Errorf("QImage-Format %d wird nicht unterstützt", format)
+		return nil, fmt.Errorf("capture: QImage-Format %d wird nicht unterstützt", format)
 	}
 	b, h, z := int(breite), int(hoehe), int(zeile) // alle ≤ Grenzen, passen in int
 	bild := image.NewNRGBA(image.Rect(0, 0, b, h))

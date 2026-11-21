@@ -157,29 +157,29 @@ func fehlerUebersetzen(methode string, err error) error {
 			}
 		}
 	}
-	return fmt.Errorf("%s: %w", methode, err)
+	return fmt.Errorf("capture: %s: %w", methode, err)
 }
 
 // auswerten prüft die Antwort-Map, liest die Pixel und wandelt sie um. name ist der angefragte Bildschirmname und
 // gilt, wenn KWin keinen "screen" meldet.
 func auswerten(antwort map[string]dbus.Variant, daten datenquelle, name string) (*Bild, error) {
 	if typ, ok := antwort["type"].Value().(string); !ok || typ != "raw" {
-		return nil, fmt.Errorf("unerwarteter Ergebnistyp %v", antwort["type"].Value())
+		return nil, fmt.Errorf("capture: unerwarteter Ergebnistyp %v", antwort["type"].Value())
 	}
 	var w [4]uint64
 	for i, schluessel := range []string{"width", "height", "stride", "format"} {
 		v, ok := antwort[schluessel]
 		if !ok {
-			return nil, fmt.Errorf("Antwort ohne %q", schluessel)
+			return nil, fmt.Errorf("capture: Antwort ohne %q", schluessel)
 		}
 		n, ok := zahl(v.Value())
 		if !ok {
-			return nil, fmt.Errorf("%q hat ungültigen Wert %v (Typ %T)", schluessel, v.Value(), v.Value())
+			return nil, fmt.Errorf("capture: %q hat ungültigen Wert %v (Typ %T)", schluessel, v.Value(), v.Value())
 		}
 		w[i] = n
 	}
 	if w[3] > 1<<16 { // QImage::Format ist klein; verhindert die Kürzung auf uint32
-		return nil, fmt.Errorf("QImage-Format %d wird nicht unterstützt", w[3])
+		return nil, fmt.Errorf("capture: QImage-Format %d wird nicht unterstützt", w[3])
 	}
 	noetig, err := groesseRoh(w[0], w[1], w[2]) // Obergrenzen vor dem Lesen: bestimmt, wie viel wir anfordern
 	if err != nil {
@@ -187,7 +187,7 @@ func auswerten(antwort map[string]dbus.Variant, daten datenquelle, name string) 
 	}
 	roh, err := daten.lies(noetig)
 	if err != nil {
-		return nil, fmt.Errorf("Pixeldaten lesen: %w", err)
+		return nil, fmt.Errorf("capture: Pixeldaten lesen: %w", err)
 	}
 	pixel, err := rohZuNRGBA(roh, w[0], w[1], w[2], uint32(w[3]))
 	if err != nil {

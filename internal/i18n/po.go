@@ -25,6 +25,15 @@ type Eintrag struct {
 // Kommentare stehen nur vor einem Eintrag, nicht zwischen msgid und msgstr. Fehler sind außerdem doppelte Einträge,
 // msgid_plural ohne msgstr[n] und Dateien über 8 MiB.
 func LesePO(r io.Reader) ([]Eintrag, error) {
+	e, err := lesePO(r)
+	if err != nil {
+		return nil, fmt.Errorf("i18n: %w", err)
+	}
+	return e, nil
+}
+
+// lesePO ist LesePO ohne Paketpräfix an den Fehlern; die Hüllen der Aufrufer setzen es genau einmal.
+func lesePO(r io.Reader) ([]Eintrag, error) {
 	var (
 		eintraege []Eintrag
 		akt       Eintrag
@@ -167,7 +176,7 @@ func LesePO(r io.Reader) ([]Eintrag, error) {
 		return nil, err
 	}
 	if err := abschliessen(); err != nil {
-		return nil, fmt.Errorf("i18n: Dateiende: %w", err)
+		return nil, fmt.Errorf("Dateiende: %w", err)
 	}
 	return eintraege, nil
 }

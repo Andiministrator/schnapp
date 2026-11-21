@@ -37,6 +37,15 @@ var englischeRegel = Mehrzahlregel{Formen: 2, wurzel: vergleich{"!=", variable{}
 // Erlaubt sind die C-Ausdrücke, die gettext dort kennt: n, ganze Zahlen, Klammern, ! % * / + - < <= > >= == != &&
 // || und ?:.
 func LeseMehrzahlregel(kopf string) (Mehrzahlregel, error) {
+	r, err := leseMehrzahlregel(kopf)
+	if err != nil {
+		return Mehrzahlregel{}, fmt.Errorf("i18n: %w", err)
+	}
+	return r, nil
+}
+
+// leseMehrzahlregel ist LeseMehrzahlregel ohne Paketpräfix an den Fehlern (Hülle in den Aufrufern).
+func leseMehrzahlregel(kopf string) (Mehrzahlregel, error) {
 	var formen int
 	var ausdruck string
 	for _, teil := range strings.Split(kopf, ";") {
