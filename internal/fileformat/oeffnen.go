@@ -74,7 +74,8 @@ func Oeffne(pfad string) (*Gelesen, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrBeschaedigt, err)
 	}
-	return ausBild(bild)
+	// EXIF-Ausrichtung anwenden (F-113); die Angabe selbst wird nicht übernommen.
+	return ausBild(richteAus(bild, exifAusrichtung(daten)))
 }
 
 func ausBild(bild image.Image) (*Gelesen, error) {
