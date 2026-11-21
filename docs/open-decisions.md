@@ -216,4 +216,4 @@ Stand 21.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
   die Viererfolge ist fest, ohne `x/sys/cpu` (ADR-0028 Punkt 2).
 - **Fehlertexte:** Präfix-Regel gilt für alle Pakete, keine Ausnahmen; fünf Pakete werden nachgezogen (ADR-0019
   Nachtrag 2, F-339).
-- **Rettungskopie gegen Absturz:** als ADR-0029 nur **vorgeschlagen** — Andis Zustimmung steht aus (F-144, Karte #77).
+- **Rettungskopie gegen Absturz:** ADR-0029 akzeptiert (Claude im Auftrag Andis, 21.11.2026), Umsetzung offen (F-144, Karte #77).

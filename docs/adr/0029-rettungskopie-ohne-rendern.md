@@ -1,7 +1,7 @@
 # ADR-0029: Rettungskopie ohne Rendern (F-144)
 
 ## Status
-Vorgeschlagen (Claude Opus, 21.11.2026, Karte #77). Wartet auf Andis Zustimmung; umgesetzt wird erst danach.
+Akzeptiert (Claude im Auftrag Andis, 21.11.2026: „#77 entscheidest du für mich“). Karte #77, Umsetzung offen.
 
 ## Kontext
 Der Editor speichert beim Schließen, bei Strg+S und bei SIGTERM, SIGINT und SIGHUP (ADR-0020 Nachträge 2, 6 bis 9).
@@ -17,7 +17,7 @@ Was eine Bearbeitung ausmacht, ist dagegen klein und ohne Pixel beschreibbar:
 - Schwärzungen und Verpixelungen — Rechteck und Art (`document.Schwaerzung`); sie überschreiben Pixel, lassen sich
   aber auf demselben Ausgangsbild in derselben Reihenfolge wiederholen.
 
-## Entscheidung (vorgeschlagen)
+## Entscheidung
 
 1. **Inhalt:** Eine Rettungskopie ist eine kleine JSON-Datei mit der Kennung der Ausgangsdatei, den Objekten, dem
    Zuschnitt, den Stauchstreifen und der Liste der Schwärzungen **seit dem letzten Speichern**, in ihrer Reihenfolge.
