@@ -264,3 +264,38 @@ func TestUebergibSchliesstGeerbte(t *testing.T) {
 		t.Errorf("Deskriptoren mit CLOEXEC: vorher %d, nachher %d, sie müssen bleiben", m1, m2)
 	}
 }
+
+// TestSchliesseOhneCloexecZaehlt prüft die Zählung ohne Halter-Kind: Ein Deskriptor ohne CLOEXEC wird geschlossen und
+// gemeldet, einer mit CLOEXEC bleibt offen und fehlt in der Rückgabe.
+func TestSchliesseOhneCloexecZaehlt(t *testing.T) {
+	// F_DUPFD setzt CLOEXEC nicht; ab 10 liegt die Nummer sicher über der Grenze 4.
+	var p [2]int
+	if err := syscall.Pipe2(p[:], 0); err != nil {
+		t.Fatal(err)
+	}
+	ohne, _, errno := syscall.Syscall(syscall.SYS_FCNTL, uintptr(p[0]), syscall.F_DUPFD, 10)
+	syscall.Close(p[0])
+	defer syscall.Close(p[1])
+	if errno != 0 {
+		t.Fatal(errno)
+	}
+	fd := int(ohne)
+
+	var q [2]int
+	if err := syscall.Pipe2(q[:], syscall.O_CLOEXEC); err != nil {
+		t.Fatal(err)
+	}
+	defer syscall.Close(q[0])
+	defer syscall.Close(q[1])
+
+	zu := schliesseOhneCloexec([]int{fd, q[0], q[1]})
+	if len(zu) != 1 || zu[0] != fd {
+		t.Fatalf("geschlossen %v, erwartet [%d]", zu, fd)
+	}
+	if _, _, errno := syscall.Syscall(syscall.SYS_FCNTL, uintptr(fd), syscall.F_GETFD, 0); errno != syscall.EBADF {
+		t.Errorf("Deskriptor %d nach dem Schließen: Fehler %v, erwartet EBADF", fd, errno)
+	}
+	if _, _, errno := syscall.Syscall(syscall.SYS_FCNTL, uintptr(q[0]), syscall.F_GETFD, 0); errno != 0 {
+		t.Errorf("Deskriptor mit CLOEXEC wurde geschlossen: %v", errno)
+	}
+}

@@ -11,9 +11,9 @@ Der Markdown-Umwandler kann genau das, was corporate-design.md benutzt: Übersch
 Tabellen, Bilder, Zitate, Code, fett, Links.
 """
 import html
+import os
 import re
 import subprocess
-import time
 from pathlib import Path
 
 from paket import RAHMEN, logo
@@ -195,18 +195,30 @@ def pdf():
     ablage = WURZEL / "tmp" / "brand"
     ablage.mkdir(parents=True, exist_ok=True)
     roh, sauber = ablage / "corporate-design.roh.pdf", ablage / "corporate-design.pdf"
+    # Ein altes Roh-PDF aus einem Vorlauf darf nicht übernommen werden (F-29). Es wird vor dem Chromium-Aufruf beiseite-
+    # gelegt (fester Name, os.replace) und danach nur noch auf Existenz geprüft: Liegt die Datei wieder da, hat dieser
+    # Lauf sie geschrieben. Ein Zeitvergleich entfällt, er scheitert auf Dateisystemen mit grober Zeitauflösung.
+    alt = ablage / "corporate-design.roh.alt"
+    vorher = roh.is_file()
+    if vorher:
+        os.replace(roh, alt)
+    erfolg = False
     try:
-        beginn = time.time()
         chromium("--no-pdf-header-footer", f"--print-to-pdf={roh}", zwischen.as_uri())
-        # Ein altes Roh-PDF aus einem Vorlauf darf nicht übernommen werden (F-29): es muss in diesem Lauf entstanden sein.
-        if not roh.is_file() or roh.stat().st_mtime < beginn:
+        if not roh.is_file():
             raise SystemExit(f"Fehler: Chromium hat in diesem Lauf kein PDF nach {roh} geschrieben. "
                              f"Das bisherige brand/corporate-design.pdf bleibt unverändert.")
         # Keine Spuren (Kernprinzip 3): Chromium schreibt Programm- und Systemnamen in Creator/Producer — entfernen.
         subprocess.run(["qpdf", "--remove-info", "--remove-metadata", str(roh), str(sauber)], check=True)
         sauber.replace(MARKE / "corporate-design.pdf")  # erst ersetzen, wenn alles geklappt hat
+        erfolg = True
     finally:
         zwischen.replace(ablage / "corporate-design.html")  # Zwischenstand aufheben statt löschen, auch bei Fehler
+        if vorher:
+            if erfolg:
+                os.remove(alt)  # nur das beiseitegelegte Vorlauf-PDF, fester Pfad
+            else:
+                os.replace(alt, roh)  # bei Fehlschlag das alte Roh-PDF wieder an seinen Platz
 
 
 def main():

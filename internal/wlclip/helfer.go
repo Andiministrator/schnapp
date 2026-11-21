@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -76,7 +77,8 @@ func Helfer(ein io.Reader, meldung io.WriteCloser, grenze time.Duration) int {
 // beim Start eine Pipe ist; sonst (Aufruf von Hand ohne fd 3) bekäme der erste Socket die Nummer 3, und die Meldung
 // landete in der Wayland-Verbindung (Kritik Fable, Befund 1).
 func HelferLauf() int {
-	schliesseGeerbte()
+	zu := schliesseGeerbte()
+	diagnose("Halter: %d geerbte Deskriptoren ohne CLOEXEC geschlossen (F-189): %v", len(zu), zu)
 	var meldung io.WriteCloser
 	if istPipe(3) {
 		meldung = os.NewFile(3, "wlclip-meldung")
@@ -90,8 +92,14 @@ func HelferLauf() int {
 // nie die der Laufzeit. Deskriptoren 0 bis 3 (Eingabe, Ausgaben, Meldeweg) bleiben. Gibt die Nummern der geschlossenen
 // zurück.
 func schliesseGeerbte() []int {
+	return schliesseOhneCloexec(offeneDeskriptoren())
+}
+
+// schliesseOhneCloexec schließt aus fds alle Deskriptoren ab 4 ohne FD_CLOEXEC und gibt deren Nummern zurück.
+// Getrennt von schliesseGeerbte, damit die Zählung ohne Vorgeschichte im Prozess testbar ist.
+func schliesseOhneCloexec(fds []int) []int {
 	var zu []int
-	for _, fd := range offeneDeskriptoren() {
+	for _, fd := range fds {
 		if fd < 4 {
 			continue
 		}
@@ -104,6 +112,13 @@ func schliesseGeerbte() []int {
 		}
 	}
 	return zu
+}
+
+// diagnose schreibt nur mit gesetztem SCHNAPP_DEBUG auf stderr (Fehlersuche bei echten Läufen, wie internal/ui).
+func diagnose(format string, args ...any) {
+	if os.Getenv("SCHNAPP_DEBUG") != "" {
+		log.Printf("[wlclip] "+format, args...)
+	}
 }
 
 // offeneDeskriptoren probiert alle Nummern bis zur weichen Grenze (höchstens 65536) per fcntl durch. Bewusst ohne
@@ -158,6 +173,9 @@ func Uebergib(programm string, daten []byte, frist time.Duration) (pid int, mana
 	cmd.Stdin = bytes.NewReader(daten)
 	cmd.ExtraFiles = []*os.File{w} // Dateideskriptor 3 im Kind
 	cmd.Dir = "/"
+	if os.Getenv("SCHNAPP_DEBUG") != "" {
+		cmd.Stderr = os.Stderr // die Diagnose des Halters soll im Terminal erscheinen, sonst /dev/null
+	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	err = cmd.Start()
 	w.Close()
