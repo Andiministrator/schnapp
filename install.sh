@@ -113,10 +113,20 @@ installieren() {
 	esac
 	case "$PROGRAMM" in *$'\n'*) echo "install.sh: Pfad mit Zeilenumbruch" >&2; exit 1 ;; esac
 
-	# Version aus git, ohne führendes v.
+	# Version aus git, ohne führendes v (ADR-0006). Nur ein Tag dieses Repos zählt: Liegt der Ordner in einem fremden
+	# Repo (Tarball im Home-Repo), gilt dessen Stand nicht. Ohne erreichbaren Tag (flacher Klon, Tarball) entsteht eine
+	# gültige SemVer-Fassung: 0.0.0-dev+<Kurzhash>[.dirty], ohne git 0.0.0-dev (F-113).
 	version=""
-	if command -v git >/dev/null 2>&1; then
-		version="$(cd "$wurzel" && git describe --tags --always --dirty 2>/dev/null || true)"
+	if command -v git >/dev/null 2>&1 \
+		&& [ "$(git -C "$wurzel" rev-parse --show-toplevel 2>/dev/null || true)" = "$(cd "$wurzel" && pwd -P)" ]; then
+		version="$(git -C "$wurzel" describe --tags --dirty 2>/dev/null || true)"
+		if [ -z "$version" ]; then
+			kurz="$(git -C "$wurzel" rev-parse --short HEAD 2>/dev/null || true)"
+			if [ -n "$kurz" ]; then
+				version="0.0.0-dev+$kurz"
+				[ -z "$(git -C "$wurzel" status --porcelain --untracked-files=no 2>/dev/null || true)" ] || version="$version.dirty"
+			fi
+		fi
 	fi
 	version="${version#v}"
 	[ -n "$version" ] || version="0.0.0-dev"
