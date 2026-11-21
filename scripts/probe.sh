@@ -9,15 +9,18 @@
 #   scripts/probe.sh --innen SKRIPT
 #     führt SKRIPT (bash) als Sitzung des virtuellen KWin aus statt Schnapp; Ausgabe nach tmp/probe/ergebnis.txt.
 #     Das Programm liegt als tmp/probe/schnapp bereit.
-#   scripts/probe.sh --drehbuch DATEI [--bild BILD] [--breite W] [--hoehe H] [--skala S] [--monitore N] [--zeit SEK]
+#   scripts/probe.sh --drehbuch DATEI [--bild BILD] [--breite W] [--hoehe H] [--skala S] [--monitore N] [--zeit SEK] [--ende SEK]
 #     Fernbedienung (Karte #95): startet den Editor (mit --bild BILD die Datei, sonst eine Aufnahme mit --region, die im
 #     Probe-Build den ersten Monitor nimmt) im Vollbild des virtuellen KWin, wartet auf die Zeile „[editor] Fenstergröße“
 #     im Debug-Log, spielt dann das Drehbuch mit tmp/probe/fernbedienung ab (Zeiger-/Tasteneingaben über
-#     org_kde_kwin_fake_input, nur im virtuellen KWin) und beendet Schnapp danach (nur die eigene PID, SIGTERM, nach 5 s
-#     SIGKILL; vorher Startzeit und Programmname wie beim Start, der Name muss „schnapp“ sein; ist die Identität nicht
-#     prüfbar, greift das Skript nicht ein und meldet es im Ergebnis). Fotos als PNG in tmp/probe/fotos/<Zeitstempel>/ (je
+#     org_kde_kwin_fake_input, nur im virtuellen KWin) und beendet Schnapp danach (nur die eigene PID, SIGTERM, nach
+#     --ende SEK (Voreinstellung 5, 1 bis 300) SIGKILL; vorher Startzeit und Programmname wie beim Start, der Name muss
+#     „schnapp“ sein; ist die Identität nicht prüfbar, greift das Skript nicht ein und meldet es im Ergebnis). Die Frist
+#     gibt Schnapp Zeit zum Speichern im Probe-Build (langsam, mit -race, F-296). Fotos als PNG in tmp/probe/fotos/<Zeitstempel>/ (je
 #     Lauf ein neuer Ordner, nichts wird gelöscht). Größe des virtuellen Bildschirms: --breite/--hoehe (Voreinstellung
-#     1600x1000), die Zeitgrenze des Laufs --zeit SEK (Voreinstellung 90, höchstens 600).
+#     1600x1000), die Zeitgrenze des Laufs --zeit SEK (Voreinstellung 90, höchstens 600). Die äußere Grenze eines
+#     Drehbuch-Laufs ist --zeit + --ende + 10 s, damit eine lange Frist nicht von ihr abgeschnitten wird. --ende wirkt nur
+#     bei --drehbuch.
 #     Drehbuch, eine Zeile je Befehl, # = Kommentar (Beispiel: scripts/drehbuecher/beispiel-schwaerzen.txt):
 #       warte MS | zeiger X Y | klick [X Y] | doppelklick X Y | rechtsklick [X Y] | mittelklick [X Y]
 #       ziehe X1 Y1 X2 Y2 [SCHRITTE] | ziehe-mitte … | taste KOMBI (B, Esc, Strg+Z, Strg+Umschalt+E, Entf, …)
@@ -31,7 +34,8 @@
 #     und bei jeder Beobachtung verglichen; weicht die Identität ab oder ist sie nicht prüfbar, steht „unklar“ im Ergebnis.
 #
 # Ergebnis: tmp/probe/ergebnis.txt (stdout und stderr getrennt, Exit-Code, in diesem Lauf abgelegte Dateien). Harte
-# Zeitgrenze 90 s, bei --drehbuch mit --zeit verlängerbar (danach SIGKILL nach weiteren 5 s). Exit: 0 Lauf durch, 1 Fehler, 124 Zeitgrenze.
+# Zeitgrenze 90 s, bei --drehbuch mit --zeit verlängerbar und um --ende + 10 s erweitert (danach SIGKILL nach weiteren 5 s).
+# Exit: 0 Lauf durch, 1 Fehler, 124 Zeitgrenze.
 set -u
 cd "$(dirname "$0")/.." || exit 1
 monitore=1
@@ -43,6 +47,7 @@ bild=""
 breite=1600
 hoehe=1000
 zeit=90
+ende=5
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--monitore) monitore="$2"; shift 2 ;;
@@ -53,6 +58,7 @@ while [ $# -gt 0 ]; do
 	--breite) breite="$2"; shift 2 ;;
 	--hoehe) hoehe="$2"; shift 2 ;;
 	--zeit) zeit="$2"; shift 2 ;;
+	--ende) ende="$2"; shift 2 ;;
 	--zwischenablage) ablage="$(realpath -e -- "$2")" || exit 2; shift 2 ;;
 	--) shift; break ;;
 	*) echo "unbekannt: $1" >&2; exit 2 ;;
@@ -67,6 +73,8 @@ case "$breite$hoehe$zeit$monitore" in *[!0-9]* | "") echo "probe.sh: --breite, -
 case "$skala" in *[!0-9.]* | "" | . | .* | *. | *.*.*) echo "probe.sh: --skala ist eine Zahl (etwa 1 oder 1.5)" >&2; exit 2 ;; esac
 [ "$monitore" -ge 1 ] && [ "$breite" -ge 1 ] && [ "$hoehe" -ge 1 ] || { echo "probe.sh: --monitore, --breite und --hoehe sind mindestens 1" >&2; exit 2; }
 [ "$zeit" -ge 1 ] && [ "$zeit" -le 600 ] || { echo "probe.sh: --zeit liegt zwischen 1 und 600" >&2; exit 2; }
+case "$ende" in *[!0-9]* | "") echo "probe.sh: --ende ist eine ganze Zahl (1 bis 300)" >&2; exit 2 ;; esac
+[ "$ende" -ge 1 ] && [ "$ende" -le 300 ] || { echo "probe.sh: --ende liegt zwischen 1 und 300" >&2; exit 2; }
 
 probe="$PWD/tmp/probe"
 
@@ -114,10 +122,11 @@ zustand() {
 
 # Drehbuch-Lauf (innerer Teil, Sitzung des virtuellen KWin): Schnapp im Hintergrund, Fernbedienung im Vordergrund.
 drehbuch_innen() {
-	local skript fotos bildpfad pid id0 id1 fb
+	local skript fotos bildpfad ende pid id0 id1 fb
 	skript="$(cat "$probe/drehbuch.txt")"
 	fotos="$(cat "$probe/fotos.txt")"
 	bildpfad="$(cat "$probe/bild.txt")"
+	ende="$(cat "$probe/ende.txt")"
 	mkdir -p "$HOME/Bilder" "$fotos"
 	printf 'XDG_PICTURES_DIR="$HOME/Bilder"\n' > "$XDG_CONFIG_HOME/user-dirs.dirs"
 	: > "$probe/stdout.txt"
@@ -155,10 +164,10 @@ drehbuch_innen() {
 			if ist_schnapp "$pid"; then
 				echo "schnapp läuft nach dem Drehbuch noch: SIGTERM an die eigene PID $pid"
 				kill -TERM "$pid" 2> /dev/null
-				for _ in $(seq 1 50); do kill -0 "$pid" 2> /dev/null || break; sleep 0.1; done
+				for _ in $(seq 1 $((ende * 10))); do kill -0 "$pid" 2> /dev/null || break; sleep 0.1; done
 				if kill -0 "$pid" 2> /dev/null; then
 					if ist_schnapp "$pid"; then
-						echo "schnapp reagiert nicht auf SIGTERM: SIGKILL an PID $pid"
+						echo "schnapp reagiert nach $ende s nicht auf SIGTERM: SIGKILL an PID $pid"
 						kill -KILL "$pid" 2> /dev/null
 						for _ in $(seq 1 20); do kill -0 "$pid" 2> /dev/null || break; sleep 0.1; done
 					else
@@ -274,6 +283,7 @@ printf '%s' "$ablage" > "$probe/ablage.txt"
 printf '%s' "$innen" > "$probe/innen.txt"
 printf '%s' "$drehbuch" > "$probe/drehbuch.txt"
 printf '%s' "$bild" > "$probe/bild.txt"
+printf '%s' "$ende" > "$probe/ende.txt"
 if [ -n "$drehbuch" ]; then
 	fotos="$probe/fotos/$(date +%Y%m%d-%H%M%S)"
 	printf '%s' "$fotos" > "$probe/fotos.txt"
@@ -283,11 +293,15 @@ fi
 # und Tagesmarke: XDG_STATE_HOME; Bilderordner aus $XDG_CONFIG_HOME/user-dirs.dirs), liegen unter tmp/probe/home. Ein
 # geerbter WAYLAND_SOCKET (fertig verbundener Socket der echten Sitzung) und ein gesetztes XDG_PICTURES_DIR werden entfernt
 # (F-230).
+# Äußere Grenze: bei --drehbuch --zeit + --ende + 10 s, sonst --zeit. Die Frist nach SIGTERM liegt im Lauf und darf nicht
+# von der Grenze abgeschnitten werden; die Zeit für Start und Drehbuch bleibt --zeit.
+grenze="$zeit"
+[ -z "$drehbuch" ] || grenze=$((zeit + ende + 10))
 env -u WAYLAND_DISPLAY -u WAYLAND_SOCKET -u DISPLAY -u XDG_PICTURES_DIR PROBE_INNEN=1 PROBE_AUSSENBUS="${DBUS_SESSION_BUS_ADDRESS:-}" \
 	HOME="$probe/home" XDG_CONFIG_HOME="$probe/home/.config" XDG_DATA_HOME="$probe/home/.local/share" \
 	XDG_STATE_HOME="$probe/home/.local/state" XDG_CACHE_HOME="$probe/home/.cache" XDG_RUNTIME_DIR="$probe/run" \
 	XKB_DEFAULT_LAYOUT=us XKB_DEFAULT_VARIANT= XKB_DEFAULT_MODEL= XKB_DEFAULT_OPTIONS= \
-	timeout -k 5 "$zeit" dbus-run-session -- \
+	timeout -k 5 "$grenze" dbus-run-session -- \
 	kwin_wayland --virtual --socket schnapp-probe --width "$breite" --height "$hoehe" --output-count "$monitore" \
 	--scale "$skala" --no-lockscreen --no-global-shortcuts \
 	--exit-with-session "$PWD/scripts/probe.sh" > "$probe/kwin.log" 2>&1
@@ -297,7 +311,7 @@ if [ ! -s "$probe/ergebnis.txt" ]; then
 	[ "$code" = 0 ] && code=1
 	exit "$code"
 fi
-[ "$code" = 124 ] && echo "Zeitgrenze erreicht ($zeit s), KWin beendet" >&2
+[ "$code" = 124 ] && echo "Zeitgrenze erreicht ($grenze s), KWin beendet" >&2
 cat "$probe/ergebnis.txt"
 grep -q '^probe.sh:' "$probe/ergebnis.txt" && exit 1
 exit "$code"
