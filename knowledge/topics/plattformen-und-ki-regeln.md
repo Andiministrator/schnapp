@@ -44,6 +44,15 @@ Quelle: https://gioui.org/doc/contribute, am 21.11.2026 geöffnet und gelesen (Z
   im PR-Text kurz sagen, warum nicht per Mail. Die Mailingliste bleibt der Weg, wenn die Gio-Leute darum bitten.
 - Vorbereitung (Karte #17): Patch in zwei Teile (FullscreenOn/WaylandOutputs; fractional-scale + viewporter samt
   Zeiger), Protokoll-Code per `go:generate` statt erzeugter Dateien, `log.Printf` in `outputByName` als offene Frage.
+- **Umgesetzt 21.11.2026 abends (Claude):** zwei PRs gegen Gio `main` (nicht v0.10.3; `main` hatte 36 Commits mehr, die
+  Serie ließ sich ohne Konflikt umsetzen). PR 1 in drei Commits (Ausgaben, gebrochene Skalierung, Zeigerbild), PR 2 in
+  zwei (alles in die Pipe schreiben, Bildtyp anbieten). Der Schnapp-eigene Haken `ClipboardWriteError` geht nicht
+  hinaus (API nur für Schnapp). Gio legt erzeugten Protokoll-Code **neben** den `go:generate`-Zeilen ins Repo; also
+  beides. Neu erzeugt mit wayland-scanner 1.26.0 aus `wayland-protocols` (Git, freedesktop): bitgleich zu unseren
+  Dateien bis auf einen behobenen Tippfehler im Kommentar („the the“). Mehrere Hunks mit gemischten Themen ließen sich
+  mit `patch` nicht sauber zerlegen; von Hand nachgezogen, danach Vergleich des Endstands mit `third_party/gio` (nur
+  Kommentare, `go:generate` und Zwischenablage weichen ab). Vorbereitung und Anleitung lagen unter
+  `tmp/sprint10/gio-einreichung/` (`ANLEITUNG.md`); einreichen tut Andi.
 
 ## Für alle öffentlichen Orte
 
