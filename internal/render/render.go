@@ -29,7 +29,7 @@ import (
 	"golang.org/x/image/vector"
 
 	"github.com/Andiministrator/schnapp/internal/document"
-	"github.com/Andiministrator/schnapp/internal/speicherschritt"
+	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
 
 // Bild liefert die Ansicht des Dokuments mit allen Objekten und den Zackenkanten der Stauch-Nähte (ADR-0023). Objekte
@@ -404,7 +404,7 @@ func (z zeichner) raster(polys [][]document.Punkt, farbe color.NRGBA) {
 	}
 	// Je Füllung ein Puls: Flache Füllungen (unter 64 Zeilen) erreichen den Zeilenzähler des einmischers nie, viele davon
 	// dauern trotzdem lange (Verify F-298 B-1).
-	speicherschritt.Puls()
+	saveprogress.Puls()
 	ox, oy := float64(ausschnitt.Min.X), float64(ausschnitt.Min.Y)
 	r := z.ras
 	r.Reset(ausschnitt.Dx(), ausschnitt.Dy())
@@ -464,7 +464,7 @@ func (e *einmischer) At(x, y int) color.Color { return color.Transparent }
 func (e *einmischer) Set(x, y int, c color.Color) {
 	if x == e.x0 { // Zeilenanfang: alle 64 Zeilen ein Fortschritts-Puls fürs Speichern (F-298)
 		if e.n++; e.n&63 == 0 {
-			speicherschritt.Puls()
+			saveprogress.Puls()
 		}
 	}
 	var ma uint32
@@ -604,7 +604,7 @@ func (z zeichner) text(face font.Face, s string, x, grundlinie float64, farbe co
 	links, rechts := float64(rand.Min.X)-1.25*grad, float64(rand.Max.X)+1.25*grad
 	vorher := rune(-1)
 	for _, c := range s {
-		speicherschritt.Puls() // je Zeichen: Glyphen kosten am Budget Sekunden (F-147, F-298)
+		saveprogress.Puls() // je Zeichen: Glyphen kosten am Budget Sekunden (F-147, F-298)
 		if vorher >= 0 {
 			dot.X += face.Kern(vorher, c)
 		}

@@ -4,5 +4,5 @@
 
 package main
 
-// probeSchutz ist im ausgelieferten Programm leer; die Prüfung gilt nur im Probe-Build (probe_an.go, F-229).
-func probeSchutz() error { return nil }
+// probeGuard ist im ausgelieferten Programm leer; die Prüfung gilt nur im Probe-Build (probe_an.go, F-229).
+func probeGuard() error { return nil }

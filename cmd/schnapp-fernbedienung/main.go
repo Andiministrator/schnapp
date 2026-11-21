@@ -23,14 +23,14 @@ import (
 	"time"
 
 	"github.com/Andiministrator/schnapp/internal/capture"
-	"github.com/Andiministrator/schnapp/internal/probeschutz"
+	"github.com/Andiministrator/schnapp/internal/probeguard"
 )
 
 // nurVirtuell lässt die Fernbedienung nur im virtuellen KWin von scripts/probe.sh zu (Prüfung gemeinsam mit dem
-// Probe-Build von schnapp, internal/probeschutz; Verify N-5, F-229). Das Werkzeug bleibt nach einem Lauf in tmp/probe
+// Probe-Build von schnapp, internal/probeguard; Verify N-5, F-229). Das Werkzeug bleibt nach einem Lauf in tmp/probe
 // liegen; von Hand in der echten Sitzung gestartet, würde es sich sonst mit dem echten KWin verbinden (KWin winkt die
 // Anmeldung durch) und Eingaben einspeisen. Geprüft wird vor jedem Verbindungsversuch (Wayland und D-Bus für foto).
-func nurVirtuell(getenv func(string) string) error { return probeschutz.NurVirtuell(getenv) }
+func nurVirtuell(getenv func(string) string) error { return probeguard.NurVirtuell(getenv) }
 
 func main() { os.Exit(lauf(os.Args[1:], os.Stdout, os.Stderr)) }
 

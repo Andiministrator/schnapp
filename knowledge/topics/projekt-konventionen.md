@@ -24,7 +24,7 @@ muss.
 - **Bauen und Testen** im Wurzelmodul immer mit `GOFLAGS=-tags=novulkan,nox11` (Gio; sonst fehlt `vulkan/vulkan.h`),
   Programme mit `-trimpath`. Pakete unter `internal/` (ADR-0027): `i18n`, `po`, `document`, `fileformat`,
   `capture`, `library`, `settings`, `selection`, `canvas`, `render`, `ui`, `wlclip` (Zwischenablage-Halter), `portal`
-  (Dateidialog), `export`, `wlwire`, `probeschutz`, `speicherschritt`; dazu `cmd/schnapp`, `cmd/schnapp-fernbedienung` (nur mit Tag `probe`; Tests dann
+  (Dateidialog), `export`, `wlwire`, `probeguard`, `saveprogress`; dazu `cmd/schnapp`, `cmd/schnapp-fernbedienung` (nur mit Tag `probe`; Tests dann
   `GOFLAGS=-tags=novulkan,nox11,probe go test ./cmd/schnapp-fernbedienung ./cmd/schnapp`). Probeläufe nur über
   `scripts/probe.sh` (virtueller KWin), nie ein Programm aus `tmp/probe/` von Hand starten. Eigene Module `draw/` (früher `zeichnen/`), `third_party/gio/`, `tmp/` (trennt den Arbeitsordner ab).
 - **Pfade und eigene Dateinamen:** `schnapp` immer klein (`~/Bilder/schnapp/`, `schnapp.desktop`), im Text „Schnapp“.

@@ -12,7 +12,7 @@ import (
 	"io"
 
 	"github.com/Andiministrator/schnapp/internal/document"
-	"github.com/Andiministrator/schnapp/internal/speicherschritt"
+	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
 
 // SchreibeArbeitsdatei schreibt die Arbeitsdatei: sichtbar ist das fertige Bild (Ansicht mit Beschriftungen, vom
@@ -21,15 +21,15 @@ import (
 // Metadaten.Erstellt).
 func SchreibeArbeitsdatei(w io.Writer, d *document.Dokument, sichtbar image.Image, m Metadaten) error {
 	var sicht, orig bytes.Buffer
-	// Über speicherschritt.Schreiber meldet das Kodieren Fortschritt je geschriebenem Stück (F-298).
-	if err := png.Encode(speicherschritt.Schreiber(&sicht), sichtbar); err != nil {
+	// Über saveprogress.Schreiber meldet das Kodieren Fortschritt je geschriebenem Stück (F-298).
+	if err := png.Encode(saveprogress.Schreiber(&sicht), sichtbar); err != nil {
 		return err
 	}
-	speicherschritt.Marke("bild-kodiert")
-	if err := png.Encode(speicherschritt.Schreiber(&orig), d.OriginalBild()); err != nil {
+	saveprogress.Marke("bild-kodiert")
+	if err := png.Encode(saveprogress.Schreiber(&orig), d.OriginalBild()); err != nil {
 		return err
 	}
-	speicherschritt.Marke("original-kodiert")
+	saveprogress.Marke("original-kodiert")
 	var svg bytes.Buffer
 	zw, _ := zlib.NewWriterLevel(&svg, zlib.BestCompression)
 	if _, err := zw.Write(svgArbeitsdatei(d, m)); err != nil {
@@ -47,12 +47,12 @@ func SchreibeArbeitsdatei(w io.Writer, d *document.Dokument, sichtbar image.Imag
 	// hängendes Medium gilt zu Recht als hängend.
 	for len(daten) > 0 {
 		n := min(len(daten), schreibStueck)
-		if _, err := speicherschritt.Schreiber(w).Write(daten[:n]); err != nil {
+		if _, err := saveprogress.Schreiber(w).Write(daten[:n]); err != nil {
 			return err
 		}
 		daten = daten[n:]
 	}
-	speicherschritt.Marke("datei-geschrieben")
+	saveprogress.Marke("datei-geschrieben")
 	return nil
 }
 
@@ -74,7 +74,7 @@ type Gelesen struct {
 func LeseArbeitsdatei(r io.Reader) (*Gelesen, error) {
 	// Fortschritt je gelesenem Stück: Beim Speichern liest die Bibliothek die alte Datei, auf einem langsamen Medium
 	// dauert das (F-298).
-	bloecke, err := leseBloecke(speicherschritt.Leser(r))
+	bloecke, err := leseBloecke(saveprogress.Leser(r))
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func decodiere(daten []byte) (image.Image, error) {
 		cfg.Width*cfg.Height > document.MaxPixel {
 		return nil, fmt.Errorf("%w: Bild %dx%d", ErrZuGross, cfg.Width, cfg.Height)
 	}
-	bild, err := png.Decode(speicherschritt.Leser(bytes.NewReader(daten))) // Fortschritt beim Dekodieren (F-298)
+	bild, err := png.Decode(saveprogress.Leser(bytes.NewReader(daten))) // Fortschritt beim Dekodieren (F-298)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrBeschaedigt, err)
 	}

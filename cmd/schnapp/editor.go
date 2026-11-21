@@ -17,7 +17,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/i18n"
 	"github.com/Andiministrator/schnapp/internal/library"
 	"github.com/Andiministrator/schnapp/internal/render"
-	"github.com/Andiministrator/schnapp/internal/speicherschritt"
+	"github.com/Andiministrator/schnapp/internal/saveprogress"
 	"github.com/Andiministrator/schnapp/internal/ui"
 )
 
@@ -106,7 +106,7 @@ func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand
 			return erg, err
 		}
 		budget := render.Pruefe(d)
-		speicherschritt.Marke("budget-geprueft")
+		saveprogress.Marke("budget-geprueft")
 		if budget == nil {
 			return erg, nil
 		}
@@ -143,12 +143,12 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 		if neuGeschwaerzt {
 			gezeigt = d.SchwaerzStand()
 		}
-		speicherschritt.Marke("start")
+		saveprogress.Marke("start")
 		sichtbar, err := render.Bild(d)
 		if err != nil {
 			return ui.Gespeichert{}, nil, speicherFehler(err)
 		}
-		speicherschritt.Marke("gerendert")
+		saveprogress.Marke("gerendert")
 		var zurueck error // Fehler beim Zurückschreiben, falls auch das Ausweichen scheitert
 		versucht := inBibliothek
 		altRel, altStand := rel, stand // bisherige Datei, falls nach dem Schwärzen ausgewichen wird (F-126)

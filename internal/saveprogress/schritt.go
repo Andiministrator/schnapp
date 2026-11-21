@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package speicherschritt meldet den Fortschritt des Speicherns. Zwei Arten von Meldungen:
+// Package saveprogress meldet den Fortschritt des Speicherns. Zwei Arten von Meldungen:
 //
 //   - Marke(schritt) zum Abschluss eines benannten Schritts (F-297): Mit gesetztem SCHNAPP_DEBUG schreibt sie eine
 //     Zeile `[speichern] <Schritt>: +<Dauer seit der vorigen Marke> (gesamt <Dauer>)` auf stderr; ein Test oder
@@ -12,7 +12,7 @@
 // gilt erst als hängend, wenn eine Frist lang kein Fortschritt kam (F-298, ADR-0020 Nachtrag 9). Der Zeitpunkt gilt
 // für den ganzen Prozess; auch ein Kopieren oder Exportieren, das nebenher rendert, setzt ihn. Das verzögert das
 // Erkennen eines hängenden Speicherns höchstens um die Dauer dieser Arbeit und ist hingenommen.
-package speicherschritt
+package saveprogress
 
 import (
 	"io"

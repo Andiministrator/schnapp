@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package probeschutz sichert Probe-Builds (Tag probe) dagegen, in der echten Sitzung zu laufen (F-229). Probe-Programme
+// Package probeguard sichert Probe-Builds (Tag probe) dagegen, in der echten Sitzung zu laufen (F-229). Probe-Programme
 // (Schnapp mit Auto-Wahl des ganzen Monitors, Fernbedienung mit fake_input) bleiben nach einem Lauf in tmp/probe liegen;
 // von Hand gestartet, würden sie den echten Monitor aufnehmen und in der echten Bibliothek ablegen bzw. Eingaben in die
 // echte Sitzung speisen.
-package probeschutz
+package probeguard
 
 import (
 	"fmt"

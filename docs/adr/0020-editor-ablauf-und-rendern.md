@@ -329,3 +329,5 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
     Start des Speicherns zerstört wird; bei spätem Zerstören und bei jedem weiteren Signal ohne Stillstand verschöbe sie
     die 2-Minuten-Grenze. Der Kritiker-Lauf zum Abschluss von Sprint 9 hat das gezeigt (F-314); seither deckt
     `TestZerstoerenFristAbBeginnBeiSpaetemZerstoeren` die Mutation ab.
+
+  Seit Sprint 10 heißt das Paket `internal/saveprogress` (E-23, F-312).

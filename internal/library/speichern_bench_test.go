@@ -15,7 +15,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/fileformat"
 	"github.com/Andiministrator/schnapp/internal/render"
-	"github.com/Andiministrator/schnapp/internal/speicherschritt"
+	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
 
 // Messung F-297: Wie verteilt sich die Zeit beim Speichern eines 4K-Dokuments auf Rendern, Lesen der alten Datei,
@@ -104,7 +104,7 @@ func speichern4K(b *testing.B, bild func() *image.NRGBA, schwaerzungen int) {
 	zeiten := map[string]time.Duration{}
 	var reihe []string
 	var vorig time.Time
-	speicherschritt.Haken = func(s string) {
+	saveprogress.Haken = func(s string) {
 		mu.Lock()
 		defer mu.Unlock()
 		jetzt := time.Now()
@@ -115,16 +115,16 @@ func speichern4K(b *testing.B, bild func() *image.NRGBA, schwaerzungen int) {
 		vorig = jetzt
 		reihe = append(reihe, s)
 	}
-	defer func() { speicherschritt.Haken = nil }()
+	defer func() { saveprogress.Haken = nil }()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		speicherschritt.Marke("start")
+		saveprogress.Marke("start")
 		sichtbar, err := render.Bild(d)
 		if err != nil {
 			b.Fatal(err)
 		}
-		speicherschritt.Marke("gerendert")
+		saveprogress.Marke("gerendert")
 		_, neu, err := bib.Speichern(e.Pfad, stand, d, sichtbar)
 		if err != nil {
 			b.Fatal(err)

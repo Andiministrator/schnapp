@@ -95,7 +95,7 @@ func echteAnschluesse() anschluesse {
 		tagesmarke: library.TagesmarkePfad(os.Getenv),
 		editor:     oeffneImEditor,
 		bearbeiten: bearbeiteNeu,
-		schutz:     probeSchutz,
+		schutz:     probeGuard,
 	}
 }
 

@@ -44,7 +44,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/i18n"
 	"github.com/Andiministrator/schnapp/internal/portal"
 	"github.com/Andiministrator/schnapp/internal/render"
-	"github.com/Andiministrator/schnapp/internal/speicherschritt"
+	"github.com/Andiministrator/schnapp/internal/saveprogress"
 	"github.com/Andiministrator/schnapp/internal/wlclip"
 )
 
@@ -75,7 +75,7 @@ var ErrSpeichernHaengt = errors.New("editor: Speichern antwortet nicht")
 
 // Fristen der Arbeit im Hintergrund (ADR-0020 Nachtrag 7); Variablen, damit Tests sie verkürzen.
 var (
-	// speichernFrist: Meldet ein Speichern so lange keinen Fortschritt (internal/speicherschritt), gilt es als hängend:
+	// speichernFrist: Meldet ein Speichern so lange keinen Fortschritt (internal/saveprogress), gilt es als hängend:
 	// Die Statusleiste sagt es, und eine weitere Schließen-Anfrage oder ein weiteres Signal schließt ohne seine Antwort
 	// (F-283). Ein Speichern mit Fortschritt wird nie aufgegeben (F-298, ADR-0020 Nachtrag 9).
 	speichernFrist = 15 * time.Second
@@ -532,14 +532,14 @@ func (e *editor) speichernAbwarten() {
 }
 
 // speichernHaengt meldet, ob das laufende Speichern seit speichernFrist keinen Fortschritt gemeldet hat (F-298, ADR-0020
-// Nachtrag 9): gerechnet ab dem letzten Fortschritt aus internal/speicherschritt, frühestens ab dem Beginn dieses
+// Nachtrag 9): gerechnet ab dem letzten Fortschritt aus internal/saveprogress, frühestens ab dem Beginn dieses
 // Speicherns.
 func (e *editor) speichernHaengt() bool {
 	if !e.s.SpeichernLaeuft() {
 		return false
 	}
 	letzter := e.speicherStart
-	if t := speicherschritt.Zuletzt(); t.After(letzter) {
+	if t := saveprogress.Zuletzt(); t.After(letzter) {
 		letzter = t
 	}
 	return time.Since(letzter) >= speichernFrist

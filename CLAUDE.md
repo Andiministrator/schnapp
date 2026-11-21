@@ -111,7 +111,7 @@ Produktcode (Stand 21.11.2026, v0.4.0 nach Sprint 9): `capture`, `document`, `fi
 Schnapp nimmt auf, legt in der Bibliothek ab und öffnet den Editor (Auswählen, Verschieben, Griffe, Zoom, Rückgängig,
 Speichern, Zeichenwerkzeuge Pfeil/Kasten/Text/Schritt-Nummer mit Farbwahl, ADR-0021; Schwärzen/Verpixeln ADR-0022;
 Zwischenablage Strg+C, ADR-0015 Nachtrag 2, bleibt nach dem Schließen über den Halter `wlclip`, ADR-0024; Zuschneiden C und Stauchen X mit Zackenkante, Band bis an den Rand wird Zuschnitt, zurück über den Knopf „Ganzes Bild“, ADR-0023; Export PNG/JPG/SVG über den Portal-Dialog, Strg+Umschalt+E,
-ADR-0025; Menü mit allen Aktionen und Kürzeln, auch allein per Tastatur, Tastentabelle `internal/ui/kuerzel.go`, ADR-0026 mit Nachträgen 2 bis 4; seit Sprint 8: Speichern und Kopieren im Hintergrund, ADR-0020 Nachträge 6 bis 8; Nachtrag 9 — Frist erkennt Fortschritt über `internal/speicherschritt`, umgesetzt in Sprint 9). Probeläufe ohne Andi: `scripts/probe.sh`
+ADR-0025; Menü mit allen Aktionen und Kürzeln, auch allein per Tastatur, Tastentabelle `internal/ui/kuerzel.go`, ADR-0026 mit Nachträgen 2 bis 4; seit Sprint 8: Speichern und Kopieren im Hintergrund, ADR-0020 Nachträge 6 bis 8; Nachtrag 9 — Frist erkennt Fortschritt über `internal/saveprogress`, umgesetzt in Sprint 9). Probeläufe ohne Andi: `scripts/probe.sh`
 (virtueller KWin, `knowledge/topics/lehren.md`). Installation per `install.sh` (`~/.local`, Version aus `git describe`). Daneben
 der Wegwerf-Prototyp `prototype/` (entfernt in Sprint 9, ADR-0027; Stand in der git-Geschichte). Alle Programmpakete liegen seit Sprint 9 unter `internal/` (ADR-0027; Modulpfad
 `github.com/Andiministrator/schnapp/internal/<paket>`), öffentlich ist nur das Modul `draw/`. Schichten:
@@ -140,10 +140,10 @@ der Wegwerf-Prototyp `prototype/` (entfernt in Sprint 9, ADR-0027; Stand in der 
 - **export** — Export aus dem Editor: Format aus Endung oder Filter, PNG/JPG aus `render`, SVG aus `fileformat`,
   atomares Schreiben (ADR-0025).
 - **ui** — Gio: Vollbild-Overlay zur Auswahl (fertig), Editor, Bibliothek.
-- **internal/speicherschritt** — Fortschritt des Speicherns: `Marke` je Schritt (Zeitstempel mit `SCHNAPP_DEBUG`),
+- **internal/saveprogress** — Fortschritt des Speicherns: `Marke` je Schritt (Zeitstempel mit `SCHNAPP_DEBUG`),
   `Puls` aus langen Schleifen (Rastern, PNG-Kodierung, Lesen, Vorschau), `Zuletzt` für die Frist im Editor (F-297, F-298,
   ADR-0020 Nachtrag 9).
-- **internal/probeschutz** — `NurVirtuell`: Probe-Builds (Tag `probe`, Schnapp und Fernbedienung) laufen nur im
+- **internal/probeguard** — `NurVirtuell`: Probe-Builds (Tag `probe`, Schnapp und Fernbedienung) laufen nur im
   virtuellen KWin von `scripts/probe.sh` (F-229); das Paket selbst hat kein Build-Tag.
 
 Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung, Mauszeiger bei gemischter Skala F-78, Bild-Typ in
@@ -161,7 +161,7 @@ ADR-0003 Nachtrag 2, ADR-0015.
   Gio braucht unter Linux die Build-Tags `novulkan,nox11` (keine Vulkan-Header, nur Wayland) und die cgo-Bibliotheken
   `libwayland-dev libegl-dev libxkbcommon-dev`. Die Tags kommen über die Umgebungsvariable, nicht über `go env -w`:
   `export GOFLAGS=-tags=novulkan,nox11`, dann `go vet ./... && go test ./...`, zusätzlich mit Tag `probe`
-  `GOFLAGS=-tags=novulkan,nox11,probe go vet ./cmd/... ./internal/ui && GOFLAGS=-tags=novulkan,nox11,probe go test ./cmd/schnapp-fernbedienung ./cmd/schnapp ./internal/probeschutz`
+  `GOFLAGS=-tags=novulkan,nox11,probe go vet ./cmd/... ./internal/ui && GOFLAGS=-tags=novulkan,nox11,probe go test ./cmd/schnapp-fernbedienung ./cmd/schnapp ./internal/probeguard`
   (der Normalbau sieht `cmd/schnapp-fernbedienung` und `cmd/schnapp/probe_test.go` nicht); Programm `go build -trimpath -o schnapp
   ./cmd/schnapp`. Pakete: `i18n` (Sprachwahl, PO-Leser, `i18n.T/TK/N`), `po` (eingebettete `internal/po/*.po`, ADR-0014
   Nachtrag 1), `ui` (Schicht zu Gio; `Starte` hält die Gio-Hauptschleife, `Overlay` je Monitor),

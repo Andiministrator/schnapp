@@ -7,9 +7,9 @@ package main
 import (
 	"os"
 
-	"github.com/Andiministrator/schnapp/internal/probeschutz"
+	"github.com/Andiministrator/schnapp/internal/probeguard"
 )
 
-// probeSchutz (F-229): Der Probe-Build nimmt ohne Eingabe den ganzen ersten Monitor auf (ui.probeAutoWahl) und legt ihn
+// probeGuard (F-229): Der Probe-Build nimmt ohne Eingabe den ganzen ersten Monitor auf (ui.probeAutoWahl) und legt ihn
 // in der Bibliothek ab. Er läuft darum nur im virtuellen KWin von scripts/probe.sh; sonst Fehler vor jeder Aufnahme.
-func probeSchutz() error { return probeschutz.NurVirtuell(os.Getenv) }
+func probeGuard() error { return probeguard.NurVirtuell(os.Getenv) }

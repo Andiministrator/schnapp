@@ -42,7 +42,7 @@
 | Begriff | Bedeutung |
 |---|---|
 | **Abzug** | Unabhängige Kopie eines Dokuments mit gleichem Stand, ohne Rückgängig-Verlauf; wird im Hintergrund gespeichert oder kopiert, während das Bearbeiten ruht (`document`, ADR-0020 Nachtrag 6). |
-| **Marke** | Meldung eines erreichten Speicherschritts (Rendern, Kodieren, Schreiben …); zählt als Fortschritt, mit `SCHNAPP_DEBUG` mit Zeitstempel (`internal/speicherschritt`, ADR-0020 Nachtrag 9). |
+| **Marke** | Meldung eines erreichten Speicherschritts (Rendern, Kodieren, Schreiben …); zählt als Fortschritt, mit `SCHNAPP_DEBUG` mit Zeitstempel (`internal/saveprogress`, ADR-0020 Nachtrag 9). |
 | **Puls** | Fortschrittsmeldung aus einer langen Schleife innerhalb eines Schritts (Rastern, PNG-Kodierung, Lesen, Vorschau), damit ein langer, aber arbeitender Schritt nicht als hängend gilt. |
-| **Fortschritt** | Zeitpunkt der letzten Marke oder des letzten Pulses (`speicherschritt.Zuletzt`); die Frist für hängendes Speichern zählt ab ihm, frühestens ab Beginn des Speicherns. |
+| **Fortschritt** | Zeitpunkt der letzten Marke oder des letzten Pulses (`saveprogress.Zuletzt`); die Frist für hängendes Speichern zählt ab ihm, frühestens ab Beginn des Speicherns. |
 | **Hängendes Speichern** | Speichern, das seit der Frist (15 s) keinen Fortschritt gemeldet hat. Nur dann gibt eine zweite Schließen-Anfrage oder ein weiteres Signal es auf; beim Zerstören des Fensters gilt zusätzlich höchstens 2 Minuten ab Beginn (ADR-0020 Nachträge 7 und 9). |

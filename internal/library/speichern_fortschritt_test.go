@@ -11,7 +11,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/fileformat"
 	"github.com/Andiministrator/schnapp/internal/render"
-	"github.com/Andiministrator/schnapp/internal/speicherschritt"
+	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
 
 // rauschBild liefert ein schlecht komprimierbares Bild (die PNG-Daten sind deutlich größer als ein Stück des Kodierers).
@@ -56,13 +56,13 @@ func TestSpeichernMeldetFortschrittBeimLesen(t *testing.T) {
 		t.Fatal(err)
 	}
 	var beimLesen uint64
-	speicherschritt.Haken = func(s string) {
+	saveprogress.Haken = func(s string) {
 		if s == "alte-datei-gelesen" {
-			beimLesen = speicherschritt.Pulse()
+			beimLesen = saveprogress.Pulse()
 		}
 	}
-	t.Cleanup(func() { speicherschritt.Haken = nil })
-	vorher := speicherschritt.Pulse()
+	t.Cleanup(func() { saveprogress.Haken = nil })
+	vorher := saveprogress.Pulse()
 	if _, _, err := bib.Speichern(e.Pfad, stand, d, sicht); err != nil {
 		t.Fatal(err)
 	}
@@ -73,9 +73,9 @@ func TestSpeichernMeldetFortschrittBeimLesen(t *testing.T) {
 
 // F-298 (Verify B-2, Mutation L2): Das Verkleinern für die Vorschau meldet Fortschritt.
 func TestVerkleinereMeldetFortschritt(t *testing.T) {
-	vorher := speicherschritt.Pulse()
+	vorher := saveprogress.Pulse()
 	verkleinere(rauschBild(800, 600), 100)
-	if speicherschritt.Pulse() == vorher {
+	if saveprogress.Pulse() == vorher {
 		t.Error("kein Fortschritt beim Verkleinern")
 	}
 }

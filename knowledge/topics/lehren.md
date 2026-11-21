@@ -96,7 +96,7 @@ Stand: 2026-11-21 (ergänzt in Sprint 9). Kurze Regeln aus Fehlern und Befunden;
   werden vor jedem Lauf geleert — ein Ergebnis ohne frischen Lauf war ein angreifbarer Beleg (Kritik Fable, F-175).
   Die Probe-Programme selbst (Schnapp mit Tag `probe`, Fernbedienung) verweigern außerhalb des virtuellen KWin den
   Start vor Aufnahme, Editor und Zwischenablage-Halter (`--version`, `--help` und `--list-screens` laufen ohne Prüfung;
-  `--list-screens` fragt dann den echten Compositor nach Monitornamen, nimmt aber nichts auf) (`internal/probeschutz.NurVirtuell`: Marke, privater Bus, Socket `schnapp-probe`, Laufzeitordner unter
+  `--list-screens` fragt dann den echten Compositor nach Monitornamen, nimmt aber nichts auf) (`internal/probeguard.NurVirtuell`: Marke, privater Bus, Socket `schnapp-probe`, Laufzeitordner unter
   `tmp/probe/run`, alle zugleich; F-229) — ein liegen gebliebenes `tmp/probe/schnapp` nimmt so nie den echten Monitor
   auf. Trotzdem nie von Hand starten. `probe.sh` biegt auch `XDG_STATE_HOME` um und entfernt `WAYLAND_SOCKET` (F-230).
   Andi bleibt für das, was nur auf seinem Rechner geht: Aussehen, echte Monitore mit gemischter Skala, Klipper,

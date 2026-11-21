@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/Andiministrator/schnapp/internal/document"
-	"github.com/Andiministrator/schnapp/internal/speicherschritt"
+	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
 
 // zaehlSchreiber zählt Write-Aufrufe und geschriebene Bytes.
@@ -39,13 +39,13 @@ func TestSchreibeArbeitsdateiMeldetFortschritt(t *testing.T) {
 		t.Fatal(err)
 	}
 	var beimKodieren uint64
-	speicherschritt.Haken = func(s string) {
+	saveprogress.Haken = func(s string) {
 		if s == "bild-kodiert" {
-			beimKodieren = speicherschritt.Pulse()
+			beimKodieren = saveprogress.Pulse()
 		}
 	}
-	t.Cleanup(func() { speicherschritt.Haken = nil })
-	vorher := speicherschritt.Pulse()
+	t.Cleanup(func() { saveprogress.Haken = nil })
+	vorher := saveprogress.Pulse()
 	var z zaehlSchreiber
 	if err := SchreibeArbeitsdatei(&z, d, bild, Metadaten{}); err != nil {
 		t.Fatal(err)
@@ -70,11 +70,11 @@ func TestDecodiereMeldetFortschritt(t *testing.T) {
 	if err := SchreibeArbeitsdatei(&z, d, bild, Metadaten{}); err != nil {
 		t.Fatal(err)
 	}
-	vorher := speicherschritt.Pulse()
+	vorher := saveprogress.Pulse()
 	if _, err := decodiere(z.b); err != nil {
 		t.Fatal(err)
 	}
-	if speicherschritt.Pulse() == vorher {
+	if saveprogress.Pulse() == vorher {
 		t.Error("kein Fortschritt beim Dekodieren")
 	}
 }
@@ -90,7 +90,7 @@ type pulsBeobachter struct {
 }
 
 func (p *pulsBeobachter) Read(b []byte) (int, error) {
-	p.stand = append(p.stand, speicherschritt.Pulse())
+	p.stand = append(p.stand, saveprogress.Pulse())
 	if len(b) > 4096 {
 		b = b[:4096] // kleine Stücke wie von einem langsamen Medium
 	}
@@ -127,7 +127,7 @@ type stueckSchreiber struct {
 }
 
 func (s *stueckSchreiber) Write(b []byte) (int, error) {
-	s.pulse = append(s.pulse, speicherschritt.Pulse())
+	s.pulse = append(s.pulse, saveprogress.Pulse())
 	if s.fehlerAb > 0 && len(s.pulse) >= s.fehlerAb {
 		return 0, s.fehler
 	}

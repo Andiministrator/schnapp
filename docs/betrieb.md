@@ -17,7 +17,7 @@ Probe-Builds (Fernbedienung und Probe-Tests sieht der Normalbau nicht):
 
 ```bash
 GOFLAGS=-tags=novulkan,nox11,probe go vet ./cmd/... ./internal/ui
-GOFLAGS=-tags=novulkan,nox11,probe go test ./cmd/schnapp-fernbedienung ./cmd/schnapp ./internal/probeschutz
+GOFLAGS=-tags=novulkan,nox11,probe go test ./cmd/schnapp-fernbedienung ./cmd/schnapp ./internal/probeguard
 ```
 
 Weitere Module, je mit eigenem `go.mod`:
@@ -29,7 +29,7 @@ Weitere Module, je mit eigenem `go.mod`:
 
 **Probeläufe der Oberfläche** ohne echten Bildschirm: `scripts/probe.sh` startet einen virtuellen KWin, Drehbücher
 liegen unter `scripts/drehbuecher/` (Anleitung in `knowledge/topics/lehren.md`). Probe-Builds laufen nur dort
-(`internal/probeschutz`, F-229) und werden nie ausgeliefert.
+(`internal/probeguard`, F-229) und werden nie ausgeliefert.
 
 ## CI
 

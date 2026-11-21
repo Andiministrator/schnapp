@@ -33,7 +33,7 @@ stderr, „Fenster zu: Fehler <nil>, ungesichert false“. `probe.sh`: SIGTERM, 
 
 - Das Speichern dauerte 17,8 und 22,1 s, also länger als die 15-s-Frist. Es gab keine Meldung „Speichern antwortet
   nicht“ und keinen Abbruch: Zwischen den Marken liegen bis zu 8 s, doch die PNG-Kodierung meldet je geschriebenem
-  Stück Fortschritt (`speicherschritt.Schreiber`), das Lesen je gelesenem Stück (`Leser`).
+  Stück Fortschritt (`saveprogress.Schreiber`), das Lesen je gelesenem Stück (`Leser`).
 - Mit der alten 5-s-Frist hätte `probe.sh` hier SIGKILL geschickt und ein ungesichertes Dokument hinterlassen (F-296);
   mit `--ende 90` endet der Lauf geordnet.
 - Ein weiteres Signal während des Speicherns kann `probe.sh` nicht schicken; diesen Weg decken die Tests in

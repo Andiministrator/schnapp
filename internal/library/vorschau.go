@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Andiministrator/schnapp/internal/speicherschritt"
+	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
 
 // VorschauSeite ist die längste Seite eines Vorschaubilds in Pixeln.
@@ -84,7 +84,7 @@ func verkleinere(bild image.Image, seite int) *image.NRGBA {
 	}
 	aus := image.NewNRGBA(image.Rect(0, 0, nw, nh))
 	for y := 0; y < nh; y++ {
-		speicherschritt.Puls() // Fortschritt beim Speichern (F-298): bei großen Bildern dauert eine Zeile
+		saveprogress.Puls() // Fortschritt beim Speichern (F-298): bei großen Bildern dauert eine Zeile
 		y0, y1 := y*h/nh, max(y*h/nh+1, (y+1)*h/nh)
 		for x := 0; x < nw; x++ {
 			x0, x1 := x*w/nw, max(x*w/nw+1, (x+1)*w/nw)

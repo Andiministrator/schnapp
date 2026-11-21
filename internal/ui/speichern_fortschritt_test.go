@@ -10,7 +10,7 @@ import (
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
-	"github.com/Andiministrator/schnapp/internal/speicherschritt"
+	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
 
 // Tests zu F-298 (ADR-0020 Nachtrag 9): Die Frist für hängendes Speichern zählt ab dem letzten Fortschritt.
@@ -41,7 +41,7 @@ func pulsSpeicher(takt, dauer time.Duration, aufrufe *atomic.Int32) Speichern {
 		ende := time.Now().Add(dauer)
 		for time.Now().Before(ende) {
 			time.Sleep(takt)
-			speicherschritt.Puls()
+			saveprogress.Puls()
 		}
 		return Gespeichert{}, nil
 	}
@@ -97,7 +97,7 @@ func TestHaengtMeldungZurueckBeiFortschritt(t *testing.T) {
 	if !e.speichernHaengtMelden() || !e.meldung.Fehler {
 		t.Fatalf("Stillstand nicht gemeldet: %q", e.meldung.Text)
 	}
-	speicherschritt.Puls()
+	saveprogress.Puls()
 	if !e.speichernHaengtMelden() || e.meldung.Fehler || e.haengtGemeldet {
 		t.Fatalf("Meldung nach Fortschritt nicht zurückgenommen: %q, Fehler %v", e.meldung.Text, e.meldung.Fehler)
 	}
@@ -205,7 +205,7 @@ func TestSchliessenNurBeiGemeldetemStillstand(t *testing.T) {
 	if !e.speichernHaengtMelden() {
 		t.Fatal("Stillstand nicht gemeldet")
 	}
-	speicherschritt.Puls() // Fortschritt, die Schleife hat die Meldung noch nicht zurückgenommen
+	saveprogress.Puls() // Fortschritt, die Schleife hat die Meldung noch nicht zurückgenommen
 	if e.schliessen() {
 		t.Error("gibt trotz neuem Fortschritt auf")
 	}

@@ -110,3 +110,5 @@ Aufwand: rund 2 Stunden; Punkt 1 berührt jede Go-Datei mit Importen, daher zule
 
 ## Entscheidung
 Andi, 21.11.2026: alle fünf Punkte angenommen („ja zu allen“).
+
+Seit Sprint 10 heißen die Pakete `internal/probeguard` (früher `probeschutz`) und `internal/saveprogress` (früher `speicherschritt`; E-23, F-312).

@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
-	"github.com/Andiministrator/schnapp/internal/speicherschritt"
+	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
 
-// F-298: Rendern meldet Fortschritt (internal/speicherschritt) — beim Füllen großer Flächen und je Textzeichen —,
+// F-298: Rendern meldet Fortschritt (internal/saveprogress) — beim Füllen großer Flächen und je Textzeichen —,
 // damit ein Speichern am Budget nicht als hängend gilt.
 func TestRendernMeldetFortschritt(t *testing.T) {
 	for name, o := range map[string]document.Objekt{
@@ -33,7 +33,7 @@ func TestRendernMeldetFortschritt(t *testing.T) {
 		if _, err := Bild(d); err != nil {
 			t.Fatal(err)
 		}
-		if !speicherschritt.Zuletzt().After(vorher) {
+		if !saveprogress.Zuletzt().After(vorher) {
 			t.Errorf("%s: kein Fortschritt beim Rendern", name)
 		}
 	}
@@ -53,11 +53,11 @@ func TestFlacheFuellungenMeldenFortschritt(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	vorher := speicherschritt.Pulse()
+	vorher := saveprogress.Pulse()
 	if _, err := Bild(d); err != nil {
 		t.Fatal(err)
 	}
-	if got := speicherschritt.Pulse() - vorher; got < n {
+	if got := saveprogress.Pulse() - vorher; got < n {
 		t.Errorf("%d Pulse für %d flache Füllungen", got, n)
 	}
 }
@@ -73,11 +73,11 @@ func TestHoheFuellungMeldetUnterwegsFortschritt(t *testing.T) {
 		Fuellung: color.NRGBA{G: 200, A: 255}}); err != nil {
 		t.Fatal(err)
 	}
-	vorher := speicherschritt.Pulse()
+	vorher := saveprogress.Pulse()
 	if _, err := Bild(d); err != nil {
 		t.Fatal(err)
 	}
-	if got := speicherschritt.Pulse() - vorher; got < 20 { // 1920 Zeilen / 64 = 30, dazu der Puls je Füllung
+	if got := saveprogress.Pulse() - vorher; got < 20 { // 1920 Zeilen / 64 = 30, dazu der Puls je Füllung
 		t.Errorf("nur %d Pulse für eine Füllung über 1920 Zeilen", got)
 	}
 }

@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/Andiministrator/schnapp/internal/capture"
-	"github.com/Andiministrator/schnapp/internal/probeschutz"
+	"github.com/Andiministrator/schnapp/internal/probeguard"
 	"github.com/Andiministrator/schnapp/internal/wlclip"
 )
 
@@ -72,7 +72,7 @@ func TestProbeBuildImVirtuellenKWinLaeuft(t *testing.T) {
 	t.Setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/a/privat")
 	t.Setenv("WAYLAND_DISPLAY", "schnapp-probe")
 	t.Setenv("XDG_RUNTIME_DIR", "/a/tmp/probe/run")
-	if err := probeSchutz(); err != nil {
+	if err := probeGuard(); err != nil {
 		t.Fatalf("Schutz sperrt die Probe-Umgebung: %v", err)
 	}
 	an, q, _ := echteAusfuehrungOhneAufnahme(t)
@@ -83,11 +83,11 @@ func TestProbeBuildImVirtuellenKWinLaeuft(t *testing.T) {
 	}
 }
 
-// TestProbeschutzIstDerGeteilte: probeSchutz prüft dieselben Bedingungen wie die Fernbedienung (internal/probeschutz).
-func TestProbeschutzIstDerGeteilte(t *testing.T) {
+// TestProbeguardIstDerGeteilte: probeGuard prüft dieselben Bedingungen wie die Fernbedienung (internal/probeguard).
+func TestProbeguardIstDerGeteilte(t *testing.T) {
 	t.Setenv("PROBE_INNEN", "")
-	if (probeSchutz() == nil) != (probeschutz.NurVirtuell(func(k string) string { return "" }) == nil) {
-		t.Error("probeSchutz weicht von probeschutz.NurVirtuell ab")
+	if (probeGuard() == nil) != (probeguard.NurVirtuell(func(k string) string { return "" }) == nil) {
+		t.Error("probeGuard weicht von probeguard.NurVirtuell ab")
 	}
 }
 

@@ -59,7 +59,7 @@ func halter(args []string, fehler io.Writer, lauf func() int) (code int, ok bool
 	if len(args) != 1 || args[0] != wlclip.HelferArgument {
 		return 0, false
 	}
-	if err := probeSchutz(); err != nil {
+	if err := probeGuard(); err != nil {
 		fmt.Fprintln(fehler, "schnapp (Probe-Build):", err)
 		return exitFehler, true
 	}

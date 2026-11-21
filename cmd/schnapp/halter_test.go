@@ -19,7 +19,7 @@ func TestHalterNurMitHelferArgument(t *testing.T) {
 			t.Errorf("%q: ok %v, Halter %d-mal gerufen", args, ok, gerufen)
 		}
 	}
-	if probeSchutz() != nil {
+	if probeGuard() != nil {
 		return // Probe-Build außerhalb des virtuellen KWin: dort prüft TestProbeHalterEndetVorDerZwischenablage
 	}
 	var fehler bytes.Buffer
