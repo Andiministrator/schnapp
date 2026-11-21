@@ -143,7 +143,9 @@ func richteAus(bild image.Image, o int) image.Image {
 }
 
 // pixelLeser liefert eine Funktion, die das Pixel (x, y) der Quelle (in deren Koordinaten) als NRGBA in dst schreibt,
-// mit demselben Ergebnis wie draw.Draw mit draw.Src in ein NRGBA-Bild. Die häufigen Typen gehen ohne Schnittstellenaufruf.
+// mit demselben Ergebnis wie draw.Draw mit draw.Src in ein NRGBA-Bild (im Test für NRGBA, YCbCr aller Unterabtastungen,
+// RGBA, RGBA64, Gray, Gray16, CMYK und Paletted gegen die Referenz geprüft). Die häufigen Typen und alle RGBA64Image
+// gehen ohne Schnittstellenwert je Pixel; nur Bilder ohne RGBA64At fallen auf At zurück.
 func pixelLeser(bild image.Image) func(dst []byte, x, y int) {
 	switch q := bild.(type) {
 	case *image.NRGBA:
@@ -157,6 +159,17 @@ func pixelLeser(bild image.Image) func(dst []byte, x, y int) {
 			ci := q.COffset(x, y)
 			dst[0], dst[1], dst[2] = color.YCbCrToRGB(q.Y[yi], q.Cb[ci], q.Cr[ci])
 			dst[3] = 255
+		}
+	case image.RGBA64Image:
+		// Rechnet wie image.NRGBA.SetRGBA64 (die Vormultiplikation wird zurückgerechnet, A = 0 behält die Farbwerte),
+		// also wie draw.Draw; kein Interface-Wert je Pixel (F-332, F-333).
+		return func(dst []byte, x, y int) {
+			c := q.RGBA64At(x, y)
+			r, g, b, a := uint32(c.R), uint32(c.G), uint32(c.B), uint32(c.A)
+			if a != 0 && a != 0xffff {
+				r, g, b = r*0xffff/a, g*0xffff/a, b*0xffff/a
+			}
+			dst[0], dst[1], dst[2], dst[3] = uint8(r>>8), uint8(g>>8), uint8(b>>8), uint8(a>>8)
 		}
 	}
 	return func(dst []byte, x, y int) {
