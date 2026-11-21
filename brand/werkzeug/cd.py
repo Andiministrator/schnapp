@@ -13,6 +13,7 @@ Tabellen, Bilder, Zitate, Code, fett, Links.
 import html
 import re
 import subprocess
+import time
 from pathlib import Path
 
 from paket import RAHMEN, logo
@@ -188,7 +189,12 @@ def pdf():
     ablage.mkdir(parents=True, exist_ok=True)
     roh, sauber = ablage / "corporate-design.roh.pdf", ablage / "corporate-design.pdf"
     try:
+        beginn = time.time()
         chromium("--no-pdf-header-footer", f"--print-to-pdf={roh}", zwischen.as_uri())
+        # Ein altes Roh-PDF aus einem Vorlauf darf nicht übernommen werden (F-29): es muss in diesem Lauf entstanden sein.
+        if not roh.is_file() or roh.stat().st_mtime < beginn:
+            raise SystemExit(f"Fehler: Chromium hat in diesem Lauf kein PDF nach {roh} geschrieben. "
+                             f"Das bisherige brand/corporate-design.pdf bleibt unverändert.")
         # Keine Spuren (Kernprinzip 3): Chromium schreibt Programm- und Systemnamen in Creator/Producer — entfernen.
         subprocess.run(["qpdf", "--remove-info", "--remove-metadata", str(roh), str(sauber)], check=True)
         sauber.replace(MARKE / "corporate-design.pdf")  # erst ersetzen, wenn alles geklappt hat
