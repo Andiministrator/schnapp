@@ -346,3 +346,16 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
   Widerlegungsgrenze von 10 % ist nicht erreicht.
 - Nicht abgedeckt: Medien unter etwa 70 KB/s, auf denen ein einzelnes Stück länger als 15 s braucht. Schluss-`Sync` und
   Umbenennen melden weiter nichts.
+
+## Nachtrag 11 (21.11.2026): Bild und Original nebenläufig kodieren (F-310, Karte #125)
+
+**Status:** Akzeptiert (Claude, Andi informiert).
+
+- `fileformat.SchreibeArbeitsdatei` kodiert sichtbares Bild und Original in zwei Goroutinen, je mit eigenem Puffer.
+  Sie kehrt erst zurück, wenn beide fertig sind, auch im Fehlerfall; ein Fehler des Bilds geht vor. `Puls` und
+  `Marke` sind nebenläufig sicher. Die Ausgabe ist bitgleich zur Fassung nacheinander (Test).
+- `library.Speichern` verkleinert die Vorschau nebenläufig und schreibt sie wie bisher erst nach dem Ersetzen.
+- Die alte Datei wird weiter mit `LeseArbeitsdatei` voll gelesen: Das Urteil „beschädigt“ erfasst auch kaputte Pixel,
+  und `Speichern` überschreibt eine solche Datei nicht. `LeseMetadaten` prüft die Pixel nicht und genügt dafür nicht.
+- Messung 4K im Normalbau (`-benchtime 3x -count 3`): glatt 0,38 → 0,20 s, Rauschen 1,54 → 0,83 s. Die Reihenfolge der
+  Marken ist nicht mehr festgelegt; ihre Teilzeiten sind Abstände zur vorigen Marke, belastbar ist die Gesamtzeit.

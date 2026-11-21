@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > Verweise auf ADR-0043, ADR-0062, ADR-0067, F-Nummern, die weder in `docs/findings.md` noch in
 > `docs/findings.archive.md` stehen, und Pfade unter `~/.aboard-framework/` oder
 > `~/.claude/` beziehen sich auf das Arbeits-Framework (aBoard) des Maintainers, nicht auf dieses Repo. Projekteigene
-> ADRs liegen unter `docs/adr/` (0001–0027), projekteigene Findings in `docs/findings.md` (erledigte
+> ADRs liegen unter `docs/adr/` (0001–0028), projekteigene Findings in `docs/findings.md` (erledigte
 > in `docs/findings.archive.md`).
 
 ## Vor jeder Antwort — Pflicht
@@ -129,7 +129,7 @@ der Wegwerf-Prototyp `prototype/` (entfernt in Sprint 9, ADR-0027; Stand in der 
   `hintergrund.go` (`SpeichernJetzt`, `SchliessenAnfrage`, `SignalAnfrage`, `SpeichernEnde`: die Oberfläche speichert einen Abzug in einer Goroutine, solange ruht das Bearbeiten, ADR-0020 Nachtrag 6; eine synchrone Schließen-Hülle gibt es nicht mehr, Tests fahren die zwei Schritte über die Helfer `schliesse` und `schliesseNachSignal` in `internal/canvas/schliessen_test.go`, F-284; Menü-Navigationstasten stehen als Ausnahme neben der Tastentabelle, ADR-0026 Nachtrag 4), Signalwache `signal.go`; `Wecker` (`wecker.go`) weckt die Gio-Schleife wiederholt, bis sie eine
   Antwort abholt, F-231; ADR-0020 bis ADR-0023).
 - **render** — Ansichtsbild + Objekte zu Pixeln ohne GPU (`golang.org/x/image` vector/font, Go-Schriften; ADR-0020);
-  Füllen über eigenen `einmischer` (bitgleich zu `draw.Over`, rund 4-mal schneller); `render.Pruefe` zählt die Textzeichen (`ZeichenBudget` 1e6, F-224) und schätzt den
+  Füllen und Glyphen über den eigenen Rasterkern `internal/raster16` (16-Bit-Maske, aus x/image/vector übernommen, bitgleich, ADR-0028) und `einmischer`; `render.Pruefe` zählt die Textzeichen (`ZeichenBudget` 1e6, F-224) und schätzt den
   Aufwand per Trockenlauf (`Budget` 1,25e11, ADR-0020 Nachtrag 3), der Editor lehnt präparierte Dateien beim Öffnen ab
   (`ladeFuerEditor`; `--ignore-limit` überspringt nur diese Prüfung, ADR-0017 Nachtrag 6), Speichern bricht nie ab und
   warnt über dem Budget.
