@@ -22,11 +22,12 @@ ADR-0011 verlangt für Fremdcode spürbaren Nutzen. Ein Fork ist Fremdcode im Re
    float32-Addition nicht assoziativ ist, rechnet `raster16` unter derselben Build-Bedingung (`acc_amd64.go`) dieselbe
    Summenfolge in Go nach, fest eingeschaltet, ohne eigene CPU-Abfrage und ohne neue Abhängigkeit: Eine Abfrage über
    `golang.org/x/sys/cpu` folgte `GODEBUG=cpu.sse41=off`, die CPUID-Abfrage von `vector` nicht (Sitzungs-QA, K-3).
-   Abweichung bewusst angenommen: auf amd64-CPUs ohne SSE4.1 (vor 2008) rechnet `vector` skalar, `raster16` nicht.
+   Abweichung bewusst angenommen: auf amd64-CPUs ohne SSE4.1 (Intel vor 2008, AMD vor 2011) rechnet `vector` skalar,
+   `raster16` nicht.
    Außerhalb dieser Bedingung rechnen beide skalar. Im Festkommaweg (bis 512 px) nimmt `vector` auf amd64 ebenfalls
    eine SIMD-Fassung, `raster16` die skalare; Ganzzahlen ergeben dieselben Werte (bis auf einen Überlauf bei
-   Windungszahl ±8192, aus `render` nicht erreichbar). `TestMaskeGleichVector` und `TestMaskeGleichVectorZufall` (600 Zufallsfälle) vergleichen die
-   Maske Wert für Wert mit `vector` (beide Rechenwege, Breiten um 512), `TestFuellenBitgleich` das gerenderte Bild.
+   Windungszahl ±8192, aus `render` nicht erreichbar). `TestMaskeGleichVector` (beide Rechenwege, Breiten um 512) und `TestMaskeGleichVectorZufall`
+   (600 Zufallsfälle im Gleitkommaweg) vergleichen die Maske Wert für Wert mit `vector`, `TestFuellenBitgleich` das gerenderte Bild.
 3. **Blockweise:** `Bloecke(n, f)` liefert die Maske je 64 Zeilen mit fortgeführtem Übertrag (gleiche Werte,
    `TestBloeckeGleichMaske`) und leert den Gleitkommapuffer gleich nach dem Lesen; `Reset` spart sich dann das Leeren
    (`TestWiederverwendet`). Vier Werte ohne Kante setzen den Übertrag fort, ohne zu rechnen (exakt, `0+acc == acc`).
@@ -34,7 +35,8 @@ ADR-0011 verlangt für Fremdcode spürbaren Nutzen. Ein Fork ist Fremdcode im Re
    Deckung 0 lässt das Pixel unverändert; `TestGlyphMischenBitgleich`, `TestGlyphMischenKleineMaske`). Andere Masken
    gehen weiter über `draw.DrawMask`.
 5. **Pflege:** Ein Update von `x/image` ändert `raster16` nicht mit. Weicht `vector` später ab, zeigt das
-   `TestMaskeGleichVector`; dann den Kern nachziehen oder die Abweichung bewusst annehmen.
+   `TestMaskeGleichVector`; dann den Kern nachziehen oder die Abweichung bewusst annehmen. Auf amd64-CPUs ohne SSE4.1
+   schlagen die Vergleichstests fehl (Punkt 2); das Bild ist dort dasselbe wie auf allen anderen amd64-Rechnern.
 
 ## Konsequenzen
 Messung (Normalbau, amd64, 16 Kerne, `-count 2`, main mit `-benchtime 1x`, nachher `2x`, `./internal/render`):

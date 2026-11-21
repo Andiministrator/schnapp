@@ -144,7 +144,7 @@ der Wegwerf-Prototyp `prototype/` (entfernt in Sprint 9, ADR-0027; Stand in der 
   `Puls` aus langen Schleifen (Rastern, PNG-Kodierung, Lesen, Vorschau), `Zuletzt` für die Frist im Editor (F-297, F-298,
   ADR-0020 Nachtrag 9).
 - **internal/raster16** — Rasterkern aus `golang.org/x/image/vector` v0.26.0 (BSD, `LICENSE` im Ordner) mit
-  16-Bit-Maske `Maske()`/`Bloecke()`; bitgleich zu vector, geprüft durch `TestMaskeGleichVector` (ADR-0028).
+  16-Bit-Maske `Maske()`/`Bloecke()`; bitgleich zu vector, geprüft durch `TestMaskeGleichVector` und `TestMaskeGleichVectorZufall` (ADR-0028).
 - **internal/probeguard** — `NurVirtuell`: Probe-Builds (Tag `probe`, Schnapp und Fernbedienung) laufen nur im
   virtuellen KWin von `scripts/probe.sh` (F-229); das Paket selbst hat kein Build-Tag.
 

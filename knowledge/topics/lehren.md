@@ -388,8 +388,10 @@ Stand: 2026-11-21 (ergänzt in Sprint 10). Kurze Regeln aus Fehlern und Befunden
   Vergleiche das Spectacle-Fenster offen lassen — derselbe Grund, aus dem Schnapp den Halter hat.
 - **Sub-Agent-Worktrees zweigen vom gepushten Stand ab**, nicht von `main` im Arbeitsbaum. Vor dem Start pushen, sonst
   arbeitet der Agent auf altem Stand (Sprint 10: drei Agenten auf dem Stand vor der Paket-Umbenennung).
-- **Sub-Agents setzen trotz Verbot Heredocs ab** (Sprint 10 fünfmal, harmlos). Berichte darauf lesen; das Verbot
-  steht im Prompt, wirkt aber nicht verlässlich.
+- **Sub-Agents setzen trotz Verbot Heredocs ab** (Sprint 10 fünfmal, harmlos; in der Sitzung vom 21.11. nachmittags
+  bei vier von vier Sonnet-Karten, sechs Aufrufe, meist Python-Heredocs für Code-Änderungen, obwohl der Prompt es
+  ausdrücklich und mit Begründung verbot; die Fable-Kritiker hielten sich daran). Berichte darauf lesen; das Verbot
+  steht im Prompt, wirkt aber nicht verlässlich — verlässlich wäre nur ein Hook, der den Aufruf abweist.
 - **Wer „behoben“ schreibt, braucht den Beleg im Repo.** Eine Messung des Maintainers (F-295) oder ein Wegwerf-Prüfskript
   unter `tmp/` (F-29, F-319) ist nach dem Aufräumen weg; Zahlen und Ablauf gehören nach `knowledge/messungen/`.
 - **Eine Quelle, die nur als Suchtreffer bekannt ist, ist nicht belegt.** Der Gio-Einreichungsweg stand zuerst nach
