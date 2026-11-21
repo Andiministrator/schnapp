@@ -14,7 +14,8 @@ import (
 
 // attrappe ersetzt D-Bus: keine echte Aufnahme.
 type attrappe struct {
-	version3, version2 bool // welche Schnittstelle "existiert"
+	version3, version2 bool   // welche Schnittstelle "existiert"
+	version2Nr         uint32 // gemeldete Version von ScreenShot2; 0 heißt 5
 	versionAufrufe     []string
 	antwort            map[string]dbus.Variant
 	daten              []byte
@@ -29,6 +30,9 @@ type attrappe struct {
 
 func (a *attrappe) version(_ context.Context, s schnittstelle) (uint32, error) {
 	a.versionAufrufe = append(a.versionAufrufe, s.name)
+	if s == schnittstelle2 && a.version2 && a.version2Nr != 0 {
+		return a.version2Nr, nil
+	}
 	if (s == schnittstelle3 && a.version3) || (s == schnittstelle2 && a.version2) {
 		return 5, nil
 	}

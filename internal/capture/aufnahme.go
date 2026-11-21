@@ -67,6 +67,8 @@ var (
 	ErrAbgebrochen = errors.New("capture: cancelled")
 	// ErrKeineSchnittstelle: Weder ScreenShot3 noch ScreenShot2 sind erreichbar (kein KWin, kein Wayland-KDE).
 	ErrKeineSchnittstelle = errors.New("capture: no screenshot interface")
+	// ErrKeineGesamtaufnahme: KWin ist zu alt für die Aufnahme aller Bildschirme (ScreenShot2 vor Version 3, kein CaptureWorkspace).
+	ErrKeineGesamtaufnahme = errors.New("capture: no all-screens capture")
 )
 
 // nutzerFehler trägt eine übersetzte Meldung und gilt für errors.Is als der Sentinel (und als ursache).
@@ -81,6 +83,8 @@ func (f *nutzerFehler) Error() string {
 		return i18n.T("Schnapp is not registered as a screenshot program. Install its desktop file and try again.")
 	case ErrAbgebrochen:
 		return i18n.T("The capture was cancelled.")
+	case ErrKeineGesamtaufnahme:
+		return i18n.T("This KWin version cannot capture all screens at once. Use a single screen instead.")
 	default:
 		return i18n.T("KWin offers no screenshot interface. Schnapp needs KDE Plasma on Wayland.")
 	}

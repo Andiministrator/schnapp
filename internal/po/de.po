@@ -89,6 +89,9 @@ msgstr "Die Aufnahme wurde abgebrochen."
 msgid "KWin offers no screenshot interface. Schnapp needs KDE Plasma on Wayland."
 msgstr "KWin bietet keine Aufnahmeschnittstelle an. Schnapp braucht KDE Plasma unter Wayland."
 
+msgid "This KWin version cannot capture all screens at once. Use a single screen instead."
+msgstr "Diese KWin-Version kann nicht alle Bildschirme auf einmal aufnehmen. Wähle stattdessen einen einzelnen Bildschirm."
+
 # einstellungen: Einstellungsdatei (settings.ini)
 msgid "Cannot locate the settings file (%v); using the defaults."
 msgstr "Die Einstellungsdatei ist nicht auffindbar (%v); es gelten die Voreinstellungen."

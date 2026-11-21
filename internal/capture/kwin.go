@@ -65,7 +65,7 @@ type KWin struct {
 func NeuKWin() (*KWin, error) {
 	t, err := neuerDBusTransport()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("capture: Session-Bus: %w", err)
 	}
 	return &KWin{t: t}, nil
 }
@@ -87,7 +87,7 @@ func (k *KWin) waehle(ctx context.Context) (schnittstelle, error) {
 			k.s = &s
 			return s, nil
 		} else if ctx.Err() != nil {
-			return schnittstelle{}, ctx.Err()
+			return schnittstelle{}, fmt.Errorf("capture: %w", ctx.Err())
 		}
 	}
 	return schnittstelle{}, &nutzerFehler{sentinel: ErrKeineSchnittstelle}
@@ -114,6 +114,17 @@ func (k *KWin) AktiverBildschirm(ctx context.Context, opt Optionen) (*Bild, erro
 func (k *KWin) Alle(ctx context.Context, opt Optionen) (*Bild, error) {
 	ctx, abbruch := context.WithTimeout(ctx, zeitgrenze)
 	defer abbruch()
+	s, err := k.waehle(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// CaptureWorkspace gibt es bei ScreenShot2 erst ab Version 3 (F-345); ältere KWin-Versionen melden sonst nur
+	// einen rohen D-Bus-Fehler (UnknownMethod).
+	if s == schnittstelle2 {
+		if v, err := k.t.version(ctx, s); err == nil && v < 3 {
+			return nil, &nutzerFehler{sentinel: ErrKeineGesamtaufnahme}
+		}
+	}
 	return k.aufnehmen(ctx, "CaptureWorkspace", nil, opt, "")
 }
 

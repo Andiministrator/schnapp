@@ -69,3 +69,33 @@ func TestFehlertextPraefix(t *testing.T) {
 	_, err = rohZuNRGBA(make([]byte, 16), 2, 2, 8, 99)
 	einmalPraefix(t, "rohZuNRGBA Format", err)
 }
+
+// F-345: Der Abbruchfehler trägt das Präfix (errors.Is bleibt); Alle ohne CaptureWorkspace (ScreenShot2 vor Version 3)
+// liefert die übersetzte Nutzermeldung statt des rohen D-Bus-Fehlers und ruft die Methode gar nicht erst auf.
+func TestPraefixAbbruchUndAlleOhneWorkspace(t *testing.T) {
+	ctx, abbruch := context.WithCancel(context.Background())
+	abbruch()
+	_, err := neu(&attrappe{}).Bildschirm(ctx, "x", Optionen{})
+	einmalPraefix(t, "ctx.Err", err)
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("errors.Is(Canceled) verloren: %v", err)
+	}
+
+	a := &attrappe{version2: true, version2Nr: 2, antwort: gueltigeAntwort(), daten: gueltigeDaten()}
+	_, err = neu(a).Alle(context.Background(), Optionen{})
+	if !errors.Is(err, ErrKeineGesamtaufnahme) {
+		t.Fatalf("Fehler %v, erwartet ErrKeineGesamtaufnahme", err)
+	}
+	if a.letzteMethode != "" {
+		t.Errorf("CaptureWorkspace trotzdem aufgerufen: %s", a.letzteMethode)
+	}
+	if strings.Contains(err.Error(), "capture:") || strings.Contains(err.Error(), "org.") {
+		t.Errorf("Nutzermeldung nicht übersetzt oder roh: %q", err)
+	}
+	einmalPraefix(t, "Sentinel", ErrKeineGesamtaufnahme)
+
+	a = &attrappe{version2: true, version2Nr: 3, antwort: gueltigeAntwort(), daten: gueltigeDaten()}
+	if _, err := neu(a).Alle(context.Background(), Optionen{}); err != nil {
+		t.Errorf("Version 3 muss gehen: %v", err)
+	}
+}
