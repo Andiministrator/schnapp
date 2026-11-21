@@ -129,3 +129,6 @@ sind Rückgängig, Löschen, Speichern und Zoomen gesperrt (F-18, Kritik A-6). N
   Anordnung der Monitore zusammen, bei gemischter Skalierung gilt die größte, kleinere Monitore werden hochgerechnet.
   Das Bild wird als Ganzes abgelegt, `--repeat` merkt dafür keinen Bereich. Geprüft im virtuellen KWin: zwei Monitore
   1600 × 1000 ergeben 3200 × 1000.
+- *Ergänzt (F-345, Karte #153):* `Alle` fragt bei ScreenShot2 die Version ab; unter Version 3 (kein `CaptureWorkspace`)
+  meldet es „This KWin version cannot capture all screens at once. Use a single screen instead.“ statt des rohen
+  D-Bus-Fehlers (nur gegen die Attrappe geprüft).

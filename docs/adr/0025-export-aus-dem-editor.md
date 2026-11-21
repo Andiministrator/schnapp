@@ -120,3 +120,6 @@ fremd; `zenity`/`kdialog` wären Laufzeit-Fremdprogramme (ADR-0011).
   Programm eine Lease, scheitert das Öffnen mit `O_NONBLOCK` sofort mit `EAGAIN`; es wird bis zu 20-mal im Abstand von
   50 ms wiederholt, danach gilt der Fehler der temporären Datei (Datei unverändert). Offen und nur unter Flatpak
   prüfbar: ob das Dokumenten-Portal `O_RDWR` zulässt (F-196).
+- *Ergänzt (F-344, Karte #153):* `ErrZielBeschaedigt` nur, wenn die Datei verändert wurde (Kürzen gelang) und die
+  Wiederherstellung scheiterte; scheitert schon das erste Kürzen, kommt die Ursache zurück. Ein `Close`-Fehler nach
+  gelungenem `Sync` ist kein Exportfehler (der Inhalt steht vollständig), er geht in die Diagnose.

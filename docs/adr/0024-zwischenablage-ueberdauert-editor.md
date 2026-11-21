@@ -139,5 +139,9 @@ Karte #143).
 - Scheitert das Kopieren, auf das eine Schließen-Anfrage wartete (F-281, F-329), schließt das Fenster nicht still: Der
   Fehler steht in der Statusleiste und zusätzlich auf der Fehlerausgabe, das Fenster bleibt einmal offen, erst die
   nächste Anfrage schließt. Ein Signal schließt in jedem Fall; dann meldet nur die Fehlerausgabe (F-337, Karte #148).
+- *Ergänzt (F-341, Karte #152):* Das gilt auch, wenn der Kopierfehler eintrifft, während das vom Schließen gestartete
+  Speichern noch läuft (Merker `schliessenNachSpeichern`) oder ein Signal vorgemerkt ist; „Saved to the library“
+  verdrängt die Kopierfehler-Meldung in dieser Zeit nicht. Die Reihenfolge von Speicher-Ende und Kopierantwort ist
+  damit gleichgültig.
 - Offen: Übernimmt ein anderes Programm die Zwischenablage, meldet Gio `data_source.cancelled` nicht nach außen; die
   Warnung kommt dann unnötig (F-328, Karte #142, braucht einen Gio-Patch).

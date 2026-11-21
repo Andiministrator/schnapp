@@ -155,3 +155,7 @@ a9f36c1), Sichtprobe im virtuellen KWin.
 - **Editor:** setzt Text und Ziffern auf die Grundlinie. Gios `layout.Dimensions.Baseline` zählt von der **Unterkante**
   des Felds; die erste Fassung zog sie von der Oberkante ab und setzte den Text zu tief (in der Sichtprobe gefunden,
   `TestEditorTextAufGrundlinie` fängt es jetzt).
+- *Ergänzt (F-342, F-343, Karten #152, #153):* Die Editor-Grundlinie steht in `textGrundlinieAnsicht` und
+  `nummerGrundlinieAnsicht`, geprüft gegen `document`. Der SVG-Text trägt `xml:space="preserve"` und zeigt
+  `document.Zeichenbar` (Tabulator als vier Leerzeichen); `textLength` bewusst nicht gesetzt (verzerrte die
+  Ersatzschrift, `fileformat` kennt keine Glyphenbreiten).
