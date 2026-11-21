@@ -662,7 +662,9 @@ func (e *editor) speichernFertig(r speicherErgebnis) {
 		e.speichernStarten(ende.Erneut)
 	case ende.Schliessen:
 		// Eine Schließen-Anfrage mit Speichern vorher warnt wie eine ohne (F-321); ein Signal schließt in jedem Fall.
-		if !e.s.SignalVorgemerkt() && e.fensterWarnen() {
+		// Läuft noch ein Kopieren, wartet das Schließen auf dessen Antwort wie im Zweig SchlussZu: Erst sie sagt, ob das
+		// Fenster die Kopie hält (F-329); danach stellt nachKopieSchliessen die Anfrage erneut, und fensterWarnen greift.
+		if !e.s.SignalVorgemerkt() && (e.kopierenHaeltOffen() || e.fensterWarnen()) {
 			return
 		}
 		e.schliessenFrei()

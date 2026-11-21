@@ -4,6 +4,7 @@ package ui
 
 import (
 	"testing"
+	"time"
 
 	"gioui.org/io/system"
 	"gioui.org/layout"
@@ -64,6 +65,42 @@ func TestSchliessenMitSpeichernWarntOhneHalter(t *testing.T) {
 	}
 	if !e.schliessen() {
 		t.Error("Die zweite Schließen-Anfrage schließt nicht")
+	}
+}
+
+// F-329: Antwortet das Speichern vor dem noch laufenden Kopieren (ohne Halter), schließt das Fenster nicht, bevor die
+// Kopierantwort da ist; danach warnt es einmal, die zweite Anfrage schließt.
+func TestSchliessenMitSpeichernWartetAufKopieren(t *testing.T) {
+	e, zu := editorMitFensterKopie(t)
+	// Zweites Kopieren, dessen Antwort (Halter-Naht blockiert) noch aussteht.
+	e.fensterHaeltKopie, e.fensterWarnung = false, false
+	e.kopierLaeuft, e.kopierStart = true, time.Now()
+	if e.schliessen() {
+		t.Fatal("Schließen mit ungesicherter Änderung schließt sofort")
+	}
+	warteSpeichern(t, e)
+	if *zu != 0 {
+		t.Fatalf("Das Fenster schloss vor der Kopierantwort (%d Schließen-Aktionen)", *zu)
+	}
+	if e.nachKopieSchliessen() {
+		t.Fatal("nachKopieSchliessen meldet vor der Kopierantwort")
+	}
+	e.kopierAntwort <- kopierErgebnis{daten: []byte("png")}
+	e.kopierenAbholen(layout.Context{})
+	if !e.nachKopieSchliessen() {
+		t.Fatal("Nach der Kopierantwort wird die Schließen-Anfrage nicht erneut gestellt")
+	}
+	if e.schliessen() {
+		t.Fatal("Die erneute Anfrage schließt ohne Warnung")
+	}
+	if e.meldung.Text != warnungKopie() {
+		t.Errorf("Meldung %q, erwartet die Warnung", e.meldung.Text)
+	}
+	if *zu != 0 {
+		t.Errorf("%d Schließen-Aktionen vor der zweiten Anfrage", *zu)
+	}
+	if !e.schliessen() {
+		t.Error("Die zweite Anfrage schließt nicht")
 	}
 }
 
