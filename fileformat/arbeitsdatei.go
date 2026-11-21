@@ -12,6 +12,7 @@ import (
 	"io"
 
 	"github.com/Andiministrator/schnapp/document"
+	"github.com/Andiministrator/schnapp/internal/speicherschritt"
 )
 
 // SchreibeArbeitsdatei schreibt die Arbeitsdatei: sichtbar ist das fertige Bild (Ansicht mit Beschriftungen, vom
@@ -23,9 +24,11 @@ func SchreibeArbeitsdatei(w io.Writer, d *document.Dokument, sichtbar image.Imag
 	if err := png.Encode(&sicht, sichtbar); err != nil {
 		return err
 	}
+	speicherschritt.Marke("bild-kodiert")
 	if err := png.Encode(&orig, d.OriginalBild()); err != nil {
 		return err
 	}
+	speicherschritt.Marke("original-kodiert")
 	var svg bytes.Buffer
 	zw, _ := zlib.NewWriterLevel(&svg, zlib.BestCompression)
 	if _, err := zw.Write(svgArbeitsdatei(d, m)); err != nil {
@@ -39,6 +42,7 @@ func SchreibeArbeitsdatei(w io.Writer, d *document.Dokument, sichtbar image.Imag
 		return err
 	}
 	_, err = w.Write(daten)
+	speicherschritt.Marke("datei-geschrieben")
 	return err
 }
 

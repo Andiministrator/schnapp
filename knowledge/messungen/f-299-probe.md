@@ -1,6 +1,6 @@
 # Probelauf F-299: Schließen während des Speicherns (Nacharbeit 30b3b7b)
 
-Datum 21.11.2026, Basis cf016f6. Umgebung: virtueller KWin über `scripts/probe.sh`, Probe-Build, Software-Zeichner.
+Datum 21.11.2026, Basis cf016f6. Umgebung: virtueller KWin über `scripts/probe.sh`, Probe-Build mit `-race` (alle Dauern hier sind Race-Zahlen; im Normalbau braucht ein verrauschtes 4K-Bild rund 1,5 s, [`f-297.md`](f-297.md)), Software-Zeichner.
 Testbild synthetisch 3840×2160 (Verläufe, Farbflächen, Rauschen, nicht im Repo), Bildschirm 3840×2160, `--zeit 250`.
 Drehbuch `scripts/drehbuecher/rueckfall-schliessen-waehrend-speichern.txt`: Schwärzen-Zug (B, ziehen), Strg+S,
 sofort Strg+W, 45 s warten.

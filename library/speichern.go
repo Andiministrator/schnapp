@@ -16,6 +16,7 @@ import (
 
 	"github.com/Andiministrator/schnapp/document"
 	"github.com/Andiministrator/schnapp/fileformat"
+	"github.com/Andiministrator/schnapp/internal/speicherschritt"
 )
 
 // Relativ liefert den Pfad einer Datei relativ zur Ablage, wenn sie dort liegt (nach Auflösen von Verweisen, damit
@@ -110,6 +111,7 @@ func (b *Bibliothek) Speichern(rel string, erwartet Stand, d *document.Dokument,
 	}
 	g, err := fileformat.LeseArbeitsdatei(f)
 	f.Close()
+	speicherschritt.Marke("alte-datei-gelesen")
 	if err != nil {
 		if fileformat.IstBeschaedigt(err) {
 			return Eintrag{}, Stand{}, fmt.Errorf("%w: %v", ErrFremd, err)
@@ -143,6 +145,7 @@ func (b *Bibliothek) Speichern(rel string, erwartet Stand, d *document.Dokument,
 	if err != nil {
 		return Eintrag{}, Stand{}, err
 	}
+	speicherschritt.Marke("ersetzt")
 	// Neuer Stand für das nächste Speichern. Lässt er sich nicht lesen, passt der Nullwert zu nichts: Das nächste
 	// Speichern weicht dann auf eine neue Aufnahme aus, statt blind zu überschreiben.
 	var neuStand Stand
@@ -156,9 +159,11 @@ func (b *Bibliothek) Speichern(rel string, erwartet Stand, d *document.Dokument,
 	if err := b.ersetzeImIndex(neu); err != nil {
 		folge = errors.Join(folge, fmt.Errorf("%w: %v", ErrIndex, err))
 	}
+	speicherschritt.Marke("index")
 	if err := b.erneuereVorschau(rel, sichtbar); err != nil {
 		folge = errors.Join(folge, err)
 	}
+	speicherschritt.Marke("vorschau")
 	return neu, neuStand, folge
 }
 

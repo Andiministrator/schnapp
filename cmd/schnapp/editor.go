@@ -15,6 +15,7 @@ import (
 	"github.com/Andiministrator/schnapp/document"
 	"github.com/Andiministrator/schnapp/fileformat"
 	"github.com/Andiministrator/schnapp/i18n"
+	"github.com/Andiministrator/schnapp/internal/speicherschritt"
 	"github.com/Andiministrator/schnapp/library"
 	"github.com/Andiministrator/schnapp/render"
 	"github.com/Andiministrator/schnapp/ui"
@@ -101,8 +102,13 @@ func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand
 	speichern := ablegenIn(b, abs, g, stand)
 	return func(d *document.Dokument) (ui.Gespeichert, error) {
 		erg, err := speichern(d)
-		if err != nil || render.Pruefe(d) == nil {
+		if err != nil {
 			return erg, err
+		}
+		budget := render.Pruefe(d)
+		speicherschritt.Marke("budget-geprueft")
+		if budget == nil {
+			return erg, nil
 		}
 		text := i18n.T("Saved, but the file has too many or too large annotations to be opened again. Remove some before closing.")
 		if erg.Hinweis != "" {
@@ -137,10 +143,12 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 		if neuGeschwaerzt {
 			gezeigt = d.SchwaerzStand()
 		}
+		speicherschritt.Marke("start")
 		sichtbar, err := render.Bild(d)
 		if err != nil {
 			return ui.Gespeichert{}, nil, speicherFehler(err)
 		}
+		speicherschritt.Marke("gerendert")
 		var zurueck error // Fehler beim Zurückschreiben, falls auch das Ausweichen scheitert
 		versucht := inBibliothek
 		altRel, altStand := rel, stand // bisherige Datei, falls nach dem Schwärzen ausgewichen wird (F-126)

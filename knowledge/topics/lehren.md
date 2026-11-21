@@ -351,3 +351,11 @@ Stand: 2026-11-20 (ergänzt in Sprint 8). Kurze Regeln aus Fehlern und Befunden;
   (`messungen/f-249.md`, `messungen/f-299-probe.md`). Im Messprotokoll die Art des Bildes nennen und für Fristen den
   ungünstigen Fall (Rauschen, Foto) messen.
 
+## Sprint 9 (21.11.2026)
+
+- **Dauern aus `scripts/probe.sh` sind Race-Zahlen.** Der Probe-Build läuft mit `-race`; Speichern in 4K braucht dort
+  8–24 s, im Normalbau 0,4–1,5 s (Faktor 8–20, `messungen/f-297.md`). `f-249.md` nannte fälschlich „Bau ohne
+  `-race`“. Dauern im Normalbau per Go-Benchmark messen (`go test -run '^$' -bench Speichern4K ./library`) oder
+  ausdrücklich als Race-Zahl führen; die Bauart steht im Messprotokoll, geprüft am Build-Befehl, nicht aus dem Gedächtnis.
+- **CI-Annotationen gibt es über die öffentliche API**, ohne Anmeldung: `commits/<sha>/check-runs`, dann
+  `check-runs/<id>/annotations`. Gegenprobe gegen den Vorlauf (F-309: vorher 1, nachher 0).
