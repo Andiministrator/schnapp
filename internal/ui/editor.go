@@ -331,6 +331,7 @@ func (e *editor) laufen() error {
 		e.meldung.Frisch(e.s.D.Stand(), e.s.Werkzeug)
 		if zwischenablageFehlt.Swap(false) {
 			e.melde(i18n.T("Could not copy: no clipboard is available."), true) // statt „Copied“ (F-177)
+			e.fensterHaeltKopie = false                                         // Gio bietet nichts an: nichts, wovor zu warnen wäre (F-321)
 			e.w.Invalidate()
 		}
 		// Auch nach Ereignissen ohne Bild (Gio sendet bei inaktivem Fenster nur ein Weckereignis) die Dialogantwort
@@ -419,14 +420,7 @@ func (e *editor) schliessen() bool {
 		if e.kopierenHaeltOffen() {
 			return false
 		}
-		if e.fensterHaeltKopie && !e.fensterWarnung {
-			// Ohne Halter verschwindet das Bild mit dem Fenster aus der Zwischenablage; das einmal sagen, statt es nur
-			// auf der Fehlerausgabe zu verlieren (F-295). Das nächste Schließen schließt.
-			e.fensterWarnung = true
-			e.melde(i18n.T("The clipboard holds the image only while this window is open. Close again to discard it."), true)
-			if e.w != nil {
-				e.w.Invalidate()
-			}
+		if e.fensterWarnen() {
 			return false
 		}
 		return true
@@ -440,6 +434,22 @@ func (e *editor) schliessen() bool {
 		e.w.Invalidate() // Meldung zeigen
 	}
 	return false
+}
+
+// fensterWarnen hält das Schließen einmal an, wenn nur dieses Fenster das kopierte Bild trägt (kein Halter, Rückfall,
+// ADR-0015 Nachtrag 2): Ohne Halter verschwindet das Bild mit dem Fenster aus der Zwischenablage; das einmal sagen,
+// statt es nur auf der Fehlerausgabe zu verlieren (F-295). Das nächste Schließen schließt. Gilt für jeden Weg, der
+// ein Schließen ausführt, auch den, auf dem vorher gespeichert wurde (F-321). true: Das Fenster bleibt offen.
+func (e *editor) fensterWarnen() bool {
+	if !e.fensterHaeltKopie || e.fensterWarnung {
+		return false
+	}
+	e.fensterWarnung = true
+	e.melde(i18n.T("The clipboard holds the image only while this window is open. Close again to discard it."), true)
+	if e.w != nil {
+		e.w.Invalidate()
+	}
+	return true
 }
 
 // nachSignal nimmt ein Signal an: Es speichert im Hintergrund und schließt das Fenster danach in jedem Fall, ohne es
@@ -461,6 +471,10 @@ func (e *editor) nachSignal() {
 // schliessenFrei gibt das Fenster zum Schließen frei und schließt es in der eigenen Schleife (F-77).
 func (e *editor) schliessenFrei() {
 	e.erzwungen = true
+	if e.perform != nil { // Naht für Tests ohne Fenster
+		e.perform(system.ActionClose)
+		return
+	}
 	e.w.Perform(system.ActionClose)
 }
 
@@ -647,6 +661,10 @@ func (e *editor) speichernFertig(r speicherErgebnis) {
 	case ende.Erneut != nil:
 		e.speichernStarten(ende.Erneut)
 	case ende.Schliessen:
+		// Eine Schließen-Anfrage mit Speichern vorher warnt wie eine ohne (F-321); ein Signal schließt in jedem Fall.
+		if !e.s.SignalVorgemerkt() && e.fensterWarnen() {
+			return
+		}
 		e.schliessenFrei()
 	}
 }
