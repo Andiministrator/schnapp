@@ -612,3 +612,9 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   `XDG_*` setzt der Client; Einwilligung und Ablageort kommen aus dem Heim der Benutzerdatenbank.
 - **Mutanten eines Kritikers können Dateien in den Quellbaum schreiben**, wenn ein Test relative Pfade nutzt und die
   Prüfung mutiert ist (`rel.png`, F-471): Tests mit relativen Pfaden laufen in `t.Chdir(t.TempDir())`.
+- **Ein Dialog-Kind testet man, indem `TestMain` das Testprogramm selbst als Kind spielen lässt** (Umgebungsvariable,
+  Naht `kindProgramm`, Karte #203): ohne Wayland, ohne Tracing.
+- **Pipe-Tests gegen einen Zeilen-Server:** Kehrt das Schreiben der übernächsten Zeile zurück, ist die vorletzte
+  verarbeitet — das ersetzt Wartezeiten; EOF erst nach der Antwort, sonst bricht der Server den Aufruf ab.
+- **Attrappen in Tests bekommen eine eigene Ausweichzeit:** Ein Mutant, der einen Test hängen lässt, lieferte sonst
+  FEHLER statt ROT (seit F-478 eigener Status HÄNGT).
