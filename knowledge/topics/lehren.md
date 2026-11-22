@@ -602,3 +602,13 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   `{ printf …; sleep N; } | schnapp mcp`, sonst endet jede lange Anfrage als „Cancelled“.
 - **Benachrichtigungen im virtuellen KWin:** Der private D-Bus hat keinen Dienst; `scripts/fake-notifications`
   stellt ihn mit eigener Zeitgrenze, so prüft der Lauf auch die echte D-Bus-Signatur von `Notify`.
+- **Eine Anzeige „wieder X“ braucht den Auslöser der Änderung, nicht nur einen Zähler** (F-472): Ein Zähler erzählte in
+  drei Lagen die falsche Geschichte („anderes Fenster hat losgelassen“ nach Speichern als andere Datei, bei `aus`).
+- **Einmal nach festem Abstand wecken ist eine Annahme über die Dauer der Kette** (F-474): im Takt bis zu einer Grenze
+  wecken.
+- **Nach jedem Umbau einer Produktzeile `-trocken` fahren:** Vier Mutanten-Muster (M5, M12b, T5, Q5) waren durch die
+  Nacharbeit ungültig; das Werkzeug lehnt seit F-478 auch unbekannte Schlüssel und ungültige `timeout` ab.
+- **Sicherheitsgrenzen eines Servers, den ein Agent startet, hängen nie an dessen Umgebung** (F-461): `HOME` und
+  `XDG_*` setzt der Client; Einwilligung und Ablageort kommen aus dem Heim der Benutzerdatenbank.
+- **Mutanten eines Kritikers können Dateien in den Quellbaum schreiben**, wenn ein Test relative Pfade nutzt und die
+  Prüfung mutiert ist (`rel.png`, F-471): Tests mit relativen Pfaden laufen in `t.Chdir(t.TempDir())`.
