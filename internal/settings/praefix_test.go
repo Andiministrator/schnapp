@@ -20,3 +20,13 @@ func TestPfadFehlerPraefix(t *testing.T) {
 		t.Errorf("Fehlertext %q ohne genau ein Präfix \"settings: \"", s)
 	}
 }
+
+// KA-8: Die Warnung von Lade ist eine übersetzte Nutzerzeile; die Ursache steht darin ohne Paketpräfix.
+func TestLadeWarnungOhnePraefix(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", "")
+	t.Setenv("HOME", "")
+	_, warn := Lade()
+	if len(warn) != 1 || strings.Contains(warn[0], "settings:") || !strings.Contains(warn[0], "$HOME") {
+		t.Errorf("Warnungen %q, Soll eine Zeile mit der Ursache ($HOME) ohne \"settings:\"", warn)
+	}
+}

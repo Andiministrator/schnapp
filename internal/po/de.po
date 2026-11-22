@@ -612,6 +612,21 @@ msgstr "Den Ordner gibt es nicht."
 msgid "Could not write %s: %s"
 msgstr "Konnte %s nicht schreiben: %s"
 
+msgid "Option --export needs a target file after an equals sign: --export=TARGET FILE."
+msgstr "Die Option --export braucht eine Zieldatei nach einem Gleichheitszeichen: --export=ZIEL DATEI."
+
+msgid "Cannot export %s onto itself; choose a different target."
+msgstr "%s lässt sich nicht auf sich selbst exportieren; bitte ein anderes Ziel wählen."
+
+msgid "With --json, the file name for %s must be valid UTF-8."
+msgstr "Mit --json muss der Dateiname für %s gültiges UTF-8 sein."
+
+msgid "The path is not valid UTF-8 and cannot be written as JSON."
+msgstr "Der Pfad ist kein gültiges UTF-8 und lässt sich nicht als JSON ausgeben."
+
+msgid "Writing failed and the old content could not be restored; the target file is incomplete."
+msgstr "Das Schreiben ist gescheitert und der alte Inhalt ließ sich nicht wiederherstellen; die Zieldatei ist unvollständig."
+
 # Formate je Sprache (ADR-0014 Nachtrag 2): „date format“ ist ein Go-Zeitmuster (Referenzzeit 2006-01-02 15:04),
 # „status bar“ die Größen- und Zoomangabe rechts in der Statusleiste.
 msgctxt "date format"

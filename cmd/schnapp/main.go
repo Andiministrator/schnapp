@@ -43,15 +43,20 @@ func main() {
 	if code, ok := halter(os.Args[1:], os.Stderr, wlclip.HelferLauf); ok {
 		os.Exit(code)
 	}
-	// Die Sprache kommt aus [general] language, sonst aus der Umgebung (ADR-0014 Nachtrag 2). Die Warnungen über die
-	// Einstellungsdatei gibt erst laufe aus (übersetzt, nur bei Aufnahmen); hier zählt nur die Sprache. Scheitert das
-	// Laden der Sprache, bleibt Englisch aktiv; das Programm läuft trotzdem (i18n.Starte).
-	einst, _ := settings.Lade()
-	_, _ = i18n.Starte(po.Dateien, einst.Sprache)
+	starteSprache(settings.Lade)
 	// Gio braucht die Hauptschleife auf dem Haupt-Goroutine, sobald das Overlay ein Fenster öffnet.
 	ui.Starte(func() int {
 		return laufe(os.Args[1:], os.Stdout, os.Stderr, ui.Monitore, settings.Lade, echteAnschluesse().Ausfuehren)
 	})
+}
+
+// starteSprache setzt die Sprache der Oberfläche: aus [general] language, sonst aus der Umgebung (ADR-0014 Nachtrag
+// 2). Die Warnungen über die Einstellungsdatei gibt erst laufe aus (übersetzt, nur bei Aufnahmen); hier zählt nur die
+// Sprache. Scheitert das Laden der Sprache, bleibt Englisch aktiv; das Programm läuft trotzdem (i18n.Starte). lade
+// kommt von außen, damit der Test ohne echte Datei auskommt (KB-11).
+func starteSprache(lade Ladefunktion) {
+	einst, _ := lade()
+	_, _ = i18n.Starte(po.Dateien, einst.Sprache)
 }
 
 // halter führt den Halter der Zwischenablage aus (ADR-0024), wenn args genau das Helfer-Argument ist: vom Editor

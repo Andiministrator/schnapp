@@ -5,13 +5,16 @@ package main
 // Schnittstelle für Skripte und Agenten, Fassung 1 (ADR-0030): --json, --output=DATEI, --export=ZIEL DATEI.
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"image"
 	"io"
 	"io/fs"
+	"os"
 	"path/filepath"
+	"unicode/utf8"
 
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/export"
@@ -40,9 +43,16 @@ func gibJSONAus(aus, fehler io.Writer, v any) int {
 }
 
 // gibPfadAus schreibt das Ergebnis einer Aufnahme oder eines Exports: den Pfad als Zeile, mit alsJSON die JSON-Zeile.
-// Scheitert das Schreiben, meldet es fehler (die Datei liegt trotzdem vor, F-162) und liefert false.
+// Scheitert das Schreiben, meldet es fehler (die Datei liegt trotzdem vor, F-162) und liefert false. Ein Pfad, der kein
+// gültiges UTF-8 ist, lässt sich in JSON nicht treu wiedergeben (json.Marshal setzte still U+FFFD ein): Mit alsJSON
+// steht dann keine Zeile da, sondern eine Meldung auf fehler (KA-8). Ziele von --output und --export lehnt Auswerten
+// schon vorher ab; übrig bleiben ein Bibliotheksordner oder ein Arbeitsordner mit solchem Namen.
 func gibPfadAus(aus, fehler io.Writer, alsJSON bool, pfad string, g image.Point) bool {
 	var err error
+	if alsJSON && !utf8.ValidString(pfad) {
+		fmt.Fprintln(fehler, i18n.T("The path is not valid UTF-8 and cannot be written as JSON."))
+		return false
+	}
 	if alsJSON {
 		var b []byte
 		if b, err = json.Marshal(ergebnis{Path: pfad, Width: g.X, Height: g.Y}); err == nil {
@@ -59,8 +69,12 @@ func gibPfadAus(aus, fehler io.Writer, alsJSON bool, pfad string, g image.Point)
 }
 
 // schreibeBild schreibt das sichtbare Bild von d nach pfad, Format nach der Endung (ADR-0030 Punkte 2 und 3), atomar
-// (ADR-0025 Punkt 5). Liefert den absoluten Pfad.
-func schreibeBild(d *document.Dokument, pfad string) (string, error) {
+// (ADR-0025 Punkt 5). Liefert den absoluten Pfad. Das Bild wird zuerst vollständig im Speicher gerendert und kodiert;
+// erst dann entsteht die temporäre Datei neben dem Ziel (KA-3): Ein Abbruch (etwa SIGTERM) während des langen
+// Renderns hinterlässt so nichts, nur einer während des kurzen Schreibens kann eine `.schnapp-export-*` zurücklassen.
+// privat (--output): eine neue Datei bekommt die Rechte 0600 (Bildschirminhalt, wie die Bibliothek; KA-4); sonst
+// (--export) gilt die umask wie beim Export aus dem Editor (ADR-0025). Eine vorhandene Zieldatei behält ihre Rechte.
+func schreibeBild(d *document.Dokument, pfad string, privat bool) (string, error) {
 	f, ok := export.AusEndung(pfad)
 	if !ok {
 		// Auswerten prüft die Endung schon; hier nur gegen einen Aufruf von anderer Stelle.
@@ -70,30 +84,68 @@ func schreibeBild(d *document.Dokument, pfad string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return abs, export.SchreibeAtomar(abs, func(w io.Writer) error { return export.Schreibe(d, f, w) })
+	var inhalt bytes.Buffer
+	if err := export.Schreibe(d, f, &inhalt); err != nil {
+		return "", err
+	}
+	schreibe := func(w io.Writer) error { _, err := w.Write(inhalt.Bytes()); return err }
+	if privat {
+		return abs, export.SchreibeAtomarPrivat(abs, schreibe)
+	}
+	return abs, export.SchreibeAtomar(abs, schreibe)
 }
 
-// schreibFehler übersetzt einen Fehler beim Schreiben der Ausgabe für die Meldung. Andere Fehler bleiben, wie sie sind:
-// Sie nennen höchstens das Ziel, das der Aufrufer selbst angegeben hat.
+// schreibFehler übersetzt einen Fehler beim Schreiben der Ausgabe für die Meldung. Was keine bekannte Ursache hat,
+// erscheint als allgemeine übersetzte Meldung; die Ursache selbst (deutsche Paketfehler, womöglich mit Pfaden) zeigt
+// nur SCHNAPP_DEBUG, das schreiben die Aufrufer über diagnose (KA-8).
 func schreibFehler(err error) string {
 	switch {
+	case errors.Is(err, export.ErrZielBeschaedigt):
+		return i18n.T("Writing failed and the old content could not be restored; the target file is incomplete.")
 	case errors.Is(err, fs.ErrPermission):
 		return i18n.T("No permission to write there.")
 	case errors.Is(err, fs.ErrNotExist):
 		return i18n.T("The folder does not exist.")
 	}
-	return err.Error()
+	return i18n.T("The file could not be written.")
+}
+
+// errZielIstQuelle: --export=ZIEL DATEI mit ZIEL = DATEI (auch über einen Link) überschriebe die Arbeitsdatei mit dem
+// flachen Bild (KA-2).
+var errZielIstQuelle = errors.New("schnapp: Exportziel ist die Datei selbst")
+
+// pruefeZielNichtQuelle lehnt ein Exportziel ab, das dieselbe Datei ist wie die Quelle — gleich ob über denselben
+// Namen, einen symbolischen oder einen harten Link (os.SameFile). Gibt es das Ziel noch nicht oder lässt es sich nicht
+// prüfen, entscheidet das Schreiben selbst.
+func pruefeZielNichtQuelle(quelle, ziel string) error {
+	q, err := os.Stat(quelle)
+	if err != nil {
+		return nil // das Laden meldet den Fehler der Quelle
+	}
+	z, err := os.Stat(ziel)
+	if err != nil {
+		return nil
+	}
+	if os.SameFile(q, z) {
+		return errZielIstQuelle
+	}
+	return nil
 }
 
 // exportiere öffnet die Datei ohne Fenster und schreibt ihr sichtbares Bild nach a.Ziel (--export, ADR-0030 Punkt 3).
-// Das Rechenbudget gilt wie beim Öffnen im Editor, außer mit --ignore-limit. Die Datei selbst bleibt unverändert.
+// Das Rechenbudget gilt wie beim Öffnen im Editor, außer mit --ignore-limit. Die Datei selbst bleibt unverändert; ein
+// Ziel, das die Datei selbst ist, wird abgelehnt (KA-2).
 func exportiere(a Aufruf, aus, fehler io.Writer) int {
+	if err := pruefeZielNichtQuelle(a.Datei, a.Ziel); err != nil {
+		fmt.Fprintf(fehler, i18n.T("Cannot export %s onto itself; choose a different target.")+"\n", a.Datei)
+		return exitFehler
+	}
 	_, g, _, err := ladeFuerEditor(a.Datei, a.OhneGrenze)
 	if err != nil {
 		fmt.Fprintf(fehler, i18n.T("Cannot open %s: %s")+"\n", a.Datei, nutzerFehler(err))
 		return exitFehler
 	}
-	abs, err := schreibeBild(g.Dokument, a.Ziel)
+	abs, err := schreibeBild(g.Dokument, a.Ziel, false)
 	if err != nil {
 		diagnose(fehler, "Ursache des Exports: %v", err)
 		fmt.Fprintf(fehler, i18n.T("Could not write %s: %s")+"\n", a.Ziel, schreibFehler(err))

@@ -45,7 +45,7 @@ func TestSchreibeAtomarCloseFehlerWirdGemeldet(t *testing.T) {
 		// Vorhandenes Ziel bleibt unverändert (nur beim Ersetzen), neues Ziel wird nicht angelegt.
 		ordner := t.TempDir()
 		neu := filepath.Join(ordner, "neu.png")
-		err := schreibeAtomar(neu, ohneErsetzen, schreibeNeu)
+		err := schreibeAtomar(neu, ohneErsetzen, 0, schreibeNeu)
 		if err == nil {
 			t.Fatalf("ohneErsetzen=%v: kein Fehler trotz Close-Fehler", ohneErsetzen)
 		}
@@ -67,7 +67,7 @@ func TestSchreibeAtomarCloseFehlerWirdGemeldet(t *testing.T) {
 	ziel := zielMit(t, alt)
 	kaputt := errors.New("Close")
 	biegeTempUm(t, func(f tempSchreiber) tempSchreiber { return tempSchliessFehler{f, kaputt} })
-	if err := schreibeAtomar(ziel, false, schreibeNeu); !errors.Is(err, kaputt) {
+	if err := schreibeAtomar(ziel, false, 0, schreibeNeu); !errors.Is(err, kaputt) {
 		t.Fatalf("Fehler %v, erwartet die Ursache", err)
 	}
 	if b, _ := os.ReadFile(ziel); string(b) != string(alt) {

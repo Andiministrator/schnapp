@@ -1,0 +1,37 @@
+[
+  {
+    "name": "KA-6 --export ohne Rechenbudget",
+    "datei": "cmd/schnapp/agenten.go",
+    "paket": "./cmd/schnapp",
+    "alt": "_, g, _, err := ladeFuerEditor(a.Datei, a.OhneGrenze)",
+    "neu": "_, g, _, err := ladeFuerEditor(a.Datei, true)"
+  },
+  {
+    "name": "KA-2 --export auf sich selbst erlaubt",
+    "datei": "cmd/schnapp/agenten.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif os.SameFile(q, z) {",
+    "neu": "\tif false && os.SameFile(q, z) {"
+  },
+  {
+    "name": "KA-4 --output nach der umask",
+    "datei": "cmd/schnapp/aufnehmen.go",
+    "paket": "./cmd/schnapp",
+    "alt": "abs, err := schreibeBild(d, t.Ausgabe, true)",
+    "neu": "abs, err := schreibeBild(d, t.Ausgabe, false)"
+  },
+  {
+    "name": "KA-8 roher Paketfehler in der Meldung",
+    "datei": "cmd/schnapp/agenten.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\treturn i18n.T(\"The file could not be written.\")\n}",
+    "neu": "\treturn err.Error()\n}"
+  },
+  {
+    "name": "KA-8 JSON-Ziel ohne UTF-8-Prüfung",
+    "datei": "cmd/schnapp/argumente.go",
+    "paket": "./cmd/schnapp",
+    "alt": "if z.wert != \"\" && !utf8.ValidString(z.wert) {",
+    "neu": "if false && z.wert != \"\" && !utf8.ValidString(z.wert) {"
+  }
+]

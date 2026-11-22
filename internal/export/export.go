@@ -147,7 +147,16 @@ func Schreibe(d *document.Dokument, f Format, w io.Writer) (fehler error) {
 // geschrieben, wohin er zeigt (der Link bleibt).
 func SchreibeAtomar(pfad string, schreibe func(io.Writer) error) (fehler error) {
 	defer errprefix.Defer("export", &fehler)
-	return schreibeAtomar(pfad, false, schreibe)
+	return schreibeAtomar(pfad, false, 0, schreibe)
+}
+
+// SchreibeAtomarPrivat ist SchreibeAtomar, legt eine neue Datei aber mit den Rechten 0600 an statt nach der umask
+// (Kommandozeile --output, ADR-0030; Bildschirminhalt wie in der Bibliothek, ADR-0016). Die Rechte werden gesetzt,
+// bevor ein Byte geschrieben wird. Eine vorhandene Zieldatei behält ihre Rechte wie bei SchreibeAtomar. Der Export
+// aus dem Editor und --export bleiben bei SchreibeAtomar (KA-4).
+func SchreibeAtomarPrivat(pfad string, schreibe func(io.Writer) error) (fehler error) {
+	defer errprefix.Defer("export", &fehler)
+	return schreibeAtomar(pfad, false, 0o600, schreibe)
 }
 
 // SchreibeOhneErsetzen ist SchreibeAtomar, legt die Datei aber nur an, wenn es das Ziel noch nicht gibt — geprüft beim
@@ -156,10 +165,11 @@ func SchreibeAtomar(pfad string, schreibe func(io.Writer) error) (fehler error) 
 // geprüft und umbenannt (bestmöglich).
 func SchreibeOhneErsetzen(pfad string, schreibe func(io.Writer) error) (fehler error) {
 	defer errprefix.Defer("export", &fehler)
-	return schreibeAtomar(pfad, true, schreibe)
+	return schreibeAtomar(pfad, true, 0, schreibe)
 }
 
-func schreibeAtomar(pfad string, ohneErsetzen bool, schreibe func(io.Writer) error) (fehler error) {
+// schreibeAtomar: neuRechte != 0 setzt die Rechte einer neu entstehenden Datei (sonst gilt die umask).
+func schreibeAtomar(pfad string, ohneErsetzen bool, neuRechte os.FileMode, schreibe func(io.Writer) error) (fehler error) {
 	if st, err := os.Lstat(pfad); err == nil && st.Mode()&os.ModeSymlink != 0 {
 		echt, err := filepath.EvalSymlinks(pfad)
 		if err != nil {
@@ -185,6 +195,12 @@ func schreibeAtomar(pfad string, ohneErsetzen bool, schreibe func(io.Writer) err
 		// Vor dem Schreiben (Verify N-2). Ein Fehler (etwa exFAT ohne Rechte) bricht nicht ab.
 		if err := tmp.Chmod(st.Mode().Perm()); err != nil {
 			Diagnose("Rechte der ersetzten Datei nicht übernommen: %v", err)
+		}
+	} else if neuRechte != 0 {
+		// Neue Datei mit festen Rechten, vor dem Schreiben. Ein Dateisystem ohne Unix-Rechte (etwa exFAT) lehnt das
+		// womöglich ab; dann gelten dessen feste Rechte, wie beim Ersetzen oben.
+		if err := tmp.Chmod(neuRechte); err != nil {
+			Diagnose("Rechte der neuen Datei nicht gesetzt: %v", err)
 		}
 	}
 	if err := schreibe(tmp); err != nil {

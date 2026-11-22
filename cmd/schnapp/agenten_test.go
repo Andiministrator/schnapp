@@ -12,10 +12,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/fileformat"
 	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
 	"github.com/Andiministrator/schnapp/internal/po"
 	"github.com/Andiministrator/schnapp/internal/settings"
 	"github.com/Andiministrator/schnapp/internal/ui"
@@ -49,7 +51,8 @@ func TestAuswertenAgenten(t *testing.T) {
 	}{
 		{[]string{"--output"}, "--output=FILE"},
 		{[]string{"--output=", "--window"}, "--output=FILE"},
-		{[]string{"--export", "f.png"}, "--export=FILE"},
+		{[]string{"--export", "f.png"}, "--export=TARGET FILE"},
+		{[]string{"--export="}, "--export=TARGET FILE"},
 		{[]string{"--output=x.gif"}, ".png, .jpg or .svg"},
 		{[]string{"--output=ohne"}, ".png, .jpg or .svg"},
 		{[]string{"--export=x.bmp", "f.png"}, ".png, .jpg or .svg"},
@@ -81,9 +84,9 @@ func TestLaufeJSON(t *testing.T) {
 	i18n.Setze(k)
 	t.Cleanup(func() { i18n.Setze(nil) })
 	code, aus, _ := fuehre(t, keineMonitore, "--version", "--json")
-	var v struct{ Version string }
-	if code != exitOK || json.Unmarshal([]byte(aus), &v) != nil || v.Version != versionsText() || strings.Count(aus, "\n") != 1 {
-		t.Errorf("--version --json: Code %d, %q", code, aus)
+	// Wortgleich festgenagelt (KB-11): Schlüssel klein, keine Leerzeichen, genau eine Zeile.
+	if soll := `{"version":"` + versionsText() + `"}` + "\n"; code != exitOK || aus != soll {
+		t.Errorf("--version --json: Code %d, %q; Soll %q", code, aus, soll)
 	}
 	zwei := func() ([]ui.Monitor, error) {
 		return []ui.Monitor{{Name: "DP-1", Breite: 2560, Hoehe: 1440, Skala: 2}, {Name: "HDMI-A-1", Breite: 1920, Hoehe: 1080}}, nil
@@ -117,18 +120,23 @@ func TestAufnahmeMitOutput(t *testing.T) {
 		magie string
 	}{{"bild.png", "\x89PNG"}, {"bild.JPG", "\xff\xd8\xff"}, {"bild.svg", "<?xml"}} {
 		l := neuerLauf(t)
-		bearbeitet := 0
+		bearbeitet, aufgeraeumt := 0, 0
 		l.an.bearbeiten = func(abgelegt) error { bearbeitet++; return nil }
-		l.an.aufraeumen = nil
+		// Echter Zähler statt nil (KB-3): Mit nil fiele ein Aufräumen still aus und der Test merkte nichts.
+		l.an.aufraeumen = func(library.Einstellung, time.Time) (library.AufraeumErgebnis, error) {
+			aufgeraeumt++
+			return library.AufraeumErgebnis{}, nil
+		}
+		l.an.tagesmarke = filepath.Join(t.TempDir(), "cleanup-stamp")
 		ziel := filepath.Join(dir, fall.name)
 		code, aus, fehler := l.fuehre(Auftrag{Modus: ModusFenster, Ausgabe: ziel, JSON: true, Editor: true,
-			Aufraeumen: settings.Voreinstellungen().Bibliothek})
+			Aufraeumen: library.Einstellung{An: true, Tage: 7}})
 		var e ergebnis
 		if code != exitOK || fehler != "" || json.Unmarshal([]byte(aus), &e) != nil || e != (ergebnis{ziel, 2, 2}) {
 			t.Fatalf("%s: Code %d, aus %q, fehler %q", fall.name, code, aus, fehler)
 		}
-		if len(l.abgelegt) != 0 || bearbeitet != 0 {
-			t.Errorf("%s: abgelegt %d, Editor %d", fall.name, len(l.abgelegt), bearbeitet)
+		if len(l.abgelegt) != 0 || bearbeitet != 0 || aufgeraeumt != 0 {
+			t.Errorf("%s: abgelegt %d, Editor %d, Aufräumen %d", fall.name, len(l.abgelegt), bearbeitet, aufgeraeumt)
 		}
 		b, err := os.ReadFile(ziel)
 		if err != nil || !strings.HasPrefix(string(b), fall.magie) {

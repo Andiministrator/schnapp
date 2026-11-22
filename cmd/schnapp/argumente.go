@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/Andiministrator/schnapp/internal/export"
 	"github.com/Andiministrator/schnapp/internal/i18n"
@@ -110,6 +111,9 @@ func Auswerten(args []string) (Aufruf, error) {
 				ziel = &exportZiel
 			}
 			if !hatWert || wert == "" {
+				if name == "--export" { // KB-7: die ganze Schreibweise mit der zu exportierenden Datei
+					return Aufruf{}, &Fehler{i18n.T("Option --export needs a target file after an equals sign: --export=TARGET FILE.")}
+				}
 				return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Option %s needs a file name after an equals sign: %s=FILE."), name, name)}
 			}
 			if *ziel != "" && *ziel != wert {
@@ -212,6 +216,13 @@ func Auswerten(args []string) (Aufruf, error) {
 			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Options %s and %s cannot be combined."), a.Modus.Option(), "--json")}
 		}
 		a.JSON = true
+		// KA-8: Ein Ziel, das kein gültiges UTF-8 ist, käme in der JSON-Zeile nur verfälscht (U+FFFD) zurück; das
+		// Skript fände seine Datei nicht. Lieber vorher ablehnen, als still etwas anderes zu melden.
+		for _, z := range []struct{ option, wert string }{{"--output", a.Ausgabe}, {"--export", a.Ziel}} {
+			if z.wert != "" && !utf8.ValidString(z.wert) {
+				return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("With --json, the file name for %s must be valid UTF-8."), z.option)}
+			}
+		}
 	}
 	return a, nil
 }

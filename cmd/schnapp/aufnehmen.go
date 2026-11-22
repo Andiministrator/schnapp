@@ -277,7 +277,7 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 	}
 	if t.Ausgabe != "" {
 		// --output (ADR-0030 Punkt 2): statt in die Bibliothek an den angegebenen Ort; kein Editor, kein Aufräumen.
-		abs, err := schreibeBild(d, t.Ausgabe)
+		abs, err := schreibeBild(d, t.Ausgabe, true)
 		diagnose(fehler, "Schreiben nach --output: %v", time.Since(start).Round(time.Millisecond))
 		if err != nil {
 			diagnose(fehler, "Ursache: %v", err)

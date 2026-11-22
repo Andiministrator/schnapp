@@ -107,12 +107,19 @@ func Voreinstellungen() Einstellungen {
 // XDG_CONFIG_HOME (laut Spezifikation ignoriert) $HOME/.config/schnapp/settings.ini. Ist auch das Heimverzeichnis
 // unbekannt, kommt ein Fehler.
 func Pfad() (string, error) {
+	p, err := ort()
+	return p, errprefix.Wrap("settings", err) // ADR-0019 Nachtrag 2, F-379
+}
+
+// ort ist Pfad ohne Paketpräfix im Fehler: Lade setzt die Ursache in eine übersetzte Warnung, dort gehört der
+// Paketname nicht hin (KA-8).
+func ort() (string, error) {
 	if w := os.Getenv("XDG_CONFIG_HOME"); filepath.IsAbs(w) {
 		return filepath.Join(filepath.Clean(w), "schnapp", "settings.ini"), nil
 	}
 	heim, err := os.UserHomeDir()
 	if err != nil {
-		return "", errprefix.Wrap("settings", err) // ADR-0019 Nachtrag 2, F-379
+		return "", err
 	}
 	return filepath.Join(heim, ".config", "schnapp", "settings.ini"), nil
 }
@@ -120,7 +127,7 @@ func Pfad() (string, error) {
 // Lade liest die Einstellungsdatei am Ort von Pfad. Es gibt immer brauchbare Einstellungen zurück; die Warnungen
 // sind fertig übersetzte Zeilen, die der Aufrufer ausgibt (der Leser selbst schreibt nichts).
 func Lade() (Einstellungen, []string) {
-	pfad, err := Pfad()
+	pfad, err := ort()
 	if err != nil {
 		return Voreinstellungen(), []string{fmt.Sprintf(i18n.T("Cannot locate the settings file (%v); using the defaults."), maske(err.Error()))}
 	}

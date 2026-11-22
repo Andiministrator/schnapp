@@ -20,7 +20,15 @@ msgid "Could not write to standard output: %v"
 msgstr ""
 
 #: cmd/schnapp/agenten.go
+msgid "The path is not valid UTF-8 and cannot be written as JSON."
+msgstr ""
+
+#: cmd/schnapp/agenten.go
 msgid "Could not write the path to standard output: %v"
+msgstr ""
+
+#: cmd/schnapp/agenten.go
+msgid "Writing failed and the old content could not be restored; the target file is incomplete."
 msgstr ""
 
 #: cmd/schnapp/agenten.go
@@ -31,12 +39,28 @@ msgstr ""
 msgid "The folder does not exist."
 msgstr ""
 
+#: cmd/schnapp/agenten.go cmd/schnapp/editor.go
+msgid "The file could not be written."
+msgstr ""
+
+#: cmd/schnapp/agenten.go
+msgid "Cannot export %s onto itself; choose a different target."
+msgstr ""
+
 #: cmd/schnapp/agenten.go cmd/schnapp/aufnehmen.go
 msgid "Cannot open %s: %s"
 msgstr ""
 
 #: cmd/schnapp/agenten.go cmd/schnapp/aufnehmen.go
 msgid "Could not write %s: %s"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Show the version"
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "Option --export needs a target file after an equals sign: --export=TARGET FILE."
 msgstr ""
 
 #: cmd/schnapp/argumente.go
@@ -85,6 +109,10 @@ msgstr ""
 
 #: cmd/schnapp/argumente.go
 msgid "Option --export needs the file to export: --export=TARGET FILE."
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "With --json, the file name for %s must be valid UTF-8."
 msgstr ""
 
 #: cmd/schnapp/aufnehmen.go
@@ -278,10 +306,6 @@ msgid "No home directory (HOME is not set)."
 msgstr ""
 
 #: cmd/schnapp/editor.go
-msgid "The file could not be written."
-msgstr ""
-
-#: cmd/schnapp/editor.go
 msgid "The file does not exist."
 msgstr ""
 
@@ -379,10 +403,6 @@ msgstr ""
 
 #: cmd/schnapp/main.go
 msgid "Open FILE even if it is too costly to render"
-msgstr ""
-
-#: cmd/schnapp/main.go
-msgid "Show the version"
 msgstr ""
 
 #: cmd/schnapp/main.go
