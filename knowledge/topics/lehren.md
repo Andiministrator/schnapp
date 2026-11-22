@@ -488,4 +488,12 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   mehr genau einmal vorkommen, an die neue Stelle ziehen, Absicht beibehalten.
 - **Sonnet-Agenten setzen trotz Verbot Heredocs ab** (zweimal in dieser Sitzung, folgenlos) — im Bericht nach
   „Heredoc“ suchen und Diffs lesen; dasselbe gilt für eigene Einzeiler (`python3 - <<` ist auch ein Heredoc).
-
+- **Was eine Meldung zusagt, muss der Code halten** (Verify 7, V7-1): „kept for 30 days“ stand in der Statusleiste,
+  aber das Schließen ohne Änderung löschte die Kopie und die erste neue überschrieb sie. Bei jeder Zusage in einem
+  Oberflächentext den Weg suchen, der sie bricht (gleicher Dateiname, Aufräumen beim Schließen).
+- **„Ruht während X“ braucht eine Obergrenze** (V7-2, V7-7): Eine Bündelung, die bei Zug oder Speichern einfach
+  aussetzt, lässt eine fertige Änderung beliebig lange ungesichert. Lieber vor dem Ereignis sofort sichern.
+- **Jede Stelle, die eine Meldung löscht, ist ein Weg, eine haltende Meldung zu verlieren** (Q-1): \ beim Export-Start lag neben allen geschützten Wegen. Bei einer Schutzregel nach allen Schreibern des
+  Felds suchen (\), nicht nur nach \.
+- **Ein Prüfwerkzeug prüft zuerst seine Ausgangslage** (Q-3): Ohne grünen Lauf ohne Mutation gilt jeder Mutant als
+  getötet.
