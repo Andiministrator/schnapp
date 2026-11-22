@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-22 (ergänzt nach Sprint 10). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -464,3 +464,28 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10). Kurze Regeln aus Fehlern und Befund
 - **`gh` nur kurz anmelden** (Q-13, F-376, Rat von framework 22.11.): Auf dem Laptop laufen alle Sitzungen als `andi`; jede könnte den Token lesen und an einem Hook vorbei `curl` nehmen. Eine Sperre per Hook schützt nur vor Versehen. Darum: Andi meldet sich für einen konkreten PR an und danach ab; solange angemeldet, schreibt nur, wer Andis Freigabe hat (CLAUDE.md §Repos und Remotes). Auf dem 13 Pro laufen Sitzungen als eigene Benutzer — dort baut framework einen befristeten Token per KI-Widget und einen verwalteten Hook.
 - **Tag-Nachricht aus dem README-Satz der Version bilden** (Q-16): v0.5.0 trägt nur „Schnapp 0.5.0 (Sprint 10)“, v0.1.0
   bis v0.4.0 nennen den Inhalt. Ein Tag lässt sich nicht ohne Force nachbessern.
+
+## Sprint 11, erste Sitzung (22.11.2026)
+
+- **Nach jedem Push den CI-Lauf ansehen, nicht erst am Sprint-Ende** (F-380): Der neue `-race`-Schritt (F-368) war ab
+  827c9c0 sechs Pushes lang rot, ohne dass es auffiel. Status über die öffentliche API
+  (`api.github.com/repos/<owner>/<repo>/actions/runs`, ohne Anmeldung); die Annotation sagt nur „exit code 1“, das
+  Job-Log liefert die API nur angemeldet (403). Das Log steht ohne Anmeldung auf der öffentlichen Job-Seite
+  (`github.com/<owner>/<repo>/actions/runs/<run>/job/<job>`), lesbar über Andis Chrome (nur lesen, Tab danach zu).
+- **`NumGoroutine` direkt nach einem `<-fertig` zählt die Goroutine noch mit**, wenn sie mit `defer close(fertig)`
+  endet: Sie lebt nach dem Signal noch einen Augenblick. Lokal fällt das nie auf, auf dem CI-Rechner mit `-race` schon.
+  Kurzes Nachlauffenster (Abfrage bis 20 ms) und Gegenprobe ohne das Warten.
+- **Tests, die ein Ergebnis-Struct als Ganzes vergleichen** (`erg != (ui.Gespeichert{})`, 28 Stellen), brechen bei
+  jedem neuen Feld. Eine Zusatzangabe, die nur ein Aufrufer braucht (Pfad für die Rettungskopie), geht als Rückruf
+  (`speichernMitNachher`), nicht als Feld.
+- **Parallel arbeiten mit Worktree-Agenten trägt**, wenn die Konfliktprüfung vorher stimmt: Haiku (#160, #162),
+  Sonnet (#151/#161, #159, #165) und Fable-Verify liefen neben der eigenen Arbeit; übernommen per Cherry-Pick, danach
+  `git cherry` (nur „-“) und Worktree samt Zweig weg. Volle Testkette erst im Hauptbaum nach allen Cherry-Picks.
+- **Verify-Reste derselben Karte sofort beheben** statt neue Karten: V6-1 bis V6-5 lagen alle in der Datei, die die
+  Karte ohnehin änderte; als ein Finding (F-378) mit Hash geführt, Prüfer-Tests ins Repo übernommen.
+- **Mutationsprobe ist jetzt ein Go-Werkzeug** (`scripts/mutanten`, F-371): arbeitet in einer Kopie unter
+  `tmp/mutanten/`, nie im Arbeitsbaum. Nach Umbauten an `internal/ui/editor.go` zuerst `-trocken`: Muster, die nicht
+  mehr genau einmal vorkommen, an die neue Stelle ziehen, Absicht beibehalten.
+- **Sonnet-Agenten setzen trotz Verbot Heredocs ab** (zweimal in dieser Sitzung, folgenlos) — im Bericht nach
+  „Heredoc“ suchen und Diffs lesen; dasselbe gilt für eigene Einzeiler (`python3 - <<` ist auch ein Heredoc).
+

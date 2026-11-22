@@ -179,7 +179,8 @@ func tintenKosten(inhalt string, zeilen int) int {
 	return len(inhalt) + tintenEintrag + zeilen*tintenZeile
 }
 
-// textZeilen liefert die Zeilen von Inhalt mit Tinte, gemessen in Grad (aus dem Zwischenspeicher). Nur mit schriftMu.
+// textZeilen liefert die Zeilen von Inhalt mit Tinte oder mit Vorschub (nur Leerzeichen, hatTinte false, F-365), gemessen
+// in Grad (aus dem Zwischenspeicher). Nur mit schriftMu.
 func textZeilen(s *schriftMass, inhalt string, grad float64) []zeilenTinte {
 	k := tintenSchluessel{inhalt, grad}
 	if z, ok := tintenSpeicher[k]; ok {

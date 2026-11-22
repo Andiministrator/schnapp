@@ -382,8 +382,14 @@ func (e *editor) zwischenablageFehltMelden() bool {
 	if !zwischenablageFehlt.Swap(false) {
 		return false
 	}
-	e.meldeNebenbei(i18n.T("Could not copy: no clipboard is available."), true) // statt „Copied“ (F-177); eine haltende Meldung bleibt (V6-1)
-	e.fensterHaeltKopie = false                                                 // Gio bietet nichts an: nichts, wovor zu warnen wäre (F-321)
+	text := i18n.T("Could not copy: no clipboard is available.")
+	if e.meldungHaelt == haltFenster {
+		// Die Fenster-Warnung stimmt nicht mehr: Gio bietet nichts an (Sitzungs-QA 22.11., Q-2, Gegenstück zu V6-3).
+		e.melde(text, true)
+	} else {
+		e.meldeNebenbei(text, true) // statt „Copied“ (F-177); eine andere haltende Meldung bleibt (V6-1)
+	}
+	e.fensterHaeltKopie = false // Gio bietet nichts an: nichts, wovor zu warnen wäre (F-321)
 	return true
 }
 
@@ -879,7 +885,7 @@ func (e *editor) kopierenAbholen(gtx layout.Context) {
 		if e.s.D.Stand() != e.kopierStand {
 			text = i18n.T("Copied to clipboard as it was when copying began; later changes are not included.")
 		}
-		if e.meldungHaelt == haltFenster && r.daten == nil {
+		if e.meldungHaelt == haltFenster && e.haltendeMeldung() && r.daten == nil {
 			// Die Fenster-Warnung stimmt nicht mehr: Ein Halter hat das Bild übernommen (V6-3).
 			e.melde(text, false)
 			return
@@ -972,7 +978,11 @@ func (e *editor) exportStarten() {
 		return
 	}
 	e.exportOffen = true
-	e.meldung = canvas.Meldung{} // sonst verdeckte eine frische Meldung den Hinweis zum offenen Dialog (A-12)
+	if !e.haltendeMeldung() {
+		// Sonst verdeckte eine frische Meldung den Hinweis zum offenen Dialog (A-12). Eine haltende Meldung (etwa die
+		// Verwerfen-Warnung) bleibt: Bricht der Nutzer den Dialog ab, muss sie noch dastehen (Sitzungs-QA 22.11., Q-1).
+		e.melde("", false)
+	}
 	if e.exportAntwort == nil {
 		e.exportAntwort = make(chan exportErgebnis, 1)
 	}

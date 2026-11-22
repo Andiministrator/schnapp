@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"strings"
 
 	"github.com/Andiministrator/schnapp/internal/export"
 	"github.com/Andiministrator/schnapp/internal/i18n"
@@ -37,7 +38,25 @@ func exportFehlerText(err error, dateiname string) string {
 	if errors.As(err, &le) {
 		return le.Err.Error()
 	}
-	return err.Error()
+	return ohnePaketpraefix(err.Error())
+}
+
+// ohnePaketpraefix nimmt die Präfixe „<paket>: “ der internen Pakete vom Anfang eines Fehlertexts (ADR-0019 Nachtrag 2):
+// In der Statusleiste steht schon „Could not export:“, die Paketnamen sagen dem Nutzer nichts (Sitzungs-QA 22.11., Q-9).
+func ohnePaketpraefix(text string) string {
+	for {
+		rest, ok := "", false
+		for _, p := range []string{"export: ", "fileformat: ", "document: ", "render: ", "library: "} {
+			if r, gefunden := strings.CutPrefix(text, p); gefunden {
+				rest, ok = r, true
+				break
+			}
+		}
+		if !ok {
+			return text
+		}
+		text = rest
+	}
 }
 
 // Meldungen des Exports, die nur ins Debug-Log gehören (etwa nicht übernommene Rechte auf exFAT).

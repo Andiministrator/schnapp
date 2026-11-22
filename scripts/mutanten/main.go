@@ -139,6 +139,10 @@ func ladeGruppen(dir string) ([]Mutant, error) {
 			if ms[i].Name == "" || ms[i].Datei == "" || ms[i].Paket == "" || ms[i].Alt == "" {
 				return nil, fmt.Errorf("%s: Eintrag %d unvollständig (name, datei, paket, alt)", g, i+1)
 			}
+			// Die Datei muss in der Kopie liegen: ../ oder ein absoluter Pfad träfe den Arbeitsbaum (Sitzungs-QA, Q-4).
+			if !filepath.IsLocal(filepath.FromSlash(ms[i].Datei)) {
+				return nil, fmt.Errorf("%s: Eintrag %d: datei %q liegt nicht im Baum", g, i+1, ms[i].Datei)
+			}
 		}
 		alle = append(alle, ms...)
 	}
@@ -172,12 +176,7 @@ func testeMutant(baum, lauf string, m Mutant) (status string, rote []string, det
 	}
 	defer os.WriteFile(datei, orig, 0o644)
 
-	cmd := exec.Command("go", "test", "-count=1", m.Paket)
-	cmd.Dir = baum
-	g := filepath.Join(lauf, "g")
-	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS=-tags=novulkan,nox11", "TMPDIR="+g, "GOTMPDIR="+g)
-	out, runErr := cmd.CombinedOutput()
-	text := string(out)
+	text, runErr := goTest(baum, lauf, m.Paket)
 	for _, z := range strings.Split(text, "\n") {
 		if strings.HasPrefix(z, "--- FAIL") {
 			if f := strings.Fields(z); len(f) >= 3 {
@@ -195,6 +194,16 @@ func testeMutant(baum, lauf string, m Mutant) (status string, rote []string, det
 		return Fehler, nil, "kein FAIL-Name: " + kurz(text)
 	}
 	return Rot, rote, ""
+}
+
+// goTest testet paket in der Kopie baum.
+func goTest(baum, lauf, paket string) (string, error) {
+	cmd := exec.Command("go", "test", "-count=1", paket)
+	cmd.Dir = baum
+	g := filepath.Join(lauf, "g")
+	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS=-tags=novulkan,nox11", "TMPDIR="+g, "GOTMPDIR="+g)
+	out, err := cmd.CombinedOutput()
+	return string(out), err
 }
 
 func kurz(s string) string {
@@ -250,6 +259,21 @@ func lauf(args []string, aus io.Writer) int {
 		}
 	}
 
+	// Ausgangslage: Jedes Paket muss ohne Mutation grün sein, sonst gälte jeder Mutant als getötet (Sitzungs-QA, Q-3).
+	ausgangRot := map[string]string{}
+	if !*trocken {
+		for _, m := range ms {
+			if _, gesehen := ausgangRot[m.Paket]; gesehen {
+				continue
+			}
+			ausgangRot[m.Paket] = ""
+			if text, err := goTest(baum, laufDir, m.Paket); err != nil {
+				ausgangRot[m.Paket] = "Ausgangslage rot (ohne Mutation): " + kurz(text)
+				fmt.Fprintf(aus, "Paket %s: %s\n", m.Paket, ausgangRot[m.Paket])
+			}
+		}
+	}
+
 	zaehler := map[string]int{}
 	schlecht := 0
 	for _, m := range ms {
@@ -265,6 +289,8 @@ func lauf(args []string, aus io.Writer) int {
 			} else {
 				status = "MUSTER OK"
 			}
+		} else if grund := ausgangRot[m.Paket]; grund != "" {
+			status, detail = Fehler, grund
 		} else {
 			status, rote, detail = testeMutant(baum, laufDir, m)
 		}
