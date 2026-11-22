@@ -69,7 +69,7 @@ func (s *Sitzung) sichtbareObjekte() []document.Objekt {
 func (s *Sitzung) ansichtGeaendert(verborgenVorher int) {
 	s.bildAenderung++
 	s.eingepasst = true
-	s.Abb = Einpassen(s.D.Groesse(), s.fenster, Rand)
+	s.Abb = s.einpassAbb()
 	if o, ok := s.D.Objekt(s.Auswahl); ok && !s.D.ObjektSichtbar(o) {
 		s.Auswahl = 0
 	}
@@ -78,11 +78,91 @@ func (s *Sitzung) ansichtGeaendert(verborgenVorher int) {
 	}
 }
 
-// ganzzahlig rundet einen Ansichtsrahmen auf ganze Ansichtspixel innerhalb der Ansicht.
+// ganzzahlig rundet einen Ansichtsrahmen auf ganze Ansichtspixel innerhalb der Bildfläche (beim Zuschneiden die
+// Vollansicht, ADR-0023 Nachtrag 5).
 func (s *Sitzung) ganzzahlig(r document.Rechteck) image.Rectangle {
+	f := s.Bildflaeche()
+	k := func(v float64, lo, hi int) int { return max(lo, min(hi, int(math.Round(v)))) }
+	return image.Rect(k(r.Min.X, f.Min.X, f.Max.X), k(r.Min.Y, f.Min.Y, f.Max.Y), k(r.Max.X, f.Min.X, f.Max.X),
+		k(r.Max.Y, f.Min.Y, f.Max.Y))
+}
+
+// vollBereich rechnet einen Bereich [von, bis) der Vollansicht (ganze Pixel, bis > von) einer Achse ins Original um,
+// wie originalBereich: vom ersten Pixel bis hinter das letzte.
+func (s *Sitzung) vollBereich(von, bis int, zeilen bool) (int, int) {
+	o := func(v int) int {
+		p := s.D.VollZuOriginal(document.Pt(float64(v), float64(v)))
+		if zeilen {
+			return int(math.Round(p.Y))
+		}
+		return int(math.Round(p.X))
+	}
+	return o(von), o(bis-1) + 1
+}
+
+// zuschnittGriff liefert den Griff des Zuschnittrahmens am Fensterpunkt p (ADR-0023 Nachtrag 5): Greifbar ist die
+// ganze Kante innerhalb von Toleranz Fensterpixeln, an einer Ecke gewinnt die Ecke; liegen zwei gegenüberliegende Kanten
+// gleich nah (sehr kleiner Zuschnitt), die nähere, bei Gleichstand die linke bzw. obere.
+func (s *Sitzung) zuschnittGriff(p document.Punkt) (GriffArt, bool) {
 	g := s.D.Groesse()
-	k := func(v float64, m int) int { return max(0, min(m, int(math.Round(v)))) }
-	return image.Rect(k(r.Min.X, g.X), k(r.Min.Y, g.Y), k(r.Max.X, g.X), k(r.Max.Y, g.Y))
+	a, b := s.Abb.ZuFenster(document.Pt(0, 0)), s.Abb.ZuFenster(document.Pt(float64(g.X), float64(g.Y)))
+	seite := func(v, lo, hi float64) int { // -1 Anfang, +1 Ende, 0 keine
+		d0, d1 := math.Abs(v-lo), math.Abs(v-hi)
+		switch {
+		case d0 <= Toleranz && d0 <= d1:
+			return -1
+		case d1 <= Toleranz:
+			return 1
+		}
+		return 0
+	}
+	innen := func(v, lo, hi float64) bool { return v >= lo-Toleranz && v <= hi+Toleranz }
+	var sx, sy int
+	if innen(p.Y, a.Y, b.Y) {
+		sx = seite(p.X, a.X, b.X)
+	}
+	if innen(p.X, a.X, b.X) {
+		sy = seite(p.Y, a.Y, b.Y)
+	}
+	art := map[[2]int]GriffArt{
+		{-1, -1}: GriffNW, {0, -1}: GriffN, {1, -1}: GriffNO, {1, 0}: GriffO,
+		{1, 1}: GriffSO, {0, 1}: GriffS, {-1, 1}: GriffSW, {-1, 0}: GriffW,
+	}[[2]int{sx, sy}]
+	return art, art != 0
+}
+
+// zieheZuschnitt führt Kante oder Ecke des Zuschnittrahmens zum Fensterpunkt p, begrenzt auf die Vollansicht. Der
+// Rahmen geht immer vom Zuschnitt beim Druck aus; über die Gegenkante gezogen, klappt er um.
+func (s *Sitzung) zieheZuschnitt(p document.Punkt) {
+	g := s.D.Groesse()
+	a, b := document.Pt(0, 0), document.Pt(float64(g.X), float64(g.Y))
+	q := s.klemmeAnsicht(s.Abb.ZuAnsicht(p))
+	switch s.griff {
+	case GriffNW, GriffW, GriffSW:
+		a.X = q.X
+	case GriffNO, GriffO, GriffSO:
+		b.X = q.X
+	}
+	switch s.griff {
+	case GriffNW, GriffN, GriffNO:
+		a.Y = q.Y
+	case GriffSW, GriffS, GriffSO:
+		b.Y = q.Y
+	}
+	s.rahmenA, s.rahmenB = a, b
+}
+
+// ZuschnittRahmen liefert beim Werkzeug Zuschneiden den Rahmen, den die Leinwand mit Griffen zeigt (Fensterpunkte):
+// während eines Zugs den gezogenen, sonst den Zuschnitt (ADR-0023 Nachtrag 5). ok = false bei anderen Werkzeugen.
+func (s *Sitzung) ZuschnittRahmen() (a, b document.Punkt, ok bool) {
+	if !s.zuschnittModus() {
+		return document.Punkt{}, document.Punkt{}, false
+	}
+	if a, b, ok := s.Rahmen(); ok {
+		return a, b, true
+	}
+	g := s.D.Groesse()
+	return s.Abb.ZuFenster(document.Pt(0, 0)), s.Abb.ZuFenster(document.Pt(float64(g.X), float64(g.Y))), true
 }
 
 // originalBereich rechnet einen Bereich [von, bis) der Ansicht (ganze Pixel, bis > von) einer Achse ins Original um:
@@ -99,8 +179,9 @@ func (s *Sitzung) originalBereich(von, bis int, zeilen bool) (int, int) {
 	return o(von), o(bis-1) + 1
 }
 
-// zuschneideRahmen setzt beim Loslassen den Zuschnitt auf den gezogenen Rahmen (ADR-0023 Punkt 1). Unter der
-// Mindestgröße passiert nichts.
+// zuschneideRahmen setzt beim Loslassen den Zuschnitt auf den gezogenen Rahmen (ADR-0023 Punkt 1, Nachtrag 5): ein
+// neuer Rahmen oder der mit einem Griff geänderte Zuschnitt, beides in der Vollansicht. Unter der Mindestgröße
+// passiert nichts.
 func (s *Sitzung) zuschneideRahmen() {
 	if !s.rahmen {
 		return
@@ -117,8 +198,9 @@ func (s *Sitzung) zuschneideRahmen() {
 		// am Rand, wiche der umgerechnete Zuschnitt vom alten ab, ohne dass sich etwas Sichtbares ändert (F-182).
 		return
 	}
-	x0, x1 := s.originalBereich(a.Min.X, a.Max.X, false)
-	y0, y1 := s.originalBereich(a.Min.Y, a.Max.Y, true)
+	a = a.Add(s.D.VollVersatz()) // in die Vollansicht: Der Rahmen darf über den bisherigen Zuschnitt hinausreichen
+	x0, x1 := s.vollBereich(a.Min.X, a.Max.X, false)
+	y0, y1 := s.vollBereich(a.Min.Y, a.Max.Y, true)
 	z := image.Rect(x0, y0, x1, y1)
 	if z == s.D.Zuschnitt() {
 		return

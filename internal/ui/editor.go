@@ -264,7 +264,8 @@ type editor struct {
 	}
 
 	// Doppelklick erkennen (ADR-0021: Text bearbeiten): Zeit und Ort des letzten Drucks der linken Taste.
-	bildStand    uint64 // canvas.Sitzung.BildAenderung beim letzten bildNeu (Schwärzen ändert die Pixel)
+	bildStand    uint64      // canvas.Sitzung.BildAenderung beim letzten bildNeu (Schwärzen ändert die Pixel)
+	bildOrt      image.Point // Lage des Leinwandbilds in Ansichtskoordinaten (Vollansicht beim Zuschneiden)
 	letzterDruck time.Duration
 	letzterOrt   document.Punkt
 	hatDruck     bool
@@ -300,7 +301,12 @@ func diagnoseEditor(format string, args ...any) {
 	}
 }
 
-func (e *editor) bildNeu() { e.bildOp = paint.NewImageOp(e.s.D.Ansichtsbild()) }
+// bildNeu baut das Bild der Leinwand: die Ansicht, beim Werkzeug Zuschneiden die Vollansicht (ADR-0023 Nachtrag 5),
+// abgelegt bei bildOrt in Ansichtskoordinaten.
+func (e *editor) bildNeu() {
+	e.bildOp = paint.NewImageOp(e.s.Leinwandbild())
+	e.bildOrt = e.s.Bildflaeche().Min
+}
 
 // quittiere meldet dem Wecker, dass die Schleife ein Ereignis bearbeitet, das ein Bild trägt. Ab einem FrameEvent sieht
 // die Schleife alles, was vor dem letzten Anfordern abgelegt wurde (Marke, Dialogantwort), und zeigt es im selben Bild;
@@ -1290,10 +1296,16 @@ func (e *editor) leinwand(gtx layout.Context) {
 	if a.Zoom >= 2 {
 		b.Filter = paint.FilterNearest // einzelne Pixel sichtbar
 	}
-	// Objekte im selben Ausschnitt wie das Bild: Was außerhalb liegt, fehlt auch in der gespeicherten Datei (Kritik A-7).
-	bc := clip.Rect(image.Rectangle{Max: e.s.D.Groesse()}).Push(gtx.Ops)
+	// Das Bild liegt bei bildOrt (beim Zuschneiden die Vollansicht, ADR-0023 Nachtrag 5) und ist auf sich selbst
+	// begrenzt.
+	bo := op.Offset(e.bildOrt).Push(gtx.Ops)
+	bi := clip.Rect(image.Rectangle{Max: b.Size()}).Push(gtx.Ops)
 	b.Add(gtx.Ops)
 	paint.PaintOp{}.Add(gtx.Ops)
+	bi.Pop()
+	bo.Pop()
+	// Objekte im Ausschnitt der Ansicht: Was außerhalb liegt, fehlt auch in der gespeicherten Datei (Kritik A-7).
+	bc := clip.Rect(image.Rectangle{Max: e.s.D.Groesse()}).Push(gtx.Ops)
 	e.zeichneObjekte(gtx)
 	e.zeichneNaehte(gtx)
 	bc.Pop()
@@ -1317,18 +1329,25 @@ func (e *editor) leinwand(gtx layout.Context) {
 // zeichneRahmen zeigt den gerade gezogenen Rahmen in Fensterpixeln: beim Schwärzen und beim Stauchen-Band (ADR-0022,
 // ADR-0023) halbdurchsichtig dunkel, beim Zuschneiden ist das Bild außerhalb des Rahmens abgedunkelt; immer mit hellem
 // Rand, damit er auf hellen wie dunklen Bildern sichtbar ist.
+//
+// Beim Werkzeug Zuschneiden liegt der Rahmen immer da (ADR-0023 Nachtrag 5): auf dem Zuschnitt oder dem gezogenen
+// Rahmen, mit acht Griffen; abgedunkelt ist die Vollansicht außerhalb davon.
 func (e *editor) zeichneRahmen(gtx layout.Context) {
 	a, b, ok := e.s.Rahmen()
+	zuschneiden := e.s.Werkzeug == canvas.WerkzeugZuschneiden
+	if zuschneiden {
+		a, b, ok = e.s.ZuschnittRahmen()
+	}
 	if !ok {
 		return
 	}
 	rund := func(p document.Punkt) image.Point { return image.Pt(int(math.Round(p.X)), int(math.Round(p.Y))) }
 	r := image.Rectangle{Min: rund(a), Max: rund(b)}.Canon()
 	dunkel := color.NRGBA{A: 0x99}
-	if e.s.Werkzeug == canvas.WerkzeugZuschneiden {
-		g := e.s.D.Groesse()
-		bild := image.Rectangle{Min: rund(e.s.Abb.ZuFenster(document.Pt(0, 0))),
-			Max: rund(e.s.Abb.ZuFenster(document.Pt(float64(g.X), float64(g.Y))))}
+	if zuschneiden {
+		f := e.s.Bildflaeche()
+		bild := image.Rectangle{Min: rund(e.s.Abb.ZuFenster(document.Pt(float64(f.Min.X), float64(f.Min.Y)))),
+			Max: rund(e.s.Abb.ZuFenster(document.Pt(float64(f.Max.X), float64(f.Max.Y))))}
 		for _, k := range []image.Rectangle{
 			{bild.Min, image.Pt(bild.Max.X, r.Min.Y)}, {image.Pt(bild.Min.X, r.Max.Y), bild.Max},
 			{image.Pt(bild.Min.X, r.Min.Y), image.Pt(r.Min.X, r.Max.Y)}, {image.Pt(r.Max.X, r.Min.Y), image.Pt(bild.Max.X, r.Max.Y)},
@@ -1346,6 +1365,16 @@ func (e *editor) zeichneRahmen(gtx layout.Context) {
 		{r.Min, image.Pt(r.Min.X+w, r.Max.Y)}, {image.Pt(r.Max.X-w, r.Min.Y), r.Max},
 	} {
 		paint.FillShape(gtx.Ops, color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xCC}, clip.Rect(k).Op())
+	}
+	if zuschneiden {
+		h := gtx.Dp(5)
+		mx, my := (r.Min.X+r.Max.X)/2, (r.Min.Y+r.Max.Y)/2
+		for _, m := range []image.Point{r.Min, {mx, r.Min.Y}, {r.Max.X, r.Min.Y}, {r.Max.X, my}, r.Max, {mx, r.Max.Y},
+			{r.Min.X, r.Max.Y}, {r.Min.X, my}} {
+			q := image.Rect(m.X-h, m.Y-h, m.X+h, m.Y+h)
+			paint.FillShape(gtx.Ops, farbeText, clip.Rect(q).Op())
+			rahmen(gtx.Ops, q, gtx.Dp(1), farbeAuswahl)
+		}
 	}
 }
 
@@ -2070,7 +2099,7 @@ func (e *editor) hinweis() string {
 		return i18n.T("Drag over the area to pixelate. The pixels are overwritten for good once saved.")
 	case canvas.WerkzeugZuschneiden:
 		// Zuschneiden ist kein Schwärzen: Das Weggeschnittene bleibt im Original der Arbeitsdatei (ADR-0023 Punkt 8).
-		return i18n.T("Drag a frame to crop. Double-click: whole image again. Cropped parts stay in the working file; redact what must go.")
+		return i18n.T("Drag the edges or corners inwards, or drag a new frame. Double-click: whole image again. Cropped parts stay in the working file; redact what must go.")
 	case canvas.WerkzeugStauchen:
 		// Wie beim Zuschneiden bleibt das Herausgenommene im Original der Arbeitsdatei (ADR-0023 Punkt 8, F-185).
 		return i18n.T("Drag across the part to cut out: vertically for rows, horizontally for columns. Double-click a seam to restore it. Cut-out parts stay in the working file; redact what must go.")

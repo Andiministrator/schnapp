@@ -88,7 +88,7 @@ func TestZuschnittSchwaerzenMusterJenseitsDerKante(t *testing.T) {
 		s.Ziehen(a.Plus(b.Minus(a).Mal(0.5)))
 		s.Loslassen(b)
 	}
-	zieh(s.Abb.ZuFenster(document.Pt(0, 0)), s.Abb.ZuFenster(document.Pt(60, 80)))
+	zieh(s.Abb.ZuFenster(document.Pt(120, 40)), s.Abb.ZuFenster(document.Pt(60, 40))) // rechte Kante (ADR-0023 Nachtrag 5)
 	if z := d.Zuschnitt(); z != image.Rect(0, 0, 60, 80) {
 		t.Fatalf("Zuschnitt %v", z)
 	}

@@ -9,6 +9,7 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	"math"
 	"math/big"
 	"sort"
 )
@@ -221,15 +222,6 @@ func (d *Dokument) setzeAnsicht(z image.Rectangle, st []Streifen) {
 	d.abbX, d.abbY = baueAbbildung(z, st, false), baueAbbildung(z, st, true)
 }
 
-// achse liefert für die Ansicht die entfernten Bereiche einer Achse, auf den Zuschnitt begrenzt und sortiert.
-func (d *Dokument) achse(zeilen bool) (von, bis int, weg [][2]int) {
-	m := d.abbX
-	if zeilen {
-		m = d.abbY
-	}
-	return m.von, m.bis, m.weg
-}
-
 // Groesse ist die Größe der Ansicht in Pixeln.
 func (d *Dokument) Groesse() image.Point { return image.Pt(d.abbX.groesse(), d.abbY.groesse()) }
 
@@ -244,9 +236,46 @@ func (d *Dokument) ZuOriginal(p Punkt) Punkt {
 }
 
 // Ansichtsbild liefert die Pixel der Ansicht: Original, beschnitten und gestaucht, ohne Objekte.
-func (d *Dokument) Ansichtsbild() *image.NRGBA {
+func (d *Dokument) Ansichtsbild() *image.NRGBA { return d.bildAus(d.abbX, d.abbY) }
+
+// --- Vollansicht: das ganze Original mit denselben Streifen, ohne Zuschnitt (Werkzeug Zuschneiden, ADR-0023
+// Nachtrag 5). Die Ansicht ist ein verschobener Ausschnitt davon: Ansichtspunkt v liegt in der Vollansicht bei
+// v + VollVersatz, denn die Streifen vor dem Zuschnittsanfang verschieben nur. ---
+
+func (d *Dokument) vollAbb(zeilen bool) abbildung {
+	return baueAbbildung(image.Rectangle{Max: d.original.Rect.Size()}, d.streifen, zeilen)
+}
+
+// VollGroesse ist die Größe der Vollansicht in Pixeln.
+func (d *Dokument) VollGroesse() image.Point {
+	return image.Pt(d.vollAbb(false).groesse(), d.vollAbb(true).groesse())
+}
+
+// VollVersatz ist die Lage des Ansichtsursprungs (Zuschnittsanfang) in der Vollansicht, in ganzen Pixeln.
+func (d *Dokument) VollVersatz() image.Point {
+	x := d.vollAbb(false).zuAnsicht(float64(d.zuschnitt.Min.X))
+	y := d.vollAbb(true).zuAnsicht(float64(d.zuschnitt.Min.Y))
+	return image.Pt(int(math.Round(x)), int(math.Round(y)))
+}
+
+// VollZuOriginal rechnet einen Punkt der Vollansicht ins Original um (Kanten wie ZuOriginal).
+func (d *Dokument) VollZuOriginal(p Punkt) Punkt {
+	return Punkt{d.vollAbb(false).zuOriginal(p.X), d.vollAbb(true).zuOriginal(p.Y)}
+}
+
+// VollAnsichtsbild liefert die Pixel der Vollansicht, ohne Objekte.
+func (d *Dokument) VollAnsichtsbild() *image.NRGBA {
+	return d.bildAus(d.vollAbb(false), d.vollAbb(true))
+}
+
+// bildAus kopiert die Pixel des Originals, die die Abbildungen mx und my behalten.
+func (d *Dokument) bildAus(mx, my abbildung) *image.NRGBA {
 	behalten := func(zeilen bool) []int {
-		von, bis, weg := d.achse(zeilen)
+		m := mx
+		if zeilen {
+			m = my
+		}
+		von, bis, weg := m.von, m.bis, m.weg
 		var res []int
 		j := 0
 		for v := von; v < bis; v++ {

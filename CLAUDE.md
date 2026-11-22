@@ -125,7 +125,7 @@ der Wegwerf-Prototyp `prototype/` (entfernt in Sprint 9, ADR-0027; Stand in der 
 - **settings** — `settings.ini` lesen (ADR-0018); Warnungen statt Abbruch.
 - **selection** — Logik des Overlays ohne Gio (Abbildung, Bereich, Monitor per Klick, Lupe, letzter Bereich).
 - **canvas** — Logik der Editor-Leinwand ohne Gio (Zoom zum Zeiger, Einpassen, Treffer, Griffe, Verschieben;
-  Zeichenwerkzeuge, Schwärzen und Texteingabe `werkzeuge.go`; Zuschneiden/Stauchen `zuschnitt.go`; Menü-Aktionen ohne Werkzeug `menue.go` (Gestauchtes zurückholen, ADR-0026); Statusleiste `status.go` `StatusZeile`; Speichern im Hintergrund
+  Zeichenwerkzeuge, Schwärzen und Texteingabe `werkzeuge.go`; Zuschneiden/Stauchen `zuschnitt.go` (Zuschneiden zeigt die Vollansicht mit Rahmen und Griffen, `Bildflaeche`/`VollVersatz`, ADR-0023 Nachtrag 5); Menü-Aktionen ohne Werkzeug `menue.go` (Gestauchtes zurückholen, ADR-0026); Statusleiste `status.go` `StatusZeile`; Speichern im Hintergrund
   `hintergrund.go` (`SpeichernJetzt`, `SchliessenAnfrage`, `SignalAnfrage`, `SpeichernEnde`: die Oberfläche speichert einen Abzug in einer Goroutine, solange ruht das Bearbeiten, ADR-0020 Nachtrag 6; eine synchrone Schließen-Hülle gibt es nicht mehr, Tests fahren die zwei Schritte über die Helfer `schliesse` und `schliesseNachSignal` in `internal/canvas/schliessen_test.go`, F-284; Menü-Navigationstasten stehen als Ausnahme neben der Tastentabelle, ADR-0026 Nachtrag 4), Signalwache `signal.go`; `Wecker` (`wecker.go`) weckt die Gio-Schleife wiederholt, bis sie eine
   Antwort abholt, F-231; ADR-0020 bis ADR-0023).
 - **render** — Ansichtsbild + Objekte zu Pixeln ohne GPU (`golang.org/x/image` font, Go-Schriften; ADR-0020);

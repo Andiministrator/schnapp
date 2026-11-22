@@ -73,8 +73,10 @@ neue Zeile, **Esc** verwirft; Doppelklick auf einen Text bearbeitet ihn), **N** 
 **P** Verpixeln (ziehen; ein Mosaik nur aus der Durchschnittsfarbe des Bereichs und Zufall, es trägt nichts vom
 Inhalt). Beides überschreibt die Pixel des Bildes selbst: Bis zum Speichern lässt es sich zurücknehmen (der Rückgängig-Verlauf hält höchstens 512 MiB Pixelkopien, ältere Schritte fallen still weg), danach ist es
 endgültig, und keine gespeicherte oder exportierte Datei enthält den verdeckten Inhalt. Ein vor dem Schwärzen mit
-**Strg+C** kopiertes Bild bleibt, wie es war, in der Zwischenablage. **C** Zuschneiden (Rahmen ziehen; der Knopf *Ganzes Bild*
-oder ein Doppelklick mit dem Werkzeug zeigt wieder das ganze Bild), **X** Stauchen (quer über den Teil ziehen, der
+**Strg+C** kopiertes Bild bleibt, wie es war, in der Zwischenablage. **C** Zuschneiden (das ganze Bild erscheint mit einem Rahmen;
+Kanten oder Ecken nach innen ziehen oder einen neuen Rahmen ziehen — der Teil außerhalb bleibt abgedunkelt sichtbar,
+eine Kante lässt sich also wieder hinausschieben; der Knopf *Ganzes Bild* oder ein Doppelklick mit dem Werkzeug zeigt
+wieder das ganze Bild), **X** Stauchen (quer über den Teil ziehen, der
 wegfallen soll — senkrecht für Zeilen, waagrecht für Spalten; die Naht zeigt eine Zackenkante; Doppelklick auf eine
 Naht holt den Teil zurück; ein Teil bis an den Bildrand wird stattdessen abgeschnitten und kommt mit *Ganzes Bild*
 zurück).

@@ -37,6 +37,9 @@ const (
 	zugAnsicht
 	zugNeu  // neues Objekt mit einem Zeichenwerkzeug (ADR-0021)
 	zugText // Texteingabe: läuft über Druck und Loslassen hinaus bis Bestätigen oder Abbrechen
+	// zugZuschnitt: Griff oder Kante des Zuschnittrahmens (Werkzeug Zuschneiden, ADR-0023 Nachtrag 5); der Rahmen
+	// steht in rahmenA/rahmenB, der Griff in griff.
+	zugZuschnitt
 )
 
 // Sitzung ist der Zustand des Editors ohne Gio (ADR-0020 Punkt 2): Dokument, Abbildung, Auswahl und laufender Zug.
@@ -100,7 +103,7 @@ func (s *Sitzung) Geaendert() bool { return s.D.Stand() != s.gespeichert }
 func (s *Sitzung) SetzeFenster(g image.Point) {
 	s.fenster = g
 	if s.eingepasst && !s.Zieht() {
-		s.Abb = Einpassen(s.D.Groesse(), g, Rand)
+		s.Abb = s.einpassAbb()
 	}
 }
 
@@ -110,7 +113,36 @@ func (s *Sitzung) Einpassen() {
 		return // während eines Zugs bliebe der Startpunkt in der alten Abbildung (Kritik A-6)
 	}
 	s.eingepasst = true
-	s.Abb = Einpassen(s.D.Groesse(), s.fenster, Rand)
+	s.Abb = s.einpassAbb()
+}
+
+// einpassAbb ist die Abbildung, die die Bildfläche (Bildflaeche) mittig ins Fenster passt.
+func (s *Sitzung) einpassAbb() Abbildung {
+	f := s.Bildflaeche()
+	a := Einpassen(f.Size(), s.fenster, Rand)
+	a.Versatz = a.Versatz.Minus(document.Pt(float64(f.Min.X), float64(f.Min.Y)).Mal(a.Zoom))
+	return a
+}
+
+// zuschnittModus meldet, ob die Leinwand die Vollansicht zeigt (Werkzeug Zuschneiden, ADR-0023 Nachtrag 5).
+func (s *Sitzung) zuschnittModus() bool { return s.Werkzeug == WerkzeugZuschneiden }
+
+// Bildflaeche ist das gezeigte Bild in Ansichtskoordinaten: sonst die Ansicht, beim Zuschneiden die Vollansicht
+// (ganzes Original, dieselben Streifen), in der die Ansicht bei VollVersatz liegt (ADR-0023 Nachtrag 5).
+func (s *Sitzung) Bildflaeche() image.Rectangle {
+	if !s.zuschnittModus() {
+		return image.Rectangle{Max: s.D.Groesse()}
+	}
+	v := s.D.VollVersatz()
+	return image.Rectangle{Max: s.D.VollGroesse()}.Sub(v)
+}
+
+// Leinwandbild liefert die Pixel der Bildfläche (ohne Objekte); die Oberfläche legt sie bei Bildflaeche().Min ab.
+func (s *Sitzung) Leinwandbild() *image.NRGBA {
+	if s.zuschnittModus() {
+		return s.D.VollAnsichtsbild()
+	}
+	return s.D.Ansichtsbild()
 }
 
 // EinsZuEins zeigt die Ansicht 1:1 um die Fenstermitte (Strg+1).
@@ -173,6 +205,14 @@ func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
 			return
 		}
 	}
+	if s.Werkzeug == WerkzeugZuschneiden {
+		if art, ok := s.zuschnittGriff(p); ok {
+			g := s.D.Groesse()
+			s.zug, s.griff, s.neuArt, s.rahmen = zugZuschnitt, art, WerkzeugZuschneiden, true
+			s.rahmenA, s.rahmenB = document.Pt(0, 0), document.Pt(float64(g.X), float64(g.Y))
+			return
+		}
+	}
 	if s.Werkzeug != WerkzeugAuswahl {
 		// Ein neues Objekt beginnt nur im sichtbaren Bild (F-150); daneben passiert nichts. Griffe des ausgewählten
 		// Objekts sind oben schon vorgegangen und bleiben auch im Rand greifbar.
@@ -220,6 +260,8 @@ func (s *Sitzung) Ziehen(p document.Punkt) {
 		_ = s.D.ZugSetze(s.begrenzeGriff(s.startObj, s.griff, s.original(p)))
 	case zugNeu:
 		s.zieheNeu(p)
+	case zugZuschnitt:
+		s.zieheZuschnitt(p)
 	}
 }
 
@@ -245,6 +287,8 @@ func (s *Sitzung) Loslassen(p document.Punkt) {
 		}
 	case zugNeu:
 		s.beendeNeu()
+	case zugZuschnitt:
+		s.zuschneideRahmen()
 	}
 	s.merkeAenderung(vor)
 	s.zug = keinZug
@@ -259,17 +303,18 @@ func (s *Sitzung) merkeAenderung(vor uint64) {
 	}
 }
 
-// imBild meldet, ob der Fensterpunkt p im sichtbaren Bild liegt (Ansicht nach Zuschnitt und Stauchen, Rand
-// eingeschlossen).
+// imBild meldet, ob der Fensterpunkt p im gezeigten Bild liegt (Bildflaeche: Ansicht nach Zuschnitt und Stauchen,
+// beim Zuschneiden die Vollansicht; Rand eingeschlossen).
 func (s *Sitzung) imBild(p document.Punkt) bool {
-	a, g := s.Abb.ZuAnsicht(p), s.D.Groesse()
-	return a.X >= 0 && a.Y >= 0 && a.X <= float64(g.X) && a.Y <= float64(g.Y)
+	a, f := s.Abb.ZuAnsicht(p), s.Bildflaeche()
+	return a.X >= float64(f.Min.X) && a.Y >= float64(f.Min.Y) && a.X <= float64(f.Max.X) && a.Y <= float64(f.Max.Y)
 }
 
-// klemmeAnsicht begrenzt einen Ansichtspunkt auf das sichtbare Bild.
+// klemmeAnsicht begrenzt einen Ansichtspunkt auf das gezeigte Bild (Bildflaeche).
 func (s *Sitzung) klemmeAnsicht(a document.Punkt) document.Punkt {
-	g := s.D.Groesse()
-	return document.Pt(math.Max(0, math.Min(float64(g.X), a.X)), math.Max(0, math.Min(float64(g.Y), a.Y)))
+	f := s.Bildflaeche()
+	return document.Pt(math.Max(float64(f.Min.X), math.Min(float64(f.Max.X), a.X)),
+		math.Max(float64(f.Min.Y), math.Min(float64(f.Max.Y), a.Y)))
 }
 
 // Abbrechen stellt den Stand vor dem Zug wieder her (Esc während des Ziehens, Zeiger-Cancel). Eine Texteingabe bleibt
@@ -288,6 +333,8 @@ func (s *Sitzung) Abbrechen() {
 		if s.neuID != 0 {
 			_ = s.D.BrecheZugAb()
 		}
+		s.rahmen = false
+	case zugZuschnitt:
 		s.rahmen = false
 	case zugAnsicht:
 		s.Abb = s.startAbb

@@ -71,8 +71,9 @@ double-click a text to edit it), **N** step number (counts up by itself), **B** 
 **P** pixelate (drag; a mosaic made only from the area's average colour and random noise, so it carries nothing of
 what was there). Both overwrite the pixels of the image itself: they can be undone until you save (the undo history keeps at most 512 MiB of pixel copies, older steps fall away silently), after that they are
 final and no saved or exported file contains the hidden content. An image copied with **Ctrl+C** before redacting
-stays in the clipboard as it was. **C** crop (drag a frame; the *Whole image* button or a
-double-click with the tool shows the whole image again), **X** cut out (drag across the part to remove — vertically to
+stays in the clipboard as it was. **C** crop (the whole image appears with a frame; drag its
+edges or corners inwards, or drag a new frame — the part outside stays visible, darkened, so an edge can be pushed back
+out; the *Whole image* button or a double-click with the tool shows the whole image again), **X** cut out (drag across the part to remove — vertically to
 remove rows, horizontally for columns; the seam shows a zigzag edge; double-click a seam to bring the part back; a part
 reaching the edge of the image is cropped off instead and comes back with *Whole image*). Both only hide: the original stays complete in the working
 file, so redact anything secret before cropping it away — exports and the clipboard contain only the visible part.

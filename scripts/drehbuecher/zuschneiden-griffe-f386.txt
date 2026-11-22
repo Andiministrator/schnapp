@@ -1,0 +1,41 @@
+# Probe F-386 (Karte #169, ADR-0023 Nachtrag 5): Zuschneiden zeigt sofort einen Rahmen mit Griffen über dem ganzen
+# Original; Griff-Zug gilt beim Loslassen, Strg+Z und Zurückschieben holen zurück, ein neuer Rahmen darf im
+# abgedunkelten Teil beginnen.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/zuschneiden-griffe-f386.txt --bild scripts/drehbuecher/testbild-1200x800.png --zeit 120
+# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
+# Bild 1200x800 bei 100 % ab (200,136); Bildpunkt = Bildschirm - (200,136). Beim Zuschneiden bleibt die Vollansicht
+# stehen, die Bildschirmpunkte gelten also für den ganzen Lauf, solange das Werkzeug Zuschneiden aktiv ist.
+warte 800
+foto 01-vorher
+# 1) C: Rahmen mit acht Griffen über dem ganzen Bild, ohne Ziehen
+taste C
+warte 300
+foto 02-rahmen-sofort
+# 2) rechte Kante (x 1400) nach innen auf 1100: Bildspalten 900 bis 1200 abgedunkelt, Statusleiste 900 × 800
+ziehe 1400 536 1100 536 12
+warte 300
+foto 03-rechts-innen
+# 3) Ecke links oben (200,136) auf (400,300): Zuschnitt (200,164)-(900,800)
+ziehe 200 136 400 300 12
+warte 300
+foto 04-ecke
+# 4) neuer Rahmen, beginnt im abgedunkelten Teil (260,180) bis (700,500): Zuschnitt (60,44)-(500,364)
+ziehe 260 180 700 500 12
+warte 300
+foto 05-neuer-rahmen
+# 5) Strg+Z: wieder der Zuschnitt aus 3)
+taste Strg+Z
+warte 300
+foto 06-rueckgaengig
+# 6) linke Kante (x 400) zurück nach außen über den Bildrand hinaus: klemmt bei 200, Zuschnitt (0,164)-(900,800)
+ziehe 400 500 150 500 12
+warte 300
+foto 07-zurueckgeschoben
+# 7) rechte Kante (x 1100) nach außen auf 1300: Zuschnitt (0,164)-(1100,800)
+ziehe 1100 600 1300 600 12
+warte 300
+foto 07b-rechts-aussen
+# 8) Werkzeug Auswahl (V): die zugeschnittene Ansicht, eingepasst, ohne Rahmen
+taste V
+warte 300
+foto 08-auswahl

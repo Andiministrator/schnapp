@@ -121,7 +121,16 @@ func (s *Sitzung) SetzeWerkzeug(w Werkzeug) bool {
 	if ohneGriffe(w) {
 		s.Auswahl = 0 // F-174: sonst zöge ein Zug nahe einem Griff den Griff statt den Rahmen
 	}
+	vorher := s.zuschnittModus()
 	s.Werkzeug = w
+	if s.zuschnittModus() != vorher {
+		// Vollansicht an oder aus (ADR-0023 Nachtrag 5): anderes Bild; die Ansichtskoordinaten bleiben, neu eingepasst
+		// wird nur, wenn der Nutzer nicht selbst gezoomt oder verschoben hat.
+		s.bildAenderung++
+		if s.eingepasst {
+			s.Abb = s.einpassAbb()
+		}
+	}
 	return true
 }
 
@@ -353,7 +362,7 @@ func (s *Sitzung) beendeNeu() {
 // Rahmen liefert den gerade gezogenen Rahmen (Schwärzen, Verpixeln, Zuschneiden) in Fensterpunkten, beim Stauchen das
 // Band über die ganze Breite bzw. Höhe des Bilds (ok = false, wenn keiner gezogen wird).
 func (s *Sitzung) Rahmen() (a, b document.Punkt, ok bool) {
-	if s.zug != zugNeu || !s.rahmen {
+	if (s.zug != zugNeu && s.zug != zugZuschnitt) || !s.rahmen {
 		return document.Punkt{}, document.Punkt{}, false
 	}
 	if s.neuArt == WerkzeugStauchen {

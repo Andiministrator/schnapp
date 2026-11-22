@@ -17,9 +17,9 @@ import (
 // passt der Editor neu ein, die festen Werte von f gelten dann nicht mehr).
 func fv(s *Sitzung, x, y float64) document.Punkt { return s.Abb.ZuFenster(document.Pt(x, y)) }
 
-// ADR-0023 Punkte 1 und 5: Ein Rahmen mit dem Werkzeug Zuschneiden setzt beim Loslassen den Zuschnitt (auf ganze
-// Ansichtspixel gerundet), ändert weder Original noch Objekte, ist ein Rückgängig-Schritt und passt die Ansicht neu
-// ein; Rückgängig stellt das ganze Bild und die alte Einpassung wieder her.
+// ADR-0023 Punkte 1 und 5, Nachtrag 5: Ein Rahmen mit dem Werkzeug Zuschneiden setzt beim Loslassen den Zuschnitt (auf
+// ganze Ansichtspixel gerundet), ändert weder Original noch Objekte, ist ein Rückgängig-Schritt und passt neu ein —
+// beim Zuschneiden die Vollansicht, die deshalb stehen bleibt; Rückgängig stellt das ganze Bild wieder her.
 func TestZuschneidenWerkzeug(t *testing.T) {
 	s := verlaufSitzung(t)
 	vorher := s.D.Original()
@@ -41,11 +41,13 @@ func TestZuschneidenWerkzeug(t *testing.T) {
 	if !bytes.Equal(s.D.Original().Pix, vorher.Pix) || len(s.D.Objekte()) != 0 {
 		t.Error("Zuschneiden hat Original oder Objekte geändert")
 	}
-	if s.BildAenderung() != 1 || !s.Geaendert() {
+	if s.BildAenderung() != 2 || !s.Geaendert() { // 1: Vollansicht beim Werkzeugwechsel, 2: Zuschnitt
 		t.Errorf("BildAenderung %d, Geaendert %v", s.BildAenderung(), s.Geaendert())
 	}
-	if s.Abb != Einpassen(image.Pt(101, 51), image.Pt(248, 148), Rand) {
-		t.Errorf("nach dem Zuschneiden nicht eingepasst: %+v", s.Abb)
+	voll := Einpassen(image.Pt(200, 100), image.Pt(248, 148), Rand)
+	if s.Bildflaeche() != image.Rect(-20, -10, 180, 90) || s.Abb.ZuFenster(document.Pt(-20, -10)) != voll.Versatz ||
+		s.Abb.Zoom != voll.Zoom {
+		t.Errorf("nach dem Zuschneiden steht die Vollansicht nicht still: Fläche %v, %+v", s.Bildflaeche(), s.Abb)
 	}
 	if n := schritte(t, s); n != 1 {
 		t.Errorf("%d Rückgängig-Schritte, Soll 1", n)
@@ -55,15 +57,22 @@ func TestZuschneidenWerkzeug(t *testing.T) {
 	if !s.Rueckgaengig() || s.D.Zuschnitt() != image.Rect(0, 0, 200, 100) {
 		t.Fatal("Rückgängig")
 	}
-	if s.Abb != Einpassen(image.Pt(200, 100), image.Pt(248, 148), Rand) || s.BildAenderung() != vor+1 {
+	if s.Abb != voll || s.BildAenderung() != vor+1 {
 		t.Errorf("nach Rückgängig: %+v, BildAenderung %d", s.Abb, s.BildAenderung())
+	}
+	// Mit einem anderen Werkzeug gilt wieder die Ansicht nach dem Zuschnitt (eingepasst, weil Rückgängig einpasst).
+	if !s.Wiederholen() || !s.SetzeWerkzeug(WerkzeugAuswahl) || s.Bildflaeche() != image.Rect(0, 0, 101, 51) ||
+		s.Abb != Einpassen(image.Pt(101, 51), image.Pt(248, 148), Rand) {
+		t.Errorf("nach dem Werkzeugwechsel: Fläche %v, %+v", s.Bildflaeche(), s.Abb)
 	}
 }
 
-// Unter der Mindestgröße, mit Esc abgebrochen oder als Rahmen über die ganze Ansicht ändert Zuschneiden nichts.
+// Unter der Mindestgröße, mit Esc abgebrochen oder als Rahmen über die ganze Ansicht (Griff über den Rand der
+// Vollansicht hinaus) ändert Zuschneiden nichts.
 func TestZuschneidenOhneWirkung(t *testing.T) {
 	s := verlaufSitzung(t)
 	s.SetzeWerkzeug(WerkzeugZuschneiden)
+	bild := s.BildAenderung()
 	zieh(s, f(10, 10), f(14, 80)) // 4 Pixel breit
 	s.Druecken(f(10, 10), TastePrimaer)
 	s.Ziehen(f(100, 80))
@@ -73,8 +82,9 @@ func TestZuschneidenOhneWirkung(t *testing.T) {
 	}
 	s.Loslassen(f(100, 80))
 	zieh(s, f(-50, -50), f(500, 500)) // beginnt neben dem Bild: nichts (F-150)
-	zieh(s, f(0, 0), f(500, 500))     // ganze Ansicht
-	if s.Geaendert() || s.BildAenderung() != 0 || s.D.Zuschnitt() != image.Rect(0, 0, 200, 100) {
+	zieh(s, f(0, 0), f(-30, -30))     // Griff links oben nach außen: bleibt die ganze Ansicht
+	zieh(s, f(100, 50), f(100, 50))   // Klick ohne Ziehen
+	if s.Geaendert() || s.BildAenderung() != bild || s.D.Zuschnitt() != image.Rect(0, 0, 200, 100) {
 		t.Errorf("geändert: Zuschnitt %v", s.D.Zuschnitt())
 	}
 }
@@ -364,8 +374,10 @@ func TestZuschneidenGanzeAnsichtMitRandstreifen(t *testing.T) {
 		vor, z := s.D.Stand(), s.D.Zuschnitt()
 		g := s.D.Groesse()
 		s.SetzeWerkzeug(WerkzeugZuschneiden)
-		zieh(s, fv(s, 0, 0), fv(s, float64(g.X), float64(g.Y)))
-		if s.D.Stand() != vor || s.D.Zuschnitt() != z || s.BildAenderung() != 0 {
+		bild := s.BildAenderung()
+		zieh(s, fv(s, 0, 0), fv(s, -20, -20))                                               // Ecke nach außen
+		zieh(s, fv(s, float64(g.X), float64(g.Y)), fv(s, float64(g.X+20), float64(g.Y+20))) // Gegenecke nach außen
+		if s.D.Stand() != vor || s.D.Zuschnitt() != z || s.BildAenderung() != bild {
 			t.Errorf("Streifen %v: Stand geändert %v, Zuschnitt %v (Soll %v)", st, s.D.Stand() != vor, s.D.Zuschnitt(), z)
 		}
 		// „Ganzes Bild“ holt den Randstreifen zurück: Er hat keine Naht und wäre sonst verloren (F-222).
@@ -384,11 +396,11 @@ func TestMeldungVerborgenNurBeiZuwachs(t *testing.T) {
 		t.Fatal(err)
 	}
 	s.SetzeWerkzeug(WerkzeugZuschneiden)
-	zieh(s, fv(s, 0, 0), fv(s, 120, 60)) // verbirgt den Kasten
+	zieh(s, fv(s, 10, 10), fv(s, 120, 60)) // verbirgt den Kasten
 	if m := s.NimmAnsichtMeldung(); m != AnsichtVerborgen || s.VerborgeneObjekte() != 1 {
 		t.Fatalf("1. Zuschnitt: Meldung %v, verborgen %d", m, s.VerborgeneObjekte())
 	}
-	zieh(s, fv(s, 0, 0), fv(s, 80, 40)) // verbirgt nichts Neues
+	zieh(s, fv(s, 10, 10), fv(s, 80, 40)) // verbirgt nichts Neues
 	if m := s.NimmAnsichtMeldung(); m != AnsichtKeine {
 		t.Errorf("2. Zuschnitt ohne Zuwachs: Meldung %v", m)
 	}
@@ -435,7 +447,7 @@ func TestUnsichtbarerTextNichtImSVG(t *testing.T) {
 		s := NeueSitzung(d)
 		s.SetzeFenster(image.Pt(1200, 400))
 		s.SetzeWerkzeug(WerkzeugZuschneiden)
-		zieh(s, fv(s, float64(fall.ab), 0), fv(s, 1000, 200))
+		zieh(s, fv(s, 0, 100), fv(s, float64(fall.ab), 100)) // linke Kante nach innen (ADR-0023 Nachtrag 5)
 		if z := d.Zuschnitt(); z.Min.X != fall.ab {
 			t.Fatalf("Zuschnitt %v, Soll ab x = %d", z, fall.ab)
 		}

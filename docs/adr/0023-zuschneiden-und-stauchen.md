@@ -147,3 +147,34 @@ Bandhöhe, es konnten zwei Splitter von je 3 Pixeln neben der Naht übrig bleibe
   Koordinaten, die Original-Koordinaten sind) — berichtigt nach dem Verify-Lauf (V-5, F-242): Sie ist keine Spur im Sinn
   von Kernprinzip 3 (keine Pfade, Programm- oder Rechnernamen); sie ganz zu entfernen hieße alle Objekte umzurechnen.
   Die Arbeitsdatei (snAP) behält die Attribute für den Rundlauf.
+
+## Nachtrag 5 (22.11.2026): Zuschneiden zeigt das ganze Original, Rahmen mit Griffen (F-386)
+
+**Status:** Akzeptiert (Entscheidung Andi 22.11.2026, Variante a; umgesetzt von Claude Opus 5.5, Karte #169).
+
+Anlass: Wer das Werkzeug Zuschneiden wählte, sah nichts und musste erst einen neuen Rahmen ziehen; einen Zuschnitt
+nachzubessern hieß, ihn aufzuheben und neu zu ziehen. Erwartet (wie in Snagit): Mit der Wahl liegt ein Rahmen über
+dem Bild, mit Griffen, die man nach innen zieht.
+
+- **Punkt 1 ersetzt:** Solange das Werkzeug Zuschneiden aktiv ist, zeigt die Leinwand die **Vollansicht**: das ganze
+  Original mit denselben Stauch-Streifen, nur ohne Zuschnitt. Was außerhalb des Zuschnitts liegt, ist abgedunkelt; auf
+  dem Zuschnitt liegt ein Rahmen mit **acht Griffen** (Ecken und Kantenmitten). Greifbar ist die ganze Kante, nicht nur
+  der Griff (Toleranz wie bei Objektgriffen, `canvas.Toleranz` Fensterpixel); an einer Ecke gewinnt die Ecke. Ein
+  Griff-Zug verschiebt eine Kante (Ecke: zwei), nach innen wie nach außen bis an den Rand der Vollansicht, und **gilt
+  beim Loslassen** als ein Rückgängig-Schritt — zurück per Strg+Z oder durch Zurückschieben des Griffs. Ein Druck
+  **abseits der Kanten** (im Zuschnitt oder im abgedunkelten Teil) zieht wie bisher einen neuen Rahmen, jetzt überall
+  in der Vollansicht. Mindestgröße, Esc, Runden auf ganze Pixel und „Rahmen gleich dem Zuschnitt tut nichts“ gelten
+  weiter; die Umrechnung ins Original läuft über die Vollansicht (letztes enthaltenes Pixel + 1).
+- **Koordinaten:** Die Ansicht nach dem Zuschnitt ist ein verschobener Ausschnitt der Vollansicht (die Streifen vor
+  dem Zuschnittsanfang verschieben nur), `Dokument.VollVersatz` ist die Lage ihres Ursprungs darin. Die Leinwand rechnet
+  deshalb weiter in Ansichtskoordinaten; im Modus Zuschneiden reicht die Bildfläche (`Sitzung.Bildflaeche`) von
+  `-VollVersatz` bis `VollGroesse - VollVersatz`. Einpassen passt diese Fläche ein, die Vollansicht bleibt also beim
+  Zuschneiden stehen. Ein Werkzeugwechsel passt nur neu ein, wenn der Nutzer nicht selbst gezoomt hat.
+- **Was die Vollansicht nicht zeigt:** Beschriftungen und Zackenkanten bleiben auf den Zuschnitt begrenzt (wie im
+  gespeicherten Bild); was außerhalb liegt, kommt nach dem Loslassen. Streifen am Rand des Originals (ältere Dateien,
+  Nachtrag 3) bleiben auch in der Vollansicht verborgen; „Ganzes Bild“ holt sie wie bisher zurück.
+- Punkt 2 (Doppelklick hebt auf), Punkt 8 (Zuschneiden ist kein Schwärzen) und der Knopf „Ganzes Bild“ bleiben.
+- **Widerlegungsbedingung aus F-386 geprüft:** Bei einem kleinen Zuschnitt (Kanten näher als zwei Toleranzen) bliebe
+  im Zuschnitt kein Platz, einen neuen Rahmen zu beginnen; er lässt sich aber im abgedunkelten Teil beginnen, den es
+  vorher nicht gab. Rahmen-ziehen wird also nicht schlechter.
+- **Probe:** `scripts/drehbuecher/zuschneiden-griffe-f386.txt` (virtueller KWin).
