@@ -501,3 +501,17 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Skriptdatei unter `tmp/`.
 - **Ein Prüfwerkzeug prüft zuerst seine Ausgangslage** (Q-3): Ohne grünen Lauf ohne Mutation gilt jeder Mutant als
   getötet.
+
+## Sprint 11, zweite Sitzung (22.11.2026)
+
+- **Ein Test-Auslöser am ersten Pixelzugriff wackelt, sobald jemand das Bild nebenläufig liest** (CI-Rot zu e9b4cef,
+  5ff47d0): Die Vorschau-Goroutine (F-310) las `sichtbar` mitunter vor dem Lesen der Altdatei. Zeitpunkte im Ablauf
+  des Speicherns über `saveprogress.SetzeHaken` auf eine Marke legen, nicht über Seiteneffekte eines Datenzugriffs.
+- **Verdrahtung in der Gio-Schleife ist ohne Fenster prüfbar, wenn sie in einer Methode steht** (F-385): `neuerEditor`
+  und `nachEreignis` herausgelöst, dann trugen Tests die Mutanten „Aufruf fehlt“. Eine Zeile mitten in `laufen()`
+  oder `Editor()` erreicht nur der virtuelle KWin.
+- **Speicherbefunde messen statt rechnen** (F-361): `TotalAlloc` mit abgeschaltetem GC um den Dekoder; ein von Hand
+  gebautes JPEG (nur DC-Scan, Koeffizienten 0) braucht wenige Bytes je Block. Die Schätzung im Code dann gegen dieselbe
+  Messung im Test halten (Spiel 2 % + 64 KiB), sonst überleben Mutanten am Rechenweg.
+- **Ein Befehl mit Platzhalter geht nicht an den Browser** (22.11., eigener Fehler, folgenlos): Eine URL mit `RUNID`
+  statt der Nummer wurde aufgerufen. Werte erst holen, dann einsetzen.
