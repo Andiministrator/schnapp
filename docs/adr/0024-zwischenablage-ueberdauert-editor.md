@@ -143,8 +143,8 @@ Karte #143).
   Speichern noch läuft (Merker `schliessenNachSpeichern`) oder ein Signal vorgemerkt ist; „Saved to the library“
   verdrängt die Kopierfehler-Meldung in dieser Zeit nicht. Die Reihenfolge von Speicher-Ende und Kopierantwort ist
   damit gleichgültig.
-- Offen: Übernimmt ein anderes Programm die Zwischenablage, meldet Gio `data_source.cancelled` nicht nach außen; die
-  Warnung kommt dann unnötig (F-328, Karte #142, braucht einen Gio-Patch).
+- Übernimmt ein anderes Programm die Zwischenablage, meldete Gio `data_source.cancelled` nicht nach außen; die
+  Warnung kam dann unnötig. Behoben in Nachtrag 8 (F-328).
 
 ## Nachtrag 7 (22.11.2026): Speicher-Ende, Kopierantwort und haltende Meldungen (F-351 bis F-359, F-372)
 
@@ -173,3 +173,15 @@ und werden hier nachgetragen (F-372); die übrigen setzt Sprint 11 um (Karte #15
 - **Ein laufendes neues Kopieren entscheidet selbst (F-359):** Wurde nach einem Kopierfehler erneut kopiert, meldet sich
   das Speicher-Ende wie sonst („Saved“); über das Offenbleiben entscheidet die Antwort des neuen Kopierens.
 
+## Nachtrag 8 (22.11.2026): Warnung ohne Halter entfällt, wenn ein anderes Programm übernommen hat (F-328, Karte #142)
+
+**Status:** Akzeptiert (Claude, Andi informiert).
+
+- Der Gio-Patch ruft bei `data_source.cancelled` für die **eigene aktuelle** Quelle `app.ClipboardCancelled` auf
+  (ADR-0015 Nachtrag 3), nach dem Vorbild `ClipboardWriteError`. Eine ältere, schon ersetzte Quelle meldet nichts.
+- Der Editor setzt dafür den atomaren Merker `zwischenablageUebernommen` und weckt die Schleife (`Wecker.Anfordern`,
+  aus jeder Goroutine erlaubt). `nachEreignis` wertet ihn aus (`zwischenablageUebernommenMelden`): `fensterHaeltKopie`
+  wird zurückgesetzt, eine gezeigte Fenster-Warnung (`haltFenster`) wird ohne neuen Text aufgelöst. Ohne Abbruch bleibt
+  die Warnung wie in Nachtrag 6.
+- Ist ein Merker mangels Halter gesetzt und kommt `cancelled` erst später (Compositor sendet es verzögert), gilt der
+  Zustand ab dann; zu früh gemeldetes Schließen warnt wie bisher. Kein neuer Oberflächentext.

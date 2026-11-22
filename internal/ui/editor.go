@@ -65,6 +65,10 @@ var offeneOverlays atomic.Int32
 // „Copied to clipboard“ durch einen Fehler.
 var zwischenablageFehlt atomic.Bool
 
+// zwischenablageUebernommen setzt der Gio-Patch (app.ClipboardCancelled, F-328), wenn ein anderes Programm die
+// Zwischenablage übernommen hat: Das Fenster hält die Kopie dann nicht mehr, die Warnung beim Schließen entfällt.
+var zwischenablageUebernommen atomic.Bool
+
 // ErrOverlayOffen: Nach der Frist waren noch Overlay-Fenster offen; der Editor öffnet dann nicht (F-82).
 var ErrOverlayOffen = errors.New("ui: Overlay-Fenster noch offen")
 
@@ -134,6 +138,12 @@ func Editor(titel string, d *document.Dokument, speichern Speichern, rettung Ret
 	// Wecker statt einzelnem Invalidate: Gio verwirft ein Invalidate nach einem schon angenommenen (F-231).
 	e.wecker = canvas.NeuerWecker(e.w.Invalidate, weckTakt, weckGrenze)
 	defer e.wecker.Ende()
+	wecker := e.wecker // der Rückruf liest nur diese Kopie, nie e.wecker (Datenwettlauf)
+	zwischenablageUebernommen.Store(false)
+	app.ClipboardCancelled = func() { // Gios Wayland-Schleife, nicht die Editor-Goroutine (F-328)
+		zwischenablageUebernommen.Store(true)
+		wecker.Anfordern()
+	}
 	ctx, abbruch := context.WithCancel(context.Background())
 	defer abbruch() // schließt einen offenen Exportdialog mit dem Fenster
 	e.exportCtx = ctx
@@ -365,6 +375,9 @@ func (e *editor) nachEreignis() {
 	if e.zwischenablageFehltMelden() {
 		e.w.Invalidate()
 	}
+	if e.zwischenablageUebernommenMelden() {
+		e.w.Invalidate()
+	}
 	// Auch nach Ereignissen ohne Bild (Gio sendet bei inaktivem Fenster nur ein Weckereignis) die Dialogantwort
 	// annehmen, sonst läge sie bis zum nächsten Bild (F-231); ein Folgebild zeigt sie. Ebenso die Antwort des
 	// Speicherns (ADR-0020 Nachtrag 6).
@@ -403,6 +416,23 @@ func (e *editor) zwischenablageFehltMelden() bool {
 		e.meldeNebenbei(text, true) // statt „Copied“ (F-177); eine andere haltende Meldung bleibt (V6-1)
 	}
 	e.fensterHaeltKopie = false // Gio bietet nichts an: nichts, wovor zu warnen wäre (F-321)
+	return true
+}
+
+// zwischenablageUebernommenMelden nimmt, wenn ein anderes Programm die Zwischenablage übernommen hat, den Merker
+// fensterHaeltKopie zurück und löst eine gezeigte Fenster-Warnung ohne neuen Text auf (F-328); liefert, ob es etwas
+// zu tun gab.
+func (e *editor) zwischenablageUebernommenMelden() bool {
+	if !zwischenablageUebernommen.Swap(false) {
+		return false
+	}
+	if !e.fensterHaeltKopie {
+		return false
+	}
+	e.fensterHaeltKopie = false
+	if e.meldungHaelt == haltFenster {
+		e.melde("", false)
+	}
 	return true
 }
 

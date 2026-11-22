@@ -84,3 +84,10 @@ das Bild nur erhalten, wenn ein Zwischenablage-Verwalter (unter KDE Klipper) es 
 überdauert (data-control-Protokoll oder ein kurzlebiger Hilfsprozess), ist eine spätere Entscheidung. **Stand 20.11.2026:** Klipper übernimmt das Bild bei Andi nicht; Andi will, dass es das Schließen
 überdauert (E-19). **Umgesetzt in ADR-0024:** Strg+C übergibt das Bild an einen Halter-Prozess (data-control); der Weg
 über Gio bleibt als Rückfall, wenn der Compositor data-control nicht anbietet.
+
+## Nachtrag 3 (22.11.2026): Rückmeldung bei abgelöster Zwischenablage-Quelle (F-328)
+
+Der Patch ergänzt `app.ClipboardCancelled func()` in `app/os_wayland.go`: Gio ruft es in `gio_onDataSourceCancelled`
+auf, wenn die eigene aktuelle `wl_data_source` abgelöst wird (ein anderes Programm hat die Zwischenablage übernommen),
+gleiche Art wie `ClipboardWriteError`; aus Gios Wayland-Schleife, vor dem ersten Fenster zu setzen. Verwendung: ADR-0024
+Nachtrag 8.

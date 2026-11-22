@@ -327,6 +327,13 @@ var ErrClipboardUnavailable = errors.New("app: no clipboard available (no seat o
 // event goroutine.
 var ClipboardWriteError func(error)
 
+// ClipboardCancelled, if set, is called when the compositor cancels the
+// data source of the current clipboard write because another client took
+// over the clipboard (Schnapp patch, F-328). Set it once before any window
+// opens. It is called from Gio's Wayland dispatch loop, not necessarily on
+// the window's event goroutine.
+var ClipboardCancelled func()
+
 func (d *wlDisplay) writeClipboard(mime string, content []byte) error {
 	s := d.seat
 	if s == nil {
@@ -2110,11 +2117,15 @@ func writeAllFD(fd int, content []byte, stall time.Duration) error {
 //export gio_onDataSourceCancelled
 func gio_onDataSourceCancelled(data unsafe.Pointer, source *C.struct_wl_data_source) {
 	s := callbackLoad(data).(*wlSeat)
-	if s.source == source {
+	own := s.source == source
+	if own {
 		s.content = nil
 		s.source = nil
 	}
 	C.wl_data_source_destroy(source)
+	if own && ClipboardCancelled != nil {
+		ClipboardCancelled()
+	}
 }
 
 //export gio_onDataSourceDNDDropPerformed
