@@ -39,9 +39,20 @@ func TestSpeichernKehrtNachVerkleinerungZurueck(t *testing.T) {
 		if !errors.Is(err, ErrFremd) {
 			t.Fatalf("Fehler %v, erwartet ErrFremd", err)
 		}
-		if nachher := runtime.NumGoroutine(); nachher > vorher {
+		// Die Goroutine signalisiert ihr Ende mit close (defer) und lebt danach noch einen Augenblick; auf einem langsamen
+		// Rechner (CI mit -race) zählt NumGoroutine sie dann noch mit. Ein kurzes Nachlauffenster trennt das vom echten
+		// Fehler: Eine nicht abgewartete Verkleinerung von 6000x4000 Pixeln läuft deutlich länger (Gegenprobe ohne das
+		// Warten in Speichern: rot).
+		nachher := runtime.NumGoroutine()
+		for frist := time.Now().Add(nachlauf); nachher > vorher && time.Now().Before(frist); nachher = runtime.NumGoroutine() {
+			time.Sleep(time.Millisecond)
+		}
+		if nachher > vorher {
 			t.Errorf("Durchgang %d: nach der Rückkehr laufen %d statt %d Goroutinen (Verkleinerung nicht abgewartet)", i, nachher, vorher)
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
 }
+
+// nachlauf ist das Fenster, in dem eine eben beendete Goroutine noch gezählt werden darf (CI-Wackler 22.11.2026).
+const nachlauf = 20 * time.Millisecond
