@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-21 (ergänzt in Sprint 10). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-22 (ergänzt nach Sprint 10). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -425,7 +425,7 @@ Stand: 2026-11-21 (ergänzt in Sprint 10). Kurze Regeln aus Fehlern und Befunden
 - **Ein Zustand aus mehreren Merkern verlangt einen Prüflauf je Runde und eine Grenze.** Der Kopierfehler-Halt (drei
   Merker: `kopierFehlerHaelt`, `schliessenNachKopie`, `schliessenNachSpeichern`) bekam in drei Verify-Runden je neue
   Reihenfolgen (F-346 bis F-359). Was half: die roten Prüfer-Tests als echte Tests übernehmen, je geänderte Zeile einen
-  Mutanten in ein Skript (`tmp/sprint10/k154/mutanten.py`, 25 Mutanten, alle rot) und die Reste ab P2/P3 auf eine Karte
+  Mutanten in ein Skript (`tmp/sprint10/k154/mutanten.py`, 23 Mutanten, alle rot) und die Reste ab P2/P3 auf eine Karte
   statt in eine weitere Runde. Die Reste zeigen das fehlende Konzept („haltende Meldung“, Karte #156) — ein vierter
   Merker hätte es nicht gelöst.
 - **Belege aus Agenten-Worktrees vor dem Abräumen sichern und vergleichen.** Prüfer-Tests und Mutantenskripte nach
@@ -447,3 +447,20 @@ Stand: 2026-11-21 (ergänzt in Sprint 10). Kurze Regeln aus Fehlern und Befunden
   außerhalb von Backlog lässt den Sprint als „läuft, aber nicht aktiviert“ gelten (`/projekt-start`).
 - **`git rev-parse --short` nimmt genau ein Argument**; mit zweien bricht es ab („Benötigte einen einzelnen Commit“),
   und die Ausgabe sieht aus wie ein Fehler des folgenden Befehls.
+- **Zahlen aus dem Beleg, auch die eigenen** (Sitzungs-QA 22.11., Q-1, Q-6, Q-7): „25 Mutanten“ (es waren 23), „37
+  Arbeitskarten“ (36; #77 war verschoben, nicht erledigt) und „2 offene [K]“ (3; F-361 kam im selben Recap dazu) standen
+  in Commit, Archiv und Recap. Zahl unmittelbar vor dem Schreiben mit dem Prüfbefehl erheben (`grep -c`, `jq … | length`,
+  `schulden-grenze.mjs`), nicht aus der Erinnerung an einen früheren Lauf.
+- **Eine Testaussage in einem PR-Text braucht je Commit einen Beleg** (Q-11). „Tested on KDE Plasma with outputs at
+  integer and fractional scales“ galt für den Patch auf v0.10.3 im täglichen Gebrauch, nicht für die von Hand auf Gio
+  `main` umgesetzte Serie und nicht für das Zeigerbild (F-123-Echttest nie gefahren). Vor dem Einreichen jede Aussage
+  im Text gegen die Akte halten; offene Andi-Tests einer geschlossenen Karte auf eine offene Karte umhängen.
+- **Rote Prüfvorlagen offener Findings liegen nur einmal** (Q-3): unter `tmp/` gitignoriert, auf dem Laptop. Beim
+  Kartenstart als Erstes in Tests übernehmen; `tmp/sprint10/verify5`, `kritiker`, `k154`, `gio-einreichung` erst
+  räumen, wenn die zugehörigen Karten erledigt sind.
+- **Wer eine Karte in einen neuen Sprint legt, zieht Titel, Beschreibung und agentContext nach** (Q-9): #77 hieß noch
+  „… erwägen“, obwohl ADR-0029 akzeptiert war; die Entscheidung stand nur in Kommentaren, die ein Sub-Agent nicht sieht.
+- **Nach jedem Commit hinter dem ▶-Kommentar diesen erneuern** (Q-8); er nennt Hash und Stand, die sonst veralten.
+- **Nach `gh auth login` gilt: lesen frei, schreiben nur mit Andis Freigabe** (Q-13, CLAUDE.md §Repos und Remotes).
+- **Tag-Nachricht aus dem README-Satz der Version bilden** (Q-16): v0.5.0 trägt nur „Schnapp 0.5.0 (Sprint 10)“, v0.1.0
+  bis v0.4.0 nennen den Inhalt. Ein Tag lässt sich nicht ohne Force nachbessern.

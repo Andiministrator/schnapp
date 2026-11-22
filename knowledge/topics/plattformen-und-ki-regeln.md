@@ -24,7 +24,7 @@ ersetzt (laut GamingOnLinux und Linuxiac; Wortlaut vor einer Einreichung in Flat
 **Folge:** Flathub bleibt möglich, aber nur mit Andis Handarbeit an Manifest und Einreichung und ohne Garantie.
 Alternative: eigenes Flatpak-Repo oder Pakete (AUR, eigene Releases).
 
-## Gio — Patch einreichen (Stand 21.11.2026, Karte #17)
+## Gio — Patch einreichen (Stand 22.11.2026, Karten #17 und #157)
 
 Quelle: https://gioui.org/doc/contribute, am 21.11.2026 geöffnet und gelesen (Zitate gekürzt):
 

@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > Verweise auf ADR-0043, ADR-0062, ADR-0067, F-Nummern, die weder in `docs/findings.md` noch in
 > `docs/findings.archive.md` stehen, und Pfade unter `~/.aboard-framework/` oder
 > `~/.claude/` beziehen sich auf das Arbeits-Framework (aBoard) des Maintainers, nicht auf dieses Repo. Projekteigene
-> ADRs liegen unter `docs/adr/` (0001–0028), projekteigene Findings in `docs/findings.md` (erledigte
+> ADRs liegen unter `docs/adr/` (0001–0029), projekteigene Findings in `docs/findings.md` (erledigte
 > in `docs/findings.archive.md`).
 
 ## Vor jeder Antwort — Pflicht
@@ -209,6 +209,10 @@ Aktueller Entwicklungsstand: Board (`aboard-sync.json`, nicht versioniert).
 - Commits nur mit der GitHub-noreply-Adresse (repo-lokal eingestellt), nie mit einer privaten Mailadresse.
 - **Interne Angaben** (Herkunft, Hausnetz, Schwesterprojekt, Abstimmungspartner) gehören in `CLAUDE.local.md`, nie in
   versionierte Dateien (F-1).
+- **`gh` ist unter Andis Konto angemeldet** (seit 22.11.2026, Token mit `repo`-Recht lokal; F-376). Lesend (`gh run`,
+  `gh pr view`, `gh api` ohne Schreibmethode) ohne Rückfrage; **jede schreibende `gh`-Aktion** (PR, Issue, Kommentar,
+  Review-Antwort, Release, Fork) **nur nach Andis Freigabe**, Text vorher zeigen. Sub-Agents rufen `gh` nicht auf.
+  Gio-Fork `Andiministrator/gio`, PRs gioui/gio #204 und #205 (Karte #157); Push zum Fork über den SSH-Alias `github`.
 
 ## Commit-Konvention
 
