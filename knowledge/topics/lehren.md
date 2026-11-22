@@ -461,6 +461,6 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10). Kurze Regeln aus Fehlern und Befund
 - **Wer eine Karte in einen neuen Sprint legt, zieht Titel, Beschreibung und agentContext nach** (Q-9): #77 hieß noch
   „… erwägen“, obwohl ADR-0029 akzeptiert war; die Entscheidung stand nur in Kommentaren, die ein Sub-Agent nicht sieht.
 - **Nach jedem Commit hinter dem ▶-Kommentar diesen erneuern** (Q-8); er nennt Hash und Stand, die sonst veralten.
-- **Nach `gh auth login` gilt: lesen frei, schreiben nur mit Andis Freigabe** (Q-13, CLAUDE.md §Repos und Remotes).
+- **`gh` nur kurz anmelden** (Q-13, F-376, Rat von framework 22.11.): Auf dem Laptop laufen alle Sitzungen als `andi`; jede könnte den Token lesen und an einem Hook vorbei `curl` nehmen. Eine Sperre per Hook schützt nur vor Versehen. Darum: Andi meldet sich für einen konkreten PR an und danach ab; solange angemeldet, schreibt nur, wer Andis Freigabe hat (CLAUDE.md §Repos und Remotes). Auf dem 13 Pro laufen Sitzungen als eigene Benutzer — dort baut framework einen befristeten Token per KI-Widget und einen verwalteten Hook.
 - **Tag-Nachricht aus dem README-Satz der Version bilden** (Q-16): v0.5.0 trägt nur „Schnapp 0.5.0 (Sprint 10)“, v0.1.0
   bis v0.4.0 nennen den Inhalt. Ein Tag lässt sich nicht ohne Force nachbessern.

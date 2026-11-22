@@ -41,7 +41,7 @@ muss.
 - **Board:** alles selbst erledigen, auch Sprints anlegen (Andi); nie `aboard-sync.json` direkt schreiben; Ops über `node ~/.aboard-framework/tools/aboard-op.mjs … --dir .`.
 - **Commits:** Conventional Commits, deutsch, `Co-Authored-By` für das ausführende bzw. prüfende Modell und den Orchestrator; gleiche
   Modelle nur eine Zeile, keine Leerzeile zwischen den Trailern (CLAUDE.md §Commit-Konvention, ADR-0005).
-- **Sub-Agents:** kein Memory; Auflagen-Block wörtlich; keine gemeinsamen Dateien, kein `git stash/reset/checkout`,
+- **Sub-Agents:** kein Memory; Auflagen-Block wörtlich; kein `gh` und keine Netz-Schreibzugriffe (F-376); keine gemeinsamen Dateien, kein `git stash/reset/checkout`,
   kein Build bei mehreren Strängen. Karten mit anderem Owner-Modell laufen als Sub-Agent im eigenen Worktree
   (`isolation: worktree`), Commit dort, Übernahme per `git cherry-pick`; den Worktree erst löschen, wenn
   `git cherry main <branch>` nur „-“ zeigt oder (nach Zusammenführen beim Cherry-Pick) die geänderten Zeilen

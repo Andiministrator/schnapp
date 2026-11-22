@@ -209,10 +209,14 @@ Aktueller Entwicklungsstand: Board (`aboard-sync.json`, nicht versioniert).
 - Commits nur mit der GitHub-noreply-Adresse (repo-lokal eingestellt), nie mit einer privaten Mailadresse.
 - **Interne Angaben** (Herkunft, Hausnetz, Schwesterprojekt, Abstimmungspartner) gehören in `CLAUDE.local.md`, nie in
   versionierte Dateien (F-1).
-- **`gh` ist unter Andis Konto angemeldet** (seit 22.11.2026, Token mit `repo`-Recht lokal; F-376). Lesend (`gh run`,
-  `gh pr view`, `gh api` ohne Schreibmethode) ohne Rückfrage; **jede schreibende `gh`-Aktion** (PR, Issue, Kommentar,
-  Review-Antwort, Release, Fork) **nur nach Andis Freigabe**, Text vorher zeigen. Sub-Agents rufen `gh` nicht auf.
-  Gio-Fork `Andiministrator/gio`, PRs gioui/gio #204 und #205 (Karte #157); Push zum Fork über den SSH-Alias `github`.
+- **`gh` ist im Normalfall nicht angemeldet** (F-376; Rat der framework-Sitzung vom 22.11.2026): Auf diesem Rechner
+  laufen alle Sitzungen als derselbe Benutzer und könnten einen Token lesen; eine Sperre per Hook hülfe nur gegen
+  Versehen. Für einen konkreten PR meldet Andi sich selbst an (`gh auth login` im eigenen Terminal) und danach wieder ab
+  (`gh auth logout`). Lesendes `gh` für öffentliche Repos geht ohne Anmeldung (mit Ratenlimit). Ist `gh` angemeldet:
+  lesen ohne Rückfrage, **jede schreibende Aktion** (PR, Issue, Kommentar, Review-Antwort, Release, Fork) **nur nach
+  Andis Freigabe**, Text vorher zeigen. Sub-Agents rufen `gh` nie auf. Eine echte Grenze (befristeter Token per
+  KI-Widget, verwalteter Hook) baut framework für den 13 Pro. Gio-Fork `Andiministrator/gio`, PRs gioui/gio #204 und
+  #205 (Karte #157); Push zum Fork über den SSH-Alias `github` (geht ohne `gh`).
 
 ## Commit-Konvention
 
