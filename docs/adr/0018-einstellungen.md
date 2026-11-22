@@ -78,3 +78,14 @@ Sprache nicht, gilt ebenfalls die Umgebung, ohne Warnung (die Datei kennt die ei
 anderer Form ist ungültig und wird gewarnt. `main` liest die Datei vor dem Laden der Sprache nur für diesen Schlüssel
 und gibt dabei keine Warnungen aus; die Warnungen kommen wie bisher übersetzt bei Aufnahme und Editor. Neuer Abschnitt
 `[general]` für Einstellungen, die das ganze Programm betreffen.
+
+## Nachtrag 3 (22.11.2026): `[capture] seam` (Karte #96, ADR-0023 Nachtrag 6)
+
+**Status:** Akzeptiert (Andi 22.11.2026: Form einstellbar, eine als Voreinstellung; umgesetzt von Claude Opus 5.5).
+
+`[capture] seam` = `tear` (Voreinstellung) | `wave` | `zigzag` legt die Form der Stauch-Kante neuer Dokumente fest:
+einer Aufnahme und eines einfachen PNG/JPEG, das Schnapp öffnet, auch einer beschädigten oder neueren Arbeitsdatei, die
+als Bild geöffnet wird. Eine Arbeitsdatei behält ihre gespeicherte Form (`s:kante`). Die Werte gelten genau so
+geschrieben (Groß-/Kleinschreibung zählt); ein anderer Wert warnt wie jeder ungültige Wert und lässt den bisherigen
+Stand. Gesetzt wird die Form ohne Rückgängig-Schritt (`document.VorgabeKante`); sie ist keine Änderung des Nutzers.
+`--export` liest die Einstellungen nicht; das ist ohne Wirkung, weil ein frisch geöffnetes Bild keine Naht hat.

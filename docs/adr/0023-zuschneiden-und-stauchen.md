@@ -215,3 +215,28 @@ Anlass: Die Zackenkante war erkennbar, aber nicht schön (Andi, Echtlauf #92).
   `[capture] seam` = `tear` (Voreinstellung) | `wave` | `zigzag` (ADR-0018). Im Editor wechselt ein Menüeintrag
   „Seam style“ die Form des Dokuments reihum, als ein Rückgängig-Schritt.
 - Das Rechenbudget (`render.Pruefe`) zählt alle Schichten.
+- **Schichttabelle** (umgesetzt in `document.KantenSchichten`, Karte #96, 1181aec; abgestimmt an Muster 4; Maße quer zur
+  Mittellinie bei Faktor 1, negativ oben/links; in Zeichenreihenfolge):
+
+  | # | von | bis | Farbe | Deckkraft (A) | Zweck |
+  |---|---|---|---|---|---|
+  | 1 | −5 | 5 | #D3D7DC | 255 | Spalt |
+  | 2 | −5 | 2 | #202428 | 0x21 | Schatten oben/links |
+  | 3 | −5 | −1 | #202428 | 0x16 | Schatten oben/links |
+  | 4 | −5 | −3 | #202428 | 0x2A | Schatten oben/links |
+  | 5 | −5 | −4 | #202428 | 0x33 | Schatten oben/links |
+  | 6 | 1 | 5 | #202428 | 0x0F | Schatten unten/rechts |
+  | 7 | 3 | 5 | #202428 | 0x10 | Schatten unten/rechts |
+  | 8 | 4 | 5 | #202428 | 0x17 | Schatten unten/rechts |
+  | 9 | −6 | −5 | #000000 | 0x1C | Kantenabdunklung |
+  | 10 | 5 | 6 | #000000 | 0x1C | Kantenabdunklung |
+
+  Übereinander ergibt das vom oberen Teil je Pixeltiefe 0–1, 1–2, 2–4 und 4–7 die Deckung 0,47, 0,34, 0,21 und 0,13,
+  vom unteren je Tiefe 0–1, 1–2 und 2–4 die Deckung 0,20, 0,12 und 0,06 (Muster: 0,55·e^(−s/3) bzw. 0,25·e^(−s/2)
+  über das Pixel gemittelt). Das Muster rechnete mit Faktor 1,4, Spalt 12 und Wellenperiode 36; umgesetzt sind die
+  Werte dieses Nachtrags (0,8, 10, 32), die Kante wirkt dadurch etwas ruhiger.
+- **Ergänzungen bei der Umsetzung:** Querlagen werden auf 1/100 px gerundet (gleiche Zahlen in Editor, Renderer und
+  SVG, kurzes SVG). Die Rettungskopie (ADR-0029) trägt die Form mit (`fileformat.Angaben.Kante`), sonst ginge ein
+  Formwechsel bei der Wiederherstellung verloren. `document.Neu` legt `tear` an (wie ein Nutzer ohne
+  Einstellungsdatei); Aufnahme, Öffnen und Laden setzen die Form ausdrücklich ohne Rückgängig-Schritt
+  (`VorgabeKante`).
