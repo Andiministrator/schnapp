@@ -40,7 +40,8 @@ func oeffneImEditor(pfad string, ohneGrenze bool) error {
 	if err != nil {
 		return err
 	}
-	return editorStarten(filepath.Base(abs), g.Dokument, speichernIn(library.Neu(orte), abs, g, stand))
+	r := rettungFuer(abs, ohneGrenze)
+	return editorStarten(filepath.Base(abs), g.Dokument, speichernMitNachher(library.Neu(orte), abs, g, stand, r.nachSpeichern()), r.ui())
 }
 
 // bearbeiteNeu öffnet eine eben abgelegte Aufnahme im Editor (F-112): mit dem Dokument aus dem Speicher, ohne die
@@ -58,7 +59,8 @@ func bearbeiteNeu(a abgelegt) error {
 		return err
 	}
 	g := &fileformat.Gelesen{Dokument: a.d}
-	return editorStarten(filepath.Base(abs), a.d, speichernIn(library.Neu(orte), abs, g, a.stand))
+	r := rettungFuer(abs, false)
+	return editorStarten(filepath.Base(abs), a.d, speichernMitNachher(library.Neu(orte), abs, g, a.stand, r.nachSpeichern()), r.ui())
 }
 
 // ladeFuerEditor liest eine Datei für den Editor (von außen oder aus der Bibliothek) und lehnt ein Dokument ab, dessen
@@ -99,7 +101,13 @@ func ladeFuerEditor(pfad string, ohneGrenze bool) (abs string, g *fileformat.Gel
 // Gespeichert ist es trotzdem (F-131), aber ladeFuerEditor lehnte es beim nächsten Öffnen ab. Die Warnung hält das
 // Fenster beim Schließen einmal offen (ADR-0020 Nachtrag 2), sodass sich Beschriftungen noch entfernen lassen.
 func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand) ui.Speichern {
-	speichern := ablegenIn(b, abs, g, stand)
+	return speichernMitNachher(b, abs, g, stand, nil)
+}
+
+// speichernMitNachher ist speichernIn; nachher bekommt nach jedem gelungenen Speichern den absoluten Pfad der Datei,
+// die jetzt den Stand trägt (Ausgangsdatei der Rettungskopie, ADR-0029). nil: niemand.
+func speichernMitNachher(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand, nachher func(string)) ui.Speichern {
+	speichern := ablegenIn(b, abs, g, stand, nachher)
 	return func(d *document.Dokument) (ui.Gespeichert, error) {
 		erg, err := speichern(d)
 		if err != nil {
@@ -123,7 +131,7 @@ func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand
 var entfernen = (*library.Bibliothek).Entfernen
 
 // ablegenIn ist speichernIn ohne die Prüfung des Budgets.
-func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand) ui.Speichern {
+func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand, nachher func(string)) ui.Speichern {
 	rel, inBibliothek := b.Relativ(abs)
 	inBibliothek = inBibliothek && !g.Fremd
 	meta := g.Meta
@@ -298,6 +306,9 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 		}
 		erg, reste = rueckblick(b, d, reste, rel, erg)
 		reste = append(reste, neue...)
+		if nachher != nil {
+			nachher(filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))) // Datei, die jetzt den Stand trägt (ADR-0029)
+		}
 		return erg, nil
 	}
 }

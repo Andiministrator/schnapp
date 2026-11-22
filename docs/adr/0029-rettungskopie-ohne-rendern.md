@@ -1,7 +1,7 @@
 # ADR-0029: Rettungskopie ohne Rendern (F-144)
 
 ## Status
-Akzeptiert (Claude im Auftrag Andis, 21.11.2026: „#77 entscheidest du für mich“). Karte #77, Umsetzung offen.
+Akzeptiert (Claude im Auftrag Andis, 21.11.2026: „#77 entscheidest du für mich“). Umgesetzt in Sprint 11, Karte #77 (Nachtrag 1).
 
 ## Kontext
 Der Editor speichert beim Schließen, bei Strg+S und bei SIGTERM, SIGINT und SIGHUP (ADR-0020 Nachträge 2, 6 bis 9).
@@ -58,3 +58,28 @@ Was eine Bearbeitung ausmacht, ist dagegen klein und ohne Pixel beschreibbar:
 - **Rückgängig-Verlauf auf Platte spiegeln:** enthält Pixelstände (Schwärzungen) und wäre ein Leck für Prinzip 2.
 - **Rückfrage beim Öffnen** („Wiederherstellen?“): Schnapp hat keine Dialoge (ADR-0020 Nachtrag 2); Anwenden mit
   Rückgängig als Ausweg ist gleich sicher und schneller.
+
+## Nachtrag 1 (22.11.2026): Umsetzung
+
+**Status:** Akzeptiert (Claude Opus 5.5, Andi informiert). Karte #77, F-144.
+
+- **Pakete:** `internal/rescue` (Kennung, Ort, JSON-Format 1, atomares Schreiben, Lesen mit Grenzen, Anwenden,
+  Aufräumen, `Sicherung` für eine Editor-Sitzung); `document.SetzeAngaben` (Objekte, Zuschnitt und Streifen in einem
+  Rückgängig-Schritt) und `document.SchwaerzungenImVerlauf`; `fileformat.AngabenSVG`/`LeseAngaben` (dasselbe SVG wie
+  der Block snAP, ohne Metadaten); `ui.Rettung` (Bündelung in der Ereignisschleife, `internal/ui/rettung.go`);
+  Anschluss in `cmd/schnapp/rettung.go`.
+- **Schwärzungen seit dem letzten Speichern** sind genau die Schwärzungen im Rückgängig-Verlauf: Ein Speichern mit
+  Schwärzung leert ihn (ADR-0022 Punkt 3). Verwirft die Grenze des Verlaufs (512 MiB, F-64) eine Schwärzung, wäre die
+  Liste unvollständig; dann wird keine neue Kopie geschrieben, die zuletzt geschriebene bleibt.
+- **Neue Ausgangsdatei nach dem Speichern:** Weicht das Speichern auf eine neue Aufnahme der Bibliothek aus (Datei von
+  außen, Konflikt), bezieht sich die Rettungskopie danach auf diese Datei; die Kopie zur alten wird gelöscht.
+- **Wiederherstellen** prüft erst an einem Abzug (Grenzen wie beim Laden, `render.Pruefe`, außer mit
+  `--ignore-limit`); scheitert etwas, bleibt das Dokument unverändert und die Kopie liegen.
+- **Löschen beim Schließen** nur, wenn das Dokument dem Gespeicherten gleicht. Hat der Nutzer nach einem gescheiterten
+  Speichern das Verwerfen bestätigt, bleibt die Kopie (Punkt 5: „Scheitert das Speichern, bleibt sie“) — ein Netz etwa
+  bei voller Platte.
+- **Aufräumen** nach 30 Tagen geschieht beim Start des Editors (nicht beim Aufräumen der Bibliothek, das nicht bei
+  jedem Start läuft); nur eigene Dateinamen im eigenen Ordner.
+- **Meldungen** (englisch, deutsch in `de.po`): wiederhergestellt; nicht angewendet, weil die Datei geändert wurde;
+  nicht anwendbar; nicht lesbar. Die Zeit erscheint als `JJJJ-MM-TT hh:mm` (Datumsformate je Sprache: Karte #28).
+

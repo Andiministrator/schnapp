@@ -44,6 +44,9 @@ type Dokument struct {
 	// schwaerzStand ist die Kennung der zuletzt wirksamen Schwärzung (0: keine seit Neu bzw. Laden), schwaerzKennungen
 	// die zuletzt vergebene Kennung (SchwaerzStand, F-187).
 	schwaerzStand, schwaerzKennungen uint64
+	// schwaerzVerworfen: Die Grenze des Verlaufs hat seit dem letzten VergissVerlauf eine Schwärzung verworfen
+	// (SchwaerzungenImVerlauf ist dann unvollständig, ADR-0029).
+	schwaerzVerworfen bool
 }
 
 // Fehler der Änderungen.

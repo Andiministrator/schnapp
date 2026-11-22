@@ -68,6 +68,9 @@ func (d *Dokument) begrenzeVerlauf() {
 		if g, ok := v.erledigt[weg].b.(groessenBefehl); ok {
 			summe -= g.pixelBytes()
 		}
+		if _, ok := v.erledigt[weg].b.(*schwaerzen); ok {
+			d.schwaerzVerworfen = true // SchwaerzungenImVerlauf ist unvollständig (ADR-0029)
+		}
 		v.basis = v.erledigt[weg].stand
 		weg++
 	}
@@ -132,6 +135,7 @@ func (d *Dokument) VergissVerlauf() error {
 		return ErrZugLaeuft
 	}
 	d.verlauf = verlauf{basis: d.Stand(), letzte: d.verlauf.letzte}
+	d.schwaerzVerworfen = false
 	return nil
 }
 

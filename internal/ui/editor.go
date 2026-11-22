@@ -116,7 +116,9 @@ func (g Gespeichert) HaeltOffen() bool { return g.Warnung || g.Hinweis != "" }
 // mit der Meldung offen, und erst eine zweite Schließen-Anfrage verwirft (F-107, ADR-0020 Nachtrag 2). Ein Signal
 // (SIGTERM, SIGINT, SIGHUP) speichert und schließt; weitere Signale bis zur Rückkehr werden abgefangen (F-152).
 // Rückgabewert ist ein Fehler des Fensters oder des letzten Speicherns ohne Rückfrage. titel ist der Dateiname für die Titelleiste. Muss neben app.Main laufen (Starte).
-func Editor(titel string, d *document.Dokument, speichern Speichern) error {
+//
+// rettung führt die Rettungskopie gegen Absturz und SIGKILL (ADR-0029); nil: keine.
+func Editor(titel string, d *document.Dokument, speichern Speichern, rettung Rettung) error {
 	frist := time.Now().Add(2 * time.Second)
 	for offeneOverlays.Load() > 0 {
 		if time.Now().After(frist) {
@@ -128,11 +130,12 @@ func Editor(titel string, d *document.Dokument, speichern Speichern) error {
 	// Nur die Go-Schriften, wie im Renderer: sonst zeigte der Bildschirm Zeichen aus Systemschriften, die in der
 	// gespeicherten Datei als Kästchen erscheinen (Kritik A-3).
 	th.Shaper = text.NewShaper(text.NoSystemFonts(), text.WithCollection(gofont.Collection()))
-	e := &editor{w: new(app.Window), thema: th, s: canvas.NeueSitzung(d), titel: titel, speichern: speichern}
+	e := &editor{w: new(app.Window), thema: th, s: canvas.NeueSitzung(d), titel: titel, speichern: speichern, rettung: rettung}
 	app.ClipboardWriteError = func(err error) { // vor dem ersten Fenster (F-177)
 		diagnoseEditor("Zwischenablage nicht geschrieben: %v", err)
 		zwischenablageFehlt.Store(true)
 	}
+	e.rettungStart() // vor dem ersten Bild: Wiederholte Schwärzungen ändern die Pixel
 	e.bildNeu()
 	// Wecker statt einzelnem Invalidate: Gio verwirft ein Invalidate nach einem schon angenommenen (F-231).
 	e.wecker = canvas.NeuerWecker(e.w.Invalidate, weckTakt, weckGrenze)
@@ -231,6 +234,9 @@ type editor struct {
 	// fensterHaeltKopie: Die Zwischenablage trägt das Bild nur über dieses Fenster (kein Halter möglich, Rückfall,
 	// ADR-0015 Nachtrag 2); fensterWarnung: Das Schließen wurde deswegen schon einmal angehalten (F-295).
 	fensterHaeltKopie, fensterWarnung bool
+
+	rettung Rettung        // Rettungskopie (ADR-0029); nil: keine
+	rett    rettungZustand // Bündelung der Rettungskopie
 
 	speicherStart       time.Time     // Beginn des laufenden Speicherns (F-283)
 	haengtGemeldet      bool          // die Statusleiste sagt schon, dass das Speichern nicht antwortet
@@ -366,6 +372,7 @@ func (e *editor) laufen() error {
 		if e.nachKopieSchliessen() {
 			e.w.Perform(system.ActionClose) // erneut anfragen; schliessen entscheidet wie sonst (F-281)
 		}
+		e.rettungPruefen() // Rettungskopie gebündelt nach Änderungen (ADR-0029)
 	}
 }
 
@@ -413,6 +420,7 @@ func (e *editor) zerstoert(fensterErr error) error {
 			hinweisAufStderr(g)
 		}
 	}
+	e.rettungEnde()
 	return errors.Join(fensterErr, e.schlussErr, err)
 }
 
@@ -578,6 +586,9 @@ func (e *editor) speichernAbwarten() {
 		case r := <-e.speicherAntwort:
 			fristStop()
 			ende := e.s.SpeichernEnde(r.g.HaeltOffen(), r.err)
+			if r.err == nil {
+				e.rettungGespeichert()
+			}
 			e.speichernMelden(r, ende, false, false) // das Fenster ist schon weg: kein Halt
 			// Eine Schließen-Anfrage, deren Fehler erst jetzt ankommt, hat niemand gesehen: Die Statusleiste verschwindet
 			// mit dem Fenster, und der Stand gilt schon als verworfen. Also in die Rückgabe, nicht still verlieren (F-300).
@@ -651,6 +662,7 @@ func (e *editor) spaeteAntwort(r speicherErgebnis) {
 	diagnoseEditor("Speichern nach dem Aufgeben zurück: %v, Ende %+v", r.err, ende)
 	if r.err == nil {
 		hinweisAufStderr(r.g)
+		e.rettungGespeichert()
 	}
 	haengt := errors.Is(e.schlussErr, ErrSpeichernHaengt)
 	if ende.Erneut != nil {
@@ -686,6 +698,9 @@ func (e *editor) weiteresSignalSchliesst() bool {
 func (e *editor) speichernFertig(r speicherErgebnis) {
 	ende := e.s.SpeichernEnde(r.g.HaeltOffen(), r.err)
 	diagnoseEditor("Speichern zurück: %v, Ende %+v", r.err, ende)
+	if r.err == nil {
+		e.rettungGespeichert() // gespeichert: die Rettungskopie ist überflüssig (ADR-0029 Punkt 5)
+	}
 	// Der Kopierfehler kam vor dem Speicher-Ende (F-341): Er hält das Fenster einmal offen wie bei F-337 — aber nur, wenn
 	// dieses Speichern schließen würde, kein Signal vorgemerkt ist (ein Signal schließt in jedem Fall, ADR-0020 Nachtrag
 	// 2, F-346) und kein neues Kopieren läuft (dessen Antwort entscheidet, F-348). Der Merker wird vorher gelesen und in
