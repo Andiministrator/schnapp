@@ -184,5 +184,10 @@ func meldeSchreibFehler(fehler io.Writer, ziel string, err error) {
 		fmt.Fprintf(fehler, i18n.T("Interrupted by a signal after %s was written completely.")+"\n", ziel)
 		return
 	}
+	if errors.Is(err, errAbgebrochen) {
+		// F-452: Das Signal kam vor dem ersten Byte, das Ziel ist unberührt.
+		fmt.Fprintf(fehler, i18n.T("Interrupted before anything was written to %s; it is untouched.")+"\n", ziel)
+		return
+	}
 	fmt.Fprintf(fehler, i18n.T("Could not write %s: %s")+"\n", ziel, schreibFehler(err))
 }

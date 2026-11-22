@@ -780,6 +780,7 @@ type WaylandOutput struct {
 	Name          string
 	Width, Height int // current mode in physical pixels
 	Scale         int // integer buffer scale
+	Transform     int // wl_output.transform as announced: 0 normal, 1/3 rotated by 90/270 degrees, 4 to 7 the same flipped
 }
 
 // sortedOutputs drops outputs without a name, which can't be addressed by
@@ -846,7 +847,7 @@ func WaylandOutputs() ([]WaylandOutput, error) {
 	defer d.destroy()
 	var out []WaylandOutput
 	for _, c := range d.outputConfig {
-		out = append(out, WaylandOutput{Name: c.name, Width: c.width, Height: c.height, Scale: c.scale})
+		out = append(out, WaylandOutput{Name: c.name, Width: c.width, Height: c.height, Scale: c.scale, Transform: int(c.transform)})
 	}
 	return sortedOutputs(out), nil
 }

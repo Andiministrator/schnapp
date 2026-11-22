@@ -472,6 +472,10 @@ msgstr ""
 msgid "Unsaved changes from %s could not be restored. The rescue copy is kept for 30 days in the state folder: %s"
 msgstr ""
 
+#: cmd/schnapp/rettung.go
+msgid "The other Schnapp window has let go of this file. Changes made here are protected by a rescue copy again."
+msgstr ""
+
 #: cmd/schnapp/signalwache.go
 msgid "Interrupted again while writing directly to the target; it may be incomplete."
 msgstr ""
@@ -494,6 +498,10 @@ msgstr ""
 
 #: cmd/schnapp/signalwache.go
 msgid "Interrupted by a signal after %s was written completely."
+msgstr ""
+
+#: cmd/schnapp/signalwache.go
+msgid "Interrupted before anything was written to %s; it is untouched."
 msgstr ""
 
 #: cmd/schnapp/signalwache.go

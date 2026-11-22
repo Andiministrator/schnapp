@@ -40,6 +40,7 @@ type Sicherung struct {
 	aus      bool          // eine nicht angewendete Kopie ließ sich nicht beiseitelegen: diese Sitzung schreibt und löscht nichts
 	fremd    bool          // ein anderes Fenster hält die Sperre auf die Ausgangsdatei (F-413)
 	gestoert bool          // die Sperre ließ sich nicht prüfen (Symlink, Verzeichnis, Rechte, ...): Sitzung stumm (F-440)
+	lageNr   uint64        // zählt Änderungen von fremd und gestoert (Lage, F-454)
 	sperre   *sperre       // gehaltene Sperre auf kettenBasis; nil: keine
 	wechsel  int           // NeueBasis-Aufträge, die noch in der Kette stehen: bis dahin entscheidet die Kette, nicht Sichere (F-446)
 
@@ -98,8 +99,26 @@ func (s *Sicherung) sperreFuer(pfad string) {
 // setzeSperre hält den Stand der Sperre für die Ausgangsdatei pfad fest (kettenBasis, F-456).
 func (s *Sicherung) setzeSperre(pfad string, fremd, gestoert bool, sp *sperre) {
 	s.mu.Lock()
+	if fremd != s.fremd || gestoert != s.gestoert {
+		s.lageNr++ // F-454: Die Oberfläche sieht am Zähler, dass sich etwas geändert hat
+	}
 	s.kettenBasis, s.fremd, s.gestoert, s.sperre = pfad, fremd, gestoert, sp
 	s.mu.Unlock()
+}
+
+// Lage ist der Stand der Sperre dieser Sitzung für die Oberfläche (F-454).
+type Lage struct {
+	Fremd    bool   // ein anderes Fenster hält die Sperre: diese Sitzung sichert nicht
+	Gestoert bool   // die Sperre ließ sich nicht prüfen: diese Sitzung sichert nicht
+	Nr       uint64 // wächst mit jeder Änderung von Fremd oder Gestoert (0: seit dem Anlegen keine)
+}
+
+// Lage liefert den Stand der Sperre. Fremd wird die Sitzung bei NeueBasis oder beim Anlegen, frei wieder, wenn sie die
+// Sperre später nachholt (F-436); beides läuft in der Kette, die Oberfläche fragt deshalb nach (ui.Rettung.Lage).
+func (s *Sicherung) Lage() Lage {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return Lage{Fremd: s.fremd, Gestoert: s.gestoert, Nr: s.lageNr}
 }
 
 // uebernehmen versucht, die Sperre nachzuholen, wenn ein anderes Fenster sie hatte (F-436): ein Aufruf von flock ohne

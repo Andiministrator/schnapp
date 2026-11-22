@@ -138,7 +138,8 @@ func TestMeldeSchreibFehlerNachSchreiben(t *testing.T) {
 	}
 	b.Reset()
 	meldeSchreibFehler(&b, "x.png", errAbgebrochen)
-	if s := b.String(); !strings.Contains(s, "Could not write x.png") {
+	// F-452: eigener Text, nicht „Could not write“.
+	if s := b.String(); !strings.Contains(s, "Interrupted before anything was written to x.png; it is untouched.") || strings.Contains(s, "Could not") {
 		t.Errorf("Meldung %q", s)
 	}
 }
@@ -208,15 +209,10 @@ func TestSignalwacheZweitesSignalBeiHaengendemSchreiben(t *testing.T) {
 
 // F-443: Ein beim Start ignoriertes Signal (nohup) meldet die Wache nicht an; der Aufruf gelingt trotz SIGHUP.
 func TestSignalwacheLaesstIgnoriertesInRuhe(t *testing.T) {
-	war := signal.Ignored(syscall.SIGHUP)
+	// F-453: fangbar stellt den geerbten Zustand nach dem Test wieder her (seine Aufräumfunktion läuft zuletzt).
+	fangbar(t, syscall.SIGHUP)
 	signal.Ignore(syscall.SIGHUP)
-	t.Cleanup(func() {
-		if war {
-			signal.Ignore(syscall.SIGHUP)
-		} else {
-			standardSignal(syscall.SIGHUP)
-		}
-	})
+	t.Cleanup(func() { standardSignal(syscall.SIGHUP) })
 	var angemeldet []os.Signal
 	altAn := meldeAn
 	meldeAn = func(c chan<- os.Signal, sigs ...os.Signal) {

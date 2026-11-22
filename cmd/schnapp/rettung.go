@@ -115,6 +115,21 @@ func (r *rettung) Wiederherstellen(d *document.Dokument) (string, bool) {
 	}
 }
 
+// Lage meldet, wenn sich der Stand der Sperre seit dem Start geändert hat (F-454): Die Sitzung wurde bei NeueBasis
+// fremd oder gestört, oder sie hat die Sperre eines anderen Fensters später übernommen. nr wächst mit jeder Änderung.
+func (r *rettung) Lage() (string, bool, uint64) {
+	l := r.s.Lage()
+	switch {
+	case l.Gestoert:
+		return i18n.T("The rescue copy for this file is unavailable. Changes made here are not protected by a rescue copy."), true, l.Nr
+	case l.Fremd:
+		return i18n.T("This file is open in another Schnapp window. Changes made here are not protected by a rescue copy."), false, l.Nr
+	case l.Nr == 0:
+		return "", false, 0
+	}
+	return i18n.T("The other Schnapp window has let go of this file. Changes made here are protected by a rescue copy again."), false, l.Nr
+}
+
 // Sichere schreibt die Rettungskopie im Hintergrund.
 func (r *rettung) Sichere(d *document.Dokument) { r.s.Sichere(d) }
 

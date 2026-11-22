@@ -3,6 +3,7 @@
 package ui
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -22,6 +23,11 @@ type Rettung interface {
 	Verwirf()
 	// Ende wartet auf begonnene Schreibaufträge, höchstens eine Frist (F-417).
 	Ende()
+	// Lage meldet den Stand der Sperre auf die Ausgangsdatei (F-454): Wird die Sitzung fremd oder gestört, oder übernimmt
+	// sie die Sperre eines anderen Fensters später, ändert sich nr (wächst nur) und meldung sagt, was nun gilt. Der
+	// Editor fragt nach jedem Ereignis und zeigt die Meldung, wenn nr sich seit dem Start oder der letzten Frage geändert
+	// hat; leere meldung bei nr 0: nichts zu sagen. Ruft nicht auf die Platte.
+	Lage() (meldung string, fehler bool, nr uint64)
 }
 
 // Bündelung (ADR-0029 Punkt 4): frühestens rettungRuhe nach der letzten Änderung, höchstens rettungTakt nach der
@@ -29,6 +35,9 @@ type Rettung interface {
 const (
 	rettungRuhe = 2 * time.Second
 	rettungTakt = 10 * time.Second
+	// rettungNachweckZeit: So lange nach einem Sichern oder Speichern weckt der Editor einmal, damit eine geänderte Lage der
+	// Sperre sichtbar wird (F-454).
+	rettungNachweckZeit = 300 * time.Millisecond
 )
 
 // rettungUhr ist die Uhr der Bündelung; Naht für Tests.
@@ -41,6 +50,7 @@ type rettungZustand struct {
 	letzte     time.Time // Zeit der letzten Änderung
 	erste      time.Time // erste ungesicherte Änderung seit der letzten Kopie; Null: keine
 	geweckt    time.Time // Zeitpunkt, zu dem schon ein Wecken bestellt ist
+	lageNr     uint64    // zuletzt gesehener Zähler der Sperrlage (Rettung.Lage, F-454)
 }
 
 // rettungStart wendet beim Öffnen eine Rettungskopie an und merkt den Stand.
@@ -50,9 +60,35 @@ func (e *editor) rettungStart() {
 	}
 	if text, fehler := e.rettung.Wiederherstellen(e.s.D); text != "" {
 		e.melde(text, fehler)
+		if fehler {
+			// F-411: Die einzeilige Statusleiste kürzt den Ort der Kopie weg; auf der Fehlerausgabe bleibt er lesbar.
+			fmt.Fprintln(fehlerAusgabe, text)
+		}
 	}
 	st := e.s.D.Stand()
 	e.rett = rettungZustand{gesichert: st, beobachtet: st}
+	_, _, e.rett.lageNr = e.rettung.Lage() // die Meldung zum Anfangsstand gab schon Wiederherstellen
+}
+
+// rettungLage zeigt eine Änderung der Sperre (Fremdwerden, spätere Übernahme, F-454). Ein haltende Meldung (Verwerfen,
+// Hinweis) bleibt stehen (meldeNebenbei).
+func (e *editor) rettungLage() {
+	text, fehler, nr := e.rettung.Lage()
+	if nr == e.rett.lageNr {
+		return
+	}
+	e.rett.lageNr = nr
+	if text != "" {
+		e.meldeNebenbei(text, fehler)
+	}
+}
+
+// rettungNachwecken bestellt ein Wecken kurz nach einem Auftrag an die Rettung: Ihre Kette ändert die Lage der Sperre in
+// einer Goroutine, und ohne Ereignis bliebe die Meldung sonst stehen (F-454).
+func (e *editor) rettungNachwecken() {
+	if e.wecker != nil {
+		time.AfterFunc(rettungNachweckZeit, e.wecker.Anfordern)
+	}
 }
 
 // rettungPruefen läuft nach jedem Ereignis: Ist der Stand seit der letzten Kopie geändert und die Bündelung um,
@@ -64,7 +100,11 @@ func (e *editor) rettungStart() {
 // Stand und wird nach der Bündelung gesichert (F-409). Steht das Dokument wieder auf dem gespeicherten Stand, verwirft
 // es die Kopie.
 func (e *editor) rettungPruefen() {
-	if e.rettung == nil || e.s.SpeichernLaeuft() || e.erzwungen {
+	if e.rettung == nil {
+		return
+	}
+	e.rettungLage() // auch während eines Speicherns: Die Kette der Rettung wechselt die Sperre nach dem Speichern
+	if e.s.SpeichernLaeuft() || e.erzwungen {
 		return
 	}
 	jetzt := rettungUhr()
@@ -97,6 +137,7 @@ func (e *editor) rettungPruefen() {
 	}
 	e.rettung.Sichere(e.s.D)
 	e.rett.gesichert, e.rett.erste = st, time.Time{}
+	e.rettungNachwecken()
 }
 
 // rettungVorSpeichern schreibt beim Beginn eines Speicherns eine noch nicht gesicherte Änderung sofort, ohne Bündelung:
@@ -119,6 +160,7 @@ func (e *editor) rettungGespeichert() {
 	e.rettung.Verwirf()
 	st := e.s.D.Stand()
 	e.rett.gesichert, e.rett.beobachtet, e.rett.erste = st, st, time.Time{}
+	e.rettungNachwecken() // NeueBasis läuft in der Kette der Rettung (F-454)
 }
 
 // rettungEnde räumt beim Zerstören auf: Ohne Änderung gegenüber dem Gespeicherten ist die Kopie überflüssig. Nach

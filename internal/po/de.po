@@ -333,6 +333,12 @@ msgstr "Die Datei ließ sich nicht schreiben."
 msgid "Interrupted by a signal after %s was written completely."
 msgstr "Durch ein Signal unterbrochen, nachdem %s vollständig geschrieben war."
 
+msgid "The other Schnapp window has let go of this file. Changes made here are protected by a rescue copy again."
+msgstr "Das andere Schnapp-Fenster hat die Datei losgelassen. Änderungen hier sind wieder durch eine Rettungskopie geschützt."
+
+msgid "Interrupted before anything was written to %s; it is untouched."
+msgstr "Unterbrochen, bevor etwas nach %s geschrieben wurde; die Datei ist unberührt."
+
 msgid "Interrupted again while writing; the temporary file was removed."
 msgstr "Beim Schreiben erneut unterbrochen; die temporäre Datei wurde entfernt."
 

@@ -15,6 +15,7 @@ func (r *rettungAttrappe) Wiederherstellen(*document.Dokument) (string, bool) { 
 func (r *rettungAttrappe) Sichere(*document.Dokument)                         { r.gesichert++ }
 func (r *rettungAttrappe) Verwirf()                                           { r.verworfen++ }
 func (r *rettungAttrappe) Ende()                                              { r.ende++ }
+func (r *rettungAttrappe) Lage() (string, bool, uint64)                       { return "", false, 0 }
 
 // ADR-0029 Punkt 4: frühestens 2 s nach der letzten Änderung, bei laufenden Änderungen spätestens 10 s nach der ersten;
 // zurück auf dem gespeicherten Stand wird verworfen; nach gelungenem Speichern ebenso; beim Zerstören nur ohne Änderung.

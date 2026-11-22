@@ -20,6 +20,7 @@ type rettungInhalt struct {
 func (r *rettungInhalt) Wiederherstellen(*document.Dokument) (string, bool) { return "", false }
 func (r *rettungInhalt) Verwirf()                                           { r.verworfen++ }
 func (r *rettungInhalt) Ende()                                              {}
+func (r *rettungInhalt) Lage() (string, bool, uint64)                       { return "", false, 0 }
 func (r *rettungInhalt) Sichere(d *document.Dokument) {
 	a, err := fileformat.LeseAngaben(bytes.NewReader(fileformat.AngabenSVG(d)))
 	if err != nil {

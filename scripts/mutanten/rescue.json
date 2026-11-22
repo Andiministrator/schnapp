@@ -199,22 +199,22 @@
     "name": "U1 sichert während des Speicherns",
     "datei": "internal/ui/rettung.go",
     "paket": "./internal/ui",
-    "alt": "e.rettung == nil || e.s.SpeichernLaeuft() || e.erzwungen",
-    "neu": "e.rettung == nil || e.erzwungen"
+    "alt": "if e.s.SpeichernLaeuft() || e.erzwungen {",
+    "neu": "if e.erzwungen {"
   },
   {
     "name": "U2 hält während eines Zugs an (V7-2)",
     "datei": "internal/ui/rettung.go",
     "paket": "./internal/ui",
-    "alt": "e.rettung == nil || e.s.SpeichernLaeuft() || e.erzwungen",
-    "neu": "e.rettung == nil || e.s.SpeichernLaeuft() || e.s.D.ZugLaeuft() || e.erzwungen"
+    "alt": "if e.s.SpeichernLaeuft() || e.erzwungen {",
+    "neu": "if e.s.SpeichernLaeuft() || e.s.D.ZugLaeuft() || e.erzwungen {"
   },
   {
     "name": "U3 sichert nach Freigabe zum Schließen",
     "datei": "internal/ui/rettung.go",
     "paket": "./internal/ui",
-    "alt": "e.rettung == nil || e.s.SpeichernLaeuft() || e.erzwungen",
-    "neu": "e.rettung == nil || e.s.SpeichernLaeuft()"
+    "alt": "if e.s.SpeichernLaeuft() || e.erzwungen {",
+    "neu": "if e.s.SpeichernLaeuft() {"
   },
   {
     "name": "U4 kein Verwerfen auf gespeichertem Stand",
@@ -241,8 +241,36 @@
     "name": "U7 kein Wiederherstellen beim Start",
     "datei": "internal/ui/rettung.go",
     "paket": "./internal/ui",
-    "alt": "\tif text, fehler := e.rettung.Wiederherstellen(e.s.D); text != \"\" {\n\t\te.melde(text, fehler)\n\t}\n",
+    "alt": "e.rettung.Wiederherstellen(e.s.D); text != \"\" {",
+    "neu": "e.rettung.Wiederherstellen(e.s.D); false && text != \"\" {"
+  },
+  {
+    "name": "U7c Fehler der Wiederherstellung nicht auf der Fehlerausgabe (F-411)",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "fmt.Fprintln(fehlerAusgabe, text)",
+    "neu": "fmt.Sprint(text)"
+  },
+  {
+    "name": "U7d Lage ohne Vergleich des Zählers (F-454)",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "if nr == e.rett.lageNr {",
+    "neu": "if false {"
+  },
+  {
+    "name": "U7e Lage merkt den Zähler nicht (F-454)",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "\te.rett.lageNr = nr\n",
     "neu": ""
+  },
+  {
+    "name": "U7f Lage meldet die Änderung nicht (F-454)",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "e.meldeNebenbei(text, fehler)",
+    "neu": "_, _ = text, fehler"
   },
   {
     "name": "U7b Meldung nicht gezeigt",
