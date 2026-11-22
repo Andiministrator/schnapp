@@ -208,12 +208,37 @@ func TestWiederherstellen(t *testing.T) {
 	}
 	k2, _ := KennungVon(pfad)
 	neu2, _ := document.Neu(bild(64, 64))
-	w = NeueSicherung(ort, k2).Wiederherstellen(neu2, nil)
+	s2 := NeueSicherung(ort, k2)
+	w = s2.Wiederherstellen(neu2, nil)
 	if w.Angewendet || !w.Liegt || !errors.Is(w.Grund, ErrAnders) || len(neu2.Objekte()) != 0 {
 		t.Errorf("trotz geänderter Datei: %+v", w)
 	}
-	if _, err := os.Stat(filepath.Join(ort, Name(pfad))); err != nil {
-		t.Errorf("Kopie nicht liegen geblieben: %v", err)
+	// V7-1: Die nicht angewendete Kopie liegt beiseite; weder Sichere noch Verwirf dieser Sitzung berühren sie.
+	if w.Beiseite == "" || !eigenerName(w.Beiseite) {
+		t.Fatalf("nicht beiseitegelegt: %q", w.Beiseite)
+	}
+	bearbeite(t, neu2)
+	s2.Sichere(neu2)
+	s2.Ende()
+	s2.Verwirf()
+	if _, err := os.Stat(filepath.Join(ort, w.Beiseite)); err != nil {
+		t.Errorf("beiseitegelegte Kopie weg: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(ort, Name(pfad))); !os.IsNotExist(err) {
+		t.Errorf("eigene Kopie der Sitzung nach Verwirf noch da: %v", err)
+	}
+}
+
+// V7-1: Eigene Namen beim Aufräumen, auch für beiseitegelegte Kopien.
+func TestEigenerName(t *testing.T) {
+	h := strings.Repeat("a1", 32)
+	for n, soll := range map[string]bool{
+		h + ".json": true, h + ".123.alt.json": true, ".schreibt-9": true,
+		h + ".alt.json": false, h + ".12x.alt.json": false, "fremd.json": false, strings.Repeat("G", 64) + ".json": false,
+	} {
+		if eigenerName(n) != soll {
+			t.Errorf("%q: %v", n, !soll)
+		}
 	}
 }
 

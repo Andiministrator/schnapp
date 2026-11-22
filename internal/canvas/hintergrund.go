@@ -159,6 +159,7 @@ func (s *Sitzung) SpeichernEnde(warnung bool, err error) Ende {
 	s.hg.laeuft = false
 	if err == nil {
 		s.gespeichert, s.verwerfen = s.hg.stand, false
+		s.D.SchwaerzungenGesichert() // Liste der Rettungskopie wieder vollständig (ADR-0029, V7-3)
 		// ADR-0022 Punkt 3: Die Datei trägt jetzt die Schwärzung; kein Rückgängig darf die alten Pixel zurückholen. Geleert
 		// wird ohne Bedingung an den Stand (F-280): Hätte sich das Dokument trotz der Sperre geändert, holte ein
 		// Rückgängig über die neue Änderung hinweg sonst das Geschwärzte zurück. Den Verlauf zu verlieren ist der

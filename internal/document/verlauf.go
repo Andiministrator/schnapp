@@ -478,6 +478,11 @@ func (d *Dokument) Schwaerzen(r image.Rectangle, s Schwaerzung) error {
 		// Ein schmaler Bereich lässt sich nicht wirksam verpixeln (ein Block über 1 Pixel ändert nichts).
 		return fmt.Errorf("document: Bereich zum Verpixeln kleiner als %d Pixel — schwärzen statt verpixeln", MinBlock)
 	}
+	if s.Block > max(r.Dx(), r.Dy()) {
+		// Ein Block größer als der Bereich ist ein einziger Block; ohne Klemme liefe bloecke bei riesigen Werten (etwa aus
+		// einer präparierten Rettungskopie) über (Verify 7, V7-4).
+		s.Block = max(r.Dx(), r.Dy())
+	}
 	d.fuehreAus(&schwaerzen{r: r, s: s})
 	return nil
 }

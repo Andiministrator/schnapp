@@ -88,17 +88,23 @@ func (r *rettung) Wiederherstellen(d *document.Dokument) (string, bool) {
 		rettungDiagnose(w.Grund)
 	}
 	zeit := w.Gesichert.Local().Format("2006-01-02 15:04")
+	// Ort der liegenden Kopie relativ zum Zustandsordner, ohne Benutzerpfad (ADR-0029 Punkt 6, F-155, Verify 7, V7-6).
+	name := w.Beiseite
+	if name == "" {
+		name = rescue.Name(r.s.Basis().Pfad)
+	}
+	ort := "schnapp/rescue/" + name
 	switch {
 	case w.Angewendet:
 		return fmt.Sprintf(i18n.T("Restored unsaved changes from %s. Undo returns to the saved state."), zeit), false
 	case !w.Liegt:
 		return "", false
 	case w.Gesichert.IsZero():
-		return i18n.T("A rescue copy for this file could not be read. It is kept for 30 days."), true
+		return fmt.Sprintf(i18n.T("A rescue copy for this file could not be read. It is kept for 30 days in the state folder: %s"), ort), true
 	case errors.Is(w.Grund, rescue.ErrAnders):
-		return fmt.Sprintf(i18n.T("Unsaved changes from %s were not restored: the file has changed since. The rescue copy is kept for 30 days."), zeit), true
+		return fmt.Sprintf(i18n.T("Unsaved changes from %s were not restored: the file has changed since. The rescue copy is kept for 30 days in the state folder: %s"), zeit, ort), true
 	default:
-		return fmt.Sprintf(i18n.T("Unsaved changes from %s could not be restored. The rescue copy is kept for 30 days."), zeit), true
+		return fmt.Sprintf(i18n.T("Unsaved changes from %s could not be restored. The rescue copy is kept for 30 days in the state folder: %s"), zeit, ort), true
 	}
 }
 

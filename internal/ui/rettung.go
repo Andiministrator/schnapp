@@ -55,11 +55,12 @@ func (e *editor) rettungStart() {
 }
 
 // rettungPruefen läuft nach jedem Ereignis: Ist der Stand seit der letzten Kopie geändert und die Bündelung um,
-// schreibt es eine neue Kopie; sonst bestellt es ein Wecken zum fälligen Zeitpunkt. Während eines Speicherns, eines
-// Zugs und nach der Freigabe zum Schließen ruht es. Steht das Dokument wieder auf dem gespeicherten Stand, verwirft es
-// die Kopie.
+// schreibt es eine neue Kopie; sonst bestellt es ein Wecken zum fälligen Zeitpunkt. Während eines Speicherns und nach
+// der Freigabe zum Schließen ruht es. Ein laufender Zug (Ziehen, Texteingabe) hält es nicht auf: Die Kopie trägt dann
+// das Objekt im Zug mit, sonst bliebe eine fertige Änderung so lange ungesichert, wie getippt wird (Verify 7, V7-2).
+// Steht das Dokument wieder auf dem gespeicherten Stand, verwirft es die Kopie.
 func (e *editor) rettungPruefen() {
-	if e.rettung == nil || e.s.SpeichernLaeuft() || e.s.D.ZugLaeuft() || e.erzwungen {
+	if e.rettung == nil || e.s.SpeichernLaeuft() || e.erzwungen {
 		return
 	}
 	jetzt := rettungUhr()
@@ -92,6 +93,18 @@ func (e *editor) rettungPruefen() {
 	}
 	e.rettung.Sichere(e.s.D)
 	e.rett.gesichert, e.rett.erste = st, time.Time{}
+}
+
+// rettungVorSpeichern schreibt beim Beginn eines Speicherns eine noch nicht gesicherte Änderung sofort, ohne Bündelung:
+// Hängt das Speichern und folgt ein SIGKILL, wäre sie sonst verloren (Verify 7, V7-7).
+func (e *editor) rettungVorSpeichern() {
+	if e.rettung == nil || e.erzwungen {
+		return
+	}
+	if st := e.s.D.Stand(); st != e.rett.gesichert && e.s.Geaendert() {
+		e.rettung.Sichere(e.s.D)
+		e.rett.gesichert, e.rett.erste = st, time.Time{}
+	}
 }
 
 // rettungGespeichert verwirft die Rettungskopie nach einem gelungenen Speichern (ADR-0029 Punkt 5).

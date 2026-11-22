@@ -30,7 +30,12 @@ func TestMain(m *testing.M) {
 		}
 		return os.Getenv(k)
 	}
-	os.Exit(m.Run())
+	code := m.Run()
+	// Eigener Ordner aus MkdirTemp, Name geprüft (Verify 7, V7-5): kein Rest im Temp-Ordner.
+	if strings.HasPrefix(filepath.Base(ort), "schnapp-state-") {
+		_ = os.RemoveAll(ort)
+	}
+	os.Exit(code)
 }
 
 // F-144, ADR-0029: Bearbeiten, Rettungskopie schreiben, Ende ohne Speichern (wie SIGKILL), dieselbe Datei wieder
@@ -143,7 +148,13 @@ func TestRettungskopieNachAbbruch(t *testing.T) {
 	if !strings.Contains(text, "has changed since") || !fehler || len(dok.Objekte()) != 0 {
 		t.Errorf("trotz geänderter Datei: %q %v %d", text, fehler, len(dok.Objekte()))
 	}
-	if _, err := os.Stat(kopie); err != nil {
-		t.Errorf("Kopie nicht liegen geblieben: %v", err)
+	if !strings.Contains(text, "schnapp/rescue/") || strings.Contains(text, staat) {
+		t.Errorf("Meldung nennt den Ort nicht ohne Benutzerpfad: %q", text)
+	}
+	// Die Kopie liegt beiseite (V7-1) und überlebt das Schließen dieser Sitzung ohne Änderung.
+	rettung.Verwirf()
+	eintraege, _ = os.ReadDir(filepath.Dir(kopie))
+	if len(eintraege) != 1 || !strings.HasSuffix(eintraege[0].Name(), ".alt.json") {
+		t.Errorf("beiseitegelegte Kopie fehlt: %v", eintraege)
 	}
 }

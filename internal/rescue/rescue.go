@@ -242,7 +242,7 @@ func Aufraeumen(ort string, jetzt time.Time) (entfernt int, fehler error) {
 	var fehlerListe []error
 	for _, e := range eintraege {
 		n := e.Name()
-		if !e.Type().IsRegular() || !(strings.HasSuffix(n, ".json") && len(n) == 64+5 || strings.HasPrefix(n, ".schreibt-")) {
+		if !e.Type().IsRegular() || !eigenerName(n) {
 			continue
 		}
 		info, err := e.Info()
@@ -303,4 +303,50 @@ func wende(d *document.Dokument, liste []document.SchwaerzAngabe, a *fileformat.
 		}
 	}
 	return d.SetzeAngaben(a.Objekte, a.Zuschnitt, a.Streifen)
+}
+
+// eigenerName erkennt die Dateinamen dieses Pakets: Kopie (<64 hex>.json), beiseitegelegte Kopie
+// (<64 hex>.<Zeit>.alt.json) und temporäre Datei beim Schreiben (.schreibt-…).
+func eigenerName(n string) bool {
+	if strings.HasPrefix(n, ".schreibt-") {
+		return true
+	}
+	if len(n) < 64 || !istHex(n[:64]) {
+		return false
+	}
+	rest := n[64:]
+	if rest == ".json" {
+		return true
+	}
+	mitte, ok := strings.CutSuffix(rest, ".alt.json")
+	if !ok || len(mitte) < 2 || mitte[0] != '.' {
+		return false
+	}
+	for _, c := range mitte[1:] {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func istHex(s string) bool {
+	for _, c := range s {
+		if !('0' <= c && c <= '9' || 'a' <= c && c <= 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+// legeBeiseite benennt die Kopie zur Ausgangsdatei pfad um in <Name ohne .json>.<Zeit>.alt.json und liefert den neuen
+// Dateinamen. Die Sitzung schreibt und löscht danach nur unter dem gewöhnlichen Namen (Verify 7, V7-1).
+func legeBeiseite(ort, pfad string, jetzt time.Time) (_ string, fehler error) {
+	defer errprefix.Defer("rescue", &fehler)
+	alt := Name(pfad)
+	neu := strings.TrimSuffix(alt, ".json") + fmt.Sprintf(".%d.alt.json", jetzt.UnixNano())
+	if err := os.Rename(filepath.Join(ort, alt), filepath.Join(ort, neu)); err != nil {
+		return "", err
+	}
+	return neu, nil
 }

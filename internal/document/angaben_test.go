@@ -117,3 +117,36 @@ func TestSchwaerzungenImVerlauf(t *testing.T) {
 		t.Error("nach VergissVerlauf weiter unvollständig")
 	}
 }
+
+// V7-3: Nach einem gelungenen Speichern ist die Liste wieder vollständig, auch wenn der Verlauf dabei nicht geleert wurde.
+func TestSchwaerzungenGesichertSetztZurueck(t *testing.T) {
+	alt := verlaufGrenze
+	defer func() { verlaufGrenze = alt }()
+	verlaufGrenze = 20
+	d, _ := Neu(image.NewNRGBA(image.Rect(0, 0, 10, 10)))
+	schwarz := Schwaerzung{Farbe: color.NRGBA{A: 255}}
+	for _, r := range []image.Rectangle{image.Rect(0, 0, 2, 2), image.Rect(4, 4, 6, 6)} {
+		if err := d.Schwaerzen(r, schwarz); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, ok := d.SchwaerzungenImVerlauf(); ok {
+		t.Fatal("Vorbedingung: unvollständig")
+	}
+	d.SchwaerzungenGesichert()
+	if _, ok := d.SchwaerzungenImVerlauf(); !ok {
+		t.Error("nach dem Speichern weiter unvollständig")
+	}
+}
+
+// V7-4: Eine riesige Blockgröße (etwa aus einer präparierten Rettungskopie) wird auf den Bereich geklemmt, statt
+// bloecke überlaufen zu lassen.
+func TestSchwaerzenRiesigerBlock(t *testing.T) {
+	d, _ := Neu(image.NewNRGBA(image.Rect(0, 0, 40, 30)))
+	if err := d.Schwaerzen(image.Rect(0, 0, 20, 16), Schwaerzung{Block: math.MaxInt - 3}); err != nil {
+		t.Fatal(err)
+	}
+	if l, _ := d.SchwaerzungenImVerlauf(); len(l) != 1 || l[0].Art.Block != 20 {
+		t.Errorf("Block nicht geklemmt: %+v", l)
+	}
+}

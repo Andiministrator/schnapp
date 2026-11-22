@@ -26,6 +26,7 @@ type Sicherung struct {
 	naechste uint64 // Nummer des nächsten Schreibauftrags
 	letzte   uint64 // Nummer des zuletzt geschriebenen
 	laeuft   sync.WaitGroup
+	aus      bool        // eine nicht angewendete Kopie ließ sich nicht beiseitelegen: diese Sitzung schreibt und löscht nichts
 	Diagnose func(error) // Fehler beim Schreiben und Löschen (nur Diagnose; die Oberfläche bleibt ruhig)
 	jetzt    func() time.Time
 }
@@ -49,6 +50,10 @@ func (s *Sicherung) Ort() string { return s.ort }
 // Hintergrund. Ist der Verlauf unvollständig (ErrUnfertig), bleibt die zuletzt geschriebene Kopie stehen.
 func (s *Sicherung) Sichere(d *document.Dokument) {
 	s.mu.Lock()
+	if s.aus {
+		s.mu.Unlock()
+		return
+	}
 	kp, err := Erzeuge(d, s.basis, s.jetzt())
 	if err != nil {
 		s.mu.Unlock()
@@ -86,8 +91,11 @@ func (s *Sicherung) Verwirf() {
 	defer s.schreibt.Unlock()
 	s.mu.Lock()
 	s.gen++
-	pfad := s.basis.Pfad
+	pfad, aus := s.basis.Pfad, s.aus
 	s.mu.Unlock()
+	if aus {
+		return
+	}
 	if err := Loesche(s.ort, pfad); err != nil {
 		s.Diagnose(err)
 	}
@@ -100,9 +108,12 @@ func (s *Sicherung) NeueBasis(k Kennung) {
 	defer s.schreibt.Unlock()
 	s.mu.Lock()
 	s.gen++
-	pfad := s.basis.Pfad
-	s.basis = k
+	pfad, aus := s.basis.Pfad, s.aus
+	s.basis, s.aus = k, false // die neue Ausgangsdatei hat keine beiseitegelegte Kopie im Weg
 	s.mu.Unlock()
+	if aus {
+		return
+	}
 	if err := Loesche(s.ort, pfad); err != nil {
 		s.Diagnose(err)
 	}
@@ -117,6 +128,7 @@ type Wiederherstellung struct {
 	Gesichert  time.Time // Zeitpunkt der Kopie (angewendet oder nicht)
 	Liegt      bool      // eine Kopie liegt, wurde aber nicht angewendet (Datei geändert, unlesbar, Grenzen)
 	Grund      error     // warum nicht angewendet
+	Beiseite   string    // Dateiname, unter dem die nicht angewendete Kopie im Ordner bleibt (leer: Umbenennen scheiterte)
 }
 
 // Wiederherstellen wendet beim Öffnen eine passende Rettungskopie auf d an (ADR-0029 Punkt 6). Passt die Kennung
@@ -129,17 +141,26 @@ func (s *Sicherung) Wiederherstellen(d *document.Dokument, pruefe func(*document
 	if errors.Is(err, ErrKeine) {
 		return Wiederherstellung{}
 	}
+	w := Wiederherstellung{Liegt: true, Grund: err}
+	if err == nil {
+		w.Gesichert = kp.Gesichert
+		if !kp.Datei.Gleich(basis) {
+			w.Grund = ErrAnders
+		} else if w.Grund = Anwenden(d, kp, pruefe); w.Grund == nil {
+			return Wiederherstellung{Angewendet: true, Gesichert: kp.Gesichert}
+		}
+	}
+	// Nicht angewendet: beiseitelegen, damit diese Sitzung sie weder überschreibt noch beim Schließen löscht; sie bleibt
+	// bis zum Aufräumen nach Haltezeit (ADR-0029 Punkt 6, Verify 7, V7-1). Scheitert das Umbenennen, schreibt und löscht
+	// diese Sitzung nichts.
+	name, err := legeBeiseite(s.ort, basis.Pfad, s.jetzt())
 	if err != nil {
-		return Wiederherstellung{Liegt: true, Grund: err}
-	}
-	w := Wiederherstellung{Gesichert: kp.Gesichert, Liegt: true}
-	if !kp.Datei.Gleich(basis) {
-		w.Grund = ErrAnders
+		s.Diagnose(err)
+		s.mu.Lock()
+		s.aus = true
+		s.mu.Unlock()
 		return w
 	}
-	if err := Anwenden(d, kp, pruefe); err != nil {
-		w.Grund = err
-		return w
-	}
-	return Wiederherstellung{Angewendet: true, Gesichert: kp.Gesichert}
+	w.Beiseite = name
+	return w
 }

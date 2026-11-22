@@ -531,6 +531,7 @@ type speicherErgebnis struct {
 // speichernStarten speichert den Abzug in einer Goroutine (ADR-0020 Nachtrag 6). Die Speicherfunktion führt Zustand;
 // canvas.Sitzung lässt höchstens ein Speichern zugleich zu. Die Antwort holt die Ereignisschleife ab.
 func (e *editor) speichernStarten(abzug *document.Dokument) {
+	e.rettungVorSpeichern() // vor dem Speichern sichern: ein hängendes Speichern plus SIGKILL (V7-7)
 	e.melde(i18n.T("Saving…"), false)
 	if e.speicherAntwort == nil {
 		e.speicherAntwort = make(chan speicherErgebnis, 1)

@@ -347,6 +347,7 @@ func (s *Sitzung) Abwaehlen() { s.Auswahl = 0 }
 // brächte (ADR-0022 Punkt 3).
 func (s *Sitzung) Gespeichert() {
 	s.gespeichert, s.verwerfen = s.D.Stand(), false
+	s.D.SchwaerzungenGesichert() // Liste der Rettungskopie wieder vollständig (ADR-0029, V7-3)
 	if s.D.VerlaufMitSchwaerzung() {
 		_ = s.D.VergissVerlauf() // während eines Zugs nicht möglich; gespeichert wird ohne Zug
 	}

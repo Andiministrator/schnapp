@@ -90,7 +90,8 @@ func TestRettungBuendelung(t *testing.T) {
 	}
 }
 
-// Während eines Speicherns ruht die Rettung (ADR-0029 Punkt 4).
+// Beim Beginn eines Speicherns wird eine ungesicherte Änderung sofort gesichert (V7-7), währenddessen ruht die Rettung
+// (ADR-0029 Punkt 4).
 func TestRettungRuhtWaehrendSpeichern(t *testing.T) {
 	jetzt := time.Now()
 	alt := rettungUhr
@@ -107,12 +108,34 @@ func TestRettungRuhtWaehrendSpeichern(t *testing.T) {
 	e.speichernJetzt()
 	jetzt = jetzt.Add(time.Minute)
 	e.rettungPruefen()
-	if r.gesichert != 0 {
-		t.Error("während des Speicherns gesichert")
+	if r.gesichert != 1 {
+		t.Errorf("%d Sicherungen: erwartet genau eine beim Beginn des Speicherns (V7-7), keine weitere währenddessen", r.gesichert)
 	}
 	close(frei)
 	warteSpeichern(t, e)
 	if r.verworfen != 1 {
 		t.Errorf("nach gelungenem Speichern nicht verworfen: %+v", r)
+	}
+}
+
+// V7-2: Ein laufender Zug (etwa eine lange Texteingabe) hält die fällige Kopie nicht auf.
+func TestRettungAuchWaehrendZug(t *testing.T) {
+	jetzt := time.Date(2026, 11, 22, 10, 0, 0, 0, time.UTC)
+	alt := rettungUhr
+	rettungUhr = func() time.Time { return jetzt }
+	t.Cleanup(func() { rettungUhr = alt })
+	e := testEditor(t)
+	r := &rettungAttrappe{}
+	e.rettung = r
+	e.rettungStart()
+	haltAendere(t, e)
+	e.rettungPruefen()
+	if _, err := e.s.D.BeginneNeuenZug(document.Text{Ort: document.Pt(3, 20), Inhalt: "z", Schriftgrad: 10}); err != nil {
+		t.Fatal(err)
+	}
+	jetzt = jetzt.Add(5 * time.Minute)
+	e.rettungPruefen()
+	if r.gesichert != 1 {
+		t.Errorf("während des Zugs %d Sicherungen, erwartet 1", r.gesichert)
 	}
 }

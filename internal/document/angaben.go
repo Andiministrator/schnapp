@@ -81,3 +81,8 @@ func (d *Dokument) SetzeAngaben(objekte []Objekt, z image.Rectangle, st []Streif
 	})
 	return nil
 }
+
+// SchwaerzungenGesichert meldet dem Dokument ein gelungenes Speichern: Was die Grenze des Verlaufs vorher verworfen
+// hat, steht jetzt in der Datei; SchwaerzungenImVerlauf ist wieder vollständig (Verify 7, V7-3). canvas.Sitzung ruft es
+// nach jedem gelungenen Speichern.
+func (d *Dokument) SchwaerzungenGesichert() { d.schwaerzVerworfen = false }
