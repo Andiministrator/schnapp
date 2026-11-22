@@ -89,3 +89,12 @@ als Bild geöffnet wird. Eine Arbeitsdatei behält ihre gespeicherte Form (`s:ka
 geschrieben (Groß-/Kleinschreibung zählt); ein anderer Wert warnt wie jeder ungültige Wert und lässt den bisherigen
 Stand. Gesetzt wird die Form ohne Rückgängig-Schritt (`document.VorgabeKante`); sie ist keine Änderung des Nutzers.
 `--export` liest die Einstellungen nicht; das ist ohne Wirkung, weil ein frisch geöffnetes Bild keine Naht hat.
+
+## Nachtrag 4 (22.11.2026): Abschnitt `[agents]` (Karte #173, ADR-0030 Nachtrag 2)
+
+**Status:** Akzeptiert (Claude Opus 5.5; Entscheidung Andi vom 22.11.2026 an Karte #173).
+
+Neuer Abschnitt `[agents]` für den MCP-Server, Werte `yes`/`no` (auch `true`/`false`):
+`capture = no`, `library = no`, `confirm = yes`, `image = yes`. Ein ungültiger Wert lässt die Voreinstellung stehen
+(mit Warnung) — eine Einwilligung entsteht nie aus einem Tippfehler. Der Server liest die Datei bei jedem
+Werkzeugaufruf neu und schreibt sie nie. Bedeutung im Einzelnen: ADR-0030 Nachtrag 2 Punkt 2.
