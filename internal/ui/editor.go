@@ -361,10 +361,6 @@ func (e *editor) laufen() error {
 	}
 }
 
-// zerstoert räumt beim Zerstören des Fensters auf und liefert den Rückgabewert von Editor. Läuft noch ein Speichern im
-// Hintergrund, wartet es auf seine Antwort (ADR-0020 Nachtrag 6), höchstens zerstoerenFrist lang (Nachtrag 7); ein
-// weiterer Versuch nach einem Signal läuft ebenso. Ein laufendes Kopieren bekommt seine Frist, damit der Halter der
-// Zwischenablage noch startet (F-281).
 // zwischenablageFehltMelden ersetzt, wenn der Gio-Patch einen Schreibfehler der Zwischenablage gemeldet hat, die Meldung
 // „Copied“ durch den Fehler und setzt die Marke zurück (F-177); liefert, ob es etwas zu zeigen gab.
 func (e *editor) zwischenablageFehltMelden() bool {
@@ -376,6 +372,10 @@ func (e *editor) zwischenablageFehltMelden() bool {
 	return true
 }
 
+// zerstoert räumt beim Zerstören des Fensters auf und liefert den Rückgabewert von Editor. Läuft noch ein Speichern im
+// Hintergrund, wartet es auf seine Antwort (ADR-0020 Nachtrag 6), höchstens zerstoerenFrist lang (Nachtrag 7); ein
+// weiterer Versuch nach einem Signal läuft ebenso. Ein laufendes Kopieren bekommt seine Frist, damit der Halter der
+// Zwischenablage noch startet (F-281).
 func (e *editor) zerstoert(fensterErr error) error {
 	e.speichernAbwarten()
 	if e.speichernAufgegeben {
