@@ -14,6 +14,9 @@
 #   D mit confirm = yes: Dialog erscheint (Foto), Esc lehnt ab, nichts aufgenommen.
 #   E mit confirm = yes: Klick auf „Erlauben“ (Koordinaten aus PROBE_ERLAUBEN="X Y", sonst übersprungen) nimmt auf;
 #     bei 1600x1000 und deutscher Oberfläche: PROBE_ERLAUBEN="981 577" (Foto dialog.png aus D zeigt die Lage).
+#   F mit confirm = yes (ADR-0030 Nachtrag 4 Punkt 4, F-464): Tab, Tab, Return erlaubt nie — Return trifft höchstens
+#     „Ablehnen“; danach schließt Esc einen noch offenen Dialog. Antwort „did not allow“, nichts aufgenommen, kein Hinweis.
+# Der Probe-Build nimmt für den MCP-Server HOME als Heim (probe_an.go); probe.sh setzt es unter tmp/probe.
 # Es startet nur Prozesse, die von selbst enden (Attrappe mit eigener Zeitgrenze, Fernbedienung, schnapp mcp mit EOF).
 set -u
 wurzel="$PWD"
@@ -27,7 +30,9 @@ for ordner in "${HOME:-}" "${XDG_CONFIG_HOME:-}" "${XDG_STATE_HOME:-}"; do
 	esac
 done
 [ -x "$probe/fake-notifications" ] || { echo "probe.sh: tmp/probe/fake-notifications fehlt (siehe Kopf)"; exit 1; }
-mkdir -p "$HOME/Bilder" "$HOME/aus" "$XDG_CONFIG_HOME/schnapp" "$probe/mcp"
+# Je Lauf ein eigener Ausgabeordner: output und target ersetzen nie eine vorhandene Datei (ADR-0030 Nachtrag 4 Punkt 2).
+aus="$HOME/aus/$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$HOME/Bilder" "$aus" "$XDG_CONFIG_HOME/schnapp" "$probe/mcp"
 printf 'XDG_PICTURES_DIR="$HOME/Bilder"\n' > "$XDG_CONFIG_HOME/user-dirs.dirs"
 ini="$XDG_CONFIG_HOME/schnapp/settings.ini"
 s="$probe/schnapp"
@@ -64,7 +69,7 @@ vorher="$(aufnahmen)"
 	printf '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{%s}}\n' "$M"
 	ruf 3 list_screens '{}'
 	ruf 4 capture_screen '{}'
-	ruf 5 capture_screen "{\"all\":true,\"output\":\"$HOME/aus/mcp.png\"}"
+	ruf 5 capture_screen "{\"all\":true,\"output\":\"$aus/mcp.png\"}"
 	ruf 6 library_search '{"limit":5}'
 	sleep 25
 	printf '[capture]\nopen-editor = false\n[agents]\ncapture = no\n' > "$ini"
@@ -81,8 +86,8 @@ case "$a4" in *'"isError":false'*'"type":"image"'* | *'"type":"image"'*'"isError
 pfad="$(printf '%s' "$a4" | grep -o '"structuredContent":{"path":"[^"]*"' | sed 's/.*"path":"//; s/"$//')"
 case "$pfad" in "$HOME/Bilder/schnapp/agents/"*.png) echo "OK   A Ablage unter agents/ ($pfad)" ;; *) echo "FEHL A Pfad: $pfad"; fehler=1 ;; esac
 pruefe "A Rechte der Ablage" "$(stat -c %a "$pfad" 2> /dev/null)" 600
-pruefe "A Rechte von output" "$(stat -c %a "$HOME/aus/mcp.png" 2> /dev/null)" 600
-file "$HOME/aus/mcp.png" | grep -q 'PNG image data' && echo "OK   A output ist PNG" || { echo "FEHL A output kein PNG"; fehler=1; }
+pruefe "A Rechte von output" "$(stat -c %a "$aus/mcp.png" 2> /dev/null)" 600
+file "$aus/mcp.png" | grep -q 'PNG image data' && echo "OK   A output ist PNG" || { echo "FEHL A output kein PNG"; fehler=1; }
 pruefe "A genau eine neue Aufnahme in der Bibliothek" "$(($(aufnahmen) - vorher))" 1
 enthaelt "A library_search nennt die Aufnahme" "$probe/mcp/a.out" "$pfad"
 urteil "A Widerruf wirkt sofort" "$probe/mcp/a.out" 7 true 'capture = yes'
@@ -94,8 +99,8 @@ echo "== B: library_read, export, Altform"
 printf '[capture]\nopen-editor = false\n[agents]\nlibrary = yes\nimage = no\n' > "$ini"
 {
 	ruf 1 library_read "{\"path\":\"$pfad\"}"
-	ruf 2 export "{\"file\":\"$pfad\",\"target\":\"$HOME/aus/export.jpg\"}"
-	ruf 3 library_read "{\"path\":\"$HOME/aus/mcp.png\"}"
+	ruf 2 export "{\"file\":\"$pfad\",\"target\":\"$aus/export.jpg\"}"
+	ruf 3 library_read "{\"path\":\"$aus/mcp.png\"}"
 	printf '{"jsonrpc":"2.0","id":4,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"Alt","version":"1"}}}\n'
 	printf '{"jsonrpc":"2.0","method":"notifications/initialized"}\n'
 	printf '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"list_screens","arguments":{}}}\n'
@@ -105,7 +110,7 @@ pruefe "B Exit" "$?" 0
 b1="$(antwort "$probe/mcp/b.out" 1)"
 case "$b1" in *'"isError":false'*) echo "OK   B library_read" ;; *) echo "FEHL B library_read: ${b1:0:300}"; fehler=1 ;; esac
 case "$b1" in *'"type":"image"'*) echo "FEHL B image = no lieferte ein Bild"; fehler=1 ;; *) echo "OK   B ohne Bild bei image = no" ;; esac
-file "$HOME/aus/export.jpg" | grep -q 'JPEG image data' && echo "OK   B export JPEG" || { echo "FEHL B export"; fehler=1; }
+file "$aus/export.jpg" | grep -q 'JPEG image data' && echo "OK   B export JPEG" || { echo "FEHL B export"; fehler=1; }
 case "$(antwort "$probe/mcp/b.out" 3)" in *'"isError":true'*) echo "OK   B Datei außerhalb der Bibliothek abgelehnt" ;; *) echo "FEHL B library_read außerhalb"; fehler=1 ;; esac
 enthaelt "B Altform initialize" "$probe/mcp/b.out" '"protocolVersion":"2025-06-18"'
 case "$(antwort "$probe/mcp/b.out" 5)" in *'"isError":false'*) echo "OK   B Altform tools/call" ;; *) echo "FEHL B Altform tools/call"; fehler=1 ;; esac
@@ -146,6 +151,17 @@ if [ -x "$probe/fernbedienung" ]; then
 		pruefe "E Benachrichtigung" "$(grep -c '^notify' "$notify_log")" 1
 		pruefe "E eine neue Aufnahme" "$(($(aufnahmen) - vorher))" 1
 	fi
+	echo "== F: Tab, Tab, Return erlaubt nie"
+	printf 'warte 4000\ntaste Tab\nwarte 200\ntaste Tab\nwarte 200\nfoto tastatur-fokus\ntaste Return\nwarte 1000\ntaste Esc\nwarte 500\n' > "$probe/mcp/f.txt"
+	vorher="$(aufnahmen)"
+	hinweise_vorher="$(grep -c '^notify' "$notify_log")"
+	{ ruf 1 capture_screen '{}'; sleep 25; } | SCHNAPP_DEBUG=1 "$s" mcp > "$probe/mcp/f.out" 2> "$probe/mcp/f.err" &
+	mcp_pid=$!
+	FOTOS="$fotos" "$probe/fernbedienung" "$probe/mcp/f.txt" 2>&1 | tail -3
+	wait "$mcp_pid"
+	urteil "F Tastatur erlaubt nicht" "$probe/mcp/f.out" 1 true 'did not allow'
+	pruefe "F Bibliothek unverändert" "$(($(aufnahmen) - vorher))" 0
+	pruefe "F kein Hinweis" "$(grep -c '^notify' "$notify_log")" "$hinweise_vorher"
 	wait
 fi
 echo "-- stderr A (Auszug):"; head -20 "$probe/mcp/a.err"

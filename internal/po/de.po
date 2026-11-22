@@ -676,6 +676,16 @@ msgid "Writing failed and the old content could not be restored; the target file
 msgstr "Das Schreiben ist gescheitert und der alte Inhalt ließ sich nicht wiederherstellen; die Zieldatei ist unvollständig."
 
 # MCP-Server und Bestätigungsdialog (ADR-0030 Nachtrag 2)
+# Härtung (ADR-0030 Nachtrag 4): Einstellungen und Bibliothek aus dem echten Heim, zweites Signal
+msgid "schnapp mcp: ignoring %s from the environment; settings and library come from the home directory %s."
+msgstr "schnapp mcp: %s aus der Umgebung wird nicht beachtet; Einstellungen und Bibliothek kommen aus dem Heimverzeichnis %s."
+
+msgid "schnapp mcp: the home directory of the user is unknown; agents can neither capture nor read the library."
+msgstr "schnapp mcp: Das Heimverzeichnis des Benutzers ist unbekannt; Agenten können weder aufnehmen noch die Bibliothek lesen."
+
+msgid "schnapp mcp: second signal, stopping now."
+msgstr "schnapp mcp: zweites Signal, Ende sofort."
+
 msgid "MCP server stopped: %v"
 msgstr "MCP-Server beendet: %v"
 

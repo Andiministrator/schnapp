@@ -155,6 +155,17 @@ func entferneTemp(name string) error {
 // schreibeInhalt schreibt inhalt atomar nach abs, unter der Signalwache (F-396). vorSchreiben (nur Tests) läuft
 // innerhalb der Wache, bevor das Schreiben beginnt.
 func schreibeInhalt(abs string, inhalt []byte, privat bool, vorSchreiben func(abgebrochen func() bool)) error {
+	schreiber := export.SchreibeAtomar
+	if privat {
+		schreiber = export.SchreibeAtomarPrivat
+	}
+	return schreibeInhaltMit(abs, inhalt, schreiber, vorSchreiben)
+}
+
+// schreibeInhaltMit ist schreibeInhalt mit frei gewähltem Schreiber aus internal/export (MCP: ohne Ersetzen,
+// ADR-0030 Nachtrag 4 Punkt 2).
+func schreibeInhaltMit(abs string, inhalt []byte, schreiber func(string, func(io.Writer) error) error,
+	vorSchreiben func(abgebrochen func() bool)) error {
 	return mitSignalwache(func(abgebrochen func() bool, merkeTemp func(string)) error {
 		if vorSchreiben != nil {
 			vorSchreiben(abgebrochen)
@@ -170,10 +181,7 @@ func schreibeInhalt(abs string, inhalt []byte, privat bool, vorSchreiben func(ab
 			}
 			return schreibNaht(w, inhalt, abgebrochen)
 		}
-		if privat {
-			return export.SchreibeAtomarPrivat(abs, schreibe)
-		}
-		return export.SchreibeAtomar(abs, schreibe)
+		return schreiber(abs, schreibe)
 	})
 }
 

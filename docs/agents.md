@@ -110,25 +110,38 @@ language of the system; do not parse them.
 ## MCP server
 
 `schnapp mcp` runs Schnapp as a Model Context Protocol server over standard input and output (newline-delimited
-JSON-RPC 2.0). It never opens a socket. Register it in your agent like any stdio server, with the command `schnapp`
-and the single argument `mcp`. It speaks protocol revision 2026-07-28 (`server/discover`, `_meta` on every request)
-and the older handshake form (`initialize`, revisions 2024-11-05 to 2025-11-25). Logs go to standard error only.
+JSON-RPC 2.0). It opens no network socket; it talks to the desktop only over the session D-Bus (capture,
+notification) and Wayland (confirmation dialog). Register it in your agent like any stdio server, with the command
+`schnapp` and the single argument `mcp`. It speaks protocol revision 2026-07-28 (`server/discover`, `_meta` on every
+request) and the older handshake form (`initialize`, revisions 2024-11-05 to 2025-11-25); `ping` is answered in both.
+Logs go to standard error only. Requests run one at a time; while a tool runs, at most 64 further messages (8 MiB) are
+held, and a request beyond that fails with `-32600`. After SIGTERM, SIGINT or SIGHUP no further request starts; a
+second signal stops the server at once.
 
 Tools (names and JSON keys are stable):
 
 | Tool | Arguments | Needs |
 |---|---|---|
 | `list_screens` | — | nothing |
-| `capture_screen` | `screen` (name), `all` (bool), `output` (absolute path) — without `screen` and `all`: the active monitor, or all if `[capture] screen = all` | `capture` |
+| `capture_screen` | `screen` (a name from `list_screens`), `all` (bool), `output` (absolute path) — without `screen` and `all`: the active monitor, or all if `[capture] screen = all` | `capture` |
 | `capture_repeat` | `output` | `capture` |
 | `library_search` | `tag`, `from`, `to` (RFC 3339 or `YYYY-MM-DD`), `limit` (1–50, default 20), `agents` (default true) | `library` |
 | `library_read` | `path` (absolute or relative to the library) | `library` |
-| `export` | `file`, `target` (absolute paths) | `library` if `file` is in the library |
+| `export` | `file`, `target` (absolute paths) | `library` if `file` is in the library or its preview cache |
 
 Captures and `library_read` return `structuredContent` `{"path","width","height"}`, the same JSON as text and — with
 `image = yes` — the visible image as a PNG (at most 8 MiB). There is no overlay over MCP: picking an area needs a person.
 
-Consent lives only in `~/.config/schnapp/settings.ini`; the server reads it on every call and never writes it:
+`output` and `target` must be new files: the server never replaces an existing file (the call fails with "already
+exists") and refuses targets inside the Schnapp library or its preview cache, also through a symbolic link to the
+folder. A new `output` file gets mode 0600, a new `target` follows the umask. If the location of the library cannot be
+determined, `output` and `export` are refused. This differs from `--output` and `--export` on the command line, which
+replace an existing file.
+
+Consent lives only in `settings.ini` under the user's real home directory (`~/.config/schnapp/settings.ini`, home taken
+from the user database). The server ignores `HOME` and `XDG_*` from its environment — the agent's client sets that
+environment — and takes the settings, the library and the last area from the real home directory instead; if the
+environment points elsewhere, it says so on standard error. It reads the file on every call and never writes it:
 
 ```ini
 [agents]
@@ -139,6 +152,13 @@ image = yes    # send the image itself to the agent; no: only path and size
 ```
 
 A call without consent fails with `isError: true` and a sentence that names the missing switch. Every capture shows a
-desktop notification; if it cannot be shown, the screenshot is discarded. Captures without `output` go to the library
-under `<Pictures>/schnapp/agents/` and are cleaned up like any capture. The name the agent reports about itself is
-shown in the dialog as unverified.
+desktop notification (urgency critical); if the notification service does not accept it, the screenshot is discarded.
+The notification is only a hint: the server knows that the service took it, not that a person saw it, and a
+do-not-disturb mode may hide it. If you want to see every capture, keep `confirm = yes`. Captures without `output` go
+to the library under `<Pictures>/schnapp/agents/` and are cleaned up like any capture. A capture that is cancelled
+(`notifications/cancelled`, end of input, signal) is discarded even if the image was already taken.
+
+The dialog answers only to the mouse: "Allow" counts only when it is pressed and released after a short lock (0.6 s)
+once the dialog appears; no key ever allows (Return, Space and Tab cannot reach the button). Esc, "Deny" and closing
+the window deny. The dialog closes itself shortly after the 60 s limit, even if the server is gone. The name the agent
+reports about itself is shown in the dialog as unverified.

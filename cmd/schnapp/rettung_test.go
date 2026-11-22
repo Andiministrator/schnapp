@@ -19,6 +19,7 @@ import (
 
 // Kein Test dieses Pakets berührt den echten Zustandsordner: Die Rettungskopien liegen in einem eigenen Ordner.
 func TestMain(m *testing.M) {
+	dialogKindAttrappe() // als Dialog-Kind gestartet: endet hier (mcp_kind_test.go, F-471)
 	ort, err := os.MkdirTemp("", "schnapp-state-")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

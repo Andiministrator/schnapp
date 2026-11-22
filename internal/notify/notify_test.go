@@ -7,6 +7,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/godbus/dbus/v5"
 )
 
 func mitAttrappe(t *testing.T, f func(ctx context.Context, args []any) ([]any, error)) {
@@ -33,6 +35,14 @@ func TestZeigeSchicktTitelUndText(t *testing.T) {
 	}
 	if _, ok := gesehen[7].(int32); !ok {
 		t.Errorf("expire_timeout muss int32 sein: %T", gesehen[7])
+	}
+	// Dringlichkeit critical (Byte 2): auch bei „Nicht stören“ sichtbar (ADR-0030 Nachtrag 4 Punkt 8, F-466).
+	hints, ok := gesehen[6].(map[string]dbus.Variant)
+	if !ok {
+		t.Fatalf("hints: %T", gesehen[6])
+	}
+	if u, ok := hints["urgency"].Value().(byte); !ok || u != 2 {
+		t.Errorf("urgency %v, erwartet byte 2 (critical)", hints["urgency"])
 	}
 }
 

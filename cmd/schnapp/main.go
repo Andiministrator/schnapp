@@ -51,7 +51,9 @@ func main() {
 		// Argumente; der Dialog braucht die Gio-Hauptschleife, der Server die Monitorabfrage.
 		switch args := os.Args[1:]; {
 		case len(args) == 1 && args[0] == mcpArgument:
-			return laufeMcp(os.Stdin, os.Stdout, os.Stderr, echteMcpAnschluesse(os.Stderr))
+			an := echteMcpAnschluesse(os.Stderr)
+			starteSprache(an.lade) // auch die Sprache aus dem echten Heim (ADR-0030 Nachtrag 4 Punkt 1)
+			return laufeMcp(os.Stdin, os.Stdout, os.Stderr, an)
 		case len(args) == 1 && args[0] == bestaetigenArgument:
 			return laufeBestaetigung(os.Stdin, os.Stderr)
 		}

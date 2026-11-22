@@ -36,7 +36,9 @@ func Zeige(ctx context.Context, titel, text string) (fehler error) {
 	ctx, ende := context.WithTimeout(ctx, frist)
 	defer ende()
 	args := []any{"Schnapp", uint32(0), "schnapp", titel, text, []string{}, map[string]dbus.Variant{
-		"urgency":       dbus.MakeVariant(byte(1)), // normal
+		// critical: auch bei „Nicht stören“ sichtbar (Plasma-Voreinstellung); der Hinweis ist der einzige sichtbare
+		// Rest einer Aufnahme ohne Dialog (ADR-0030 Nachtrag 4 Punkt 8, F-466).
+		"urgency":       dbus.MakeVariant(byte(2)),
 		"desktop-entry": dbus.MakeVariant("schnapp"),
 	}, dauer}
 	var body []any

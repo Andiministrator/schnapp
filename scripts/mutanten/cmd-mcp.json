@@ -52,8 +52,8 @@
     "name": "M8 Export aus der Bibliothek ohne Einwilligung",
     "datei": "cmd/schnapp/mcp.go",
     "paket": "./cmd/schnapp",
-    "alt": "if _, drin := inAblage(o.Ablage, p.File); drin && !an.einstellungen().Agenten.Bibliothek {",
-    "neu": "if _, drin := inAblage(o.Ablage, p.File); false && drin && !an.einstellungen().Agenten.Bibliothek {"
+    "alt": "if _, drin := inAblage(ort, p.File); drin && !an.einstellungen().Agenten.Bibliothek {",
+    "neu": "if _, drin := inAblage(ort, p.File); false && drin && !an.einstellungen().Agenten.Bibliothek {"
   },
   {
     "name": "M9 Agenten-Aufnahme in der normalen Ablage",
@@ -66,8 +66,8 @@
     "name": "M10 output nach der umask",
     "datei": "cmd/schnapp/mcp.go",
     "paket": "./cmd/schnapp",
-    "alt": "pfad, err = schreibeBild(d, ausgabe, true)",
-    "neu": "pfad, err = schreibeBild(d, ausgabe, false)"
+    "alt": "pfad, err = schreibeBildNeu(d, ausgabe, true)",
+    "neu": "pfad, err = schreibeBildNeu(d, ausgabe, false)"
   },
   {
     "name": "M11 Bild trotz image = no",
@@ -131,5 +131,244 @@
     "paket": "./cmd/schnapp",
     "alt": "\tif !a.letzter && !a.alle && a.monitor == \"\" && e.Bildschirm == settings.WahlAlle {",
     "neu": "\tif false && !a.letzter && !a.alle && a.monitor == \"\" && e.Bildschirm == settings.WahlAlle {"
+  },
+  {
+    "name": "M20 c1 library_read ohne Prüfung auf reguläre .png (F-471)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "if fi, err := os.Stat(pfad); err != nil || !fi.Mode().IsRegular() || !strings.EqualFold(filepath.Ext(pfad), \".png\") {",
+    "neu": "if fi, err := os.Stat(pfad); err != nil || false && (!fi.Mode().IsRegular() || !strings.EqualFold(filepath.Ext(pfad), \".png\")) {"
+  },
+  {
+    "name": "M21 c2 Ziel ohne bekannten Ort der Bibliothek (F-471, F-462)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif err != nil {\n\t\treturn fmt.Errorf(\"%s cannot be checked because the location of the Schnapp library is unknown\", name)",
+    "neu": "\tif false && err != nil {\n\t\treturn fmt.Errorf(\"%s cannot be checked because the location of the Schnapp library is unknown\", name)"
+  },
+  {
+    "name": "M22 c6 Bild ohne Größengrenze (F-471)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif buf.Len() > maxBildBytes {",
+    "neu": "\tif false && buf.Len() > maxBildBytes {"
+  },
+  {
+    "name": "M23 c7 Kundenname roh in den Dialog (F-471)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "an.bestaetige(ctx, a.zielText(), kundenname(k))",
+    "neu": "an.bestaetige(ctx, a.zielText(), k.Name)"
+  },
+  {
+    "name": "M24 c9 Kind-stdout ins Protokoll (F-471)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tcmd.Stdout = os.Stderr",
+    "neu": "\tcmd.Stdout = os.Stdout"
+  },
+  {
+    "name": "M25 c10 Frist des Dialogs heißt erlaubt (F-471)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "return false, nil // Frist abgelaufen oder abgebrochen: abgelehnt",
+    "neu": "return true, nil // Frist abgelaufen oder abgebrochen: abgelehnt"
+  },
+  {
+    "name": "M26 c11 Exit ungleich 0 des Kindes heißt erlaubt (F-471)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "return false, nil // Ablehnen, Esc, Schließen",
+    "neu": "return true, nil // Ablehnen, Esc, Schließen"
+  },
+  {
+    "name": "M27 c12 Kind meldet Ablehnen mit Exit 0 (F-471)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif !ok {\n\t\treturn exitFehler\n\t}\n\treturn exitOK",
+    "neu": "\tif false && !ok {\n\t\treturn exitFehler\n\t}\n\treturn exitOK"
+  },
+  {
+    "name": "M28 p2 Abbruch ohne normID (F-471)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "return bytes.Equal(normID(p.ID), normID(id))",
+    "neu": "return bytes.Equal(p.ID, id)"
+  },
+  {
+    "name": "M29 p3 Altversion ohne initialize angenommen (F-471)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "if slices.Contains(altVersionen, v) && s.alt {",
+    "neu": "if slices.Contains(altVersionen, v) {"
+  },
+  {
+    "name": "M30 p5 notifications/cancelled mit id bricht ab (F-471)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "n.Methode != \"notifications/cancelled\" || len(n.ID) != 0 {",
+    "neu": "n.Methode != \"notifications/cancelled\" {"
+  },
+  {
+    "name": "M31 p10 Leerzeilen nicht übersprungen (F-471)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "if len(z.daten) == 0 && !z.zuLang {",
+    "neu": "if false && len(z.daten) == 0 && !z.zuLang {"
+  },
+  {
+    "name": "M32 Einstellungen aus der Umgebung (F-461)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "an.lade = func() (settings.Einstellungen, []string) { return settings.LadeDatei(ini) }",
+    "neu": "an.lade = settings.Lade"
+  },
+  {
+    "name": "M33 Orte der Bibliothek aus der Umgebung (F-461)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "return library.OrteAus(nurHeim)",
+    "neu": "return library.OrteAus(os.Getenv)"
+  },
+  {
+    "name": "M34 Ziel in Ablage oder Vorschau erlaubt (F-462)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif liegtIn(aufgeloest(b), echt) || liegtIn(filepath.Clean(b), filepath.Clean(pfad)) {",
+    "neu": "\t\tif false && (liegtIn(aufgeloest(b), echt) || liegtIn(filepath.Clean(b), filepath.Clean(pfad))) {"
+  },
+  {
+    "name": "M35 Ordner des Ziels nicht aufgelöst (F-462)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "ordner, err := filepath.EvalSymlinks(filepath.Dir(pfad))",
+    "neu": "ordner, err := filepath.Dir(pfad), error(nil)"
+  },
+  {
+    "name": "M36 Schreiben ersetzt ein vorhandenes Ziel (F-462)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tschreiber := export.SchreibeOhneErsetzen\n\tif privat {\n\t\tschreiber = export.SchreibeOhneErsetzenPrivat",
+    "neu": "\tschreiber := export.SchreibeAtomar\n\tif privat {\n\t\tschreiber = export.SchreibeAtomarPrivat"
+  },
+  {
+    "name": "M37 vorhandenes Ziel erst beim Schreiben erkannt, Dialog läuft (F-462)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tcase err == nil:\n\t\treturn fmt.Errorf(\"%s already exists",
+    "neu": "\tcase false && err == nil:\n\t\treturn fmt.Errorf(\"%s already exists"
+  },
+  {
+    "name": "M38 Vorschau-Cache ohne library exportierbar (F-465)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "for _, ort := range []string{o.Ablage, o.Vorschau} {",
+    "neu": "for _, ort := range []string{o.Ablage} {"
+  },
+  {
+    "name": "M39 unbekannter Monitor in den Dialog (F-463)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif !slices.ContainsFunc(ms, func(m ui.Monitor) bool { return m.Name == a.monitor }) {",
+    "neu": "\t\tif false && !slices.ContainsFunc(ms, func(m ui.Monitor) bool { return m.Name == a.monitor }) {"
+  },
+  {
+    "name": "M40 Monitorname unmaskiert im Zieltext (F-463)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "maskiere(a.monitor, maxMonitorname)",
+    "neu": "a.monitor"
+  },
+  {
+    "name": "M41 Aufnahme nach Abbruch abgelegt (F-469)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "nichts zurück (F-469).\n\tif ctx.Err() != nil {",
+    "neu": "nichts zurück (F-469).\n\tif false && ctx.Err() != nil {"
+  },
+  {
+    "name": "M42 Hinweis trotz Abbruch während der Aufnahme (F-469)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "Nachtrag 4 Punkt 6, F-469).\n\tif ctx.Err() != nil {",
+    "neu": "Nachtrag 4 Punkt 6, F-469).\n\tif false && ctx.Err() != nil {"
+  },
+  {
+    "name": "M43 Kind ohne eigene Frist (F-469)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "ctx, ende := context.WithTimeout(context.Background(), bestaetigenFrist+kindZugabe)",
+    "neu": "ctx, ende := context.WithCancel(context.Background())",
+    "timeout": "120s"
+  },
+  {
+    "name": "M44 Kind ohne harten Abbruch (F-469)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tfmt.Fprintln(fehler, \"schnapp: confirmation dialog did not close in time\")\n\t\tbeendeProzess(exitFehler)",
+    "neu": "\t\tfmt.Fprintln(fehler, \"schnapp: confirmation dialog did not close in time\")"
+  },
+  {
+    "name": "M45 zweites Signal beendet nicht (F-467)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\tbeende(exitFehler)\n\t\t\treturn",
+    "neu": "\t\t\treturn"
+  },
+  {
+    "name": "M46 Schlange läuft nach Abbruch weiter (F-467)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "\t\tif ctx.Err() != nil {\n\t\t\treturn nil\n\t\t}\n\t\tvar z zeile",
+    "neu": "\t\tif false && ctx.Err() != nil {\n\t\t\treturn nil\n\t\t}\n\t\tvar z zeile"
+  },
+  {
+    "name": "M47 Schlange ohne Grenze (F-468)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "if len(q.zeilen) >= MaxSchlange || q.bytes+len(z.daten) > MaxSchlangeBytes {",
+    "neu": "if false && (len(q.zeilen) >= MaxSchlange || q.bytes+len(z.daten) > MaxSchlangeBytes) {"
+  },
+  {
+    "name": "M48 Schlange nur nach Anzahl begrenzt (F-468)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "if len(q.zeilen) >= MaxSchlange || q.bytes+len(z.daten) > MaxSchlangeBytes {",
+    "neu": "if len(q.zeilen) >= MaxSchlange {"
+  },
+  {
+    "name": "M49 JSON ohne Objekt als Parse error (F-470)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "\t\treturn nachricht{}, fehlerAntwort(nullID, codeAnfrage, \"Invalid Request\", nil)",
+    "neu": "\t\treturn nachricht{}, fehlerAntwort(nullID, codeParse, \"Invalid Request\", nil)"
+  },
+  {
+    "name": "M50 Antwort des Clients beantwortet (F-470)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "if n.Methode == \"\" && len(n.ID) > 0 && (len(n.Result) > 0 || len(n.Error) > 0) {",
+    "neu": "if false && n.Methode == \"\" && len(n.ID) > 0 && (len(n.Result) > 0 || len(n.Error) > 0) {"
+  },
+  {
+    "name": "M51 Hinweis mit Dringlichkeit normal (F-466)",
+    "datei": "internal/notify/notify.go",
+    "paket": "./internal/notify",
+    "alt": "dbus.MakeVariant(byte(2))",
+    "neu": "dbus.MakeVariant(byte(1))"
+  },
+  {
+    "name": "M52 Drücken in der Sperre zählt (F-464)",
+    "datei": "internal/ui/bestaetigen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "f.druckGueltig = !f.gesperrt(jetzt)",
+    "neu": "f.druckGueltig = true"
+  },
+  {
+    "name": "M53 Esc lehnt nicht ab (F-464)",
+    "datei": "internal/ui/bestaetigen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "return name == key.NameEscape",
+    "neu": "return false && name == key.NameEscape"
   }
 ]

@@ -66,7 +66,7 @@ func neuerMcpLauf(t *testing.T) *mcpLauf {
 		},
 		quelle: func() (capture.Quelle, error) { l.schritte = append(l.schritte, "aufnahme"); return l.q, nil },
 		monitore: func() ([]ui.Monitor, error) {
-			return []ui.Monitor{{Name: "DP-1", Breite: 40, Hoehe: 30, Skala: 1}}, nil
+			return []ui.Monitor{{Name: "DP-1", Breite: 40, Hoehe: 30, Skala: 1}, {Name: "HDMI-A-1", Breite: 20, Hoehe: 10, Skala: 1}}, nil
 		},
 		bestaetige: func(_ context.Context, ziel, kunde string) (bool, error) {
 			l.schritte = append(l.schritte, "dialog:"+ziel+"|"+kunde)
@@ -302,6 +302,7 @@ func TestMcpOhneZielFolgtEinstellung(t *testing.T) {
 }
 
 func TestMcpFalscheArgumente(t *testing.T) {
+	t.Chdir(t.TempDir())
 	l := neuerMcpLauf(t)
 	for _, args := range []string{
 		`{"screen":"DP-1","all":true}`, `{"output":"rel.png"}`, `{"output":"/x/a.txt"}`, `{"unbekannt":1}`, `{"all":"ja"}`,
@@ -487,6 +488,7 @@ func mustPNG(t *testing.T) []byte {
 }
 
 func TestMcpExport(t *testing.T) {
+	t.Chdir(t.TempDir()) // bei gebrochener Prüfung entsteht rel.png dort, nicht im Paketordner (F-471)
 	l := neuerMcpLauf(t)
 	aussen := filepath.Join(l.heim, "aussen.png")
 	if err := os.WriteFile(aussen, mustPNG(t), 0o600); err != nil {

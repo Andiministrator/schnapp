@@ -168,6 +168,13 @@ func SchreibeOhneErsetzen(pfad string, schreibe func(io.Writer) error) (fehler e
 	return schreibeAtomar(pfad, true, 0, schreibe)
 }
 
+// SchreibeOhneErsetzenPrivat ist SchreibeOhneErsetzen mit den Rechten 0600 für die neue Datei (MCP-Werkzeug
+// `capture_screen` mit `output`, ADR-0030 Nachtrag 4 Punkt 2).
+func SchreibeOhneErsetzenPrivat(pfad string, schreibe func(io.Writer) error) (fehler error) {
+	defer errprefix.Defer("export", &fehler)
+	return schreibeAtomar(pfad, true, 0o600, schreibe)
+}
+
 // schreibeAtomar: neuRechte != 0 setzt die Rechte einer neu entstehenden Datei (sonst gilt die umask).
 func schreibeAtomar(pfad string, ohneErsetzen bool, neuRechte os.FileMode, schreibe func(io.Writer) error) (fehler error) {
 	if st, err := os.Lstat(pfad); err == nil && st.Mode()&os.ModeSymlink != 0 {

@@ -11,7 +11,8 @@
 //
 // Anfragen laufen nacheinander. Während ein Werkzeug läuft, liest der Server weiter: `notifications/cancelled` für
 // die laufende Anfrage bricht sie ab (dann ohne Antwort), EOF auf stdin bricht sie ab und beendet den Server, andere
-// Nachrichten warten in einer Schlange.
+// Nachrichten warten in einer begrenzten Schlange (MaxSchlange, MaxSchlangeBytes). Nach dem Ende von ctx startet
+// nichts mehr aus der Schlange (ADR-0030 Nachtrag 4).
 package mcp
 
 import (
@@ -43,6 +44,13 @@ var (
 // MaxZeile ist die längste gelesene Zeile; eine längere gilt als unlesbar (-32700), der Rest bis zum Zeilenende wird
 // verworfen.
 const MaxZeile = 1 << 20
+
+// Grenzen der Warteschlange, solange ein Werkzeug läuft (ADR-0030 Nachtrag 4 Punkt 7, F-468): darüber bekommt eine
+// Anfrage -32600 und wird verworfen, eine Benachrichtigung fällt still weg.
+const (
+	MaxSchlange      = 64
+	MaxSchlangeBytes = 8 << 20
+)
 
 // Schlüssel in params._meta (2026-07-28).
 const (
@@ -124,6 +132,9 @@ type nachricht struct {
 	ID      json.RawMessage `json:"id,omitempty"`
 	Methode string          `json:"method"`
 	Params  json.RawMessage `json:"params,omitempty"`
+	// Result und Error trägt nur eine Antwort des Clients; sie bekommt keine Antwort (F-470).
+	Result json.RawMessage `json:"result,omitempty"`
+	Error  json.RawMessage `json:"error,omitempty"`
 }
 
 type fehlerObjekt struct {
@@ -195,11 +206,15 @@ func (s *Server) Bediene(ctx context.Context, r io.Reader, w io.Writer) (fehler 
 	defer close(ende)
 	go liesZeilen(r, zeilen, ende)
 
-	var schlange []zeile
+	var schlange schlange
 	for {
+		// Nach einem Abbruch (Signal) startet nichts mehr aus der Schlange (ADR-0030 Nachtrag 4 Punkt 6, F-467).
+		if ctx.Err() != nil {
+			return nil
+		}
 		var z zeile
-		if len(schlange) > 0 {
-			z, schlange = schlange[0], schlange[1:]
+		if schlange.laenge() > 0 {
+			z = schlange.nimm()
 		} else {
 			select {
 			case <-ctx.Done():
@@ -221,8 +236,11 @@ func (s *Server) Bediene(ctx context.Context, r io.Reader, w io.Writer) (fehler 
 			}
 			continue
 		}
+		if n.Methode == "" {
+			continue // Antwort des Clients: keine Antwort darauf (F-470)
+		}
 		if n.Methode == "tools/call" && len(n.ID) > 0 {
-			res, abgebrochen, eof, err := s.rufeAuf(ctx, n, zeilen, &schlange)
+			res, abgebrochen, eof, err := s.rufeAuf(ctx, n, zeilen, &schlange, w)
 			if err == nil && !abgebrochen {
 				err = schreibe(w, res)
 			}
@@ -249,16 +267,24 @@ func (s *Server) lies(z zeile) (nachricht, *antwort) {
 		s.log("Zeile länger als %d Bytes verworfen", MaxZeile)
 		return nachricht{}, fehlerAntwort(nullID, codeParse, "Parse error: line too long", nil)
 	}
+	if !json.Valid(z.daten) {
+		return nachricht{}, fehlerAntwort(nullID, codeParse, "Parse error", nil)
+	}
 	if z.daten[0] == '[' {
 		return nachricht{}, fehlerAntwort(nullID, codeAnfrage, "Invalid Request: batches are not supported", nil)
 	}
 	var n nachricht
-	if err := json.Unmarshal(z.daten, &n); err != nil {
-		return nachricht{}, fehlerAntwort(nullID, codeParse, "Parse error", nil)
+	if z.daten[0] != '{' || json.Unmarshal(z.daten, &n) != nil {
+		// Gültiges JSON, aber kein Objekt oder mit falschen Typen: keine Anfrage (F-470).
+		return nachricht{}, fehlerAntwort(nullID, codeAnfrage, "Invalid Request", nil)
 	}
 	id := n.ID
 	if len(id) == 0 {
 		id = nullID
+	}
+	if n.Methode == "" && len(n.ID) > 0 && (len(n.Result) > 0 || len(n.Error) > 0) {
+		s.log("Antwort des Clients ohne Anfrage verworfen")
+		return nachricht{}, nil // Antwort des Clients (F-470): Bediene antwortet nicht
 	}
 	if n.JSONRPC != "2.0" || n.Methode == "" || !gueltigeID(n.ID) {
 		if len(n.ID) == 0 && n.JSONRPC == "2.0" && n.Methode != "" {
@@ -426,9 +452,49 @@ func (s *Server) kundeAus(params json.RawMessage) Kunde {
 	return s.kunde
 }
 
+// schlange hält die Nachrichten, die während eines Werkzeugaufrufs eintreffen, mit Zählung der Bytes (F-468).
+type schlange struct {
+	zeilen []zeile
+	bytes  int
+}
+
+func (q *schlange) laenge() int { return len(q.zeilen) }
+
+func (q *schlange) nimm() zeile {
+	z := q.zeilen[0]
+	q.zeilen[0] = zeile{} // den Speicher freigeben
+	q.zeilen = q.zeilen[1:]
+	q.bytes -= len(z.daten)
+	return z
+}
+
+// stelle hängt z an; false heißt, die Grenze ist erreicht und z wurde nicht angenommen.
+func (q *schlange) stelle(z zeile) bool {
+	if len(q.zeilen) >= MaxSchlange || q.bytes+len(z.daten) > MaxSchlangeBytes {
+		return false
+	}
+	q.zeilen = append(q.zeilen, z)
+	q.bytes += len(z.daten)
+	return true
+}
+
+// ueberlauf ist die Antwort auf eine Zeile, die nicht mehr in die Schlange passt: eine Anfrage mit gültiger Kennung
+// bekommt -32600, alles andere (Benachrichtigungen, Antworten des Clients, Unlesbares) fällt still weg.
+func ueberlauf(z zeile) *antwort {
+	if z.zuLang || len(z.daten) == 0 || z.daten[0] != '{' {
+		return nil
+	}
+	var n nachricht
+	if json.Unmarshal(z.daten, &n) != nil || n.Methode == "" || len(n.ID) == 0 || !gueltigeID(n.ID) {
+		return nil
+	}
+	return fehlerAntwort(n.ID, codeAnfrage, "Invalid Request: too many pending messages", nil)
+}
+
 // rufeAuf führt tools/call aus und liest währenddessen weiter. abgebrochen: Der Client hat die Anfrage abgebrochen
-// (keine Antwort). eof: stdin ist zu, der Server endet nach dieser Anfrage.
-func (s *Server) rufeAuf(ctx context.Context, n nachricht, zeilen <-chan zeile, schlange *[]zeile) (res antwort, abgebrochen, eof bool, err error) {
+// (keine Antwort). eof: stdin ist zu, der Server endet nach dieser Anfrage. Läuft die Schlange über, schreibt rufeAuf
+// die Fehlerantwort gleich nach w (das Werkzeug selbst schreibt nie dorthin).
+func (s *Server) rufeAuf(ctx context.Context, n nachricht, zeilen <-chan zeile, q *schlange, w io.Writer) (res antwort, abgebrochen, eof bool, err error) {
 	if f := s.pruefeMeta(n); f != nil {
 		return *f, false, false, nil
 	}
@@ -482,7 +548,14 @@ func (s *Server) rufeAuf(ctx context.Context, n nachricht, zeilen <-chan zeile, 
 				abbrechen()
 				continue
 			}
-			*schlange = append(*schlange, z)
+			if !q.stelle(z) {
+				s.log("Warteschlange voll (%d Nachrichten, %d Bytes), Nachricht verworfen", q.laenge(), q.bytes)
+				if a := ueberlauf(z); a != nil {
+					if err := schreibe(w, *a); err != nil {
+						return antwort{}, false, eof, err // abbrechen per defer; fertig ist gepuffert
+					}
+				}
+			}
 		}
 	}
 }

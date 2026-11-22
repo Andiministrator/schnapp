@@ -15,10 +15,13 @@ import (
 	"image"
 	"image/png"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"os/signal"
+	"os/user"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -46,15 +49,39 @@ const mcpArgument = "mcp"
 // kommen als eine JSON-Zeile über stdin, nicht über die Kommandozeile.
 const bestaetigenArgument = "--internal-confirm-capture"
 
-const (
+// Variablen statt Konstanten, damit Tests die Grenzen klein setzen können.
+var (
 	// bestaetigenFrist: so lange wartet der Server auf eine Antwort im Dialog, dann lehnt er ab.
 	bestaetigenFrist = 60 * time.Second
-	// fensterWeg: Abstand zwischen dem Ende des Dialogs und der Aufnahme, damit das Fenster nicht im Bild steht.
-	fensterWeg = 300 * time.Millisecond
 	// maxBildBytes: größtes PNG, das als Bildinhalt an den Agenten geht.
 	maxBildBytes = 8 << 20
+	// kindProgramm liefert das Programm des Dialog-Kindes (Naht für Tests: das Testprogramm selbst, F-471).
+	kindProgramm = os.Executable
+	// zeigeDialog ist der Dialog im Kind (Naht für Tests, F-471).
+	zeigeDialog = ui.Bestaetige
+	// benutzerHeim liefert das Heimverzeichnis aus der Benutzerdatenbank (Naht für Tests, F-461).
+	benutzerHeim = func() (string, error) {
+		u, err := user.Current()
+		if err != nil {
+			return "", err
+		}
+		return u.HomeDir, nil
+	}
+	// kindZugabe: Das Kind schließt den Dialog nach bestaetigenFrist + kindZugabe selbst und lehnt ab; kindHart
+	// danach beendet es sich hart (ADR-0030 Nachtrag 4 Punkt 5, F-469).
+	kindZugabe = 5 * time.Second
+	kindHart   = 2 * time.Second
+)
+
+const (
+	// fensterWeg: Abstand zwischen dem Ende des Dialogs und der Aufnahme, damit das Fenster nicht im Bild steht.
+	fensterWeg = 300 * time.Millisecond
 	// maxKundenname: so viele Zeichen des vom Agenten gemeldeten Namens zeigt der Dialog.
 	maxKundenname = 60
+	// maxMonitorname: so viele Zeichen eines Monitornamens erscheinen in Dialog und Hinweis (F-463).
+	maxMonitorname = 40
+	// maxZieltext: so viele Zeichen des Zieltexts zeigt das Kind höchstens (zweite Maske, F-463).
+	maxZieltext = 120
 	// Grenzen für library_search.
 	suchVoreinstellung = 20
 	suchHoechstens     = 50
@@ -73,21 +100,16 @@ type mcpAnschluesse struct {
 	// einstellungsOrt nennt die Datei in den Ablehnungstexten.
 	einstellungsOrt string
 	fehler          io.Writer
+	// startWarnung schreibt laufeMcp beim Start auf stderr (leer = keine): abweichende Umgebung, unbekanntes Heim.
+	startWarnung string
 }
 
 func echteMcpAnschluesse(fehler io.Writer) mcpAnschluesse {
-	ort, err := settings.Pfad()
-	if err != nil {
-		ort = "~/.config/schnapp/settings.ini"
-	}
-	return mcpAnschluesse{
-		lade:        settings.Lade,
-		quelle:      func() (capture.Quelle, error) { return capture.NeuKWin() },
-		monitore:    ui.Monitore,
-		bestaetige:  bestaetigeImKind,
-		melde:       notify.Zeige,
-		orte:        func() (library.Orte, error) { return library.OrteAus(os.Getenv) },
-		letzterPfad: selection.LetzterPfad(os.Getenv),
+	an := mcpAnschluesse{
+		quelle:     func() (capture.Quelle, error) { return capture.NeuKWin() },
+		monitore:   ui.Monitore,
+		bestaetige: bestaetigeImKind,
+		melde:      notify.Zeige,
 		warte: func(ctx context.Context, d time.Duration) error {
 			select {
 			case <-time.After(d):
@@ -96,8 +118,88 @@ func echteMcpAnschluesse(fehler io.Writer) mcpAnschluesse {
 				return ctx.Err()
 			}
 		},
-		einstellungsOrt: ort,
-		fehler:          fehler,
+		fehler: fehler,
+	}
+	heim, err := benutzerHeim()
+	if err != nil {
+		diagnose(fehler, "Heimverzeichnis aus der Benutzerdatenbank: %v", err)
+		heim = ""
+	}
+	an.mitHeim(heim, os.Getenv)
+	return an
+}
+
+// mcpUmgebung sind die Variablen, denen der Server nicht folgt (ADR-0030 Nachtrag 4 Punkt 1, F-461).
+var mcpUmgebung = []string{"HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME", "XDG_STATE_HOME"}
+
+// mitHeim setzt Einstellungen und Orte der Bibliothek aus heim (Heimverzeichnis der Benutzerdatenbank), ohne HOME und
+// XDG_* der Umgebung: Die setzt der Agenten-Client, womöglich aus einer fremden `.mcp.json` (F-461). umgebung dient nur
+// der Warnung. Ist heim nicht absolut, gelten die Voreinstellungen und kein Ort ist bekannt.
+func (an *mcpAnschluesse) mitHeim(heim string, umgebung func(string) string) {
+	if !filepath.IsAbs(heim) {
+		an.lade = func() (settings.Einstellungen, []string) { return settings.Voreinstellungen(), nil }
+		an.orte = func() (library.Orte, error) { return library.Orte{}, library.ErrKeinHeim }
+		an.letzterPfad = ""
+		an.einstellungsOrt = "~/.config/schnapp/settings.ini"
+		an.startWarnung = i18n.T("schnapp mcp: the home directory of the user is unknown; agents can neither capture nor read the library.")
+		return
+	}
+	heim = filepath.Clean(heim)
+	nurHeim := func(k string) string {
+		if k == "HOME" {
+			return heim
+		}
+		return ""
+	}
+	ini := filepath.Join(heim, ".config", "schnapp", "settings.ini")
+	an.lade = func() (settings.Einstellungen, []string) { return settings.LadeDatei(ini) }
+	an.orte = func() (library.Orte, error) { return library.OrteAus(nurHeim) }
+	an.letzterPfad = selection.LetzterPfad(nurHeim)
+	an.einstellungsOrt = ini
+	an.startWarnung = ""
+	if abw := abweichendeUmgebung(heim, umgebung); len(abw) > 0 {
+		an.startWarnung = fmt.Sprintf(i18n.T("schnapp mcp: ignoring %s from the environment; settings and library come from the home directory %s."),
+			strings.Join(abw, ", "), heim)
+	}
+}
+
+// abweichendeUmgebung nennt die Variablen aus mcpUmgebung, die gesetzt sind und nicht auf den Ort unter heim zeigen,
+// den die XDG-Vorgabe ohnehin nähme.
+func abweichendeUmgebung(heim string, umgebung func(string) string) []string {
+	vorgabe := map[string]string{
+		"HOME":            heim,
+		"XDG_CONFIG_HOME": filepath.Join(heim, ".config"),
+		"XDG_DATA_HOME":   filepath.Join(heim, ".local", "share"),
+		"XDG_CACHE_HOME":  filepath.Join(heim, ".cache"),
+		"XDG_STATE_HOME":  filepath.Join(heim, ".local", "state"),
+	}
+	var abw []string
+	for _, k := range mcpUmgebung {
+		if w := umgebung(k); w != "" && filepath.Clean(w) != vorgabe[k] {
+			abw = append(abw, k)
+		}
+	}
+	return abw
+}
+
+// mcpSignale beendet den Server beim ersten Signal sanft (abbrechen) und beim zweiten sofort mit Exit 1 (ADR-0030
+// Nachtrag 4 Punkt 6, F-467): Hängt ein Werkzeug, hilft sonst nur SIGKILL. Endet, wenn fertig schließt.
+func mcpSignale(kanal <-chan os.Signal, abbrechen func(), beende func(int), fehler io.Writer, fertig <-chan struct{}) {
+	n := 0
+	for {
+		select {
+		case <-fertig:
+			return
+		case <-kanal:
+			n++
+			if n == 1 {
+				abbrechen()
+				continue
+			}
+			fmt.Fprintln(fehler, i18n.T("schnapp mcp: second signal, stopping now."))
+			beende(exitFehler)
+			return
+		}
 	}
 }
 
@@ -107,8 +209,25 @@ func laufeMcp(ein io.Reader, aus, fehler io.Writer, an mcpAnschluesse) int {
 		fmt.Fprintln(fehler, "schnapp (Probe-Build):", err)
 		return exitFehler
 	}
-	ctx, ende := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
-	defer ende()
+	if an.startWarnung != "" {
+		fmt.Fprintln(fehler, an.startWarnung)
+	}
+	ctx, abbrechen := context.WithCancel(context.Background())
+	defer abbrechen()
+	var fangen []os.Signal
+	for _, s := range []os.Signal{syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP} {
+		if !signal.Ignored(s) { // wie die Signalwache (F-443): geerbtes Ignorieren bleibt
+			fangen = append(fangen, s)
+		}
+	}
+	kanal := make(chan os.Signal, 4)
+	if len(fangen) > 0 {
+		meldeAn(kanal, fangen...)
+		defer meldeAb(kanal)
+	}
+	fertig := make(chan struct{})
+	defer close(fertig)
+	go mcpSignale(kanal, abbrechen, beendeProzess, fehler, fertig)
 	s := &mcp.Server{Name: "schnapp", Version: versionsText(), Log: fehler, Werkzeuge: an.werkzeuge(),
 		Anleitung: "Schnapp takes screenshots on a KDE Plasma (Wayland) desktop. Capturing and reading the library " +
 			"need the user's consent in the settings file; a denied call says which switch is missing."}
@@ -203,9 +322,98 @@ func pruefeAusgabe(name, pfad string) error {
 	return nil
 }
 
+// aufgeloest löst die Symlinks des längsten vorhandenen Anfangs von p auf; der Rest bleibt, wie er ist.
+func aufgeloest(p string) string {
+	p = filepath.Clean(p)
+	rest := ""
+	for {
+		if a, err := filepath.EvalSymlinks(p); err == nil {
+			return filepath.Join(a, rest)
+		}
+		eltern := filepath.Dir(p)
+		if eltern == p {
+			return filepath.Join(p, rest)
+		}
+		rest = filepath.Join(filepath.Base(p), rest)
+		p = eltern
+	}
+}
+
+// liegtIn: p ist basis selbst oder liegt darunter (beide schon bereinigt).
+func liegtIn(basis, p string) bool {
+	rel, err := filepath.Rel(basis, p)
+	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
+}
+
+// pruefeZiel prüft ein output/target über pruefeAusgabe hinaus (ADR-0030 Nachtrag 4 Punkt 2, F-462): Es darf nicht in
+// der Ablage und nicht im Vorschau-Cache liegen (der Ordner nach dem Auflösen seiner Symlinks) und es darf es noch
+// nicht geben. Das Schreiben legt die Datei danach exklusiv an; diese Prüfung erspart nur Dialog und Aufnahme.
+func (an mcpAnschluesse) pruefeZiel(name, pfad string) error {
+	o, err := an.orte()
+	if err != nil {
+		return fmt.Errorf("%s cannot be checked because the location of the Schnapp library is unknown", name)
+	}
+	ordner, err := filepath.EvalSymlinks(filepath.Dir(pfad))
+	if err != nil {
+		return fmt.Errorf("the folder of %s does not exist", name)
+	}
+	echt := filepath.Join(ordner, filepath.Base(pfad))
+	for _, b := range []string{o.Ablage, o.Vorschau} {
+		if liegtIn(aufgeloest(b), echt) || liegtIn(filepath.Clean(b), filepath.Clean(pfad)) {
+			return fmt.Errorf("%s must not be inside the Schnapp library or its preview cache", name)
+		}
+	}
+	switch _, err := os.Lstat(pfad); {
+	case err == nil:
+		return fmt.Errorf("%s already exists; Schnapp never replaces a file for an agent", name)
+	case !errors.Is(err, fs.ErrNotExist):
+		return fmt.Errorf("%s cannot be checked", name)
+	}
+	return nil
+}
+
+// mcpSchreibFehler ist der englische Satz zu einem gescheiterten Schreiben von output/target.
+func mcpSchreibFehler(err error) string {
+	switch {
+	case errors.Is(err, export.ErrZielVorhanden):
+		return "the file already exists; Schnapp never replaces a file for an agent."
+	case errors.Is(err, fs.ErrPermission):
+		return "no permission to write there."
+	case errors.Is(err, fs.ErrNotExist):
+		return "the folder does not exist."
+	}
+	return "the file could not be written."
+}
+
+// schreibeBildNeu schreibt das sichtbare Bild nach pfad wie schreibeBild, ersetzt aber nie ein vorhandenes Ziel
+// (exklusiv angelegt; ADR-0030 Nachtrag 4 Punkt 2). privat: neue Datei mit 0600, sonst nach der umask.
+func schreibeBildNeu(d *document.Dokument, pfad string, privat bool) (string, error) {
+	f, ok := export.AusEndung(pfad)
+	if !ok {
+		return "", fmt.Errorf("schnapp: unbekannte Endung %q", filepath.Ext(pfad))
+	}
+	abs, err := filepath.Abs(pfad)
+	if err != nil {
+		return "", err
+	}
+	var inhalt bytes.Buffer
+	if err := export.Schreibe(d, f, &inhalt); err != nil {
+		return "", err
+	}
+	schreiber := export.SchreibeOhneErsetzen
+	if privat {
+		schreiber = export.SchreibeOhneErsetzenPrivat
+	}
+	return abs, schreibeInhaltMit(abs, inhalt.Bytes(), schreiber, nil)
+}
+
 // kundenname macht den vom Agenten gemeldeten Namen für den Dialog unschädlich: keine Steuerzeichen, gekürzt.
-func kundenname(k mcp.Kunde) string {
-	n := strings.TrimSpace(k.Name)
+func kundenname(k mcp.Kunde) string { return maskiere(k.Name, maxKundenname) }
+
+// maskiere macht einen Text des Agenten für Dialog und Hinweis unschädlich: gültiges UTF-8, keine Steuer- oder
+// Formatzeichen (auch keine Zeilenumbrüche), höchstens max Zeichen (F-463).
+func maskiere(s string, max int) string {
+	n := strings.TrimSpace(s)
 	if !utf8.ValidString(n) {
 		n = strings.ToValidUTF8(n, "�")
 	}
@@ -218,8 +426,8 @@ func kundenname(k mcp.Kunde) string {
 		}
 	}
 	n = b.String()
-	if r := []rune(n); len(r) > maxKundenname {
-		n = string(r[:maxKundenname]) + "…"
+	if r := []rune(n); len(r) > max {
+		n = string(r[:max]) + "…"
 	}
 	return n
 }
@@ -288,7 +496,7 @@ func (a aufnahme) zielText() string {
 	case a.alle:
 		return i18n.T("all monitors")
 	case a.monitor != "":
-		return fmt.Sprintf(i18n.T("monitor %s"), a.monitor)
+		return fmt.Sprintf(i18n.T("monitor %s"), maskiere(a.monitor, maxMonitorname))
 	}
 	return i18n.T("the active monitor")
 }
@@ -329,8 +537,21 @@ func (an mcpAnschluesse) nimmAuf(ctx context.Context, a aufnahme, ausgabe string
 	if !a.letzter && !a.alle && a.monitor == "" && e.Bildschirm == settings.WahlAlle {
 		a.alle = true
 	}
+	// Nur ein Name aus der Monitorliste, vor dem Dialog (ADR-0030 Nachtrag 4 Punkt 3, F-463).
+	if a.monitor != "" {
+		ms, err := an.monitore()
+		if err != nil {
+			return mcp.FehlerErgebnis("Could not query the monitors; nothing was captured.")
+		}
+		if !slices.ContainsFunc(ms, func(m ui.Monitor) bool { return m.Name == a.monitor }) {
+			return mcp.FehlerErgebnis("Unknown screen; use a name from list_screens.")
+		}
+	}
 	if ausgabe != "" {
 		if err := pruefeAusgabe("output", ausgabe); err != nil {
+			return mcp.FehlerErgebnis(err.Error() + ".")
+		}
+		if err := an.pruefeZiel("output", ausgabe); err != nil {
 			return mcp.FehlerErgebnis(err.Error() + ".")
 		}
 	}
@@ -363,6 +584,10 @@ func (an mcpAnschluesse) nimmAuf(ctx context.Context, a aufnahme, ausgabe string
 		}
 		return mcp.FehlerErgebnis("The screenshot could not be taken: " + nutzerFehler(err))
 	}
+	// Abbruch während der Aufnahme: das fertige Bild wird verworfen (ADR-0030 Nachtrag 4 Punkt 6, F-469).
+	if ctx.Err() != nil {
+		return mcp.FehlerErgebnis("Cancelled; the screenshot was discarded.")
+	}
 	d, err := document.Neu(b.SubImage(bereich))
 	if err != nil {
 		return mcp.FehlerErgebnis("The screenshot could not be taken: " + nutzerFehler(err))
@@ -379,12 +604,16 @@ func (an mcpAnschluesse) nimmAuf(ctx context.Context, a aufnahme, ausgabe string
 	if err != nil {
 		return mcp.FehlerErgebnis("The screenshot could not be rendered.")
 	}
+	// Letzte Gelegenheit vor dem Ablegen: Nach einem Abbruch bleibt vom Bild nichts zurück (F-469).
+	if ctx.Err() != nil {
+		return mcp.FehlerErgebnis("Cancelled; the screenshot was discarded.")
+	}
 	var pfad string
 	if ausgabe != "" {
-		pfad, err = schreibeBild(d, ausgabe, true)
+		pfad, err = schreibeBildNeu(d, ausgabe, true)
 		if err != nil {
 			diagnose(an.fehler, "Schreiben nach output: %v", err)
-			return mcp.FehlerErgebnis("Could not write " + ausgabe + ": " + schreibFehler(err))
+			return mcp.FehlerErgebnis("Could not write " + ausgabe + ": " + mcpSchreibFehler(err))
 		}
 	} else {
 		pfad, err = an.legeAb(d, sichtbar)
@@ -537,7 +766,10 @@ func inAblage(ablage, pfad string) (aufgeloest string, drin bool) {
 	return p, true
 }
 
-func (an mcpAnschluesse) liesAusBibliothek(_ context.Context, args json.RawMessage, _ mcp.Kunde) mcp.Ergebnis {
+// abgebrochenErgebnis ist die Antwort, wenn ctx zwischen zwei Schritten endete (F-467).
+var abgebrochenErgebnis = mcp.FehlerErgebnis("Cancelled.")
+
+func (an mcpAnschluesse) liesAusBibliothek(ctx context.Context, args json.RawMessage, _ mcp.Kunde) mcp.Ergebnis {
 	var p struct {
 		Path string `json:"path"`
 	}
@@ -566,14 +798,20 @@ func (an mcpAnschluesse) liesAusBibliothek(_ context.Context, args json.RawMessa
 	if err != nil {
 		return mcp.FehlerErgebnis("Cannot open the screenshot: " + nutzerFehler(err))
 	}
+	if ctx.Err() != nil {
+		return abgebrochenErgebnis
+	}
 	sichtbar, err := render.Bild(g.Dokument)
 	if err != nil {
 		return mcp.FehlerErgebnis("The screenshot could not be rendered.")
 	}
+	if ctx.Err() != nil {
+		return abgebrochenErgebnis
+	}
 	return ergebnisMitBild(pfad, sichtbar, e.Agenten.Bild)
 }
 
-func (an mcpAnschluesse) exportiere(_ context.Context, args json.RawMessage, _ mcp.Kunde) mcp.Ergebnis {
+func (an mcpAnschluesse) exportiere(ctx context.Context, args json.RawMessage, _ mcp.Kunde) mcp.Ergebnis {
 	var p struct {
 		File   string `json:"file"`
 		Target string `json:"target"`
@@ -587,25 +825,34 @@ func (an mcpAnschluesse) exportiere(_ context.Context, args json.RawMessage, _ m
 	if err := pruefeAusgabe("target", p.Target); err != nil {
 		return mcp.FehlerErgebnis(err.Error() + ".")
 	}
-	if o, err := an.orte(); err == nil {
-		if _, drin := inAblage(o.Ablage, p.File); drin && !an.einstellungen().Agenten.Bibliothek {
+	// Ohne bekannten Ort der Bibliothek lässt sich weder die Quelle noch das Ziel prüfen (Nachtrag 4 Punkt 2).
+	o, err := an.orte()
+	if err != nil {
+		return mcp.FehlerErgebnis("The location of the Schnapp library is unknown, so export is not possible.")
+	}
+	// Ablage und Vorschau-Cache (verkleinerte Bibliotheksbilder) brauchen library = yes (F-465).
+	for _, ort := range []string{o.Ablage, o.Vorschau} {
+		if _, drin := inAblage(ort, p.File); drin && !an.einstellungen().Agenten.Bibliothek {
 			return an.nichtErlaubt("Reading the library", "library")
 		}
-	} else if !an.einstellungen().Agenten.Bibliothek {
-		// Ohne bekannten Ort der Ablage lässt sich nicht ausschließen, dass die Datei dort liegt.
-		return an.nichtErlaubt("Reading the library", "library")
 	}
 	if err := pruefeZielNichtQuelle(p.File, p.Target); err != nil {
 		return mcp.FehlerErgebnis("Cannot export a file onto itself; choose a different target.")
+	}
+	if err := an.pruefeZiel("target", p.Target); err != nil {
+		return mcp.FehlerErgebnis(err.Error() + ".")
 	}
 	_, g, _, err := ladeFuerEditor(p.File, false)
 	if err != nil {
 		return mcp.FehlerErgebnis("Cannot open the file: " + nutzerFehler(err))
 	}
-	abs, err := schreibeBild(g.Dokument, p.Target, false)
+	if ctx.Err() != nil {
+		return abgebrochenErgebnis
+	}
+	abs, err := schreibeBildNeu(g.Dokument, p.Target, false)
 	if err != nil {
 		diagnose(an.fehler, "Export: %v", err)
-		return mcp.FehlerErgebnis("Could not write " + p.Target + ": " + schreibFehler(err))
+		return mcp.FehlerErgebnis("Could not write " + p.Target + ": " + mcpSchreibFehler(err))
 	}
 	gr := g.Dokument.Groesse()
 	e := ergebnis{Path: abs, Width: gr.X, Height: gr.Y}
@@ -624,7 +871,7 @@ type bestaetigung struct {
 // bestaetigeImKind startet `schnapp --internal-confirm-capture` und wartet höchstens bestaetigenFrist. Erlaubt ist nur
 // Exit 0. Das Kind schreibt nie auf die stdout des Servers (dort steht das Protokoll).
 func bestaetigeImKind(ctx context.Context, ziel, kunde string) (bool, error) {
-	exe, err := os.Executable()
+	exe, err := kindProgramm()
 	if err != nil {
 		return false, err
 	}
@@ -649,6 +896,8 @@ func bestaetigeImKind(ctx context.Context, ziel, kunde string) (bool, error) {
 }
 
 // laufeBestaetigung ist die Seite des Kindes: liest die Angaben von stdin, zeigt den Dialog, Exit 0 nur bei „Allow“.
+// Das Kind hat eine eigene Frist (bestaetigenFrist + kindZugabe): Stirbt der Server, bleibt kein Fenster stehen; kehrt
+// der Dialog danach nicht zurück, beendet es sich nach kindHart hart (ADR-0030 Nachtrag 4 Punkt 5, F-469).
 func laufeBestaetigung(ein io.Reader, fehler io.Writer) int {
 	if err := probeGuard(); err != nil {
 		fmt.Fprintln(fehler, "schnapp (Probe-Build):", err)
@@ -659,7 +908,17 @@ func laufeBestaetigung(ein io.Reader, fehler io.Writer) int {
 		fmt.Fprintln(fehler, "schnapp: invalid confirmation request")
 		return exitAufruf
 	}
-	ok, err := ui.Bestaetige(b.Ziel, kundenname(mcp.Kunde{Name: b.Kunde}))
+	ctx, ende := context.WithTimeout(context.Background(), bestaetigenFrist+kindZugabe)
+	defer ende()
+	hart := time.AfterFunc(bestaetigenFrist+kindZugabe+kindHart, func() {
+		fmt.Fprintln(fehler, "schnapp: confirmation dialog did not close in time")
+		beendeProzess(exitFehler)
+	})
+	defer hart.Stop()
+	ok, err := zeigeDialog(ctx, maskiere(b.Ziel, maxZieltext), kundenname(mcp.Kunde{Name: b.Kunde}))
+	if ctx.Err() != nil {
+		return exitFehler // eigene Frist abgelaufen: abgelehnt, auch wenn der Dialog noch etwas meldete
+	}
 	if err != nil {
 		diagnose(fehler, "Dialog: %v", err)
 		return exitFehler
