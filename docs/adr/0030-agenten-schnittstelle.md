@@ -83,4 +83,9 @@ Mutant in `scripts/mutanten/cmd-agenten.json`; Rechte 0600 von `--output` prüft
   dem ersten Byte, gibt Schnapp die Ergebniszeile (Pfad bzw. JSON) trotzdem aus und meldet „vollständig geschrieben,
   durch ein Signal unterbrochen“ (Exit 1). Ein zweites Signal bei hängendem Schreiben räumt die Temp-Datei
   (`.schnapp-export-*`) auf und endet mit Exit 1. Beim Start ignorierte Signale (`nohup`) fängt die Wache nicht.
+- **Rückfall (Karte #201, F-458):** Im Rückfall aus ADR-0025 Nachträgen 3/4 (direktes Schreiben ins vorhandene Ziel)
+  gibt es keine temporäre Datei: Ein zweites Signal beendet den Aufruf mit Exit 1 und der Meldung, das Ziel könne
+  unvollständig sein; die Wache fasst das hängende Schreiben nicht an (kein zweiter Schreiber auf dieselbe Datei) und
+  stellt nichts wieder her. Ohne Namen einer temporären Datei meldet sie, dass das Schreiben nicht begonnen hat und das
+  Ziel unverändert ist; ist die temporäre Datei schon umbenannt, dass die Datei vollständig war.
 
