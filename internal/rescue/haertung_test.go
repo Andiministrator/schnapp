@@ -164,6 +164,7 @@ func TestSicherungVerwirfGegenLaufendeAuftraege(t *testing.T) {
 			t.Fatalf("Durchgang %d: Kopie zur alten Ausgangsdatei liegt nach NeueBasis (%v)", i, err)
 		}
 		s.Verwirf()
+		s.Ende() // Fenster zu: Sperre frei für den nächsten Durchgang (F-413)
 	}
 	if reste, _ := os.ReadDir(ort); len(reste) != 0 {
 		t.Errorf("%d Reste im Ordner", len(reste))

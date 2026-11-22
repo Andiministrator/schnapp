@@ -42,6 +42,11 @@ func (d *Dokument) fuehreAus(b befehl) {
 // (400 x 100 Pixel = 160 KB). Paketvariable, damit Tests mit einer kleinen Grenze arbeiten.
 var verlaufGrenze int64 = 512 << 20
 
+// VerlaufGrenze liefert die Grenze des Rückgängig-Verlaufs in Bytes: so viel Platz hat ein frisch geöffnetes Dokument
+// (VerlaufPlatz ohne gehaltene Kopien). Die Rettungskopie prüft damit beim Schreiben dasselbe Flächenbudget, das beim
+// Anwenden gilt (F-431).
+func VerlaufGrenze() int64 { return verlaufGrenze }
+
 // groessenBefehl ist ein Befehl, der Pixelkopien hält.
 type groessenBefehl interface{ pixelBytes() int64 }
 

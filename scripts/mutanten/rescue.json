@@ -87,8 +87,15 @@
     "name": "R14 unbekannte Felder erlaubt",
     "datei": "internal/rescue/rescue.go",
     "paket": "./internal/rescue",
-    "alt": "\tdec.DisallowUnknownFields()\n",
-    "neu": ""
+    "alt": "\tdec.DisallowUnknownFields()\n\tif err := dec.Decode(&kp)",
+    "neu": "\tif err := dec.Decode(&kp)"
+  },
+  {
+    "name": "R14b F-410 unbekannte Felder in der Kennung erlaubt",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "\tdec.DisallowUnknownFields()\n\tif err := dec.Decode(&j)",
+    "neu": "\tif err := dec.Decode(&j)"
   },
   {
     "name": "R15 Zahl der Schwärzungen unbegrenzt",
@@ -119,11 +126,11 @@
     "neu": "tmp.Chmod(0o644)"
   },
   {
-    "name": "S2 ältere überschreibt jüngere",
+    "name": "S2 eingereihte ältere Kopie nicht übersprungen (F-417)",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "gen != s.gen || nr <= s.letzte",
-    "neu": "gen != s.gen"
+    "alt": "gen != s.gen || nr != s.naechste",
+    "neu": "gen != s.gen || nr == 0"
   },
   {
     "name": "S4 Kennung beim Wiederherstellen ungeprüft",
@@ -136,15 +143,15 @@
     "name": "S5 NeueBasis setzt Basis nicht",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "s.basis, s.aus = k, false",
-    "neu": "s.aus = false"
+    "alt": "\talt := s.basis.Pfad\n\ts.basis = k\n",
+    "neu": "\talt := s.basis.Pfad\n"
   },
   {
     "name": "S6 NeueBasis löscht alte Kopie nicht",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "s.basis, s.aus = k, false // die neue Ausgangsdatei hat keine beiseitegelegte Kopie im Weg\n\ts.mu.Unlock()\n\tif aus {",
-    "neu": "s.basis, s.aus = k, false // die neue Ausgangsdatei hat keine beiseitegelegte Kopie im Weg\n\ts.mu.Unlock()\n\tif true || aus {"
+    "alt": "\t\ts.loescheKopie(alt)\n",
+    "neu": "\t\t_ = alt\n"
   },
   {
     "name": "D1 Liste immer vollständig",
@@ -367,15 +374,15 @@
     "name": "S1b Schreiben trotz Verwirf",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "veraltet := gen != s.gen || nr <= s.letzte",
-    "neu": "veraltet := gen != gen || nr <= s.letzte"
+    "alt": "veraltet := s.stumm() || gen != s.gen || nr != s.naechste",
+    "neu": "veraltet := s.stumm() || gen != gen || nr != s.naechste"
   },
   {
     "name": "S7 Verwirf erhöht gen nicht und löscht nur",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "\ts.gen++\n\tpfad, aus := s.basis.Pfad, s.aus\n\ts.mu.Unlock()\n",
-    "neu": "\tpfad, aus := s.basis.Pfad, s.aus\n\ts.mu.Unlock()\n"
+    "alt": "\ts.gen++\n\tpfad := s.basis.Pfad\n",
+    "neu": "\tpfad := s.basis.Pfad\n"
   },
   {
     "name": "R19 Farbe ungeprüft lang",
@@ -446,5 +453,96 @@
     "paket": "./internal/document",
     "alt": "\tr, _, err := pruefeSchwaerzung(d.original.Rect, r, s)\n\treturn r, err",
     "neu": "\t_, _, err := pruefeSchwaerzung(d.original.Rect, r, s)\n\treturn r, err"
+  },
+  {
+    "name": "P1 F-410 roher Pfad nicht geschrieben",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "if !utf8.ValidString(k.Pfad) {",
+    "neu": "if false && !utf8.ValidString(k.Pfad) {"
+  },
+  {
+    "name": "P2 F-410 roher Pfad nicht gelesen",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "if j.PfadRoh != nil {",
+    "neu": "if false {"
+  },
+  {
+    "name": "K1 F-413 fremde Sperre nicht erkannt",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "s.setzeFremd(errors.Is(err, ErrBelegt), sp)",
+    "neu": "s.setzeFremd(false, sp)"
+  },
+  {
+    "name": "K2 F-413 Wiederherstellen trotz fremder Sperre",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\tif fremd {\n\t\treturn Wiederherstellung{Fremd: true}\n\t}\n",
+    "neu": "\tif false && fremd {\n\t\treturn Wiederherstellung{Fremd: true}\n\t}\n"
+  },
+  {
+    "name": "K3 F-413 fremde Sitzung schreibt und löscht",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "return s.aus || s.fremd }",
+    "neu": "return s.aus }"
+  },
+  {
+    "name": "K4 F-413 Ende gibt die Sperre nicht frei",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\tif sp != nil {\n\t\tif err := sp.frei(); err != nil {",
+    "neu": "\tif false && sp != nil {\n\t\tif err := sp.frei(); err != nil {"
+  },
+  {
+    "name": "K5 F-413 Aufräumen entfernt gehaltene Sperre",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "if strings.HasSuffix(n, sperrEndung) {",
+    "neu": "if false {"
+  },
+  {
+    "name": "K6 F-413 keine Meldung im zweiten Fenster",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tcase w.Fremd:\n",
+    "neu": "\tcase false && w.Fremd:\n"
+  },
+  {
+    "name": "E1 F-417 Ende ohne Frist",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "case <-time.After(endeFrist):",
+    "neu": "case <-time.After(time.Hour):"
+  },
+  {
+    "name": "E2 F-417 Verwirf wartet auf ein laufendes Schreiben",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\ts.reihe(func() { s.loescheKopie(pfad) })\n\ts.mu.Unlock()\n}",
+    "neu": "\tw := s.kette\n\ts.mu.Unlock()\n\tif w != nil {\n\t\t<-w\n\t}\n\ts.loescheKopie(pfad)\n}"
+  },
+  {
+    "name": "E3 F-417 Verwirf löscht außerhalb der Reihenfolge",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\ts.reihe(func() { s.loescheKopie(pfad) })\n\ts.mu.Unlock()\n}",
+    "neu": "\ts.mu.Unlock()\n\ts.loescheKopie(pfad)\n}"
+  },
+  {
+    "name": "B5 F-431 Erzeuge ohne Flächenbudget",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/document",
+    "alt": "if err := pruefeBudget(d, liste, document.VerlaufGrenze()); err != nil {",
+    "neu": "if err := pruefeBudget(d, liste, document.VerlaufGrenze()); false && err != nil {"
+  },
+  {
+    "name": "B6 F-434 Anwenden mit fester Grenze statt Restplatz",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/document",
+    "alt": "pruefeBudget(d, liste, d.VerlaufPlatz())",
+    "neu": "pruefeBudget(d, liste, document.VerlaufGrenze())"
   }
 ]

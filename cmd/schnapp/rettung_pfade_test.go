@@ -11,6 +11,7 @@ import (
 	"image/color"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -61,11 +62,19 @@ func rettungsLauf(t *testing.T) (ort, aussen string, g *gestartet) {
 		return nil
 	}
 	t.Cleanup(func() { editorStarten = altStart })
+	// Die zuletzt gestartete Rettung beenden, bevor die Testordner verschwinden: Ihre Aufträge laufen in Goroutinen
+	// (F-417), ihre Sperre hält eine Datei offen (F-413).
+	t.Cleanup(func() {
+		if g.rettung != nil {
+			g.rettung.Ende()
+		}
+	})
 	return filepath.Join(staat, "schnapp", "rescue"), aussen, g
 }
 
 // C3, C4: Nach einem gelungenen Speichern ist die gespeicherte Datei (hier eine neue Aufnahme der Bibliothek) die neue
-// Ausgangsdatei: Die Kopie der alten verschwindet sofort, die nächste Kopie liegt unter dem Namen der neuen.
+// Ausgangsdatei: Die Kopie der alten verschwindet (sobald die Kette der Aufträge abgearbeitet ist, F-417), die nächste
+// Kopie liegt unter dem Namen der neuen.
 func TestRettungNeueBasisNachSpeichern(t *testing.T) {
 	ort, aussen, g := rettungsLauf(t)
 	if err := oeffneImEditor(aussen, false, document.KanteAbriss); err != nil {
@@ -81,6 +90,7 @@ func TestRettungNeueBasisNachSpeichern(t *testing.T) {
 	if _, err := g.speichern(g.dok); err != nil {
 		t.Fatal(err)
 	}
+	g.rettung.Ende() // NeueBasis löscht in der Kette (F-417)
 	if _, err := os.Stat(alt); !os.IsNotExist(err) {
 		t.Errorf("Kopie der alten Ausgangsdatei nach dem Speichern noch da: %v", err)
 	}
@@ -103,6 +113,7 @@ func TestRettungNachSpeichernUnlesbar(t *testing.T) {
 	}
 	weg := filepath.Join(t.TempDir(), "fehlt.png")
 	r.nachSpeichern()(weg)
+	r.Ende() // NeueBasis arbeitet in der Kette (F-417): vor dem Aufräumen des Testordners abwarten
 	if b := r.s.Basis(); b.Pfad != weg || b.SHA256 != "" {
 		t.Errorf("Basis %+v, erwartet Pfad %s ohne Prüfsumme", b, weg)
 	}
@@ -147,6 +158,32 @@ func TestRettungIgnoreLimit(t *testing.T) {
 			t.Errorf("--ignore-limit %v: %d Objekte, erwartet %d (Meldung %q, Fehler %v)", fall.ohneGrenze, got,
 				fall.objekte, text, fehler)
 		}
+		g.rettung.Ende() // Fenster zu: Sperre frei für den nächsten Durchgang (F-413)
+	}
+}
+
+// F-413: Ein zweites Fenster auf derselben Datei sagt in der Statusleiste, dass es keine Rettungskopie führt, und lässt
+// die des ersten liegen.
+func TestRettungZweitesFenster(t *testing.T) {
+	ort, aussen, g := rettungsLauf(t)
+	if err := oeffneImEditor(aussen, false, document.KanteAbriss); err != nil {
+		t.Fatal(err)
+	}
+	erstes := g.rettung
+	mitKasten(t, g.dok)
+	erstes.Sichere(g.dok)
+	if err := oeffneImEditor(aussen, false, document.KanteAbriss); err != nil {
+		t.Fatal(err)
+	}
+	text, fehler := g.rettung.Wiederherstellen(g.dok)
+	if !strings.Contains(text, "another Schnapp window") || fehler || len(g.dok.Objekte()) != 0 {
+		t.Errorf("zweites Fenster: %q (Fehler %v), %d Objekte", text, fehler, len(g.dok.Objekte()))
+	}
+	g.rettung.Verwirf()
+	g.rettung.Ende()
+	erstes.Ende()
+	if _, err := os.Stat(filepath.Join(ort, rescue.Name(aussen))); err != nil {
+		t.Errorf("Kopie des ersten Fensters weg: %v", err)
 	}
 }
 

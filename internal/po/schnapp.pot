@@ -425,6 +425,10 @@ msgid "2006-01-02 15:04"
 msgstr ""
 
 #: cmd/schnapp/rettung.go
+msgid "This file is open in another Schnapp window. Changes made here are not protected by a rescue copy."
+msgstr ""
+
+#: cmd/schnapp/rettung.go
 msgid "Restored unsaved changes from %s. Undo returns to the saved state."
 msgstr ""
 

@@ -198,7 +198,9 @@ func TestWiederherstellen(t *testing.T) {
 	s.Ende()
 
 	neu, _ := document.Neu(bild(64, 64))
-	w := NeueSicherung(ort, k).Wiederherstellen(neu, nil)
+	s1 := NeueSicherung(ort, k)
+	w := s1.Wiederherstellen(neu, nil)
+	s1.Ende() // Fenster zu: Sperre frei (F-413)
 	if !w.Angewendet || w.Gesichert.IsZero() || len(neu.Objekte()) != 2 {
 		t.Fatalf("nicht angewendet: %+v", w)
 	}
@@ -221,6 +223,7 @@ func TestWiederherstellen(t *testing.T) {
 	s2.Sichere(neu2)
 	s2.Ende()
 	s2.Verwirf()
+	s2.Ende() // Löschen läuft in der Kette (F-417)
 	if _, err := os.Stat(filepath.Join(ort, w.Beiseite)); err != nil {
 		t.Errorf("beiseitegelegte Kopie weg: %v", err)
 	}
@@ -233,7 +236,7 @@ func TestWiederherstellen(t *testing.T) {
 func TestEigenerName(t *testing.T) {
 	h := strings.Repeat("a1", 32)
 	for n, soll := range map[string]bool{
-		h + ".json": true, h + ".123.alt.json": true, ".schreibt-9": true,
+		h + ".json": true, h + ".123.alt.json": true, ".schreibt-9": true, h + ".lock": true, "fremd.lock": false,
 		h + ".alt.json": false, h + ".12x.alt.json": false, "fremd.json": false, strings.Repeat("G", 64) + ".json": false,
 	} {
 		if eigenerName(n) != soll {
@@ -313,6 +316,7 @@ func TestSicherungVerwirfUndNeueBasis(t *testing.T) {
 		t.Fatalf("nicht geschrieben: %v", err)
 	}
 	s.Verwirf()
+	s.Ende() // Löschen läuft in der Kette (F-417)
 	if _, err := os.Stat(filepath.Join(ort, Name(pfad))); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("nach Verwirf noch da: %v", err)
 	}
@@ -320,6 +324,7 @@ func TestSicherungVerwirfUndNeueBasis(t *testing.T) {
 	s.Ende()
 	pfad2, k2 := ausgang(t, "neu")
 	s.NeueBasis(k2)
+	s.Ende()
 	if _, err := os.Stat(filepath.Join(ort, Name(pfad))); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("Kopie der alten Basis noch da: %v", err)
 	}

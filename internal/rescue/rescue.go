@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/errprefix"
@@ -51,12 +52,48 @@ var (
 )
 
 // Kennung beschreibt die Ausgangsdatei, auf die sich eine Rettungskopie bezieht (ADR-0029 Punkt 2): Nur wenn alle
-// vier Angaben passen, wird sie angewendet.
+// vier Angaben passen, wird sie angewendet. Im JSON steht sie als kennungJSON.
 type Kennung struct {
-	Pfad    string    `json:"pfad"` // absolut
+	Pfad    string // absolut, Bytes wie im Dateisystem (nicht unbedingt gültiges UTF-8)
+	Groesse int64
+	Zeit    time.Time // Änderungszeit
+	SHA256  string
+}
+
+// kennungJSON ist die Kennung im JSON. Ein Pfad ohne gültiges UTF-8 (etwa ein alter Latin-1-Dateiname) steht
+// verlustfrei als Base64 in pfad_roh; pfad trägt dann eine lesbare Fassung mit U+FFFD. Ohne pfad_roh gilt pfad — so
+// lesen sich ältere Kopien unverändert (F-410). encoding/json ersetzte ungültige Bytes sonst still durch U+FFFD, und
+// die Kopie passte nie mehr zu ihrem Pfad.
+type kennungJSON struct {
+	Pfad    string    `json:"pfad"`
+	PfadRoh []byte    `json:"pfad_roh,omitempty"`
 	Groesse int64     `json:"groesse"`
-	Zeit    time.Time `json:"zeit"` // Änderungszeit
+	Zeit    time.Time `json:"zeit"`
 	SHA256  string    `json:"sha256"`
+}
+
+// MarshalJSON schreibt die Kennung; einen Pfad ohne gültiges UTF-8 zusätzlich roh (F-410).
+func (k Kennung) MarshalJSON() ([]byte, error) {
+	j := kennungJSON{Pfad: k.Pfad, Groesse: k.Groesse, Zeit: k.Zeit, SHA256: k.SHA256}
+	if !utf8.ValidString(k.Pfad) {
+		j.Pfad, j.PfadRoh = strings.ToValidUTF8(k.Pfad, "�"), []byte(k.Pfad)
+	}
+	return json.Marshal(j)
+}
+
+// UnmarshalJSON liest die Kennung, unbekannte Felder abgelehnt wie in der ganzen Kopie; pfad_roh geht vor pfad.
+func (k *Kennung) UnmarshalJSON(daten []byte) error {
+	var j kennungJSON
+	dec := json.NewDecoder(bytes.NewReader(daten))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&j); err != nil {
+		return err
+	}
+	*k = Kennung{Pfad: j.Pfad, Groesse: j.Groesse, Zeit: j.Zeit, SHA256: j.SHA256}
+	if j.PfadRoh != nil {
+		k.Pfad = string(j.PfadRoh)
+	}
+	return nil
 }
 
 // KennungVon liest die Datei pfad (absolut) und bildet ihre Kennung.
@@ -125,11 +162,17 @@ func Name(pfad string) string {
 }
 
 // Erzeuge bildet die Rettungskopie von d zur Ausgangsdatei k (auf der Ereignisschleife: liest nur Angaben, keine
-// Pixel). Ist die Liste der Schwärzungen unvollständig (Grenze des Verlaufs), kommt ErrUnfertig.
+// Pixel). Ist die Liste der Schwärzungen unvollständig (Grenze des Verlaufs), kommt ErrUnfertig. Belegen die
+// Schwärzungen mehr, als Anwenden beim Öffnen annimmt (Flächenbudget eines frisch geöffneten Dokuments,
+// document.VerlaufGrenze), kommt ErrZuGross (F-431): Eine solche Kopie würde beim Öffnen abgelehnt und verdrängte die
+// zuletzt geschriebene, anwendbare. Die Sicherung lässt in beiden Fällen die vorige Kopie stehen.
 func Erzeuge(d *document.Dokument, k Kennung, jetzt time.Time) (Kopie, error) {
 	liste, ok := d.SchwaerzungenImVerlauf()
 	if !ok {
 		return Kopie{}, ErrUnfertig
+	}
+	if err := pruefeBudget(d, liste, document.VerlaufGrenze()); err != nil {
+		return Kopie{}, err
 	}
 	kp := Kopie{Format: Format, Datei: k, Gesichert: jetzt.UTC(), Angaben: string(fileformat.AngabenSVG(d)),
 		Schwaerzungen: make([]Schwaerzung, 0, len(liste))}
@@ -249,6 +292,15 @@ func Aufraeumen(ort string, jetzt time.Time) (entfernt int, fehler error) {
 		if err != nil || jetzt.Sub(info.ModTime()) < Haltezeit {
 			continue
 		}
+		if strings.HasSuffix(n, sperrEndung) {
+			// Sperre einer abgestürzten Sitzung: nur entfernen, wenn niemand sie hält (F-413).
+			if ok, err := raeumeSperre(filepath.Join(ort, n)); err != nil {
+				fehlerListe = append(fehlerListe, err)
+			} else if ok {
+				entfernt++
+			}
+			continue
+		}
 		if err := os.Remove(filepath.Join(ort, n)); err != nil && !errors.Is(err, os.ErrNotExist) {
 			fehlerListe = append(fehlerListe, err)
 			continue
@@ -266,11 +318,13 @@ func Aufraeumen(ort string, jetzt time.Time) (entfernt int, fehler error) {
 // Flächenbudget (F-412): Alle Schwärzungen werden vorab ohne Pixel geprüft (document.PruefeSchwaerzung) und ihre
 // Flächen summiert. Belegten sie im Rückgängig-Verlauf mehr Pixelkopien, als er noch aufnimmt (document.VerlaufPlatz,
 // 4 Bytes je Pixel, Grenze 512 MiB), kommt ErrZuGross, bevor ein Pixel angefasst wird. So bleibt die Arbeit beim
-// Öffnen auf rund 128 Mi Pixel begrenzt (unter einer Sekunde), keine Schwärzung fällt beim Wiederherstellen aus dem
-// Verlauf (Rückgängig trägt bis zum gespeicherten Stand, Erzeuge liefert danach kein ErrUnfertig), und eine Sitzung
-// schreibt nie eine Kopie über dem Budget, ohne dass der Verlauf schon Schwärzungen verworfen hätte (dann schreibt sie
-// gar keine, ADR-0029 Nachtrag 1). Abgelehnt heißt: nichts angewendet, auch keine der Schwärzungen (Prinzip 2: kein
-// halb geschwärztes Ergebnis gilt als wiederhergestellt).
+// Öffnen auf rund 128 Mi Pixel begrenzt (rund eine Sekunde), und keine Schwärzung fällt beim Wiederherstellen aus dem
+// Verlauf (Rückgängig trägt bis zum gespeicherten Stand, Erzeuge liefert danach kein ErrUnfertig). Eine Sitzung kann
+// dennoch Schwärzungen über dem Budget halten, ohne dass der Verlauf eine verworfen hätte: begrenzeVerlauf lässt den
+// jüngsten Schritt immer stehen, eine einzelne Schwärzung über 512 MiB setzt den Merker nicht (F-431). Deshalb prüft
+// Erzeuge dasselbe Budget (pruefeBudget mit document.VerlaufGrenze) und schreibt eine solche Kopie nicht; die zuletzt
+// geschriebene bleibt. Abgelehnt heißt: nichts angewendet, auch keine der Schwärzungen (Prinzip 2: kein halb
+// geschwärztes Ergebnis gilt als wiederhergestellt).
 func Anwenden(d *document.Dokument, kp *Kopie, pruefe func(*document.Dokument) error) (fehler error) {
 	defer errprefix.Defer("rescue", &fehler)
 	a, err := fileformat.LeseAngaben(strings.NewReader(kp.Angaben))
@@ -290,15 +344,8 @@ func Anwenden(d *document.Dokument, kp *Kopie, pruefe func(*document.Dokument) e
 		liste = append(liste, document.SchwaerzAngabe{Bereich: r, Art: document.Schwaerzung{Block: s.Block, Farbe: c, Mosaik: s.Mosaik}})
 	}
 	// Schwärzungen vorab ohne Pixel prüfen und gegen den Platz im Verlauf rechnen (F-412).
-	platz, bedarf := d.VerlaufPlatz(), int64(0)
-	for _, s := range liste {
-		r, err := d.PruefeSchwaerzung(s.Bereich, s.Art)
-		if err != nil {
-			return err
-		}
-		if bedarf += 4 * int64(r.Dx()) * int64(r.Dy()); bedarf > platz { // r liegt im Bild: kein Überlauf
-			return fmt.Errorf("%w: Schwärzungen belegen mehr als %d MiB im Rückgängig-Verlauf", ErrZuGross, platz>>20)
-		}
+	if err := pruefeBudget(d, liste, d.VerlaufPlatz()); err != nil {
+		return err
 	}
 	// Die Angaben erst an einem Abzug: Scheitert ein Schritt oder die Prüfung, bleibt d, wie es war. Die Schwärzungen
 	// ändern nur Pixel, die weder SetzeAngaben noch pruefe lesen; sie sind oben geprüft und laufen nur einmal, an d.
@@ -322,8 +369,25 @@ func Anwenden(d *document.Dokument, kp *Kopie, pruefe func(*document.Dokument) e
 	return d.SetzeAngaben(a.Objekte, a.Zuschnitt, a.Streifen, a.Kante)
 }
 
+// pruefeBudget prüft die Schwärzungen ohne Pixel (document.PruefeSchwaerzung) und rechnet ihre Flächen im Bild gegen
+// platz (Bytes im Rückgängig-Verlauf, 4 je Pixel). Anwenden rechnet gegen den freien Platz des Dokuments, Erzeuge gegen
+// den eines frisch geöffneten (F-412, F-431).
+func pruefeBudget(d *document.Dokument, liste []document.SchwaerzAngabe, platz int64) error {
+	bedarf := int64(0)
+	for _, s := range liste {
+		r, err := d.PruefeSchwaerzung(s.Bereich, s.Art)
+		if err != nil {
+			return err
+		}
+		if bedarf += 4 * int64(r.Dx()) * int64(r.Dy()); bedarf > platz { // r liegt im Bild: kein Überlauf
+			return fmt.Errorf("%w: Schwärzungen belegen mehr als %d MiB im Rückgängig-Verlauf", ErrZuGross, platz>>20)
+		}
+	}
+	return nil
+}
+
 // eigenerName erkennt die Dateinamen dieses Pakets: Kopie (<64 hex>.json), beiseitegelegte Kopie
-// (<64 hex>.<Zeit>.alt.json) und temporäre Datei beim Schreiben (.schreibt-…).
+// (<64 hex>.<Zeit>.alt.json), Sperre einer Sitzung (<64 hex>.lock) und temporäre Datei beim Schreiben (.schreibt-…).
 func eigenerName(n string) bool {
 	if strings.HasPrefix(n, ".schreibt-") {
 		return true
@@ -332,7 +396,7 @@ func eigenerName(n string) bool {
 		return false
 	}
 	rest := n[64:]
-	if rest == ".json" {
+	if rest == ".json" || rest == sperrEndung {
 		return true
 	}
 	mitte, ok := strings.CutSuffix(rest, ".alt.json")

@@ -122,6 +122,7 @@ func TestRettungskopieNachAbbruch(t *testing.T) {
 		t.Fatal(err)
 	}
 	rettung.Verwirf()
+	rettung.Ende() // Löschen läuft in der Kette (F-417); Fenster zu gibt die Sperre frei (F-413)
 	if _, err := os.Stat(kopie); !os.IsNotExist(err) {
 		t.Errorf("Kopie nach dem Speichern noch da: %v", err)
 	}
@@ -153,6 +154,7 @@ func TestRettungskopieNachAbbruch(t *testing.T) {
 	}
 	// Die Kopie liegt beiseite (V7-1) und überlebt das Schließen dieser Sitzung ohne Änderung.
 	rettung.Verwirf()
+	rettung.Ende()
 	eintraege, _ = os.ReadDir(filepath.Dir(kopie))
 	if len(eintraege) != 1 || !strings.HasSuffix(eintraege[0].Name(), ".alt.json") {
 		t.Errorf("beiseitegelegte Kopie fehlt: %v", eintraege)

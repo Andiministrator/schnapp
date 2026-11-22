@@ -17,9 +17,10 @@ type Rettung interface {
 	Wiederherstellen(d *document.Dokument) (meldung string, fehler bool)
 	// Sichere bildet die Rettungskopie (Angaben, keine Pixel) und schreibt sie im Hintergrund.
 	Sichere(d *document.Dokument)
-	// Verwirf löscht die Rettungskopie: Der Stand ist gespeichert.
+	// Verwirf löscht die Rettungskopie: Der Stand ist gespeichert. Kehrt sofort zurück, das Löschen läuft im
+	// Hintergrund (F-417).
 	Verwirf()
-	// Ende wartet auf begonnene Schreibaufträge.
+	// Ende wartet auf begonnene Schreibaufträge, höchstens eine Frist (F-417).
 	Ende()
 }
 

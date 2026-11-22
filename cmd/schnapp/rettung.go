@@ -96,6 +96,9 @@ func (r *rettung) Wiederherstellen(d *document.Dokument) (string, bool) {
 	}
 	ort := "schnapp/rescue/" + name
 	switch {
+	case w.Fremd:
+		// Ein anderes Fenster führt die Rettungskopie dieser Datei (F-413): Diese Sitzung lässt sie in Ruhe.
+		return i18n.T("This file is open in another Schnapp window. Changes made here are not protected by a rescue copy."), false
 	case w.Angewendet:
 		return fmt.Sprintf(i18n.T("Restored unsaved changes from %s. Undo returns to the saved state."), zeit), false
 	case !w.Liegt:
@@ -115,5 +118,5 @@ func (r *rettung) Sichere(d *document.Dokument) { r.s.Sichere(d) }
 // Verwirf löscht die Rettungskopie.
 func (r *rettung) Verwirf() { r.s.Verwirf() }
 
-// Ende wartet auf begonnene Schreibaufträge.
+// Ende wartet auf begonnene Aufträge, höchstens die Frist der Sicherung (F-417), und gibt die Sperre frei.
 func (r *rettung) Ende() { r.s.Ende() }
