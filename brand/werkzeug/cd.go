@@ -112,7 +112,7 @@ body{margin:0;background:#1E2124;color:#ECEAE5;font:15px/1.5 'Open Sans',sans-se
 <span class="n">1920 × 1080 · 100 %</span></div></div></body></html>`
 
 func (b *bauer) chromium(args ...string) error {
-	profil := filepath.Join(b.wurzel(), "tmp", "chromium-profil") // eigenes, leeres Profil — nie das des Nutzers
+	profil := filepath.Join(b.wurzel(), "tmp", "chromium-profil") // eigenes Profil unter tmp/ (bleibt zwischen Läufen liegen) — nie das des Nutzers
 	if err := os.MkdirAll(profil, 0o755); err != nil {
 		return err
 	}

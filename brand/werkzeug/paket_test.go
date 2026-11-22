@@ -3,17 +3,21 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
 // Karte #23: Das Go-Werkzeug erzeugt die eingecheckten SVGs byte-gleich (wie früher paket.py und cd.py). Ohne die
-// Schrift (etwa in der CI) wird der Test übersprungen.
+// Schriftdatei (etwa in der CI) wird der Test übersprungen, bei jedem anderen Fehler nicht (Sitzungs-QA, QB-4).
 func TestSVGWieEingecheckt(t *testing.T) {
 	b, err := neuerBauer()
-	if err != nil {
+	if errors.Is(err, os.ErrNotExist) {
 		t.Skip(err)
+	}
+	if err != nil {
+		t.Fatal(err)
 	}
 	logo := func(art string, mit, grund bool) func() (string, error) {
 		return func() (string, error) { return b.logo(art, mit, grund) }

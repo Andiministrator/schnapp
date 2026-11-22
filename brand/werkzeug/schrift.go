@@ -67,7 +67,8 @@ type schrift struct {
 	anzahl    int
 }
 
-func ladeSchrift(pfad string) (*schrift, error) {
+func ladeSchrift(pfad string) (_ *schrift, fehler error) {
+	defer schuetze(pfad, &fehler)
 	d, err := os.ReadFile(pfad)
 	if err != nil {
 		return nil, err
@@ -96,6 +97,9 @@ func ladeSchrift(pfad string) (*schrift, error) {
 	s.kurzLoca = binary.BigEndian.Uint16(head[50:]) == 0
 	s.anzahl = int(binary.BigEndian.Uint16(s.tabellen["maxp"][4:]))
 	metriken := int(binary.BigEndian.Uint16(s.tabellen["hhea"][34:]))
+	if metriken < 1 {
+		return nil, fmt.Errorf("%s: hhea nennt keine Metriken", pfad)
+	}
 	hmtx := s.tabellen["hmtx"]
 	s.vorschub = make([]int, s.anzahl)
 	for i := 0; i < s.anzahl; i++ {
@@ -132,6 +136,9 @@ func (s *schrift) leseCmap() error {
 		for i := 0; i < gruppen; i++ {
 			g := f12[16+12*i:]
 			von, bis, start := binary.BigEndian.Uint32(g), binary.BigEndian.Uint32(g[4:]), binary.BigEndian.Uint32(g[8:])
+			if bis < von || bis > 0x10FFFF {
+				return fmt.Errorf("cmap Format 12: Gruppe %X–%X ungültig", von, bis)
+			}
 			for r := von; r <= bis; r++ {
 				s.zeichen[rune(r)] = int(start + r - von)
 			}
@@ -167,7 +174,11 @@ func (s *schrift) leseCmap() error {
 	return nil
 }
 
-func (s *schrift) glyphe(id int) (*glyphe, error) {
+func (s *schrift) glyphe(id int) (_ *glyphe, fehler error) {
+	defer schuetze("Glyphe "+strconv.Itoa(id), &fehler)
+	if id < 0 || id >= s.anzahl {
+		return nil, fmt.Errorf("Glyphe %d außerhalb der Schrift (%d Glyphen)", id, s.anzahl)
+	}
 	if g := s.glyphen[id]; g != nil {
 		return g, nil
 	}
@@ -179,8 +190,8 @@ func (s *schrift) glyphe(id int) (*glyphe, error) {
 		von, bis = int(binary.BigEndian.Uint32(loca[4*id:])), int(binary.BigEndian.Uint32(loca[4*id+4:]))
 	}
 	g := &glyphe{vorschub: s.vorschub[id]}
-	s.glyphen[id] = g
 	if bis <= von {
+		s.glyphen[id] = g
 		return g, nil // leer (Leerzeichen)
 	}
 	d := s.tabellen["glyf"][von:bis]
@@ -242,7 +253,17 @@ func (s *schrift) glyphe(id int) (*glyphe, error) {
 		g.konturen = append(g.konturen, k)
 		start = e + 1
 	}
+	s.glyphen[id] = g // erst nach dem Lesen: Ein Fehler hinterlässt keine leere Glyphe im Speicher
 	return g, nil
+}
+
+// schuetze wandelt eine Laufzeit-Panik beim Lesen einer beschädigten oder fremden Schrift (Index außerhalb einer
+// Tabelle) in einen Fehler (Sitzungs-QA 22.11., QB-3). Die Tabellen werden nicht Feld für Feld gegen ihre Länge
+// geprüft; der Schutz hier hält das Werkzeug trotzdem bei einer Fehlermeldung statt eines Stacktraces.
+func schuetze(was string, fehler *error) {
+	if r := recover(); r != nil {
+		*fehler = fmt.Errorf("%s: Schrift beschädigt oder nicht unterstützt (%v)", was, r)
+	}
 }
 
 // svgStift schreibt Pfadbefehle wie fontTools SVGPathPen (H/V für waagrechte und senkrechte Linien, doppelte Punkte

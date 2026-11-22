@@ -319,9 +319,11 @@ the visible image, `snAO` nor `snAP`, contains the covered content, and no undo 
 Consequences for implementations:
 
 * A writer MUST write redacted pixels, never a layer that merely hides them.
-* A pixelation SHOULD NOT be invertible from what remains. The reference editor shifts every block mean by a random
-  offset (plain block means of small text can be computed back); the example `redaction` uses plain block means so
-  that it can be generated reproducibly, and is not a model for a real redaction.
+* A pixelation SHOULD NOT be invertible from what remains. Block means, even with random noise added per block, can
+  be computed back for small and medium text. The reference editor therefore fills every block with the mean of the
+  *whole* redacted area, shifted by a random offset per block (the same offset for R, G and B), so that no block
+  carries information about the pixels it covers. The example `redaction` uses plain block means so that it can be
+  generated reproducibly, and is not a model for a real redaction.
 * A reader has nothing to interpret: a redaction is indistinguishable from ordinary pixels. Programs MUST NOT try to
   reconstruct covered content.
 
@@ -386,8 +388,9 @@ Original width and height are at least 1.
 
 ## 12. Writer rules
 
-1. Write the chunks of section 2 and the document of section 5; use the formats of section 5.2 exactly (lower-case
-   colours, points without spaces, the shortest round-trip number form).
+1. Write the chunks of section 2 and the document of section 5; use the formats of section 5.2 (lower-case colours,
+   points without spaces, any decimal number form that round-trips; the reference writer uses Go's shortest `%g`
+   form, e.g. `1e+06`).
 2. Emit `s:format`, `viewBox`, the `image` placeholder, `s:ansicht` with `s:zuschnitt` and the object layer even when
    there is nothing in them.
 3. Write redacted pixels (section 9).
@@ -411,7 +414,7 @@ Original width and height are at least 1.
 
 ## 14. Examples and conformance
 
-The directory [`testdata/format/`](../testdata/format/) contains synthetic examples (64 x 48 pixels, generated, no real
+The directory [`testdata/format/`](../testdata/format/) contains synthetic examples (64 x 48 pixels, `minimal` 32 x 24; generated, no real
 screenshots). For each there is the working file `NAME.png` and the decompressed `snAP` document `NAME.snap.svg`:
 
 | Name | Shows |
