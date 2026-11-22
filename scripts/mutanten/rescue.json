@@ -1,0 +1,394 @@
+[
+  {
+    "name": "R1 Kennung ohne Größe",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "k.Groesse == o.Groesse && ",
+    "neu": ""
+  },
+  {
+    "name": "R2 Kennung ohne Zeit",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "k.Zeit.Equal(o.Zeit) && ",
+    "neu": ""
+  },
+  {
+    "name": "R3 Kennung ohne SHA",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": " && k.SHA256 == o.SHA256",
+    "neu": ""
+  },
+  {
+    "name": "R4 Ordner 0755",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "os.MkdirAll(ort, 0o700)",
+    "neu": "os.MkdirAll(ort, 0o755)"
+  },
+  {
+    "name": "R5 neuere Fassung angenommen",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "\tcase kp.Format > Format:\n\t\treturn nil, fmt.Errorf(\"%w: %d > %d\", ErrNeuer, kp.Format, Format)\n",
+    "neu": ""
+  },
+  {
+    "name": "R6 Pfad in der Kopie ungeprüft",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "\tcase kp.Datei.Pfad != pfad:\n\t\treturn nil, fmt.Errorf(\"%w: Pfad passt nicht\", ErrFormat)\n",
+    "neu": ""
+  },
+  {
+    "name": "R7 Aufräumen auch Nicht-Dateien",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "!e.Type().IsRegular() || ",
+    "neu": ""
+  },
+  {
+    "name": "R9 Größe ungeprüft",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "if a.Groesse != d.OriginalGroesse() {",
+    "neu": "if false {"
+  },
+  {
+    "name": "R10 Prüfung am Abzug ohne Wirkung",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "\t\tif err := pruefe(probe); err != nil {\n\t\t\treturn err\n\t\t}\n",
+    "neu": "\t\t_ = pruefe(probe)\n"
+  },
+  {
+    "name": "R11 unvollständiger Verlauf trotzdem geschrieben",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/document",
+    "alt": "if !ok {\n\t\treturn Kopie{}, ErrUnfertig\n\t}",
+    "neu": "_ = ok"
+  },
+  {
+    "name": "R12 kein Probelauf am Abzug",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "if err := wende(probe, liste, a); err != nil {\n\t\treturn err\n\t}",
+    "neu": "_ = probe"
+  },
+  {
+    "name": "R13 Dateigröße unbegrenzt",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "len(daten) > maxDatei",
+    "neu": "false"
+  },
+  {
+    "name": "R14 unbekannte Felder erlaubt",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "\tdec.DisallowUnknownFields()\n",
+    "neu": ""
+  },
+  {
+    "name": "R15 Zahl der Schwärzungen unbegrenzt",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "\tcase len(kp.Schwaerzungen) > maxSchwaerzungen:\n\t\treturn nil, ErrZuGross\n",
+    "neu": ""
+  },
+  {
+    "name": "R16 Aufräumen jede json-Datei",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "\tif len(n) < 64 || !istHex(n[:64]) {",
+    "neu": "\tif strings.HasSuffix(n, \".json\") {\n\t\treturn true\n\t}\n\tif len(n) < 64 || !istHex(n[:64]) {"
+  },
+  {
+    "name": "R17 Schwärzungen nach den Angaben vergessen",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "\tfor _, s := range liste {\n\t\tif err := d.Schwaerzen(s.Bereich, s.Art); err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n",
+    "neu": "\t_ = liste\n"
+  },
+  {
+    "name": "R18 Datei 0644",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "tmp.Chmod(0o600)",
+    "neu": "tmp.Chmod(0o644)"
+  },
+  {
+    "name": "S2 ältere überschreibt jüngere",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "gen != s.gen || nr <= s.letzte",
+    "neu": "gen != s.gen"
+  },
+  {
+    "name": "S4 Kennung beim Wiederherstellen ungeprüft",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "if !kp.Datei.Gleich(basis) {",
+    "neu": "if false {"
+  },
+  {
+    "name": "S5 NeueBasis setzt Basis nicht",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "s.basis, s.aus = k, false",
+    "neu": "s.aus = false"
+  },
+  {
+    "name": "S6 NeueBasis löscht alte Kopie nicht",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "s.basis, s.aus = k, false // die neue Ausgangsdatei hat keine beiseitegelegte Kopie im Weg\n\ts.mu.Unlock()\n\tif aus {",
+    "neu": "s.basis, s.aus = k, false // die neue Ausgangsdatei hat keine beiseitegelegte Kopie im Weg\n\ts.mu.Unlock()\n\tif true || aus {"
+  },
+  {
+    "name": "D1 Liste immer vollständig",
+    "datei": "internal/document/angaben.go",
+    "paket": "./internal/document",
+    "alt": "return liste, !d.schwaerzVerworfen",
+    "neu": "return liste, true"
+  },
+  {
+    "name": "D2 Merker nie zurückgesetzt",
+    "datei": "internal/document/verlauf.go",
+    "paket": "./internal/document",
+    "alt": "\td.schwaerzVerworfen = false\n",
+    "neu": ""
+  },
+  {
+    "name": "D3 SetzeAngaben ohne Objektgrenze",
+    "datei": "internal/document/angaben.go",
+    "paket": "./internal/document",
+    "alt": "if len(objekte) > MaxObjekte {",
+    "neu": "if false {"
+  },
+  {
+    "name": "D4 SetzeAngaben ohne Ansichtsprüfung",
+    "datei": "internal/document/angaben.go",
+    "paket": "./internal/document",
+    "alt": "if err := d.pruefeAnsicht(z, st); err != nil {\n\t\treturn err\n\t}\n\tneu := make",
+    "neu": "neu := make"
+  },
+  {
+    "name": "D5 SetzeAngaben ohne Objektprüfung",
+    "datei": "internal/document/angaben.go",
+    "paket": "./internal/document",
+    "alt": "if err := o.pruefe(); err != nil {\n\t\t\treturn err\n\t\t}\n\t\tneu = append",
+    "neu": "neu = append"
+  },
+  {
+    "name": "D6 Rückgängig lässt Ansicht stehen",
+    "datei": "internal/document/angaben.go",
+    "paket": "./internal/document",
+    "alt": "d.objekte = append([]Objekt(nil), b.altO...)\n\td.setzeAnsicht(b.altZ, b.altSt)",
+    "neu": "d.objekte = append([]Objekt(nil), b.altO...)"
+  },
+  {
+    "name": "U1 sichert während des Speicherns",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "e.rettung == nil || e.s.SpeichernLaeuft() || e.erzwungen",
+    "neu": "e.rettung == nil || e.erzwungen"
+  },
+  {
+    "name": "U2 hält während eines Zugs an (V7-2)",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "e.rettung == nil || e.s.SpeichernLaeuft() || e.erzwungen",
+    "neu": "e.rettung == nil || e.s.SpeichernLaeuft() || e.s.D.ZugLaeuft() || e.erzwungen"
+  },
+  {
+    "name": "U3 sichert nach Freigabe zum Schließen",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "e.rettung == nil || e.s.SpeichernLaeuft() || e.erzwungen",
+    "neu": "e.rettung == nil || e.s.SpeichernLaeuft()"
+  },
+  {
+    "name": "U4 kein Verwerfen auf gespeichertem Stand",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.s.Geaendert() {\n\t\te.rettung.Verwirf()\n\t\te.rett.gesichert, e.rett.erste = st, time.Time{}\n\t\treturn\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "U5 kein Takt",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "; t.Before(faellig) {",
+    "neu": "; false && t.Before(faellig) {"
+  },
+  {
+    "name": "U6 Zerstören verwirft immer",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.s.Geaendert() {\n\t\te.rettung.Verwirf()\n\t}\n\te.rettung.Ende()",
+    "neu": "\te.rettung.Verwirf()\n\te.rettung.Ende()"
+  },
+  {
+    "name": "U7 kein Wiederherstellen beim Start",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "\tif text, fehler := e.rettung.Wiederherstellen(e.s.D); text != \"\" {\n\t\te.melde(text, fehler)\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "U7b Meldung nicht gezeigt",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "e.melde(text, fehler)",
+    "neu": "_ = fehler"
+  },
+  {
+    "name": "U8 Editor ruft rettungStart nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.rettungStart() // vor dem ersten Bild: Wiederholte Schwärzungen ändern die Pixel\n",
+    "neu": ""
+  },
+  {
+    "name": "U9 Schleife ruft rettungPruefen nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.rettungPruefen() // Rettungskopie gebündelt nach Änderungen (ADR-0029)\n",
+    "neu": ""
+  },
+  {
+    "name": "U10 speichernFertig verwirft nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.rettungGespeichert() // gespeichert: die Rettungskopie ist überflüssig (ADR-0029 Punkt 5)\n",
+    "neu": "\t\t_ = 0\n"
+  },
+  {
+    "name": "U11 spaeteAntwort verwirft nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\thinweisAufStderr(r.g)\n\t\te.rettungGespeichert()\n",
+    "neu": "\t\thinweisAufStderr(r.g)\n"
+  },
+  {
+    "name": "U12 speichernAbwarten verwirft nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif r.err == nil {\n\t\t\t\te.rettungGespeichert()\n\t\t\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "U13 zerstoert ohne rettungEnde",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.rettungEnde()\n\treturn errors.Join(fensterErr, e.schlussErr, err)",
+    "neu": "\treturn errors.Join(fensterErr, e.schlussErr, err)"
+  },
+  {
+    "name": "U14 verwirft auch nach gescheitertem Speichern",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if r.err == nil {\n\t\te.rettungGespeichert() // gespeichert",
+    "neu": "if true {\n\t\te.rettungGespeichert() // gespeichert"
+  },
+  {
+    "name": "C1 ignore-limit ohne Wirkung",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif r.ohneGrenze {\n\t\tpruefe = nil\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "C2 Wiederherstellen ohne render.Pruefe",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif r.ohneGrenze {\n\t\tpruefe = nil\n\t}\n",
+    "neu": "\tpruefe = nil\n"
+  },
+  {
+    "name": "C3 nachSpeichern setzt keine neue Basis",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tr.s.NeueBasis(k)\n",
+    "neu": "\t\t_ = k\n"
+  },
+  {
+    "name": "C4 Speichern ruft nachher nicht",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif nachher != nil {\n\t\t\tnachher(",
+    "neu": "\t\tif false {\n\t\t\tnachher("
+  },
+  {
+    "name": "C5 oeffneImEditor reicht ignore-limit nicht durch",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "r := rettungFuer(abs, ohneGrenze)",
+    "neu": "r := rettungFuer(abs, false)"
+  },
+  {
+    "name": "C6 nach einer Aufnahme keine Rettung",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "r := rettungFuer(abs, false)",
+    "neu": "var r *rettung"
+  },
+  {
+    "name": "C7 kein Aufräumen beim Start",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "rescue.Aufraeumen(ort, time.Now())",
+    "neu": "rescue.Aufraeumen(ort+\"/nirgends\", time.Now())"
+  },
+  {
+    "name": "C8 geänderte Datei wie unlesbar gemeldet",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "case errors.Is(w.Grund, rescue.ErrAnders):",
+    "neu": "case false && errors.Is(w.Grund, rescue.ErrAnders):"
+  },
+  {
+    "name": "C9 Kennung nach Speichern von falscher Datei",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\tk = rescue.Kennung{Pfad: pfad} // passt nie",
+    "neu": "\t\t\tk = rescue.Kennung{} // passt nie"
+  },
+  {
+    "name": "R8b Aufräumen ohne Haltezeit",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "jetzt.Sub(info.ModTime()) < Haltezeit",
+    "neu": "jetzt.Sub(info.ModTime()) < 0"
+  },
+  {
+    "name": "S1b Schreiben trotz Verwirf",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "veraltet := gen != s.gen || nr <= s.letzte",
+    "neu": "veraltet := gen != gen || nr <= s.letzte"
+  },
+  {
+    "name": "S7 Verwirf erhöht gen nicht und löscht nur",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\ts.gen++\n\tpfad, aus := s.basis.Pfad, s.aus\n\ts.mu.Unlock()\n",
+    "neu": "\tpfad, aus := s.basis.Pfad, s.aus\n\ts.mu.Unlock()\n"
+  },
+  {
+    "name": "R19 Farbe ungeprüft lang",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": " || len(s.Farbe) != 9",
+    "neu": ""
+  },
+  {
+    "name": "F1 LeseAngaben ohne PruefeInhalt",
+    "datei": "internal/fileformat/angaben.go",
+    "paket": "./internal/fileformat",
+    "alt": "if _, err := document.PruefeInhalt(g, in.zuschnitt, in.streifen, in.objekte); err != nil {",
+    "neu": "if _, err := document.PruefeInhalt(g, in.zuschnitt, in.streifen, in.objekte); false && err != nil {"
+  }
+]

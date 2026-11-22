@@ -126,17 +126,11 @@ func Editor(titel string, d *document.Dokument, speichern Speichern, rettung Ret
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	th := material.NewTheme()
-	// Nur die Go-Schriften, wie im Renderer: sonst zeigte der Bildschirm Zeichen aus Systemschriften, die in der
-	// gespeicherten Datei als Kästchen erscheinen (Kritik A-3).
-	th.Shaper = text.NewShaper(text.NoSystemFonts(), text.WithCollection(gofont.Collection()))
-	e := &editor{w: new(app.Window), thema: th, s: canvas.NeueSitzung(d), titel: titel, speichern: speichern, rettung: rettung}
 	app.ClipboardWriteError = func(err error) { // vor dem ersten Fenster (F-177)
 		diagnoseEditor("Zwischenablage nicht geschrieben: %v", err)
 		zwischenablageFehlt.Store(true)
 	}
-	e.rettungStart() // vor dem ersten Bild: Wiederholte Schwärzungen ändern die Pixel
-	e.bildNeu()
+	e := neuerEditor(titel, d, speichern, rettung)
 	// Wecker statt einzelnem Invalidate: Gio verwirft ein Invalidate nach einem schon angenommenen (F-231).
 	e.wecker = canvas.NeuerWecker(e.w.Invalidate, weckTakt, weckGrenze)
 	defer e.wecker.Ende()
@@ -147,6 +141,19 @@ func Editor(titel string, d *document.Dokument, speichern Speichern, rettung Ret
 	ende := e.signaleAbfangen()
 	defer ende()
 	return e.laufen()
+}
+
+// neuerEditor legt den Editor an, wendet eine Rettungskopie an und baut das erste Ansichtsbild; das Fenster öffnet
+// erst laufen. Eigene Funktion, damit Tests den Aufbau ohne Fenster prüfen (F-385).
+func neuerEditor(titel string, d *document.Dokument, speichern Speichern, rettung Rettung) *editor {
+	th := material.NewTheme()
+	// Nur die Go-Schriften, wie im Renderer: sonst zeigte der Bildschirm Zeichen aus Systemschriften, die in der
+	// gespeicherten Datei als Kästchen erscheinen (Kritik A-3).
+	th.Shaper = text.NewShaper(text.NoSystemFonts(), text.WithCollection(gofont.Collection()))
+	e := &editor{w: new(app.Window), thema: th, s: canvas.NeueSitzung(d), titel: titel, speichern: speichern, rettung: rettung}
+	e.rettungStart() // vor dem ersten Bild: Wiederholte Schwärzungen ändern die Pixel
+	e.bildNeu()
+	return e
 }
 
 // signaleAbfangen leitet SIGTERM, SIGINT und SIGHUP (Abmelden, Strg+C im Terminal, kill) in ein geordnetes Schließen
@@ -345,35 +352,41 @@ func (e *editor) laufen() error {
 				e.w.Option(app.Title(t))
 			}
 		}
-		// Nach jedem Ereignis nachsehen, ob die Meldung noch gilt: Eine abgelöste kehrt nicht zurück (F-160), auch wenn
-		// Ändern und Rückgängig in einem Bild liegen.
-		e.meldung.Frisch(e.s.D.Stand(), e.s.Werkzeug)
-		if e.zwischenablageFehltMelden() {
-			e.w.Invalidate()
-		}
-		// Auch nach Ereignissen ohne Bild (Gio sendet bei inaktivem Fenster nur ein Weckereignis) die Dialogantwort
-		// annehmen, sonst läge sie bis zum nächsten Bild (F-231); ein Folgebild zeigt sie. Ebenso die Antwort des
-		// Speicherns (ADR-0020 Nachtrag 6).
-		if e.exportAbholen() {
-			e.wecker.Anfordern()
-		}
-		if e.speichernAbholen() {
-			e.wecker.Anfordern()
-		}
-		if e.wache.Angekommen() && !e.erzwungen && !e.s.SignalVorgemerkt() {
-			e.nachSignal()
-		}
-		if e.weiteresSignalSchliesst() {
-			e.schliessenFrei()
-		}
-		if e.speichernHaengtMelden() {
-			e.w.Invalidate()
-		}
-		if e.nachKopieSchliessen() {
-			e.w.Perform(system.ActionClose) // erneut anfragen; schliessen entscheidet wie sonst (F-281)
-		}
-		e.rettungPruefen() // Rettungskopie gebündelt nach Änderungen (ADR-0029)
+		e.nachEreignis()
 	}
+}
+
+// nachEreignis läuft nach jedem Ereignis der Schleife: Meldung, Antworten aus Hintergrund-Goroutinen, Signale,
+// Rettungskopie. Eigene Funktion, damit Tests es ohne Fenster aufrufen (F-385).
+func (e *editor) nachEreignis() {
+	// Nach jedem Ereignis nachsehen, ob die Meldung noch gilt: Eine abgelöste kehrt nicht zurück (F-160), auch wenn
+	// Ändern und Rückgängig in einem Bild liegen.
+	e.meldung.Frisch(e.s.D.Stand(), e.s.Werkzeug)
+	if e.zwischenablageFehltMelden() {
+		e.w.Invalidate()
+	}
+	// Auch nach Ereignissen ohne Bild (Gio sendet bei inaktivem Fenster nur ein Weckereignis) die Dialogantwort
+	// annehmen, sonst läge sie bis zum nächsten Bild (F-231); ein Folgebild zeigt sie. Ebenso die Antwort des
+	// Speicherns (ADR-0020 Nachtrag 6).
+	if e.exportAbholen() {
+		e.wecker.Anfordern()
+	}
+	if e.speichernAbholen() {
+		e.wecker.Anfordern()
+	}
+	if e.wache.Angekommen() && !e.erzwungen && !e.s.SignalVorgemerkt() {
+		e.nachSignal()
+	}
+	if e.weiteresSignalSchliesst() {
+		e.schliessenFrei()
+	}
+	if e.speichernHaengtMelden() {
+		e.w.Invalidate()
+	}
+	if e.nachKopieSchliessen() {
+		e.w.Perform(system.ActionClose) // erneut anfragen; schliessen entscheidet wie sonst (F-281)
+	}
+	e.rettungPruefen() // Rettungskopie gebündelt nach Änderungen (ADR-0029)
 }
 
 // zwischenablageFehltMelden ersetzt, wenn der Gio-Patch einen Schreibfehler der Zwischenablage gemeldet hat, die Meldung

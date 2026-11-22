@@ -60,7 +60,12 @@ func TestSetzeAngabenGrenzen(t *testing.T) {
 		},
 		"nil": func() error { return d.SetzeAngaben([]Objekt{nil}, ganz, nil) },
 		"zu viele": func() error {
-			return d.SetzeAngaben(make([]Objekt, MaxObjekte+1), ganz, nil)
+			// Gültige Objekte, sonst griffe schon die Prüfung auf nil (F-385, D3).
+			viele := make([]Objekt, MaxObjekte+1)
+			for i := range viele {
+				viele[i] = Text{Ort: Pt(2, 20), Inhalt: "z", Schriftgrad: 10}
+			}
+			return d.SetzeAngaben(viele, ganz, nil)
 		},
 	}
 	for name, f := range faelle {
