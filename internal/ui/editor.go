@@ -438,6 +438,8 @@ func (e *editor) zwischenablageUebernommenMelden() bool {
 	if !zwischenablageUebernommen.Swap(false) {
 		return false
 	}
+	// Für die Handprobe F-392: wann KWin cancelled schickt (nach fremdem Kopieren oder schon beim eigenen Strg+C).
+	diagnoseEditor("Zwischenablage übernommen (cancelled), Fenster hielt Kopie: %v", e.fensterHaeltKopie)
 	if !e.fensterHaeltKopie {
 		return false
 	}
