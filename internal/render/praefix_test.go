@@ -24,17 +24,21 @@ func einmalPraefix(t *testing.T, name string, err error) {
 	}
 }
 
-// Die Schrift lässt sich nicht kaputt machen (eingebettete Go-Schriften); der Fehlerweg wird nachgestellt: Der
-// Einmal-Lauf ist erledigt, die gemerkte Ursache ein roher Fehler ohne Präfix. Bild und PNG müssen ihn hüllen.
+// Die Schrift lässt sich nicht kaputt machen (eingebettete Go-Schriften); der Fehlerweg wird nachgestellt: Die
+// Schriften werden zuerst echt geladen (ein Text wird gerendert), erst dann ist die gemerkte Ursache ein roher Fehler
+// ohne Präfix; danach wird sie zurückgesetzt. Bild und PNG müssen ihn hüllen. Früher verbrauchte der Test den
+// Einmal-Lauf leer und ließ die Schriften nil — ein später laufender Test stürzte dann ab, je nach Reihenfolge
+// (-shuffle, KB-1).
 func TestFehlertextPraefixSchriftfehler(t *testing.T) {
-	schriftEinmal.Do(func() {})
+	d := weissesDokument(t, 100, 40)
+	hinzu(t, d, document.Text{Ort: document.Pt(5, 5), Inhalt: "Hallo", Schriftgrad: 20, Farbe: weiss})
+	if _, err := Bild(d); err != nil { // lädt die Schriften echt
+		t.Fatal(err)
+	}
 	alt := schriftFehler
 	roh := errors.New("Schrift kaputt")
 	schriftFehler = roh
 	defer func() { schriftFehler = alt }()
-
-	d := weissesDokument(t, 100, 40)
-	hinzu(t, d, document.Text{Ort: document.Pt(5, 5), Inhalt: "Hallo", Schriftgrad: 20, Farbe: weiss})
 
 	_, err := Bild(d)
 	einmalPraefix(t, "Bild", err)

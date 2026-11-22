@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 // text ist ein Oberflächentext, wie er im Code an i18n.T, i18n.TK oder i18n.N übergeben wird; datei ist die
@@ -187,6 +188,24 @@ func pruefeUebersetzung(texte []text, eintraege []Eintrag) []string {
 			if (t.mehrzahl == "" && !reflect.DeepEqual(ist, soll)) || (t.mehrzahl != "" && !teilmenge(ist, soll)) {
 				probleme = append(probleme, fmt.Sprintf("Platzhalter: %q Form %d hat %v, Original %v", t.id, i, ist, soll))
 			}
+			// %% (ein Prozentzeichen in einem printf-Text) gleich oft wie im Original (KA-7): Fehlt es, liest Sprintf
+			// das „%“ als Platzhalter ("100 %!(NOVERB)"); kommt es in einem Text ohne printf dazu, steht „%%“ da.
+			orig := t.id
+			if t.mehrzahl != "" {
+				orig = t.mehrzahl
+			}
+			if a, b := prozente(orig), prozente(w); a != b {
+				probleme = append(probleme, fmt.Sprintf("%%%%: %q Form %d hat %d, Original %d", t.id, i, b, a))
+			}
+			// Kontext "date format" ist ein Go-Zeitmuster (ADR-0014 Nachtrag 2): Was damit formatiert wird, muss sich
+			// mit demselben Muster minutengenau zurücklesen lassen — sonst fehlt etwa das Jahr oder steht ein Wort, das
+			// Go als Musterteil liest (KA-7).
+			if t.kontext == "date format" {
+				ref := time.Date(2026, 11, 22, 15, 4, 0, 0, time.UTC)
+				if z, err := time.Parse(w, ref.Format(w)); err != nil || !z.Equal(ref) {
+					probleme = append(probleme, fmt.Sprintf("Datumsformat: %q ergibt %q, zurückgelesen %v (%v)", w, ref.Format(w), z, err))
+				}
+			}
 		}
 	}
 	if !kopfMitMehrzahl {
@@ -204,6 +223,17 @@ func pruefeUebersetzung(texte []text, eintraege []Eintrag) []string {
 // platzhalterMuster findet printf-Platzhalter wie %d, %s, %[1]d, %.2f (ohne %%). Das Leerzeichen-Flag ("% d") ist
 // bewusst nicht dabei: sonst gälte "100% fit" als Platzhalter "% f" (F-46). Oberflächentexte nutzen es nicht.
 var platzhalterMuster = regexp.MustCompile(`%(\[\d+\])?[-+#0]*(\d+|\*)?(\.(\d+|\*))?[a-zA-Z%]`)
+
+// prozente zählt die Folgen „%%“ eines Texts (über platzhalterMuster, damit „%%d“ nicht falsch zerlegt wird).
+func prozente(s string) int {
+	n := 0
+	for _, p := range platzhalterMuster.FindAllString(s, -1) {
+		if p == "%%" {
+			n++
+		}
+	}
+	return n
+}
 
 // platzhalter liefert die Platzhalter eines Texts, sortiert.
 func platzhalter(s string) []string {
@@ -317,10 +347,10 @@ func TestPruefungFindetLuecken(t *testing.T) {
 
 // Platzhalter in Mehrzahlformen und der Pflichtkopf Plural-Forms (F-38).
 func TestPruefungPlatzhalterUndKopf(t *testing.T) {
-	texte := []text{{id: "%d image", mehrzahl: "%d images"}, {id: "%[1]s of %[2]d"}, {id: "Zoom 100% fit"}}
+	texte := []text{{id: "%d image", mehrzahl: "%d images"}, {id: "%[1]s of %[2]d, 100%%"}, {id: "Zoom 100% fit"}}
 	po := "msgid \"\"\nmsgstr \"Language: xx\\n\"\n\n" +
 		"msgid \"%d image\"\nmsgid_plural \"%d images\"\nmsgstr[0] \"ein Bild\"\nmsgstr[1] \"%d Bilder %s\"\n\n" +
-		"msgid \"%[1]s of %[2]d\"\nmsgstr \"%[2]d von %[1]s, 100%%\"\n\n" +
+		"msgid \"%[1]s of %[2]d, 100%%\"\nmsgstr \"%[2]d von %[1]s, 100%%\"\n\n" +
 		"msgid \"Zoom 100% fit\"\nmsgstr \"Zoom 100 % passend\"\n"
 	eintraege, err := LesePO(strings.NewReader(po))
 	if err != nil {
@@ -332,5 +362,42 @@ func TestPruefungPlatzhalterUndKopf(t *testing.T) {
 	}
 	if got := pruefeUebersetzung(texte, eintraege); !reflect.DeepEqual(got, want) {
 		t.Errorf("pruefeUebersetzung:\n got %q\nwant %q", got, want)
+	}
+}
+
+// KA-7: Eine Probe-PO mit verlorenem %% (printf-Text), einem hinzugefügten %% (Text ohne printf) und einem
+// Datumsformat ohne Jahr, das sich nicht minutengenau zurücklesen lässt — alle drei werden gemeldet. Nur der Kontext
+// "date format" wird als Zeitmuster geprüft (der Kontext "date one" nicht); ein korrektes Datumsformat geht durch.
+func TestPruefungProzentUndDatum(t *testing.T) {
+	texte := []text{{id: "%d%%"}, {id: "Zoom 100% fit"}, {kontext: "date format", id: "2006-01-02 15:04"},
+		{kontext: "date one", id: "x"}}
+	po := "msgid \"\"\nmsgstr \"Plural-Forms: nplurals=2; plural=(n != 1);\\n\"\n\n" +
+		"msgid \"%d%%\"\nmsgstr \"%d %\"\n\n" +
+		"msgid \"Zoom 100% fit\"\nmsgstr \"Zoom 100%% passend\"\n\n" +
+		"msgctxt \"date format\"\nmsgid \"2006-01-02 15:04\"\nmsgstr \"02.01. 15:04\"\n\n" +
+		"msgctxt \"date one\"\nmsgid \"x\"\nmsgstr \"02.01.2006 15:04\"\n"
+	eintraege, err := LesePO(strings.NewReader(po))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := strings.Join(pruefeUebersetzung(texte, eintraege), "\n")
+	for _, soll := range []string{`%%: "%d%%" Form 0 hat 0, Original 1`, `%%: "Zoom 100% fit" Form 0 hat 1, Original 0`,
+		`Datumsformat: "02.01. 15:04"`} {
+		if !strings.Contains(got, soll) {
+			t.Errorf("fehlt %q in\n%s", soll, got)
+		}
+	}
+	if strings.Count(got, "\n")+1 != 3 {
+		t.Errorf("Soll genau drei Meldungen:\n%s", got)
+	}
+	// Ein gültiges deutsches Datumsformat geht durch.
+	ok := "msgid \"\"\nmsgstr \"Plural-Forms: nplurals=2; plural=(n != 1);\\n\"\n\n" +
+		"msgctxt \"date format\"\nmsgid \"2006-01-02 15:04\"\nmsgstr \"02.01.2006 15:04\"\n"
+	e2, err := LesePO(strings.NewReader(ok))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := pruefeUebersetzung(texte[2:3], e2); len(p) != 0 {
+		t.Errorf("gültiges Datumsformat gemeldet: %q", p)
 	}
 }

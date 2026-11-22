@@ -12,7 +12,11 @@ import (
 )
 
 // ADR-0014 Nachtrag 2: Datum und Zoom folgen der Sprache über den Katalog — englisch „2026-11-22 15:04“ und „100%“,
-// deutsch „22.11.2026 15:04“ und „100 %“. Dieselben Literale wie in cmd/schnapp/rettung.go und internal/ui/editor.go.
+// deutsch „22.11.2026 15:04“ und „100 %“. Die Literale sind hier aus cmd/schnapp/rettung.go und internal/ui/editor.go
+// abgeschrieben; dieser Test bindet sie nicht selbst an den Produktionscode (KB-11). Das tut TestUebersetzungenVollstaendig:
+// Ändert sich ein Literal dort, fehlt sein Eintrag in de.po und der alte gilt als veraltet — dann muss auch dieser Test
+// nachgezogen werden. Eine Hilfsfunktion im Paket i18n mit den Literalen ginge nicht: Der Scanner sammelt nur Aufrufe
+// über den Import von i18n und hielte die Einträge dann für veraltet.
 func TestFormateJeSprache(t *testing.T) {
 	zeit := time.Date(2026, 11, 22, 15, 4, 0, 0, time.UTC)
 	for _, fall := range []struct{ sprache, datum, status string }{
