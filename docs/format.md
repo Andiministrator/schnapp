@@ -161,14 +161,14 @@ Root element `svg`:
 
 | Kind | Syntax | Notes |
 |---|---|---|
-| number | decimal floating point as written by the shortest round-trip form, e.g. `2.5`, `-1`, `1e-05` | readers MUST accept any decimal float, including exponent notation; `NaN` and `Inf` are invalid |
-| integer | optional minus sign, decimal digits | |
+| number | decimal floating point as written by the shortest round-trip form, e.g. `2.5`, `-1`, `1e-05`, `1e+06` | characters only digits, `.`, `-`, `e`, `E`, and `+` directly after the exponent mark; readers MUST accept any such decimal float, including exponent notation, and MUST reject everything else (a leading `+`, `NaN`, `Inf`, hexadecimal floats, `_`, white space) |
+| integer | optional minus sign, decimal digits | no `+`, no white space, no decimal point |
 | boolean | `true` or `false` | a reader treats every value other than `true` as false |
 | point | `x,y` (two numbers, one comma, no spaces) | |
 | area | `x0,y0 x1,y1` (two points, one space) | `x0 <= x1` and `y0 <= y1` |
-| colour | `#rrggbbaa`, exactly 8 hexadecimal digits | red, green, blue, alpha; **non-premultiplied**, 8 bits each; `aa` = `00` transparent, `ff` opaque; writers use lower case, readers accept both |
+| colour | `#rrggbbaa`, exactly 8 hexadecimal digits, no white space | red, green, blue, alpha; **non-premultiplied**, 8 bits each; `aa` = `00` transparent, `ff` opaque; writers use lower case, readers accept both |
 | stroke | `<colour> <width>` (one space) | `width` is a number in original pixels |
-| rectangle | `x0 y0 x1 y1` (four integers, single spaces) | half-open: `[x0,x1) x [y0,y1)` |
+| rectangle | `x0 y0 x1 y1` (four integers separated by single spaces, nothing before, between or after) | half-open: `[x0,x1) x [y0,y1)` |
 
 Colours carry no colour-space tag; pixel values are used as stored. Units are always pixels of the original.
 
@@ -239,7 +239,7 @@ All objects are children of `g s:ebene="objekte"` (readers accept an object elem
 object). Document order is stacking order: the first object is at the bottom, the last on top. Identifiers are not
 stored; a reader assigns 1, 2, 3, ... in document order.
 
-An object is the element that has the attribute `s:typ`. The value selects the type; **the `s:` attributes are the
+An object is the element that has the attribute `s:typ`. The value selects the type; an empty value is invalid (the file is damaged), and the root, `s:meta`, `s:ansicht`, `s:streifen` and `s:schlagwort` MUST NOT carry `s:typ` (a reader treats the file as damaged); **the `s:` attributes are the
 object's complete data**. The element's children (`path`, `rect`, `text`, `circle`, ...) are presentation and are
 ignored on reading. Coordinates in objects are original pixels and may lie partly outside the image, but each
 coordinate MUST satisfy `|value| <= max_coordinate`.
@@ -373,7 +373,7 @@ Original width and height are at least 1.
    the version after parsing the whole document, so a newer file that also contains an object type unknown to it is
    reported as damaged rather than as newer; either way the file is rejected and offered as a plain picture.)
 3. **Unknown content.** Attributes or elements that are not defined here and are not an object (`s:typ`) MUST be
-   ignored, whatever their namespace; so are the presentation elements and attributes. Unknown *object types* are not
+   ignored, whatever their namespace; so are the presentation elements and attributes. Position matters for two elements: `s:streifen` counts only as a direct child of `s:ansicht`, and `s:schlagwort` only as a direct child of `s:meta`; anywhere else they are unknown content and have no effect (they are neither data nor damage). Readers MUST NOT accept them elsewhere, so that all readers see the same strips and keywords. Unknown *object types* are not
    ignored (8.5). Unknown content is not preserved when the reader saves the file.
 4. **Strictness.** A required attribute that is missing, a value that does not parse, a value outside the ranges of
    sections 7, 8 and 10, a rectangle outside the original, overlapping strips, a view that would be

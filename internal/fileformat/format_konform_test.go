@@ -27,6 +27,11 @@ import (
 // (`go test ./internal/fileformat -run TestFormatBeispiele -update`), der Leser liest sie mit dem erwarteten Ergebnis,
 // und ein Test hält die Konstanten der Spezifikation mit denen des Codes zusammen. Die Spezifikation und FormatVersion
 // ändern sich immer im selben Commit.
+//
+// Die Byte-Gleichheit der Beispiel-PNG hängt an `compress/zlib` und `image/png` der Go-Version: ein anderer Deflate-
+// Encoder liefert andere Bytes bei gleichem Inhalt. Die CI nimmt Go nach go.mod; bei einem Go-Update `-update` fahren
+// und den Diff der `*.snap.svg` prüfen (er muss leer sein, nur die `*.png` dürfen sich ändern), erst dann
+// einchecken. Das Format selbst ändert sich dadurch nicht.
 
 var aktualisiereBeispiele = flag.Bool("update", false, "Beispieldateien unter testdata/format neu schreiben")
 
@@ -269,12 +274,21 @@ func TestFormatSchwaerzung(t *testing.T) {
 // pngMitSVG ersetzt den Block snAP einer Beispieldatei durch das SVG svg.
 func pngMitSVG(t *testing.T, png []byte, svg string) []byte {
 	t.Helper()
+	return pngMitSVGStufe(t, png, svg, zlib.DefaultCompression)
+}
+
+// pngMitSVGStufe wie pngMitSVG, mit der zlib-Stufe level für den Block.
+func pngMitSVGStufe(t *testing.T, png []byte, svg string, level int) []byte {
+	t.Helper()
 	bl, err := leseBloecke(bytes.NewReader(png))
 	if err != nil {
 		t.Fatal(err)
 	}
 	var z bytes.Buffer
-	zw := zlib.NewWriter(&z)
+	zw, err := zlib.NewWriterLevel(&z, level)
+	if err != nil {
+		t.Fatal(err)
+	}
 	zw.Write([]byte(svg))
 	zw.Close()
 	for i := range bl {
@@ -289,64 +303,233 @@ func pngMitSVG(t *testing.T, png []byte, svg string) []byte {
 	return buf.Bytes()
 }
 
-// TestFormatLeserRegeln: die Regeln für Leser aus docs/format.md, an der Beispieldatei „objects“ durchgespielt.
-func TestFormatLeserRegeln(t *testing.T) {
-	png, err := os.ReadFile(filepath.Join(beispielOrdner, "objects.png"))
+// beispielSVG liest das PNG und das SVG eines Beispiels.
+func beispielSVG(t *testing.T, name string) (png []byte, svg string) {
+	t.Helper()
+	png, err := os.ReadFile(filepath.Join(beispielOrdner, name+".png"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	svg := string(entpackeSVG(t, png))
-	lies := func(s string) error {
+	return png, string(entpackeSVG(t, png))
+}
+
+// urteil ist, was ein Leser über eine Datei sagt: ok, neuer, zu groß oder beschädigt.
+func urteil(err error) string {
+	switch {
+	case err == nil:
+		return "ok"
+	case errors.Is(err, ErrFormatNeuer):
+		return "neuer"
+	case errors.Is(err, ErrZuGross):
+		return "zu groß"
+	case errors.Is(err, ErrBeschaedigt):
+		return "beschädigt"
+	}
+	return "anders: " + err.Error()
+}
+
+// TestFormatLeserRegeln: die Regeln für Leser aus docs/format.md (Abschnitte 5.2, 7, 8, 11), an den Beispielen
+// durchgespielt. Jede Ablehnung prüft einen Teil des Fehlertexts; das volle Lesen und LeseMetadaten fällen dasselbe
+// Urteil (Regel 4 und 7).
+func TestFormatLeserRegeln(t *testing.T) {
+	png, svg := beispielSVG(t, "objects")
+	viewPNG, viewSVG := beispielSVG(t, "view")
+	lies := func(png []byte, s string) error {
 		_, err := LeseArbeitsdatei(bytes.NewReader(pngMitSVG(t, png, s)))
 		return err
 	}
-	if err := lies(svg); err != nil {
+	// gleich: LeseMetadaten urteilt wie LeseArbeitsdatei.
+	gleich := func(name string, png []byte, s string) {
+		t.Helper()
+		_, kopf := LeseMetadaten(bytes.NewReader(pngMitSVG(t, png, s)))
+		if voll := lies(png, s); urteil(voll) != urteil(kopf) {
+			t.Errorf("%s: LeseArbeitsdatei %q, LeseMetadaten %q", name, urteil(voll), urteil(kopf))
+		}
+	}
+	if err := lies(png, svg); err != nil {
 		t.Fatal(err)
 	}
-	ersetze := func(alt, neu string) string {
-		if !strings.Contains(svg, alt) {
+	ersetzeIn := func(vorlage, alt, neu string) string {
+		if !strings.Contains(vorlage, alt) {
 			t.Fatalf("Vorlage ohne %q", alt)
 		}
-		return strings.Replace(svg, alt, neu, 1)
+		return strings.Replace(vorlage, alt, neu, 1)
 	}
+	ersetze := func(alt, neu string) string { return ersetzeIn(svg, alt, neu) }
+	ersetzeV := func(alt, neu string) string { return ersetzeIn(viewSVG, alt, neu) }
 	version := `s:format="` + strconv.Itoa(FormatVersion) + `"`
-	// Unbekannte Attribute und Elemente sind ohne Wirkung.
-	for name, s := range map[string]string{
-		"Attribut am Objekt":     ersetze(`s:typ="kasten"`, `s:typ="kasten" s:zukunft="1"`),
-		"Attribut an der Wurzel": ersetze(version, version+` s:zukunft="1"`),
-		"Element in der Ansicht": ersetze(`</s:ansicht>`, `<s:zukunft a="b"/></s:ansicht>`),
-		"Element neben Objekten": ersetze(`<g s:ebene="objekte">`, `<desc>x</desc><g s:ebene="objekte">`),
-		"fremdes Attribut":       ersetze(`<image `, `<image data-x="y" `),
-		"Metadaten ohne Zeit":    ersetze(` s:erstellt="2026-01-02T03:04:05Z"`, ``),
-	} {
-		if err := lies(s); err != nil {
+	const streifenV = `<s:streifen s:zeilen="false" s:von="30" s:bis="33"/><s:streifen s:zeilen="true" s:von="20" s:bis="25"/>`
+	const metaV = `<s:meta s:erstellt="2026-01-02T03:04:05Z" s:bearbeitet="false">`
+
+	type fall struct {
+		png []byte
+		svg string
+	}
+	// Angenommen: unbekannter Inhalt ist ohne Wirkung (Regel 3), dazu die Schreibweisen, die 5.2 und 7 erlauben.
+	angenommen := map[string]fall{
+		"Attribut am Objekt":          {png, ersetze(`s:typ="kasten"`, `s:typ="kasten" s:zukunft="1"`)},
+		"Attribut an der Wurzel":      {png, ersetze(version, version+` s:zukunft="1"`)},
+		"Element in der Ansicht":      {png, ersetze(`</s:ansicht>`, `<s:zukunft a="b"/></s:ansicht>`)},
+		"Element neben Objekten":      {png, ersetze(`<g s:ebene="objekte">`, `<desc>x</desc><g s:ebene="objekte">`)},
+		"fremdes Attribut":            {png, ersetze(`<image `, `<image data-x="y" `)},
+		"Metadaten ohne Zeit":         {png, ersetze(` s:erstellt="2026-01-02T03:04:05Z"`, ``)},
+		"Farbe in Großbuchstaben":     {png, ersetze(`#1e5ac8ff`, `#1E5AC8FF`)},
+		"Zahl mit Exponent":           {png, ersetze(`s:radius="7"`, `s:radius="0.7e1"`)},
+		"Exponent mit Plus":           {png, ersetze(`s:eckradius="3"`, `s:eckradius="3e+00"`)},
+		"Exponent mit Minus":          {png, ersetze(`s:eckradius="3"`, `s:eckradius="30e-1"`)},
+		"Zuschnitt, Ecken vertauscht": {viewPNG, ersetzeV(`s:zuschnitt="4 3 60 45"`, `s:zuschnitt="60 45 4 3"`)},
+		"Streifen unsortiert": {viewPNG, ersetzeV(streifenV,
+			`<s:streifen s:zeilen="true" s:von="30" s:bis="33"/><s:streifen s:zeilen="false" s:von="30" s:bis="33"/><s:streifen s:zeilen="true" s:von="20" s:bis="25"/>`)},
+		"Streifen aneinander": {viewPNG, ersetzeV(`s:zeilen="false" s:von="30" s:bis="33"`, `s:zeilen="true" s:von="25" s:bis="33"`)},
+	}
+	for name, f := range angenommen {
+		if err := lies(f.png, f.svg); err != nil {
 			t.Errorf("%s: %v", name, err)
 		}
+		gleich(name, f.png, f.svg)
 	}
+	// Ein anderer zlib-Level ändert die Bytes des Blocks, nicht seinen Inhalt.
+	for _, level := range []int{zlib.NoCompression, zlib.BestSpeed, zlib.BestCompression} {
+		if _, err := LeseArbeitsdatei(bytes.NewReader(pngMitSVGStufe(t, png, svg, level))); err != nil {
+			t.Errorf("zlib-Stufe %d: %v", level, err)
+		}
+	}
+	// Unsortierte Streifen liest der Leser sortiert (Spalten zuerst, je Achse aufsteigend).
+	if g, err := LeseArbeitsdatei(bytes.NewReader(pngMitSVG(t, viewPNG, angenommen["Streifen unsortiert"].svg))); err != nil {
+		t.Error(err)
+	} else if want := []document.Streifen{{Zeilen: false, Von: 30, Bis: 33}, {Zeilen: true, Von: 20, Bis: 25},
+		{Zeilen: true, Von: 30, Bis: 33}}; !reflect.DeepEqual(g.Dokument.Streifen(), want) {
+		t.Errorf("Streifen unsortiert: %v, erwartet %v", g.Dokument.Streifen(), want)
+	}
+
+	// Ortsfreiheit (Regel 3): `s:streifen` und `s:schlagwort` zählen nur unter `s:ansicht` bzw. `s:meta`; an anderer
+	// Stelle sind sie unbekannter Inhalt und ohne Wirkung.
+	fremdStreifen := `<s:streifen s:zeilen="true" s:von="1" s:bis="2"/>`
+	for name, s := range map[string]string{
+		"Streifen unter s:meta":       ersetzeV(metaV+`</s:meta>`, metaV+fremdStreifen+`</s:meta>`),
+		"Streifen in der Objektebene": ersetzeV(`<g s:ebene="objekte">`, `<g s:ebene="objekte">`+fremdStreifen),
+		"Streifen unter der Wurzel":   ersetzeV(`</svg>`, fremdStreifen+`</svg>`),
+	} {
+		g, err := LeseArbeitsdatei(bytes.NewReader(pngMitSVG(t, viewPNG, s)))
+		if err != nil {
+			t.Errorf("%s: %v", name, err)
+			continue
+		}
+		if len(g.Dokument.Streifen()) != 2 {
+			t.Errorf("%s: %d Streifen, erwartet 2 (der fremde zählt nicht)", name, len(g.Dokument.Streifen()))
+		}
+		gleich(name, viewPNG, s)
+	}
+	for name, s := range map[string]string{
+		"Schlagwort unter s:ansicht":  ersetze(`</s:ansicht>`, `<s:schlagwort>fremd</s:schlagwort></s:ansicht>`),
+		"Schlagwort unter der Wurzel": ersetze(`</svg>`, `<s:schlagwort>fremd</s:schlagwort></svg>`),
+	} {
+		g, err := LeseArbeitsdatei(bytes.NewReader(pngMitSVG(t, png, s)))
+		if err != nil {
+			t.Errorf("%s: %v", name, err)
+			continue
+		}
+		if !reflect.DeepEqual(g.Meta.Schlagworte, beispielMeta().Schlagworte) {
+			t.Errorf("%s: Schlagworte %v", name, g.Meta.Schlagworte)
+		}
+		gleich(name, png, s)
+	}
+
 	// Neuere Version: abgelehnt, die Datei bleibt als Bild lesbar.
-	err = lies(ersetze(version, `s:format="`+strconv.Itoa(FormatVersion+1)+`"`))
-	if !errors.Is(err, ErrFormatNeuer) {
+	neuer := ersetze(version, `s:format="`+strconv.Itoa(FormatVersion+1)+`"`)
+	if err := lies(png, neuer); !errors.Is(err, ErrFormatNeuer) {
 		t.Errorf("neuere Version: %v", err)
 	}
+	gleich("neuere Version", png, neuer)
 	if _, err := LeseBild(bytes.NewReader(png)); err != nil {
 		t.Error(err)
 	}
-	// Beschädigt: fehlende Version, fehlende Ansicht, unbekannter Objekttyp, fehlendes Pflichtattribut, ungültiger
-	// Wert, Entität, Größe passt nicht zum Original.
-	for name, s := range map[string]string{
-		"Version fehlt":          ersetze(version, ``),
-		"Ansicht fehlt":          strings.Replace(ersetze(`<s:ansicht`, `<s:ansichtx`), `</s:ansicht>`, `</s:ansichtx>`, 1),
-		"unbekannter Objekttyp":  ersetze(`s:typ="kasten"`, `s:typ="ellipse"`),
-		"Pflichtattribut fehlt":  ersetze(` s:radius="7"`, ``),
-		"Farbe ungültig":         ersetze(`#1e5ac8ff`, `#1e5ac8`),
-		"Zahl ungültig":          ersetze(`s:radius="7"`, `s:radius="NaN"`),
-		"Entität":                strings.Replace(ersetze(`<s:meta`, `<s:meta s:autor="&x;"`), ` s:autor="Example Author"`, ``, 1),
-		"Größe passt nicht":      ersetze(`width="64" height="48" viewBox`, `width="65" height="48" viewBox`),
-		"Wert außerhalb Grenzen": ersetze(`s:radius="7"`, `s:radius="1e9"`),
-	} {
-		err := lies(s)
-		if err == nil || !errors.Is(err, ErrBeschaedigt) && !errors.Is(err, ErrZuGross) {
-			t.Errorf("%s: %v", name, err)
+
+	// Beschädigt oder zu groß: Sentinel und ein Teil des Fehlertexts.
+	abgelehnt := []struct {
+		name string
+		png  []byte
+		svg  string
+		art  error
+		teil string
+	}{
+		{"Version fehlt", png, ersetze(version, ``), ErrBeschaedigt, "format"},
+		{"Version mit Plus", png, ersetze(version, `s:format="+1"`), ErrBeschaedigt, "format"},
+		{"Ansicht fehlt", png, strings.Replace(ersetze(`<s:ansicht`, `<s:ansichtx`), `</s:ansicht>`, `</s:ansichtx>`, 1), ErrBeschaedigt, "Ansicht fehlt"},
+		{"unbekannter Objekttyp", png, ersetze(`s:typ="kasten"`, `s:typ="ellipse"`), ErrBeschaedigt, "unbekannter Objekttyp"},
+		{"Pflichtattribut fehlt", png, ersetze(` s:radius="7"`, ``), ErrBeschaedigt, "radius fehlt"},
+		{"Zahl NaN", png, ersetze(`s:radius="7"`, `s:radius="NaN"`), ErrBeschaedigt, "Zahl radius"},
+		{"Entität", png, strings.Replace(ersetze(`<s:meta`, `<s:meta s:autor="&x;"`), ` s:autor="Example Author"`, ``, 1), ErrBeschaedigt, "SVG"},
+		{"Größe passt nicht", png, ersetze(`width="64" height="48" viewBox`, `width="65" height="48" viewBox`), ErrBeschaedigt, "passt nicht"},
+		{"Wert außerhalb Grenzen", png, ersetze(`s:radius="7"`, `s:radius="1e9"`), ErrBeschaedigt, ""},
+		// Farbe: genau # und acht Hexziffern
+		{"Farbe zu kurz", png, ersetze(`#1e5ac8ff`, `#1e5ac8`), ErrBeschaedigt, "Farbe farbe"},
+		{"Farbe mit Leerraum", png, ersetze(`#1e5ac8ff`, `# a b c d`), ErrBeschaedigt, "Farbe farbe"},
+		{"Farbe mit Leerzeichen am Ende", png, ersetze(`#1e5ac8ff`, `#1e5ac8f `), ErrBeschaedigt, "Farbe farbe"},
+		{"Farbe ohne Raute", png, ersetze(`#1e5ac8ff`, `x1e5ac8ffx`), ErrBeschaedigt, "Farbe farbe"},
+		{"Farbe mit Vorzeichen", png, ersetze(`#1e5ac8ff`, `#+e5ac8ff`), ErrBeschaedigt, "Farbe farbe"},
+		// Zahlen: Dezimalschreibweise
+		{"Zahl hexadezimal", png, ersetze(`s:radius="7"`, `s:radius="0x1p3"`), ErrBeschaedigt, "Zahl radius"},
+		{"Zahl mit Unterstrich", png, ersetze(`s:radius="7"`, `s:radius="1_0"`), ErrBeschaedigt, "Zahl radius"},
+		{"Zahl mit Plus", png, ersetze(`s:radius="7"`, `s:radius="+7"`), ErrBeschaedigt, "Zahl radius"},
+		{"Zahl Inf", png, ersetze(`s:radius="7"`, `s:radius="Inf"`), ErrBeschaedigt, "Zahl radius"},
+		{"Zahl mit Leerraum", png, ersetze(`s:radius="7"`, `s:radius=" 7"`), ErrBeschaedigt, "Zahl radius"},
+		{"Punkt mit Plus", png, ersetze(`s:mitte="52,10"`, `s:mitte="+52,10"`), ErrBeschaedigt, "Punkt mitte"},
+		{"Ganzzahl mit Plus", png, ersetze(`s:wert="3"`, `s:wert="+3"`), ErrBeschaedigt, "Ganzzahl wert"},
+		{"Ganzzahl mit Dezimalpunkt", png, ersetze(`s:wert="3"`, `s:wert="3.0"`), ErrBeschaedigt, "Ganzzahl wert"},
+		{"Breite mit Plus", png, ersetze(`width="64" height="48" viewBox`, `width="+64" height="48" viewBox`), ErrBeschaedigt, "Ganzzahl"},
+		// s:typ
+		{"leeres s:typ", png, ersetze(`s:typ="kasten"`, `s:typ=""`), ErrBeschaedigt, "leeres s:typ"},
+		{"s:typ an s:meta", png, ersetze(`<s:meta`, `<s:meta s:typ="kasten"`), ErrBeschaedigt, "Strukturelement"},
+		{"s:typ an s:ansicht", png, ersetze(`<s:ansicht`, `<s:ansicht s:typ="kasten"`), ErrBeschaedigt, "Strukturelement"},
+		{"s:typ an s:streifen", viewPNG, ersetzeV(`<s:streifen`, `<s:streifen s:typ="kasten"`), ErrBeschaedigt, "Strukturelement"},
+		{"s:typ an s:schlagwort", png, ersetze(`<s:schlagwort>`, `<s:schlagwort s:typ="kasten">`), ErrBeschaedigt, "Strukturelement"},
+		{"s:typ an der Wurzel", png, ersetze(version, version+` s:typ="kasten"`), ErrBeschaedigt, "Strukturelement"},
+		// Zuschnitt (5.2 rectangle, 7.1)
+		{"Zuschnitt mit Rest", viewPNG, ersetzeV(`s:zuschnitt="4 3 60 45"`, `s:zuschnitt="4 3 60 45 muell"`), ErrBeschaedigt, "Zuschnitt ungültig"},
+		{"Zuschnitt mit doppeltem Leerzeichen", viewPNG, ersetzeV(`s:zuschnitt="4 3 60 45"`, `s:zuschnitt="4  3 60 45"`), ErrBeschaedigt, "Zuschnitt ungültig"},
+		{"Zuschnitt mit Plus", viewPNG, ersetzeV(`s:zuschnitt="4 3 60 45"`, `s:zuschnitt="+4 3 60 45"`), ErrBeschaedigt, "Zuschnitt ungültig"},
+		{"Zuschnitt mit Leerraum am Rand", viewPNG, ersetzeV(`s:zuschnitt="4 3 60 45"`, `s:zuschnitt=" 4 3 60 45"`), ErrBeschaedigt, "Zuschnitt ungültig"},
+		{"Zuschnitt zu kurz", viewPNG, ersetzeV(`s:zuschnitt="4 3 60 45"`, `s:zuschnitt="4 3 60"`), ErrBeschaedigt, "Zuschnitt ungültig"},
+		{"Zuschnitt dezimal", viewPNG, ersetzeV(`s:zuschnitt="4 3 60 45"`, `s:zuschnitt="4 3 60 45.5"`), ErrBeschaedigt, "Zuschnitt ungültig"},
+		{"Zuschnitt außerhalb", viewPNG, ersetzeV(`s:zuschnitt="4 3 60 45"`, `s:zuschnitt="4 3 60 49"`), ErrBeschaedigt, "außerhalb des Bilds"},
+		{"Zuschnitt negativ", viewPNG, ersetzeV(`s:zuschnitt="4 3 60 45"`, `s:zuschnitt="-1 3 60 45"`), ErrBeschaedigt, "außerhalb des Bilds"},
+		{"Zuschnitt leer", viewPNG, ersetzeV(`s:zuschnitt="4 3 60 45"`, `s:zuschnitt="4 3 4 45"`), ErrBeschaedigt, "außerhalb des Bilds"},
+		// Streifen (7.2, 7.3)
+		{"Streifen überlappen", viewPNG, ersetzeV(`s:zeilen="false" s:von="30" s:bis="33"`, `s:zeilen="true" s:von="24" s:bis="27"`), ErrBeschaedigt, "überlappen"},
+		{"Streifen von gleich bis", viewPNG, ersetzeV(`s:von="20" s:bis="25"`, `s:von="25" s:bis="25"`), ErrBeschaedigt, "ungültig"},
+		{"Streifen von größer als bis", viewPNG, ersetzeV(`s:von="20" s:bis="25"`, `s:von="25" s:bis="20"`), ErrBeschaedigt, "ungültig"},
+		{"Streifen über den Rand", viewPNG, ersetzeV(`s:von="20" s:bis="25"`, `s:von="20" s:bis="49"`), ErrBeschaedigt, "ungültig"},
+		{"Streifen ohne Zahl", viewPNG, ersetzeV(`s:von="20"`, `s:von="zwanzig"`), ErrBeschaedigt, "Ganzzahl von"},
+		{"leere Ansicht", viewPNG, ersetzeV(`s:von="20" s:bis="25"`, `s:von="0" s:bis="48"`), ErrBeschaedigt, "Ansicht wäre leer"},
+	}
+	for _, f := range abgelehnt {
+		err := lies(f.png, f.svg)
+		if !errors.Is(err, f.art) || !strings.Contains(err.Error(), f.teil) {
+			t.Errorf("%s: %v (erwartet %v mit %q)", f.name, err, f.art, f.teil)
+		}
+		gleich(f.name, f.png, f.svg)
+	}
+}
+
+// TestFormatMetadatenBeispiele: LeseMetadaten liest alle Beispiele mit demselben Ergebnis wie das volle Lesen
+// (Regel 4 und 7).
+func TestFormatMetadatenBeispiele(t *testing.T) {
+	for _, b := range beispiele() {
+		daten, err := os.ReadFile(filepath.Join(beispielOrdner, b.name+".png"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		k, err := LeseMetadaten(bytes.NewReader(daten))
+		if err != nil {
+			t.Fatalf("%s: %v", b.name, err)
+		}
+		g, err := LeseArbeitsdatei(bytes.NewReader(daten))
+		if err != nil {
+			t.Fatalf("%s: %v", b.name, err)
+		}
+		if !reflect.DeepEqual(k.Meta, g.Meta) || image.Pt(k.Breite, k.Hoehe) != g.Dokument.Groesse() {
+			t.Errorf("%s: LeseMetadaten %+v %dx%d, voll %+v %v", b.name, k.Meta, k.Breite, k.Hoehe, g.Meta, g.Dokument.Groesse())
 		}
 	}
 }
@@ -367,9 +550,14 @@ func leseSpezifikation(t *testing.T) string {
 // fällt hier auf.
 func TestFormatSpezifikationKonstanten(t *testing.T) {
 	spez := leseSpezifikation(t)
+	// Nur Abschnitt 10: andere Tabellen (etwa die Beispielnamen in Abschnitt 14) haben ebenfalls Zeilen der Form `x` | y.
+	von, bis := strings.Index(spez, "\n## 10."), strings.Index(spez, "\n## 11.")
+	if von < 0 || bis < von {
+		t.Fatal("docs/format.md: Abschnitte 10 und 11 nicht gefunden")
+	}
 	zeile := regexp.MustCompile("(?m)^\\| `([a-z_]+)` \\| ([^|]+?) \\|")
 	werte := map[string]string{}
-	for _, m := range zeile.FindAllStringSubmatch(spez, -1) {
+	for _, m := range zeile.FindAllStringSubmatch(spez[von:bis], -1) {
 		werte[m[1]] = strings.Trim(m[2], "` ")
 	}
 	zahlen := map[string]float64{
@@ -412,6 +600,15 @@ func TestFormatSpezifikationKonstanten(t *testing.T) {
 			t.Errorf("docs/format.md: %s = %q, Code %q", k, s, soll)
 		}
 	}
+	// Rückrichtung: Jeder Schlüssel der Tabelle ist hier einer Zuordnung zum Code zugeordnet; sonst stünde in der
+	// Spezifikation ein Wert, den kein Test festhält.
+	for k := range werte {
+		_, istZahl := zahlen[k]
+		_, istText := texte[k]
+		if !istZahl && !istText {
+			t.Errorf("docs/format.md: Schlüssel `%s` der Tabelle Constants ist keinem Wert im Code zugeordnet", k)
+		}
+	}
 	// Die Kopfzeile nennt die Version noch einmal im Fließtext.
 	if !strings.Contains(spez, "**Format version: "+strconv.Itoa(FormatVersion)+"**") {
 		t.Errorf("docs/format.md: Kopfzeile „**Format version: %d**“ fehlt", FormatVersion)
@@ -430,11 +627,24 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 			gesehen[m[1]] = true
 		}
 	}
-	for _, w := range []string{"format", "meta", "autor", "erstellt", "quelle", "bearbeitet", "schlagwort", "ansicht", "zuschnitt",
+	wortliste := []string{"format", "meta", "autor", "erstellt", "quelle", "bearbeitet", "schlagwort", "ansicht", "zuschnitt",
 		"streifen", "zeilen", "von", "bis", "ebene", "typ", "a", "b", "k", "strich", "bereich", "fuellung", "eckradius",
-		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "mitte", "wert", "radius"} {
+		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "mitte", "wert", "radius"}
+	for _, w := range wortliste {
 		if !gesehen[w] {
 			t.Errorf("Beispiele enthalten s:%s nicht (Beispielabdeckung)", w)
+		}
+	}
+	// Rückrichtung: Jedes `s:name` der Spezifikation steht in der Wortliste; ein Name, den die Spezifikation einführt
+	// und den weder Schreiber noch Beispiele noch Leser kennen, fiele sonst nicht auf. `s:name` ist der Platzhalter
+	// der Einleitung von Abschnitt 5.
+	bekannt := map[string]bool{"name": true}
+	for _, w := range wortliste {
+		bekannt[w] = true
+	}
+	for _, m := range regexp.MustCompile("`s:([a-z]+)`").FindAllStringSubmatch(spez, -1) {
+		if !bekannt[m[1]] {
+			t.Errorf("docs/format.md nennt `s:%s`, das die Wortliste des Tests nicht kennt (Schreiber, Beispiele, Leser prüfen)", m[1])
 		}
 	}
 	for n := range gesehen {

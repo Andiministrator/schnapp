@@ -283,17 +283,53 @@ func (l *leser) text(name string) string {
 	return v
 }
 
+// dezimal prüft die Schreibweise einer Zahl nach docs/format.md 5.2: nur Ziffern, Punkt, Minus und Exponent (`e`/`E`),
+// ein Plus nur als Vorzeichen des Exponenten (`1e+06`, wie der Schreiber es mit %g erzeugt). Hexadezimale Gleitkomma-
+// zahlen, Unterstriche, `+7`, `Inf` und `NaN` fallen hier heraus, obwohl strconv sie annähme.
+func dezimal(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		switch c := s[i]; {
+		case c >= '0' && c <= '9', c == '.', c == '-', c == 'e', c == 'E':
+		case c == '+' && i > 0 && (s[i-1] == 'e' || s[i-1] == 'E'):
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+// parseZahl liest eine Zahl in der Schreibweise von dezimal; ok ist falsch bei NaN, Inf und anderer Schreibweise.
+func parseZahl(s string) (float64, bool) {
+	if !dezimal(s) {
+		return 0, false
+	}
+	f, err := strconv.ParseFloat(s, 64)
+	return f, err == nil && !math.IsNaN(f) && !math.IsInf(f, 0)
+}
+
+// parseGanz liest eine ganze Zahl: optionales Minus, Ziffern, kein Plus (docs/format.md 5.2).
+func parseGanz(s string) (int, bool) {
+	if s == "" || s[0] == '+' {
+		return 0, false
+	}
+	n, err := strconv.Atoi(s)
+	return n, err == nil
+}
+
 func (l *leser) zahl(name string) float64 {
-	f, err := strconv.ParseFloat(l.text(name), 64)
-	if err != nil || math.IsNaN(f) || math.IsInf(f, 0) {
+	f, ok := parseZahl(l.text(name))
+	if !ok {
 		l.fehler("Zahl %s ungültig", name)
 	}
 	return f
 }
 
 func (l *leser) ganz(name string) int {
-	n, err := strconv.Atoi(l.text(name))
-	if err != nil {
+	n, ok := parseGanz(l.text(name))
+	if !ok {
 		l.fehler("Ganzzahl %s ungültig", name)
 	}
 	return n
@@ -301,9 +337,9 @@ func (l *leser) ganz(name string) int {
 
 func (l *leser) punkt(name string) document.Punkt {
 	x, y, ok := strings.Cut(l.text(name), ",")
-	fx, e1 := strconv.ParseFloat(x, 64)
-	fy, e2 := strconv.ParseFloat(y, 64)
-	if !ok || e1 != nil || e2 != nil {
+	fx, ok1 := parseZahl(x)
+	fy, ok2 := parseZahl(y)
+	if !ok || !ok1 || !ok2 {
 		l.fehler("Punkt %s ungültig", name)
 	}
 	return document.Pt(fx, fy)
@@ -311,11 +347,17 @@ func (l *leser) punkt(name string) document.Punkt {
 
 func (l *leser) farbe(name string) color.NRGBA {
 	v := l.text(name)
-	var c color.NRGBA
-	if n, err := fmt.Sscanf(v, "#%02x%02x%02x%02x", &c.R, &c.G, &c.B, &c.A); err != nil || n != 4 || len(v) != 9 {
+	// genau `#` und acht Hexziffern, in beiden Schreibweisen (docs/format.md 5.2); kein Leerraum, kein Vorzeichen
+	if len(v) != 9 || v[0] != '#' {
 		l.fehler("Farbe %s ungültig", name)
+		return color.NRGBA{}
 	}
-	return c
+	n, err := strconv.ParseUint(v[1:], 16, 32)
+	if err != nil {
+		l.fehler("Farbe %s ungültig", name)
+		return color.NRGBA{}
+	}
+	return color.NRGBA{R: uint8(n >> 24), G: uint8(n >> 16), B: uint8(n >> 8), A: uint8(n)}
 }
 
 func (l *leser) strich(name string) document.Strich {
@@ -356,7 +398,8 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 		version         = -1
 		hatZuschnitt    bool
 		inSchlagwort    bool
-		inObjekt        int // Tiefe des aktuellen Objekts, 0 = keins
+		inObjekt        int        // Tiefe des aktuellen Objekts, 0 = keins
+		eltern          []xml.Name // Vorfahren des aktuellen Elements
 	)
 	for {
 		tok, err := dec.Token()
@@ -372,10 +415,27 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 			if elemente++; elemente > maxElemente || tiefe > maxTiefe {
 				return nil, fmt.Errorf("%w: SVG zu groß oder zu tief", ErrZuGross)
 			}
+			elternteil := xml.Name{}
+			if len(eltern) > 0 {
+				elternteil = eltern[len(eltern)-1]
+			}
+			eltern = append(eltern, t.Name)
 			if inObjekt > 0 {
 				continue // Darstellung eines Objekts
 			}
 			l := &leser{a: attrs(t)}
+			// Ein Element mit s:typ ist ein Objekt (docs/format.md 8); die Strukturelemente tragen es nie, auch nicht
+			// leer. Ein leeres s:typ ist ebenfalls beschädigt, nicht „kein Objekt“.
+			_, hatTyp := l.a["typ"]
+			strukturell := tiefe == 1 || t.Name.Space == ns && (t.Name.Local == "meta" || t.Name.Local == "ansicht" ||
+				t.Name.Local == "streifen" && elternteil == (xml.Name{Space: ns, Local: "ansicht"}) ||
+				t.Name.Local == "schlagwort" && elternteil == (xml.Name{Space: ns, Local: "meta"}))
+			if hatTyp && strukturell {
+				return nil, fmt.Errorf("%w: s:typ an einem Strukturelement (%s)", ErrBeschaedigt, t.Name.Local)
+			}
+			if hatTyp && l.a["typ"] == "" {
+				return nil, fmt.Errorf("%w: leeres s:typ", ErrBeschaedigt)
+			}
 			switch {
 			case t.Name.Local == "svg" && tiefe == 1:
 				version = l.ganz("format")
@@ -391,19 +451,28 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 					}
 					in.meta.Erstellt = zeit
 				}
-			case t.Name.Space == ns && t.Name.Local == "schlagwort":
+			case t.Name.Space == ns && t.Name.Local == "schlagwort" && elternteil == (xml.Name{Space: ns, Local: "meta"}):
 				inSchlagwort = true
 				in.meta.Schlagworte = append(in.meta.Schlagworte, "")
 			case t.Name.Space == ns && t.Name.Local == "ansicht":
+				// vier ganze Zahlen, einzelne Leerzeichen, nichts davor oder danach (docs/format.md 5.2)
 				var z [4]int
-				if n, err := fmt.Sscanf(l.text("zuschnitt"), "%d %d %d %d", &z[0], &z[1], &z[2], &z[3]); err != nil || n != 4 {
+				teile := strings.Split(l.text("zuschnitt"), " ")
+				if len(teile) != 4 {
 					l.fehler("Zuschnitt ungültig")
+				} else {
+					for i, teil := range teile {
+						var ok bool
+						if z[i], ok = parseGanz(teil); !ok {
+							l.fehler("Zuschnitt ungültig")
+						}
+					}
 				}
 				in.zuschnitt, hatZuschnitt = image.Rect(z[0], z[1], z[2], z[3]), true
-			case t.Name.Space == ns && t.Name.Local == "streifen":
+			case t.Name.Space == ns && t.Name.Local == "streifen" && elternteil == (xml.Name{Space: ns, Local: "ansicht"}):
 				in.streifen = append(in.streifen, document.Streifen{Zeilen: l.text("zeilen") == "true",
 					Von: l.ganz("von"), Bis: l.ganz("bis")})
-			case l.a["typ"] != "":
+			case hatTyp:
 				if o := l.objekt(l.a["typ"]); o != nil {
 					in.objekte = append(in.objekte, o)
 				}
@@ -417,6 +486,7 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 				inObjekt = 0
 			}
 			inSchlagwort = false
+			eltern = eltern[:len(eltern)-1]
 			tiefe--
 		case xml.CharData:
 			if inSchlagwort {
