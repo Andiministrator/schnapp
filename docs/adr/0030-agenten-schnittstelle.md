@@ -163,3 +163,52 @@ oder 270 Grad (auch gespiegelt) sind Breite und Höhe gegenüber dem wl_output-M
 `WaylandOutput.Transform`, `ui.gedrehteGroesse` tauscht (`TestGedrehteGroesse`, alle acht Werte). Die Schlüssel
 bleiben gleich, nur die Werte stimmen jetzt. Gegen eine echt gedrehte Ausgabe ist das nicht gemessen: Der virtuelle
 KWin bietet keine Drehung über die Kommandozeile.
+
+## Nachtrag 4 (22.11.2026): Härtung des MCP-Servers nach der Sitzungs-QA (Karte #203, F-461 bis F-471)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #203; Befunde der Sitzungs-QA Sprint 12, Kritik A, Claude Fable 5.2).
+Die Entscheidungen zu F-461 und F-462 fielen in der sichereren Richtung (Register `docs/findings.md`, 22.11.2026).
+Ändert Nachtrag 2 dort, wo er abweicht.
+
+1. **Einwilligung und Orte aus dem echten Heim (F-461).** Den Server startet der Agenten-Client, und der setzt die
+   Umgebung — auch über eine `.mcp.json` in einem fremden Repo. Für `schnapp mcp` kommen deshalb `settings.ini` (alle
+   Werte, `[agents]` wie `[capture]` und die Sprache) und die Orte der Bibliothek (Ablage, Index, Vorschau, letzter
+   Bereich) aus dem Heimverzeichnis der Benutzerdatenbank (`os/user`), nicht aus `HOME` und nicht aus `XDG_*`: die
+   Einstellungen aus `<heim>/.config/schnapp/settings.ini`, der Bilderordner aus `<heim>/.config/user-dirs.dirs`, sonst
+   `<heim>/Pictures`. Weicht die Umgebung davon ab, schreibt der Server beim Start eine Warnung auf stderr und arbeitet
+   mit dem echten Heim. Ist es nicht bestimmbar, gelten die Voreinstellungen (Aufnehmen und Bibliothek aus), und
+   jedes Werkzeug, das einen Ort braucht, lehnt ab. Die Kommandozeile (Fassung 1) folgt weiter der Umgebung: Wer sie
+   aufruft, ist der Mensch oder sein Skript.
+2. **Ziele (F-462, F-465).** `output` (Aufnahme) und `target` (`export`) dürfen nicht in der Ablage und nicht im
+   Vorschau-Cache liegen; geprüft wird der Ordner des Ziels nach dem Auflösen seiner Symlinks. Ein vorhandenes Ziel
+   wird **nie ersetzt**: Die Datei entsteht exklusiv (harter Link der temporären Datei, wie beim Export mit
+   angehängter Endung), sonst lautet die Antwort „already exists“. Eine neue Datei bekommt bei `output` die Rechte
+   0600, bei `export` die der umask. Liegt `file` von `export` in der Ablage **oder** im Vorschau-Cache, braucht es
+   `library = yes`. Ist der Ort der Bibliothek nicht bestimmbar, lehnt der Server Aufnahmen mit `output` und jeden
+   Export ab. Das ersetzt für MCP den Satz „ersetzt ein vorhandenes Ziel“ aus Nachtrag 2 Punkt 3; `--output` und
+   `--export` der Kommandozeile bleiben, wie sie sind.
+3. **Monitorname (F-463).** `screen` muss ein Name aus der Monitorliste sein; ein unbekannter Name wird vor dem Dialog
+   abgelehnt. Der Name im Dialog- und Hinweistext ist maskiert (keine Steuerzeichen) und gekürzt wie der gemeldete
+   Name des Agenten.
+4. **Dialog nur per Mausklick (F-464).** Tastatur löst nie „Erlauben“ aus: Return, Leertaste und Tab-Fokus erreichen
+   den Knopf nicht (er ist kein fokussierbares Element). Esc, Schließen des Fensters und „Ablehnen“ (auch per
+   Tastatur) lehnen ab. Ein Klick auf „Erlauben“ zählt nur, wenn **Drücken und Loslassen** nach der Sperre von 600 ms
+   liegen; ein Drücken während der Sperre zählt auch nach ihrem Ende nicht.
+5. **Kind mit eigener Frist (F-469).** Das Dialog-Kind schließt nach der Frist des Servers plus 5 s selbst und lehnt
+   ab; spätestens 2 s danach beendet es sich hart. So bleibt kein Fenster stehen, wenn der Server stirbt.
+6. **Abbruch (F-467, F-469).** Nach einem Signal oder EOF startet der Server keinen weiteren Aufruf aus der
+   Warteschlange. Ein Werkzeug prüft den Abbruch zwischen seinen Schritten; eine Aufnahme, die nach dem Abbruch fertig
+   wird, wird verworfen (weder abgelegt noch an `output` geschrieben). Ein zweites SIGTERM/SIGINT/SIGHUP beendet den
+   Prozess sofort mit Exit 1 — für ein hängendes Werkzeug.
+7. **Grenze der Warteschlange (F-468).** Während ein Werkzeug läuft, hält der Server höchstens 64 Nachrichten und
+   8 MiB; darüber antwortet er auf eine Anfrage mit `-32600` („too many pending messages“) und verwirft sie,
+   Benachrichtigungen verwirft er still. Abbrüche der laufenden Anfrage zählen nicht mit.
+8. **Hinweis ist nur ein Hinweis (F-466).** „Hinweis gezeigt“ heißt: Der Benachrichtigungsdienst hat eine Kennung
+   vergeben. Ob ein Mensch sie sieht, weiß der Server nicht; „Nicht stören“ kann sie verbergen. Darum sendet er sie
+   mit Dringlichkeit `critical` (Byte 2); Plasma zeigt kritische Hinweise bei „Nicht stören“ nach Voreinstellung weiter
+   und lässt sie stehen, bis der Mensch sie wegklickt (nicht gemessen, Plasma-Einstellung „kritische Benachrichtigungen
+   zeigen“). Wer jede Aufnahme selbst sehen will, lässt `confirm = yes`.
+9. **Protokoll (F-470).** Gültiges JSON, das kein Objekt ist, ergibt `-32600` (nicht `-32700`). Eine Antwort des
+   Clients (Kennung mit `result` oder `error`, ohne Methode) bekommt keine Antwort. `ping` beantwortet der Server in
+   beiden Formen, auch ohne `_meta` (2026-07-28 kennt `ping` nicht mehr; die Antwort ist harmlos und hilft älteren
+   Clients).
