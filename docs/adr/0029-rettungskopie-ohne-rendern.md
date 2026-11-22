@@ -128,3 +128,28 @@ Was eine Bearbeitung ausmacht, ist dagegen klein und ohne Pixel beschreibbar:
   Schwärzungen laufen einmal, am Dokument, nachdem sie vorab geprüft sind.
 - **Bekannte Lücke (F-431):** Ein einzelnes vollflächiges Schwärzen eines Bilds über 128 Mi Pixel (etwa 11600²) als
   letzter Schritt vor einem Absturz ergibt eine Kopie über dem Budget; sie wird beim Öffnen abgelehnt und gemeldet.
+
+## Nachtrag 4 (22.11.2026): Rettungskopie-Reste aus Sprint 11 (F-410, F-413, F-417, F-431, F-432)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Andi informiert). Karte #179, Umsetzung 1fef69b (in main als Cherry-Pick).
+
+- **Pfad ohne gültiges UTF-8 (F-410):** Die Kennung trägt einen solchen Pfad zusätzlich roh (Base64) im Feld
+  `pfad_roh`; `pfad` zeigt eine lesbare Fassung mit U+FFFD. Ohne `pfad_roh` gilt `pfad` — ältere Kopien lesen sich
+  unverändert, das Format bleibt 1. Eine ältere Fassung legt eine Kopie mit `pfad_roh` als unlesbar beiseite; solche
+  Kopien waren dort ohnehin nie anwendbar.
+- **Zwei Fenster auf derselben Datei (F-413, ersetzt den letzten Satz von Nachtrag 2):** Jede Sitzung hält eine
+  flock-Sperre auf `<SHA-256 des Pfads>.lock` im Ordner der Rettungskopien (`internal/rescue/sperre.go`). Ein zweites
+  Fenster, das sie nicht bekommt, wendet keine Kopie an, legt keine beiseite, schreibt und löscht keine und sagt das in
+  der Statusleiste. Nach Ende oder Absturz des ersten gibt der Kern die Sperre frei. Das Ende einer Sitzung entfernt
+  die Sperrdatei; das Aufräumen entfernt eine alte nur, wenn niemand sie hält. Auf einem Dateisystem ohne flock läuft
+  die Sitzung ohne Sperre wie bisher. Die Sperre steht nicht in der Kopie, ihr Format bleibt. Offen: F-436.
+- **Keine Wartezeit auf der Ereignisschleife (F-417, ergänzt Punkt 4):** Schreiben, Löschen und das Setzen einer
+  neuen Ausgangsdatei laufen als Kette von Aufträgen in Goroutinen, in der Reihenfolge der Aufrufe; kein Aufruf wartet
+  auf die Platte, ein Löschen trifft nie eine später gewollte Kopie. Beim Schließen wartet die Sitzung höchstens 5 s;
+  danach endet sie trotzdem (Diagnose), die zuletzt gewollte Kopie ist dann womöglich nicht geschrieben. Offen: F-437.
+- **Flächenbudget beim Schreiben (F-431, ersetzt „Bekannte Lücke“ aus Nachtrag 3):** Die Sitzung schreibt keine Kopie,
+  deren Schwärzungen mehr belegen, als ein frisch geöffnetes Dokument aufnimmt (512 MiB, dieselbe Rechnung wie beim
+  Anwenden, `pruefeBudget`); die zuletzt geschriebene bleibt stehen, wie bei einem unvollständigen Verlauf
+  (Nachtrag 1).
+- **Dauer (F-432):** In Nachtrag 3 gilt statt „unter einer Sekunde“ „rund eine Sekunde“ (Mosaik knapp unter der
+  Grenze gemessen 0,92 s).
