@@ -68,3 +68,19 @@ Fehlertexte beginnen mit dem heutigen Paketnamen (F-114, Sprint 10).
   werden nachgezogen (F-339, Karte #150).
 - Oberflächentexte (`i18n.T`) sind keine Fehlertexte im Sinne der Regel; sie tragen kein Präfix.
 
+## Nachtrag 3 (22.11.2026): Hülle `internal/errprefix` (F-362, Sitzungs-QA 22.11. Q-7)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Andi informiert).
+
+- Umgesetzt sind `document`, `fileformat`, `export`, `library` (F-362) und `rescue`; dazu `capture` (F-339). Ungeprüft
+  sind `render`, `canvas`, `portal`, `settings`, `saveprogress` (F-379, Karte #168).
+- **`internal/errprefix`:** `Wrap(paket, err)` hüllt mit `"<paket>: %w"` und lässt einen Text, der schon mit dem
+  Präfix beginnt, unverändert. Ein `errors.Join` wird zweigweise gehüllt und bleibt ein Join, weil
+  `cmd/schnapp` (`sammleOhneUebersetzt`) den Baum der Speicherfehler durchgeht. Erkannt wird der Join am Typnamen
+  `*errors.joinError` der Standardbibliothek; `TestWrap` fällt, wenn Go ihn umbenennt. `Defer("paket", &fehler)` hüllt
+  das benannte Fehlerergebnis einer exportierten Funktion beim Verlassen.
+- **Block-Fehler in `fileformat`:** ein Fehler im Block snAO lautet „fileformat: snAO: …“ (`blockFehler`), nicht mehr
+  „snAO: fileformat: …“.
+- **Oberfläche:** Die Statusleiste nimmt die Paketpräfixe vor der Anzeige ab (`ohnePaketpraefix` beim Export), die
+  Paketnamen sagen dem Nutzer nichts.
+

@@ -425,7 +425,7 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Ein Zustand aus mehreren Merkern verlangt einen Prüflauf je Runde und eine Grenze.** Der Kopierfehler-Halt (drei
   Merker: `kopierFehlerHaelt`, `schliessenNachKopie`, `schliessenNachSpeichern`) bekam in drei Verify-Runden je neue
   Reihenfolgen (F-346 bis F-359). Was half: die roten Prüfer-Tests als echte Tests übernehmen, je geänderte Zeile einen
-  Mutanten in ein Skript (`tmp/sprint10/k154/mutanten.py`, 23 Mutanten, alle rot) und die Reste ab P2/P3 auf eine Karte
+  Mutanten in ein Skript (damals `tmp/sprint10/k154/mutanten.py`, heute `scripts/mutanten`, Gruppe `ui-kopieren`) und die Reste ab P2/P3 auf eine Karte
   statt in eine weitere Runde. Die Reste zeigen das fehlende Konzept („haltende Meldung“, Karte #156) — ein vierter
   Merker hätte es nicht gelöst.
 - **Belege aus Agenten-Worktrees vor dem Abräumen sichern und vergleichen.** Prüfer-Tests und Mutantenskripte nach

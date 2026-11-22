@@ -83,3 +83,23 @@ Was eine Bearbeitung ausmacht, ist dagegen klein und ohne Pixel beschreibbar:
 - **Meldungen** (englisch, deutsch in `de.po`): wiederhergestellt; nicht angewendet, weil die Datei geändert wurde;
   nicht anwendbar; nicht lesbar. Die Zeit erscheint als `JJJJ-MM-TT hh:mm` (Datumsformate je Sprache: Karte #28).
 
+## Nachtrag 2 (22.11.2026): Nacharbeit aus Verify 7 (Fable)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Andi informiert). F-384.
+
+- **Nicht angewendete Kopie wird beiseitegelegt** (Punkt 6): Passt die Kennung nicht, ist die Kopie unlesbar, einer
+  neueren Fassung oder über den Grenzen, benennt das Öffnen sie um in `<SHA-256 des Pfads>.<Zeit>.alt.json`. Die
+  Sitzung schreibt und löscht nur unter dem gewöhnlichen Namen; so bleibt die alte Kopie bis zum Aufräumen nach 30 Tagen,
+  wie die Meldung sagt. Scheitert das Umbenennen, schreibt und löscht diese Sitzung keine Kopie.
+- **Die Meldung nennt den Ort** relativ zum Zustandsordner (`schnapp/rescue/<Name>`), ohne Benutzerpfad (F-155).
+- **Bündelung** (Punkt 4): Ein laufender Zug (Ziehen, Texteingabe) hält die fällige Kopie nicht auf; sie trägt das
+  Objekt im Zug mit. Beim Beginn eines Speicherns wird eine noch nicht gesicherte Änderung sofort geschrieben, ohne
+  Bündelung — hängt das Speichern und folgt ein SIGKILL, wäre sie sonst verloren.
+- **Liste der Schwärzungen:** Nach jedem gelungenen Speichern gilt sie wieder als vollständig
+  (`document.SchwaerzungenGesichert`, von `canvas` gerufen), auch wenn der Verlauf dabei nicht geleert wurde.
+- **Blockgröße:** `document.Schwaerzen` klemmt eine Blockgröße über dem Bereich auf den Bereich (eine präparierte Kopie
+  ließ sonst die Blockteilung überlaufen).
+- **Offen:** Testlücken laut Mutationsprobe des Prüfers (F-385, Karte #77): Bündelung in der Schleife, `--ignore-limit`,
+  neue Ausgangsdatei nach dem Speichern, Aufräumen beim Start, Grenzen beim Lesen. Zwei Instanzen auf derselben Datei
+  sind nicht gegeneinander gesperrt (bewusst: Schnapp sperrt Dateien sonst auch nicht; F-110 schützt das Speichern).
+
