@@ -4,15 +4,16 @@ package library
 
 import (
 	"errors"
-	"image"
 	"image/color"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/fileformat"
+	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
 
 // standIn liefert den Stand einer Aufnahme der Ablage (wie der Editor beim Öffnen).
@@ -118,21 +119,6 @@ func TestSpeichernKonfliktBeiAenderungAnOrtUndStelle(t *testing.T) {
 	}
 }
 
-// ersetzendesBild ruft beim ersten Pixelzugriff (also mitten im Kodieren) wenn auf.
-type ersetzendesBild struct {
-	*image.NRGBA
-	wenn  func()
-	getan bool
-}
-
-func (b *ersetzendesBild) At(x, y int) color.Color {
-	if !b.getan {
-		b.getan = true
-		b.wenn()
-	}
-	return b.NRGBA.At(x, y)
-}
-
 // Wird die Datei während des Kodierens ersetzt (zweiter Vergleich kurz vor dem Umbenennen), bleibt die neue Fassung
 // und keine temporäre Datei liegt herum.
 func TestSpeichernKonfliktKurzVorDemErsetzen(t *testing.T) {
@@ -145,17 +131,26 @@ func TestSpeichernKonfliktKurzVorDemErsetzen(t *testing.T) {
 	s := standIn(t, b, e.Pfad)
 	voll := filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad))
 	fremd := []byte("zwischendurch ersetzt")
-	// Das Bild tauscht die Datei aus, während es kodiert wird — nach dem ersten Vergleich, vor dem zweiten.
-	bild := &ersetzendesBild{NRGBA: d.Ansichtsbild(), wenn: func() {
-		if err := os.WriteFile(voll+".neu", fremd, 0o600); err != nil {
-			t.Error(err)
+	// Die Datei wird nach dem Lesen der alten Fassung ausgetauscht — nach dem ersten Vergleich, vor dem zweiten. Über den
+	// Haken der Marke, nicht über den ersten Pixelzugriff: Den macht seit F-310 auch die nebenläufige Vorschau, mitunter
+	// vor dem Lesen der alten Datei, und dann meldet Speichern zu Recht ErrFremd (CI-Lauf zu e9b4cef).
+	var einmal sync.Once
+	t.Cleanup(func() { saveprogress.SetzeHaken(nil) })
+	saveprogress.SetzeHaken(func(schritt string) {
+		if schritt != "alte-datei-gelesen" {
+			return
 		}
-		if err := os.Rename(voll+".neu", voll); err != nil {
-			t.Error(err)
-		}
-	}}
+		einmal.Do(func() {
+			if err := os.WriteFile(voll+".neu", fremd, 0o600); err != nil {
+				t.Error(err)
+			}
+			if err := os.Rename(voll+".neu", voll); err != nil {
+				t.Error(err)
+			}
+		})
+	})
 	kasten(t, d, 1)
-	if _, _, err := b.Speichern(e.Pfad, s, d, bild); !errors.Is(err, ErrGeaendert) {
+	if _, _, err := b.Speichern(e.Pfad, s, d, d.Ansichtsbild()); !errors.Is(err, ErrGeaendert) {
 		t.Fatalf("Fehler %v (Soll ErrGeaendert)", err)
 	}
 	if jetzt, _ := os.ReadFile(voll); string(jetzt) != string(fremd) {
