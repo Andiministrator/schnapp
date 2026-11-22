@@ -133,6 +133,13 @@
     "neu": "{KantenSpaltHalb, KantenSpaltHalb + 0.8, mitDeckkraft(kantenSaum, 0x60)}"
   },
   {
+    "name": "K183-10 Abdunklung der oberen Kante fehlt (Karte #183, F-421)",
+    "datei": "internal/document/kante.go",
+    "paket": "./internal/render",
+    "alt": "\t{-KantenSpaltHalb - 1, -KantenSpaltHalb, mitDeckkraft(kantenDunkel, 0x13)},\n",
+    "neu": ""
+  },
+  {
     "name": "K183-8 Mindestrest mit alter halber Bandhöhe 11 (Karte #183)",
     "datei": "internal/canvas/zuschnitt.go",
     "paket": "./internal/canvas",
