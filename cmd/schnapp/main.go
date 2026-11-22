@@ -86,10 +86,17 @@ func laufe(args []string, aus, fehler io.Writer, monitore func() ([]ui.Monitor, 
 		fmt.Fprint(aus, hilfe())
 		return exitOK
 	case ModusVersion:
+		if a.JSON {
+			return gibJSONAus(aus, fehler, struct {
+				Version string `json:"version"`
+			}{versionsText()})
+		}
 		fmt.Fprintf(aus, i18n.T("Schnapp %s")+"\n", versionsText())
 		return exitOK
 	case ModusMonitorliste:
-		return gibMonitoreAus(aus, fehler, monitore)
+		return gibMonitoreAus(aus, fehler, monitore, a.JSON)
+	case ModusExport:
+		return exportiere(a, aus, fehler)
 	}
 	einst, warnungen := lade()
 	for _, w := range warnungen {
@@ -113,6 +120,10 @@ type Auftrag struct {
 	Datei string
 	// OhneGrenze: bei ModusOeffnen das Rechenbudget nicht prüfen (--ignore-limit, ADR-0017 Nachtrag 6).
 	OhneGrenze bool
+	// Ausgabe: --output=DATEI, die Aufnahme dorthin statt in die Bibliothek, ohne Editor (ADR-0030 Punkt 2).
+	Ausgabe string
+	// JSON: --json, das Ergebnis als eine Zeile JSON (ADR-0030 Punkt 1).
+	JSON bool
 }
 
 // Bildschirmziel sagt, welcher Monitor aufgenommen wird.
@@ -124,8 +135,9 @@ type Bildschirmziel struct {
 // plane löst den Aufruf mit den Einstellungen auf. Vorrang: Kommandozeile vor Datei vor Voreinstellung
 // (ADR-0018): --screen=NAME ignoriert [capture] screen, --screen ohne Wert folgt ihr.
 func plane(a Aufruf, e settings.Einstellungen) Auftrag {
-	t := Auftrag{Modus: a.Modus, Aufraeumen: e.Bibliothek, Editor: a.Modus.Aufnahme() && e.Editor && !a.OhneEditor,
-		Datei: a.Datei, OhneGrenze: a.OhneGrenze}
+	t := Auftrag{Modus: a.Modus, Aufraeumen: e.Bibliothek,
+		Editor: a.Modus.Aufnahme() && e.Editor && !a.OhneEditor && a.Ausgabe == "",
+		Datei:  a.Datei, OhneGrenze: a.OhneGrenze, Ausgabe: a.Ausgabe, JSON: a.JSON}
 	if a.Modus == ModusBildschirm {
 		if a.Bildschirm != "" {
 			t.Ziel = Bildschirmziel{Name: a.Bildschirm}
@@ -138,7 +150,7 @@ func plane(a Aufruf, e settings.Einstellungen) Auftrag {
 
 // hilfe liefert den Hilfetext.
 func hilfe() string {
-	return i18n.T("Usage: schnapp [option] | schnapp [--ignore-limit] FILE") + "\n\n" +
+	return i18n.T("Usage: schnapp [option] [--json] [--output=FILE] | schnapp [--ignore-limit] [--export=TARGET [--json]] FILE") + "\n\n" +
 		i18n.T("Take a screenshot. Without an option, you select an area (--region).") + "\n\n" +
 		"  --region       " + i18n.T("Select an area") + "\n" +
 		"  --screen       " + i18n.T("Capture a monitor, as set in the settings (default: pick by click)") + "\n" +
@@ -147,14 +159,17 @@ func hilfe() string {
 		"  --window       " + i18n.T("Select a window") + "\n" +
 		"  --repeat       " + i18n.T("Repeat the last area") + "\n" +
 		"  --no-editor    " + i18n.T("Do not open the editor after capturing") + "\n" +
+		"  --output=FILE  " + i18n.T("Write the screenshot to FILE (.png, .jpg, .svg) instead of the library") + "\n" +
+		"  --json         " + i18n.T("Print the result as one line of JSON") + "\n" +
 		"  FILE           " + i18n.T("Open FILE in the editor") + "\n" +
+		"  --export=TARGET FILE " + i18n.T("Export FILE to TARGET (.png, .jpg, .svg) without a window") + "\n" +
 		"  --ignore-limit " + i18n.T("Open FILE even if it is too costly to render") + "\n" +
 		"  -V, --version  " + i18n.T("Show the version") + "\n" +
 		"  -h, --help     " + i18n.T("Show this help") + "\n"
 }
 
-// gibMonitoreAus schreibt die Monitorliste nach aus.
-func gibMonitoreAus(aus, fehler io.Writer, monitore func() ([]ui.Monitor, error)) int {
+// gibMonitoreAus schreibt die Monitorliste nach aus, mit alsJSON als eine Zeile JSON (F-98, ADR-0030 Punkt 1).
+func gibMonitoreAus(aus, fehler io.Writer, monitore func() ([]ui.Monitor, error), alsJSON bool) int {
 	liste, err := monitore()
 	if err != nil {
 		fmt.Fprintf(fehler, i18n.T("Could not query the monitors: %v")+"\n", err)
@@ -163,6 +178,20 @@ func gibMonitoreAus(aus, fehler io.Writer, monitore func() ([]ui.Monitor, error)
 	if len(liste) == 0 {
 		fmt.Fprintln(fehler, i18n.T("No monitors found."))
 		return exitFehler
+	}
+	if alsJSON {
+		type bildschirm struct {
+			Name   string `json:"name"`
+			Width  int    `json:"width"`
+			Height int    `json:"height"`
+		}
+		j := struct {
+			Screens []bildschirm `json:"screens"`
+		}{Screens: []bildschirm{}}
+		for _, m := range liste {
+			j.Screens = append(j.Screens, bildschirm{m.Name, m.Breite, m.Hoehe})
+		}
+		return gibJSONAus(aus, fehler, j)
 	}
 	fmt.Fprintf(aus, i18n.N("%d monitor found:", "%d monitors found:", len(liste))+"\n", len(liste))
 	for _, m := range liste {

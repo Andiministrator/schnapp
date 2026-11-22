@@ -61,9 +61,12 @@ What exists:
 | `schnapp --no-editor …` | capture without opening the editor afterwards |
 | `schnapp FILE` | open a PNG or JPEG in the editor (also what "Open with" in a file manager runs; a JPEG with EXIF orientation is rotated or mirrored as image viewers show it, the EXIF data itself is not kept) |
 | `schnapp --ignore-limit FILE` | open the file even if it has so many or such large annotations that rendering exceeds the compute budget (for your own work that grew past it) |
+| `schnapp … --output=shot.png` | write the capture to `shot.png` (or `.jpg`, `.svg`) instead of the library, without the editor |
+| `schnapp --export=out.png FILE` | export FILE as it looks in the editor, without a window |
+| `schnapp … --json` | print the result (path and size, or the monitor list) as one line of JSON |
 
 Every capture is saved to the library (`~/Pictures/schnapp/YYYY-MM/`) and its path printed on standard output before
-the editor opens. Settings live in `~/.config/schnapp/settings.ini`, for example `[capture] open-editor = false`.
+the editor opens. Scripts and AI agents: see [`docs/agents.md`](docs/agents.md). Settings live in `~/.config/schnapp/settings.ini`, for example `[capture] open-editor = false`.
 
 In the editor, tools: **V** select, **A** arrow (drag; **Shift** snaps to 45°; drag the middle handle to bend it),
 **R** box (**Shift**: square), **T** text (click, type, **Enter** confirms, **Shift+Enter** new line, **Esc** discards;

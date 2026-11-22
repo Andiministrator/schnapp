@@ -72,6 +72,10 @@ func AusIndex(i int) Format {
 	return Formate[i]
 }
 
+// AusEndung liefert das Format nach der Endung von pfad (.png, .jpg/.jpeg, .svg, ohne Beachtung der
+// Groß-/Kleinschreibung) und ob die Endung bekannt ist (Kommandozeile, ADR-0030).
+func AusEndung(pfad string) (Format, bool) { return ausEndung(pfad) }
+
 // aus Endung (ohne Beachtung der Groß-/Kleinschreibung).
 func ausEndung(pfad string) (Format, bool) {
 	switch strings.ToLower(filepath.Ext(pfad)) {

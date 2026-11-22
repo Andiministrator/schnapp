@@ -35,8 +35,8 @@ msgstr "Die verfügbaren Optionen zeigt --help."
 msgid "Schnapp %s"
 msgstr "Schnapp %s"
 
-msgid "Usage: schnapp [option] | schnapp [--ignore-limit] FILE"
-msgstr "Aufruf: schnapp [Option] | schnapp [--ignore-limit] DATEI"
+msgid "Usage: schnapp [option] [--json] [--output=FILE] | schnapp [--ignore-limit] [--export=TARGET [--json]] FILE"
+msgstr "Aufruf: schnapp [Option] [--json] [--output=DATEI] | schnapp [--ignore-limit] [--export=ZIEL [--json]] DATEI"
 
 msgid "Take a screenshot. Without an option, you select an area (--region)."
 msgstr "Nimmt einen Screenshot auf. Ohne Option wird ein Bereich gewählt (--region)."
@@ -577,3 +577,37 @@ msgstr "Ungesicherte Änderungen vom %s nicht wiederhergestellt: Die Datei wurde
 
 msgid "Unsaved changes from %s could not be restored. The rescue copy is kept for 30 days in the state folder: %s"
 msgstr "Ungesicherte Änderungen vom %s ließen sich nicht wiederherstellen. Die Rettungskopie bleibt 30 Tage im Zustandsordner erhalten: %s"
+
+# cmd/schnapp: Schnittstelle für Skripte und Agenten (agenten.go, ADR-0030)
+msgid "Option %s needs a file name after an equals sign: %s=FILE."
+msgstr "Die Option %s braucht einen Dateinamen nach einem Gleichheitszeichen: %s=DATEI."
+
+msgid "Option %s cannot be given more than once with different files."
+msgstr "Die Option %s darf nicht mehrfach mit verschiedenen Dateien angegeben werden."
+
+msgid "Unknown file type for %s: use a name ending in .png, .jpg or .svg."
+msgstr "Unbekannter Dateityp für %s: Der Name muss auf .png, .jpg oder .svg enden."
+
+msgid "Option --export needs the file to export: --export=TARGET FILE."
+msgstr "Die Option --export braucht die zu exportierende Datei: --export=ZIEL DATEI."
+
+msgid "Write the screenshot to FILE (.png, .jpg, .svg) instead of the library"
+msgstr "Aufnahme nach DATEI schreiben (.png, .jpg, .svg) statt in die Bibliothek"
+
+msgid "Print the result as one line of JSON"
+msgstr "Ergebnis als eine Zeile JSON ausgeben"
+
+msgid "Export FILE to TARGET (.png, .jpg, .svg) without a window"
+msgstr "DATEI ohne Fenster nach ZIEL exportieren (.png, .jpg, .svg)"
+
+msgid "Could not write to standard output: %v"
+msgstr "Konnte nicht auf die Standardausgabe schreiben: %v"
+
+msgid "No permission to write there."
+msgstr "Keine Berechtigung, dort zu schreiben."
+
+msgid "The folder does not exist."
+msgstr "Den Ordner gibt es nicht."
+
+msgid "Could not write %s: %s"
+msgstr "Konnte %s nicht schreiben: %s"

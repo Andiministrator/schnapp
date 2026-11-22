@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Andiministrator/schnapp/internal/export"
 	"github.com/Andiministrator/schnapp/internal/i18n"
 )
 
@@ -21,6 +22,7 @@ const (
 	ModusVersion                   // --version
 	ModusHilfe                     // --help
 	ModusOeffnen                   // schnapp DATEI: Datei im Editor öffnen (ADR-0020)
+	ModusExport                    // --export=ZIEL DATEI: Datei ohne Fenster exportieren (ADR-0030 Punkt 3)
 )
 
 // Aufruf ist das ausgewertete Ergebnis der Kommandozeile.
@@ -36,6 +38,12 @@ type Aufruf struct {
 	Datei string
 	// OhneGrenze ist --ignore-limit: die Datei auch über dem Rechenbudget öffnen (ADR-0017 Nachtrag 6, F-146).
 	OhneGrenze bool
+	// JSON ist --json: bei Erfolg eine Zeile JSON auf stdout (ADR-0030 Punkt 1).
+	JSON bool
+	// Ausgabe ist --output=DATEI: die Aufnahme dorthin schreiben statt in die Bibliothek (ADR-0030 Punkt 2).
+	Ausgabe string
+	// Ziel ist bei ModusExport das Ziel von --export=ZIEL (ADR-0030 Punkt 3).
+	Ziel string
 }
 
 // Aufnahme meldet, ob der Modus eine Aufnahme ist (nur diese öffnen danach den Editor und vertragen --no-editor).
@@ -60,6 +68,8 @@ func (m Modus) Option() string {
 		return "--help"
 	case ModusOeffnen:
 		return "FILE"
+	case ModusExport:
+		return "--export"
 	}
 	return "--region"
 }
@@ -80,10 +90,35 @@ func Auswerten(args []string) (Aufruf, error) {
 		gesehen    bool
 		ohneEditor bool
 		ohneGrenze bool
+		alsJSON    bool
+		ausgabe    string
+		exportZiel string
 	)
 	for _, arg := range args {
 		if arg == "--ignore-limit" {
 			ohneGrenze = true
+			continue
+		}
+		if arg == "--json" {
+			alsJSON = true
+			continue
+		}
+		// Optionen mit Dateiwert (ADR-0030 Punkt 4): nur mit Gleichheitszeichen, mehrfach nur mit demselben Wert.
+		if name, wert, hatWert := strings.Cut(arg, "="); name == "--output" || name == "--export" {
+			ziel := &ausgabe
+			if name == "--export" {
+				ziel = &exportZiel
+			}
+			if !hatWert || wert == "" {
+				return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Option %s needs a file name after an equals sign: %s=FILE."), name, name)}
+			}
+			if *ziel != "" && *ziel != wert {
+				return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Option %s cannot be given more than once with different files."), name)}
+			}
+			if _, ok := export.AusEndung(wert); !ok {
+				return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Unknown file type for %s: use a name ending in .png, .jpg or .svg."), name)}
+			}
+			*ziel = wert
 			continue
 		}
 		if arg == "--no-editor" {
@@ -121,6 +156,8 @@ func Auswerten(args []string) (Aufruf, error) {
 			m = ModusVersion
 		case "--help", "-h":
 			m = ModusHilfe
+		case "--json":
+			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Option %s takes no value."), "--json")}
 		default:
 			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Unknown option: %s"), name)}
 		}
@@ -154,6 +191,27 @@ func Auswerten(args []string) (Aufruf, error) {
 			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Options %s and %s cannot be combined."), a.Modus.Option(), "--no-editor")}
 		}
 		a.OhneEditor = true
+	}
+	if exportZiel != "" {
+		if a.Modus != ModusOeffnen {
+			if !gesehen {
+				return Aufruf{}, &Fehler{i18n.T("Option --export needs the file to export: --export=TARGET FILE.")}
+			}
+			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Options %s and %s cannot be combined."), a.Modus.Option(), "--export")}
+		}
+		a.Modus, a.Ziel = ModusExport, exportZiel
+	}
+	if ausgabe != "" {
+		if !a.Modus.Aufnahme() {
+			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Options %s and %s cannot be combined."), a.Modus.Option(), "--output")}
+		}
+		a.Ausgabe = ausgabe
+	}
+	if alsJSON {
+		if a.Modus == ModusHilfe || a.Modus == ModusOeffnen {
+			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Options %s and %s cannot be combined."), a.Modus.Option(), "--json")}
+		}
+		a.JSON = true
 	}
 	return a, nil
 }

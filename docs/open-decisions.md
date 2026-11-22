@@ -88,7 +88,7 @@ Stand 21.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 - **Vor:** erste Oberflächentexte (Karte Übersetzbarkeit).
 
 ## E-14: Schnittstelle für Agenten und lokale KI (Kommandozeile, MCP-Server) — ENTSCHIEDEN 19.11.2026 (Andi folgt der Tendenz)
-- Kommandozeile mit `--output`/`--json` in der ersten Fassung, `schnapp mcp` (nur stdio, Einwilligung getrennt für Aufnehmen und Bibliothek-Lesen, Hinweis bei jeder MCP-Aufnahme) in der zweiten, kurze englische `docs/agents.md`. Umsetzung: ADR zuerst (Karte #43).
+- Kommandozeile mit `--output`/`--json` in der ersten Fassung, `schnapp mcp` (nur stdio, Einwilligung getrennt für Aufnehmen und Bibliothek-Lesen, Hinweis bei jeder MCP-Aufnahme) in der zweiten, kurze englische `docs/agents.md`. Umsetzung: ADR zuerst (Karte #43). ADR-0030 (22.11.2026): Fassung 1 umgesetzt (`--json`, `--output=DATEI`, `--export=ZIEL DATEI`, `docs/agents.md`), Fassung 2 (MCP) entschieden, eigene Karte.
 - **Frage:** Bekommt Schnapp von Anfang an eine Schnittstelle, über die KI-Agenten und lokale Modelle aufnehmen,
   beschriften, schwärzen, exportieren und die Bibliothek durchsuchen können — als skriptfähige Kommandozeile, als
   MCP-Server, beides? Braucht es dafür eine eigene Doku für Agenten? (Andi, 19.11.2026)

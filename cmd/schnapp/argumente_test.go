@@ -124,7 +124,7 @@ func TestLaufeEnglisch(t *testing.T) {
 		t.Errorf("--version: Code %d, Ausgabe %q, Soll %q", code, aus, soll)
 	}
 	code, aus, _ = fuehre(t, keineMonitore, "--help")
-	if code != exitOK || !strings.HasPrefix(aus, "Usage: schnapp [option] | schnapp [--ignore-limit] FILE\n") || !strings.Contains(aus, "--repeat") {
+	if code != exitOK || !strings.HasPrefix(aus, "Usage: schnapp [option] [--json] [--output=FILE] | schnapp [--ignore-limit] [--export=TARGET [--json]] FILE\n") || !strings.Contains(aus, "--repeat") {
 		t.Errorf("--help: Code %d, Ausgabe %q", code, aus)
 	}
 	code, _, fehler := fuehre(t, keineMonitore, "--quatsch")
@@ -203,7 +203,7 @@ func TestLaufeDeutsch(t *testing.T) {
 	i18n.Setze(k)
 	t.Cleanup(func() { i18n.Setze(nil) })
 	_, aus, _ := fuehre(t, keineMonitore, "--help")
-	if !strings.HasPrefix(aus, "Aufruf: schnapp [Option] | schnapp [--ignore-limit] DATEI\n") {
+	if !strings.HasPrefix(aus, "Aufruf: schnapp [Option] [--json] [--output=DATEI] | schnapp [--ignore-limit] [--export=ZIEL [--json]] DATEI\n") {
 		t.Errorf("--help deutsch: %q", aus)
 	}
 	zwei := func() ([]ui.Monitor, error) {

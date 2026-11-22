@@ -275,6 +275,18 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 	if err != nil {
 		return meldeFehler(fehler, err), nil
 	}
+	if t.Ausgabe != "" {
+		// --output (ADR-0030 Punkt 2): statt in die Bibliothek an den angegebenen Ort; kein Editor, kein Aufräumen.
+		abs, err := schreibeBild(d, t.Ausgabe)
+		diagnose(fehler, "Schreiben nach --output: %v", time.Since(start).Round(time.Millisecond))
+		if err != nil {
+			diagnose(fehler, "Ursache: %v", err)
+			fmt.Fprintf(fehler, i18n.T("Could not write %s: %s")+"\n", t.Ausgabe, schreibFehler(err))
+			return exitFehler, nil
+		}
+		gibPfadAus(aus, fehler, t.JSON, abs, d.Groesse()) // Exit 0 auch ohne Zeile, wie unten (F-180)
+		return exitOK, nil
+	}
 	pfad, stand, err := an.ablegen(d)
 	diagnose(fehler, "Ablegen in der Bibliothek: %v", time.Since(start).Round(time.Millisecond))
 	if err != nil && !(pfad != "" && errors.Is(err, library.ErrTempRest)) {
@@ -293,14 +305,13 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 		diagnose(fehler, "Ursache der temporären Kopie: %v", err)
 		fmt.Fprintln(fehler, i18n.T("Warning: a temporary copy of the screenshot could not be removed and may still show it after you redact it later."))
 	}
-	if _, err := fmt.Fprintln(aus, pfad); err != nil {
-		// Die Aufnahme liegt in der Bibliothek; nur die Pfadzeile ging verloren (F-162). Nicht verschlucken: Skripte
-		// verlassen sich auf sie. Der Exit-Code bleibt 0 (F-180): Die Aufnahme liegt vor, und der Editor öffnet
-		// trotzdem; ein Fehler-Code ließe ein Skript die Aufnahme wiederholen. Ist stdout eine geschlossene Pipe,
-		// beendet SIGPIPE das Programm wie jedes Go-Programm schon beim Schreiben (Go-Standard, bewusst so gelassen):
-		// Wer die Ausgabe nicht mehr liest, will auch keinen Editor.
-		fmt.Fprintf(fehler, i18n.T("Could not write the path to standard output: %v")+"\n", err)
-	}
+	// Die Aufnahme liegt in der Bibliothek; geht nur die Pfadzeile verloren, meldet gibPfadAus das (F-162). Nicht
+	// verschlucken: Skripte verlassen sich auf sie. Der Exit-Code bleibt 0 (F-180): Die Aufnahme liegt vor, und der
+	// Editor öffnet trotzdem; ein Fehler-Code ließe ein Skript die Aufnahme wiederholen. Ist stdout eine geschlossene
+	// Pipe, beendet SIGPIPE das Programm wie jedes Go-Programm schon beim Schreiben (Go-Standard, bewusst so gelassen):
+	// Wer die Ausgabe nicht mehr liest, will auch keinen Editor. Mit --json steht dieselbe Angabe als JSON-Zeile da
+	// (ADR-0030 Punkt 1).
+	gibPfadAus(aus, fehler, t.JSON, pfad, d.Groesse())
 	an.raeumeAuf(t.Aufraeumen, time.Now(), fehler)
 	return exitOK, &abgelegt{pfad: pfad, d: d, stand: stand}
 }

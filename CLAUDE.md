@@ -169,7 +169,8 @@ ADR-0003 Nachtrag 2, ADR-0015.
   ./cmd/schnapp`. Pakete: `i18n` (Sprachwahl, PO-Leser, `i18n.T/TK/N`), `po` (eingebettete `internal/po/*.po`, ADR-0014
   Nachtrag 1), `ui` (Schicht zu Gio; `Starte` hält die Gio-Hauptschleife, `Overlay` je Monitor),
   `cmd/schnapp` (Argumente `--region` [Voreinstellung], `--screen[=NAME]`, `--list-screens`, `--window`, `--repeat`,
-  `--no-editor`, `DATEI`, `--ignore-limit DATEI`, `--version`, `--help`; der Editor fängt SIGTERM/SIGINT/SIGHUP bis zur
+  `--no-editor`, `DATEI`, `--ignore-limit DATEI`, `--version`, `--help`; für Skripte und Agenten `--json`,
+  `--output=DATEI` (statt Bibliothek, ohne Editor) und `--export=ZIEL DATEI` in `agenten.go`, ADR-0030, `docs/agents.md`; der Editor fängt SIGTERM/SIGINT/SIGHUP bis zur
   Rückkehr ab und speichert im Hintergrund (ADR-0020 Nachträge 2, 6 und 7: Fristen 15 s / 2 min / 10 s in `internal/ui/editor.go`); bleiben Änderungen ungesichert, endet Schnapp mit Fehler, auch nach einer Aufnahme (`ungesichert` in `cmd/schnapp/editor.go`, Nachtrag 8), Strg+C-Proben nur im eigenen Terminal; `aufnehmen.go` nimmt auf und legt in der Bibliothek ab, Pfad auf
   stdout, dann Editor — erst nach der Rückkehr des Aufnahme-Aufrufs, mit dem abgelegten Dokument und dem Dateistand vom Ablegen (ADR-0020 Nachtrag 6, F-275), Exit 3 bei Abbruch; `editor.go` öffnet Dateien und speichert in die Bibliothek;
   `--screen` mit `[capture] screen = all` nimmt alle Monitore als ein Bild auf, ADR-0017 Nachtrag 7; `schnapp DATEI` auch über „Öffnen mit“ im Dateimanager, `%f` und `MimeType` in `data/schnapp.desktop.in`). **Tests, die Claude selbst fahren kann, fährt

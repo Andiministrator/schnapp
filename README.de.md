@@ -63,9 +63,12 @@ Vorhanden ist:
 | `schnapp --no-editor …` | aufnehmen, ohne danach den Editor zu öffnen |
 | `schnapp DATEI` | ein PNG oder JPEG im Editor öffnen (das startet auch „Öffnen mit“ im Dateimanager; ein JPEG mit EXIF-Ausrichtung wird gedreht oder gespiegelt, wie Bildbetrachter es zeigen, die EXIF-Angabe selbst bleibt nicht erhalten) |
 | `schnapp --ignore-limit DATEI` | die Datei auch öffnen, wenn ihre Beschriftungen so zahlreich oder groß sind, dass das Rendern das Rechenbudget überschreitet (für eigene Arbeit, die darüber hinausgewachsen ist) |
+| `schnapp … --output=bild.png` | die Aufnahme nach `bild.png` (oder `.jpg`, `.svg`) schreiben statt in die Bibliothek, ohne Editor |
+| `schnapp --export=aus.png DATEI` | DATEI so exportieren, wie der Editor sie zeigt, ohne Fenster |
+| `schnapp … --json` | das Ergebnis (Pfad und Größe oder die Monitorliste) als eine Zeile JSON ausgeben |
 
 Jede Aufnahme landet in der Bibliothek (`~/Bilder/schnapp/JJJJ-MM/`), ihr Pfad steht auf der Standardausgabe, bevor
-der Editor öffnet. Einstellungen stehen in `~/.config/schnapp/settings.ini`, etwa `[capture] open-editor = false`.
+der Editor öffnet. Skripte und KI-Agenten: siehe [`docs/agents.md`](docs/agents.md) (englisch). Einstellungen stehen in `~/.config/schnapp/settings.ini`, etwa `[capture] open-editor = false`.
 
 Im Editor, Werkzeuge: **V** Auswählen, **A** Pfeil (ziehen; **Umschalt** rastet auf 45°; mittleren Griff ziehen
 biegt ihn), **R** Kasten (**Umschalt**: Quadrat), **T** Text (klicken, tippen, **Enter** bestätigt, **Umschalt+Enter**
