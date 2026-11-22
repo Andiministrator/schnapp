@@ -17,8 +17,8 @@
     "name": "W3 Merker nur verbraucht, wenn fensterHaeltKopie gesetzt (F-328)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\tif !zwischenablageUebernommen.Swap(false) {\n\t\treturn false\n\t}\n\tif !e.fensterHaeltKopie {\n\t\treturn false\n\t}",
-    "neu": "\tif !e.fensterHaeltKopie {\n\t\treturn false\n\t}\n\tif !zwischenablageUebernommen.Swap(false) {\n\t\treturn false\n\t}"
+    "alt": "\tif !zwischenablageUebernommen.Swap(false) {\n\t\treturn false\n\t}\n\t// Für die Handprobe F-392: wann KWin cancelled schickt (nach fremdem Kopieren oder schon beim eigenen Strg+C).\n\tdiagnoseEditor(\"Zwischenablage übernommen (cancelled), Fenster hielt Kopie: %v\", e.fensterHaeltKopie)\n\tif !e.fensterHaeltKopie {\n\t\treturn false\n\t}",
+    "neu": "\tif !e.fensterHaeltKopie {\n\t\treturn false\n\t}\n\t// Für die Handprobe F-392: wann KWin cancelled schickt (nach fremdem Kopieren oder schon beim eigenen Strg+C).\n\tdiagnoseEditor(\"Zwischenablage übernommen (cancelled), Fenster hielt Kopie: %v\", e.fensterHaeltKopie)\n\tif !zwischenablageUebernommen.Swap(false) {\n\t\treturn false\n\t}"
   },
   {
     "name": "W5 Merker beim Start nicht zurückgesetzt (F-328)",
