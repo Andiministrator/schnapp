@@ -493,7 +493,11 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Oberflächentext den Weg suchen, der sie bricht (gleicher Dateiname, Aufräumen beim Schließen).
 - **„Ruht während X“ braucht eine Obergrenze** (V7-2, V7-7): Eine Bündelung, die bei Zug oder Speichern einfach
   aussetzt, lässt eine fertige Änderung beliebig lange ungesichert. Lieber vor dem Ereignis sofort sichern.
-- **Jede Stelle, die eine Meldung löscht, ist ein Weg, eine haltende Meldung zu verlieren** (Q-1): \ beim Export-Start lag neben allen geschützten Wegen. Bei einer Schutzregel nach allen Schreibern des
-  Felds suchen (\), nicht nur nach \.
+- **Jede Stelle, die eine Meldung löscht, ist ein Weg, eine haltende Meldung zu verlieren** (Q-1): `e.meldung =
+  canvas.Meldung{}` beim Export-Start lag neben allen geschützten Wegen. Bei einer Schutzregel nach allen Schreibern des
+  Felds suchen (`grep 'e.meldung ='`), nicht nur nach `melde(`.
+- **Backticks in einem doppelt gequoteten Einzeiler führt die Shell aus** (22.11., eigener Fehler, folgenlos):
+  Markdown mit Code-Spannen nie über `python3 -c "…"` schreiben, sondern mit dem Write- oder Edit-Werkzeug oder aus einer
+  Skriptdatei unter `tmp/`.
 - **Ein Prüfwerkzeug prüft zuerst seine Ausgangslage** (Q-3): Ohne grünen Lauf ohne Mutation gilt jeder Mutant als
   getötet.
