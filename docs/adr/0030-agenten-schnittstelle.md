@@ -67,3 +67,15 @@ und mit „ד gesetzt (F-98), und eine Aufnahme landet immer in der Bibliothek, 
 - `--output` umgeht die Bibliothek bewusst: Was so aufgenommen wird, taucht dort nicht auf und wird nicht aufgeräumt.
 - F-98 ist mit `--list-screens --json` behoben.
 - Beschriften und Schwärzen über die Kommandozeile sind noch offen; sie kommen mit Fassung 2 auf eigener Karte.
+
+## Nachtrag 1 (22.11.2026): Signalwache beim Schreiben von `--output`/`--export` (F-396)
+
+**Status:** Akzeptiert (Claude, Karte #176; Befund aus der Sitzungs-QA 22.11., Fable).
+
+Das Schreiben der Ausgabe von `--output` und `--export` läuft unter einer Signalwache (`mitSignalwache` in
+`cmd/schnapp/agenten.go`, SIGTERM/SIGINT/SIGHUP). Kommt ein Signal vor dem ersten Byte, bricht Schnapp ab, die
+temporäre Datei fällt weg, das Ziel bleibt unberührt, Exit 1. Kommt es nach dem Schreiben, ist die Datei vollständig,
+der Aufruf meldet trotzdem den Abbruch (Exit 1). Das Rendern liegt außerhalb der Wache; der Editor-Weg ist nicht
+betroffen. Restfall: SIGKILL oder Absturz (in `docs/agents.md` genannt). Test `cmd/schnapp/signalwache_test.go`,
+Mutant in `scripts/mutanten/cmd-agenten.json`; Rechte 0600 von `--output` prüft das Drehbuch
+`scripts/drehbuecher/agenten-kommandozeile.sh` im virtuellen KWin (F-405).
