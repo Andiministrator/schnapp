@@ -445,6 +445,22 @@ func TestFormatLeserRegeln(t *testing.T) {
 		t.Error(err)
 	}
 
+	// F-387: Die Version entscheidet vor dem Inhalt. Eine neuere Fassung mit unbekanntem Objekttyp ist „neuer“, nicht
+	// „beschädigt“; Version 0 und negative Versionen hat es nie gegeben.
+	neuerUnbekannt := strings.Replace(ersetze(`s:typ="kasten"`, `s:typ="ellipse"`), version,
+		`s:format="`+strconv.Itoa(FormatVersion+1)+`"`, 1)
+	if err := lies(png, neuerUnbekannt); !errors.Is(err, ErrFormatNeuer) {
+		t.Errorf("neuere Version mit unbekanntem Objekttyp: %v", err)
+	}
+	gleich("neuere Version mit unbekanntem Objekttyp", png, neuerUnbekannt)
+	for _, v := range []string{"0", "-1"} {
+		s := ersetze(version, `s:format="`+v+`"`)
+		if err := lies(png, s); !errors.Is(err, ErrBeschaedigt) || !strings.Contains(err.Error(), "Formatversion") {
+			t.Errorf("Version %s: %v", v, err)
+		}
+		gleich("Version "+v, png, s)
+	}
+
 	// Beschädigt oder zu groß: Sentinel und ein Teil des Fehlertexts.
 	abgelehnt := []struct {
 		name string

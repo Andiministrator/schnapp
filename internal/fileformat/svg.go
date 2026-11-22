@@ -438,7 +438,18 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 			}
 			switch {
 			case t.Name.Local == "svg" && tiefe == 1:
+				// Die Version entscheidet vor jedem Inhalt (docs/format.md 11, Regel 2, F-387): eine neuere Fassung
+				// darf nicht an ihren unbekannten Objekten als beschädigt scheitern; Version 0 gab es nie.
 				version = l.ganz("format")
+				if l.err != nil {
+					return nil, l.err
+				}
+				if version < 1 {
+					return nil, fmt.Errorf("%w: Formatversion %d ungültig", ErrBeschaedigt, version)
+				}
+				if version > FormatVersion {
+					return nil, fmt.Errorf("%w: %d > %d", ErrFormatNeuer, version, FormatVersion)
+				}
 				in.breite, in.hoehe = l.ganz("svg:width"), l.ganz("svg:height")
 			case tiefe == 1:
 				return nil, fmt.Errorf("%w: Wurzel ist kein svg", ErrBeschaedigt)
@@ -495,10 +506,8 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 		}
 	}
 	switch {
-	case version < 0:
+	case version < 1:
 		return nil, fmt.Errorf("%w: Formatversion fehlt", ErrBeschaedigt)
-	case version > FormatVersion:
-		return nil, fmt.Errorf("%w: %d > %d", ErrFormatNeuer, version, FormatVersion)
 	case !hatZuschnitt:
 		return nil, fmt.Errorf("%w: Ansicht fehlt", ErrBeschaedigt)
 	}

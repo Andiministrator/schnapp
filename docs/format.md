@@ -369,9 +369,9 @@ Original width and height are at least 1.
 2. **Version.** Read `s:format` first. A version greater than the highest one the reader supports MUST be rejected as
    "newer"; the reader MUST NOT interpret such a file (the layout may differ in any respect) and SHOULD offer the
    visible image as a plain picture; it MUST NOT save over the file, or the newer layers would be lost. A version
-   that is missing or not an integer is damaged. Older supported versions MUST be read. (The reference reader checks
-   the version after parsing the whole document, so a newer file that also contains an object type unknown to it is
-   reported as damaged rather than as newer; either way the file is rejected and offered as a plain picture.)
+   that is missing, not an integer, or less than 1 is damaged. Older supported versions MUST be read. The version is
+   decided before any other content is judged, so a newer file that also contains an object type unknown to the
+   reader is reported as newer, not as damaged.
 3. **Unknown content.** Attributes or elements that are not defined here and are not an object (`s:typ`) MUST be
    ignored, whatever their namespace; so are the presentation elements and attributes. Position matters for two elements: `s:streifen` counts only as a direct child of `s:ansicht`, and `s:schlagwort` only as a direct child of `s:meta`; anywhere else they are unknown content and have no effect (they are neither data nor damage). Readers MUST NOT accept them elsewhere, so that all readers see the same strips and keywords. Unknown *object types* are not
    ignored (8.5). Unknown content is not preserved when the reader saves the file.
