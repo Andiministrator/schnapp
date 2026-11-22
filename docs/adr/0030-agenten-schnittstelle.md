@@ -89,3 +89,67 @@ Mutant in `scripts/mutanten/cmd-agenten.json`; Rechte 0600 von `--output` prüft
   stellt nichts wieder her. Ohne Namen einer temporären Datei meldet sie, dass das Schreiben nicht begonnen hat und das
   Ziel unverändert ist; ist die temporäre Datei schon umbenannt, dass die Datei vollständig war.
 
+
+## Nachtrag 2 (22.11.2026): Fassung 2 im Einzelnen — Protokoll, Einstellungen, Bestätigung, Ablage (Karte #173)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #173; Entscheidungen Andi vom 22.11.2026 im Kommentar an der Karte:
+Einstellungen `[agents]`, Bild direkt an den Agenten, Bestätigungsdialog, eigener Unterordner; Frist des Dialogs von
+Claude gesetzt). Ersetzt die Punkte 7 bis 9 dort, wo sie abweichen.
+
+Quelle zum Protokoll: `knowledge/sources/mcp-2026-07-28.md` (Spezifikation 2026-07-28, ohne `initialize`).
+
+1. **Protokoll, zwei Epochen.** `schnapp mcp` spricht JSON-RPC 2.0 zeilenweise über stdin/stdout, sonst nichts auf
+   stdout; Meldungen nur auf stderr. Neue Form (2026-07-28): jede Anfrage trägt `_meta` mit
+   `io.modelcontextprotocol/protocolVersion` und `…/clientCapabilities`; `server/discover` meldet
+   `supportedVersions`, `capabilities: {"tools":{}}` und `serverInfo`; fehlt ein Pflichtfeld, `-32602`; unbekannte
+   Version `-32022` mit `supported`/`requested`. Altform (2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05): eine
+   `initialize`-Anfrage wählt sie, die Antwort nennt die angefragte Version, wenn bekannt, sonst 2025-11-25; dazu
+   `ping`. Jedes Ergebnis trägt `resultType: "complete"`; `tools/list` trägt `ttlMs` (1 h) und `cacheScope`
+   (`"private"`). JSON-Arrays (Batching) lehnt der Server mit `-32600` ab, unbekannte Methoden mit `-32601`,
+   unlesbare Zeilen mit `-32700`; Benachrichtigungen bekommen keine Antwort. Zeilen über 1 MiB gelten als unlesbar.
+   Anfragen laufen nacheinander. Bei EOF auf stdin endet der Server; SIGTERM/SIGINT beenden ihn ebenso (ein
+   laufender Dialog wird geschlossen, eine laufende Aufnahme verworfen).
+2. **Einstellungen `[agents]`** (ADR-0018), alle global, gelesen **bei jedem Werkzeugaufruf** (ein Widerruf in der
+   Datei wirkt sofort, ohne Neustart des Servers):
+   - `capture = no` — Aufnehmen erlaubt (Voreinstellung aus).
+   - `library = no` — Bibliothek suchen und Bilder daraus lesen (Voreinstellung aus).
+   - `confirm = yes` — vor jeder Aufnahme ein Bestätigungsdialog (Punkt 4).
+   - `image = yes` — das Bild geht als Bildinhalt (PNG, Base64) an den Agenten; mit `no` nur Pfad und Größe.
+   Ein ungültiger Wert gilt als Voreinstellung (mit Warnung auf stderr) — für `capture`/`library` also als „aus“.
+   Der Server schreibt die Datei nie.
+3. **Werkzeuge** (Namen und JSON-Schlüssel sind Oberfläche; die Liste ist immer vollständig, auch ohne
+   Einwilligung — die Spezifikation verlangt dieselbe Liste für jede Verbindung):
+   - `list_screens {}` → `{"screens":[{"name","width","height"}]}` (wie `--list-screens --json`), keine Einwilligung.
+   - `capture_screen {screen?, all?, output?}` — ein Monitor nach Name, alle mit `all: true`; ohne beides gilt
+     `[capture] screen = all` als „alle“, sonst der aktive Monitor (KWin `CaptureActiveScreen`). Kein Overlay.
+   - `capture_repeat {output?}` — der zuletzt gewählte Bereich (`--repeat`).
+   - `library_search {tag?, from?, to?, limit?, agents?}` — neueste zuerst, `limit` 1–50 (Voreinstellung 20),
+     `from`/`to` als RFC 3339 oder `JJJJ-MM-TT`, `agents: false` blendet Agenten-Aufnahmen aus. Antwort je Eintrag
+     `path` (absolut), `created`, `width`, `height`, `tags`, `agent`. Braucht `library`.
+   - `library_read {path}` — das sichtbare Bild eines Eintrags; `path` absolut oder relativ zur Ablage, muss nach
+     dem Auflösen von Symlinks in der Ablage liegen. Braucht `library`.
+   - `export {file, target}` — wie `--export` (Pfade absolut). Liegt `file` in der Ablage, braucht es `library`.
+   Aufnahmen und `library_read` antworten mit `structuredContent {path,width,height}`, demselben JSON als Text und,
+   mit `image = yes`, dem Bild als `image/png` — höchstens 8 MiB PNG, sonst nur ein Satz, dass es zu groß ist. `output`
+   gilt wie `--output` (Endung, atomar, 0600, ersetzt ein vorhandenes Ziel, kein Bibliothekseintrag) und muss absolut
+   sein. Ohne Einwilligung antwortet das Werkzeug mit `isError: true` und einem englischen Satz, der den Schalter und
+   die Datei nennt.
+4. **Bestätigung** (`confirm = yes`): Vor der Aufnahme startet der Server sich selbst als Kindprozess
+   (`schnapp --internal-confirm-capture`, wie der Halter `--internal-keep-clipboard`) mit einem kleinen Fenster:
+   „Ein Agent möchte <Monitor / alle Monitore / den letzten Bereich> aufnehmen“, darunter der vom Agenten gemeldete
+   Name (`clientInfo.name`, ungeprüft, maskiert, höchstens 60 Zeichen, als solcher gekennzeichnet), Knöpfe „Erlauben“
+   und „Ablehnen“. Esc, Schließen und jeder Fehler heißen Ablehnen; Eingabe löst nichts aus. Erlaubt ist nur Exit 0
+   des Kindes. **Frist 60 s**, dann beendet der Server das Kind und lehnt ab. Fällt der Dialog aus (kein Wayland,
+   Start scheitert), scheitert die Aufnahme. Aufgenommen wird erst, wenn das Kind beendet ist, mit 300 ms Abstand,
+   damit das Fenster nicht im Bild steht. Kein „immer erlauben“.
+5. **Hinweis** (Punkt 8 bleibt): Nach jeder Aufnahme, vor dem Ablegen, schickt der Server eine Desktop-Benachrichtigung
+   „Schnapp hat für einen Agenten aufgenommen: <Ziel>“ (übersetzt). Scheitert sie, wird das Bild verworfen und die
+   Aufnahme scheitert — auch mit `confirm = yes`.
+6. **Ablage:** Agenten-Aufnahmen ohne `output` landen in der Bibliothek unter
+   `<Bilderordner>/schnapp/agents/<JJJJ-MM>/…png` (Index-Pfad `agents/…`), mit demselben Aufräumen; der Neuaufbau
+   findet sie wie jede Aufnahme. Die Bibliotheks-Oberfläche blendet sie per Schalter ein (Karte der
+   Bibliotheks-Oberfläche).
+7. **Beschriften und Schwärzen über die Kommandozeile** sind aus Karte #173 herausgelöst (eigene Karte); die
+   MCP-Werkzeuge dazu folgen mit ihr.
+8. **Schichten:** Das Protokoll liegt im Paket `internal/mcp` (ohne Gio, ohne Wissen über Schnapp), die Werkzeuge in
+   `cmd/schnapp/mcp.go` auf denselben Kernschichten wie die Kommandozeile, der Dialog in `internal/ui`.

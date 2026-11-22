@@ -114,6 +114,18 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | https://api.github.com/repos/actions/checkout/releases/tags/v6.0.0 | 2026-11-21 | 2026-11-21 | live | curl | Release-Notes v6.0.0 (Zugangsdaten in separater Datei) | knowledge/sources/github-actions-node24.md |
 | https://api.github.com/repos/Andiministrator/schnapp/commits/<sha>/check-runs, …/check-runs/<id>/annotations | 2026-11-21 | 2026-11-21 | live | curl | Annotationen: Lauf #158 eine („Node.js 20 is deprecated“), #159 keine (F-309) | knowledge/topics/lehren.md (Sprint 9) |
 
+## Model Context Protocol (Karte #173, ADR-0030 Nachtrag 2)
+
+| URL | Letzter Besuch | Erstbesuch | Status | Weg | Inhalt | Zieldatei |
+|---|---|---|---|---|---|---|
+| https://modelcontextprotocol.io/specification/2026-07-28/changelog | 2026-11-22 | 2026-11-22 | live | WebFetch | Handshake, ping, setLevel entfallen; `resultType`; `-32022` | `knowledge/sources/mcp-2026-07-28.md` |
+| https://modelcontextprotocol.io/docs/2026-07-28/learn/versioning | 2026-11-22 | 2026-11-22 | live | WebFetch | aktuelle Version 2026-07-28; Zwei-Epochen-Regel | `knowledge/sources/mcp-2026-07-28.md` |
+| https://modelcontextprotocol.io/specification/2026-07-28/basic/lifecycle | 2026-11-22 | 2026-11-22 | live | WebFetch | „Versioning and Compatibility“ | `knowledge/sources/mcp-2026-07-28.md` |
+| https://modelcontextprotocol.io/specification/2026-07-28/basic/index | 2026-11-22 | 2026-11-22 | live | WebFetch | `_meta`-Schlüssel je Anfrage, `-32602` | `knowledge/sources/mcp-2026-07-28.md` |
+| https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio | 2026-11-22 | 2026-11-22 | live | WebFetch | Zeilen-JSON, stdout nur Protokoll, Ende bei EOF, Probe mit `server/discover` | `knowledge/sources/mcp-2026-07-28.md` |
+| https://modelcontextprotocol.io/specification/2026-07-28/server/discover | 2026-11-22 | 2026-11-22 | live | WebFetch | Antwortform `server/discover` | `knowledge/sources/mcp-2026-07-28.md` |
+| https://modelcontextprotocol.io/specification/2026-07-28/server/tools | 2026-11-22 | 2026-11-22 | live | WebFetch | Werkzeug- und Ergebnisform, `isError`, Bildinhalt | `knowledge/sources/mcp-2026-07-28.md` |
+
 ## Suchanfragen
 
 | Datum | Anfrage | Ergebnis |
@@ -125,3 +137,4 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | 2026-11-21 | Gio gioui contributing patches mailing list sourcehut send-email | gio-patches auf lists.sr.ht, git send-email, --signoff Pflicht, GitHub-PR als Ersatz |
 | 2026-11-21 | gioui.org latest release version 2026 | v0.10.3 aktuell (Newsletter Sept. 2026) |
 | 2026-11-21 | gioui contribute AI generated code policy LLM patches Elias Naur | keine Gio-eigene KI-Regel gefunden |
+| 2026-11-22 | Model Context Protocol specification latest protocol version 2026 stdio lifecycle initialize (nur modelcontextprotocol.io) | aktuelle Revision 2026-07-28 ohne initialize-Handshake |
