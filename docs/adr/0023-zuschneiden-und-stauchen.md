@@ -269,3 +269,28 @@ Menüeintrag bleiben.
   zählt die neuen Schichten; F-407 (Mischung im Editor), F-421 (Schichttabelle als Literal-Soll), F-422 (SVG-Größe)
   und F-430 (Rastern) beziehen sich danach auf die neuen Schichten. `docs/format.md` ändert sich nicht im Format
   (`s:kante` bleibt), nur in der informativen Beschreibung der Darstellung.
+- **Schichttabelle (umgesetzt, Karte #183, Commits in main nach 9e07984):** Maße bei Faktor 1 quer zur Mittellinie,
+  negativ oben/links, in Zeichenreihenfolge. Der Spalt −8..8 (`document.Spaltband`) ist keine Schicht: Renderer
+  radiert ihn (Alpha 0, erst die Spalte aller Nähte, dann alle Schichten), der SVG-Export legt Bild und Objekte unter
+  eine Maske, der Editor zeigt ein Schachbrett (`internal/ui/schachbrett.go`, 8 px, #9A9EA3/#7A7E83).
+
+  | # | von | bis | Farbe | Deckkraft (A) | Zweck |
+  |---|---|---|---|---|---|
+  | 1 | −9,6 | −8 | #FFFFFF | 0x30 | Fasersaum oben/links |
+  | 2 | −8,8 | −8 | #FFFFFF | 0x76 | Fasersaum oben/links |
+  | 3 | 8 | 9,6 | #FFFFFF | 0x30 | Fasersaum unten/rechts |
+  | 4 | 8 | 8,8 | #FFFFFF | 0x76 | Fasersaum unten/rechts |
+  | 5 | −10 | −8 | #000000 | 0x08 | Abdunklung oben/links |
+  | 6 | −9 | −8 | #000000 | 0x13 | Abdunklung oben/links |
+  | 7 | 8 | 10 | #000000 | 0x05 | Abdunklung unten/rechts (× 0,7) |
+  | 8 | 8 | 9 | #000000 | 0x0D | Abdunklung unten/rechts (× 0,7) |
+  | 9 | −8 | −1 | #101214 | 0x08 | Schatten der oberen/linken Kante in den Spalt |
+  | 10 | −8 | −4 | #101214 | 0x10 | Schatten |
+  | 11 | −8 | −6 | #101214 | 0x18 | Schatten |
+  | 12 | −8 | −7 | #101214 | 0x20 | Schatten |
+
+  Übereinander je Tiefe s ab der Spaltkante: Saum 0–0,8 → 0,56, 0,8–1,6 → 0,19; Abdunklung 0–1 → 0,10, 1–2 → 0,03
+  (unten 0,07/0,02); Schatten 0–1, 1–2, 2–4, 4–7 → 0,28, 0,18, 0,09, 0,03. Saum ohne Schwankung (erlaubt oben).
+  Auslenkung Abriss 0,9 · 6,15 = 5,54 ≤ 6; `ZackenBandHalb` = 6 + 8 + 2 = 16 (Teiler im Faktor-Deckel 128). Je Naht
+  13 Füllungen (12 Schichten und der Spalt); JPEG legt das Bild wie bisher in `fileformat.ExportiereJPG` auf Weiß.
+  Offen: F-438 (Saum einer Naht im Spalt der kreuzenden), F-439.
