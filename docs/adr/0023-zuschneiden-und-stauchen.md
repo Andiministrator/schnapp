@@ -243,3 +243,29 @@ Anlass: Die Zackenkante war erkennbar, aber nicht schön (Andi, Echtlauf #92).
 - **Ergänzung 22.11.2026 (F-418):** Die Mittellinie wird je Form, Länge und Faktor einmal gerechnet
   (`document.Kantenlinie`), die Schichten verschieben sie nur quer (`Band`). Die Zahlen, die Renderer, Editor und
   SVG-Export bekommen, sind unverändert (ganze Hundertstel, Schichttabelle wie oben; `testdata/format/` unverändert).
+
+## Nachtrag 7 (22.11.2026): Naht durchsichtig, Kanten nur als Papier-Abriss angedeutet (Karte #183)
+
+**Status:** Akzeptiert (Andi 22.11.2026: „die naht sollte transparent sein und nur die kanten angedeutet wie
+abgerissen“; Wahl „2, aber etwas mehr (vertikaler) abstand zwischen den beiden hälften“). Referenzbild
+`docs/adr/bilder/0023-naht-durchsichtig-muster.png` (mittlere Zeile, 16 px). Ersetzt aus Nachtrag 6 den grauen Spalt
+und die Schichttabelle; Formen (Abriss, Welle, Zacken), Speicherung (`s:kante`), Einstellung `[capture] seam` und
+Menüeintrag bleiben.
+
+- **Spalt:** 16 px bei Faktor 1 (je 8 px beiderseits der Mittellinie), **durchsichtig** — keine Füllfarbe mehr. Beide
+  Kanten haben dieselbe Form. Auslenkung des Abrisses 0,9 statt 0,8 (wie im gewählten Muster).
+- **Kanten (Papier-Abriss):** am Rand jedes Bildteils ein heller Fasersaum (rund 1,6 px, Deckung bis 0,75 zum Weiß
+  hin) und eine leichte Abdunklung der Kante (0,18·e^(−d/0,8), am unteren bzw. rechten Teil × 0,7); dazu ein feiner
+  Schatten der oberen bzw. linken Kante in den Spalt (0,35·e^(−d/2,2), dunkel, halbdurchsichtig).
+- **Wie bisher ohne Filter:** Saum, Abdunklung und Schatten sind wenige gestufte Bänder derselben Form, damit Editor,
+  Renderer und SVG-Export gleich zeichnen. Die Schwankung des Saums im Muster entfällt, wenn sie sich nicht in allen
+  drei Ausgängen gleich darstellen lässt. Die neue Schichttabelle steht nach der Umsetzung hier.
+- **Ausgaben:** PNG und Zwischenablage tragen den Spalt als Alpha (durchsichtig, der Schatten halbdurchsichtig); SVG
+  lässt den Spalt leer. JPEG kennt keine Durchsicht: dort wird der Spalt **weiß** gefüllt (wie Papier), der Schatten
+  darauf gemischt. Der Editor zeigt Durchsicht als Schachbrett (übliche Darstellung in Bildprogrammen).
+- **Kantenform ohne Naht:** Der Menüeintrag „Kantenform“ ist grau, solange das Dokument keine Naht hat (Entscheidung
+  Claude, F-426) — sonst gälte ein nur angesehenes Bild als geändert.
+- **Folgen:** Bandhöhe, Zackenfaktor-Deckel, Mindestrest und Trefferweite folgen der neuen Breite; das Rechenbudget
+  zählt die neuen Schichten; F-407 (Mischung im Editor), F-421 (Schichttabelle als Literal-Soll), F-422 (SVG-Größe)
+  und F-430 (Rastern) beziehen sich danach auf die neuen Schichten. `docs/format.md` ändert sich nicht im Format
+  (`s:kante` bleibt), nur in der informativen Beschreibung der Darstellung.
