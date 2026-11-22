@@ -558,8 +558,8 @@
     "name": "M5b F-446 Sichere entscheidet vor der Kette über aus",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "(s.aus && s.wechsel == 0)",
-    "neu": "s.aus"
+    "alt": "\tif (s.gestoert || s.aus) && s.wechsel == 0 {",
+    "neu": "\tif s.gestoert || s.aus {"
   },
   {
     "name": "M5c F-446 je Sichere ein Auftrag in der Kette",
@@ -644,7 +644,7 @@
     "name": "T1 F-436 fremdes Fenster holt die Sperre nicht nach",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "func (s *Sicherung) schreibeWartende(gen uint64) {\n\ts.uebernehmen()\n",
+    "alt": "func (s *Sicherung) schreibeWartende(gen uint64) {\n\ts.uebernehmen(gen)\n",
     "neu": "func (s *Sicherung) schreibeWartende(gen uint64) {\n"
   },
   {
@@ -658,8 +658,52 @@
     "name": "T3 F-436 Sichere verwirft eine fremde Sitzung vorab",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "\tif s.gestoert || (s.aus && s.wechsel == 0) {",
+    "alt": "\tif (s.gestoert || s.aus) && s.wechsel == 0 {",
     "neu": "\tif s.stumm() {"
+  },
+  {
+    "name": "T4 F-460 Übernahme legt auch ohne Kopie beiseite",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\tif _, err := os.Lstat(filepath.Join(s.ort, Name(pfad))); err != nil {",
+    "neu": "\tif _, err := os.Lstat(filepath.Join(s.ort, Name(pfad))); false && err != nil {"
+  },
+  {
+    "name": "T5 F-460 gescheitertes Beiseitelegen bei der Übernahme macht nicht stumm",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\t\ts.Diagnose(err)\n\t\ts.mu.Lock()\n\t\ts.aus = true\n\t\ts.mu.Unlock()\n\t}\n}\n",
+    "neu": "\t\ts.Diagnose(err)\n\t}\n}\n"
+  },
+  {
+    "name": "G1 F-457 Sichere entscheidet vor der Kette über gestoert",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\tif (s.gestoert || s.aus) && s.wechsel == 0 {",
+    "neu": "\tif s.gestoert || (s.aus && s.wechsel == 0) {"
+  },
+  {
+    "name": "G2 F-456 Übernahme liest die Basis der Aufrufe statt der Kette",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\tfremd, pfad, verfallen := s.fremd, s.kettenBasis, gen != s.gen\n",
+    "neu": "\tfremd, pfad, verfallen := s.fremd, s.basis.Pfad, gen != s.gen\n",
+    "aequivalent": true,
+    "grund": "uebernehmen liest unter derselben Sperre (mu) auch gen: Ist der Auftrag nicht verfallen, gab es seit dem Sichere kein NeueBasis, alle früheren NeueBasis-Aufträge sind gelaufen, also ist basis.Pfad gleich kettenBasis. kettenBasis bindet die Übernahme ausdrücklich an den Stand der Kette (F-456); rot wird die Rücknahme zusammen mit der von G3, siehe G4 (TestFremdSichereDannNeueBasisLaesstKopieVonA)."
+  },
+  {
+    "name": "G3 F-456 verfallener Auftrag holt die Sperre nach",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\tfremd, pfad, verfallen := s.fremd, s.kettenBasis, gen != s.gen\n",
+    "neu": "\tfremd, pfad, verfallen := s.fremd, s.kettenBasis, false\n"
+  },
+  {
+    "name": "G4 F-456 Übernahme liest die Basis der Aufrufe und auch verfallene Aufträge übernehmen",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\tfremd, pfad, verfallen := s.fremd, s.kettenBasis, gen != s.gen\n",
+    "neu": "\tfremd, pfad, verfallen := s.fremd, s.basis.Pfad, false\n"
   },
   {
     "name": "X1 F-451 Erzeuge ohne Präfix",
