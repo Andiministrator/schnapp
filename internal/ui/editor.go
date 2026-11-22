@@ -270,11 +270,14 @@ type editor struct {
 	letzterOrt   document.Punkt
 	hatDruck     bool
 
-	// naht hält die Zackenkanten als aufgezeichnete Ops (Ansichtskoordinaten), bis sich Ansichtsgröße oder Nähte
-	// ändern (F-183): Bei vielen Nähten in einem breiten Bild baute der Editor sonst jedes Bild alle Pfade neu.
+	// naht hält die Kanten der Nähte als aufgezeichnete Ops (Ansichtskoordinaten), bis sich Ansichtsgröße, Nähte,
+	// Kantenform oder Zackenfaktor ändern (F-183, ADR-0023 Nachtrag 6): Bei vielen Nähten in einem breiten Bild baute der
+	// Editor sonst jedes Bild alle Pfade neu.
 	naht struct {
 		groesse image.Point
 		naehte  []document.Naht
+		form    document.Kante
+		faktor  int
 		ops     op.Ops
 		aufruf  op.CallOp
 		gueltig bool
@@ -1551,27 +1554,26 @@ func textGrundlinieAnsicht(grad float64, i int) float32 {
 // nummerGrundlinieAnsicht ist der Abstand der Ziffern-Grundlinie von der Mitte (document.Nummer.Grundlinie, F-342).
 func nummerGrundlinieAnsicht(n document.Nummer) float32 { return float32(n.Grundlinie() - n.Mitte.Y) }
 
-// zeichneNaehte legt die Zackenkanten der Stauch-Nähte über Bild und Objekte, in Ansichtskoordinaten und mit denselben
-// Vielecken wie Renderer und SVG-Export (ADR-0023 Punkt 6). Die Pfade werden nur neu gebaut, wenn sich Ansichtsgröße
-// oder Nähte ändern; sonst spielt der Editor die Aufzeichnung ab (F-183, e.naht).
+// zeichneNaehte legt die Kanten der Stauch-Nähte über Bild und Objekte, in Ansichtskoordinaten und mit denselben
+// Vielecken und Schichten wie Renderer und SVG-Export (ADR-0023 Punkt 6, Nachtrag 6). Die Pfade werden nur neu gebaut,
+// wenn sich Ansichtsgröße, Nähte, Kantenform oder Zackenfaktor ändern; sonst spielt der Editor die Aufzeichnung ab
+// (F-183, e.naht).
 func (e *editor) zeichneNaehte(gtx layout.Context) {
-	g, naehte := e.s.D.Groesse(), e.s.D.Naehte()
+	g, naehte, form, faktor := e.s.D.Groesse(), e.s.D.Naehte(), e.s.D.Kante(), e.s.D.ZackenFaktor()
 	c := &e.naht
-	if !c.gueltig || c.groesse != g || !slices.Equal(c.naehte, naehte) {
+	if !c.gueltig || c.groesse != g || !slices.Equal(c.naehte, naehte) || c.form != form || c.faktor != faktor {
 		c.ops.Reset()
 		aufnahme := op.Record(&c.ops)
+		schichten := document.KantenSchichten()
 		for _, n := range naehte {
 			laenge := g.X
 			if !n.Zeilen {
 				laenge = g.Y
 			}
-			for _, band := range []struct {
-				halb  float64
-				farbe color.NRGBA
-			}{{document.ZackenRandHalb, document.ZackenRand}, {document.ZackenLinieHalb, document.ZackenLinie}} {
+			for _, sch := range schichten {
 				var p clip.Path
 				p.Begin(&c.ops)
-				for i, q := range document.Zackenband(n, laenge, e.s.D.ZackenFaktor(), band.halb) {
+				for i, q := range document.Kantenband(form, n, laenge, faktor, sch.Von, sch.Bis) {
 					pt := f32.Pt(float32(q.X), float32(q.Y))
 					if i == 0 {
 						p.MoveTo(pt)
@@ -1580,11 +1582,11 @@ func (e *editor) zeichneNaehte(gtx layout.Context) {
 					}
 				}
 				p.Close()
-				paint.FillShape(&c.ops, band.farbe, clip.Outline{Path: p.End()}.Op())
+				paint.FillShape(&c.ops, sch.Farbe, clip.Outline{Path: p.End()}.Op())
 			}
 		}
 		c.aufruf = aufnahme.Stop()
-		c.groesse, c.naehte, c.gueltig = g, naehte, true
+		c.groesse, c.naehte, c.form, c.faktor, c.gueltig = g, naehte, form, faktor, true
 	}
 	c.aufruf.Add(gtx.Ops)
 }

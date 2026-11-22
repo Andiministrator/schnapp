@@ -302,7 +302,7 @@ func (s *Sitzung) stauchBand() (zeilen bool, von, bis int, ok bool) {
 	bis = max(0, min(g, int(math.Round(hi))))
 	ok = hi-lo >= MinObjekt/s.Abb.Zoom && bis > von
 	// Mindestrest je Seite (ADR-0023 Nachtrag 4, F-226): Zwischen Naht und Bildrand müssen mindestens die halbe Bandhöhe
-	// bleiben, sonst bestünde die Seite nur aus Zackenband. Ein kleinerer Rest ginge ohnehin im Band unter; das Band
+	// bleiben, sonst bestünde die Seite nur aus der Kante. Ein kleinerer Rest ginge ohnehin im Band unter; das Band
 	// reicht dann bis an den Rand (und wird, wie jedes Band am Rand, zum Zuschnitt, F-222). Vorschau (bandRahmen) und
 	// Ergebnis (staucheRahmen) lesen dasselbe Band (F-240).
 	halb := s.D.ZackenFaktor() * document.ZackenBandHalb
@@ -413,13 +413,14 @@ func (s *Sitzung) randZuschnitt(zeilen bool, von, bis, laenge int) {
 
 // EntferneNaht nimmt am Fensterpunkt p die nächste Stauch-Naht zurück (Doppelklick mit dem Werkzeug Stauchen,
 // ADR-0023 Punkt 4): alle Streifen, die an dieser Naht verborgen sind, in einem Rückgängig-Schritt. Gefunden wird eine
-// Naht, wenn p höchstens Toleranz Fensterpixel neben ihrem Zackenband liegt. Liefert, ob sich etwas geändert hat.
+// Naht, wenn p höchstens Toleranz Fensterpixel neben ihrer Kante liegt (halbe Bandhöhe, ADR-0023 Nachtrag 6). Liefert,
+// ob sich etwas geändert hat.
 func (s *Sitzung) EntferneNaht(p document.Punkt) bool {
 	if s.zug != keinZug || s.gesperrt() || !s.imBild(p) {
 		return false
 	}
 	a := s.Abb.ZuAnsicht(p)
-	tol := Toleranz/s.Abb.Zoom + float64(s.D.ZackenFaktor())*(document.ZackenHoehe+document.ZackenRandHalb)
+	tol := Toleranz/s.Abb.Zoom + float64(s.D.ZackenFaktor())*document.ZackenBandHalb
 	best, gefunden := math.Inf(1), document.Naht{}
 	for _, n := range s.D.Naehte() {
 		v := a.X

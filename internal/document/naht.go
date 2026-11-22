@@ -5,7 +5,6 @@ package document
 import (
 	"fmt"
 	"image"
-	"image/color"
 	"math"
 )
 
@@ -16,21 +15,7 @@ type Naht struct {
 	Lage   int
 }
 
-// Grundmaße und Farben der Zackenkante (ADR-0023 Punkt 6), in Pixeln der Ansicht bei Faktor 1: Zacken ±ZackenHoehe um
-// die Naht, eine Zahnbreite ZackenWeite; außen ein helles Band der Dicke 2·ZackenRandHalb, darin eine dunkle Linie der
-// Dicke 2·ZackenLinieHalb. Alle vier Maße werden mit dem Zackenfaktor des Dokuments multipliziert (ADR-0023 Nachtrag 1, 4,
-// F-173). Renderer, SVG-Export und Editor zeichnen dieselben Vielecke (Zackenband).
-const (
-	ZackenHoehe     = 4.0
-	ZackenWeite     = 16.0
-	ZackenRandHalb  = 3.0
-	ZackenLinieHalb = 1.0
-)
-
-var (
-	ZackenRand  = color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
-	ZackenLinie = color.NRGBA{R: 0x4A, G: 0x50, B: 0x57, A: 0xFF}
-)
+// Form, Maße und Schichten der Kante an einer Naht stehen in kante.go (ADR-0023 Nachtrag 6).
 
 // ZackenReferenz ist die kurze Seite der Ansicht, bis zu der die Zackenkante in den Grundmaßen bleibt (Faktor 1).
 const ZackenReferenz = 1080
@@ -43,14 +28,12 @@ func ZackenFaktor(g image.Point) int { return max(1, min(g.X, g.Y)/ZackenReferen
 // **Originals** (Nachtrag 2: eine gestauchte 4K-Aufnahme behält ihre Pixeldichte), gedeckelt durch die kurze Seite der
 // **aktuellen Ansicht** (Nachtrag 4, F-226): Die Bandhöhe (2·ZackenBandHalb) bleibt höchstens ein Viertel der kurzen
 // Ansichtsseite, mindestens aber bei Faktor 1. Eine 8K-Aufnahme, die auf 300×80 zugeschnitten wird, trägt so kein
-// ±28-Pixel-Band auf 80 Pixeln Höhe. Renderer, SVG-Export, Editor und Trefferweite holen den Wert von hier.
+// ±44-Pixel-Band auf 80 Pixeln Höhe. Renderer, SVG-Export, Editor und Trefferweite holen den Wert von hier. Mit der
+// halben Bandhöhe 11 (Nachtrag 6) ist der Teiler 88.
 func (d *Dokument) ZackenFaktor() int {
 	kurz := min(d.abbX.groesse(), d.abbY.groesse())
 	return min(ZackenFaktor(d.original.Rect.Size()), max(1, kurz/(8*ZackenBandHalb)))
 }
-
-// ZackenBandHalb ist die halbe Höhe des Zackenbandes bei Faktor 1: Zacken und heller Rand ragen so weit über die Naht.
-const ZackenBandHalb = ZackenHoehe + ZackenRandHalb
 
 // OriginalGroesse liefert die Größe des unbeschnittenen Originals, ohne es zu kopieren (anders als Original).
 func (d *Dokument) OriginalGroesse() image.Point { return d.original.Rect.Size() }
@@ -75,42 +58,6 @@ func (d *Dokument) Naehte() []Naht {
 		}
 	}
 	return res
-}
-
-// Zackenband liefert ein Vieleck (Ansicht) entlang der Naht n über die Länge laenge (Breite bzw. Höhe der Ansicht):
-// eine Zickzacklinie mit Zacken ±ZackenHoehe, quer zur Naht um ±halb aufgeweitet. Die Zacken beginnen bei 0 und
-// reichen höchstens eine halbe Zahnbreite über laenge hinaus (Renderer und SVG beschneiden auf die Ansicht). Zacken-
-// höhe, Zahnbreite und halb (ein Grundmaß, z. B. ZackenRandHalb) werden mit faktor (ZackenFaktor, mindestens 1)
-// multipliziert.
-func Zackenband(n Naht, laenge, faktor int, halb float64) []Punkt {
-	f := float64(max(faktor, 1))
-	halb *= f
-	hoehe := ZackenHoehe * f
-	schritt := ZackenWeite * f / 2
-	k := int(math.Ceil(float64(max(laenge, 1)) / schritt))
-	oben := make([]Punkt, 0, 2*(k+1))
-	unten := make([]Punkt, 0, k+1)
-	for i := 0; i <= k; i++ {
-		t := float64(i) * schritt
-		q := float64(n.Lage) - hoehe
-		if i%2 == 1 {
-			q = float64(n.Lage) + hoehe
-		}
-		oben = append(oben, quer(n, t, q-halb))
-		unten = append(unten, quer(n, t, q+halb))
-	}
-	for i := len(unten) - 1; i >= 0; i-- {
-		oben = append(oben, unten[i])
-	}
-	return oben
-}
-
-// quer baut einen Punkt aus der Lage t entlang der Naht und q quer dazu.
-func quer(n Naht, t, q float64) Punkt {
-	if n.Zeilen {
-		return Punkt{t, q}
-	}
-	return Punkt{q, t}
 }
 
 // ObjektSichtbar meldet, ob o in die Ansicht reicht (ADR-0023 Punkt 7): Sichtbar für seine Reichweite (bei Text und

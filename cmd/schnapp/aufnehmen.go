@@ -45,7 +45,8 @@ type anschluesse struct {
 	tagesmarke string
 	// editor öffnet eine Datei im Editor und kehrt nach dem Schließen zurück (ADR-0020); nil = kein Editor.
 	// ohneGrenze ist --ignore-limit (nur bei schnapp DATEI, ADR-0017 Nachtrag 6).
-	editor func(pfad string, ohneGrenze bool) error
+	// kante ist [capture] seam: die Form der Stauch-Kante, wenn die Datei ein einfaches Bild ist (ADR-0023 Nachtrag 6).
+	editor func(pfad string, ohneGrenze bool, kante document.Kante) error
 	// bearbeiten öffnet eine eben abgelegte Aufnahme im Editor, mit dem Dokument aus dem Speicher statt die Datei neu
 	// zu lesen (F-112). nil = kein Editor nach der Aufnahme.
 	bearbeiten func(a abgelegt) error
@@ -111,7 +112,7 @@ func (an anschluesse) Ausfuehren(t Auftrag, aus, fehler io.Writer) int {
 		if an.editor == nil {
 			return exitFehler
 		}
-		if err := an.editor(t.Datei, t.OhneGrenze); err != nil {
+		if err := an.editor(t.Datei, t.OhneGrenze, t.Kante); err != nil {
 			diagnoseUrsache(fehler, err)
 			if ungesichert(err) {
 				// Geöffnet war die Datei; gescheitert ist das Speichern beim Schließen (F-302).
@@ -274,6 +275,11 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 	d, err := document.Neu(b.SubImage(bereich))
 	if err != nil {
 		return meldeFehler(fehler, err), nil
+	}
+	// Form der Stauch-Kante aus [capture] seam (ADR-0023 Nachtrag 6): Sie steht mit in der abgelegten Datei. Ein frisches
+	// Dokument hat keinen Verlauf; ein Fehler hieße eine ungültige Form, dann bleibt die Voreinstellung.
+	if err := d.VorgabeKante(t.Kante); err != nil {
+		diagnose(fehler, "Kantenform %v nicht gesetzt: %v", t.Kante, err)
 	}
 	if t.Ausgabe != "" {
 		// --output (ADR-0030 Punkt 2): statt in die Bibliothek an den angegebenen Ort; kein Editor, kein Aufräumen.

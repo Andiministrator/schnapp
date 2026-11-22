@@ -33,7 +33,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
 
-// Bild liefert die Ansicht des Dokuments mit allen Objekten und den Zackenkanten der Stauch-Nähte (ADR-0023). Objekte
+// Bild liefert die Ansicht des Dokuments mit allen Objekten und den Kanten der Stauch-Nähte (ADR-0023). Objekte
 // liegen im Original und werden über Dokument.ZuAnsicht abgebildet; was außerhalb der Ansicht liegt, fällt weg. Bild rastert immer vollständig und
 // bricht nie wegen des Aufwands ab: Eine im Editor gemachte Bearbeitung darf nicht am Speichern scheitern (F-131),
 // langsam ist besser als verloren. Gegen präparierte Dateien prüft der Editor beim Öffnen mit Pruefe (ADR-0020
@@ -146,8 +146,10 @@ func trockenlauf(d *document.Dokument) aufwand {
 	return *z.auf
 }
 
-// alles zeichnet die sichtbaren Objekte und darüber die Zackenkanten der Stauch-Nähte (ADR-0023 Punkte 6 und 7).
-// Objekte ganz im Verborgenen (Dokument.ObjektSichtbar) fallen weg, wie im SVG-Export und im Editor.
+// alles zeichnet die sichtbaren Objekte und darüber die Kanten der Stauch-Nähte (ADR-0023 Punkte 6 und 7, Nachtrag 6):
+// je Naht alle Schichten (document.KantenSchichten) in der Form des Dokuments. Jede Schicht ist eine Füllung und zählt
+// im Trockenlauf (Pruefe) mit. Objekte ganz im Verborgenen (Dokument.ObjektSichtbar) fallen weg, wie im SVG-Export und
+// im Editor.
 func (z zeichner) alles() error {
 	for _, o := range z.d.Objekte() {
 		if !z.d.ObjektSichtbar(o) {
@@ -157,14 +159,16 @@ func (z zeichner) alles() error {
 			return err
 		}
 	}
-	g, f := z.d.Groesse(), z.d.ZackenFaktor()
+	g, f, k := z.d.Groesse(), z.d.ZackenFaktor(), z.d.Kante()
+	schichten := document.KantenSchichten()
 	for _, n := range z.d.Naehte() {
 		laenge := g.X
 		if !n.Zeilen {
 			laenge = g.Y
 		}
-		z.fuelle([][]document.Punkt{document.Zackenband(n, laenge, f, document.ZackenRandHalb)}, nil, document.ZackenRand)
-		z.fuelle([][]document.Punkt{document.Zackenband(n, laenge, f, document.ZackenLinieHalb)}, nil, document.ZackenLinie)
+		for _, s := range schichten {
+			z.fuelle([][]document.Punkt{document.Kantenband(k, n, laenge, f, s.Von, s.Bis)}, nil, s.Farbe)
+		}
 	}
 	return nil
 }

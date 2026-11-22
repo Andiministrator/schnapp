@@ -88,7 +88,7 @@ func TestRettungskopieNachAbbruch(t *testing.T) {
 	t.Cleanup(func() { editorStarten = altStart })
 
 	// Erster Lauf: bearbeiten, sichern, „abstürzen“.
-	if err := oeffneImEditor(aussen, false); err != nil {
+	if err := oeffneImEditor(aussen, false, document.KanteAbriss); err != nil {
 		t.Fatal(err)
 	}
 	if rettung == nil {
@@ -106,7 +106,7 @@ func TestRettungskopieNachAbbruch(t *testing.T) {
 	}
 
 	// Zweiter Lauf: dieselbe Datei — die Bearbeitung ist zurück.
-	if err := oeffneImEditor(aussen, false); err != nil {
+	if err := oeffneImEditor(aussen, false, document.KanteAbriss); err != nil {
 		t.Fatal(err)
 	}
 	text, fehler := rettung.Wiederherstellen(dok)
@@ -131,7 +131,7 @@ func TestRettungskopieNachAbbruch(t *testing.T) {
 	}
 
 	// Kopie anlegen, dann die Datei von anderer Seite ändern: nicht angewendet, Kopie bleibt, Meldung als Warnung.
-	if err := oeffneImEditor(aussen, false); err != nil {
+	if err := oeffneImEditor(aussen, false, document.KanteAbriss); err != nil {
 		t.Fatal(err)
 	}
 	mitKasten(t, dok)
@@ -141,7 +141,7 @@ func TestRettungskopieNachAbbruch(t *testing.T) {
 	if err := os.WriteFile(aussen, append(inhalt, 0), 0o600); err != nil { // anderer Inhalt, PNG liest weiter
 		t.Fatal(err)
 	}
-	if err := oeffneImEditor(aussen, false); err != nil {
+	if err := oeffneImEditor(aussen, false, document.KanteAbriss); err != nil {
 		t.Fatal(err)
 	}
 	text, fehler = rettung.Wiederherstellen(dok)

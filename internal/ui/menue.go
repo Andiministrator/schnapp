@@ -18,6 +18,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/i18n"
 )
 
@@ -42,10 +43,23 @@ func (e *editor) menueEintraege() []menueEintrag {
 		{akt: aktLoeschen, text: i18n.T("Delete"), an: s.KannLoeschen()},
 		{akt: aktGanzesBild, text: i18n.T("Whole image"), an: s.KannGanzesBild(), gruppe: true},
 		{akt: aktZurueckholen, text: i18n.T("Restore cut-out areas"), an: s.KannZurueckholen()},
+		{akt: aktKantenform, text: i18n.T("Seam style"), an: s.KannKanteWechseln()},
 		{akt: aktEinpassen, text: i18n.T("Fit"), an: true, gruppe: true},
 		{akt: aktEins, text: "1:1", an: true},
 		{akt: aktSchliessen, text: i18n.T("Close"), an: true, gruppe: true},
 	}
+}
+
+// kantenMeldung ist die Statusmeldung nach einem Wechsel der Kantenform (Menüeintrag „Seam style“). Jede Form hat ihren
+// eigenen Text als Literal, damit die Übersetzung ihn findet (ADR-0014 Nachtrag 1).
+func kantenMeldung(k document.Kante) string {
+	switch k {
+	case document.KanteWelle:
+		return i18n.T("Seam style: wave")
+	case document.KanteZacken:
+		return i18n.T("Seam style: zigzag")
+	}
+	return i18n.T("Seam style: torn edge")
 }
 
 // schliessenEintrag ist der Knopf des Menüeintrags „Schließen“ (nil, wenn es ihn nicht gibt).
@@ -214,6 +228,14 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 			if e.s.HoleGestauchtesZurueck() {
 				e.bildNeu()
 				e.meldeAnsicht()
+			}
+		}
+	case aktKantenform:
+		// Kantenform reihum, ein Rückgängig-Schritt (ADR-0023 Nachtrag 6); die Statusleiste nennt die neue Form. Die
+		// Kanten zeichnet zeichneNaehte neu, ihr Zwischenspeicher ist nach der Form geschlüsselt.
+		return func(layout.Context) {
+			if k, ok := e.s.WechsleKante(); ok {
+				e.melde(kantenMeldung(k), false)
 			}
 		}
 	case aktEinpassen:

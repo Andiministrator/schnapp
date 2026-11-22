@@ -27,6 +27,7 @@ const (
 	aktLoeschen
 	aktGanzesBild
 	aktZurueckholen
+	aktKantenform // „Seam style“: Form der Stauch-Kante reihum, ohne eigenes Kürzel (ADR-0023 Nachtrag 6)
 	aktEinpassen
 	aktEins
 	aktSchliessen

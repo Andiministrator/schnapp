@@ -58,11 +58,12 @@ func intervalle(von, bis int, st []document.Streifen, zeilen bool) [][2]int {
 	return res
 }
 
-// naehte schreibt die Zackenkanten der Stauch-Nähte in Ansichtskoordinaten über alle Kacheln (ADR-0023 Punkt 6):
-// dieselben Vielecke wie im Renderer (document.Zackenband), hell außen, dunkel innen. Das Band jeder Achse steht einmal
-// in <defs> (Naht bei Lage 0 über die ganze Länge, id naht-zeilen bzw. naht-spalten); jede Naht verweist darauf mit
-// <use> und verschiebt es auf ihre Lage. So wächst die Datei je Naht um eine kurze Zeile statt um zwei Bänder über die
-// ganze Bildbreite (F-183: vorher 41 MB nur für 1023 Nähte in 8192 px Breite).
+// naehte schreibt die Kanten der Stauch-Nähte in Ansichtskoordinaten über alle Kacheln (ADR-0023 Punkt 6, Nachtrag 6):
+// dieselben Vielecke wie im Renderer (document.Kantenband je Schicht aus document.KantenSchichten, in der Form des
+// Dokuments), halbdurchsichtige Schichten mit fill-opacity, ohne Filter. Das Band jeder Achse steht einmal in <defs>
+// (Naht bei Lage 0 über die ganze Länge, id naht-zeilen bzw. naht-spalten); jede Naht verweist darauf mit <use> und
+// verschiebt es auf ihre Lage. So wächst die Datei je Naht um eine kurze Zeile statt um alle Schichten über die ganze
+// Bildbreite (F-183: vorher 41 MB nur für 1023 Nähte in 8192 px Breite).
 func (s *schreiber) naehte(d *document.Dokument) {
 	g := d.Groesse()
 	naehte := d.Naehte()
@@ -87,12 +88,9 @@ func (s *schreiber) naehte(d *document.Dokument) {
 		s.WriteString(`<g`)
 		s.attr("id", "naht-"+art(zeilen))
 		s.WriteString(`>`)
-		for _, band := range []struct {
-			halb  float64
-			farbe color.NRGBA
-		}{{document.ZackenRandHalb, document.ZackenRand}, {document.ZackenLinieHalb, document.ZackenLinie}} {
+		for _, sch := range document.KantenSchichten() {
 			var pfad strings.Builder
-			for i, p := range document.Zackenband(document.Naht{Zeilen: zeilen}, laenge, d.ZackenFaktor(), band.halb) {
+			for i, p := range document.Kantenband(d.Kante(), document.Naht{Zeilen: zeilen}, laenge, d.ZackenFaktor(), sch.Von, sch.Bis) {
 				if i == 0 {
 					pfad.WriteString("M")
 				} else {
@@ -103,7 +101,7 @@ func (s *schreiber) naehte(d *document.Dokument) {
 			pfad.WriteString(" Z")
 			s.WriteString(`<path`)
 			s.attr("d", pfad.String())
-			s.farbeSVG("fill", band.farbe)
+			s.farbeSVG("fill", sch.Farbe)
 			s.WriteString(`/>`)
 		}
 		s.WriteString(`</g>`)

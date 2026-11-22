@@ -63,6 +63,38 @@ func TestMenueTextBearbeitenUndZurueckholen(t *testing.T) {
 	}
 }
 
+// ADR-0023 Nachtrag 6: „Seam style“ steht im Menü (ohne eigenes Kürzel), wechselt die Form reihum als ein
+// Rückgängig-Schritt und nennt die neue Form in der Statusleiste.
+func TestMenueKantenform(t *testing.T) {
+	e := testEditor(t)
+	var gefunden bool
+	for _, en := range e.menueEintraege() {
+		if en.akt == aktKantenform {
+			gefunden = en.text == "Seam style" && en.an
+		}
+	}
+	if !gefunden {
+		t.Fatal("Eintrag „Seam style“ fehlt oder ist grau")
+	}
+	if e.s.D.Kante() != document.KanteAbriss {
+		t.Fatalf("Ausgang %v", e.s.D.Kante())
+	}
+	for _, c := range []struct {
+		k    document.Kante
+		text string
+	}{{document.KanteWelle, "Seam style: wave"}, {document.KanteZacken, "Seam style: zigzag"},
+		{document.KanteAbriss, "Seam style: torn edge"}} {
+		e.fuehreAus(layout.Context{}, aktKantenform, true)
+		if e.s.D.Kante() != c.k || e.meldung.Text != c.text {
+			t.Errorf("Form %v, Meldung %q; Soll %v, %q", e.s.D.Kante(), e.meldung.Text, c.k, c.text)
+		}
+	}
+	e.rueckgaengig()
+	if e.s.D.Kante() != document.KanteZacken {
+		t.Errorf("Rückgängig: %v, Soll zigzag", e.s.D.Kante())
+	}
+}
+
 // Jeder Menüeintrag hat eine Wirkung in fuehreAus: Ein Eintrag, den fuehreAus nicht kennt, wäre ein toter Knopf.
 func TestMenueEintraegeHabenWirkung(t *testing.T) {
 	e := testEditor(t)

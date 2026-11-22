@@ -1,6 +1,7 @@
 # Rückfallprobe ADR-0026 (Karte #104): Menü — Gestauchtes zurückholen, Löschen, Kopieren, Schließen; Kürzel im Menü
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-menue.txt --bild scripts/drehbuecher/testbild-1200x800.png
-# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen. Leiste bei 1600 px: Menü (1456,28); Einträge siehe Foto 02.
+# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen. Leiste bei 1600 px: Menü (1456,28); Einträge siehe Foto 02
+# (seit Karte #96 steht „Kantenform“ vor Einpassen, Schließen liegt bei y = 501).
 # Schließen hält das Fenster beim ersten Mal offen (Hinweis zum Ablageort, F-158), probe.sh beendet danach per SIGTERM.
 warte 800
 taste R
@@ -30,5 +31,5 @@ warte 1500
 foto 04-kopiert
 klick 1456 28
 warte 300
-klick 1203 469
+klick 1203 501
 warte 1500

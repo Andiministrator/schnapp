@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/i18n"
 	"github.com/Andiministrator/schnapp/internal/library"
 	"github.com/Andiministrator/schnapp/internal/po"
@@ -132,6 +133,9 @@ type Auftrag struct {
 	Ausgabe string
 	// JSON: --json, das Ergebnis als eine Zeile JSON (ADR-0030 Punkt 1).
 	JSON bool
+	// Kante: [capture] seam, die Form der Stauch-Kante für neue Dokumente — die Aufnahme und ein einfaches PNG/JPEG,
+	// das ModusOeffnen öffnet (ADR-0023 Nachtrag 6). Eine Arbeitsdatei behält ihre eigene.
+	Kante document.Kante
 }
 
 // Bildschirmziel sagt, welcher Monitor aufgenommen wird.
@@ -145,7 +149,7 @@ type Bildschirmziel struct {
 func plane(a Aufruf, e settings.Einstellungen) Auftrag {
 	t := Auftrag{Modus: a.Modus, Aufraeumen: e.Bibliothek,
 		Editor: a.Modus.Aufnahme() && e.Editor && !a.OhneEditor && a.Ausgabe == "",
-		Datei:  a.Datei, OhneGrenze: a.OhneGrenze, Ausgabe: a.Ausgabe, JSON: a.JSON}
+		Datei:  a.Datei, OhneGrenze: a.OhneGrenze, Ausgabe: a.Ausgabe, JSON: a.JSON, Kante: e.Kante}
 	if a.Modus == ModusBildschirm {
 		if a.Bildschirm != "" {
 			t.Ziel = Bildschirmziel{Name: a.Bildschirm}

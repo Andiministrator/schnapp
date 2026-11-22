@@ -127,7 +127,7 @@ entities).
     <s:meta s:autor="..." s:erstellt="..." s:quelle="..." s:bearbeitet="true">
       <s:schlagwort>keyword</s:schlagwort>
     </s:meta>
-    <s:ansicht s:zuschnitt="0 0 64 48">
+    <s:ansicht s:zuschnitt="0 0 64 48" s:kante="tear">
       <s:streifen s:zeilen="true" s:von="20" s:bis="25"/>
     </s:ansicht>
   </metadata>
@@ -195,19 +195,32 @@ The *view* is what the visible image shows. It is derived from the original in t
 
 ### 7.1 Element `s:ansicht`
 
-`s:ansicht` is REQUIRED (a file without it is damaged). Attribute:
+`s:ansicht` is REQUIRED (a file without it is damaged). Attributes:
 
 | Attribute | Value |
 |---|---|
 | `s:zuschnitt` | rectangle `x0 y0 x1 y1` of the original that stays visible. The whole image is `0 0 <width> <height>`. |
+| `s:kante` | style of the edge drawn at every squeeze seam (7.2): `tear` (torn paper), `wave` or `zigzag`. Writers MUST emit it. |
 
 The rectangle MUST be non-empty and lie within the original. A reader canonicalises reversed corners (`x0 > x1`);
 writers MUST write the smaller value first.
 
+`s:kante` is presentation of the document, not of a single seam. If it is missing (files written before the attribute
+existed) or holds any other value (including other letter case or an empty value, or a style of a later version), a
+reader MUST use `zigzag` and MUST NOT treat the file as damaged. Adding the attribute did not change the format
+version: a reader that does not know it ignores it (section 11, rule 3).
+
 ### 7.2 Element `s:streifen` (squeeze strips)
 
-Zero or more `s:streifen` children of `s:ansicht` remove parts of the cropped image ("squeeze"). Schnapp draws a zigzag
-edge at every seam in the view; that edge is a rendering, not stored data.
+Zero or more `s:streifen` children of `s:ansicht` remove parts of the cropped image ("squeeze"). Schnapp draws an edge
+in the style `s:kante` at every seam inside the view; that edge is a rendering, not stored data.
+
+Informative: the edge follows a centre line `f(t)` across the seam, `t` running along it, in view pixels:
+`tear` = `0.8 x (2.6 sin(2πt/71 + 0.3) + 1.6 sin(2πt/29 + 1.9) + 1.0 sin(2πt/13 + 4.1) + 0.6 sin(2πt/7.3 + 2.2)
++ 0.35 sin(2πt/3.1 + 5.7))` sampled every pixel, `wave` = `4 sin(2πt/32)` sampled every 2 pixels, `zigzag` = ±4 with
+a tooth width of 16. Around the line lies a light gap 10 pixels wide that covers the image, with a soft shadow of both
+image parts in it (stronger from the upper or left part) and a slightly darkened 1-pixel edge on both parts, built
+from a few semi-transparent bands of the same shape. All sizes grow by an integer factor on large images.
 
 | Attribute | Value |
 |---|---|
@@ -376,8 +389,8 @@ Original width and height are at least 1.
    ignored, whatever their namespace; so are the presentation elements and attributes. Position matters for two elements: `s:streifen` counts only as a direct child of `s:ansicht`, and `s:schlagwort` only as a direct child of `s:meta`; anywhere else they are unknown content and have no effect (they are neither data nor damage). Readers MUST NOT accept them elsewhere, so that all readers see the same strips and keywords. Unknown *object types* are not
    ignored (8.5). Unknown content is not preserved when the reader saves the file.
 4. **Strictness.** A required attribute that is missing, a value that does not parse, a value outside the ranges of
-   sections 7, 8 and 10, a rectangle outside the original, overlapping strips, a view that would be
-   empty, an `s:ansicht` that is missing, or an original whose size differs from the root's `width`/`height` makes
+   sections 7, 8 and 10 (except `s:kante`, whose unknown values mean `zigzag`, 7.1), a rectangle outside the original,
+   overlapping strips, a view that would be empty, an `s:ansicht` that is missing, or an original whose size differs from the root's `width`/`height` makes
    the file **damaged**. A reader MUST apply the same validation whether it loads pixels or only reads metadata.
 5. **Safety.** Parse XML strictly. Do not resolve external or internal entities (only the five predefined entities
    and character references occur), do not fetch anything, do not follow `href`. Enforce the limits of section 10
@@ -391,8 +404,8 @@ Original width and height are at least 1.
 1. Write the chunks of section 2 and the document of section 5; use the formats of section 5.2 (lower-case colours,
    points without spaces, any decimal number form that round-trips; the reference writer uses Go's shortest `%g`
    form, e.g. `1e+06`).
-2. Emit `s:format`, `viewBox`, the `image` placeholder, `s:ansicht` with `s:zuschnitt` and the object layer even when
-   there is nothing in them.
+2. Emit `s:format`, `viewBox`, the `image` placeholder, `s:ansicht` with `s:zuschnitt` and `s:kante`, and the object
+   layer even when there is nothing in them.
 3. Write redacted pixels (section 9).
 4. Do not add anything that identifies the machine or user (section 13).
 5. Write objects in stacking order, bottom first.
@@ -421,7 +434,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 |---|---|
 | `minimal` | smallest valid file: no objects, no metadata, whole image visible |
 | `objects` | one object of each type, full metadata with keywords |
-| `view` | crop plus one row strip and one column strip, one box |
+| `view` | crop plus one row strip and one column strip, one box, edge style `wave` |
 | `redaction` | one filled and one pixelated redaction, applied to the pixels |
 
 In the examples the visible image is the view *without* annotations (annotation rendering depends on a font

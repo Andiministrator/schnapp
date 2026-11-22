@@ -1,0 +1,65 @@
+# Sichtprobe Karte #96 (ADR-0023 Nachtrag 6): Form der Stauch-Kante. Abriss mit Spalt und Schatten als Voreinstellung,
+# der Menüeintrag „Seam style“ (per Tastatur) wechselt reihum zu Welle und Zacken, Strg+Z nimmt einen Wechsel zurück.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/stauchkante-formen-96.txt --bild scripts/drehbuecher/testbild-1200x800.png --zeit 120
+# Vorher die Einstellung des Probe-Heims selbst schreiben (die Probe liest nie die echte): Datei
+# tmp/probe/home/.config/schnapp/settings.ini mit den zwei Zeilen „[capture]“ und „seam = tear“ (ohne Datei gilt
+# dieselbe Voreinstellung). Das Testbild ist ein einfaches PNG, bekommt also die eingestellte Form.
+# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen und gegen docs/adr/bilder/0023-kante-muster-4.png halten.
+# Bild 1200x800 bei 100 % ab (200,136); nach dem Stauchen 1200x600 ab (200,236), Naht bei y = 236+286 = 522.
+warte 800
+foto 01-start
+# Zeilen 286 bis 486 heraus: Abriss an der waagrechten Naht
+taste X
+ziehe 800 422 800 622 12
+warte 400
+foto 02-abriss
+# Spalten 300 bis 500 heraus: auch eine senkrechte Naht (Bild 1000 breit ab x 300, Naht bei x 600)
+ziehe 500 622 700 622 12
+warte 400
+foto 03-abriss-beide-naehte
+# Vergrößert an der Kreuzung der Nähte (Mausrad hoch zoomt zum Zeiger)
+rad 600 522 -4
+warte 400
+foto 04-abriss-zoom
+taste Strg+0
+warte 400
+# Menü per Tastatur: Umschalt+Tab zum Knopf Menü, Enter öffnet, Ende springt auf Schließen, dreimal Hoch auf „Seam style“
+taste Umschalt+Tab
+warte 300
+taste Enter
+warte 300
+taste Ende
+taste Hoch
+taste Hoch
+taste Hoch
+warte 300
+foto 05-menue-seam-style
+taste Enter
+warte 400
+foto 06-welle
+rad 600 522 -4
+warte 400
+foto 07-welle-zoom
+taste Strg+0
+warte 300
+taste Umschalt+Tab
+warte 300
+taste Enter
+warte 300
+taste Ende
+taste Hoch
+taste Hoch
+taste Hoch
+warte 300
+taste Enter
+warte 400
+foto 08-zacken
+rad 600 522 -4
+warte 400
+foto 09-zacken-zoom
+taste Strg+0
+warte 300
+# Strg+Z nimmt den Wechsel zurück: wieder Welle
+taste Strg+Z
+warte 400
+foto 10-zurueck-welle

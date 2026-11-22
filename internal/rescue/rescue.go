@@ -302,7 +302,7 @@ func wende(d *document.Dokument, liste []document.SchwaerzAngabe, a *fileformat.
 			return err
 		}
 	}
-	return d.SetzeAngaben(a.Objekte, a.Zuschnitt, a.Streifen)
+	return d.SetzeAngaben(a.Objekte, a.Zuschnitt, a.Streifen, a.Kante)
 }
 
 // eigenerName erkennt die Dateinamen dieses Pakets: Kopie (<64 hex>.json), beiseitegelegte Kopie

@@ -548,6 +548,18 @@ msgstr "Text bearbeiten"
 msgid "Restore cut-out areas"
 msgstr "Gestauchtes zurückholen"
 
+msgid "Seam style"
+msgstr "Kantenform"
+
+msgid "Seam style: torn edge"
+msgstr "Kantenform: Abriss"
+
+msgid "Seam style: wave"
+msgstr "Kantenform: Welle"
+
+msgid "Seam style: zigzag"
+msgstr "Kantenform: Zacken"
+
 msgid "Close"
 msgstr "Schließen"
 

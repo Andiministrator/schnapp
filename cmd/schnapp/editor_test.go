@@ -32,7 +32,10 @@ func TestEditorNachDerAufnahme(t *testing.T) {
 		l := neuerLauf(t)
 		var geoeffnet []string
 		var dok *document.Dokument
-		l.an.editor = func(p string, _ bool) error { t.Errorf("Editor über die Datei geöffnet: %q", p); return nil }
+		l.an.editor = func(p string, _ bool, _ document.Kante) error {
+			t.Errorf("Editor über die Datei geöffnet: %q", p)
+			return nil
+		}
 		// Der Stand kommt vom Ablegen, nicht vom Start des Editors (F-110, Verify W-5).
 		datei := filepath.Join(t.TempDir(), "stand.png")
 		if err := os.WriteFile(datei, []byte("x"), 0o600); err != nil {
@@ -102,12 +105,12 @@ func TestOeffnenOhneAufnahme(t *testing.T) {
 	l := neuerLauf(t)
 	l.an.quelle = nil // eine Aufnahme würde hier abstürzen
 	var geoeffnet string
-	l.an.editor = func(p string, _ bool) error { geoeffnet = p; return nil }
+	l.an.editor = func(p string, _ bool, _ document.Kante) error { geoeffnet = p; return nil }
 	code, aus, fehler := l.fuehre(Auftrag{Modus: ModusOeffnen, Datei: "bild.png"})
 	if code != exitOK || aus != "" || fehler != "" || geoeffnet != "bild.png" {
 		t.Errorf("Code %d, aus %q, fehler %q, geöffnet %q", code, aus, fehler, geoeffnet)
 	}
-	l.an.editor = func(string, bool) error { return errors.New("gibt es nicht") }
+	l.an.editor = func(string, bool, document.Kante) error { return errors.New("gibt es nicht") }
 	if code, _, fehler := l.fuehre(Auftrag{Modus: ModusOeffnen, Datei: "x"}); code != exitFehler || !strings.Contains(fehler, "Cannot open x: gibt es nicht") {
 		t.Errorf("Fehlerfall: Code %d, fehler %q", code, fehler)
 	}

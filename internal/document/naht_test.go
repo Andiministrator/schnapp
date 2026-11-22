@@ -48,23 +48,29 @@ func TestNaehte(t *testing.T) {
 	}
 }
 
-// Zackenband: Zacken abwechselnd −4 und +4 um die Naht, Zahnbreite 16, quer um halb aufgeweitet; erst die eine Kante
-// vorwärts, dann die andere rückwärts.
-func TestZackenband(t *testing.T) {
-	got := Zackenband(Naht{Zeilen: true, Lage: 10}, 20, 1, 1)
+// Kantenband der Form Zacken: Mittellinie abwechselnd −4 und +4 um die Naht, Zahnbreite 16, quer um [−1, 1]
+// verschoben; erst die eine Kante vorwärts, dann die andere rückwärts (wie das Zackenband bis Nachtrag 6).
+func TestKantenbandZacken(t *testing.T) {
+	got := Kantenband(KanteZacken, Naht{Zeilen: true, Lage: 10}, 20, 1, -1, 1)
 	want := []Punkt{{0, 5}, {8, 13}, {16, 5}, {24, 13}, {24, 15}, {16, 7}, {8, 15}, {0, 7}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("waagrecht:\n got %v\nwant %v", got, want)
 	}
-	got = Zackenband(Naht{Zeilen: false, Lage: 10}, 20, 1, 1)
+	got = Kantenband(KanteZacken, Naht{Zeilen: false, Lage: 10}, 20, 1, -1, 1)
 	for i := range want {
 		want[i] = Punkt{want[i].Y, want[i].X}
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("senkrecht:\n got %v\nwant %v", got, want)
 	}
-	if n := len(Zackenband(Naht{Lage: 3}, 0, 1, 1)); n != 4 {
+	if n := len(Kantenband(KanteZacken, Naht{Lage: 3}, 0, 1, -1, 1)); n != 4 {
 		t.Errorf("Länge 0: %d Punkte, Soll 4 (ein Zahn)", n)
+	}
+	// Ein unsymmetrischer Querbereich: beide Kanten folgen derselben Linie.
+	got = Kantenband(KanteZacken, Naht{Zeilen: true, Lage: 10}, 8, 1, 2, 5)
+	want = []Punkt{{0, 8}, {8, 16}, {8, 19}, {0, 11}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Querbereich [2, 5]:\n got %v\nwant %v", got, want)
 	}
 }
 
@@ -199,9 +205,9 @@ func TestZackenFaktor(t *testing.T) {
 	}
 }
 
-// F-173: Bei Faktor 2 sind Zackenhöhe, Zahnbreite und Bandbreite doppelt so groß (vgl. TestZackenband bei Faktor 1).
-func TestZackenbandFaktor(t *testing.T) {
-	got := Zackenband(Naht{Zeilen: true, Lage: 10}, 40, 2, 1)
+// F-173: Bei Faktor 2 sind Zackenhöhe, Zahnbreite und Bandbreite doppelt so groß (vgl. TestKantenbandZacken bei Faktor 1).
+func TestKantenbandFaktor(t *testing.T) {
+	got := Kantenband(KanteZacken, Naht{Zeilen: true, Lage: 10}, 40, 2, -1, 1)
 	want := []Punkt{{0, 0}, {16, 16}, {32, 0}, {48, 16}, {48, 20}, {32, 4}, {16, 20}, {0, 4}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Faktor 2:\n got %v\nwant %v", got, want)
@@ -216,14 +222,15 @@ func TestZackenFaktorGedeckeltDurchAnsicht(t *testing.T) {
 	if f := d.ZackenFaktor(); f != 4 {
 		t.Fatalf("ganze 8K-Aufnahme: Faktor %d, Soll 4", f)
 	}
-	// Das Beispiel des Befunds: auf 300×80 zugeschnitten. Vorher ±28 Pixel Band auf 80 Pixeln Höhe.
+	// Das Beispiel des Befunds: auf 300×80 zugeschnitten. Ohne Deckel ±44 Pixel Band auf 80 Pixeln Höhe.
 	if err := d.SetzeZuschnitt(image.Rect(1000, 1000, 1300, 1080)); err != nil {
 		t.Fatal(err)
 	}
 	if f := d.ZackenFaktor(); f != 1 {
 		t.Errorf("auf 300×80: Faktor %d, Soll 1", f)
 	}
-	for _, c := range []struct{ kurz, soll int }{{112, 2}, {111, 1}, {224, 4}, {223, 3}, {1000, 4}} {
+	// Mit der halben Bandhöhe 11 (ADR-0023 Nachtrag 6) ist der Teiler 8·11 = 88.
+	for _, c := range []struct{ kurz, soll int }{{176, 2}, {175, 1}, {352, 4}, {351, 3}, {1000, 4}} {
 		if err := d.SetzeZuschnitt(image.Rect(0, 0, 3000, c.kurz)); err != nil {
 			t.Fatal(err)
 		}

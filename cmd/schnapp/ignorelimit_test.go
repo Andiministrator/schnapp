@@ -199,7 +199,10 @@ func TestOhneGrenzeBisZumEditor(t *testing.T) {
 		l := neuerLauf(t)
 		l.an.quelle = nil
 		var gesehen []bool
-		l.an.editor = func(_ string, ohneGrenze bool) error { gesehen = append(gesehen, ohneGrenze); return nil }
+		l.an.editor = func(_ string, ohneGrenze bool, _ document.Kante) error {
+			gesehen = append(gesehen, ohneGrenze)
+			return nil
+		}
 		if code, _, fehler := l.fuehre(plane(a, settings.Voreinstellungen())); code != exitOK || fehler != "" {
 			t.Fatalf("Code %d, fehler %q", code, fehler)
 		}

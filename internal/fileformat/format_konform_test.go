@@ -101,6 +101,9 @@ func beispiele() []beispiel {
 			if err := d.SetzeZuschnitt(image.Rect(4, 3, 60, 45)); err != nil {
 				t.Fatal(err)
 			}
+			if err := d.SetzeKante(document.KanteWelle); err != nil { // nicht die Voreinstellung (ADR-0023 Nachtrag 6)
+				t.Fatal(err)
+			}
 			if err := d.SetzeStreifen([]document.Streifen{{Zeilen: true, Von: 20, Bis: 25}, {Zeilen: false, Von: 30, Bis: 33}}); err != nil {
 				t.Fatal(err)
 			}
@@ -194,8 +197,9 @@ func TestFormatBeispieleLesen(t *testing.T) {
 		if !reflect.DeepEqual(g.Dokument.Objekte(), soll.Objekte()) {
 			t.Errorf("%s: Objekte\n got %#v\nwant %#v", b.name, g.Dokument.Objekte(), soll.Objekte())
 		}
-		if g.Dokument.Zuschnitt() != soll.Zuschnitt() || !reflect.DeepEqual(g.Dokument.Streifen(), soll.Streifen()) {
-			t.Errorf("%s: Ansicht %v %v", b.name, g.Dokument.Zuschnitt(), g.Dokument.Streifen())
+		if g.Dokument.Zuschnitt() != soll.Zuschnitt() || !reflect.DeepEqual(g.Dokument.Streifen(), soll.Streifen()) ||
+			g.Dokument.Kante() != soll.Kante() {
+			t.Errorf("%s: Ansicht %v %v %v", b.name, g.Dokument.Zuschnitt(), g.Dokument.Streifen(), g.Dokument.Kante())
 		}
 		if !bytes.Equal(g.Dokument.Original().Pix, soll.Original().Pix) {
 			t.Errorf("%s: Original weicht ab", b.name)
@@ -644,6 +648,7 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 		}
 	}
 	wortliste := []string{"format", "meta", "autor", "erstellt", "quelle", "bearbeitet", "schlagwort", "ansicht", "zuschnitt",
+		"kante",
 		"streifen", "zeilen", "von", "bis", "ebene", "typ", "a", "b", "k", "strich", "bereich", "fuellung", "eckradius",
 		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "mitte", "wert", "radius"}
 	for _, w := range wortliste {

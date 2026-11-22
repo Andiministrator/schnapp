@@ -37,6 +37,7 @@ type Dokument struct {
 	zuschnitt  image.Rectangle // im Original; immer gesetzt, ganzes Bild = keine Beschneidung
 	streifen   []Streifen
 	abbX, abbY abbildung // aus zuschnitt und streifen abgeleitet, nur über setzeAnsicht ändern
+	kante      Kante     // Form der Stauch-Kante (ADR-0023 Nachtrag 6)
 	verlauf    verlauf
 	zug        *zug
 	// geschwaerzt zählt die wirksamen Schwärzungen seit Neu bzw. dem Laden (Rückgängig zieht ab); VergissVerlauf
@@ -97,8 +98,13 @@ func pruefeGroesse(b image.Rectangle) error {
 	return nil
 }
 
+// mitOriginal legt das Dokument an. Die Kantenform ist der Abriss, die Voreinstellung von `[capture] seam` (ADR-0023
+// Nachtrag 6): Ein Weg, der ein neues Dokument anlegt und die Einstellung nicht kennt (Tests, künftige Aufrufer),
+// zeichnet so wie ein Nutzer ohne Einstellungsdatei. Wer eine andere Form braucht, setzt sie gleich danach mit
+// VorgabeKante — die Arbeitsdatei die gespeicherte (fehlt sie, KanteZacken), Aufnahme und Öffnen eines einfachen Bilds
+// die eingestellte.
 func mitOriginal(o *image.NRGBA) *Dokument {
-	d := &Dokument{original: o, naechsteID: 1}
+	d := &Dokument{original: o, naechsteID: 1, kante: KanteAbriss}
 	d.setzeAnsicht(o.Bounds(), nil)
 	return d
 }

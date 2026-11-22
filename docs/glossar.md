@@ -15,9 +15,10 @@
 | **Vektorebene** | Eine Beschriftung (Pfeil, Kasten, Text …) als SVG-Element. |
 | **Schwärzen** | Bereich deckend überdecken; überschreibt die Pixel auch im Original. Endgültig. |
 | **Verpixeln** | Bereich grob aufrastern; überschreibt ebenfalls das Original. |
-| **Stauchen** | Aus der Mitte eines Bildes einen Streifen ausblenden (Header und Footer bleiben), nicht zerstörend, mit Zackenkante. Snagit: „Cut Out". |
+| **Stauchen** | Aus der Mitte eines Bildes einen Streifen ausblenden (Header und Footer bleiben), nicht zerstörend, mit Kante an der Naht (Kantenform). Snagit: „Cut Out". |
 | **Stauchnaht** | Die Stelle, an der gestaucht wird; Schnapp kann eine vorschlagen (Bildvergleich). |
-| **Zackenkante** | Gezackter Rand an einer Stauchnaht oder Bildkante, zeigt „hier fehlt etwas". |
+| **Zackenkante** | Gezackter Rand an einer Stauchnaht oder Bildkante, zeigt „hier fehlt etwas"; heute eine der drei Kantenformen (`zigzag`). |
+| **Kantenform** | Form der Kante an Stauch-Nähten, je Dokument: Abriss (`tear`, Voreinstellung), Welle (`wave`), Zacken (`zigzag`); mit hellem Spalt und Schatten. Einstellung `[capture] seam`, Menüeintrag „Kantenform“ (ADR-0023 Nachtrag 6). |
 | **Vollansicht** | Das ganze Original mit denselben Stauch-Streifen, ohne Zuschnitt; nur beim Werkzeug Zuschneiden gezeigt. Die Ansicht liegt darin bei `VollVersatz` (ADR-0023 Nachtrag 5). |
 | **Schritt-Nummer** | Nummerierter Kreis, der beim Setzen selbst hochzählt. |
 | **Stempel** | Fertiges Symbol aus einer durchsuchbaren Sammlung (Icon-Sets oder eigene). |

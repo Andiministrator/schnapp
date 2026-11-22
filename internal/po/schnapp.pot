@@ -810,7 +810,23 @@ msgid "Restore cut-out areas"
 msgstr ""
 
 #: internal/ui/menue.go
+msgid "Seam style"
+msgstr ""
+
+#: internal/ui/menue.go
 msgid "Close"
+msgstr ""
+
+#: internal/ui/menue.go
+msgid "Seam style: wave"
+msgstr ""
+
+#: internal/ui/menue.go
+msgid "Seam style: zigzag"
+msgstr ""
+
+#: internal/ui/menue.go
+msgid "Seam style: torn edge"
 msgstr ""
 
 #: internal/ui/overlay.go

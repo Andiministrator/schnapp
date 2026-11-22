@@ -27,12 +27,12 @@ func TestSetzeAngabenEinSchritt(t *testing.T) {
 	}
 	z := image.Rect(2, 3, 45, 38)
 	st := []Streifen{{Von: 10, Bis: 15}}
-	if err := d.SetzeAngaben(neu, z, st); err != nil {
+	if err := d.SetzeAngaben(neu, z, st, KanteWelle); err != nil {
 		t.Fatal(err)
 	}
 	o := d.Objekte()
-	if len(o) != 2 || d.Zuschnitt() != z || len(d.Streifen()) != 1 {
-		t.Fatalf("Angaben nicht gesetzt: %d %v %v", len(o), d.Zuschnitt(), d.Streifen())
+	if len(o) != 2 || d.Zuschnitt() != z || len(d.Streifen()) != 1 || d.Kante() != KanteWelle {
+		t.Fatalf("Angaben nicht gesetzt: %d %v %v %v", len(o), d.Zuschnitt(), d.Streifen(), d.Kante())
 	}
 	if o[0].Kennung() == 0 || o[0].Kennung() == altID || o[0].Kennung() == o[1].Kennung() {
 		t.Errorf("Kennungen %d %d (alt %d)", o[0].Kennung(), o[1].Kennung(), altID)
@@ -40,7 +40,7 @@ func TestSetzeAngabenEinSchritt(t *testing.T) {
 	if err := d.Rueckgaengig(); err != nil {
 		t.Fatal(err)
 	}
-	if d.Stand() != vorher || len(d.Objekte()) != 1 || d.Objekte()[0].Kennung() != altID || d.Zuschnitt() != image.Rect(0, 0, 50, 40) || len(d.Streifen()) != 0 {
+	if d.Stand() != vorher || len(d.Objekte()) != 1 || d.Objekte()[0].Kennung() != altID || d.Zuschnitt() != image.Rect(0, 0, 50, 40) || len(d.Streifen()) != 0 || d.Kante() != KanteAbriss {
 		t.Error("ein Rückgängig führt nicht auf den Stand davor")
 	}
 	if err := d.Wiederholen(); err != nil || len(d.Objekte()) != 2 {
@@ -53,19 +53,20 @@ func TestSetzeAngabenGrenzen(t *testing.T) {
 	d, _ := Neu(image.NewNRGBA(image.Rect(0, 0, 50, 40)))
 	ganz := image.Rect(0, 0, 50, 40)
 	faelle := map[string]func() error{
-		"Zuschnitt außerhalb": func() error { return d.SetzeAngaben(nil, image.Rect(0, 0, 60, 40), nil) },
-		"Streifen ungültig":   func() error { return d.SetzeAngaben(nil, ganz, []Streifen{{Von: 30, Bis: 10}}) },
+		"Zuschnitt außerhalb": func() error { return d.SetzeAngaben(nil, image.Rect(0, 0, 60, 40), nil, KanteAbriss) },
+		"Streifen ungültig":   func() error { return d.SetzeAngaben(nil, ganz, []Streifen{{Von: 30, Bis: 10}}, KanteAbriss) },
 		"Objekt ungültig": func() error {
-			return d.SetzeAngaben([]Objekt{Text{Ort: Pt(math.NaN(), 1), Inhalt: "a", Schriftgrad: 10}}, ganz, nil)
+			return d.SetzeAngaben([]Objekt{Text{Ort: Pt(math.NaN(), 1), Inhalt: "a", Schriftgrad: 10}}, ganz, nil, KanteAbriss)
 		},
-		"nil": func() error { return d.SetzeAngaben([]Objekt{nil}, ganz, nil) },
+		"nil":             func() error { return d.SetzeAngaben([]Objekt{nil}, ganz, nil, KanteAbriss) },
+		"Kante unbekannt": func() error { return d.SetzeAngaben(nil, ganz, nil, Kante(7)) },
 		"zu viele": func() error {
 			// Gültige Objekte, sonst griffe schon die Prüfung auf nil (F-385, D3).
 			viele := make([]Objekt, MaxObjekte+1)
 			for i := range viele {
 				viele[i] = Text{Ort: Pt(2, 20), Inhalt: "z", Schriftgrad: 10}
 			}
-			return d.SetzeAngaben(viele, ganz, nil)
+			return d.SetzeAngaben(viele, ganz, nil, KanteAbriss)
 		},
 	}
 	for name, f := range faelle {
@@ -79,7 +80,7 @@ func TestSetzeAngabenGrenzen(t *testing.T) {
 	if _, err := d.BeginneNeuenZug(Text{Ort: Pt(2, 20), Inhalt: "z", Schriftgrad: 10}); err != nil {
 		t.Fatal(err)
 	}
-	if err := d.SetzeAngaben(nil, ganz, nil); !errors.Is(err, ErrZugLaeuft) {
+	if err := d.SetzeAngaben(nil, ganz, nil, KanteAbriss); !errors.Is(err, ErrZugLaeuft) {
 		t.Errorf("während eines Zugs: %v", err)
 	}
 }

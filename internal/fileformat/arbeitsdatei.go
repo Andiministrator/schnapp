@@ -109,7 +109,7 @@ const schreibStueck = 1 << 20
 
 // Gelesen ist das Ergebnis von LeseArbeitsdatei.
 type Gelesen struct {
-	// Dokument mit Original, Objekten, Zuschnitt und Streifen; der Verlauf ist leer. Bei einem fremden PNG ohne
+	// Dokument mit Original, Objekten, Zuschnitt, Streifen und Kantenform; der Verlauf ist leer. Bei einem fremden PNG ohne
 	// Schnapp-Blöcke ist das sichtbare Bild das Original.
 	Dokument *document.Dokument
 	Meta     Metadaten
@@ -181,6 +181,9 @@ func LeseArbeitsdatei(r io.Reader) (_ *Gelesen, fehler error) {
 	}
 	d, err := neuesDokument(original) // frisch dekodiert: ohne zweite Kopie (F-334)
 	if err != nil {
+		return nil, err
+	}
+	if err := d.VorgabeKante(in.kante); err != nil { // vor jeder Änderung: kein Rückgängig-Schritt
 		return nil, err
 	}
 	for _, o := range in.objekte {

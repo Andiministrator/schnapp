@@ -35,27 +35,34 @@ type angabenSetzen struct {
 	altO, neuO   []Objekt
 	altZ, neuZ   image.Rectangle
 	altSt, neuSt []Streifen
+	altK, neuK   Kante
 }
 
 func (b angabenSetzen) ausfuehren(d *Dokument) {
 	d.objekte = append([]Objekt(nil), b.neuO...)
 	d.setzeAnsicht(b.neuZ, b.neuSt)
+	d.kante = b.neuK
 }
 
 func (b angabenSetzen) zuruecknehmen(d *Dokument) {
 	d.objekte = append([]Objekt(nil), b.altO...)
 	d.setzeAnsicht(b.altZ, b.altSt)
+	d.kante = b.altK
 }
 
-// SetzeAngaben ersetzt Objekte, Zuschnitt und Streifen in einem einzigen Rückgängig-Schritt (Wiederherstellen einer
-// Rettungskopie, ADR-0029 Punkt 6). Die Objekte bekommen neue Kennungen; es gelten dieselben Grenzen wie bei
-// Hinzufuegen, SetzeZuschnitt und SetzeStreifen.
-func (d *Dokument) SetzeAngaben(objekte []Objekt, z image.Rectangle, st []Streifen) error {
+// SetzeAngaben ersetzt Objekte, Zuschnitt, Streifen und Kantenform in einem einzigen Rückgängig-Schritt
+// (Wiederherstellen einer Rettungskopie, ADR-0029 Punkt 6; die Kantenform seit ADR-0023 Nachtrag 6). Die Objekte
+// bekommen neue Kennungen; es gelten dieselben Grenzen wie bei Hinzufuegen, SetzeZuschnitt, SetzeStreifen und
+// SetzeKante.
+func (d *Dokument) SetzeAngaben(objekte []Objekt, z image.Rectangle, st []Streifen, k Kante) error {
 	if d.zug != nil {
 		return ErrZugLaeuft
 	}
 	if len(objekte) > MaxObjekte {
 		return fmt.Errorf("document: mehr als %d Objekte", MaxObjekte)
+	}
+	if err := pruefeKante(k); err != nil {
+		return err
 	}
 	z, st = z.Canon(), sortiert(st)
 	if err := d.pruefeAnsicht(z, st); err != nil {
@@ -78,6 +85,7 @@ func (d *Dokument) SetzeAngaben(objekte []Objekt, z image.Rectangle, st []Streif
 		altO: append([]Objekt(nil), d.objekte...), neuO: neu,
 		altZ: d.zuschnitt, neuZ: z,
 		altSt: append([]Streifen(nil), d.streifen...), neuSt: st,
+		altK: d.kante, neuK: k,
 	})
 	return nil
 }

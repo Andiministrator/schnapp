@@ -10,12 +10,13 @@ import (
 	"github.com/Andiministrator/schnapp/internal/errprefix"
 )
 
-// Angaben sind Objekte, Zuschnitt und Streifen eines Dokuments ohne Pixel — der Inhalt des Blocks snAP ohne
-// Metadaten. Die Rettungskopie (ADR-0029) trägt sie in derselben Form wie die Arbeitsdatei.
+// Angaben sind Objekte, Zuschnitt, Streifen und Kantenform eines Dokuments ohne Pixel — der Inhalt des Blocks snAP
+// ohne Metadaten. Die Rettungskopie (ADR-0029) trägt sie in derselben Form wie die Arbeitsdatei.
 type Angaben struct {
 	Groesse   image.Point // Größe des Originals
 	Zuschnitt image.Rectangle
 	Streifen  []document.Streifen
+	Kante     document.Kante // fehlt s:kante (ältere Rettungskopie), KanteZacken wie beim Laden einer Arbeitsdatei
 	Objekte   []document.Objekt
 }
 
@@ -34,5 +35,5 @@ func LeseAngaben(r io.Reader) (_ *Angaben, fehler error) {
 	if _, err := document.PruefeInhalt(g, in.zuschnitt, in.streifen, in.objekte); err != nil {
 		return nil, err
 	}
-	return &Angaben{Groesse: g, Zuschnitt: in.zuschnitt, Streifen: in.streifen, Objekte: in.objekte}, nil
+	return &Angaben{Groesse: g, Zuschnitt: in.zuschnitt, Streifen: in.streifen, Kante: in.kante, Objekte: in.objekte}, nil
 }

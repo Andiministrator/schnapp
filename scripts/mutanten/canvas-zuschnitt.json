@@ -19,5 +19,47 @@
     "paket": "./internal/canvas",
     "alt": "\t\t\ts.Abb.Versatz = s.Abb.Versatz.Plus(document.Pt(float64(d.X), float64(d.Y)).Mal(s.Abb.Zoom))\n",
     "neu": "\t\t\t_ = d\n"
+  },
+  {
+    "name": "K96-3 Mindestrest oben fehlt (Karte #96, halbe Bandhöhe 11)",
+    "datei": "internal/canvas/zuschnitt.go",
+    "paket": "./internal/canvas",
+    "alt": "if ok && von < halb {",
+    "neu": "if false && ok && von < halb {"
+  },
+  {
+    "name": "K96-4 Trefferweite mit alter halber Bandhöhe 7 (Karte #96)",
+    "datei": "internal/canvas/zuschnitt.go",
+    "paket": "./internal/canvas",
+    "alt": "tol := Toleranz/s.Abb.Zoom + float64(s.D.ZackenFaktor())*document.ZackenBandHalb",
+    "neu": "tol := Toleranz/s.Abb.Zoom + float64(s.D.ZackenFaktor())*7"
+  },
+  {
+    "name": "K96-5 Kantenform wechselt auch während des Speicherns (Karte #96)",
+    "datei": "internal/canvas/menue.go",
+    "paket": "./internal/canvas",
+    "alt": "if !s.KannKanteWechseln() {",
+    "neu": "if false && !s.KannKanteWechseln() {"
+  },
+  {
+    "name": "K96-6 Renderer zeichnet keine Schicht der Kante (Karte #96)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\tz.fuelle([][]document.Punkt{document.Kantenband(k, n, laenge, f, s.Von, s.Bis)}, nil, s.Farbe)",
+    "neu": "\t\t\tif false {\n\t\t\t\tz.fuelle([][]document.Punkt{document.Kantenband(k, n, laenge, f, s.Von, s.Bis)}, nil, s.Farbe)\n\t\t\t}"
+  },
+  {
+    "name": "K96-7 Einstellung seam wird nicht übernommen (Karte #96)",
+    "datei": "internal/settings/einstellungen.go",
+    "paket": "./internal/settings",
+    "alt": "if k, ok := document.KanteAus(wert); ok {",
+    "neu": "if k, ok := document.KanteAus(wert); false && ok {"
+  },
+  {
+    "name": "K96-8 einfaches Bild bekommt die eingestellte Form nicht (Karte #96)",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif g.Fremd {",
+    "neu": "\tif false && g.Fremd {"
   }
 ]

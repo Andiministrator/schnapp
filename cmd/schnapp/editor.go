@@ -30,11 +30,18 @@ var editorStarten = ui.Editor
 // Speichern als neue Aufnahme in die Bibliothek, danach wird diese fortgeschrieben. Die geöffnete Datei selbst bleibt
 // dann unberührt.
 //
-// ohneGrenze ist --ignore-limit (ADR-0017 Nachtrag 6): Die Datei wird auch über dem Rechenbudget geöffnet.
-func oeffneImEditor(pfad string, ohneGrenze bool) error {
+// ohneGrenze ist --ignore-limit (ADR-0017 Nachtrag 6): Die Datei wird auch über dem Rechenbudget geöffnet. kante ist
+// [capture] seam (ADR-0023 Nachtrag 6): Ein einfaches PNG/JPEG (auch eine beschädigte oder neuere Arbeitsdatei, die als
+// Bild geöffnet wird) ist ein neues Dokument und bekommt diese Form; eine Arbeitsdatei behält ihre eigene.
+func oeffneImEditor(pfad string, ohneGrenze bool, kante document.Kante) error {
 	abs, g, stand, err := ladeFuerEditor(pfad, ohneGrenze)
 	if err != nil {
 		return err
+	}
+	if g.Fremd {
+		if err := g.Dokument.VorgabeKante(kante); err != nil {
+			return err
+		}
 	}
 	orte, err := library.OrteAus(os.Getenv)
 	if err != nil {

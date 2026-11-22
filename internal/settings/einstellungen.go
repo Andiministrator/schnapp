@@ -22,6 +22,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/errprefix"
 	"github.com/Andiministrator/schnapp/internal/i18n"
 	"github.com/Andiministrator/schnapp/internal/library"
@@ -93,14 +94,17 @@ type Einstellungen struct {
 	// Sprache ist [general] language: leer bei „auto“ (Sprache aus der Umgebung), sonst ein Sprachcode wie „de“ oder
 	// „pt_BR“ (ADR-0018 Nachtrag 2, ADR-0014 Nachtrag 2). Gibt es die Sprache nicht, gilt die Umgebung.
 	Sprache    string
-	Bildschirm Bildschirmwahl      // [capture] screen
-	Editor     bool                // [capture] open-editor: Editor nach der Aufnahme öffnen (ADR-0020)
+	Bildschirm Bildschirmwahl // [capture] screen
+	Editor     bool           // [capture] open-editor: Editor nach der Aufnahme öffnen (ADR-0020)
+	// Kante ist [capture] seam: Form der Stauch-Kante neuer Dokumente (Aufnahme, Öffnen eines einfachen PNG/JPEG),
+	// tear (Voreinstellung), wave oder zigzag (ADR-0023 Nachtrag 6, ADR-0018 Nachtrag 3).
+	Kante      document.Kante
 	Bibliothek library.Einstellung // [library] cleanup, cleanup-days
 }
 
 // Voreinstellungen liefert die Werte, die gelten, wenn nichts eingestellt ist.
 func Voreinstellungen() Einstellungen {
-	return Einstellungen{Bildschirm: WahlKlick, Editor: true, Bibliothek: library.Voreinstellung}
+	return Einstellungen{Bildschirm: WahlKlick, Editor: true, Kante: document.KanteAbriss, Bibliothek: library.Voreinstellung}
 }
 
 // Pfad liefert den Ort der Datei: $XDG_CONFIG_HOME/schnapp/settings.ini, ohne gesetztes oder mit relativem
@@ -229,6 +233,11 @@ func Parse(name, inhalt string) (Einstellungen, []string) {
 			switch w := Bildschirmwahl(wert); w {
 			case WahlKlick, WahlZeiger, WahlAlle:
 				e.Bildschirm, gueltig = w, true
+			}
+		case "capture.seam":
+			bekannterSchluessel = true
+			if k, ok := document.KanteAus(wert); ok {
+				e.Kante, gueltig = k, true
 			}
 		case "capture.open-editor":
 			bekannterSchluessel = true

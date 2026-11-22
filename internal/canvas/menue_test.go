@@ -91,3 +91,44 @@ func TestKannZurueckholenNichtImZug(t *testing.T) {
 		t.Error("nach dem Zug aus")
 	}
 }
+
+// ADR-0023 Nachtrag 6: „Seam style“ wechselt die Kantenform reihum, jeder Wechsel ein Rückgängig-Schritt, auch ohne
+// Naht; im Zug und während des Speicherns aus.
+func TestWechsleKante(t *testing.T) {
+	s := randSitzung(t)
+	if s.D.Kante() != document.KanteAbriss || !s.KannKanteWechseln() {
+		t.Fatalf("Ausgang %v, an %v", s.D.Kante(), s.KannKanteWechseln())
+	}
+	vor := s.D.Stand()
+	for _, soll := range []document.Kante{document.KanteWelle, document.KanteZacken, document.KanteAbriss} {
+		if k, ok := s.WechsleKante(); !ok || k != soll || s.D.Kante() != soll {
+			t.Fatalf("WechsleKante %v %v, Soll %v", k, ok, soll)
+		}
+	}
+	if !s.Geaendert() {
+		t.Error("Wechsel gilt nicht als Änderung")
+	}
+	for _, soll := range []document.Kante{document.KanteZacken, document.KanteWelle, document.KanteAbriss} {
+		if !s.Rueckgaengig() || s.D.Kante() != soll {
+			t.Fatalf("Rückgängig: %v, Soll %v", s.D.Kante(), soll)
+		}
+	}
+	if s.D.Stand() != vor {
+		t.Error("drei Rückgängig führen nicht auf den Stand davor")
+	}
+	s.Einpassen()
+	s.SetzeWerkzeug(WerkzeugKasten)
+	s.Druecken(fv(s, 20, 20), TastePrimaer)
+	s.Ziehen(fv(s, 80, 80))
+	if s.KannKanteWechseln() {
+		t.Error("im Zug an")
+	}
+	if _, ok := s.WechsleKante(); ok || s.D.Kante() != document.KanteAbriss {
+		t.Error("im Zug gewechselt")
+	}
+	s.Loslassen(fv(s, 80, 80))
+	s.hg.laeuft = true // Speichern im Hintergrund (ADR-0020 Nachtrag 6)
+	if _, ok := s.WechsleKante(); ok || s.KannKanteWechseln() {
+		t.Error("während des Speicherns gewechselt")
+	}
+}

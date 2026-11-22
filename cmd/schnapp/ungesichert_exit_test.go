@@ -83,14 +83,14 @@ func TestEditorUngesichertNachDerAufnahmeIstFehler(t *testing.T) {
 func TestOeffnenUngesichertMeldung(t *testing.T) {
 	i18n.Setze(nil)
 	l := neuerLauf(t)
-	l.an.editor = func(string, bool) error { return errors.Join(nil, ui.ErrSpeichernHaengt) }
+	l.an.editor = func(string, bool, document.Kante) error { return errors.Join(nil, ui.ErrSpeichernHaengt) }
 	code, _, fehler := l.fuehre(Auftrag{Modus: ModusOeffnen, Datei: "x.png"})
 	if code != exitFehler || strings.Contains(fehler, "Cannot open") ||
 		!strings.Contains(fehler, "The editor could not be opened or saved: ") ||
 		!strings.Contains(fehler, i18n.T("Saving did not respond; the changes may not have been saved.")) {
 		t.Errorf("Code %d, fehler %q", code, fehler)
 	}
-	l.an.editor = func(string, bool) error { return fs.ErrNotExist }
+	l.an.editor = func(string, bool, document.Kante) error { return fs.ErrNotExist }
 	code, _, fehler = l.fuehre(Auftrag{Modus: ModusOeffnen, Datei: "x.png"})
 	if code != exitFehler || !strings.Contains(fehler, "Cannot open x.png: ") {
 		t.Errorf("Öffnen-Fehler: Code %d, fehler %q", code, fehler)

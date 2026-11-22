@@ -68,7 +68,7 @@ Vorhanden ist:
 | `schnapp … --json` | das Ergebnis (Pfad und Größe oder die Monitorliste) als eine Zeile JSON ausgeben |
 
 Ohne `--output` landet jede Aufnahme in der Bibliothek (`~/Bilder/schnapp/JJJJ-MM/`), ihr Pfad steht auf der Standardausgabe, bevor
-der Editor öffnet. Skripte und KI-Agenten: siehe [`docs/agents.md`](docs/agents.md) (englisch). Einstellungen stehen in `~/.config/schnapp/settings.ini`, etwa `[capture] open-editor = false` oder
+der Editor öffnet. Skripte und KI-Agenten: siehe [`docs/agents.md`](docs/agents.md) (englisch). Einstellungen stehen in `~/.config/schnapp/settings.ini`, etwa `[capture] open-editor = false`, `[capture] seam = wave` (Kante an Stauch-Nähten: `tear`, `wave` oder `zigzag`) oder
 `[general] language = en` (Voreinstellung `auto`: die Sprache des Systems).
 
 Im Editor, Werkzeuge: **V** Auswählen, **A** Pfeil (ziehen; **Umschalt** rastet auf 45°; mittleren Griff ziehen
@@ -81,7 +81,7 @@ endgültig, und keine gespeicherte oder exportierte Datei enthält den verdeckte
 Kanten oder Ecken nach innen ziehen oder einen neuen Rahmen ziehen — der Teil außerhalb bleibt abgedunkelt sichtbar,
 eine Kante lässt sich also wieder hinausschieben; der Knopf *Ganzes Bild* oder ein Doppelklick mit dem Werkzeug zeigt
 wieder das ganze Bild), **X** Stauchen (quer über den Teil ziehen, der
-wegfallen soll — senkrecht für Zeilen, waagrecht für Spalten; die Naht zeigt eine Zackenkante; Doppelklick auf eine
+wegfallen soll — senkrecht für Zeilen, waagrecht für Spalten; die Naht zeigt eine Abrisskante mit hellem Spalt und weichem Schatten — **Kantenform** im Menü wechselt zu Welle oder Zacken, `[capture] seam` legt die Form neuer Aufnahmen fest; Doppelklick auf eine
 Naht holt den Teil zurück; ein Teil bis an den Bildrand wird stattdessen abgeschnitten und kommt mit *Ganzes Bild*
 zurück).
 Beides verbirgt nur: Das Original bleibt in der Arbeitsdatei vollständig, Geheimes also vor dem Wegschneiden

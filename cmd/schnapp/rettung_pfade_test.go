@@ -68,7 +68,7 @@ func rettungsLauf(t *testing.T) (ort, aussen string, g *gestartet) {
 // Ausgangsdatei: Die Kopie der alten verschwindet sofort, die nächste Kopie liegt unter dem Namen der neuen.
 func TestRettungNeueBasisNachSpeichern(t *testing.T) {
 	ort, aussen, g := rettungsLauf(t)
-	if err := oeffneImEditor(aussen, false); err != nil {
+	if err := oeffneImEditor(aussen, false, document.KanteAbriss); err != nil {
 		t.Fatal(err)
 	}
 	mitKasten(t, g.dok)
@@ -139,7 +139,7 @@ func TestRettungIgnoreLimit(t *testing.T) {
 		if err := rescue.Schreibe(ort, kp); err != nil {
 			t.Fatal(err)
 		}
-		if err := oeffneImEditor(aussen, fall.ohneGrenze); err != nil {
+		if err := oeffneImEditor(aussen, fall.ohneGrenze, document.KanteAbriss); err != nil {
 			t.Fatal(err)
 		}
 		text, fehler := g.rettung.Wiederherstellen(g.dok)
@@ -189,7 +189,7 @@ func TestRettungRaeumtBeimStartAuf(t *testing.T) {
 	if err := os.Chtimes(alt, z, z); err != nil {
 		t.Fatal(err)
 	}
-	if err := oeffneImEditor(aussen, false); err != nil {
+	if err := oeffneImEditor(aussen, false, document.KanteAbriss); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(alt); !os.IsNotExist(err) {

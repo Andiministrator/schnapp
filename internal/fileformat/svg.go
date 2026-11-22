@@ -221,6 +221,7 @@ func svgArbeitsdatei(d *document.Dokument, m Metadaten) []byte {
 	s.WriteString(`</s:meta><s:ansicht`)
 	z := d.Zuschnitt()
 	s.attr("s:zuschnitt", fmt.Sprintf("%d %d %d %d", z.Min.X, z.Min.Y, z.Max.X, z.Max.Y))
+	s.attr("s:kante", d.Kante().Name()) // Form der Stauch-Kante (ADR-0023 Nachtrag 6, docs/format.md 7.1)
 	s.WriteString(`>`)
 	for _, st := range d.Streifen() {
 		s.WriteString(`<s:streifen`)
@@ -248,6 +249,7 @@ type inhalt struct {
 	breite, hoehe int
 	zuschnitt     image.Rectangle
 	streifen      []document.Streifen
+	kante         document.Kante // s:kante; fehlt es oder ist es unbekannt, KanteZacken (ADR-0023 Nachtrag 6)
 	objekte       []document.Objekt
 	meta          Metadaten
 }
@@ -480,6 +482,9 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 					}
 				}
 				in.zuschnitt, hatZuschnitt = image.Rect(z[0], z[1], z[2], z[3]), true
+				// Form der Kante: Fehlt sie (ältere Dateien) oder ist sie unbekannt (neuere Form), gilt zigzag — kein
+				// Schaden, die Kante ist Darstellung (docs/format.md 7.1, Regel 3 in 11).
+				in.kante, _ = document.KanteAus(l.a["kante"])
 			case t.Name.Space == ns && t.Name.Local == "streifen" && elternteil == (xml.Name{Space: ns, Local: "ansicht"}):
 				in.streifen = append(in.streifen, document.Streifen{Zeilen: l.text("zeilen") == "true",
 					Von: l.ganz("von"), Bis: l.ganz("bis")})

@@ -24,5 +24,9 @@
   {"name": "S11 leerer Zuschnitt nicht abgelehnt (QB-6)", "datei": "internal/document/dokument.go", "paket": "./internal/fileformat",
    "alt": "if z.Empty() || !z.In(d.original.Rect) {", "neu": "if !z.In(d.original.Rect) {"},
   {"name": "S12 Streifen mit von gleich bis (QB-6)", "datei": "internal/document/dokument.go", "paket": "./internal/fileformat",
-   "alt": "|| s.Von >= s.Bis {", "neu": "|| s.Von > s.Bis {"}
+   "alt": "|| s.Von >= s.Bis {", "neu": "|| s.Von > s.Bis {"},
+  {"name": "K96-1 s:kante nicht geschrieben (Karte #96)", "datei": "internal/fileformat/svg.go", "paket": "./internal/fileformat",
+   "alt": "\ts.attr(\"s:kante\", d.Kante().Name())", "neu": "\tif false {\n\t\ts.attr(\"s:kante\", d.Kante().Name())\n\t}"},
+  {"name": "K96-2 s:kante nicht gelesen (Karte #96)", "datei": "internal/fileformat/svg.go", "paket": "./internal/fileformat",
+   "alt": "\t\t\t\tin.kante, _ = document.KanteAus(l.a[\"kante\"])", "neu": "\t\t\t\tif false {\n\t\t\t\t\tin.kante, _ = document.KanteAus(l.a[\"kante\"])\n\t\t\t\t}"}
 ]
