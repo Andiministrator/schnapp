@@ -105,6 +105,10 @@ Speichern, bleibt das Fenster offen und sagt es; erneutes Schließen verwirft di
 Abmelden speichert vorher. Eine Datei, die zu aufwendig zu rendern ist, wird beim Öffnen abgelehnt; `--ignore-limit
 DATEI` öffnet sie trotzdem.
 
+### Rettungskopie
+
+Während du bearbeitest, legt Schnapp eine kleine *Rettungskopie* (englisch „rescue copy“) deiner ungespeicherten Arbeit an, damit ein Absturz, ein beendeter Prozess oder ein Stromausfall sie nicht vernichtet. Sie enthält deine Beschriftungen mit ihren Texten, den Zuschnitt, die Stauchstreifen und die Schwärzungen seit dem letzten Speichern, aber keine Pixel. Sie liegt in `~/.local/state/schnapp/rescue/` (`$XDG_STATE_HOME/schnapp/rescue/`, falls gesetzt), in einem Ordner, den nur du lesen kannst (Rechte 0700, Dateien 0600), je geöffneter Datei eine. Nach einem gelungenen Speichern und beim Schließen ohne Änderungen wird sie gelöscht. Öffnest du dieselbe, unveränderte Datei später wieder, stellt der Editor sie wieder her und sagt es in der Statusleiste; Rückgängig führt auf den gespeicherten Stand zurück. Hat sich die Datei inzwischen geändert, wird die Kopie nicht angewendet, sondern als `….alt.json` im selben Ordner beiseitegelegt, und die Statusleiste nennt sie. Nicht mehr gebrauchte Kopien werden nach 30 Tagen beim Start des Editors entfernt. Ein zweites Fenster auf derselben Datei schreibt keine Rettungskopie und sagt es.
+
 ## Installation
 
 `./install.sh` baut Schnapp (gleiche Voraussetzungen wie unter „Bauen“; die Version kommt aus `git describe`, ohne erreichbaren Tag lautet sie `0.0.0-dev+<Hash>`, bei geänderten Dateien `0.0.0-dev+<Hash>.dirty`) und installiert es für den aktuellen Benutzer:

@@ -97,6 +97,10 @@ changes are saved as a new screenshot instead. If saving fails, the window stays
 discards the changes. Ctrl+C in the terminal or logging out saves first. A file that is too costly to render is refused
 when opening; `--ignore-limit FILE` opens it anyway.
 
+### Rescue copy
+
+While you edit, Schnapp keeps a small *rescue copy* of your unsaved work, so a crash, a killed process or a power cut does not lose it. It holds your annotations with their texts, the crop and the squeezed strips, and the redactions made since the last save, but no pixels. It lives in `~/.local/state/schnapp/rescue/` (`$XDG_STATE_HOME/schnapp/rescue/` if set), in a folder only you can read (mode 0700, files 0600), one file per opened file. It is deleted after a successful save and when you close without changes. The next time you open the same, unchanged file, the editor restores it and says so in the status bar; undo returns to the saved state. If the file has changed in the meantime, the copy is not applied but set aside as `….alt.json` in the same folder, and the status bar names it. Copies that are no longer needed are removed after 30 days, when the editor starts. A second window on the same file does not write a rescue copy and says so.
+
 ## Install
 
 `./install.sh` builds Schnapp (same requirements as under "Building"; the version comes from `git describe`, without a reachable tag it reads `0.0.0-dev+<hash>`, with changed files `0.0.0-dev+<hash>.dirty`) and installs it for the current user:

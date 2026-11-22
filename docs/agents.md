@@ -74,7 +74,8 @@ the image in pixels.
 ```
 
 for `--list-screens --json`. `name` is exactly the value for `--screen=NAME`; the size is the current mode in physical
-pixels.
+pixels, as the monitor shows it: for a monitor rotated by 90 or 270 degrees, width and height are swapped, so the size
+matches the image of `--screen=NAME`.
 
 ```json
 {"version":"0.5.0"}
