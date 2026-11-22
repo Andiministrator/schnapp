@@ -10,16 +10,39 @@ import (
 	"image"
 	"image/png"
 	"io"
+	"strings"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
+
+// blockFehler nennt den Block, in dem ein Fehler auftrat, hinter dem Paketpräfix: „fileformat: snAO: …“ statt
+// „snAO: fileformat: …“ (ADR-0019 Nachtrag 2, F-362). Unwrap lässt errors.Is und errors.As durchgreifen.
+type blockFehler struct {
+	block string
+	err   error
+}
+
+func (e *blockFehler) Error() string {
+	s := e.err.Error()
+	if rest, ok := strings.CutPrefix(s, "fileformat: "); ok {
+		return "fileformat: " + e.block + ": " + rest
+	}
+	return e.block + ": " + s
+}
+
+func (e *blockFehler) Unwrap() error { return e.err }
+
+// imBlock hüllt err mit dem Blocknamen.
+func imBlock(block string, err error) error { return &blockFehler{block: block, err: err} }
 
 // SchreibeArbeitsdatei schreibt die Arbeitsdatei: sichtbar ist das fertige Bild (Ansicht mit Beschriftungen, vom
 // Aufrufer gerendert), dazu die Blöcke snAP (SVG) und snAO (Original). Schwärzungen stecken schon im Original des
 // Dokuments (Kernprinzip 2). Die Datei trägt keine weiteren Metadaten (keine tEXt-Blöcke, keine Zeitstempel außer
 // Metadaten.Erstellt).
-func SchreibeArbeitsdatei(w io.Writer, d *document.Dokument, sichtbar image.Image, m Metadaten) error {
+func SchreibeArbeitsdatei(w io.Writer, d *document.Dokument, sichtbar image.Image, m Metadaten) (fehler error) {
+	defer errprefix.Defer("fileformat", &fehler)
 	var sicht, orig bytes.Buffer
 	// Beide PNG-Kodierungen laufen nebenläufig (F-310): Sie lesen nur ihr Bild und schreiben je in einen eigenen
 	// Puffer; zwei gleichzeitige Kodierungen kosten kaum mehr als eine. Über saveprogress.Schreiber meldet jede
@@ -96,7 +119,8 @@ type Gelesen struct {
 
 // LeseArbeitsdatei liest eine Arbeitsdatei oder ein gewöhnliches PNG. Fehlt einer der beiden Schnapp-Blöcke, ist
 // die Datei beschädigt (ErrBeschaedigt) — der Aufrufer kann sie mit LeseBild als einfaches Bild öffnen.
-func LeseArbeitsdatei(r io.Reader) (*Gelesen, error) {
+func LeseArbeitsdatei(r io.Reader) (_ *Gelesen, fehler error) {
+	defer errprefix.Defer("fileformat", &fehler)
 	// Fortschritt je gelesenem Stück: Beim Speichern liest die Bibliothek die alte Datei, auf einem langsamen Medium
 	// dauert das (F-298).
 	bloecke, err := leseBloecke(saveprogress.Leser(r))
@@ -150,7 +174,7 @@ func LeseArbeitsdatei(r io.Reader) (*Gelesen, error) {
 	}
 	original, err := decodiere(origDaten)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", blockOriginal, err)
+		return nil, imBlock(blockOriginal, err)
 	}
 	if b := original.Bounds(); b.Dx() != in.breite || b.Dy() != in.hoehe {
 		return nil, fmt.Errorf("%w: Original %v passt nicht zu %dx%d", ErrBeschaedigt, b, in.breite, in.hoehe)
@@ -181,7 +205,8 @@ func LeseArbeitsdatei(r io.Reader) (*Gelesen, error) {
 }
 
 // LeseBild liest nur das sichtbare Bild eines PNG (auch einer beschädigten Arbeitsdatei).
-func LeseBild(r io.Reader) (image.Image, error) {
+func LeseBild(r io.Reader) (_ image.Image, fehler error) {
+	defer errprefix.Defer("fileformat", &fehler)
 	bloecke, err := leseBloecke(r)
 	if err != nil {
 		return nil, err

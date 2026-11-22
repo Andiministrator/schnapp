@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 	"github.com/Andiministrator/schnapp/internal/fileformat"
 )
 
@@ -123,7 +124,8 @@ func (b *Bibliothek) zeitname(t time.Time) (monat, name string) {
 // sichtbar ist das fertige Bild (vom Aufrufer gerendert, siehe fileformat.SchreibeArbeitsdatei). Fehlt m.Erstellt,
 // gilt die aktuelle Zeit. Scheitert nur Index oder Vorschau, liefert Ablegen den Eintrag samt ErrIndex bzw.
 // ErrVorschau.
-func (b *Bibliothek) Ablegen(d *document.Dokument, sichtbar image.Image, m fileformat.Metadaten) (Eintrag, error) {
+func (b *Bibliothek) Ablegen(d *document.Dokument, sichtbar image.Image, m fileformat.Metadaten) (_ Eintrag, fehler error) {
+	defer errprefix.Defer("library", &fehler)
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if m.Erstellt.IsZero() {
@@ -236,7 +238,8 @@ type Geladen struct {
 }
 
 // Laden liest den Index. Kaputte Zeilen werden übersprungen und gezählt; ein fehlender Index ist leer.
-func (b *Bibliothek) Laden() (Geladen, error) {
+func (b *Bibliothek) Laden() (_ Geladen, fehler error) {
+	defer errprefix.Defer("library", &fehler)
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return b.lade()
@@ -313,7 +316,8 @@ type NeuaufbauErgebnis struct {
 // Index atomar neu. Fremde und beschädigte Dateien werden übersprungen, nie verändert oder gelöscht. Das einzige, was
 // Neuaufbau entfernt, sind liegen gebliebene eigene temporäre Dateien (`.schnapp-tmp-*`, reguläre Dateien, älter als
 // eine Minute, F-274); Zukunftsdatierte meldet er in TempReste, ohne sie zu löschen.
-func (b *Bibliothek) Neuaufbau() (NeuaufbauErgebnis, error) {
+func (b *Bibliothek) Neuaufbau() (_ NeuaufbauErgebnis, fehler error) {
+	defer errprefix.Defer("library", &fehler)
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	var erg NeuaufbauErgebnis
@@ -401,7 +405,8 @@ func (b *Bibliothek) liesEintrag(pfad, rel string) (Eintrag, bool) {
 
 // Abgleich lässt Index-Einträge fallen, deren Datei fehlt (etwa nach Verschieben im Dateimanager), und
 // auch kaputte Zeilen. Geschrieben wird nur bei einer Änderung. Rückgabe: Zahl der entfernten Einträge.
-func (b *Bibliothek) Abgleich() (int, error) {
+func (b *Bibliothek) Abgleich() (_ int, fehler error) {
+	defer errprefix.Defer("library", &fehler)
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	g, err := b.lade()
@@ -434,7 +439,8 @@ type Anfrage struct {
 }
 
 // Suchen liefert die passenden Aufnahmen, neueste zuerst.
-func (b *Bibliothek) Suchen(a Anfrage) ([]Eintrag, error) {
+func (b *Bibliothek) Suchen(a Anfrage) (_ []Eintrag, fehler error) {
+	defer errprefix.Defer("library", &fehler)
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	g, err := b.lade()
@@ -474,7 +480,8 @@ func hatSchlagwort(e Eintrag, w string) bool {
 // SetzeSchlagworte ersetzt die Schlagworte einer Aufnahme: Die Arbeitsdatei wird mit geänderten Metadaten atomar
 // neu geschrieben (Original, Objekte und Erstellzeit bleiben), danach folgt der Index. pfad ist relativ zur
 // Ablage, wie Eintrag.Pfad. Fremde oder beschädigte Dateien lehnt die Funktion ab (ErrFremd).
-func (b *Bibliothek) SetzeSchlagworte(pfad string, worte []string) (Eintrag, error) {
+func (b *Bibliothek) SetzeSchlagworte(pfad string, worte []string) (_ Eintrag, fehler error) {
+	defer errprefix.Defer("library", &fehler)
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	e := Eintrag{Pfad: pfad, Breite: 1, Hoehe: 1}

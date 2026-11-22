@@ -11,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 )
 
 // Rechte nach ADR-0016: Aufnahmen zeigen oft Vertrauliches.
@@ -32,7 +34,8 @@ var ErrKeinHeim = errors.New("library: kein absolutes Heimverzeichnis (HOME)")
 
 // OrteAus bestimmt die Orte aus einer Umgebung (Umgebungsvariable → Wert, leer wenn nicht gesetzt). Das Programm
 // übergibt os.Getenv, Tests ihre eigene Umgebung.
-func OrteAus(umgebung func(string) string) (Orte, error) {
+func OrteAus(umgebung func(string) string) (_ Orte, fehler error) {
+	defer errprefix.Defer("library", &fehler)
 	heim := umgebung("HOME")
 	if !filepath.IsAbs(heim) {
 		return Orte{}, ErrKeinHeim

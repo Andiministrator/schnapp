@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
 
@@ -152,7 +153,8 @@ var aendereRechte = os.Chmod
 // nicht dazugehört, ist verwaist. Andere Dateien im Ordner (fremde, temporäre) werden nicht gemeldet. Ist die
 // Ablage nicht lesbar oder fehlt sie (etwa ein nicht eingehängtes Laufwerk), kommt ein Fehler statt einer Liste, in
 // der fälschlich alles verwaist wäre. Ein fehlender Vorschau-Ordner ergibt eine leere Liste.
-func (b *Bibliothek) VerwaisteVorschauen() ([]string, error) {
+func (b *Bibliothek) VerwaisteVorschauen() (_ []string, fehler error) {
+	defer errprefix.Defer("library", &fehler)
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	erwartet := map[string]bool{}

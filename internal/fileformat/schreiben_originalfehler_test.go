@@ -33,8 +33,9 @@ func TestSchreibeArbeitsdateiOriginalFehler(t *testing.T) {
 	if err == nil {
 		t.Fatal("Fehler der Original-Kodierung verschluckt: keine Fehlermeldung")
 	}
-	if err.Error() != want.Error() {
-		t.Errorf("Fehler %q, erwartet der der Original-Kodierung %q", err, want)
+	// Hülle mit Paketpräfix (ADR-0019 Nachtrag 2, F-362): Der Text der Kodierung folgt unverändert dahinter.
+	if err.Error() != "fileformat: "+want.Error() {
+		t.Errorf("Fehler %q, erwartet „fileformat: “ vor dem der Original-Kodierung %q", err, want)
 	}
 	if z.aufrufe != 0 {
 		t.Errorf("trotz Fehler %d Schreibaufrufe", z.aufrufe)

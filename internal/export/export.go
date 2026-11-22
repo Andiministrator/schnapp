@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 	"github.com/Andiministrator/schnapp/internal/fileformat"
 	"github.com/Andiministrator/schnapp/internal/render"
 )
@@ -99,7 +100,8 @@ var ErrZielVorhanden = errors.New("export: Ziel vorhanden")
 
 // PruefeAngehaengt lehnt ein schon vorhandenes Ziel ab, wenn Waehle die Endung angehängt hat (A-1). Fehler beim
 // Prüfen außer „nicht vorhanden“ gelten als vorhanden (im Zweifel nichts ersetzen).
-func PruefeAngehaengt(pfad string, angehaengt bool) error {
+func PruefeAngehaengt(pfad string, angehaengt bool) (fehler error) {
+	defer errprefix.Defer("export", &fehler)
 	if !angehaengt {
 		return nil
 	}
@@ -116,7 +118,8 @@ func PruefeAngehaengt(pfad string, angehaengt bool) error {
 // Schreibe schreibt das Dokument im Format f nach w: PNG und JPG aus dem fertig gerenderten Bild (render.Bild, das
 // auch die Arbeitsdatei und die Zwischenablage speist), SVG über fileformat.ExportiereSVG. Ohne snAP/snAO-Blöcke und
 // ohne Metadaten (Kernprinzip 3). Schwärzen ist in den Pixeln endgültig (ADR-0008, Kernprinzip 2).
-func Schreibe(d *document.Dokument, f Format, w io.Writer) error {
+func Schreibe(d *document.Dokument, f Format, w io.Writer) (fehler error) {
+	defer errprefix.Defer("export", &fehler)
 	if f == SVG {
 		return fileformat.ExportiereSVG(w, d)
 	}
@@ -138,7 +141,8 @@ func Schreibe(d *document.Dokument, f Format, w io.Writer) error {
 // folgen der umask des Prozesses; ersetzt die Datei eine vorhandene reguläre Datei, übernimmt sie deren Rechte schon vor
 // dem Schreiben (die temporäre Datei ist nie offener als das Ziel). Ist das Ziel ein symbolischer Link, wird dorthin
 // geschrieben, wohin er zeigt (der Link bleibt).
-func SchreibeAtomar(pfad string, schreibe func(io.Writer) error) error {
+func SchreibeAtomar(pfad string, schreibe func(io.Writer) error) (fehler error) {
+	defer errprefix.Defer("export", &fehler)
 	return schreibeAtomar(pfad, false, schreibe)
 }
 
@@ -146,7 +150,8 @@ func SchreibeAtomar(pfad string, schreibe func(io.Writer) error) error {
 // Anlegen selbst (harter Link), nicht vorher: Entsteht das Ziel während des Renderns, gilt ErrZielVorhanden (Verify N-4).
 // Für eine angehängte Endung, die der Dialog nicht bestätigt hat. Kann das Dateisystem keine harten Links, wird vorher
 // geprüft und umbenannt (bestmöglich).
-func SchreibeOhneErsetzen(pfad string, schreibe func(io.Writer) error) error {
+func SchreibeOhneErsetzen(pfad string, schreibe func(io.Writer) error) (fehler error) {
+	defer errprefix.Defer("export", &fehler)
 	return schreibeAtomar(pfad, true, schreibe)
 }
 

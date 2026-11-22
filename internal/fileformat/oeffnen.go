@@ -12,6 +12,7 @@ import (
 	"os"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 )
 
 // MaxDatei begrenzt, wie viel Oeffne liest (wie die Arbeitsdatei, größer als jedes erlaubte Bild samt Ebenen).
@@ -24,7 +25,8 @@ var ErrKeineDatei = errors.New("fileformat: keine gewöhnliche Datei")
 // PNG oder ein JPEG. Was nicht als Arbeitsdatei mit Ebenen gelesen werden kann (fremdes Bild, beschädigte oder neuere
 // Arbeitsdatei), kommt als neues Dokument aus dem sichtbaren Bild mit Fremd = true — der Editor darf es dann nie an
 // seinen Platz zurückschreiben, sonst gingen Ebenen einer neueren Fassung verloren.
-func Oeffne(pfad string) (*Gelesen, error) {
+func Oeffne(pfad string) (_ *Gelesen, fehler error) {
+	defer errprefix.Defer("fileformat", &fehler)
 	st, err := os.Stat(pfad)
 	if err != nil {
 		return nil, err

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 	"github.com/Andiministrator/schnapp/internal/fileformat"
 	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
@@ -66,7 +67,8 @@ func standAus(fi os.FileInfo) Stand {
 
 // StandVon liefert den Stand der Datei pfad (Verweise werden aufgelöst). Der Editor holt ihn vor dem Lesen, damit
 // eine Änderung zwischen Lesen und Merken nicht unbemerkt bleibt.
-func StandVon(pfad string) (Stand, error) {
+func StandVon(pfad string) (_ Stand, fehler error) {
+	defer errprefix.Defer("library", &fehler)
 	fi, err := os.Stat(pfad)
 	if err != nil {
 		return Stand{}, err
@@ -84,7 +86,8 @@ func StandVon(pfad string) (Stand, error) {
 //
 // Der Vergleich ist race-arm, nicht race-frei: Zwischen Prüfen und Umbenennen bleiben Millisekunden, in denen ein
 // anderer Prozess schreiben könnte (keine Sperrdateien; der Mutex gilt nur in diesem Prozess).
-func (b *Bibliothek) Speichern(rel string, erwartet Stand, d *document.Dokument, sichtbar image.Image) (Eintrag, Stand, error) {
+func (b *Bibliothek) Speichern(rel string, erwartet Stand, d *document.Dokument, sichtbar image.Image) (_ Eintrag, _ Stand, fehler error) {
+	defer errprefix.Defer("library", &fehler)
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if !(Eintrag{Pfad: rel, Breite: 1, Hoehe: 1}).gueltig() {
@@ -211,6 +214,7 @@ func (b *Bibliothek) ersetzeImIndex(neu Eintrag) error {
 //   - ErrIndex: Datei und Vorschau sind weg, nur der Index ist nicht nachgeführt (Abgleich holt das nach).
 //   - sonst: Die Datei ließ sich nicht entfernen.
 func (b *Bibliothek) Entfernen(rel string, erwartet Stand) (geloescht bool, fehler error) {
+	defer errprefix.Defer("library", &fehler)
 	b.mu.Lock() // liest und schreibt den Index wie Speichern (F-165)
 	defer b.mu.Unlock()
 	if !(Eintrag{Pfad: rel, Breite: 1, Hoehe: 1}).gueltig() {

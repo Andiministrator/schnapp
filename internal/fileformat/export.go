@@ -17,13 +17,18 @@ import (
 	"strings"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 )
 
 // ExportierePNG schreibt das sichtbare Bild als gewöhnliches PNG ohne Bearbeitungsdaten (zum Weitergeben).
-func ExportierePNG(w io.Writer, sichtbar image.Image) error { return png.Encode(w, sichtbar) }
+func ExportierePNG(w io.Writer, sichtbar image.Image) (fehler error) {
+	defer errprefix.Defer("fileformat", &fehler)
+	return png.Encode(w, sichtbar)
+}
 
 // ExportiereJPG schreibt das sichtbare Bild als JPG (Qualität 1–100). Transparenz wird auf Weiß gelegt.
-func ExportiereJPG(w io.Writer, sichtbar image.Image, qualitaet int) error {
+func ExportiereJPG(w io.Writer, sichtbar image.Image, qualitaet int) (fehler error) {
+	defer errprefix.Defer("fileformat", &fehler)
 	if qualitaet < 1 || qualitaet > 100 {
 		return fmt.Errorf("fileformat: JPG-Qualität %d außerhalb 1–100", qualitaet)
 	}
@@ -121,7 +126,8 @@ func (s *schreiber) naehte(d *document.Dokument) {
 // die Ansicht in Rechtecke) steht ein verschachteltes <svg> mit viewBox, das nur den Pixelausschnitt dieser Kachel als
 // eingebettetes PNG trägt und die Objekte als Vektoren zeigt. Weggeschnittene oder weggestauchte Bereiche sind in
 // der Datei nicht enthalten (F-60) — anders als in der Arbeitsdatei, die nicht zerstörend das ganze Original mitführt.
-func ExportiereSVG(w io.Writer, d *document.Dokument) error {
+func ExportiereSVG(w io.Writer, d *document.Dokument) (fehler error) {
+	defer errprefix.Defer("fileformat", &fehler)
 	original := d.OriginalBild()
 	g := d.Groesse()
 	var s schreiber

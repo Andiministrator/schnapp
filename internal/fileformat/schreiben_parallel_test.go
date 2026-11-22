@@ -154,7 +154,7 @@ func TestSchreibeArbeitsdateiFehlerWartetAufBeide(t *testing.T) {
 	if err == nil {
 		t.Fatal("leeres sichtbares Bild ohne Fehler geschrieben")
 	}
-	if want := png.Encode(io.Discard, image.NewNRGBA(image.Rect(0, 0, 0, 0))); want == nil || err.Error() != want.Error() {
+	if want := png.Encode(io.Discard, image.NewNRGBA(image.Rect(0, 0, 0, 0))); want == nil || err.Error() != "fileformat: "+want.Error() {
 		t.Errorf("Fehler %q, erwartet den der Bild-Kodierung %v", err, want)
 	}
 	mu.Lock()

@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 	"github.com/Andiministrator/schnapp/internal/fileformat"
 )
 
@@ -59,7 +60,8 @@ type AufraeumErgebnis struct {
 // die Ablage auf einem anderen Dateisystem als der Papierkorb, bleibt die Aufnahme liegen und wird gemeldet.
 // Vor dem Verschieben prüft die Funktion Schlagworte und Bearbeitung in der Datei selbst (der Index ist nur ein
 // Cache). Danach fallen die verschobenen Aufnahmen aus dem Index.
-func (b *Bibliothek) Aufraeumen(jetzt time.Time, e Einstellung) (AufraeumErgebnis, error) {
+func (b *Bibliothek) Aufraeumen(jetzt time.Time, e Einstellung) (_ AufraeumErgebnis, fehler error) {
+	defer errprefix.Defer("library", &fehler)
 	var erg AufraeumErgebnis
 	if !e.An {
 		return erg, nil

@@ -13,6 +13,7 @@ import (
 	"io"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 )
 
 // Kopfdaten sind die Angaben einer Arbeitsdatei, die ohne Pixel auskommen (LeseMetadaten).
@@ -40,7 +41,8 @@ type Kopfdaten struct {
 //
 // Angekündigte Blocklängen reservieren nichts im Voraus (F-273, F-59, ADR-0008): Der IHDR hat genau 13 Bytes, der
 // snAP wächst mit den tatsächlich gelesenen Bytes.
-func LeseMetadaten(r io.Reader) (*Kopfdaten, error) {
+func LeseMetadaten(r io.Reader) (_ *Kopfdaten, fehler error) {
+	defer errprefix.Defer("fileformat", &fehler)
 	r = io.LimitReader(r, maxDatei+1)
 	sig := make([]byte, len(pngSignatur))
 	if _, err := io.ReadFull(r, sig); err != nil || !bytes.Equal(sig, pngSignatur) {
@@ -164,7 +166,7 @@ func LeseMetadaten(r io.Reader) (*Kopfdaten, error) {
 	// Das Original muss zur Größe im SVG passen: Der snAO-Block beginnt mit einem PNG (Signatur, IHDR).
 	ob, oh, err := originalGroesse(origKopf)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", blockOriginal, err)
+		return nil, imBlock(blockOriginal, err)
 	}
 	if ob != in.breite || oh != in.hoehe {
 		return nil, fmt.Errorf("%w: Original %dx%d passt nicht zu %dx%d", ErrBeschaedigt, ob, oh, in.breite, in.hoehe)

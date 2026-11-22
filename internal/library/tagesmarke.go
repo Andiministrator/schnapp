@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 )
 
 // ErrKeinZustandsordner: Ohne absolutes HOME (und ohne absolutes XDG_STATE_HOME) gibt es keinen Ort für die
@@ -32,7 +34,8 @@ func TagesmarkePfad(umgebung func(string) string) string {
 // liefert true. Die Marke wird vor dem Aufräumen geschrieben, damit es höchstens einmal am Tag läuft, auch wenn es
 // scheitert; lässt sie sich nicht schreiben, kommt false mit Fehler — dann wird nicht aufgeräumt (im Zweifel nichts
 // tun). Eine unlesbare oder fremde Marke gilt als „heute noch nicht“.
-func BeanspruchenHeute(pfad string, jetzt time.Time) (bool, error) {
+func BeanspruchenHeute(pfad string, jetzt time.Time) (_ bool, fehler error) {
+	defer errprefix.Defer("library", &fehler)
 	if pfad == "" {
 		return false, ErrKeinZustandsordner
 	}

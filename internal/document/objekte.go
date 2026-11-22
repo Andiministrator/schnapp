@@ -31,7 +31,7 @@ type Strich struct {
 
 func (s Strich) pruefe() error {
 	if !groesse(s.Breite) {
-		return fmt.Errorf("Strichbreite ungültig: %v", s.Breite)
+		return fmt.Errorf("document: Strichbreite ungültig: %v", s.Breite)
 	}
 	return nil
 }
@@ -84,7 +84,7 @@ func (p Pfeil) Grenzen() Rechteck {
 func (p Pfeil) mitKennung(id int) Objekt { p.ID = id; return p }
 func (p Pfeil) pruefe() error {
 	if !endlich(p.A.X, p.A.Y, p.B.X, p.B.Y, p.K.X, p.K.Y) {
-		return fmt.Errorf("Pfeil mit ungültigen Koordinaten")
+		return fmt.Errorf("document: Pfeil mit ungültigen Koordinaten")
 	}
 	return p.Strich.pruefe()
 }
@@ -114,7 +114,7 @@ func (k Kasten) mitKennung(id int) Objekt { k.ID = id; return k }
 func (k Kasten) pruefe() error {
 	b := k.Bereich
 	if !endlich(b.Min.X, b.Min.Y, b.Max.X, b.Max.Y) || !groesse(k.Eckradius) || b.Max.X < b.Min.X || b.Max.Y < b.Min.Y {
-		return fmt.Errorf("Kasten mit ungültigen Werten")
+		return fmt.Errorf("document: Kasten mit ungültigen Werten")
 	}
 	return k.Strich.pruefe()
 }
@@ -158,21 +158,21 @@ func (t Text) Grenzen() Rechteck {
 func (t Text) mitKennung(id int) Objekt { t.ID = id; return t }
 func (t Text) pruefe() error {
 	if !endlich(t.Ort.X, t.Ort.Y) || !groesse(t.Schriftgrad, t.BreiteGrenze) || t.Schriftgrad <= 0 || t.Schriftgrad > MaxSchrift {
-		return fmt.Errorf("Text mit ungültigen Werten")
+		return fmt.Errorf("document: Text mit ungültigen Werten")
 	}
 	// Zeichen, die XML nicht tragen kann, überstehen das Speichern nicht unverändert (F-62): ungültiges UTF-8 und
 	// Steuerzeichen unter U+0020 außer Tabulator, Zeilenumbruch und Wagenrücklauf sowie U+FFFE/U+FFFF. Alles, was
 	// XML 1.0 erlaubt, bleibt erlaubt — sonst würden Texte (etwa mit CRLF) beim Lesen strenger behandelt als beim
 	// Schreiben (F-68).
 	if !utf8.ValidString(t.Inhalt) {
-		return fmt.Errorf("Text ist kein gültiges UTF-8")
+		return fmt.Errorf("document: Text ist kein gültiges UTF-8")
 	}
 	if utf8.RuneCountInString(t.Inhalt) > MaxTextZeichen {
-		return fmt.Errorf("Text hat mehr als %d Zeichen", MaxTextZeichen)
+		return fmt.Errorf("document: Text hat mehr als %d Zeichen", MaxTextZeichen)
 	}
 	for _, r := range t.Inhalt {
 		if (r < 0x20 && r != '\n' && r != '\t' && r != '\r') || r == 0xfffe || r == 0xffff {
-			return fmt.Errorf("Text enthält das Steuerzeichen U+%04X", r)
+			return fmt.Errorf("document: Text enthält das Steuerzeichen U+%04X", r)
 		}
 	}
 	return nil
@@ -201,7 +201,7 @@ func (n Nummer) mitKennung(id int) Objekt { n.ID = id; return n }
 func (n Nummer) pruefe() error {
 	if !endlich(n.Mitte.X, n.Mitte.Y) || !groesse(n.Radius) || n.Radius <= 0 || n.Radius > MaxSchrift ||
 		n.Wert < 0 || n.Wert > MaxNummer {
-		return fmt.Errorf("Nummer mit ungültigen Werten")
+		return fmt.Errorf("document: Nummer mit ungültigen Werten")
 	}
 	return nil
 }
