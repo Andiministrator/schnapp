@@ -260,8 +260,17 @@ func Aufraeumen(ort string, jetzt time.Time) (entfernt int, fehler error) {
 
 // Anwenden wendet kp auf d an (ADR-0029 Punkt 6): erst die Schwärzungen in ihrer Reihenfolge, dann die Angaben in
 // einem Schritt. Rückgängig führt zurück auf den Stand vor dem Anwenden. pruefe (etwa render.Pruefe) bekommt vorher
-// einen Abzug mit angewendeter Kopie; lehnt es ab, bleibt d unverändert. Passt die Kopie nicht (Größe, Grenzen), bleibt
-// d ebenso unverändert.
+// einen Abzug mit den angewendeten Angaben; lehnt es ab, bleibt d unverändert. Passt die Kopie nicht (Größe, Grenzen),
+// bleibt d ebenso unverändert.
+//
+// Flächenbudget (F-412): Alle Schwärzungen werden vorab ohne Pixel geprüft (document.PruefeSchwaerzung) und ihre
+// Flächen summiert. Belegten sie im Rückgängig-Verlauf mehr Pixelkopien, als er noch aufnimmt (document.VerlaufPlatz,
+// 4 Bytes je Pixel, Grenze 512 MiB), kommt ErrZuGross, bevor ein Pixel angefasst wird. So bleibt die Arbeit beim
+// Öffnen auf rund 128 Mi Pixel begrenzt (unter einer Sekunde), keine Schwärzung fällt beim Wiederherstellen aus dem
+// Verlauf (Rückgängig trägt bis zum gespeicherten Stand, Erzeuge liefert danach kein ErrUnfertig), und eine Sitzung
+// schreibt nie eine Kopie über dem Budget, ohne dass der Verlauf schon Schwärzungen verworfen hätte (dann schreibt sie
+// gar keine, ADR-0029 Nachtrag 1). Abgelehnt heißt: nichts angewendet, auch keine der Schwärzungen (Prinzip 2: kein
+// halb geschwärztes Ergebnis gilt als wiederhergestellt).
 func Anwenden(d *document.Dokument, kp *Kopie, pruefe func(*document.Dokument) error) (fehler error) {
 	defer errprefix.Defer("rescue", &fehler)
 	a, err := fileformat.LeseAngaben(strings.NewReader(kp.Angaben))
@@ -280,12 +289,24 @@ func Anwenden(d *document.Dokument, kp *Kopie, pruefe func(*document.Dokument) e
 		r := image.Rect(s.Bereich[0], s.Bereich[1], s.Bereich[2], s.Bereich[3])
 		liste = append(liste, document.SchwaerzAngabe{Bereich: r, Art: document.Schwaerzung{Block: s.Block, Farbe: c, Mosaik: s.Mosaik}})
 	}
-	// Erst an einem Abzug: Scheitert ein Schritt oder die Prüfung, bleibt d, wie es war.
+	// Schwärzungen vorab ohne Pixel prüfen und gegen den Platz im Verlauf rechnen (F-412).
+	platz, bedarf := d.VerlaufPlatz(), int64(0)
+	for _, s := range liste {
+		r, err := d.PruefeSchwaerzung(s.Bereich, s.Art)
+		if err != nil {
+			return err
+		}
+		if bedarf += 4 * int64(r.Dx()) * int64(r.Dy()); bedarf > platz { // r liegt im Bild: kein Überlauf
+			return fmt.Errorf("%w: Schwärzungen belegen mehr als %d MiB im Rückgängig-Verlauf", ErrZuGross, platz>>20)
+		}
+	}
+	// Die Angaben erst an einem Abzug: Scheitert ein Schritt oder die Prüfung, bleibt d, wie es war. Die Schwärzungen
+	// ändern nur Pixel, die weder SetzeAngaben noch pruefe lesen; sie sind oben geprüft und laufen nur einmal, an d.
 	probe, err := d.Abzug()
 	if err != nil {
 		return err
 	}
-	if err := wende(probe, liste, a); err != nil {
+	if err := probe.SetzeAngaben(a.Objekte, a.Zuschnitt, a.Streifen, a.Kante); err != nil {
 		return err
 	}
 	if pruefe != nil {
@@ -293,13 +314,9 @@ func Anwenden(d *document.Dokument, kp *Kopie, pruefe func(*document.Dokument) e
 			return err
 		}
 	}
-	return wende(d, liste, a)
-}
-
-func wende(d *document.Dokument, liste []document.SchwaerzAngabe, a *fileformat.Angaben) error {
 	for _, s := range liste {
 		if err := d.Schwaerzen(s.Bereich, s.Art); err != nil {
-			return err
+			return err // nicht erreichbar: geprüft wie oben, ohne Zug (sonst schon Abzug gescheitert)
 		}
 	}
 	return d.SetzeAngaben(a.Objekte, a.Zuschnitt, a.Streifen, a.Kante)

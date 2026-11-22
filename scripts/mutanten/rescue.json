@@ -73,7 +73,7 @@
     "name": "R12 kein Probelauf am Abzug",
     "datei": "internal/rescue/rescue.go",
     "paket": "./internal/rescue",
-    "alt": "if err := wende(probe, liste, a); err != nil {\n\t\treturn err\n\t}",
+    "alt": "if err := probe.SetzeAngaben(a.Objekte, a.Zuschnitt, a.Streifen, a.Kante); err != nil {\n\t\treturn err\n\t}",
     "neu": "_ = probe"
   },
   {
@@ -108,7 +108,7 @@
     "name": "R17 Schwärzungen nach den Angaben vergessen",
     "datei": "internal/rescue/rescue.go",
     "paket": "./internal/rescue",
-    "alt": "\tfor _, s := range liste {\n\t\tif err := d.Schwaerzen(s.Bereich, s.Art); err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n",
+    "alt": "\tfor _, s := range liste {\n\t\tif err := d.Schwaerzen(s.Bereich, s.Art); err != nil {\n\t\t\treturn err // nicht erreichbar: geprüft wie oben, ohne Zug (sonst schon Abzug gescheitert)\n\t\t}\n\t}\n",
     "neu": "\t_ = liste\n"
   },
   {
@@ -418,5 +418,33 @@
     "paket": "./internal/rescue",
     "alt": "\t\t\to = d.zug.alt\n",
     "neu": ""
+  },
+  {
+    "name": "B1 F-412 Flächenbudget ohne Wirkung",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "; bedarf > platz {",
+    "neu": "; false && bedarf > platz {"
+  },
+  {
+    "name": "B2 F-412 Schwärzungen nicht vorab geprüft",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "r, err := d.PruefeSchwaerzung(s.Bereich, s.Art)\n\t\tif err != nil {",
+    "neu": "r, err := d.PruefeSchwaerzung(s.Bereich, s.Art)\n\t\tif false && err != nil {"
+  },
+  {
+    "name": "B3 F-412 VerlaufPlatz ohne gehaltene Kopien",
+    "datei": "internal/document/verlauf.go",
+    "paket": "./internal/document",
+    "alt": "return max(verlaufGrenze-summe, 0)",
+    "neu": "return verlaufGrenze"
+  },
+  {
+    "name": "B4 F-412 PruefeSchwaerzung ohne Begrenzung aufs Bild",
+    "datei": "internal/document/verlauf.go",
+    "paket": "./internal/document",
+    "alt": "\tr, _, err := pruefeSchwaerzung(d.original.Rect, r, s)\n\treturn r, err",
+    "neu": "\t_, _, err := pruefeSchwaerzung(d.original.Rect, r, s)\n\treturn r, err"
   }
 ]

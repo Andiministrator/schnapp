@@ -79,6 +79,20 @@ func (d *Dokument) begrenzeVerlauf() {
 	}
 }
 
+// VerlaufPlatz liefert, wie viele Bytes Pixelkopien der Rückgängig-Verlauf noch aufnimmt, ohne Schritte zu verwerfen
+// (verlaufGrenze minus die gehaltenen Kopien, nie negativ). Eine Schwärzung über n Pixel belegt 4·n Bytes. Wer mehrere
+// Schwärzungen am Stück anwendet (Rettungskopie, F-412), prüft damit vorab, dass keine aus dem Verlauf fällt und
+// Rückgängig auf den Stand davor zurückführt.
+func (d *Dokument) VerlaufPlatz() int64 {
+	var summe int64
+	for _, s := range d.verlauf.erledigt {
+		if g, ok := s.b.(groessenBefehl); ok {
+			summe += g.pixelBytes()
+		}
+	}
+	return max(verlaufGrenze-summe, 0)
+}
+
 // Stand kennzeichnet den Verlaufsstand des Dokuments (F-109): Jede neue Änderung bekommt eine neue Kennung, die nie
 // wiederkehrt; Rückgängig und Wiederholen kehren zu früheren Kennungen zurück. Gleiche Kennung heißt gleicher Inhalt
 // — so erkennt der Editor, ob der gespeicherte Stand wieder erreicht ist. Ein laufender Zug zählt nicht (er landet
@@ -461,29 +475,47 @@ func (d *Dokument) Schwaerzen(r image.Rectangle, s Schwaerzung) error {
 	if d.zug != nil {
 		return ErrZugLaeuft
 	}
+	r, s, err := pruefeSchwaerzung(d.original.Rect, r, s)
+	if err != nil {
+		return err
+	}
+	d.fuehreAus(&schwaerzen{r: r, s: s})
+	return nil
+}
+
+// PruefeSchwaerzung prüft eine Schwärzung wie Schwaerzen, ohne Pixel anzufassen, und liefert den Bereich, den sie
+// überschriebe (aufs Bild begrenzt). Liefert sie keinen Fehler, gelingt Schwaerzen mit denselben Werten, solange kein
+// Zug läuft. Für das Wiederherstellen einer Rettungskopie: alle Schwärzungen vorab prüfen und ihre Fläche summieren
+// (F-412).
+func (d *Dokument) PruefeSchwaerzung(r image.Rectangle, s Schwaerzung) (image.Rectangle, error) {
+	r, _, err := pruefeSchwaerzung(d.original.Rect, r, s)
+	return r, err
+}
+
+// pruefeSchwaerzung begrenzt r auf das Bild, prüft die Art und klemmt die Blockgröße.
+func pruefeSchwaerzung(bild, r image.Rectangle, s Schwaerzung) (image.Rectangle, Schwaerzung, error) {
 	if s.Mosaik < 0 || s.Mosaik > MaxMosaik {
-		return fmt.Errorf("document: Mosaik %d außerhalb 0..%d", s.Mosaik, MaxMosaik)
+		return r, s, fmt.Errorf("document: Mosaik %d außerhalb 0..%d", s.Mosaik, MaxMosaik)
 	}
 	if s.Block > 0 && s.Block < MinBlock {
-		return fmt.Errorf("document: Blockgröße %d kleiner als %d", s.Block, MinBlock)
+		return r, s, fmt.Errorf("document: Blockgröße %d kleiner als %d", s.Block, MinBlock)
 	}
 	if s.Block <= 0 && s.Farbe.A != 255 {
 		// Eine durchsichtige Füllung (etwa der Nullwert) hinterließe ein Loch statt einer Schwärzung.
-		return fmt.Errorf("document: Schwärzungsfarbe muss deckend sein")
+		return r, s, fmt.Errorf("document: Schwärzungsfarbe muss deckend sein")
 	}
-	r = r.Canon().Intersect(d.original.Rect)
+	r = r.Canon().Intersect(bild)
 	if r.Empty() {
-		return fmt.Errorf("document: Bereich zum Schwärzen liegt außerhalb des Bilds")
+		return r, s, fmt.Errorf("document: Bereich zum Schwärzen liegt außerhalb des Bilds")
 	}
 	if s.Block > 0 && (r.Dx() < MinBlock || r.Dy() < MinBlock) {
 		// Ein schmaler Bereich lässt sich nicht wirksam verpixeln (ein Block über 1 Pixel ändert nichts).
-		return fmt.Errorf("document: Bereich zum Verpixeln kleiner als %d Pixel — schwärzen statt verpixeln", MinBlock)
+		return r, s, fmt.Errorf("document: Bereich zum Verpixeln kleiner als %d Pixel — schwärzen statt verpixeln", MinBlock)
 	}
 	if s.Block > max(r.Dx(), r.Dy()) {
 		// Ein Block größer als der Bereich ist ein einziger Block; ohne Klemme liefe bloecke bei riesigen Werten (etwa aus
 		// einer präparierten Rettungskopie) über (Verify 7, V7-4).
 		s.Block = max(r.Dx(), r.Dy())
 	}
-	d.fuehreAus(&schwaerzen{r: r, s: s})
-	return nil
+	return r, s, nil
 }
