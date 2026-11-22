@@ -60,8 +60,11 @@ var (
 	// zeigeDialog ist der Dialog im Kind (Naht für Tests, F-471).
 	zeigeDialog = ui.Bestaetige
 	// benutzerHeim liefert das Heimverzeichnis aus der Benutzerdatenbank (Naht für Tests, F-461).
+	// LookupId statt Current: Current fällt ohne cgo (oder mit Tag osusergo) für eine UID, die nicht in /etc/passwd
+	// steht, auf $HOME zurück — damit käme das Heim wieder aus der Umgebung (Verify N-6, F-479). LookupId kennt
+	// keinen solchen Rückfall; findet es die UID nicht, gilt das Heim als unbekannt (Voreinstellungen, kein Ort).
 	benutzerHeim = func() (string, error) {
-		u, err := user.Current()
+		u, err := user.LookupId(strconv.Itoa(os.Getuid()))
 		if err != nil {
 			return "", err
 		}
