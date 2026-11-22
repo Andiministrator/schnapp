@@ -1,0 +1,7 @@
+# Rückfallprobe F-144 (rueckfall-rettung-kill9.sh), Teil 1: Kasten zeichnen, dann warten (Bündelung 2 s), danach schickt das Innen-Skript SIGKILL.
+warte 500
+foto 1-vorher
+taste R
+ziehe 500 300 800 500 12
+warte 4000
+foto 2-kasten

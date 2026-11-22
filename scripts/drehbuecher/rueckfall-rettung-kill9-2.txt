@@ -1,0 +1,3 @@
+# Rückfallprobe F-144 (rueckfall-rettung-kill9.sh), Teil 2: dieselbe Datei nach SIGKILL neu geöffnet; die Statusleiste soll die Wiederherstellung melden.
+warte 1500
+foto 3-wiederhergestellt
