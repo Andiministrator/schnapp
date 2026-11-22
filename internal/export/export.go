@@ -158,7 +158,7 @@ func schreibeAtomar(pfad string, ohneErsetzen bool, schreibe func(io.Writer) err
 		}
 		pfad = echt
 	}
-	tmp, err := tempDatei(filepath.Dir(pfad))
+	tmp, err := oeffneTemp(filepath.Dir(pfad))
 	if err != nil {
 		if !ohneErsetzen && keinSchreibrechtImOrdner(err) {
 			return schreibeDirekt(pfad, schreibe, err)
@@ -353,6 +353,24 @@ func leseAlt(f zielDatei, st os.FileInfo) ([]byte, error) {
 
 // Diagnose nimmt Meldungen, die nur im Debug-Log erscheinen sollen; die Oberfläche setzt sie, sonst bleibt sie leer.
 var Diagnose = func(format string, a ...any) {}
+
+// tempSchreiber ist, was schreibeAtomar von der temporären Datei braucht (Naht für Tests: Close-Fehler nachbauen, F-340).
+type tempSchreiber interface {
+	io.Writer
+	Name() string
+	Chmod(mode os.FileMode) error
+	Sync() error
+	Close() error
+}
+
+// oeffneTemp legt die temporäre Datei an; nur Tests biegen es um (Hülle um die echte Datei).
+var oeffneTemp = func(ordner string) (tempSchreiber, error) {
+	f, err := tempDatei(ordner)
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
+}
 
 // tempDatei legt die temporäre Datei exklusiv mit Modus 0666 an (der Kern wendet die umask an) und zufälligem Namen.
 func tempDatei(ordner string) (*os.File, error) {
