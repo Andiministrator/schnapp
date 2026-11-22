@@ -170,6 +170,10 @@ dem Bild, mit Griffen, die man nach innen zieht.
   deshalb weiter in Ansichtskoordinaten; im Modus Zuschneiden reicht die Bildfläche (`Sitzung.Bildflaeche`) von
   `-VollVersatz` bis `VollGroesse - VollVersatz`. Einpassen passt diese Fläche ein, die Vollansicht bleibt also beim
   Zuschneiden stehen. Ein Werkzeugwechsel passt nur neu ein, wenn der Nutzer nicht selbst gezoomt hat.
+  Ändert sich beim Zuschneiden nur der Zuschnitt (Griff, neuer Rahmen, Rückgängig, Wiederholen), bleibt die Abbildung:
+  eingepasst bleibt eingepasst, eine selbst gezoomte Ansicht behält Zoom und Lage der Vollansicht (der Versatz rückt um
+  die Änderung von `VollVersatz` mal Zoom nach; Kritik KA-5, F-398). Esc verlässt das Werkzeug über denselben Weg wie
+  jeder Werkzeugwechsel (KA-1, F-394).
 - **Was die Vollansicht nicht zeigt:** Beschriftungen und Zackenkanten bleiben auf den Zuschnitt begrenzt (wie im
   gespeicherten Bild); was außerhalb liegt, kommt nach dem Loslassen. Streifen am Rand des Originals (ältere Dateien,
   Nachtrag 3) bleiben auch in der Vollansicht verborgen; „Ganzes Bild“ holt sie wie bisher zurück.

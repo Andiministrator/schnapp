@@ -550,3 +550,14 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Projektordner (gelöscht war womöglich ein altes, gebautes Programm); Commit-Nachrichten per Heredoc statt per Datei;
   Register per Python-Splice statt mit `register-schreiben.mjs`; Karte #43 erst nach Arbeitsbeginn übernommen;
   Probe-Skript mit Ausführbit angelegt (F-390).
+- **Sitzungs-QA 22.11. abends (Kritiker Fable, F-394 bis F-405):** Esc setzte das Werkzeug an `SetzeWerkzeug` vorbei
+  — jede Zustandsumschaltung, die an einem Werkzeug hängt, braucht genau einen Weg (`grep '\.Werkzeug = '`). Ein neuer
+  Schalter wie `--export=ZIEL DATEI` braucht den Fall „Ziel ist die Quelle“ (`os.SameFile`, auch Symlink/Hardlink).
+- **Ein Mutant streicht eine Prüfung mit `if false && …`, nicht durch Löschen**: Sonst bleiben Variablen unbenutzt,
+  der Bau bricht, und das Werkzeug meldet FEHLER statt ROT.
+- **Eine Probe darf nicht von Resten früherer Läufe leben** (F-403): Jede Probe schreibt ihre `settings.ini` selbst
+  und hat eine Positivkontrolle für jede „bleibt gleich“-Prüfung.
+- **Öffentliche Doku verweist nicht auf `tmp/`** (F-404): Ein Referenzbild für einen ADR gehört nach
+  `docs/adr/bilder/`, sonst existiert die Vorgabe nur lokal.
+- **Sammelbefehle mit `git commit`/`git push` und `aboard-op` in einer Kette lehnt die Rechteprüfung ab**: Schritte
+  einzeln ausführen.
