@@ -79,3 +79,8 @@ der Aufruf meldet trotzdem den Abbruch (Exit 1). Das Rendern liegt außerhalb de
 betroffen. Restfall: SIGKILL oder Absturz (in `docs/agents.md` genannt). Test `cmd/schnapp/signalwache_test.go`,
 Mutant in `scripts/mutanten/cmd-agenten.json`; Rechte 0600 von `--output` prüft das Drehbuch
 `scripts/drehbuecher/agenten-kommandozeile.sh` im virtuellen KWin (F-405).
+- **Nachgezogen (Karte #199, F-441 bis F-443):** Die Wache liegt in `cmd/schnapp/signalwache.go`. Kam das Signal nach
+  dem ersten Byte, gibt Schnapp die Ergebniszeile (Pfad bzw. JSON) trotzdem aus und meldet „vollständig geschrieben,
+  durch ein Signal unterbrochen“ (Exit 1). Ein zweites Signal bei hängendem Schreiben räumt die Temp-Datei
+  (`.schnapp-export-*`) auf und endet mit Exit 1. Beim Start ignorierte Signale (`nohup`) fängt die Wache nicht.
+
