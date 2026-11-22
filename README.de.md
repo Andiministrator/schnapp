@@ -15,7 +15,7 @@ Mitte langer Seiten herausschneiden, teilen. Nebenbei ein einfaches Bildbearbeit
 
 ## Stand
 
-Version 0.4.0 (nur KDE Plasma) gibt ein langsames Speichern nicht mehr auf, solange es vorankommt: Schließen oder Beenden wartet, solange das Speichern Fortschritt meldet; aufgeben lässt sich nur ein Speichern, das stillsteht. Seit 0.3.0 speichert und kopiert Schnapp im Hintergrund: Das Fenster friert bei großen Bildern nicht mehr ein (das Bearbeiten ruht, bis gespeichert ist; Kopieren und Schließen gehen weiter), und das Menü geht ganz per Tastatur. Schnapp nimmt unter KDE Plasma schon auf (Bereich, Monitor, Fenster; Taste **Druck**), legt jeden
+Version 0.5.0 (nur KDE Plasma) öffnet PNG und JPEG aus dem Dateimanager („Öffnen mit“, JPEG gedreht wie in seiner EXIF-Angabe), setzt auf Wunsch alle Monitore zu einem Bild zusammen, speichert schneller und setzt Text im Editor, in PNG/JPG und in SVG gleich. Seit 0.4.0 wartet Schließen oder Beenden, solange ein langsames Speichern vorankommt. Seit 0.3.0 speichert und kopiert Schnapp im Hintergrund: Das Fenster friert bei großen Bildern nicht mehr ein (das Bearbeiten ruht, bis gespeichert ist; Kopieren und Schließen gehen weiter), und das Menü geht ganz per Tastatur. Schnapp nimmt unter KDE Plasma schon auf (Bereich, Monitor, Fenster; Taste **Druck**), legt jeden
 Screenshot in der Bibliothek ab und öffnet ihn in einem Editor, in dem sich Pfeile (gerade oder gebogen), Kästen, Text
 und Schritt-Nummern zeichnen sowie auswählen, verschieben und in der Größe ändern lassen, Bereiche endgültig schwärzen
 oder verpixeln, zuschneiden, die Mitte eines langen Screenshots herausnehmen und das Ergebnis in die Zwischenablage
