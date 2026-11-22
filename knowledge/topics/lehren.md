@@ -561,3 +561,27 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   `docs/adr/bilder/`, sonst existiert die Vorgabe nur lokal.
 - **Sammelbefehle mit `git commit`/`git push` und `aboard-op` in einer Kette lehnt die Rechteprüfung ab**: Schritte
   einzeln ausführen.
+
+## Sprint 11 Abschluss und Sprint 12, erste Sitzung (22.11.2026 abends, Karten #96, #176, #179, #183)
+
+- **Worktree-Agenten starten auf `origin/main`, nicht auf dem lokalen HEAD:** Zwei Agenten bekamen den vorletzten
+  Commit, weil der jüngste noch nicht gepusht war. Vor jedem Worktree-Agenten pushen, die erwartete Basis in den
+  Prompt schreiben und `git log --oneline -1` prüfen lassen. Gesperrte Worktrees nach dem Lauf mit
+  `git worktree unlock`, dann `remove --force`; das Material unter `tmp/` vorher in den Hauptbaum kopieren.
+- **Muster für Andi aus dem echten Renderer, ohne den Baum zu berühren:** eine Wegwerf-Testdatei unter `tmp/…`
+  per `go test -overlay <json> ./internal/render -run …` einblenden; sie sieht Paketinterna, Schriften
+  (`golang.org/x/image/font/gofont`) und `document`. Namen mit Präfix (`mu…`), sonst kollidieren sie mit dem Paket.
+  So entstanden Oberflächen-, Ecken- und Naht-Muster (`tmp/sprint12/muster/`) und ein fairer Vergleich A/B.
+- **Fragen an Andi nur mit Bild:** „Wie nehme ich das ab?“ — eine Gestaltungsfrage ohne Musterbild ist nicht
+  beantwortbar. Je Frage ein Bild mit Pfad an der Karte, die Frage auf dem Bild selbst.
+- **Fix-Commits zu Kritiker-Befunden tragen das Kritiker-Modell im Trailer** (F-435): Der Fix-Prompt gibt die
+  Trailer-Zeilen wörtlich vor; nachträglich umschreiben hieße Force-Push.
+- **Register per Einzeiler ändern, dann `register-schreiben.mjs pruefe --gegen-git HEAD`:** `einfuege-nach` mit
+  `--erwarte-aenderung` scheitert, wenn die Änderungen schon vorher im Arbeitsbaum stehen (Mengenprobe gegen die
+  Datei, nicht gegen git). „Rest …“ in einer Statuszelle liest der Abgleich als offen — „Folgebefund F-…“ schreiben.
+- **Agenten brechen das Heredoc-Verbot trotz Prompt** (leere oder Python-Heredocs für eigene Dateien): im Bericht
+  ausdrücklich nachsehen; der Prompt nennt das Write-Werkzeug als erlaubten Weg.
+- **Durchsicht ändert Bildpfade:** Sobald `render.Bild` Alpha liefert, jeden Ausgang prüfen (PNG, Zwischenablage,
+  JPEG auf Weiß, Vorschau vormultipliziert mitteln, SVG-Maske) — ein Spalt mit Alpha 0 ist sonst je nach Ausgang
+  schwarz oder weiß.
+
