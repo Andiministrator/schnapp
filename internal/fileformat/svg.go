@@ -84,7 +84,7 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 	s.WriteString(`<g`)
 	s.attr("s:ebene", "objekte")
 	s.WriteString(`>`)
-	for _, o := range d.Objekte() {
+	for _, o := range d.ObjekteOhneZug() { // ein laufender Zug zählt nicht (F-409)
 		if behalten != nil && !behalten(o) {
 			continue
 		}

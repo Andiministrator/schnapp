@@ -390,5 +390,33 @@
     "paket": "./internal/fileformat",
     "alt": "if _, err := document.PruefeInhalt(g, in.zuschnitt, in.streifen, in.objekte); err != nil {",
     "neu": "if _, err := document.PruefeInhalt(g, in.zuschnitt, in.streifen, in.objekte); false && err != nil {"
+  },
+  {
+    "name": "Z1 F-409 Kopie trägt das Objekt im Zug",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/rescue",
+    "alt": "range d.ObjekteOhneZug() {",
+    "neu": "range d.Objekte() {"
+  },
+  {
+    "name": "Z2 F-409 Kopie trägt das Objekt im Zug (Oberfläche)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/ui",
+    "alt": "range d.ObjekteOhneZug() {",
+    "neu": "range d.Objekte() {"
+  },
+  {
+    "name": "Z3 F-409 neues Objekt im Zug nicht ausgelassen",
+    "datei": "internal/document/angaben.go",
+    "paket": "./internal/rescue",
+    "alt": "\t\t\tif d.zug.alt == nil {\n\t\t\t\tcontinue\n\t\t\t}\n",
+    "neu": "\t\t\tif d.zug.alt == nil {\n\t\t\t\tliste = append(liste, o)\n\t\t\t\tcontinue\n\t\t\t}\n"
+  },
+  {
+    "name": "Z4 F-409 gezogenes Objekt ohne Stand vor dem Zug",
+    "datei": "internal/document/angaben.go",
+    "paket": "./internal/rescue",
+    "alt": "\t\t\to = d.zug.alt\n",
+    "neu": ""
   }
 ]

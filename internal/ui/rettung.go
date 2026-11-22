@@ -56,9 +56,12 @@ func (e *editor) rettungStart() {
 
 // rettungPruefen läuft nach jedem Ereignis: Ist der Stand seit der letzten Kopie geändert und die Bündelung um,
 // schreibt es eine neue Kopie; sonst bestellt es ein Wecken zum fälligen Zeitpunkt. Während eines Speicherns und nach
-// der Freigabe zum Schließen ruht es. Ein laufender Zug (Ziehen, Texteingabe) hält es nicht auf: Die Kopie trägt dann
-// das Objekt im Zug mit, sonst bliebe eine fertige Änderung so lange ungesichert, wie getippt wird (Verify 7, V7-2).
-// Steht das Dokument wieder auf dem gespeicherten Stand, verwirft es die Kopie.
+// der Freigabe zum Schließen ruht es. Ein laufender Zug (Ziehen, Texteingabe) hält es nicht auf, sonst bliebe eine
+// fertige Änderung so lange ungesichert, wie getippt wird (Verify 7, V7-2). Die Kopie trägt aber nur den Stand Stand()
+// ohne das Objekt im Zug (document.ObjekteOhneZug): Inhalt der Kopie und gesichert passen so immer zusammen; ein mit
+// Esc verworfener Text kommt nach einem Absturz nicht wieder und liegt nie auf der Platte, ein übernommener ändert den
+// Stand und wird nach der Bündelung gesichert (F-409). Steht das Dokument wieder auf dem gespeicherten Stand, verwirft
+// es die Kopie.
 func (e *editor) rettungPruefen() {
 	if e.rettung == nil || e.s.SpeichernLaeuft() || e.erzwungen {
 		return

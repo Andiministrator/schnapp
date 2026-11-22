@@ -46,8 +46,8 @@ func (s *Sicherung) Basis() Kennung {
 // Ort liefert den Ordner der Rettungskopien.
 func (s *Sicherung) Ort() string { return s.ort }
 
-// Sichere bildet die Rettungskopie von d (Aufrufer: Ereignisschleife, kein Zug, kein Speichern) und schreibt sie im
-// Hintergrund. Ist der Verlauf unvollständig (ErrUnfertig), bleibt die zuletzt geschriebene Kopie stehen.
+// Sichere bildet die Rettungskopie von d (Aufrufer: Ereignisschleife, kein Speichern) und schreibt sie im
+// Hintergrund. Ein laufender Zug zählt nicht: Die Kopie trägt den Stand d.Stand() ohne das Objekt im Zug (F-409). Ist der Verlauf unvollständig (ErrUnfertig), bleibt die zuletzt geschriebene Kopie stehen.
 func (s *Sicherung) Sichere(d *document.Dokument) {
 	s.mu.Lock()
 	if s.aus {

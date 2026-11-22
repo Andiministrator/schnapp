@@ -20,7 +20,8 @@ type Angaben struct {
 	Objekte   []document.Objekt
 }
 
-// AngabenSVG schreibt die Angaben von d als SVG wie den Block snAP, ohne Metadaten. Es liest keine Pixel.
+// AngabenSVG schreibt die Angaben von d als SVG wie den Block snAP, ohne Metadaten. Es liest keine Pixel. Ein laufender
+// Zug zählt nicht (document.ObjekteOhneZug, F-409): Die Rettungskopie trägt nur übernommene Objekte.
 func AngabenSVG(d *document.Dokument) []byte { return svgArbeitsdatei(d, Metadaten{}) }
 
 // LeseAngaben liest ein SVG aus AngabenSVG (oder den Block snAP) mit denselben Grenzen wie das Laden einer

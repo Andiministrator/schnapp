@@ -31,6 +31,26 @@ func (d *Dokument) SchwaerzungenImVerlauf() (liste []SchwaerzAngabe, vollstaendi
 	return liste, !d.schwaerzVerworfen
 }
 
+// ObjekteOhneZug liefert die Objekte des Stands Stand(): Ein laufender Zug zählt nicht — ein neues Objekt im Zug fehlt,
+// ein gezogenes steht mit seinem Stand vor dem Zug darin. So enthält, was gespeichert oder als Rettungskopie
+// geschrieben wird, nie ein Objekt, das der Nutzer noch verwerfen kann (Esc), auch kein leeres oder entartetes (F-409).
+func (d *Dokument) ObjekteOhneZug() []Objekt {
+	if d.zug == nil {
+		return d.Objekte()
+	}
+	liste := make([]Objekt, 0, len(d.objekte))
+	for _, o := range d.objekte {
+		if o.Kennung() == d.zug.id {
+			if d.zug.alt == nil {
+				continue
+			}
+			o = d.zug.alt
+		}
+		liste = append(liste, o)
+	}
+	return liste
+}
+
 type angabenSetzen struct {
 	altO, neuO   []Objekt
 	altZ, neuZ   image.Rectangle
