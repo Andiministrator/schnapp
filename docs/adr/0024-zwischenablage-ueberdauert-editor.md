@@ -185,3 +185,9 @@ und werden hier nachgetragen (F-372); die übrigen setzt Sprint 11 um (Karte #15
   die Warnung wie in Nachtrag 6.
 - Ist ein Merker mangels Halter gesetzt und kommt `cancelled` erst später (Compositor sendet es verzögert), gilt der
   Zustand ab dann; zu früh gemeldetes Schließen warnt wie bisher. Kein neuer Oberflächentext.
+
+*Ergänzt nach der Sitzungs-QA 22.11.2026 (F-391):* Das Setzen des Rückrufs steht in `zwischenablageRueckrufSetzen`
+(setzt den Merker zurück und hängt `app.ClipboardCancelled` ein), damit Tests die Verdrahtung tragen. `kopierenAbholen`
+löscht den Merker, bevor es `fensterHaeltKopie` für eine neue Kopie setzt: Ein Abbruch bis dahin betraf eine ältere
+Quelle und darf die neue Kopie nicht abräumen (sonst verschwände das Bild beim Schließen ohne Warnung). Mutantengruppe
+`scripts/mutanten/ui-zwischenablage.json`.
