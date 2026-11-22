@@ -402,6 +402,10 @@ msgid "Open FILE even if it is too costly to render"
 msgstr ""
 
 #: cmd/schnapp/main.go
+msgid "Run as MCP server for AI agents (standard input and output only)"
+msgstr ""
+
+#: cmd/schnapp/main.go
 msgid "Show this help"
 msgstr ""
 
@@ -413,6 +417,30 @@ msgstr[1] ""
 
 #: cmd/schnapp/main.go
 msgid "  %s: %d × %d pixels"
+msgstr ""
+
+#: cmd/schnapp/mcp.go
+msgid "MCP server stopped: %v"
+msgstr ""
+
+#: cmd/schnapp/mcp.go
+msgid "the last selected area"
+msgstr ""
+
+#: cmd/schnapp/mcp.go
+msgid "all monitors"
+msgstr ""
+
+#: cmd/schnapp/mcp.go
+msgid "monitor %s"
+msgstr ""
+
+#: cmd/schnapp/mcp.go
+msgid "the active monitor"
+msgstr ""
+
+#: cmd/schnapp/mcp.go
+msgid "Schnapp captured the screen for an agent"
 msgstr ""
 
 #: cmd/schnapp/rettung.go
@@ -542,6 +570,30 @@ msgid "… and %d more warning"
 msgid_plural "… and %d more warnings"
 msgstr[0] ""
 msgstr[1] ""
+
+#: internal/ui/bestaetigen.go
+msgid "Schnapp — agent request"
+msgstr ""
+
+#: internal/ui/bestaetigen.go
+msgid "unknown"
+msgstr ""
+
+#: internal/ui/bestaetigen.go
+msgid "An agent wants to capture:"
+msgstr ""
+
+#: internal/ui/bestaetigen.go
+msgid "Name reported by the agent (unverified):"
+msgstr ""
+
+#: internal/ui/bestaetigen.go
+msgid "Deny"
+msgstr ""
+
+#: internal/ui/bestaetigen.go
+msgid "Allow"
+msgstr ""
 
 #: internal/ui/editor.go
 msgid "Could not copy: no clipboard is available."

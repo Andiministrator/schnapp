@@ -81,7 +81,7 @@ func TestGueltigeDateiMitKommentaren(t *testing.T) {
 	schreibe(t, pfad, "\xef\xbb\xbf# Kommentar\r\n; noch einer\n\n  [capture]  \n   # eingerückt\n  screen   =   pointer  \nopen-editor = false\n\n"+
 		"[library]\ncleanup=false\n\tcleanup-days =\t30\r\n")
 	e, warn := Lade()
-	want := Einstellungen{Bildschirm: WahlZeiger, Editor: false, Bibliothek: library.Einstellung{An: false, Tage: 30}}
+	want := Einstellungen{Bildschirm: WahlZeiger, Editor: false, Bibliothek: library.Einstellung{An: false, Tage: 30}, Agenten: Voreinstellungen().Agenten}
 	if e != want || len(warn) != 0 {
 		t.Errorf("%+v, Warnungen %q; erwartet %+v ohne Warnung", e, warn, want)
 	}
@@ -177,7 +177,7 @@ func TestUnbekanntes(t *testing.T) {
 	pfad := umgebung(t)
 	schreibe(t, pfad, "[capture]\nscreen = all\nfarbe = rot\n[quatsch]\na = 1\nb = 2\n[library]\ncleanup-days = 7\nfrist = 3\n")
 	e, warn := Lade()
-	want := Einstellungen{Bildschirm: WahlAlle, Editor: true, Bibliothek: library.Einstellung{An: true, Tage: 7}}
+	want := Einstellungen{Bildschirm: WahlAlle, Editor: true, Bibliothek: library.Einstellung{An: true, Tage: 7}, Agenten: Voreinstellungen().Agenten}
 	if e != want {
 		t.Errorf("Werte %+v, erwartet %+v", e, want)
 	}

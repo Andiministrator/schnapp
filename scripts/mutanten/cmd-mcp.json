@@ -1,0 +1,128 @@
+[
+  {
+    "name": "M1 Aufnahme ohne Einwilligung",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif !e.Agenten.Aufnehmen {",
+    "neu": "\tif false && !e.Agenten.Aufnehmen {"
+  },
+  {
+    "name": "M2 Dialog übersprungen",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif e.Agenten.Bestaetigen {",
+    "neu": "\tif false && e.Agenten.Bestaetigen {"
+  },
+  {
+    "name": "M3 Ablehnung im Dialog übergangen",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif !ok {\n\t\t\treturn mcp.FehlerErgebnis(\"The user did not allow the capture.\")",
+    "neu": "\t\tif false && !ok {\n\t\t\treturn mcp.FehlerErgebnis(\"The user did not allow the capture.\")"
+  },
+  {
+    "name": "M4 Hinweis gescheitert, Bild trotzdem abgelegt",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif err := an.melde(ctx, i18n.T(\"Schnapp captured the screen for an agent\"), a.zielText()); err != nil {",
+    "neu": "\tif err := an.melde(ctx, i18n.T(\"Schnapp captured the screen for an agent\"), a.zielText()); false && err != nil {"
+  },
+  {
+    "name": "M5 Bibliothek lesen ohne Einwilligung",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif !e.Agenten.Bibliothek {\n\t\treturn an.nichtErlaubt(\"Reading the library\", \"library\")\n\t}\n\tif p.Path == \"\" {",
+    "neu": "\tif false && !e.Agenten.Bibliothek {\n\t\treturn an.nichtErlaubt(\"Reading the library\", \"library\")\n\t}\n\tif p.Path == \"\" {"
+  },
+  {
+    "name": "M6 Pfad außerhalb der Ablage gelesen",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif err != nil || rel == \".\" || rel == \"..\" || strings.HasPrefix(rel, \"..\"+string(filepath.Separator)) {",
+    "neu": "\tif err != nil || false && (rel == \".\" || rel == \"..\" || strings.HasPrefix(rel, \"..\"+string(filepath.Separator))) {"
+  },
+  {
+    "name": "M7 Symlinks nicht aufgelöst",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tp, err := filepath.EvalSymlinks(pfad)",
+    "neu": "\tp, err := filepath.Clean(pfad), error(nil)"
+  },
+  {
+    "name": "M8 Export aus der Bibliothek ohne Einwilligung",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "if _, drin := inAblage(o.Ablage, p.File); drin && !an.einstellungen().Agenten.Bibliothek {",
+    "neu": "if _, drin := inAblage(o.Ablage, p.File); false && drin && !an.einstellungen().Agenten.Bibliothek {"
+  },
+  {
+    "name": "M9 Agenten-Aufnahme in der normalen Ablage",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "library.Neu(o).AblegenAgent(d, sichtbar, fileformat.Metadaten{})",
+    "neu": "library.Neu(o).Ablegen(d, sichtbar, fileformat.Metadaten{})"
+  },
+  {
+    "name": "M10 output nach der umask",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "pfad, err = schreibeBild(d, ausgabe, true)",
+    "neu": "pfad, err = schreibeBild(d, ausgabe, false)"
+  },
+  {
+    "name": "M11 Bild trotz image = no",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif !mitBild {\n\t\treturn res\n\t}",
+    "neu": ""
+  },
+  {
+    "name": "M12 Steuerzeichen im Kundennamen",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif strconv.IsPrint(r) {",
+    "neu": "\t\tif true || strconv.IsPrint(r) {"
+  },
+  {
+    "name": "M13 Einwilligung capture ungültig = an",
+    "datei": "internal/settings/einstellungen.go",
+    "paket": "./internal/settings",
+    "alt": "\tcase \"no\", \"false\":\n\t\treturn false, true",
+    "neu": "\tcase \"no\", \"false\":\n\t\treturn false, true\n\tdefault:\n\t\treturn true, true"
+  },
+  {
+    "name": "M14 tools/call ohne Versionsprüfung",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "\tif f := s.pruefeMeta(n); f != nil {\n\t\treturn *f, false, false, nil\n\t}",
+    "neu": ""
+  },
+  {
+    "name": "M15 Abbruch der laufenden Anfrage überhört",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "\t\t\tif istAbbruchFuer(z, n.ID) {",
+    "neu": "\t\t\tif false && istAbbruchFuer(z, n.ID) {"
+  },
+  {
+    "name": "M16 Batch angenommen",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "\tif z.daten[0] == '[' {",
+    "neu": "\tif false && z.daten[0] == '[' {"
+  },
+  {
+    "name": "M17 Benachrichtigung mit Kennung 0 gilt",
+    "datei": "internal/notify/notify.go",
+    "paket": "./internal/notify",
+    "alt": "if id, ok := body[0].(uint32); !ok || id == 0 {",
+    "neu": "if _, ok := body[0].(uint32); !ok {"
+  },
+  {
+    "name": "M18 Suche blendet Agenten nie aus",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\t\tif a.OhneAgenten && e.Agent() {",
+    "neu": "\t\tif false && a.OhneAgenten && e.Agent() {"
+  }
+]

@@ -663,6 +663,46 @@ msgstr "Der Pfad ist kein gültiges UTF-8 und lässt sich nicht als JSON ausgebe
 msgid "Writing failed and the old content could not be restored; the target file is incomplete."
 msgstr "Das Schreiben ist gescheitert und der alte Inhalt ließ sich nicht wiederherstellen; die Zieldatei ist unvollständig."
 
+# MCP-Server und Bestätigungsdialog (ADR-0030 Nachtrag 2)
+msgid "MCP server stopped: %v"
+msgstr "MCP-Server beendet: %v"
+
+msgid "Run as MCP server for AI agents (standard input and output only)"
+msgstr "Als MCP-Server für KI-Agenten laufen (nur Standardein- und -ausgabe)"
+
+msgid "the last selected area"
+msgstr "den zuletzt gewählten Bereich"
+
+msgid "all monitors"
+msgstr "alle Monitore"
+
+msgid "monitor %s"
+msgstr "Monitor %s"
+
+msgid "the active monitor"
+msgstr "den aktiven Monitor"
+
+msgid "Schnapp captured the screen for an agent"
+msgstr "Schnapp hat für einen Agenten aufgenommen"
+
+msgid "Schnapp — agent request"
+msgstr "Schnapp — Anfrage eines Agenten"
+
+msgid "unknown"
+msgstr "unbekannt"
+
+msgid "An agent wants to capture:"
+msgstr "Ein Agent möchte aufnehmen:"
+
+msgid "Name reported by the agent (unverified):"
+msgstr "Vom Agenten genannter Name (ungeprüft):"
+
+msgid "Deny"
+msgstr "Ablehnen"
+
+msgid "Allow"
+msgstr "Erlauben"
+
 # Formate je Sprache (ADR-0014 Nachtrag 2): „date format“ ist ein Go-Zeitmuster (Referenzzeit 2006-01-02 15:04),
 # „status bar“ die Größen- und Zoomangabe rechts in der Statusleiste.
 msgctxt "date format"

@@ -126,6 +126,26 @@ func (b *Bibliothek) zeitname(t time.Time) (monat, name string) {
 // ErrVorschau.
 func (b *Bibliothek) Ablegen(d *document.Dokument, sichtbar image.Image, m fileformat.Metadaten) (_ Eintrag, fehler error) {
 	defer errprefix.Defer("library", &fehler)
+	return b.ablegen("", d, sichtbar, m)
+}
+
+// AgentenOrdner ist der Unterordner der Ablage für Aufnahmen über den MCP-Server (ADR-0030 Nachtrag 2): Ablage
+// `agents/<JJJJ-MM>/…png`, Index-Pfad `agents/…`. Aufräumen und Neuaufbau behandeln sie wie jede Aufnahme.
+const AgentenOrdner = "agents"
+
+// AblegenAgent wie Ablegen, aber im Unterordner AgentenOrdner.
+func (b *Bibliothek) AblegenAgent(d *document.Dokument, sichtbar image.Image, m fileformat.Metadaten) (_ Eintrag, fehler error) {
+	defer errprefix.Defer("library", &fehler)
+	return b.ablegen(AgentenOrdner, d, sichtbar, m)
+}
+
+// Agent meldet, ob der Eintrag eine Agenten-Aufnahme ist (liegt unter AgentenOrdner).
+func (e Eintrag) Agent() bool {
+	return strings.HasPrefix(e.Pfad, AgentenOrdner+"/")
+}
+
+// ablegen legt unter dem Unterordner unter der Ablage ab (leer = direkt in der Ablage).
+func (b *Bibliothek) ablegen(unter string, d *document.Dokument, sichtbar image.Image, m fileformat.Metadaten) (Eintrag, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if m.Erstellt.IsZero() {
@@ -135,8 +155,13 @@ func (b *Bibliothek) Ablegen(d *document.Dokument, sichtbar image.Image, m filef
 	m.Schlagworte = bereinige(m.Schlagworte)
 
 	monat, name := b.zeitname(m.Erstellt)
-	ordner := filepath.Join(b.Orte.Ablage, monat)
-	for _, o := range []string{b.Orte.Ablage, ordner} {
+	ordner := filepath.Join(b.Orte.Ablage, unter, monat)
+	ordnerKette := []string{b.Orte.Ablage}
+	if unter != "" {
+		ordnerKette = append(ordnerKette, filepath.Join(b.Orte.Ablage, unter))
+		monat = unter + "/" + monat
+	}
+	for _, o := range append(ordnerKette, ordner) {
 		if err := eigenerOrdner(o); err != nil {
 			return Eintrag{}, err
 		}
@@ -436,6 +461,8 @@ type Anfrage struct {
 	Schlagwort string    // ein Schlagwort, Groß-/Kleinschreibung egal
 	Von        time.Time // Erstellt >= Von
 	Bis        time.Time // Erstellt < Bis
+	// OhneAgenten blendet Aufnahmen über den MCP-Server aus (Eintrag.Agent).
+	OhneAgenten bool
 }
 
 // Suchen liefert die passenden Aufnahmen, neueste zuerst.
@@ -456,6 +483,9 @@ func (b *Bibliothek) Suchen(a Anfrage) (_ []Eintrag, fehler error) {
 			continue
 		}
 		if a.Schlagwort != "" && !hatSchlagwort(e, a.Schlagwort) {
+			continue
+		}
+		if a.OhneAgenten && e.Agent() {
 			continue
 		}
 		treffer = append(treffer, e)

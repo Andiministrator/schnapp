@@ -100,11 +100,34 @@ type Einstellungen struct {
 	// tear (Voreinstellung), wave oder zigzag (ADR-0023 Nachtrag 6, ADR-0018 Nachtrag 3).
 	Kante      document.Kante
 	Bibliothek library.Einstellung // [library] cleanup, cleanup-days
+	Agenten    Agenten             // [agents] (ADR-0030 Nachtrag 2)
+}
+
+// Agenten ist der Abschnitt [agents]: Einwilligungen für den MCP-Server `schnapp mcp` (ADR-0030 Nachtrag 2). Werte
+// yes/no (auch true/false). Ein ungültiger Wert lässt die Voreinstellung stehen — für Aufnehmen und Bibliothek also
+// „aus“.
+type Agenten struct {
+	Aufnehmen   bool // capture: Agenten dürfen aufnehmen (Voreinstellung no)
+	Bibliothek  bool // library: Agenten dürfen die Bibliothek durchsuchen und lesen (Voreinstellung no)
+	Bestaetigen bool // confirm: vor jeder Agenten-Aufnahme ein Dialog (Voreinstellung yes)
+	Bild        bool // image: das Bild geht als Bildinhalt an den Agenten (Voreinstellung yes)
+}
+
+// janein liest yes/no/true/false.
+func janein(w string) (wert, ok bool) {
+	switch w {
+	case "yes", "true":
+		return true, true
+	case "no", "false":
+		return false, true
+	}
+	return false, false
 }
 
 // Voreinstellungen liefert die Werte, die gelten, wenn nichts eingestellt ist.
 func Voreinstellungen() Einstellungen {
-	return Einstellungen{Bildschirm: WahlKlick, Editor: true, Kante: document.KanteAbriss, Bibliothek: library.Voreinstellung}
+	return Einstellungen{Bildschirm: WahlKlick, Editor: true, Kante: document.KanteAbriss, Bibliothek: library.Voreinstellung,
+		Agenten: Agenten{Bestaetigen: true, Bild: true}}
 }
 
 // Pfad liefert den Ort der Datei: $XDG_CONFIG_HOME/schnapp/settings.ini, ohne gesetztes oder mit relativem
@@ -198,7 +221,7 @@ func Parse(name, inhalt string) (Einstellungen, []string) {
 			}
 			abschnitt = strings.TrimSpace(zeile[1 : len(zeile)-1])
 			imAbschnitt = true
-			bekannt = abschnitt == "general" || abschnitt == "capture" || abschnitt == "library"
+			bekannt = abschnitt == "general" || abschnitt == "capture" || abschnitt == "library" || abschnitt == "agents"
 			if !bekannt {
 				melde(nr, i18n.T("Unknown section [%s]; its keys are ignored."), maske(kuerze(abschnitt)))
 			}
@@ -254,6 +277,21 @@ func Parse(name, inhalt string) (Einstellungen, []string) {
 				e.Bibliothek.An, gueltig = true, true
 			case "false":
 				e.Bibliothek.An, gueltig = false, true
+			}
+		case "agents.capture", "agents.library", "agents.confirm", "agents.image":
+			bekannterSchluessel = true
+			if w, ok := janein(wert); ok {
+				gueltig = true
+				switch schluessel {
+				case "capture":
+					e.Agenten.Aufnehmen = w
+				case "library":
+					e.Agenten.Bibliothek = w
+				case "confirm":
+					e.Agenten.Bestaetigen = w
+				case "image":
+					e.Agenten.Bild = w
+				}
 			}
 		case "library.cleanup-days":
 			bekannterSchluessel = true

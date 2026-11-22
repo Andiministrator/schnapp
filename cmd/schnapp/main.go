@@ -47,6 +47,14 @@ func main() {
 	starteSprache(settings.Lade)
 	// Gio braucht die Hauptschleife auf dem Haupt-Goroutine, sobald das Overlay ein Fenster öffnet.
 	ui.Starte(func() int {
+		// MCP-Server und sein Bestätigungsdialog (ADR-0030 Nachtrag 2): nur genau so aufgerufen, ohne weitere
+		// Argumente; der Dialog braucht die Gio-Hauptschleife, der Server die Monitorabfrage.
+		switch args := os.Args[1:]; {
+		case len(args) == 1 && args[0] == mcpArgument:
+			return laufeMcp(os.Stdin, os.Stdout, os.Stderr, echteMcpAnschluesse(os.Stderr))
+		case len(args) == 1 && args[0] == bestaetigenArgument:
+			return laufeBestaetigung(os.Stdin, os.Stderr)
+		}
 		return laufe(os.Args[1:], os.Stdout, os.Stderr, ui.Monitore, settings.Lade, echteAnschluesse().Ausfuehren)
 	})
 }
@@ -176,6 +184,7 @@ func hilfe() string {
 		"  FILE           " + i18n.T("Open FILE in the editor") + "\n" +
 		"  --export=TARGET FILE " + i18n.T("Export FILE to TARGET (.png, .jpg, .svg) without a window") + "\n" +
 		"  --ignore-limit " + i18n.T("Open FILE even if it is too costly to render") + "\n" +
+		"  mcp            " + i18n.T("Run as MCP server for AI agents (standard input and output only)") + "\n" +
 		"  -V, --version  " + i18n.T("Show the version") + "\n" +
 		"  -h, --help     " + i18n.T("Show this help") + "\n"
 }
