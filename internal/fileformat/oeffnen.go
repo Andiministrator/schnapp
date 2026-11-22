@@ -78,10 +78,21 @@ func Oeffne(pfad string) (*Gelesen, error) {
 	return ausBild(richteAus(bild, exifAusrichtung(daten)))
 }
 
+// ausBild legt das Dokument eines fremden Bilds an. Hier entstehen die Bilder frisch (Decoder, Ausrichten) und werden
+// nirgends sonst gehalten; ein NRGBA übernimmt das Dokument deshalb ohne zweite Vollbild-Kopie (F-334).
 func ausBild(bild image.Image) (*Gelesen, error) {
-	d, err := document.Neu(bild)
+	d, err := neuesDokument(bild)
 	if err != nil {
 		return nil, err
 	}
 	return &Gelesen{Dokument: d, Fremd: true}, nil
+}
+
+// neuesDokument legt ein Dokument aus einem frisch dekodierten Bild an, das der Aufrufer danach nicht mehr verwendet:
+// ein NRGBA ohne Kopie (document.NeuAus), alles andere mit der Umwandlung in document.Neu.
+func neuesDokument(bild image.Image) (*document.Dokument, error) {
+	if n, ok := bild.(*image.NRGBA); ok {
+		return document.NeuAus(n)
+	}
+	return document.Neu(bild)
 }

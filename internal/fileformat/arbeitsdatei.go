@@ -127,7 +127,7 @@ func LeseArbeitsdatei(r io.Reader) (*Gelesen, error) {
 		if err != nil {
 			return nil, err
 		}
-		d, err := document.Neu(bild)
+		d, err := neuesDokument(bild) // frisch dekodiert: ohne zweite Kopie (F-334)
 		if err != nil {
 			return nil, err
 		}
@@ -155,7 +155,7 @@ func LeseArbeitsdatei(r io.Reader) (*Gelesen, error) {
 	if b := original.Bounds(); b.Dx() != in.breite || b.Dy() != in.hoehe {
 		return nil, fmt.Errorf("%w: Original %v passt nicht zu %dx%d", ErrBeschaedigt, b, in.breite, in.hoehe)
 	}
-	d, err := document.Neu(original)
+	d, err := neuesDokument(original) // frisch dekodiert: ohne zweite Kopie (F-334)
 	if err != nil {
 		return nil, err
 	}

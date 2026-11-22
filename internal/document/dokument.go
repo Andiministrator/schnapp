@@ -55,17 +55,48 @@ var (
 	ErrBildGroesse = errors.New("document: Bildgröße ungültig")
 )
 
-// Neu legt ein Dokument mit einer Kopie von bild als Original an.
+// Neu legt ein Dokument mit einer Kopie von bild als Original an. Die Kopie schützt davor, dass der Aufrufer die Pixel
+// später ändert oder mit einem anderen Dokument teilt.
 func Neu(bild image.Image) (*Dokument, error) {
 	b := bild.Bounds()
-	if b.Dx() < 1 || b.Dy() < 1 || b.Dx() > MaxSeite || b.Dy() > MaxSeite || b.Dx()*b.Dy() > MaxPixel {
-		return nil, fmt.Errorf("%w: %dx%d", ErrBildGroesse, b.Dx(), b.Dy())
+	if err := pruefeGroesse(b); err != nil {
+		return nil, err
 	}
 	o := image.NewNRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
 	draw.Draw(o, o.Bounds(), bild, b.Min, draw.Src)
+	return mitOriginal(o), nil
+}
+
+// NeuAus legt ein Dokument an, das o als Original übernimmt, ohne es zu kopieren (F-334): für ein Bild, das der
+// Aufrufer eben erst erzeugt hat (Decoder, Ausrichten) und danach nicht mehr verwendet oder weitergibt — sonst teilten
+// zwei Stellen die Pixel, und eine Schwärzung oder ein Rückgängig wirkte auf beide. Ein o, das nicht genau ein
+// geschlossenes Bild ab (0, 0) ist (Teilbild, anderer Zeilenabstand), wird wie bei Neu kopiert.
+func NeuAus(o *image.NRGBA) (*Dokument, error) {
+	if o == nil {
+		return nil, fmt.Errorf("%w: kein Bild", ErrBildGroesse)
+	}
+	r := o.Rect
+	if r.Min != (image.Point{}) || o.Stride != 4*r.Dx() || len(o.Pix) != o.Stride*r.Dy() {
+		return Neu(o)
+	}
+	if err := pruefeGroesse(r); err != nil {
+		return nil, err
+	}
+	return mitOriginal(o), nil
+}
+
+// pruefeGroesse prüft die Maße eines neuen Originals gegen MaxSeite und MaxPixel.
+func pruefeGroesse(b image.Rectangle) error {
+	if b.Dx() < 1 || b.Dy() < 1 || b.Dx() > MaxSeite || b.Dy() > MaxSeite || b.Dx()*b.Dy() > MaxPixel {
+		return fmt.Errorf("%w: %dx%d", ErrBildGroesse, b.Dx(), b.Dy())
+	}
+	return nil
+}
+
+func mitOriginal(o *image.NRGBA) *Dokument {
 	d := &Dokument{original: o, naechsteID: 1}
 	d.setzeAnsicht(o.Bounds(), nil)
-	return d, nil
+	return d
 }
 
 // Original liefert eine Kopie des unbeschnittenen Originals (mit allen Schwärzungen).
