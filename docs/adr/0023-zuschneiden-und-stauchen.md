@@ -215,7 +215,7 @@ Anlass: Die Zackenkante war erkennbar, aber nicht schön (Andi, Echtlauf #92).
   `[capture] seam` = `tear` (Voreinstellung) | `wave` | `zigzag` (ADR-0018). Im Editor wechselt ein Menüeintrag
   „Seam style“ die Form des Dokuments reihum, als ein Rückgängig-Schritt.
 - Das Rechenbudget (`render.Pruefe`) zählt alle Schichten.
-- **Schichttabelle** (umgesetzt in `document.KantenSchichten`, Karte #96, 1181aec; abgestimmt an Muster 4; Maße quer zur
+- **Schichttabelle** (umgesetzt in `document.KantenSchichten`, Karte #96, d30d26f; abgestimmt an Muster 4; Maße quer zur
   Mittellinie bei Faktor 1, negativ oben/links; in Zeichenreihenfolge):
 
   | # | von | bis | Farbe | Deckkraft (A) | Zweck |
