@@ -32,6 +32,7 @@ func ordnerInhalt(t *testing.T, dir string) []string {
 // Ein echtes Signal an den eigenen Prozess (von der Wache gefangen, der Test lebt weiter) kommt an, bevor geschrieben
 // wird: nichts liegt im Zielordner, weder Ziel noch temporäre Datei, und der Aufruf meldet den Abbruch.
 func TestSignalwacheLaesstKeinenRest(t *testing.T) {
+	fangbar(t, syscall.SIGHUP)
 	for _, sig := range []syscall.Signal{syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP} {
 		dir := t.TempDir()
 		ziel := filepath.Join(dir, "aus.png")

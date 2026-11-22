@@ -287,7 +287,10 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 		diagnose(fehler, "Schreiben nach --output: %v", time.Since(start).Round(time.Millisecond))
 		if err != nil {
 			diagnose(fehler, "Ursache: %v", err)
-			fmt.Fprintf(fehler, i18n.T("Could not write %s: %s")+"\n", t.Ausgabe, schreibFehler(err))
+			meldeSchreibFehler(fehler, t.Ausgabe, err)
+			if errors.Is(err, errNachSchreiben) {
+				gibPfadAus(aus, fehler, t.JSON, abs, d.Groesse()) // die Datei liegt vor (F-441)
+			}
 			return exitFehler, nil
 		}
 		gibPfadAus(aus, fehler, t.JSON, abs, d.Groesse()) // Exit 0 auch ohne Zeile, wie unten (F-180)

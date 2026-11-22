@@ -13,10 +13,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"os/signal"
 	"path/filepath"
-	"sync/atomic"
-	"syscall"
 	"unicode/utf8"
 
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -94,64 +91,6 @@ func schreibeBild(d *document.Dokument, pfad string, privat bool) (string, error
 	return abs, schreibeInhalt(abs, inhalt.Bytes(), privat, nil)
 }
 
-// schreibeInhalt schreibt inhalt atomar nach abs, unter der Signalwache (F-396). vorSchreiben (nur Tests) läuft
-// innerhalb der Wache, bevor das Schreiben beginnt.
-func schreibeInhalt(abs string, inhalt []byte, privat bool, vorSchreiben func(abgebrochen func() bool)) error {
-	return mitSignalwache(func(abgebrochen func() bool) error {
-		if vorSchreiben != nil {
-			vorSchreiben(abgebrochen)
-		}
-		schreibe := func(w io.Writer) error {
-			if abgebrochen() {
-				return errAbgebrochen
-			}
-			_, err := w.Write(inhalt)
-			return err
-		}
-		if privat {
-			return export.SchreibeAtomarPrivat(abs, schreibe)
-		}
-		return export.SchreibeAtomar(abs, schreibe)
-	})
-}
-
-// errAbgebrochen: SIGTERM, SIGINT oder SIGHUP kam, während die Ausgabe geschrieben wurde (F-396).
-var errAbgebrochen = errors.New("schnapp: Schreiben durch Signal abgebrochen")
-
-// mitSignalwache fängt SIGTERM, SIGINT und SIGHUP, solange f läuft (nur das kurze Schreiben der Ausgabe von --output und
-// --export, nie das Rendern und nie der Editor). Ein Signal tötet den Prozess dann nicht mitten im Schreiben und lässt
-// keine `.schnapp-export-*` neben dem Ziel liegen: f fragt abgebrochen() vor dem Schreiben, ein Fehler räumt die
-// temporäre Datei ab. Kam ein Signal, endet mitSignalwache mit errAbgebrochen, auch wenn f gelang (die Datei ist dann
-// vollständig). Der Editor-Weg fängt seine Signale selbst (internal/ui/editor.go) und ruft schreibeBild nie auf.
-func mitSignalwache(f func(abgebrochen func() bool) error) error {
-	var kam atomic.Bool
-	kanal := make(chan os.Signal, 1)
-	signal.Notify(kanal, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
-	fertig := make(chan struct{})
-	ende := make(chan struct{})
-	go func() {
-		defer close(ende)
-		select {
-		case <-kanal:
-			kam.Store(true)
-		case <-fertig:
-		}
-	}()
-	err := f(kam.Load)
-	signal.Stop(kanal)
-	close(fertig)
-	<-ende
-	select { // ein Signal, das knapp vor Stop eintraf, zählt noch
-	case <-kanal:
-		kam.Store(true)
-	default:
-	}
-	if err == nil && kam.Load() {
-		return errAbgebrochen
-	}
-	return err
-}
-
 // schreibFehler übersetzt einen Fehler beim Schreiben der Ausgabe für die Meldung. Was keine bekannte Ursache hat,
 // erscheint als allgemeine übersetzte Meldung; die Ursache selbst (deutsche Paketfehler, womöglich mit Pfaden) zeigt
 // nur SCHNAPP_DEBUG, das schreiben die Aufrufer über diagnose (KA-8).
@@ -205,7 +144,10 @@ func exportiere(a Aufruf, aus, fehler io.Writer) int {
 	abs, err := schreibeBild(g.Dokument, a.Ziel, false)
 	if err != nil {
 		diagnose(fehler, "Ursache des Exports: %v", err)
-		fmt.Fprintf(fehler, i18n.T("Could not write %s: %s")+"\n", a.Ziel, schreibFehler(err))
+		meldeSchreibFehler(fehler, a.Ziel, err)
+		if errors.Is(err, errNachSchreiben) {
+			gibPfadAus(aus, fehler, a.JSON, abs, g.Dokument.Groesse()) // die Datei liegt vor (F-441)
+		}
 		return exitFehler
 	}
 	// Wie bei der Aufnahme (F-180): Die Datei liegt vor; eine verlorene Ergebniszeile ist nur gemeldet.

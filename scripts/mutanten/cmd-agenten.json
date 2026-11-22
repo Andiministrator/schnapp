@@ -36,9 +36,51 @@
   },
   {
     "name": "F-396 Signalwache ohne Abbruch vor dem Schreiben",
-    "datei": "cmd/schnapp/agenten.go",
+    "datei": "cmd/schnapp/signalwache.go",
     "paket": "./cmd/schnapp",
     "alt": "\t\t\tif abgebrochen() {",
     "neu": "\t\t\tif false && abgebrochen() {"
+  },
+  {
+    "name": "F-441 Signal nach gelungenem Schreiben meldet nicht den wahren Stand",
+    "datei": "cmd/schnapp/signalwache.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif abgebrochen() && err == nil {",
+    "neu": "\tif false && abgebrochen() && err == nil {"
+  },
+  {
+    "name": "F-441 spätes Signal (beim Abmelden im Kanal) zählt nicht",
+    "datei": "cmd/schnapp/signalwache.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif abgebrochen() && err == nil {",
+    "neu": "\tif kamen.Load() > 0 && err == nil {"
+  },
+  {
+    "name": "F-441 Signale werden nach der Wache nicht abbestellt",
+    "datei": "cmd/schnapp/signalwache.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tmeldeAb(kanal)\n",
+    "neu": ""
+  },
+  {
+    "name": "F-442 zweites Signal beendet den hängenden Aufruf nicht",
+    "datei": "cmd/schnapp/signalwache.go",
+    "paket": "./cmd/schnapp",
+    "alt": "if nimm(); kamen.Load() >= 2 {",
+    "neu": "if nimm(); kamen.Load() >= 2 && false {"
+  },
+  {
+    "name": "F-442 zweites Signal lässt die temporäre Datei liegen",
+    "datei": "cmd/schnapp/signalwache.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\t\t\t\tentferneTemp(*p)\n",
+    "neu": ""
+  },
+  {
+    "name": "F-443 Wache hebt ein geerbtes Ignorieren auf",
+    "datei": "cmd/schnapp/signalwache.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif !signal.Ignored(s) {",
+    "neu": "\t\tif true || !signal.Ignored(s) {"
   }
 ]

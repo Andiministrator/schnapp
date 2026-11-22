@@ -330,6 +330,12 @@ msgstr "Nicht genug Speicherplatz."
 msgid "The file could not be written."
 msgstr "Die Datei ließ sich nicht schreiben."
 
+msgid "Interrupted by a signal after %s was written completely."
+msgstr "Durch ein Signal unterbrochen, nachdem %s vollständig geschrieben war."
+
+msgid "Interrupted again while writing; the temporary file was removed."
+msgstr "Beim Schreiben erneut unterbrochen; die temporäre Datei wurde entfernt."
+
 msgid "Select"
 msgstr "Auswählen"
 

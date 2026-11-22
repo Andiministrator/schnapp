@@ -30,9 +30,14 @@ Rules:
 - `--output` and `--export` replace an existing file. The image is first rendered completely in memory, then written to
   a temporary file `.schnapp-export-…` next to the target and renamed over it: the target never holds a half-written
   file, and on an error an existing target stays as it was. Two exceptions:
-  - While the short write itself runs, Schnapp catches `SIGTERM`, `SIGINT` and `SIGHUP`: it then removes the temporary
-    file, leaves the target untouched and ends with exit code 1. Being signalled while rendering leaves nothing
-    either. Only `SIGKILL` (or a crash of the machine) during the write can leave a temporary file behind.
+  - While the short write itself runs, Schnapp catches `SIGTERM`, `SIGINT` and `SIGHUP` (not one the process already
+    ignores, such as `SIGHUP` under `nohup`). A signal before the first byte is written removes the temporary file,
+    leaves the target untouched and ends with exit code 1. A signal after the write has begun cannot undo it: the
+    target is then replaced completely. The call still ends with exit code 1, but says "Interrupted by a signal after
+    … was written completely" and prints the result line (path, or the JSON line with `--json`) on standard output, so
+    a script can tell this case from a failure (an ordinary failure prints no result line). If the write hangs, a second
+    signal removes the temporary file and ends the call with exit code 1. Being signalled while rendering leaves
+    nothing either. Only `SIGKILL` (or a crash of the machine) during the write can leave a temporary file behind.
   - If the folder does not allow a new file but the existing target is writable, Schnapp writes the target directly
     and restores the old content if that fails. Only if restoring fails too, the call ends with exit code 1 and the
     message that the target file is incomplete.

@@ -51,10 +51,6 @@ msgstr ""
 msgid "Cannot open %s: %s"
 msgstr ""
 
-#: cmd/schnapp/agenten.go cmd/schnapp/aufnehmen.go
-msgid "Could not write %s: %s"
-msgstr ""
-
 #: cmd/schnapp/main.go
 msgid "Show the version"
 msgstr ""
@@ -442,6 +438,18 @@ msgstr ""
 
 #: cmd/schnapp/rettung.go
 msgid "Unsaved changes from %s could not be restored. The rescue copy is kept for 30 days in the state folder: %s"
+msgstr ""
+
+#: cmd/schnapp/signalwache.go
+msgid "Interrupted again while writing; the temporary file was removed."
+msgstr ""
+
+#: cmd/schnapp/signalwache.go
+msgid "Interrupted by a signal after %s was written completely."
+msgstr ""
+
+#: cmd/schnapp/signalwache.go
+msgid "Could not write %s: %s"
 msgstr ""
 
 #: internal/capture/aufnahme.go
