@@ -13,7 +13,10 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"sync/atomic"
+	"syscall"
 	"unicode/utf8"
 
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -71,7 +74,7 @@ func gibPfadAus(aus, fehler io.Writer, alsJSON bool, pfad string, g image.Point)
 // schreibeBild schreibt das sichtbare Bild von d nach pfad, Format nach der Endung (ADR-0030 Punkte 2 und 3), atomar
 // (ADR-0025 Punkt 5). Liefert den absoluten Pfad. Das Bild wird zuerst vollständig im Speicher gerendert und kodiert;
 // erst dann entsteht die temporäre Datei neben dem Ziel (KA-3): Ein Abbruch (etwa SIGTERM) während des langen
-// Renderns hinterlässt so nichts, nur einer während des kurzen Schreibens kann eine `.schnapp-export-*` zurücklassen.
+// Renderns hinterlässt so nichts, ein Signal während des kurzen Schreibens fängt mitSignalwache (F-396).
 // privat (--output): eine neue Datei bekommt die Rechte 0600 (Bildschirminhalt, wie die Bibliothek; KA-4); sonst
 // (--export) gilt die umask wie beim Export aus dem Editor (ADR-0025). Eine vorhandene Zieldatei behält ihre Rechte.
 func schreibeBild(d *document.Dokument, pfad string, privat bool) (string, error) {
@@ -88,11 +91,65 @@ func schreibeBild(d *document.Dokument, pfad string, privat bool) (string, error
 	if err := export.Schreibe(d, f, &inhalt); err != nil {
 		return "", err
 	}
-	schreibe := func(w io.Writer) error { _, err := w.Write(inhalt.Bytes()); return err }
-	if privat {
-		return abs, export.SchreibeAtomarPrivat(abs, schreibe)
+	return abs, schreibeInhalt(abs, inhalt.Bytes(), privat, nil)
+}
+
+// schreibeInhalt schreibt inhalt atomar nach abs, unter der Signalwache (F-396). vorSchreiben (nur Tests) läuft
+// innerhalb der Wache, bevor das Schreiben beginnt.
+func schreibeInhalt(abs string, inhalt []byte, privat bool, vorSchreiben func(abgebrochen func() bool)) error {
+	return mitSignalwache(func(abgebrochen func() bool) error {
+		if vorSchreiben != nil {
+			vorSchreiben(abgebrochen)
+		}
+		schreibe := func(w io.Writer) error {
+			if abgebrochen() {
+				return errAbgebrochen
+			}
+			_, err := w.Write(inhalt)
+			return err
+		}
+		if privat {
+			return export.SchreibeAtomarPrivat(abs, schreibe)
+		}
+		return export.SchreibeAtomar(abs, schreibe)
+	})
+}
+
+// errAbgebrochen: SIGTERM, SIGINT oder SIGHUP kam, während die Ausgabe geschrieben wurde (F-396).
+var errAbgebrochen = errors.New("schnapp: Schreiben durch Signal abgebrochen")
+
+// mitSignalwache fängt SIGTERM, SIGINT und SIGHUP, solange f läuft (nur das kurze Schreiben der Ausgabe von --output und
+// --export, nie das Rendern und nie der Editor). Ein Signal tötet den Prozess dann nicht mitten im Schreiben und lässt
+// keine `.schnapp-export-*` neben dem Ziel liegen: f fragt abgebrochen() vor dem Schreiben, ein Fehler räumt die
+// temporäre Datei ab. Kam ein Signal, endet mitSignalwache mit errAbgebrochen, auch wenn f gelang (die Datei ist dann
+// vollständig). Der Editor-Weg fängt seine Signale selbst (internal/ui/editor.go) und ruft schreibeBild nie auf.
+func mitSignalwache(f func(abgebrochen func() bool) error) error {
+	var kam atomic.Bool
+	kanal := make(chan os.Signal, 1)
+	signal.Notify(kanal, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
+	fertig := make(chan struct{})
+	ende := make(chan struct{})
+	go func() {
+		defer close(ende)
+		select {
+		case <-kanal:
+			kam.Store(true)
+		case <-fertig:
+		}
+	}()
+	err := f(kam.Load)
+	signal.Stop(kanal)
+	close(fertig)
+	<-ende
+	select { // ein Signal, das knapp vor Stop eintraf, zählt noch
+	case <-kanal:
+		kam.Store(true)
+	default:
 	}
-	return abs, export.SchreibeAtomar(abs, schreibe)
+	if err == nil && kam.Load() {
+		return errAbgebrochen
+	}
+	return err
 }
 
 // schreibFehler übersetzt einen Fehler beim Schreiben der Ausgabe für die Meldung. Was keine bekannte Ursache hat,

@@ -33,5 +33,12 @@
     "paket": "./cmd/schnapp",
     "alt": "if z.wert != \"\" && !utf8.ValidString(z.wert) {",
     "neu": "if false && z.wert != \"\" && !utf8.ValidString(z.wert) {"
+  },
+  {
+    "name": "F-396 Signalwache ohne Abbruch vor dem Schreiben",
+    "datei": "cmd/schnapp/agenten.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\tif abgebrochen() {",
+    "neu": "\t\t\tif false && abgebrochen() {"
   }
 ]

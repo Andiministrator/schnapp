@@ -30,8 +30,9 @@ Rules:
 - `--output` and `--export` replace an existing file. The image is first rendered completely in memory, then written to
   a temporary file `.schnapp-export-…` next to the target and renamed over it: the target never holds a half-written
   file, and on an error an existing target stays as it was. Two exceptions:
-  - If the process is killed (for example `SIGTERM`) during the short write itself, the temporary file can be left
-    behind next to the target. Being killed while rendering leaves nothing.
+  - While the short write itself runs, Schnapp catches `SIGTERM`, `SIGINT` and `SIGHUP`: it then removes the temporary
+    file, leaves the target untouched and ends with exit code 1. Being signalled while rendering leaves nothing
+    either. Only `SIGKILL` (or a crash of the machine) during the write can leave a temporary file behind.
   - If the folder does not allow a new file but the existing target is writable, Schnapp writes the target directly
     and restores the old content if that fails. Only if restoring fails too, the call ends with exit code 1 and the
     message that the target file is incomplete.

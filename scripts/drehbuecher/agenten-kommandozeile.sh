@@ -8,7 +8,8 @@
 #   - Positivkontrolle: --screen=NAME --no-editor ohne --output legt genau eine Aufnahme in der Bibliothek ab;
 #   - --export=ZIEL DATEI schreibt die Aufnahme ohne Fenster als PNG, mit JSON in derselben Größe;
 #   - --export auf die Datei selbst endet mit Exit 1 und lässt sie unverändert (KA-2);
-#   - --output ohne Gleichheitszeichen endet mit Exit 2.
+#   - --output ohne Gleichheitszeichen endet mit Exit 2;
+#   - eine frisch benannte --output-Datei hat die Rechte 600, neben ihr bleibt kein .schnapp-export-* (F-405, F-396).
 # Das Skript prüft das selbst (BESTANDEN/DURCHGEFALLEN). Es startet nur Schnapp-Aufrufe, die von selbst enden.
 set -u
 wurzel="$PWD" # probe.sh läuft in der Wurzel des Repos
@@ -87,5 +88,16 @@ cmp -s -- "$abgelegt" "$HOME/aus/vorher.png" || fail "--export auf sich selbst h
 "$s" --output "$HOME/aus/x.png" > /dev/null 2>&1
 code=$?
 [ "$code" = 2 ] || fail "--output ohne = : Exit $code, Soll 2"
+
+# F-405: Rechte einer neu angelegten --output-Datei im Echtlauf = 600 (Bildschirminhalt, wie die Bibliothek). Der Name
+# trägt Zeitstempel und PID, damit kein Rest eines früheren Laufs zählt; eine vorhandene Datei bliebe sonst ausgenommen.
+neu="$HOME/aus/rechte-$(date +%s%N)-$$.png"
+[ ! -e "$neu" ] || fail "Ausgabe $neu gab es schon vor dem Lauf"
+"$s" --screen --output="$neu" --json > /dev/null || fail "--output für die Rechteprobe: Exit $?"
+rechte="$(stat -c %a -- "$neu")"
+echo "Rechte von --output: $rechte"
+[ "$rechte" = 600 ] || fail "Rechte von --output $rechte, Soll 600"
+# Kein Rest `.schnapp-export-*` neben dem Ziel (F-396).
+[ -z "$(find "$HOME/aus" -name '.schnapp-export-*')" ] || fail "Rest .schnapp-export-* in $HOME/aus"
 
 [ "$ok" = 1 ] && echo "BESTANDEN"
