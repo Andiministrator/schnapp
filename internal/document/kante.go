@@ -102,20 +102,51 @@ func (k Kante) schritt() float64 {
 // mit faktor (ZackenFaktor, mindestens 1) multipliziert. Die Querlage ist auf 1/100 Pixel gerundet und als Hundertstel
 // gerechnet: Renderer, Editor und SVG-Export bekommen genau dieselben Zahlen, und das SVG schreibt sie kurz.
 func Kantenband(k Kante, n Naht, laenge, faktor int, von, bis float64) []Punkt {
+	return NeueKantenlinie(k, laenge, faktor).Band(nil, n, von, bis)
+}
+
+// Kantenlinie ist die Mittellinie einer Kante, einmal je Form, Länge und Faktor gerechnet (F-418): Lage der Stützpunkte
+// entlang der Naht und ihre Auslenkung in ganzen Hundertsteln. Alle Schichten aller Nähte derselben Achse verschieben
+// sie nur quer (Band); vorher rechnete Kantenband die Mittellinie (beim Abriss fünf Sinus je Stützpunkt) für jede
+// Schicht jeder Naht neu. Die Zahlen sind dieselben wie bisher: Band liefert genau das Vieleck von Kantenband.
+type Kantenlinie struct {
+	f int
+	t []float64 // Lage entlang der Naht je Stützpunkt
+	m []int     // Auslenkung quer zur Naht in Hundertsteln, schon mit dem Faktor multipliziert
+}
+
+// NeueKantenlinie rechnet die Mittellinie der Form k über die Länge laenge beim Faktor faktor (mindestens 1); Schritt,
+// Zahl und Lage der Stützpunkte wie in Kantenband beschrieben.
+func NeueKantenlinie(k Kante, laenge, faktor int) *Kantenlinie {
 	f := max(faktor, 1)
 	s := k.schritt()
 	anz := int(math.Ceil(float64(max(laenge, 1)) / (s * float64(f))))
-	vonH, bisH := hundertstel(von)*f, hundertstel(bis)*f
-	vorn := make([]Punkt, 0, 2*(anz+1))
-	hinten := make([]Punkt, anz+1)
+	l := &Kantenlinie{f: f, t: make([]float64, anz+1), m: make([]int, anz+1)}
 	for i := 0; i <= anz; i++ {
 		tb := float64(i) * s
-		t := tb * float64(f)
-		m := n.Lage*100 + hundertstel(k.mitte(tb))*f
-		vorn = append(vorn, quer(n, t, float64(m+vonH)/100))
-		hinten[anz-i] = quer(n, t, float64(m+bisH)/100)
+		l.t[i] = tb * float64(f)
+		l.m[i] = hundertstel(k.mitte(tb)) * f
 	}
-	return append(vorn, hinten...)
+	return l
+}
+
+// Band liefert das Vieleck der Linie an der Naht n, quer um von bis bis verschoben (Ansichtspixel bei Faktor 1, mit dem
+// Faktor multipliziert), wie Kantenband. Es schreibt in dst, wenn dessen Kapazität reicht (der Renderer nutzt so einen
+// Puffer für alle Schichten), sonst in eine neue Liste.
+func (l *Kantenlinie) Band(dst []Punkt, n Naht, von, bis float64) []Punkt {
+	anz := len(l.t) - 1
+	vonH, bisH := hundertstel(von)*l.f, hundertstel(bis)*l.f
+	if cap(dst) < 2*(anz+1) {
+		dst = make([]Punkt, 2*(anz+1))
+	}
+	dst = dst[:2*(anz+1)]
+	lage := n.Lage * 100
+	for i, t := range l.t {
+		m := lage + l.m[i]
+		dst[i] = quer(n, t, float64(m+vonH)/100)
+		dst[2*anz+1-i] = quer(n, t, float64(m+bisH)/100)
+	}
+	return dst
 }
 
 // hundertstel rundet v auf ganze Hundertstel.

@@ -98,10 +98,16 @@ const (
 //   - Ein Dokument knapp unter Budget (39 gefüllte, umrandete Kästen auf 8000×8000, 1,25e11) rastert in rund 7 s
 //     (vor ADR-0028 rund 35 s, vor F-135 bis knapp 5 min) — die Wartezeit, die eine präparierte Datei beim Speichern
 //     erzwingen kann. Glyphen knapp unter GlyphBudget = 1e9, sichtbar auf 8000×8000, brauchen rund 1,2 s (vorher rund
-//     5 s; andere Grade seit ADR-0028 nicht nachgemessen), Kanten knapp unter KantenBudget rund 1,5 s; zusammen also
-//     rund 10 s. Die Gewichte unten stammen aus den Messungen vor ADR-0028 und bleiben (die Grenzen sind Obergrenzen).
+//     5 s; andere Grade seit ADR-0028 nicht nachgemessen). Kanten knapp unter KantenBudget (120 Abriss-Nähte auf
+//     32768×2100: Kanten 9,4e9, Fläche 1,4e10) rastern in rund 8 s (7,6 bis 8,9 s), davon rund 4 bis 5 s für die
+//     Kanten (rund 0,5 ns je Einheit, Vergleich mit 120 Zacken-Nähten: 3,2 bis 3,6 s); Messung 22.11.2026 nach
+//     F-418, ein Kern. Die frühere Angabe „rund 1,5 s“ stimmte für die Abrisskante nicht. Zusammen also rund 15 s.
+//     Die Gewichte unten stammen aus den Messungen vor ADR-0028 und bleiben (die Grenzen sind Obergrenzen).
 //     So werden die präparierten Fälle aus F-125 und F-132 (10000 große Glyphen oder Nummern, 10000 sehr breite
 //     Pfeile, 10000 Texte à 10000 winziger Glyphen, Hunderte bildgroßer Flächen) beim Öffnen abgelehnt.
+//   - Pruefe rechnet nur die Geometrie, die Mittellinie einer Kante einmal je Achse (document.Kantenlinie), und bricht
+//     ab, sobald eine Grenze überschritten ist (F-418): 120 Abriss-Nähte (knapp unter KantenBudget) prüft es in rund
+//     2 s, 1023 Abriss-Nähte auf 32768×2100 lehnt es nach rund 2 s ab (vorher 52 s, so lange hing das Öffnen).
 //
 // Kleiner lässt sich Budget nicht wählen, ohne den Abstand 3 zum Alltagsdokument aufzugeben: Für rund 30 s müsste es
 // auf rund 1e11 sinken, das Alltagsdokument läge dann nur 2,5-fach darunter. Lieber eine präparierte Datei etwas
@@ -138,10 +144,12 @@ func (a aufwand) summe() float64 { return a.glyph + a.flaeche + a.kanten }
 // Aufwand liefert den Rechenaufwand, den Bild für d hätte, ohne zu rastern: ein Trockenlauf desselben Zeichners, der
 // die Geometrie berechnet und die Kosten zählt, aber weder Rasterizer noch Schrift aufruft. So laufen Kostenmodell
 // und echtes Rendern nicht auseinander; Bild zählt dieselbe Summe.
-func Aufwand(d *document.Dokument) float64 { return trockenlauf(d).summe() }
+func Aufwand(d *document.Dokument) float64 { return trockenlauf(d, false).summe() }
 
-func trockenlauf(d *document.Dokument) aufwand {
-	z := zeichner{d: d, rand: image.Rectangle{Max: d.Groesse()}, auf: &aufwand{}}
+// trockenlauf zählt den Aufwand von d. Mit abbrechen hört er auf, sobald eine Grenze (grenzen) überschritten ist
+// (Pruefe, F-418); die Summe ist dann nur ein Teil, aber schon zu groß.
+func trockenlauf(d *document.Dokument, abbrechen bool) aufwand {
+	z := zeichner{d: d, rand: image.Rectangle{Max: d.Groesse()}, auf: &aufwand{}, abbrechen: abbrechen}
 	_ = z.alles() // ohne Schrift kein Fehler
 	return *z.auf
 }
@@ -152,6 +160,9 @@ func trockenlauf(d *document.Dokument) aufwand {
 // im Editor.
 func (z zeichner) alles() error {
 	for _, o := range z.d.Objekte() {
+		if z.abgebrochen() {
+			return nil
+		}
 		if !z.d.ObjektSichtbar(o) {
 			continue
 		}
@@ -161,16 +172,40 @@ func (z zeichner) alles() error {
 	}
 	g, f, k := z.d.Groesse(), z.d.ZackenFaktor(), z.d.Kante()
 	schichten := document.KantenSchichten()
+	// Die Mittellinie je Achse einmal rechnen, die Schichten verschieben sie nur quer (F-418); ein Puffer für alle Bänder
+	// (fuelle und raster behalten die Ecken nicht).
+	var linien [2]*document.Kantenlinie
+	var band []document.Punkt
+	poly := make([][]document.Punkt, 1)
 	for _, n := range z.d.Naehte() {
-		laenge := g.X
+		achse, laenge := 0, g.X
 		if !n.Zeilen {
-			laenge = g.Y
+			achse, laenge = 1, g.Y
+		}
+		if linien[achse] == nil {
+			linien[achse] = document.NeueKantenlinie(k, laenge, f)
 		}
 		for _, s := range schichten {
-			z.fuelle([][]document.Punkt{document.Kantenband(k, n, laenge, f, s.Von, s.Bis)}, nil, s.Farbe)
+			if z.abgebrochen() {
+				return nil
+			}
+			band = linien[achse].Band(band, n, s.Von, s.Bis)
+			poly[0] = band
+			z.fuelle(poly, nil, s.Farbe)
 		}
 	}
 	return nil
+}
+
+// abgebrochen meldet für den Trockenlauf von Pruefe, dass der gezählte Aufwand schon eine Grenze überschreitet: Mehr
+// Zählen ändert das Urteil nicht mehr, nur die Wartezeit (F-418: 1023 Abriss-Nähte zählten sonst rund 50 s bis zur
+// Ablehnung). Aufwand und Bild zählen immer vollständig.
+func (z zeichner) abgebrochen() bool {
+	if !z.abbrechen {
+		return false
+	}
+	a := z.auf
+	return a.summe() > grenzen.gesamt || a.glyph > grenzen.glyph || a.kanten > grenzen.kanten
 }
 
 // Pruefe meldet ErrZuAufwendig, wenn das Rastern von d das Budget überschritte (F-125, F-132). Der Editor lehnt damit
@@ -180,7 +215,9 @@ func Pruefe(d *document.Dokument) error {
 	if n := textZeichen(d); n > grenzen.zeichen {
 		return fmt.Errorf("%w (Zeichen %d, Budget %d)", ErrZuAufwendig, n, grenzen.zeichen)
 	}
-	a := trockenlauf(d)
+	// Der Trockenlauf bricht ab, sobald eine Grenze überschritten ist (F-418): dasselbe Urteil, nur früher. Welche Grenze
+	// die Meldung nennt, kann dann eine andere sein als nach dem vollen Zählen.
+	a := trockenlauf(d, true)
 	switch {
 	case a.summe() > grenzen.gesamt:
 		return fmt.Errorf("%w (Aufwand %.3g, Budget %.3g)", ErrZuAufwendig, a.summe(), grenzen.gesamt)
@@ -225,6 +262,8 @@ type zeichner struct {
 	// ras wird für jede Füllung zurückgesetzt statt neu angelegt: Seine Puffer (8 Byte je Pixel des Ausschnitts) nicht
 	// je Füllung neu anzufordern, spart bei bildgroßen Flächen rund 5 % (F-130).
 	ras *raster16.Rasterizer
+	// abbrechen: nur im Trockenlauf von Pruefe — aufhören, sobald eine Grenze überschritten ist (abgebrochen, F-418).
+	abbrechen bool
 }
 
 func (z zeichner) trocken() bool { return z.bild == nil }

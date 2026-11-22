@@ -45,8 +45,29 @@
     "name": "K96-6 Renderer zeichnet keine Schicht der Kante (Karte #96)",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "\t\t\tz.fuelle([][]document.Punkt{document.Kantenband(k, n, laenge, f, s.Von, s.Bis)}, nil, s.Farbe)",
-    "neu": "\t\t\tif false {\n\t\t\t\tz.fuelle([][]document.Punkt{document.Kantenband(k, n, laenge, f, s.Von, s.Bis)}, nil, s.Farbe)\n\t\t\t}"
+    "alt": "\t\t\tz.fuelle(poly, nil, s.Farbe)",
+    "neu": "\t\t\tif false {\n\t\t\t\tz.fuelle(poly, nil, s.Farbe)\n\t\t\t}"
+  },
+  {
+    "name": "F-418 Pruefe zählt alle Nähte zu Ende (kein Abbruch über der Grenze)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "for _, s := range schichten {\n\t\t\tif z.abgebrochen() {",
+    "neu": "for _, s := range schichten {\n\t\t\tif false && z.abgebrochen() {"
+  },
+  {
+    "name": "F-418 Pruefe zählt alle Objekte zu Ende (kein Abbruch über der Grenze)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "for _, o := range z.d.Objekte() {\n\t\tif z.abgebrochen() {",
+    "neu": "for _, o := range z.d.Objekte() {\n\t\tif false && z.abgebrochen() {"
+  },
+  {
+    "name": "F-418 Band legt die hintere Kante um einen Punkt versetzt ab",
+    "datei": "internal/document/kante.go",
+    "paket": "./internal/document",
+    "alt": "\t\tdst[2*anz+1-i] = quer(n, t, float64(m+bisH)/100)",
+    "neu": "\t\tdst[2*anz-i] = quer(n, t, float64(m+bisH)/100)"
   },
   {
     "name": "K96-7 Einstellung seam wird nicht übernommen (Karte #96)",

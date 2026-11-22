@@ -145,7 +145,7 @@ func gemischtesDokument(t *testing.T) *document.Dokument {
 // Der Trockenlauf (Aufwand) zählt dieselben Kosten wie das echte Rendern, Teil für Teil (Karte #71).
 func TestTrockenlaufGleichRendern(t *testing.T) {
 	d := gemischtesDokument(t)
-	trocken := trockenlauf(d)
+	trocken := trockenlauf(d, false)
 	_, echt, err := bildMitAufwand(d)
 	if err != nil {
 		t.Fatal(err)
@@ -195,7 +195,7 @@ func TestPruefeGrenzenEinzeln(t *testing.T) {
 	alt := grenzen
 	defer func() { grenzen = alt }()
 	d := gemischtesDokument(t)
-	a := trockenlauf(d)
+	a := trockenlauf(d, false)
 	for _, fall := range []struct {
 		name   string
 		setze  func(f float64)
@@ -222,13 +222,13 @@ func TestPruefeGrenzenEinzeln(t *testing.T) {
 func TestKostenmodellLueckenF132(t *testing.T) {
 	d := weissesDokument(t, 10, 10)
 	hinzu(t, d, document.Text{Ort: document.Pt(0, 0), Inhalt: strings.Repeat("W", 100), Schriftgrad: 0.01, Farbe: rot})
-	if a := trockenlauf(d); a.glyph != 100*glyphGrund {
+	if a := trockenlauf(d, false); a.glyph != 100*glyphGrund {
 		t.Errorf("100 winzige Glyphen kosten %v, Soll %v", a.glyph, 100*glyphGrund)
 	}
 	e := weissesDokument(t, 10, 10)
 	hinzu(t, e, document.Pfeil{A: document.Pt(-50, -50), B: document.Pt(70, 70), K: document.Pt(35, 3),
 		Strich: document.Strich{Farbe: rot, Breite: 1e5}})
-	a := trockenlauf(e)
+	a := trockenlauf(e, false)
 	// Gemessen (Messtest Karte #71): rund 9 ms Rechenzeit je solchem Pfeil, also über 1e7 Einheiten, fast alles Kanten.
 	if a.kanten < 1e7 || a.flaeche > 1e5 {
 		t.Errorf("breiter Pfeil auf 10×10: %+v, Soll Kanten über 1e7 bei winziger Fläche", a)
@@ -262,7 +262,7 @@ func alltagsDokument(t testing.TB) *document.Dokument {
 // F-131: Das alltagsnahe Dokument liegt weit unter jeder Grenze (Abstände aus der Messung, siehe Budget).
 func TestAlltagsdokumentWeitUnterDemBudget(t *testing.T) {
 	d := alltagsDokument(t)
-	a := trockenlauf(d)
+	a := trockenlauf(d, false)
 	if f := Budget / a.summe(); f < 3 {
 		t.Errorf("Budget nur %.2f-mal so groß wie das Alltagsdokument (%.3g), Soll mindestens 3", f, a.summe())
 	}
@@ -307,7 +307,7 @@ func TestPraeparierteDokumenteUeberDemBudget(t *testing.T) {
 			document.Kasten{Bereich: document.R(document.Pt(0, 0), document.Pt(2000, 2000)), Fuellung: rot, Strich: document.Strich{Farbe: blau, Breite: 4}}),
 	} {
 		if err := Pruefe(d); !errors.Is(err, ErrZuAufwendig) {
-			t.Errorf("%s: %v (Aufwand %+v), Soll ErrZuAufwendig", name, err, trockenlauf(d))
+			t.Errorf("%s: %v (Aufwand %+v), Soll ErrZuAufwendig", name, err, trockenlauf(d, false))
 		}
 	}
 }

@@ -88,9 +88,12 @@ func (s *schreiber) naehte(d *document.Dokument) {
 		s.WriteString(`<g`)
 		s.attr("id", "naht-"+art(zeilen))
 		s.WriteString(`>`)
+		linie := document.NeueKantenlinie(d.Kante(), laenge, d.ZackenFaktor()) // einmal je Achse (F-418)
+		var band []document.Punkt
 		for _, sch := range document.KantenSchichten() {
 			var pfad strings.Builder
-			for i, p := range document.Kantenband(d.Kante(), document.Naht{Zeilen: zeilen}, laenge, d.ZackenFaktor(), sch.Von, sch.Bis) {
+			band = linie.Band(band, document.Naht{Zeilen: zeilen}, sch.Von, sch.Bis)
+			for i, p := range band {
 				if i == 0 {
 					pfad.WriteString("M")
 				} else {

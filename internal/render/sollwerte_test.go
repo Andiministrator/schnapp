@@ -185,7 +185,7 @@ func TestNummerZiffernKostenNurImBild(t *testing.T) {
 	}{{-15, glyphGrund}, {-19, glyphGrund}, {-20, 0}, {-30, 0}, {-33, 0}, {-40, 0}, {-1e6, 0}, {50, glyphGrund}} {
 		d := weissesDokument(t, 100, 100)
 		hinzu(t, d, document.Nummer{Mitte: document.Pt(fall.mitte, 50), Radius: 20, Wert: 7, Farbe: blau})
-		if a := trockenlauf(d); a.glyph != fall.soll {
+		if a := trockenlauf(d, false); a.glyph != fall.soll {
 			t.Errorf("Mitte %v: Ziffernkosten %v, Soll %v", fall.mitte, a.glyph, fall.soll)
 		}
 		// Das Rendern zählt dieselben Kosten; gerastert wird nur im Bild (die Kosten sind eine obere Schranke).
@@ -201,7 +201,7 @@ func TestNummerZiffernKostenNurImBild(t *testing.T) {
 	}{{-19, 2 * glyphGrund}, {-40, 0}, {-50, 0}} {
 		d := weissesDokument(t, 100, 100)
 		hinzu(t, d, document.Nummer{Mitte: document.Pt(fall.mitte, 50), Radius: 20, Wert: 77, Farbe: blau})
-		if a := trockenlauf(d); a.glyph != fall.soll {
+		if a := trockenlauf(d, false); a.glyph != fall.soll {
 			t.Errorf("zweistellig, Mitte %v: Ziffernkosten %v, Soll %v", fall.mitte, a.glyph, fall.soll)
 		}
 	}
@@ -212,14 +212,14 @@ func TestKostenUnsichtbarerTextzeilen(t *testing.T) {
 	// Bild 100×30, Grad 20: Grundlinien bei 20, 46, 72 … — nur die ersten beiden Zeilen reichen ins Bild.
 	d := weissesDokument(t, 100, 30)
 	hinzu(t, d, document.Text{Ort: document.Pt(0, 0), Inhalt: strings.Repeat("a\n", 99) + "a", Schriftgrad: 20, Farbe: rot})
-	if a := trockenlauf(d); a.glyph != 2*glyphGrund {
+	if a := trockenlauf(d, false); a.glyph != 2*glyphGrund {
 		t.Errorf("100 Zeilen, 2 sichtbar: Kosten %v, Soll %v", a.glyph, 2*glyphGrund)
 	}
 	// Über dem Bild, unter dem Bild und rechts davon.
 	for _, ort := range []document.Punkt{document.Pt(0, -5000), document.Pt(0, 5000), document.Pt(500, 0)} {
 		e := weissesDokument(t, 100, 30)
 		hinzu(t, e, document.Text{Ort: ort, Inhalt: "a\na\na", Schriftgrad: 20, Farbe: rot})
-		if a := trockenlauf(e); a.glyph != 0 {
+		if a := trockenlauf(e, false); a.glyph != 0 {
 			t.Errorf("Text bei %v: Kosten %v, Soll 0", ort, a.glyph)
 		}
 	}
@@ -238,7 +238,7 @@ func TestZeichenzahlTabulatorZuschlag(t *testing.T) {
 	}
 	d := weissesDokument(t, 200, 40)
 	hinzu(t, d, document.Text{Ort: document.Pt(5, 5), Inhalt: "\t\t", Schriftgrad: 20, Farbe: rot})
-	trocken := trockenlauf(d)
+	trocken := trockenlauf(d, false)
 	if trocken.glyph != 8*glyphGrund {
 		t.Errorf("zwei Tabulatoren kosten %v, Soll %v (8 Glyphen)", trocken.glyph, 8*glyphGrund)
 	}
@@ -256,7 +256,7 @@ func TestKostenmodellSollwerte(t *testing.T) {
 	//             1 + 20 (Zeilen) + 2·20 (Spanne) = 61, zwei waagerechte à 1 → 124; also 400 + 3 · 124 = 772
 	d := weissesDokument(t, 100, 100)
 	hinzu(t, d, document.Kasten{Bereich: document.R(document.Pt(10, 10), document.Pt(30, 30)), Fuellung: rot})
-	if a := trockenlauf(d); a.flaeche != 11025 || a.kanten != 772 || a.glyph != 0 {
+	if a := trockenlauf(d, false); a.flaeche != 11025 || a.kanten != 772 || a.glyph != 0 {
 		t.Errorf("Kasten: %+v, Soll Fläche 11025, Kanten 772, Glyphen 0", a)
 	}
 	// Nummer Mitte (50,50), Radius 20, Wert 7: Kreis mit kreisEcken(20) = 40 Ecken, Hülle (30,30)–(71,71) = 41×41.
@@ -266,7 +266,7 @@ func TestKostenmodellSollwerte(t *testing.T) {
 	//   Glyphen = eine Ziffer, Grad 24 (Grundkosten 1700)
 	e := weissesDokument(t, 100, 100)
 	hinzu(t, e, document.Nummer{Mitte: document.Pt(50, 50), Radius: 20, Wert: 7, Farbe: blau})
-	if a := trockenlauf(e); a.flaeche != 42025 || a.kanten != 5440 || a.glyph != glyphGrund {
+	if a := trockenlauf(e, false); a.flaeche != 42025 || a.kanten != 5440 || a.glyph != glyphGrund {
 		t.Errorf("Nummer: %+v, Soll Fläche 42025, Kanten 5440, Glyphen %v", a, glyphGrund)
 	}
 	if a := Aufwand(e); a != 42025+5440+glyphGrund {

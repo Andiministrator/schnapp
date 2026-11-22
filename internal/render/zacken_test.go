@@ -157,11 +157,11 @@ func TestKanteFormen(t *testing.T) {
 // und Rendern zählen dasselbe.
 func TestKanteImAufwand(t *testing.T) {
 	d := zackenDokument(t, 100, 40)
-	if a := trockenlauf(d); a.summe() != 0 {
+	if a := trockenlauf(d, false); a.summe() != 0 {
 		t.Fatalf("ohne Naht Aufwand %v", a.summe())
 	}
 	streifen(t, d, document.Streifen{Zeilen: true, Von: 20, Bis: 25})
-	a := trockenlauf(d)
+	a := trockenlauf(d, false)
 	zeilen := 0.0
 	for _, s := range document.KantenSchichten() {
 		zeilen += 9 + s.Bis - s.Von
@@ -196,7 +196,7 @@ func TestVerborgeneBeschriftungNichtGezeichnet(t *testing.T) {
 	}
 	ohne := grauesDokument(t, 100, 40)
 	streifen(t, ohne, document.Streifen{Von: 20, Bis: 40})
-	if trockenlauf(d).summe() != trockenlauf(ohne).summe() {
+	if trockenlauf(d, false).summe() != trockenlauf(ohne, false).summe() {
 		t.Error("verborgener Kasten kostet")
 	}
 	// Reicht er über die Naht hinaus (bis x 60, Ansicht 40), erscheint er rechts neben der Kante (die höchstens 11

@@ -1565,15 +1565,22 @@ func (e *editor) zeichneNaehte(gtx layout.Context) {
 		c.ops.Reset()
 		aufnahme := op.Record(&c.ops)
 		schichten := document.KantenSchichten()
+		// Mittellinie je Achse einmal, die Schichten verschieben sie nur quer (F-418); ein Puffer für alle Bänder.
+		var linien [2]*document.Kantenlinie
+		var band []document.Punkt
 		for _, n := range naehte {
-			laenge := g.X
+			achse, laenge := 0, g.X
 			if !n.Zeilen {
-				laenge = g.Y
+				achse, laenge = 1, g.Y
+			}
+			if linien[achse] == nil {
+				linien[achse] = document.NeueKantenlinie(form, laenge, faktor)
 			}
 			for _, sch := range schichten {
 				var p clip.Path
 				p.Begin(&c.ops)
-				for i, q := range document.Kantenband(form, n, laenge, faktor, sch.Von, sch.Bis) {
+				band = linien[achse].Band(band, n, sch.Von, sch.Bis)
+				for i, q := range band {
 					pt := f32.Pt(float32(q.X), float32(q.Y))
 					if i == 0 {
 						p.MoveTo(pt)
