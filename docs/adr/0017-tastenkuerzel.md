@@ -144,5 +144,14 @@ sind Rückgängig, Löschen, Speichern und Zoomen gesperrt (F-18, Kritik A-6). N
   NRGBA des Dokuments) und lehnt über **2 GiB** mit „The image is too large.“ ab. Baseline-JPEG in YCbCr oder Grau
   bleiben bis zur Pixelgrenze erlaubt; progressiv 4:4:4 geht bis etwa 113 Megapixel, 4:2:0 bis etwa 186, CMYK bis etwa
   179 (vorher 268). Fotos aus Kameras und Telefonen liegen weit darunter.
-- Kein Fremdpaket (ADR-0011): eigener kleiner Leser für die Marker bis zum ersten SOF; unbrauchbare Köpfe überlässt er
-  dem Dekoder, der sie ablehnt.
+- Kein Fremdpaket (ADR-0011): eigener kleiner Leser für die Marker bis zum ersten SOF. Er überspringt, was auch Go
+  still überspringt (Fremdbytes vor einem Marker, „FF 00“, Füllbytes, RST-Marker ohne Länge).
+- **Berichtigung (Sitzungs-QA, QA-1/QA-2):** Die Prüfung fällt **geschlossen** aus. Gelingt `jpeg.DecodeConfig`, gibt
+  es immer eine Schätzung: Kann der eigene Leser den Kopf nicht lesen oder passen Maße und Komponentenzahl nicht zu
+  `DecodeConfig`, wird mit dessen Maßen und dem ungünstigsten Fall gerechnet (progressiv, alle Komponenten voll und
+  auf 32 Pixel gerundet, bei drei Komponenten RGB, bei vier CMYK). Die frühere Fassung („unbrauchbare Köpfe überlässt
+  er dem Dekoder“) ließ Dateien durch, die Go liest und der Leser nicht, etwa mit einem Fremdbyte nach dem SOI.
+- Mitgeschätzt werden außerdem RGB-JPEG (ohne JFIF mit Adobe-Transformation 0 oder Kennungen R, G, B; Go legt
+  zusätzlich ein RGBA an, 4 Byte je Pixel; ein Adobe-Segment zählt auch hinter dem ersten Scan, wo `DecodeConfig` es
+  nicht sieht) und der Flex-Modus (nicht standardmäßige Abtastung, Go legt die drei Farbebenen dann voll an). RGB
+  Baseline 4:4:4 geht damit bis etwa 195 Megapixel, progressiv bis etwa 93.

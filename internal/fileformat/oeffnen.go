@@ -73,8 +73,8 @@ func Oeffne(pfad string) (_ *Gelesen, fehler error) {
 		return nil, fmt.Errorf("%w: Bild %dx%d", ErrZuGross, cfg.Width, cfg.Height)
 	}
 	// Der Speicherbedarf hängt nicht nur an der Pixelzahl: Ein progressives JPEG von wenigen MB fordert bei 2^28 Pixeln
-	// fast 5 GiB an (F-361). Vorab aus dem SOF-Segment schätzen.
-	if err := pruefeJPEGBedarf(daten); err != nil {
+	// fast 5 GiB an (F-361). Vorab aus dem SOF-Segment schätzen; ist der Kopf nicht lesbar, mit dem ungünstigsten Fall.
+	if err := pruefeJPEGBedarf(daten, cfg); err != nil {
 		return nil, err
 	}
 	bild, err := jpeg.Decode(bytes.NewReader(daten))
