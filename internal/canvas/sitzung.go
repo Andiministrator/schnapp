@@ -357,7 +357,7 @@ func (s *Sitzung) verlauf(f func() error) bool {
 		return false
 	}
 	z, g, st := s.D.Zuschnitt(), s.D.Groesse(), s.D.Streifen()
-	verborgen := s.VerborgeneObjekte()
+	verborgen := s.vorAnsicht()
 	if f() != nil {
 		return false
 	}

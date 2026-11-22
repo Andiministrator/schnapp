@@ -1,0 +1,23 @@
+[
+  {
+    "name": "KA-1 Esc setzt das Werkzeug direkt",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.SetzeWerkzeug(WerkzeugAuswahl) // über den gemeinsamen Weg",
+    "neu": "\t\ts.Werkzeug = WerkzeugAuswahl // über den gemeinsamen Weg"
+  },
+  {
+    "name": "KA-5 Zuschnitt passt immer neu ein",
+    "datei": "internal/canvas/zuschnitt.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.zuschnittModus() && s.D.VollGroesse() == vorher.vollGroesse",
+    "neu": "if false && s.zuschnittModus() && s.D.VollGroesse() == vorher.vollGroesse"
+  },
+  {
+    "name": "KA-5 Versatz ohne Nachführung",
+    "datei": "internal/canvas/zuschnitt.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\ts.Abb.Versatz = s.Abb.Versatz.Plus(document.Pt(float64(d.X), float64(d.Y)).Mal(s.Abb.Zoom))\n",
+    "neu": "\t\t\t_ = d\n"
+  }
+]

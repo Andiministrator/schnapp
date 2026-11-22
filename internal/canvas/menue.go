@@ -37,7 +37,7 @@ func (s *Sitzung) HoleGestauchtesZurueck() bool {
 		return false
 	}
 	_, sonst := s.sichtbareStreifen()
-	vor, verborgen := s.D.Stand(), s.VerborgeneObjekte()
+	vor, verborgen := s.D.Stand(), s.vorAnsicht()
 	if s.D.SetzeStreifen(sonst) != nil {
 		return false
 	}

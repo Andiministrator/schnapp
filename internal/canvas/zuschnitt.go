@@ -5,6 +5,7 @@ package canvas
 import (
 	"image"
 	"math"
+	"slices"
 
 	"github.com/Andiministrator/schnapp/internal/document"
 )
@@ -66,16 +67,45 @@ func (s *Sitzung) sichtbareObjekte() []document.Objekt {
 // verborgenVorher ist VerborgeneObjekte vor der Änderung: Liegen danach mehr Beschriftungen im Verborgenen, meldet
 // die Statusleiste es (ADR-0023 Punkt 7: nicht unbemerkt) — nach Zuschneiden, Stauchen, Rückgängig und Wiederholen
 // gleich, und nur bei Zuwachs (F-184).
-func (s *Sitzung) ansichtGeaendert(verborgenVorher int) {
+//
+// Beim Werkzeug Zuschneiden zeigt die Leinwand die Vollansicht (ADR-0023 Nachtrag 5). Ändert sich nur der Zuschnitt,
+// bleibt sie dasselbe Bild; dann bleibt auch die Abbildung, wie der Nutzer sie hatte (KA-5): Eingepasst bleibt
+// eingepasst, eine selbst gezoomte oder verschobene Ansicht bleibt stehen. Weil die Ansichtskoordinaten am Zuschnitt
+// hängen (die Vollansicht liegt bei −VollVersatz), rückt der Versatz um die Verschiebung von VollVersatz mal Zoom
+// nach — so steht jeder Punkt der Vollansicht am selben Fensterpunkt. Sonst wird neu eingepasst.
+func (s *Sitzung) ansichtGeaendert(vorher ansichtVorher) {
 	s.bildAenderung++
-	s.eingepasst = true
-	s.Abb = s.einpassAbb()
+	if s.zuschnittModus() && s.D.VollGroesse() == vorher.vollGroesse && slices.Equal(s.D.Streifen(), vorher.streifen) {
+		if s.eingepasst {
+			s.Abb = s.einpassAbb()
+		} else {
+			d := s.D.VollVersatz().Sub(vorher.vollVersatz)
+			s.Abb.Versatz = s.Abb.Versatz.Plus(document.Pt(float64(d.X), float64(d.Y)).Mal(s.Abb.Zoom))
+		}
+	} else {
+		s.eingepasst = true
+		s.Abb = s.einpassAbb()
+	}
 	if o, ok := s.D.Objekt(s.Auswahl); ok && !s.D.ObjektSichtbar(o) {
 		s.Auswahl = 0
 	}
-	if s.VerborgeneObjekte() > verborgenVorher {
+	if s.VerborgeneObjekte() > vorher.verborgen {
 		s.ansichtMeldung = AnsichtVerborgen
 	}
+}
+
+// ansichtVorher hält fest, was ansichtGeaendert vom Stand vor einer Änderung von Zuschnitt oder Streifen braucht.
+type ansichtVorher struct {
+	verborgen   int // VerborgeneObjekte
+	vollGroesse image.Point
+	vollVersatz image.Point
+	streifen    []document.Streifen
+}
+
+// vorAnsicht merkt den Stand vor einer Änderung von Zuschnitt oder Streifen (für ansichtGeaendert).
+func (s *Sitzung) vorAnsicht() ansichtVorher {
+	return ansichtVorher{verborgen: s.VerborgeneObjekte(), vollGroesse: s.D.VollGroesse(), vollVersatz: s.D.VollVersatz(),
+		streifen: s.D.Streifen()}
 }
 
 // ganzzahlig rundet einen Ansichtsrahmen auf ganze Ansichtspixel innerhalb der Bildfläche (beim Zuschneiden die
@@ -205,7 +235,7 @@ func (s *Sitzung) zuschneideRahmen() {
 	if z == s.D.Zuschnitt() {
 		return
 	}
-	verborgen := s.VerborgeneObjekte()
+	verborgen := s.vorAnsicht()
 	if s.D.SetzeZuschnitt(z) == nil {
 		s.ansichtGeaendert(verborgen)
 	}
@@ -224,7 +254,7 @@ func (s *Sitzung) HebeZuschnittAuf() bool {
 	if !ok {
 		return false
 	}
-	vor, verborgen := s.D.Stand(), s.VerborgeneObjekte()
+	vor, verborgen := s.D.Stand(), s.vorAnsicht()
 	if s.D.SetzeAnsicht(ganz, st) != nil {
 		return false
 	}
@@ -322,7 +352,7 @@ func (s *Sitzung) staucheRahmen() {
 	neu := document.Streifen{Zeilen: zeilen}
 	neu.Von, neu.Bis = s.originalBereich(von, bis, zeilen)
 	st := Verschmolzen(s.D.Streifen(), neu)
-	verborgen := s.VerborgeneObjekte()
+	verborgen := s.vorAnsicht()
 	if s.D.SetzeStreifen(st) != nil {
 		s.ansichtMeldung = AnsichtZuviele
 		return
@@ -371,7 +401,7 @@ func (s *Sitzung) randZuschnitt(zeilen bool, von, bis, laenge int) {
 	if z == s.D.Zuschnitt() {
 		return
 	}
-	verborgen := s.VerborgeneObjekte()
+	verborgen := s.vorAnsicht()
 	if s.D.SetzeZuschnitt(z) != nil {
 		return
 	}
@@ -420,7 +450,7 @@ func (s *Sitzung) EntferneNaht(p document.Punkt) bool {
 		}
 		bleiben = append(bleiben, st)
 	}
-	vor, verborgen := s.D.Stand(), s.VerborgeneObjekte()
+	vor, verborgen := s.D.Stand(), s.vorAnsicht()
 	if s.D.SetzeStreifen(bleiben) != nil {
 		return false
 	}

@@ -52,18 +52,74 @@ func TestZuschneidenWerkzeug(t *testing.T) {
 	if n := schritte(t, s); n != 1 {
 		t.Errorf("%d Rückgängig-Schritte, Soll 1", n)
 	}
-	s.Scrollen(f(50, 50), -1) // Nutzer zoomt: Rückgängig passt trotzdem neu ein (die Ansicht hat eine andere Größe)
+	// Nutzer zoomt: Rückgängig im Modus Zuschneiden lässt die Vollansicht am selben Fleck (KA-5); der Zoom bleibt, der
+	// Versatz rückt um den Wechsel von VollVersatz nach.
+	s.Scrollen(f(50, 50), -1)
+	gezoomt := s.Abb
+	ecke := gezoomt.ZuFenster(document.Pt(-20, -10)) // Ursprung der Vollansicht im Fenster
 	vor := s.BildAenderung()
 	if !s.Rueckgaengig() || s.D.Zuschnitt() != image.Rect(0, 0, 200, 100) {
 		t.Fatal("Rückgängig")
 	}
-	if s.Abb != voll || s.BildAenderung() != vor+1 {
-		t.Errorf("nach Rückgängig: %+v, BildAenderung %d", s.Abb, s.BildAenderung())
+	if s.Abb.Zoom != gezoomt.Zoom || !nah(s.Abb.ZuFenster(document.Pt(0, 0)), ecke) || s.BildAenderung() != vor+1 {
+		t.Errorf("nach Rückgängig: %+v (Soll Zoom %v, Vollansicht bei %v), BildAenderung %d", s.Abb, gezoomt.Zoom, ecke,
+			s.BildAenderung())
 	}
-	// Mit einem anderen Werkzeug gilt wieder die Ansicht nach dem Zuschnitt (eingepasst, weil Rückgängig einpasst).
-	if !s.Wiederholen() || !s.SetzeWerkzeug(WerkzeugAuswahl) || s.Bildflaeche() != image.Rect(0, 0, 101, 51) ||
-		s.Abb != Einpassen(image.Pt(101, 51), image.Pt(248, 148), Rand) {
+	if !s.Wiederholen() || s.Abb.Zoom != gezoomt.Zoom || !nah(s.Abb.Versatz, gezoomt.Versatz) {
+		t.Errorf("nach Wiederholen: %+v, Soll %+v", s.Abb, gezoomt)
+	}
+	// Mit einem anderen Werkzeug gilt wieder die Ansicht nach dem Zuschnitt; selbst gezoomt bleibt die Abbildung.
+	if !s.SetzeWerkzeug(WerkzeugAuswahl) || s.Bildflaeche() != image.Rect(0, 0, 101, 51) || s.Abb.Zoom != gezoomt.Zoom || !nah(s.Abb.Versatz, gezoomt.Versatz) {
 		t.Errorf("nach dem Werkzeugwechsel: Fläche %v, %+v", s.Bildflaeche(), s.Abb)
+	}
+	// Eingepasst: der Wechsel passt die Ansicht ein.
+	s.Einpassen()
+	if s.SetzeWerkzeug(WerkzeugZuschneiden); !s.SetzeWerkzeug(WerkzeugAuswahl) ||
+		s.Abb != Einpassen(image.Pt(101, 51), image.Pt(248, 148), Rand) {
+		t.Errorf("eingepasst nach dem Werkzeugwechsel: %+v", s.Abb)
+	}
+}
+
+// KA-5: Hat der Nutzer im Modus Zuschneiden selbst gezoomt, bleibt nach einem Griff-Zug jeder Punkt der Vollansicht am
+// selben Fensterpunkt (Zoom und Lage), auch wenn sich VollVersatz ändert; eingepasst bleibt eingepasst.
+func TestZuschnittGriffBehaeltZoom(t *testing.T) {
+	s := verlaufSitzung(t)
+	s.SetzeWerkzeug(WerkzeugZuschneiden)
+	s.Scrollen(f(100, 50), -2) // hineinzoomen
+	if s.Abb.Zoom <= 1 {
+		t.Fatalf("Vorbereitung: Zoom %v", s.Abb.Zoom)
+	}
+	gezoomt := s.Abb
+	// Ein Punkt der Vollansicht (Ansicht = Vollansicht, solange VollVersatz 0 ist).
+	punkt := document.Pt(150, 70)
+	vorFenster := gezoomt.ZuFenster(punkt)
+	zieh(s, fv(s, 0, 0), fv(s, 30, 20)) // Ecke NW: VollVersatz wird (30,20)
+	if s.D.Zuschnitt() != image.Rect(30, 20, 200, 100) || s.D.VollVersatz() != image.Pt(30, 20) {
+		t.Fatalf("Zuschnitt %v, VollVersatz %v", s.D.Zuschnitt(), s.D.VollVersatz())
+	}
+	// derselbe Vollansichtspunkt hat jetzt die Ansichtskoordinaten punkt − VollVersatz
+	nachFenster := s.Abb.ZuFenster(punkt.Minus(document.Pt(30, 20)))
+	if s.Abb.Zoom != gezoomt.Zoom || !nah(nachFenster, vorFenster) {
+		t.Errorf("Vollansicht hat sich bewegt: Zoom %v→%v, Punkt %v→%v", gezoomt.Zoom, s.Abb.Zoom, vorFenster, nachFenster)
+	}
+	// Neuer Rahmen (nicht über Griffe) ebenso.
+	vor := s.Abb.ZuFenster(document.Pt(-30, -20))
+	zieh(s, fv(s, -10, -10), fv(s, 60, 50))
+	if s.D.Zuschnitt() != image.Rect(20, 10, 90, 70) {
+		t.Fatalf("neuer Rahmen: Zuschnitt %v", s.D.Zuschnitt())
+	}
+	if s.Abb.Zoom != gezoomt.Zoom || !nah(s.Abb.ZuFenster(document.Pt(-20, -10)), vor) {
+		t.Errorf("neuer Rahmen: Vollansicht bewegt, %+v", s.Abb)
+	}
+	// Eingepasst bleibt eingepasst.
+	s.Einpassen()
+	eing := s.Abb
+	zieh(s, fv(s, 0, 30), fv(s, 10, 30))
+	if s.D.Zuschnitt() != image.Rect(30, 10, 90, 70) {
+		t.Fatalf("eingepasst: Zuschnitt %v", s.D.Zuschnitt())
+	}
+	if s.Abb.Zoom != eing.Zoom || !nah(s.Abb.ZuFenster(document.Pt(-30, -10)), eing.ZuFenster(document.Pt(-20, -10))) {
+		t.Errorf("eingepasst: Vollansicht bewegt, %+v → %+v", eing, s.Abb)
 	}
 }
 

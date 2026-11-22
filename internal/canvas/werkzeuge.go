@@ -559,7 +559,7 @@ func (s *Sitzung) Esc() {
 	case s.Auswahl != 0:
 		s.Auswahl = 0
 	default:
-		s.Werkzeug = WerkzeugAuswahl
+		s.SetzeWerkzeug(WerkzeugAuswahl) // über den gemeinsamen Weg: Vollansicht aus, Bild neu, Einpassen (KA-1)
 	}
 }
 
