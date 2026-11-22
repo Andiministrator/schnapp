@@ -145,6 +145,7 @@ type zeilenTinte struct {
 	i, n     int
 	vorschub float64 // Breite der Zeile bis hinter das letzte Zeichen (ohne Tinte am Ende der Zeile)
 	tinte    Rechteck
+	hatTinte bool // false: nur Leerraum, tinte ist leer, nur der Vorschub zählt (F-365)
 }
 
 // tintenSchluessel ist Inhalt und Grad eines Textes: Die Tinte relativ zum Ort hängt nur davon ab.
@@ -169,8 +170,8 @@ const (
 	// tintenEintrag schätzt, was ein Eintrag ohne Inhalt und Zeilen belegt: Schlüssel (Zeichenkettenkopf und Grad,
 	// 24 Byte), Slice-Kopf (24 Byte) und den Anteil der Map an Steuerbytes und Reserve.
 	tintenEintrag = 96
-	// tintenZeile ist die Größe einer zeilenTinte (zwei int, vier float64; der Test vergleicht mit unsafe.Sizeof).
-	tintenZeile = 56
+	// tintenZeile ist die Größe einer zeilenTinte (zwei int, fünf float64, ein bool mit Füllbytes; der Test vergleicht mit unsafe.Sizeof).
+	tintenZeile = 64
 )
 
 // tintenKosten schätzt die Belegung eines Eintrags mit Inhalt inhalt und zeilen gemessenen Zeilen (Kapazität).
@@ -187,8 +188,9 @@ func textZeilen(s *schriftMass, inhalt string, grad float64) []zeilenTinte {
 	zeilen := []zeilenTinte{}
 	for i, z := range strings.Split(inhalt, "\n") {
 		z = Zeichenbar(z)
-		if vor, tinte, hat := s.zeile(z, grad); hat {
-			zeilen = append(zeilen, zeilenTinte{i: i, n: utf8.RuneCountInString(z), vorschub: vor, tinte: tinte})
+		// Auch eine Zeile nur aus Leerzeichen zählt, wenn sie einen Vorschub hat (F-365): ohne Tinte, aber mit Breite.
+		if vor, tinte, hat := s.zeile(z, grad); hat || vor > 0 {
+			zeilen = append(zeilen, zeilenTinte{i: i, n: utf8.RuneCountInString(z), vorschub: vor, tinte: tinte, hatTinte: hat})
 		}
 	}
 	kosten := tintenKosten(inhalt, cap(zeilen))
@@ -212,6 +214,9 @@ func textTinte(t Text) (r Rechteck, ok, geschaetzt bool) {
 		return Rechteck{}, false, true
 	}
 	for _, z := range textZeilen(s, t.Inhalt, t.Schriftgrad) {
+		if !z.hatTinte {
+			continue
+		}
 		grund := Pt(t.Ort.X, t.Grundlinie(z.i))
 		g := mitRand(Rechteck{Min: grund.Plus(z.tinte.Min), Max: grund.Plus(z.tinte.Max)}, z.n)
 		if ok {
@@ -289,6 +294,11 @@ func textFlaeche(t Text) (Rechteck, bool) {
 	}
 	for _, z := range textZeilen(s, t.Inhalt, grad) {
 		g := Pt(t.Ort.X, t.Grundlinie(z.i))
+		if !z.hatTinte {
+			// Nur Leerraum: die Zeile reicht um ihren Vorschub und die Zeilenhöhe der Schrift.
+			r = r.Vereint(Rechteck{Min: Pt(t.Ort.X, g.Y+s.refOben*grad), Max: Pt(t.Ort.X+z.vorschub, g.Y+s.refUnten*grad)})
+			continue
+		}
 		ink := Rechteck{Min: g.Plus(z.tinte.Min), Max: g.Plus(z.tinte.Max)}
 		r = r.Vereint(ink).Vereint(Rechteck{Min: Pt(t.Ort.X, ink.Min.Y), Max: Pt(t.Ort.X+z.vorschub, ink.Max.Y)})
 	}
