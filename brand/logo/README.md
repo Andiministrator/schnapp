@@ -3,15 +3,15 @@
 Stand 19.11.2026. Gewählt von Andi: Entwurf **e6** aus Runde 6 (`../entwuerfe/runde-6/`). Regeln für den Einsatz
 stehen im Corporate Design: [`../corporate-design.md`](../corporate-design.md) (PDF daneben).
 
-> **Alle Dateien hier sind erzeugt.** Quelle ist `../werkzeug/paket.py`; nie eine Datei von Hand ändern, sondern
-> das Skript anpassen und neu bauen:
+> **Alle Dateien hier sind erzeugt.** Quelle ist das Go-Werkzeug `../werkzeug/` (eigenes Modul, nur
+> Standardbibliothek); nie eine Datei von Hand ändern, sondern das Werkzeug anpassen und neu bauen:
 >
 > ```bash
-> python3 brand/werkzeug/paket.py
+> cd brand/werkzeug && go run . paket
 > ```
 >
-> Braucht Python mit `fontTools`, die Schrift Open Sans SemiBold (Pfad über `SCHNAPP_SCHRIFT`, Vorgabe
-> `/usr/share/fonts/TTF/OpenSans-SemiBold.ttf`), `rsvg-convert` und ImageMagick (`magick`).
+> Braucht Go, die Schrift Open Sans SemiBold (Pfad über `SCHNAPP_SCHRIFT`, Vorgabe
+> `/usr/share/fonts/TTF/OpenSans-SemiBold.ttf`), `rsvg-convert` und ImageMagick (`magick`, nur für `favicon.ico`).
 
 ## Das Logo
 

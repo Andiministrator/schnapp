@@ -188,7 +188,7 @@ ADR-0003 Nachtrag 2, ADR-0015.
 ## Marke
 
 Logo, Farben, Schrift und Regeln für Oberfläche und Doku: [`brand/corporate-design.md`](brand/corporate-design.md) —
-verbindlich für alles Sichtbare. Logo-Dateien sind erzeugt (`brand/werkzeug/paket.py`, `cd.py`), nie von Hand ändern.
+verbindlich für alles Sichtbare. Logo-Dateien sind erzeugt (Go-Werkzeug `brand/werkzeug/`, `go run . paket|cd|alles`), nie von Hand ändern.
 
 ## Glossar & Offene Entscheidungen
 
@@ -296,9 +296,9 @@ verbrauchen andere Karten Nummern.
   im Fließtext und in der Oberfläche „Schnapp“ (Andi, 19.11.2026, ADR-0016).
 - **X11-Wege** (xdotool, XGetImage, `import`) — Schnapp ist nur Wayland (ADR-0007).
 - **Schwärzen als Vektorebene über dem Original** — dann steht das Geschwärzte im eingebetteten Original im Klartext.
-- **Neue Python-Werkzeuge im Repo** — Python wird schrittweise entfernt (Andi, 19.11.2026): Logos und Grafiken
-  später mit Schnapp selbst oder per Go erzeugen; bestehende `brand/werkzeug/*.py` nur noch pflegen, bis sie ersetzt
-  sind (Karte im Board). Wegwerf-Einzeiler während der Arbeit bleiben erlaubt, landen aber nie im Repo.
+- **Python-Werkzeuge im Repo** — Python ist seit 22.11.2026 ganz aus dem Repo (Andi, 19.11.2026; Karte #23): Logos und
+  Grafiken mit Schnapp selbst oder per Go (`brand/werkzeug/`). Wegwerf-Einzeiler während der Arbeit bleiben erlaubt,
+  landen aber nie im Repo.
 - **`cgo`-Abhängigkeiten ohne Not** — erschwert Flatpak und Kreuzbau; vorher ADR (für Gio samt Patch: ADR-0003 Nachtrag 2).
 
 ## Board-Felder (aBoard)

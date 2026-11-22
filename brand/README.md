@@ -26,7 +26,7 @@ Logo, Symbol und Farben. Stand 19.11.2026: **entschieden — Entwurf e6** (Andi)
 
 ## Festlegungen der Entwürfe
 
-- **Schriftzug** selbst gezeichnet (`werkzeug/runde1.py`), keine Schriftdatei: Bögen als abgerundete Rechtecke,
+- **Schriftzug** selbst gezeichnet (heute `werkzeug/logo.go`), keine Schriftdatei: Bögen als abgerundete Rechtecke,
   passend zu Rahmen und Bildschirmen. x-Höhe 100, Strich 22.
 - **Farben:** ab Runde 2 die Palette in [`farben.md`](farben.md) (Grau, Grün, Orange). Runde 1 nutzte Nachtblau,
   Petrol und Markergelb.
@@ -35,8 +35,8 @@ Logo, Symbol und Farben. Stand 19.11.2026: **entschieden — Entwurf e6** (Andi)
 ## Entwürfe
 
 `entwuerfe/runde-6/vergleich.html` (aktuell). Die Bilder der Runden 1 bis 5 und die Werkzeuge `runde2.py`/`runde3.py`
-sind entfernt (ADR-0027, 21.11.2026); der letzte Stand mit ihnen ist Commit `be353c9`. `runde1.py`, `runde4.py` und
-`runde5.py` bleiben, weil `paket.py` und `runde6.py` aus ihnen Schriftzug, Farben und das „s“ mit Auge übernehmen; als
-Skript aufgerufen erzeugen sie ihre Runde wieder unter `entwuerfe/`. Die Werkzeuge in `werkzeug/` sind Python und sollen
-später durch Go oder Schnapp selbst ersetzt werden (Andi, 19.11.2026). Neu erzeugen: `python3 brand/werkzeug/runde6.py`
-(braucht Python-fontTools und Open Sans).
+sind entfernt (ADR-0027, 21.11.2026); der letzte Stand mit ihnen ist Commit `be353c9`. Die übrigen Python-Werkzeuge
+(`runde1.py`, `runde4.py` bis `runde6.py`, `paket.py`, `cd.py`) sind seit dem 22.11.2026 durch das Go-Werkzeug in
+`werkzeug/` ersetzt (Karte #23, Andi 19.11.2026: Python ganz aus dem Projekt); es übernimmt, was das Logo-Paket
+braucht, und erzeugt Logo-Paket und CD-Bilder byte-gleich. Die Entwürfe unter `entwuerfe/` bleiben als Ergebnis
+liegen; die Skripte, die sie erzeugt haben, stehen in der git-Geschichte vor diesem Wechsel.

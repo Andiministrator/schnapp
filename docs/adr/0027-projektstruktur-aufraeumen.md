@@ -112,3 +112,17 @@ Aufwand: rund 2 Stunden; Punkt 1 berührt jede Go-Datei mit Importen, daher zule
 Andi, 21.11.2026: alle fünf Punkte angenommen („ja zu allen“).
 
 Seit Sprint 10 heißen die Pakete `internal/probeguard` (früher `probeschutz`) und `internal/saveprogress` (früher `speicherschritt`; E-23, F-312).
+
+## Nachtrag 1 (22.11.2026): Python ganz entfernt (Karte #23)
+
+**Status:** Akzeptiert (Claude; Auftrag Andi vom 19.11.2026: „Python nach und nach komplett aus dem Projekt entfernen“).
+
+Die Einschränkung oben (`runde1.py`, `runde4.py`, `runde5.py` bleiben) ist aufgehoben. Alle Python-Werkzeuge
+(`runde1.py`, `runde4.py` bis `runde6.py`, `paket.py`, `cd.py`) sind durch das Go-Werkzeug `brand/werkzeug/` ersetzt
+(eigenes Modul, nur Standardbibliothek; `go run . paket|cd|alles`). Es übernimmt aus den Entwürfen nur, was das
+Logo-Paket braucht, liest die Schrift für die Unterzeile selbst (kein fontTools, kein Fremdpaket, ADR-0011) und erzeugt
+Logo-Paket und CD-Bilder byte-gleich zum Stand davor (geprüft durch Neubau und `git status`, dazu
+`TestSVGWieEingecheckt`). Das PDF druckt weiter Chromium; seine Bytes sind schon mit Python nicht reproduzierbar
+gewesen, gleich ist das erzeugte HTML. Rastern (`rsvg-convert`), `favicon.ico` (ImageMagick) und Metadaten-Entfernung
+(`qpdf`) bleiben externe Programme. Die Entwürfe unter `brand/entwuerfe/` bleiben als Ergebnis; ihre Skripte stehen in
+der git-Geschichte vor diesem Nachtrag.
