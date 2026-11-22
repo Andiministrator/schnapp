@@ -89,5 +89,5 @@ das Bild nur erhalten, wenn ein Zwischenablage-Verwalter (unter KDE Klipper) es 
 
 Der Patch ergänzt `app.ClipboardCancelled func()` in `app/os_wayland.go`: Gio ruft es in `gio_onDataSourceCancelled`
 auf, wenn die eigene aktuelle `wl_data_source` abgelöst wird (ein anderes Programm hat die Zwischenablage übernommen),
-gleiche Art wie `ClipboardWriteError`; aus Gios Wayland-Schleife, vor dem ersten Fenster zu setzen. Verwendung: ADR-0024
+gleiche Art wie `ClipboardWriteError`; aus Gios Wayland-Schleife, vor dem Fenster zu setzen, das kopiert (Schnapp setzt ihn in `Editor()` vor dessen Fenster; die Overlay-Fenster davor kopieren nie, darum ist der Satz „before any window opens“ im Gio-Kommentar für Schnapp gleichwertig). Verwendung: ADR-0024
 Nachtrag 8.

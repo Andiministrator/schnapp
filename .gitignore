@@ -17,7 +17,7 @@ Desktop.ini
 *.out
 coverage.html
 
-# Python (Bytecode enthält absolute Pfade — F-16)
+# Python (seit 22.11.2026 nicht mehr im Repo; bleibt für Wegwerf-Skripte unter tmp/, Bytecode enthält absolute Pfade — F-16)
 __pycache__/
 *.pyc
 
