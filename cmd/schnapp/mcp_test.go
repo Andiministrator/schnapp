@@ -280,6 +280,27 @@ func TestMcpZielwahl(t *testing.T) {
 	}
 }
 
+// TestMcpOhneZielFolgtEinstellung: Ohne screen und all nimmt [capture] screen = all alle Monitore.
+func TestMcpOhneZielFolgtEinstellung(t *testing.T) {
+	l := neuerMcpLauf(t)
+	l.agenten.Bestaetigen = false
+	lade := l.an.lade
+	l.an.lade = func() (settings.Einstellungen, []string) {
+		e, w := lade()
+		e.Bildschirm = settings.WahlAlle
+		return e, w
+	}
+	if e := l.rufe(t, "capture_screen", `{}`); e.Fehler {
+		t.Fatal(text(e))
+	}
+	if len(l.q.aufrufe) != 1 || l.q.aufrufe[0] != "Alle" {
+		t.Errorf("Aufrufe %v, erwartet Alle", l.q.aufrufe)
+	}
+	if !strings.Contains(strings.Join(l.schritte, ";"), "hinweis:all monitors") {
+		t.Errorf("Hinweis nennt nicht alle Monitore: %v", l.schritte)
+	}
+}
+
 func TestMcpFalscheArgumente(t *testing.T) {
 	l := neuerMcpLauf(t)
 	for _, args := range []string{

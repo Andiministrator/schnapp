@@ -68,7 +68,7 @@ Vorhanden ist:
 | `schnapp … --json` | das Ergebnis (Pfad und Größe oder die Monitorliste) als eine Zeile JSON ausgeben |
 
 Ohne `--output` landet jede Aufnahme in der Bibliothek (`~/Bilder/schnapp/JJJJ-MM/`), ihr Pfad steht auf der Standardausgabe, bevor
-der Editor öffnet. Skripte und KI-Agenten: siehe [`docs/agents.md`](docs/agents.md) (englisch). Einstellungen stehen in `~/.config/schnapp/settings.ini`, etwa `[capture] open-editor = false`, `[capture] seam = wave` (Kante an Stauch-Nähten: `tear`, `wave` oder `zigzag`) oder
+der Editor öffnet. Skripte und KI-Agenten: siehe [`docs/agents.md`](docs/agents.md) (englisch), auch zum MCP-Server `schnapp mcp` (aus, bis du ihn unter `[agents]` erlaubst). Einstellungen stehen in `~/.config/schnapp/settings.ini`, etwa `[capture] open-editor = false`, `[capture] seam = wave` (Kante an Stauch-Nähten: `tear`, `wave` oder `zigzag`) oder
 `[general] language = en` (Voreinstellung `auto`: die Sprache des Systems).
 
 Im Editor, Werkzeuge: **V** Auswählen, **A** Pfeil (ziehen; **Umschalt** rastet auf 45°; mittleren Griff ziehen

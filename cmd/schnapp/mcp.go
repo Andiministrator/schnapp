@@ -325,6 +325,10 @@ func (an mcpAnschluesse) nimmAuf(ctx context.Context, a aufnahme, ausgabe string
 	if !e.Agenten.Aufnehmen {
 		return an.nichtErlaubt("Capturing", "capture")
 	}
+	// Ohne Ziel gilt [capture] screen = all als „alle Monitore“, sonst der aktive Monitor (Nachtrag 2 Punkt 3).
+	if !a.letzter && !a.alle && a.monitor == "" && e.Bildschirm == settings.WahlAlle {
+		a.alle = true
+	}
 	if ausgabe != "" {
 		if err := pruefeAusgabe("output", ausgabe); err != nil {
 			return mcp.FehlerErgebnis(err.Error() + ".")

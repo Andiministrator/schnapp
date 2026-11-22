@@ -124,5 +124,12 @@
     "paket": "./internal/library",
     "alt": "\t\tif a.OhneAgenten && e.Agent() {",
     "neu": "\t\tif false && a.OhneAgenten && e.Agent() {"
+  },
+  {
+    "name": "M19 ohne Ziel immer der aktive Monitor",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif !a.letzter && !a.alle && a.monitor == \"\" && e.Bildschirm == settings.WahlAlle {",
+    "neu": "\tif false && !a.letzter && !a.alle && a.monitor == \"\" && e.Bildschirm == settings.WahlAlle {"
   }
 ]

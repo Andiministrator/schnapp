@@ -105,5 +105,40 @@ language of the system; do not parse them.
   `--export`) contain only the visible part. Redaction (black out, pixelate) is final in every saved file.
 - `--export` refuses files that would be too costly to render (crafted files); `--ignore-limit` skips this check — use
   it only for files you trust.
-- Annotating and redacting from the command line, and an MCP server (`schnapp mcp`, stdio only, with separate consent
-  for capturing and for reading the library), are planned; see ADR-0030.
+- Annotating and redacting from the command line (and as MCP tools) are planned; see ADR-0030.
+
+## MCP server
+
+`schnapp mcp` runs Schnapp as a Model Context Protocol server over standard input and output (newline-delimited
+JSON-RPC 2.0). It never opens a socket. Register it in your agent like any stdio server, with the command `schnapp`
+and the single argument `mcp`. It speaks protocol revision 2026-07-28 (`server/discover`, `_meta` on every request)
+and the older handshake form (`initialize`, revisions 2024-11-05 to 2025-11-25). Logs go to standard error only.
+
+Tools (names and JSON keys are stable):
+
+| Tool | Arguments | Needs |
+|---|---|---|
+| `list_screens` | — | nothing |
+| `capture_screen` | `screen` (name), `all` (bool), `output` (absolute path) — without `screen` and `all`: the active monitor, or all if `[capture] screen = all` | `capture` |
+| `capture_repeat` | `output` | `capture` |
+| `library_search` | `tag`, `from`, `to` (RFC 3339 or `YYYY-MM-DD`), `limit` (1–50, default 20), `agents` (default true) | `library` |
+| `library_read` | `path` (absolute or relative to the library) | `library` |
+| `export` | `file`, `target` (absolute paths) | `library` if `file` is in the library |
+
+Captures and `library_read` return `structuredContent` `{"path","width","height"}`, the same JSON as text and — with
+`image = yes` — the visible image as a PNG (at most 8 MiB). There is no overlay over MCP: picking an area needs a person.
+
+Consent lives only in `~/.config/schnapp/settings.ini`; the server reads it on every call and never writes it:
+
+```ini
+[agents]
+capture = no   # yes: agents may take screenshots
+library = no   # yes: agents may search the library and read images from it
+confirm = yes  # ask in a dialog before every capture (Allow / Deny, 60 s, then denied)
+image = yes    # send the image itself to the agent; no: only path and size
+```
+
+A call without consent fails with `isError: true` and a sentence that names the missing switch. Every capture shows a
+desktop notification; if it cannot be shown, the screenshot is discarded. Captures without `output` go to the library
+under `<Pictures>/schnapp/agents/` and are cleaned up like any capture. The name the agent reports about itself is
+shown in the dialog as unverified.
