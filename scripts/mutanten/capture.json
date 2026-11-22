@@ -1,0 +1,12 @@
+[
+  {"name": "C1 NeuKWin ohne Präfix", "datei": "internal/capture/kwin.go", "paket": "./internal/capture",
+   "alt": "fmt.Errorf(\"capture: Session-Bus: %w\", err)", "neu": "fmt.Errorf(\"Session-Bus: %w\", err)"},
+  {"name": "C2 NeuKWin %v statt %w", "datei": "internal/capture/kwin.go", "paket": "./internal/capture",
+   "alt": "fmt.Errorf(\"capture: Session-Bus: %w\", err)", "neu": "fmt.Errorf(\"capture: Session-Bus: %v\", err)"},
+  {"name": "C3 NeuKWin liefert KWin trotz Fehler", "datei": "internal/capture/kwin.go", "paket": "./internal/capture",
+   "alt": "\t\treturn nil, fmt.Errorf(\"capture: Session-Bus: %w\", err)", "neu": "\t\treturn &KWin{}, fmt.Errorf(\"capture: Session-Bus: %w\", err)"},
+  {"name": "C4 NeuKWin doppeltes Präfix", "datei": "internal/capture/kwin.go", "paket": "./internal/capture",
+   "alt": "fmt.Errorf(\"capture: Session-Bus: %w\", err)", "neu": "fmt.Errorf(\"capture: capture: Session-Bus: %w\", err)"},
+  {"name": "C5 Gesamtaufnahme fällt auf Rückfallmeldung", "datei": "internal/capture/aufnahme.go", "paket": "./internal/capture",
+   "alt": "\tcase ErrKeineGesamtaufnahme:\n\t\treturn i18n.T(\"This KWin version cannot capture all screens at once. Use a single screen instead.\")\n", "neu": ""}
+]
