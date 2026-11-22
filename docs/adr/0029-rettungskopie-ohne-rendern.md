@@ -153,3 +153,24 @@ Was eine Bearbeitung ausmacht, ist dagegen klein und ohne Pixel beschreibbar:
   (Nachtrag 1).
 - **Dauer (F-432):** In Nachtrag 3 gilt statt „unter einer Sekunde“ „rund eine Sekunde“ (Mosaik knapp unter der
   Grenze gemessen 0,92 s).
+
+## Nachtrag 5 (22.11.2026): Sperre strenger, fremdes Fenster übernimmt, NeueBasis in der Kette (F-436, F-440, F-446)
+
+**Status:** Akzeptiert (Claude, Karte #198, Befunde der Sitzungs-QA Sprint 12, Fable).
+
+- **Sperre (F-440, schärft Nachtrag 4):** Nur ein Dateisystem ohne flock (`ENOLCK`, `ENOTSUP`, `EOPNOTSUPP`) lässt die
+  Sitzung ohne Sperre weiterlaufen; jeder andere Fehler beim Öffnen oder Sperren der Sperrdatei macht sie stumm (kein
+  Anwenden, Beiseitelegen, Schreiben oder Löschen; eigene Meldung, `Wiederherstellung.Gestoert`). Die Sperrdatei muss
+  regulär sein (`O_NOFOLLOW`, `O_NONBLOCK`), Ordner 0700, Datei 0600; Entfernen nur nach `os.SameFile`. Die Sperre
+  hängt am angegebenen Pfad, nicht am aufgelösten: Kopie und Kennung sind pfadgebunden, sonst wären Sperre und Kopie
+  nicht mehr dieselbe Datei.
+- **Fremdes Fenster (F-436):** Es holt die Sperre beim nächsten Sichern nach (ein flock-Aufruf) und legt eine vom
+  anderen Fenster hinterlassene Kopie vorher beiseite, statt sie zu überschreiben.
+- **NeueBasis (F-446):** Die Entscheidung fällt in der Kette; ein `Sichere` direkt danach fällt nicht weg. Je Epoche
+  gibt es höchstens eine wartende Kopie und einen Schreibauftrag (jüngste gewinnt). Wird die Sitzung dabei fremd,
+  meldet das die Diagnose (die Statusleiste noch nicht, F-454).
+- **Nicht umgesetzt (F-437, akzeptiert):** Nach SIGKILL zwischen Ersetzen der Datei und Löschen der Kopie bleibt die
+  eigene alte Kopie liegen und wird beim nächsten Öffnen beiseitegelegt und gemeldet. Sie ist ohne Vermerk im
+  Kopie-Format nicht von einer echten Kopie bei geänderter Datei zu unterscheiden; kein Schaden, nur eine unnötige
+  Meldung.
+

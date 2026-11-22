@@ -25,6 +25,7 @@ editor opens unless `--no-editor` is given or the setting `[capture] open-editor
 Rules:
 
 - Options with a value take it after an equals sign only: `--output=FILE`, `--export=TARGET`, `--screen=NAME`.
+- `--export` to PNG keeps transparency: where a working file has a squeeze seam, the gap is transparent (alpha 0, with a soft shadow); JPEG fills it with white.
   `--output FILE` (with a space) is rejected with a hint.
 - The format follows the file name: `.png`, `.jpg`/`.jpeg` or `.svg`. Any other ending is rejected before capturing.
 - `--output` and `--export` replace an existing file. The image is first rendered completely in memory, then written to
