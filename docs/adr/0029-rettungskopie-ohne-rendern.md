@@ -192,3 +192,19 @@ Was eine Bearbeitung ausmacht, ist dagegen klein und ohne Pixel beschreibbar:
   stderr). Weil die Kette die Sperre nebenläufig wechselt, weckt der Editor 300 ms nach Sichern und Speichern einmal.
 - Eine Wiederherstellungs-Meldung mit Fehler (Kopie beiseitegelegt, `….alt.json`) steht zusätzlich auf stderr, samt
   Ort: In der einzeiligen Statusleiste war sie praktisch nie lesbar (F-411).
+
+## Nachtrag 7 (22.11.2026): Lage mit Grund, Nachholen und Wecken im Takt, Ort vorn (F-472, F-474, F-475)
+
+**Status:** Akzeptiert (Karte #204, umgesetzt von Claude Sonnet 5.5, Befunde von Claude Fable 5.2).
+
+- `rescue.Lage` trägt den **Grund** der letzten Änderung (`LageStart`, `LageUebernahme`, `LageBasiswechsel`, `LageAus`)
+  und `Aus`; der Zähler `Nr` wächst auch, wenn die Übernahme der Sperre an einer nicht beiseite zu legenden Kopie
+  scheitert (die Sitzung ist dann stumm) oder wenn ein Basiswechsel dieses Stummsein aufhebt. Die Oberfläche sagt
+  „wieder geschützt“ nur nach einer echten Übernahme der Sperre eines anderen Fensters (Text „hat die Datei
+  losgelassen“); nach einem Speichern als andere Datei steht „Als andere Datei gespeichert … wieder geschützt“, bei `Aus`
+  ein Fehler „nicht geschützt“.
+- Eine Lage-Meldung ohne Fehler, die hinter einer haltenden Meldung nicht erscheinen kann, verbraucht den Zähler nicht:
+  Sie kommt, sobald die haltende Meldung weicht. Der Editor weckt nach Sichern und Speichern im 300-ms-Takt bis 3 s
+  (statt einmal), weil die Kette länger brauchen kann.
+- Die Meldung zu einer beiseitegelegten oder unlesbaren Kopie beginnt mit dem Ort (`schnapp/rescue/<Name>`): Die
+  einzeilige Statusleiste kürzt das Ende, und beim Start über „Öffnen mit“ sieht niemand die Fehlerausgabe.

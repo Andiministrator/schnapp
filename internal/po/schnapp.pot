@@ -461,15 +461,23 @@ msgid "Restored unsaved changes from %s. Undo returns to the saved state."
 msgstr ""
 
 #: cmd/schnapp/rettung.go
-msgid "A rescue copy for this file could not be read. It is kept for 30 days in the state folder: %s"
+msgid "Rescue copy %s could not be read. It is kept for 30 days in the state folder."
 msgstr ""
 
 #: cmd/schnapp/rettung.go
-msgid "Unsaved changes from %s were not restored: the file has changed since. The rescue copy is kept for 30 days in the state folder: %s"
+msgid "Rescue copy %s (unsaved changes from %s) was not restored: the file has changed since. It is kept for 30 days in the state folder."
 msgstr ""
 
 #: cmd/schnapp/rettung.go
-msgid "Unsaved changes from %s could not be restored. The rescue copy is kept for 30 days in the state folder: %s"
+msgid "Rescue copy %s (unsaved changes from %s) could not be restored. It is kept for 30 days in the state folder."
+msgstr ""
+
+#: cmd/schnapp/rettung.go
+msgid "The rescue copy left by the other Schnapp window could not be set aside. Changes made here are not protected by a rescue copy."
+msgstr ""
+
+#: cmd/schnapp/rettung.go
+msgid "Saved as a different file. Changes made here are protected by a rescue copy again."
 msgstr ""
 
 #: cmd/schnapp/rettung.go

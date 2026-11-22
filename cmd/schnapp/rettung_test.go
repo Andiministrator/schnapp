@@ -152,6 +152,10 @@ func TestRettungskopieNachAbbruch(t *testing.T) {
 	if !strings.Contains(text, "schnapp/rescue/") || strings.Contains(text, staat) {
 		t.Errorf("Meldung nennt den Ort nicht ohne Benutzerpfad: %q", text)
 	}
+	// F-475: Der Ort steht am Anfang der Meldung, die einzeilige Statusleiste kürzt das Ende.
+	if i := strings.Index(text, "schnapp/rescue/"); i < 0 || i > 40 {
+		t.Errorf("Ort der Kopie steht nicht am Anfang der Meldung (Index %d): %q", i, text)
+	}
 	// Die Kopie liegt beiseite (V7-1) und überlebt das Schließen dieser Sitzung ohne Änderung.
 	rettung.Verwirf()
 	rettung.Ende()

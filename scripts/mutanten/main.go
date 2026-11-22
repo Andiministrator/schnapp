@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -36,6 +37,8 @@ const (
 	Ueberlebt  = "ÜBERLEBT"
 	Fehler     = "FEHLER"
 	Aequivalen = "ÄQUIVALENT"
+	// Haengt: Das Paket endete am Test-Timeout, mindestens ein Test lief (F-478). Zählt wie ROT: Der Mutant ist bemerkt.
+	Haengt = "HÄNGT"
 )
 
 // zaehle zählt die nicht überlappenden Vorkommen von alt in text; leeres Muster zählt 0.
@@ -131,7 +134,10 @@ func ladeGruppen(dir string) ([]Mutant, error) {
 			return nil, err
 		}
 		var ms []Mutant
-		if err := json.Unmarshal(b, &ms); err != nil {
+		// Unbekannte Schlüssel (Tippfehler wie "timout") fielen sonst still weg (F-478).
+		dec := json.NewDecoder(bytes.NewReader(b))
+		dec.DisallowUnknownFields()
+		if err := dec.Decode(&ms); err != nil {
 			return nil, fmt.Errorf("%s: %w", filepath.Base(n), err)
 		}
 		g := strings.TrimSuffix(filepath.Base(n), ".json")
@@ -139,6 +145,12 @@ func ladeGruppen(dir string) ([]Mutant, error) {
 			ms[i].Gruppe = g
 			if ms[i].Name == "" || ms[i].Datei == "" || ms[i].Paket == "" || ms[i].Alt == "" {
 				return nil, fmt.Errorf("%s: Eintrag %d unvollständig (name, datei, paket, alt)", g, i+1)
+			}
+			// Ein ungültiger timeout bräche erst mitten im Lauf, als „kein FAIL-Name“ (F-478): schon beim Laden ablehnen.
+			if ms[i].Timeout != "" {
+				if d, err := time.ParseDuration(ms[i].Timeout); err != nil || d <= 0 {
+					return nil, fmt.Errorf("%s: Eintrag %d: timeout %q ist keine positive Dauer (z. B. \"60s\")", g, i+1, ms[i].Timeout)
+				}
 			}
 			// Die Datei muss in der Kopie liegen: ../ oder ein absoluter Pfad träfe den Arbeitsbaum (Sitzungs-QA, Q-4).
 			if !filepath.IsLocal(filepath.FromSlash(ms[i].Datei)) {
@@ -192,9 +204,37 @@ func testeMutant(baum, lauf string, m Mutant) (status string, rote []string, det
 		return Fehler, nil, "Bau: " + kurz(text)
 	}
 	if len(rote) == 0 {
+		// Ein Test, der am Test-Timeout hängt, ist kein FAIL-Name, aber ein bemerkter Mutant (F-478).
+		if laufend := haengendeTests(text); len(laufend) > 0 {
+			return Haengt, laufend, ""
+		}
 		return Fehler, nil, "kein FAIL-Name: " + kurz(text)
 	}
 	return Rot, rote, ""
+}
+
+// haengendeTests liefert die Tests, die beim Abbruch durch das Test-Timeout liefen („running tests:“ in der Panik-Ausgabe
+// von go test). Leer, wenn der Lauf nicht am Timeout endete oder kein Test gestartet war (Hänger in init oder TestMain
+// sagt nichts über die Tests: FEHLER). F-478.
+func haengendeTests(text string) []string {
+	_, rest, ok := strings.Cut(text, "panic: test timed out after ")
+	if !ok {
+		return nil
+	}
+	_, rest, ok = strings.Cut(rest, "running tests:\n")
+	if !ok {
+		return nil
+	}
+	var namen []string
+	for _, z := range strings.Split(rest, "\n") {
+		if !strings.HasPrefix(z, "\t") {
+			break
+		}
+		if f := strings.Fields(z); len(f) > 0 {
+			namen = append(namen, f[0])
+		}
+	}
+	return namen
 }
 
 // goTest testet paket in der Kopie baum.
@@ -303,8 +343,10 @@ func lauf(args []string, aus io.Writer) int {
 		switch {
 		case m.Aequivalent && status == Ueberlebt:
 			anzeige = Aequivalen + " (überlebt erwartungsgemäß)"
-		case m.Aequivalent && status == Rot:
-			anzeige = "ROT (als äquivalent markiert, Markierung prüfen)"
+		case m.Aequivalent && (status == Rot || status == Haengt):
+			anzeige = status + " (als äquivalent markiert, Markierung prüfen)"
+		case status == Haengt:
+			anzeige = Haengt + " (Test-Timeout, zählt als rot)"
 		case status == Ueberlebt || status == Fehler:
 			schlecht++
 		case status == "MUSTER OK":
@@ -329,8 +371,8 @@ func lauf(args []string, aus io.Writer) int {
 		}
 		fmt.Fprintln(aus)
 	}
-	fmt.Fprintf(aus, "Summe: %d Mutanten, %d ROT, %d ÜBERLEBT, %d FEHLER, %d ÄQUIVALENT; zu beanstanden: %d\n",
-		len(ms), zaehler[Rot], zaehler[Ueberlebt], zaehler[Fehler], zaehler[Aequivalen], schlecht)
+	fmt.Fprintf(aus, "Summe: %d Mutanten, %d ROT, %d HÄNGT (zählt als rot), %d ÜBERLEBT, %d FEHLER, %d ÄQUIVALENT; zu beanstanden: %d\n",
+		len(ms), zaehler[Rot], zaehler[Haengt], zaehler[Ueberlebt], zaehler[Fehler], zaehler[Aequivalen], schlecht)
 	if schlecht > 0 {
 		return 1
 	}

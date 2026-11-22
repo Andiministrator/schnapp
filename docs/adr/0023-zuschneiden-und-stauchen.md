@@ -294,3 +294,23 @@ Menüeintrag bleiben.
   Auslenkung Abriss 0,9 · 6,15 = 5,54 ≤ 6; `ZackenBandHalb` = 6 + 8 + 2 = 16 (Teiler im Faktor-Deckel 128). Je Naht
   13 Füllungen (12 Schichten und der Spalt); JPEG legt das Bild wie bisher in `fileformat.ExportiereJPG` auf Weiß.
   Offen: F-438 (Saum einer Naht im Spalt der kreuzenden), F-439.
+
+## Nachtrag 8 (22.11.2026): Mindestrest am Rand (F-445) — entschieden, noch nicht umgesetzt
+
+**Status:** Akzeptiert (Entscheidung Claude im Auftrag Andis, 22.11.2026; Umsetzung auf der Karte „Kanten-Reste“).
+
+Anlass: Der durchsichtige Spalt (Nachtrag 7) reicht bis ±8 px um die Naht, mit Saum und Abdunklung bis ±9,6 bzw. ±10 px
+und der Auslenkung der Kante bis ±13,5 px · Faktor. Eine Naht nahe am Rand ließ nach dem Mindestrest aus Nachtrag 4
+(halbe Bandhöhe, bei Faktor 1 sieben Pixel) kaum sichtbares Bild übrig: ältere Dateien mit 11 bis 15 px Rest behalten
+rund 24 % sichtbare Pixel, auch bei 16 px bleiben 2,5 bis 8 px.
+
+- **Entscheidung:** Der Mindestrest je Seite ist die halbe Bandhöhe **plus 8 sichtbare Pixel**, beides mal Zackenfaktor
+  (`Faktor·(ZackenBandHalb + 8)`, bei Faktor 1 also 24). Bliebe auf einer Seite weniger, wird das Band wie bisher zum
+  Zuschnitt (Nachtrag 3, F-222; Nachtrag 4, Punkt 3).
+- **Ältere Dateien bleiben unverändert:** Eine gespeicherte Naht mit kleinerem Rest wird beim Öffnen nicht verschoben
+  und nicht in einen Zuschnitt verwandelt (Kernprinzip 1); die Regel gilt für neu gesetzte und verschobene Nähte.
+- **Zu wissen:** Jede Naht verdeckt bis zu ±13,5 px · Faktor Bild um sich herum (Spalt, Saum und Auslenkung der Kante
+  zusammen). Das ist Folge der Papier-Abriss-Darstellung (Nachtrag 7), kein Fehler, und gehört in die Doku der
+  Kantenformen.
+- **Umsetzung:** nicht in diesem Nachtrag, sondern auf der Karte „Kanten-Reste“ (Code, `document`-Konstanten,
+  Tests, `docs/format.md` unverändert, weil die Datei nichts Neues speichert).

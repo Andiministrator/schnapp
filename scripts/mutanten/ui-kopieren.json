@@ -143,8 +143,8 @@
     "name": "Q5 kopierenAbholen Fehler nicht auf fehlerAusgabe",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\t\tfmt.Fprintf(fehlerAusgabe, i18n.T(\"Could not copy: %v\")+\"\\n\", r.err)\n\t\t\t\te.kopierFehlerHaelt",
-    "neu": "\t\t\t\tfmt.Fprintf(io.Discard, i18n.T(\"Could not copy: %v\")+\"\\n\", r.err)\n\t\t\t\te.kopierFehlerHaelt"
+    "alt": "\t\t\t\tfmt.Fprintf(fehlerAusgabe, i18n.T(\"Could not copy: %v\")+\"\\n\", ohnePaketpraefix(r.err.Error()))\n\t\t\t\te.kopierFehlerHaelt",
+    "neu": "\t\t\t\tfmt.Fprintf(io.Discard, i18n.T(\"Could not copy: %v\")+\"\\n\", ohnePaketpraefix(r.err.Error()))\n\t\t\t\te.kopierFehlerHaelt"
   },
   {
     "name": "Q6 halt ohne Erneut-Prüfung",

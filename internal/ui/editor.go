@@ -834,9 +834,9 @@ func (e *editor) speichernMelden(r speicherErgebnis, ende canvas.Ende, kopierHal
 	case ende.SignalFehler:
 		e.schlussErr = r.err
 	case ende.Schluss == canvas.SchlussFehler:
-		e.meldeHaltend(haltVerwerfen, fmt.Sprintf(i18n.T("Could not save: %v. Close again to discard the changes."), r.err), true)
+		e.meldeHaltend(haltVerwerfen, fmt.Sprintf(i18n.T("Could not save: %v. Close again to discard the changes."), ohnePaketpraefix(r.err.Error())), true)
 	case ende.Erneut == nil:
-		e.melde(fmt.Sprintf(i18n.T("Could not save: %v"), r.err), true)
+		e.melde(fmt.Sprintf(i18n.T("Could not save: %v"), ohnePaketpraefix(r.err.Error())), true)
 	}
 }
 
@@ -918,13 +918,13 @@ func (e *editor) kopierenAbholen(gtx layout.Context) {
 	case r := <-e.kopierAntwort:
 		e.kopierLaeuft = false
 		if r.err != nil {
-			e.kopierFehlerText = fmt.Sprintf(i18n.T("Could not copy: %v"), r.err)
+			e.kopierFehlerText = fmt.Sprintf(i18n.T("Could not copy: %v"), ohnePaketpraefix(r.err.Error()))
 			if e.schliessenNachKopie || e.schliessenNachSpeichern || e.s.SignalVorgemerkt() {
 				// Ein Schließen hat auf dieses Kopieren gewartet (F-337) oder steht nach dem Speichern an, das noch
 				// läuft (F-341): Der Fehler geht zusätzlich auf die Fehlerausgabe, und das Fenster bleibt einmal offen,
 				// damit die Meldung gelesen wird; die nächste Anfrage schließt. Ein Signal schließt in jedem Fall, ebenso
 				// ein schon freigegebenes Schließen (erzwungen): Dann ist kein Halt mehr zu merken.
-				fmt.Fprintf(fehlerAusgabe, i18n.T("Could not copy: %v")+"\n", r.err)
+				fmt.Fprintf(fehlerAusgabe, i18n.T("Could not copy: %v")+"\n", ohnePaketpraefix(r.err.Error()))
 				e.kopierFehlerHaelt = !e.s.SignalVorgemerkt() && !e.erzwungen
 				e.melde(e.kopierFehlerText, true)
 				return
@@ -1021,7 +1021,7 @@ func (e *editor) kopierenAbwarten() {
 	e.kopierLaeuft = false
 	switch {
 	case r.err != nil:
-		fmt.Fprintf(fehlerAusgabe, i18n.T("Could not copy: %v")+"\n", r.err)
+		fmt.Fprintf(fehlerAusgabe, i18n.T("Could not copy: %v")+"\n", ohnePaketpraefix(r.err.Error()))
 	case r.daten != nil:
 		fmt.Fprintln(fehlerAusgabe, i18n.T("Copying was not finished when the window closed; the clipboard may be empty."))
 	}

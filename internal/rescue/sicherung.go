@@ -33,16 +33,17 @@ type Sicherung struct {
 
 	// mu schützt die Felder und wird nie über einen Dateizugriff gehalten, damit kein Aufruf die Ereignisschleife
 	// aufhält.
-	mu       sync.Mutex
-	basis    Kennung
-	gen      uint64        // erhöht von Verwirf und NeueBasis: ältere Schreibaufträge verfallen
-	kette    chan struct{} // geschlossen, wenn der zuletzt eingereihte Auftrag fertig ist; nil: noch keiner
-	aus      bool          // eine nicht angewendete Kopie ließ sich nicht beiseitelegen: diese Sitzung schreibt und löscht nichts
-	fremd    bool          // ein anderes Fenster hält die Sperre auf die Ausgangsdatei (F-413)
-	gestoert bool          // die Sperre ließ sich nicht prüfen (Symlink, Verzeichnis, Rechte, ...): Sitzung stumm (F-440)
-	lageNr   uint64        // zählt Änderungen von fremd und gestoert (Lage, F-454)
-	sperre   *sperre       // gehaltene Sperre auf kettenBasis; nil: keine
-	wechsel  int           // NeueBasis-Aufträge, die noch in der Kette stehen: bis dahin entscheidet die Kette, nicht Sichere (F-446)
+	mu        sync.Mutex
+	basis     Kennung
+	gen       uint64        // erhöht von Verwirf und NeueBasis: ältere Schreibaufträge verfallen
+	kette     chan struct{} // geschlossen, wenn der zuletzt eingereihte Auftrag fertig ist; nil: noch keiner
+	aus       bool          // eine nicht angewendete Kopie ließ sich nicht beiseitelegen: diese Sitzung schreibt und löscht nichts
+	fremd     bool          // ein anderes Fenster hält die Sperre auf die Ausgangsdatei (F-413)
+	gestoert  bool          // die Sperre ließ sich nicht prüfen (Symlink, Verzeichnis, Rechte, ...): Sitzung stumm (F-440)
+	lageNr    uint64        // zählt Änderungen von fremd, gestoert und der Übernahme mit aus (Lage, F-454, F-472)
+	lageGrund LageGrund     // Auslöser der letzten Änderung (F-472)
+	sperre    *sperre       // gehaltene Sperre auf kettenBasis; nil: keine
+	wechsel   int           // NeueBasis-Aufträge, die noch in der Kette stehen: bis dahin entscheidet die Kette, nicht Sichere (F-446)
 
 	// kettenBasis ist die Ausgangsdatei, für die fremd, gestoert, aus und sperre gelten: der Stand der Kette, nicht der
 	// Aufrufe. basis setzt NeueBasis sofort, kettenBasis erst ihr Auftrag in der Kette (F-456). Aufträge der Kette lesen
@@ -68,18 +69,18 @@ type Sicherung struct {
 // beschreibbar, Symlink oder Verzeichnis am Sperrnamen), ist sie stumm (F-440).
 func NeueSicherung(ort string, basis Kennung) *Sicherung {
 	s := &Sicherung{ort: ort, basis: basis, Diagnose: func(error) {}, jetzt: time.Now, schreibe: Schreibe, loesche: Loesche}
-	s.sperreFuer(basis.Pfad)
+	s.sperreFuer(basis.Pfad, LageStart)
 	return s
 }
 
 // sperreFuer nimmt die Sperre auf die Ausgangsdatei pfad (behält sie, wenn sie schon gehalten ist) und gibt eine Sperre
 // auf eine andere frei. Aufrufer: NeueSicherung oder ein Auftrag der Kette.
-func (s *Sicherung) sperreFuer(pfad string) {
+func (s *Sicherung) sperreFuer(pfad string, grund LageGrund) {
 	s.mu.Lock()
 	alt, warFremd := s.sperre, s.fremd
 	s.mu.Unlock()
 	if alt != nil && alt.pfad == pfad {
-		s.setzeSperre(pfad, false, false, alt)
+		s.setzeSperre(pfad, false, false, alt, grund)
 		return
 	}
 	if alt != nil {
@@ -93,14 +94,15 @@ func (s *Sicherung) sperreFuer(pfad string) {
 	if err != nil && !(fremd && warFremd) {
 		s.Diagnose(err)
 	}
-	s.setzeSperre(pfad, fremd, err != nil && !fremd && !errors.Is(err, errKeinFlock), sp)
+	s.setzeSperre(pfad, fremd, err != nil && !fremd && !errors.Is(err, errKeinFlock), sp, grund)
 }
 
 // setzeSperre hält den Stand der Sperre für die Ausgangsdatei pfad fest (kettenBasis, F-456).
-func (s *Sicherung) setzeSperre(pfad string, fremd, gestoert bool, sp *sperre) {
+func (s *Sicherung) setzeSperre(pfad string, fremd, gestoert bool, sp *sperre, grund LageGrund) {
 	s.mu.Lock()
 	if fremd != s.fremd || gestoert != s.gestoert {
 		s.lageNr++ // F-454: Die Oberfläche sieht am Zähler, dass sich etwas geändert hat
+		s.lageGrund = grund
 	}
 	s.kettenBasis, s.fremd, s.gestoert, s.sperre = pfad, fremd, gestoert, sp
 	s.mu.Unlock()
@@ -110,15 +112,28 @@ func (s *Sicherung) setzeSperre(pfad string, fremd, gestoert bool, sp *sperre) {
 type Lage struct {
 	Fremd    bool   // ein anderes Fenster hält die Sperre: diese Sitzung sichert nicht
 	Gestoert bool   // die Sperre ließ sich nicht prüfen: diese Sitzung sichert nicht
-	Nr       uint64 // wächst mit jeder Änderung von Fremd oder Gestoert (0: seit dem Anlegen keine)
+	Aus      bool   // eine hinterlassene Kopie ließ sich bei der Übernahme nicht beiseitelegen: diese Sitzung sichert nicht (F-472)
+	Nr       uint64 // wächst mit jeder Änderung von Fremd, Gestoert oder Aus (0: seit dem Anlegen keine)
+	Grund    LageGrund
 }
+
+// LageGrund sagt, was die letzte Änderung der Lage ausgelöst hat (F-472): Die Oberfläche wählt danach ihren Text, ein
+// Wechsel der Ausgangsdatei ist keine Übernahme der Sperre eines anderen Fensters.
+type LageGrund int
+
+const (
+	LageStart        LageGrund = iota // beim Anlegen der Sicherung
+	LageUebernahme                    // die Sitzung hat die Sperre eines anderen Fensters nachgeholt (F-436)
+	LageBasiswechsel                  // NeueBasis: eine andere Ausgangsdatei, mit anderem Stand der Sperre
+	LageAus                           // die Übernahme fand eine Kopie vor, die sich nicht beiseitelegen ließ
+)
 
 // Lage liefert den Stand der Sperre. Fremd wird die Sitzung bei NeueBasis oder beim Anlegen, frei wieder, wenn sie die
 // Sperre später nachholt (F-436); beides läuft in der Kette, die Oberfläche fragt deshalb nach (ui.Rettung.Lage).
 func (s *Sicherung) Lage() Lage {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return Lage{Fremd: s.fremd, Gestoert: s.gestoert, Nr: s.lageNr}
+	return Lage{Fremd: s.fremd, Gestoert: s.gestoert, Aus: s.aus, Nr: s.lageNr, Grund: s.lageGrund}
 }
 
 // uebernehmen versucht, die Sperre nachzuholen, wenn ein anderes Fenster sie hatte (F-436): ein Aufruf von flock ohne
@@ -138,7 +153,7 @@ func (s *Sicherung) uebernehmen(gen uint64) {
 	if !fremd || verfallen {
 		return
 	}
-	s.sperreFuer(pfad)
+	s.sperreFuer(pfad, LageUebernahme)
 	s.mu.Lock()
 	frei := !s.fremd && !s.gestoert
 	s.mu.Unlock()
@@ -152,6 +167,8 @@ func (s *Sicherung) uebernehmen(gen uint64) {
 		s.Diagnose(err)
 		s.mu.Lock()
 		s.aus = true
+		s.lageNr++ // F-472: Die Sitzung ist nach der Übernahme stumm, die Oberfläche soll das sagen
+		s.lageGrund = LageAus
 		s.mu.Unlock()
 	}
 }
@@ -271,9 +288,13 @@ func (s *Sicherung) NeueBasis(k Kennung) {
 	s.reihe(func() {
 		s.loescheKopie(alt)
 		s.mu.Lock()
-		s.aus = false // die neue Ausgangsdatei hat keine beiseitegelegte Kopie im Weg
+		if s.aus { // die neue Ausgangsdatei hat keine beiseitegelegte Kopie im Weg; die Sitzung ist wieder geschützt (F-472)
+			s.aus = false
+			s.lageNr++
+			s.lageGrund = LageBasiswechsel
+		}
 		s.mu.Unlock()
-		s.sperreFuer(k.Pfad)
+		s.sperreFuer(k.Pfad, LageBasiswechsel)
 		s.mu.Lock()
 		s.wechsel--
 		s.mu.Unlock()

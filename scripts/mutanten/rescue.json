@@ -581,7 +581,7 @@
     "name": "M5 F-446 NeueBasis setzt aus nicht zurück",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "\t\ts.aus = false // die neue Ausgangsdatei hat keine beiseitegelegte Kopie im Weg\n",
+    "alt": "\t\t\ts.aus = false\n",
     "neu": ""
   },
   {
@@ -667,8 +667,8 @@
     "name": "M12b F-440 Sperrfehler macht nicht stumm",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "err != nil && !fremd && !errors.Is(err, errKeinFlock), sp)",
-    "neu": "false, sp)"
+    "alt": "err != nil && !fremd && !errors.Is(err, errKeinFlock), sp, grund)",
+    "neu": "false, sp, grund)"
   },
   {
     "name": "T1 F-436 fremdes Fenster holt die Sperre nicht nach",
@@ -702,8 +702,8 @@
     "name": "T5 F-460 gescheitertes Beiseitelegen bei der Übernahme macht nicht stumm",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "\t\ts.Diagnose(err)\n\t\ts.mu.Lock()\n\t\ts.aus = true\n\t\ts.mu.Unlock()\n\t}\n}\n",
-    "neu": "\t\ts.Diagnose(err)\n\t}\n}\n"
+    "alt": "\t\ts.aus = true\n\t\ts.lageNr++ // F-472: Die Sitzung ist nach der Übernahme stumm, die Oberfläche soll das sagen\n\t\ts.lageGrund = LageAus\n",
+    "neu": ""
   },
   {
     "name": "G1 F-457 Sichere entscheidet vor der Kette über gestoert",
@@ -741,5 +741,61 @@
     "paket": "./internal/rescue",
     "alt": "\tdefer errprefix.Defer(\"rescue\", &fehler) // F-451",
     "neu": "\t_ = fehler // F-451"
+  },
+  {
+    "name": "H1 F-473 Nachwecken weckt nie",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "\n\ttime.AfterFunc(zeit, takt)\n}",
+    "neu": "\n\t_ = takt\n}"
+  },
+  {
+    "name": "H2 F-473 Lage erst hinter der Speicher-Prüfung",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "\te.rettungLage() // auch während eines Speicherns: Die Kette der Rettung wechselt die Sperre nach dem Speichern\n\tif e.s.SpeichernLaeuft() || e.erzwungen {\n\t\treturn\n\t}\n",
+    "neu": "\tif e.s.SpeichernLaeuft() || e.erzwungen {\n\t\treturn\n\t}\n\te.rettungLage()\n"
+  },
+  {
+    "name": "H3 F-473 gestört ohne Fehlerkennzeichen",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "is unavailable. Changes made here are not protected by a rescue copy.\"), true, l.Nr",
+    "neu": "is unavailable. Changes made here are not protected by a rescue copy.\"), false, l.Nr"
+  },
+  {
+    "name": "H4 F-474 Lage ohne Fehler verbraucht den Zähler hinter einer haltenden Meldung",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "\tif text != \"\" && !fehler && e.haltendeMeldung() {\n",
+    "neu": "\tif false {\n"
+  },
+  {
+    "name": "H5 F-474 Nachwecken nur einmal",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif time.Now().Before(ende) {\n",
+    "neu": "\t\tif false && time.Now().Before(ende) {\n"
+  },
+  {
+    "name": "H6 F-472 Basiswechsel ohne eigenen Text",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tcase l.Grund == rescue.LageBasiswechsel:\n",
+    "neu": "\tcase false:\n"
+  },
+  {
+    "name": "H7 F-472 aus nach der Übernahme ohne eigenen Text",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tcase l.Aus && l.Grund == rescue.LageAus:\n",
+    "neu": "\tcase false:\n"
+  },
+  {
+    "name": "H8 F-477 Speicherfehler mit Paketpräfix",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "e.melde(fmt.Sprintf(i18n.T(\"Could not save: %v\"), ohnePaketpraefix(r.err.Error())), true)",
+    "neu": "e.melde(fmt.Sprintf(i18n.T(\"Could not save: %v\"), r.err), true)"
   }
 ]

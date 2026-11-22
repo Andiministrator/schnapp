@@ -17,6 +17,12 @@ go run . -wurzel ../.. -trocken          # nur prüfen, dass jedes Muster genau 
 Exit 0 nur, wenn jeder nicht als äquivalent markierte Mutant ROT ist; ÜBERLEBT und FEHLER (Muster nicht genau einmal
 gefunden, Bau schlägt fehl, kein Test benannt) geben Exit 1.
 
+**HÄNGT** (F-478) ist ein eigener Status und **zählt als rot**: Das Paket endete am Test-Timeout (`-timeout`, Vorgabe
+10 Minuten, je Mutant über `timeout` kürzbar), und `go test` nannte laufende Tests („running tests:“) — mindestens ein
+Test war gestartet und kam nicht zurück, der Mutant ist also bemerkt, auch wenn kein Test ein `--- FAIL` ausgibt. Fiel
+vorher ein Test, ist der Status ROT. Ein Timeout ohne laufenden Test (Hänger in `init` oder `TestMain`, Bau) ist
+dagegen FEHLER. Die Ausgabe nennt die hängenden Tests und zählt HÄNGT in der Summe getrennt.
+
 Das Programm arbeitet **nie im Arbeitsbaum**: Es kopiert die Wurzel (ohne `tmp/`, `.git/`, `.claude/` der obersten
 Ebene) nach `<wurzel>/tmp/mutanten/lauf-<Zeit>/baum`, mutiert und testet dort mit `GOFLAGS=-tags=novulkan,nox11`
 sowie `TMPDIR`/`GOTMPDIR` unter dem Laufordner und stellt die Datei in der Kopie nach jedem Mutanten wieder her. Alte
@@ -40,7 +46,9 @@ Je Gruppe eine Datei `*.json` mit einer Liste von Einträgen:
 - `neu` ersetzt `alt` (leer = Stelle streichen). Der Mutant muss kompilieren.
 
 Optional `"timeout": "60s"` reicht `-timeout` an `go test` durch. Für Mutanten, die einen Test hängen lassen statt ihn
-rot zu machen (E2/E3 der Gruppe `rescue`, F-455): sonst läuft jeder bis zum Vorgabe-Timeout von 10 Minuten.
+rot zu machen (E2/E3 der Gruppe `rescue`, F-455): sonst läuft jeder bis zum Vorgabe-Timeout von 10 Minuten. Der Wert
+muss eine positive Dauer sein (`time.ParseDuration`), und unbekannte Schlüssel in den JSON-Dateien sind Fehler: beides
+scheitert schon beim Laden, auch mit `-trocken` (F-478).
 
 ## Äquivalente Mutanten
 

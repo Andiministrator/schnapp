@@ -35,9 +35,14 @@ type Rettung interface {
 const (
 	rettungRuhe = 2 * time.Second
 	rettungTakt = 10 * time.Second
-	// rettungNachweckZeit: So lange nach einem Sichern oder Speichern weckt der Editor einmal, damit eine geänderte Lage der
-	// Sperre sichtbar wird (F-454).
-	rettungNachweckZeit = 300 * time.Millisecond
+)
+
+// Nachwecken (F-454, F-474): Nach einem Sichern oder Speichern weckt der Editor im Takt rettungNachweckZeit, bis
+// rettungNachweckGrenze verstrichen ist, damit eine geänderte Lage der Sperre sichtbar wird, auch wenn die Kette der
+// Rettung länger als einen Takt braucht. Variablen für Tests.
+var (
+	rettungNachweckZeit   = 300 * time.Millisecond
+	rettungNachweckGrenze = 3 * time.Second
 )
 
 // rettungUhr ist die Uhr der Bündelung; Naht für Tests.
@@ -77,6 +82,11 @@ func (e *editor) rettungLage() {
 	if nr == e.rett.lageNr {
 		return
 	}
+	if text != "" && !fehler && e.haltendeMeldung() {
+		// F-474: Eine Meldung ohne Fehler verschwände hinter der haltenden Meldung (nur Diagnose-Log). Der Zähler bleibt
+		// unverbraucht: Sie kommt, sobald die haltende Meldung weicht (das nächste Ereignis fragt wieder).
+		return
+	}
 	e.rett.lageNr = nr
 	if text != "" {
 		e.meldeNebenbei(text, fehler)
@@ -86,9 +96,19 @@ func (e *editor) rettungLage() {
 // rettungNachwecken bestellt ein Wecken kurz nach einem Auftrag an die Rettung: Ihre Kette ändert die Lage der Sperre in
 // einer Goroutine, und ohne Ereignis bliebe die Meldung sonst stehen (F-454).
 func (e *editor) rettungNachwecken() {
-	if e.wecker != nil {
-		time.AfterFunc(rettungNachweckZeit, e.wecker.Anfordern)
+	if e.wecker == nil {
+		return
 	}
+	w, zeit := e.wecker, rettungNachweckZeit // der Rückruf liest nur diese Kopien, nie e (Datenwettlauf)
+	ende := time.Now().Add(rettungNachweckGrenze)
+	var takt func()
+	takt = func() {
+		w.Anfordern()
+		if time.Now().Before(ende) {
+			time.AfterFunc(zeit, takt)
+		}
+	}
+	time.AfterFunc(zeit, takt)
 }
 
 // rettungPruefen läuft nach jedem Ereignis: Ist der Stand seit der letzten Kopie geändert und die Bündelung um,

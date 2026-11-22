@@ -107,11 +107,12 @@ func (r *rettung) Wiederherstellen(d *document.Dokument) (string, bool) {
 	case !w.Liegt:
 		return "", false
 	case w.Gesichert.IsZero():
-		return fmt.Sprintf(i18n.T("A rescue copy for this file could not be read. It is kept for 30 days in the state folder: %s"), ort), true
+		// Der Ort steht vorn (F-475): Die einzeilige Statusleiste kürzt das Ende, „Öffnen mit“ hat keine Fehlerausgabe.
+		return fmt.Sprintf(i18n.T("Rescue copy %s could not be read. It is kept for 30 days in the state folder."), ort), true
 	case errors.Is(w.Grund, rescue.ErrAnders):
-		return fmt.Sprintf(i18n.T("Unsaved changes from %s were not restored: the file has changed since. The rescue copy is kept for 30 days in the state folder: %s"), zeit, ort), true
+		return fmt.Sprintf(i18n.T("Rescue copy %s (unsaved changes from %s) was not restored: the file has changed since. It is kept for 30 days in the state folder."), ort, zeit), true
 	default:
-		return fmt.Sprintf(i18n.T("Unsaved changes from %s could not be restored. The rescue copy is kept for 30 days in the state folder: %s"), zeit, ort), true
+		return fmt.Sprintf(i18n.T("Rescue copy %s (unsaved changes from %s) could not be restored. It is kept for 30 days in the state folder."), ort, zeit), true
 	}
 }
 
@@ -126,8 +127,16 @@ func (r *rettung) Lage() (string, bool, uint64) {
 		return i18n.T("This file is open in another Schnapp window. Changes made here are not protected by a rescue copy."), false, l.Nr
 	case l.Nr == 0:
 		return "", false, 0
+	case l.Aus && l.Grund == rescue.LageAus:
+		// Die Übernahme der Sperre ist gelungen, die Kopie des anderen Fensters aber nicht beiseite zu legen (F-472).
+		return i18n.T("The rescue copy left by the other Schnapp window could not be set aside. Changes made here are not protected by a rescue copy."), true, l.Nr
+	case l.Grund == rescue.LageBasiswechsel:
+		// Eine andere Ausgangsdatei: Kein anderes Fenster hat etwas losgelassen (F-472).
+		return i18n.T("Saved as a different file. Changes made here are protected by a rescue copy again."), false, l.Nr
+	case l.Grund == rescue.LageUebernahme:
+		return i18n.T("The other Schnapp window has let go of this file. Changes made here are protected by a rescue copy again."), false, l.Nr
 	}
-	return i18n.T("The other Schnapp window has let go of this file. Changes made here are protected by a rescue copy again."), false, l.Nr
+	return "", false, l.Nr
 }
 
 // Sichere schreibt die Rettungskopie im Hintergrund.
