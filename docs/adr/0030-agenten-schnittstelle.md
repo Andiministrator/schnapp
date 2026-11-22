@@ -153,3 +153,13 @@ Quelle zum Protokoll: `knowledge/sources/mcp-2026-07-28.md` (Spezifikation 2026-
    MCP-Werkzeuge dazu folgen mit ihr.
 8. **Schichten:** Das Protokoll liegt im Paket `internal/mcp` (ohne Gio, ohne Wissen über Schnapp), die Werkzeuge in
    `cmd/schnapp/mcp.go` auf denselben Kernschichten wie die Kommandozeile, der Dialog in `internal/ui`.
+
+## Nachtrag 3 (22.11.2026): Monitorgröße mit Drehung (F-415)
+
+**Status:** Akzeptiert (Karte #180, umgesetzt von Claude Sonnet 5.5, übernommen von Claude Opus 5.5).
+
+`--list-screens --json` (und `list_screens` über MCP) meldet die Größe, wie der Monitor sie zeigt: Bei Drehung um 90
+oder 270 Grad (auch gespiegelt) sind Breite und Höhe gegenüber dem wl_output-Modus vertauscht. Der Gio-Patch liefert
+`WaylandOutput.Transform`, `ui.gedrehteGroesse` tauscht (`TestGedrehteGroesse`, alle acht Werte). Die Schlüssel
+bleiben gleich, nur die Werte stimmen jetzt. Gegen eine echt gedrehte Ausgabe ist das nicht gemessen: Der virtuelle
+KWin bietet keine Drehung über die Kommandozeile.

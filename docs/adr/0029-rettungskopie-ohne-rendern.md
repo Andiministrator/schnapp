@@ -168,7 +168,7 @@ Was eine Bearbeitung ausmacht, ist dagegen klein und ohne Pixel beschreibbar:
   anderen Fenster hinterlassene Kopie vorher beiseite, statt sie zu überschreiben.
 - **NeueBasis (F-446):** Die Entscheidung fällt in der Kette; ein `Sichere` direkt danach fällt nicht weg. Je Epoche
   gibt es höchstens eine wartende Kopie und einen Schreibauftrag (jüngste gewinnt). Wird die Sitzung dabei fremd,
-  meldet das die Diagnose (die Statusleiste noch nicht, F-454).
+  meldet das die Diagnose; die Statusleiste seit Nachtrag 6 (F-454).
 - **Nicht umgesetzt (F-437, akzeptiert):** Nach SIGKILL zwischen Ersetzen der Datei und Löschen der Kopie bleibt die
   eigene alte Kopie liegen und wird beim nächsten Öffnen beiseitegelegt und gemeldet. Sie ist ohne Vermerk im
   Kopie-Format nicht von einer echten Kopie bei geänderter Datei zu unterscheiden; kein Schaden, nur eine unnötige
@@ -180,3 +180,15 @@ Was eine Bearbeitung ausmacht, ist dagegen klein und ohne Pixel beschreibbar:
   der ersten Fassung dieses Nachtrags, F-456). `gestoert` fällt wie `aus` erst nach einem ausstehenden Wechsel ins
   Gewicht (F-457).
 
+
+## Nachtrag 6 (22.11.2026): Lage der Sperre in der Statusleiste, Ort der beiseitegelegten Kopie auf stderr (F-454, F-411)
+
+**Status:** Akzeptiert (Karte #180, umgesetzt von Claude Sonnet 5.5, übernommen von Claude Opus 5.5).
+
+- `rescue.Sicherung.Lage()` liefert `Fremd`, `Gestoert` und einen Zähler `Nr`, der mit jeder Änderung einer der beiden
+  wächst. `ui.Rettung` hat dazu `Lage() (meldung string, fehler bool, nr uint64)`: gestört (Fehler), fremd (der
+  Starttext) oder nach einer Übernahme „wieder geschützt“. Der Editor fragt nach jedem Ereignis und zeigt eine
+  geänderte Lage über `meldeNebenbei`; eine haltende Meldung bleibt stehen (dann steht eine Fehlermeldung auf
+  stderr). Weil die Kette die Sperre nebenläufig wechselt, weckt der Editor 300 ms nach Sichern und Speichern einmal.
+- Eine Wiederherstellungs-Meldung mit Fehler (Kopie beiseitegelegt, `….alt.json`) steht zusätzlich auf stderr, samt
+  Ort: In der einzeiligen Statusleiste war sie praktisch nie lesbar (F-411).

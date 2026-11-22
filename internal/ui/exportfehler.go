@@ -43,7 +43,7 @@ func exportFehlerText(err error, dateiname string) string {
 
 // paketPraefixe sind die Pakete, deren Fehlertexte mit „<paket>: “ beginnen (internal/errprefix, ADR-0019 Nachtrag 3,
 // F-379, F-416). Ein Test vergleicht die Liste mit den Aufrufen von errprefix im Quelltext.
-var paketPraefixe = []string{"export", "fileformat", "document", "render", "library", "rescue", "capture", "canvas", "portal", "settings"}
+var paketPraefixe = []string{"export", "fileformat", "document", "render", "library", "rescue", "capture", "canvas", "portal", "settings", "mcp", "notify"}
 
 // ohnePaketpraefix nimmt die Präfixe „<paket>: “ der internen Pakete vom Anfang eines Fehlertexts (ADR-0019 Nachtrag 2):
 // In der Statusleiste steht schon „Could not export:“, die Paketnamen sagen dem Nutzer nichts (Sitzungs-QA 22.11., Q-9).
