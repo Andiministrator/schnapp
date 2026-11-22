@@ -65,7 +65,7 @@ What exists:
 | `schnapp --export=out.png FILE` | export FILE as it looks in the editor, without a window |
 | `schnapp … --json` | print the result (path and size, or the monitor list) as one line of JSON |
 
-Every capture is saved to the library (`~/Pictures/schnapp/YYYY-MM/`) and its path printed on standard output before
+Unless `--output` is given, every capture is saved to the library (`~/Pictures/schnapp/YYYY-MM/`) and its path printed on standard output before
 the editor opens. Scripts and AI agents: see [`docs/agents.md`](docs/agents.md). Settings live in `~/.config/schnapp/settings.ini`, for example `[capture] open-editor = false` or
 `[general] language = de` (default `auto`: the language of the system).
 

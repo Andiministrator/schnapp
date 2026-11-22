@@ -27,7 +27,23 @@ Rules:
 - Options with a value take it after an equals sign only: `--output=FILE`, `--export=TARGET`, `--screen=NAME`.
   `--output FILE` (with a space) is rejected with a hint.
 - The format follows the file name: `.png`, `.jpg`/`.jpeg` or `.svg`. Any other ending is rejected before capturing.
-- `--output` and `--export` replace an existing file (written atomically: no half-written file is ever left behind).
+- `--output` and `--export` replace an existing file. The image is first rendered completely in memory, then written to
+  a temporary file `.schnapp-export-…` next to the target and renamed over it: the target never holds a half-written
+  file, and on an error an existing target stays as it was. Two exceptions:
+  - If the process is killed (for example `SIGTERM`) during the short write itself, the temporary file can be left
+    behind next to the target. Being killed while rendering leaves nothing.
+  - If the folder does not allow a new file but the existing target is writable, Schnapp writes the target directly
+    and restores the old content if that fails. Only if restoring fails too, the call ends with exit code 1 and the
+    message that the target file is incomplete.
+- `--export` refuses a target that is FILE itself, also through a symbolic or hard link (exit code 1; nothing is
+  written): it would replace the working file, with its original and annotations, by the flat image.
+- A new file written by `--output` gets the permissions `0600` (it shows the screen, like the library). `--export`
+  creates files with the usual permissions (umask), like the export from the editor. An existing target keeps its
+  permissions in both cases.
+- With `--json`, the file names for `--output` and `--export` must be valid UTF-8 (otherwise exit code 2): JSON could not
+  report such a path faithfully. If a path that Schnapp itself chooses (the library folder, the current folder for a
+  relative name) is not valid UTF-8, no JSON line is printed; the file exists and the exit code is 0, a message on
+  standard error says why.
 - Exported files carry no metadata: no paths, no program or host names.
 
 ## Output
@@ -36,7 +52,7 @@ With `--json`, a successful call prints exactly one line of JSON on standard out
 depend on the language of the system.
 
 ```json
-{"path":"/home/me/shots/shot.png","width":1920,"height":1080}
+{"path":"/data/shots/shot.png","width":1920,"height":1080}
 ```
 
 for a capture (with or without `--output`) and for `--export`. `path` is absolute; `width` and `height` are the size of

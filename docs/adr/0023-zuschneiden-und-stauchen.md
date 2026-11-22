@@ -182,7 +182,8 @@ dem Bild, mit Griffen, die man nach innen zieht.
 ## Nachtrag 6 (22.11.2026): Kantenform wählbar, Abriss mit Spalt und Schatten als Voreinstellung (Karte #96)
 
 **Status:** Akzeptiert (Andi 22.11.2026: „Form 4 find ich am besten — einstellbar machen und eine als default nehmen“;
-Muster `tmp/sprint11/kante-muster/`, Einzelheiten von Claude Opus 5.5).
+Referenzbild Muster 4: [`bilder/0023-kante-muster-4.png`](bilder/0023-kante-muster-4.png), synthetisch; Einzelheiten von
+Claude Opus 5.5).
 
 Anlass: Die Zackenkante war erkennbar, aber nicht schön (Andi, Echtlauf #92).
 
@@ -198,7 +199,8 @@ Anlass: Die Zackenkante war erkennbar, aber nicht schön (Andi, Echtlauf #92).
   der obere bzw. linke kräftiger (Licht von oben links), und ihre Kante ist um 1 px leicht abgedunkelt. Der Schatten
   besteht aus wenigen gestuften, halbdurchsichtigen Bändern derselben Form — keine Weichzeichner-Filter, damit Editor,
   Renderer und SVG-Export gleich zeichnen. Die Schichten (Abstände, Farben, Deckkraft) stehen einmal als Tabelle in
-  `document`; die Werte stimmt die Umsetzung an Muster 4 ab.
+  `document`; diese Tabelle entsteht erst mit der Umsetzung (Karte #96), die ihre Werte am Referenzbild Muster 4
+  abstimmt.
 - **Bandhöhe:** halbe Bandhöhe einheitlich 11 px (Auslenkung bis 5, Spalt 5, Kante 1) statt 7; Zackenfaktor-Deckel
   (Nachtrag 4), Mindestrest je Seite und Trefferweite von „Naht zurückholen“ folgen der neuen Höhe.
 - **Je Dokument gespeichert:** Attribut `s:kante` (`tear` | `wave` | `zigzag`) an `s:ansicht` in der Arbeitsdatei.

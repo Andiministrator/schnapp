@@ -67,7 +67,7 @@ Vorhanden ist:
 | `schnapp --export=aus.png DATEI` | DATEI so exportieren, wie der Editor sie zeigt, ohne Fenster |
 | `schnapp … --json` | das Ergebnis (Pfad und Größe oder die Monitorliste) als eine Zeile JSON ausgeben |
 
-Jede Aufnahme landet in der Bibliothek (`~/Bilder/schnapp/JJJJ-MM/`), ihr Pfad steht auf der Standardausgabe, bevor
+Ohne `--output` landet jede Aufnahme in der Bibliothek (`~/Bilder/schnapp/JJJJ-MM/`), ihr Pfad steht auf der Standardausgabe, bevor
 der Editor öffnet. Skripte und KI-Agenten: siehe [`docs/agents.md`](docs/agents.md) (englisch). Einstellungen stehen in `~/.config/schnapp/settings.ini`, etwa `[capture] open-editor = false` oder
 `[general] language = en` (Voreinstellung `auto`: die Sprache des Systems).
 
