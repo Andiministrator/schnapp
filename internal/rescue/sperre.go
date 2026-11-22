@@ -34,9 +34,20 @@ type sperre struct {
 	name string // voller Pfad der Sperrdatei
 }
 
+// errKeinFlock meldet ein Dateisystem, das flock nicht kann (ENOLCK, ENOTSUP/EOPNOTSUPP): Nur dann läuft eine Sitzung
+// ohne Sperre weiter (F-440). Jeder andere Fehler beim Öffnen oder Sperren (Symlink am Sperrnamen, Verzeichnis, fehlende
+// Rechte, ...) macht sie stumm: Wer die Sperre nicht prüfen kann, wendet keine Kopie an und schreibt und löscht keine.
+var errKeinFlock = errors.New("rescue: Dateisystem kann keine flock-Sperre")
+
+// Nähte für Tests (F-440): das Sperren selbst und ein Haken zwischen Sperren und Prüfen der Sperrdatei.
+var (
+	flockFn    = syscall.Flock
+	sperrHaken = func(name string) {}
+)
+
 // sperreNehmen nimmt die Sperre zur Ausgangsdatei pfad im Ordner ort, ohne zu warten. Hält sie ein anderer, kommt
-// ErrBelegt. Wurde die Sperrdatei zwischen Öffnen und Sperren entfernt (ein anderes Fenster endete, Aufräumen), sperrt
-// der Deskriptor eine verwaiste Datei; dann von vorn.
+// ErrBelegt, kann das Dateisystem kein flock, errKeinFlock. Wurde die Sperrdatei zwischen Öffnen und Sperren entfernt
+// (ein anderes Fenster endete, Aufräumen), sperrt der Deskriptor eine verwaiste Datei; dann von vorn.
 func sperreNehmen(ort, pfad string) (_ *sperre, fehler error) {
 	defer errprefix.Defer("rescue", &fehler)
 	if err := os.MkdirAll(ort, 0o700); err != nil {
@@ -44,16 +55,14 @@ func sperreNehmen(ort, pfad string) (_ *sperre, fehler error) {
 	}
 	name := filepath.Join(ort, sperrName(pfad))
 	for range 10 {
-		f, belegt, err := oeffneGesperrt(name)
+		f, belegt, err := oeffneGesperrt(name, true)
 		if err != nil {
 			return nil, err
 		}
 		if belegt {
 			return nil, ErrBelegt
 		}
-		a, err1 := f.Stat()
-		b, err2 := os.Lstat(name)
-		if err1 == nil && err2 == nil && os.SameFile(a, b) {
+		if gleicheDatei(f, name) {
 			return &sperre{pfad: pfad, f: f, name: name}, nil
 		}
 		_ = f.Close()
@@ -61,38 +70,73 @@ func sperreNehmen(ort, pfad string) (_ *sperre, fehler error) {
 	return nil, errors.New("rescue: Sperrdatei wechselt ständig")
 }
 
-// oeffneGesperrt öffnet (oder legt an) die Sperrdatei name und versucht die Sperre ohne Warten. belegt: ein anderer hält
-// sie (die Datei ist dann geschlossen).
-func oeffneGesperrt(name string) (_ *os.File, belegt bool, _ error) {
-	f, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE|syscall.O_NOFOLLOW, 0o600)
+// gleicheDatei meldet, ob der offene Deskriptor f und der Name name dieselbe reguläre Datei sind.
+func gleicheDatei(f *os.File, name string) bool {
+	a, err1 := f.Stat()
+	b, err2 := os.Lstat(name)
+	return err1 == nil && err2 == nil && a.Mode().IsRegular() && os.SameFile(a, b)
+}
+
+// oeffneGesperrt öffnet (mit anlegen: oder legt an) die Sperrdatei name und versucht die Sperre ohne Warten. belegt: ein
+// anderer hält sie (die Datei ist dann geschlossen). O_NOFOLLOW weist einen Symlink am Namen ab, O_NONBLOCK verhindert
+// das Hängen an einer Pipe; was keine reguläre Datei ist, ist ein Fehler.
+func oeffneGesperrt(name string, anlegen bool) (_ *os.File, belegt bool, _ error) {
+	flags := os.O_RDWR | syscall.O_NOFOLLOW | syscall.O_NONBLOCK
+	if anlegen {
+		flags |= os.O_CREATE
+	}
+	f, err := os.OpenFile(name, flags, 0o600)
 	if err != nil {
 		return nil, false, err
 	}
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+	if st, err := f.Stat(); err != nil || !st.Mode().IsRegular() {
 		_ = f.Close()
-		if errors.Is(err, syscall.EWOULDBLOCK) {
+		return nil, false, errors.Join(err, errors.New("rescue: Sperrdatei ist keine reguläre Datei"))
+	}
+	if err := flockFn(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+		_ = f.Close()
+		switch {
+		case errors.Is(err, syscall.EWOULDBLOCK):
 			return nil, true, nil
+		case errors.Is(err, syscall.ENOLCK), errors.Is(err, syscall.ENOTSUP), errors.Is(err, syscall.EOPNOTSUPP):
+			return nil, false, errors.Join(errKeinFlock, err)
 		}
 		return nil, false, err
 	}
+	sperrHaken(name)
 	return f, false, nil
 }
 
-// frei entfernt die Sperrdatei, solange sie noch gehalten ist, und gibt die Sperre frei. Wer die Datei inzwischen
-// geöffnet hat, merkt am Vergleich in sperreNehmen, dass sie verwaist ist.
+// frei entfernt die Sperrdatei, solange sie noch gehalten ist und der Name noch dieselbe Datei meint (os.SameFile:
+// entfernt wird nur, was geprüft ist), und gibt die Sperre frei. Wer die Datei inzwischen geöffnet hat, merkt am
+// Vergleich in sperreNehmen, dass sie verwaist ist.
 func (s *sperre) frei() error {
-	err := os.Remove(s.name)
-	if errors.Is(err, os.ErrNotExist) {
-		err = nil
+	var err error
+	if gleicheDatei(s.f, s.name) {
+		err = os.Remove(s.name)
+		if errors.Is(err, os.ErrNotExist) {
+			err = nil
+		}
 	}
 	return errors.Join(err, s.f.Close())
 }
 
-// raeumeSperre entfernt die Sperrdatei name, wenn niemand sie hält (Aufräumen nach einem Absturz); ok: entfernt.
+// raeumeSperre entfernt die Sperrdatei name, wenn niemand sie hält (Aufräumen nach einem Absturz); ok: entfernt. Sie
+// legt nichts an; ist der Name nach dem Sperren nicht mehr dieselbe Datei, bleibt er unberührt.
 func raeumeSperre(name string) (ok bool, _ error) {
-	f, belegt, err := oeffneGesperrt(name)
+	f, belegt, err := oeffneGesperrt(name, false)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
 	if err != nil || belegt {
 		return false, err
 	}
-	return true, (&sperre{f: f, name: name}).frei()
+	if !gleicheDatei(f, name) {
+		return false, f.Close()
+	}
+	err = os.Remove(name)
+	if errors.Is(err, os.ErrNotExist) {
+		err = nil
+	}
+	return err == nil, errors.Join(err, f.Close())
 }

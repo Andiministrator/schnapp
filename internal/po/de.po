@@ -599,6 +599,9 @@ msgstr "Ungesicherte Änderungen vom %s ließen sich nicht wiederherstellen. Die
 msgid "This file is open in another Schnapp window. Changes made here are not protected by a rescue copy."
 msgstr "Diese Datei ist in einem anderen Schnapp-Fenster geöffnet. Änderungen in diesem Fenster sichert keine Rettungskopie."
 
+msgid "The rescue copy for this file is unavailable. Changes made here are not protected by a rescue copy."
+msgstr "Die Rettungskopie für diese Datei ist nicht verfügbar. Änderungen in diesem Fenster sichert keine Rettungskopie."
+
 # cmd/schnapp: Schnittstelle für Skripte und Agenten (agenten.go, ADR-0030)
 msgid "Option %s needs a file name after an equals sign: %s=FILE."
 msgstr "Die Option %s braucht einen Dateinamen nach einem Gleichheitszeichen: %s=DATEI."

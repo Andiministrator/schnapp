@@ -129,8 +129,8 @@
     "name": "S2 eingereihte ältere Kopie nicht übersprungen (F-417)",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "gen != s.gen || nr != s.naechste",
-    "neu": "gen != s.gen || nr == 0"
+    "alt": "\tif kp == nil || s.wartendGen != gen {",
+    "neu": "\tif kp == nil {"
   },
   {
     "name": "S4 Kennung beim Wiederherstellen ungeprüft",
@@ -374,15 +374,17 @@
     "name": "S1b Schreiben trotz Verwirf",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "veraltet := s.stumm() || gen != s.gen || nr != s.naechste",
-    "neu": "veraltet := s.stumm() || gen != gen || nr != s.naechste"
+    "alt": "veraltet := s.stumm() || gen != s.gen",
+    "neu": "veraltet := s.stumm() || gen != gen",
+    "aequivalent": true,
+    "grund": "Seit F-446 verwirft schon die Zeile davor (wartendGen != gen) jede Kopie einer früheren Epoche; Verwirf und NeueBasis setzen wartend zurück. Die zweite Prüfung ist ein Gürtel zum Hosenträger, S2 und S7 decken die Epochen ab."
   },
   {
     "name": "S7 Verwirf erhöht gen nicht und löscht nur",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "\ts.gen++\n\tpfad := s.basis.Pfad\n",
-    "neu": "\tpfad := s.basis.Pfad\n"
+    "alt": "\ts.gen++\n\ts.wartend, s.eingereiht = nil, false\n\tpfad := s.basis.Pfad\n",
+    "neu": "\ts.wartend, s.eingereiht = nil, false\n\tpfad := s.basis.Pfad\n"
   },
   {
     "name": "R19 Farbe ungeprüft lang",
@@ -472,8 +474,8 @@
     "name": "K1 F-413 fremde Sperre nicht erkannt",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "s.setzeFremd(errors.Is(err, ErrBelegt), sp)",
-    "neu": "s.setzeFremd(false, sp)"
+    "alt": "fremd := errors.Is(err, ErrBelegt)",
+    "neu": "fremd := false"
   },
   {
     "name": "K2 F-413 Wiederherstellen trotz fremder Sperre",
@@ -486,8 +488,8 @@
     "name": "K3 F-413 fremde Sitzung schreibt und löscht",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
-    "alt": "return s.aus || s.fremd }",
-    "neu": "return s.aus }"
+    "alt": "return s.aus || s.fremd || s.gestoert }",
+    "neu": "return s.aus || s.gestoert }"
   },
   {
     "name": "K4 F-413 Ende gibt die Sperre nicht frei",
@@ -535,8 +537,8 @@
     "name": "B5 F-431 Erzeuge ohne Flächenbudget",
     "datei": "internal/rescue/rescue.go",
     "paket": "./internal/document",
-    "alt": "if err := pruefeBudget(d, liste, document.VerlaufGrenze()); err != nil {",
-    "neu": "if err := pruefeBudget(d, liste, document.VerlaufGrenze()); false && err != nil {"
+    "alt": "if err := budgetPruefer(d, liste, document.VerlaufGrenze()); err != nil {",
+    "neu": "if err := budgetPruefer(d, liste, document.VerlaufGrenze()); false && err != nil {"
   },
   {
     "name": "B6 F-434 Anwenden mit fester Grenze statt Restplatz",
@@ -544,5 +546,126 @@
     "paket": "./internal/document",
     "alt": "pruefeBudget(d, liste, d.VerlaufPlatz())",
     "neu": "pruefeBudget(d, liste, document.VerlaufGrenze())"
+  },
+  {
+    "name": "M5 F-446 NeueBasis setzt aus nicht zurück",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\t\ts.aus = false // die neue Ausgangsdatei hat keine beiseitegelegte Kopie im Weg\n",
+    "neu": ""
+  },
+  {
+    "name": "M5b F-446 Sichere entscheidet vor der Kette über aus",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "(s.aus && s.wechsel == 0)",
+    "neu": "s.aus"
+  },
+  {
+    "name": "M5c F-446 je Sichere ein Auftrag in der Kette",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\tif !s.eingereiht {\n\t\ts.eingereiht = true",
+    "neu": "\tif true {\n\t\ts.eingereiht = true"
+  },
+  {
+    "name": "M5d F-446 NeueBasis meldet das Fremdwerden nicht",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\tif err != nil && !(fremd && warFremd) {",
+    "neu": "\tif err != nil && !(fremd && warFremd) && !fremd {"
+  },
+  {
+    "name": "M6 F-440 Sperrdatei folgt Symlinks",
+    "datei": "internal/rescue/sperre.go",
+    "paket": "./internal/rescue",
+    "alt": "flags := os.O_RDWR | syscall.O_NOFOLLOW | syscall.O_NONBLOCK",
+    "neu": "flags := os.O_RDWR | syscall.O_NONBLOCK"
+  },
+  {
+    "name": "M6b F-440 Sperrdatei mit 0644",
+    "datei": "internal/rescue/sperre.go",
+    "paket": "./internal/rescue",
+    "alt": "f, err := os.OpenFile(name, flags, 0o600)",
+    "neu": "f, err := os.OpenFile(name, flags, 0o644)"
+  },
+  {
+    "name": "M6c F-440 Verzeichnis oder Sonderdatei als Sperrdatei gilt",
+    "datei": "internal/rescue/sperre.go",
+    "paket": "./internal/rescue",
+    "alt": "if st, err := f.Stat(); err != nil || !st.Mode().IsRegular() {",
+    "neu": "if st, err := f.Stat(); err != nil && !st.Mode().IsRegular() {",
+    "aequivalent": true,
+    "grund": "Was keine reguläre Datei ist, fängt gleicheDatei (Mode().IsRegular) nach dem Sperren ab: sperreNehmen versucht es zehnmal und meldet einen Fehler, die Sitzung ist wie mit der Vorprüfung stumm. Die Vorprüfung spart nur den flock auf Sonderdateien."
+  },
+  {
+    "name": "M7 F-440 verwaiste Sperrdatei gilt",
+    "datei": "internal/rescue/sperre.go",
+    "paket": "./internal/rescue",
+    "alt": "\t\tif gleicheDatei(f, name) {\n\t\t\treturn &sperre{",
+    "neu": "\t\tif true {\n\t\t\treturn &sperre{"
+  },
+  {
+    "name": "M7b F-440 raeumeSperre ohne SameFile",
+    "datei": "internal/rescue/sperre.go",
+    "paket": "./internal/rescue",
+    "alt": "\tif !gleicheDatei(f, name) {",
+    "neu": "\tif false {"
+  },
+  {
+    "name": "M7c F-440 frei ohne SameFile",
+    "datei": "internal/rescue/sperre.go",
+    "paket": "./internal/rescue",
+    "alt": "\tif gleicheDatei(s.f, s.name) {",
+    "neu": "\tif true {"
+  },
+  {
+    "name": "M11 F-440 Sperrordner mit 0755",
+    "datei": "internal/rescue/sperre.go",
+    "paket": "./internal/rescue",
+    "alt": "os.MkdirAll(ort, 0o700)",
+    "neu": "os.MkdirAll(ort, 0o755)"
+  },
+  {
+    "name": "M12 F-440 jeder flock-Fehler lässt die Sitzung weiterlaufen",
+    "datei": "internal/rescue/sperre.go",
+    "paket": "./internal/rescue",
+    "alt": "\t\tcase errors.Is(err, syscall.ENOLCK), errors.Is(err, syscall.ENOTSUP), errors.Is(err, syscall.EOPNOTSUPP):",
+    "neu": "\t\tcase true:"
+  },
+  {
+    "name": "M12b F-440 Sperrfehler macht nicht stumm",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "err != nil && !fremd && !errors.Is(err, errKeinFlock), sp)",
+    "neu": "false, sp)"
+  },
+  {
+    "name": "T1 F-436 fremdes Fenster holt die Sperre nicht nach",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "func (s *Sicherung) schreibeWartende(gen uint64) {\n\ts.uebernehmen()\n",
+    "neu": "func (s *Sicherung) schreibeWartende(gen uint64) {\n"
+  },
+  {
+    "name": "T2 F-436 Übernahme überschreibt die Kopie des anderen Fensters",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\tif _, err := legeBeiseite(s.ort, pfad, s.jetzt()); err != nil {",
+    "neu": "\tif _, err := \"\", error(nil); err != nil {"
+  },
+  {
+    "name": "T3 F-436 Sichere verwirft eine fremde Sitzung vorab",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./internal/rescue",
+    "alt": "\tif s.gestoert || (s.aus && s.wechsel == 0) {",
+    "neu": "\tif s.stumm() {"
+  },
+  {
+    "name": "X1 F-451 Erzeuge ohne Präfix",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "\tdefer errprefix.Defer(\"rescue\", &fehler) // F-451",
+    "neu": "\t_ = fehler // F-451"
   }
 ]

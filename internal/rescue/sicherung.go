@@ -5,6 +5,8 @@ package rescue
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -34,13 +36,20 @@ type Sicherung struct {
 	mu       sync.Mutex
 	basis    Kennung
 	gen      uint64        // erhöht von Verwirf und NeueBasis: ältere Schreibaufträge verfallen
-	naechste uint64        // Nummer des zuletzt eingereihten Schreibauftrags
 	kette    chan struct{} // geschlossen, wenn der zuletzt eingereihte Auftrag fertig ist; nil: noch keiner
 	aus      bool          // eine nicht angewendete Kopie ließ sich nicht beiseitelegen: diese Sitzung schreibt und löscht nichts
 	fremd    bool          // ein anderes Fenster hält die Sperre auf die Ausgangsdatei (F-413)
+	gestoert bool          // die Sperre ließ sich nicht prüfen (Symlink, Verzeichnis, Rechte, ...): Sitzung stumm (F-440)
 	sperre   *sperre       // gehaltene Sperre auf basis.Pfad; nil: keine
-	Diagnose func(error)   // Fehler beim Schreiben und Löschen (nur Diagnose; die Oberfläche bleibt ruhig)
-	jetzt    func() time.Time
+	wechsel  int           // NeueBasis-Aufträge, die noch in der Kette stehen: bis dahin entscheidet die Kette, nicht Sichere (F-446)
+
+	// Höchstens eine wartende Kopie (F-446): Sichere ersetzt sie, ein einziger Auftrag je Epoche (gen) schreibt sie. Bei
+	// hängender Platte hält die Sitzung so eine Kopie, nicht eine je Aufruf.
+	wartend    *Kopie
+	wartendGen uint64      // gen, zu dem wartend gebildet wurde
+	eingereiht bool        // für gen steht ein Schreibauftrag in der Kette
+	Diagnose   func(error) // Fehler beim Schreiben und Löschen (nur Diagnose; die Oberfläche bleibt ruhig)
+	jetzt      func() time.Time
 
 	// Nähte für Tests (F-417): Schreiben und Löschen der Kopie.
 	schreibe func(ort string, kp Kopie) error
@@ -48,8 +57,9 @@ type Sicherung struct {
 }
 
 // NeueSicherung legt die Sicherung für die Ausgangsdatei basis im Ordner ort an und nimmt die Sperre auf sie. Hält ein
-// anderes Fenster sie, ist die Sitzung fremd (Wiederherstellung.Fremd). Lässt sich keine Sperre anlegen (Ordner nicht
-// beschreibbar, Dateisystem ohne flock), läuft die Sitzung ohne Sperre wie vor F-413.
+// anderes Fenster sie, ist die Sitzung fremd (Wiederherstellung.Fremd). Kann das Dateisystem kein flock (ENOLCK,
+// ENOTSUP), läuft die Sitzung ohne Sperre wie vor F-413; scheitert das Anlegen oder Sperren anders (Ordner nicht
+// beschreibbar, Symlink oder Verzeichnis am Sperrnamen), ist sie stumm (F-440).
 func NeueSicherung(ort string, basis Kennung) *Sicherung {
 	s := &Sicherung{ort: ort, basis: basis, Diagnose: func(error) {}, jetzt: time.Now, schreibe: Schreibe, loesche: Loesche}
 	s.sperreFuer(basis.Pfad)
@@ -60,10 +70,10 @@ func NeueSicherung(ort string, basis Kennung) *Sicherung {
 // auf eine andere frei. Aufrufer: NeueSicherung oder ein Auftrag der Kette.
 func (s *Sicherung) sperreFuer(pfad string) {
 	s.mu.Lock()
-	alt := s.sperre
+	alt, warFremd := s.sperre, s.fremd
 	s.mu.Unlock()
 	if alt != nil && alt.pfad == pfad {
-		s.setzeFremd(false, alt)
+		s.setzeSperre(false, false, alt)
 		return
 	}
 	if alt != nil {
@@ -72,16 +82,47 @@ func (s *Sicherung) sperreFuer(pfad string) {
 		}
 	}
 	sp, err := sperreNehmen(s.ort, pfad)
-	if err != nil {
+	fremd := errors.Is(err, ErrBelegt)
+	// Ein erneuter Versuch einer fremden Sitzung meldet nicht jedes Mal von Neuem.
+	if err != nil && !(fremd && warFremd) {
 		s.Diagnose(err)
 	}
-	s.setzeFremd(errors.Is(err, ErrBelegt), sp)
+	s.setzeSperre(fremd, err != nil && !fremd && !errors.Is(err, errKeinFlock), sp)
 }
 
-func (s *Sicherung) setzeFremd(fremd bool, sp *sperre) {
+func (s *Sicherung) setzeSperre(fremd, gestoert bool, sp *sperre) {
 	s.mu.Lock()
-	s.fremd, s.sperre = fremd, sp
+	s.fremd, s.gestoert, s.sperre = fremd, gestoert, sp
 	s.mu.Unlock()
+}
+
+// uebernehmen versucht, die Sperre nachzuholen, wenn ein anderes Fenster sie hatte (F-436): ein Aufruf von flock ohne
+// Warten, keine Suche auf der Platte. Gelingt es, übernimmt diese Sitzung die Ausgangsdatei; eine Kopie, die das andere
+// Fenster hinterlassen hat (es endete mit ungesicherten Änderungen oder stürzte ab), legt sie vorher beiseite, statt sie
+// zu überschreiben. Auftrag der Kette.
+func (s *Sicherung) uebernehmen() {
+	s.mu.Lock()
+	fremd, pfad := s.fremd, s.basis.Pfad
+	s.mu.Unlock()
+	if !fremd {
+		return
+	}
+	s.sperreFuer(pfad)
+	s.mu.Lock()
+	frei := !s.fremd && !s.gestoert
+	s.mu.Unlock()
+	if !frei {
+		return
+	}
+	if _, err := os.Lstat(filepath.Join(s.ort, Name(pfad))); err != nil {
+		return
+	}
+	if _, err := legeBeiseite(s.ort, pfad, s.jetzt()); err != nil {
+		s.Diagnose(err)
+		s.mu.Lock()
+		s.aus = true
+		s.mu.Unlock()
+	}
 }
 
 // Basis liefert die aktuelle Ausgangsdatei.
@@ -109,7 +150,7 @@ func (s *Sicherung) reihe(auftrag func()) {
 }
 
 // stumm meldet, ob diese Sitzung keine Kopie schreiben oder löschen darf (Aufrufer hält mu).
-func (s *Sicherung) stumm() bool { return s.aus || s.fremd }
+func (s *Sicherung) stumm() bool { return s.aus || s.fremd || s.gestoert }
 
 // Sichere bildet die Rettungskopie von d (Aufrufer: Ereignisschleife, kein Speichern) und schreibt sie im
 // Hintergrund. Ein laufender Zug zählt nicht: Die Kopie trägt den Stand d.Stand() ohne das Objekt im Zug (F-409). Ist
@@ -117,7 +158,9 @@ func (s *Sicherung) stumm() bool { return s.aus || s.fremd }
 // zuletzt geschriebene Kopie stehen.
 func (s *Sicherung) Sichere(d *document.Dokument) {
 	s.mu.Lock()
-	if s.stumm() {
+	// Entscheidend ist die Kette (F-446, F-436): Ein NeueBasis-Auftrag setzt aus und fremd erst dort zurück, und eine
+	// fremde Sitzung holt die Sperre dort nach. Nur was dauerhaft stumm ist, fällt hier schon weg.
+	if s.gestoert || (s.aus && s.wechsel == 0) {
 		s.mu.Unlock()
 		return
 	}
@@ -127,21 +170,35 @@ func (s *Sicherung) Sichere(d *document.Dokument) {
 		s.Diagnose(err)
 		return
 	}
-	s.naechste++
-	nr, gen := s.naechste, s.gen
-	s.reihe(func() {
-		s.mu.Lock()
-		// Verworfen, neue Basis, fremd, oder eine jüngere Kopie ist schon eingereiht (sie folgt in der Kette).
-		veraltet := s.stumm() || gen != s.gen || nr != s.naechste
-		s.mu.Unlock()
-		if veraltet {
-			return
-		}
-		if err := s.schreibe(s.ort, kp); err != nil {
-			s.Diagnose(err)
-		}
-	})
+	gen := s.gen
+	s.wartend, s.wartendGen = &kp, gen
+	if !s.eingereiht {
+		s.eingereiht = true
+		s.reihe(func() { s.schreibeWartende(gen) })
+	}
 	s.mu.Unlock()
+}
+
+// schreibeWartende schreibt die wartende Kopie der Epoche gen (Auftrag der Kette). Sie hat sie vorher aus der Hand
+// gegeben: Zur Zeit eines hängenden Schreibens ersetzt Sichere nur wartend, ein Auftrag folgt erst danach.
+func (s *Sicherung) schreibeWartende(gen uint64) {
+	s.uebernehmen()
+	s.mu.Lock()
+	kp := s.wartend
+	if kp == nil || s.wartendGen != gen {
+		// Verworfen oder neue Basis: Eine Kopie einer späteren Epoche hat ihren eigenen Auftrag.
+		s.mu.Unlock()
+		return
+	}
+	s.wartend, s.eingereiht = nil, false
+	veraltet := s.stumm() || gen != s.gen
+	s.mu.Unlock()
+	if veraltet {
+		return
+	}
+	if err := s.schreibe(s.ort, *kp); err != nil {
+		s.Diagnose(err)
+	}
 }
 
 // Verwirf löscht die Rettungskopie (nach einem gelungenen Speichern, beim Schließen ohne Änderung, zurück auf dem
@@ -150,6 +207,7 @@ func (s *Sicherung) Sichere(d *document.Dokument) {
 func (s *Sicherung) Verwirf() {
 	s.mu.Lock()
 	s.gen++
+	s.wartend, s.eingereiht = nil, false
 	pfad := s.basis.Pfad
 	s.reihe(func() { s.loescheKopie(pfad) })
 	s.mu.Unlock()
@@ -174,14 +232,19 @@ func (s *Sicherung) loescheKopie(pfad string) {
 func (s *Sicherung) NeueBasis(k Kennung) {
 	s.mu.Lock()
 	s.gen++
+	s.wartend, s.eingereiht = nil, false
 	alt := s.basis.Pfad
 	s.basis = k
+	s.wechsel++
 	s.reihe(func() {
 		s.loescheKopie(alt)
 		s.mu.Lock()
 		s.aus = false // die neue Ausgangsdatei hat keine beiseitegelegte Kopie im Weg
 		s.mu.Unlock()
 		s.sperreFuer(k.Pfad)
+		s.mu.Lock()
+		s.wechsel--
+		s.mu.Unlock()
 	})
 	s.mu.Unlock()
 }
@@ -221,6 +284,7 @@ type Wiederherstellung struct {
 	Grund      error     // warum nicht angewendet
 	Beiseite   string    // Dateiname, unter dem die nicht angewendete Kopie im Ordner bleibt (leer: Umbenennen scheiterte)
 	Fremd      bool      // ein anderes Fenster hat die Datei offen: nichts gelesen, diese Sitzung sichert nicht (F-413)
+	Gestoert   bool      // die Sperre ließ sich nicht prüfen: nichts gelesen, diese Sitzung sichert nicht (F-440)
 }
 
 // Wiederherstellen wendet beim Öffnen eine passende Rettungskopie auf d an (ADR-0029 Punkt 6). Passt die Kennung
@@ -228,8 +292,11 @@ type Wiederherstellung struct {
 // die Sitzung fremd, bleibt die Kopie des anderen Fensters unberührt.
 func (s *Sicherung) Wiederherstellen(d *document.Dokument, pruefe func(*document.Dokument) error) Wiederherstellung {
 	s.mu.Lock()
-	basis, fremd := s.basis, s.fremd
+	basis, fremd, gestoert := s.basis, s.fremd, s.gestoert
 	s.mu.Unlock()
+	if gestoert {
+		return Wiederherstellung{Gestoert: true}
+	}
 	if fremd {
 		return Wiederherstellung{Fremd: true}
 	}

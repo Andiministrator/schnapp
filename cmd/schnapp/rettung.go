@@ -96,6 +96,9 @@ func (r *rettung) Wiederherstellen(d *document.Dokument) (string, bool) {
 	}
 	ort := "schnapp/rescue/" + name
 	switch {
+	case w.Gestoert:
+		// Die Sperre auf die Ausgangsdatei ließ sich nicht prüfen (F-440): Diese Sitzung sichert nicht.
+		return i18n.T("The rescue copy for this file is unavailable. Changes made here are not protected by a rescue copy."), true
 	case w.Fremd:
 		// Ein anderes Fenster führt die Rettungskopie dieser Datei (F-413): Diese Sitzung lässt sie in Ruhe.
 		return i18n.T("This file is open in another Schnapp window. Changes made here are not protected by a rescue copy."), false

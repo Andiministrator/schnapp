@@ -166,12 +166,13 @@ func Name(pfad string) string {
 // Schwärzungen mehr, als Anwenden beim Öffnen annimmt (Flächenbudget eines frisch geöffneten Dokuments,
 // document.VerlaufGrenze), kommt ErrZuGross (F-431): Eine solche Kopie würde beim Öffnen abgelehnt und verdrängte die
 // zuletzt geschriebene, anwendbare. Die Sicherung lässt in beiden Fällen die vorige Kopie stehen.
-func Erzeuge(d *document.Dokument, k Kennung, jetzt time.Time) (Kopie, error) {
+func Erzeuge(d *document.Dokument, k Kennung, jetzt time.Time) (_ Kopie, fehler error) {
+	defer errprefix.Defer("rescue", &fehler) // F-451: auch Fehler aus document.PruefeSchwaerzung tragen das Präfix
 	liste, ok := d.SchwaerzungenImVerlauf()
 	if !ok {
 		return Kopie{}, ErrUnfertig
 	}
-	if err := pruefeBudget(d, liste, document.VerlaufGrenze()); err != nil {
+	if err := budgetPruefer(d, liste, document.VerlaufGrenze()); err != nil {
 		return Kopie{}, err
 	}
 	kp := Kopie{Format: Format, Datei: k, Gesichert: jetzt.UTC(), Angaben: string(fileformat.AngabenSVG(d)),
@@ -368,6 +369,9 @@ func Anwenden(d *document.Dokument, kp *Kopie, pruefe func(*document.Dokument) e
 	}
 	return d.SetzeAngaben(a.Objekte, a.Zuschnitt, a.Streifen, a.Kante)
 }
+
+// budgetPruefer ist die Naht für Tests (F-451): ein Fehler aus document.PruefeSchwaerzung ist sonst nicht herzustellen.
+var budgetPruefer = pruefeBudget
 
 // pruefeBudget prüft die Schwärzungen ohne Pixel (document.PruefeSchwaerzung) und rechnet ihre Flächen im Bild gegen
 // platz (Bytes im Rückgängig-Verlauf, 4 je Pixel). Anwenden rechnet gegen den freien Platz des Dokuments, Erzeuge gegen
