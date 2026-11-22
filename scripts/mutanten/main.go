@@ -26,6 +26,7 @@ type Mutant struct {
 	Neu         string `json:"neu"`
 	Aequivalent bool   `json:"aequivalent"`
 	Grund       string `json:"grund"`
+	Timeout     string `json:"timeout"` // optional: -timeout für go test (z. B. "45s"); für Mutanten, die hängen statt rot zu werden (F-455)
 	Gruppe      string `json:"-"`
 }
 
@@ -176,7 +177,7 @@ func testeMutant(baum, lauf string, m Mutant) (status string, rote []string, det
 	}
 	defer os.WriteFile(datei, orig, 0o644)
 
-	text, runErr := goTest(baum, lauf, m.Paket)
+	text, runErr := goTest(baum, lauf, m.Paket, m.Timeout)
 	for _, z := range strings.Split(text, "\n") {
 		if strings.HasPrefix(z, "--- FAIL") {
 			if f := strings.Fields(z); len(f) >= 3 {
@@ -197,8 +198,12 @@ func testeMutant(baum, lauf string, m Mutant) (status string, rote []string, det
 }
 
 // goTest testet paket in der Kopie baum.
-func goTest(baum, lauf, paket string) (string, error) {
-	cmd := exec.Command("go", "test", "-count=1", paket)
+func goTest(baum, lauf, paket, timeout string) (string, error) {
+	args := []string{"test", "-count=1"}
+	if timeout != "" {
+		args = append(args, "-timeout", timeout)
+	}
+	cmd := exec.Command("go", append(args, paket)...)
 	cmd.Dir = baum
 	g := filepath.Join(lauf, "g")
 	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS=-tags=novulkan,nox11", "TMPDIR="+g, "GOTMPDIR="+g)
@@ -267,7 +272,7 @@ func lauf(args []string, aus io.Writer) int {
 				continue
 			}
 			ausgangRot[m.Paket] = ""
-			if text, err := goTest(baum, laufDir, m.Paket); err != nil {
+			if text, err := goTest(baum, laufDir, m.Paket, ""); err != nil {
 				ausgangRot[m.Paket] = "Ausgangslage rot (ohne Mutation): " + kurz(text)
 				fmt.Fprintf(aus, "Paket %s: %s\n", m.Paket, ausgangRot[m.Paket])
 			}

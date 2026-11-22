@@ -524,14 +524,16 @@
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
     "alt": "\ts.reihe(func() { s.loescheKopie(pfad) })\n\ts.mu.Unlock()\n}",
-    "neu": "\tw := s.kette\n\ts.mu.Unlock()\n\tif w != nil {\n\t\t<-w\n\t}\n\ts.loescheKopie(pfad)\n}"
+    "neu": "\tw := s.kette\n\ts.mu.Unlock()\n\tif w != nil {\n\t\t<-w\n\t}\n\ts.loescheKopie(pfad)\n}",
+    "timeout": "60s"
   },
   {
     "name": "E3 F-417 Verwirf löscht außerhalb der Reihenfolge",
     "datei": "internal/rescue/sicherung.go",
     "paket": "./internal/rescue",
     "alt": "\ts.reihe(func() { s.loescheKopie(pfad) })\n\ts.mu.Unlock()\n}",
-    "neu": "\ts.mu.Unlock()\n\ts.loescheKopie(pfad)\n}"
+    "neu": "\ts.mu.Unlock()\n\ts.loescheKopie(pfad)\n}",
+    "timeout": "60s"
   },
   {
     "name": "B5 F-431 Erzeuge ohne Flächenbudget",

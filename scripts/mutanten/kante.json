@@ -1,0 +1,72 @@
+[
+  {
+    "name": "KA1 F-419 wende übergibt die Form des Ziels statt der Kopie",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "return d.SetzeAngaben(a.Objekte, a.Zuschnitt, a.Streifen, a.Kante)",
+    "neu": "return d.SetzeAngaben(a.Objekte, a.Zuschnitt, a.Streifen, d.Kante())"
+  },
+  {
+    "name": "KA2 F-419 Rettungskopie schreibt s:kante nicht",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/rescue",
+    "alt": "\ts.attr(\"s:kante\", d.Kante().Name())",
+    "neu": "\t_ = 0"
+  },
+  {
+    "name": "KB1 F-420 Zwischenspeicher der Nähte ohne Form und Faktor im Schlüssel",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": " || c.form != form || c.faktor != faktor {",
+    "neu": " {"
+  },
+  {
+    "name": "KB2 F-420 Menüeintrag Kantenform immer an",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "text: i18n.T(\"Seam style\"), an: s.KannKanteWechseln()}",
+    "neu": "text: i18n.T(\"Seam style\"), an: true}"
+  },
+  {
+    "name": "KB3 F-420 WechsleKante ohne merkeAenderung",
+    "datei": "internal/canvas/menue.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.merkeAenderung(vor)\n\treturn s.D.Kante(), true",
+    "neu": "\t_ = vor\n\treturn s.D.Kante(), true"
+  },
+  {
+    "name": "KC1 F-433 Renderer: gemeinsame Linie für beide Achsen",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "achse, laenge = 1, g.Y",
+    "neu": "achse, laenge = 0, g.Y"
+  },
+  {
+    "name": "KC2 F-433 Renderer: g.X als Länge der Spalten-Naht",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "achse, laenge = 1, g.Y",
+    "neu": "achse, laenge = 1, g.X"
+  },
+  {
+    "name": "KC3 F-433 Editor: gemeinsame Linie für beide Achsen",
+    "datei": "internal/ui/naehte_linien.go",
+    "paket": "./internal/ui",
+    "alt": "achse, laenge = 1, l.g.Y",
+    "neu": "achse, laenge = 0, l.g.Y"
+  },
+  {
+    "name": "KC4 F-433 Editor: g.X als Länge der Spalten-Naht",
+    "datei": "internal/ui/naehte_linien.go",
+    "paket": "./internal/ui",
+    "alt": "achse, laenge = 1, l.g.Y",
+    "neu": "achse, laenge = 1, l.g.X"
+  },
+  {
+    "name": "KD1 F-434 abgebrochen prüft die Glyphen-Grenze nicht",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "return a.summe() > grenzen.gesamt || a.glyph > grenzen.glyph || a.kanten > grenzen.kanten",
+    "neu": "return a.summe() > grenzen.gesamt || a.kanten > grenzen.kanten"
+  }
+]

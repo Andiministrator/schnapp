@@ -1567,18 +1567,9 @@ func (e *editor) zeichneNaehte(gtx layout.Context) {
 		aufnahme := op.Record(&c.ops)
 		schichten := document.KantenSchichten()
 		// Mittellinie je Achse einmal, die Schichten verschieben sie nur quer (F-418); ein Puffer für alle Bänder.
-		var linien [2]*document.Kantenlinie
+		linien := nahtLinien{g: g, form: form, faktor: faktor}
 		var band []document.Punkt
-		linie := func(n document.Naht) (*document.Kantenlinie, int) {
-			achse, laenge := 0, g.X
-			if !n.Zeilen {
-				achse, laenge = 1, g.Y
-			}
-			if linien[achse] == nil {
-				linien[achse] = document.NeueKantenlinie(form, laenge, faktor)
-			}
-			return linien[achse], laenge
-		}
+		linie := linien.fuer
 		pfad := func(band []document.Punkt) clip.PathSpec {
 			var p clip.Path
 			p.Begin(&c.ops)

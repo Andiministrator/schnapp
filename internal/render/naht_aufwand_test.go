@@ -77,6 +77,26 @@ func TestPruefeBrichtUeberDerGrenzeAb(t *testing.T) {
 	if err := Pruefe(e); !errors.Is(err, ErrZuAufwendig) {
 		t.Errorf("Pruefe Objekte: %v, Soll ErrZuAufwendig", err)
 	}
+
+	// Dritte Grenze (F-434 a): die der Glyphen. Gesamt und Kanten bleiben auf ihren Vorgaben, so kann nur der
+	// Glyphen-Zweig von abgebrochen() das Zählen beenden. Jeder der 100 Texte kostet 1 % des vollen Aufwands.
+	grenzen = alt
+	g := weissesDokument(t, 200, 200)
+	for i := 0; i < 100; i++ {
+		hinzu(t, g, document.Text{Ort: document.Pt(10, float64(i)), Inhalt: "Hallo", Schriftgrad: 20, Farbe: rot})
+	}
+	voll = trockenlauf(g, false)
+	if voll.glyph == 0 {
+		t.Fatal("Texte kosten keine Glyphen")
+	}
+	grenzen.glyph = voll.glyph / 20
+	teil = trockenlauf(g, true)
+	if teil.glyph <= grenzen.glyph || teil.glyph > voll.glyph/10 {
+		t.Errorf("Glyphen: gezählt %v, Grenze %v, voll %v", teil.glyph, grenzen.glyph, voll.glyph)
+	}
+	if err := Pruefe(g); !errors.Is(err, ErrZuAufwendig) {
+		t.Errorf("Pruefe Glyphen: %v, Soll ErrZuAufwendig", err)
+	}
 }
 
 // F-418: 1023 Abriss-Nähte auf 32768×2100 (präparierte Datei) lehnt Pruefe ab, ohne lange zu blockieren — vorher rund

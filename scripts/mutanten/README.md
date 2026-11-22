@@ -39,6 +39,9 @@ Je Gruppe eine Datei `*.json` mit einer Liste von Einträgen:
   fällt das hier zuerst auf: Muster an die neue Stelle anpassen, wenn die Absicht dieselbe ist.
 - `neu` ersetzt `alt` (leer = Stelle streichen). Der Mutant muss kompilieren.
 
+Optional `"timeout": "60s"` reicht `-timeout` an `go test` durch. Für Mutanten, die einen Test hängen lassen statt ihn
+rot zu machen (E2/E3 der Gruppe `rescue`, F-455): sonst läuft jeder bis zum Vorgabe-Timeout von 10 Minuten.
+
 ## Äquivalente Mutanten
 
 `"aequivalent": true` heißt: Die Änderung verändert das beobachtbare Verhalten nicht (etwa eine doppelte Bedingung
