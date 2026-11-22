@@ -58,24 +58,44 @@ func intervalle(von, bis int, st []document.Streifen, zeilen bool) [][2]int {
 	return res
 }
 
-// naehte schreibt die Kanten der Stauch-Nähte in Ansichtskoordinaten über alle Kacheln (ADR-0023 Punkt 6, Nachtrag 6):
-// dieselben Vielecke wie im Renderer (document.Kantenband je Schicht aus document.KantenSchichten, in der Form des
-// Dokuments), halbdurchsichtige Schichten mit fill-opacity, ohne Filter. Das Band jeder Achse steht einmal in <defs>
-// (Naht bei Lage 0 über die ganze Länge, id naht-zeilen bzw. naht-spalten); jede Naht verweist darauf mit <use> und
-// verschiebt es auf ihre Lage. So wächst die Datei je Naht um eine kurze Zeile statt um alle Schichten über die ganze
-// Bildbreite (F-183: vorher 41 MB nur für 1023 Nähte in 8192 px Breite).
-func (s *schreiber) naehte(d *document.Dokument) {
+// nahtArt ist der Name der Achse in den ids des SVG-Exports.
+func nahtArt(zeilen bool) string {
+	if zeilen {
+		return "zeilen"
+	}
+	return "spalten"
+}
+
+// bandPfad schreibt ein Kantenband als Pfadangabe (M … L … Z).
+func bandPfad(band []document.Punkt) string {
+	var pfad strings.Builder
+	for i, p := range band {
+		if i == 0 {
+			pfad.WriteString("M")
+		} else {
+			pfad.WriteString(" L")
+		}
+		pfad.WriteString(punkt(p))
+	}
+	pfad.WriteString(" Z")
+	return pfad.String()
+}
+
+// naehteDefs schreibt die Kanten der Stauch-Nähte als Vorlagen (ADR-0023 Punkt 6, Nachträge 6 und 7): dieselben Vielecke
+// wie im Renderer (document.Kantenband, in der Form des Dokuments), ohne Filter. Je Achse steht einmal das Band bei Lage
+// 0 über die ganze Länge in <defs>: die Schichten (document.KantenSchichten, halbdurchsichtige mit fill-opacity) als
+// Gruppe naht-zeilen bzw. naht-spalten, der Spalt (document.Spaltband) als Pfad spalt-zeilen bzw. spalt-spalten. Dazu
+// die Maske spalt: weiß über die ganze Ansicht, je Naht der Spalt schwarz darin. Die Kacheln liegen unter dieser Maske
+// (der Spalt bleibt leer, Bild und Objekte darin fallen weg), die Schichten darüber (naehteUse). Je Naht kostet das zwei
+// kurze <use>-Zeilen statt aller Schichten über die ganze Bildbreite (F-183: vorher 41 MB nur für 1023 Nähte in
+// 8192 px Breite). Ohne Naht schreibt es nichts und meldet false.
+func (s *schreiber) naehteDefs(d *document.Dokument) bool {
 	g := d.Groesse()
 	naehte := d.Naehte()
 	if len(naehte) == 0 {
-		return
+		return false
 	}
-	art := func(zeilen bool) string {
-		if zeilen {
-			return "zeilen"
-		}
-		return "spalten"
-	}
+	spaltVon, spaltBis := document.Spaltband()
 	s.WriteString(`<defs>`)
 	for _, zeilen := range []bool{false, true} {
 		if !slices.ContainsFunc(naehte, func(n document.Naht) bool { return n.Zeilen == zeilen }) {
@@ -85,40 +105,55 @@ func (s *schreiber) naehte(d *document.Dokument) {
 		if zeilen {
 			laenge = g.X
 		}
-		s.WriteString(`<g`)
-		s.attr("id", "naht-"+art(zeilen))
-		s.WriteString(`>`)
 		linie := document.NeueKantenlinie(d.Kante(), laenge, d.ZackenFaktor()) // einmal je Achse (F-418)
+		bei0 := document.Naht{Zeilen: zeilen}
 		var band []document.Punkt
+		s.WriteString(`<g`)
+		s.attr("id", "naht-"+nahtArt(zeilen))
+		s.WriteString(`>`)
 		for _, sch := range document.KantenSchichten() {
-			var pfad strings.Builder
-			band = linie.Band(band, document.Naht{Zeilen: zeilen}, sch.Von, sch.Bis)
-			for i, p := range band {
-				if i == 0 {
-					pfad.WriteString("M")
-				} else {
-					pfad.WriteString(" L")
-				}
-				pfad.WriteString(punkt(p))
-			}
-			pfad.WriteString(" Z")
+			band = linie.Band(band, bei0, sch.Von, sch.Bis)
 			s.WriteString(`<path`)
-			s.attr("d", pfad.String())
+			s.attr("d", bandPfad(band))
 			s.farbeSVG("fill", sch.Farbe)
 			s.WriteString(`/>`)
 		}
-		s.WriteString(`</g>`)
+		s.WriteString(`</g><path`)
+		s.attr("id", "spalt-"+nahtArt(zeilen))
+		band = linie.Band(band, bei0, spaltVon, spaltBis)
+		s.attr("d", bandPfad(band))
+		s.attr("fill", "#000")
+		s.WriteString(`/>`)
 	}
-	s.WriteString(`</defs>`)
+	s.WriteString(`<mask id="spalt" maskUnits="userSpaceOnUse" x="0" y="0"`)
+	s.attr("width", strconv.Itoa(g.X))
+	s.attr("height", strconv.Itoa(g.Y))
+	s.WriteString(`><rect`)
+	s.attr("width", strconv.Itoa(g.X))
+	s.attr("height", strconv.Itoa(g.Y))
+	s.WriteString(` fill="#fff"/>`)
+	s.nahtVerweise(naehte, "spalt-", false)
+	s.WriteString(`</mask></defs>`)
+	return true
+}
+
+// naehteUse legt die Schichten jeder Naht über die Kacheln (siehe naehteDefs).
+func (s *schreiber) naehteUse(d *document.Dokument) { s.nahtVerweise(d.Naehte(), "naht-", true) }
+
+// nahtVerweise schreibt je Naht ein <use> auf die Vorlage praefix+Achse, verschoben auf die Lage der Naht; mitArt
+// schreibt in der Arbeitsdatei die Achse dazu (s:naht).
+func (s *schreiber) nahtVerweise(naehte []document.Naht, praefix string, mitArt bool) {
 	for _, n := range naehte {
 		s.WriteString(`<use`)
-		s.attr("href", "#naht-"+art(n.Zeilen))
+		s.attr("href", "#"+praefix+nahtArt(n.Zeilen))
 		if n.Zeilen {
 			s.attr("y", strconv.Itoa(n.Lage))
 		} else {
 			s.attr("x", strconv.Itoa(n.Lage))
 		}
-		s.attr("s:naht", art(n.Zeilen))
+		if mitArt {
+			s.attr("s:naht", nahtArt(n.Zeilen))
+		}
 		s.WriteString(`/>`)
 	}
 }
@@ -145,6 +180,11 @@ func ExportiereSVG(w io.Writer, d *document.Dokument) (fehler error) {
 	s.WriteString(`><defs><g id="objekte">`)
 	s.objekte(d, d.ObjektSichtbar)
 	s.WriteString(`</g></defs>`)
+	// Gibt es Nähte, liegen die Kacheln unter der Maske, die den Spalt jeder Naht leer lässt (ADR-0023 Nachtrag 7).
+	maske := s.naehteDefs(d)
+	if maske {
+		s.WriteString(`<g mask="url(#spalt)">`)
+	}
 	ay := 0
 	for _, zy := range intervalle(z.Min.Y, z.Max.Y, st, true) {
 		ax := 0
@@ -176,7 +216,10 @@ func ExportiereSVG(w io.Writer, d *document.Dokument) (fehler error) {
 		}
 		ay += zy[1] - zy[0]
 	}
-	s.naehte(d)
+	if maske {
+		s.WriteString(`</g>`)
+		s.naehteUse(d)
+	}
 	s.WriteString("</svg>\n")
 	_, err := io.WriteString(w, s.String())
 	return err

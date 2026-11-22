@@ -37,7 +37,9 @@ import (
 // liegen im Original und werden über Dokument.ZuAnsicht abgebildet; was außerhalb der Ansicht liegt, fällt weg. Bild rastert immer vollständig und
 // bricht nie wegen des Aufwands ab: Eine im Editor gemachte Bearbeitung darf nicht am Speichern scheitern (F-131),
 // langsam ist besser als verloren. Gegen präparierte Dateien prüft der Editor beim Öffnen mit Pruefe (ADR-0020
-// Nachtrag 1).
+// Nachtrag 1). Das Ergebnis trägt Alpha: Der Spalt jeder Stauch-Naht ist durchsichtig, ihr Schatten halbdurchsichtig
+// (ADR-0023 Nachtrag 7). PNG, Zwischenablage, Arbeitsdatei und Vorschau behalten das; JPEG legt es auf Weiß
+// (fileformat.ExportiereJPG).
 func Bild(d *document.Dokument) (b *image.NRGBA, fehler error) {
 	defer errprefix.Defer("render", &fehler) // ADR-0019 Nachtrag 2: auch Schrift- und Rasterfehler tragen das Präfix (F-379)
 	b, _, err := bildMitAufwand(d)
@@ -154,10 +156,11 @@ func trockenlauf(d *document.Dokument, abbrechen bool) aufwand {
 	return *z.auf
 }
 
-// alles zeichnet die sichtbaren Objekte und darüber die Kanten der Stauch-Nähte (ADR-0023 Punkte 6 und 7, Nachtrag 6):
-// je Naht alle Schichten (document.KantenSchichten) in der Form des Dokuments. Jede Schicht ist eine Füllung und zählt
-// im Trockenlauf (Pruefe) mit. Objekte ganz im Verborgenen (Dokument.ObjektSichtbar) fallen weg, wie im SVG-Export und
-// im Editor.
+// alles zeichnet die sichtbaren Objekte und darüber die Kanten der Stauch-Nähte (ADR-0023 Punkte 6 und 7, Nachträge 6
+// und 7): zuerst wird der Spalt aller Nähte durchsichtig (Bild und Objekte darin fallen weg, Alpha 0), dann folgen je
+// Naht alle Schichten (document.KantenSchichten) in der Form des Dokuments. Spalt und Schichten sind je eine Füllung
+// und zählen im Trockenlauf (Pruefe) mit. Objekte ganz im Verborgenen (Dokument.ObjektSichtbar) fallen weg, wie im
+// SVG-Export und im Editor.
 func (z zeichner) alles() error {
 	for _, o := range z.d.Objekte() {
 		if z.abgebrochen() {
@@ -177,7 +180,8 @@ func (z zeichner) alles() error {
 	var linien [2]*document.Kantenlinie
 	var band []document.Punkt
 	poly := make([][]document.Punkt, 1)
-	for _, n := range z.d.Naehte() {
+	naehte := z.d.Naehte()
+	linie := func(n document.Naht) *document.Kantenlinie {
 		achse, laenge := 0, g.X
 		if !n.Zeilen {
 			achse, laenge = 1, g.Y
@@ -185,11 +189,26 @@ func (z zeichner) alles() error {
 		if linien[achse] == nil {
 			linien[achse] = document.NeueKantenlinie(k, laenge, f)
 		}
+		return linien[achse]
+	}
+	// Erst alle Spalte leeren, dann alle Schichten: So zeichnen Renderer, SVG-Export (Maske über den Kacheln) und
+	// Editor (Schachbrett) auch eng beieinanderliegende Nähte gleich.
+	spaltVon, spaltBis := document.Spaltband()
+	for _, n := range naehte {
+		if z.abgebrochen() {
+			return nil
+		}
+		band = linie(n).Band(band, n, spaltVon, spaltBis)
+		poly[0] = band
+		z.radiere(poly)
+	}
+	for _, n := range naehte {
+		l := linie(n)
 		for _, s := range schichten {
 			if z.abgebrochen() {
 				return nil
 			}
-			band = linien[achse].Band(band, n, s.Von, s.Bis)
+			band = l.Band(band, n, s.Von, s.Bis)
 			poly[0] = band
 			z.fuelle(poly, nil, s.Farbe)
 		}
@@ -386,6 +405,15 @@ func (z zeichner) fuelle(polys [][]document.Punkt, kreise []kreisform, farbe col
 	if farbe.A == 0 {
 		return
 	}
+	z.fuelleMit(polys, kreise, farbe, false)
+}
+
+// radiere macht die Polygone durchsichtig (der Spalt einer Stauch-Naht, ADR-0023 Nachtrag 7): Die Deckung der Pixel
+// sinkt um die Deckung der Fläche, mit Kantenglättung. Kosten wie eine Füllung.
+func (z zeichner) radiere(polys [][]document.Punkt) { z.fuelleMit(polys, nil, color.NRGBA{}, true) }
+
+// fuelleMit ist fuelle bzw. radiere (loeschen): Kosten zählen, dann rastern.
+func (z zeichner) fuelleMit(polys [][]document.Punkt, kreise []kreisform, farbe color.NRGBA, loeschen bool) {
 	// Kosten aus Polygonpunkten und Kreisen (Mitte ± Radius umschließt alle Ecken von kreis); Trockenlauf und
 	// Rendern rechnen dieselbe Summe.
 	minX, minY := math.Inf(1), math.Inf(1)
@@ -424,12 +452,12 @@ func (z zeichner) fuelle(polys [][]document.Punkt, kreise []kreisform, farbe col
 	for _, k := range kreise {
 		polys = append(polys, kreis(k.m, k.r))
 	}
-	z.raster(polys, farbe)
+	z.raster(polys, farbe, loeschen)
 }
 
-// raster füllt die Polygone; gerastert wird nur das umschließende Rechteck ihrer Ecken (sonst kostet jedes Objekt das
-// ganze Bild).
-func (z zeichner) raster(polys [][]document.Punkt, farbe color.NRGBA) {
+// raster füllt die Polygone (mit loeschen: macht sie durchsichtig); gerastert wird nur das umschließende Rechteck ihrer
+// Ecken (sonst kostet jedes Objekt das ganze Bild).
+func (z zeichner) raster(polys [][]document.Punkt, farbe color.NRGBA, loeschen bool) {
 	minX, minY := math.Inf(1), math.Inf(1)
 	maxX, maxY := math.Inf(-1), math.Inf(-1)
 	for _, p := range polys {
@@ -468,7 +496,44 @@ func (z zeichner) raster(polys [][]document.Punkt, farbe color.NRGBA) {
 			r.ClosePath()
 		}
 	}
+	if loeschen {
+		ausradieren(z.ras, pfade, z.bild, ausschnitt)
+		return
+	}
 	einmischen(z.ras, pfade, z.bild, ausschnitt, farbe)
+}
+
+// ausradieren senkt im Ausschnitt von bild die Deckung jedes Pixels um die Deckung der Pfade (draw.Op „Ziel außerhalb
+// der Quelle“): A' = A · (1 − Deckung), auf 16 Bit gerechnet; die Farbe bleibt, ein ganz durchsichtiges Pixel wird
+// (0,0,0,0) wie bei color.NRGBAModel. Für den Spalt der Stauch-Naht (ADR-0023 Nachtrag 7).
+func ausradieren(ras *raster16.Rasterizer, pfade func(pfad), bild *image.NRGBA, ausschnitt image.Rectangle) {
+	ras.Reset(ausschnitt.Dx(), ausschnitt.Dy())
+	pfade(ras)
+	breite := ausschnitt.Dx()
+	sichtbar := ausschnitt.Intersect(bild.Rect)
+	ras.Bloecke(64, func(y0 int, maske []uint32) {
+		saveprogress.Puls()
+		von := max(sichtbar.Min.Y, ausschnitt.Min.Y+y0)
+		bis := min(sichtbar.Max.Y, ausschnitt.Min.Y+y0+len(maske)/breite)
+		for y := von; y < bis; y++ {
+			zeile := maske[(y-ausschnitt.Min.Y-y0)*breite:]
+			i := bild.PixOffset(sichtbar.Min.X, y)
+			zeile = zeile[sichtbar.Min.X-ausschnitt.Min.X : sichtbar.Max.X-ausschnitt.Min.X]
+			pix := bild.Pix[i : i+4*len(zeile)]
+			for k, ma := range zeile {
+				if ma == 0 {
+					continue
+				}
+				p := pix[4*k : 4*k+4 : 4*k+4]
+				a := uint32(p[3]) * 0x101 * (0xffff - ma) / 0xffff >> 8
+				if a == 0 {
+					p[0], p[1], p[2], p[3] = 0, 0, 0, 0
+					continue
+				}
+				p[3] = uint8(a)
+			}
+		}
+	})
 }
 
 // pfad nimmt Strecken auf: raster16.Rasterizer, im Bitgleich-Test auch vector.Rasterizer.

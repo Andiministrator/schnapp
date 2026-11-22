@@ -140,10 +140,10 @@ func TestMenueFokussierterEintragWirdGrau(t *testing.T) {
 		t.Errorf("Enter auf grau gewordenem Eintrag wirkt: offen %v, Text %v", l.e.menue.offen, l.e.s.TextLaeuft())
 	}
 	l.taste(key.NameDownArrow, 0)
-	// Nächster bedienbarer Eintrag: „Seam style“ (immer an, ADR-0023 Nachtrag 6), davor sind Löschen, Ganzes Bild und
-	// Zurückholen grau.
-	if i := menueFokusNr(l); i != l.index(aktKantenform) {
-		t.Errorf("Runter nach Grauwerden: Fokus %d (%s), soll Seam style", i, menueFokusName(l))
+	// Nächster bedienbarer Eintrag: „Fit“ (immer an), davor sind Löschen, Ganzes Bild, Zurückholen und „Seam style“
+	// grau (ohne Naht, ADR-0023 Nachtrag 7).
+	if i := menueFokusNr(l); i != l.index(aktEinpassen) {
+		t.Errorf("Runter nach Grauwerden: Fokus %d (%s), soll Fit", i, menueFokusName(l))
 	}
 	l.taste(key.NameUpArrow, 0)
 	if i := menueFokusNr(l); i != l.index(aktRueckgaengig) && i != l.index(aktSpeichern) {

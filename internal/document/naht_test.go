@@ -222,15 +222,15 @@ func TestZackenFaktorGedeckeltDurchAnsicht(t *testing.T) {
 	if f := d.ZackenFaktor(); f != 4 {
 		t.Fatalf("ganze 8K-Aufnahme: Faktor %d, Soll 4", f)
 	}
-	// Das Beispiel des Befunds: auf 300×80 zugeschnitten. Ohne Deckel ±44 Pixel Band auf 80 Pixeln Höhe.
+	// Das Beispiel des Befunds: auf 300×80 zugeschnitten. Ohne Deckel ±64 Pixel Band auf 80 Pixeln Höhe.
 	if err := d.SetzeZuschnitt(image.Rect(1000, 1000, 1300, 1080)); err != nil {
 		t.Fatal(err)
 	}
 	if f := d.ZackenFaktor(); f != 1 {
 		t.Errorf("auf 300×80: Faktor %d, Soll 1", f)
 	}
-	// Mit der halben Bandhöhe 11 (ADR-0023 Nachtrag 6) ist der Teiler 8·11 = 88.
-	for _, c := range []struct{ kurz, soll int }{{176, 2}, {175, 1}, {352, 4}, {351, 3}, {1000, 4}} {
+	// Mit der halben Bandhöhe 16 (ADR-0023 Nachtrag 7) ist der Teiler 8·16 = 128.
+	for _, c := range []struct{ kurz, soll int }{{256, 2}, {255, 1}, {512, 4}, {511, 3}, {1000, 4}} {
 		if err := d.SetzeZuschnitt(image.Rect(0, 0, 3000, c.kurz)); err != nil {
 			t.Fatal(err)
 		}

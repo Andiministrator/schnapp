@@ -87,8 +87,8 @@ func TestStreifenVerschiebenObjekte(t *testing.T) {
 	d := weissesDokument(t, 100, 40)
 	// Liegt rechts vom Streifen: Original 60 bis 90 wird Ansicht 40 bis 70; Zeilen 5 bis 35 werden 0 bis 30.
 	hinzu(t, d, document.Kasten{Bereich: document.R(document.Pt(60, 5), document.Pt(90, 35)), Fuellung: rot})
-	// Überspannt den Streifen: Original 10 bis 50 wird Ansicht 10 bis 30 (der Streifen fällt weg).
-	hinzu(t, d, document.Kasten{Bereich: document.R(document.Pt(10, 10), document.Pt(50, 20)), Fuellung: blau})
+	// Überspannt den Streifen: Original 2 bis 58 wird Ansicht 2 bis 38 (der Streifen fällt weg).
+	hinzu(t, d, document.Kasten{Bereich: document.R(document.Pt(2, 10), document.Pt(58, 20)), Fuellung: blau})
 	// Liegt ganz im Streifen: beide Kanten fallen auf Ansicht 20, nichts bleibt.
 	hinzu(t, d, document.Kasten{Bereich: document.R(document.Pt(25, 30), document.Pt(35, 40)), Fuellung: color.NRGBA{G: 255, A: 255}})
 	if err := d.SetzeStreifen([]document.Streifen{{Zeilen: false, Von: 20, Bis: 40}, {Zeilen: true, Von: 0, Bis: 5}}); err != nil {
@@ -98,11 +98,11 @@ func TestStreifenVerschiebenObjekte(t *testing.T) {
 	if b.Bounds().Size() != image.Pt(80, 35) {
 		t.Fatalf("Größe %v, Soll 80×35", b.Bounds().Size())
 	}
-	// Über der Naht bei x = 20 liegt die Zackenkante (ADR-0023, x 13 bis 27); sie prüft TestZackenkanteSollwerte.
+	// Über der Naht bei x = 20 liegt die Zackenkante (ADR-0023 Nachtrag 7, x 4 bis 36); sie prüft TestKanteSollwerte.
 	pruefe(t, b, map[image.Point]color.NRGBA{
 		{40, 15}: rot, {69, 15}: rot, {39, 15}: weiss, {70, 15}: weiss, {55, 0}: rot, {55, 29}: rot, {55, 30}: weiss,
-		{10, 7}: blau, {29, 7}: blau, {9, 7}: weiss, {30, 7}: weiss, {12, 16}: weiss, {28, 16}: weiss,
-		{12, 28}: weiss, {28, 28}: weiss, // der Kasten im Streifen zeichnet nichts
+		{2, 7}: blau, {37, 7}: blau, {1, 7}: weiss, {38, 7}: weiss, {2, 16}: weiss, {37, 16}: weiss,
+		{2, 28}: weiss, {37, 28}: weiss, // der Kasten im Streifen zeichnet nichts (auch nicht neben der Kante)
 	})
 	// Das Grüne darf nirgends auftauchen.
 	for y := 0; y < 35; y++ {

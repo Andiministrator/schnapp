@@ -4,6 +4,7 @@ package document
 
 import (
 	"errors"
+	"image/color"
 	"math"
 	"reflect"
 	"strconv"
@@ -36,9 +37,9 @@ func TestKanteNamen(t *testing.T) {
 	}
 }
 
-// abrissSoll rechnet die Formel aus ADR-0023 Nachtrag 6 unabhängig von Kante.mitte nach.
+// abrissSoll rechnet die Formel aus ADR-0023 Nachtrag 6 (Faktor 0,9 nach Nachtrag 7) unabhängig von Kante.mitte nach.
 func abrissSoll(t float64) float64 {
-	return 0.8 * (2.6*math.Sin(2*math.Pi*t/71+0.3) + 1.6*math.Sin(2*math.Pi*t/29+1.9) +
+	return 0.9 * (2.6*math.Sin(2*math.Pi*t/71+0.3) + 1.6*math.Sin(2*math.Pi*t/29+1.9) +
 		1.0*math.Sin(2*math.Pi*t/13+4.1) + 0.6*math.Sin(2*math.Pi*t/7.3+2.2) + 0.35*math.Sin(2*math.Pi*t/3.1+5.7))
 }
 
@@ -94,11 +95,16 @@ func TestKantenbandHundertstel(t *testing.T) {
 	}
 }
 
-// ADR-0023 Nachtrag 6: Die Mittellinie lenkt höchstens 5 aus (Abriss 4,92), Spalt ±5 und Kante 1 — die halbe Bandhöhe
-// ist 11, und keine Schicht ragt darüber hinaus.
+// ADR-0023 Nachtrag 7: Die Mittellinie lenkt höchstens 6 aus (Abriss 0,9 · 6,15 = 5,54), Spalt ±8 und Rand 2 — die
+// halbe Bandhöhe ist 16, und keine Schicht ragt darüber hinaus. Die Schichttabelle steht hier als Literal (F-421): Wer
+// eine Schicht entfernt, ihre Deckkraft oder Lage ändert, fällt hier auf, nicht erst im Bild.
 func TestKantenSchichtenImBand(t *testing.T) {
-	if ZackenBandHalb != 11 {
-		t.Fatalf("ZackenBandHalb %v, Soll 11", float64(ZackenBandHalb))
+	if ZackenBandHalb != 16 || KantenSpaltHalb != 8 || abrissFaktor != 0.9 {
+		t.Fatalf("ZackenBandHalb %v, Spalt %v, Abriss %v; Soll 16, 8, 0,9", float64(ZackenBandHalb),
+			float64(KantenSpaltHalb), float64(abrissFaktor))
+	}
+	if von, bis := Spaltband(); von != -8 || bis != 8 {
+		t.Errorf("Spaltband %v..%v, Soll −8..8", von, bis)
 	}
 	for _, k := range []Kante{KanteAbriss, KanteWelle, KanteZacken} {
 		groesste := 0.0
@@ -108,34 +114,36 @@ func TestKantenSchichtenImBand(t *testing.T) {
 		if groesste > KantenAuslenkung || groesste < 3.9 {
 			t.Errorf("%v: größte Auslenkung %v, Soll höchstens %v", k, groesste, KantenAuslenkung)
 		}
+		if k == KanteAbriss && groesste < 5 {
+			t.Errorf("Abriss: größte Auslenkung %v, mit Faktor 0,9 Soll über 5", groesste)
+		}
+	}
+	weiss := func(a uint8) color.NRGBA { return color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: a} }
+	schwarz := func(a uint8) color.NRGBA { return color.NRGBA{A: a} }
+	schatten := func(a uint8) color.NRGBA { return color.NRGBA{R: 0x10, G: 0x12, B: 0x14, A: a} }
+	soll := []Schicht{
+		{-9.6, -8, weiss(0x30)}, {-8.8, -8, weiss(0x76)}, // Fasersaum oben bzw. links
+		{8, 9.6, weiss(0x30)}, {8, 8.8, weiss(0x76)}, // Fasersaum unten bzw. rechts
+		{-10, -8, schwarz(0x08)}, {-9, -8, schwarz(0x13)}, // Abdunklung oben bzw. links
+		{8, 10, schwarz(0x05)}, {8, 9, schwarz(0x0D)}, // Abdunklung unten bzw. rechts
+		{-8, -1, schatten(0x08)}, {-8, -4, schatten(0x10)}, {-8, -6, schatten(0x18)}, {-8, -7, schatten(0x20)}, // Schatten
 	}
 	s := KantenSchichten()
+	if !reflect.DeepEqual(s, soll) {
+		t.Fatalf("Schichten\n%v\nSoll\n%v", s, soll)
+	}
 	weiteste := 0.0
-	var oben, unten float64 // Summe der Deckkraft der Schatten je Seite
 	for i, sch := range s {
-		if !(sch.Von < sch.Bis) || sch.Farbe.A == 0 {
-			t.Errorf("Schicht %d: %+v leer", i, sch)
+		if !(sch.Von < sch.Bis) || sch.Farbe.A == 0 || sch.Farbe.A == 255 {
+			t.Errorf("Schicht %d: %+v leer oder deckend", i, sch)
 		}
 		weiteste = math.Max(weiteste, math.Max(math.Abs(sch.Von), math.Abs(sch.Bis)))
-		if sch.Farbe.A < 255 && sch.Von >= -KantenSpaltHalb && sch.Bis <= KantenSpaltHalb {
-			if sch.Von == -KantenSpaltHalb {
-				oben += float64(sch.Farbe.A)
-			} else {
-				unten += float64(sch.Farbe.A)
-			}
-		}
 	}
 	if weiteste+KantenAuslenkung != ZackenBandHalb {
 		t.Errorf("weiteste Schicht %v + Auslenkung %v ≠ %v", weiteste, KantenAuslenkung, float64(ZackenBandHalb))
 	}
-	if s[0] != (Schicht{-5, 5, KantenSpalt}) || KantenSpalt.A != 255 {
-		t.Errorf("erste Schicht %+v, Soll der deckende Spalt ±5", s[0])
-	}
-	if oben <= unten || unten == 0 {
-		t.Errorf("Schatten oben %v, unten %v: oben soll kräftiger sein", oben, unten)
-	}
 	s[0].Von = 99
-	if KantenSchichten()[0].Von != -5 {
+	if KantenSchichten()[0].Von != -9.6 {
 		t.Error("KantenSchichten liefert keine Kopie")
 	}
 }

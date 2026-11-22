@@ -46,13 +46,16 @@ func (s *Sitzung) HoleGestauchtesZurueck() bool {
 	return true
 }
 
-// KannKanteWechseln meldet, ob WechsleKante etwas tut (Menüeintrag „Seam style“ an oder grau): nicht während eines
-// Zugs und nicht während des Speicherns.
-func (s *Sitzung) KannKanteWechseln() bool { return s.zug == keinZug && !s.gesperrt() }
+// KannKanteWechseln meldet, ob WechsleKante etwas tut (Menüeintrag „Seam style“ an oder grau): nur, wenn das Dokument
+// eine Naht hat (ADR-0023 Nachtrag 7, F-426: sonst gälte ein nur angesehenes Bild nach einem Formwechsel als geändert),
+// nicht während eines Zugs und nicht während des Speicherns.
+func (s *Sitzung) KannKanteWechseln() bool {
+	return s.zug == keinZug && !s.gesperrt() && len(s.D.Naehte()) > 0
+}
 
 // WechsleKante setzt die Form der Stauch-Kante reihum auf die nächste (tear → wave → zigzag → tear) als einen
-// Rückgängig-Schritt (ADR-0023 Nachtrag 6). Die Form gilt für das ganze Dokument, auch wenn es noch keine Naht hat.
-// Zurück kommen die neue Form und ob sie gesetzt wurde.
+// Rückgängig-Schritt (ADR-0023 Nachtrag 6). Die Form gilt für das ganze Dokument; ohne Naht tut es nichts
+// (KannKanteWechseln). Zurück kommen die neue Form und ob sie gesetzt wurde.
 func (s *Sitzung) WechsleKante() (document.Kante, bool) {
 	if !s.KannKanteWechseln() {
 		return s.D.Kante(), false

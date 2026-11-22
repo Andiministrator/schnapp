@@ -1555,7 +1555,8 @@ func textGrundlinieAnsicht(grad float64, i int) float32 {
 func nummerGrundlinieAnsicht(n document.Nummer) float32 { return float32(n.Grundlinie() - n.Mitte.Y) }
 
 // zeichneNaehte legt die Kanten der Stauch-Nähte über Bild und Objekte, in Ansichtskoordinaten und mit denselben
-// Vielecken und Schichten wie Renderer und SVG-Export (ADR-0023 Punkt 6, Nachtrag 6). Die Pfade werden nur neu gebaut,
+// Vielecken und Schichten wie Renderer und SVG-Export (ADR-0023 Punkt 6, Nachträge 6 und 7; den durchsichtigen Spalt
+// zeigt ein Schachbrett, schachbrett.go). Die Pfade werden nur neu gebaut,
 // wenn sich Ansichtsgröße, Nähte, Kantenform oder Zackenfaktor ändern; sonst spielt der Editor die Aufzeichnung ab
 // (F-183, e.naht).
 func (e *editor) zeichneNaehte(gtx layout.Context) {
@@ -1568,7 +1569,7 @@ func (e *editor) zeichneNaehte(gtx layout.Context) {
 		// Mittellinie je Achse einmal, die Schichten verschieben sie nur quer (F-418); ein Puffer für alle Bänder.
 		var linien [2]*document.Kantenlinie
 		var band []document.Punkt
-		for _, n := range naehte {
+		linie := func(n document.Naht) (*document.Kantenlinie, int) {
 			achse, laenge := 0, g.X
 			if !n.Zeilen {
 				achse, laenge = 1, g.Y
@@ -1576,20 +1577,38 @@ func (e *editor) zeichneNaehte(gtx layout.Context) {
 			if linien[achse] == nil {
 				linien[achse] = document.NeueKantenlinie(form, laenge, faktor)
 			}
-			for _, sch := range schichten {
-				var p clip.Path
-				p.Begin(&c.ops)
-				band = linien[achse].Band(band, n, sch.Von, sch.Bis)
-				for i, q := range band {
-					pt := f32.Pt(float32(q.X), float32(q.Y))
-					if i == 0 {
-						p.MoveTo(pt)
-					} else {
-						p.LineTo(pt)
-					}
+			return linien[achse], laenge
+		}
+		pfad := func(band []document.Punkt) clip.PathSpec {
+			var p clip.Path
+			p.Begin(&c.ops)
+			for i, q := range band {
+				pt := f32.Pt(float32(q.X), float32(q.Y))
+				if i == 0 {
+					p.MoveTo(pt)
+				} else {
+					p.LineTo(pt)
 				}
-				p.Close()
-				paint.FillShape(&c.ops, sch.Farbe, clip.Outline{Path: p.End()}.Op())
+			}
+			p.Close()
+			return p.End()
+		}
+		// Erst die Spalte aller Nähte als Schachbrett (durchsichtig, ADR-0023 Nachtrag 7), dann die Schichten — dieselbe
+		// Reihenfolge wie Renderer und SVG-Export.
+		spaltVon, spaltBis := document.Spaltband()
+		var bretter schachbretter
+		for _, n := range naehte {
+			l, laenge := linie(n)
+			band = l.Band(band, n, spaltVon, spaltBis)
+			stapel := clip.Outline{Path: pfad(band)}.Op().Push(&c.ops)
+			bretter.male(&c.ops, n, laenge, faktor)
+			stapel.Pop()
+		}
+		for _, n := range naehte {
+			l, _ := linie(n)
+			for _, sch := range schichten {
+				band = l.Band(band, n, sch.Von, sch.Bis)
+				paint.FillShape(&c.ops, sch.Farbe, clip.Outline{Path: pfad(band)}.Op())
 			}
 		}
 		c.aufruf = aufnahme.Stop()

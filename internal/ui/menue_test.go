@@ -64,17 +64,30 @@ func TestMenueTextBearbeitenUndZurueckholen(t *testing.T) {
 }
 
 // ADR-0023 Nachtrag 6: „Seam style“ steht im Menü (ohne eigenes Kürzel), wechselt die Form reihum als ein
-// Rückgängig-Schritt und nennt die neue Form in der Statusleiste.
+// Rückgängig-Schritt und nennt die neue Form in der Statusleiste. Nachtrag 7 (F-426): Ohne Naht ist der Eintrag grau
+// und tut nichts, das Bild bleibt ungeändert.
 func TestMenueKantenform(t *testing.T) {
 	e := testEditor(t)
-	var gefunden bool
-	for _, en := range e.menueEintraege() {
-		if en.akt == aktKantenform {
-			gefunden = en.text == "Seam style" && en.an
+	eintrag := func() (gefunden, an bool) {
+		for _, en := range e.menueEintraege() {
+			if en.akt == aktKantenform {
+				return en.text == "Seam style", en.an
+			}
 		}
+		return false, false
 	}
-	if !gefunden {
-		t.Fatal("Eintrag „Seam style“ fehlt oder ist grau")
+	if gefunden, an := eintrag(); !gefunden || an {
+		t.Fatalf("ohne Naht: Eintrag gefunden %v, an %v; Soll vorhanden und grau", gefunden, an)
+	}
+	e.fuehreAus(layout.Context{}, aktKantenform, true)
+	if e.s.D.Kante() != document.KanteAbriss || e.s.Geaendert() {
+		t.Fatalf("ohne Naht gewechselt: %v, geändert %v", e.s.D.Kante(), e.s.Geaendert())
+	}
+	if err := e.s.D.SetzeStreifen([]document.Streifen{{Zeilen: true, Von: 10, Bis: 15}}); err != nil {
+		t.Fatal(err)
+	}
+	if gefunden, an := eintrag(); !gefunden || !an {
+		t.Fatal("mit Naht: Eintrag „Seam style“ fehlt oder ist grau")
 	}
 	if e.s.D.Kante() != document.KanteAbriss {
 		t.Fatalf("Ausgang %v", e.s.D.Kante())

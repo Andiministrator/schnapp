@@ -48,22 +48,24 @@ func KanteAus(name string) (k Kante, ok bool) {
 // Naechste ist die Form nach k, reihum (Menüeintrag „Seam style“).
 func (k Kante) Naechste() Kante { return (k + 1) % anzahlKanten }
 
-// Maße der Kante quer zur Naht, in Ansichtspixeln bei Faktor 1 (ADR-0023 Nachtrag 6): Die Mittellinie lenkt höchstens
-// KantenAuslenkung aus (Abriss 0,8 · 6,15 = 4,92, Welle und Zacken 4), um sie liegt der Spalt mit KantenSpaltHalb je
-// Seite, daneben die abgedunkelte Bildkante der Breite KantenDunkel. ZackenBandHalb ist die Summe: So weit ragt die
-// Kante höchstens über die Naht. Alle Maße wachsen mit dem Zackenfaktor des Dokuments (Nachträge 1, 2 und 4).
+// Maße der Kante quer zur Naht, in Ansichtspixeln bei Faktor 1 (ADR-0023 Nachträge 6 und 7): Die Mittellinie lenkt
+// höchstens KantenAuslenkung aus (Abriss 0,9 · 6,15 = 5,54, Welle und Zacken 4), um sie liegt der durchsichtige Spalt
+// mit KantenSpaltHalb je Seite, daneben der Rand der Bildteile (Fasersaum und Abdunklung) der Breite KantenRand.
+// ZackenBandHalb ist die Summe: So weit ragt die Kante höchstens über die Naht. Alle Maße wachsen mit dem Zackenfaktor
+// des Dokuments (Nachträge 1, 2 und 4).
 const (
-	KantenAuslenkung = 5.0
-	KantenSpaltHalb  = 5.0
-	KantenDunkel     = 1.0
-	ZackenBandHalb   = KantenAuslenkung + KantenSpaltHalb + KantenDunkel
+	KantenAuslenkung = 6.0
+	KantenSpaltHalb  = 8.0
+	KantenRand       = 2.0
+	ZackenBandHalb   = KantenAuslenkung + KantenSpaltHalb + KantenRand
 )
 
 // abrissTerme sind Amplitude, Periode und Phase der Sinusanteile der Abrisskante, abrissFaktor ihr gemeinsamer Faktor
-// (ADR-0023 Nachtrag 6). Fest, ohne Zufall: Editor, Renderer und SVG-Export zeichnen dieselbe Linie.
+// (ADR-0023 Nachtrag 6; Faktor 0,9 seit Nachtrag 7). Fest, ohne Zufall: Editor, Renderer und SVG-Export zeichnen
+// dieselbe Linie.
 var abrissTerme = [...][3]float64{{2.6, 71, 0.3}, {1.6, 29, 1.9}, {1.0, 13, 4.1}, {0.6, 7.3, 2.2}, {0.35, 3.1, 5.7}}
 
-const abrissFaktor = 0.8
+const abrissFaktor = 0.9
 
 // mitte ist die Auslenkung der Mittellinie quer zur Naht an der Stelle t entlang der Naht, bei Faktor 1.
 func (k Kante) mitte(t float64) float64 {
@@ -167,42 +169,55 @@ type Schicht struct {
 	Farbe    color.NRGBA
 }
 
-// Farben der Kante: der helle Spalt, der Schatten in ihn hinein und die Abdunklung der Bildkanten (Deckkraft in A).
+// Farben der Kante (Deckkraft in A): der helle Fasersaum am Rand der Bildteile, ihre Abdunklung und der Schatten der
+// oberen bzw. linken Kante in den Spalt.
 var (
-	KantenSpalt    = color.NRGBA{R: 0xD3, G: 0xD7, B: 0xDC, A: 0xFF}
-	kantenSchatten = color.NRGBA{R: 0x20, G: 0x24, B: 0x28}
+	kantenSaum     = color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF}
 	kantenDunkel   = color.NRGBA{}
+	kantenSchatten = color.NRGBA{R: 0x10, G: 0x12, B: 0x14}
 )
 
 func mitDeckkraft(c color.NRGBA, a uint8) color.NRGBA { c.A = a; return c }
 
-// kantenSchichten ist die Gestaltung aller Formen (ADR-0023 Nachtrag 6), unten zuerst gezeichnet, abgestimmt am
-// Referenzbild Muster 4 (docs/adr/bilder/0023-kante-muster-4.png): Der Spalt (±5) liegt deckend über dem Bild. Den
-// weichen Schatten werfen beide Teile als gestufte, halbdurchsichtige Bänder, die alle an der Spaltkante des Teils
-// beginnen; wo mehrere übereinanderliegen, wird es dunkler. Das Muster (Schatten 0,55·e^(−s/3) vom oberen,
-// 0,25·e^(−s/2) vom unteren Teil, s = Abstand von dessen Kante) ergibt je Pixeltiefe 0 bis 1, 1 bis 2, 2 bis 4 und 4
-// bis 7 vom oberen Teil die Deckung 0,47, 0,34, 0,21 und 0,13, vom unteren 0,20, 0,12 und 0,06 (bis Tiefe 4) — die
-// Deckkraft der Bänder ist so gewählt, dass ihr Produkt diese Werte trifft. Zuletzt die Abdunklung der Bildkanten
-// (1 px, Deckung 0,11, im Muster 0,18·e^(−s) gemittelt über das erste Pixel).
+// kantenSchichten ist die Gestaltung aller Formen (ADR-0023 Nachtrag 7, Papier-Abriss), unten zuerst gezeichnet, nach
+// dem Referenzbild docs/adr/bilder/0023-naht-durchsichtig-muster.png (mittlere Zeile, 16 px). Der Spalt selbst
+// (±KantenSpaltHalb) ist keine Schicht: Er ist durchsichtig, Renderer und SVG-Export lassen ihn leer, der Editor
+// zeigt dort ein Schachbrett; die Schichten liegen danach darüber. Alle Bänder einer Gruppe beginnen an der
+// Spaltkante ihres Teils, wo mehrere übereinanderliegen, wird es kräftiger; die Deckkraft ist so gewählt, dass das
+// Produkt je Tiefe s (Abstand von der Spaltkante) das Muster über die Stufe gemittelt trifft:
+//   - Fasersaum, weiß, im Muster 0,75·(1 − s/1,6) (ohne die Schwankung des Musters, die sich im SVG nicht gleich
+//     zeigen ließe): Tiefe 0 bis 0,8 Deckung 0,56, 0,8 bis 1,6 Deckung 0,19;
+//   - Abdunklung, schwarz, im Muster 0,18·e^(−s/0,8): Tiefe 0 bis 1 Deckung 0,10, 1 bis 2 Deckung 0,03; am unteren
+//     bzw. rechten Teil × 0,7 (0,07 und 0,02);
+//   - Schatten der oberen bzw. linken Kante in den Spalt, dunkel, im Muster 0,35·e^(−s/2,2): Tiefe 0 bis 1, 1 bis 2,
+//     2 bis 4 und 4 bis 7 Deckung 0,28, 0,18, 0,09 und 0,03 (darunter unter 0,01, weggelassen).
 var kantenSchichten = [...]Schicht{
-	{-KantenSpaltHalb, KantenSpaltHalb, KantenSpalt},
-	// Schatten des oberen bzw. linken Teils, kräftiger (Licht von oben links)
-	{-5, 2, mitDeckkraft(kantenSchatten, 0x21)},
-	{-5, -1, mitDeckkraft(kantenSchatten, 0x16)},
-	{-5, -3, mitDeckkraft(kantenSchatten, 0x2A)},
-	{-5, -4, mitDeckkraft(kantenSchatten, 0x33)},
-	// Schatten des unteren bzw. rechten Teils
-	{1, 5, mitDeckkraft(kantenSchatten, 0x0F)},
-	{3, 5, mitDeckkraft(kantenSchatten, 0x10)},
-	{4, 5, mitDeckkraft(kantenSchatten, 0x17)},
-	// Abdunklung der Bildkanten
-	{-KantenSpaltHalb - KantenDunkel, -KantenSpaltHalb, mitDeckkraft(kantenDunkel, 0x1C)},
-	{KantenSpaltHalb, KantenSpaltHalb + KantenDunkel, mitDeckkraft(kantenDunkel, 0x1C)},
+	// Fasersaum, oben bzw. links
+	{-KantenSpaltHalb - 1.6, -KantenSpaltHalb, mitDeckkraft(kantenSaum, 0x30)},
+	{-KantenSpaltHalb - 0.8, -KantenSpaltHalb, mitDeckkraft(kantenSaum, 0x76)},
+	// Fasersaum, unten bzw. rechts
+	{KantenSpaltHalb, KantenSpaltHalb + 1.6, mitDeckkraft(kantenSaum, 0x30)},
+	{KantenSpaltHalb, KantenSpaltHalb + 0.8, mitDeckkraft(kantenSaum, 0x76)},
+	// Abdunklung, oben bzw. links
+	{-KantenSpaltHalb - KantenRand, -KantenSpaltHalb, mitDeckkraft(kantenDunkel, 0x08)},
+	{-KantenSpaltHalb - 1, -KantenSpaltHalb, mitDeckkraft(kantenDunkel, 0x13)},
+	// Abdunklung, unten bzw. rechts (× 0,7)
+	{KantenSpaltHalb, KantenSpaltHalb + KantenRand, mitDeckkraft(kantenDunkel, 0x05)},
+	{KantenSpaltHalb, KantenSpaltHalb + 1, mitDeckkraft(kantenDunkel, 0x0D)},
+	// Schatten der oberen bzw. linken Kante in den Spalt
+	{-KantenSpaltHalb, -1, mitDeckkraft(kantenSchatten, 0x08)},
+	{-KantenSpaltHalb, -4, mitDeckkraft(kantenSchatten, 0x10)},
+	{-KantenSpaltHalb, -6, mitDeckkraft(kantenSchatten, 0x18)},
+	{-KantenSpaltHalb, -7, mitDeckkraft(kantenSchatten, 0x20)},
 }
 
 // KantenSchichten liefert die Schichten der Kante in Zeichenreihenfolge (eine Kopie). Renderer, SVG-Export und Editor
-// zeichnen je Naht und Schicht ein Kantenband.
+// leeren zuerst den Spalt aller Nähte (Band −KantenSpaltHalb bis KantenSpaltHalb, siehe Spaltband) und zeichnen dann je
+// Naht und Schicht ein Kantenband.
 func KantenSchichten() []Schicht { return append([]Schicht(nil), kantenSchichten[:]...) }
+
+// Spaltband liefert die Grenzen des durchsichtigen Spalts quer zur Mittellinie (Faktor 1), für Kantenlinie.Band.
+func Spaltband() (von, bis float64) { return -KantenSpaltHalb, KantenSpaltHalb }
 
 // Kante liefert die Form der Stauch-Kante des Dokuments.
 func (d *Dokument) Kante() Kante { return d.kante }

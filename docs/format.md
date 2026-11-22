@@ -216,11 +216,13 @@ Zero or more `s:streifen` children of `s:ansicht` remove parts of the cropped im
 in the style `s:kante` at every seam inside the view; that edge is a rendering, not stored data.
 
 Informative: the edge follows a centre line `f(t)` across the seam, `t` running along it, in view pixels:
-`tear` = `0.8 x (2.6 sin(2πt/71 + 0.3) + 1.6 sin(2πt/29 + 1.9) + 1.0 sin(2πt/13 + 4.1) + 0.6 sin(2πt/7.3 + 2.2)
+`tear` = `0.9 x (2.6 sin(2πt/71 + 0.3) + 1.6 sin(2πt/29 + 1.9) + 1.0 sin(2πt/13 + 4.1) + 0.6 sin(2πt/7.3 + 2.2)
 + 0.35 sin(2πt/3.1 + 5.7))` sampled every pixel, `wave` = `4 sin(2πt/32)` sampled every 2 pixels, `zigzag` = ±4 with
-a tooth width of 16. Around the line lies a light gap 10 pixels wide that covers the image, with a soft shadow of both
-image parts in it (stronger from the upper or left part) and a slightly darkened 1-pixel edge on both parts, built
-from a few semi-transparent bands of the same shape. All sizes grow by an integer factor on large images.
+a tooth width of 16. Around the line lies a transparent gap 16 pixels wide: the image and annotations under it are not
+drawn, so the visible image carries an alpha channel there (a JPEG export fills the gap with white). The edges of both
+image parts look like torn paper: a light fibre fringe of about 1.6 pixels and a slight darkening, plus a fine
+semi-transparent shadow of the upper or left part into the gap, built from a few semi-transparent bands of the same
+shape. All sizes grow by an integer factor on large images.
 
 | Attribute | Value |
 |---|---|

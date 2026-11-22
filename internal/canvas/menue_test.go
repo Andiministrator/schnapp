@@ -92,12 +92,21 @@ func TestKannZurueckholenNichtImZug(t *testing.T) {
 	}
 }
 
-// ADR-0023 Nachtrag 6: „Seam style“ wechselt die Kantenform reihum, jeder Wechsel ein Rückgängig-Schritt, auch ohne
-// Naht; im Zug und während des Speicherns aus.
+// ADR-0023 Nachtrag 6: „Seam style“ wechselt die Kantenform reihum, jeder Wechsel ein Rückgängig-Schritt; im Zug und
+// während des Speicherns aus. Nachtrag 7 (F-426): ohne Naht aus, das Bild bleibt ungeändert.
 func TestWechsleKante(t *testing.T) {
 	s := randSitzung(t)
-	if s.D.Kante() != document.KanteAbriss || !s.KannKanteWechseln() {
-		t.Fatalf("Ausgang %v, an %v", s.D.Kante(), s.KannKanteWechseln())
+	if s.D.Kante() != document.KanteAbriss || s.KannKanteWechseln() {
+		t.Fatalf("ohne Naht: Ausgang %v, an %v", s.D.Kante(), s.KannKanteWechseln())
+	}
+	if _, ok := s.WechsleKante(); ok || s.D.Kante() != document.KanteAbriss || s.Geaendert() {
+		t.Fatalf("ohne Naht gewechselt: %v, geändert %v", s.D.Kante(), s.Geaendert())
+	}
+	if err := s.D.SetzeStreifen([]document.Streifen{{Zeilen: true, Von: 100, Bis: 120}}); err != nil {
+		t.Fatal(err)
+	}
+	if !s.KannKanteWechseln() {
+		t.Fatal("mit Naht aus")
 	}
 	vor := s.D.Stand()
 	for _, soll := range []document.Kante{document.KanteWelle, document.KanteZacken, document.KanteAbriss} {

@@ -28,8 +28,8 @@ func ZackenFaktor(g image.Point) int { return max(1, min(g.X, g.Y)/ZackenReferen
 // **Originals** (Nachtrag 2: eine gestauchte 4K-Aufnahme behält ihre Pixeldichte), gedeckelt durch die kurze Seite der
 // **aktuellen Ansicht** (Nachtrag 4, F-226): Die Bandhöhe (2·ZackenBandHalb) bleibt höchstens ein Viertel der kurzen
 // Ansichtsseite, mindestens aber bei Faktor 1. Eine 8K-Aufnahme, die auf 300×80 zugeschnitten wird, trägt so kein
-// ±44-Pixel-Band auf 80 Pixeln Höhe. Renderer, SVG-Export, Editor und Trefferweite holen den Wert von hier. Mit der
-// halben Bandhöhe 11 (Nachtrag 6) ist der Teiler 88.
+// ±64-Pixel-Band auf 80 Pixeln Höhe. Renderer, SVG-Export, Editor und Trefferweite holen den Wert von hier. Mit der
+// halben Bandhöhe 16 (Nachtrag 7; vorher 11) ist der Teiler 128.
 func (d *Dokument) ZackenFaktor() int {
 	kurz := min(d.abbX.groesse(), d.abbY.groesse())
 	return min(ZackenFaktor(d.original.Rect.Size()), max(1, kurz/(8*ZackenBandHalb)))

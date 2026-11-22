@@ -81,7 +81,7 @@ endgültig, und keine gespeicherte oder exportierte Datei enthält den verdeckte
 Kanten oder Ecken nach innen ziehen oder einen neuen Rahmen ziehen — der Teil außerhalb bleibt abgedunkelt sichtbar,
 eine Kante lässt sich also wieder hinausschieben; der Knopf *Ganzes Bild* oder ein Doppelklick mit dem Werkzeug zeigt
 wieder das ganze Bild), **X** Stauchen (quer über den Teil ziehen, der
-wegfallen soll — senkrecht für Zeilen, waagrecht für Spalten; die Naht zeigt eine Abrisskante mit hellem Spalt und weichem Schatten — **Kantenform** im Menü wechselt zu Welle oder Zacken, `[capture] seam` legt die Form neuer Aufnahmen fest; Doppelklick auf eine
+wegfallen soll — senkrecht für Zeilen, waagrecht für Spalten; die Naht zeigt einen durchsichtigen Spalt zwischen zwei Papier-Abrisskanten (in JPEG weiß) — **Kantenform** im Menü (sobald es eine Naht gibt) wechselt zu Welle oder Zacken, `[capture] seam` legt die Form neuer Aufnahmen fest; Doppelklick auf eine
 Naht holt den Teil zurück; ein Teil bis an den Bildrand wird stattdessen abgeschnitten und kommt mit *Ganzes Bild*
 zurück).
 Beides verbirgt nur: Das Original bleibt in der Arbeitsdatei vollständig, Geheimes also vor dem Wegschneiden

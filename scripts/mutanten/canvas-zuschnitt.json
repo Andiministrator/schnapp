@@ -21,7 +21,7 @@
     "neu": "\t\t\t_ = d\n"
   },
   {
-    "name": "K96-3 Mindestrest oben fehlt (Karte #96, halbe Bandhöhe 11)",
+    "name": "K96-3 Mindestrest oben fehlt (Karte #96, halbe Bandhöhe 16 seit #183)",
     "datei": "internal/canvas/zuschnitt.go",
     "paket": "./internal/canvas",
     "alt": "if ok && von < halb {",
@@ -82,5 +82,68 @@
     "paket": "./cmd/schnapp",
     "alt": "\tif g.Fremd {",
     "neu": "\tif false && g.Fremd {"
+  },
+  {
+    "name": "K183-1 Renderer lässt den Spalt deckend (Karte #183)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\tz.radiere(poly)",
+    "neu": "\t\tif false {\n\t\t\tz.radiere(poly)\n\t\t}"
+  },
+  {
+    "name": "K183-2 Spalt behält Farbreste in durchsichtigen Pixeln (Karte #183)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\t\tif a == 0 {",
+    "neu": "\t\t\t\tif false && a == 0 {"
+  },
+  {
+    "name": "K183-3 SVG-Kacheln ohne Maske, Spalt gemalt (Karte #183)",
+    "datei": "internal/fileformat/export.go",
+    "paket": "./internal/fileformat",
+    "alt": "\tif maske {\n\t\ts.WriteString(`<g mask=\"url(#spalt)\">`)",
+    "neu": "\tif false && maske {\n\t\ts.WriteString(`<g mask=\"url(#spalt)\">`)"
+  },
+  {
+    "name": "K183-4 Kantenform ohne Naht wählbar (Karte #183, F-426)",
+    "datei": "internal/canvas/menue.go",
+    "paket": "./internal/canvas",
+    "alt": "return s.zug == keinZug && !s.gesperrt() && len(s.D.Naehte()) > 0",
+    "neu": "return s.zug == keinZug && !s.gesperrt()"
+  },
+  {
+    "name": "K183-5 Schachbrett im Editor ohne feste Parität (Karte #183)",
+    "datei": "internal/ui/schachbrett.go",
+    "paket": "./internal/ui",
+    "alt": "if (x+y)%2 == 1 != ungerade {",
+    "neu": "if (x+y)%2 == 1 {"
+  },
+  {
+    "name": "K183-6 letzte Schattenschicht fehlt (Karte #183, F-421)",
+    "datei": "internal/document/kante.go",
+    "paket": "./internal/document",
+    "alt": "\t{-KantenSpaltHalb, -7, mitDeckkraft(kantenSchatten, 0x20)},\n",
+    "neu": ""
+  },
+  {
+    "name": "K183-7 Saum unten mit anderer Deckkraft (Karte #183, F-421)",
+    "datei": "internal/document/kante.go",
+    "paket": "./internal/render",
+    "alt": "{KantenSpaltHalb, KantenSpaltHalb + 0.8, mitDeckkraft(kantenSaum, 0x76)}",
+    "neu": "{KantenSpaltHalb, KantenSpaltHalb + 0.8, mitDeckkraft(kantenSaum, 0x60)}"
+  },
+  {
+    "name": "K183-8 Mindestrest mit alter halber Bandhöhe 11 (Karte #183)",
+    "datei": "internal/canvas/zuschnitt.go",
+    "paket": "./internal/canvas",
+    "alt": "halb := s.D.ZackenFaktor() * document.ZackenBandHalb",
+    "neu": "halb := s.D.ZackenFaktor() * 11"
+  },
+  {
+    "name": "K183-9 Abriss mit alter Auslenkung 0,8 (Karte #183)",
+    "datei": "internal/document/kante.go",
+    "paket": "./internal/document",
+    "alt": "const abrissFaktor = 0.9",
+    "neu": "const abrissFaktor = 0.8"
   }
 ]

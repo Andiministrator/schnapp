@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"image"
 	"image/color"
+	"math"
 	"testing"
 
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -54,57 +55,77 @@ func ueber(c color.NRGBA, schichten ...color.NRGBA) color.NRGBA {
 	return color.NRGBA{R: p[0], G: p[1], B: p[2], A: p[3]}
 }
 
-// schicht ist die Farbe der Schicht von..bis (Faktor 1) aus document.KantenSchichten.
-func schicht(t *testing.T, von, bis float64) color.NRGBA {
-	t.Helper()
-	for _, s := range document.KantenSchichten() {
-		if s.Von == von && s.Bis == bis {
-			return s.Farbe
-		}
-	}
-	t.Fatalf("keine Schicht %v..%v", von, bis)
-	return color.NRGBA{}
+// Die Schichten der Kante als Literal (ADR-0023 Nachtrag 7, F-421): Sollpixel kommen von hier, nicht aus
+// document.KantenSchichten — sonst bliebe eine geänderte Tabelle grün. Quer zur Mittellinie bei Faktor 1, negativ oben
+// bzw. links; der Spalt ±8 ist durchsichtig und keine Schicht.
+var (
+	saum30, saum76       = color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0x30}, color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0x76}
+	dunkelO08, dunkelO13 = color.NRGBA{A: 0x08}, color.NRGBA{A: 0x13}
+	dunkelU05, dunkelU0D = color.NRGBA{A: 0x05}, color.NRGBA{A: 0x0D}
+	schatten08           = color.NRGBA{R: 0x10, G: 0x12, B: 0x14, A: 0x08}
+	schatten10           = color.NRGBA{R: 0x10, G: 0x12, B: 0x14, A: 0x10}
+	schatten18           = color.NRGBA{R: 0x10, G: 0x12, B: 0x14, A: 0x18}
+	schatten20           = color.NRGBA{R: 0x10, G: 0x12, B: 0x14, A: 0x20}
+	durchsichtig         = color.NRGBA{}
+)
+
+// schichtTabelle ist die Tabelle aus ADR-0023 Nachtrag 7 (von, bis, Farbe) in Zeichenreihenfolge.
+var schichtTabelle = []document.Schicht{
+	{Von: -9.6, Bis: -8, Farbe: saum30}, {Von: -8.8, Bis: -8, Farbe: saum76},
+	{Von: 8, Bis: 9.6, Farbe: saum30}, {Von: 8, Bis: 8.8, Farbe: saum76},
+	{Von: -10, Bis: -8, Farbe: dunkelO08}, {Von: -9, Bis: -8, Farbe: dunkelO13},
+	{Von: 8, Bis: 10, Farbe: dunkelU05}, {Von: 8, Bis: 9, Farbe: dunkelU0D},
+	{Von: -8, Bis: -1, Farbe: schatten08}, {Von: -8, Bis: -4, Farbe: schatten10},
+	{Von: -8, Bis: -6, Farbe: schatten18}, {Von: -8, Bis: -7, Farbe: schatten20},
 }
 
-// ADR-0023 Nachtrag 6: Kante der Form Zacken an der senkrechten Naht bei x = 20 (Spalten 20 bis 40 heraus). Die
-// Mittellinie läuft von x 16 (y 0) nach x 24 (y 8) und zurück nach 16 (y 16); in Zeile 4 liegt sie bei x 20 bis 21, in
-// Zeile 12 bei 19 bis 20. Das Pixel darauf liegt quer zur Mittellinie zwischen −1 und +1: ganz im Spalt und im
-// breitesten Schattenband des linken Teils (−5 bis 2), die Grenzen der übrigen Schatten berühren es nur an einer Ecke.
-// Sieben Pixel daneben (quer −8..−6 bzw. +6..+8) bleibt das Bild. Die Kante liegt auch über Objekten.
+// ADR-0023 Nachtrag 7: Kante der Form Zacken an der senkrechten Naht bei x = 20 (Spalten 20 bis 40 heraus). Die
+// Mittellinie läuft von x 16 (y 0) nach x 24 (y 8) und zurück nach 16 (y 16); in Zeile 4 liegt sie bei x 20 bis 21,
+// das Pixel x überdeckt dort quer zur Mittellinie x−21 bis x−19. Der Spalt (±8) ist durchsichtig, auch über Objekten
+// (der blaue Kasten in Zeile 36 = Zeile 4 + 2 Zähne): Pixel 22 (quer 1..3) und 26 (5..7) haben Alpha 0, rechts
+// fällt kein Schatten. Den Schatten wirft nur der linke Teil: Pixel 17 (−4..−2) liegt im Band −8..−1, Pixel 15
+// (−6..−4) zusätzlich in −8..−4 (die übrigen Grenzen berühren es nur an einer Ecke). Pixel 9 (−12..−10) und 31
+// (10..12) bleiben Bild.
 func TestKanteSollwerte(t *testing.T) {
 	d := zackenDokument(t, 100, 40)
 	hinzu(t, d, document.Kasten{Bereich: document.R(document.Pt(0, 30), document.Pt(100, 40)), Fuellung: blau})
 	streifen(t, d, document.Streifen{Von: 20, Bis: 40})
 	b := bild(t, d)
-	mitte := ueber(document.KantenSpalt, schicht(t, -5, 2))
 	pruefe(t, b, map[image.Point]color.NRGBA{
-		{20, 4}: mitte, {19, 12}: mitte,
-		{20, 36}: mitte, // y 36: wie y 4 (Zahnbreite 16), über dem blauen Kasten
-		{13, 4}:  grau, {27, 4}: grau, {12, 12}: grau, {26, 12}: grau, {13, 36}: blau, {27, 36}: blau,
+		{22, 4}: durchsichtig, {26, 4}: durchsichtig, {22, 36}: durchsichtig, {26, 36}: durchsichtig,
+		{17, 4}: ueber(durchsichtig, schatten08), {17, 36}: ueber(durchsichtig, schatten08),
+		{15, 4}: ueber(durchsichtig, schatten08, schatten10),
+		{9, 4}:  grau, {31, 4}: grau, {9, 36}: blau, {31, 36}: blau,
 	})
-	// Im Spalt: links (oben) dunkler als rechts (unten), Licht von oben links; alles heller als der Schatten selbst.
-	links, rechts := b.NRGBAAt(17, 4), b.NRGBAAt(23, 4)
-	if links.R >= rechts.R || rechts.R >= document.KantenSpalt.R {
-		t.Errorf("Schatten: links %v, rechts %v, Spalt %v", links, rechts, document.KantenSpalt)
+	if a := b.NRGBAAt(15, 4).A; a == 0 || a == 0xFF {
+		t.Errorf("Schatten nicht halbdurchsichtig: Alpha %d", a)
 	}
 }
 
-// Die Abdunklung der Bildkante (1 px bei Faktor 1, 2 px bei Faktor 2) und das Pixel auf der Mittellinie bei Faktor 2:
-// Spalten 100 bis 120 heraus, Naht bei x = 100, Mittellinie von x 92 (y 0) nach x 108 (y 16), in Zeile 8 bei x 100
-// bis 101. Quer −12..−10 (Pixel 89) ist ganz abgedunkelt, −1..1 (Pixel 100) wie bei Faktor 1, −14..−12 (Pixel 87)
-// bleibt das Bild.
-func TestKanteFaktor2(t *testing.T) {
-	d := zackenDokument(t, 2200, 2200)
-	streifen(t, d, document.Streifen{Von: 100, Bis: 120})
-	if f := d.ZackenFaktor(); f != 2 {
-		t.Fatalf("Faktor %d, Soll 2", f)
+// Fasersaum und Abdunklung bei Faktor 3 (alle Maße dreifach, die Bänder sind breit genug, ganze Pixel zu decken):
+// Spalten 300 bis 320 heraus, Naht bei x = 300; die Mittellinie läuft von x 288 (y 0) nach 312 (y 24), in Zeile 12
+// bei x 300 bis 301, das Pixel x überdeckt quer x−301 bis x−299. Pixel 275 (−26..−24) liegt in beiden Saum- und beiden
+// Abdunklungsbändern des linken Teils, Pixel 325 (24..26) in denen des rechten; Pixel 277 (−24..−22) im Spalt in allen
+// vier Schattenbändern, Pixel 301 (0..2) im Spalt ohne Schatten. Pixel 269 und 331 (±30..±32) bleiben Bild.
+func TestKanteFaktor3(t *testing.T) {
+	d := zackenDokument(t, 3300, 3300)
+	streifen(t, d, document.Streifen{Von: 300, Bis: 320})
+	if f := d.ZackenFaktor(); f != 3 {
+		t.Fatalf("Faktor %d, Soll 3", f)
 	}
 	b := bild(t, d)
 	pruefe(t, b, map[image.Point]color.NRGBA{
-		{100, 8}: ueber(document.KantenSpalt, schicht(t, -5, 2)),
-		{89, 8}:  ueber(grau, schicht(t, -6, -5)),
-		{87, 8}:  grau, {60, 8}: grau,
+		{275, 12}: ueber(grau, saum30, saum76, dunkelO08, dunkelO13),
+		{325, 12}: ueber(grau, saum30, saum76, dunkelU05, dunkelU0D),
+		{277, 12}: ueber(durchsichtig, schatten08, schatten10, schatten18, schatten20),
+		{301, 12}: durchsichtig,
+		{269, 12}: grau, {331, 12}: grau,
 	})
+	// Der Saum hellt auf, die Abdunklung des oberen bzw. linken Teils ist kräftiger als die des unteren bzw. rechten.
+	l, r := b.NRGBAAt(275, 12), b.NRGBAAt(325, 12)
+	if l.R <= grau.R || r.R <= l.R {
+		t.Errorf("Saum links %v, rechts %v, Bild %v", l, r, grau)
+	}
 }
 
 // Ohne Naht zeichnet der Renderer keine Kante: ohne Streifen, und bei einem Streifen am Rand der Ansicht.
@@ -123,7 +144,7 @@ func TestKeineKanteOhneNaht(t *testing.T) {
 }
 
 // Die drei Formen zeichnen verschieden, der Abriss ist die Voreinstellung; alle bleiben innerhalb der halben Bandhöhe
-// (11 Pixel um die Naht bei y 50).
+// (16 Pixel um die Naht bei y 50, ADR-0023 Nachtrag 7).
 func TestKanteFormen(t *testing.T) {
 	bilder := map[document.Kante][]byte{}
 	for _, k := range []document.Kante{document.KanteAbriss, document.KanteWelle, document.KanteZacken} {
@@ -136,7 +157,7 @@ func TestKanteFormen(t *testing.T) {
 		streifen(t, d, document.Streifen{Zeilen: true, Von: 50, Bis: 60})
 		b := bild(t, d)
 		for x := 0; x < 200; x++ {
-			for _, y := range []int{0, 38, 62, 89} {
+			for _, y := range []int{0, 33, 67, 89} {
 				if c := b.NRGBAAt(x, y); c != grau {
 					t.Fatalf("%v: Pixel (%d,%d) = %v außerhalb der Kante", k, x, y, c)
 				}
@@ -151,10 +172,10 @@ func TestKanteFormen(t *testing.T) {
 	}
 }
 
-// Die Kante zählt im Kostenmodell (ADR-0020 Nachtrag 3, ADR-0023 Nachtrag 6): Fläche je Schicht aus dem
-// umschließenden Rechteck. Waagrechte Naht der Form Zacken bei y 20 auf 100 Pixel Breite: Eine Schicht von..bis reicht
-// von y 16+von bis 24+bis, ihr Rechteck hat 9+(bis−von) Zeilen (ganze Grenzen); also 25·100·Σ(9+bis−von). Trockenlauf
-// und Rendern zählen dasselbe.
+// Die Kante zählt im Kostenmodell (ADR-0020 Nachtrag 3, ADR-0023 Nachträge 6 und 7): Fläche je Schicht und für den
+// Spalt (±8) aus dem umschließenden Rechteck. Waagrechte Naht der Form Zacken bei y 20 auf 100 Pixel Breite: Ein Band
+// von..bis reicht von y 16+von bis 24+bis, sein Rechteck von ⌊16+von⌋ bis ⌈24+bis⌉+1; also 25·100·Σ Zeilen.
+// Trockenlauf und Rendern zählen dasselbe.
 func TestKanteImAufwand(t *testing.T) {
 	d := zackenDokument(t, 100, 40)
 	if a := trockenlauf(d, false); a.summe() != 0 {
@@ -163,8 +184,8 @@ func TestKanteImAufwand(t *testing.T) {
 	streifen(t, d, document.Streifen{Zeilen: true, Von: 20, Bis: 25})
 	a := trockenlauf(d, false)
 	zeilen := 0.0
-	for _, s := range document.KantenSchichten() {
-		zeilen += 9 + s.Bis - s.Von
+	for _, s := range append([]document.Schicht{{Von: -8, Bis: 8}}, schichtTabelle...) {
+		zeilen += math.Ceil(24+s.Bis) + 1 - math.Floor(16+s.Von)
 	}
 	if soll := 25 * 100 * zeilen; a.flaeche != soll || a.kanten <= 0 || a.glyph != 0 {
 		t.Errorf("Aufwand %+v, Fläche Soll %v", a, soll)
@@ -199,10 +220,10 @@ func TestVerborgeneBeschriftungNichtGezeichnet(t *testing.T) {
 	if trockenlauf(d, false).summe() != trockenlauf(ohne, false).summe() {
 		t.Error("verborgener Kasten kostet")
 	}
-	// Reicht er über die Naht hinaus (bis x 60, Ansicht 40), erscheint er rechts neben der Kante (die höchstens 11
+	// Reicht er über die Naht hinaus (bis x 60, Ansicht 40), erscheint er rechts neben der Kante (die höchstens 16
 	// Pixel über die Naht ragt).
 	hinzu(t, d, document.Kasten{Bereich: document.R(document.Pt(25, 20), document.Pt(60, 30)), Fuellung: rot})
-	if c := bild(t, d).NRGBAAt(34, 25); c != rot {
+	if c := bild(t, d).NRGBAAt(38, 25); c != rot {
 		t.Errorf("angeschnittener Kasten fehlt: %v", c)
 	}
 }

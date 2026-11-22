@@ -18,7 +18,8 @@ import (
 
 // ADR-0023 Punkt 6, Nachtrag 6: Der SVG-Export zeichnet je Naht alle Schichten der Kante (document.KantenSchichten) mit
 // denselben Punkten wie der Renderer, in der Form des Dokuments, halbdurchsichtige mit fill-opacity, ohne Filter, in
-// Ansichtskoordinaten nach den Kacheln (also obenauf); ein Streifen am Rand ergibt keine.
+// Ansichtskoordinaten nach den Kacheln (also obenauf); ein Streifen am Rand ergibt keine. Seit Nachtrag 7 bleibt der
+// Spalt leer (pruefeSpaltLeer).
 func TestExportSVGKante(t *testing.T) {
 	for _, form := range []document.Kante{document.KanteAbriss, document.KanteWelle, document.KanteZacken} {
 		d, err := document.Neu(testbild(80, 60))
@@ -103,6 +104,85 @@ func TestExportSVGKante(t *testing.T) {
 		if strings.LastIndex(s, `<use href="#objekte"/>`) > strings.Index(s, `<use href="#naht-`) {
 			t.Errorf("%v: Kante liegt unter einer Kachel", form)
 		}
+		pruefeSpaltLeer(t, form, s, d)
+	}
+}
+
+// ADR-0023 Nachtrag 7: Der Spalt bleibt im SVG leer. Je Achse steht er einmal als schwarzer Pfad in <defs> (dieselben
+// Punkte wie das Spaltband ±8 des Renderers), die Maske „spalt“ ist weiß über die ganze Ansicht und verweist je Naht auf
+// ihn; alle Kacheln (Bild und Objekte) liegen unter dieser Maske, die Schichten darüber. Außerhalb der Maske wird der
+// Spalt nirgends gemalt, und keine Schicht ist deckend (die alte graue Spaltfüllung).
+func pruefeSpaltLeer(t *testing.T, form document.Kante, s string, d *document.Dokument) {
+	t.Helper()
+	g := d.Groesse()
+	spaltRe := regexp.MustCompile(`<path id="spalt-(zeilen|spalten)" d="([^"]*)" fill="#000"/>`)
+	pfade := map[string]string{}
+	for _, m := range spaltRe.FindAllStringSubmatch(s, -1) {
+		pfade[m[1]] = m[2]
+	}
+	if len(pfade) != 2 {
+		t.Fatalf("%v: %d Spaltpfade, Soll 2", form, len(pfade))
+	}
+	for art, zeilen := range map[string]bool{"zeilen": true, "spalten": false} {
+		laenge := g.Y
+		if zeilen {
+			laenge = g.X
+		}
+		var soll []string
+		for _, q := range document.Kantenband(form, document.Naht{Zeilen: zeilen}, laenge, d.ZackenFaktor(), -8, 8) {
+			soll = append(soll, punkt(q))
+		}
+		if pfade[art] != "M"+strings.Join(soll, " L")+" Z" {
+			t.Errorf("%v Spalt %s: %.200s", form, art, pfade[art])
+		}
+	}
+	maske := regexp.MustCompile(`<mask id="spalt" maskUnits="userSpaceOnUse" x="0" y="0" width="(\d+)" height="(\d+)">` +
+		`<rect width="(\d+)" height="(\d+)" fill="#fff"/>((?:<use href="#spalt-(?:zeilen|spalten)" (?:x|y)="-?\d+"/>)*)</mask>`).
+		FindStringSubmatch(s)
+	if maske == nil {
+		t.Fatalf("%v: Maske fehlt:\n%.3000s", form, s)
+	}
+	if b := strconv.Itoa(g.X); maske[1] != b || maske[3] != b || maske[2] != strconv.Itoa(g.Y) || maske[4] != strconv.Itoa(g.Y) {
+		t.Errorf("%v: Maske %s×%s, Soll %v", form, maske[1], maske[2], g)
+	}
+	var soll strings.Builder
+	for _, n := range d.Naehte() {
+		if n.Zeilen {
+			fmt.Fprintf(&soll, `<use href="#spalt-zeilen" y="%d"/>`, n.Lage)
+		} else {
+			fmt.Fprintf(&soll, `<use href="#spalt-spalten" x="%d"/>`, n.Lage)
+		}
+	}
+	if maske[5] != soll.String() {
+		t.Errorf("%v: Verweise der Maske %q, Soll %q", form, maske[5], soll.String())
+	}
+	if strings.Count(s, `href="#spalt-`) != len(d.Naehte()) {
+		t.Errorf("%v: Spalt außerhalb der Maske verwendet", form)
+	}
+	// Alle Kacheln unter der Maske: die erste Kachel nach dem Öffnen der Gruppe, die letzte vor ihrem Schluss.
+	auf := strings.Index(s, `<g mask="url(#spalt)">`)
+	zu := strings.Index(s, `</g><use href="#naht-`)
+	if auf < 0 || zu < auf || strings.Index(s, `<image`) < auf || strings.LastIndex(s, `<image`) > zu ||
+		strings.Count(s, `mask="url(#spalt)"`) != 1 {
+		t.Errorf("%v: Kacheln nicht unter der Maske", form)
+	}
+	if strings.Contains(s, `fill="#d3d7dc"`) {
+		t.Errorf("%v: graue Spaltfüllung noch im Export", form)
+	}
+}
+
+// Ohne Naht kein Band, keine Maske (ADR-0023 Nachtrag 7): Der Export bleibt wie zuvor.
+func TestExportSVGOhneNahtOhneMaske(t *testing.T) {
+	d, err := document.Neu(testbild(40, 30))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	if err := ExportiereSVG(&buf, d); err != nil {
+		t.Fatal(err)
+	}
+	if s := buf.String(); strings.Contains(s, "mask") || strings.Contains(s, "spalt") || strings.Contains(s, "naht") {
+		t.Errorf("ohne Naht Kante im Export:\n%s", s)
 	}
 }
 
@@ -130,20 +210,26 @@ func TestExportSVGVieleNaehteKompakt(t *testing.T) {
 			t.Fatal(err)
 		}
 		s := buf.String()
+		// Seit ADR-0023 Nachtrag 7 stehen Bänder und Maske vor den Kacheln, die Verweise der Schichten danach. Gezählt
+		// wird ohne die Kacheln (deren PNG wächst mit jeder Naht um eine Kachel, nicht durch die Kante).
 		start := strings.Index(s, `<defs><g id="naht-`)
-		if start < 0 {
+		maske := strings.Index(s, `<mask id="spalt"`)
+		kachelnEnde := strings.Index(s, `</g><use href="#naht-`)
+		if start < 0 || maske < start || kachelnEnde < maske {
 			t.Fatal("keine Nähte im Export")
 		}
-		ende := strings.Index(s[start:], `</defs>`)
-		return len(s) - start, ende
+		ende := maske + strings.Index(s[maske:], `</defs>`)
+		return (ende - maske) + (len(s) - kachelnEnde), maske - start
 	}
 	eins, band1 := export(1)
 	viele, band := export(1023)
 	if band != band1 {
 		t.Errorf("Band in <defs> hängt an der Zahl der Nähte: %d gegen %d Byte", band, band1)
 	}
-	if je := (viele - eins) / 1022; je > 64 {
-		t.Errorf("je weitere Naht %d Byte, Soll höchstens 64", je)
+	// Je Naht zwei Verweise: einer in der Maske (Spalt), einer auf die Schichten (ADR-0023 Nachtrag 7); vorher einer,
+	// Grenze 64 Byte.
+	if je := (viele - eins) / 1022; je > 80 {
+		t.Errorf("je weitere Naht %d Byte, Soll höchstens 80", je)
 	}
 	const soll = 4 << 20
 	if band > soll {
@@ -190,7 +276,8 @@ func TestRundlaufZuschnittUndStreifen(t *testing.T) {
 }
 
 // F-173: Bei 2200×2200 Ansicht gilt Faktor 2; das Band in <defs> hat doppelte Zackenhöhe und Spaltbreite (Form Zacken,
-// Naht bei Lage 0: erster Punkt des Spalts bei x = -8 - 10 = -18 statt -4 - 5 = -9, der zweite bei y = 16).
+// Naht bei Lage 0: erster Punkt des Spalts bei x = -8 - 16 = -24 statt -4 - 8 = -12, der zweite bei y = 16; ADR-0023
+// Nachtrag 7).
 func TestExportSVGKanteFaktor2(t *testing.T) {
 	d, err := document.Neu(testbild(2200, 2200))
 	if err != nil {
@@ -209,7 +296,8 @@ func TestExportSVGKanteFaktor2(t *testing.T) {
 	if err := ExportiereSVG(&buf, d); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(buf.String(), `<g id="naht-spalten"><path d="M-18,0 L-2,16 `) {
+	// Spalt ±8 um die Zacken ±4, beides doppelt: erster Punkt bei x = −8 − 16 = −24, der zweite bei y = 16 und x = 8 − 16.
+	if !strings.Contains(buf.String(), `<path id="spalt-spalten" d="M-24,0 L-8,16 `) {
 		t.Errorf("Band bei Faktor 2 nicht gefunden:\n%.600s", buf.String())
 	}
 }

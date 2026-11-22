@@ -78,7 +78,7 @@ final and no saved or exported file contains the hidden content. An image copied
 stays in the clipboard as it was. **C** crop (the whole image appears with a frame; drag its
 edges or corners inwards, or drag a new frame — the part outside stays visible, darkened, so an edge can be pushed back
 out; the *Whole image* button or a double-click with the tool shows the whole image again), **X** cut out (drag across the part to remove — vertically to
-remove rows, horizontally for columns; the seam shows a torn edge with a light gap and a soft shadow — **Seam style** in the menu switches to a wave or a zigzag, `[capture] seam` sets the style of new screenshots; double-click a seam to bring the part back; a part
+remove rows, horizontally for columns; the seam shows a transparent gap between two torn paper edges (white in JPEG) — **Seam style** in the menu (once there is a seam) switches to a wave or a zigzag, `[capture] seam` sets the style of new screenshots; double-click a seam to bring the part back; a part
 reaching the edge of the image is cropped off instead and comes back with *Whole image*). Both only hide: the original stays complete in the working
 file, so redact anything secret before cropping it away — exports and the clipboard contain only the visible part.
 Annotations lying entirely in a hidden part are hidden too (the status bar says how many) and come back with it.
