@@ -31,8 +31,14 @@ Pull Request.
   `i18n.TK("Kontext", "…")` oder `i18n.N("one …", "many …", n)` schreiben; jeder neue Text braucht einen
   deutschen Eintrag in `internal/po/de.po` — sonst schlägt `go test ./...` fehl (`docs/adr/0014-*`). Im Programmcode nur diese
   Paketfunktionen nutzen (kein Punkt-Import von `i18n`, keine Aufrufe über einen `*Katalog`), damit die Prüfung
-  jeden Text findet. Weitere Sprachen sind als
-  `internal/po/<sprache>.po` willkommen.
+  jeden Text findet. Nach dem Hinzufügen oder Entfernen eines Texts die Vorlage neu
+  erzeugen: `go test ./internal/i18n -run TestVorlage -update` (der Test schlägt fehl, solange
+  `internal/po/schnapp.pot` veraltet ist).
+- Neue Übersetzungen: `internal/po/schnapp.pot` nach `internal/po/<sprache>.po` kopieren, `Language` und
+  `Plural-Forms` eintragen und jeden Eintrag übersetzen; die Tests prüfen sie dann wie `de.po`. Datum und Zahlen
+  folgen ebenfalls der Sprache: Der Kontext `date format` trägt ein Go-Zeitmuster, der Kontext `status bar` die
+  Zoomangabe (etwa `100 %`). Die Sprache wählt man mit `[general] language = <sprache>` in `settings.ini`
+  (Voreinstellung `auto`: aus der Umgebung).
 - Nutzer-Dokumente (README, CONTRIBUTING) gibt es auf Englisch und Deutsch — beide im selben Pull Request pflegen.
 - Arbeitsdokumente (`docs/`, `knowledge/`), Commit-Nachrichten und Code-Kommentare sind deutsch. Englisch ist im Pull
   Request in Ordnung; der Maintainer passt es an.

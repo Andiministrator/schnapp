@@ -181,7 +181,9 @@ ADR-0003 Nachtrag 2, ADR-0015.
   startet Andi selbst per `!`-Befehl, gebündelt, Anleitung davor (`knowledge/topics/lehren.md`); vorher mit `go build -race` nach `tmp/` bauen,
   Diagnose mit `SCHNAPP_DEBUG=1` (`[overlay]`/`[editor]`-Zeilen, `knowledge/topics/gio-wayland.md`).
   Oberflächentexte nur als Literal über `i18n.T/TK/N`; der Test verlangt für jeden Text einen fertigen Eintrag in
-  `internal/po/de.po`. `capture` ist die Aufnahmeschicht (`Quelle`, KWin über D-Bus: ScreenShot3/memfd bevorzugt, sonst
+  `internal/po/de.po`, und `TestVorlage` hält die Vorlage `internal/po/schnapp.pot` aktuell (neu erzeugen mit
+  `go test ./internal/i18n -run TestVorlage -update`); Datum und Zoom folgen der Sprache über die Kontexte
+  `date format`/`status bar`, die Sprache wählt `[general] language` (ADR-0014 Nachtrag 2). `capture` ist die Aufnahmeschicht (`Quelle`, KWin über D-Bus: ScreenShot3/memfd bevorzugt, sonst
   ScreenShot2/Pipe; Tests mit Attrappe, keine echte Aufnahme in `go test`). `data/schnapp.desktop.in` ist die Vorlage der Desktop-Datei (ADR-0017). `tmp/go.mod` trennt `tmp/` vom
   Wurzelmodul. `library` ist die Bibliothek (ADR-0016: Ablage `<Bilderordner>/schnapp/<JJJJ-MM>/…png`, Index-Cache
   als JSON-Zeilen (Neuaufbau nur aus Metadaten), Suche, Aufräumen über den freedesktop-Papierkorb); Tests nur mit eigener Umgebung unter `t.TempDir()`.

@@ -87,7 +87,8 @@ func (r *rettung) Wiederherstellen(d *document.Dokument) (string, bool) {
 	if w.Grund != nil {
 		rettungDiagnose(w.Grund)
 	}
-	zeit := w.Gesichert.Local().Format("2006-01-02 15:04")
+	// Datumsformat je Sprache: ein Go-Zeitmuster im Katalog (ADR-0014 Nachtrag 2).
+	zeit := w.Gesichert.Local().Format(i18n.TK("date format", "2006-01-02 15:04"))
 	// Ort der liegenden Kopie relativ zum Zustandsordner, ohne Benutzerpfad (ADR-0029 Punkt 6, F-155, Verify 7, V7-6).
 	name := w.Beiseite
 	if name == "" {

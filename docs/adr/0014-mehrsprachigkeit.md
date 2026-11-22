@@ -75,3 +75,19 @@ und Englisch auf „vor der Veröffentlichung“ verschoben (E-07). Nachträglic
 - **Noch nicht umgesetzt:** Vorlage `po/schnapp.pot` für Übersetzer und Weblate (aus derselben Code-Durchsuchung zu
   erzeugen, sobald es Texte gibt), Zahlen- und Datumsformate je Sprache, die Einstellung in Schnapp (Parameter
   `einstellung` ist vorgesehen). Karte im Board.
+
+## Nachtrag 2 (22.11.2026): Vorlage, Formate je Sprache, Einstellung (Karte #28)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #28; die Umsetzung war Claude überlassen).
+
+- **Vorlage `internal/po/schnapp.pot`:** erzeugt aus derselben Code-Durchsuchung wie die Prüfung der Übersetzungen
+  (`sammleTexte`), je Text ein leerer Eintrag in der Reihenfolge des ersten Vorkommens. Fundstellen nur als Datei
+  relativ zur Wurzel, ohne Zeilennummer (sonst veraltete die Vorlage bei jeder Codeänderung), ohne Datum und Namen im
+  Kopf (Kernprinzip 3). `TestVorlage` vergleicht sie mit dem Code und schlägt fehl, wenn sie veraltet ist; neu schreiben
+  mit `go test ./internal/i18n -run TestVorlage -update`. Sie wird nicht eingebettet (`//go:embed *.po`).
+- **Zahlen- und Datumsformate je Sprache über den Katalog, ohne `golang.org/x/text`** (ADR-0011): Schnapp zeigt nur
+  zwei solche Angaben — das Datum einer Rettungskopie und den Zoom in der Statusleiste. Das Datum ist ein Go-Zeitmuster
+  im Kontext `date format` (englisch `2006-01-02 15:04`, deutsch `02.01.2006 15:04`), die Statusangabe ein Text im
+  Kontext `status bar` (englisch `100%`, deutsch `100 %`). Übersetzer ändern so das Format mit, ohne Code. Kommen
+  Dezimalzahlen oder Tausendertrennung hinzu, ist das neu abzuwägen.
+- **Einstellung:** `[general] language` (ADR-0018 Nachtrag 2) geht als `einstellung` an `i18n.Starte`.

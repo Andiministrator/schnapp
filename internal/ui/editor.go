@@ -2055,7 +2055,8 @@ func (e *editor) zeichneStatus(gtx layout.Context, hoehe int) {
 	mx := gtx.Constraints.Max
 	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(image.Rect(0, mx.Y-hoehe, mx.X, mx.Y)).Op())
 	g := e.s.D.Groesse()
-	rechts := fmt.Sprintf("%d × %d · %d %%", g.X, g.Y, int(math.Round(e.s.Abb.Zoom*100)))
+	// Zahlenformat je Sprache über den Katalog (ADR-0014 Nachtrag 2): englisch „100%“, deutsch „100 %“.
+	rechts := fmt.Sprintf(i18n.TK("status bar", "%d × %d · %d%%"), g.X, g.Y, int(math.Round(e.s.Abb.Zoom*100)))
 	rb := e.statusText(gtx, rechts, farbeNebentext, mx.Y-hoehe, false, mx.X)
 	// Eine frische Meldung geht vor dem Bedienhinweis des Werkzeugs, danach zeigt die Leiste wieder den Hinweis (F-151).
 	links, fehler, meldung := canvas.StatusZeile(&e.meldung, e.s.D.Stand(), e.s.Werkzeug, e.hinweis(), e.s.TextLaeuft())

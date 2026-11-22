@@ -43,8 +43,11 @@ func main() {
 	if code, ok := halter(os.Args[1:], os.Stderr, wlclip.HelferLauf); ok {
 		os.Exit(code)
 	}
-	// Scheitert das Laden der Sprache, bleibt Englisch aktiv; das Programm läuft trotzdem (i18n.Starte).
-	_, _ = i18n.Starte(po.Dateien, "")
+	// Die Sprache kommt aus [general] language, sonst aus der Umgebung (ADR-0014 Nachtrag 2). Die Warnungen über die
+	// Einstellungsdatei gibt erst laufe aus (übersetzt, nur bei Aufnahmen); hier zählt nur die Sprache. Scheitert das
+	// Laden der Sprache, bleibt Englisch aktiv; das Programm läuft trotzdem (i18n.Starte).
+	einst, _ := settings.Lade()
+	_, _ = i18n.Starte(po.Dateien, einst.Sprache)
 	// Gio braucht die Hauptschleife auf dem Haupt-Goroutine, sobald das Overlay ein Fenster öffnet.
 	ui.Starte(func() int {
 		return laufe(os.Args[1:], os.Stdout, os.Stderr, ui.Monitore, settings.Lade, echteAnschluesse().Ausfuehren)
@@ -71,9 +74,9 @@ func halter(args []string, fehler io.Writer, lauf func() int) (code int, ok bool
 type Ladefunktion func() (settings.Einstellungen, []string)
 
 // laufe führt einen Aufruf aus und liefert den Exit-Code. Die Monitorabfrage und das Laden der Einstellungen kommen
-// von außen, damit der Test ohne Wayland und ohne echte Datei auskommt. --version, --help und --list-screens lesen
-// die Einstellungsdatei nicht (und warnen nicht über sie); nur die Aufnahme-Modi laden sie, geben jede Warnung als
-// eine Zeile auf fehler aus und machen weiter (ADR-0018).
+// von außen, damit der Test ohne Wayland und ohne echte Datei auskommt. --version, --help, --list-screens und
+// --export warnen nicht über die Einstellungsdatei (main liest aus ihr vorher nur die Sprache); nur die Aufnahme-Modi
+// laden sie hier, geben jede Warnung als eine Zeile auf fehler aus und machen weiter (ADR-0018).
 func laufe(args []string, aus, fehler io.Writer, monitore func() ([]ui.Monitor, error), lade Ladefunktion, ausfuehren Ausfuehrung) int {
 	a, err := Auswerten(args)
 	if err != nil {

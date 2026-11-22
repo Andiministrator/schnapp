@@ -30,7 +30,12 @@ request.
 - User interface texts: English is the source language. Write them as literals through `i18n.T("…")`,
   `i18n.TK("context", "…")` or `i18n.N("one …", "many …", n)`; every new text also needs a German entry in
   `internal/po/de.po` — `go test ./...` fails otherwise (`docs/adr/0014-*`). Use only these package functions in program code (no
-  dot import of `i18n`, no calls through a `*Katalog`), so the check can find every text. Further languages are welcome as `internal/po/<lang>.po`.
+  dot import of `i18n`, no calls through a `*Katalog`), so the check can find every text. After adding or removing a text, regenerate the template with
+  `go test ./internal/i18n -run TestVorlage -update` (the test fails while `internal/po/schnapp.pot` is out of date).
+- New translations: copy `internal/po/schnapp.pot` to `internal/po/<lang>.po`, fill in `Language` and `Plural-Forms`
+  and translate every entry; the tests then check it like `de.po`. Dates and numbers follow the language too: the
+  context `date format` holds a Go time layout, the context `status bar` the zoom figure (for example `100 %`).
+  Users pick a language with `[general] language = <lang>` in `settings.ini` (default `auto`: from the environment).
 - User documents (README, CONTRIBUTING) exist in English and German — update both in the same pull request.
 - Working documents (`docs/`, `knowledge/`), commit messages and code comments are in German. English is fine in your
   pull request; the maintainer will adapt it.

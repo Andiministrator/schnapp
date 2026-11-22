@@ -18,8 +18,9 @@ import (
 	"testing"
 )
 
-// text ist ein Oberflächentext, wie er im Code an i18n.T, i18n.TK oder i18n.N übergeben wird.
-type text struct{ kontext, id, mehrzahl string }
+// text ist ein Oberflächentext, wie er im Code an i18n.T, i18n.TK oder i18n.N übergeben wird; datei ist die
+// Fundstelle relativ zur durchsuchten Wurzel, mit „/“ (für die Vorlage schnapp.pot, ADR-0014 Nachtrag 2).
+type text struct{ kontext, id, mehrzahl, datei string }
 
 // sprachePfad ist der Importpfad des Pakets, dessen Aufrufe gesammelt werden.
 const sprachePfad = "github.com/Andiministrator/schnapp/internal/i18n"
@@ -73,6 +74,11 @@ func sammleTexte(wurzel string) ([]text, []string, error) {
 		if paketname == "" || paketname == "_" {
 			return nil
 		}
+		rel, err := filepath.Rel(wurzel, pfad)
+		if err != nil {
+			return err
+		}
+		rel = filepath.ToSlash(rel)
 		ast.Inspect(f, func(n ast.Node) bool {
 			aufruf, ok := n.(*ast.CallExpr)
 			if !ok {
@@ -115,11 +121,11 @@ func sammleTexte(wurzel string) ([]text, []string, error) {
 			}
 			switch sel.Sel.Name {
 			case "T":
-				texte = append(texte, text{id: werte[0]})
+				texte = append(texte, text{id: werte[0], datei: rel})
 			case "TK":
-				texte = append(texte, text{kontext: werte[0], id: werte[1]})
+				texte = append(texte, text{kontext: werte[0], id: werte[1], datei: rel})
 			case "N":
-				texte = append(texte, text{id: werte[0], mehrzahl: werte[1]})
+				texte = append(texte, text{id: werte[0], mehrzahl: werte[1], datei: rel})
 			}
 			return true
 		})
@@ -269,6 +275,12 @@ func TestPruefungFindetLuecken(t *testing.T) {
 		{id: "%d file", mehrzahl: "%d files"},
 		{id: "Close"},
 		{id: "%s saved"}, // b.go, unter Import-Alias
+	}
+	for i := range texte {
+		if texte[i].datei == "" {
+			t.Errorf("Text %q ohne Fundstelle", texte[i].id)
+		}
+		texte[i].datei = "" // die Fundstellen prüft TestVorlage
 	}
 	if !reflect.DeepEqual(texte, wantTexte) {
 		t.Errorf("Texte:\n got %v\nwant %v", texte, wantTexte)

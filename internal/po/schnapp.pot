@@ -1,0 +1,802 @@
+# Translation template for Schnapp.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Generated from the i18n.T, i18n.TK and i18n.N calls in the code; do not edit by hand. Regenerate with
+#   go test ./internal/i18n -run TestVorlage -update
+# To start a translation, copy this file to <language>.po (for example fr.po), fill in Language and Plural-Forms
+# and translate every msgstr. Entries with the context "date format" are Go time layouts (reference time
+# 2006-01-02 15:04); keep the digits, change only their order and separators. See CONTRIBUTING.md.
+msgid ""
+msgstr ""
+"Project-Id-Version: Schnapp\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: cmd/schnapp/agenten.go
+msgid "Could not write to standard output: %v"
+msgstr ""
+
+#: cmd/schnapp/agenten.go
+msgid "Could not write the path to standard output: %v"
+msgstr ""
+
+#: cmd/schnapp/agenten.go
+msgid "No permission to write there."
+msgstr ""
+
+#: cmd/schnapp/agenten.go
+msgid "The folder does not exist."
+msgstr ""
+
+#: cmd/schnapp/agenten.go cmd/schnapp/aufnehmen.go
+msgid "Cannot open %s: %s"
+msgstr ""
+
+#: cmd/schnapp/agenten.go cmd/schnapp/aufnehmen.go
+msgid "Could not write %s: %s"
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "Option %s needs a file name after an equals sign: %s=FILE."
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "Option %s cannot be given more than once with different files."
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "Unknown file type for %s: use a name ending in .png, .jpg or .svg."
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "Unexpected argument: %s"
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "A file cannot be combined with %s."
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "Option %s takes no value."
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "Unknown option: %s"
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "Option --screen needs a monitor name after the equals sign."
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "Option --screen cannot be given more than once with different monitor names."
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "Options %s and %s cannot be combined."
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "Option --ignore-limit works only together with a file."
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "Option --export needs the file to export: --export=TARGET FILE."
+msgstr ""
+
+#: cmd/schnapp/aufnehmen.go
+msgid "The editor could not be opened or saved: %v"
+msgstr ""
+
+#: cmd/schnapp/aufnehmen.go
+msgid "No state directory (HOME is not set), so there is no last area to repeat."
+msgstr ""
+
+#: cmd/schnapp/aufnehmen.go
+msgid "No area to repeat yet. Select one with --region first."
+msgstr ""
+
+#: cmd/schnapp/aufnehmen.go
+msgid "The monitor of the last area has changed. Select a new area with --region."
+msgstr ""
+
+#: cmd/schnapp/aufnehmen.go cmd/schnapp/main.go
+msgid "Could not query the monitors: %v"
+msgstr ""
+
+#: cmd/schnapp/aufnehmen.go cmd/schnapp/main.go
+msgid "No monitors found."
+msgstr ""
+
+#: cmd/schnapp/aufnehmen.go
+msgid "The selection is outside the captured image."
+msgstr ""
+
+#: cmd/schnapp/aufnehmen.go
+msgid "Could not save the screenshot: %v"
+msgstr ""
+
+#: cmd/schnapp/aufnehmen.go
+msgid "Warning: a temporary copy of the screenshot could not be removed and may still show it after you redact it later."
+msgstr ""
+
+#: cmd/schnapp/aufnehmen.go
+msgid "Automatic cleanup of the library skipped: no state directory (HOME is not set)."
+msgstr ""
+
+#: cmd/schnapp/aufnehmen.go
+msgid "Automatic cleanup of the library skipped: %v"
+msgstr ""
+
+#: cmd/schnapp/aufnehmen.go
+msgid "Automatic cleanup of the library failed: %v"
+msgstr ""
+
+#: cmd/schnapp/aufnehmen.go
+msgid "Automatic cleanup could not move %d screenshot to the trash."
+msgid_plural "Automatic cleanup could not move %d screenshots to the trash."
+msgstr[0] ""
+msgstr[1] ""
+
+#: cmd/schnapp/aufnehmen.go
+msgid "Could not remember the area for --repeat: no state directory (HOME is not set)."
+msgstr ""
+
+#: cmd/schnapp/aufnehmen.go
+msgid "Could not remember the area for --repeat: %v"
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "Saved, but the file has too many or too large annotations to be opened again. Remove some before closing."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "Saved, but the old preview of this capture could not be removed and still shows the unredacted content."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "Saved, but the old preview of this capture could not be removed."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "Saved, but a leftover temporary copy of this capture could not be removed and may still show the unredacted content."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "Saved, but a leftover temporary copy of this capture could not be removed."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "Also, a leftover temporary copy of this capture could not be removed and may still show the unredacted content."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "Also, a leftover temporary copy of this capture could not be removed."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "Saved as a new capture in the library: %s (the original file is unchanged)"
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The file was changed elsewhere since it was opened; saved as a new capture: %s"
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The other version may still show the unredacted content."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The previous file could not be updated and was removed, but its preview could not be removed and still shows the unredacted content. Saved as a new capture: %s"
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The previous file could not be updated and still showed the unredacted content, so it was removed. Saved as a new capture: %s"
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The previous file %s was no longer there; wherever it is now, it still shows the unredacted content. Its preview could not be removed and still shows it too. Saved as a new capture: %s"
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The previous file %s was no longer there; wherever it is now, it still shows the unredacted content. Saved as a new capture: %s"
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The previous file could not be updated and still shows the unredacted content: %s. Delete it yourself. Saved as a new capture: %s"
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "A temporary copy of the previous file could not be removed and may still show the unredacted content."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The previous file could not be updated; saved as a new capture: %s"
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "Saved as a new capture in the library: %s. The original file is unchanged and still shows the unredacted content."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The old preview could not be removed."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "It still shows the unredacted content."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "A temporary copy of the new capture could not be removed."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The original file %s is unchanged and still shows the unredacted content."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The other version %s may still show the unredacted content."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The earlier file %s, left behind when saving failed, was removed, but its preview could not be removed and still shows the unredacted content."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The earlier file %s, left behind when saving failed, still showed the unredacted content and was removed."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The earlier file %s was no longer there; wherever it is now, it still shows the unredacted content. Its preview could not be removed and still shows it too."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The earlier file %s was no longer there; wherever it is now, it still shows the unredacted content."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The earlier file %s still shows the unredacted content. Delete it yourself."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "A temporary copy of the earlier file %s could not be removed and may still show the unredacted content."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "No permission to write the file."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "Not enough disk space."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "No home directory (HOME is not set)."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The file could not be written."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The file does not exist."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "No permission to read the file."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "This is not a regular file."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "This is neither a PNG nor a JPEG image."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The image is too large."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The image is damaged."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "Saving did not respond; the changes may not have been saved."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "The selection overlay did not close in time."
+msgstr ""
+
+#: cmd/schnapp/editor.go
+msgid "This file has too many or too large annotations to open. To open it anyway, use --ignore-limit."
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Try --help for the available options."
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Schnapp %s"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Usage: schnapp [option] [--json] [--output=FILE] | schnapp [--ignore-limit] [--export=TARGET [--json]] FILE"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Take a screenshot. Without an option, you select an area (--region)."
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Select an area"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Capture a monitor, as set in the settings (default: pick by click)"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Capture the monitor NAME"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "List the monitors"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Select a window"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Repeat the last area"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Do not open the editor after capturing"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Write the screenshot to FILE (.png, .jpg, .svg) instead of the library"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Print the result as one line of JSON"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Open FILE in the editor"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Export FILE to TARGET (.png, .jpg, .svg) without a window"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Open FILE even if it is too costly to render"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Show the version"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Show this help"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "%d monitor found:"
+msgid_plural "%d monitors found:"
+msgstr[0] ""
+msgstr[1] ""
+
+#: cmd/schnapp/main.go
+msgid "  %s: %d × %d pixels"
+msgstr ""
+
+#: cmd/schnapp/rettung.go
+msgctxt "date format"
+msgid "2006-01-02 15:04"
+msgstr ""
+
+#: cmd/schnapp/rettung.go
+msgid "Restored unsaved changes from %s. Undo returns to the saved state."
+msgstr ""
+
+#: cmd/schnapp/rettung.go
+msgid "A rescue copy for this file could not be read. It is kept for 30 days in the state folder: %s"
+msgstr ""
+
+#: cmd/schnapp/rettung.go
+msgid "Unsaved changes from %s were not restored: the file has changed since. The rescue copy is kept for 30 days in the state folder: %s"
+msgstr ""
+
+#: cmd/schnapp/rettung.go
+msgid "Unsaved changes from %s could not be restored. The rescue copy is kept for 30 days in the state folder: %s"
+msgstr ""
+
+#: internal/capture/aufnahme.go
+msgid "Schnapp is not registered as a screenshot program. Install its desktop file and try again."
+msgstr ""
+
+#: internal/capture/aufnahme.go
+msgid "The capture was cancelled."
+msgstr ""
+
+#: internal/capture/aufnahme.go
+msgid "This KWin version cannot capture all screens at once. Use a single screen instead."
+msgstr ""
+
+#: internal/capture/aufnahme.go
+msgid "KWin offers no screenshot interface. Schnapp needs KDE Plasma on Wayland."
+msgstr ""
+
+#: internal/ui/editor.go
+msgctxt "status bar"
+msgid "%d × %d · %d%%"
+msgstr ""
+
+#: internal/settings/einstellungen.go
+msgid "Cannot locate the settings file (%v); using the defaults."
+msgstr ""
+
+#: internal/settings/einstellungen.go
+msgid "%s: cannot read the settings file (%v); using the defaults."
+msgstr ""
+
+#: internal/settings/einstellungen.go
+msgid "%s: the settings file is not a regular file; using the defaults."
+msgstr ""
+
+#: internal/settings/einstellungen.go
+msgid "%s: the settings file is larger than 64 KiB; using the defaults."
+msgstr ""
+
+#: internal/settings/einstellungen.go
+msgid "Broken section header; its settings up to the next section are ignored."
+msgstr ""
+
+#: internal/settings/einstellungen.go
+msgid "Unknown section [%s]; its keys are ignored."
+msgstr ""
+
+#: internal/settings/einstellungen.go
+msgid "Line is neither a section, a comment nor \"key = value\"; ignored."
+msgstr ""
+
+#: internal/settings/einstellungen.go
+msgid "Setting %q is outside of any section; ignored."
+msgstr ""
+
+#: internal/settings/einstellungen.go
+msgid "Unknown key %q in section [%s]; ignored."
+msgstr ""
+
+#: internal/settings/einstellungen.go
+msgid "Invalid value %q for key %q in section [%s]; ignored."
+msgstr ""
+
+#: internal/settings/einstellungen.go
+msgid "Key %q in section [%s] is set again; the last value counts."
+msgstr ""
+
+#: internal/settings/einstellungen.go
+msgid "… and %d more warning"
+msgid_plural "… and %d more warnings"
+msgstr[0] ""
+msgstr[1] ""
+
+#: internal/ui/editor.go
+msgid "Could not copy: no clipboard is available."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Could not save. Close again to discard the changes."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "The clipboard holds the image only while this window is open. Close again to discard it."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Saving…"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Saving does not respond. Closing the window now quits without waiting; changes may be lost."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Could not save: %v. Close again to discard the changes."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Could not save: %v"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "No changes to save."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Copying is already in progress."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Could not copy: finish the current action first."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Copying…"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Could not copy: %v"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Copied to clipboard"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Copied to clipboard as it was when copying began; later changes are not included."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Copying was not finished when the window closed; the clipboard may be empty."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Export"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "PNG image"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "JPEG image"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "SVG image"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "No file dialog available (desktop portal missing)."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Could not export: %v"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Could not export: only local files can be written."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Could not export: finish the current action first."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Exported to %s"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Saved to the library"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "The limit of %d annotations is reached. Delete some to add more."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Step numbers end at %d; no further number can be placed."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Too narrow to pixelate; the area was blacked out instead."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "The area is too small to redact at this zoom; zoom in or draw a larger area."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "%d annotation is now hidden outside the visible area; it returns when the crop or cut is removed."
+msgid_plural "%d annotations are now hidden outside the visible area; they return when the crop or cut is removed."
+msgstr[0] ""
+msgstr[1] ""
+
+#: internal/ui/editor.go
+msgid "Nothing of the image would remain; cut out a smaller part."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Too many cuts; undo or remove one first."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "The part reached the edge and was cropped off; “Whole image” brings it back."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Select"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Arrow"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Rectangle"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Text"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Step"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Redact"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Pixelate"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Crop"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Cut out"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Color"
+msgstr ""
+
+#: internal/ui/editor.go internal/ui/menue.go
+msgid "Undo"
+msgstr ""
+
+#: internal/ui/editor.go internal/ui/menue.go
+msgid "Redo"
+msgstr ""
+
+#: internal/ui/editor.go internal/ui/menue.go
+msgid "Whole image"
+msgstr ""
+
+#: internal/ui/editor.go internal/ui/menue.go
+msgid "Fit"
+msgstr ""
+
+#: internal/ui/editor.go internal/ui/menue.go
+msgid "Export…"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Menu"
+msgstr ""
+
+#: internal/ui/editor.go internal/ui/menue.go
+msgid "Save"
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "File dialog is open."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Type the text. Enter: done, Shift+Enter: new line, Esc: discard."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Drag to draw an arrow. Shift: 45° steps. Drag the middle handle to bend it."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Drag to draw a rectangle. Shift: square."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Click to place text, or click a text to edit it."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Click to place step number %d."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Drag over the area to black out. The pixels are overwritten for good once saved."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Drag over the area to pixelate. The pixels are overwritten for good once saved."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Drag the edges or corners inwards, or drag a new frame. Double-click: whole image again. Cropped parts stay in the working file; redact what must go."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Drag across the part to cut out: vertically for rows, horizontally for columns. Double-click a seam to restore it. Cut-out parts stay in the working file; redact what must go."
+msgstr ""
+
+#: internal/ui/exportfehler.go
+msgid "A file with this name already exists: %s"
+msgstr ""
+
+#: internal/ui/exportfehler.go
+msgid "The file %s is damaged: writing failed and the old content could not be restored."
+msgstr ""
+
+#: internal/ui/exportfehler.go
+msgid "The connection to the desktop portal was lost."
+msgstr ""
+
+#: internal/ui/exportfehler.go
+msgid "The file dialog ended without a result."
+msgstr ""
+
+#: internal/ui/exportfehler.go
+msgid "The file dialog returned no file."
+msgstr ""
+
+#: internal/ui/kuerzel.go
+msgid "Ctrl"
+msgstr ""
+
+#: internal/ui/kuerzel.go
+msgid "Shift"
+msgstr ""
+
+#: internal/ui/kuerzel.go
+msgid "Del"
+msgstr ""
+
+#: internal/ui/kuerzel.go
+msgid "Backspace"
+msgstr ""
+
+#: internal/ui/kuerzel.go
+msgid "Enter"
+msgstr ""
+
+#: internal/ui/menue.go
+msgid "Copy"
+msgstr ""
+
+#: internal/ui/menue.go
+msgid "Edit text"
+msgstr ""
+
+#: internal/ui/menue.go
+msgid "Delete"
+msgstr ""
+
+#: internal/ui/menue.go
+msgid "Restore cut-out areas"
+msgstr ""
+
+#: internal/ui/menue.go
+msgid "Close"
+msgstr ""
+
+#: internal/ui/overlay.go
+msgid "Click a monitor or drag an area · Enter: monitor under the pointer · Esc or right-click: cancel"
+msgstr ""
+
+#: internal/ui/overlay.go
+msgid "Drag an area · Enter: whole monitor under the pointer · Esc or right-click: cancel"
+msgstr ""

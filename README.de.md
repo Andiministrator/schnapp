@@ -47,7 +47,7 @@ Vorhanden ist:
 
 | Pfad | Was es ist | Prüfen |
 |---|---|---|
-| `.` (Wurzel) | Go-Modul `github.com/Andiministrator/schnapp`: das Programm `cmd/schnapp` und seine Pakete unter `internal/`, darunter `capture` (Aufnahme über KWin), `selection` (Logik des Overlays), `canvas` (Logik des Editors), `document` (Ebenen, Zuschnitt, Schwärzen, Rückgängig), `fileformat` (Arbeitsdatei und Exporte), `render` (Ebenen zu Pixeln), `library` (Bibliothek), `settings` (`settings.ini`), `ui` (Overlay und Editor in Gio), `wlclip` (hält ein kopiertes Bild nach dem Schließen des Editors in der Zwischenablage), `portal` (Dateidialog des Desktop-Portals), `export` (Export aus dem Editor), `i18n` (Sprachwahl, gettext-PO-Leser) und `po` (eingebettete Übersetzungen, `internal/po/de.po`); `data/` enthält die Vorlage der Desktop-Datei | `go vet ./... && go test ./...` (mit `GOFLAGS` wie oben) |
+| `.` (Wurzel) | Go-Modul `github.com/Andiministrator/schnapp`: das Programm `cmd/schnapp` und seine Pakete unter `internal/`, darunter `capture` (Aufnahme über KWin), `selection` (Logik des Overlays), `canvas` (Logik des Editors), `document` (Ebenen, Zuschnitt, Schwärzen, Rückgängig), `fileformat` (Arbeitsdatei und Exporte), `render` (Ebenen zu Pixeln), `library` (Bibliothek), `settings` (`settings.ini`), `ui` (Overlay und Editor in Gio), `wlclip` (hält ein kopiertes Bild nach dem Schließen des Editors in der Zwischenablage), `portal` (Dateidialog des Desktop-Portals), `export` (Export aus dem Editor), `i18n` (Sprachwahl, gettext-PO-Leser) und `po` (eingebettete Übersetzungen, `internal/po/de.po`; Vorlage `schnapp.pot`); `data/` enthält die Vorlage der Desktop-Datei | `go vet ./... && go test ./...` (mit `GOFLAGS` wie oben) |
 | `draw/` | Go-Modul `github.com/Andiministrator/schnapp/draw`: SVG lesen, Rasterer mit Kantenglättung, Rechenhilfen (nur Standardbibliothek) | `cd draw && go vet ./... && go test ./...` |
 | `brand/` | Logo, Farben und Corporate Design ([`brand/corporate-design.md`](brand/corporate-design.md), mit PDF) | `cd brand/werkzeug && go run . paket` erzeugt die Logo-Dateien neu |
 | `third_party/gio/` | Gio mit unserem Patch (Vollbild auf gewähltem Monitor, gebrochene Skalierung, Mauszeiger bei gemischten Skalen, Bilder in der Zwischenablage), eingebunden per `replace` in `go.mod` | `third_party/gio-patch.sh pruefen`, siehe [`third_party/README.md`](third_party/README.md) |
@@ -68,7 +68,8 @@ Vorhanden ist:
 | `schnapp … --json` | das Ergebnis (Pfad und Größe oder die Monitorliste) als eine Zeile JSON ausgeben |
 
 Jede Aufnahme landet in der Bibliothek (`~/Bilder/schnapp/JJJJ-MM/`), ihr Pfad steht auf der Standardausgabe, bevor
-der Editor öffnet. Skripte und KI-Agenten: siehe [`docs/agents.md`](docs/agents.md) (englisch). Einstellungen stehen in `~/.config/schnapp/settings.ini`, etwa `[capture] open-editor = false`.
+der Editor öffnet. Skripte und KI-Agenten: siehe [`docs/agents.md`](docs/agents.md) (englisch). Einstellungen stehen in `~/.config/schnapp/settings.ini`, etwa `[capture] open-editor = false` oder
+`[general] language = en` (Voreinstellung `auto`: die Sprache des Systems).
 
 Im Editor, Werkzeuge: **V** Auswählen, **A** Pfeil (ziehen; **Umschalt** rastet auf 45°; mittleren Griff ziehen
 biegt ihn), **R** Kasten (**Umschalt**: Quadrat), **T** Text (klicken, tippen, **Enter** bestätigt, **Umschalt+Enter**

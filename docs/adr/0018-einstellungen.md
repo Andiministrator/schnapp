@@ -67,3 +67,14 @@ spürbarem Nutzen (ADR-0011); Pfade klein `schnapp` (ADR-0016); die Kommandozeil
 
 `[capture] open-editor` = `true` (Voreinstellung) | `false`: Editor nach einer interaktiven Aufnahme öffnen. Für einen
 einzelnen Aufruf schaltet `--no-editor` ihn ab (ADR-0017 Nachtrag 4).
+
+## Nachtrag 2 (22.11.2026): `[general] language` (ADR-0014 Nachtrag 2)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #28).
+
+`[general] language` = `auto` (Voreinstellung) | Sprachcode `ll`, `lll`, `ll_CC` oder `lll_CC` (etwa `de`, `en`,
+`pt_BR`): Sprache der Oberfläche. `auto` folgt der Umgebung wie gettext (ADR-0014 Nachtrag 1). Gibt es die gewählte
+Sprache nicht, gilt ebenfalls die Umgebung, ohne Warnung (die Datei kennt die eingebauten Sprachen nicht); ein Wert in
+anderer Form ist ungültig und wird gewarnt. `main` liest die Datei vor dem Laden der Sprache nur für diesen Schlüssel
+und gibt dabei keine Warnungen aus; die Warnungen kommen wie bisher übersetzt bei Aufnahme und Editor. Neuer Abschnitt
+`[general]` für Einstellungen, die das ganze Programm betreffen.

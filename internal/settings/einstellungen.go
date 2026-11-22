@@ -62,8 +62,36 @@ const (
 	WahlAlle   Bildschirmwahl = "all"     // alle Monitore
 )
 
+// sprachcode meldet, ob w ein Sprachcode der Form ll, lll, ll_CC oder lll_CC ist (wie in LANG ohne Kodierung).
+func sprachcode(w string) bool {
+	sprache, land, mitLand := strings.Cut(w, "_")
+	klein := func(s string) bool {
+		for _, r := range s {
+			if r < 'a' || r > 'z' {
+				return false
+			}
+		}
+		return true
+	}
+	gross := func(s string) bool {
+		for _, r := range s {
+			if r < 'A' || r > 'Z' {
+				return false
+			}
+		}
+		return true
+	}
+	if len(sprache) < 2 || len(sprache) > 3 || !klein(sprache) {
+		return false
+	}
+	return !mitLand || (len(land) == 2 && gross(land))
+}
+
 // Einstellungen sind die gelesenen Werte samt Voreinstellungen.
 type Einstellungen struct {
+	// Sprache ist [general] language: leer bei „auto“ (Sprache aus der Umgebung), sonst ein Sprachcode wie „de“ oder
+	// „pt_BR“ (ADR-0018 Nachtrag 2, ADR-0014 Nachtrag 2). Gibt es die Sprache nicht, gilt die Umgebung.
+	Sprache    string
 	Bildschirm Bildschirmwahl      // [capture] screen
 	Editor     bool                // [capture] open-editor: Editor nach der Aufnahme öffnen (ADR-0020)
 	Bibliothek library.Einstellung // [library] cleanup, cleanup-days
@@ -158,7 +186,7 @@ func Parse(name, inhalt string) (Einstellungen, []string) {
 			}
 			abschnitt = strings.TrimSpace(zeile[1 : len(zeile)-1])
 			imAbschnitt = true
-			bekannt = abschnitt == "capture" || abschnitt == "library"
+			bekannt = abschnitt == "general" || abschnitt == "capture" || abschnitt == "library"
 			if !bekannt {
 				melde(nr, i18n.T("Unknown section [%s]; its keys are ignored."), maske(kuerze(abschnitt)))
 			}
@@ -181,6 +209,13 @@ func Parse(name, inhalt string) (Einstellungen, []string) {
 		wiederholt := gesetzt[kennung]
 		var gueltig, bekannterSchluessel bool
 		switch abschnitt + "." + schluessel {
+		case "general.language":
+			bekannterSchluessel = true
+			if wert == "auto" {
+				e.Sprache, gueltig = "", true
+			} else if sprachcode(wert) {
+				e.Sprache, gueltig = wert, true
+			}
 		case "capture.screen":
 			bekannterSchluessel = true
 			switch w := Bildschirmwahl(wert); w {
