@@ -515,3 +515,16 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Messung im Test halten (Spiel 2 % + 64 KiB), sonst überleben Mutanten am Rechenweg.
 - **Ein Befehl mit Platzhalter geht nicht an den Browser** (22.11., eigener Fehler, folgenlos): Eine URL mit `RUNID`
   statt der Nummer wurde aufgerufen. Werte erst holen, dann einsetzen.
+- **Eine Schutzprüfung fällt geschlossen aus** (F-389, Kritiker A): Kann der eigene Leser die Eingabe nicht deuten,
+  die Bibliothek dahinter aber schon, muss die Prüfung mit dem ungünstigsten Fall rechnen, nicht durchwinken. Gegenprobe:
+  „Was macht der nachgelagerte Dekoder mit dem, was mein Leser ablehnt?“ — Go überspringt Fremdbytes vor Markern.
+- **Probe-Skripte schützen sich selbst** (F-390): Ein Skript, das nur in einer Sandbox laufen darf, prüft die Sandbox
+  (`PROBE_INNEN`, HOME und XDG unter `tmp/probe`) vor dem ersten Schreiben, trägt kein Ausführbit und fällt ein Urteil
+  mit Exit-Code statt nur `ls`-Ausgaben.
+- **Nach jeder Übernahme die Trockenprobe über alle Mutantengruppen** (K14/K20 nach F-391): Eine Änderung für eine
+  Gruppe verschiebt Muster einer anderen; die CI prüft `-trocken` über alle und wäre rot geworden.
+- **Erwartete Werte gegen die Referenz prüfen, nicht gegen das Gedächtnis** (brand/werkzeug, QB-4): Ein eigener
+  Testwert widersprach dem Code; fontTools selbst gab dem Code recht (SVGPathPen merkt „M“ bis zum nächsten Befehl).
+- **Kritiker aus anderer Familie lohnen sich auch nach eigenen Mutationsproben** (Sitzungs-QA 22.11.): Die eigene
+  Gruppe `fileformat-jpeg` war 9/9 rot und F-361 trotzdem mit einem Byte umgehbar — Mutanten prüfen die Tests gegen den
+  Code, nicht den Code gegen die Wirklichkeit.
