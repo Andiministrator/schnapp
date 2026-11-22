@@ -14,6 +14,8 @@ import (
 	"strings"
 
 	"github.com/godbus/dbus/v5"
+
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 )
 
 const (
@@ -97,7 +99,7 @@ func Neu() (*Dialog, error) {
 }
 
 // Close gibt die Verbindung frei.
-func (d *Dialog) Close() error { return d.t.Close() }
+func (d *Dialog) Close() error { return errprefix.Wrap("portal", d.t.Close()) }
 
 func zufallsToken() string {
 	var b [8]byte
@@ -160,7 +162,8 @@ func baueOptionen(token string, a Anfrage) map[string]dbus.Variant {
 
 // Speichern zeigt den Dialog und wartet auf die Antwort (oder auf ctx). Die Anmeldung für Request.Response steht vor
 // dem Aufruf von SaveFile: Das Portal kann antworten, bevor der Aufruf zurückkehrt (bekannte Wettlauf-Falle).
-func (d *Dialog) Speichern(ctx context.Context, a Anfrage) (Ergebnis, error) {
+func (d *Dialog) Speichern(ctx context.Context, a Anfrage) (erg Ergebnis, fehler error) {
+	defer errprefix.Defer("portal", &fehler) // ADR-0019 Nachtrag 2: D-Bus- und Kontextfehler tragen das Präfix (F-379)
 	token := d.token()
 	pfad := RequestPfad(d.t.Name(), token)
 	ch, ab, err := d.t.Abonniere(pfad)

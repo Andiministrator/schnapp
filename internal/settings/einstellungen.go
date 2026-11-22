@@ -22,6 +22,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 	"github.com/Andiministrator/schnapp/internal/i18n"
 	"github.com/Andiministrator/schnapp/internal/library"
 )
@@ -111,7 +112,7 @@ func Pfad() (string, error) {
 	}
 	heim, err := os.UserHomeDir()
 	if err != nil {
-		return "", err
+		return "", errprefix.Wrap("settings", err) // ADR-0019 Nachtrag 2, F-379
 	}
 	return filepath.Join(heim, ".config", "schnapp", "settings.ini"), nil
 }

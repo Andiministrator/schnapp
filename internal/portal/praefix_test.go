@@ -3,6 +3,8 @@
 package portal
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -42,4 +44,58 @@ func TestFehlertextPraefix(t *testing.T) {
 	einmalPraefix(t, "auswerten ohne Datei", err)
 	_, err = auswerten(Antwort{Code: antwortAbgebrochen}, Anfrage{})
 	einmalPraefix(t, "auswerten abgebrochen", err)
+}
+
+// abonnierFehler lässt Abonniere und Close scheitern; sonst die Attrappe.
+type abonnierFehler struct {
+	*attrappe
+	roh error
+}
+
+func (a abonnierFehler) Abonniere(dbus.ObjectPath) (<-chan Antwort, func(), error) {
+	return nil, nil, a.roh
+}
+func (a abonnierFehler) Close() error { return a.roh }
+
+// F-379: Rohe D-Bus- und Kontextfehler verlassen Speichern, Close und URIZuPfad mit Präfix; die Ursache bleibt über
+// errors.Is erreichbar.
+func TestFehlertextPraefixPaketgrenze(t *testing.T) {
+	roh := errors.New("Bus kaputt")
+	pruefe := func(name string, err error) {
+		t.Helper()
+		einmalPraefix(t, name, err)
+		if !errors.Is(err, roh) {
+			t.Errorf("%s: Ursache verloren: %v", name, err)
+		}
+	}
+	// Abonnieren scheitert.
+	d := &Dialog{t: abonnierFehler{&attrappe{}, roh}, token: func() string { return "tok" }}
+	_, err := d.Speichern(context.Background(), Anfrage{})
+	pruefe("Speichern Abonniere", err)
+	pruefe("Close", d.Close())
+	// SaveFile scheitert (roher Fehler der Attrappe).
+	_, err = neuerDialog(&attrappe{fehler: roh}).Speichern(mitFrist(t), anfrage())
+	pruefe("Speichern SaveFile", err)
+	// Antwort trägt einen rohen Fehler.
+	_, err = neuerDialog(&attrappe{antwort: &Antwort{Err: roh}}).Speichern(mitFrist(t), anfrage())
+	pruefe("Speichern Antwort.Err", err)
+	// Kontext endet vor der Antwort.
+	ctx, abbruch := context.WithCancel(context.Background())
+	abbruch()
+	_, err = neuerDialog(&attrappe{}).Speichern(ctx, anfrage())
+	einmalPraefix(t, "Speichern ctx", err)
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("Speichern ctx: Ursache verloren: %v", err)
+	}
+	// Sentinel bleibt erkennbar, ohne doppeltes Präfix.
+	_, err = neuerDialog(&attrappe{antwort: &Antwort{Code: antwortAbgebrochen}}).Speichern(mitFrist(t), anfrage())
+	einmalPraefix(t, "abgebrochen", err)
+	if !errors.Is(err, ErrAbgebrochen) {
+		t.Errorf("ErrAbgebrochen verloren: %v", err)
+	}
+	// URIZuPfad: nicht parsbare Adresse und Nicht-Datei.
+	_, err = URIZuPfad("file://%zz/x")
+	einmalPraefix(t, "URIZuPfad parse", err)
+	_, err = URIZuPfad("https://x/y")
+	einmalPraefix(t, "URIZuPfad Schema", err)
 }

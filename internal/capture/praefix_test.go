@@ -104,6 +104,32 @@ func TestPraefixAbbruchUndAlleOhneWorkspace(t *testing.T) {
 	}
 }
 
+// schliessFehler lässt Close scheitern; sonst die Attrappe.
+type schliessFehler struct {
+	*attrappe
+	roh error
+}
+
+func (s schliessFehler) Close() error { return s.roh }
+
+// F-379: Close hüllt den rohen Fehler der Verbindung; Fenster, AktiverBildschirm und Alle tragen das Präfix je mit
+// eigenem Aufruf.
+func TestPraefixCloseUndEinzelaufrufe(t *testing.T) {
+	roh := errors.New("Bus weg")
+	err := (&KWin{t: schliessFehler{&attrappe{}, roh}}).Close()
+	einmalPraefix(t, "Close", err)
+	if !errors.Is(err, roh) {
+		t.Errorf("Ursache verloren: %v", err)
+	}
+	a := &attrappe{version3: true, fehler: errors.New("Pipe kaputt")}
+	_, err = neu(a).Fenster(context.Background(), Optionen{})
+	einmalPraefix(t, "Fenster", err)
+	_, err = neu(a).AktiverBildschirm(context.Background(), Optionen{})
+	einmalPraefix(t, "AktiverBildschirm", err)
+	_, err = neu(a).Alle(context.Background(), Optionen{})
+	einmalPraefix(t, "Alle", err)
+}
+
 // F-350: NeuKWin meldet einen Verbindungsfehler mit genau einem Präfix und hält die Ursache erreichbar.
 func TestNeuKWinVerbindungsfehlerPraefix(t *testing.T) {
 	alt := verbindeTransport

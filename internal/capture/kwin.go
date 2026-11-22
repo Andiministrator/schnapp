@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/godbus/dbus/v5"
+
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 )
 
 const kwinDienst = "org.kde.KWin"
@@ -80,7 +82,7 @@ func NeuKWin() (*KWin, error) {
 }
 
 // Close schließt die D-Bus-Verbindung.
-func (k *KWin) Close() error { return k.t.Close() }
+func (k *KWin) Close() error { return errprefix.Wrap("capture", k.t.Close()) }
 
 var _ Quelle = (*KWin)(nil)
 

@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
+
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 )
 
 // ErrKeineDatei: Die Adresse ist keine lokale Datei (kein file://), ADR-0025 Punkt 3.
@@ -17,7 +19,7 @@ var ErrKeineDatei = errors.New("portal: keine lokale Datei (file://)")
 func URIZuPfad(uri string) (string, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
-		return "", err
+		return "", errprefix.Wrap("portal", err) // F-379
 	}
 	if !strings.EqualFold(u.Scheme, "file") {
 		return "", ErrKeineDatei

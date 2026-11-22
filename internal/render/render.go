@@ -28,6 +28,7 @@ import (
 	"golang.org/x/image/math/fixed"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/errprefix"
 	"github.com/Andiministrator/schnapp/internal/raster16"
 	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
@@ -37,7 +38,8 @@ import (
 // bricht nie wegen des Aufwands ab: Eine im Editor gemachte Bearbeitung darf nicht am Speichern scheitern (F-131),
 // langsam ist besser als verloren. Gegen präparierte Dateien prüft der Editor beim Öffnen mit Pruefe (ADR-0020
 // Nachtrag 1).
-func Bild(d *document.Dokument) (*image.NRGBA, error) {
+func Bild(d *document.Dokument) (b *image.NRGBA, fehler error) {
+	defer errprefix.Defer("render", &fehler) // ADR-0019 Nachtrag 2: auch Schrift- und Rasterfehler tragen das Präfix (F-379)
 	b, _, err := bildMitAufwand(d)
 	return b, err
 }
@@ -46,7 +48,8 @@ func Bild(d *document.Dokument) (*image.NRGBA, error) {
 // ohne Bearbeitungsdaten (kein snAP/snAO) und ohne Metadaten (kein tEXt, iTXt, tIME), Kernprinzip 3. Wie Bild bricht es
 // nie wegen des Aufwands ab. Der Editor ruft es in einer eigenen Goroutine auf einem Abzug des Dokuments auf, nicht im
 // Fensterthread (F-178, ADR-0020 Nachtrag 6); das Dokument darf daneben nicht verändert werden.
-func PNG(d *document.Dokument) ([]byte, error) {
+func PNG(d *document.Dokument) (daten []byte, fehler error) {
+	defer errprefix.Defer("render", &fehler) // F-379
 	b, err := Bild(d)
 	if err != nil {
 		return nil, err
