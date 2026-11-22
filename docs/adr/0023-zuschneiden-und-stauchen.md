@@ -240,3 +240,6 @@ Anlass: Die Zackenkante war erkennbar, aber nicht schön (Andi, Echtlauf #92).
   Formwechsel bei der Wiederherstellung verloren. `document.Neu` legt `tear` an (wie ein Nutzer ohne
   Einstellungsdatei); Aufnahme, Öffnen und Laden setzen die Form ausdrücklich ohne Rückgängig-Schritt
   (`VorgabeKante`).
+- **Ergänzung 22.11.2026 (F-418):** Die Mittellinie wird je Form, Länge und Faktor einmal gerechnet
+  (`document.Kantenlinie`), die Schichten verschieben sie nur quer (`Band`). Die Zahlen, die Renderer, Editor und
+  SVG-Export bekommen, sind unverändert (ganze Hundertstel, Schichttabelle wie oben; `testdata/format/` unverändert).

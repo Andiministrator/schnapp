@@ -103,3 +103,28 @@ Was eine Bearbeitung ausmacht, ist dagegen klein und ohne Pixel beschreibbar:
   neue Ausgangsdatei nach dem Speichern, Aufräumen beim Start, Grenzen beim Lesen. Zwei Instanzen auf derselben Datei
   sind nicht gegeneinander gesperrt (bewusst: Schnapp sperrt Dateien sonst auch nicht; F-110 schützt das Speichern).
 
+
+## Nachtrag 3 (22.11.2026): Nacharbeit aus dem Sprint-Abschluss 11 (F-409, F-412)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Andi informiert).
+
+- **Zug (F-409, ersetzt den Satz „trägt das Objekt im Zug mit“ aus Nachtrag 2):** Ein laufender Zug hält die fällige
+  Kopie weiter nicht auf, die Kopie trägt aber nur den Stand `Stand()`: Ein neues Objekt im Zug fehlt, ein gezogenes
+  steht mit seiner Lage vor dem Zug darin (`document.ObjekteOhneZug`, auch im SVG-Schreiber). So kommt ein mit Esc
+  verworfenes Objekt nach einem Absturz nie zurück, kein verworfener Text liegt auf der Platte, und leere oder entartete
+  Zug-Objekte werden nie geschrieben. Ein übernommener Zug ändert den Stand und wird nach der Bündelung gesichert. Damit
+  gilt wieder „Folgen“: *Nicht abgedeckt ist Text, der gerade getippt und noch nicht übernommen ist.* Verworfen: die
+  Kopie im Zug zu schreiben und nach Zugende neu zu sichern — der verworfene Text läge dann bis zur nächsten Kopie auf
+  der Platte, und die Schleife müsste das Zugende eigens erkennen.
+- **Flächenbudget (F-412, ergänzt Punkt 7):** Vor dem Anwenden werden alle Schwärzungen ohne Pixel geprüft
+  (`document.PruefeSchwaerzung`) und ihre Flächen im Bild summiert. Belegen sie mehr Pixelkopien, als der
+  Rückgängig-Verlauf noch aufnimmt (512 MiB, 4 Bytes je Pixel, `document.VerlaufPlatz`), wird die Kopie nicht
+  angewendet (`ErrZuGross`) und wie jede nicht anwendbare beiseitegelegt. Begründung: Unter dieser Grenze verwirft der
+  Verlauf nichts; Rückgängig führt also auf den gespeicherten Stand (Punkt 6), die Sitzung schreibt danach weiter
+  Kopien, und die Arbeit beim Öffnen bleibt bei rund 128 Mi Pixeln (unter einer Sekunde). Eine präparierte Kopie mit
+  Tausenden vollflächiger Schwärzungen wird sofort abgelehnt. Die Höchstzahl von 10000 Schwärzungen je Kopie bleibt als
+  Grenze beim Lesen. Abgelehnt heißt: nichts wird angewendet (Kernprinzip 2 bleibt gewahrt).
+- **Probelauf:** Der Abzug bekommt nur noch die Angaben und die Prüfung (`render.Pruefe` liest keine Pixel). Die
+  Schwärzungen laufen einmal, am Dokument, nachdem sie vorab geprüft sind.
+- **Bekannte Lücke (F-431):** Ein einzelnes vollflächiges Schwärzen eines Bilds über 128 Mi Pixel (etwa 11600²) als
+  letzter Schritt vor einem Absturz ergibt eine Kopie über dem Budget; sie wird beim Öffnen abgelehnt und gemeldet.
