@@ -174,8 +174,13 @@ func TestGewoehnlicherKopierfehlerNachGescheitertemSpeichern(t *testing.T) {
 	warteSpeichern(t, e)
 	e.kopierLaeuft, e.kopierStart = true, time.Now()
 	haltKopierFehler(e)
-	if e.kopierFehlerHaelt || aus.Len() != 0 || e.schliessenNachSpeichern {
+	// Das Kopieren ist hier ohne seine Meldung „Copying…“ gesetzt, die Verwerfen-Warnung steht also noch: Sie bleibt, und
+	// der Kopierfehler geht genau einmal auf die Fehlerausgabe (F-356) — ein Halt ist er nicht.
+	if e.kopierFehlerHaelt || strings.Count(aus.String(), "kaputt") != 1 || e.schliessenNachSpeichern {
 		t.Errorf("gewöhnlicher Kopierfehler wird Halt: haelt=%v stderr=%q nachSpeichern=%v", e.kopierFehlerHaelt, aus.String(), e.schliessenNachSpeichern)
+	}
+	if !strings.Contains(e.meldung.Text, "discard") {
+		t.Errorf("Verwerfen-Warnung verdrängt: %q", e.meldung.Text)
 	}
 	if !e.schliessen() {
 		t.Error("zweite Anfrage verwirft nicht")

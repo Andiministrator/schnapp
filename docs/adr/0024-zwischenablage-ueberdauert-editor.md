@@ -145,3 +145,28 @@ Karte #143).
   damit gleichgültig.
 - Offen: Übernimmt ein anderes Programm die Zwischenablage, meldet Gio `data_source.cancelled` nicht nach außen; die
   Warnung kommt dann unnötig (F-328, Karte #142, braucht einen Gio-Patch).
+
+## Nachtrag 7 (22.11.2026): Speicher-Ende, Kopierantwort und haltende Meldungen (F-351 bis F-359, F-372)
+
+**Status:** Akzeptiert (Claude, Andi informiert). Die ersten drei Regeln sind in Sprint 10 umgesetzt (ce586c6, 3a01c98)
+und werden hier nachgetragen (F-372); die übrigen setzt Sprint 11 um (Karte #156).
+
+- **Der Halt beantwortet die wartende Anfrage (F-351):** Hält ein Kopierfehler das Fenster nach dem Speicher-Ende einmal
+  offen, gilt damit auch eine Schließen-Anfrage als beantwortet, die wegen des Kopierens angehalten war; sie wird nicht
+  von selbst neu gestellt.
+- **Ein Speicher-Ende mit Fehler oder Hinweis verwirft die wartende Kopier-Anfrage (F-352, F-357):** Sie gälte sonst als
+  Bestätigung des Verwerfens oder schlösse, bevor der Hinweis gelesen ist. Das gilt auch für einen Hinweis aus einem
+  Strg+S, der die Schließen-Anfrage nicht selbst entscheidet.
+- **Die jüngste Kopierantwort entscheidet (F-354):** Ein gelungenes Kopieren löscht den Merker eines früheren
+  Kopierfehlers, auch wenn nur das Fenster die Kopie hält.
+- **Haltende Meldungen bleiben stehen (F-356):** Sagt die Statusleiste, was die nächste Schließen-Anfrage tut
+  (Verwerfen-Warnung nach gescheitertem Speichern, Hinweis, Fenster-Warnung), verdrängt die Antwort eines Kopierens
+  sie nicht, solange sie gilt (gleicher Dokumentstand). Die Bestätigung „Copied to clipboard“ entfällt dann; ein
+  Kopierfehler geht stattdessen auf die Fehlerausgabe. Jede andere Meldung, etwa „Copying…“ nach einem neuen Strg+C,
+  löst die haltende Meldung ab.
+- **Der Kopierfehler-Halt zeigt seinen Grund (F-358):** Hält ein Kopierfehler das Fenster nach dem Speicher-Ende offen,
+  steht danach wieder der Kopierfehler in der Leiste, auch wenn sie zwischendurch etwas anderes sagte (etwa dass das
+  Speichern nicht antwortet).
+- **Ein laufendes neues Kopieren entscheidet selbst (F-359):** Wurde nach einem Kopierfehler erneut kopiert, meldet sich
+  das Speicher-Ende wie sonst („Saved“); über das Offenbleiben entscheidet die Antwort des neuen Kopierens.
+
