@@ -1,6 +1,6 @@
 # Plattformen und ihre Regeln zu KI-erzeugtem Code
 
-Stand: 2026-11-21 (Gio-Einreichung ergänzt), 2026-11-19
+Stand: 2026-11-22 (Gio-Patch eingereicht, PR #204 und #205), 2026-11-21, 2026-11-19
 
 Schnapp wird überwiegend von Claude geschrieben; das schließt manche Plattformen aus oder bindet sie
 an Auflagen. Quellen: `sources-visited.md` (Einträge vom 19.11.2026).
