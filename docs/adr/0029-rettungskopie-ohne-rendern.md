@@ -173,4 +173,10 @@ Was eine Bearbeitung ausmacht, ist dagegen klein und ohne Pixel beschreibbar:
   eigene alte Kopie liegen und wird beim nächsten Öffnen beiseitegelegt und gemeldet. Sie ist ohne Vermerk im
   Kopie-Format nicht von einer echten Kopie bei geänderter Datei zu unterscheiden; kein Schaden, nur eine unnötige
   Meldung.
+- **Nachgezogen (Karte #200, F-456, F-457, F-460):** Aufträge der Kette lesen nur den Stand der Kette
+  (`kettenBasis`, gesetzt mit der Sperre) oder einen Pfad, den ihr Aufruf mitgibt, nie `basis`. Die Übernahme der
+  Sperre läuft nur für einen Auftrag der laufenden Epoche — sonst könnte ein verfallener Sichere-Auftrag die Sperre
+  einer neuen Datei nehmen und der folgende `NeueBasis`-Auftrag die Kopie des anderen Fensters löschen (Rückschritt aus
+  der ersten Fassung dieses Nachtrags, F-456). `gestoert` fällt wie `aus` erst nach einem ausstehenden Wechsel ins
+  Gewicht (F-457).
 

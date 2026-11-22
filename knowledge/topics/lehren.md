@@ -584,4 +584,11 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Durchsicht ändert Bildpfade:** Sobald `render.Bild` Alpha liefert, jeden Ausgang prüfen (PNG, Zwischenablage,
   JPEG auf Weiß, Vorschau vormultipliziert mitteln, SVG-Maske) — ein Spalt mit Alpha 0 ist sonst je nach Ausgang
   schwarz oder weiß.
+- **Nebenläufige Ketten: Zustand, der beim Aufruf gesetzt und erst im Auftrag gelesen wird, ist ein Rückschritt-Muster**
+  (F-446 → F-456): Die Nacharbeit zu einem Befund baute genau diese Klasse an anderer Stelle neu ein; erst ein zweiter
+  Verify-Lauf fand sie. Jeder Auftrag liest den Stand der Kette oder einen mitgegebenen Wert, nie das Feld, das der
+  Aufrufer gerade umsetzt — und der Verify-Prompt fragt danach ausdrücklich.
+- **Overlay-Gegenproben, die ganze Dateien ersetzen, veralten mit dem Code:** Ein „FAIL“ nach einer Änderung kann ein
+  Baufehler sein und belegt dann nichts. Verbindlich sind Mutanten im Mutanten-Werkzeug (`if false &&`), die an der
+  aktuellen Zeile hängen.
 
