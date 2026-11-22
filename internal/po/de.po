@@ -336,6 +336,18 @@ msgstr "Durch ein Signal unterbrochen, nachdem %s vollständig geschrieben war."
 msgid "Interrupted again while writing; the temporary file was removed."
 msgstr "Beim Schreiben erneut unterbrochen; die temporäre Datei wurde entfernt."
 
+msgid "Interrupted again while writing directly to the target; it may be incomplete."
+msgstr "Beim direkten Schreiben ins Ziel erneut unterbrochen; die Datei kann unvollständig sein."
+
+msgid "Interrupted again before writing started; the target was not changed."
+msgstr "Erneut unterbrochen, bevor das Schreiben begann; das Ziel wurde nicht verändert."
+
+msgid "Interrupted again; the file was already complete."
+msgstr "Erneut unterbrochen; die Datei war schon vollständig."
+
+msgid "Interrupted again while writing; the temporary file could not be removed."
+msgstr "Beim Schreiben erneut unterbrochen; die temporäre Datei ließ sich nicht entfernen."
+
 msgid "Select"
 msgstr "Auswählen"
 

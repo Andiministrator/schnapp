@@ -73,8 +73,50 @@
     "name": "F-442 zweites Signal lässt die temporäre Datei liegen",
     "datei": "cmd/schnapp/signalwache.go",
     "paket": "./cmd/schnapp",
-    "alt": "\t\t\t\t\t\tentferneTemp(*p)\n",
+    "alt": "\terr := entferneTemp(*temp)\n",
+    "neu": "\tvar err error\n"
+  },
+  {
+    "name": "F-458 zweites Signal im Rückfall meldet eine entfernte temporäre Datei",
+    "datei": "cmd/schnapp/signalwache.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tcase direkt:\n",
+    "neu": "\tcase false && direkt:\n"
+  },
+  {
+    "name": "F-458 Rückfall wird der Wache nicht gemeldet",
+    "datei": "cmd/schnapp/signalwache.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\t\tmerkeTemp(\"\") // Rückfall: Puffer statt temporärer Datei, danach schreibt export das Ziel direkt\n",
     "neu": ""
+  },
+  {
+    "name": "F-458 umbenannte temporäre Datei gilt als nicht entfernbar",
+    "datei": "cmd/schnapp/signalwache.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tcase errors.Is(err, os.ErrNotExist):\n",
+    "neu": "\tcase false && errors.Is(err, os.ErrNotExist):\n"
+  },
+  {
+    "name": "F-459 entferneTemp ohne Präfixprüfung",
+    "datei": "cmd/schnapp/signalwache.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif !strings.HasPrefix(filepath.Base(name), tempVorsatz) {",
+    "neu": "\tif false && !strings.HasPrefix(filepath.Base(name), tempVorsatz) {"
+  },
+  {
+    "name": "F-459 --output gibt nach dem Signal keine Ergebniszeile aus",
+    "datei": "cmd/schnapp/aufnehmen.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\tif errors.Is(err, errNachSchreiben) {\n\t\t\t\tgibPfadAus(aus, fehler, t.JSON, abs, d.Groesse())",
+    "neu": "\t\t\tif false && errors.Is(err, errNachSchreiben) {\n\t\t\t\tgibPfadAus(aus, fehler, t.JSON, abs, d.Groesse())"
+  },
+  {
+    "name": "F-459 gestörte Rettung meldet nichts",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tcase w.Gestoert:\n",
+    "neu": "\tcase false && w.Gestoert:\n"
   },
   {
     "name": "F-443 Wache hebt ein geerbtes Ignorieren auf",

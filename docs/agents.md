@@ -37,7 +37,11 @@ Rules:
     target is then replaced completely. The call still ends with exit code 1, but says "Interrupted by a signal after
     … was written completely" and prints the result line (path, or the JSON line with `--json`) on standard output, so
     a script can tell this case from a failure (an ordinary failure prints no result line). If the write hangs, a second
-    signal removes the temporary file and ends the call with exit code 1. Being signalled while rendering leaves
+    signal removes the temporary file and ends the call with exit code 1, and says what state it left: the file was
+    already complete, or the temporary file could not be removed. In the direct write below there is no temporary
+    file: a second signal then ends the call with exit code 1 and the message "Interrupted again while writing
+    directly to the target; it may be incomplete." (Schnapp does not touch the hanging write, so the target may be
+    truncated; check it before using it). Being signalled while rendering leaves
     nothing either. Only `SIGKILL` (or a crash of the machine) during the write can leave a temporary file behind.
   - If the folder does not allow a new file but the existing target is writable, Schnapp writes the target directly
     and restores the old content if that fails. Only if restoring fails too, the call ends with exit code 1 and the

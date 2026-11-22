@@ -445,7 +445,23 @@ msgid "Unsaved changes from %s could not be restored. The rescue copy is kept fo
 msgstr ""
 
 #: cmd/schnapp/signalwache.go
+msgid "Interrupted again while writing directly to the target; it may be incomplete."
+msgstr ""
+
+#: cmd/schnapp/signalwache.go
+msgid "Interrupted again before writing started; the target was not changed."
+msgstr ""
+
+#: cmd/schnapp/signalwache.go
 msgid "Interrupted again while writing; the temporary file was removed."
+msgstr ""
+
+#: cmd/schnapp/signalwache.go
+msgid "Interrupted again; the file was already complete."
+msgstr ""
+
+#: cmd/schnapp/signalwache.go
+msgid "Interrupted again while writing; the temporary file could not be removed."
 msgstr ""
 
 #: cmd/schnapp/signalwache.go

@@ -58,6 +58,7 @@ const tempVorsatz = ".schnapp-export-"
 func mitSignalwache(f func(abgebrochen func() bool, merkeTemp func(string)) error) error {
 	var kamen atomic.Int32 // gezählte Signale
 	var temp atomic.Pointer[string]
+	var direkt atomic.Bool // Rückfall: das Ziel selbst wird beschrieben, es gibt keine temporäre Datei (F-458)
 	var fangen []os.Signal
 	for _, s := range signaleDerWache {
 		if !signal.Ignored(s) {
@@ -93,17 +94,20 @@ func mitSignalwache(f func(abgebrochen func() bool, merkeTemp func(string)) erro
 				return
 			case <-takt.C:
 				if nimm(); kamen.Load() >= 2 {
-					if p := temp.Load(); p != nil {
-						entferneTemp(*p)
-					}
-					fmt.Fprintln(os.Stderr, i18n.T("Interrupted again while writing; the temporary file was removed."))
+					fmt.Fprintln(os.Stderr, zweitesSignalMeldung(direkt.Load(), temp.Load()))
 					beendeProzess(exitFehler)
 					return
 				}
 			}
 		}
 	}()
-	err := f(abgebrochen, func(name string) { temp.Store(&name) })
+	err := f(abgebrochen, func(name string) {
+		if name == "" { // kein Dateiname: der Rückfall schreibt das Ziel direkt (F-458)
+			direkt.Store(true)
+			return
+		}
+		temp.Store(&name)
+	})
 	meldeAb(kanal)
 	close(fertig)
 	<-ende
@@ -114,13 +118,38 @@ func mitSignalwache(f func(abgebrochen func() bool, merkeTemp func(string)) erro
 	return err
 }
 
+// zweitesSignalMeldung räumt, soweit möglich, auf und liefert den wahren Stand für die Meldung beim zweiten Signal
+// (F-458). Im Rückfall (direkt) beschreibt der hängende Schreiber das Ziel selbst: Die Wache fasst es nicht an, ein
+// zweiter Schreiber auf dieselbe Datei risse sie womöglich nur weiter entzwei; sie meldet ehrlich, dass es unvollständig
+// sein kann. Ohne Namen der temporären Datei hat das Schreiben noch nicht begonnen.
+func zweitesSignalMeldung(direkt bool, temp *string) string {
+	switch {
+	case direkt:
+		return i18n.T("Interrupted again while writing directly to the target; it may be incomplete.")
+	case temp == nil:
+		return i18n.T("Interrupted again before writing started; the target was not changed.")
+	}
+	err := entferneTemp(*temp)
+	switch {
+	case err == nil:
+		return i18n.T("Interrupted again while writing; the temporary file was removed.")
+	case errors.Is(err, os.ErrNotExist):
+		// Umbenannt oder schon weg: das Ziel ist vollständig ersetzt.
+		return i18n.T("Interrupted again; the file was already complete.")
+	}
+	return i18n.T("Interrupted again while writing; the temporary file could not be removed.")
+}
+
+// errKeinTemp: der Name trägt den Vorsatz der Exportdatei nicht; entferneTemp fasst ihn nicht an.
+var errKeinTemp = errors.New("schnapp: keine temporäre Exportdatei")
+
 // entferneTemp entfernt die temporäre Datei name, aber nur, wenn sie den Vorsatz der
 // Exportdatei trägt (der Name stammt aus internal/export).
-func entferneTemp(name string) {
+func entferneTemp(name string) error {
 	if !strings.HasPrefix(filepath.Base(name), tempVorsatz) {
-		return
+		return errKeinTemp
 	}
-	os.Remove(name)
+	return os.Remove(name)
 }
 
 // schreibeInhalt schreibt inhalt atomar nach abs, unter der Signalwache (F-396). vorSchreiben (nur Tests) läuft
@@ -136,6 +165,8 @@ func schreibeInhalt(abs string, inhalt []byte, privat bool, vorSchreiben func(ab
 			}
 			if n, ok := w.(interface{ Name() string }); ok {
 				merkeTemp(n.Name())
+			} else {
+				merkeTemp("") // Rückfall: Puffer statt temporärer Datei, danach schreibt export das Ziel direkt
 			}
 			return schreibNaht(w, inhalt, abgebrochen)
 		}
