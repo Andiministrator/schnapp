@@ -592,3 +592,13 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Baufehler sein und belegt dann nichts. Verbindlich sind Mutanten im Mutanten-Werkzeug (`if false &&`), die an der
   aktuellen Zeile hängen.
 
+- **Protokoll-Spezifikationen vor der Umsetzung frisch lesen** (Karte #173): Die MCP-Revision 2026-07-28 hat den
+  `initialize`-Handshake abgeschafft (`server/discover`, `_meta` je Anfrage). Aus dem Gedächtnis gebaut, hätte der
+  Server nur die Altform gesprochen. Quelle in `knowledge/sources/`, beide Epochen getestet.
+- **Probe-Skripte prüfen JSON nicht über die Feldreihenfolge und Oberflächentexte nicht wörtlich:** Go schreibt
+  `content` vor `isError`, und der virtuelle KWin läuft in der Systemsprache (deutscher Benachrichtigungstitel).
+  Muster je Feld einzeln prüfen (`urteil` in `scripts/drehbuecher/agenten-mcp.sh`).
+- **Ein Werkzeug, das bei EOF auf stdin seine laufende Anfrage abbricht, braucht im Probe-Skript offenes stdin:**
+  `{ printf …; sleep N; } | schnapp mcp`, sonst endet jede lange Anfrage als „Cancelled“.
+- **Benachrichtigungen im virtuellen KWin:** Der private D-Bus hat keinen Dienst; `scripts/fake-notifications`
+  stellt ihn mit eigener Zeitgrenze, so prüft der Lauf auch die echte D-Bus-Signatur von `Notify`.
