@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Attrappe für gtk-update-icon-cache im Test von install.sh (scripts/install-test.sh, F-367): baut und ändert nichts,
+# hängt „gtk-update-icon-cache <argumente>“ an $STUB_LOG an und endet mit 0. Das echte Werkzeug aus /usr/bin
+# bleibt außen vor, weil dieser Ordner im PATH des Tests vorn steht.
+set -eu
+[ -n "${STUB_LOG:-}" ] || { echo "gtk-update-icon-cache-Attrappe: STUB_LOG fehlt" >&2; exit 1; }
+printf '%s\n' "gtk-update-icon-cache $*" >> "$STUB_LOG"
+exit 0

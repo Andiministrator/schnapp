@@ -10,13 +10,21 @@
 #   1. Vorlage ohne exakte Zeile [Desktop Entry]: Abbruch mit Fehler, nichts angelegt, nicht gebaut (F-122).
 #   2. Repo ohne Tag: Version 0.0.0-dev+<Kurzhash>, mit .dirty bei geändertem Baum; mit Tag die Tag-Version (F-113).
 #   3. Ordner in fremdem Repo (mit Tag), selbst ohne Repo: der fremde Tag zählt nicht, Version 0.0.0-dev (F-113).
+#   4. Repo mit Tag ohne v-Schema (sprint-ende): zählt nicht, Version 0.0.0-dev+<Kurzhash> (F-364).
+#
+# Desktop-Werkzeuge (update-desktop-database, gtk-update-icon-cache, kbuildsycoca6) laufen im Test nur als Attrappen
+# aus scripts/install-test-stub/ (F-367): Der Ordner steht im PATH vor /usr/bin, und Attrappen mit gleichem Namen
+# verdecken dort die echten Programme. /usr/bin bleibt im PATH für cp, git und Co. Fall 2a prüft im Protokoll,
+# dass die Attrappen liefen und nur Pfade im Sandkasten erhielten.
 #
 # Der Sandkasten liegt unter tmp/ des Projekts (gitignoriert) und bleibt nach dem Lauf liegen; es wird nichts gelöscht.
 set -eu
 
 wurzel="$(cd "$(dirname "$0")/.." && pwd -P)"
 stub="$wurzel/scripts/install-test-stub"
-[ -x "$stub/go" ] || { echo "install-test: Attrappe fehlt oder ist nicht ausführbar: $stub/go" >&2; exit 1; }
+for n in go update-desktop-database gtk-update-icon-cache kbuildsycoca6; do
+	[ -x "$stub/$n" ] || { echo "install-test: Attrappe fehlt oder ist nicht ausführbar: $stub/$n" >&2; exit 1; }
+done
 mkdir -p -- "$wurzel/tmp"
 sand="$(mktemp -d "$wurzel/tmp/install-test.XXXXXX")"
 echo "Sandkasten: $sand"
@@ -72,6 +80,11 @@ grep -qF -- "0.0.0-dev+$kurz.dirty" "$f2/go.log" && fail "Fall 2a: sauberer Baum
 [ -x "$f2/home/.local/bin/schnapp" ] || fail "Fall 2a: Programm nicht installiert"
 grep -q "^Exec=\"$f2/home/.local/bin/schnapp\"" "$f2/home/.local/share/applications/schnapp.desktop" \
 	|| fail "Fall 2a: Exec= in der Desktop-Datei falsch: $(cat "$f2/home/.local/share/applications/schnapp.desktop" 2>&1 || true)"
+# Die Attrappen liefen (nur sie schreiben ins Protokoll), und ihre Pfade liegen im Sandkasten.
+grep -q '^update-desktop-database ' "$f2/go.log" || fail "Fall 2a: Attrappe update-desktop-database nicht aufgerufen"
+grep -q '^kbuildsycoca6' "$f2/go.log" || fail "Fall 2a: Attrappe kbuildsycoca6 nicht aufgerufen"
+grep -E '^(update-desktop-database|gtk-update-icon-cache) ' "$f2/go.log" | grep -v -F -- " $f2/" \
+	&& fail "Fall 2a: Desktop-Werkzeug mit Pfad außerhalb des Sandkastens: $(cat "$f2/go.log")" || true
 
 printf '# geändert\n' >> "$f2/repo/data/schnapp.desktop.in"
 rc=0
@@ -99,6 +112,19 @@ rc=0
 lauf "$f3/unterordner" "$f3" || rc=$?
 [ "$rc" -eq 0 ] || fail "Fall 3: install.sh scheiterte: $(cat "$f3/aus.txt")"
 grep -qF -- "-X main.version=0.0.0-dev " "$f3/go.log" || fail "Fall 3: erwartet 0.0.0-dev (fremder Tag zählt nicht), go-Aufruf: $(cat "$f3/go.log")"
+
+# --- Fall 4: Tag ohne v-Schema (F-364) ---------------------------------------
+f4="$sand/f4"
+kopie "$f4/repo"
+git_ein "$f4/repo" init -q
+git_ein "$f4/repo" add -A
+git_ein "$f4/repo" commit -q -m start
+git_ein "$f4/repo" tag sprint-ende
+kurz4="$(git_ein "$f4/repo" rev-parse --short HEAD)"
+rc=0
+lauf "$f4/repo" "$f4" || rc=$?
+[ "$rc" -eq 0 ] || fail "Fall 4: install.sh scheiterte: $(cat "$f4/aus.txt")"
+grep -qF -- "-X main.version=0.0.0-dev+$kurz4 " "$f4/go.log" || fail "Fall 4: erwartet 0.0.0-dev+$kurz4 (Tag sprint-ende zählt nicht), go-Aufruf: $(cat "$f4/go.log")"
 
 if [ "$fehler" -eq 0 ]; then
 	echo "install-test: alle Fälle bestanden"

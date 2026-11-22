@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Attrappe für kbuildsycoca6 im Test von install.sh (scripts/install-test.sh, F-367): baut und ändert nichts,
+# hängt „kbuildsycoca6 <argumente>“ an $STUB_LOG an und endet mit 0. Das echte Werkzeug aus /usr/bin
+# bleibt außen vor, weil dieser Ordner im PATH des Tests vorn steht.
+set -eu
+[ -n "${STUB_LOG:-}" ] || { echo "kbuildsycoca6-Attrappe: STUB_LOG fehlt" >&2; exit 1; }
+printf '%s\n' "kbuildsycoca6 $*" >> "$STUB_LOG"
+exit 0
