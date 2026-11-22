@@ -112,6 +112,8 @@ User-facing documents (this README, `CONTRIBUTING.md`) exist in English and Germ
 — requirements, architecture decisions (`docs/adr/`), QA checklists, findings, research notes (`knowledge/`) and the
 corporate design (`brand/`) — are written in German.
 
+The working file format (PNG with the private chunks `snAP` and `snAO`) is specified in English in [`docs/format.md`](docs/format.md), with example files in `testdata/format/`.
+
 ## AI disclosure
 
 Most of the code and documentation in this repository is written by an AI model (Anthropic Claude) under the

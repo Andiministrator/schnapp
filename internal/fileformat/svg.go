@@ -22,6 +22,9 @@ const FormatVersion = 1
 // ns ist der Namensraum der Schnapp-Attribute. Er kennzeichnet das Format, nicht den Rechner oder Nutzer.
 const ns = "urn:x-schnapp:1"
 
+// maxTiefe ist die größte Verschachtelungstiefe des SVG beim Lesen (docs/format.md, Abschnitt Limits).
+const maxTiefe = 64
+
 // Metadaten stehen im SVG-Block; die Bibliothek baut ihren Index daraus neu auf (ADR-0016). Keine Pfade, keine
 // Rechner- oder Nutzernamen (Kernprinzip 3); den Autor trägt nur ein, wer ihn einstellt.
 type Metadaten struct {
@@ -366,7 +369,7 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 		switch t := tok.(type) {
 		case xml.StartElement:
 			tiefe++
-			if elemente++; elemente > maxElemente || tiefe > 64 {
+			if elemente++; elemente > maxElemente || tiefe > maxTiefe {
 				return nil, fmt.Errorf("%w: SVG zu groß oder zu tief", ErrZuGross)
 			}
 			if inObjekt > 0 {

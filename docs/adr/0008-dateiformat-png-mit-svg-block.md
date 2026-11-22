@@ -66,3 +66,10 @@ man überall verschicken kann und die in Schnapp voll bearbeitbar bleibt.
   einem wirklich vorhandenen Block: höchstens das Doppelte seiner Länge (früher das 2,6- bis 4-Fache), behalten wird genau
   die Länge.
 - **PDF-Export:** noch nicht umgesetzt (Karte #39).
+
+## Nachtrag 3 (22.11.2026): Öffentliche Spezifikation (E-15, Karte #44)
+
+**Status:** Akzeptiert (E-15, Andi 19.11.2026).
+
+- Die normative Beschreibung für Außenstehende steht in `docs/format.md` (Englisch, ohne deutsche Fassung) mit Beispieldateien unter `testdata/format/`. Diese ADR bleibt die Entscheidung; die Spezifikation beschreibt, was der Code tut.
+- Spezifikation und `FormatVersion` ändern sich immer im selben Commit. Der Konformitätstest (`internal/fileformat/format_konform_test.go`) erzeugt die Beispiele mit dem Schreiber (`-update`), liest sie mit dem Leser und gleicht die Konstanten der Tabelle „Limits and constants“ mit dem Code ab.

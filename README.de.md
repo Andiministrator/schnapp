@@ -119,6 +119,8 @@ Die Dokumente für Nutzer und Beitragende (diese README, `CONTRIBUTING.de.md`) g
 Arbeitsdokumente des Projekts — Anforderungen, Architektur-Entscheidungen (`docs/adr/`), QA-Listen, Befunde,
 Recherchen (`knowledge/`) und das Corporate Design (`brand/`) — sind auf Deutsch.
 
+Das Format der Arbeitsdatei (PNG mit den privaten Blöcken `snAP` und `snAO`) ist auf Englisch in [`docs/format.md`](docs/format.md) spezifiziert, mit Beispieldateien in `testdata/format/`.
+
 ## Hinweis zu KI
 
 Der größte Teil von Code und Doku in diesem Repository wird von einem KI-Modell (Anthropic Claude) unter Anleitung und
