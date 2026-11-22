@@ -178,3 +178,34 @@ dem Bild, mit Griffen, die man nach innen zieht.
   im Zuschnitt kein Platz, einen neuen Rahmen zu beginnen; er lässt sich aber im abgedunkelten Teil beginnen, den es
   vorher nicht gab. Rahmen-ziehen wird also nicht schlechter.
 - **Probe:** `scripts/drehbuecher/zuschneiden-griffe-f386.txt` (virtueller KWin).
+
+## Nachtrag 6 (22.11.2026): Kantenform wählbar, Abriss mit Spalt und Schatten als Voreinstellung (Karte #96)
+
+**Status:** Akzeptiert (Andi 22.11.2026: „Form 4 find ich am besten — einstellbar machen und eine als default nehmen“;
+Muster `tmp/sprint11/kante-muster/`, Einzelheiten von Claude Opus 5.5).
+
+Anlass: Die Zackenkante war erkennbar, aber nicht schön (Andi, Echtlauf #92).
+
+- **Punkt 6 ersetzt — drei Formen** der Kante, alle Maße in Ansichtspixeln bei Faktor 1, die Mittellinie f(t) quer zur
+  Naht entlang der Länge t:
+  - `tear` (Abriss, **Voreinstellung**): f(t) = 0,8 · (2,6·sin(2πt/71 + 0,3) + 1,6·sin(2πt/29 + 1,9) +
+    1,0·sin(2πt/13 + 4,1) + 0,6·sin(2πt/7,3 + 2,2) + 0,35·sin(2πt/3,1 + 5,7)), abgetastet je 1 px. Fest, ohne Zufall:
+    Editor, Renderer und SVG zeichnen dasselbe.
+  - `wave` (Welle): f(t) = 4·sin(2πt/32), abgetastet je 2 px.
+  - `zigzag` (Zacken): wie bisher ±4, Zahnbreite 16.
+- **Gestaltung für alle Formen:** Zwischen den beiden Bildteilen liegt ein Spalt von 10 px (je 5 px beiderseits der
+  Mittellinie, beide Kanten mit derselben Form) in hellem Grau; beide Teile werfen einen weichen Schatten in den Spalt,
+  der obere bzw. linke kräftiger (Licht von oben links), und ihre Kante ist um 1 px leicht abgedunkelt. Der Schatten
+  besteht aus wenigen gestuften, halbdurchsichtigen Bändern derselben Form — keine Weichzeichner-Filter, damit Editor,
+  Renderer und SVG-Export gleich zeichnen. Die Schichten (Abstände, Farben, Deckkraft) stehen einmal als Tabelle in
+  `document`; die Werte stimmt die Umsetzung an Muster 4 ab.
+- **Bandhöhe:** halbe Bandhöhe einheitlich 11 px (Auslenkung bis 5, Spalt 5, Kante 1) statt 7; Zackenfaktor-Deckel
+  (Nachtrag 4), Mindestrest je Seite und Trefferweite von „Naht zurückholen“ folgen der neuen Höhe.
+- **Je Dokument gespeichert:** Attribut `s:kante` (`tear` | `wave` | `zigzag`) an `s:ansicht` in der Arbeitsdatei.
+  Fehlt es (ältere Dateien) oder ist der Wert unbekannt, gilt `zigzag` — ältere Dateien behalten ihre Form, bekommen
+  aber Spalt und Schatten. `FormatVersion` bleibt 1 (ein älterer Leser übergeht das Attribut, `docs/format.md` §11
+  Regel 3); Spezifikation §7 und Beispiele ändern sich im selben Commit.
+- **Wahl:** Neue Dokumente (Aufnahme, Öffnen eines einfachen PNG/JPEG) bekommen die Form aus der Einstellung
+  `[capture] seam` = `tear` (Voreinstellung) | `wave` | `zigzag` (ADR-0018). Im Editor wechselt ein Menüeintrag
+  „Seam style“ die Form des Dokuments reihum, als ein Rückgängig-Schritt.
+- Das Rechenbudget (`render.Pruefe`) zählt alle Schichten.
