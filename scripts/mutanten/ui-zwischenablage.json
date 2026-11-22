@@ -1,0 +1,37 @@
+[
+  {
+    "name": "W1 nachEreignis ruft zwischenablageUebernommenMelden nicht auf (F-328)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.zwischenablageUebernommenMelden() {\n\t\te.w.Invalidate()",
+    "neu": "\tif false {\n\t\te.w.Invalidate()"
+  },
+  {
+    "name": "W2 Rückruf ClipboardCancelled nicht zugewiesen (F-328)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tapp.ClipboardCancelled = func() {",
+    "neu": "\t_ = func() {"
+  },
+  {
+    "name": "W3 Merker nur verbraucht, wenn fensterHaeltKopie gesetzt (F-328)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !zwischenablageUebernommen.Swap(false) {\n\t\treturn false\n\t}\n\tif !e.fensterHaeltKopie {\n\t\treturn false\n\t}",
+    "neu": "\tif !e.fensterHaeltKopie {\n\t\treturn false\n\t}\n\tif !zwischenablageUebernommen.Swap(false) {\n\t\treturn false\n\t}"
+  },
+  {
+    "name": "W5 Merker beim Start nicht zurückgesetzt (F-328)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "func zwischenablageRueckrufSetzen(anfordern func()) {\n\tzwischenablageUebernommen.Store(false)\n",
+    "neu": "func zwischenablageRueckrufSetzen(anfordern func()) {\n"
+  },
+  {
+    "name": "W6 Abholen löscht den Merker nicht (F-328, QA-5)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tzwischenablageUebernommen.Store(false)\n\t\te.fensterHaeltKopie, e.fensterWarnung = r.daten != nil, false",
+    "neu": "\t\te.fensterHaeltKopie, e.fensterWarnung = r.daten != nil, false"
+  }
+]

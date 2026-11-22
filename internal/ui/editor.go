@@ -139,11 +139,7 @@ func Editor(titel string, d *document.Dokument, speichern Speichern, rettung Ret
 	e.wecker = canvas.NeuerWecker(e.w.Invalidate, weckTakt, weckGrenze)
 	defer e.wecker.Ende()
 	wecker := e.wecker // der Rückruf liest nur diese Kopie, nie e.wecker (Datenwettlauf)
-	zwischenablageUebernommen.Store(false)
-	app.ClipboardCancelled = func() { // Gios Wayland-Schleife, nicht die Editor-Goroutine (F-328)
-		zwischenablageUebernommen.Store(true)
-		wecker.Anfordern()
-	}
+	zwischenablageRueckrufSetzen(wecker.Anfordern)
 	ctx, abbruch := context.WithCancel(context.Background())
 	defer abbruch() // schließt einen offenen Exportdialog mit dem Fenster
 	e.exportCtx = ctx
@@ -417,6 +413,16 @@ func (e *editor) zwischenablageFehltMelden() bool {
 	}
 	e.fensterHaeltKopie = false // Gio bietet nichts an: nichts, wovor zu warnen wäre (F-321)
 	return true
+}
+
+// zwischenablageRueckrufSetzen setzt den Merker zurück und hängt den Rückruf des Gio-Patchs ein (F-328, QA-4); als
+// eigene Funktion, damit ein Test die Verdrahtung trägt.
+func zwischenablageRueckrufSetzen(anfordern func()) {
+	zwischenablageUebernommen.Store(false)
+	app.ClipboardCancelled = func() { // Gios Wayland-Schleife, nicht die Editor-Goroutine (F-328)
+		zwischenablageUebernommen.Store(true)
+		anfordern()
+	}
 }
 
 // zwischenablageUebernommenMelden nimmt, wenn ein anderes Programm die Zwischenablage übernommen hat, den Merker
@@ -919,6 +925,8 @@ func (e *editor) kopierenAbholen(gtx layout.Context) {
 		}
 		// Die jüngste Antwort entscheidet: Ein früherer Kopierfehler hält das Fenster nicht mehr (F-354).
 		e.kopierFehlerHaelt = false
+		// Ein Abbruch bis hierher betraf eine ältere Quelle; er darf die neue Kopie nicht abräumen (F-328, QA-5).
+		zwischenablageUebernommen.Store(false)
 		e.fensterHaeltKopie, e.fensterWarnung = r.daten != nil, false
 		if r.daten != nil {
 			gtx.Execute(clipboard.WriteCmd{Type: wlclip.MIME, Data: io.NopCloser(bytes.NewReader(r.daten))})
