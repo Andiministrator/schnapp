@@ -528,3 +528,25 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Kritiker aus anderer Familie lohnen sich auch nach eigenen Mutationsproben** (Sitzungs-QA 22.11.): Die eigene
   Gruppe `fileformat-jpeg` war 9/9 rot und F-361 trotzdem mit einem Byte umgehbar — Mutanten prüfen die Tests gegen den
   Code, nicht den Code gegen die Wirklichkeit.
+
+## Sprint 11, dritte Sitzung (22.11.2026, Karten #169, #43, #28, #172)
+
+- **Eine Ansicht nach dem Zuschnitt ist ein verschobener Ausschnitt der Vollansicht** (F-386, ADR-0023 Nachtrag 5):
+  Streifen vor dem Zuschnittsanfang verschieben nur. Statt eines zweiten Koordinatensystems reicht ein Versatz
+  (`VollVersatz`) und eine größere Bildfläche; ein Zufallstest über Zuschnitt und Streifen (auch Kanten mitten im
+  Streifen) belegt die Gleichung, bevor die Oberfläche darauf baut.
+- **Neue Griffe verschieben den Sinn alter Tests** (F-386): Fünf Tests zogen einen „neuen Rahmen“ ab der Bildecke —
+  genau dort sitzt jetzt der Griff. Nicht die Tests „reparieren“, bis sie grün sind, sondern jeden Fall auf die neue
+  Regel umschreiben und den alten Sinn mit einem Griff-Zug abdecken.
+- **Der virtuelle KWin ist das echte KWin**: `kwin_wayland --virtual` hat dieselben Protokolle. Den Rückfall ohne
+  Halter erzwingt eine geerbte Verbindung (`WAYLAND_SOCKET`, kleiner Python-Starter unter `tmp/`, nicht im Repo); so
+  ließ sich F-392 bis auf Klipper vorab prüfen. Was nur der echte Desktop hat (Klipper, echte Monitore, Portal), bleibt
+  Andis Handprobe.
+- **`strings` findet keine Texte mit Umlauten**: Es sucht nur ASCII-Folgen. Für einen Nachweis im Programm
+  `grep -a -c` mit einem ASCII-Stück des Texts.
+- **Ein Diagnosebefehl gehört vor die Handprobe, nicht danach**: Ohne Zeile für `cancelled` hätte die Handprobe F-392
+  nur „Warnung ja/nein“ geliefert, nicht wann KWin meldet. Nach dem Ergänzen das Probe-Programm neu bauen.
+- **Eigene Abweichungen dieser Sitzung** (folgenlos, als Erinnerung): `rm -f schnapp` mit relativem Pfad im
+  Projektordner (gelöscht war womöglich ein altes, gebautes Programm); Commit-Nachrichten per Heredoc statt per Datei;
+  Register per Python-Splice statt mit `register-schreiben.mjs`; Karte #43 erst nach Arbeitsbeginn übernommen;
+  Probe-Skript mit Ausführbit angelegt (F-390).
