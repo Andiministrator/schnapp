@@ -1,0 +1,20 @@
+[
+  {"name": "J1 Öffnen ohne Bedarfsprüfung (F-361)", "datei": "internal/fileformat/oeffnen.go", "paket": "./internal/fileformat",
+   "alt": "\tif err := pruefeJPEGBedarf(daten); err != nil {\n\t\treturn nil, err\n\t}\n", "neu": ""},
+  {"name": "J2 Koeffizienten nicht gezählt (F-361)", "datei": "internal/fileformat/jpegbedarf.go", "paket": "./internal/fileformat",
+   "alt": "\t\t\tsumme += bloecke * 64 * 4\n", "neu": ""},
+  {"name": "J3 progressiv nicht erkannt (F-361)", "datei": "internal/fileformat/jpegbedarf.go", "paket": "./internal/fileformat",
+   "alt": "return sofLesen(inhalt, marker == 0xC2)", "neu": "return sofLesen(inhalt, false)"},
+  {"name": "J4 CMYK-Bild nicht gezählt (F-361)", "datei": "internal/fileformat/jpegbedarf.go", "paket": "./internal/fileformat",
+   "alt": "\tif len(k.komponenten) == 4 {\n\t\tsumme += pixel * 4\n\t}\n", "neu": ""},
+  {"name": "J5 NRGBA nicht gezählt (F-361)", "datei": "internal/fileformat/jpegbedarf.go", "paket": "./internal/fileformat",
+   "alt": "\treturn summe + pixel*4\n", "neu": "\treturn summe\n"},
+  {"name": "J6 Abtastfaktoren ungeprüft (F-361)", "datei": "internal/fileformat/jpegbedarf.go", "paket": "./internal/fileformat",
+   "alt": "\t\tif h < 1 || h > 4 || v < 1 || v > 4 {\n\t\t\treturn k, false\n\t\t}\n", "neu": ""},
+  {"name": "J7 Länge über das Ende (F-361)", "datei": "internal/fileformat/jpegbedarf.go", "paket": "./internal/fileformat",
+   "alt": "if laenge < 2 || i+2+laenge > len(daten) {", "neu": "if laenge < 2 {"},
+  {"name": "J8 Füllbyte nicht übersprungen (F-361)", "datei": "internal/fileformat/jpegbedarf.go", "paket": "./internal/fileformat",
+   "alt": "\t\tif marker == 0xFF { // Füllbyte\n\t\t\ti++\n\t\t\tcontinue\n\t\t}\n", "neu": ""},
+  {"name": "J9 Grenze verdoppelt (F-361)", "datei": "internal/fileformat/jpegbedarf.go", "paket": "./internal/fileformat",
+   "alt": "const jpegGrenze = 2 << 30", "neu": "const jpegGrenze = 4 << 30"}
+]

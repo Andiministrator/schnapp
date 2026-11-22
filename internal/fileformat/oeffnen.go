@@ -72,6 +72,11 @@ func Oeffne(pfad string) (_ *Gelesen, fehler error) {
 		cfg.Width*cfg.Height > document.MaxPixel {
 		return nil, fmt.Errorf("%w: Bild %dx%d", ErrZuGross, cfg.Width, cfg.Height)
 	}
+	// Der Speicherbedarf hängt nicht nur an der Pixelzahl: Ein progressives JPEG von wenigen MB fordert bei 2^28 Pixeln
+	// fast 5 GiB an (F-361). Vorab aus dem SOF-Segment schätzen.
+	if err := pruefeJPEGBedarf(daten); err != nil {
+		return nil, err
+	}
 	bild, err := jpeg.Decode(bytes.NewReader(daten))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrBeschaedigt, err)

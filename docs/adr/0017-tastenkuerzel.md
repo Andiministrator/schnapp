@@ -132,3 +132,17 @@ sind Rückgängig, Löschen, Speichern und Zoomen gesperrt (F-18, Kritik A-6). N
 - *Ergänzt (F-345, Karte #153):* `Alle` fragt bei ScreenShot2 die Version ab; unter Version 3 (kein `CaptureWorkspace`)
   meldet es „This KWin version cannot capture all screens at once. Use a single screen instead.“ statt des rohen
   D-Bus-Fehlers (nur gegen die Attrappe geprüft).
+
+## Nachtrag 8 (22.11.2026): Speichergrenze beim Öffnen eines JPEG (F-361)
+
+**Status:** Akzeptiert (Claude, Andi informiert). Umgesetzt in Sprint 11.
+
+- Die Pixelgrenze (`document.MaxPixel`) allein begrenzt den Speicher nicht: Go `image/jpeg` hält bei einem
+  progressiven JPEG je Komponente die Koeffizienten (4 Byte je Pixel), eine präparierte Datei von 1,5 MB forderte so
+  4864 MiB an (gemessen, `knowledge/messungen/f-361.md`).
+- `Oeffne` schätzt den Bedarf vorab aus dem SOF-Segment (Ausgabeebenen, Koeffizienten bei progressiv, CMYK-Bild,
+  NRGBA des Dokuments) und lehnt über **2 GiB** mit „The image is too large.“ ab. Baseline-JPEG in YCbCr oder Grau
+  bleiben bis zur Pixelgrenze erlaubt; progressiv 4:4:4 geht bis etwa 113 Megapixel, 4:2:0 bis etwa 186, CMYK bis etwa
+  179 (vorher 268). Fotos aus Kameras und Telefonen liegen weit darunter.
+- Kein Fremdpaket (ADR-0011): eigener kleiner Leser für die Marker bis zum ersten SOF; unbrauchbare Köpfe überlässt er
+  dem Dekoder, der sie ablehnt.
