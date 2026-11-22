@@ -160,10 +160,13 @@ und werden hier nachgetragen (F-372); die übrigen setzt Sprint 11 um (Karte #15
 - **Die jüngste Kopierantwort entscheidet (F-354):** Ein gelungenes Kopieren löscht den Merker eines früheren
   Kopierfehlers, auch wenn nur das Fenster die Kopie hält.
 - **Haltende Meldungen bleiben stehen (F-356):** Sagt die Statusleiste, was die nächste Schließen-Anfrage tut
-  (Verwerfen-Warnung nach gescheitertem Speichern, Hinweis, Fenster-Warnung), verdrängt die Antwort eines Kopierens
-  sie nicht, solange sie gilt (gleicher Dokumentstand). Die Bestätigung „Copied to clipboard“ entfällt dann; ein
-  Kopierfehler geht stattdessen auf die Fehlerausgabe. Jede andere Meldung, etwa „Copying…“ nach einem neuen Strg+C,
-  löst die haltende Meldung ab.
+  (Verwerfen-Warnung nach gescheitertem Speichern, Hinweis zu einer offenen Schließen-Anfrage, Fenster-Warnung),
+  verdrängt keine späte Antwort sie, solange sie gilt (gleicher Dokumentstand): weder das Kopieren noch der
+  Export-Dialog noch ein Fehler der Zwischenablage (Verify 6, V6-1). Eine Bestätigung entfällt dann; ein Fehler geht
+  stattdessen auf die Fehlerausgabe. Jede andere Meldung, etwa „Copying…“ nach einem neuen Strg+C, löst die haltende
+  Meldung ab. Ein Hinweis aus einem gewöhnlichen Strg+S ohne offene Anfrage ist nicht haltend; ein späterer
+  Kopierfehler erscheint dann in der Leiste (V6-2). Übernimmt ein Halter das Bild doch noch, ersetzt die Bestätigung
+  die überholte Fenster-Warnung (V6-3).
 - **Der Kopierfehler-Halt zeigt seinen Grund (F-358):** Hält ein Kopierfehler das Fenster nach dem Speicher-Ende offen,
   steht danach wieder der Kopierfehler in der Leiste, auch wenn sie zwischendurch etwas anderes sagte (etwa dass das
   Speichern nicht antwortet).

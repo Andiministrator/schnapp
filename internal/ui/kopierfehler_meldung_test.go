@@ -6,6 +6,8 @@ package ui
 // Sitzungs-QA vom 22.11.2026 (F-370). Die ersten vier Tests waren die roten Befund-Tests des Prüfers.
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"gioui.org/layout"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/portal"
 	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
 
@@ -196,7 +199,7 @@ func TestKopierfehlerNachFreigabeOhneHalt(t *testing.T) {
 	e.schliessen()
 	e.speichernAufgeben()
 	haltKopierFehler(e)
-	if e.kopierFehlerHaelt || e.meldungHaelt {
+	if e.kopierFehlerHaelt || e.meldungHaelt != keinHalt {
 		t.Errorf("Halt gemerkt trotz freigegebenem Schließen: %v %v", e.kopierFehlerHaelt, e.meldungHaelt)
 	}
 	if strings.Count(aus.String(), "kaputt") != 1 {
@@ -285,5 +288,41 @@ func TestHaltendeMeldungNeuesKopierenMeldetSich(t *testing.T) {
 	warteKopieren(t, e, gtx)
 	if !strings.Contains(e.meldung.Text, "Copied to clipboard") {
 		t.Errorf("Leiste zeigt %q, erwartet die Kopierbestätigung", e.meldung.Text)
+	}
+}
+
+// V6-3, Gegenprobe (Mutanten A3, A11): Hält auch das spät antwortende Kopieren das Bild nur im Fenster, stimmt die
+// Fenster-Warnung weiter und bleibt stehen.
+func TestHaltendeMeldungFensterWarnungBleibtBeiFensterKopie(t *testing.T) {
+	e, _ := editorMitFensterKopie(t)
+	fehlerAbfangen(t)
+	e.s.Gespeichert()
+	e.kopierLaeuft, e.kopierStart = true, time.Now().Add(-2*kopierFrist)
+	if e.schliessen() {
+		t.Fatal("Vorbedingung: Fenster-Warnung fehlt")
+	}
+	e.kopierAntwort <- kopierErgebnis{daten: []byte("png")}
+	e.kopierenAbholen(layout.Context{})
+	if !e.fensterHaeltKopie || !strings.Contains(e.meldung.Text, "only while this window is open") {
+		t.Errorf("Fenster hält die Kopie (%v), Leiste zeigt aber %q", e.fensterHaeltKopie, e.meldung.Text)
+	}
+}
+
+// V6-1 für einen gelungenen Export (Mutante A13): „Exported to …“ verdrängt die Verwerfen-Warnung nicht, die Datei ist
+// trotzdem geschrieben.
+func TestHaltendeMeldungExportErfolgVerdraengtNicht(t *testing.T) {
+	e, _ := haltStart(t)
+	fehlerAbfangen(t)
+	e.kopierLaeuft = false
+	e.speichern = v5Voll
+	e.schliessen()
+	warteSpeichern(t, e)
+	ziel := filepath.Join(t.TempDir(), "export.png")
+	e.exportFertig(exportErgebnis{ergebnis: portal.Ergebnis{URI: "file://" + ziel, Filter: 0}})
+	if _, err := os.Stat(ziel); err != nil {
+		t.Fatalf("Export nicht geschrieben: %v", err)
+	}
+	if !strings.Contains(e.meldung.Text, "discard") {
+		t.Errorf("Leiste zeigt %q statt der Verwerfen-Warnung", e.meldung.Text)
 	}
 }

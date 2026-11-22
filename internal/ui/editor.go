@@ -221,10 +221,10 @@ type editor struct {
 	// wenn die Leiste inzwischen etwas anderes sagte (F-358).
 	kopierFehlerText string
 	// meldungHaelt: Die Meldung in der Statusleiste sagt, was die nächste Schließen-Anfrage tut (Verwerfen-Warnung,
-	// Hinweis, Fenster-Warnung). Die Antwort eines Kopierens verdrängt sie nicht, solange sie frisch ist (F-356); jede
-	// andere Meldung löst sie ab (melde). Der Kopierfehler-Halt braucht den Schutz nicht: Solange er steht, läuft kein
+	// Hinweis, Fenster-Warnung). Späte Antworten (Kopieren, Export, Fehler der Zwischenablage; meldeNebenbei) verdrängen
+	// sie nicht, solange sie frisch ist (F-356, V6-1); jede andere Meldung löst sie ab (melde). Der Kopierfehler-Halt braucht den Schutz nicht: Solange er steht, läuft kein
 	// Kopieren, dessen Antwort ihn verdrängen könnte (ein neues Strg+C löst ihn ohnehin mit „Copying…“ ab).
-	meldungHaelt bool
+	meldungHaelt haltArt
 	// schliessenNachSpeichern: Eine Schließen-Anfrage wartet auf die Antwort des Speicherns (F-341); ein Kopierfehler, der
 	// dazwischen eintrifft, wird behandelt wie einer, auf den ein Schließen wartet (kopierenAbholen).
 	schliessenNachSpeichern bool
@@ -375,8 +375,8 @@ func (e *editor) zwischenablageFehltMelden() bool {
 	if !zwischenablageFehlt.Swap(false) {
 		return false
 	}
-	e.melde(i18n.T("Could not copy: no clipboard is available."), true) // statt „Copied“ (F-177)
-	e.fensterHaeltKopie = false                                         // Gio bietet nichts an: nichts, wovor zu warnen wäre (F-321)
+	e.meldeNebenbei(i18n.T("Could not copy: no clipboard is available."), true) // statt „Copied“ (F-177); eine haltende Meldung bleibt (V6-1)
+	e.fensterHaeltKopie = false                                                 // Gio bietet nichts an: nichts, wovor zu warnen wäre (F-321)
 	return true
 }
 
@@ -450,7 +450,9 @@ func (e *editor) schliessen() bool {
 		}
 		return true
 	case canvas.SchlussFehler:
-		e.meldeHaltend(i18n.T("Could not save. Close again to discard the changes."), true)
+		// Nur erreichbar, wenn der Abzug nach dem Abbrechen eines Zugs scheitert (canvas.Sitzung.SchliessenAnfrage); kein
+		// Test erreicht den Zweig, „haltend“ steht hier der Einheitlichkeit halber (Verify 6, Mutante M2/A2).
+		e.meldeHaltend(haltVerwerfen, i18n.T("Could not save. Close again to discard the changes."), true)
 	}
 	if z == canvas.SchlussWarten {
 		e.schliessenNachSpeichern = true
@@ -473,7 +475,7 @@ func (e *editor) fensterWarnen() bool {
 		return false
 	}
 	e.fensterWarnung = true
-	e.meldeHaltend(i18n.T("The clipboard holds the image only while this window is open. Close again to discard it."), true)
+	e.meldeHaltend(haltFenster, i18n.T("The clipboard holds the image only while this window is open. Close again to discard it."), true)
 	if e.w != nil {
 		e.w.Invalidate()
 	}
@@ -576,7 +578,7 @@ func (e *editor) speichernAbwarten() {
 		case r := <-e.speicherAntwort:
 			fristStop()
 			ende := e.s.SpeichernEnde(r.g.HaeltOffen(), r.err)
-			e.speichernMelden(r, ende, false) // das Fenster ist schon weg: kein Halt
+			e.speichernMelden(r, ende, false, false) // das Fenster ist schon weg: kein Halt
 			// Eine Schließen-Anfrage, deren Fehler erst jetzt ankommt, hat niemand gesehen: Die Statusleiste verschwindet
 			// mit dem Fenster, und der Stand gilt schon als verworfen. Also in die Rückgabe, nicht still verlieren (F-300).
 			// Anders in speichernFertig: Dort zeigt ein Bild den Fehler, und die nächste Anfrage verwirft.
@@ -691,6 +693,9 @@ func (e *editor) speichernFertig(r speicherErgebnis) {
 	// nachKopieSchliessen. ende.Erneut == nil ist neben !SignalVorgemerkt() doppelt (Erneut gibt es nur nach einem Signal,
 	// canvas.Sitzung.SpeichernEnde) und steht nur der Lesbarkeit halber da (F-370, Mutante Q6 äquivalent).
 	halt := e.kopierFehlerHaelt && ende.Erneut == nil && ende.Schliessen && !e.s.SignalVorgemerkt() && !e.kopierLaeuft
+	// Der Hinweis hält eine Schließen-Anfrage offen: die des Schließens (SchlussHinweis) oder eine wegen des Kopierens
+	// angehaltene, die er gleich verwirft (F-357). Nur dann ist er haltend (V6-2).
+	hinweisHaelt := ende.Schluss == canvas.SchlussHinweis || (r.err == nil && r.g.HaeltOffen() && e.schliessenNachKopie)
 	if ende.Erneut == nil {
 		e.schliessenNachSpeichern = false
 		if ende.Schluss == canvas.SchlussFehler || ende.Schluss == canvas.SchlussHinweis || (r.err == nil && r.g.HaeltOffen()) {
@@ -707,7 +712,7 @@ func (e *editor) speichernFertig(r speicherErgebnis) {
 	// Steht der Merker noch neben einer wegen des Kopierens angehaltenen Anfrage, hält gleich nachKopieSchliessen das
 	// Fenster für den Kopierfehler offen; auch dann verdrängt „Saved“ ihn nicht (F-353). Läuft schon ein neues Kopieren,
 	// entscheidet dessen Antwort (F-354), und das Speicher-Ende meldet sich wie sonst (F-359).
-	e.speichernMelden(r, ende, halt || (e.kopierFehlerHaelt && e.schliessenNachKopie && !e.kopierLaeuft))
+	e.speichernMelden(r, ende, halt || (e.kopierFehlerHaelt && e.schliessenNachKopie && !e.kopierLaeuft), hinweisHaelt)
 	switch {
 	case ende.Erneut != nil:
 		e.speichernStarten(ende.Erneut)
@@ -730,11 +735,11 @@ func (e *editor) speichernFertig(r speicherErgebnis) {
 // Hinweis offen, geht der Hinweis zusätzlich auf die Fehlerausgabe (F-116, ADR-0020 Nachtrag 4). Hält ein Kopierfehler
 // das Fenster offen (kopierHalt, F-341), verdrängt „Saved“ dessen Meldung nicht: Die Leiste zeigt den Kopierfehler
 // erneut, auch wenn sie inzwischen etwas anderes sagte, etwa dass das Speichern nicht antwortet (F-358).
-func (e *editor) speichernMelden(r speicherErgebnis, ende canvas.Ende, kopierHalt bool) {
+func (e *editor) speichernMelden(r speicherErgebnis, ende canvas.Ende, kopierHalt, hinweisHaelt bool) {
 	switch {
 	case r.err == nil:
 		if !kopierHalt {
-			e.gespeichertMelden(r.g)
+			e.gespeichertMelden(r.g, hinweisHaelt)
 		} else {
 			if r.g.Datei != "" {
 				e.titel = r.g.Datei
@@ -747,7 +752,7 @@ func (e *editor) speichernMelden(r speicherErgebnis, ende canvas.Ende, kopierHal
 	case ende.SignalFehler:
 		e.schlussErr = r.err
 	case ende.Schluss == canvas.SchlussFehler:
-		e.meldeHaltend(fmt.Sprintf(i18n.T("Could not save: %v. Close again to discard the changes."), r.err), true)
+		e.meldeHaltend(haltVerwerfen, fmt.Sprintf(i18n.T("Could not save: %v. Close again to discard the changes."), r.err), true)
 	case ende.Erneut == nil:
 		e.melde(fmt.Sprintf(i18n.T("Could not save: %v"), r.err), true)
 	}
@@ -842,13 +847,9 @@ func (e *editor) kopierenAbholen(gtx layout.Context) {
 				e.melde(e.kopierFehlerText, true)
 				return
 			}
-			if e.haltendeMeldung() {
-				// Die Leiste sagt, was die nächste Schließen-Anfrage tut (Verwerfen, Hinweis): Das bleibt stehen, der
-				// Kopierfehler geht auf die Fehlerausgabe (F-356).
-				fmt.Fprintln(fehlerAusgabe, e.kopierFehlerText)
-				return
-			}
-			e.melde(e.kopierFehlerText, true)
+			// Sagt die Leiste, was die nächste Schließen-Anfrage tut, bleibt das stehen, und der Kopierfehler geht auf die
+			// Fehlerausgabe (F-356).
+			e.meldeNebenbei(e.kopierFehlerText, true)
 			return
 		}
 		// Die jüngste Antwort entscheidet: Ein früherer Kopierfehler hält das Fenster nicht mehr (F-354).
@@ -863,13 +864,13 @@ func (e *editor) kopierenAbholen(gtx layout.Context) {
 		if e.s.D.Stand() != e.kopierStand {
 			text = i18n.T("Copied to clipboard as it was when copying began; later changes are not included.")
 		}
-		if e.haltendeMeldung() {
-			// Die Leiste sagt, warum das Fenster offen ist oder was die nächste Anfrage tut; das ist wichtiger als die
-			// Bestätigung des Kopierens (F-356).
-			diagnoseEditor("Kopiert, Meldung bleibt: %q", e.meldung.Text)
+		if e.meldungHaelt == haltFenster && r.daten == nil {
+			// Die Fenster-Warnung stimmt nicht mehr: Ein Halter hat das Bild übernommen (V6-3).
+			e.melde(text, false)
 			return
 		}
-		e.melde(text, false)
+		// Sagt die Leiste, was die nächste Schließen-Anfrage tut, ist das wichtiger als die Bestätigung (F-356).
+		e.meldeNebenbei(text, false)
 	default:
 	}
 }
@@ -1011,27 +1012,27 @@ func (e *editor) exportFertig(r exportErgebnis) {
 		return
 	case errors.Is(r.err, portal.ErrKeinPortal):
 		diagnoseEditor("Export: %v", r.err)
-		e.melde(i18n.T("No file dialog available (desktop portal missing)."), true)
+		e.meldeNebenbei(i18n.T("No file dialog available (desktop portal missing)."), true)
 		return
 	case r.err != nil:
-		e.melde(fmt.Sprintf(i18n.T("Could not export: %v"), exportFehlerText(r.err, "")), true)
+		e.meldeNebenbei(fmt.Sprintf(i18n.T("Could not export: %v"), exportFehlerText(r.err, "")), true)
 		return
 	}
 	pfad, err := portal.URIZuPfad(r.ergebnis.URI)
 	if err != nil {
-		e.melde(i18n.T("Could not export: only local files can be written."), true)
+		e.meldeNebenbei(i18n.T("Could not export: only local files can be written."), true)
 		return
 	}
 	f, pfad, angehaengt := export.Waehle(pfad, export.AusIndex(r.ergebnis.Filter))
 	// Der Dialog hat nur den Namen ohne Endung bestätigt: Ein vorhandenes Ziel nicht still ersetzen (A-1).
 	if err := export.PruefeAngehaengt(pfad, angehaengt); err != nil {
-		e.melde(exportFehlerText(err, filepath.Base(pfad)), true)
+		e.meldeNebenbei(exportFehlerText(err, filepath.Base(pfad)), true)
 		return
 	}
 	// Wie beim Speichern: ein laufender Text gehört mit in die Datei, ein laufendes Ziehen verschiebt den Export (A-5).
 	e.s.TextBestaetigen()
 	if e.s.Zieht() {
-		e.melde(i18n.T("Could not export: finish the current action first."), true)
+		e.meldeNebenbei(i18n.T("Could not export: finish the current action first."), true)
 		return
 	}
 	schreibe := export.SchreibeAtomar
@@ -1040,10 +1041,10 @@ func (e *editor) exportFertig(r exportErgebnis) {
 	}
 	err = schreibe(pfad, func(w io.Writer) error { return export.Schreibe(e.s.D, f, w) })
 	if err != nil {
-		e.melde(fmt.Sprintf(i18n.T("Could not export: %v"), exportFehlerText(err, "")), true)
+		e.meldeNebenbei(fmt.Sprintf(i18n.T("Could not export: %v"), exportFehlerText(err, "")), true)
 		return
 	}
-	e.melde(fmt.Sprintf(i18n.T("Exported to %s"), filepath.Base(pfad)), false)
+	e.meldeNebenbei(fmt.Sprintf(i18n.T("Exported to %s"), filepath.Base(pfad)), false)
 }
 
 // ohneDataControl merkt sich, dass der Compositor kein data-control anbietet: Weitere Strg+C starten dann keinen
@@ -1076,15 +1077,20 @@ func halteZwischenablage(daten []byte) error {
 	return nil
 }
 
-// gespeichertMelden zeigt ein gelungenes Speichern in Titel- und Statusleiste (F-116).
-func (e *editor) gespeichertMelden(g Gespeichert) {
+// gespeichertMelden zeigt ein gelungenes Speichern in Titel- und Statusleiste (F-116). haelt: Der Hinweis hält eine
+// Schließen-Anfrage offen (SchlussHinweis, F-357); dann verdrängt ihn keine späte Antwort (F-356). Ein Hinweis aus einem
+// gewöhnlichen Strg+S sagt nichts über die nächste Anfrage und lässt einem späteren Kopierfehler den Vortritt (V6-2).
+func (e *editor) gespeichertMelden(g Gespeichert, haelt bool) {
 	if g.Datei != "" {
 		e.titel = g.Datei
 	}
 	e.melde(i18n.T("Saved to the library"), false)
 	if g.Hinweis != "" {
-		// Ein Hinweis muss gelesen werden (Gespeichert.HaeltOffen); eine spätere Kopierantwort verdrängt ihn nicht (F-356).
-		e.meldeHaltend(g.Hinweis, g.Warnung)
+		if haelt {
+			e.meldeHaltend(haltHinweis, g.Hinweis, g.Warnung)
+		} else {
+			e.melde(g.Hinweis, g.Warnung)
+		}
 	}
 }
 
@@ -1092,20 +1098,44 @@ func (e *editor) gespeichertMelden(g Gespeichert) {
 // (F-151). Ein gelungenes Speichern löst einen früheren Fehler ab.
 func (e *editor) melde(text string, fehler bool) {
 	e.meldung = canvas.NeueMeldung(text, fehler, e.s.D.Stand(), e.s.Werkzeug)
-	e.meldungHaelt = false
+	e.meldungHaelt = keinHalt
 }
 
-// meldeHaltend zeigt eine Meldung, die das Offenbleiben des Fensters begründet oder sagt, was die nächste
-// Schließen-Anfrage tut (F-356): Eine Kopierantwort verdrängt sie nicht (haltendeMeldung).
-func (e *editor) meldeHaltend(text string, fehler bool) {
+// haltArt sagt, was eine haltende Meldung über die nächste Schließen-Anfrage aussagt (F-356).
+type haltArt int
+
+const (
+	keinHalt      haltArt = iota
+	haltVerwerfen         // Speichern gescheitert: die nächste Anfrage verwirft
+	haltHinweis           // Hinweis beim Speichern: die nächste Anfrage schließt
+	haltFenster           // nur das Fenster hält die Kopie: die nächste Anfrage verwirft sie (F-295)
+)
+
+// meldeHaltend zeigt eine Meldung, die sagt, was die nächste Schließen-Anfrage tut (F-356): Späte Antworten (Kopieren,
+// Export, Zwischenablage) verdrängen sie nicht, solange sie gilt (meldeNebenbei).
+func (e *editor) meldeHaltend(art haltArt, text string, fehler bool) {
 	e.melde(text, fehler)
-	e.meldungHaelt = true
+	e.meldungHaelt = art
 }
 
 // haltendeMeldung meldet, ob die Statusleiste gerade eine haltende Meldung zeigt, die noch gilt (gleicher Dokumentstand,
 // bei einem Hinweis auch gleiches Werkzeug; canvas.Meldung.Frisch).
 func (e *editor) haltendeMeldung() bool {
-	return e.meldungHaelt && e.meldung.Frisch(e.s.D.Stand(), e.s.Werkzeug)
+	return e.meldungHaelt != keinHalt && e.meldung.Frisch(e.s.D.Stand(), e.s.Werkzeug)
+}
+
+// meldeNebenbei zeigt die Meldung einer späten Antwort (Kopieren, Export, Zwischenablage), ohne eine haltende Meldung zu
+// verdrängen (F-356, V6-1): Dann geht ein Fehler auf die Fehlerausgabe, eine Bestätigung nur ins Diagnose-Log.
+func (e *editor) meldeNebenbei(text string, fehler bool) {
+	if !e.haltendeMeldung() {
+		e.melde(text, fehler)
+		return
+	}
+	if fehler {
+		fmt.Fprintln(fehlerAusgabe, text)
+		return
+	}
+	diagnoseEditor("Meldung %q bleibt, nicht gezeigt: %q", e.meldung.Text, text)
 }
 
 // meldeAbgelehnt zeigt, warum ein Druck mit einem Zeichenwerkzeug nichts angelegt hat (F-154).
