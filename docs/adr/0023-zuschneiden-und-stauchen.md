@@ -259,7 +259,7 @@ Menüeintrag bleiben.
   Schatten der oberen bzw. linken Kante in den Spalt (0,35·e^(−d/2,2), dunkel, halbdurchsichtig).
 - **Wie bisher ohne Filter:** Saum, Abdunklung und Schatten sind wenige gestufte Bänder derselben Form, damit Editor,
   Renderer und SVG-Export gleich zeichnen. Die Schwankung des Saums im Muster entfällt, wenn sie sich nicht in allen
-  drei Ausgängen gleich darstellen lässt. Die neue Schichttabelle steht nach der Umsetzung hier.
+  drei Ausgängen gleich darstellen lässt (sie entfällt, siehe Schichttabelle unten).
 - **Ausgaben:** PNG und Zwischenablage tragen den Spalt als Alpha (durchsichtig, der Schatten halbdurchsichtig); SVG
   lässt den Spalt leer. JPEG kennt keine Durchsicht: dort wird der Spalt **weiß** gefüllt (wie Papier), der Schatten
   darauf gemischt. Der Editor zeigt Durchsicht als Schachbrett (übliche Darstellung in Bildprogrammen).
@@ -269,7 +269,7 @@ Menüeintrag bleiben.
   zählt die neuen Schichten; F-407 (Mischung im Editor), F-421 (Schichttabelle als Literal-Soll), F-422 (SVG-Größe)
   und F-430 (Rastern) beziehen sich danach auf die neuen Schichten. `docs/format.md` ändert sich nicht im Format
   (`s:kante` bleibt), nur in der informativen Beschreibung der Darstellung.
-- **Schichttabelle (umgesetzt, Karte #183, Commits in main nach 9e07984):** Maße bei Faktor 1 quer zur Mittellinie,
+- **Schichttabelle (umgesetzt, Karte #183, Commits 86c0b50 und 8a3e0af):** Maße bei Faktor 1 quer zur Mittellinie,
   negativ oben/links, in Zeichenreihenfolge. Der Spalt −8..8 (`document.Spaltband`) ist keine Schicht: Renderer
   radiert ihn (Alpha 0, erst die Spalte aller Nähte, dann alle Schichten), der SVG-Export legt Bild und Objekte unter
   eine Maske, der Editor zeigt ein Schachbrett (`internal/ui/schachbrett.go`, 8 px, #9A9EA3/#7A7E83).

@@ -100,16 +100,17 @@ const (
 //   - Ein Dokument knapp unter Budget (39 gefüllte, umrandete Kästen auf 8000×8000, 1,25e11) rastert in rund 7 s
 //     (vor ADR-0028 rund 35 s, vor F-135 bis knapp 5 min) — die Wartezeit, die eine präparierte Datei beim Speichern
 //     erzwingen kann. Glyphen knapp unter GlyphBudget = 1e9, sichtbar auf 8000×8000, brauchen rund 1,2 s (vorher rund
-//     5 s; andere Grade seit ADR-0028 nicht nachgemessen). Kanten knapp unter KantenBudget (120 Abriss-Nähte auf
-//     32768×2100: Kanten 9,4e9, Fläche 1,4e10) rastern in rund 8 s (7,6 bis 8,9 s), davon rund 4 bis 5 s für die
-//     Kanten (rund 0,5 ns je Einheit, Vergleich mit 120 Zacken-Nähten: 3,2 bis 3,6 s); Messung 22.11.2026 nach
-//     F-418, ein Kern. Die frühere Angabe „rund 1,5 s“ stimmte für die Abrisskante nicht. Zusammen also rund 15 s.
+//     5 s; andere Grade seit ADR-0028 nicht nachgemessen). Kanten knapp unter KantenBudget (vor ADR-0023 Nachtrag 7:
+//     120 Abriss-Nähte auf 32768×2100, Kanten 9,4e9, Fläche 1,4e10) rasterten in rund 8 s (7,6 bis 8,9 s), davon rund
+//     4 bis 5 s für die Kanten (rund 0,5 ns je Einheit, Vergleich mit 120 Zacken-Nähten: 3,2 bis 3,6 s); Messung
+//     22.11.2026 nach F-418, ein Kern. Seit Nachtrag 7 (13 Füllungen je Naht, Band 32 px) kosten 120 Abriss-Nähte auf
+//     dieser Breite 1,22e10 und werden abgelehnt; die Grenze liegt bei rund 98 Nähten (F-444, Zeit nicht nachgemessen). Die frühere Angabe „rund 1,5 s“ stimmte für die Abrisskante nicht. Zusammen also rund 15 s.
 //     Die Gewichte unten stammen aus den Messungen vor ADR-0028 und bleiben (die Grenzen sind Obergrenzen).
 //     So werden die präparierten Fälle aus F-125 und F-132 (10000 große Glyphen oder Nummern, 10000 sehr breite
 //     Pfeile, 10000 Texte à 10000 winziger Glyphen, Hunderte bildgroßer Flächen) beim Öffnen abgelehnt.
 //   - Pruefe rechnet nur die Geometrie, die Mittellinie einer Kante einmal je Achse (document.Kantenlinie), und bricht
-//     ab, sobald eine Grenze überschritten ist (F-418): 120 Abriss-Nähte (knapp unter KantenBudget) prüft es in rund
-//     2 s, 1023 Abriss-Nähte auf 32768×2100 lehnt es nach rund 2 s ab (vorher 52 s, so lange hing das Öffnen).
+//     ab, sobald eine Grenze überschritten ist (F-418): 120 Abriss-Nähte (vor Nachtrag 7 knapp unter KantenBudget) prüfte es
+//     in rund 2 s, 1023 Abriss-Nähte auf 32768×2100 lehnt es nach rund 2 s ab (vorher 52 s, so lange hing das Öffnen).
 //
 // Kleiner lässt sich Budget nicht wählen, ohne den Abstand 3 zum Alltagsdokument aufzugeben: Für rund 30 s müsste es
 // auf rund 1e11 sinken, das Alltagsdokument läge dann nur 2,5-fach darunter. Lieber eine präparierte Datei etwas

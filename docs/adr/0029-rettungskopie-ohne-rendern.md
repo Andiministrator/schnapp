@@ -131,7 +131,7 @@ Was eine Bearbeitung ausmacht, ist dagegen klein und ohne Pixel beschreibbar:
 
 ## Nachtrag 4 (22.11.2026): Rettungskopie-Reste aus Sprint 11 (F-410, F-413, F-417, F-431, F-432)
 
-**Status:** Akzeptiert (Claude Opus 5.5, Andi informiert). Karte #179, Umsetzung 1fef69b (in main als Cherry-Pick).
+**Status:** Akzeptiert (Claude Opus 5.5, Andi informiert). Karte #179, Umsetzung 0513ced.
 
 - **Pfad ohne gültiges UTF-8 (F-410):** Die Kennung trägt einen solchen Pfad zusätzlich roh (Base64) im Feld
   `pfad_roh`; `pfad` zeigt eine lesbare Fassung mit U+FFFD. Ohne `pfad_roh` gilt `pfad` — ältere Kopien lesen sich
