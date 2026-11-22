@@ -35,7 +35,7 @@ Quelle: https://gioui.org/doc/contribute, am 21.11.2026 geöffnet und gelesen (Z
 - **GitHub nur als Ersatzweg:** „If using sourcehut is problematic the project is mirrored on Github and does accept
   pull-requests.“
 - **Sign-off ist Pflicht**, auch für Pull Requests („signing the commits with --signoff is still required“, DCO,
-  Kompatibilität mit MIT und UNLICENSE). Der Sign-off läuft unter Andis Namen — Andi reicht selbst ein.
+  Kompatibilität mit MIT und UNLICENSE). Der Sign-off läuft unter Andis GitHub-Namen; eingereicht wird nur mit seiner Zustimmung (siehe unten).
 - **Zu KI-erzeugtem Code sagt die Seite nichts.** Offenlegung im Anschreiben ist trotzdem der ehrliche Weg
   (eigene Abwägung, keine Gio-Regel).
 - ⚠️ unbelegt (nur Suchtreffer, Newsletter nicht geöffnet): Gio v0.10.3 ist die aktuelle Fassung (September 2026).
@@ -52,7 +52,12 @@ Quelle: https://gioui.org/doc/contribute, am 21.11.2026 geöffnet und gelesen (Z
   Dateien bis auf einen behobenen Tippfehler im Kommentar („the the“). Mehrere Hunks mit gemischten Themen ließen sich
   mit `patch` nicht sauber zerlegen; von Hand nachgezogen, danach Vergleich des Endstands mit `third_party/gio` (nur
   Kommentare, `go:generate` und Zwischenablage weichen ab). Vorbereitung und Anleitung lagen unter
-  `tmp/sprint10/gio-einreichung/` (`ANLEITUNG.md`); einreichen tut Andi.
+  `tmp/sprint10/gio-einreichung/` (`ANLEITUNG.md`).
+- **Eingereicht 22.11.2026** (Andi bestätigt; `gh`-Anmeldung durch Andi, Fork, Push und PRs durch Claude):
+  PR 1 https://github.com/gioui/gio/pull/204 (drei Commits), PR 2 https://github.com/gioui/gio/pull/205 (zwei Commits),
+  aus dem Fork `Andiministrator/gio`. Sign-off `Andiministrator` mit der GitHub-noreply-Adresse (kein Klarname).
+  Offenlegung im PR-Text: KI schrieb Code, Tests und Text, Andi nutzt den gepatchten Gio täglich — nicht „reviewed and
+  tested by me“ (stimmte nicht). Begleitung der Reviews: Karte #157; Antworten vorher Andi zeigen.
 
 ## Für alle öffentlichen Orte
 

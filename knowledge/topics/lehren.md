@@ -419,3 +419,31 @@ Stand: 2026-11-21 (ergänzt in Sprint 10). Kurze Regeln aus Fehlern und Befunden
 - **Bei mehreren parallelen Läufen messen alle schlechter.** Benchmarks des Orchestrators liefen neben den Benchmarks
   eines Sub-Agents; die Vergleichszahlen für ADR-0028 sind deshalb auf `main` und auf dem Zweig zur selben ruhigen Zeit
   nachgemessen worden, nicht aus verschiedenen Zwischenständen zusammengesetzt.
+
+### Sitzung 21./22.11.2026 (Karten #154, #155, #152, #133, #17, Sprint-Abschluss 10)
+
+- **Ein Zustand aus mehreren Merkern verlangt einen Prüflauf je Runde und eine Grenze.** Der Kopierfehler-Halt (drei
+  Merker: `kopierFehlerHaelt`, `schliessenNachKopie`, `schliessenNachSpeichern`) bekam in drei Verify-Runden je neue
+  Reihenfolgen (F-346 bis F-359). Was half: die roten Prüfer-Tests als echte Tests übernehmen, je geänderte Zeile einen
+  Mutanten in ein Skript (`tmp/sprint10/k154/mutanten.py`, 25 Mutanten, alle rot) und die Reste ab P2/P3 auf eine Karte
+  statt in eine weitere Runde. Die Reste zeigen das fehlende Konzept („haltende Meldung“, Karte #156) — ein vierter
+  Merker hätte es nicht gelöst.
+- **Belege aus Agenten-Worktrees vor dem Abräumen sichern und vergleichen.** Prüfer-Tests und Mutantenskripte nach
+  `tmp/<sprint>/verifyN/` kopieren, mit `cmp` gegen das Original prüfen, mit `git cherry main <zweig>` zeigen, dass kein
+  Commit verloren geht; erst dann `git worktree remove` und `git branch -D` (ausgeschriebene Pfade).
+- **Register-Status nur aus dem Vokabular** (`sofort`, `eingeplant (Sprint N, …)`, `backlog (…)`, `akzeptiert (…)`,
+  `behoben …`). „umgesetzt …“ rotiert nie und zählt weder als offen noch als erledigt; `findings-rotate.mjs` meldet es
+  mit Exit 2. `register-schreiben.mjs einfuege-nach` verlangt bei mehr als fünf neuen Zeilen `--erwarte-zeilen-delta N`.
+- **Erst der Fix-Commit, dann das Register mit dessen Hash.** Ein Status „behoben (Commit mit diesem Eintrag)“ ist nicht
+  prüfbar; zwei Commits kosten nichts.
+- **Nichts im Namen des Maintainers behaupten, was er nicht getan hat.** Die vorbereiteten Gio-PR-Texte sagten „reviewed
+  and tested by me“; Andi hatte den Code nicht durchgesehen. Vor dem Einreichen umformuliert auf das, was stimmt (KI
+  schrieb Code, Tests und Text; Andi nutzt den gepatchten Gio täglich).
+- **`gh` meldet Andi selbst im eigenen Terminal an** (`gh auth login`, interaktiv, sein Konto; im Chat per `!` nicht
+  bedienbar). Danach liegt ein Token mit `repo`-Recht lokal. Ein Fork entsteht mit `gh repo fork --remote --remote-name
+  fork` im Klon (mit Repo-Argument lehnt `gh` `--remote` ab). Gepusht wird über Andis SSH-Alias `github`
+  (`git remote set-url fork github:Andiministrator/gio.git`); `git@github.com:` nimmt den falschen Schlüssel.
+- **Einen Sprint planen, ohne ihn zu starten:** Karten in die Spalte Backlog der neuen Sprint-Swimlane legen. Eine Karte
+  außerhalb von Backlog lässt den Sprint als „läuft, aber nicht aktiviert“ gelten (`/projekt-start`).
+- **`git rev-parse --short` nimmt genau ein Argument**; mit zweien bricht es ab („Benötigte einen einzelnen Commit“),
+  und die Ausgabe sieht aus wie ein Fehler des folgenden Befehls.
