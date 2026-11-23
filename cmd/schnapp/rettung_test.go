@@ -153,9 +153,15 @@ func TestRettungskopieNachAbbruch(t *testing.T) {
 	if !strings.Contains(text, "schnapp/rescue/") || strings.Contains(text, staat) {
 		t.Errorf("Meldung nennt den Ort nicht ohne Benutzerpfad: %q", text)
 	}
-	// F-475: Der Ort steht am Anfang der Meldung, die einzeilige Statusleiste kürzt das Ende.
-	if i := strings.Index(text, "schnapp/rescue/"); i < 0 || i > 40 {
-		t.Errorf("Ort der Kopie steht nicht am Anfang der Meldung (Index %d): %q", i, text)
+	// F-488: Die Aussage steht vor dem Ort, und der Ort ist gekürzt (8 Hex-Zeichen statt 64 samt Endung).
+	if i := strings.Index(text, "has changed since"); i < 0 || i > 100 || i > strings.Index(text, "schnapp/rescue/") {
+		t.Errorf("Aussage steht nicht vor dem Ort (Index %d): %q", i, text)
+	}
+	if strings.Contains(text, ".json") || len(text) > 160 {
+		t.Errorf("Ort nicht gekürzt (%d Zeichen): %q", len(text), text)
+	}
+	if !strings.Contains(text, "schnapp/rescue/"+rescue.Name(aussen)[:8]+"…") {
+		t.Errorf("gekürzter Name fehlt: %q", text)
 	}
 	// Die Kopie liegt beiseite (V7-1) und überlebt das Schließen dieser Sitzung ohne Änderung.
 	rettung.Verwirf()

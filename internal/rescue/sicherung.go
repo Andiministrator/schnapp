@@ -285,6 +285,12 @@ func (s *Sicherung) NeueBasis(k Kennung) {
 	alt := s.basis.Pfad
 	s.basis = k
 	s.wechsel++
+	// Dieselbe Datei wie bisher (F-486): Wer fremd war, das andere Fenster ließ los und speichert unter demselben Namen,
+	// hat die Sperre dieses Fensters übernommen, keine andere Datei gespeichert.
+	grund := LageBasiswechsel
+	if alt == k.Pfad {
+		grund = LageUebernahme
+	}
 	s.reihe(func() {
 		s.loescheKopie(alt)
 		s.mu.Lock()
@@ -294,7 +300,7 @@ func (s *Sicherung) NeueBasis(k Kennung) {
 			s.lageGrund = LageBasiswechsel
 		}
 		s.mu.Unlock()
-		s.sperreFuer(k.Pfad, LageBasiswechsel)
+		s.sperreFuer(k.Pfad, grund)
 		s.mu.Lock()
 		s.wechsel--
 		s.mu.Unlock()

@@ -208,3 +208,17 @@ Was eine Bearbeitung ausmacht, ist dagegen klein und ohne Pixel beschreibbar:
   (statt einmal), weil die Kette länger brauchen kann.
 - Die Meldung zu einer beiseitegelegten oder unlesbaren Kopie beginnt mit dem Ort (`schnapp/rescue/<Name>`): Die
   einzeilige Statusleiste kürzt das Ende, und beim Start über „Öffnen mit“ sieht niemand die Fehlerausgabe.
+
+## Nachtrag 8 (23.11.2026): Aussage vor Ort, Grund bei gleicher Datei, Fehler-Lage nachholen (F-486, F-487, F-488)
+
+**Status:** Akzeptiert (Karte #206, umgesetzt von Claude Sonnet 5.5, Befunde aus dem Verify-Lauf von Sprint 12).
+
+- **Ändert Nachtrag 7, letzter Punkt:** Der Ort steht nicht mehr vorn. Der Dateiname der Kopie ist ein SHA-256 (64 Hex-Zeichen
+  plus Endung, über 100 Zeichen mit Pfad) und verdrängte so die Aussage aus der einzeiligen Statusleiste. Jetzt steht die
+  kurze Aussage zuerst, dann `schnapp/rescue/<8 Hex-Zeichen>…`; der Kurzname ist im Zustandsordner eindeutig zu finden. Die
+  volle Meldung steht bei Fehlern weiter auf der Fehlerausgabe.
+- `NeueBasis` mit derselben Ausgangsdatei wie bisher (ein fremdes Fenster ließ los, dieses speichert unter demselben
+  Namen) setzt den Grund `LageUebernahme`, nicht `LageBasiswechsel`: Der Text „hat die Datei losgelassen“ stimmt, „als
+  andere Datei gespeichert“ nicht (F-486).
+- Auch eine Lage mit Fehler hinter einer haltenden Meldung bleibt unverbraucht und wird nachgeholt; sie steht dabei je
+  Änderung einmal auf der Fehlerausgabe (F-487).

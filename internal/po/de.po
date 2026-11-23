@@ -605,14 +605,14 @@ msgstr "Eingabe"
 msgid "Restored unsaved changes from %s. Undo returns to the saved state."
 msgstr "Ungesicherte Änderungen vom %s wiederhergestellt. Rückgängig führt zum gespeicherten Stand."
 
-msgid "Rescue copy %s could not be read. It is kept for 30 days in the state folder."
-msgstr "Rettungskopie %s war nicht lesbar. Sie bleibt 30 Tage im Zustandsordner erhalten."
+msgid "The rescue copy could not be read. Kept for 30 days: %s"
+msgstr "Die Rettungskopie war nicht lesbar. 30 Tage aufbewahrt: %s"
 
-msgid "Rescue copy %s (unsaved changes from %s) was not restored: the file has changed since. It is kept for 30 days in the state folder."
-msgstr "Rettungskopie %s (ungesicherte Änderungen vom %s) nicht wiederhergestellt: Die Datei wurde seitdem geändert. Sie bleibt 30 Tage im Zustandsordner erhalten."
+msgid "Rescue copy (unsaved changes from %s) not restored: the file has changed since. Kept for 30 days: %s"
+msgstr "Rettungskopie (ungesicherte Änderungen vom %s) nicht wiederhergestellt: Die Datei wurde seitdem geändert. 30 Tage aufbewahrt: %s"
 
-msgid "Rescue copy %s (unsaved changes from %s) could not be restored. It is kept for 30 days in the state folder."
-msgstr "Rettungskopie %s (ungesicherte Änderungen vom %s) ließ sich nicht wiederherstellen. Sie bleibt 30 Tage im Zustandsordner erhalten."
+msgid "Rescue copy (unsaved changes from %s) could not be restored. Kept for 30 days: %s"
+msgstr "Rettungskopie (ungesicherte Änderungen vom %s) ließ sich nicht wiederherstellen. 30 Tage aufbewahrt: %s"
 
 msgid "The rescue copy left by the other Schnapp window could not be set aside. Changes made here are not protected by a rescue copy."
 msgstr "Die Rettungskopie des anderen Schnapp-Fensters ließ sich nicht beiseitelegen. Änderungen hier sind nicht durch eine Rettungskopie geschützt."

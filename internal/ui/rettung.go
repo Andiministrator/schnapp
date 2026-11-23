@@ -56,6 +56,8 @@ type rettungZustand struct {
 	erste      time.Time // erste ungesicherte Änderung seit der letzten Kopie; Null: keine
 	geweckt    time.Time // Zeitpunkt, zu dem schon ein Wecken bestellt ist
 	lageNr     uint64    // zuletzt gesehener Zähler der Sperrlage (Rettung.Lage, F-454)
+	// Zähler der Lage, deren Fehler schon auf der Fehlerausgabe stand, weil eine haltende Meldung ihn verdeckte (F-487)
+	lageGemeldet uint64
 }
 
 // rettungStart wendet beim Öffnen eine Rettungskopie an und merkt den Stand.
@@ -82,9 +84,14 @@ func (e *editor) rettungLage() {
 	if nr == e.rett.lageNr {
 		return
 	}
-	if text != "" && !fehler && e.haltendeMeldung() {
-		// F-474: Eine Meldung ohne Fehler verschwände hinter der haltenden Meldung (nur Diagnose-Log). Der Zähler bleibt
-		// unverbraucht: Sie kommt, sobald die haltende Meldung weicht (das nächste Ereignis fragt wieder).
+	if text != "" && e.haltendeMeldung() {
+		// F-474, F-487: Die Meldung verschwände hinter der haltenden Meldung (ein Fehler nur auf der Fehlerausgabe, sonst
+		// nur im Diagnose-Log). Der Zähler bleibt unverbraucht: Sie kommt, sobald die haltende Meldung weicht (das
+		// nächste Ereignis fragt wieder). Die Fehlerausgabe bekommt den Fehler je Änderung nur einmal.
+		if fehler && e.rett.lageGemeldet != nr {
+			e.rett.lageGemeldet = nr
+			fmt.Fprintln(fehlerAusgabe, text)
+		}
 		return
 	}
 	e.rett.lageNr = nr

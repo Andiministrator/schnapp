@@ -248,8 +248,8 @@
     "name": "U7c Fehler der Wiederherstellung nicht auf der Fehlerausgabe (F-411)",
     "datei": "internal/ui/rettung.go",
     "paket": "./internal/ui",
-    "alt": "fmt.Fprintln(fehlerAusgabe, text)",
-    "neu": "fmt.Sprint(text)"
+    "alt": "lesbar.\n\t\t\tfmt.Fprintln(fehlerAusgabe, text)",
+    "neu": "lesbar.\n\t\t\tfmt.Sprint(text)"
   },
   {
     "name": "U7d Lage ohne Vergleich des Zählers (F-454)",
@@ -767,7 +767,7 @@
     "name": "H4 F-474 Lage ohne Fehler verbraucht den Zähler hinter einer haltenden Meldung",
     "datei": "internal/ui/rettung.go",
     "paket": "./internal/ui",
-    "alt": "\tif text != \"\" && !fehler && e.haltendeMeldung() {\n",
+    "alt": "\tif text != \"\" && e.haltendeMeldung() {\n",
     "neu": "\tif false {\n"
   },
   {
@@ -797,5 +797,26 @@
     "paket": "./internal/ui",
     "alt": "e.melde(fmt.Sprintf(i18n.T(\"Could not save: %v\"), ohnePaketpraefix(r.err.Error())), true)",
     "neu": "e.melde(fmt.Sprintf(i18n.T(\"Could not save: %v\"), r.err), true)"
+  },
+  {
+    "name": "H9 F-486 gleiche Datei als Basiswechsel",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif alt == k.Pfad {\n\t\tgrund = LageUebernahme\n",
+    "neu": "\tif false {\n\t\tgrund = LageUebernahme\n"
+  },
+  {
+    "name": "H10 F-487 Fehler-Lage hinter haltender Meldung verbraucht",
+    "datei": "internal/ui/rettung.go",
+    "paket": "./internal/ui",
+    "alt": "if text != \"\" && e.haltendeMeldung() {",
+    "neu": "if text != \"\" && !fehler && e.haltendeMeldung() {"
+  },
+  {
+    "name": "H11 F-488 Ort nicht gekürzt",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "if len(name) > 8 {",
+    "neu": "if false {"
   }
 ]

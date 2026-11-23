@@ -473,15 +473,15 @@ msgid "Restored unsaved changes from %s. Undo returns to the saved state."
 msgstr ""
 
 #: cmd/schnapp/rettung.go
-msgid "Rescue copy %s could not be read. It is kept for 30 days in the state folder."
+msgid "The rescue copy could not be read. Kept for 30 days: %s"
 msgstr ""
 
 #: cmd/schnapp/rettung.go
-msgid "Rescue copy %s (unsaved changes from %s) was not restored: the file has changed since. It is kept for 30 days in the state folder."
+msgid "Rescue copy (unsaved changes from %s) not restored: the file has changed since. Kept for 30 days: %s"
 msgstr ""
 
 #: cmd/schnapp/rettung.go
-msgid "Rescue copy %s (unsaved changes from %s) could not be restored. It is kept for 30 days in the state folder."
+msgid "Rescue copy (unsaved changes from %s) could not be restored. Kept for 30 days: %s"
 msgstr ""
 
 #: cmd/schnapp/rettung.go

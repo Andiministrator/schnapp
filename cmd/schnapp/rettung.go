@@ -94,6 +94,11 @@ func (r *rettung) Wiederherstellen(d *document.Dokument) (string, bool) {
 	if name == "" {
 		name = rescue.Name(r.s.Basis().Pfad)
 	}
+	// Der Dateiname ist ein SHA-256 (64 Hex-Zeichen): Gekürzt auf 8 bleibt er im Ordner eindeutig zu finden, und die Aussage
+	// der Meldung steht vor dem Ort, damit die einzeilige Statusleiste nicht die Aussage kürzt (F-488).
+	if len(name) > 8 {
+		name = name[:8] + "…"
+	}
 	ort := "schnapp/rescue/" + name
 	switch {
 	case w.Gestoert:
@@ -107,12 +112,12 @@ func (r *rettung) Wiederherstellen(d *document.Dokument) (string, bool) {
 	case !w.Liegt:
 		return "", false
 	case w.Gesichert.IsZero():
-		// Der Ort steht vorn (F-475): Die einzeilige Statusleiste kürzt das Ende, „Öffnen mit“ hat keine Fehlerausgabe.
-		return fmt.Sprintf(i18n.T("Rescue copy %s could not be read. It is kept for 30 days in the state folder."), ort), true
+		// Aussage zuerst, dann der gekürzte Ort (F-488, ADR-0029 Nachtrag 8; F-475 stellte den Ort noch voran).
+		return fmt.Sprintf(i18n.T("The rescue copy could not be read. Kept for 30 days: %s"), ort), true
 	case errors.Is(w.Grund, rescue.ErrAnders):
-		return fmt.Sprintf(i18n.T("Rescue copy %s (unsaved changes from %s) was not restored: the file has changed since. It is kept for 30 days in the state folder."), ort, zeit), true
+		return fmt.Sprintf(i18n.T("Rescue copy (unsaved changes from %s) not restored: the file has changed since. Kept for 30 days: %s"), zeit, ort), true
 	default:
-		return fmt.Sprintf(i18n.T("Rescue copy %s (unsaved changes from %s) could not be restored. It is kept for 30 days in the state folder."), ort, zeit), true
+		return fmt.Sprintf(i18n.T("Rescue copy (unsaved changes from %s) could not be restored. Kept for 30 days: %s"), zeit, ort), true
 	}
 }
 

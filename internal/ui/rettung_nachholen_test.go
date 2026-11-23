@@ -51,6 +51,34 @@ func TestStatusleisteLageOhneFehlerWirdNachgeholt(t *testing.T) {
 	}
 }
 
+// F-487: Auch eine Lage mit Fehler („nicht geschützt“) geht hinter einer haltenden Meldung nicht verloren: Sie steht
+// einmal auf der Fehlerausgabe und erscheint in der Statusleiste, sobald die haltende Meldung weicht.
+func TestStatusleisteLageMitFehlerWirdNachgeholt(t *testing.T) {
+	e := testEditor(t)
+	aus := fehlerAbfangen(t)
+	r := &lageRettung{}
+	e.rettung = r
+	e.rettungStart()
+	e.meldeHaltend(haltVerwerfen, "Saving failed", true)
+	r.lText, r.lFehl, r.lNr = "nicht geschützt", true, 1
+	e.rettungPruefen()
+	e.rettungPruefen()
+	if e.meldung.Text != "Saving failed" {
+		t.Fatalf("Meldung %q, die haltende Meldung muss stehen bleiben", e.meldung.Text)
+	}
+	if e.rett.lageNr != 0 {
+		t.Errorf("lageNr %d: Der Zähler ist verbraucht, die Meldung wurde nie gezeigt", e.rett.lageNr)
+	}
+	if got := strings.Count(aus.String(), "nicht geschützt"); got != 1 {
+		t.Errorf("Fehlerausgabe %q: %d Zeilen, erwartet genau eine", aus.String(), got)
+	}
+	e.melde("Gespeichert", false) // die haltende Meldung weicht
+	e.rettungPruefen()
+	if e.meldung.Text != "nicht geschützt" || !e.meldung.Fehler || e.rett.lageNr != 1 {
+		t.Errorf("Meldung %q (lageNr %d), erwartet die nachgeholte Fehler-Lage", e.meldung.Text, e.rett.lageNr)
+	}
+}
+
 // F-473: Die Lage wird auch dann geprüft, wenn das Schließen schon freigegeben ist oder ein Speichern läuft; die Kette der
 // Rettung wechselt die Sperre nach dem Speichern.
 func TestStatusleisteLageAuchBeiErzwungenemSchliessen(t *testing.T) {
