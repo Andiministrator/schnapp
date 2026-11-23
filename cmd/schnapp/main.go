@@ -45,6 +45,7 @@ func main() {
 		os.Exit(code)
 	}
 	starteSprache(settings.Lade)
+	ui.Version = versionsText() // „Über Schnapp“ im Menü Hilfe (ADR-0031)
 	// Gio braucht die Hauptschleife auf dem Haupt-Goroutine, sobald das Overlay ein Fenster öffnet.
 	ui.Starte(func() int {
 		// MCP-Server und sein Bestätigungsdialog (ADR-0030 Nachtrag 2): nur genau so aufgerufen, ohne weitere

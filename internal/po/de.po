@@ -780,3 +780,30 @@ msgstr "Bild %d × %d (gestaucht)"
 msgctxt "status bar"
 msgid "%d%%"
 msgstr "%d %%"
+
+msgid "About Schnapp"
+msgstr "Über Schnapp"
+
+msgid "Cancel, deselect, back to Select"
+msgstr "Abbrechen, abwählen, zurück zu Auswählen"
+
+msgid "Help"
+msgstr "Hilfe"
+
+msgid "Keyboard shortcuts"
+msgstr "Tastenkürzel"
+
+msgid "Menu bar"
+msgstr "Menüzeile"
+
+msgid "New line in a text"
+msgstr "Neue Zeile im Text"
+
+msgid "Other keys"
+msgstr "Weitere Tasten"
+
+msgid "Schnapp %s — screenshots and annotations for Linux. Free software under the GPL 3.0 or later."
+msgstr "Schnapp %s — Bildschirmfotos und Beschriftungen für Linux. Freie Software unter der GPL 3.0 oder später."
+
+msgid "click or Esc to close"
+msgstr "Klick oder Esc schließt"

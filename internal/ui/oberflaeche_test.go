@@ -6,6 +6,7 @@ package ui
 
 import (
 	"image"
+	"strings"
 	"testing"
 
 	"gioui.org/f32"
@@ -32,7 +33,7 @@ func TestF10UndPfeileWechselnMenues(t *testing.T) {
 	}
 	l.taste(key.NameLeftArrow, 0)
 	l.taste(key.NameLeftArrow, 0)
-	if m.welches != menueWerkzeuge {
+	if m.welches != menueAnzahl-1 {
 		t.Errorf("links vom ersten: Menü %d, soll das letzte (Umlauf)", m.welches)
 	}
 	l.taste(key.NameF10, 0)
@@ -158,5 +159,51 @@ func TestFusszeileFelder(t *testing.T) {
 	}
 	if text := fussText(canvas.FussFeld{Art: canvas.FeldStand, Ungesichert: true}); text != "unsaved" {
 		t.Errorf("Stand: %q", text)
+	}
+}
+
+// TestHilfeTastenkuerzel: F1 und der Eintrag im Menü Hilfe öffnen die Übersicht; sie nennt jedes Kürzel der Tabelle
+// mit Handlung oder Werkzeug; Esc und ein Klick schließen sie (ADR-0031 Punkt 1).
+func TestHilfeTastenkuerzel(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	l.fokusiere(l.e)
+	l.taste(key.NameF1, 0)
+	if !l.e.hilfeOffen {
+		t.Fatal("F1 öffnet die Übersicht nicht")
+	}
+	tasten := map[string]bool{}
+	for _, z := range l.e.hilfeZeilen() {
+		for _, k := range strings.Split(z.taste, ", ") {
+			tasten[k] = true
+		}
+	}
+	for _, ta := range tastenTabelle() {
+		if ta.ausnahme != "" {
+			continue
+		}
+		if n := tastenName(ta.filter); !tasten[n] {
+			t.Errorf("Kürzel %q fehlt in der Übersicht", n)
+		}
+	}
+	l.taste(key.NameEscape, 0)
+	if l.e.hilfeOffen {
+		t.Error("Esc schließt die Übersicht nicht")
+	}
+	l.e.menue.welches = menueHilfe
+	l.titel().Click()
+	l.setle()
+	l.e.menue.eintraege[l.index(aktTastenkuerzel)].Click()
+	l.setle()
+	if !l.e.hilfeOffen {
+		t.Fatal("Menüeintrag öffnet die Übersicht nicht")
+	}
+	l.klick(leinwandFlaeche(l.gtx()).Min.Add(image.Pt(5, 5)))
+	if l.e.hilfeOffen {
+		t.Error("Klick schließt die Übersicht nicht")
+	}
+	Version = "9.9.9"
+	l.e.fuehreAus(l.gtx(), aktUeber, true)
+	if !strings.Contains(l.e.meldung.Text, "9.9.9") {
+		t.Errorf("Über Schnapp: %q", l.e.meldung.Text)
 	}
 }

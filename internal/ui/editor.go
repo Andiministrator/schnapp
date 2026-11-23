@@ -266,6 +266,8 @@ type editor struct {
 	// zeigerBild ist der Zeigerort über der Leinwand in Ansichtskoordinaten des Bilds (nil: außerhalb), für die
 	// Fußzeile (ADR-0031 Punkt 4).
 	zeigerBild *document.Punkt
+	// hilfeOffen: die Übersicht der Tastenkürzel liegt über der Leinwand (Menü Hilfe, F1; hilfe.go).
+	hilfeOffen bool
 
 	// Doppelklick erkennen (ADR-0021: Text bearbeiten): Zeit und Ort des letzten Drucks der linken Taste.
 	bildStand    uint64      // canvas.Sitzung.BildAenderung beim letzten bildNeu (Schwärzen ändert die Pixel)
@@ -1278,6 +1280,7 @@ func (e *editor) frame(gtx layout.Context) {
 	e.zeichneMenuezeile(gtx)
 	e.zeichneWerkzeugleiste(gtx)
 	e.zeichneFusszeile(gtx)
+	e.zeichneHilfe(gtx)
 	e.zeichneMenue(gtx) // über allem, unter dem Titel des offenen Menüs
 }
 
@@ -1785,6 +1788,10 @@ func (e *editor) tasten(gtx layout.Context) {
 			if i := e.menueTitelFokus(gtx); i >= 0 {
 				e.menueOeffne(i, true)
 			}
+			continue
+		}
+		if e.hilfeOffen && k.Name == key.NameEscape && !e.menue.offen { // Esc schließt zuerst die Übersicht
+			e.hilfeOffen = false
 			continue
 		}
 		if k.Name == key.NameF10 { // öffnet das erste Menü bzw. schließt das offene (ADR-0031 Punkt 1)

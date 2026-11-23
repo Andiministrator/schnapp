@@ -857,12 +857,40 @@ msgstr ""
 msgid "The file dialog returned no file."
 msgstr ""
 
-#: internal/ui/kuerzel.go
-msgid "Ctrl"
+#: internal/ui/hilfe.go
+msgid "Other keys"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Menu bar"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Cancel, deselect, back to Select"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "New line in a text"
+msgstr ""
+
+#: internal/ui/hilfe.go internal/ui/kuerzel.go
+msgid "Shift"
+msgstr ""
+
+#: internal/ui/hilfe.go internal/ui/kuerzel.go
+msgid "Enter"
+msgstr ""
+
+#: internal/ui/hilfe.go internal/ui/oberflaeche.go
+msgid "Keyboard shortcuts"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "click or Esc to close"
 msgstr ""
 
 #: internal/ui/kuerzel.go
-msgid "Shift"
+msgid "Ctrl"
 msgstr ""
 
 #: internal/ui/kuerzel.go
@@ -871,10 +899,6 @@ msgstr ""
 
 #: internal/ui/kuerzel.go
 msgid "Backspace"
-msgstr ""
-
-#: internal/ui/kuerzel.go
-msgid "Enter"
 msgstr ""
 
 #: internal/ui/menue.go
@@ -887,6 +911,10 @@ msgstr ""
 
 #: internal/ui/menue.go
 msgid "Seam style: torn edge"
+msgstr ""
+
+#: internal/ui/menue.go
+msgid "Schnapp %s — screenshots and annotations for Linux. Free software under the GPL 3.0 or later."
 msgstr ""
 
 #: internal/ui/oberflaeche.go
@@ -907,6 +935,10 @@ msgstr ""
 
 #: internal/ui/oberflaeche.go
 msgid "Tools"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Help"
 msgstr ""
 
 #: internal/ui/oberflaeche.go
@@ -951,6 +983,10 @@ msgstr ""
 
 #: internal/ui/oberflaeche.go
 msgid "Restore cut-out areas"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "About Schnapp"
 msgstr ""
 
 #: internal/ui/oberflaeche.go

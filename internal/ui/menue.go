@@ -3,6 +3,7 @@
 package ui
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 
@@ -233,6 +234,13 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 			if k, ok := e.s.WechsleKante(); ok {
 				e.melde(kantenMeldung(k), false)
 			}
+		}
+	case aktTastenkuerzel:
+		return func(layout.Context) { e.hilfeOffen = !e.hilfeOffen }
+	case aktUeber:
+		return func(layout.Context) {
+			e.melde(fmt.Sprintf(i18n.T("Schnapp %s — screenshots and annotations for Linux. Free software under the GPL 3.0 or later."),
+				Version), false)
 		}
 	case aktEinpassen:
 		return func(layout.Context) { e.s.Einpassen() }

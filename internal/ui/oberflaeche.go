@@ -42,6 +42,7 @@ const (
 	menueAnsicht
 	menueBild
 	menueWerkzeuge
+	menueHilfe
 	menueAnzahl
 )
 
@@ -58,6 +59,8 @@ func menueTitel(i int) string {
 		return i18n.T("Image")
 	case menueWerkzeuge:
 		return i18n.T("Tools")
+	case menueHilfe:
+		return i18n.T("Help")
 	}
 	return ""
 }
@@ -98,6 +101,11 @@ func (e *editor) menueEintraegeVon(i int) []menueEintrag {
 				aktiv: e.s.Werkzeug == w.w})
 		}
 		return en
+	case menueHilfe:
+		return []menueEintrag{
+			{akt: aktTastenkuerzel, text: i18n.T("Keyboard shortcuts"), an: true},
+			{akt: aktUeber, text: i18n.T("About Schnapp"), an: true},
+		}
 	}
 	return nil
 }

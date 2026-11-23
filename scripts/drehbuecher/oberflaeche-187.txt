@@ -33,3 +33,9 @@ foto 07-werkzeuge
 taste Esc
 warte 300
 foto 08-zu
+taste F1
+warte 300
+foto 09-hilfe
+taste Esc
+warte 300
+foto 10-hilfe-zu

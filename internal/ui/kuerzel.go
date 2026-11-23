@@ -27,7 +27,9 @@ const (
 	aktLoeschen
 	aktGanzesBild
 	aktZurueckholen
-	aktKantenform // „Seam style“: Form der Stauch-Kante reihum, ohne eigenes Kürzel (ADR-0023 Nachtrag 6)
+	aktKantenform    // „Seam style“: Form der Stauch-Kante reihum, ohne eigenes Kürzel (ADR-0023 Nachtrag 6)
+	aktTastenkuerzel // Menü Hilfe: Übersicht der Tastenkürzel (F1, ADR-0031 Punkt 1)
+	aktUeber         // Menü Hilfe: Über Schnapp
 	aktEinpassen
 	aktEins
 	aktSchliessen
@@ -80,6 +82,7 @@ func tastenTabelle() []taste {
 		strg("0", aktEinpassen),
 		strg("1", aktEins),
 		strg("W", aktSchliessen),
+		{filter: key.Filter{Name: key.NameF1}, akt: aktTastenkuerzel},
 		wz("V", canvas.WerkzeugAuswahl),
 		wz("A", canvas.WerkzeugPfeil),
 		wz("R", canvas.WerkzeugKasten),
@@ -148,6 +151,17 @@ func kuerzelText(a aktion) string {
 		}
 	}
 	return ""
+}
+
+// alleKuerzel sind alle Tasten einer Handlung in der Reihenfolge der Tabelle (Übersicht im Menü Hilfe).
+func alleKuerzel(a aktion) []string {
+	var k []string
+	for _, t := range tastenTabelle() {
+		if t.akt == a && !t.hatWerkzeug && a != aktKeine {
+			k = append(k, tastenName(t.filter))
+		}
+	}
+	return k
 }
 
 // werkzeugKuerzel ist der Buchstabe eines Werkzeugs (Hinweis über dem Knopf, ADR-0026 Punkt 3).
