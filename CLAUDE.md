@@ -147,6 +147,7 @@ der Wegwerf-Prototyp `prototype/` (entfernt in Sprint 9, ADR-0027; Stand in der 
   ADR-0020 Nachtrag 9); die Uhr (`SetzeUhr`) und der Haken je Schritt (`SetzeHaken`) sind für Tests austauschbar, `Puls` und `Marke` nebenläufig sicher (Nachtrag 11).
 - **internal/raster16** — Rasterkern aus `golang.org/x/image/vector` v0.26.0 (BSD, `LICENSE` im Ordner) mit
   16-Bit-Maske `Maske()`/`Bloecke()`; bitgleich zu vector, geprüft durch `TestMaskeGleichVector` und `TestMaskeGleichVectorZufall` (ADR-0028).
+- **Eckig:** Voreinstellung der Beschriftungen Eckradius 0 (`canvas.StandardStil`), Overlay-Schilder über `schildUmriss`, gespeicherte Eckradien bleiben (ADR-0021 Nachtrag 4, Karte #186; Strichecken noch rund, F-498).
 - **internal/icons** — eigenes, eckiges Symbolset (Karte #188, Muster `tmp/sprint12/muster/bilder/188-symbole.png`, Abnahme Andi offen): Raster 24, Strich 2, gefüllte Vielecke für Gio und SVG; `logo.go` trägt die Maße des „s“ aus `brand/logo/svg/schnapp-s-dunkel.svg` (Test hält sie gleich).
 - **internal/probeguard** — `NurVirtuell`: Probe-Builds (Tag `probe`, Schnapp und Fernbedienung) laufen nur im
   virtuellen KWin von `scripts/probe.sh` (F-229); das Paket selbst hat kein Build-Tag.
