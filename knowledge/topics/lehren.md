@@ -840,3 +840,9 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   `tmp/…` und müssen vor dem Abräumen herüberkopiert werden; im Prompt den Worktree-Pfad statt des Hauptbaums nennen.
 - **Messungen nicht neben anderen Läufen**: Eine Zeitmessung parallel zu Tests oder Mutanten (#227) streut um 20 %;
   Zahlen für ein Versprechen nur in ruhiger Zeit, mehrfach (`-count 3`).
+- **Grüne Sonde, falscher Fix** (#225, F-598): Die Sonde schickte ein einziges großes Radereignis; das echte Rad kommt in
+  15-px-Stufen, und nach fünf Stufen lag ein Knopf unter dem Zeiger, der das Rad schluckte (Gio `hitTest`: eine
+  Anmeldung in einem eigenen, sofort abgelegten Clip-Ausschnitt verliert gegen jeden undurchlässigen Bereich darüber).
+  Erst die Sichtprobe im virtuellen KWin fand es. Eingaben im Test so zerlegen, wie das System sie liefert.
+- **Ein globales `op.Offset` um einen gerollten Inhalt** hält Zeichnung, gemerkte Rahmen und Ereignislagen deckungsgleich;
+  Fensterkoordinaten (Wachen über dem ganzen Fenster) müssen umgerechnet werden.
