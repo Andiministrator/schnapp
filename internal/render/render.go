@@ -182,6 +182,27 @@ func (z zeichner) alles() error {
 			return err
 		}
 	}
+	z.kanten(true)
+	return nil
+}
+
+// KantenOhneSchatten legt die Kanten der Stauch-Nähte von d über b, das Ansichtsbild von d (wird verändert), mit
+// derselben Mischung wie Bild — aber ohne den Schatten im Spalt (document.Schicht.ImSpalt). Der Editor mischt die
+// halbdurchsichtigen Schichten so im Renderer statt in Gio, das sie linear statt in sRGB mischt und den Fasersaum um
+// im Mittel 22 von 255 zu hell zeigte (F-407, ADR-0023 Nachtrag 11); den durchsichtigen Spalt zeigt er weiter als
+// Schachbrett mit dem Schatten darüber. Der Spalt ist danach durchsichtig (Alpha 0), wie in Bild.
+func KantenOhneSchatten(b *image.NRGBA, d *document.Dokument) {
+	if len(d.Naehte()) == 0 {
+		return
+	}
+	z := zeichner{bild: b, rand: b.Bounds(), d: d, auf: &aufwand{}, ras: &raster16.Rasterizer{}, masken: neuerMaskenCache(),
+		ohneZaehlen: true}
+	z.kanten(false)
+}
+
+// kanten zeichnet die Kanten der Nähte: erst der Spalt aller Nähte durchsichtig, dann die Schichten; mit schatten auch
+// den Schatten im Spalt (Bild), ohne ihn nur Fasersaum und Abdunklung (KantenOhneSchatten).
+func (z zeichner) kanten(schatten bool) {
 	g, f, k := z.d.Groesse(), z.d.KantenFaktor(), z.d.Kante()
 	schichten := document.KantenSchichten()
 	// Die Mittellinie je Achse einmal rechnen, die Schichten verschieben sie nur quer (F-418); ein Puffer für alle Bänder
@@ -233,20 +254,25 @@ func (z zeichner) alles() error {
 		return true
 	}
 	if !spalte() {
-		return nil
+		return
 	}
 	if !document.NaehteBeruehren(naehte, f) {
-		schichtenDurchgang(func(document.Schicht) bool { return true })
-		return nil
+		if schatten {
+			schichtenDurchgang(func(document.Schicht) bool { return true })
+		} else {
+			schichtenDurchgang(func(s document.Schicht) bool { return !s.ImSpalt() })
+		}
+		return
 	}
 	// Kreuzen sich Nähte oder liegen sie eng beieinander, ragt der Fasersaum der einen in den Spalt der anderen (F-438,
 	// ADR-0023 Nachtrag 8): Erst Fasersaum und Abdunklung, dann die Spalte noch einmal leeren, dann erst den Schatten
 	// (er liegt im Spalt und bleibt dort, auch im Spalt der kreuzenden Naht).
 	if !schichtenDurchgang(func(s document.Schicht) bool { return !s.ImSpalt() }) || !spalte() {
-		return nil
+		return
 	}
-	schichtenDurchgang(document.Schicht.ImSpalt)
-	return nil
+	if schatten {
+		schichtenDurchgang(document.Schicht.ImSpalt)
+	}
 }
 
 // abgebrochen meldet für den Trockenlauf von Pruefe, dass der gezählte Aufwand schon eine Grenze überschreitet: Mehr

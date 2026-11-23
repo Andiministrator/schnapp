@@ -69,8 +69,8 @@ func TestEditorFotoGegenRenderer(t *testing.T) {
 		return
 	}
 	besteSumme, bestN, bestOX, bestOY := 1<<62, 0, 0, 0
-	for oy := 190; oy <= 260; oy++ {
-		for ox := 190; ox <= 210; ox++ {
+	for oy := 195; oy <= 205; oy++ {
+		for ox := 220; ox <= 232; ox++ {
 			s, n, _, _ := vergleich(ox, oy)
 			if n > 0 && s*bestN < besteSumme*n || bestN == 0 {
 				besteSumme, bestN, bestOX, bestOY = s, n, ox, oy

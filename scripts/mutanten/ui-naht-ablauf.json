@@ -19,5 +19,26 @@
     "paket": "./internal/ui",
     "alt": "\tif !document.NaehteBeruehren(naehte, faktor) {",
     "neu": "\tif true || !document.NaehteBeruehren(naehte, faktor) {"
+  },
+  {
+    "name": "NA4 F-407 Editor legt bei Saum im Bild trotzdem alle Schichten",
+    "datei": "internal/ui/naehte_linien.go",
+    "paket": "./internal/ui",
+    "alt": "\tif saumImBild {",
+    "neu": "\tif false && saumImBild {"
+  },
+  {
+    "name": "NA5 F-407 Stand des Leinwandbilds ignoriert die Kantenform",
+    "datei": "internal/ui/naehte_linien.go",
+    "paket": "./internal/ui",
+    "alt": "k.groesse == a.groesse && k.form == a.form && ",
+    "neu": "k.groesse == a.groesse && "
+  },
+  {
+    "name": "NA6 F-407 Saum liegt auch beim Zuschneiden im Bild",
+    "datei": "internal/ui/naehte_linien.go",
+    "paket": "./internal/ui",
+    "alt": "k.im = len(k.naehte) > 0 && s.Werkzeug != canvas.WerkzeugZuschneiden",
+    "neu": "k.im = len(k.naehte) > 0"
   }
 ]

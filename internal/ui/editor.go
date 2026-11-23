@@ -274,6 +274,7 @@ type editor struct {
 	// Doppelklick erkennen (ADR-0021: Text bearbeiten): Zeit und Ort des letzten Drucks der linken Taste.
 	bildStand    uint64      // canvas.Sitzung.BildAenderung beim letzten bildNeu (Schwärzen ändert die Pixel)
 	bildOrt      image.Point // Lage des Leinwandbilds in Ansichtskoordinaten (Vollansicht beim Zuschneiden)
+	kantenStand  kantenBild  // Stand der Nähte beim letzten bildNeu: liegen Fasersaum und Abdunklung im Bild (F-407)
 	letzterDruck time.Duration
 	letzterOrt   document.Punkt
 	hatDruck     bool
@@ -286,9 +287,11 @@ type editor struct {
 		naehte  []document.Naht
 		form    document.Kante
 		faktor  int
-		ops     op.Ops
-		aufruf  op.CallOp
-		gueltig bool
+		// saumImBild: Fasersaum und Abdunklung kommen aus dem Bild der Leinwand, die Aufzeichnung hat nur Spalt und Schatten.
+		saumImBild bool
+		ops        op.Ops
+		aufruf     op.CallOp
+		gueltig    bool
 	}
 }
 
@@ -315,7 +318,14 @@ func diagnoseEditor(format string, args ...any) {
 // bildNeu baut das Bild der Leinwand: die Ansicht, beim Werkzeug Zuschneiden die Vollansicht (ADR-0023 Nachtrag 5),
 // abgelegt bei bildOrt in Ansichtskoordinaten.
 func (e *editor) bildNeu() {
-	e.bildOp = paint.NewImageOp(e.s.Leinwandbild())
+	img := e.s.Leinwandbild()
+	// Fasersaum und Abdunklung der Nähte mischt der Renderer ins Bild (F-407): Gio mischt halbdurchsichtige Flächen
+	// linear, der Renderer in sRGB; im Fasersaum zeigte der Editor so im Mittel 22 von 255 zu hell.
+	e.kantenStand = kantenBildStand(e.s)
+	if e.kantenStand.im {
+		render.KantenOhneSchatten(img, e.s.D)
+	}
+	e.bildOp = paint.NewImageOp(img)
 	e.bildOrt = e.s.Bildflaeche().Min
 }
 
@@ -1295,6 +1305,8 @@ func (e *editor) leinwand(gtx layout.Context) {
 	if n := e.s.BildAenderung(); n != e.bildStand {
 		e.bildStand = n
 		e.bildNeu() // geschwärzte Pixel sofort zeigen (ADR-0022)
+	} else if !kantenBildStand(e.s).gleich(e.kantenStand) {
+		e.bildNeu() // Kantenform, Nähte oder Werkzeug Zuschneiden geändert: Fasersaum im Bild neu mischen (F-407)
 	}
 
 	c := clip.Rect(image.Rectangle{Max: groesse}).Push(gtx.Ops)
@@ -1629,7 +1641,9 @@ func nummerGrundlinieAnsicht(n document.Nummer) float32 { return float32(n.Grund
 func (e *editor) zeichneNaehte(gtx layout.Context) {
 	g, naehte, form, faktor := e.s.D.Groesse(), e.s.D.Naehte(), e.s.D.Kante(), e.s.D.KantenFaktor()
 	c := &e.naht
-	if !c.gueltig || c.groesse != g || !slices.Equal(c.naehte, naehte) || c.form != form || c.faktor != faktor {
+	saumImBild := e.kantenStand.im // Fasersaum und Abdunklung liegen im Bild der Leinwand (bildNeu, F-407)
+	if !c.gueltig || c.groesse != g || !slices.Equal(c.naehte, naehte) || c.form != form || c.faktor != faktor ||
+		c.saumImBild != saumImBild {
 		c.ops.Reset()
 		aufnahme := op.Record(&c.ops)
 		schichten := document.KantenSchichten()
@@ -1676,9 +1690,9 @@ func (e *editor) zeichneNaehte(gtx layout.Context) {
 			}
 		}
 		// Die Reihenfolge (auch die zweite Leerung bei sich berührenden Nähten, F-438, F-499) liegt in fuehreNahtAblaufAus.
-		fuehreNahtAblaufAus(naehte, faktor, spalte, durchgang)
+		fuehreNahtAblaufAus(naehte, faktor, saumImBild, spalte, durchgang)
 		c.aufruf = aufnahme.Stop()
-		c.groesse, c.naehte, c.form, c.faktor, c.gueltig = g, naehte, form, faktor, true
+		c.groesse, c.naehte, c.form, c.faktor, c.saumImBild, c.gueltig = g, naehte, form, faktor, saumImBild, true
 	}
 	c.aufruf.Add(gtx.Ops)
 }

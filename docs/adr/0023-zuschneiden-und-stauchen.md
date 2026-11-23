@@ -393,3 +393,23 @@ Mutanten `K182-1` bis `K182-4` in `scripts/mutanten/kante.json`.
 **Verworfen:** Relative Pfadbefehle (rund −25 % je Punkt, aber schlechter lesbar und nicht nötig), Masken und
 Clip-Pfade statt Bändern (kleinste Daten, aber je Schicht und Naht eine Maske in jedem Betrachter; Darstellung
 schwerer zu prüfen).
+
+## Nachtrag 11 (23.11.2026): Fasersaum im Editor wie im Renderer, Rechenzeit vieler Nähte (F-407, F-430, F-499, Karte #212)
+
+**Status:** Akzeptiert (Claude Sonnet 5.5 mit Claude Opus 5.5, Karte #212).
+
+- **Fasersaum im Editor (F-407):** Gio mischt halbdurchsichtige Flächen linear, `render` in sRGB; im Fasersaum zeigte der
+  Editor im Mittel 22 (höchstens 43) von 255 je Kanal zu hell (Messung bei Zoom 100 %, Skala 1, Versatz genau
+  (226,200): keine Skalierung im Spiel). Jetzt mischt `render.KantenOhneSchatten` Fasersaum und Abdunklung (auch die zweite
+  Leerung bei berührenden Nähten) ins Bild der Leinwand (`editor.bildNeu`); Gio legt nur noch das Schachbrett des Spalts
+  und darüber den Schatten. Nach der Änderung weicht das Foto im Mittel um 0,02 ab, höchstens 2 je Kanal, kein Pixel über 2.
+  Der Stand (`kantenBild`: Nähte, Form, Faktor, Werkzeug) löst ein Neubauen aus, auch beim Wechsel der Kantenform.
+  Beim Werkzeug Zuschneiden (Vollansicht) bleibt es beim alten Weg in Gio. Folge: Objekte liegen im Editor über dem
+  Fasersaum, nicht darunter wie in Export und Renderer (nur in den wenigen Pixeln am Rand einer Naht).
+- **Rechenzeit (F-430):** Der Renderer merkt sich die Deckung großer Füllungen (`masken.go`) unter ihren genauen
+  Pfadkoordinaten; Nähte einer Achse sind querverschobene Kopien, die Füllungen der übrigen Nähte spielen die Maske ab.
+  Das Abspielen teilt sich in Spaltenstreifen auf höchstens 8 Kerne (jedes Pixel hängt nur von sich ab). Dazu schnelleres
+  Einmischen auf deckendem Grund. 120 Abriss-Nähte auf 32768×2100, Bild bitgleich (`TestNahtPruefsumme`): 6,46 s auf
+  4,4 s mit einem Kern, 3,0 s mit zwei, 2,5 s mit allen Kernen des Entwicklungsrechners. `BenchmarkNaehteAlleGrenzen`
+  (ein Kern): rund 11 s statt rund 14 s.
+- **Test (F-499):** `TestNahtAblaufZweiteLeerung` und `TestKantenOhneSchatten` (Sollpixel im Spalt bei kreuzenden Nähten).

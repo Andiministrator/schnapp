@@ -33,5 +33,19 @@
     "paket": "./internal/render",
     "alt": "dst[i] = uint16(v)",
     "neu": "dst[i] = uint16(v) &^ 1"
+  },
+  {
+    "name": "RK1 F-407 KantenOhneSchatten leert den Spalt nicht noch einmal",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "if !schichtenDurchgang(func(s document.Schicht) bool { return !s.ImSpalt() }) || !spalte() {",
+    "neu": "if !schichtenDurchgang(func(s document.Schicht) bool { return !s.ImSpalt() }) {"
+  },
+  {
+    "name": "RK2 F-407 KantenOhneSchatten zeichnet den Schatten bei getrennten Nähten mit",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\tif schatten {\n\t\t\tschichtenDurchgang(func(document.Schicht) bool { return true })",
+    "neu": "\t\tif true {\n\t\t\tschichtenDurchgang(func(document.Schicht) bool { return true })"
   }
 ]
