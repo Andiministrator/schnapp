@@ -846,3 +846,8 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Erst die Sichtprobe im virtuellen KWin fand es. Eingaben im Test so zerlegen, wie das System sie liefert.
 - **Ein globales `op.Offset` um einen gerollten Inhalt** hält Zeichnung, gemerkte Rahmen und Ereignislagen deckungsgleich;
   Fensterkoordinaten (Wachen über dem ganzen Fenster) müssen umgerechnet werden.
+- **Gio setzt den Fokus eines Tags, das aus dem Bild verschwindet, ohne FocusEvent auf nil** (#220): Wer ihn halten will,
+  merkt sich das Feld und prüft im Folgebild (`farbwaehler.hatteFokus`). Tab im Test als `input.SystemEvent` schicken und
+  bei nicht behandeltem Ereignis `MoveFocus` rufen wie `app/window.go`; ein nacktes `key.Event` bewegt den Fokus nicht.
+- **Ein Filter mit `Focus: tag` fängt eine Taste nur, solange dieses Tag den Fokus hat** — so bleibt Tab in Feldern der
+  Leiste frei. Wer Tasten freigibt, prüft, wohin die nächsten Zeichen gehen (F-608).
