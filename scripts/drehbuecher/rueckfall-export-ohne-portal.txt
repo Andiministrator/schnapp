@@ -2,11 +2,15 @@
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-export-ohne-portal.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 480 --hoehe 800
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
 # Lauf 8d: Export ohne Portal, danach Taste R — stimmt der Zustand und fehlt nur das Neuzeichnen?
+# Seit Karte #210 (ADR-0031) gibt es keinen Export-Knopf mehr: Export über das Menü Datei, Titel (62,15), Eintrag
+# „Exportieren …“ (100,84); Taste R wählt das Rechteck-Werkzeug (Knopf bei (26,154) wird aktiv).
 warte 800
-klick 358 160
+klick 62 15
+warte 300
+klick 100 84
 warte 6000
 foto 01-nach-6s
-warte 10
+taste R
 warte 500
 foto 02-nach-taste-R
 taste Strg+W

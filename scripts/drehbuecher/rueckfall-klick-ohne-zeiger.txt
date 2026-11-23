@@ -1,33 +1,43 @@
-# Rückfallprobe F-251 (Karte #109): `klick X Y` ohne vorheriges `zeiger X Y` trifft den Leistenknopf „Ganzes Bild“.
-# Das Band bis an den Rand (X, senkrecht) macht „Ganzes Bild“ aktiv; der Klick darauf ohne eigene Zeigerbewegung davor
-# muss den Zuschnitt zurückholen (Bildgröße 1200 x 800 in der Statusleiste, Knopf wieder ausgegraut). Vier Wiederholungen,
-# weil ein Einzelfall auch durch Zufall gelingen kann.
+# Rückfallprobe F-251 (Karte #109): `klick X Y` ohne vorheriges `zeiger X Y` trifft den Menüeintrag „Ganzes Bild“.
+# Das Band bis an den Rand (X, senkrecht) macht „Ganzes Bild“ im Menü Bild aktiv; zwei Klicks hintereinander ohne eigene
+# Zeigerbewegung (Titel „Bild“, dann der Eintrag) müssen den Zuschnitt zurückholen (Bildgröße 1200 x 800 in der Fußzeile,
+# Eintrag danach wieder grau). Vier Wiederholungen, weil ein Einzelfall auch durch Zufall gelingen kann.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-klick-ohne-zeiger.txt --bild scripts/drehbuecher/testbild-1200x800.png --zeit 120
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen: „nach-band-N“ zeigt 1200 x 564, „nach-klick-N“ 1200 x 800.
-# Bild 1200x800 bei 100 % ab (200,136); Knopf „Ganzes Bild“ in der Leiste bei (1247,28), Leiste bei 1600 px zweizeilig.
+# Seit Karte #210 (ADR-0031): Bild 1200x800 bei 100 % ab (226,100); „Ganzes Bild“ liegt nicht mehr als Knopf in einer
+# Leiste, sondern im Menü Bild: Titel (267,15), Eintrag (300,52). Das Band beginnt in der Bildmitte und endet unter
+# dem Bild, aber noch über der Fußzeile (y 970).
 warte 800
 taste X
-ziehe 800 700 800 990 12
+ziehe 826 664 826 950 12
 warte 300
 foto nach-band-1
-klick 1247 28
+klick 267 15
+klick 300 52
 warte 300
 foto nach-klick-1
-ziehe 800 700 800 990 12
+ziehe 826 664 826 950 12
 warte 300
 foto nach-band-2
-klick 1247 28
+klick 267 15
+klick 300 52
 warte 300
 foto nach-klick-2
-ziehe 800 700 800 990 12
+ziehe 826 664 826 950 12
 warte 300
 foto nach-band-3
-klick 1247 28
+klick 267 15
+klick 300 52
 warte 300
 foto nach-klick-3
-ziehe 800 700 800 990 12
+ziehe 826 664 826 950 12
 warte 300
 foto nach-band-4
-klick 1247 28
+klick 267 15
+klick 300 52
 warte 300
 foto nach-klick-4
+# Zusätzlich ein Werkzeugknopf der linken Leiste ohne Zeigerbewegung davor: Verpixeln (26,338) muss aktiv werden (Stauchen ist schon gewählt).
+klick 26 338
+warte 300
+foto nach-klick-knopf-verpixeln

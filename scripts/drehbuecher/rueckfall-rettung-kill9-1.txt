@@ -1,7 +1,8 @@
 # Rückfallprobe F-144 (rueckfall-rettung-kill9.sh), Teil 1: Kasten zeichnen, dann warten (Bündelung 2 s), danach schickt das Innen-Skript SIGKILL.
+# Koordinaten seit Karte #210 (neue Oberfläche, ADR-0031): Bild 1200x800 bei 100 % ab (226,100), Bildschirmpunkt = Bildpunkt + (226,100) (vorher + (200,136)); der Zug (526,264)-(826,464) liegt ganz im Bild.
 warte 500
 foto 1-vorher
 taste R
-ziehe 500 300 800 500 12
+ziehe 526 264 826 464 12
 warte 4000
 foto 2-kasten

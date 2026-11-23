@@ -1,6 +1,7 @@
 # Messung F-235 (knowledge/messungen/f-235.md): Folgebild je Zeigerereignis, 4K-Fenster, 6 Schwärzen-Drags zu je 200 Schritten
-# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/messung-f235-drag.txt --bild <4K-Testbild> --breite 3840 --hoehe 2160 --zeit 200
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/messung-f235-drag.txt --bild <4K-Testbild> --breite 3840 --hoehe 2160 --zeit 200 --ende 90
 #   (ohne Folgebild: SCHNAPP_PROBE_OHNE_FOLGEBILD=1 davor; Testbild und Auswertung siehe Protokoll)
+# Koordinaten seit Karte #210 geprüft (neue Oberfläche, ADR-0031): Alle Züge liegen weiter im Bild (Leinwand ab x 52, y 30; das 4K-Bild ist eingepasst, Zoom 95 %, und deckt die Zugpunkte ab); das Foto am Ende belegt sechs Schwärzungen. Das Speichern beim Beenden braucht im Race-Build länger als die 5 s Voreinstellung: --ende 90 mitgeben.
 # F-235: 4K-Fenster, Drag-Läufe mit Schwärzen (B), je 200 Zeigerschritte
 warte 800
 taste B
@@ -17,3 +18,4 @@ ziehe 400 1300 3200 1420 200
 warte 300
 ziehe 400 1550 3200 1670 200
 warte 300
+foto 99-ende

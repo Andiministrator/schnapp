@@ -2,15 +2,16 @@
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-zuschnitt-stauchen.txt --bild scripts/drehbuecher/testbild-1200x800.png --zeit 120
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
 # Lauf 5: Zuschneiden (C) und Stauchen (X), Punkte 1-8 aus #38 und F-185
-# Bild 1200x800 bei 100 % ab (200,136); Bildpunkt = Bildschirm - (200,136)
+# Koordinaten seit Karte #210 (neue Oberfläche, ADR-0031): Bild 1200x800 bei 100 % ab (226,100); Bildpunkt =
+# Bildschirm - (226,100) (vorher - (200,136)). Gestaucht auf 600 Zeilen liegt das Bild ab (226,200).
 warte 800
 # 1) Zuschneiden: Bildausschnitt (100,86)-(1100,686)
 taste C
-ziehe 300 222 1300 822 12
+ziehe 326 186 1326 786 12
 warte 300
 foto 01-zugeschnitten
 # 2) Doppelklick mit C: ganzes Bild, Strg+Z: wieder zugeschnitten
-doppelklick 800 522
+doppelklick 826 486
 warte 300
 foto 02-ganzes-bild
 taste Strg+Z
@@ -26,30 +27,30 @@ warte 300
 foto 05-original
 # 4) X senkrecht über den Mittelteil: Zeilen 286-486 fallen weg
 taste X
-ziehe 800 422 800 622 12
+ziehe 826 386 826 586 12
 warte 300
 foto 06-gestaucht-zeilen
-# 6) Doppelklick auf die Naht (Bild 600 hoch, oben bei 236, Naht bei 236+286=522)
-doppelklick 800 522
+# 6) Doppelklick auf die Naht (Bild 600 hoch, oben bei 200, Naht bei 200+286=486)
+doppelklick 826 486
 warte 300
 foto 07-naht-zurueck
 # 5) X waagrecht: Spalten 300-500 fallen weg
-ziehe 500 622 700 622 12
+ziehe 526 586 726 586 12
 warte 300
 foto 08-gestaucht-spalten
 taste Strg+Z
 warte 300
 foto 09-spalten-zurueck
-# 8) Band über das ganze Bild ab der ersten Bildzeile (y=136): rote Meldung, keine Änderung
-ziehe 800 136 800 982 12
+# 8) Band über das ganze Bild ab der ersten Bildzeile (y=100): rote Meldung, keine Änderung
+ziehe 826 100 826 946 12
 warte 300
 foto 10-ganzes-band
 # 7) Pfeil ganz im gestauchten Teil, dann stauchen: Pfeil verborgen, Meldung; Strg+Z bringt ihn zurück
 taste A
-ziehe 1100 472 1300 522 12
+ziehe 1126 436 1326 486 12
 warte 300
 taste X
-ziehe 800 422 800 622 12
+ziehe 826 386 826 586 12
 warte 300
 foto 11-pfeil-verborgen
 taste Strg+Z

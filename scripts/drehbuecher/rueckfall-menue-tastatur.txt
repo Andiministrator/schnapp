@@ -1,36 +1,36 @@
-# Rückfallprobe ADR-0026 Nachtrag 2 (Karte #110, F-255): Menü allein per Tastatur — Text-Werkzeug, Text setzen, Umschalt+Tab bis „Menü“,
-# Enter (Fokus in die Liste), Pfeile bis „Text bearbeiten“, Enter, tippen: der Text erscheint (Fokus liegt danach auf der Leinwand).
+# Rückfallprobe ADR-0026 Nachtrag 2 (Karte #110, F-255): Menü allein per Tastatur — Text-Werkzeug, Text setzen, F10 öffnet
+# das Menü, Pfeile bis „Text bearbeiten“, Enter, tippen: der Text erscheint (Fokus liegt danach auf der Leinwand).
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-menue-tastatur.txt --bild scripts/drehbuecher/testbild-1200x800.png
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
+# Neue Oberfläche (Karte #210, ADR-0031): Das Menü ist die Menüzeile oben; F10 öffnet „Datei“ mit Fokus auf dem ersten
+# Eintrag, Rechts/Links wechseln das Menü (Datei, Bearbeiten, Ansicht, Bild, Werkzeuge, Hilfe), Runter/Hoch springen über
+# graue Einträge, Enter führt aus, Esc schließt. Bild bei 100 % ab (226,100), der Text kommt bei (826,500).
 warte 800
-zeiger 600 400
+zeiger 826 500
 warte 200
 taste T
 warte 200
-klick 600 400
+klick 826 500
 warte 300
 schreibe Hallo
 warte 200
 taste Enter
 warte 300
 foto 01-text-gesetzt
-# Umschalt+Tab läuft rückwärts durch die Knöpfe; der Menüknopf kommt vor Speichern (Fokusring im Foto prüfen).
-taste Umschalt+Tab
+# F10 öffnet das Menü Datei, der erste Eintrag hat den Fokusring.
+taste F10
 warte 300
-foto 02-fokus-auf-knopf
-taste Enter
+foto 02-f10-datei-fokus
+# Rechts wechselt nach „Bearbeiten“: Rückgängig (aktiv), Wiederholen (grau), Text bearbeiten, Löschen.
+taste Rechts
 warte 300
-foto 03-menue-fokus-erster-eintrag
+foto 03-bearbeiten-fokus
+# Ein Runter springt über das graue „Wiederholen“ auf „Text bearbeiten“ (Fokusring im Foto); Pfeile führen nichts aus, der Text steht weiter im Bild.
 taste Runter
-taste Runter
-taste Runter
-warte 200
+warte 300
 foto 04-pfeile-ueberspringen-nichts-ausgefuehrt
-taste Runter
-warte 300
-foto 05-text-bearbeiten-fokussiert
 taste Enter
 warte 300
 schreibe XY
 warte 300
-foto 06-text-bearbeiten-getippt
+foto 05-text-bearbeiten-getippt

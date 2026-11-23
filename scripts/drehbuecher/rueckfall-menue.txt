@@ -1,35 +1,40 @@
 # Rückfallprobe ADR-0026 (Karte #104): Menü — Gestauchtes zurückholen, Löschen, Kopieren, Schließen; Kürzel im Menü
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-menue.txt --bild scripts/drehbuecher/testbild-1200x800.png
-# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen. Leiste bei 1600 px: Menü (1456,28); Einträge siehe Foto 02
-# (seit Karte #96 steht „Kantenform“ vor Einpassen, Schließen liegt bei y = 501).
+# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
+# Neue Oberfläche (Karte #210, ADR-0031), 1600 x 1000, Skala 1: Menüzeile oben (y 0..30), Titel bei y = 15: Datei x 62,
+# Bearbeiten 134, Ansicht 212, Bild 267, Werkzeuge 336, Hilfe 406. Einträge ab y = 52 im Abstand 32 (Gruppentrenner
+# schiebt weiter): Datei: Speichern 52, Exportieren 84, Kopieren 116, Schließen 157. Bearbeiten: Rückgängig 52,
+# Wiederholen 84, Text bearbeiten 125, Löschen 157. Bild: Ganzes Bild 52, Gestauchtes zurückholen 84, Kantenform 125.
+# Das Bild 1200x800 liegt bei 100 % ab (226,100); Bildschirmpunkt = Bildpunkt + (226,100).
 # Schließen hält das Fenster beim ersten Mal offen (Hinweis zum Ablageort, F-158), probe.sh beendet danach per SIGTERM.
 warte 800
 taste R
-ziehe 300 500 500 600 10
+ziehe 326 464 526 564 10
 warte 200
 taste X
-ziehe 1100 422 1100 522 10
+ziehe 1126 386 1126 486 10
 warte 300
-klick 1456 28
+klick 267 15
 warte 300
-klick 1250 355
+klick 300 84
 warte 400
 foto 01-zurueckgeholt
 taste V
-klick 300 550
+klick 326 514
 warte 300
-klick 1456 28
+klick 134 15
 warte 300
 foto 02-menue-mit-auswahl
-klick 1198 282
+klick 140 157
 warte 400
 foto 03-geloescht
-klick 1456 28
+klick 62 15
 warte 300
-klick 1200 72
+klick 100 116
 warte 1500
 foto 04-kopiert
-klick 1456 28
+klick 62 15
 warte 300
-klick 1203 501
+klick 100 157
 warte 1500
+foto 05-nach-schliessen

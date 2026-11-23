@@ -1,17 +1,21 @@
-# Rückfallprobe ADR-0026 Nachtrag 1/2 (Karte #110, F-265, F-252): Menü im kleinsten Fenster — Liste passt hinein, der unterste Eintrag
-# „Schließen“ ist per Klick erreichbar.
+# Rückfallprobe ADR-0026 Nachtrag 1/2 (Karte #110, F-265, F-252): Menü im kleinsten Fenster — die Liste passt hinein, der
+# unterste Eintrag ist per Klick erreichbar.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-menue-klein.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 480 --hoehe 320
-# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen. Das Menü wird per Tastatur geöffnet (Umschalt+Tab, Enter), weil die
-# Lage des Knopfes „Menü“ im schmalen Fenster vom Umbruch der Leiste abhängt.
+# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
+# Neue Oberfläche (Karte #210, ADR-0031): Menüzeile oben (Titel bei y = 15: Datei x 62, Werkzeuge x 336), Fußzeile unten
+# (y 290..320). Das längste Menü ist „Werkzeuge“ mit neun Einträgen (im großen Fenster Auswählen y 52 … Stauchen y 308, im 320 hohen Fenster rückt die Liste hoch: Auswählen y 42 … Stauchen y 298).
+# Erst Werkzeuge öffnen und den untersten Eintrag „Stauchen“ anklicken (Foto 02: Werkzeug Stauchen aktiv), dann Datei
+# öffnen und „Schließen“ anklicken: Der Editor beendet sich (Probe-Skript meldet Exit 0) oder zeigt den Hinweis.
 warte 800
-taste Umschalt+Tab
-warte 200
-taste Enter
+klick 336 15
 warte 300
-foto 01-menue-klein
-# „Schließen“ liegt bei y=294 (Foto 01); der Klick muss ankommen: Der Editor beendet sich (Probe-Skript meldet Exit 0) oder zeigt den Hinweis.
-zeiger 200 294
-warte 200
-klick 200 294
+foto 01-werkzeuge-klein
+klick 340 298
+warte 300
+foto 02-nach-klick-stauchen
+klick 62 15
+warte 300
+foto 03-datei-klein
+klick 100 157
 warte 1500
-foto 02-nach-klick-auf-schliessen
+foto 04-nach-klick-auf-schliessen

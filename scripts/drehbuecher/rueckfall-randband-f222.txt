@@ -2,34 +2,43 @@
 # zurück; Schwärzen über den Rand hinaus trifft nichts Verborgenes.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-randband-f222.txt --bild scripts/drehbuecher/testbild-1200x800.png --zeit 120
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
-# Bild 1200x800 bei 100 % ab (200,136); Bildpunkt = Bildschirm - (200,136)
+# Koordinaten seit Karte #210 (neue Oberfläche, ADR-0031): Bild 1200x800 bei 100 % ab (226,100); Bildschirmpunkt =
+# Bildpunkt + (226,100). Züge „unter den Bildrand“ enden bei y = 950 (Bild endet bei 900, die Fußzeile beginnt bei 970).
 warte 800
 foto 01-vorher
 # 1) X senkrecht von Bildzeile 564 bis unter den Bildrand: unten abgeschnitten, Meldung nennt „Ganzes Bild“,
-#    der Knopf „Ganzes Bild“ ist aktiv
+#    der Menüeintrag „Ganzes Bild“ (Menü Bild) ist aktiv
 taste X
-ziehe 800 700 800 990 12
+ziehe 826 664 826 950 12
 warte 300
 foto 02-band-am-rand
-# 2) Knopf „Ganzes Bild“ in der Leiste bei (1247,28), Leiste bei 1600 px zweizeilig. Erst den Zeiger hinbewegen:
+# 2) Menü Bild: Titel bei (267,15), Eintrag „Ganzes Bild“ bei (300,52). Erst den Zeiger hinbewegen:
 #    Vorsorge aus Sprint 7 (F-251): Ein Klick ohne vorherige Bewegung wirkte dort einmal nicht; heute wirkt er
 #    (rueckfall-klick-ohne-zeiger.txt, vier von vier), die Bewegung davor bleibt harmlos
-zeiger 1247 28
+zeiger 267 15
 warte 200
-klick 1247 28
+klick 267 15
+warte 300
+zeiger 300 52
+warte 200
+klick 300 52
 warte 300
 foto 03-ganzes-bild
 # 3) wieder unten weg, dann Schwärzen über den unteren Rand hinaus; „Ganzes Bild“ zeigt den Streifen darunter
 #    ungeschwärzt
-ziehe 800 700 800 990 12
+ziehe 826 664 826 950 12
 warte 300
 taste B
-ziehe 400 500 600 990 12
+ziehe 426 464 626 950 12
 warte 300
 foto 04-geschwaerzt-am-rand
-zeiger 1247 28
+zeiger 267 15
 warte 200
-klick 1247 28
+klick 267 15
+warte 300
+zeiger 300 52
+warte 200
+klick 300 52
 warte 300
 foto 05-ganz-mit-schwaerzung
 taste Strg+Z

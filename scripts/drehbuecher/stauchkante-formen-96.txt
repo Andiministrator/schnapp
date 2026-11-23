@@ -1,74 +1,74 @@
 # Sichtprobe Karten #96 und #183 (ADR-0023 Nachträge 6 und 7): Form der Stauch-Kante. Abriss als Voreinstellung, der
 # Spalt (16 px) ist durchsichtig und zeigt im Editor ein Schachbrett, die Kanten einen hellen Fasersaum mit leichter
-# Abdunklung und einen feinen Schatten der oberen bzw. linken Kante. Ohne Naht ist „Seam style“ im Menü grau (F-426);
-# nach dem Stauchen wechselt er (per Tastatur) reihum zu Welle und Zacken, Strg+Z nimmt einen Wechsel zurück.
+# Abdunklung und einen feinen Schatten der oberen bzw. linken Kante. Ohne Naht ist „Kantenform“ im Menü Bild grau
+# (F-426); nach dem Stauchen wechselt sie (per Tastatur) reihum zu Welle und Zacken, Strg+Z nimmt einen Wechsel zurück.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/stauchkante-formen-96.txt --bild scripts/drehbuecher/testbild-1200x800.png --zeit 120
 # Vorher die Einstellung des Probe-Heims selbst schreiben (die Probe liest nie die echte): Datei
 # tmp/probe/home/.config/schnapp/settings.ini mit den zwei Zeilen „[capture]“ und „seam = tear“ (ohne Datei gilt
 # dieselbe Voreinstellung). Das Testbild ist ein einfaches PNG, bekommt also die eingestellte Form.
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen und gegen die linke Spalte, mittlere Zeile von
 # docs/adr/bilder/0023-naht-durchsichtig-muster.png halten.
-# Bild 1200x800 bei 100 % ab (200,136); nach dem Stauchen 1200x600 ab (200,236), Naht bei y = 236+286 = 522.
+# Koordinaten seit Karte #210 (neue Oberfläche, ADR-0031): Bild 1200x800 bei 100 % ab (226,100); nach dem Stauchen
+# 1200x600 ab (226,200), Naht bei y = 200+286 = 486. Menü per Tastatur: F10 öffnet „Datei“, dreimal Rechts führt zu
+# „Bild“ (Datei, Bearbeiten, Ansicht, Bild), Ende springt auf den letzten bedienbaren Eintrag („Kantenform“, solange eine
+# Naht da ist; „Gestauchtes zurückholen“ ist dann ebenfalls aktiv).
 warte 800
 foto 01-start
-# Ohne Naht: Menü per Tastatur öffnen, Ende springt auf Schließen; „Seam style“ steht grau darüber. Esc schließt.
-taste Umschalt+Tab
+# Ohne Naht: Menü Bild per Tastatur öffnen; „Kantenform“ steht grau. Esc schließt.
+taste F10
 warte 300
-taste Enter
-warte 300
-taste Ende
+taste Rechts
+taste Rechts
+taste Rechts
 warte 300
 foto 01b-menue-ohne-naht-grau
 taste Esc
 warte 300
 # Zeilen 286 bis 486 heraus: Abriss an der waagrechten Naht
 taste X
-ziehe 800 422 800 622 12
+ziehe 826 386 826 586 12
 warte 400
 foto 02-abriss
-# Spalten 300 bis 500 heraus: auch eine senkrechte Naht (Bild 1000 breit ab x 300, Naht bei x 600)
-ziehe 500 622 700 622 12
+# Spalten 300 bis 500 heraus: auch eine senkrechte Naht (Bild 1000 breit ab x 326, Naht bei x 626)
+ziehe 526 586 726 586 12
 warte 400
 foto 03-abriss-beide-naehte
 # Vergrößert an der Kreuzung der Nähte (Mausrad hoch zoomt zum Zeiger)
-rad 600 522 -4
+rad 626 486 -4
 warte 400
 foto 04-abriss-zoom
 taste Strg+0
 warte 400
-# Menü per Tastatur: Umschalt+Tab zum Knopf Menü, Enter öffnet, Ende springt auf Schließen, dreimal Hoch auf „Seam style“
-# (mit Naht an)
-taste Umschalt+Tab
+# Menü Bild per Tastatur (F10, dreimal Rechts), Ende springt auf „Kantenform“ (mit Naht an)
+taste F10
 warte 300
-taste Enter
+taste Rechts
+taste Rechts
+taste Rechts
 warte 300
 taste Ende
-taste Hoch
-taste Hoch
-taste Hoch
 warte 300
-foto 05-menue-seam-style
+foto 05-menue-kantenform
 taste Enter
 warte 400
 foto 06-welle
-rad 600 522 -4
+rad 626 486 -4
 warte 400
 foto 07-welle-zoom
 taste Strg+0
 warte 300
-taste Umschalt+Tab
+taste F10
 warte 300
-taste Enter
+taste Rechts
+taste Rechts
+taste Rechts
 warte 300
 taste Ende
-taste Hoch
-taste Hoch
-taste Hoch
 warte 300
 taste Enter
 warte 400
 foto 08-zacken
-rad 600 522 -4
+rad 626 486 -4
 warte 400
 foto 09-zacken-zoom
 taste Strg+0

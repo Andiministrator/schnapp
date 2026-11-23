@@ -2,12 +2,13 @@
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-verpixeln-schmal.txt --bild scripts/drehbuecher/testbild-1200x800.png
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
 # Lauf 3: Verpixeln mit 7 px breitem Rahmen (zwischen MinObjekt 6 und MinBlock 8) -> schwarz + Meldung; danach normaler Rahmen ohne Meldung
+# Koordinaten seit Karte #210: Bild bei (226,100), Bildschirmpunkt = Bildpunkt + (226,100) (vorher + (200,136)).
 warte 800
 taste P
-ziehe 1100 300 1107 500 8
+ziehe 1126 264 1133 464 8
 warte 300
 foto 01-schmal-schwarz
-ziehe 1150 300 1250 400 8
+ziehe 1176 264 1276 364 8
 warte 300
 foto 02-normal-ohne-meldung
 taste Strg+Z

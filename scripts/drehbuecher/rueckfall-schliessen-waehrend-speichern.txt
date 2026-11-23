@@ -13,6 +13,7 @@
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-schliessen-waehrend-speichern.txt --bild tmp/probe/home/Bilder/schnapp/JJJJ-MM/BILD.png --breite 3840 --hoehe 2160 --zeit 250
 # Das Speichern dauert bei 4K gut 20 s (Messung f-299-probe); probe.sh schickt nach dem Drehbuch SIGTERM mit 5 s Frist,
 # deshalb die lange Wartezeit am Ende. Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
+# Koordinaten seit Karte #210 geprüft (neue Oberfläche, ADR-0031: Menüzeile 30, Werkzeugleiste 52, Fußzeile 30): Der Zug (1000,600)-(1800,1000) liegt im eingepassten 4K-Bild (Zoom 95 %, Leinwand ab x 52, y 30), die Zeilen blieben unverändert; Beleg: Foto 01 bzw. 02 zeigt den schwarzen Kasten.
 warte 800
 zeiger 1000 600
 warte 200

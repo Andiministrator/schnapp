@@ -2,24 +2,26 @@
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-schwaerzen.txt --bild scripts/drehbuecher/testbild-1200x800.png
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
 # Lauf 2: Schwärzen (B) und Verpixeln (P), schmaler Rahmen, Rückgängig vor und nach Strg+S
+# Koordinaten seit Karte #210 (neue Oberfläche, ADR-0031): Bild 1200x800 bei 100 % ab (226,100); Bildschirmpunkt =
+# Bildpunkt + (226,100) (vorher + (200,136)). Zeigerhinweis für Werkzeuge steht seither in der Fußzeile und am Knopf.
 warte 800
 taste B
 warte 100
 foto 01-B-hinweis
-ziehe 690 427 910 482 12
+ziehe 716 391 936 446 12
 warte 300
 foto 02-geschwaerzt
 taste P
 warte 100
 foto 03-P-hinweis
-ziehe 290 227 510 307 12
+ziehe 316 191 536 271 12
 warte 300
 foto 04-verpixelt
-# schmaler Rahmen mit P: 4 px breit -> schwarz statt Mosaik, Meldung
-ziehe 1100 322 1104 522 8
+# P mit 4 px breitem Rahmen (unter MinObjekt 6): nichts entsteht, Meldung „zu klein“; danach 7 px breit: schwarz statt Mosaik, Meldung
+ziehe 1126 286 1130 486 8
 warte 300
 foto 05-schmal
-ziehe 1200 322 1204 522 8
+ziehe 1226 286 1233 486 8
 warte 300
 foto 06-schmal-zweites-mal
 taste Strg+Z
