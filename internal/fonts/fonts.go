@@ -106,9 +106,9 @@ var (
 		{name: GoMono, schnitte: [4]quelle{{da: true, roh: gomono.TTF}, {da: true, roh: gomonobold.TTF},
 			{da: true, roh: gomonoitalic.TTF}, {da: true, roh: gomonobolditalic.TTF}}},
 	}
-	system     []familie // nach der Suche, nach Namen sortiert
-	gesucht    bool      // die Suche ist fertig
-	suche      sync.Once
+	system     []familie        // nach der Suche, nach Namen sortiert
+	gesucht    bool             // die Suche ist fertig
+	suche      = new(sync.Once) // Zeiger: der Test tauscht ihn aus
 	geladen    = map[schluessel]*Schrift{}
 	fehler     = map[schluessel]bool{} // Dateien, die sich nicht laden ließen
 	ordner     = schriftOrdner         // für Tests austauschbar
@@ -138,8 +138,14 @@ func familieZu(name string) (*familie, bool) {
 }
 
 // Laden liefert den Schnitt s der Familie name (leer = Go), mit Ersatz nach Punkt 4; nie nil. Fehlt die Familie oder
-// lässt sich keiner ihrer Schnitte laden, kommt Go mit Ersatz = true.
+// lässt sich keiner ihrer Schnitte laden, kommt Go mit Ersatz = true. Eine Familie außer Go und Go Mono löst die Suche
+// aus, wenn sie noch nicht gelaufen ist (blockierend, einmal je Prozess).
 func Laden(name string, s Schnitt) *Schrift {
+	if name != "" && name != Go && name != GoMono && !SucheFertig() {
+		// Ohne Editor (Export, Rettung, MCP) hat niemand die Suche gestartet: einmal blockierend suchen, sonst setzte
+		// ein Export eine vorhandene Systemschrift in Go. Läuft die Suche schon, wartet Do auf sie.
+		suche.Do(Suche)
+	}
 	mu.Lock()
 	defer mu.Unlock()
 	if f, ok := familieZu(name); ok {

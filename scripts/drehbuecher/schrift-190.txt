@@ -1,0 +1,45 @@
+# Sichtprobe ADR-0031 Nachtrag 6 / ADR-0021 Nachtrag 10 (Karte #190): Schrift, Größe, Stil und Ausrichtung.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/schrift-190.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1, gewählter Text: Feld „Schrift“ x 1404–1584, y 73–99; Größe − 1404–1434, + 1497–1527 (y 107–133);
+# Stil F K U S ab x 1404 je 30 (y 141–167); Ausrichtung links, Mitte, rechts ab x 1404 je 30 (y 175–201).
+# Erwartet: 01 zweizeiliger Text in Go; 02 fett, unterstrichen, Zeilen mittig, größer (24 px); 03 offene Schriftliste
+# mit Go grün; 04 nach Tippen von „go m“ steht Go Mono grün; 05 Text in Go Mono, Liste zu; 06 Liste nach „c0“ auf einer
+# Systemschrift (C059, wenn vorhanden), 07 Text in ihr.
+warte 800
+taste T
+warte 300
+klick 300 300
+warte 200
+schreibe Hallo Welt
+taste Umschalt+Enter
+schreibe Zweite
+taste Enter
+warte 400
+foto 01-go
+klick 1416 154
+warte 150
+klick 1476 154
+warte 150
+klick 1446 188
+warte 150
+klick 1512 120
+klick 1512 120
+warte 300
+foto 02-fett-unter-mitte
+klick 1490 86
+warte 300
+foto 03-liste
+schreibe go m
+warte 300
+foto 04-go-mono-gewaehlt
+taste Enter
+warte 300
+foto 05-go-mono
+klick 1490 86
+warte 300
+schreibe c0
+warte 300
+foto 06-liste-c0
+taste Enter
+warte 400
+foto 07-systemschrift

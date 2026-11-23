@@ -41,6 +41,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/export"
+	"github.com/Andiministrator/schnapp/internal/fonts"
 	"github.com/Andiministrator/schnapp/internal/i18n"
 	"github.com/Andiministrator/schnapp/internal/portal"
 	"github.com/Andiministrator/schnapp/internal/render"
@@ -157,6 +158,8 @@ func neuerEditor(titel string, d *document.Dokument, speichern Speichern, rettun
 	// gespeicherten Datei als Kästchen erscheinen (Kritik A-3).
 	th.Shaper = text.NewShaper(text.NoSystemFonts(), text.WithCollection(gofont.Collection()))
 	e := &editor{w: new(app.Window), thema: th, s: canvas.NeueSitzung(d), titel: titel, speichern: speichern, rettung: rettung}
+	// Systemschriften im Hintergrund suchen, damit die Schriftliste sie kennt (ADR-0021 Nachtrag 10 Punkt 3).
+	fonts.StarteSuche(e.w.Invalidate)
 	e.rettungStart() // vor dem ersten Bild: Wiederholte Schwärzungen ändern die Pixel
 	e.bildNeu()
 	return e
@@ -1329,6 +1332,7 @@ func (e *editor) frame(gtx layout.Context) {
 	e.zeichneWerkzeugleiste(gtx)
 	e.zeichneSeitenleiste(gtx)
 	e.zeichneFusszeile(gtx)
+	e.zeichneSchriftliste(gtx) // über Leisten und Fußzeile, unter Hilfe und Menü
 	e.zeichneHilfe(gtx)
 	e.zeichneMenue(gtx) // über allem, unter dem Titel des offenen Menüs
 }
@@ -1898,6 +1902,20 @@ func (e *editor) tasten(gtx layout.Context) {
 				} else if t, ok := findeTaste(k.Name, k.Modifiers, e.s.TextLaeuft()); ok && !t.hatWerkzeug &&
 					(t.akt == aktKopieren || t.akt == aktSchliessen) {
 					e.fuehreAus(gtx, t.akt, false)
+				}
+			}
+			continue
+		}
+		if e.seite.sw.offen && !e.menue.offen {
+			// Offene Schriftliste (ADR-0031 Nachtrag 6): Pfeile, Pos1, Ende, Enter und Esc bedienen sie, getippte
+			// Buchstaben springen zur Familie; alles andere wirkt nicht, damit kein Buchstabe als Werkzeugkürzel hinter
+			// der Liste das Werkzeug wechselt.
+			switch ev := ev.(type) {
+			case key.EditEvent:
+				e.schriftListeTippe(ev.Text)
+			case key.Event:
+				if ev.State == key.Press {
+					e.schriftListeTaste(gtx, ev.Name)
 				}
 			}
 			continue

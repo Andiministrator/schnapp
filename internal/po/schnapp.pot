@@ -1045,7 +1045,7 @@ msgctxt "status bar"
 msgid "#%02X%02X%02X · %d%%"
 msgstr ""
 
-#: internal/ui/oberflaeche.go internal/ui/seitenleiste.go
+#: internal/ui/oberflaeche.go internal/ui/schriftwahl.go internal/ui/seitenleiste.go
 msgctxt "status bar"
 msgid "%d px"
 msgstr ""
@@ -1074,6 +1074,46 @@ msgstr ""
 
 #: internal/ui/overlay.go
 msgid "Drag an area · Enter: whole monitor under the pointer · Esc or right-click: cancel"
+msgstr ""
+
+#: internal/ui/schriftwahl.go
+msgctxt "text style"
+msgid "B"
+msgstr ""
+
+#: internal/ui/schriftwahl.go
+msgctxt "text style"
+msgid "I"
+msgstr ""
+
+#: internal/ui/schriftwahl.go
+msgctxt "text style"
+msgid "U"
+msgstr ""
+
+#: internal/ui/schriftwahl.go
+msgctxt "text style"
+msgid "S"
+msgstr ""
+
+#: internal/ui/schriftwahl.go
+msgid "Font"
+msgstr ""
+
+#: internal/ui/schriftwahl.go
+msgid "%s (missing)"
+msgstr ""
+
+#: internal/ui/schriftwahl.go
+msgid "Size"
+msgstr ""
+
+#: internal/ui/schriftwahl.go
+msgid "Style"
+msgstr ""
+
+#: internal/ui/schriftwahl.go
+msgid "Align"
 msgstr ""
 
 #: internal/ui/seitenleiste.go

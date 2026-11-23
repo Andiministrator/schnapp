@@ -86,7 +86,9 @@ Pick one of four colours in the sidebar on the right, in the list of the colour 
 swatch below the tools; it recolours the selected annotation. The sidebar also takes any colour: drag in the colour
 area and the hue and opacity sliders, type a hex code (`#RRGGBB` or `#RRGGBBAA`) or an opacity in percent, reuse one of
 the last three colours, or pick a colour from the image with the eyedropper (it reads the screenshot, not the
-annotations). Redaction always stays opaque. On large screenshots (4K and up) lines, text and step numbers start thicker and larger. A drawing tool stays active; **Esc** steps back: text input → drag → selection →
+annotations). Redaction always stays opaque. For text, the sidebar picks the font (the built-in Go and Go Mono or any
+font installed on the system), the size, bold, italic, underline, strike-through and the alignment of the lines; a file
+that names a font missing on another computer shows the text in Go there and keeps the name. On large screenshots (4K and up) lines, text and step numbers start thicker and larger. A drawing tool stays active; **Esc** steps back: text input → drag → selection →
 select tool. Drag an annotation or its handles to move, resize or bend it; it always stays partly inside the image.
 The mouse wheel zooms at the pointer; with the select tool dragging empty space moves the view, the middle button does
 so with every tool. Keys: **Ctrl+Z** undo, **Ctrl+Shift+Z**/**Ctrl+Y** redo, **Del** delete, **Ctrl+S** save,

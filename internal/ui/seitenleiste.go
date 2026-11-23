@@ -39,6 +39,7 @@ type seitenKnoepfe struct {
 	strichText   string // angezeigte Strichstärke beim letzten Zeichnen (Tests)
 	farbRahmen   [farbPlaetze]image.Rectangle
 	fw           farbwaehler
+	sw           schriftwahl
 	kantRahmen   [3]image.Rectangle
 	kopf         string // Überschrift oben beim letzten Zeichnen (Tests)
 	farbeGezeigt bool   // der Abschnitt Farbe stand beim letzten Zeichnen da
@@ -53,6 +54,7 @@ func (k *seitenKnoepfe) alle() []*widget.Clickable {
 	for i := range k.kanten {
 		a = append(a, &k.kanten[i])
 	}
+	a = append(a, k.sw.knoepfe()...)
 	return append(a, &k.strich[0], &k.strich[1], &k.fw.pipette)
 }
 
@@ -115,6 +117,7 @@ func (e *editor) seiteAuswerten(gtx layout.Context) {
 		}
 	}
 	e.farbeAuswerten(gtx)
+	e.schriftAuswerten(gtx)
 	for j, f := range kantenFormen {
 		if k.kanten[j].Clicked(gtx) && an() && e.s.SetzeKante(f) {
 			e.melde(kantenMeldung(f), false)
@@ -159,7 +162,7 @@ func seiteKnopf(gtx layout.Context, c *widget.Clickable, r image.Rectangle) {
 // zeichneSeitenleiste zeichnet die rechte Leiste, wenn sie sichtbar ist (seiteSichtbar).
 func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	k := &e.seite
-	k.kopf, k.farbeGezeigt = "", false
+	k.kopf, k.farbeGezeigt, k.sw.gezeigt = "", false, false
 	k.farbRahmen, k.kantRahmen, k.strRahmen = [farbPlaetze]image.Rectangle{}, [3]image.Rectangle{}, [2]image.Rectangle{}
 	k.fw.flaeche, k.fw.ton, k.fw.deck, k.fw.pipRahmen = image.Rectangle{}, image.Rectangle{}, image.Rectangle{}, image.Rectangle{}
 	k.fw.hex.rahmen, k.fw.deckkraft.rahmen = image.Rectangle{}, image.Rectangle{}
@@ -213,6 +216,9 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 			seiteKnopf(gtx, &k.kanten[j], r)
 		}
 		y += hoch + gtx.Dp(10)
+	}
+	if inhalt.Text { // Schrift, Größe, Stil, Ausrichtung (ADR-0031 Nachtrag 6)
+		y = e.zeichneSchriftwahl(gtx, x, y, breite, spalte) + gtx.Dp(10)
 	}
 	if inhalt.Strich {
 		hoch, kb := gtx.Dp(26), gtx.Dp(30)

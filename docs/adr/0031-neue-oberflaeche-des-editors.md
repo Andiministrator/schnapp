@@ -238,3 +238,28 @@ Farbe und der Deckkraft in ADR-0021 Nachtrag 9.
   Objekts, sonst die des Werkzeugs (`canvas.Sitzung.AktuelleFarbe`). Vorher zeigten Farbfeld und Fußzeile immer die
   Werkzeugfarbe; nach Rückgängig an einem gewählten Objekt wichen sie von der Leiste ab (Sichtprobe #189,
   `scripts/drehbuecher/farbwaehler-189.txt`).
+
+## Nachtrag 6 (23.11.2026): Schrift in der rechten Leiste (Karte #190)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Füllt den Block „Werkzeug: Text“ des Musters v2; Bedeutung in ADR-0021
+Nachtrag 10.
+
+- **Aufbau** (beim Text-Werkzeug oder gewählten Text, über der Farbe): Zeile **Schrift** mit einem Feld (Name, ▾;
+  fehlt die Familie hier, „Name (missing)“), Zeile **Größe** mit − / + und der Größe in px wie bei der Strichstärke,
+  Zeile **Stil** mit vier Umschaltern (F, K, U, S auf Deutsch; B, I, U, S auf Englisch; an = grün) und Zeile
+  **Ausrichtung** mit drei Knöpfen (links, Mitte, rechts). Abweichung vom Muster: Die Ausrichtung steht in einer
+  eigenen Zeile, weil sieben Knöpfe neben der Beschriftungsspalte nicht in 300 dp passen; die Größe hat keine Liste
+  (− / + genügt, die Stufen stehen in `canvas.SchriftStufen`). „Schild: gefüllt, eckig“ aus dem Muster gehört zur
+  zweiten Farbe (#219).
+- **Schriftliste:** Ein Klick oder Enter auf das Feld öffnet unter ihm eine Liste mit allen Familien (Go und Go Mono
+  zuerst, dann die gefundenen nach Namen), höchstens 320 dp hoch, mit dem Mausrad zu blättern; die gezeigte Familie
+  ist grün markiert. Ein Klick auf einen Eintrag wählt ihn, ein Klick daneben schließt ohne Wahl. Per Tastatur:
+  Pfeil hoch und runter, Pos1, Ende, Enter wählt, Esc schließt; getippte Buchstaben springen zur ersten Familie mit
+  diesem Anfang (nach einer Sekunde Pause beginnt ein neuer Anfang). Solange die Liste offen ist, wirken andere
+  Tasten nicht (kein Werkzeugkürzel hinter der Liste); danach liegt der Fokus wieder auf dem Feld. Die Namen stehen in
+  der Schrift der Oberfläche, nicht in ihrer eigenen.
+- **Tab-Reihenfolge** (beim Text): … Farbfeld links, Schrift, Größe − und +, die vier Umschalter, die drei
+  Ausrichtungen, dann die Farbe wie in Nachtrag 5.
+- **Suche:** Der Editor startet die Suche nach Systemschriften beim Öffnen im Hintergrund und zeichnet neu, wenn sie
+  fertig ist; bis dahin enthält die Liste nur Go und Go Mono.
+- Sichtprobe: `scripts/drehbuecher/schrift-190.txt`.

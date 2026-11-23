@@ -1,0 +1,156 @@
+[
+  {
+    "name": "T190-1 andere Schnitte zählen als normal",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "\t\tdefault:\n\t\t\treturn 0, false\n\t\t}\n\t}\n\treturn SchnittAus(fett, kursiv), true",
+    "neu": "\t\tdefault:\n\t\t}\n\t}\n\treturn SchnittAus(fett, kursiv), true"
+  },
+  {
+    "name": "T190-2 fett ohne Ersatz durch normal",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "\tcase Fett:\n\t\treturn []Schnitt{Fett, Normal}",
+    "neu": "\tcase Fett:\n\t\treturn []Schnitt{Fett}"
+  },
+  {
+    "name": "T190-3 Laden sucht nicht selbst",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "\t\tsuche.Do(Suche)\n\t}\n\tmu.Lock()",
+    "neu": "\t}\n\tmu.Lock()"
+  },
+  {
+    "name": "T190-4 Dateigrenze fehlt",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "\t\t\tif dateien >= maxDateien {",
+    "neu": "\t\t\tif false && dateien >= maxDateien {"
+  },
+  {
+    "name": "T190-5 System-Go überschreibt die eingebaute",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "if !ok || name == Go || name == GoMono {",
+    "neu": "if !ok {"
+  },
+  {
+    "name": "T190-6 Mitte falsch berechnet",
+    "datei": "internal/document/schrift.go",
+    "paket": "./internal/document",
+    "alt": "\t\treturn (block - vorschub) / 2",
+    "neu": "\t\treturn block - vorschub"
+  },
+  {
+    "name": "T190-7 Unterstrich über der Grundlinie",
+    "datei": "internal/document/schrift.go",
+    "paket": "./internal/document",
+    "alt": "\t\t\ty := g + UnterstrichAbstand*grad",
+    "neu": "\t\t\ty := g - UnterstrichAbstand*grad"
+  },
+  {
+    "name": "T190-8 Schild ohne Striche",
+    "datei": "internal/document/schrift.go",
+    "paket": "./internal/document",
+    "alt": "\tfor _, st := range t.striche(gemessen) {\n\t\tr = r.Vereint(st)\n\t}",
+    "neu": "\tfor range t.striche(gemessen) {\n\t}"
+  },
+  {
+    "name": "T190-9 Tinte ohne Ausrichtung",
+    "datei": "internal/document/schrift.go",
+    "paket": "./internal/document",
+    "alt": "\t\tgrund := Pt(t.Ort.X+versatz(t.Ausrichtung, block, z.vorschub), t.Grundlinie(z.i))",
+    "neu": "\t\tgrund := Pt(t.Ort.X+0*versatz(t.Ausrichtung, block, z.vorschub), t.Grundlinie(z.i))"
+  },
+  {
+    "name": "T190-10 ungültiger Schriftname erlaubt",
+    "datei": "internal/document/objekte.go",
+    "paket": "./internal/document",
+    "alt": "(t.Schrift != \"\" && !fonts.NameGueltig(t.Schrift)) || ",
+    "neu": "(t.Schrift != \"\" && !fonts.NameGueltig(t.Schrift) && false) || "
+  },
+  {
+    "name": "T190-11 Go wird als Name gelesen",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "if n := a[\"schrift\"]; n != fonts.Go && fonts.NameGueltig(n) {",
+    "neu": "if n := a[\"schrift\"]; fonts.NameGueltig(n) {"
+  },
+  {
+    "name": "T190-12 Stil wird nicht geschrieben",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\t\tif st := textStilText(o); st != \"\" {\n\t\t\t\ts.attr(\"s:stil\", st)",
+    "neu": "\t\t\tif st := textStilText(o); st == \"-\" {\n\t\t\t\ts.attr(\"s:stil\", st)"
+  },
+  {
+    "name": "T190-13 Zeilen im SVG ohne Ausrichtung",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\t\t\ts.attr(\"x\", zahl(zeile.X))",
+    "neu": "\t\t\t\ts.attr(\"x\", zahl(o.Ort.X))"
+  },
+  {
+    "name": "T190-14 Go bleibt im Werkzeug als Name",
+    "datei": "internal/canvas/textstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif name == fonts.Go {\n\t\tname = \"\"\n\t}",
+    "neu": "\tif false {\n\t}"
+  },
+  {
+    "name": "T190-15 neuer Text ohne Stil des Werkzeugs",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.Stil.aufText(&t)\n",
+    "neu": ""
+  },
+  {
+    "name": "T190-16 Wahl in der Eingabe wird eigener Schritt",
+    "datei": "internal/canvas/textstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif eingabe {\n\t\t_ = s.D.ZugSetze(neu)\n\t\treturn false\n\t}",
+    "neu": "\tif eingabe {\n\t\ts.TextBestaetigen()\n\t\tt = neu\n\t}"
+  },
+  {
+    "name": "T190-17 Buchstaben bei offener Liste wirken als Kürzel",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif e.seite.sw.offen && !e.menue.offen {",
+    "neu": "\t\tif false && e.seite.sw.offen && !e.menue.offen {"
+  },
+  {
+    "name": "T190-18 Eintrag der Liste setzt nichts",
+    "datei": "internal/ui/schriftwahl.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.s.SetzeSchrift(sw.familien[i])",
+    "neu": "\t\t_ = sw.familien[i]"
+  },
+  {
+    "name": "T190-19 Klick daneben schließt nicht",
+    "datei": "internal/ui/schriftwahl.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif p, ok := ev.(pointer.Event); ok && p.Kind == pointer.Press && sw.offen {\n\t\t\te.schriftListeSchliesse(gtx, false)",
+    "neu": "\t\tif p, ok := ev.(pointer.Event); ok && p.Kind == pointer.Press && sw.offen {\n\t\t\t_ = p"
+  },
+  {
+    "name": "T190-20 Tippen ohne Pause neu",
+    "datei": "internal/ui/schriftwahl.go",
+    "paket": "./internal/ui",
+    "alt": "\tif t.Sub(sw.tippZeit) > tippPause {",
+    "neu": "\tif true {"
+  },
+  {
+    "name": "T190-21 Esc lässt den Fokus nicht am Feld",
+    "datei": "internal/ui/schriftwahl.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase key.NameEscape:\n\t\te.schriftListeSchliesse(gtx, true)",
+    "neu": "\tcase key.NameEscape:\n\t\te.schriftListeSchliesse(gtx, false)"
+  },
+  {
+    "name": "T190-22 Umschalter unter der Hilfetafel",
+    "datei": "internal/ui/schriftwahl.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif sw.stil[j].Clicked(gtx) && e.seiteAn() {",
+    "neu": "\t\tif sw.stil[j].Clicked(gtx) {"
+  }
+]

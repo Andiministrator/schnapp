@@ -864,3 +864,34 @@ msgstr "Die Kantenform wirkt, sobald ein Streifen herausgenommen ist."
 
 msgid "Line width"
 msgstr "Strichstärke"
+
+msgid "Font"
+msgstr "Schrift"
+
+msgid "Size"
+msgstr "Größe"
+
+msgid "Style"
+msgstr "Stil"
+
+msgid "Align"
+msgstr "Ausrichtung"
+
+msgid "%s (missing)"
+msgstr "%s (fehlt)"
+
+msgctxt "text style"
+msgid "B"
+msgstr "F"
+
+msgctxt "text style"
+msgid "I"
+msgstr "K"
+
+msgctxt "text style"
+msgid "U"
+msgstr "U"
+
+msgctxt "text style"
+msgid "S"
+msgstr "S"

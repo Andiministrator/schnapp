@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sync"
 	"testing"
 
 	"golang.org/x/image/font/gofont/gobold"
@@ -155,5 +156,29 @@ func TestSchriftOrdner(t *testing.T) {
 	t.Setenv("XDG_DATA_DIRS", "/a:relativ:/a:/b")
 	if o := schriftOrdner(); !slices.Equal(o, []string{"/daten/fonts", "/heim/.fonts", "/a/fonts", "/b/fonts"}) {
 		t.Errorf("gesetzt %v", o)
+	}
+}
+
+// TestLadenSuchtSelbst: Ohne vorherige Suche (Export ohne Editor) sucht Laden einmal selbst und findet die Familie.
+func TestLadenSuchtSelbst(t *testing.T) {
+	d := t.TempDir()
+	schreibe(t, filepath.Join(d, "m.ttf"), gomedium.TTF)
+	alt := ordner
+	ordner = func() []string { return []string{d} }
+	altSuche := suche
+	suche = new(sync.Once)
+	t.Cleanup(func() {
+		ordner, suche = alt, altSuche
+		mu.Lock()
+		system, gesucht = nil, false
+		clear(geladen)
+		clear(fehler)
+		mu.Unlock()
+	})
+	mu.Lock()
+	system, gesucht = nil, false
+	mu.Unlock()
+	if s := Laden("Go Medium", Normal); s.Ersatz || s.Familie != "Go Medium" || !SucheFertig() {
+		t.Errorf("Laden ohne Suche: %+v, fertig %v", s, SucheFertig())
 	}
 }

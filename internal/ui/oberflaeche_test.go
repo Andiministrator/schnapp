@@ -366,6 +366,14 @@ func TestFarbHinweisNichtUeberOffenerListe(t *testing.T) {
 func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
 	l.fokusiere(&l.e.knoepfe.farbe)
+	// Gewählt ist ein Text: erst Schrift, Größe, Stil und Ausrichtung (ADR-0031 Nachtrag 6).
+	for i, k := range l.e.seite.sw.knoepfe() {
+		l.r.MoveFocus(key.FocusForward)
+		l.setle()
+		if !l.fokus(k) {
+			t.Fatalf("Tab %d nach dem Farbfeld: Fokus nicht auf Knopf %d der Schrift (%s)", i+1, i, menueFokusName(l))
+		}
+	}
 	for i := range canvas.Beschriftungsfarben {
 		l.r.MoveFocus(key.FocusForward) // wie die Tab-Taste (Gio)
 		l.setle()
