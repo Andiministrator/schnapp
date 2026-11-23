@@ -2,7 +2,7 @@
 # Echtlauf für F-490 und F-506 (Karte #208) in der eigenen Plasma-Sitzung; der virtuelle KWin hat keinen echten
 # Benachrichtigungsdienst und keinen echten Fokuswechsel durch den Nutzer.
 #
-#   scripts/echtlauf-mcp-hinweise.sh        (aus der Wurzel des Repos, im eigenen Terminal)
+#   scripts/echtlauf-mcp-hinweise.sh [A|B]   (aus der Wurzel des Repos; ohne Angabe beide Teile)
 #
 # Was es tut:
 #   - baut Schnapp mit -race nach tmp/echtlauf-208/<Zeit>/;
@@ -15,6 +15,7 @@
 #     dann EINMAL auf „Erlauben“. Frage: Hat der eine Klick erlaubt (b.png da), oder brauchte es einen zweiten?
 # Die Bilder zeigen den echten Bildschirm: Sie bleiben unter tmp/ (nicht versioniert) und gehören nie ins Repo.
 set -u
+teile="${1:-AB}"
 [ -x scripts/probe.sh ] || { echo "Bitte aus der Wurzel des Repos starten."; exit 1; }
 lauf="tmp/echtlauf-208/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$lauf"
@@ -52,21 +53,24 @@ ruf() { printf '{"jsonrpc":"2.0","id":%s,"method":"tools/call","params":{"name":
 warte() { local i; for ((i = 0; i < $3 * 4; i++)); do grep -q -F "\"id\":$2," "$1" 2> /dev/null && return 0; sleep 0.25; done; return 1; }
 urteil() { local z; z="$(grep -F "\"id\":$2," "$1" | head -1)"; case "$z" in *'"isError":false'*) echo "erlaubt/aufgenommen" ;; '') echo "keine Antwort" ;; *) echo "abgelehnt: ${z:0:200}" ;; esac; }
 
+if [[ $teile == *A* ]]; then
 echo
 echo "== Teil A (F-490): zwei Aufnahmen ohne Dialog, Abstand 5 s. Nichts anklicken, Hinweise nicht wegklicken."
 read -r -p "   Enter startet …" _
 setze no
 {
 	ruf 1 "$PWD/$lauf/a1.png"
-	warte "$lauf/a.out" 1 30
+	warte "$lauf/a.out" 1 180 # eine Aufnahme aller Monitore dauert im -race-Bau bis etwa 30 s
 	sleep 5
 	ruf 2 "$PWD/$lauf/a2.png"
-	warte "$lauf/a.out" 2 30
+	warte "$lauf/a.out" 2 180
 } | "$lauf/schnapp" mcp > "$lauf/a.out" 2> "$lauf/a.err"
 echo "   Aufnahme 1: $(urteil "$lauf/a.out" 1)"
 echo "   Aufnahme 2: $(urteil "$lauf/a.out" 2)"
 echo "   Bitte ansehen: $lauf/a2.png — steht der Hinweis der ersten Aufnahme darin?"
+fi
 
+if [[ $teile == *B* ]]; then
 echo
 echo "== Teil B (F-506): eine Aufnahme mit Dialog."
 echo "   Wenn der Dialog erscheint: zuerst einmal NEBEN den Dialog klicken (z. B. in dieses Terminal),"
@@ -75,9 +79,10 @@ read -r -p "   Enter startet …" _
 setze yes
 {
 	ruf 3 "$PWD/$lauf/b.png"
-	warte "$lauf/b.out" 3 70
+	warte "$lauf/b.out" 3 120 # Dialog höchstens 60 s, danach die Aufnahme
 } | "$lauf/schnapp" mcp > "$lauf/b.out" 2> "$lauf/b.err"
 echo "   Ergebnis: $(urteil "$lauf/b.out" 3)"
 [ -f "$lauf/b.png" ] && echo "   b.png liegt vor." || echo "   b.png fehlt."
+fi
 echo
 echo "== Fertig. Laufordner: $lauf (Bilder zeigen deinen Bildschirm, bleiben unter tmp/)."
