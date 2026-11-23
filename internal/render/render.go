@@ -68,7 +68,9 @@ var ErrZuAufwendig = errors.New("render: Dokument zu aufwendig zu rastern")
 
 // Kostenmodell (F-125, F-131, F-132). Einheit ist die Rechenzeit, die das Rastern einer Glyphe je Schriftgrad² braucht,
 // rund 0,3 ns (Messung 19.11.2026, Entwicklungsrechner, ein Kern, Karte #71):
-//   - je Glyphe max(Schriftgrad², glyphGrund): Auch kleine Glyphen kosten rund 0,5 µs (Gesichtsaufruf, Maske);
+//   - je Glyphe max(Schriftgrad², glyphGrund): Auch kleine Glyphen kosten 4 bis 10 µs (Gesichtsaufruf, Maske; Messung
+//     23.11.2026, F-589: Grad 4 bis 24 rund 3,6 bis 5,5 µs, Grad 32 bis 64 rund 8 bis 10 µs, `BenchmarkGlyphKosten`), das sind
+//     bei glyphGrund 5500 rund 0,6 bis 1,8 ns je Einheit, so viel wie bei großen Glyphen (rund 1 ns je Einheit);
 //   - je Füllung fuellGewicht × Fläche ihres aufs Bild beschnittenen Rechtecks: rund 7 ns je Pixel mit einmischer
 //     (F-130, Messung 20.11.2026; vorher rund 30 bis 36 ns über den allgemeinen Weg von x/image/vector, Gewicht 100);
 //   - je Polygonecke punktGewicht (Geometrie, Ausrichten, LineTo; rund 30 ns) und je Kante kantenGewicht ×
@@ -81,7 +83,7 @@ var ErrZuAufwendig = errors.New("render: Dokument zu aufwendig zu rastern")
 // (Grad 24 bis 64 auf breitem Bild; „W“ Grad 4096 auf 8000×8000 5,5 ns, Sitzungs-QA 19.11.2026). Deshalb ist
 // GlyphBudget eng gewählt (siehe unten).
 const (
-	glyphGrund    = 1700.0
+	glyphGrund    = 5500.0
 	fuellGewicht  = 25.0
 	kantenGewicht = 3.0
 	punktGewicht  = 100.0
@@ -92,14 +94,15 @@ const (
 // (Entwicklungsrechner, ein Kern; Benchmarks BenchmarkAufwand… in render_test.go, F-140):
 //   - Ein alltagsnahes, großes Dokument (50 bildgroße Rahmen, 50 diagonale Pfeile, 100 Nummern, 200 Texte auf
 //     7680×2160) kostet 4,06e10 Einheiten, fast alles Fläche, und rastert in rund 11 s (vorher 48 s). Budget ist gut
-//     3-mal so groß; Glyphen (1,7e7) und Kanten (1,5e7) liegen beim 1/58 bzw. 1/650 ihrer Grenze. Eine echte
+//     3-mal so groß; Glyphen (5,6e7, vor F-589 1,7e7) und Kanten (1,5e7) liegen beim 1/53 bzw. 1/650 ihrer Grenze. Eine echte
 //     Bearbeitung wird beim Wiederöffnen also nicht abgelehnt — und beim Speichern ohnehin nie (Bild bricht nicht
 //     ab; über dem Budget warnt der Editor, F-138). Auf 8000×8000 kostet ein bildgroßer Rahmen oder diagonaler Pfeil
 //     1,6e9, ein gefüllter, umrandeter Kasten 3,2e9: Bis Budget/3 passen 26 bzw. 13 davon.
 //   - Ein Dokument knapp unter Budget (39 gefüllte, umrandete Kästen auf 8000×8000, 1,25e11) rastert in rund 7 s
 //     (vor ADR-0028 rund 35 s, vor F-135 bis knapp 5 min) — die Wartezeit, die eine präparierte Datei beim Speichern
-//     erzwingen kann. Glyphen knapp unter GlyphBudget = 1e9, sichtbar auf 8000×8000, brauchen rund 1,2 s (vorher rund
-//     5 s; andere Grade seit ADR-0028 nicht nachgemessen). Kanten knapp unter KantenBudget (vor ADR-0023 Nachtrag 7:
+//     erzwingen kann. Glyphen knapp unter GlyphBudget = 3e9 (seit F-589; vorher 1e9 bei glyphGrund 1700), sichtbar auf
+//     8000×8000 als „W“ Grad 4096, brauchen rund 3,4 s (1,1 ns je Einheit), kleine Glyphen im Grad 64 knapp unter der
+//     Grenze (rund 520 000) rund 5 s. Kanten knapp unter KantenBudget (vor ADR-0023 Nachtrag 7:
 //     120 Abriss-Nähte auf 32768×2100, Kanten 9,4e9, Fläche 1,4e10) rasterten in rund 8 s (7,6 bis 8,9 s), davon rund
 //     4 bis 5 s für die Kanten (rund 0,5 ns je Einheit, Vergleich mit 120 Zacken-Nähten: 3,2 bis 3,6 s); Messung
 //     22.11.2026 nach F-418, ein Kern. Seit Nachtrag 7 (13 Füllungen je Naht, Band 32 px) kosten 120 Abriss-Nähte auf
@@ -110,8 +113,9 @@ const (
 //     Abriss-Nähte auf 32768×2100 statt 11,8 s in rund 6,5 s (liegen die Nähte eng, wie dort mit 17 px Abstand, wird
 //     der Spalt für F-438 ein zweites Mal geleert: rund 7,3 s). Seit F-438 liegt die Grenze bei rund 91 Nähten auf
 //     32768 px Länge und rund 364 auf 8192 px (TestNahtZahlGrenze); ein Dokument knapp unter allen drei Grenzen
-//     zugleich (90 Nähte, 59 × „W“ Grad 4096, bildgroße Rahmen bis Budget) rastert in rund 14 s, nicht in 10 s
-//     (BenchmarkNaehteAlleGrenzen). Zusammen also rund 14 s.
+//     zugleich (90 Nähte, 177 × „W“ Grad 4096, bildgroße Rahmen bis Budget) rastert in rund 14 s, nicht in 10 s
+//     (BenchmarkNaehteAlleGrenzen); mit den teuersten kleinen Glyphen statt der „W“ (Grad 64, rund 520 000 Glyphen,
+//     BenchmarkNaehteAlleGrenzenKleineGlyphen) in rund 16 s. Zusammen also rund 16 s (Messung 23.11.2026, F-589).
 //     Die Gewichte unten stammen aus den Messungen vor ADR-0028 und bleiben (die Grenzen sind Obergrenzen).
 //     So werden die präparierten Fälle aus F-125 und F-132 (10000 große Glyphen oder Nummern, 10000 sehr breite
 //     Pfeile, 10000 Texte à 10000 winziger Glyphen, Hunderte bildgroßer Flächen) beim Öffnen abgelehnt.
@@ -131,7 +135,7 @@ const (
 // eines Bildschirmfotos trägt eine Million Zeichen.
 const (
 	Budget        = 1.25e11
-	GlyphBudget   = 1e9
+	GlyphBudget   = 3e9
 	KantenBudget  = 1e10
 	ZeichenBudget = 1_000_000
 )

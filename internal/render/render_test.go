@@ -241,11 +241,12 @@ func BenchmarkAufwandNaheBudgetFlaeche(b *testing.B) {
 	messeAufwand(b, d)
 }
 
-// Glyphen knapp unter GlyphBudget, sichtbar auf großem Bild (59 × „W“ Grad 4096 auf 8000×8000).
+// Glyphen knapp unter GlyphBudget, sichtbar auf großem Bild (177 × „W“ Grad 4096 auf 8000×8000, 80 Orte, darüber
+// übereinander; vor F-589 59 Stück bei GlyphBudget 1e9).
 func BenchmarkAufwandNaheGlyphBudget(b *testing.B) {
 	d := weissesDokument(b, 8000, 8000)
-	for i := 0; i < 59; i++ {
-		hinzu(b, d, document.Text{Ort: document.Pt(float64(i*100), 0), Inhalt: "W", Schriftgrad: 4096, Farbe: rot})
+	for i := 0; i < 177; i++ {
+		hinzu(b, d, document.Text{Ort: document.Pt(float64((i%80)*100), 0), Inhalt: "W", Schriftgrad: 4096, Farbe: rot})
 	}
 	messeAufwand(b, d)
 }

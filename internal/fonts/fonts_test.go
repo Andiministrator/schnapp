@@ -274,7 +274,12 @@ func TestLadenFrist(t *testing.T) {
 	mu.Unlock()
 	t.Cleanup(func() {
 		close(frei)
-		<-k // die Suche ist zu Ende, erst dann zurückstellen
+		// Die Suche ist zu Ende, erst dann zurückstellen. Höchstens 3 s warten: Lief die Suche nie (ein Fehler in Laden,
+		// Mutant T190-3), schlösse k nie, und der Lauf hinge bis zum Test-Timeout (F-591).
+		select {
+		case <-k:
+		case <-time.After(3 * time.Second):
+		}
 		mu.Lock()
 		ordner, suche, fertigKanal, sucheFrist = alt, altSuche, altKanal, altFrist
 		mu.Unlock()
@@ -286,8 +291,17 @@ func TestLadenFrist(t *testing.T) {
 	system, gesucht = nil, false
 	mu.Unlock()
 	start := time.Now()
-	if s := Laden("Irgendeine Familie", Normal); !s.Ersatz {
-		t.Errorf("hängende Suche: %+v", s)
+	// In einer Goroutine, damit ein Laden ohne Frist (Mutant QA3-V4) den Test rot macht, statt ihn bis zum Test-Timeout
+	// hängen zu lassen (F-591); die Suche gibt erst das Cleanup frei, dann kehrt auch dieses Laden zurück.
+	fertig := make(chan *Schrift, 1)
+	go func() { fertig <- Laden("Irgendeine Familie", Normal) }()
+	select {
+	case s := <-fertig:
+		if !s.Ersatz {
+			t.Errorf("hängende Suche: %+v", s)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("Laden kehrt bei hängender Suche nicht zurück")
 	}
 	if d := time.Since(start); d > 3*time.Second {
 		t.Errorf("Laden wartete %v", d)

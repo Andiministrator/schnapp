@@ -88,15 +88,16 @@ func (ts *textsatz) umriss(f *sfnt.Font, gi sfnt.GlyphIndex, ppem fixed.Int26_6)
 // zeichneZeile zeichnet text in der Schrift s im Grad grad mit dem Anfang x auf der Grundlinie y (Ansichtspixel, unter
 // der Zoom-Abbildung der Leinwand). sicht ist der sichtbare Bereich (Ansicht): Glyphen, deren Ursprung mehr als die Hülle der Schrift (mindestens
 // 1,25 Schriftgrade, fonts.Schrift.Huelle) daneben liegt, entfallen wie im Renderer; Vorschub und Unterschneidung laufen weiter.
+// Das Ergebnis ist die Zahl der gezeichneten Glyphenumrisse (für Tests ohne Fenster, F-590).
 func (ts *textsatz) zeichneZeile(gtx layout.Context, s *fonts.Schrift, text string, x, y, grad float64, c color.NRGBA,
-	sicht image.Rectangle) {
+	sicht image.Rectangle) int {
 	oben, unten, seitlich := s.Huelle() // wie im Renderer (F-576)
 	if text == "" || y-grad*oben > float64(sicht.Max.Y) || y+grad*unten < float64(sicht.Min.Y) {
-		return
+		return 0
 	}
 	face := ts.face(s, grad)
 	if face == nil {
-		return
+		return 0
 	}
 	ppem := fixed.Int26_6(math.Round(grad * 64))
 	links, rechts := float64(sicht.Min.X)-seitlich*grad, float64(sicht.Max.X)+seitlich*grad
@@ -105,6 +106,7 @@ func (ts *textsatz) zeichneZeile(gtx layout.Context, s *fonts.Schrift, text stri
 	var p clip.Path
 	p.Begin(gtx.Ops)
 	leer := true
+	gezeichnet := 0
 	vorher := rune(-1)
 	for _, r := range text {
 		if vorher >= 0 {
@@ -140,6 +142,7 @@ func (ts *textsatz) zeichneZeile(gtx layout.Context, s *fonts.Schrift, text stri
 				}
 				if offen {
 					p.Close()
+					gezeichnet++
 				}
 			}
 		}
@@ -149,4 +152,5 @@ func (ts *textsatz) zeichneZeile(gtx layout.Context, s *fonts.Schrift, text stri
 	if !leer {
 		paint.FillShape(gtx.Ops, c, clip.Outline{Path: spec}.Op())
 	}
+	return gezeichnet
 }

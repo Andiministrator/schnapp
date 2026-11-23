@@ -9,6 +9,7 @@ import (
 	"image"
 	"os"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -42,12 +43,12 @@ func BenchmarkNaehteZacken120(b *testing.B) {
 }
 
 // BenchmarkNaehteAlleGrenzen (F-429): ein Dokument knapp unter allen drei Grenzen zugleich — 90 Abriss-Nähte auf
-// 32768×2100 (knapp unter KantenBudget), 59 × „W“ Grad 4096 (knapp unter GlyphBudget) und bildgroße Rahmen, bis die
+// 32768×2100 (knapp unter KantenBudget), 177 × „W“ Grad 4096 (knapp unter GlyphBudget, seit F-589; vorher 59) und bildgroße Rahmen, bis die
 // Summe knapp unter Budget liegt. Die Zeit ist das Versprechen des Rechenbudgets für Bild (ein Kern).
 func BenchmarkNaehteAlleGrenzen(b *testing.B) {
 	d := opakDokument(b, 32768, 2100, document.KanteAbriss, 90)
-	for i := 0; i < 59; i++ {
-		hinzu(b, d, document.Text{Ort: document.Pt(float64(i*100), 0), Inhalt: "W", Schriftgrad: 4096, Farbe: rot})
+	for i := 0; i < 177; i++ {
+		hinzu(b, d, document.Text{Ort: document.Pt(float64((i%80)*100), 0), Inhalt: "W", Schriftgrad: 4096, Farbe: rot})
 	}
 	for Aufwand(d)+fuellGewicht*32768*2100 < 0.98*Budget {
 		hinzu(b, d, document.Kasten{Bereich: document.R(document.Pt(0, 0), document.Pt(32768, 2100)), Fuellung: rot})
@@ -62,6 +63,36 @@ func BenchmarkNaehteAlleGrenzen(b *testing.B) {
 		}
 	}
 	b.ReportMetric(Aufwand(d), "Einheiten")
+}
+
+// BenchmarkNaehteAlleGrenzenKleineGlyphen (F-589): wie BenchmarkNaehteAlleGrenzen, aber die Glyphen sind das teuerste
+// Muster je Kosteneinheit: Buchstaben im Grad 64 (Kosten glyphGrund je Glyphe, gemessen rund 10 µs), übereinander in
+// Textobjekten zu 10 000 Zeichen, bis knapp unter GlyphBudget.
+func BenchmarkNaehteAlleGrenzenKleineGlyphen(b *testing.B) {
+	d := opakDokument(b, 32768, 2100, document.KanteAbriss, 90)
+	const grad = 64.0
+	zeile := strings.Repeat("Schnapp zeichnet ", 60)[:900]
+	text := strings.TrimSuffix(strings.Repeat(zeile+"\n", 11), "\n")
+	eins := document.Text{Ort: document.Pt(10, 10), Inhalt: text, Schriftgrad: grad, Farbe: rot}
+	hinzu(b, d, eins)
+	je := trockenlauf(d, false).glyph // Kosten eines solchen Texts
+	for n := 1; float64(n+1)*je < 0.98*GlyphBudget; n++ {
+		hinzu(b, d, eins)
+	}
+	for Aufwand(d)+fuellGewicht*32768*2100 < 0.98*Budget {
+		hinzu(b, d, document.Kasten{Bereich: document.R(document.Pt(0, 0), document.Pt(32768, 2100)), Fuellung: rot})
+	}
+	if err := Pruefe(d); err != nil {
+		b.Fatalf("Pruefe: %v", err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := Bild(d); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.ReportMetric(Aufwand(d), "Einheiten")
+	b.ReportMetric(trockenlauf(d, false).glyph, "Glyphen-Einheiten")
 }
 
 // opakDokument ist wie nahtDokument, aber mit deckend weißem Bild (wie eine echte Aufnahme).

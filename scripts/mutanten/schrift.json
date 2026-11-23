@@ -272,5 +272,68 @@
     "paket": "./internal/fonts",
     "alt": "s.Font.Bounds(&puffer, fixed.Int26_6(ppem<<6), 0)",
     "neu": "s.Font.Bounds(&puffer, fixed.Int26_6(s.Font.UnitsPerEm())<<6, 0)"
+  },
+  {
+    "name": "K221-7 Hülle ignoriert den head-Rahmen oben (F-593)",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "oben = max(oben, cap(-e(b.Min.Y)+rand))",
+    "neu": "oben = max(oben, 0*cap(-e(b.Min.Y)+rand))"
+  },
+  {
+    "name": "K221-8 Hülle ignoriert den head-Rahmen rechts (F-593)",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "cap(e(b.Max.X)+rand), cap(-e(b.Min.X)+rand))",
+    "neu": "0*cap(e(b.Max.X)+rand), cap(-e(b.Min.X)+rand))"
+  },
+  {
+    "name": "K221-9 Hülle ignoriert den head-Rahmen links (F-593)",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "cap(e(b.Max.X)+rand), cap(-e(b.Min.X)+rand))",
+    "neu": "cap(e(b.Max.X)+rand), 0*cap(-e(b.Min.X)+rand))"
+  },
+  {
+    "name": "K221-10 Hülle ohne Deckel HuelleMax (F-593)",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "cap := func(v float64) float64 { return min(v, HuelleMax) }",
+    "neu": "cap := func(v float64) float64 { return v }"
+  },
+  {
+    "name": "K221-11 Renderer: seitliche Grenze fest 1,25 Schriftgrade (F-593)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "links, rechts := float64(rand.Min.X)-seitlich*grad, float64(rand.Max.X)+seitlich*grad",
+    "neu": "links, rechts := float64(rand.Min.X)-(seitlich*0+1.25)*grad, float64(rand.Max.X)+(seitlich*0+1.25)*grad"
+  },
+  {
+    "name": "K221-12 Editor: Unterlänge fest 1 Schriftgrad in zeichneZeile (F-590)",
+    "datei": "internal/ui/textsatz.go",
+    "paket": "./internal/ui",
+    "alt": "y+grad*unten < float64(sicht.Min.Y)",
+    "neu": "y+grad*(unten*0+1) < float64(sicht.Min.Y)"
+  },
+  {
+    "name": "K221-13 Editor: Oberlänge fest 1 Schriftgrad in zeichneZeile (F-590)",
+    "datei": "internal/ui/textsatz.go",
+    "paket": "./internal/ui",
+    "alt": "y-grad*oben > float64(sicht.Max.Y)",
+    "neu": "y-grad*(oben*0+1) > float64(sicht.Max.Y)"
+  },
+  {
+    "name": "K221-14 Editor: rechte Grenze ohne seitliche Hülle (F-590)",
+    "datei": "internal/ui/textsatz.go",
+    "paket": "./internal/ui",
+    "alt": "float64(sicht.Max.X)+seitlich*grad",
+    "neu": "float64(sicht.Max.X)+grad"
+  },
+  {
+    "name": "K221-15 Editor: linke Grenze ohne seitliche Hülle (F-590)",
+    "datei": "internal/ui/textsatz.go",
+    "paket": "./internal/ui",
+    "alt": "float64(sicht.Min.X)-seitlich*grad",
+    "neu": "float64(sicht.Min.X)-grad"
   }
 ]

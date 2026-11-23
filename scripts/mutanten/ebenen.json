@@ -159,5 +159,110 @@
     "paket": "./internal/ui",
     "alt": "\t\t\tk.vorrang, k.zu = true, false",
     "neu": "\t\t\tk.zu = !k.zu"
+  },
+  {
+    "name": "E26 Ziehen am oberen Listenrand blättert nicht (F-593)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tk.versatz = max(0, k.versatz-k.zeileH/3)",
+    "neu": "\t\t\t\tk.versatz = max(0, k.versatz)"
+  },
+  {
+    "name": "E27 Ziehen am unteren Listenrand blättert nicht (F-593)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tk.versatz = max(0, min(k.inhaltH-k.liste.Dy(), k.versatz+k.zeileH/3))",
+    "neu": "\t\t\t\tk.versatz = max(0, min(k.inhaltH-k.liste.Dy(), k.versatz))"
+  },
+  {
+    "name": "E28 Randzone oben nur die Kante selbst (F-593)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tcase p.Y < k.liste.Min.Y+rand:",
+    "neu": "\t\t\tcase p.Y < k.liste.Min.Y:"
+  },
+  {
+    "name": "E29 Randzone unten nur die Kante selbst (F-593)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tcase p.Y > k.liste.Max.Y-rand:",
+    "neu": "\t\t\tcase p.Y > k.liste.Max.Y:"
+  },
+  {
+    "name": "E30 Randzone oben reicht bis zur Mitte der Liste (F-593)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tcase p.Y < k.liste.Min.Y+rand:",
+    "neu": "\t\t\tcase p.Y < k.liste.Min.Y+k.liste.Dy():"
+  },
+  {
+    "name": "E31 Wahl per Tastatur blättert nicht zur Ebene (F-593)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\tif k.zeigeGewaehlte {",
+    "neu": "\tif false && k.zeigeGewaehlte {"
+  },
+  {
+    "name": "E32 Blättern nach oben fehlt (F-593)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tif oben < k.versatz {",
+    "neu": "\t\t\t\tif false {"
+  },
+  {
+    "name": "E33 Blättern nach unten fehlt (F-593)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\t} else if unten > k.versatz+k.liste.Dy() {",
+    "neu": "\t\t\t\t} else if false {"
+  },
+  {
+    "name": "E34 Doppelklick öffnet das Umbenennen nicht (F-593)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif doppel {",
+    "neu": "\t\t\tif false && doppel {"
+  },
+  {
+    "name": "E35 F2 nach leerer Texteingabe öffnet ein Namensfeld ohne Ebene (F-593)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.s.KannEbene() { // eine leere Texteingabe war die Auswahl und ist weg (F-587)\n\t\treturn\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "E36 Überschrift Farbe fehlt in der Tab-Folge der Leiste (F-593)",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "&k.fw.pipette, &k.farbeKopf)",
+    "neu": "&k.fw.pipette)"
+  },
+  {
+    "name": "E37 Editor zeichnet ausgeblendete Ebenen (F-593)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif !d.ObjektSichtbar(o) || o.Ebenenwerte().Ausgeblendet {",
+    "neu": "\t\tif !d.ObjektSichtbar(o) {"
+  },
+  {
+    "name": "E38 Editor zeichnet die Deckkraft der Ebene nicht (F-593)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif p := o.Ebenenwerte().Deckkraft(); p < 100 {",
+    "neu": "\tif p := o.Ebenenwerte().Deckkraft(); p < 0 {"
+  },
+  {
+    "name": "E39 Editor zeigt Rahmen und Griffe einer ausgeblendeten Ebene (F-593)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !ok || o.Ebenenwerte().Ausgeblendet { // Ausgeblendetes zeigt keinen Rahmen (ADR-0032 Punkt 4)",
+    "neu": "\tif !ok { // Ausgeblendetes zeigt keinen Rahmen (ADR-0032 Punkt 4)"
+  },
+  {
+    "name": "E40 Editor zeigt Griffe an einer gesperrten Ebene (F-593)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif o.Ebenenwerte().Gesperrt {\n\t\treturn // gesperrt: Rahmen ohne Griffe (Punkt 5)",
+    "neu": "\tif false {\n\t\treturn // gesperrt: Rahmen ohne Griffe (Punkt 5)"
   }
 ]

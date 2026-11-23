@@ -152,6 +152,38 @@ Glyphen von Systemschriften (Noto Serif CJK) rastern 1,9- bis 2,6-mal langsamer 
 nur, wenn eine präparierte Datei dieselbe Systemschrift nutzt. Das Modell liegt bei kleinen Graden rund zehnfach unter
 der Messung (rund 0,5 µs gegen rund 5 µs je Glyphe); das Budget bleibt Obergrenze, die Neueichung ist F-589.
 
+**Ergänzung (23.11.2026, Karte #224, F-589): Neueichung der kleinen Glyphen.** Messung mit `BenchmarkGlyphKosten`
+(`internal/render/glyphkosten_test.go`; ein Kern, ohne `-race`, 4000×4000, Go-Schrift, Zeit des leeren Bildes
+abgezogen, 5 Läufe je Grad):
+
+| Grad | µs je Glyphe | Einheiten je Glyphe vorher (1700) | ns je Einheit vorher | Einheiten nachher (5500) | ns je Einheit nachher |
+|---|---|---|---|---|---|
+| 4 | 3,6 | 1700 | 2,1 | 5500 | 0,66 |
+| 8 | 4,0 | 1700 | 2,4 | 5500 | 0,73 |
+| 12 | 5,2 | 1700 | 3,1 | 5500 | 0,95 |
+| 16 | 5,5 | 1700 | 3,2 | 5500 | 0,99 |
+| 24 | 5,3 | 1700 | 3,1 | 5500 | 0,96 |
+| 32 | 8,0 | 1700 | 4,7 | 5500 | 1,45 |
+| 48 | 8,9 | 2304 | 3,9 | 5500 | 1,61 |
+| 64 | 9,9 | 4096 | 2,4 | 5500 | 1,80 |
+| 128 | 17,3 | 16384 | 1,1 | 16384 | 1,06 |
+| 256 | 63,7 | 65536 | 0,97 | 65536 | 0,97 |
+
+Große Glyphen („W“ Grad 4096) rastern mit rund 1,1 ns je Einheit; kleine lagen mit 1700 Einheiten bis zum Vierfachen
+darüber (die frühere Angabe von 0,3 ns je Einheit stammt aus der Messung vom 19.11.2026 vor ADR-0028). Neu:
+`glyphGrund` = 5500 (vorher 1700), damit kleine und große Glyphen rund 1 ns je Einheit kosten (höchstens 1,8 ns bei
+Grad 64, 0,7 ns bei Grad 4). Die Form max(Grad², `glyphGrund`) bleibt; sie bildet die Mitte (Grad 32 bis 64, wo die Zeit
+schon über dem Grundwert liegt) nur genähert ab. `GlyphBudget` steigt von 1e9 auf 3e9, weil das Alltagsdokument
+(10 200 Glyphen, 5,6e7 Einheiten) den Abstand 50 zur Grenze behalten soll (`TestAlltagsdokumentWeitUnterDemBudget`):
+Der Abstand ist die Eigenschaft, die echte Bearbeitungen schützt; bei einem Abstand von 50 liegt die Wartezeit der
+Glyphen an der Grenze bei rund 5 s, unabhängig davon, wie die Einheiten verteilt sind (vorher hatten die kleinen Glyphen
+mit rund 588 000 Stück zu 5 bis 8 µs ebenfalls bis zu 4,7 s gebraucht, das Modell hatte es nur nicht gezählt). Gemessen
+am Budget (ein Kern): 177 × „W“ Grad 4096 auf 8000×8000 (2,97e9) in 3,4 s; Grad 64 mit rund 520 000 Glyphen übereinander
+(2,9e9) tragen zu einem Dokument knapp unter allen drei Grenzen (90 Abriss-Nähte auf 32768×2100, Rahmen bis Budget) in
+insgesamt 16,3 s bei (`BenchmarkNaehteAlleGrenzenKleineGlyphen`); mit den „W“ sind es 11,7 bis 13,8 s
+(`BenchmarkNaehteAlleGrenzen`). **Das Zeitversprechen lautet damit rund 16 s** (vorher rund 14 s, gemessen mit dem
+billigeren Glyphenmuster). Ein Text trägt höchstens 10 000 Zeichen; die Messung verteilt sie auf mehrere Objekte.
+
 ## Nachtrag 4 (20.11.2026): Arbeitsziel nach dem Speichern einer Datei von außen (F-155)
 
 - **Neues Arbeitsziel:** Das erste Speichern einer Datei außerhalb der Bibliothek legt eine neue Aufnahme an (die
