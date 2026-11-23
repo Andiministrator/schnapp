@@ -130,6 +130,13 @@ func TestPfeilBiegenUeberGriff(t *testing.T) {
 	}
 }
 
+// Karte #186: Die Voreinstellung der Beschriftungen ist eckig (Eckradius 0); der Radius bleibt im Stil einstellbar.
+func TestStandardStilEckig(t *testing.T) {
+	if s := StandardStil(); s.Eckradius != 0 {
+		t.Errorf("Eckradius %v, erwartet 0", s.Eckradius)
+	}
+}
+
 func TestKastenAnlegen(t *testing.T) {
 	s, _, _ := sitzung(t)
 	s.SetzeWerkzeug(WerkzeugKasten)
@@ -141,7 +148,7 @@ func TestKastenAnlegen(t *testing.T) {
 	if k.Bereich != document.R(document.Pt(60, 60), document.Pt(90, 80)) {
 		t.Errorf("Bereich %v", k.Bereich)
 	}
-	if k.Eckradius != 4 || k.Fuellung.A != 0 || k.Strich.Breite != 4 || k.Strich.Farbe != Beschriftungsfarben[0] {
+	if k.Eckradius != 0 || k.Fuellung.A != 0 || k.Strich.Breite != 4 || k.Strich.Farbe != Beschriftungsfarben[0] {
 		t.Errorf("Stil %+v", k)
 	}
 	s.Umschalt = true

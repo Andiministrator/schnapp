@@ -14,7 +14,10 @@ zurück, das Bild des Nutzers steht im Vordergrund. Die Persönlichkeit steckt i
 
 - **Ruhig:** dunkelgrauer Grund, wenige Farben, viel Luft.
 - **Klar:** eine Schrift für Text, Monoline-Formen für Zeichen, keine Effekte (Schatten, Verläufe, Glanz).
-- **Freundlich:** runde Enden, abgerundete Ecken, kurze Texte in Alltagssprache.
+- **Eckig und freundlich:** Flächen, Knöpfe, Felder und Schilder haben scharfe Ecken (Radius 0); freundlich sind die
+  kurzen Texte in Alltagssprache und das Auge, nicht Rundungen. Das Logo behält seine runden Enden.
+- **Gegen den KI-Look:** keine Pillen-Knöpfe, keine weichen Karten mit Schatten, keine Verläufe als Schmuck, keine
+  Emojis, keine generische Rundschrift; klare 1-px-Linien, Flächen aus der Palette, Orange nur als Akzent.
 
 ## 2. Logo
 
@@ -113,9 +116,12 @@ auf jedem System); dann gehören OFL-Text und Urhebervermerk unter `licenses/` i
 
 ## 5. Formen
 
-- **Monoline:** eine Strichstärke je Zeichen, runde Enden und Ecken — für Symbole, Werkzeugzeichen, Markierungen.
-- **Abgerundete Rechtecke** als Grundform: Radius 6 px für Schaltflächen und Felder, 10 px für Karten und
-  Dialoge, rund 23 % der Kantenlänge beim App-Symbol.
+- **Monoline:** eine Strichstärke je Zeichen — für Logo-Zeichen und Markierungen mit runden Enden; die Symbole der
+  Oberfläche sind eckig (`internal/icons`, Karte #188).
+- **Eckige Rechtecke** als Grundform: Radius 0 für Schaltflächen, Felder, Karten, Dialoge und Schilder (Karte #186).
+  Beschriftungen im Bild (Kasten, Text-Schild) beginnen mit Eckradius 0; der Radius bleibt im Dokument einstellbar,
+  gespeicherte Dateien behalten ihren Wert. Kreise, die Inhalt sind (Schritt-Nummer, „s“ im Logo), bleiben rund. Beim
+  App-Symbol bleibt es bei rund 23 % der Kantenlänge (Logo).
 - **Auswahlecken** (vier Winkel) als Motiv für alles, was „Bereich“ bedeutet.
 - Abstände im **4-px-Raster** (4, 8, 12, 16, 24, 32).
 

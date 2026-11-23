@@ -68,7 +68,7 @@ type Stil struct {
 
 // StandardStil ist die Voreinstellung (ADR-0021 Punkt 4).
 func StandardStil() Stil {
-	return Stil{Farbe: Beschriftungsfarben[0], Breite: 4, Eckradius: 4, Schriftgrad: 20, Radius: 14}
+	return Stil{Farbe: Beschriftungsfarben[0], Breite: 4, Eckradius: 0, Schriftgrad: 20, Radius: 14}
 }
 
 func (st Stil) strich() document.Strich { return document.Strich{Farbe: st.Farbe, Breite: st.Breite} }

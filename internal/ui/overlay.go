@@ -441,7 +441,12 @@ func (f *overlayFenster) zeichneHinweis(gtx layout.Context) {
 	t.Pop()
 }
 
-// schild zeichnet Text auf einer abgerundeten Leiste und liefert die Aufzeichnung samt Größe (zum Platzieren).
+// schildUmriss ist der Umriss der Schild-Leiste: eckig, ohne Rundung (Karte #186, ADR-0021 Nachtrag 4, CD §5).
+func schildUmriss(groesse image.Point) clip.RRect {
+	return clip.UniformRRect(image.Rectangle{Max: groesse}, 0)
+}
+
+// schild zeichnet Text auf einer eckigen Leiste und liefert die Aufzeichnung samt Größe (zum Platzieren).
 func (f *overlayFenster) schild(gtx layout.Context, s string, mono bool) (op.CallOp, image.Point) {
 	m := op.Record(gtx.Ops)
 	lbl := material.Label(f.thema, unit.Sp(14), s)
@@ -456,7 +461,7 @@ func (f *overlayFenster) schild(gtx layout.Context, s string, mono bool) (op.Cal
 	dims := lbl.Layout(g)
 	text := textMakro.Stop()
 	groesse := dims.Size.Add(innen.Mul(2))
-	paint.FillShape(gtx.Ops, farbeLeiste, clip.UniformRRect(image.Rectangle{Max: groesse}, gtx.Dp(6)).Op(gtx.Ops))
+	paint.FillShape(gtx.Ops, farbeLeiste, schildUmriss(groesse).Op(gtx.Ops))
 	t := op.Offset(innen).Push(gtx.Ops)
 	text.Add(gtx.Ops)
 	t.Pop()

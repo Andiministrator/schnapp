@@ -159,3 +159,17 @@ a9f36c1), Sichtprobe im virtuellen KWin.
   `nummerGrundlinieAnsicht`, geprüft gegen `document`. Der SVG-Text trägt `xml:space="preserve"` und zeigt
   `document.Zeichenbar` (Tabulator als vier Leerzeichen); `textLength` bewusst nicht gesetzt (verzerrte die
   Ersatzschrift, `fileformat` kennt keine Glyphenbreiten).
+
+## Nachtrag 4 (23.11.2026): Voreinstellung eckig, Eckradius 0 (Karte #186)
+
+**Status:** Akzeptiert (Claude im Auftrag Andis, 22.11.2026: „keine runden Ecken“; ADR-0031 Punkt 8).
+
+- **Voreinstellung:** `canvas.StandardStil` legt Kästen mit Eckradius 0 an (vorher 4). Das Text-Schild ist schon eckig,
+  eine Sprechblase gibt es nicht. Der Radius bleibt im Datenmodell (`document.Kasten.Eckradius`), in Renderer, SVG-Export
+  und Editor einstellbar und gleich begrenzt (Nachtrag 3, `WirksamerEckradius`).
+- **Gespeicherte Dateien bleiben:** ein gespeicherter Eckradius wird beim Öffnen nicht verändert, auch nicht auf 0 gesetzt.
+- **Oberfläche:** die Overlay-Schilder (Maß, Position) sind eckig (`schildUmriss`); Knöpfe, Menü, Leisten und Felder der neuen
+  Oberfläche (ADR-0031) und der Bestätigungsdialog waren es schon. Kreise als Inhalt (Schritt-Nummer, „s“) bleiben rund.
+- **Nicht geändert:** die Strichecken des Kastens bleiben rund (`stroke-linejoin="round"`, Nachtrag 3); bei Radius 0 sind die
+  Außenecken dadurch um die halbe Strichbreite gerundet. Eckige Strichecken wären eine eigene Entscheidung (Renderer, SVG, Editor zugleich).
+- **Begründung:** Gegen den üblichen KI-Look (Pillen, weiche Karten); Regeln in `brand/corporate-design.md` §1 und §5.
