@@ -637,4 +637,14 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Agenten geht, braucht eigene englische Sätze ohne Pfade (`agentGrund`).
 - **Worktree eines Agenten mit eigenem HOME lässt sich nicht entfernen,** wenn darin ein Go-Modulcache liegt (Go legt ihn schreibgeschützt an): erst `GOMODCACHE=<voller Pfad> go clean -modcache`, dann `git worktree remove --force`.
 - **Agenten setzen trotz Verbot leere Heredocs ab** (vier von fünf Berichten am 23.11.); harmlos, aber im Bericht nachsehen. Einmal lag dadurch eine leere Datei im Worktree-Wurzelordner.
+- **Der virtuelle KWin ist nicht die echte Plasma-Sitzung** (F-500): `probe.sh` startet `kwin_wayland --virtual` ohne
+  `kwin_wayland_wrapper`. Eine Prüfung, die am Prozess hinter dem Wayland-Socket hängt, bestand jede Probe und lehnte
+  jede echte Sitzung ab. Was an Prozess- oder Socket-Struktur hängt, braucht eine Gegenprobe in der echten Sitzung
+  (lesend: verbinden ohne Byte, Bus-Abfrage) — der Kritiker hat sie gemacht, nicht die Umsetzung.
+- **Einen Pfad nicht zweimal auflösen:** Wer einen Socket prüft und dann einem Kind den Pfad gibt, prüft etwas anderes,
+  als das Kind benutzt (`..`, Symlink, Umhängen, F-501). Die geprüfte Verbindung vererben (`WAYLAND_SOCKET`).
+- **Eine Tafel über der Leinwand braucht dieselbe Tastensperre wie das Menü** (F-508): sonst wirken Entf und
+  Werkzeugbuchstaben unsichtbar dahinter.
+- **Kritiker-Proben, die Formeln nachrechnen, bleiben nach dem Fix rot bzw. grün wie vorher** — sie messen das alte
+  Layout. Nach der Nacharbeit mit einer Sichtprobe oder einem Test gegen den echten Code prüfen.
 
