@@ -153,7 +153,7 @@ image = yes    # send the image itself to the agent; no: only path and size
 
 A call without consent fails with `isError: true` and a sentence that names the missing switch. Every capture shows a
 desktop notification (urgency critical); if the notification service does not accept it, the screenshot is discarded.
-Before the next capture of the same server the previous notification is closed, so it does not show up in the new image. The notification is only a hint: the server knows that the service took it, not that a person saw it, and a
+Right before the next capture of the same server (after the dialog, if any) the previous notification is closed, so it does not show up in the new image; if that capture then fails or is cancelled, the previous notification is shown again. The notification is only a hint: the server knows that the service took it, not that a person saw it, and a
 do-not-disturb mode may hide it. If you want to see every capture, keep `confirm = yes`. Captures without `output` go
 to the library under `<Pictures>/schnapp/agents/` and are cleaned up like any capture. A capture that is cancelled
 (`notifications/cancelled`, end of input, first signal) is discarded even if the image was already taken or written: the

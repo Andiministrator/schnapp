@@ -694,7 +694,8 @@ func (e *editor) listenAnker(i int) image.Rectangle {
 	if i == listeFarbe {
 		art = canvas.FeldFarbe
 	}
-	if r, ok := e.fussFeldRahmen[art]; ok && !e.listeAmFarbKnopf {
+	// Der Merker gilt nur für die Farbliste; die Zoomliste hängt immer am Zoomfeld (Sitzungs-QA A-1).
+	if r, ok := e.fussFeldRahmen[art]; ok && !(i == listeFarbe && e.listeAmFarbKnopf) {
 		return r
 	}
 	if i == listeFarbe && !e.farbKnopfRahmen.Empty() {

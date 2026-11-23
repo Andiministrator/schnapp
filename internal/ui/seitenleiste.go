@@ -36,6 +36,7 @@ type seitenKnoepfe struct {
 	kanten       [3]widget.Clickable // je Kantenform einer (kantenFormen)
 	strich       [2]widget.Clickable // Strichstärke − und + (ADR-0021 Nachtrag 7)
 	strRahmen    [2]image.Rectangle
+	strichText   string // angezeigte Strichstärke beim letzten Zeichnen (Tests)
 	farbRahmen   [8]image.Rectangle
 	kantRahmen   [3]image.Rectangle
 	kopf         string // Überschrift oben beim letzten Zeichnen (Tests)
@@ -100,8 +101,11 @@ func seitenHinweisText(h canvas.SeitenHinweis) string {
 }
 
 // seiteAuswerten verarbeitet die Klicks der Leiste; während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6).
+//
+// Liegt die Übersicht der Tastenkürzel offen, wirken die Klicks nicht: Die Tafel verdeckt das Objekt, das sie ändern
+// würden (wie die Tasten, Sitzungs-QA A-8).
 func (e *editor) seiteAuswerten(gtx layout.Context) {
-	an := func() bool { return !e.s.SpeichernLaeuft() }
+	an := func() bool { return !e.s.SpeichernLaeuft() && !e.hilfeOffen }
 	k := &e.seite
 	for j, c := range canvas.Beschriftungsfarben {
 		if k.farben[j].Clicked(gtx) && an() {
@@ -228,11 +232,12 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 			paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(r).Op())
 			paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
 			e.textMittig(gtx, zeichen, 14, schrift, r)
-			if an {
-				seiteKnopf(gtx, &k.strich[j], r)
-			}
+			// Auch grau angemeldet: Sonst fiele der Tastaturfokus nach dem Schritt auf die letzte Stufe ins Leere
+			// (Sitzungs-QA A-5); ein Klick dort tut nichts, weil BreiteStufe keine Stufe mehr findet.
+			seiteKnopf(gtx, &k.strich[j], r)
 		}
-		e.textMittig(gtx, fmt.Sprintf(i18n.TK("status bar", "%d px"), int(math.Round(e.s.Breite()))), 13, farbeText, wert)
+		k.strichText = fmt.Sprintf(i18n.TK("status bar", "%d px"), int(math.Round(e.s.Breite())))
+		e.textMittig(gtx, k.strichText, 13, farbeText, wert)
 		y += hoch + gtx.Dp(10)
 	}
 	if t := seitenHinweisText(inhalt.Hinweis); t != "" {
@@ -255,6 +260,8 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 			paint.FillShape(gtx.Ops, farbeNebentext, clip.Rect(r.Inset(-gtx.Dp(1))).Op())
 		}
 		paint.FillShape(gtx.Ops, c, clip.Rect(r).Op())
+		// Heller Rand, damit auch Dunkelgrau auf der dunklen Leiste zu sehen ist (Sitzungs-QA A-9).
+		paint.FillShape(gtx.Ops, farbeNebentext, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
 		seiteKnopf(gtx, &k.farben[j], r)
 	}
 	y += q + gtx.Dp(12)

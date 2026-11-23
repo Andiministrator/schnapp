@@ -108,7 +108,7 @@ func (l *menueLauf) inhalt() string {
 }
 
 // titel ist der Titel des offenen bzw. zuletzt offenen Menüs (ADR-0031: ersetzt den Menütitel).
-func (l *menueLauf) titel() *widget.Clickable { return &l.e.menue.titel[l.e.menue.welches] }
+func (l *menueLauf) titel() *widget.Clickable { return l.e.listenKnopf(l.e.menue.welches) } // auch Fußzeilen-Listen (A-4)
 
 // zuMenue wählt das Menü, das a führt, für das nächste Öffnen (Menü geschlossen).
 func (l *menueLauf) zuMenue(a aktion) {

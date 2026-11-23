@@ -5,7 +5,6 @@ package ui
 import (
 	"testing"
 
-	"gioui.org/io/event"
 	"gioui.org/io/key"
 )
 
@@ -24,10 +23,12 @@ func TestTastenfilterNurTabelleUndMenueNavigation(t *testing.T) {
 		{Name: key.NameEnd}: true, {Name: key.NameLeftArrow}: true, {Name: key.NameRightArrow}: true,
 		{Name: key.NameF10}: true,
 	}
-	var titel []event.Tag
-	for i := range e.menue.titel {
-		soll[key.Filter{Focus: &e.menue.titel[i], Name: key.NameSpace}] = true
-		titel = append(titel, &e.menue.titel[i])
+	titel := e.leertastenZiele()
+	if len(titel) != menueAnzahl+3 {
+		t.Errorf("%d Ziele der Leertaste, Soll Menütitel + 3 Felder mit Liste", len(titel))
+	}
+	for _, z := range titel {
+		soll[key.Filter{Focus: z, Name: key.NameSpace}] = true
 	}
 	nav := map[key.Filter]bool{}
 	for _, f := range menueNavigationsFilter(titel...) {

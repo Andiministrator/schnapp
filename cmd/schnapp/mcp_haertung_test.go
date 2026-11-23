@@ -140,6 +140,9 @@ func TestEchteMcpAnschluesseNutzenBenutzerHeim(t *testing.T) {
 	if !strings.Contains(an.startWarnung, "HOME") {
 		t.Errorf("keine Warnung über HOME: %q", an.startWarnung)
 	}
+	if an.schliesse == nil || an.hinweis == nil || an.melde == nil { // F-490: Schließen verdrahtet (Sitzungs-QA B-7)
+		t.Error("Hinweis-Anschlüsse fehlen")
+	}
 
 	schreibeText(t, filepath.Join(os.Getenv("HOME"), ".config", "schnapp", "settings.ini"), "[agents]\ncapture = yes\n")
 	benutzerHeim = func() (string, error) { return "", errors.New("unbekannt") }

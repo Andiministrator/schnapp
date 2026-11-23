@@ -728,3 +728,19 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Gio-Knöpfe nehmen beim Mausklick keinen Fokus** (`widget.Clickable`): Ein Klick auf eine Farbe während der
   Texteingabe lässt die Eingabe weiterlaufen. Vor einem Fokus-Umbau im Gio-Quelltext nachsehen statt vermuten.
 
+## Sitzungs-QA 23.11.2026 spätnachmittags (Kritiker A/B, Fable)
+
+- **Ein Fix, der etwas Sichtbares wegnimmt, braucht einen Rückweg für jeden Fehlerweg** (F-528): Das Schließen des
+  vorigen Hinweises vor dem Dialog ließ einen Agenten den Hinweis seiner Aufnahme mit einem Fehlversuch verschwinden
+  lassen. Erst nach dem letzten Ablehnungspunkt schließen und bei jedem späteren Fehler wiederherstellen.
+- **Ein Echtlauf vor dem Fix belegt den Befund, nicht den Fix** (F-490 wieder offen): Nach dem Fix gehört derselbe
+  Echtlauf wiederholt, bevor das Finding ins Archiv geht.
+- **Skripte, die echte Einstellungen ändern, stellen nach jedem Teil zurück und hinterlassen eine Laufmarke**
+  (F-529): Wartet ein Skript zwischen zwei Teilen auf Enter, steht die Erlaubnis sonst unbegrenzt offen; ein harter
+  Abbruch hinterließe sie dauerhaft, und der nächste Lauf sicherte den veränderten Stand als „Original“.
+- **Merker für eine Liste nur für diese Liste auswerten** (F-534): `listeAmFarbKnopf` galt auch für die Zoomliste.
+- **Mutanten in `canvas`, deren Tests in `ui` liegen, brauchen `paket: ./internal/ui`**: Das Werkzeug fährt nur die
+  Tests des genannten Pakets; sonst „überlebt“ der Mutant, obwohl ein Test ihn fängt.
+- **Doppelter Schutz (UI-Sperre und canvas-Sperre) macht den Mutanten einer Schicht grün**: Einen Einzelmutanten der
+  äußeren Schicht nicht als Lücke werten; geprüft wird die innere Schicht (wie F-307).
+

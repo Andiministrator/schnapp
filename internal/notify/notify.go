@@ -78,11 +78,12 @@ func ruf(ctx context.Context, m string, args []any) ([]any, error) {
 }
 
 func echt(ctx context.Context, m string, args []any) ([]any, error) {
-	c, err := dbus.ConnectSessionBus() // eigene Verbindung, danach geschlossen
+	// Die gemeinsame Verbindung des Prozesses: CloseNotification kommt so vom selben Absender wie Notify (ein Dienst darf
+	// das Schließen fremder Hinweise ablehnen; Sitzungs-QA B-4). Sie bleibt offen, solange der Prozess läuft.
+	c, err := dbus.SessionBus()
 	if err != nil {
 		return nil, err
 	}
-	defer c.Close()
 	call := c.Object(dienst, pfad).CallWithContext(ctx, m, 0, args...)
 	return call.Body, call.Err
 }

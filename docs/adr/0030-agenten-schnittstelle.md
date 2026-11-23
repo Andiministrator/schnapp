@@ -305,3 +305,25 @@ Bericht zu Karte #203). F-491 fiel in der sichereren Richtung: absichern statt n
 - Die Benachrichtigungs-Attrappe der Probeläufe (`scripts/fake-notifications`) kennt `CloseNotification` und
   protokolliert es.
 
+## Nachtrag 8 (23.11.2026): Voriger Hinweis verschwindet nie ersatzlos (Sitzungs-QA, Kritiker B, B-1, B-4, B-5)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Berichtigt Nachtrag 7.
+
+- **Lücke in Nachtrag 7 (B-1):** Der Server schloss den vorigen Hinweis vor dem Dialog. Jeder spätere Fehlerweg
+  (Abbruch während des Wartens, abgelehnter Dialog, gescheiterte Aufnahme) endete ohne neuen Hinweis; ein Agent hätte
+  den Hinweis seiner Aufnahme mit einem sofortigen Fehlversuch verschwinden lassen können. **Entscheidung:** Geschlossen
+  wird erst nach dem Dialog, direkt vor der Aufnahme. Endet der Aufruf danach ohne eigenen Hinweis, zeigt der Server
+  den vorigen erneut (gleicher Text, neue Kennung, `hinweisZurueck` mit eigener Frist von 5 s, weil der Aufruf oft
+  gerade abgebrochen wurde). Ein abgelehnter Dialog schließt nichts.
+- **Berichtigung (B-5):** Der Satz „Abgelehnte oder verworfene Aufnahmen hinterlassen keinen Hinweis“ in Nachtrag 7
+  gilt nur für Ablehnung und Abbruch **vor** dem Hinweis. Eine Aufnahme, die nach dem Hinweis verworfen wird (Rendern,
+  Abbruch vor dem Ablegen, Schreibfehler), hat ihren Hinweis schon gezeigt; er bleibt stehen und wird vor der
+  nächsten Aufnahme geschlossen — so bleibt jeder Aufnahmeversuch sichtbar.
+- **Absender (B-4):** `notify` nutzt die gemeinsame Bus-Verbindung des Prozesses (`dbus.SessionBus()`) statt je Aufruf
+  einer neuen; `CloseNotification` kommt so vom selben Absender wie `Notify`, auch bei Diensten, die das Schließen
+  fremder Hinweise ablehnen.
+- **Noch offen:** Der Echtlauf vom 23.11. lief vor dem Fix. Ob Plasma den kritischen Hinweis binnen 600 ms ausblendet,
+  ist im echten Plasma nachzumessen (`scripts/echtlauf-mcp-hinweise.sh A`); bis dahin bleibt F-490 offen.
+- Das Echtlauf-Skript stellt die Einstellungen nach jedem Teil zurück, schreibt sie über eine Nachbardatei und bricht
+  ab, wenn ein früherer Lauf ohne Abschluss liegt (Marke `laeuft`; Sitzungs-QA B-2, B-3).
+

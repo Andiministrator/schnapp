@@ -270,7 +270,14 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 	case aktEins:
 		return func(layout.Context) { e.s.EinsZuEins() }
 	case aktSeitenleiste:
-		return func(layout.Context) { e.seiteZu = !e.seiteZu }
+		// Beim Einklappen geht der Fokus an die Leinwand: Ein Knopf der Leiste, der ihn hielt, ist dann weg, und Enter
+		// träfe sonst die Texteingabe (Sitzungs-QA A-5).
+		return func(gtx layout.Context) {
+			e.seiteZu = !e.seiteZu
+			if e.seiteZu {
+				gtx.Execute(key.FocusCmd{Tag: e})
+			}
+		}
 	case aktSchliessen:
 		return func(layout.Context) {
 			diagnoseEditor("Schließen über Taste oder Menü")

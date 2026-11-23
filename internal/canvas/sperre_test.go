@@ -108,6 +108,8 @@ func TestSperreWaehrendSpeichern(t *testing.T) {
 		"Wiederholen":       func() { s.Wiederholen() },
 		"Löschen":           func() { s.Loeschen() },
 		"Farbe":             func() { s.SetzeFarbe(color.NRGBA{B: 255, A: 255}) },
+		"Strichstärke":      func() { s.SetzeBreite(24) },                 // Sitzungs-QA A-2
+		"Kantenform":        func() { s.SetzeKante(document.KanteWelle) }, // A-2
 		"Werkzeug":          func() { s.SetzeWerkzeug(WerkzeugKasten) },
 		"Ganzes Bild":       func() { s.HebeZuschnittAuf() },
 		"Zurückholen":       func() { s.HoleGestauchtesZurueck() },

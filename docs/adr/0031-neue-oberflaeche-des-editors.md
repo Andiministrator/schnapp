@@ -190,3 +190,22 @@ in `internal/ui/hilfe.go`; Tastentabelle in `internal/ui/kuerzel.go`; Logik der 
 - **Drehbücher:** Die Drehbücher mit festen Koordinaten klappen die Leiste am Anfang mit Strg+Umschalt+B ein; damit gilt
   die Lage der Leinwand aus Schritt (a) weiter. Sichtprobe von Schritt (b): `scripts/drehbuecher/oberflaeche-187b.txt`
   und `oberflaeche-187b-klein.txt` (480 × 320).
+
+## Nachtrag 4 (23.11.2026): Strichstärke, Tastatur und Kleinkram nach der Sitzungs-QA (Kritiker A, A-1 bis A-11)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Ergänzt Nachtrag 3.
+
+- **Strichstärke** steht seit #216 in der Leiste (− / + für Pfeil und Kasten, ADR-0021 Nachträge 7 und 8); der Satz in
+  Nachtrag 3 „Ebenen, Schrift und Strichstärke fehlen noch“ gilt nur noch für Ebenen (#191) und Schrift (#190).
+- **Tab-Reihenfolge:** Menütitel, Werkzeuge, Farbfeld links, Strich − und + (Pfeil, Kasten), Kantenknöpfe (Stauchen),
+  Farben der rechten Leiste, Fußfeld Farbe, Fußfeld Zoom.
+- **Anker der Listen (A-1):** Die Zoomliste hängt immer am Zoomfeld; nur die Farbliste kann am Farbfeld links hängen.
+- **Tastatur (A-5, A-6):** Ein grauer Stufenknopf bleibt fokussierbar (ein Klick tut dort nichts), damit der Fokus
+  nach dem Schritt auf die letzte Stufe nicht ins Leere fällt. Strg+Umschalt+B gibt beim Einklappen den Fokus an die
+  Leinwand. Die Leertaste an den Feldern mit Liste (Fußfelder Farbe und Zoom, Farbfeld links) öffnet die Liste wie
+  Enter, mit Fokus auf dem ersten Eintrag; Esc gibt ihn ans Feld zurück (`editor.leertastenZiele`).
+- **Hilfetafel (A-8):** Solange die Übersicht der Tastenkürzel offen ist, wirken Klicks in die rechte Leiste nicht.
+- **Sichtbarkeit (A-9):** Die Farbfelder der Leiste haben einen hellen 1-px-Rand (Dunkelgrau auf grau-800).
+- **Drehbücher (A-11):** Die Zeile „taste Strg+Umschalt+B“ am Anfang der Drehbücher ist ein Umschalter und gilt, weil
+  die Leiste beim Start immer offen ist (die Einstellung wird nicht gespeichert). Speichert #175 die Einstellung, muss
+  sie durch ein Zustandssetzen ersetzt werden (Karte #175).

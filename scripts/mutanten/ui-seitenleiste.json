@@ -87,14 +87,14 @@
     "name": "S216-1 Voreinstellung wächst nicht mit dem Bild",
     "datei": "internal/canvas/werkzeuge.go",
     "paket": "./internal/canvas",
-    "alt": "\tf := float64(document.KantenFaktor(g))",
+    "alt": "\tf := float64(max(1, faktor))",
     "neu": "\tf := float64(1)"
   },
   {
     "name": "S216-2 neue Sitzung ohne Stil nach Bildgröße",
     "datei": "internal/canvas/sitzung.go",
     "paket": "./internal/canvas",
-    "alt": "\t\tStil: StilFuer(d.OriginalGroesse())}",
+    "alt": "\t\tStil: StilMitFaktor(d.KantenFaktor())}",
     "neu": "\t\tStil: StandardStil()}"
   },
   {
@@ -131,5 +131,152 @@
     "paket": "./internal/canvas",
     "alt": "func strichWerkzeug(w Werkzeug) bool { return w == WerkzeugPfeil || w == WerkzeugKasten }",
     "neu": "func strichWerkzeug(w Werkzeug) bool { return w != WerkzeugAuswahl }"
+  },
+  {
+    "name": "QA-A1 Zoomliste nimmt den Merker der Farbliste",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "ok && !(i == listeFarbe && e.listeAmFarbKnopf) {",
+    "neu": "ok && !e.listeAmFarbKnopf {"
+  },
+  {
+    "name": "QA-C1 Strichstärke ohne Speichersperre (canvas)",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.Zieht() || s.gesperrt() || !(b > 0) || b > document.MaxGroesse {",
+    "neu": "if s.Zieht() || !(b > 0) || b > document.MaxGroesse {"
+  },
+  {
+    "name": "QA-C2 Strichstärke während eines Zugs",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/ui",
+    "alt": "if s.Zieht() || s.gesperrt() || !(b > 0) || b > document.MaxGroesse {",
+    "neu": "if s.gesperrt() || !(b > 0) || b > document.MaxGroesse {"
+  },
+  {
+    "name": "QA-C3 Strichstärke ohne Obergrenze",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/ui",
+    "alt": "if s.Zieht() || s.gesperrt() || !(b > 0) || b > document.MaxGroesse {",
+    "neu": "if s.Zieht() || s.gesperrt() || !(b > 0) {"
+  },
+  {
+    "name": "QA-C5 Zoomstufe während eines Zugs",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/ui",
+    "alt": "if s.Zieht() || z < MinZoom || z > MaxZoom {",
+    "neu": "if z < MinZoom || z > MaxZoom {"
+  },
+  {
+    "name": "QA-U2 Schwelle 752 echt größer",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "return gtx.Constraints.Max.X >= gtx.Dp(werkzeugeDp+seiteDp+minLeinwandDp)",
+    "neu": "return gtx.Constraints.Max.X > gtx.Dp(werkzeugeDp+seiteDp+minLeinwandDp)"
+  },
+  {
+    "name": "QA-U4a Farbfeld klappt auch ohne Farbe auf",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if e.seiteZu && seitePasst(gtx) && e.s.Seitenleiste().Farbe {",
+    "neu": "if e.seiteZu && seitePasst(gtx) {"
+  },
+  {
+    "name": "QA-U4b Farbfeld klappt im schmalen Fenster auf",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if e.seiteZu && seitePasst(gtx) && e.s.Seitenleiste().Farbe {",
+    "neu": "if e.seiteZu && e.s.Seitenleiste().Farbe {"
+  },
+  {
+    "name": "QA-U5 Haken Seitenleiste falsch herum",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "an: true, aktiv: !e.seiteZu, gruppe: true}",
+    "neu": "an: true, aktiv: e.seiteZu, gruppe: true}"
+  },
+  {
+    "name": "QA-U6a Zoomliste grün trotz Einpassen",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "an: true, aktiv: !s.Eingepasst() && jetzt == z})",
+    "neu": "an: true, aktiv: jetzt == z})"
+  },
+  {
+    "name": "QA-U7 Farbliste ohne grüne Wahl",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "an: true, aktiv: s.Stil.Farbe == c})",
+    "neu": "an: true, aktiv: false})"
+  },
+  {
+    "name": "QA-U14 Zoomliste ohne Kürzel 1:1",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tcase 100:\n\t\t\treturn kuerzelText(aktEins)",
+    "neu": "\t\tcase 100:\n\t\t\treturn \"\""
+  },
+  {
+    "name": "QA-U15 Farbliste ohne Hex",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\treturn fmt.Sprintf(\"#%02X%02X%02X\", en.farbe.R, en.farbe.G, en.farbe.B)",
+    "neu": "\t\treturn \"\""
+  },
+  {
+    "name": "QA-U16 Anzeige zeigt die Werkzeugbreite",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "int(math.Round(e.s.Breite()))",
+    "neu": "int(math.Round(e.s.Stil.Breite))"
+  },
+  {
+    "name": "QA-U17 Schwärzen-Hinweis leer",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase canvas.SeitenHinweisEndgueltig:\n\t\treturn i18n.T(\"The pixels are overwritten for good once saved.\")",
+    "neu": "\tcase canvas.SeitenHinweisEndgueltig:\n\t\treturn \"\""
+  },
+  {
+    "name": "QA-U21 Stufe 24 fehlt",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/ui",
+    "alt": "{1, 2, 3, 4, 6, 8, 12, 16, 24, 32}",
+    "neu": "{1, 2, 3, 4, 6, 8, 12, 16, 32}"
+  },
+  {
+    "name": "QA-U22 Zoomstufe 400 fehlt",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/ui",
+    "alt": "{25, 50, 100, 200, 400}",
+    "neu": "{25, 50, 100, 200}"
+  },
+  {
+    "name": "QA-A5a grauer Stufenknopf nicht angemeldet",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tseiteKnopf(gtx, &k.strich[j], r)",
+    "neu": "\t\t\tif an {\n\t\t\t\tseiteKnopf(gtx, &k.strich[j], r)\n\t\t\t}"
+  },
+  {
+    "name": "QA-A5b Einklappen lässt den Fokus im Leeren",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif e.seiteZu {\n\t\t\t\tgtx.Execute(key.FocusCmd{Tag: e})",
+    "neu": "\t\t\tif false && e.seiteZu {\n\t\t\t\tgtx.Execute(key.FocusCmd{Tag: e})"
+  },
+  {
+    "name": "QA-A6 Leertaste am Fußfeld wie ein Klick",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn append(z, &e.knoepfe.fussFarbe, &e.knoepfe.fussZoom, &e.knoepfe.farbe)",
+    "neu": "\treturn z"
+  },
+  {
+    "name": "QA-A8 Leiste wirkt hinter der Hilfetafel",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\tan := func() bool { return !e.s.SpeichernLaeuft() && !e.hilfeOffen }",
+    "neu": "\tan := func() bool { return !e.s.SpeichernLaeuft() }"
   }
 ]

@@ -74,9 +74,14 @@ func StandardStil() Stil {
 // StilFuer ist die Voreinstellung für ein Bild der Größe g (ADR-0021 Nachtrag 7): Strich, Schriftgrad und
 // Nummernradius wachsen mit demselben ganzzahligen Faktor wie die Stauch-Kante (document.KantenFaktor: kurze Seite /
 // 1080), damit Beschriftungen auf 4K- und HiDPI-Aufnahmen nicht dünn und klein wirken.
-func StilFuer(g image.Point) Stil {
+func StilFuer(g image.Point) Stil { return StilMitFaktor(document.KantenFaktor(g)) }
+
+// StilMitFaktor ist die Voreinstellung mal dem ganzzahligen Faktor f (mindestens 1). NeueSitzung nimmt den Faktor des
+// Dokuments (document.Dokument.KantenFaktor), der wie bei der Kante durch die aktuelle Ansicht gedeckelt ist: ein
+// 4K-Original, auf 300×80 zugeschnitten, beginnt mit Faktor 1 (Sitzungs-QA B-6).
+func StilMitFaktor(faktor int) Stil {
 	st := StandardStil()
-	f := float64(document.KantenFaktor(g))
+	f := float64(max(1, faktor))
 	st.Breite *= f
 	st.Schriftgrad *= f
 	st.Radius *= f

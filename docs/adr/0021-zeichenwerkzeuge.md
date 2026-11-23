@@ -217,3 +217,16 @@ Größen) und ergänzt Punkt 5 (nur die Farbe).
 3. Schriftgröße (#190) und Nummerngröße bekommen ihre Bedienung mit ihren Karten; die Fußzeile zeigt die Strichstärke
    nicht (die Leiste genügt).
 
+## Nachtrag 8 (23.11.2026): Faktor wie die Kante gedeckelt, Stufen und Faktor (Sitzungs-QA, A-7, B-6)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Berichtigt Nachtrag 7 Punkt 1.
+
+- **Deckel:** Die Sitzung nimmt den Faktor des Dokuments (`document.Dokument.KantenFaktor`), der wie bei der Kante
+  (ADR-0023 Nachtrag 4) durch die kurze Seite der aktuellen Ansicht gedeckelt ist (`canvas.StilMitFaktor`); ein
+  4K-Original, auf 300×80 zugeschnitten, beginnt mit Faktor 1 statt mit 40-px-Text. `canvas.StilFuer(Größe)` bleibt
+  für den ungedeckelten Faktor einer Bildgröße.
+- **Stufen:** Der Satz „Ganzzahlig, damit die Werte die Stufen unten treffen“ gilt nur für die Faktoren 1, 2, 3, 4, 6
+  und 8. Faktor 5 (20 px) und 7 (28 px) liegen zwischen zwei Stufen, ab Faktor 9 liegt die Voreinstellung über 32 px;
+  − und + gehen dann zur nächsten Stufe in der Richtung (+ ist grau, − springt auf 32). Das ist gewollt: Die
+  Voreinstellung folgt dem Bild, die Stufen der Bedienung.
+- Nachtrag 7 löst den Satz in ADR-0031 Nachtrag 3 „… und Strichstärke fehlen noch“ ab; siehe ADR-0031 Nachtrag 4.

@@ -508,22 +508,22 @@
     "name": "H490-1 voriger Hinweis wird nicht geschlossen (F-490)",
     "datei": "cmd/schnapp/mcp.go",
     "paket": "./cmd/schnapp",
-    "alt": "\tif err := an.vorigenHinweisSchliessen(ctx); err != nil {",
-    "neu": "\tif err := error(nil); err != nil {"
+    "alt": "\talt, err := an.vorigenHinweisSchliessen(ctx)\n",
+    "neu": "\talt, err := letzterHinweis{}, error(nil)\n"
   },
   {
     "name": "H490-2 Kennung des Hinweises nicht gemerkt (F-490)",
     "datei": "cmd/schnapp/mcp.go",
     "paket": "./cmd/schnapp",
-    "alt": "\t\t*an.hinweis = id\n",
+    "alt": "\t\t*an.hinweis = letzterHinweis{id: id, text: a.zielText()}\n",
     "neu": "\t\t_ = id\n"
   },
   {
     "name": "H490-3 kein Warten nach dem Schließen (F-490)",
     "datei": "cmd/schnapp/mcp.go",
     "paket": "./cmd/schnapp",
-    "alt": "\treturn an.warte(ctx, hinweisWeg)",
-    "neu": "\treturn nil"
+    "alt": "\treturn alt, an.warte(ctx, hinweisWeg)",
+    "neu": "\treturn alt, nil"
   },
   {
     "name": "H490-4 Schliesse ruft Notify statt CloseNotification (F-490)",
@@ -531,5 +531,40 @@
     "paket": "./internal/notify",
     "alt": "\t_, err := ruf(ctx, schliessen, []any{id})",
     "neu": "\t_, err := ruf(ctx, methode, []any{id})"
+  },
+  {
+    "name": "B1-1 voriger Hinweis kommt nach Fehlschlag nicht wieder (Sitzungs-QA B-1)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif !neuerHinweis {\n\t\t\tan.hinweisZurueck(alt)",
+    "neu": "\t\tif false && !neuerHinweis {\n\t\t\tan.hinweisZurueck(alt)"
+  },
+  {
+    "name": "B1-2 neuer Hinweis nicht vermerkt, alter kommt zusätzlich (Sitzungs-QA B-1)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tneuerHinweis = true\n",
+    "neu": "\n"
+  },
+  {
+    "name": "B1-3 Abbruch im Warten nach dem Schließen verschluckt (Sitzungs-QA B-7)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif err != nil {\n\t\treturn mcp.FehlerErgebnis(\"Cancelled; nothing was captured.\")\n\t}\n\tb, bereich, err := an.nimm(ctx, a, letzter)",
+    "neu": "\t_ = err\n\tb, bereich, err := an.nimm(ctx, a, letzter)"
+  },
+  {
+    "name": "B1-4 wiedergezeigter Hinweis nicht gemerkt (Sitzungs-QA B-1)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t*an.hinweis = letzterHinweis{id: id, text: alt.text}",
+    "neu": "\t_ = id"
+  },
+  {
+    "name": "B7-1 hinweisWeg zu kurz (Sitzungs-QA B-7)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\thinweisWeg = 600 * time.Millisecond",
+    "neu": "\thinweisWeg = 1 * time.Millisecond"
   }
 ]

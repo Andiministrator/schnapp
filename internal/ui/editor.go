@@ -1832,14 +1832,20 @@ func (e *editor) alleTastenFilter() []event.Filter {
 		filter = append(filter, f)
 	}
 	filter = append(filter, key.FocusFilter{Target: e})
-	var titel []event.Tag
-	for i := range e.menue.titel {
-		titel = append(titel, &e.menue.titel[i])
-	}
-	for _, f := range menueNavigationsFilter(titel...) {
+	for _, f := range menueNavigationsFilter(e.leertastenZiele()...) {
 		filter = append(filter, f)
 	}
 	return filter
+}
+
+// leertastenZiele sind die Knöpfe, an denen die Leertaste wie Enter ein Menü oder eine Liste mit Fokus auf dem ersten
+// Eintrag öffnet: die Menütitel und die Felder mit Liste (Fußfelder Farbe und Zoom, Farbfeld links; Sitzungs-QA A-6).
+func (e *editor) leertastenZiele() []event.Tag {
+	var z []event.Tag
+	for i := range e.menue.titel {
+		z = append(z, &e.menue.titel[i])
+	}
+	return append(z, &e.knoepfe.fussFarbe, &e.knoepfe.fussZoom, &e.knoepfe.farbe)
 }
 
 func (e *editor) tasten(gtx layout.Context) {
@@ -1897,9 +1903,12 @@ func (e *editor) tasten(gtx layout.Context) {
 		if !ok || k.State != key.Press {
 			continue
 		}
-		if k.Name == key.NameSpace { // nur an den Menütiteln angemeldet; wirkt wie Enter
+		if k.Name == key.NameSpace { // nur an den Menütiteln und den Feldern mit Liste angemeldet; wirkt wie Enter
 			if i := e.menueTitelFokus(gtx); i >= 0 {
 				e.menueOeffne(i, true)
+			} else if c := e.fokussierterKnopf(gtx); c == &e.knoepfe.fussFarbe || c == &e.knoepfe.fussZoom ||
+				c == &e.knoepfe.farbe {
+				e.knopfPerTaste(c)
 			}
 			continue
 		}

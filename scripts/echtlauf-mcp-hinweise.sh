@@ -17,6 +17,15 @@
 set -u
 teile="${1:-AB}"
 [ -x scripts/probe.sh ] || { echo "Bitte aus der Wurzel des Repos starten."; exit 1; }
+# Ein früherer Lauf ohne Abschluss (SIGKILL, Absturz) hat die Einstellungen womöglich verändert hinterlassen; seine
+# Sicherung ist dann das Original. Nicht darüber hinweg laufen (Sitzungs-QA B-2).
+for marke in tmp/echtlauf-208/*/laeuft; do
+	[ -e "$marke" ] || continue
+	echo "Ein früherer Lauf ist nicht sauber zu Ende gegangen: ${marke%/laeuft}"
+	echo "Bitte ~/.config/schnapp/settings.ini prüfen; das Original liegt dort als settings.ini.vorher (falls es eines gab)."
+	echo "Danach die Marke umbenennen: mv ${marke} ${marke%/laeuft}/fertig"
+	exit 1
+done
 lauf="tmp/echtlauf-208/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$lauf"
 echo "== Bauen (mit -race) nach $lauf/schnapp …"
@@ -28,23 +37,41 @@ if [ -f "$ini" ]; then
 	cp -p "$ini" "$lauf/settings.ini.vorher" || exit 1
 	hatte=1
 fi
+: > "$lauf/laeuft" # Marke: Einstellungen sind ab jetzt womöglich verändert; „abschluss“ benennt sie in „fertig“ um
+# zurueck stellt die Einstellungen her (nach jedem Teil, damit zwischen den Teilen keine Einwilligung offen steht,
+# Sitzungs-QA B-2). Scheitert es, sagt es laut, wo die Sicherung liegt (B-3).
 zurueck() {
 	if [ "$hatte" = 1 ]; then
-		cp -p "$lauf/settings.ini.vorher" "$ini" && echo "== Einstellungen zurückgestellt ($ini)."
+		if ! cp -p "$lauf/settings.ini.vorher" "$ini"; then
+			echo "FEHLER: Einstellungen NICHT zurückgestellt. Original: $lauf/settings.ini.vorher → $ini" >&2
+			return 1
+		fi
 	elif [ -f "$ini" ]; then
-		mv "$ini" "$lauf/settings.ini.vom-lauf" && echo "== Laufeinstellung aus $ini in den Laufordner verschoben."
+		if ! mv "$ini" "$lauf/settings.ini.vom-lauf"; then
+			echo "FEHLER: Laufeinstellung $ini nicht entfernt; dort steht noch [agents] capture = yes." >&2
+			return 1
+		fi
 	fi
 }
-trap zurueck EXIT
+abschluss() {
+	if zurueck; then
+		mv "$lauf/laeuft" "$lauf/fertig"
+		echo "== Einstellungen wiederhergestellt ($ini)."
+	else
+		exit 1
+	fi
+}
+trap abschluss EXIT
 trap 'exit 130' INT TERM # auch bei Strg+C über EXIT zurückstellen
 mkdir -p "$(dirname "$ini")"
 
-# setze CONFIRM: alte Datei ohne [agents]-Abschnitt, dann der Abschnitt für den Lauf.
+# setze CONFIRM: alte Datei ohne [agents]-Abschnitt, dann der Abschnitt für den Lauf; erst in eine Nachbardatei, dann
+# umbenannt (B-3).
 setze() {
 	{
 		[ "$hatte" = 1 ] && awk '/^\[/{drin = ($0 ~ /^\[agents\]/)} !drin' "$lauf/settings.ini.vorher"
 		printf '\n[agents]\ncapture = yes\nlibrary = no\nconfirm = %s\nimage = no\n' "$1"
-	} > "$ini"
+	} > "$ini.echtlauf-neu" && mv "$ini.echtlauf-neu" "$ini"
 }
 
 M='"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{},"io.modelcontextprotocol/clientInfo":{"name":"Echtlauf-208","version":"1"}}'
@@ -68,6 +95,7 @@ setze no
 echo "   Aufnahme 1: $(urteil "$lauf/a.out" 1)"
 echo "   Aufnahme 2: $(urteil "$lauf/a.out" 2)"
 echo "   Bitte ansehen: $lauf/a2.png — steht der Hinweis der ersten Aufnahme darin?"
+zurueck || exit 1
 fi
 
 if [[ $teile == *B* ]]; then
