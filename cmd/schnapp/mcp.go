@@ -159,7 +159,7 @@ func (an *mcpAnschluesse) mitHeim(heim string, umgebung func(string) string) {
 	an.lade = func() (settings.Einstellungen, []string) { return settings.LadeDatei(ini) }
 	an.orte = func() (library.Orte, error) { return library.OrteAus(nurHeim) }
 	an.letzterPfad = selection.LetzterPfad(nurHeim)
-	an.einstellungsOrt = ini
+	an.einstellungsOrt = "~/.config/schnapp/settings.ini" // ohne Heimpfad an den Agenten (Sitzungs-QA A-4)
 	an.startWarnung = ""
 	if abw := abweichendeUmgebung(heim, umgebung); len(abw) > 0 {
 		an.startWarnung = fmt.Sprintf(i18n.T("schnapp mcp: ignoring %s from the environment; settings and library come from the home directory %s."),
@@ -635,14 +635,15 @@ func (an mcpAnschluesse) nimmAuf(ctx context.Context, a aufnahme, ausgabe string
 			return an.verwirfAusgabe(pfad)
 		}
 	} else {
-		var rel string
-		pfad, rel, err = an.legeAb(d, sichtbar)
+		var ab agentAblage
+		ab, err = an.legeAb(d, sichtbar)
+		pfad = ab.abs
 		if err != nil {
 			diagnose(an.fehler, "Ablegen: %v", err)
 			return mcp.FehlerErgebnis("Could not save the screenshot: " + agentGrund(err))
 		}
 		if ctx.Err() != nil { // Abbruch während des Ablegens (F-483)
-			return an.verwirfAblage(rel, pfad)
+			return an.verwirfAblage(ab)
 		}
 	}
 	return ergebnisMitBild(pfad, sichtbar, e.Agenten.Bild)
@@ -681,19 +682,33 @@ func (an mcpAnschluesse) nimm(ctx context.Context, a aufnahme, l selection.Letzt
 var errLetzterVeraltet = errors.New("schnapp: der Monitor des letzten Bereichs hat sich geändert")
 
 // legeAb legt die Aufnahme unter agents/ ab und liefert den absoluten und den relativen Pfad.
-func (an mcpAnschluesse) legeAb(d *document.Dokument, sichtbar image.Image) (abs, rel string, _ error) {
+// agentAblage ist eine eben abgelegte Agenten-Aufnahme: Orte, Pfade und der Stand der Datei direkt nach dem Ablegen
+// (verwirfAblage löscht nur genau diese Datei, Sitzungs-QA A-5).
+type agentAblage struct {
+	orte     library.Orte
+	abs, rel string
+	stand    library.Stand
+	standOK  bool
+}
+
+// legeAb legt die Aufnahme unter agents/ ab.
+func (an mcpAnschluesse) legeAb(d *document.Dokument, sichtbar image.Image) (agentAblage, error) {
 	o, err := an.orte()
 	if err != nil {
-		return "", "", err
+		return agentAblage{}, err
 	}
 	e, err := library.Neu(o).AblegenAgent(d, sichtbar, fileformat.Metadaten{})
 	if e.Pfad == "" {
-		return "", "", err
+		return agentAblage{}, err
 	}
 	if err != nil {
 		diagnose(an.fehler, "Ablegen mit Folgefehler: %v", err) // Index/Vorschau/Temp-Rest: die Datei liegt vor
 	}
-	return filepath.Join(o.Ablage, filepath.FromSlash(e.Pfad)), e.Pfad, nil
+	a := agentAblage{orte: o, abs: filepath.Join(o.Ablage, filepath.FromSlash(e.Pfad)), rel: e.Pfad}
+	if st, err := library.StandVon(a.abs); err == nil {
+		a.stand, a.standOK = st, true
+	}
+	return a, nil
 }
 
 // verwirfAusgabe entfernt eine nach dem Abbruch fertig gewordene Datei an output (F-482, F-483). Gelingt das nicht,
@@ -710,17 +725,14 @@ func (an mcpAnschluesse) verwirfAusgabe(pfad string) mcp.Ergebnis {
 var entferneAusgabe = os.Remove
 
 // verwirfAblage entfernt eine nach dem Abbruch abgelegte Aufnahme samt Vorschau und Index-Eintrag (F-483).
-func (an mcpAnschluesse) verwirfAblage(rel, pfad string) mcp.Ergebnis {
-	o, err := an.orte()
-	if err == nil {
-		var st library.Stand
-		if st, err = library.StandVon(pfad); err == nil {
-			_, err = library.Neu(o).Entfernen(rel, st)
-		}
+func (an mcpAnschluesse) verwirfAblage(ab agentAblage) mcp.Ergebnis {
+	err := library.ErrGeaendert
+	if ab.standOK { // nur mit dem Stand direkt nach dem Ablegen; eine inzwischen ersetzte Datei bleibt (A-5)
+		_, err = library.Neu(ab.orte).Entfernen(ab.rel, ab.stand)
 	}
 	if err != nil {
 		diagnose(an.fehler, "Verwerfen der Ablage: %v", err)
-		return mcp.FehlerErgebnis("Cancelled, but the screenshot could not be removed from the library again: " + pfad)
+		return mcp.FehlerErgebnis("Cancelled, but the screenshot could not be removed from the library again: " + ab.abs)
 	}
 	return mcp.FehlerErgebnis("Cancelled; the screenshot was discarded.")
 }
@@ -995,13 +1007,18 @@ func bestaetigeImKind(ctx context.Context, ziel, kunde string) (bool, error) {
 	}
 	ctx, ende := context.WithTimeout(ctx, bestaetigenFrist)
 	defer ende()
-	// Der Dialog erscheint nur auf dem Compositor, der auch aufnimmt (ADR-0030 Nachtrag 5, F-491).
-	if err := pruefeSitzung(ctx, os.Getenv); err != nil {
+	// Der Dialog erscheint nur auf dem Compositor, der auch aufnimmt (ADR-0030 Nachträge 5 und 6, F-491): Das Kind
+	// bekommt die geprüfte Verbindung als Deskriptor 3 (WAYLAND_SOCKET), libwayland nimmt sie statt des Pfads.
+	wl, err := pruefeSitzung(ctx, os.Getenv)
+	if err != nil {
 		return false, err
 	}
+	defer wl.Close()
 	daten, _ := json.Marshal(bestaetigung{Ziel: ziel, Kunde: kunde, Sprache: mcpSprache})
 	cmd := exec.CommandContext(ctx, exe, bestaetigenArgument)
 	cmd.Stdin = bytes.NewReader(append(daten, '\n'))
+	cmd.ExtraFiles = []*os.File{wl}
+	cmd.Env = append(os.Environ(), "WAYLAND_SOCKET=3")
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	cmd.Cancel = func() error { return cmd.Process.Signal(syscall.SIGTERM) } // eigenes Kind, über exec.Cmd

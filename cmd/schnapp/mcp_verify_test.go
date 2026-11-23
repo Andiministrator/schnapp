@@ -279,3 +279,40 @@ func TestMcpExportVerraetQuelleNicht(t *testing.T) {
 		t.Errorf("Ablage ohne Einwilligung: %q gegen %q", text(a), text(b))
 	}
 }
+
+// TestVerwirfAblageNurEigeneDatei: verwirfAblage löscht nur die Datei mit dem Stand direkt nach dem Ablegen; eine
+// inzwischen ersetzte bleibt (Sitzungs-QA A-5).
+func TestVerwirfAblageNurEigeneDatei(t *testing.T) {
+	l := neuerMcpLauf(t)
+	pfad := l.legeAb(t, true, "2026-11-01T10:00:00Z")
+	rel, err := filepath.Rel(l.orte.Ablage, pfad)
+	if err != nil {
+		t.Fatal(err)
+	}
+	alt, err := library.StandVon(pfad)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ab := agentAblage{orte: l.orte, abs: pfad, rel: filepath.ToSlash(rel), stand: alt, standOK: true}
+	// ersetzen: eine andere Datei unter demselben Namen
+	if err := os.Remove(pfad); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(pfad, mustPNG(t), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if e := l.an.verwirfAblage(ab); !strings.Contains(text(e), "could not be removed") {
+		t.Errorf("fremde Datei: %q", text(e))
+	}
+	if _, err := os.Stat(pfad); err != nil {
+		t.Fatal("fremde Datei gelöscht")
+	}
+	neu, _ := library.StandVon(pfad)
+	ab.stand = neu
+	if e := l.an.verwirfAblage(ab); !strings.Contains(text(e), "discarded") {
+		t.Errorf("eigene Datei: %q", text(e))
+	}
+	if _, err := os.Stat(pfad); !errors.Is(err, os.ErrNotExist) {
+		t.Error("eigene Datei blieb")
+	}
+}

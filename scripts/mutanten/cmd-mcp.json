@@ -396,8 +396,8 @@
     "name": "M57 Dialog auf fremdem Compositor (F-491)",
     "datei": "cmd/schnapp/sitzung.go",
     "paket": "./cmd/schnapp",
-    "alt": "\tif w <= 0 || w != k {",
-    "neu": "\tif false && (w <= 0 || w != k) {"
+    "alt": "\tif w > 0 && (w == k || elternVon(k) == w) {",
+    "neu": "\tif w > 0 || k > 0 {"
   },
   {
     "name": "M59 output bleibt nach Signal liegen (F-482)",
@@ -468,5 +468,33 @@
     "paket": "./internal/export",
     "alt": "\tswitch err := umbenennenOhneErsetzen(name, pfad); {",
     "neu": "\tswitch err := os.Rename(name, pfad); {"
+  },
+  {
+    "name": "M69 Wrapper als Elternprozess abgelehnt (A-1)",
+    "datei": "cmd/schnapp/sitzung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif w > 0 && (w == k || elternVon(k) == w) {",
+    "neu": "\tif w > 0 && w == k {"
+  },
+  {
+    "name": "M70 geprüfte Verbindung nicht vererbt (A-2)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tcmd.ExtraFiles = []*os.File{wl}\n",
+    "neu": "\t_ = wl\n"
+  },
+  {
+    "name": "M71 Ablehnung nennt Heimpfad (A-4)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tan.einstellungsOrt = \"~/.config/schnapp/settings.ini\" // ohne Heimpfad",
+    "neu": "\tan.einstellungsOrt = ini // ohne Heimpfad"
+  },
+  {
+    "name": "M72 Verwerfen holt den Stand nachträglich (A-5)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t_, err = library.Neu(ab.orte).Entfernen(ab.rel, ab.stand)",
+    "neu": "\t\tst, _ := library.StandVon(ab.abs)\n\t\t_, err = library.Neu(ab.orte).Entfernen(ab.rel, st)"
   }
 ]

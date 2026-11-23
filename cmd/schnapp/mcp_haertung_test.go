@@ -81,7 +81,8 @@ func TestMcpEinwilligungNichtAusDerUmgebung(t *testing.T) {
 	if len(l.schritte) != 0 {
 		t.Errorf("Schritte: %v", l.schritte)
 	}
-	if want := filepath.Join(heim, ".config", "schnapp", "settings.ini"); l.an.einstellungsOrt != want {
+	// Die Ablehnung nennt den Ort ohne Heimpfad (Benutzername, Sitzungs-QA A-4).
+	if want := "~/.config/schnapp/settings.ini"; l.an.einstellungsOrt != want || strings.Contains(l.an.einstellungsOrt, heim) {
 		t.Errorf("Ablehnung nennt %s, erwartet %s", l.an.einstellungsOrt, want)
 	}
 	for _, v := range mcpUmgebung {

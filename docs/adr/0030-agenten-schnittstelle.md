@@ -223,9 +223,8 @@ Bericht zu Karte #203). F-491 fiel in der sichereren Richtung: absichern statt n
    klicken, während der Sitzungsbus das echte KWin aufnehmen lässt. Vor dem Dialog prüft der Server deshalb: Der
    Prozess hinter dem Wayland-Socket (`SO_PEERCRED`; `WAYLAND_DISPLAY`, sonst `wayland-0`, relativ zu
    `XDG_RUNTIME_DIR`) ist derselbe wie der Besitzer von `org.kde.KWin` auf dem Sitzungsbus
-   (`GetConnectionUnixProcessID`). Weichen sie ab oder ist `WAYLAND_SOCKET` gesetzt, wird nicht aufgenommen. Das Kind
-   erbt `WAYLAND_DISPLAY` und `XDG_RUNTIME_DIR` unverändert und löst so denselben Socket auf (ein absoluter Pfad
-   scheiterte an der Probe-Sperre, F-229; der Probelauf hat es gezeigt). Zeigt die Umgebung
+   (`GetConnectionUnixProcessID`). Weichen sie ab oder ist `WAYLAND_SOCKET` gesetzt, wird nicht aufgenommen. *Geändert durch
+   Nachtrag 6 (Elternprozess zugelassen, Verbindung vererbt).* Zeigt die Umgebung
    **beides** auf einen fremden Compositor, nimmt auch die Aufnahme von dort auf; der echte Bildschirm bleibt
    unberührt. Ohne `confirm` gibt es keinen Dialog und nichts zu binden; die Hinweise laufen über denselben Bus wie
    die Aufnahme. **Grenze:** Prozessnummern gelten im eigenen PID-Namensraum; für ein Flatpak ist die Bindung neu zu
@@ -247,11 +246,41 @@ Bericht zu Karte #203). F-491 fiel in der sichereren Richtung: absichern statt n
    Prozess beendet.
 5. **Sprache des Dialogs (F-485).** Der Server schickt seine Sprache (aus dem echten Heim) in der Anfrage an das Kind;
    das Kind liest keine Einstellungen aus seiner Umgebung für die Sprache. Eine unbekannte Sprache bleibt ohne Wirkung.
-6. **Texte an den Agenten (F-492, F-493).** Fehlertexte an den Agenten sind immer englisch und tragen weder Pfade des
-   Menschen noch Paketfehler; Unbekanntes steht nur auf stderr. `export` antwortet auf jede Quelle, die sich nicht
+6. **Texte an den Agenten (F-492, F-493).** Fehlertexte an den Agenten sind immer englisch und tragen keine
+   Paketfehler und kein Heimverzeichnis (die Ablehnung nennt `~/.config/schnapp/settings.ini`, Nachtrag 6); Unbekanntes
+   steht nur auf stderr. Pfade, die der Agent selbst genannt hat oder die er als Ergebnis bekommt, erscheinen wie
+   bisher. `export` antwortet auf jede Quelle, die sich nicht
    öffnen lässt (fehlt, nicht lesbar, kein Bild, Ordner), mit demselben Satz. Ob `file` in Ablage oder Vorschau-Cache
    liegt, prüft der Server auch dem Namen nach (ohne Auflösen), damit „library = yes“ nicht nur für vorhandene Dateien
    kommt.
 7. **Ohne harte Links (F-494).** Kann das Dateisystem keine harten Links, legt `SchreibeOhneErsetzen` das Ziel mit
    `renameat2(RENAME_NOREPLACE)` an — der Kernel prüft beim Umbenennen selbst. Nur wenn auch das fehlt
    (`EINVAL`/`ENOSYS`), bleibt das bestmögliche Prüfen und Umbenennen mit kurzem Fenster.
+
+## Nachtrag 6 (23.11.2026): Sitzungsbindung in Plasma, Grenzen nach der Sitzungs-QA (Befunde A-1 bis A-7)
+
+**Status:** Akzeptiert (Claude Opus 5.5; Befunde aus der Sitzungs-QA vom 23.11.2026, Kritiker A, Claude Fable 5.2).
+
+1. **Wrapper zugelassen, Verbindung vererbt (A-1, A-2).** In Plasma legt `kwin_wayland_wrapper` den Wayland-Socket an
+   und startet `kwin_wayland` als Kind; `SO_PEERCRED` nennt deshalb den Wrapper, nicht den Besitzer von
+   `org.kde.KWin`. Nachtrag 5 lehnte damit jede echte Plasma-Sitzung ab (gemessen; der virtuelle KWin der Probe startet
+   ohne Wrapper und verdeckte es). Jetzt gilt: Der Prozess hinter dem Socket ist der Besitzer von `org.kde.KWin` **oder
+   dessen Elternprozess** (gelesen aus `/proc/<pid>/stat`, Feld 4 — nur diese Statuszeile, nie Kommandozeile oder
+   Umgebung). Der Server reicht die geprüfte Verbindung als Deskriptor 3 an das Kind (`WAYLAND_SOCKET=3`, libwayland
+   nimmt sie statt des Pfads): Das Kind löst den Pfad nicht ein zweites Mal auf, ein Pfad mit `..`, ein Symlink oder ein
+   zwischen Prüfen und Start umgehängter Socket führen es nicht woandershin. In der echten Plasma-Sitzung des
+   Maintainers geprüft (23.11.2026: `pruefeSitzung` ok), im virtuellen KWin per Drehbuch `agenten-mcp.sh`.
+2. **Ziel von `export` verrät Ordner und Dateien (A-3), Grenze.** Die Prüfung von `target` (Ordner fehlt, Datei
+   vorhanden) läuft vor dem Lesen der Quelle und antwortet unterschiedlich. Bewusst so gelassen: Ein Agent, der den
+   Server starten darf, führt ohnehin Programme als der Mensch aus und sieht dessen Dateien; die Antworten sind für das
+   Arbeiten mit `export` nötig. Die Quelle (`file`) verrät nichts (Nachtrag 5 Punkt 6).
+3. **Zweites Signal (A-6), Grenze.** Das zweite Signal beendet sofort; geräumt werden nur die temporären Dateien des
+   Schreibens (`.schnapp-export-*`). Trifft es das Ablegen in der Bibliothek oder das Verwerfen danach, kann eine
+   Aufnahme in `agents/` liegen bleiben; sie wird wie jede Aufnahme aufgeräumt. Der Satz „discarded even if …“ in
+   `docs/agents.md` gilt für das erste Signal, `notifications/cancelled` und EOF.
+4. **Verwerfen nur der eigenen Datei (A-5).** Den Stand der abgelegten Datei hält der Server direkt nach dem Ablegen
+   fest; `library.Entfernen` löscht nur eine Datei mit genau diesem Stand.
+5. **Erster Klick bei unfokussiertem Dialog (A-7), offen.** Bekommt der Dialog den Fokus erst durch den Klick auf
+   „Allow“, beginnt die Sperre neu und der Klick zählt nicht; der Mensch klickt ein zweites Mal. Prüfpunkt im Echtlauf
+   F-490.
+

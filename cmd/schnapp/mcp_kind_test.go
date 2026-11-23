@@ -50,8 +50,12 @@ func dialogKindAttrappe() {
 			os.Exit(exitFehler)
 		}
 		os.Exit(exitOK)
-	case "umgebung": // F-491: derselbe Socket wie geprüft (gleiche Umgebung)
-		if os.Getenv("WAYLAND_DISPLAY") != "wayland-probe" || os.Getenv("XDG_RUNTIME_DIR") != "/lauf" {
+	case "umgebung": // F-491: die geprüfte Verbindung als Deskriptor 3 (WAYLAND_SOCKET), kein zweites Auflösen
+		if os.Getenv("WAYLAND_SOCKET") != "3" {
+			os.Exit(exitFehler)
+		}
+		b := make([]byte, 1) // die Attrappe der Verbindung trägt ein „S“: genau diese ist geerbt, kein zufälliger fd 3
+		if n, err := os.NewFile(3, "wayland").Read(b); err != nil || n != 1 || b[0] != 'S' {
 			os.Exit(exitFehler)
 		}
 		os.Exit(exitOK)
@@ -71,19 +75,63 @@ func mitKind(t *testing.T, art string) {
 	t.Setenv("WAYLAND_SOCKET", "")
 }
 
-// sitzungAttrappe ersetzt die Abfragen der Sitzungsbindung (F-491): Prozess hinter dem Wayland-Socket und Besitzer
-// von org.kde.KWin.
+// sitzungAttrappe ersetzt die Abfragen der Sitzungsbindung (F-491): Prozess hinter dem Wayland-Socket (die
+// „Verbindung“ ist eine Pipe), Besitzer von org.kde.KWin und dessen Elternprozess (kein Elternteil: 1).
 func sitzungAttrappe(t *testing.T, wayland, kwin int32) {
 	t.Helper()
-	altW, altK := waylandPid, kwinPid
-	waylandPid = func(string) (int32, error) { return wayland, nil }
+	altW, altK, altE := waylandVerbinde, kwinPid, elternVon
+	waylandVerbinde = func(string) (*os.File, int32, error) {
+		r, w, err := os.Pipe()
+		if err != nil {
+			return nil, 0, err
+		}
+		w.Write([]byte("S"))
+		w.Close()
+		return r, wayland, nil
+	}
 	kwinPid = func(context.Context) (int32, error) { return kwin, nil }
-	t.Cleanup(func() { waylandPid, kwinPid = altW, altK })
+	elternVon = func(int32) int32 { return 1 }
+	t.Cleanup(func() { waylandVerbinde, kwinPid, elternVon = altW, altK, altE })
+}
+
+// TestSitzungMitWrapper: In Plasma hält kwin_wayland_wrapper den Socket und ist Elternprozess von kwin_wayland
+// (Sitzungs-QA A-1): angenommen. Ein anderer Elternprozess bleibt fremd.
+func TestSitzungMitWrapper(t *testing.T) {
+	sitzungAttrappe(t, 1679, 1774)
+	t.Setenv("XDG_RUNTIME_DIR", "/lauf")
+	t.Setenv("WAYLAND_DISPLAY", "wayland-0")
+	t.Setenv("WAYLAND_SOCKET", "")
+	elternVon = func(p int32) int32 {
+		if p == 1774 {
+			return 1679
+		}
+		return 1
+	}
+	f, err := pruefeSitzung(context.Background(), os.Getenv)
+	if err != nil {
+		t.Fatalf("Wrapper als Elternprozess: %v", err)
+	}
+	f.Close()
+	elternVon = func(int32) int32 { return 4242 }
+	if _, err := pruefeSitzung(context.Background(), os.Getenv); !errors.Is(err, errFremdeSitzung) {
+		t.Fatalf("fremder Elternprozess: %v", err)
+	}
+}
+
+// TestElternProzess: der Elternprozess des Tests stimmt mit os.Getppid überein; ein Programmname mit Leerzeichen und
+// Klammern verwirrt das Lesen nicht (es nimmt das Feld nach der letzten „)“).
+func TestElternProzess(t *testing.T) {
+	if got := elternProzess(int32(os.Getpid())); int(got) != os.Getppid() {
+		t.Fatalf("Eltern %d, erwartet %d", got, os.Getppid())
+	}
+	if got := elternProzess(-1); got != 0 {
+		t.Errorf("unbekannter Prozess: %d", got)
+	}
 }
 
 // TestKindNurAufDerAufnehmendenSitzung: Bedient ein anderer Prozess den Wayland-Socket als der, dem KWin auf dem
-// Sitzungsbus gehört, startet kein Dialog und es gilt nicht als erlaubt (F-491). Das Kind sieht dieselbe Umgebung (also
-// denselben Socket); mit WAYLAND_SOCKET startet kein Dialog.
+// Sitzungsbus gehört (noch dessen Elternprozess), startet kein Dialog und es gilt nicht als erlaubt (F-491). Das Kind
+// bekommt die geprüfte Verbindung als Deskriptor 3; ist WAYLAND_SOCKET schon gesetzt, startet kein Dialog.
 func TestKindNurAufDerAufnehmendenSitzung(t *testing.T) {
 	mitKind(t, "erlauben")
 	sitzungAttrappe(t, 100, 200)
@@ -122,8 +170,9 @@ func TestWaylandSocketPfad(t *testing.T) {
 	}
 }
 
-// TestWaylandCompositorPid: SO_PEERCRED liefert den eigenen Prozess, wenn der Test selbst lauscht.
-func TestWaylandCompositorPid(t *testing.T) {
+// TestWaylandVerbindung: SO_PEERCRED liefert den eigenen Prozess, wenn der Test selbst lauscht, und die Verbindung
+// bleibt als Datei offen.
+func TestWaylandVerbindung(t *testing.T) {
 	t.Chdir(t.TempDir()) // relativ: Ein langer TMPDIR (Mutantenlauf) überschritte die 108 Zeichen eines Socket-Pfads
 	socket := "w"
 	l, err := net.Listen("unix", socket)
@@ -136,9 +185,13 @@ func TestWaylandCompositorPid(t *testing.T) {
 			c.Close()
 		}
 	}()
-	pid, err := waylandCompositorPid(socket)
+	f, pid, err := waylandVerbindung(socket)
 	if err != nil || int(pid) != os.Getpid() {
 		t.Fatalf("Pid %d, %v; erwartet %d", pid, err, os.Getpid())
+	}
+	defer f.Close()
+	if _, err := f.Stat(); err != nil {
+		t.Errorf("Verbindung nicht offen: %v", err)
 	}
 }
 
