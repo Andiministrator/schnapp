@@ -13,6 +13,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
+	"gioui.org/widget"
 	"gioui.org/widget/material"
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
@@ -103,10 +104,27 @@ func (l *menueLauf) inhalt() string {
 	return o.(document.Text).Inhalt
 }
 
-// index liefert den Index des Eintrags zu einer Handlung.
+// titel ist der Titel des offenen bzw. zuletzt offenen Menüs (ADR-0031: ersetzt den Menüknopf).
+func (l *menueLauf) titel() *widget.Clickable { return &l.e.menue.titel[l.e.menue.welches] }
+
+// zuMenue wählt das Menü, das a führt, für das nächste Öffnen (Menü geschlossen).
+func (l *menueLauf) zuMenue(a aktion) {
+	l.t.Helper()
+	if l.e.menue.offen {
+		l.t.Fatal("zuMenue bei offenem Menü")
+	}
+	l.e.menue.welches = l.e.menueMit(a)
+}
+
+// index liefert den Index des Eintrags zu einer Handlung im offenen Menü. Steht sie in einem anderen Menü der Zeile,
+// wechselt es dorthin, wie der Mensch über den Titel fährt (ADR-0031 Punkt 1), und zeichnet neu.
 func (l *menueLauf) index(a aktion) int {
+	if m := l.e.menueMit(a); m >= 0 && m != l.e.menue.welches {
+		l.e.menue.welches, l.e.menue.cursor = m, -1
+		l.setle()
+	}
 	for i, en := range l.e.menueEintraege() {
-		if en.akt == a {
+		if !en.hatWerkzeug && en.akt == a {
 			return i
 		}
 	}
@@ -114,9 +132,9 @@ func (l *menueLauf) index(a aktion) int {
 	return -1
 }
 
-// oeffneMitTaste: Tab bis zum Menüknopf (Fokus), Enter.
+// oeffneMitTaste: Tab bis zum Titel des gewählten Menüs (Fokus), Enter.
 func (l *menueLauf) oeffneMitTaste() {
-	l.fokusiere(&l.e.menue.knopf)
+	l.fokusiere(l.titel())
 	l.taste(key.NameReturn, 0)
 }
 
@@ -172,8 +190,8 @@ func TestMenueTastaturOeffnenUndEsc(t *testing.T) {
 	if m.offen {
 		t.Error("Esc schließt das Menü nicht")
 	}
-	if !l.fokus(&m.knopf) {
-		t.Error("nach Esc hat der Menüknopf den Fokus nicht")
+	if !l.fokus(l.titel()) {
+		t.Error("nach Esc hat der Menütitel den Fokus nicht")
 	}
 	// Enter auf dem Knopf öffnet wieder (Gegenprobe: der Fokus liegt wirklich dort).
 	l.taste(key.NameReturn, 0)
@@ -185,11 +203,11 @@ func TestMenueTastaturOeffnenUndEsc(t *testing.T) {
 // Pfeiltasten, Pos1, Ende: graue Einträge übersprungen, an den Enden Umlauf.
 func TestMenuePfeiltasten(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
-	en := l.e.menueEintraege()
-	for _, a := range []aktion{aktWiederholen, aktGanzesBild, aktZurueckholen} {
-		if en[l.index(a)].an {
-			t.Fatalf("Vorbedingung: %d nicht grau", a)
-		}
+	// Menü „Bearbeiten“ (ADR-0031): Rückgängig, Wiederholen (grau), Text bearbeiten, Löschen.
+	l.zuMenue(aktWiederholen)
+	en := l.e.menueEintraegeVon(menueBearbeiten)
+	if en[1].akt != aktWiederholen || en[1].an {
+		t.Fatalf("Vorbedingung: Wiederholen nicht grau an zweiter Stelle: %+v", en)
 	}
 	stand := l.e.s.D.Stand()
 	l.oeffneMitTaste()
@@ -200,25 +218,19 @@ func TestMenuePfeiltasten(t *testing.T) {
 			t.Errorf("%s: Fokus nicht auf Eintrag %d (%s)", wo, i, en[i].text)
 		}
 	}
-	zu(aktKopieren, "nach dem Öffnen")
-	l.taste(key.NameDownArrow, 0)
-	zu(aktExport, "runter")
-	l.taste(key.NameDownArrow, 0)
-	zu(aktSpeichern, "runter")
-	l.taste(key.NameDownArrow, 0)
-	zu(aktRueckgaengig, "runter")
+	zu(aktRueckgaengig, "nach dem Öffnen")
 	l.taste(key.NameDownArrow, 0)
 	zu(aktTextBearbeiten, "runter über den grauen Eintrag Wiederholen")
 	l.taste(key.NameUpArrow, 0)
 	zu(aktRueckgaengig, "hoch über den grauen Eintrag Wiederholen")
 	l.taste(key.NameEnd, 0)
-	zu(aktSchliessen, "Ende")
+	zu(aktLoeschen, "Ende")
 	l.taste(key.NameDownArrow, 0)
-	zu(aktKopieren, "Umlauf abwärts vom letzten zum ersten")
+	zu(aktRueckgaengig, "Umlauf abwärts vom letzten zum ersten")
 	l.taste(key.NameUpArrow, 0)
-	zu(aktSchliessen, "Umlauf aufwärts vom ersten zum letzten")
+	zu(aktLoeschen, "Umlauf aufwärts vom ersten zum letzten")
 	l.taste(key.NameHome, 0)
-	zu(aktKopieren, "Pos1")
+	zu(aktRueckgaengig, "Pos1")
 	if !m.offen {
 		t.Error("Pfeiltasten schließen das Menü")
 	}
@@ -270,7 +282,7 @@ func TestMenueTextBearbeitenPerTastaturDanachTippen(t *testing.T) {
 // Dasselbe mit der Maus: Klick auf „Text bearbeiten“, danach kommt getippter Text an.
 func TestMenueMausEintragDannTippen(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
-	l.e.menue.knopf.Click()
+	l.titel().Click()
 	l.setle()
 	if !l.e.menue.offen {
 		t.Fatal("Menü nicht offen")
@@ -292,7 +304,7 @@ func TestMenueMausOeffnenLaesstFokus(t *testing.T) {
 	l.fokusiere(l.e)
 	// Zeiger über den Menüknopf: Hovered. Aus dem Test ohne Zeigerereignis ist Hovered falsch, also wie ein
 	// Tastaturklick; die Mausart wird deshalb über einen echten Klick auf den Knopf geprüft.
-	l.klick(image.Pt(l.fenst.X-12-70-8-30, 28)) // Menüknopf liegt links neben „Speichern“ rechts oben
+	l.klick(menueKnopfMitte(l)) // Titel „Datei“ in der Menüzeile (ADR-0031)
 	if !l.e.menue.offen {
 		t.Fatal("Menüknopf nicht getroffen: Klick öffnet das Menü nicht (ADR-0026 Nachtrag 2)")
 	}
@@ -307,7 +319,7 @@ func TestMenueMausOeffnenLaesstFokus(t *testing.T) {
 func TestMenueAuswertenKlicks(t *testing.T) {
 	t.Run("Klick daneben schließt", func(t *testing.T) {
 		l := neuerMenueLauf(t, image.Pt(1200, 800))
-		l.e.menue.knopf.Click()
+		l.titel().Click()
 		l.setle()
 		if !l.e.menue.offen {
 			t.Fatal("Menü nicht offen")
@@ -322,7 +334,7 @@ func TestMenueAuswertenKlicks(t *testing.T) {
 	})
 	t.Run("grauer Eintrag tut nichts", func(t *testing.T) {
 		l := neuerMenueLauf(t, image.Pt(1200, 800))
-		l.e.menue.knopf.Click()
+		l.titel().Click()
 		l.setle()
 		i := l.index(aktWiederholen)
 		if l.e.menueEintraege()[i].an {
@@ -340,9 +352,9 @@ func TestMenueAuswertenKlicks(t *testing.T) {
 	})
 	t.Run("zweiter Klick auf Menü schließt", func(t *testing.T) {
 		l := neuerMenueLauf(t, image.Pt(1200, 800))
-		l.e.menue.knopf.Click()
+		l.titel().Click()
 		l.setle()
-		l.e.menue.knopf.Click()
+		l.titel().Click()
 		l.setle()
 		if l.e.menue.offen {
 			t.Error("zweiter Klick auf „Menü“ lässt die Liste offen")
@@ -350,10 +362,10 @@ func TestMenueAuswertenKlicks(t *testing.T) {
 	})
 	t.Run("Klick auf die Fläche zwischen Einträgen schließt nicht", func(t *testing.T) {
 		l := neuerMenueLauf(t, image.Pt(1200, 800))
-		l.e.menue.knopf.Click()
+		l.titel().Click()
 		l.setle()
-		// Trennlinie zwischen „Speichern“ und „Rückgängig“ (Gruppenabstand).
-		a, b := l.e.menue.rahmen[l.index(aktSpeichern)], l.e.menue.rahmen[l.index(aktRueckgaengig)]
+		// Trennlinie zwischen „Kopieren“ und „Schließen“ im Menü Datei (Gruppenabstand).
+		a, b := l.e.menue.rahmen[l.index(aktKopieren)], l.e.menue.rahmen[l.index(aktSchliessen)]
 		l.klick(image.Pt(a.Min.X+5, (a.Max.Y+b.Min.Y)/2))
 		if !l.e.menue.offen {
 			t.Error("Klick zwischen Einträgen schließt das Menü")
@@ -364,7 +376,7 @@ func TestMenueAuswertenKlicks(t *testing.T) {
 // F-265: Im kleinsten Fenster (480 × 320) liegt jeder Eintrag im Fenster, und der unterste ist per Klick erreichbar.
 func TestMenueKleinstesFensterLetzterEintragErreichbar(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(480, 320))
-	l.e.menue.knopf.Click()
+	l.titel().Click()
 	l.setle()
 	fenster := image.Rectangle{Max: l.fenst}
 	for i, en := range l.e.menueEintraege() {
@@ -402,7 +414,7 @@ func TestWerkzeugHinweisBeiTastaturfokus(t *testing.T) {
 		t.Errorf("mit Fokus auf „Kasten“: %v", h)
 	}
 	// Bei offenem Menü zeichnet zeichneWerkzeugHinweis nichts (Test über die Zeichnung: kein Absturz, Menü bleibt offen).
-	l.e.menue.knopf.Click()
+	l.titel().Click()
 	l.setle()
 	if !l.e.menue.offen {
 		t.Error("Menü nicht offen")

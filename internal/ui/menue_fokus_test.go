@@ -6,7 +6,6 @@ package ui
 
 import (
 	"image"
-	"image/color"
 	"testing"
 
 	"gioui.org/f32"
@@ -14,16 +13,12 @@ import (
 	"gioui.org/io/pointer"
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
-	"github.com/Andiministrator/schnapp/internal/i18n"
 )
 
-// menueKnopfMitte: Mitte des Menüknopfs, gerechnet wie zeichneLeiste.
+// menueKnopfMitte: Mitte des Titels des gewählten Menüs (ADR-0031).
 func menueKnopfMitte(l *menueLauf) image.Point {
-	gtx := l.gtx()
-	w := l.e.messeKnopf(gtx, &l.e.knoepfe.speichern, i18n.T("Save"), color.NRGBA{})
-	mb := l.e.messeKnopf(gtx, &l.e.menue.knopf, i18n.T("Menu"), color.NRGBA{})
-	rechts := l.fenst.X - 12 - w - 8
-	return image.Pt(rechts-mb/2, 28)
+	r := l.e.menue.titelRahmen[l.e.menue.welches]
+	return r.Min.Add(r.Max).Div(2)
 }
 
 func drueckeUndLoese(l *menueLauf, n key.Name) {
@@ -46,8 +41,8 @@ func menueFokusName(l *menueLauf) string {
 	switch {
 	case l.fokus(l.e):
 		return "Leinwand"
-	case l.fokus(&l.e.menue.knopf):
-		return "Menüknopf"
+	case l.fokus(l.titel()):
+		return "Menütitel"
 	case menueFokusNr(l) >= 0:
 		return "Eintrag " + l.e.menueEintraege()[menueFokusNr(l)].text
 	case l.e.fokussierterKnopf(l.gtx()) != nil:
@@ -121,6 +116,7 @@ func TestMenueMausMenueEscDannEnter(t *testing.T) {
 // V3: Der fokussierte Eintrag wird bei offenem Menü grau (Klickfläche verschwindet, Gio setzt den Fokus auf nil).
 func TestMenueFokussierterEintragWirdGrau(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	l.zuMenue(aktTextBearbeiten) // Menü „Bearbeiten“
 	l.oeffneMitTaste()
 	ziel := l.index(aktTextBearbeiten)
 	for n := 0; menueFokusNr(l) != ziel; n++ {
@@ -140,17 +136,17 @@ func TestMenueFokussierterEintragWirdGrau(t *testing.T) {
 		t.Errorf("Enter auf grau gewordenem Eintrag wirkt: offen %v, Text %v", l.e.menue.offen, l.e.s.TextLaeuft())
 	}
 	l.taste(key.NameDownArrow, 0)
-	// Nächster bedienbarer Eintrag: „Fit“ (immer an), davor sind Löschen, Ganzes Bild, Zurückholen und „Seam style“
-	// grau (ohne Naht, ADR-0023 Nachtrag 7).
-	if i := menueFokusNr(l); i != l.index(aktEinpassen) {
-		t.Errorf("Runter nach Grauwerden: Fokus %d (%s), soll Fit", i, menueFokusName(l))
+	// Nächster bedienbarer Eintrag im Menü „Bearbeiten“: Löschen ist ohne Auswahl grau, Wiederholen ohne Verlauf;
+	// der Umlauf führt zu Rückgängig.
+	if i := menueFokusNr(l); i != l.index(aktRueckgaengig) {
+		t.Errorf("Runter nach Grauwerden: Fokus %d (%s), soll Rückgängig", i, menueFokusName(l))
 	}
 	l.taste(key.NameUpArrow, 0)
-	if i := menueFokusNr(l); i != l.index(aktRueckgaengig) && i != l.index(aktSpeichern) {
+	if i := menueFokusNr(l); i != l.index(aktRueckgaengig) {
 		t.Errorf("Hoch: Fokus %d (%s)", i, menueFokusName(l))
 	}
 	l.taste(key.NameEscape, 0)
-	if l.e.menue.offen || !l.fokus(&l.e.menue.knopf) {
+	if l.e.menue.offen || !l.fokus(l.titel()) {
 		t.Errorf("Esc: offen %v, Fokus %s", l.e.menue.offen, menueFokusName(l))
 	}
 }
@@ -190,16 +186,16 @@ func TestMenueOffenesMenueSperrtTasten(t *testing.T) {
 func TestMenueEnterUndLeertasteMitLoslassen(t *testing.T) {
 	for _, n := range []key.Name{key.NameReturn, key.NameSpace} {
 		l := neuerMenueLauf(t, image.Pt(1200, 800))
-		l.fokusiere(&l.e.menue.knopf)
+		l.zuMenue(aktEins) // Menü „Ansicht“: Einpassen, 1:1
+		l.fokusiere(l.titel())
 		drueckeUndLoese(l, n)
 		if !l.e.menue.offen {
-			t.Fatalf("%q auf dem Menüknopf öffnet nicht (oder öffnet und schließt)", n)
+			t.Fatalf("%q auf dem Menütitel öffnet nicht (oder öffnet und schließt)", n)
 		}
 		if menueFokusNr(l) != 0 {
 			t.Errorf("%q: Fokus %s, soll erster Eintrag", n, menueFokusName(l))
 		}
 		l.taste(key.NameEnd, 0)
-		l.taste(key.NameUpArrow, 0)
 		if menueFokusNr(l) != l.index(aktEins) {
 			t.Fatalf("%q: Fokus %s, soll 1:1", n, menueFokusName(l))
 		}
@@ -216,7 +212,7 @@ func TestMenueEnterUndLeertasteMitLoslassen(t *testing.T) {
 // V6: Schnelle Folge ohne Bild dazwischen: Enter (öffnet), sofort Runter.
 func TestMenueSchnelleFolgeEnterRunter(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
-	l.fokusiere(&l.e.menue.knopf)
+	l.fokusiere(l.titel())
 	l.r.Queue(key.Event{Name: key.NameReturn, State: key.Press})
 	l.r.Queue(key.Event{Name: key.NameReturn, State: key.Release})
 	l.r.Queue(key.Event{Name: key.NameDownArrow, State: key.Press})
@@ -239,10 +235,10 @@ func TestMenueArtDesKlicksAusEreignis(t *testing.T) {
 		p := menueKnopfMitte(l)
 		l.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(float32(p.X), float32(p.Y))})
 		l.setle()
-		if !l.e.menue.knopf.Hovered() {
+		if !l.titel().Hovered() {
 			t.Fatal("Vorbedingung: Zeiger über dem Knopf")
 		}
-		l.fokusiere(&l.e.menue.knopf)
+		l.fokusiere(l.titel())
 		drueckeUndLoese(l, key.NameSpace)
 		if !l.e.menue.offen {
 			t.Fatal("Leertaste öffnet nicht")
@@ -258,7 +254,7 @@ func TestMenueArtDesKlicksAusEreignis(t *testing.T) {
 		p := menueKnopfMitte(l)
 		l.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(float32(p.X), float32(p.Y))})
 		l.setle()
-		l.fokusiere(&l.e.menue.knopf)
+		l.fokusiere(l.titel())
 		drueckeUndLoese(l, key.NameReturn)
 		if !l.e.menue.offen || menueFokusNr(l) != 0 {
 			t.Errorf("Enter bei ruhendem Zeiger: offen %v, Fokus %s", l.e.menue.offen, menueFokusName(l))
@@ -317,7 +313,7 @@ func TestMenueTabFahrtBeiOffenemMenue(t *testing.T) {
 	}
 	t.Logf("Tab-Fahrt ab erstem Eintrag: %v", weg)
 	// Nach der Tab-Fahrt auf einen Leistenknopf: Pfeil runter muss wieder in die Liste führen.
-	l.fokusiere(&l.e.knoepfe.einpassen)
+	l.fokusiere(&l.e.knoepfe.farbe)
 	l.taste(key.NameDownArrow, 0)
 	if menueFokusNr(l) < 0 {
 		t.Errorf("Pfeil runter von einem Leistenknopf aus: Fokus %s", menueFokusName(l))
@@ -356,7 +352,7 @@ func TestMenueTastaturOffenDannMaus(t *testing.T) {
 // V11: Werkzeug-Hinweis: Fokus auf einem Knopf, Zeiger über einem anderen.
 func TestMenueHinweisFokusUndZeiger(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
-	l.fokusiere(&l.e.knoepfe.speichern) // kein Werkzeugknopf
+	l.fokusiere(&l.e.knoepfe.fussZoom) // kein Werkzeugknopf
 	if n := len(l.e.hinweisKnoepfe(l.gtx())); n != 0 {
 		t.Errorf("Fokus auf Speichern: %d Hinweise", n)
 	}

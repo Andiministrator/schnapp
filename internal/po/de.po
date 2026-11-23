@@ -557,9 +557,6 @@ msgstr "Der Teil reichte bis an den Rand und wurde abgeschnitten; „Ganzes Bild
 msgid "The area is too small to redact at this zoom; zoom in or draw a larger area."
 msgstr "Der Bereich ist bei diesem Zoom zu klein zum Schwärzen; hineinzoomen oder einen größeren Bereich ziehen."
 
-msgid "Menu"
-msgstr "Menü"
-
 msgid "Copy"
 msgstr "Kopieren"
 
@@ -571,9 +568,6 @@ msgstr "Text bearbeiten"
 
 msgid "Restore cut-out areas"
 msgstr "Gestauchtes zurückholen"
-
-msgid "Seam style"
-msgstr "Kantenform"
 
 msgid "Seam style: torn edge"
 msgstr "Kantenform: Abriss"
@@ -737,3 +731,52 @@ msgstr "02.01.2006 15:04"
 msgctxt "status bar"
 msgid "%d × %d · %d%%"
 msgstr "%d × %d · %d %%"
+
+msgid "File"
+msgstr "Datei"
+
+msgid "Edit"
+msgstr "Bearbeiten"
+
+msgid "View"
+msgstr "Ansicht"
+
+msgid "Image"
+msgstr "Bild"
+
+msgid "Tools"
+msgstr "Werkzeuge"
+
+msgid "saved"
+msgstr "gespeichert"
+
+msgid "unsaved"
+msgstr "ungesichert"
+
+msgctxt "status bar"
+msgid "Selection %d × %d px"
+msgstr "Auswahl %d × %d px"
+
+msgctxt "status bar"
+msgid "at %d, %d"
+msgstr "bei %d, %d"
+
+msgctxt "status bar"
+msgid "#%02X%02X%02X · %d%%"
+msgstr "#%02X%02X%02X · %d %%"
+
+msgctxt "status bar"
+msgid "%d px"
+msgstr "%d px"
+
+msgctxt "status bar"
+msgid "Image %d × %d"
+msgstr "Bild %d × %d"
+
+msgctxt "status bar"
+msgid "Image %d × %d (cut out)"
+msgstr "Bild %d × %d (gestaucht)"
+
+msgctxt "status bar"
+msgid "%d%%"
+msgstr "%d %%"

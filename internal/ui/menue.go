@@ -18,6 +18,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/i18n"
 )
@@ -28,27 +29,14 @@ type menueEintrag struct {
 	text   string
 	an     bool
 	gruppe bool // beginnt eine neue Gruppe (Trennlinie davor)
+	// Menü „Werkzeuge“ (ADR-0031 Punkt 1): wählt ein Werkzeug statt einer Handlung; aktiv markiert das gewählte.
+	werkzeug    canvas.Werkzeug
+	hatWerkzeug bool
+	aktiv       bool
 }
 
-// menueEintraege liefert die Einträge in Reihenfolge, mit dem Zustand der Sitzung (an oder grau).
-func (e *editor) menueEintraege() []menueEintrag {
-	s := e.s
-	return []menueEintrag{
-		{akt: aktKopieren, text: i18n.T("Copy"), an: true},
-		{akt: aktExport, text: i18n.T("Export…"), an: !e.exportOffen},
-		{akt: aktSpeichern, text: i18n.T("Save"), an: true},
-		{akt: aktRueckgaengig, text: i18n.T("Undo"), an: s.D.KannRueckgaengig(), gruppe: true},
-		{akt: aktWiederholen, text: i18n.T("Redo"), an: s.D.KannWiederholen()},
-		{akt: aktTextBearbeiten, text: i18n.T("Edit text"), an: s.KannTextBearbeiten(), gruppe: true},
-		{akt: aktLoeschen, text: i18n.T("Delete"), an: s.KannLoeschen()},
-		{akt: aktGanzesBild, text: i18n.T("Whole image"), an: s.KannGanzesBild(), gruppe: true},
-		{akt: aktZurueckholen, text: i18n.T("Restore cut-out areas"), an: s.KannZurueckholen()},
-		{akt: aktKantenform, text: i18n.T("Seam style"), an: s.KannKanteWechseln()},
-		{akt: aktEinpassen, text: i18n.T("Fit"), an: true, gruppe: true},
-		{akt: aktEins, text: "1:1", an: true},
-		{akt: aktSchliessen, text: i18n.T("Close"), an: true, gruppe: true},
-	}
-}
+// menueEintraege liefert die Einträge des offenen Menüs (ADR-0031 Punkt 1) mit dem Zustand der Sitzung.
+func (e *editor) menueEintraege() []menueEintrag { return e.menueEintraegeVon(e.menue.welches) }
 
 // kantenMeldung ist die Statusmeldung nach einem Wechsel der Kantenform (Menüeintrag „Seam style“). Jede Form hat ihren
 // eigenen Text als Literal, damit die Übersetzung ihn findet (ADR-0014 Nachtrag 1).
@@ -72,20 +60,28 @@ func (e *editor) schliessenEintrag() *widget.Clickable {
 	return nil
 }
 
-// menueKuerzel ist das angezeigte Kürzel eines Eintrags; „Text bearbeiten“ geht mit Enter.
-func menueKuerzel(a aktion) string {
-	if a == aktTextBearbeiten {
+// menueKuerzel ist das angezeigte Kürzel eines Eintrags; „Text bearbeiten“ geht mit Enter, ein Werkzeug mit seinem
+// Buchstaben.
+func menueKuerzel(en menueEintrag) string {
+	if en.hatWerkzeug {
+		return werkzeugKuerzel(en.werkzeug)
+	}
+	if en.akt == aktTextBearbeiten {
 		return kuerzelText(aktEnter)
 	}
-	return kuerzelText(a)
+	return kuerzelText(en.akt)
 }
 
 // menue ist der Zustand des Menüs.
 type menue struct {
-	knopf     widget.Clickable
-	offen     bool
-	eintraege [16]widget.Clickable // je Eintrag einer; mehr als genug für menueEintraege
-	aussen    int                  // Ziel für Klicks neben die offene Liste (schließt sie)
+	// titel sind die Menüs der Zeile (ADR-0031 Punkt 1), titelRahmen ihre Lage beim letzten Zeichnen; welches ist
+	// das offene bzw. zuletzt offene Menü.
+	titel       [menueAnzahl]widget.Clickable
+	titelRahmen [menueAnzahl]image.Rectangle
+	welches     int
+	offen       bool
+	eintraege   [16]widget.Clickable // je Eintrag einer; mehr als genug für menueEintraege
+	aussen      int                  // Ziel für Klicks neben die offene Liste (schließt sie)
 
 	// Tastatur (F-255): fokusNach ist der Eintrag, der beim Zeichnen den Fokus bekommt (die Klickfläche gibt es erst
 	// dort); cursor der zuletzt per Taste angesteuerte Eintrag (-1: keiner).
@@ -170,7 +166,7 @@ func (e *editor) menueSchliesse(gtx layout.Context, zuKnopf bool) {
 	m := &e.menue
 	m.offen, m.fokusNach = false, nil
 	if zuKnopf {
-		gtx.Execute(key.FocusCmd{Tag: &m.knopf})
+		gtx.Execute(key.FocusCmd{Tag: &m.titel[m.welches]})
 	} else {
 		gtx.Execute(key.FocusCmd{Tag: e})
 	}
@@ -257,29 +253,63 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 	return nil
 }
 
-// menueUmschalten öffnet oder schließt die Liste. Per Tastatur geöffnet: Fokus auf den ersten bedienbaren Eintrag (F-255).
-// Per Maus bleibt der Fokus unberührt, damit kein Ring ohne Tastatur erscheint. Die Art kommt vom Aufrufer, nicht aus
-// dem Klick: Gio meldet bei einem Knopfklick keine Quelle, und der Zeigerort sagt nichts (Leertaste bei ruhendem Zeiger,
-// F-255 V-2). Enter und Leertaste öffnen sofort statt erst im nächsten Bild, damit eine gleich folgende Pfeiltaste
-// die Liste schon findet (F-255 V-3).
-func (e *editor) menueUmschalten(perTaste bool) {
+// menueOeffne öffnet das Menü i oder schließt es, wenn es schon offen ist. Per Tastatur geöffnet: Fokus auf den
+// ersten bedienbaren Eintrag (F-255). Per Maus bleibt der Fokus unberührt, damit kein Ring ohne Tastatur erscheint. Die
+// Art kommt vom Aufrufer, nicht aus dem Klick (F-255 V-2); Enter, Leertaste und F10 öffnen sofort statt erst im
+// nächsten Bild (F-255 V-3).
+func (e *editor) menueOeffne(i int, perTaste bool) {
 	m := &e.menue
-	m.offen = !m.offen
-	m.cursor = -1
-	m.perTasteOffen = m.offen && perTaste
-	if m.perTasteOffen {
-		if i := menueErster(e.menueEintraege()); i >= 0 {
-			m.cursor, m.fokusNach = i, &m.eintraege[i]
+	if m.offen && m.welches == i {
+		m.offen = false
+		return
+	}
+	m.welches, m.offen, m.cursor = i, true, -1
+	m.perTasteOffen = perTaste
+	if perTaste {
+		if j := menueErster(e.menueEintraege()); j >= 0 {
+			m.cursor, m.fokusNach = j, &m.eintraege[j]
 		}
 	}
 }
 
-// knopfPerTaste löst einen per Tastatur fokussierten Knopf aus (Enter): der Menüknopf über menueUmschalten, die
-// übrigen als Klick.
+// menueMit ist das Menü, das die Handlung a führt (-1: keines). Tests und Drehbücher wählen so das richtige Menü.
+func (e *editor) menueMit(a aktion) int {
+	for i := 0; i < menueAnzahl; i++ {
+		for _, en := range e.menueEintraegeVon(i) {
+			if !en.hatWerkzeug && en.akt == a {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+// menueWechsel öffnet das Nachbarmenü (Pfeil links/rechts, ADR-0031 Punkt 1); läuft an den Enden um.
+func (e *editor) menueWechsel(dir int) {
+	m := &e.menue
+	perTaste := m.perTasteOffen
+	m.offen = false
+	e.menueOeffne(((m.welches+dir)%menueAnzahl+menueAnzahl)%menueAnzahl, perTaste)
+}
+
+// menueTitelFokus ist der Index des Menütitels mit Tastaturfokus (-1: keiner).
+func (e *editor) menueTitelFokus(gtx layout.Context) int {
+	for i := range e.menue.titel {
+		if gtx.Focused(&e.menue.titel[i]) {
+			return i
+		}
+	}
+	return -1
+}
+
+// knopfPerTaste löst einen per Tastatur fokussierten Knopf aus (Enter): einen Menütitel über menueOeffne, die übrigen
+// als Klick.
 func (e *editor) knopfPerTaste(c *widget.Clickable) {
-	if c == &e.menue.knopf {
-		e.menueUmschalten(true)
-		return
+	for i := range e.menue.titel {
+		if c == &e.menue.titel[i] {
+			e.menueOeffne(i, true)
+			return
+		}
 	}
 	c.Click()
 }
@@ -290,8 +320,22 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 	// Während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6); je Klick neu gefragt, denn ein Eintrag im selben
 	// Bild kann das Speichern starten (F-280).
 	an := func() bool { return !e.s.SpeichernLaeuft() }
-	if m.knopf.Clicked(gtx) && an() {
-		e.menueUmschalten(false) // ein Klick des Knopfes ist die Maus; Enter und Leertaste laufen in tasten
+	for i := range m.titel {
+		if m.titel[i].Clicked(gtx) && an() {
+			if m.offen && m.welches == i { // zweiter Klick auf den Titel: schließen, Fokus an die Leinwand
+				e.menueSchliesse(gtx, false)
+				continue
+			}
+			e.menueOeffne(i, false) // ein Klick ist die Maus; Enter, Leertaste und F10 laufen in tasten
+		}
+	}
+	// Ist ein Menü offen, wechselt das Überfahren eines anderen Titels die Liste (wie in Qt, ADR-0031 Punkt 1).
+	if m.offen && !m.perTasteOffen {
+		for i := range m.titel {
+			if i != m.welches && m.titel[i].Hovered() {
+				m.welches, m.cursor = i, -1
+			}
+		}
 	}
 	for {
 		ev, ok := gtx.Event(pointer.Filter{Target: &m.aussen, Kinds: pointer.Press})
@@ -311,20 +355,25 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 		// Schließen wirkt auch während des Speicherns wie der Fensterknopf: Die Anfrage wird vorgemerkt (F-299).
 		if m.eintraege[i].Clicked(gtx) && m.offen && en.an && (an() || en.akt == aktSchliessen) {
 			e.menueSchliesse(gtx, false) // Fokus an die Leinwand: getippter Text nach „Text bearbeiten“ kommt an
+			if en.hatWerkzeug {
+				e.s.SetzeWerkzeug(en.werkzeug)
+				continue
+			}
 			e.fuehreAus(gtx, en.akt, true)
 		}
 	}
 }
 
-// zeichneMenue legt die offene Liste unter den Menüknopf, rechtsbündig an rechts (Fensterpixel), oben bei y. Darunter
-// liegt eine Fläche über dem ganzen Fenster, die einen Klick daneben abfängt.
-func (e *editor) zeichneMenue(gtx layout.Context, rechts, y int) {
+// zeichneMenue legt die offene Liste unter den Titel des offenen Menüs (ADR-0031 Punkt 1). Darunter liegt eine Fläche
+// über dem ganzen Fenster außer der Menüzeile, die einen Klick daneben abfängt; die Titel der Zeile bleiben bedienbar.
+func (e *editor) zeichneMenue(gtx layout.Context) {
 	m := &e.menue
 	if !m.offen {
 		return
 	}
 	mx := gtx.Constraints.Max
-	ha := clip.Rect(image.Rectangle{Max: mx}).Push(gtx.Ops)
+	y := gtx.Dp(menuezeileDp)
+	ha := clip.Rect(image.Rect(0, y, mx.X, mx.Y)).Push(gtx.Ops)
 	event.Op(gtx.Ops, &m.aussen)
 	ha.Pop()
 
@@ -345,7 +394,7 @@ func (e *editor) zeichneMenue(gtx layout.Context, rechts, y int) {
 	textB, kuerzelB, hoehe := 0, 0, gtx.Dp(6)*2
 	for _, en := range eintraege {
 		textB = max(textB, mess(en.text))
-		kuerzelB = max(kuerzelB, mess(menueKuerzel(en.akt)))
+		kuerzelB = max(kuerzelB, mess(menueKuerzel(en)))
 		hoehe += zeile
 		if en.gruppe {
 			hoehe += trenn
@@ -364,12 +413,12 @@ func (e *editor) zeichneMenue(gtx layout.Context, rechts, y int) {
 		hoehe = gtx.Dp(6)*2 + zeile*len(eintraege)
 		y = 0
 	}
-	ecke := image.Pt(max(0, rechts-breite), y)
+	links := m.titelRahmen[m.welches].Min.X
+	ecke := image.Pt(max(0, min(links, mx.X-breite)), y)
 	t := op.Offset(ecke).Push(gtx.Ops)
 	flaeche := image.Rectangle{Max: image.Pt(breite, hoehe)}
-	rr := clip.UniformRRect(flaeche, gtx.Dp(6))
-	paint.FillShape(gtx.Ops, farbeLeisteVoll, rr.Op(gtx.Ops))
-	paint.FillShape(gtx.Ops, farbeLinie, clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
+	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(flaeche).Op()) // eckig (Karte #186)
+	paint.FillShape(gtx.Ops, farbeLinie, clip.Stroke{Path: clip.Rect(flaeche).Path(), Width: float32(gtx.Dp(1))}.Op())
 	// Die Fläche selbst fängt Klicks zwischen den Einträgen ab, damit sie nicht als „daneben“ gelten.
 	hf := clip.Rect(flaeche).Push(gtx.Ops)
 	event.Op(gtx.Ops, m)
@@ -412,12 +461,14 @@ func (e *editor) menueZeile(gtx layout.Context, c *widget.Clickable, en menueEin
 	if fokus { // Tastaturfokus immer sichtbar: 2 px orangener Ring (corporate-design.md §6). Die Zeilen stoßen aneinander,
 		// außen ist kein Platz: Der Ring liegt innen mit 2 px Abstand zum Zeilenrand (ADR-0026 Nachtrag 3).
 		r := image.Rectangle{Max: groesse}.Inset(gtx.Dp(3))
-		paint.FillShape(gtx.Ops, farbeAkzent, clip.Stroke{Path: clip.UniformRRect(r, gtx.Dp(4)).Path(gtx.Ops),
-			Width: float32(gtx.Dp(2))}.Op())
+		paint.FillShape(gtx.Ops, farbeAkzent, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(2))}.Op())
 	}
 	farbe, neben := farbeText, farbeNebentext
-	if !en.an {
+	switch {
+	case !en.an:
 		farbe = farbeNebentext
+	case en.aktiv:
+		farbe = farbeGruenText
 	}
 	g := gtx
 	g.Constraints.Min = image.Point{}
@@ -436,7 +487,7 @@ func (e *editor) menueZeile(gtx layout.Context, c *widget.Clickable, en menueEin
 		tt.Pop()
 	}
 	schreibe(en.text, farbe, false)
-	if k := menueKuerzel(en.akt); k != "" {
+	if k := menueKuerzel(en); k != "" {
 		schreibe(k, neben, true)
 	}
 	if en.an {
@@ -462,38 +513,4 @@ func (e *editor) hinweisKnoepfe(gtx layout.Context) []werkzeugKnopf {
 		return fokus
 	}
 	return hover
-}
-
-// zeichneWerkzeugHinweis zeigt unter dem Werkzeugknopf, über dem der Zeiger steht, Namen und Kürzel (ADR-0026 Punkt 3).
-func (e *editor) zeichneWerkzeugHinweis(gtx layout.Context, links []leistenKnopf, pos []image.Point) {
-	if e.menue.offen {
-		return
-	}
-	for _, w := range e.hinweisKnoepfe(gtx) {
-		for i, l := range links {
-			if l.c != w.c {
-				continue
-			}
-			text := w.text + " (" + werkzeugKuerzel(w.w) + ")"
-			r := op.Record(gtx.Ops)
-			g := gtx
-			g.Constraints.Min = image.Point{}
-			lbl := material.Label(e.thema, unit.Sp(12), text)
-			lbl.Color = farbeText
-			d := lbl.Layout(g)
-			call := r.Stop()
-			rand := gtx.Dp(6)
-			ecke := pos[i].Add(image.Pt(0, gtx.Dp(36)+gtx.Dp(4)))
-			ecke.X = max(0, min(ecke.X, gtx.Constraints.Max.X-d.Size.X-2*rand))
-			t := op.Offset(ecke).Push(gtx.Ops)
-			fl := image.Rectangle{Max: d.Size.Add(image.Pt(2*rand, rand))}
-			paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.UniformRRect(fl, gtx.Dp(4)).Op(gtx.Ops))
-			paint.FillShape(gtx.Ops, farbeLinie, clip.Stroke{Path: clip.UniformRRect(fl, gtx.Dp(4)).Path(gtx.Ops),
-				Width: float32(gtx.Dp(1))}.Op())
-			tt := op.Offset(image.Pt(rand, rand/2)).Push(gtx.Ops)
-			call.Add(gtx.Ops)
-			tt.Pop()
-			t.Pop()
-		}
-	}
 }

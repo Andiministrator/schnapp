@@ -1,0 +1,51 @@
+[
+  {
+    "name": "O1 F10 ohne Wirkung (ADR-0031)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif k.Name == key.NameF10 {",
+    "neu": "\t\tif false && k.Name == key.NameF10 {"
+  },
+  {
+    "name": "O2 Pfeil rechts wechselt nicht (ADR-0031)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tcase key.NameRightArrow:\n\t\t\t\te.menueWechsel(1)",
+    "neu": "\t\t\tcase key.NameRightArrow:\n\t\t\t\te.menueWechsel(0)"
+  },
+  {
+    "name": "O3 Leisten vor dem Menü ausgewertet (F-280)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.menueAuswerten(gtx)\n\te.knoepfeAuswerten(gtx)",
+    "neu": "\te.knoepfeAuswerten(gtx)\n\te.menueAuswerten(gtx)"
+  },
+  {
+    "name": "O4 Menü Werkzeuge wählt nichts (ADR-0031)",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\te.s.SetzeWerkzeug(en.werkzeug)\n\t\t\t\tcontinue",
+    "neu": "\t\t\t\tcontinue"
+  },
+  {
+    "name": "O5 Zoomfeld der Fußzeile ohne Wirkung (ADR-0031)",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.knoepfe.fussZoom.Clicked(gtx) && an() {",
+    "neu": "\tif e.knoepfe.fussZoom.Clicked(gtx) && false {"
+  },
+  {
+    "name": "O6 Zeigerort bleibt nach Verlassen (ADR-0031)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.zeigerBild = nil\n\t\treturn alt != nil",
+    "neu": "\t\treturn alt != nil"
+  },
+  {
+    "name": "O7 Fußfeld Zeiger außerhalb des Bilds (ADR-0031)",
+    "datei": "internal/canvas/fusszeile.go",
+    "paket": "./internal/canvas",
+    "alt": "zeiger.X < float64(bild.X) && zeiger.Y < float64(bild.Y)",
+    "neu": "zeiger.X <= float64(bild.X) && zeiger.Y < float64(bild.Y)"
+  }
+]

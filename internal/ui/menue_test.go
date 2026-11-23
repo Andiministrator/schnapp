@@ -69,9 +69,9 @@ func TestMenueTextBearbeitenUndZurueckholen(t *testing.T) {
 func TestMenueKantenform(t *testing.T) {
 	e := testEditor(t)
 	eintrag := func() (gefunden, an bool) {
-		for _, en := range e.menueEintraege() {
-			if en.akt == aktKantenform {
-				return en.text == "Seam style", en.an
+		for _, en := range e.menueEintraegeVon(menueBild) {
+			if en.akt == aktKantenform { // nennt die aktuelle Form (F-425, ADR-0031 Punkt 1)
+				return en.text == kantenMeldung(e.s.D.Kante()), en.an
 			}
 		}
 		return false, false

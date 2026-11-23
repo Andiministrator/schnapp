@@ -27,8 +27,12 @@ func testEditor(t *testing.T) *editor {
 func TestJedeTasteAuchPerMaus(t *testing.T) {
 	e := testEditor(t)
 	imMenue := map[aktion]bool{}
-	for _, en := range e.menueEintraege() {
-		imMenue[en.akt] = true
+	for i := 0; i < menueAnzahl; i++ { // alle Menüs der Zeile (ADR-0031 Punkt 6)
+		for _, en := range e.menueEintraegeVon(i) {
+			if !en.hatWerkzeug {
+				imMenue[en.akt] = true
+			}
+		}
 	}
 	werkzeuge := map[canvas.Werkzeug]bool{}
 	for _, w := range e.werkzeugKnoepfe() {
@@ -51,8 +55,10 @@ func TestJedeTasteAuchPerMaus(t *testing.T) {
 			t.Errorf("%s: Handlung %d ohne Menüeintrag", name, ta.akt)
 		}
 	}
-	if len(e.menueEintraege()) > len(e.menue.eintraege) {
-		t.Errorf("%d Menüeinträge, aber nur %d Clickables", len(e.menueEintraege()), len(e.menue.eintraege))
+	for i := 0; i < menueAnzahl; i++ {
+		if n := len(e.menueEintraegeVon(i)); n > len(e.menue.eintraege) {
+			t.Errorf("Menü %d: %d Einträge, aber nur %d Clickables", i, n, len(e.menue.eintraege))
+		}
 	}
 }
 
@@ -62,9 +68,17 @@ func TestMenueZeigtKuerzel(t *testing.T) {
 	soll := map[aktion]string{aktKopieren: "Ctrl+C", aktExport: "Ctrl+Shift+E", aktSpeichern: "Ctrl+S",
 		aktRueckgaengig: "Ctrl+Z", aktWiederholen: "Ctrl+Shift+Z", aktTextBearbeiten: "Enter", aktLoeschen: "Del",
 		aktEinpassen: "Ctrl+0", aktEins: "Ctrl+1", aktSchliessen: "Ctrl+W", aktGanzesBild: "", aktZurueckholen: "", aktKantenform: ""}
-	for _, en := range e.menueEintraege() {
-		if got := menueKuerzel(en.akt); got != soll[en.akt] {
-			t.Errorf("%s: Kürzel %q, Soll %q", en.text, got, soll[en.akt])
+	for i := 0; i < menueAnzahl; i++ {
+		for _, en := range e.menueEintraegeVon(i) {
+			if en.hatWerkzeug {
+				if got := menueKuerzel(en); got != werkzeugKuerzel(en.werkzeug) || got == "" {
+					t.Errorf("Werkzeug %s: Kürzel %q", en.text, got)
+				}
+				continue
+			}
+			if got := menueKuerzel(en); got != soll[en.akt] {
+				t.Errorf("%s: Kürzel %q, Soll %q", en.text, got, soll[en.akt])
+			}
 		}
 	}
 	if got := werkzeugKuerzel(canvas.WerkzeugPfeil); got != "A" {

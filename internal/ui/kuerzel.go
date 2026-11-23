@@ -112,12 +112,16 @@ func tastenFilter(textLaeuft bool) []key.Filter {
 // bleibt er ohne Wirkung; Gio fährt den Fokus nur per Tab, Pfeile gehören sonst niemandem. Die Leertaste am Menüknopf
 // wirkt wie Enter und gilt als Tastatur (F-255 V-2; der Klick des Knopfes trägt keine Quelle); sie ist auf den
 // Menüknopf begrenzt, damit sie im Text weiter als Zeichen ankommt.
-func menueNavigationsFilter(menueKnopf event.Tag) []key.Filter {
+func menueNavigationsFilter(menueTitel ...event.Tag) []key.Filter {
 	var f []key.Filter
-	for _, n := range []key.Name{key.NameUpArrow, key.NameDownArrow, key.NameHome, key.NameEnd} {
+	for _, n := range []key.Name{key.NameUpArrow, key.NameDownArrow, key.NameHome, key.NameEnd, key.NameLeftArrow,
+		key.NameRightArrow, key.NameF10} {
 		f = append(f, key.Filter{Name: n})
 	}
-	return append(f, key.Filter{Focus: menueKnopf, Name: key.NameSpace})
+	for _, t := range menueTitel {
+		f = append(f, key.Filter{Focus: t, Name: key.NameSpace})
+	}
+	return f
 }
 
 // passt meldet, ob das Ereignis zum Filter gehört: Name gleich, alle verlangten Umschalter gedrückt und keine

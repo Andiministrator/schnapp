@@ -109,14 +109,15 @@ func TestEnterWaehrendSpeichernAendertNichts(t *testing.T) {
 		"Menüeintrag Wiederholen": func(l *menueLauf) any {
 			return &l.e.menue.eintraege[l.index(aktWiederholen)]
 		},
-		"Leistenknopf Rückgängig bei offenem Menü": func(l *menueLauf) any { return &l.e.knoepfe.rueck },
-		"Leistenknopf Speichern bei offenem Menü":  func(l *menueLauf) any { return &l.e.knoepfe.speichern },
+		"Farbfeld bei offenem Menü":              func(l *menueLauf) any { return &l.e.knoepfe.farbe },
+		"Zoomfeld der Fußzeile bei offenem Menü": func(l *menueLauf) any { return &l.e.knoepfe.fussZoom },
 	}
 	for name, ziel := range faelle {
 		l := neuerMenueLauf(t, image.Pt(1200, 800))
 		n := zaehleSchliessen(l)
 		v := neuerSperrSpeicher()
 		l.e.speichern = v.speichern
+		l.zuMenue(aktRueckgaengig)
 		l.oeffneMitTaste()
 		z, abzug := l.e.s.SchliessenAnfrage()
 		if z != canvas.SchlussWarten || abzug == nil {

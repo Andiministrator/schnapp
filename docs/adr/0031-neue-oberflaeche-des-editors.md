@@ -68,8 +68,9 @@ selbst (wie schon das Menü nach ADR-0026).
 6. **Aktionen bleiben eine Liste:** Menüzeile, Werkzeugleiste, Fußzeile und Tasten führen dieselben `aktion`en über
    `editor.fuehreAus` aus. Der Test aus ADR-0026 Punkt 6 verlangt für jede Taste weiter einen Eintrag in einem Menü
    oder einen Knopf; er prüft jetzt alle Menüs der Zeile.
-7. **Fokusreihenfolge (Tab):** Menüzeile wird nur über F10 erreicht (wie in KDE), Tab läuft Werkzeugleiste → Leinwand →
-   rechte Leiste → Fußzeilenfelder. Fokusring 2 px orange wie bisher.
+7. **Fokus:** F10 öffnet die Menüzeile wie in KDE; die Menütitel sind zudem per Tab erreichbar (Gio-Knöpfe sind
+   fokussierbar), Enter und Leertaste öffnen dann das Menü wie der frühere Menüknopf (ADR-0026 Nachträge 2 und 3).
+   Fokusring 2 px orange, eckig.
 8. **Gestaltung:** eckig (Karte #186: kein Radius an Knöpfen, Feldern, Listen, Hinweisen), Farben aus dem Corporate
    Design, Grün für das aktive Werkzeug und die Hauptaktion, Orange nur als Akzent (Fokus, „ungesichert“, „s“).
    Schrift wie bisher (Go-Schriften bis zum Wechsel auf Open Sans, eigener Schritt). Kein Speichern-Knopf mehr in einer
@@ -90,3 +91,20 @@ selbst (wie schon das Menü nach ADR-0026).
 - Probe-Drehbücher mit festen Koordinaten brechen und werden nachgezogen (`knowledge/topics/lehren.md`: feste
   Koordinaten nach jeder Leistenänderung neu fahren).
 - ADR-0026 Punkte 1 und 3 sind durch Punkte 1 und 2 hier ersetzt.
+
+## Nachtrag 1 (23.11.2026): Schritt (a) umgesetzt
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #187).
+
+- Menüzeile mit „s“ (Maße aus `internal/icons/logo.go`, gegen `brand/logo/svg/schnapp-s-dunkel.svg` getestet), fünf
+  Menüs **Datei, Bearbeiten, Ansicht, Bild, Werkzeuge**; „Hilfe“ (Tastenkürzel, Über Schnapp) folgt mit Schritt (b),
+  weil es eine eigene Ansicht braucht. Der Eintrag „Kantenform“ nennt die aktuelle Form (F-425, Teil 2). Werkzeugleiste
+  links mit den Symbolen aus `internal/icons` (Karte #188, Muster noch nicht abgenommen; Änderungen dort wirken ohne
+  Umbau). Fußzeile mit Feldern aus `canvas.FussFelder`; das Farbfeld nimmt bis Schritt (b) die nächste Farbe, das
+  Zoomfeld wechselt zwischen Einpassen und 1:1 (statt einer Liste).
+- Reihenfolge im Bild: Menü vor Leisten ausgewertet, damit ein Menüeintrag, der das Speichern startet, Klicks auf
+  Leisten im selben Bild sperrt (F-280).
+- `canvas.LeisteAnordnen` (Umbruch der alten Leiste, F-148) ist entfallen.
+- Drehbücher mit festen Koordinaten der alten Leiste (`rueckfall-menue*.txt`, `rueckfall-leiste-schmal.txt` u. a.)
+  sind noch nicht nachgezogen; Sichtprobe des neuen Rahmens: `scripts/drehbuecher/oberflaeche-187.txt`.
+

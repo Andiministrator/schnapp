@@ -1,0 +1,35 @@
+# Sichtprobe ADR-0031 Schritt (a) (Karte #187): Menüzeile, Werkzeugleiste links, Fußzeile.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/oberflaeche-187.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen. Bei 1600 × 1000, Skala 1: Menüzeile 30 px hoch,
+# Werkzeugleiste 52 px breit (Knöpfe 40 px ab y = 38, Text bei y = 178–218), Fußzeile 30 px.
+warte 800
+foto 01-start
+zeiger 600 400
+warte 200
+foto 02-zeiger-ueber-bild
+zeiger 26 198
+warte 300
+foto 03-hinweis-text
+klick 26 198
+warte 200
+klick 600 400
+warte 300
+schreibe Hallo
+warte 200
+klick 900 700
+warte 300
+foto 04-text-gesetzt
+taste F10
+warte 300
+foto 05-f10-datei
+taste Rechts
+warte 300
+foto 06-bearbeiten
+taste Rechts
+taste Rechts
+taste Rechts
+warte 300
+foto 07-werkzeuge
+taste Esc
+warte 300
+foto 08-zu

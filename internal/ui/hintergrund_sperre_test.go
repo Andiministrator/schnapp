@@ -73,8 +73,8 @@ func (l *menueLauf) maus(kind pointer.Kind, p image.Point, tasten pointer.Button
 
 // bildPt rechnet Bildpixel (Zoom 1) in Fensterpixel um.
 func (l *menueLauf) bildPt(p image.Point) image.Point {
-	_, leiste := l.e.ordneLeiste(l.gtx(), l.e.leistenKnoepfe())
-	return p.Add(image.Pt(int(l.e.s.Abb.Versatz.X), int(l.e.s.Abb.Versatz.Y)+leiste))
+	f := leinwandFlaeche(l.gtx())
+	return p.Add(image.Pt(int(l.e.s.Abb.Versatz.X)+f.Min.X, int(l.e.s.Abb.Versatz.Y)+f.Min.Y))
 }
 
 func (l *menueLauf) zug(a, b image.Point) {
@@ -126,8 +126,7 @@ func TestSperreZeigerKnoepfeMenue(t *testing.T) {
 	sp := l.bildPt(image.Pt(10, 22))
 	l.r.Queue(pointer.Event{Kind: pointer.Scroll, Source: pointer.Mouse, Position: f32.Pt(float32(sp.X), float32(sp.Y)), Scroll: f32.Pt(0, 120)})
 	l.setle()
-	for _, c := range []interface{ Click() }{&l.e.knoepfe.rueck, &l.e.knoepfe.wieder, &l.e.knoepfe.ganz, &l.e.knoepfe.farbe,
-		&l.e.knoepfe.speichern, &l.e.knoepfe.export, &l.e.knoepfe.einpassen, &l.e.knoepfe.eins} {
+	for _, c := range []interface{ Click() }{&l.e.knoepfe.farbe, &l.e.knoepfe.fussFarbe, &l.e.knoepfe.fussZoom} {
 		c.Click()
 		l.setle()
 	}
@@ -135,7 +134,7 @@ func TestSperreZeigerKnoepfeMenue(t *testing.T) {
 		w.c.Click()
 		l.setle()
 	}
-	l.e.menue.knopf.Click()
+	l.titel().Click()
 	l.setle()
 	if l.e.menue.offen {
 		t.Error("Menü öffnet während des Speicherns")
@@ -246,7 +245,10 @@ func TestSchwaerzenSpeichernRueckgaengigUI(t *testing.T) {
 	close(v.frei)
 	l.warteBis(t, "Speichern", func() bool { return !l.e.s.SpeichernLaeuft() })
 	l.taste("Z", key.ModShortcut)
-	l.e.knoepfe.rueck.Click()
+	l.zuMenue(aktRueckgaengig) // Menüeintrag Rückgängig (ADR-0031: kein Leistenknopf mehr)
+	l.titel().Click()
+	l.setle()
+	l.e.menue.eintraege[l.index(aktRueckgaengig)].Click()
 	l.setle()
 	l.taste("Y", key.ModShortcut)
 	if l.e.s.D.OriginalBild().NRGBAAt(3, 3) != (color.NRGBA{A: 255}) || l.e.s.D.KannRueckgaengig() || l.e.s.Geaendert() {
@@ -267,7 +269,10 @@ func TestSpeichernUndFarbeImSelbenBild(t *testing.T) {
 		t.Fatal(err)
 	}
 	stand := l.e.s.D.Stand()
-	l.e.knoepfe.speichern.Click()
+	l.zuMenue(aktSpeichern) // Menüeintrag Speichern und Farbfeld im selben Bild (ADR-0031)
+	l.titel().Click()
+	l.setle()
+	l.e.menue.eintraege[l.index(aktSpeichern)].Click()
 	l.e.knoepfe.farbe.Click()
 	l.bild()
 	if !l.e.s.SpeichernLaeuft() {

@@ -552,7 +552,7 @@ msgstr ""
 msgid "KWin offers no screenshot interface. Schnapp needs KDE Plasma on Wayland."
 msgstr ""
 
-#: internal/ui/editor.go
+#: internal/i18n/formate_test.go
 msgctxt "status bar"
 msgid "%d × %d · %d%%"
 msgstr ""
@@ -798,38 +798,6 @@ msgid "Cut out"
 msgstr ""
 
 #: internal/ui/editor.go
-msgid "Color"
-msgstr ""
-
-#: internal/ui/editor.go internal/ui/menue.go
-msgid "Undo"
-msgstr ""
-
-#: internal/ui/editor.go internal/ui/menue.go
-msgid "Redo"
-msgstr ""
-
-#: internal/ui/editor.go internal/ui/menue.go
-msgid "Whole image"
-msgstr ""
-
-#: internal/ui/editor.go internal/ui/menue.go
-msgid "Fit"
-msgstr ""
-
-#: internal/ui/editor.go internal/ui/menue.go
-msgid "Export…"
-msgstr ""
-
-#: internal/ui/editor.go
-msgid "Menu"
-msgstr ""
-
-#: internal/ui/editor.go internal/ui/menue.go
-msgid "Save"
-msgstr ""
-
-#: internal/ui/editor.go
 msgid "File dialog is open."
 msgstr ""
 
@@ -910,30 +878,6 @@ msgid "Enter"
 msgstr ""
 
 #: internal/ui/menue.go
-msgid "Copy"
-msgstr ""
-
-#: internal/ui/menue.go
-msgid "Edit text"
-msgstr ""
-
-#: internal/ui/menue.go
-msgid "Delete"
-msgstr ""
-
-#: internal/ui/menue.go
-msgid "Restore cut-out areas"
-msgstr ""
-
-#: internal/ui/menue.go
-msgid "Seam style"
-msgstr ""
-
-#: internal/ui/menue.go
-msgid "Close"
-msgstr ""
-
-#: internal/ui/menue.go
 msgid "Seam style: wave"
 msgstr ""
 
@@ -943,6 +887,117 @@ msgstr ""
 
 #: internal/ui/menue.go
 msgid "Seam style: torn edge"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "File"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Edit"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "View"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Image"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Tools"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Save"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Export…"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Copy"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Close"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Undo"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Redo"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Edit text"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Delete"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Fit"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Whole image"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Restore cut-out areas"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Color"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgctxt "status bar"
+msgid "Selection %d × %d px"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgctxt "status bar"
+msgid "at %d, %d"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgctxt "status bar"
+msgid "#%02X%02X%02X · %d%%"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgctxt "status bar"
+msgid "%d px"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgctxt "status bar"
+msgid "Image %d × %d (cut out)"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgctxt "status bar"
+msgid "Image %d × %d"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgctxt "status bar"
+msgid "%d%%"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "unsaved"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "saved"
 msgstr ""
 
 #: internal/ui/overlay.go

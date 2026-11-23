@@ -3,6 +3,8 @@
 package icons
 
 import (
+	"math"
+	"os"
 	"strings"
 	"testing"
 )
@@ -58,5 +60,32 @@ func TestSVG(t *testing.T) {
 	}
 	if strings.Count(s, `fill="#F5A65B"`) != 1 || strings.Count(s, `fill="#ECEAE5"`) != 4 {
 		t.Errorf("Farben: %s", s)
+	}
+}
+
+// TestLogoSWieMarke: Pfad, Strich, viewBox und Auge des „s“ stimmen mit der Datei aus brand/werkzeug überein; die
+// Punktfolge beginnt und endet an den Enden des Pfads und läuft durch die äußersten Punkte der Bögen.
+func TestLogoSWieMarke(t *testing.T) {
+	b, err := os.ReadFile("../../brand/logo/svg/schnapp-s-dunkel.svg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	svg := string(b)
+	for _, teil := range []string{`viewBox="-16 84 108 132"`, `d="` + LogoSPfad + `"`, `stroke-width="22"`,
+		`<circle cx="30" cy="125" r="11"`, `<circle cx="34.0" cy="125" r="5.5"`} {
+		if !strings.Contains(svg, teil) {
+			t.Errorf("Logo-Datei enthält %q nicht", teil)
+		}
+	}
+	l := LogoSLinie(16)
+	if l[0] != (Punkt{76, 100}) || l[len(l)-1] != (Punkt{0, 200}) {
+		t.Errorf("Enden: %v … %v", l[0], l[len(l)-1])
+	}
+	minX, maxX := 1e9, -1e9
+	for _, p := range l {
+		minX, maxX = math.Min(minX, p.X), math.Max(maxX, p.X)
+	}
+	if math.Abs(minX) > 1e-9 || math.Abs(maxX-76) > 1e-9 {
+		t.Errorf("Bögen: x von %v bis %v, erwartet 0 bis 76", minX, maxX)
 	}
 }

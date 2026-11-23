@@ -5,6 +5,7 @@ package ui
 import (
 	"testing"
 
+	"gioui.org/io/event"
 	"gioui.org/io/key"
 )
 
@@ -17,13 +18,19 @@ func TestTastenfilterNurTabelleUndMenueNavigation(t *testing.T) {
 	for _, f := range tastenFilter(e.s.TextLaeuft()) {
 		tabelle[f] = true
 	}
-	// Genau diese fünf: Pfeile, Pos1, Ende ohne Tag, Leertaste am Menüknopf.
+	// Genau diese: Pfeile, Pos1, Ende, F10 ohne Tag, Leertaste an jedem Menütitel (ADR-0031 Punkt 1).
 	soll := map[key.Filter]bool{
 		{Name: key.NameUpArrow}: true, {Name: key.NameDownArrow}: true, {Name: key.NameHome}: true,
-		{Name: key.NameEnd}: true, {Focus: &e.menue.knopf, Name: key.NameSpace}: true,
+		{Name: key.NameEnd}: true, {Name: key.NameLeftArrow}: true, {Name: key.NameRightArrow}: true,
+		{Name: key.NameF10}: true,
+	}
+	var titel []event.Tag
+	for i := range e.menue.titel {
+		soll[key.Filter{Focus: &e.menue.titel[i], Name: key.NameSpace}] = true
+		titel = append(titel, &e.menue.titel[i])
 	}
 	nav := map[key.Filter]bool{}
-	for _, f := range menueNavigationsFilter(&e.menue.knopf) {
+	for _, f := range menueNavigationsFilter(titel...) {
 		if tabelle[f] {
 			t.Errorf("Navigation %q steht auch in der Tabelle", tastenName(f))
 		}

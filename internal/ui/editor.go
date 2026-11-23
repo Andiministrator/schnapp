@@ -201,7 +201,7 @@ type editor struct {
 	wache *canvas.Signalwache // nimmt Signale an (eigene Goroutine), Ereignisschleife fragt Angekommen
 	// wecker weckt die Ereignisschleife für Signal und Dateidialog, bis sie ein Ereignis bearbeitet (F-231).
 	wecker *canvas.Wecker
-	menue  menue // Menü der Leiste (ADR-0026)
+	menue  menue // Menüzeile (ADR-0031, Regeln aus ADR-0026)
 	// bilder zählt die gezeichneten Bilder (Diagnose mit SCHNAPP_DEBUG, Messung F-235).
 	bilder int
 	// zug sammelt die Bildzeiten des laufenden Zeigerzugs (nur mit SCHNAPP_DEBUG, F-250, internal/ui/bildzeit.go).
@@ -256,12 +256,16 @@ type editor struct {
 	speichernAufgegeben bool          // geschlossen ohne Antwort des Speicherns; beim Zerstören nicht mehr warten
 	weitereSignale      chan struct{} // jedes weitere Signal nach dem ersten (Wach-Goroutine), F-283
 
+	// knoepfe: Werkzeugleiste links, Farbfeld und die anklickbaren Felder der Fußzeile (ADR-0031). Alle übrigen
+	// Handlungen stehen in der Menüzeile.
 	knoepfe struct {
 		auswahl, pfeil, kasten, text, nummer, farbe  widget.Clickable
 		schwaerzen, verpixeln, zuschneiden, stauchen widget.Clickable
-		rueck, wieder, einpassen, eins, speichern    widget.Clickable
-		export, ganz                                 widget.Clickable
+		fussFarbe, fussZoom                          widget.Clickable
 	}
+	// zeigerBild ist der Zeigerort über der Leinwand in Ansichtskoordinaten des Bilds (nil: außerhalb), für die
+	// Fußzeile (ADR-0031 Punkt 4).
+	zeigerBild *document.Punkt
 
 	// Doppelklick erkennen (ADR-0021: Text bearbeiten): Zeit und Ort des letzten Drucks der linken Taste.
 	bildStand    uint64      // canvas.Sitzung.BildAenderung beim letzten bildNeu (Schwärzen ändert die Pixel)
@@ -1257,16 +1261,12 @@ func (e *editor) frame(gtx layout.Context) {
 	_ = e.speichernAbholen() // ebenso die Antwort des Speicherns und des Kopierens (ADR-0020 Nachtrag 6)
 	e.kopierenAbholen(gtx)
 	e.tasten(gtx)
-	e.knoepfeAuswerten(gtx)
+	// Menü zuerst: Startet ein Eintrag das Speichern, wirken Klicks auf Leisten im selben Bild nicht mehr (F-280).
 	e.menueAuswerten(gtx)
+	e.knoepfeAuswerten(gtx)
+	e.fussAuswerten(gtx)
 	paint.Fill(gtx.Ops, farbeFenster)
-	knoepfe := e.leistenKnoepfe()
-	pos, leiste := e.ordneLeiste(gtx, knoepfe) // Höhe folgt dem Umbruch (F-148), nie eine feste Größe
-	status := gtx.Dp(28)
-	flaeche := image.Rect(0, leiste, gtx.Constraints.Max.X, gtx.Constraints.Max.Y-status)
-	if flaeche.Dy() < 1 {
-		flaeche.Max.Y = flaeche.Min.Y + 1
-	}
+	flaeche := leinwandFlaeche(gtx) // zwischen Menüzeile, Werkzeugleiste und Fußzeile (ADR-0031)
 
 	// Leinwand: eigener Ursprung, damit Zeigerpositionen schon Leinwandkoordinaten sind.
 	t := op.Offset(flaeche.Min).Push(gtx.Ops)
@@ -1275,10 +1275,10 @@ func (e *editor) frame(gtx layout.Context) {
 	e.leinwand(g)
 	t.Pop()
 
-	menueRechts := e.zeichneLeiste(gtx, knoepfe, pos, leiste)
-	e.zeichneStatus(gtx, status)
-	e.zeichneWerkzeugHinweis(gtx, knoepfe, pos)
-	e.zeichneMenue(gtx, menueRechts, gtx.Dp(10)+gtx.Dp(36)+gtx.Dp(4)) // über allem, unter dem Menüknopf
+	e.zeichneMenuezeile(gtx)
+	e.zeichneWerkzeugleiste(gtx)
+	e.zeichneFusszeile(gtx)
+	e.zeichneMenue(gtx) // über allem, unter dem Titel des offenen Menüs
 }
 
 // --- Leinwand ---
@@ -1406,7 +1406,7 @@ func (e *editor) zeiger(gtx layout.Context) {
 	for {
 		ev, ok := gtx.Event(pointer.Filter{
 			Target:  e,
-			Kinds:   pointer.Press | pointer.Drag | pointer.Release | pointer.Cancel | pointer.Scroll,
+			Kinds:   pointer.Press | pointer.Drag | pointer.Release | pointer.Cancel | pointer.Scroll | pointer.Move | pointer.Leave,
 			ScrollY: pointer.ScrollRange{Min: -1e6, Max: 1e6},
 		})
 		if !ok {
@@ -1417,6 +1417,16 @@ func (e *editor) zeiger(gtx layout.Context) {
 		// Gemessen (F-235, 4K-Aufnahme auf 4K-Probebildschirm, 1209 Zeigerereignisse): mit und ohne Folgebild bei Drag
 		// gleich viele Bilder (788 gegen 782) und gleiche Bildzeit; Gio fasst die Anforderungen zusammen. Bleibt so.
 		pe, ok := ev.(pointer.Event)
+		if ok && (pe.Kind == pointer.Move || pe.Kind == pointer.Leave) {
+			// Nur der Zeigerort der Fußzeile; ein Folgebild nur, wenn sich das angezeigte Pixel ändert.
+			if e.merkeZeiger(pe) {
+				gtx.Execute(op.InvalidateCmd{})
+			}
+			continue
+		}
+		if ok {
+			e.merkeZeiger(pe)
+		}
 		if !(probeOhneFolgebildBeiZug && ok && pe.Kind == pointer.Drag) {
 			gtx.Execute(op.InvalidateCmd{})
 		}
@@ -1474,6 +1484,19 @@ func (e *editor) zeiger(gtx layout.Context) {
 			e.s.Scrollen(p, dy)
 		}
 	}
+}
+
+// merkeZeiger hält den Zeigerort in Ansichtskoordinaten für die Fußzeile fest und meldet, ob sich das angezeigte
+// Pixel geändert hat.
+func (e *editor) merkeZeiger(pe pointer.Event) bool {
+	alt := e.zeigerBild
+	if pe.Kind == pointer.Leave {
+		e.zeigerBild = nil
+		return alt != nil
+	}
+	p := e.s.Abb.ZuAnsicht(document.Pt(float64(pe.Position.X), float64(pe.Position.Y)))
+	e.zeigerBild = &p
+	return alt == nil || int(alt.X) != int(p.X) || int(alt.Y) != int(p.Y)
 }
 
 // zeichneObjekte zeichnet in Ansichtskoordinaten (die Affine-Abbildung liegt schon auf dem Stapel). Schrift in
@@ -1703,7 +1726,11 @@ func (e *editor) alleTastenFilter() []event.Filter {
 		filter = append(filter, f)
 	}
 	filter = append(filter, key.FocusFilter{Target: e})
-	for _, f := range menueNavigationsFilter(&e.menue.knopf) {
+	var titel []event.Tag
+	for i := range e.menue.titel {
+		titel = append(titel, &e.menue.titel[i])
+	}
+	for _, f := range menueNavigationsFilter(titel...) {
 		filter = append(filter, f)
 	}
 	return filter
@@ -1754,9 +1781,17 @@ func (e *editor) tasten(gtx layout.Context) {
 		if !ok || k.State != key.Press {
 			continue
 		}
-		if k.Name == key.NameSpace { // nur am Menüknopf angemeldet; wirkt wie Enter
-			if gtx.Focused(&e.menue.knopf) {
-				e.menueUmschalten(true)
+		if k.Name == key.NameSpace { // nur an den Menütiteln angemeldet; wirkt wie Enter
+			if i := e.menueTitelFokus(gtx); i >= 0 {
+				e.menueOeffne(i, true)
+			}
+			continue
+		}
+		if k.Name == key.NameF10 { // öffnet das erste Menü bzw. schließt das offene (ADR-0031 Punkt 1)
+			if e.menue.offen {
+				e.menueSchliesse(gtx, false)
+			} else {
+				e.menueOeffne(menueDatei, true)
 			}
 			continue
 		}
@@ -1772,6 +1807,10 @@ func (e *editor) tasten(gtx layout.Context) {
 				e.menueSchliesse(gtx, e.menue.perTasteOffen && !e.s.TextLaeuft())
 			case key.NameUpArrow, key.NameDownArrow, key.NameHome, key.NameEnd:
 				e.menueTaste(gtx, k.Name)
+			case key.NameLeftArrow:
+				e.menueWechsel(-1)
+			case key.NameRightArrow:
+				e.menueWechsel(1)
 			case key.NameReturn, key.NameEnter:
 				if c := e.fokussierterKnopf(gtx); c != nil {
 					e.knopfPerTaste(c)
@@ -1818,8 +1857,10 @@ func (e *editor) tasten(gtx layout.Context) {
 // fokussierterKnopf liefert den Knopf der Leiste, der gerade den Tastaturfokus hat (nil: keiner).
 func (e *editor) fokussierterKnopf(gtx layout.Context) *widget.Clickable {
 	k := &e.knoepfe
-	alle := []*widget.Clickable{&k.rueck, &k.wieder, &k.ganz, &k.einpassen, &k.eins, &k.export, &k.speichern, &k.farbe,
-		&e.menue.knopf}
+	alle := []*widget.Clickable{&k.farbe, &k.fussFarbe, &k.fussZoom}
+	for i := range e.menue.titel {
+		alle = append(alle, &e.menue.titel[i])
+	}
 	if e.menue.offen {
 		for i := range e.menueEintraege() {
 			alle = append(alle, &e.menue.eintraege[i])
@@ -1856,27 +1897,6 @@ func (e *editor) knoepfeAuswerten(gtx layout.Context) {
 	// ausgewertet), an verwirft sie. an fragt je Klick neu: Liegen mehrere Klicks in einem Bild und startet einer das
 	// Speichern, wirken die folgenden nicht mehr (F-280; canvas sperrt zusätzlich).
 	an := func() bool { return !e.s.SpeichernLaeuft() }
-	if k.rueck.Clicked(gtx) && an() {
-		e.rueckgaengig()
-	}
-	if k.wieder.Clicked(gtx) && an() {
-		e.wiederholen()
-	}
-	if k.einpassen.Clicked(gtx) && an() {
-		e.s.Einpassen()
-	}
-	if k.ganz.Clicked(gtx) && an() {
-		e.fuehreAus(gtx, aktGanzesBild, true)
-	}
-	if k.eins.Clicked(gtx) && an() {
-		e.s.EinsZuEins()
-	}
-	if k.export.Clicked(gtx) && an() {
-		e.fuehreAus(gtx, aktExport, true) // wie Speichern: ein laufender Text kommt mit
-	}
-	if k.speichern.Clicked(gtx) && an() {
-		e.speichernJetzt()
-	}
 	for _, w := range e.werkzeugKnoepfe() {
 		if w.c.Clicked(gtx) && an() {
 			e.s.SetzeWerkzeug(w.w)
@@ -1907,191 +1927,6 @@ func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
 		{&k.verpixeln, canvas.WerkzeugVerpixeln, i18n.T("Pixelate")},
 		{&k.zuschneiden, canvas.WerkzeugZuschneiden, i18n.T("Crop")},
 		{&k.stauchen, canvas.WerkzeugStauchen, i18n.T("Cut out")},
-	}
-}
-
-type knopfArt int
-
-const (
-	knopfNormal knopfArt = iota
-	knopfAktiv           // aktives Werkzeug: grüner Rand, grüner Text
-	knopfHaupt           // Hauptaktion: grüne Fläche
-)
-
-// leistenKnopf ist ein Eintrag der Werkzeugleiste links von „Speichern“.
-type leistenKnopf struct {
-	c      *widget.Clickable
-	text   string
-	art    knopfArt
-	an     bool
-	muster color.NRGBA // Farbfeld vor dem Text (A = 0: keins)
-	gruppe bool        // beginnt eine neue Gruppe (zusätzlicher Abstand)
-}
-
-// leistenKnoepfe liefert die Knöpfe der Leiste in Reihenfolge.
-func (e *editor) leistenKnoepfe() []leistenKnopf {
-	k := &e.knoepfe
-	var links []leistenKnopf
-	for _, w := range e.werkzeugKnoepfe() {
-		art := knopfNormal
-		if e.s.Werkzeug == w.w {
-			art = knopfAktiv
-		}
-		links = append(links, leistenKnopf{c: w.c, text: w.text, art: art, an: true})
-	}
-	// Gruppen: Werkzeuge | Farbe | Verlauf | Ansicht. Während der Texteingabe sperrt der Zug den Verlauf (F-18).
-	return append(links,
-		leistenKnopf{c: &k.farbe, text: i18n.T("Color"), an: true, muster: e.s.Stil.Farbe, gruppe: true},
-		leistenKnopf{c: &k.rueck, text: i18n.T("Undo"), an: e.s.D.KannRueckgaengig(), gruppe: true},
-		leistenKnopf{c: &k.wieder, text: i18n.T("Redo"), an: e.s.D.KannWiederholen()},
-		leistenKnopf{c: &k.ganz, text: i18n.T("Whole image"), an: e.s.KannGanzesBild(), gruppe: true},
-		leistenKnopf{c: &k.einpassen, text: i18n.T("Fit"), an: true, gruppe: true},
-		leistenKnopf{c: &k.eins, text: "1:1", an: true},
-		leistenKnopf{c: &k.export, text: i18n.T("Export…"), an: !e.exportOffen, gruppe: true},
-	)
-}
-
-// messeKnopf liefert die Breite eines Knopfs, ohne etwas zu zeichnen. Der Knopf wird in einen Makro aufgenommen, der
-// nie abgespielt wird, und zwar als nicht bedienbarer (an = false): So legt die Messung weder Klickflächen an noch
-// verbraucht sie Ereignisse des Clickable, die das echte Zeichnen danach noch braucht. Die Breite hängt nur von Text
-// und Farbfeld ab, nicht von an oder art. Zwei Durchgänge mit echtem Zeichnen hätten die Ereignisse doppelt gelesen.
-func (e *editor) messeKnopf(gtx layout.Context, c *widget.Clickable, text string, muster color.NRGBA) int {
-	m := op.Record(gtx.Ops)
-	w := e.knopf(gtx, c, text, knopfNormal, false, image.Point{}, muster)
-	m.Stop()
-	return w
-}
-
-// ordneLeiste misst die Knöpfe und bricht sie um, wenn sie nicht neben „Speichern“ passen (F-148). Liefert die Ecken
-// und die Höhe der Leiste in Pixeln; die Leinwand beginnt darunter.
-func (e *editor) ordneLeiste(gtx layout.Context, links []leistenKnopf) ([]image.Point, int) {
-	kn := make([]canvas.LeistenKnopf, len(links))
-	for i, l := range links {
-		kn[i] = canvas.LeistenKnopf{Breite: e.messeKnopf(gtx, l.c, l.text, l.muster), Gruppe: l.gruppe}
-	}
-	m := canvas.LeistenMass{RandX: gtx.Dp(12), RandY: gtx.Dp(10), Abstand: gtx.Dp(8), KnopfHoehe: gtx.Dp(36),
-		Speichern: e.rechterBlock(gtx), Breite: gtx.Constraints.Max.X}
-	pos, hoehe, _ := canvas.LeisteAnordnen(kn, m)
-	return pos, hoehe
-}
-
-// rechterBlock ist die Breite rechts in der ersten Zeile: „Menü“, Abstand, „Speichern“ (ADR-0026 Punkt 1).
-func (e *editor) rechterBlock(gtx layout.Context) int {
-	return e.messeKnopf(gtx, &e.menue.knopf, i18n.T("Menu"), color.NRGBA{}) + gtx.Dp(8) +
-		e.messeKnopf(gtx, &e.knoepfe.speichern, i18n.T("Save"), color.NRGBA{})
-}
-
-// zeichneLeiste zeichnet die Leiste und liefert die rechte Kante des Menüknopfs (dort schließt die Liste an).
-func (e *editor) zeichneLeiste(gtx layout.Context, links []leistenKnopf, pos []image.Point, hoehe int) int {
-	breite := gtx.Constraints.Max.X
-	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(image.Rect(0, 0, breite, hoehe)).Op())
-	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(image.Rect(0, hoehe-gtx.Dp(1), breite, hoehe)).Op())
-	for i, kn := range links {
-		e.knopf(gtx, kn.c, kn.text, kn.art, kn.an, pos[i], kn.muster)
-	}
-	// Speichern rechts in der ersten Zeile.
-	m := op.Record(gtx.Ops)
-	w := e.knopf(gtx, &e.knoepfe.speichern, i18n.T("Save"), knopfHaupt, true, image.Point{}, color.NRGBA{})
-	call := m.Stop()
-	t := op.Offset(image.Pt(breite-gtx.Dp(12)-w, gtx.Dp(10))).Push(gtx.Ops)
-	call.Add(gtx.Ops)
-	t.Pop()
-	// „Menü“ links neben „Speichern“; offen wie ein aktives Werkzeug hervorgehoben.
-	art := knopfNormal
-	if e.menue.offen {
-		art = knopfAktiv
-	}
-	rechts := breite - gtx.Dp(12) - w - gtx.Dp(8)
-	mb := e.messeKnopf(gtx, &e.menue.knopf, i18n.T("Menu"), color.NRGBA{})
-	e.knopf(gtx, &e.menue.knopf, i18n.T("Menu"), art, true, image.Pt(rechts-mb, gtx.Dp(10)), color.NRGBA{})
-	return rechts
-}
-
-// knopf zeichnet eine Schaltfläche (Radius 6, Höhe 36 dp) bei ecke und liefert ihre Breite. Ein muster mit A > 0
-// erscheint als rundes Farbfeld vor dem Text (Knopf „Farbe“; der Text nennt die Handlung, die Farbe ist nicht das
-// einzige Merkmal, Corporate Design §3).
-func (e *editor) knopf(gtx layout.Context, c *widget.Clickable, s string, art knopfArt, an bool, ecke image.Point,
-	muster color.NRGBA) int {
-	lbl := material.Label(e.thema, unit.Sp(14), s)
-	lbl.Color = farbeText
-	switch {
-	case !an:
-		lbl.Color = farbeNebentext
-	case art == knopfAktiv:
-		lbl.Color = farbeGruenText
-	case art == knopfHaupt:
-		lbl.Color = farbeGrund
-	}
-	g := gtx
-	g.Constraints.Min = image.Point{}
-	m := op.Record(gtx.Ops)
-	dims := lbl.Layout(g)
-	textCall := m.Stop()
-	innen := image.Pt(gtx.Dp(14), (gtx.Dp(36)-dims.Size.Y)/2)
-	groesse := image.Pt(dims.Size.X+2*innen.X, gtx.Dp(36))
-	feld := 0 // Breite des Farbfelds samt Abstand
-	if muster.A > 0 {
-		feld = gtx.Dp(16 + 8)
-		groesse.X += feld
-	}
-
-	t := op.Offset(ecke).Push(gtx.Ops)
-	r := image.Rectangle{Max: groesse}
-	rr := clip.UniformRRect(r, gtx.Dp(6))
-	switch {
-	case art == knopfHaupt && an:
-		paint.FillShape(gtx.Ops, farbeAuswahl, rr.Op(gtx.Ops))
-	default:
-		paint.FillShape(gtx.Ops, farbeGrund, rr.Op(gtx.Ops))
-		rand := farbeLinie
-		if art == knopfAktiv {
-			rand = farbeAuswahl
-		}
-		paint.FillShape(gtx.Ops, rand, clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
-	}
-	if gtx.Focused(c) { // 2 px Ring mit 2 px Abstand zur Randlinie (corporate-design.md §6; gemessen, ADR-0026 Nachtrag 3)
-		paint.FillShape(gtx.Ops, farbeAkzent, clip.Stroke{Path: clip.UniformRRect(r.Inset(-gtx.Dp(4)), gtx.Dp(8)).Path(gtx.Ops),
-			Width: float32(gtx.Dp(2))}.Op())
-	}
-	if feld > 0 {
-		d := gtx.Dp(16)
-		oy := (groesse.Y - d) / 2
-		kr := image.Rect(innen.X, oy, innen.X+d, oy+d)
-		paint.FillShape(gtx.Ops, muster, clip.Ellipse(kr).Op(gtx.Ops))
-		paint.FillShape(gtx.Ops, farbeText, clip.Stroke{Path: clip.Ellipse(kr).Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
-	}
-	tt := op.Offset(innen.Add(image.Pt(feld, 0))).Push(gtx.Ops)
-	textCall.Add(gtx.Ops)
-	tt.Pop()
-	if an {
-		g.Constraints = layout.Exact(groesse)
-		c.Layout(g, func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: groesse} })
-		pointer.CursorPointer.Add(gtx.Ops)
-	}
-	t.Pop()
-	return groesse.X
-}
-
-func (e *editor) zeichneStatus(gtx layout.Context, hoehe int) {
-	mx := gtx.Constraints.Max
-	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(image.Rect(0, mx.Y-hoehe, mx.X, mx.Y)).Op())
-	g := e.s.D.Groesse()
-	// Zahlenformat je Sprache über den Katalog (ADR-0014 Nachtrag 2): englisch „100%“, deutsch „100 %“.
-	rechts := fmt.Sprintf(i18n.TK("status bar", "%d × %d · %d%%"), g.X, g.Y, int(math.Round(e.s.Abb.Zoom*100)))
-	rb := e.statusText(gtx, rechts, farbeNebentext, mx.Y-hoehe, false, mx.X)
-	// Eine frische Meldung geht vor dem Bedienhinweis des Werkzeugs, danach zeigt die Leiste wieder den Hinweis (F-151).
-	links, fehler, meldung := canvas.StatusZeile(&e.meldung, e.s.D.Stand(), e.s.Werkzeug, e.hinweis(), e.s.TextLaeuft())
-	c := farbeNebentext
-	switch {
-	case fehler:
-		c = color.NRGBA{R: 0xE6, G: 0x78, B: 0x73, A: 0xFF} // rot-500
-	case meldung:
-		c = farbeGruenText
-	}
-	if links != "" {
-		// Links bleibt Platz bis vor die Größenangabe; ein längerer Hinweis wird im schmalen Fenster gekürzt, statt
-		// über die Größenangabe zu laufen (Echtlauf #92).
-		e.statusText(gtx, links, c, mx.Y-hoehe, true, mx.X-rb-gtx.Dp(36))
 	}
 }
 
@@ -2127,26 +1962,4 @@ func (e *editor) hinweis() string {
 		return i18n.T("Drag across the part to cut out: vertically for rows, horizontally for columns. Double-click a seam to restore it. Cut-out parts stay in the working file; redact what must go.")
 	}
 	return ""
-}
-
-// statusText schreibt s einzeilig in die Statusleiste (links oder rechtsbündig), höchstens breite Pixel breit, und
-// liefert die gezeichnete Breite.
-func (e *editor) statusText(gtx layout.Context, s string, c color.NRGBA, y int, links bool, breite int) int {
-	lbl := material.Label(e.thema, unit.Sp(12), s)
-	lbl.Color = c
-	lbl.MaxLines = 1 // kürzt mit „…“, wenn breite nicht reicht
-	g := gtx
-	g.Constraints.Min = image.Point{}
-	g.Constraints.Max.X = max(0, breite)
-	m := op.Record(gtx.Ops)
-	dims := lbl.Layout(g)
-	call := m.Stop()
-	x := gtx.Dp(12)
-	if !links {
-		x = gtx.Constraints.Max.X - gtx.Dp(12) - dims.Size.X
-	}
-	t := op.Offset(image.Pt(x, y+(gtx.Dp(28)-dims.Size.Y)/2)).Push(gtx.Ops)
-	call.Add(gtx.Ops)
-	t.Pop()
-	return dims.Size.X
 }

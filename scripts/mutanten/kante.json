@@ -22,10 +22,10 @@
   },
   {
     "name": "KB2 F-420 Menüeintrag Kantenform immer an",
-    "datei": "internal/ui/menue.go",
+    "datei": "internal/ui/oberflaeche.go",
     "paket": "./internal/ui",
-    "alt": "text: i18n.T(\"Seam style\"), an: s.KannKanteWechseln()}",
-    "neu": "text: i18n.T(\"Seam style\"), an: true}"
+    "alt": "{akt: aktKantenform, text: kantenMeldung(s.D.Kante()), an: s.KannKanteWechseln(), gruppe: true},",
+    "neu": "{akt: aktKantenform, text: kantenMeldung(s.D.Kante()), an: true, gruppe: true},"
   },
   {
     "name": "KB3 F-420 WechsleKante ohne merkeAenderung",
