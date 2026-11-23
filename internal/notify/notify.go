@@ -18,6 +18,8 @@ const (
 	dienst  = "org.freedesktop.Notifications"
 	pfad    = "/org/freedesktop/Notifications"
 	methode = dienst + ".Notify"
+	// schliessen nimmt einen Hinweis zurück (F-490: sonst steht er in der nächsten Aufnahme).
+	schliessen = dienst + ".CloseNotification"
 	// Anzeigedauer in Millisekunden; der Server darf sie verkürzen.
 	dauer int32 = 8000
 	// frist begrenzt den Aufruf: Ein hängender Benachrichtigungsdienst darf die Aufnahme nicht ewig halten.
@@ -27,11 +29,13 @@ const (
 // ErrKeineKennung: Der Dienst hat geantwortet, aber ohne gültige Kennung — als gescheitert gewertet.
 var ErrKeineKennung = errors.New("notify: Antwort ohne Kennung")
 
-// rufe ist die Naht für Tests: führt Notify aus und liefert den Antwortkörper. nil = echter Session-Bus.
-var rufe func(ctx context.Context, args []any) ([]any, error)
+// rufe ist die Naht für Tests: führt die Methode des Dienstes aus und liefert den Antwortkörper. nil = echter
+// Session-Bus.
+var rufe func(ctx context.Context, methode string, args []any) ([]any, error)
 
-// Zeige schickt eine Benachrichtigung mit Titel und Text. Der Absendername ist „Schnapp“, das Symbol `schnapp`.
-func Zeige(ctx context.Context, titel, text string) (fehler error) {
+// Zeige schickt eine Benachrichtigung mit Titel und Text und liefert ihre Kennung (für Schliesse). Der Absendername
+// ist „Schnapp“, das Symbol `schnapp`.
+func Zeige(ctx context.Context, titel, text string) (id uint32, fehler error) {
 	defer errprefix.Defer("notify", &fehler)
 	ctx, ende := context.WithTimeout(ctx, frist)
 	defer ende()
@@ -41,31 +45,44 @@ func Zeige(ctx context.Context, titel, text string) (fehler error) {
 		"urgency":       dbus.MakeVariant(byte(2)),
 		"desktop-entry": dbus.MakeVariant("schnapp"),
 	}, dauer}
-	var body []any
-	var err error
-	if rufe != nil {
-		body, err = rufe(ctx, args)
-	} else {
-		body, err = echt(ctx, args)
-	}
+	body, err := ruf(ctx, methode, args)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if len(body) != 1 {
-		return ErrKeineKennung
+		return 0, ErrKeineKennung
 	}
-	if id, ok := body[0].(uint32); !ok || id == 0 {
-		return ErrKeineKennung
+	id, ok := body[0].(uint32)
+	if !ok || id == 0 {
+		return 0, ErrKeineKennung
 	}
-	return nil
+	return id, nil
 }
 
-func echt(ctx context.Context, args []any) ([]any, error) {
+// Schliesse nimmt den Hinweis mit der Kennung id zurück (CloseNotification). Der MCP-Server ruft es vor der nächsten
+// Aufnahme, damit der vorige Hinweis nicht im Bild steht (F-490); ein schon geschlossener Hinweis ist kein Fehler des
+// Dienstes.
+func Schliesse(ctx context.Context, id uint32) (fehler error) {
+	defer errprefix.Defer("notify", &fehler)
+	ctx, ende := context.WithTimeout(ctx, frist)
+	defer ende()
+	_, err := ruf(ctx, schliessen, []any{id})
+	return err
+}
+
+func ruf(ctx context.Context, m string, args []any) ([]any, error) {
+	if rufe != nil {
+		return rufe(ctx, m, args)
+	}
+	return echt(ctx, m, args)
+}
+
+func echt(ctx context.Context, m string, args []any) ([]any, error) {
 	c, err := dbus.ConnectSessionBus() // eigene Verbindung, danach geschlossen
 	if err != nil {
 		return nil, err
 	}
 	defer c.Close()
-	call := c.Object(dienst, pfad).CallWithContext(ctx, methode, 0, args...)
+	call := c.Object(dienst, pfad).CallWithContext(ctx, m, 0, args...)
 	return call.Body, call.Err
 }

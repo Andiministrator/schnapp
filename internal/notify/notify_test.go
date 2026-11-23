@@ -11,10 +11,17 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
+// mitAttrappe setzt f für Notify ein; andere Methoden scheitern im Test.
 func mitAttrappe(t *testing.T, f func(ctx context.Context, args []any) ([]any, error)) {
 	t.Helper()
 	alt := rufe
-	rufe = f
+	rufe = func(ctx context.Context, m string, args []any) ([]any, error) {
+		if m != methode {
+			t.Errorf("unerwartete Methode %s", m)
+			return nil, errors.New("unerwartet")
+		}
+		return f(ctx, args)
+	}
 	t.Cleanup(func() { rufe = alt })
 }
 
@@ -24,8 +31,8 @@ func TestZeigeSchicktTitelUndText(t *testing.T) {
 		gesehen = args
 		return []any{uint32(42)}, nil
 	})
-	if err := Zeige(context.Background(), "Titel", "Text"); err != nil {
-		t.Fatal(err)
+	if id, err := Zeige(context.Background(), "Titel", "Text"); err != nil || id != 42 {
+		t.Fatalf("Kennung %d, Fehler %v", id, err)
 	}
 	if len(gesehen) != 8 || gesehen[0] != "Schnapp" || gesehen[3] != "Titel" || gesehen[4] != "Text" {
 		t.Errorf("Argumente: %v", gesehen)
@@ -56,7 +63,7 @@ func TestZeigeMeldetJedenFehler(t *testing.T) {
 		"Kennung 0":    func() ([]any, error) { return []any{uint32(0)}, nil },
 	} {
 		mitAttrappe(t, func(context.Context, []any) ([]any, error) { return antwort() })
-		err := Zeige(context.Background(), "a", "b")
+		_, err := Zeige(context.Background(), "a", "b")
 		if err == nil {
 			t.Errorf("%s: kein Fehler", name)
 			continue
@@ -75,7 +82,33 @@ func TestZeigeHatFrist(t *testing.T) {
 		}
 		return []any{uint32(1)}, nil
 	})
-	if err := Zeige(context.Background(), "a", "b"); err != nil {
+	if _, err := Zeige(context.Background(), "a", "b"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestSchliesseRuftCloseNotification (F-490): Schliesse schickt CloseNotification mit der Kennung, mit Frist; ein
+// Fehler des Busses kommt mit Präfix zurück.
+func TestSchliesseRuftCloseNotification(t *testing.T) {
+	alt := rufe
+	t.Cleanup(func() { rufe = alt })
+	var m string
+	var args []any
+	rufe = func(ctx context.Context, methode string, a []any) ([]any, error) {
+		if _, ok := ctx.Deadline(); !ok {
+			t.Error("Kontext ohne Frist")
+		}
+		m, args = methode, a
+		return nil, nil
+	}
+	if err := Schliesse(context.Background(), 42); err != nil {
+		t.Fatal(err)
+	}
+	if m != "org.freedesktop.Notifications.CloseNotification" || len(args) != 1 || args[0] != uint32(42) {
+		t.Errorf("Aufruf %s %v", m, args)
+	}
+	rufe = func(context.Context, string, []any) ([]any, error) { return nil, errors.New("kein Dienst") }
+	if err := Schliesse(context.Background(), 42); err == nil || !strings.HasPrefix(err.Error(), "notify: ") {
+		t.Errorf("Busfehler: %v", err)
 	}
 }

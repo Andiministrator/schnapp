@@ -35,6 +35,15 @@ func (d *dienst) Notify(app string, ersetzt uint32, symbol, titel, text string, 
 	return d.n, nil
 }
 
+// CloseNotification nimmt einen Hinweis zurück (Spezifikation: u → nichts); protokolliert wie Notify (F-490).
+func (d *dienst) CloseNotification(id uint32) *dbus.Error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	fmt.Fprintf(d.datei, "close id=%d\n", id)
+	_ = d.datei.Sync()
+	return nil
+}
+
 func (d *dienst) GetCapabilities() ([]string, *dbus.Error) { return []string{"body"}, nil }
 
 func (d *dienst) GetServerInformation() (string, string, string, string, *dbus.Error) {

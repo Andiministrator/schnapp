@@ -8,7 +8,7 @@
 # Erwartet (das Skript prüft es selbst, OK/FEHL):
 #   A neue Form (2026-07-28): server/discover, tools/list mit sechs Werkzeugen, list_screens, capture_screen ohne Ziel
 #     (Bibliothek, agents/), capture_screen all mit output (Datei 0600, nicht in der Bibliothek), library_search;
-#     Benachrichtigung je Aufnahme; danach in derselben Sitzung capture = no → abgelehnt (Widerruf wirkt sofort).
+#     Benachrichtigung je Aufnahme, vor der zweiten wird die erste geschlossen (F-490); danach in derselben Sitzung capture = no → abgelehnt (Widerruf wirkt sofort).
 #   B library_read und export auf die Aufnahme aus A; Altform mit initialize.
 #   C ohne Benachrichtigungsdienst: Aufnahme verworfen, Bibliothek unverändert.
 #   D mit confirm = yes: Dialog erscheint (Foto), Esc lehnt ab, nichts aufgenommen.
@@ -98,6 +98,8 @@ enthaelt "A library_search nennt die Aufnahme" "$probe/mcp/a.out" "$pfad"
 urteil "A Widerruf wirkt sofort" "$probe/mcp/a.out" 7 true 'capture = yes'
 pruefe "A zwei Benachrichtigungen" "$(grep -c '^notify' "$notify_log")" 2
 enthaelt "A Benachrichtigung von Schnapp" "$notify_log" 'notify app="Schnapp"'
+# F-490 (ADR-0030 Nachtrag 7): vor der zweiten Aufnahme schließt der Server den ersten Hinweis über den Bus.
+enthaelt "A voriger Hinweis geschlossen" "$notify_log" "close id=1"
 fehlt "A stdout nur Protokoll" "$probe/mcp/a.out" "schnapp mcp:"
 
 echo "== B: library_read, export, Altform"

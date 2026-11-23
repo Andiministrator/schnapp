@@ -24,8 +24,8 @@
     "name": "M4 Hinweis gescheitert, Bild trotzdem abgelegt",
     "datei": "cmd/schnapp/mcp.go",
     "paket": "./cmd/schnapp",
-    "alt": "\tif err := an.melde(ctx, i18n.T(\"Schnapp captured the screen for an agent\"), a.zielText()); err != nil {",
-    "neu": "\tif err := an.melde(ctx, i18n.T(\"Schnapp captured the screen for an agent\"), a.zielText()); false && err != nil {"
+    "alt": "\tid, err := an.melde(ctx, i18n.T(\"Schnapp captured the screen for an agent\"), a.zielText())\n\tif err != nil {",
+    "neu": "\tid, err := an.melde(ctx, i18n.T(\"Schnapp captured the screen for an agent\"), a.zielText())\n\tif false && err != nil {"
   },
   {
     "name": "M5 Bibliothek lesen ohne Einwilligung",
@@ -115,8 +115,8 @@
     "name": "M17 Benachrichtigung mit Kennung 0 gilt",
     "datei": "internal/notify/notify.go",
     "paket": "./internal/notify",
-    "alt": "if id, ok := body[0].(uint32); !ok || id == 0 {",
-    "neu": "if _, ok := body[0].(uint32); !ok {"
+    "alt": "\tif !ok || id == 0 {\n\t\treturn 0, ErrKeineKennung",
+    "neu": "\tif !ok {\n\t\treturn 0, ErrKeineKennung"
   },
   {
     "name": "M18 Suche blendet Agenten nie aus",
@@ -503,5 +503,33 @@
     "paket": "./cmd/schnapp",
     "alt": "\tif w > 0 && (w == k || elternVon(k) == w) {",
     "neu": "\tif w == k || elternVon(k) == w {"
+  },
+  {
+    "name": "H490-1 voriger Hinweis wird nicht geschlossen (F-490)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif err := an.vorigenHinweisSchliessen(ctx); err != nil {",
+    "neu": "\tif err := error(nil); err != nil {"
+  },
+  {
+    "name": "H490-2 Kennung des Hinweises nicht gemerkt (F-490)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t*an.hinweis = id\n",
+    "neu": "\t\t_ = id\n"
+  },
+  {
+    "name": "H490-3 kein Warten nach dem Schließen (F-490)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\treturn an.warte(ctx, hinweisWeg)",
+    "neu": "\treturn nil"
+  },
+  {
+    "name": "H490-4 Schliesse ruft Notify statt CloseNotification (F-490)",
+    "datei": "internal/notify/notify.go",
+    "paket": "./internal/notify",
+    "alt": "\t_, err := ruf(ctx, schliessen, []any{id})",
+    "neu": "\t_, err := ruf(ctx, methode, []any{id})"
   }
 ]

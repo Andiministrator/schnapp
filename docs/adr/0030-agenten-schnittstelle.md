@@ -284,3 +284,24 @@ Bericht zu Karte #203). F-491 fiel in der sichereren Richtung: absichern statt n
    „Allow“, beginnt die Sperre neu und der Klick zählt nicht; der Mensch klickt ein zweites Mal. Prüfpunkt im Echtlauf
    F-490.
 
+## Nachtrag 7 (23.11.2026): Voriger Hinweis wird vor der nächsten Aufnahme geschlossen (Karte #208, F-490, F-506)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Grundlage: Echtlauf in Andis Plasma-Sitzung am 23.11.2026
+(`scripts/echtlauf-mcp-hinweise.sh`).
+
+- **F-490 bestätigt:** Mit `confirm = no` stand der Hinweis (Dringlichkeit critical) der ersten Aufnahme im Bild der
+  zweiten, fünf Sekunden später. **Entscheidung:** Der Server merkt sich die Kennung seines letzten Hinweises
+  (`notify.Zeige` liefert sie) und nimmt ihn vor der nächsten Aufnahme mit `CloseNotification` zurück
+  (`notify.Schliesse`), dann wartet er 600 ms (`hinweisWeg`), bis Plasma ihn ausgeblendet hat; mit Dialog geschieht
+  das schon vor dem Dialog. Die Dringlichkeit bleibt critical (Nachtrag 4 Punkt 8): Der Hinweis steht, bis die nächste
+  Aufnahme kommt oder der Nutzer ihn schließt, und die nächste Aufnahme zeigt ihren eigenen. Scheitert das Schließen,
+  wird trotzdem aufgenommen (verborgen wird nichts, der alte Hinweis steht dann im Bild). Abgelehnte oder verworfene
+  Aufnahmen hinterlassen keinen Hinweis und nichts zu schließen.
+- **Grenze:** Die Kennung gilt je Serverprozess. Ein zweiter `schnapp mcp` (anderer Agent, neue Sitzung) kennt den
+  Hinweis des ersten nicht; ein noch stehender Hinweis eines anderen Prozesses kann in dessen erstem Bild stehen.
+  Hinweise anderer Programme sind ohnehin Teil des Bildschirms.
+- **F-506 widerlegt:** Bei Dialog ohne Fokus hat ein einziger Klick auf „Erlauben“ die Aufnahme erlaubt (Echtlauf,
+  Teil B); die Fokus-Neusperre verschluckt den Klick nicht. Keine Änderung.
+- Die Benachrichtigungs-Attrappe der Probeläufe (`scripts/fake-notifications`) kennt `CloseNotification` und
+  protokolliert es.
+

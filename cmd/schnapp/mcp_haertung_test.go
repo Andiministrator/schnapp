@@ -366,7 +366,7 @@ func TestMcpAbbruchVerwirftFertigeAufnahme(t *testing.T) {
 				l.an.quelle = func() (capture.Quelle, error) { abbrechen(); return quelle() }
 			} else {
 				melde := l.an.melde
-				l.an.melde = func(c context.Context, ti, te string) error { abbrechen(); return melde(c, ti, te) }
+				l.an.melde = func(c context.Context, ti, te string) (uint32, error) { abbrechen(); return melde(c, ti, te) }
 			}
 			e := l.rufeMit(t, ctx, "capture_screen", args, mcp.Kunde{})
 			if !e.Fehler || !strings.Contains(text(e), "discarded") {

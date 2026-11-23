@@ -80,6 +80,9 @@ var (
 const (
 	// fensterWeg: Abstand zwischen dem Ende des Dialogs und der Aufnahme, damit das Fenster nicht im Bild steht.
 	fensterWeg = 300 * time.Millisecond
+	// hinweisWeg: Abstand zwischen dem Schließen des vorigen Hinweises und der nächsten Aufnahme; Plasma blendet ihn
+	// aus, statt ihn sofort zu entfernen (F-490).
+	hinweisWeg = 600 * time.Millisecond
 	// maxKundenname: so viele Zeichen des vom Agenten gemeldeten Namens zeigt der Dialog.
 	maxKundenname = 60
 	// maxMonitorname: so viele Zeichen eines Monitornamens erscheinen in Dialog und Hinweis (F-463).
@@ -93,11 +96,15 @@ const (
 
 // mcpAnschluesse sind die Außenanschlüsse des Servers; Tests setzen Attrappen ein.
 type mcpAnschluesse struct {
-	lade        Ladefunktion
-	quelle      func() (capture.Quelle, error)
-	monitore    func() ([]ui.Monitor, error)
-	bestaetige  func(ctx context.Context, ziel, kunde string) (bool, error)
-	melde       func(ctx context.Context, titel, text string) error
+	lade       Ladefunktion
+	quelle     func() (capture.Quelle, error)
+	monitore   func() ([]ui.Monitor, error)
+	bestaetige func(ctx context.Context, ziel, kunde string) (bool, error)
+	melde      func(ctx context.Context, titel, text string) (uint32, error)
+	schliesse  func(ctx context.Context, id uint32) error
+	// hinweis hält die Kennung des letzten Hinweises dieses Servers (0: keiner offen). Ein Zeiger, weil die Werkzeuge
+	// auf einer Kopie der Anschlüsse laufen; nil schaltet das Schließen ab (F-490).
+	hinweis     *uint32
 	orte        func() (library.Orte, error)
 	letzterPfad string
 	warte       func(ctx context.Context, d time.Duration) error
@@ -114,6 +121,8 @@ func echteMcpAnschluesse(fehler io.Writer) mcpAnschluesse {
 		monitore:   ui.Monitore,
 		bestaetige: bestaetigeImKind,
 		melde:      notify.Zeige,
+		schliesse:  notify.Schliesse,
+		hinweis:    new(uint32),
 		warte: func(ctx context.Context, d time.Duration) error {
 			select {
 			case <-time.After(d):
@@ -532,6 +541,21 @@ func (an mcpAnschluesse) nimmLetztenAuf(ctx context.Context, args json.RawMessag
 	return an.nimmAuf(ctx, aufnahme{letzter: true}, p.Output, k)
 }
 
+// vorigenHinweisSchliessen nimmt den Hinweis der letzten Aufnahme dieses Servers zurück und wartet, bis Plasma ihn
+// ausgeblendet hat (F-490). Scheitert das Schließen, geht es weiter: Der alte Hinweis steht dann im Bild, verborgen wird
+// nichts. Fehler nur bei Abbruch während des Wartens.
+func (an mcpAnschluesse) vorigenHinweisSchliessen(ctx context.Context) error {
+	if an.hinweis == nil || *an.hinweis == 0 || an.schliesse == nil {
+		return nil
+	}
+	id := *an.hinweis
+	*an.hinweis = 0
+	if err := an.schliesse(ctx, id); err != nil {
+		diagnose(an.fehler, "voriger Hinweis nicht geschlossen: %v", err)
+	}
+	return an.warte(ctx, hinweisWeg)
+}
+
 // nimmAuf ist der gemeinsame Weg: Einwilligung, Bestätigung, Aufnahme, Hinweis, Ablage (ADR-0030 Nachtrag 2).
 func (an mcpAnschluesse) nimmAuf(ctx context.Context, a aufnahme, ausgabe string, k mcp.Kunde) mcp.Ergebnis {
 	e := an.einstellungen()
@@ -567,6 +591,11 @@ func (an mcpAnschluesse) nimmAuf(ctx context.Context, a aufnahme, ausgabe string
 			return mcp.FehlerErgebnis("There is no last area to repeat yet; the user has to select one first.")
 		}
 		letzter = l
+	}
+	// Der Hinweis der vorigen Aufnahme stünde sonst in diesem Bild (F-490, Echtlauf 23.11.2026); vor dem Dialog, damit
+	// auch der Dialog ihn nicht verdeckt.
+	if err := an.vorigenHinweisSchliessen(ctx); err != nil {
+		return mcp.FehlerErgebnis("Cancelled; nothing was captured.")
 	}
 	if e.Agenten.Bestaetigen {
 		ok, err := an.bestaetige(ctx, a.zielText(), kundenname(k))
@@ -606,9 +635,13 @@ func (an mcpAnschluesse) nimmAuf(ctx context.Context, a aufnahme, ausgabe string
 		diagnose(an.fehler, "Kantenform %v nicht gesetzt: %v", e.Kante, err)
 	}
 	// Erst der Hinweis, dann die Ablage: Scheitert er, bleibt vom Bild nichts zurück (Punkt 8).
-	if err := an.melde(ctx, i18n.T("Schnapp captured the screen for an agent"), a.zielText()); err != nil {
+	id, err := an.melde(ctx, i18n.T("Schnapp captured the screen for an agent"), a.zielText())
+	if err != nil {
 		diagnose(an.fehler, "Hinweis gescheitert: %v", err)
 		return mcp.FehlerErgebnis("The desktop notification could not be shown, so the screenshot was discarded.")
+	}
+	if an.hinweis != nil {
+		*an.hinweis = id
 	}
 	sichtbar, err := render.Bild(d)
 	if err != nil {

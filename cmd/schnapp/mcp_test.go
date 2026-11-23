@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"image"
 	"image/png"
 	"os"
@@ -30,16 +31,17 @@ import (
 
 // mcpLauf hält die Attrappen eines Server-Laufs und protokolliert die Schritte in Reihenfolge.
 type mcpLauf struct {
-	an       mcpAnschluesse
-	q        *quelleAttrappe
-	agenten  settings.Agenten
-	schritte []string
-	antwort  bool  // Antwort des Dialogs
-	dialog   error // Fehler des Dialogs
-	hinweis  error // Fehler der Benachrichtigung
-	orte     library.Orte
-	heim     string
-	fehler   bytes.Buffer
+	an        mcpAnschluesse
+	q         *quelleAttrappe
+	agenten   settings.Agenten
+	schritte  []string
+	antwort   bool   // Antwort des Dialogs
+	dialog    error  // Fehler des Dialogs
+	hinweis   error  // Fehler der Benachrichtigung
+	hinweisNr uint32 // Kennung des letzten Hinweises der Attrappe
+	orte      library.Orte
+	heim      string
+	fehler    bytes.Buffer
 }
 
 func neuerMcpLauf(t *testing.T) *mcpLauf {
@@ -72,10 +74,16 @@ func neuerMcpLauf(t *testing.T) *mcpLauf {
 			l.schritte = append(l.schritte, "dialog:"+ziel+"|"+kunde)
 			return l.antwort, l.dialog
 		},
-		melde: func(_ context.Context, titel, text string) error {
+		melde: func(_ context.Context, titel, text string) (uint32, error) {
 			l.schritte = append(l.schritte, "hinweis:"+text)
-			return l.hinweis
+			l.hinweisNr++
+			return l.hinweisNr, l.hinweis
 		},
+		schliesse: func(_ context.Context, id uint32) error {
+			l.schritte = append(l.schritte, fmt.Sprintf("schliesse:%d", id))
+			return nil
+		},
+		hinweis:     new(uint32),
 		orte:        func() (library.Orte, error) { return orte, nil },
 		letzterPfad: filepath.Join(heim, "letzter.json"),
 		warte: func(_ context.Context, d time.Duration) error {
@@ -247,6 +255,55 @@ func TestMcpOhneDialog(t *testing.T) {
 	}
 	if strings.Join(l.schritte, ";") != "aufnahme;hinweis:all monitors" {
 		t.Errorf("Schritte: %v", l.schritte)
+	}
+}
+
+// TestMcpSchliesstVorigenHinweis (F-490, Echtlauf 23.11.2026): Der Hinweis der vorigen Aufnahme stand im nächsten Bild.
+// Vor jeder weiteren Aufnahme schließt der Server ihn und wartet; mit Dialog schon vor dem Dialog. Scheitert das
+// Schließen, wird trotzdem aufgenommen (verborgen wird nichts).
+func TestMcpSchliesstVorigenHinweis(t *testing.T) {
+	l := neuerMcpLauf(t)
+	l.agenten.Bestaetigen = false
+	for i := 0; i < 2; i++ {
+		if e := l.rufe(t, "capture_screen", `{"all":true}`); e.Fehler {
+			t.Fatal(text(e))
+		}
+	}
+	want := "aufnahme;hinweis:all monitors;schliesse:1;warte;aufnahme;hinweis:all monitors"
+	if got := strings.Join(l.schritte, ";"); got != want {
+		t.Errorf("ohne Dialog: %s, erwartet %s", got, want)
+	}
+
+	l.schritte = nil
+	l.agenten.Bestaetigen = true
+	if e := l.rufe(t, "capture_screen", `{"screen":"DP-1"}`); e.Fehler {
+		t.Fatal(text(e))
+	}
+	want = "schliesse:2;warte;dialog:monitor DP-1|Testagent;warte;aufnahme;hinweis:monitor DP-1"
+	if got := strings.Join(l.schritte, ";"); got != want {
+		t.Errorf("mit Dialog: %s, erwartet %s", got, want)
+	}
+
+	// Abgelehnt: kein neuer Hinweis, also beim nächsten Mal nichts zu schließen.
+	l.schritte, l.antwort = nil, false
+	l.rufe(t, "capture_screen", `{"screen":"DP-1"}`)
+	l.schritte, l.antwort = nil, true
+	l.rufe(t, "capture_screen", `{"screen":"DP-1"}`)
+	if got := strings.Join(l.schritte, ";"); strings.Contains(got, "schliesse") {
+		t.Errorf("nach Ablehnung erneut geschlossen: %s", got)
+	}
+
+	t.Setenv("SCHNAPP_DEBUG", "1") // diagnose schreibt nur damit
+	l.schritte = nil
+	l.an.schliesse = func(context.Context, uint32) error {
+		l.schritte = append(l.schritte, "schliesse-scheitert")
+		return errors.New("kein Dienst")
+	}
+	if e := l.rufe(t, "capture_screen", `{"screen":"DP-1"}`); e.Fehler || !strings.Contains(strings.Join(l.schritte, ";"), "aufnahme") {
+		t.Errorf("gescheitertes Schließen verhindert die Aufnahme: %v %s", l.schritte, text(e))
+	}
+	if !strings.Contains(l.fehler.String(), "nicht geschlossen") {
+		t.Errorf("gescheitertes Schließen ohne Diagnose: %q", l.fehler.String())
 	}
 }
 
