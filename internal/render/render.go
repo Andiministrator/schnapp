@@ -355,7 +355,11 @@ type zeichner struct {
 
 func (z zeichner) trocken() bool { return z.bild == nil }
 
-// glyphKosten sind die Kosten von n Glyphen im Schriftgrad grad (Kostenmodell).
+// glyphKosten sind die Kosten von n Glyphen im Schriftgrad grad (Kostenmodell). Je Schrift wird nicht skaliert
+// (F-576, Messung 23.11.2026, ein Kern): Einheiten je em spielen keine Rolle (der Grad ist in Pixeln); die dichtesten
+// Glyphen einer Systemschrift (Noto Serif CJK „鬱龍蠶麤“) rastern bei Grad 8 mit rund 14 µs je Glyphe gegen rund 5,4 µs
+// in Go (Faktor 2,6), bei Grad 40 mit rund 30 gegen 16 µs (Faktor 1,9) — das verlängert das Zeitversprechen
+// (ADR-0020 Nachtrag 3) um einen Faktor unter 3 für den Glyphenanteil, es sprengt es nicht.
 func glyphKosten(n int, grad float64) float64 { return float64(n) * math.Max(grad*grad, glyphGrund) }
 
 // zeichenzahl zählt die Glyphen, die eine Zeile höchstens erzeugt: Tabulator wird zu vier Leerzeichen
@@ -478,9 +482,10 @@ func (z zeichner) objekt(o document.Objekt) error {
 				return err
 			}
 		}
+		sch := v.Schriftdatei()
 		for _, zeile := range v.Zeilen() {
 			p := z.ansicht(document.Pt(zeile.X, zeile.Grundlinie))
-			if !z.zeileSichtbar(p.X, p.Y, v.Schriftgrad) {
+			if !z.zeileSichtbar(sch, p.X, p.Y, v.Schriftgrad) {
 				continue
 			}
 			z.auf.glyph += glyphKosten(zeichenzahl(zeile.Text), v.Schriftgrad)
@@ -489,7 +494,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 			}
 			// Tabulator als vier Leerzeichen, Wagenrücklauf weg (Zeichenbar in Zeilen): die Schriften haben für beide
 			// keine Glyphe (Kritik A-3).
-			z.text(face, v.Schriftdatei().Font, zeile.Text, p.X, p.Y, v.Farbe, v.Schriftgrad)
+			z.text(face, sch, zeile.Text, p.X, p.Y, v.Farbe, v.Schriftgrad)
 		}
 		// Unter- und Durchstrich (ADR-0021 Nachtrag 10 Punkt 7): Rechtecke in der Textfarbe.
 		for _, st := range v.Striche() {
@@ -519,16 +524,18 @@ func (z zeichner) objekt(o document.Objekt) error {
 		breite := float64(font.MeasureString(face, s)) / 64
 		// Senkrecht mittig wie dominant-baseline="central": Grundlinie um die halbe Ziffernhöhe unter der Mitte.
 		hoehe := float64(face.Metrics().CapHeight) / 64
-		z.text(face, fonts.Laden(fonts.Go, fonts.Fett).Font, s, m.X-breite/2, m.Y+hoehe/2, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, grad)
+		z.text(face, fonts.Laden(fonts.Go, fonts.Fett), s, m.X-breite/2, m.Y+hoehe/2, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, grad)
 	}
 	return nil
 }
 
 // zeileSichtbar meldet, ob eine Textzeile ab x auf dieser Grundlinie das Bild schneiden kann — dieselben Grenzen wie
-// in text (senkrecht; rechts beginnt die erste Glyphe hinter dem Rand).
-func (z zeichner) zeileSichtbar(x, grundlinie, grad float64) bool {
-	return grundlinie-grad*1.5 <= float64(z.rand.Max.Y) && grundlinie+grad >= float64(z.rand.Min.Y) &&
-		x <= float64(z.rand.Max.X)+1.25*grad
+// in text (senkrecht; rechts beginnt die erste Glyphe hinter dem Rand). Die Grenzen folgen der Schrift sch
+// (fonts.Schrift.Huelle, F-576).
+func (z zeichner) zeileSichtbar(sch *fonts.Schrift, x, grundlinie, grad float64) bool {
+	oben, unten, seitlich := sch.Huelle()
+	return grundlinie-grad*oben <= float64(z.rand.Max.Y) && grundlinie+grad*unten >= float64(z.rand.Min.Y) &&
+		x <= float64(z.rand.Max.X)+seitlich*grad
 }
 
 // kreisform ist ein Kreis, der erst beim Rastern zum Polygon wird (kreis): Der Trockenlauf zählt seine Kosten aus
@@ -854,18 +861,21 @@ func (z zeichner) strich(pts []document.Punkt, geschlossen bool, s document.Stri
 }
 
 // text zeichnet eine Zeile. Was das Bild nicht schneidet, wird nicht gerastert (F-118): eine Zeile, deren Höhe ganz
-// über oder unter dem Bild liegt, entfällt, ebenso jede Glyphe, deren Ursprung mehr als 1,25 Schriftgrade links oder
-// rechts vom Bild liegt (Vorschub und Unterschneidung laufen weiter, damit sichtbare Glyphen am selben Ort stehen).
+// über oder unter dem Bild liegt, entfällt, ebenso jede Glyphe, deren Ursprung mehr als die seitliche Hülle der Schrift (mindestens
+// 1,25 Schriftgrade, fonts.Schrift.Huelle) links oder rechts vom Bild liegt (Vorschub und Unterschneidung laufen weiter, damit sichtbare Glyphen am selben Ort stehen).
 // Die Kosten zählt der Aufrufer (glyphKosten), auch im Trockenlauf.
-func (z zeichner) text(face font.Face, sf *sfnt.Font, s string, x, grundlinie float64, farbe color.NRGBA, grad float64) {
+func (z zeichner) text(face font.Face, sch *fonts.Schrift, s string, x, grundlinie float64, farbe color.NRGBA, grad float64) {
 	var puffer sfnt.Buffer // je Aufruf: Zeilen können nebenläufig gezeichnet werden
+	sf := sch.Font
 	rand := z.rand
-	if grundlinie-grad*1.5 > float64(rand.Max.Y) || grundlinie+grad < float64(rand.Min.Y) {
+	oben, unten, seitlich := sch.Huelle()
+	if grundlinie-grad*oben > float64(rand.Max.Y) || grundlinie+grad*unten < float64(rand.Min.Y) {
 		return
 	}
 	dot := fixed.Point26_6{X: fixed.Int26_6(math.Round(x * 64)), Y: fixed.Int26_6(math.Round(grundlinie * 64))}
-	// Rand 1,25 Schriftgrad: Glyphen sind bis gut 1,07 em breit (z. B. U+20A7), ihr Ursprung liegt links der Zeichenfläche.
-	links, rechts := float64(rand.Min.X)-1.25*grad, float64(rand.Max.X)+1.25*grad
+	// Seitlicher Rand: mindestens 1,25 Schriftgrad (Glyphen sind bis gut 1,07 em breit, z. B. U+20A7), bei breiteren
+	// Schriften ihr head-Rahmen (Huelle).
+	links, rechts := float64(rand.Min.X)-seitlich*grad, float64(rand.Max.X)+seitlich*grad
 	vorher := rune(-1)
 	for _, c := range s {
 		saveprogress.Puls() // je Zeichen: Glyphen kosten am Budget Sekunden (F-147, F-298)

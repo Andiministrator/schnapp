@@ -1,0 +1,9 @@
+schnapp-testkern.ttf — synthetische Testschrift des Projekts Schnapp
+
+Eigenes Werk des Projekts, keine Ableitung einer fremden Schrift. Freigegeben unter CC0 1.0 (Public Domain Dedication,
+https://creativecommons.org/publicdomain/zero/1.0/), auch als GPL-3.0-or-later nutzbar.
+
+Inhalt (1000 Einheiten je em): Glyphen .notdef, Leerzeichen, A und V (Dreiecke, 600 breit), H (Kasten, 600 breit) und
+g (Kasten mit 1300 Einheiten Unterlänge, 400 breit); kern-Paar (A, V) = -120 Einheiten. Familie "Schnapp Testkern".
+Erzeugt einmalig mit fontTools (FontBuilder); die Datei ist die Quelle, das Erzeugungsskript liegt nicht im Repo.
+Verwendet von den Tests zu Unterschneidung, Schriftliste und Sichtbarkeitsgrenzen (F-575, F-576).

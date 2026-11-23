@@ -86,11 +86,12 @@ func (ts *textsatz) umriss(f *sfnt.Font, gi sfnt.GlyphIndex, ppem fixed.Int26_6)
 }
 
 // zeichneZeile zeichnet text in der Schrift s im Grad grad mit dem Anfang x auf der Grundlinie y (Ansichtspixel, unter
-// der Zoom-Abbildung der Leinwand). sicht ist der sichtbare Bereich (Ansicht): Glyphen, deren Ursprung mehr als 1,25
-// Schriftgrade daneben liegt, entfallen wie im Renderer; Vorschub und Unterschneidung laufen weiter.
+// der Zoom-Abbildung der Leinwand). sicht ist der sichtbare Bereich (Ansicht): Glyphen, deren Ursprung mehr als die Hülle der Schrift (mindestens
+// 1,25 Schriftgrade, fonts.Schrift.Huelle) daneben liegt, entfallen wie im Renderer; Vorschub und Unterschneidung laufen weiter.
 func (ts *textsatz) zeichneZeile(gtx layout.Context, s *fonts.Schrift, text string, x, y, grad float64, c color.NRGBA,
 	sicht image.Rectangle) {
-	if text == "" || y-grad*1.5 > float64(sicht.Max.Y) || y+grad < float64(sicht.Min.Y) {
+	oben, unten, seitlich := s.Huelle() // wie im Renderer (F-576)
+	if text == "" || y-grad*oben > float64(sicht.Max.Y) || y+grad*unten < float64(sicht.Min.Y) {
 		return
 	}
 	face := ts.face(s, grad)
@@ -98,7 +99,7 @@ func (ts *textsatz) zeichneZeile(gtx layout.Context, s *fonts.Schrift, text stri
 		return
 	}
 	ppem := fixed.Int26_6(math.Round(grad * 64))
-	links, rechts := float64(sicht.Min.X)-1.25*grad, float64(sicht.Max.X)+1.25*grad
+	links, rechts := float64(sicht.Min.X)-seitlich*grad, float64(sicht.Max.X)+seitlich*grad
 	dot := fixed.Int26_6(math.Round(x * 64))
 	gy := float32(fixed.Int26_6(math.Round(y*64))) / 64
 	var p clip.Path

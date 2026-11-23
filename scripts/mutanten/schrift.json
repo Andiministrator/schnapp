@@ -230,5 +230,40 @@
     "alt": "\t\tcase <-time.After(sucheFrist + time.Second):",
     "neu": "\t\tcase <-time.After(time.Hour):",
     "timeout": "60s"
+  },
+  {
+    "name": "K221-1 Unterschneidung nicht im Schriftgrad",
+    "datei": "internal/document/schrift.go",
+    "paket": "./internal/document",
+    "alt": "s.f.Kern(&schriftPuffer, vorher, gi, fixed.Int26_6(math.Round(grad*64)), font.HintingNone)",
+    "neu": "s.f.Kern(&schriftPuffer, vorher, gi, fixed.Int26_6(640), font.HintingNone)"
+  },
+  {
+    "name": "K221-2 Unterlänge fest 1 Schriftgrad in zeileSichtbar",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "grundlinie+grad*unten >= float64(z.rand.Min.Y)",
+    "neu": "grundlinie+grad*unten*0+grad >= float64(z.rand.Min.Y)"
+  },
+  {
+    "name": "K221-3 Unterlänge fest 1 Schriftgrad in text",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "grundlinie+grad*unten < float64(rand.Min.Y)",
+    "neu": "grundlinie+grad*unten*0+grad < float64(rand.Min.Y)"
+  },
+  {
+    "name": "K221-4 Liste liest nach der Suche nicht neu",
+    "datei": "internal/ui/schriftwahl.go",
+    "paket": "./internal/ui",
+    "alt": "if !sw.offen || !sw.ohneSuche || !fonts.SucheFertig() {",
+    "neu": "if true {"
+  },
+  {
+    "name": "K221-5 Hülle ignoriert den head-Rahmen unten",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "unten = max(unten, cap(e(b.Max.Y)+rand))",
+    "neu": "unten = max(unten, 0*cap(e(b.Max.Y)+rand))"
   }
 ]

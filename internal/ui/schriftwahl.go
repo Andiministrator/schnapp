@@ -55,8 +55,10 @@ type schriftwahl struct {
 	gezeigt    bool // der Abschnitt stand beim letzten Zeichnen da
 
 	// Liste
-	offen     bool
-	familien  []string // beim Öffnen gelesen
+	offen    bool
+	familien []string // beim Öffnen gelesen, nach dem Ende der Suche neu (schriftListeNachSuche)
+	// ohneSuche: Die Liste wurde geöffnet, bevor die Suche nach Systemschriften fertig war (F-575).
+	ohneSuche bool
 	cursor    int
 	liste     widget.List
 	eintraege []widget.Clickable
@@ -105,6 +107,7 @@ func stilBuchstabe(a canvas.StilArt) string {
 // Leinwand, damit getippte Buchstaben (EditEvent) und die Pfeile in tasten ankommen.
 func (e *editor) schriftListeOeffne(gtx layout.Context) {
 	sw := &e.seite.sw
+	sw.ohneSuche = !fonts.SucheFertig() // vor dem Lesen: endet die Suche dazwischen, liest schriftListeNachSuche nach
 	sw.familien = fonts.Familien()
 	sw.cursor = 0
 	jetzt := schriftName(e.s.AktuellerTextStil().Schrift)
@@ -120,6 +123,31 @@ func (e *editor) schriftListeOeffne(gtx layout.Context) {
 	sw.liste.Axis = layout.Vertical
 	sw.liste.ScrollTo(max(0, sw.cursor-3))
 	gtx.Execute(key.FocusCmd{Tag: e})
+}
+
+// schriftListeNachSuche liest die Familien neu, wenn die Suche nach dem Öffnen der Liste fertig geworden ist (F-575):
+// Bis dahin standen nur Go und Go Mono darin. Der Cursor bleibt auf demselben Namen, sonst auf dem Eintrag mit der
+// gezeigten Familie.
+func (e *editor) schriftListeNachSuche() {
+	sw := &e.seite.sw
+	if !sw.offen || !sw.ohneSuche || !fonts.SucheFertig() {
+		return
+	}
+	sw.ohneSuche = false
+	name := ""
+	if sw.cursor >= 0 && sw.cursor < len(sw.familien) {
+		name = sw.familien[sw.cursor]
+	}
+	sw.familien = fonts.Familien()
+	sw.cursor = 0
+	for i, f := range sw.familien {
+		if f == name {
+			sw.cursor = i
+		}
+	}
+	if len(sw.eintraege) < len(sw.familien) {
+		sw.eintraege = make([]widget.Clickable, len(sw.familien))
+	}
 }
 
 // schriftListeSchliesse schließt die Liste; mit zumFeld geht der Fokus an das Feld zurück, während der Texteingabe
@@ -208,6 +236,7 @@ func (e *editor) schriftListeTippe(text string) {
 // schriftAuswerten verarbeitet die Klicks des Abschnitts und der Liste.
 func (e *editor) schriftAuswerten(gtx layout.Context) {
 	sw := &e.seite.sw
+	e.schriftListeNachSuche()
 	if sw.feld.Clicked(gtx) && e.seiteAn() {
 		if sw.offen {
 			e.schriftListeSchliesse(gtx, true)

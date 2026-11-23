@@ -141,6 +141,15 @@ func SetzeOrdner(o []string) {
 	mu.Unlock()
 }
 
+// SucheZuruecksetzen verwirft das Ergebnis der Suche und lässt die nächste von vorn beginnen: nur für Tests, die eine
+// Suche „vor und nach ihrem Ende“ prüfen (F-575). Es darf keine Suche laufen.
+func SucheZuruecksetzen() {
+	mu.Lock()
+	defer mu.Unlock()
+	system, gesucht = nil, false
+	suche, fertigKanal = new(sync.Once), make(chan struct{})
+}
+
 // Ordner liefert die Schriftordner, in denen gesucht wird (bzw. würde).
 func Ordner() []string {
 	mu.Lock()
@@ -530,4 +539,39 @@ func NameGueltig(name string) bool {
 		}
 	}
 	return true
+}
+
+// Mindestwerte der Sichtbarkeitsgrenzen in em (Go: ADR-0021 Nachtrag 10, ADR-0020 Nachtrag 3): Die Tinte reicht nicht
+// weiter als 1,5 em über und 1 em unter die Grundlinie und bis 1,25 em seitlich des Glyphenursprungs.
+const (
+	HuelleOben     = 1.5
+	HuelleUnten    = 1.0
+	HuelleSeitlich = 1.25
+	// HuelleMax deckelt die Angabe einer kaputten Schrift (head-Rahmen von Millionen Einheiten): größere Werte
+	// kosten nur Rechenzeit, sie schneiden nichts ab.
+	HuelleMax = 8.0
+)
+
+// Huelle liefert, wie weit die Tinte der Glyphen dieser Schrift in em über die Grundlinie (oben), darunter (unten)
+// und seitlich des Glyphenursprungs (seitlich) reichen kann: der Rahmen aller Glyphen aus dem head der Schrift mit
+// einem Rand von 0,05 em, nie weniger als die Mindestwerte (Go bleibt bei 1,5 / 1 / 1,25). Renderer und Editor
+// lassen Zeilen und Glyphen außerhalb des Bildes nur aus, wenn auch diese Tinte es nicht mehr schneidet (F-576).
+func (s *Schrift) Huelle() (oben, unten, seitlich float64) {
+	oben, unten, seitlich = HuelleOben, HuelleUnten, HuelleSeitlich
+	em := float64(s.Font.UnitsPerEm())
+	if em <= 0 {
+		return
+	}
+	var puffer sfnt.Buffer
+	b, err := s.Font.Bounds(&puffer, fixed.Int26_6(s.Font.UnitsPerEm())<<6, 0)
+	if err != nil {
+		return
+	}
+	e := func(v fixed.Int26_6) float64 { return float64(v) / 64 / em }
+	const rand = 0.05
+	cap := func(v float64) float64 { return min(v, HuelleMax) }
+	oben = max(oben, cap(-e(b.Min.Y)+rand))
+	unten = max(unten, cap(e(b.Max.Y)+rand))
+	seitlich = max(seitlich, cap(e(b.Max.X)+rand), cap(-e(b.Min.X)+rand))
+	return
 }
