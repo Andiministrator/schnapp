@@ -119,3 +119,6 @@ func (e *Eingabe) Tastatur(code, zustand uint32) error {
 func (e *Eingabe) Keysym(sym, zustand uint32) error {
 	return e.v.Sende(e.obj, opKeysym, new(wlwire.Nachricht).U32(sym).U32(zustand))
 }
+
+// Fassung liefert die gebundene Version der Schnittstelle.
+func (e *Eingabe) Fassung() uint32 { return e.Version }

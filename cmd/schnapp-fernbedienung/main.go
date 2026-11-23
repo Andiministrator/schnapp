@@ -8,7 +8,9 @@
 // durch, jedes Programm der Sitzung könnte also Eingaben einspeisen.
 //
 // Befehle: warte MS | zeiger X Y | klick [X Y] | doppelklick X Y | rechtsklick [X Y] | mittelklick [X Y] |
-// ziehe X1 Y1 X2 Y2 [SCHRITTE] | ziehe-mitte … | taste KOMBI | schreibe TEXT | rad X Y SCHRITTE | foto NAME [BILDSCHIRM]
+// ziehe X1 Y1 X2 Y2 [SCHRITTE] | ziehe-mitte … | taste KOMBI | druecke[-rechts|-mitte] [X Y] | bewege X Y [SCHRITTE] |
+// loslassen | taste-halten KOMBI | taste-loslassen KOMBI (Halten, F-599; am Ende des Drehbuchs wird alles Gehaltene
+// gelöst, auch nach einem Fehler) | schreibe TEXT | rad X Y SCHRITTE | foto NAME [BILDSCHIRM]
 // Fotos landen als PNG in $FOTOS (Ordner wird angelegt). Exit: 0 durch, 1 Laufzeitfehler, 2 Fehler im Drehbuch.
 package main
 
@@ -67,6 +69,12 @@ func lauf(args []string, aus, fehler io.Writer) int {
 	defer e.Close()
 	fmt.Fprintf(aus, "fake_input Version %d verbunden, %d Befehle\n", e.Version, len(befehle))
 	a := &abspieler{e: e, fotos: os.Getenv("FOTOS"), aus: aus}
+	// Was noch gehalten wird, lösen wir immer, sonst bliebe der Sitz des virtuellen KWin verklemmt (Taste „gedrückt“).
+	defer func() {
+		if err := a.alleLoslassen(); err != nil {
+			fmt.Fprintln(fehler, "Loslassen am Ende:", err)
+		}
+	}()
 	for _, b := range befehle {
 		fmt.Fprintf(aus, "%3d: %s\n", b.Zeile, b.Text)
 		if err := a.fuehreAus(b); err != nil {
@@ -82,10 +90,26 @@ func lauf(args []string, aus, fehler io.Writer) int {
 	return 0
 }
 
+// eingeber ist, was der Abspieler von der Eingabe braucht (Eingabe erfüllt es; Tests setzen eine Attrappe ein).
+type eingeber interface {
+	Zeiger(x, y int) error
+	Maus(knopf, zustand uint32) error
+	Rad(wert float64) error
+	Tastatur(code, zustand uint32) error
+	Keysym(sym, zustand uint32) error
+	Fassung() uint32
+}
+
 type abspieler struct {
-	e     *Eingabe
+	e     eingeber
 	fotos string
 	aus   io.Writer
+
+	// Zustand des Haltens (F-599).
+	zx, zy        int // zuletzt gesetzte Zeigerlage
+	zeigerBekannt bool
+	knoepfe       []uint32 // gehaltene Maustasten in Reihenfolge des Drückens
+	tasten        []uint32 // gehaltene Tasten in Reihenfolge des Drückens
 }
 
 // kurz ist die Wartezeit zwischen den einzelnen Ereignissen einer Geste (Drücken, Bewegen, Loslassen).
@@ -97,7 +121,7 @@ func (a *abspieler) fuehreAus(b *Befehl) error {
 	case "warte":
 		time.Sleep(time.Duration(z[0]) * time.Millisecond)
 	case "zeiger":
-		return a.e.Zeiger(z[0], z[1])
+		return a.setzeZeiger(z[0], z[1])
 	case "klick":
 		return a.klicke(btnLinks, 1, z)
 	case "rechtsklick":
@@ -116,6 +140,20 @@ func (a *abspieler) fuehreAus(b *Befehl) error {
 		return a.schreibe(b.Rest)
 	case "rad":
 		return a.rad(z[0], z[1], z[2])
+	case "druecke":
+		return a.druecke(btnLinks, z)
+	case "druecke-rechts":
+		return a.druecke(btnRechts, z)
+	case "druecke-mitte":
+		return a.druecke(btnMitte, z)
+	case "bewege":
+		return a.bewege(z)
+	case "loslassen":
+		return a.loslassen()
+	case "taste-halten":
+		return a.tasteHalten(b.Kombi)
+	case "taste-loslassen":
+		return a.tasteLoslassen(b.Kombi)
 	case "foto":
 		return a.foto(b.Rest, b.Extra)
 	default:
@@ -126,7 +164,7 @@ func (a *abspieler) fuehreAus(b *Befehl) error {
 
 func (a *abspieler) klicke(knopf uint32, mal int, z []int) error {
 	if len(z) == 2 {
-		if err := a.e.Zeiger(z[0], z[1]); err != nil {
+		if err := a.setzeZeiger(z[0], z[1]); err != nil {
 			return err
 		}
 		time.Sleep(kurz)
@@ -150,7 +188,7 @@ func (a *abspieler) ziehe(knopf uint32, z []int) error {
 		schritte = z[4]
 	}
 	x1, y1, x2, y2 := z[0], z[1], z[2], z[3]
-	if err := a.e.Zeiger(x1, y1); err != nil {
+	if err := a.setzeZeiger(x1, y1); err != nil {
 		return err
 	}
 	time.Sleep(3 * kurz)
@@ -161,7 +199,7 @@ func (a *abspieler) ziehe(knopf uint32, z []int) error {
 	for i := 1; i <= schritte; i++ {
 		x := x1 + (x2-x1)*i/schritte
 		y := y1 + (y2-y1)*i/schritte
-		if err := a.e.Zeiger(x, y); err != nil {
+		if err := a.setzeZeiger(x, y); err != nil {
 			return err
 		}
 		time.Sleep(kurz)
@@ -194,7 +232,7 @@ func (a *abspieler) taste(k Kombi) error {
 
 func (a *abspieler) schreibe(text string) error {
 	for _, r := range text {
-		if a.e.Version >= 6 {
+		if a.e.Fassung() >= 6 {
 			s, err := Keysym(r)
 			if err != nil {
 				return err
@@ -208,7 +246,7 @@ func (a *abspieler) schreibe(text string) error {
 		} else {
 			code, umschalt, ok := ZeichenZuTaste(r)
 			if !ok {
-				return fmt.Errorf("Zeichen %q ohne Keysym-Unterstützung (Version %d) nicht schreibbar", r, a.e.Version)
+				return fmt.Errorf("Zeichen %q ohne Keysym-Unterstützung (Version %d) nicht schreibbar", r, a.e.Fassung())
 			}
 			k := Kombi{Taste: code}
 			if umschalt {
@@ -224,7 +262,7 @@ func (a *abspieler) schreibe(text string) error {
 }
 
 func (a *abspieler) rad(x, y, schritte int) error {
-	if err := a.e.Zeiger(x, y); err != nil {
+	if err := a.setzeZeiger(x, y); err != nil {
 		return err
 	}
 	time.Sleep(kurz)
@@ -284,4 +322,133 @@ func (a *abspieler) foto(name, bildschirm string) error {
 	r := b.Pixel.Bounds()
 	fmt.Fprintf(a.aus, "     foto %s (%dx%d, Skala %.2f, Bildschirm %s)\n", pfad, r.Dx(), r.Dy(), b.Skala, b.Bildschirm)
 	return nil
+}
+
+// setzeZeiger setzt den Zeiger und merkt sich die Lage (für bewege).
+func (a *abspieler) setzeZeiger(x, y int) error {
+	if err := a.e.Zeiger(x, y); err != nil {
+		return err
+	}
+	a.zx, a.zy, a.zeigerBekannt = x, y, true
+	return nil
+}
+
+func (a *abspieler) haelt(liste []uint32, code uint32) bool {
+	for _, c := range liste {
+		if c == code {
+			return true
+		}
+	}
+	return false
+}
+
+// druecke drückt eine Maustaste und hält sie, bis loslassen (oder das Ende des Drehbuchs) sie löst; mit X Y wandert
+// der Zeiger vorher dorthin.
+func (a *abspieler) druecke(knopf uint32, z []int) error {
+	if a.haelt(a.knoepfe, knopf) {
+		return fmt.Errorf("Maustaste wird schon gehalten")
+	}
+	if len(z) == 2 {
+		if err := a.setzeZeiger(z[0], z[1]); err != nil {
+			return err
+		}
+		time.Sleep(3 * kurz)
+	}
+	if err := a.e.Maus(knopf, gedrueckt); err != nil {
+		return err
+	}
+	a.knoepfe = append(a.knoepfe, knopf)
+	time.Sleep(3 * kurz)
+	return nil
+}
+
+// bewege führt den Zeiger in SCHRITTE (Voreinstellung 10) gleichen Schritten von der zuletzt gesetzten Lage nach X Y,
+// bei gehaltener Maustaste also ein Zug. Ohne bekannte Lage springt der Zeiger.
+func (a *abspieler) bewege(z []int) error {
+	schritte := 10
+	if len(z) == 3 {
+		schritte = z[2]
+	}
+	if !a.zeigerBekannt {
+		return a.setzeZeiger(z[0], z[1])
+	}
+	x1, y1 := a.zx, a.zy
+	for i := 1; i <= schritte; i++ {
+		if err := a.setzeZeiger(x1+(z[0]-x1)*i/schritte, y1+(z[1]-y1)*i/schritte); err != nil {
+			return err
+		}
+		time.Sleep(kurz)
+	}
+	return nil
+}
+
+// loslassen löst alle gehaltenen Maustasten (die zuletzt gedrückte zuerst).
+func (a *abspieler) loslassen() error {
+	if len(a.knoepfe) == 0 {
+		return fmt.Errorf("keine Maustaste gehalten")
+	}
+	time.Sleep(3 * kurz)
+	return a.loesseKnoepfe()
+}
+
+func (a *abspieler) loesseKnoepfe() error {
+	var erster error
+	for len(a.knoepfe) > 0 {
+		k := a.knoepfe[len(a.knoepfe)-1]
+		a.knoepfe = a.knoepfe[:len(a.knoepfe)-1]
+		if err := a.e.Maus(k, los); err != nil && erster == nil {
+			erster = err
+		}
+	}
+	return erster
+}
+
+// tasteHalten drückt erst die Modifikatoren, dann die Taste und lässt sie gedrückt.
+func (a *abspieler) tasteHalten(k Kombi) error {
+	for _, c := range append(append([]uint32{}, k.Mods...), k.Taste) {
+		if a.haelt(a.tasten, c) {
+			return fmt.Errorf("Taste %d wird schon gehalten", c)
+		}
+		if err := a.e.Tastatur(c, gedrueckt); err != nil {
+			return err
+		}
+		a.tasten = append(a.tasten, c)
+		time.Sleep(kurz)
+	}
+	return nil
+}
+
+// tasteLoslassen löst die Taste und dann die Modifikatoren der Kombination, jede nur, wenn sie gehalten wird.
+func (a *abspieler) tasteLoslassen(k Kombi) error {
+	alle := append(append([]uint32{}, k.Mods...), k.Taste)
+	for i := len(alle) - 1; i >= 0; i-- {
+		c := alle[i]
+		if !a.haelt(a.tasten, c) {
+			return fmt.Errorf("Taste %d wird nicht gehalten", c)
+		}
+		if err := a.e.Tastatur(c, los); err != nil {
+			return err
+		}
+		for j, h := range a.tasten {
+			if h == c {
+				a.tasten = append(a.tasten[:j], a.tasten[j+1:]...)
+				break
+			}
+		}
+		time.Sleep(kurz)
+	}
+	return nil
+}
+
+// alleLoslassen löst alles Gehaltene: erst Maustasten, dann Tasten in umgekehrter Reihenfolge des Drückens.
+func (a *abspieler) alleLoslassen() error {
+	erster := a.loesseKnoepfe()
+	for len(a.tasten) > 0 {
+		c := a.tasten[len(a.tasten)-1]
+		a.tasten = a.tasten[:len(a.tasten)-1]
+		if err := a.e.Tastatur(c, los); err != nil && erster == nil {
+			erster = err
+		}
+	}
+	return erster
 }

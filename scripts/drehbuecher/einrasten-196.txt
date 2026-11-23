@@ -1,6 +1,6 @@
 # Sichtprobe ADR-0021 Nachtrag 12 (Karte #196): Einrasten und Hilfslinien.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/einrasten-196.txt --bild scripts/drehbuecher/testbild-1200x800.png
-# Bei 1600 × 1000, Skala 1. Die Hilfslinien stehen nur während des Ziehens; das Drehbuch kann die Taste nicht halten
+# Bei 1600 × 1000, Skala 1. Die Hilfslinien stehen nur während des Ziehens; dieses Drehbuch hält den Zug nicht (siehe einrasten-196-halten.txt)
 # und fotografiert erst nach dem Loslassen. Es zeigt deshalb das Ergebnis (Kanten bündig). Alt beim Ziehen und der
 # Menüschalter „Snap to objects“ sind in den Tests geprüft
 # (internal/ui/einrasten_test.go); die orangen Linien sieht nur, wer wirklich zieht.

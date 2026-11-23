@@ -1,0 +1,32 @@
+# Sichtprobe ADR-0021 Nachtrag 12 (Karte #196, F-599): Hilfslinien WÄHREND des Ziehens, Alt beim Ziehen.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/einrasten-196-halten.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1. Nutzt „druecke“, „bewege“, „loslassen“, „taste-halten“, „taste-loslassen“ der
+# Fernbedienung: Der Zug bleibt offen, während fotografiert wird.
+# Erwartet: 01 zwei rote Kästen, der linke gewählt; 02 mitten im Zug, linker Kasten an den rechten gerastet, eine
+# orange Hilfslinie an der Berührkante (x = 800); 03 Alt gehalten, Zug geht weiter: keine Hilfslinie, Kasten frei
+# (1 px weiter); 04 nach Loslassen von Alt und Maus keine Hilfslinie; 05 nach „Rückgängig“ wieder am Ausgang.
+warte 800
+taste R
+ziehe 300 300 600 450
+warte 300
+taste R
+ziehe 800 400 1000 600
+warte 300
+taste V
+warte 300
+foto 01-zwei-kaesten
+druecke 300 375
+bewege 495 375 20
+warte 300
+foto 02-zug-eingerastet
+taste-halten Alt
+bewege 490 376 3
+warte 300
+foto 03-zug-mit-alt
+taste-loslassen Alt
+loslassen
+warte 300
+foto 04-nach-loslassen
+taste Strg+Z
+warte 300
+foto 05-zurueck

@@ -33,6 +33,12 @@ var zahlenBefehle = map[string][2]int{
 	"ziehe":       {4, 5},
 	"ziehe-mitte": {4, 5},
 	"rad":         {3, 3},
+	// Halten (F-599): druecke setzt die Taste, loslassen löst sie; dazwischen foto, zeiger/bewege.
+	"druecke":        {0, 2},
+	"druecke-rechts": {0, 2},
+	"druecke-mitte":  {0, 2},
+	"bewege":         {2, 3},
+	"loslassen":      {0, 0},
 }
 
 var fotoName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
@@ -49,6 +55,13 @@ func ParseZeile(nr int, zeile string) (*Befehl, error) {
 	b := &Befehl{Zeile: nr, Text: z, Art: name}
 	switch name {
 	case "taste":
+		k, err := ParseKombi(rest)
+		if err != nil {
+			return nil, err
+		}
+		b.Kombi = k
+		return b, nil
+	case "taste-halten", "taste-loslassen":
 		k, err := ParseKombi(rest)
 		if err != nil {
 			return nil, err
@@ -92,6 +105,10 @@ func ParseZeile(nr int, zeile string) (*Befehl, error) {
 		return nil, fmt.Errorf("%s: %d Zahlen angegeben, erwartet %d bis %d", name, len(b.Zahl), grenzen[0], grenzen[1])
 	}
 	switch {
+	case (name == "druecke" || name == "druecke-rechts" || name == "druecke-mitte") && len(b.Zahl) == 1:
+		return nil, fmt.Errorf("%s: entweder keine Koordinaten oder X und Y", name)
+	case name == "bewege" && len(b.Zahl) == 3 && b.Zahl[2] < 1:
+		return nil, fmt.Errorf("bewege: SCHRITTE muss mindestens 1 sein")
 	case (name == "klick" || name == "rechtsklick" || name == "mittelklick") && len(b.Zahl) == 1:
 		return nil, fmt.Errorf("%s: entweder keine Koordinaten oder X und Y", name)
 	case name == "warte" && b.Zahl[0] < 0:
