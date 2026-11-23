@@ -59,7 +59,8 @@ type farbwaehler struct {
 	flaeche, ton, deck image.Rectangle // Lage beim letzten Zeichnen; die Zeiger sind die Ziele der Zeigerereignisse
 	zieht              farbRegler
 	hex, deckkraft     eingabe
-	wache              int // Ziel der durchlässigen Fläche über dem Fenster (zeichneFeldWache)
+	hatteFokus         *eingabe // Feld mit Fokus im letzten Bild (feldTasten: Fokus nach dem Verschwinden des Felds)
+	wache              int      // Ziel der durchlässigen Fläche über dem Fenster (zeichneFeldWache)
 	pipette            widget.Clickable
 	pipRahmen          image.Rectangle
 
@@ -159,6 +160,19 @@ func (e *editor) seiteAn() bool { return !e.s.SpeichernLaeuft() && !e.hilfeOffen
 // Rücktaste gehören dem Feld, solange es den Fokus hat (Gio gibt eine Taste dem ersten passenden Filter des Bildes).
 func (e *editor) feldTasten(gtx layout.Context) {
 	fw := &e.seite.fw
+	// Verschwindet ein Feld mit Fokus (Leiste klappt bei schmalem Fenster ein, Abschnitt zu), setzt Gio den Fokus ohne
+	// Ereignis auf nil, und Tasten gingen ins Leere: Er geht an die Leinwand (Karte #220, F-574). Gemerkt wird das Feld
+	// mit Fokus vom letzten Bild; hat es keine Lage mehr (die Leiste setzt sie je Bild zurück), war es das Verschwinden.
+	// Das Namensfeld hat seine eigene Regel (nameHatteFokus).
+	if f := e.fokusFeld(gtx); f != nil {
+		fw.hatteFokus = f
+	} else if h := fw.hatteFokus; h != nil {
+		fw.hatteFokus = nil
+		if h.rahmen.Empty() && h != &e.ebenen.name {
+			h.neu, h.text, h.fehler = true, "", false
+			gtx.Execute(key.FocusCmd{Tag: e})
+		}
+	}
 	// Ein Klick woanders übernimmt eine schwebende Eingabe, bevor der Klick selbst wirkt (ADR-0031 Nachtrag 5,
 	// Sitzungs-QA A-2): Die Wache liegt durchlässig über dem ganzen Fenster (zeichneFeldWache), dieser Aufruf läuft vor
 	// Leinwand und Knöpfen. Der Fokus geht an die Leinwand; ein Klick in ein anderes Feld fokussiert danach dieses.

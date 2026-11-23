@@ -336,5 +336,54 @@
     "paket": "./internal/canvas",
     "alt": "\tif c.A == 0 {\n\t\treturn\n\t}\n\tfor _, b := range Beschriftungsfarben {",
     "neu": "\tfor _, b := range Beschriftungsfarben {"
+  },
+  {
+    "name": "K220-1 Pipette ohne Zoom-Umrechnung (F-574)",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/canvas",
+    "alt": "s.ZeigerOrt(s.Abb.ZuAnsicht(p))",
+    "neu": "s.ZeigerOrt(p)"
+  },
+  {
+    "name": "K220-2 ZeigerOrt rechnet nicht über Naht und Zuschnitt (F-574)",
+    "datei": "internal/canvas/fusszeile.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\to = s.D.ZuOriginal(a)\n",
+    "neu": "\t\to = a\n"
+  },
+  {
+    "name": "K220-3 Schließen im Farbzug lässt den Zug laufen (F-574)",
+    "datei": "internal/canvas/hintergrund.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.zug != keinZug || s.farbZug { // auch das Ziehen im Farbwähler (Sitzungs-QA A-1)\n\t\ts.Abbrechen()\n\t}\n\tif !s.Ungesichert() {\n\t\treturn SchlussZu, nil",
+    "neu": "\tif s.zug != keinZug { // auch das Ziehen im Farbwähler (Sitzungs-QA A-1)\n\t\ts.Abbrechen()\n\t}\n\tif !s.Ungesichert() {\n\t\treturn SchlussZu, nil"
+  },
+  {
+    "name": "K220-4 Tab fängt auch im Eingabefeld der Leiste ab (F-574)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tf.Focus = e\n",
+    "neu": "\t\t\t_ = e\n"
+  },
+  {
+    "name": "K220-5 Fokus fällt nach verschwundenem Feld ins Leere (F-574)",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "if h.rahmen.Empty() && h != &e.ebenen.name {",
+    "neu": "if false && h.rahmen.Empty() && h != &e.ebenen.name {"
+  },
+  {
+    "name": "K220-6 Zeiger-Cancel schließt den Farbzug ab statt abzubrechen (F-574)",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\t\te.s.BrecheFarbZugAb()",
+    "neu": "\t\t\t\t\te.s.BeendeFarbZug()"
+  },
+  {
+    "name": "K220-7 Rücktaste im unberührten Feld löscht von der Anzeige statt vom Rohwert (F-574)",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "f.neu, f.text = false, e.feldRohwert(f)",
+    "neu": "f.neu, f.text = false, f.gezeigt"
   }
 ]

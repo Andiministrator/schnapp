@@ -1884,6 +1884,11 @@ func (e *editor) zeichneAuswahl(gtx layout.Context) {
 func (e *editor) alleTastenFilter() []event.Filter {
 	var filter []event.Filter
 	for _, f := range tastenFilter(e.s.TextLaeuft()) {
+		if f.Name == key.NameTab {
+			// Tab fängt nur ab, solange die Leinwand den Fokus hat; in einem Eingabefeld der Leiste bleibt es die
+			// Fokusfahrt (Karte #220, F-574): Sonst käme man aus Hex und Deckkraft während einer Texteingabe nicht heraus.
+			f.Focus = e
+		}
 		filter = append(filter, f)
 	}
 	filter = append(filter, key.FocusFilter{Target: e})
