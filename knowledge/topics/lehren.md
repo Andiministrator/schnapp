@@ -796,3 +796,8 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **`register-schreiben.mjs einfuege-nach`**: Anker muss eindeutig sein (bei gleichen Statusspalten das Zeilenende
   mehrerer Zeilen gleich → längeren Anker nehmen); endet der Anker am Zeilenende, beginnt `--neu` mit einem
   Zeilenumbruch; eine führende Leerzeile zerreißt die Tabelle (Abgleich Exit 2).
+- **Bei Platzmangel nicht den meistgenutzten Block opfern** (Verify V23-2): Das erste Auto-Einklappen nahm die Farbe weg
+  und sperrte den Farbwähler unter 690 dp aus; richtig ist, den seltener gebrauchten Abschnitt einzuklappen und einen
+  Klick auf die Überschrift als Vorrang zu werten. Schwellen in dp mit `gtx.Dp(unit.Dp(a+b))` rechnen, nie
+  `a*gtx.Dp(1)` (rundet 1,25 auf 1 und 1,5 auf 2).
+- **`sfnt.Font.Bounds` rechnet in int32**: mit ppem = unitsPerEm läuft es bei großen Schriften über; festen ppem nehmen.
