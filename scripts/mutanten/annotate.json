@@ -292,5 +292,13 @@
     "paket": "./internal/annotate",
     "alt": "f(\"%q %v lies outside the visible image\", name, *p)",
     "neu": "f(\"%q %v lies outside the visible image (0..%d, 0..%d)\", name, *p, d.Groesse().X, d.Groesse().Y)"
+  },
+  {
+    "name": "F603-1 Wache bleibt nach dem Speichern angemeldet (blockiertes stdout hängt)",
+    "datei": "cmd/schnapp/beschriften.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif len(fangen) > 0 {\n\t\tmeldeAb(kanal)\n\t}",
+    "neu": "\tif len(fangen) > 0 {\n\t\t_ = kanal\n\t}",
+    "timeout": "300s"
   }
 ]

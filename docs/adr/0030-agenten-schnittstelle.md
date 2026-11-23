@@ -416,3 +416,15 @@ MCP-Protokoll, nicht bei hartem Prozessende.
    nicht den Satz des Editors. Der Fehler zu einem Punkt außerhalb des Bilds nennt die Bildgröße nicht mehr: Aus einer
    abgelehnten Liste erfährt ein Agent die Maße einer fremden Datei nicht (gespeichert wird dabei nichts, es bleibt
    keine Spur).
+
+## Nachtrag 12 (23.11.2026): Signale bei blockierter Ausgabe nach dem Speichern (F-603, Karte #228)
+
+**Status:** Akzeptiert (Claude Opus 5.5, im Auftrag Andis: „arbeite selbstständig“). Präzisiert Nachtrag 11 Punkt 1.
+
+Die Wache von `--annotate` gilt nur, solange gelesen, beschriftet und gespeichert wird; vor der Ausgabe des Ergebnisses
+meldet sie ihre Signale ab (`signal.Stop`). Hängt danach stdout (eine volle Pipe, die niemand liest), beendet SIGTERM,
+SIGINT oder SIGHUP den Prozess wie ohne Schnapp — auch wenn das erste Signal schon während des Speicherns kam. Der
+Verdacht aus der Behebung zu #202, dort helfe nur SIGKILL, trifft nicht zu; belegt mit echten Signalen in einem
+Kindprozess (`cmd/schnapp/beschriften_signal_kind_test.go`, Gegenprobe: ohne Abmelden hängen alle Fälle). Im
+MCP-Server endet die Lage eines `annotate` gleich nach `beschrifteDatei`, vor dem Hinweis auf stderr: Ein blockiertes
+stderr hält ein zweites Signal nicht zurück.

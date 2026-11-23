@@ -1174,6 +1174,9 @@ func (an mcpAnschluesse) beschrifte(ctx context.Context, args json.RawMessage, _
 	lage := new(beschriftenLage)
 	defer lage.ende()
 	b, err := beschrifteDatei(ctx, p.File, es, o, einst.Kante, false, lage)
+	// Gespeichert oder gescheitert: Ab hier hält nichts mehr ein Signal zurück, auch nicht ein Hinweis auf einem
+	// blockierten stderr (F-603).
+	lage.ende()
 	var f *annotate.Fehler
 	switch {
 	case errors.As(err, &f):
