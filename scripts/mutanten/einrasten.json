@@ -45,7 +45,7 @@
     "name": "E7 Ränder und Mitte des Bilds fehlen",
     "datei": "internal/canvas/einrasten.go",
     "paket": "./internal/canvas",
-    "alt": "xs = []float64{a.X, (a.X + b.X) / 2, b.X}",
+    "alt": "xs = []float64{a.X, m.X, b.X}",
     "neu": "xs = []float64{}"
   },
   {
@@ -66,8 +66,8 @@
     "name": "E10 Kantengriff zeigt auch die fremde Achse",
     "datei": "internal/canvas/einrasten.go",
     "paket": "./internal/canvas",
-    "alt": "if math.Abs(w-l.Lage) < 1e-6 {",
-    "neu": "if math.Abs(w-w) < 1e6 {"
+    "alt": "case GriffO, GriffW:\n\t\treturn true, false",
+    "neu": "case GriffO, GriffW:\n\t\treturn true, true"
   },
   {
     "name": "E11 Gekürzte Verschiebung zeigt weiter die Linie",
@@ -124,5 +124,124 @@
     "paket": "./internal/ui",
     "alt": "return func(layout.Context) { e.s.SchalteEinrasten() }",
     "neu": "return func(layout.Context) {}"
+  },
+  {
+    "name": "E19 Bildmitte zwischen den Rändern des Originals statt der Ansicht",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "m := s.D.ZuOriginal(document.Pt(float64(g.X)/2, float64(g.Y)/2))",
+    "neu": "m := document.Pt((a.X+b.X)/2, (a.Y+b.Y)/2)"
+  },
+  {
+    "name": "E20 Verborgene senkrechte Linie bleibt Ziel",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.linieSichtbar(x, false) {",
+    "neu": "if true {"
+  },
+  {
+    "name": "E21 Verborgene waagrechte Linie bleibt Ziel",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.linieSichtbar(y, true) {",
+    "neu": "if true {"
+  },
+  {
+    "name": "E22 Kante am Streifen gilt als verborgen",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "const eps, weit = 1e-6, 1e18",
+    "neu": "const eps, weit = -1e-6, 1e18"
+  },
+  {
+    "name": "E23 Kasten nach dem Umklappen: gezogene senkrechte Kante zählt nicht",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "xs = []float64{k.Bereich.Min.X, k.Bereich.Max.X}",
+    "neu": "xs = []float64{k.Bereich.Min.X}"
+  },
+  {
+    "name": "E24 Kasten nach dem Umklappen: gezogene waagrechte Kante zählt nicht",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "ys = []float64{k.Bereich.Min.Y, k.Bereich.Max.Y}",
+    "neu": "ys = []float64{k.Bereich.Max.Y}"
+  },
+  {
+    "name": "E25 Kantengriff N/S zeigt auch die fremde Achse",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "case GriffN, GriffS:\n\t\treturn false, true",
+    "neu": "case GriffN, GriffS:\n\t\treturn true, true"
+  },
+  {
+    "name": "E26 Alt-Taste rechnet den laufenden Zug nicht neu",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.Ziehen(s.zugOrt)",
+    "neu": "\t\t_ = s.zugOrt"
+  },
+  {
+    "name": "E27 Alt-Taste bewegt schon vor der ersten Bewegung",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.bewegt && !s.pan && (s.zug == zugObjekt",
+    "neu": "if !s.pan && (s.zug == zugObjekt"
+  },
+  {
+    "name": "E28 Letzter Zeigerort wird nicht gemerkt",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "s.bewegt, s.zugOrt = true, p",
+    "neu": "s.bewegt = true"
+  },
+  {
+    "name": "E29 Linien bleiben nach Abbruch oder Loslassen stehen",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "if !s.bewegt || (s.zug != zugObjekt && s.zug != zugGriff && s.zug != zugNeu) {",
+    "neu": "if !s.bewegt {"
+  },
+  {
+    "name": "E30 Linien des alten Zugs vor der ersten Bewegung",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "if !s.bewegt || (s.zug != zugObjekt && s.zug != zugGriff && s.zug != zugNeu) {",
+    "neu": "if s.zug != zugObjekt && s.zug != zugGriff && s.zug != zugNeu {"
+  },
+  {
+    "name": "E31 Alt-Tastenereignis kommt nicht in der Sitzung an",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "e.s.AltTaste(k.State == key.Press)",
+    "neu": "e.s.AltTaste(false)"
+  },
+  {
+    "name": "E32 Alt-Filter ohne erlaubte Umschalter",
+    "datei": "internal/ui/kuerzel.go",
+    "paket": "./internal/ui",
+    "alt": "{filter: key.Filter{Name: key.NameAlt, Optional: key.ModAlt | key.ModShift | key.ModCtrl | key.ModSuper},",
+    "neu": "{filter: key.Filter{Name: key.NameAlt},"
+  },
+  {
+    "name": "E33 Senkrechte Hilfslinie ohne Umrechnung in die Ansicht",
+    "datei": "internal/ui/hilfslinien.go",
+    "paket": "./internal/ui",
+    "alt": "s.Abb.ZuFenster(s.D.ZuAnsicht(document.Pt(l.Lage, 0))).X",
+    "neu": "s.Abb.ZuFenster(document.Pt(l.Lage, 0)).X"
+  },
+  {
+    "name": "E34 Waagrechte Hilfslinie ohne Umrechnung in die Ansicht",
+    "datei": "internal/ui/hilfslinien.go",
+    "paket": "./internal/ui",
+    "alt": "s.Abb.ZuFenster(s.D.ZuAnsicht(document.Pt(0, l.Lage))).Y",
+    "neu": "s.Abb.ZuFenster(document.Pt(0, l.Lage)).Y"
+  },
+  {
+    "name": "E35 Hilfslinie reicht nicht über das sichtbare Bild",
+    "datei": "internal/ui/hilfslinien.go",
+    "paket": "./internal/ui",
+    "alt": "b := s.Abb.ZuFenster(document.Pt(float64(g.X), float64(g.Y)))",
+    "neu": "b := s.Abb.ZuFenster(document.Pt(float64(g.X)/2, float64(g.Y)/2))"
   }
 ]

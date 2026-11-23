@@ -26,6 +26,19 @@ type Hilfslinie struct {
 // ein.
 func (s *Sitzung) SetzeAlt(an bool) { s.alt = an }
 
+// AltTaste meldet, dass die Alt-Taste gedrückt oder losgelassen wurde, ohne dass sich der Zeiger bewegt hat (Tasten-
+// ereignis der Oberfläche): Ein laufender Zug wird sofort am letzten Zeigerort neu gerechnet, das Einrasten schaltet
+// also ohne die nächste Zeigerbewegung ab oder wieder an (ADR-0021 Nachtrag 12 Punkt 4, Kritik zu Karte #196).
+func (s *Sitzung) AltTaste(an bool) {
+	if s.alt == an {
+		return
+	}
+	s.alt = an
+	if s.bewegt && !s.pan && (s.zug == zugObjekt || s.zug == zugGriff || s.zug == zugNeu) {
+		s.Ziehen(s.zugOrt)
+	}
+}
+
 // EinrastenAn meldet, ob das Einrasten eingeschaltet ist (Menü Ansicht; Voreinstellung an, nicht gespeichert).
 func (s *Sitzung) EinrastenAn() bool { return !s.einrastenAus }
 
@@ -46,21 +59,44 @@ func (s *Sitzung) einrastenAktiv() bool { return !s.einrastenAus && !s.alt && !s
 
 // rastZiele sammelt die Linien, an denen eingerastet wird (Original): Kanten und Mitte der sichtbaren Objekte außer
 // dem mit der Kennung ohne, dazu Ränder und Mitte des sichtbaren Bilds. Ausgeblendete Ebenen und Objekte, die ganz im
-// Verborgenen liegen, zählen nicht.
+// Verborgenen liegen, zählen nicht; von den übrigen Objekten zählen nur die Linien, die selbst zu sehen sind
+// (linieSichtbar). Die Mitte des Bilds ist die Mitte der Ansicht, ins Original zurückgerechnet: Bei gestauchten
+// Bildern liegt die Mitte zwischen den Rändern des Originals woanders, womöglich in einem herausgeschnittenen Streifen.
 func (s *Sitzung) rastZiele(ohne int) (xs, ys []float64) {
 	g := s.D.Groesse()
 	a, b := s.D.ZuOriginal(document.Pt(0, 0)), s.D.ZuOriginal(document.Pt(float64(g.X), float64(g.Y)))
-	xs = []float64{a.X, (a.X + b.X) / 2, b.X}
-	ys = []float64{a.Y, (a.Y + b.Y) / 2, b.Y}
+	m := s.D.ZuOriginal(document.Pt(float64(g.X)/2, float64(g.Y)/2))
+	xs = []float64{a.X, m.X, b.X}
+	ys = []float64{a.Y, m.Y, b.Y}
 	for _, o := range s.D.Objekte() {
 		if o.Kennung() == ohne || o.Ebenenwerte().Ausgeblendet || !s.D.ObjektSichtbar(o) {
 			continue
 		}
 		r := o.Grenzen()
-		xs = append(xs, r.Min.X, (r.Min.X+r.Max.X)/2, r.Max.X)
-		ys = append(ys, r.Min.Y, (r.Min.Y+r.Max.Y)/2, r.Max.Y)
+		for _, x := range []float64{r.Min.X, (r.Min.X + r.Max.X) / 2, r.Max.X} {
+			if s.linieSichtbar(x, false) {
+				xs = append(xs, x)
+			}
+		}
+		for _, y := range []float64{r.Min.Y, (r.Min.Y + r.Max.Y) / 2, r.Max.Y} {
+			if s.linieSichtbar(y, true) {
+				ys = append(ys, y)
+			}
+		}
 	}
 	return xs, ys
+}
+
+// linieSichtbar meldet, ob die Linie x = lage (waagrecht: y = lage) des Originals im sichtbaren Bild liegt, also weder
+// außerhalb des Zuschnitts noch in einem herausgeschnittenen Streifen (die Kanten eines Streifens zählen als sichtbar).
+// An einer verborgenen Linie rastet nichts ein: Die Hilfslinie stünde an der Naht oder neben dem Bild, und das Ende
+// eines neuen Objekts läge im Verborgenen (F-150, F-157).
+func (s *Sitzung) linieSichtbar(lage float64, waagrecht bool) bool {
+	const eps, weit = 1e-6, 1e18
+	if waagrecht {
+		return s.D.Sichtbar(document.Rechteck{Min: document.Pt(-weit, lage-eps), Max: document.Pt(weit, lage+eps)})
+	}
+	return s.D.Sichtbar(document.Rechteck{Min: document.Pt(lage-eps, -weit), Max: document.Pt(lage+eps, weit)})
 }
 
 // rasteAchse liefert die kleinste Verschiebung, mit der einer der Werte mv auf eines der Ziele fällt, wenn sie höchstens
@@ -134,23 +170,52 @@ func nurWennGleich(linien []Hilfslinie, wunsch, ergebnis document.Punkt) []Hilfs
 
 // linienAmGriff behält die Linien, auf denen der Griff art des Ergebnisses o tatsächlich liegt: Eine Kantengriff
 // bewegt nur eine Achse, die andere Linie bliebe sonst ohne Bezug stehen.
+//
+// Beim Kasten zählen je bewegter Achse (griffAchsen) beide Kanten des Ergebnisses, nicht der Ort des Griffs: Wird eine
+// Seite über die andere gezogen, ordnet ZieheGriff den Bereich neu, und der gezogene Punkt gehört danach zu einem
+// anderen Griff — die Kante liegt trotzdem auf der Linie.
 func linienAmGriff(linien []Hilfslinie, o document.Objekt, art GriffArt) []Hilfslinie {
-	var res []Hilfslinie
-	for _, gr := range Griffe(o) {
-		if gr.Art != art {
-			continue
+	var xs, ys []float64
+	if k, ok := o.(document.Kasten); ok {
+		x, y := griffAchsen(art)
+		if x {
+			xs = []float64{k.Bereich.Min.X, k.Bereich.Max.X}
 		}
-		for _, l := range linien {
-			w := gr.Ort.X
-			if l.Waagrecht {
-				w = gr.Ort.Y
+		if y {
+			ys = []float64{k.Bereich.Min.Y, k.Bereich.Max.Y}
+		}
+	} else {
+		for _, gr := range Griffe(o) {
+			if gr.Art == art {
+				xs, ys = []float64{gr.Ort.X}, []float64{gr.Ort.Y}
 			}
+		}
+	}
+	var res []Hilfslinie
+	for _, l := range linien {
+		werte := xs
+		if l.Waagrecht {
+			werte = ys
+		}
+		for _, w := range werte {
 			if math.Abs(w-l.Lage) < 1e-6 {
 				res = append(res, l)
+				break
 			}
 		}
 	}
 	return res
+}
+
+// griffAchsen meldet, welche Achsen ein Griff bewegt: die Kantengriffe des Kastens nur eine, alle anderen beide.
+func griffAchsen(art GriffArt) (x, y bool) {
+	switch art {
+	case GriffN, GriffS:
+		return false, true
+	case GriffO, GriffW:
+		return true, false
+	}
+	return true, true
 }
 
 // AltGedrueckt meldet die zuletzt über SetzeAlt gemeldete Alt-Taste (für Tests der Oberfläche).

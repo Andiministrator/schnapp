@@ -1908,6 +1908,14 @@ func (e *editor) tasten(gtx layout.Context) {
 		if !ok {
 			return
 		}
+		if k, ok := ev.(key.Event); ok && k.Name == key.NameAlt {
+			// Alt gedrückt oder losgelassen, ohne dass sich der Zeiger bewegt (ADR-0021 Nachtrag 12 Punkt 4): Ein
+			// laufender Zug rastet sofort nicht mehr bzw. wieder ein. Ohne Zug merkt die Sitzung nur den Zustand; das
+			// nächste Zeigerereignis setzt ihn ohnehin neu. Während des Speicherns ruht der Zug (Sitzung.Ziehen).
+			e.s.AltTaste(k.State == key.Press)
+			gtx.Execute(op.InvalidateCmd{})
+			continue
+		}
 		if e.hilfeOffen && !e.menue.offen {
 			// Übersicht der Tastenkürzel offen (F1): Esc und F1 schließen sie, auch während des Speicherns; alle anderen
 			// Tasten und getippter Text wirken nicht, damit nichts unbemerkt hinter der Tafel die Leinwand ändert (wie

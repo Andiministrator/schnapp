@@ -404,7 +404,7 @@ Objekten und am Bild.
    Original; bei gestauchten Bildern weicht die Weite an einer Naht geringfügig ab, das ist hinzunehmen. Die Fangweite
    selbst zählt noch dazu; bei Gleichstand gewinnt das zuerst genannte Ziel (Bild vor Objekten).
 4. **Alt schaltet ab.** Solange Alt gedrückt ist, rastet nichts ein. Die Oberfläche setzt es je Zeigerereignis
-   (`Sitzung.SetzeAlt`, wie `Umschalt`); eine Alt-Taste ohne Zeigerbewegung wirkt erst mit der nächsten Bewegung. Das
+   (`Sitzung.SetzeAlt`, wie `Umschalt`); eine Alt-Taste ohne Zeigerbewegung wirkt sofort (Ergänzung unten, Punkt c). Das
    ist eine Ausnahme nach ADR-0026 Punkt 5, wie Umschalt beim Ziehen: ein Zustand während des Ziehens, kein Kürzel;
    der Knopf dazu ist der Menüeintrag in Punkt 6. Die Übersicht (F1) nennt „Alt: Einrasten beim Ziehen aus“.
 5. **Hilfslinie.** Dünn (1 dp), in der Akzentfarbe Orange (`farbeAkzent`, Corporate Design: Orange nur als Akzent),
@@ -421,3 +421,32 @@ Objekten und am Bild.
 8. **Umsetzung.** Logik `internal/canvas/einrasten.go` (`rastZiele`, `rasteAchse`, `rasteRechteck`, `rastePunkt`,
    `Hilfslinie`), Einhängen in `Sitzung.Ziehen` und `zieheNeu`; Tests `einrasten_test.go` (canvas und ui), Mutanten
    `scripts/mutanten/einrasten.json`, Sichtprobe `scripts/drehbuecher/einrasten-196.txt`.
+
+**Ergänzung aus der Kritik (23.11.2026, Claude Fable 5.2, Karte #196).** Sie stellt die Punkte 1, 4 und 5 genauer:
+
+- a. **Nur sichtbare Linien sind Ziele (zu Punkt 1).** Von einem Objekt, das nur zum Teil zu sehen ist, zählen die
+  Linien nicht, die außerhalb des Zuschnitts oder in einem herausgeschnittenen Streifen liegen (`linieSichtbar`; die
+  Kanten eines Streifens selbst sind zu sehen und zählen). Sonst stünde die Hilfslinie an der Naht oder neben dem
+  Bild, und das Ende eines neuen Pfeils oder Kastens läge im Verborgenen (gegen F-150 und F-157).
+- b. **Mitte des Bilds (zu Punkt 1).** Gemeint ist die Mitte der Ansicht, ins Original zurückgerechnet, nicht die
+  Mitte zwischen den Rändern des Originals: Bei gestauchten Bildern fallen beide auseinander, die zweite kann in
+  einem Streifen liegen.
+- c. **Alt ohne Zeigerbewegung (zu Punkt 4).** Die Alt-Taste kommt zusätzlich als Tastenereignis an (gedrückt und
+  losgelassen, `Sitzung.AltTaste`): Ein laufender Zug wird sofort am letzten Zeigerort neu gerechnet, das Einrasten
+  schaltet also ohne die nächste Zeigerbewegung ab und wieder an; es bleibt ein Schritt im Verlauf. Die Taste steht
+  dafür mit ihrer Begründung als Ausnahme in `tastenTabelle` (ADR-0026 Punkte 5 und 6), ohne eigene Handlung. Liefert
+  die Tastaturbelegung für die Taste ein anderes Zeichen als Alt (etwa Umschalt+Alt als Meta), kommt kein
+  Tastenereignis; dann gilt weiter der Stand des nächsten Zeigerereignisses.
+- d. **Annahme zu KDE (zu Punkt 4).** Unter Plasma 5 verschob Alt+Ziehen in der Voreinstellung das Fenster; unter
+  Plasma 6 ist die Voreinstellung der Modifikatortaste für Fensteraktionen Meta. Angenommen wird: Mit der
+  Voreinstellung von Plasma 6 erreicht Alt beim Ziehen Schnapp. Wer die KWin-Einstellung auf Alt stellt (oder eine
+  Umgebung nutzt, die Alt+Ziehen selbst verbraucht), bekommt den Zug nicht in Schnapp und schaltet das Einrasten
+  über den Menüeintrag „Snap to objects“ (Punkt 6) ab. Gegen eine echte Sitzung ist das noch nicht geprüft; eine
+  zweite Taste wird erst erwogen, wenn sich die Annahme als falsch erweist.
+- e. **Kasten über die Gegenseite gezogen (zu Punkt 5).** Beim Kasten zählt für die Hilfslinie je bewegter Achse
+  (`griffAchsen`) jede der beiden Kanten des Ergebnisses, nicht der Ort des Griffs: Klappt der Kasten um, liegt die
+  gezogene Kante weiter auf der Linie, der Griffname gehört aber zur anderen Seite.
+- f. **Nicht erreichbar:** Die Abfrage der Vollansicht des Zuschneidens in `einrastenAktiv` ist eine Absicherung; in
+  diesem Werkzeug gibt es weder Objektzug noch Objektgriffe noch neue Objekte.
+- g. **Umsetzung und Tests:** `einrasten_kritik_test.go` (canvas und ui), `hilfslinienFlaechen` (Lage der Linie im
+  Fenster, ohne Gio prüfbar), Mutanten E19 bis E35.

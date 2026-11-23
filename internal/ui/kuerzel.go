@@ -83,6 +83,10 @@ func tastenTabelle() []taste {
 			ausnahme: "wie Return (Ziffernblock)"},
 		{filter: key.Filter{Name: key.NameTab, Optional: key.ModShift}, nurText: true,
 			ausnahme: "während der Texteingabe abgefangen und ohne Wirkung (F-153)"},
+		// Alt allein, gedrückt und losgelassen (ADR-0021 Nachtrag 12 Punkt 4): Die Umschalter sind erlaubt, weil der
+		// Tastendruck selbst je nach Reihenfolge mit oder ohne ModAlt ankommt.
+		{filter: key.Filter{Name: key.NameAlt, Optional: key.ModAlt | key.ModShift | key.ModCtrl | key.ModSuper},
+			ausnahme: "Zustand während des Ziehens, kein Kürzel: Einrasten aus, solange gehalten (Menü Ansicht → „Snap to objects“)"},
 		{filter: key.Filter{Name: key.NameDeleteForward}, akt: aktLoeschen},
 		{filter: key.Filter{Name: key.NameDeleteBackward}, akt: aktLoeschen},
 		strg("Z", aktRueckgaengig),

@@ -63,6 +63,7 @@ type Sitzung struct {
 	// Linien, an denen der laufende Zug einrastet.
 	alt, einrastenAus bool
 	linien            []Hilfslinie
+	zugOrt            document.Punkt // Fensterpunkt des letzten Ziehens (AltTaste rechnet den Zug dort neu)
 
 	gespeichert uint64 // Verlaufsstand beim Öffnen oder letzten Speichern (F-109)
 	// verwerfen: Speichern beim Schließen ist bei diesem Stand gescheitert; eine weitere Schließen-Anfrage ohne neue
@@ -293,7 +294,7 @@ func (s *Sitzung) Ziehen(p document.Punkt) {
 	if !s.bewegt && p.Minus(s.start).Laenge() < Ziehschwelle {
 		return
 	}
-	s.bewegt = true
+	s.bewegt, s.zugOrt = true, p
 	switch s.zug {
 	case zugAnsicht:
 		s.eingepasst = false
