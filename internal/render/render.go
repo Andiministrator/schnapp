@@ -553,7 +553,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 		if err != nil {
 			return err
 		}
-		breite := float64(font.MeasureString(face, s)) / 64
+		breite := zeilenBreite(face, fonts.Laden(fonts.Go, fonts.Fett), s, grad)
 		// Senkrecht mittig wie dominant-baseline="central": Grundlinie um die halbe Ziffernhöhe unter der Mitte.
 		hoehe := float64(face.Metrics().CapHeight) / 64
 		z.text(face, fonts.Laden(fonts.Go, fonts.Fett), s, m.X-breite/2, m.Y+hoehe/2, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, grad)
@@ -561,6 +561,23 @@ func (z zeichner) objekt(o document.Objekt) error {
 		z.lupe(v)
 	}
 	return nil
+}
+
+// zeilenBreite ist die Breite von s in Pixeln, wie text sie setzt: Vorschub je Zeichen und Paarunterschneidung im Grad
+// (document.KernPaar). font.MeasureString nähme face.Kern, der nicht mit dem Grad skaliert (F-577).
+func zeilenBreite(face font.Face, sch *fonts.Schrift, s string, grad float64) float64 {
+	var puffer sfnt.Buffer
+	var b fixed.Int26_6
+	vorher := rune(-1)
+	for _, c := range s {
+		if vorher >= 0 {
+			b += document.KernPaar(sch.Font, &puffer, vorher, c, grad)
+		}
+		vorher = c
+		a, _ := face.GlyphAdvance(c)
+		b += a
+	}
+	return float64(b) / 64
 }
 
 // zeileSichtbar meldet, ob eine Textzeile ab x auf dieser Grundlinie das Bild schneiden kann — dieselben Grenzen wie
@@ -928,7 +945,12 @@ func (z zeichner) text(face font.Face, sch *fonts.Schrift, s string, x, grundlin
 		z.auf.glyphen++
 		// Wie font.Drawer.DrawString mit einem Zeichen (ohne Kerning, das steht oben), aber mit eigenem Einmischen
 		// statt draw.DrawMask, das für *image.NRGBA nur den allgemeinen Weg kennt (F-147).
-		gr, maske, mp, adv, _ := face.Glyph(dot, c)
+		gr, maske, mp, adv, ok := face.Glyph(dot, c)
+		if !ok {
+			// Face.Glyph meldet bei unlesbaren Umrissen Vorschub 0; der Vorschub gilt trotzdem, wie in der Messung, im
+			// Editor und im Zweig oben (F-577).
+			adv, _ = face.GlyphAdvance(c)
+		}
 		if !gr.Empty() {
 			glyphMischen(z.bild, gr, maske, mp, farbe)
 		}

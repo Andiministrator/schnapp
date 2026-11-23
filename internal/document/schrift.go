@@ -97,24 +97,34 @@ func (t Text) SchriftFehlt() bool { return t.Schrift != "" && t.Schriftdatei().E
 func textSchrift(t Text) *schriftMass { return massVon(t.Schriftdatei()) }
 
 // glyph liefert die Maße der Glyphe für r wie font.Drawer sie zeichnet: Ein Zeichen ohne Glyphe erscheint als
-// Ersatzkästchen (Glyphe 0); lässt sich r nicht nachschlagen, zeichnet der Renderer nichts. Nur mit schriftMu.
-func (s *schriftMass) glyph(r rune) (sfnt.GlyphIndex, glyphMass, bool) {
+// Ersatzkästchen (Glyphe 0). Der Vorschub gilt immer, wie ihn font.Face.GlyphAdvance liefert, mit dem Editor und
+// Renderer die nächste Glyphe setzen (F-577): Lässt sich r nicht nachschlagen, zählt der Vorschub der Glyphe 0 und ok
+// ist false (der Renderer zeichnet nichts, Unterschneidung gibt es dort nicht, KernPaar); sind die Umrisse unlesbar,
+// bleibt der Vorschub und die Tinte ist leer. Nur mit schriftMu.
+func (s *schriftMass) glyph(r rune) (gi sfnt.GlyphIndex, m glyphMass, ok bool) {
 	gi, err := s.f.GlyphIndex(&schriftPuffer, r)
+	ok = err == nil
 	if err != nil {
-		return 0, glyphMass{}, false
+		gi = 0
 	}
-	if m, ok := s.glyphen[gi]; ok {
-		return gi, m, true
-	}
-	b, vor, err := s.f.GlyphBounds(&schriftPuffer, gi, s.ppem, font.HintingNone)
-	if err != nil {
-		return 0, glyphMass{}, false
+	if m, hat := s.glyphen[gi]; hat {
+		return gi, m, ok
 	}
 	e := func(v fixed.Int26_6) float64 { return float64(v) / 64 / s.em }
-	m := glyphMass{vorschub: e(vor), tinte: Rechteck{Min: Pt(e(b.Min.X), e(b.Min.Y)), Max: Pt(e(b.Max.X), e(b.Max.Y))},
-		leer: b.Min.X >= b.Max.X || b.Min.Y >= b.Max.Y}
+	b, vor, err := s.f.GlyphBounds(&schriftPuffer, gi, s.ppem, font.HintingNone)
+	if err != nil {
+		// Umrisse unlesbar (LoadGlyph scheitert): nur der Vorschub aus hmtx, wie font.Face.GlyphAdvance.
+		a, err := s.f.GlyphAdvance(&schriftPuffer, gi, s.ppem, font.HintingNone)
+		if err != nil {
+			a = 0
+		}
+		m = glyphMass{vorschub: e(a), leer: true}
+	} else {
+		m = glyphMass{vorschub: e(vor), tinte: Rechteck{Min: Pt(e(b.Min.X), e(b.Min.Y)), Max: Pt(e(b.Max.X), e(b.Max.Y))},
+			leer: b.Min.X >= b.Max.X || b.Min.Y >= b.Max.Y}
+	}
 	s.glyphen[gi] = m
-	return gi, m, true
+	return gi, m, ok
 }
 
 // zeile misst eine Zeile im Schriftgrad grad (Pixel): Vorschub (wie font.MeasureString) und Tinte relativ zum
@@ -123,20 +133,18 @@ func (s *schriftMass) glyph(r rune) (sfnt.GlyphIndex, glyphMass, bool) {
 func (s *schriftMass) zeile(text string, grad float64) (vorschub float64, tinte Rechteck, ok bool) {
 	x := 0.0
 	var vorher sfnt.GlyphIndex
+	vorherGut := false
 	erste := true
 	for _, r := range text {
 		gi, m, gut := s.glyph(r)
-		if !erste {
+		if !erste && gut && vorherGut {
 			// Paarunterschneidung (GPOS, sonst kern) im Schriftgrad, wie Renderer und Editor (KernPaar; Sitzungs-QA B-4:
-			// opentype.Face.Kern skaliert nicht mit der Größe).
+			// opentype.Face.Kern skaliert nicht mit der Größe). Ein Zeichen ohne Nachschlag hat keine (KernPaar: 0).
 			if k, err := s.f.Kern(&schriftPuffer, vorher, gi, fixed.Int26_6(math.Round(grad*64)), font.HintingNone); err == nil {
 				x += float64(k) / 64
 			}
 		}
-		erste, vorher = false, gi
-		if !gut {
-			continue
-		}
+		erste, vorher, vorherGut = false, gi, gut
 		if !m.leer {
 			g := Rechteck{Min: Pt(x+m.tinte.Min.X*grad, m.tinte.Min.Y*grad), Max: Pt(x+m.tinte.Max.X*grad, m.tinte.Max.Y*grad)}
 			if ok {

@@ -87,8 +87,8 @@
     "name": "T190-13 Zeilen im SVG ohne Ausrichtung",
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
-    "alt": "\t\t\t\ts.attr(\"x\", zahl(zeile.X))",
-    "neu": "\t\t\t\ts.attr(\"x\", zahl(o.Ort.X))"
+    "alt": "\t\t\t\ts.attr(\"x\", zahl(zeile.X+anker*zeile.Vorschub))",
+    "neu": "\t\t\t\ts.attr(\"x\", zahl(o.Ort.X+0*anker))"
   },
   {
     "name": "T190-14 Go bleibt im Werkzeug als Name",
@@ -335,5 +335,133 @@
     "paket": "./internal/ui",
     "alt": "float64(sicht.Min.X)-seitlich*grad",
     "neu": "float64(sicht.Min.X)-grad"
+  },
+  {
+    "name": "K220-10 Messung: unlesbare Glyphe ohne Vorschub (F-577)",
+    "datei": "internal/document/schrift.go",
+    "paket": "./internal/document",
+    "alt": "m = glyphMass{vorschub: e(a), leer: true}",
+    "neu": "m = glyphMass{vorschub: e(a) * 0, leer: true}"
+  },
+  {
+    "name": "K220-11 Renderer: unlesbare Glyphe ohne Vorschub (F-577)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\tadv, _ = face.GlyphAdvance(c)\n",
+    "neu": "\t\t\t_ = adv\n"
+  },
+  {
+    "name": "K220-12 SVG-Export: Mitte ohne text-anchor (F-577)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\t\t\t\ts.attr(\"text-anchor\", \"middle\")\n",
+    "neu": ""
+  },
+  {
+    "name": "K220-13 SVG-Export: Mitte ohne verschobenes x (F-577)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\t\t\t\tanker = 0.5\n",
+    "neu": "\t\t\t\t\tanker = 0\n"
+  },
+  {
+    "name": "K220-14 SVG-Export: rechts mit start statt end (F-577)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "s.attr(\"text-anchor\", \"end\")",
+    "neu": "s.attr(\"text-anchor\", \"start\")"
+  },
+  {
+    "name": "K220-15 SVG-Export: rechts ohne verschobenes x (F-577)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\t\t\t\tanker = 1\n",
+    "neu": "\t\t\t\t\tanker = 0\n"
+  },
+  {
+    "name": "K220-16 SVG-Export: font-weight nach verlangtem Schnitt (F-577)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "if schnitt&fonts.Fett != 0 {",
+    "neu": "if o.Fett {"
+  },
+  {
+    "name": "K220-17 SVG-Export: font-style nach verlangtem Schnitt (F-577)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "if schnitt&fonts.Kursiv != 0 {",
+    "neu": "if o.Kursiv {"
+  },
+  {
+    "name": "K220-18 Nummernbreite ohne Unterschneidung im Grad (F-577)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\tb += document.KernPaar(sch.Font, &puffer, vorher, c, grad)\n",
+    "neu": "\t\t\t_ = puffer\n"
+  },
+  {
+    "name": "K220-19 Sammlung: Index der Schrift geht verloren (F-577)",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "quelle{da: true, pfad: pfad, index: i, samml: sammlung}",
+    "neu": "quelle{da: true, pfad: pfad, index: i * 0, samml: sammlung}"
+  },
+  {
+    "name": "K220-20 Suche: Dateigröße ungeprüft (F-577)",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "err != nil || !st.Mode().IsRegular() || st.Size() > MaxDateiGroesse {",
+    "neu": "err != nil || !st.Mode().IsRegular() {"
+  },
+  {
+    "name": "K220-21 Laden: Dateigröße ungeprüft (F-577)",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "\t\t\tif !st.Mode().IsRegular() || st.Size() > MaxDateiGroesse {",
+    "neu": "\t\t\tif !st.Mode().IsRegular() {",
+    "aequivalent": true,
+    "grund": "Die Prüfung nach dem Lesen (len(roh) > MaxDateiGroesse, wenige Zeilen weiter) fängt dieselbe Datei ab; die Vorabprüfung spart nur das Einlesen von bis zu 64 MiB. Beobachtbar ist nur der Zeit- und Speicherverbrauch, nicht das Ergebnis (TestLadenUeberMaxDateiGroesse)."
+  },
+  {
+    "name": "K220-22 Farb-Bitmap-Schriften stehen in der Liste (F-577)",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "return !errors.Is(err, sfnt.ErrColoredGlyph)",
+    "neu": "return true"
+  },
+  {
+    "name": "K220-23 Editor: Text ohne Vorschub (F-577)",
+    "datei": "internal/ui/textsatz.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tdot += adv\n\t}\n\tspec",
+    "neu": "\t\t_ = adv\n\t}\n\tspec"
+  },
+  {
+    "name": "K220-24 Editor: Text ohne Unterschneidung (F-577)",
+    "datei": "internal/ui/textsatz.go",
+    "paket": "./internal/ui",
+    "alt": "dot += document.KernPaar(s.Font, &ts.puffer, vorher, r, grad)",
+    "neu": "_ = document.KernPaar(s.Font, &ts.puffer, vorher, r, grad)"
+  },
+  {
+    "name": "K220-25 Editor: Umrisse ohne Grenze (F-577)",
+    "datei": "internal/ui/textsatz.go",
+    "paket": "./internal/ui",
+    "alt": "if len(ts.umrisse) >= umrissGrenze {",
+    "neu": "if false && len(ts.umrisse) >= umrissGrenze {"
+  },
+  {
+    "name": "K220-26 Editor: Faces ohne Grenze (F-577)",
+    "datei": "internal/ui/textsatz.go",
+    "paket": "./internal/ui",
+    "alt": "if len(ts.faces) > 256 {",
+    "neu": "if false && len(ts.faces) > 256 {"
+  },
+  {
+    "name": "K220-27 Editor zeichnet keine Striche (F-577)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "for _, st := range v.Striche() {",
+    "neu": "for _, st := range v.Striche()[:0] {"
   }
 ]

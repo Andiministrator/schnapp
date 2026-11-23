@@ -311,17 +311,34 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			s.attr("xml:space", "preserve") // sonst falten Betrachter mehrere und führende Leerzeichen (F-343)
 			s.attr("font-family", svgSchriftFuer(o.Schrift))
 			s.attr("font-size", zahl(o.Schriftgrad))
-			if o.Fett {
+			// Gewicht und Stil nach dem Schnitt, den Renderer und Editor wirklich setzen (fehlt der verlangte, steht der
+			// Ersatz, ADR-0021 Nachtrag 10 Punkt 4), nicht nach dem verlangten (F-577).
+			schnitt := o.Schriftdatei().Schnitt
+			if schnitt&fonts.Fett != 0 {
 				s.attr("font-weight", "bold")
 			}
-			if o.Kursiv {
+			if schnitt&fonts.Kursiv != 0 {
 				s.attr("font-style", "italic")
+			}
+			// Im Export (nicht in der Arbeitsdatei, deren Zeilenanfänge das Format nicht festlegt) verankert text-anchor
+			// jede Zeile an Mitte bzw. rechtem Ende: Setzt ein Betrachter eine andere Schrift, bleibt die Ausrichtung
+			// erhalten (F-577); der Anfang einer Zeile bleibt der des Renderers.
+			anker := 0.0
+			if !s.rundlauf {
+				switch o.Ausrichtung {
+				case document.AusrichtungMitte:
+					s.attr("text-anchor", "middle")
+					anker = 0.5
+				case document.AusrichtungRechts:
+					s.attr("text-anchor", "end")
+					anker = 1
+				}
 			}
 			s.farbeSVG("fill", o.Farbe)
 			s.WriteString(`>`)
 			for _, zeile := range o.Zeilen() { // Anfang nach der Ausrichtung (ADR-0021 Nachtrag 10 Punkt 6)
 				s.WriteString(`<tspan`)
-				s.attr("x", zahl(zeile.X))
+				s.attr("x", zahl(zeile.X+anker*zeile.Vorschub))
 				s.attr("y", zahl(zeile.Grundlinie))
 				s.WriteString(`>`)
 				xml.EscapeText(s, []byte(zeile.Text)) // sichtbar wie im Renderer: Tabulator als vier Leerzeichen (F-343); s:inhalt behält das Original
