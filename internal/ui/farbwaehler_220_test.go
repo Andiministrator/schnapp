@@ -145,3 +145,27 @@ func TestZeigerCancelImFarbzug(t *testing.T) {
 			fw.zieht, l.textHintergrund(), vor, l.e.s.D.Stand() != stand)
 	}
 }
+
+// F-608: Läuft eine Texteingabe, gibt Tab aus einem Eingabefeld der Leiste den Fokus an die Leinwand zurück; der
+// nächste getippte Buchstabe landet im Text, nicht im Leeren.
+func TestTabAusFeldGibtLeinwandFokusWaehrendTexteingabe(t *testing.T) {
+	for _, m := range []key.Modifiers{0, key.ModShift} {
+		l := neuerMenueLauf(t, image.Pt(1200, 800))
+		fw := &l.e.seite.fw
+		l.textEingabeStarten()
+		vor, _ := l.e.s.TextObjekt()
+		l.klick(mittenPunkt(fw.hex.rahmen))
+		if !l.fokus(&fw.hex) {
+			t.Fatalf("Klick fokussiert das Hex-Feld nicht (%s)", menueFokusName(l))
+		}
+		l.tabTaste(m)
+		if !l.fokus(l.e) {
+			t.Errorf("Tab (%v) gab den Fokus nicht an die Leinwand (Fokus %s)", m, menueFokusName(l))
+		}
+		l.tippe("x")
+		nach, ok := l.e.s.TextObjekt()
+		if !ok || nach.Inhalt != vor.Inhalt+"x" {
+			t.Errorf("Tab (%v): Text %q, erwartet %q", m, nach.Inhalt, vor.Inhalt+"x")
+		}
+	}
+}

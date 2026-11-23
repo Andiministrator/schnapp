@@ -211,6 +211,12 @@ func (e *editor) feldTasten(gtx layout.Context) {
 			for _, n := range []key.Name{key.NameReturn, key.NameEnter, key.NameEscape, key.NameDeleteBackward} {
 				filter = append(filter, key.Filter{Focus: f, Name: n, Optional: key.ModShift})
 			}
+			if e.s.TextLaeuft() {
+				// Während einer Texteingabe gibt Tab aus dem Feld den Fokus an die Leinwand zurück, statt zum nächsten
+				// Knopf zu fahren: Dort gingen weitere getippte Zeichen verloren (Karte #233, F-608). Ohne Texteingabe
+				// bleibt Tab die Fokusfahrt.
+				filter = append(filter, key.Filter{Focus: f, Name: key.NameTab, Optional: key.ModShift})
+			}
 		}
 		for {
 			ev, ok := gtx.Event(filter...)
@@ -266,6 +272,9 @@ func (e *editor) feldTasten(gtx layout.Context) {
 				case key.NameEscape:
 					f.neu, f.text, f.fehler = true, "", false
 					e.umbenennenEnde(f)
+					gtx.Execute(key.FocusCmd{Tag: e})
+				case key.NameTab:
+					// Der Fokuswechsel übernimmt die Eingabe (FocusEvent oben, Zweig „Tab oder ein Fokuswechsel“).
 					gtx.Execute(key.FocusCmd{Tag: e})
 				case key.NameDeleteBackward:
 					if f.neu { // vom reinen Wert ohne Einheit aus (A-8: „50 %“ ließ sonst ein Leerzeichen stehen)

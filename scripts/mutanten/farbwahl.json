@@ -385,5 +385,19 @@
     "paket": "./internal/ui",
     "alt": "f.neu, f.text = false, e.feldRohwert(f)",
     "neu": "f.neu, f.text = false, f.gezeigt"
+  },
+  {
+    "name": "K233-1 Tab aus dem Feld gibt den Fokus nicht an die Leinwand (F-608)",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tcase key.NameTab:\n\t\t\t\t\t// Der Fokuswechsel übernimmt die Eingabe (FocusEvent oben, Zweig „Tab oder ein Fokuswechsel“).\n\t\t\t\t\tgtx.Execute(key.FocusCmd{Tag: e})",
+    "neu": "\t\t\t\tcase key.NameTab:"
+  },
+  {
+    "name": "K233-2 Tab im Feld bleibt Fokusfahrt auch bei Texteingabe (F-608)",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif e.s.TextLaeuft() {\n\t\t\t\t// Während einer Texteingabe gibt Tab",
+    "neu": "\t\t\tif false && e.s.TextLaeuft() {\n\t\t\t\t// Während einer Texteingabe gibt Tab"
   }
 ]
