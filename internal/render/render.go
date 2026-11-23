@@ -70,7 +70,10 @@ var ErrZuAufwendig = errors.New("render: Dokument zu aufwendig zu rastern")
 // rund 0,3 ns (Messung 19.11.2026, Entwicklungsrechner, ein Kern, Karte #71):
 //   - je Glyphe max(Schriftgrad², glyphGrund): Auch kleine Glyphen kosten 4 bis 10 µs (Gesichtsaufruf, Maske; Messung
 //     23.11.2026, F-589: Grad 4 bis 24 rund 3,6 bis 5,5 µs, Grad 32 bis 64 rund 8 bis 10 µs, `BenchmarkGlyphKosten`), das sind
-//     bei glyphGrund 5500 rund 0,6 bis 1,8 ns je Einheit, so viel wie bei großen Glyphen (rund 1 ns je Einheit);
+//     bei glyphGrund 5500 rund 0,6 bis 1,8 ns je Einheit, so viel wie bei großen Glyphen (rund 1 ns je Einheit; die
+//     „rund 0,3 ns“ oben gelten seit ADR-0028 nicht mehr). Das gilt für gemischten Fließtext. Die Form max(…) zählt in
+//     der Mitte zu wenig: Dichte Glyphen an der Knickstelle (Grad 74, 74² = glyphGrund) kosten bis rund 20 µs, also
+//     rund 3,7 ns je Einheit („@“; „W“ rund 3 ns, Fließtext rund 2 ns; Kritik zu Karte #224, 23.11.2026);
 //   - je Füllung fuellGewicht × Fläche ihres aufs Bild beschnittenen Rechtecks: rund 7 ns je Pixel mit einmischer
 //     (F-130, Messung 20.11.2026; vorher rund 30 bis 36 ns über den allgemeinen Weg von x/image/vector, Gewicht 100);
 //   - je Polygonecke punktGewicht (Geometrie, Ausrichten, LineTo; rund 30 ns) und je Kante kantenGewicht ×
@@ -102,7 +105,8 @@ const (
 //     (vor ADR-0028 rund 35 s, vor F-135 bis knapp 5 min) — die Wartezeit, die eine präparierte Datei beim Speichern
 //     erzwingen kann. Glyphen knapp unter GlyphBudget = 3e9 (seit F-589; vorher 1e9 bei glyphGrund 1700), sichtbar auf
 //     8000×8000 als „W“ Grad 4096, brauchen rund 3,4 s (1,1 ns je Einheit), kleine Glyphen im Grad 64 knapp unter der
-//     Grenze (rund 520 000) rund 5 s. Kanten knapp unter KantenBudget (vor ADR-0023 Nachtrag 7:
+//     Grenze (rund 520 000) rund 5 s, das teuerste gefundene Muster („@“ im Grad 74, rund 530 000 Glyphen) rund 11 s.
+//     Kanten knapp unter KantenBudget (vor ADR-0023 Nachtrag 7:
 //     120 Abriss-Nähte auf 32768×2100, Kanten 9,4e9, Fläche 1,4e10) rasterten in rund 8 s (7,6 bis 8,9 s), davon rund
 //     4 bis 5 s für die Kanten (rund 0,5 ns je Einheit, Vergleich mit 120 Zacken-Nähten: 3,2 bis 3,6 s); Messung
 //     22.11.2026 nach F-418, ein Kern. Seit Nachtrag 7 (13 Füllungen je Naht, Band 32 px) kosten 120 Abriss-Nähte auf
@@ -113,9 +117,10 @@ const (
 //     Abriss-Nähte auf 32768×2100 statt 11,8 s in rund 6,5 s (liegen die Nähte eng, wie dort mit 17 px Abstand, wird
 //     der Spalt für F-438 ein zweites Mal geleert: rund 7,3 s). Seit F-438 liegt die Grenze bei rund 91 Nähten auf
 //     32768 px Länge und rund 364 auf 8192 px (TestNahtZahlGrenze); ein Dokument knapp unter allen drei Grenzen
-//     zugleich (90 Nähte, 177 × „W“ Grad 4096, bildgroße Rahmen bis Budget) rastert in rund 14 s, nicht in 10 s
-//     (BenchmarkNaehteAlleGrenzen); mit den teuersten kleinen Glyphen statt der „W“ (Grad 64, rund 520 000 Glyphen,
-//     BenchmarkNaehteAlleGrenzenKleineGlyphen) in rund 16 s. Zusammen also rund 16 s (Messung 23.11.2026, F-589).
+//     zugleich (90 Nähte, 177 × „W“ Grad 4096, bildgroße Rahmen bis Budget) rastert in rund 12 bis 14 s, nicht in 10 s
+//     (BenchmarkNaehteAlleGrenzen); mit kleinen Glyphen statt der „W“ (BenchmarkNaehteAlleGrenzenKleineGlyphen) in
+//     rund 16 s (Fließtext Grad 64, rund 520 000 Glyphen) und mit dem teuersten gefundenen Muster („@“ Grad 74, rund
+//     530 000 Glyphen) in rund 21 s. Zusammen also rund 21 s (Messung 23.11.2026, F-589 und Kritik zu Karte #224).
 //     Die Gewichte unten stammen aus den Messungen vor ADR-0028 und bleiben (die Grenzen sind Obergrenzen).
 //     So werden die präparierten Fälle aus F-125 und F-132 (10000 große Glyphen oder Nummern, 10000 sehr breite
 //     Pfeile, 10000 Texte à 10000 winziger Glyphen, Hunderte bildgroßer Flächen) beim Öffnen abgelehnt.

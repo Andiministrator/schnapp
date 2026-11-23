@@ -65,34 +65,50 @@ func BenchmarkNaehteAlleGrenzen(b *testing.B) {
 	b.ReportMetric(Aufwand(d), "Einheiten")
 }
 
-// BenchmarkNaehteAlleGrenzenKleineGlyphen (F-589): wie BenchmarkNaehteAlleGrenzen, aber die Glyphen sind das teuerste
-// Muster je Kosteneinheit: Buchstaben im Grad 64 (Kosten glyphGrund je Glyphe, gemessen rund 10 µs), übereinander in
-// Textobjekten zu 10 000 Zeichen, bis knapp unter GlyphBudget.
+// BenchmarkNaehteAlleGrenzenKleineGlyphen (F-589): wie BenchmarkNaehteAlleGrenzen, aber mit kleinen Glyphen statt der
+// „W“ im Grad 4096, übereinander in Textobjekten unter 10 000 Zeichen, bis knapp unter GlyphBudget:
+//   - Fliesstext64: gemischte Buchstaben im Grad 64 (Kosten glyphGrund je Glyphe, gemessen rund 10 µs);
+//   - Klammeraffe74: das teuerste gefundene Muster je Kosteneinheit (Kritik zu Karte #224): „@“ im Grad 74, an der
+//     Knickstelle des Modells (74² = glyphGrund), gemessen rund 20 µs je Glyphe, also rund 3,7 ns je Einheit statt
+//     rund 1 ns. Diese Zeit ist das Versprechen des Rechenbudgets für Bild (ein Kern).
 func BenchmarkNaehteAlleGrenzenKleineGlyphen(b *testing.B) {
-	d := opakDokument(b, 32768, 2100, document.KanteAbriss, 90)
-	const grad = 64.0
-	zeile := strings.Repeat("Schnapp zeichnet ", 60)[:900]
-	text := strings.TrimSuffix(strings.Repeat(zeile+"\n", 11), "\n")
-	eins := document.Text{Ort: document.Pt(10, 10), Inhalt: text, Schriftgrad: grad, Farbe: rot}
-	hinzu(b, d, eins)
-	je := trockenlauf(d, false).glyph // Kosten eines solchen Texts
-	for n := 1; float64(n+1)*je < 0.98*GlyphBudget; n++ {
-		hinzu(b, d, eins)
+	for _, fall := range []struct {
+		name  string
+		grad  float64
+		zeile string
+		n     int // Zeilen je Text
+	}{
+		{"Fliesstext64", 64, strings.Repeat("Schnapp zeichnet ", 60)[:900], 11},
+		{"Klammeraffe74", 74, strings.Repeat("@", 440), 20},
+	} {
+		b.Run(fall.name, func(b *testing.B) {
+			d := opakDokument(b, 32768, 2100, document.KanteAbriss, 90)
+			text := strings.TrimSuffix(strings.Repeat(fall.zeile+"\n", fall.n), "\n")
+			eins := document.Text{Ort: document.Pt(10, 10), Inhalt: text, Schriftgrad: fall.grad, Farbe: rot}
+			hinzu(b, d, eins)
+			je := trockenlauf(d, false).glyph // Kosten eines solchen Texts
+			if soll := glyphKosten(len(fall.zeile)*fall.n, fall.grad); je != soll {
+				b.Fatalf("ein Text kostet %v, Soll %v: nicht alle Glyphen liegen im Bild", je, soll)
+			}
+			for n := 1; float64(n+1)*je < 0.98*GlyphBudget; n++ {
+				hinzu(b, d, eins)
+			}
+			for Aufwand(d)+fuellGewicht*32768*2100 < 0.98*Budget {
+				hinzu(b, d, document.Kasten{Bereich: document.R(document.Pt(0, 0), document.Pt(32768, 2100)), Fuellung: rot})
+			}
+			if err := Pruefe(d); err != nil {
+				b.Fatalf("Pruefe: %v", err)
+			}
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if _, err := Bild(d); err != nil {
+					b.Fatal(err)
+				}
+			}
+			b.ReportMetric(Aufwand(d), "Einheiten")
+			b.ReportMetric(trockenlauf(d, false).glyph, "Glyphen-Einheiten")
+		})
 	}
-	for Aufwand(d)+fuellGewicht*32768*2100 < 0.98*Budget {
-		hinzu(b, d, document.Kasten{Bereich: document.R(document.Pt(0, 0), document.Pt(32768, 2100)), Fuellung: rot})
-	}
-	if err := Pruefe(d); err != nil {
-		b.Fatalf("Pruefe: %v", err)
-	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		if _, err := Bild(d); err != nil {
-			b.Fatal(err)
-		}
-	}
-	b.ReportMetric(Aufwand(d), "Einheiten")
-	b.ReportMetric(trockenlauf(d, false).glyph, "Glyphen-Einheiten")
 }
 
 // opakDokument ist wie nahtDokument, aber mit deckend weißem Bild (wie eine echte Aufnahme).

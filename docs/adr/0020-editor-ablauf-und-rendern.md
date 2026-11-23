@@ -144,7 +144,8 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   gleich, die genannte Grenze kann eine andere sein. `Aufwand` und `Bild` zählen vollständig. Nachmessung: Kanten knapp
   unter `KantenBudget` (120 Abriss-Nähte auf 32768×2100) rastern in rund 8 s (rund 0,5 ns je Kanten-Einheit), die
   Summe aller Grenzen also rund 15 s statt 10 s; die Gewichte bleiben vorerst (F-429). *Nachmessung 23.11.2026 (ADR-0023
-  Nachtrag 9): 120 Abriss-Nähte jetzt rund 6,5 s, die Summe aller Grenzen rund 14 s; das Zeitversprechen lautet rund 14 s.*
+  Nachtrag 9): 120 Abriss-Nähte jetzt rund 6,5 s, die Summe aller Grenzen rund 14 s; das Zeitversprechen lautet rund 14 s. Seit der Neueichung der Glyphen (Ergänzungen zu
+  Karte #224 unten): rund 21 s.*
 
 **Ergänzung (23.11.2026, Karte #221, F-576):** Die Kosten je Glyphe werden nicht je Schrift skaliert: Die dichtesten
 Glyphen von Systemschriften (Noto Serif CJK) rastern 1,9- bis 2,6-mal langsamer als Go (Messung 23.11.2026, ein Kern,
@@ -183,6 +184,29 @@ am Budget (ein Kern): 177 × „W“ Grad 4096 auf 8000×8000 (2,97e9) in 3,4 s;
 insgesamt 16,3 s bei (`BenchmarkNaehteAlleGrenzenKleineGlyphen`); mit den „W“ sind es 11,7 bis 13,8 s
 (`BenchmarkNaehteAlleGrenzen`). **Das Zeitversprechen lautet damit rund 16 s** (vorher rund 14 s, gemessen mit dem
 billigeren Glyphenmuster). Ein Text trägt höchstens 10 000 Zeichen; die Messung verteilt sie auf mehrere Objekte.
+*Die 16 s und die Aussage „rund 5 s, unabhängig von der Verteilung“ gelten nur für gemischten Fließtext; überholt durch
+die folgende Ergänzung.*
+
+**Ergänzung (23.11.2026, Kritik zu Karte #224): Das teuerste Muster liegt an der Knickstelle, Zeitversprechen rund
+21 s.** Die Tabelle oben misst gemischten Fließtext. Je Kosteneinheit am teuersten sind dichte Glyphen im Grad 74, wo
+Grad² gerade `glyphGrund` erreicht (74² = 5476): Die Rechenzeit einer Glyphe wächst zwischen Grad 24 und 128 etwa
+linear mit dem Grad, das Modell max(Grad², `glyphGrund`) bleibt dort flach. Stichprobe (ein Kern, ohne `-race`,
+4000×4000, Go-Schrift, 8 Läufe, leeres Bild abgezogen):
+
+| Muster | Grad 56 | Grad 64 | Grad 74 | Grad 80 | Grad 100 | Grad 160 |
+|---|---|---|---|---|---|---|
+| „@“, ns je Einheit | 2,8 | 3,2 | 3,7 (20 µs je Glyphe) | 3,5 | 2,9 | 2,3 |
+| „W“, ns je Einheit | 2,3 | 2,4 | 3,0 | 2,6 | 2,4 | 2,1 |
+| Fließtext, ns je Einheit | 1,7 | 1,8 | 2,1 | 1,9 | 1,5 | 1,2 |
+
+Glyphen knapp unter `GlyphBudget` brauchen damit nicht höchstens rund 5 s, sondern mit „@“ im Grad 74 (rund 530 000
+Glyphen) rund 11 s. Ein Dokument knapp unter allen drei Grenzen rastert mit diesem Muster in 21,1 s
+(`BenchmarkNaehteAlleGrenzenKleineGlyphen/Klammeraffe74`; `…/Fliesstext64` 16,2 s, `BenchmarkNaehteAlleGrenzen` mit den
+„W“ 12,4 s). **Das Zeitversprechen lautet rund 21 s** (Go-Schrift; für dichte Systemschriften gilt weiter der Faktor
+unter 3 auf den Glyphenanteil aus der Ergänzung zu F-576). `glyphGrund` und `GlyphBudget` bleiben: Der Abstand 50 zum
+Alltagsdokument schützt echte Bearbeitungen, und Speichern bricht ohnehin nie ab. Offen ist die Form des Modells
+(Summe oder linearer Anteil statt max, damit die Mitte nicht bis zum 3,7-Fachen unterschätzt wird); das verschiebt die
+Sollwerte der Kostentests und den Abstand des Alltagsdokuments und ist ein eigener Befund.
 
 ## Nachtrag 4 (20.11.2026): Arbeitsziel nach dem Speichern einer Datei von außen (F-155)
 

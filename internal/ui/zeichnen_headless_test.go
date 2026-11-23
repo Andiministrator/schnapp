@@ -5,6 +5,7 @@ package ui
 import (
 	"image"
 	"image/color"
+	"os"
 	"testing"
 
 	"gioui.org/gpu/headless"
@@ -17,10 +18,21 @@ import (
 
 // headlessBild lässt zeichne auf eine Fläche ohne Fenster zeichnen (Gio headless, EGL) und liefert die Pixel. Gibt es
 // auf dem Rechner kein EGL, wird der Test übersprungen (F-590, F-593: das Zeichnen des Editors war ungetestet).
+//
+// EGL_PLATFORM=surfaceless (Mesa), wenn nichts anderes verlangt ist: Ohne die Angabe nimmt EGL die Anzeige der Sitzung
+// (WAYLAND_DISPLAY) — der Test hinge dann an der laufenden Sitzung und würde ohne sie (CI, Mutantenlauf aus einem
+// Dienst) still übersprungen (eglInitialize 0x3001). Mit surfaceless läuft er auch ohne Anzeige und mit
+// Software-Rasterung (Kritik zu Karte #224). Wer den Sprung nicht hinnehmen will, setzt SCHNAPP_HEADLESS_PFLICHT=1.
 func headlessBild(t *testing.T, groesse image.Point, zeichne func(gtx layout.Context)) *image.RGBA {
 	t.Helper()
+	if os.Getenv("EGL_PLATFORM") == "" {
+		t.Setenv("EGL_PLATFORM", "surfaceless")
+	}
 	w, err := headless.NewWindow(groesse.X, groesse.Y)
 	if err != nil {
+		if os.Getenv("SCHNAPP_HEADLESS_PFLICHT") != "" {
+			t.Fatalf("keine Zeichenfläche ohne Fenster (SCHNAPP_HEADLESS_PFLICHT gesetzt): %v", err)
+		}
 		t.Skipf("keine Zeichenfläche ohne Fenster: %v", err)
 	}
 	t.Cleanup(w.Release)
