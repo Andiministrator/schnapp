@@ -71,7 +71,7 @@ the editor opens. Scripts and AI agents: see [`docs/agents.md`](docs/agents.md),
 
 In the editor, tools: **V** select, **A** arrow (drag; **Shift** snaps to 45°; drag the middle handle to bend it),
 **R** box (**Shift**: square), **T** text (click, type, **Enter** confirms, **Shift+Enter** new line, **Esc** discards;
-double-click a text to edit it), **N** step number (counts up by itself), **B** redact (drag over an area: black),
+double-click a text to edit it), **N** step number (counts up by itself), **M** magnifier (drag over a spot: an enlarged copy appears next to it, linked by a line; source and copy move separately, the sidebar sets 2×, 3× or 4×; it shows the redacted pixels and nothing cropped away), **B** redact (drag over an area: black),
 **P** pixelate (drag; a mosaic made only from the area's average colour and random noise, so it carries nothing of
 what was there). Both overwrite the pixels of the image itself: they can be undone until you save (the undo history keeps at most 512 MiB of pixel copies, older steps fall away silently), after that they are
 final and no saved or exported file contains the hidden content. An image copied with **Ctrl+C** before redacting
