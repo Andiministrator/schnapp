@@ -432,5 +432,12 @@
     "paket": "./internal/ui",
     "alt": "rollen = min(r.Max.Y+rand-unten, r.Min.Y-rand-oben)",
     "neu": "rollen = rollen"
+  },
+  {
+    "name": "KU225-8 Anmeldung des Mausrads in eigenem Ausschnitt, Rad bleibt unter Knöpfen und Feldern stehen (F-598)",
+    "datei": "internal/ui/seitenrollen.go",
+    "paket": "./internal/ui",
+    "alt": "\tevent.Op(gtx.Ops, &k.flaeche)\n}",
+    "neu": "\tc := clip.Rect(r).Push(gtx.Ops)\n\tevent.Op(gtx.Ops, &k.flaeche)\n\tc.Pop()\n}"
   }
 ]

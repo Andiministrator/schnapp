@@ -1,0 +1,22 @@
+# Sichtprobe ADR-0031 Nachtrag 8 (Karte #225, F-598): Die rechte Leiste rollt in niedrigen Fenstern.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/seitenrollen-225.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 1000 --hoehe 330
+# Gegenprobe: dasselbe mit --hoehe 800 (kein Balken, nichts gerollt).
+warte 800
+taste R
+ziehe 240 110 330 200
+warte 300
+taste V
+klick 240 155
+warte 300
+foto 01-kasten-gewaehlt
+rad 750 60 40
+warte 300
+foto 02-gerollt-ueber-kopf
+rad 750 60 -40
+warte 300
+rad 850 150 40
+warte 300
+foto 03-gerollt-ueber-farbflaeche
+rad 850 150 -40
+warte 300
+foto 04-zurueck

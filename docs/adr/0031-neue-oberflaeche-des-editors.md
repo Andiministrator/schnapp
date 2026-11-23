@@ -316,6 +316,11 @@ die Farbe von selbst einzuklappen sperrte den Farbwähler aus (F-592) und ist au
   in der Leiste sind Inhaltskoordinaten (Versatz 0 = Fensterkoordinaten); wer Fensterkoordinaten dagegen hält
   (`inFarbwahl`, die Fokuswache), addiert `roll.rollen`. Rechnung ohne Gio in `internal/ui/seitenrollen.go`
   (`rollEnde`, `rollBegrenze`, `rollZeige`, `rollDaumen`).
+- **Mausrad-Anmeldung (Sichtprobe):** Die Anmeldung der Leiste für das Mausrad steht im Ausschnitt der Leiste selbst
+  (`zeichneSeitenleiste`, vor dem Inhalt), nicht in einem eigenen, wieder abgelegten Ausschnitt. Gio überspringt
+  Bereiche unter einem undurchlässigen Treffer, es sei denn, der Eintrag ist ein Vorfahre; in einem eigenen Ausschnitt
+  stand das Rad deshalb nach 75 px still, sobald Knopf, Feld oder Farbfläche unter den Zeiger wanderte. So behalten
+  Ebenen- und Schriftliste ihr Rad (tiefere Einträge werden zuerst bedient), alles andere rollt die Leiste.
 - Tests: `internal/ui/seitenrollen_test.go` (Sonde aus der Kritik zu #219 über alle Höhen 320 bis 800 in 2-px-Schritten,
   Tab-Weg, Klicks im gerollten Bild, Ebenen-Vorrang, Zeichnen ohne Fenster), Mutanten KU225-1 bis KU225-7 in
   `scripts/mutanten/ui-seitenleiste.json`.

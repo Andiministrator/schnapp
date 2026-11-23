@@ -88,14 +88,15 @@ func (e *editor) rollAuswerten(gtx layout.Context) {
 }
 
 // rollAnmelden meldet die Fläche der Leiste für das Mausrad an; vor dem Inhalt, damit dessen Listen (Ebenen, Schriften)
-// ihr Mausrad behalten.
+// ihr Mausrad behalten. Der Aufrufer hat r als Ausschnitt schon aufgelegt (zeichneSeitenleiste), und die Anmeldung steht
+// bewusst darin und nicht in einem eigenen, wieder abgelegten Ausschnitt: Gio verbindet einen Treffer nur dann mit den
+// Bereichen, die später darin gezeichnet werden, wenn der Eintrag im selben Ausschnitt-Bereich bleibt. Sonst deckt jeder
+// undurchlässige Bereich darüber (Knopf, Eingabefeld, Farbfläche) das Mausrad ab (Sichtprobe Karte #225).
 func (e *editor) rollAnmelden(gtx layout.Context, r image.Rectangle) {
 	k := &e.seite.roll
 	k.sicht = r
 	k.fokus = image.Rectangle{}
-	c := clip.Rect(r).Push(gtx.Ops)
 	event.Op(gtx.Ops, &k.flaeche)
-	c.Pop()
 }
 
 // rollAbschluss rechnet nach dem Zeichnen: größter Versatz, Rollen zum Fokus nach einem Wechsel. Ändert sich der Versatz,
@@ -125,5 +126,5 @@ func (e *editor) zeichneRollbalken(gtx layout.Context) {
 	breite := gtx.Dp(4)
 	oben, laenge := rollDaumen(s.Dy(), s.Dy(), s.Dy()+k.rollMax, k.rollen)
 	r := image.Rect(s.Max.X-breite-gtx.Dp(2), s.Min.Y+oben, s.Max.X-gtx.Dp(2), s.Min.Y+oben+laenge)
-	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(r).Op())
+	paint.FillShape(gtx.Ops, farbeNebentext, clip.Rect(r).Op())
 }

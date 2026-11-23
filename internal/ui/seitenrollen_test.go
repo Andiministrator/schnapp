@@ -222,7 +222,13 @@ func TestRollenZeichnetImNiedrigenFenster(t *testing.T) {
 	if u := b.RGBAAt(r.Min.X+3, groesse.Y-fusszeileDp+3); u.A != 0 {
 		t.Errorf("Pixel unter der Leiste (Fußzeile): %v, Soll leer", u)
 	}
-	if n := zaehleFarbe(b, farbeLinie); n == 0 {
-		t.Error("kein Rollbalken gezeichnet")
+	// Rollbalken: Daumen in der Spalte 4 dp vom rechten Rand, am Ende der Bahn.
+	s := roll.sicht
+	oben, laenge := rollDaumen(s.Dy(), s.Dy(), s.Dy()+roll.rollMax, roll.rollen)
+	if p := b.RGBAAt(s.Max.X-4, s.Min.Y+oben+laenge/2); p.R != farbeNebentext.R || p.G != farbeNebentext.G || p.A != 255 {
+		t.Errorf("Pixel im Rollbalken: %v, Soll %v", p, farbeNebentext)
+	}
+	if p := b.RGBAAt(s.Max.X-4, s.Min.Y+1); roll.rollen > 0 && p.R == farbeNebentext.R && p.G == farbeNebentext.G {
+		t.Errorf("Pixel über dem Daumen ist auch Balken: %v", p)
 	}
 }
