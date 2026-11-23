@@ -9,10 +9,10 @@ import (
 	"unicode/utf8"
 
 	"golang.org/x/image/font"
-	"golang.org/x/image/font/gofont/gobold"
-	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/font/sfnt"
 	"golang.org/x/image/math/fixed"
+
+	"github.com/Andiministrator/schnapp/internal/fonts"
 )
 
 // Schriftmaße (F-181): Ob ein Text oder eine Nummer in die Ansicht reicht, entscheidet die echte Tinte der Glyphen,
@@ -46,40 +46,54 @@ type schriftMass struct {
 }
 
 var (
-	schriftMu      sync.Mutex // schützt alles hier, auch den Puffer (sfnt.Buffer ist nicht nebenläufig nutzbar)
-	schriftPuffer  sfnt.Buffer
-	schriftGeladen bool
-	schriftenMass  [2]*schriftMass // 0 Go Regular (Text), 1 Go Bold (Nummer)
+	schriftMu     sync.Mutex // schützt alles hier, auch den Puffer (sfnt.Buffer ist nicht nebenläufig nutzbar)
+	schriftPuffer sfnt.Buffer
+	schriftenMass = map[*sfnt.Font]*schriftMass{} // je geladener Schriftdatei (fonts.Laden liefert je Schnitt eine)
+	// ohneSchrift stellt die Schrift „nicht ladbar“ (nur Tests): Dann gilt die Schätzung (TestSchaetzungIstObermass).
+	ohneSchrift bool
 )
 
-// schriftFuer liefert die Maße der Schrift; nil, wenn sie sich nicht laden lässt (dann schätzt Reichweite). Nur mit
-// gehaltenem schriftMu.
-func schriftFuer(fett bool) *schriftMass {
-	if !schriftGeladen {
-		schriftGeladen = true
-		for i, roh := range [][]byte{goregular.TTF, gobold.TTF} {
-			f, err := sfnt.Parse(roh)
-			if err != nil {
-				continue
-			}
-			em := float64(f.UnitsPerEm())
-			s := &schriftMass{f: f, em: em, ppem: fixed.Int26_6(f.UnitsPerEm()) << 6, glyphen: map[sfnt.GlyphIndex]glyphMass{}}
-			if m, err := f.Metrics(&schriftPuffer, s.ppem, font.HintingNone); err == nil {
-				s.versal = float64(m.CapHeight) / 64 / em
-			}
-			// Höhe der Zeile für das Schild: Oberlänge und Unterlänge der Schrift, unabhängig vom Inhalt (der Rahmen soll
-			// beim Tippen nicht springen). Referenz sind Versalien, Oberlängen und Unterlängen.
-			if _, t, ok := s.zeile("HdgjpÅ", 1); ok {
-				s.refOben, s.refUnten = t.Min.Y, t.Max.Y
-			}
-			schriftenMass[i] = s
-		}
+// massVon liefert die Maße der Schriftdatei f (aus dem Zwischenspeicher). Nur mit gehaltenem schriftMu.
+func massVon(f *fonts.Schrift) *schriftMass {
+	if ohneSchrift {
+		return nil
 	}
-	if fett {
-		return schriftenMass[1]
+	if s, ok := schriftenMass[f.Font]; ok {
+		return s
 	}
-	return schriftenMass[0]
+	em := float64(f.Font.UnitsPerEm())
+	s := &schriftMass{f: f.Font, em: em, ppem: fixed.Int26_6(f.Font.UnitsPerEm()) << 6, glyphen: map[sfnt.GlyphIndex]glyphMass{}}
+	if m, err := f.Font.Metrics(&schriftPuffer, s.ppem, font.HintingNone); err == nil {
+		s.versal = float64(m.CapHeight) / 64 / em
+	}
+	// Höhe der Zeile für das Schild: Oberlänge und Unterlänge der Schrift, unabhängig vom Inhalt (der Rahmen soll
+	// beim Tippen nicht springen). Referenz sind Versalien, Oberlängen und Unterlängen.
+	if _, t, ok := s.zeile("HdgjpÅ", 1); ok {
+		s.refOben, s.refUnten = t.Min.Y, t.Max.Y
+	}
+	schriftenMass[f.Font] = s
+	return s
 }
+
+// schriftFuer liefert die Maße von Go Regular bzw. Go Bold (Nummern). Nur mit gehaltenem schriftMu.
+func schriftFuer(fett bool) *schriftMass {
+	if fett {
+		return massVon(fonts.Laden(fonts.Go, fonts.Fett))
+	}
+	return massVon(fonts.Laden(fonts.Go, fonts.Normal))
+}
+
+// Schriftdatei ist die Schrift, in der Messung, Renderer und Editor den Text setzen (ADR-0021 Nachtrag 10): Familie und
+// Schnitt mit Ersatz, nie nil.
+func (t Text) Schriftdatei() *fonts.Schrift {
+	return fonts.Laden(t.Schrift, fonts.SchnittAus(t.Fett, t.Kursiv))
+}
+
+// SchriftFehlt meldet, dass die Familie des Texts hier fehlt und Go an ihrer Stelle steht.
+func (t Text) SchriftFehlt() bool { return t.Schrift != "" && t.Schriftdatei().Ersatz }
+
+// textSchrift liefert die Maße der Schrift von t. Nur mit gehaltenem schriftMu.
+func textSchrift(t Text) *schriftMass { return massVon(t.Schriftdatei()) }
 
 // glyph liefert die Maße der Glyphe für r wie font.Drawer sie zeichnet: Ein Zeichen ohne Glyphe erscheint als
 // Ersatzkästchen (Glyphe 0); lässt sich r nicht nachschlagen, zeichnet der Renderer nichts. Nur mit schriftMu.
@@ -148,8 +162,9 @@ type zeilenTinte struct {
 	hatTinte bool // false: nur Leerraum, tinte ist leer, nur der Vorschub zählt (F-365)
 }
 
-// tintenSchluessel ist Inhalt und Grad eines Textes: Die Tinte relativ zum Ort hängt nur davon ab.
+// tintenSchluessel ist Schrift, Inhalt und Grad eines Textes: Die Tinte relativ zum Ort hängt nur davon ab.
 type tintenSchluessel struct {
+	f      *sfnt.Font
 	inhalt string
 	grad   float64
 }
@@ -167,8 +182,8 @@ var (
 )
 
 const (
-	// tintenEintrag schätzt, was ein Eintrag ohne Inhalt und Zeilen belegt: Schlüssel (Zeichenkettenkopf und Grad,
-	// 24 Byte), Slice-Kopf (24 Byte) und den Anteil der Map an Steuerbytes und Reserve.
+	// tintenEintrag schätzt, was ein Eintrag ohne Inhalt und Zeilen belegt: Schlüssel (Schrift, Zeichenkettenkopf und
+	// Grad, 32 Byte), Slice-Kopf (24 Byte) und den Anteil der Map an Steuerbytes und Reserve.
 	tintenEintrag = 96
 	// tintenZeile ist die Größe einer zeilenTinte (zwei int, fünf float64, ein bool mit Füllbytes; der Test vergleicht mit unsafe.Sizeof).
 	tintenZeile = 64
@@ -182,7 +197,7 @@ func tintenKosten(inhalt string, zeilen int) int {
 // textZeilen liefert die Zeilen von Inhalt mit Tinte oder mit Vorschub (nur Leerzeichen, hatTinte false, F-365), gemessen
 // in Grad (aus dem Zwischenspeicher). Nur mit schriftMu.
 func textZeilen(s *schriftMass, inhalt string, grad float64) []zeilenTinte {
-	k := tintenSchluessel{inhalt, grad}
+	k := tintenSchluessel{s.f, inhalt, grad}
 	if z, ok := tintenSpeicher[k]; ok {
 		return z
 	}
@@ -204,27 +219,143 @@ func textZeilen(s *schriftMass, inhalt string, grad float64) []zeilenTinte {
 	return zeilen
 }
 
-// textTinte ist die Fläche, die Renderer und Editor von t mit Tinte füllen (Original, mit Rand), ohne Hintergrund.
-// Zeilen wie im Renderer: Grundlinie Ort.Y + Grad·(1 + 1,3·i), Zeichenbar. ok ist false, wenn der Text keine Tinte hat
-// (nur Leerraum); geschaetzt, wenn die Schrift nicht zu laden war.
+// Lage der Striche in Schriftgraden (ADR-0021 Nachtrag 10 Punkt 7): Oberkante des Unterstrichs unter der Grundlinie,
+// Mitte des Durchstrichs über der Grundlinie, Dicke (mindestens ein Pixel).
+const (
+	UnterstrichAbstand = 0.1
+	DurchstrichHoehe   = 0.3
+	StrichDicke        = 0.06
+)
+
+// blockBreite ist der größte Vorschub der Zeilen: die Breite, in der die Ausrichtung jede Zeile setzt.
+func blockBreite(zeilen []zeilenTinte) float64 {
+	b := 0.0
+	for _, z := range zeilen {
+		b = max(b, z.vorschub)
+	}
+	return b
+}
+
+// versatz ist der Abstand einer Zeile mit Vorschub vorschub vom linken Rand des Blocks der Breite block.
+func versatz(a Ausrichtung, block, vorschub float64) float64 {
+	switch a {
+	case AusrichtungMitte:
+		return (block - vorschub) / 2
+	case AusrichtungRechts:
+		return block - vorschub
+	}
+	return 0
+}
+
+// striche liefert Unter- und Durchstriche der gemessenen Zeilen (Original). Nur mit gehaltenem schriftMu.
+func (t Text) striche(zeilen []zeilenTinte) []Rechteck {
+	if !t.Unterstrichen && !t.Durchgestrichen {
+		return nil
+	}
+	grad, block := t.Schriftgrad, blockBreite(zeilen)
+	d := max(1, StrichDicke*grad)
+	var r []Rechteck
+	for _, z := range zeilen {
+		if z.vorschub <= 0 {
+			continue
+		}
+		x := t.Ort.X + versatz(t.Ausrichtung, block, z.vorschub)
+		g := t.Grundlinie(z.i)
+		if t.Unterstrichen {
+			y := g + UnterstrichAbstand*grad
+			r = append(r, Rechteck{Min: Pt(x, y), Max: Pt(x+z.vorschub, y+d)})
+		}
+		if t.Durchgestrichen {
+			y := g - DurchstrichHoehe*grad
+			r = append(r, Rechteck{Min: Pt(x, y-d/2), Max: Pt(x+z.vorschub, y+d/2)})
+		}
+	}
+	return r
+}
+
+// Striche liefert die Rechtecke von Unter- und Durchstrich (Original); Renderer, SVG-Export und Editor füllen sie in
+// der Textfarbe.
+func (t Text) Striche() []Rechteck {
+	schriftMu.Lock()
+	defer schriftMu.Unlock()
+	s := textSchrift(t)
+	if s == nil {
+		return nil
+	}
+	return t.striche(textZeilen(s, t.Inhalt, t.Schriftgrad))
+}
+
+// TextZeile ist die Lage einer Zeile: sichtbarer Text (Zeichenbar), Anfang nach der Ausrichtung, Grundlinie und
+// Vorschub, alles im Original.
+type TextZeile struct {
+	Text                    string
+	X, Grundlinie, Vorschub float64
+}
+
+// Zeilen liefert jede Zeile des Texts (auch leere) mit ihrer Lage: Renderer, Editor und SVG-Export setzen sie dorthin.
+func (t Text) Zeilen() []TextZeile {
+	schriftMu.Lock()
+	defer schriftMu.Unlock()
+	var gemessen []zeilenTinte
+	if s := textSchrift(t); s != nil {
+		gemessen = textZeilen(s, t.Inhalt, t.Schriftgrad)
+	}
+	block := blockBreite(gemessen)
+	vor := map[int]float64{}
+	for _, z := range gemessen {
+		vor[z.i] = z.vorschub
+	}
+	var r []TextZeile
+	for i, z := range strings.Split(t.Inhalt, "\n") {
+		v := vor[i]
+		r = append(r, TextZeile{Text: Zeichenbar(z), X: t.Ort.X + versatz(t.Ausrichtung, block, v), Grundlinie: t.Grundlinie(i),
+			Vorschub: v})
+	}
+	return r
+}
+
+// Vorschub ist die Breite von zeile (sichtbar gemacht mit Zeichenbar) in der Schrift und im Grad von t: die Lage der
+// Schreibmarke hinter diesem Text.
+func (t Text) Vorschub(zeile string) float64 {
+	schriftMu.Lock()
+	defer schriftMu.Unlock()
+	s := textSchrift(t)
+	if s == nil {
+		return float64(utf8.RuneCountInString(Zeichenbar(zeile))) * t.Schriftgrad * 0.6 // wie die Schätzung in Grenzen
+	}
+	v, _, _ := s.zeile(Zeichenbar(zeile), t.Schriftgrad)
+	return v
+}
+
+// textTinte ist die Fläche, die Renderer und Editor von t mit Tinte füllen (Original, mit Rand), ohne Hintergrund:
+// Glyphen und Striche. Zeilen wie im Renderer: Grundlinie Ort.Y + Grad·(1 + 1,3·i), Anfang nach der Ausrichtung,
+// Zeichenbar. ok ist false, wenn der Text keine Tinte hat (nur Leerraum ohne Striche); geschaetzt bleibt für Aufrufer,
+// die Schrift ist immer ladbar (fonts.Laden fällt auf Go zurück).
 func textTinte(t Text) (r Rechteck, ok, geschaetzt bool) {
 	schriftMu.Lock()
 	defer schriftMu.Unlock()
-	s := schriftFuer(false)
+	s := textSchrift(t)
 	if s == nil {
 		return Rechteck{}, false, true
 	}
-	for _, z := range textZeilen(s, t.Inhalt, t.Schriftgrad) {
-		if !z.hatTinte {
-			continue
-		}
-		grund := Pt(t.Ort.X, t.Grundlinie(z.i))
-		g := mitRand(Rechteck{Min: grund.Plus(z.tinte.Min), Max: grund.Plus(z.tinte.Max)}, z.n)
+	zeilen := textZeilen(s, t.Inhalt, t.Schriftgrad)
+	block := blockBreite(zeilen)
+	dazu := func(g Rechteck) {
 		if ok {
 			r = r.Vereint(g)
 		} else {
 			r, ok = g, true
 		}
+	}
+	for _, z := range zeilen {
+		if !z.hatTinte {
+			continue
+		}
+		grund := Pt(t.Ort.X+versatz(t.Ausrichtung, block, z.vorschub), t.Grundlinie(z.i))
+		dazu(mitRand(Rechteck{Min: grund.Plus(z.tinte.Min), Max: grund.Plus(z.tinte.Max)}, z.n))
+	}
+	for _, st := range t.striche(zeilen) {
+		dazu(mitRand(st, 0))
 	}
 	return r, ok, false
 }
@@ -283,7 +414,7 @@ func NummerTinte(n Nummer) (Rechteck, bool) {
 func textFlaeche(t Text) (Rechteck, bool) {
 	schriftMu.Lock()
 	defer schriftMu.Unlock()
-	s := schriftFuer(false)
+	s := textSchrift(t)
 	if s == nil {
 		return Rechteck{}, false
 	}
@@ -293,15 +424,21 @@ func textFlaeche(t Text) (Rechteck, bool) {
 		Min: Pt(t.Ort.X, t.Grundlinie(0)+s.refOben*grad),
 		Max: Pt(t.Ort.X, t.Grundlinie(zeilen-1)+s.refUnten*grad),
 	}
-	for _, z := range textZeilen(s, t.Inhalt, grad) {
-		g := Pt(t.Ort.X, t.Grundlinie(z.i))
+	gemessen := textZeilen(s, t.Inhalt, grad)
+	block := blockBreite(gemessen)
+	for _, z := range gemessen {
+		x := t.Ort.X + versatz(t.Ausrichtung, block, z.vorschub)
+		g := Pt(x, t.Grundlinie(z.i))
 		if !z.hatTinte {
 			// Nur Leerraum: die Zeile reicht um ihren Vorschub und die Zeilenhöhe der Schrift.
-			r = r.Vereint(Rechteck{Min: Pt(t.Ort.X, g.Y+s.refOben*grad), Max: Pt(t.Ort.X+z.vorschub, g.Y+s.refUnten*grad)})
+			r = r.Vereint(Rechteck{Min: Pt(x, g.Y+s.refOben*grad), Max: Pt(x+z.vorschub, g.Y+s.refUnten*grad)})
 			continue
 		}
 		ink := Rechteck{Min: g.Plus(z.tinte.Min), Max: g.Plus(z.tinte.Max)}
-		r = r.Vereint(ink).Vereint(Rechteck{Min: Pt(t.Ort.X, ink.Min.Y), Max: Pt(t.Ort.X+z.vorschub, ink.Max.Y)})
+		r = r.Vereint(ink).Vereint(Rechteck{Min: Pt(x, ink.Min.Y), Max: Pt(x+z.vorschub, ink.Max.Y)})
+	}
+	for _, st := range t.striche(gemessen) {
+		r = r.Vereint(st)
 	}
 	d := TextInnenabstand * grad
 	return Rechteck{Min: r.Min.Minus(Pt(d, d)), Max: r.Max.Plus(Pt(d, d))}, true

@@ -1,0 +1,427 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+// Package fonts findet und lädt die Schriften für Text-Beschriftungen (ADR-0021 Nachtrag 10): eingebaut Go und Go Mono,
+// dazu die Systemschriften aus den XDG-Schriftordnern, gelesen mit golang.org/x/image/font/sfnt — ohne cgo, ohne
+// fontconfig, ohne Index auf der Platte. Jede Familie zählt mit den vier Grundschnitten normal, fett, kursiv und fett
+// kursiv; andere Schnitte übergeht sie.
+package fonts
+
+import (
+	"errors"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
+	"sync"
+
+	"golang.org/x/image/font/gofont/gobold"
+	"golang.org/x/image/font/gofont/gobolditalic"
+	"golang.org/x/image/font/gofont/goitalic"
+	"golang.org/x/image/font/gofont/gomono"
+	"golang.org/x/image/font/gofont/gomonobold"
+	"golang.org/x/image/font/gofont/gomonobolditalic"
+	"golang.org/x/image/font/gofont/gomonoitalic"
+	"golang.org/x/image/font/gofont/goregular"
+	"golang.org/x/image/font/sfnt"
+)
+
+// Namen der eingebauten Familien; Go ist die Voreinstellung (leerer Name im Dokument).
+const (
+	Go     = "Go"
+	GoMono = "Go Mono"
+)
+
+// Grenzen der Suche (ADR-0021 Nachtrag 10 Punkt 3).
+const (
+	MaxDateien      = 20000
+	MaxDateiGroesse = 64 << 20
+	MaxNamenLaenge  = 128
+)
+
+// Schnitt ist einer der vier Grundschnitte: Bit 0 fett, Bit 1 kursiv.
+type Schnitt uint8
+
+const (
+	Normal Schnitt = iota
+	Fett
+	Kursiv
+	FettKursiv
+)
+
+// SchnittAus liefert den Schnitt zu fett und kursiv.
+func SchnittAus(fett, kursiv bool) Schnitt {
+	s := Normal
+	if fett {
+		s |= Fett
+	}
+	if kursiv {
+		s |= Kursiv
+	}
+	return s
+}
+
+// ersatzFolge ist die Reihenfolge, in der ein fehlender Schnitt ersetzt wird (Punkt 4): erst der verlangte, dann
+// ohne kursiv, dann normal.
+func ersatzFolge(s Schnitt) []Schnitt {
+	switch s {
+	case FettKursiv:
+		return []Schnitt{FettKursiv, Fett, Kursiv, Normal}
+	case Fett:
+		return []Schnitt{Fett, Normal}
+	case Kursiv:
+		return []Schnitt{Kursiv, Normal}
+	}
+	return []Schnitt{Normal, Fett, Kursiv, FettKursiv}
+}
+
+// quelle ist der Ort eines Schnitts: eingebaute Bytes oder eine Datei (mit Index in einer Sammlung).
+type quelle struct {
+	da    bool
+	roh   []byte
+	pfad  string
+	index int
+	samml bool
+}
+
+type familie struct {
+	name     string
+	schnitte [4]quelle
+}
+
+// Schrift ist ein geladener Schnitt. Font ist nebenläufig lesbar, solange jeder Aufrufer seinen eigenen sfnt.Buffer
+// nimmt (opentype.NewFace legt einen eigenen an).
+type Schrift struct {
+	Familie string  // Name der gelieferten Familie (bei Ersatz: Go)
+	Schnitt Schnitt // gelieferter Schnitt (kann vom verlangten abweichen)
+	Font    *sfnt.Font
+	Ersatz  bool // die verlangte Familie fehlt, geliefert ist Go
+}
+
+var (
+	mu        sync.Mutex
+	eingebaut = []familie{
+		{name: Go, schnitte: [4]quelle{{da: true, roh: goregular.TTF}, {da: true, roh: gobold.TTF},
+			{da: true, roh: goitalic.TTF}, {da: true, roh: gobolditalic.TTF}}},
+		{name: GoMono, schnitte: [4]quelle{{da: true, roh: gomono.TTF}, {da: true, roh: gomonobold.TTF},
+			{da: true, roh: gomonoitalic.TTF}, {da: true, roh: gomonobolditalic.TTF}}},
+	}
+	system     []familie // nach der Suche, nach Namen sortiert
+	gesucht    bool      // die Suche ist fertig
+	suche      sync.Once
+	geladen    = map[schluessel]*Schrift{}
+	fehler     = map[schluessel]bool{} // Dateien, die sich nicht laden ließen
+	ordner     = schriftOrdner         // für Tests austauschbar
+	maxDateien = MaxDateien            // für Tests austauschbar
+)
+
+type schluessel struct {
+	familie string
+	schnitt Schnitt
+}
+
+// familieZu sucht eine Familie, eingebaute zuerst; Groß- und Kleinschreibung zählt. Nur mit mu.
+func familieZu(name string) (*familie, bool) {
+	if name == "" {
+		name = Go
+	}
+	for i := range eingebaut {
+		if eingebaut[i].name == name {
+			return &eingebaut[i], true
+		}
+	}
+	i, ok := slices.BinarySearchFunc(system, name, func(f familie, n string) int { return strings.Compare(f.name, n) })
+	if ok {
+		return &system[i], true
+	}
+	return nil, false
+}
+
+// Laden liefert den Schnitt s der Familie name (leer = Go), mit Ersatz nach Punkt 4; nie nil. Fehlt die Familie oder
+// lässt sich keiner ihrer Schnitte laden, kommt Go mit Ersatz = true.
+func Laden(name string, s Schnitt) *Schrift {
+	mu.Lock()
+	defer mu.Unlock()
+	if f, ok := familieZu(name); ok {
+		for _, w := range ersatzFolge(s) {
+			if sch := ladeSchnitt(f, w); sch != nil {
+				return sch
+			}
+		}
+	}
+	g, _ := familieZu(Go)
+	for _, w := range ersatzFolge(s) {
+		if sch := ladeSchnitt(g, w); sch != nil {
+			k := *sch
+			k.Ersatz = true
+			return &k
+		}
+	}
+	panic("fonts: Go-Schrift nicht ladbar") // eingebaute Bytes: nur bei kaputtem Build
+}
+
+// ladeSchnitt lädt den Schnitt w von f (aus dem Zwischenspeicher); nil, wenn er fehlt oder kaputt ist. Nur mit mu.
+func ladeSchnitt(f *familie, w Schnitt) *Schrift {
+	q := f.schnitte[w]
+	if !q.da {
+		return nil
+	}
+	k := schluessel{f.name, w}
+	if s, ok := geladen[k]; ok {
+		return s
+	}
+	if fehler[k] {
+		return nil
+	}
+	fnt, err := ladeQuelle(q)
+	if err != nil {
+		fehler[k] = true
+		return nil
+	}
+	s := &Schrift{Familie: f.name, Schnitt: w, Font: fnt}
+	geladen[k] = s
+	return s
+}
+
+func ladeQuelle(q quelle) (*sfnt.Font, error) {
+	roh := q.roh
+	if roh == nil {
+		st, err := os.Stat(q.pfad)
+		if err != nil {
+			return nil, err
+		}
+		if !st.Mode().IsRegular() || st.Size() > MaxDateiGroesse {
+			return nil, errors.New("fonts: keine reguläre Datei oder zu groß")
+		}
+		if roh, err = os.ReadFile(q.pfad); err != nil {
+			return nil, err
+		}
+	}
+	if q.samml {
+		c, err := sfnt.ParseCollection(roh)
+		if err != nil {
+			return nil, err
+		}
+		return c.Font(q.index)
+	}
+	return sfnt.Parse(roh)
+}
+
+// Bekannt meldet, ob die Familie name vorhanden ist (eingebaut oder gefunden); leer ist Go.
+func Bekannt(name string) bool {
+	mu.Lock()
+	defer mu.Unlock()
+	_, ok := familieZu(name)
+	return ok
+}
+
+// Familien liefert die Namen aller Familien: eingebaute zuerst, dann die gefundenen nach Namen.
+func Familien() []string {
+	mu.Lock()
+	defer mu.Unlock()
+	var n []string
+	for _, f := range eingebaut {
+		n = append(n, f.name)
+	}
+	for _, f := range system {
+		n = append(n, f.name)
+	}
+	return n
+}
+
+// SucheFertig meldet, ob die Suche nach Systemschriften abgeschlossen ist.
+func SucheFertig() bool {
+	mu.Lock()
+	defer mu.Unlock()
+	return gesucht
+}
+
+// StarteSuche sucht die Systemschriften einmal je Prozess im Hintergrund; fertig (darf nil sein) wird danach aus der
+// Goroutine gerufen.
+func StarteSuche(fertig func()) {
+	suche.Do(func() {
+		go func() {
+			Suche()
+			if fertig != nil {
+				fertig()
+			}
+		}()
+	})
+}
+
+// Suche sucht die Systemschriften jetzt (blockierend) und ersetzt das Ergebnis einer früheren Suche.
+func Suche() {
+	gefunden := durchsuche(ordner())
+	mu.Lock()
+	system, gesucht = gefunden, true
+	mu.Unlock()
+}
+
+// schriftOrdner sind die XDG-Schriftordner (Punkt 3), ohne doppelte.
+func schriftOrdner() []string {
+	var o []string
+	heim, _ := os.UserHomeDir()
+	daten := os.Getenv("XDG_DATA_HOME")
+	if daten == "" && heim != "" {
+		daten = filepath.Join(heim, ".local", "share")
+	}
+	if daten != "" {
+		o = append(o, filepath.Join(daten, "fonts"))
+	}
+	if heim != "" {
+		o = append(o, filepath.Join(heim, ".fonts"))
+	}
+	dirs := os.Getenv("XDG_DATA_DIRS")
+	if dirs == "" {
+		dirs = "/usr/local/share:/usr/share"
+	}
+	for _, d := range filepath.SplitList(dirs) {
+		if d != "" {
+			o = append(o, filepath.Join(d, "fonts"))
+		}
+	}
+	var eindeutig []string
+	for _, d := range o {
+		if filepath.IsAbs(d) && !slices.Contains(eindeutig, d) {
+			eindeutig = append(eindeutig, d)
+		}
+	}
+	return eindeutig
+}
+
+// durchsuche liest die Namen aller Schriften unter den Ordnern (Verweise auf Ordner werden nicht verfolgt).
+func durchsuche(ordner []string) []familie {
+	nachName := map[string]*familie{}
+	var buf sfnt.Buffer
+	dateien := 0
+	for _, wurzel := range ordner {
+		_ = filepath.WalkDir(wurzel, func(pfad string, d fs.DirEntry, err error) error {
+			if err != nil {
+				if d != nil && d.IsDir() {
+					return fs.SkipDir
+				}
+				return nil
+			}
+			if dateien >= maxDateien {
+				return fs.SkipAll
+			}
+			if d.IsDir() {
+				return nil
+			}
+			endung := strings.ToLower(filepath.Ext(pfad))
+			if endung != ".ttf" && endung != ".otf" && endung != ".ttc" && endung != ".otc" {
+				return nil
+			}
+			dateien++
+			leseDatei(pfad, endung == ".ttc" || endung == ".otc", &buf, nachName)
+			return nil
+		})
+	}
+	var f []familie
+	for _, v := range nachName {
+		f = append(f, *v)
+	}
+	slices.SortFunc(f, func(a, b familie) int { return strings.Compare(a.name, b.name) })
+	return f
+}
+
+// leseDatei trägt die Schnitte der Datei pfad in nachName ein (der erste Fund je Familie und Schnitt gilt).
+func leseDatei(pfad string, sammlung bool, buf *sfnt.Buffer, nachName map[string]*familie) {
+	st, err := os.Stat(pfad) // folgt einem Verweis auf eine Datei
+	if err != nil || !st.Mode().IsRegular() || st.Size() > MaxDateiGroesse {
+		return
+	}
+	d, err := os.Open(pfad)
+	if err != nil {
+		return
+	}
+	defer d.Close()
+	var fonts []*sfnt.Font
+	if sammlung {
+		c, err := sfnt.ParseCollectionReaderAt(d)
+		if err != nil {
+			return
+		}
+		for i := 0; i < c.NumFonts() && i < 256; i++ {
+			f, err := c.Font(i)
+			if err != nil {
+				f = nil
+			}
+			fonts = append(fonts, f)
+		}
+	} else {
+		f, err := sfnt.ParseReaderAt(d)
+		if err != nil {
+			return
+		}
+		fonts = []*sfnt.Font{f}
+	}
+	for i, f := range fonts {
+		if f == nil {
+			continue
+		}
+		name, schnitt, ok := namenVon(f, buf)
+		if !ok || name == Go || name == GoMono {
+			continue
+		}
+		fam := nachName[name]
+		if fam == nil {
+			fam = &familie{name: name}
+			nachName[name] = fam
+		}
+		if !fam.schnitte[schnitt].da {
+			fam.schnitte[schnitt] = quelle{da: true, pfad: pfad, index: i, samml: sammlung}
+		}
+	}
+}
+
+// namenVon liest Familie und Schnitt; ok ist false für Schnitte außer den vier Grundschnitten oder unbrauchbare Namen.
+func namenVon(f *sfnt.Font, buf *sfnt.Buffer) (string, Schnitt, bool) {
+	name, err := f.Name(buf, sfnt.NameIDTypographicFamily)
+	if err != nil || strings.TrimSpace(name) == "" {
+		if name, err = f.Name(buf, sfnt.NameIDFamily); err != nil {
+			return "", 0, false
+		}
+	}
+	unter, err := f.Name(buf, sfnt.NameIDTypographicSubfamily)
+	if err != nil || strings.TrimSpace(unter) == "" {
+		unter, _ = f.Name(buf, sfnt.NameIDSubfamily)
+	}
+	name = strings.TrimSpace(name)
+	if !NameGueltig(name) {
+		return "", 0, false
+	}
+	s, ok := SchnittAusName(unter)
+	return name, s, ok
+}
+
+// SchnittAusName erkennt einen Grundschnitt am Namen des Schnitts (Punkt 3); ok ist false für andere Schnitte.
+func SchnittAusName(unter string) (Schnitt, bool) {
+	fett, kursiv := false, false
+	for _, w := range strings.Fields(strings.ToLower(unter)) {
+		switch w {
+		case "regular", "book", "normal", "roman", "plain":
+		case "bold":
+			fett = true
+		case "italic", "oblique":
+			kursiv = true
+		default:
+			return 0, false
+		}
+	}
+	return SchnittAus(fett, kursiv), true
+}
+
+// NameGueltig meldet, ob name als Familienname taugt: nicht leer, höchstens MaxNamenLaenge Zeichen, keine
+// Steuerzeichen (er steht in der Arbeitsdatei und in der Oberfläche).
+func NameGueltig(name string) bool {
+	if name == "" || len([]rune(name)) > MaxNamenLaenge {
+		return false
+	}
+	for _, r := range name {
+		if r < 0x20 || r == 0x7f || r == 0xfffd || r == 0xfffe || r == 0xffff {
+			return false
+		}
+	}
+	return true
+}

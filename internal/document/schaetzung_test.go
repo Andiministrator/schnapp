@@ -40,12 +40,11 @@ func TestSchaetzungIstObermass(t *testing.T) {
 	}
 
 	schriftMu.Lock()
-	alt := schriftenMass
-	schriftenMass = [2]*schriftMass{}
+	ohneSchrift = true
 	schriftMu.Unlock()
 	defer func() {
 		schriftMu.Lock()
-		schriftenMass = alt
+		ohneSchrift = false
 		schriftMu.Unlock()
 	}()
 

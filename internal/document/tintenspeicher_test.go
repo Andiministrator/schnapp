@@ -40,7 +40,7 @@ func mitLeeremSpeicher(t *testing.T, grenze int) *schriftMass {
 func TestTintenSpeicherLeertNachZeilen(t *testing.T) {
 	s := mitLeeremSpeicher(t, 4096)
 	textZeilen(s, "a", 12)
-	klein := tintenSchluessel{"a", 12}
+	klein := tintenSchluessel{s.f, "a", 12}
 	if _, ok := tintenSpeicher[klein]; !ok {
 		t.Fatal("Vorbedingung: kleiner Eintrag gespeichert")
 	}

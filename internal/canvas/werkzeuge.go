@@ -64,6 +64,12 @@ type Stil struct {
 	Eckradius   float64 // Kasten
 	Schriftgrad float64 // Text
 	Radius      float64 // Nummer
+	// Schrift, Stil und Ausrichtung neuer Texte (ADR-0021 Nachtrag 10); leere Schrift ist Go.
+	Schrift         string
+	Fett, Kursiv    bool
+	Unterstrichen   bool
+	Durchgestrichen bool
+	Ausrichtung     document.Ausrichtung
 }
 
 // StandardStil ist die Voreinstellung (ADR-0021 Punkt 4).
@@ -298,6 +304,7 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 		s.zug, s.neuID, s.startObj = zugNeu, id, n
 	case WerkzeugText:
 		t := document.Text{Ort: q, Schriftgrad: s.Stil.Schriftgrad, Farbe: Weiss, Hintergrund: s.Stil.Farbe}
+		s.Stil.aufText(&t)
 		id, err := s.D.BeginneNeuenZug(t)
 		if err != nil {
 			return

@@ -297,15 +297,28 @@ rounding is circular, never elliptic.
 | `s:farbe` | text colour |
 | `s:hintergrund` | colour of the label behind the text; alpha `00` means none |
 | `s:umbruch` | wrap width, number `>= 0`; `0` = no wrapping. Stored, but **not applied** by the current implementation |
+| `s:schrift` | OPTIONAL. Font family name, 1 to 128 characters, no control characters. Missing, empty, `Go`, or not a valid name: the built-in family Go |
+| `s:stil` | OPTIONAL. Words separated by spaces from `bold`, `italic`, `underline`, `strike`; unknown words are ignored. Missing: none |
+| `s:ausrichtung` | OPTIONAL. Alignment of each line: `left`, `center` or `right`. Missing or any other value: `left` |
 
 `s:inhalt` is the text as typed. Line feed (U+000A) separates lines. The value MUST be valid UTF-8 with at most
 `max_text_chars` characters (Unicode scalar values) and MUST NOT contain control characters below U+0020 other than
 tab, line feed and carriage return, nor U+FFFE or U+FFFF. Writers MUST escape line feed, carriage return and tab as
 character references (`&#xA;`, `&#xD;`, `&#x9;`) so that XML attribute-value normalisation keeps them.
 
-Informative: font Go Regular (family "Go"); the first baseline lies `grad` below `ort.y`, each further line
-`1.3 x grad` lower; a tab is shown as four spaces; the background label spans the measured text ink plus
-`0.25 x grad` padding on every side.
+The three optional attributes were added without changing the format version (like `s:kante`, 7.1): writers emit
+them only when they differ from the default, a reader that does not know them ignores them (section 11, rule 3) and
+shows the text in Go Regular, and no value of them makes a file damaged. The family is a name, never a path; a reader
+that lacks the family sets the text in Go and SHOULD keep the name when it saves the file.
+
+Informative: Schnapp sets the text in the named family (system fonts or the built-in Go and Go Mono) in the face
+picked by `bold` and `italic`, falling back to the nearest available face of the family and to Go if the family is
+missing; there is no shaping, only advance widths and the `kern` table. The first baseline lies `grad` below
+`ort.y`, each further line `1.3 x grad` lower; each line is placed left, centred or right within the advance width
+of the longest line; a tab is shown as four spaces. `underline` draws a bar from `0.1 x grad` below the baseline,
+`strike` a bar centred `0.3 x grad` above it, both `max(1, 0.06 x grad)` thick and as wide as the line's advance.
+The background label spans the measured text ink and bars plus `0.25 x grad` padding on every side. Example with all
+three attributes: `testdata/format/text-style`.
 
 ### 8.4 `"nummer"` step number
 
@@ -439,6 +452,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `view` | crop plus one row strip and one column strip, one box, edge style `wave` |
 | `no-edge-style` | like `minimal`, but `s:ansicht` has no `s:kante` (a valid version-1 file written before the attribute existed; readers use `zigzag`) |
 | `redaction` | one filled and one pixelated redaction, applied to the pixels |
+| `text-style` | one text with all optional text attributes: a family that is not installed, `bold italic underline strike`, `center` |
 
 In the examples the visible image is the view *without* annotations (annotation rendering depends on a font
 rasteriser and is not part of the format).

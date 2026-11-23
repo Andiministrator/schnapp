@@ -18,17 +18,16 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"sync"
 	"unicode/utf8"
 
 	"golang.org/x/image/font"
-	"golang.org/x/image/font/gofont/gobold"
-	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/font/opentype"
+	"golang.org/x/image/font/sfnt"
 	"golang.org/x/image/math/fixed"
 
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/errprefix"
+	"github.com/Andiministrator/schnapp/internal/fonts"
 	"github.com/Andiministrator/schnapp/internal/raster16"
 	"github.com/Andiministrator/schnapp/internal/saveprogress"
 )
@@ -415,22 +414,27 @@ func (z zeichner) objekt(o document.Objekt) error {
 		var face font.Face
 		if !z.trocken() {
 			var err error
-			if face, err = z.schrift(false, v.Schriftgrad); err != nil {
+			if face, err = z.schrift(v.Schriftdatei(), v.Schriftgrad); err != nil {
 				return err
 			}
 		}
-		ort := z.ansicht(v.Ort)
-		for i, zeile := range strings.Split(v.Inhalt, "\n") {
-			grundlinie := ort.Y + v.Schriftgrad*(1+document.Zeilenabstand*float64(i))
-			if !z.zeileSichtbar(ort.X, grundlinie, v.Schriftgrad) {
+		for _, zeile := range v.Zeilen() {
+			p := z.ansicht(document.Pt(zeile.X, zeile.Grundlinie))
+			if !z.zeileSichtbar(p.X, p.Y, v.Schriftgrad) {
 				continue
 			}
-			z.auf.glyph += glyphKosten(zeichenzahl(zeile), v.Schriftgrad)
+			z.auf.glyph += glyphKosten(zeichenzahl(zeile.Text), v.Schriftgrad)
 			if z.trocken() {
 				continue
 			}
-			// Tabulator als vier Leerzeichen, Wagenrücklauf weg: die Go-Schrift hat für beide keine Glyphe (Kritik A-3).
-			z.text(face, document.Zeichenbar(zeile), ort.X, grundlinie, v.Farbe, v.Schriftgrad)
+			// Tabulator als vier Leerzeichen, Wagenrücklauf weg (Zeichenbar in Zeilen): die Schriften haben für beide
+			// keine Glyphe (Kritik A-3).
+			z.text(face, zeile.Text, p.X, p.Y, v.Farbe, v.Schriftgrad)
+		}
+		// Unter- und Durchstrich (ADR-0021 Nachtrag 10 Punkt 7): Rechtecke in der Textfarbe.
+		for _, st := range v.Striche() {
+			r := document.R(z.ansicht(st.Min), z.ansicht(st.Max))
+			z.fuelle([][]document.Punkt{rundesRechteck(r, 0)}, nil, v.Farbe)
 		}
 	case document.Nummer:
 		m := z.ansicht(v.Mitte)
@@ -448,7 +452,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 		if z.trocken() {
 			return nil
 		}
-		face, err := z.schrift(true, grad)
+		face, err := z.schrift(fonts.Laden(fonts.Go, fonts.Fett), grad)
 		if err != nil {
 			return err
 		}
@@ -910,39 +914,23 @@ func umgekehrt(p []document.Punkt) []document.Punkt {
 	return r
 }
 
-// Schriften: Go Regular und Go Bold (BSD-Lizenz, in golang.org/x/image), einmal geparst; sfnt-Fonts sind
-// nebenläufig nutzbar. Faces sind es nicht — jeder Aufruf von Bild hält deshalb seine eigenen (zeichner.faces).
-var (
-	schriftEinmal sync.Once
-	schriften     [2]*opentype.Font // 0 normal, 1 fett
-	schriftFehler error
-)
+// Schriften kommen aus internal/fonts (ADR-0021 Nachtrag 10); sfnt-Fonts sind nebenläufig nutzbar. Faces sind es
+// nicht — jeder Aufruf von Bild hält deshalb seine eigenen (zeichner.faces).
+// neueFace legt ein Face an; der Test des Fehlerwegs tauscht es aus (die eingebauten Schriften lassen sich nicht
+// kaputt machen).
+var neueFace = func(f *sfnt.Font, o *opentype.FaceOptions) (font.Face, error) { return opentype.NewFace(f, o) }
 
 type faceSchluessel struct {
-	fett bool
+	f    *sfnt.Font
 	grad float64
 }
 
-func (z zeichner) schrift(fett bool, grad float64) (font.Face, error) {
-	schriftEinmal.Do(func() {
-		for i, roh := range [][]byte{goregular.TTF, gobold.TTF} {
-			if schriften[i], schriftFehler = opentype.Parse(roh); schriftFehler != nil {
-				return
-			}
-		}
-	})
-	if schriftFehler != nil {
-		return nil, schriftFehler
-	}
-	k := faceSchluessel{fett, grad}
+func (z zeichner) schrift(s *fonts.Schrift, grad float64) (font.Face, error) {
+	k := faceSchluessel{s.Font, grad}
 	if f, ok := z.faces[k]; ok {
 		return f, nil
 	}
-	i := 0
-	if fett {
-		i = 1
-	}
-	face, err := opentype.NewFace(schriften[i], &opentype.FaceOptions{Size: grad, DPI: 72, Hinting: font.HintingNone})
+	face, err := neueFace(s.Font, &opentype.FaceOptions{Size: grad, DPI: 72, Hinting: font.HintingNone})
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/Andiministrator/schnapp/internal/fonts"
 )
 
 // Objekt ist eine Beschriftung über dem Bild. Objekte sind Werte: Ändern heißt, ein geändertes Objekt mit derselben
@@ -147,11 +149,27 @@ type Text struct {
 	Farbe        color.NRGBA
 	Hintergrund  color.NRGBA
 	BreiteGrenze float64 // Zeilenumbruch ab dieser Breite; 0 = ohne Umbruch
+	// Schrift ist der Familienname (leer = Go); fehlt die Familie, setzen alle in Go, der Name bleibt (ADR-0021
+	// Nachtrag 10).
+	Schrift         string
+	Fett, Kursiv    bool
+	Unterstrichen   bool
+	Durchgestrichen bool
+	Ausrichtung     Ausrichtung
 }
+
+// Ausrichtung ist die Lage jeder Zeile in der Breite des Textblocks (der längsten Zeile).
+type Ausrichtung uint8
+
+const (
+	AusrichtungLinks Ausrichtung = iota
+	AusrichtungMitte
+	AusrichtungRechts
+)
 
 func (t Text) Kennung() int { return t.ID }
 
-// Grenzen ist das Schild des Textes: die gemessene Tinte der Glyphen (Go Regular, textFlaeche) mit
+// Grenzen ist das Schild des Textes: die gemessene Tinte der Glyphen (Schriftdatei, textFlaeche) mit
 // TextInnenabstand Schriftgraden Rand. Renderer, Editor und SVG füllen den Hintergrund genau hier, Treffer,
 // Auswahlrahmen und Verschieben nutzen dieselbe Fläche (F-108, F-149, F-172). Der Umbruch bei BreiteGrenze ist nicht
 // umgesetzt, die Fläche kappt deshalb nicht. Nur wenn die Schrift nicht zu laden ist, gilt die grobe Schätzung: je Zeile
@@ -178,6 +196,9 @@ func (t Text) mitKennung(id int) Objekt { t.ID = id; return t }
 func (t Text) pruefe() error {
 	if !endlich(t.Ort.X, t.Ort.Y) || !groesse(t.Schriftgrad, t.BreiteGrenze) || t.Schriftgrad <= 0 || t.Schriftgrad > MaxSchrift {
 		return fmt.Errorf("document: Text mit ungültigen Werten")
+	}
+	if (t.Schrift != "" && !fonts.NameGueltig(t.Schrift)) || t.Ausrichtung > AusrichtungRechts {
+		return fmt.Errorf("document: Text mit ungültiger Schrift oder Ausrichtung")
 	}
 	// Zeichen, die XML nicht tragen kann, überstehen das Speichern nicht unverändert (F-62): ungültiges UTF-8 und
 	// Steuerzeichen unter U+0020 außer Tabulator, Zeilenumbruch und Wagenrücklauf sowie U+FFFE/U+FFFF. Alles, was

@@ -122,6 +122,13 @@ func beispiele() []beispiel {
 			}
 			return d
 		}, Metadaten{Bearbeitet: true}, false},
+		{"text-style", func(t *testing.T) *document.Dokument { // Schrift, Stil, Ausrichtung (ADR-0021 Nachtrag 10)
+			d := beispielDok(t, 64, 48)
+			fuege(t, d, document.Text{Ort: document.Pt(4, 4), Inhalt: "Wide line\nNarrow", Schriftgrad: 9,
+				Farbe: color.NRGBA{0, 0, 0, 255}, Hintergrund: color.NRGBA{255, 255, 255, 255}, Schrift: "Example Sans",
+				Fett: true, Kursiv: true, Unterstrichen: true, Durchgestrichen: true, Ausrichtung: document.AusrichtungMitte})
+			return d
+		}, Metadaten{}, false},
 		{"minimal", func(t *testing.T) *document.Dokument { return beispielDok(t, 32, 24) }, Metadaten{}, false},
 		{"no-edge-style", func(t *testing.T) *document.Dokument {
 			d := beispielDok(t, 32, 24)
@@ -678,7 +685,7 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 	wortliste := []string{"format", "meta", "autor", "erstellt", "quelle", "bearbeitet", "schlagwort", "ansicht", "zuschnitt",
 		"kante",
 		"streifen", "zeilen", "von", "bis", "ebene", "typ", "a", "b", "k", "strich", "bereich", "fuellung", "eckradius",
-		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "mitte", "wert", "radius"}
+		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "schrift", "stil", "ausrichtung", "mitte", "wert", "radius"}
 	for _, w := range wortliste {
 		if !gesehen[w] {
 			t.Errorf("Beispiele enthalten s:%s nicht (Beispielabdeckung)", w)

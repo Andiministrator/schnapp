@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/fonts"
 )
 
 // FormatVersion ist die Version des SVG-Blocks (ADR-0006, ADR-0008). Ältere Versionen müssen lesbar bleiben.
@@ -104,6 +105,65 @@ func strich(st document.Strich) string { return farbeHex(st.Farbe) + " " + zahl(
 // ein Betrachter ohne diese Schrift fällt auf eine serifenlose Schrift zurück (F-108).
 const svgSchrift = "Go, Go Regular, sans-serif"
 
+// svgSchriftFuer ist font-family für einen Text der Familie name (leer = Go): die Familie als CSS-Zeichenkette vor Go
+// und sans-serif (ADR-0021 Nachtrag 10 Punkt 8).
+func svgSchriftFuer(name string) string {
+	if name == "" {
+		return svgSchrift
+	}
+	return "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(name) + "', " + svgSchrift
+}
+
+// Stil und Ausrichtung als Wörter der Arbeitsdatei (docs/format.md 8.3).
+func textStilText(t document.Text) string {
+	var w []string
+	for _, x := range []struct {
+		an   bool
+		wort string
+	}{{t.Fett, "bold"}, {t.Kursiv, "italic"}, {t.Unterstrichen, "underline"}, {t.Durchgestrichen, "strike"}} {
+		if x.an {
+			w = append(w, x.wort)
+		}
+	}
+	return strings.Join(w, " ")
+}
+
+func ausrichtungText(a document.Ausrichtung) string {
+	switch a {
+	case document.AusrichtungMitte:
+		return "center"
+	case document.AusrichtungRechts:
+		return "right"
+	}
+	return ""
+}
+
+// leseTextStil übernimmt s:schrift, s:stil und s:ausrichtung. Alle drei sind freiwillig: fehlend, ungültig oder
+// unbekannt heißt Go, normal, links — kein Schaden (wie s:kante); unbekannte Stil-Wörter werden übergangen.
+func leseTextStil(t *document.Text, a map[string]string) {
+	if n := a["schrift"]; n != fonts.Go && fonts.NameGueltig(n) {
+		t.Schrift = n
+	}
+	for _, w := range strings.Fields(a["stil"]) {
+		switch w {
+		case "bold":
+			t.Fett = true
+		case "italic":
+			t.Kursiv = true
+		case "underline":
+			t.Unterstrichen = true
+		case "strike":
+			t.Durchgestrichen = true
+		}
+	}
+	switch a["ausrichtung"] {
+	case "center":
+		t.Ausrichtung = document.AusrichtungMitte
+	case "right":
+		t.Ausrichtung = document.AusrichtungRechts
+	}
+}
+
 // objekte schreibt die Objekte in Original-Koordinaten; mit behalten != nil nur die, für die behalten true liefert
 // (Export: nur Objekte, die in die Ansicht reichen).
 func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt) bool) {
@@ -172,6 +232,16 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			s.attr("s:farbe", farbeHex(o.Farbe))
 			s.attr("s:hintergrund", farbeHex(o.Hintergrund))
 			s.attr("s:umbruch", zahl(o.BreiteGrenze))
+			// Schrift, Stil und Ausrichtung nur, wo sie von der Voreinstellung abweichen (docs/format.md 8.3).
+			if o.Schrift != "" {
+				s.attr("s:schrift", o.Schrift)
+			}
+			if st := textStilText(o); st != "" {
+				s.attr("s:stil", st)
+			}
+			if a := ausrichtungText(o.Ausrichtung); a != "" {
+				s.attr("s:ausrichtung", a)
+			}
 			s.WriteString(`>`)
 			if o.Hintergrund.A > 0 {
 				g := o.Grenzen()
@@ -185,19 +255,35 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			}
 			s.WriteString(`<text`)
 			s.attr("xml:space", "preserve") // sonst falten Betrachter mehrere und führende Leerzeichen (F-343)
-			s.attr("font-family", svgSchrift)
+			s.attr("font-family", svgSchriftFuer(o.Schrift))
 			s.attr("font-size", zahl(o.Schriftgrad))
+			if o.Fett {
+				s.attr("font-weight", "bold")
+			}
+			if o.Kursiv {
+				s.attr("font-style", "italic")
+			}
 			s.farbeSVG("fill", o.Farbe)
 			s.WriteString(`>`)
-			for i, zeile := range strings.Split(o.Inhalt, "\n") {
+			for _, zeile := range o.Zeilen() { // Anfang nach der Ausrichtung (ADR-0021 Nachtrag 10 Punkt 6)
 				s.WriteString(`<tspan`)
-				s.attr("x", zahl(o.Ort.X))
-				s.attr("y", zahl(o.Grundlinie(i)))
+				s.attr("x", zahl(zeile.X))
+				s.attr("y", zahl(zeile.Grundlinie))
 				s.WriteString(`>`)
-				xml.EscapeText(s, []byte(document.Zeichenbar(zeile))) // sichtbar wie im Renderer: Tabulator als vier Leerzeichen (F-343); s:inhalt behält das Original
+				xml.EscapeText(s, []byte(zeile.Text)) // sichtbar wie im Renderer: Tabulator als vier Leerzeichen (F-343); s:inhalt behält das Original
 				s.WriteString(`</tspan>`)
 			}
-			s.WriteString(`</text></g>`)
+			s.WriteString(`</text>`)
+			for _, st := range o.Striche() { // als Rechtecke, nicht text-decoration (Punkt 7)
+				s.WriteString(`<rect`)
+				s.attr("x", zahl(st.Min.X))
+				s.attr("y", zahl(st.Min.Y))
+				s.attr("width", zahl(st.Breite()))
+				s.attr("height", zahl(st.Hoehe()))
+				s.farbeSVG("fill", o.Farbe)
+				s.WriteString(`/>`)
+			}
+			s.WriteString(`</g>`)
 		case document.Nummer:
 			s.WriteString(`<g`)
 			s.attr("s:typ", "nummer")
@@ -412,8 +498,10 @@ func (l *leser) objekt(typ string) document.Objekt {
 		return document.Kasten{Bereich: document.Rechteck{Min: l.punkt("_min"), Max: l.punkt("_max")},
 			Strich: l.strich("strich"), Fuellung: l.farbe("fuellung"), Eckradius: l.zahl("eckradius")}
 	case "text":
-		return document.Text{Ort: l.punkt("ort"), Inhalt: l.text("inhalt"), Schriftgrad: l.zahl("grad"),
+		t := document.Text{Ort: l.punkt("ort"), Inhalt: l.text("inhalt"), Schriftgrad: l.zahl("grad"),
 			Farbe: l.farbe("farbe"), Hintergrund: l.farbe("hintergrund"), BreiteGrenze: l.zahl("umbruch")}
+		leseTextStil(&t, l.a)
+		return t
 	case "nummer":
 		return document.Nummer{Mitte: l.punkt("mitte"), Wert: l.ganz("wert"), Radius: l.zahl("radius"),
 			Farbe: l.farbe("farbe")}

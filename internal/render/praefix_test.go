@@ -7,6 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/opentype"
+	"golang.org/x/image/font/sfnt"
+
 	"github.com/Andiministrator/schnapp/internal/document"
 )
 
@@ -24,21 +28,18 @@ func einmalPraefix(t *testing.T, name string, err error) {
 	}
 }
 
-// Die Schrift lässt sich nicht kaputt machen (eingebettete Go-Schriften); der Fehlerweg wird nachgestellt: Die
-// Schriften werden zuerst echt geladen (ein Text wird gerendert), erst dann ist die gemerkte Ursache ein roher Fehler
-// ohne Präfix; danach wird sie zurückgesetzt. Bild und PNG müssen ihn hüllen. Früher verbrauchte der Test den
-// Einmal-Lauf leer und ließ die Schriften nil — ein später laufender Test stürzte dann ab, je nach Reihenfolge
-// (-shuffle, KB-1).
+// Die Schrift lässt sich nicht kaputt machen (eingebettete Go-Schriften); der Fehlerweg wird nachgestellt: Das Anlegen
+// des Face liefert einen rohen Fehler ohne Präfix, danach wird es zurückgesetzt. Bild und PNG müssen ihn hüllen.
 func TestFehlertextPraefixSchriftfehler(t *testing.T) {
 	d := weissesDokument(t, 100, 40)
 	hinzu(t, d, document.Text{Ort: document.Pt(5, 5), Inhalt: "Hallo", Schriftgrad: 20, Farbe: weiss})
 	if _, err := Bild(d); err != nil { // lädt die Schriften echt
 		t.Fatal(err)
 	}
-	alt := schriftFehler
+	alt := neueFace
 	roh := errors.New("Schrift kaputt")
-	schriftFehler = roh
-	defer func() { schriftFehler = alt }()
+	neueFace = func(*sfnt.Font, *opentype.FaceOptions) (font.Face, error) { return nil, roh }
+	defer func() { neueFace = alt }()
 
 	_, err := Bild(d)
 	einmalPraefix(t, "Bild", err)

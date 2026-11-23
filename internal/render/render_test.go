@@ -16,6 +16,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/raster16"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/fonts"
 )
 
 var (
@@ -354,7 +355,7 @@ func TestTextAnschnittLinksBleibtAmSelbenOrt(t *testing.T) {
 	{
 		z := zeichner{d: d, faces: map[faceSchluessel]font.Face{}}
 		defer z.schliessen()
-		f, err := z.schrift(false, 20)
+		f, err := z.schrift(fonts.Laden(fonts.Go, fonts.Normal), 20)
 		if err != nil {
 			t.Fatal(err)
 		}

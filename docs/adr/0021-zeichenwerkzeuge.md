@@ -267,3 +267,50 @@ Nachtrag 6: Neben den vier Beschriftungsfarben ist jede Farbe wählbar, mit Deck
 8. **Nicht hier:** Eine zweite Farbe „Füllung“ (Fläche von Kasten und Text-Schild getrennt vom Strich, mit Tausch-Knopf;
    Entscheidung im Kommentar an #189 vom 22.11.) ändert die Bedeutung der Farbe beim Text und bekommt eine eigene Karte
    mit eigenem Nachtrag.
+
+## Nachtrag 10 (23.11.2026): Schriftart, Größe, Stil und Ausrichtung im Text-Werkzeug (Karte #190)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Anlass: Andi, 22.11.2026: „bei der schrift brauchen wir auch eine
+schrift-auswahl, größen-auswahl, stil-auswahl und so“; Muster v2 (Block „Werkzeug: Text“). Ändert Punkt 4 (nur Go
+Regular) und präzisiert Nachtrag 3 (gleiche Maße überall).
+
+1. **Modell:** Ein Text trägt zusätzlich `Schrift` (Familienname, leer = Go), `Fett`, `Kursiv`, `Unterstrichen`,
+   `Durchgestrichen` und `Ausrichtung` (links, Mitte, rechts). Die Voreinstellung (Go, normal, links) ist genau der
+   bisherige Text; vorhandene Dateien ändern sich nicht.
+2. **Arbeitsdatei:** drei freiwillige Attribute am Objekt `text` (`docs/format.md` §8.3): `s:schrift` (Familienname,
+   höchstens 128 Zeichen), `s:stil` (Wörter aus `bold italic underline strike`, durch Leerzeichen getrennt; unbekannte
+   Wörter werden übergangen) und `s:ausrichtung` (`left`, `center`, `right`). Fehlend oder unbekannt heißt Go, normal,
+   links; das ist kein Schaden. Wie `s:kante` (ADR-0023 Nachtrag 7) ändert das die `FormatVersion` nicht: Ein älterer
+   Leser übergeht die Attribute und zeigt den Text in Go Regular (Regel 3 der Spezifikation). Kein Pfad, nur der Name
+   (Kernprinzip 3).
+3. **Schriftquellen** (`internal/fonts`): eingebaut die Go-Schriften „Go“ und „Go Mono“ mit je vier Schnitten; dazu die
+   Systemschriften aus den XDG-Schriftordnern (`$XDG_DATA_HOME/fonts`, `~/.fonts`, `<XDG_DATA_DIRS>/fonts`, Voreinstellung
+   `/usr/local/share/fonts` und `/usr/share/fonts`), gelesen mit `golang.org/x/image/font/sfnt` — kein cgo, kein
+   fontconfig, nichts wird auf die Platte geschrieben (Gio selbst würde einen Index im Cache anlegen). Gelesen werden
+   TrueType und OpenType (`.ttf`, `.otf`) sowie Sammlungen (`.ttc`, `.otc`); höchstens 20 000 Dateien und 64 MiB je
+   Datei, Verweise auf Ordner werden nicht verfolgt. Aus jeder Schrift zählen der Familienname (typografische Familie,
+   sonst Familie) und die vier Grundschnitte (normal, fett, kursiv, fett kursiv, erkannt am Namen des Schnitts: „Bold“,
+   „Italic“/„Oblique“; „Regular“, „Book“, „Normal“, „Roman“ oder leer = normal). Andere Schnitte (Light, Medium,
+   Condensed …) übergeht die Liste. Die Suche läuft einmal je Prozess im Hintergrund beim Öffnen des Editors; bis sie
+   fertig ist, zeigt die Liste die eingebauten Schriften.
+4. **Wahl des Schnitts:** Fehlt ein verlangter Schnitt in der Familie, gilt der nächste vorhandene (fett kursiv → fett
+   → normal, kursiv → normal); künstliches Fett oder Schrägstellen gibt es nicht. Fehlt die Familie (Datei von einem
+   anderen Rechner), setzen Messung, Renderer und Editor in Go; der Name bleibt im Dokument und kommt beim Speichern
+   wieder mit, die Leiste zeigt ihn mit „(missing)“.
+5. **Ein Satz für alles:** Messung des Schilds, Renderer, Editor und die Lage im SVG-Export setzen Text aus derselben
+   Schriftdatei mit Vorschub und `kern`-Tabelle, ohne Hinting (wie bisher für Go). Es gibt kein Shaping (keine
+   GPOS-Unterschneidung, keine Ligaturen, keine Schriften, die Shaping brauchen); dafür stimmen die Maße überall.
+   Deshalb zeichnet der Editor Text nicht mehr über den Shaper von Gio, sondern aus den Glyphenumrissen derselben
+   Datei; die Schreibmarke misst mit demselben Satz.
+6. **Ausrichtung:** Jede Zeile wird innerhalb der Blockbreite (Vorschub der längsten Zeile) links, mittig oder rechts
+   gesetzt; der Ort bleibt die linke obere Ecke des Blocks.
+7. **Unter- und Durchstrich** sind Rechtecke über den Vorschub der Zeile: Unterstrich mit der Oberkante 0,1 Schriftgrad
+   unter der Grundlinie, Durchstrich mit der Mitte 0,3 Schriftgrad über der Grundlinie, Dicke max(1 px, 0,06 Schriftgrad).
+   Sie gehören zur Tinte und damit zum Schild. Im SVG-Export stehen sie als `<rect>`, nicht als `text-decoration`.
+8. **SVG-Export:** `font-family` nennt die Familie und dahinter Go und `sans-serif`, `font-weight="bold"` und
+   `font-style="italic"` je nach Stil, jede Zeile mit eigenem `x` nach der Ausrichtung. Die Schrift wird nicht
+   eingebettet (Lizenzen); ein Betrachter ohne die Schrift nimmt die nächste.
+9. **Bedienung** (rechte Leiste, Text-Werkzeug oder gewählter Text, ADR-0031 Nachtrag 6): Schrift (Liste), Größe (− / +
+   in den Stufen `canvas.SchriftStufen` und Anzeige in px), Stil (vier Umschalter F, K, U, S) und Ausrichtung (drei
+   Knöpfe). Jede Wahl gilt für neue Texte und ändert den gewählten Text als einen Rückgängig-Schritt; während der
+   Texteingabe gehört sie zur Eingabe. Gleiches erneut gewählt ist kein Schritt.

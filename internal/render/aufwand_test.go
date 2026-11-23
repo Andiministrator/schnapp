@@ -15,6 +15,7 @@ import (
 	"golang.org/x/image/math/fixed"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/fonts"
 )
 
 // zaehle rendert und liefert den Aufwand samt Zählung der gerasterten Glyphen (Zählnahtstelle ohne Uhr).
@@ -105,7 +106,7 @@ func vergleiche(t *testing.T, inhalt string, grad, x float64) {
 	ref := weissesDokument(t, 60, 50)
 	z := zeichner{d: ref, faces: map[faceSchluessel]font.Face{}}
 	defer z.schliessen()
-	f, err := z.schrift(false, grad)
+	f, err := z.schrift(fonts.Laden(fonts.Go, fonts.Normal), grad)
 	if err != nil {
 		t.Fatal(err)
 	}

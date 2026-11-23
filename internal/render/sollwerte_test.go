@@ -11,6 +11,7 @@ import (
 	"golang.org/x/image/font"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/fonts"
 )
 
 // tintenzeilen liefert die Zeilen von b, in denen mindestens ein Pixel nicht weiß ist, als Bänder zusammenhängender
@@ -156,7 +157,7 @@ func TestTextRechterRand(t *testing.T) {
 	d := weissesDokument(t, 60, 30)
 	z := zeichner{d: d, faces: map[faceSchluessel]font.Face{}}
 	defer z.schliessen()
-	f, err := z.schrift(false, 20)
+	f, err := z.schrift(fonts.Laden(fonts.Go, fonts.Normal), 20)
 	if err != nil {
 		t.Fatal(err)
 	}

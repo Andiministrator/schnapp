@@ -268,6 +268,7 @@ type editor struct {
 	seiteZu bool
 	// seite: Knöpfe der rechten Leiste (seitenleiste.go).
 	seite seitenKnoepfe
+	satz  textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
 	// fussFeldRahmen: Lage der Felder Farbe und Zoom beim letzten Zeichnen (leer: nicht gezeigt), farbKnopfRahmen die des
 	// Farbfelds der Werkzeugleiste; die Aufklapplisten hängen sich daran (listenAnker).
 	fussFeldRahmen  map[canvas.FeldArt]image.Rectangle
@@ -1434,17 +1435,18 @@ func (e *editor) zeichneRahmen(gtx layout.Context) {
 }
 
 // zeichneEinfuegemarke zeigt während der Texteingabe die Einfügemarke am Ende der letzten Zeile (orange wie der
-// Tastaturfokus, Corporate Design §6), in Fensterpixeln. Die Zeilenbreite misst derselbe Textsatz wie zeichneObjekte.
+// Tastaturfokus, Corporate Design §6), in Fensterpixeln. Lage und Breite der Zeile kommen aus dem Dokument
+// (document.Text.Zeilen), wie in zeichneObjekte.
 func (e *editor) zeichneEinfuegemarke(gtx layout.Context) {
 	t, ok := e.s.TextObjekt()
 	if !ok {
 		return
 	}
-	zeilen := strings.Split(t.Inhalt, "\n")
+	zeilen := t.Zeilen()
 	i := len(zeilen) - 1
-	breite := e.textBreite(gtx, document.Zeichenbar(zeilen[i]), float32(t.Schriftgrad))
+	z := zeilen[i] // Anfang nach der Ausrichtung, Vorschub aus demselben Satz wie Renderer und Editor (ADR-0021 Nachtrag 10)
 	// Von der Oberlänge (0,75 Schriftgrad über der Grundlinie) bis unter die Unterlänge (0,25 darunter).
-	ort := e.s.D.ZuAnsicht(t.Ort).Plus(document.Pt(float64(breite), t.Schriftgrad*(0.25+document.Zeilenabstand*float64(i))))
+	ort := e.s.D.ZuAnsicht(document.Pt(z.X, t.Ort.Y)).Plus(document.Pt(z.Vorschub, t.Schriftgrad*(0.25+document.Zeilenabstand*float64(i))))
 	oben := e.s.Abb.ZuFenster(ort)
 	unten := e.s.Abb.ZuFenster(ort.Plus(document.Pt(0, t.Schriftgrad)))
 	x := int(math.Round(oben.X))
@@ -1640,12 +1642,18 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 				a, b := an(g.Min), an(g.Max)
 				paint.FillShape(gtx.Ops, v.Hintergrund, clip.Rect(image.Rect(int(a.X), int(a.Y), int(b.X), int(b.Y))).Op())
 			}
-			ort := an(v.Ort)
-			for i, zeile := range strings.Split(v.Inhalt, "\n") {
-				zeile = document.Zeichenbar(zeile) // wie im Renderer
-				// Grundlinie wie im Renderer: ein Schriftgrad unter der Oberkante, je Zeile Zeilenabstand weiter.
-				p := ort.Add(f32.Pt(0, textGrundlinieAnsicht(v.Schriftgrad, i)))
-				e.textBei(gtx, zeile, float32(v.Schriftgrad), p, false, v.Farbe)
+			// Zeilen und Striche wie im Renderer: Schrift, Anfang nach der Ausrichtung und Grundlinie aus dem Dokument,
+			// Glyphen aus den Umrissen derselben Datei (ADR-0021 Nachtrag 10 Punkt 5).
+			sch := v.Schriftdatei()
+			sicht := image.Rectangle{Max: e.s.D.Groesse()}
+			for _, zeile := range v.Zeilen() {
+				p := an(document.Pt(zeile.X, zeile.Grundlinie))
+				e.satz.zeichneZeile(gtx, sch, zeile.Text, float64(p.X), float64(p.Y), v.Schriftgrad, v.Farbe, sicht)
+			}
+			for _, st := range v.Striche() {
+				a, b := an(st.Min), an(st.Max)
+				paint.FillShape(gtx.Ops, v.Farbe, clip.Rect(image.Rect(int(math.Floor(float64(a.X))), int(math.Floor(float64(a.Y))),
+					int(math.Ceil(float64(b.X))), int(math.Ceil(float64(b.Y))))).Op())
 			}
 		}
 	}
