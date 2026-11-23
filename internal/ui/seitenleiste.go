@@ -164,6 +164,7 @@ func (e *editor) seiteAuswerten(gtx layout.Context) {
 	e.farbeAuswerten(gtx)
 	e.schriftAuswerten(gtx)
 	e.ebenenAuswerten(gtx)
+	e.lupeAuswerten(gtx)
 	for j, f := range kantenFormen {
 		if k.kanten[j].Clicked(gtx) && an() && e.s.SetzeKante(f) {
 			e.melde(kantenMeldung(f), false)
@@ -298,6 +299,9 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 		k.strichText = fmt.Sprintf(i18n.TK("status bar", "%d px"), int(math.Round(e.s.Breite())))
 		e.textMittig(gtx, k.strichText, 13, farbeText, wert)
 		y += hoch + gtx.Dp(10)
+	}
+	if inhalt.Vergroesserung { // gewählte Lupe (ADR-0033 Punkt 8)
+		y = e.zeichneVergroesserung(gtx, x, y, spalte)
 	}
 	if t := seitenHinweisText(inhalt.Hinweis); t != "" {
 		y += e.seiteText(gtx, t, 12, farbeNebentext, image.Pt(x, y), breite, 4)

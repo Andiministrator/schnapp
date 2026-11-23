@@ -115,6 +115,7 @@ func tastenTabelle() []taste {
 		wz("R", canvas.WerkzeugKasten),
 		wz("T", canvas.WerkzeugText),
 		wz("N", canvas.WerkzeugNummer),
+		wz("M", canvas.WerkzeugLupe), // M wie magnifier (ADR-0033 Punkt 8)
 		wz("B", canvas.WerkzeugSchwaerzen),
 		wz("P", canvas.WerkzeugVerpixeln),
 		wz("C", canvas.WerkzeugZuschneiden), // ohne Strg; Strg+C bleibt Kopieren

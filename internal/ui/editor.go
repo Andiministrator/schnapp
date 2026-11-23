@@ -263,6 +263,7 @@ type editor struct {
 	// Handlungen stehen in der Menüzeile.
 	knoepfe struct {
 		auswahl, pfeil, kasten, text, nummer, farbe  widget.Clickable
+		lupe                                         widget.Clickable // Werkzeug Lupe (ADR-0033)
 		fuellung, tausch                             widget.Clickable // Farbpaar der Werkzeugleiste (ADR-0021 Nachtrag 11)
 		schwaerzen, verpixeln, zuschneiden, stauchen widget.Clickable
 		fussFarbe, fussZoom                          widget.Clickable
@@ -274,7 +275,9 @@ type editor struct {
 	seite seitenKnoepfe
 	// ebenen ist der Abschnitt „Ebenen“ der rechten Leiste (ADR-0032, ebenen.go).
 	ebenen ebenenLeiste
-	satz   textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
+	// lupe: Abschnitt „Vergrößerung“ der rechten Leiste und gemerkte Bilder der Lupen (ADR-0033, lupe.go).
+	lupe lupenLeiste
+	satz textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
 	// fussFeldRahmen: Lage der Felder Farbe und Zoom beim letzten Zeichnen (leer: nicht gezeigt), farbKnopfRahmen die des
 	// Farbfelds der Werkzeugleiste; die Aufklapplisten hängen sich daran (listenAnker).
 	fussFeldRahmen  map[canvas.FeldArt]image.Rectangle
@@ -1592,14 +1595,16 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 		if !d.ObjektSichtbar(o) || o.Ebenenwerte().Ausgeblendet {
 			continue // ganz im Verborgenen oder ausgeblendet: wie Renderer und SVG-Export (ADR-0023 Punkt 7, ADR-0032)
 		}
-		e.zeichneObjekt(gtx, o, an, sicht)
+		e.zeichneObjekt(gtx, o, an, sicht, false)
 	}
 }
 
 // zeichneObjekt zeichnet o; an bildet Originalpunkte in die Zeichenfläche ab, sicht begrenzt die Textzeilen (in
 // derselben Fläche). Die Deckkraft der Ebene wirkt als Gios Deckkraft-Ebene auf das Objekt als Ganzes (ADR-0032 Punkt
-// 10). Leinwand und Vorschau der Ebenenliste zeichnen über diese eine Funktion.
-func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(document.Punkt) f32.Point, sicht image.Rectangle) {
+// 10). Leinwand und Vorschau der Ebenenliste zeichnen über diese eine Funktion; vorschau sagt, dass an das Original
+// ohne Ansicht abbildet (das Bild einer Lupe liegt dann nicht in Ansichtskoordinaten, ADR-0033).
+func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(document.Punkt) f32.Point, sicht image.Rectangle,
+	vorschau bool) {
 	if p := o.Ebenenwerte().Deckkraft(); p < 100 {
 		defer paint.PushOpacity(gtx.Ops, float32(p)/100).Pop()
 	}
@@ -1658,6 +1663,8 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 		// Grundlinie wie im Renderer: eine halbe Versalhöhe unter der Mitte (document.Nummer.Grundlinie).
 		e.textBei(gtx, fmt.Sprint(v.Wert), float32(v.Radius*1.2), f32.Pt(m.X, m.Y+nummerGrundlinieAnsicht(v)), true,
 			color.NRGBA{R: 255, G: 255, B: 255, A: 255})
+	case document.Lupe:
+		e.zeichneLupe(gtx, v, an, vorschau)
 	case document.Text:
 		if v.Hintergrund.A > 0 {
 			g := v.Grenzen()
@@ -2061,6 +2068,7 @@ func (e *editor) fokussierterKnopf(gtx layout.Context) *widget.Clickable {
 	alle := []*widget.Clickable{&k.farbe, &k.fuellung, &k.tausch, &k.fussFarbe, &k.fussZoom}
 	alle = append(alle, e.seite.alle()...)
 	alle = append(alle, e.ebenen.alleKnoepfe()...)
+	alle = append(alle, e.lupe.alle()...)
 	for i := range e.menue.titel {
 		alle = append(alle, &e.menue.titel[i])
 	}
@@ -2137,8 +2145,8 @@ type werkzeugKnopf struct {
 	text string
 }
 
-// werkzeugKnoepfe sind die Knöpfe der Werkzeuggruppe in Reihenfolge der Leiste (Kürzel V, A, R, T, N, B, P, C, X;
-// ADR-0021, ADR-0022, ADR-0023).
+// werkzeugKnoepfe sind die Knöpfe der Werkzeuggruppe in Reihenfolge der Leiste (Kürzel V, A, R, T, N, M, B, P, C, X;
+// ADR-0021, ADR-0022, ADR-0023, ADR-0033).
 func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
 	k := &e.knoepfe
 	return []werkzeugKnopf{
@@ -2147,6 +2155,7 @@ func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
 		{&k.kasten, canvas.WerkzeugKasten, i18n.T("Rectangle")},
 		{&k.text, canvas.WerkzeugText, i18n.T("Text")},
 		{&k.nummer, canvas.WerkzeugNummer, i18n.T("Step")},
+		{&k.lupe, canvas.WerkzeugLupe, i18n.T("Magnifier")},
 		{&k.schwaerzen, canvas.WerkzeugSchwaerzen, i18n.T("Redact")},
 		{&k.verpixeln, canvas.WerkzeugVerpixeln, i18n.T("Pixelate")},
 		{&k.zuschneiden, canvas.WerkzeugZuschneiden, i18n.T("Crop")},
@@ -2177,6 +2186,8 @@ func (e *editor) hinweis() string {
 			return e.grenzText(a) // keine Nummer versprechen, die nicht kommt (F-154)
 		}
 		return fmt.Sprintf(i18n.T("Click to place step number %d."), e.s.D.NaechsteNummer())
+	case canvas.WerkzeugLupe:
+		return i18n.T("Drag over the part to magnify. The enlarged copy appears next to it; drag either frame to move it.")
 	case canvas.WerkzeugSchwaerzen:
 		return i18n.T("Drag over the area to black out. The pixels are overwritten for good once saved.")
 	case canvas.WerkzeugVerpixeln:

@@ -593,13 +593,16 @@ func (e *editor) zeichneVorschau(gtx layout.Context, o document.Objekt, v image.
 	case document.Kasten:
 		w.Strich.Breite = math.Max(w.Strich.Breite, 1.5/f)
 		o = w
+	case document.Lupe:
+		w.Strich.Breite = math.Max(w.Strich.Breite, 1.5/f)
+		o = w
 	}
 	c := clip.Rect(v).Push(gtx.Ops)
 	t := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Pt(float32(f), float32(f))).
 		Offset(f32.Pt(float32(ox), float32(oy)))).Push(gtx.Ops)
 	an := func(p document.Punkt) f32.Point { return f32.Pt(float32(p.X), float32(p.Y)) }
 	sicht := image.Rect(int(math.Floor(g.Min.X)), int(math.Floor(g.Min.Y)), int(math.Ceil(g.Max.X)), int(math.Ceil(g.Max.Y)))
-	e.zeichneObjekt(gtx, o, an, sicht)
+	e.zeichneObjekt(gtx, o, an, sicht, true)
 	t.Pop()
 	c.Pop()
 }

@@ -323,6 +323,8 @@ func werkzeugSymbol(w canvas.Werkzeug) icons.Symbol {
 		return icons.Text
 	case canvas.WerkzeugNummer:
 		return icons.Nummer
+	case canvas.WerkzeugLupe:
+		return icons.LupeWerkzeug
 	case canvas.WerkzeugSchwaerzen:
 		return icons.Schwaerzen
 	case canvas.WerkzeugVerpixeln:

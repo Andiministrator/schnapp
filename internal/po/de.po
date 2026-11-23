@@ -382,6 +382,23 @@ msgstr "Text"
 msgid "Step"
 msgstr "Nummer"
 
+msgid "Magnifier"
+msgstr "Lupe"
+
+msgid "Magnification"
+msgstr "Vergrößerung"
+
+msgid "Drag over the part to magnify. The enlarged copy appears next to it; drag either frame to move it."
+msgstr "Über den Teil ziehen, der vergrößert werden soll. Die Vergrößerung erscheint daneben; jeder Rahmen lässt sich für sich verschieben."
+
+msgctxt "status bar"
+msgid "%d×"
+msgstr "%d×"
+
+msgctxt "status bar"
+msgid "%d.%d×"
+msgstr "%d,%d×"
+
 msgid "Color"
 msgstr "Farbe"
 

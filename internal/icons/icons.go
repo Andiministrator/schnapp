@@ -134,6 +134,10 @@ var (
 	Zuschneiden = Symbol{"crop", teile(zug(7, 2, 7, 17, 22, 17), zug(2, 7, 17, 7, 17, 22))}
 	Stauchen    = Symbol{"cut-out", teile(flaeche(4, 3, 16, 5), flaeche(4, 16, 16, 5),
 		akzent(zug(3, 12, 7, 10, 11, 12, 15, 10, 19, 12, 21, 11)...))}
+	// LupeWerkzeug: kleine Quelle links unten, Verbindungslinie, großes Ziel rechts oben mit vergrößertem Inhalt
+	// (ADR-0033); „Lupe“ ist schon das Zoom-Symbol der Menüzeile.
+	LupeWerkzeug = Symbol{"magnifier", teile(rahmen(2, 15, 7, 7), linie(9, 15, 12, 12), rahmen(12, 2, 10, 10),
+		akzent(flaeche(15, 5, 4, 4)))}
 )
 
 // Aktionen der Menüzeile und der Fußzeile.
@@ -204,7 +208,7 @@ var (
 // Gruppen liefert alle Symbole in Gruppen (Musterblatt, Doku, Test).
 func Gruppen() []Gruppe {
 	return []Gruppe{
-		{"tools", []Symbol{Auswahl, Pfeil, Kasten, Text, Nummer, Schwaerzen, Verpixeln, Zuschneiden, Stauchen}},
+		{"tools", []Symbol{Auswahl, Pfeil, Kasten, Text, Nummer, LupeWerkzeug, Schwaerzen, Verpixeln, Zuschneiden, Stauchen}},
 		{"actions", []Symbol{Aufnehmen, Oeffnen, Speichern, Exportieren, Kopieren, Rueck, Wieder, Einpassen, EinsZuEins,
 			Lupe, GanzesBild, Zurueckholen, Schliessen}},
 		{"properties", []Symbol{Farbe, Strichstaerke, Schriftgroesse, KanteAbriss, KanteWelle, KanteZacken}},

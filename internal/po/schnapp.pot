@@ -879,6 +879,10 @@ msgid "Step"
 msgstr ""
 
 #: internal/ui/editor.go
+msgid "Magnifier"
+msgstr ""
+
+#: internal/ui/editor.go
 msgid "Redact"
 msgstr ""
 
@@ -920,6 +924,10 @@ msgstr ""
 
 #: internal/ui/editor.go
 msgid "Click to place step number %d."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Drag over the part to magnify. The enlarged copy appears next to it; drag either frame to move it."
 msgstr ""
 
 #: internal/ui/editor.go
@@ -1020,6 +1028,20 @@ msgstr ""
 
 #: internal/ui/kuerzel.go
 msgid "PgDn"
+msgstr ""
+
+#: internal/ui/lupe.go
+msgctxt "status bar"
+msgid "%d×"
+msgstr ""
+
+#: internal/ui/lupe.go
+msgctxt "status bar"
+msgid "%d.%d×"
+msgstr ""
+
+#: internal/ui/lupe.go
+msgid "Magnification"
 msgstr ""
 
 #: internal/ui/menue.go
