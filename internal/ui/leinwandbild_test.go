@@ -178,4 +178,22 @@ func TestZeichneNaehteRuftDenAblaufAuf(t *testing.T) {
 	if len(rufe) != 2 || rufe[1].saum {
 		t.Errorf("Zuschneiden: Aufrufe %+v, Soll ein zweiter ohne Saum im Bild", rufe)
 	}
+	// Faktor 2 (kurze Seite 2160): Der Ablauf bekommt den Faktor des Dokuments, nicht 1.
+	grossD, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 3840, 2160)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := grossD.SetzeStreifen([]document.Streifen{{Zeilen: true, Von: 300, Bis: 340}}); err != nil {
+		t.Fatal(err)
+	}
+	if grossD.KantenFaktor() != 2 {
+		t.Fatalf("Faktor %d, Soll 2", grossD.KantenFaktor())
+	}
+	e2 := testEditor(t)
+	e2.s.D = grossD
+	rufe = nil
+	e2.zeichneNaehte(layout.Context{Ops: new(op.Ops)})
+	if len(rufe) != 1 || rufe[0].faktor != 2 {
+		t.Errorf("Faktor 2: Aufrufe %+v, Soll einer mit Faktor 2", rufe)
+	}
 }

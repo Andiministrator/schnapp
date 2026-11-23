@@ -145,5 +145,12 @@
     "paket": "./internal/canvas",
     "alt": "halb := s.D.KantenFaktor() * (document.KantenBandHalb + document.KantenSichtRest)",
     "neu": "halb := s.D.KantenFaktor()*document.KantenBandHalb + document.KantenSichtRest"
+  },
+  {
+    "name": "K212-1 Zeigerort beim Zuschneiden ohne Vollansicht (F-513)",
+    "datei": "internal/canvas/fusszeile.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.zuschnittModus() {\n\t\tv := s.D.VollVersatz()",
+    "neu": "\tif false && s.zuschnittModus() {\n\t\tv := s.D.VollVersatz()"
   }
 ]

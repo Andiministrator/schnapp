@@ -1,0 +1,23 @@
+[
+  {
+    "name": "T1 F-422 KantenToleranz zehnfach",
+    "datei": "internal/fileformat/export.go",
+    "paket": "./internal/fileformat",
+    "alt": "const KantenToleranz = 0.4",
+    "neu": "const KantenToleranz = 4.0"
+  },
+  {
+    "name": "T2 F-422 Toleranz wächst nicht mit dem Faktor",
+    "datei": "internal/fileformat/export.go",
+    "paket": "./internal/fileformat",
+    "alt": "func KantenToleranzFuer(faktor int) float64 { return KantenToleranz * float64(max(faktor, 1)) }",
+    "neu": "func KantenToleranzFuer(faktor int) float64 { return KantenToleranz }"
+  },
+  {
+    "name": "T3 F-422 Export vereinfacht mit der Toleranz für Faktor 1 statt für den Faktor des Dokuments",
+    "datei": "internal/fileformat/export.go",
+    "paket": "./internal/fileformat",
+    "alt": "Vereinfacht(KantenToleranzFuer(d.KantenFaktor())) //",
+    "neu": "Vereinfacht(KantenToleranz) //"
+  }
+]

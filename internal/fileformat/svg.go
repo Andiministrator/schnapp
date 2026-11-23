@@ -72,6 +72,32 @@ func (s *schreiber) farbeSVG(art string, c color.NRGBA) {
 	}
 }
 
+// kastenOhneFlaeche schreibt einen Kasten mit Breite oder Höhe 0 (etwa ein Griff, der eine Kante auf die gegenüberliegende
+// zieht): Der Renderer zeichnet ihn als Balken (document.EckigerRahmen, Strichbreite über die Länge), ein `<rect>` mit Maß
+// 0 aber ist im SVG unsichtbar (Kritik A-5). Darum trägt eine Gruppe die Daten und ein gefüllter Pfad die Darstellung;
+// die Daten (s:bereich usw.) sind dieselben wie beim Rechteck, der Leser unterscheidet die Elemente nicht.
+func (s *schreiber) kastenOhneFlaeche(o document.Kasten) {
+	s.WriteString(`<g`)
+	s.attr("s:typ", "kasten")
+	s.attr("s:bereich", punkt(o.Bereich.Min)+" "+punkt(o.Bereich.Max))
+	s.attr("s:strich", strich(o.Strich))
+	s.attr("s:fuellung", farbeHex(o.Fuellung))
+	s.attr("s:eckradius", zahl(o.Eckradius))
+	s.WriteString(`>`)
+	if o.Strich.Breite > 0 && o.Strich.Farbe.A > 0 {
+		s.WriteString(`<path`)
+		var pfad strings.Builder
+		for _, r := range document.EckigerRahmen(o.Bereich, o.Strich.Breite) {
+			pfad.WriteString("M" + punkt(r.Min) + " L" + punkt(document.Pt(r.Max.X, r.Min.Y)) + " L" + punkt(r.Max) +
+				" L" + punkt(document.Pt(r.Min.X, r.Max.Y)) + " Z")
+		}
+		s.attr("d", pfad.String())
+		s.farbeSVG("fill", o.Strich.Farbe)
+		s.WriteString(`/>`)
+	}
+	s.WriteString(`</g>`)
+}
+
 func strich(st document.Strich) string { return farbeHex(st.Farbe) + " " + zahl(st.Breite) }
 
 // svgSchrift ist die Schrift der Beschriftungen im SVG: Renderer und Editor setzen Go Regular und Go Bold (Familie „Go“);
@@ -112,6 +138,10 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			s.WriteString(`/></g>`)
 		case document.Kasten:
 			b := o.Bereich
+			if b.Breite() == 0 || b.Hoehe() == 0 {
+				s.kastenOhneFlaeche(o)
+				break
+			}
 			s.WriteString(`<rect`)
 			s.attr("s:typ", "kasten")
 			s.attr("s:bereich", punkt(b.Min)+" "+punkt(b.Max))

@@ -47,5 +47,26 @@
     "paket": "./internal/render",
     "alt": "\t\tif schatten {\n\t\t\tschichtenDurchgang(func(document.Schicht) bool { return true })",
     "neu": "\t\tif true {\n\t\t\tschichtenDurchgang(func(document.Schicht) bool { return true })"
+  },
+  {
+    "name": "RK3 F-430 Grenze des Zwischenspeichers gilt nicht",
+    "datei": "internal/render/masken.go",
+    "paket": "./internal/render",
+    "alt": "c.bytes+bedarf <= maskenCacheGrenze {",
+    "neu": "bedarf >= 0 {"
+  },
+  {
+    "name": "RK4 F-430 Grenze des Zwischenspeichers gilt nicht (oder wahr)",
+    "datei": "internal/render/masken.go",
+    "paket": "./internal/render",
+    "alt": "c.bytes+bedarf <= maskenCacheGrenze {",
+    "neu": "c.bytes+bedarf <= maskenCacheGrenze || true {"
+  },
+  {
+    "name": "RK5 F-430 gemerkte Maske nur nach Hash und Länge verglichen",
+    "datei": "internal/render/masken.go",
+    "paket": "./internal/render",
+    "alt": "\t\tif slices.Equal(e.pkt, a.pkt) {",
+    "neu": "\t\tif len(e.pkt) == len(a.pkt) {"
   }
 ]

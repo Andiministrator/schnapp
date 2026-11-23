@@ -1,0 +1,65 @@
+[
+  {
+    "name": "L1 F-407 leinwandBild mischt die Kanten nicht ins Bild",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif stand.im {\n\t\trender.KantenOhneSchatten(img, s.D)",
+    "neu": "\tif false {\n\t\trender.KantenOhneSchatten(img, s.D)"
+  },
+  {
+    "name": "L2 F-407 bildPruefen baut bei geändertem Kantenstand nicht neu",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t} else if !kantenBildStand(e.s).gleich(e.kantenStand) {",
+    "neu": "\t} else if false {"
+  },
+  {
+    "name": "L3 F-407 zeichneNaehte legt den Saum zusätzlich in Gio",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tsaumImBild := e.kantenStand.im // Fasersaum",
+    "neu": "\tsaumImBild := false // Fasersaum"
+  },
+  {
+    "name": "L4 F-407 Stand des Leinwandbilds ignoriert die Lage der Nähte",
+    "datei": "internal/ui/naehte_linien.go",
+    "paket": "./internal/ui",
+    "alt": "k.faktor == a.faktor && slices.Equal(k.naehte, a.naehte)",
+    "neu": "k.faktor == a.faktor && len(k.naehte) == len(a.naehte)"
+  },
+  {
+    "name": "L5 F-521 zeichneNaehte ruft den Nahtablauf nicht auf",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tnahtAblauf(naehte, faktor, saumImBild, spalte, durchgang)",
+    "neu": "\t\tspalte()\n\t\t_ = durchgang"
+  },
+  {
+    "name": "L6 F-521 zeichneNaehte reicht dem Ablauf den falschen Faktor",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tnahtAblauf(naehte, faktor, saumImBild, spalte, durchgang)",
+    "neu": "\t\tnahtAblauf(naehte, 1, saumImBild, spalte, durchgang)"
+  },
+  {
+    "name": "L7 F-498 Editor zeichnet den eckigen Kasten weiter mit Gios rundem Strich",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif document.WirksamerEckradius(v.Eckradius, float64(r.Dx()), float64(r.Dy())) != 0 {\n\t\treturn nil",
+    "neu": "\tif true {\n\t\treturn nil"
+  },
+  {
+    "name": "L8 F-509 Tafel der Übersicht nicht auf die Leinwand begrenzt",
+    "datei": "internal/ui/hilfe.go",
+    "paket": "./internal/ui",
+    "alt": "groesse := image.Pt(min(flaeche.Dx(), innen*2+spalten*spalteB), min(flaeche.Dy(), innen*2+gtx.Dp(14)+pro*hoehe))",
+    "neu": "groesse := image.Pt(innen*2+spalten*spalteB, innen*2+gtx.Dp(14)+pro*hoehe)"
+  },
+  {
+    "name": "L9 F-507 Meldung bekommt keinen Vorrang vor den Feldern",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tgrenze = max(grenze, min(mx.X*2/3, d.Size.X+gtx.Dp(36)))",
+    "neu": "\t\t_ = d"
+  }
+]

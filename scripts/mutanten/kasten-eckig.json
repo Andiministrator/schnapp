@@ -1,0 +1,44 @@
+[
+  {
+    "name": "K1 F-498 EckigerRahmen ohne Sonderfall verschwundener Innenraum (document)",
+    "datei": "internal/document/objekte.go",
+    "paket": "./internal/document",
+    "alt": "if ia.X >= ib.X || ia.Y >= ib.Y {",
+    "neu": "if false {"
+  },
+  {
+    "name": "K2 F-498 EckigerRahmen ohne Sonderfall verschwundener Innenraum (render)",
+    "datei": "internal/document/objekte.go",
+    "paket": "./internal/render",
+    "alt": "if ia.X >= ib.X || ia.Y >= ib.Y {",
+    "neu": "if false {"
+  },
+  {
+    "name": "K3 F-498 EckigerRahmen überlappt (document)",
+    "datei": "internal/document/objekte.go",
+    "paket": "./internal/document",
+    "alt": "\t\t{Punkt{ib.X, ia.Y}, Punkt{b.X, ib.Y}},",
+    "neu": "\t\t{Punkt{ib.X, a.Y}, Punkt{b.X, b.Y}},"
+  },
+  {
+    "name": "K4 F-498 EckigerRahmen überlappt (render)",
+    "datei": "internal/document/objekte.go",
+    "paket": "./internal/render",
+    "alt": "\t\t{Punkt{ib.X, ia.Y}, Punkt{b.X, ib.Y}},",
+    "neu": "\t\t{Punkt{ib.X, a.Y}, Punkt{b.X, b.Y}},"
+  },
+  {
+    "name": "K5 Kritik A-5 SVG schreibt den Kasten ohne Fläche als unsichtbares rect",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\t\tif b.Breite() == 0 || b.Hoehe() == 0 {",
+    "neu": "\t\t\tif false {"
+  },
+  {
+    "name": "K6 Kritik A-5 SVG-Pfad des Kastens ohne Fläche nimmt nur die erste Teilfläche",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "document.EckigerRahmen(o.Bereich, o.Strich.Breite) {",
+    "neu": "document.EckigerRahmen(o.Bereich, o.Strich.Breite/2) {"
+  }
+]
