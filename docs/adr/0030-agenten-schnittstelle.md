@@ -350,3 +350,40 @@ MCP-Protokoll, nicht bei hartem Prozessende.
   Richtung (zu viel statt zu wenig Hinweis).
 - Das Echtlauf-Skript bricht bei einer `settings.ini` als Symlink ab, stellt nur zurück, was es selbst gesetzt hat,
   und sichert eine zwischendurch geänderte Fassung im Laufordner (N-5, N-6).
+
+## Nachtrag 10 (23.11.2026): Beschriften und Schwärzen ohne Fenster — `--annotate` und Werkzeug `annotate` (Karte #202)
+
+**Status:** Akzeptiert (Claude Opus 5.5, im Auftrag Andis: „arbeite selbstständig“). Löst Nachtrag 2 Punkt 7 ein.
+
+1. **Aufruf:** `schnapp --annotate=SPEC DATEI` liest eine Liste von Beschriftungen aus der JSON-Datei SPEC (`-` = stdin,
+   höchstens 1 MiB), legt sie auf DATEI (Arbeitsdatei, PNG, JPG) und **speichert wie der Editor**: eine Arbeitsdatei
+   der Bibliothek wird fortgeschrieben, jede andere Datei bleibt unverändert und das Ergebnis wird eine neue Aufnahme
+   der Bibliothek (ADR-0016, auch mit Ausweichen bei Konflikt). Kein Fenster. Wert nur mit `=` (Punkt 4).
+   `--ignore-limit` gilt wie beim Öffnen.
+2. **Form (Oberfläche, englisch, stabil):** `{"annotations":[…]}`, jedes Element mit `type`:
+   - `arrow` — `from`, `to` (Punkte `[x, y]`), optional `color`, `width`;
+   - `rect` — `from`, `to` (gegenüberliegende Ecken), optional `color`, `fill`, `width`;
+   - `text` — `at` (linke obere Ecke), `text` (nicht leer, Zeilenumbruch `\n`), optional `size`, `color`, `fill`,
+     `font`, `bold`, `italic`, `underline`, `strikethrough`, `align` (`left`/`center`/`right`);
+   - `step` — `at` (Mitte), optional `color`, `radius`; die Zahl ist die nächste freie (wie im Editor);
+   - `redact`, `pixelate` — `from`, `to`: Bereich wird **endgültig** überschrieben (Kernprinzip 2), wie im Editor
+     (zu schmal zum Verpixeln: geschwärzt).
+   Koordinaten in Pixeln des **sichtbaren** Bilds (die Größe, die `--json` meldet), Ursprung oben links, Zahlen
+   dürfen Brüche sein. Farben `#RRGGBB` oder `#RRGGBBAA`; `fill` kann `"none"` sein. Fehlende Werte nehmen die
+   Voreinstellung des Werkzeugs im Editor (ADR-0021 Nachtrag 7 und 11: Faktor nach Bildgröße, Text weiß auf Rot,
+   Kasten ohne Füllung). Unbekannte Schlüssel und Typen sind ein Fehler, damit ein Tippfehler nicht still wirkt.
+3. **Alles oder nichts:** Erst wird die ganze Liste geprüft und auf eine Kopie angewendet; scheitert ein Eintrag
+   (Form, Wert, Bereich außerhalb des Bilds, Objektgrenze) oder läge das Ergebnis über dem Rechenbudget
+   (`render.Pruefe`), wird nichts gespeichert. Ungültige SPEC: Exit 2; Datei unlesbar, Budget, Speichern: Exit 1.
+   Der Fehlertext nennt den Index des Eintrags.
+4. **Ergebnis:** wie `--export` der Pfad auf stdout, mit `--json`
+   `{"path":…, "width":…, "height":…, "annotations":N, "redactions":M, "warning":false}`. `warning: true` heißt:
+   gespeichert, aber mit Hinweis (etwa eine liegen gebliebene Fassung mit dem ungeschwärzten Inhalt, ADR-0022
+   Nachtrag 2); der Hinweis steht auf stderr, Exit 0 — die Datei trägt den Stand.
+5. **MCP-Werkzeug `annotate {file, annotations}`:** dieselbe Form und Wirkung (Pfad absolut). Braucht die neue
+   Einwilligung **`[agents] edit = no`** (Voreinstellung aus), weil es Dateien des Menschen dauerhaft ändert — Schwärzen
+   lässt sich nicht zurücknehmen; liegt `file` in der Ablage, zusätzlich `library`. Antwort wie `export` (Pfad, Größe,
+   Zählung), ohne Bildinhalt. Kein Dialog: die Einwilligung gibt der Mensch in der Datei.
+6. **Umsetzung:** Auswertung und Anwendung im Paket `internal/annotate` (ohne Gio); die Voreinstellungen und die
+   Abbildung eines Schwärzungsrahmens aufs Original liefert `canvas` (`canvas.StandardPaar`,
+   `canvas.SchwaerzBereich`), damit Kommandozeile und Editor gleich rechnen.

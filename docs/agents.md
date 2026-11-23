@@ -17,6 +17,7 @@ Schnapp runs on Linux with Wayland (KDE Plasma/KWin). Capturing talks to KWin di
 | `schnapp --region --output=shot.png` | Lets the user drag an area (interactive) |
 | `schnapp --list-screens --json` | Lists the monitors |
 | `schnapp --export=out.png FILE` | Renders FILE (a Schnapp working file, PNG or JPEG) with its crop, annotations and redactions into `out.png`, without a window; FILE stays unchanged |
+| `schnapp --annotate=list.json FILE` | Adds the arrows, rectangles, text, step numbers and redactions from `list.json` (`-` reads standard input) to FILE and saves as the editor does — see [Annotating and redacting](#annotating-and-redacting) |
 | `schnapp --version --json` | Prints the version |
 
 Without `--output`, a capture is stored in the library (`~/Pictures/schnapp/YYYY-MM/…`, see the README) and the
@@ -105,7 +106,50 @@ language of the system; do not parse them.
   `--export`) contain only the visible part. Redaction (black out, pixelate) is final in every saved file.
 - `--export` refuses files that would be too costly to render (crafted files); `--ignore-limit` skips this check — use
   it only for files you trust.
-- Annotating and redacting from the command line (and as MCP tools) are planned; see ADR-0030.
+- Redacting with `--annotate` or the MCP tool `annotate` is as final as in the editor: a library screenshot is
+  overwritten, its old content is gone. A file from outside the library stays unchanged and still shows what was
+  redacted in the new copy (`"warning": true`).
+
+## Annotating and redacting
+
+`schnapp --annotate=LIST FILE` reads a JSON list and applies it to FILE without a window, then saves like the editor:
+a Schnapp working file in the library is updated in place; any other file (PNG, JPEG, a working file elsewhere)
+stays unchanged and the result becomes a new screenshot in the library. `LIST` is a file or `-` for standard input
+(at most 1 MiB).
+
+```json
+{"annotations":[
+  {"type":"arrow","from":[40,40],"to":[200,120]},
+  {"type":"rect","from":[220,100],"to":[420,180],"color":"#2F6FDB","fill":"#2F6FDB40","width":6},
+  {"type":"text","at":[220,200],"text":"Click here","size":24},
+  {"type":"step","at":[200,90]},
+  {"type":"redact","from":[10,300],"to":[300,330]},
+  {"type":"pixelate","from":[10,340],"to":[300,400]}
+]}
+```
+
+| `type` | Keys (required **bold**) |
+|---|---|
+| `arrow` | **`from`**, **`to`**, `color`, `width` |
+| `rect` | **`from`**, **`to`** (opposite corners), `color` (line), `fill`, `width` |
+| `text` | **`at`** (top left), **`text`** (`\n` for a new line), `size`, `color` (letters), `fill` (label), `font`, `bold`, `italic`, `underline`, `strikethrough`, `align` (`left`, `center`, `right`) |
+| `step` | **`at`** (centre), `color`, `radius` — the number is the next free one |
+| `redact`, `pixelate` | **`from`**, **`to`** — overwrites the pixels for good; an area too narrow to pixelate is blacked out |
+
+Points are `[x, y]` in pixels of the **visible** image (the `width` and `height` that `--json` reports), origin top
+left, and must lie inside it. Colours are `#RRGGBB` or `#RRGGBBAA`; `fill` may also be `"none"`. Missing values take
+the defaults of the editor: red lines, rectangles without fill, text in white on a red label, sizes that grow with
+large screenshots. Unknown keys or types, and keys that do not belong to the type, are errors.
+
+All or nothing: if one entry is invalid (exit code 2, the message names the entry by its index from 0) or the result
+would be too costly to render (exit code 1; `--ignore-limit` skips this check), nothing is saved. With `--json`:
+
+```json
+{"path":"/home/user/Pictures/schnapp/2026-11/2026-11-23_10-00-00.png","width":1920,"height":1080,"annotations":4,"redactions":2,"warning":false}
+```
+
+`path` is the file that now holds the result. `warning: true` means saved, but with a note on standard error — for
+example that the original file outside the library still shows what was redacted.
 
 ## MCP server
 
@@ -128,6 +172,7 @@ Tools (names and JSON keys are stable):
 | `library_search` | `tag`, `from`, `to` (RFC 3339 or `YYYY-MM-DD`), `limit` (1–50, default 20), `agents` (default true) | `library` |
 | `library_read` | `path` (absolute or relative to the library) | `library` |
 | `export` | `file`, `target` (absolute paths) | `library` if `file` is in the library or its preview cache |
+| `annotate` | `file` (absolute path), `annotations` (the list above) | `edit`; also `library` if `file` is in the library or its preview cache |
 
 Captures and `library_read` return `structuredContent` `{"path","width","height"}`, the same JSON as text and — with
 `image = yes` — the visible image as a PNG (at most 8 MiB). There is no overlay over MCP: picking an area needs a person.
@@ -149,6 +194,7 @@ capture = no   # yes: agents may take screenshots
 library = no   # yes: agents may search the library and read images from it
 confirm = yes  # ask in a dialog before every capture (Allow / Deny, 60 s, then denied)
 image = yes    # send the image itself to the agent; no: only path and size
+edit = no      # yes: agents may annotate and redact files (tool annotate); redaction cannot be undone
 ```
 
 A call without consent fails with `isError: true` and a sentence that names the missing switch. Every capture shows a

@@ -24,6 +24,7 @@ const (
 	ModusHilfe                     // --help
 	ModusOeffnen                   // schnapp DATEI: Datei im Editor öffnen (ADR-0020)
 	ModusExport                    // --export=ZIEL DATEI: Datei ohne Fenster exportieren (ADR-0030 Punkt 3)
+	ModusBeschriften               // --annotate=SPEC DATEI: Beschriftungen ohne Fenster (ADR-0030 Nachtrag 10)
 )
 
 // Aufruf ist das ausgewertete Ergebnis der Kommandozeile.
@@ -45,6 +46,8 @@ type Aufruf struct {
 	Ausgabe string
 	// Ziel ist bei ModusExport das Ziel von --export=ZIEL (ADR-0030 Punkt 3).
 	Ziel string
+	// Spez ist bei ModusBeschriften die Liste von --annotate=SPEC, „-“ = stdin (ADR-0030 Nachtrag 10).
+	Spez string
 }
 
 // Aufnahme meldet, ob der Modus eine Aufnahme ist (nur diese öffnen danach den Editor und vertragen --no-editor).
@@ -71,6 +74,8 @@ func (m Modus) Option() string {
 		return "FILE"
 	case ModusExport:
 		return "--export"
+	case ModusBeschriften:
+		return "--annotate"
 	}
 	return "--region"
 }
@@ -94,6 +99,7 @@ func Auswerten(args []string) (Aufruf, error) {
 		alsJSON    bool
 		ausgabe    string
 		exportZiel string
+		spez       string
 	)
 	for _, arg := range args {
 		if arg == "--ignore-limit" {
@@ -123,6 +129,17 @@ func Auswerten(args []string) (Aufruf, error) {
 				return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Unknown file type for %s: use a name ending in .png, .jpg or .svg."), name)}
 			}
 			*ziel = wert
+			continue
+		}
+		if name, wert, hatWert := strings.Cut(arg, "="); name == "--annotate" {
+			// Wie --export nur mit Gleichheitszeichen (ADR-0030 Punkt 4); „-“ liest die Liste von stdin.
+			if !hatWert || wert == "" {
+				return Aufruf{}, &Fehler{i18n.T("Option --annotate needs a list after an equals sign: --annotate=LIST FILE (LIST - reads standard input).")}
+			}
+			if spez != "" && spez != wert {
+				return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Option %s cannot be given more than once with different files."), name)}
+			}
+			spez = wert
 			continue
 		}
 		if arg == "--no-editor" {
@@ -204,6 +221,15 @@ func Auswerten(args []string) (Aufruf, error) {
 			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Options %s and %s cannot be combined."), a.Modus.Option(), "--export")}
 		}
 		a.Modus, a.Ziel = ModusExport, exportZiel
+	}
+	if spez != "" {
+		if a.Modus != ModusOeffnen {
+			if !gesehen {
+				return Aufruf{}, &Fehler{i18n.T("Option --annotate needs the file to annotate: --annotate=LIST FILE.")}
+			}
+			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Options %s and %s cannot be combined."), a.Modus.Option(), "--annotate")}
+		}
+		a.Modus, a.Spez = ModusBeschriften, spez
 	}
 	if ausgabe != "" {
 		if !a.Modus.Aufnahme() {

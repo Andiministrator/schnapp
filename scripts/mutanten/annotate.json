@@ -1,0 +1,100 @@
+[
+  {
+    "name": "A202-1 Pflichtschlüssel nicht geprüft",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\tfor _, k := range pflicht[e.Type] {",
+    "neu": "\t\tfor _, k := range pflicht[\"\"] {"
+  },
+  {
+    "name": "A202-2 unpassender Schlüssel angenommen",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\t\tif !enthaelt(ok, k) {",
+    "neu": "\t\t\tif false && !enthaelt(ok, k) {"
+  },
+  {
+    "name": "A202-3 null angenommen",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\t\tif string(bytes.TrimSpace(v)) == \"null\" {",
+    "neu": "\t\t\tif false && string(bytes.TrimSpace(v)) == \"null\" {"
+  },
+  {
+    "name": "A202-4 Punkt rechts außerhalb angenommen",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "|| p[0] > float64(g.X) ",
+    "neu": ""
+  },
+  {
+    "name": "A202-5 Koordinaten nicht ins Original umgerechnet",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\t\treturn d.ZuOriginal(document.Pt(p[0], p[1])), nil",
+    "neu": "\t\t\treturn document.Pt(p[0], p[1]), nil"
+  },
+  {
+    "name": "A202-6 Füllung des Kastens fällt weg",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "Strich: strich, Fuellung: fuellung, Eckradius",
+    "neu": "Strich: strich, Fuellung: color.NRGBA{A: fuellung.A * 0}, Eckradius"
+  },
+  {
+    "name": "A202-7 Verpixeln schwärzt immer",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "canvas.SchwaerzBereich(d, r, e.Type == \"pixelate\")",
+    "neu": "canvas.SchwaerzBereich(d, r, false)"
+  },
+  {
+    "name": "A202-8 Punkt mit einer Zahl angenommen",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\tif len(l) != 2 {",
+    "neu": "\tif len(l) > 2 {"
+  },
+  {
+    "name": "A202-9 Text ohne Voreinstellung der Schrift (weiß)",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\t\tvorn, fuel := canvas.StandardPaar(canvas.WerkzeugText)",
+    "neu": "\t\t\tvorn, fuel := canvas.StandardPaar(canvas.WerkzeugKasten)"
+  },
+  {
+    "name": "C202-1 Rechenbudget nicht geprüft",
+    "datei": "cmd/schnapp/beschriften.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif err := render.Pruefe(d); err != nil {\n\t\t\treturn beschriftung{}, err",
+    "neu": "\t\tif err := render.Pruefe(d); false && err != nil {\n\t\t\treturn beschriftung{}, err"
+  },
+  {
+    "name": "C202-2 Speicherfunktion erst nach dem Anwenden (Warnung fehlt)",
+    "datei": "cmd/schnapp/beschriften.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tspeichern := speichernMitNachher(library.Neu(orte), abs, g, stand, func(p string) { ziel = p })\n\terg, err := annotate.Wende(d, es)\n\tif err != nil {\n\t\treturn beschriftung{}, err\n\t}",
+    "neu": "\terg, err := annotate.Wende(d, es)\n\tif err != nil {\n\t\treturn beschriftung{}, err\n\t}\n\tspeichern := speichernMitNachher(library.Neu(orte), abs, g, stand, func(p string) { ziel = p })"
+  },
+  {
+    "name": "C202-3 annotate ohne Einwilligung edit",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif !einst.Agenten.Bearbeiten {",
+    "neu": "\tif false && !einst.Agenten.Bearbeiten {"
+  },
+  {
+    "name": "C202-4 annotate liest die Bibliothek ohne library",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif (drin || liegtIn(filepath.Clean(ort), filepath.Clean(p.File))) && !einst.Agenten.Bibliothek {",
+    "neu": "\t\tif (drin || liegtIn(filepath.Clean(ort), filepath.Clean(p.File))) && false {"
+  },
+  {
+    "name": "C202-5 Liste nicht zum Modus Beschriften",
+    "datei": "cmd/schnapp/argumente.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\ta.Modus, a.Spez = ModusBeschriften, spez",
+    "neu": "\t\ta.Spez = spez"
+  }
+]

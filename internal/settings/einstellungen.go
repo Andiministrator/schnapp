@@ -111,6 +111,7 @@ type Agenten struct {
 	Bibliothek  bool // library: Agenten dürfen die Bibliothek durchsuchen und lesen (Voreinstellung no)
 	Bestaetigen bool // confirm: vor jeder Agenten-Aufnahme ein Dialog (Voreinstellung yes)
 	Bild        bool // image: das Bild geht als Bildinhalt an den Agenten (Voreinstellung yes)
+	Bearbeiten  bool // edit: Agenten dürfen Dateien beschriften und schwärzen (Voreinstellung no, ADR-0030 Nachtrag 10)
 }
 
 // janein liest yes/no/true/false.
@@ -278,7 +279,7 @@ func Parse(name, inhalt string) (Einstellungen, []string) {
 			case "false":
 				e.Bibliothek.An, gueltig = false, true
 			}
-		case "agents.capture", "agents.library", "agents.confirm", "agents.image":
+		case "agents.capture", "agents.library", "agents.confirm", "agents.image", "agents.edit":
 			bekannterSchluessel = true
 			if w, ok := janein(wert); ok {
 				gueltig = true
@@ -291,6 +292,8 @@ func Parse(name, inhalt string) (Einstellungen, []string) {
 					e.Agenten.Bestaetigen = w
 				case "image":
 					e.Agenten.Bild = w
+				case "edit":
+					e.Agenten.Bearbeiten = w
 				}
 			}
 		case "library.cleanup-days":

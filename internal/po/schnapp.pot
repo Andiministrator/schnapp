@@ -19,7 +19,7 @@ msgstr ""
 msgid "Could not write to standard output: %v"
 msgstr ""
 
-#: cmd/schnapp/agenten.go
+#: cmd/schnapp/agenten.go cmd/schnapp/beschriften.go
 msgid "The path is not valid UTF-8 and cannot be written as JSON."
 msgstr ""
 
@@ -47,7 +47,7 @@ msgstr ""
 msgid "Cannot export %s onto itself; choose a different target."
 msgstr ""
 
-#: cmd/schnapp/agenten.go cmd/schnapp/aufnehmen.go
+#: cmd/schnapp/agenten.go cmd/schnapp/aufnehmen.go cmd/schnapp/beschriften.go
 msgid "Cannot open %s: %s"
 msgstr ""
 
@@ -69,6 +69,10 @@ msgstr ""
 
 #: cmd/schnapp/argumente.go
 msgid "Unknown file type for %s: use a name ending in .png, .jpg or .svg."
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "Option --annotate needs a list after an equals sign: --annotate=LIST FILE (LIST - reads standard input)."
 msgstr ""
 
 #: cmd/schnapp/argumente.go
@@ -105,6 +109,10 @@ msgstr ""
 
 #: cmd/schnapp/argumente.go
 msgid "Option --export needs the file to export: --export=TARGET FILE."
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "Option --annotate needs the file to annotate: --annotate=LIST FILE."
 msgstr ""
 
 #: cmd/schnapp/argumente.go
@@ -171,6 +179,22 @@ msgstr ""
 
 #: cmd/schnapp/aufnehmen.go
 msgid "Could not remember the area for --repeat: %v"
+msgstr ""
+
+#: cmd/schnapp/beschriften.go
+msgid "Cannot annotate %s: %s"
+msgstr ""
+
+#: cmd/schnapp/beschriften.go
+msgid "Invalid annotation list %s: %s"
+msgstr ""
+
+#: cmd/schnapp/beschriften.go
+msgid "Cannot annotate %s: the result would have too many or too large annotations to be opened again."
+msgstr ""
+
+#: cmd/schnapp/beschriften.go
+msgid "Cannot read the annotation list %s: %s"
 msgstr ""
 
 #: cmd/schnapp/editor.go
@@ -395,6 +419,10 @@ msgstr ""
 
 #: cmd/schnapp/main.go
 msgid "Export FILE to TARGET (.png, .jpg, .svg) without a window"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Add annotations and redactions from LIST (JSON, - = standard input) to FILE and save as the editor does"
 msgstr ""
 
 #: cmd/schnapp/main.go

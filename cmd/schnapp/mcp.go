@@ -28,6 +28,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/Andiministrator/schnapp/internal/annotate"
 	"github.com/Andiministrator/schnapp/internal/capture"
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/export"
@@ -252,8 +253,8 @@ func laufeMcp(ein io.Reader, aus, fehler io.Writer, an mcpAnschluesse) int {
 	defer close(fertig)
 	go mcpSignale(kanal, abbrechen, beendeProzess, fehler, fertig)
 	s := &mcp.Server{Name: "schnapp", Version: versionsText(), Log: fehler, Werkzeuge: an.werkzeuge(),
-		Anleitung: "Schnapp takes screenshots on a KDE Plasma (Wayland) desktop. Capturing and reading the library " +
-			"need the user's consent in the settings file; a denied call says which switch is missing."}
+		Anleitung: "Schnapp takes screenshots on a KDE Plasma (Wayland) desktop. Capturing, reading the library and " +
+			"annotating files need the user's consent in the settings file; a denied call says which switch is missing."}
 	if err := s.Bediene(ctx, ein, aus); err != nil {
 		fmt.Fprintf(fehler, i18n.T("MCP server stopped: %v")+"\n", err)
 		return exitFehler
@@ -301,6 +302,27 @@ func (an mcpAnschluesse) werkzeuge() []mcp.Werkzeug {
 			Eingabe: schema(`{"type":"object","properties":{"file":{"type":"string"},"target":{"type":"string"}},` +
 				`"required":["file","target"],"additionalProperties":false}`),
 			Aufruf: an.exportiere},
+		{Name: "annotate", Titel: "Annotate or redact a file",
+			Beschreibung: "Adds arrows, rectangles, text and step numbers to a Schnapp file, PNG or JPEG (file, absolute " +
+				"path) and redacts or pixelates areas for good, then saves like the Schnapp editor: a library screenshot " +
+				"is updated, any other file stays unchanged and the result becomes a new library screenshot. Coordinates " +
+				"are pixels of the visible image (width and height as export reports them). All or nothing: one invalid " +
+				"entry saves nothing. Needs consent ([agents] edit = yes); a file from the library also needs " +
+				"[agents] library = yes.",
+			Eingabe: schema(`{"type":"object","properties":{"file":{"type":"string"},` +
+				`"annotations":{"type":"array","items":{"type":"object","properties":{` +
+				`"type":{"enum":["arrow","rect","text","step","redact","pixelate"]},` +
+				`"from":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},` +
+				`"to":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},` +
+				`"at":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},` +
+				`"text":{"type":"string"},"color":{"type":"string","description":"#RRGGBB or #RRGGBBAA"},` +
+				`"fill":{"type":"string","description":"#RRGGBB, #RRGGBBAA or none"},` +
+				`"width":{"type":"number"},"size":{"type":"number"},"radius":{"type":"number"},"font":{"type":"string"},` +
+				`"bold":{"type":"boolean"},"italic":{"type":"boolean"},"underline":{"type":"boolean"},` +
+				`"strikethrough":{"type":"boolean"},"align":{"enum":["left","center","right"]}},` +
+				`"required":["type"],"additionalProperties":false}}},` +
+				`"required":["file","annotations"],"additionalProperties":false}`),
+			Aufruf: an.beschrifte},
 	}
 }
 
@@ -1049,6 +1071,68 @@ func (an mcpAnschluesse) exportiere(ctx context.Context, args json.RawMessage, _
 	e := ergebnis{Path: abs, Width: gr.X, Height: gr.Y}
 	text, _ := json.Marshal(e)
 	return mcp.Ergebnis{Inhalt: []mcp.Inhalt{mcp.TextInhalt(string(text))}, Strukturiert: e}
+}
+
+// beschriftenQuelleFehler ist wie bei export ein Satz für jeden Grund, aus dem die Datei nicht zu öffnen ist (F-493).
+const beschriftenQuelleFehler = exportQuelleFehler
+
+// beschrifte ist das Werkzeug annotate (ADR-0030 Nachtrag 10 Punkt 5): dieselbe Liste und Wirkung wie
+// --annotate, mit der Einwilligung edit (und library für eine Datei aus der Ablage oder dem Vorschau-Cache).
+func (an mcpAnschluesse) beschrifte(ctx context.Context, args json.RawMessage, _ mcp.Kunde) mcp.Ergebnis {
+	var p struct {
+		File        string          `json:"file"`
+		Annotations json.RawMessage `json:"annotations"`
+	}
+	if err := liesArgs(args, &p); err != nil {
+		return falscheArgs(err)
+	}
+	einst := an.einstellungen()
+	if !einst.Agenten.Bearbeiten {
+		return an.nichtErlaubt("Annotating and redacting files", "edit")
+	}
+	if !filepath.IsAbs(p.File) {
+		return mcp.FehlerErgebnis("file must be an absolute path.")
+	}
+	o, err := an.orte()
+	if err != nil {
+		return mcp.FehlerErgebnis("The location of the Schnapp library is unknown, so annotate is not possible.")
+	}
+	// Wie export (F-465, F-493): Ablage und Vorschau-Cache brauchen library, auch dem Namen nach.
+	for _, ort := range []string{o.Vorschau, o.Ablage} {
+		_, drin := inAblage(ort, p.File)
+		if (drin || liegtIn(filepath.Clean(ort), filepath.Clean(p.File))) && !einst.Agenten.Bibliothek {
+			return an.nichtErlaubt("Reading the library", "library")
+		}
+	}
+	if len(p.Annotations) == 0 {
+		return mcp.FehlerErgebnis("annotations is missing.")
+	}
+	huelle, _ := json.Marshal(struct {
+		Annotations json.RawMessage `json:"annotations"`
+	}{p.Annotations})
+	es, err := annotate.Lies(bytes.NewReader(huelle))
+	if err != nil {
+		return mcp.FehlerErgebnis(err.Error() + ".")
+	}
+	b, err := beschrifteDatei(ctx, p.File, es, o, einst.Kante, false)
+	var f *annotate.Fehler
+	switch {
+	case errors.As(err, &f):
+		return mcp.FehlerErgebnis(err.Error() + ". Nothing was saved.")
+	case errors.Is(err, errBeschriftenLesen):
+		diagnose(an.fehler, "Beschriften, Quelle: %v", err)
+		return mcp.FehlerErgebnis(beschriftenQuelleFehler)
+	case ctx.Err() != nil:
+		return abgebrochenErgebnis
+	case err != nil:
+		diagnose(an.fehler, "Beschriften: %v", err)
+		return mcp.FehlerErgebnis("Nothing was saved: " + agentGrund(err))
+	}
+	if b.hinweis != "" {
+		fmt.Fprintln(an.fehler, b.hinweis) // übersetzt, womöglich mit Ortsangabe: nur auf stderr des Servers
+	}
+	text, _ := json.Marshal(b.erg)
+	return mcp.Ergebnis{Inhalt: []mcp.Inhalt{mcp.TextInhalt(string(text))}, Strukturiert: b.erg}
 }
 
 // --- Bestätigung im Kindprozess ---

@@ -33,6 +33,13 @@ func standardPaar(w Werkzeug) farbpaar {
 	return farbpaar{vorn: rot}
 }
 
+// StandardPaar ist die Voreinstellung von Vordergrund und Füllung des Werkzeugs w, wie ein neuer Editor sie beginnt
+// (für die Kommandozeile, ADR-0030 Nachtrag 10).
+func StandardPaar(w Werkzeug) (vorn, fuellung color.NRGBA) {
+	p := standardPaar(w)
+	return p.vorn, p.fuellung
+}
+
 // fuellWerkzeug meldet, ob ein Werkzeug eine Füllung zeichnet (Kasten, Text).
 func fuellWerkzeug(w Werkzeug) bool { return w == WerkzeugKasten || w == WerkzeugText }
 

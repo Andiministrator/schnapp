@@ -964,3 +964,24 @@ msgstr "Farben tauschen"
 
 msgid "None"
 msgstr "Keine"
+
+msgid "Cannot annotate %s: %s"
+msgstr "%s lässt sich nicht beschriften: %s"
+
+msgid "Cannot annotate %s: the result would have too many or too large annotations to be opened again."
+msgstr "%s lässt sich nicht beschriften: Das Ergebnis hätte zu viele oder zu große Beschriftungen, um wieder geöffnet zu werden."
+
+msgid "Cannot read the annotation list %s: %s"
+msgstr "Die Beschriftungsliste %s lässt sich nicht lesen: %s"
+
+msgid "Invalid annotation list %s: %s"
+msgstr "Ungültige Beschriftungsliste %s: %s"
+
+msgid "Option --annotate needs a list after an equals sign: --annotate=LIST FILE (LIST - reads standard input)."
+msgstr "Die Option --annotate braucht nach einem Gleichheitszeichen eine Liste: --annotate=LISTE DATEI (LISTE - liest die Standardeingabe)."
+
+msgid "Option --annotate needs the file to annotate: --annotate=LIST FILE."
+msgstr "Die Option --annotate braucht die Datei, die beschriftet werden soll: --annotate=LISTE DATEI."
+
+msgid "Add annotations and redactions from LIST (JSON, - = standard input) to FILE and save as the editor does"
+msgstr "Beschriftungen und Schwärzungen aus LISTE (JSON, - = Standardeingabe) auf DATEI legen und wie der Editor speichern"

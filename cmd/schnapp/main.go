@@ -118,6 +118,9 @@ func laufe(args []string, aus, fehler io.Writer, monitore func() ([]ui.Monitor, 
 		return gibMonitoreAus(aus, fehler, monitore, a.JSON)
 	case ModusExport:
 		return exportiere(a, aus, fehler)
+	case ModusBeschriften:
+		einst, _ := lade() // nur [capture] seam für ein einfaches Bild; Warnungen wie bei --export nicht
+		return beschrifte(a, aus, fehler, einst.Kante)
 	}
 	einst, warnungen := lade()
 	for _, w := range warnungen {
@@ -187,6 +190,7 @@ func hilfe() string {
 		"  --json         " + i18n.T("Print the result as one line of JSON") + "\n" +
 		"  FILE           " + i18n.T("Open FILE in the editor") + "\n" +
 		"  --export=TARGET FILE " + i18n.T("Export FILE to TARGET (.png, .jpg, .svg) without a window") + "\n" +
+		"  --annotate=LIST FILE " + i18n.T("Add annotations and redactions from LIST (JSON, - = standard input) to FILE and save as the editor does") + "\n" +
 		"  --ignore-limit " + i18n.T("Open FILE even if it is too costly to render") + "\n" +
 		"  mcp            " + i18n.T("Run as MCP server for AI agents (standard input and output only)") + "\n" +
 		"  -V, --version  " + i18n.T("Show the version") + "\n" +

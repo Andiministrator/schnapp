@@ -168,7 +168,7 @@ func TestMcpWerkzeugliste(t *testing.T) {
 			t.Errorf("%s: Schema %s", w.Name, w.Eingabe)
 		}
 	}
-	if got := strings.Join(namen, ","); got != "list_screens,capture_screen,capture_repeat,library_search,library_read,export" {
+	if got := strings.Join(namen, ","); got != "list_screens,capture_screen,capture_repeat,library_search,library_read,export,annotate" {
 		t.Errorf("Werkzeuge: %s", got)
 	}
 }

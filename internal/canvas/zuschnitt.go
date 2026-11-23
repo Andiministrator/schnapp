@@ -200,8 +200,13 @@ func (s *Sitzung) ZuschnittRahmen() (a, b document.Punkt, ok bool) {
 // Anfang ist das Original des ersten Pixels, Ende das des letzten Pixels + 1. So endet der Bereich nie mitten in oder
 // hinter einem Streifen an seinem Rand (ADR-0023 Punkt 1).
 func (s *Sitzung) originalBereich(von, bis int, zeilen bool) (int, int) {
+	return originalBereich(s.D, von, bis, zeilen)
+}
+
+// originalBereich ist Sitzung.originalBereich für ein Dokument ohne Sitzung (SchwaerzBereich).
+func originalBereich(d *document.Dokument, von, bis int, zeilen bool) (int, int) {
 	o := func(v int) int {
-		p := s.D.ZuOriginal(document.Pt(float64(v), float64(v)))
+		p := d.ZuOriginal(document.Pt(float64(v), float64(v)))
 		if zeilen {
 			return int(math.Round(p.Y))
 		}

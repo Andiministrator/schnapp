@@ -98,3 +98,5 @@ Neuer Abschnitt `[agents]` für den MCP-Server, Werte `yes`/`no` (auch `true`/`f
 `capture = no`, `library = no`, `confirm = yes`, `image = yes`. Ein ungültiger Wert lässt die Voreinstellung stehen
 (mit Warnung) — eine Einwilligung entsteht nie aus einem Tippfehler. Der Server liest die Datei bei jedem
 Werkzeugaufruf neu und schreibt sie nie. Bedeutung im Einzelnen: ADR-0030 Nachtrag 2 Punkt 2.
+*Ergänzt 23.11.2026 (Karte #202, ADR-0030 Nachtrag 10 Punkt 5):* `edit = no` — Agenten dürfen Dateien beschriften und
+schwärzen (Werkzeug `annotate`).

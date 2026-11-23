@@ -478,18 +478,36 @@ func (s *Sitzung) schwaerzeRahmen() {
 	// Nach außen auf ganze Ansichtspixel, auf die Ansicht begrenzt (ADR-0023 Punkt 8), dann je Achse wie beim
 	// Zuschneiden ins Original: vom ersten bis hinter das letzte Pixel. So endet der Rahmen an einer Naht oder an der
 	// Kante der Ansicht vor dem verborgenen Streifen dahinter (F-223); ein Streifen mitten im Rahmen wird mitgeschwärzt.
-	g := s.D.Groesse()
+	px, sw, ersatz, ok := SchwaerzBereich(s.D, r, s.neuArt == WerkzeugVerpixeln)
+	if !ok {
+		return
+	}
+	s.ersatzSchwarz = s.ersatzSchwarz || ersatz
+	if s.D.Schwaerzen(px, sw) == nil {
+		s.bildAenderung++
+	}
+}
+
+// SchwaerzBereich rechnet einen Rahmen r der Ansicht in den Bereich des Originals und die Art der Schwärzung um, wie
+// sie Editor und Kommandozeile (ADR-0030 Nachtrag 10) gleich anwenden: nach außen auf ganze Ansichtspixel, auf die
+// Ansicht begrenzt (ADR-0023 Punkt 8), dann je Achse wie beim Zuschneiden ins Original — vom ersten bis hinter das
+// letzte Pixel. So endet der Rahmen an einer Naht oder an der Kante der Ansicht vor dem verborgenen Streifen dahinter
+// (F-223); ein Streifen mitten im Rahmen wird mitgeschwärzt. verpixeln wählt das Mosaik; ist der Bereich dafür zu
+// schmal, wird geschwärzt und ersatz gemeldet (ADR-0022 Punkt 2). ok ist false, wenn nichts von r im Bild liegt.
+func SchwaerzBereich(d *document.Dokument, r document.Rechteck, verpixeln bool) (px image.Rectangle,
+	sw document.Schwaerzung, ersatz, ok bool) {
+	g := d.Groesse()
 	k := func(v float64, m int) int { return max(0, min(m, int(v))) }
 	a := image.Rect(k(math.Floor(r.Min.X), g.X), k(math.Floor(r.Min.Y), g.Y), k(math.Ceil(r.Max.X), g.X),
 		k(math.Ceil(r.Max.Y), g.Y))
 	if a.Empty() {
-		return
+		return image.Rectangle{}, sw, false, false
 	}
-	x0, x1 := s.originalBereich(a.Min.X, a.Max.X, false)
-	y0, y1 := s.originalBereich(a.Min.Y, a.Max.Y, true)
-	px := image.Rect(x0, y0, x1, y1)
-	sw := document.Schwaerzung{Farbe: Schwaerzfarbe}
-	if s.neuArt == WerkzeugVerpixeln {
+	x0, x1 := originalBereich(d, a.Min.X, a.Max.X, false)
+	y0, y1 := originalBereich(d, a.Min.Y, a.Max.Y, true)
+	px = image.Rect(x0, y0, x1, y1)
+	sw = document.Schwaerzung{Farbe: Schwaerzfarbe}
+	if verpixeln {
 		kurz := min(px.Dx(), px.Dy())
 		switch {
 		case kurz >= VerpixelnBlock:
@@ -497,12 +515,10 @@ func (s *Sitzung) schwaerzeRahmen() {
 		case kurz >= document.MinBlock:
 			sw = document.Schwaerzung{Block: document.MinBlock, Mosaik: VerpixelnMosaik}
 		default:
-			s.ersatzSchwarz = true // zu schmal zum Verpixeln: schwärzen (ADR-0022 Punkt 2)
+			ersatz = true // zu schmal zum Verpixeln: schwärzen (ADR-0022 Punkt 2)
 		}
 	}
-	if s.D.Schwaerzen(px, sw) == nil {
-		s.bildAenderung++
-	}
+	return px, sw, ersatz, true
 }
 
 // NimmVerpixelnErsetzt meldet einmal, dass der letzte Rahmen zu schmal zum Verpixeln war und geschwärzt wurde; danach
