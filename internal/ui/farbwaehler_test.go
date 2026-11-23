@@ -93,7 +93,7 @@ func schritteSeit(l *menueLauf, vor uint64) int {
 	return n
 }
 
-// TestFarbwaehlerUnterHilfeUndBeimSpeichern: Unter der Hilfetafel wirkt Ziehen nicht (wie die Knöpfe, A-8).
+// TestFarbwaehlerUnterHilfe: Unter der Hilfetafel wirken Ziehen und Pipette nicht (wie die Knöpfe, A-8).
 func TestFarbwaehlerUnterHilfe(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
 	fw := &l.e.seite.fw
@@ -204,8 +204,11 @@ func TestPipetteKnopf(t *testing.T) {
 	if !l.e.s.PipetteLaeuft() {
 		t.Fatal("Enter auf der Pipette schaltet sie nicht ein")
 	}
+	// Das Testbild ist 40×30 und durchsichtig; durchsichtige Bildpunkte nimmt die Pipette nicht (A-9).
+	l.e.s.D.OriginalBild().SetNRGBA(20, 15, color.NRGBA{A: 255})
+	l.e.bildNeu()
 	f := l.e.leinwandFlaeche(l.gtx())
-	p := l.e.s.Abb.ZuFenster(document.Pt(20, 15)) // das Testbild ist 40×30, durchsichtig schwarz
+	p := l.e.s.Abb.ZuFenster(document.Pt(20, 15))
 	l.klick(f.Min.Add(image.Pt(int(p.X), int(p.Y))))
 	if l.e.s.PipetteLaeuft() || l.e.s.Stil.Farbe != (color.NRGBA{A: 255}) {
 		t.Errorf("Klick ins Bild: Pipette %v, Farbe %v", l.e.s.PipetteLaeuft(), l.e.s.Stil.Farbe)

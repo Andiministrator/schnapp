@@ -8,6 +8,7 @@ import (
 	"slices"
 	"sync"
 	"testing"
+	"time"
 
 	"golang.org/x/image/font/gofont/gobold"
 	"golang.org/x/image/font/gofont/gomedium"
@@ -28,6 +29,8 @@ func mitOrdnern(t *testing.T, o ...string) {
 		system, gesucht = nil, false
 		clear(geladen)
 		clear(fehler)
+		clear(dateien)
+		dateiBytes = 0
 		mu.Unlock()
 	})
 }
@@ -134,7 +137,7 @@ func TestSchnittAusName(t *testing.T) {
 
 func TestNameGueltig(t *testing.T) {
 	lang := string(slices.Repeat([]rune{'x'}, MaxNamenLaenge+1))
-	for _, n := range []string{"", "a\nb", "a\x00", lang} {
+	for _, n := range []string{"", "a\nb", "a\x00", lang, "   ", "a\u0085b", "a\u009fb", "a\x7fb", "a\ufffdb"} {
 		if NameGueltig(n) {
 			t.Errorf("%q gilt", n)
 		}
@@ -165,10 +168,12 @@ func TestLadenSuchtSelbst(t *testing.T) {
 	schreibe(t, filepath.Join(d, "m.ttf"), gomedium.TTF)
 	alt := ordner
 	ordner = func() []string { return []string{d} }
-	altSuche := suche
-	suche = new(sync.Once)
+	altSuche, altKanal := suche, fertigKanal
+	suche, fertigKanal = new(sync.Once), make(chan struct{})
 	t.Cleanup(func() {
-		ordner, suche = alt, altSuche
+		ordner, suche, fertigKanal = alt, altSuche, altKanal
+		clear(dateien)
+		dateiBytes = 0
 		mu.Lock()
 		system, gesucht = nil, false
 		clear(geladen)
@@ -180,5 +185,91 @@ func TestLadenSuchtSelbst(t *testing.T) {
 	mu.Unlock()
 	if s := Laden("Go Medium", Normal); s.Ersatz || s.Familie != "Go Medium" || !SucheFertig() {
 		t.Errorf("Laden ohne Suche: %+v, fertig %v", s, SucheFertig())
+	}
+}
+
+// TestHintergrundsucheUndWarten (Sitzungs-QA B-5): Läuft die Suche im Hintergrund, wartet Laden auf ihr Ende statt
+// sofort Go zu liefern; der Rückruf kommt danach.
+func TestHintergrundsucheUndWarten(t *testing.T) {
+	d := t.TempDir()
+	schreibe(t, filepath.Join(d, "m.ttf"), gomedium.TTF)
+	frei := make(chan struct{})
+	alt, altSuche, altKanal := ordner, suche, fertigKanal
+	ordner = func() []string { <-frei; return []string{d} }
+	suche, fertigKanal = new(sync.Once), make(chan struct{})
+	t.Cleanup(func() {
+		ordner, suche, fertigKanal = alt, altSuche, altKanal
+		mu.Lock()
+		system, gesucht = nil, false
+		clear(geladen)
+		clear(fehler)
+		clear(dateien)
+		dateiBytes = 0
+		mu.Unlock()
+	})
+	mu.Lock()
+	system, gesucht = nil, false
+	mu.Unlock()
+	gerufen := make(chan struct{})
+	StarteSuche(func() { close(gerufen) })
+	ergebnis := make(chan *Schrift)
+	go func() { ergebnis <- Laden("Go Medium", Normal) }()
+	select {
+	case s := <-ergebnis:
+		t.Fatalf("Laden kam vor dem Ende der Suche zurück: %+v", s)
+	case <-time.After(50 * time.Millisecond):
+	}
+	close(frei)
+	if s := <-ergebnis; s.Ersatz || s.Familie != "Go Medium" {
+		t.Errorf("nach der Suche: %+v", s)
+	}
+	<-gerufen
+}
+
+// TestGrenzeGeladen (Sitzungs-QA B-2): Über der Summe geladener Bytes kommt Go als Ersatz; eingebaute Schriften
+// zählen nicht mit.
+func TestGrenzeGeladen(t *testing.T) {
+	d := t.TempDir()
+	schreibe(t, filepath.Join(d, "m.ttf"), gomedium.TTF)
+	mitOrdnern(t, d)
+	mu.Lock()
+	dateiBytes = MaxGeladenBytes
+	mu.Unlock()
+	if s := Laden("Go Medium", Normal); !s.Ersatz {
+		t.Errorf("über der Grenze: %+v", s)
+	}
+	if s := Laden(GoMono, Fett); s.Ersatz {
+		t.Errorf("eingebaute Schrift: %+v", s)
+	}
+	// Ebenso über der Zahl der Dateien (eigene Prüfung vor dem Lesen).
+	mu.Lock()
+	dateiBytes = 0
+	clear(geladen)
+	clear(fehler)
+	for i := range MaxGeladen {
+		dateien[filepath.Join(d, "andere", string(rune('a'+i%26))+string(rune('0'+i/26)))] = nil
+	}
+	mu.Unlock()
+	if s := Laden("Go Medium", Kursiv); !s.Ersatz {
+		t.Errorf("über der Dateizahl: %+v", s)
+	}
+}
+
+// TestSetzeOrdner (Sitzungs-QA B-3): Die festgelegten Ordner gelten statt HOME und XDG_*.
+func TestSetzeOrdner(t *testing.T) {
+	alt := ordner
+	t.Cleanup(func() { ordner = alt })
+	d := t.TempDir()
+	schreibe(t, filepath.Join(d, "m.ttf"), gomedium.TTF)
+	t.Setenv("XDG_DATA_DIRS", "/gibt/es/nicht")
+	SetzeOrdner([]string{d})
+	Suche()
+	t.Cleanup(func() {
+		mu.Lock()
+		system, gesucht = nil, false
+		mu.Unlock()
+	})
+	if f := Familien(); len(f) != 3 || f[2] != "Go Medium" {
+		t.Errorf("Familien %v", f)
 	}
 }

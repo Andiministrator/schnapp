@@ -223,6 +223,7 @@ func TestPipette(t *testing.T) {
 	o := image.NewNRGBA(image.Rect(0, 0, 200, 100))
 	o.SetNRGBA(30, 30, color.NRGBA{R: 10, G: 20, B: 30, A: 77})
 	o.SetNRGBA(199, 99, color.NRGBA{R: 9, A: 255})
+	o.SetNRGBA(0, 0, color.NRGBA{B: 7, A: 255}) // deckend: ein Klick neben das Bild darf ihn nicht treffen
 	d, err := document.Neu(o)
 	if err != nil {
 		t.Fatal(err)
@@ -246,12 +247,18 @@ func TestPipette(t *testing.T) {
 	}
 	// Rand des Bilds: der letzte Bildpunkt.
 	s.SchaltePipette()
-	s.Druecken(f(200, 100), TastePrimaer)
-	s.Loslassen(f(200, 100))
+	s.Druecken(f(199.5, 99.5), TastePrimaer)
+	s.Loslassen(f(199.5, 99.5))
 	if s.Stil.Farbe != (color.NRGBA{R: 9, A: 255}) {
 		t.Errorf("Rand: %v", s.Stil.Farbe)
 	}
 	vor, farbe := s.D.Stand(), s.Stil.Farbe
+	s.SchaltePipette() // ganz durchsichtiger Bildpunkt: nichts aufnehmen (A-9)
+	s.Druecken(f(5.5, 5.5), TastePrimaer)
+	s.Loslassen(f(5.5, 5.5))
+	if s.PipetteLaeuft() || s.D.Stand() != vor || s.Stil.Farbe != farbe {
+		t.Error("durchsichtiger Bildpunkt wurde aufgenommen")
+	}
 	s.SchaltePipette()
 	s.Druecken(document.Pt(2, 2), TastePrimaer) // neben dem Bild
 	s.Loslassen(document.Pt(2, 2))

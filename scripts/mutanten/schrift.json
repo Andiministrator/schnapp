@@ -17,22 +17,22 @@
     "name": "T190-3 Laden sucht nicht selbst",
     "datei": "internal/fonts/fonts.go",
     "paket": "./internal/fonts",
-    "alt": "\t\tsuche.Do(Suche)\n\t}\n\tmu.Lock()",
-    "neu": "\t}\n\tmu.Lock()"
+    "alt": "\tif name != \"\" && name != Go && name != GoMono && !SucheFertig() {",
+    "neu": "\tif false {"
   },
   {
     "name": "T190-4 Dateigrenze fehlt",
     "datei": "internal/fonts/fonts.go",
     "paket": "./internal/fonts",
-    "alt": "\t\t\tif dateien >= maxDateien {",
-    "neu": "\t\t\tif false && dateien >= maxDateien {"
+    "alt": "\t\t\tif gezaehlt >= maxDateien || time.Now().After(ende) {",
+    "neu": "\t\t\tif time.Now().After(ende) {"
   },
   {
     "name": "T190-5 System-Go überschreibt die eingebaute",
     "datei": "internal/fonts/fonts.go",
     "paket": "./internal/fonts",
-    "alt": "if !ok || name == Go || name == GoMono {",
-    "neu": "if !ok {"
+    "alt": "if !ok || name == Go || name == GoMono || !mitUmrissen(f, buf) {",
+    "neu": "if !ok || !mitUmrissen(f, buf) {"
   },
   {
     "name": "T190-6 Mitte falsch berechnet",
@@ -152,5 +152,68 @@
     "paket": "./internal/ui",
     "alt": "\t\tif sw.stil[j].Clicked(gtx) && e.seiteAn() {",
     "neu": "\t\tif sw.stil[j].Clicked(gtx) {"
+  },
+  {
+    "name": "QA3-B1 Fokus nach der Wahl in der Texteingabe am Feld",
+    "datei": "internal/ui/schriftwahl.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase e.s.TextLaeuft():\n",
+    "neu": "\tcase false:\n"
+  },
+  {
+    "name": "QA3-B6 Liste bleibt ohne Leiste offen",
+    "datei": "internal/ui/schriftwahl.go",
+    "paket": "./internal/ui",
+    "alt": " || !e.seiteSichtbar(gtx)) {",
+    "neu": ") {"
+  },
+  {
+    "name": "QA3-B2 keine Grenze geladener Dateien",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "\t\t\tif len(dateien) >= MaxGeladen || dateiBytes+st.Size() > MaxGeladenBytes {",
+    "neu": "\t\t\tif false {"
+  },
+  {
+    "name": "QA3-B3 MCP folgt XDG_DATA_DIRS",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tfonts.SetzeOrdner(schriften)\n",
+    "neu": "\tfonts.SetzeOrdner(nil)\n\t_ = schriften\n"
+  },
+  {
+    "name": "QA3-B5 Laden wartet nicht auf die Suche",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "\t\t<-starte()",
+    "neu": "\t\tstarte()"
+  },
+  {
+    "name": "QA3-B12a Renderer ohne Striche",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "for _, st := range v.Striche() {",
+    "neu": "for _, st := range []document.Rechteck(nil) {"
+  },
+  {
+    "name": "QA3-B12b Renderer ohne Ausrichtung",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "p := z.ansicht(document.Pt(zeile.X, zeile.Grundlinie))",
+    "neu": "p := z.ansicht(document.Pt(v.Ort.X, zeile.Grundlinie))"
+  },
+  {
+    "name": "QA3-B12c Renderer immer in Go",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "z.schrift(v.Schriftdatei(), v.Schriftgrad)",
+    "neu": "z.schrift(fonts.Laden(fonts.Go, fonts.Normal), v.Schriftgrad)"
+  },
+  {
+    "name": "QA3-B11 Name mit C1-Steuerzeichen gilt",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "\t\tif unicode.IsControl(r) || r == 0xfffd",
+    "neu": "\t\tif (unicode.IsControl(r) && r < 0x80) || r == 0xfffd"
   }
 ]

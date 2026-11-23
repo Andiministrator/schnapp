@@ -3,8 +3,9 @@
 package ui
 
 // Text der Beschriftungen im Editor (ADR-0021 Nachtrag 10 Punkt 5): aus den Glyphenumrissen derselben Schriftdatei, mit
-// denselben Orten wie der Renderer (opentype.Face: Vorschub und kern-Tabelle, ohne Hinting), statt über den Shaper von
-// Gio, der GPOS-Unterschneidung kennt und so andere Breiten setzen würde als Messung, Renderer und Export.
+// denselben Orten wie der Renderer (Vorschub aus opentype.Face, Paarunterschneidung im Grad über document.KernPaar, ohne
+// Hinting), statt über den Shaper von Gio, der anders setzt (eigenes Shaping) und so andere Breiten ergäbe als Messung,
+// Renderer und Export.
 
 import (
 	"image"
@@ -20,6 +21,7 @@ import (
 	"golang.org/x/image/font/sfnt"
 	"golang.org/x/image/math/fixed"
 
+	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/fonts"
 )
 
@@ -105,7 +107,7 @@ func (ts *textsatz) zeichneZeile(gtx layout.Context, s *fonts.Schrift, text stri
 	vorher := rune(-1)
 	for _, r := range text {
 		if vorher >= 0 {
-			dot += face.Kern(vorher, r)
+			dot += document.KernPaar(s.Font, &ts.puffer, vorher, r, grad) // wie Renderer und Messung
 		}
 		vorher = r
 		px := float64(dot) / 64

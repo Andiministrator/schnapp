@@ -322,11 +322,11 @@ Bericht zu Karte #203). F-491 fiel in der sichereren Richtung: absichern statt n
 - **Absender (B-4):** `notify` nutzt die gemeinsame Bus-Verbindung des Prozesses (`dbus.SessionBus()`) statt je Aufruf
   einer neuen; `CloseNotification` kommt so vom selben Absender wie `Notify`, auch bei Diensten, die das Schließen
   fremder Hinweise ablehnen.
-- **Noch offen:** Der Echtlauf vom 23.11. lief vor dem Fix. Ob Plasma den kritischen Hinweis binnen 600 ms ausblendet,
+- **Echtlauf (zuerst offen, inzwischen erledigt):** Der Echtlauf vom 23.11. lief vor dem Fix. Ob Plasma den kritischen Hinweis binnen 600 ms ausblendet,
   ist im echten Plasma nachzumessen (`scripts/echtlauf-mcp-hinweise.sh A`); bis dahin bleibt F-490 offen.
   **Gemessen 23.11.2026 nach dem Fix** (Andi, Plasma, Teil A): das zweite Bild zeigt den Hinweis der ersten Aufnahme
   nicht mehr; F-490 ist behoben. Teil B im selben Lauf: ein Klick auf „Erlauben“ nach einem Klick neben den Dialog
-  wurde gezählt (erlaubt/aufgenommen).
+  wurde gezählt (erlaubt/aufgenommen) — das bestätigt die Widerlegung von F-506 aus Nachtrag 7 im echten Plasma.
 - Das Echtlauf-Skript stellt die Einstellungen nach jedem Teil zurück, schreibt sie über eine Nachbardatei und bricht
   ab, wenn ein früherer Lauf ohne Abschluss liegt (Marke `laeuft`; Sitzungs-QA B-2, B-3).
 

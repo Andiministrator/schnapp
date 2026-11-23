@@ -277,8 +277,8 @@ func (s *Sitzung) BrecheFarbZugAb() {
 // PipetteLaeuft meldet, ob der nächste Klick ins Bild eine Farbe aufnimmt.
 func (s *Sitzung) PipetteLaeuft() bool { return s.pipette }
 
-// SchaltePipette schaltet die Pipette ein oder aus (nicht während eines Zugs oder des Speicherns). Eine Texteingabe
-// wird vorher bestätigt, wie bei jedem Klick auf die Leinwand.
+// SchaltePipette schaltet die Pipette ein oder aus (nicht während eines Zugs oder des Speicherns). Der Klick ins Bild
+// bestätigt eine laufende Texteingabe, wie jeder Klick auf die Leinwand.
 func (s *Sitzung) SchaltePipette() bool {
 	if s.Zieht() || s.gesperrt() {
 		return false
@@ -288,18 +288,20 @@ func (s *Sitzung) SchaltePipette() bool {
 }
 
 // pipetteKlick nimmt die Farbe am Fensterpunkt p auf (Original mit Schwärzungen, ohne Beschriftungen, deckend) und
-// beendet die Pipette; neben dem Bild endet sie ohne Wirkung.
+// beendet die Pipette. Den Bildpunkt bestimmt dieselbe Umrechnung wie die Fußzeile (ZeigerOrt; beim Zuschneiden die
+// Vollansicht, Sitzungs-QA A-6). Neben dem Bild oder auf einem ganz durchsichtigen Bildpunkt endet sie ohne Wirkung:
+// Dessen Farbe sieht niemand (A-9, ADR-0021 Nachtrag 9 Punkt 5).
 func (s *Sitzung) pipetteKlick(p document.Punkt) {
 	s.pipette = false
-	if !s.imBild(p) {
+	ort, ok := s.ZeigerOrt(s.Abb.ZuAnsicht(p))
+	o := s.D.OriginalBild()
+	if !ok || !ort.In(o.Rect) {
 		return
 	}
-	q := s.original(p)
-	o := s.D.OriginalBild()
-	x, y := int(math.Floor(q.X)), int(math.Floor(q.Y))
-	b := o.Rect
-	x, y = max(b.Min.X, min(b.Max.X-1, x)), max(b.Min.Y, min(b.Max.Y-1, y))
-	c := o.NRGBAAt(x, y)
+	c := o.NRGBAAt(ort.X, ort.Y)
+	if c.A == 0 {
+		return
+	}
 	c.A = 255
 	s.TextBestaetigen()
 	s.setzeEigeneFarbe(c)

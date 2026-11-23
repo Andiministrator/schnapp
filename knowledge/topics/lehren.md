@@ -747,3 +747,26 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Aufruf ohne sie lud alle Module neu in den Sandkasten (schreibgeschützt, `rm` scheitert); Abräumen mit
   `GOMODCACHE=<voller Pfad> go clean -modcache`, dann `rm`. Billige Prüfungen (Symlink, Laufmarke) gehören vor den Bau.
 
+
+## Farbwähler und Schrift (Karten #189, #190, 23.11.2026 abends)
+
+- **Gio gibt ein Tastenereignis dem ersten passenden `gtx.Event`-Aufruf des Bildes** (Tastenereignisse tragen kein
+  Ziel; maßgeblich ist die Reihenfolge der Aufrufe). Ein eigenes Eingabefeld holt Enter, Esc und die Rücktaste deshalb
+  **vor** der allgemeinen Tastenauswertung ab (`feldTasten` vor `tasten`), sonst löscht die Rücktaste das gewählte
+  Objekt. Getippter Text kommt unter Wayland getrennt als `EditEvent` an das fokussierte Ziel; die zugehörige Taste
+  läuft trotzdem durch die Kürzel — Buchstaben-Kürzel müssen bei fokussiertem Feld ausdrücklich übergangen werden.
+- **Tab fährt den Fokus nur, wenn kein Filter die Taste nimmt**: Ein Feld darf keinen Filter ohne Namen
+  (`key.Filter{Focus: f}`) anmelden, sonst bleibt der Fokus im Feld stecken.
+- **Im Test lässt sich `pointer.Drag` nicht einspeisen** (Gio-Router: Panik „unsupported pointer event type“); Ziehen
+  ist `Move` mit gedrückter Taste, Gio macht daraus `Drag`. Ein Druck genau auf `Max` eines Rechtecks liegt außerhalb.
+- **Gleiche Maße in Editor und Export gibt es nur mit demselben Satz** (#190): Der Gio-Shaper unterschneidet per GPOS,
+  `x/image` nur mit der `kern`-Tabelle; bei fremden Schriften liefen Schild und Glyphen auseinander. Der Editor zeichnet
+  Text deshalb aus den Glyphenumrissen derselben Datei (`internal/ui/textsatz.go`) mit denselben Orten wie der Renderer.
+- **Systemschriften ohne fontconfig**: `sfnt.ParseReaderAt` liest nur Tabellenverzeichnis und Namen; auf dem
+  Entwicklungsrechner 297 Familien in rund 0,6 s. Gios eigene Systemschrift-Suche (go-text/fontscan) legt einen Index
+  im Cache an — deshalb `text.NoSystemFonts()` und eigene Suche (Kernprinzip 3).
+- **Ein Testablauf kann einen Mutanten zufällig verdecken** (F189-6): Eine Beschriftungsfarbe, die fälschlich in die
+  zuletzt benutzten Farben rutschte, wurde vom weiteren Ablauf wieder hinausgeschoben. Zwischenzustände prüfen, nicht
+  nur das Endergebnis.
+- **Im Auto-Modus lehnt die Freigabe ein rekursives Löschen von Ordnern mit Bildschirmfotos ab**: Solche Ordner löscht
+  Andi selbst per `!`-Befehl (am 23.11. so geschehen); nicht wiederholt versuchen.

@@ -122,11 +122,16 @@ func (e *editor) schriftListeOeffne(gtx layout.Context) {
 	gtx.Execute(key.FocusCmd{Tag: e})
 }
 
-// schriftListeSchliesse schließt die Liste; mit zumFeld geht der Fokus an das Feld zurück.
+// schriftListeSchliesse schließt die Liste; mit zumFeld geht der Fokus an das Feld zurück, während der Texteingabe
+// immer an die Leinwand.
 func (e *editor) schriftListeSchliesse(gtx layout.Context, zumFeld bool) {
 	sw := &e.seite.sw
 	sw.offen = false
-	if zumFeld {
+	switch {
+	case e.s.TextLaeuft():
+		// In der Texteingabe gehört der Fokus der Leinwand, sonst gingen weitere Zeichen verloren (Sitzungs-QA B-1).
+		gtx.Execute(key.FocusCmd{Tag: e})
+	case zumFeld:
 		gtx.Execute(key.FocusCmd{Tag: &sw.feld})
 	}
 }
@@ -242,7 +247,7 @@ func (e *editor) schriftAuswerten(gtx layout.Context) {
 		}
 	}
 	// Ohne Abschnitt (anderes Werkzeug, Auswahl weg) bleibt keine Liste offen.
-	if sw.offen && !e.s.Seitenleiste().Text {
+	if sw.offen && (!e.s.Seitenleiste().Text || !e.seiteSichtbar(gtx)) { // auch ohne sichtbare Leiste (B-6)
 		sw.offen = false
 	}
 }

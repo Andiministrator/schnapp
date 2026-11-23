@@ -139,3 +139,45 @@ func TestSchriftGroesseStilAusrichtung(t *testing.T) {
 		t.Error("Stil unter der Hilfetafel geändert")
 	}
 }
+
+// TestSchriftListeInDerTexteingabe (Sitzungs-QA B-1): Nach der Wahl in der Texteingabe liegt der Fokus an der
+// Leinwand, weitere Zeichen kommen im Text an.
+func TestSchriftListeInDerTexteingabe(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	sw := &l.e.seite.sw
+	l.e.s.Auswahl = 0
+	l.e.s.SetzeWerkzeug(canvas.WerkzeugText)
+	l.setle()
+	f := l.e.leinwandFlaeche(l.gtx())
+	p := l.e.s.Abb.ZuFenster(document.Pt(5, 20)) // trifft den Testtext „Hallo“: die Eingabe gilt ihm
+	l.klick(f.Min.Add(image.Pt(int(p.X), int(p.Y))))
+	l.fokusiere(l.e)
+	l.tippe("a")
+	if !l.e.s.TextLaeuft() {
+		t.Fatal("keine Texteingabe")
+	}
+	l.klick(mittenPunkt(sw.feldRahmen))
+	l.klick(mittenPunkt(sw.zeilen[1]))
+	l.tippe("b")
+	tx, ok := l.e.s.TextObjekt()
+	if !ok || tx.Inhalt != "Halloab" || tx.Schrift != fonts.GoMono || !l.fokus(l.e) {
+		t.Errorf("nach der Wahl: Eingabe %v, Inhalt %q, Schrift %q, Fokus %s", ok, tx.Inhalt, tx.Schrift, menueFokusName(l))
+	}
+}
+
+// TestSchriftListeOhneLeiste (Sitzungs-QA B-6): Wird die Leiste bei offener Liste ausgeblendet, schließt die Liste und
+// die Kürzel wirken wieder.
+func TestSchriftListeOhneLeiste(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	sw := &l.e.seite.sw
+	l.klick(mittenPunkt(sw.feldRahmen))
+	if !sw.offen {
+		t.Fatal("Liste nicht offen")
+	}
+	l.fenst = image.Pt(700, 800)
+	l.setle()
+	l.taste("P", 0)
+	if sw.offen || l.e.s.Werkzeug != canvas.WerkzeugVerpixeln {
+		t.Errorf("schmales Fenster: Liste offen %v, Werkzeug %v", sw.offen, l.e.s.Werkzeug)
+	}
+}

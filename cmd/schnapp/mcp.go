@@ -32,6 +32,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/export"
 	"github.com/Andiministrator/schnapp/internal/fileformat"
+	"github.com/Andiministrator/schnapp/internal/fonts"
 	"github.com/Andiministrator/schnapp/internal/i18n"
 	"github.com/Andiministrator/schnapp/internal/library"
 	"github.com/Andiministrator/schnapp/internal/mcp"
@@ -149,6 +150,14 @@ var mcpUmgebung = []string{"HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACH
 // XDG_* der Umgebung: Die setzt der Agenten-Client, womöglich aus einer fremden `.mcp.json` (F-461). umgebung dient nur
 // der Warnung. Ist heim nicht absolut, gelten die Voreinstellungen und kein Ort ist bekannt.
 func (an *mcpAnschluesse) mitHeim(heim string, umgebung func(string) string) {
+	// Schriftordner ebenso aus dem Heim, nicht aus XDG_DATA_HOME/XDG_DATA_DIRS: Ein Ordner des Agenten-Clients schöbe
+	// sonst jedem Familiennamen eigene Glyphen unter (Sitzungs-QA B-3, ADR-0021 Nachtrag 10 Punkt 3).
+	schriften := []string{"/usr/local/share/fonts", "/usr/share/fonts"}
+	if filepath.IsAbs(heim) {
+		h := filepath.Clean(heim)
+		schriften = append([]string{filepath.Join(h, ".local", "share", "fonts"), filepath.Join(h, ".fonts")}, schriften...)
+	}
+	fonts.SetzeOrdner(schriften)
 	if !filepath.IsAbs(heim) {
 		an.lade = func() (settings.Einstellungen, []string) { return settings.Voreinstellungen(), nil }
 		an.orte = func() (library.Orte, error) { return library.Orte{}, library.ErrKeinHeim }

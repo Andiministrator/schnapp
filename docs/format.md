@@ -297,7 +297,7 @@ rounding is circular, never elliptic.
 | `s:farbe` | text colour |
 | `s:hintergrund` | colour of the label behind the text; alpha `00` means none |
 | `s:umbruch` | wrap width, number `>= 0`; `0` = no wrapping. Stored, but **not applied** by the current implementation |
-| `s:schrift` | OPTIONAL. Font family name, 1 to 128 characters, no control characters. Missing, empty, `Go`, or not a valid name: the built-in family Go |
+| `s:schrift` | OPTIONAL. Font family name: 1 to 128 Unicode scalar values, not only white space, no control characters (Unicode category Cc: U+0000 to U+001F, U+007F to U+009F) and none of U+FFFD, U+FFFE, U+FFFF. Missing, empty, `Go`, or not a valid name: the built-in family Go; writers omit it for Go |
 | `s:stil` | OPTIONAL. Words separated by spaces from `bold`, `italic`, `underline`, `strike`; unknown words are ignored. Missing: none |
 | `s:ausrichtung` | OPTIONAL. Alignment of each line: `left`, `center` or `right`. Missing or any other value: `left` |
 
@@ -313,7 +313,8 @@ that lacks the family sets the text in Go and SHOULD keep the name when it saves
 
 Informative: Schnapp sets the text in the named family (system fonts or the built-in Go and Go Mono) in the face
 picked by `bold` and `italic`, falling back to the nearest available face of the family and to Go if the family is
-missing; there is no shaping, only advance widths and the `kern` table. The first baseline lies `grad` below
+missing; there is no shaping, only advance widths and pair kerning (from `GPOS`, otherwise the `kern` table),
+scaled with `grad`. The first baseline lies `grad` below
 `ort.y`, each further line `1.3 x grad` lower; each line is placed left, centred or right within the advance width
 of the longest line; a tab is shown as four spaces. `underline` draws a bar from `0.1 x grad` below the baseline,
 `strike` a bar centred `0.3 x grad` above it, both `max(1, 0.06 x grad)` thick and as wide as the line's advance.

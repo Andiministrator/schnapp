@@ -233,7 +233,7 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			s.attr("s:hintergrund", farbeHex(o.Hintergrund))
 			s.attr("s:umbruch", zahl(o.BreiteGrenze))
 			// Schrift, Stil und Ausrichtung nur, wo sie von der Voreinstellung abweichen (docs/format.md 8.3).
-			if o.Schrift != "" {
+			if o.Schrift != "" && o.Schrift != fonts.Go { // Go ist die Voreinstellung (Sitzungs-QA B-11)
 				s.attr("s:schrift", o.Schrift)
 			}
 			if st := textStilText(o); st != "" {

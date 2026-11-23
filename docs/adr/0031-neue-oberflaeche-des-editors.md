@@ -225,7 +225,11 @@ Farbe und der Deckkraft in ADR-0021 Nachtrag 9.
   halbdurchsichtig ist, zeigt das Schachbrett darunter.
 - **Eingabefelder:** Ein Klick oder Tab fokussiert das Feld (orangefarbener Rand, Schreibmarke am Ende, der Text wird
   beim Fokussieren ersetzt, sobald getippt wird). Enter übernimmt, Esc verwirft und gibt den Fokus an die Leinwand, Tab
-  oder ein Klick woanders übernimmt ebenfalls. Rücktaste löscht ein Zeichen. Solange ein Feld den Fokus hat, sind
+  oder ein Klick woanders übernimmt ebenfalls — der Klick übernimmt, **bevor** er selbst wirkt (eine durchlässige
+  Fläche über dem Fenster sieht jeden Druck; danach liegt der Fokus an der Leinwand), so dass ein Klick auf ein
+  Farbfeld oder die Pipette danach gilt (Sitzungs-QA A-2). Verliert nur das Fenster den Fokus, bleibt die Eingabe
+  unverändert stehen. Bei offenem Menü oder offener Hilfetafel gehören Esc und Enter diesen (A-3, A-7); Umschalt+Enter
+  wirkt im Feld wie Enter (A-5); die Rücktaste auf dem unberührten Feld beginnt beim Wert ohne Einheit (A-8). Rücktaste löscht ein Zeichen. Solange ein Feld den Fokus hat, sind
   Buchstaben, Ziffern, Entf und die Rücktaste Eingabe, keine Kürzel (wie in der Texteingabe, ADR-0021 Nachtrag 1); eine
   ungültige Eingabe zeigt den Rand rot, bis sie korrigiert oder verworfen ist.
 - **Tastatur:** Farbfläche und Regler sind nur mit der Maus zu bedienen; per Tastatur gehen Farbfelder, Pipette (Enter)
@@ -256,7 +260,8 @@ Nachtrag 10.
   ist grün markiert. Ein Klick auf einen Eintrag wählt ihn, ein Klick daneben schließt ohne Wahl. Per Tastatur:
   Pfeil hoch und runter, Pos1, Ende, Enter wählt, Esc schließt; getippte Buchstaben springen zur ersten Familie mit
   diesem Anfang (nach einer Sekunde Pause beginnt ein neuer Anfang). Solange die Liste offen ist, wirken andere
-  Tasten nicht (kein Werkzeugkürzel hinter der Liste); danach liegt der Fokus wieder auf dem Feld. Die Namen stehen in
+  Tasten nicht (kein Werkzeugkürzel hinter der Liste); danach liegt der Fokus wieder auf dem Feld, während einer
+  Texteingabe an der Leinwand (Sitzungs-QA B-1). Verschwindet die Leiste (schmales Fenster), schließt die Liste (B-6). Die Namen stehen in
   der Schrift der Oberfläche, nicht in ihrer eigenen.
 - **Tab-Reihenfolge** (beim Text): … Farbfeld links, Schrift, Größe − und +, die vier Umschalter, die drei
   Ausrichtungen, dann die Farbe wie in Nachtrag 5.

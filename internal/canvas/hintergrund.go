@@ -97,7 +97,7 @@ func (s *Sitzung) SchliessenAnfrage() (Schluss, *document.Dokument) {
 		return SchlussWarten, nil
 	}
 	s.TextBestaetigen()
-	if s.zug != keinZug {
+	if s.zug != keinZug || s.farbZug { // auch das Ziehen im Farbwähler (Sitzungs-QA A-1)
 		s.Abbrechen()
 	}
 	if !s.Ungesichert() {
@@ -120,7 +120,7 @@ func (s *Sitzung) SignalAnfrage() (zu bool, abzug *document.Dokument) {
 		return false, nil
 	}
 	s.TextBestaetigen()
-	if s.zug != keinZug {
+	if s.zug != keinZug || s.farbZug { // auch das Ziehen im Farbwähler (Sitzungs-QA A-1)
 		s.Abbrechen()
 	}
 	if !s.Geaendert() {

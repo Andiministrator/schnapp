@@ -59,8 +59,8 @@
     "name": "F189-9 Pipette wirkt neben dem Bild",
     "datei": "internal/canvas/farbwahl.go",
     "paket": "./internal/canvas",
-    "alt": "\ts.pipette = false\n\tif !s.imBild(p) {\n\t\treturn\n\t}",
-    "neu": "\ts.pipette = false\n\tif false && !s.imBild(p) {\n\t\treturn\n\t}"
+    "alt": "\tif !ok || !ort.In(o.Rect) {",
+    "neu": "\tif (false && !ok) || !ort.In(o.Rect) {"
   },
   {
     "name": "F189-10 Esc beendet die Pipette nicht",
@@ -101,8 +101,8 @@
     "name": "F189-15 Tab aus dem Feld übernimmt nicht",
     "datei": "internal/ui/farbwaehler.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\t\tif !ev.Focus {\n\t\t\t\t\t// Tab oder ein Klick woanders übernimmt; ungültig bleibt es beim Alten (ADR-0031 Nachtrag 5).\n\t\t\t\t\te.feldUebernehmen(f)",
-    "neu": "\t\t\t\tif !ev.Focus {\n\t\t\t\t\t// Tab oder ein Klick woanders übernimmt; ungültig bleibt es beim Alten (ADR-0031 Nachtrag 5)."
+    "alt": "\t\t\t\t\t// Tab oder ein Fokuswechsel: übernehmen; ungültig bleibt es beim Alten (ADR-0031 Nachtrag 5).\n\t\t\t\t\te.feldUebernehmen(f)",
+    "neu": "\t\t\t\t\t// Tab oder ein Fokuswechsel: übernehmen; ungültig bleibt es beim Alten (ADR-0031 Nachtrag 5)."
   },
   {
     "name": "F189-16 Esc im Feld lässt den Fokus im Feld",
@@ -145,5 +145,54 @@
     "paket": "./internal/canvas",
     "alt": "FussFeld{Art: FeldFarbe, Farbe: s.AktuelleFarbe(),",
     "neu": "FussFeld{Art: FeldFarbe, Farbe: s.Stil.Farbe,"
+  },
+  {
+    "name": "QA3-A1 Abbrechen kennt den Farbzug nicht",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.farbZug { // Ziehen im Farbwähler: Objekt wie vorher (Sitzungs-QA A-1)\n\t\ts.BrecheFarbZugAb()\n\t\treturn\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "QA3-A4 Esc kennt den Farbzug nicht",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase s.farbZug: // laufendes Ziehen im Farbwähler abbrechen (ADR-0021 Punkt 2, Sitzungs-QA A-4)\n\t\ts.BrecheFarbZugAb()\n",
+    "neu": ""
+  },
+  {
+    "name": "QA3-A9 Pipette nimmt durchsichtige Bildpunkte",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif c.A == 0 {\n\t\treturn\n\t}\n\tc.A = 255",
+    "neu": "\tc.A = 255"
+  },
+  {
+    "name": "QA3-A2 Klick woanders übernimmt nicht",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.feldUebernehmen(f)\n\t\tf.neu, f.text, f.fehler = true, \"\", false\n\t\tgtx.Execute(key.FocusCmd{Tag: e})",
+    "neu": "\t\tf.neu, f.text, f.fehler = true, \"\", false\n\t\tgtx.Execute(key.FocusCmd{Tag: e})"
+  },
+  {
+    "name": "QA3-A2d Fensterwechsel übernimmt",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tcase gtx.Focused(f):",
+    "neu": "\t\t\t\tcase false:"
+  },
+  {
+    "name": "QA3-A3 Feld nimmt Tasten bei offenem Menü",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\ttasten := !e.menue.offen && !e.hilfeOffen",
+    "neu": "\ttasten := true"
+  },
+  {
+    "name": "QA3-A5 Umschalt+Enter rutscht durch",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "filter = append(filter, key.Filter{Focus: f, Name: n, Optional: key.ModShift})",
+    "neu": "filter = append(filter, key.Filter{Focus: f, Name: n})"
   }
 ]

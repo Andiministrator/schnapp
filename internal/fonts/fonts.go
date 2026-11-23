@@ -14,6 +14,9 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/image/font/gofont/gobold"
 	"golang.org/x/image/font/gofont/gobolditalic"
@@ -24,6 +27,7 @@ import (
 	"golang.org/x/image/font/gofont/gomonoitalic"
 	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/font/sfnt"
+	"golang.org/x/image/math/fixed"
 )
 
 // Namen der eingebauten Familien; Go ist die Voreinstellung (leerer Name im Dokument).
@@ -37,6 +41,12 @@ const (
 	MaxDateien      = 20000
 	MaxDateiGroesse = 64 << 20
 	MaxNamenLaenge  = 128
+	// MaxGeladen und MaxGeladenBytes begrenzen, was an Schriftdateien im Speicher liegt (Sitzungs-QA B-2): Eine
+	// präparierte Arbeitsdatei mit vielen Familien lädt sonst den ganzen Schriftbestand. Darüber gilt Ersatz (Go).
+	MaxGeladen      = 32
+	MaxGeladenBytes = 256 << 20
+	// SucheFrist begrenzt die Suche nach Systemschriften (ein hängender Ordner blockiert sonst jede Textmessung).
+	SucheFrist = 10 * time.Second
 )
 
 // Schnitt ist einer der vier Grundschnitte: Bit 0 fett, Bit 1 kursiv.
@@ -106,14 +116,51 @@ var (
 		{name: GoMono, schnitte: [4]quelle{{da: true, roh: gomono.TTF}, {da: true, roh: gomonobold.TTF},
 			{da: true, roh: gomonoitalic.TTF}, {da: true, roh: gomonobolditalic.TTF}}},
 	}
-	system     []familie        // nach der Suche, nach Namen sortiert
-	gesucht    bool             // die Suche ist fertig
-	suche      = new(sync.Once) // Zeiger: der Test tauscht ihn aus
-	geladen    = map[schluessel]*Schrift{}
-	fehler     = map[schluessel]bool{} // Dateien, die sich nicht laden ließen
-	ordner     = schriftOrdner         // für Tests austauschbar
-	maxDateien = MaxDateien            // für Tests austauschbar
+	system  []familie // nach der Suche, nach Namen sortiert
+	gesucht bool      // die Suche ist fertig
+	// suche startet die Suche einmal je Prozess in einer Goroutine; fertigKanal wird danach geschlossen. Beide sind
+	// Zeiger bzw. Kanäle, die der Test austauscht.
+	suche       = new(sync.Once)
+	fertigKanal = make(chan struct{})
+	geladen     = map[schluessel]*Schrift{}
+	fehler      = map[schluessel]bool{} // Dateien, die sich nicht laden ließen
+	dateien     = map[string][]byte{}   // geladene Schriftdateien je Pfad (Sammlungen nur einmal gelesen)
+	dateiBytes  int64                   // Summe der Bytes in dateien
+	ordner      = schriftOrdner         // für Tests und SetzeOrdner austauschbar
+	maxDateien  = MaxDateien            // für Tests austauschbar
+	sucheFrist  = SucheFrist            // für Tests austauschbar
 )
+
+// SetzeOrdner legt die Schriftordner fest, statt sie aus HOME und XDG_* zu lesen (MCP-Server: aus dem Heim der
+// Benutzerdatenbank, Sitzungs-QA B-3; Tests: hermetisch). Wirkt nur vor der ersten Suche.
+func SetzeOrdner(o []string) {
+	kopie := append([]string(nil), o...)
+	mu.Lock()
+	ordner = func() []string { return kopie }
+	mu.Unlock()
+}
+
+// Ordner liefert die Schriftordner, in denen gesucht wird (bzw. würde).
+func Ordner() []string {
+	mu.Lock()
+	o := ordner
+	mu.Unlock()
+	return o()
+}
+
+// starte stößt die Suche einmal je Prozess an und liefert den Kanal, der nach ihrem Ende geschlossen ist.
+func starte() chan struct{} {
+	mu.Lock()
+	k, o := fertigKanal, suche
+	mu.Unlock()
+	o.Do(func() {
+		go func() {
+			Suche()
+			close(k)
+		}()
+	})
+	return k
+}
 
 type schluessel struct {
 	familie string
@@ -142,9 +189,9 @@ func familieZu(name string) (*familie, bool) {
 // aus, wenn sie noch nicht gelaufen ist (blockierend, einmal je Prozess).
 func Laden(name string, s Schnitt) *Schrift {
 	if name != "" && name != Go && name != GoMono && !SucheFertig() {
-		// Ohne Editor (Export, Rettung, MCP) hat niemand die Suche gestartet: einmal blockierend suchen, sonst setzte
-		// ein Export eine vorhandene Systemschrift in Go. Läuft die Suche schon, wartet Do auf sie.
-		suche.Do(Suche)
+		// Ohne Editor (Export, Rettung, MCP) hat niemand die Suche gestartet; läuft sie schon (Editor), wird auf ihr
+		// Ende gewartet (Sitzungs-QA B-5). Sonst setzte ein Export eine vorhandene Systemschrift in Go.
+		<-starte()
 	}
 	mu.Lock()
 	defer mu.Unlock()
@@ -166,7 +213,8 @@ func Laden(name string, s Schnitt) *Schrift {
 	panic("fonts: Go-Schrift nicht ladbar") // eingebaute Bytes: nur bei kaputtem Build
 }
 
-// ladeSchnitt lädt den Schnitt w von f (aus dem Zwischenspeicher); nil, wenn er fehlt oder kaputt ist. Nur mit mu.
+// ladeSchnitt lädt den Schnitt w von f (aus dem Zwischenspeicher); nil, wenn er fehlt, kaputt ist oder die Grenzen
+// MaxGeladen/MaxGeladenBytes erreicht sind. Nur mit mu.
 func ladeSchnitt(f *familie, w Schnitt) *Schrift {
 	q := f.schnitte[w]
 	if !q.da {
@@ -192,15 +240,26 @@ func ladeSchnitt(f *familie, w Schnitt) *Schrift {
 func ladeQuelle(q quelle) (*sfnt.Font, error) {
 	roh := q.roh
 	if roh == nil {
-		st, err := os.Stat(q.pfad)
-		if err != nil {
-			return nil, err
-		}
-		if !st.Mode().IsRegular() || st.Size() > MaxDateiGroesse {
-			return nil, errors.New("fonts: keine reguläre Datei oder zu groß")
-		}
-		if roh, err = os.ReadFile(q.pfad); err != nil {
-			return nil, err
+		var ok bool
+		if roh, ok = dateien[q.pfad]; !ok {
+			st, err := os.Stat(q.pfad)
+			if err != nil {
+				return nil, err
+			}
+			if !st.Mode().IsRegular() || st.Size() > MaxDateiGroesse {
+				return nil, errors.New("fonts: keine reguläre Datei oder zu groß")
+			}
+			if len(dateien) >= MaxGeladen || dateiBytes+st.Size() > MaxGeladenBytes {
+				return nil, errors.New("fonts: zu viele Schriftdateien geladen")
+			}
+			if roh, err = os.ReadFile(q.pfad); err != nil {
+				return nil, err
+			}
+			if int64(len(roh)) > MaxDateiGroesse || dateiBytes+int64(len(roh)) > MaxGeladenBytes {
+				return nil, errors.New("fonts: Datei gewachsen, zu groß")
+			}
+			dateien[q.pfad] = roh
+			dateiBytes += int64(len(roh))
 		}
 	}
 	if q.samml {
@@ -242,22 +301,24 @@ func SucheFertig() bool {
 	return gesucht
 }
 
-// StarteSuche sucht die Systemschriften einmal je Prozess im Hintergrund; fertig (darf nil sein) wird danach aus der
-// Goroutine gerufen.
+// StarteSuche sucht die Systemschriften einmal je Prozess im Hintergrund; fertig (darf nil sein) wird nach dem Ende
+// aus einer Goroutine gerufen.
 func StarteSuche(fertig func()) {
-	suche.Do(func() {
+	k := starte()
+	if fertig != nil {
 		go func() {
-			Suche()
-			if fertig != nil {
-				fertig()
-			}
+			<-k
+			fertig()
 		}()
-	})
+	}
 }
 
 // Suche sucht die Systemschriften jetzt (blockierend) und ersetzt das Ergebnis einer früheren Suche.
 func Suche() {
-	gefunden := durchsuche(ordner())
+	mu.Lock()
+	o := ordner
+	mu.Unlock()
+	gefunden := durchsuche(o())
 	mu.Lock()
 	system, gesucht = gefunden, true
 	mu.Unlock()
@@ -299,7 +360,8 @@ func schriftOrdner() []string {
 func durchsuche(ordner []string) []familie {
 	nachName := map[string]*familie{}
 	var buf sfnt.Buffer
-	dateien := 0
+	gezaehlt := 0
+	ende := time.Now().Add(sucheFrist)
 	for _, wurzel := range ordner {
 		_ = filepath.WalkDir(wurzel, func(pfad string, d fs.DirEntry, err error) error {
 			if err != nil {
@@ -308,7 +370,7 @@ func durchsuche(ordner []string) []familie {
 				}
 				return nil
 			}
-			if dateien >= maxDateien {
+			if gezaehlt >= maxDateien || time.Now().After(ende) {
 				return fs.SkipAll
 			}
 			if d.IsDir() {
@@ -318,7 +380,7 @@ func durchsuche(ordner []string) []familie {
 			if endung != ".ttf" && endung != ".otf" && endung != ".ttc" && endung != ".otc" {
 				return nil
 			}
-			dateien++
+			gezaehlt++
 			leseDatei(pfad, endung == ".ttc" || endung == ".otc", &buf, nachName)
 			return nil
 		})
@@ -367,7 +429,7 @@ func leseDatei(pfad string, sammlung bool, buf *sfnt.Buffer, nachName map[string
 			continue
 		}
 		name, schnitt, ok := namenVon(f, buf)
-		if !ok || name == Go || name == GoMono {
+		if !ok || name == Go || name == GoMono || !mitUmrissen(f, buf) {
 			continue
 		}
 		fam := nachName[name]
@@ -379,6 +441,20 @@ func leseDatei(pfad string, sammlung bool, buf *sfnt.Buffer, nachName map[string
 			fam.schnitte[schnitt] = quelle{da: true, pfad: pfad, index: i, samml: sammlung}
 		}
 	}
+}
+
+// mitUmrissen meldet, ob die Schrift Glyphenumrisse hat: Farb-Bitmap-Schriften (etwa Emoji) zeichnen Renderer und
+// Editor nicht und stehen deshalb nicht in der Liste (Sitzungs-QA B-8). Geprobt wird „A“, sonst die erste Glyphe.
+func mitUmrissen(f *sfnt.Font, buf *sfnt.Buffer) bool {
+	gi, err := f.GlyphIndex(buf, 'A')
+	if err != nil || gi == 0 {
+		gi = 1
+	}
+	if gi >= sfnt.GlyphIndex(f.NumGlyphs()) {
+		gi = 0
+	}
+	_, err = f.LoadGlyph(buf, gi, fixed.I(16), nil)
+	return !errors.Is(err, sfnt.ErrColoredGlyph)
 }
 
 // namenVon liest Familie und Schnitt; ok ist false für Schnitte außer den vier Grundschnitten oder unbrauchbare Namen.
@@ -418,14 +494,15 @@ func SchnittAusName(unter string) (Schnitt, bool) {
 	return SchnittAus(fett, kursiv), true
 }
 
-// NameGueltig meldet, ob name als Familienname taugt: nicht leer, höchstens MaxNamenLaenge Zeichen, keine
-// Steuerzeichen (er steht in der Arbeitsdatei und in der Oberfläche).
+// NameGueltig meldet, ob name als Familienname taugt: 1 bis MaxNamenLaenge Zeichen, nicht nur Leerraum, keine
+// Steuerzeichen (C0, DEL, C1) und nicht U+FFFD, U+FFFE, U+FFFF (er steht in der Arbeitsdatei und in der Oberfläche;
+// docs/format.md 8.3).
 func NameGueltig(name string) bool {
-	if name == "" || len([]rune(name)) > MaxNamenLaenge {
+	if strings.TrimSpace(name) == "" || utf8.RuneCountInString(name) > MaxNamenLaenge || !utf8.ValidString(name) {
 		return false
 	}
 	for _, r := range name {
-		if r < 0x20 || r == 0x7f || r == 0xfffd || r == 0xfffe || r == 0xffff {
+		if unicode.IsControl(r) || r == 0xfffd || r == 0xfffe || r == 0xffff {
 			return false
 		}
 	}

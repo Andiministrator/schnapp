@@ -1334,7 +1334,8 @@ func (e *editor) frame(gtx layout.Context) {
 	e.zeichneFusszeile(gtx)
 	e.zeichneSchriftliste(gtx) // über Leisten und Fußzeile, unter Hilfe und Menü
 	e.zeichneHilfe(gtx)
-	e.zeichneMenue(gtx) // über allem, unter dem Titel des offenen Menüs
+	e.zeichneMenue(gtx)     // über allem, unter dem Titel des offenen Menüs
+	e.zeichneFeldWache(gtx) // durchlässig über allem: Klick woanders übernimmt eine Feldeingabe (A-2)
 }
 
 // --- Leinwand ---
@@ -1654,10 +1655,16 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 				p := an(document.Pt(zeile.X, zeile.Grundlinie))
 				e.satz.zeichneZeile(gtx, sch, zeile.Text, float64(p.X), float64(p.Y), v.Schriftgrad, v.Farbe, sicht)
 			}
-			for _, st := range v.Striche() {
+			for _, st := range v.Striche() { // mit gebrochenen Ecken wie der Renderer (Sitzungs-QA B-9)
 				a, b := an(st.Min), an(st.Max)
-				paint.FillShape(gtx.Ops, v.Farbe, clip.Rect(image.Rect(int(math.Floor(float64(a.X))), int(math.Floor(float64(a.Y))),
-					int(math.Ceil(float64(b.X))), int(math.Ceil(float64(b.Y))))).Op())
+				var sp clip.Path
+				sp.Begin(gtx.Ops)
+				sp.MoveTo(a)
+				sp.LineTo(f32.Pt(b.X, a.Y))
+				sp.LineTo(b)
+				sp.LineTo(f32.Pt(a.X, b.Y))
+				sp.Close()
+				paint.FillShape(gtx.Ops, v.Farbe, clip.Outline{Path: sp.End()}.Op())
 			}
 		}
 	}

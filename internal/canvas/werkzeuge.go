@@ -649,6 +649,8 @@ func (s *Sitzung) Esc() {
 		return
 	}
 	switch {
+	case s.farbZug: // laufendes Ziehen im Farbwähler abbrechen (ADR-0021 Punkt 2, Sitzungs-QA A-4)
+		s.BrecheFarbZugAb()
 	case s.pipette:
 		s.pipette = false
 	case s.zug == zugText:

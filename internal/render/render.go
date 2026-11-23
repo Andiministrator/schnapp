@@ -429,7 +429,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 			}
 			// Tabulator als vier Leerzeichen, Wagenrücklauf weg (Zeichenbar in Zeilen): die Schriften haben für beide
 			// keine Glyphe (Kritik A-3).
-			z.text(face, zeile.Text, p.X, p.Y, v.Farbe, v.Schriftgrad)
+			z.text(face, v.Schriftdatei().Font, zeile.Text, p.X, p.Y, v.Farbe, v.Schriftgrad)
 		}
 		// Unter- und Durchstrich (ADR-0021 Nachtrag 10 Punkt 7): Rechtecke in der Textfarbe.
 		for _, st := range v.Striche() {
@@ -459,7 +459,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 		breite := float64(font.MeasureString(face, s)) / 64
 		// Senkrecht mittig wie dominant-baseline="central": Grundlinie um die halbe Ziffernhöhe unter der Mitte.
 		hoehe := float64(face.Metrics().CapHeight) / 64
-		z.text(face, s, m.X-breite/2, m.Y+hoehe/2, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, grad)
+		z.text(face, fonts.Laden(fonts.Go, fonts.Fett).Font, s, m.X-breite/2, m.Y+hoehe/2, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, grad)
 	}
 	return nil
 }
@@ -797,7 +797,8 @@ func (z zeichner) strich(pts []document.Punkt, geschlossen bool, s document.Stri
 // über oder unter dem Bild liegt, entfällt, ebenso jede Glyphe, deren Ursprung mehr als 1,25 Schriftgrade links oder
 // rechts vom Bild liegt (Vorschub und Unterschneidung laufen weiter, damit sichtbare Glyphen am selben Ort stehen).
 // Die Kosten zählt der Aufrufer (glyphKosten), auch im Trockenlauf.
-func (z zeichner) text(face font.Face, s string, x, grundlinie float64, farbe color.NRGBA, grad float64) {
+func (z zeichner) text(face font.Face, sf *sfnt.Font, s string, x, grundlinie float64, farbe color.NRGBA, grad float64) {
+	var puffer sfnt.Buffer // je Aufruf: Zeilen können nebenläufig gezeichnet werden
 	rand := z.rand
 	if grundlinie-grad*1.5 > float64(rand.Max.Y) || grundlinie+grad < float64(rand.Min.Y) {
 		return
@@ -809,7 +810,7 @@ func (z zeichner) text(face font.Face, s string, x, grundlinie float64, farbe co
 	for _, c := range s {
 		saveprogress.Puls() // je Zeichen: Glyphen kosten am Budget Sekunden (F-147, F-298)
 		if vorher >= 0 {
-			dot.X += face.Kern(vorher, c)
+			dot.X += document.KernPaar(sf, &puffer, vorher, c, grad) // im Grad wie die Messung (Sitzungs-QA B-4)
 		}
 		vorher = c
 		if px := float64(dot.X) / 64; px > rechts {

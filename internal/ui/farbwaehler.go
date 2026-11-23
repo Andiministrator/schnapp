@@ -11,6 +11,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"strconv"
 	"unicode/utf8"
 
 	"gioui.org/f32"
@@ -56,6 +57,7 @@ type farbwaehler struct {
 	flaeche, ton, deck image.Rectangle // Lage beim letzten Zeichnen; die Zeiger sind die Ziele der Zeigerereignisse
 	zieht              farbRegler
 	hex, deckkraft     eingabe
+	wache              int // Ziel der durchlässigen Fläche über dem Fenster (zeichneFeldWache)
 	pipette            widget.Clickable
 	pipRahmen          image.Rectangle
 
@@ -92,7 +94,7 @@ func (e *editor) feldWert(f *eingabe) string {
 	return fmt.Sprintf(i18n.TK("status bar", "%d%%"), canvas.Deckkraft(c))
 }
 
-// feldZeichen meldet, ob r in das Feld f getippt werden darf, und die Höchstlänge.
+// feldZeichen meldet, ob r in das Feld f getippt werden darf; feldLaenge ist die Höchstlänge.
 func (e *editor) feldZeichen(f *eingabe, r rune) bool {
 	if f == &e.seite.fw.hex {
 		return r == '#' || (r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')
@@ -130,26 +132,54 @@ func (e *editor) seiteAn() bool { return !e.s.SpeichernLaeuft() && !e.hilfeOffen
 // feldTasten verarbeitet Fokus, Tasten und getippten Text der Eingabefelder. Es läuft vor tasten: Enter, Esc und die
 // Rücktaste gehören dem Feld, solange es den Fokus hat (Gio gibt eine Taste dem ersten passenden Filter des Bildes).
 func (e *editor) feldTasten(gtx layout.Context) {
-	for _, f := range e.seite.fw.eingaben() {
+	fw := &e.seite.fw
+	// Ein Klick woanders übernimmt eine schwebende Eingabe, bevor der Klick selbst wirkt (ADR-0031 Nachtrag 5,
+	// Sitzungs-QA A-2): Die Wache liegt durchlässig über dem ganzen Fenster (zeichneFeldWache), dieser Aufruf läuft vor
+	// Leinwand und Knöpfen. Der Fokus geht an die Leinwand; ein Klick in ein anderes Feld fokussiert danach dieses.
+	for {
+		ev, ok := gtx.Event(pointer.Filter{Target: &fw.wache, Kinds: pointer.Press})
+		if !ok {
+			break
+		}
+		pe, ok := ev.(pointer.Event)
+		f := fw.fokusFeld(gtx)
+		if !ok || f == nil || pe.Position.Round().In(f.rahmen) {
+			continue
+		}
+		e.feldUebernehmen(f)
+		f.neu, f.text, f.fehler = true, "", false
+		gtx.Execute(key.FocusCmd{Tag: e})
+	}
+	// Bei offenem Menü oder offener Hilfetafel meldet das Feld keine Tasten an: Esc und Enter gehören dann dem Menü
+	// bzw. der Tafel (A-3, A-7). Umschalt ist erlaubt, damit Umschalt+Enter nicht als Kürzel durchrutscht (A-5).
+	tasten := !e.menue.offen && !e.hilfeOffen
+	for _, f := range fw.eingaben() {
+		filter := []event.Filter{key.FocusFilter{Target: f}, pointer.Filter{Target: f, Kinds: pointer.Press}}
+		if tasten {
+			for _, n := range []key.Name{key.NameReturn, key.NameEnter, key.NameEscape, key.NameDeleteBackward} {
+				filter = append(filter, key.Filter{Focus: f, Name: n, Optional: key.ModShift})
+			}
+		}
 		for {
-			ev, ok := gtx.Event(
-				key.FocusFilter{Target: f},
-				key.Filter{Focus: f, Name: key.NameReturn},
-				key.Filter{Focus: f, Name: key.NameEnter},
-				key.Filter{Focus: f, Name: key.NameEscape},
-				key.Filter{Focus: f, Name: key.NameDeleteBackward},
-				pointer.Filter{Target: f, Kinds: pointer.Press},
-			)
+			ev, ok := gtx.Event(filter...)
 			if !ok {
 				break
 			}
 			switch ev := ev.(type) {
 			case key.FocusEvent:
-				if !ev.Focus {
-					// Tab oder ein Klick woanders übernimmt; ungültig bleibt es beim Alten (ADR-0031 Nachtrag 5).
+				switch {
+				case ev.Focus:
+					if f.neu { // nach einer Unterbrechung (Fenster ohne Fokus) bleibt eine angefangene Eingabe stehen
+						f.text, f.fehler = "", false
+					}
+				case gtx.Focused(f):
+					// Das Fenster hat den Fokus verloren, das Feld behält ihn: nichts übernehmen, die Eingabe bleibt
+					// stehen (A-2 d) — eine halb getippte Farbe wäre sonst schon gesetzt.
+				default:
+					// Tab oder ein Fokuswechsel: übernehmen; ungültig bleibt es beim Alten (ADR-0031 Nachtrag 5).
 					e.feldUebernehmen(f)
+					f.neu, f.text, f.fehler = true, "", false
 				}
-				f.neu, f.text, f.fehler = true, "", false
 			case key.EditEvent:
 				if !e.seiteAn() || e.menue.offen {
 					continue
@@ -164,7 +194,7 @@ func (e *editor) feldTasten(gtx layout.Context) {
 				}
 				f.fehler = false
 			case key.Event:
-				if ev.State != key.Press || e.menue.offen {
+				if ev.State != key.Press || !e.seiteAn() {
 					continue
 				}
 				switch ev.Name {
@@ -174,8 +204,8 @@ func (e *editor) feldTasten(gtx layout.Context) {
 					f.neu, f.text, f.fehler = true, "", false
 					gtx.Execute(key.FocusCmd{Tag: e})
 				case key.NameDeleteBackward:
-					if f.neu {
-						f.neu, f.text = false, e.feldWert(f)
+					if f.neu { // vom reinen Wert ohne Einheit aus (A-8: „50 %“ ließ sonst ein Leerzeichen stehen)
+						f.neu, f.text = false, e.feldRohwert(f)
 					}
 					if _, n := utf8.DecodeLastRuneInString(f.text); n > 0 {
 						f.text = f.text[:len(f.text)-n]
@@ -187,6 +217,28 @@ func (e *editor) feldTasten(gtx layout.Context) {
 			}
 		}
 	}
+}
+
+// feldRohwert ist der Wert eines Felds ohne Einheit, Ausgangspunkt der Rücktaste.
+func (e *editor) feldRohwert(f *eingabe) string {
+	c := e.s.AktuelleFarbe()
+	if f == &e.seite.fw.hex {
+		return canvas.HexText(c)
+	}
+	return strconv.Itoa(canvas.Deckkraft(c))
+}
+
+// zeichneFeldWache meldet über dem ganzen Fenster eine durchlässige Fläche an, die jeden Druck sieht (feldTasten); nur
+// solange ein Eingabefeld den Fokus hat.
+func (e *editor) zeichneFeldWache(gtx layout.Context) {
+	if e.seite.fw.fokusFeld(gtx) == nil {
+		return
+	}
+	c := clip.Rect(image.Rectangle{Max: gtx.Constraints.Max}).Push(gtx.Ops)
+	p := pointer.PassOp{}.Push(gtx.Ops)
+	event.Op(gtx.Ops, &e.seite.fw.wache)
+	p.Pop()
+	c.Pop()
 }
 
 // farbeAuswerten verarbeitet Ziehen in Farbfläche und Reglern sowie die Pipette.
@@ -350,7 +402,7 @@ func marke(gtx layout.Context, r image.Rectangle) {
 		Width: float32(gtx.Dp(2))}.Op())
 }
 
-// reglerFlaecheAnmelden meldet r als Ziel der Zeigerereignisse tag an (Ursprung bei r.Min, Zeiger Fadenkreuz).
+// reglerAnmelden meldet r als Ziel der Zeigerereignisse tag an (Ursprung bei r.Min, Zeiger Fadenkreuz).
 func reglerAnmelden(gtx layout.Context, tag event.Tag, r image.Rectangle) {
 	t := op.Offset(r.Min).Push(gtx.Ops)
 	c := clip.Rect(image.Rectangle{Max: r.Size()}).Push(gtx.Ops)

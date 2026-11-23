@@ -246,8 +246,9 @@ Nachtrag 6: Neben den vier Beschriftungsfarben ist jede Farbe wählbar, mit Deck
 2. **Ein Rückgängig-Schritt je Wahl.** Ein Klick auf ein Farbfeld, die Pipette, eine bestätigte Eingabe (Hex,
    Deckkraft) ist ein Schritt am gewählten Objekt, wie bisher (`SetzeFarbe`). Ziehen in der Farbfläche oder an einem
    Regler färbt das gewählte Objekt sichtbar mit, bleibt aber **ein** Schritt beim Loslassen (`BeginneFarbZug`,
-   `FarbZugSetze`, `BeendeFarbZug` über den Zug des Dokuments); während der Texteingabe gehört es zur Eingabe. Solange
-   gezogen wird, ruhen Speichern und Leinwand (`Zieht`).
+   `FarbZugHSV`, `BeendeFarbZug` über den Zug des Dokuments); während der Texteingabe gehört es zur Eingabe. Solange
+   gezogen wird, ruhen Speichern und Leinwand (`Zieht`). Esc, Schließen und ein Signal brechen das Ziehen ab, das
+   Objekt steht wie vorher (Sitzungs-QA A-1, A-4); Schließen und Signal speichern danach wie sonst.
 3. **Farbton bleibt beim Ziehen erhalten.** Die Sitzung merkt sich den Farbton (HSV), damit Grau, Schwarz oder Weiß beim
    Ziehen in der Fläche den Ton nicht verlieren; HSV ist nur Bedienung, gespeichert wird RGB.
 4. **Zuletzt benutzte Farben:** Jede Farbe, die nicht über ein Farbfeld gewählt wurde (Fläche, Regler beim Loslassen,
@@ -258,6 +259,9 @@ Nachtrag 6: Neben den vier Beschriftungsfarben ist jede Farbe wählbar, mit Deck
    Bildpunkts darunter aus dem Original **mit** Schwärzungen und **ohne** Beschriftungen, deckend (Alpha 255) — so
    färbt man eine Beschriftung passend zum Bild, ohne eine andere Beschriftung aufzugreifen. Ein Klick neben das Bild,
    Esc oder ein Werkzeugwechsel beendet sie ohne Wirkung; ein Klick trifft dann kein Objekt und beginnt keinen Zug.
+   Den Bildpunkt bestimmt dieselbe Umrechnung wie der Zeigerort der Fußzeile (beim Zuschneiden die Vollansicht,
+   Sitzungs-QA A-6). Ein ganz durchsichtiger Bildpunkt (Alpha 0) wird nicht aufgenommen, die Pipette endet ohne
+   Wirkung: Seine Farbe sieht niemand (A-9, entschieden von Claude im Auftrag Andis, 23.11.2026).
 6. **Eingaben:** Hex nimmt 3, 6 oder 8 Hex-Ziffern, mit oder ohne `#`, Groß- oder Kleinschreibung; 3 und 6 Ziffern
    behalten die Deckkraft, 8 setzen sie mit. Deckkraft nimmt eine ganze Zahl 0 bis 100, mit oder ohne `%`. Ungültige
    Eingaben ändern nichts. Umrechnung Prozent ↔ Alpha: Alpha = round(p · 255 / 100), angezeigt round(Alpha · 100 / 255)
@@ -298,8 +302,10 @@ Regular) und präzisiert Nachtrag 3 (gleiche Maße überall).
    anderen Rechner), setzen Messung, Renderer und Editor in Go; der Name bleibt im Dokument und kommt beim Speichern
    wieder mit, die Leiste zeigt ihn mit „(missing)“.
 5. **Ein Satz für alles:** Messung des Schilds, Renderer, Editor und die Lage im SVG-Export setzen Text aus derselben
-   Schriftdatei mit Vorschub und `kern`-Tabelle, ohne Hinting (wie bisher für Go). Es gibt kein Shaping (keine
-   GPOS-Unterschneidung, keine Ligaturen, keine Schriften, die Shaping brauchen); dafür stimmen die Maße überall.
+   Schriftdatei mit Vorschub und Paarunterschneidung (`GPOS`, sonst `kern`, im Schriftgrad skaliert:
+   `document.KernPaar`), ohne Hinting. Es gibt kein Shaping (keine Ligaturen, keine Schriften, die Shaping brauchen);
+   dafür stimmen die Maße überall. Berichtigt nach der Sitzungs-QA (B-4): Anfangs hieß es „keine GPOS-Unterschneidung“,
+   und die Unterschneidung kam über `opentype.Face.Kern` unskaliert (gleich viele Pixel bei jeder Größe).
    Deshalb zeichnet der Editor Text nicht mehr über den Shaper von Gio, sondern aus den Glyphenumrissen derselben
    Datei; die Schreibmarke misst mit demselben Satz.
 6. **Ausrichtung:** Jede Zeile wird innerhalb der Blockbreite (Vorschub der längsten Zeile) links, mittig oder rechts

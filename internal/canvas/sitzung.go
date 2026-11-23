@@ -354,6 +354,10 @@ func (s *Sitzung) klemmeAnsicht(a document.Punkt) document.Punkt {
 // Abbrechen stellt den Stand vor dem Zug wieder her (Esc während des Ziehens, Zeiger-Cancel). Eine Texteingabe bleibt
 // (sie verwirft nur TextAbbrechen).
 func (s *Sitzung) Abbrechen() {
+	if s.farbZug { // Ziehen im Farbwähler: Objekt wie vorher (Sitzungs-QA A-1)
+		s.BrecheFarbZugAb()
+		return
+	}
 	if s.pan {
 		s.Abb, s.pan = s.startAbb, false
 		return

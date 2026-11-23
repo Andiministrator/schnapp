@@ -3,6 +3,7 @@
 package document
 
 import (
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -16,9 +17,9 @@ import (
 )
 
 // Schriftmaße (F-181): Ob ein Text oder eine Nummer in die Ansicht reicht, entscheidet die echte Tinte der Glyphen,
-// nicht eine Schätzung je Zeichen. Renderer und Editor zeichnen Text in Go Regular und Nummern in Go Bold, ohne
-// Hinting; die Maße hier kommen aus denselben Schriftdateien (golang.org/x/image/font/gofont). So gilt dieselbe Regel
-// für Editor, Renderer, SVG-Export, Treffer und Zähler, gleich welches Paket gebunden ist (ADR-0023 Punkt 7).
+// nicht eine Schätzung je Zeichen. Text steht in der Schrift seines Objekts (internal/fonts, Ersatz Go; ADR-0021
+// Nachtrag 10), Nummern in Go Bold, ohne Hinting; die Maße hier kommen aus denselben Schriftdateien wie in Renderer
+// und Editor. So gilt dieselbe Regel für Editor, Renderer, SVG-Export, Treffer und Zähler (ADR-0023 Punkt 7).
 
 // tintenRand weitet die Tinte aus: Kantenglättung (1 Pixel) und Rundung der Glyphenorte auf 1/64 Pixel je Glyphe
 // (rundungJeGlyphe) beim Rastern.
@@ -117,8 +118,8 @@ func (s *schriftMass) glyph(r rune) (sfnt.GlyphIndex, glyphMass, bool) {
 }
 
 // zeile misst eine Zeile im Schriftgrad grad (Pixel): Vorschub (wie font.MeasureString) und Tinte relativ zum
-// Ursprung auf der Grundlinie, ohne Rand; ok ist false, wenn die Zeile keine Tinte hat. Unterschneidung wie der
-// Renderer (opentype.Face.Kern liefert sie unskaliert in Schrifteinheiten). Nur mit schriftMu.
+// Ursprung auf der Grundlinie, ohne Rand; ok ist false, wenn die Zeile keine Tinte hat. Unterschneidung im Grad wie
+// Renderer und Editor (KernPaar). Nur mit schriftMu.
 func (s *schriftMass) zeile(text string, grad float64) (vorschub float64, tinte Rechteck, ok bool) {
 	x := 0.0
 	var vorher sfnt.GlyphIndex
@@ -126,8 +127,9 @@ func (s *schriftMass) zeile(text string, grad float64) (vorschub float64, tinte 
 	for _, r := range text {
 		gi, m, gut := s.glyph(r)
 		if !erste {
-			// ppem wie opentype.Face.Kern (Einheiten je em als 26.6-Rohwert), damit dieselbe Zahl herauskommt.
-			if k, err := s.f.Kern(&schriftPuffer, vorher, gi, fixed.Int26_6(s.f.UnitsPerEm()), font.HintingNone); err == nil {
+			// Paarunterschneidung (GPOS, sonst kern) im Schriftgrad, wie Renderer und Editor (KernPaar; Sitzungs-QA B-4:
+			// opentype.Face.Kern skaliert nicht mit der Größe).
+			if k, err := s.f.Kern(&schriftPuffer, vorher, gi, fixed.Int26_6(math.Round(grad*64)), font.HintingNone); err == nil {
 				x += float64(k) / 64
 			}
 		}
@@ -442,4 +444,23 @@ func textFlaeche(t Text) (Rechteck, bool) {
 	}
 	d := TextInnenabstand * grad
 	return Rechteck{Min: r.Min.Minus(Pt(d, d)), Max: r.Max.Plus(Pt(d, d))}, true
+}
+
+// KernPaar ist die Paarunterschneidung zwischen a und b in der Schrift f im Grad grad (26.6-Pixel): GPOS, sonst die
+// kern-Tabelle, skaliert mit dem Grad. Renderer und Editor setzen damit wie die Messung (ADR-0021 Nachtrag 10 Punkt 5);
+// b ist ein eigener Puffer des Aufrufers.
+func KernPaar(f *sfnt.Font, b *sfnt.Buffer, a, c rune, grad float64) fixed.Int26_6 {
+	ga, err := f.GlyphIndex(b, a)
+	if err != nil {
+		return 0
+	}
+	gc, err := f.GlyphIndex(b, c)
+	if err != nil {
+		return 0
+	}
+	k, err := f.Kern(b, ga, gc, fixed.Int26_6(math.Round(grad*64)), font.HintingNone)
+	if err != nil {
+		return 0
+	}
+	return k
 }
