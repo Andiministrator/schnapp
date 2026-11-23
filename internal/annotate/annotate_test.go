@@ -163,8 +163,23 @@ func TestWendeSchwaerzen(t *testing.T) {
 	if c := o.NRGBAAt(20, 20); c != canvas.Schwaerzfarbe {
 		t.Errorf("geschwärzt: %v", c)
 	}
-	if c := o.NRGBAAt(130, 40); c == canvas.Schwaerzfarbe || c == (color.NRGBA{0x80, 0x80, 0x80, 0x80}) {
-		t.Errorf("verpixelt: %v (weder Mosaik noch unverändert erwartet)", c)
+	// Das Mosaik verschiebt jeden Block um einen Zufallswert, der auch 0 sein kann (ADR-0022 Nachtrag 1): Ein
+	// einzelnes Pixel des einfarbigen Testbilds darf deshalb unverändert aussehen (F-604). Geprüft wird der ganze
+	// Bereich: nicht geschwärzt, und mindestens ein Block weicht vom Original ab.
+	veraendert := false
+	for y := 10; y < 70; y++ {
+		for x := 100; x < 160; x++ {
+			c := o.NRGBAAt(x, y)
+			if c == canvas.Schwaerzfarbe {
+				t.Fatalf("verpixelt (%d,%d) ist geschwärzt", x, y)
+			}
+			if c != (color.NRGBA{0x80, 0x80, 0x80, 0x80}) {
+				veraendert = true
+			}
+		}
+	}
+	if !veraendert {
+		t.Error("verpixelt: der ganze Bereich ist unverändert")
 	}
 	if c := o.NRGBAAt(41, 60); c != canvas.Schwaerzfarbe {
 		t.Errorf("schmal verpixelt → geschwärzt: %v", c)
