@@ -302,7 +302,7 @@ func bildMitAufwand(d *document.Dokument) (*image.NRGBA, aufwand, error) {
 func bildMitAufwandOpt(d *document.Dokument, ohneZaehlen bool) (*image.NRGBA, aufwand, error) {
 	b := d.Ansichtsbild()
 	z := zeichner{bild: b, rand: b.Bounds(), d: d, faces: map[faceSchluessel]font.Face{}, auf: &aufwand{},
-		ras: &raster16.Rasterizer{}, ohneZaehlen: ohneZaehlen}
+		ras: &raster16.Rasterizer{}, masken: neuerMaskenCache(), ohneZaehlen: ohneZaehlen}
 	defer z.schliessen()
 	if err := z.alles(); err != nil {
 		return nil, *z.auf, err
@@ -320,6 +320,8 @@ type zeichner struct {
 	// ras wird für jede Füllung zurückgesetzt statt neu angelegt: Seine Puffer (8 Byte je Pixel des Ausschnitts) nicht
 	// je Füllung neu anzufordern, spart bei bildgroßen Flächen rund 5 % (F-130).
 	ras *raster16.Rasterizer
+	// masken merkt die Deckung großer Füllungen für gleiche Pfade (masken.go, F-430); nil im Trockenlauf.
+	masken *maskenCache
 	// abbrechen: nur im Trockenlauf von Pruefe — aufhören, sobald eine Grenze überschritten ist (abgebrochen, F-418).
 	abbrechen bool
 	// ohneZaehlen: nur Bild (F-430) — Füllungen rastern, ohne ihre Kosten zu zählen.
@@ -553,6 +555,13 @@ func (z zeichner) raster(polys [][]document.Punkt, farbe color.NRGBA, loeschen b
 			r.ClosePath()
 		}
 	}
+	punkte := 0
+	for _, p := range polys {
+		punkte += len(p)
+	}
+	if z.rasterGemerkt(punkte, pfade, ausschnitt, farbe, loeschen) {
+		return
+	}
 	if loeschen {
 		ausradieren(z.ras, pfade, z.bild, ausschnitt)
 		return
@@ -566,30 +575,10 @@ func (z zeichner) raster(polys [][]document.Punkt, farbe color.NRGBA, loeschen b
 func ausradieren(ras *raster16.Rasterizer, pfade func(pfad), bild *image.NRGBA, ausschnitt image.Rectangle) {
 	ras.Reset(ausschnitt.Dx(), ausschnitt.Dy())
 	pfade(ras)
-	breite := ausschnitt.Dx()
 	sichtbar := ausschnitt.Intersect(bild.Rect)
 	ras.Bloecke(64, func(y0 int, maske []uint32) {
 		saveprogress.Puls()
-		von := max(sichtbar.Min.Y, ausschnitt.Min.Y+y0)
-		bis := min(sichtbar.Max.Y, ausschnitt.Min.Y+y0+len(maske)/breite)
-		for y := von; y < bis; y++ {
-			zeile := maske[(y-ausschnitt.Min.Y-y0)*breite:]
-			i := bild.PixOffset(sichtbar.Min.X, y)
-			zeile = zeile[sichtbar.Min.X-ausschnitt.Min.X : sichtbar.Max.X-ausschnitt.Min.X]
-			pix := bild.Pix[i : i+4*len(zeile)]
-			for k, ma := range zeile {
-				if ma == 0 {
-					continue
-				}
-				p := pix[4*k : 4*k+4 : 4*k+4]
-				a := uint32(p[3]) * 0x101 * (0xffff - ma) / 0xffff >> 8
-				if a == 0 {
-					p[0], p[1], p[2], p[3] = 0, 0, 0, 0
-					continue
-				}
-				p[3] = uint8(a)
-			}
-		}
+		wendeBlockAn(bild, ausschnitt, sichtbar, y0, maske, radiereZeile[uint32])
 	})
 }
 
@@ -606,32 +595,12 @@ var einmischen = func(ras *raster16.Rasterizer, pfade func(pfad), bild *image.NR
 	ras.Reset(ausschnitt.Dx(), ausschnitt.Dy())
 	pfade(ras)
 	e := neuerEinmischer(bild, farbe)
-	breite := ausschnitt.Dx()
 	sichtbar := ausschnitt.Intersect(bild.Rect)
+	zeile := func(m []uint32, pix []byte) { mischeZeile(&e, m, pix) }
 	// Je 64 Zeilen ein Block der Maske (bleibt im Cache) und ein Fortschritts-Puls fürs Speichern (F-298).
 	ras.Bloecke(64, func(y0 int, maske []uint32) {
 		saveprogress.Puls()
-		von := max(sichtbar.Min.Y, ausschnitt.Min.Y+y0)
-		bis := min(sichtbar.Max.Y, ausschnitt.Min.Y+y0+len(maske)/breite)
-		for y := von; y < bis; y++ {
-			zeile := maske[(y-ausschnitt.Min.Y-y0)*breite:]
-			i := bild.PixOffset(sichtbar.Min.X, y)
-			zeile = zeile[sichtbar.Min.X-ausschnitt.Min.X : sichtbar.Max.X-ausschnitt.Min.X]
-			pix := bild.Pix[i : i+4*len(zeile)]
-			for k, ma := range zeile {
-				p := pix[4*k : 4*k+4 : 4*k+4]
-				// Die häufigen Fälle ohne Aufruf (wie in misch): keine Deckung auf deckendem Grund, volle Deckung einer
-				// deckenden Quelle.
-				if ma == 0 && (p[3] == 0xff || p[3]|p[0]|p[1]|p[2] == 0) {
-					continue // (0,0,0,0) bliebe (0,0,0,0), misch liefert dasselbe (F-430)
-				}
-				if ma == 0xffff && e.sa == 0xffff {
-					p[0], p[1], p[2], p[3] = e.voll.R, e.voll.G, e.voll.B, 0xff
-					continue
-				}
-				e.misch(p, ma)
-			}
-		}
+		wendeBlockAn(bild, ausschnitt, sichtbar, y0, maske, zeile)
 	})
 }
 
@@ -649,6 +618,36 @@ func neuerEinmischer(b *image.NRGBA, farbe color.NRGBA) einmischer {
 	e := einmischer{voll: farbe}
 	e.sr, e.sg, e.sb, e.sa = farbe.RGBA()
 	return e
+}
+
+// mischeEins mischt ein Pixel mit der Deckung ma, mit den häufigen Fällen ohne Aufruf von misch: keine Deckung auf
+// deckendem oder ganz durchsichtigem Grund, volle Deckung einer deckenden Quelle, deckender Grund (mischDeckend).
+func (e *einmischer) mischeEins(ma uint32, p []byte) {
+	if ma == 0 && (p[3] == 0xff || p[3]|p[0]|p[1]|p[2] == 0) {
+		return // (0,0,0,0) bliebe (0,0,0,0), misch liefert dasselbe (F-430)
+	}
+	if ma == 0xffff && e.sa == 0xffff {
+		p[0], p[1], p[2], p[3] = e.voll.R, e.voll.G, e.voll.B, 0xff
+		return
+	}
+	if p[3] == 0xff {
+		e.mischDeckend(p, ma)
+		return
+	}
+	e.misch(p, ma)
+}
+
+// mischDeckend ist misch für ein deckendes Pixel (p[3] == 0xff, der Normalfall einer Aufnahme): Dort ist das Alpha des
+// Ziels 0xffff, das Ergebnis-Alpha wird wieder 0xffff (a + sa·ma/0xffff = 0xffff, ohne Überlauf: höchstens
+// 0x10000·0xffff), und die Umrechnung des Ziels ist c·0x101. Dieselben Zahlen wie misch ohne dessen Umwege, auch bei
+// Deckung 0 (Pixel bleibt) und bei voller Deckung einer deckenden Quelle (Farbe der Quelle): ohne Fallunterscheidung,
+// also ohne Fehlsprünge an den Rändern der Bänder (TestMischDeckendGleich).
+func (e *einmischer) mischDeckend(p []byte, ma uint32) {
+	a := 0xffff - (e.sa * ma / 0xffff)
+	r := uint32(uint16((uint32(p[0])*0x101*a + e.sr*ma) / 0xffff))
+	g := uint32(uint16((uint32(p[1])*0x101*a + e.sg*ma) / 0xffff))
+	b := uint32(uint16((uint32(p[2])*0x101*a + e.sb*ma) / 0xffff))
+	p[0], p[1], p[2] = uint8(r>>8), uint8(g>>8), uint8(b>>8)
 }
 
 // misch mischt die Quelle mit der Deckung ma (16 Bit) in das Pixel p (vier Bytes NRGBA).

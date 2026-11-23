@@ -272,8 +272,8 @@ func referenzEinmischen(_ *raster16.Rasterizer, pfade func(pfad), bild *image.NR
 // auf teils durchsichtigem Grund (auch Alpha 0 mit Farbe), mit halbdurchsichtigen Farben, angeschnittenen Formen,
 // Text, Streifen und Ausschnitten über 512 Pixel (Gleitkomma-Weg von vector).
 func TestFuellenBitgleich(t *testing.T) {
-	alt := einmischen
-	defer func() { einmischen = alt }()
+	alt, grenzeAlt := einmischen, maskenCacheGrenze
+	defer func() { einmischen, maskenCacheGrenze = alt, grenzeAlt }()
 	bunt := func(w, h int) *document.Dokument {
 		b := image.NewNRGBA(image.Rect(0, 0, w, h))
 		for i := range b.Pix {
@@ -313,7 +313,9 @@ func TestFuellenBitgleich(t *testing.T) {
 		"Streifen":              streifen,
 	} {
 		einmischen = referenzEinmischen
+		maskenCacheGrenze = 0 // der Zwischenspeicher (F-430) umginge die Nahtstelle bei großen Füllungen
 		soll := bild(t, d)
+		maskenCacheGrenze = grenzeAlt
 		einmischen = alt
 		ist := bild(t, d)
 		if !bytes.Equal(soll.Pix, ist.Pix) {

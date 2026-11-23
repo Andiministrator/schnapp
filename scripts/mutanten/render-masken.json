@@ -1,0 +1,37 @@
+[
+  {
+    "name": "RM1 F-430 mischDeckend rechnet das Ziel mit 0x100 statt 0x101",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "r := uint32(uint16((uint32(p[0])*0x101*a + e.sr*ma) / 0xffff))",
+    "neu": "r := uint32(uint16((uint32(p[0])*0x100*a + e.sr*ma) / 0xffff))"
+  },
+  {
+    "name": "RM2 F-430 vier Pixel gelten als deckend, sobald eines es ist",
+    "datei": "internal/render/masken.go",
+    "paket": "./internal/render",
+    "alt": "if (a0>>24)&(a1>>24)&(a2>>24)&(a3>>24) == 0xff {",
+    "neu": "if (a0>>24)|(a1>>24)|(a2>>24)|(a3>>24) == 0xff {"
+  },
+  {
+    "name": "RM3 F-430 Spaltenstreifen der gemerkten Maske lässt je Streifen eine Spalte aus",
+    "datei": "internal/render/masken.go",
+    "paket": "./internal/render",
+    "alt": "streifen.Max.X = sichtbar.Min.X + sichtbar.Dx()*(t+1)/teile",
+    "neu": "streifen.Max.X = sichtbar.Min.X + sichtbar.Dx()*(t+1)/teile - 1"
+  },
+  {
+    "name": "RM4 F-430 gemerkte Maske radiert statt zu füllen",
+    "datei": "internal/render/masken.go",
+    "paket": "./internal/render",
+    "alt": "zeile16 := func(m []uint16, pix []byte) {\n\t\tif loeschen {",
+    "neu": "zeile16 := func(m []uint16, pix []byte) {\n\t\tif !loeschen {"
+  },
+  {
+    "name": "RM5 F-430 gemerkte Maske verliert das unterste Bit",
+    "datei": "internal/render/masken.go",
+    "paket": "./internal/render",
+    "alt": "dst[i] = uint16(v)",
+    "neu": "dst[i] = uint16(v) &^ 1"
+  }
+]
