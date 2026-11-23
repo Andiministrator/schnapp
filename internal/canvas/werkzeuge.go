@@ -26,6 +26,7 @@ const (
 	WerkzeugVerpixeln                   // Rahmen ziehen: Mosaik ohne Bezug zum Inhalt (ADR-0022 Nachtrag 1)
 	WerkzeugZuschneiden                 // Rahmen ziehen: sichtbarer Ausschnitt (ADR-0023)
 	WerkzeugStauchen                    // Band ziehen: Zeilen oder Spalten herausnehmen (ADR-0023)
+	WerkzeugLupe                        // Quelle aufziehen, das Ziel erscheint vergrößert daneben (ADR-0033)
 )
 
 // Werte des Verpixelns (ADR-0022 Nachtrag 1), Größen in Pixeln des Originals. Die Blockgröße ist nur noch Optik: Die
@@ -186,7 +187,7 @@ func (s *Sitzung) strichObjekt() (document.Objekt, bool) {
 		return nil, false
 	}
 	switch o.(type) {
-	case document.Pfeil, document.Kasten:
+	case document.Pfeil, document.Kasten, document.Lupe:
 		return o, true
 	}
 	return nil, false
@@ -200,6 +201,8 @@ func (s *Sitzung) Breite() float64 {
 	case document.Pfeil:
 		return v.Strich.Breite
 	case document.Kasten:
+		return v.Strich.Breite
+	case document.Lupe:
 		return v.Strich.Breite
 	}
 	return s.Stil.Breite
@@ -256,6 +259,9 @@ func mitBreite(o document.Objekt, b float64) document.Objekt {
 	case document.Kasten:
 		v.Strich.Breite = b
 		return v
+	case document.Lupe:
+		v.Strich.Breite = b
+		return v
 	}
 	return o
 }
@@ -281,7 +287,7 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 		return
 	}
 	switch s.Werkzeug {
-	case WerkzeugPfeil, WerkzeugKasten:
+	case WerkzeugPfeil, WerkzeugKasten, WerkzeugLupe:
 		s.zug = zugNeu
 	case WerkzeugSchwaerzen, WerkzeugVerpixeln, WerkzeugZuschneiden, WerkzeugStauchen:
 		s.zug, s.rahmen = zugNeu, false
@@ -357,6 +363,15 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 		}
 		o = document.Kasten{ID: s.neuID, Bereich: document.R(a, b), Strich: s.Stil.strich(), Fuellung: s.Stil.Fuellung,
 			Eckradius: s.Stil.Eckradius}
+	case WerkzeugLupe: // Aufziehen wählt die Quelle wie einen Kasten, das Ziel liegt daneben (ADR-0033 Punkt 8)
+		if s.Umschalt {
+			b = s.umschaltEnde(WerkzeugKasten, p)
+		} else {
+			b, s.linien = s.rastePunkt(b, s.neuID)
+		}
+		l := s.neueLupe(document.R(a, b))
+		l.ID = s.neuID
+		o = l
 	case WerkzeugNummer:
 		d, linien := s.rasteRechteck(s.startObj.Grenzen(), b.Minus(a), s.neuID)
 		s.linien = linien
@@ -443,6 +458,8 @@ func (s *Sitzung) beendeNeu() {
 		gross = v.B.Minus(v.A).Laenge() >= min
 	case document.Kasten:
 		gross = v.Bereich.Breite() >= min && v.Bereich.Hoehe() >= min
+	case document.Lupe:
+		gross = v.Quelle.Breite() >= min && v.Quelle.Hoehe() >= min
 	}
 	if !gross {
 		_ = s.D.BrecheZugAb()

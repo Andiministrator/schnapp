@@ -79,11 +79,12 @@ type Sitzung struct {
 	startObj   document.Objekt // Objekt beim Drücken (ZieheGriff/Verschiebe wirken immer darauf)
 	startAbb   Abbildung
 	bewegt     bool
-	neuArt     Werkzeug // Werkzeug beim Beginn eines zugNeu
-	neuID      int      // Kennung des neuen Objekts im Zug, 0 = noch nicht angelegt (unter der Ziehschwelle)
-	textID     int      // Kennung des Texts in der Eingabe
-	textNeu    bool     // die Eingabe gilt einem neuen Text (Abbrechen entfernt ihn)
-	pan        bool     // mittlere Taste verschiebt die Ansicht, während die Texteingabe weiterläuft (F-154)
+	neuArt     Werkzeug  // Werkzeug beim Beginn eines zugNeu
+	neuID      int       // Kennung des neuen Objekts im Zug, 0 = noch nicht angelegt (unter der Ziehschwelle)
+	textID     int       // Kennung des Texts in der Eingabe
+	textNeu    bool      // die Eingabe gilt einem neuen Text (Abbrechen entfernt ihn)
+	pan        bool      // mittlere Taste verschiebt die Ansicht, während die Texteingabe weiterläuft (F-154)
+	lupenTeil  LupenTeil // beim Verschieben einer Lupe: Quelle, Ziel oder beide (ADR-0033 Punkt 8)
 	abgelehnt  Ablehnung
 
 	// Farbwahl (ADR-0021 Nachtrag 9, farbwahl.go)
@@ -270,6 +271,10 @@ func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
 	if id, ok := Treffer(o, q, s.toleranz()); ok {
 		s.Auswahl = id
 		obj, _ := s.D.Objekt(id)
+		s.lupenTeil = LupeGanz
+		if l, ist := obj.(document.Lupe); ist {
+			s.lupenTeil, _ = lupenTeil(l, q, s.toleranz())
+		}
 		if s.D.BeginneZug(id) == nil {
 			s.zug, s.startObj = zugObjekt, obj
 		}
@@ -301,6 +306,10 @@ func (s *Sitzung) Ziehen(p document.Punkt) {
 		s.Abb = s.startAbb.Verschoben(p.Minus(s.start))
 	case zugObjekt:
 		d := s.original(p).Minus(s.original(s.start))
+		if l, ok := s.startObj.(document.Lupe); ok && s.lupenTeil != LupeGanz {
+			s.zieheLupenTeil(l, d)
+			break
+		}
 		d, linien := s.rasteRechteck(s.startObj.Grenzen(), d, s.startObj.Kennung())
 		e := s.begrenzeVerschieben(s.startObj, d)
 		s.linien = nurWennGleich(linien, d, e)

@@ -73,6 +73,10 @@ func objektFarbe(o document.Objekt, f Farbfeld) (color.NRGBA, bool) {
 		if f == FeldVordergrund {
 			return v.Farbe, true
 		}
+	case document.Lupe: // nur Vordergrund: Rahmen und Linie (ADR-0033 Punkt 8)
+		if f == FeldVordergrund {
+			return v.Strich.Farbe, true
+		}
 	}
 	return color.NRGBA{}, false
 }
@@ -102,6 +106,11 @@ func UmgefaerbtIn(o document.Objekt, f Farbfeld, c color.NRGBA) document.Objekt 
 	case document.Nummer:
 		if f == FeldVordergrund {
 			v.Farbe = c
+		}
+		return v
+	case document.Lupe:
+		if f == FeldVordergrund {
+			v.Strich.Farbe = c
 		}
 		return v
 	}

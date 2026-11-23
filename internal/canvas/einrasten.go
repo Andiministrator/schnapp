@@ -72,15 +72,20 @@ func (s *Sitzung) rastZiele(ohne int) (xs, ys []float64) {
 		if o.Kennung() == ohne || o.Ebenenwerte().Ausgeblendet || !s.D.ObjektSichtbar(o) {
 			continue
 		}
-		r := o.Grenzen()
-		for _, x := range []float64{r.Min.X, (r.Min.X + r.Max.X) / 2, r.Max.X} {
-			if s.linieSichtbar(x, false) {
-				xs = append(xs, x)
-			}
+		rs := []document.Rechteck{o.Grenzen()}
+		if l, ok := o.(document.Lupe); ok {
+			rs = []document.Rechteck{l.Quelle, l.Ziel} // beide Rechtecke zählen, nicht ihre Hülle (ADR-0033 Punkt 9)
 		}
-		for _, y := range []float64{r.Min.Y, (r.Min.Y + r.Max.Y) / 2, r.Max.Y} {
-			if s.linieSichtbar(y, true) {
-				ys = append(ys, y)
+		for _, r := range rs {
+			for _, x := range []float64{r.Min.X, (r.Min.X + r.Max.X) / 2, r.Max.X} {
+				if s.linieSichtbar(x, false) {
+					xs = append(xs, x)
+				}
+			}
+			for _, y := range []float64{r.Min.Y, (r.Min.Y + r.Max.Y) / 2, r.Max.Y} {
+				if s.linieSichtbar(y, true) {
+					ys = append(ys, y)
+				}
 			}
 		}
 	}

@@ -20,6 +20,15 @@ const (
 	GriffS
 	GriffSW
 	GriffW
+	// Lupe (ADR-0033 Punkt 8): Ecken der Quelle und des Ziels, je ab links oben im Uhrzeigersinn (lupenGriffe).
+	GriffQuelleNW
+	GriffQuelleNO
+	GriffQuelleSO
+	GriffQuelleSW
+	GriffZielNW
+	GriffZielNO
+	GriffZielSO
+	GriffZielSW
 )
 
 // Griff ist ein Griff mit seinem Ort im Original.
@@ -41,6 +50,8 @@ func Griffe(o document.Objekt) []Griff {
 			{GriffO, document.Pt(r.Max.X, my)}, {GriffSO, r.Max}, {GriffS, document.Pt(mx, r.Max.Y)},
 			{GriffSW, document.Pt(r.Min.X, r.Max.Y)}, {GriffW, document.Pt(r.Min.X, my)},
 		}
+	case document.Lupe:
+		return lupenGriffe(v)
 	}
 	return nil
 }
@@ -102,6 +113,8 @@ func ZieheGriff(o document.Objekt, art GriffArt, p document.Punkt) document.Obje
 		}
 		v.Bereich = document.R(r.Min, r.Max)
 		return v
+	case document.Lupe:
+		return zieheLupenGriff(v, art, p)
 	}
 	return o
 }
