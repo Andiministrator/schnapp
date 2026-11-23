@@ -559,6 +559,7 @@ Ausgelagerte Findings aus `docs/findings.md`. Einträge hier sind abgeschlossen 
 | F-551 | [D] | P3 | Sprint 12 | **ADR-0030 Nachtrag 9 „bleibt vorgemerkt“ ungenau** (Verify 2, Fund 3): Text nennt beide Fälle (Aufnahme gelingt: alter bleibt stehen). | behoben (dieser Commit) |
 | F-552 | [S] | P3 | Sprint 12 | **Merker `gesetzt` im Echtlauf-Skript fiel in die falsche Richtung** (Verify 2, Fund 4): vor dem Umbenennen gesetzt; scheitert die Sicherung einer zwischendurch geänderten Fassung, wird nicht zurückgestellt und laut gemeldet. | behoben (dieser Commit) |
 | F-553 | [V] | P3 | Sprint 12 | **Graue Kantenknöpfe ohne Test** (Verify 2, Fund 5): `TestSeitenleisteFarbeUndKante` prüft Fokus und Enter ohne Naht, Mutant V2-5. | behoben (dieser Commit) |
+| F-490 | [K] | P3 | Sprint 12 | **Kritische Hinweise können sich stapeln und im nächsten Bild stehen** (Verify, N-12, nicht gemessen): `urgency = 2` bleibt in Plasma stehen; mit `confirm = no` und mehreren Aufnahmen stünde der vorige Hinweis im Bild. **Prüfbefehl:** Echtlauf Andi (gebündelt). | behoben 23.11.2026: Echtlauf nach dem Fix (Andi, `scripts/echtlauf-mcp-hinweise.sh A`, Lauf 20261123-162419): `a2.png` zeigt den Hinweis der ersten Aufnahme nicht mehr. Fix dceef06, Nacharbeit F-528. |
 
 ## Archiviert (aus Sektion "Behoben / Akzeptiert")
 
