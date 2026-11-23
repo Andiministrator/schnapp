@@ -143,7 +143,7 @@
     "name": "K182-3 SVG-Export vereinfacht die Kante nicht (F-422)",
     "datei": "internal/fileformat/export.go",
     "paket": "./internal/fileformat",
-    "alt": ".Vereinfacht(KantenToleranz) // einmal",
+    "alt": ".Vereinfacht(KantenToleranzFuer(d.KantenFaktor())) // einmal",
     "neu": " // einmal"
   },
   {

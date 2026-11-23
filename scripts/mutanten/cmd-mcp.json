@@ -221,7 +221,7 @@
     "datei": "cmd/schnapp/mcp.go",
     "paket": "./cmd/schnapp",
     "alt": "an.lade = func() (settings.Einstellungen, []string) { return settings.LadeDatei(ini) }",
-    "neu": "an.lade = settings.Lade"
+    "neu": "an.lade = settings.Lade\n\t_ = ini"
   },
   {
     "name": "M33 Orte der Bibliothek aus der Umgebung (F-461)",
