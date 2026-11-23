@@ -98,6 +98,11 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | https://api.github.com/repos/Andiministrator/schnapp/commits/main | 2026-11-19 | 2026-11-19 | live | curl | Autor/Committer = noreply-Adresse | docs/findings.md (F-1) |
 | https://api.github.com/repos/Andiministrator/schnapp/actions/runs | 2026-11-21 | 2026-11-19 | live | curl | CI-Lauf test: success; 21.11.: Status der CI-Läufe #154–#170 | — |
 | https://www.gnu.org/licenses/gpl-3.0.txt | 2026-11-19 | 2026-11-19 | live | curl | GPL-3.0-Text | LICENSE |
+| https://api.github.com/repos/Andiministrator/schnapp/commits/<sha>/check-runs | 2026-11-23 | 2026-11-23 | live | curl | CI-Status je Commit: e08a477 rot (wurzel), ab 1cb0d08 grün | docs/findings.archive.md (F-527) |
+| https://github.com/Andiministrator/schnapp/actions/runs/45170788427/job/137679469084 | 2026-11-23 | 2026-11-23 | live | Chrome (nur lesen) | Job-Log: TestAbbruchWaehrendDesAufrufs rot unter -race | docs/findings.archive.md (F-527) |
+| https://www.techsmith.com/snagit/ | 2026-11-23 | 2026-11-23 | live | Chrome (nur lesen, Cookie-Banner nicht bedient) | Seite trägt Camtasia-Marke, Snagit-Symbol nicht sichtbar | — |
+| https://en.wikipedia.org/wiki/Snagit | 2026-11-23 | 2026-11-23 | live | Chrome (nur lesen) | Symbole: weißes, kantiges S auf blauer Kachel; Snagit Capture auf rot-oranger Kachel | Board-Karte #217 |
+| https://techsmith.com/blog/wp-content/uploads/2025/01/Snagit-Help-2024-EN.pdf | 2026-11-23 | 2026-11-23 | live | WebSearch-Auszug | Markenliste nennt „S Icon“ als TechSmith-Marke | Board-Karte #217 |
 
 ## GitHub Actions: Node-24-Fassungen und SHA-Pinning (Sprint 9, Karte #29, F-43/F-309)
 
@@ -138,3 +143,4 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | 2026-11-21 | gioui.org latest release version 2026 | v0.10.3 aktuell (Newsletter Sept. 2026) |
 | 2026-11-21 | gioui contribute AI generated code policy LLM patches Elias Naur | keine Gio-eigene KI-Regel gefunden |
 | 2026-11-22 | Model Context Protocol specification latest protocol version 2026 stdio lifecycle initialize (nur modelcontextprotocol.io) | aktuelle Revision 2026-07-28 ohne initialize-Handshake |
+| 2026-11-23 | Snagit logo icon design TechSmith 2024 | kein Designbeleg; Markenliste mit „S Icon“ in der Snagit-Hilfe 2024 |
