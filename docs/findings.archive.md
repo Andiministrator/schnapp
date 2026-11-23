@@ -508,6 +508,9 @@ Ausgelagerte Findings aus `docs/findings.md`. Einträge hier sind abgeschlossen 
 | F-503 | [D] | P3 | Sprint 12 | **Ablehnung nannte das Heimverzeichnis** (Kritiker A, A-4): `nichtErlaubt` gab `<heim>/.config/schnapp/settings.ini` an jeden Agenten. | behoben (0036671: `~/.config/schnapp/settings.ini`, Test) |
 | F-504 | [K] | P3 | Sprint 12 | **`verwirfAblage` konnte eine inzwischen ersetzte Datei löschen** (Kritiker A, A-5, gemessen): Stand erst beim Verwerfen gelesen. | behoben (0036671: Stand direkt nach dem Ablegen, Test `TestVerwirfAblageNurEigeneDatei`) |
 | F-505 | [K] | P3 | Sprint 12 | **Zweites Signal kann eine Aufnahme in `agents/` liegen lassen** (Kritiker A, A-6, gelesen). | akzeptiert (0036671: Grenze in ADR-0030 Nachtrag 6 Punkt 3, agents.md auf das erste Signal eingeschränkt) |
+| F-507 | [K] | P2 | Sprint 12 | **Fußzeile kürzte haltende Meldungen zugunsten der Felder** (Sitzungs-QA 23.11., Kritiker B, B-1, gemessen). | behoben (e060cc1: Meldung bis zwei Drittel der Breite vor den Feldern) |
+| F-508 | [K] | P2 | Sprint 12 | **Übersicht F1 sperrte keine Tasten, Esc schloss sie während des Speicherns nicht** (Kritiker B, B-2, gemessen). | behoben (e060cc1: Test TestHilfeSperrtTasten, Mutanten O9, O10) |
+| F-509 | [V] | P2 | Sprint 12 | **Übersicht F1 lief in kleinen Fenstern über die Leinwand** (Kritiker B, B-3, gemessen). | behoben (e060cc1: Spalten nach Breite, Tafel abgeschnitten; Sichtprobe 800×600) |
 
 ## Archiviert (aus Sektion "Behoben / Akzeptiert")
 
