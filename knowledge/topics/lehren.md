@@ -801,3 +801,27 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Klick auf die Überschrift als Vorrang zu werten. Schwellen in dp mit `gtx.Dp(unit.Dp(a+b))` rechnen, nie
   `a*gtx.Dp(1)` (rundet 1,25 auf 1 und 1,5 auf 2).
 - **`sfnt.Font.Bounds` rechnet in int32**: mit ppem = unitsPerEm läuft es bei großen Schriften über; festen ppem nehmen.
+
+## Füllfarbe, `--annotate`, Einrasten, Glyphkosten (Karten #219, #202, #196, #224, 23.11.2026 nachts)
+
+- **Speicherfunktion vor der ersten Änderung anlegen** (#202): `ablegenIn` merkt sich den Schwärzungsstand der gelesenen
+  Datei beim Anlegen. Wer sie erst nach dem Anwenden der Schwärzungen baut, verliert die Warnung „Ausgangsdatei zeigt
+  noch den Klartext“ — ein Test mit einer Datei von außen hat es gefangen.
+- **`encoding/json` füllt `[2]float64` still auf** (`[1]` wird `[1, 0]`) und vergleicht Feldnamen ohne Groß-/
+  Kleinschreibung; doppelte Schlüssel gewinnt der letzte. Strenge Eingaben brauchen eigenes `UnmarshalJSON` und eine
+  Schlüsselprüfung über die Rohdaten.
+- **Neuer Code darf alte Mutanten-Muster nicht verdoppeln**: `-trocken` meldet „Muster 2-mal gefunden“, wenn eine neue
+  Funktion eine vorhandene Zeile wörtlich wiederholt (cmd-mcp M38, M66). Nach jedem größeren Commit `-trocken` fahren.
+- **Ein „aktives Feld“ braucht eine einzige Quelle**: `Fuellbar()` (Werkzeug des Paars) und `Seitenleiste().Fuellung`
+  (aktuelles Werkzeug) liefen auseinander; „Tauschen“ war bei Schwärzen an (Kritik #219 B-4).
+- **Ganz durchsichtig ist ein Sonderfall der Farbwahl**: HSV von Alpha 0 ist Schwarz; Regler und Hex auf „Keine“ müssen
+  sichtbar machen, Zuletzt-Farben nehmen Alpha 0 nicht auf.
+- **Gio `gpu/headless` (EGL) läuft auf dem Arbeitsrechner** (#224): Editor-Zeichnen lässt sich ohne Fenster testen
+  (`internal/ui/zeichnen_headless_test.go`, `EGL_PLATFORM=surfaceless`; `SCHNAPP_HEADLESS_PFLICHT=1` macht das Überspringen zum Fehler). Für F-520 und Hilfslinien nutzbar.
+- **Alt beim Ziehen unter KDE**: Plasma 5 verschob Fenster mit Alt+Ziehen, Plasma 6 nimmt Meta als Voreinstellung — Alt
+  erreicht Schnapp, solange niemand KWin umstellt (Annahme, ADR-0021 Nachtrag 12); der Menüschalter bleibt der Ausweg.
+- **Agenten-Berichte sichern, bevor der Chat wechselt**: Kritiker ohne Commit verlieren ihren Worktree; Berichte gehören
+  vor einem Chat-Wechsel nach `tmp/sprint12/berichte/` (gitignoriert) und die Übergabe nennt die Pfade. Langen Berichten
+  vorbeugen: Ausführliches in eine Datei im Worktree, Antwort an den Orchestrator kurz.
+- **Ein Sub-Agent kann von einem Sicherheitsfilter der API abgebrochen werden** (Sonnet, #224), auch bei harmloser
+  Arbeit. Commit und Bericht waren schon da; nichts wiederholen, Lage im Bericht an Andi weitergeben.
