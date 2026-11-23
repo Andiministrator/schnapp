@@ -124,5 +124,33 @@
     "paket": "./internal/render",
     "alt": "\t\t\tz.fuelle(poly, nil, s.Farbe)",
     "neu": "\t\t\tif false {\n\t\t\t\tz.fuelle(poly, nil, s.Farbe)\n\t\t\t}"
+  },
+  {
+    "name": "K182-1 Vereinfachung lässt dreimal so große Abweichung zu (F-422)",
+    "datei": "internal/document/kante.go",
+    "paket": "./internal/document",
+    "alt": "\t\tif weit > tol {\n",
+    "neu": "\t\tif weit > 3*tol {\n"
+  },
+  {
+    "name": "K182-2 KantenFlach merkt sich nur die Deckkraft des letzten Bands (F-422)",
+    "datei": "internal/document/kante.go",
+    "paket": "./internal/document",
+    "alt": "\t\t\t\t\tfrei *= 1 - float64(s.Farbe.A)/255\n",
+    "neu": "\t\t\t\t\tfrei = 1 - float64(s.Farbe.A)/255\n"
+  },
+  {
+    "name": "K182-3 SVG-Export vereinfacht die Kante nicht (F-422)",
+    "datei": "internal/fileformat/export.go",
+    "paket": "./internal/fileformat",
+    "alt": ".Vereinfacht(KantenToleranz) // einmal",
+    "neu": " // einmal"
+  },
+  {
+    "name": "K182-4 SVG-Export verschiebt die Stücke nicht um den Faktor (F-422)",
+    "datei": "internal/fileformat/export.go",
+    "paket": "./internal/fileformat",
+    "alt": "float64(hundertstel(sch.Von)*faktor) / 100",
+    "neu": "float64(hundertstel(sch.Von)*faktor/faktor) / 100"
   }
 ]

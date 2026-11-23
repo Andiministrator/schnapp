@@ -53,8 +53,15 @@ func TestExportSVGKante(t *testing.T) {
 			`<use href="#schatten-spalten" x="\d+"/><use href="#schatten-zeilen" y="\d+"/></svg>`).MatchString(s) {
 			t.Errorf("%v: Verweise unter Maske und Schatten fehlen am Ende:\n%.400s", form, s[len(s)-400:])
 		}
-		pfadRe := regexp.MustCompile(`<path d="([^"]*)" fill="#([0-9a-f]{6})"(?: fill-opacity="([0-9.]+)")?/>`)
-		schichten := document.KantenSchichten()
+		// Je Achse ein Pfad je Breite (band-<Achse>-<Breite>, ohne Füllung), je Stück der Kante (document.KantenFlach) ein
+		// <use> darauf mit Versatz, Farbe und Deckkraft (F-422).
+		basisRe := regexp.MustCompile(`<path id="band-(zeilen|spalten)-(\d+)" d="([^"]*)"/>`)
+		basen := map[string]string{}
+		for _, m := range basisRe.FindAllStringSubmatch(s, -1) {
+			basen[m[1]+"-"+m[2]] = m[3]
+		}
+		stueckRe := regexp.MustCompile(`<use href="#band-(zeilen|spalten)-(\d+)" (?:x|y)="(-?[0-9.e+-]+)" fill="#([0-9a-f]{6})"(?: fill-opacity="([0-9.e+-]+)")?/>`)
+		stuecke := document.KantenFlach()
 		g := d.Groesse()
 		for i, n := range d.Naehte() {
 			art, achse, laenge := "spalten", "x", g.Y
@@ -64,48 +71,48 @@ func TestExportSVGKante(t *testing.T) {
 			if v := verweise[i]; v[1] != art || v[2] != achse || v[3] != strconv.Itoa(n.Lage) {
 				t.Errorf("%v Naht %d: %v", form, i, v[0])
 			}
-			var grp string // Saum und Abdunklung, dann der Schatten: die Reihenfolge der Schichten
+			var grp string // Saum und Abdunklung, dann der Schatten: die Reihenfolge der Stücke
 			for _, gr := range gruppen {
 				if gr[1] == art {
 					grp += gr[2]
 				}
 			}
-			pfade := pfadRe.FindAllStringSubmatch(grp, -1)
-			if len(pfade) != len(schichten) {
-				t.Fatalf("%v Band %s: %d Pfade, Soll %d Schichten", form, art, len(pfade), len(schichten))
+			use := stueckRe.FindAllStringSubmatch(grp, -1)
+			if len(use) != len(stuecke) {
+				t.Fatalf("%v Band %s: %d Stücke, Soll %d", form, art, len(use), len(stuecke))
 			}
-			for j, sch := range schichten {
-				p := pfade[j]
-				if want := fmt.Sprintf("%02x%02x%02x", sch.Farbe.R, sch.Farbe.G, sch.Farbe.B); p[2] != want {
-					t.Errorf("%v Schicht %d: Farbe %s, Soll %s", form, j, p[2], want)
+			f := d.KantenFaktor()
+			for j, sch := range stuecke {
+				u := use[j]
+				if want := fmt.Sprintf("%02x%02x%02x", sch.Farbe.R, sch.Farbe.G, sch.Farbe.B); u[4] != want {
+					t.Errorf("%v Stück %d: Farbe %s, Soll %s", form, j, u[4], want)
 				}
-				if want := ""; sch.Farbe.A != 255 {
-					want = strconv.FormatFloat(float64(sch.Farbe.A)/255, 'g', -1, 64)
-					if p[3] != want {
-						t.Errorf("%v Schicht %d: Deckkraft %q, Soll %q", form, j, p[3], want)
-					}
-				} else if p[3] != want {
-					t.Errorf("%v Schicht %d: deckend mit fill-opacity %q", form, j, p[3])
+				if want := strconv.FormatFloat(float64(sch.Farbe.A)/255, 'g', -1, 64); u[5] != want {
+					t.Errorf("%v Stück %d: Deckkraft %q, Soll %q", form, j, u[5], want)
 				}
-				// Das Band bei Lage 0, um die Lage verschoben, ist das Band des Renderers an der Naht.
-				var soll []string
-				bei0 := document.Kantenband(form, document.Naht{Zeilen: n.Zeilen}, laenge, d.KantenFaktor(), sch.Von, sch.Bis)
-				for _, q := range bei0 {
-					soll = append(soll, punkt(q))
+				vonH, bisH := int(math.Round(sch.Von*100)), int(math.Round(sch.Bis*100))
+				if want := strconv.FormatFloat(float64(vonH*f)/100, 'g', -1, 64); u[3] != want {
+					t.Errorf("%v Stück %d: Versatz %s, Soll %s", form, j, u[3], want)
 				}
-				if p[1] != "M"+strings.Join(soll, " L")+" Z" {
-					t.Errorf("%v Band %s Schicht %d: %.200s", form, art, j, p[1])
+				if u[1] != art || u[2] != strconv.Itoa(bisH-vonH) {
+					t.Errorf("%v Stück %d: Verweis auf %s-%s, Soll %s-%d", form, j, u[1], u[2], art, bisH-vonH)
 				}
-				for k, q := range document.Kantenband(form, n, laenge, d.KantenFaktor(), sch.Von, sch.Bis) {
-					v := bei0[k]
-					if n.Zeilen {
-						v.Y += float64(n.Lage)
-					} else {
-						v.X += float64(n.Lage)
-					}
-					if math.Abs(q.X-v.X) > 1e-9 || math.Abs(q.Y-v.Y) > 1e-9 {
-						t.Fatalf("%v Naht %d Schicht %d Punkt %d: %v, verschoben %v", form, i, j, k, q, v)
-					}
+				// Der Pfad ist das Band von 0 bis zur Breite der vereinfachten Linie (dieselbe wie im Export) ...
+				bei0 := document.Naht{Zeilen: n.Zeilen}
+				linie := document.NeueKantenlinie(form, laenge, f).Vereinfacht(KantenToleranz)
+				soll := linie.Band(nil, bei0, 0, float64(bisH-vonH)/100)
+				var teile []string
+				for _, q := range soll {
+					teile = append(teile, punkt(q))
+				}
+				if basen[art+"-"+u[2]] != "M"+strings.Join(teile, " L")+" Z" {
+					t.Errorf("%v Band %s Stück %d: %.200s", form, art, j, basen[art+"-"+u[2]])
+				}
+				// ... und weicht von der vollen Linie des Renderers an keiner Stelle um mehr als die Toleranz ab.
+				voll := document.Kantenband(form, bei0, laenge, f, 0, float64(bisH-vonH)/100)
+				abweichung := kantenAbweichung(voll[:len(voll)/2], soll[:len(soll)/2], n.Zeilen)
+				if abweichung > KantenToleranz+1e-9 {
+					t.Errorf("%v Band %s Stück %d: Abweichung %v > %v", form, art, j, abweichung, KantenToleranz)
 				}
 			}
 		}
@@ -114,6 +121,32 @@ func TestExportSVGKante(t *testing.T) {
 		}
 		pruefeSpaltLeer(t, form, s, d)
 	}
+}
+
+// kantenAbweichung ist der größte Querabstand der Punkte voll von dem Linienzug einfach (beide entlang der Naht
+// aufsteigend, einfach hat weniger Punkte): Abstand quer zur Naht an der Stelle des jeweiligen Punkts.
+func kantenAbweichung(voll, einfach []document.Punkt, zeilen bool) float64 {
+	entlang := func(p document.Punkt) (t, q float64) {
+		if zeilen {
+			return p.X, p.Y
+		}
+		return p.Y, p.X
+	}
+	weit, k := 0.0, 0
+	for _, p := range voll {
+		t, q := entlang(p)
+		for k+2 < len(einfach) {
+			if t2, _ := entlang(einfach[k+1]); t2 >= t {
+				break
+			}
+			k++
+		}
+		t0, q0 := entlang(einfach[k])
+		t1, q1 := entlang(einfach[k+1])
+		soll := q0 + (q1-q0)*(t-t0)/(t1-t0)
+		weit = max(weit, math.Abs(q-soll))
+	}
+	return weit
 }
 
 // ADR-0023 Nachtrag 7: Der Spalt bleibt im SVG leer. Je Achse steht er einmal als schwarzer Pfad in <defs> (dieselben
@@ -137,7 +170,13 @@ func pruefeSpaltLeer(t *testing.T, form document.Kante, s string, d *document.Do
 			laenge = g.X
 		}
 		var soll []string
-		for _, q := range document.Kantenband(form, document.Naht{Zeilen: zeilen}, laenge, d.KantenFaktor(), -8, 8) {
+		bei0 := document.Naht{Zeilen: zeilen}
+		voll := document.Kantenband(form, bei0, laenge, d.KantenFaktor(), -8, 8)
+		vereinfacht := document.NeueKantenlinie(form, laenge, d.KantenFaktor()).Vereinfacht(KantenToleranz).Band(nil, bei0, -8, 8)
+		if a := kantenAbweichung(voll[:len(voll)/2], vereinfacht[:len(vereinfacht)/2], zeilen); a > KantenToleranz+1e-9 {
+			t.Errorf("%v Spalt %s: Abweichung %v > %v", form, art, a, KantenToleranz)
+		}
+		for _, q := range vereinfacht {
 			soll = append(soll, punkt(q))
 		}
 		if pfade[art] != "M"+strings.Join(soll, " L")+" Z" {
@@ -262,7 +301,7 @@ func TestExportSVGVieleNaehteKompakt(t *testing.T) {
 		s := buf.String()
 		// Seit ADR-0023 Nachtrag 7 stehen Bänder und Maske vor den Kacheln, die Verweise der Schichten danach. Gezählt
 		// wird ohne die Kacheln (deren PNG wächst mit jeder Naht um eine Kachel, nicht durch die Kante).
-		start := strings.Index(s, `<defs><g id="naht-`)
+		start := strings.Index(s, `<defs><path id="band-`)
 		maske := strings.Index(s, `<mask id="spalt"`)
 		kachelnEnde := strings.Index(s, `</g><use href="#naht-`)
 		if kachelnEnde < 0 { // eng beieinander (F-438): Schichten unter Maske

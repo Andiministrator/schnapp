@@ -356,3 +356,40 @@ rund 24 % sichtbare Pixel, auch bei 16 px bleiben 2,5 bis 8 px.
   weicht der Fasersaum im Editor vom gerenderten PNG um im Mittel 22 von 255 je Kanal ab (bis 43), der Editor ist
   heller. Die Abweichung deckt sich mit linearer statt sRGB-Mischung der Deckkraft durch Gio (gerechnet mit linearer
   Mischung nur 5 im Mittel). Gelöst ist das nicht; es bleibt als eigenes Finding (siehe Register).
+
+## Nachtrag 10 (23.11.2026): SVG-Export der Kanten schlank (F-422, Karte #182)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #182). Betrifft nur den SVG-Export (`fileformat.ExportiereSVG`) und
+die Hilfen in `document`; Renderer, Editor und Arbeitsdatei (`snAP`, `docs/format.md`, `FormatVersion`) bleiben wie sie sind.
+
+**Anlass:** Der Export schrieb je Achse mit Naht 13 Pfade mit je einem Punktpaar je Pixel (Abriss): 1920×1080 mit einer
+Naht kostete +300 kB (Spalten-Naht) bis +557 kB (Zeilen-Naht), bei Zackenform +28 bis +54 kB. Die Voreinstellung (Abriss)
+trifft jeden gestauchten Export. Ziel laut F-422: höchstens 100 kB je Naht.
+
+**Entscheidung — drei Maßnahmen, die zusammen wirken:**
+1. **Gemeinsame Linie, weniger Stützpunkte.** Alle Schichten einer Achse sind quer verschobene Kopien derselben
+   Mittellinie. `Kantenlinie.Vereinfacht(Toleranz)` (Douglas-Peucker über die Querlage) streicht Stützpunkte, die höchstens
+   `fileformat.KantenToleranz` = 0,4 px quer neben der Verbindung ihrer Nachbarn liegen (Abriss 1920 px: 792 von 1921
+   Punkten; Welle rund 38 %; der Zacken hat nur seine Ecken und bleibt). Spalt und Schichten benutzen dieselbe vereinfachte
+   Linie und bleiben deshalb **genau** deckungsgleich; gegenüber dem Renderer weicht jede Kante um höchstens 0,4 px ab,
+   also unter einem halben Pixel. Bei Faktor ≥ 2 bleiben anteilig mehr Punkte (Maße und Toleranz wachsen nicht mit).
+2. **Stücke statt überlappender Schichten.** `document.KantenFlach()` zerlegt die zwölf Bänder je Farbe an allen
+   ihren Grenzen in überlappungsfreie Stücke; jedes trägt die Deckkraft, die alle Bänder darüber ergäben
+   (1 − Π(1 − aᵢ), auf 1/255 gerundet). Gleichfarbige Bänder mischen so dasselbe Bild (Test mit Untergründen schwarz, grau,
+   weiß: höchstens eine Stufe Abweichung). Es gibt nur fünf verschiedene Breiten (0,8 / 1 / 2 / 3 / 16 px).
+3. **Jede Breite einmal.** In `<defs>` steht je Achse und Breite ein Pfad ohne Füllung `band-<Achse>-<Breite in
+   Hundertsteln>` (das Band von 0 bis zur Breite); jedes Stück ist ein `<use>` darauf mit Versatz (`x` bzw. `y`, Hundertstel
+   mal Faktor), Farbe und Deckkraft. Die Gruppen `naht-…` und `schatten-…` (F-438), der Spalt-Pfad `spalt-…`, die Maske
+   und die `<use>` je Naht bleiben, wie sie waren; Stücke im Spalt (Schatten) liegen in `schatten-…`.
+
+**Ergebnis** (Test `TestSVGNahtZuwachs`, einfarbiges Bild 1920×1080, Zuwachs gegenüber demselben Bild ohne Naht, einmal die
+Spalten-Naht über 1080 px, einmal die Zeilen-Naht über 1920 px): Abriss 300 kB / 557 kB → 44 kB / 85 kB; Welle 139 kB /
+260 kB → 19 kB / 36 kB; Zacken 28 kB / 54 kB → 10 kB / 20 kB. Grenze im Test: 100 kB.
+
+**Geprüft:** `TestExportSVGKante` (Pfade, Versatz, Farbe, Deckkraft je Stück; Abweichung gegen die volle Linie des Renderers
+höchstens `KantenToleranz`), `TestKantenlinieVereinfacht`, `TestKantenFlachGleichKantenSchichten`, `TestSVGNahtFaktor2`;
+Mutanten `K182-1` bis `K182-4` in `scripts/mutanten/kante.json`.
+
+**Verworfen:** Relative Pfadbefehle (rund −25 % je Punkt, aber schlechter lesbar und nicht nötig), Masken und
+Clip-Pfade statt Bändern (kleinste Daten, aber je Schicht und Naht eine Maske in jedem Betrachter; Darstellung
+schwerer zu prüfen).

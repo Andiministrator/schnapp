@@ -136,6 +136,49 @@ func NeueKantenlinie(k Kante, laenge, faktor int) *Kantenlinie {
 	return l
 }
 
+// Vereinfacht liefert die Linie mit weniger Stützpunkten (Douglas-Peucker, F-422): Jeder weggelassene Punkt liegt höchstens
+// toleranz Pixel (quer zur Naht gemessen) neben der Verbindung seiner Nachbarn, Anfang und Ende bleiben. Alle Schichten
+// einer Achse sind um feste Beträge quer verschobene Kopien derselben Linie, also weicht jede Kante des Vielecks um
+// höchstens toleranz von der des Renderers ab; weil Spalt und Schichten dieselbe Linie nutzen, bleiben sie
+// zueinander genau deckungsgleich. Nur der SVG-Export vereinfacht (ADR-0023 Nachtrag 10), der Renderer rechnet voll.
+func (l *Kantenlinie) Vereinfacht(toleranz float64) *Kantenlinie {
+	n := len(l.t)
+	if n <= 2 {
+		return l
+	}
+	tol := toleranz * 100 // m liegt in Hundertsteln
+	behalte := make([]bool, n)
+	behalte[0], behalte[n-1] = true, true
+	stapel := [][2]int{{0, n - 1}}
+	for len(stapel) > 0 {
+		a, b := stapel[len(stapel)-1][0], stapel[len(stapel)-1][1]
+		stapel = stapel[:len(stapel)-1]
+		if b-a < 2 {
+			continue
+		}
+		weit, wo := -1.0, -1
+		for i := a + 1; i < b; i++ {
+			// Querabstand von der Verbindung a–b an der Stelle t[i]
+			soll := float64(l.m[a]) + float64(l.m[b]-l.m[a])*(l.t[i]-l.t[a])/(l.t[b]-l.t[a])
+			if d := math.Abs(float64(l.m[i]) - soll); d > weit {
+				weit, wo = d, i
+			}
+		}
+		if weit > tol {
+			behalte[wo] = true
+			stapel = append(stapel, [2]int{a, wo}, [2]int{wo, b})
+		}
+	}
+	v := &Kantenlinie{f: l.f}
+	for i, b := range behalte {
+		if b {
+			v.t = append(v.t, l.t[i])
+			v.m = append(v.m, l.m[i])
+		}
+	}
+	return v
+}
+
 // Band liefert das Vieleck der Linie an der Naht n, quer um von bis bis verschoben (Ansichtspixel bei Faktor 1, mit dem
 // Faktor multipliziert), wie Kantenband. Es schreibt in dst, wenn dessen Kapazität reicht (der Renderer nutzt so einen
 // Puffer für alle Schichten), sonst in eine neue Liste.
@@ -219,6 +262,48 @@ var kantenSchichten = [...]Schicht{
 // leeren zuerst den Spalt aller Nähte (Band −KantenSpaltHalb bis KantenSpaltHalb, siehe Spaltband) und zeichnen dann je
 // Naht und Schicht ein Kantenband.
 func KantenSchichten() []Schicht { return append([]Schicht(nil), kantenSchichten[:]...) }
+
+// KantenFlach liefert dieselbe Gestaltung wie KantenSchichten, aber ohne Überlappung (F-422): Je Farbe werden die
+// übereinanderliegenden Bänder an allen ihren Grenzen zerlegt, und jedes Stück trägt die Deckkraft, die alle Bänder
+// darüber zusammen ergäben (1 − Π(1 − aᵢ), auf 1/255 gerundet). Weil die Bänder einer Farbe gleichfarbig sind, malt das
+// dasselbe Bild. Der SVG-Export braucht so weniger verschiedene Bandbreiten (fünf statt dreizehn Pfade je Achse, jede
+// Breite einmal, die Stücke als verschobene Verweise). Reihenfolge: je Farbe in der Reihenfolge von KantenSchichten, in
+// jeder Farbe von oben bzw. links nach unten bzw. rechts. Grenzen sind Hundertstel, wie in Kantenlinie.Band.
+func KantenFlach() []Schicht {
+	var res []Schicht
+	var fertig []color.NRGBA
+	for _, s0 := range kantenSchichten {
+		rgb := mitDeckkraft(s0.Farbe, 0)
+		if slices.Contains(fertig, rgb) {
+			continue
+		}
+		fertig = append(fertig, rgb)
+		var gleich []Schicht
+		var grenzen []int
+		for _, s := range kantenSchichten {
+			if mitDeckkraft(s.Farbe, 0) == rgb {
+				gleich = append(gleich, s)
+				grenzen = append(grenzen, hundertstel(s.Von), hundertstel(s.Bis))
+			}
+		}
+		slices.Sort(grenzen)
+		grenzen = slices.Compact(grenzen)
+		for i := 0; i+1 < len(grenzen); i++ {
+			von, bis := grenzen[i], grenzen[i+1]
+			frei := 1.0 // Anteil, der durch alle Bänder darüber hindurchscheint
+			for _, s := range gleich {
+				if hundertstel(s.Von) <= von && bis <= hundertstel(s.Bis) {
+					frei *= 1 - float64(s.Farbe.A)/255
+				}
+			}
+			if frei == 1 {
+				continue // kein Band deckt dieses Stück
+			}
+			res = append(res, Schicht{float64(von) / 100, float64(bis) / 100, mitDeckkraft(rgb, uint8(math.Round(255*(1-frei))))})
+		}
+	}
+	return res
+}
 
 // Spaltband liefert die Grenzen des durchsichtigen Spalts quer zur Mittellinie (Faktor 1), für Kantenlinie.Band.
 func Spaltband() (von, bis float64) { return -KantenSpaltHalb, KantenSpaltHalb }

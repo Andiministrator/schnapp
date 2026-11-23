@@ -12,6 +12,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -81,9 +82,15 @@ func bandPfad(band []document.Punkt) string {
 	return pfad.String()
 }
 
-// naehteDefs schreibt die Kanten der Stauch-Nähte als Vorlagen (ADR-0023 Punkt 6, Nachträge 6 und 7): dieselben Vielecke
-// wie im Renderer (document.Kantenband, in der Form des Dokuments), ohne Filter. Je Achse steht einmal das Band bei Lage
-// 0 über die ganze Länge in <defs>: die Schichten (document.KantenSchichten, halbdurchsichtige mit fill-opacity) als
+// KantenToleranz ist die größte Abweichung (Pixel, quer zur Naht), um die die Kanten im SVG-Export von denen des Renderers
+// abweichen dürfen: Der Export lässt Stützpunkte weg, die weniger als das neben der Verbindung ihrer Nachbarn liegen
+// (F-422, ADR-0023 Nachtrag 10). Unter einem halben Pixel, also nicht sichtbar.
+const KantenToleranz = 0.4
+
+// naehteDefs schreibt die Kanten der Stauch-Nähte als Vorlagen (ADR-0023 Punkt 6, Nachträge 6, 7 und 10): die Vielecke
+// des Renderers (document.Kantenband, in der Form des Dokuments), mit höchstens KantenToleranz Abweichung vereinfacht,
+// ohne Filter. Je Achse steht einmal das Band bei Lage 0 über die ganze Länge in <defs>: je Breite ein Pfad, die Stücke
+// der Schichten (document.KantenFlach, halbdurchsichtige mit fill-opacity) als <use> darauf in der
 // Gruppe naht-zeilen bzw. naht-spalten, der Spalt (document.Spaltband) als Pfad spalt-zeilen bzw. spalt-spalten. Dazu
 // die Maske spalt: weiß über die ganze Ansicht, je Naht der Spalt schwarz darin. Die Kacheln liegen unter dieser Maske
 // (der Spalt bleibt leer, Bild und Objekte darin fallen weg), die Schichten darüber (naehteUse). Je Naht kostet das zwei
@@ -106,22 +113,47 @@ func (s *schreiber) naehteDefs(d *document.Dokument) bool {
 		if zeilen {
 			laenge = g.X
 		}
-		linie := document.NeueKantenlinie(d.Kante(), laenge, d.KantenFaktor()) // einmal je Achse (F-418)
+		linie := document.NeueKantenlinie(d.Kante(), laenge, d.KantenFaktor()).Vereinfacht(KantenToleranz) // einmal je Achse (F-418, F-422)
 		bei0 := document.Naht{Zeilen: zeilen}
 		var band []document.Punkt
+		// Die Stücke (document.KantenFlach) haben nur fünf verschiedene Breiten: Jede Breite steht einmal als Pfad ohne
+		// Füllung (band-<Achse>-<Breite in Hundertsteln>) in <defs>, jedes Stück ist ein <use> darauf, quer verschoben und
+		// mit Farbe und Deckkraft (F-422). Der Pfad ist das Band von 0 bis zur Breite, genau die Punkte von Kantenband.
+		faktor := d.KantenFaktor()
+		stuecke := document.KantenFlach()
+		breiten := make([]int, len(stuecke))
+		var bekannt []int
+		for i, sch := range stuecke {
+			breiten[i] = hundertstel(sch.Bis) - hundertstel(sch.Von)
+			if slices.Contains(bekannt, breiten[i]) {
+				continue
+			}
+			bekannt = append(bekannt, breiten[i])
+			band = linie.Band(band, bei0, 0, float64(breiten[i])/100)
+			s.WriteString(`<path`)
+			s.attr("id", fmt.Sprintf("band-%s-%d", nahtArt(zeilen), breiten[i]))
+			s.attr("d", bandPfad(band))
+			s.WriteString(`/>`)
+		}
 		// Berühren sich Nähte (F-438), liegen Fasersaum und Abdunklung (naht-…) und der Schatten (schatten-…) in zwei
 		// Gruppen: Die erste legt naehteUse unter die Maske, der Schatten bleibt im Spalt stehen.
 		gruppe := func(id string, nimm func(document.Schicht) bool) {
 			s.WriteString(`<g`)
 			s.attr("id", id+nahtArt(zeilen))
 			s.WriteString(`>`)
-			for _, sch := range document.KantenSchichten() {
+			for i, sch := range stuecke {
 				if !nimm(sch) {
 					continue
 				}
-				band = linie.Band(band, bei0, sch.Von, sch.Bis)
-				s.WriteString(`<path`)
-				s.attr("d", bandPfad(band))
+				s.WriteString(`<use`)
+				s.attr("href", fmt.Sprintf("#band-%s-%d", nahtArt(zeilen), breiten[i]))
+				// Versatz wie in Kantenlinie.Band: Hundertstel mal Faktor
+				quer := zahl(float64(hundertstel(sch.Von)*faktor) / 100)
+				if zeilen {
+					s.attr("y", quer)
+				} else {
+					s.attr("x", quer)
+				}
 				s.farbeSVG("fill", sch.Farbe)
 				s.WriteString(`/>`)
 			}
@@ -253,3 +285,6 @@ func ExportiereSVG(w io.Writer, d *document.Dokument) (fehler error) {
 	_, err := io.WriteString(w, s.String())
 	return err
 }
+
+// hundertstel rundet v auf ganze Hundertstel (wie document.Kantenlinie.Band).
+func hundertstel(v float64) int { return int(math.Round(v * 100)) }
