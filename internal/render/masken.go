@@ -137,6 +137,15 @@ func mischeZeile[M maskenWert](e *einmischer, maske []M, pix []byte) {
 		if (a0>>24)&(a1>>24)&(a2>>24)&(a3>>24) == 0xff {
 			// Vier deckende Pixel: ohne Fallunterscheidung je Pixel (mischDeckend gilt für jede Deckung). An den Rändern der
 			// Bänder wechseln Deckung 0, teilweise und voll unregelmäßig; Fehlsprünge kosteten dort mehr als die Rechnung.
+			if e.sa == 0xffff && maske[k]&maske[k+1]&maske[k+2]&maske[k+3] == 0xffff {
+				// Volle Deckung einer deckenden Quelle (Inneres bildgroßer Flächen): die Farbe, ohne Rechnung.
+				v := uint32(e.voll.R) | uint32(e.voll.G)<<8 | uint32(e.voll.B)<<16 | 0xff<<24
+				binary.LittleEndian.PutUint32(q[0:], v)
+				binary.LittleEndian.PutUint32(q[4:], v)
+				binary.LittleEndian.PutUint32(q[8:], v)
+				binary.LittleEndian.PutUint32(q[12:], v)
+				continue
+			}
 			e.mischDeckend(q[0:4:4], uint32(maske[k]))
 			e.mischDeckend(q[4:8:8], uint32(maske[k+1]))
 			e.mischDeckend(q[8:12:12], uint32(maske[k+2]))
