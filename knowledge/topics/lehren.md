@@ -670,3 +670,14 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Voraussetzung der alten Eigenschaft (`TestKastenEckeRund` jetzt mit Radius 6).
 - **API-Abbrüche (529) treffen Agenten kurz vor dem Commit:** Beim Fortsetzen zuerst committen lassen, dann prüfen
   und berichten (Karte #211, zwei Abbrüche).
+- **Nach jeder Übernahme den Mutanten-Trockenlauf fahren, nicht nur `go test`** (`cd scripts/mutanten && go run . -wurzel ../.. -trocken`):
+  #213 änderte den Code unter O6/O7, die Muster fanden nichts mehr, und die CI war von 93ae780 bis 4ce56c3 rot. Die
+  Orchestrator-Prüfkette ist die CI-Kette (`.github/workflows/`), auch `go test -race ./internal/...`.
+- **Vor einer Umbenennung `git grep` auch über `scripts/mutanten/*.json`, `draw/` und `docs/format.md`** — Mutanten-Muster
+  tragen Bezeichner als Text (Karte #182).
+- **Gleichfarbige Halbtransparenzen lassen sich in überlappungsfreie Stücke mit zusammengesetzter Deckkraft
+  (1 − Π(1 − aᵢ)) umrechnen;** gleich breite Stücke teilen dann einen SVG-Pfad per `<use>` (F-422: Abriss-Naht +557 kB
+  → +85 kB).
+- **Chromium/Aboard: leere Board-Seite ohne Konsolenmeldung** kam von gespeicherten Ordner-Handles, deren
+  `queryPermission` nie antwortete (alle 25, auch lokale; frisch gewählter Ordner ging). Abhilfe: IndexedDB
+  `aboard-handles` gezielt entfernen, Ordner neu wählen; hält über Neustart (23.11.2026, aBoard F-3106/#1179).
