@@ -635,4 +635,6 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   „nicht aussagekräftig“ statt still grün.
 - **Agenten-Fehlertexte nicht über die Oberflächen-Übersetzung führen** (F-492): `nutzerFehler` übersetzt; was an einen
   Agenten geht, braucht eigene englische Sätze ohne Pfade (`agentGrund`).
+- **Worktree eines Agenten mit eigenem HOME lässt sich nicht entfernen,** wenn darin ein Go-Modulcache liegt (Go legt ihn schreibgeschützt an): erst `GOMODCACHE=<voller Pfad> go clean -modcache`, dann `git worktree remove --force`.
+- **Agenten setzen trotz Verbot leere Heredocs ab** (vier von fünf Berichten am 23.11.); harmlos, aber im Bericht nachsehen. Einmal lag dadurch eine leere Datei im Worktree-Wurzelordner.
 
