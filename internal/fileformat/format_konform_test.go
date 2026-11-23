@@ -52,6 +52,9 @@ type beispiel struct {
 	name string
 	bau  func(t *testing.T) *document.Dokument
 	meta Metadaten
+	// ohneKante: Die Datei trägt kein s:kante (Schreiber vor Karte #96, docs/format.md 7.1); das Dokument dazu hat
+	// die Form zigzag, die ein Leser dann annimmt.
+	ohneKante bool
 }
 
 func beispielMeta() Metadaten {
@@ -94,7 +97,7 @@ func beispiele() []beispiel {
 					Farbe: color.NRGBA{0, 0, 0, 255}, Hintergrund: color.NRGBA{255, 255, 255, 200}},
 				document.Nummer{Mitte: document.Pt(52, 10), Wert: 3, Radius: 7, Farbe: beispielBlau})
 			return d
-		}, beispielMeta()},
+		}, beispielMeta(), false},
 		{"view", func(t *testing.T) *document.Dokument {
 			d := beispielDok(t, 64, 48)
 			fuege(t, d, document.Kasten{Bereich: document.R(document.Pt(10, 8), document.Pt(50, 40)), Strich: beispielRot})
@@ -108,7 +111,7 @@ func beispiele() []beispiel {
 				t.Fatal(err)
 			}
 			return d
-		}, Metadaten{Erstellt: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)}},
+		}, Metadaten{Erstellt: time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)}, false},
 		{"redaction", func(t *testing.T) *document.Dokument {
 			d := beispielDok(t, 64, 48)
 			if err := d.Schwaerzen(image.Rect(8, 8, 24, 20), document.Schwaerzung{Farbe: color.NRGBA{0, 0, 0, 255}}); err != nil {
@@ -118,9 +121,27 @@ func beispiele() []beispiel {
 				t.Fatal(err)
 			}
 			return d
-		}, Metadaten{Bearbeitet: true}},
-		{"minimal", func(t *testing.T) *document.Dokument { return beispielDok(t, 32, 24) }, Metadaten{}},
+		}, Metadaten{Bearbeitet: true}, false},
+		{"minimal", func(t *testing.T) *document.Dokument { return beispielDok(t, 32, 24) }, Metadaten{}, false},
+		{"no-edge-style", func(t *testing.T) *document.Dokument {
+			d := beispielDok(t, 32, 24)
+			if err := d.SetzeKante(document.KanteZacken); err != nil { // das, was ein Leser ohne s:kante annimmt
+				t.Fatal(err)
+			}
+			return d
+		}, Metadaten{}, true},
 	}
+}
+
+// ohneKanteSVG entfernt das Attribut s:kante (zigzag) aus dem SVG eines Beispiels: So sah eine Datei vor dem
+// Attribut aus.
+func ohneKanteSVG(t *testing.T, svg string) string {
+	t.Helper()
+	const attr = ` s:kante="zigzag"`
+	if strings.Count(svg, attr) != 1 {
+		t.Fatalf("s:kante=\"zigzag\" kommt nicht genau einmal vor: %s", svg)
+	}
+	return strings.Replace(svg, attr, "", 1)
 }
 
 func beispielDatei(t *testing.T, b beispiel) (d *document.Dokument, png []byte) {
@@ -131,6 +152,9 @@ func beispielDatei(t *testing.T, b beispiel) (d *document.Dokument, png []byte) 
 	// gehört nicht zum Format (docs/format.md, „visible image“).
 	if err := SchreibeArbeitsdatei(&buf, d, d.Ansichtsbild(), b.meta); err != nil {
 		t.Fatal(err)
+	}
+	if b.ohneKante {
+		return d, pngMitSVG(t, buf.Bytes(), ohneKanteSVG(t, string(entpackeSVG(t, buf.Bytes()))))
 	}
 	return d, buf.Bytes()
 }
@@ -154,7 +178,11 @@ func TestFormatBeispiele(t *testing.T) {
 	for _, b := range beispiele() {
 		_, png := beispielDatei(t, b)
 		svg := entpackeSVG(t, png)
-		if !bytes.Equal(svg, svgArbeitsdatei(b.bau(t), b.meta)) {
+		soll := string(svgArbeitsdatei(b.bau(t), b.meta))
+		if b.ohneKante {
+			soll = ohneKanteSVG(t, soll)
+		}
+		if string(svg) != soll {
 			t.Errorf("%s: entpacktes SVG weicht von svgArbeitsdatei ab", b.name)
 		}
 		for ext, soll := range map[string][]byte{".png": png, ".snap.svg": svg} {

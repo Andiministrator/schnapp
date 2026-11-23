@@ -200,7 +200,7 @@ The *view* is what the visible image shows. It is derived from the original in t
 | Attribute | Value |
 |---|---|
 | `s:zuschnitt` | rectangle `x0 y0 x1 y1` of the original that stays visible. The whole image is `0 0 <width> <height>`. |
-| `s:kante` | style of the edge drawn at every squeeze seam (7.2): `tear` (torn paper), `wave` or `zigzag`. Writers MUST emit it. |
+| `s:kante` | style of the edge drawn at every squeeze seam (7.2): `tear` (torn paper), `wave` or `zigzag`. Writers SHOULD emit it; files without it remain valid version-1 files, and readers treat a missing value as `zigzag`. |
 
 The rectangle MUST be non-empty and lie within the original. A reader canonicalises reversed corners (`x0 > x1`);
 writers MUST write the smaller value first.
@@ -406,7 +406,7 @@ Original width and height are at least 1.
 1. Write the chunks of section 2 and the document of section 5; use the formats of section 5.2 (lower-case colours,
    points without spaces, any decimal number form that round-trips; the reference writer uses Go's shortest `%g`
    form, e.g. `1e+06`).
-2. Emit `s:format`, `viewBox`, the `image` placeholder, `s:ansicht` with `s:zuschnitt` and `s:kante`, and the object
+2. Emit `s:format`, `viewBox`, the `image` placeholder, `s:ansicht` with `s:zuschnitt` (and `s:kante`, which a writer SHOULD emit, 7.1), and the object
    layer even when there is nothing in them.
 3. Write redacted pixels (section 9).
 4. Do not add anything that identifies the machine or user (section 13).
@@ -437,6 +437,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `minimal` | smallest valid file: no objects, no metadata, whole image visible |
 | `objects` | one object of each type, full metadata with keywords |
 | `view` | crop plus one row strip and one column strip, one box, edge style `wave` |
+| `no-edge-style` | like `minimal`, but `s:ansicht` has no `s:kante` (a valid version-1 file written before the attribute existed; readers use `zigzag`) |
 | `redaction` | one filled and one pixelated redaction, applied to the pixels |
 
 In the examples the visible image is the view *without* annotations (annotation rendering depends on a font
