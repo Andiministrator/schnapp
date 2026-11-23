@@ -851,3 +851,7 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   bei nicht behandeltem Ereignis `MoveFocus` rufen wie `app/window.go`; ein nacktes `key.Event` bewegt den Fokus nicht.
 - **Ein Filter mit `Focus: tag` fängt eine Taste nur, solange dieses Tag den Fokus hat** — so bleibt Tab in Feldern der
   Leiste frei. Wer Tasten freigibt, prüft, wohin die nächsten Zeichen gehen (F-608).
+- **Gio reicht ein Zeigerereignis an Ziele weiter, die im selben offenen `clip`-Scope davor angemeldet sind** (#197):
+  Ein schwebendes Element über der Leinwand (Navigator) wird **nach** dem `Pop()` des Leinwand-Ausschnitts angemeldet,
+  sonst erreicht der Druck auch die Werkzeuge. Test prüft, dass kein Objekt entsteht.
+- **Ein Test „Klick zentriert“ ist leer, wenn die Ansicht vorher schon mittig stand**: Zielpunkt abseits der Mitte wählen.
