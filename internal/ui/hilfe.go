@@ -81,17 +81,22 @@ func (e *editor) zeichneHilfe(gtx layout.Context) {
 	zeilen := e.hilfeZeilen()
 	hoehe, innen := gtx.Dp(22), gtx.Dp(16)
 	spalteText, spalteTaste := gtx.Dp(300), gtx.Dp(170)
-	spalteB := spalteText + spalteTaste + innen
-	// Zwei Spalten, wenn eine nicht in die Leinwand passt.
+	// Die Tafel passt sich der Leinwand an (Sitzungs-QA B-3): zwei Spalten nur, wenn eine nicht in die Höhe passt und
+	// zwei in die Breite; schmale Fenster verkürzen die Textspalte; was dann noch übersteht, schneidet die Tafel ab.
 	pro := len(zeilen)
 	spalten := 1
-	if innen*2+pro*hoehe > flaeche.Dy() {
+	if innen*2+gtx.Dp(14)+pro*hoehe > flaeche.Dy() && innen*2+2*(spalteText+spalteTaste+innen) <= flaeche.Dx() {
 		spalten, pro = 2, (len(zeilen)+1)/2
 	}
-	groesse := image.Pt(innen*2+spalten*spalteB, min(flaeche.Dy(), innen*2+pro*hoehe+gtx.Dp(30)))
+	if frei := flaeche.Dx() - innen*2 - spalten*(spalteTaste+innen); spalteText*spalten > frei {
+		spalteText = max(gtx.Dp(120), frei/spalten)
+	}
+	spalteB := spalteText + spalteTaste + innen
+	groesse := image.Pt(min(flaeche.Dx(), innen*2+spalten*spalteB), min(flaeche.Dy(), innen*2+gtx.Dp(14)+pro*hoehe))
 	ecke := flaeche.Min.Add(flaeche.Size().Sub(groesse).Div(2))
 	t := op.Offset(ecke).Push(gtx.Ops)
 	r := image.Rectangle{Max: groesse}
+	rand := clip.Rect(r).Push(gtx.Ops) // nichts läuft über die Tafel hinaus
 	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(r).Op())
 	paint.FillShape(gtx.Ops, farbeLinie, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
 	schreibe := func(s string, x, y int, sp unit.Sp, c, fett bool) {
@@ -126,5 +131,6 @@ func (e *editor) zeichneHilfe(gtx layout.Context) {
 		schreibe(z.text, x+gtx.Dp(8), y, unit.Sp(13), false, false)
 		schreibe(z.taste, x+spalteText, y, unit.Sp(13), true, false)
 	}
+	rand.Pop()
 	t.Pop()
 }

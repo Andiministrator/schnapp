@@ -1765,6 +1765,15 @@ func (e *editor) tasten(gtx layout.Context) {
 		if !ok {
 			return
 		}
+		if e.hilfeOffen && !e.menue.offen {
+			// Übersicht der Tastenkürzel offen (F1): Esc und F1 schließen sie, auch während des Speicherns; alle anderen
+			// Tasten und getippter Text wirken nicht, damit nichts unbemerkt hinter der Tafel die Leinwand ändert (wie
+			// beim offenen Menü, F-257; Sitzungs-QA B-2).
+			if k, ok := ev.(key.Event); ok && k.State == key.Press && (k.Name == key.NameEscape || k.Name == key.NameF1) {
+				e.hilfeOffen = false
+			}
+			continue
+		}
 		if e.s.SpeichernLaeuft() {
 			// Während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6): abholen, damit Filter und Fokus
 			// bestehen bleiben, und verwerfen. Nur Strg+C wirkt: Kopieren ändert nichts am Dokument, und während des
@@ -1803,10 +1812,6 @@ func (e *editor) tasten(gtx layout.Context) {
 			if i := e.menueTitelFokus(gtx); i >= 0 {
 				e.menueOeffne(i, true)
 			}
-			continue
-		}
-		if e.hilfeOffen && k.Name == key.NameEscape && !e.menue.offen { // Esc schließt zuerst die Übersicht
-			e.hilfeOffen = false
 			continue
 		}
 		if k.Name == key.NameF10 { // öffnet das erste Menü bzw. schließt das offene (ADR-0031 Punkt 1)

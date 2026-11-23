@@ -207,3 +207,32 @@ func TestHilfeTastenkuerzel(t *testing.T) {
 		t.Errorf("Über Schnapp: %q", l.e.meldung.Text)
 	}
 }
+
+// TestHilfeSperrtTasten: Bei offener Übersicht wirken Entf und Werkzeugbuchstaben nicht; Esc schließt sie auch während
+// des Speicherns (Sitzungs-QA B-2).
+func TestHilfeSperrtTasten(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	l.fokusiere(l.e)
+	l.taste(key.NameF1, 0)
+	wz := l.e.s.Werkzeug
+	l.taste(key.NameDeleteForward, 0)
+	l.taste("X", 0)
+	if _, ok := l.e.s.D.Objekt(l.id); !ok || l.e.s.Werkzeug != wz {
+		t.Errorf("Tasten wirken hinter der Übersicht: Objekt da %v, Werkzeug %v", ok, l.e.s.Werkzeug)
+	}
+	if !l.e.hilfeOffen {
+		t.Fatal("Übersicht durch Tasten geschlossen")
+	}
+	v := neuerSperrSpeicher()
+	l.e.speichern = v.speichern
+	defer close(v.frei)
+	l.e.speichernJetzt() // Strg+S wirkt hinter der Übersicht nicht; das Speichern kommt hier von außen
+	l.setle()
+	if !l.e.s.SpeichernLaeuft() {
+		t.Fatal("Vorbedingung: Speichern läuft nicht")
+	}
+	l.taste(key.NameEscape, 0)
+	if l.e.hilfeOffen {
+		t.Error("Esc während des Speicherns schließt die Übersicht nicht")
+	}
+}

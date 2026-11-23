@@ -436,6 +436,21 @@ func (e *editor) zeichneFusszeile(gtx layout.Context) {
 	y0 := mx.Y - h
 	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(image.Rect(0, y0, mx.X, mx.Y)).Op())
 	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(image.Rect(0, y0, mx.X, y0+gtx.Dp(1))).Op())
+	// Meldung zuerst (Sitzungs-QA B-1): Eine Meldung (Speichern, Warnung, Fehler) behält ihren ganzen Text, solange
+	// zwei Drittel der Breite reichen; die Felder weichen von links her. Der bloße Bedienhinweis des Werkzeugs weicht
+	// dagegen den Feldern (mindestens ein Drittel bleibt ihm).
+	links, fehler, meldung := canvas.StatusZeile(&e.meldung, e.s.D.Stand(), e.s.Werkzeug, e.hinweis(), e.s.TextLaeuft())
+	grenze := mx.X / 3
+	if (meldung || fehler) && links != "" {
+		lbl := material.Label(e.thema, unit.Sp(12), links)
+		g := gtx
+		g.Constraints.Min = image.Point{}
+		g.Constraints.Max.X = mx.X
+		m := op.Record(gtx.Ops)
+		d := lbl.Layout(g)
+		m.Stop()
+		grenze = max(grenze, min(mx.X*2/3, d.Size.X+gtx.Dp(36)))
+	}
 	felder := e.s.FussFelder(e.zeigerBild)
 	x := mx.X
 	for i := len(felder) - 1; i >= 0; i-- {
@@ -463,7 +478,7 @@ func (e *editor) zeichneFusszeile(gtx layout.Context) {
 		}
 		breite := d.Size.X + 2*innen + feld
 		r := image.Rect(x-breite, y0+gtx.Dp(1), x, mx.Y)
-		if x-breite < mx.X/3 { // links bleibt Platz für die Meldung; überzählige Felder fallen weg
+		if x-breite < grenze { // links bleibt Platz für die Meldung; überzählige Felder fallen weg
 			break
 		}
 		k := e.fussKnopf(f.Art)
@@ -495,7 +510,6 @@ func (e *editor) zeichneFusszeile(gtx layout.Context) {
 		x = r.Min.X
 	}
 	// Meldung bzw. Hinweis links, bis vor die Felder (gekürzt).
-	links, fehler, meldung := canvas.StatusZeile(&e.meldung, e.s.D.Stand(), e.s.Werkzeug, e.hinweis(), e.s.TextLaeuft())
 	if links == "" {
 		return
 	}

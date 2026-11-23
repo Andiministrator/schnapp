@@ -61,5 +61,12 @@
     "paket": "./internal/ui",
     "alt": "\t\t\te.hilfeOffen = false\n\t\t\tcontinue",
     "neu": "\t\t\tcontinue"
+  },
+  {
+    "name": "O10 Tasten wirken hinter der Übersicht (B-2)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif e.hilfeOffen && !e.menue.offen {\n\t\t\t// Übersicht",
+    "neu": "\t\tif false && e.hilfeOffen && !e.menue.offen {\n\t\t\t// Übersicht"
   }
 ]
