@@ -66,8 +66,8 @@
     "name": "S187-10 Farbklick in der Leiste wirkt nicht",
     "datei": "internal/ui/seitenleiste.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif k.farben[j].Clicked(gtx) && an() {\n\t\t\te.s.SetzeFarbe(c)",
-    "neu": "\t\tif k.farben[j].Clicked(gtx) && an() {\n\t\t\t_ = c"
+    "alt": "\t\tif k.farben[j].Clicked(gtx) && an() && j < len(farben) {\n\t\t\te.s.SetzeFarbe(farben[j])",
+    "neu": "\t\tif k.farben[j].Clicked(gtx) && an() && j < len(farben) {\n\t\t\t_ = farben"
   },
   {
     "name": "S187-11 Farbfeld links klappt die Leiste nicht auf",
@@ -206,7 +206,7 @@
     "name": "QA-U7 Farbliste ohne grüne Wahl",
     "datei": "internal/ui/oberflaeche.go",
     "paket": "./internal/ui",
-    "alt": "an: true, aktiv: s.Stil.Farbe == c})",
+    "alt": "an: true, aktiv: s.AktuelleFarbe() == c})",
     "neu": "an: true, aktiv: false})"
   },
   {
@@ -274,10 +274,10 @@
   },
   {
     "name": "QA-A8 Leiste wirkt hinter der Hilfetafel",
-    "datei": "internal/ui/seitenleiste.go",
+    "datei": "internal/ui/farbwaehler.go",
     "paket": "./internal/ui",
-    "alt": "\tan := func() bool { return !e.s.SpeichernLaeuft() && !e.hilfeOffen }",
-    "neu": "\tan := func() bool { return !e.s.SpeichernLaeuft() }"
+    "alt": "func (e *editor) seiteAn() bool { return !e.s.SpeichernLaeuft() && !e.hilfeOffen }",
+    "neu": "func (e *editor) seiteAn() bool { return !e.s.SpeichernLaeuft() }"
   },
   {
     "name": "N7 Faktor ungedeckelt (Sitzungs-QA N-7)",

@@ -209,3 +209,32 @@ in `internal/ui/hilfe.go`; Tastentabelle in `internal/ui/kuerzel.go`; Logik der 
 - **Drehbücher (A-11):** Die Zeile „taste Strg+Umschalt+B“ am Anfang der Drehbücher ist ein Umschalter und gilt, weil
   die Leiste beim Start immer offen ist (die Einstellung wird nicht gespeichert). Speichert #175 die Einstellung, muss
   sie durch ein Zustandssetzen ersetzt werden (Karte #175).
+
+## Nachtrag 5 (23.11.2026): Farbwähler in der rechten Leiste (Karte #189)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Füllt den Abschnitt „Farbe“ aus Nachtrag 3 nach dem Muster v2; Bedeutung der
+Farbe und der Deckkraft in ADR-0021 Nachtrag 9.
+
+- **Aufbau** (von oben): links die **Farbfläche** (Sättigung nach rechts, Hellwert nach oben, zum Farbton des Reglers),
+  rechts daneben ein Raster aus 2 × 4 Feldern: die vier Beschriftungsfarben, bis zu drei zuletzt benutzte Farben (leere
+  Plätze bleiben leer) und als letztes Feld die **Pipette**. Darunter über die volle Breite der **Farbton-Regler** und
+  der **Deckkraft-Regler** (Schachbrett unter einem Verlauf von durchsichtig zur Farbe), darunter die Felder **Hex**
+  (`#RRGGBB`, bei Deckkraft unter 100 % `#RRGGBBAA`) und **Deckkraft** (`100 %`).
+- **Maus:** Drücken und Ziehen in Fläche oder Regler setzt die Farbe laufend (Marke folgt dem Zeiger, auch außerhalb
+  begrenzt auf den Rand), Loslassen schließt den Schritt ab. Die gewählte Farbe hat einen grünen Rand; ein Feld, das
+  halbdurchsichtig ist, zeigt das Schachbrett darunter.
+- **Eingabefelder:** Ein Klick oder Tab fokussiert das Feld (orangefarbener Rand, Schreibmarke am Ende, der Text wird
+  beim Fokussieren ersetzt, sobald getippt wird). Enter übernimmt, Esc verwirft und gibt den Fokus an die Leinwand, Tab
+  oder ein Klick woanders übernimmt ebenfalls. Rücktaste löscht ein Zeichen. Solange ein Feld den Fokus hat, sind
+  Buchstaben, Ziffern, Entf und die Rücktaste Eingabe, keine Kürzel (wie in der Texteingabe, ADR-0021 Nachtrag 1); eine
+  ungültige Eingabe zeigt den Rand rot, bis sie korrigiert oder verworfen ist.
+- **Tastatur:** Farbfläche und Regler sind nur mit der Maus zu bedienen; per Tastatur gehen Farbfelder, Pipette (Enter)
+  und die beiden Eingabefelder. **Tab-Reihenfolge** (ersetzt die Liste aus Nachtrag 4 ab „Farben der rechten Leiste“):
+  … Farbfelder der Leiste (Beschriftungsfarben, dann zuletzt benutzte), Pipette, Hex, Deckkraft, Fußfeld Farbe, Fußfeld
+  Zoom.
+- **Pipette:** Solange sie an ist, ist ihr Feld grün, der Zeiger ein Fadenkreuz und die Statuszeile sagt „Click in the
+  image to pick its color. Esc cancels.“.
+- **Eine Farbe überall:** Leiste, Farbfeld links, Farbliste und Fußzeile zeigen dieselbe Farbe — die des gewählten
+  Objekts, sonst die des Werkzeugs (`canvas.Sitzung.AktuelleFarbe`). Vorher zeigten Farbfeld und Fußzeile immer die
+  Werkzeugfarbe; nach Rückgängig an einem gewählten Objekt wichen sie von der Leiste ab (Sichtprobe #189,
+  `scripts/drehbuecher/farbwaehler-189.txt`).

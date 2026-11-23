@@ -83,7 +83,10 @@ reaching the edge of the image is cropped off instead and comes back with *Whole
 file, so redact anything secret before cropping it away — exports and the clipboard contain only the visible part.
 Annotations lying entirely in a hidden part are hidden too (the footer says how many) and come back with it.
 Pick one of four colours in the sidebar on the right, in the list of the colour field in the footer or of the colour
-swatch below the tools; it recolours the selected annotation. On large screenshots (4K and up) lines, text and step numbers start thicker and larger. A drawing tool stays active; **Esc** steps back: text input → drag → selection →
+swatch below the tools; it recolours the selected annotation. The sidebar also takes any colour: drag in the colour
+area and the hue and opacity sliders, type a hex code (`#RRGGBB` or `#RRGGBBAA`) or an opacity in percent, reuse one of
+the last three colours, or pick a colour from the image with the eyedropper (it reads the screenshot, not the
+annotations). Redaction always stays opaque. On large screenshots (4K and up) lines, text and step numbers start thicker and larger. A drawing tool stays active; **Esc** steps back: text input → drag → selection →
 select tool. Drag an annotation or its handles to move, resize or bend it; it always stays partly inside the image.
 The mouse wheel zooms at the pointer; with the select tool dragging empty space moves the view, the middle button does
 so with every tool. Keys: **Ctrl+Z** undo, **Ctrl+Shift+Z**/**Ctrl+Y** redo, **Del** delete, **Ctrl+S** save,

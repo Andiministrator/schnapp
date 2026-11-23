@@ -452,6 +452,9 @@ msgstr "Über den Bereich ziehen, der geschwärzt werden soll. Nach dem Speicher
 msgid "Drag over the area to pixelate. The pixels are overwritten for good once saved."
 msgstr "Über den Bereich ziehen, der verpixelt werden soll. Nach dem Speichern sind die Pixel endgültig überschrieben."
 
+msgid "Click in the image to pick its color. Esc cancels."
+msgstr "Ins Bild klicken, um seine Farbe aufzunehmen. Esc bricht ab."
+
 msgid "The previous file could not be updated and still showed the unredacted content, so it was removed. Saved as a new capture: %s"
 msgstr "Die bisherige Datei ließ sich nicht aktualisieren und zeigte noch den ungeschwärzten Inhalt; sie wurde entfernt. Als neue Aufnahme gespeichert: %s"
 

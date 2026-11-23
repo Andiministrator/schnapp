@@ -1307,6 +1307,7 @@ func (e *editor) frame(gtx layout.Context) {
 	_ = e.exportAbholen()
 	_ = e.speichernAbholen() // ebenso die Antwort des Speicherns und des Kopierens (ADR-0020 Nachtrag 6)
 	e.kopierenAbholen(gtx)
+	e.feldTasten(gtx) // vor tasten: Enter, Esc und Rücktaste gehören dem fokussierten Eingabefeld (ADR-0031 Nachtrag 5)
 	e.tasten(gtx)
 	// Menü zuerst: Startet ein Eintrag das Speichern, wirken Klicks auf Leisten im selben Bild nicht mehr (F-280).
 	e.menueAuswerten(gtx)
@@ -1366,10 +1367,12 @@ func (e *editor) leinwand(gtx layout.Context) {
 	e.zeichneRahmen(gtx)
 	e.zeichneEinfuegemarke(gtx)
 
-	switch e.s.Werkzeug {
-	case canvas.WerkzeugAuswahl:
+	switch {
+	case e.s.PipetteLaeuft():
+		pointer.CursorCrosshair.Add(gtx.Ops)
+	case e.s.Werkzeug == canvas.WerkzeugAuswahl:
 		pointer.CursorDefault.Add(gtx.Ops)
-	case canvas.WerkzeugText:
+	case e.s.Werkzeug == canvas.WerkzeugText:
 		pointer.CursorText.Add(gtx.Ops)
 	default:
 		pointer.CursorCrosshair.Add(gtx.Ops)
@@ -1945,6 +1948,11 @@ func (e *editor) tasten(gtx layout.Context) {
 			continue
 		}
 		t, ok := findeTaste(k.Name, k.Modifiers, e.s.TextLaeuft())
+		if e.seite.fw.fokusFeld(gtx) != nil && ((ok && t.hatWerkzeug) || k.Name == key.NameDeleteForward) {
+			// Im Eingabefeld der Leiste (Hex, Deckkraft) sind Buchstaben und Ziffern Eingabe (kommt als EditEvent), keine
+			// Kürzel; Entf wirkt dort nicht (ADR-0031 Nachtrag 5). Enter, Esc und die Rücktaste holt feldTasten vorher ab.
+			continue
+		}
 		if e.s.TextLaeuft() {
 			// Während der Texteingabe sind Buchstaben Text (kommt als EditEvent), keine Kürzel: Werkzeugtasten aus der
 			// Tabelle, Entf und Tab wirken nicht (Tab: F-153), die Rücktaste löscht im Text. Die Werkzeugtasten kommen aus der Tabelle,
@@ -2073,6 +2081,9 @@ func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
 func (e *editor) hinweis() string {
 	if e.exportOffen {
 		return i18n.T("File dialog is open.") // der Dialog kann hinter dem Fenster liegen (A-12)
+	}
+	if e.s.PipetteLaeuft() {
+		return i18n.T("Click in the image to pick its color. Esc cancels.")
 	}
 	if e.s.TextLaeuft() {
 		return i18n.T("Type the text. Enter: done, Shift+Enter: new line, Esc: discard.")

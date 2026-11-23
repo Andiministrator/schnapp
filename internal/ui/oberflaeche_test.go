@@ -361,7 +361,8 @@ func TestFarbHinweisNichtUeberOffenerListe(t *testing.T) {
 }
 
 // TestTabFolgtDerReihenfolgeDerFussfelder (F-515): Vom Farbfeld links springt Tab durch die Farben der rechten Leiste
-// (ADR-0031 Nachtrag 3) zu den klickbaren Feldern der Fußzeile von links nach rechts: erst Farbe, dann Zoom.
+// (ADR-0031 Nachtrag 3), Pipette, Hex und Deckkraft (Nachtrag 5) zu den klickbaren Feldern der Fußzeile von links nach
+// rechts: erst Farbe, dann Zoom.
 func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
 	l.fokusiere(&l.e.knoepfe.farbe)
@@ -372,10 +373,21 @@ func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 			t.Fatalf("Tab %d nach dem Farbfeld: Fokus nicht auf Farbe %d der rechten Leiste (%s)", i+1, i, menueFokusName(l))
 		}
 	}
+	// Danach Pipette, Hex und Deckkraft (ADR-0031 Nachtrag 5).
+	for _, z := range []struct {
+		tag  any
+		name string
+	}{{&l.e.seite.fw.pipette, "Pipette"}, {&l.e.seite.fw.hex, "Hex"}, {&l.e.seite.fw.deckkraft, "Deckkraft"}} {
+		l.r.MoveFocus(key.FocusForward)
+		l.setle()
+		if !l.fokus(z.tag) {
+			t.Fatalf("Tab nach den Farben: Fokus nicht auf %s (%s)", z.name, menueFokusName(l))
+		}
+	}
 	l.r.MoveFocus(key.FocusForward)
 	l.setle()
 	if !l.fokus(&l.e.knoepfe.fussFarbe) {
-		t.Fatalf("erstes Tab nach dem Farbfeld: Fokus nicht auf dem Fußfeld Farbe (%s)", menueFokusName(l))
+		t.Fatalf("erstes Tab nach dem Farbwähler: Fokus nicht auf dem Fußfeld Farbe (%s)", menueFokusName(l))
 	}
 	l.r.MoveFocus(key.FocusForward)
 	l.setle()

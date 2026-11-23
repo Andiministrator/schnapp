@@ -802,6 +802,10 @@ msgid "File dialog is open."
 msgstr ""
 
 #: internal/ui/editor.go
+msgid "Click in the image to pick its color. Esc cancels."
+msgstr ""
+
+#: internal/ui/editor.go
 msgid "Type the text. Enter: done, Shift+Enter: new line, Esc: discard."
 msgstr ""
 
@@ -855,6 +859,19 @@ msgstr ""
 
 #: internal/ui/exportfehler.go
 msgid "The file dialog returned no file."
+msgstr ""
+
+#: internal/ui/farbwaehler.go internal/ui/oberflaeche.go
+msgctxt "status bar"
+msgid "%d%%"
+msgstr ""
+
+#: internal/ui/farbwaehler.go
+msgid "Hex"
+msgstr ""
+
+#: internal/ui/farbwaehler.go
+msgid "Opacity"
 msgstr ""
 
 #: internal/ui/hilfe.go
@@ -993,11 +1010,6 @@ msgstr ""
 msgid "About Schnapp"
 msgstr ""
 
-#: internal/ui/oberflaeche.go internal/ui/seitenleiste.go
-msgctxt "status bar"
-msgid "%d%%"
-msgstr ""
-
 #: internal/ui/oberflaeche.go
 msgid "Red"
 msgstr ""
@@ -1106,12 +1118,4 @@ msgstr ""
 
 #: internal/ui/seitenleiste.go
 msgid "Line width"
-msgstr ""
-
-#: internal/ui/seitenleiste.go
-msgid "Hex"
-msgstr ""
-
-#: internal/ui/seitenleiste.go
-msgid "Opacity"
 msgstr ""

@@ -230,3 +230,40 @@ Größen) und ergänzt Punkt 5 (nur die Farbe).
   − und + gehen dann zur nächsten Stufe in der Richtung (+ ist grau, − springt auf 32). Das ist gewollt: Die
   Voreinstellung folgt dem Bild, die Stufen der Bedienung.
 - Nachtrag 7 löst den Satz in ADR-0031 Nachtrag 3 „… und Strichstärke fehlen noch“ ab; siehe ADR-0031 Nachtrag 4.
+
+## Nachtrag 9 (23.11.2026): Freie Farbe mit Deckkraft, zuletzt benutzte Farben, Pipette (Karte #189)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Anlass: Andi, 22.11.2026: „einen farbregler und ein (hex?) eingabefeld für
+die farbe und zusätzlich einen regler für die transparenzstufe“; Anforderung A-41 (Farbpipette). Ergänzt Punkt 4 und
+Nachtrag 6: Neben den vier Beschriftungsfarben ist jede Farbe wählbar, mit Deckkraft.
+
+1. **Deckkraft gehört zur Farbe.** Die Farbe eines Werkzeugs bzw. Objekts ist ein `color.NRGBA` mit Alpha (nicht
+   vormultipliziert). Dokumentmodell, Arbeitsdatei (`#rrggbbaa`, `docs/format.md` §5.2), SVG-Export (`fill-opacity`/
+   `stroke-opacity`) und Renderer tragen Alpha schon; das Format ändert sich nicht, `FormatVersion` bleibt. Wirkung je
+   Objekt wie beim Umfärben: Strich von Pfeil und Kasten, Schild des Texts (die Schrift bleibt weiß und deckend),
+   Kreis der Nummer (die Ziffer bleibt weiß). Eine Deckkraft von 0 % ist erlaubt (unsichtbar, aber wählbar und mit
+   Griffen). **Schwärzen und Verpixeln** haben keine Farbwahl und bleiben deckend (Kernprinzip 2).
+2. **Ein Rückgängig-Schritt je Wahl.** Ein Klick auf ein Farbfeld, die Pipette, eine bestätigte Eingabe (Hex,
+   Deckkraft) ist ein Schritt am gewählten Objekt, wie bisher (`SetzeFarbe`). Ziehen in der Farbfläche oder an einem
+   Regler färbt das gewählte Objekt sichtbar mit, bleibt aber **ein** Schritt beim Loslassen (`BeginneFarbZug`,
+   `FarbZugSetze`, `BeendeFarbZug` über den Zug des Dokuments); während der Texteingabe gehört es zur Eingabe. Solange
+   gezogen wird, ruhen Speichern und Leinwand (`Zieht`).
+3. **Farbton bleibt beim Ziehen erhalten.** Die Sitzung merkt sich den Farbton (HSV), damit Grau, Schwarz oder Weiß beim
+   Ziehen in der Fläche den Ton nicht verlieren; HSV ist nur Bedienung, gespeichert wird RGB.
+4. **Zuletzt benutzte Farben:** Jede Farbe, die nicht über ein Farbfeld gewählt wurde (Fläche, Regler beim Loslassen,
+   Hex, Deckkraft, Pipette) und nicht unter den Beschriftungsfarben steht, kommt vorn in eine Liste von höchstens drei
+   (`canvas.ZuletztGrenze`); dieselbe Farbe rückt nach vorn statt doppelt zu stehen. Die Liste gilt je Fenster und wird
+   nicht gespeichert (Einstellungen mit #175).
+5. **Pipette:** Ein Klick auf die Pipette schaltet sie ein; der nächste Linksklick ins Bild übernimmt die Farbe des
+   Bildpunkts darunter aus dem Original **mit** Schwärzungen und **ohne** Beschriftungen, deckend (Alpha 255) — so
+   färbt man eine Beschriftung passend zum Bild, ohne eine andere Beschriftung aufzugreifen. Ein Klick neben das Bild,
+   Esc oder ein Werkzeugwechsel beendet sie ohne Wirkung; ein Klick trifft dann kein Objekt und beginnt keinen Zug.
+6. **Eingaben:** Hex nimmt 3, 6 oder 8 Hex-Ziffern, mit oder ohne `#`, Groß- oder Kleinschreibung; 3 und 6 Ziffern
+   behalten die Deckkraft, 8 setzen sie mit. Deckkraft nimmt eine ganze Zahl 0 bis 100, mit oder ohne `%`. Ungültige
+   Eingaben ändern nichts. Umrechnung Prozent ↔ Alpha: Alpha = round(p · 255 / 100), angezeigt round(Alpha · 100 / 255)
+   (`canvas.Deckkraft`).
+7. **Editor-Mischung:** Gio mischt halbdurchsichtige Flächen linear, Renderer und Export in sRGB (F-520, Karte #215);
+   halbdurchsichtige Beschriftungen sehen im Editor daher etwas heller aus als in PNG/JPG. Das bleibt bis #215.
+8. **Nicht hier:** Eine zweite Farbe „Füllung“ (Fläche von Kasten und Text-Schild getrennt vom Strich, mit Tausch-Knopf;
+   Entscheidung im Kommentar an #189 vom 22.11.) ändert die Bedeutung der Farbe beim Text und bekommt eine eigene Karte
+   mit eigenem Nachtrag.

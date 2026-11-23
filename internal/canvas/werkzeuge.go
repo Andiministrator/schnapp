@@ -138,6 +138,7 @@ func (s *Sitzung) SetzeWerkzeug(w Werkzeug) bool {
 		return false
 	}
 	s.TextBestaetigen()
+	s.pipette = false
 	if ohneGriffe(w) {
 		s.Auswahl = 0 // F-174: sonst zöge ein Zug nahe einem Griff den Griff statt den Rahmen
 	}
@@ -641,6 +642,8 @@ func (s *Sitzung) Esc() {
 		return
 	}
 	switch {
+	case s.pipette:
+		s.pipette = false
 	case s.zug == zugText:
 		s.TextAbbrechen()
 	case s.zug != keinZug:

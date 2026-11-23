@@ -76,7 +76,7 @@ func (s *Sitzung) FussFelder(zeiger *document.Punkt) []FussFeld {
 			f = append(f, FussFeld{Art: FeldZeiger, Ort: ort})
 		}
 	}
-	f = append(f, FussFeld{Art: FeldFarbe, Farbe: s.Stil.Farbe, Klickbar: true})
+	f = append(f, FussFeld{Art: FeldFarbe, Farbe: s.AktuelleFarbe(), Klickbar: true})
 	switch {
 	case text != nil:
 		f = append(f, FussFeld{Art: FeldSchrift, Grad: int(math.Round(text.Schriftgrad))})

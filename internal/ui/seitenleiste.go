@@ -32,12 +32,13 @@ var kantenFormen = []document.Kante{document.KanteAbriss, document.KanteWelle, d
 
 // seitenKnoepfe sind die Knöpfe der rechten Leiste; die Rahmen halten ihre Lage beim letzten Zeichnen (Tests).
 type seitenKnoepfe struct {
-	farben       [8]widget.Clickable // je Beschriftungsfarbe einer
-	kanten       [3]widget.Clickable // je Kantenform einer (kantenFormen)
-	strich       [2]widget.Clickable // Strichstärke − und + (ADR-0021 Nachtrag 7)
+	farben       [farbPlaetze]widget.Clickable // Beschriftungsfarben, dann zuletzt benutzte (ADR-0031 Nachtrag 5)
+	kanten       [3]widget.Clickable           // je Kantenform einer (kantenFormen)
+	strich       [2]widget.Clickable           // Strichstärke − und + (ADR-0021 Nachtrag 7)
 	strRahmen    [2]image.Rectangle
 	strichText   string // angezeigte Strichstärke beim letzten Zeichnen (Tests)
-	farbRahmen   [8]image.Rectangle
+	farbRahmen   [farbPlaetze]image.Rectangle
+	fw           farbwaehler
 	kantRahmen   [3]image.Rectangle
 	kopf         string // Überschrift oben beim letzten Zeichnen (Tests)
 	farbeGezeigt bool   // der Abschnitt Farbe stand beim letzten Zeichnen da
@@ -46,13 +47,13 @@ type seitenKnoepfe struct {
 // alle sind die Knöpfe der Leiste (Tastaturfokus, editor.fokussierterKnopf).
 func (k *seitenKnoepfe) alle() []*widget.Clickable {
 	var a []*widget.Clickable
-	for i := range canvas.Beschriftungsfarben {
+	for i := range k.farben {
 		a = append(a, &k.farben[i])
 	}
 	for i := range k.kanten {
 		a = append(a, &k.kanten[i])
 	}
-	return append(a, &k.strich[0], &k.strich[1])
+	return append(a, &k.strich[0], &k.strich[1], &k.fw.pipette)
 }
 
 // kantenName ist der Name einer Kantenform auf ihrem Knopf.
@@ -105,13 +106,15 @@ func seitenHinweisText(h canvas.SeitenHinweis) string {
 // Liegt die Übersicht der Tastenkürzel offen, wirken die Klicks nicht: Die Tafel verdeckt das Objekt, das sie ändern
 // würden (wie die Tasten, Sitzungs-QA A-8).
 func (e *editor) seiteAuswerten(gtx layout.Context) {
-	an := func() bool { return !e.s.SpeichernLaeuft() && !e.hilfeOffen }
+	an := e.seiteAn
 	k := &e.seite
-	for j, c := range canvas.Beschriftungsfarben {
-		if k.farben[j].Clicked(gtx) && an() {
-			e.s.SetzeFarbe(c)
+	farben := append(append([]color.NRGBA(nil), canvas.Beschriftungsfarben...), e.s.Zuletzt()...)
+	for j := range k.farben {
+		if k.farben[j].Clicked(gtx) && an() && j < len(farben) {
+			e.s.SetzeFarbe(farben[j])
 		}
 	}
+	e.farbeAuswerten(gtx)
 	for j, f := range kantenFormen {
 		if k.kanten[j].Clicked(gtx) && an() && e.s.SetzeKante(f) {
 			e.melde(kantenMeldung(f), false)
@@ -157,7 +160,9 @@ func seiteKnopf(gtx layout.Context, c *widget.Clickable, r image.Rectangle) {
 func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	k := &e.seite
 	k.kopf, k.farbeGezeigt = "", false
-	k.farbRahmen, k.kantRahmen, k.strRahmen = [8]image.Rectangle{}, [3]image.Rectangle{}, [2]image.Rectangle{}
+	k.farbRahmen, k.kantRahmen, k.strRahmen = [farbPlaetze]image.Rectangle{}, [3]image.Rectangle{}, [2]image.Rectangle{}
+	k.fw.flaeche, k.fw.ton, k.fw.deck, k.fw.pipRahmen = image.Rectangle{}, image.Rectangle{}, image.Rectangle{}, image.Rectangle{}
+	k.fw.hex.rahmen, k.fw.deckkraft.rahmen = image.Rectangle{}, image.Rectangle{}
 	if !e.seiteSichtbar(gtx) {
 		return
 	}
@@ -250,27 +255,7 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	trenne()
 	k.farbeGezeigt = true
 	y += e.seiteText(gtx, strings.ToUpper(i18n.T("Color")), 12, farbeNebentext, image.Pt(x, y), breite, 1) + gtx.Dp(12)
-	q, abst := gtx.Dp(28), gtx.Dp(8)
-	for j, c := range canvas.Beschriftungsfarben {
-		r := image.Rect(x+j*(q+abst), y, x+j*(q+abst)+q, y+q)
-		k.farbRahmen[j] = r
-		if c == e.s.Stil.Farbe { // gewählt: grüner Rahmen außen (Grün heißt aktiv, Orange bleibt dem Fokus)
-			paint.FillShape(gtx.Ops, farbeAuswahl, clip.Rect(r.Inset(-gtx.Dp(2))).Op())
-		} else if k.farben[j].Hovered() {
-			paint.FillShape(gtx.Ops, farbeNebentext, clip.Rect(r.Inset(-gtx.Dp(1))).Op())
-		}
-		paint.FillShape(gtx.Ops, c, clip.Rect(r).Op())
-		// Heller Rand, damit auch Dunkelgrau auf der dunklen Leiste zu sehen ist (Sitzungs-QA A-9).
-		paint.FillShape(gtx.Ops, farbeNebentext, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
-		seiteKnopf(gtx, &k.farben[j], r)
-	}
-	y += q + gtx.Dp(12)
-	f := e.s.Stil.Farbe
-	e.seiteText(gtx, i18n.T("Hex"), 13, farbeNebentext, image.Pt(x, y), spalte, 1)
-	e.seiteText(gtx, fmt.Sprintf("#%02X%02X%02X", f.R, f.G, f.B), 13, farbeText, image.Pt(x+gtx.Dp(40), y), spalte, 1)
-	e.seiteText(gtx, i18n.T("Opacity"), 13, farbeNebentext, image.Pt(x+spalte+gtx.Dp(20), y), spalte, 1)
-	e.seiteText(gtx, fmt.Sprintf(i18n.TK("status bar", "%d%%"), canvas.Deckkraft(f)), 13, farbeText,
-		image.Pt(x+breite-gtx.Dp(44), y), gtx.Dp(44), 1)
+	e.zeichneFarbwaehler(gtx, x, y, breite, spalte)
 }
 
 // textMittig setzt text mittig in r.

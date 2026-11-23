@@ -4,6 +4,7 @@ package canvas
 
 import (
 	"image"
+	"image/color"
 	"math"
 	"slices"
 
@@ -78,6 +79,15 @@ type Sitzung struct {
 	textNeu    bool     // die Eingabe gilt einem neuen Text (Abbrechen entfernt ihn)
 	pan        bool     // mittlere Taste verschiebt die Ansicht, während die Texteingabe weiterläuft (F-154)
 	abgelehnt  Ablehnung
+
+	// Farbwahl (ADR-0021 Nachtrag 9, farbwahl.go)
+	hsv           HSV  // gemerkter Farbton der Fläche
+	hsvGemerkt    bool // hsv gilt, solange er zur aktuellen Farbe passt
+	farbZug       bool // in Farbfläche oder Regler wird gezogen
+	farbZugObjekt bool // der Farbzug läuft als Zug des Dokuments am gewählten Objekt
+	farbZugVor    uint64
+	zuletzt       []color.NRGBA
+	pipette       bool // der nächste Klick ins Bild nimmt eine Farbe auf
 	// Schwärzen (ADR-0022): Rahmen in Ansichtspunkten, solange gezogen wird.
 	rahmen           bool
 	rahmenA, rahmenB document.Punkt
@@ -205,6 +215,11 @@ func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
 	if t == TasteMitte && s.zug == zugText {
 		// Die mittlere Taste verschiebt nur die Ansicht, die Texteingabe läuft weiter (ADR-0021 Punkt 1, F-154).
 		s.pan, s.start, s.bewegt, s.startAbb = true, p, false, s.Abb
+		return
+	}
+	if s.pipette && t == TastePrimaer && !s.farbZug && (s.zug == keinZug || s.zug == zugText) {
+		// Pipette (ADR-0021 Nachtrag 9 Punkt 5): der Klick nimmt eine Farbe auf und trifft kein Objekt.
+		s.pipetteKlick(p)
 		return
 	}
 	s.TextBestaetigen()
@@ -362,7 +377,7 @@ func (s *Sitzung) Abbrechen() {
 }
 
 // Zieht meldet einen laufenden Zug mit der Maus (nicht die Texteingabe, dafür TextLaeuft).
-func (s *Sitzung) Zieht() bool { return s.pan || (s.zug != keinZug && s.zug != zugText) }
+func (s *Sitzung) Zieht() bool { return s.pan || s.farbZug || (s.zug != keinZug && s.zug != zugText) }
 
 // Rueckgaengig nimmt die letzte Änderung zurück (nicht während eines Zugs, F-18). Verschwindet dabei das
 // ausgewählte Objekt, endet die Auswahl.

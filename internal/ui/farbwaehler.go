@@ -1,0 +1,523 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package ui
+
+// Farbwähler im Abschnitt „Farbe“ der rechten Leiste (ADR-0031 Nachtrag 5, Bedeutung ADR-0021 Nachtrag 9): Farbfläche,
+// Felder (Beschriftungsfarben, zuletzt benutzte, Pipette), Farbton- und Deckkraft-Regler, Eingaben für Hex und
+// Deckkraft. Was eine Lage oder Eingabe bewirkt, entscheidet canvas.Sitzung; hier stehen Lage, Bilder und Ereignisse.
+
+import (
+	"fmt"
+	"image"
+	"image/color"
+	"math"
+	"unicode/utf8"
+
+	"gioui.org/f32"
+	"gioui.org/io/event"
+	"gioui.org/io/key"
+	"gioui.org/io/pointer"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
+	"gioui.org/unit"
+	"gioui.org/widget"
+	"gioui.org/widget/material"
+
+	"github.com/Andiministrator/schnapp/internal/canvas"
+	"github.com/Andiministrator/schnapp/internal/i18n"
+)
+
+// farbPlaetze ist die Zahl der Farbfelder: die Beschriftungsfarben und die zuletzt benutzten.
+const farbPlaetze = 7
+
+// farbRegler ist das Bedienelement, in dem gerade gezogen wird.
+type farbRegler int
+
+const (
+	reglerKeiner farbRegler = iota
+	reglerFlaeche
+	reglerTon
+	reglerDeck
+)
+
+// eingabe ist ein einzeiliges Eingabefeld der Leiste (Hex, Deckkraft); sein Zeiger ist zugleich das Fokus-Ziel.
+type eingabe struct {
+	text    string // getippter Text (gilt nur mit Fokus und !neu)
+	neu     bool   // der nächste getippte Text ersetzt die Anzeige
+	fehler  bool   // die letzte Übernahme war ungültig: roter Rand
+	rahmen  image.Rectangle
+	gezeigt string // angezeigter Text beim letzten Zeichnen (Tests)
+}
+
+// farbwaehler hält Lage, Zustand und Bilder des Farbwählers.
+type farbwaehler struct {
+	flaeche, ton, deck image.Rectangle // Lage beim letzten Zeichnen; die Zeiger sind die Ziele der Zeigerereignisse
+	zieht              farbRegler
+	hex, deckkraft     eingabe
+	pipette            widget.Clickable
+	pipRahmen          image.Rectangle
+
+	flaechenBild paint.ImageOp
+	flaechenTon  float64
+	flaecheDa    bool
+	tonBild      paint.ImageOp
+	tonDa        bool
+	deckBild     paint.ImageOp
+	deckFarbe    color.NRGBA
+	deckDa       bool
+	schach       map[image.Point]paint.ImageOp
+}
+
+// eingaben sind die Eingabefelder in Tab-Reihenfolge.
+func (fw *farbwaehler) eingaben() []*eingabe { return []*eingabe{&fw.hex, &fw.deckkraft} }
+
+// fokusFeld liefert das Eingabefeld mit Tastaturfokus (nil: keins).
+func (fw *farbwaehler) fokusFeld(gtx layout.Context) *eingabe {
+	for _, f := range fw.eingaben() {
+		if gtx.Focused(f) {
+			return f
+		}
+	}
+	return nil
+}
+
+// feldWert ist der Text, den ein Feld ohne Eingabe zeigt.
+func (e *editor) feldWert(f *eingabe) string {
+	c := e.s.AktuelleFarbe()
+	if f == &e.seite.fw.hex {
+		return canvas.HexText(c)
+	}
+	return fmt.Sprintf(i18n.TK("status bar", "%d%%"), canvas.Deckkraft(c))
+}
+
+// feldZeichen meldet, ob r in das Feld f getippt werden darf, und die Höchstlänge.
+func (e *editor) feldZeichen(f *eingabe, r rune) bool {
+	if f == &e.seite.fw.hex {
+		return r == '#' || (r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')
+	}
+	return (r >= '0' && r <= '9') || r == '%'
+}
+
+func (e *editor) feldLaenge(f *eingabe) int {
+	if f == &e.seite.fw.hex {
+		return 9
+	}
+	return 4
+}
+
+// feldUebernehmen übernimmt die Eingabe; ungültig bleibt sie stehen und das Feld zeigt den Fehler.
+func (e *editor) feldUebernehmen(f *eingabe) {
+	if f.neu || !e.seiteAn() {
+		return
+	}
+	ok := false
+	if f == &e.seite.fw.hex {
+		ok = e.s.SetzeHex(f.text)
+	} else {
+		ok = e.s.SetzeDeckkraftText(f.text)
+	}
+	f.fehler = !ok
+	if ok {
+		f.neu, f.text = true, ""
+	}
+}
+
+// seiteAn meldet, ob Bedienung in der Leiste wirkt: nicht während des Speicherns und nicht unter der Hilfetafel.
+func (e *editor) seiteAn() bool { return !e.s.SpeichernLaeuft() && !e.hilfeOffen }
+
+// feldTasten verarbeitet Fokus, Tasten und getippten Text der Eingabefelder. Es läuft vor tasten: Enter, Esc und die
+// Rücktaste gehören dem Feld, solange es den Fokus hat (Gio gibt eine Taste dem ersten passenden Filter des Bildes).
+func (e *editor) feldTasten(gtx layout.Context) {
+	for _, f := range e.seite.fw.eingaben() {
+		for {
+			ev, ok := gtx.Event(
+				key.FocusFilter{Target: f},
+				key.Filter{Focus: f, Name: key.NameReturn},
+				key.Filter{Focus: f, Name: key.NameEnter},
+				key.Filter{Focus: f, Name: key.NameEscape},
+				key.Filter{Focus: f, Name: key.NameDeleteBackward},
+				pointer.Filter{Target: f, Kinds: pointer.Press},
+			)
+			if !ok {
+				break
+			}
+			switch ev := ev.(type) {
+			case key.FocusEvent:
+				if !ev.Focus {
+					// Tab oder ein Klick woanders übernimmt; ungültig bleibt es beim Alten (ADR-0031 Nachtrag 5).
+					e.feldUebernehmen(f)
+				}
+				f.neu, f.text, f.fehler = true, "", false
+			case key.EditEvent:
+				if !e.seiteAn() || e.menue.offen {
+					continue
+				}
+				if f.neu {
+					f.neu, f.text = false, ""
+				}
+				for _, r := range ev.Text {
+					if e.feldZeichen(f, r) && utf8.RuneCountInString(f.text) < e.feldLaenge(f) {
+						f.text += string(r)
+					}
+				}
+				f.fehler = false
+			case key.Event:
+				if ev.State != key.Press || e.menue.offen {
+					continue
+				}
+				switch ev.Name {
+				case key.NameReturn, key.NameEnter:
+					e.feldUebernehmen(f)
+				case key.NameEscape:
+					f.neu, f.text, f.fehler = true, "", false
+					gtx.Execute(key.FocusCmd{Tag: e})
+				case key.NameDeleteBackward:
+					if f.neu {
+						f.neu, f.text = false, e.feldWert(f)
+					}
+					if _, n := utf8.DecodeLastRuneInString(f.text); n > 0 {
+						f.text = f.text[:len(f.text)-n]
+					}
+					f.fehler = false
+				}
+			case pointer.Event:
+				gtx.Execute(key.FocusCmd{Tag: f})
+			}
+		}
+	}
+}
+
+// farbeAuswerten verarbeitet Ziehen in Farbfläche und Reglern sowie die Pipette.
+func (e *editor) farbeAuswerten(gtx layout.Context) {
+	fw := &e.seite.fw
+	if fw.pipette.Clicked(gtx) && e.seiteAn() {
+		e.s.SchaltePipette()
+	}
+	for _, r := range []struct {
+		tag *image.Rectangle
+		art farbRegler
+	}{{&fw.flaeche, reglerFlaeche}, {&fw.ton, reglerTon}, {&fw.deck, reglerDeck}} {
+		for {
+			ev, ok := gtx.Event(pointer.Filter{Target: r.tag,
+				Kinds: pointer.Press | pointer.Drag | pointer.Release | pointer.Cancel})
+			if !ok {
+				break
+			}
+			pe, ok := ev.(pointer.Event)
+			if !ok {
+				continue
+			}
+			switch pe.Kind {
+			case pointer.Press:
+				if pe.Buttons != pointer.ButtonPrimary || fw.zieht != reglerKeiner || !e.seiteAn() {
+					continue
+				}
+				if e.s.BeginneFarbZug() {
+					fw.zieht = r.art
+					e.farbeZiehen(r.art, *r.tag, pe.Position)
+				}
+			case pointer.Drag, pointer.Release:
+				if fw.zieht != r.art {
+					continue
+				}
+				e.farbeZiehen(r.art, *r.tag, pe.Position)
+				if pe.Kind == pointer.Release {
+					e.s.BeendeFarbZug()
+					fw.zieht = reglerKeiner
+				}
+			case pointer.Cancel:
+				if fw.zieht == r.art {
+					e.s.BrecheFarbZugAb()
+					fw.zieht = reglerKeiner
+				}
+			}
+		}
+	}
+}
+
+// farbeZiehen setzt die Farbe aus der Lage p (relativ zum Element r) im Regler art.
+func (e *editor) farbeZiehen(art farbRegler, r image.Rectangle, p f32.Point) {
+	if r.Dx() <= 0 || r.Dy() <= 0 {
+		return
+	}
+	fx := math.Max(0, math.Min(1, float64(p.X)/float64(r.Dx())))
+	fy := math.Max(0, math.Min(1, float64(p.Y)/float64(r.Dy())))
+	h, a := e.s.FarbeHSV(), e.s.AktuelleFarbe().A
+	switch art {
+	case reglerFlaeche:
+		h.S, h.V = fx, 1-fy
+	case reglerTon:
+		h.H = math.Min(fx*360, 359.99) // ganz rechts bleibt Rot am Ende, statt auf Rot am Anfang zu springen
+	case reglerDeck:
+		a = uint8(math.Round(fx * 255))
+	}
+	e.s.FarbZugHSV(h, a)
+}
+
+// --- Zeichnen ---
+
+// bildIn zeichnet das Bild b gestreckt in r.
+func bildIn(gtx layout.Context, b paint.ImageOp, r image.Rectangle, filter paint.ImageFilter) {
+	g := b.Size()
+	if g.X == 0 || g.Y == 0 || r.Empty() {
+		return
+	}
+	b.Filter = filter
+	c := clip.Rect(r).Push(gtx.Ops)
+	t := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Pt(float32(r.Dx())/float32(g.X), float32(r.Dy())/float32(g.Y))).
+		Offset(f32.Pt(float32(r.Min.X), float32(r.Min.Y)))).Push(gtx.Ops)
+	b.Add(gtx.Ops)
+	paint.PaintOp{}.Add(gtx.Ops)
+	t.Pop()
+	c.Pop()
+}
+
+// schachIn zeichnet ein kleines Schachbrett (Felder zelle Pixel) in r, darunter liegt, was durchsichtig ist.
+func (fw *farbwaehler) schachIn(gtx layout.Context, r image.Rectangle, zelle int) {
+	if r.Empty() || zelle <= 0 {
+		return
+	}
+	n := image.Pt((r.Dx()+zelle-1)/zelle, (r.Dy()+zelle-1)/zelle)
+	if fw.schach == nil {
+		fw.schach = map[image.Point]paint.ImageOp{}
+	}
+	b, ok := fw.schach[n]
+	if !ok {
+		m := image.NewNRGBA(image.Rectangle{Max: n})
+		for y := 0; y < n.Y; y++ {
+			for x := 0; x < n.X; x++ {
+				c := color.NRGBA{R: 0x9A, G: 0x9E, B: 0xA3, A: 0xFF}
+				if (x+y)%2 == 0 {
+					c = color.NRGBA{R: 0xD4, G: 0xD6, B: 0xD9, A: 0xFF}
+				}
+				m.SetNRGBA(x, y, c)
+			}
+		}
+		b = paint.NewImageOp(m)
+		fw.schach[n] = b
+	}
+	bildIn(gtx, b, image.Rectangle{Min: r.Min, Max: r.Min.Add(n.Mul(zelle))}.Intersect(r), paint.FilterNearest)
+}
+
+// flaechenBildFuer liefert die Farbfläche zum Farbton h (Sättigung nach rechts, Hellwert nach oben).
+func (fw *farbwaehler) flaechenBildFuer(h float64) paint.ImageOp {
+	if !fw.flaecheDa || fw.flaechenTon != h {
+		const n = 64
+		m := image.NewNRGBA(image.Rect(0, 0, n, n))
+		for y := 0; y < n; y++ {
+			for x := 0; x < n; x++ {
+				m.SetNRGBA(x, y, canvas.HSV{H: h, S: float64(x) / (n - 1), V: 1 - float64(y)/(n-1)}.Farbe(255))
+			}
+		}
+		fw.flaechenBild, fw.flaechenTon, fw.flaecheDa = paint.NewImageOp(m), h, true
+	}
+	return fw.flaechenBild
+}
+
+func (fw *farbwaehler) tonBildHolen() paint.ImageOp {
+	if !fw.tonDa {
+		m := image.NewNRGBA(image.Rect(0, 0, 360, 1))
+		for x := 0; x < 360; x++ {
+			m.SetNRGBA(x, 0, canvas.HSV{H: float64(x), S: 1, V: 1}.Farbe(255))
+		}
+		fw.tonBild, fw.tonDa = paint.NewImageOp(m), true
+	}
+	return fw.tonBild
+}
+
+func (fw *farbwaehler) deckBildFuer(c color.NRGBA) paint.ImageOp {
+	c.A = 0
+	if !fw.deckDa || fw.deckFarbe != c {
+		const n = 64
+		m := image.NewNRGBA(image.Rect(0, 0, n, 1))
+		for x := 0; x < n; x++ {
+			d := c
+			d.A = uint8(math.Round(float64(x) * 255 / (n - 1)))
+			m.SetNRGBA(x, 0, d)
+		}
+		fw.deckBild, fw.deckFarbe, fw.deckDa = paint.NewImageOp(m), c, true
+	}
+	return fw.deckBild
+}
+
+// marke zeichnet eine Lagemarke: hell mit dunklem Rand, auf jeder Farbe zu sehen.
+func marke(gtx layout.Context, r image.Rectangle) {
+	paint.FillShape(gtx.Ops, farbeGrund, clip.Stroke{Path: clip.Rect(r.Inset(-gtx.Dp(1))).Path(),
+		Width: float32(gtx.Dp(1))}.Op())
+	paint.FillShape(gtx.Ops, color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}, clip.Stroke{Path: clip.Rect(r).Path(),
+		Width: float32(gtx.Dp(2))}.Op())
+}
+
+// reglerFlaecheAnmelden meldet r als Ziel der Zeigerereignisse tag an (Ursprung bei r.Min, Zeiger Fadenkreuz).
+func reglerAnmelden(gtx layout.Context, tag event.Tag, r image.Rectangle) {
+	t := op.Offset(r.Min).Push(gtx.Ops)
+	c := clip.Rect(image.Rectangle{Max: r.Size()}).Push(gtx.Ops)
+	event.Op(gtx.Ops, tag)
+	pointer.CursorCrosshair.Add(gtx.Ops)
+	c.Pop()
+	t.Pop()
+}
+
+// farbFeld zeichnet ein Farbfeld (Schachbrett unter halbdurchsichtigen Farben, heller Rand, grün wenn gewählt).
+func (e *editor) farbFeld(gtx layout.Context, c color.NRGBA, r image.Rectangle, gewaehlt, ueber bool) {
+	if gewaehlt { // grüner Rahmen außen (Grün heißt aktiv, Orange bleibt dem Fokus)
+		paint.FillShape(gtx.Ops, farbeAuswahl, clip.Rect(r.Inset(-gtx.Dp(2))).Op())
+	} else if ueber {
+		paint.FillShape(gtx.Ops, farbeNebentext, clip.Rect(r.Inset(-gtx.Dp(1))).Op())
+	}
+	if c.A < 255 {
+		e.seite.fw.schachIn(gtx, r, gtx.Dp(6))
+	}
+	paint.FillShape(gtx.Ops, c, clip.Rect(r).Op())
+	// Heller Rand, damit auch Dunkelgrau auf der dunklen Leiste zu sehen ist (Sitzungs-QA A-9).
+	paint.FillShape(gtx.Ops, farbeNebentext, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
+}
+
+// zeichnePipette zeichnet das Symbol der Pipette in r: ein schräger Stab mit Spitze unten links.
+func zeichnePipette(gtx layout.Context, r image.Rectangle, c color.NRGBA) {
+	s := float32(r.Dx())
+	var p clip.Path
+	p.Begin(gtx.Ops)
+	o := f32.Pt(float32(r.Min.X), float32(r.Min.Y))
+	pt := func(x, y float32) f32.Point { return o.Add(f32.Pt(x*s, y*s)) }
+	p.MoveTo(pt(0.22, 0.78))
+	p.LineTo(pt(0.70, 0.30))
+	paint.FillShape(gtx.Ops, c, clip.Stroke{Path: p.End(), Width: float32(gtx.Dp(2))}.Op())
+	kopf := image.Rect(int(o.X+0.62*s), int(o.Y+0.18*s), int(o.X+0.82*s), int(o.Y+0.38*s))
+	paint.FillShape(gtx.Ops, c, clip.Rect(kopf).Op())
+}
+
+// zeichneFarbwaehler zeichnet den Farbwähler ab y in der Breite breite bei x und liefert das neue y.
+func (e *editor) zeichneFarbwaehler(gtx layout.Context, x, y, breite, spalte int) int {
+	k := &e.seite
+	fw := &k.fw
+	aktuell, hsv := e.s.AktuelleFarbe(), e.s.FarbeHSV()
+	q, abst := gtx.Dp(24), gtx.Dp(6)
+	raster := 2*q + abst
+	hoch := 4*q + 3*abst
+
+	// Farbfläche links.
+	fw.flaeche = image.Rect(x, y, x+breite-raster-gtx.Dp(10), y+hoch)
+	bildIn(gtx, fw.flaechenBildFuer(hsv.H), fw.flaeche, paint.FilterLinear)
+	paint.FillShape(gtx.Ops, farbeLinie, clip.Stroke{Path: clip.Rect(fw.flaeche).Path(), Width: float32(gtx.Dp(1))}.Op())
+	mp := image.Pt(fw.flaeche.Min.X+int(math.Round(hsv.S*float64(fw.flaeche.Dx()))),
+		fw.flaeche.Min.Y+int(math.Round((1-hsv.V)*float64(fw.flaeche.Dy()))))
+	{
+		rc := clip.Rect(fw.flaeche.Inset(-gtx.Dp(4))).Push(gtx.Ops)
+		marke(gtx, image.Rectangle{Min: mp, Max: mp}.Inset(-gtx.Dp(4)))
+		rc.Pop()
+	}
+	reglerAnmelden(gtx, &fw.flaeche, fw.flaeche)
+
+	// Raster rechts: Beschriftungsfarben, zuletzt benutzte, Pipette.
+	rx := x + breite - raster
+	platz := func(i int) image.Rectangle {
+		px, py := rx+(i%2)*(q+abst), y+(i/2)*(q+abst)
+		return image.Rect(px, py, px+q, py+q)
+	}
+	farben := append(append([]color.NRGBA(nil), canvas.Beschriftungsfarben...), e.s.Zuletzt()...)
+	for j := range k.farbRahmen {
+		k.farbRahmen[j] = image.Rectangle{}
+	}
+	for j, c := range farben {
+		if j >= farbPlaetze {
+			break
+		}
+		r := platz(j)
+		k.farbRahmen[j] = r
+		e.farbFeld(gtx, c, r, c == aktuell, k.farben[j].Hovered())
+		seiteKnopf(gtx, &k.farben[j], r)
+	}
+	fw.pipRahmen = platz(farbPlaetze)
+	{
+		r, an := fw.pipRahmen, e.s.PipetteLaeuft()
+		grund, rnd := farbeGrund, farbeLinie
+		switch {
+		case an:
+			grund, rnd = farbeAuswahl, farbeAuswahl
+		case fw.pipette.Hovered():
+			rnd = farbeNebentext
+		}
+		paint.FillShape(gtx.Ops, grund, clip.Rect(r).Op())
+		paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
+		zeichnePipette(gtx, r.Inset(gtx.Dp(3)), farbeText)
+		seiteKnopf(gtx, &fw.pipette, r)
+	}
+	y += hoch + gtx.Dp(12)
+
+	// Farbton- und Deckkraft-Regler über die volle Breite.
+	rh := gtx.Dp(12)
+	fw.ton = image.Rect(x, y, x+breite, y+rh)
+	bildIn(gtx, fw.tonBildHolen(), fw.ton, paint.FilterLinear)
+	tx := fw.ton.Min.X + int(math.Round(hsv.H/360*float64(fw.ton.Dx())))
+	marke(gtx, image.Rect(tx-gtx.Dp(2), fw.ton.Min.Y-gtx.Dp(2), tx+gtx.Dp(2), fw.ton.Max.Y+gtx.Dp(2)))
+	reglerAnmelden(gtx, &fw.ton, fw.ton)
+	y += rh + gtx.Dp(10)
+
+	fw.deck = image.Rect(x, y, x+breite, y+rh)
+	fw.schachIn(gtx, fw.deck, gtx.Dp(6))
+	bildIn(gtx, fw.deckBildFuer(aktuell), fw.deck, paint.FilterLinear)
+	dx := fw.deck.Min.X + int(math.Round(float64(aktuell.A)/255*float64(fw.deck.Dx())))
+	marke(gtx, image.Rect(dx-gtx.Dp(2), fw.deck.Min.Y-gtx.Dp(2), dx+gtx.Dp(2), fw.deck.Max.Y+gtx.Dp(2)))
+	reglerAnmelden(gtx, &fw.deck, fw.deck)
+	y += rh + gtx.Dp(14)
+
+	// Eingaben Hex und Deckkraft.
+	fh := gtx.Dp(26)
+	e.seiteText(gtx, i18n.T("Hex"), 13, farbeNebentext, image.Pt(x, y+gtx.Dp(5)), gtx.Dp(36), 1)
+	fw.hex.rahmen = image.Rect(x+gtx.Dp(36), y, x+gtx.Dp(36)+gtx.Dp(100), y+fh)
+	e.zeichneEingabe(gtx, &fw.hex)
+	dl := x + spalte + gtx.Dp(64)
+	e.seiteText(gtx, i18n.T("Opacity"), 13, farbeNebentext, image.Pt(dl, y+gtx.Dp(5)), x+breite-gtx.Dp(58)-dl, 1)
+	fw.deckkraft.rahmen = image.Rect(x+breite-gtx.Dp(54), y, x+breite, y+fh)
+	e.zeichneEingabe(gtx, &fw.deckkraft)
+	return y + fh
+}
+
+// zeichneEingabe zeichnet ein Eingabefeld: Rand orange mit Fokus, rot bei ungültiger Eingabe, Schreibmarke am Ende.
+func (e *editor) zeichneEingabe(gtx layout.Context, f *eingabe) {
+	r := f.rahmen
+	fokus := gtx.Focused(f)
+	text := e.feldWert(f)
+	if fokus && !f.neu {
+		text = f.text
+	}
+	f.gezeigt = text
+	rnd := farbeLinie
+	switch {
+	case f.fehler:
+		rnd = farbeRot
+	case fokus:
+		rnd = farbeAkzent
+	}
+	paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(r).Op())
+	paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
+	innen := r.Min.Add(image.Pt(gtx.Dp(6), gtx.Dp(5)))
+	e.seiteText(gtx, text, 13, farbeText, innen, r.Dx()-gtx.Dp(10), 1)
+	if fokus {
+		// Schreibmarke hinter dem Text: Breite gemessen mit demselben Satz wie die Anzeige.
+		w := e.feldTextBreite(gtx, text, 13)
+		mx := min(innen.X+w+gtx.Dp(1), r.Max.X-gtx.Dp(3))
+		paint.FillShape(gtx.Ops, farbeText, clip.Rect(image.Rect(mx, r.Min.Y+gtx.Dp(5), mx+gtx.Dp(1), r.Max.Y-gtx.Dp(5))).Op())
+	}
+	t := op.Offset(r.Min).Push(gtx.Ops)
+	c := clip.Rect(image.Rectangle{Max: r.Size()}).Push(gtx.Ops)
+	event.Op(gtx.Ops, f)
+	pointer.CursorText.Add(gtx.Ops)
+	c.Pop()
+	t.Pop()
+}
+
+// feldTextBreite misst die Breite von text in sp (Maß der Leiste), ohne zu zeichnen.
+func (e *editor) feldTextBreite(gtx layout.Context, text string, sp float32) int {
+	lbl := material.Label(e.thema, unit.Sp(sp), text)
+	lbl.MaxLines = 1
+	g := gtx
+	g.Constraints = layout.Constraints{Max: image.Pt(gtx.Dp(400), gtx.Dp(100))}
+	m := op.Record(gtx.Ops)
+	d := lbl.Layout(g)
+	m.Stop()
+	return d.Size.X
+}

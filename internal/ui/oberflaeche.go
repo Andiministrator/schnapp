@@ -128,7 +128,7 @@ func (e *editor) menueEintraegeVon(i int) []menueEintrag {
 	case listeFarbe:
 		var en []menueEintrag
 		for j, c := range canvas.Beschriftungsfarben {
-			en = append(en, menueEintrag{farbe: c, hatFarbe: true, text: farbName(j), an: true, aktiv: s.Stil.Farbe == c})
+			en = append(en, menueEintrag{farbe: c, hatFarbe: true, text: farbName(j), an: true, aktiv: s.AktuelleFarbe() == c})
 		}
 		return en
 	case listeZoom:
@@ -420,7 +420,7 @@ func (e *editor) farbKnopf(gtx layout.Context, r image.Rectangle) {
 	}
 	paint.FillShape(gtx.Ops, rand, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
 	innen := r.Inset(min(gtx.Dp(8), r.Dx()/5)) // schrumpft mit dem Knopf (F-516)
-	paint.FillShape(gtx.Ops, e.s.Stil.Farbe, clip.Rect(innen).Op())
+	paint.FillShape(gtx.Ops, e.s.AktuelleFarbe(), clip.Rect(innen).Op())
 	paint.FillShape(gtx.Ops, farbeText, clip.Stroke{Path: clip.Rect(innen).Path(), Width: float32(gtx.Dp(1))}.Op())
 	if gtx.Focused(c) {
 		paint.FillShape(gtx.Ops, farbeAkzent, clip.Stroke{Path: clip.Rect(r.Inset(-gtx.Dp(3))).Path(),

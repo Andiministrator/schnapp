@@ -1,0 +1,149 @@
+[
+  {
+    "name": "F189-1 Farbzug schließt keinen Schritt ab",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t_ = s.D.BeendeZug()\n\t\ts.merkeAenderung(s.farbZugVor)",
+    "neu": "\t\ts.merkeAenderung(s.farbZugVor)"
+  },
+  {
+    "name": "F189-2 Farbzug färbt das Objekt nicht mit",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase s.farbZugObjekt:\n\t\tif o, ok := s.D.Objekt(s.Auswahl); ok {\n\t\t\t_ = s.D.ZugSetze(Umgefaerbt(o, c))",
+    "neu": "\tcase s.farbZugObjekt:\n\t\tif o, ok := s.D.Objekt(s.Auswahl); ok {\n\t\t\t_ = o"
+  },
+  {
+    "name": "F189-3 Abbruch stellt das Objekt nicht her",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t_ = s.D.BrecheZugAb()\n\t}\n}",
+    "neu": "\t\t_ = s.D.BeendeZug()\n\t}\n}"
+  },
+  {
+    "name": "F189-4 Farbton geht bei Schwarz verloren",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.hsvGemerkt && s.hsv.Farbe(c.A) == c {",
+    "neu": "\tif false && s.hsvGemerkt && s.hsv.Farbe(c.A) == c {"
+  },
+  {
+    "name": "F189-5 sechs Hex-Ziffern setzen die Deckkraft",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/canvas",
+    "alt": "B: uint8(n), A: alt.A}, true",
+    "neu": "B: uint8(n), A: 255}, true"
+  },
+  {
+    "name": "F189-6 Beschriftungsfarben landen in den zuletzt benutzten",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif b == c {\n\t\t\treturn\n\t\t}",
+    "neu": "\t\tif b == c {\n\t\t\tbreak\n\t\t}"
+  },
+  {
+    "name": "F189-7 zuletzt benutzte ohne Grenze",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/canvas",
+    "alt": "if z != c && len(neu) < ZuletztGrenze {",
+    "neu": "if z != c {"
+  },
+  {
+    "name": "F189-8 Pipette übernimmt die Deckkraft des Bildpunkts",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/canvas",
+    "alt": "\tc.A = 255\n\ts.TextBestaetigen()",
+    "neu": "\ts.TextBestaetigen()"
+  },
+  {
+    "name": "F189-9 Pipette wirkt neben dem Bild",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.pipette = false\n\tif !s.imBild(p) {\n\t\treturn\n\t}",
+    "neu": "\ts.pipette = false\n\tif false && !s.imBild(p) {\n\t\treturn\n\t}"
+  },
+  {
+    "name": "F189-10 Esc beendet die Pipette nicht",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase s.pipette:\n\t\ts.pipette = false\n",
+    "neu": ""
+  },
+  {
+    "name": "F189-11 Werkzeugwechsel lässt die Pipette an",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.TextBestaetigen()\n\ts.pipette = false\n",
+    "neu": "\ts.TextBestaetigen()\n"
+  },
+  {
+    "name": "F189-12 Pipetten-Klick wählt ein Objekt",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.pipetteKlick(p)\n\t\treturn",
+    "neu": "\t\ts.pipetteKlick(p)"
+  },
+  {
+    "name": "F189-13 Buchstaben im Hex-Feld wechseln das Werkzeug",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif e.seite.fw.fokusFeld(gtx) != nil && ((ok && t.hatWerkzeug)",
+    "neu": "\t\tif false && ((ok && t.hatWerkzeug)"
+  },
+  {
+    "name": "F189-14 Felder nach den Kürzeln ausgewertet (Rücktaste löscht das Objekt)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.feldTasten(gtx) // vor tasten",
+    "neu": "\t// e.feldTasten(gtx) // vor tasten"
+  },
+  {
+    "name": "F189-15 Tab aus dem Feld übernimmt nicht",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tif !ev.Focus {\n\t\t\t\t\t// Tab oder ein Klick woanders übernimmt; ungültig bleibt es beim Alten (ADR-0031 Nachtrag 5).\n\t\t\t\t\te.feldUebernehmen(f)",
+    "neu": "\t\t\t\tif !ev.Focus {\n\t\t\t\t\t// Tab oder ein Klick woanders übernimmt; ungültig bleibt es beim Alten (ADR-0031 Nachtrag 5)."
+  },
+  {
+    "name": "F189-16 Esc im Feld lässt den Fokus im Feld",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\t\tgtx.Execute(key.FocusCmd{Tag: e})",
+    "neu": "\t\t\t\t\t_ = e"
+  },
+  {
+    "name": "F189-17 Feld nimmt jedes Zeichen",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "if e.feldZeichen(f, r) && utf8",
+    "neu": "if utf8"
+  },
+  {
+    "name": "F189-18 Deckkraft-Regler setzt kein Alpha",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\t\ta = uint8(math.Round(fx * 255))",
+    "neu": "\t\t_ = fx"
+  },
+  {
+    "name": "F189-19 Ziehen unter der Hilfetafel",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "fw.zieht != reglerKeiner || !e.seiteAn() {",
+    "neu": "fw.zieht != reglerKeiner {"
+  },
+  {
+    "name": "F189-20 Loslassen schließt den Farbzug nicht",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\t\te.s.BeendeFarbZug()\n",
+    "neu": ""
+  },
+  {
+    "name": "F189-21 Fußzeile zeigt die Werkzeugfarbe statt der gewählten",
+    "datei": "internal/canvas/fusszeile.go",
+    "paket": "./internal/canvas",
+    "alt": "FussFeld{Art: FeldFarbe, Farbe: s.AktuelleFarbe(),",
+    "neu": "FussFeld{Art: FeldFarbe, Farbe: s.Stil.Farbe,"
+  }
+]
