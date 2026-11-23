@@ -36,6 +36,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/library"
 	"github.com/Andiministrator/schnapp/internal/mcp"
 	"github.com/Andiministrator/schnapp/internal/notify"
+	"github.com/Andiministrator/schnapp/internal/po"
 	"github.com/Andiministrator/schnapp/internal/render"
 	"github.com/Andiministrator/schnapp/internal/selection"
 	"github.com/Andiministrator/schnapp/internal/settings"
@@ -200,6 +201,7 @@ func mcpSignale(kanal <-chan os.Signal, abbrechen func(), beende func(int), fehl
 				continue
 			}
 			fmt.Fprintln(fehler, i18n.T("schnapp mcp: second signal, stopping now."))
+			raeumeLaufendeTempsAuf() // vor dem Beenden, nicht der Signalwache überlassen (F-484)
 			beende(exitFehler)
 			return
 		}
@@ -570,6 +572,10 @@ func (an mcpAnschluesse) nimmAuf(ctx context.Context, a aufnahme, ausgabe string
 		ok, err := an.bestaetige(ctx, a.zielText(), kundenname(k))
 		if err != nil {
 			diagnose(an.fehler, "Bestätigung gescheitert: %v", err)
+			if errors.Is(err, errFremdeSitzung) {
+				return mcp.FehlerErgebnis("The confirmation dialog would not appear on the desktop that would be captured " +
+					"(WAYLAND_DISPLAY and the session bus belong to different compositors); nothing was captured.")
+			}
 			return mcp.FehlerErgebnis("The confirmation dialog could not be shown; nothing was captured.")
 		}
 		if !ok {
@@ -585,7 +591,7 @@ func (an mcpAnschluesse) nimmAuf(ctx context.Context, a aufnahme, ausgabe string
 		if ctx.Err() != nil {
 			return mcp.FehlerErgebnis("Cancelled; nothing was captured.")
 		}
-		return mcp.FehlerErgebnis("The screenshot could not be taken: " + nutzerFehler(err))
+		return mcp.FehlerErgebnis("The screenshot could not be taken: " + agentGrund(err))
 	}
 	// Abbruch während der Aufnahme: das fertige Bild wird verworfen (ADR-0030 Nachtrag 4 Punkt 6, F-469).
 	if ctx.Err() != nil {
@@ -593,7 +599,8 @@ func (an mcpAnschluesse) nimmAuf(ctx context.Context, a aufnahme, ausgabe string
 	}
 	d, err := document.Neu(b.SubImage(bereich))
 	if err != nil {
-		return mcp.FehlerErgebnis("The screenshot could not be taken: " + nutzerFehler(err))
+		diagnose(an.fehler, "Dokument der Aufnahme: %v", err)
+		return mcp.FehlerErgebnis("The screenshot could not be taken: " + agentGrund(err))
 	}
 	if err := d.VorgabeKante(e.Kante); err != nil {
 		diagnose(an.fehler, "Kantenform %v nicht gesetzt: %v", e.Kante, err)
@@ -614,15 +621,28 @@ func (an mcpAnschluesse) nimmAuf(ctx context.Context, a aufnahme, ausgabe string
 	var pfad string
 	if ausgabe != "" {
 		pfad, err = schreibeBildNeu(d, ausgabe, true)
-		if err != nil {
+		switch {
+		case errors.Is(err, errAbgebrochen):
+			return mcp.FehlerErgebnis("Cancelled; the screenshot was discarded.")
+		case errors.Is(err, errNachSchreiben):
+			// Das Signal kam während des Schreibens: Die Datei ist vollständig, wird aber wie jede Aufnahme nach einem
+			// Abbruch verworfen (Nachtrag 4 Punkt 6, F-482). Sie ist exklusiv neu angelegt, also unsere.
+			return an.verwirfAusgabe(pfad)
+		case err != nil:
 			diagnose(an.fehler, "Schreiben nach output: %v", err)
 			return mcp.FehlerErgebnis("Could not write " + ausgabe + ": " + mcpSchreibFehler(err))
+		case ctx.Err() != nil: // Abbruch während des Schreibens ohne Signal (notifications/cancelled, EOF; F-483)
+			return an.verwirfAusgabe(pfad)
 		}
 	} else {
-		pfad, err = an.legeAb(d, sichtbar)
+		var rel string
+		pfad, rel, err = an.legeAb(d, sichtbar)
 		if err != nil {
 			diagnose(an.fehler, "Ablegen: %v", err)
-			return mcp.FehlerErgebnis("Could not save the screenshot: " + speicherFehler(err).Error())
+			return mcp.FehlerErgebnis("Could not save the screenshot: " + agentGrund(err))
+		}
+		if ctx.Err() != nil { // Abbruch während des Ablegens (F-483)
+			return an.verwirfAblage(rel, pfad)
 		}
 	}
 	return ergebnisMitBild(pfad, sichtbar, e.Agenten.Bild)
@@ -660,19 +680,77 @@ func (an mcpAnschluesse) nimm(ctx context.Context, a aufnahme, l selection.Letzt
 
 var errLetzterVeraltet = errors.New("schnapp: der Monitor des letzten Bereichs hat sich geändert")
 
-func (an mcpAnschluesse) legeAb(d *document.Dokument, sichtbar image.Image) (string, error) {
+// legeAb legt die Aufnahme unter agents/ ab und liefert den absoluten und den relativen Pfad.
+func (an mcpAnschluesse) legeAb(d *document.Dokument, sichtbar image.Image) (abs, rel string, _ error) {
 	o, err := an.orte()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	e, err := library.Neu(o).AblegenAgent(d, sichtbar, fileformat.Metadaten{})
 	if e.Pfad == "" {
-		return "", err
+		return "", "", err
 	}
 	if err != nil {
 		diagnose(an.fehler, "Ablegen mit Folgefehler: %v", err) // Index/Vorschau/Temp-Rest: die Datei liegt vor
 	}
-	return filepath.Join(o.Ablage, filepath.FromSlash(e.Pfad)), nil
+	return filepath.Join(o.Ablage, filepath.FromSlash(e.Pfad)), e.Pfad, nil
+}
+
+// verwirfAusgabe entfernt eine nach dem Abbruch fertig gewordene Datei an output (F-482, F-483). Gelingt das nicht,
+// sagt die Antwort, wo sie liegt.
+func (an mcpAnschluesse) verwirfAusgabe(pfad string) mcp.Ergebnis {
+	if err := entferneAusgabe(pfad); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		diagnose(an.fehler, "Verwerfen von output: %v", err)
+		return mcp.FehlerErgebnis("Cancelled, but the screenshot could not be removed again: " + pfad)
+	}
+	return mcp.FehlerErgebnis("Cancelled; the screenshot was discarded.")
+}
+
+// entferneAusgabe ist os.Remove (Naht für Tests).
+var entferneAusgabe = os.Remove
+
+// verwirfAblage entfernt eine nach dem Abbruch abgelegte Aufnahme samt Vorschau und Index-Eintrag (F-483).
+func (an mcpAnschluesse) verwirfAblage(rel, pfad string) mcp.Ergebnis {
+	o, err := an.orte()
+	if err == nil {
+		var st library.Stand
+		if st, err = library.StandVon(pfad); err == nil {
+			_, err = library.Neu(o).Entfernen(rel, st)
+		}
+	}
+	if err != nil {
+		diagnose(an.fehler, "Verwerfen der Ablage: %v", err)
+		return mcp.FehlerErgebnis("Cancelled, but the screenshot could not be removed from the library again: " + pfad)
+	}
+	return mcp.FehlerErgebnis("Cancelled; the screenshot was discarded.")
+}
+
+// agentGrund ist der englische Grund eines Fehlers für den Agenten (F-492): nie übersetzt, nie mit Pfad oder
+// Paketpräfix; Unbekanntes steht nur auf stderr des Servers.
+func agentGrund(err error) string {
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		return "the file does not exist."
+	case errors.Is(err, fs.ErrPermission):
+		return "no permission."
+	case errors.Is(err, syscall.ENOSPC):
+		return "not enough disk space."
+	case errors.Is(err, fileformat.ErrKeineDatei):
+		return "this is not a regular file."
+	case errors.Is(err, fileformat.ErrKeinPNG):
+		return "this is neither a PNG nor a JPEG image."
+	case errors.Is(err, fileformat.ErrZuGross):
+		return "the image is too large."
+	case errors.Is(err, fileformat.ErrBeschaedigt):
+		return "the image is damaged."
+	case errors.Is(err, render.ErrZuAufwendig):
+		return "the file has too many or too large annotations."
+	case errors.Is(err, library.ErrKeinHeim):
+		return "the home directory is unknown."
+	case errors.Is(err, errLetzterVeraltet):
+		return "the monitor of the last area has changed; the user has to select the area again."
+	}
+	return "unexpected error (details on the standard error output of the server)."
 }
 
 // datum liest RFC 3339 oder JJJJ-MM-TT (lokale Mitternacht).
@@ -769,6 +847,9 @@ func inAblage(ablage, pfad string) (aufgeloest string, drin bool) {
 	return p, true
 }
 
+// exportQuelleFehler ist die eine Antwort auf jede Quelle von export, die sich nicht öffnen lässt (F-493).
+const exportQuelleFehler = "Cannot open the file: it does not exist, cannot be read or is not an image Schnapp can open."
+
 // abgebrochenErgebnis ist die Antwort, wenn ctx zwischen zwei Schritten endete (F-467).
 var abgebrochenErgebnis = mcp.FehlerErgebnis("Cancelled.")
 
@@ -799,7 +880,8 @@ func (an mcpAnschluesse) liesAusBibliothek(ctx context.Context, args json.RawMes
 	}
 	_, g, _, err := ladeFuerEditor(pfad, false)
 	if err != nil {
-		return mcp.FehlerErgebnis("Cannot open the screenshot: " + nutzerFehler(err))
+		diagnose(an.fehler, "Lesen aus der Bibliothek: %v", err)
+		return mcp.FehlerErgebnis("Cannot open the screenshot: " + agentGrund(err))
 	}
 	if ctx.Err() != nil {
 		return abgebrochenErgebnis
@@ -835,7 +917,10 @@ func (an mcpAnschluesse) exportiere(ctx context.Context, args json.RawMessage, _
 	}
 	// Ablage und Vorschau-Cache (verkleinerte Bibliotheksbilder) brauchen library = yes (F-465).
 	for _, ort := range []string{o.Ablage, o.Vorschau} {
-		if _, drin := inAblage(ort, p.File); drin && !an.einstellungen().Agenten.Bibliothek {
+		// Auch dem Namen nach, ohne Auflösen: Sonst unterschiede die Antwort eine fehlende von einer vorhandenen Datei
+		// in der Ablage (F-493).
+		_, drin := inAblage(ort, p.File)
+		if (drin || liegtIn(filepath.Clean(ort), filepath.Clean(p.File))) && !an.einstellungen().Agenten.Bibliothek {
 			return an.nichtErlaubt("Reading the library", "library")
 		}
 	}
@@ -847,12 +932,21 @@ func (an mcpAnschluesse) exportiere(ctx context.Context, args json.RawMessage, _
 	}
 	_, g, _, err := ladeFuerEditor(p.File, false)
 	if err != nil {
-		return mcp.FehlerErgebnis("Cannot open the file: " + nutzerFehler(err))
+		// Ein Satz für jeden Grund: Die Antwort verrät nicht, ob es einen Pfad gibt und was er ist (F-493).
+		diagnose(an.fehler, "Export, Quelle: %v", err)
+		return mcp.FehlerErgebnis(exportQuelleFehler)
 	}
 	if ctx.Err() != nil {
 		return abgebrochenErgebnis
 	}
 	abs, err := schreibeBildNeu(g.Dokument, p.Target, false)
+	switch {
+	case errors.Is(err, errAbgebrochen):
+		return mcp.FehlerErgebnis("Cancelled before anything was written to " + p.Target + ".")
+	case errors.Is(err, errNachSchreiben):
+		// Ein Export ist keine Aufnahme: Die vollständige Datei bleibt, die Antwort sagt es (F-482).
+		return mcp.FehlerErgebnis("Interrupted by a signal after " + p.Target + " was written completely.")
+	}
 	if err != nil {
 		diagnose(an.fehler, "Export: %v", err)
 		return mcp.FehlerErgebnis("Could not write " + p.Target + ": " + mcpSchreibFehler(err))
@@ -869,6 +963,27 @@ func (an mcpAnschluesse) exportiere(ctx context.Context, args json.RawMessage, _
 type bestaetigung struct {
 	Ziel  string `json:"target"`
 	Kunde string `json:"client"`
+	// Sprache des Servers (aus dem echten Heim, F-485); das Kind liest keine Einstellungen aus seiner Umgebung.
+	Sprache string `json:"lang,omitempty"`
+}
+
+// mcpSprache ist die Sprache, die der Server beim Start gewählt hat (main.go); das Kind übernimmt sie (F-485).
+var mcpSprache string
+
+// setzeKindSprache lädt die Sprache des Servers im Kind; eine unbekannte bleibt ohne Wirkung (die Sprache aus der
+// Umgebung gilt dann weiter).
+func setzeKindSprache(sprache string, fehler io.Writer) {
+	if sprache == "" {
+		return
+	}
+	verfuegbar, err := i18n.Sprachen(po.Dateien)
+	if err != nil || !slices.Contains(verfuegbar, sprache) {
+		diagnose(fehler, "Sprache %q des Servers unbekannt", sprache)
+		return
+	}
+	if k, err := i18n.Lade(po.Dateien, sprache); err == nil {
+		i18n.Setze(k)
+	}
 }
 
 // bestaetigeImKind startet `schnapp --internal-confirm-capture` und wartet höchstens bestaetigenFrist. Erlaubt ist nur
@@ -880,7 +995,11 @@ func bestaetigeImKind(ctx context.Context, ziel, kunde string) (bool, error) {
 	}
 	ctx, ende := context.WithTimeout(ctx, bestaetigenFrist)
 	defer ende()
-	daten, _ := json.Marshal(bestaetigung{Ziel: ziel, Kunde: kunde})
+	// Der Dialog erscheint nur auf dem Compositor, der auch aufnimmt (ADR-0030 Nachtrag 5, F-491).
+	if err := pruefeSitzung(ctx, os.Getenv); err != nil {
+		return false, err
+	}
+	daten, _ := json.Marshal(bestaetigung{Ziel: ziel, Kunde: kunde, Sprache: mcpSprache})
 	cmd := exec.CommandContext(ctx, exe, bestaetigenArgument)
 	cmd.Stdin = bytes.NewReader(append(daten, '\n'))
 	cmd.Stdout = os.Stderr
@@ -911,6 +1030,7 @@ func laufeBestaetigung(ein io.Reader, fehler io.Writer) int {
 		fmt.Fprintln(fehler, "schnapp: invalid confirmation request")
 		return exitAufruf
 	}
+	setzeKindSprache(b.Sprache, fehler)
 	ctx, ende := context.WithTimeout(context.Background(), bestaetigenFrist+kindZugabe)
 	defer ende()
 	hart := time.AfterFunc(bestaetigenFrist+kindZugabe+kindHart, func() {

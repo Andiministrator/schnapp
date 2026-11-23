@@ -16,6 +16,11 @@
 #     bei 1600x1000 und deutscher Oberfläche: PROBE_ERLAUBEN="981 577" (Foto dialog.png aus D zeigt die Lage).
 #   F mit confirm = yes (ADR-0030 Nachtrag 4 Punkt 4, F-464): Tab, Tab, Return erlaubt nie — Return trifft höchstens
 #     „Ablehnen“; danach schließt Esc einen noch offenen Dialog. Antwort „did not allow“, nichts aufgenommen, kein Hinweis.
+#   G mit confirm = yes und PROBE_ERLAUBEN (F-481): Klick auf „Erlauben“, sobald das Kind sein erstes Bild meldet
+#     (SCHNAPP_DEBUG) — er fällt in die Sperre und erlaubt nicht; danach Esc. Meldet das Kind kein Drücken in der
+#     Sperre, ist der Lauf nicht aussagekräftig (FEHL).
+# Seit ADR-0030 Nachtrag 5 (F-491) erscheint der Dialog nur, wenn der Wayland-Socket und org.kde.KWin auf dem Bus zum
+# selben Prozess gehören; im virtuellen KWin ist das so (sonst lautet die Antwort in D bis G „different compositors“).
 # Der Probe-Build nimmt für den MCP-Server HOME als Heim (probe_an.go); probe.sh setzt es unter tmp/probe.
 # Es startet nur Prozesse, die von selbst enden (Attrappe mit eigener Zeitgrenze, Fernbedienung, schnapp mcp mit EOF).
 set -u
@@ -162,6 +167,28 @@ if [ -x "$probe/fernbedienung" ]; then
 	urteil "F Tastatur erlaubt nicht" "$probe/mcp/f.out" 1 true 'did not allow'
 	pruefe "F Bibliothek unverändert" "$(($(aufnahmen) - vorher))" 0
 	pruefe "F kein Hinweis" "$(grep -c '^notify' "$notify_log")" "$hinweise_vorher"
+	if [ -n "${PROBE_ERLAUBEN:-}" ]; then
+		echo "== G: Klick auf Allow in der Sperre erlaubt nicht (F-481)"
+		vorher="$(aufnahmen)"
+		hinweise_vorher="$(grep -c '^notify' "$notify_log")"
+		printf 'klick %s\nwarte 1500\nfoto nach-sperrklick\ntaste Esc\nwarte 500\n' "$PROBE_ERLAUBEN" > "$probe/mcp/g.txt"
+		{ ruf 1 capture_screen '{}'; sleep 25; } | SCHNAPP_DEBUG=1 "$s" mcp > "$probe/mcp/g.out" 2> "$probe/mcp/g.err" &
+		mcp_pid=$!
+		# Erst klicken, wenn das Kind sein erstes Bild meldet: Der Klick soll in die 600 ms der Sperre fallen.
+		for _ in $(seq 1 200); do grep -q -F '[bestaetigen] erstes Bild' "$probe/mcp/g.err" && break; sleep 0.05; done
+		FOTOS="$fotos" "$probe/fernbedienung" "$probe/mcp/g.txt" 2>&1 | tail -3
+		wait "$mcp_pid"
+		if grep -q -F '[bestaetigen] Drücken gesperrt=true' "$probe/mcp/g.err"; then
+			urteil "G Klick in der Sperre erlaubt nicht" "$probe/mcp/g.out" 1 true 'did not allow'
+			pruefe "G Bibliothek unverändert" "$(($(aufnahmen) - vorher))" 0
+			pruefe "G kein Hinweis" "$(grep -c '^notify' "$notify_log")" "$hinweise_vorher"
+		else
+			# Kam der Klick erst nach der Sperre an, sagt der Lauf nichts aus: nicht als bestanden zählen.
+			echo "FEHL G nicht aussagekräftig: kein Drücken in der Sperre gemeldet (Fernbedienung zu spät?)"
+			grep -F '[bestaetigen]' "$probe/mcp/g.err" | head -5
+			fehler=1
+		fi
+	fi
 	wait
 fi
 echo "-- stderr A (Auszug):"; head -20 "$probe/mcp/a.err"

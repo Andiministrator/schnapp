@@ -212,3 +212,46 @@ Die Entscheidungen zu F-461 und F-462 fielen in der sichereren Richtung (Registe
    Clients (Kennung mit `result` oder `error`, ohne Methode) bekommt keine Antwort. `ping` beantwortet der Server in
    beiden Formen, auch ohne `_meta` (2026-07-28 kennt `ping` nicht mehr; die Antwort ist harmlos und hilft älteren
    Clients).
+
+## Nachtrag 5 (23.11.2026): Dialog an die aufnehmende Sitzung gebunden, Abbruch nach dem Schreiben, Texte an den Agenten (Karte #205, F-480 bis F-494)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #205; Befunde aus dem Verify-Lauf von Sprint 12, Claude Fable 5.2, und dem
+Bericht zu Karte #203). F-491 fiel in der sichereren Richtung: absichern statt nur als Grenze dokumentieren.
+
+1. **Dialog nur auf dem Compositor, der aufnimmt (F-491).** Die Umgebung des Servers setzt der Agenten-Client. Zeigte
+   `WAYLAND_DISPLAY` auf einen eigenen Compositor, erschiene der Dialog dort, und ein Programm könnte „Erlauben“
+   klicken, während der Sitzungsbus das echte KWin aufnehmen lässt. Vor dem Dialog prüft der Server deshalb: Der
+   Prozess hinter dem Wayland-Socket (`SO_PEERCRED`; `WAYLAND_DISPLAY`, sonst `wayland-0`, relativ zu
+   `XDG_RUNTIME_DIR`) ist derselbe wie der Besitzer von `org.kde.KWin` auf dem Sitzungsbus
+   (`GetConnectionUnixProcessID`). Weichen sie ab oder ist `WAYLAND_SOCKET` gesetzt, wird nicht aufgenommen. Das Kind
+   erbt `WAYLAND_DISPLAY` und `XDG_RUNTIME_DIR` unverändert und löst so denselben Socket auf (ein absoluter Pfad
+   scheiterte an der Probe-Sperre, F-229; der Probelauf hat es gezeigt). Zeigt die Umgebung
+   **beides** auf einen fremden Compositor, nimmt auch die Aufnahme von dort auf; der echte Bildschirm bleibt
+   unberührt. Ohne `confirm` gibt es keinen Dialog und nichts zu binden; die Hinweise laufen über denselben Bus wie
+   die Aufnahme. **Grenze:** Prozessnummern gelten im eigenen PID-Namensraum; für ein Flatpak ist die Bindung neu zu
+   prüfen (vor Flathub). Wer das Kommando des Servers setzt, kann ohnehin beliebigen Code als der Mensch ausführen —
+   die Prüfung schützt gegen eine fremde Umgebung, nicht gegen ein fremdes Programm.
+2. **Sperre auch nach dem Fokus (F-481).** Das erste Bild ist womöglich noch nicht zu sehen, wenn es gezeichnet wird.
+   Die Sperre von 600 ms beginnt deshalb mit dem ersten Bild **und** neu mit dem ersten Bild nach jedem Erhalt des
+   Fokus; ein Fokusverlust macht ein laufendes Drücken ungültig. Die Verdrahtung von Ereignissen und Logik ist ohne
+   Fenster getestet (`input.Router`). „Nur per Mausklick“ heißt genauer: nur per Zeiger — Gio meldet Berührung und
+   Stift als dasselbe Klicken; Tasten erreichen „Erlauben“ weiter nie.
+3. **Abbruch nach dem Schreiben (F-482, F-483).** Endet ein Aufruf durch Signal, `notifications/cancelled` oder EOF,
+   während die Aufnahme geschrieben oder abgelegt wird, entfernt der Server die Datei, die er gerade selbst angelegt
+   hat: an `output` (exklusiv neu angelegt, also seine) wie in der Bibliothek (`library.Entfernen` mit dem Stand
+   direkt nach dem Ablegen, samt Vorschau und Index). Scheitert das Entfernen, nennt die Antwort die Datei. Ein
+   `export`, den ein Signal nach dem vollständigen Schreiben trifft, behält die Datei und sagt das (ein Export ist
+   keine Aufnahme).
+4. **Zweites Signal räumt zuerst auf (F-484).** Die Signalwache führt die temporären Dateien laufender Schreibvorgänge
+   in einer Liste; das zweite Signal an den Server entfernt sie (nur mit dem Vorsatz `.schnapp-export-`), bevor es den
+   Prozess beendet.
+5. **Sprache des Dialogs (F-485).** Der Server schickt seine Sprache (aus dem echten Heim) in der Anfrage an das Kind;
+   das Kind liest keine Einstellungen aus seiner Umgebung für die Sprache. Eine unbekannte Sprache bleibt ohne Wirkung.
+6. **Texte an den Agenten (F-492, F-493).** Fehlertexte an den Agenten sind immer englisch und tragen weder Pfade des
+   Menschen noch Paketfehler; Unbekanntes steht nur auf stderr. `export` antwortet auf jede Quelle, die sich nicht
+   öffnen lässt (fehlt, nicht lesbar, kein Bild, Ordner), mit demselben Satz. Ob `file` in Ablage oder Vorschau-Cache
+   liegt, prüft der Server auch dem Namen nach (ohne Auflösen), damit „library = yes“ nicht nur für vorhandene Dateien
+   kommt.
+7. **Ohne harte Links (F-494).** Kann das Dateisystem keine harten Links, legt `SchreibeOhneErsetzen` das Ziel mit
+   `renameat2(RENAME_NOREPLACE)` an — der Kernel prüft beim Umbenennen selbst. Nur wenn auch das fehlt
+   (`EINVAL`/`ENOSYS`), bleibt das bestmögliche Prüfen und Umbenennen mit kurzem Fenster.

@@ -52,8 +52,8 @@
     "name": "M8 Export aus der Bibliothek ohne Einwilligung",
     "datei": "cmd/schnapp/mcp.go",
     "paket": "./cmd/schnapp",
-    "alt": "if _, drin := inAblage(ort, p.File); drin && !an.einstellungen().Agenten.Bibliothek {",
-    "neu": "if _, drin := inAblage(ort, p.File); false && drin && !an.einstellungen().Agenten.Bibliothek {"
+    "alt": "if (drin || liegtIn(filepath.Clean(ort), filepath.Clean(p.File))) && !an.einstellungen().Agenten.Bibliothek {",
+    "neu": "if false && (drin || liegtIn(filepath.Clean(ort), filepath.Clean(p.File))) && !an.einstellungen().Agenten.Bibliothek {"
   },
   {
     "name": "M9 Agenten-Aufnahme in der normalen Ablage",
@@ -370,5 +370,103 @@
     "paket": "./internal/ui",
     "alt": "return name == key.NameEscape",
     "neu": "return false && name == key.NameEscape"
+  },
+  {
+    "name": "M54 export ohne Zielprüfung (F-480)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif err := an.pruefeZiel(\"target\", p.Target); err != nil {",
+    "neu": "\tif err := an.pruefeZiel(\"target\", p.Target); false && err != nil {"
+  },
+  {
+    "name": "M55 Dialog erlaubt jeden Klick (F-481)",
+    "datei": "internal/ui/bestaetigen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tok := d.f.klick(jetzt)",
+    "neu": "\t\t\tok := d.f.klick(jetzt) || true"
+  },
+  {
+    "name": "M56 Fokus setzt die Sperre nicht neu (F-481)",
+    "datei": "internal/ui/bestaetigen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tf.neuSperren = true",
+    "neu": "\t\tf.neuSperren = false"
+  },
+  {
+    "name": "M57 Dialog auf fremdem Compositor (F-491)",
+    "datei": "cmd/schnapp/sitzung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif w <= 0 || w != k {",
+    "neu": "\tif false && (w <= 0 || w != k) {"
+  },
+  {
+    "name": "M59 output bleibt nach Signal liegen (F-482)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "also unsere.\n\t\t\treturn an.verwirfAusgabe(pfad)",
+    "neu": "also unsere.\n\t\t\treturn ergebnisMitBild(pfad, sichtbar, false)"
+  },
+  {
+    "name": "M60 export nach Signal meldet Schreibfehler (F-482)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\treturn mcp.FehlerErgebnis(\"Interrupted by a signal after \" + p.Target + \" was written completely.\")",
+    "neu": "\t\treturn mcp.FehlerErgebnis(\"Could not write \" + p.Target + \": \" + mcpSchreibFehler(err))"
+  },
+  {
+    "name": "M61 Abbruch beim Ablegen ignoriert (F-483)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif ctx.Err() != nil { // Abbruch während des Ablegens (F-483)",
+    "neu": "\t\tif false && ctx.Err() != nil { // Abbruch während des Ablegens (F-483)"
+  },
+  {
+    "name": "M62 Abbruch beim Schreiben von output ignoriert (F-483)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tcase ctx.Err() != nil: // Abbruch während des Schreibens ohne Signal",
+    "neu": "\t\tcase false && ctx.Err() != nil: // Abbruch während des Schreibens ohne Signal"
+  },
+  {
+    "name": "M63 zweites Signal ohne Aufräumen (F-484)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\traeumeLaufendeTempsAuf() // vor dem Beenden",
+    "neu": "\t\t\t// raeumeLaufendeTempsAuf() vor dem Beenden"
+  },
+  {
+    "name": "M64 Kind übernimmt die Sprache nicht (F-485)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tsetzeKindSprache(b.Sprache, fehler)",
+    "neu": "\t_ = b.Sprache"
+  },
+  {
+    "name": "M65 übersetzter Aufnahmefehler an den Agenten (F-492)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\treturn mcp.FehlerErgebnis(\"The screenshot could not be taken: \" + agentGrund(err))\n\t}\n\t// Abbruch",
+    "neu": "\t\treturn mcp.FehlerErgebnis(\"The screenshot could not be taken: \" + nutzerFehler(err))\n\t}\n\t// Abbruch"
+  },
+  {
+    "name": "M66 export verrät den Grund der Quelle (F-493)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\treturn mcp.FehlerErgebnis(exportQuelleFehler)",
+    "neu": "\t\treturn mcp.FehlerErgebnis(\"Cannot open the file: \" + agentGrund(err))"
+  },
+  {
+    "name": "M67 Bibliotheksprüfung nur aufgelöst (F-493)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "if (drin || liegtIn(filepath.Clean(ort), filepath.Clean(p.File))) && !an.einstellungen().Agenten.Bibliothek {",
+    "neu": "if drin && !an.einstellungen().Agenten.Bibliothek {"
+  },
+  {
+    "name": "M68 ohne Links ersetzt das Umbenennen (F-494)",
+    "datei": "internal/export/export.go",
+    "paket": "./internal/export",
+    "alt": "\tswitch err := umbenennenOhneErsetzen(name, pfad); {",
+    "neu": "\tswitch err := os.Rename(name, pfad); {"
   }
 ]

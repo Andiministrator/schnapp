@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -49,6 +50,11 @@ func dialogKindAttrappe() {
 			os.Exit(exitFehler)
 		}
 		os.Exit(exitOK)
+	case "umgebung": // F-491: derselbe Socket wie geprüft (gleiche Umgebung)
+		if os.Getenv("WAYLAND_DISPLAY") != "wayland-probe" || os.Getenv("XDG_RUNTIME_DIR") != "/lauf" {
+			os.Exit(exitFehler)
+		}
+		os.Exit(exitOK)
 	}
 	os.Exit(99)
 }
@@ -59,6 +65,81 @@ func mitKind(t *testing.T, art string) {
 	alt := kindProgramm
 	kindProgramm = os.Executable
 	t.Cleanup(func() { kindProgramm = alt })
+	sitzungAttrappe(t, 4711, 4711)
+	t.Setenv("XDG_RUNTIME_DIR", "/lauf")
+	t.Setenv("WAYLAND_DISPLAY", "wayland-probe")
+	t.Setenv("WAYLAND_SOCKET", "")
+}
+
+// sitzungAttrappe ersetzt die Abfragen der Sitzungsbindung (F-491): Prozess hinter dem Wayland-Socket und Besitzer
+// von org.kde.KWin.
+func sitzungAttrappe(t *testing.T, wayland, kwin int32) {
+	t.Helper()
+	altW, altK := waylandPid, kwinPid
+	waylandPid = func(string) (int32, error) { return wayland, nil }
+	kwinPid = func(context.Context) (int32, error) { return kwin, nil }
+	t.Cleanup(func() { waylandPid, kwinPid = altW, altK })
+}
+
+// TestKindNurAufDerAufnehmendenSitzung: Bedient ein anderer Prozess den Wayland-Socket als der, dem KWin auf dem
+// Sitzungsbus gehört, startet kein Dialog und es gilt nicht als erlaubt (F-491). Das Kind sieht dieselbe Umgebung (also
+// denselben Socket); mit WAYLAND_SOCKET startet kein Dialog.
+func TestKindNurAufDerAufnehmendenSitzung(t *testing.T) {
+	mitKind(t, "erlauben")
+	sitzungAttrappe(t, 100, 200)
+	ok, err := bestaetigeImKind(context.Background(), "monitor DP-1", "Agent")
+	if ok || !errors.Is(err, errFremdeSitzung) {
+		t.Fatalf("fremder Compositor: %v, %v; erwartet abgelehnt mit errFremdeSitzung", ok, err)
+	}
+	mitKind(t, "umgebung")
+	if ok, err := bestaetigeImKind(context.Background(), "monitor DP-1", "Agent"); !ok || err != nil {
+		t.Fatalf("Umgebung des Kindes falsch: %v, %v", ok, err)
+	}
+	t.Setenv("WAYLAND_SOCKET", "5")
+	if ok, err := bestaetigeImKind(context.Background(), "monitor DP-1", "Agent"); ok || err == nil {
+		t.Fatalf("mit WAYLAND_SOCKET: %v, %v; erwartet Fehler", ok, err)
+	}
+}
+
+// TestWaylandSocketPfad: WAYLAND_DISPLAY relativ zu XDG_RUNTIME_DIR, absolut, Voreinstellung wayland-0.
+func TestWaylandSocketPfad(t *testing.T) {
+	for _, c := range []struct {
+		env  map[string]string
+		want string
+		ok   bool
+	}{
+		{map[string]string{"XDG_RUNTIME_DIR": "/lauf", "WAYLAND_DISPLAY": "wayland-1"}, "/lauf/wayland-1", true},
+		{map[string]string{"XDG_RUNTIME_DIR": "/lauf"}, "/lauf/wayland-0", true},
+		{map[string]string{"WAYLAND_DISPLAY": "/anders/w"}, "/anders/w", true},
+		{map[string]string{"WAYLAND_DISPLAY": "wayland-1"}, "", false},
+		{map[string]string{"XDG_RUNTIME_DIR": "rel", "WAYLAND_DISPLAY": "wayland-1"}, "", false},
+		{map[string]string{"XDG_RUNTIME_DIR": "/lauf", "WAYLAND_SOCKET": "3"}, "", false},
+	} {
+		got, err := waylandSocketPfad(func(k string) string { return c.env[k] })
+		if (err == nil) != c.ok || got != c.want {
+			t.Errorf("%v: %q, %v", c.env, got, err)
+		}
+	}
+}
+
+// TestWaylandCompositorPid: SO_PEERCRED liefert den eigenen Prozess, wenn der Test selbst lauscht.
+func TestWaylandCompositorPid(t *testing.T) {
+	t.Chdir(t.TempDir()) // relativ: Ein langer TMPDIR (Mutantenlauf) überschritte die 108 Zeichen eines Socket-Pfads
+	socket := "w"
+	l, err := net.Listen("unix", socket)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+	go func() {
+		if c, err := l.Accept(); err == nil {
+			c.Close()
+		}
+	}()
+	pid, err := waylandCompositorPid(socket)
+	if err != nil || int(pid) != os.Getpid() {
+		t.Fatalf("Pid %d, %v; erwartet %d", pid, err, os.Getpid())
+	}
 }
 
 // TestKindNurExit0Erlaubt: Erlaubt ist nur Exit 0; ein anderer Exit lehnt ab (Mutant c11).

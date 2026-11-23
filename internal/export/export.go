@@ -16,6 +16,8 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	"golang.org/x/sys/unix"
 	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -161,8 +163,8 @@ func SchreibeAtomarPrivat(pfad string, schreibe func(io.Writer) error) (fehler e
 
 // SchreibeOhneErsetzen ist SchreibeAtomar, legt die Datei aber nur an, wenn es das Ziel noch nicht gibt — geprüft beim
 // Anlegen selbst (harter Link), nicht vorher: Entsteht das Ziel während des Renderns, gilt ErrZielVorhanden (Verify N-4).
-// Für eine angehängte Endung, die der Dialog nicht bestätigt hat. Kann das Dateisystem keine harten Links, wird vorher
-// geprüft und umbenannt (bestmöglich).
+// Für eine angehängte Endung, die der Dialog nicht bestätigt hat. Kann das Dateisystem keine harten Links, benennt es
+// mit RENAME_NOREPLACE um; kann es auch das nicht, wird vorher geprüft und umbenannt (bestmöglich, F-494).
 func SchreibeOhneErsetzen(pfad string, schreibe func(io.Writer) error) (fehler error) {
 	defer errprefix.Defer("export", &fehler)
 	return schreibeAtomar(pfad, true, 0, schreibe)
@@ -222,13 +224,25 @@ func schreibeAtomar(pfad string, ohneErsetzen bool, neuRechte os.FileMode, schre
 	if !ohneErsetzen {
 		return os.Rename(name, pfad)
 	}
-	switch err := os.Link(name, pfad); {
+	switch err := linkNaht(name, pfad); {
 	case err == nil:
 		os.Remove(name)
 		return nil
 	case errors.Is(err, os.ErrExist):
 		return ErrZielVorhanden
 	}
+	// Ohne harte Links: Umbenennen, das ein vorhandenes Ziel nicht ersetzt — geprüft vom Kernel beim Umbenennen selbst,
+	// ohne Fenster zwischen Prüfen und Umbenennen (F-494).
+	switch err := umbenennenOhneErsetzen(name, pfad); {
+	case err == nil:
+		return nil
+	case errors.Is(err, os.ErrExist):
+		return ErrZielVorhanden
+	case !errors.Is(err, unix.EINVAL) && !errors.Is(err, unix.ENOSYS):
+		return err
+	}
+	// Auch das kann das Dateisystem nicht (etwa manche FUSE- oder Netz-Dateisysteme): bestmöglich prüfen, dann
+	// umbenennen. Hier bleibt ein kurzes Fenster.
 	if _, err := os.Lstat(pfad); !errors.Is(err, os.ErrNotExist) {
 		if err == nil {
 			return ErrZielVorhanden
@@ -237,6 +251,18 @@ func schreibeAtomar(pfad string, ohneErsetzen bool, neuRechte os.FileMode, schre
 	}
 	return os.Rename(name, pfad)
 }
+
+// Nähte für Tests: harter Link und Umbenennen ohne Ersetzen (Dateisystem ohne diese Fähigkeiten nachbauen).
+var (
+	linkNaht               = os.Link
+	umbenennenOhneErsetzen = func(alt, neu string) error {
+		err := unix.Renameat2(unix.AT_FDCWD, alt, unix.AT_FDCWD, neu, unix.RENAME_NOREPLACE)
+		if err != nil {
+			return &os.LinkError{Op: "renameat2", Old: alt, New: neu, Err: err}
+		}
+		return nil
+	}
+)
 
 // keinSchreibrechtImOrdner: Der Ordner erlaubt keine neue Datei (Rechte, schreibgeschützt).
 func keinSchreibrechtImOrdner(err error) bool {

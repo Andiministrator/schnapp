@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -101,13 +102,22 @@ func mitSignalwache(f func(abgebrochen func() bool, merkeTemp func(string)) erro
 			}
 		}
 	}()
+	var gemerkt *string
 	err := f(abgebrochen, func(name string) {
 		if name == "" { // kein Dateiname: der Rückfall schreibt das Ziel direkt (F-458)
 			direkt.Store(true)
 			return
 		}
 		temp.Store(&name)
+		if gemerkt != nil {
+			laufendeTemps.Delete(gemerkt)
+		}
+		gemerkt = &name
+		laufendeTemps.Store(gemerkt, name)
 	})
+	if gemerkt != nil {
+		laufendeTemps.Delete(gemerkt)
+	}
 	meldeAb(kanal)
 	close(fertig)
 	<-ende
@@ -138,6 +148,22 @@ func zweitesSignalMeldung(direkt bool, temp *string) string {
 		return i18n.T("Interrupted again; the file was already complete.")
 	}
 	return i18n.T("Interrupted again while writing; the temporary file could not be removed.")
+}
+
+// laufendeTemps hält die temporären Dateien der gerade laufenden Schreibvorgänge unter der Signalwache. Ein anderer
+// Signal-Empfänger, der den Prozess beendet (zweites Signal im MCP-Server), räumt sie vorher ab (F-484): Sonst überholte
+// er die Wache, die nur im 10-ms-Takt nachsieht, und die Datei mit Bildschirminhalt bliebe liegen.
+var laufendeTemps sync.Map // *string → string
+
+// raeumeLaufendeTempsAuf entfernt die temporären Dateien aller laufenden Schreibvorgänge (nur mit dem Vorsatz der
+// Exportdatei, entferneTemp).
+func raeumeLaufendeTempsAuf() {
+	laufendeTemps.Range(func(_, name any) bool {
+		if err := entferneTemp(name.(string)); err != nil && !errors.Is(err, os.ErrNotExist) {
+			fmt.Fprintln(os.Stderr, i18n.T("Interrupted again while writing; the temporary file could not be removed."))
+		}
+		return true
+	})
 }
 
 // errKeinTemp: der Name trägt den Vorsatz der Exportdatei nicht; entferneTemp fasst ihn nicht an.

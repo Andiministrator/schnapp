@@ -52,7 +52,7 @@ func main() {
 		switch args := os.Args[1:]; {
 		case len(args) == 1 && args[0] == mcpArgument:
 			an := echteMcpAnschluesse(os.Stderr)
-			starteSprache(an.lade) // auch die Sprache aus dem echten Heim (ADR-0030 Nachtrag 4 Punkt 1)
+			mcpSprache = starteSprache(an.lade) // auch die Sprache aus dem echten Heim (ADR-0030 Nachtrag 4 Punkt 1)
 			return laufeMcp(os.Stdin, os.Stdout, os.Stderr, an)
 		case len(args) == 1 && args[0] == bestaetigenArgument:
 			return laufeBestaetigung(os.Stdin, os.Stderr)
@@ -65,9 +65,10 @@ func main() {
 // 2). Die Warnungen über die Einstellungsdatei gibt erst laufe aus (übersetzt, nur bei Aufnahmen); hier zählt nur die
 // Sprache. Scheitert das Laden der Sprache, bleibt Englisch aktiv; das Programm läuft trotzdem (i18n.Starte). lade
 // kommt von außen, damit der Test ohne echte Datei auskommt (KB-11).
-func starteSprache(lade Ladefunktion) {
+func starteSprache(lade Ladefunktion) string {
 	einst, _ := lade()
-	_, _ = i18n.Starte(po.Dateien, einst.Sprache)
+	s, _ := i18n.Starte(po.Dateien, einst.Sprache)
+	return s
 }
 
 // halter führt den Halter der Zwischenablage aus (ADR-0024), wenn args genau das Helfer-Argument ist: vom Editor

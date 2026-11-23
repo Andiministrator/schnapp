@@ -156,9 +156,19 @@ desktop notification (urgency critical); if the notification service does not ac
 The notification is only a hint: the server knows that the service took it, not that a person saw it, and a
 do-not-disturb mode may hide it. If you want to see every capture, keep `confirm = yes`. Captures without `output` go
 to the library under `<Pictures>/schnapp/agents/` and are cleaned up like any capture. A capture that is cancelled
-(`notifications/cancelled`, end of input, signal) is discarded even if the image was already taken.
+(`notifications/cancelled`, end of input, signal) is discarded even if the image was already taken or written: the
+server removes the file it has just created (in the library together with its preview and index entry). Only if that
+removal fails does the answer name the file. An `export` that a signal interrupts after the target was written
+completely keeps the file and says so. Error texts to the agent are always English and never contain paths of the
+user; `export` gives one sentence for every source it cannot open (missing, unreadable, not an image).
 
-The dialog answers only to the mouse: "Allow" counts only when it is pressed and released after a short lock (0.6 s)
-once the dialog appears; no key ever allows (Return, Space and Tab cannot reach the button). Esc, "Deny" and closing
-the window deny. The dialog closes itself shortly after the 60 s limit, even if the server is gone. The name the agent
-reports about itself is shown in the dialog as unverified.
+The dialog answers only to a pointer (mouse, touch or pen): "Allow" counts only when it is pressed and released after a
+short lock (0.6 s) once the dialog appears and again each time it gets the focus; no key ever allows (Return, Space
+and Tab cannot reach the button). Esc, "Deny" and closing the window deny. The dialog closes itself shortly after the
+60 s limit, even if the server is gone. The name the agent reports about itself is shown in the dialog as unverified;
+the dialog speaks the language of the server (from the real home directory).
+
+The dialog appears only on the compositor that also takes the screenshot: before showing it, the server checks that
+the process serving the Wayland socket (`WAYLAND_DISPLAY`, relative to `XDG_RUNTIME_DIR`) is the process that owns
+`org.kde.KWin` on the session bus (`DBUS_SESSION_BUS_ADDRESS`). If they differ, or `WAYLAND_SOCKET` is set, nothing
+is captured. An environment that points both elsewhere can only capture that other desktop, never the real one.

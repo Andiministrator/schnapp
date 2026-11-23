@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"image/jpeg"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -344,6 +345,21 @@ func TestMcpAbbruchVerwirftFertigeAufnahme(t *testing.T) {
 			ziel := filepath.Join(l.heim, "aus.png")
 			args = strings.ReplaceAll(args, "OUT", ziel)
 			ctx, abbrechen := context.WithCancel(context.Background())
+			// Nach dem Abbruch wird nicht einmal versucht zu schreiben oder abzulegen (F-469; das Entfernen nach
+			// dem Schreiben, F-483, ist nur das Netz dahinter): weder die Orte der Ablage gefragt noch Bytes geschrieben.
+			var versucht bool
+			orte := l.an.orte
+			l.an.orte = func() (library.Orte, error) {
+				if ctx.Err() != nil {
+					versucht = true
+				}
+				return orte()
+			}
+			setzeNaht(t, func(w io.Writer, inhalt []byte, _ func() bool) error {
+				versucht = true
+				_, err := w.Write(inhalt)
+				return err
+			})
 			if wann == "aufnahme" {
 				quelle := l.an.quelle
 				l.an.quelle = func() (capture.Quelle, error) { abbrechen(); return quelle() }
@@ -360,6 +376,9 @@ func TestMcpAbbruchVerwirftFertigeAufnahme(t *testing.T) {
 			}
 			if _, err := os.Stat(ziel); !errors.Is(err, os.ErrNotExist) {
 				t.Errorf("%s %s: output geschrieben", wann, args)
+			}
+			if versucht {
+				t.Errorf("%s %s: nach dem Abbruch noch geschrieben oder abgelegt", wann, args)
 			}
 			// Abbruch während der Aufnahme: nicht einmal ein Hinweis auf ein Bild, das verworfen wird.
 			if wann == "aufnahme" && strings.Contains(strings.Join(l.schritte, ";"), "hinweis:") {

@@ -14,13 +14,30 @@ import (
 type freigabe struct {
 	sperreBis    time.Time // Ende der Sperre; null, solange kein Bild gezeigt wurde
 	druckGueltig bool      // das laufende Drücken auf „Erlauben“ lag nach der Sperre
+	fokussiert   bool      // das Fenster hat den Fokus
+	neuSperren   bool      // das nächste Bild setzt die Sperre neu (Fokus erhalten)
 }
 
-// bild meldet ein Bild zur Zeit jetzt; das erste setzt die Sperre.
+// bild meldet ein Bild zur Zeit jetzt; das erste setzt die Sperre, ebenso das erste nach einem Fokus-Erhalt.
 func (f *freigabe) bild(jetzt time.Time) {
-	if f.sperreBis.IsZero() {
+	if f.sperreBis.IsZero() || f.neuSperren {
 		f.sperreBis = jetzt.Add(bestaetigenSperre)
+		f.neuSperren = false
 	}
+}
+
+// fokus meldet den Fokus des Fensters (F-481). Bekommt das Fenster ihn, beginnt die Sperre mit dem nächsten Bild neu:
+// Erst dann ist es sicher zu sehen, und ein Fenster, das sich nach vorn drängt, öffnet kein Klickfenster. Verliert es
+// ihn, verfällt ein laufendes Drücken.
+func (f *freigabe) fokus(hat bool) {
+	switch {
+	case hat && !f.fokussiert:
+		f.neuSperren = true
+		f.druckGueltig = false
+	case !hat:
+		f.druckGueltig = false
+	}
+	f.fokussiert = hat
 }
 
 // gesperrt: vor dem ersten Bild oder innerhalb der Sperre.
