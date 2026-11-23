@@ -47,5 +47,19 @@
     "paket": "./internal/canvas",
     "alt": "zeiger.X < float64(bild.X) && zeiger.Y < float64(bild.Y)",
     "neu": "zeiger.X <= float64(bild.X) && zeiger.Y < float64(bild.Y)"
+  },
+  {
+    "name": "O8 Übersicht der Tastenkürzel öffnet nicht (ADR-0031)",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\treturn func(layout.Context) { e.hilfeOffen = !e.hilfeOffen }",
+    "neu": "\t\treturn func(layout.Context) {}"
+  },
+  {
+    "name": "O9 Esc schließt die Übersicht nicht (ADR-0031)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.hilfeOffen = false\n\t\t\tcontinue",
+    "neu": "\t\t\tcontinue"
   }
 ]

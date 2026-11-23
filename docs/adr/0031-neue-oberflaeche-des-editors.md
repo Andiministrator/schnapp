@@ -96,9 +96,9 @@ selbst (wie schon das Menü nach ADR-0026).
 
 **Status:** Akzeptiert (Claude Opus 5.5, Karte #187).
 
-- Menüzeile mit „s“ (Maße aus `internal/icons/logo.go`, gegen `brand/logo/svg/schnapp-s-dunkel.svg` getestet), fünf
-  Menüs **Datei, Bearbeiten, Ansicht, Bild, Werkzeuge**; „Hilfe“ (Tastenkürzel, Über Schnapp) folgt mit Schritt (b),
-  weil es eine eigene Ansicht braucht. Der Eintrag „Kantenform“ nennt die aktuelle Form (F-425, Teil 2). Werkzeugleiste
+- Menüzeile mit „s“ (Maße aus `internal/icons/logo.go`, gegen `brand/logo/svg/schnapp-s-dunkel.svg` getestet), sechs
+  Menüs **Datei, Bearbeiten, Ansicht, Bild, Werkzeuge, Hilfe**; „Hilfe“ führt die Übersicht der Tastenkürzel (F1,
+  aus Tastentabelle und Menüeinträgen erzeugt, Esc oder Klick schließt) und „Über Schnapp“ (Version als Meldung). Der Eintrag „Kantenform“ nennt die aktuelle Form (F-425, Teil 2). Werkzeugleiste
   links mit den Symbolen aus `internal/icons` (Karte #188, Muster noch nicht abgenommen; Änderungen dort wirken ohne
   Umbau). Fußzeile mit Feldern aus `canvas.FussFelder`; das Farbfeld nimmt bis Schritt (b) die nächste Farbe, das
   Zoomfeld wechselt zwischen Einpassen und 1:1 (statt einer Liste).
