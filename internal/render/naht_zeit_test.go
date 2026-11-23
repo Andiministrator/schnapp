@@ -3,10 +3,12 @@
 package render
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"image"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -139,10 +141,16 @@ func TestNahtGrenzeMessen(t *testing.T) {
 	}
 }
 
-// TestNahtPruefsumme (F-430, F-514) hält die Pixel der Nähte bitgleich fest: SHA-256 des Ergebnisses für 12 Nähte auf
-// 3000×700 in jeder Form gegen feste Sollwerte, vor der Beschleunigung gemessen und nach ihr unverändert. Ändert sich
-// das Bild mit Absicht (Kantenform, Rasterkern), gehören die Werte mit einer Begründung im Commit neu eingetragen:
-// `go test ./internal/render -run TestNahtPruefsumme -v` nennt die neuen Summen.
+// TestNahtPruefsumme (F-430, F-514, F-518) hält die Pixel der Nähte bitgleich fest: SHA-256 des Ergebnisses für 12
+// Nähte auf 3000×700 in jeder Form gegen feste Sollwerte, vor der Beschleunigung gemessen und nach ihr unverändert.
+// Ändert sich das Bild mit Absicht (Kantenform, Rasterkern), gehören die Werte mit einer Begründung im Commit neu
+// eingetragen: `go test ./internal/render -run TestNahtPruefsumme -v` nennt die neuen Summen.
+//
+// F-518: Die festen Summen hängen an Fließkomma-Rechnung der Kantenlinien. Go darf auf Architekturen mit FMA (arm64,
+// ppc64, s390x) Multiplikation und Addition ohne eigene Klammerung zusammenziehen; das Ergebnis kann dann in den
+// letzten Bits abweichen, ohne dass etwas kaputt ist. Der harte Vergleich gilt deshalb nur auf amd64 (dort läuft die
+// CI); überall sonst prüft der Test, was architekturunabhängig gilt: zweimal Rendern liefert dasselbe Bild, und das
+// Bild mit Zwischenspeicher der Deckungen ist bitgleich zum Bild ohne (maskenCacheGrenze 0).
 func TestNahtPruefsumme(t *testing.T) {
 	soll := map[document.Kante]string{
 		document.KanteAbriss: "82e17cfcdb1432698e71c50005238a6f4a20d6707c475731f30b22b2026087bf",
@@ -155,8 +163,29 @@ func TestNahtPruefsumme(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := fmt.Sprintf("%x", sha256.Sum256(b.Pix)); got != erwartet {
-			t.Errorf("Summe %v: %s, erwartet %s", f, got, erwartet)
+		got := fmt.Sprintf("%x", sha256.Sum256(b.Pix))
+		if runtime.GOARCH == "amd64" {
+			if got != erwartet {
+				t.Errorf("Summe %v: %s, erwartet %s", f, got, erwartet)
+			}
+			continue
+		}
+		b2, err := Bild(d)
+		if err != nil {
+			t.Fatal(err)
+		}
+		alt := maskenCacheGrenze
+		maskenCacheGrenze = 0
+		b3, err := Bild(d)
+		maskenCacheGrenze = alt
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(b.Pix, b2.Pix) {
+			t.Errorf("Naht %v: zweimal Rendern ist nicht bitgleich (%s)", f, got)
+		}
+		if !bytes.Equal(b.Pix, b3.Pix) {
+			t.Errorf("Naht %v: Bild mit und ohne Zwischenspeicher der Deckungen unterscheidet sich (%s)", f, got)
 		}
 	}
 }

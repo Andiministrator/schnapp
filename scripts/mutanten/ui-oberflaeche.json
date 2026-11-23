@@ -68,5 +68,117 @@
     "paket": "./internal/ui",
     "alt": "\t\tif e.hilfeOffen && !e.menue.offen {\n\t\t\t// Übersicht",
     "neu": "\t\tif false && e.hilfeOffen && !e.menue.offen {\n\t\t\t// Übersicht"
+  },
+  {
+    "name": "U1 Zeigerort ohne Umrechnung in die Ansicht (F-513)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tp := e.s.Abb.ZuAnsicht(*e.zeigerFenster)\n\treturn &p",
+    "neu": "\tp := *e.zeigerFenster\n\treturn &p"
+  },
+  {
+    "name": "U2 Fußzeile lässt bei schmalem Fenster kein Feld weg",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "if x-breite < grenze {",
+    "neu": "if false {"
+  },
+  {
+    "name": "U3 Überfahren wechselt auch ein per Taste geöffnetes Menü",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "if m.offen && !m.perTasteOffen && !istListe(m.welches) {",
+    "neu": "if m.offen && !istListe(m.welches) {"
+  },
+  {
+    "name": "U4 Logo-s: Strich 30 statt 22",
+    "datei": "internal/icons/logo.go",
+    "paket": "./internal/icons",
+    "alt": "LogoSStrich = 22.0",
+    "neu": "LogoSStrich = 30.0"
+  },
+  {
+    "name": "U5 Logo-s: viewBox verschoben",
+    "datei": "internal/icons/logo.go",
+    "paket": "./internal/icons",
+    "alt": "var LogoSBox = [4]float64{-16, 84, 108, 132}",
+    "neu": "var LogoSBox = [4]float64{0, 0, 200, 300}"
+  },
+  {
+    "name": "U6 Logo-s: Pupille links statt rechts",
+    "datei": "internal/icons/logo.go",
+    "paket": "./internal/icons",
+    "alt": "LogoSPupille  = [3]float64{34, 125, 5.5}",
+    "neu": "LogoSPupille  = [3]float64{26, 125, 5.5}"
+  },
+  {
+    "name": "U7 Logo-s: zweiter Bogen gestaucht",
+    "datei": "internal/icons/logo.go",
+    "paket": "./internal/icons",
+    "alt": "p = append(p, Punkt{51 + 25*math.Cos(w), 175 + 25*math.Sin(w)})",
+    "neu": "p = append(p, Punkt{51 + 5*math.Cos(w), 175 + 25*math.Sin(w)})"
+  },
+  {
+    "name": "U8 Hilfe: zweite Taste (Strg+Y, Rücktaste) fehlt",
+    "datei": "internal/ui/hilfe.go",
+    "paket": "./internal/ui",
+    "alt": "k = strings.Join(alleKuerzel(en.akt), \", \")",
+    "neu": "k = strings.Join(alleKuerzel(en.akt)[:min(1, len(alleKuerzel(en.akt)))], \", \")"
+  },
+  {
+    "name": "U9 Hinweis am Werkzeugknopf ohne Kürzel",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "return w.text + \" (\" + werkzeugKuerzel(w.w) + \")\" }",
+    "neu": "return w.text }"
+  },
+  {
+    "name": "U10 Fußfeld Auswahl: Höhe = Breite",
+    "datei": "internal/canvas/fusszeile.go",
+    "paket": "./internal/canvas",
+    "alt": "int(math.Round(g.Max.Y-g.Min.Y)))})",
+    "neu": "int(math.Round(g.Max.X-g.Min.X)))})"
+  },
+  {
+    "name": "U11 Fußfeld Bild nie „gestaucht“",
+    "datei": "internal/canvas/fusszeile.go",
+    "paket": "./internal/canvas",
+    "alt": "Gestaucht: s.KannZurueckholen()}",
+    "neu": "Gestaucht: false}"
+  },
+  {
+    "name": "U12 Fußfeld Schrift nimmt bei gewähltem Text den Grad des Werkzeugs",
+    "datei": "internal/canvas/fusszeile.go",
+    "paket": "./internal/canvas",
+    "alt": "Grad: int(math.Round(text.Schriftgrad))}",
+    "neu": "Grad: int(math.Round(s.Stil.Schriftgrad))}"
+  },
+  {
+    "name": "U13 Esc bei per Taste geöffnetem Menü gibt den Fokus nie an den Titel",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "e.menueSchliesse(gtx, e.menue.perTasteOffen && !e.s.TextLaeuft())",
+    "neu": "e.menueSchliesse(gtx, false)"
+  },
+  {
+    "name": "U14 Pfeil links wechselt nach rechts",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "case key.NameLeftArrow:\n\t\t\t\te.menueWechsel(-1)",
+    "neu": "case key.NameLeftArrow:\n\t\t\t\te.menueWechsel(1)"
+  },
+  {
+    "name": "U15 Klick auf die Übersicht schließt sie nicht",
+    "datei": "internal/ui/hilfe.go",
+    "paket": "./internal/ui",
+    "alt": "if _, ok := ev.(pointer.Event); ok {\n\t\t\te.hilfeOffen = false\n\t\t\treturn",
+    "neu": "if _, ok := ev.(pointer.Event); ok {\n\t\t\treturn"
+  },
+  {
+    "name": "U16 Farbfeld der Fußzeile wirkt während des Speicherns",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "if e.knoepfe.fussFarbe.Clicked(gtx) && an() {",
+    "neu": "if e.knoepfe.fussFarbe.Clicked(gtx) {"
   }
 ]

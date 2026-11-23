@@ -1625,7 +1625,7 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 		min, max := an(v.Bereich.Min), an(v.Bereich.Max)
 		r := image.Rect(int(math.Round(float64(min.X))), int(math.Round(float64(min.Y))),
 			int(math.Round(float64(max.X))), int(math.Round(float64(max.Y))))
-		rr := clip.UniformRRect(r, int(math.Round(document.WirksamerEckradius(v.Eckradius, float64(r.Dx()), float64(r.Dy())))))
+		rr := clip.UniformRRect(r, kastenRundung(v, r))
 		if v.Fuellung.A > 0 {
 			paint.FillShape(gtx.Ops, v.Fuellung, rr.Op(gtx.Ops))
 		}
@@ -1680,6 +1680,14 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 			paint.FillShape(gtx.Ops, v.Farbe, clip.Outline{Path: sp.End()}.Op())
 		}
 	}
+}
+
+// kastenRundung ist der Eckradius in Bildpunkten, mit dem der Editor den Kasten auf dem ganzzahligen Rechteck r
+// zeichnet: derselbe wirksame Radius wie in Renderer und SVG-Export (document.WirksamerEckradius), auf ganze Punkte
+// gerundet, weil Gios clip.UniformRRect ganzzahlig rechnet. Eigene Funktion, damit ein Test ihn ohne Gio-Zeichnen mit
+// Renderer und SVG vergleicht (F-519).
+func kastenRundung(v document.Kasten, r image.Rectangle) int {
+	return int(math.Round(document.WirksamerEckradius(v.Eckradius, float64(r.Dx()), float64(r.Dy()))))
 }
 
 // kastenStrich liefert die Rechtecke des Strichs, wenn der Kasten auf dem ganzzahligen Rechteck r ohne Rundung

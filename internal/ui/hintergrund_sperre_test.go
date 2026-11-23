@@ -129,6 +129,11 @@ func TestSperreZeigerKnoepfeMenue(t *testing.T) {
 	for _, c := range []interface{ Click() }{&l.e.knoepfe.farbe, &l.e.knoepfe.fussFarbe, &l.e.knoepfe.fussZoom} {
 		c.Click()
 		l.setle()
+		// Farb- und Zoomfeld der Fußzeile klappen ihre Liste nicht auf, solange gespeichert wird (F-517, U16).
+		if l.e.menue.offen {
+			t.Errorf("Feld %T klappt während des Speicherns eine Liste auf (Nr. %d)", c, l.e.menue.welches)
+			l.e.menue.offen = false
+		}
 	}
 	for _, w := range l.e.werkzeugKnoepfe() {
 		w.c.Click()
