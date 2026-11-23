@@ -658,3 +658,9 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **4K-Drehbücher im Race-Build brauchen `--ende 90`**, sonst beendet `probe.sh` Schnapp nach 5 s mitten im Speichern.
 - **Kopfkommentare gegen das Foto halten:** `rueckfall-schwaerzen.txt` behauptete „4 px → schwarz“; tatsächlich lehnt
   der Editor unter `MinObjekt` ab und meldet „zu klein“.
+- **Gio nimmt die Tab-Reihenfolge aus der Anmeldung der Klickflächen im Bild,** nicht aus der Zeichenreihenfolge —
+  Felder von rechts legen, Klickflächen von links anmelden geht ohne Layoutänderung. Im Test bewegt
+  `key.Event{Name: key.NameTab}` den Fokus nicht, nur `MoveFocus(key.FocusForward)` (Karte #213).
+- **Ein Zustandswechsel und eine Taste im selben Bild sehen denselben Gio-Fokus:** Pfeil rechts wechselt das Menü,
+  Enter wertet danach noch den alten Fokus-Index aus. Was im selben Bild auf dem Fokus aufbaut, braucht eine
+  „gerade gewechselt“-Marke (`menue.gewechselt`, F-512).
