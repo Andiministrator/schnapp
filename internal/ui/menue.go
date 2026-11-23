@@ -34,6 +34,12 @@ type menueEintrag struct {
 	werkzeug    canvas.Werkzeug
 	hatWerkzeug bool
 	aktiv       bool
+	// Aufklapplisten der Fußzeile (ADR-0031 Nachtrag 3): eine Farbe (hatFarbe) bzw. eine Zoomstufe in Prozent
+	// (hatZoom; 0 heißt Einpassen) statt einer Handlung.
+	farbe    color.NRGBA
+	hatFarbe bool
+	zoom     int
+	hatZoom  bool
 }
 
 // menueEintraege liefert die Einträge des offenen Menüs (ADR-0031 Punkt 1) mit dem Zustand der Sitzung.
@@ -66,6 +72,18 @@ func (e *editor) schliessenEintrag() *widget.Clickable {
 func menueKuerzel(en menueEintrag) string {
 	if en.hatWerkzeug {
 		return werkzeugKuerzel(en.werkzeug)
+	}
+	if en.hatFarbe {
+		return fmt.Sprintf("#%02X%02X%02X", en.farbe.R, en.farbe.G, en.farbe.B)
+	}
+	if en.hatZoom {
+		switch en.zoom {
+		case 0:
+			return kuerzelText(aktEinpassen)
+		case 100:
+			return kuerzelText(aktEins)
+		}
+		return ""
 	}
 	if en.akt == aktTextBearbeiten {
 		return kuerzelText(aktEnter)
@@ -172,7 +190,7 @@ func (e *editor) menueSchliesse(gtx layout.Context, zuKnopf bool) {
 	m := &e.menue
 	m.offen, m.fokusNach = false, nil
 	if zuKnopf {
-		gtx.Execute(key.FocusCmd{Tag: &m.titel[m.welches]})
+		gtx.Execute(key.FocusCmd{Tag: e.listenKnopf(m.welches)})
 	} else {
 		gtx.Execute(key.FocusCmd{Tag: e})
 	}
@@ -251,6 +269,8 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 		return func(layout.Context) { e.s.Einpassen() }
 	case aktEins:
 		return func(layout.Context) { e.s.EinsZuEins() }
+	case aktSeitenleiste:
+		return func(layout.Context) { e.seiteZu = !e.seiteZu }
 	case aktSchliessen:
 		return func(layout.Context) {
 			diagnoseEditor("Schließen über Taste oder Menü")
@@ -297,9 +317,13 @@ func (e *editor) menueMit(a aktion) int {
 	return -1
 }
 
-// menueWechsel öffnet das Nachbarmenü (Pfeil links/rechts, ADR-0031 Punkt 1); läuft an den Enden um.
+// menueWechsel öffnet das Nachbarmenü (Pfeil links/rechts, ADR-0031 Punkt 1); läuft an den Enden um. Eine
+// Aufklappliste der Fußzeile hat keine Nachbarn: Dort wirken die Pfeile nicht.
 func (e *editor) menueWechsel(dir int) {
 	m := &e.menue
+	if istListe(m.welches) {
+		return
+	}
 	perTaste := m.perTasteOffen
 	m.gewechselt = true
 	m.offen = false
@@ -316,8 +340,8 @@ func (e *editor) menueTitelFokus(gtx layout.Context) int {
 	return -1
 }
 
-// knopfPerTaste löst einen per Tastatur fokussierten Knopf aus (Enter): einen Menütitel über menueOeffne, die übrigen
-// als Klick.
+// knopfPerTaste löst einen per Tastatur fokussierten Knopf aus (Enter): einen Menütitel und ein Feld der Fußzeile mit
+// Liste über menueOeffne (Fokus in die Liste), die übrigen als Klick.
 func (e *editor) knopfPerTaste(c *widget.Clickable) {
 	for i := range e.menue.titel {
 		if c == &e.menue.titel[i] {
@@ -325,7 +349,36 @@ func (e *editor) knopfPerTaste(c *widget.Clickable) {
 			return
 		}
 	}
+	switch c {
+	case &e.knoepfe.fussFarbe:
+		e.listeAmFarbKnopf = false
+		e.menueOeffne(listeFarbe, true)
+		return
+	case &e.knoepfe.fussZoom:
+		e.menueOeffne(listeZoom, true)
+		return
+	case &e.knoepfe.farbe:
+		// Per Tastatur öffnet das Farbfeld der Werkzeugleiste immer die Liste; die rechte Leiste klappt Strg+Umschalt+B
+		// auf.
+		e.listeAmFarbKnopf = true
+		e.menueOeffne(listeFarbe, true)
+		return
+	}
 	c.Click()
+}
+
+// listenKnopf ist der Knopf, der das Menü bzw. die Liste i öffnet: der Menütitel oder das Feld der Fußzeile.
+func (e *editor) listenKnopf(i int) *widget.Clickable {
+	switch i {
+	case listeFarbe:
+		if e.listeAmFarbKnopf {
+			return &e.knoepfe.farbe
+		}
+		return &e.knoepfe.fussFarbe
+	case listeZoom:
+		return &e.knoepfe.fussZoom
+	}
+	return &e.menue.titel[i]
 }
 
 // menueAuswerten verarbeitet Klicks auf den Menütitel, die Einträge und daneben.
@@ -344,7 +397,7 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 		}
 	}
 	// Ist ein Menü offen, wechselt das Überfahren eines anderen Titels die Liste (wie in Qt, ADR-0031 Punkt 1).
-	if m.offen && !m.perTasteOffen {
+	if m.offen && !m.perTasteOffen && !istListe(m.welches) {
 		for i := range m.titel {
 			if i != m.welches && m.titel[i].Hovered() {
 				m.welches, m.cursor = i, -1
@@ -378,8 +431,18 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 		// Schließen wirkt auch während des Speicherns wie der Fensterknopf: Die Anfrage wird vorgemerkt (F-299).
 		if m.eintraege[i].Clicked(gtx) && m.offen && en.an && (an() || en.akt == aktSchliessen) {
 			e.menueSchliesse(gtx, false) // Fokus an die Leinwand: getippter Text nach „Text bearbeiten“ kommt an
-			if en.hatWerkzeug {
+			switch {
+			case en.hatWerkzeug:
 				e.s.SetzeWerkzeug(en.werkzeug)
+				continue
+			case en.hatFarbe:
+				e.s.SetzeFarbe(en.farbe)
+				continue
+			case en.hatZoom && en.zoom == 0:
+				e.s.Einpassen()
+				continue
+			case en.hatZoom:
+				e.s.SetzeZoom(en.zoom)
 				continue
 			}
 			e.fuehreAus(gtx, en.akt, true)
@@ -396,6 +459,13 @@ func (e *editor) zeichneMenue(gtx layout.Context) {
 	}
 	mx := gtx.Constraints.Max
 	y := gtx.Dp(menuezeileDp)
+	anker, liste := image.Rectangle{}, istListe(m.welches)
+	if liste {
+		// Aufklappliste der Fußzeile: Die Fläche für Klicks daneben deckt das ganze Fenster, auch das Feld selbst (ein
+		// zweiter Klick darauf schließt die Liste).
+		anker = e.listenAnker(m.welches)
+		y = 0
+	}
 	ha := clip.Rect(image.Rect(0, y, mx.X, mx.Y)).Push(gtx.Ops)
 	event.Op(gtx.Ops, &m.aussen)
 	ha.Pop()
@@ -424,6 +494,19 @@ func (e *editor) zeichneMenue(gtx layout.Context) {
 		}
 	}
 	breite := innen + textB + gtx.Dp(32) + kuerzelB + innen
+	farbFeld := 0
+	if liste && m.welches == listeFarbe {
+		farbFeld = gtx.Dp(14 + 10) // Farbquadrat vor dem Namen
+		breite += farbFeld
+	}
+	if liste {
+		// Unter dem Anker, wenn es passt (Farbfeld der Werkzeugleiste), sonst darüber (Felder der Fußzeile).
+		y = anker.Max.Y
+		if y+hoehe > mx.Y {
+			y = anker.Min.Y - hoehe
+		}
+		y = max(0, y)
+	}
 	// Passt die Liste nicht unter den Knopf, rückt sie nach oben (über die Leiste); ist das Fenster niedriger als die
 	// Liste, fallen die Abstände der Gruppen weg und die Zeilen werden niedriger, bis zur Höhe einer Textzeile
 	// (F-252: bei der Mindesthöhe 320 dp wären sonst die unteren Einträge nicht erreichbar).
@@ -436,7 +519,12 @@ func (e *editor) zeichneMenue(gtx layout.Context) {
 		hoehe = gtx.Dp(6)*2 + zeile*len(eintraege)
 		y = 0
 	}
-	links := m.titelRahmen[m.welches].Min.X
+	var links int
+	if liste {
+		links = anker.Min.X
+	} else {
+		links = m.titelRahmen[m.welches].Min.X
+	}
 	ecke := image.Pt(max(0, min(links, mx.X-breite)), y)
 	t := op.Offset(ecke).Push(gtx.Ops)
 	flaeche := image.Rectangle{Max: image.Pt(breite, hoehe)}
@@ -456,7 +544,7 @@ func (e *editor) zeichneMenue(gtx layout.Context) {
 			oy += trenn
 		}
 		m.rahmen[i] = image.Rectangle{Min: ecke.Add(image.Pt(0, oy)), Max: ecke.Add(image.Pt(breite, oy+zeile))}
-		e.menueZeile(gtx, &m.eintraege[i], en, image.Pt(0, oy), image.Pt(breite, zeile), innen)
+		e.menueZeile(gtx, &m.eintraege[i], en, image.Pt(0, oy), image.Pt(breite, zeile), innen, farbFeld)
 		oy += zeile
 	}
 	t.Pop()
@@ -475,7 +563,9 @@ func menueZeilenhoehe(fensterHoehe, rand, kleinst, groesst, zeilen int) int {
 }
 
 // menueZeile zeichnet einen Eintrag: Text links, Kürzel rechts, grau wenn nicht bedienbar.
-func (e *editor) menueZeile(gtx layout.Context, c *widget.Clickable, en menueEintrag, ecke, groesse image.Point, innen int) {
+//
+// farbFeld > 0: Vor dem Text steht ein Farbquadrat der Breite farbFeld (Farbliste der Fußzeile).
+func (e *editor) menueZeile(gtx layout.Context, c *widget.Clickable, en menueEintrag, ecke, groesse image.Point, innen, farbFeld int) {
 	t := op.Offset(ecke).Push(gtx.Ops)
 	fokus := en.an && gtx.Focused(c)
 	if en.an && (c.Hovered() || fokus) {
@@ -495,19 +585,27 @@ func (e *editor) menueZeile(gtx layout.Context, c *widget.Clickable, en menueEin
 	}
 	g := gtx
 	g.Constraints.Min = image.Point{}
+	textX := innen // Anfang des Texts; hinter dem Farbquadrat weiter rechts
 	schreibe := func(s string, c color.NRGBA, rechtsbuendig bool) {
 		r := op.Record(gtx.Ops)
 		lbl := material.Label(e.thema, unit.Sp(14), s)
 		lbl.Color = c
 		d := lbl.Layout(g)
 		call := r.Stop()
-		x := innen
+		x := textX
 		if rechtsbuendig {
 			x = groesse.X - innen - d.Size.X
 		}
 		tt := op.Offset(image.Pt(x, (groesse.Y-d.Size.Y)/2)).Push(gtx.Ops)
 		call.Add(gtx.Ops)
 		tt.Pop()
+	}
+	if farbFeld > 0 && en.hatFarbe {
+		q := gtx.Dp(14)
+		fr := image.Rect(innen, (groesse.Y-q)/2, innen+q, (groesse.Y-q)/2+q)
+		paint.FillShape(gtx.Ops, en.farbe, clip.Rect(fr).Op())
+		paint.FillShape(gtx.Ops, farbeText, clip.Stroke{Path: clip.Rect(fr).Path(), Width: float32(gtx.Dp(1))}.Op())
+		textX += farbFeld
 	}
 	schreibe(en.text, farbe, false)
 	if k := menueKuerzel(en); k != "" {

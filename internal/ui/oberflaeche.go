@@ -31,7 +31,13 @@ const (
 	menuezeileDp    = 30
 	werkzeugeDp     = 52 // Breite der Werkzeugleiste
 	werkzeugKnopfDp = 40 // Kantenlänge eines Werkzeugknopfs
-	fusszeileDp     = 30
+	// werkzeugKnopfMinDp: kleinste Kantenlänge, wenn die Leiste in niedrigen Fenstern schrumpft (F-516).
+	werkzeugKnopfMinDp = 20
+	fusszeileDp        = 30
+	seiteDp            = 300 // Breite der rechten Leiste (ADR-0031 Punkt 3)
+	// minLeinwandDp: Die rechte Leiste erscheint nur, wenn daneben mindestens so viel Leinwand bleibt (ADR-0031
+	// Nachtrag 3); sonst bleibt sie eingeklappt, die Einstellung bleibt erhalten.
+	minLeinwandDp = 400
 )
 
 var farbeRot = color.NRGBA{R: 0xE6, G: 0x78, B: 0x73, A: 0xFF} // rot-500
@@ -46,6 +52,17 @@ const (
 	menueHilfe
 	menueAnzahl
 )
+
+// Aufklapplisten der Fußzeile (ADR-0031 Punkt 4, Nachtrag 3). Sie laufen über dieselbe Liste wie die Menüs (Tastatur,
+// Klick daneben, Sperre beim Speichern), haben aber keinen Titel in der Menüzeile: menue.welches trägt dann eine
+// dieser Nummern hinter den Menüs.
+const (
+	listeFarbe = menueAnzahl + iota
+	listeZoom
+)
+
+// istListe meldet, ob i eine Aufklappliste der Fußzeile ist (kein Menü der Zeile).
+func istListe(i int) bool { return i >= menueAnzahl }
 
 // menueTitel ist der Text eines Menüs der Zeile.
 func menueTitel(i int) string {
@@ -88,6 +105,7 @@ func (e *editor) menueEintraegeVon(i int) []menueEintrag {
 		return []menueEintrag{
 			{akt: aktEinpassen, text: i18n.T("Fit"), an: true},
 			{akt: aktEins, text: "1:1", an: true},
+			{akt: aktSeitenleiste, text: i18n.T("Sidebar"), an: true, aktiv: !e.seiteZu, gruppe: true},
 		}
 	case menueBild:
 		return []menueEintrag{
@@ -107,14 +125,59 @@ func (e *editor) menueEintraegeVon(i int) []menueEintrag {
 			{akt: aktTastenkuerzel, text: i18n.T("Keyboard shortcuts"), an: true},
 			{akt: aktUeber, text: i18n.T("About Schnapp"), an: true},
 		}
+	case listeFarbe:
+		var en []menueEintrag
+		for j, c := range canvas.Beschriftungsfarben {
+			en = append(en, menueEintrag{farbe: c, hatFarbe: true, text: farbName(j), an: true, aktiv: s.Stil.Farbe == c})
+		}
+		return en
+	case listeZoom:
+		en := []menueEintrag{{hatZoom: true, text: i18n.T("Fit"), an: true, aktiv: s.Eingepasst()}}
+		jetzt := int(math.Round(s.Abb.Zoom * 100))
+		for _, z := range canvas.ZoomStufen {
+			en = append(en, menueEintrag{hatZoom: true, zoom: z, text: fmt.Sprintf(i18n.TK("status bar", "%d%%"), z),
+				an: true, aktiv: !s.Eingepasst() && jetzt == z})
+		}
+		return en
 	}
 	return nil
 }
 
-// leinwandFlaeche ist die Fläche der Leinwand im Fenster (Pixel).
-func leinwandFlaeche(gtx layout.Context) image.Rectangle {
+// farbName ist der Name der Beschriftungsfarbe j (Reihenfolge von canvas.Beschriftungsfarben).
+func farbName(j int) string {
+	switch j {
+	case 0:
+		return i18n.T("Red")
+	case 1:
+		return i18n.T("Blue")
+	case 2:
+		return i18n.T("Green")
+	case 3:
+		return i18n.T("Dark grey")
+	}
+	return ""
+}
+
+// seiteSichtbar meldet, ob die rechte Leiste gezeigt wird: eingeblendet (Ansicht → Seitenleiste, Strg+Umschalt+B) und
+// breit genug für sie und die Mindest-Leinwand (ADR-0031 Nachtrag 3).
+func (e *editor) seiteSichtbar(gtx layout.Context) bool {
+	return !e.seiteZu && seitePasst(gtx)
+}
+
+// seitePasst meldet, ob das Fenster breit genug für die rechte Leiste ist.
+func seitePasst(gtx layout.Context) bool {
+	return gtx.Constraints.Max.X >= gtx.Dp(werkzeugeDp+seiteDp+minLeinwandDp)
+}
+
+// leinwandFlaeche ist die Fläche der Leinwand im Fenster (Pixel): zwischen Menüzeile, Werkzeugleiste, Fußzeile und,
+// wenn sichtbar, der rechten Leiste.
+func (e *editor) leinwandFlaeche(gtx layout.Context) image.Rectangle {
 	mx := gtx.Constraints.Max
-	r := image.Rect(gtx.Dp(werkzeugeDp), gtx.Dp(menuezeileDp), mx.X, mx.Y-gtx.Dp(fusszeileDp))
+	rechts := mx.X
+	if e.seiteSichtbar(gtx) {
+		rechts -= gtx.Dp(seiteDp)
+	}
+	r := image.Rect(gtx.Dp(werkzeugeDp), gtx.Dp(menuezeileDp), rechts, mx.Y-gtx.Dp(fusszeileDp))
 	if r.Dx() < 1 {
 		r.Max.X = r.Min.X + 1
 	}
@@ -252,19 +315,40 @@ func werkzeugGruppeBeginnt(w canvas.Werkzeug) bool {
 	return w == canvas.WerkzeugPfeil || w == canvas.WerkzeugSchwaerzen || w == canvas.WerkzeugZuschneiden
 }
 
-// werkzeugRahmen liefert die Lage der Werkzeugknöpfe und des Farbfelds (Fensterpixel).
+// werkzeugRahmen liefert die Lage der Werkzeugknöpfe und des Farbfelds (Fensterpixel). Passt die Leiste nicht in die
+// Höhe zwischen Menüzeile und Fußzeile, werden Knöpfe und Abstände gleichmäßig kleiner, bis zur Kantenlänge
+// werkzeugKnopfMinDp; erst darunter schneidet die Leiste unten ab, und Werkzeuge und Farbe bleiben über das Menü
+// „Werkzeuge“, die Buchstaben und die Fußzeile erreichbar (F-516, ADR-0031 Nachtrag 3).
 func werkzeugRahmen(gtx layout.Context, ws []werkzeugKnopf) (knoepfe []image.Rectangle, farbe image.Rectangle) {
-	x := (gtx.Dp(werkzeugeDp) - gtx.Dp(werkzeugKnopfDp)) / 2
-	y := gtx.Dp(menuezeileDp) + gtx.Dp(8)
-	k := gtx.Dp(werkzeugKnopfDp)
+	oben, unten := gtx.Dp(menuezeileDp), gtx.Constraints.Max.Y-gtx.Dp(fusszeileDp)
+	k, rand, gruppe, abstand, vorFarbe := gtx.Dp(werkzeugKnopfDp), gtx.Dp(8), gtx.Dp(8), gtx.Dp(4), gtx.Dp(16)
+	gruppen := 0
 	for _, w := range ws {
 		if werkzeugGruppeBeginnt(w.w) {
-			y += gtx.Dp(8)
+			gruppen++
+		}
+	}
+	// Bedarf von oben: Rand, Knöpfe mit Abständen, Gruppenabstände, Abstand vor dem Farbfeld, Farbfeld, Rand.
+	bedarf := 2*rand + (len(ws)+1)*k + (len(ws)-1)*abstand + gruppen*gruppe + vorFarbe
+	if frei := unten - oben; bedarf > frei && frei > 0 {
+		f := float64(frei) / float64(bedarf)
+		skal := func(v int) int { return int(float64(v) * f) }
+		k = max(gtx.Dp(werkzeugKnopfMinDp), skal(k))
+		rand, gruppe, abstand, vorFarbe = skal(rand), skal(gruppe), skal(abstand), skal(vorFarbe)
+	}
+	x := (gtx.Dp(werkzeugeDp) - k) / 2
+	y := oben + rand
+	for i, w := range ws {
+		if werkzeugGruppeBeginnt(w.w) {
+			y += gruppe
 		}
 		knoepfe = append(knoepfe, image.Rect(x, y, x+k, y+k))
-		y += k + gtx.Dp(4)
+		y += k
+		if i < len(ws)-1 {
+			y += abstand
+		}
 	}
-	y += gtx.Dp(12)
+	y += vorFarbe
 	return knoepfe, image.Rect(x, y, x+k, y+k)
 }
 
@@ -281,6 +365,7 @@ func (e *editor) zeichneWerkzeugleiste(gtx layout.Context) {
 	for i, w := range ws {
 		e.werkzeugKnopfZeichnen(gtx, w.c, rahmen[i], werkzeugSymbol(w.w), e.s.Werkzeug == w.w)
 	}
+	e.farbKnopfRahmen = farbe
 	e.farbKnopf(gtx, farbe)
 	if e.menue.offen {
 		return
@@ -313,7 +398,7 @@ func (e *editor) werkzeugKnopfZeichnen(gtx layout.Context, c *widget.Clickable, 
 		paint.FillShape(gtx.Ops, farbeAkzent, clip.Stroke{Path: clip.Rect(r.Inset(-gtx.Dp(3))).Path(),
 			Width: float32(gtx.Dp(2))}.Op())
 	}
-	seite := gtx.Dp(24)
+	seite := min(gtx.Dp(24), r.Dx()*3/5) // schrumpft mit dem Knopf (F-516)
 	ecke := r.Min.Add(image.Pt((r.Dx()-seite)/2, (r.Dy()-seite)/2))
 	zeichneSymbol(gtx, s, ecke, seite, farbeText, farbeAkzent)
 	t := op.Offset(r.Min).Push(gtx.Ops)
@@ -334,7 +419,7 @@ func (e *editor) farbKnopf(gtx layout.Context, r image.Rectangle) {
 		rand = farbeNebentext
 	}
 	paint.FillShape(gtx.Ops, rand, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
-	innen := r.Inset(gtx.Dp(8))
+	innen := r.Inset(min(gtx.Dp(8), r.Dx()/5)) // schrumpft mit dem Knopf (F-516)
 	paint.FillShape(gtx.Ops, e.s.Stil.Farbe, clip.Rect(innen).Op())
 	paint.FillShape(gtx.Ops, farbeText, clip.Stroke{Path: clip.Rect(innen).Path(), Width: float32(gtx.Dp(1))}.Op())
 	if gtx.Focused(c) {
@@ -469,6 +554,10 @@ func (e *editor) zeichneFusszeile(gtx layout.Context) {
 	}
 	felder := e.s.FussFelder(e.zeigerAnsicht())
 	e.fussRahmen = e.fussRahmen[:0]
+	clear(e.fussFeldRahmen)
+	if e.fussFeldRahmen == nil {
+		e.fussFeldRahmen = map[canvas.FeldArt]image.Rectangle{}
+	}
 	// Die Felder werden von rechts her gelegt (links weichen sie der Meldung); die Klickflächen kommen danach von
 	// links nach rechts an die Reihe, damit Tab sie in der Reihenfolge des Bildschirms besucht (F-515).
 	type fussKlick struct {
@@ -500,12 +589,17 @@ func (e *editor) zeichneFusszeile(gtx layout.Context) {
 		if f.Art == canvas.FeldFarbe {
 			feld = gtx.Dp(12 + 6)
 		}
-		breite := d.Size.X + 2*innen + feld
+		pfeil := 0 // ▾ hinter dem Text: das Feld klappt eine Liste auf (Muster v2)
+		if f.Klickbar {
+			pfeil = gtx.Dp(14)
+		}
+		breite := d.Size.X + 2*innen + feld + pfeil
 		r := image.Rect(x-breite, y0+gtx.Dp(1), x, mx.Y)
 		if x-breite < grenze { // links bleibt Platz für die Meldung; überzählige Felder fallen weg
 			break
 		}
 		e.fussRahmen = append(e.fussRahmen, r)
+		e.fussFeldRahmen[f.Art] = r
 		k := e.fussKnopf(f.Art)
 		if k != nil && f.Klickbar && k.Hovered() {
 			paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(r).Op())
@@ -525,6 +619,9 @@ func (e *editor) zeichneFusszeile(gtx layout.Context) {
 		tt := op.Offset(image.Pt(r.Min.X+innen+feld, y0+(h-d.Size.Y)/2)).Push(gtx.Ops)
 		call.Add(gtx.Ops)
 		tt.Pop()
+		if pfeil > 0 {
+			zeichneAufklappPfeil(gtx, image.Pt(r.Max.X-innen-gtx.Dp(8), y0+h/2), c)
+		}
 		if k != nil && f.Klickbar {
 			klicks = append(klicks, fussKlick{r, k})
 		}
@@ -564,18 +661,44 @@ func (e *editor) zeichneFusszeile(gtx layout.Context) {
 	tt.Pop()
 }
 
-// fussAuswerten: Klick auf das Farbfeld nimmt die nächste Farbe, Klick auf den Zoom wechselt zwischen Einpassen und
-// 1:1 (bis die Felder Listen aufklappen, ADR-0031 Schritt b).
+// zeichneAufklappPfeil zeichnet ein kleines ▾ (8 × 4 dp) mit der Mitte der Oberkante bei m.
+func zeichneAufklappPfeil(gtx layout.Context, m image.Point, c color.NRGBA) {
+	b, h := float32(gtx.Dp(4)), float32(gtx.Dp(4))
+	o := f32.Pt(float32(m.X), float32(m.Y)-h/2)
+	var p clip.Path
+	p.Begin(gtx.Ops)
+	p.MoveTo(o.Add(f32.Pt(-b, 0)))
+	p.LineTo(o.Add(f32.Pt(b, 0)))
+	p.LineTo(o.Add(f32.Pt(0, h)))
+	p.Close()
+	paint.FillShape(gtx.Ops, c, clip.Outline{Path: p.End()}.Op())
+}
+
+// fussAuswerten: Ein Klick auf das Feld Farbe oder Zoom klappt dessen Liste auf (ADR-0031 Punkt 4, Nachtrag 3); Enter
+// auf dem fokussierten Feld öffnet sie mit Fokus auf dem ersten Eintrag (knopfPerTaste).
 func (e *editor) fussAuswerten(gtx layout.Context) {
 	an := func() bool { return !e.s.SpeichernLaeuft() }
 	if e.knoepfe.fussFarbe.Clicked(gtx) && an() {
-		e.s.NaechsteFarbe()
+		e.listeAmFarbKnopf = false
+		e.menueOeffne(listeFarbe, false)
 	}
 	if e.knoepfe.fussZoom.Clicked(gtx) && an() {
-		if e.s.Abb.Zoom == 1 {
-			e.s.Einpassen()
-		} else {
-			e.s.EinsZuEins()
-		}
+		e.menueOeffne(listeZoom, false)
 	}
+}
+
+// listenAnker ist das Rechteck, an dem die Liste i aufklappt: das Feld der Fußzeile; fehlt es (schmales Fenster), bei
+// der Farbe das Farbfeld der Werkzeugleiste, sonst die rechte untere Ecke über der Fußzeile.
+func (e *editor) listenAnker(i int) image.Rectangle {
+	art := canvas.FeldZoom
+	if i == listeFarbe {
+		art = canvas.FeldFarbe
+	}
+	if r, ok := e.fussFeldRahmen[art]; ok && !e.listeAmFarbKnopf {
+		return r
+	}
+	if i == listeFarbe && !e.farbKnopfRahmen.Empty() {
+		return e.farbKnopfRahmen
+	}
+	return image.Rectangle{}
 }

@@ -7,6 +7,9 @@
 # Bildschirm - (226,100) (vorher - (200,136)). Beim Zuschneiden bleibt die Vollansicht stehen, die Bildschirmpunkte
 # gelten also für den ganzen Lauf, solange das Werkzeug Zuschneiden aktiv ist. Rechter Bildrand bei x = 1426.
 warte 800
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 foto 01-vorher
 # 1) C: Rahmen mit acht Griffen über dem ganzen Bild, ohne Ziehen
 taste C

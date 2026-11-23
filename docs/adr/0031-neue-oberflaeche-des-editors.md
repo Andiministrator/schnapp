@@ -148,3 +148,45 @@ in `internal/ui/hilfe.go`; Tastentabelle in `internal/ui/kuerzel.go`; Logik der 
   vorher besuchte er Zoom vor Farbe.
 - Kommentare im Code sagen „Menütitel“ und „Fußzeile“ statt „Menüknopf“ und „Statusleiste“; F-438 steht dort als
   ADR-0023 Nachtrag 9.
+
+## Nachtrag 3 (23.11.2026): Schritt (b) umgesetzt — rechte Leiste, Listen der Fußzeile, kleine Fenster (F-516)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #187).
+
+- **Rechte Leiste** (`internal/ui/seitenleiste.go`, Inhalt ohne Gio in `canvas.Sitzung.Seitenleiste`), 300 dp:
+  - Kopf in Versalien: „Auswahl: <Art>“, wenn ein Objekt gewählt ist (es geht dem Werkzeug vor, denn die Farbwahl färbt
+    es um), sonst „Werkzeug: <Name>“.
+  - Eigenschaften heute: beim Stauchen die **Kantenform** als drei Knöpfe Abriss/Welle/Zacken (aktive grün; ohne Naht
+    grau wie der Menüeintrag, F-426), gesetzt über `canvas.Sitzung.SetzeKante` als ein Rückgängig-Schritt, dieselbe
+    Form erneut ist kein Schritt. Darunter ein Hinweis im Nebentext: nichts ausgewählt (Auswählen), Pixel endgültig
+    (Schwärzen, Verpixeln), Weggenommenes bleibt in der Arbeitsdatei (Zuschneiden, Stauchen), Kantenform wirkt erst mit
+    einer Naht.
+  - Abschnitt **Farbe** nur, wo eine Farbe wirkt (Pfeil, Kasten, Text, Nummer oder ein gewähltes solches Objekt): die
+    vier Beschriftungsfarben als Felder (gewählte mit grünem Rand), Hex und Deckkraft als Anzeige. Farbfläche, Hex-Eingabe
+    und Deckkraft-Regler kommen mit #189.
+  - Ebenen (#191), Schrift (#190) und Strichstärke fehlen noch; die Leiste wächst mit ihren Karten.
+- **Einklappen:** Ansicht → „Seitenleiste“ (Haken als grüner Text) und Strg+Umschalt+B (Tastentabelle; Strg+Umschalt
+  unterscheidet es vom Werkzeug B). Die Leinwand wird um die Breite der Leiste schmaler oder breiter, Einpassen folgt.
+  **Abweichung:** Ist das Fenster schmaler als Werkzeugleiste + 300 dp + 400 dp Leinwand (752 dp), bleibt die Leiste
+  eingeklappt, ohne die Einstellung zu ändern; wird das Fenster breiter, erscheint sie wieder. Die Einstellung gilt je
+  Fenster und wird nicht gespeichert (später mit #175).
+- **Farbfeld der Werkzeugleiste:** Ein Klick klappt die eingeklappte Leiste auf, wenn sie Platz hat und die Farbe zeigt;
+  sonst (Leiste schon offen, Fenster zu schmal, Werkzeug ohne Farbe) öffnet er die Farbliste am Farbfeld. Per Tastatur
+  (Enter) öffnet es immer die Liste mit Fokus auf dem ersten Eintrag. Die Liste ersetzt das bisherige Weiterschalten
+  der Farbe.
+- **Listen der Fußzeile:** Farbe und Zoom klappen eine Liste über dem Feld auf (▾ am Feld): Farbe mit Farbquadrat,
+  Name und Hex; Zoom mit Einpassen (Strg+0), 25, 50, 100 (Strg+1), 200, 400 % (`canvas.ZoomStufen`,
+  `canvas.Sitzung.SetzeZoom` um die Fenstermitte). Die aktuelle Wahl ist grün. Die Listen laufen über dieselbe
+  Liste wie die Menüs (`menue.welches` = `listeFarbe`/`listeZoom` hinter den Menüs): Tastatur (hoch/runter/Pos1/Ende,
+  Enter, Esc gibt den Fokus an das Feld zurück), Klick daneben, Sperre beim Speichern. Pfeil links/rechts wechselt dort
+  kein Menü. Enter auf dem fokussierten Feld öffnet die Liste mit Fokus auf dem ersten Eintrag. Damit ist
+  Nachtrag 2 „Farbe und Zoom klappen noch keine Liste auf“ erledigt; die Schriftgröße bleibt Anzeige bis #190.
+- **Tab-Reihenfolge:** Menütitel, Werkzeuge, Farbfeld links, Farben (und Kantenknöpfe) der rechten Leiste, Fußfeld Farbe,
+  Fußfeld Zoom.
+- **Kleine Fenster (F-516):** Passt die Werkzeugleiste nicht zwischen Menüzeile und Fußzeile, werden Knöpfe, Abstände,
+  Symbol und Farbquadrat gleichmäßig kleiner, bis zu Knöpfen von 20 dp; bei 480 × 320 passen damit alle neun Werkzeuge
+  und das Farbfeld. Erst unter 244 dp Leistenhöhe (Fenster unter 304 dp hoch, also unter der Mindesthöhe von 320 dp, F-252) schneidet sie unten ab; Werkzeuge und Farbe bleiben dann über das
+  Menü „Werkzeuge“, die Buchstaben und die Fußzeile erreichbar. Hohe Fenster behalten die Maße aus Schritt (a).
+- **Drehbücher:** Die Drehbücher mit festen Koordinaten klappen die Leiste am Anfang mit Strg+Umschalt+B ein; damit gilt
+  die Lage der Leinwand aus Schritt (a) weiter. Sichtprobe von Schritt (b): `scripts/drehbuecher/oberflaeche-187b.txt`
+  und `oberflaeche-187b-klein.txt` (480 × 320).

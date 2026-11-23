@@ -1,0 +1,7 @@
+# Sichtprobe ADR-0031 Nachtrag 3 im kleinsten Fenster (F-516): Werkzeugleiste schrumpft, rechte Leiste bleibt eingeklappt.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/oberflaeche-187b-klein.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 480 --hoehe 320
+warte 800
+foto 01-klein
+taste Strg+Umschalt+B
+warte 300
+foto 02-klein-nach-strg-umschalt-b

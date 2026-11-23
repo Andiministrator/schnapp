@@ -73,7 +73,7 @@ func (e *editor) zeichneHilfe(gtx layout.Context) {
 			return
 		}
 	}
-	flaeche := leinwandFlaeche(gtx)
+	flaeche := e.leinwandFlaeche(gtx)
 	ha := clip.Rect(flaeche).Push(gtx.Ops)
 	event.Op(gtx.Ops, &e.hilfeOffen)
 	ha.Pop()

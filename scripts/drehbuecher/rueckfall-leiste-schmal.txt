@@ -7,6 +7,9 @@
 # Schwärzen y = 294; Menü Datei (62,15), Eintrag „Exportieren“ (100,84).
 # Lauf 8 (480x800): Werkzeugknopf weit unten klickbar (Stauchen), Hinweis in der Fußzeile gekürzt, Export per Menü ohne Portal
 warte 800
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 foto 00-start
 zeiger 26 434
 warte 200

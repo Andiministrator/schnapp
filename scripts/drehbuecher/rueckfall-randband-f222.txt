@@ -5,6 +5,9 @@
 # Koordinaten seit Karte #210 (neue Oberfläche, ADR-0031): Bild 1200x800 bei 100 % ab (226,100); Bildschirmpunkt =
 # Bildpunkt + (226,100). Züge „unter den Bildrand“ enden bei y = 950 (Bild endet bei 900, die Fußzeile beginnt bei 970).
 warte 800
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 foto 01-vorher
 # 1) X senkrecht von Bildzeile 564 bis unter den Bildrand: unten abgeschnitten, Meldung nennt „Ganzes Bild“,
 #    der Menüeintrag „Ganzes Bild“ (Menü Bild) ist aktiv

@@ -5,6 +5,9 @@
 # Koordinaten seit Karte #210 (neue Oberfläche, ADR-0031): Bild 1200x800 bei 100 % ab (226,100); Bildschirmpunkt =
 # Bildpunkt + (226,100) (vorher + (200,136)). Zeigerhinweis für Werkzeuge steht seither in der Fußzeile und am Knopf.
 warte 800
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 taste B
 warte 100
 foto 01-B-hinweis

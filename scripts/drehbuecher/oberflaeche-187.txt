@@ -3,6 +3,9 @@
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen. Bei 1600 × 1000, Skala 1: Menüzeile 30 px hoch,
 # Werkzeugleiste 52 px breit (Knöpfe 40 px ab y = 38, Text bei y = 178–218), Fußzeile 30 px.
 warte 800
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 foto 01-start
 zeiger 600 400
 warte 200

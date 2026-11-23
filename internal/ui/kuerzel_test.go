@@ -67,7 +67,8 @@ func TestMenueZeigtKuerzel(t *testing.T) {
 	e := testEditor(t)
 	soll := map[aktion]string{aktKopieren: "Ctrl+C", aktExport: "Ctrl+Shift+E", aktSpeichern: "Ctrl+S",
 		aktRueckgaengig: "Ctrl+Z", aktWiederholen: "Ctrl+Shift+Z", aktTextBearbeiten: "Enter", aktLoeschen: "Del",
-		aktEinpassen: "Ctrl+0", aktEins: "Ctrl+1", aktSchliessen: "Ctrl+W", aktGanzesBild: "", aktZurueckholen: "", aktKantenform: "", aktTastenkuerzel: "F1", aktUeber: ""}
+		aktEinpassen: "Ctrl+0", aktEins: "Ctrl+1", aktSchliessen: "Ctrl+W", aktGanzesBild: "", aktZurueckholen: "", aktKantenform: "", aktTastenkuerzel: "F1", aktUeber: "",
+		aktSeitenleiste: "Ctrl+Shift+B"}
 	for i := 0; i < menueAnzahl; i++ {
 		for _, en := range e.menueEintraegeVon(i) {
 			if en.hatWerkzeug {

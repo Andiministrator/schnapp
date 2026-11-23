@@ -154,6 +154,24 @@ func (s *Sitzung) EinsZuEins() {
 	s.Abb = s.Abb.Eins(document.Pt(float64(s.fenster.X)/2, float64(s.fenster.Y)/2))
 }
 
+// ZoomStufen sind die Stufen der Zoom-Liste in der Fußzeile in Prozent (ADR-0031 Nachtrag 3); Einpassen steht dort
+// zusätzlich als eigener Eintrag.
+var ZoomStufen = []int{25, 50, 100, 200, 400}
+
+// SetzeZoom zeigt die Ansicht mit prozent um die Fenstermitte (Zoom-Liste der Fußzeile), wie EinsZuEins für 100 %.
+// Außerhalb von [MinZoom, MaxZoom] oder während eines Zugs geschieht nichts.
+func (s *Sitzung) SetzeZoom(prozent int) {
+	z := float64(prozent) / 100
+	if s.Zieht() || z < MinZoom || z > MaxZoom {
+		return
+	}
+	s.eingepasst = false
+	s.Abb = s.Abb.ZoomUm(document.Pt(float64(s.fenster.X)/2, float64(s.fenster.Y)/2), z/s.Abb.Zoom)
+}
+
+// Eingepasst meldet, ob die Ansicht dem Fenster folgt (Einpassen; Haken in der Zoom-Liste).
+func (s *Sitzung) Eingepasst() bool { return s.eingepasst }
+
 // Scrollen zoomt zum Zeiger: dy < 0 vergrößert (Rad nach oben). Ein Rastschritt (dy = ±1) ändert um 10 %.
 func (s *Sitzung) Scrollen(p document.Punkt, dy float64) {
 	if dy == 0 || math.IsNaN(dy) || math.IsInf(dy, 0) || s.Zieht() {

@@ -1,0 +1,32 @@
+# Sichtprobe ADR-0031 Schritt (b) (Karte #187): rechte Leiste, Listen der Fußzeile, Einklappen.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/oberflaeche-187b.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen. Bei 1600 × 1000, Skala 1: rechte Leiste ab x = 1300,
+# Farben 28 px ab x = 1316 im Abstand 36 px.
+warte 800
+foto 01-start
+taste T
+klick 600 400
+warte 200
+schreibe Hallo
+warte 300
+foto 02-text-ausgewaehlt
+klick 1352 142
+warte 300
+foto 03-blau
+klick 1478 985
+warte 300
+foto 04-zoomliste
+taste Esc
+warte 200
+taste Strg+Umschalt+B
+warte 300
+foto 05-ohne-leiste
+taste Strg+Umschalt+B
+taste Enter
+warte 200
+taste X
+warte 300
+foto 06-stauchen
+klick 26 490
+warte 300
+foto 07-farbliste-links

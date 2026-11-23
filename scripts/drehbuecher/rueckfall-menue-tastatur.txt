@@ -6,6 +6,9 @@
 # Eintrag, Rechts/Links wechseln das Menü (Datei, Bearbeiten, Ansicht, Bild, Werkzeuge, Hilfe), Runter/Hoch springen über
 # graue Einträge, Enter führt aus, Esc schließt. Bild bei 100 % ab (226,100), der Text kommt bei (826,500).
 warte 800
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 zeiger 826 500
 warte 200
 taste T

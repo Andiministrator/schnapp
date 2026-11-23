@@ -4,6 +4,9 @@
 # Lauf 3: Verpixeln mit 7 px breitem Rahmen (zwischen MinObjekt 6 und MinBlock 8) -> schwarz + Meldung; danach normaler Rahmen ohne Meldung
 # Koordinaten seit Karte #210: Bild bei (226,100), Bildschirmpunkt = Bildpunkt + (226,100) (vorher + (200,136)).
 warte 800
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 taste P
 ziehe 1126 264 1133 464 8
 warte 300

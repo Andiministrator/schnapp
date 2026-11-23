@@ -58,7 +58,7 @@ func TestZeigerFeldFolgtZoomPerTasteUndZuschnitt(t *testing.T) {
 		return image.Point{}, false
 	}
 	// Hineingezoomt den Zeiger auf die Leinwandmitte setzen, dann den Zoom per Taste ändern, ohne ihn zu bewegen.
-	fl := leinwandFlaeche(l.gtx())
+	fl := l.e.leinwandFlaeche(l.gtx())
 	mitte := fl.Min.Add(fl.Max).Div(2)
 	l.e.s.Scrollen(document.Pt(float64(mitte.X-fl.Min.X), float64(mitte.Y-fl.Min.Y)), -3)
 	l.setle()

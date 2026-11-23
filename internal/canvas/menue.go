@@ -68,6 +68,21 @@ func (s *Sitzung) WechsleKante() (document.Kante, bool) {
 	return s.D.Kante(), true
 }
 
+// SetzeKante setzt die Form der Stauch-Kante auf k (rechte Leiste, ADR-0031 Nachtrag 3) als einen Rückgängig-Schritt,
+// unter denselben Bedingungen wie WechsleKante. Ist k schon gesetzt, ändert sich nichts (kein leerer Schritt). Zurück
+// kommt, ob sich das Dokument geändert hat.
+func (s *Sitzung) SetzeKante(k document.Kante) bool {
+	if !s.KannKanteWechseln() || s.D.Kante() == k {
+		return false
+	}
+	vor := s.D.Stand()
+	if s.D.SetzeKante(k) != nil {
+		return false
+	}
+	s.merkeAenderung(vor)
+	return true
+}
+
 // KannLoeschen meldet, ob Loeschen ein Objekt entfernen würde (Menüeintrag „Löschen“).
 func (s *Sitzung) KannLoeschen() bool { return s.zug == keinZug && s.Auswahl != 0 && !s.gesperrt() }
 

@@ -45,7 +45,7 @@ func TestHilfetafelPasstAufDieLeinwand(t *testing.T) {
 		l := neuerMenueLauf(t, fenster)
 		l.e.hilfeOffen = true
 		l.setle()
-		flaeche := leinwandFlaeche(l.gtx())
+		flaeche := l.e.leinwandFlaeche(l.gtx())
 		g := l.e.hilfeGroesse
 		if g.X <= 0 || g.Y <= 0 {
 			t.Fatalf("%v: Tafel ohne Größe (%v), wurde sie gezeichnet?", fenster, g)
@@ -58,7 +58,7 @@ func TestHilfetafelPasstAufDieLeinwand(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(800, 600))
 	l.e.hilfeOffen = true
 	l.setle()
-	if g, f := l.e.hilfeGroesse, leinwandFlaeche(l.gtx()); g.Y != f.Dy() {
+	if g, f := l.e.hilfeGroesse, l.e.leinwandFlaeche(l.gtx()); g.Y != f.Dy() {
 		t.Errorf("800×600: Tafelhöhe %d, Soll die Leinwandhöhe %d (abgeschnitten)", g.Y, f.Dy())
 	}
 }

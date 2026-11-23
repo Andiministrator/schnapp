@@ -716,3 +716,15 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Testhilfen mit träge angelegtem Schloss sind selbst ein Datenrennen** (`if p.mu == nil { p.mu = … }`). Ein
   `sync.Mutex` als Nullwert braucht keine Anlage. Aufgefallen erst, als der Test den Puffer während des Laufs las.
 
+## Rechte Leiste (Karte #187 b, 23.11.2026)
+
+- **Eine neue, einklappbare Leiste verschiebt die Leinwand aller Drehbücher.** Statt 17 Drehbücher neu auszumessen,
+  klappen sie die Leiste am Anfang per Taste ein (Strg+Umschalt+B); damit gilt die alte Lage, und ihr Prüfgegenstand
+  bleibt derselbe. Die neue Leiste bekommt eigene Drehbücher. Gegenprobe: alle Drehbücher mit Testbild gefahren, Fotos
+  der lagerempfindlichen (Schwärzen, Stauchen, Kantenform) angesehen.
+- **Neue Aufklapplisten über die vorhandene Menü-Mechanik führen** (eine Nummer hinter den Menüs statt eines zweiten
+  Listensystems): Tastatur, Klick daneben und Sperre beim Speichern kommen mit, nur Lage, Rückgabe des Fokus und die
+  Pfeile links/rechts brauchen eine Ausnahme.
+- **Gio-Knöpfe nehmen beim Mausklick keinen Fokus** (`widget.Clickable`): Ein Klick auf eine Farbe während der
+  Texteingabe lässt die Eingabe weiterlaufen. Vor einem Fokus-Umbau im Gio-Quelltext nachsehen statt vermuten.
+

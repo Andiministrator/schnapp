@@ -8,6 +8,9 @@
 # Leiste, sondern im Menü Bild: Titel (267,15), Eintrag (300,52). Das Band beginnt in der Bildmitte und endet unter
 # dem Bild, aber noch über der Fußzeile (y 970).
 warte 800
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 taste X
 ziehe 826 664 826 950 12
 warte 300

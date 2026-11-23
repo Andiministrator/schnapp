@@ -13,6 +13,9 @@
 # „Bild“ (Datei, Bearbeiten, Ansicht, Bild), Ende springt auf den letzten bedienbaren Eintrag („Kantenform“, solange eine
 # Naht da ist; „Gestauchtes zurückholen“ ist dann ebenfalls aktiv).
 warte 800
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 foto 01-start
 # Ohne Naht: Menü Bild per Tastatur öffnen; „Kantenform“ steht grau. Esc schließt.
 taste F10

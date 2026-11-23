@@ -7,6 +7,9 @@
 # Erst Werkzeuge öffnen und den untersten Eintrag „Stauchen“ anklicken (Foto 02: Werkzeug Stauchen aktiv), dann Datei
 # öffnen und „Schließen“ anklicken: Der Editor beendet sich (Probe-Skript meldet Exit 0) oder zeigt den Hinweis.
 warte 800
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 klick 336 15
 warte 300
 foto 01-werkzeuge-klein

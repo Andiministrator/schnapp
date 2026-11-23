@@ -8,6 +8,9 @@
 # Das Bild 1200x800 liegt bei 100 % ab (226,100); Bildschirmpunkt = Bildpunkt + (226,100).
 # Schließen hält das Fenster beim ersten Mal offen (Hinweis zum Ablageort, F-158), probe.sh beendet danach per SIGTERM.
 warte 800
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 taste R
 ziehe 326 464 526 564 10
 warte 200

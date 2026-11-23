@@ -263,6 +263,17 @@ type editor struct {
 		schwaerzen, verpixeln, zuschneiden, stauchen widget.Clickable
 		fussFarbe, fussZoom                          widget.Clickable
 	}
+	// seiteZu: Die rechte Leiste ist eingeklappt (Ansicht → Seitenleiste, Strg+Umschalt+B; ADR-0031 Punkt 3). Der
+	// Nullwert zeigt sie, sofern das Fenster breit genug ist (seiteSichtbar).
+	seiteZu bool
+	// seite: Knöpfe der rechten Leiste (seitenleiste.go).
+	seite seitenKnoepfe
+	// fussFeldRahmen: Lage der Felder Farbe und Zoom beim letzten Zeichnen (leer: nicht gezeigt), farbKnopfRahmen die des
+	// Farbfelds der Werkzeugleiste; die Aufklapplisten hängen sich daran (listenAnker).
+	fussFeldRahmen  map[canvas.FeldArt]image.Rectangle
+	farbKnopfRahmen image.Rectangle
+	// listeAmFarbKnopf: Die offene Farbliste kam vom Farbfeld der Werkzeugleiste und hängt dort, nicht an der Fußzeile.
+	listeAmFarbKnopf bool
 	// zeigerFenster ist der Zeigerort über der Leinwand in Fensterpixeln (nil: außerhalb), für die
 	// Fußzeile (ADR-0031 Punkt 4).
 	zeigerFenster *document.Punkt
@@ -1301,8 +1312,9 @@ func (e *editor) frame(gtx layout.Context) {
 	e.menueAuswerten(gtx)
 	e.knoepfeAuswerten(gtx)
 	e.fussAuswerten(gtx)
+	e.seiteAuswerten(gtx)
 	paint.Fill(gtx.Ops, farbeFenster)
-	flaeche := leinwandFlaeche(gtx) // zwischen Menüzeile, Werkzeugleiste und Fußzeile (ADR-0031)
+	flaeche := e.leinwandFlaeche(gtx) // zwischen Menüzeile, Werkzeugleiste, Fußzeile und rechter Leiste (ADR-0031)
 
 	// Leinwand: eigener Ursprung, damit Zeigerpositionen schon Leinwandkoordinaten sind.
 	t := op.Offset(flaeche.Min).Push(gtx.Ops)
@@ -1313,6 +1325,7 @@ func (e *editor) frame(gtx layout.Context) {
 
 	e.zeichneMenuezeile(gtx)
 	e.zeichneWerkzeugleiste(gtx)
+	e.zeichneSeitenleiste(gtx)
 	e.zeichneFusszeile(gtx)
 	e.zeichneHilfe(gtx)
 	e.zeichneMenue(gtx) // über allem, unter dem Titel des offenen Menüs
@@ -1962,6 +1975,7 @@ func (e *editor) tasten(gtx layout.Context) {
 func (e *editor) fokussierterKnopf(gtx layout.Context) *widget.Clickable {
 	k := &e.knoepfe
 	alle := []*widget.Clickable{&k.farbe, &k.fussFarbe, &k.fussZoom}
+	alle = append(alle, e.seite.alle()...)
 	for i := range e.menue.titel {
 		alle = append(alle, &e.menue.titel[i])
 	}
@@ -2007,8 +2021,20 @@ func (e *editor) knoepfeAuswerten(gtx layout.Context) {
 		}
 	}
 	if k.farbe.Clicked(gtx) && an() {
-		e.s.NaechsteFarbe()
+		e.farbKnopfGeklickt(gtx)
 	}
+}
+
+// farbKnopfGeklickt: Das Farbfeld der Werkzeugleiste zeigt die Farbe in der rechten Leiste (ADR-0031 Punkt 2). Ist die
+// Leiste eingeklappt, klappt es sie auf; kann sie die Farbe nicht zeigen (Fenster zu schmal, Werkzeug ohne Farbe) oder
+// zeigt sie sie schon, öffnet es die Farbliste am Farbfeld (ADR-0031 Nachtrag 3).
+func (e *editor) farbKnopfGeklickt(gtx layout.Context) {
+	if e.seiteZu && seitePasst(gtx) && e.s.Seitenleiste().Farbe {
+		e.seiteZu = false
+		return
+	}
+	e.listeAmFarbKnopf = true
+	e.menueOeffne(listeFarbe, false)
 }
 
 type werkzeugKnopf struct {

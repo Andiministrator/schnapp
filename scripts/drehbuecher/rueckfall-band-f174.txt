@@ -6,6 +6,9 @@
 # x 52..1600, y 30..970; Bild 1200x800 bei 100 % ab (226,100); Bildschirmpunkt = Bildpunkt + (226,100) (vorher
 # + (200,136) unter der zweizeiligen Knopfleiste). Züge enden über der Fußzeile (y < 970).
 warte 800
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 taste X
 ziehe 826 100 826 946 12
 warte 300

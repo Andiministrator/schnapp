@@ -32,6 +32,7 @@ const (
 	aktUeber         // Menü Hilfe: Über Schnapp
 	aktEinpassen
 	aktEins
+	aktSeitenleiste // Menü Ansicht: rechte Leiste ein- und ausklappen (ADR-0031 Punkt 3)
 	aktSchliessen
 	aktEsc   // Esc in Stufen (canvas.Sitzung.Esc), Ausnahme nach ADR-0026 Punkt 5
 	aktEnter // Enter: Knopf mit Fokus, Text bestätigen bzw. Zeilenumbruch, sonst Text bearbeiten
@@ -81,6 +82,7 @@ func tastenTabelle() []taste {
 		{filter: key.Filter{Name: "E", Required: key.ModShortcut | key.ModShift}, akt: aktExport},
 		strg("0", aktEinpassen),
 		strg("1", aktEins),
+		{filter: key.Filter{Name: "B", Required: key.ModShortcut | key.ModShift}, akt: aktSeitenleiste},
 		strg("W", aktSchliessen),
 		{filter: key.Filter{Name: key.NameF1}, akt: aktTastenkuerzel},
 		wz("V", canvas.WerkzeugAuswahl),

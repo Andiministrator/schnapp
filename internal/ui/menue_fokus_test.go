@@ -195,7 +195,7 @@ func TestMenueEnterUndLeertasteMitLoslassen(t *testing.T) {
 		if menueFokusNr(l) != 0 {
 			t.Errorf("%q: Fokus %s, soll erster Eintrag", n, menueFokusName(l))
 		}
-		l.taste(key.NameEnd, 0)
+		l.taste(key.NameDownArrow, 0)
 		if menueFokusNr(l) != l.index(aktEins) {
 			t.Fatalf("%q: Fokus %s, soll 1:1", n, menueFokusName(l))
 		}

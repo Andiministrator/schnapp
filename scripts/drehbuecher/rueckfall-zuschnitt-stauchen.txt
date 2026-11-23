@@ -5,6 +5,9 @@
 # Koordinaten seit Karte #210 (neue Oberfläche, ADR-0031): Bild 1200x800 bei 100 % ab (226,100); Bildpunkt =
 # Bildschirm - (226,100) (vorher - (200,136)). Gestaucht auf 600 Zeilen liegt das Bild ab (226,200).
 warte 800
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 # 1) Zuschneiden: Bildausschnitt (100,86)-(1100,686)
 taste C
 ziehe 326 186 1326 786 12

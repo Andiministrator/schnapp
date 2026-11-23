@@ -1,0 +1,86 @@
+[
+  {
+    "name": "S187-1 dieselbe Kantenform legt einen leeren Schritt an",
+    "datei": "internal/canvas/menue.go",
+    "paket": "./internal/canvas",
+    "alt": "if !s.KannKanteWechseln() || s.D.Kante() == k {",
+    "neu": "if !s.KannKanteWechseln() {"
+  },
+  {
+    "name": "S187-2 Kantenform ohne Naht setzbar",
+    "datei": "internal/canvas/menue.go",
+    "paket": "./internal/canvas",
+    "alt": "if !s.KannKanteWechseln() || s.D.Kante() == k {",
+    "neu": "if s.D.Kante() == k {"
+  },
+  {
+    "name": "S187-3 Auswahl geht dem Werkzeug nicht vor",
+    "datei": "internal/canvas/seitenleiste.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.Auswahl != 0 {\n\t\tif o, ok := s.D.Objekt(s.Auswahl); ok {",
+    "neu": "\tif false && s.Auswahl != 0 {\n\t\tif o, ok := s.D.Objekt(s.Auswahl); ok {"
+  },
+  {
+    "name": "S187-4 SetzeZoom hebt Einpassen nicht auf",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.eingepasst = false\n\ts.Abb = s.Abb.ZoomUm(document.Pt(float64(s.fenster.X)/2, float64(s.fenster.Y)/2), z/s.Abb.Zoom)",
+    "neu": "\ts.Abb = s.Abb.ZoomUm(document.Pt(float64(s.fenster.X)/2, float64(s.fenster.Y)/2), z/s.Abb.Zoom)"
+  },
+  {
+    "name": "S187-5 rechte Leiste auch im schmalen Fenster",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "return !e.seiteZu && seitePasst(gtx)",
+    "neu": "return !e.seiteZu"
+  },
+  {
+    "name": "S187-6 Pfeil rechts verlässt die Fußzeilen-Liste",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\tif istListe(m.welches) {\n\t\treturn\n\t}",
+    "neu": "\tif false && istListe(m.welches) {\n\t\treturn\n\t}"
+  },
+  {
+    "name": "S187-7 Enter auf dem Fußfeld öffnet ohne Fokus in der Liste",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.listeAmFarbKnopf = false\n\t\te.menueOeffne(listeFarbe, true)",
+    "neu": "\t\te.listeAmFarbKnopf = false\n\t\te.menueOeffne(listeFarbe, false)"
+  },
+  {
+    "name": "S187-8 Esc gibt den Fokus an den Menütitel statt an das Farbfeld links",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif e.listeAmFarbKnopf {\n\t\t\treturn &e.knoepfe.farbe\n\t\t}",
+    "neu": "\t\tif false && e.listeAmFarbKnopf {\n\t\t\treturn &e.knoepfe.farbe\n\t\t}"
+  },
+  {
+    "name": "S187-9 Werkzeugleiste schrumpft nicht (F-516)",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "if frei := unten - oben; bedarf > frei && frei > 0 {",
+    "neu": "if frei := unten - oben; false && bedarf > frei && frei > 0 {"
+  },
+  {
+    "name": "S187-10 Farbklick in der Leiste wirkt nicht",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif k.farben[j].Clicked(gtx) && an() {\n\t\t\te.s.SetzeFarbe(c)",
+    "neu": "\t\tif k.farben[j].Clicked(gtx) && an() {\n\t\t\t_ = c"
+  },
+  {
+    "name": "S187-11 Farbfeld links klappt die Leiste nicht auf",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.seiteZu = false\n\t\treturn\n\t}\n\te.listeAmFarbKnopf = true",
+    "neu": "\t\treturn\n\t}\n\te.listeAmFarbKnopf = true"
+  },
+  {
+    "name": "S187-12 Zoomliste: Eintrag setzt den Zoom nicht",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tcase en.hatZoom:\n\t\t\t\te.s.SetzeZoom(en.zoom)",
+    "neu": "\t\t\tcase en.hatZoom:\n\t\t\t\t_ = en.zoom"
+  }
+]

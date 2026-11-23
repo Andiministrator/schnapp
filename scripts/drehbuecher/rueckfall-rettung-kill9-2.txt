@@ -1,3 +1,6 @@
 # Rückfallprobe F-144 (rueckfall-rettung-kill9.sh), Teil 2: dieselbe Datei nach SIGKILL neu geöffnet; die Fußzeile soll die Wiederherstellung melden.
 warte 1500
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 foto 3-wiederhergestellt

@@ -5,6 +5,9 @@
 # Seit Karte #210 (ADR-0031) gibt es keinen Export-Knopf mehr: Export über das Menü Datei, Titel (62,15), Eintrag
 # „Exportieren …“ (100,84); Taste R wählt das Rechteck-Werkzeug (Knopf bei (26,154) wird aktiv).
 warte 800
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 klick 62 15
 warte 300
 klick 100 84

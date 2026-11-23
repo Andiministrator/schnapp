@@ -9,6 +9,9 @@
 # tmp/probe/home/Bilder/schnapp/JJJJ-MM/> --breite 3840 --hoehe 2160 --zeit 120 --ende 90
 # Koordinaten seit Karte #210 geprüft (neue Oberfläche, ADR-0031: Menüzeile 30, Werkzeugleiste 52, Fußzeile 30): Der Zug (1000,600)-(1800,1000) liegt im eingepassten 4K-Bild (Zoom 95 %, Leinwand ab x 52, y 30), die Zeilen blieben unverändert; Beleg: Foto 01 bzw. 02 zeigt den schwarzen Kasten.
 warte 800
+# Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
+taste Strg+Umschalt+B
+warte 200
 zeiger 1000 600
 warte 200
 taste B

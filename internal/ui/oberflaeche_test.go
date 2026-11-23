@@ -93,7 +93,9 @@ func TestUeberfahrenWechseltOffenesMenue(t *testing.T) {
 	}
 }
 
-// TestWerkzeugleisteKlick: Ein Klick auf den Knopf in der Leiste links wählt das Werkzeug (Lage aus werkzeugRahmen).
+// TestWerkzeugleisteKlick: Ein Klick auf den Knopf in der Leiste links wählt das Werkzeug (Lage aus werkzeugRahmen). Ein
+// Klick auf das Farbfeld klappt die eingeklappte rechte Leiste auf; zeigt sie die Farbe schon, öffnet er die Farbliste
+// am Farbfeld, und ein Eintrag setzt die Farbe (ADR-0031 Nachtrag 3).
 func TestWerkzeugleisteKlick(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
 	ws := l.e.werkzeugKnoepfe()
@@ -107,19 +109,31 @@ func TestWerkzeugleisteKlick(t *testing.T) {
 	if l.e.s.Werkzeug != canvas.WerkzeugText {
 		t.Errorf("Klick auf „Text“ links: Werkzeug %v", l.e.s.Werkzeug)
 	}
-	vorher := l.e.s.Stil.Farbe
-	l.e.s.Auswahl = 0
+	l.e.seiteZu = true
 	l.klick(farbe.Min.Add(farbe.Max).Div(2))
-	if l.e.s.Stil.Farbe == vorher {
-		t.Error("Klick auf das Farbfeld ändert die Farbe nicht")
+	if l.e.seiteZu || l.e.menue.offen {
+		t.Fatalf("Klick auf das Farbfeld bei eingeklappter Leiste: zu %v, Liste offen %v", l.e.seiteZu, l.e.menue.offen)
+	}
+	l.klick(farbe.Min.Add(farbe.Max).Div(2))
+	if !l.e.menue.offen || l.e.menue.welches != listeFarbe {
+		t.Fatalf("zweiter Klick auf das Farbfeld: Liste offen %v (%d)", l.e.menue.offen, l.e.menue.welches)
+	}
+	if r := l.e.menue.rahmen[0]; r.Min.Y < farbe.Max.Y || r.Min.X != farbe.Min.X {
+		t.Errorf("Farbliste hängt nicht unter dem Farbfeld: %v, Farbfeld %v", r, farbe)
+	}
+	l.e.s.Auswahl = 0
+	l.klick(l.e.menue.rahmen[2].Min.Add(l.e.menue.rahmen[2].Max).Div(2))
+	if l.e.menue.offen || l.e.s.Stil.Farbe != canvas.Beschriftungsfarben[2] {
+		t.Errorf("Eintrag 3 der Farbliste: offen %v, Farbe %v", l.e.menue.offen, l.e.s.Stil.Farbe)
 	}
 }
 
 // TestFusszeileFelder: Der Zeigerort folgt der Maus über dem Bild und verschwindet beim Verlassen; ein Klick auf das
-// Zoomfeld wechselt zwischen Einpassen und 1:1, einer auf das Farbfeld nimmt die nächste Farbe.
+// Zoomfeld oder das Farbfeld klappt eine Liste über dem Feld auf, ein Eintrag setzt Zoom bzw. Farbe (ADR-0031
+// Nachtrag 3).
 func TestFusszeileFelder(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
-	f := leinwandFlaeche(l.gtx())
+	f := l.e.leinwandFlaeche(l.gtx())
 	ort := f.Min.Add(image.Pt(int(l.e.s.Abb.Versatz.X), int(l.e.s.Abb.Versatz.Y))).Add(image.Pt(3, 2))
 	l.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(float32(ort.X), float32(ort.Y))})
 	l.setle()
@@ -145,17 +159,40 @@ func TestFusszeileFelder(t *testing.T) {
 	if l.e.s.Abb.Zoom == 1 {
 		t.Fatal("Vorbedingung: Zoom ist 1")
 	}
-	l.e.knoepfe.fussZoom.Click()
-	l.setle()
-	if l.e.s.Abb.Zoom != 1 {
-		t.Errorf("Zoomfeld bei Zoom ≠ 1: Zoom %v, soll 1:1", l.e.s.Abb.Zoom)
+	zoomFeld := l.e.fussFeldRahmen[canvas.FeldZoom]
+	l.klick(zoomFeld.Min.Add(zoomFeld.Max).Div(2))
+	if !l.e.menue.offen || l.e.menue.welches != listeZoom {
+		t.Fatalf("Klick auf das Zoomfeld: Liste offen %v (%d)", l.e.menue.offen, l.e.menue.welches)
 	}
-	vorher := l.e.s.Stil.Farbe
+	en := l.e.menueEintraege()
+	if len(en) != 1+len(canvas.ZoomStufen) || en[0].zoom != 0 || en[0].aktiv {
+		t.Fatalf("Zoomliste: %+v", en)
+	}
+	if r := l.e.menue.rahmen[len(en)-1]; r.Max.Y > zoomFeld.Min.Y {
+		t.Errorf("Zoomliste liegt nicht über dem Feld: letzte Zeile %v, Feld %v", r, zoomFeld)
+	}
+	for i, x := range en {
+		if x.zoom == 200 {
+			l.klick(l.e.menue.rahmen[i].Min.Add(l.e.menue.rahmen[i].Max).Div(2))
+		}
+	}
+	if l.e.menue.offen || l.e.s.Abb.Zoom != 2 {
+		t.Errorf("Eintrag 200 %%: offen %v, Zoom %v", l.e.menue.offen, l.e.s.Abb.Zoom)
+	}
+	l.klick(zoomFeld.Min.Add(zoomFeld.Max).Div(2))
+	l.klick(l.e.menue.rahmen[0].Min.Add(l.e.menue.rahmen[0].Max).Div(2))
+	if !l.e.s.Eingepasst() {
+		t.Error("Eintrag Einpassen passt nicht ein")
+	}
 	l.e.s.Auswahl = 0
-	l.e.knoepfe.fussFarbe.Click()
-	l.setle()
-	if l.e.s.Stil.Farbe == vorher {
-		t.Error("Farbfeld der Fußzeile ändert die Farbe nicht")
+	farbFeld := l.e.fussFeldRahmen[canvas.FeldFarbe]
+	l.klick(farbFeld.Min.Add(farbFeld.Max).Div(2))
+	if !l.e.menue.offen || l.e.menue.welches != listeFarbe {
+		t.Fatalf("Klick auf das Farbfeld der Fußzeile: Liste offen %v (%d)", l.e.menue.offen, l.e.menue.welches)
+	}
+	l.klick(l.e.menue.rahmen[1].Min.Add(l.e.menue.rahmen[1].Max).Div(2))
+	if l.e.s.Stil.Farbe != canvas.Beschriftungsfarben[1] {
+		t.Errorf("Farbliste der Fußzeile, Eintrag 2: Farbe %v", l.e.s.Stil.Farbe)
 	}
 	if text := fussText(canvas.FussFeld{Art: canvas.FeldStand, Ungesichert: true}); text != "unsaved" {
 		t.Errorf("Stand: %q", text)
@@ -197,7 +234,7 @@ func TestHilfeTastenkuerzel(t *testing.T) {
 	if !l.e.hilfeOffen {
 		t.Fatal("Menüeintrag öffnet die Übersicht nicht")
 	}
-	l.klick(leinwandFlaeche(l.gtx()).Min.Add(image.Pt(5, 5)))
+	l.klick(l.e.leinwandFlaeche(l.gtx()).Min.Add(image.Pt(5, 5)))
 	if l.e.hilfeOffen {
 		t.Error("Klick schließt die Übersicht nicht")
 	}
@@ -323,12 +360,19 @@ func TestFarbHinweisNichtUeberOffenerListe(t *testing.T) {
 	}
 }
 
-// TestTabFolgtDerReihenfolgeDerFussfelder (F-515): Vom Farbfeld links springt Tab zu den klickbaren Feldern der
-// Fußzeile von links nach rechts: erst Farbe, dann Zoom.
+// TestTabFolgtDerReihenfolgeDerFussfelder (F-515): Vom Farbfeld links springt Tab durch die Farben der rechten Leiste
+// (ADR-0031 Nachtrag 3) zu den klickbaren Feldern der Fußzeile von links nach rechts: erst Farbe, dann Zoom.
 func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
 	l.fokusiere(&l.e.knoepfe.farbe)
-	l.r.MoveFocus(key.FocusForward) // wie die Tab-Taste (Gio)
+	for i := range canvas.Beschriftungsfarben {
+		l.r.MoveFocus(key.FocusForward) // wie die Tab-Taste (Gio)
+		l.setle()
+		if !l.fokus(&l.e.seite.farben[i]) {
+			t.Fatalf("Tab %d nach dem Farbfeld: Fokus nicht auf Farbe %d der rechten Leiste (%s)", i+1, i, menueFokusName(l))
+		}
+	}
+	l.r.MoveFocus(key.FocusForward)
 	l.setle()
 	if !l.fokus(&l.e.knoepfe.fussFarbe) {
 		t.Fatalf("erstes Tab nach dem Farbfeld: Fokus nicht auf dem Fußfeld Farbe (%s)", menueFokusName(l))

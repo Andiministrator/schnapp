@@ -73,7 +73,7 @@ func (l *menueLauf) maus(kind pointer.Kind, p image.Point, tasten pointer.Button
 
 // bildPt rechnet Bildpixel (Zoom 1) in Fensterpixel um.
 func (l *menueLauf) bildPt(p image.Point) image.Point {
-	f := leinwandFlaeche(l.gtx())
+	f := l.e.leinwandFlaeche(l.gtx())
 	return p.Add(image.Pt(int(l.e.s.Abb.Versatz.X)+f.Min.X, int(l.e.s.Abb.Versatz.Y)+f.Min.Y))
 }
 
