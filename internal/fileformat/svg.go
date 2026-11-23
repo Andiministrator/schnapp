@@ -127,7 +127,11 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			s.farbeSVG("fill", o.Fuellung)
 			s.farbeSVG("stroke", o.Strich.Farbe)
 			s.attr("stroke-width", zahl(o.Strich.Breite))
-			s.attr("stroke-linejoin", "round")
+			if document.WirksamerEckradius(o.Eckradius, b.Breite(), b.Hoehe()) == 0 {
+				s.attr("stroke-linejoin", "miter") // spitze Außenecken wie der Renderer (F-498)
+			} else {
+				s.attr("stroke-linejoin", "round")
+			}
 			s.WriteString(`/>`)
 		case document.Text:
 			s.WriteString(`<g`)

@@ -173,3 +173,18 @@ a9f36c1), Sichtprobe im virtuellen KWin.
 - **Nicht geändert:** die Strichecken des Kastens bleiben rund (`stroke-linejoin="round"`, Nachtrag 3); bei Radius 0 sind die
   Außenecken dadurch um die halbe Strichbreite gerundet. Eckige Strichecken wären eine eigene Entscheidung (Renderer, SVG, Editor zugleich).
 - **Begründung:** Gegen den üblichen KI-Look (Pillen, weiche Karten); Regeln in `brand/corporate-design.md` §1 und §5.
+
+## Nachtrag 5 (23.11.2026): Spitze Strichecken beim Kasten ohne Rundung (F-498, Karte #211)
+
+**Status:** Akzeptiert (Claude Sonnet 5.5 im Auftrag der Karte; ersetzt den Punkt „Nicht geändert“ aus Nachtrag 4 und die
+runden Strichecken aus Nachtrag 3 für Kästen ohne Rundung).
+
+- **Regel:** Ist `WirksamerEckradius` 0 (Eckradius 0 oder unter 0,5 px), hat der Strich spitze Außenecken (Gehrung); bei
+  Radius > 0 bleibt alles wie bisher (runde Strichecken, SVG `stroke-linejoin="round"`).
+- **Gleich in drei Ausgängen:** Renderer und Editor füllen `document.EckigerRahmen` (vier überlappungsfreie Rechtecke,
+  bei verschwundenem Innenraum eins; Gios Strich kennt nur runde Ecken, deshalb Füllung statt Strich); das SVG sagt
+  `stroke-linejoin="miter"` (Gehrung 90° = 1,41 unter der Standardgrenze 4). Die Ausdehnung bleibt `Kasten.Grenzen`
+  (Bereich ± halbe Strichbreite): Trefferfläche, Griffe und Auswahlrahmen ändern sich nicht.
+- **Format:** `docs/format.md` und `FormatVersion` unverändert (`stroke-linejoin` ist Darstellungsattribut, kein
+  `s:`-Attribut); nur die Beispiele `view.png` und `view.snap.svg` tragen jetzt `miter`.
+- **Nicht geändert:** Pfeil (runde Enden, Spitze ein Dreieck), Text-Schild (Rechteck ohne Strich) und Nummer (Kreis).

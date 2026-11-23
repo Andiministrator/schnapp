@@ -367,7 +367,16 @@ func (z zeichner) objekt(o document.Objekt) error {
 			z.fuelle([][]document.Punkt{umriss}, nil, v.Fuellung)
 		}
 		if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
-			z.strich(umriss, true, v.Strich)
+			if document.WirksamerEckradius(v.Eckradius, r.Breite(), r.Hoehe()) == 0 {
+				// Ohne Rundung spitze Außenecken (F-498): Strich als überlappungsfreie Rechtecke.
+				var polys [][]document.Punkt
+				for _, q := range document.EckigerRahmen(r, v.Strich.Breite) {
+					polys = append(polys, []document.Punkt{q.Min, document.Pt(q.Max.X, q.Min.Y), q.Max, document.Pt(q.Min.X, q.Max.Y)})
+				}
+				z.fuelle(polys, nil, v.Strich.Farbe)
+			} else {
+				z.strich(umriss, true, v.Strich)
+			}
 		}
 	case document.Text:
 		if v.Hintergrund.A > 0 {

@@ -108,6 +108,25 @@ func WirksamerEckradius(radius, breite, hoehe float64) float64 {
 	return radius
 }
 
+// EckigerRahmen zerlegt den Strich eines Kastens ohne Rundung (WirksamerEckradius = 0) in überlappungsfreie
+// Rechtecke mit spitzen Außenecken (Gehrung, F-498): oben und unten über die ganze Breite, links und rechts dazwischen.
+// Ist der Innenraum durch den Strich verschwunden (Breite oder Höhe höchstens eine Strichbreite), bleibt ein einziges
+// Rechteck. Renderer und Editor zeichnen genau diese Rechtecke; das SVG sagt dasselbe mit stroke-linejoin="miter".
+func EckigerRahmen(r Rechteck, strichBreite float64) []Rechteck {
+	h := strichBreite / 2
+	a, b := r.Min.Minus(Punkt{h, h}), r.Max.Plus(Punkt{h, h})
+	ia, ib := r.Min.Plus(Punkt{h, h}), r.Max.Minus(Punkt{h, h})
+	if ia.X >= ib.X || ia.Y >= ib.Y {
+		return []Rechteck{{a, b}}
+	}
+	return []Rechteck{
+		{a, Punkt{b.X, ia.Y}},
+		{Punkt{a.X, ib.Y}, b},
+		{Punkt{a.X, ia.Y}, Punkt{ia.X, ib.Y}},
+		{Punkt{ib.X, ia.Y}, Punkt{b.X, ib.Y}},
+	}
+}
+
 func (k Kasten) Kennung() int             { return k.ID }
 func (k Kasten) Grenzen() Rechteck        { return aufgeweitet(k.Bereich, k.Strich.Breite) }
 func (k Kasten) mitKennung(id int) Objekt { k.ID = id; return k }

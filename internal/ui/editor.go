@@ -1564,7 +1564,21 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 				paint.FillShape(gtx.Ops, v.Fuellung, rr.Op(gtx.Ops))
 			}
 			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
-				paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(v.Strich.Breite)}.Op())
+				if document.WirksamerEckradius(v.Eckradius, float64(r.Dx()), float64(r.Dy())) == 0 {
+					// Ohne Rundung spitze Außenecken (F-498); Gios Strich kennt nur runde Ecken.
+					var pfad clip.Path
+					pfad.Begin(gtx.Ops)
+					for _, q := range kastenRahmen(r, v.Strich.Breite) {
+						pfad.MoveTo(f32.Pt(float32(q.Min.X), float32(q.Min.Y)))
+						pfad.LineTo(f32.Pt(float32(q.Max.X), float32(q.Min.Y)))
+						pfad.LineTo(f32.Pt(float32(q.Max.X), float32(q.Max.Y)))
+						pfad.LineTo(f32.Pt(float32(q.Min.X), float32(q.Max.Y)))
+						pfad.Close()
+					}
+					paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Outline{Path: pfad.End()}.Op())
+				} else {
+					paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(v.Strich.Breite)}.Op())
+				}
 			}
 		case document.Nummer:
 			m := an(v.Mitte)
@@ -1590,6 +1604,13 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 			}
 		}
 	}
+}
+
+// kastenRahmen sind die Rechtecke des eckigen Kasten-Strichs auf dem ganzzahligen Rechteck r (document.EckigerRahmen,
+// F-498); eigene Funktion, damit ein Test sie ohne Gio-Zeichnen prüfen kann.
+func kastenRahmen(r image.Rectangle, strichBreite float64) []document.Rechteck {
+	return document.EckigerRahmen(document.R(document.Pt(float64(r.Min.X), float64(r.Min.Y)),
+		document.Pt(float64(r.Max.X), float64(r.Max.Y))), strichBreite)
 }
 
 // textGrundlinieAnsicht ist die Grundlinie von Zeile i relativ zu Ort.Y (wie document.Text.Grundlinie, F-342).

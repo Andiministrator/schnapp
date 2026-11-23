@@ -12,6 +12,30 @@ import (
 	"github.com/Andiministrator/schnapp/internal/document"
 )
 
+// F-498: Eckradius 0 gibt stroke-linejoin="miter", ein Radius über 0 bleibt "round".
+func TestSVGKastenEckenform(t *testing.T) {
+	for _, c := range []struct {
+		radius float64
+		soll   string
+	}{{0, `stroke-linejoin="miter"`}, {0.2, `stroke-linejoin="miter"`}, {6, `stroke-linejoin="round"`}} {
+		d, err := document.Neu(testbild(100, 100))
+		if err != nil {
+			t.Fatal(err)
+		}
+		k := document.Kasten{Bereich: document.R(document.Pt(10, 10), document.Pt(50, 40)), Strich: document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 8}, Eckradius: c.radius}
+		if _, err := d.Hinzufuegen(k); err != nil {
+			t.Fatal(err)
+		}
+		var buf bytes.Buffer
+		if err := ExportiereSVG(&buf, d); err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(buf.String(), c.soll) {
+			t.Errorf("Radius %v: SVG ohne %s", c.radius, c.soll)
+		}
+	}
+}
+
 // F-108: Das SVG hat dieselben Maße wie der Renderer: runde Strichecken, der Eckradius wie WirksamerEckradius (nie
 // elliptisch), der Text-Hintergrund aus Grenzen(), die Schrift „Go“ (nicht Open Sans) mit serifenloser Rückfallfamilie,
 // die Ziffern auf der Grundlinie der Nummer.
