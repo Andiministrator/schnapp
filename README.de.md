@@ -22,7 +22,7 @@ oder verpixeln, zuschneiden, die Mitte eines langen Screenshots herausnehmen und
 kopieren.
 Schnapp entsteht in Go mit [Gio](https://gioui.org), dazu ein kleiner Patch an Gio (ein Vollbild-Overlay je Monitor,
 gebrochene Skalierung, Mauszeiger bei gemischten Skalen, Bilder in der Zwischenablage). Ein Teil bis an
-den Bildrand wird abgeschnitten und kommt mit dem Knopf *Ganzes Bild* zurück.
+den Bildrand wird abgeschnitten und kommt mit *Bild → Ganzes Bild* zurück.
 
 ## Geplante Funktionen
 
@@ -79,27 +79,27 @@ Inhalt). Beides überschreibt die Pixel des Bildes selbst: Bis zum Speichern lä
 endgültig, und keine gespeicherte oder exportierte Datei enthält den verdeckten Inhalt. Ein vor dem Schwärzen mit
 **Strg+C** kopiertes Bild bleibt, wie es war, in der Zwischenablage. **C** Zuschneiden (das ganze Bild erscheint mit einem Rahmen;
 Kanten oder Ecken nach innen ziehen oder einen neuen Rahmen ziehen — der Teil außerhalb bleibt abgedunkelt sichtbar,
-eine Kante lässt sich also wieder hinausschieben; der Knopf *Ganzes Bild* oder ein Doppelklick mit dem Werkzeug zeigt
+eine Kante lässt sich also wieder hinausschieben; *Bild → Ganzes Bild* oder ein Doppelklick mit dem Werkzeug zeigt
 wieder das ganze Bild), **X** Stauchen (quer über den Teil ziehen, der
-wegfallen soll — senkrecht für Zeilen, waagrecht für Spalten; die Naht zeigt einen durchsichtigen Spalt zwischen zwei Papier-Abrisskanten (in JPEG weiß) — **Kantenform** im Menü (sobald es eine Naht gibt) wechselt zu Welle oder Zacken, `[capture] seam` legt die Form neuer Aufnahmen fest; Doppelklick auf eine
+wegfallen soll — senkrecht für Zeilen, waagrecht für Spalten; die Naht zeigt einen durchsichtigen Spalt zwischen zwei Papier-Abrisskanten (in JPEG weiß) — **Kantenform** im Menü *Bild* (sobald es eine Naht gibt) wechselt zu Welle oder Zacken, `[capture] seam` legt die Form neuer Aufnahmen fest; Doppelklick auf eine
 Naht holt den Teil zurück (jede Naht verdeckt auf beiden Seiten rund 14 Pixel Bild, bei sehr großen Aufnahmen entsprechend mehr, und eine Naht näher als rund 24 Pixel am Rand wird abgeschnitten); ein Teil bis an den Bildrand wird stattdessen abgeschnitten und kommt mit *Ganzes Bild*
 zurück).
 Beides verbirgt nur: Das Original bleibt in der Arbeitsdatei vollständig, Geheimes also vor dem Wegschneiden
 schwärzen — Exporte und Zwischenablage enthalten nur den sichtbaren Teil. Beschriftungen, die ganz in einem
-verborgenen Teil liegen, sind mit verborgen (die Statusleiste nennt ihre Zahl) und kehren mit ihm zurück. Der
-Knopf *Farbe* schaltet reihum durch vier Farben und färbt die ausgewählte Beschriftung um. Ein Zeichenwerkzeug bleibt
+verborgenen Teil liegen, sind mit verborgen (die Fußzeile nennt ihre Zahl) und kehren mit ihm zurück. Das
+Farbfeld unter den Werkzeugen (und das Farbfeld der Fußzeile) schaltet reihum durch vier Farben und färbt die ausgewählte Beschriftung um. Ein Zeichenwerkzeug bleibt
 aktiv; **Esc** geht stufenweise zurück: Texteingabe → Ziehen → Auswahl → Auswählen. Beschriftung oder Griffe ziehen
 verschiebt, ändert die Größe oder biegt; sie bleibt dabei immer teilweise im Bild. Das Mausrad zoomt zum Zeiger; mit
 Auswählen verschiebt Ziehen auf freier Fläche die Ansicht, die mittlere Taste in jedem Werkzeug. Tasten: **Strg+Z**
 rückgängig, **Strg+Umschalt+Z**/**Strg+Y** wiederholen, **Entf** löschen, **Strg+S** speichern,
-**Strg+Umschalt+E** (Knopf „Exportieren …“) als PNG, JPG oder SVG über den Dateidialog des Desktops weitergeben (ohne Bearbeitungsdaten, Geschwärztes bleibt weg; scheitert das Ersetzen einer vorhandenen Datei auf halbem Weg und lässt sich der alte Inhalt nicht wiederherstellen, nennt die Statusleiste die Datei als beschädigt),
+**Strg+Umschalt+E** (*Datei → Exportieren …*) als PNG, JPG oder SVG über den Dateidialog des Desktops weitergeben (ohne Bearbeitungsdaten, Geschwärztes bleibt weg; scheitert das Ersetzen einer vorhandenen Datei auf halbem Weg und lässt sich der alte Inhalt nicht wiederherstellen, nennt die Fußzeile die Datei als beschädigt),
 **Strg+C** fertiges Bild in die Zwischenablage (mit dem data-control-Protokoll, etwa unter KDE Plasma, bleibt
 es nach dem Schließen des Editors, bis etwas anderes kopiert wird, höchstens 12 Stunden; sonst nur, solange der Editor offen ist; das Schließen hält dann einmal an und warnt, dass die Zwischenablage das Bild nur hält, solange das Fenster offen ist), **Strg+0** einpassen,
-**Strg+1** 100 %, **Strg+W** schließen. Jedes Kürzel geht auch mit der Maus (nur Umschalt beim Ziehen, für Pfeile in 45°-Schritten und Quadrate, und Umschalt+Enter für den Zeilenumbruch im Text bleiben Tasten): Der Knopf **Menü** neben Speichern führt alle Aktionen mit ihren Kürzeln (darunter **Gestauchtes zurückholen**, das alles Gestauchte wieder zeigt), und über einem Werkzeugknopf erscheint sein Buchstabe. Das Menü geht auch ohne Maus: mit **Tab** zum Knopf Menü, **Enter** oder **Leertaste** öffnet, Pfeiltasten, **Pos1** und **Ende** wählen einen Eintrag, **Enter** führt ihn aus, **Esc** schließt.
+**Strg+1** 100 %, **Strg+W** schließen. Jedes Kürzel geht auch mit der Maus (nur Umschalt beim Ziehen, für Pfeile in 45°-Schritten und Quadrate, und Umschalt+Enter für den Zeilenumbruch im Text bleiben Tasten). Das Editorfenster hat oben eine **Menüzeile** (das „s“ des Logos, dann *Datei, Bearbeiten, Ansicht, Bild, Werkzeuge, Hilfe*; rechts steht der Dateiname), links eine **Werkzeugleiste** mit den neun Werkzeugen als Symbolen und darunter dem Farbfeld und unten eine **Fußzeile**: links die Meldung oder der Hinweis zum Werkzeug, rechts Felder für die Größe der Auswahl, den Zeigerort im Bild, die Farbe mit Deckkraft (Klick: nächste Farbe), die Schriftgröße, die Bildgröße (mit „gestaucht“, wenn Teile gestaucht sind), den Zoom (Klick: einpassen oder 100 %) und „gespeichert“ oder „ungesichert“. Die Menüs führen alle Aktionen mit ihren Kürzeln (darunter **Gestauchtes zurückholen**, das alles Gestauchte wieder zeigt); über einem Werkzeugknopf erscheinen Name und Buchstabe. **F1** (*Hilfe → Tastenkürzel*) zeigt alle Kürzel. Die Menüs gehen auch ohne Maus: **F10** öffnet das erste Menü, mit **Tab** erreichst du die Menütitel, **Enter** oder **Leertaste** öffnet eines, **Pfeil links**/**rechts** wechselt das Menü, **Pfeil hoch**/**runter**, **Pos1** und **Ende** wählen einen Eintrag, **Enter** führt ihn aus, **Esc** schließt.
 
 Änderungen werden beim Schließen gespeichert; **Strg+S** ohne Änderung schreibt nichts. Gespeichert wird im Hintergrund: Das Fenster reagiert weiter und zeigt „Speichern …“, das Bearbeiten ruht, bis es fertig ist. Eine Datei außerhalb der
 Bibliothek wird beim ersten Speichern zu einer neuen Aufnahme der Bibliothek (die Datei selbst bleibt unverändert; die
-Statusleiste nennt die neue Datei, in die danach gespeichert wird). Lässt sich eine Datei der Bibliothek nicht
+Fußzeile nennt die neue Datei, in die danach gespeichert wird). Lässt sich eine Datei der Bibliothek nicht
 aktualisieren (gelöscht, ersetzt oder nicht beschreibbar), landen die Änderungen als neue Aufnahme. Scheitert das
 Speichern, bleibt das Fenster offen und sagt es; erneutes Schließen verwirft die Änderungen. Strg+C im Terminal oder
 Abmelden speichert vorher. Eine Datei, die zu aufwendig zu rendern ist, wird beim Öffnen abgelehnt; `--ignore-limit
@@ -107,7 +107,7 @@ DATEI` öffnet sie trotzdem.
 
 ### Rettungskopie
 
-Während du bearbeitest, legt Schnapp eine kleine *Rettungskopie* (englisch „rescue copy“) deiner ungespeicherten Arbeit an, damit ein Absturz, ein beendeter Prozess oder ein Stromausfall sie nicht vernichtet. Sie enthält deine Beschriftungen mit ihren Texten, den Zuschnitt, die Stauchstreifen und die Schwärzungen seit dem letzten Speichern, aber keine Pixel. Sie liegt in `~/.local/state/schnapp/rescue/` (`$XDG_STATE_HOME/schnapp/rescue/`, falls gesetzt), in einem Ordner, den nur du lesen kannst (Rechte 0700, Dateien 0600), je geöffneter Datei eine, benannt nach dem SHA-256 des absoluten Pfads der bearbeiteten Datei. Die Kopie selbst hält diesen Pfad samt Größe, Änderungszeit und SHA-256 der Datei fest; daran erkennt der Editor, dass sie noch passt. Nach einem gelungenen Speichern und beim Schließen ohne Änderungen wird sie gelöscht. Öffnest du dieselbe, unveränderte Datei später wieder, stellt der Editor sie wieder her und sagt es in der Statusleiste; Rückgängig führt auf den gespeicherten Stand zurück. Hat sich die Datei inzwischen geändert, wird die Kopie nicht angewendet, sondern als `….alt.json` im selben Ordner beiseitegelegt, und die Statusleiste nennt sie. Jede Kopie, deren eigene Änderungszeit mehr als 30 Tage zurückliegt, wird beim Start des Editors entfernt, auch eine beiseitegelegte oder nie angewendete. Ein zweites Fenster auf derselben Datei schreibt keine Rettungskopie und sagt es; eine Sperrdatei `<SHA>.lock` im selben Ordner trennt die Fenster.
+Während du bearbeitest, legt Schnapp eine kleine *Rettungskopie* (englisch „rescue copy“) deiner ungespeicherten Arbeit an, damit ein Absturz, ein beendeter Prozess oder ein Stromausfall sie nicht vernichtet. Sie enthält deine Beschriftungen mit ihren Texten, den Zuschnitt, die Stauchstreifen und die Schwärzungen seit dem letzten Speichern, aber keine Pixel. Sie liegt in `~/.local/state/schnapp/rescue/` (`$XDG_STATE_HOME/schnapp/rescue/`, falls gesetzt), in einem Ordner, den nur du lesen kannst (Rechte 0700, Dateien 0600), je geöffneter Datei eine, benannt nach dem SHA-256 des absoluten Pfads der bearbeiteten Datei. Die Kopie selbst hält diesen Pfad samt Größe, Änderungszeit und SHA-256 der Datei fest; daran erkennt der Editor, dass sie noch passt. Nach einem gelungenen Speichern und beim Schließen ohne Änderungen wird sie gelöscht. Öffnest du dieselbe, unveränderte Datei später wieder, stellt der Editor sie wieder her und sagt es in der Fußzeile; Rückgängig führt auf den gespeicherten Stand zurück. Hat sich die Datei inzwischen geändert, wird die Kopie nicht angewendet, sondern als `….alt.json` im selben Ordner beiseitegelegt, und die Fußzeile nennt sie. Jede Kopie, deren eigene Änderungszeit mehr als 30 Tage zurückliegt, wird beim Start des Editors entfernt, auch eine beiseitegelegte oder nie angewendete. Ein zweites Fenster auf derselben Datei schreibt keine Rettungskopie und sagt es; eine Sperrdatei `<SHA>.lock` im selben Ordner trennt die Fenster.
 
 ## Installation
 
