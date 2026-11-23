@@ -429,6 +429,8 @@ func (z zeichner) ebenenRahmen(o document.Objekt) image.Rectangle {
 		// Der Strich liegt starr mit halber Breite um das abgebildete Rechteck; fällt seine Kante auf eine Naht, ragt er
 		// über die abgebildeten Grenzen hinaus (Verify V23-1).
 		rand += v.Strich.Breite / 2
+	case document.Lupe: // Rahmen wie beim Kasten (ADR-0033 Punkt 4)
+		rand += v.Strich.Breite / 2
 	}
 	r := document.R(z.ansicht(g.Min), z.ansicht(g.Max))
 	starr := func(anker document.Punkt) {
@@ -555,6 +557,8 @@ func (z zeichner) objekt(o document.Objekt) error {
 		// Senkrecht mittig wie dominant-baseline="central": Grundlinie um die halbe Ziffernhöhe unter der Mitte.
 		hoehe := float64(face.Metrics().CapHeight) / 64
 		z.text(face, fonts.Laden(fonts.Go, fonts.Fett), s, m.X-breite/2, m.Y+hoehe/2, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, grad)
+	case document.Lupe:
+		z.lupe(v)
 	}
 	return nil
 }

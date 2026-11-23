@@ -246,7 +246,7 @@ func TestBeschaedigt(t *testing.T) {
 		"kein XML":          svg("<svg"),
 		"Wurzel falsch":     svg(`<html/>`),
 		"Version fehlt":     svg(`<svg xmlns="http://www.w3.org/2000/svg" width="80" height="60">` + ansicht + `</svg>`),
-		"Version neuer":     svg(strings.Replace(kopf, `s:format="1"`, `s:format="2"`, 1) + ansicht + `</svg>`),
+		"Version neuer":     svg(strings.Replace(kopf, `s:format="1"`, `s:format="3"`, 1) + ansicht + `</svg>`),
 		"Ansicht fehlt":     svg(kopf + `</svg>`),
 		"unbekannter Typ":   svg(kopf + ansicht + `<g s:typ="stempel"/></svg>`),
 		"Farbe kaputt":      svg(kopf + ansicht + `<g s:typ="nummer" s:mitte="1,1" s:wert="1" s:radius="2" s:farbe="rot"/></svg>`),

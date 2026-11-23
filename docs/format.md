@@ -1,6 +1,6 @@
 # Schnapp working file format
 
-**Format version: 1**
+**Format version: 2**
 
 This document specifies the working file written and read by Schnapp: a PNG image that looks like a finished
 screenshot in every viewer and carries all editable layers (annotations, crop and squeeze, the unmodified original) in
@@ -144,7 +144,7 @@ Root element `svg`:
 
 | Attribute | Value | Required |
 |---|---|---|
-| `s:format` | format version, a decimal integer; this document describes `1` | MUST |
+| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7; writers use the lowest version that carries the content, section 12) | MUST |
 | `width`, `height` | size of the original in pixels, plain decimal integers without unit | MUST |
 | `viewBox` | `0 0 <width> <height>` | writer MUST, reader ignores |
 | `xmlns`, `xmlns:s` | the namespaces above | writer MUST |
@@ -364,6 +364,45 @@ with opacity 0, and writes `opacity`. Example: `testdata/format/layers`.
 A reader that meets an unknown `s:typ` MUST NOT silently drop the object (that would lose data on the next save). It
 treats the file as damaged and offers the visible image instead (section 11).
 
+### 8.7 `"lupe"` magnifier (format version 2)
+
+An enlarged copy of a part of the image, shown in a frame of its own with a line to where it comes from. The type
+exists from format version 2 on: in a file with `s:format="1"` it is an unknown object type (8.6), and the file is
+damaged.
+
+| Attribute | Value |
+|---|---|
+| `s:quelle` | area (5.2): the source, the part of the original that is enlarged; `x0 < x1`, `y0 < y1` |
+| `s:ziel` | area: the target, where the enlarged copy is shown; `x0 < x1`, `y0 < y1` |
+| `s:strich` | stroke of both frames and of the connecting line |
+
+Width and height of both areas MUST be greater than 0 and at most `max_size`. The magnification is not stored: it is
+`target width / source width` horizontally and `target height / source height` vertically. Schnapp keeps both equal;
+a file in which they differ is valid and is drawn stretched.
+
+**The content is not stored.** The target shows the pixels of the original (`snAO`) under the source, read anew
+whenever the object is drawn. A redaction in the source therefore shows in the magnifier at once, and no part of the
+file keeps a copy of the redacted content (section 9). Only what the view shows is magnified: source pixels outside the
+crop, inside a squeeze strip or outside the original are transparent in the target, so that a magnifier never carries
+anything cropped or squeezed away into an export. Annotations under the source are not part of the content. The
+`snAP` document carries the frames and the line as presentation, never pixels.
+
+Drawing, bottom to top, all in the colour and width of `s:strich`:
+
+1. the connecting line between the centres of source and target, cut off where it enters either area (from the edge of
+   the source to the edge of the target), with round caps; no line if the areas overlap;
+2. the frame around the source;
+3. the enlarged content in the target, by **nearest neighbour** without smoothing: the target pixel whose centre is at
+   `z` (original pixels) shows the source pixel `floor(quelle.min + (z - ziel.min) x quelle.size / ziel.size)`, per
+   axis;
+4. the frame around the target.
+
+Each frame is centred on the edge of its area and has square outer corners, like a `kasten` with corner radius 0. The
+layer attributes (8.5) apply to the object as a whole. Example: `testdata/format/magnifier`.
+
+Informative: the SVG export embeds the visible source pixels as a PNG inside a nested `svg` element at the target whose
+`viewBox` is the source, with `preserveAspectRatio="none"` and `image-rendering:pixelated`.
+
 ## 9. Redaction
 
 Redacting (blacking out or pixelating) is **not** an object. It overwrites pixels of the original, and the result is
@@ -394,7 +433,7 @@ value here and to the code must happen in the same commit.
 
 | Key | Value | Meaning |
 |---|---|---|
-| `format_version` | 1 | value of `s:format` written by this version |
+| `format_version` | 2 | highest value of `s:format` read and written by this version (`2` only with a `lupe`, section 12) |
 | `namespace` | `urn:x-schnapp:1` | Schnapp XML namespace |
 | `chunk_svg` | `snAP` | chunk with the compressed SVG |
 | `chunk_orig` | `snAO` | chunk with the original PNG |
@@ -425,7 +464,8 @@ Original width and height are at least 1.
    visible image as a plain picture; it MUST NOT save over the file, or the newer layers would be lost. A version
    that is missing, not an integer, or less than 1 is damaged. Older supported versions MUST be read. The version is
    decided before any other content is judged, so a newer file that also contains an object type unknown to the
-   reader is reported as newer, not as damaged.
+   reader is reported as newer, not as damaged. Within a supported version, only the object types of that version
+   exist: a `lupe` (8.7) in a file of version 1 is an unknown object type, and the file is damaged.
 3. **Unknown content.** Attributes or elements that are not defined here and are not an object (`s:typ`) MUST be
    ignored, whatever their namespace; so are the presentation elements and attributes. Position matters for two elements: `s:streifen` counts only as a direct child of `s:ansicht`, and `s:schlagwort` only as a direct child of `s:meta`; anywhere else they are unknown content and have no effect (they are neither data nor damage). Readers MUST NOT accept them elsewhere, so that all readers see the same strips and keywords. Unknown *object types* are not
    ignored (8.6). Unknown content is not preserved when the reader saves the file.
@@ -452,6 +492,9 @@ Original width and height are at least 1.
 5. Write objects in stacking order, bottom first.
 6. A program that stores a changed view of the file SHOULD rewrite all of it (visible image, `snAP`, `snAO`) rather
    than patch single chunks.
+7. Write the lowest format version that carries the content: `s:format="2"` if and only if the document contains a
+   `lupe` (8.7), otherwise `1`. A reader that knows only version 1 then still reads every file without a magnifier,
+   and reports a file with one as newer instead of damaged.
 
 ## 13. What is not stored
 
@@ -480,6 +523,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `redaction` | one filled and one pixelated redaction, applied to the pixels |
 | `text-style` | one text with all optional text attributes: a family that is not installed, `bold italic underline strike`, `center` |
 | `layers` | three objects with layer attributes: a named, half-opaque box, a hidden and locked arrow, a step number without them |
+| `magnifier` | format version 2: one magnifier with a non-integer source; the visible image shows no annotations, as in all examples |
 
 In the examples the visible image is the view *without* annotations (annotation rendering depends on a font
 rasteriser and is not part of the format).

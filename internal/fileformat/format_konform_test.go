@@ -138,6 +138,12 @@ func beispiele() []beispiel {
 			fuege(t, d, document.Nummer{Mitte: document.Pt(52, 10), Wert: 1, Radius: 6, Farbe: color.NRGBA{217, 58, 51, 255}})
 			return d
 		}, Metadaten{}, false},
+		{"magnifier", func(t *testing.T) *document.Dokument { // Lupe, Formatversion 2 (ADR-0033)
+			d := beispielDok(t, 64, 48)
+			fuege(t, d, document.Lupe{Quelle: document.R(document.Pt(6, 30), document.Pt(16.5, 38)),
+				Ziel: document.R(document.Pt(30, 6), document.Pt(51, 22)), Strich: beispielRot})
+			return d
+		}, Metadaten{}, false},
 		{"minimal", func(t *testing.T) *document.Dokument { return beispielDok(t, 32, 24) }, Metadaten{}, false},
 		{"no-edge-style", func(t *testing.T) *document.Dokument {
 			d := beispielDok(t, 32, 24)
@@ -405,7 +411,7 @@ func TestFormatLeserRegeln(t *testing.T) {
 	}
 	ersetze := func(alt, neu string) string { return ersetzeIn(svg, alt, neu) }
 	ersetzeV := func(alt, neu string) string { return ersetzeIn(viewSVG, alt, neu) }
-	version := `s:format="` + strconv.Itoa(FormatVersion) + `"`
+	version := `s:format="1"` // objects und view tragen keine Lupe: Version 1 (ADR-0033 Punkt 5)
 	const streifenV = `<s:streifen s:zeilen="false" s:von="30" s:bis="33"/><s:streifen s:zeilen="true" s:von="20" s:bis="25"/>`
 	const metaV = `<s:meta s:erstellt="2026-01-02T03:04:05Z" s:bearbeitet="false">`
 
@@ -695,7 +701,7 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 		"kante",
 		"streifen", "zeilen", "von", "bis", "ebene", "typ", "a", "b", "k", "strich", "bereich", "fuellung", "eckradius",
 		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "schrift", "stil", "ausrichtung", "mitte", "wert", "radius",
-		"name", "ausgeblendet", "gesperrt", "deckkraft"}
+		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel"}
 	for _, w := range wortliste {
 		if !gesehen[w] {
 			t.Errorf("Beispiele enthalten s:%s nicht (Beispielabdeckung)", w)
@@ -718,7 +724,7 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 			t.Errorf("docs/format.md beschreibt s:%s nicht", n)
 		}
 	}
-	for _, n := range []string{"pfeil", "kasten", "text", "nummer"} {
+	for _, n := range []string{"pfeil", "kasten", "text", "nummer", "lupe"} {
 		if !strings.Contains(spez, `"`+n+`"`) {
 			t.Errorf("docs/format.md nennt den Objekttyp %q nicht", n)
 		}

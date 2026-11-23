@@ -39,7 +39,7 @@ func neuereFassung(t *testing.T, daten []byte) []byte {
 			if err != nil {
 				t.Fatal(err)
 			}
-			neu := bytes.Replace(svg, []byte(`s:format="1"`), []byte(`s:format="2"`), 1)
+			neu := bytes.Replace(svg, []byte(`s:format="1"`), []byte(`s:format="3"`), 1) // 3: neuer als jede lesbare Version (ADR-0033: 2 ist die Lupe)
 			if bytes.Equal(neu, svg) {
 				t.Fatalf("Formatversion nicht im SVG gefunden: %s", svg)
 			}

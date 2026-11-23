@@ -17,8 +17,23 @@ import (
 	"github.com/Andiministrator/schnapp/internal/fonts"
 )
 
-// FormatVersion ist die Version des SVG-Blocks (ADR-0006, ADR-0008). Ältere Versionen müssen lesbar bleiben.
-const FormatVersion = 1
+// FormatVersion ist die höchste Version des SVG-Blocks, die dieser Stand liest und schreibt (ADR-0006, ADR-0008).
+// Ältere Versionen müssen lesbar bleiben. Geschrieben wird die kleinste Version, die den Inhalt trägt (schreibVersion):
+// 2 nur mit einer Lupe (ADR-0033 Punkt 5), sonst 1 — Dateien ohne Lupe bleiben für ältere Leser lesbar.
+const FormatVersion = 2
+
+// versionLupe ist die erste Formatversion mit dem Objekttyp „lupe“ (ADR-0033 Punkt 5).
+const versionLupe = 2
+
+// schreibVersion ist die Version, die der Schreiber für die Objekte objekte angibt.
+func schreibVersion(objekte []document.Objekt) int {
+	for _, o := range objekte {
+		if _, ok := o.(document.Lupe); ok {
+			return versionLupe
+		}
+	}
+	return 1
+}
 
 // ns ist der Namensraum der Schnapp-Attribute. Er kennzeichnet das Format, nicht den Rechner oder Nutzer.
 const ns = "urn:x-schnapp:1"
@@ -345,6 +360,8 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			s.attr("text-anchor", "middle")
 			s.attr("fill", "#ffffff")
 			s.WriteString(`>` + strconv.Itoa(o.Wert) + `</text></g>`)
+		case document.Lupe:
+			s.lupe(d, o)
 		}
 	}
 	s.WriteString(`</g>`)
@@ -357,7 +374,7 @@ func svgArbeitsdatei(d *document.Dokument, m Metadaten) []byte {
 	s := schreiber{rundlauf: true}
 	s.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n" + `<svg xmlns="http://www.w3.org/2000/svg"`)
 	s.attr("xmlns:s", ns)
-	s.attr("s:format", strconv.Itoa(FormatVersion))
+	s.attr("s:format", strconv.Itoa(schreibVersion(d.ObjekteOhneZug()))) // dieselbe Liste wie s.objekte
 	s.attr("width", strconv.Itoa(o.Dx()))
 	s.attr("height", strconv.Itoa(o.Dy()))
 	s.attr("viewBox", fmt.Sprintf("0 0 %d %d", o.Dx(), o.Dy()))
@@ -528,6 +545,13 @@ func (l *leser) strich(name string) document.Strich {
 	return document.Strich{Farbe: l.farbe("_f"), Breite: l.zahl("_b")}
 }
 
+// bereich liest eine Fläche `x0,y0 x1,y1` (docs/format.md 5.2); die Ordnung der Ecken prüft das Objekt.
+func (l *leser) bereich(name string) document.Rechteck {
+	min, max, _ := strings.Cut(l.text(name), " ")
+	l.a["_min"], l.a["_max"] = min, max
+	return document.Rechteck{Min: l.punkt("_min"), Max: l.punkt("_max")}
+}
+
 func (l *leser) objekt(typ string) document.Objekt {
 	o := l.objektOhneEbene(typ)
 	if o == nil {
@@ -541,10 +565,8 @@ func (l *leser) objektOhneEbene(typ string) document.Objekt {
 	case "pfeil":
 		return document.Pfeil{A: l.punkt("a"), B: l.punkt("b"), K: l.punkt("k"), Strich: l.strich("strich")}
 	case "kasten":
-		min, max, _ := strings.Cut(l.text("bereich"), " ")
-		l.a["_min"], l.a["_max"] = min, max
-		return document.Kasten{Bereich: document.Rechteck{Min: l.punkt("_min"), Max: l.punkt("_max")},
-			Strich: l.strich("strich"), Fuellung: l.farbe("fuellung"), Eckradius: l.zahl("eckradius")}
+		return document.Kasten{Bereich: l.bereich("bereich"), Strich: l.strich("strich"), Fuellung: l.farbe("fuellung"),
+			Eckradius: l.zahl("eckradius")}
 	case "text":
 		t := document.Text{Ort: l.punkt("ort"), Inhalt: l.text("inhalt"), Schriftgrad: l.zahl("grad"),
 			Farbe: l.farbe("farbe"), Hintergrund: l.farbe("hintergrund"), BreiteGrenze: l.zahl("umbruch")}
@@ -553,6 +575,8 @@ func (l *leser) objektOhneEbene(typ string) document.Objekt {
 	case "nummer":
 		return document.Nummer{Mitte: l.punkt("mitte"), Wert: l.ganz("wert"), Radius: l.zahl("radius"),
 			Farbe: l.farbe("farbe")}
+	case "lupe":
+		return document.Lupe{Quelle: l.bereich("quelle"), Ziel: l.bereich("ziel"), Strich: l.strich("strich")}
 	}
 	// Unbekannte Objekttypen aus neueren Fassungen: als Fehler melden statt still verlieren.
 	l.fehler("unbekannter Objekttyp %q", typ)
@@ -659,6 +683,11 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 				in.streifen = append(in.streifen, document.Streifen{Zeilen: l.text("zeilen") == "true",
 					Von: l.ganz("von"), Bis: l.ganz("bis")})
 			case hatTyp:
+				// Die Lupe gibt es erst ab Version 2 (ADR-0033 Punkt 5): In einer Datei der Version 1 ist sie ein
+				// unbekannter Objekttyp, wie für einen Leser dieser Version.
+				if l.a["typ"] == "lupe" && version < versionLupe {
+					return nil, fmt.Errorf("%w: Objekttyp \"lupe\" erst ab Formatversion %d", ErrBeschaedigt, versionLupe)
+				}
 				if o := l.objekt(l.a["typ"]); o != nil {
 					in.objekte = append(in.objekte, o)
 				}
