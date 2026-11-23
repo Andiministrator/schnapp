@@ -312,7 +312,7 @@ func Spaltband() (von, bis float64) { return -KantenSpaltHalb, KantenSpaltHalb }
 // Nachtrag 7); die anderen (Fasersaum, Abdunklung) liegen daneben auf den Bildteilen.
 func (s Schicht) ImSpalt() bool { return s.Von >= -KantenSpaltHalb && s.Bis <= KantenSpaltHalb }
 
-// NaehteBeruehren meldet, ob die Kante einer Naht in den Spalt einer anderen ragen kann (ADR-0023 Nachtrag 8,
+// NaehteBeruehren meldet, ob die Kante einer Naht in den Spalt einer anderen ragen kann (ADR-0023 Nachtrag 9,
 // F-438): wenn es Nähte beider Achsen gibt (sie kreuzen sich) oder zwei Nähte derselben Achse näher als die ganze
 // Bandhöhe (2·KantenBandHalb·Faktor) beieinanderliegen. Nur dann leeren Renderer, SVG-Export und Editor die Spalte nach
 // dem Fasersaum und der Abdunklung noch einmal; sonst bleibt die Zeichnung wie vor F-438.

@@ -624,7 +624,7 @@ func TestStauchenMindestrestJeSeite(t *testing.T) {
 	}
 }
 
-// F-445: Bei Zackenfaktor 2 verdoppelt sich der Mindestrest (48): 47 wird Zuschnitt, 48 bleibt eine Naht.
+// F-445: Bei KantenFaktor 2 verdoppelt sich der Mindestrest (48): 47 wird Zuschnitt, 48 bleibt eine Naht.
 func TestStauchenMindestrestFaktor2(t *testing.T) {
 	neu := func() *Sitzung {
 		d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 2200, 2200)))

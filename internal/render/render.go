@@ -265,7 +265,7 @@ func (z zeichner) kanten(schatten bool) {
 		return
 	}
 	// Kreuzen sich Nähte oder liegen sie eng beieinander, ragt der Fasersaum der einen in den Spalt der anderen (F-438,
-	// ADR-0023 Nachtrag 8): Erst Fasersaum und Abdunklung, dann die Spalte noch einmal leeren, dann erst den Schatten
+	// ADR-0023 Nachtrag 9): Erst Fasersaum und Abdunklung, dann die Spalte noch einmal leeren, dann erst den Schatten
 	// (er liegt im Spalt und bleibt dort, auch im Spalt der kreuzenden Naht).
 	if !schichtenDurchgang(func(s document.Schicht) bool { return !s.ImSpalt() }) || !spalte() {
 		return

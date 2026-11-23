@@ -280,7 +280,7 @@ type editor struct {
 	hatDruck     bool
 
 	// naht hält die Kanten der Nähte als aufgezeichnete Ops (Ansichtskoordinaten), bis sich Ansichtsgröße, Nähte,
-	// Kantenform oder Zackenfaktor ändern (F-183, ADR-0023 Nachtrag 6): Bei vielen Nähten in einem breiten Bild baute der
+	// Kantenform oder KantenFaktor ändern (F-183, ADR-0023 Nachtrag 6): Bei vielen Nähten in einem breiten Bild baute der
 	// Editor sonst jedes Bild alle Pfade neu.
 	naht struct {
 		groesse image.Point
@@ -1636,7 +1636,7 @@ func nummerGrundlinieAnsicht(n document.Nummer) float32 { return float32(n.Grund
 // zeichneNaehte legt die Kanten der Stauch-Nähte über Bild und Objekte, in Ansichtskoordinaten und mit denselben
 // Vielecken und Schichten wie Renderer und SVG-Export (ADR-0023 Punkt 6, Nachträge 6 und 7; den durchsichtigen Spalt
 // zeigt ein Schachbrett, schachbrett.go). Die Pfade werden nur neu gebaut,
-// wenn sich Ansichtsgröße, Nähte, Kantenform oder Zackenfaktor ändern; sonst spielt der Editor die Aufzeichnung ab
+// wenn sich Ansichtsgröße, Nähte, Kantenform oder KantenFaktor ändern; sonst spielt der Editor die Aufzeichnung ab
 // (F-183, e.naht).
 func (e *editor) zeichneNaehte(gtx layout.Context) {
 	g, naehte, form, faktor := e.s.D.Groesse(), e.s.D.Naehte(), e.s.D.Kante(), e.s.D.KantenFaktor()

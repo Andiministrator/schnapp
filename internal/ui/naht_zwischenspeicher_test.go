@@ -27,7 +27,7 @@ func editorMitNaht(t *testing.T, w, h int) *editor {
 	return e
 }
 
-// F-420: Der Zwischenspeicher der Nähte (e.naht) wird neu gebaut, wenn sich Kantenform oder Zackenfaktor ändern. Ohne
+// F-420: Der Zwischenspeicher der Nähte (e.naht) wird neu gebaut, wenn sich Kantenform oder KantenFaktor ändern. Ohne
 // Form und Faktor im Schlüssel zeigte die Leinwand nach „Seam style“ weiter die alte Kante. Ohne Fenster prüfbar, weil
 // zeichneNaehte nur Ops aufzeichnet: der Schlüssel im Zwischenspeicher gibt Auskunft.
 func TestZwischenspeicherNaehteFolgtFormUndFaktor(t *testing.T) {
@@ -46,7 +46,7 @@ func TestZwischenspeicherNaehteFolgtFormUndFaktor(t *testing.T) {
 			t.Errorf("Zwischenspeicher hält Form %v nach Wechsel auf %v", e.naht.form, k)
 		}
 	}
-	// Faktor: Der Schlüssel ist der Zackenfaktor des Dokuments; ein Wert, der nicht passt, löst den Neuaufbau aus.
+	// Faktor: Der Schlüssel ist der KantenFaktor des Dokuments; ein Wert, der nicht passt, löst den Neuaufbau aus.
 	e.naht.faktor = e.s.D.KantenFaktor() + 1
 	e.zeichneNaehte(gtx)
 	if e.naht.faktor != e.s.D.KantenFaktor() {
