@@ -42,3 +42,21 @@ func TestKastenRahmenSchmal(t *testing.T) {
 		t.Errorf("Rahmen %v", rs)
 	}
 }
+
+// F-498 (Kritik A-2, B-6, Mutanten Q15/E11): Ohne wirksamen Eckradius zeichnet der Editor den Strich aus den
+// Rechtecken des eckigen Rahmens, mit Rundung mit Gios rundem Strich.
+func TestKastenStrichWahl(t *testing.T) {
+	r := image.Rect(30, 30, 80, 70)
+	k := document.Kasten{Bereich: document.R(document.Pt(30, 30), document.Pt(80, 70)), Strich: document.Strich{Breite: 8}}
+	if rs := kastenStrich(k, r); len(rs) != 4 {
+		t.Errorf("Eckradius 0: %d Rechtecke, Soll 4 (eckiger Rahmen)", len(rs))
+	}
+	k.Eckradius = 0.4 // unter einem halben Pixel: gar nicht gerundet (WirksamerEckradius)
+	if rs := kastenStrich(k, r); len(rs) != 4 {
+		t.Errorf("Eckradius 0,4: %d Rechtecke, Soll 4", len(rs))
+	}
+	k.Eckradius = 6
+	if rs := kastenStrich(k, r); rs != nil {
+		t.Errorf("Eckradius 6: %v, Soll nil (runder Strich)", rs)
+	}
+}

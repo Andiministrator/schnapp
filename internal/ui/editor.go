@@ -1576,11 +1576,11 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 				paint.FillShape(gtx.Ops, v.Fuellung, rr.Op(gtx.Ops))
 			}
 			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
-				if document.WirksamerEckradius(v.Eckradius, float64(r.Dx()), float64(r.Dy())) == 0 {
+				if eckig := kastenStrich(v, r); eckig != nil {
 					// Ohne Rundung spitze Außenecken (F-498); Gios Strich kennt nur runde Ecken.
 					var pfad clip.Path
 					pfad.Begin(gtx.Ops)
-					for _, q := range kastenRahmen(r, v.Strich.Breite) {
+					for _, q := range eckig {
 						pfad.MoveTo(f32.Pt(float32(q.Min.X), float32(q.Min.Y)))
 						pfad.LineTo(f32.Pt(float32(q.Max.X), float32(q.Min.Y)))
 						pfad.LineTo(f32.Pt(float32(q.Max.X), float32(q.Max.Y)))
@@ -1616,6 +1616,16 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 			}
 		}
 	}
+}
+
+// kastenStrich liefert die Rechtecke des Strichs, wenn der Kasten auf dem ganzzahligen Rechteck r ohne Rundung
+// gezeichnet wird (WirksamerEckradius = 0, F-498), sonst nil: dann zeichnet der Editor mit Gios rundem Strich. Eigene
+// Funktion, damit ein Test die Wahl ohne Gio-Zeichnen prüft (Kritik A-2, Mutanten Q15/E11).
+func kastenStrich(v document.Kasten, r image.Rectangle) []document.Rechteck {
+	if document.WirksamerEckradius(v.Eckradius, float64(r.Dx()), float64(r.Dy())) != 0 {
+		return nil
+	}
+	return kastenRahmen(r, v.Strich.Breite)
 }
 
 // kastenRahmen sind die Rechtecke des eckigen Kasten-Strichs auf dem ganzzahligen Rechteck r (document.EckigerRahmen,
