@@ -372,7 +372,7 @@ trifft jeden gestauchten Export. Ziel laut F-422: höchstens 100 kB je Naht.
    `fileformat.KantenToleranz` = 0,4 px quer neben der Verbindung ihrer Nachbarn liegen (Abriss 1920 px: 792 von 1921
    Punkten; Welle rund 38 %; der Zacken hat nur seine Ecken und bleibt). Spalt und Schichten benutzen dieselbe vereinfachte
    Linie und bleiben deshalb **genau** deckungsgleich; gegenüber dem Renderer weicht jede Kante um höchstens 0,4 px ab,
-   also unter einem halben Pixel. Bei Faktor ≥ 2 bleiben anteilig mehr Punkte (Maße und Toleranz wachsen nicht mit).
+   also unter einem halben Pixel. Seit der Sitzungs-QA vom 23.11.2026 (B-10) wächst die Toleranz mit dem Faktor (`KantenToleranzFuer(faktor)` = 0,4·Faktor; die Ansicht verkleinert um den Faktor, es bleibt unter einem halben Bildschirmpixel): 3840×2160, Faktor 2, eine Abriss-Naht +40,5 kB (Spalten) bzw. +85,2 kB (Zeilen) statt +64,6/+137,4 kB (`TestSVGNahtZuwachs4K`, Grenze 100 kB).
 2. **Stücke statt überlappender Schichten.** `document.KantenFlach()` zerlegt die zwölf Bänder je Farbe an allen
    ihren Grenzen in überlappungsfreie Stücke; jedes trägt die Deckkraft, die alle Bänder darüber ergäben
    (1 − Π(1 − aᵢ), auf 1/255 gerundet). Gleichfarbige Bänder mischen so dasselbe Bild (Test mit Untergründen schwarz, grau,

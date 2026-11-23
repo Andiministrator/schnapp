@@ -690,3 +690,19 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   (float32-Summen im Rasterkern).
 - **Gio mischt halbdurchsichtig linear, `render` in sRGB** (F-407 gemessen: bis 43 je Kanal). Was im Editor gleich
   aussehen muss wie im Export, wird vorgerastert (`render.KantenOhneSchatten`); Rest F-520.
+
+## Sitzungs-QA 23.11.2026 nachmittags (Kritiker A/B, Fable)
+
+- **Nach einer Übernahme die berührten Mutanten-Gruppen scharf fahren, nicht nur trocken:** O2 endete seit b2bb31e
+  scharf mit Panik („kein FAIL-Name“) statt ROT; der Trockenlauf der CI sieht das nicht. Ein Panik-FEHLER ohne
+  Testnamen ist meist ein nil-Rückruf in einer Hintergrund-Goroutine — der Testlauf-Helfer braucht Attrappen.
+- **Herausgelöste Teilfunktionen getestet heißt nicht Verdrahtung getestet:** Nach F-407 waren `KantenOhneSchatten`,
+  `kantenBildStand` und `fuehreNahtAblaufAus` geprüft, aber `bildNeu`/`leinwand` riefen sie ungeprüft auf (Q2/Q3,
+  E14 bis E17). Den Bau ohne Gio herauslösen (`leinwandBild`, `bildPruefen`) und die Entscheidung testen.
+- **Kritiker-Worktrees ohne Änderung verschwinden sofort beim Ende des Agenten** — Belege unter `tmp/` sind dann weg.
+  Zusatztests und Mutationsmuster gehören wörtlich in den Bericht (beide Kritiker haben es so gemacht); der
+  Orchestrator schreibt die Muster aus dem Bericht nach `tmp/<sprint>/qa-…/`.
+- **Teilüberdeckung halbdurchsichtiger Rechtecke zeigt sich nur mit halben Pixeln:** Die 16-Bit-Maske klemmt
+  Überlappung bei voller Deckung weg; ein Test auf doppelte Mischung braucht Koordinaten auf .5.
+- **Mutanten, die eine Variable unbenutzt lassen, bauen nicht** (`declared and not used` → FEHLER): im Muster
+  `_ = x` mitschreiben (L5, M32).
