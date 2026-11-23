@@ -786,3 +786,13 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   setzen, nicht im Dokument.
 - **Drehbuch-Koordinaten der Liste hängen an der Zahl der Zeilen** (Doppeln schiebt alles): Leiste per Tastatur bedienen,
   wo es geht, und Koordinaten aus dem Foto davor lesen.
+- **Ein Zwischenbild für ein Objekt muss so groß sein wie das GEZEICHNETE, nicht wie die abgebildeten Grenzen**
+  (F-583): Text und Nummer werden starr ab einem abgebildeten Anker gezeichnet; hinter einer Stauch-Naht liegt ihre Tinte
+  weiter rechts/unten als `ZuAnsicht(Grenzen.Max)`. Prüfen mit „Tinte bei 100 % ⊆ Tinte bei 50 %“ auf gestauchtem Bild.
+- **Platz in der Leiste: zuerst den größten Block einklappen, nicht Kleinkram weglassen** (F-586): Das Weglassen des
+  Hinweises half in keiner geprüften Fensterhöhe; der überlebende Mutant zeigte, dass der Code tot war — entfernt.
+- **Kritik-Worktrees ohne Commit räumt die Laufzeit selbst weg**: Testvorlagen der Kritik sind danach verloren. Im
+  Prompt verlangen, dass jede belegende Testvorlage als Code-Block im Bericht steht.
+- **`register-schreiben.mjs einfuege-nach`**: Anker muss eindeutig sein (bei gleichen Statusspalten das Zeilenende
+  mehrerer Zeilen gleich → längeren Anker nehmen); endet der Anker am Zeilenende, beginnt `--neu` mit einem
+  Zeilenumbruch; eine führende Leerzeile zerreißt die Tabelle (Abgleich Exit 2).
