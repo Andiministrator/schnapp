@@ -409,8 +409,8 @@ func (e *editor) werkzeugKnopfZeichnen(gtx layout.Context, c *widget.Clickable, 
 	t.Pop()
 }
 
-// farbKnopf ist das Farbfeld unter den Werkzeugen: Klick nimmt die nächste Farbe (bis die rechte Leiste die Farbwahl
-// trägt, ADR-0031 Schritt b).
+// farbKnopf ist das Farbfeld unter den Werkzeugen: Ein Klick klappt die rechte Leiste auf oder öffnet die Farbliste
+// (editor.farbKnopfGeklickt, ADR-0031 Nachtrag 3).
 func (e *editor) farbKnopf(gtx layout.Context, r image.Rectangle) {
 	c := &e.knoepfe.farbe
 	paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(r).Op())

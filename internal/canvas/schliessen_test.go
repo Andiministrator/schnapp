@@ -199,7 +199,7 @@ func TestVerwerfenMarkeNachBearbeitungUndRueckgaengig(t *testing.T) {
 		"Löschen":     func(s *Sitzung, k int) { s.Auswahl = k; s.Loeschen() },
 		"Umfärben": func(s *Sitzung, k int) {
 			s.Auswahl = k
-			s.NaechsteFarbe()
+			s.SetzeFarbe(Beschriftungsfarben[1])
 		},
 		"Text": func(s *Sitzung, k int) {
 			s.SetzeWerkzeug(WerkzeugText)

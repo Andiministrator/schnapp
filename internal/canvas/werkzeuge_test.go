@@ -442,7 +442,7 @@ func TestEscStufen(t *testing.T) {
 func TestFarbe(t *testing.T) {
 	s, _, p := sitzung(t)
 	s.Auswahl = p
-	if !s.NaechsteFarbe() {
+	if !s.SetzeFarbe(Beschriftungsfarben[1]) {
 		t.Fatal("ausgewählter Pfeil nicht umgefärbt")
 	}
 	if o, _ := s.D.Objekt(p); o.(document.Pfeil).Strich.Farbe != Beschriftungsfarben[1] {
@@ -458,12 +458,7 @@ func TestFarbe(t *testing.T) {
 	if n := letztes(t, s).(document.Nummer); n.Farbe != Beschriftungsfarben[1] {
 		t.Errorf("neue Nummer %+v", n)
 	}
-	for i := 0; i < 3; i++ {
-		s.NaechsteFarbe()
-	}
-	if s.Stil.Farbe != Beschriftungsfarben[0] {
-		t.Errorf("reihum: %v", s.Stil.Farbe)
-	}
+	s.SetzeFarbe(Beschriftungsfarben[0])
 	// Gleiche Farbe: kein Schritt.
 	vorher := schritte(t, s)
 	if s.SetzeFarbe(Beschriftungsfarben[0]) || schritte(t, s) != vorher {

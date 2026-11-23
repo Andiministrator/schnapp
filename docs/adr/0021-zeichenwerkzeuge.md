@@ -188,3 +188,11 @@ runden Strichecken aus Nachtrag 3 für Kästen ohne Rundung).
 - **Format:** `docs/format.md` und `FormatVersion` unverändert (`stroke-linejoin` ist Darstellungsattribut, kein
   `s:`-Attribut); nur die Beispiele `view.png` und `view.snap.svg` tragen jetzt `miter`.
 - **Nicht geändert:** Pfeil (runde Enden, Spitze ein Dreieck), Text-Schild (Rechteck ohne Strich) und Nummer (Kreis).
+
+## Nachtrag 6 (23.11.2026): Farbwahl über Leiste und Listen statt reihum (Karte #187)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Ändert Punkt 5: Der Knopf „Farbe“ schaltet nicht mehr reihum. Die vier
+Farben wählt man in der rechten Leiste oder in der Farbliste des Farbfelds links bzw. der Fußzeile (ADR-0031
+Nachtrag 3); Umfärben des gewählten Objekts als ein Rückgängig-Schritt und „gleiche Farbe ist kein Schritt“ bleiben
+(`canvas.Sitzung.SetzeFarbe`). `NaechsteFarbe` ist entfallen.
+

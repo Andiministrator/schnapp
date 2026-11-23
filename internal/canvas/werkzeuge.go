@@ -161,18 +161,6 @@ func (s *Sitzung) SetzeFarbe(c color.NRGBA) bool {
 	return ok
 }
 
-// NaechsteFarbe schaltet reihum zur nächsten Beschriftungsfarbe (Knopf „Farbe“).
-func (s *Sitzung) NaechsteFarbe() bool {
-	i := 0
-	for j, c := range Beschriftungsfarben {
-		if c == s.Stil.Farbe {
-			i = j + 1
-			break
-		}
-	}
-	return s.SetzeFarbe(Beschriftungsfarben[i%len(Beschriftungsfarben)])
-}
-
 // --- Anlegen ---
 
 // beginneNeu startet mit einem Zeichenwerkzeug an q (Original). Pfeil und Kasten entstehen erst beim Ziehen über die
