@@ -292,5 +292,12 @@
     "paket": "./internal/ui",
     "alt": "} else if c := e.fokussierterKnopf(gtx); c == &e.knoepfe.fussFarbe || c == &e.knoepfe.fussZoom ||\n\t\t\t\tc == &e.knoepfe.farbe {",
     "neu": "} else if c := e.fokussierterKnopf(gtx); c == &e.knoepfe.fussZoom {"
+  },
+  {
+    "name": "V2-5 graue Kantenknöpfe nicht angemeldet (Verify 2, Fund 5)",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tseiteKnopf(gtx, &k.kanten[j], r)",
+    "neu": "\t\t\tif inhalt.KanteAn {\n\t\t\t\tseiteKnopf(gtx, &k.kanten[j], r)\n\t\t\t}"
   }
 ]

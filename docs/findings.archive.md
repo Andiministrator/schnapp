@@ -554,6 +554,11 @@ Ausgelagerte Findings aus `docs/findings.md`. Einträge hier sind abgeschlossen 
 | F-546 | [V] | P3 | Sprint 12 | **Deckel des Faktors ohne Test** (N-7): `TestNeueSitzungFaktorGedeckelt`, Mutant N7. | behoben (dieser Commit) |
 | F-547 | [V] | P3 | Sprint 12 | **Leertaste an Fußfeld Farbe und Farbfeld links ohne Verhaltenstest** (N-8): `TestLeisteTastaturfokus` erweitert, Mutant N8. | behoben (dieser Commit) |
 | F-548 | [D] | P3 | Sprint 12 | **Graue Kantenknöpfe nicht fokussierbar** (N-9): bleiben angemeldet wie die Stufenknöpfe; ADR-0031 Nachtrag 4. | behoben (dieser Commit) |
+| F-549 | [V] | P3 | Sprint 12 | **Mutant N1 nur zu ~97 % getötet** (Verify 2, Fund 1): Testwerkzeug meldet sich 100 ms nach dem Abbruch; Mutant N1 sicher rot. | behoben (dieser Commit) |
+| F-550 | [S] | P3 | Sprint 12 | **Abbruch mitten im Schließen ließ den vorigen Hinweis ersatzlos verschwinden** (Verify 2, Fund 2): Abbruch oder Frist gilt als „geschlossen“ und der Hinweis kommt bei Fehlschlag wieder; nur eine Fehlerantwort des Dienstes heißt „steht noch“ (`TestMcpAbbruchBeimSchliessen`, Mutant V2-2). | behoben (dieser Commit) |
+| F-551 | [D] | P3 | Sprint 12 | **ADR-0030 Nachtrag 9 „bleibt vorgemerkt“ ungenau** (Verify 2, Fund 3): Text nennt beide Fälle (Aufnahme gelingt: alter bleibt stehen). | behoben (dieser Commit) |
+| F-552 | [S] | P3 | Sprint 12 | **Merker `gesetzt` im Echtlauf-Skript fiel in die falsche Richtung** (Verify 2, Fund 4): vor dem Umbenennen gesetzt; scheitert die Sicherung einer zwischendurch geänderten Fassung, wird nicht zurückgestellt und laut gemeldet. | behoben (dieser Commit) |
+| F-553 | [V] | P3 | Sprint 12 | **Graue Kantenknöpfe ohne Test** (Verify 2, Fund 5): `TestSeitenleisteFarbeUndKante` prüft Fokus und Enter ohne Naht, Mutant V2-5. | behoben (dieser Commit) |
 
 ## Archiviert (aus Sektion "Behoben / Akzeptiert")
 

@@ -592,7 +592,14 @@
     "name": "N3 gescheitertes Schließen zeigt den alten doppelt (Sitzungs-QA N-3)",
     "datei": "cmd/schnapp/mcp.go",
     "paket": "./cmd/schnapp",
-    "alt": "\t\tdiagnose(an.fehler, \"voriger Hinweis nicht geschlossen: %v\", err)\n\t\treturn letzterHinweis{}, nil\n",
-    "neu": "\t\tdiagnose(an.fehler, \"voriger Hinweis nicht geschlossen: %v\", err)\n\t\t*an.hinweis = letzterHinweis{}\n\t\treturn alt, nil\n"
+    "alt": "\t\t\treturn letzterHinweis{}, nil\n\t\t}\n\t}\n\t*an.hinweis = letzterHinweis{}",
+    "neu": "\t\t\t*an.hinweis = letzterHinweis{}\n\t\t\treturn alt, nil\n\t\t}\n\t}\n\t*an.hinweis = letzterHinweis{}"
+  },
+  {
+    "name": "V2-2 Abbruch beim Schließen gilt als „steht noch“ (Verify 2, Fund 2)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif !(ctx.Err() != nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)) {",
+    "neu": "\t\tif true {"
   }
 ]

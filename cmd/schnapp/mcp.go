@@ -558,9 +558,13 @@ func (an mcpAnschluesse) vorigenHinweisSchliessen(ctx context.Context) (letzterH
 	}
 	alt := *an.hinweis
 	if err := an.schliesse(ctx, alt.id); err != nil {
-		// Der alte Hinweis steht noch: nichts wieder zu zeigen, beim nächsten Mal erneut schließen (Sitzungs-QA N-3).
 		diagnose(an.fehler, "voriger Hinweis nicht geschlossen: %v", err)
-		return letzterHinweis{}, nil
+		// Abbruch oder Frist mitten im Aufruf: Ob der Dienst schon geschlossen hat, ist unbekannt. Dann gilt er als
+		// geschlossen und kommt bei einem Fehlschlag wieder, doppelt ist die vorsichtige Richtung (Verify 2, Fund 2).
+		// Nur eine Fehlerantwort des Dienstes heißt sicher „steht noch“: nichts wieder zeigen (N-3).
+		if !(ctx.Err() != nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)) {
+			return letzterHinweis{}, nil
+		}
 	}
 	*an.hinweis = letzterHinweis{}
 	return alt, an.warte(ctx, hinweisWeg)

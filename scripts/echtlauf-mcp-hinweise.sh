@@ -28,17 +28,18 @@ for marke in tmp/echtlauf-208/*/laeuft; do
 	echo "Danach die Marke umbenennen: mv ${marke} ${marke%/laeuft}/fertig"
 	exit 1
 done
+ini="$HOME/.config/schnapp/settings.ini"
+# Ein Symlink (etwa in ein Dotfiles-Repo) würde durch das Umbenennen beim Schreiben zur normalen Datei (Sitzungs-QA N-5).
+# Vor dem Bau geprüft, damit ein Abbruch nichts baut und nichts herunterlädt.
+if [ -L "$ini" ]; then
+	echo "~/.config/schnapp/settings.ini ist ein Symlink; das Skript ändert sie nicht. Bitte vorübergehend durch eine Kopie ersetzen."
+	exit 1
+fi
 lauf="tmp/echtlauf-208/$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$lauf"
 echo "== Bauen (mit -race) nach $lauf/schnapp …"
 GOFLAGS= go build -race -trimpath -tags novulkan,nox11 -o "$lauf/schnapp" ./cmd/schnapp || exit 1
 
-ini="$HOME/.config/schnapp/settings.ini"
-# Ein Symlink (etwa in ein Dotfiles-Repo) würde durch das Umbenennen beim Schreiben zur normalen Datei (Sitzungs-QA N-5).
-if [ -L "$ini" ]; then
-	echo "~/.config/schnapp/settings.ini ist ein Symlink; das Skript ändert sie nicht. Bitte vorübergehend durch eine Kopie ersetzen."
-	exit 1
-fi
 hatte=0
 gesetzt=0 # 1, solange die Einstellungen den Stand von „setze“ tragen (nur dann zurückstellen, N-6)
 if [ -f "$ini" ]; then
@@ -53,8 +54,12 @@ zurueck() {
 	[ "$gesetzt" = 1 ] || return 0
 	# Hat jemand die Datei seit „setze“ geändert, bleibt diese Fassung im Laufordner erhalten (N-6).
 	if [ -f "$ini" ] && ! cmp -s "$ini" "$lauf/settings.ini.gesetzt"; then
-		cp -p "$ini" "$lauf/settings.ini.geaendert-$(date +%H%M%S)"
-		echo "Hinweis: settings.ini wurde während des Laufs geändert; diese Fassung liegt im Laufordner." >&2
+		if cp -p "$ini" "$lauf/settings.ini.geaendert-$(date +%H%M%S)"; then
+			echo "Hinweis: settings.ini wurde während des Laufs geändert; diese Fassung liegt im Laufordner." >&2
+		else
+			echo "FEHLER: settings.ini wurde während des Laufs geändert und ließ sich nicht sichern; nicht zurückgestellt." >&2
+			return 1
+		fi
 	fi
 	if [ "$hatte" = 1 ]; then
 		if ! cp -p "$lauf/settings.ini.vorher" "$ini"; then
@@ -87,7 +92,9 @@ setze() {
 	{
 		[ "$hatte" = 1 ] && awk '/^\[/{drin = ($0 ~ /^\[agents\]/)} !drin' "$lauf/settings.ini.vorher"
 		printf '\n[agents]\ncapture = yes\nlibrary = no\nconfirm = %s\nimage = no\n' "$1"
-	} > "$ini.echtlauf-neu" && mv "$ini.echtlauf-neu" "$ini" && cp -p "$ini" "$lauf/settings.ini.gesetzt" && gesetzt=1
+	} > "$ini.echtlauf-neu" || return 1
+	gesetzt=1 # vor dem Umbenennen: fällt der Lauf danach, wird sicher zurückgestellt (Verify 2, Fund 4)
+	mv "$ini.echtlauf-neu" "$ini" && cp -p "$ini" "$lauf/settings.ini.gesetzt"
 }
 
 M='"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{},"io.modelcontextprotocol/clientInfo":{"name":"Echtlauf-208","version":"1"}}'

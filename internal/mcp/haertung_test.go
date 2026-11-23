@@ -236,7 +236,16 @@ func TestSchreibfehlerWartetAufWerkzeug(t *testing.T) {
 	ab := make(chan bool, 1)
 	pr, pw := io.Pipe()
 	fertig := make(chan error, 1)
-	go func() { fertig <- blockServer(ab).Bediene(context.Background(), pr, kaputt{}) }()
+	// Das Werkzeug meldet sich erst 100 ms nach dem Abbruch: Ohne das Warten auf das Werkzeug kehrte Bediene sicher
+	// vorher zurück (Verify 2, Fund 1: sonst gewann die Attrappe das Rennen gelegentlich).
+	langsam := &Server{Name: "s", Version: "1", Werkzeuge: []Werkzeug{{Name: "warte",
+		Aufruf: func(ctx context.Context, _ json.RawMessage, _ Kunde) Ergebnis {
+			<-ctx.Done()
+			time.Sleep(100 * time.Millisecond)
+			ab <- true
+			return TextErgebnis("fertig")
+		}}}}
+	go func() { fertig <- langsam.Bediene(context.Background(), pr, kaputt{}) }()
 	go func() {
 		io.WriteString(pw, `{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"warte",`+metaNeu+`}}`+"\n")
 		for i := 1; i <= MaxSchlange+1; i++ {

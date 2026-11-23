@@ -67,6 +67,15 @@ func TestSeitenleisteFarbeUndKante(t *testing.T) {
 	if l.e.s.D.Kante() != document.KanteAbriss {
 		t.Error("Kantenform ohne Naht geändert")
 	}
+	// Graue Kantenknöpfe bleiben fokussierbar; Enter ändert ohne Naht nichts (Verify 2, Fund 5).
+	l.fokusiere(&l.e.seite.kanten[2])
+	if !l.fokus(&l.e.seite.kanten[2]) {
+		t.Error("grauer Kantenknopf nicht fokussierbar")
+	}
+	l.taste(key.NameReturn, 0)
+	if l.e.s.D.Kante() != document.KanteAbriss {
+		t.Error("Enter auf grauem Kantenknopf hat die Form geändert")
+	}
 	if err := l.e.s.D.SetzeStreifen([]document.Streifen{{Zeilen: true, Von: 10, Bis: 12}}); err != nil {
 		t.Fatal(err)
 	}

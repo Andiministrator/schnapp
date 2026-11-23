@@ -743,4 +743,7 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Tests des genannten Pakets; sonst „überlebt“ der Mutant, obwohl ein Test ihn fängt.
 - **Doppelter Schutz (UI-Sperre und canvas-Sperre) macht den Mutanten einer Schicht grün**: Einen Einzelmutanten der
   äußeren Schicht nicht als Lücke werten; geprüft wird die innere Schicht (wie F-307).
+- **Ein Skript-Test mit eigenem `HOME` braucht `GOMODCACHE` und `GOCACHE` bei JEDEM Aufruf** (23.11.): Ein zweiter
+  Aufruf ohne sie lud alle Module neu in den Sandkasten (schreibgeschützt, `rm` scheitert); Abräumen mit
+  `GOMODCACHE=<voller Pfad> go clean -modcache`, dann `rm`. Billige Prüfungen (Symlink, Laufmarke) gehören vor den Bau.
 

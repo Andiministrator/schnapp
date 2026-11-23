@@ -736,3 +736,30 @@ func TestMcpVorigerHinweisWeitereWege(t *testing.T) {
 	l.rufe(t, "capture_screen", `{"all":true}`)
 	pruefe("Schließen und Aufnahme scheitern", l, "schliesse-scheitert", 1)
 }
+
+// TestMcpAbbruchBeimSchliessen (Verify 2, Fund 2): Wird mitten im Schließen abgebrochen, ist unbekannt, ob der Dienst
+// den Hinweis schon geschlossen hat; er gilt als geschlossen und kommt wieder, statt ersatzlos zu verschwinden.
+func TestMcpAbbruchBeimSchliessen(t *testing.T) {
+	l := neuerMcpLauf(t)
+	l.agenten.Bestaetigen = false
+	if e := l.rufe(t, "capture_screen", `{"screen":"DP-1"}`); e.Fehler {
+		t.Fatal(text(e))
+	}
+	l.schritte = nil
+	ctx, abbrechen := context.WithCancel(context.Background())
+	l.an.schliesse = func(context.Context, uint32) error {
+		l.schritte = append(l.schritte, "schliesse-abgebrochen")
+		abbrechen()
+		return context.Canceled
+	}
+	if e := l.rufeMit(t, ctx, "capture_screen", `{"all":true}`, mcp.Kunde{}); !e.Fehler {
+		t.Error("kein Fehler nach dem Abbruch")
+	}
+	if got, want := strings.Join(l.schritte, ";"), "schliesse-abgebrochen;warte-hinweis;aufnahme;hinweis:monitor DP-1"; got != want {
+		// Die Warte-Attrappe beachtet den Abbruch nicht; die Aufnahme läuft an und wird verworfen.
+		t.Errorf("%s, erwartet %s", got, want)
+	}
+	if h := *l.an.hinweis; h.id == 0 || h.text != "monitor DP-1" {
+		t.Errorf("kein Hinweis gemerkt: %+v", h)
+	}
+}

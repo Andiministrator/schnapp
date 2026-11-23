@@ -337,8 +337,11 @@ MCP-Protokoll, nicht bei hartem Prozessende.
 - **Grenze:** Endet der Prozess hart (SIGKILL, zweites Signal, Absturz) zwischen Schließen und neuem Hinweis, bleibt
   der vorige Hinweis weg. Das setzt Kontrolle über den Prozess voraus, nicht nur über die MCP-Nachrichten; dagegen
   hilft nur `confirm = yes`.
-- **Schließen gescheitert (N-3):** Dann steht der alte Hinweis noch; er wird nicht zusätzlich gezeigt und bleibt zum
-  Schließen vor der nächsten Aufnahme vorgemerkt.
+- **Schließen gescheitert (N-3):** Antwortet der Dienst mit einem Fehler, steht der alte Hinweis noch; er wird nicht
+  zusätzlich gezeigt. Scheitert danach auch die Aufnahme, bleibt er zum Schließen vorgemerkt; gelingt sie, bleibt er
+  neben dem neuen stehen (zu viel Hinweis, hingenommen). Endet der Aufruf dagegen durch Abbruch oder Frist, ist
+  unbekannt, ob der Dienst schon geschlossen hat: Dann gilt der Hinweis als geschlossen und wird bei einem Fehlschlag
+  wieder gezeigt (Verify 2, Funde 2 und 3).
 - **Hingenommen:** Hat der Nutzer den Hinweis selbst weggeklickt, erscheint er nach einem späteren Fehlversuch erneut,
   und ein mitten im Zeigen abgebrochener neuer Hinweis kann neben dem alten stehen. Beides geht in die vorsichtige
   Richtung (zu viel statt zu wenig Hinweis).
