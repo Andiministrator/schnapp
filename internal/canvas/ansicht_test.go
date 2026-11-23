@@ -105,6 +105,7 @@ func TestSitzungTrefferMitZuschnittUndStreifen(t *testing.T) {
 // Streifen (20 Pixel) und verschiebt im Original um −42. Ein Rückgängig stellt den Anfang her.
 func TestSitzungVerschiebenUeberDenSchnitt(t *testing.T) {
 	s, k := sitzungMitAnsicht(t)
+	s.SchalteEinrasten() // diese Probe misst die Geometrie ohne Einrasten (eigene Tests: einrasten_test.go)
 	s.Druecken(fa(52, 20), TastePrimaer)
 	s.Ziehen(fa(40, 20))
 	s.Loslassen(fa(30, 20))
@@ -147,6 +148,7 @@ func TestSitzungVerschiebenUeberZeilenstreifen(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := NeueSitzung(d)
+	s.SchalteEinrasten() // diese Probe misst die Geometrie ohne Einrasten (eigene Tests: einrasten_test.go)
 	s.SetzeFenster(image.Pt(148, 128))
 	if s.Abb.Zoom != 1 || !nah(s.Abb.Versatz, document.Pt(24, 24)) {
 		t.Fatalf("Abbildung %+v, Soll Zoom 1, Versatz (24,24)", s.Abb)

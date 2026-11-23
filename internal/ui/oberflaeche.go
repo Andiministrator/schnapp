@@ -110,6 +110,7 @@ func (e *editor) menueEintraegeVon(i int) []menueEintrag {
 			{akt: aktEinpassen, text: i18n.T("Fit"), an: true},
 			{akt: aktEins, text: "1:1", an: true},
 			{akt: aktSeitenleiste, text: i18n.T("Sidebar"), an: true, aktiv: !e.seiteZu, gruppe: true},
+			{akt: aktEinrasten, text: i18n.T("Snap to objects"), an: true, aktiv: s.EinrastenAn()},
 		}
 	case menueBild:
 		return []menueEintrag{

@@ -83,6 +83,7 @@ func TestPfeilAnlegen(t *testing.T) {
 
 func TestPfeilRastetMitUmschalt(t *testing.T) {
 	s, _, _ := sitzung(t)
+	s.SchalteEinrasten() // diese Probe misst die Geometrie ohne Einrasten (eigene Tests: einrasten_test.go)
 	s.SetzeWerkzeug(WerkzeugPfeil)
 	s.Umschalt = true
 	zieh(s, f(60, 70), f(100, 75)) // 7° → waagerecht, Länge bleibt
@@ -212,6 +213,7 @@ func TestAnlegenImZuschnitt(t *testing.T) {
 
 func TestNummernZaehlenHoch(t *testing.T) {
 	s, _, _ := sitzung(t)
+	s.SchalteEinrasten() // diese Probe misst die Geometrie ohne Einrasten (eigene Tests: einrasten_test.go)
 	s.SetzeWerkzeug(WerkzeugNummer)
 	klick := func(x, y float64) document.Nummer {
 		t.Helper()

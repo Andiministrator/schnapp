@@ -1,0 +1,128 @@
+[
+  {
+    "name": "E1 Fangweite viel zu klein",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "const FangWeite = 6.0",
+    "neu": "const FangWeite = 0.5"
+  },
+  {
+    "name": "E2 Fangweite viel zu groß",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "const FangWeite = 6.0",
+    "neu": "const FangWeite = 40.0"
+  },
+  {
+    "name": "E3 Fangweite ohne Zoom (Verschieben)",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "weite := FangWeite / s.Abb.Zoom\n\tvar linien []Hilfslinie\n\tif v, l, ok := rasteAchse([]float64{g.Min.X",
+    "neu": "weite := FangWeite\n\tvar linien []Hilfslinie\n\tif v, l, ok := rasteAchse([]float64{g.Min.X"
+  },
+  {
+    "name": "E4 Alt schaltet nicht ab",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "return !s.einrastenAus && !s.alt && !s.zuschnittModus()",
+    "neu": "return !s.einrastenAus && !s.zuschnittModus()"
+  },
+  {
+    "name": "E5 Menüschalter wirkt nicht",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "return !s.einrastenAus && !s.alt && !s.zuschnittModus()",
+    "neu": "return !s.alt && !s.zuschnittModus()"
+  },
+  {
+    "name": "E6 Mitte des Objekts rastet nicht ein",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "rasteAchse([]float64{g.Min.X + d.X, (g.Min.X+g.Max.X)/2 + d.X, g.Max.X + d.X}, xs, weite)",
+    "neu": "rasteAchse([]float64{g.Min.X + d.X, g.Max.X + d.X}, xs, weite)"
+  },
+  {
+    "name": "E7 Ränder und Mitte des Bilds fehlen",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "xs = []float64{a.X, (a.X + b.X) / 2, b.X}",
+    "neu": "xs = []float64{}"
+  },
+  {
+    "name": "E8 Ausgeblendete Ebene bleibt Ziel",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "if o.Kennung() == ohne || o.Ebenenwerte().Ausgeblendet || !s.D.ObjektSichtbar(o) {",
+    "neu": "if o.Kennung() == ohne || !s.D.ObjektSichtbar(o) {"
+  },
+  {
+    "name": "E9 Das gezogene Objekt ist sein eigenes Ziel",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "if o.Kennung() == ohne || o.Ebenenwerte().Ausgeblendet",
+    "neu": "if o.Ebenenwerte().Ausgeblendet"
+  },
+  {
+    "name": "E10 Kantengriff zeigt auch die fremde Achse",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "if math.Abs(w-l.Lage) < 1e-6 {",
+    "neu": "if math.Abs(w-w) < 1e6 {"
+  },
+  {
+    "name": "E11 Gekürzte Verschiebung zeigt weiter die Linie",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "if math.Abs(w-e) < 1e-6 {",
+    "neu": "if math.Abs(w-e) < 1e6 {"
+  },
+  {
+    "name": "E12 Umschalt rastet beim Kasten doch ein",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "b = s.umschaltEnde(WerkzeugKasten, p)\n\t\t} else {\n\t\t\tb, s.linien = s.rastePunkt(b, s.neuID)\n\t\t}",
+    "neu": "b = s.umschaltEnde(WerkzeugKasten, p)\n\t\t}\n\t\tb, s.linien = s.rastePunkt(b, s.neuID)"
+  },
+  {
+    "name": "E13 Linien des vorigen Zugs bleiben stehen",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.linien = nil\n\tswitch s.neuArt {",
+    "neu": "\tswitch s.neuArt {"
+  },
+  {
+    "name": "E14 Neue Nummer rastet nicht ein",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "d, linien := s.rasteRechteck(s.startObj.Grenzen(), b.Minus(a), s.neuID)",
+    "neu": "d, linien := b.Minus(a), []Hilfslinie(nil)"
+  },
+  {
+    "name": "E15 Griff rastet nicht ein",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "q, linien := s.rastePunkt(s.original(p), s.startObj.Kennung())",
+    "neu": "q, linien := s.original(p), []Hilfslinie(nil)"
+  },
+  {
+    "name": "E16 Verschieben rastet nicht ein",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "d, linien := s.rasteRechteck(s.startObj.Grenzen(), d, s.startObj.Kennung())",
+    "neu": "linien := []Hilfslinie(nil)"
+  },
+  {
+    "name": "E17 Alt aus dem Zeigerereignis kommt nicht an",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "e.s.SetzeAlt(pe.Modifiers.Contain(key.ModAlt))",
+    "neu": "e.s.SetzeAlt(false)"
+  },
+  {
+    "name": "E18 Menüeintrag schaltet nichts um",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "return func(layout.Context) { e.s.SchalteEinrasten() }",
+    "neu": "return func(layout.Context) {}"
+  }
+]

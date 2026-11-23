@@ -802,6 +802,12 @@ msgstr "Menüzeile"
 msgid "New line in a text"
 msgstr "Neue Zeile im Text"
 
+msgid "Snapping off while dragging"
+msgstr "Einrasten beim Ziehen aus"
+
+msgid "Snap to objects"
+msgstr "An Objekten einrasten"
+
 msgid "Other keys"
 msgstr "Weitere Tasten"
 

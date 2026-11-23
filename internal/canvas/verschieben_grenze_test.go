@@ -37,6 +37,7 @@ func TestVerschiebenBleibtImBild(t *testing.T) {
 		{"im Bild: unbegrenzt", 30, 20, document.Pt(90, 40)},
 	} {
 		s, _, _ := sitzung(t)
+		s.SchalteEinrasten() // diese Probe misst die Geometrie ohne Einrasten (eigene Tests: einrasten_test.go)
 		id := kastenAm(t, s, document.R(document.Pt(60, 20), document.Pt(100, 50)))
 		s.Auswahl = id
 		s.Druecken(f(80, 35), TastePrimaer)

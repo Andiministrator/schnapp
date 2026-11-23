@@ -1374,6 +1374,7 @@ func (e *editor) leinwand(gtx layout.Context) {
 	af.Pop()
 	e.zeichneAuswahl(gtx)
 	e.zeichneRahmen(gtx)
+	e.zeichneHilfslinien(gtx)
 	e.zeichneEinfuegemarke(gtx)
 
 	switch {
@@ -1495,6 +1496,7 @@ func (e *editor) zeiger(gtx layout.Context) {
 		}
 		p := document.Pt(float64(pe.Position.X), float64(pe.Position.Y))
 		e.s.Umschalt = pe.Modifiers.Contain(key.ModShift) // Pfeil 45°, Quadrat (ADR-0021)
+		e.s.SetzeAlt(pe.Modifiers.Contain(key.ModAlt))    // Alt schaltet das Einrasten ab (ADR-0021 Nachtrag 12)
 		switch pe.Kind {
 		case pointer.Press:
 			if os.Getenv("SCHNAPP_DEBUG") != "" {

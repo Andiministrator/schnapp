@@ -966,6 +966,10 @@ msgstr ""
 msgid "Enter"
 msgstr ""
 
+#: internal/ui/hilfe.go
+msgid "Snapping off while dragging"
+msgstr ""
+
 #: internal/ui/hilfe.go internal/ui/oberflaeche.go
 msgid "Keyboard shortcuts"
 msgstr ""
@@ -1072,6 +1076,10 @@ msgstr ""
 
 #: internal/ui/oberflaeche.go
 msgid "Sidebar"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Snap to objects"
 msgstr ""
 
 #: internal/ui/oberflaeche.go

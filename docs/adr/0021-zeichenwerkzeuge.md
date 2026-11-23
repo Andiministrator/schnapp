@@ -374,3 +374,43 @@ Nachtrag 9 Punkt 8 ein; ändert Punkt 4 (eine Farbe für alles) und die Bedeutun
    Werkzeugleiste: das Quadrat unter den Werkzeugen ist geviertelt, Vordergrund oben links, Füllung unten rechts,
    ⇄ oben rechts, ohne Überlappung (`farbpaarRahmen`). Rechte Leiste: Zeile Vordergrund, Füllung, ⇄, „Keine“ über der
    Farbfläche (`zeichneFarbpaarZeile`).
+
+## Nachtrag 12 (23.11.2026): Hilfslinien und Einrasten (Karte #196)
+
+**Status:** Akzeptiert (Claude Sonnet 5.5). Beschriftungen sollen sich ohne Augenmaß ausrichten lassen: an anderen
+Objekten und am Bild.
+
+1. **Woran gerastet wird.** Kanten und Mitte (je Achse drei Linien) der Grenzen (`Objekt.Grenzen`, wie der
+   Auswahlrahmen) aller anderen Objekte, die nicht ausgeblendet sind und in die Ansicht reichen
+   (`ObjektSichtbar`; gesperrte zählen mit, sie sind zu sehen), dazu die zwei Ränder und die Mitte des sichtbaren Bilds
+   (Ansicht nach Zuschnitt und Stauchen, ins Original zurückgerechnet). Ausgeblendete Ebenen und Objekte ganz im
+   Verborgenen sind keine Ziele. Das Objekt, das gezogen wird, ist selbst kein Ziel.
+2. **Was einrastet.** Das Verschieben eines Objekts: seine drei Linien je Achse gegen die Ziele, eingerastet wird die
+   kleinste Verschiebung je Achse. Das Ziehen eines Griffs (Pfeilende, Pfeilanfang, Kastenkanten und -ecken): der
+   Griffpunkt je Achse; der Bogengriff des Pfeils rastet mit, er ist ein Punkt wie die anderen. Das Aufziehen eines
+   neuen Pfeils oder Kastens: der Endpunkt; eine neue Nummer wie ein Verschieben. Nicht einrasten: der Anfangspunkt eines
+   neuen Objekts (der Druck liegt dort, wo der Nutzer ihn setzt), Schwärzen, Verpixeln, Zuschneiden, Stauchen (Rahmen,
+   keine Objekte; im Zuschneiden zeigt die Leinwand die Vollansicht) und Text (ein Klick setzt nur den Ort). Mit
+   gedrückter Umschalttaste beim Aufziehen gilt 45° bzw. Quadrat (Nachtrag 1) und rastet nichts ein: Beides zugleich
+   widerspräche sich.
+3. **Fangweite** `canvas.FangWeite` = 6 Fensterpixel, unabhängig vom Zoom (im Original 6 / Zoom). Gerechnet wird im
+   Original; bei gestauchten Bildern weicht die Weite an einer Naht geringfügig ab, das ist hinzunehmen. Die Fangweite
+   selbst zählt noch dazu; bei Gleichstand gewinnt das zuerst genannte Ziel (Bild vor Objekten).
+4. **Alt schaltet ab.** Solange Alt gedrückt ist, rastet nichts ein. Die Oberfläche setzt es je Zeigerereignis
+   (`Sitzung.SetzeAlt`, wie `Umschalt`); eine Alt-Taste ohne Zeigerbewegung wirkt erst mit der nächsten Bewegung. Das
+   ist eine Ausnahme nach ADR-0026 Punkt 5, wie Umschalt beim Ziehen: ein Zustand während des Ziehens, kein Kürzel;
+   der Knopf dazu ist der Menüeintrag in Punkt 6. Die Übersicht (F1) nennt „Alt: Einrasten beim Ziehen aus“.
+5. **Hilfslinie.** Dünn (1 dp), in der Akzentfarbe Orange (`farbeAkzent`, Corporate Design: Orange nur als Akzent),
+   über die ganze Breite oder Höhe des sichtbaren Bilds, nur während des Zugs und nur für die Achsen, an denen
+   wirklich eingerastet ist (beim Kantengriff nur die Achse, die der Griff bewegt; wird die Verschiebung danach durch
+   die Sichtbarkeitsgrenze gekürzt, fällt die Linie weg). Sie erscheint nie im Bild, in der Datei oder im Export; sie
+   liegt nur in der Leinwand (`Sitzung.Hilfslinien`, `internal/ui/hilfslinien.go`).
+6. **Schalter.** Menü Ansicht, Eintrag „Snap to objects“ („An Objekten einrasten“), Voreinstellung an, nicht
+   gespeichert (kein Eintrag in `settings.ini`; ein Zustand der Sitzung wie die Seitenleiste). Haken wie bei „Sidebar“.
+   Kein Kürzel.
+7. **Rückgängig.** Das Einrasten ändert nur, wohin der Zug zeigt: Ein Zug bleibt ein Schritt im Verlauf, Esc bricht
+   ihn ab, Rückgängig stellt den Stand davor her. Die Sichtbarkeitsgrenze (ADR-0021 Nachtrag 2) gilt weiter und geht dem
+   Einrasten vor.
+8. **Umsetzung.** Logik `internal/canvas/einrasten.go` (`rastZiele`, `rasteAchse`, `rasteRechteck`, `rastePunkt`,
+   `Hilfslinie`), Einhängen in `Sitzung.Ziehen` und `zieheNeu`; Tests `einrasten_test.go` (canvas und ui), Mutanten
+   `scripts/mutanten/einrasten.json`, Sichtprobe `scripts/drehbuecher/einrasten-196.txt`.

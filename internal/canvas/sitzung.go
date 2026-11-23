@@ -59,6 +59,11 @@ type Sitzung struct {
 	// Kasten wird ein Quadrat.
 	Umschalt bool
 
+	// Einrasten (einrasten.go, ADR-0021 Nachtrag 12): alt = Alt gedrückt, einrastenAus = Menüschalter, linien = die
+	// Linien, an denen der laufende Zug einrastet.
+	alt, einrastenAus bool
+	linien            []Hilfslinie
+
 	gespeichert uint64 // Verlaufsstand beim Öffnen oder letzten Speichern (F-109)
 	// verwerfen: Speichern beim Schließen ist bei diesem Stand gescheitert; eine weitere Schließen-Anfrage ohne neue
 	// Änderung verwirft ihn (F-107).
@@ -295,9 +300,15 @@ func (s *Sitzung) Ziehen(p document.Punkt) {
 		s.Abb = s.startAbb.Verschoben(p.Minus(s.start))
 	case zugObjekt:
 		d := s.original(p).Minus(s.original(s.start))
-		_ = s.D.ZugSetze(Verschiebe(s.startObj, s.begrenzeVerschieben(s.startObj, d)))
+		d, linien := s.rasteRechteck(s.startObj.Grenzen(), d, s.startObj.Kennung())
+		e := s.begrenzeVerschieben(s.startObj, d)
+		s.linien = nurWennGleich(linien, d, e)
+		_ = s.D.ZugSetze(Verschiebe(s.startObj, e))
 	case zugGriff:
-		_ = s.D.ZugSetze(s.begrenzeGriff(s.startObj, s.griff, s.original(p)))
+		q, linien := s.rastePunkt(s.original(p), s.startObj.Kennung())
+		o := s.begrenzeGriff(s.startObj, s.griff, q)
+		s.linien = linienAmGriff(linien, o, s.griff)
+		_ = s.D.ZugSetze(o)
 	case zugNeu:
 		s.zieheNeu(p)
 	case zugZuschnitt:

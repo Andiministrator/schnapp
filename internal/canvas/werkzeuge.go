@@ -338,10 +338,13 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 	a := s.original(s.start)
 	b := s.original(s.Abb.ZuFenster(s.klemmeAnsicht(s.Abb.ZuAnsicht(p))))
 	var o document.Objekt
+	s.linien = nil
 	switch s.neuArt {
 	case WerkzeugPfeil:
 		if s.Umschalt {
 			b = s.umschaltEnde(WerkzeugPfeil, p)
+		} else {
+			b, s.linien = s.rastePunkt(b, s.neuID) // Umschalt hat Vorrang: 45° und Quadrat bleiben genau
 		}
 		pf := document.GeraderPfeil(a, b, s.Stil.strich())
 		pf.ID = s.neuID
@@ -349,11 +352,15 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 	case WerkzeugKasten:
 		if s.Umschalt {
 			b = s.umschaltEnde(WerkzeugKasten, p)
+		} else {
+			b, s.linien = s.rastePunkt(b, s.neuID)
 		}
 		o = document.Kasten{ID: s.neuID, Bereich: document.R(a, b), Strich: s.Stil.strich(), Fuellung: s.Stil.Fuellung,
 			Eckradius: s.Stil.Eckradius}
 	case WerkzeugNummer:
-		o = Verschiebe(s.startObj, b.Minus(a))
+		d, linien := s.rasteRechteck(s.startObj.Grenzen(), b.Minus(a), s.neuID)
+		s.linien = linien
+		o = Verschiebe(s.startObj, d)
 	case WerkzeugSchwaerzen, WerkzeugVerpixeln, WerkzeugZuschneiden, WerkzeugStauchen:
 		s.rahmen = true
 		s.rahmenA = s.klemmeAnsicht(s.Abb.ZuAnsicht(s.start))

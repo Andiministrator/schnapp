@@ -280,6 +280,8 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 				gtx.Execute(key.FocusCmd{Tag: e})
 			}
 		}
+	case aktEinrasten:
+		return func(layout.Context) { e.s.SchalteEinrasten() }
 	case aktDoppeln:
 		return func(layout.Context) { e.s.Doppeln() }
 	case aktUmbenennen:
