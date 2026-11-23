@@ -635,6 +635,10 @@ msgstr ""
 msgid "Step %d"
 msgstr ""
 
+#: internal/ui/ebenen.go
+msgid "Layer hidden. It stays in the working file; redact to remove content for good."
+msgstr ""
+
 #: internal/ui/ebenen.go internal/ui/farbwaehler.go internal/ui/oberflaeche.go
 msgctxt "status bar"
 msgid "%d%%"

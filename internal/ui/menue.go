@@ -283,7 +283,7 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 	case aktUmbenennen:
 		return func(gtx layout.Context) { e.umbenennenBeginnen(gtx) }
 	case aktAusblenden:
-		return func(layout.Context) { e.s.SchalteAusgeblendet(e.s.Auswahl) }
+		return func(layout.Context) { e.schalteAusgeblendet(e.s.Auswahl) }
 	case aktSperren:
 		return func(layout.Context) { e.s.SchalteGesperrt(e.s.Auswahl) }
 	case aktEbeneVor:

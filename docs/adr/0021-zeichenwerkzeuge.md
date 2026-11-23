@@ -325,6 +325,13 @@ Regular) und präzisiert Nachtrag 3 (gleiche Maße überall).
    Knöpfe). Jede Wahl gilt für neue Texte und ändert den gewählten Text als einen Rückgängig-Schritt; während der
    Texteingabe gehört sie zur Eingabe. Gleiches erneut gewählt ist kein Schritt.
 
+**Ergänzung (23.11.2026, Karte #221, F-575, F-576):** Die Sichtbarkeitsgrenzen für Zeilen und Glyphen am Bildrand
+folgen der Schrift (`fonts.Schrift.Huelle`): head-Rahmen aller Glyphen plus 0,05 em, mindestens 1,5 em über, 1 em unter
+der Grundlinie und 1,25 em seitlich (höchstens 8 em); Go und Go Mono bleiben genau bei den Mindestwerten. Renderer,
+Zeichenfläche des Editors und Trockenlauf nutzen dieselbe Hülle. Eine offene Schriftliste liest nach dem Ende der
+Hintergrundsuche neu. Die Unterschneidung ist mit der synthetischen Testschrift `testdata/fonts/schnapp-testkern.ttf`
+(eigenes Werk, CC0 1.0) geprüft.
+
 ## Nachtrag 11 (23.11.2026): Zweite Farbe „Füllung“, Farbpaar je Werkzeug, Tauschen (Karte #219)
 
 **Status:** Akzeptiert (Claude Opus 5.5). Grundlage: Entscheidung vom 22.11.2026 an Karte #189 (Andi fragte nach einer

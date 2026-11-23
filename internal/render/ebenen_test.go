@@ -94,3 +94,77 @@ func TestEbenenDeckkraftWieFarbalpha(t *testing.T) {
 		t.Errorf("Ebene 60 %%: %v, Farbe mit Alpha 60 %%: %v", c1, c2)
 	}
 }
+
+// F-583: Bei Deckkraft unter 100 % fehlt im gestauchten Bild keine Tinte — Text und Nummer werden starr ab einem
+// abgebildeten Anker gezeichnet und liegen hinter einer Naht weiter rechts bzw. unten als die abgebildeten Grenzen.
+func TestEbenenRahmenMitStauchen(t *testing.T) {
+	baue := func(deck int) *image.NRGBA {
+		b := image.NewNRGBA(image.Rect(0, 0, 400, 300))
+		draw.Draw(b, b.Bounds(), image.NewUniform(color.NRGBA{255, 255, 255, 255}), image.Point{}, draw.Src)
+		d, err := document.Neu(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := d.SetzeStreifen([]document.Streifen{{Von: 120, Bis: 180}, {Zeilen: true, Von: 80, Bis: 110}}); err != nil {
+			t.Fatal(err)
+		}
+		eb := document.Ebene{}.MitDeckkraft(deck)
+		schwarz := color.NRGBA{A: 255}
+		for _, o := range []document.Objekt{
+			document.Text{Ebene: eb, Ort: document.Pt(30, 30), Inhalt: "Hallo Welt Hallo\nzweite Zeile", Schriftgrad: 40, Farbe: schwarz},
+			document.Nummer{Ebene: eb, Mitte: document.Pt(250, 200), Wert: 9999, Radius: 24, Farbe: schwarz},
+		} {
+			if _, err := d.Hinzufuegen(o); err != nil {
+				t.Fatal(err)
+			}
+		}
+		bild, err := Bild(d)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return bild
+	}
+	voll, halb := baue(100), baue(50)
+	tinte, fehlt := 0, 0
+	for y := 0; y < voll.Rect.Dy(); y++ {
+		for x := 0; x < voll.Rect.Dx(); x++ {
+			if voll.NRGBAAt(x, y).R < 128 { // deutliche Tinte
+				tinte++
+				if halb.NRGBAAt(x, y) == (color.NRGBA{255, 255, 255, 255}) {
+					fehlt++
+				}
+			}
+		}
+	}
+	if tinte < 500 || fehlt != 0 {
+		t.Errorf("Tinte %d Pixel, davon bei 50 %% fehlend %d", tinte, fehlt)
+	}
+}
+
+// F-584: Die Spitze eines halbdurchsichtigen Pfeils ragt über seine Grenzen hinaus und wird nicht abgeschnitten; das
+// Zwischenbild zählt im Aufwand als Fläche.
+func TestEbenenPfeilspitzeUndAufwand(t *testing.T) {
+	rot := color.NRGBA{255, 0, 0, 255}
+	p := document.GeraderPfeil(document.Pt(4, 20), document.Pt(56, 20), document.Strich{Farbe: rot, Breite: 6})
+	d1 := weissesDok(t)
+	if _, err := d1.Hinzufuegen(p); err != nil {
+		t.Fatal(err)
+	}
+	p.Ebene = p.Ebene.MitDeckkraft(50)
+	d2 := weissesDok(t)
+	if _, err := d2.Hinzufuegen(p); err != nil {
+		t.Fatal(err)
+	}
+	b, err := Bild(d2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Die Spitze ist 24 lang und 24 breit: (36, 28) liegt in ihr, aber 8 Pixel unter der Grenze des Schafts.
+	if c := b.NRGBAAt(36, 28); !nah(c, color.NRGBA{255, 127, 127, 255}, 2) {
+		t.Errorf("Spitze bei 50 %%: %v", c)
+	}
+	voll, halb := Aufwand(d1), Aufwand(d2)
+	if halb < voll+fuellGewicht*24*24 {
+		t.Errorf("Aufwand deckend %v, halb %v: Zwischenbild nicht gezählt", voll, halb)
+	}
+}

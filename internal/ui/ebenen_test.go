@@ -4,6 +4,7 @@ package ui
 
 import (
 	"image"
+	"strings"
 	"testing"
 
 	"gioui.org/f32"
@@ -192,5 +193,50 @@ func TestEbenenLeisteZiehenUeberZweiZeilen(t *testing.T) {
 	l.ziehe(a, b)
 	if got := []int{l.e.s.D.Stelle(n), l.e.s.D.Stelle(k)}; got[0] != 1 || got[1] != 2 {
 		t.Errorf("Stellen Nummer/Kasten %v, Soll [1 2]", got)
+	}
+}
+
+// F-586: Ausblenden meldet, dass der Inhalt in der Arbeitsdatei bleibt; in einem niedrigen Fenster bleiben Liste und
+// Knöpfe in der Leiste (der Hinweis fällt weg).
+func TestEbenenAusblendenMeldungUndNiedrigesFenster(t *testing.T) {
+	l, k := ebenenLauf(t)
+	l.e.s.WaehleEbene(k)
+	l.taste("H", key.ModShortcut)
+	if !l.ebene(k).Ausgeblendet || !strings.Contains(l.e.meldung.Text, "working file") {
+		t.Errorf("Strg+H: ausgeblendet %v, Meldung %q", l.ebene(k).Ausgeblendet, l.e.meldung.Text)
+	}
+	l.e.s.WaehleEbene(l.id) // Text: höchster Inhalt über dem Abschnitt (Schrift, Farbe)
+	l.fenst = image.Pt(1200, 560)
+	l.setle()
+	eb := &l.e.ebenen
+	unten := 560 - fusszeileDp
+	if !eb.gezeigt || eb.knopfRahmen[ebKnopfLoeschen].Max.Y > unten || eb.liste.Max.Y > unten {
+		t.Errorf("Fenster 560: Liste %v, Knöpfe %v, Leiste endet %d", eb.liste, eb.knopfRahmen, unten)
+	}
+	// Noch niedriger, mit eingeklappter Farbe: Liste und Knöpfe bleiben in der Leiste.
+	l.fenst = image.Pt(1200, 470)
+	l.setle()
+	if unten := 470 - fusszeileDp; !eb.gezeigt || eb.knopfRahmen[ebKnopfLoeschen].Max.Y > unten {
+		t.Errorf("Fenster 470: Liste %v, Knöpfe %v, Leiste endet %d", eb.liste, eb.knopfRahmen, unten)
+	}
+}
+
+// F-587: Leeren des Namensfelds einer Ebene ohne eigenen Namen ist kein Fehler; ein gesperrter Text lässt sich nicht
+// per Enter bearbeiten.
+func TestEbenenNameLeerUndGesperrterText(t *testing.T) {
+	l, k := ebenenLauf(t)
+	l.e.s.WaehleEbene(k)
+	l.taste(key.NameF2, 0)
+	for range "Rectangle" {
+		l.taste(key.NameDeleteBackward, 0)
+	}
+	l.taste(key.NameReturn, 0)
+	if eb := &l.e.ebenen; eb.name.fehler || eb.umbenennen != 0 {
+		t.Errorf("leerer Name: Fehler %v, umbenennen %d", eb.name.fehler, eb.umbenennen)
+	}
+	l.e.s.WaehleEbene(l.id) // Text „Hallo“
+	l.e.s.SchalteGesperrt(l.id)
+	if l.e.s.KannTextBearbeiten() || l.e.s.TextBearbeiten() {
+		t.Error("gesperrter Text lässt sich bearbeiten")
 	}
 }

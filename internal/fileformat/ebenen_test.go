@@ -94,3 +94,17 @@ func TestEbenenExportSVG(t *testing.T) {
 		t.Error("Export trägt Schnapp-Attribute oder den Namen der Ebene")
 	}
 }
+
+// F-585: Eine Ebene mit Deckkraft 0 % fehlt im SVG-Export wie im Renderer.
+func TestEbenenExportDeckkraftNull(t *testing.T) {
+	d := beispielDok(t, 64, 48)
+	fuege(t, d, document.Text{Ebene: document.Ebene{}.MitDeckkraft(0), Ort: document.Pt(3, 3), Inhalt: "UNSICHTBAR",
+		Schriftgrad: 9, Farbe: color.NRGBA{A: 255}})
+	var b bytes.Buffer
+	if err := ExportiereSVG(&b, d); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(b.String(), "UNSICHTBAR") {
+		t.Error("Text mit Deckkraft 0 steht im Export")
+	}
+}

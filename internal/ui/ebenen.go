@@ -138,7 +138,23 @@ func (e *editor) ebenenNameText() string {
 
 // ebenenNameUnveraendert meldet, ob text der gezeigte Name ist: Enter ohne Änderung ist kein Fehler.
 func (e *editor) ebenenNameUnveraendert(text string) bool {
-	return strings.TrimSpace(text) == e.ebenenNameText()
+	t := strings.TrimSpace(text)
+	if t == "" { // leer heißt „Name aus dem Inhalt“: ohne eigenen Namen ist das keine Änderung (F-587)
+		eb, ok := e.s.GewaehlteEbene()
+		return ok && eb.Name == "" && e.ebenen.umbenennen == e.s.Auswahl
+	}
+	return t == e.ebenenNameText()
+}
+
+// schalteAusgeblendet blendet id aus bzw. ein und meldet beim Ausblenden, dass der Inhalt in der Arbeitsdatei bleibt
+// (F-586: der Hinweis der Leiste ist nicht immer zu sehen).
+func (e *editor) schalteAusgeblendet(id int) {
+	if !e.s.SchalteAusgeblendet(id) {
+		return
+	}
+	if o, ok := e.s.D.Objekt(id); ok && o.Ebenenwerte().Ausgeblendet {
+		e.melde(i18n.T("Layer hidden. It stays in the working file; redact to remove content for good."), false)
+	}
 }
 
 // ebenenFeldWert ist der Text der Felder des Abschnitts ohne Eingabe; ok ist falsch für fremde Felder.
@@ -167,6 +183,9 @@ func (e *editor) umbenennenBeginnen(gtx layout.Context) {
 		return
 	}
 	e.s.TextBestaetigen()
+	if !e.s.KannEbene() { // eine leere Texteingabe war die Auswahl und ist weg (F-587)
+		return
+	}
 	e.seiteZu, e.ebenen.zu = false, false
 	k := &e.ebenen
 	k.umbenennen, k.umbenennenFokus, k.zeigeGewaehlte, k.nameHatteFokus = e.s.Auswahl, true, true, false
@@ -240,7 +259,7 @@ func (e *editor) ebenenZeiger(gtx layout.Context, pe pointer.Event, an bool) {
 		}
 		switch {
 		case p.X < k.liste.Min.X+k.augeB:
-			e.s.SchalteAusgeblendet(z.id)
+			e.schalteAusgeblendet(z.id)
 		case p.X >= k.liste.Max.X-k.augeB:
 			e.s.SchalteGesperrt(z.id)
 		default:
@@ -263,6 +282,13 @@ func (e *editor) ebenenZeiger(gtx layout.Context, pe pointer.Event, an bool) {
 			k.druck.zieht = true
 		}
 		if k.druck.zieht {
+			// Am Rand der Liste blättert sie mit, damit auch ein weiter Weg in einer langen Liste geht (F-587).
+			switch rand := gtx.Dp(8); {
+			case p.Y < k.liste.Min.Y+rand:
+				k.versatz = max(0, k.versatz-k.zeileH/3)
+			case p.Y > k.liste.Max.Y-rand:
+				k.versatz = max(0, min(k.inhaltH-k.liste.Dy(), k.versatz+k.zeileH/3))
+			}
 			k.druck.slot = k.slotBei(p.Y, len(e.s.Ebenen()))
 		}
 	case pointer.Release:

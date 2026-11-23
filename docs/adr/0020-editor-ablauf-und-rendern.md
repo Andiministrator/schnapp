@@ -146,6 +146,12 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   Summe aller Grenzen also rund 15 s statt 10 s; die Gewichte bleiben vorerst (F-429). *Nachmessung 23.11.2026 (ADR-0023
   Nachtrag 9): 120 Abriss-Nähte jetzt rund 6,5 s, die Summe aller Grenzen rund 14 s; das Zeitversprechen lautet rund 14 s.*
 
+**Ergänzung (23.11.2026, Karte #221, F-576):** Die Kosten je Glyphe werden nicht je Schrift skaliert: Die dichtesten
+Glyphen von Systemschriften (Noto Serif CJK) rastern 1,9- bis 2,6-mal langsamer als Go (Messung 23.11.2026, ein Kern,
+4000×4000, 72 000 Glyphen bei Grad 8), der Glyphenanteil des Zeitversprechens wächst also höchstens um den Faktor 3 und
+nur, wenn eine präparierte Datei dieselbe Systemschrift nutzt. Das Modell liegt bei kleinen Graden rund zehnfach unter
+der Messung (rund 0,5 µs gegen rund 5 µs je Glyphe); das Budget bleibt Obergrenze, die Neueichung ist F-589.
+
 ## Nachtrag 4 (20.11.2026): Arbeitsziel nach dem Speichern einer Datei von außen (F-155)
 
 - **Neues Arbeitsziel:** Das erste Speichern einer Datei außerhalb der Bibliothek legt eine neue Aufnahme an (die

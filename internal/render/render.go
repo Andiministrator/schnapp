@@ -405,16 +405,31 @@ func (z zeichner) ebene(o document.Objekt) error {
 }
 
 // ebenenRahmen ist der Umriss von o in der Ansicht, aufs Bild begrenzt, mit Rand für die Pfeilspitze (sie ragt über
-// Grenzen hinaus) und die Kantenglättung.
+// Grenzen hinaus) und die Kantenglättung. Pfeil und Kasten bildet der Zeichner Punkt für Punkt ab, ihre Ecken reichen.
+// Text und Nummer zeichnet er dagegen starr ab einem abgebildeten Anker (je Zeile bzw. die Mitte): Hinter einer
+// Stauch-Naht liegt ihre Tinte dann weiter rechts bzw. unten als die abgebildete Ecke der Grenzen. Deshalb kommen die
+// Grenzen, um die Verschiebung jedes Ankers versetzt, dazu (F-583).
 func (z zeichner) ebenenRahmen(o document.Objekt) image.Rectangle {
 	g := o.Grenzen()
 	rand := 2.0
 	if v, ok := o.(document.Pfeil); ok {
 		rand += math.Max(8, 4*v.Strich.Breite)
 	}
-	a, b := z.ansicht(g.Min), z.ansicht(g.Max)
-	return image.Rect(int(math.Floor(math.Min(a.X, b.X)-rand)), int(math.Floor(math.Min(a.Y, b.Y)-rand)),
-		int(math.Ceil(math.Max(a.X, b.X)+rand)), int(math.Ceil(math.Max(a.Y, b.Y)+rand))).Intersect(z.rand)
+	r := document.R(z.ansicht(g.Min), z.ansicht(g.Max))
+	starr := func(anker document.Punkt) {
+		d := z.ansicht(anker).Minus(anker)
+		r = r.Vereint(document.Rechteck{Min: g.Min.Plus(d), Max: g.Max.Plus(d)})
+	}
+	switch v := o.(type) {
+	case document.Text:
+		for _, zeile := range v.Zeilen() {
+			starr(document.Pt(zeile.X, zeile.Grundlinie))
+		}
+	case document.Nummer:
+		starr(v.Mitte)
+	}
+	return image.Rect(int(math.Floor(r.Min.X-rand)), int(math.Floor(r.Min.Y-rand)),
+		int(math.Ceil(r.Max.X+rand)), int(math.Ceil(r.Max.Y+rand))).Intersect(z.rand)
 }
 
 // mischeEbene mischt das Zwischenbild q mit der Deckkraft p (Prozent) über bild, Pixel für Pixel mit derselben Formel

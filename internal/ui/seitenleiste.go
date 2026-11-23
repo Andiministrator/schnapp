@@ -27,6 +27,14 @@ import (
 	"github.com/Andiministrator/schnapp/internal/i18n"
 )
 
+// Höhen für das Einklappen der Farbe in niedrigen Fenstern (dp): der Farbwähler (zeichneFarbwaehler: Fläche 114,
+// zwei Regler, Felder) und der kleinste Ebenen-Abschnitt ohne Hinweis (zeichneEbenen: Trennlinie, Kopf, Deckkraft,
+// eine Zeile, Knöpfe).
+const (
+	farbwaehlerHoeheDp = 200
+	ebenenMindestDp    = 180
+)
+
 // kantenFormen sind die Formen der Stauch-Kante in der Reihenfolge der Knöpfe.
 var kantenFormen = []document.Kante{document.KanteAbriss, document.KanteWelle, document.KanteZacken}
 
@@ -263,8 +271,11 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 
 	if inhalt.Farbe {
 		trenne()
-		y += e.abschnittKopf(gtx, &k.farbeKopf, i18n.T("Color"), k.farbeZu, x, y, breite) + gtx.Dp(12)
-		if !k.farbeZu {
+		// Reicht der Platz nicht für Farbwähler und den kleinsten Ebenen-Abschnitt, bleibt „Farbe“ in diesem Bild
+		// eingeklappt (F-586): sonst lägen Liste und Knöpfe der Ebenen unter der Fußzeile.
+		zu := k.farbeZu || unten-y-gtx.Dp(30) < farbwaehlerHoeheDp*gtx.Dp(1)+ebenenMindestDp*gtx.Dp(1)
+		y += e.abschnittKopf(gtx, &k.farbeKopf, i18n.T("Color"), zu, x, y, breite) + gtx.Dp(12)
+		if !zu {
 			k.farbeGezeigt = true
 			y = e.zeichneFarbwaehler(gtx, x, y, breite, spalte)
 		}

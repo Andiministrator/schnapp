@@ -17,8 +17,8 @@
     "name": "E3 SVG-Export schreibt ausgeblendete Ebenen",
     "datei": "internal/fileformat/export.go",
     "paket": "./internal/fileformat",
-    "alt": "return d.ObjektSichtbar(o) && !o.Ebenenwerte().Ausgeblendet })",
-    "neu": "return d.ObjektSichtbar(o) })"
+    "alt": "return d.ObjektSichtbar(o) && !e.Ausgeblendet && e.Deckkraft() > 0",
+    "neu": "return d.ObjektSichtbar(o) && e.Deckkraft() > 0"
   },
   {
     "name": "E4 Leser übergeht s:ausgeblendet",
@@ -80,7 +80,7 @@
     "name": "E12 Texteingabe an ausgeblendeter Ebene",
     "datei": "internal/canvas/menue.go",
     "paket": "./internal/canvas",
-    "alt": "return ok && isText(o) && !o.Ebenenwerte().Ausgeblendet",
+    "alt": "return ok && isText(o) && o.Ebenenwerte().Bearbeitbar()",
     "neu": "return ok && isText(o)"
   },
   {
@@ -89,5 +89,54 @@
     "paket": "./internal/canvas",
     "alt": "return eb.Deckkraft() == p || s.SetzeDeckkraft(s.Auswahl, p)",
     "neu": "_ = eb\n\treturn s.SetzeDeckkraft(s.Auswahl, p)"
+  },
+  {
+    "name": "E14 Zwischenbild zählt nicht als Fläche (F-584)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\tz.auf.flaeche += fuellGewicht * float64(r.Dx()) * float64(r.Dy())\n\t}\n\tif z.trocken() {",
+    "neu": "\t\t_ = r\n\t}\n\tif z.trocken() {"
+  },
+  {
+    "name": "E15 Zwischenbild ohne Rand für die Pfeilspitze (F-584)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\trand += math.Max(8, 4*v.Strich.Breite)\n\t}\n\tr := document.R(",
+    "neu": "\t\t_ = v\n\t}\n\tr := document.R("
+  },
+  {
+    "name": "E16 Zwischenbild ohne starre Anker bei Stauchen (F-583)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\tr = r.Vereint(document.Rechteck{Min: g.Min.Plus(d), Max: g.Max.Plus(d)})",
+    "neu": "\t\t_ = d"
+  },
+  {
+    "name": "E17 SVG-Export schreibt Ebenen mit Deckkraft 0 (F-585)",
+    "datei": "internal/fileformat/export.go",
+    "paket": "./internal/fileformat",
+    "alt": "return d.ObjektSichtbar(o) && !e.Ausgeblendet && e.Deckkraft() > 0",
+    "neu": "return d.ObjektSichtbar(o) && !e.Ausgeblendet"
+  },
+  {
+    "name": "E19 Leeres Namensfeld ohne eigenen Namen ist ein Fehler (F-587)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\treturn ok && eb.Name == \"\" && e.ebenen.umbenennen == e.s.Auswahl",
+    "neu": "\t\treturn false && ok && eb.Name == \"\""
+  },
+  {
+    "name": "E20 Keine Meldung beim Ausblenden (F-586)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\tif o, ok := e.s.D.Objekt(id); ok && o.Ebenenwerte().Ausgeblendet {",
+    "neu": "\tif o, ok := e.s.D.Objekt(id); false && ok && o.Ebenenwerte().Ausgeblendet {"
+  },
+  {
+    "name": "E21 Farbe klappt im niedrigen Fenster nicht ein (F-586)",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "zu := k.farbeZu || unten-y-gtx.Dp(30) < farbwaehlerHoeheDp*gtx.Dp(1)+ebenenMindestDp*gtx.Dp(1)",
+    "neu": "zu := k.farbeZu"
   }
 ]

@@ -949,3 +949,6 @@ msgstr "Text „%s“"
 
 msgid "The window is too narrow for the sidebar; widen it to rename a layer."
 msgstr "Das Fenster ist zu schmal für die Seitenleiste; zum Umbenennen einer Ebene breiter ziehen."
+
+msgid "Layer hidden. It stays in the working file; redact to remove content for good."
+msgstr "Ebene ausgeblendet. Sie bleibt in der Arbeitsdatei; was endgültig weg soll, schwärzen."
