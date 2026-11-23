@@ -37,8 +37,19 @@ const (
 	maskenMinProArbeiter = 100_000
 )
 
-// Zähler für Tests: Wiederverwendungen und Neuberechnungen gemerkter Masken.
-var maskenTreffer, maskenFehl atomic.Int64
+// Zähler für Tests: Wiederverwendungen und Neuberechnungen gemerkter Masken, dazu die größte Bytezahl, die ein
+// Zwischenspeicher je gehalten hat (maskenBytesMax, F-430: sie darf maskenCacheGrenze nie übersteigen).
+var maskenTreffer, maskenFehl, maskenBytesMax atomic.Int64
+
+// merkeBytes hebt maskenBytesMax auf n, wenn n größer ist.
+func merkeBytes(n int) {
+	for {
+		alt := maskenBytesMax.Load()
+		if int64(n) <= alt || maskenBytesMax.CompareAndSwap(alt, int64(n)) {
+			return
+		}
+	}
+}
 
 type maskenSchluessel struct {
 	w, h int
@@ -239,6 +250,7 @@ func (z zeichner) rasterGemerkt(punkte int, pfade func(pfad), ausschnitt image.R
 	if bedarf := 2*w*h + 4*len(c.scratch.pkt); c.bytes+bedarf <= maskenCacheGrenze {
 		neu = &maskenEintrag{maske: make([]uint16, w*h)}
 		c.bytes += bedarf
+		merkeBytes(c.bytes)
 	}
 	z.ras.Reset(w, h)
 	pfade(z.ras)

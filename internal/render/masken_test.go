@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"image/color"
 	"math/rand"
+	"slices"
 	"testing"
 
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -36,7 +37,14 @@ func TestMaskenCacheBitgleich(t *testing.T) {
 			for _, grenze := range []int{alt, 3 << 20} {
 				maskenCacheGrenze = grenze
 				t0, f0 := maskenTreffer.Load(), maskenFehl.Load()
+				maskenBytesMax.Store(0)
 				ist := bild(t, d)
+				if got := maskenBytesMax.Load(); got > int64(grenze) {
+					t.Errorf("%v opak=%v Grenze %d: Zwischenspeicher hielt bis zu %d Bytes (Kritik A-3, B-5)", f, opak, grenze, got)
+				}
+				if grenze == 3<<20 && maskenFehl.Load() == f0 {
+					t.Errorf("%v opak=%v Grenze %d: kein Fehlgriff, die Masken passen nicht alle in 3 MiB und müssen frisch gerastert werden", f, opak, grenze)
+				}
 				if !bytes.Equal(soll.Pix, ist.Pix) {
 					t.Errorf("%v opak=%v Grenze %d: Bild weicht vom Rastern ohne Zwischenspeicher ab", f, opak, grenze)
 				}
@@ -45,6 +53,30 @@ func TestMaskenCacheBitgleich(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// F-430: Der Zwischenspeicher vergleicht den Pfad vollständig, nicht nur Hash und Länge: Zwei Aufnahmen mit gleichem Hash
+// und gleicher Länge, aber einem anderen Punkt, finden einander nicht (Kritik A-3, B-5, Mutant E19).
+func TestMaskenSucheVergleichtVollstaendig(t *testing.T) {
+	c := neuerMaskenCache()
+	a := pfadAufnahme{}
+	a.reset()
+	a.MoveTo(1, 2)
+	a.LineTo(30, 4)
+	a.LineTo(5, 60)
+	a.ClosePath()
+	c.eintraege[maskenSchluessel{10, 10, a.hash}] = []*maskenEintrag{{pkt: slices.Clone(a.pkt), maske: make([]uint16, 100)}}
+	if c.suche(10, 10, &a) == nil {
+		t.Fatal("dieselbe Aufnahme nicht gefunden")
+	}
+	b := pfadAufnahme{pkt: slices.Clone(a.pkt), hash: a.hash} // gleicher Hash, gleiche Länge
+	b.pkt[5]++                                                // ein anderer Punkt
+	if g := c.suche(10, 10, &b); g != nil {
+		t.Errorf("Aufnahme mit anderem Punkt fand einen Eintrag (%v)", g)
+	}
+	if g := c.suche(11, 10, &a); g != nil {
+		t.Errorf("andere Breite fand einen Eintrag")
 	}
 }
 
