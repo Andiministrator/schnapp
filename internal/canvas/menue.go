@@ -92,5 +92,5 @@ func (s *Sitzung) KannTextBearbeiten() bool {
 		return false
 	}
 	o, ok := s.D.Objekt(s.Auswahl)
-	return ok && isText(o)
+	return ok && isText(o) && !o.Ebenenwerte().Ausgeblendet // Unsichtbares lässt sich nicht tippen (ADR-0032)
 }

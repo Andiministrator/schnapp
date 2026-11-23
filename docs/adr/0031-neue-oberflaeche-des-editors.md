@@ -270,3 +270,13 @@ Nachtrag 10.
 - **Suche:** Der Editor startet die Suche nach Systemschriften beim Öffnen im Hintergrund und zeichnet neu, wenn sie
   fertig ist; bis dahin enthält die Liste nur Go und Go Mono.
 - Sichtprobe: `scripts/drehbuecher/schrift-190.txt`.
+
+## Nachtrag 7 (23.11.2026): Abschnitt „Ebenen“ und Menü „Ebene“ (Karte #191)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Einzelheiten in ADR-0032. Ändert Punkt 1 und Punkt 3:
+
+1. Die Menüzeile hat **sieben** Menüs: „Ebene“ steht zwischen „Werkzeuge“ und „Hilfe“ (die Titel davor behalten ihre
+   Lage).
+2. Die rechte Leiste trägt unter der Farbe den Abschnitt **Ebenen**; er hängt am unteren Rand der Leiste, damit die
+   Liste beim Wählen nicht springt. Die Überschriften „Farbe“ und „Ebenen“ sind Knöpfe, die ihren Abschnitt ein- und
+   ausklappen (Tab-Reihenfolge: Überschrift vor dem Inhalt).

@@ -23,6 +23,10 @@ type Objekt interface {
 	mitKennung(int) Objekt
 	// pruefe meldet ungültige Werte (NaN, negative Größen).
 	pruefe() error
+	// Ebenenwerte liefert Name, Sichtbarkeit, Sperre und Deckkraft der Ebene (ADR-0032; über die Einbettung von Ebene).
+	Ebenenwerte() Ebene
+	// mitEbene liefert eine Kopie mit den Angaben e.
+	mitEbene(e Ebene) Objekt
 }
 
 // Strich beschreibt Linienfarbe und -breite in Pixeln des Originals.
@@ -41,6 +45,7 @@ func (s Strich) pruefe() error {
 // Pfeil ist eine quadratische Bézier-Kurve von A nach B mit Kontrollpunkt K; die Spitze sitzt bei B. Gerade ist er,
 // wenn K auf der Mitte liegt. Der Nutzer zieht am Griff (Kurvenpunkt bei t = 0,5), nicht an K.
 type Pfeil struct {
+	Ebene
 	ID      int
 	A, B, K Punkt
 	Strich  Strich
@@ -88,11 +93,15 @@ func (p Pfeil) pruefe() error {
 	if !endlich(p.A.X, p.A.Y, p.B.X, p.B.Y, p.K.X, p.K.Y) {
 		return fmt.Errorf("document: Pfeil mit ungültigen Koordinaten")
 	}
+	if err := p.Ebene.pruefe(); err != nil {
+		return err
+	}
 	return p.Strich.pruefe()
 }
 
 // Kasten ist ein Rechteck mit Rand, wahlweise gefüllt (Fuellung.A > 0) und mit runden Ecken.
 type Kasten struct {
+	Ebene
 	ID        int
 	Bereich   Rechteck
 	Strich    Strich
@@ -137,11 +146,15 @@ func (k Kasten) pruefe() error {
 	if !endlich(b.Min.X, b.Min.Y, b.Max.X, b.Max.Y) || !groesse(k.Eckradius) || b.Max.X < b.Min.X || b.Max.Y < b.Min.Y {
 		return fmt.Errorf("document: Kasten mit ungültigen Werten")
 	}
+	if err := k.Ebene.pruefe(); err != nil {
+		return err
+	}
 	return k.Strich.pruefe()
 }
 
 // Text ist ein Textfeld; Ort ist die linke obere Ecke, Hintergrund mit A = 0 heißt „ohne“.
 type Text struct {
+	Ebene
 	ID           int
 	Ort          Punkt
 	Inhalt       string
@@ -200,6 +213,9 @@ func (t Text) pruefe() error {
 	if (t.Schrift != "" && !fonts.NameGueltig(t.Schrift)) || t.Ausrichtung > AusrichtungRechts {
 		return fmt.Errorf("document: Text mit ungültiger Schrift oder Ausrichtung")
 	}
+	if err := t.Ebene.pruefe(); err != nil {
+		return err
+	}
 	// Zeichen, die XML nicht tragen kann, überstehen das Speichern nicht unverändert (F-62): ungültiges UTF-8 und
 	// Steuerzeichen unter U+0020 außer Tabulator, Zeilenumbruch und Wagenrücklauf sowie U+FFFE/U+FFFF. Alles, was
 	// XML 1.0 erlaubt, bleibt erlaubt — sonst würden Texte (etwa mit CRLF) beim Lesen strenger behandelt als beim
@@ -220,6 +236,7 @@ func (t Text) pruefe() error {
 
 // Nummer ist eine Schritt-Nummer im Kreis.
 type Nummer struct {
+	Ebene
 	ID     int
 	Mitte  Punkt
 	Wert   int
@@ -243,7 +260,7 @@ func (n Nummer) pruefe() error {
 		n.Wert < 0 || n.Wert > MaxNummer {
 		return fmt.Errorf("document: Nummer mit ungültigen Werten")
 	}
-	return nil
+	return n.Ebene.pruefe()
 }
 
 func aufgeweitet(r Rechteck, um float64) Rechteck {

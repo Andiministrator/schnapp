@@ -245,7 +245,7 @@ func ExportiereSVG(w io.Writer, d *document.Dokument) (fehler error) {
 	// die Datei — sonst stünde etwa ein Text dort im Klartext im XML (F-66). Dieselbe Regel gilt im Renderer und im
 	// Editor (Dokument.ObjektSichtbar, ADR-0023 Punkt 7).
 	s.WriteString(`><defs><g id="objekte">`)
-	s.objekte(d, d.ObjektSichtbar)
+	s.objekte(d, func(o document.Objekt) bool { return d.ObjektSichtbar(o) && !o.Ebenenwerte().Ausgeblendet })
 	s.WriteString(`</g></defs>`)
 	// Gibt es Nähte, liegen die Kacheln unter der Maske, die den Spalt jeder Naht leer lässt (ADR-0023 Nachtrag 7).
 	maske := s.naehteDefs(d)

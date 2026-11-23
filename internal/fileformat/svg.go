@@ -80,6 +80,7 @@ func (s *schreiber) farbeSVG(art string, c color.NRGBA) {
 func (s *schreiber) kastenOhneFlaeche(o document.Kasten) {
 	s.WriteString(`<g`)
 	s.attr("s:typ", "kasten")
+	s.ebene(o.Ebenenwerte())
 	s.attr("s:bereich", punkt(o.Bereich.Min)+" "+punkt(o.Bereich.Max))
 	s.attr("s:strich", strich(o.Strich))
 	s.attr("s:fuellung", farbeHex(o.Fuellung))
@@ -97,6 +98,41 @@ func (s *schreiber) kastenOhneFlaeche(o document.Kasten) {
 		s.WriteString(`/>`)
 	}
 	s.WriteString(`</g>`)
+}
+
+// ebene schreibt die Angaben der Ebene (ADR-0032 Punkt 9, docs/format.md 8.5): die Daten nur, wo sie von der
+// Voreinstellung abweichen, und für Betrachter display="none" bzw. opacity. Der Export lässt ausgeblendete Objekte
+// vorher weg (behalten), dort steht nur opacity.
+func (s *schreiber) ebene(e document.Ebene) {
+	if e.Name != "" {
+		s.attr("s:name", e.Name)
+	}
+	if e.Ausgeblendet {
+		s.attr("s:ausgeblendet", "true")
+		s.attr("display", "none")
+	}
+	if e.Gesperrt {
+		s.attr("s:gesperrt", "true")
+	}
+	if p := e.Deckkraft(); p < 100 {
+		s.attr("s:deckkraft", strconv.Itoa(p))
+		s.attr("opacity", zahl(float64(p)/100))
+	}
+}
+
+// leseEbene übernimmt s:name, s:ausgeblendet, s:gesperrt und s:deckkraft. Alle sind freiwillig: fehlend oder ungültig
+// heißt kein Name, sichtbar, offen, deckend — kein Schaden (wie s:schrift).
+func leseEbene(a map[string]string) document.Ebene {
+	var e document.Ebene
+	if n := a["name"]; document.EbenenNameGueltig(n) {
+		e.Name = n
+	}
+	e.Ausgeblendet = a["ausgeblendet"] == "true"
+	e.Gesperrt = a["gesperrt"] == "true"
+	if p, ok := parseGanz(a["deckkraft"]); ok && p >= 0 && p <= 100 {
+		e = e.MitDeckkraft(p)
+	}
+	return e
 }
 
 func strich(st document.Strich) string { return farbeHex(st.Farbe) + " " + zahl(st.Breite) }
@@ -178,6 +214,7 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 		case document.Pfeil:
 			s.WriteString(`<g`)
 			s.attr("s:typ", "pfeil")
+			s.ebene(o.Ebenenwerte())
 			s.attr("s:a", punkt(o.A))
 			s.attr("s:b", punkt(o.B))
 			s.attr("s:k", punkt(o.K))
@@ -204,6 +241,7 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			}
 			s.WriteString(`<rect`)
 			s.attr("s:typ", "kasten")
+			s.ebene(o.Ebenenwerte())
 			s.attr("s:bereich", punkt(b.Min)+" "+punkt(b.Max))
 			s.attr("s:strich", strich(o.Strich))
 			s.attr("s:fuellung", farbeHex(o.Fuellung))
@@ -226,6 +264,7 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 		case document.Text:
 			s.WriteString(`<g`)
 			s.attr("s:typ", "text")
+			s.ebene(o.Ebenenwerte())
 			s.attr("s:ort", punkt(o.Ort))
 			s.attr("s:inhalt", o.Inhalt)
 			s.attr("s:grad", zahl(o.Schriftgrad))
@@ -287,6 +326,7 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 		case document.Nummer:
 			s.WriteString(`<g`)
 			s.attr("s:typ", "nummer")
+			s.ebene(o.Ebenenwerte())
 			s.attr("s:mitte", punkt(o.Mitte))
 			s.attr("s:wert", strconv.Itoa(o.Wert))
 			s.attr("s:radius", zahl(o.Radius))
@@ -489,6 +529,14 @@ func (l *leser) strich(name string) document.Strich {
 }
 
 func (l *leser) objekt(typ string) document.Objekt {
+	o := l.objektOhneEbene(typ)
+	if o == nil {
+		return nil
+	}
+	return document.MitEbene(o, leseEbene(l.a))
+}
+
+func (l *leser) objektOhneEbene(typ string) document.Objekt {
 	switch typ {
 	case "pfeil":
 		return document.Pfeil{A: l.punkt("a"), B: l.punkt("b"), K: l.punkt("k"), Strich: l.strich("strich")}

@@ -278,6 +278,22 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 				gtx.Execute(key.FocusCmd{Tag: e})
 			}
 		}
+	case aktDoppeln:
+		return func(layout.Context) { e.s.Doppeln() }
+	case aktUmbenennen:
+		return func(gtx layout.Context) { e.umbenennenBeginnen(gtx) }
+	case aktAusblenden:
+		return func(layout.Context) { e.s.SchalteAusgeblendet(e.s.Auswahl) }
+	case aktSperren:
+		return func(layout.Context) { e.s.SchalteGesperrt(e.s.Auswahl) }
+	case aktEbeneVor:
+		return func(layout.Context) { e.s.EbeneSchritt(1) }
+	case aktEbeneZurueck:
+		return func(layout.Context) { e.s.EbeneSchritt(-1) }
+	case aktEbeneDarueber:
+		return func(gtx layout.Context) { e.s.WaehleNachbar(1); e.ebenen.zeigeGewaehlte = true }
+	case aktEbeneDarunter:
+		return func(gtx layout.Context) { e.s.WaehleNachbar(-1); e.ebenen.zeigeGewaehlte = true }
 	case aktSchliessen:
 		return func(layout.Context) {
 			diagnoseEditor("Schließen über Taste oder Menü")

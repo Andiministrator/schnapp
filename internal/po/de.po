@@ -895,3 +895,57 @@ msgstr "U"
 msgctxt "text style"
 msgid "S"
 msgstr "S"
+
+msgid "Layer"
+msgstr "Ebene"
+
+msgid "Layers"
+msgstr "Ebenen"
+
+msgid "Duplicate"
+msgstr "Doppeln"
+
+msgid "Rename…"
+msgstr "Umbenennen …"
+
+msgid "Hide layer"
+msgstr "Ebene ausblenden"
+
+msgid "Show layer"
+msgstr "Ebene einblenden"
+
+msgid "Lock layer"
+msgstr "Ebene sperren"
+
+msgid "Unlock layer"
+msgstr "Ebene entsperren"
+
+msgid "Bring forward"
+msgstr "Nach vorn"
+
+msgid "Send backward"
+msgstr "Nach hinten"
+
+msgid "Select layer above"
+msgstr "Ebene darüber wählen"
+
+msgid "Select layer below"
+msgstr "Ebene darunter wählen"
+
+msgid "PgUp"
+msgstr "Bild↑"
+
+msgid "PgDn"
+msgstr "Bild↓"
+
+msgid "Redaction is part of the image (permanent). Hidden layers stay in the working file."
+msgstr "Schwärzen ist Teil des Bilds (endgültig). Ausgeblendete Ebenen bleiben in der Arbeitsdatei."
+
+msgid "Step %d"
+msgstr "Nummer %d"
+
+msgid "Text “%s”"
+msgstr "Text „%s“"
+
+msgid "The window is too narrow for the sidebar; widen it to rename a layer."
+msgstr "Das Fenster ist zu schmal für die Seitenleiste; zum Umbenennen einer Ebene breiter ziehen."

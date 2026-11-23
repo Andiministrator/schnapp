@@ -374,6 +374,12 @@ func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 			t.Fatalf("Tab %d nach dem Farbfeld: Fokus nicht auf Knopf %d der Schrift (%s)", i+1, i, menueFokusName(l))
 		}
 	}
+	// Die Überschrift „Farbe“ klappt den Abschnitt ein und aus (ADR-0032 Punkt 6).
+	l.r.MoveFocus(key.FocusForward)
+	l.setle()
+	if !l.fokus(&l.e.seite.farbeKopf) {
+		t.Fatalf("Tab nach der Schrift: Fokus nicht auf der Überschrift Farbe (%s)", menueFokusName(l))
+	}
 	for i := range canvas.Beschriftungsfarben {
 		l.r.MoveFocus(key.FocusForward) // wie die Tab-Taste (Gio)
 		l.setle()
@@ -390,6 +396,18 @@ func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 		l.setle()
 		if !l.fokus(z.tag) {
 			t.Fatalf("Tab nach den Farben: Fokus nicht auf %s (%s)", z.name, menueFokusName(l))
+		}
+	}
+	// Dann der Abschnitt Ebenen: Überschrift, Deckkraft, Knöpfe ↑ ↓ Doppeln Löschen (ADR-0032 Punkt 6).
+	ebenen := []any{&l.e.ebenen.kopf, &l.e.ebenen.deck}
+	for j := range l.e.ebenen.knoepfe {
+		ebenen = append(ebenen, &l.e.ebenen.knoepfe[j])
+	}
+	for i, tag := range ebenen {
+		l.r.MoveFocus(key.FocusForward)
+		l.setle()
+		if !l.fokus(tag) {
+			t.Fatalf("Tab %d im Abschnitt Ebenen: Fokus woanders (%s)", i+1, menueFokusName(l))
 		}
 	}
 	l.r.MoveFocus(key.FocusForward)

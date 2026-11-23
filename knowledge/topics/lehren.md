@@ -771,3 +771,18 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   nur das Endergebnis.
 - **Im Auto-Modus lehnt die Freigabe ein rekursives Löschen von Ordnern mit Bildschirmfotos ab**: Solche Ordner löscht
   Andi selbst per `!`-Befehl (am 23.11. so geschehen); nicht wiederholt versuchen.
+
+## Ebenen-Leiste (Karte #191, 23.11.2026 abends)
+
+- **Ein `FocusCmd` wirkt nur auf ein Ziel, dessen `key.FocusFilter` Gio schon kennt.** Ein Feld, das erst in diesem Bild
+  gezeichnet wird (Namensfeld beim Umbenennen), bekommt den Fokus deshalb erst im nächsten Bild, und zwar dort, wo seine
+  Filter angemeldet werden (`feldTasten`, per `defer` nach dem Anmelden). Vorher liefert Gio dem frisch angemeldeten Ziel
+  ein `FocusEvent{Focus: false}` — das darf nicht als „Fokus verloren“ gelten, sonst endet das Umbenennen sofort
+  (`nameHatteFokus`).
+- **Eine Deckkraft je Objekt ist Gruppendeckkraft**, nicht ein Faktor auf jede Farbe: sonst sind Pfeilspitze über dem
+  Schaft und Schrift auf dem Schild dunkler. Renderer: Objekt in ein durchsichtiges Zwischenbild, dann mit einer Deckung
+  einmischen (`render.ebene`); Gio: `paint.PushOpacity`. Prüfen an einer Stelle, wo sich zwei Teile überlagern.
+- **Vorschauen verkleinern Striche bis zur Unsichtbarkeit**: in der Vorschau eine Mindestbreite in Vorschau-Pixeln
+  setzen, nicht im Dokument.
+- **Drehbuch-Koordinaten der Liste hängen an der Zahl der Zeilen** (Doppeln schiebt alles): Leiste per Tastatur bedienen,
+  wo es geht, und Koordinaten aus dem Foto davor lesen.

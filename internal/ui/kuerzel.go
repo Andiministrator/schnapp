@@ -36,6 +36,15 @@ const (
 	aktSchliessen
 	aktEsc   // Esc in Stufen (canvas.Sitzung.Esc), Ausnahme nach ADR-0026 Punkt 5
 	aktEnter // Enter: Knopf mit Fokus, Text bestätigen bzw. Zeilenumbruch, sonst Text bearbeiten
+	// Menü „Ebene“ (ADR-0032 Punkt 8)
+	aktDoppeln
+	aktUmbenennen
+	aktAusblenden
+	aktSperren
+	aktEbeneVor
+	aktEbeneZurueck
+	aktEbeneDarueber
+	aktEbeneDarunter
 )
 
 // taste ist ein Tastenkürzel des Editors. Genau eines gilt: akt (Handlung), werkzeug (wählt ein Werkzeug, hatWerkzeug)
@@ -85,6 +94,14 @@ func tastenTabelle() []taste {
 		{filter: key.Filter{Name: "B", Required: key.ModShortcut | key.ModShift}, akt: aktSeitenleiste},
 		strg("W", aktSchliessen),
 		{filter: key.Filter{Name: key.NameF1}, akt: aktTastenkuerzel},
+		strg("D", aktDoppeln),
+		{filter: key.Filter{Name: key.NameF2}, akt: aktUmbenennen},
+		strg("H", aktAusblenden),
+		strg("L", aktSperren),
+		strg(key.NamePageUp, aktEbeneVor),
+		strg(key.NamePageDown, aktEbeneZurueck),
+		{filter: key.Filter{Name: key.NamePageUp, Required: key.ModAlt}, akt: aktEbeneDarueber},
+		{filter: key.Filter{Name: key.NamePageDown, Required: key.ModAlt}, akt: aktEbeneDarunter},
 		wz("V", canvas.WerkzeugAuswahl),
 		wz("A", canvas.WerkzeugPfeil),
 		wz("R", canvas.WerkzeugKasten),
@@ -184,6 +201,9 @@ func tastenName(f key.Filter) string {
 	if f.Required.Contain(key.ModShift) {
 		teile = append(teile, i18n.T("Shift"))
 	}
+	if f.Required.Contain(key.ModAlt) {
+		teile = append(teile, "Alt")
+	}
 	switch f.Name {
 	case key.NameDeleteForward:
 		teile = append(teile, i18n.T("Del"))
@@ -193,6 +213,10 @@ func tastenName(f key.Filter) string {
 		teile = append(teile, i18n.T("Enter"))
 	case key.NameEscape:
 		teile = append(teile, "Esc")
+	case key.NamePageUp:
+		teile = append(teile, i18n.T("PgUp"))
+	case key.NamePageDown:
+		teile = append(teile, i18n.T("PgDn"))
 	default:
 		teile = append(teile, string(f.Name))
 	}

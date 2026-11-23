@@ -558,7 +558,7 @@ func (s *Sitzung) TextBearbeiten() bool {
 		return false
 	}
 	o, ok := s.D.Objekt(s.Auswahl)
-	if !ok || !isText(o) || s.D.BeginneZug(s.Auswahl) != nil {
+	if !ok || !isText(o) || o.Ebenenwerte().Ausgeblendet || s.D.BeginneZug(s.Auswahl) != nil {
 		return false
 	}
 	s.zug, s.textID, s.textNeu = zugText, s.Auswahl, false

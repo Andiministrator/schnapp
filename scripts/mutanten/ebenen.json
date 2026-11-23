@@ -1,0 +1,93 @@
+[
+  {
+    "name": "E1 Deckkraft der Ebene wirkt im Renderer nicht",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\tif p >= 100 {\n\t\treturn z.objekt(o)",
+    "neu": "\tif true {\n\t\treturn z.objekt(o)"
+  },
+  {
+    "name": "E2 Renderer zeichnet ausgeblendete Ebenen",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "if !z.d.ObjektSichtbar(o) || o.Ebenenwerte().Ausgeblendet {",
+    "neu": "if !z.d.ObjektSichtbar(o) {"
+  },
+  {
+    "name": "E3 SVG-Export schreibt ausgeblendete Ebenen",
+    "datei": "internal/fileformat/export.go",
+    "paket": "./internal/fileformat",
+    "alt": "return d.ObjektSichtbar(o) && !o.Ebenenwerte().Ausgeblendet })",
+    "neu": "return d.ObjektSichtbar(o) })"
+  },
+  {
+    "name": "E4 Leser übergeht s:ausgeblendet",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "e.Ausgeblendet = a[\"ausgeblendet\"] == \"true\"",
+    "neu": "e.Ausgeblendet = false"
+  },
+  {
+    "name": "E5 Schreiber ohne display=none",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\ts.attr(\"display\", \"none\")\n",
+    "neu": "\n"
+  },
+  {
+    "name": "E6 Treffer greifen ausgeblendete und gesperrte Ebenen",
+    "datei": "internal/canvas/zuschnitt.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.D.ObjektSichtbar(o) && o.Ebenenwerte().Bearbeitbar() {",
+    "neu": "if s.D.ObjektSichtbar(o) {"
+  },
+  {
+    "name": "E7 Griffe an gesperrter Ebene",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "&& !ohneGriffe(s.Werkzeug) && sel.Ebenenwerte().Bearbeitbar() {",
+    "neu": "&& !ohneGriffe(s.Werkzeug) {"
+  },
+  {
+    "name": "E8 Rückgängig des Umordnens wiederholt es",
+    "datei": "internal/document/ebene.go",
+    "paket": "./internal/document",
+    "alt": "func (b umordnen) zuruecknehmen(d *Dokument) { d.objekte = verschobenIn(d.objekte, b.nach, b.von) }",
+    "neu": "func (b umordnen) zuruecknehmen(d *Dokument) { d.objekte = verschobenIn(d.objekte, b.von, b.nach) }"
+  },
+  {
+    "name": "E9 Doppeln legt die Kopie unter das Original",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "id, err := s.D.FuegeEin(kopie, s.D.Stelle(o.Kennung())+1)",
+    "neu": "id, err := s.D.FuegeEin(kopie, s.D.Stelle(o.Kennung()))"
+  },
+  {
+    "name": "E10 Ziehen in der Liste ohne Ausgleich der eigenen Zeile",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif neu > von {\n\t\t\tneu--",
+    "neu": "\t\tif false {\n\t\t\tneu--"
+  },
+  {
+    "name": "E11 Frisches Namensfeld beendet das Umbenennen sofort",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "case f == &e.ebenen.name && !e.ebenen.nameHatteFokus:",
+    "neu": "case false:"
+  },
+  {
+    "name": "E12 Texteingabe an ausgeblendeter Ebene",
+    "datei": "internal/canvas/menue.go",
+    "paket": "./internal/canvas",
+    "alt": "return ok && isText(o) && !o.Ebenenwerte().Ausgeblendet",
+    "neu": "return ok && isText(o)"
+  },
+  {
+    "name": "E13 Deckkraft-Feld verlangt eine Änderung",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "return eb.Deckkraft() == p || s.SetzeDeckkraft(s.Auswahl, p)",
+    "neu": "_ = eb\n\treturn s.SetzeDeckkraft(s.Auswahl, p)"
+  }
+]

@@ -271,7 +271,9 @@ type editor struct {
 	seiteZu bool
 	// seite: Knöpfe der rechten Leiste (seitenleiste.go).
 	seite seitenKnoepfe
-	satz  textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
+	// ebenen ist der Abschnitt „Ebenen“ der rechten Leiste (ADR-0032, ebenen.go).
+	ebenen ebenenLeiste
+	satz   textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
 	// fussFeldRahmen: Lage der Felder Farbe und Zoom beim letzten Zeichnen (leer: nicht gezeigt), farbKnopfRahmen die des
 	// Farbfelds der Werkzeugleiste; die Aufklapplisten hängen sich daran (listenAnker).
 	fussFeldRahmen  map[canvas.FeldArt]image.Rectangle
@@ -1582,90 +1584,100 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 		q := d.ZuAnsicht(p)
 		return f32.Pt(float32(q.X), float32(q.Y))
 	}
+	sicht := image.Rectangle{Max: d.Groesse()}
 	for _, o := range d.Objekte() {
-		if !d.ObjektSichtbar(o) {
-			continue // ganz im Verborgenen: wie Renderer und SVG-Export (ADR-0023 Punkt 7)
+		if !d.ObjektSichtbar(o) || o.Ebenenwerte().Ausgeblendet {
+			continue // ganz im Verborgenen oder ausgeblendet: wie Renderer und SVG-Export (ADR-0023 Punkt 7, ADR-0032)
 		}
-		switch v := o.(type) {
-		case document.Pfeil:
-			var pfad clip.Path
-			pfad.Begin(gtx.Ops)
-			pfad.MoveTo(an(v.A))
-			const n = 48
-			for i := 1; i <= n; i++ {
-				pfad.LineTo(an(v.Punkt(float64(i) / n)))
-			}
-			paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Stroke{Path: pfad.End(), Width: float32(v.Strich.Breite)}.Op())
-			r := v.RichtungAmEnde()
-			gl := math.Max(8, 4*v.Strich.Breite)
-			nrm := document.Pt(-r.Y, r.X)
-			fuss := v.B.Minus(r.Mal(gl))
-			var spitze clip.Path
-			spitze.Begin(gtx.Ops)
-			spitze.MoveTo(an(v.B))
-			spitze.LineTo(an(fuss.Plus(nrm.Mal(gl / 2))))
-			spitze.LineTo(an(fuss.Minus(nrm.Mal(gl / 2))))
-			spitze.Close()
-			paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Outline{Path: spitze.End()}.Op())
-		case document.Kasten:
-			min, max := an(v.Bereich.Min), an(v.Bereich.Max)
-			r := image.Rect(int(math.Round(float64(min.X))), int(math.Round(float64(min.Y))),
-				int(math.Round(float64(max.X))), int(math.Round(float64(max.Y))))
-			rr := clip.UniformRRect(r, int(math.Round(document.WirksamerEckradius(v.Eckradius, float64(r.Dx()), float64(r.Dy())))))
-			if v.Fuellung.A > 0 {
-				paint.FillShape(gtx.Ops, v.Fuellung, rr.Op(gtx.Ops))
-			}
-			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
-				if eckig := kastenStrich(v, r); eckig != nil {
-					// Ohne Rundung spitze Außenecken (F-498); Gios Strich kennt nur runde Ecken.
-					var pfad clip.Path
-					pfad.Begin(gtx.Ops)
-					for _, q := range eckig {
-						pfad.MoveTo(f32.Pt(float32(q.Min.X), float32(q.Min.Y)))
-						pfad.LineTo(f32.Pt(float32(q.Max.X), float32(q.Min.Y)))
-						pfad.LineTo(f32.Pt(float32(q.Max.X), float32(q.Max.Y)))
-						pfad.LineTo(f32.Pt(float32(q.Min.X), float32(q.Max.Y)))
-						pfad.Close()
-					}
-					paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Outline{Path: pfad.End()}.Op())
-				} else {
-					paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(v.Strich.Breite)}.Op())
+		e.zeichneObjekt(gtx, o, an, sicht)
+	}
+}
+
+// zeichneObjekt zeichnet o; an bildet Originalpunkte in die Zeichenfläche ab, sicht begrenzt die Textzeilen (in
+// derselben Fläche). Die Deckkraft der Ebene wirkt als Gios Deckkraft-Ebene auf das Objekt als Ganzes (ADR-0032 Punkt
+// 10). Leinwand und Vorschau der Ebenenliste zeichnen über diese eine Funktion.
+func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(document.Punkt) f32.Point, sicht image.Rectangle) {
+	if p := o.Ebenenwerte().Deckkraft(); p < 100 {
+		defer paint.PushOpacity(gtx.Ops, float32(p)/100).Pop()
+	}
+	switch v := o.(type) {
+	case document.Pfeil:
+		var pfad clip.Path
+		pfad.Begin(gtx.Ops)
+		pfad.MoveTo(an(v.A))
+		const n = 48
+		for i := 1; i <= n; i++ {
+			pfad.LineTo(an(v.Punkt(float64(i) / n)))
+		}
+		paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Stroke{Path: pfad.End(), Width: float32(v.Strich.Breite)}.Op())
+		r := v.RichtungAmEnde()
+		gl := math.Max(8, 4*v.Strich.Breite)
+		nrm := document.Pt(-r.Y, r.X)
+		fuss := v.B.Minus(r.Mal(gl))
+		var spitze clip.Path
+		spitze.Begin(gtx.Ops)
+		spitze.MoveTo(an(v.B))
+		spitze.LineTo(an(fuss.Plus(nrm.Mal(gl / 2))))
+		spitze.LineTo(an(fuss.Minus(nrm.Mal(gl / 2))))
+		spitze.Close()
+		paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Outline{Path: spitze.End()}.Op())
+	case document.Kasten:
+		min, max := an(v.Bereich.Min), an(v.Bereich.Max)
+		r := image.Rect(int(math.Round(float64(min.X))), int(math.Round(float64(min.Y))),
+			int(math.Round(float64(max.X))), int(math.Round(float64(max.Y))))
+		rr := clip.UniformRRect(r, int(math.Round(document.WirksamerEckradius(v.Eckradius, float64(r.Dx()), float64(r.Dy())))))
+		if v.Fuellung.A > 0 {
+			paint.FillShape(gtx.Ops, v.Fuellung, rr.Op(gtx.Ops))
+		}
+		if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
+			if eckig := kastenStrich(v, r); eckig != nil {
+				// Ohne Rundung spitze Außenecken (F-498); Gios Strich kennt nur runde Ecken.
+				var pfad clip.Path
+				pfad.Begin(gtx.Ops)
+				for _, q := range eckig {
+					pfad.MoveTo(f32.Pt(float32(q.Min.X), float32(q.Min.Y)))
+					pfad.LineTo(f32.Pt(float32(q.Max.X), float32(q.Min.Y)))
+					pfad.LineTo(f32.Pt(float32(q.Max.X), float32(q.Max.Y)))
+					pfad.LineTo(f32.Pt(float32(q.Min.X), float32(q.Max.Y)))
+					pfad.Close()
 				}
+				paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Outline{Path: pfad.End()}.Op())
+			} else {
+				paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(v.Strich.Breite)}.Op())
 			}
-		case document.Nummer:
-			m := an(v.Mitte)
-			rad := float32(v.Radius)
-			kr := image.Rect(int(math.Round(float64(m.X-rad))), int(math.Round(float64(m.Y-rad))),
-				int(math.Round(float64(m.X+rad))), int(math.Round(float64(m.Y+rad))))
-			paint.FillShape(gtx.Ops, v.Farbe, clip.Ellipse(kr).Op(gtx.Ops))
-			// Grundlinie wie im Renderer: eine halbe Versalhöhe unter der Mitte (document.Nummer.Grundlinie).
-			e.textBei(gtx, fmt.Sprint(v.Wert), float32(v.Radius*1.2), f32.Pt(m.X, m.Y+nummerGrundlinieAnsicht(v)), true,
-				color.NRGBA{R: 255, G: 255, B: 255, A: 255})
-		case document.Text:
-			if v.Hintergrund.A > 0 {
-				g := v.Grenzen()
-				a, b := an(g.Min), an(g.Max)
-				paint.FillShape(gtx.Ops, v.Hintergrund, clip.Rect(image.Rect(int(a.X), int(a.Y), int(b.X), int(b.Y))).Op())
-			}
-			// Zeilen und Striche wie im Renderer: Schrift, Anfang nach der Ausrichtung und Grundlinie aus dem Dokument,
-			// Glyphen aus den Umrissen derselben Datei (ADR-0021 Nachtrag 10 Punkt 5).
-			sch := v.Schriftdatei()
-			sicht := image.Rectangle{Max: e.s.D.Groesse()}
-			for _, zeile := range v.Zeilen() {
-				p := an(document.Pt(zeile.X, zeile.Grundlinie))
-				e.satz.zeichneZeile(gtx, sch, zeile.Text, float64(p.X), float64(p.Y), v.Schriftgrad, v.Farbe, sicht)
-			}
-			for _, st := range v.Striche() { // mit gebrochenen Ecken wie der Renderer (Sitzungs-QA B-9)
-				a, b := an(st.Min), an(st.Max)
-				var sp clip.Path
-				sp.Begin(gtx.Ops)
-				sp.MoveTo(a)
-				sp.LineTo(f32.Pt(b.X, a.Y))
-				sp.LineTo(b)
-				sp.LineTo(f32.Pt(a.X, b.Y))
-				sp.Close()
-				paint.FillShape(gtx.Ops, v.Farbe, clip.Outline{Path: sp.End()}.Op())
-			}
+		}
+	case document.Nummer:
+		m := an(v.Mitte)
+		rad := float32(v.Radius)
+		kr := image.Rect(int(math.Round(float64(m.X-rad))), int(math.Round(float64(m.Y-rad))),
+			int(math.Round(float64(m.X+rad))), int(math.Round(float64(m.Y+rad))))
+		paint.FillShape(gtx.Ops, v.Farbe, clip.Ellipse(kr).Op(gtx.Ops))
+		// Grundlinie wie im Renderer: eine halbe Versalhöhe unter der Mitte (document.Nummer.Grundlinie).
+		e.textBei(gtx, fmt.Sprint(v.Wert), float32(v.Radius*1.2), f32.Pt(m.X, m.Y+nummerGrundlinieAnsicht(v)), true,
+			color.NRGBA{R: 255, G: 255, B: 255, A: 255})
+	case document.Text:
+		if v.Hintergrund.A > 0 {
+			g := v.Grenzen()
+			a, b := an(g.Min), an(g.Max)
+			paint.FillShape(gtx.Ops, v.Hintergrund, clip.Rect(image.Rect(int(a.X), int(a.Y), int(b.X), int(b.Y))).Op())
+		}
+		// Zeilen und Striche wie im Renderer: Schrift, Anfang nach der Ausrichtung und Grundlinie aus dem Dokument,
+		// Glyphen aus den Umrissen derselben Datei (ADR-0021 Nachtrag 10 Punkt 5).
+		sch := v.Schriftdatei()
+		for _, zeile := range v.Zeilen() {
+			p := an(document.Pt(zeile.X, zeile.Grundlinie))
+			e.satz.zeichneZeile(gtx, sch, zeile.Text, float64(p.X), float64(p.Y), v.Schriftgrad, v.Farbe, sicht)
+		}
+		for _, st := range v.Striche() { // mit gebrochenen Ecken wie der Renderer (Sitzungs-QA B-9)
+			a, b := an(st.Min), an(st.Max)
+			var sp clip.Path
+			sp.Begin(gtx.Ops)
+			sp.MoveTo(a)
+			sp.LineTo(f32.Pt(b.X, a.Y))
+			sp.LineTo(b)
+			sp.LineTo(f32.Pt(a.X, b.Y))
+			sp.Close()
+			paint.FillShape(gtx.Ops, v.Farbe, clip.Outline{Path: sp.End()}.Op())
 		}
 	}
 }
@@ -1824,7 +1836,7 @@ func textEcke(p f32.Point, dims layout.Dimensions, mitte bool) f32.Point {
 // zeichneAuswahl zeichnet Rahmen und Griffe des ausgewählten Objekts in Fensterpixeln (unabhängig vom Zoom).
 func (e *editor) zeichneAuswahl(gtx layout.Context) {
 	o, ok := e.s.D.Objekt(e.s.Auswahl)
-	if !ok {
+	if !ok || o.Ebenenwerte().Ausgeblendet { // Ausgeblendetes zeigt keinen Rahmen (ADR-0032 Punkt 4)
 		return
 	}
 	fe := func(p document.Punkt) image.Point {
@@ -1835,6 +1847,9 @@ func (e *editor) zeichneAuswahl(gtx layout.Context) {
 	r := image.Rectangle{Min: fe(g.Min), Max: fe(g.Max)}.Canon()
 	rahmen(gtx.Ops, r.Inset(-gtx.Dp(2)), gtx.Dp(1), farbeAuswahl)
 	h := gtx.Dp(5)
+	if o.Ebenenwerte().Gesperrt {
+		return // gesperrt: Rahmen ohne Griffe (Punkt 5)
+	}
 	for _, gr := range canvas.Griffe(o) {
 		m := fe(gr.Ort)
 		q := image.Rect(m.X-h, m.Y-h, m.X+h, m.Y+h)
@@ -1981,7 +1996,7 @@ func (e *editor) tasten(gtx layout.Context) {
 			continue
 		}
 		t, ok := findeTaste(k.Name, k.Modifiers, e.s.TextLaeuft())
-		if e.seite.fw.fokusFeld(gtx) != nil && ((ok && t.hatWerkzeug) || k.Name == key.NameDeleteForward) {
+		if e.fokusFeld(gtx) != nil && ((ok && t.hatWerkzeug) || k.Name == key.NameDeleteForward) {
 			// Im Eingabefeld der Leiste (Hex, Deckkraft) sind Buchstaben und Ziffern Eingabe (kommt als EditEvent), keine
 			// Kürzel; Entf wirkt dort nicht (ADR-0031 Nachtrag 5). Enter, Esc und die Rücktaste holt feldTasten vorher ab.
 			continue
@@ -2026,6 +2041,7 @@ func (e *editor) fokussierterKnopf(gtx layout.Context) *widget.Clickable {
 	k := &e.knoepfe
 	alle := []*widget.Clickable{&k.farbe, &k.fussFarbe, &k.fussZoom}
 	alle = append(alle, e.seite.alle()...)
+	alle = append(alle, e.ebenen.alleKnoepfe()...)
 	for i := range e.menue.titel {
 		alle = append(alle, &e.menue.titel[i])
 	}

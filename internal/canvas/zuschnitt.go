@@ -52,11 +52,12 @@ func (s *Sitzung) VerborgeneObjekte() int {
 	return n
 }
 
-// sichtbareObjekte sind die Objekte, die Treffer finden kann: Verborgenes ist nicht zu sehen und nicht zu greifen.
+// sichtbareObjekte sind die Objekte, die Treffer finden kann: Verborgenes ist nicht zu sehen und nicht zu greifen,
+// ausgeblendete und gesperrte Ebenen auch nicht (ADR-0032 Punkte 4 und 5).
 func (s *Sitzung) sichtbareObjekte() []document.Objekt {
 	var res []document.Objekt
 	for _, o := range s.D.Objekte() {
-		if s.D.ObjektSichtbar(o) {
+		if s.D.ObjektSichtbar(o) && o.Ebenenwerte().Bearbeitbar() {
 			res = append(res, o)
 		}
 	}

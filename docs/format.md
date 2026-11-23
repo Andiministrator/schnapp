@@ -334,7 +334,32 @@ A filled circle with a number in it.
 
 Informative: the number is drawn in bold white, centred, with font size `1.2 x radius`.
 
-### 8.5 Unknown object types
+### 8.5 Layer attributes (all object types)
+
+Every object is a layer above the image; stacking order is document order (section 8). Four OPTIONAL attributes may
+appear on the element of any object type:
+
+| Attribute | Value |
+|---|---|
+| `s:name` | Name given by the user: at most 100 Unicode scalar values, no control characters (category Cc) and none of U+FFFE, U+FFFF. Missing or invalid: no name (the program shows one derived from type and content) |
+| `s:ausgeblendet` | `true`: the layer is hidden. Any other value or missing: visible |
+| `s:gesperrt` | `true`: the layer is locked against changes with the pointer. Any other value or missing: not locked |
+| `s:deckkraft` | Layer opacity in percent, integer `0` to `100` (syntax of 5.2). Missing or invalid: `100` |
+
+Writers emit them only when they differ from the default. They were added without changing the format version
+(like the text attributes of 8.3): a reader that does not know them ignores them (section 11, rule 3) and shows every
+object visible, unlocked and opaque; no value of them makes a file damaged.
+
+A hidden layer is **kept** in the working file but drawn nowhere: not in the visible image, the exports, the
+clipboard or the library preview. Hiding is not redaction; the content of a hidden object stays readable in `snAP`.
+The layer opacity applies to the object as a whole (group opacity: overlapping parts of one object are not
+compounded), in addition to the alpha of its colours.
+
+Informative: for viewers of the `snAP` document the reference writer adds `display="none"` to a hidden object and
+`opacity` (the percentage as a fraction) to a translucent one; the SVG export omits hidden objects and writes
+`opacity`. Example: `testdata/format/layers`.
+
+### 8.6 Unknown object types
 
 A reader that meets an unknown `s:typ` MUST NOT silently drop the object (that would lose data on the next save). It
 treats the file as damaged and offers the visible image instead (section 11).
@@ -403,7 +428,7 @@ Original width and height are at least 1.
    reader is reported as newer, not as damaged.
 3. **Unknown content.** Attributes or elements that are not defined here and are not an object (`s:typ`) MUST be
    ignored, whatever their namespace; so are the presentation elements and attributes. Position matters for two elements: `s:streifen` counts only as a direct child of `s:ansicht`, and `s:schlagwort` only as a direct child of `s:meta`; anywhere else they are unknown content and have no effect (they are neither data nor damage). Readers MUST NOT accept them elsewhere, so that all readers see the same strips and keywords. Unknown *object types* are not
-   ignored (8.5). Unknown content is not preserved when the reader saves the file.
+   ignored (8.6). Unknown content is not preserved when the reader saves the file.
 4. **Strictness.** A required attribute that is missing, a value that does not parse, a value outside the ranges of
    sections 7, 8 and 10 (except `s:kante`, whose unknown values mean `zigzag`, 7.1), a rectangle outside the original,
    overlapping strips, a view that would be empty, an `s:ansicht` that is missing, or an original whose size differs from the root's `width`/`height` makes
@@ -454,6 +479,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `no-edge-style` | like `minimal`, but `s:ansicht` has no `s:kante` (a valid version-1 file written before the attribute existed; readers use `zigzag`) |
 | `redaction` | one filled and one pixelated redaction, applied to the pixels |
 | `text-style` | one text with all optional text attributes: a family that is not installed, `bold italic underline strike`, `center` |
+| `layers` | three objects with layer attributes: a named, half-opaque box, a hidden and locked arrow, a step number without them |
 
 In the examples the visible image is the view *without* annotations (annotation rendering depends on a font
 rasteriser and is not part of the format).

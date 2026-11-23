@@ -174,10 +174,10 @@ func (z zeichner) alles() error {
 		if z.abgebrochen() {
 			return nil
 		}
-		if !z.d.ObjektSichtbar(o) {
+		if !z.d.ObjektSichtbar(o) || o.Ebenenwerte().Ausgeblendet { // ausgeblendete Ebenen fehlen (ADR-0032 Punkt 4)
 			continue
 		}
-		if err := z.objekt(o); err != nil {
+		if err := z.ebene(o); err != nil {
 			return err
 		}
 	}
@@ -371,6 +371,66 @@ func (z zeichner) schliessen() {
 }
 
 func (z zeichner) ansicht(p document.Punkt) document.Punkt { return z.d.ZuAnsicht(p) }
+
+// ebene zeichnet o. Ist die Deckkraft der Ebene unter 100 %, entsteht das Objekt erst in einem durchsichtigen
+// Zwischenbild in der Größe seines Umrisses und wird dann als Ganzes mit der Deckkraft eingemischt (Gruppendeckkraft,
+// ADR-0032 Punkte 2 und 10): Schaft und Spitze, Schild und Schrift überlagern sich nicht doppelt. Im Trockenlauf zählt
+// das Einmischen wie eine Füllung über dem Umriss.
+func (z zeichner) ebene(o document.Objekt) error {
+	p := o.Ebenenwerte().Deckkraft()
+	if p >= 100 {
+		return z.objekt(o)
+	}
+	r := z.ebenenRahmen(o)
+	if r.Empty() || p <= 0 {
+		return nil
+	}
+	if !z.ohneZaehlen {
+		z.auf.flaeche += fuellGewicht * float64(r.Dx()) * float64(r.Dy())
+	}
+	if z.trocken() {
+		return z.objekt(o)
+	}
+	zw := z
+	zw.bild = image.NewNRGBA(r)
+	if err := zw.objekt(o); err != nil {
+		return err
+	}
+	mischeEbene(z.bild, zw.bild, p)
+	return nil
+}
+
+// ebenenRahmen ist der Umriss von o in der Ansicht, aufs Bild begrenzt, mit Rand für die Pfeilspitze (sie ragt über
+// Grenzen hinaus) und die Kantenglättung.
+func (z zeichner) ebenenRahmen(o document.Objekt) image.Rectangle {
+	g := o.Grenzen()
+	rand := 2.0
+	if v, ok := o.(document.Pfeil); ok {
+		rand += math.Max(8, 4*v.Strich.Breite)
+	}
+	a, b := z.ansicht(g.Min), z.ansicht(g.Max)
+	return image.Rect(int(math.Floor(math.Min(a.X, b.X)-rand)), int(math.Floor(math.Min(a.Y, b.Y)-rand)),
+		int(math.Ceil(math.Max(a.X, b.X)+rand)), int(math.Ceil(math.Max(a.Y, b.Y)+rand))).Intersect(z.rand)
+}
+
+// mischeEbene mischt das Zwischenbild q mit der Deckkraft p (Prozent) über bild, Pixel für Pixel mit derselben Formel
+// wie jede Füllung (einmischer.misch, draw.Over in 16 Bit): das Pixel von q ist die Quelle, die Deckkraft die Deckung.
+func mischeEbene(bild, q *image.NRGBA, p int) {
+	ma := uint32(p) * 0xffff / 100
+	r := q.Rect.Intersect(bild.Rect)
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		saveprogress.Puls()
+		qi, bi := q.PixOffset(r.Min.X, y), bild.PixOffset(r.Min.X, y)
+		for x := 0; x < r.Dx(); x++ {
+			s := q.Pix[qi+4*x : qi+4*x+4 : qi+4*x+4]
+			if s[3] == 0 {
+				continue
+			}
+			e := neuerEinmischer(bild, color.NRGBA{R: s[0], G: s[1], B: s[2], A: s[3]})
+			e.misch(bild.Pix[bi+4*x:bi+4*x+4:bi+4*x+4], ma)
+		}
+	}
+}
 
 func (z zeichner) objekt(o document.Objekt) error {
 	switch v := o.(type) {

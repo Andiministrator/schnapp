@@ -129,6 +129,15 @@ func beispiele() []beispiel {
 				Fett: true, Kursiv: true, Unterstrichen: true, Durchgestrichen: true, Ausrichtung: document.AusrichtungMitte})
 			return d
 		}, Metadaten{}, false},
+		{"layers", func(t *testing.T) *document.Dokument { // Angaben der Ebenen (ADR-0032 Punkt 9)
+			d := beispielDok(t, 64, 48)
+			fuege(t, d, document.Kasten{Ebene: document.Ebene{Name: "Frame"}.MitDeckkraft(50),
+				Bereich: document.R(document.Pt(4, 4), document.Pt(40, 30)), Strich: document.Strich{Farbe: color.NRGBA{217, 58, 51, 255}, Breite: 2}})
+			fuege(t, d, document.Pfeil{Ebene: document.Ebene{Ausgeblendet: true, Gesperrt: true},
+				A: document.Pt(50, 40), B: document.Pt(20, 12), K: document.Pt(35, 26), Strich: document.Strich{Farbe: color.NRGBA{0, 0, 255, 255}, Breite: 3}})
+			fuege(t, d, document.Nummer{Mitte: document.Pt(52, 10), Wert: 1, Radius: 6, Farbe: color.NRGBA{217, 58, 51, 255}})
+			return d
+		}, Metadaten{}, false},
 		{"minimal", func(t *testing.T) *document.Dokument { return beispielDok(t, 32, 24) }, Metadaten{}, false},
 		{"no-edge-style", func(t *testing.T) *document.Dokument {
 			d := beispielDok(t, 32, 24)
@@ -685,7 +694,8 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 	wortliste := []string{"format", "meta", "autor", "erstellt", "quelle", "bearbeitet", "schlagwort", "ansicht", "zuschnitt",
 		"kante",
 		"streifen", "zeilen", "von", "bis", "ebene", "typ", "a", "b", "k", "strich", "bereich", "fuellung", "eckradius",
-		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "schrift", "stil", "ausrichtung", "mitte", "wert", "radius"}
+		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "schrift", "stil", "ausrichtung", "mitte", "wert", "radius",
+		"name", "ausgeblendet", "gesperrt", "deckkraft"}
 	for _, w := range wortliste {
 		if !gesehen[w] {
 			t.Errorf("Beispiele enthalten s:%s nicht (Beispielabdeckung)", w)
@@ -693,7 +703,7 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 	}
 	// Rückrichtung: Jedes `s:name` der Spezifikation steht in der Wortliste; ein Name, den die Spezifikation einführt
 	// und den weder Schreiber noch Beispiele noch Leser kennen, fiele sonst nicht auf. `s:name` ist der Platzhalter
-	// der Einleitung von Abschnitt 5.
+	// der Einleitung von Abschnitt 5 und zugleich der Name einer Ebene (8.5).
 	bekannt := map[string]bool{"name": true}
 	for _, w := range wortliste {
 		bekannt[w] = true

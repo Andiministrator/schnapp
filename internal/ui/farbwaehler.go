@@ -12,6 +12,7 @@ import (
 	"image/color"
 	"math"
 	"strconv"
+	"unicode"
 	"unicode/utf8"
 
 	"gioui.org/f32"
@@ -27,6 +28,7 @@ import (
 	"gioui.org/widget/material"
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
+	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/i18n"
 )
 
@@ -75,9 +77,19 @@ type farbwaehler struct {
 // eingaben sind die Eingabefelder in Tab-Reihenfolge.
 func (fw *farbwaehler) eingaben() []*eingabe { return []*eingabe{&fw.hex, &fw.deckkraft} }
 
+// eingaben sind alle Eingabefelder der Leiste in Tab-Reihenfolge: Hex und Deckkraft der Farbe, Deckkraft der Ebene und,
+// während einer Umbenennung, der Name (ADR-0032 Punkt 6).
+func (e *editor) eingaben() []*eingabe {
+	f := append(e.seite.fw.eingaben(), &e.ebenen.deck)
+	if e.ebenen.umbenennen != 0 {
+		f = append(f, &e.ebenen.name)
+	}
+	return f
+}
+
 // fokusFeld liefert das Eingabefeld mit Tastaturfokus (nil: keins).
-func (fw *farbwaehler) fokusFeld(gtx layout.Context) *eingabe {
-	for _, f := range fw.eingaben() {
+func (e *editor) fokusFeld(gtx layout.Context) *eingabe {
+	for _, f := range e.eingaben() {
 		if gtx.Focused(f) {
 			return f
 		}
@@ -87,6 +99,9 @@ func (fw *farbwaehler) fokusFeld(gtx layout.Context) *eingabe {
 
 // feldWert ist der Text, den ein Feld ohne Eingabe zeigt.
 func (e *editor) feldWert(f *eingabe) string {
+	if t, ok := e.ebenenFeldWert(f); ok {
+		return t
+	}
 	c := e.s.AktuelleFarbe()
 	if f == &e.seite.fw.hex {
 		return canvas.HexText(c)
@@ -96,6 +111,9 @@ func (e *editor) feldWert(f *eingabe) string {
 
 // feldZeichen meldet, ob r in das Feld f getippt werden darf; feldLaenge ist die Höchstlänge.
 func (e *editor) feldZeichen(f *eingabe, r rune) bool {
+	if f == &e.ebenen.name {
+		return !unicode.IsControl(r)
+	}
 	if f == &e.seite.fw.hex {
 		return r == '#' || (r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')
 	}
@@ -103,6 +121,9 @@ func (e *editor) feldZeichen(f *eingabe, r rune) bool {
 }
 
 func (e *editor) feldLaenge(f *eingabe) int {
+	if f == &e.ebenen.name {
+		return document.MaxEbenenName
+	}
 	if f == &e.seite.fw.hex {
 		return 9
 	}
@@ -115,9 +136,14 @@ func (e *editor) feldUebernehmen(f *eingabe) {
 		return
 	}
 	ok := false
-	if f == &e.seite.fw.hex {
+	switch f {
+	case &e.ebenen.name:
+		ok = e.s.Umbenennen(e.ebenen.umbenennen, f.text) || e.ebenenNameUnveraendert(f.text)
+	case &e.ebenen.deck:
+		ok = e.s.SetzeEbenenDeckkraftText(f.text)
+	case &e.seite.fw.hex:
 		ok = e.s.SetzeHex(f.text)
-	} else {
+	default:
 		ok = e.s.SetzeDeckkraftText(f.text)
 	}
 	f.fehler = !ok
@@ -142,7 +168,7 @@ func (e *editor) feldTasten(gtx layout.Context) {
 			break
 		}
 		pe, ok := ev.(pointer.Event)
-		f := fw.fokusFeld(gtx)
+		f := e.fokusFeld(gtx)
 		if !ok || f == nil || pe.Position.Round().In(f.rahmen) {
 			continue
 		}
@@ -153,12 +179,19 @@ func (e *editor) feldTasten(gtx layout.Context) {
 			e.feldUebernehmen(f)
 		}
 		f.neu, f.text, f.fehler = true, "", false
+		e.umbenennenEnde(f)
 		gtx.Execute(key.FocusCmd{Tag: e})
+	}
+	// Das Namensfeld einer neuen Umbenennung bekommt den Fokus, sobald es gezeichnet war: Erst dann kennt Gio das Ziel,
+	// und die Filter unten melden es im selben Bild an (ADR-0032 Punkt 6).
+	if k := &e.ebenen; k.umbenennenFokus && !k.name.rahmen.Empty() {
+		k.umbenennenFokus = false
+		defer gtx.Execute(key.FocusCmd{Tag: &k.name})
 	}
 	// Bei offenem Menü oder offener Hilfetafel meldet das Feld keine Tasten an: Esc und Enter gehören dann dem Menü
 	// bzw. der Tafel (A-3, A-7). Umschalt ist erlaubt, damit Umschalt+Enter nicht als Kürzel durchrutscht (A-5).
 	tasten := !e.menue.offen && !e.hilfeOffen
-	for _, f := range fw.eingaben() {
+	for _, f := range e.eingaben() {
 		filter := []event.Filter{key.FocusFilter{Target: f}, pointer.Filter{Target: f, Kinds: pointer.Press}}
 		if tasten {
 			for _, n := range []key.Name{key.NameReturn, key.NameEnter, key.NameEscape, key.NameDeleteBackward} {
@@ -174,16 +207,23 @@ func (e *editor) feldTasten(gtx layout.Context) {
 			case key.FocusEvent:
 				switch {
 				case ev.Focus:
+					if f == &e.ebenen.name {
+						e.ebenen.nameHatteFokus = true
+					}
 					if f.neu { // nach einer Unterbrechung (Fenster ohne Fokus) bleibt eine angefangene Eingabe stehen
 						f.text, f.fehler = "", false
 					}
 				case gtx.Focused(f):
 					// Das Fenster hat den Fokus verloren, das Feld behält ihn: nichts übernehmen, die Eingabe bleibt
 					// stehen (A-2 d) — eine halb getippte Farbe wäre sonst schon gesetzt.
+				case f == &e.ebenen.name && !e.ebenen.nameHatteFokus:
+					// Das Namensfeld ist eben erst angemeldet und hatte den Fokus noch nicht: Gio meldet „kein Fokus“,
+					// bevor der FocusCmd aus zeichneEbenen wirkt; das beendet die Umbenennung nicht.
 				default:
 					// Tab oder ein Fokuswechsel: übernehmen; ungültig bleibt es beim Alten (ADR-0031 Nachtrag 5).
 					e.feldUebernehmen(f)
 					f.neu, f.text, f.fehler = true, "", false
+					e.umbenennenEnde(f)
 				}
 			case key.EditEvent:
 				if !e.seiteAn() || e.menue.offen {
@@ -205,8 +245,13 @@ func (e *editor) feldTasten(gtx layout.Context) {
 				switch ev.Name {
 				case key.NameReturn, key.NameEnter:
 					e.feldUebernehmen(f)
+					if f == &e.ebenen.name && f.neu { // übernommen oder nichts getippt: Umbenennen endet
+						e.umbenennenEnde(f)
+						gtx.Execute(key.FocusCmd{Tag: e})
+					}
 				case key.NameEscape:
 					f.neu, f.text, f.fehler = true, "", false
+					e.umbenennenEnde(f)
 					gtx.Execute(key.FocusCmd{Tag: e})
 				case key.NameDeleteBackward:
 					if f.neu { // vom reinen Wert ohne Einheit aus (A-8: „50 %“ ließ sonst ein Leerzeichen stehen)
@@ -238,6 +283,13 @@ func (e *editor) inFarbwahl(p image.Point) bool {
 
 // feldRohwert ist der Wert eines Felds ohne Einheit, Ausgangspunkt der Rücktaste.
 func (e *editor) feldRohwert(f *eingabe) string {
+	if f == &e.ebenen.name {
+		return e.ebenenNameText()
+	}
+	if f == &e.ebenen.deck {
+		eb, _ := e.s.GewaehlteEbene()
+		return strconv.Itoa(eb.Deckkraft())
+	}
 	c := e.s.AktuelleFarbe()
 	if f == &e.seite.fw.hex {
 		return canvas.HexText(c)
@@ -248,7 +300,7 @@ func (e *editor) feldRohwert(f *eingabe) string {
 // zeichneFeldWache meldet über dem ganzen Fenster eine durchlässige Fläche an, die jeden Druck sieht (feldTasten); nur
 // solange ein Eingabefeld den Fokus hat.
 func (e *editor) zeichneFeldWache(gtx layout.Context) {
-	if e.seite.fw.fokusFeld(gtx) == nil {
+	if e.fokusFeld(gtx) == nil {
 		return
 	}
 	c := clip.Rect(image.Rectangle{Max: gtx.Constraints.Max}).Push(gtx.Ops)

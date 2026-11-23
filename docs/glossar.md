@@ -13,6 +13,7 @@
 | **Original** | Die unbeschnittene, ungestauchte Aufnahme in der Arbeitsdatei. Wird nur durch Schwärzen verändert. |
 | **Pixelebene** | Die Aufnahme als Bild im Ebenenmodell. |
 | **Vektorebene** | Eine Beschriftung (Pfeil, Kasten, Text …) als SVG-Element. |
+| **Ebene** | Jede Beschriftung ist eine Ebene über dem Bild, mit Name, Sichtbarkeit, Sperre und Deckkraft; das Bild ist die unterste, Schwärzungen gehören zu ihm. Ausgeblendete Ebenen fehlen in Export und Zwischenablage, bleiben aber in der Arbeitsdatei (kein Schwärzen). Leiste „Ebenen“ und Menü „Ebene“, ADR-0032. |
 | **Schwärzen** | Bereich deckend überdecken; überschreibt die Pixel auch im Original. Endgültig. |
 | **Verpixeln** | Bereich grob aufrastern; überschreibt ebenfalls das Original. |
 | **Stauchen** | Aus der Mitte eines Bildes einen Streifen ausblenden (Header und Footer bleiben), nicht zerstörend, mit Kante an der Naht (Kantenform). Snagit: „Cut Out". |

@@ -41,8 +41,10 @@ type seitenKnoepfe struct {
 	fw           farbwaehler
 	sw           schriftwahl
 	kantRahmen   [3]image.Rectangle
-	kopf         string // Überschrift oben beim letzten Zeichnen (Tests)
-	farbeGezeigt bool   // der Abschnitt Farbe stand beim letzten Zeichnen da
+	kopf         string           // Überschrift oben beim letzten Zeichnen (Tests)
+	farbeGezeigt bool             // der Abschnitt Farbe stand beim letzten Zeichnen da
+	farbeKopf    widget.Clickable // Überschrift „Farbe“: klappt den Abschnitt ein und aus (ADR-0032 Punkt 6)
+	farbeZu      bool
 }
 
 // alle sind die Knöpfe der Leiste (Tastaturfokus, editor.fokussierterKnopf).
@@ -55,7 +57,7 @@ func (k *seitenKnoepfe) alle() []*widget.Clickable {
 		a = append(a, &k.kanten[i])
 	}
 	a = append(a, k.sw.knoepfe()...)
-	return append(a, &k.strich[0], &k.strich[1], &k.fw.pipette)
+	return append(a, &k.strich[0], &k.strich[1], &k.fw.pipette, &k.farbeKopf)
 }
 
 // kantenName ist der Name einer Kantenform auf ihrem Knopf.
@@ -116,8 +118,12 @@ func (e *editor) seiteAuswerten(gtx layout.Context) {
 			e.s.SetzeFarbe(farben[j])
 		}
 	}
+	if k.farbeKopf.Clicked(gtx) {
+		k.farbeZu = !k.farbeZu
+	}
 	e.farbeAuswerten(gtx)
 	e.schriftAuswerten(gtx)
+	e.ebenenAuswerten(gtx)
 	for j, f := range kantenFormen {
 		if k.kanten[j].Clicked(gtx) && an() && e.s.SetzeKante(f) {
 			e.melde(kantenMeldung(f), false)
@@ -255,13 +261,15 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 		y += e.seiteText(gtx, t, 12, farbeNebentext, image.Pt(x, y), breite, 4)
 	}
 
-	if !inhalt.Farbe {
-		return
+	if inhalt.Farbe {
+		trenne()
+		y += e.abschnittKopf(gtx, &k.farbeKopf, i18n.T("Color"), k.farbeZu, x, y, breite) + gtx.Dp(12)
+		if !k.farbeZu {
+			k.farbeGezeigt = true
+			y = e.zeichneFarbwaehler(gtx, x, y, breite, spalte)
+		}
 	}
-	trenne()
-	k.farbeGezeigt = true
-	y += e.seiteText(gtx, strings.ToUpper(i18n.T("Color")), 12, farbeNebentext, image.Pt(x, y), breite, 1) + gtx.Dp(12)
-	e.zeichneFarbwaehler(gtx, x, y, breite, spalte)
+	e.zeichneEbenen(gtx, x, y, breite, spalte, unten) // mit eigener Trennlinie, am unteren Rand (ADR-0032 Punkt 6)
 }
 
 // textMittig setzt text mittig in r.

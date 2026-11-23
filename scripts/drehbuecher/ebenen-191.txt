@@ -1,0 +1,60 @@
+# Sichtprobe ADR-0032 (Karte #191): Ebenen-Leiste mit Liste, Vorschau, Auge, Schloss, Deckkraft, Umbenennen, Umordnen.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/ebenen-191.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1. Die Liste steht unter der Farbe; feste Koordinaten nur für Leinwand und Kürzel, die Leiste
+# wird per Tastatur bedient (Lage hängt vom gewählten Objekt ab).
+# Erwartet: 01 vier Ebenen (Text, Nummer, Rechteck, Pfeil) über dem Bild, Text gewählt; 02 Text ausgeblendet (Auge
+# durchgestrichen, Name grau, nicht auf der Leinwand); 03 Namensfeld offen mit „Hinweis oben“; 04 Name übernommen;
+# 05 Rechteck gesperrt (Rahmen ohne Griffe), ganz nach hinten; 06 Rechteck mit Deckkraft 50 %; 07 Doppel des
+# Rechtecks (an der untersten Stelle bleibt die Wahl), versetzt, gesperrt und 50 % wie das Original, darüber gewählt;
+# 08 die Kopie (Zeile y 771–805) in der Liste ganz nach oben gezogen; 09 Text per Auge (danach zweite Zeile, y 703–737)
+# wieder eingeblendet. Der Abschnitt Ebenen hängt am unteren Rand (ADR-0032 Punkt 6): mit fünf Zeilen (4 Ebenen + Bild)
+# Feld „Deckkraft“ x 1404–1474, y 667–693, Zeilen ab y 703 je 34; jede weitere Ebene schiebt beides um 34 nach oben.
+warte 800
+taste A
+ziehe 300 300 600 420
+warte 200
+taste R
+ziehe 650 250 900 450
+warte 200
+taste N
+klick 520 620
+warte 200
+taste T
+klick 300 680
+warte 200
+schreibe Achtung
+taste Enter
+warte 400
+foto 01-vier-ebenen
+taste Strg+H
+warte 300
+foto 02-text-ausgeblendet
+taste F2
+warte 300
+schreibe Hinweis oben
+warte 200
+foto 03-namensfeld
+taste Enter
+warte 300
+foto 04-name
+taste Alt+BildAb
+taste Alt+BildAb
+warte 200
+taste Strg+L
+taste Strg+BildAb
+warte 300
+foto 05-rechteck-hinten
+klick 1440 680
+schreibe 50
+taste Enter
+warte 300
+foto 06-deckkraft-50
+taste Strg+D
+warte 400
+foto 07-doppeln
+ziehe 1450 788 1450 672 12
+warte 400
+foto 08-pfeil-nach-oben
+klick 1322 720
+warte 300
+foto 09-text-eingeblendet

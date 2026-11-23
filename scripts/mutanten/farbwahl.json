@@ -87,7 +87,7 @@
     "name": "F189-13 Buchstaben im Hex-Feld wechseln das Werkzeug",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif e.seite.fw.fokusFeld(gtx) != nil && ((ok && t.hatWerkzeug)",
+    "alt": "\t\tif e.fokusFeld(gtx) != nil && ((ok && t.hatWerkzeug)",
     "neu": "\t\tif false && ((ok && t.hatWerkzeug)"
   },
   {
@@ -108,8 +108,8 @@
     "name": "F189-16 Esc im Feld lässt den Fokus im Feld",
     "datei": "internal/ui/farbwaehler.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\t\t\tgtx.Execute(key.FocusCmd{Tag: e})",
-    "neu": "\t\t\t\t\t_ = e"
+    "alt": "\t\t\t\t\te.umbenennenEnde(f)\n\t\t\t\t\tgtx.Execute(key.FocusCmd{Tag: e})",
+    "neu": "\t\t\t\t\te.umbenennenEnde(f)\n\t\t\t\t\t_ = e"
   },
   {
     "name": "F189-17 Feld nimmt jedes Zeichen",

@@ -49,6 +49,7 @@ const (
 	menueAnsicht
 	menueBild
 	menueWerkzeuge
+	menueEbene // ADR-0032 Punkt 8
 	menueHilfe
 	menueAnzahl
 )
@@ -77,6 +78,8 @@ func menueTitel(i int) string {
 		return i18n.T("Image")
 	case menueWerkzeuge:
 		return i18n.T("Tools")
+	case menueEbene:
+		return i18n.T("Layer")
 	case menueHilfe:
 		return i18n.T("Help")
 	}
@@ -120,6 +123,26 @@ func (e *editor) menueEintraegeVon(i int) []menueEintrag {
 				aktiv: e.s.Werkzeug == w.w})
 		}
 		return en
+	case menueEbene:
+		eb, _ := s.GewaehlteEbene()
+		an := s.KannEbene()
+		aus, sperr := i18n.T("Hide layer"), i18n.T("Lock layer")
+		if eb.Ausgeblendet {
+			aus = i18n.T("Show layer")
+		}
+		if eb.Gesperrt {
+			sperr = i18n.T("Unlock layer")
+		}
+		return []menueEintrag{
+			{akt: aktDoppeln, text: i18n.T("Duplicate"), an: an},
+			{akt: aktUmbenennen, text: i18n.T("Rename…"), an: an},
+			{akt: aktAusblenden, text: aus, an: an},
+			{akt: aktSperren, text: sperr, an: an},
+			{akt: aktEbeneVor, text: i18n.T("Bring forward"), an: s.KannEbeneSchritt(1), gruppe: true},
+			{akt: aktEbeneZurueck, text: i18n.T("Send backward"), an: s.KannEbeneSchritt(-1)},
+			{akt: aktEbeneDarueber, text: i18n.T("Select layer above"), an: len(s.D.Objekte()) > 0, gruppe: true},
+			{akt: aktEbeneDarunter, text: i18n.T("Select layer below"), an: len(s.D.Objekte()) > 0},
+		}
 	case menueHilfe:
 		return []menueEintrag{
 			{akt: aktTastenkuerzel, text: i18n.T("Keyboard shortcuts"), an: true},
