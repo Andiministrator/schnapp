@@ -428,3 +428,27 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
   und `Speichern` überschreibt eine solche Datei nicht. `LeseMetadaten` prüft die Pixel nicht und genügt dafür nicht.
 - Messung 4K im Normalbau (`-benchtime 3x -count 3`): glatt 0,38 → 0,20 s, Rauschen 1,54 → 0,83 s. Die Reihenfolge der
   Marken ist nicht mehr festgelegt; ihre Teilzeiten sind Abstände zur vorigen Marke, belastbar ist die Gesamtzeit.
+
+## Nachtrag 12 (23.11.2026): Glyphenmodell bleibt `max(Grad², glyphGrund)`, Zeitversprechen rund 21 s gilt (F-601, Karte #227)
+
+**Status:** Akzeptiert (Claude, Andi informiert).
+
+- **Frage (Kritik zu Karte #224, K-1):** Das Modell `max(Grad², glyphGrund)` zählt an der Knickstelle (Grad 74) bis zu
+  3,7-fach zu wenig; das Zeitversprechen des Rechenbudgets liegt deshalb bei rund 21 s statt 16 s (Nachtrag 3,
+  Ergänzung vom 23.11.2026). Eine Summenform `glyphGrund + Grad²` flacht das Maximum je Einheit auf rund 2 ns ab und
+  würde das Versprechen auf rund 16 s drücken.
+- **Messung (ein Kern, ohne `-race`, `BenchmarkNaehteAlleGrenzenKleineGlyphen`, 23.11.2026):** `Fliesstext64` 15,7 und
+  16,0 s, `Klammeraffe74` 21,3 s — das Versprechen von rund 21 s hält, die Messung bestätigt die Ergänzung zu Nachtrag 3.
+- **Entscheidung: die max-Form bleibt, das Versprechen rund 21 s wird festgeschrieben.** Gründe: (1) Die Summenform
+  verdoppelt die gezählten Kosten jedes Alltagstexts (Grad 24: 5500 + 576 statt 5500) und senkt den Abstand des
+  Alltagsdokuments von 53 auf rund 48, unter die Schwelle 50 von `TestAlltagsdokumentWeitUnterDemBudget`; wollte man
+  ihn halten, müsste `GlyphBudget` steigen, und damit stiege die Zeit für gemischten Fließtext wieder über 16 s —
+  das Versprechen wäre nicht gewonnen, nur verschoben. (2) Die 21 s sind der Wert für ein bewusst gebautes
+  Worst-Case-Dokument (440 mal „@“ im Grad 74 je Zeile, 177 Texte, dazu volle Naht- und Füllgrenzen); gewöhnliche
+  Dokumente liegen um Größenordnungen darunter. (3) Die Fristen des Editors (ADR-0020 Nachträge 6, 7 und 9) rechnen
+  mit Speichern bis rund 45 s und erkennen Fortschritt am Puls; 21 s liegen darin. (4) Eine Summenform verschöbe acht
+  Sollwerte der Kostentests und Mutanten-Muster ohne Gewinn für Nutzer.
+- **Folge:** Nichts am Code außer dem Kommentar zum Kostenmodell (`internal/render/render.go`), der die Entscheidung
+  nennt. Wer das Modell später ändert (andere Schrift als Go als Eichgrundlage, dichtere Muster), misst zuerst
+  `BenchmarkNaehteAlleGrenzenKleineGlyphen` und trägt die neue Zeit hier und in Nachtrag 3 ein; ein gemessenes
+  Muster über 21 s widerlegt diese Entscheidung.

@@ -19,16 +19,19 @@ jobs:
         with:
           go-version-file: go.mod
       - name: Bibliotheken für Gio (Wayland, EGL, xkbcommon)
-        # libegl-mesa0 und libgl1-mesa-dri: Mesa mit Software-Rasterung für die Zeichentests ohne Fenster (Karte #224)
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwayland-dev libegl-dev libxkbcommon-dev libegl-mesa0 libgl1-mesa-dri
+        # libegl-mesa0 und libgl1-mesa-dri: Mesa mit Software-Rasterung für die Zeichentests ohne Fenster (Karte #224);
+        # libgles2 liefert libGLESv2.so.2, ohne die Gio headless im Runner übersprang (CI-Befund, F-602, Karte #227)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwayland-dev libegl-dev libxkbcommon-dev libegl-mesa0 libgl1-mesa-dri libgles2
       - name: gofmt
         run: test -z "$(gofmt -l $(go list -f '{{.Dir}}' ./...))"
       - run: go vet ./...
       - run: go test ./...
       # Zeichnen des Editors ohne Fenster (Gio headless über EGL surfaceless, internal/ui/zeichnen_headless_test.go):
-      # Der Schritt zeigt PASS oder SKIP im Protokoll. Ohne EGL überspringen die Tests; erst wenn hier PASS steht,
-      # SCHNAPP_HEADLESS_PFLICHT=1 setzen, dann wird ein Sprung zum Fehler.
-      - name: Editor-Zeichnen ohne Fenster (PASS oder SKIP sichtbar)
+      # SCHNAPP_HEADLESS_PFLICHT=1 macht ein Überspringen (kein EGL/GLES im Runner) zum Fehler (F-602), damit die
+      # Mutanten E37 bis E40 in der CI bewacht sind; das Protokoll zeigt PASS je Test.
+      - name: Editor-Zeichnen ohne Fenster (Pflicht)
+        env:
+          SCHNAPP_HEADLESS_PFLICHT: 1
         run: go test ./internal/ui -count=1 -run 'TestEditorZeichnet' -v
       # Alle Pakete unter internal/ zusätzlich mit dem Race-Detektor (F-368, Sitzungs-QA 22.11. Q-6; ADR-0020 Nachtrag 11)
       - run: go test -race ./internal/...

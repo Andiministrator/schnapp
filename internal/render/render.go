@@ -73,7 +73,8 @@ var ErrZuAufwendig = errors.New("render: Dokument zu aufwendig zu rastern")
 //     bei glyphGrund 5500 rund 0,6 bis 1,8 ns je Einheit, so viel wie bei großen Glyphen (rund 1 ns je Einheit; die
 //     „rund 0,3 ns“ oben gelten seit ADR-0028 nicht mehr). Das gilt für gemischten Fließtext. Die Form max(…) zählt in
 //     der Mitte zu wenig: Dichte Glyphen an der Knickstelle (Grad 74, 74² = glyphGrund) kosten bis rund 20 µs, also
-//     rund 3,7 ns je Einheit („@“; „W“ rund 3 ns, Fließtext rund 2 ns; Kritik zu Karte #224, 23.11.2026);
+//     rund 3,7 ns je Einheit („@“; „W“ rund 3 ns, Fließtext rund 2 ns; Kritik zu Karte #224, 23.11.2026), bewusst so
+//     belassen: Das Zeitversprechen rund 21 s gilt (ADR-0020 Nachtrag 12, F-601);
 //   - je Füllung fuellGewicht × Fläche ihres aufs Bild beschnittenen Rechtecks: rund 7 ns je Pixel mit einmischer
 //     (F-130, Messung 20.11.2026; vorher rund 30 bis 36 ns über den allgemeinen Weg von x/image/vector, Gewicht 100);
 //   - je Polygonecke punktGewicht (Geometrie, Ausrichten, LineTo; rund 30 ns) und je Kante kantenGewicht ×
