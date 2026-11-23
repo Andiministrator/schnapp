@@ -83,14 +83,19 @@ type menue struct {
 	offen       bool
 	eintraege   [16]widget.Clickable // je Eintrag einer; mehr als genug für menueEintraege
 	aussen      int                  // Ziel für Klicks neben die offene Liste (schließt sie)
+	zeile       int                  // Ziel für Klicks in die Menüzeile abseits der Titel (schließt die Liste, F-515)
 
 	// Tastatur (F-255): fokusNach ist der Eintrag, der beim Zeichnen den Fokus bekommt (die Klickfläche gibt es erst
 	// dort); cursor der zuletzt per Taste angesteuerte Eintrag (-1: keiner).
 	fokusNach *widget.Clickable
 	cursor    int
-	// perTasteOffen: Die Liste wurde per Tastatur geöffnet (Esc gibt den Fokus dann an den Menüknopf zurück, sonst an
+	// perTasteOffen: Die Liste wurde per Tastatur geöffnet (Esc gibt den Fokus dann an den Menütitel zurück, sonst an
 	// die Leinwand).
 	perTasteOffen bool
+	// gewechselt: In diesem Bild hat Pfeil links/rechts das Menü gewechselt. Der Fokus liegt dann noch auf der Klickfläche
+	// des alten Menüs, die gleiche Nummer im neuen Menü wäre ein anderer Eintrag; Enter im selben Bild löst deshalb nichts
+	// aus (F-512). `tasten` setzt es zu Beginn jedes Bildes zurück.
+	gewechselt bool
 
 	// rahmen: Lage der Zeilen im Fenster beim letzten Zeichnen (Tests und Drehbuch-Koordinaten, F-265).
 	rahmen [16]image.Rectangle
@@ -161,7 +166,7 @@ func (e *editor) menueTaste(gtx layout.Context, name key.Name) {
 	}
 }
 
-// menueSchliesse schließt die Liste und gibt den Fokus zurück: per Esc an den Menüknopf, nach einer Handlung oder
+// menueSchliesse schließt die Liste und gibt den Fokus zurück: per Esc an den Menütitel, nach einer Handlung oder
 // einem Klick daneben an die Leinwand (F-255; sonst fiele der Fokus auf nil, getippter Text ginge verloren).
 func (e *editor) menueSchliesse(gtx layout.Context, zuKnopf bool) {
 	m := &e.menue
@@ -228,7 +233,7 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 			}
 		}
 	case aktKantenform:
-		// Kantenform reihum, ein Rückgängig-Schritt (ADR-0023 Nachtrag 6); die Statusleiste nennt die neue Form. Die
+		// Kantenform reihum, ein Rückgängig-Schritt (ADR-0023 Nachtrag 6); die Fußzeile nennt die neue Form. Die
 		// Kanten zeichnet zeichneNaehte neu, ihr Zwischenspeicher ist nach der Form geschlüsselt.
 		return func(layout.Context) {
 			if k, ok := e.s.WechsleKante(); ok {
@@ -296,6 +301,7 @@ func (e *editor) menueMit(a aktion) int {
 func (e *editor) menueWechsel(dir int) {
 	m := &e.menue
 	perTaste := m.perTasteOffen
+	m.gewechselt = true
 	m.offen = false
 	e.menueOeffne(((m.welches+dir)%menueAnzahl+menueAnzahl)%menueAnzahl, perTaste)
 }
@@ -322,7 +328,7 @@ func (e *editor) knopfPerTaste(c *widget.Clickable) {
 	c.Click()
 }
 
-// menueAuswerten verarbeitet Klicks auf den Menüknopf, die Einträge und daneben.
+// menueAuswerten verarbeitet Klicks auf den Menütitel, die Einträge und daneben.
 func (e *editor) menueAuswerten(gtx layout.Context) {
 	m := &e.menue
 	// Während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6); je Klick neu gefragt, denn ein Eintrag im selben
@@ -347,6 +353,15 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 	}
 	for {
 		ev, ok := gtx.Event(pointer.Filter{Target: &m.aussen, Kinds: pointer.Press})
+		if !ok {
+			break
+		}
+		if p, ok := ev.(pointer.Event); ok && p.Kind == pointer.Press && m.offen {
+			e.menueSchliesse(gtx, false)
+		}
+	}
+	for { // Klick in die Menüzeile abseits der Titel („s“, leere Fläche, Dateiname): wie ein Klick daneben
+		ev, ok := gtx.Event(pointer.Filter{Target: &m.zeile, Kinds: pointer.Press})
 		if !ok {
 			break
 		}

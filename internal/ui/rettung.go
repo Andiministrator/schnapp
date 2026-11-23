@@ -14,7 +14,7 @@ import (
 type Rettung interface {
 	// Wiederherstellen wendet beim Öffnen eine passende Rettungskopie an (nach dem Anlegen der Sitzung, damit das
 	// Dokument als geändert gilt und Rückgängig auf den gespeicherten Stand führt). Zurück kommt die Meldung für die
-	// Statusleiste (leer: nichts zu sagen).
+	// Fußzeile (leer: nichts zu sagen).
 	Wiederherstellen(d *document.Dokument) (meldung string, fehler bool)
 	// Sichere bildet die Rettungskopie (Angaben, keine Pixel) und schreibt sie im Hintergrund.
 	Sichere(d *document.Dokument)
@@ -68,7 +68,7 @@ func (e *editor) rettungStart() {
 	if text, fehler := e.rettung.Wiederherstellen(e.s.D); text != "" {
 		e.melde(text, fehler)
 		if fehler {
-			// F-411: Die einzeilige Statusleiste kürzt den Ort der Kopie weg; auf der Fehlerausgabe bleibt er lesbar.
+			// F-411: Die einzeilige Fußzeile kürzt den Ort der Kopie weg; auf der Fehlerausgabe bleibt er lesbar.
 			fmt.Fprintln(fehlerAusgabe, text)
 		}
 	}

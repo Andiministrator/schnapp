@@ -64,7 +64,7 @@ func TestMenueTextBearbeitenUndZurueckholen(t *testing.T) {
 }
 
 // ADR-0023 Nachtrag 6: „Seam style“ steht im Menü (ohne eigenes Kürzel), wechselt die Form reihum als ein
-// Rückgängig-Schritt und nennt die neue Form in der Statusleiste. Nachtrag 7 (F-426): Ohne Naht ist der Eintrag grau
+// Rückgängig-Schritt und nennt die neue Form in der Fußzeile. Nachtrag 7 (F-426): Ohne Naht ist der Eintrag grau
 // und tut nichts, das Bild bleibt ungeändert.
 func TestMenueKantenform(t *testing.T) {
 	e := testEditor(t)

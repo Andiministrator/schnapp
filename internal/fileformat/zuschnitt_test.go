@@ -182,7 +182,7 @@ func pruefeSpaltLeer(t *testing.T, form document.Kante, s string, d *document.Do
 	}
 }
 
-// F-438 (ADR-0023 Nachtrag 8): Eine einzelne Naht oder weit auseinanderliegende bleiben im Export wie zuvor (eine
+// F-438 (ADR-0023 Nachtrag 9): Eine einzelne Naht oder weit auseinanderliegende bleiben im Export wie zuvor (eine
 // Gruppe, ein Verweis, keine zweite Maske); kreuzen oder berühren sich Nähte, liegen Saum und Abdunklung unter der
 // Maske und der Schatten in einer eigenen Gruppe darüber.
 func TestExportSVGNaehteBeruehrenSchatten(t *testing.T) {
@@ -280,7 +280,7 @@ func TestExportSVGVieleNaehteKompakt(t *testing.T) {
 		t.Errorf("Band in <defs> hängt an der Zahl der Nähte: %d gegen %d Byte", band, band1)
 	}
 	// Je Naht drei Verweise: einer in der Maske (Spalt), einer auf Saum und Abdunklung, einer auf den Schatten (die Nähte
-	// liegen hier eng beieinander, F-438, ADR-0023 Nachtrag 8); vor Nachtrag 7 einer,
+	// liegen hier eng beieinander, F-438, ADR-0023 Nachtrag 9); vor Nachtrag 7 einer,
 	// Grenze damals 64 Byte.
 	if je := (viele - eins) / 1021; je > 120 {
 		t.Errorf("je weitere Naht %d Byte, Soll höchstens 120", je)

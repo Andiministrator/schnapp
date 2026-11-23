@@ -107,7 +107,7 @@ func TestKopierfehlerMerkerNachGescheitertemSpeichern(t *testing.T) {
 	}
 }
 
-// F-347 (c): Speichern mit Hinweis nach einem Kopierfehler: Der Hinweis steht in der Statusleiste, der Merker ist weg,
+// F-347 (c): Speichern mit Hinweis nach einem Kopierfehler: Der Hinweis steht in der Fußzeile, der Merker ist weg,
 // die nächste Anfrage schließt.
 func TestKopierfehlerNebenSpeicherHinweis(t *testing.T) {
 	e, zu := haltStart(t)
@@ -122,7 +122,7 @@ func TestKopierfehlerNebenSpeicherHinweis(t *testing.T) {
 		t.Errorf("schloss trotz Hinweis (%d)", *zu)
 	}
 	if !strings.Contains(e.meldung.Text, "HINWEIS-NEU") {
-		t.Errorf("Hinweis fehlt in der Statusleiste: %q", e.meldung.Text)
+		t.Errorf("Hinweis fehlt in der Fußzeile: %q", e.meldung.Text)
 	}
 	if !strings.Contains(aus.String(), "kaputt") {
 		t.Errorf("Kopierfehler fehlt auf der Fehlerausgabe: %q", aus.String())

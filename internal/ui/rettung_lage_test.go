@@ -2,7 +2,7 @@
 
 package ui
 
-// Tests zu F-411 (Ort der beiseitegelegten Kopie auf der Fehlerausgabe) und F-454 (Statusleiste meldet Fremdwerden und
+// Tests zu F-411 (Ort der beiseitegelegten Kopie auf der Fehlerausgabe) und F-454 (Fußzeile meldet Fremdwerden und
 // spätere Übernahme der Rettungs-Sperre), im Editor ohne Fenster.
 
 import (
@@ -43,7 +43,7 @@ func TestWiederherstellungFehlerAufFehlerausgabe(t *testing.T) {
 	}
 }
 
-// F-411: Eine Meldung ohne Fehler (angewendet) bleibt der Statusleiste vorbehalten.
+// F-411: Eine Meldung ohne Fehler (angewendet) bleibt der Fußzeile vorbehalten.
 func TestWiederherstellungOhneFehlerNichtAufFehlerausgabe(t *testing.T) {
 	i18n.Setze(nil)
 	aus := fehlerAbfangen(t)
@@ -54,9 +54,9 @@ func TestWiederherstellungOhneFehlerNichtAufFehlerausgabe(t *testing.T) {
 	}
 }
 
-// F-454: Wird die Sitzung später fremd, zeigt die Statusleiste das; übernimmt sie die Sperre wieder, ändert sich die
+// F-454: Wird die Sitzung später fremd, zeigt die Fußzeile das; übernimmt sie die Sperre wieder, ändert sich die
 // Meldung. Ohne Änderung des Zählers bleibt die Meldung stehen.
-func TestStatusleisteMeldetFremdUndUebernahme(t *testing.T) {
+func TestFußzeileMeldetFremdUndUebernahme(t *testing.T) {
 	e := testEditor(t)
 	r := &lageRettung{}
 	e.rettung = r
@@ -86,7 +86,7 @@ func TestStatusleisteMeldetFremdUndUebernahme(t *testing.T) {
 }
 
 // F-454: Eine Lage, die schon beim Öffnen galt (Meldung von Wiederherstellen), meldet der Editor nicht ein zweites Mal.
-func TestStatusleisteLageVomStartNichtDoppelt(t *testing.T) {
+func TestFußzeileLageVomStartNichtDoppelt(t *testing.T) {
 	e := testEditor(t)
 	r := &lageRettung{lText: "fremd: another window", lNr: 1}
 	r.text = "fremd: another window"
@@ -100,7 +100,7 @@ func TestStatusleisteLageVomStartNichtDoppelt(t *testing.T) {
 }
 
 // F-454: Eine haltende Meldung (Verwerfen) verdrängt die Lage-Meldung nicht.
-func TestStatusleisteLageVerdraengtHaltendeMeldungNicht(t *testing.T) {
+func TestFußzeileLageVerdraengtHaltendeMeldungNicht(t *testing.T) {
 	e := testEditor(t)
 	aus := fehlerAbfangen(t)
 	r := &lageRettung{}

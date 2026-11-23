@@ -104,7 +104,7 @@ func (l *menueLauf) inhalt() string {
 	return o.(document.Text).Inhalt
 }
 
-// titel ist der Titel des offenen bzw. zuletzt offenen Menüs (ADR-0031: ersetzt den Menüknopf).
+// titel ist der Titel des offenen bzw. zuletzt offenen Menüs (ADR-0031: ersetzt den Menütitel).
 func (l *menueLauf) titel() *widget.Clickable { return &l.e.menue.titel[l.e.menue.welches] }
 
 // zuMenue wählt das Menü, das a führt, für das nächste Öffnen (Menü geschlossen).
@@ -175,13 +175,13 @@ func TestMenueNaechster(t *testing.T) {
 }
 
 // F-255: Menü per Tastatur öffnen setzt den Fokus auf den ersten bedienbaren Eintrag; Esc schließt und gibt den
-// Fokus an den Menüknopf.
+// Fokus an den Menütitel.
 func TestMenueTastaturOeffnenUndEsc(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
 	l.oeffneMitTaste()
 	m := &l.e.menue
 	if !m.offen {
-		t.Fatal("Enter auf dem Menüknopf öffnet das Menü nicht")
+		t.Fatal("Enter auf dem Menütitel öffnet das Menü nicht")
 	}
 	if !l.fokus(&m.eintraege[0]) {
 		t.Errorf("Fokus nicht auf dem ersten Eintrag (Kopieren)")
@@ -302,11 +302,11 @@ func TestMenueMausEintragDannTippen(t *testing.T) {
 func TestMenueMausOeffnenLaesstFokus(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
 	l.fokusiere(l.e)
-	// Zeiger über den Menüknopf: Hovered. Aus dem Test ohne Zeigerereignis ist Hovered falsch, also wie ein
+	// Zeiger über den Menütitel: Hovered. Aus dem Test ohne Zeigerereignis ist Hovered falsch, also wie ein
 	// Tastaturklick; die Mausart wird deshalb über einen echten Klick auf den Knopf geprüft.
 	l.klick(menueKnopfMitte(l)) // Titel „Datei“ in der Menüzeile (ADR-0031)
 	if !l.e.menue.offen {
-		t.Fatal("Menüknopf nicht getroffen: Klick öffnet das Menü nicht (ADR-0026 Nachtrag 2)")
+		t.Fatal("Menütitel nicht getroffen: Klick öffnet das Menü nicht (ADR-0026 Nachtrag 2)")
 	}
 	for i := range l.e.menueEintraege() {
 		if l.fokus(&l.e.menue.eintraege[i]) {

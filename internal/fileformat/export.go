@@ -154,7 +154,7 @@ func (s *schreiber) naehteDefs(d *document.Dokument) bool {
 
 // naehteUse legt die Schichten jeder Naht über die Kacheln (siehe naehteDefs).
 //
-// Berühren sich Nähte (document.NaehteBeruehren, F-438, ADR-0023 Nachtrag 8), liegen die Schichten neben dem Spalt unter
+// Berühren sich Nähte (document.NaehteBeruehren, F-438, ADR-0023 Nachtrag 9), liegen die Schichten neben dem Spalt unter
 // derselben Maske wie die Kacheln, damit der Fasersaum einer Naht nicht im Spalt der anderen steht, und der Schatten
 // darüber, ohne Maske.
 func (s *schreiber) naehteUse(d *document.Dokument) {

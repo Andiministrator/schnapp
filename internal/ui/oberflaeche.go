@@ -11,6 +11,7 @@ import (
 	"math"
 
 	"gioui.org/f32"
+	"gioui.org/io/event"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -132,6 +133,11 @@ func (e *editor) zeichneMenuezeile(gtx layout.Context) {
 	h := gtx.Dp(menuezeileDp)
 	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(image.Rect(0, 0, mx.X, h)).Op())
 	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(image.Rect(0, h-gtx.Dp(1), mx.X, h)).Op())
+	// Die Zeile fängt Klicks ab, die keinen Titel treffen (schließt eine offene Liste); die Titel darüber, weil sie
+	// danach angemeldet werden.
+	za := clip.Rect(image.Rect(0, 0, mx.X, h)).Push(gtx.Ops)
+	event.Op(gtx.Ops, &e.menue.zeile)
+	za.Pop()
 	x := gtx.Dp(8)
 	x += zeichneLogoS(gtx, image.Pt(x, gtx.Dp(4)), h-gtx.Dp(8)) + gtx.Dp(10)
 	for i := 0; i < menueAnzahl; i++ {
@@ -282,12 +288,15 @@ func (e *editor) zeichneWerkzeugleiste(gtx layout.Context) {
 	for _, w := range e.hinweisKnoepfe(gtx) {
 		for i, x := range ws {
 			if x.c == w.c {
-				e.zeichneHinweis(gtx, w.text+" ("+werkzeugKuerzel(w.w)+")", image.Pt(rahmen[i].Max.X+gtx.Dp(8),
+				e.zeichneHinweis(gtx, werkzeugHinweis(w), image.Pt(rahmen[i].Max.X+gtx.Dp(8),
 					rahmen[i].Min.Y+gtx.Dp(8)))
 			}
 		}
 	}
 }
+
+// werkzeugHinweis ist der Text des Hinweises am Werkzeugknopf: Name und Kürzel (ADR-0031 Punkt 2).
+func werkzeugHinweis(w werkzeugKnopf) string { return w.text + " (" + werkzeugKuerzel(w.w) + ")" }
 
 // werkzeugKnopfZeichnen: eckiger Knopf mit Rand, Grund und Symbol; aktiv grün gefüllt; Fokusring 2 px orange.
 func (e *editor) werkzeugKnopfZeichnen(gtx layout.Context, c *widget.Clickable, r image.Rectangle, s icons.Symbol, aktiv bool) {
@@ -338,9 +347,16 @@ func (e *editor) farbKnopf(gtx layout.Context, r image.Rectangle) {
 	c.Layout(g, func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: r.Size()} })
 	pointer.CursorPointer.Add(gtx.Ops)
 	t.Pop()
-	if c.Hovered() || gtx.Focused(c) {
+	if e.farbHinweisZeigen(gtx) {
 		e.zeichneHinweis(gtx, i18n.T("Color"), image.Pt(r.Max.X+gtx.Dp(8), r.Min.Y+gtx.Dp(8)))
 	}
+}
+
+// farbHinweisZeigen: Der Hinweis „Color“ steht bei Zeiger und bei Tastaturfokus, wie die Hinweise der Werkzeuge nicht
+// über einer offenen Liste (F-515).
+func (e *editor) farbHinweisZeigen(gtx layout.Context) bool {
+	c := &e.knoepfe.farbe
+	return !e.menue.offen && (c.Hovered() || gtx.Focused(c))
 }
 
 // zeichneSymbol zeichnet ein Symbol aus internal/icons als gefüllte Vielecke im Quadrat (ecke, seite).
@@ -451,7 +467,15 @@ func (e *editor) zeichneFusszeile(gtx layout.Context) {
 		m.Stop()
 		grenze = max(grenze, min(mx.X*2/3, d.Size.X+gtx.Dp(36)))
 	}
-	felder := e.s.FussFelder(e.zeigerBild)
+	felder := e.s.FussFelder(e.zeigerAnsicht())
+	e.fussRahmen = e.fussRahmen[:0]
+	// Die Felder werden von rechts her gelegt (links weichen sie der Meldung); die Klickflächen kommen danach von
+	// links nach rechts an die Reihe, damit Tab sie in der Reihenfolge des Bildschirms besucht (F-515).
+	type fussKlick struct {
+		r image.Rectangle
+		k *widget.Clickable
+	}
+	var klicks []fussKlick
 	x := mx.X
 	for i := len(felder) - 1; i >= 0; i-- {
 		f := felder[i]
@@ -481,6 +505,7 @@ func (e *editor) zeichneFusszeile(gtx layout.Context) {
 		if x-breite < grenze { // links bleibt Platz für die Meldung; überzählige Felder fallen weg
 			break
 		}
+		e.fussRahmen = append(e.fussRahmen, r)
 		k := e.fussKnopf(f.Art)
 		if k != nil && f.Klickbar && k.Hovered() {
 			paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(r).Op())
@@ -501,13 +526,18 @@ func (e *editor) zeichneFusszeile(gtx layout.Context) {
 		call.Add(gtx.Ops)
 		tt.Pop()
 		if k != nil && f.Klickbar {
-			ft := op.Offset(r.Min).Push(gtx.Ops)
-			g.Constraints = layout.Exact(r.Size())
-			k.Layout(g, func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: r.Size()} })
-			pointer.CursorPointer.Add(gtx.Ops)
-			ft.Pop()
+			klicks = append(klicks, fussKlick{r, k})
 		}
 		x = r.Min.X
+	}
+	for i := len(klicks) - 1; i >= 0; i-- {
+		r, k := klicks[i].r, klicks[i].k
+		ft := op.Offset(r.Min).Push(gtx.Ops)
+		g := gtx
+		g.Constraints = layout.Exact(r.Size())
+		k.Layout(g, func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: r.Size()} })
+		pointer.CursorPointer.Add(gtx.Ops)
+		ft.Pop()
 	}
 	// Meldung bzw. Hinweis links, bis vor die Felder (gekürzt).
 	if links == "" {

@@ -8,7 +8,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/document"
 )
 
-// F-438 (ADR-0023 Nachtrag 8): Kreuzen sich eine Zeilen- und eine Spalten-Naht, liegt der weiße Fasersaum der einen
+// F-438 (ADR-0023 Nachtrag 9): Kreuzen sich eine Zeilen- und eine Spalten-Naht, liegt der weiße Fasersaum der einen
 // nicht im durchsichtigen Spalt der anderen. Dort bleibt Alpha 0 oder höchstens der dunkle Schatten. Zackenform, Naht
 // bei Zeile 50 und bei Spalte 50 auf einem deckend weißen Bild; im Spalt der Spaltennaht (x 48 bis 52) liegt der Saum
 // der Zeilennaht (y 36 bis 46) und umgekehrt.

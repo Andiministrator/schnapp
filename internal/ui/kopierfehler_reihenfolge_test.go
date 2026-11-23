@@ -158,7 +158,7 @@ func TestKopierHaltNachHaltAllesGewoehnlich(t *testing.T) {
 	}
 }
 
-// F-347: Halt und Titel: Der Titel trägt die Datei, die Statusleiste den Kopierfehler.
+// F-347: Halt und Titel: Der Titel trägt die Datei, die Fußzeile den Kopierfehler.
 func TestKopierHaltHaltSetztTitel(t *testing.T) {
 	e, zu := haltStart(t)
 	fehlerAbfangen(t)

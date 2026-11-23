@@ -59,7 +59,7 @@ func strg(name key.Name, a aktion) taste {
 // tastenTabelle sind die Tasten des Editors mit eigener Handlung (Kürzel, Werkzeuge, Esc, Enter). Die Tastenfilter
 // entstehen daraus (tastenFilter); der Test verlangt für jede einen Knopf, einen Menüeintrag oder eine begründete
 // Ausnahme (E-21). Nicht hier stehen die Tasten, mit denen sich das offene Menü bedienen lässt (Pfeile hoch und runter,
-// Pos1, Ende, Leertaste am Menüknopf; ADR-0026 Nachträge 2 und 3): Ihre Filter setzt tasten selbst, und sie wirken nur
+// Pos1, Ende, Leertaste am Menütitel; ADR-0026 Nachträge 2 und 3): Ihre Filter setzt tasten selbst, und sie wirken nur
 // im Menü.
 func tastenTabelle() []taste {
 	return []taste{
@@ -112,9 +112,9 @@ func tastenFilter(textLaeuft bool) []key.Filter {
 //
 // Pfeile, Pos1 und Ende wählen im offenen Menü den Eintrag (F-255). Der Filter steht immer, nicht erst nach dem
 // Öffnen: Kommen Enter und Runter ohne Bild dazwischen, ginge Runter sonst verloren (F-255 V-3). Bei geschlossenem Menü
-// bleibt er ohne Wirkung; Gio fährt den Fokus nur per Tab, Pfeile gehören sonst niemandem. Die Leertaste am Menüknopf
+// bleibt er ohne Wirkung; Gio fährt den Fokus nur per Tab, Pfeile gehören sonst niemandem. Die Leertaste am Menütitel
 // wirkt wie Enter und gilt als Tastatur (F-255 V-2; der Klick des Knopfes trägt keine Quelle); sie ist auf den
-// Menüknopf begrenzt, damit sie im Text weiter als Zeichen ankommt.
+// Menütitel begrenzt, damit sie im Text weiter als Zeichen ankommt.
 func menueNavigationsFilter(menueTitel ...event.Tag) []key.Filter {
 	var f []key.Filter
 	for _, n := range []key.Name{key.NameUpArrow, key.NameDownArrow, key.NameHome, key.NameEnd, key.NameLeftArrow,

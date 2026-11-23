@@ -2,7 +2,7 @@
 
 package ui
 
-// Haltende Meldungen in der Statusleiste (F-356 bis F-359, Verify 5 nach Sprint 10) und die Mutanten Q1, Q7, Q9 aus der
+// Haltende Meldungen in der Fußzeile (F-356 bis F-359, Verify 5 nach Sprint 10) und die Mutanten Q1, Q7, Q9 aus der
 // Sitzungs-QA vom 22.11.2026 (F-370). Die ersten vier Tests waren die roten Befund-Tests des Prüfers.
 
 import (

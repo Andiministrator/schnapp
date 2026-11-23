@@ -19,7 +19,7 @@ import (
 
 // F-474: Eine Lage-Meldung ohne Fehler, die hinter einer haltenden Meldung nicht erscheinen kann, geht nicht verloren:
 // Der Zähler bleibt unverbraucht, und sie erscheint, sobald die haltende Meldung weicht.
-func TestStatusleisteLageOhneFehlerWirdNachgeholt(t *testing.T) {
+func TestFußzeileLageOhneFehlerWirdNachgeholt(t *testing.T) {
 	e := testEditor(t)
 	aus := fehlerAbfangen(t)
 	r := &lageRettung{}
@@ -52,8 +52,8 @@ func TestStatusleisteLageOhneFehlerWirdNachgeholt(t *testing.T) {
 }
 
 // F-487: Auch eine Lage mit Fehler („nicht geschützt“) geht hinter einer haltenden Meldung nicht verloren: Sie steht
-// einmal auf der Fehlerausgabe und erscheint in der Statusleiste, sobald die haltende Meldung weicht.
-func TestStatusleisteLageMitFehlerWirdNachgeholt(t *testing.T) {
+// einmal auf der Fehlerausgabe und erscheint in der Fußzeile, sobald die haltende Meldung weicht.
+func TestFußzeileLageMitFehlerWirdNachgeholt(t *testing.T) {
 	e := testEditor(t)
 	aus := fehlerAbfangen(t)
 	r := &lageRettung{}
@@ -81,7 +81,7 @@ func TestStatusleisteLageMitFehlerWirdNachgeholt(t *testing.T) {
 
 // F-473: Die Lage wird auch dann geprüft, wenn das Schließen schon freigegeben ist oder ein Speichern läuft; die Kette der
 // Rettung wechselt die Sperre nach dem Speichern.
-func TestStatusleisteLageAuchBeiErzwungenemSchliessen(t *testing.T) {
+func TestFußzeileLageAuchBeiErzwungenemSchliessen(t *testing.T) {
 	e := testEditor(t)
 	r := &lageRettung{}
 	e.rettung = r
@@ -152,7 +152,7 @@ func TestNachweckenWiederholtSichBisZurGrenze(t *testing.T) {
 	}
 }
 
-// F-477: Speicherfehler und Kopierfehler erscheinen in der Statusleiste und auf der Fehlerausgabe ohne Paketpräfix.
+// F-477: Speicherfehler und Kopierfehler erscheinen in der Fußzeile und auf der Fehlerausgabe ohne Paketpräfix.
 func TestSpeicherUndKopierFehlerOhnePaketpraefix(t *testing.T) {
 	t.Run("speichern", func(t *testing.T) {
 		e := testEditor(t)

@@ -14,7 +14,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/portal"
 )
 
-// exportFehlerText übersetzt einen Fehler des Exports für die Statusleiste (A-6): Bekannte Fehler der Pakete portal und
+// exportFehlerText übersetzt einen Fehler des Exports für die Fußzeile (A-6): Bekannte Fehler der Pakete portal und
 // export kommen als übersetzter Text; bei Dateifehlern erscheint nur die Ursache des Betriebssystems, nie der Pfad
 // (er enthielte Ordner- und Benutzernamen). dateiname ist der Name der Zieldatei ohne Ordner.
 func exportFehlerText(err error, dateiname string) string {
@@ -46,7 +46,7 @@ func exportFehlerText(err error, dateiname string) string {
 var paketPraefixe = []string{"export", "fileformat", "document", "render", "library", "rescue", "capture", "canvas", "portal", "settings", "mcp", "notify"}
 
 // ohnePaketpraefix nimmt die Präfixe „<paket>: “ der internen Pakete vom Anfang eines Fehlertexts (ADR-0019 Nachtrag 2):
-// In der Statusleiste steht schon „Could not export:“, die Paketnamen sagen dem Nutzer nichts (Sitzungs-QA 22.11., Q-9).
+// In der Fußzeile steht schon „Could not export:“, die Paketnamen sagen dem Nutzer nichts (Sitzungs-QA 22.11., Q-9).
 func ohnePaketpraefix(text string) string {
 	for {
 		rest, ok := "", false

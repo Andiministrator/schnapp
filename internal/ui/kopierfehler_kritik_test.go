@@ -45,7 +45,7 @@ func TestHaltendeMeldungZwischenablageFehlerLoestFensterWarnungAb(t *testing.T) 
 // Q-2: Die Verwerfen-Warnung steht. Der Nutzer öffnet den Export-Dialog (nahe liegend nach gescheitertem Speichern) und
 // bricht ihn ab: exportStarten leert die Meldung unmittelbar (e.meldung = canvas.Meldung{}), ohne meldungHaelt
 // zurückzusetzen; die Leiste zeigt kein „discard“ mehr, die nächste Anfrage verwirft. Das ist die
-// Widerlegungsbedingung von F-356 („Fenster offen wegen Speicherfehler, Statusleiste ohne discard“).
+// Widerlegungsbedingung von F-356 („Fenster offen wegen Speicherfehler, Fußzeile ohne discard“).
 func TestHaltendeMeldungExportStartLaesstVerwerfenWarnung(t *testing.T) {
 	e, _ := haltStart(t)
 	fehlerAbfangen(t)

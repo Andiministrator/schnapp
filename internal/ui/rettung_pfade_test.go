@@ -28,7 +28,7 @@ func (r *meldendeRettung) Wiederherstellen(*document.Dokument) (string, bool) {
 	return r.text, r.fehler
 }
 
-// U7, U7b, U8: Der Aufbau des Editors wendet die Rettungskopie an und zeigt ihre Meldung in der Statusleiste.
+// U7, U7b, U8: Der Aufbau des Editors wendet die Rettungskopie an und zeigt ihre Meldung in der Fußzeile.
 func TestNeuerEditorZeigtWiederherstellung(t *testing.T) {
 	i18n.Setze(nil)
 	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 40, 30)))

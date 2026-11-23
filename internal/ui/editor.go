@@ -80,7 +80,7 @@ var ErrSpeichernHaengt = errors.New("ui: Speichern antwortet nicht")
 // Fristen der Arbeit im Hintergrund (ADR-0020 Nachtrag 7); Variablen, damit Tests sie verkürzen.
 var (
 	// speichernFrist: Meldet ein Speichern so lange keinen Fortschritt (internal/saveprogress), gilt es als hängend:
-	// Die Statusleiste sagt es, und eine weitere Schließen-Anfrage oder ein weiteres Signal schließt ohne seine Antwort
+	// Die Fußzeile sagt es, und eine weitere Schließen-Anfrage oder ein weiteres Signal schließt ohne seine Antwort
 	// (F-283). Ein Speichern mit Fortschritt wird nie aufgegeben (F-298, ADR-0020 Nachtrag 9).
 	speichernFrist = 15 * time.Second
 	// zerstoerenFrist: So lange wartet der Editor beim Zerstören des Fensters ohne Anfrage (Wayland weg) höchstens auf
@@ -99,14 +99,14 @@ var fristTimer = func(rest time.Duration) (<-chan time.Time, func()) {
 	return t.C, func() { t.Stop() }
 }
 
-// Speichern speichert das Dokument (Aufrufer: Bibliothek, ADR-0020). Der Fehlertext erscheint in der Statusleiste und
+// Speichern speichert das Dokument (Aufrufer: Bibliothek, ADR-0020). Der Fehlertext erscheint in der Fußzeile und
 // muss schon übersetzt sein.
 type Speichern func(d *document.Dokument) (Gespeichert, error)
 
 // Gespeichert beschreibt ein gelungenes Speichern, das der Nutzer erfahren muss (F-116).
 type Gespeichert struct {
 	Datei   string // neuer Dateiname für die Titelleiste (nur Name, kein Ordner); leer = unverändert
-	Hinweis string // übersetzter Text für die Statusleiste statt „Saved to the library“; leer = gewöhnlich
+	Hinweis string // übersetzter Text für die Fußzeile statt „Saved to the library“; leer = gewöhnlich
 	Warnung bool   // Hinweis als Warnung zeigen (z. B. Datei nicht aktualisiert, alter Stand liegt noch)
 }
 
@@ -195,7 +195,7 @@ type editor struct {
 	titel     string
 	speichern Speichern
 	bildOp    paint.ImageOp
-	meldung   canvas.Meldung // Zeile in der Statusleiste (Speichern, Hinweis, Fehler); Vorrang regelt canvas.StatusZeile (F-151)
+	meldung   canvas.Meldung // Zeile in der Fußzeile (Speichern, Hinweis, Fehler); Vorrang regelt canvas.StatusZeile (F-151)
 	titelSet  string
 
 	wache *canvas.Signalwache // nimmt Signale an (eigene Goroutine), Ereignisschleife fragt Angekommen
@@ -236,7 +236,7 @@ type editor struct {
 	// kopierFehlerText ist die Meldung des letzten Kopierfehlers; ein Halt wegen des Kopierfehlers zeigt sie erneut, auch
 	// wenn die Leiste inzwischen etwas anderes sagte (F-358).
 	kopierFehlerText string
-	// meldungHaelt: Die Meldung in der Statusleiste sagt, was die nächste Schließen-Anfrage tut (Verwerfen-Warnung,
+	// meldungHaelt: Die Meldung in der Fußzeile sagt, was die nächste Schließen-Anfrage tut (Verwerfen-Warnung,
 	// Hinweis, Fenster-Warnung). Späte Antworten (Kopieren, Export, Fehler der Zwischenablage; meldeNebenbei) verdrängen
 	// sie nicht, solange sie frisch ist (F-356, V6-1); jede andere Meldung löst sie ab (melde). Der Kopierfehler-Halt braucht den Schutz nicht: Solange er steht, läuft kein
 	// Kopieren, dessen Antwort ihn verdrängen könnte (ein neues Strg+C löst ihn ohnehin mit „Copying…“ ab).
@@ -252,7 +252,7 @@ type editor struct {
 	rett    rettungZustand // Bündelung der Rettungskopie
 
 	speicherStart       time.Time     // Beginn des laufenden Speicherns (F-283)
-	haengtGemeldet      bool          // die Statusleiste sagt schon, dass das Speichern nicht antwortet
+	haengtGemeldet      bool          // die Fußzeile sagt schon, dass das Speichern nicht antwortet
 	speichernAufgegeben bool          // geschlossen ohne Antwort des Speicherns; beim Zerstören nicht mehr warten
 	weitereSignale      chan struct{} // jedes weitere Signal nach dem ersten (Wach-Goroutine), F-283
 
@@ -263,9 +263,11 @@ type editor struct {
 		schwaerzen, verpixeln, zuschneiden, stauchen widget.Clickable
 		fussFarbe, fussZoom                          widget.Clickable
 	}
-	// zeigerBild ist der Zeigerort über der Leinwand in Ansichtskoordinaten des Bilds (nil: außerhalb), für die
+	// zeigerFenster ist der Zeigerort über der Leinwand in Fensterpixeln (nil: außerhalb), für die
 	// Fußzeile (ADR-0031 Punkt 4).
-	zeigerBild *document.Punkt
+	zeigerFenster *document.Punkt
+	// fussRahmen: Lage der Felder, die die Fußzeile beim letzten Zeichnen zeigte (von rechts nach links; Tests, F-514).
+	fussRahmen []image.Rectangle
 	// hilfeOffen: die Übersicht der Tastenkürzel liegt über der Leinwand (Menü Hilfe, F1; hilfe.go).
 	hilfeOffen bool
 
@@ -499,7 +501,7 @@ func (e *editor) zerstoert(fensterErr error) error {
 // fehlerAusgabe ist die Fehlerausgabe des Editors; Naht für Tests (F-337).
 var fehlerAusgabe io.Writer = os.Stderr
 
-// hinweisAufStderr: Das Fenster ist (gleich) zu, die Statusleiste weg — ein Hinweis (z. B. neue Aufnahme statt der
+// hinweisAufStderr: Das Fenster ist (gleich) zu, die Fußzeile weg — ein Hinweis (z. B. neue Aufnahme statt der
 // alten Datei) geht auf die Fehlerausgabe, damit er nicht still verloren ist (F-116).
 func hinweisAufStderr(g Gespeichert) {
 	if g.Hinweis != "" {
@@ -510,7 +512,7 @@ func hinweisAufStderr(g Gespeichert) {
 // schliessen beantwortet eine Schließen-Anfrage; false hält das Fenster offen (Entscheidung in canvas.Sitzung). Ist
 // etwas zu speichern, läuft es im Hintergrund (ADR-0020 Nachtrag 6): Das Fenster bleibt offen und zeichnet weiter, die
 // Antwort entscheidet in speichernFertig wie bisher — zu; einmal offen mit Hinweis; offen mit Fehler, und die nächste
-// Anfrage verwirft. Hängt ein Speichern über die Frist und sagt die Statusleiste das schon, schließt die Anfrage ohne
+// Anfrage verwirft. Hängt ein Speichern über die Frist und sagt die Fußzeile das schon, schließt die Anfrage ohne
 // seine Antwort (F-283, ADR-0020 Nachtrag 7). Wäre zu schließen, läuft aber noch ein Kopieren, bleibt das Fenster bis
 // zu dessen Antwort offen (höchstens kopierFrist), sonst startete der Halter der Zwischenablage nie (F-281).
 func (e *editor) schliessen() bool {
@@ -663,7 +665,7 @@ func (e *editor) speichernAbwarten() {
 				e.rettungGespeichert()
 			}
 			e.speichernMelden(r, ende, false, false) // das Fenster ist schon weg: kein Halt
-			// Eine Schließen-Anfrage, deren Fehler erst jetzt ankommt, hat niemand gesehen: Die Statusleiste verschwindet
+			// Eine Schließen-Anfrage, deren Fehler erst jetzt ankommt, hat niemand gesehen: Die Fußzeile verschwindet
 			// mit dem Fenster, und der Stand gilt schon als verworfen. Also in die Rückgabe, nicht still verlieren (F-300).
 			// Anders in speichernFertig: Dort zeigt ein Bild den Fehler, und die nächste Anfrage verwirft.
 			if ende.Schluss == canvas.SchlussFehler && e.schlussErr == nil {
@@ -697,7 +699,7 @@ func (e *editor) speichernHaengt() bool {
 	return saveprogress.Jetzt().Sub(letzter) >= speichernFrist
 }
 
-// speichernHaengtMelden sagt in der Statusleiste, dass das Speichern nicht antwortet und das Schließen jetzt ohne seine
+// speichernHaengtMelden sagt in der Fußzeile, dass das Speichern nicht antwortet und das Schließen jetzt ohne seine
 // Antwort geht (F-283); einmal je Stillstand. Kommt danach wieder Fortschritt, nimmt es die Meldung zurück, und die
 // nächste Anfrage hält das Fenster wieder offen (F-298). Liefert, ob sich die Meldung geändert hat.
 func (e *editor) speichernHaengtMelden() bool {
@@ -819,7 +821,7 @@ func (e *editor) speichernFertig(r speicherErgebnis) {
 	}
 }
 
-// speichernMelden zeigt das Ergebnis in Titel- und Statusleiste. Schließt das Fenster gleich oder bleibt es für einen
+// speichernMelden zeigt das Ergebnis in Titel- und Fußzeile. Schließt das Fenster gleich oder bleibt es für einen
 // Hinweis offen, geht der Hinweis zusätzlich auf die Fehlerausgabe (F-116, ADR-0020 Nachtrag 4). Hält ein Kopierfehler
 // das Fenster offen (kopierHalt, F-341), verdrängt „Saved“ dessen Meldung nicht: Die Leiste zeigt den Kopierfehler
 // erneut, auch wenn sie inzwischen etwas anderes sagte, etwa dass das Speichern nicht antwortet (F-358).
@@ -1006,7 +1008,7 @@ func (e *editor) nachKopieSchliessen() bool {
 // kopierenAbwarten wartet beim Zerstören des Fensters auf ein laufendes Kopieren, höchstens bis kopierFrist ab Beginn
 // (F-281): Der Halter der Zwischenablage startet in der Goroutine; endete der Prozess vorher, bliebe die Zwischenablage
 // still leer. Was das Fenster selbst hätte anbieten müssen (kein Halter möglich), geht mit dem Fenster verloren; das
-// steht wie eine abgelaufene Frist auf der Fehlerausgabe, denn die Statusleiste ist weg.
+// steht wie eine abgelaufene Frist auf der Fehlerausgabe, denn die Fußzeile ist weg.
 func (e *editor) kopierenAbwarten() {
 	if !e.kopierLaeuft {
 		return
@@ -1099,7 +1101,7 @@ func (e *editor) exportAbholen() bool {
 	}
 }
 
-// exportFertig wertet die Antwort aus: Abbruch tut nichts, Fehler und Erfolg erscheinen in der Statusleiste.
+// exportFertig wertet die Antwort aus: Abbruch tut nichts, Fehler und Erfolg erscheinen in der Fußzeile.
 func (e *editor) exportFertig(r exportErgebnis) {
 	switch {
 	case errors.Is(r.err, portal.ErrAbgebrochen), errors.Is(r.err, context.Canceled):
@@ -1171,7 +1173,7 @@ func halteZwischenablage(daten []byte) error {
 	return nil
 }
 
-// gespeichertMelden zeigt ein gelungenes Speichern in Titel- und Statusleiste (F-116). haelt: Der Hinweis hält eine
+// gespeichertMelden zeigt ein gelungenes Speichern in Titel- und Fußzeile (F-116). haelt: Der Hinweis hält eine
 // Schließen-Anfrage offen (SchlussHinweis, F-357); dann verdrängt ihn keine späte Antwort (F-356). Ein Hinweis aus einem
 // gewöhnlichen Strg+S sagt nichts über die nächste Anfrage und lässt einem späteren Kopierfehler den Vortritt (V6-2).
 func (e *editor) gespeichertMelden(g Gespeichert, haelt bool) {
@@ -1188,7 +1190,7 @@ func (e *editor) gespeichertMelden(g Gespeichert, haelt bool) {
 	}
 }
 
-// melde zeigt text in der Statusleiste, bis das Dokument sich ändert oder (außer bei Fehlern) das Werkzeug wechselt
+// melde zeigt text in der Fußzeile, bis das Dokument sich ändert oder (außer bei Fehlern) das Werkzeug wechselt
 // (F-151). Ein gelungenes Speichern löst einen früheren Fehler ab.
 func (e *editor) melde(text string, fehler bool) {
 	e.meldung = canvas.NeueMeldung(text, fehler, e.s.D.Stand(), e.s.Werkzeug)
@@ -1212,7 +1214,7 @@ func (e *editor) meldeHaltend(art haltArt, text string, fehler bool) {
 	e.meldungHaelt = art
 }
 
-// haltendeMeldung meldet, ob die Statusleiste gerade eine haltende Meldung zeigt, die noch gilt (gleicher Dokumentstand,
+// haltendeMeldung meldet, ob die Fußzeile gerade eine haltende Meldung zeigt, die noch gilt (gleicher Dokumentstand,
 // bei einem Hinweis auch gleiches Werkzeug; canvas.Meldung.Frisch).
 func (e *editor) haltendeMeldung() bool {
 	return e.meldungHaelt != keinHalt && e.meldung.Frisch(e.s.D.Stand(), e.s.Werkzeug)
@@ -1489,17 +1491,35 @@ func (e *editor) zeiger(gtx layout.Context) {
 	}
 }
 
-// merkeZeiger hält den Zeigerort in Ansichtskoordinaten für die Fußzeile fest und meldet, ob sich das angezeigte
-// Pixel geändert hat.
-func (e *editor) merkeZeiger(pe pointer.Event) bool {
-	alt := e.zeigerBild
-	if pe.Kind == pointer.Leave {
-		e.zeigerBild = nil
-		return alt != nil
+// zeigerAnsicht ist der Zeigerort in Ansichtskoordinaten für die Fußzeile (nil: Zeiger nicht im Fenster). Er wird aus
+// der Fensterposition bei jedem Bild neu gerechnet, damit Zoom und Verschieben per Taste ihn nicht veralten lassen
+// (F-513).
+func (e *editor) zeigerAnsicht() *document.Punkt {
+	if e.zeigerFenster == nil {
+		return nil
 	}
-	p := e.s.Abb.ZuAnsicht(document.Pt(float64(pe.Position.X), float64(pe.Position.Y)))
-	e.zeigerBild = &p
-	return alt == nil || int(alt.X) != int(p.X) || int(alt.Y) != int(p.Y)
+	p := e.s.Abb.ZuAnsicht(*e.zeigerFenster)
+	return &p
+}
+
+// merkeZeiger hält die Fensterposition des Zeigers für die Fußzeile fest und meldet, ob sich das angezeigte Pixel
+// geändert hat.
+func (e *editor) merkeZeiger(pe pointer.Event) bool {
+	zeigt := func() (image.Point, bool) {
+		if a := e.zeigerAnsicht(); a != nil {
+			return e.s.ZeigerOrt(*a)
+		}
+		return image.Point{}, false
+	}
+	altOrt, altDa := zeigt()
+	if pe.Kind == pointer.Leave {
+		e.zeigerFenster = nil
+	} else {
+		p := document.Pt(float64(pe.Position.X), float64(pe.Position.Y))
+		e.zeigerFenster = &p
+	}
+	ort, da := zeigt()
+	return altDa != da || altOrt != ort
 }
 
 // zeichneObjekte zeichnet in Ansichtskoordinaten (die Affine-Abbildung liegt schon auf dem Stapel). Schrift in
@@ -1638,7 +1658,7 @@ func (e *editor) zeichneNaehte(gtx layout.Context) {
 		if !document.NaehteBeruehren(naehte, faktor) {
 			durchgang(func(document.Schicht) bool { return true })
 		} else {
-			// Wie im Renderer (F-438, ADR-0023 Nachtrag 8): Saum und Abdunklung, Spalte noch einmal, dann der Schatten.
+			// Wie im Renderer (F-438, ADR-0023 Nachtrag 9): Saum und Abdunklung, Spalte noch einmal, dann der Schatten.
 			durchgang(func(s document.Schicht) bool { return !s.ImSpalt() })
 			spalte()
 			durchgang(document.Schicht.ImSpalt)
@@ -1755,6 +1775,7 @@ func (e *editor) alleTastenFilter() []event.Filter {
 }
 
 func (e *editor) tasten(gtx layout.Context) {
+	e.menue.gewechselt = false
 	for {
 		// Die Tasten stehen in tastenTabelle (ADR-0026): Jede hat einen Knopf, einen Menüeintrag oder eine begründete
 		// Ausnahme. Während der Texteingabe fängt der Editor Tab ab (ohne Wirkung, ADR-0021 Nachtrag 1): Sonst wanderte
@@ -1825,11 +1846,11 @@ func (e *editor) tasten(gtx layout.Context) {
 		if e.menue.offen {
 			// Offenes Menü (ADR-0026 Punkt 1, Nachträge 2 und 3): Esc schließt es, Enter löst einen Knopf oder Eintrag
 			// mit Tastaturfokus aus, Pfeile hoch und runter, Pos1 und Ende wählen den Eintrag; die Leertaste am
-			// Menüknopf ist oben behandelt, Tab fährt den Fokus wie sonst (Gio). Alle anderen Tasten wirken nicht,
+			// Menütitel ist oben behandelt, Tab fährt den Fokus wie sonst (Gio). Alle anderen Tasten wirken nicht,
 			// damit Entf oder ein Buchstabe nicht unbemerkt hinter der Liste die Leinwand ändert (F-257).
 			switch k.Name {
 			case key.NameEscape:
-				// Fokus zurück an den Menüknopf nur, wenn per Tastatur geöffnet wurde und kein Text läuft; sonst an die
+				// Fokus zurück an den Menütitel nur, wenn per Tastatur geöffnet wurde und kein Text läuft; sonst an die
 				// Leinwand, sonst gingen getippte Zeichen verloren (F-255 V-1).
 				e.menueSchliesse(gtx, e.menue.perTasteOffen && !e.s.TextLaeuft())
 			case key.NameUpArrow, key.NameDownArrow, key.NameHome, key.NameEnd:
@@ -1839,7 +1860,8 @@ func (e *editor) tasten(gtx layout.Context) {
 			case key.NameRightArrow:
 				e.menueWechsel(1)
 			case key.NameReturn, key.NameEnter:
-				if c := e.fokussierterKnopf(gtx); c != nil {
+				// Nach einem Menüwechsel im selben Bild liegt der Fokus noch im alten Menü (F-512).
+				if c := e.fokussierterKnopf(gtx); c != nil && !e.menue.gewechselt {
 					e.knopfPerTaste(c)
 				}
 			}
@@ -1957,7 +1979,7 @@ func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
 	}
 }
 
-// hinweis ist die Bedienung des aktiven Werkzeugs bzw. der Texteingabe für die Statusleiste (ADR-0021).
+// hinweis ist die Bedienung des aktiven Werkzeugs bzw. der Texteingabe für die Fußzeile (ADR-0021).
 func (e *editor) hinweis() string {
 	if e.exportOffen {
 		return i18n.T("File dialog is open.") // der Dialog kann hinter dem Fenster liegen (A-12)

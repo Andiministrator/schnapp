@@ -123,21 +123,21 @@ func TestFusszeileFelder(t *testing.T) {
 	ort := f.Min.Add(image.Pt(int(l.e.s.Abb.Versatz.X), int(l.e.s.Abb.Versatz.Y))).Add(image.Pt(3, 2))
 	l.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(float32(ort.X), float32(ort.Y))})
 	l.setle()
-	if l.e.zeigerBild == nil {
+	if l.e.zeigerAnsicht() == nil {
 		t.Fatal("kein Zeigerort über dem Bild")
 	}
 	gefunden := false
-	for _, x := range l.e.s.FussFelder(l.e.zeigerBild) {
+	for _, x := range l.e.s.FussFelder(l.e.zeigerAnsicht()) {
 		if x.Art == canvas.FeldZeiger {
 			gefunden = true
 		}
 	}
 	if !gefunden {
-		t.Errorf("Feld Zeiger fehlt (Ort %v)", *l.e.zeigerBild)
+		t.Errorf("Feld Zeiger fehlt (Ort %v)", *l.e.zeigerAnsicht())
 	}
 	l.r.Queue(pointer.Event{Kind: pointer.Leave, Source: pointer.Mouse, Position: f32.Pt(float32(ort.X), float32(ort.Y))})
 	l.setle()
-	if l.e.zeigerBild != nil {
+	if l.e.zeigerAnsicht() != nil {
 		t.Error("Zeigerort bleibt nach dem Verlassen stehen")
 	}
 	l.e.s.Scrollen(document.Pt(10, 10), -3) // hineinzoomen: nicht mehr eingepasst, nicht 1:1
@@ -234,5 +234,108 @@ func TestHilfeSperrtTasten(t *testing.T) {
 	l.taste(key.NameEscape, 0)
 	if l.e.hilfeOffen {
 		t.Error("Esc während des Speicherns schließt die Übersicht nicht")
+	}
+}
+
+// TestUeberfahrenWechseltPerTasteOffenesMenueNicht (F-514, Mutant U3): Nur ein per Maus geöffnetes Menü wechselt beim
+// Überfahren eines anderen Titels; ein per Taste (F10) geöffnetes bleibt, der Zeiger ruht meist irgendwo darüber.
+func TestUeberfahrenWechseltPerTasteOffenesMenueNicht(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	l.fokusiere(l.e)
+	l.taste(key.NameF10, 0)
+	if !l.e.menue.offen || l.e.menue.welches != menueDatei || !l.e.menue.perTasteOffen {
+		t.Fatalf("Vorbedingung: offen %v, Menü %d", l.e.menue.offen, l.e.menue.welches)
+	}
+	r := l.e.menue.titelRahmen[menueBild]
+	p := r.Min.Add(r.Max).Div(2)
+	l.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(float32(p.X), float32(p.Y))})
+	l.setle()
+	if !l.e.menue.offen || l.e.menue.welches != menueDatei {
+		t.Errorf("Überfahren von „Bild“ bei per Taste offenem Menü: offen %v, Menü %d, soll Datei bleiben",
+			l.e.menue.offen, l.e.menue.welches)
+	}
+}
+
+// TestHinweisAmWerkzeugknopfNenntKuerzel (F-514, Mutant U9): Der Hinweis führt Name und Kürzel jedes Werkzeugs.
+func TestHinweisAmWerkzeugknopfNenntKuerzel(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	for _, w := range l.e.werkzeugKnoepfe() {
+		k := werkzeugKuerzel(w.w)
+		if k == "" {
+			t.Errorf("%s: kein Kürzel", w.text)
+		}
+		if h := werkzeugHinweis(w); h != w.text+" ("+k+")" {
+			t.Errorf("Hinweis %q, erwartet %q", h, w.text+" ("+k+")")
+		}
+	}
+}
+
+// TestFusszeileLaesstFelderWeg (F-514, Mutant U2): Ein schmales Fenster zeigt weniger Felder; keines liegt im linken
+// Drittel, das der Meldung gehört. Ein breites Fenster zeigt alle.
+func TestFusszeileLaesstFelderWeg(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	alle := len(l.e.s.FussFelder(l.e.zeigerAnsicht()))
+	if got := len(l.e.fussRahmen); got != alle {
+		t.Fatalf("breites Fenster: %d von %d Feldern", got, alle)
+	}
+	l.fenst = image.Pt(360, 400)
+	l.setle()
+	if got := len(l.e.fussRahmen); got == 0 || got >= alle {
+		t.Errorf("schmales Fenster: %d von %d Feldern, erwartet mindestens eins weniger", got, alle)
+	}
+	for _, r := range l.e.fussRahmen {
+		if r.Min.X < 360/3 {
+			t.Errorf("Feld %v ragt ins linke Drittel (Meldung)", r)
+		}
+	}
+}
+
+// TestKlickInDieMenuezeileSchliesstListe (F-515): Ein Klick in die Menüzeile abseits der Titel (hier rechts neben dem
+// letzten Titel) schließt eine offene Liste wie ein Klick daneben; ein Klick auf einen Titel tut weiter, was er tat.
+func TestKlickInDieMenuezeileSchliesstListe(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	l.klick(menueKnopfMitte(l))
+	if !l.e.menue.offen {
+		t.Fatal("Vorbedingung: Menü offen")
+	}
+	letzter := l.e.menue.titelRahmen[menueAnzahl-1]
+	l.klick(image.Pt(letzter.Max.X+40, letzter.Min.Y+5))
+	if l.e.menue.offen {
+		t.Error("Klick in die leere Menüzeile lässt die Liste offen")
+	}
+	l.klick(menueKnopfMitte(l)) // ein Titel öffnet weiter
+	if !l.e.menue.offen {
+		t.Error("Klick auf den Titel öffnet nicht mehr")
+	}
+}
+
+// TestFarbHinweisNichtUeberOffenerListe (F-515): Wie die Hinweise der Werkzeuge verschwindet der Hinweis am Farbfeld,
+// solange eine Liste offen ist.
+func TestFarbHinweisNichtUeberOffenerListe(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	l.fokusiere(&l.e.knoepfe.farbe)
+	if !l.e.farbHinweisZeigen(l.gtx()) {
+		t.Fatal("Vorbedingung: Hinweis bei Tastaturfokus")
+	}
+	l.e.menue.offen = true
+	if l.e.farbHinweisZeigen(l.gtx()) {
+		t.Error("Hinweis am Farbfeld steht über der offenen Liste")
+	}
+}
+
+// TestTabFolgtDerReihenfolgeDerFussfelder (F-515): Vom Farbfeld links springt Tab zu den klickbaren Feldern der
+// Fußzeile von links nach rechts: erst Farbe, dann Zoom.
+func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	l.fokusiere(&l.e.knoepfe.farbe)
+	l.r.MoveFocus(key.FocusForward) // wie die Tab-Taste (Gio)
+	l.setle()
+	if !l.fokus(&l.e.knoepfe.fussFarbe) {
+		t.Fatalf("erstes Tab nach dem Farbfeld: Fokus nicht auf dem Fußfeld Farbe (%s)", menueFokusName(l))
+	}
+	l.r.MoveFocus(key.FocusForward)
+	l.setle()
+	if !l.fokus(&l.e.knoepfe.fussZoom) {
+		t.Errorf("zweites Tab: Fokus nicht auf dem Fußfeld Zoom (%s)", menueFokusName(l))
 	}
 }

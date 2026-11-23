@@ -27,7 +27,7 @@ const (
 type FussFeld struct {
 	Art         FeldArt
 	Groesse     image.Point // FeldAuswahl, FeldBild
-	Ort         image.Point // FeldZeiger (ganze Bildpixel)
+	Ort         image.Point // FeldZeiger (ganze Pixel des Originals)
 	Farbe       color.NRGBA // FeldFarbe
 	Grad        int         // FeldSchrift (Pixel des Originals)
 	Zoom        int         // FeldZoom, Prozent
@@ -36,8 +36,26 @@ type FussFeld struct {
 	Klickbar    bool        // Farbe und Zoom
 }
 
-// FussFelder liefert die Felder der Fußzeile; zeiger ist der Zeigerort in Bildkoordinaten (nil: Zeiger nicht über
-// dem Bild). Ein Feld fehlt, wenn es nichts zu sagen hat: Auswahl ohne gewähltes Objekt, Zeiger außerhalb, Schrift
+// ZeigerOrt rechnet einen Zeigerort in Ansichtskoordinaten in den Ort im Original um (die Koordinaten der Objekte und
+// der Auswahlgröße; bei Zuschnitt oder Stauchen also nicht der Ort in der Ansicht). Beim Zuschneiden zeigt die
+// Leinwand die Vollansicht, dann gilt deren Fläche. false: Der Zeiger liegt nicht über dem gezeigten Bild (F-513).
+func (s *Sitzung) ZeigerOrt(a document.Punkt) (image.Point, bool) {
+	f := s.Bildflaeche()
+	if !(a.X >= float64(f.Min.X) && a.Y >= float64(f.Min.Y) && a.X < float64(f.Max.X) && a.Y < float64(f.Max.Y)) {
+		return image.Point{}, false
+	}
+	var o document.Punkt
+	if s.zuschnittModus() {
+		v := s.D.VollVersatz()
+		o = s.D.VollZuOriginal(a.Plus(document.Pt(float64(v.X), float64(v.Y))))
+	} else {
+		o = s.D.ZuOriginal(a)
+	}
+	return image.Pt(int(math.Floor(o.X)), int(math.Floor(o.Y))), true
+}
+
+// FussFelder liefert die Felder der Fußzeile; zeiger ist der Zeigerort in Ansichtskoordinaten (nil: Zeiger nicht über
+// dem Bild); das Feld zeigt den Ort im Original (ZeigerOrt). Ein Feld fehlt, wenn es nichts zu sagen hat: Auswahl ohne gewähltes Objekt, Zeiger außerhalb, Schrift
 // außer beim Text.
 func (s *Sitzung) FussFelder(zeiger *document.Punkt) []FussFeld {
 	var f []FussFeld
@@ -53,8 +71,10 @@ func (s *Sitzung) FussFelder(zeiger *document.Punkt) []FussFeld {
 		}
 	}
 	bild := s.D.Groesse()
-	if zeiger != nil && zeiger.X >= 0 && zeiger.Y >= 0 && zeiger.X < float64(bild.X) && zeiger.Y < float64(bild.Y) {
-		f = append(f, FussFeld{Art: FeldZeiger, Ort: image.Pt(int(zeiger.X), int(zeiger.Y))})
+	if zeiger != nil {
+		if ort, ok := s.ZeigerOrt(*zeiger); ok {
+			f = append(f, FussFeld{Art: FeldZeiger, Ort: ort})
+		}
 	}
 	f = append(f, FussFeld{Art: FeldFarbe, Farbe: s.Stil.Farbe, Klickbar: true})
 	switch {

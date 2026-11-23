@@ -187,7 +187,7 @@ func TestSpeichernMitFortschrittNieAufgegeben(t *testing.T) {
 	}
 }
 
-// Kommt nach der Meldung „antwortet nicht“ wieder Fortschritt, nimmt die Statusleiste sie zurück, und die nächste
+// Kommt nach der Meldung „antwortet nicht“ wieder Fortschritt, nimmt die Fußzeile sie zurück, und die nächste
 // Schließen-Anfrage hält das Fenster wieder offen.
 func TestHaengtMeldungZurueckBeiFortschritt(t *testing.T) {
 	fristTest(t, 50*time.Millisecond)
@@ -289,7 +289,7 @@ func TestFristPruefungWiederholtSich(t *testing.T) {
 	}
 }
 
-// Verify F-298 B-2 (Mutationen M1, M14): Die Schließen-Anfrage gibt nur auf, wenn die Statusleiste den Stillstand
+// Verify F-298 B-2 (Mutationen M1, M14): Die Schließen-Anfrage gibt nur auf, wenn die Fußzeile den Stillstand
 // gemeldet hat UND das Speichern jetzt noch hängt — nicht vor der Meldung und nicht, wenn seit der Meldung Fortschritt
 // kam, auch bevor die Schleife die Meldung zurückgenommen hat.
 func TestSchliessenNurBeiGemeldetemStillstand(t *testing.T) {
@@ -302,7 +302,7 @@ func TestSchliessenNurBeiGemeldetemStillstand(t *testing.T) {
 	e.speichernJetzt()
 	uhr.vor(60 * time.Millisecond)
 	if e.schliessen() {
-		t.Fatal("gibt auf, bevor die Statusleiste den Stillstand gemeldet hat")
+		t.Fatal("gibt auf, bevor die Fußzeile den Stillstand gemeldet hat")
 	}
 	if !e.speichernHaengtMelden() {
 		t.Fatal("Stillstand nicht gemeldet")

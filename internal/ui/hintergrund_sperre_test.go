@@ -416,7 +416,7 @@ func TestZerstoerenWartetAufKopieren(t *testing.T) {
 }
 
 // F-283, ADR-0020 Nachtrag 7: Ein Speichern, das nie zurückkehrt, hält das Fenster nicht für immer. Vor der Frist hält
-// die Schließen-Anfrage offen und ein weiteres Signal wirkt nicht; nach der Frist sagt die Statusleiste es, und die
+// die Schließen-Anfrage offen und ein weiteres Signal wirkt nicht; nach der Frist sagt die Fußzeile es, und die
 // nächste Anfrage bzw. ein weiteres Signal schließt ohne Antwort. Zerstören wartet dann nicht und speichert nicht noch
 // einmal daneben; Editor liefert ErrSpeichernHaengt.
 func TestHaengendesSpeichernSchliessen(t *testing.T) {

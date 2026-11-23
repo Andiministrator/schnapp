@@ -108,3 +108,43 @@ selbst (wie schon das Menü nach ADR-0026).
 - Drehbücher mit festen Koordinaten der alten Leiste (`rueckfall-menue*.txt`, `rueckfall-leiste-schmal.txt` u. a.)
   sind noch nicht nachgezogen; Sichtprobe des neuen Rahmens: `scripts/drehbuecher/oberflaeche-187.txt`.
 
+## Nachtrag 2 (23.11.2026): Stand nach der Sitzungs-QA, Abweichungen vom Entwurf (Karte #213, F-515)
+
+**Status:** Akzeptiert (Claude Sonnet 5.5, Karte #213). Hält fest, was Schritt (a) tatsächlich tut, wo es vom Wortlaut
+oben abweicht und was beim Prüfen als Fehler behoben wurde. Gilt neben Nachtrag 1.
+
+**Dateien.** Die Konsequenzen oben nennen `menuezeile.go`, `werkzeugleiste.go`, `fusszeile.go`, `seitenleiste.go`; sie
+sind **nicht** entstanden. Es gilt: Menüzeile, Werkzeugleiste, Fußzeile, Hinweise und das „s“ in
+`internal/ui/oberflaeche.go`; Liste, Tastatur und Handlungen des Menüs in `internal/ui/menue.go`; Übersicht der Kürzel
+in `internal/ui/hilfe.go`; Tastentabelle in `internal/ui/kuerzel.go`; Logik der Fußfelder ohne Gio in
+`internal/canvas/fusszeile.go` (`FussFelder`, `ZeigerOrt`). Eine rechte Leiste gibt es noch nicht (Schritt b).
+
+**Als Stand beschrieben (gewollt oder hingenommen):**
+- **Überfahren wechselt die Liste nur bei einem per Maus geöffneten Menü.** Ein per Taste (F10, Enter, Leertaste)
+  geöffnetes Menü bleibt, auch wenn der Zeiger ruhend über einem anderen Titel liegt; sonst sprängen Tastaturnutzer
+  unfreiwillig um. Pfeil links/rechts wechselt dort das Menü.
+- **Schriftfeld nicht anklickbar.** Oben steht „Felder mit Auswahl (Farbe, Schriftgröße, Zoom) sind anklickbar“. Heute
+  sind es Farbe (nächste Farbe) und Zoom (Einpassen oder 1:1); die Schriftgröße ist nur Anzeige, bis es die Schrift-Liste
+  gibt (Karte #190). Auch Farbe und Zoom klappen noch keine Liste auf (Schritt b).
+- **Meldung vor Feldern.** Eine Meldung (Speichern, Warnung, Fehler) behält ihren Text bis zu zwei Dritteln der
+  Breite, die Felder weichen von links her; der bloße Bedienhinweis des Werkzeugs weicht den Feldern (mindestens ein
+  Drittel bleibt ihm). Ein Feld, das nicht mehr passt, fällt ganz weg, statt gekürzt zu werden.
+- **Zeigerort in Pixeln des Originals** (wie Auswahlgröße und Objektkoordinaten), nicht der Ansicht: Bei Zuschnitt ab
+  (10,10) liegt Ansichtspunkt (2,2) bei Original (12,12). Beim Zuschneiden, wo die Leinwand die Vollansicht zeigt, gilt
+  deren Fläche, das Feld steht auch über dem abgedunkelten Teil. Das Feld rechnet bei jedem Bild aus der Fensterposition
+  des Zeigers und veraltet nach Zoom per Taste nicht (F-513).
+- **Werkzeugleiste in kleinen Fenstern** schneidet Knöpfe ab: eigenes Finding F-516, noch offen (Entscheidung mit
+  Schritt b).
+
+**Beim Prüfen als Fehler behoben:**
+- **Enter im Bild eines Menüwechsels** (F-512): Pfeil rechts und Enter im selben Bild lösten den Eintrag des
+  Nachbarmenüs an derselben Stelle aus, weil der Fokus noch auf der Klickfläche des alten Menüs lag. Nach einem Wechsel
+  wirkt Enter erst im nächsten Bild (`menue.gewechselt`).
+- **Klick in die Menüzeile** abseits der Titel („s“, leere Fläche, Dateiname) schließt eine offene Liste wie ein Klick
+  daneben (bisher blieb sie offen); ein Klick auf einen Titel bleibt, was er war: öffnen, wechseln oder schließen.
+- **Hinweis am Farbfeld** erscheint, wie die Hinweise der Werkzeuge, nicht über einer offenen Liste.
+- **Tab-Reihenfolge der Fußfelder:** Die Felder werden von rechts her gelegt, die Klickflächen kommen dennoch von links
+  nach rechts an die Reihe. Tab geht damit Menütitel, Werkzeuge, Farbfeld der Leiste, Fußfeld Farbe, Fußfeld Zoom;
+  vorher besuchte er Zoom vor Farbe.
+- Kommentare im Code sagen „Menütitel“ und „Fußzeile“ statt „Menüknopf“ und „Statusleiste“; F-438 steht dort als
+  ADR-0023 Nachtrag 9.

@@ -63,7 +63,7 @@ func TestMenueTextLaeuftMausMenueEscDannTippen(t *testing.T) {
 	}
 	l.klick(menueKnopfMitte(l))
 	if !l.e.menue.offen {
-		t.Fatal("Menüknopf nicht getroffen")
+		t.Fatal("Menütitel nicht getroffen")
 	}
 	if !l.e.s.TextLaeuft() {
 		t.Fatal("Öffnen per Maus beendet die Texteingabe")
@@ -89,7 +89,7 @@ func TestMenueTextLaeuftMausMenueEscDannTippen(t *testing.T) {
 	// Leertaste: soll ein Leerzeichen sein, kein Menü öffnen.
 	drueckeUndLoese(l, key.NameSpace)
 	if l.e.menue.offen {
-		t.Errorf("Leertaste während der Texteingabe öffnet das Menü (Fokus am Menüknopf)")
+		t.Errorf("Leertaste während der Texteingabe öffnet das Menü (Fokus am Menütitel)")
 	}
 }
 
@@ -99,7 +99,7 @@ func TestMenueMausMenueEscDannEnter(t *testing.T) {
 	l.fokusiere(l.e)
 	l.klick(menueKnopfMitte(l))
 	if !l.e.menue.offen {
-		t.Fatal("Menüknopf nicht getroffen")
+		t.Fatal("Menütitel nicht getroffen")
 	}
 	if i := menueFokusNr(l); i >= 0 {
 		t.Errorf("per Maus geöffnet, Fokus auf Eintrag %d", i)
@@ -181,7 +181,7 @@ func TestMenueOffenesMenueSperrtTasten(t *testing.T) {
 	}
 }
 
-// V5: Echte Tastenfolge (Drücken und Loslassen): Enter auf dem Menüknopf öffnet genau einmal, Enter auf dem Eintrag
+// V5: Echte Tastenfolge (Drücken und Loslassen): Enter auf dem Menütitel öffnet genau einmal, Enter auf dem Eintrag
 // führt genau einmal aus; Leertaste ebenso.
 func TestMenueEnterUndLeertasteMitLoslassen(t *testing.T) {
 	for _, n := range []key.Name{key.NameReturn, key.NameSpace} {
@@ -318,7 +318,7 @@ func TestMenueTabFahrtBeiOffenemMenue(t *testing.T) {
 	if menueFokusNr(l) < 0 {
 		t.Errorf("Pfeil runter von einem Leistenknopf aus: Fokus %s", menueFokusName(l))
 	}
-	// Tab-Reihenfolge bei geschlossenem Menü: Menüknopf erreichbar per Umschalt+Tab von der Leinwand?
+	// Tab-Reihenfolge bei geschlossenem Menü: Menütitel erreichbar per Umschalt+Tab von der Leinwand?
 	l.taste(key.NameEscape, 0)
 	l.fokusiere(l.e)
 	rueck := []string{}
@@ -330,14 +330,14 @@ func TestMenueTabFahrtBeiOffenemMenue(t *testing.T) {
 	t.Logf("Umschalt+Tab ab Leinwand: %v", rueck)
 }
 
-// V10: Per Tastatur geöffnet (Fokus in der Liste), dann Mausklick auf den Menüknopf und Klick daneben: Fokus bleibt
+// V10: Per Tastatur geöffnet (Fokus in der Liste), dann Mausklick auf den Menütitel und Klick daneben: Fokus bleibt
 // nirgends hängen, getippter Text käme an.
 func TestMenueTastaturOffenDannMaus(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
 	l.oeffneMitTaste()
 	l.klick(menueKnopfMitte(l))
 	if l.e.menue.offen {
-		t.Errorf("Klick auf den Menüknopf bei offenem Menü schließt nicht")
+		t.Errorf("Klick auf den Menütitel bei offenem Menü schließt nicht")
 	}
 	if !l.fokus(l.e) {
 		t.Errorf("danach Fokus %s, soll Leinwand", menueFokusName(l))
