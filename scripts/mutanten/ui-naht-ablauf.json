@@ -1,0 +1,23 @@
+[
+  {
+    "name": "NA1 F-499 Editor leert den Spalt bei berührenden Nähten nicht noch einmal",
+    "datei": "internal/ui/naehte_linien.go",
+    "paket": "./internal/ui",
+    "alt": "\tdurchgang(func(s document.Schicht) bool { return !s.ImSpalt() })\n\tspalte()\n\tdurchgang(document.Schicht.ImSpalt)",
+    "neu": "\tdurchgang(func(s document.Schicht) bool { return !s.ImSpalt() })\n\tdurchgang(document.Schicht.ImSpalt)"
+  },
+  {
+    "name": "NA2 F-499 Editor zeichnet den Schatten vor der zweiten Leerung",
+    "datei": "internal/ui/naehte_linien.go",
+    "paket": "./internal/ui",
+    "alt": "\tdurchgang(func(s document.Schicht) bool { return !s.ImSpalt() })\n\tspalte()\n\tdurchgang(document.Schicht.ImSpalt)",
+    "neu": "\tdurchgang(func(s document.Schicht) bool { return true })\n\tspalte()\n\tdurchgang(document.Schicht.ImSpalt)"
+  },
+  {
+    "name": "NA3 F-499 Editor entscheidet nie auf berührende Nähte",
+    "datei": "internal/ui/naehte_linien.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !document.NaehteBeruehren(naehte, faktor) {",
+    "neu": "\tif true || !document.NaehteBeruehren(naehte, faktor) {"
+  }
+]

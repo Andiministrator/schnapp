@@ -18,6 +18,21 @@ type nahtLinien struct {
 	linien [2]*document.Kantenlinie
 }
 
+// fuehreNahtAblaufAus ruft spalte (alle Spalte leeren) und durchgang (die Schichten aller Nähte, die auswahl bejaht) in
+// der Reihenfolge von Renderer und SVG-Export auf (ADR-0023 Nachtrag 9, F-438): zuerst die Spalte, dann alle Schichten;
+// berühren sich Nähte (document.NaehteBeruehren), erst Fasersaum und Abdunklung, dann die Spalte noch einmal, dann der
+// Schatten im Spalt. Aus zeichneNaehte herausgelöst, damit ein Test ohne Fenster die zweite Leerung prüfen kann (F-499).
+func fuehreNahtAblaufAus(naehte []document.Naht, faktor int, spalte func(), durchgang func(auswahl func(document.Schicht) bool)) {
+	spalte()
+	if !document.NaehteBeruehren(naehte, faktor) {
+		durchgang(func(document.Schicht) bool { return true })
+		return
+	}
+	durchgang(func(s document.Schicht) bool { return !s.ImSpalt() })
+	spalte()
+	durchgang(document.Schicht.ImSpalt)
+}
+
 // fuer liefert die Linie der Achse von n und die Länge der Naht.
 func (l *nahtLinien) fuer(n document.Naht) (*document.Kantenlinie, int) {
 	achse, laenge := 0, l.g.X

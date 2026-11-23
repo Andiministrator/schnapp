@@ -1675,15 +1675,8 @@ func (e *editor) zeichneNaehte(gtx layout.Context) {
 				}
 			}
 		}
-		spalte()
-		if !document.NaehteBeruehren(naehte, faktor) {
-			durchgang(func(document.Schicht) bool { return true })
-		} else {
-			// Wie im Renderer (F-438, ADR-0023 Nachtrag 9): Saum und Abdunklung, Spalte noch einmal, dann der Schatten.
-			durchgang(func(s document.Schicht) bool { return !s.ImSpalt() })
-			spalte()
-			durchgang(document.Schicht.ImSpalt)
-		}
+		// Die Reihenfolge (auch die zweite Leerung bei sich berührenden Nähten, F-438, F-499) liegt in fuehreNahtAblaufAus.
+		fuehreNahtAblaufAus(naehte, faktor, spalte, durchgang)
 		c.aufruf = aufnahme.Stop()
 		c.groesse, c.naehte, c.form, c.faktor, c.gueltig = g, naehte, form, faktor, true
 	}
