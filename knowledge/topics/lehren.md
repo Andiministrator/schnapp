@@ -681,3 +681,12 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Chromium/Aboard: leere Board-Seite ohne Konsolenmeldung** kam von gespeicherten Ordner-Handles, deren
   `queryPermission` nie antwortete (alle 25, auch lokale; frisch gewählter Ordner ging). Abhilfe: IndexedDB
   `aboard-handles` gezielt entfernen, Ordner neu wählen; hält über Neustart (23.11.2026, aBoard F-3106/#1179).
+- **Messen vor Optimieren, und den Benchmark über alle Grenzen mitlaufen lassen** (Karte #212): Der Verdacht
+  „Rasterkern“ war falsch, teuer waren das wiederholte Pfad-Rastern gleicher Nähte (gemerkte Masken lösen es) und
+  das Mischen der Randpixel. Eine verallgemeinerte Viererschleife machte `BenchmarkNaehteAlleGrenzen` von 14 s auf
+  21,6 s langsamer, weil der Schnellpfad „volle Deckung, deckende Quelle“ wegfiel.
+- **Ein Cache über Pfadkoordinaten ist nur bitgleich, wenn der Schlüssel vollständig verglichen wird** (Hash nur zur
+  Vorsortierung). Eine Maske in Spaltenstreifen abspielen ist bitgleich; eine Füllung in Kacheln rastern nicht
+  (float32-Summen im Rasterkern).
+- **Gio mischt halbdurchsichtig linear, `render` in sRGB** (F-407 gemessen: bis 43 je Kanal). Was im Editor gleich
+  aussehen muss wie im Export, wird vorgerastert (`render.KantenOhneSchatten`); Rest F-520.
