@@ -618,3 +618,21 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   verarbeitet — das ersetzt Wartezeiten; EOF erst nach der Antwort, sonst bricht der Server den Aufruf ab.
 - **Attrappen in Tests bekommen eine eigene Ausweichzeit:** Ein Mutant, der einen Test hängen lässt, lieferte sonst
   FEHLER statt ROT (seit F-478 eigener Status HÄNGT).
+
+## Sprint 12, zweite Sitzung (23.11.2026, Karten #205, #206, #207)
+
+- **Ein Sicherheitsnetz hinter dem eigentlichen Schutz verdeckt dessen Mutanten** (M41, F-483): Seit der Server eine
+  nach dem Abbruch geschriebene Datei wieder entfernt, überlebte der Mutant, der die Prüfung *vor* dem Schreiben
+  strich. Der Test muss den Schreibversuch selbst beobachten (Naht), nicht nur das Ergebnis im Dateisystem.
+- **Unix-Sockets in Tests nie unter `t.TempDir()` mit absolutem Pfad:** Im Mutantenlauf ist `TMPDIR` lang, der Pfad
+  sprengt die 108 Zeichen von `sun_path` („bind: invalid argument“). Relativ in `t.Chdir(t.TempDir())`.
+- **Den Dialog im Probelauf vor dem Urteil sichtbar machen** (F-491): Nach der Sitzungsbindung scheiterte das Kind an der
+  Probe-Sperre (absoluter `WAYLAND_DISPLAY`); D und F („Esc lehnt ab“, „Tastatur erlaubt nicht“) waren trotzdem grün,
+  weil auch ein gescheitertes Kind „nicht erlaubt“ heißt. Erst E (Erlauben) fiel. Ablehnungs-Proben brauchen einen
+  Beleg, dass der Dialog da war (Diagnosezeile `[bestaetigen] erstes Bild`, Foto).
+- **Zeitkritische Drehbuch-Schritte am Ereignis ausrichten, nicht an einer Wartezeit:** Teil G klickt, sobald das Kind
+  sein erstes Bild meldet, und zählt nur als bestanden, wenn der Dialog ein Drücken *in* der Sperre meldet — sonst
+  „nicht aussagekräftig“ statt still grün.
+- **Agenten-Fehlertexte nicht über die Oberflächen-Übersetzung führen** (F-492): `nutzerFehler` übersetzt; was an einen
+  Agenten geht, braucht eigene englische Sätze ohne Pfade (`agentGrund`).
+
