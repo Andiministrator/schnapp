@@ -141,3 +141,19 @@ eine Menüzeile mit sechs Menüs oben, Werkzeugleiste links mit Hinweis rechts n
 (Einträge mit Kürzel, graue Einträge), 4 bis 6 und der Nachträge 1 bis 4 gelten weiter; die Menü-Navigation (Nachtrag
 4) kommt um F10 und Pfeil links/rechts dazu.
 
+
+## Nachtrag 6 (23.11.2026): Eintrag „Kantenform/Seam style“ (F-425, Karte #182)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #182).
+
+Das Menü „Bild“ trägt den Eintrag **Kantenform** (englisch „Seam style“; `aktKantenform` in `internal/ui/kuerzel.go`) und
+folgt damit ADR-0023 Nachträgen 6 und 7:
+
+- **Reihum:** Jeder Aufruf wechselt die Form der Stauch-Kante weiter (Abriss, Welle, Zacken, wieder Abriss) als ein
+  Rückgängig-Schritt (`WechsleKante`); es gibt kein eigenes Kürzel, das Kürzel-Feld in `kuerzel.go` bleibt leer.
+- **Grau ohne Naht:** Ohne Naht (`KannKanteWechseln` falsch) ist der Eintrag grau und tut nichts, das Bild bleibt ungeändert.
+- **Zeigt die aktuelle Form:** Der Menütext ist die Aussage „Seam style: torn edge / wave / zigzag“ (`kantenMeldung`), also
+  auch ohne Wechsel sichtbar; dieselbe Zeile erscheint nach einem Wechsel in der Fußzeile.
+
+Getestet von `TestMenueKantenform` in `internal/ui/menue_test.go` (Eintrag vorhanden, Text gleich der aktuellen Form, grau
+ohne Naht, Reihenfolge, Rückgängig).
