@@ -496,5 +496,12 @@
     "paket": "./cmd/schnapp",
     "alt": "\t\t_, err = library.Neu(ab.orte).Entfernen(ab.rel, ab.stand)",
     "neu": "\t\tst, _ := library.StandVon(ab.abs)\n\t\t_, err = library.Neu(ab.orte).Entfernen(ab.rel, st)"
+  },
+  {
+    "name": "M73 Peer-PID 0 zugelassen (F-500)",
+    "datei": "cmd/schnapp/sitzung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif w > 0 && (w == k || elternVon(k) == w) {",
+    "neu": "\tif w == k || elternVon(k) == w {"
   }
 ]

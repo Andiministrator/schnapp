@@ -116,6 +116,23 @@ func TestSitzungMitWrapper(t *testing.T) {
 	if _, err := pruefeSitzung(context.Background(), os.Getenv); !errors.Is(err, errFremdeSitzung) {
 		t.Fatalf("fremder Elternprozess: %v", err)
 	}
+	// Peer-PID 0 (F-500): Liefert der Socket keine Prozesskennung, darf „0 == KWin-PID“ und „0 == Elternprozess unbekannt“
+	// nicht als Übereinstimmung gelten — weder bei gleicher PID noch bei unlesbarem Elternprozess (elternVon liefert 0).
+	for name, c := range map[string]struct{ kwin, eltern int32 }{
+		"PID 0 gleich KWin-PID 0": {0, 7},
+		"PID 0 und Eltern 0":      {1774, 0},
+		"PID 0 alles 0":           {0, 0},
+	} {
+		sitzungAttrappe(t, 0, c.kwin)
+		elternVon = func(int32) int32 { return c.eltern }
+		f, err := pruefeSitzung(context.Background(), os.Getenv)
+		if !errors.Is(err, errFremdeSitzung) {
+			if f != nil {
+				f.Close()
+			}
+			t.Errorf("%s: %v, erwartet errFremdeSitzung", name, err)
+		}
+	}
 }
 
 // TestElternProzess: der Elternprozess des Tests stimmt mit os.Getppid überein; ein Programmname mit Leerzeichen und
