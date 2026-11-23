@@ -2,7 +2,7 @@
 # Ein Schwärzen-Zug ändert das Dokument, Strg+S startet das Speichern im Hintergrund (bei 4K dauert es Sekunden),
 # sofort danach Strg+W. Erwartet: Das Fenster schließt sich von selbst, sobald das Speichern fertig ist (Exit 0), das
 # Debug-Log zeigt „Speichern im Hintergrund: …“ vor „Speichern zurück: … Schliessen:true“ und „Fenster zu“, probe.sh
-# braucht kein SIGTERM/SIGKILL („schnapp hat sich selbst beendet“); Foto 02 zeigt „Speichern …“ in der Statusleiste.
+# braucht kein SIGTERM/SIGKILL („schnapp hat sich selbst beendet“); Foto 02 zeigt „Speichern …“ in der Fußzeile.
 # Testbild synthetisch (Verläufe, Farbflächen, Rauschen), wird beim Aufruf erzeugt und nicht eingecheckt: ein kleines
 # Go-Programm unter tmp/ schreibt ein 3840x2160-PNG (image/png, NRGBA); kein echter Screenshot.
 # WICHTIG: Das Bild muss eine Datei in der Bibliothek sein. Ein fremdes PNG speichert als neue Aufnahme in die

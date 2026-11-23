@@ -413,3 +413,10 @@ schwerer zu prüfen).
   4,4 s mit einem Kern, 3,0 s mit zwei, 2,5 s mit allen Kernen des Entwicklungsrechners. `BenchmarkNaehteAlleGrenzen`
   (ein Kern): rund 11 s statt rund 14 s.
 - **Test (F-499):** `TestNahtAblaufZweiteLeerung` und `TestKantenOhneSchatten` (Sollpixel im Spalt bei kreuzenden Nähten).
+- **Grenze, bewusst hingenommen (Sitzungs-QA 23.11.2026, Kritiker A-4/B-11):** `KantenOhneSchatten` läuft in `bildNeu`
+  synchron in der Ereignisschleife (jede Schwärzung, Rückgängig/Wiederholen, Kantenform, Wechsel zu oder von
+  Zuschneiden), mit eigenem Maskenspeicher je Aufruf. Gemessen auf 16 Kernen: 1920×1080 mit einer Naht 3 ms,
+  3840×2160 mit zehn Nähten 26 ms, 8000×3000 mit 20 Nähten 74 ms, an der Nahtgrenze (32768×2100, 91 Nähte) rund 1,2 s
+  zusätzlich zu `Ansichtsbild`. Im Alltag unkritisch; nur präparierte Grenzdokumente lassen das Fenster je Schwärzung
+  gut eine Sekunde stocken. Abhilfe, falls nötig: den Maskenspeicher am Editor halten, solange Größe, Form und Faktor
+  gleich bleiben, oder nur das geänderte Rechteck neu mischen (F-525).
