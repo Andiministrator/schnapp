@@ -825,3 +825,18 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   vorbeugen: Ausführliches in eine Datei im Worktree, Antwort an den Orchestrator kurz.
 - **Ein Sub-Agent kann von einem Sicherheitsfilter der API abgebrochen werden** (Sonnet, #224), auch bei harmloser
   Arbeit. Commit und Bericht waren schon da; nichts wiederholen, Lage im Bericht an Andi weitergeben.
+
+## Nachlauf Sprint 12 (Karten #226, #227, #228, 23./24.11.2026 nachts)
+
+- **Was nur während eines Zugs zu sehen ist, fotografiert das Drehbuch mit `druecke` … `foto` … `loslassen`** (F-599,
+  `einrasten-196-halten.txt`). Alt loslassen wirkt mitten im Zug sofort, ohne Zeigerbewegung.
+- **Ein vermuteter Hänger bei Signalen gehört mit echten Signalen im Kindprozess geprüft** (F-603): Die Nähte
+  `meldeAn`/`meldeAb` ersetzen gerade das, worum es geht (`signal.Stop` stellt das Standardverhalten wieder her). Muster:
+  `cmd/schnapp/beschriften_signal_kind_test.go` (Kind über Umgebungsvariable, Heim vom Elternprozess, Ende per
+  `WaitStatus.Signal()`); die Gegenprobe ohne Abmelden muss hängen.
+- **SKIP in der CI ist kein PASS**: Der headless-Zeichentest sprang im Runner, weil `libGLESv2.so.2` fehlte (Paket
+  `libgles2`), obwohl EGL da war. Der Grund steht nur im Log mit `-v`; die Pflicht-Variable macht es zum Fehler (F-602).
+- **Worktree-Agenten können nicht in den Hauptbaum schreiben** (Isolation): Berichte landen in ihrem Worktree unter
+  `tmp/…` und müssen vor dem Abräumen herüberkopiert werden; im Prompt den Worktree-Pfad statt des Hauptbaums nennen.
+- **Messungen nicht neben anderen Läufen**: Eine Zeitmessung parallel zu Tests oder Mutanten (#227) streut um 20 %;
+  Zahlen für ein Versprechen nur in ruhiger Zeit, mehrfach (`-count 3`).

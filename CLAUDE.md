@@ -183,7 +183,7 @@ ADR-0003 Nachtrag 2, ADR-0015.
   `--screen` mit `[capture] screen = all` nimmt alle Monitore als ein Bild auf, ADR-0017 Nachtrag 7; `schnapp DATEI` auch über „Öffnen mit“ im Dateimanager, `%f` und `MimeType` in `data/schnapp.desktop.in`). **Tests, die Claude selbst fahren kann, fährt
   Claude selbst** (Andi, 20.11.2026): `scripts/probe.sh` (virtueller KWin, Build-Tag `probe`, nie ausliefern), auch den
   Editor per Drehbuch (`--drehbuch DATEI --bild BILD`, Fernbedienung `cmd/schnapp-fernbedienung` über
-  `org_kde_kwin_fake_input`, Fotos mit Read ansehen; `internal/wlwire` ist der gemeinsame Wayland-Client von `wlclip`
+  `org_kde_kwin_fake_input`, Fotos mit Read ansehen; Zug und Taste halten mit `druecke [X Y]`, `bewege X Y [SCHRITTE]`, `loslassen`, `taste-halten KOMBI`, `taste-loslassen KOMBI`, am Ende löst der Abspieler alles, F-599, Beispiel `scripts/drehbuecher/einrasten-196-halten.txt`; `internal/wlwire` ist der gemeinsame Wayland-Client von `wlclip`
   und Fernbedienung; ein Teilschreiben schickt den Rest nach, statt die Verbindung zu zerreißen, F-207). Nur was der virtuelle KWin nicht kann (Portal-Dialog, Klipper, fremde Programme, echte Monitore)
   startet Andi selbst per `!`-Befehl, gebündelt, Anleitung davor (`knowledge/topics/lehren.md`); vorher mit `go build -race` nach `tmp/` bauen,
   Diagnose mit `SCHNAPP_DEBUG=1` (`[overlay]`/`[editor]`-Zeilen, `knowledge/topics/gio-wayland.md`).
