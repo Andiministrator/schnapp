@@ -324,3 +324,32 @@ Regular) und präzisiert Nachtrag 3 (gleiche Maße überall).
    in den Stufen `canvas.SchriftStufen` und Anzeige in px), Stil (vier Umschalter F, K, U, S) und Ausrichtung (drei
    Knöpfe). Jede Wahl gilt für neue Texte und ändert den gewählten Text als einen Rückgängig-Schritt; während der
    Texteingabe gehört sie zur Eingabe. Gleiches erneut gewählt ist kein Schritt.
+
+## Nachtrag 11 (23.11.2026): Zweite Farbe „Füllung“, Farbpaar je Werkzeug, Tauschen (Karte #219)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Grundlage: Entscheidung vom 22.11.2026 an Karte #189 (Andi fragte nach einer
+Hintergrundfarbe: „zwei Farben wie in Bildprogrammen“), Muster v2 (zwei Felder unter der Werkzeugleiste). Löst
+Nachtrag 9 Punkt 8 ein; ändert Punkt 4 (eine Farbe für alles) und die Bedeutung der Farbe beim Text.
+
+1. **Zwei Farben:** **Vordergrund** — Linie von Pfeil und Kasten, Schrift des Texts, Kreis der Nummer — und **Füllung** —
+   Fläche des Kastens, Schild des Texts (später die Sprechblase). Füllung kann **keine** sein (Deckkraft 0). Pfeil und
+   Nummer haben keine Füllung; dort ist das Feld grau. Modell und Format ändern sich nicht: `Kasten.Fuellung`,
+   `Text.Farbe` und `Text.Hintergrund` gibt es schon.
+2. **Farbpaar je Werkzeug:** Pfeil, Kasten, Text und Nummer merken sich ihr eigenes Paar, solange das Fenster offen ist
+   (nicht in den Einstellungen; Schnellstile #192 bauen darauf auf). Voreinstellung: Pfeil Rot, Kasten Rot ohne Füllung,
+   **Text weiße Schrift auf rotem Schild** (ein neuer Text sieht aus wie bisher), Nummer Rot. Folge: Eine Farbe, die bei
+   einem Werkzeug gewählt wird, gilt nicht mehr für alle Werkzeuge (bisher Punkt 4) — so arbeiten Bildprogramme und
+   Snagit, und nur so passt die Voreinstellung des Texts zu der der anderen Werkzeuge. Die Zuletzt-Farben bleiben
+   gemeinsam.
+3. **Aktives Feld:** Farbwähler, Farbfelder, zuletzt benutzte Farben, Pipette, Hex, Deckkraft und die Farbliste der
+   Fußzeile wirken auf das **aktive** Feld (Vordergrund oder Füllung). Gewählt wird es per Klick auf eines der beiden
+   Felder — unter der Werkzeugleiste (vorn links Vordergrund, hinten rechts Füllung) oder in der Zeile über dem
+   Farbwähler der rechten Leiste. Hat das Werkzeug bzw. Objekt keine Füllung, ist Vordergrund aktiv. Ist ein Objekt
+   gewählt, zeigen und ändern die Felder seine Farben (ein Rückgängig-Schritt je Änderung, wie bisher).
+4. **Keine Füllung:** Knopf „Keine“ neben den beiden Feldern der Leiste (nur bei aktiver Füllung an); gleichbedeutend mit
+   Deckkraft 0 %. Ein Text ohne Schild zeigt nur die Schrift.
+5. **Tauschen:** Knopf ⇄ neben den Feldern (Werkzeugleiste und rechte Leiste), Menü Bearbeiten → „Farben tauschen“,
+   Kürzel **Strg+Umschalt+X** (X allein ist Stauchen; Umschalt+X allein träfe beim Tippen eines großen X im Text). Mit
+   gewähltem Objekt werden seine beiden Farben getauscht (ein Rückgängig-Schritt), sonst das Paar des Werkzeugs; ohne
+   Füllung (Pfeil, Nummer) ist Tauschen grau.
+6. **Fußzeile** zeigt die Farbe des aktiven Felds; die Statuszeile nennt das Feld nicht eigens.
