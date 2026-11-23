@@ -648,3 +648,13 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Kritiker-Proben, die Formeln nachrechnen, bleiben nach dem Fix rot bzw. grün wie vorher** — sie messen das alte
   Layout. Nach der Nacharbeit mit einer Sichtprobe oder einem Test gegen den echten Code prüfen.
 
+
+## Drehbücher nach der neuen Oberfläche (Karte #210, 23.11.2026)
+
+- **Pfeiltasten im Menü überspringen graue Einträge.** Wer im Drehbuch mit „Runter“ zählt, prüft die Reihenfolge im
+  Foto; zwei Runter statt einem löschten den Text (`rueckfall-menue-tastatur.txt`).
+- **Ein Knopf-Klick ohne Zeiger beweist nur etwas an einem Knopf, der noch nicht aktiv ist** (Stauchen war schon
+  gewählt; jetzt Verpixeln).
+- **4K-Drehbücher im Race-Build brauchen `--ende 90`**, sonst beendet `probe.sh` Schnapp nach 5 s mitten im Speichern.
+- **Kopfkommentare gegen das Foto halten:** `rueckfall-schwaerzen.txt` behauptete „4 px → schwarz“; tatsächlich lehnt
+  der Editor unter `MinObjekt` ab und meldet „zu klein“.
