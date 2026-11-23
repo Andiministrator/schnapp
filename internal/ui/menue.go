@@ -235,6 +235,8 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 		return func(layout.Context) { e.s.TextBearbeiten() }
 	case aktLoeschen:
 		return func(layout.Context) { e.s.Loeschen() }
+	case aktFarbenTauschen:
+		return func(layout.Context) { e.s.TauscheFarben() }
 	case aktGanzesBild:
 		// Zuschnitt aufheben und Randstreifen zurückholen, wie Doppelklick mit Zuschneiden (E-21, F-222).
 		return func(layout.Context) {
@@ -380,9 +382,16 @@ func (e *editor) knopfPerTaste(c *widget.Clickable) {
 	case &e.knoepfe.fussZoom:
 		e.menueOeffne(listeZoom, true)
 		return
-	case &e.knoepfe.farbe:
-		// Per Tastatur öffnet das Farbfeld der Werkzeugleiste immer die Liste; die rechte Leiste klappt Strg+Umschalt+B
-		// auf.
+	case &e.knoepfe.farbe, &e.knoepfe.fuellung:
+		// Per Tastatur öffnet ein Farbfeld der Werkzeugleiste immer die Liste für sein Feld; die rechte Leiste klappt
+		// Strg+Umschalt+B auf. Das graue Feld Füllung tut nichts (ADR-0021 Nachtrag 11).
+		f := canvas.FeldVordergrund
+		if c == &e.knoepfe.fuellung {
+			f = canvas.FeldFuellung
+		}
+		if !e.s.SetzeFeld(f) {
+			return
+		}
 		e.listeAmFarbKnopf = true
 		e.menueOeffne(listeFarbe, true)
 		return
@@ -395,6 +404,9 @@ func (e *editor) listenKnopf(i int) *widget.Clickable {
 	switch i {
 	case listeFarbe:
 		if e.listeAmFarbKnopf {
+			if e.s.AktivesFeld() == canvas.FeldFuellung {
+				return &e.knoepfe.fuellung
+			}
 			return &e.knoepfe.farbe
 		}
 		return &e.knoepfe.fussFarbe

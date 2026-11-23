@@ -50,8 +50,8 @@ func TestSeitenleisteFarbeUndKante(t *testing.T) {
 	r := l.e.seite.farbRahmen[1]
 	l.klick(r.Min.Add(r.Max).Div(2))
 	o, _ := l.e.s.D.Objekt(l.id)
-	if l.e.s.Stil.Farbe != canvas.Beschriftungsfarben[1] || o.(document.Text).Hintergrund != canvas.Beschriftungsfarben[1] {
-		t.Errorf("Klick auf Blau: Stil %v, Text %v", l.e.s.Stil.Farbe, o.(document.Text).Hintergrund)
+	if l.e.s.AktuelleFarbe() != canvas.Beschriftungsfarben[1] || o.(document.Text).Hintergrund != canvas.Beschriftungsfarben[1] {
+		t.Errorf("Klick auf Blau: aktuell %v, Text %v", l.e.s.AktuelleFarbe(), o.(document.Text).Hintergrund)
 	}
 	if l.e.s.D.Stand() == vor {
 		t.Error("Umfärben ist kein Rückgängig-Schritt")

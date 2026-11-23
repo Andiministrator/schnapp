@@ -910,6 +910,10 @@ msgstr ""
 msgid "Hex"
 msgstr ""
 
+#: internal/ui/farbwaehler.go
+msgid "None"
+msgstr ""
+
 #: internal/ui/hilfe.go
 msgid "Other keys"
 msgstr ""
@@ -1031,6 +1035,10 @@ msgid "Edit text"
 msgstr ""
 
 #: internal/ui/oberflaeche.go
+msgid "Swap colors"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
 msgid "Fit"
 msgstr ""
 
@@ -1102,8 +1110,12 @@ msgstr ""
 msgid "Dark grey"
 msgstr ""
 
-#: internal/ui/oberflaeche.go internal/ui/seitenleiste.go
-msgid "Color"
+#: internal/ui/oberflaeche.go
+msgid "Foreground"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Fill"
 msgstr ""
 
 #: internal/ui/oberflaeche.go
@@ -1234,4 +1246,8 @@ msgstr ""
 
 #: internal/ui/seitenleiste.go
 msgid "Line width"
+msgstr ""
+
+#: internal/ui/seitenleiste.go
+msgid "Color"
 msgstr ""

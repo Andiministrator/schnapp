@@ -89,6 +89,11 @@ type Sitzung struct {
 	farbZugText   document.Objekt // Text der Eingabe vor dem Farbzug (Abbruch stellt ihn her, Verify V-3)
 	zuletzt       []color.NRGBA
 	pipette       bool // der nächste Klick ins Bild nimmt eine Farbe auf
+	// Farbpaare (ADR-0021 Nachtrag 11, farbpaar.go): paarW ist das Werkzeug, dessen Paar in Stil steht; paare hält die
+	// Paare der anderen Werkzeuge; feld ist das gewählte Feld (wirksam nur mit Füllung, AktivesFeld).
+	paarW Werkzeug
+	paare map[Werkzeug]farbpaar
+	feld  Farbfeld
 	// Schwärzen (ADR-0022): Rahmen in Ansichtspunkten, solange gezogen wird.
 	rahmen           bool
 	rahmenA, rahmenB document.Punkt

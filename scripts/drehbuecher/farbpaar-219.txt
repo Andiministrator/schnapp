@@ -1,0 +1,34 @@
+# Sichtprobe ADR-0021 Nachtrag 11 (Karte #219): zwei Farben je Beschriftung, Farbpaar unter der Werkzeugleiste,
+# Zeile über dem Farbwähler, Tauschen.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/farbpaar-219.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1: das Farbpaar links liegt bei (6,470)–(46,510): Vordergrund (6,470)–(26,490), Füllung
+# (26,490)–(46,510), ⇄ (26,470)–(46,490).
+# Erwartet: 01 roter Kasten ohne Füllung, gewählt; Feld Füllung links mit Schachbrett und rotem Schrägstrich,
+# Vordergrund grün umrandet; 02 Farbliste am Farbpaar, Füllung grün umrandet; 03 Kasten blau gefüllt; 04 nach
+# Strg+Umschalt+X Strich blau, Fläche rot; 05 neuer Text weiß auf rotem Schild, Leiste zeigt Weiß/Rot; 06 Pfeil:
+# Feld Füllung grau, ⇄ grau.
+warte 800
+taste R
+ziehe 300 300 600 450
+warte 300
+foto 01-kasten
+klick 36 500
+warte 300
+foto 02-liste-fuellung
+taste Runter
+taste Enter
+warte 300
+foto 03-kasten-blau
+taste Strg+Umschalt+X
+warte 300
+foto 04-getauscht
+taste T
+klick 300 650
+warte 200
+schreibe Hallo
+taste Enter
+warte 300
+foto 05-text
+taste A
+warte 300
+foto 06-pfeil

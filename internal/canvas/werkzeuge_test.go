@@ -455,8 +455,13 @@ func TestFarbe(t *testing.T) {
 	s.SetzeWerkzeug(WerkzeugNummer)
 	s.Druecken(f(60, 70), TastePrimaer)
 	s.Loslassen(f(60, 70))
-	if n := letztes(t, s).(document.Nummer); n.Farbe != Beschriftungsfarben[1] {
+	// Farbpaar je Werkzeug (ADR-0021 Nachtrag 11): der umgefärbte Pfeil färbt die Nummer nicht, wohl aber den
+	// nächsten Pfeil.
+	if n := letztes(t, s).(document.Nummer); n.Farbe != Beschriftungsfarben[0] {
 		t.Errorf("neue Nummer %+v", n)
+	}
+	if c := s.paar(WerkzeugPfeil).vorn; c != Beschriftungsfarben[1] {
+		t.Errorf("Paar des Pfeils %v", c)
 	}
 	s.SetzeFarbe(Beschriftungsfarben[0])
 	// Gleiche Farbe: kein Schritt.
@@ -464,14 +469,14 @@ func TestFarbe(t *testing.T) {
 	if s.SetzeFarbe(Beschriftungsfarben[0]) || schritte(t, s) != vorher {
 		t.Error("gleiche Farbe ergab einen Schritt")
 	}
-	// Während der Texteingabe färbt sie das Schild mit, ohne eigenen Schritt.
+	// Während der Texteingabe färbt sie die Schrift mit (Vordergrund), ohne eigenen Schritt.
 	s.SetzeWerkzeug(WerkzeugText)
 	s.Druecken(f(120, 80), TastePrimaer)
 	s.Tippe("x")
 	s.SetzeFarbe(Beschriftungsfarben[2])
 	s.Enter(false)
-	if tx := letztes(t, s).(document.Text); tx.Hintergrund != Beschriftungsfarben[2] {
-		t.Errorf("Schild %v", tx.Hintergrund)
+	if tx := letztes(t, s).(document.Text); tx.Farbe != Beschriftungsfarben[2] || tx.Hintergrund != Beschriftungsfarben[0] {
+		t.Errorf("Schrift %v, Schild %v", tx.Farbe, tx.Hintergrund)
 	}
 	if n := schritte(t, s); n != vorher+1 {
 		t.Errorf("%d Schritte, erwartet %d", n, vorher+1)

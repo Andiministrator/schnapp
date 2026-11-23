@@ -45,6 +45,7 @@ const (
 	aktEbeneZurueck
 	aktEbeneDarueber
 	aktEbeneDarunter
+	aktFarbenTauschen // Menü Bearbeiten: Vordergrund und Füllung tauschen (ADR-0021 Nachtrag 11 Punkt 5)
 )
 
 // taste ist ein Tastenkürzel des Editors. Genau eines gilt: akt (Handlung), werkzeug (wählt ein Werkzeug, hatWerkzeug)
@@ -102,6 +103,8 @@ func tastenTabelle() []taste {
 		strg(key.NamePageDown, aktEbeneZurueck),
 		{filter: key.Filter{Name: key.NamePageUp, Required: key.ModAlt}, akt: aktEbeneDarueber},
 		{filter: key.Filter{Name: key.NamePageDown, Required: key.ModAlt}, akt: aktEbeneDarunter},
+		// X allein ist Stauchen; Umschalt+X allein träfe beim Tippen eines großen X (ADR-0021 Nachtrag 11 Punkt 5).
+		{filter: key.Filter{Name: "X", Required: key.ModShortcut | key.ModShift}, akt: aktFarbenTauschen},
 		wz("V", canvas.WerkzeugAuswahl),
 		wz("A", canvas.WerkzeugPfeil),
 		wz("R", canvas.WerkzeugKasten),

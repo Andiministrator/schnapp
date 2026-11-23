@@ -156,8 +156,9 @@ func TestFarbZugInDerTexteingabe(t *testing.T) {
 		t.Fatal("Texteingabe endete")
 	}
 	s.Enter(false)
-	if tx := letztes(t, s).(document.Text); tx.Hintergrund != (HSV{H: 120, S: 1, V: 0.5}).Farbe(255) {
-		t.Errorf("Schild %v", tx.Hintergrund)
+	// Vordergrund ist beim Text die Schrift (ADR-0021 Nachtrag 11), das Schild bleibt in der Füllung.
+	if tx := letztes(t, s).(document.Text); tx.Farbe != (HSV{H: 120, S: 1, V: 0.5}).Farbe(255) || tx.Hintergrund != Beschriftungsfarben[0] {
+		t.Errorf("Schrift %v, Schild %v", tx.Farbe, tx.Hintergrund)
 	}
 	if n := schritte(t, s); n != vor+1 {
 		t.Errorf("%d Schritte, erwartet %d", n, vor+1)
@@ -189,14 +190,18 @@ func TestHexUndDeckkraftEingabe(t *testing.T) {
 	if z := s.Zuletzt(); len(z) != 2 || z[0] != want {
 		t.Errorf("zuletzt %v", z)
 	}
-	// Der Kasten der Testsitzung hat keinen Strich (Alpha 0): 6 Ziffern behalten diese Deckkraft, 8 setzen sie.
+	// Der Kasten der Testsitzung hat keinen Strich (Alpha 0): Auf einer ganz durchsichtigen Farbe (etwa Füllung
+	// „keine“) machen 6 Ziffern die Farbe deckend (ADR-0021 Nachtrag 11 Punkt 7), 8 Ziffern setzen die Deckkraft.
 	s.Auswahl = k
-	if st := s.D.Stand(); !s.SetzeHex("#000000") || s.D.Stand() != st {
-		t.Error("6 Ziffern änderten den Kasten ohne Strich")
+	if !s.SetzeHex("#000000") {
+		t.Fatal("6 Ziffern abgelehnt")
 	}
-	s.SetzeHex("#000000ff")
 	if o, _ := s.D.Objekt(k); o.(document.Kasten).Strich.Farbe != (color.NRGBA{A: 255}) {
-		t.Errorf("Kasten %v", o.(document.Kasten).Strich)
+		t.Errorf("Kasten nach 6 Ziffern %v", o.(document.Kasten).Strich)
+	}
+	s.SetzeHex("#11223380")
+	if o, _ := s.D.Objekt(k); o.(document.Kasten).Strich.Farbe != (color.NRGBA{R: 0x11, G: 0x22, B: 0x33, A: 0x80}) {
+		t.Errorf("Kasten nach 8 Ziffern %v", o.(document.Kasten).Strich)
 	}
 }
 
@@ -239,8 +244,9 @@ func TestPipette(t *testing.T) {
 	s.Druecken(f(30.5, 30.5), TastePrimaer)
 	s.Loslassen(f(30.5, 30.5))
 	want := color.NRGBA{R: 10, G: 20, B: 30, A: 255}
-	if s.PipetteLaeuft() || s.Stil.Farbe != want || s.Zieht() {
-		t.Fatalf("Pipette %v, Stil %v", s.PipetteLaeuft(), s.Stil.Farbe)
+	// Die Farbe geht in das Paar des Kastens (das Werkzeug des gewählten Objekts), nicht in das des Pfeils.
+	if s.PipetteLaeuft() || s.paar(WerkzeugKasten).vorn != want || s.Stil.Farbe != Beschriftungsfarben[0] || s.Zieht() {
+		t.Fatalf("Pipette %v, Kasten %v, Stil %v", s.PipetteLaeuft(), s.paar(WerkzeugKasten).vorn, s.Stil.Farbe)
 	}
 	if ob, _ := s.D.Objekt(k); ob.(document.Kasten).Strich.Farbe != want || ob.(document.Kasten).Bereich != document.R(document.Pt(10, 10), document.Pt(50, 50)) {
 		t.Errorf("Kasten %+v", ob)
@@ -249,20 +255,20 @@ func TestPipette(t *testing.T) {
 	s.SchaltePipette()
 	s.Druecken(f(199.5, 99.5), TastePrimaer)
 	s.Loslassen(f(199.5, 99.5))
-	if s.Stil.Farbe != (color.NRGBA{R: 9, A: 255}) {
-		t.Errorf("Rand: %v", s.Stil.Farbe)
+	if s.AktuelleFarbe() != (color.NRGBA{R: 9, A: 255}) {
+		t.Errorf("Rand: %v", s.AktuelleFarbe())
 	}
-	vor, farbe := s.D.Stand(), s.Stil.Farbe
+	vor, farbe := s.D.Stand(), s.AktuelleFarbe()
 	s.SchaltePipette() // ganz durchsichtiger Bildpunkt: nichts aufnehmen (A-9)
 	s.Druecken(f(5.5, 5.5), TastePrimaer)
 	s.Loslassen(f(5.5, 5.5))
-	if s.PipetteLaeuft() || s.D.Stand() != vor || s.Stil.Farbe != farbe {
+	if s.PipetteLaeuft() || s.D.Stand() != vor || s.AktuelleFarbe() != farbe {
 		t.Error("durchsichtiger Bildpunkt wurde aufgenommen")
 	}
 	s.SchaltePipette()
 	s.Druecken(document.Pt(2, 2), TastePrimaer) // neben dem Bild
 	s.Loslassen(document.Pt(2, 2))
-	if s.PipetteLaeuft() || s.D.Stand() != vor || s.Stil.Farbe != farbe {
+	if s.PipetteLaeuft() || s.D.Stand() != vor || s.AktuelleFarbe() != farbe {
 		t.Error("Klick neben das Bild wirkte")
 	}
 	s.SchaltePipette()
@@ -303,7 +309,8 @@ func TestFarbZugAbbruchInDerTexteingabe(t *testing.T) {
 	s.BeginneFarbZug()
 	s.FarbZugHSV(HSV{H: 120, S: 1, V: 1}, 255)
 	s.Esc()
-	if tx, ok := s.TextObjekt(); !ok || tx.Hintergrund != vor.Hintergrund || s.FarbZugLaeuft() {
-		t.Errorf("nach Esc: Eingabe %v, Schild %v, vorher %v", ok, tx.Hintergrund, vor.Hintergrund)
+	// Der Zug färbt den Vordergrund (die Schrift, ADR-0021 Nachtrag 11); Esc stellt beide Farben her.
+	if tx, ok := s.TextObjekt(); !ok || tx.Farbe != vor.Farbe || tx.Hintergrund != vor.Hintergrund || s.FarbZugLaeuft() {
+		t.Errorf("nach Esc: Eingabe %v, Schrift %v auf %v, vorher %v auf %v", ok, tx.Farbe, tx.Hintergrund, vor.Farbe, vor.Hintergrund)
 	}
 }

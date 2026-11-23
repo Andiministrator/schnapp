@@ -54,6 +54,8 @@ Bedienung vor Funktionsfülle).
    Dunkelgrau `#1E2124` (grau-900). Strichstärke Pfeil und Kasten 4 px (Spitze damit 16 px), Kasten ungefüllt mit
    Eckradius 4 px (CD §5: runde Ecken), Text 20 px weiß auf einem Schild in der gewählten Farbe, Nummer Radius 14 px
    mit weißer, fetter Ziffer (wie Renderer und SVG-Export). Größen in Pixeln des Originals, unabhängig vom Zoom.
+   *Seit Nachtrag 11:* zwei Farben je Werkzeug; beim Text ist die gewählte Vordergrundfarbe die Schrift, das Schild die
+   Füllung (Voreinstellung weiß auf Rot).
    - **Schrift:** Das Corporate Design nennt Open Sans; ausgeliefert wird sie noch nicht (CD §4: „soll … ausgeliefert
      werden“, dann mit OFL-Text unter `licenses/`). Editor und Renderer setzen bis dahin beide die Go-Schriften
      (ADR-0020 Nachtrag 1), der SVG-Export nennt „Open Sans, sans-serif“. Die Umstellung betrifft Renderer, Editor,
@@ -264,7 +266,7 @@ Nachtrag 6: Neben den vier Beschriftungsfarben ist jede Farbe wählbar, mit Deck
    Sitzungs-QA A-6). Ein ganz durchsichtiger Bildpunkt (Alpha 0) wird nicht aufgenommen, die Pipette endet ohne
    Wirkung: Seine Farbe sieht niemand (A-9, entschieden von Claude im Auftrag Andis, 23.11.2026).
 6. **Eingaben:** Hex nimmt 3, 6 oder 8 Hex-Ziffern, mit oder ohne `#`, Groß- oder Kleinschreibung; 3 und 6 Ziffern
-   behalten die Deckkraft, 8 setzen sie mit. Deckkraft nimmt eine ganze Zahl 0 bis 100, mit oder ohne `%`. Ungültige
+   behalten die Deckkraft (bei Deckkraft 0 seit Nachtrag 11 Punkt 7: deckend), 8 setzen sie mit. Deckkraft nimmt eine ganze Zahl 0 bis 100, mit oder ohne `%`. Ungültige
    Eingaben ändern nichts. Umrechnung Prozent ↔ Alpha: Alpha = round(p · 255 / 100), angezeigt round(Alpha · 100 / 255)
    (`canvas.Deckkraft`).
 7. **Editor-Mischung:** Gio mischt halbdurchsichtige Flächen linear, Renderer und Export in sRGB (F-520, Karte #215);
@@ -360,3 +362,15 @@ Nachtrag 9 Punkt 8 ein; ändert Punkt 4 (eine Farbe für alles) und die Bedeutun
    gewähltem Objekt werden seine beiden Farben getauscht (ein Rückgängig-Schritt), sonst das Paar des Werkzeugs; ohne
    Füllung (Pfeil, Nummer) ist Tauschen grau.
 6. **Fußzeile** zeigt die Farbe des aktiven Felds; die Statuszeile nennt das Feld nicht eigens.
+7. **Ganz durchsichtige Farbe wird beim Wählen deckend** (ergänzt bei der Umsetzung, 23.11.2026): Ist die Farbe des
+   aktiven Felds ganz durchsichtig (Füllung „keine“), übernimmt eine Hex-Eingabe mit 3 oder 6 Ziffern Deckkraft 100 %
+   statt 0 %, und ein Zug in Farbfläche oder Farbton-Regler beginnt deckend. Sonst bliebe die gewählte Farbe
+   unsichtbar. Das ändert Nachtrag 9 Punkt 6 nur für Deckkraft 0; 8 Ziffern und der Deckkraft-Regler setzen sie wie
+   bisher.
+8. **Umsetzung** (Karte #219): Logik `internal/canvas/farbpaar.go` (`Farbfeld`, `AktivesFeld`, `SetzeFeld`, `Farbe`,
+   `KeineFuellung`, `TauscheFarben`; `Stil.Fuellung`; das Paar des zuletzt gewählten Werkzeugs mit Farbe steht in
+   `Stil`, die übrigen in der Sitzung). Eine Farbe am gewählten Objekt geht in das Paar des Werkzeugs, das diese Art
+   zeichnet (ein umgefärbter Kasten färbt auch die nächsten Kästen); Tauschen am Objekt ändert das Paar nicht.
+   Werkzeugleiste: das Quadrat unter den Werkzeugen ist geviertelt, Vordergrund oben links, Füllung unten rechts,
+   ⇄ oben rechts, ohne Überlappung (`farbpaarRahmen`). Rechte Leiste: Zeile Vordergrund, Füllung, ⇄, „Keine“ über der
+   Farbfläche (`zeichneFarbpaarZeile`).

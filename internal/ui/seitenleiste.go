@@ -31,7 +31,7 @@ import (
 // zwei Regler, Felder) und der kleinste Ebenen-Abschnitt ohne Hinweis (zeichneEbenen: Trennlinie, Kopf, Deckkraft,
 // eine Zeile, Knöpfe, drei Zeilen Hinweis).
 const (
-	farbwaehlerHoeheDp = 200
+	farbwaehlerHoeheDp = 234 // seit #219 mit der Zeile des Farbpaars (24 + 10)
 	ebenenMindestDp    = 230
 )
 
@@ -53,11 +53,25 @@ type seitenKnoepfe struct {
 	farbeGezeigt bool             // der Abschnitt Farbe stand beim letzten Zeichnen da
 	farbeKopf    widget.Clickable // Überschrift „Farbe“: klappt den Abschnitt ein und aus (ADR-0032 Punkt 6)
 	farbeZu      bool
+	// Farbpaar über dem Farbwähler (ADR-0021 Nachtrag 11): Vordergrund, Füllung, Tauschen, Keine; Rahmen für Tests.
+	paar       [4]widget.Clickable
+	paarRahmen [4]image.Rectangle
 }
+
+// Plätze in seitenKnoepfe.paar.
+const (
+	paarVorn = iota
+	paarFuellung
+	paarTausch
+	paarKeine
+)
 
 // alle sind die Knöpfe der Leiste (Tastaturfokus, editor.fokussierterKnopf).
 func (k *seitenKnoepfe) alle() []*widget.Clickable {
 	var a []*widget.Clickable
+	for i := range k.paar {
+		a = append(a, &k.paar[i])
+	}
 	for i := range k.farben {
 		a = append(a, &k.farben[i])
 	}
@@ -125,6 +139,18 @@ func (e *editor) seiteAuswerten(gtx layout.Context) {
 		if k.farben[j].Clicked(gtx) && an() && j < len(farben) {
 			e.s.SetzeFarbe(farben[j])
 		}
+	}
+	if k.paar[paarVorn].Clicked(gtx) && an() {
+		e.s.SetzeFeld(canvas.FeldVordergrund)
+	}
+	if k.paar[paarFuellung].Clicked(gtx) && an() {
+		e.s.SetzeFeld(canvas.FeldFuellung)
+	}
+	if k.paar[paarTausch].Clicked(gtx) && an() {
+		e.s.TauscheFarben()
+	}
+	if k.paar[paarKeine].Clicked(gtx) && an() {
+		e.s.KeineFuellung()
 	}
 	if k.farbeKopf.Clicked(gtx) {
 		if e.ebenen.vorrang && !k.farbeZu { // bei Platzmangel eingeklappt: Farbe öffnen, Ebenen wieder einklappen

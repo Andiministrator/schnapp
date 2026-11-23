@@ -17,11 +17,14 @@ import (
 
 func mittenPunkt(r image.Rectangle) image.Point { return r.Min.Add(r.Max).Div(2) }
 
+// vornVon ist das Feld Vordergrund im Farbpaar r der Werkzeugleiste (ADR-0021 Nachtrag 11).
+func vornVon(r image.Rectangle) image.Rectangle { v, _, _ := farbpaarRahmen(r); return v }
+
 // A-1: Nach der Farbliste am Farbfeld links hängt die Zoomliste trotzdem am Zoomfeld, per Maus und per Tastatur.
 func TestZoomListeNachFarbKnopf(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
 	_, farbe := werkzeugRahmen(l.gtx(), l.e.werkzeugKnoepfe())
-	l.klick(mittenPunkt(farbe)) // Leiste ist offen und zeigt die Farbe: Liste am Farbfeld
+	l.klick(mittenPunkt(vornVon(farbe))) // Leiste ist offen und zeigt die Farbe: Liste am Farbfeld
 	if !l.e.menue.offen || !l.e.listeAmFarbKnopf {
 		t.Fatalf("Vorbedingung: Farbliste am Farbfeld offen %v, Merker %v", l.e.menue.offen, l.e.listeAmFarbKnopf)
 	}
@@ -181,14 +184,14 @@ func TestFarbKnopfOhneFarbeOderSchmal(t *testing.T) {
 	l.e.seiteZu = true
 	l.setle()
 	_, farbe := werkzeugRahmen(l.gtx(), l.e.werkzeugKnoepfe())
-	l.klick(mittenPunkt(farbe))
+	l.klick(mittenPunkt(vornVon(farbe)))
 	if !l.e.seiteZu || !l.e.menue.offen || l.e.menue.welches != listeFarbe {
 		t.Errorf("Werkzeug ohne Farbe: zu %v, Liste offen %v", l.e.seiteZu, l.e.menue.offen)
 	}
 	l = neuerMenueLauf(t, image.Pt(700, 600))
 	l.e.seiteZu = true
 	_, farbe = werkzeugRahmen(l.gtx(), l.e.werkzeugKnoepfe())
-	l.klick(mittenPunkt(farbe))
+	l.klick(mittenPunkt(vornVon(farbe)))
 	if !l.e.menue.offen || l.e.menue.welches != listeFarbe {
 		t.Errorf("schmales Fenster: Liste offen %v", l.e.menue.offen)
 	}

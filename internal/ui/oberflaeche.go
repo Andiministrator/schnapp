@@ -103,6 +103,7 @@ func (e *editor) menueEintraegeVon(i int) []menueEintrag {
 			{akt: aktWiederholen, text: i18n.T("Redo"), an: s.D.KannWiederholen()},
 			{akt: aktTextBearbeiten, text: i18n.T("Edit text"), an: s.KannTextBearbeiten(), gruppe: true},
 			{akt: aktLoeschen, text: i18n.T("Delete"), an: s.KannLoeschen()},
+			{akt: aktFarbenTauschen, text: i18n.T("Swap colors"), an: s.KannTauschen(), gruppe: true},
 		}
 	case menueAnsicht:
 		return []menueEintrag{
@@ -432,39 +433,120 @@ func (e *editor) werkzeugKnopfZeichnen(gtx layout.Context, c *widget.Clickable, 
 	t.Pop()
 }
 
-// farbKnopf ist das Farbfeld unter den Werkzeugen: Ein Klick klappt die rechte Leiste auf oder öffnet die Farbliste
-// (editor.farbKnopfGeklickt, ADR-0031 Nachtrag 3).
-func (e *editor) farbKnopf(gtx layout.Context, r image.Rectangle) {
-	c := &e.knoepfe.farbe
-	paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(r).Op())
-	rand := farbeLinie
-	if c.Hovered() {
-		rand = farbeNebentext
-	}
-	paint.FillShape(gtx.Ops, rand, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
-	innen := r.Inset(min(gtx.Dp(8), r.Dx()/5)) // schrumpft mit dem Knopf (F-516)
-	paint.FillShape(gtx.Ops, e.s.AktuelleFarbe(), clip.Rect(innen).Op())
-	paint.FillShape(gtx.Ops, farbeText, clip.Stroke{Path: clip.Rect(innen).Path(), Width: float32(gtx.Dp(1))}.Op())
-	if gtx.Focused(c) {
-		paint.FillShape(gtx.Ops, farbeAkzent, clip.Stroke{Path: clip.Rect(r.Inset(-gtx.Dp(3))).Path(),
-			Width: float32(gtx.Dp(2))}.Op())
-	}
-	t := op.Offset(r.Min).Push(gtx.Ops)
-	g := gtx
-	g.Constraints = layout.Exact(r.Size())
-	c.Layout(g, func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: r.Size()} })
-	pointer.CursorPointer.Add(gtx.Ops)
-	t.Pop()
-	if e.farbHinweisZeigen(gtx) {
-		e.zeichneHinweis(gtx, i18n.T("Color"), image.Pt(r.Max.X+gtx.Dp(8), r.Min.Y+gtx.Dp(8)))
-	}
+// farbpaarRahmen teilt das Quadrat r unter den Werkzeugen (ADR-0021 Nachtrag 11): Vordergrund vorn links, Füllung
+// hinten rechts, Tauschen oben rechts in der freien Ecke.
+func farbpaarRahmen(r image.Rectangle) (vorn, fuellung, tausch image.Rectangle) {
+	s := r.Dx() / 2 // ohne Überlappung: jeder Punkt gehört genau einem Knopf, Tab geht vorn, hinten, Tauschen
+	vorn = image.Rectangle{Min: r.Min, Max: r.Min.Add(image.Pt(s, s))}
+	fuellung = image.Rectangle{Min: r.Max.Sub(image.Pt(s, s)), Max: r.Max}
+	tausch = image.Rect(r.Min.X+s, r.Min.Y, r.Max.X, r.Max.Y-s)
+	return vorn, fuellung, tausch
 }
 
-// farbHinweisZeigen: Der Hinweis „Color“ steht bei Zeiger und bei Tastaturfokus, wie die Hinweise der Werkzeuge nicht
-// über einer offenen Liste (F-515).
+// farbKnopf ist das Farbpaar unter den Werkzeugen: Ein Klick auf ein Feld macht es aktiv und klappt die rechte Leiste
+// auf oder öffnet die Farbliste (editor.farbKnopfGeklickt, ADR-0031 Nachtrag 3); ⇄ tauscht die Farben.
+func (e *editor) farbKnopf(gtx layout.Context, r image.Rectangle) {
+	k := &e.knoepfe
+	vorn, fuel, tausch := farbpaarRahmen(r)
+	aktiv := e.s.AktivesFeld()
+	e.paarFeld(gtx, &k.farbe, vorn, e.s.Farbe(canvas.FeldVordergrund), true, aktiv == canvas.FeldVordergrund)
+	e.paarFeld(gtx, &k.fuellung, fuel, e.s.Farbe(canvas.FeldFuellung), e.s.Fuellbar(), aktiv == canvas.FeldFuellung)
+	e.tauschKnopf(gtx, &k.tausch, tausch)
+	if !e.farbHinweisZeigen(gtx) {
+		return
+	}
+	hinweis := func(c *widget.Clickable, text string, q image.Rectangle) {
+		if c.Hovered() || gtx.Focused(c) {
+			e.zeichneHinweis(gtx, text, image.Pt(r.Max.X+gtx.Dp(8), q.Min.Y+gtx.Dp(4)))
+		}
+	}
+	hinweis(&k.farbe, i18n.T("Foreground"), vorn)
+	hinweis(&k.fuellung, i18n.T("Fill"), fuel)
+	hinweis(&k.tausch, tauschHinweis(), tausch)
+}
+
+// farbHinweisZeigen: Die Hinweise am Farbpaar stehen bei Zeiger und bei Tastaturfokus, wie die Hinweise der Werkzeuge
+// nicht über einer offenen Liste (F-515).
 func (e *editor) farbHinweisZeigen(gtx layout.Context) bool {
-	c := &e.knoepfe.farbe
-	return !e.menue.offen && (c.Hovered() || gtx.Focused(c))
+	if e.menue.offen {
+		return false
+	}
+	for _, c := range []*widget.Clickable{&e.knoepfe.farbe, &e.knoepfe.fuellung, &e.knoepfe.tausch} {
+		if c.Hovered() || gtx.Focused(c) {
+			return true
+		}
+	}
+	return false
+}
+
+// tauschHinweis ist der Hinweis am Knopf ⇄: Name und Kürzel.
+func tauschHinweis() string {
+	return i18n.T("Swap colors") + " (" + kuerzelText(aktFarbenTauschen) + ")"
+}
+
+// paarFeld zeichnet ein Feld des Farbpaars und meldet es als Knopf an: aktiv grün umrandet, ohne Füllung (an false)
+// grau; eine Füllung „keine“ zeigt das Schachbrett mit rotem Schrägstrich.
+func (e *editor) paarFeld(gtx layout.Context, c *widget.Clickable, r image.Rectangle, farbe color.NRGBA, an, aktiv bool) {
+	if an {
+		e.farbFeld(gtx, farbe, r, aktiv, c.Hovered())
+		if farbe.A == 0 {
+			zeichneKeine(gtx, r)
+		}
+	} else {
+		paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(r).Op())
+		paint.FillShape(gtx.Ops, farbeNebentext, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
+	}
+	seiteKnopf(gtx, c, r)
+}
+
+// zeichneKeine legt den roten Schrägstrich „keine Füllung“ über r.
+func zeichneKeine(gtx layout.Context, r image.Rectangle) {
+	var p clip.Path
+	p.Begin(gtx.Ops)
+	p.MoveTo(f32.Pt(float32(r.Min.X+gtx.Dp(2)), float32(r.Max.Y-gtx.Dp(2))))
+	p.LineTo(f32.Pt(float32(r.Max.X-gtx.Dp(2)), float32(r.Min.Y+gtx.Dp(2))))
+	paint.FillShape(gtx.Ops, farbeRot, clip.Stroke{Path: p.End(), Width: float32(gtx.Dp(2))}.Op())
+}
+
+// tauschKnopf zeichnet den Knopf ⇄ (zwei gegenläufige Pfeile) in r und meldet ihn an; grau ohne Füllung.
+func (e *editor) tauschKnopf(gtx layout.Context, c *widget.Clickable, r image.Rectangle) {
+	farbe := farbeText
+	switch {
+	case !e.s.KannTauschen():
+		farbe = farbeLinie
+	case c.Hovered():
+		farbe = farbeAkzent
+	}
+	zeichneTausch(gtx, r.Inset(max(1, r.Dx()/8)), farbe)
+	seiteKnopf(gtx, c, r)
+}
+
+// zeichneTausch zeichnet ⇄ in r: oben ein Pfeil nach rechts, unten einer nach links.
+func zeichneTausch(gtx layout.Context, r image.Rectangle, c color.NRGBA) {
+	w, h := float32(r.Dx()), float32(r.Dy())
+	o := f32.Pt(float32(r.Min.X), float32(r.Min.Y))
+	pt := func(x, y float32) f32.Point { return o.Add(f32.Pt(x*w, y*h)) }
+	strich := float32(max(1, gtx.Dp(1)))
+	pfeil := func(y, von, bis float32) {
+		var p clip.Path
+		p.Begin(gtx.Ops)
+		p.MoveTo(pt(von, y))
+		p.LineTo(pt(bis, y))
+		paint.FillShape(gtx.Ops, c, clip.Stroke{Path: p.End(), Width: strich * 1.5}.Op())
+		d := float32(0.3)
+		if bis < von {
+			d = -d
+		}
+		var s clip.Path
+		s.Begin(gtx.Ops)
+		s.MoveTo(pt(bis, y))
+		s.LineTo(pt(bis-d, y-0.22))
+		s.LineTo(pt(bis-d, y+0.22))
+		s.Close()
+		paint.FillShape(gtx.Ops, c, clip.Outline{Path: s.End()}.Op())
+	}
+	pfeil(0.28, 0.05, 0.95)
+	pfeil(0.72, 0.95, 0.05)
 }
 
 // zeichneSymbol zeichnet ein Symbol aus internal/icons als gefüllte Vielecke im Quadrat (ecke, seite).

@@ -117,30 +117,9 @@ func LeseDeckkraft(text string) (uint8, bool) {
 	return uint8(math.Round(float64(p) * 255 / 100)), true
 }
 
-// objektFarbe ist die Farbe, die SetzeFarbe an o ändert (Umgefaerbt).
-func objektFarbe(o document.Objekt) (color.NRGBA, bool) {
-	switch v := o.(type) {
-	case document.Pfeil:
-		return v.Strich.Farbe, true
-	case document.Kasten:
-		return v.Strich.Farbe, true
-	case document.Text:
-		return v.Hintergrund, true
-	case document.Nummer:
-		return v.Farbe, true
-	}
-	return color.NRGBA{}, false
-}
-
-// AktuelleFarbe ist die Farbe, die die Leiste zeigt: die des gewählten Objekts, sonst die des Werkzeugs.
-func (s *Sitzung) AktuelleFarbe() color.NRGBA {
-	if o, ok := s.D.Objekt(s.Auswahl); ok {
-		if c, ok := objektFarbe(o); ok {
-			return c
-		}
-	}
-	return s.Stil.Farbe
-}
+// AktuelleFarbe ist die Farbe des aktiven Felds, die die Leiste zeigt: die des Objekts, auf das die Farbwahl wirkt,
+// sonst die des Werkzeugs.
+func (s *Sitzung) AktuelleFarbe() color.NRGBA { return s.Farbe(s.AktivesFeld()) }
 
 // FarbeHSV ist die aktuelle Farbe als HSV. Solange die Farbe zum gemerkten Wert passt, gilt der gemerkte Farbton und
 // die gemerkte Sättigung: Grau, Schwarz und Weiß verlieren beim Ziehen den Ton nicht (ADR-0021 Nachtrag 9 Punkt 3).
@@ -183,9 +162,14 @@ func (s *Sitzung) setzeEigeneFarbe(c color.NRGBA) bool {
 	return true
 }
 
-// SetzeHex übernimmt eine Hex-Eingabe (LeseHex); false: ungültig oder gesperrt, nichts geändert.
+// SetzeHex übernimmt eine Hex-Eingabe (LeseHex); false: ungültig oder gesperrt, nichts geändert. Ist die aktuelle
+// Farbe ganz durchsichtig (Füllung „keine“), wird eine Eingabe ohne Deckkraft deckend (ADR-0021 Nachtrag 11).
 func (s *Sitzung) SetzeHex(text string) bool {
-	c, ok := LeseHex(text, s.AktuelleFarbe())
+	alt := s.AktuelleFarbe()
+	if alt.A == 0 {
+		alt.A = 255
+	}
+	c, ok := LeseHex(text, alt)
 	return ok && s.setzeEigeneFarbe(c)
 }
 
@@ -218,12 +202,8 @@ func (s *Sitzung) BeginneFarbZug() bool {
 		if o, ok := s.D.Objekt(s.textID); ok {
 			s.farbZugText = o
 		}
-	} else {
-		if o, ok := s.D.Objekt(s.Auswahl); ok {
-			if _, ok := objektFarbe(o); ok && s.D.BeginneZug(o.Kennung()) == nil {
-				s.farbZugObjekt, s.farbZugVor = true, s.D.Stand()
-			}
-		}
+	} else if o, ok := s.farbObjekt(); ok && s.D.BeginneZug(o.Kennung()) == nil {
+		s.farbZugObjekt, s.farbZugVor = true, s.D.Stand()
 	}
 	return true
 }
@@ -235,15 +215,16 @@ func (s *Sitzung) FarbZugHSV(h HSV, a uint8) {
 	}
 	s.hsv, s.hsvGemerkt = h, true
 	c := h.Farbe(a)
-	s.Stil.Farbe = c
+	f := s.AktivesFeld()
+	s.merkePaarFarbe(s.zielWerkzeug(), f, c)
 	switch {
 	case s.zug == zugText:
 		if o, ok := s.D.Objekt(s.textID); ok {
-			_ = s.D.ZugSetze(Umgefaerbt(o, c))
+			_ = s.D.ZugSetze(UmgefaerbtIn(o, f, c))
 		}
 	case s.farbZugObjekt:
 		if o, ok := s.D.Objekt(s.Auswahl); ok {
-			_ = s.D.ZugSetze(Umgefaerbt(o, c))
+			_ = s.D.ZugSetze(UmgefaerbtIn(o, f, c))
 		}
 	}
 }
@@ -260,7 +241,7 @@ func (s *Sitzung) BeendeFarbZug() {
 		_ = s.D.BeendeZug()
 		s.merkeAenderung(s.farbZugVor)
 	}
-	s.merkeZuletzt(s.Stil.Farbe)
+	s.merkeZuletzt(s.AktuelleFarbe())
 }
 
 // BrecheFarbZugAb stellt das Objekt wie vor dem Ziehen her (Zeiger-Cancel); die Farbe des Werkzeugs bleibt die zuletzt

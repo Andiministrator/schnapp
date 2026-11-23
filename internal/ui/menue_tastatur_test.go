@@ -45,6 +45,8 @@ func neuerMenueLauf(t *testing.T, fenster image.Point) *menueLauf {
 		t.Fatal(err)
 	}
 	e.s.Auswahl = id
+	// Aktives Feld Füllung (ADR-0021 Nachtrag 11): Die Farbwähler-Tests färben das Schild des Testtexts, wie vor #219.
+	e.s.SetzeFeld(canvas.FeldFuellung)
 	e.bildNeu()
 	l := &menueLauf{t: t, e: e, r: new(input.Router), ops: new(op.Ops), fenst: fenster, id: id}
 	l.bild()
@@ -227,11 +229,11 @@ func TestMenuePfeiltasten(t *testing.T) {
 	l.taste(key.NameUpArrow, 0)
 	zu(aktRueckgaengig, "hoch über den grauen Eintrag Wiederholen")
 	l.taste(key.NameEnd, 0)
-	zu(aktLoeschen, "Ende")
+	zu(aktFarbenTauschen, "Ende")
 	l.taste(key.NameDownArrow, 0)
 	zu(aktRueckgaengig, "Umlauf abwärts vom letzten zum ersten")
 	l.taste(key.NameUpArrow, 0)
-	zu(aktLoeschen, "Umlauf aufwärts vom ersten zum letzten")
+	zu(aktFarbenTauschen, "Umlauf aufwärts vom ersten zum letzten")
 	l.taste(key.NameHome, 0)
 	zu(aktRueckgaengig, "Pos1")
 	if !m.offen {

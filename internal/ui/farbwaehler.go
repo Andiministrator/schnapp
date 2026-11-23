@@ -374,6 +374,9 @@ func (e *editor) farbeZiehen(art farbRegler, r image.Rectangle, p f32.Point) {
 	case reglerDeck:
 		a = uint8(math.Round(fx * 255))
 	}
+	if art != reglerDeck && a == 0 {
+		a = 255 // eine ganz durchsichtige Farbe (Füllung „keine“) wird mit der Wahl eines Tons sichtbar (#219)
+	}
 	e.s.FarbZugHSV(h, a)
 }
 
@@ -516,6 +519,7 @@ func (e *editor) zeichneFarbwaehler(gtx layout.Context, x, y, breite, spalte int
 	fw := &k.fw
 	aktuell, hsv := e.s.AktuelleFarbe(), e.s.FarbeHSV()
 	q, abst := gtx.Dp(24), gtx.Dp(6)
+	y = e.zeichneFarbpaarZeile(gtx, x, y, breite, q)
 	raster := 2*q + abst
 	hoch := 4*q + 3*abst
 
@@ -595,6 +599,40 @@ func (e *editor) zeichneFarbwaehler(gtx layout.Context, x, y, breite, spalte int
 	fw.deckkraft.rahmen = image.Rect(x+breite-gtx.Dp(54), y, x+breite, y+fh)
 	e.zeichneEingabe(gtx, &fw.deckkraft)
 	return y + fh
+}
+
+// zeichneFarbpaarZeile zeichnet über dem Farbwähler die Zeile des Farbpaars (ADR-0021 Nachtrag 11): Vordergrund,
+// Füllung (grau ohne Füllung), Tauschen und „Keine“ (nur bei aktiver Füllung an). Liefert das neue y.
+func (e *editor) zeichneFarbpaarZeile(gtx layout.Context, x, y, breite, q int) int {
+	k := &e.seite
+	aktiv := e.s.AktivesFeld()
+	abst := gtx.Dp(8)
+	k.paarRahmen[paarVorn] = image.Rect(x, y, x+q, y+q)
+	k.paarRahmen[paarFuellung] = k.paarRahmen[paarVorn].Add(image.Pt(q+abst, 0))
+	k.paarRahmen[paarTausch] = k.paarRahmen[paarFuellung].Add(image.Pt(q+abst, 0))
+	keineX := k.paarRahmen[paarTausch].Max.X + abst
+	k.paarRahmen[paarKeine] = image.Rect(keineX, y, min(x+breite, keineX+gtx.Dp(72)), y+q)
+	e.paarFeld(gtx, &k.paar[paarVorn], k.paarRahmen[paarVorn], e.s.Farbe(canvas.FeldVordergrund), true,
+		aktiv == canvas.FeldVordergrund)
+	e.paarFeld(gtx, &k.paar[paarFuellung], k.paarRahmen[paarFuellung], e.s.Farbe(canvas.FeldFuellung), e.s.Fuellbar(),
+		aktiv == canvas.FeldFuellung)
+	e.tauschKnopf(gtx, &k.paar[paarTausch], k.paarRahmen[paarTausch])
+	{
+		rk, c := k.paarRahmen[paarKeine], &k.paar[paarKeine]
+		an := aktiv == canvas.FeldFuellung
+		text, rnd := farbeText, farbeLinie
+		switch {
+		case !an:
+			text = farbeNebentext
+		case c.Hovered():
+			rnd = farbeNebentext
+		}
+		paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(rk).Op())
+		paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(rk).Path(), Width: float32(gtx.Dp(1))}.Op())
+		e.textMittig(gtx, i18n.T("None"), 12, text, rk)
+		seiteKnopf(gtx, c, rk)
+	}
+	return y + q + gtx.Dp(10)
 }
 
 // zeichneEingabe zeichnet ein Eingabefeld: Rand orange mit Fokus, rot bei ungültiger Eingabe, Schreibmarke am Ende.

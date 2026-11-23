@@ -12,6 +12,7 @@ import (
 	"gioui.org/f32"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
+	"gioui.org/widget"
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -110,11 +111,11 @@ func TestWerkzeugleisteKlick(t *testing.T) {
 		t.Errorf("Klick auf „Text“ links: Werkzeug %v", l.e.s.Werkzeug)
 	}
 	l.e.seiteZu = true
-	l.klick(farbe.Min.Add(farbe.Max).Div(2))
+	l.klick(mittenPunkt(vornVon(farbe)))
 	if l.e.seiteZu || l.e.menue.offen {
 		t.Fatalf("Klick auf das Farbfeld bei eingeklappter Leiste: zu %v, Liste offen %v", l.e.seiteZu, l.e.menue.offen)
 	}
-	l.klick(farbe.Min.Add(farbe.Max).Div(2))
+	l.klick(mittenPunkt(vornVon(farbe)))
 	if !l.e.menue.offen || l.e.menue.welches != listeFarbe {
 		t.Fatalf("zweiter Klick auf das Farbfeld: Liste offen %v (%d)", l.e.menue.offen, l.e.menue.welches)
 	}
@@ -366,6 +367,14 @@ func TestFarbHinweisNichtUeberOffenerListe(t *testing.T) {
 func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
 	l.fokusiere(&l.e.knoepfe.farbe)
+	// Farbpaar der Werkzeugleiste: Vordergrund, Füllung, Tauschen (ADR-0021 Nachtrag 11).
+	for i, k := range []*widget.Clickable{&l.e.knoepfe.fuellung, &l.e.knoepfe.tausch} {
+		l.r.MoveFocus(key.FocusForward)
+		l.setle()
+		if !l.fokus(k) {
+			t.Fatalf("Tab %d im Farbpaar: Fokus auf %s", i+1, menueFokusName(l))
+		}
+	}
 	// Gewählt ist ein Text: erst Schrift, Größe, Stil und Ausrichtung (ADR-0031 Nachtrag 6).
 	for i, k := range l.e.seite.sw.knoepfe() {
 		l.r.MoveFocus(key.FocusForward)
@@ -379,6 +388,14 @@ func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 	l.setle()
 	if !l.fokus(&l.e.seite.farbeKopf) {
 		t.Fatalf("Tab nach der Schrift: Fokus nicht auf der Überschrift Farbe (%s)", menueFokusName(l))
+	}
+	// Die Zeile des Farbpaars: Vordergrund, Füllung, Tauschen, Keine (ADR-0021 Nachtrag 11).
+	for i := range l.e.seite.paar {
+		l.r.MoveFocus(key.FocusForward)
+		l.setle()
+		if !l.fokus(&l.e.seite.paar[i]) {
+			t.Fatalf("Tab %d im Farbpaar der Leiste: Fokus woanders (%s)", i+1, menueFokusName(l))
+		}
 	}
 	for i := range canvas.Beschriftungsfarben {
 		l.r.MoveFocus(key.FocusForward) // wie die Tab-Taste (Gio)

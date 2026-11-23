@@ -52,8 +52,8 @@
     "name": "S187-8 Esc gibt den Fokus an den Menütitel statt an das Farbfeld links",
     "datei": "internal/ui/menue.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif e.listeAmFarbKnopf {\n\t\t\treturn &e.knoepfe.farbe\n\t\t}",
-    "neu": "\t\tif false && e.listeAmFarbKnopf {\n\t\t\treturn &e.knoepfe.farbe\n\t\t}"
+    "alt": "\t\tif e.listeAmFarbKnopf {\n\t\t\tif e.s.AktivesFeld() == canvas.FeldFuellung {",
+    "neu": "\t\tif false && e.listeAmFarbKnopf {\n\t\t\tif e.s.AktivesFeld() == canvas.FeldFuellung {"
   },
   {
     "name": "S187-9 Werkzeugleiste schrumpft nicht (F-516)",
@@ -269,7 +269,7 @@
     "name": "QA-A6 Leertaste am Fußfeld wie ein Klick",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\treturn append(z, &e.knoepfe.fussFarbe, &e.knoepfe.fussZoom, &e.knoepfe.farbe)",
+    "alt": "\treturn append(z, &e.knoepfe.fussFarbe, &e.knoepfe.fussZoom, &e.knoepfe.farbe, &e.knoepfe.fuellung)",
     "neu": "\treturn z"
   },
   {
@@ -290,7 +290,7 @@
     "name": "N8 Leertaste nur am Zoomfeld (Sitzungs-QA N-8)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "} else if c := e.fokussierterKnopf(gtx); c == &e.knoepfe.fussFarbe || c == &e.knoepfe.fussZoom ||\n\t\t\t\tc == &e.knoepfe.farbe {",
+    "alt": "} else if c := e.fokussierterKnopf(gtx); c == &e.knoepfe.fussFarbe || c == &e.knoepfe.fussZoom ||\n\t\t\t\tc == &e.knoepfe.farbe || c == &e.knoepfe.fuellung {",
     "neu": "} else if c := e.fokussierterKnopf(gtx); c == &e.knoepfe.fussZoom {"
   },
   {
@@ -299,5 +299,47 @@
     "paket": "./internal/ui",
     "alt": "\t\t\tseiteKnopf(gtx, &k.kanten[j], r)",
     "neu": "\t\t\tif inhalt.KanteAn {\n\t\t\t\tseiteKnopf(gtx, &k.kanten[j], r)\n\t\t\t}"
+  },
+  {
+    "name": "U219-1 Knopf ⇄ links ohne Wirkung",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif k.tausch.Clicked(gtx) && an() {\n\t\te.s.TauscheFarben()",
+    "neu": "\tif k.tausch.Clicked(gtx) && an() {\n\t\t_ = 0"
+  },
+  {
+    "name": "U219-2 Feld Füllung links ohne Wirkung",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif k.fuellung.Clicked(gtx) && an() && e.s.SetzeFeld(canvas.FeldFuellung) {",
+    "neu": "\tif k.fuellung.Clicked(gtx) && an() && false {"
+  },
+  {
+    "name": "U219-3 Keine in der rechten Leiste ohne Wirkung",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\tif k.paar[paarKeine].Clicked(gtx) && an() {\n\t\te.s.KeineFuellung()",
+    "neu": "\tif k.paar[paarKeine].Clicked(gtx) && an() {\n\t\t_ = 0"
+  },
+  {
+    "name": "U219-4 Ziehen auf durchsichtiger Farbe bleibt durchsichtig",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\tif art != reglerDeck && a == 0 {",
+    "neu": "\tif false && art != reglerDeck && a == 0 {"
+  },
+  {
+    "name": "U219-5 Strg+Umschalt+X fehlt in der Tastentabelle",
+    "datei": "internal/ui/kuerzel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t{filter: key.Filter{Name: \"X\", Required: key.ModShortcut | key.ModShift}, akt: aktFarbenTauschen},\n",
+    "neu": ""
+  },
+  {
+    "name": "U219-6 Feld Vordergrund rechts ohne Wirkung",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\tif k.paar[paarVorn].Clicked(gtx) && an() {\n\t\te.s.SetzeFeld(canvas.FeldVordergrund)",
+    "neu": "\tif k.paar[paarVorn].Clicked(gtx) && an() {\n\t\t_ = 0"
   }
 ]

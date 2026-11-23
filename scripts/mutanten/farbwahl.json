@@ -10,7 +10,7 @@
     "name": "F189-2 Farbzug färbt das Objekt nicht mit",
     "datei": "internal/canvas/farbwahl.go",
     "paket": "./internal/canvas",
-    "alt": "\tcase s.farbZugObjekt:\n\t\tif o, ok := s.D.Objekt(s.Auswahl); ok {\n\t\t\t_ = s.D.ZugSetze(Umgefaerbt(o, c))",
+    "alt": "\tcase s.farbZugObjekt:\n\t\tif o, ok := s.D.Objekt(s.Auswahl); ok {\n\t\t\t_ = s.D.ZugSetze(UmgefaerbtIn(o, f, c))",
     "neu": "\tcase s.farbZugObjekt:\n\t\tif o, ok := s.D.Objekt(s.Auswahl); ok {\n\t\t\t_ = o"
   },
   {
@@ -208,5 +208,61 @@
     "paket": "./internal/canvas",
     "alt": "\t\t_ = s.D.ZugSetze(s.farbZugText)",
     "neu": "\t\t_ = s.farbZugText"
+  },
+  {
+    "name": "P219-1 Werkzeugwechsel lädt das Paar nicht",
+    "datei": "internal/canvas/farbpaar.go",
+    "paket": "./internal/canvas",
+    "alt": "\talt := s.paarWerkzeug()\n\tif !farbWerkzeug(w) || w == alt {",
+    "neu": "\talt := s.paarWerkzeug()\n\tif true || !farbWerkzeug(w) || w == alt {"
+  },
+  {
+    "name": "P219-2 aktives Feld immer Vordergrund",
+    "datei": "internal/canvas/farbpaar.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.feld == FeldFuellung && s.Fuellbar() {\n\t\treturn FeldFuellung",
+    "neu": "\tif false && s.feld == FeldFuellung && s.Fuellbar() {\n\t\treturn FeldFuellung"
+  },
+  {
+    "name": "P219-3 Tauschen am Kasten tauscht nicht",
+    "datei": "internal/canvas/farbpaar.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tv.Strich.Farbe, v.Fuellung = v.Fuellung, v.Strich.Farbe",
+    "neu": "\t\t_ = v.Fuellung"
+  },
+  {
+    "name": "P219-4 neuer Text mit Schild in der Vordergrundfarbe",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "Farbe: s.Stil.Farbe, Hintergrund: s.Stil.Fuellung}",
+    "neu": "Farbe: s.Stil.Farbe, Hintergrund: s.Stil.Farbe}"
+  },
+  {
+    "name": "P219-5 neuer Kasten ohne Füllung",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "Strich: s.Stil.strich(), Fuellung: s.Stil.Fuellung,",
+    "neu": "Strich: s.Stil.strich(),"
+  },
+  {
+    "name": "P219-6 Hex auf durchsichtiger Farbe bleibt durchsichtig",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif alt.A == 0 {\n\t\talt.A = 255",
+    "neu": "\tif false && alt.A == 0 {\n\t\talt.A = 255"
+  },
+  {
+    "name": "P219-7 Farbe am Objekt geht ins Paar des aktiven Werkzeugs",
+    "datei": "internal/canvas/farbpaar.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif w, ok := objektWerkzeug(o); ok {\n\t\t\treturn w",
+    "neu": "\t\tif w, ok := objektWerkzeug(o); false && ok {\n\t\t\treturn w"
+  },
+  {
+    "name": "P219-8 Keine wirkt auch ohne aktive Füllung",
+    "datei": "internal/canvas/farbpaar.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.Zieht() || s.gesperrt() || s.AktivesFeld() != FeldFuellung {",
+    "neu": "\tif s.Zieht() || s.gesperrt() {"
   }
 ]

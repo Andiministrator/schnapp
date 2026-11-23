@@ -952,3 +952,15 @@ msgstr "Das Fenster ist zu schmal für die Seitenleiste; zum Umbenennen einer Eb
 
 msgid "Layer hidden. It stays in the working file; redact to remove content for good."
 msgstr "Ebene ausgeblendet. Sie bleibt in der Arbeitsdatei; was endgültig weg soll, schwärzen."
+
+msgid "Foreground"
+msgstr "Vordergrund"
+
+msgid "Fill"
+msgstr "Füllung"
+
+msgid "Swap colors"
+msgstr "Farben tauschen"
+
+msgid "None"
+msgstr "Keine"

@@ -24,8 +24,8 @@ func TestTastenfilterNurTabelleUndMenueNavigation(t *testing.T) {
 		{Name: key.NameF10}: true,
 	}
 	titel := e.leertastenZiele()
-	if len(titel) != menueAnzahl+3 {
-		t.Errorf("%d Ziele der Leertaste, Soll Menütitel + 3 Felder mit Liste", len(titel))
+	if len(titel) != menueAnzahl+4 {
+		t.Errorf("%d Ziele der Leertaste, Soll Menütitel + 4 Felder mit Liste", len(titel))
 	}
 	for _, z := range titel {
 		soll[key.Filter{Focus: z, Name: key.NameSpace}] = true

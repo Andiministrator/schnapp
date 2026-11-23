@@ -263,6 +263,7 @@ type editor struct {
 	// Handlungen stehen in der Menüzeile.
 	knoepfe struct {
 		auswahl, pfeil, kasten, text, nummer, farbe  widget.Clickable
+		fuellung, tausch                             widget.Clickable // Farbpaar der Werkzeugleiste (ADR-0021 Nachtrag 11)
 		schwaerzen, verpixeln, zuschneiden, stauchen widget.Clickable
 		fussFarbe, fussZoom                          widget.Clickable
 	}
@@ -1890,7 +1891,7 @@ func (e *editor) leertastenZiele() []event.Tag {
 	for i := range e.menue.titel {
 		z = append(z, &e.menue.titel[i])
 	}
-	return append(z, &e.knoepfe.fussFarbe, &e.knoepfe.fussZoom, &e.knoepfe.farbe)
+	return append(z, &e.knoepfe.fussFarbe, &e.knoepfe.fussZoom, &e.knoepfe.farbe, &e.knoepfe.fuellung)
 }
 
 func (e *editor) tasten(gtx layout.Context) {
@@ -1966,7 +1967,7 @@ func (e *editor) tasten(gtx layout.Context) {
 			if i := e.menueTitelFokus(gtx); i >= 0 {
 				e.menueOeffne(i, true)
 			} else if c := e.fokussierterKnopf(gtx); c == &e.knoepfe.fussFarbe || c == &e.knoepfe.fussZoom ||
-				c == &e.knoepfe.farbe {
+				c == &e.knoepfe.farbe || c == &e.knoepfe.fuellung {
 				e.knopfPerTaste(c)
 			}
 			continue
@@ -2047,7 +2048,7 @@ func (e *editor) tasten(gtx layout.Context) {
 // fokussierterKnopf liefert den Knopf der Leiste, der gerade den Tastaturfokus hat (nil: keiner).
 func (e *editor) fokussierterKnopf(gtx layout.Context) *widget.Clickable {
 	k := &e.knoepfe
-	alle := []*widget.Clickable{&k.farbe, &k.fussFarbe, &k.fussZoom}
+	alle := []*widget.Clickable{&k.farbe, &k.fuellung, &k.tausch, &k.fussFarbe, &k.fussZoom}
 	alle = append(alle, e.seite.alle()...)
 	alle = append(alle, e.ebenen.alleKnoepfe()...)
 	for i := range e.menue.titel {
@@ -2094,8 +2095,17 @@ func (e *editor) knoepfeAuswerten(gtx layout.Context) {
 			e.s.SetzeWerkzeug(w.w)
 		}
 	}
+	// Farbpaar (ADR-0021 Nachtrag 11 Punkt 3): Ein Klick auf ein Feld macht es aktiv und zeigt die Farbe wie bisher;
+	// das graue Feld Füllung (Pfeil, Nummer) tut nichts.
 	if k.farbe.Clicked(gtx) && an() {
+		e.s.SetzeFeld(canvas.FeldVordergrund)
 		e.farbKnopfGeklickt(gtx)
+	}
+	if k.fuellung.Clicked(gtx) && an() && e.s.SetzeFeld(canvas.FeldFuellung) {
+		e.farbKnopfGeklickt(gtx)
+	}
+	if k.tausch.Clicked(gtx) && an() {
+		e.s.TauscheFarben()
 	}
 }
 

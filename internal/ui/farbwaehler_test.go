@@ -143,7 +143,8 @@ func TestHexEingabe(t *testing.T) {
 	vor := l.e.s.D.Stand()
 	l.tippe("#336699")
 	l.taste(key.NameReturn, 0)
-	want := color.NRGBA{R: 0x33, G: 0x66, B: 0x99, A: l.e.s.Stil.Farbe.A}
+	// Das Schild des Testtexts ist durchsichtig (keine Füllung): sechs Ziffern machen es deckend (ADR-0021 Nachtrag 11).
+	want := color.NRGBA{R: 0x33, G: 0x66, B: 0x99, A: 255}
 	if fw.hex.fehler || l.textHintergrund() != want || l.e.s.D.Stand() == vor {
 		t.Fatalf("nach Enter: Fehler %v, Schild %v, erwartet %v", fw.hex.fehler, l.textHintergrund(), want)
 	}
@@ -210,10 +211,10 @@ func TestPipetteKnopf(t *testing.T) {
 	f := l.e.leinwandFlaeche(l.gtx())
 	p := l.e.s.Abb.ZuFenster(document.Pt(20, 15))
 	l.klick(f.Min.Add(image.Pt(int(p.X), int(p.Y))))
-	if l.e.s.PipetteLaeuft() || l.e.s.Stil.Farbe != (color.NRGBA{A: 255}) {
-		t.Errorf("Klick ins Bild: Pipette %v, Farbe %v", l.e.s.PipetteLaeuft(), l.e.s.Stil.Farbe)
+	if l.e.s.PipetteLaeuft() || l.e.s.AktuelleFarbe() != (color.NRGBA{A: 255}) {
+		t.Errorf("Klick ins Bild: Pipette %v, Farbe %v", l.e.s.PipetteLaeuft(), l.e.s.AktuelleFarbe())
 	}
-	if l.textHintergrund() != l.e.s.Stil.Farbe {
-		t.Errorf("Schild %v, Farbe %v", l.textHintergrund(), l.e.s.Stil.Farbe)
+	if l.textHintergrund() != (color.NRGBA{A: 255}) {
+		t.Errorf("Schild %v", l.textHintergrund())
 	}
 }

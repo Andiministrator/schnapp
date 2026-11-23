@@ -173,7 +173,10 @@ in `internal/ui/hilfe.go`; Tastentabelle in `internal/ui/kuerzel.go`; Logik der 
 - **Farbfeld der Werkzeugleiste:** Ein Klick klappt die eingeklappte Leiste auf, wenn sie Platz hat und die Farbe zeigt;
   sonst (Leiste schon offen, Fenster zu schmal, Werkzeug ohne Farbe) öffnet er die Farbliste am Farbfeld. Per Tastatur
   (Enter) öffnet es immer die Liste mit Fokus auf dem ersten Eintrag. Die Liste ersetzt das bisherige Weiterschalten
-  der Farbe.
+  der Farbe. *Seit ADR-0021 Nachtrag 11 (#219):* Das Farbfeld ist ein Farbpaar (Vordergrund oben links, Füllung unten
+  rechts, ⇄ oben rechts); ein Klick auf ein Feld macht es aktiv und wirkt dann wie hier beschrieben, das graue Feld
+  Füllung tut nichts. Tab: Vordergrund, Füllung, ⇄; in der rechten Leiste steht unter der Überschrift „Farbe“ die Zeile
+  Vordergrund, Füllung, ⇄, „Keine“ vor den Farbfeldern.
 - **Listen der Fußzeile:** Farbe und Zoom klappen eine Liste über dem Feld auf (▾ am Feld): Farbe mit Farbquadrat,
   Name und Hex; Zoom mit Einpassen (Strg+0), 25, 50, 100 (Strg+1), 200, 400 % (`canvas.ZoomStufen`,
   `canvas.Sitzung.SetzeZoom` um die Fenstermitte). Die aktuelle Wahl ist grün. Die Listen laufen über dieselbe

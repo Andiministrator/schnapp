@@ -59,7 +59,10 @@ var Weiss = color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 
 // Stil sind die Eigenschaften neuer Objekte, Größen in Pixeln des Originals.
 type Stil struct {
+	// Farbe ist der Vordergrund, Fuellung die Fläche von Kasten und Text-Schild (Deckkraft 0: keine), beide aus dem
+	// Paar des zuletzt gewählten Werkzeugs mit Farbe (ADR-0021 Nachtrag 11, farbpaar.go).
 	Farbe       color.NRGBA
+	Fuellung    color.NRGBA
 	Breite      float64 // Strich von Pfeil und Kasten
 	Eckradius   float64 // Kasten
 	Schriftgrad float64 // Text
@@ -117,23 +120,10 @@ func Quadrat(a, b document.Punkt) document.Punkt {
 	return a.Plus(document.Pt(math.Copysign(s, d.X), math.Copysign(s, d.Y)))
 }
 
-// Umgefaerbt liefert o in der Farbe c: Strich bei Pfeil und Kasten, Schild beim Text, Kreis bei der Nummer.
+// Umgefaerbt liefert o mit dem Vordergrund c: Strich bei Pfeil und Kasten, Schrift beim Text, Kreis bei der Nummer
+// (ADR-0021 Nachtrag 11; das Schild des Texts ist die Füllung, UmgefaerbtIn).
 func Umgefaerbt(o document.Objekt, c color.NRGBA) document.Objekt {
-	switch v := o.(type) {
-	case document.Pfeil:
-		v.Strich.Farbe = c
-		return v
-	case document.Kasten:
-		v.Strich.Farbe = c
-		return v
-	case document.Text:
-		v.Hintergrund = c
-		return v
-	case document.Nummer:
-		v.Farbe = c
-		return v
-	}
-	return o
+	return UmgefaerbtIn(o, FeldVordergrund, c)
 }
 
 // --- Werkzeug und Farbe ---
@@ -150,6 +140,7 @@ func (s *Sitzung) SetzeWerkzeug(w Werkzeug) bool {
 	}
 	vorher := s.zuschnittModus()
 	s.Werkzeug = w
+	s.wechslePaar(w)
 	if s.zuschnittModus() != vorher {
 		// Vollansicht an oder aus (ADR-0023 Nachtrag 5): anderes Bild; die Ansichtskoordinaten bleiben, neu eingepasst
 		// wird nur, wenn der Nutzer nicht selbst gezoomt oder verschoben hat.
@@ -161,24 +152,24 @@ func (s *Sitzung) SetzeWerkzeug(w Werkzeug) bool {
 	return true
 }
 
-// SetzeFarbe setzt die Farbe für folgende Objekte und färbt das ausgewählte Objekt um (ein Rückgängig-Schritt);
-// während der Texteingabe gehört das Umfärben zur Eingabe. Liefert, ob sich das Dokument geändert hat.
+// SetzeFarbe setzt die Farbe c im aktiven Feld (AktivesFeld) für folgende Objekte und färbt das Objekt um, auf das die
+// Farbwahl wirkt (ein Rückgängig-Schritt); während der Texteingabe gehört das Umfärben zur Eingabe. Das Paar des
+// Werkzeugs, das dieses Objekt zeichnet, übernimmt die Farbe. Liefert, ob sich das Dokument geändert hat.
 func (s *Sitzung) SetzeFarbe(c color.NRGBA) bool {
 	if s.Zieht() || s.gesperrt() { // während des Speicherns auch keine neue Farbe (F-280): Bearbeiten ruht ganz
 		return false
 	}
-	s.Stil.Farbe = c
-	if s.zug == zugText {
-		if o, ok := s.D.Objekt(s.textID); ok {
-			_ = s.D.ZugSetze(Umgefaerbt(o, c))
-		}
-		return false
-	}
-	o, ok := s.D.Objekt(s.Auswahl)
+	f := s.AktivesFeld()
+	s.merkePaarFarbe(s.zielWerkzeug(), f, c)
+	o, ok := s.farbObjekt()
 	if !ok {
 		return false
 	}
-	neu := Umgefaerbt(o, c)
+	neu := UmgefaerbtIn(o, f, c)
+	if s.zug == zugText {
+		_ = s.D.ZugSetze(neu)
+		return false
+	}
 	if neu == o {
 		return false
 	}
@@ -303,7 +294,7 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 		n.ID = id
 		s.zug, s.neuID, s.startObj = zugNeu, id, n
 	case WerkzeugText:
-		t := document.Text{Ort: q, Schriftgrad: s.Stil.Schriftgrad, Farbe: Weiss, Hintergrund: s.Stil.Farbe}
+		t := document.Text{Ort: q, Schriftgrad: s.Stil.Schriftgrad, Farbe: s.Stil.Farbe, Hintergrund: s.Stil.Fuellung}
 		s.Stil.aufText(&t)
 		id, err := s.D.BeginneNeuenZug(t)
 		if err != nil {
@@ -359,7 +350,8 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 		if s.Umschalt {
 			b = s.umschaltEnde(WerkzeugKasten, p)
 		}
-		o = document.Kasten{ID: s.neuID, Bereich: document.R(a, b), Strich: s.Stil.strich(), Eckradius: s.Stil.Eckradius}
+		o = document.Kasten{ID: s.neuID, Bereich: document.R(a, b), Strich: s.Stil.strich(), Fuellung: s.Stil.Fuellung,
+			Eckradius: s.Stil.Eckradius}
 	case WerkzeugNummer:
 		o = Verschiebe(s.startObj, b.Minus(a))
 	case WerkzeugSchwaerzen, WerkzeugVerpixeln, WerkzeugZuschneiden, WerkzeugStauchen:
