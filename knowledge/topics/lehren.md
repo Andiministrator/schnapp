@@ -664,3 +664,9 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Ein Zustandswechsel und eine Taste im selben Bild sehen denselben Gio-Fokus:** Pfeil rechts wechselt das Menü,
   Enter wertet danach noch den alten Fokus-Index aus. Was im selben Bild auf dem Fokus aufbaut, braucht eine
   „gerade gewechselt“-Marke (`menue.gewechselt`, F-512).
+- **Gios Strich (`clip.Stroke`) kennt nur runde Ecken.** Spitze Ecken im Editor gehen nur über gefüllte Flächen
+  (`document.EckigerRahmen`, F-498).
+- **Ein Test, der die gerade zu ändernde Eigenschaft festschreibt, wird nicht gelöscht,** sondern bekommt die
+  Voraussetzung der alten Eigenschaft (`TestKastenEckeRund` jetzt mit Radius 6).
+- **API-Abbrüche (529) treffen Agenten kurz vor dem Commit:** Beim Fortsetzen zuerst committen lassen, dann prüfen
+  und berichten (Karte #211, zwei Abbrüche).
