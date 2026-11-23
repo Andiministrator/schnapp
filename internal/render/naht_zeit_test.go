@@ -139,16 +139,24 @@ func TestNahtGrenzeMessen(t *testing.T) {
 	}
 }
 
-// TestNahtPruefsumme gibt die SHA-256-Summe der Pixel für mehrere Nähte-Dokumente aus (bitgleich-Vergleich vor und
-// nach einer Beschleunigung, F-430); ohne -v bleibt der Test stumm.
+// TestNahtPruefsumme (F-430, F-514) hält die Pixel der Nähte bitgleich fest: SHA-256 des Ergebnisses für 12 Nähte auf
+// 3000×700 in jeder Form gegen feste Sollwerte, vor der Beschleunigung gemessen und nach ihr unverändert. Ändert sich
+// das Bild mit Absicht (Kantenform, Rasterkern), gehören die Werte mit einer Begründung im Commit neu eingetragen:
+// `go test ./internal/render -run TestNahtPruefsumme -v` nennt die neuen Summen.
 func TestNahtPruefsumme(t *testing.T) {
-	for _, f := range []document.Kante{document.KanteAbriss, document.KanteWelle, document.KanteZacken} {
+	soll := map[document.Kante]string{
+		document.KanteAbriss: "82e17cfcdb1432698e71c50005238a6f4a20d6707c475731f30b22b2026087bf",
+		document.KanteWelle:  "41cf31a746a2012b06066bbfc968704e1741fa89657dfed8fbae5047503073f2",
+		document.KanteZacken: "ba294d195ab655a21bad2e1fdd8ec2a51d5bfca879dbc02cb70102651970e0c3",
+	}
+	for f, erwartet := range soll {
 		d := nahtDokument(t, 3000, 700, f, 12)
 		b, err := Bild(d)
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Logf("Summe %v: %x", f, sha256.Sum256(b.Pix))
+		if got := fmt.Sprintf("%x", sha256.Sum256(b.Pix)); got != erwartet {
+			t.Errorf("Summe %v: %s, erwartet %s", f, got, erwartet)
+		}
 	}
-	_ = fmt.Sprint
 }
