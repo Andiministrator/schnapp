@@ -59,8 +59,8 @@
     "name": "O9 Esc schließt die Übersicht nicht (ADR-0031)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\te.hilfeOffen = false\n\t\t\tcontinue",
-    "neu": "\t\t\tcontinue"
+    "alt": "\t\t\t\te.hilfeOffen = false\n\t\t\t}\n\t\t\tcontinue",
+    "neu": "\t\t\t}\n\t\t\tcontinue"
   },
   {
     "name": "O10 Tasten wirken hinter der Übersicht (B-2)",
