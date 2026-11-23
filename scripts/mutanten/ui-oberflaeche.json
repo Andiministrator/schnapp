@@ -38,15 +38,15 @@
     "name": "O6 Zeigerort bleibt nach Verlassen (ADR-0031)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\t\te.zeigerBild = nil\n\t\treturn alt != nil",
-    "neu": "\t\treturn alt != nil"
+    "alt": "\tif pe.Kind == pointer.Leave {\n\t\te.zeigerFenster = nil\n\t} else {",
+    "neu": "\tif false && pe.Kind == pointer.Leave {\n\t\te.zeigerFenster = nil\n\t} else {"
   },
   {
     "name": "O7 Fußfeld Zeiger außerhalb des Bilds (ADR-0031)",
     "datei": "internal/canvas/fusszeile.go",
     "paket": "./internal/canvas",
-    "alt": "zeiger.X < float64(bild.X) && zeiger.Y < float64(bild.Y)",
-    "neu": "zeiger.X <= float64(bild.X) && zeiger.Y < float64(bild.Y)"
+    "alt": "a.X < float64(f.Max.X) && a.Y < float64(f.Max.Y)",
+    "neu": "a.X <= float64(f.Max.X) && a.Y < float64(f.Max.Y)"
   },
   {
     "name": "O8 Übersicht der Tastenkürzel öffnet nicht (ADR-0031)",
