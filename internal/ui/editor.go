@@ -268,6 +268,8 @@ type editor struct {
 	zeigerFenster *document.Punkt
 	// fussRahmen: Lage der Felder, die die Fußzeile beim letzten Zeichnen zeigte (von rechts nach links; Tests, F-514).
 	fussRahmen []image.Rectangle
+	// hilfeGroesse: Größe der Tastenübersicht beim letzten Zeichnen (Tests, F-509: sie passt auf die Leinwand).
+	hilfeGroesse image.Point
 	// hilfeOffen: die Übersicht der Tastenkürzel liegt über der Leinwand (Menü Hilfe, F1; hilfe.go).
 	hilfeOffen bool
 

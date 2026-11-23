@@ -93,6 +93,7 @@ func (e *editor) zeichneHilfe(gtx layout.Context) {
 	}
 	spalteB := spalteText + spalteTaste + innen
 	groesse := image.Pt(min(flaeche.Dx(), innen*2+spalten*spalteB), min(flaeche.Dy(), innen*2+gtx.Dp(14)+pro*hoehe))
+	e.hilfeGroesse = groesse
 	ecke := flaeche.Min.Add(flaeche.Size().Sub(groesse).Div(2))
 	t := op.Offset(ecke).Push(gtx.Ops)
 	r := image.Rectangle{Max: groesse}
