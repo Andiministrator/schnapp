@@ -24,7 +24,7 @@
     "name": "A202-4 Punkt rechts außerhalb angenommen",
     "datei": "internal/annotate/annotate.go",
     "paket": "./internal/annotate",
-    "alt": "|| p[0] > float64(g.X) ",
+    "alt": "p[0] <= float64(g.X) && ",
     "neu": ""
   },
   {
@@ -45,8 +45,8 @@
     "name": "A202-7 Verpixeln schwärzt immer",
     "datei": "internal/annotate/annotate.go",
     "paket": "./internal/annotate",
-    "alt": "canvas.SchwaerzBereich(d, r, e.Type == \"pixelate\")",
-    "neu": "canvas.SchwaerzBereich(d, r, false)"
+    "alt": "\t\t\tpx, sw, _, ok := canvas.SchwaerzBereich(d, r, e.Type == \"pixelate\")",
+    "neu": "\t\t\tpx, sw, _, ok := canvas.SchwaerzBereich(d, r, false)"
   },
   {
     "name": "A202-8 Punkt mit einer Zahl angenommen",
@@ -73,8 +73,8 @@
     "name": "C202-2 Speicherfunktion erst nach dem Anwenden (Warnung fehlt)",
     "datei": "cmd/schnapp/beschriften.go",
     "paket": "./cmd/schnapp",
-    "alt": "\tspeichern := speichernMitNachher(library.Neu(orte), abs, g, stand, func(p string) { ziel = p })\n\terg, err := annotate.Wende(d, es)\n\tif err != nil {\n\t\treturn beschriftung{}, err\n\t}",
-    "neu": "\terg, err := annotate.Wende(d, es)\n\tif err != nil {\n\t\treturn beschriftung{}, err\n\t}\n\tspeichern := speichernMitNachher(library.Neu(orte), abs, g, stand, func(p string) { ziel = p })"
+    "alt": "\tspeichern := ablegenIn(library.Neu(orte), abs, g, stand, func(p string) { ziel = p })\n\terg, err := annotate.Wende(ctx, d, es)\n\tif err != nil {\n\t\treturn beschriftung{}, err\n\t}",
+    "neu": "\terg, err := annotate.Wende(ctx, d, es)\n\tif err != nil {\n\t\treturn beschriftung{}, err\n\t}\n\tspeichern := ablegenIn(library.Neu(orte), abs, g, stand, func(p string) { ziel = p })"
   },
   {
     "name": "C202-3 annotate ohne Einwilligung edit",
@@ -96,5 +96,201 @@
     "paket": "./cmd/schnapp",
     "alt": "\t\ta.Modus, a.Spez = ModusBeschriften, spez",
     "neu": "\t\ta.Spez = spez"
+  },
+  {
+    "name": "K202-M1 Vorschau-Cache ohne library",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tfor _, ort := range []string{o.Vorschau, o.Ablage} {",
+    "neu": "\tfor _, ort := range []string{o.Ablage} {"
+  },
+  {
+    "name": "K202-M3 MCP ohne Rechenbudget",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "beschrifteDatei(ctx, p.File, es, o, einst.Kante, false, lage)",
+    "neu": "beschrifteDatei(ctx, p.File, es, o, einst.Kante, true, lage)"
+  },
+  {
+    "name": "K202-M4 Lesefehler unterscheidbar",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\treturn mcp.FehlerErgebnis(beschriftenQuelleFehler)",
+    "neu": "\t\treturn mcp.FehlerErgebnis(\"Cannot open the file: \" + agentGrund(err))"
+  },
+  {
+    "name": "K202-M5 relativer Pfad angenommen",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif !filepath.IsAbs(p.File) {\n\t\treturn mcp.FehlerErgebnis(\"file must be an absolute path.\")\n\t}\n\to, err := an.orte()",
+    "neu": "\tif false {\n\t\treturn mcp.FehlerErgebnis(\"file must be an absolute path.\")\n\t}\n\to, err := an.orte()"
+  },
+  {
+    "name": "K202-M7 ein Eintrag über MaxEintraege angenommen",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\tif len(liste) > MaxEintraege {",
+    "neu": "\tif len(liste) > MaxEintraege+1 {"
+  },
+  {
+    "name": "K202-M10 Ablage nur nach Auflösen geprüft",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif (drin || liegtIn(filepath.Clean(ort), filepath.Clean(p.File))) && !einst.Agenten.Bibliothek {",
+    "neu": "\t\tif drin && !einst.Agenten.Bibliothek {"
+  },
+  {
+    "name": "K202-M11 Ablage nur dem Namen nach geprüft",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif (drin || liegtIn(filepath.Clean(ort), filepath.Clean(p.File))) && !einst.Agenten.Bibliothek {",
+    "neu": "\t\tif (drin && false || liegtIn(filepath.Clean(ort), filepath.Clean(p.File))) && !einst.Agenten.Bibliothek {"
+  },
+  {
+    "name": "K202-M14 Hinweis an den Agenten",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\treturn mcp.Ergebnis{Inhalt: []mcp.Inhalt{mcp.TextInhalt(string(text))}, Strukturiert: b.erg}",
+    "neu": "\treturn mcp.Ergebnis{Inhalt: []mcp.Inhalt{mcp.TextInhalt(string(text) + b.hinweis)}, Strukturiert: b.erg}"
+  },
+  {
+    "name": "K202-M17 none auch für color",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\t\tif keineErlaubt && *s == \"none\" {",
+    "neu": "\t\t\tif *s == \"none\" {"
+  },
+  {
+    "name": "K202-B1 Cancelled trotz gespeicherter Datei",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tcase err != nil && ctx.Err() != nil:",
+    "neu": "\tcase ctx.Err() != nil:"
+  },
+  {
+    "name": "K202-B2a CLI hält weitere Signale nicht zurück",
+    "datei": "cmd/schnapp/beschriften.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\t\tif lage.haelt() {\n\t\t\t\t\tcontinue // abgefangen",
+    "neu": "\t\t\t\tif false {\n\t\t\t\t\tcontinue // abgefangen"
+  },
+  {
+    "name": "K202-B2b hängendes Speichern hält Signale ewig",
+    "datei": "cmd/schnapp/beschriften.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\treturn saveprogress.Jetzt().Sub(letzt) < beschriftenFrist",
+    "neu": "\treturn true"
+  },
+  {
+    "name": "K202-B2c MCP wartet nicht auf das Speichern",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\tif signalHalten() {\n\t\t\t\t// Ein laufendes annotate",
+    "neu": "\t\t\tif false {\n\t\t\t\t// Ein laufendes annotate"
+  },
+  {
+    "name": "K202-B2d erstes Signal bricht nicht ab",
+    "datei": "cmd/schnapp/beschriften.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\t\tif kamen.Add(1) == 1 {\n\t\t\t\t\tabbrechen()",
+    "neu": "\t\t\t\tif kamen.Add(1) == 1 {\n\t\t\t\t\t_ = abbrechen"
+  },
+  {
+    "name": "K202-B2e Phase Speichern nicht gesetzt",
+    "datei": "cmd/schnapp/beschriften.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tlage.setze(1)\n",
+    "neu": ""
+  },
+  {
+    "name": "K202-B3a Flächenbudget nicht geprüft",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\tif err := pruefeSchwaerzFlaeche(d, es); err != nil {",
+    "neu": "\tif err := pruefeSchwaerzFlaeche(d, es); false && err != nil {"
+  },
+  {
+    "name": "K202-B3b Flächen nicht summiert",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "if bedarf += 4 * int64(q.Dx()) * int64(q.Dy()); bedarf > platz",
+    "neu": "if bedarf = 4 * int64(q.Dx()) * int64(q.Dy()); bedarf > platz"
+  },
+  {
+    "name": "K202-B3c Wende ohne Abbruch",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\tif err := ctx.Err(); err != nil {\n\t\t\treturn erg, err\n\t\t}",
+    "neu": "\t\tif err := ctx.Err(); false && err != nil {\n\t\t\treturn erg, err\n\t\t}"
+  },
+  {
+    "name": "K202-B5a leere Liste angenommen",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\tif len(liste) == 0 {",
+    "neu": "\tif false && len(liste) == 0 {"
+  },
+  {
+    "name": "K202-B5b MCP ohne Nothing was saved bei ungültiger Liste",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\treturn mcp.FehlerErgebnis(err.Error() + \". Nothing was saved.\")\n\t}\n\t// Die Lage",
+    "neu": "\t\treturn mcp.FehlerErgebnis(err.Error() + \".\")\n\t}\n\t// Die Lage"
+  },
+  {
+    "name": "K202-B6a Hülle in anderer Schreibung angenommen",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\tif k != \"annotations\" {",
+    "neu": "\t\tif false && k != \"annotations\" {"
+  },
+  {
+    "name": "K202-B6b doppelte Schlüssel angenommen",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\t\tif pruefen && gesehen[s] {",
+    "neu": "\t\t\tif false && pruefen && gesehen[s] {"
+  },
+  {
+    "name": "K202-B6c doppelte Schlüssel im Eintrag angenommen",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\tif err := KeineDoppelten(roh); err != nil {",
+    "neu": "\t\tif err := KeineDoppelten(roh); false && err != nil {"
+  },
+  {
+    "name": "K202-B6d MCP-Argumente in anderer Schreibung",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif !namen[k] {",
+    "neu": "\t\tif false && !namen[k] {"
+  },
+  {
+    "name": "K202-B6e MCP-Argumente doppelt",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif err := annotate.KeineDoppelten(args); err != nil {",
+    "neu": "\tif err := annotate.KeineDoppelten(args); false && err != nil {"
+  },
+  {
+    "name": "K202-B7a Lesefehler der Liste Exit 2",
+    "datei": "cmd/schnapp/beschriften.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif errors.As(err, &l) {",
+    "neu": "\tif false && errors.As(err, &l) {"
+  },
+  {
+    "name": "K202-B7b kein Budget-Hinweis mit --ignore-limit",
+    "datei": "cmd/schnapp/beschriften.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif ohneGrenze {\n\t\tif render.Pruefe(d) != nil {",
+    "neu": "\tif false {\n\t\tif render.Pruefe(d) != nil {"
+  },
+  {
+    "name": "K202-A Bildgröße im Fehlertext",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "f(\"%q %v lies outside the visible image\", name, *p)",
+    "neu": "f(\"%q %v lies outside the visible image (0..%d, 0..%d)\", name, *p, d.Groesse().X, d.Groesse().Y)"
   }
 ]

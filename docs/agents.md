@@ -139,10 +139,15 @@ stays unchanged and the result becomes a new screenshot in the library. `LIST` i
 Points are `[x, y]` in pixels of the **visible** image (the `width` and `height` that `--json` reports), origin top
 left, and must lie inside it. Colours are `#RRGGBB` or `#RRGGBBAA`; `fill` may also be `"none"`. Missing values take
 the defaults of the editor: red lines, rectangles without fill, text in white on a red label, sizes that grow with
-large screenshots. Unknown keys or types, and keys that do not belong to the type, are errors.
+large screenshots. Unknown keys or types, keys that do not belong to the type, keys in another spelling
+(`"AT"`), keys given twice and an empty list are errors. All redacted and pixelated areas of one list together may
+cover at most about 134 megapixels of the original (use several lists for more).
 
 All or nothing: if one entry is invalid (exit code 2, the message names the entry by its index from 0) or the result
-would be too costly to render (exit code 1; `--ignore-limit` skips this check), nothing is saved. With `--json`:
+would be too costly to render (exit code 1; `--ignore-limit` skips this check and saves with a warning), nothing is
+saved. A list that cannot be read is exit code 1. SIGTERM, SIGINT or SIGHUP before saving stops without saving
+(exit code 1); once saving has started it finishes, the result is printed and the exit code is 1. A further signal
+stops at once only before saving or when saving has made no progress for 15 seconds. With `--json`:
 
 ```json
 {"path":"/home/user/Pictures/schnapp/2026-11/2026-11-23_10-00-00.png","width":1920,"height":1080,"annotations":4,"redactions":2,"warning":false}
@@ -160,7 +165,8 @@ notification) and Wayland (confirmation dialog). Register it in your agent like 
 request) and the older handshake form (`initialize`, revisions 2024-11-05 to 2025-11-25); `ping` is answered in both.
 Logs go to standard error only. Requests run one at a time; while a tool runs, at most 64 further messages (8 MiB) are
 held, and a request beyond that fails with `-32600`. After SIGTERM, SIGINT or SIGHUP no further request starts; a
-second signal stops the server at once.
+second signal stops the server at once — only a running `annotate` save is finished first (unless it makes no
+progress for 15 seconds). Arguments of every tool must use the exact key names, each at most once.
 
 Tools (names and JSON keys are stable):
 
@@ -205,7 +211,8 @@ to the library under `<Pictures>/schnapp/agents/` and are cleaned up like any ca
 (`notifications/cancelled`, end of input, first signal) is discarded even if the image was already taken or written: the
 server removes the file it has just created (in the library together with its preview and index entry). Only if that
 removal fails does the answer name the file. An `export` that a signal interrupts after the target was written
-completely keeps the file and says so. Error texts to the agent are always English and never contain the user's home directory (only paths the
+completely keeps the file and says so. An `annotate` that is cancelled before saving saves nothing (`Cancelled.`);
+once saving has started it finishes, and the answer is the result. Error texts to the agent are always English and never contain the user's home directory (only paths the
 agent gave or got); `export` gives one sentence for every source it cannot open (missing, unreadable, not an image).
 
 The dialog answers only to a pointer (mouse, touch or pen): "Allow" counts only when it is pressed and released after a

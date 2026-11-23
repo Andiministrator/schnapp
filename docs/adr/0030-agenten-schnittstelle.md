@@ -387,3 +387,32 @@ MCP-Protokoll, nicht bei hartem Prozessende.
 6. **Umsetzung:** Auswertung und Anwendung im Paket `internal/annotate` (ohne Gio); die Voreinstellungen und die
    Abbildung eines Schwärzungsrahmens aufs Original liefert `canvas` (`canvas.StandardPaar`,
    `canvas.SchwaerzBereich`), damit Kommandozeile und Editor gleich rechnen.
+
+## Nachtrag 11 (23.11.2026): Härtung von `--annotate` und `annotate` nach der Kritik zu Karte #202 (B-1 bis B-7)
+
+**Status:** Akzeptiert (Claude Opus 5.5, im Auftrag Andis: „arbeite selbstständig“). Ändert Nachtrag 10, wo er abweicht.
+
+1. **Signale beim Beschriften (B-2):** `--annotate` fängt SIGTERM, SIGINT und SIGHUP wie der Editor (ADR-0020
+   Nachträge 2 und 7; geerbtes Ignorieren bleibt). Das erste Signal vor dem Speichern bricht ab: nichts gespeichert,
+   Exit 1. Läuft das Speichern schon, wird es fertig — mit neuer Vorschau und dem Entfernen einer ausgewichenen
+   Fassung —, das Ergebnis steht auf stdout, Exit 1 (wie `--output` nach dem Schreiben, Nachtrag 1). Weitere Signale
+   hält die Wache zurück, solange das Speichern Fortschritt meldet (`internal/saveprogress`, Frist 15 s wie
+   `speichernFrist` im Editor). **Grenze:** Ein weiteres Signal beendet sofort mit Exit 1 vor dem Speichern (nichts
+   geschrieben) und bei einem Speichern ohne Fortschritt über die Frist (hängendes Dateisystem; die Meldung sagt, dass
+   das Ergebnis unvollständig sein kann). SIGKILL bleibt außerhalb jeder Wache. Der MCP-Server (Nachtrag 4 Punkt 6)
+   beendet beim zweiten Signal erst nach einem laufenden `annotate`-Speichern, mit derselben Frist.
+2. **Abbruch nach dem Speichern (B-1):** Endet der Aufruf (`notifications/cancelled`, EOF, Signal), während schon
+   gespeichert wird, antwortet `annotate` mit dem Ergebnis, nicht mit „Cancelled.“; ein Hinweis steht wie sonst nur
+   auf stderr des Servers.
+3. **Flächenbudget der Schwärzungen (B-3):** Vorab werden die Flächen aller `redact`/`pixelate` im Original
+   summiert; mehr als `document.VerlaufPlatz()` / 4 Pixel (anfangs 512 MiB, rund 134 Megapixel, derselbe Maßstab wie
+   beim Anwenden einer Rettungskopie, F-412) lehnt die Liste ab, ohne ein Pixel anzufassen (Exit 2, Index des
+   Eintrags, der die Grenze überschreitet). Zwischen zwei Einträgen bricht das Anwenden ab, sobald der Aufruf endet.
+4. **Strengere Liste (B-5, B-6):** Eine leere Liste ist ein Fehler (Exit 2, MCP „Nothing was saved“). Schlüssel
+   gelten nur in genau ihrer Schreibung (`ANNOTATIONS`, `AT` sind Fehler), doppelte Schlüssel sind ein Fehler — in der
+   Liste und in den Argumenten aller MCP-Werkzeuge (`FILE`).
+5. **Exit-Codes und Texte (B-7, Anmerkung):** Eine Liste, die sich nicht lesen lässt (Ordner, E/A-Fehler auf stdin),
+   ist Exit 1 wie eine fehlende. Mit `--ignore-limit` über dem Budget sagt der Hinweis „… without --ignore-limit“,
+   nicht den Satz des Editors. Der Fehler zu einem Punkt außerhalb des Bilds nennt die Bildgröße nicht mehr: Aus einer
+   abgelehnten Liste erfährt ein Agent die Maße einer fremden Datei nicht (gespeichert wird dabei nichts, es bleibt
+   keine Spur).

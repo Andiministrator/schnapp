@@ -991,3 +991,21 @@ msgstr "Die Option --annotate braucht die Datei, die beschriftet werden soll: --
 
 msgid "Add annotations and redactions from LIST (JSON, - = standard input) to FILE and save as the editor does"
 msgstr "Beschriftungen und Schwärzungen aus LISTE (JSON, - = Standardeingabe) auf DATEI legen und wie der Editor speichern"
+
+msgid "Interrupted by a signal; nothing was saved."
+msgstr "Durch ein Signal unterbrochen; nichts wurde gespeichert."
+
+msgid "Interrupted again; nothing was saved."
+msgstr "Erneut unterbrochen; nichts wurde gespeichert."
+
+msgid "Interrupted again while saving made no progress; the result may be incomplete."
+msgstr "Erneut unterbrochen, während das Speichern nicht vorankam; das Ergebnis ist womöglich unvollständig."
+
+msgid "Interrupted again; the file was already saved."
+msgstr "Erneut unterbrochen; die Datei war schon gespeichert."
+
+msgid "Saved, but the file has too many or too large annotations to be opened again without --ignore-limit."
+msgstr "Gespeichert, aber die Datei hat zu viele oder zu große Beschriftungen, um sie ohne --ignore-limit wieder zu öffnen."
+
+msgid "schnapp mcp: second signal, stopping after the running save."
+msgstr "schnapp mcp: zweites Signal, Ende nach dem laufenden Speichern."

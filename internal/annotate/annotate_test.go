@@ -3,6 +3,7 @@
 package annotate
 
 import (
+	"context"
 	"errors"
 	"image"
 	"image/color"
@@ -76,7 +77,7 @@ func TestWendeVoreinstellungen(t *testing.T) {
 		{"type":"text","at":[10,60],"text":"Hallo"},
 		{"type":"step","at":[150,50]},
 		{"type":"step","at":[170,50]}]}`)
-	erg, err := Wende(d, es)
+	erg, err := Wende(context.Background(), d, es)
 	if err != nil || erg.Beschriftungen != 5 || erg.Schwaerzungen != 0 {
 		t.Fatalf("%+v, %v", erg, err)
 	}
@@ -105,7 +106,7 @@ func TestWendeAngaben(t *testing.T) {
 		{"type":"text","at":[10,60],"text":"a\nb","size":30,"color":"#000000","fill":"none","font":"Go Mono",
 		 "bold":true,"italic":true,"underline":true,"strikethrough":true,"align":"right"},
 		{"type":"step","at":[150,50],"color":"#2F6FDB","radius":20}]}`)
-	if _, err := Wende(d, es); err != nil {
+	if _, err := Wende(context.Background(), d, es); err != nil {
 		t.Fatal(err)
 	}
 	o := d.Objekte()
@@ -139,7 +140,7 @@ func TestWendeFehler(t *testing.T) {
 		{`{"type":"redact","from":[10,10],"to":[10,50]}`, "empty"},
 	} {
 		d := dokument(t, 200, 100)
-		_, err := Wende(d, lies(t, `{"annotations":[{"type":"step","at":[5,5]},`+tc.eintrag+`]}`))
+		_, err := Wende(context.Background(), d, lies(t, `{"annotations":[{"type":"step","at":[5,5]},`+tc.eintrag+`]}`))
 		var f *Fehler
 		if !errors.As(err, &f) || f.Index != 1 || !strings.Contains(err.Error(), tc.teil) {
 			t.Errorf("%s: %v", tc.eintrag, err)
@@ -151,7 +152,7 @@ func TestWendeFehler(t *testing.T) {
 // zu schmaler Verpixeln-Bereich wird geschwärzt (ADR-0022 Punkt 2); gezählt als Schwärzungen.
 func TestWendeSchwaerzen(t *testing.T) {
 	d := dokument(t, 200, 100)
-	erg, err := Wende(d, lies(t, `{"annotations":[
+	erg, err := Wende(context.Background(), d, lies(t, `{"annotations":[
 		{"type":"redact","from":[10,10],"to":[30,30]},
 		{"type":"pixelate","from":[100,10],"to":[160,70]},
 		{"type":"pixelate","from":[40,40],"to":[42,90]}]}`))
@@ -183,16 +184,16 @@ func TestWendeSichtbaresBild(t *testing.T) {
 	if err := d.SetzeZuschnitt(image.Rect(50, 20, 150, 80)); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Wende(d, lies(t, `{"annotations":[{"type":"step","at":[100,60]}]}`)); err != nil {
+	if _, err := Wende(context.Background(), d, lies(t, `{"annotations":[{"type":"step","at":[100,60]}]}`)); err != nil {
 		t.Fatal(err)
 	}
 	if n := d.Objekte()[0].(document.Nummer); n.Mitte != document.Pt(150, 80) {
 		t.Errorf("Nummer bei %v, erwartet (150, 80)", n.Mitte)
 	}
-	if _, err := Wende(d, lies(t, `{"annotations":[{"type":"step","at":[101,10]}]}`)); err == nil {
+	if _, err := Wende(context.Background(), d, lies(t, `{"annotations":[{"type":"step","at":[101,10]}]}`)); err == nil {
 		t.Error("Punkt rechts neben dem sichtbaren Bild angenommen")
 	}
-	if _, err := Wende(d, lies(t, `{"annotations":[{"type":"redact","from":[0,0],"to":[10,10]}]}`)); err != nil {
+	if _, err := Wende(context.Background(), d, lies(t, `{"annotations":[{"type":"redact","from":[0,0],"to":[10,10]}]}`)); err != nil {
 		t.Fatal(err)
 	}
 	o := d.OriginalBild()
@@ -209,7 +210,7 @@ func TestWendeGrenze(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	_, err := Wende(d, lies(t, `{"annotations":[{"type":"arrow","from":[1,1],"to":[9,9]}]}`))
+	_, err := Wende(context.Background(), d, lies(t, `{"annotations":[{"type":"arrow","from":[1,1],"to":[9,9]}]}`))
 	if err == nil || !strings.Contains(err.Error(), "annotation 0") {
 		t.Errorf("über der Objektgrenze: %v", err)
 	}

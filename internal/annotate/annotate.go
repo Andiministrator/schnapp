@@ -9,6 +9,7 @@ package annotate
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -40,6 +41,13 @@ func (f *Fehler) Error() string {
 	}
 	return fmt.Sprintf("annotation %d: %s", f.Index, f.Grund)
 }
+
+// LeseFehler: Die Liste ließ sich nicht lesen (Ordner, E/A-Fehler auf stdin) — kein Fehler in der Liste, sondern einer
+// der Umgebung (Exit 1 statt 2, Kritik #202 B-7). Err ist die Ursache.
+type LeseFehler struct{ Err error }
+
+func (l *LeseFehler) Error() string { return "annotation spec: cannot read: " + l.Err.Error() }
+func (l *LeseFehler) Unwrap() error { return l.Err }
 
 // Eintrag ist ein gelesener Eintrag der Liste. Zeiger sind „nicht angegeben“ (dann gilt die Voreinstellung).
 type Eintrag struct {
@@ -93,37 +101,60 @@ var (
 	}
 )
 
-// Lies liest die Liste aus r: ein Objekt mit genau dem Schlüssel "annotations" (ein Array). Unbekannte Schlüssel und
-// Typen, fehlende Pflichtwerte und Schlüssel, die zum Typ nicht passen, sind Fehler — ein Tippfehler soll nicht still
-// wirken.
+// Lies liest die Liste aus r: ein Objekt mit genau dem Schlüssel "annotations" (ein nicht leeres Array). Unbekannte
+// Schlüssel und Typen, fehlende Pflichtwerte, Schlüssel, die zum Typ nicht passen, und doppelte Schlüssel sind Fehler —
+// ein Tippfehler soll nicht still wirken. Schlüssel gelten nur in genau dieser Schreibung (encoding/json nähme sonst
+// "ANNOTATIONS" an und ließe bei doppelten den letzten still gewinnen, Kritik #202 B-6). Eine leere Liste ist ein
+// Fehler: Sie speicherte sonst ohne Änderung eine neue Aufnahme (B-5). Lässt sich r nicht lesen, kommt *LeseFehler.
 func Lies(r io.Reader) ([]Eintrag, error) {
 	b, err := io.ReadAll(io.LimitReader(r, MaxBytes+1))
 	if err != nil {
-		return nil, &Fehler{-1, "cannot read: " + err.Error()}
+		return nil, &LeseFehler{err}
 	}
 	if len(b) > MaxBytes {
 		return nil, &Fehler{-1, fmt.Sprintf("larger than %d bytes", MaxBytes)}
 	}
-	var huelle struct {
-		Annotations []json.RawMessage `json:"annotations"`
-	}
+	var huelle map[string]json.RawMessage
 	if err := streng(b, &huelle); err != nil {
 		return nil, &Fehler{-1, err.Error()}
 	}
-	if huelle.Annotations == nil {
+	if err := doppelte(b, false); err != nil { // die Einträge prüft die Schleife, mit ihrem Index
+		return nil, &Fehler{-1, err.Error()}
+	}
+	for k := range huelle {
+		if k != "annotations" {
+			return nil, &Fehler{-1, fmt.Sprintf(`invalid JSON: unknown key %q (only "annotations")`, k)}
+		}
+	}
+	var liste []json.RawMessage
+	if roh, da := huelle["annotations"]; da {
+		if err := json.Unmarshal(roh, &liste); err != nil {
+			return nil, &Fehler{-1, `"annotations" must be an array`}
+		}
+	}
+	if liste == nil {
 		return nil, &Fehler{-1, `missing "annotations" array`}
 	}
-	if len(huelle.Annotations) > MaxEintraege {
+	if len(liste) == 0 {
+		return nil, &Fehler{-1, `"annotations" is empty: nothing to do`}
+	}
+	if len(liste) > MaxEintraege {
 		return nil, &Fehler{-1, fmt.Sprintf("more than %d annotations", MaxEintraege)}
 	}
-	es := make([]Eintrag, 0, len(huelle.Annotations))
-	for i, roh := range huelle.Annotations {
+	es := make([]Eintrag, 0, len(liste))
+	for i, roh := range liste {
 		var e Eintrag
 		if err := streng(roh, &e); err != nil {
 			return nil, &Fehler{i, err.Error()}
 		}
+		if err := KeineDoppelten(roh); err != nil {
+			return nil, &Fehler{i, err.Error()}
+		}
 		var schluessel map[string]json.RawMessage
 		_ = json.Unmarshal(roh, &schluessel) // gelang eben als Eintrag, ist also ein Objekt
+		if _, da := schluessel["type"]; !da {
+			return nil, &Fehler{i, `missing key "type"`}
+		}
 		ok, bekannt := erlaubt[e.Type]
 		if !bekannt {
 			return nil, &Fehler{i, fmt.Sprintf("unknown type %q (arrow, rect, text, step, redact, pixelate)", e.Type)}
@@ -165,6 +196,50 @@ func streng(b []byte, v any) error {
 	return nil
 }
 
+// KeineDoppelten meldet einen Fehler, wenn ein Objekt im JSON-Wert b (auf jeder Ebene) einen Schlüssel zweimal trägt.
+// encoding/json ließe sonst still den letzten gewinnen (Kritik #202 B-6). b muss gültiges JSON sein (vorher dekodiert):
+// Die Tiefe ist dann durch die Grenze von encoding/json beschränkt.
+func KeineDoppelten(b []byte) error { return doppelte(b, true) }
+
+// doppelte ist KeineDoppelten; tief = false prüft nur das äußerste Objekt.
+func doppelte(b []byte, tief bool) error {
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.UseNumber()
+	return doppelteWert(dec, tief, true)
+}
+
+func doppelteWert(dec *json.Decoder, tief, pruefen bool) error {
+	t, err := dec.Token()
+	if err != nil {
+		return fmt.Errorf("invalid JSON: %v", err)
+	}
+	d, ok := t.(json.Delim)
+	if !ok {
+		return nil
+	}
+	gesehen := map[string]bool{}
+	for dec.More() {
+		if d == '{' {
+			k, err := dec.Token()
+			if err != nil {
+				return fmt.Errorf("invalid JSON: %v", err)
+			}
+			s, _ := k.(string)
+			if pruefen && gesehen[s] {
+				return fmt.Errorf("invalid JSON: duplicate key %q", s)
+			}
+			gesehen[s] = true
+		}
+		if err := doppelteWert(dec, tief, tief); err != nil {
+			return err
+		}
+	}
+	if _, err := dec.Token(); err != nil { // schließende Klammer
+		return fmt.Errorf("invalid JSON: %v", err)
+	}
+	return nil
+}
+
 func enthaelt(l []string, s string) bool {
 	for _, x := range l {
 		if x == s {
@@ -180,18 +255,60 @@ type Ergebnis struct {
 	Schwaerzungen  int // Schwärzen und Verpixeln
 }
 
+// imBild meldet, ob p im sichtbaren Bild von d liegt (Rand eingeschlossen).
+func imBild(d *document.Dokument, p *Punkt) bool {
+	g := d.Groesse()
+	return endlich(p[0]) && endlich(p[1]) && p[0] >= 0 && p[1] >= 0 && p[0] <= float64(g.X) && p[1] <= float64(g.Y)
+}
+
+// pruefeSchwaerzFlaeche summiert vorab die Fläche aller Schwärzungen und Verpixelungen der Liste im Original und lehnt
+// die Liste ab, wenn sie mehr Pixelkopien in den Rückgängig-Verlauf legte, als er ohne Verwerfen aufnimmt (4 Bytes je
+// Pixel ≤ d.VerlaufPlatz(), derselbe Maßstab wie beim Anwenden einer Rettungskopie, F-412). Das begrenzt zugleich die
+// Rechenzeit (Kritik #202 B-3: 10 000 ganzflächige Verpixelungen dauerten eine Viertelstunde). Einträge mit ungültigen
+// Punkten oder leerem Bereich überspringt sie: Deren Fehler meldet Wende in der Reihenfolge der Liste.
+func pruefeSchwaerzFlaeche(d *document.Dokument, es []Eintrag) error {
+	platz := d.VerlaufPlatz()
+	var bedarf int64
+	for i, e := range es {
+		if e.Type != "redact" && e.Type != "pixelate" || e.From == nil || e.To == nil || !imBild(d, e.From) || !imBild(d, e.To) {
+			continue
+		}
+		r := document.R(document.Pt(e.From[0], e.From[1]), document.Pt(e.To[0], e.To[1]))
+		px, sw, _, ok := canvas.SchwaerzBereich(d, r, e.Type == "pixelate")
+		if !ok {
+			continue
+		}
+		q, err := d.PruefeSchwaerzung(px, sw)
+		if err != nil {
+			continue
+		}
+		if bedarf += 4 * int64(q.Dx()) * int64(q.Dy()); bedarf > platz { // q liegt im Bild: kein Überlauf
+			return &Fehler{i, fmt.Sprintf("the redacted and pixelated areas of this list together exceed %d megapixels; "+
+				"use several lists", platz/4/1_000_000)}
+		}
+	}
+	return nil
+}
+
 // Wende legt die Einträge der Reihe nach auf d. Koordinaten gelten im sichtbaren Bild (d.Groesse()) und müssen darin
-// liegen (Rand eingeschlossen). Bei einem Fehler ist d teilweise geändert: Der Aufrufer speichert dann nicht (ADR-0030
-// Nachtrag 10 Punkt 3).
-func Wende(d *document.Dokument, es []Eintrag) (Ergebnis, error) {
+// liegen (Rand eingeschlossen); der Fehlertext nennt die Größe des Bilds nicht (ein Agent soll über eine fremde Datei
+// nichts erfahren, Kritik #202 Anmerkung). Vorab prüft Wende das Flächenbudget der Schwärzungen
+// (pruefeSchwaerzFlaeche); zwischen zwei Einträgen bricht es ab, sobald ctx endet (dann ctx.Err()). Bei einem Fehler
+// ist d teilweise geändert: Der Aufrufer speichert dann nicht (ADR-0030 Nachtrag 10 Punkt 3).
+func Wende(ctx context.Context, d *document.Dokument, es []Eintrag) (Ergebnis, error) {
 	var erg Ergebnis
+	if err := pruefeSchwaerzFlaeche(d, es); err != nil {
+		return erg, err
+	}
 	st := canvas.StilMitFaktor(d.KantenFaktor())
 	for i, e := range es {
+		if err := ctx.Err(); err != nil {
+			return erg, err
+		}
 		f := func(format string, a ...any) error { return &Fehler{i, fmt.Sprintf(format, a...)} }
 		punkt := func(name string, p *Punkt) (document.Punkt, error) {
-			g := d.Groesse()
-			if !endlich(p[0]) || !endlich(p[1]) || p[0] < 0 || p[1] < 0 || p[0] > float64(g.X) || p[1] > float64(g.Y) {
-				return document.Punkt{}, f("%q %v lies outside the visible image (0..%d, 0..%d)", name, *p, g.X, g.Y)
+			if !imBild(d, p) {
+				return document.Punkt{}, f("%q %v lies outside the visible image", name, *p)
 			}
 			return d.ZuOriginal(document.Pt(p[0], p[1])), nil
 		}

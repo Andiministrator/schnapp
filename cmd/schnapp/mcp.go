@@ -21,6 +21,7 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -219,6 +220,19 @@ func mcpSignale(kanal <-chan os.Signal, abbrechen func(), beende func(int), fehl
 				abbrechen()
 				continue
 			}
+			if signalHalten() {
+				// Ein laufendes annotate speichert zu Ende (Vorschau, Entfernen einer ausgewichenen Fassung), solange es
+				// Fortschritt meldet (Kritik #202 B-2); weitere Signale ändern daran nichts.
+				fmt.Fprintln(fehler, i18n.T("schnapp mcp: second signal, stopping after the running save."))
+				for signalHalten() {
+					select {
+					case <-fertig:
+						return
+					case <-kanal:
+					case <-time.After(10 * time.Millisecond):
+					}
+				}
+			}
 			fmt.Fprintln(fehler, i18n.T("schnapp mcp: second signal, stopping now."))
 			raeumeLaufendeTempsAuf() // vor dem Beenden, nicht der Signalwache überlassen (F-484)
 			beende(exitFehler)
@@ -342,11 +356,53 @@ func (an mcpAnschluesse) nichtErlaubt(was, schalter string) mcp.Ergebnis {
 		was, schalter, an.einstellungsOrt))
 }
 
-// liesArgs dekodiert die Argumente streng: unbekannte Schlüssel sind ein Fehler.
+// liesArgs dekodiert die Argumente streng: unbekannte Schlüssel sind ein Fehler, auch in anderer Schreibung
+// ("FILE" statt "file"; encoding/json vergleicht ohne Rücksicht auf Groß- und Kleinschreibung), und kein Schlüssel darf
+// doppelt stehen (Kritik #202 B-6). v ist ein Zeiger auf eine Struktur mit json-Namen.
 func liesArgs(args json.RawMessage, v any) error {
 	dec := json.NewDecoder(bytes.NewReader(args))
 	dec.DisallowUnknownFields()
-	return dec.Decode(v)
+	if err := dec.Decode(v); err != nil {
+		return err
+	}
+	if err := annotate.KeineDoppelten(args); err != nil {
+		return errors.New(strings.TrimPrefix(err.Error(), "invalid JSON: "))
+	}
+	var m map[string]json.RawMessage
+	if json.Unmarshal(args, &m) != nil {
+		return nil // kein Objekt: Decode hat es schon beurteilt
+	}
+	namen := jsonNamen(v)
+	for k := range m {
+		if !namen[k] {
+			return fmt.Errorf("json: unknown field %q", k)
+		}
+	}
+	return nil
+}
+
+// jsonNamen liefert die JSON-Namen der Felder der Struktur, auf die v zeigt.
+func jsonNamen(v any) map[string]bool {
+	namen := map[string]bool{}
+	t := reflect.TypeOf(v)
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return namen
+	}
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		name, _, _ := strings.Cut(f.Tag.Get("json"), ",")
+		switch name {
+		case "-":
+			continue
+		case "":
+			name = f.Name
+		}
+		namen[name] = true
+	}
+	return namen
 }
 
 func falscheArgs(err error) mcp.Ergebnis {
@@ -1112,9 +1168,12 @@ func (an mcpAnschluesse) beschrifte(ctx context.Context, args json.RawMessage, _
 	}{p.Annotations})
 	es, err := annotate.Lies(bytes.NewReader(huelle))
 	if err != nil {
-		return mcp.FehlerErgebnis(err.Error() + ".")
+		return mcp.FehlerErgebnis(err.Error() + ". Nothing was saved.")
 	}
-	b, err := beschrifteDatei(ctx, p.File, es, o, einst.Kante, false)
+	// Die Lage hält ein zweites Signal zurück, solange das Speichern läuft (mcpSignale, Kritik #202 B-2).
+	lage := new(beschriftenLage)
+	defer lage.ende()
+	b, err := beschrifteDatei(ctx, p.File, es, o, einst.Kante, false, lage)
 	var f *annotate.Fehler
 	switch {
 	case errors.As(err, &f):
@@ -1122,7 +1181,9 @@ func (an mcpAnschluesse) beschrifte(ctx context.Context, args json.RawMessage, _
 	case errors.Is(err, errBeschriftenLesen):
 		diagnose(an.fehler, "Beschriften, Quelle: %v", err)
 		return mcp.FehlerErgebnis(beschriftenQuelleFehler)
-	case ctx.Err() != nil:
+	case err != nil && ctx.Err() != nil:
+		// Nur ein gescheitertes Beschriften heißt „abgebrochen“: Gelang das Speichern, obwohl ctx inzwischen endete,
+		// trägt die Datei den Stand, und die Antwort sagt es (Kritik #202 B-1).
 		return abgebrochenErgebnis
 	case err != nil:
 		diagnose(an.fehler, "Beschriften: %v", err)

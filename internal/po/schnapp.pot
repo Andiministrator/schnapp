@@ -186,11 +186,35 @@ msgid "Cannot annotate %s: %s"
 msgstr ""
 
 #: cmd/schnapp/beschriften.go
+msgid "Interrupted by a signal; nothing was saved."
+msgstr ""
+
+#: cmd/schnapp/beschriften.go
 msgid "Invalid annotation list %s: %s"
 msgstr ""
 
 #: cmd/schnapp/beschriften.go
 msgid "Cannot annotate %s: the result would have too many or too large annotations to be opened again."
+msgstr ""
+
+#: cmd/schnapp/beschriften.go cmd/schnapp/signalwache.go
+msgid "Interrupted by a signal after %s was written completely."
+msgstr ""
+
+#: cmd/schnapp/beschriften.go
+msgid "Interrupted again; nothing was saved."
+msgstr ""
+
+#: cmd/schnapp/beschriften.go
+msgid "Interrupted again while saving made no progress; the result may be incomplete."
+msgstr ""
+
+#: cmd/schnapp/beschriften.go
+msgid "Interrupted again; the file was already saved."
+msgstr ""
+
+#: cmd/schnapp/beschriften.go
+msgid "Saved, but the file has too many or too large annotations to be opened again without --ignore-limit."
 msgstr ""
 
 #: cmd/schnapp/beschriften.go
@@ -456,6 +480,10 @@ msgid "schnapp mcp: ignoring %s from the environment; settings and library come 
 msgstr ""
 
 #: cmd/schnapp/mcp.go
+msgid "schnapp mcp: second signal, stopping after the running save."
+msgstr ""
+
+#: cmd/schnapp/mcp.go
 msgid "schnapp mcp: second signal, stopping now."
 msgstr ""
 
@@ -550,10 +578,6 @@ msgstr ""
 
 #: cmd/schnapp/signalwache.go
 msgid "Interrupted again while writing; the temporary file could not be removed."
-msgstr ""
-
-#: cmd/schnapp/signalwache.go
-msgid "Interrupted by a signal after %s was written completely."
 msgstr ""
 
 #: cmd/schnapp/signalwache.go
