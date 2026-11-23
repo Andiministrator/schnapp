@@ -21,10 +21,13 @@ gefunden, Bau schlägt fehl, kein Test benannt) geben Exit 1.
 10 Minuten, je Mutant über `timeout` kürzbar), und `go test` nannte laufende Tests („running tests:“) — mindestens ein
 Test war gestartet und kam nicht zurück, der Mutant ist also bemerkt, auch wenn kein Test ein `--- FAIL` ausgibt. Fiel
 vorher ein Test, ist der Status ROT. Ein Timeout ohne laufenden Test (Hänger in `init` oder `TestMain`, Bau) ist
-dagegen FEHLER. Die Ausgabe nennt die hängenden Tests und zählt HÄNGT in der Summe getrennt.
+dagegen FEHLER. Die Ausgabe nennt die hängenden Tests und zählt HÄNGT in der Summe getrennt. HÄNGT gilt nur, wenn der
+Grundlauf (unveränderter Code, gleiches Paket, gleicher `timeout`) durchläuft (F-489): Der Grundlauf läuft einmal je
+Kombination aus Paket und `timeout`; scheitert er am `timeout`, melden alle betroffenen Mutanten FEHLER mit
+„TIMEOUT-ZU-KNAPP“ (Exit 1) — dann den `timeout` erhöhen.
 
 Das Programm arbeitet **nie im Arbeitsbaum**: Es kopiert die Wurzel (ohne `tmp/`, `.git/`, `.claude/` der obersten
-Ebene) nach `<wurzel>/tmp/mutanten/lauf-<Zeit>/baum`, mutiert und testet dort mit `GOFLAGS=-tags=novulkan,nox11`
+Ebene) nach `<wurzel>/tmp/mutanten/lauf-<Zeit>-<Zufall>/baum` (eindeutig auch bei zwei Läufen in derselben Sekunde, F-495), mutiert und testet dort mit `GOFLAGS=-tags=novulkan,nox11`
 sowie `TMPDIR`/`GOTMPDIR` unter dem Laufordner und stellt die Datei in der Kopie nach jedem Mutanten wieder her. Alte
 Läufe bleiben (gitignoriert) liegen. Ein Lauf über alle Gruppen dauert einige Minuten.
 

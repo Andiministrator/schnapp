@@ -258,6 +258,21 @@ func kurz(s string) string {
 	return strings.ReplaceAll(strings.TrimSpace(s), "\n", " | ")
 }
 
+// ausgangSchluessel kennzeichnet den Test-Aufruf eines Mutanten: Paket und timeout (F-489).
+func ausgangSchluessel(m Mutant) string { return m.Paket + "\x00" + m.Timeout }
+
+// jetzt ist die Uhr für den Laufordner; Tests setzen sie fest (F-495).
+var jetzt = time.Now
+
+// neuerLaufordner legt <wurzel>/tmp/mutanten/lauf-<Zeit>-<Zufall> neu an; eindeutig auch bei gleicher Sekunde (F-495).
+func neuerLaufordner(wurzel string, t time.Time) (string, error) {
+	eltern := filepath.Join(wurzel, "tmp", "mutanten")
+	if err := os.MkdirAll(eltern, 0o755); err != nil {
+		return "", err
+	}
+	return os.MkdirTemp(eltern, "lauf-"+t.Format("20060102-150405")+"-")
+}
+
 func main() {
 	os.Exit(lauf(os.Args[1:], os.Stdout))
 }
@@ -291,7 +306,12 @@ func lauf(args []string, aus io.Writer) int {
 
 	baum, laufDir := w, ""
 	if !*trocken {
-		laufDir = filepath.Join(w, "tmp", "mutanten", "lauf-"+time.Now().Format("20060102-150405"))
+		// Eindeutiger Ordner auch bei zwei Läufen in derselben Sekunde (F-495).
+		laufDir, err = neuerLaufordner(w, jetzt())
+		if err != nil {
+			fmt.Fprintln(aus, "Fehler:", err)
+			return 2
+		}
 		baum = filepath.Join(laufDir, "baum")
 		if err := os.MkdirAll(filepath.Join(laufDir, "g"), 0o755); err != nil {
 			fmt.Fprintln(aus, "Fehler:", err)
@@ -304,17 +324,27 @@ func lauf(args []string, aus io.Writer) int {
 		}
 	}
 
-	// Ausgangslage: Jedes Paket muss ohne Mutation grün sein, sonst gälte jeder Mutant als getötet (Sitzungs-QA, Q-3).
+	// Ausgangslage: Jeder Test-Aufruf (Paket und timeout) muss ohne Mutation grün sein, sonst gälte jeder Mutant als
+	// getötet (Sitzungs-QA, Q-3). Mit demselben timeout wie der Mutant: ein zu knapper timeout ließe sonst jeden Mutanten
+	// als HÄNGT (rot) durchgehen (F-489). Einmal je Kombination.
 	ausgangRot := map[string]string{}
 	if !*trocken {
 		for _, m := range ms {
-			if _, gesehen := ausgangRot[m.Paket]; gesehen {
+			k := ausgangSchluessel(m)
+			if _, gesehen := ausgangRot[k]; gesehen {
 				continue
 			}
-			ausgangRot[m.Paket] = ""
-			if text, err := goTest(baum, laufDir, m.Paket, ""); err != nil {
-				ausgangRot[m.Paket] = "Ausgangslage rot (ohne Mutation): " + kurz(text)
-				fmt.Fprintf(aus, "Paket %s: %s\n", m.Paket, ausgangRot[m.Paket])
+			ausgangRot[k] = ""
+			if text, err := goTest(baum, laufDir, m.Paket, m.Timeout); err != nil {
+				ausgangRot[k] = "Ausgangslage rot (ohne Mutation)"
+				if m.Timeout != "" {
+					ausgangRot[k] += " mit timeout " + m.Timeout
+					if strings.Contains(text, "panic: test timed out") {
+						ausgangRot[k] += " (TIMEOUT-ZU-KNAPP: timeout in der Gruppendatei erhöhen)"
+					}
+				}
+				ausgangRot[k] += ": " + kurz(text)
+				fmt.Fprintf(aus, "Paket %s: %s\n", m.Paket, ausgangRot[k])
 			}
 		}
 	}
@@ -334,7 +364,7 @@ func lauf(args []string, aus io.Writer) int {
 			} else {
 				status = "MUSTER OK"
 			}
-		} else if grund := ausgangRot[m.Paket]; grund != "" {
+		} else if grund := ausgangRot[ausgangSchluessel(m)]; grund != "" {
 			status, detail = Fehler, grund
 		} else {
 			status, rote, detail = testeMutant(baum, laufDir, m)
