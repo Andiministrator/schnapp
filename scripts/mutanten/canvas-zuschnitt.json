@@ -31,8 +31,8 @@
     "name": "K96-4 Trefferweite mit alter halber Bandhöhe 7 (Karte #96)",
     "datei": "internal/canvas/zuschnitt.go",
     "paket": "./internal/canvas",
-    "alt": "tol := Toleranz/s.Abb.Zoom + float64(s.D.ZackenFaktor())*document.ZackenBandHalb",
-    "neu": "tol := Toleranz/s.Abb.Zoom + float64(s.D.ZackenFaktor())*7"
+    "alt": "tol := Toleranz/s.Abb.Zoom + float64(s.D.KantenFaktor())*document.KantenBandHalb",
+    "neu": "tol := Toleranz/s.Abb.Zoom + float64(s.D.KantenFaktor())*7"
   },
   {
     "name": "K96-5 Kantenform wechselt auch während des Speicherns (Karte #96)",
@@ -40,13 +40,6 @@
     "paket": "./internal/canvas",
     "alt": "if !s.KannKanteWechseln() {",
     "neu": "if false && !s.KannKanteWechseln() {"
-  },
-  {
-    "name": "K96-6 Renderer zeichnet keine Schicht der Kante (Karte #96)",
-    "datei": "internal/render/render.go",
-    "paket": "./internal/render",
-    "alt": "\t\t\tz.fuelle(poly, nil, s.Farbe)",
-    "neu": "\t\t\tif false {\n\t\t\t\tz.fuelle(poly, nil, s.Farbe)\n\t\t\t}"
   },
   {
     "name": "F-418 Pruefe zählt alle Nähte zu Ende (kein Abbruch über der Grenze)",
@@ -68,20 +61,6 @@
     "paket": "./internal/document",
     "alt": "\t\tdst[2*anz+1-i] = quer(n, t, float64(m+bisH)/100)",
     "neu": "\t\tdst[2*anz-i] = quer(n, t, float64(m+bisH)/100)"
-  },
-  {
-    "name": "K96-7 Einstellung seam wird nicht übernommen (Karte #96)",
-    "datei": "internal/settings/einstellungen.go",
-    "paket": "./internal/settings",
-    "alt": "if k, ok := document.KanteAus(wert); ok {",
-    "neu": "if k, ok := document.KanteAus(wert); false && ok {"
-  },
-  {
-    "name": "K96-8 einfaches Bild bekommt die eingestellte Form nicht (Karte #96)",
-    "datei": "cmd/schnapp/editor.go",
-    "paket": "./cmd/schnapp",
-    "alt": "\tif g.Fremd {",
-    "neu": "\tif false && g.Fremd {"
   },
   {
     "name": "K183-1 Renderer lässt den Spalt deckend (Karte #183)",
@@ -143,8 +122,8 @@
     "name": "K183-8 Mindestrest mit alter halber Bandhöhe 11 (Karte #183)",
     "datei": "internal/canvas/zuschnitt.go",
     "paket": "./internal/canvas",
-    "alt": "halb := s.D.ZackenFaktor() * (document.ZackenBandHalb + document.KantenSichtRest)",
-    "neu": "halb := s.D.ZackenFaktor() * 11"
+    "alt": "halb := s.D.KantenFaktor() * (document.KantenBandHalb + document.KantenSichtRest)",
+    "neu": "halb := s.D.KantenFaktor() * 11"
   },
   {
     "name": "K183-9 Abriss mit alter Auslenkung 0,8 (Karte #183)",
@@ -157,14 +136,14 @@
     "name": "K177-1 Mindestrest ohne sichtbaren Zuschlag (F-445, Karte #177)",
     "datei": "internal/canvas/zuschnitt.go",
     "paket": "./internal/canvas",
-    "alt": "halb := s.D.ZackenFaktor() * (document.ZackenBandHalb + document.KantenSichtRest)",
-    "neu": "halb := s.D.ZackenFaktor() * document.ZackenBandHalb"
+    "alt": "halb := s.D.KantenFaktor() * (document.KantenBandHalb + document.KantenSichtRest)",
+    "neu": "halb := s.D.KantenFaktor() * document.KantenBandHalb"
   },
   {
     "name": "K177-2 Zuschlag nicht mit dem Zackenfaktor multipliziert (F-445, Karte #177)",
     "datei": "internal/canvas/zuschnitt.go",
     "paket": "./internal/canvas",
-    "alt": "halb := s.D.ZackenFaktor() * (document.ZackenBandHalb + document.KantenSichtRest)",
-    "neu": "halb := s.D.ZackenFaktor()*document.ZackenBandHalb + document.KantenSichtRest"
+    "alt": "halb := s.D.KantenFaktor() * (document.KantenBandHalb + document.KantenSichtRest)",
+    "neu": "halb := s.D.KantenFaktor()*document.KantenBandHalb + document.KantenSichtRest"
   }
 ]

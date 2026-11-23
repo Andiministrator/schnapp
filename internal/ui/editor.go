@@ -1627,7 +1627,7 @@ func nummerGrundlinieAnsicht(n document.Nummer) float32 { return float32(n.Grund
 // wenn sich Ansichtsgröße, Nähte, Kantenform oder Zackenfaktor ändern; sonst spielt der Editor die Aufzeichnung ab
 // (F-183, e.naht).
 func (e *editor) zeichneNaehte(gtx layout.Context) {
-	g, naehte, form, faktor := e.s.D.Groesse(), e.s.D.Naehte(), e.s.D.Kante(), e.s.D.ZackenFaktor()
+	g, naehte, form, faktor := e.s.D.Groesse(), e.s.D.Naehte(), e.s.D.Kante(), e.s.D.KantenFaktor()
 	c := &e.naht
 	if !c.gueltig || c.groesse != g || !slices.Equal(c.naehte, naehte) || c.form != form || c.faktor != faktor {
 		c.ops.Reset()

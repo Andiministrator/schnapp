@@ -22,7 +22,7 @@ func TestSchachbrettRaster(t *testing.T) {
 		{document.Naht{Zeilen: false, Lage: 9}, 200, 1}, {document.Naht{Zeilen: false, Lage: 500}, 900, 3},
 	} {
 		erstes, quer, lang := schachLage(c.n, c.laenge, c.faktor)
-		halb := int(document.ZackenBandHalb) * c.faktor
+		halb := int(document.KantenBandHalb) * c.faktor
 		if erstes*schachFeld > c.n.Lage-halb || (erstes+quer)*schachFeld < c.n.Lage+halb {
 			t.Errorf("%+v: Brett %d..%d deckt das Band %d..%d nicht", c.n, erstes*schachFeld, (erstes+quer)*schachFeld,
 				c.n.Lage-halb, c.n.Lage+halb)

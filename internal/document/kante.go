@@ -52,15 +52,15 @@ func (k Kante) Naechste() Kante { return (k + 1) % anzahlKanten }
 // Maße der Kante quer zur Naht, in Ansichtspixeln bei Faktor 1 (ADR-0023 Nachträge 6 und 7): Die Mittellinie lenkt
 // höchstens KantenAuslenkung aus (Abriss 0,9 · 6,15 = 5,54, Welle und Zacken 4), um sie liegt der durchsichtige Spalt
 // mit KantenSpaltHalb je Seite, daneben der Rand der Bildteile (Fasersaum und Abdunklung) der Breite KantenRand.
-// ZackenBandHalb ist die Summe: So weit ragt die Kante höchstens über die Naht. Alle Maße wachsen mit dem Zackenfaktor
+// KantenBandHalb ist die Summe: So weit ragt die Kante höchstens über die Naht. Alle Maße wachsen mit dem Kantenfaktor
 // des Dokuments (Nachträge 1, 2 und 4).
 const (
 	KantenAuslenkung = 6.0
 	KantenSpaltHalb  = 8.0
 	KantenRand       = 2.0
-	ZackenBandHalb   = KantenAuslenkung + KantenSpaltHalb + KantenRand
+	KantenBandHalb   = KantenAuslenkung + KantenSpaltHalb + KantenRand
 	// KantenSichtRest ist der Teil des Bilds, der neben der Kante mindestens sichtbar bleibt (ADR-0023 Nachtrag 8,
-	// F-445): Mindestrest je Seite einer Naht = (ZackenBandHalb + KantenSichtRest) · Faktor.
+	// F-445): Mindestrest je Seite einer Naht = (KantenBandHalb + KantenSichtRest) · Faktor.
 	KantenSichtRest = 8.0
 )
 
@@ -105,7 +105,7 @@ func (k Kante) schritt() float64 {
 // Mittellinie der Form k, quer zur Naht um von bis bis verschoben (von < bis; negativ heißt oben bzw. links). Erst die
 // Kante bei von vorwärts, dann die bei bis rückwärts. Die Stützpunkte beginnen bei 0 und reichen höchstens einen
 // Schritt über laenge hinaus (Renderer und SVG beschneiden auf die Ansicht). Auslenkung, Schritt, von und bis werden
-// mit faktor (ZackenFaktor, mindestens 1) multipliziert. Die Querlage ist auf 1/100 Pixel gerundet und als Hundertstel
+// mit faktor (KantenFaktor, mindestens 1) multipliziert. Die Querlage ist auf 1/100 Pixel gerundet und als Hundertstel
 // gerechnet: Renderer, Editor und SVG-Export bekommen genau dieselben Zahlen, und das SVG schreibt sie kurz.
 func Kantenband(k Kante, n Naht, laenge, faktor int, von, bis float64) []Punkt {
 	return NeueKantenlinie(k, laenge, faktor).Band(nil, n, von, bis)
@@ -229,7 +229,7 @@ func (s Schicht) ImSpalt() bool { return s.Von >= -KantenSpaltHalb && s.Bis <= K
 
 // NaehteBeruehren meldet, ob die Kante einer Naht in den Spalt einer anderen ragen kann (ADR-0023 Nachtrag 8,
 // F-438): wenn es Nähte beider Achsen gibt (sie kreuzen sich) oder zwei Nähte derselben Achse näher als die ganze
-// Bandhöhe (2·ZackenBandHalb·Faktor) beieinanderliegen. Nur dann leeren Renderer, SVG-Export und Editor die Spalte nach
+// Bandhöhe (2·KantenBandHalb·Faktor) beieinanderliegen. Nur dann leeren Renderer, SVG-Export und Editor die Spalte nach
 // dem Fasersaum und der Abdunklung noch einmal; sonst bleibt die Zeichnung wie vor F-438.
 func NaehteBeruehren(naehte []Naht, faktor int) bool {
 	var zeilen, spalten []int
@@ -246,7 +246,7 @@ func NaehteBeruehren(naehte []Naht, faktor int) bool {
 	nah := func(l []int) bool {
 		slices.Sort(l)
 		for i := 1; i < len(l); i++ {
-			if float64(l[i]-l[i-1]) < 2*ZackenBandHalb*float64(max(faktor, 1)) {
+			if float64(l[i]-l[i-1]) < 2*KantenBandHalb*float64(max(faktor, 1)) {
 				return true
 			}
 		}

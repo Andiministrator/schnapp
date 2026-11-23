@@ -110,7 +110,7 @@ func TestKanteSollwerte(t *testing.T) {
 func TestKanteFaktor3(t *testing.T) {
 	d := zackenDokument(t, 3300, 3300)
 	streifen(t, d, document.Streifen{Von: 300, Bis: 320})
-	if f := d.ZackenFaktor(); f != 3 {
+	if f := d.KantenFaktor(); f != 3 {
 		t.Fatalf("Faktor %d, Soll 3", f)
 	}
 	b := bild(t, d)

@@ -17,22 +17,22 @@ type Naht struct {
 
 // Form, Maße und Schichten der Kante an einer Naht stehen in kante.go (ADR-0023 Nachtrag 6).
 
-// ZackenReferenz ist die kurze Seite der Ansicht, bis zu der die Zackenkante in den Grundmaßen bleibt (Faktor 1).
-const ZackenReferenz = 1080
+// KantenReferenz ist die kurze Seite der Ansicht, bis zu der die Kante in den Grundmaßen bleibt (Faktor 1).
+const KantenReferenz = 1080
 
-// ZackenFaktor ist der ganzzahlige Faktor der Zackenmaße für ein Bild der Größe g: max(1, kurze Seite / 1080),
+// KantenFaktor ist der ganzzahlige Faktor der Kantenmaße für ein Bild der Größe g: max(1, kurze Seite / 1080),
 // ganzzahlig geteilt (F-173). So bleibt die Kante bei HiDPI-Aufnahmen und kleinem Zoom erkennbar.
-func ZackenFaktor(g image.Point) int { return max(1, min(g.X, g.Y)/ZackenReferenz) }
+func KantenFaktor(g image.Point) int { return max(1, min(g.X, g.Y)/KantenReferenz) }
 
-// ZackenFaktor ist der Zackenfaktor des Dokuments (ADR-0023 Nachtrag 2 und 4): der Faktor nach der Größe des
+// KantenFaktor ist der Kantenfaktor des Dokuments (ADR-0023 Nachtrag 2 und 4): der Faktor nach der Größe des
 // **Originals** (Nachtrag 2: eine gestauchte 4K-Aufnahme behält ihre Pixeldichte), gedeckelt durch die kurze Seite der
-// **aktuellen Ansicht** (Nachtrag 4, F-226): Die Bandhöhe (2·ZackenBandHalb) bleibt höchstens ein Viertel der kurzen
+// **aktuellen Ansicht** (Nachtrag 4, F-226): Die Bandhöhe (2·KantenBandHalb) bleibt höchstens ein Viertel der kurzen
 // Ansichtsseite, mindestens aber bei Faktor 1. Eine 8K-Aufnahme, die auf 300×80 zugeschnitten wird, trägt so kein
 // ±64-Pixel-Band auf 80 Pixeln Höhe. Renderer, SVG-Export, Editor und Trefferweite holen den Wert von hier. Mit der
 // halben Bandhöhe 16 (Nachtrag 7; vorher 11) ist der Teiler 128.
-func (d *Dokument) ZackenFaktor() int {
+func (d *Dokument) KantenFaktor() int {
 	kurz := min(d.abbX.groesse(), d.abbY.groesse())
-	return min(ZackenFaktor(d.original.Rect.Size()), max(1, kurz/(8*ZackenBandHalb)))
+	return min(KantenFaktor(d.original.Rect.Size()), max(1, kurz/(8*KantenBandHalb)))
 }
 
 // OriginalGroesse liefert die Größe des unbeschnittenen Originals, ohne es zu kopieren (anders als Original).

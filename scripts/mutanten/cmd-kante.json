@@ -1,0 +1,9 @@
+[
+  {
+    "name": "K96-8 einfaches Bild bekommt die eingestellte Form nicht (Karte #96)",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif g.Fremd {",
+    "neu": "\tif false && g.Fremd {"
+  }
+]

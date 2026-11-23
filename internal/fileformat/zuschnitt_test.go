@@ -89,14 +89,14 @@ func TestExportSVGKante(t *testing.T) {
 				}
 				// Das Band bei Lage 0, um die Lage verschoben, ist das Band des Renderers an der Naht.
 				var soll []string
-				bei0 := document.Kantenband(form, document.Naht{Zeilen: n.Zeilen}, laenge, d.ZackenFaktor(), sch.Von, sch.Bis)
+				bei0 := document.Kantenband(form, document.Naht{Zeilen: n.Zeilen}, laenge, d.KantenFaktor(), sch.Von, sch.Bis)
 				for _, q := range bei0 {
 					soll = append(soll, punkt(q))
 				}
 				if p[1] != "M"+strings.Join(soll, " L")+" Z" {
 					t.Errorf("%v Band %s Schicht %d: %.200s", form, art, j, p[1])
 				}
-				for k, q := range document.Kantenband(form, n, laenge, d.ZackenFaktor(), sch.Von, sch.Bis) {
+				for k, q := range document.Kantenband(form, n, laenge, d.KantenFaktor(), sch.Von, sch.Bis) {
 					v := bei0[k]
 					if n.Zeilen {
 						v.Y += float64(n.Lage)
@@ -137,7 +137,7 @@ func pruefeSpaltLeer(t *testing.T, form document.Kante, s string, d *document.Do
 			laenge = g.X
 		}
 		var soll []string
-		for _, q := range document.Kantenband(form, document.Naht{Zeilen: zeilen}, laenge, d.ZackenFaktor(), -8, 8) {
+		for _, q := range document.Kantenband(form, document.Naht{Zeilen: zeilen}, laenge, d.KantenFaktor(), -8, 8) {
 			soll = append(soll, punkt(q))
 		}
 		if pfade[art] != "M"+strings.Join(soll, " L")+" Z" {
@@ -343,7 +343,7 @@ func TestExportSVGKanteFaktor2(t *testing.T) {
 	if err := d.SetzeStreifen([]document.Streifen{{Von: 100, Bis: 110}}); err != nil {
 		t.Fatal(err)
 	}
-	if f := d.ZackenFaktor(); f != 2 {
+	if f := d.KantenFaktor(); f != 2 {
 		t.Fatalf("Faktor %d, Soll 2", f)
 	}
 	var buf bytes.Buffer

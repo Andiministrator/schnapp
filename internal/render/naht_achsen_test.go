@@ -32,7 +32,7 @@ func TestNaehteBeiderAchsenNichtQuadratisch(t *testing.T) {
 				if len(naehte) != 2 {
 					t.Fatalf("%d Nähte, Soll 2", len(naehte))
 				}
-				g, faktor := d.Groesse(), d.ZackenFaktor()
+				g, faktor := d.Groesse(), d.KantenFaktor()
 				if g.X != gr.X-5 || g.Y != gr.Y-5 {
 					t.Fatalf("Ansicht %v", g)
 				}

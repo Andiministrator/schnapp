@@ -47,10 +47,10 @@ func TestZwischenspeicherNaehteFolgtFormUndFaktor(t *testing.T) {
 		}
 	}
 	// Faktor: Der Schlüssel ist der Zackenfaktor des Dokuments; ein Wert, der nicht passt, löst den Neuaufbau aus.
-	e.naht.faktor = e.s.D.ZackenFaktor() + 1
+	e.naht.faktor = e.s.D.KantenFaktor() + 1
 	e.zeichneNaehte(gtx)
-	if e.naht.faktor != e.s.D.ZackenFaktor() {
-		t.Errorf("Zwischenspeicher hält Faktor %d, Soll %d", e.naht.faktor, e.s.D.ZackenFaktor())
+	if e.naht.faktor != e.s.D.KantenFaktor() {
+		t.Errorf("Zwischenspeicher hält Faktor %d, Soll %d", e.naht.faktor, e.s.D.KantenFaktor())
 	}
 }
 

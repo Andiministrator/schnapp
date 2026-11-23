@@ -173,7 +173,7 @@ func TestObjektSichtbar(t *testing.T) {
 }
 
 // F-173: Der Faktor der Zackenmaße ist max(1, kurze Seite / 1080), ganzzahlig geteilt.
-func TestZackenFaktor(t *testing.T) {
+func TestKantenFaktor(t *testing.T) {
 	for _, c := range []struct {
 		g    image.Point
 		want int
@@ -181,12 +181,12 @@ func TestZackenFaktor(t *testing.T) {
 		{image.Pt(1920, 1080), 1}, {image.Pt(3840, 2160), 2}, {image.Pt(1000, 5000), 1}, {image.Pt(7680, 4320), 4},
 		{image.Pt(100, 60), 1}, {image.Pt(5000, 1079), 1}, {image.Pt(2159, 5000), 1}, {image.Pt(2160, 5000), 2},
 	} {
-		if got := ZackenFaktor(c.g); got != c.want {
-			t.Errorf("ZackenFaktor(%v) = %d, Soll %d", c.g, got, c.want)
+		if got := KantenFaktor(c.g); got != c.want {
+			t.Errorf("KantenFaktor(%v) = %d, Soll %d", c.g, got, c.want)
 		}
 	}
 	d := leeresDokument(t, 3840, 2160)
-	if f := d.ZackenFaktor(); f != 2 {
+	if f := d.KantenFaktor(); f != 2 {
 		t.Errorf("Dokument 3840×2160: %d, Soll 2", f)
 	}
 	// Stauchen und Zuschnitt ändern den Faktor nicht: Er gilt für das Original (ADR-0023 Nachtrag 2, Echtlauf #92 —
@@ -194,13 +194,13 @@ func TestZackenFaktor(t *testing.T) {
 	if err := d.SetzeStreifen([]Streifen{{Zeilen: true, Von: 800, Bis: 1200}}); err != nil {
 		t.Fatal(err)
 	}
-	if f := d.ZackenFaktor(); f != 2 {
+	if f := d.KantenFaktor(); f != 2 {
 		t.Errorf("4K nach Stauchen auf Höhe 1760: %d, Soll 2", f)
 	}
 	if err := d.SetzeZuschnitt(image.Rect(0, 0, 3840, 1000)); err != nil {
 		t.Fatal(err)
 	}
-	if f := d.ZackenFaktor(); f != 2 {
+	if f := d.KantenFaktor(); f != 2 {
 		t.Errorf("nach Zuschnitt auf Höhe 1000: %d, Soll 2", f)
 	}
 }
@@ -215,18 +215,18 @@ func TestKantenbandFaktor(t *testing.T) {
 }
 
 // F-226 (ADR-0023 Nachtrag 4): Der Faktor nach dem Original wird durch die kurze Seite der Ansicht gedeckelt: Die
-// Bandhöhe (2·ZackenBandHalb·Faktor) bleibt höchstens ein Viertel der kurzen Ansichtsseite (bei Faktor 1 ist das die
+// Bandhöhe (2·KantenBandHalb·Faktor) bleibt höchstens ein Viertel der kurzen Ansichtsseite (bei Faktor 1 ist das die
 // Untergrenze).
-func TestZackenFaktorGedeckeltDurchAnsicht(t *testing.T) {
+func TestKantenFaktorGedeckeltDurchAnsicht(t *testing.T) {
 	d := leeresDokument(t, 7680, 4320)
-	if f := d.ZackenFaktor(); f != 4 {
+	if f := d.KantenFaktor(); f != 4 {
 		t.Fatalf("ganze 8K-Aufnahme: Faktor %d, Soll 4", f)
 	}
 	// Das Beispiel des Befunds: auf 300×80 zugeschnitten. Ohne Deckel ±64 Pixel Band auf 80 Pixeln Höhe.
 	if err := d.SetzeZuschnitt(image.Rect(1000, 1000, 1300, 1080)); err != nil {
 		t.Fatal(err)
 	}
-	if f := d.ZackenFaktor(); f != 1 {
+	if f := d.KantenFaktor(); f != 1 {
 		t.Errorf("auf 300×80: Faktor %d, Soll 1", f)
 	}
 	// Mit der halben Bandhöhe 16 (ADR-0023 Nachtrag 7) ist der Teiler 8·16 = 128.
@@ -234,11 +234,11 @@ func TestZackenFaktorGedeckeltDurchAnsicht(t *testing.T) {
 		if err := d.SetzeZuschnitt(image.Rect(0, 0, 3000, c.kurz)); err != nil {
 			t.Fatal(err)
 		}
-		f := d.ZackenFaktor()
+		f := d.KantenFaktor()
 		if f != c.soll {
 			t.Errorf("kurze Seite %d: Faktor %d, Soll %d", c.kurz, f, c.soll)
 		}
-		if band := 2 * int(ZackenBandHalb) * f; f > 1 && band > c.kurz/4 {
+		if band := 2 * int(KantenBandHalb) * f; f > 1 && band > c.kurz/4 {
 			t.Errorf("kurze Seite %d: Band %d höher als ein Viertel", c.kurz, band)
 		}
 	}

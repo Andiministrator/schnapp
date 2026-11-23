@@ -305,7 +305,7 @@ func (s *Sitzung) stauchBand() (zeilen bool, von, bis int, ok bool) {
 	// halbe Bandhöhe plus KantenSichtRest sichtbare Pixel bleiben, sonst bestünde die Seite nur aus der Kante. Ein kleinerer Rest ginge ohnehin im Band unter; das Band
 	// reicht dann bis an den Rand (und wird, wie jedes Band am Rand, zum Zuschnitt, F-222). Vorschau (bandRahmen) und
 	// Ergebnis (staucheRahmen) lesen dasselbe Band (F-240).
-	halb := s.D.ZackenFaktor() * (document.ZackenBandHalb + document.KantenSichtRest) // F-445, ADR-0023 Nachtrag 8
+	halb := s.D.KantenFaktor() * (document.KantenBandHalb + document.KantenSichtRest) // F-445, ADR-0023 Nachtrag 8
 	if ok && von < halb {
 		von = 0
 	}
@@ -420,7 +420,7 @@ func (s *Sitzung) EntferneNaht(p document.Punkt) bool {
 		return false
 	}
 	a := s.Abb.ZuAnsicht(p)
-	tol := Toleranz/s.Abb.Zoom + float64(s.D.ZackenFaktor())*document.ZackenBandHalb
+	tol := Toleranz/s.Abb.Zoom + float64(s.D.KantenFaktor())*document.KantenBandHalb
 	best, gefunden := math.Inf(1), document.Naht{}
 	for _, n := range s.D.Naehte() {
 		v := a.X

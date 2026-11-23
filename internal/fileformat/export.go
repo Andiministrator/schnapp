@@ -96,7 +96,7 @@ func (s *schreiber) naehteDefs(d *document.Dokument) bool {
 		return false
 	}
 	spaltVon, spaltBis := document.Spaltband()
-	beruehren := document.NaehteBeruehren(naehte, d.ZackenFaktor())
+	beruehren := document.NaehteBeruehren(naehte, d.KantenFaktor())
 	s.WriteString(`<defs>`)
 	for _, zeilen := range []bool{false, true} {
 		if !slices.ContainsFunc(naehte, func(n document.Naht) bool { return n.Zeilen == zeilen }) {
@@ -106,7 +106,7 @@ func (s *schreiber) naehteDefs(d *document.Dokument) bool {
 		if zeilen {
 			laenge = g.X
 		}
-		linie := document.NeueKantenlinie(d.Kante(), laenge, d.ZackenFaktor()) // einmal je Achse (F-418)
+		linie := document.NeueKantenlinie(d.Kante(), laenge, d.KantenFaktor()) // einmal je Achse (F-418)
 		bei0 := document.Naht{Zeilen: zeilen}
 		var band []document.Punkt
 		// Berühren sich Nähte (F-438), liegen Fasersaum und Abdunklung (naht-…) und der Schatten (schatten-…) in zwei
@@ -159,7 +159,7 @@ func (s *schreiber) naehteDefs(d *document.Dokument) bool {
 // darüber, ohne Maske.
 func (s *schreiber) naehteUse(d *document.Dokument) {
 	naehte := d.Naehte()
-	if !document.NaehteBeruehren(naehte, d.ZackenFaktor()) {
+	if !document.NaehteBeruehren(naehte, d.KantenFaktor()) {
 		s.nahtVerweise(naehte, "naht-", true)
 		return
 	}

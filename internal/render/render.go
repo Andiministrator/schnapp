@@ -182,7 +182,7 @@ func (z zeichner) alles() error {
 			return err
 		}
 	}
-	g, f, k := z.d.Groesse(), z.d.ZackenFaktor(), z.d.Kante()
+	g, f, k := z.d.Groesse(), z.d.KantenFaktor(), z.d.Kante()
 	schichten := document.KantenSchichten()
 	// Die Mittellinie je Achse einmal rechnen, die Schichten verschieben sie nur quer (F-418); ein Puffer für alle Bänder
 	// (fuelle und raster behalten die Ecken nicht).

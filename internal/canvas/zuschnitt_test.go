@@ -343,7 +343,7 @@ func TestNahtEntfernen(t *testing.T) {
 // Nachtrag 7); mit der Weite des Faktors 1 (6 + 16 = 22) läge er außerhalb. 40 Pixel daneben trifft auch bei Faktor 2
 // Nachtrag 6); mit der Weite des Faktors 1 (6 + 11 = 17) läge er außerhalb. 30 Pixel daneben trifft auch bei Faktor 2
 // nicht.
-func TestNahtEntfernenZackenFaktor2(t *testing.T) {
+func TestNahtEntfernenFaktor2(t *testing.T) {
 	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 2200, 2200)))
 	if err != nil {
 		t.Fatal(err)
@@ -351,8 +351,8 @@ func TestNahtEntfernenZackenFaktor2(t *testing.T) {
 	if err := d.SetzeStreifen([]document.Streifen{{Von: 1000, Bis: 1010}}); err != nil {
 		t.Fatal(err)
 	}
-	if got := d.ZackenFaktor(); got != 2 {
-		t.Fatalf("Zackenfaktor %d, Soll 2", got)
+	if got := d.KantenFaktor(); got != 2 {
+		t.Fatalf("Kantenfaktor %d, Soll 2", got)
 	}
 	s := NeueSitzung(d)
 	s.SetzeFenster(image.Pt(2400, 2400))
@@ -631,8 +631,8 @@ func TestStauchenMindestrestFaktor2(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if d.ZackenFaktor() != 2 {
-			t.Fatalf("Zackenfaktor %d, Soll 2", d.ZackenFaktor())
+		if d.KantenFaktor() != 2 {
+			t.Fatalf("Kantenfaktor %d, Soll 2", d.KantenFaktor())
 		}
 		s := NeueSitzung(d)
 		s.SetzeFenster(image.Pt(2400, 2400))

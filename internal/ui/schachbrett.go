@@ -54,10 +54,10 @@ func schachBild(lang, quer int, zeilen, ungerade bool) *image.NRGBA {
 }
 
 // schachLage liefert für die Naht n das erste Feld quer zur Naht (in Feldern) und die Zahl der Felder quer, so dass
-// das Brett das ganze Band ±ZackenBandHalb·faktor um die Naht deckt, sowie die Zahl der Felder entlang der Naht
+// das Brett das ganze Band ±KantenBandHalb·faktor um die Naht deckt, sowie die Zahl der Felder entlang der Naht
 // (laenge plus ein Stützschritt Überstand, den Kantenlinie.Band haben kann).
 func schachLage(n document.Naht, laenge, faktor int) (erstes, quer, lang int) {
-	halb := document.ZackenBandHalb * float64(max(faktor, 1))
+	halb := document.KantenBandHalb * float64(max(faktor, 1))
 	erstes = int(math.Floor((float64(n.Lage) - halb) / schachFeld))
 	letztes := int(math.Ceil((float64(n.Lage) + halb) / schachFeld))
 	lang = (laenge+8*max(faktor, 1))/schachFeld + 2

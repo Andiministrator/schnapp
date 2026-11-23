@@ -1,0 +1,9 @@
+[
+  {
+    "name": "K96-7 Einstellung seam wird nicht übernommen (Karte #96)",
+    "datei": "internal/settings/einstellungen.go",
+    "paket": "./internal/settings",
+    "alt": "if k, ok := document.KanteAus(wert); ok {",
+    "neu": "if k, ok := document.KanteAus(wert); false && ok {"
+  }
+]

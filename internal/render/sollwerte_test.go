@@ -98,7 +98,7 @@ func TestStreifenVerschiebenObjekte(t *testing.T) {
 	if b.Bounds().Size() != image.Pt(80, 35) {
 		t.Fatalf("Größe %v, Soll 80×35", b.Bounds().Size())
 	}
-	// Über der Naht bei x = 20 liegt die Zackenkante (ADR-0023 Nachtrag 7, x 4 bis 36); sie prüft TestKanteSollwerte.
+	// Über der Naht bei x = 20 liegt die Kante (Voreinstellung Abriss, ADR-0023 Nachtrag 6 und 7, Band ±16 um die Naht, also x 4 bis 36); ihre Sollwerte prüft TestKanteSollwerte (kante_faktor_test.go).
 	pruefe(t, b, map[image.Point]color.NRGBA{
 		{40, 15}: rot, {69, 15}: rot, {39, 15}: weiss, {70, 15}: weiss, {55, 0}: rot, {55, 29}: rot, {55, 30}: weiss,
 		{2, 7}: blau, {37, 7}: blau, {1, 7}: weiss, {38, 7}: weiss, {2, 16}: weiss, {37, 16}: weiss,

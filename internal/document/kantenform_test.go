@@ -124,8 +124,8 @@ func TestKantenbandHundertstel(t *testing.T) {
 // halbe Bandhöhe ist 16, und keine Schicht ragt darüber hinaus. Die Schichttabelle steht hier als Literal (F-421): Wer
 // eine Schicht entfernt, ihre Deckkraft oder Lage ändert, fällt hier auf, nicht erst im Bild.
 func TestKantenSchichtenImBand(t *testing.T) {
-	if ZackenBandHalb != 16 || KantenSpaltHalb != 8 || abrissFaktor != 0.9 {
-		t.Fatalf("ZackenBandHalb %v, Spalt %v, Abriss %v; Soll 16, 8, 0,9", float64(ZackenBandHalb),
+	if KantenBandHalb != 16 || KantenSpaltHalb != 8 || abrissFaktor != 0.9 {
+		t.Fatalf("KantenBandHalb %v, Spalt %v, Abriss %v; Soll 16, 8, 0,9", float64(KantenBandHalb),
 			float64(KantenSpaltHalb), float64(abrissFaktor))
 	}
 	if von, bis := Spaltband(); von != -8 || bis != 8 {
@@ -164,8 +164,8 @@ func TestKantenSchichtenImBand(t *testing.T) {
 		}
 		weiteste = math.Max(weiteste, math.Max(math.Abs(sch.Von), math.Abs(sch.Bis)))
 	}
-	if weiteste+KantenAuslenkung != ZackenBandHalb {
-		t.Errorf("weiteste Schicht %v + Auslenkung %v ≠ %v", weiteste, KantenAuslenkung, float64(ZackenBandHalb))
+	if weiteste+KantenAuslenkung != KantenBandHalb {
+		t.Errorf("weiteste Schicht %v + Auslenkung %v ≠ %v", weiteste, KantenAuslenkung, float64(KantenBandHalb))
 	}
 	s[0].Von = 99
 	if KantenSchichten()[0].Von != -9.6 {
