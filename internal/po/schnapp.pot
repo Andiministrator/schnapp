@@ -465,6 +465,10 @@ msgid "2006-01-02 15:04"
 msgstr ""
 
 #: cmd/schnapp/rettung.go
+msgid "Rescue copy file: schnapp/rescue/%s"
+msgstr ""
+
+#: cmd/schnapp/rettung.go
 msgid "The rescue copy for this file is unavailable. Changes made here are not protected by a rescue copy."
 msgstr ""
 

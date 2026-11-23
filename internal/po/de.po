@@ -605,6 +605,9 @@ msgstr "Eingabe"
 msgid "Restored unsaved changes from %s. Undo returns to the saved state."
 msgstr "Ungesicherte Änderungen vom %s wiederhergestellt. Rückgängig führt zum gespeicherten Stand."
 
+msgid "Rescue copy file: schnapp/rescue/%s"
+msgstr "Datei der Rettungskopie: schnapp/rescue/%s"
+
 msgid "The rescue copy could not be read. Kept for 30 days: %s"
 msgstr "Die Rettungskopie war nicht lesbar. 30 Tage aufbewahrt: %s"
 

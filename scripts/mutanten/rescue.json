@@ -818,5 +818,19 @@
     "paket": "./cmd/schnapp",
     "alt": "if len(name) > 8 {",
     "neu": "if false {"
+  },
+  {
+    "name": "H12 F-496 aus bei gleicher Datei aufgehoben",
+    "datei": "internal/rescue/sicherung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "if s.aus && alt != k.Pfad {",
+    "neu": "if s.aus {"
+  },
+  {
+    "name": "H13 F-497 voller Name nicht auf der Fehlerausgabe",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif w.Liegt {\n\t\t// F-497",
+    "neu": "\tif false {\n\t\t// F-497"
   }
 ]

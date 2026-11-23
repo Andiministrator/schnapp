@@ -5,6 +5,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -25,6 +26,9 @@ type rettung struct {
 
 // rettungUmgebung liefert die Umgebung für den Ort der Rettungskopien; Naht für Tests.
 var rettungUmgebung = os.Getenv
+
+// rettungFehlerAusgabe ist die Fehlerausgabe für den vollen Namen einer liegenden Kopie (F-497); Naht für Tests.
+var rettungFehlerAusgabe io.Writer = os.Stderr
 
 // rettungFuer legt die Rettung für die Ausgangsdatei abs an und räumt alte Kopien auf. Ohne Zustandsordner oder wenn
 // die Datei unlesbar ist, gibt es keine (nil); der Editor läuft dann wie bisher.
@@ -100,6 +104,14 @@ func (r *rettung) Wiederherstellen(d *document.Dokument) (string, bool) {
 		name = name[:8] + "…"
 	}
 	ort := "schnapp/rescue/" + name
+	if w.Liegt {
+		// F-497: Die Statusleiste bleibt kurz, auf der Fehlerausgabe steht der volle Dateiname der liegenden Kopie.
+		voll := w.Beiseite
+		if voll == "" {
+			voll = rescue.Name(r.s.Basis().Pfad)
+		}
+		fmt.Fprintf(rettungFehlerAusgabe, i18n.T("Rescue copy file: schnapp/rescue/%s")+"\n", voll)
+	}
 	switch {
 	case w.Gestoert:
 		// Die Sperre auf die Ausgangsdatei ließ sich nicht prüfen (F-440): Diese Sitzung sichert nicht.

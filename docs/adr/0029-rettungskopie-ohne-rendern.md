@@ -222,3 +222,14 @@ Was eine Bearbeitung ausmacht, ist dagegen klein und ohne Pixel beschreibbar:
   andere Datei gespeichert“ nicht (F-486).
 - Auch eine Lage mit Fehler hinter einer haltenden Meldung bleibt unverbraucht und wird nachgeholt; sie steht dabei je
   Änderung einmal auf der Fehlerausgabe (F-487).
+
+## Nachtrag 9 (23.11.2026): `aus` bleibt bei gleicher Datei, voller Name auf der Fehlerausgabe (F-496, F-497)
+
+**Status:** Akzeptiert (Karte #209, umgesetzt von Claude Sonnet 5.5).
+
+- **Ändert Nachtrag 7 (F-472):** `NeueBasis` hebt den Zustand „aus“ (eine hinterlassene Kopie ließ sich nicht beiseitelegen)
+  nur bei einer **anderen** Ausgangsdatei auf. Bei derselben Datei liegt die Kopie weiter an ihrem Platz, die stumme
+  Sitzung fasst sie nicht an (`loescheKopie`); sie gälte sonst zu Unrecht als geschützt und meldete „Saved as a
+  different file“ (F-496).
+- Eine liegende Kopie (beiseitegelegt oder unlesbar) steht beim Öffnen mit **vollem Dateinamen** auf der Fehlerausgabe
+  (`Rescue copy file: schnapp/rescue/<Name>`); die Statusleiste behält den Kurznamen aus Nachtrag 8 (F-497).

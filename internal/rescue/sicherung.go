@@ -294,7 +294,10 @@ func (s *Sicherung) NeueBasis(k Kennung) {
 	s.reihe(func() {
 		s.loescheKopie(alt)
 		s.mu.Lock()
-		if s.aus { // die neue Ausgangsdatei hat keine beiseitegelegte Kopie im Weg; die Sitzung ist wieder geschützt (F-472)
+		// Nur bei einer anderen Datei: Die neue hat keine Kopie im Weg, die Sitzung ist wieder geschützt (F-472). Bei
+		// derselben Datei liegt die nicht beiseite zu legende Kopie weiter an ihrem Platz (loescheKopie fasst sie als
+		// stumme Sitzung nicht an), die Sitzung bleibt aus (F-496).
+		if s.aus && alt != k.Pfad {
 			s.aus = false
 			s.lageNr++
 			s.lageGrund = LageBasiswechsel
