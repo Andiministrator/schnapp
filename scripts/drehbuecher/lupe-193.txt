@@ -1,0 +1,47 @@
+# Sichtprobe ADR-0033 (Karte #193): Lupe anlegen, Vergrößerung, Schwärzen in der Quelle, Ziel verschieben, Griff am
+# Ziel, Zuschnitt über der Quelle.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/lupe-193.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1: das Bild liegt bei (76,100)–(1276,900), Zoom 1 (Original = Bildschirm − (76,100)).
+# Erwartet:
+#  01 Werkzeug Lupe (Taste M): Quelle (480,320)–(540,380) über grünem Grund, Ecke des weißen und des schwarzen
+#     Balkens; Ziel rechts daneben im Abstand 16, doppelt so groß, scharfe Pixelkanten; rote Rahmen eckig, Linie
+#     zwischen den Rahmen; Leiste „AUSWAHL: LUPE“ mit Strichstärke, „Vergrößerung 2×“, Ebene „Lupe“ mit Vorschau.
+#  02 nach „+“: Vergrößerung 3×, Ziel wächst von links oben.
+#  03 Schwärzen (B) über einen Teil der Quelle: dieselbe Stelle im Ziel sofort schwarz.
+#  04 Auswählen (V), Ziel ins Blau gezogen: nur das Ziel bewegt sich, die Linie folgt.
+#  05 Griff rechts unten am Ziel gezogen: Seitenverhältnis der Quelle bleibt, Vergrößerung ändert sich.
+#  06 Zuschnitt links bis x = 500 (Original): die linken 20 Spalten der Quelle sind weg, im Ziel steht dort das Bild
+#     darunter (durchsichtig), der Rest der Lupe bleibt.
+#  07 Rückgängig: wieder ganzes Bild.
+warte 1500
+taste M
+warte 300
+ziehe 556 420 616 480 10
+warte 400
+foto 01-lupe-angelegt
+klick 1512 122
+warte 400
+foto 02-vergroesserung-3
+taste B
+warte 300
+ziehe 560 425 590 450 6
+warte 400
+foto 03-schwaerzen-in-quelle
+taste V
+warte 300
+ziehe 700 470 1000 650 10
+warte 400
+foto 04-ziel-verschoben
+ziehe 1112 780 1172 820 10
+warte 400
+foto 05-griff-am-ziel
+taste C
+warte 400
+ziehe 76 500 576 500 10
+warte 400
+taste V
+warte 500
+foto 06-zuschnitt-ueber-quelle
+taste Strg+Z
+warte 500
+foto 07-rueckgaengig

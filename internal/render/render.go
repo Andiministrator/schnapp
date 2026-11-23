@@ -430,7 +430,7 @@ func (z zeichner) ebenenRahmen(o document.Objekt) image.Rectangle {
 		// über die abgebildeten Grenzen hinaus (Verify V23-1).
 		rand += v.Strich.Breite / 2
 	case document.Lupe: // Rahmen wie beim Kasten (ADR-0033 Punkt 4)
-		rand += v.Strich.Breite / 2
+		rand += 0.5 * v.Strich.Breite
 	}
 	r := document.R(z.ansicht(g.Min), z.ansicht(g.Max))
 	starr := func(anker document.Punkt) {

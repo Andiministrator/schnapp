@@ -220,7 +220,7 @@ func TestLupeGriffe(t *testing.T) {
 		t.Errorf("Ziel, größter Faktor: %v", z.Ziel)
 	}
 	z = ZieheGriff(l, GriffZielNO, document.Pt(60, 0)).(document.Lupe) // über die feste Ecke (76,80) nach links: Spiegeln
-	if x, y := z.Vergroesserung(); math.Abs(x-y) > 1e-9 || z.Ziel.Max.X != 76 || z.Ziel.Max.Y != 80 {
+	if x, y := z.Vergroesserung(); math.Abs(x-y) > 1e-9 || z.Ziel.Max.X != 76 || z.Ziel.Max.Y != 80 || math.Abs(z.Ziel.Min.Y) > 1e-9 {
 		t.Errorf("Ziel NO über die Ecke: %v", z.Ziel)
 	}
 	q := ZieheGriff(l, GriffQuelleSO, document.Pt(70, 60)).(document.Lupe) // Quelle 50×40, Ziel 100×80 ab (76,20)

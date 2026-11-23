@@ -43,7 +43,8 @@ func TestLupeVergroessert(t *testing.T) {
 		name string
 		z    document.Rechteck
 		k    int
-	}{{"2x", document.R(document.Pt(20, 10), document.Pt(28, 16)), 2}, {"3x", document.R(document.Pt(20, 10), document.Pt(32, 19)), 3}} {
+	}{{"2x", document.R(document.Pt(20, 10), document.Pt(28, 16)), 2}, {"3x", document.R(document.Pt(20, 10), document.Pt(32, 19)), 3},
+		{"2x versetzt", document.R(document.Pt(20.6, 10.6), document.Pt(28.6, 16.6)), 2}} {
 		d := musterDokument(t, 40, 30)
 		orig := d.Original()
 		l := lupeOhneStrich(document.R(document.Pt(2, 3), document.Pt(6, 6)), f.z)
@@ -53,9 +54,13 @@ func TestLupeVergroessert(t *testing.T) {
 		for y := 0; y < 30; y++ {
 			for x := 0; x < 40; x++ {
 				want := orig.NRGBAAt(x, y)
-				drin := image.Pt(x, y).In(image.Rect(int(f.z.Min.X), int(f.z.Min.Y), int(f.z.Max.X), int(f.z.Max.Y)))
+				mx, my := float64(x)+0.5, float64(y)+0.5 // Mittelpunkt des Pixels
+				drin := mx >= f.z.Min.X && mx < f.z.Max.X && my >= f.z.Min.Y && my < f.z.Max.Y
 				if drin {
-					want = orig.NRGBAAt(2+(x-20)/f.k, 3+(y-10)/f.k)
+					want = orig.NRGBAAt(l.QuellSpalte(mx), l.QuellZeile(my))
+					if gx, gy := 2+int(mx-f.z.Min.X)/f.k, 3+int(my-f.z.Min.Y)/f.k; l.QuellSpalte(mx) != gx || l.QuellZeile(my) != gy {
+						t.Fatalf("%s: Quellpixel (%d,%d), erwartet (%d,%d)", f.name, l.QuellSpalte(mx), l.QuellZeile(my), gx, gy)
+					}
 					if got := inhalt.NRGBAAt(x, y); got != want {
 						t.Errorf("%s: LupenInhalt (%d,%d) = %v, erwartet %v", f.name, x, y, got, want)
 					}

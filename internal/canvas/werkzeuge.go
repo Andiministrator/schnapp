@@ -364,10 +364,10 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 		o = document.Kasten{ID: s.neuID, Bereich: document.R(a, b), Strich: s.Stil.strich(), Fuellung: s.Stil.Fuellung,
 			Eckradius: s.Stil.Eckradius}
 	case WerkzeugLupe: // Aufziehen wählt die Quelle wie einen Kasten, das Ziel liegt daneben (ADR-0033 Punkt 8)
-		if s.Umschalt {
-			b = s.umschaltEnde(WerkzeugKasten, p)
-		} else {
+		if !s.Umschalt {
 			b, s.linien = s.rastePunkt(b, s.neuID)
+		} else {
+			b = s.umschaltEnde(WerkzeugKasten, p) // Quadrat, ohne Einrasten
 		}
 		l := s.neueLupe(document.R(a, b))
 		l.ID = s.neuID

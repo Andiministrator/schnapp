@@ -1,0 +1,163 @@
+[
+  {
+    "name": "L1 Lupe mit Quellbreite 0 gültig",
+    "datei": "internal/document/lupe.go",
+    "paket": "./internal/document",
+    "alt": "!(r.Breite() > 0) || !(r.Hoehe() > 0)",
+    "neu": "!(r.Breite() >= 0) || !(r.Hoehe() > 0)"
+  },
+  {
+    "name": "L2 Linie trotz Überlappung",
+    "datei": "internal/document/lupe.go",
+    "paket": "./internal/document",
+    "alt": "if ueberlappen(l.Quelle, l.Ziel) {",
+    "neu": "if false && ueberlappen(l.Quelle, l.Ziel) {"
+  },
+  {
+    "name": "L3 Linie bei bloßer Berührung (Rundungsrest)",
+    "datei": "internal/document/lupe.go",
+    "paket": "./internal/document",
+    "alt": "if !(tz-tq > 1e-9) {",
+    "neu": "if !(tz-tq > 0) {"
+  },
+  {
+    "name": "L4 Quellpixel gerundet statt nächster Nachbar mit floor",
+    "datei": "internal/document/lupe.go",
+    "paket": "./internal/document",
+    "alt": "return int(math.Floor(l.Quelle.Min.X + (x-l.Ziel.Min.X)*l.Quelle.Breite()/l.Ziel.Breite()))",
+    "neu": "return int(math.Round(l.Quelle.Min.X + (x-l.Ziel.Min.X)*l.Quelle.Breite()/l.Ziel.Breite()))"
+  },
+  {
+    "name": "L5 Streifen gelten als sichtbar",
+    "datei": "internal/document/lupe.go",
+    "paket": "./internal/document",
+    "alt": "return k == len(m.weg) || v < m.weg[k][0]",
+    "neu": "return k == len(m.weg) || v < m.weg[k][0] || k >= 0"
+  },
+  {
+    "name": "L6 Renderer zeigt verborgene Quellpixel",
+    "datei": "internal/render/lupe.go",
+    "paket": "./internal/render",
+    "alt": "if c := nimm(o); sichtbar(c) {",
+    "neu": "if c := nimm(o); c >= 0 {"
+  },
+  {
+    "name": "L7 Renderer prüft nicht, ob der Pixelmittelpunkt im Ziel liegt",
+    "datei": "internal/render/lupe.go",
+    "paket": "./internal/render",
+    "alt": "if !(o >= von && o < bis) {",
+    "neu": "if false {"
+  },
+  {
+    "name": "L8 Bild der Lupe kostet nichts",
+    "datei": "internal/render/lupe.go",
+    "paket": "./internal/render",
+    "alt": "z.auf.flaeche += fuellGewicht * float64(r.Dx()) * float64(r.Dy())",
+    "neu": "z.auf.flaeche += 0 * float64(r.Dx()) * float64(r.Dy())"
+  },
+  {
+    "name": "L9 Kosten nicht aufs Bild beschnitten",
+    "datei": "internal/render/lupe.go",
+    "paket": "./internal/render",
+    "alt": "r := lupenRahmen(z.d, v).Intersect(z.rand)\n\tif r.Empty() {\n\t\treturn\n\t}\n\tif !z.ohneZaehlen {",
+    "neu": "r := lupenRahmen(z.d, v)\n\tif r.Empty() {\n\t\treturn\n\t}\n\tif !z.ohneZaehlen {"
+  },
+  {
+    "name": "L10 Rahmen um das Ziel fehlt",
+    "datei": "internal/render/lupe.go",
+    "paket": "./internal/render",
+    "alt": "\tif strich {\n\t\tz.eckigerRahmen(v.Ziel, v.Strich)\n\t}",
+    "neu": ""
+  },
+  {
+    "name": "L11 Schreiber schreibt immer Version 2",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "func schreibVersion(objekte []document.Objekt) int {",
+    "neu": "func schreibVersion(objekte []document.Objekt) int {\n\tif true {\n\t\treturn versionLupe\n\t}"
+  },
+  {
+    "name": "L12 Lupe in Version 1 angenommen",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "if l.a[\"typ\"] == \"lupe\" && version < versionLupe {",
+    "neu": "if false {"
+  },
+  {
+    "name": "L13 Arbeitsdatei trägt Pixel der Lupe",
+    "datei": "internal/fileformat/lupe.go",
+    "paket": "./internal/fileformat",
+    "alt": "if !s.rundlauf {\n\t\ts.lupenBild(d, o)",
+    "neu": "if true {\n\t\ts.lupenBild(d, o)"
+  },
+  {
+    "name": "L14 Export bettet verborgene Quellpixel ein",
+    "datei": "internal/fileformat/lupe.go",
+    "paket": "./internal/fileformat",
+    "alt": "px := d.SichtbarerAusschnitt(r)",
+    "neu": "px := d.Original().SubImage(r.Intersect(d.Original().Rect)).(*image.NRGBA)"
+  },
+  {
+    "name": "L15 Ziel nie links der Quelle",
+    "datei": "internal/canvas/lupe.go",
+    "paket": "./internal/canvas",
+    "alt": "if x := q.Min.X - abstand - w; x >= 0 {",
+    "neu": "if x := q.Min.X - abstand - w; false && x >= 0 {"
+  },
+  {
+    "name": "L16 Abstand ohne KantenFaktor",
+    "datei": "internal/canvas/lupe.go",
+    "paket": "./internal/canvas",
+    "alt": "LupenAbstand*float64(s.D.KantenFaktor())",
+    "neu": "LupenAbstand"
+  },
+  {
+    "name": "L17 Ziel-Griff folgt nur der Breite",
+    "datei": "internal/canvas/lupe.go",
+    "paket": "./internal/canvas",
+    "alt": "k := math.Max(math.Abs(d.X)/l.Quelle.Breite(), math.Abs(d.Y)/l.Quelle.Hoehe())",
+    "neu": "k := math.Abs(d.X) / l.Quelle.Breite()"
+  },
+  {
+    "name": "L18 Ziehen verschiebt immer die ganze Lupe",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "if l, ok := s.startObj.(document.Lupe); ok && s.lupenTeil != LupeGanz {",
+    "neu": "if l, ok := s.startObj.(document.Lupe); false && ok && s.lupenTeil != LupeGanz {"
+  },
+  {
+    "name": "L19 Quell-Griff lässt das Ziel stehen",
+    "datei": "internal/canvas/lupe.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tl.Ziel.Max = l.Ziel.Min.Plus(document.Pt(l.Quelle.Breite()*kx, l.Quelle.Hoehe()*ky))\n",
+    "neu": "\t\t_, _ = kx, ky\n"
+  },
+  {
+    "name": "L20 Stufe + bleibt auf der aktuellen Stufe",
+    "datei": "internal/canvas/lupe.go",
+    "paket": "./internal/canvas",
+    "alt": "if k > jetzt+eps {",
+    "neu": "if k >= jetzt {"
+  },
+  {
+    "name": "L21 Einrasten an der Lupe nur an der Quelle",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": "rs = []document.Rechteck{l.Quelle, l.Ziel}",
+    "neu": "rs = []document.Rechteck{l.Quelle}"
+  },
+  {
+    "name": "L22 Editor merkt das Bild über eine Schwärzung hinweg",
+    "datei": "internal/ui/lupe.go",
+    "paket": "./internal/ui",
+    "alt": "b.l == l && b.stand == stand && b.bild == bild",
+    "neu": "b.l == l"
+  },
+  {
+    "name": "L23 Leiste ohne Vergrößerung",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "if inhalt.Vergroesserung {",
+    "neu": "if false {"
+  }
+]

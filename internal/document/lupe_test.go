@@ -110,6 +110,11 @@ func TestLupeLinie(t *testing.T) {
 	if _, _, ok := l.Linie(); ok {
 		t.Error("Linie trotz Überlappung")
 	}
+	// Überlappung an einer Ecke, die Gerade zwischen den Mitten läuft außerhalb der Schnittfläche: trotzdem keine Linie.
+	l.Ziel = R(Pt(19, 15), Pt(110, 17))
+	if _, _, ok := l.Linie(); ok {
+		t.Error("Linie trotz Überlappung an der Ecke")
+	}
 	// Berühren an der Kante: nichts bleibt übrig.
 	l.Ziel = R(Pt(20, 10), Pt(40, 16))
 	if _, _, ok := l.Linie(); ok {
