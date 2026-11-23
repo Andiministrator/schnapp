@@ -203,9 +203,9 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 			paint.FillShape(gtx.Ops, grund, clip.Rect(r).Op())
 			paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
 			e.textMittig(gtx, kantenName(f), 12, schrift, r)
-			if inhalt.KanteAn {
-				seiteKnopf(gtx, &k.kanten[j], r)
-			}
+			// Auch grau angemeldet, wie die Stufenknöpfe: Der Fokus fällt nicht ins Leere, wenn die letzte Naht
+			// wegfällt; ein Klick tut dann nichts, weil SetzeKante ohne Naht nichts setzt (Sitzungs-QA N-9).
+			seiteKnopf(gtx, &k.kanten[j], r)
 		}
 		y += hoch + gtx.Dp(10)
 	}

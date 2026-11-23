@@ -327,3 +327,20 @@ Bericht zu Karte #203). F-491 fiel in der sichereren Richtung: absichern statt n
 - Das Echtlauf-Skript stellt die Einstellungen nach jedem Teil zurück, schreibt sie über eine Nachbardatei und bricht
   ab, wenn ein früherer Lauf ohne Abschluss liegt (Marke `laeuft`; Sitzungs-QA B-2, B-3).
 
+## Nachtrag 9 (23.11.2026): Grenzen des Wiederzeigens (Verify der Sitzungs-QA, N-1, N-3)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Präzisiert Nachtrag 8: „nie ersatzlos“ gilt für jeden Weg über das
+MCP-Protokoll, nicht bei hartem Prozessende.
+
+- **Schreibfehler (N-1):** Scheitert das Schreiben einer Überlauf-Ablehnung, bricht der Server das laufende Werkzeug ab
+  und wartet auf sein Ende, bevor er sich beendet; das Wiederzeigen läuft also noch.
+- **Grenze:** Endet der Prozess hart (SIGKILL, zweites Signal, Absturz) zwischen Schließen und neuem Hinweis, bleibt
+  der vorige Hinweis weg. Das setzt Kontrolle über den Prozess voraus, nicht nur über die MCP-Nachrichten; dagegen
+  hilft nur `confirm = yes`.
+- **Schließen gescheitert (N-3):** Dann steht der alte Hinweis noch; er wird nicht zusätzlich gezeigt und bleibt zum
+  Schließen vor der nächsten Aufnahme vorgemerkt.
+- **Hingenommen:** Hat der Nutzer den Hinweis selbst weggeklickt, erscheint er nach einem späteren Fehlversuch erneut,
+  und ein mitten im Zeigen abgebrochener neuer Hinweis kann neben dem alten stehen. Beides geht in die vorsichtige
+  Richtung (zu viel statt zu wenig Hinweis).
+- Das Echtlauf-Skript bricht bei einer `settings.ini` als Symlink ab, stellt nur zurück, was es selbst gesetzt hat,
+  und sichert eine zwischendurch geänderte Fassung im Laufordner (N-5, N-6).

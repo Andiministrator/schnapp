@@ -219,6 +219,23 @@ func TestLeisteTastaturfokus(t *testing.T) {
 	if !l.fok(&l.e.knoepfe.fussZoom) {
 		t.Errorf("Esc nach Leertaste: Fokus %s", menueFokusName(l))
 	}
+	// Ebenso am Fußfeld Farbe und am Farbfeld links (Sitzungs-QA N-8); dort hängt die Liste am Farbfeld.
+	for _, f := range []struct {
+		c      any
+		amLink bool
+	}{{&l.e.knoepfe.fussFarbe, false}, {&l.e.knoepfe.farbe, true}} {
+		l.fokusiere(f.c)
+		l.taste(key.NameSpace, 0)
+		if !l.e.menue.offen || l.e.menue.welches != listeFarbe || !l.e.menue.perTasteOffen || menueFokusNr(l) != 0 ||
+			l.e.listeAmFarbKnopf != f.amLink {
+			t.Errorf("Leertaste an %T (Farbfeld links %v): offen %v, per Taste %v, Fokus %d, am Farbfeld %v", f.c, f.amLink,
+				l.e.menue.offen, l.e.menue.perTasteOffen, menueFokusNr(l), l.e.listeAmFarbKnopf)
+		}
+		l.taste(key.NameEscape, 0)
+		if !l.fok(f.c) {
+			t.Errorf("Esc: Fokus %s", menueFokusName(l))
+		}
+	}
 }
 
 // A-8: Bei offener Übersicht der Tastenkürzel ändert ein Klick in die rechte Leiste nichts.

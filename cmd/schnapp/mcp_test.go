@@ -682,3 +682,57 @@ func TestBestaetigungKindLiestStdin(t *testing.T) {
 		}
 	}
 }
+
+// TestMcpVorigerHinweisWeitereWege (Sitzungs-QA N-2, N-3): Scheitert der neue Hinweis oder wird nach der Aufnahme
+// abgebrochen, kommt der vorige wieder. Scheitert schon das Schließen, steht der alte noch: Er wird nicht doppelt
+// gezeigt und bleibt zum Schließen vorgemerkt.
+func TestMcpVorigerHinweisWeitereWege(t *testing.T) {
+	vorbereiten := func() *mcpLauf {
+		l := neuerMcpLauf(t)
+		l.agenten.Bestaetigen = false
+		if e := l.rufe(t, "capture_screen", `{"screen":"DP-1"}`); e.Fehler {
+			t.Fatal(text(e))
+		}
+		l.schritte = nil
+		return l
+	}
+	pruefe := func(name string, l *mcpLauf, want string, id uint32) {
+		t.Helper()
+		if got := strings.Join(l.schritte, ";"); got != want {
+			t.Errorf("%s: %s, erwartet %s", name, got, want)
+		}
+		if h := *l.an.hinweis; h.text != "monitor DP-1" || (id != 0 && h.id != id) || h.id == 0 {
+			t.Errorf("%s: gemerkter Hinweis %+v", name, h)
+		}
+	}
+
+	l := vorbereiten()
+	melde := l.an.melde
+	l.an.melde = func(c context.Context, ti, te string) (uint32, error) {
+		id, _ := melde(c, ti, te)
+		if te == "all monitors" {
+			return 0, errors.New("Dienst weg")
+		}
+		return id, nil
+	}
+	l.rufe(t, "capture_screen", `{"all":true}`)
+	pruefe("neuer Hinweis scheitert", l, "schliesse:1;warte-hinweis;aufnahme;hinweis:all monitors;hinweis:monitor DP-1", 0)
+
+	l = vorbereiten()
+	ctx, abbrechen := context.WithCancel(context.Background())
+	quelle := l.an.quelle
+	l.an.quelle = func() (capture.Quelle, error) { abbrechen(); return quelle() }
+	if e := l.rufeMit(t, ctx, "capture_screen", `{"all":true}`, mcp.Kunde{}); !e.Fehler {
+		t.Error("Abbruch nach der Aufnahme: kein Fehler")
+	}
+	pruefe("Abbruch nach der Aufnahme", l, "schliesse:1;warte-hinweis;aufnahme;hinweis:monitor DP-1", 0)
+
+	l = vorbereiten()
+	l.an.schliesse = func(context.Context, uint32) error {
+		l.schritte = append(l.schritte, "schliesse-scheitert")
+		return errors.New("kein Dienst")
+	}
+	l.an.quelle = func() (capture.Quelle, error) { return nil, errors.New("kein KWin") }
+	l.rufe(t, "capture_screen", `{"all":true}`)
+	pruefe("Schließen und Aufnahme scheitern", l, "schliesse-scheitert", 1)
+}

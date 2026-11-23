@@ -200,3 +200,18 @@ func TestNeueSitzungStilNachBildgroesse(t *testing.T) {
 		t.Errorf("Stil %+v", s.Stil)
 	}
 }
+
+// Sitzungs-QA N-7: Der Faktor ist wie bei der Kante durch die Ansicht gedeckelt: ein 4K-Original, auf 300×80
+// zugeschnitten, beginnt mit der Grundeinstellung.
+func TestNeueSitzungFaktorGedeckelt(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 3840, 2160)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := d.SetzeZuschnitt(image.Rect(100, 100, 400, 180)); err != nil {
+		t.Fatal(err)
+	}
+	if s := NeueSitzung(d); s.Stil != StandardStil() {
+		t.Errorf("zugeschnittenes 4K-Bild: Stil %+v, soll die Grundeinstellung", s.Stil)
+	}
+}

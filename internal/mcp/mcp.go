@@ -552,7 +552,11 @@ func (s *Server) rufeAuf(ctx context.Context, n nachricht, zeilen <-chan zeile, 
 				s.log("Warteschlange voll (%d Nachrichten, %d Bytes), Nachricht verworfen", q.laenge(), q.bytes)
 				if a := ueberlauf(z); a != nil {
 					if err := schreibe(w, *a); err != nil {
-						return antwort{}, false, eof, err // abbrechen per defer; fertig ist gepuffert
+						// Erst abbrechen und auf das Werkzeug warten: Seine Aufräumarbeit (etwa einen geschlossenen
+						// Hinweis wieder zeigen) liefe sonst nicht mehr, wenn der Server danach endet (Sitzungs-QA N-1).
+						abbrechen()
+						<-fertig
+						return antwort{}, false, eof, err
 					}
 				}
 			}

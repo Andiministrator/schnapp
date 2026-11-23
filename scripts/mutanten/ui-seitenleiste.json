@@ -278,5 +278,19 @@
     "paket": "./internal/ui",
     "alt": "\tan := func() bool { return !e.s.SpeichernLaeuft() && !e.hilfeOffen }",
     "neu": "\tan := func() bool { return !e.s.SpeichernLaeuft() }"
+  },
+  {
+    "name": "N7 Faktor ungedeckelt (Sitzungs-QA N-7)",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tStil: StilMitFaktor(d.KantenFaktor())}",
+    "neu": "\t\tStil: StilFuer(d.OriginalGroesse())}"
+  },
+  {
+    "name": "N8 Leertaste nur am Zoomfeld (Sitzungs-QA N-8)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "} else if c := e.fokussierterKnopf(gtx); c == &e.knoepfe.fussFarbe || c == &e.knoepfe.fussZoom ||\n\t\t\t\tc == &e.knoepfe.farbe {",
+    "neu": "} else if c := e.fokussierterKnopf(gtx); c == &e.knoepfe.fussZoom {"
   }
 ]

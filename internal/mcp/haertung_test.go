@@ -228,3 +228,36 @@ func TestAbbruchMitKennungIstKeiner(t *testing.T) {
 		t.Errorf("Anfrage 7 fälschlich abgebrochen: %s", aus.String())
 	}
 }
+
+// TestSchreibfehlerWartetAufWerkzeug (Sitzungs-QA N-1): Scheitert das Schreiben einer Überlauf-Ablehnung, kehrt Bediene
+// erst zurück, wenn das abgebrochene Werkzeug fertig ist; dessen Aufräumarbeit (etwa einen geschlossenen Hinweis
+// wieder zeigen) läuft also noch.
+func TestSchreibfehlerWartetAufWerkzeug(t *testing.T) {
+	ab := make(chan bool, 1)
+	pr, pw := io.Pipe()
+	fertig := make(chan error, 1)
+	go func() { fertig <- blockServer(ab).Bediene(context.Background(), pr, kaputt{}) }()
+	go func() {
+		io.WriteString(pw, `{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"warte",`+metaNeu+`}}`+"\n")
+		for i := 1; i <= MaxSchlange+1; i++ {
+			io.WriteString(pw, fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"method":"ping"}`+"\n", 100+i))
+		}
+	}()
+	select {
+	case err := <-fertig:
+		if err == nil {
+			t.Fatal("kein Schreibfehler gemeldet")
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("Bediene endet nicht")
+	}
+	select {
+	case v := <-ab:
+		if !v {
+			t.Error("Werkzeug nicht abgebrochen, sondern abgelaufen")
+		}
+	default:
+		t.Error("Bediene kehrte zurück, bevor das Werkzeug fertig war")
+	}
+	pw.Close()
+}

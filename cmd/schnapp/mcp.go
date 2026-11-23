@@ -557,16 +557,18 @@ func (an mcpAnschluesse) vorigenHinweisSchliessen(ctx context.Context) (letzterH
 		return letzterHinweis{}, nil
 	}
 	alt := *an.hinweis
-	*an.hinweis = letzterHinweis{}
 	if err := an.schliesse(ctx, alt.id); err != nil {
+		// Der alte Hinweis steht noch: nichts wieder zu zeigen, beim nächsten Mal erneut schließen (Sitzungs-QA N-3).
 		diagnose(an.fehler, "voriger Hinweis nicht geschlossen: %v", err)
+		return letzterHinweis{}, nil
 	}
+	*an.hinweis = letzterHinweis{}
 	return alt, an.warte(ctx, hinweisWeg)
 }
 
 // hinweisZurueck zeigt einen geschlossenen Hinweis erneut, wenn die Aufnahme danach ohne eigenen Hinweis endete
 // (abgebrochen, gescheitert): Ein Agent kann den Hinweis seiner vorigen Aufnahme so nicht durch einen Fehlversuch
-// verschwinden lassen (Sitzungs-QA B-1, ADR-0030 Nachtrag 7). Eigener Kontext mit Frist, weil der Aufruf oft gerade
+// verschwinden lassen (Sitzungs-QA B-1, ADR-0030 Nachtrag 8). Eigener Kontext mit Frist, weil der Aufruf oft gerade
 // abgebrochen wurde.
 func (an mcpAnschluesse) hinweisZurueck(alt letzterHinweis) {
 	if alt.id == 0 || an.hinweis == nil {

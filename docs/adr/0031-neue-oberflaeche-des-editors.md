@@ -200,7 +200,7 @@ in `internal/ui/hilfe.go`; Tastentabelle in `internal/ui/kuerzel.go`; Logik der 
 - **Tab-Reihenfolge:** Menütitel, Werkzeuge, Farbfeld links, Strich − und + (Pfeil, Kasten), Kantenknöpfe (Stauchen),
   Farben der rechten Leiste, Fußfeld Farbe, Fußfeld Zoom.
 - **Anker der Listen (A-1):** Die Zoomliste hängt immer am Zoomfeld; nur die Farbliste kann am Farbfeld links hängen.
-- **Tastatur (A-5, A-6):** Ein grauer Stufenknopf bleibt fokussierbar (ein Klick tut dort nichts), damit der Fokus
+- **Tastatur (A-5, A-6):** Ein grauer Stufenknopf und ein grauer Kantenknopf bleiben fokussierbar (ein Klick tut dort nichts; Kantenknöpfe seit dem Verify, N-9), damit der Fokus
   nach dem Schritt auf die letzte Stufe nicht ins Leere fällt. Strg+Umschalt+B gibt beim Einklappen den Fokus an die
   Leinwand. Die Leertaste an den Feldern mit Liste (Fußfelder Farbe und Zoom, Farbfeld links) öffnet die Liste wie
   Enter, mit Fokus auf dem ersten Eintrag; Esc gibt ihn ans Feld zurück (`editor.leertastenZiele`).

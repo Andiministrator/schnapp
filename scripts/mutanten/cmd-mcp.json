@@ -566,5 +566,33 @@
     "paket": "./cmd/schnapp",
     "alt": "\thinweisWeg = 600 * time.Millisecond",
     "neu": "\thinweisWeg = 1 * time.Millisecond"
+  },
+  {
+    "name": "N1 Schreibfehler wartet nicht auf das Werkzeug (Sitzungs-QA N-1)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "\t\t\t\t\t\tabbrechen()\n\t\t\t\t\t\t<-fertig\n",
+    "neu": "\t\t\t\t\t\tabbrechen()\n"
+  },
+  {
+    "name": "N2a gescheiterter neuer Hinweis gilt als gezeigt (Sitzungs-QA N-2)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tdiagnose(an.fehler, \"Hinweis gescheitert: %v\", err)\n",
+    "neu": "\t\tdiagnose(an.fehler, \"Hinweis gescheitert: %v\", err)\n\t\tneuerHinweis = true\n"
+  },
+  {
+    "name": "N2b Abbruch nach der Aufnahme ohne Wiederzeigen (Sitzungs-QA N-2)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t// Abbruch während der Aufnahme: das fertige Bild wird verworfen (ADR-0030 Nachtrag 4 Punkt 6, F-469).\n\tif ctx.Err() != nil {\n",
+    "neu": "\t// Abbruch während der Aufnahme: das fertige Bild wird verworfen (ADR-0030 Nachtrag 4 Punkt 6, F-469).\n\tif ctx.Err() != nil {\n\t\tneuerHinweis = true\n"
+  },
+  {
+    "name": "N3 gescheitertes Schließen zeigt den alten doppelt (Sitzungs-QA N-3)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tdiagnose(an.fehler, \"voriger Hinweis nicht geschlossen: %v\", err)\n\t\treturn letzterHinweis{}, nil\n",
+    "neu": "\t\tdiagnose(an.fehler, \"voriger Hinweis nicht geschlossen: %v\", err)\n\t\t*an.hinweis = letzterHinweis{}\n\t\treturn alt, nil\n"
   }
 ]

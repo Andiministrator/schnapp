@@ -545,6 +545,15 @@ Ausgelagerte Findings aus `docs/findings.md`. Einträge hier sind abgeschlossen 
 | F-536 | [D] | P3 | Sprint 12 | **Tastaturfokus fiel ins Leere, Leertaste an Feldern mit Liste wie ein Mausklick** (A-5, A-6): grauer Stufenknopf bleibt angemeldet, Einklappen gibt den Fokus an die Leinwand, Leertaste öffnet wie Enter (`editor.leertastenZiele`, `TestLeisteTastaturfokus`). | behoben (dieser Commit) |
 | F-537 | [D] | P3 | Sprint 12 | **Klick in die rechte Leiste änderte das Dokument hinter der Hilfetafel** (A-8): Klicks wirken bei offener Tafel nicht (`TestHilfeOffenSperrtLeiste`). | behoben (dieser Commit) |
 | F-538 | [V] | P3 | Sprint 12 | **Dunkelgraues Farbfeld kaum sichtbar, feste Feldgröße ohne Schutz** (A-9, A-10): heller 1-px-Rand; Test `len(Beschriftungsfarben) <= len(farben)`. | behoben (dieser Commit) |
+| F-540 | [S] | P3 | Sprint 12 | **Wiederzeigen des Hinweises lief bei Schreibfehler-Ausstieg nicht; „nie ersatzlos“ zu absolut** (Verify N-1): `rufeAuf` bricht das Werkzeug ab und wartet auf sein Ende (`TestSchreibfehlerWartetAufWerkzeug`, Mutant N1); Grenze hartes Prozessende in ADR-0030 Nachtrag 9. | behoben (dieser Commit) |
+| F-541 | [V] | P3 | Sprint 12 | **Rückwege „neuer Hinweis scheitert“ und „Abbruch nach der Aufnahme“ ungetestet** (N-2): `TestMcpVorigerHinweisWeitereWege`, Mutanten N2a, N2b. | behoben (dieser Commit) |
+| F-542 | [K] | P3 | Sprint 12 | **Alter Hinweis doppelt, wenn schon das Schließen scheiterte** (N-3): dann nichts wieder zeigen und vorgemerkt lassen (Mutant N3); weggeklickter Hinweis erscheint nach Fehlversuch erneut — hingenommen, ADR-0030 Nachtrag 9. | behoben (dieser Commit) |
+| F-543 | [D] | P3 | Sprint 12 | **Kommentar nannte Nachtrag 7 statt 8; Trailer von ed487c3 ohne Kritiker-Modell** (N-4): Kommentar berichtigt; der Trailer lässt sich ohne Umschreiben der Geschichte nicht nachholen, dieser Commit trägt Fable mit. | behoben (dieser Commit) |
+| F-544 | [K] | P3 | Sprint 12 | **Echtlauf-Skript ersetzte einen Symlink settings.ini, Rest .echtlauf-neu** (N-5): Abbruch bei Symlink, Rest wird in den Laufordner verschoben; im Sandkasten geprüft (Symlink bleibt, Exit 1). | behoben (dieser Commit) |
+| F-545 | [K] | P3 | Sprint 12 | **Zurückstellen überschrieb fremde Änderungen, Meldung ohne Vorher-Datei unvollständig** (N-6): nur zurückstellen, was „setze“ geschrieben hat; geänderte Fassung bleibt im Laufordner; Meldung nennt den Fall ohne Vorher-Datei. | behoben (dieser Commit) |
+| F-546 | [V] | P3 | Sprint 12 | **Deckel des Faktors ohne Test** (N-7): `TestNeueSitzungFaktorGedeckelt`, Mutant N7. | behoben (dieser Commit) |
+| F-547 | [V] | P3 | Sprint 12 | **Leertaste an Fußfeld Farbe und Farbfeld links ohne Verhaltenstest** (N-8): `TestLeisteTastaturfokus` erweitert, Mutant N8. | behoben (dieser Commit) |
+| F-548 | [D] | P3 | Sprint 12 | **Graue Kantenknöpfe nicht fokussierbar** (N-9): bleiben angemeldet wie die Stufenknöpfe; ADR-0031 Nachtrag 4. | behoben (dieser Commit) |
 
 ## Archiviert (aus Sektion "Behoben / Akzeptiert")
 
