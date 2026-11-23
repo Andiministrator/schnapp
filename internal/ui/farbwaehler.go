@@ -169,7 +169,7 @@ func (e *editor) feldTasten(gtx layout.Context) {
 		}
 		pe, ok := ev.(pointer.Event)
 		f := e.fokusFeld(gtx)
-		if !ok || f == nil || pe.Position.Round().In(f.rahmen) {
+		if !ok || f == nil || pe.Position.Round().Add(image.Pt(0, e.seite.roll.rollen)).In(f.rahmen) {
 			continue
 		}
 		// Ein Klick auf Farbfeld, Pipette, Fläche oder Regler setzt selbst eine Farbe: Die Eingabe wird verworfen statt
@@ -273,6 +273,7 @@ func (e *editor) feldTasten(gtx layout.Context) {
 // beim letzten Zeichnen).
 func (e *editor) inFarbwahl(p image.Point) bool {
 	fw := &e.seite.fw
+	p = p.Add(image.Pt(0, e.seite.roll.rollen)) // die Lagen sind Inhaltskoordinaten der rollenden Leiste
 	for _, r := range append(e.seite.farbRahmen[:], fw.pipRahmen, fw.flaeche, fw.ton, fw.deck) {
 		if p.In(r) {
 			return true
@@ -558,7 +559,7 @@ func (e *editor) zeichneFarbwaehler(gtx layout.Context, x, y, breite, spalte int
 		r := platz(j)
 		k.farbRahmen[j] = r
 		e.farbFeld(gtx, c, r, c == aktuell, k.farben[j].Hovered())
-		seiteKnopf(gtx, &k.farben[j], r)
+		e.knopfAn(gtx, &k.farben[j], r)
 	}
 	fw.pipRahmen = platz(farbPlaetze)
 	{
@@ -573,7 +574,7 @@ func (e *editor) zeichneFarbwaehler(gtx layout.Context, x, y, breite, spalte int
 		paint.FillShape(gtx.Ops, grund, clip.Rect(r).Op())
 		paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
 		zeichnePipette(gtx, r.Inset(gtx.Dp(3)), farbeText)
-		seiteKnopf(gtx, &fw.pipette, r)
+		e.knopfAn(gtx, &fw.pipette, r)
 	}
 	y += hoch + gtx.Dp(12)
 
@@ -635,7 +636,7 @@ func (e *editor) zeichneFarbpaarZeile(gtx layout.Context, x, y, breite, q int) i
 		paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(rk).Op())
 		paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(rk).Path(), Width: float32(gtx.Dp(1))}.Op())
 		e.textMittig(gtx, i18n.T("None"), 12, text, rk)
-		seiteKnopf(gtx, c, rk)
+		e.knopfAn(gtx, c, rk)
 	}
 	return y + q + gtx.Dp(10)
 }
@@ -644,6 +645,9 @@ func (e *editor) zeichneFarbpaarZeile(gtx layout.Context, x, y, breite, q int) i
 func (e *editor) zeichneEingabe(gtx layout.Context, f *eingabe) {
 	r := f.rahmen
 	fokus := gtx.Focused(f)
+	if fokus {
+		e.seite.roll.fokus = r
+	}
 	text := e.feldWert(f)
 	if fokus && !f.neu {
 		text = f.text

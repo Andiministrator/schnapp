@@ -367,7 +367,7 @@ func (e *editor) abschnittKopf(gtx layout.Context, c *widget.Clickable, text str
 	}
 	pf.Close()
 	paint.FillShape(gtx.Ops, farbeNebentext, clip.Outline{Path: pf.End()}.Op())
-	seiteKnopf(gtx, c, image.Rect(x, y-gtx.Dp(2), x+breite, y+h+gtx.Dp(2)))
+	e.knopfAn(gtx, c, image.Rect(x, y-gtx.Dp(2), x+breite, y+h+gtx.Dp(2)))
 	return h
 }
 
@@ -504,7 +504,7 @@ func (e *editor) zeichneEbenen(gtx layout.Context, x, y, breite, spalte, unten i
 		default:
 			e.textMittig(gtx, text, 13, vorn, r)
 		}
-		seiteKnopf(gtx, &k.knoepfe[j], r)
+		e.knopfAn(gtx, &k.knoepfe[j], r)
 	}
 	y += fh + gtx.Dp(8)
 	k.hinweisY = y

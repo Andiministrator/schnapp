@@ -283,3 +283,39 @@ Nachtrag 10.
 2. Die rechte Leiste trägt unter der Farbe den Abschnitt **Ebenen**; er hängt am unteren Rand der Leiste, damit die
    Liste beim Wählen nicht springt. Die Überschriften „Farbe“ und „Ebenen“ sind Knöpfe, die ihren Abschnitt ein- und
    ausklappen (Tab-Reihenfolge: Überschrift vor dem Inhalt).
+
+## Nachtrag 8 (23.11.2026): Die rechte Leiste rollt bei wenig Höhe (Karte #225, F-598)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Ergänzt Nachtrag 3, Nachtrag 5 und Nachtrag 7.
+
+**Problem.** In niedrigen Fenstern mit sichtbarer Leiste lagen Hex und Deckkraft des Farbwählers unter der Fußzeile
+(Fenster 320 px hoch, Text gewählt: Hex bis y 504, Fußzeile ab 290). Die Einklapp-Logik kann nur die Ebenen einklappen;
+die Farbe von selbst einzuklappen sperrte den Farbwähler aus (F-592) und ist ausgeschlossen.
+
+**Erwogen.**
+1. *Kompakter Wähler* (kleinere Farbfläche bei wenig Höhe): spart höchstens rund 70 dp. Der Inhalt über dem Wähler
+   (Schrift, Größe, Stil, Ausrichtung, Strichstärke) und der Wähler selbst ergeben bei gewähltem Text über 480 dp; das
+   Mindestmaß wäre nie erreicht, und die Farbfläche würde für genaue Wahl zu klein.
+2. *Eigener rollbarer Abschnitt nur für die Farbe*: zwei verschachtelte Rolllisten (Farbe, Ebenen, Schriftliste) mit
+   getrennten Fokus- und Zeigerräumen; mehr Zustand, mehr Sonderfälle.
+3. *Die ganze Leiste rollt* (gewählt): Alles wird wie bisher in Inhaltskoordinaten gezeichnet und mit einem Versatz
+   verschoben; nichts wird ein- oder ausgeblendet. Ein kompakter Wähler bleibt bei Bedarf später möglich, ändert aber
+   nichts an dieser Regel.
+
+**Entscheidung.**
+- Reicht die Höhe nicht (Inhalt endet unter der Leiste), rollt die Leiste senkrecht: Mausrad über der Leiste, dazu ein
+  schmaler eckiger Balken am rechten Rand. Passt alles, ist der Versatz 0 und nichts ist sichtbar anders (hohe Fenster
+  zeichnen wie zuvor). Die Listen der Ebenen und der Schriften behalten ihr eigenes Mausrad.
+- Die Farbe klappt nie von selbst ein (F-592); der Vorrang der Ebenen (ADR-0032 Punkt 6, Klick auf „Ebenen“ klappt die
+  Farbe ein, Klick auf „Farbe“ gibt ihn zurück) und die Schwelle `farbwaehlerHoeheDp + ebenenMindestDp` bleiben. Das
+  Rollen ist das Netz darunter: Was trotz Einklappen nicht passt, ist erreichbar.
+- **Tab-Weg:** Die Reihenfolge der Felder und Knöpfe bleibt (`editor.eingaben()`, `fokusFeld`, `seitenKnoepfe.alle`).
+  Wechselt der Tastaturfokus auf ein Element, das nicht ganz sichtbar ist, rollt die Leiste es mit 8 dp Rand ins Bild
+  (`rollZeige`, nur beim Wechsel, damit das Mausrad nicht dagegen arbeitet).
+- **Koordinaten:** Die Lagen in den Zustandsstrukturen (`hex.rahmen`, `knopfRahmen` usw.) und die Lagen der Zeigerereignisse
+  in der Leiste sind Inhaltskoordinaten (Versatz 0 = Fensterkoordinaten); wer Fensterkoordinaten dagegen hält
+  (`inFarbwahl`, die Fokuswache), addiert `roll.rollen`. Rechnung ohne Gio in `internal/ui/seitenrollen.go`
+  (`rollEnde`, `rollBegrenze`, `rollZeige`, `rollDaumen`).
+- Tests: `internal/ui/seitenrollen_test.go` (Sonde aus der Kritik zu #219 über alle Höhen 320 bis 800 in 2-px-Schritten,
+  Tab-Weg, Klicks im gerollten Bild, Ebenen-Vorrang, Zeichnen ohne Fenster), Mutanten KU225-1 bis KU225-7 in
+  `scripts/mutanten/ui-seitenleiste.json`.

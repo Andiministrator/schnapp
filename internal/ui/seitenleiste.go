@@ -56,6 +56,7 @@ type seitenKnoepfe struct {
 	// Farbpaar über dem Farbwähler (ADR-0021 Nachtrag 11): Vordergrund, Füllung, Tauschen, Keine; Rahmen für Tests.
 	paar       [4]widget.Clickable
 	paarRahmen [4]image.Rectangle
+	roll       rollZustand // Rollen der Leiste bei wenig Höhe (ADR-0031 Nachtrag 7, F-598)
 }
 
 // Plätze in seitenKnoepfe.paar.
@@ -159,6 +160,7 @@ func (e *editor) seiteAuswerten(gtx layout.Context) {
 			k.farbeZu = !k.farbeZu
 		}
 	}
+	e.rollAuswerten(gtx)
 	e.farbeAuswerten(gtx)
 	e.schriftAuswerten(gtx)
 	e.ebenenAuswerten(gtx)
@@ -220,6 +222,8 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	// Nichts läuft unter die Fußzeile (niedrige Fenster).
 	rand := clip.Rect(image.Rect(x0, oben, mx.X, unten)).Push(gtx.Ops)
 	defer rand.Pop()
+	e.rollAnmelden(gtx, image.Rect(x0, oben, mx.X, unten))
+	versatz := op.Offset(image.Pt(0, -k.roll.rollen)).Push(gtx.Ops)
 
 	innen := gtx.Dp(16)
 	x, breite := x0+innen, gtx.Dp(seiteDp)-2*innen
@@ -257,7 +261,7 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 			e.textMittig(gtx, kantenName(f), 12, schrift, r)
 			// Auch grau angemeldet, wie die Stufenknöpfe: Der Fokus fällt nicht ins Leere, wenn die letzte Naht
 			// wegfällt; ein Klick tut dann nichts, weil SetzeKante ohne Naht nichts setzt (Sitzungs-QA N-9).
-			seiteKnopf(gtx, &k.kanten[j], r)
+			e.knopfAn(gtx, &k.kanten[j], r)
 		}
 		y += hoch + gtx.Dp(10)
 	}
@@ -289,7 +293,7 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 			e.textMittig(gtx, zeichen, 14, schrift, r)
 			// Auch grau angemeldet: Sonst fiele der Tastaturfokus nach dem Schritt auf die letzte Stufe ins Leere
 			// (Sitzungs-QA A-5); ein Klick dort tut nichts, weil BreiteStufe keine Stufe mehr findet.
-			seiteKnopf(gtx, &k.strich[j], r)
+			e.knopfAn(gtx, &k.strich[j], r)
 		}
 		k.strichText = fmt.Sprintf(i18n.TK("status bar", "%d px"), int(math.Round(e.s.Breite())))
 		e.textMittig(gtx, k.strichText, 13, farbeText, wert)
@@ -316,7 +320,10 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 			y = e.zeichneFarbwaehler(gtx, x, y, breite, spalte)
 		}
 	}
-	e.zeichneEbenen(gtx, x, y, breite, spalte, unten) // mit eigener Trennlinie, am unteren Rand (ADR-0032 Punkt 6)
+	y = e.zeichneEbenen(gtx, x, y, breite, spalte, unten) // mit eigener Trennlinie, am unteren Rand (ADR-0032 Punkt 6)
+	versatz.Pop()
+	e.rollAbschluss(gtx, y)
+	e.zeichneRollbalken(gtx)
 }
 
 // textMittig setzt text mittig in r.

@@ -255,8 +255,8 @@
     "name": "QA-A5a grauer Stufenknopf nicht angemeldet",
     "datei": "internal/ui/seitenleiste.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\tseiteKnopf(gtx, &k.strich[j], r)",
-    "neu": "\t\t\tif an {\n\t\t\t\tseiteKnopf(gtx, &k.strich[j], r)\n\t\t\t}"
+    "alt": "\t\t\te.knopfAn(gtx, &k.strich[j], r)",
+    "neu": "\t\t\tif an {\n\t\t\t\te.knopfAn(gtx, &k.strich[j], r)\n\t\t\t}"
   },
   {
     "name": "QA-A5b Einklappen lässt den Fokus im Leeren",
@@ -297,8 +297,8 @@
     "name": "V2-5 graue Kantenknöpfe nicht angemeldet (Verify 2, Fund 5)",
     "datei": "internal/ui/seitenleiste.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\tseiteKnopf(gtx, &k.kanten[j], r)",
-    "neu": "\t\t\tif inhalt.KanteAn {\n\t\t\t\tseiteKnopf(gtx, &k.kanten[j], r)\n\t\t\t}"
+    "alt": "\t\t\te.knopfAn(gtx, &k.kanten[j], r)",
+    "neu": "\t\t\tif inhalt.KanteAn {\n\t\t\t\te.knopfAn(gtx, &k.kanten[j], r)\n\t\t\t}"
   },
   {
     "name": "U219-1 Knopf ⇄ links ohne Wirkung",
@@ -383,5 +383,54 @@
     "paket": "./internal/ui",
     "alt": "\tfarbwaehlerHoeheDp = 234",
     "neu": "\tfarbwaehlerHoeheDp = 200"
+  },
+  {
+    "name": "KU225-1 Leiste rollt nie (F-598)",
+    "datei": "internal/ui/seitenrollen.go",
+    "paket": "./internal/ui",
+    "alt": "return max(0, inhaltEnde-unten)",
+    "neu": "return 0"
+  },
+  {
+    "name": "KU225-2 Versatz ungedeckelt (F-598)",
+    "datei": "internal/ui/seitenrollen.go",
+    "paket": "./internal/ui",
+    "alt": "return max(0, min(rollen, rollMax))",
+    "neu": "return max(0, rollen)"
+  },
+  {
+    "name": "KU225-3 Fokus rollt nicht ins Bild (F-598)",
+    "datei": "internal/ui/seitenrollen.go",
+    "paket": "./internal/ui",
+    "alt": "if !k.fokus.Empty() && k.fokus != k.fokusAlt {",
+    "neu": "if false && !k.fokus.Empty() && k.fokus != k.fokusAlt {"
+  },
+  {
+    "name": "KU225-4 Inhalt wird nicht verschoben (F-598)",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "op.Offset(image.Pt(0, -k.roll.rollen))",
+    "neu": "op.Offset(image.Pt(0, 0))"
+  },
+  {
+    "name": "KU225-5 Klicklage ohne Versatz in inFarbwahl (F-598)",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "p = p.Add(image.Pt(0, e.seite.roll.rollen))",
+    "neu": "_ = 0"
+  },
+  {
+    "name": "KU225-6 Mausrad ruht (F-598)",
+    "datei": "internal/ui/seitenrollen.go",
+    "paket": "./internal/ui",
+    "alt": "k.rollen = rollBegrenze(k.rollen+int(pe.Scroll.Y), k.rollMax)",
+    "neu": "_ = pe"
+  },
+  {
+    "name": "KU225-7 Fokus unten wird nicht gezeigt (F-598)",
+    "datei": "internal/ui/seitenrollen.go",
+    "paket": "./internal/ui",
+    "alt": "rollen = min(r.Max.Y+rand-unten, r.Min.Y-rand-oben)",
+    "neu": "rollen = rollen"
   }
 ]

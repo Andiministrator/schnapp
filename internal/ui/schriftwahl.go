@@ -300,7 +300,7 @@ func (e *editor) zeichneSchriftwahl(gtx layout.Context, x, y, breite, spalte int
 	e.seiteText(gtx, sw.feldText, 13, farbeText, sw.feldRahmen.Min.Add(image.Pt(gtx.Dp(6), gtx.Dp(4))),
 		sw.feldRahmen.Dx()-gtx.Dp(26), 1)
 	zeichneAufklappPfeil(gtx, image.Pt(sw.feldRahmen.Max.X-gtx.Dp(12), y+hoch/2-gtx.Dp(2)), farbeNebentext)
-	seiteKnopf(gtx, &sw.feld, sw.feldRahmen)
+	e.knopfAn(gtx, &sw.feld, sw.feldRahmen)
 	y += hoch + gtx.Dp(8)
 
 	// Größe: − Wert +.
@@ -321,7 +321,7 @@ func (e *editor) zeichneSchriftwahl(gtx layout.Context, x, y, breite, spalte int
 			schrift = farbeNebentext
 		}
 		e.textMittig(gtx, zeichen, 14, schrift, r)
-		seiteKnopf(gtx, &sw.groesse[j], r) // auch grau angemeldet, wie die Strichstärke (Sitzungs-QA A-5)
+		e.knopfAn(gtx, &sw.groesse[j], r) // auch grau angemeldet, wie die Strichstärke (Sitzungs-QA A-5)
 	}
 	sw.grText = fmt.Sprintf(i18n.TK("status bar", "%d px"), int(math.Round(st.Grad)))
 	e.textMittig(gtx, sw.grText, 13, farbeText, wert)
@@ -335,7 +335,7 @@ func (e *editor) zeichneSchriftwahl(gtx layout.Context, x, y, breite, spalte int
 		sw.stilRahmen[j] = r
 		e.knopfFlaeche(gtx, &sw.stil[j], r, st.An(a), true)
 		e.zeichneStilBuchstabe(gtx, a, r)
-		seiteKnopf(gtx, &sw.stil[j], r)
+		e.knopfAn(gtx, &sw.stil[j], r)
 	}
 	y += hoch + gtx.Dp(8)
 
@@ -346,7 +346,7 @@ func (e *editor) zeichneSchriftwahl(gtx layout.Context, x, y, breite, spalte int
 		sw.ausrRahmen[j] = r
 		e.knopfFlaeche(gtx, &sw.ausr[j], r, st.Ausrichtung == a, true)
 		zeichneAusrichtung(gtx, a, r.Inset(gtx.Dp(6)))
-		seiteKnopf(gtx, &sw.ausr[j], r)
+		e.knopfAn(gtx, &sw.ausr[j], r)
 	}
 	return y + hoch
 }
