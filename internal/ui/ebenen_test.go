@@ -3,7 +3,10 @@
 package ui
 
 import (
+	"gioui.org/layout"
+	"gioui.org/unit"
 	"image"
+	"math"
 	"strings"
 	"testing"
 
@@ -206,18 +209,63 @@ func TestEbenenAusblendenMeldungUndNiedrigesFenster(t *testing.T) {
 		t.Errorf("Strg+H: ausgeblendet %v, Meldung %q", l.ebene(k).Ausgeblendet, l.e.meldung.Text)
 	}
 	l.e.s.WaehleEbene(l.id) // Text: höchster Inhalt über dem Abschnitt (Schrift, Farbe)
+	eb, seite := &l.e.ebenen, &l.e.seite
+	for _, h := range []int{560, 470, 430} {
+		l.fenst = image.Pt(1200, h)
+		l.setle()
+		unten := h - fusszeileDp
+		// Platzmangel (Verify V23-2): die Farbe bleibt offen, die Ebenen klappen ein; nichts liegt unter der Fußzeile.
+		if !seite.farbeGezeigt || eb.gezeigt || (eb.gezeigt && eb.knopfRahmen[ebKnopfLoeschen].Max.Y > unten) {
+			t.Errorf("Fenster %d: Farbe gezeigt %v, Ebenen gezeigt %v, Knöpfe %v", h, seite.farbeGezeigt, eb.gezeigt, eb.knopfRahmen)
+		}
+	}
+	// Klick auf „Ebenen“ gibt ihnen den Vorrang: Ebenen offen, Farbe eingeklappt, Knöpfe in der Leiste.
 	l.fenst = image.Pt(1200, 560)
 	l.setle()
-	eb := &l.e.ebenen
-	unten := 560 - fusszeileDp
-	if !eb.gezeigt || eb.knopfRahmen[ebKnopfLoeschen].Max.Y > unten || eb.liste.Max.Y > unten {
-		t.Errorf("Fenster 560: Liste %v, Knöpfe %v, Leiste endet %d", eb.liste, eb.knopfRahmen, unten)
+	l.fokusiere(&eb.kopf)
+	l.taste(key.NameReturn, 0)
+	if !eb.gezeigt || seite.farbeGezeigt || eb.knopfRahmen[ebKnopfLoeschen].Max.Y > 560-fusszeileDp {
+		t.Errorf("Vorrang Ebenen: Ebenen %v, Farbe %v, Knöpfe %v", eb.gezeigt, seite.farbeGezeigt, eb.knopfRahmen)
 	}
-	// Noch niedriger, mit eingeklappter Farbe: Liste und Knöpfe bleiben in der Leiste.
-	l.fenst = image.Pt(1200, 470)
+	// Klick auf „Farbe“ gibt ihn zurück; im hohen Fenster ist danach beides offen (kein verdeckter Zustand).
+	l.fokusiere(&seite.farbeKopf)
+	l.taste(key.NameReturn, 0)
+	if !seite.farbeGezeigt || eb.gezeigt {
+		t.Errorf("Vorrang Farbe: Farbe %v, Ebenen %v", seite.farbeGezeigt, eb.gezeigt)
+	}
+	l.fenst = image.Pt(1200, 1200)
 	l.setle()
-	if unten := 470 - fusszeileDp; !eb.gezeigt || eb.knopfRahmen[ebKnopfLoeschen].Max.Y > unten {
-		t.Errorf("Fenster 470: Liste %v, Knöpfe %v, Leiste endet %d", eb.liste, eb.knopfRahmen, unten)
+	if !seite.farbeGezeigt || !eb.gezeigt {
+		t.Errorf("hohes Fenster: Farbe %v, Ebenen %v", seite.farbeGezeigt, eb.gezeigt)
+	}
+}
+
+// Verify V23-2/V23-3: Mit gewähltem Text ist der Farbwähler ab einer üblichen Fensterhöhe da, auch bei gebrochener
+// Skalierung; liegen Farbe und Ebenen offen, ragen die Knöpfe nie unter die Fußzeile.
+func TestSeitenleisteNiedrigSkalen(t *testing.T) {
+	for _, skala := range []float32{1, 1.25, 1.5, 1.75} {
+		l := neuerMenueLauf(t, image.Pt(1200, 1200))
+		ersteOffen := -1
+		for h := int(450 * skala); h <= int(1100*skala); h += 5 {
+			for range 3 {
+				l.ops.Reset()
+				l.e.frame(layout.Context{Ops: l.ops, Source: l.r.Source(), Metric: unit.Metric{PxPerDp: skala, PxPerSp: skala},
+					Constraints: layout.Exact(image.Pt(int(1400*skala), h))})
+				l.r.Frame(l.ops)
+			}
+			eb := &l.e.ebenen
+			if l.e.seite.farbeGezeigt && ersteOffen < 0 {
+				ersteOffen = h
+			}
+			fuss := int(math.Round(float64(skala) * fusszeileDp))
+			if eb.gezeigt && eb.knopfRahmen[ebKnopfLoeschen].Max.Y > h-fuss {
+				t.Errorf("Skala %v, Höhe %d px: Ebenen-Knöpfe unter der Fußzeile (%v)", skala, h, eb.knopfRahmen[ebKnopfLoeschen])
+				break
+			}
+		}
+		if dp := float64(ersteOffen) / float64(skala); ersteOffen < 0 || dp > 600 {
+			t.Errorf("Skala %v: Farbwähler erst ab %.0f dp", skala, dp)
+		}
 	}
 }
 

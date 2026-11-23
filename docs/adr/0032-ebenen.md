@@ -55,7 +55,9 @@ der Farbe? Folgen für Dokumentmodell, Rückgängig, Arbeitsdatei und Rettungsko
      spränge sie unter dem Zeiger weg, und der zweite Klick eines Doppelklicks oder ein Ziehen träfe eine andere Zeile.
      Fehlt Platz, rückt er nach oben und die Liste schrumpft.
    - Die Liste blättert, wenn sie nicht passt, auch beim Ziehen an ihrem Rand. Reicht die Leiste nicht für Farbwähler
-     und Ebenen, bleibt „Farbe“ in diesem Bild eingeklappt (F-586). Ausblenden meldet in der Fußzeile, dass der Inhalt
+     und Ebenen, klappen die **Ebenen** in diesem Bild ein (die Farbe braucht man öfter); ein Klick auf ihre
+     Überschrift gibt ihnen den Vorrang und klappt dafür die Farbe ein, ein Klick auf „Farbe“ gibt ihn zurück (F-586,
+     Verify V23-2; die Schwelle rechnet in dp, auch bei gebrochener Skalierung). Ausblenden meldet in der Fußzeile, dass der Inhalt
      in der Arbeitsdatei bleibt. Die Überschriften **FARBE** und **EBENEN** klappen ihren Abschnitt per
      Klick ein und aus (für niedrige Fenster; der Zustand gilt für das Fenster und wird nicht gespeichert).
 7. **Doppeln** legt eine Kopie direkt über das Original, um 10 Fensterpixel nach rechts unten versetzt, und wählt sie.
@@ -72,7 +74,7 @@ der Farbe? Folgen für Dokumentmodell, Rückgängig, Arbeitsdatei und Rettungsko
    (ADR-0021 Nachtrag 10) ändert das die `FormatVersion` nicht; ein älterer Leser zeigt alle Objekte sichtbar, offen und
    deckend. Der SVG-Export lässt ausgeblendete Objekte weg und schreibt die Deckkraft als `opacity`.
 10. **Mischen:** Der Renderer zeichnet ein Objekt mit Deckkraft unter 100 % erst in ein durchsichtiges Zwischenbild in
-    der Größe seines gezeichneten Umrisses (Grenzen in der Ansicht, bei Text und Nummer zusätzlich um die Verschiebung
+    der Größe seines gezeichneten Umrisses (Grenzen in der Ansicht, beim Kasten mit halber Strichbreite Rand, bei Text und Nummer zusätzlich um die Verschiebung
     jedes starr gezeichneten Ankers durch Stauch-Nähte versetzt, F-583; Rand für die Pfeilspitze) und mischt dieses
     dann mit der Deckkraft ein (gleiche sRGB-Rechnung wie jede Füllung). Deckkraft 0 % zeichnet nichts; der SVG-Export
     lässt solche Ebenen wie ausgeblendete weg (F-585).

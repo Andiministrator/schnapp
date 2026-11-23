@@ -101,8 +101,8 @@
     "name": "E15 Zwischenbild ohne Rand für die Pfeilspitze (F-584)",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "\t\trand += math.Max(8, 4*v.Strich.Breite)\n\t}\n\tr := document.R(",
-    "neu": "\t\t_ = v\n\t}\n\tr := document.R("
+    "alt": "\t\trand += math.Max(8, 4*v.Strich.Breite)\n\tcase document.Kasten:",
+    "neu": "\t\t_ = v\n\tcase document.Kasten:"
   },
   {
     "name": "E16 Zwischenbild ohne starre Anker bei Stauchen (F-583)",
@@ -133,10 +133,31 @@
     "neu": "\tif o, ok := e.s.D.Objekt(id); false && ok && o.Ebenenwerte().Ausgeblendet {"
   },
   {
-    "name": "E21 Farbe klappt im niedrigen Fenster nicht ein (F-586)",
+    "name": "E22 Zwischenbild ohne Rand für den Kasten-Strich (V23-1)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\trand += v.Strich.Breite / 2\n",
+    "neu": "\t\t_ = v\n"
+  },
+  {
+    "name": "E23 Nummer ohne starren Anker im Zwischenbild (V23-5)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\tcase document.Nummer:\n\t\tstarr(v.Mitte)",
+    "neu": "\tcase document.Nummer:\n\t\t_ = v"
+  },
+  {
+    "name": "E24 Bei Platzmangel klappt die Farbe statt der Ebenen (V23-2)",
     "datei": "internal/ui/seitenleiste.go",
     "paket": "./internal/ui",
-    "alt": "zu := k.farbeZu || unten-y-gtx.Dp(30) < farbwaehlerHoeheDp*gtx.Dp(1)+ebenenMindestDp*gtx.Dp(1)",
-    "neu": "zu := k.farbeZu"
+    "alt": "\te.ebenen.autoZu = eng && !e.ebenen.vorrang",
+    "neu": "\te.ebenen.autoZu = false"
+  },
+  {
+    "name": "E25 Klick auf Ebenen bei Platzmangel gibt keinen Vorrang (V23-2)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tk.vorrang, k.zu = true, false",
+    "neu": "\t\t\tk.zu = !k.zu"
   }
 ]

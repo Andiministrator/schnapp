@@ -412,8 +412,13 @@ func (z zeichner) ebene(o document.Objekt) error {
 func (z zeichner) ebenenRahmen(o document.Objekt) image.Rectangle {
 	g := o.Grenzen()
 	rand := 2.0
-	if v, ok := o.(document.Pfeil); ok {
+	switch v := o.(type) {
+	case document.Pfeil:
 		rand += math.Max(8, 4*v.Strich.Breite)
+	case document.Kasten:
+		// Der Strich liegt starr mit halber Breite um das abgebildete Rechteck; fällt seine Kante auf eine Naht, ragt er
+		// über die abgebildeten Grenzen hinaus (Verify V23-1).
+		rand += v.Strich.Breite / 2
 	}
 	r := document.R(z.ansicht(g.Min), z.ansicht(g.Max))
 	starr := func(anker document.Punkt) {

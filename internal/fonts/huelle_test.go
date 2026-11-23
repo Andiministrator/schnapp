@@ -35,7 +35,7 @@ func TestHuelle(t *testing.T) {
 		t.Fatalf("Testschrift nicht gefunden: %v", Familien())
 	}
 	o, u, l := s.Huelle()
-	if math.Abs(u-1.35) > 1e-9 || o != HuelleOben || l != HuelleSeitlich {
+	if math.Abs(u-1.35) > 1e-4 || o != HuelleOben || l != HuelleSeitlich {
 		t.Errorf("Testschrift: %v / %v / %v, Soll %v / 1,35 / %v", o, u, l, HuelleOben, HuelleSeitlich)
 	}
 }

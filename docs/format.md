@@ -356,8 +356,8 @@ The layer opacity applies to the object as a whole (group opacity: overlapping p
 compounded), in addition to the alpha of its colours.
 
 Informative: for viewers of the `snAP` document the reference writer adds `display="none"` to a hidden object and
-`opacity` (the percentage as a fraction) to a translucent one; the SVG export omits hidden objects and writes
-`opacity`. Example: `testdata/format/layers`.
+`opacity` (the percentage as a fraction) to a translucent one; the SVG export omits hidden objects and objects
+with opacity 0, and writes `opacity`. Example: `testdata/format/layers`.
 
 ### 8.6 Unknown object types
 

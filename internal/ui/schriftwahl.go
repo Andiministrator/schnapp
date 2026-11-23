@@ -126,8 +126,8 @@ func (e *editor) schriftListeOeffne(gtx layout.Context) {
 }
 
 // schriftListeNachSuche liest die Familien neu, wenn die Suche nach dem Öffnen der Liste fertig geworden ist (F-575):
-// Bis dahin standen nur Go und Go Mono darin. Der Cursor bleibt auf demselben Namen, sonst auf dem Eintrag mit der
-// gezeigten Familie.
+// Bis dahin standen nur Go und Go Mono darin. Der Cursor bleibt auf demselben Namen, sonst steht er auf dem ersten
+// Eintrag (Go und Go Mono bleiben an ihrer Stelle, praktisch also immer derselbe Name, Verify V23-6).
 func (e *editor) schriftListeNachSuche() {
 	sw := &e.seite.sw
 	if !sw.offen || !sw.ohneSuche || !fonts.SucheFertig() {

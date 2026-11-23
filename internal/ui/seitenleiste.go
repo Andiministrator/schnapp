@@ -29,10 +29,10 @@ import (
 
 // Höhen für das Einklappen der Farbe in niedrigen Fenstern (dp): der Farbwähler (zeichneFarbwaehler: Fläche 114,
 // zwei Regler, Felder) und der kleinste Ebenen-Abschnitt ohne Hinweis (zeichneEbenen: Trennlinie, Kopf, Deckkraft,
-// eine Zeile, Knöpfe).
+// eine Zeile, Knöpfe, drei Zeilen Hinweis).
 const (
 	farbwaehlerHoeheDp = 200
-	ebenenMindestDp    = 180
+	ebenenMindestDp    = 230
 )
 
 // kantenFormen sind die Formen der Stauch-Kante in der Reihenfolge der Knöpfe.
@@ -127,7 +127,11 @@ func (e *editor) seiteAuswerten(gtx layout.Context) {
 		}
 	}
 	if k.farbeKopf.Clicked(gtx) {
-		k.farbeZu = !k.farbeZu
+		if e.ebenen.vorrang && !k.farbeZu { // bei Platzmangel eingeklappt: Farbe öffnen, Ebenen wieder einklappen
+			e.ebenen.vorrang = false
+		} else {
+			k.farbeZu = !k.farbeZu
+		}
 	}
 	e.farbeAuswerten(gtx)
 	e.schriftAuswerten(gtx)
@@ -269,11 +273,17 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 		y += e.seiteText(gtx, t, 12, farbeNebentext, image.Pt(x, y), breite, 4)
 	}
 
+	// Reicht die Leiste nicht für Farbwähler und den kleinsten Ebenen-Abschnitt (Verify V23-2, V23-3), klappen die
+	// Ebenen in diesem Bild ein — die Farbe braucht man öfter; ein Klick auf „Ebenen“ gibt ihnen den Vorrang.
+	eng := inhalt.Farbe && !k.farbeZu && !e.ebenen.zu &&
+		unten-y-gtx.Dp(30) < gtx.Dp(unit.Dp(farbwaehlerHoeheDp+ebenenMindestDp))
+	if !eng {
+		e.ebenen.vorrang = false
+	}
+	e.ebenen.autoZu = eng && !e.ebenen.vorrang
 	if inhalt.Farbe {
 		trenne()
-		// Reicht der Platz nicht für Farbwähler und den kleinsten Ebenen-Abschnitt, bleibt „Farbe“ in diesem Bild
-		// eingeklappt (F-586): sonst lägen Liste und Knöpfe der Ebenen unter der Fußzeile.
-		zu := k.farbeZu || unten-y-gtx.Dp(30) < farbwaehlerHoeheDp*gtx.Dp(1)+ebenenMindestDp*gtx.Dp(1)
+		zu := k.farbeZu || (eng && e.ebenen.vorrang)
 		y += e.abschnittKopf(gtx, &k.farbeKopf, i18n.T("Color"), zu, x, y, breite) + gtx.Dp(12)
 		if !zu {
 			k.farbeGezeigt = true

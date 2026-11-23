@@ -70,6 +70,9 @@ type ebenenLeiste struct {
 	knopfRahmen [ebKnopfAnzahl]image.Rectangle
 	kopf        widget.Clickable // Überschrift: klappt den Abschnitt ein und aus
 	zu          bool
+	// autoZu: Die Leiste reicht nicht für Farbwähler und Ebenen; die Ebenen sind in diesem Bild eingeklappt (setzt
+	// zeichneSeitenleiste). vorrang: Der Nutzer hat die Ebenen bei Platzmangel geöffnet, dafür klappt die Farbe ein.
+	autoZu, vorrang bool
 
 	liste   image.Rectangle // sichtbare Fläche der Liste beim letzten Zeichnen; der Zeiger ist das Ziel der Ereignisse
 	zeilen  []ebenenZeileLage
@@ -204,7 +207,11 @@ func (e *editor) ebenenAuswerten(gtx layout.Context) {
 	k := &e.ebenen
 	an := e.seiteAn()
 	if k.kopf.Clicked(gtx) {
-		k.zu = !k.zu
+		if k.autoZu { // bei Platzmangel: Ebenen öffnen, dafür die Farbe einklappen
+			k.vorrang, k.zu = true, false
+		} else {
+			k.zu, k.vorrang = !k.zu, false
+		}
 	}
 	for j := range k.knoepfe {
 		if !k.knoepfe[j].Clicked(gtx) || !an {
@@ -371,6 +378,7 @@ func (e *editor) abschnittKopf(gtx layout.Context, c *widget.Clickable, text str
 // schrumpft (mindestens eine Zeile, sie blättert).
 func (e *editor) zeichneEbenen(gtx layout.Context, x, y, breite, spalte, unten int) int {
 	k := &e.ebenen
+	zu := k.zu || k.autoZu // vom Nutzer oder aus Platzmangel eingeklappt (Verify V23-2)
 	k.gezeigt, k.namen, k.zeilen = false, nil, nil
 	k.liste, k.deck.rahmen, k.name.rahmen = image.Rectangle{}, image.Rectangle{}, image.Rectangle{}
 	k.knopfRahmen = [ebKnopfAnzahl]image.Rectangle{}
@@ -382,21 +390,21 @@ func (e *editor) zeichneEbenen(gtx layout.Context, x, y, breite, spalte, unten i
 	trennH, kopfH := gtx.Dp(28), gtx.Dp(28)
 	listeH := max(k.zeileH, min(k.inhaltH, ebenenMaxZeilen*k.zeileH))
 	rest := trennH + kopfH + fh + gtx.Dp(10) + gtx.Dp(8) + fh + gtx.Dp(8) + hinweisH // alles außer der Liste
-	if k.zu {
+	if zu {
 		rest, listeH = trennH+kopfH, 0
 	}
 	oben := unten - gtx.Dp(8) - rest - listeH
 	if oben < y {
 		oben = y
-		if !k.zu {
+		if !zu {
 			listeH = max(k.zeileH, unten-gtx.Dp(8)-rest-y)
 		}
 	}
 	ly := oben + trennH/2
 	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(image.Rect(x-gtx.Dp(8), ly, x+breite+gtx.Dp(8), ly+gtx.Dp(1))).Op())
 	y = oben + trennH
-	y += e.abschnittKopf(gtx, &k.kopf, i18n.T("Layers"), k.zu, x, y, breite) + gtx.Dp(12)
-	if k.zu {
+	y += e.abschnittKopf(gtx, &k.kopf, i18n.T("Layers"), zu, x, y, breite) + gtx.Dp(12)
+	if zu {
 		return y
 	}
 	k.gezeigt = true

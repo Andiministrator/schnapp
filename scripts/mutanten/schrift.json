@@ -265,5 +265,12 @@
     "paket": "./internal/fonts",
     "alt": "unten = max(unten, cap(e(b.Max.Y)+rand))",
     "neu": "unten = max(unten, 0*cap(e(b.Max.Y)+rand))"
+  },
+  {
+    "name": "K221-6 Hülle mit ppem = unitsPerEm läuft über (V23-4)",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "s.Font.Bounds(&puffer, fixed.Int26_6(ppem<<6), 0)",
+    "neu": "s.Font.Bounds(&puffer, fixed.Int26_6(s.Font.UnitsPerEm())<<6, 0)"
   }
 ]

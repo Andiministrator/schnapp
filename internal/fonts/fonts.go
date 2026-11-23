@@ -563,11 +563,14 @@ func (s *Schrift) Huelle() (oben, unten, seitlich float64) {
 		return
 	}
 	var puffer sfnt.Buffer
-	b, err := s.Font.Bounds(&puffer, fixed.Int26_6(s.Font.UnitsPerEm())<<6, 0)
+	// Fester ppem 1024 statt unitsPerEm: sfnt rechnet Rahmen × ppem in int32, das liefe bei großem unitsPerEm über
+	// (Verify V23-4); 32767 × 1024 × 64 passt.
+	const ppem = 1024
+	b, err := s.Font.Bounds(&puffer, fixed.Int26_6(ppem<<6), 0)
 	if err != nil {
 		return
 	}
-	e := func(v fixed.Int26_6) float64 { return float64(v) / 64 / em }
+	e := func(v fixed.Int26_6) float64 { return float64(v) / 64 / ppem }
 	const rand = 0.05
 	cap := func(v float64) float64 { return min(v, HuelleMax) }
 	oben = max(oben, cap(-e(b.Min.Y)+rand))
