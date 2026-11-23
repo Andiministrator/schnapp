@@ -301,11 +301,11 @@ func (s *Sitzung) stauchBand() (zeilen bool, von, bis int, ok bool) {
 	von = max(0, min(g, int(math.Round(lo))))
 	bis = max(0, min(g, int(math.Round(hi))))
 	ok = hi-lo >= MinObjekt/s.Abb.Zoom && bis > von
-	// Mindestrest je Seite (ADR-0023 Nachtrag 4, F-226): Zwischen Naht und Bildrand müssen mindestens die halbe Bandhöhe
-	// bleiben, sonst bestünde die Seite nur aus der Kante. Ein kleinerer Rest ginge ohnehin im Band unter; das Band
+	// Mindestrest je Seite (ADR-0023 Nachträge 4 und 8, F-226, F-445): Zwischen Naht und Bildrand müssen mindestens die
+	// halbe Bandhöhe plus KantenSichtRest sichtbare Pixel bleiben, sonst bestünde die Seite nur aus der Kante. Ein kleinerer Rest ginge ohnehin im Band unter; das Band
 	// reicht dann bis an den Rand (und wird, wie jedes Band am Rand, zum Zuschnitt, F-222). Vorschau (bandRahmen) und
 	// Ergebnis (staucheRahmen) lesen dasselbe Band (F-240).
-	halb := s.D.ZackenFaktor() * document.ZackenBandHalb
+	halb := s.D.ZackenFaktor() * (document.ZackenBandHalb + document.KantenSichtRest) // F-445, ADR-0023 Nachtrag 8
 	if ok && von < halb {
 		von = 0
 	}

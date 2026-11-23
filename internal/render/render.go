@@ -42,7 +42,7 @@ import (
 // (fileformat.ExportiereJPG).
 func Bild(d *document.Dokument) (b *image.NRGBA, fehler error) {
 	defer errprefix.Defer("render", &fehler) // ADR-0019 Nachtrag 2: auch Schrift- und Rasterfehler tragen das Präfix (F-379)
-	b, _, err := bildMitAufwand(d)
+	b, _, err := bildMitAufwandOpt(d, true)
 	return b, err
 }
 
@@ -104,7 +104,15 @@ const (
 //     120 Abriss-Nähte auf 32768×2100, Kanten 9,4e9, Fläche 1,4e10) rasterten in rund 8 s (7,6 bis 8,9 s), davon rund
 //     4 bis 5 s für die Kanten (rund 0,5 ns je Einheit, Vergleich mit 120 Zacken-Nähten: 3,2 bis 3,6 s); Messung
 //     22.11.2026 nach F-418, ein Kern. Seit Nachtrag 7 (13 Füllungen je Naht, Band 32 px) kosten 120 Abriss-Nähte auf
-//     dieser Breite 1,22e10 und werden abgelehnt; die Grenze liegt bei rund 98 Nähten (F-444, Zeit nicht nachgemessen). Die frühere Angabe „rund 1,5 s“ stimmte für die Abrisskante nicht. Zusammen also rund 15 s.
+//     dieser Breite 1,22e10 und werden abgelehnt; die Grenze liegt bei rund 98 Nähten (F-444). Die frühere Angabe
+//     „rund 1,5 s“ stimmte für die Abrisskante nicht. Karte #177 (23.11.2026, F-430, F-429, F-444, F-408; ein Kern,
+//     Benchmarks in naht_zeit_test.go): Bild zählt die Kosten nicht mehr mit, die Rasterschleifen nehmen min/max statt
+//     math.Min/Max, ein Pixel (0,0,0,0) ohne Deckung wird übersprungen — bitgleich zu vorher (Prüfsummen), 120
+//     Abriss-Nähte auf 32768×2100 statt 11,8 s in rund 6,5 s (liegen die Nähte eng, wie dort mit 17 px Abstand, wird
+//     der Spalt für F-438 ein zweites Mal geleert: rund 7,3 s). Seit F-438 liegt die Grenze bei rund 91 Nähten auf
+//     32768 px Länge und rund 364 auf 8192 px (TestNahtZahlGrenze); ein Dokument knapp unter allen drei Grenzen
+//     zugleich (90 Nähte, 59 × „W“ Grad 4096, bildgroße Rahmen bis Budget) rastert in rund 14 s, nicht in 10 s
+//     (BenchmarkNaehteAlleGrenzen). Zusammen also rund 14 s.
 //     Die Gewichte unten stammen aus den Messungen vor ADR-0028 und bleiben (die Grenzen sind Obergrenzen).
 //     So werden die präparierten Fälle aus F-125 und F-132 (10000 große Glyphen oder Nummern, 10000 sehr breite
 //     Pfeile, 10000 Texte à 10000 winziger Glyphen, Hunderte bildgroßer Flächen) beim Öffnen abgelehnt.
@@ -195,31 +203,55 @@ func (z zeichner) alles() error {
 	// Erst alle Spalte leeren, dann alle Schichten: So zeichnen Renderer, SVG-Export (Maske über den Kacheln) und
 	// Editor (Schachbrett) auch eng beieinanderliegende Nähte gleich.
 	spaltVon, spaltBis := document.Spaltband()
-	for _, n := range naehte {
-		if z.abgebrochen() {
-			return nil
-		}
-		band = linie(n).Band(band, n, spaltVon, spaltBis)
-		poly[0] = band
-		z.radiere(poly)
-	}
-	for _, n := range naehte {
-		l := linie(n)
-		for _, s := range schichten {
+	spalte := func() bool {
+		for _, n := range naehte {
 			if z.abgebrochen() {
-				return nil
+				return false
 			}
-			band = l.Band(band, n, s.Von, s.Bis)
+			band = linie(n).Band(band, n, spaltVon, spaltBis)
 			poly[0] = band
-			z.fuelle(poly, nil, s.Farbe)
+			z.radiere(poly)
 		}
+		return true
 	}
+	// schichtenDurchgang zeichnet die Schichten aller Nähte, die auswahl bejaht.
+	schichtenDurchgang := func(auswahl func(document.Schicht) bool) bool {
+		for _, n := range naehte {
+			l := linie(n)
+			for _, s := range schichten {
+				if !auswahl(s) {
+					continue
+				}
+				if z.abgebrochen() {
+					return false
+				}
+				band = l.Band(band, n, s.Von, s.Bis)
+				poly[0] = band
+				z.fuelle(poly, nil, s.Farbe)
+			}
+		}
+		return true
+	}
+	if !spalte() {
+		return nil
+	}
+	if !document.NaehteBeruehren(naehte, f) {
+		schichtenDurchgang(func(document.Schicht) bool { return true })
+		return nil
+	}
+	// Kreuzen sich Nähte oder liegen sie eng beieinander, ragt der Fasersaum der einen in den Spalt der anderen (F-438,
+	// ADR-0023 Nachtrag 8): Erst Fasersaum und Abdunklung, dann die Spalte noch einmal leeren, dann erst den Schatten
+	// (er liegt im Spalt und bleibt dort, auch im Spalt der kreuzenden Naht).
+	if !schichtenDurchgang(func(s document.Schicht) bool { return !s.ImSpalt() }) || !spalte() {
+		return nil
+	}
+	schichtenDurchgang(document.Schicht.ImSpalt)
 	return nil
 }
 
 // abgebrochen meldet für den Trockenlauf von Pruefe, dass der gezählte Aufwand schon eine Grenze überschreitet: Mehr
 // Zählen ändert das Urteil nicht mehr, nur die Wartezeit (F-418: 1023 Abriss-Nähte zählten sonst rund 50 s bis zur
-// Ablehnung). Aufwand und Bild zählen immer vollständig.
+// Ablehnung). Aufwand zählt immer vollständig; Bild zählt gar nicht (ohneZaehlen, F-430).
 func (z zeichner) abgebrochen() bool {
 	if !z.abbrechen {
 		return false
@@ -262,9 +294,15 @@ func textZeichen(d *document.Dokument) int {
 
 // bildMitAufwand ist Bild und liefert zusätzlich den Aufwand (für Tests).
 func bildMitAufwand(d *document.Dokument) (*image.NRGBA, aufwand, error) {
+	return bildMitAufwandOpt(d, false)
+}
+
+// bildMitAufwandOpt ist bildMitAufwand; mit ohneZaehlen zählt es die Kosten der Füllungen nicht (Bild braucht sie
+// nicht, F-430: das Zählen kostete bei vielen Nähten rund ein Achtel der Zeit), der Aufwand ist dann unvollständig.
+func bildMitAufwandOpt(d *document.Dokument, ohneZaehlen bool) (*image.NRGBA, aufwand, error) {
 	b := d.Ansichtsbild()
 	z := zeichner{bild: b, rand: b.Bounds(), d: d, faces: map[faceSchluessel]font.Face{}, auf: &aufwand{},
-		ras: &raster16.Rasterizer{}}
+		ras: &raster16.Rasterizer{}, ohneZaehlen: ohneZaehlen}
 	defer z.schliessen()
 	if err := z.alles(); err != nil {
 		return nil, *z.auf, err
@@ -284,6 +322,8 @@ type zeichner struct {
 	ras *raster16.Rasterizer
 	// abbrechen: nur im Trockenlauf von Pruefe — aufhören, sobald eine Grenze überschritten ist (abgebrochen, F-418).
 	abbrechen bool
+	// ohneZaehlen: nur Bild (F-430) — Füllungen rastern, ohne ihre Kosten zu zählen.
+	ohneZaehlen bool
 }
 
 func (z zeichner) trocken() bool { return z.bild == nil }
@@ -415,6 +455,13 @@ func (z zeichner) radiere(polys [][]document.Punkt) { z.fuelleMit(polys, nil, co
 
 // fuelleMit ist fuelle bzw. radiere (loeschen): Kosten zählen, dann rastern.
 func (z zeichner) fuelleMit(polys [][]document.Punkt, kreise []kreisform, farbe color.NRGBA, loeschen bool) {
+	if z.ohneZaehlen && !z.trocken() {
+		for _, k := range kreise {
+			polys = append(polys, kreis(k.m, k.r))
+		}
+		z.raster(polys, farbe, loeschen)
+		return
+	}
 	// Kosten aus Polygonpunkten und Kreisen (Mitte ± Radius umschließt alle Ecken von kreis); Trockenlauf und
 	// Rendern rechnen dieselbe Summe.
 	minX, minY := math.Inf(1), math.Inf(1)
@@ -426,14 +473,14 @@ func (z zeichner) fuelleMit(polys [][]document.Punkt, kreise []kreisform, farbe 
 		}
 		punkte += len(p)
 		for _, q := range p {
-			minX, minY = math.Min(minX, q.X), math.Min(minY, q.Y)
-			maxX, maxY = math.Max(maxX, q.X), math.Max(maxY, q.Y)
+			minX, minY = min(minX, q.X), min(minY, q.Y)
+			maxX, maxY = max(maxX, q.X), max(maxY, q.Y)
 		}
 	}
 	for _, k := range kreise {
 		punkte += kreisEcken(k.r)
-		minX, minY = math.Min(minX, k.m.X-k.r), math.Min(minY, k.m.Y-k.r)
-		maxX, maxY = math.Max(maxX, k.m.X+k.r), math.Max(maxY, k.m.Y+k.r)
+		minX, minY = min(minX, k.m.X-k.r), min(minY, k.m.Y-k.r)
+		maxX, maxY = max(maxX, k.m.X+k.r), max(maxY, k.m.Y+k.r)
 	}
 	if minX > maxX {
 		return
@@ -466,8 +513,8 @@ func (z zeichner) raster(polys [][]document.Punkt, farbe color.NRGBA, loeschen b
 			continue
 		}
 		for _, q := range p {
-			minX, minY = math.Min(minX, q.X), math.Min(minY, q.Y)
-			maxX, maxY = math.Max(maxX, q.X), math.Max(maxY, q.Y)
+			minX, minY = min(minX, q.X), min(minY, q.Y)
+			maxX, maxY = max(maxX, q.X), max(maxY, q.Y)
 		}
 	}
 	if minX > maxX {
@@ -566,8 +613,8 @@ var einmischen = func(ras *raster16.Rasterizer, pfade func(pfad), bild *image.NR
 				p := pix[4*k : 4*k+4 : 4*k+4]
 				// Die häufigen Fälle ohne Aufruf (wie in misch): keine Deckung auf deckendem Grund, volle Deckung einer
 				// deckenden Quelle.
-				if ma == 0 && p[3] == 0xff {
-					continue
+				if ma == 0 && (p[3] == 0xff || p[3]|p[0]|p[1]|p[2] == 0) {
+					continue // (0,0,0,0) bliebe (0,0,0,0), misch liefert dasselbe (F-430)
 				}
 				if ma == 0xffff && e.sa == 0xffff {
 					p[0], p[1], p[2], p[3] = e.voll.R, e.voll.G, e.voll.B, 0xff
@@ -636,19 +683,19 @@ func kantenSchritte(polys [][]document.Punkt, oy float64, hoehe int) float64 {
 		for i, a := range p {
 			b := p[(i+1)%len(p)]
 			s++
-			oben, unten := math.Min(a.Y, b.Y)-oy, math.Max(a.Y, b.Y)-oy
+			oben, unten := min(a.Y, b.Y)-oy, max(a.Y, b.Y)-oy
 			if unten-oben <= 1e-6 {
 				continue
 			}
-			von, bis := math.Floor(oben), math.Min(math.Ceil(unten), h)
+			von, bis := math.Floor(oben), min(math.Ceil(unten), h)
 			if bis <= von {
 				continue
 			}
-			innen := bis - math.Max(von, 0)
+			innen := bis - max(von, 0)
 			s += bis - von
 			if innen > 0 {
 				dx := math.Abs(b.X - a.X)
-				s += 2*innen + math.Min(dx, innen*dx/(unten-oben))
+				s += 2*innen + min(dx, innen*dx/(unten-oben))
 			}
 		}
 	}
@@ -665,11 +712,11 @@ func kreisSchritte(kreise []kreisform, oy float64, hoehe int) float64 {
 	for _, k := range kreise {
 		n := float64(kreisEcken(k.r))
 		s += 2 * n
-		von, bis := math.Floor(k.m.Y-k.r-oy), math.Min(math.Ceil(k.m.Y+k.r-oy), h)
+		von, bis := math.Floor(k.m.Y-k.r-oy), min(math.Ceil(k.m.Y+k.r-oy), h)
 		if bis <= von {
 			continue
 		}
-		innen := bis - math.Max(von, 0)
+		innen := bis - max(von, 0)
 		s += 2 * (bis - von)
 		if innen > 0 {
 			s += 2*(2*innen+n) + 4*k.r

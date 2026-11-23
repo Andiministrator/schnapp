@@ -37,6 +37,31 @@ func TestKanteNamen(t *testing.T) {
 	}
 }
 
+// F-439 (ADR-0023 Nachtrag 8, entschieden: so lassen): Die gewählte Form gehört zum Dokument, nicht zu den Nähten. Sind
+// alle Nähte zurückgeholt, bleibt sie; die nächste Naht erscheint in dieser Form, nicht in der aus `[capture] seam`.
+// Rückgängig und Wiederholen der Form bleiben davon unberührt.
+func TestKanteBleibtOhneNaehte(t *testing.T) {
+	d := leeresDokument(t, 200, 100)
+	if err := d.SetzeKante(KanteWelle); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.SetzeStreifen([]Streifen{{Zeilen: true, Von: 30, Bis: 40}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.SetzeStreifen(nil); err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Naehte()) != 0 || d.Kante() != KanteWelle {
+		t.Errorf("ohne Naht: Form %v, Nähte %v; Soll Welle bleibt", d.Kante(), d.Naehte())
+	}
+	if err := d.SetzeStreifen([]Streifen{{Von: 50, Bis: 60}}); err != nil {
+		t.Fatal(err)
+	}
+	if d.Kante() != KanteWelle {
+		t.Errorf("neue Naht in Form %v, Soll Welle", d.Kante())
+	}
+}
+
 // abrissSoll rechnet die Formel aus ADR-0023 Nachtrag 6 (Faktor 0,9 nach Nachtrag 7) unabhängig von Kante.mitte nach.
 func abrissSoll(t float64) float64 {
 	return 0.9 * (2.6*math.Sin(2*math.Pi*t/71+0.3) + 1.6*math.Sin(2*math.Pi*t/29+1.9) +

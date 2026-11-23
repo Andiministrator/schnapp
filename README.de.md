@@ -82,7 +82,7 @@ Kanten oder Ecken nach innen ziehen oder einen neuen Rahmen ziehen — der Teil 
 eine Kante lässt sich also wieder hinausschieben; der Knopf *Ganzes Bild* oder ein Doppelklick mit dem Werkzeug zeigt
 wieder das ganze Bild), **X** Stauchen (quer über den Teil ziehen, der
 wegfallen soll — senkrecht für Zeilen, waagrecht für Spalten; die Naht zeigt einen durchsichtigen Spalt zwischen zwei Papier-Abrisskanten (in JPEG weiß) — **Kantenform** im Menü (sobald es eine Naht gibt) wechselt zu Welle oder Zacken, `[capture] seam` legt die Form neuer Aufnahmen fest; Doppelklick auf eine
-Naht holt den Teil zurück; ein Teil bis an den Bildrand wird stattdessen abgeschnitten und kommt mit *Ganzes Bild*
+Naht holt den Teil zurück (jede Naht verdeckt auf beiden Seiten rund 14 Pixel Bild, bei sehr großen Aufnahmen entsprechend mehr, und eine Naht näher als rund 24 Pixel am Rand wird abgeschnitten); ein Teil bis an den Bildrand wird stattdessen abgeschnitten und kommt mit *Ganzes Bild*
 zurück).
 Beides verbirgt nur: Das Original bleibt in der Arbeitsdatei vollständig, Geheimes also vor dem Wegschneiden
 schwärzen — Exporte und Zwischenablage enthalten nur den sichtbaren Teil. Beschriftungen, die ganz in einem

@@ -8,7 +8,7 @@ import (
 )
 
 // F-240: Die Vorschau des Stauch-Bands folgt derselben Mindestrest-Regel wie das Ergebnis beim Loslassen. Reicht das
-// Band mit einem Rest unter der halben Bandhöhe (16, ADR-0023 Nachtrag 7) bis an den Rand, zeigt die Vorschau es dort;
+// Band mit einem Rest unter halber Bandhöhe + 8 (24, ADR-0023 Nachtrag 8) bis an den Rand, zeigt die Vorschau es dort;
 // sonst beginnt sie an der Naht. Verglichen wird, was die Vorschau zeigt, mit dem, was nach dem Loslassen im Dokument
 // steht.
 func TestStauchenVorschauGleichErgebnis(t *testing.T) {
@@ -20,9 +20,9 @@ func TestStauchenVorschauGleichErgebnis(t *testing.T) {
 		naht      bool            // Ergebnis ist eine Naht (sonst Zuschnitt)
 		zuschnitt image.Rectangle // erwarteter Zuschnitt, wenn keine Naht
 	}{
-		{"oben Rest 15", 15, 60, 0, 60, false, image.Rect(0, 60, 200, 100)},
-		{"unten Rest 15", 40, 85, 40, 100, false, image.Rect(0, 0, 200, 40)},
-		{"oben Rest 16", 16, 40, 16, 40, true, image.Rect(0, 0, 200, 100)},
+		{"oben Rest 23", 23, 60, 0, 60, false, image.Rect(0, 60, 200, 100)},
+		{"unten Rest 23", 40, 77, 40, 100, false, image.Rect(0, 0, 200, 40)},
+		{"oben Rest 24", 24, 40, 24, 40, true, image.Rect(0, 0, 200, 100)},
 	}
 	for _, c := range faelle {
 		s := verlaufSitzung(t)

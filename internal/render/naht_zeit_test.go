@@ -1,0 +1,154 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package render
+
+import (
+	"crypto/sha256"
+	"fmt"
+	"image"
+	"os"
+	"testing"
+
+	"github.com/Andiministrator/schnapp/internal/document"
+)
+
+// BenchmarkNaehteAbriss120 misst Bild für viele Abriss-Nähte (F-430, F-429, F-444): 120 Zeilen-Nähte auf 32768×2100,
+// das Dokument, das vor ADR-0023 Nachtrag 7 knapp unter KantenBudget lag. Aufruf:
+//
+//	GOFLAGS=-tags=novulkan,nox11 go test -run '^$' -bench 'NaehteAbriss120' -benchtime 1x ./internal/render
+func BenchmarkNaehteAbriss120(b *testing.B) {
+	d := nahtDokument(b, 32768, 2100, document.KanteAbriss, 120)
+	a := Aufwand(d)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := Bild(d); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.ReportMetric(a, "Einheiten")
+}
+
+// BenchmarkNaehteAbriss120Zackenfrei misst dasselbe in der Form Zacken (Vergleich).
+func BenchmarkNaehteZacken120(b *testing.B) {
+	d := nahtDokument(b, 32768, 2100, document.KanteZacken, 120)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := Bild(d); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// BenchmarkNaehteAlleGrenzen (F-429): ein Dokument knapp unter allen drei Grenzen zugleich — 90 Abriss-Nähte auf
+// 32768×2100 (knapp unter KantenBudget), 59 × „W“ Grad 4096 (knapp unter GlyphBudget) und bildgroße Rahmen, bis die
+// Summe knapp unter Budget liegt. Die Zeit ist das Versprechen des Rechenbudgets für Bild (ein Kern).
+func BenchmarkNaehteAlleGrenzen(b *testing.B) {
+	d := opakDokument(b, 32768, 2100, document.KanteAbriss, 90)
+	for i := 0; i < 59; i++ {
+		hinzu(b, d, document.Text{Ort: document.Pt(float64(i*100), 0), Inhalt: "W", Schriftgrad: 4096, Farbe: rot})
+	}
+	for Aufwand(d)+fuellGewicht*32768*2100 < 0.98*Budget {
+		hinzu(b, d, document.Kasten{Bereich: document.R(document.Pt(0, 0), document.Pt(32768, 2100)), Fuellung: rot})
+	}
+	if err := Pruefe(d); err != nil {
+		b.Fatalf("Pruefe: %v", err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := Bild(d); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.ReportMetric(Aufwand(d), "Einheiten")
+}
+
+// opakDokument ist wie nahtDokument, aber mit deckend weißem Bild (wie eine echte Aufnahme).
+func opakDokument(tb testing.TB, b, h int, k document.Kante, zn int) *document.Dokument {
+	tb.Helper()
+	bild := image.NewNRGBA(image.Rect(0, 0, b, h))
+	for i := range bild.Pix {
+		bild.Pix[i] = 0xff
+	}
+	d, err := document.NeuAus(bild)
+	if err != nil {
+		tb.Fatal(err)
+	}
+	if err := d.VorgabeKante(k); err != nil {
+		tb.Fatal(err)
+	}
+	var st []document.Streifen
+	for i := 0; i < zn; i++ {
+		v := (i + 1) * h / (zn + 1)
+		st = append(st, document.Streifen{Zeilen: true, Von: v, Bis: v + 1})
+	}
+	if err := d.SetzeStreifen(st); err != nil {
+		tb.Fatal(err)
+	}
+	return d
+}
+
+// BenchmarkNaehteAbriss120Opak: dasselbe auf deckend weißem Bild (der Normalfall einer Aufnahme).
+func BenchmarkNaehteAbriss120Opak(b *testing.B) {
+	d := opakDokument(b, 32768, 2100, document.KanteAbriss, 120)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := Bild(d); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// F-408, F-444: Die Zahl der Abriss-Nähte, die Pruefe annimmt, hängt an der Länge der Naht (gemessen am 23.11.2026):
+// auf 8192 Pixeln Länge etwa 364, auf 32768 etwa 91. Der Test hält das fest, nicht als Soll, sondern als Dokumentation:
+// weit darunter nimmt Pruefe an, weit darüber lehnt es ab. Ändert sich das Kostenmodell, ändern sich die Zahlen in
+// ADR-0023 Nachtrag 8 und in der Anmerkung zu KantenBudget mit. Nicht unter -short (69 MB Bild).
+func TestNahtZahlGrenze(t *testing.T) {
+	if testing.Short() || pruefeNahtZeit == 0 {
+		t.Skip("lang (69 MB Bild); nicht unter -short oder -race")
+	}
+	for _, c := range []struct {
+		anzahl int
+		soll   bool
+	}{{200, true}, {320, true}, {450, false}, {700, false}} {
+		err := Pruefe(opakDokument(t, 8192, 2100, document.KanteAbriss, c.anzahl))
+		if (err == nil) != c.soll {
+			t.Errorf("%d Abriss-Nähte auf 8192×2100: Pruefe %v, angenommen soll %v sein", c.anzahl, err, c.soll)
+		}
+	}
+}
+
+// TestNahtGrenzeMessen sucht, wie viele Abriss-Nähte Pruefe auf zwei Breiten noch annimmt (F-408, F-444); läuft nur mit
+// SCHNAPP_MESSEN=1 (Messung, kein Test).
+func TestNahtGrenzeMessen(t *testing.T) {
+	if os.Getenv("SCHNAPP_MESSEN") == "" {
+		t.Skip("Messung")
+	}
+	for _, c := range [][2]int{{8192, 2100}, {32768, 2100}} {
+		lo, hi := 1, 4000
+		for lo < hi {
+			m := (lo + hi + 1) / 2
+			if Pruefe(opakDokument(t, c[0], c[1], document.KanteAbriss, min(m, c[1]/3))) == nil && m <= c[1]/3 {
+				lo = m
+			} else {
+				hi = m - 1
+			}
+		}
+		d := opakDokument(t, c[0], c[1], document.KanteAbriss, lo)
+		a := trockenlauf(d, false)
+		t.Logf("%d×%d: größte angenommene Nahtzahl %d (Aufwand %.3g, Kanten %.3g)", c[0], c[1], lo, a.summe(), a.kanten)
+	}
+}
+
+// TestNahtPruefsumme gibt die SHA-256-Summe der Pixel für mehrere Nähte-Dokumente aus (bitgleich-Vergleich vor und
+// nach einer Beschleunigung, F-430); ohne -v bleibt der Test stumm.
+func TestNahtPruefsumme(t *testing.T) {
+	for _, f := range []document.Kante{document.KanteAbriss, document.KanteWelle, document.KanteZacken} {
+		d := nahtDokument(t, 3000, 700, f, 12)
+		b, err := Bild(d)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Logf("Summe %v: %x", f, sha256.Sum256(b.Pix))
+	}
+	_ = fmt.Sprint
+}

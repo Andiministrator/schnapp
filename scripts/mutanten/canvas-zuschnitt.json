@@ -52,8 +52,8 @@
     "name": "F-418 Pruefe zählt alle Nähte zu Ende (kein Abbruch über der Grenze)",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "for _, s := range schichten {\n\t\t\tif z.abgebrochen() {",
-    "neu": "for _, s := range schichten {\n\t\t\tif false && z.abgebrochen() {"
+    "alt": "\t\t\t\t}\n\t\t\t\tif z.abgebrochen() {\n\t\t\t\t\treturn false",
+    "neu": "\t\t\t\t}\n\t\t\t\tif false && z.abgebrochen() {\n\t\t\t\t\treturn false"
   },
   {
     "name": "F-418 Pruefe zählt alle Objekte zu Ende (kein Abbruch über der Grenze)",
@@ -143,7 +143,7 @@
     "name": "K183-8 Mindestrest mit alter halber Bandhöhe 11 (Karte #183)",
     "datei": "internal/canvas/zuschnitt.go",
     "paket": "./internal/canvas",
-    "alt": "halb := s.D.ZackenFaktor() * document.ZackenBandHalb",
+    "alt": "halb := s.D.ZackenFaktor() * (document.ZackenBandHalb + document.KantenSichtRest)",
     "neu": "halb := s.D.ZackenFaktor() * 11"
   },
   {
@@ -152,5 +152,19 @@
     "paket": "./internal/document",
     "alt": "const abrissFaktor = 0.9",
     "neu": "const abrissFaktor = 0.8"
+  },
+  {
+    "name": "K177-1 Mindestrest ohne sichtbaren Zuschlag (F-445, Karte #177)",
+    "datei": "internal/canvas/zuschnitt.go",
+    "paket": "./internal/canvas",
+    "alt": "halb := s.D.ZackenFaktor() * (document.ZackenBandHalb + document.KantenSichtRest)",
+    "neu": "halb := s.D.ZackenFaktor() * document.ZackenBandHalb"
+  },
+  {
+    "name": "K177-2 Zuschlag nicht mit dem Zackenfaktor multipliziert (F-445, Karte #177)",
+    "datei": "internal/canvas/zuschnitt.go",
+    "paket": "./internal/canvas",
+    "alt": "halb := s.D.ZackenFaktor() * (document.ZackenBandHalb + document.KantenSichtRest)",
+    "neu": "halb := s.D.ZackenFaktor()*document.ZackenBandHalb + document.KantenSichtRest"
   }
 ]

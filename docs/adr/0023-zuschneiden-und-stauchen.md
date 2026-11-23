@@ -295,9 +295,9 @@ Menüeintrag bleiben.
   13 Füllungen (12 Schichten und der Spalt); JPEG legt das Bild wie bisher in `fileformat.ExportiereJPG` auf Weiß.
   Offen: F-438 (Saum einer Naht im Spalt der kreuzenden), F-439.
 
-## Nachtrag 8 (22.11.2026): Mindestrest am Rand (F-445) — entschieden, noch nicht umgesetzt
+## Nachtrag 8 (22.11.2026): Mindestrest am Rand (F-445) — umgesetzt am 23.11.2026 (Karte #177)
 
-**Status:** Akzeptiert (Entscheidung Claude im Auftrag Andis, 22.11.2026; Umsetzung auf der Karte „Kanten-Reste“).
+**Status:** Akzeptiert (Entscheidung Claude im Auftrag Andis, 22.11.2026; umgesetzt auf der Karte #177 „Kanten-Reste“).
 
 Anlass: Der durchsichtige Spalt (Nachtrag 7) reicht bis ±8 px um die Naht, mit Saum und Abdunklung bis ±9,6 bzw. ±10 px
 und der Auslenkung der Kante bis ±13,5 px · Faktor. Eine Naht nahe am Rand ließ nach dem Mindestrest aus Nachtrag 4
@@ -312,5 +312,47 @@ rund 24 % sichtbare Pixel, auch bei 16 px bleiben 2,5 bis 8 px.
 - **Zu wissen:** Jede Naht verdeckt bis zu ±13,5 px · Faktor Bild um sich herum (Spalt, Saum und Auslenkung der Kante
   zusammen). Das ist Folge der Papier-Abriss-Darstellung (Nachtrag 7), kein Fehler, und gehört in die Doku der
   Kantenformen.
-- **Umsetzung:** nicht in diesem Nachtrag, sondern auf der Karte „Kanten-Reste“ (Code, `document`-Konstanten,
-  Tests, `docs/format.md` unverändert, weil die Datei nichts Neues speichert).
+- **Umsetzung (23.11.2026):** `document.KantenSichtRest` = 8 und `canvas.stauchBand` (`Faktor·(ZackenBandHalb + KantenSichtRest)`),
+  Tests `TestStauchenMindestrestJeSeite` (Rest 23 wird Zuschnitt, 24 bleibt Naht), `TestStauchenMindestrestFaktor2` (47 und 48),
+  `TestStauchenVorschauGleichErgebnis`; Mutanten `K177-1` und `K177-2`. Trefferweite von „Naht zurückholen“ unverändert
+  (halbe Bandhöhe). README (englisch und deutsch) nennen die rund 14 verdeckten Pixel je Seite und den Mindestrest 24.
+  `docs/format.md` bleibt unverändert, weil die Datei nichts Neues speichert.
+
+## Nachtrag 9 (23.11.2026): Kreuzende Nähte, Form ohne Naht, Rechenzeit vieler Nähte (Karte #177, F-438, F-439, F-430, F-444, F-408, F-429)
+
+**Status:** Akzeptiert (Entscheidung Claude im Auftrag Andis; umgesetzt).
+
+- **Kreuzende und eng liegende Nähte (F-438):** Der Fasersaum einer Naht liegt nicht im durchsichtigen Spalt einer
+  anderen. `document.NaehteBeruehren(naehte, faktor)` ist wahr, wenn es Nähte beider Achsen gibt oder zwei Nähte
+  derselben Achse näher als die ganze Bandhöhe (2·`ZackenBandHalb`·Faktor) beieinanderliegen. Nur dann zeichnen alle
+  drei Ausgänge in dieser Reihenfolge: Spalte leeren, Fasersaum und Abdunklung (`Schicht.ImSpalt()` falsch), Spalte
+  **noch einmal** leeren, Schatten (`ImSpalt()` wahr; er liegt im Spalt der eigenen Naht und bleibt dort, auch im Spalt
+  der kreuzenden). Renderer: `zeichner.alles`; SVG-Export: Gruppen `naht-…` (Saum, Abdunklung) unter derselben Maske wie
+  die Kacheln und `schatten-…` darüber; Editor: Schachbrett zweimal. Ohne Berührung bleibt jede Ausgabe wie vorher
+  (bitgleich, Prüfsummen vor und nach); die zweite Leerung kostet eine Füllung je Naht mehr und wird mitgezählt. Tests:
+  `TestKreuzendeNaehteSaumNichtImSpalt`, `TestNaehteBeruehren`, `TestExportSVGNaehteBeruehrenSchatten`; Mutanten
+  `K177-3` bis `K177-5`, `K177-8`, `K177-9`. Der Editor-Zweig ist nicht automatisch geprüft (Zeichnen ohne Fenster nicht
+  testbar); Sichtprobe über `scripts/probe.sh` mit dem Drehbuch `stauchkante-formen-96.txt` (Foto 03).
+- **Form ohne Naht (F-439) — so lassen:** Die Kantenform gehört zum Dokument, nicht zu den Nähten. Sind alle Nähte
+  zurückgeholt, bleibt die gewählte Form; die nächste Naht erscheint in ihr, nicht in der aus `[capture] seam` (die gilt
+  für neu entstehende Dokumente). Das ist, was die Person zuletzt gewählt hat, und es lässt Rückgängig und Wiederholen
+  der Form unberührt; der Menüeintrag „Seam style“ bleibt ohne Naht grau (F-426). Test `TestKanteBleibtOhneNaehte`.
+- **Rechenzeit (F-430, F-429):** Schichten lassen sich nicht bitgleich bündeln (verschiedene Farben und Deckkräfte
+  übereinander); auf die sichtbare Ansicht beschneiden ist nicht nötig (`Bild` rastert nur die Ansicht). Bitgleich
+  schneller sind: `Bild` zählt die Kosten der Füllungen nicht mit (nur `Aufwand` und der Trockenlauf von `Pruefe`
+  brauchen sie), die Rasterschleifen nehmen `min`/`max` statt `math.Min`/`math.Max`, ein Pixel (0,0,0,0) ohne Deckung
+  wird übersprungen. 120 Abriss-Nähte auf 32768×2100: 11,8 s auf 6,5 s (Benchmark `BenchmarkNaehteAbriss120`, ein Kern,
+  Entwicklungsrechner, 23.11.2026). Das Ziel „unter 4 s“ ist damit **nicht** erreicht; es bleibt bei der
+  Rasterarbeit je Füllung (rund 7 ns je Pixel, 13 Füllungen je Naht über die ganze Länge). Das Zeitversprechen des
+  Rechenbudgets (Nachtrag 3 von ADR-0020) lautet deshalb **rund 14 s** statt 10 s: ein Dokument knapp unter allen drei
+  Grenzen zugleich (90 Nähte, 59 × „W“ Grad 4096, bildgroße Rahmen bis zum Budget) rastert in rund 14 s
+  (`BenchmarkNaehteAlleGrenzen`).
+- **Grenze der Nahtzahl (F-444, F-408):** `KantenBudget` bleibt 1e10. `Pruefe` nimmt bei Abriss-Nähten auf 8192 px Länge
+  rund 364, auf 32768 px rund 91 an (seit F-438 mit der zweiten Leerung; vorher 392 und 98); mehr lehnt der Editor beim
+  Öffnen ab, Speichern bricht nie ab. Das Heben der Grenze auf 600 Nähte bei 8192 px hieße rund 1,6e10 und (hochgerechnet) rund 9 s
+  Rasterzeit für Kanten allein; das wäre die Wartezeit einer präparierten Datei ohne echten Nutzen (reale Dateien
+  haben wenige Nähte). Die Grenze ist hier dokumentiert und in `TestNahtZahlGrenze` festgehalten.
+- **Editor und Renderer mischen unterschiedlich (F-407, Messung):** Mit `scripts/probe.sh` (Zoom 100 %, Skala 1)
+  weicht der Fasersaum im Editor vom gerenderten PNG um im Mittel 22 von 255 je Kanal ab (bis 43), der Editor ist
+  heller. Die Abweichung deckt sich mit linearer statt sRGB-Mischung der Deckkraft durch Gio (gerechnet mit linearer
+  Mischung nur 5 im Mittel). Gelöst ist das nicht; es bleibt als eigenes Finding (siehe Register).

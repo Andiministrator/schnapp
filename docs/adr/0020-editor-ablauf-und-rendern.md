@@ -143,7 +143,8 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
 - **Ergänzung 22.11.2026 (F-418):** `Pruefe` zählt nur so weit, bis eine Grenze überschritten ist; das Urteil bleibt
   gleich, die genannte Grenze kann eine andere sein. `Aufwand` und `Bild` zählen vollständig. Nachmessung: Kanten knapp
   unter `KantenBudget` (120 Abriss-Nähte auf 32768×2100) rastern in rund 8 s (rund 0,5 ns je Kanten-Einheit), die
-  Summe aller Grenzen also rund 15 s statt 10 s; die Gewichte bleiben vorerst (F-429).
+  Summe aller Grenzen also rund 15 s statt 10 s; die Gewichte bleiben vorerst (F-429). *Nachmessung 23.11.2026 (ADR-0023
+  Nachtrag 9): 120 Abriss-Nähte jetzt rund 6,5 s, die Summe aller Grenzen rund 14 s; das Zeitversprechen lautet rund 14 s.*
 
 ## Nachtrag 4 (20.11.2026): Arbeitsziel nach dem Speichern einer Datei von außen (F-155)
 

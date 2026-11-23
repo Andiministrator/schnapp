@@ -68,5 +68,54 @@
     "paket": "./internal/render",
     "alt": "return a.summe() > grenzen.gesamt || a.glyph > grenzen.glyph || a.kanten > grenzen.kanten",
     "neu": "return a.summe() > grenzen.gesamt || a.kanten > grenzen.kanten"
+  },
+  {
+    "name": "K177-3 F-438 Spalte nach dem Saum nicht noch einmal leeren",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "|| !spalte() {",
+    "neu": "|| false {"
+  },
+  {
+    "name": "K177-4 F-438 Berührung kreuzender Nähte nicht erkannt",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "if !document.NaehteBeruehren(naehte, f) {",
+    "neu": "if true {"
+  },
+  {
+    "name": "K177-5 F-438 Schatten ginge mit dem zweiten Leeren verloren (vorher gezeichnet)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\tschichtenDurchgang(document.Schicht.ImSpalt)\n\treturn nil",
+    "neu": "\treturn nil"
+  },
+  {
+    "name": "K177-8 F-438 SVG legt die Schichten bei Berührung nicht unter die Maske",
+    "datei": "internal/fileformat/export.go",
+    "paket": "./internal/fileformat",
+    "alt": "if !document.NaehteBeruehren(naehte, d.ZackenFaktor()) {",
+    "neu": "if true {"
+  },
+  {
+    "name": "K177-9 F-438 SVG trennt den Schatten bei Berührung nicht ab",
+    "datei": "internal/fileformat/export.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\tif beruehren {",
+    "neu": "\t\tif beruehren && false {"
+  },
+  {
+    "name": "K177-6 F-430 Bild ohne Zählen rastert anders als mit Zählen",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\tz.raster(polys, farbe, loeschen)\n\t\treturn\n\t}\n\t// Kosten aus Polygonpunkten",
+    "neu": "\t\tif !loeschen {\n\t\t\tz.raster(polys, farbe, loeschen)\n\t\t}\n\t\treturn\n\t}\n\t// Kosten aus Polygonpunkten"
+  },
+  {
+    "name": "K177-7 F-430 Pixel (0,0,0,0) ohne Deckung nicht mehr übersprungen, falsche Farbe",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "(p[3] == 0xff || p[3]|p[0]|p[1]|p[2] == 0)",
+    "neu": "(p[3] == 0xff || p[3] == 0)"
   }
 ]

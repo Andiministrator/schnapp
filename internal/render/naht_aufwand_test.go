@@ -13,7 +13,7 @@ import (
 
 // nahtDokument ist ein leeres Bild b×h in der Form k mit zn Zeilen-Nähten in gleichen Abständen (je ein Streifen von
 // einer Zeile).
-func nahtDokument(t *testing.T, b, h int, k document.Kante, zn int) *document.Dokument {
+func nahtDokument(t testing.TB, b, h int, k document.Kante, zn int) *document.Dokument {
 	t.Helper()
 	d, err := document.NeuAus(image.NewNRGBA(image.Rect(0, 0, b, h)))
 	if err != nil {
@@ -56,6 +56,13 @@ func TestPruefeBrichtUeberDerGrenzeAb(t *testing.T) {
 	if err := Pruefe(d); !errors.Is(err, ErrZuAufwendig) {
 		t.Errorf("Pruefe: %v, Soll ErrZuAufwendig", err)
 	}
+	// Eine Grenze, die erst in den Schichten erreicht wird (die Spalte kosten zusammen rund 14 %): auch dort bricht der
+	// Trockenlauf ab (F-418, F-438: die Nähte hier liegen eng, die Spalte werden zweimal geleert).
+	grenzen.kanten = voll.kanten / 3
+	if teil := trockenlauf(d, true); teil.kanten <= grenzen.kanten || teil.kanten > voll.kanten/2 {
+		t.Errorf("Nähte, späte Grenze: gezählt %v von %v, Grenze %v", teil.kanten, voll.kanten, grenzen.kanten)
+	}
+	grenzen.kanten = voll.kanten / 20
 	if a := trockenlauf(d, false); a != voll {
 		t.Errorf("ohne Abbruch %+v, vorher %+v", a, voll)
 	}

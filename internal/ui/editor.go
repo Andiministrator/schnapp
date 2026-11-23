@@ -1614,19 +1614,34 @@ func (e *editor) zeichneNaehte(gtx layout.Context) {
 		// Reihenfolge wie Renderer und SVG-Export.
 		spaltVon, spaltBis := document.Spaltband()
 		var bretter schachbretter
-		for _, n := range naehte {
-			l, laenge := linie(n)
-			band = l.Band(band, n, spaltVon, spaltBis)
-			stapel := clip.Outline{Path: pfad(band)}.Op().Push(&c.ops)
-			bretter.male(&c.ops, n, laenge, faktor)
-			stapel.Pop()
-		}
-		for _, n := range naehte {
-			l, _ := linie(n)
-			for _, sch := range schichten {
-				band = l.Band(band, n, sch.Von, sch.Bis)
-				paint.FillShape(&c.ops, sch.Farbe, clip.Outline{Path: pfad(band)}.Op())
+		spalte := func() {
+			for _, n := range naehte {
+				l, laenge := linie(n)
+				band = l.Band(band, n, spaltVon, spaltBis)
+				stapel := clip.Outline{Path: pfad(band)}.Op().Push(&c.ops)
+				bretter.male(&c.ops, n, laenge, faktor)
+				stapel.Pop()
 			}
+		}
+		durchgang := func(auswahl func(document.Schicht) bool) {
+			for _, n := range naehte {
+				l, _ := linie(n)
+				for _, sch := range schichten {
+					if auswahl(sch) {
+						band = l.Band(band, n, sch.Von, sch.Bis)
+						paint.FillShape(&c.ops, sch.Farbe, clip.Outline{Path: pfad(band)}.Op())
+					}
+				}
+			}
+		}
+		spalte()
+		if !document.NaehteBeruehren(naehte, faktor) {
+			durchgang(func(document.Schicht) bool { return true })
+		} else {
+			// Wie im Renderer (F-438, ADR-0023 Nachtrag 8): Saum und Abdunklung, Spalte noch einmal, dann der Schatten.
+			durchgang(func(s document.Schicht) bool { return !s.ImSpalt() })
+			spalte()
+			durchgang(document.Schicht.ImSpalt)
 		}
 		c.aufruf = aufnahme.Stop()
 		c.groesse, c.naehte, c.form, c.faktor, c.gueltig = g, naehte, form, faktor, true

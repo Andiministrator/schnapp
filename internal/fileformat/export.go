@@ -96,6 +96,7 @@ func (s *schreiber) naehteDefs(d *document.Dokument) bool {
 		return false
 	}
 	spaltVon, spaltBis := document.Spaltband()
+	beruehren := document.NaehteBeruehren(naehte, d.ZackenFaktor())
 	s.WriteString(`<defs>`)
 	for _, zeilen := range []bool{false, true} {
 		if !slices.ContainsFunc(naehte, func(n document.Naht) bool { return n.Zeilen == zeilen }) {
@@ -108,17 +109,31 @@ func (s *schreiber) naehteDefs(d *document.Dokument) bool {
 		linie := document.NeueKantenlinie(d.Kante(), laenge, d.ZackenFaktor()) // einmal je Achse (F-418)
 		bei0 := document.Naht{Zeilen: zeilen}
 		var band []document.Punkt
-		s.WriteString(`<g`)
-		s.attr("id", "naht-"+nahtArt(zeilen))
-		s.WriteString(`>`)
-		for _, sch := range document.KantenSchichten() {
-			band = linie.Band(band, bei0, sch.Von, sch.Bis)
-			s.WriteString(`<path`)
-			s.attr("d", bandPfad(band))
-			s.farbeSVG("fill", sch.Farbe)
-			s.WriteString(`/>`)
+		// Berühren sich Nähte (F-438), liegen Fasersaum und Abdunklung (naht-…) und der Schatten (schatten-…) in zwei
+		// Gruppen: Die erste legt naehteUse unter die Maske, der Schatten bleibt im Spalt stehen.
+		gruppe := func(id string, nimm func(document.Schicht) bool) {
+			s.WriteString(`<g`)
+			s.attr("id", id+nahtArt(zeilen))
+			s.WriteString(`>`)
+			for _, sch := range document.KantenSchichten() {
+				if !nimm(sch) {
+					continue
+				}
+				band = linie.Band(band, bei0, sch.Von, sch.Bis)
+				s.WriteString(`<path`)
+				s.attr("d", bandPfad(band))
+				s.farbeSVG("fill", sch.Farbe)
+				s.WriteString(`/>`)
+			}
+			s.WriteString(`</g>`)
 		}
-		s.WriteString(`</g><path`)
+		if beruehren {
+			gruppe("naht-", func(sch document.Schicht) bool { return !sch.ImSpalt() })
+			gruppe("schatten-", document.Schicht.ImSpalt)
+		} else {
+			gruppe("naht-", func(document.Schicht) bool { return true })
+		}
+		s.WriteString(`<path`)
 		s.attr("id", "spalt-"+nahtArt(zeilen))
 		band = linie.Band(band, bei0, spaltVon, spaltBis)
 		s.attr("d", bandPfad(band))
@@ -138,7 +153,21 @@ func (s *schreiber) naehteDefs(d *document.Dokument) bool {
 }
 
 // naehteUse legt die Schichten jeder Naht über die Kacheln (siehe naehteDefs).
-func (s *schreiber) naehteUse(d *document.Dokument) { s.nahtVerweise(d.Naehte(), "naht-", true) }
+//
+// Berühren sich Nähte (document.NaehteBeruehren, F-438, ADR-0023 Nachtrag 8), liegen die Schichten neben dem Spalt unter
+// derselben Maske wie die Kacheln, damit der Fasersaum einer Naht nicht im Spalt der anderen steht, und der Schatten
+// darüber, ohne Maske.
+func (s *schreiber) naehteUse(d *document.Dokument) {
+	naehte := d.Naehte()
+	if !document.NaehteBeruehren(naehte, d.ZackenFaktor()) {
+		s.nahtVerweise(naehte, "naht-", true)
+		return
+	}
+	s.WriteString(`<g mask="url(#spalt)">`)
+	s.nahtVerweise(naehte, "naht-", true)
+	s.WriteString(`</g>`)
+	s.nahtVerweise(naehte, "schatten-", false)
+}
 
 // nahtVerweise schreibt je Naht ein <use> auf die Vorlage praefix+Achse, verschoben auf die Lage der Naht; mitArt
 // schreibt in der Arbeitsdatei die Achse dazu (s:naht).

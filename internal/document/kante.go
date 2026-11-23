@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image/color"
 	"math"
+	"slices"
 )
 
 // Kante ist die Form der Stauch-Kante eines Dokuments (ADR-0023 Nachtrag 6). Der Nullwert ist der Abriss, die
@@ -58,6 +59,9 @@ const (
 	KantenSpaltHalb  = 8.0
 	KantenRand       = 2.0
 	ZackenBandHalb   = KantenAuslenkung + KantenSpaltHalb + KantenRand
+	// KantenSichtRest ist der Teil des Bilds, der neben der Kante mindestens sichtbar bleibt (ADR-0023 Nachtrag 8,
+	// F-445): Mindestrest je Seite einer Naht = (ZackenBandHalb + KantenSichtRest) · Faktor.
+	KantenSichtRest = 8.0
 )
 
 // abrissTerme sind Amplitude, Periode und Phase der Sinusanteile der Abrisskante, abrissFaktor ihr gemeinsamer Faktor
@@ -218,6 +222,38 @@ func KantenSchichten() []Schicht { return append([]Schicht(nil), kantenSchichten
 
 // Spaltband liefert die Grenzen des durchsichtigen Spalts quer zur Mittellinie (Faktor 1), für Kantenlinie.Band.
 func Spaltband() (von, bis float64) { return -KantenSpaltHalb, KantenSpaltHalb }
+
+// ImSpalt meldet, ob die Schicht ganz im durchsichtigen Spalt ihrer eigenen Naht liegt (der Schatten, ADR-0023
+// Nachtrag 7); die anderen (Fasersaum, Abdunklung) liegen daneben auf den Bildteilen.
+func (s Schicht) ImSpalt() bool { return s.Von >= -KantenSpaltHalb && s.Bis <= KantenSpaltHalb }
+
+// NaehteBeruehren meldet, ob die Kante einer Naht in den Spalt einer anderen ragen kann (ADR-0023 Nachtrag 8,
+// F-438): wenn es Nähte beider Achsen gibt (sie kreuzen sich) oder zwei Nähte derselben Achse näher als die ganze
+// Bandhöhe (2·ZackenBandHalb·Faktor) beieinanderliegen. Nur dann leeren Renderer, SVG-Export und Editor die Spalte nach
+// dem Fasersaum und der Abdunklung noch einmal; sonst bleibt die Zeichnung wie vor F-438.
+func NaehteBeruehren(naehte []Naht, faktor int) bool {
+	var zeilen, spalten []int
+	for _, n := range naehte {
+		if n.Zeilen {
+			zeilen = append(zeilen, n.Lage)
+		} else {
+			spalten = append(spalten, n.Lage)
+		}
+	}
+	if len(zeilen) > 0 && len(spalten) > 0 {
+		return true
+	}
+	nah := func(l []int) bool {
+		slices.Sort(l)
+		for i := 1; i < len(l); i++ {
+			if float64(l[i]-l[i-1]) < 2*ZackenBandHalb*float64(max(faktor, 1)) {
+				return true
+			}
+		}
+		return false
+	}
+	return nah(zeilen) || nah(spalten)
+}
 
 // Kante liefert die Form der Stauch-Kante des Dokuments.
 func (d *Dokument) Kante() Kante { return d.kante }

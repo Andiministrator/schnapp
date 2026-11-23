@@ -204,19 +204,19 @@ func TestStauchenRichtung(t *testing.T) {
 	if !s.SetzeWerkzeug(WerkzeugStauchen) || s.Voll() != AblehnungKeine {
 		t.Fatal("Werkzeug")
 	}
-	s.Druecken(f(30, 20.3), TastePrimaer)
-	s.Ziehen(f(35, 39.6))
-	if a, b, ok := s.Rahmen(); !ok || a != f(0, 20) || b != f(200, 40) {
+	s.Druecken(f(30, 24.3), TastePrimaer)
+	s.Ziehen(f(35, 43.6))
+	if a, b, ok := s.Rahmen(); !ok || a != f(0, 24) || b != f(200, 44) {
 		t.Errorf("Band beim Ziehen: %v %v %v", a, b, ok)
 	}
-	s.Loslassen(f(35, 39.6))
-	if st := s.D.Streifen(); !reflect.DeepEqual(st, []document.Streifen{{Zeilen: true, Von: 20, Bis: 40}}) {
+	s.Loslassen(f(35, 43.6))
+	if st := s.D.Streifen(); !reflect.DeepEqual(st, []document.Streifen{{Zeilen: true, Von: 24, Bis: 44}}) {
 		t.Fatalf("Streifen %v", st)
 	}
 	if g := s.D.Groesse(); g != image.Pt(200, 80) {
 		t.Errorf("Ansicht %v", g)
 	}
-	if n := s.D.Naehte(); !reflect.DeepEqual(n, []document.Naht{{Zeilen: true, Lage: 20}}) {
+	if n := s.D.Naehte(); !reflect.DeepEqual(n, []document.Naht{{Zeilen: true, Lage: 24}}) {
 		t.Errorf("Naehte %v", n)
 	}
 	if s.BildAenderung() != 1 {
@@ -235,18 +235,18 @@ func TestStauchenRichtung(t *testing.T) {
 // ADR-0023 Punkt 3: Überlappende und anstoßende Streifen verschmelzen, es entsteht keine doppelte Naht.
 func TestStauchenVerschmilzt(t *testing.T) {
 	s := verlaufSitzung(t)
-	if err := s.D.SetzeStreifen([]document.Streifen{{Zeilen: true, Von: 30, Bis: 50}}); err != nil {
+	if err := s.D.SetzeStreifen([]document.Streifen{{Zeilen: true, Von: 40, Bis: 60}}); err != nil {
 		t.Fatal(err)
 	}
 	s.Einpassen()
 	s.SetzeWerkzeug(WerkzeugStauchen)
-	zieh(s, fv(s, 50, 28), fv(s, 52, 35)) // über die Naht bei 30: Original 28 bis 55
-	if st := s.D.Streifen(); !reflect.DeepEqual(st, []document.Streifen{{Zeilen: true, Von: 28, Bis: 55}}) {
+	zieh(s, fv(s, 50, 38), fv(s, 52, 45)) // über die Naht bei 40: Original 38 bis 65
+	if st := s.D.Streifen(); !reflect.DeepEqual(st, []document.Streifen{{Zeilen: true, Von: 38, Bis: 65}}) {
 		t.Errorf("überlappend: %v", st)
 	}
-	// Endet an der Naht: Original 16 bis 28, stößt an (Rest oben ≥ Bandhalbhöhe 16, ADR-0023 Nachtrag 7).
-	zieh(s, fv(s, 50, 16), fv(s, 52, 28))
-	if st := s.D.Streifen(); !reflect.DeepEqual(st, []document.Streifen{{Zeilen: true, Von: 16, Bis: 55}}) {
+	// Endet an der Naht: Original 24 bis 38, stößt an (Rest oben ≥ 24 = Bandhalbhöhe + 8, ADR-0023 Nachtrag 8).
+	zieh(s, fv(s, 50, 24), fv(s, 52, 38))
+	if st := s.D.Streifen(); !reflect.DeepEqual(st, []document.Streifen{{Zeilen: true, Von: 24, Bis: 65}}) {
 		t.Errorf("anstoßend: %v", st)
 	}
 	if n := s.D.Naehte(); len(n) != 1 {
@@ -271,15 +271,15 @@ func TestStauchenAbgelehnt(t *testing.T) {
 	if s.NimmAnsichtMeldung() != AnsichtKeine {
 		t.Error("Meldung nicht einmalig")
 	}
-	// Ein Rest unter MinObjekt (hier 4 von 100 Zeilen bei Zoom 1) zählt wie nichts (Echtlauf #92); 32 Zeilen bleiben
-	// (je Seite mindestens die Bandhalbhöhe 16, ADR-0023 Nachträge 4 und 7).
+	// Ein Rest unter MinObjekt (hier 4 von 100 Zeilen bei Zoom 1) zählt wie nichts (Echtlauf #92); 48 Zeilen bleiben
+	// (je Seite mindestens Bandhalbhöhe + 8 = 24, ADR-0023 Nachträge 4 und 8).
 	zieh(s, f(5, 2), f(6, 98))
 	if m := s.NimmAnsichtMeldung(); m != AnsichtLeer || s.Geaendert() {
 		t.Errorf("Rest 4: Meldung %v, geändert %v", m, s.Geaendert())
 	}
-	zieh(s, f(5, 16), f(6, 84))
+	zieh(s, f(5, 24), f(6, 76))
 	if m := s.NimmAnsichtMeldung(); m == AnsichtLeer || !s.Geaendert() {
-		t.Errorf("Rest 32: Meldung %v, geändert %v", m, s.Geaendert())
+		t.Errorf("Rest 48: Meldung %v, geändert %v", m, s.Geaendert())
 	}
 	if err := s.D.Rueckgaengig(); err != nil {
 		t.Fatal(err)
@@ -378,19 +378,19 @@ func TestNahtEntfernenZackenFaktor2(t *testing.T) {
 // nennt es; Rückgängig bringt es zurück. Das Objekt selbst bleibt unverändert.
 func TestVerborgeneObjekte(t *testing.T) {
 	s, k, p := sitzung(t) // Kasten (10,10)-(50,50) gefüllt, Pfeil (100,50)-(180,50)
-	// Der Kasten rückt auf (10,20)-(50,50): Über dem Streifen müssen mindestens 16 Zeilen bleiben (halbe Bandhöhe,
-	// ADR-0023 Nachtrag 7), sonst würde er zum Zuschnitt.
+	// Der Kasten rückt auf (10,30)-(50,50): Über dem Streifen müssen mindestens 24 Zeilen bleiben (Bandhöhe/2 + 8,
+	// ADR-0023 Nachtrag 8), sonst würde er zum Zuschnitt.
 	o, _ := s.D.Objekt(k)
 	kb := o.(document.Kasten)
-	kb.Bereich = document.R(document.Pt(10, 20), document.Pt(50, 50))
+	kb.Bereich = document.R(document.Pt(10, 30), document.Pt(50, 50))
 	if err := s.D.Ersetzen(kb); err != nil {
 		t.Fatal(err)
 	}
 	kasten, _ := s.D.Objekt(k)
 	s.Auswahl = k
 	s.SetzeWerkzeug(WerkzeugStauchen)
-	// Zeilen 16 bis 55: der Kasten liegt ganz darin. Begonnen wird weit weg von seinen Griffen (die gingen vor).
-	zieh(s, f(75, 16), f(76, 55))
+	// Zeilen 24 bis 55: der Kasten liegt ganz darin. Begonnen wird weit weg von seinen Griffen (die gingen vor).
+	zieh(s, f(75, 24), f(76, 55))
 	if st := s.D.Streifen(); len(st) != 1 {
 		t.Fatalf("Streifen %v", st)
 	}
@@ -404,13 +404,13 @@ func TestVerborgeneObjekte(t *testing.T) {
 		t.Error("Stauchen hat den Kasten geändert")
 	}
 	s.SetzeWerkzeug(WerkzeugAuswahl)
-	s.Druecken(fv(s, 30, 16), TastePrimaer) // auf der Naht über dem Kasten
-	s.Loslassen(fv(s, 30, 16))
+	s.Druecken(fv(s, 30, 24), TastePrimaer) // auf der Naht über dem Kasten
+	s.Loslassen(fv(s, 30, 24))
 	if s.Auswahl != 0 {
 		t.Errorf("verborgener Kasten getroffen (Auswahl %d)", s.Auswahl)
 	}
-	s.Druecken(fv(s, 140, 16), TastePrimaer) // der Pfeil (y 50 → Ansicht 16) bleibt greifbar
-	s.Loslassen(fv(s, 140, 16))
+	s.Druecken(fv(s, 140, 24), TastePrimaer) // der Pfeil (y 50 → Ansicht 24) bleibt greifbar
+	s.Loslassen(fv(s, 140, 24))
 	if s.Auswahl != p {
 		t.Errorf("Pfeil nicht getroffen (Auswahl %d)", s.Auswahl)
 	}
@@ -593,9 +593,9 @@ func TestGriffeGehenNichtVorRahmen(t *testing.T) {
 	}
 }
 
-// F-226 (ADR-0023 Nachträge 4 und 7): Zwischen Naht und Bildrand bleibt mindestens die halbe Bandhöhe (Faktor 1: 16
-// Pixel). Ein Band, das weniger übrig ließe, reicht bis an den Rand und wird dort zum Zuschnitt; ab genau 16 bleibt es
-// eine Naht.
+// F-226, F-445 (ADR-0023 Nachträge 4 und 8): Zwischen Naht und Bildrand bleibt mindestens die halbe Bandhöhe plus 8
+// sichtbare Pixel (Faktor 1: 24). Ein Band, das weniger übrig ließe, reicht bis an den Rand und wird dort zum
+// Zuschnitt; ab genau 24 bleibt es eine Naht.
 func TestStauchenMindestrestJeSeite(t *testing.T) {
 	neu := func() *Sitzung {
 		s := verlaufSitzung(t) // 200×100, Faktor 1
@@ -603,19 +603,62 @@ func TestStauchenMindestrestJeSeite(t *testing.T) {
 		return s
 	}
 	s := neu()
-	zieh(s, f(5, 15), f(6, 60)) // oben bleiben 15 < 16
+	zieh(s, f(5, 23), f(6, 60)) // oben bleiben 23 < 24
 	if st := s.D.Streifen(); len(st) != 0 || s.D.Zuschnitt().Min.Y != 60 {
-		t.Errorf("Rest 15 oben: Streifen %v, Zuschnitt %v, Soll Zuschnitt ab Zeile 60", st, s.D.Zuschnitt())
+		t.Errorf("Rest 23 oben: Streifen %v, Zuschnitt %v, Soll Zuschnitt ab Zeile 60", st, s.D.Zuschnitt())
 	}
 	s = neu()
-	zieh(s, f(5, 40), f(6, 85)) // unten bleiben 15 < 16
+	zieh(s, f(5, 40), f(6, 77)) // unten bleiben 23 < 24
 	if st := s.D.Streifen(); len(st) != 0 || s.D.Zuschnitt().Max.Y != 40 {
-		t.Errorf("Rest 15 unten: Streifen %v, Zuschnitt %v, Soll Zuschnitt bis Zeile 40", st, s.D.Zuschnitt())
+		t.Errorf("Rest 23 unten: Streifen %v, Zuschnitt %v, Soll Zuschnitt bis Zeile 40", st, s.D.Zuschnitt())
 	}
 	s = neu()
-	zieh(s, f(5, 16), f(6, 40)) // oben genau 16: bleibt eine Naht
-	if st := s.D.Streifen(); !reflect.DeepEqual(st, []document.Streifen{{Zeilen: true, Von: 16, Bis: 40}}) {
-		t.Errorf("Rest 16: Streifen %v", st)
+	zieh(s, f(5, 24), f(6, 40)) // oben genau 24: bleibt eine Naht
+	if st := s.D.Streifen(); !reflect.DeepEqual(st, []document.Streifen{{Zeilen: true, Von: 24, Bis: 40}}) {
+		t.Errorf("Rest 24: Streifen %v", st)
+	}
+	s = neu()
+	zieh(s, f(5, 40), f(6, 76)) // unten genau 24
+	if st := s.D.Streifen(); !reflect.DeepEqual(st, []document.Streifen{{Zeilen: true, Von: 40, Bis: 76}}) {
+		t.Errorf("Rest 24 unten: Streifen %v", st)
+	}
+}
+
+// F-445: Bei Zackenfaktor 2 verdoppelt sich der Mindestrest (48): 47 wird Zuschnitt, 48 bleibt eine Naht.
+func TestStauchenMindestrestFaktor2(t *testing.T) {
+	neu := func() *Sitzung {
+		d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 2200, 2200)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if d.ZackenFaktor() != 2 {
+			t.Fatalf("Zackenfaktor %d, Soll 2", d.ZackenFaktor())
+		}
+		s := NeueSitzung(d)
+		s.SetzeFenster(image.Pt(2400, 2400))
+		s.EinsZuEins()
+		s.SetzeWerkzeug(WerkzeugStauchen)
+		return s
+	}
+	s := neu()
+	zieh(s, fv(s, 500, 47), fv(s, 501, 300))
+	if st := s.D.Streifen(); len(st) != 0 || s.D.Zuschnitt().Min.Y != 300 {
+		t.Errorf("Rest 47 oben: Streifen %v, Zuschnitt %v, Soll Zuschnitt ab Zeile 300", st, s.D.Zuschnitt())
+	}
+	s = neu()
+	zieh(s, fv(s, 500, 48), fv(s, 501, 300))
+	if st := s.D.Streifen(); !reflect.DeepEqual(st, []document.Streifen{{Zeilen: true, Von: 48, Bis: 300}}) {
+		t.Errorf("Rest 48 oben: Streifen %v", st)
+	}
+	s = neu()
+	zieh(s, fv(s, 500, 300), fv(s, 501, 2153)) // unten bleiben 47
+	if st := s.D.Streifen(); len(st) != 0 || s.D.Zuschnitt().Max.Y != 300 {
+		t.Errorf("Rest 47 unten: Streifen %v, Zuschnitt %v, Soll Zuschnitt bis Zeile 300", st, s.D.Zuschnitt())
+	}
+	s = neu()
+	zieh(s, fv(s, 500, 300), fv(s, 501, 2152)) // unten bleiben 48
+	if st := s.D.Streifen(); !reflect.DeepEqual(st, []document.Streifen{{Zeilen: true, Von: 300, Bis: 2152}}) {
+		t.Errorf("Rest 48 unten: Streifen %v", st)
 	}
 }
 

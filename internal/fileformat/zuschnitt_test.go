@@ -42,10 +42,16 @@ func TestExportSVGKante(t *testing.T) {
 			t.Errorf("%v: Filter oder s:-Attribut im Export", form)
 		}
 		// Je Achse ein Band bei Lage 0 in <defs> (F-183), je Naht ein <use>, das es auf die Lage verschiebt.
-		gruppen := regexp.MustCompile(`<g id="naht-(zeilen|spalten)">(.*?)</g>`).FindAllStringSubmatch(s, -1)
+		gruppen := regexp.MustCompile(`<g id="(?:naht|schatten)-(zeilen|spalten)">(.*?)</g>`).FindAllStringSubmatch(s, -1)
 		verweise := regexp.MustCompile(`<use href="#naht-(zeilen|spalten)" (x|y)="(-?\d+)"/>`).FindAllStringSubmatch(s, -1)
-		if len(gruppen) != 2 || len(verweise) != 2 {
-			t.Fatalf("%v: %d Bänder, %d Nähte im Export, Soll 2 und 2:\n%.2000s", form, len(gruppen), len(verweise), s)
+		// Nähte beider Achsen berühren sich (F-438): je Achse zwei Gruppen (Saum und Abdunklung, Schatten), die
+		// Verweise der ersten unter der Maske, die des Schattens danach.
+		if len(gruppen) != 4 || len(verweise) != 2 {
+			t.Fatalf("%v: %d Bänder, %d Nähte im Export, Soll 4 und 2:\n%.2000s", form, len(gruppen), len(verweise), s)
+		}
+		if !regexp.MustCompile(`<g mask="url\(#spalt\)"><use href="#naht-spalten" x="\d+"/><use href="#naht-zeilen" y="\d+"/></g>` +
+			`<use href="#schatten-spalten" x="\d+"/><use href="#schatten-zeilen" y="\d+"/></svg>`).MatchString(s) {
+			t.Errorf("%v: Verweise unter Maske und Schatten fehlen am Ende:\n%.400s", form, s[len(s)-400:])
 		}
 		pfadRe := regexp.MustCompile(`<path d="([^"]*)" fill="#([0-9a-f]{6})"(?: fill-opacity="([0-9.]+)")?/>`)
 		schichten := document.KantenSchichten()
@@ -58,11 +64,13 @@ func TestExportSVGKante(t *testing.T) {
 			if v := verweise[i]; v[1] != art || v[2] != achse || v[3] != strconv.Itoa(n.Lage) {
 				t.Errorf("%v Naht %d: %v", form, i, v[0])
 			}
-			grp := gruppen[0]
-			if grp[1] != art {
-				grp = gruppen[1]
+			var grp string // Saum und Abdunklung, dann der Schatten: die Reihenfolge der Schichten
+			for _, gr := range gruppen {
+				if gr[1] == art {
+					grp += gr[2]
+				}
 			}
-			pfade := pfadRe.FindAllStringSubmatch(grp[2], -1)
+			pfade := pfadRe.FindAllStringSubmatch(grp, -1)
 			if len(pfade) != len(schichten) {
 				t.Fatalf("%v Band %s: %d Pfade, Soll %d Schichten", form, art, len(pfade), len(schichten))
 			}
@@ -162,12 +170,54 @@ func pruefeSpaltLeer(t *testing.T, form document.Kante, s string, d *document.Do
 	// Alle Kacheln unter der Maske: die erste Kachel nach dem Öffnen der Gruppe, die letzte vor ihrem Schluss.
 	auf := strings.Index(s, `<g mask="url(#spalt)">`)
 	zu := strings.Index(s, `</g><use href="#naht-`)
+	if zu < 0 { // berühren sich Nähte (F-438), liegen die Schichten unter einer Maske
+		zu = strings.Index(s, `</g><g mask="url(#spalt)"><use href="#naht-`)
+	}
 	if auf < 0 || zu < auf || strings.Index(s, `<image`) < auf || strings.LastIndex(s, `<image`) > zu ||
-		strings.Count(s, `mask="url(#spalt)"`) != 1 {
+		strings.Count(s, `mask="url(#spalt)"`) != 1+strings.Count(s, `<g mask="url(#spalt)"><use`) {
 		t.Errorf("%v: Kacheln nicht unter der Maske", form)
 	}
 	if strings.Contains(s, `fill="#d3d7dc"`) {
 		t.Errorf("%v: graue Spaltfüllung noch im Export", form)
+	}
+}
+
+// F-438 (ADR-0023 Nachtrag 8): Eine einzelne Naht oder weit auseinanderliegende bleiben im Export wie zuvor (eine
+// Gruppe, ein Verweis, keine zweite Maske); kreuzen oder berühren sich Nähte, liegen Saum und Abdunklung unter der
+// Maske und der Schatten in einer eigenen Gruppe darüber.
+func TestExportSVGNaehteBeruehrenSchatten(t *testing.T) {
+	export := func(st ...document.Streifen) string {
+		d, err := document.Neu(testbild(200, 200))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := d.SetzeStreifen(st); err != nil {
+			t.Fatal(err)
+		}
+		var buf bytes.Buffer
+		if err := ExportiereSVG(&buf, d); err != nil {
+			t.Fatal(err)
+		}
+		return buf.String()
+	}
+	for name, c := range map[string]struct {
+		st   []document.Streifen
+		soll bool
+	}{
+		"eine Naht":        {[]document.Streifen{{Zeilen: true, Von: 50, Bis: 55}}, false},
+		"weit auseinander": {[]document.Streifen{{Zeilen: true, Von: 40, Bis: 45}, {Zeilen: true, Von: 120, Bis: 125}}, false},
+		"eng beieinander":  {[]document.Streifen{{Zeilen: true, Von: 40, Bis: 45}, {Zeilen: true, Von: 60, Bis: 65}}, true},
+		"kreuzend":         {[]document.Streifen{{Zeilen: true, Von: 40, Bis: 45}, {Von: 100, Bis: 105}}, true},
+	} {
+		s := export(c.st...)
+		hat := strings.Contains(s, `id="schatten-`) && strings.Contains(s, `<g mask="url(#spalt)"><use`) &&
+			strings.Contains(s, `<use href="#schatten-`)
+		if hat != c.soll {
+			t.Errorf("%s: Schattengruppe %v, Soll %v", name, hat, c.soll)
+		}
+		if !c.soll && (strings.Contains(s, "schatten") || strings.Count(s, `mask="url(#spalt)"`) != 1) {
+			t.Errorf("%s: Export weicht vom Zustand vor F-438 ab", name)
+		}
 	}
 }
 
@@ -215,21 +265,25 @@ func TestExportSVGVieleNaehteKompakt(t *testing.T) {
 		start := strings.Index(s, `<defs><g id="naht-`)
 		maske := strings.Index(s, `<mask id="spalt"`)
 		kachelnEnde := strings.Index(s, `</g><use href="#naht-`)
+		if kachelnEnde < 0 { // eng beieinander (F-438): Schichten unter Maske
+			kachelnEnde = strings.Index(s, `</g><g mask="url(#spalt)"><use href="#naht-`)
+		}
 		if start < 0 || maske < start || kachelnEnde < maske {
 			t.Fatal("keine Nähte im Export")
 		}
 		ende := maske + strings.Index(s[maske:], `</defs>`)
 		return (ende - maske) + (len(s) - kachelnEnde), maske - start
 	}
-	eins, band1 := export(1)
+	eins, band1 := export(2) // zwei eng liegende Nähte berühren sich schon (F-438), wie die 1023
 	viele, band := export(1023)
 	if band != band1 {
 		t.Errorf("Band in <defs> hängt an der Zahl der Nähte: %d gegen %d Byte", band, band1)
 	}
-	// Je Naht zwei Verweise: einer in der Maske (Spalt), einer auf die Schichten (ADR-0023 Nachtrag 7); vorher einer,
-	// Grenze 64 Byte.
-	if je := (viele - eins) / 1022; je > 80 {
-		t.Errorf("je weitere Naht %d Byte, Soll höchstens 80", je)
+	// Je Naht drei Verweise: einer in der Maske (Spalt), einer auf Saum und Abdunklung, einer auf den Schatten (die Nähte
+	// liegen hier eng beieinander, F-438, ADR-0023 Nachtrag 8); vor Nachtrag 7 einer,
+	// Grenze damals 64 Byte.
+	if je := (viele - eins) / 1021; je > 120 {
+		t.Errorf("je weitere Naht %d Byte, Soll höchstens 120", je)
 	}
 	const soll = 4 << 20
 	if band > soll {
