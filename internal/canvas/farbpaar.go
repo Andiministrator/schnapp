@@ -208,12 +208,15 @@ func (s *Sitzung) zielWerkzeug() Werkzeug {
 	return s.paarWerkzeug()
 }
 
-// Fuellbar meldet, ob das, worauf die Farbwahl wirkt, eine Füllung hat: das Objekt, sonst das Werkzeug des Paars.
+// Fuellbar meldet, ob das, worauf die Farbwahl wirkt, eine Füllung hat: das Objekt, sonst das gewählte Werkzeug.
+// Ein Werkzeug ohne Farbe (Auswählen ohne Objekt, Schwärzen, Zuschneiden, Stauchen) hat keine Füllung, obwohl Stil
+// das Paar des zuletzt benutzten Farbwerkzeugs trägt: Tauschen und „Keine“ wirkten sonst unsichtbar darauf
+// (ADR-0021 Nachtrag 11 Punkt 9, Kritik B-4). Einzige Quelle für Feld Füllung, „Keine“ und Tauschen.
 func (s *Sitzung) Fuellbar() bool {
 	if o, ok := s.farbObjekt(); ok {
 		return hatFuellung(o)
 	}
-	return fuellWerkzeug(s.paarWerkzeug())
+	return fuellWerkzeug(s.Werkzeug)
 }
 
 // AktivesFeld ist das Feld, auf das die Farbwahl wirkt; ohne Füllung immer der Vordergrund.

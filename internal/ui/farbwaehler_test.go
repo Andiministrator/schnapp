@@ -60,6 +60,7 @@ func TestFarbflaecheUndRegler(t *testing.T) {
 	if a := l.textHintergrund().A; a < 125 || a > 130 {
 		t.Errorf("Deckkraft halb: Alpha %d", a)
 	}
+	halb := l.textHintergrund()
 	// Über den Rand hinaus: begrenzt.
 	l.ziehe(lageIn(fw.deck, 0.5, 0.5), image.Pt(fw.deck.Min.X-300, fw.deck.Min.Y))
 	if a := l.textHintergrund().A; a != 0 {
@@ -71,8 +72,9 @@ func TestFarbflaecheUndRegler(t *testing.T) {
 	if l.e.s.Zieht() || fw.zieht != reglerKeiner {
 		t.Error("Ziehen endete nicht")
 	}
-	if z := l.e.s.Zuletzt(); len(z) == 0 || z[0] != l.textHintergrund() {
-		t.Errorf("zuletzt %v", z)
+	// Deckkraft 0 ist „keine“ und kommt nicht in die zuletzt benutzten (Kritik B-3): vorn steht die halbe.
+	if z := l.e.s.Zuletzt(); len(z) == 0 || z[0] != halb {
+		t.Errorf("zuletzt %v, vorn erwartet %v", z, halb)
 	}
 	// Die zuletzt benutzte Farbe steht als fünftes Feld und ist wählbar.
 	l.setle()

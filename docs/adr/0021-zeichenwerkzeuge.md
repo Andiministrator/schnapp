@@ -374,6 +374,13 @@ Nachtrag 9 Punkt 8 ein; ändert Punkt 4 (eine Farbe für alles) und die Bedeutun
    Werkzeugleiste: das Quadrat unter den Werkzeugen ist geviertelt, Vordergrund oben links, Füllung unten rechts,
    ⇄ oben rechts, ohne Überlappung (`farbpaarRahmen`). Rechte Leiste: Zeile Vordergrund, Füllung, ⇄, „Keine“ über der
    Farbfläche (`zeichneFarbpaarZeile`).
+9. **Umsetzung nach Kritik** (23.11.2026, Kritik zu #219): Ohne gewähltes Objekt gilt die Füllung nur beim gewählten
+   Werkzeug mit Füllung (Kasten, Text). Bei einem Werkzeug ohne Farbe — Auswählen ohne Objekt, Schwärzen, Verpixeln,
+   Zuschneiden, Stauchen — sind Feld Füllung, „Keine“ und Tauschen grau, obwohl `Stil` das Paar des zuletzt benutzten
+   Farbwerkzeugs trägt; sonst tauschte Strg+Umschalt+X unsichtbar dessen Paar. Einzige Quelle dafür ist
+   `Sitzung.Fuellbar` (das Feld `SeitenInhalt.Fuellung` entfällt). Der Farbton-Regler auf einer ganz durchsichtigen
+   Farbe setzt Sättigung und Helligkeit voll, damit Punkt 7 einen sichtbaren Ton ergibt statt Schwarz (Füllung „keine“
+   ist `{0,0,0,0}`). Eine ganz durchsichtige Farbe kommt wie „Keine“ nicht in die zuletzt benutzten Farben.
 
 ## Nachtrag 12 (23.11.2026): Hilfslinien und Einrasten (Karte #196)
 

@@ -208,24 +208,25 @@ func TestFarbZugFuellung(t *testing.T) {
 	}
 }
 
-// TestSeitenleisteFuellung: Die Leiste weiß, ob es eine Füllung gibt.
+// TestSeitenleisteFuellung: Fuellbar sagt der Leiste, ob es eine Füllung gibt; ein Werkzeug ohne Farbe hat keine.
 func TestSeitenleisteFuellung(t *testing.T) {
 	s, k, p := sitzung(t)
 	for _, tc := range []struct {
 		w    Werkzeug
 		want bool
-	}{{WerkzeugPfeil, false}, {WerkzeugKasten, true}, {WerkzeugText, true}, {WerkzeugNummer, false}, {WerkzeugAuswahl, false}} {
+	}{{WerkzeugPfeil, false}, {WerkzeugKasten, true}, {WerkzeugText, true}, {WerkzeugNummer, false}, {WerkzeugAuswahl, false},
+		{WerkzeugKasten, true}, {WerkzeugSchwaerzen, false}, {WerkzeugZuschneiden, false}, {WerkzeugStauchen, false}} {
 		s.SetzeWerkzeug(tc.w)
-		if s.Seitenleiste().Fuellung != tc.want {
+		if s.Fuellbar() != tc.want {
 			t.Errorf("Werkzeug %v: Füllung %v", tc.w, !tc.want)
 		}
 	}
 	s.Auswahl = k
-	if !s.Seitenleiste().Fuellung {
+	if !s.Fuellbar() {
 		t.Error("gewählter Kasten ohne Füllung")
 	}
 	s.Auswahl = p
-	if s.Seitenleiste().Fuellung {
+	if s.Fuellbar() {
 		t.Error("gewählter Pfeil mit Füllung")
 	}
 }

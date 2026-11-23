@@ -134,8 +134,12 @@ func (s *Sitzung) FarbeHSV() HSV {
 // Zuletzt sind die zuletzt benutzten Farben, die jüngste zuerst (höchstens ZuletztGrenze).
 func (s *Sitzung) Zuletzt() []color.NRGBA { return append([]color.NRGBA(nil), s.zuletzt...) }
 
-// merkeZuletzt setzt c vorn in die zuletzt benutzten Farben, wenn sie keine Beschriftungsfarbe ist.
+// merkeZuletzt setzt c vorn in die zuletzt benutzten Farben, wenn sie keine Beschriftungsfarbe und nicht ganz
+// durchsichtig ist (Deckkraft 0 ist „keine“, ein solches Feld zeigte nichts; Kritik B-3).
 func (s *Sitzung) merkeZuletzt(c color.NRGBA) {
+	if c.A == 0 {
+		return
+	}
 	for _, b := range Beschriftungsfarben {
 		if b == c {
 			return

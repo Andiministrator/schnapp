@@ -371,6 +371,11 @@ func (e *editor) farbeZiehen(art farbRegler, r image.Rectangle, p f32.Point) {
 		h.S, h.V = fx, 1-fy
 	case reglerTon:
 		h.H = math.Min(fx*360, 359.99) // ganz rechts bleibt Rot am Ende, statt auf Rot am Anfang zu springen
+		// Füllung „keine“ ({0,0,0,0} ist Schwarz): der Ton allein machte sie deckend schwarz; mit voller Sättigung und
+		// Helligkeit zeigt der Regler den gewählten Ton (Kritik B-1).
+		if a == 0 {
+			h.S, h.V = 1, 1
+		}
 	case reglerDeck:
 		a = uint8(math.Round(fx * 255))
 	}

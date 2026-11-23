@@ -341,5 +341,47 @@
     "paket": "./internal/ui",
     "alt": "\tif k.paar[paarVorn].Clicked(gtx) && an() {\n\t\te.s.SetzeFeld(canvas.FeldVordergrund)",
     "neu": "\tif k.paar[paarVorn].Clicked(gtx) && an() {\n\t\t_ = 0"
+  },
+  {
+    "name": "KU219-1 Farbliste nach Esc nicht am Feld Füllung",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif e.s.AktivesFeld() == canvas.FeldFuellung {\n\t\t\t\treturn &e.knoepfe.fuellung\n\t\t\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "KU219-2 graues Feld Füllung öffnet die Liste",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif !e.s.SetzeFeld(f) {\n\t\t\treturn\n\t\t}",
+    "neu": "\t\te.s.SetzeFeld(f)"
+  },
+  {
+    "name": "KU219-4 Leertaste am Feld Füllung ohne Liste",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tc == &e.knoepfe.farbe || c == &e.knoepfe.fuellung {",
+    "neu": "\t\t\t\tc == &e.knoepfe.farbe {"
+  },
+  {
+    "name": "KU219-6 Knopf Tauschen nicht im Tastaturweg",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "&k.farbe, &k.fuellung, &k.tausch, &k.fussFarbe",
+    "neu": "&k.farbe, &k.fuellung, &k.fussFarbe"
+  },
+  {
+    "name": "KU219-7 Farbton-Regler auf „keine“ ergibt Schwarz (B-1)",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\th.S, h.V = 1, 1\n",
+    "neu": "\t\t\t_ = 0\n"
+  },
+  {
+    "name": "KU219-8 Höhe des Farbwählers ungebunden (B-5)",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\tfarbwaehlerHoeheDp = 234",
+    "neu": "\tfarbwaehlerHoeheDp = 200"
   }
 ]
