@@ -71,10 +71,10 @@
   },
   {
     "name": "K183-2 Spalt behält Farbreste in durchsichtigen Pixeln (Karte #183)",
-    "datei": "internal/render/render.go",
+    "datei": "internal/render/masken.go",
     "paket": "./internal/render",
-    "alt": "\t\t\t\tif a == 0 {",
-    "neu": "\t\t\t\tif false && a == 0 {"
+    "alt": "\t\tif a == 0 {",
+    "neu": "\t\tif false && a == 0 {"
   },
   {
     "name": "K183-3 SVG-Kacheln ohne Maske, Spalt gemalt (Karte #183)",

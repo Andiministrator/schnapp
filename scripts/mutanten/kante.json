@@ -17,8 +17,8 @@
     "name": "KB1 F-420 Zwischenspeicher der Nähte ohne Form und Faktor im Schlüssel",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": " || c.form != form || c.faktor != faktor {",
-    "neu": " {"
+    "alt": " || c.form != form || c.faktor != faktor ||",
+    "neu": " ||"
   },
   {
     "name": "KB2 F-420 Menüeintrag Kantenform immer an",
@@ -87,8 +87,8 @@
     "name": "K177-5 F-438 Schatten ginge mit dem zweiten Leeren verloren (vorher gezeichnet)",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "\tschichtenDurchgang(document.Schicht.ImSpalt)\n\treturn nil",
-    "neu": "\treturn nil"
+    "alt": "\t\tschichtenDurchgang(document.Schicht.ImSpalt)\n\t}\n}",
+    "neu": "\t}\n}"
   },
   {
     "name": "K177-8 F-438 SVG legt die Schichten bei Berührung nicht unter die Maske",
