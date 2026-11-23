@@ -131,3 +131,13 @@ wenig Code (ADR-0011).
   eigenen Nachtrag.
 - **Verworfen:** die fünf Tasten über die Tabelle führen. Dafür bräuchte die Tabelle ein Feld „Navigation“, und die
   Leertaste mit Tag (`Focus`) passt nicht zur Form der Einträge; die Tabelle zählte dann Tasten ohne Handlung mit.
+
+## Nachtrag 5 (23.11.2026): Menüzeile statt Knopf „Menü“ (ADR-0031)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #187).
+
+Punkt 1 (Knopf „Menü“ neben „Speichern“) und Punkt 3 (Hinweis unter dem Werkzeugknopf) sind durch ADR-0031 ersetzt:
+eine Menüzeile mit sechs Menüs oben, Werkzeugleiste links mit Hinweis rechts neben dem Knopf. Die Regeln der Punkte 2
+(Einträge mit Kürzel, graue Einträge), 4 bis 6 und der Nachträge 1 bis 4 gelten weiter; die Menü-Navigation (Nachtrag
+4) kommt um F10 und Pfeil links/rechts dazu.
+
