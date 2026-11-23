@@ -38,7 +38,7 @@ func haltServer(gestartet chan<- string, frei <-chan struct{}, zaehler *atomic.I
 // bedieneImHintergrund startet Bediene auf einer Pipe und liefert Schreibende, Ausgabe und Ende.
 func bedieneImHintergrund(ctx context.Context, s *Server) (*io.PipeWriter, *syncPuffer, <-chan error) {
 	pr, pw := io.Pipe()
-	aus := &syncPuffer{mu: make(chan struct{}, 1)}
+	aus := &syncPuffer{}
 	fertig := make(chan error, 1)
 	go func() { fertig <- s.Bediene(ctx, pr, aus) }()
 	return pw, aus, fertig

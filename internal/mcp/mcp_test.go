@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"io"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -211,6 +212,12 @@ func TestAbbruchWaehrendDesAufrufs(t *testing.T) {
 	if !<-ab {
 		t.Fatal("Werkzeug nicht abgebrochen")
 	}
+	// Erst nach der Antwort auf 8 schließen: Ein EOF, das eintrifft, bevor der Server das Werkzeug-Ende abholt, beendet
+	// ihn vertragsgemäß samt Schlange (Paketkommentar). So lief der Test in der CI unter -race rot (Commit e08a477).
+	frist := time.Now().Add(5 * time.Second)
+	for !strings.Contains(aus.String(), `"id":8`) && time.Now().Before(frist) {
+		time.Sleep(time.Millisecond)
+	}
 	pw.Close()
 	if err := <-fertig; err != nil {
 		t.Fatal(err)
@@ -248,26 +255,21 @@ type kaputt struct{}
 
 func (kaputt) Write([]byte) (int, error) { return 0, io.ErrClosedPipe }
 
+// syncPuffer ist ein nebenläufig lesbarer Puffer. Der Mutex braucht keine Anlage: Ein träge angelegtes Schloss war
+// selbst ein Datenrennen, sobald Test und Server gleichzeitig zugriffen.
 type syncPuffer struct {
-	mu  chan struct{}
+	mu  sync.Mutex
 	buf bytes.Buffer
 }
 
-func (p *syncPuffer) lock() {
-	if p.mu == nil {
-		p.mu = make(chan struct{}, 1)
-	}
-	p.mu <- struct{}{}
-}
-
 func (p *syncPuffer) Write(b []byte) (int, error) {
-	p.lock()
-	defer func() { <-p.mu }()
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	return p.buf.Write(b)
 }
 
 func (p *syncPuffer) String() string {
-	p.lock()
-	defer func() { <-p.mu }()
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	return p.buf.String()
 }

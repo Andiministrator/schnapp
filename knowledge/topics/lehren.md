@@ -706,3 +706,13 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Überlappung bei voller Deckung weg; ein Test auf doppelte Mischung braucht Koordinaten auf .5.
 - **Mutanten, die eine Variable unbenutzt lassen, bauen nicht** (`declared and not used` → FEHLER): im Muster
   `_ = x` mitschreiben (L5, M32).
+
+## CI zu e08a477 (23.11.2026 abends, F-527)
+
+- **Ein Test, der stdin nach einem Ereignis schließt, muss auf die erwartete Antwort warten, nicht auf das Ereignis.**
+  Der Server darf ein EOF vor dem Abholen des Werkzeug-Endes vertragsgemäß als Ende nehmen; lokal 300× grün, in der CI
+  unter `-race` rot. Nachstellen gelang erst mit einer erzwungenen Pause im Test-Werkzeug (Fenster vergrößern statt
+  Wiederholungen zählen).
+- **Testhilfen mit träge angelegtem Schloss sind selbst ein Datenrennen** (`if p.mu == nil { p.mu = … }`). Ein
+  `sync.Mutex` als Nullwert braucht keine Anlage. Aufgefallen erst, als der Test den Puffer während des Laufs las.
+
