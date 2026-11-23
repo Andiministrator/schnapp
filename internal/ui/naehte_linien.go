@@ -42,6 +42,10 @@ func fuehreNahtAblaufAus(naehte []document.Naht, faktor int, saumImBild bool, sp
 	durchgang(document.Schicht.ImSpalt)
 }
 
+// nahtAblauf ist fuehreNahtAblaufAus; ein Test tauscht es gegen eine Aufzeichnung, um zu prüfen, dass zeichneNaehte den
+// Ablauf mit den Werten des Dokuments und dem Stand des Leinwandbilds aufruft (F-521).
+var nahtAblauf = fuehreNahtAblaufAus
+
 // kantenBild ist der Stand, mit dem das Bild der Leinwand gebaut wurde: ob Fasersaum und Abdunklung der Nähte darin
 // liegen (im) und wovon sie abhängen. Ändert sich einer der Werte (Kantenform per Menü, Stauchen, Rückgängig), baut
 // leinwand das Bild neu (F-407).

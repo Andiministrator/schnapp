@@ -320,15 +320,35 @@ func diagnoseEditor(format string, args ...any) {
 // bildNeu baut das Bild der Leinwand: die Ansicht, beim Werkzeug Zuschneiden die Vollansicht (ADR-0023 Nachtrag 5),
 // abgelegt bei bildOrt in Ansichtskoordinaten.
 func (e *editor) bildNeu() {
-	img := e.s.Leinwandbild()
-	// Fasersaum und Abdunklung der Nähte mischt der Renderer ins Bild (F-407): Gio mischt halbdurchsichtige Flächen
-	// linear, der Renderer in sRGB; im Fasersaum zeigte der Editor so im Mittel 22 von 255 zu hell.
-	e.kantenStand = kantenBildStand(e.s)
-	if e.kantenStand.im {
-		render.KantenOhneSchatten(img, e.s.D)
-	}
+	img, stand := leinwandBild(e.s)
+	e.kantenStand = stand
 	e.bildOp = paint.NewImageOp(img)
 	e.bildOrt = e.s.Bildflaeche().Min
+}
+
+// leinwandBild baut die Pixel des Leinwandbilds und liefert den Stand, mit dem es gebaut wurde (ohne Gio, damit ein
+// Test die Verdrahtung prüfen kann, F-407). Fasersaum und Abdunklung der Nähte mischt der Renderer ins Bild: Gio mischt
+// halbdurchsichtige Flächen linear, der Renderer in sRGB; im Fasersaum zeigte der Editor so im Mittel 22 von 255 zu
+// hell. Beim Werkzeug Zuschneiden (Vollansicht) bleibt das Bild, wie es ist.
+func leinwandBild(s *canvas.Sitzung) (*image.NRGBA, kantenBild) {
+	img := s.Leinwandbild()
+	stand := kantenBildStand(s)
+	if stand.im {
+		render.KantenOhneSchatten(img, s.D)
+	}
+	return img, stand
+}
+
+// bildPruefen baut das Leinwandbild neu, wenn sich Pixel (Schwärzen, ADR-0022) oder der Stand der Kanten geändert haben:
+// Kantenform, Nähte oder Werkzeug Zuschneiden, dann mischt der Renderer den Fasersaum neu (F-407). Eigene Methode, damit
+// ein Test sie ohne Fenster fährt.
+func (e *editor) bildPruefen() {
+	if n := e.s.BildAenderung(); n != e.bildStand {
+		e.bildStand = n
+		e.bildNeu() // geschwärzte Pixel sofort zeigen (ADR-0022)
+	} else if !kantenBildStand(e.s).gleich(e.kantenStand) {
+		e.bildNeu()
+	}
 }
 
 // quittiere meldet dem Wecker, dass die Schleife ein Ereignis bearbeitet, das ein Bild trägt. Ab einem FrameEvent sieht
@@ -1304,12 +1324,7 @@ func (e *editor) leinwand(gtx layout.Context) {
 	groesse := gtx.Constraints.Max
 	e.s.SetzeFenster(groesse)
 	e.zeiger(gtx)
-	if n := e.s.BildAenderung(); n != e.bildStand {
-		e.bildStand = n
-		e.bildNeu() // geschwärzte Pixel sofort zeigen (ADR-0022)
-	} else if !kantenBildStand(e.s).gleich(e.kantenStand) {
-		e.bildNeu() // Kantenform, Nähte oder Werkzeug Zuschneiden geändert: Fasersaum im Bild neu mischen (F-407)
-	}
+	e.bildPruefen()
 
 	c := clip.Rect(image.Rectangle{Max: groesse}).Push(gtx.Ops)
 	paint.Fill(gtx.Ops, farbeGrund)
@@ -1702,7 +1717,7 @@ func (e *editor) zeichneNaehte(gtx layout.Context) {
 			}
 		}
 		// Die Reihenfolge (auch die zweite Leerung bei sich berührenden Nähten, F-438, F-499) liegt in fuehreNahtAblaufAus.
-		fuehreNahtAblaufAus(naehte, faktor, saumImBild, spalte, durchgang)
+		nahtAblauf(naehte, faktor, saumImBild, spalte, durchgang)
 		c.aufruf = aufnahme.Stop()
 		c.groesse, c.naehte, c.form, c.faktor, c.saumImBild, c.gueltig = g, naehte, form, faktor, saumImBild, true
 	}
