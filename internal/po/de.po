@@ -825,6 +825,15 @@ msgstr "Einrasten beim Ziehen aus"
 msgid "Snap to objects"
 msgstr "An Objekten einrasten"
 
+msgid "Navigator"
+msgstr "Navigator"
+
+msgid "Move the view in the navigator"
+msgstr "Ansicht im Navigator verschieben"
+
+msgid "Click, drag"
+msgstr "Klicken, Ziehen"
+
 msgid "Other keys"
 msgstr "Weitere Tasten"
 

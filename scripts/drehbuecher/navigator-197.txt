@@ -1,0 +1,55 @@
+# Sichtprobe ADR-0031 Nachtrag 9 (Karte #197): Navigator, die Mini-Übersicht unten rechts auf der Leinwand.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/navigator-197.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1: Die Leinwand liegt bei (52,30)–(1300,970); eingepasst liegt das Bild bei (76,100)–(1276,900).
+# 30 Rastschritte des Mausrads zoomen auf rund 292 %; der Navigator liegt dann bei (1128,851)–(1288,958), 12 px von den
+# Kanten der Leinwand (Kasten 160 × 107, Seitenverhältnis des Bilds).
+# Erwartet:
+#  01 eingepasst: kein Navigator.
+#  02 gezoomt: Navigator unten rechts mit dem ganzen Bild (rot, grün, blau mit den weißen und schwarzen Balken), darüber
+#     ein oranger Rahmen in der Mitte (der sichtbare Ausschnitt, grüner Streifen).
+#  03 Klick in die linke obere Ecke des Kastens: Die Ansicht springt an die linke obere Bildecke, der Rahmen sitzt oben
+#     links; auf der Leinwand der rote Streifen mit dem weißen und schwarzen Balken (Zoom unverändert).
+#  04 Taste gedrückt und gezogen, mitten im Zug: Der Rahmen folgt dem Zeiger nach rechts unten, die Leinwand zeigt den
+#     blauen Streifen; kein Objekt und kein Kasten entsteht (Werkzeug Kasten ist gewählt).
+#  05 nach dem Loslassen: Stand bleibt; eine Bewegung der Maus ohne Taste ändert nichts.
+#  06 Mausrad über dem Navigator: Zoom wächst, der Rahmen im Navigator wird kleiner und bleibt um dieselbe Mitte.
+#  07 Menü Ansicht offen: Eintrag „Navigator“ mit Haken (unter „An Objekten einrasten“).
+#  08 Menü Ansicht → Navigator: Kasten weg, Bild bleibt gezoomt.
+#  09 Menü Ansicht → Navigator wieder an: Kasten da.
+#  10 Strg+0 (Einpassen): Kasten weg.
+warte 1500
+foto 01-eingepasst-ohne-navigator
+rad 600 450 -30
+warte 400
+foto 02-gezoomt-mit-navigator
+taste R
+warte 300
+klick 1134 856
+warte 400
+foto 03-klick-oben-links
+druecke 1200 900
+bewege 1282 952 12
+warte 300
+foto 04-ziehen-unten-rechts
+loslassen
+warte 300
+zeiger 1210 904
+warte 300
+foto 05-nach-loslassen
+rad 1210 904 -10
+warte 400
+foto 06-rad-ueber-navigator
+klick 189 15
+warte 400
+foto 07-menue-ansicht
+klick 223 189
+warte 400
+foto 08-navigator-aus
+klick 189 15
+warte 300
+klick 223 189
+warte 400
+foto 09-navigator-wieder-an
+taste Strg+0
+warte 400
+foto 10-einpassen-ohne-navigator

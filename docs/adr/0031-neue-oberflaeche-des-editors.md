@@ -324,3 +324,32 @@ die Farbe von selbst einzuklappen sperrte den Farbwähler aus (F-592) und ist au
 - Tests: `internal/ui/seitenrollen_test.go` (Sonde aus der Kritik zu #219 über alle Höhen 320 bis 800 in 2-px-Schritten,
   Tab-Weg, Klicks im gerollten Bild, Ebenen-Vorrang, Zeichnen ohne Fenster), Mutanten KU225-1 bis KU225-7 in
   `scripts/mutanten/ui-seitenleiste.json`.
+
+## Nachtrag 9 (24.11.2026): Navigator — Mini-Übersicht bei starkem Zoom (Karte #197)
+
+Wunsch des Maintainers: Bei starkem Zoom soll eine kleine Übersicht des ganzen Bilds zeigen, welcher Ausschnitt gerade
+im Fenster liegt, und sich per Klick und Ziehen verschieben lassen. Entscheidung des Orchestrators:
+
+- **Ort:** schwebend unten rechts auf der Leinwand, über dem Bild (nicht in der rechten Leiste). Eckiger Kasten mit
+  1-dp-Rand in `farbeLinie`, Grund `farbeLeisteVoll`, 12 dp Abstand zu den Leinwandkanten (die Fußzeile liegt unter der
+  Leinwand), längste Seite 160 dp, Seitenverhältnis der gezeigten Bildfläche (`Sitzung.Bildflaeche`, beim Zuschneiden
+  die Vollansicht).
+- **Wann:** nur, wenn das Bild bei der Zoomstufe nicht ganz ins Fenster passt (eine Achse ragt hinaus, Toleranz ein
+  halbes Pixel); beim Einpassen und bei kleinerem Zoom verschwindet er. Er verschwindet auch, wenn er nicht in die
+  Leinwand passt. Menü Ansicht → „Navigator“ (Schalter, Voreinstellung an, nicht gespeichert, ohne Kürzel) blendet ihn
+  ganz aus.
+- **Inhalt:** das Leinwandbild samt Objekten und Nähten, auf die Kastengröße verkleinert (dieselben Zeichenaufrufe wie
+  die Leinwand unter einer Verkleinerung, keine zweite Renderkette). Darüber ein 2-dp-Rechteck in `farbeAkzent` (orange
+  wie die Hilfslinien) für den sichtbaren Ausschnitt, auf das Bild begrenzt.
+- **Bedienung:** Klick zentriert die Ansicht auf die Stelle, Ziehen führt die Mitte des Ausschnitts live mit dem Zeiger
+  (der Zeiger darf den Kasten verlassen, die Stelle wird auf den Kasten begrenzt); die Ansicht bleibt dabei so
+  begrenzt, dass der Ausschnitt im Bild liegt (ist das Bild in einer Achse kleiner als das Fenster, steht es dort
+  mittig). Das Mausrad über dem Navigator zoomt wie über der Leinwand, nur um die Fenstermitte statt um den Zeiger (der
+  Zeiger steht in der Ecke, ein Zoom um ihn schöbe das Bild aus dem Fenster). Der Navigator meldet sich mit eigenem
+  Zeigerziel über der Leinwand an: Klicks, Ziehen und Rad erreichen die Werkzeuge nicht. Ein Klick darin nimmt dem
+  laufenden Zug nichts weg; während eines Zugs (Ziehen eines Objekts, Zuschneiden, Verschieben mit der mittleren
+  Taste) ändert der Navigator die Ansicht nicht (wie Zoom und Einpassen).
+- **Umsetzung:** Logik ohne Gio in `internal/canvas/navigator.go` (Sichtbarkeitsregel, Größe, Lage, Abbildung Bild ↔
+  Kasten, Ausschnitt, Zentrieren mit Begrenzung; `Sitzung.NavigatorZu`, `Sitzung.NavigatorZoom`); Zeichnen und
+  Ereignisse in `internal/ui/navigator.go`. Tests `internal/canvas/navigator_test.go`, `internal/ui/navigator_test.go`,
+  Mutanten `scripts/mutanten/navigator.json`, Sichtprobe `scripts/drehbuecher/navigator-197.txt`.

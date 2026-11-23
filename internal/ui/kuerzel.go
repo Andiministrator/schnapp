@@ -47,6 +47,7 @@ const (
 	aktEbeneDarunter
 	aktFarbenTauschen // Menü Bearbeiten: Vordergrund und Füllung tauschen (ADR-0021 Nachtrag 11 Punkt 5)
 	aktEinrasten      // Menü Ansicht: Einrasten an Objekten ein/aus, ohne Kürzel (ADR-0021 Nachtrag 12)
+	aktNavigator      // Menü Ansicht: Navigator (Mini-Übersicht) ein/aus, ohne Kürzel (ADR-0031 Nachtrag 9)
 )
 
 // taste ist ein Tastenkürzel des Editors. Genau eines gilt: akt (Handlung), werkzeug (wählt ein Werkzeug, hatWerkzeug)

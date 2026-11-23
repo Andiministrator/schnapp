@@ -1,0 +1,170 @@
+[
+  {
+    "name": "N1 Sichtbar schon, wenn beide Achsen hinausragen",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "navigatorToleranz ||\n\t\tfloat64(bild.Dy())",
+    "neu": "navigatorToleranz &&\n\t\tfloat64(bild.Dy())"
+  },
+  {
+    "name": "N2 Höhe zählt für die Sichtbarkeit nicht",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "float64(bild.Dy())*zoom > float64(fenster.Y)+navigatorToleranz",
+    "neu": "float64(bild.Dy())*zoom > float64(fenster.Y)+1e9"
+  },
+  {
+    "name": "N3 Toleranz zeigt den Navigator beim genau passenden Bild",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "const navigatorToleranz = 0.5",
+    "neu": "const navigatorToleranz = -0.5"
+  },
+  {
+    "name": "N4 Kastenhöhe aus der Breite",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "h := max(1, int(math.Round(float64(bild.Dy())*f)))",
+    "neu": "h := max(1, int(math.Round(float64(bild.Dx())*f)))"
+  },
+  {
+    "name": "N5 Kasten klebt am unteren Fensterrand",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "ende := image.Pt(fenster.X-rand, fenster.Y-rand)",
+    "neu": "ende := image.Pt(fenster.X-rand, fenster.Y)"
+  },
+  {
+    "name": "N6 Zeiger außerhalb des Kastens nicht aufs Bild begrenzt",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "return document.Pt(math.Max(float64(n.Bild.Min.X), math.Min(float64(n.Bild.Max.X), a.X)),\n\t\tmath.Max(float64(n.Bild.Min.Y), math.Min(float64(n.Bild.Max.Y), a.Y)))\n}\n\n// Enthaelt",
+    "neu": "return a\n}\n\n// Enthaelt"
+  },
+  {
+    "name": "N7 Ausschnitt ragt über den Bildrand",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "return document.R(n.ZuKasten(klemme(a)), n.ZuKasten(klemme(b)))",
+    "neu": "return document.R(n.ZuKasten(a), n.ZuKasten(klemme(b)))"
+  },
+  {
+    "name": "N8 Zentrieren ohne Begrenzung auf das Bild",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "return math.Max(von+halb, math.Min(bis-halb, m))",
+    "neu": "return m"
+  },
+  {
+    "name": "N9 Kleines Bild steht nicht mittig",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "return (von + bis) / 2",
+    "neu": "return m"
+  },
+  {
+    "name": "N10 Klick lässt die Ansicht dem Fenster folgen",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "s.eingepasst = false\n\ts.Abb = ZentriertAuf(",
+    "neu": "s.Abb = ZentriertAuf("
+  },
+  {
+    "name": "N11 Zentrieren auch während eines Zugs",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.Zieht() {\n\t\treturn\n\t}\n\ts.eingepasst = false\n\ts.Abb = ZentriertAuf(",
+    "neu": "s.eingepasst = false\n\ts.Abb = ZentriertAuf("
+  },
+  {
+    "name": "N12 Rad zoomt um die Fensterecke",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "s.Scrollen(document.Pt(float64(s.fenster.X)/2, float64(s.fenster.Y)/2), dy)",
+    "neu": "s.Scrollen(document.Pt(0, 0), dy)"
+  },
+  {
+    "name": "N13 Menüschalter wirkt nicht",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.navigatorAus || !NavigatorSichtbar(",
+    "neu": "if !NavigatorSichtbar("
+  },
+  {
+    "name": "NU1 Zeigerziel im Ausschnitt der Leinwand: Druck erreicht das Werkzeug",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tc.Pop()\n\t// Außerhalb des Ausschnitts der Leinwand angemeldet: Gio gibt ein Zeigerereignis auch den Zielen weiter, die im selben\n\t// offenen Ausschnitt davor angemeldet sind; so erreichen Druck, Ziehen und Rad die Werkzeuge nicht.\n\te.zeichneNavigator(gtx)\n}",
+    "neu": "\te.zeichneNavigator(gtx)\n\tc.Pop()\n}"
+  },
+  {
+    "name": "NU2 Rad zoomt um den Zeiger statt um die Fenstermitte",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "e.s.NavigatorZoom(radSchritt(pe.Scroll.Y))",
+    "neu": "e.s.Scrollen(p, radSchritt(pe.Scroll.Y))"
+  },
+  {
+    "name": "NU3 Ziehen führt den Ausschnitt nicht",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "if e.nav.zieht {\n\t\t\t\te.s.NavigatorZu(n, p)",
+    "neu": "if false {\n\t\t\t\te.s.NavigatorZu(n, p)"
+  },
+  {
+    "name": "NU4 Klick zentriert nicht",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "e.nav.zieht = true\n\t\t\t\te.s.NavigatorZu(n, p)",
+    "neu": "e.nav.zieht = true"
+  },
+  {
+    "name": "NU5 Loslassen beendet das Ziehen nicht",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "case pointer.Release, pointer.Cancel:\n\t\t\te.nav.zieht = false",
+    "neu": "case pointer.Release, pointer.Cancel:\n\t\t\t_ = n"
+  },
+  {
+    "name": "NU6 Ausschnitt-Rahmen nur 1 dp",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "max(1, gtx.Dp(2))",
+    "neu": "max(1, gtx.Dp(1))"
+  },
+  {
+    "name": "NU7 Ausschnitt nicht in der Akzentfarbe",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "paint.FillShape(gtx.Ops, farbeAkzent, clip.Rect(s).Op())",
+    "neu": "paint.FillShape(gtx.Ops, farbeText, clip.Rect(s).Op())"
+  },
+  {
+    "name": "NU8 Rand des Kastens fehlt",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(s).Op())",
+    "neu": "paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(s).Op())"
+  },
+  {
+    "name": "NU9 Objekte fehlen in der Übersicht",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "\te.zeichneObjekte(gtx)\n\te.zeichneNaehte(gtx)\n\tbc.Pop()",
+    "neu": "\te.zeichneNaehte(gtx)\n\tbc.Pop()"
+  },
+  {
+    "name": "NU10 Menüeintrag schaltet das Einrasten",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "e.s.SchalteNavigator()",
+    "neu": "e.s.SchalteEinrasten()"
+  },
+  {
+    "name": "NU11 Hilfe ohne Zeile zum Navigator",
+    "datei": "internal/ui/hilfe.go",
+    "paket": "./internal/ui",
+    "alt": "\t\thilfeZeile{text: i18n.T(\"Move the view in the navigator\"), taste: i18n.T(\"Click, drag\")},\n",
+    "neu": ""
+  }
+]

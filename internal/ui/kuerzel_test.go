@@ -70,7 +70,7 @@ func TestMenueZeigtKuerzel(t *testing.T) {
 		aktEinpassen: "Ctrl+0", aktEins: "Ctrl+1", aktSchliessen: "Ctrl+W", aktGanzesBild: "", aktZurueckholen: "", aktKantenform: "", aktTastenkuerzel: "F1", aktUeber: "",
 		aktSeitenleiste: "Ctrl+Shift+B", aktDoppeln: "Ctrl+D", aktUmbenennen: "F2", aktAusblenden: "Ctrl+H",
 		aktSperren: "Ctrl+L", aktEbeneVor: "Ctrl+PgUp", aktEbeneZurueck: "Ctrl+PgDn", aktEbeneDarueber: "Alt+PgUp",
-		aktEbeneDarunter: "Alt+PgDn", aktFarbenTauschen: "Ctrl+Shift+X", aktEinrasten: ""}
+		aktEbeneDarunter: "Alt+PgDn", aktFarbenTauschen: "Ctrl+Shift+X", aktEinrasten: "", aktNavigator: ""}
 	for i := 0; i < menueAnzahl; i++ {
 		for _, en := range e.menueEintraegeVon(i) {
 			if en.hatWerkzeug {

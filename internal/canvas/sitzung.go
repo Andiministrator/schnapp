@@ -62,8 +62,10 @@ type Sitzung struct {
 	// Einrasten (einrasten.go, ADR-0021 Nachtrag 12): alt = Alt gedrückt, einrastenAus = Menüschalter, linien = die
 	// Linien, an denen der laufende Zug einrastet.
 	alt, einrastenAus bool
-	linien            []Hilfslinie
-	zugOrt            document.Punkt // Fensterpunkt des letzten Ziehens (AltTaste rechnet den Zug dort neu)
+	// navigatorAus: Menüschalter Ansicht → „Navigator“ (navigator.go, ADR-0031 Nachtrag 9); Nullwert = eingeschaltet.
+	navigatorAus bool
+	linien       []Hilfslinie
+	zugOrt       document.Punkt // Fensterpunkt des letzten Ziehens (AltTaste rechnet den Zug dort neu)
 
 	gespeichert uint64 // Verlaufsstand beim Öffnen oder letzten Speichern (F-109)
 	// verwerfen: Speichern beim Schließen ist bei diesem Stand gescheitert; eine weitere Schließen-Anfrage ohne neue

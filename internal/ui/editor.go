@@ -278,6 +278,8 @@ type editor struct {
 	// lupe: Abschnitt „Vergrößerung“ der rechten Leiste und gemerkte Bilder der Lupen (ADR-0033, lupe.go).
 	lupe lupenLeiste
 	satz textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
+	// nav: Zustand des Navigators auf der Leinwand (navigator.go, ADR-0031 Nachtrag 9); die Adresse ist das Zeigerziel.
+	nav navigatorZustand
 	// fussFeldRahmen: Lage der Felder Farbe und Zoom beim letzten Zeichnen (leer: nicht gezeigt), farbKnopfRahmen die des
 	// Farbfelds der Werkzeugleiste; die Aufklapplisten hängen sich daran (listenAnker).
 	fussFeldRahmen  map[canvas.FeldArt]image.Rectangle
@@ -1392,6 +1394,9 @@ func (e *editor) leinwand(gtx layout.Context) {
 	}
 	event.Op(gtx.Ops, e)
 	c.Pop()
+	// Außerhalb des Ausschnitts der Leinwand angemeldet: Gio gibt ein Zeigerereignis auch den Zielen weiter, die im selben
+	// offenen Ausschnitt davor angemeldet sind; so erreichen Druck, Ziehen und Rad die Werkzeuge nicht.
+	e.zeichneNavigator(gtx)
 }
 
 // zeichneRahmen zeigt den gerade gezogenen Rahmen in Fensterpixeln: beim Schwärzen und beim Stauchen-Band (ADR-0022,
@@ -1540,15 +1545,19 @@ func (e *editor) zeiger(gtx layout.Context) {
 		case pointer.Cancel:
 			e.s.Abbrechen()
 		case pointer.Scroll:
-			// Gio liefert Pixel; ein Rastschritt des Mausrads ergibt je nach System 10–120. Auf Schritte von etwa
-			// 10 % umrechnen und begrenzen, damit ein Touchpad nicht springt.
-			dy := float64(pe.Scroll.Y) / 40
-			if dy != 0 {
-				dy = math.Copysign(math.Min(3, math.Max(0.25, math.Abs(dy))), dy)
-			}
-			e.s.Scrollen(p, dy)
+			e.s.Scrollen(p, radSchritt(pe.Scroll.Y))
 		}
 	}
+}
+
+// radSchritt rechnet das Mausrad in Rastschritte um. Gio liefert Pixel; ein Rastschritt des Mausrads ergibt je nach
+// System 10–120. Auf Schritte von etwa 10 % umrechnen und begrenzen, damit ein Touchpad nicht springt.
+func radSchritt(scrollY float32) float64 {
+	dy := float64(scrollY) / 40
+	if dy != 0 {
+		dy = math.Copysign(math.Min(3, math.Max(0.25, math.Abs(dy))), dy)
+	}
+	return dy
 }
 
 // zeigerAnsicht ist der Zeigerort in Ansichtskoordinaten für die Fußzeile (nil: Zeiger nicht im Fenster). Er wird aus

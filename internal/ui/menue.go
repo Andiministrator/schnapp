@@ -282,6 +282,8 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 		}
 	case aktEinrasten:
 		return func(layout.Context) { e.s.SchalteEinrasten() }
+	case aktNavigator:
+		return func(layout.Context) { e.s.SchalteNavigator() }
 	case aktDoppeln:
 		return func(layout.Context) { e.s.Doppeln() }
 	case aktUmbenennen:
