@@ -213,8 +213,12 @@ func (s *Sitzung) BeginneFarbZug() bool {
 		return false
 	}
 	s.hsv, s.hsvGemerkt = s.FarbeHSV(), true
-	s.farbZug, s.farbZugObjekt = true, false
-	if s.zug != zugText {
+	s.farbZug, s.farbZugObjekt, s.farbZugText = true, false, nil
+	if s.zug == zugText {
+		if o, ok := s.D.Objekt(s.textID); ok {
+			s.farbZugText = o
+		}
+	} else {
 		if o, ok := s.D.Objekt(s.Auswahl); ok {
 			if _, ok := objektFarbe(o); ok && s.D.BeginneZug(o.Kennung()) == nil {
 				s.farbZugObjekt, s.farbZugVor = true, s.D.Stand()
@@ -270,6 +274,10 @@ func (s *Sitzung) BrecheFarbZugAb() {
 		s.farbZugObjekt = false
 		_ = s.D.BrecheZugAb()
 	}
+	if s.zug == zugText && s.farbZugText != nil { // in der Texteingabe: Text wie vor dem Zug (Verify V-3)
+		_ = s.D.ZugSetze(s.farbZugText)
+	}
+	s.farbZugText = nil
 }
 
 // --- Pipette ---

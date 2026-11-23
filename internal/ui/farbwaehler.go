@@ -146,7 +146,12 @@ func (e *editor) feldTasten(gtx layout.Context) {
 		if !ok || f == nil || pe.Position.Round().In(f.rahmen) {
 			continue
 		}
-		e.feldUebernehmen(f)
+		// Ein Klick auf Farbfeld, Pipette, Fläche oder Regler setzt selbst eine Farbe: Die Eingabe wird verworfen statt
+		// übernommen — übernommen rückte sie vorn in die zuletzt benutzten Farben und verschöbe das Feld unter dem Klick
+		// (Verify V-1).
+		if !e.inFarbwahl(pe.Position.Round()) {
+			e.feldUebernehmen(f)
+		}
 		f.neu, f.text, f.fehler = true, "", false
 		gtx.Execute(key.FocusCmd{Tag: e})
 	}
@@ -217,6 +222,18 @@ func (e *editor) feldTasten(gtx layout.Context) {
 			}
 		}
 	}
+}
+
+// inFarbwahl meldet, ob p (Fensterpixel) auf einem Farbfeld, der Pipette, der Farbfläche oder einem Regler liegt (Lage
+// beim letzten Zeichnen).
+func (e *editor) inFarbwahl(p image.Point) bool {
+	fw := &e.seite.fw
+	for _, r := range append(e.seite.farbRahmen[:], fw.pipRahmen, fw.flaeche, fw.ton, fw.deck) {
+		if p.In(r) {
+			return true
+		}
+	}
+	return false
 }
 
 // feldRohwert ist der Wert eines Felds ohne Einheit, Ausgangspunkt der Rücktaste.

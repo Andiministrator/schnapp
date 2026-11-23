@@ -759,8 +759,9 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   (`key.Filter{Focus: f}`) anmelden, sonst bleibt der Fokus im Feld stecken.
 - **Im Test lässt sich `pointer.Drag` nicht einspeisen** (Gio-Router: Panik „unsupported pointer event type“); Ziehen
   ist `Move` mit gedrückter Taste, Gio macht daraus `Drag`. Ein Druck genau auf `Max` eines Rechtecks liegt außerhalb.
-- **Gleiche Maße in Editor und Export gibt es nur mit demselben Satz** (#190): Der Gio-Shaper unterschneidet per GPOS,
-  `x/image` nur mit der `kern`-Tabelle; bei fremden Schriften liefen Schild und Glyphen auseinander. Der Editor zeichnet
+- **Gleiche Maße in Editor und Export gibt es nur mit demselben Satz** (#190): Der Gio-Shaper setzt mit eigenem Shaping,
+  und `opentype.Face.Kern` skaliert die Unterschneidung nicht mit der Größe; bei fremden Schriften liefen Schild und
+  Glyphen auseinander. Gemeinsam gilt jetzt `document.KernPaar` (GPOS, sonst kern, im Grad). Der Editor zeichnet
   Text deshalb aus den Glyphenumrissen derselben Datei (`internal/ui/textsatz.go`) mit denselben Orten wie der Renderer.
 - **Systemschriften ohne fontconfig**: `sfnt.ParseReaderAt` liest nur Tabellenverzeichnis und Namen; auf dem
   Entwicklungsrechner 297 Familien in rund 0,6 s. Gios eigene Systemschrift-Suche (go-text/fontscan) legt einen Index

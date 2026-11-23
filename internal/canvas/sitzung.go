@@ -86,6 +86,7 @@ type Sitzung struct {
 	farbZug       bool // in Farbfläche oder Regler wird gezogen
 	farbZugObjekt bool // der Farbzug läuft als Zug des Dokuments am gewählten Objekt
 	farbZugVor    uint64
+	farbZugText   document.Objekt // Text der Eingabe vor dem Farbzug (Abbruch stellt ihn her, Verify V-3)
 	zuletzt       []color.NRGBA
 	pipette       bool // der nächste Klick ins Bild nimmt eine Farbe auf
 	// Schwärzen (ADR-0022): Rahmen in Ansichtspunkten, solange gezogen wird.

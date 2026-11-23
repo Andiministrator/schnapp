@@ -226,8 +226,10 @@ Farbe und der Deckkraft in ADR-0021 Nachtrag 9.
 - **Eingabefelder:** Ein Klick oder Tab fokussiert das Feld (orangefarbener Rand, Schreibmarke am Ende, der Text wird
   beim Fokussieren ersetzt, sobald getippt wird). Enter übernimmt, Esc verwirft und gibt den Fokus an die Leinwand, Tab
   oder ein Klick woanders übernimmt ebenfalls — der Klick übernimmt, **bevor** er selbst wirkt (eine durchlässige
-  Fläche über dem Fenster sieht jeden Druck; danach liegt der Fokus an der Leinwand), so dass ein Klick auf ein
-  Farbfeld oder die Pipette danach gilt (Sitzungs-QA A-2). Verliert nur das Fenster den Fokus, bleibt die Eingabe
+  Fläche über dem Fenster sieht jeden Druck; danach liegt der Fokus an der Leinwand). Ein Klick auf ein Farbfeld, die
+  Pipette, die Farbfläche oder einen Regler **verwirft** die schwebende Eingabe dagegen, denn diese setzen selbst eine
+  Farbe; übernommen rückte die Eingabe vorn in die zuletzt benutzten Farben und verschöbe das Feld unter dem Klick
+  (Sitzungs-QA A-2, Verify V-1). Verliert nur das Fenster den Fokus, bleibt die Eingabe
   unverändert stehen. Bei offenem Menü oder offener Hilfetafel gehören Esc und Enter diesen (A-3, A-7); Umschalt+Enter
   wirkt im Feld wie Enter (A-5); die Rücktaste auf dem unberührten Feld beginnt beim Wert ohne Einheit (A-8). Rücktaste löscht ein Zeichen. Solange ein Feld den Fokus hat, sind
   Buchstaben, Ziffern, Entf und die Rücktaste Eingabe, keine Kürzel (wie in der Texteingabe, ADR-0021 Nachtrag 1); eine

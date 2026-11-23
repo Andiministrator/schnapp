@@ -45,7 +45,8 @@ const (
 	// präparierte Arbeitsdatei mit vielen Familien lädt sonst den ganzen Schriftbestand. Darüber gilt Ersatz (Go).
 	MaxGeladen      = 32
 	MaxGeladenBytes = 256 << 20
-	// SucheFrist begrenzt die Suche nach Systemschriften (ein hängender Ordner blockiert sonst jede Textmessung).
+	// SucheFrist begrenzt die Suche nach Systemschriften: Der Durchlauf bricht danach ab; Laden wartet höchstens
+	// SucheFrist + 1 s auf sie (ein hängender Systemaufruf selbst wird nicht unterbrochen).
 	SucheFrist = 10 * time.Second
 )
 
@@ -191,7 +192,12 @@ func Laden(name string, s Schnitt) *Schrift {
 	if name != "" && name != Go && name != GoMono && !SucheFertig() {
 		// Ohne Editor (Export, Rettung, MCP) hat niemand die Suche gestartet; läuft sie schon (Editor), wird auf ihr
 		// Ende gewartet (Sitzungs-QA B-5). Sonst setzte ein Export eine vorhandene Systemschrift in Go.
-		<-starte()
+		// Höchstens SucheFrist und eine Sekunde warten: Ein hängender Ordner (toter Netzordner) unterbricht die
+		// Frist der Suche nicht, das Fenster darf nicht einfrieren (Verify V-4); dann gilt Go.
+		select {
+		case <-starte():
+		case <-time.After(sucheFrist + time.Second):
+		}
 	}
 	mu.Lock()
 	defer mu.Unlock()
@@ -229,13 +235,19 @@ func ladeSchnitt(f *familie, w Schnitt) *Schrift {
 	}
 	fnt, err := ladeQuelle(q)
 	if err != nil {
-		fehler[k] = true
+		if !errors.Is(err, errGrenze) { // die Grenze ist kein Mangel der Datei (Verify V-2)
+			fehler[k] = true
+		}
 		return nil
 	}
 	s := &Schrift{Familie: f.name, Schnitt: w, Font: fnt}
 	geladen[k] = s
 	return s
 }
+
+// errGrenze meldet, dass MaxGeladen oder MaxGeladenBytes erreicht ist; das ist kein Fehler der Datei und wird nicht
+// gemerkt (Verify V-2).
+var errGrenze = errors.New("fonts: zu viele Schriftdateien geladen")
 
 func ladeQuelle(q quelle) (*sfnt.Font, error) {
 	roh := q.roh
@@ -250,18 +262,29 @@ func ladeQuelle(q quelle) (*sfnt.Font, error) {
 				return nil, errors.New("fonts: keine reguläre Datei oder zu groß")
 			}
 			if len(dateien) >= MaxGeladen || dateiBytes+st.Size() > MaxGeladenBytes {
-				return nil, errors.New("fonts: zu viele Schriftdateien geladen")
+				return nil, errGrenze
 			}
 			if roh, err = os.ReadFile(q.pfad); err != nil {
 				return nil, err
 			}
 			if int64(len(roh)) > MaxDateiGroesse || dateiBytes+int64(len(roh)) > MaxGeladenBytes {
-				return nil, errors.New("fonts: Datei gewachsen, zu groß")
+				return nil, errGrenze
+			}
+			// Erst nach gelungenem Parsen behalten (Verify V-2): eine kaputte Datei belegt keinen Platz.
+			fnt, err := parse(roh, q)
+			if err != nil {
+				return nil, err
 			}
 			dateien[q.pfad] = roh
 			dateiBytes += int64(len(roh))
+			return fnt, nil
 		}
 	}
+	return parse(roh, q)
+}
+
+// parse liest den Schnitt q aus roh (Einzelschrift oder Sammlung).
+func parse(roh []byte, q quelle) (*sfnt.Font, error) {
 	if q.samml {
 		c, err := sfnt.ParseCollection(roh)
 		if err != nil {

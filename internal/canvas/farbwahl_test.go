@@ -291,3 +291,19 @@ func TestFussFeldZeigtAktuelleFarbe(t *testing.T) {
 		t.Errorf("ohne Auswahl: Fußfeld %v", c)
 	}
 }
+
+// TestFarbZugAbbruchInDerTexteingabe (Verify V-3): Esc im Farbzug während der Texteingabe stellt das Schild her.
+func TestFarbZugAbbruchInDerTexteingabe(t *testing.T) {
+	s, _, _ := sitzung(t)
+	s.SetzeWerkzeug(WerkzeugText)
+	s.Druecken(f(120, 80), TastePrimaer)
+	s.Loslassen(f(120, 80))
+	s.Tippe("x")
+	vor, _ := s.TextObjekt()
+	s.BeginneFarbZug()
+	s.FarbZugHSV(HSV{H: 120, S: 1, V: 1}, 255)
+	s.Esc()
+	if tx, ok := s.TextObjekt(); !ok || tx.Hintergrund != vor.Hintergrund || s.FarbZugLaeuft() {
+		t.Errorf("nach Esc: Eingabe %v, Schild %v, vorher %v", ok, tx.Hintergrund, vor.Hintergrund)
+	}
+}

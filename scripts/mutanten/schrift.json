@@ -185,8 +185,8 @@
     "name": "QA3-B5 Laden wartet nicht auf die Suche",
     "datei": "internal/fonts/fonts.go",
     "paket": "./internal/fonts",
-    "alt": "\t\t<-starte()",
-    "neu": "\t\tstarte()"
+    "alt": "\t\tcase <-starte():",
+    "neu": "\t\tcase <-time.After(0):\n\t\t\tstarte()"
   },
   {
     "name": "QA3-B12a Renderer ohne Striche",
@@ -215,5 +215,20 @@
     "paket": "./internal/fonts",
     "alt": "\t\tif unicode.IsControl(r) || r == 0xfffd",
     "neu": "\t\tif (unicode.IsControl(r) && r < 0x80) || r == 0xfffd"
+  },
+  {
+    "name": "QA3-V2 Grenze als Dateifehler gemerkt",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "\t\tif !errors.Is(err, errGrenze) {",
+    "neu": "\t\tif true {"
+  },
+  {
+    "name": "QA3-V4 Laden ohne Frist",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "\t\tcase <-time.After(sucheFrist + time.Second):",
+    "neu": "\t\tcase <-time.After(time.Hour):",
+    "timeout": "60s"
   }
 ]

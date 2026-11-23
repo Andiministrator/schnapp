@@ -253,6 +253,45 @@ func TestGrenzeGeladen(t *testing.T) {
 	if s := Laden("Go Medium", Kursiv); !s.Ersatz {
 		t.Errorf("über der Dateizahl: %+v", s)
 	}
+	// Die Grenze wird nicht als Fehler der Datei gemerkt: Ist wieder Platz, lädt dieselbe Familie (Verify V-2).
+	mu.Lock()
+	clear(dateien)
+	mu.Unlock()
+	if s := Laden("Go Medium", Kursiv); s.Ersatz {
+		t.Errorf("nach Freigabe: %+v", s)
+	}
+}
+
+// TestLadenFrist (Verify V-4): Hängt die Suche, kehrt Laden nach der Frist mit Go zurück, statt das Fenster
+// einzufrieren.
+func TestLadenFrist(t *testing.T) {
+	frei := make(chan struct{})
+	alt, altSuche, altKanal, altFrist := ordner, suche, fertigKanal, sucheFrist
+	k := make(chan struct{})
+	mu.Lock()
+	ordner = func() []string { <-frei; return nil }
+	suche, fertigKanal, sucheFrist = new(sync.Once), k, 50*time.Millisecond
+	mu.Unlock()
+	t.Cleanup(func() {
+		close(frei)
+		<-k // die Suche ist zu Ende, erst dann zurückstellen
+		mu.Lock()
+		ordner, suche, fertigKanal, sucheFrist = alt, altSuche, altKanal, altFrist
+		mu.Unlock()
+		mu.Lock()
+		system, gesucht = nil, false
+		mu.Unlock()
+	})
+	mu.Lock()
+	system, gesucht = nil, false
+	mu.Unlock()
+	start := time.Now()
+	if s := Laden("Irgendeine Familie", Normal); !s.Ersatz {
+		t.Errorf("hängende Suche: %+v", s)
+	}
+	if d := time.Since(start); d > 3*time.Second {
+		t.Errorf("Laden wartete %v", d)
+	}
 }
 
 // TestSetzeOrdner (Sitzungs-QA B-3): Die festgelegten Ordner gelten statt HOME und XDG_*.

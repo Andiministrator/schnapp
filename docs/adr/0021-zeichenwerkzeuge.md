@@ -248,7 +248,8 @@ Nachtrag 6: Neben den vier Beschriftungsfarben ist jede Farbe wählbar, mit Deck
    Regler färbt das gewählte Objekt sichtbar mit, bleibt aber **ein** Schritt beim Loslassen (`BeginneFarbZug`,
    `FarbZugHSV`, `BeendeFarbZug` über den Zug des Dokuments); während der Texteingabe gehört es zur Eingabe. Solange
    gezogen wird, ruhen Speichern und Leinwand (`Zieht`). Esc, Schließen und ein Signal brechen das Ziehen ab, das
-   Objekt steht wie vorher (Sitzungs-QA A-1, A-4); Schließen und Signal speichern danach wie sonst.
+   Objekt steht wie vorher — in der Texteingabe der Text der Eingabe (Sitzungs-QA A-1, A-4, Verify V-3); Schließen
+   und Signal speichern danach wie sonst.
 3. **Farbton bleibt beim Ziehen erhalten.** Die Sitzung merkt sich den Farbton (HSV), damit Grau, Schwarz oder Weiß beim
    Ziehen in der Fläche den Ton nicht verlieren; HSV ist nur Bedienung, gespeichert wird RGB.
 4. **Zuletzt benutzte Farben:** Jede Farbe, die nicht über ein Farbfeld gewählt wurde (Fläche, Regler beim Loslassen,
@@ -292,7 +293,10 @@ Regular) und präzisiert Nachtrag 3 (gleiche Maße überall).
    `/usr/local/share/fonts` und `/usr/share/fonts`), gelesen mit `golang.org/x/image/font/sfnt` — kein cgo, kein
    fontconfig, nichts wird auf die Platte geschrieben (Gio selbst würde einen Index im Cache anlegen). Gelesen werden
    TrueType und OpenType (`.ttf`, `.otf`) sowie Sammlungen (`.ttc`, `.otc`); höchstens 20 000 Dateien und 64 MiB je
-   Datei, Verweise auf Ordner werden nicht verfolgt. Aus jeder Schrift zählen der Familienname (typografische Familie,
+   Datei, Verweise auf Ordner werden nicht verfolgt. Nach der Sitzungs-QA: höchstens 32 geladene Schriftdateien bzw.
+   256 MiB je Prozess (darüber Go; die Grenze gilt nicht als Fehler der Datei), die Suche bricht nach 10 s ab und
+   `Laden` wartet höchstens 11 s; `schnapp mcp` sucht nur im Heim der Benutzerdatenbank und den Systemordnern;
+   Farb-Bitmap-Schriften fehlen in der Liste. Aus jeder Schrift zählen der Familienname (typografische Familie,
    sonst Familie) und die vier Grundschnitte (normal, fett, kursiv, fett kursiv, erkannt am Namen des Schnitts: „Bold“,
    „Italic“/„Oblique“; „Regular“, „Book“, „Normal“, „Roman“ oder leer = normal). Andere Schnitte (Light, Medium,
    Condensed …) übergeht die Liste. Die Suche läuft einmal je Prozess im Hintergrund beim Öffnen des Editors; bis sie
