@@ -36,6 +36,9 @@ func neuerMenueLauf(t *testing.T, fenster image.Point) *menueLauf {
 	t.Helper()
 	e := testEditor(t)
 	e.thema = material.NewTheme()
+	// Ein Speichern, das nichts tut: Löst ein Mutant versehentlich „Speichern“ aus, endet der Lauf rot mit Testnamen
+	// statt in einer Panik der Hintergrund-Goroutine ohne Namen (Kritik B-1, Mutant O2).
+	e.speichern = func(*document.Dokument) (Gespeichert, error) { return Gespeichert{}, nil }
 	id, err := e.s.D.Hinzufuegen(document.Text{Ort: document.Pt(5, 15), Inhalt: "Hallo", Schriftgrad: 12,
 		Farbe: canvas.Schwaerzfarbe})
 	if err != nil {
