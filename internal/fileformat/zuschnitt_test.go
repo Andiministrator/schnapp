@@ -99,7 +99,7 @@ func TestExportSVGKante(t *testing.T) {
 				}
 				// Der Pfad ist das Band von 0 bis zur Breite der vereinfachten Linie (dieselbe wie im Export) ...
 				bei0 := document.Naht{Zeilen: n.Zeilen}
-				linie := document.NeueKantenlinie(form, laenge, f).Vereinfacht(KantenToleranz)
+				linie := document.NeueKantenlinie(form, laenge, f).Vereinfacht(KantenToleranzFuer(f))
 				soll := linie.Band(nil, bei0, 0, float64(bisH-vonH)/100)
 				var teile []string
 				for _, q := range soll {
@@ -111,8 +111,8 @@ func TestExportSVGKante(t *testing.T) {
 				// ... und weicht von der vollen Linie des Renderers an keiner Stelle um mehr als die Toleranz ab.
 				voll := document.Kantenband(form, bei0, laenge, f, 0, float64(bisH-vonH)/100)
 				abweichung := kantenAbweichung(voll[:len(voll)/2], soll[:len(soll)/2], n.Zeilen)
-				if abweichung > KantenToleranz+1e-9 {
-					t.Errorf("%v Band %s Stück %d: Abweichung %v > %v", form, art, j, abweichung, KantenToleranz)
+				if abweichung > KantenToleranzFuer(f)+1e-9 {
+					t.Errorf("%v Band %s Stück %d: Abweichung %v > %v", form, art, j, abweichung, KantenToleranzFuer(f))
 				}
 			}
 		}
@@ -172,9 +172,9 @@ func pruefeSpaltLeer(t *testing.T, form document.Kante, s string, d *document.Do
 		var soll []string
 		bei0 := document.Naht{Zeilen: zeilen}
 		voll := document.Kantenband(form, bei0, laenge, d.KantenFaktor(), -8, 8)
-		vereinfacht := document.NeueKantenlinie(form, laenge, d.KantenFaktor()).Vereinfacht(KantenToleranz).Band(nil, bei0, -8, 8)
-		if a := kantenAbweichung(voll[:len(voll)/2], vereinfacht[:len(vereinfacht)/2], zeilen); a > KantenToleranz+1e-9 {
-			t.Errorf("%v Spalt %s: Abweichung %v > %v", form, art, a, KantenToleranz)
+		vereinfacht := document.NeueKantenlinie(form, laenge, d.KantenFaktor()).Vereinfacht(KantenToleranzFuer(d.KantenFaktor())).Band(nil, bei0, -8, 8)
+		if a := kantenAbweichung(voll[:len(voll)/2], vereinfacht[:len(vereinfacht)/2], zeilen); a > KantenToleranzFuer(d.KantenFaktor())+1e-9 {
+			t.Errorf("%v Spalt %s: Abweichung %v > %v", form, art, a, KantenToleranzFuer(d.KantenFaktor()))
 		}
 		for _, q := range vereinfacht {
 			soll = append(soll, punkt(q))

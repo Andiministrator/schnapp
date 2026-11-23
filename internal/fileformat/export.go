@@ -87,6 +87,12 @@ func bandPfad(band []document.Punkt) string {
 // (F-422, ADR-0023 Nachtrag 10). Unter einem halben Pixel, also nicht sichtbar.
 const KantenToleranz = 0.4
 
+// KantenToleranzFuer ist die Toleranz für den Faktor der Kanten (document.Dokument.KantenFaktor): Bei Faktor f zeigt
+// die Ansicht das Bild um f verkleinert (Maße und Versätze der Kante wachsen mit f), also bleibt eine Abweichung von
+// f · KantenToleranz unter einem halben Bildschirmpixel (Kritik B-10, F-422: bei 3840×2160 hielt die feste Toleranz das
+// Ziel „höchstens 100 kB je Naht“ nicht).
+func KantenToleranzFuer(faktor int) float64 { return KantenToleranz * float64(max(faktor, 1)) }
+
 // naehteDefs schreibt die Kanten der Stauch-Nähte als Vorlagen (ADR-0023 Punkt 6, Nachträge 6, 7 und 10): die Vielecke
 // des Renderers (document.Kantenband, in der Form des Dokuments), mit höchstens KantenToleranz Abweichung vereinfacht,
 // ohne Filter. Je Achse steht einmal das Band bei Lage 0 über die ganze Länge in <defs>: je Breite ein Pfad, die Stücke
@@ -113,7 +119,7 @@ func (s *schreiber) naehteDefs(d *document.Dokument) bool {
 		if zeilen {
 			laenge = g.X
 		}
-		linie := document.NeueKantenlinie(d.Kante(), laenge, d.KantenFaktor()).Vereinfacht(KantenToleranz) // einmal je Achse (F-418, F-422)
+		linie := document.NeueKantenlinie(d.Kante(), laenge, d.KantenFaktor()).Vereinfacht(KantenToleranzFuer(d.KantenFaktor())) // einmal je Achse (F-418, F-422)
 		bei0 := document.Naht{Zeilen: zeilen}
 		var band []document.Punkt
 		// Die Stücke (document.KantenFlach) haben nur fünf verschiedene Breiten: Jede Breite steht einmal als Pfad ohne
