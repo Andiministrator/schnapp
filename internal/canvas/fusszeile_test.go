@@ -5,6 +5,7 @@ package canvas
 import (
 	"image"
 	"image/color"
+	"math"
 	"testing"
 
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -113,6 +114,35 @@ func TestFussFeldZeigerImOriginal(t *testing.T) {
 	}
 	if o, ok := ort(document.Pt(189.5, 89.5)); !ok || o != image.Pt(199, 99) {
 		t.Errorf("Zuschneiden, Vollansicht rechts unten: Ort %v (da %v), erwartet (199,99)", o, ok)
+	}
+
+	// Ein Zeilenstreifen vor dem Zuschnittsanfang (Kritik B-6, Mutant E3): Dann rechnen Ansicht und Vollansicht
+	// verschieden um, und beim Zuschneiden gilt die Vollansicht (Zeigerort plus Versatz).
+	s2, _, _ := sitzung(t)
+	if err := s2.D.SetzeStreifen([]document.Streifen{{Zeilen: true, Von: 2, Bis: 6}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s2.D.SetzeZuschnitt(image.Rect(10, 10, 200, 100)); err != nil {
+		t.Fatal(err)
+	}
+	a := document.Pt(5.5, -5.5) // im abgedunkelten Teil vor dem Streifen (Ansicht setzt den Zuschnitt linear fort)
+	v := s2.D.VollVersatz()
+	voll := s2.D.VollZuOriginal(a.Plus(document.Pt(float64(v.X), float64(v.Y))))
+	ansicht := s2.D.ZuOriginal(a)
+	if math.Floor(voll.Y) == math.Floor(ansicht.Y) {
+		t.Fatalf("Vorbedingung: Vollansicht %v und Ansicht %v rechnen gleich um, der Streifen wirkt nicht", voll, ansicht)
+	}
+	ort2 := func() (image.Point, bool) {
+		for _, x := range s2.FussFelder(&a) {
+			if x.Art == FeldZeiger {
+				return x.Ort, true
+			}
+		}
+		return image.Point{}, false
+	}
+	s2.SetzeWerkzeug(WerkzeugZuschneiden)
+	if o, ok := ort2(); !ok || o != image.Pt(int(math.Floor(voll.X)), int(math.Floor(voll.Y))) {
+		t.Errorf("Streifen vor dem Zuschnitt, Zuschneiden: Ort %v (da %v), erwartet Vollansicht %v", o, ok, voll)
 	}
 }
 
