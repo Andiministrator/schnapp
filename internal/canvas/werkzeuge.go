@@ -71,6 +71,21 @@ func StandardStil() Stil {
 	return Stil{Farbe: Beschriftungsfarben[0], Breite: 4, Eckradius: 0, Schriftgrad: 20, Radius: 14}
 }
 
+// StilFuer ist die Voreinstellung für ein Bild der Größe g (ADR-0021 Nachtrag 7): Strich, Schriftgrad und
+// Nummernradius wachsen mit demselben ganzzahligen Faktor wie die Stauch-Kante (document.KantenFaktor: kurze Seite /
+// 1080), damit Beschriftungen auf 4K- und HiDPI-Aufnahmen nicht dünn und klein wirken.
+func StilFuer(g image.Point) Stil {
+	st := StandardStil()
+	f := float64(document.KantenFaktor(g))
+	st.Breite *= f
+	st.Schriftgrad *= f
+	st.Radius *= f
+	return st
+}
+
+// StrichStufen sind die Strichstärken der rechten Leiste in Pixeln des Originals (− und + gehen von Stufe zu Stufe).
+var StrichStufen = []float64{1, 2, 3, 4, 6, 8, 12, 16, 24, 32}
+
 func (st Stil) strich() document.Strich { return document.Strich{Farbe: st.Farbe, Breite: st.Breite} }
 
 // Rasten45 liefert b so gedreht um a, dass die Richtung a→b ein Vielfaches von 45° ist; die Länge bleibt.
@@ -159,6 +174,87 @@ func (s *Sitzung) SetzeFarbe(c color.NRGBA) bool {
 	ok = s.D.Ersetzen(neu) == nil
 	s.merkeAenderung(vor)
 	return ok
+}
+
+// strichObjekt liefert das gewählte Objekt, wenn es einen Strich hat (Pfeil, Kasten).
+func (s *Sitzung) strichObjekt() (document.Objekt, bool) {
+	o, ok := s.D.Objekt(s.Auswahl)
+	if !ok {
+		return nil, false
+	}
+	switch o.(type) {
+	case document.Pfeil, document.Kasten:
+		return o, true
+	}
+	return nil, false
+}
+
+// Breite ist die Strichstärke, die die rechte Leiste zeigt: die des gewählten Pfeils oder Kastens, sonst die des
+// Werkzeugs.
+func (s *Sitzung) Breite() float64 {
+	o, _ := s.strichObjekt()
+	switch v := o.(type) {
+	case document.Pfeil:
+		return v.Strich.Breite
+	case document.Kasten:
+		return v.Strich.Breite
+	}
+	return s.Stil.Breite
+}
+
+// SetzeBreite setzt die Strichstärke b (Pixel des Originals) für folgende Pfeile und Kästen und ändert ein gewähltes
+// solches Objekt als einen Rückgängig-Schritt, wie SetzeFarbe (ADR-0021 Nachtrag 7). Liefert, ob sich das Dokument
+// geändert hat; dieselbe Stärke ist kein Schritt.
+func (s *Sitzung) SetzeBreite(b float64) bool {
+	if s.Zieht() || s.gesperrt() || !(b > 0) || b > document.MaxGroesse {
+		return false
+	}
+	s.Stil.Breite = b
+	o, ok := s.strichObjekt()
+	if !ok {
+		return false
+	}
+	neu := mitBreite(o, b)
+	if neu == o {
+		return false
+	}
+	vor := s.D.Stand()
+	ok = s.D.Ersetzen(neu) == nil
+	s.merkeAenderung(vor)
+	return ok
+}
+
+// BreiteStufe geht von der wirksamen Breite zur nächsten Stufe aus StrichStufen (dir > 0: dicker, sonst dünner); eine
+// Breite zwischen zwei Stufen geht zur nächsten in der Richtung. Liefert die neue Breite und ob es eine gab.
+func (s *Sitzung) BreiteStufe(dir int) (float64, bool) {
+	jetzt := s.Breite()
+	if dir > 0 {
+		for _, b := range StrichStufen {
+			if b > jetzt {
+				return b, true
+			}
+		}
+		return jetzt, false
+	}
+	for i := len(StrichStufen) - 1; i >= 0; i-- {
+		if StrichStufen[i] < jetzt {
+			return StrichStufen[i], true
+		}
+	}
+	return jetzt, false
+}
+
+// mitBreite liefert Pfeil oder Kasten o mit der Strichstärke b; andere Objekte unverändert.
+func mitBreite(o document.Objekt, b float64) document.Objekt {
+	switch v := o.(type) {
+	case document.Pfeil:
+		v.Strich.Breite = b
+		return v
+	case document.Kasten:
+		v.Strich.Breite = b
+		return v
+	}
+	return o
 }
 
 // --- Anlegen ---

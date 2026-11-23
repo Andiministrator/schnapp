@@ -91,7 +91,8 @@ type Sitzung struct {
 
 // NeueSitzung beginnt mit eingepasster Ansicht, ohne Auswahl, mit dem Werkzeug Auswählen und dem Standardstil.
 func NeueSitzung(d *document.Dokument) *Sitzung {
-	return &Sitzung{D: d, Abb: Abbildung{Zoom: 1}, eingepasst: true, gespeichert: d.Stand(), Stil: StandardStil()}
+	return &Sitzung{D: d, Abb: Abbildung{Zoom: 1}, eingepasst: true, gespeichert: d.Stand(),
+		Stil: StilFuer(d.OriginalGroesse())}
 }
 
 // Geaendert meldet, ob der Verlaufsstand vom gespeicherten abweicht (F-109): Rückgängig bis zum gespeicherten Stand

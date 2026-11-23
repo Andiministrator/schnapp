@@ -82,5 +82,54 @@
     "paket": "./internal/ui",
     "alt": "\t\t\tcase en.hatZoom:\n\t\t\t\te.s.SetzeZoom(en.zoom)",
     "neu": "\t\t\tcase en.hatZoom:\n\t\t\t\t_ = en.zoom"
+  },
+  {
+    "name": "S216-1 Voreinstellung wächst nicht mit dem Bild",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tf := float64(document.KantenFaktor(g))",
+    "neu": "\tf := float64(1)"
+  },
+  {
+    "name": "S216-2 neue Sitzung ohne Stil nach Bildgröße",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tStil: StilFuer(d.OriginalGroesse())}",
+    "neu": "\t\tStil: StandardStil()}"
+  },
+  {
+    "name": "S216-3 SetzeBreite ändert das gewählte Objekt nicht",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tneu := mitBreite(o, b)\n\tif neu == o {",
+    "neu": "\tneu := o\n\tif neu == o {"
+  },
+  {
+    "name": "S216-4 Stufe hoch nimmt gleiche Breite",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\tif b > jetzt {",
+    "neu": "\t\t\tif b >= jetzt {"
+  },
+  {
+    "name": "S216-5 Breite zeigt immer das Werkzeug",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\to, _ := s.strichObjekt()\n\tswitch v := o.(type) {",
+    "neu": "\to, _ := s.strichObjekt()\n\to = nil\n\tswitch v := o.(type) {"
+  },
+  {
+    "name": "S216-6 Plus in der Leiste wirkt nicht",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif b, ok := e.s.BreiteStufe(dir); ok {\n\t\t\t\te.s.SetzeBreite(b)",
+    "neu": "\t\t\tif b, ok := e.s.BreiteStufe(dir); ok {\n\t\t\t\t_ = b"
+  },
+  {
+    "name": "S216-7 Text zeigt Strichstärke",
+    "datei": "internal/canvas/seitenleiste.go",
+    "paket": "./internal/canvas",
+    "alt": "func strichWerkzeug(w Werkzeug) bool { return w == WerkzeugPfeil || w == WerkzeugKasten }",
+    "neu": "func strichWerkzeug(w Werkzeug) bool { return w != WerkzeugAuswahl }"
   }
 ]

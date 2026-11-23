@@ -25,6 +25,7 @@ type SeitenInhalt struct {
 	Auswahl  bool
 	Werkzeug Werkzeug
 	Farbe    bool // Abschnitt Farbe: Werkzeug oder Objekt hat eine Farbe
+	Strich   bool // Strichstärke wählbar (Pfeil, Kasten; ADR-0021 Nachtrag 7)
 	Kante    bool // Kantenform wählbar (Stauchen)
 	KanteAn  bool // die Knöpfe der Kantenform wirken (KannKanteWechseln)
 	Hinweis  SeitenHinweis
@@ -50,17 +51,20 @@ func farbWerkzeug(w Werkzeug) bool {
 	return w == WerkzeugPfeil || w == WerkzeugKasten || w == WerkzeugText || w == WerkzeugNummer
 }
 
+// strichWerkzeug meldet, ob ein Werkzeug einen Strich zeichnet (Pfeil, Kasten).
+func strichWerkzeug(w Werkzeug) bool { return w == WerkzeugPfeil || w == WerkzeugKasten }
+
 // Seitenleiste liefert den Inhalt der rechten Leiste. Ein gewähltes Objekt geht dem Werkzeug vor: Seine Farbe ändert
 // die Farbwahl (SetzeFarbe färbt es um). Ohne Objekt zeigt Auswählen keine Farbe, denn sie wirkte auf nichts.
 func (s *Sitzung) Seitenleiste() SeitenInhalt {
 	if s.Auswahl != 0 {
 		if o, ok := s.D.Objekt(s.Auswahl); ok {
 			if w, ok := objektWerkzeug(o); ok {
-				return SeitenInhalt{Auswahl: true, Werkzeug: w, Farbe: true}
+				return SeitenInhalt{Auswahl: true, Werkzeug: w, Farbe: true, Strich: strichWerkzeug(w)}
 			}
 		}
 	}
-	i := SeitenInhalt{Werkzeug: s.Werkzeug, Farbe: farbWerkzeug(s.Werkzeug)}
+	i := SeitenInhalt{Werkzeug: s.Werkzeug, Farbe: farbWerkzeug(s.Werkzeug), Strich: strichWerkzeug(s.Werkzeug)}
 	switch s.Werkzeug {
 	case WerkzeugAuswahl:
 		i.Hinweis = SeitenHinweisNichts

@@ -196,3 +196,24 @@ Farben wählt man in der rechten Leiste oder in der Farbliste des Farbfelds link
 Nachtrag 3); Umfärben des gewählten Objekts als ein Rückgängig-Schritt und „gleiche Farbe ist kein Schritt“ bleiben
 (`canvas.Sitzung.SetzeFarbe`). `NaechsteFarbe` ist entfallen.
 
+## Nachtrag 7 (23.11.2026): Strichstärke wählbar, Voreinstellungen wachsen mit der Bildgröße (Karte #216)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Anlass: Andi, 23.11.2026: „die strichstärke der pfeile usw [sollte sich]
+relativ zur bildgröße(-auflösung) anpassen … bei pfeil usw fehlt noch die strichstärke“. Ändert Punkt 4 (feste
+Größen) und ergänzt Punkt 5 (nur die Farbe).
+
+1. **Voreinstellung nach Bildgröße:** Beim Öffnen gelten Strich, Schriftgrad und Nummernradius aus Punkt 4 mal dem
+   Faktor der Stauch-Kante, `document.KantenFaktor(Originalgröße)` = max(1, kurze Seite / 1080), ganzzahlig
+   (`canvas.StilFuer`): Full HD und kleiner 4 / 20 / 14 px, 4K 8 / 40 / 28 px, 8K 16 / 80 / 56 px. Ganzzahlig, damit
+   die Werte die Stufen unten treffen und gleiche Bilder gleiche Größen bekommen. Maßgeblich ist das Original (wie bei
+   der Kante, ADR-0023 Nachtrag 2), nicht der Zuschnitt. Gespeicherte Objekte ändern sich nie; die Voreinstellung gilt
+   je Fenster und wird nicht gespeichert (Einstellungen mit #175).
+2. **Strichstärke in der rechten Leiste** für Pfeil und Kasten (Werkzeug oder gewähltes solches Objekt): − und + gehen
+   durch die Stufen 1, 2, 3, 4, 6, 8, 12, 16, 24, 32 px (`canvas.StrichStufen`); eine Breite zwischen zwei Stufen (aus
+   einer älteren Datei) geht zur nächsten in der Richtung, an den Enden werden die Knöpfe grau. Die Anzeige zeigt die
+   Breite des gewählten Objekts, sonst die des Werkzeugs, gerundet in ganzen Pixeln. Wie bei der Farbe ändert die Wahl
+   das gewählte Objekt als einen Rückgängig-Schritt (`canvas.Sitzung.SetzeBreite`), dieselbe Breite ist kein Schritt.
+   Die Pfeilspitze wächst wie bisher mit dem Strich.
+3. Schriftgröße (#190) und Nummerngröße bekommen ihre Bedienung mit ihren Karten; die Fußzeile zeigt die Strichstärke
+   nicht (die Leiste genügt).
+

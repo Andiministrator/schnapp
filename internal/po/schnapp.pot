@@ -1033,7 +1033,7 @@ msgctxt "status bar"
 msgid "#%02X%02X%02X · %d%%"
 msgstr ""
 
-#: internal/ui/oberflaeche.go
+#: internal/ui/oberflaeche.go internal/ui/seitenleiste.go
 msgctxt "status bar"
 msgid "%d px"
 msgstr ""
@@ -1102,6 +1102,10 @@ msgstr ""
 
 #: internal/ui/seitenleiste.go
 msgid "Seam style"
+msgstr ""
+
+#: internal/ui/seitenleiste.go
+msgid "Line width"
 msgstr ""
 
 #: internal/ui/seitenleiste.go

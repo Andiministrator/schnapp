@@ -858,3 +858,6 @@ msgstr "Das Weggenommene bleibt in der Arbeitsdatei; was weg muss, schwärzen."
 
 msgid "The seam style applies once a part is cut out."
 msgstr "Die Kantenform wirkt, sobald ein Streifen herausgenommen ist."
+
+msgid "Line width"
+msgstr "Strichstärke"

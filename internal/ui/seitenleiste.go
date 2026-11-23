@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math"
 	"strings"
 
 	"gioui.org/io/pointer"
@@ -33,6 +34,8 @@ var kantenFormen = []document.Kante{document.KanteAbriss, document.KanteWelle, d
 type seitenKnoepfe struct {
 	farben       [8]widget.Clickable // je Beschriftungsfarbe einer
 	kanten       [3]widget.Clickable // je Kantenform einer (kantenFormen)
+	strich       [2]widget.Clickable // Strichstärke − und + (ADR-0021 Nachtrag 7)
+	strRahmen    [2]image.Rectangle
 	farbRahmen   [8]image.Rectangle
 	kantRahmen   [3]image.Rectangle
 	kopf         string // Überschrift oben beim letzten Zeichnen (Tests)
@@ -48,7 +51,7 @@ func (k *seitenKnoepfe) alle() []*widget.Clickable {
 	for i := range k.kanten {
 		a = append(a, &k.kanten[i])
 	}
-	return a
+	return append(a, &k.strich[0], &k.strich[1])
 }
 
 // kantenName ist der Name einer Kantenform auf ihrem Knopf.
@@ -110,6 +113,13 @@ func (e *editor) seiteAuswerten(gtx layout.Context) {
 			e.melde(kantenMeldung(f), false)
 		}
 	}
+	for j, dir := range []int{-1, 1} {
+		if k.strich[j].Clicked(gtx) && an() {
+			if b, ok := e.s.BreiteStufe(dir); ok {
+				e.s.SetzeBreite(b)
+			}
+		}
+	}
 }
 
 // seiteText setzt text bei p (links oben) in höchstens breite Pixeln, umbrochen, und liefert die Höhe.
@@ -143,7 +153,7 @@ func seiteKnopf(gtx layout.Context, c *widget.Clickable, r image.Rectangle) {
 func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	k := &e.seite
 	k.kopf, k.farbeGezeigt = "", false
-	k.farbRahmen, k.kantRahmen = [8]image.Rectangle{}, [3]image.Rectangle{}
+	k.farbRahmen, k.kantRahmen, k.strRahmen = [8]image.Rectangle{}, [3]image.Rectangle{}, [2]image.Rectangle{}
 	if !e.seiteSichtbar(gtx) {
 		return
 	}
@@ -193,6 +203,36 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 				seiteKnopf(gtx, &k.kanten[j], r)
 			}
 		}
+		y += hoch + gtx.Dp(10)
+	}
+	if inhalt.Strich {
+		hoch, kb := gtx.Dp(26), gtx.Dp(30)
+		e.seiteText(gtx, i18n.T("Line width"), 13, farbeNebentext, image.Pt(x, y+gtx.Dp(4)), spalte-gtx.Dp(4), 1)
+		wert := image.Rect(x+spalte+kb, y, x+spalte+kb+gtx.Dp(64), y+hoch)
+		for j, dir := range []int{-1, 1} {
+			r := image.Rect(x+spalte, y, x+spalte+kb, y+hoch)
+			zeichen := "−"
+			if dir > 0 {
+				r = image.Rect(wert.Max.X, y, wert.Max.X+kb, y+hoch)
+				zeichen = "+"
+			}
+			k.strRahmen[j] = r
+			_, an := e.s.BreiteStufe(dir)
+			rnd, schrift := farbeLinie, farbeText
+			switch {
+			case !an:
+				schrift = farbeNebentext
+			case k.strich[j].Hovered():
+				rnd = farbeNebentext
+			}
+			paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(r).Op())
+			paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
+			e.textMittig(gtx, zeichen, 14, schrift, r)
+			if an {
+				seiteKnopf(gtx, &k.strich[j], r)
+			}
+		}
+		e.textMittig(gtx, fmt.Sprintf(i18n.TK("status bar", "%d px"), int(math.Round(e.s.Breite()))), 13, farbeText, wert)
 		y += hoch + gtx.Dp(10)
 	}
 	if t := seitenHinweisText(inhalt.Hinweis); t != "" {

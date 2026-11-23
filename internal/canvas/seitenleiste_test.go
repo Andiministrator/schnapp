@@ -112,3 +112,91 @@ func TestSetzeZoom(t *testing.T) {
 		}
 	}
 }
+
+// ADR-0021 Nachtrag 7: Die Voreinstellung wächst mit der kurzen Seite des Bilds (Faktor wie die Stauch-Kante).
+func TestStilFuerBildgroesse(t *testing.T) {
+	for _, f := range []struct {
+		g      image.Point
+		faktor float64
+	}{{image.Pt(1920, 1080), 1}, {image.Pt(1200, 800), 1}, {image.Pt(3840, 2160), 2}, {image.Pt(11472, 2560), 2},
+		{image.Pt(7680, 4320), 4}} {
+		st, std := StilFuer(f.g), StandardStil()
+		if st.Breite != std.Breite*f.faktor || st.Schriftgrad != std.Schriftgrad*f.faktor || st.Radius != std.Radius*f.faktor ||
+			st.Farbe != std.Farbe || st.Eckradius != std.Eckradius {
+			t.Errorf("%v: %+v, Faktor %v", f.g, st, f.faktor)
+		}
+	}
+}
+
+// SetzeBreite ändert Werkzeug und gewählten Pfeil als einen Schritt; BreiteStufe geht von Stufe zu Stufe und hält an
+// den Enden; ein Kasten zeigt seine eigene Breite.
+func TestSetzeBreiteUndStufen(t *testing.T) {
+	s := randSitzung(t)
+	if s.Breite() != 4 {
+		t.Fatalf("Voreinstellung %v", s.Breite())
+	}
+	if b, ok := s.BreiteStufe(1); !ok || b != 6 {
+		t.Errorf("Stufe hoch von 4: %v %v", b, ok)
+	}
+	if b, ok := s.BreiteStufe(-1); !ok || b != 3 {
+		t.Errorf("Stufe runter von 4: %v %v", b, ok)
+	}
+	id, err := s.D.Hinzufuegen(document.GeraderPfeil(document.Pt(10, 10), document.Pt(80, 60),
+		document.Strich{Farbe: Beschriftungsfarben[0], Breite: 5}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Auswahl = id
+	if s.Breite() != 5 {
+		t.Fatalf("Breite des gewählten Pfeils %v", s.Breite())
+	}
+	if b, _ := s.BreiteStufe(1); b != 6 {
+		t.Errorf("zwischen den Stufen hoch: %v", b)
+	}
+	if b, _ := s.BreiteStufe(-1); b != 4 {
+		t.Errorf("zwischen den Stufen runter: %v", b)
+	}
+	vor := s.D.Stand()
+	if !s.SetzeBreite(12) || s.Stil.Breite != 12 || s.Breite() != 12 || s.D.Stand() == vor {
+		t.Fatalf("SetzeBreite 12: Stil %v, Objekt %v", s.Stil.Breite, s.Breite())
+	}
+	nach := s.D.Stand()
+	if s.SetzeBreite(12) || s.D.Stand() != nach {
+		t.Error("dieselbe Stärke ist ein Schritt")
+	}
+	if s.SetzeBreite(0) || s.SetzeBreite(-1) || s.Breite() != 12 {
+		t.Error("ungültige Stärke angenommen")
+	}
+	if !s.Rueckgaengig() || s.Breite() != 5 {
+		t.Errorf("Rückgängig: %v", s.Breite())
+	}
+	s.SetzeBreite(StrichStufen[len(StrichStufen)-1])
+	if _, ok := s.BreiteStufe(1); ok {
+		t.Error("über die größte Stufe hinaus")
+	}
+	s.SetzeBreite(StrichStufen[0])
+	if _, ok := s.BreiteStufe(-1); ok {
+		t.Error("unter die kleinste Stufe")
+	}
+	s.Auswahl = 0
+	s.SetzeWerkzeug(WerkzeugKasten)
+	if i := s.Seitenleiste(); !i.Strich {
+		t.Error("Kasten ohne Strichstärke in der Leiste")
+	}
+	s.SetzeWerkzeug(WerkzeugText)
+	if i := s.Seitenleiste(); i.Strich {
+		t.Error("Text mit Strichstärke in der Leiste")
+	}
+}
+
+// NeueSitzung nimmt die Voreinstellung nach der Größe des Originals (ADR-0021 Nachtrag 7): ein 4K-Bild beginnt mit
+// Strich 8.
+func TestNeueSitzungStilNachBildgroesse(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 3840, 2160)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := NeueSitzung(d); s.Stil != StilFuer(image.Pt(3840, 2160)) || s.Stil.Breite != 8 {
+		t.Errorf("Stil %+v", s.Stil)
+	}
+}

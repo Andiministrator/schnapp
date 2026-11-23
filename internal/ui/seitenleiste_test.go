@@ -144,3 +144,36 @@ func TestWerkzeugleistePasstInKleinesFenster(t *testing.T) {
 		}
 	}
 }
+
+// ADR-0021 Nachtrag 7: − und + der Strichstärke gehen von Stufe zu Stufe, beim Werkzeug Pfeil für neue Pfeile, bei
+// einem gewählten Kasten für ihn (ein Rückgängig-Schritt); ohne Strich (Text) fehlt die Zeile.
+func TestSeitenleisteStrichstaerke(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	if !l.e.seite.strRahmen[0].Empty() {
+		t.Fatal("Strichstärke beim gewählten Text sichtbar")
+	}
+	l.e.s.Auswahl = 0
+	l.taste("A", 0)
+	plus := l.e.seite.strRahmen[1]
+	if plus.Empty() {
+		t.Fatal("keine Strichstärke beim Pfeil")
+	}
+	l.klick(plus.Min.Add(plus.Max).Div(2))
+	if l.e.s.Stil.Breite != 6 {
+		t.Errorf("+ beim Pfeil: %v, soll 6", l.e.s.Stil.Breite)
+	}
+	id, err := l.e.s.D.Hinzufuegen(document.Kasten{Bereich: document.Rechteck{Min: document.Pt(5, 5), Max: document.Pt(40, 30)},
+		Strich: document.Strich{Farbe: canvas.Beschriftungsfarben[0], Breite: 8}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	l.e.s.Auswahl = id
+	l.setle()
+	minus := l.e.seite.strRahmen[0]
+	vor := l.e.s.D.Stand()
+	l.klick(minus.Min.Add(minus.Max).Div(2))
+	o, _ := l.e.s.D.Objekt(id)
+	if o.(document.Kasten).Strich.Breite != 6 || l.e.s.D.Stand() == vor {
+		t.Errorf("− am gewählten Kasten: %v", o.(document.Kasten).Strich.Breite)
+	}
+}
