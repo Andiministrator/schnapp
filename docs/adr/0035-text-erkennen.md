@@ -177,8 +177,8 @@ Befunde der Sitzungs-QA vom 24.11. nachmittags (F-640 bis F-650 ohne F-644). Erg
 8. **Lizenzen (F-645):** Texte und Vermerke aller einkompilierten Fremdteile liegen in `ocr/THIRD-PARTY-LICENSES/`;
    der Ordner gehört zu jeder Weitergabe von schnapp-ocr (Flatpak, Nachtrag 1 Punkt 7). **Nachgezogen (F-667,
    Karte #254):** Laut Quellpfaden des Debug-Moduls und Meldungstexten des ausgelieferten Moduls stecken im WASM auch
-   musl libc, dlmalloc und embind (Emscripten), libc++, libc++abi und compiler-rt (LLVM), libjpeg 9c, libpng 1.6.39 und
-   zlib 1.2.13; ihre Texte liegen jetzt im Ordner, der Emscripten-Text ist durch das ungekürzte Original ersetzt. Die
+   musl libc, dlmalloc und embind (Emscripten), libc++, libc++abi und compiler-rt (LLVM), libjpeg 9c, libpng 1.6.39,
+   zlib 1.2.13 und giflib 5.2.1 (giflib nachgetragen nach der Sitzungs-QA 24.11. abends, Kritiker C); ihre Texte liegen jetzt im Ordner, der Emscripten-Text ist durch das ungekürzte Original ersetzt. Die
    IJG-Lizenz verlangt bei Weitergabe des Programms den Satz „this software is based in part on the work of the
    Independent JPEG Group“ in der Doku: er steht in `ocr/THIRD-PARTY-LICENSES/README.md`, `ocr/README.md` und im
    Lizenzabschnitt beider READMEs.

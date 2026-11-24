@@ -24,13 +24,14 @@ WebAssembly module that gogosseract embeds.
 | libjpeg (Emscripten port, used by Leptonica) | 9c | IJG | `ijg-libjpeg-README.txt` (section LEGAL ISSUES) |
 | libpng (Emscripten port, used by Leptonica) | 1.6.39 | PNG Reference Library License version 2 | `libpng-LICENSE.txt` |
 | zlib (Emscripten port, used by libpng and Leptonica) | 1.2.13 | zlib | `zlib-LICENSE.txt` |
+| giflib (Emscripten port, used by Leptonica), incl. `openbsd-reallocarray.c` (Copyright (c) 2008 Otto Moerbeek, SPDX MIT) | 5.2.1 | MIT | `giflib-COPYING.txt` |
 | tessdata_fast `deu`, `eng` | 87416418 (2024-08-01) | Apache-2.0 | `../tessdata/LICENSE` |
 
 How the WASM contents were determined: the source paths in `internal/wasm/tesseract-core-debug.wasm` of the gogosseract
 module (Emscripten `system/lib/libc/musl`, `system/lib/libcxx`, `system/lib/libcxxabi`, `system/lib/compiler-rt`,
-`system/lib/dlmalloc.c`, `system/lib/embind`, ports `libjpeg/jpeg-9c`, `libpng/libpng-1.6.39`, `zlib/zlib-1.2.13`;
+`system/lib/dlmalloc.c`, `system/lib/embind`, ports `libjpeg/jpeg-9c`, `libpng/libpng-1.6.39`, `zlib/zlib-1.2.13`, `giflib/giflib-5.2.1`;
 compiler `clang version 17.0.0`), cross-checked against messages in the embedded release module `tesseract-core.wasm`
-(libjpeg, libpng, zlib and libc++ messages are present there as well). The sanitizer and ubsan runtime appear only
+(libjpeg, libpng, zlib, giflib (`GIF87a`, `GIF89a`, Leptonica `gifio.c` messages) and libc++ messages are present there as well). The sanitizer and ubsan runtime appear only
 in the debug module.
 
 Sources: the module texts are copied unchanged from the Go module cache (`go env GOMODCACHE`). Taken unchanged from
@@ -39,4 +40,4 @@ Leptonica (`leptonica-license.txt` of github.com/DanBloomberg/leptonica), Emscri
 (`system/lib/libc/musl/COPYRIGHT`), libc++ / libc++abi / compiler-rt (`system/lib/{libcxx,libcxxabi,compiler-rt}/LICENSE.TXT`)
 from github.com/emscripten-core/emscripten (branch main; the exact Emscripten version of the build is not recorded in
 the module), libpng (`LICENSE` at tag v1.6.39 of github.com/pnggroup/libpng), zlib (`LICENSE` at tag v1.2.13 of
-github.com/madler/zlib), libjpeg (`README` of `jpegsrc.v9c.tar.gz` from ijg.org).
+github.com/madler/zlib), libjpeg (`README` of `jpegsrc.v9c.tar.gz` from ijg.org), giflib (`COPYING` of `giflib-5.2.1.tar.gz`, the archive the Emscripten port downloads).

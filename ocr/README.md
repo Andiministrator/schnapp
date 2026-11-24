@@ -29,7 +29,7 @@ jeder Weitergabe des Programms dazu (etwa im Flatpak, ADR-0035 Nachtrag 1 Punkt 
 | im WASM: Tesseract, Leptonica | [tesseract-ocr/tesseract](https://github.com/tesseract-ocr/tesseract), [DanBloomberg/leptonica](https://github.com/DanBloomberg/leptonica) | Apache-2.0, BSD-2-Clause |
 | im WASM: Laufzeit von Emscripten mit musl libc, dlmalloc und embind | [emscripten-core/emscripten](https://github.com/emscripten-core/emscripten) | MIT/UIUC, musl MIT |
 | im WASM: libc++, libc++abi, compiler-rt (LLVM, Clang 17) | über Emscripten | Apache-2.0 WITH LLVM-exception (UIUC für ältere Teile) |
-| im WASM: libjpeg 9c, libpng 1.6.39, zlib 1.2.13 (Emscripten-Ports, von Leptonica eingebunden) | [ijg.org](https://www.ijg.org/), [pnggroup/libpng](https://github.com/pnggroup/libpng), [madler/zlib](https://github.com/madler/zlib) | IJG, PNG Reference Library License v2, zlib |
+| im WASM: libjpeg 9c, libpng 1.6.39, zlib 1.2.13, giflib 5.2.1 (Emscripten-Ports, von Leptonica eingebunden) | [ijg.org](https://www.ijg.org/), [pnggroup/libpng](https://github.com/pnggroup/libpng), [madler/zlib](https://github.com/madler/zlib), [giflib](https://sourceforge.net/projects/giflib/) | IJG, PNG Reference Library License v2, zlib, MIT |
 | wazero v1.7.3 | [github.com/tetratelabs/wazero](https://github.com/tetratelabs/wazero), fest (ADR-0035 Nachtrag 1 Punkt 6) | Apache-2.0 mit NOTICE |
 | wazero-emscripten-embind v1.5.2 | [github.com/jerbob92/wazero-emscripten-embind](https://github.com/jerbob92/wazero-emscripten-embind) | MIT |
 | golang.org/x/exp, golang.org/x/text | [go.googlesource.com](https://go.googlesource.com/) | BSD-3-Clause |
