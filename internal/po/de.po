@@ -148,7 +148,7 @@ msgstr "Bereich aufziehen · Enter: ganzer Monitor unter dem Zeiger · Esc oder 
 
 # settings/argumente: Härtung
 msgid "%s: the settings file is not a regular file; using the defaults."
-msgstr "%s: Die Einstellungsdatei ist keine reguläre Datei; es gelten die Voreinstellungen."
+msgstr "%s: Die Einstellungsdatei ist keine gewöhnliche Datei; es gelten die Voreinstellungen."
 
 msgid "%s: the settings file is larger than 64 KiB; using the defaults."
 msgstr "%s: Die Einstellungsdatei ist größer als 64 KiB; es gelten die Voreinstellungen."
@@ -465,6 +465,9 @@ msgstr "Das Bild ist zu groß."
 
 msgid "The image is damaged."
 msgstr "Das Bild ist beschädigt."
+
+msgid "The file comes from a newer version of Schnapp."
+msgstr "Die Datei stammt aus einer neueren Fassung von Schnapp."
 
 msgid "The selection overlay did not close in time."
 msgstr "Das Auswahl-Overlay hat sich nicht rechtzeitig geschlossen."
@@ -1059,13 +1062,13 @@ msgstr "schnapp mcp: zweites Signal, Ende nach dem laufenden Speichern."
 
 # internal/settings/stile.go: Schnellstile (styles.ini)
 msgid "Cannot locate the styles file (%v); using no custom styles."
-msgstr "Die Stildatei lässt sich nicht finden (%v); es gibt keine eigenen Stile."
+msgstr "Die Stildatei ist nicht auffindbar (%v); es gibt keine eigenen Stile."
 
 msgid "%s: cannot read the styles file (%v); using no custom styles."
 msgstr "%s: Die Stildatei lässt sich nicht lesen (%v); es gibt keine eigenen Stile."
 
 msgid "%s: the styles file is not a regular file; using no custom styles."
-msgstr "%s: Die Stildatei ist keine reguläre Datei; es gibt keine eigenen Stile."
+msgstr "%s: Die Stildatei ist keine gewöhnliche Datei; es gibt keine eigenen Stile."
 
 msgid "%s: the styles file is larger than 64 KiB; using no custom styles."
 msgstr "%s: Die Stildatei ist größer als 64 KiB; es gibt keine eigenen Stile."
@@ -1368,10 +1371,10 @@ msgid "the home directory of the user is unknown"
 msgstr "das Heimverzeichnis des Benutzers ist unbekannt"
 
 msgid "the settings file cannot be located"
-msgstr "der Ort der Einstellungsdatei ist nicht bestimmbar"
+msgstr "die Einstellungsdatei ist nicht auffindbar"
 
 msgid "the styles file would be larger than 64 KiB"
-msgstr "die Stildatei würde größer als 64 KiB"
+msgstr "die Stildatei wäre größer als 64 KiB"
 
 msgid "the styles file is not a regular file"
 msgstr "die Stildatei ist keine gewöhnliche Datei"
@@ -1477,6 +1480,9 @@ msgstr "Der Index der Bibliothek ist nicht lesbar."
 
 msgid "The other capture was not opened: this one was changed meanwhile."
 msgstr "Die andere Aufnahme wurde nicht geöffnet: Diese wurde inzwischen geändert."
+
+msgid "The other capture was not opened: the export is still open."
+msgstr "Die andere Aufnahme wurde nicht geöffnet: Der Export ist noch offen."
 
 msgid "Recent captures apply immediately, clean-up at the next start."
 msgstr "Letzte Aufnahmen gelten sofort, das Aufräumen beim nächsten Start."

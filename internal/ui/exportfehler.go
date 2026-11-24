@@ -5,8 +5,6 @@ package ui
 import (
 	"errors"
 	"fmt"
-	"io/fs"
-	"os"
 	"strings"
 
 	"github.com/Andiministrator/schnapp/internal/export"
@@ -30,13 +28,8 @@ func exportFehlerText(err error, dateiname string) string {
 	case errors.Is(err, portal.ErrOhneDatei):
 		return i18n.T("The file dialog returned no file.")
 	}
-	var pe *fs.PathError
-	if errors.As(err, &pe) {
-		return pe.Err.Error()
-	}
-	var le *os.LinkError
-	if errors.As(err, &le) {
-		return le.Err.Error()
+	if u, ok := dateiUrsache(err); ok {
+		return u
 	}
 	return ohnePaketpraefix(err.Error())
 }

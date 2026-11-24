@@ -4,6 +4,8 @@ package ui
 
 import (
 	"errors"
+	"io/fs"
+	"os"
 	"strings"
 
 	"github.com/Andiministrator/schnapp/internal/i18n"
@@ -13,7 +15,13 @@ import (
 // fehlerGrund liefert den Grund eines Fehlers für die Fußzeile (F-623): Die eigenen Fehlerwerte des Pakets settings
 // (und der Tafel) werden über errors.Is auf übersetzte Texte abgebildet; die Pakete selbst liefern weiter englische
 // Texte mit Paketpräfix (ADR-0019 Nachträge 2 und 3). Alles andere, vor allem Fehler des Betriebssystems, bleibt
-// englisch und verliert nur das Paketpräfix. Ein Zusatz hinter dem Fehlerwert (etwa „: capture.seam“) bleibt stehen.
+// englisch und verliert das Paketpräfix; bei einem Dateifehler bleibt nur die Ursache, nie der Pfad (dateiUrsache,
+// F-661). Wo die Übersetzung bewusst endet, sagt ADR-0019 Nachtrag 4.
+//
+// Zusatz (C-5): Erhalten bleibt nur, was im Text HINTER dem Fehlerwert steht (etwa „: capture.seam“ bei
+// ErrUngueltig). Angaben davor ("settings: styles.ini line 7: %w") und weitere Zweige eines errors.Join fallen weg bzw.
+// stehen roh dahinter. Das Paket settings hüllt seine Fehlerwerte nur in der Form „%w: Zusatz“ (Präfix davor ist
+// nur „settings: “); wer eine andere Hülle einführt, passt diese Funktion und ihren Test an.
 func fehlerGrund(err error) string {
 	text := ohnePaketpraefix(err.Error())
 	for _, f := range []struct {
@@ -42,5 +50,23 @@ func fehlerGrund(err error) string {
 			return f.grund
 		}
 	}
+	if u, ok := dateiUrsache(err); ok {
+		return u
+	}
 	return text
+}
+
+// dateiUrsache liefert bei einem Dateifehler (*fs.PathError, *os.LinkError) nur die Ursache des Betriebssystems, etwa
+// „permission denied“: Der Pfad enthielte Ordner- und Benutzernamen und temporäre Namen, und das Fenster wird oft
+// fotografiert (Kernprinzip 3, A-6, F-661). Gemeinsam für fehlerGrund und exportFehlerText.
+func dateiUrsache(err error) (string, bool) {
+	var pe *fs.PathError
+	if errors.As(err, &pe) {
+		return pe.Err.Error(), true
+	}
+	var le *os.LinkError
+	if errors.As(err, &le) {
+		return le.Err.Error(), true
+	}
+	return "", false
 }

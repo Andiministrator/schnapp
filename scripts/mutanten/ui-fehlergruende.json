@@ -1,0 +1,44 @@
+[
+  {
+    "name": "FG1 Zeile der Tabelle fehlt (ErrStileGesperrt)",
+    "datei": "internal/ui/fehlergruende.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t{settings.ErrStileGesperrt, i18n.T(\"the styles file is locked by another window\")},\n",
+    "neu": ""
+  },
+  {
+    "name": "FG2 Zeile der Tabelle fehlt (errKeinOrt)",
+    "datei": "internal/ui/fehlergruende.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t{errKeinOrt, i18n.T(\"the settings file cannot be located\")},\n",
+    "neu": ""
+  },
+  {
+    "name": "FG3 Zusatz hinter dem Fehlerwert verworfen",
+    "datei": "internal/ui/fehlergruende.go",
+    "paket": "./internal/ui",
+    "alt": "return f.grund + rest",
+    "neu": "return f.grund"
+  },
+  {
+    "name": "FG4 Dateifehler zeigt den Pfad",
+    "datei": "internal/ui/fehlergruende.go",
+    "paket": "./internal/ui",
+    "alt": "\tif u, ok := dateiUrsache(err); ok {\n\t\treturn u\n\t}\n\treturn text",
+    "neu": "\treturn text"
+  },
+  {
+    "name": "FG5 LinkError zeigt den Pfad",
+    "datei": "internal/ui/fehlergruende.go",
+    "paket": "./internal/ui",
+    "alt": "\t\treturn le.Err.Error(), true",
+    "neu": "\t\treturn le.Error(), true"
+  },
+  {
+    "name": "FG6 ErrFormatNeuer unübersetzt",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tcase errors.Is(err, fileformat.ErrFormatNeuer): // F-663; Oeffne öffnet sie als Bild, andere Wege nicht\n\t\treturn i18n.T(\"The file comes from a newer version of Schnapp.\")\n",
+    "neu": ""
+  }
+]

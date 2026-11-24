@@ -378,6 +378,10 @@ msgid "The image is damaged."
 msgstr ""
 
 #: cmd/schnapp/editor.go
+msgid "The file comes from a newer version of Schnapp."
+msgstr ""
+
+#: cmd/schnapp/editor.go
 msgid "Saving did not respond; the changes may not have been saved."
 msgstr ""
 
@@ -1922,6 +1926,10 @@ msgstr ""
 
 #: internal/ui/wechsel.go
 msgid "Could not open the capture: %v"
+msgstr ""
+
+#: internal/ui/wechsel.go
+msgid "The other capture was not opened: the export is still open."
 msgstr ""
 
 #: internal/ui/wechsel.go

@@ -495,6 +495,7 @@ func TestNutzerFehler(t *testing.T) {
 		speicherFehler(errors.Join(errors.New("a"), fmt.Errorf("b: %w", syscall.ENOSPC))): "Not enough disk space.",
 		fmt.Errorf("x: %w", render.ErrZuAufwendig):                                        "This file has too many or too large annotations to open. To open it anyway, use --ignore-limit.",
 		speicherFehler(errors.New("/irgendwo/datei.png: kaputt")):                         "The file could not be written.",
+		fmt.Errorf("fileformat: %w", fileformat.ErrFormatNeuer):                           "The file comes from a newer version of Schnapp.", // F-663
 		errors.New("x"): "x",
 	} {
 		if got := nutzerFehler(err); got != soll {

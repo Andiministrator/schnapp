@@ -84,3 +84,27 @@ Fehlertexte beginnen mit dem heutigen Paketnamen (F-114, Sprint 10).
 - **Oberfläche:** Die Statusleiste nimmt die Paketpräfixe vor der Anzeige ab (`ohnePaketpraefix` beim Export), die
   Paketnamen sagen dem Nutzer nichts.
 
+## Nachtrag 4 (24.11.2026): Wo die Übersetzung der Fehlertexte endet (F-663, Sitzungs-QA, Karte #252)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Andi informiert).
+
+Die Pakete liefern ihre Fehler weiter englisch mit Paketpräfix (Nachträge 2 und 3). Die Oberfläche übersetzt nur, was
+sie als Fehlerwert kennt; alles andere bleibt bewusst englisch:
+
+- **Übersetzt** (über `errors.Is` auf eigene Sätze): die Fehlerwerte von `settings` und der Tafel (`fehlerGrund` in
+  `internal/ui/fehlergruende.go`), die des Exports und des Portals (`exportFehlerText`), die des Öffnens und Speicherns
+  in `cmd/schnapp` (`nutzerFehler`, seit F-663 auch `fileformat.ErrFormatNeuer`), die fünf Fehlerwerte der
+  Texterkennung und die Lagen der Rettungskopie (feste Sätze ohne eingebetteten Fehler).
+- **Bleibt englisch, nur ohne Paketpräfix:** unbekannte Fehler beim Laden einer anderen Aufnahme (`wechsel.go`), Fehler
+  des Betriebssystems und Diagnosetexte fremder Programme, vor allem der Texterkennung (`tesseract`, `schnapp-ocr`:
+  Rückgabecode, Meldung auf stderr), die Fehlertexte der Stildatei, die keine Fehlerwerte sind (`unknown style kind`,
+  `invalid font name`; nur bei einem Programmfehler erreichbar), und die Ursache eines gescheiterten Kopierens
+  („Could not copy: …“). Sie zu übersetzen hieße, fremde Texte zu raten; der englische Grund ist für eine Fehlersuche
+  nützlicher.
+- **Nie ein Pfad:** Bei einem Dateifehler (`fs.PathError`, `os.LinkError`) zeigen Statuszeile und Tafel nur die
+  Ursache des Betriebssystems („permission denied“), nie den Pfad mit Ordner-, Benutzer- oder Temporärnamen
+  (`dateiUrsache`, gemeinsam für `fehlerGrund` und `exportFehlerText`, F-661; Kernprinzip 3).
+- **Hülle:** `fehlerGrund` behält nur einen Zusatz **hinter** dem Fehlerwert (`%w: Zusatz`); `settings` hüllt nur so.
+  Wer eine andere Hülle einführt, passt die Funktion und `TestFehlerGrundUebersetzt` an (C-5).
+- Ein neuer Fehlerwert in `settings` braucht eine Zeile in `fehlerGrund` und einen Sollwert im Test (F-660).
+

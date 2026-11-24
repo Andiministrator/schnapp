@@ -537,6 +537,8 @@ func nutzerFehlerBlatt(err error) string {
 		return i18n.T("The image is too large.")
 	case errors.Is(err, fileformat.ErrBeschaedigt):
 		return i18n.T("The image is damaged.")
+	case errors.Is(err, fileformat.ErrFormatNeuer): // F-663; Oeffne öffnet sie als Bild, andere Wege nicht
+		return i18n.T("The file comes from a newer version of Schnapp.")
 	case errors.Is(err, ui.ErrSpeichernHaengt):
 		return i18n.T("Saving did not respond; the changes may not have been saved.")
 	case errors.Is(err, ui.ErrOverlayOffen):

@@ -5,6 +5,10 @@ package ui
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
@@ -25,27 +29,72 @@ func deutsch(t *testing.T) {
 	t.Cleanup(func() { i18n.Setze(nil) })
 }
 
-// F-623: Die eigenen Fehlerwerte erscheinen übersetzt, Fehler des Betriebssystems bleiben englisch ohne Paketpräfix.
+// F-623, F-660: Jeder eigene Fehlerwert erscheint mit seinem deutschen Text (Sollwert je Wert, nicht nur „anders als
+// englisch“), und der Zusatz hinter dem Wert bleibt stehen. Fehler des Betriebssystems bleiben englisch, ohne
+// Paketpräfix und ohne Pfad (F-661).
 func TestFehlerGrundUebersetzt(t *testing.T) {
 	deutsch(t)
-	fehler := []error{settings.ErrZuGross, settings.ErrKeineDatei, settings.ErrKeinUTF8, settings.ErrUngueltig,
-		settings.ErrVerweisLeer, settings.ErrKeinHeim, errKeinOrt, settings.ErrStileZuGross, settings.ErrStileKeineDatei,
-		settings.ErrStileVerweis, settings.ErrStileUnlesbar, settings.ErrStileSicherung, settings.ErrStileGesperrt}
-	for _, e := range fehler {
-		g := fehlerGrund(fmt.Errorf("settings: %w: Zusatz", e)) // eingewickelt wie im Betrieb
-		if g == "" || g == e.Error() {
-			t.Errorf("%q nicht übersetzt: %q", e, g)
+	for _, f := range []struct {
+		wert error
+		soll string
+	}{
+		{settings.ErrZuGross, "die Einstellungsdatei ist größer als 64 KiB"},
+		{settings.ErrKeineDatei, "die Einstellungsdatei ist keine gewöhnliche Datei"},
+		{settings.ErrKeinUTF8, "die Einstellungsdatei ist kein gültiges UTF-8"},
+		{settings.ErrUngueltig, "eine Einstellung hat einen ungültigen Wert"},
+		{settings.ErrVerweisLeer, "die Einstellungsdatei ist ein Verweis ins Leere"},
+		{settings.ErrKeinHeim, "das Heimverzeichnis des Benutzers ist unbekannt"},
+		{errKeinOrt, "die Einstellungsdatei ist nicht auffindbar"},
+		{settings.ErrStileZuGross, "die Stildatei wäre größer als 64 KiB"},
+		{settings.ErrStileKeineDatei, "die Stildatei ist keine gewöhnliche Datei"},
+		{settings.ErrStileVerweis, "die Stildatei ist ein Verweis ins Leere"},
+		{settings.ErrStileUnlesbar, "die vorhandene Stildatei ist nicht lesbar und bleibt deshalb unverändert"},
+		{settings.ErrStileSicherung, "die vorhandene Stildatei hat unlesbare Teile und styles.ini.bak existiert schon, deshalb bleibt sie unverändert"},
+		{settings.ErrStileGesperrt, "die Stildatei ist von einem anderen Fenster gesperrt"},
+	} {
+		if g := fehlerGrund(f.wert); g != f.soll {
+			t.Errorf("%q: %q, Soll %q", f.wert, g, f.soll)
 		}
-	}
-	if g := fehlerGrund(settings.ErrKeineDatei); g != "die Einstellungsdatei ist keine gewöhnliche Datei" {
-		t.Errorf("Grund %q", g)
+		// eingewickelt wie im Betrieb: Präfix weg, Zusatz bleibt
+		if g := fehlerGrund(fmt.Errorf("settings: %w: Zusatz", f.wert)); g != f.soll+": Zusatz" {
+			t.Errorf("%q mit Zusatz: %q", f.wert, g)
+		}
 	}
 	// Der Schlüssel hinter dem Fehlerwert bleibt stehen, sonst weiß niemand, welcher Wert ungültig ist.
 	if g := fehlerGrund(fmt.Errorf("settings: %w", fmt.Errorf("%w: capture.seam = %q", settings.ErrUngueltig, "x"))); g != `eine Einstellung hat einen ungültigen Wert: capture.seam = "x"` {
 		t.Errorf("Zusatz verloren: %q", g)
 	}
-	if g := fehlerGrund(errors.New("settings: permission denied")); g != "permission denied" {
-		t.Errorf("Betriebssystem-Fehler: %q", g)
+	if g := fehlerGrund(errors.New("settings: something else")); g != "something else" {
+		t.Errorf("unbekannter Fehler: %q", g)
+	}
+}
+
+// F-661: Ein echter Schreibfehler (Ordner ohne Schreibrecht) zeigt nur die Ursache, nie Pfad, Heim oder Temporärnamen
+// — wie exportFehlerText, über dieselbe Funktion.
+func TestFehlerGrundOhnePfad(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("als root wirken Dateirechte nicht")
+	}
+	ordner := filepath.Join(t.TempDir(), "zu")
+	if err := os.Mkdir(ordner, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(ordner, 0o700) })
+	err := settings.SchreibeDatei(filepath.Join(ordner, "settings.ini"), []settings.Aenderung{{Abschnitt: "library", Schluessel: "bar", Wert: "no"}})
+	if err == nil {
+		t.Fatal("Vorbedingung: Schreiben gelang")
+	}
+	g := fehlerGrund(err)
+	if strings.Contains(g, "/") || strings.Contains(g, "schnapp-tmp") || g != "permission denied" {
+		t.Errorf("Grund %q (Fehler %v)", g, err)
+	}
+	if x := exportFehlerText(err, "bild.png"); x != g {
+		t.Errorf("Export %q, Tafel %q: nicht einheitlich", x, g)
+	}
+	// os.LinkError ebenso
+	le := &os.LinkError{Op: "rename", Old: "/home/jemand/a", New: "/home/jemand/b", Err: syscall.EXDEV}
+	if g := fehlerGrund(fmt.Errorf("settings: %w", le)); g != syscall.EXDEV.Error() {
+		t.Errorf("LinkError: %q", g)
 	}
 }
 
