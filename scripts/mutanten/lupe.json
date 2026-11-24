@@ -24,29 +24,29 @@
     "name": "L4 Quellpixel gerundet statt nächster Nachbar mit floor",
     "datei": "internal/document/lupe.go",
     "paket": "./internal/document",
-    "alt": "return int(math.Floor(l.Quelle.Min.X + (x-l.Ziel.Min.X)*l.Quelle.Breite()/l.Ziel.Breite()))",
-    "neu": "return int(math.Round(l.Quelle.Min.X + (x-l.Ziel.Min.X)*l.Quelle.Breite()/l.Ziel.Breite()))"
+    "alt": "return int(math.Floor(amin + (z-zmin)*(amax-amin)/(zmax-zmin))), true",
+    "neu": "return int(math.Round(amin + (z-zmin)*(amax-amin)/(zmax-zmin))), true"
   },
   {
-    "name": "L5 Streifen gelten als sichtbar",
+    "name": "L5 Streifen in der Quelle fallen nicht heraus (Original statt Ansicht)",
     "datei": "internal/document/lupe.go",
     "paket": "./internal/document",
-    "alt": "return k == len(m.weg) || v < m.weg[k][0]",
-    "neu": "return k == len(m.weg) || v < m.weg[k][0] || k >= 0"
+    "alt": "qa: R(d.ZuAnsicht(l.Quelle.Min), d.ZuAnsicht(l.Quelle.Max))}",
+    "neu": "qa: R(d.ZuAnsicht(l.Quelle.Min), d.ZuAnsicht(l.Quelle.Min).Plus(l.Quelle.Max.Minus(l.Quelle.Min)))}"
   },
   {
-    "name": "L6 Renderer zeigt verborgene Quellpixel",
-    "datei": "internal/render/lupe.go",
+    "name": "L6 Ansichtspixel außerhalb der Ansicht gelten als sichtbar",
+    "datei": "internal/document/lupe.go",
     "paket": "./internal/render",
-    "alt": "if c := nimm(o); sichtbar(c) {",
-    "neu": "if c := nimm(o); c >= 0 {"
+    "alt": "if v < 0 || v >= m.groesse() {\n\t\treturn 0, false\n\t}\n\treturn int(m.zuOriginal(float64(v))), true",
+    "neu": "if v < -1<<40 {\n\t\treturn 0, false\n\t}\n\treturn int(m.zuOriginal(float64(v))), true"
   },
   {
-    "name": "L7 Renderer prüft nicht, ob der Pixelmittelpunkt im Ziel liegt",
-    "datei": "internal/render/lupe.go",
+    "name": "L7 Pixelmittelpunkt außerhalb des Ziels zeigt die Quelle",
+    "datei": "internal/document/lupe.go",
     "paket": "./internal/render",
-    "alt": "if !(o >= von && o < bis) {",
-    "neu": "if false {"
+    "alt": "if !(z >= zmin && z < zmax) || !(amax > amin) {",
+    "neu": "if !(amax > amin) {"
   },
   {
     "name": "L8 Bild der Lupe kostet nichts",
@@ -59,8 +59,8 @@
     "name": "L9 Kosten nicht aufs Bild beschnitten",
     "datei": "internal/render/lupe.go",
     "paket": "./internal/render",
-    "alt": "r := lupenRahmen(z.d, v).Intersect(z.rand)\n\tif r.Empty() {\n\t\treturn\n\t}\n\tif !z.ohneZaehlen {",
-    "neu": "r := lupenRahmen(z.d, v)\n\tif r.Empty() {\n\t\treturn\n\t}\n\tif !z.ohneZaehlen {"
+    "alt": "r := lupenRahmen(z.d, v).Intersect(z.rand)\n\tif r.Empty() {",
+    "neu": "r := lupenRahmen(z.d, v)\n\tif r.Empty() {"
   },
   {
     "name": "L10 Rahmen um das Ziel fehlt",
@@ -91,11 +91,11 @@
     "neu": "if true {\n\t\ts.lupenBild(d, o)"
   },
   {
-    "name": "L14 Export bettet verborgene Quellpixel ein",
-    "datei": "internal/fileformat/lupe.go",
-    "paket": "./internal/fileformat",
-    "alt": "px := d.SichtbarerAusschnitt(r)",
-    "neu": "px := d.Original().SubImage(r.Intersect(d.Original().Rect)).(*image.NRGBA)"
+    "name": "L14 Spalt der Naht in der Lupe sichtbar",
+    "datei": "internal/document/lupe.go",
+    "paket": "./internal/render",
+    "alt": "if !okx || !oky || q.ImSpalt(vx, vy) {",
+    "neu": "if !okx || !oky {"
   },
   {
     "name": "L15 Ziel nie links der Quelle",
@@ -115,8 +115,8 @@
     "name": "L17 Ziel-Griff folgt nur der Breite",
     "datei": "internal/canvas/lupe.go",
     "paket": "./internal/canvas",
-    "alt": "k := math.Max(math.Abs(d.X)/l.Quelle.Breite(), math.Abs(d.Y)/l.Quelle.Hoehe())",
-    "neu": "k := math.Abs(d.X) / l.Quelle.Breite()"
+    "alt": "k := math.Max(math.Abs(d.X)/g.X, math.Abs(d.Y)/g.Y)",
+    "neu": "k := math.Abs(d.X) / g.X"
   },
   {
     "name": "L18 Ziehen verschiebt immer die ganze Lupe",
@@ -129,8 +129,8 @@
     "name": "L19 Quell-Griff lässt das Ziel stehen",
     "datei": "internal/canvas/lupe.go",
     "paket": "./internal/canvas",
-    "alt": "\t\tl.Ziel.Max = l.Ziel.Min.Plus(document.Pt(l.Quelle.Breite()*kx, l.Quelle.Hoehe()*ky))\n",
-    "neu": "\t\t_, _ = kx, ky\n"
+    "alt": "\t\tl.Ziel.Max = l.Ziel.Min.Plus(document.Pt(g1.X*kx, g1.Y*ky))\n",
+    "neu": "\t\t_, _, _ = g1, kx, ky\n"
   },
   {
     "name": "L20 Stufe + bleibt auf der aktuellen Stufe",
@@ -159,5 +159,117 @@
     "paket": "./internal/ui",
     "alt": "if inhalt.Vergroesserung {",
     "neu": "if false {"
+  },
+  {
+    "name": "L24 Export bettet Ansichtspixel außerhalb der Ansicht ein",
+    "datei": "internal/document/lupe.go",
+    "paket": "./internal/fileformat",
+    "alt": "int(math.Ceil(q.qa.Max.Y))).Intersect(image.Rectangle{Max: q.d.Groesse()})",
+    "neu": "int(math.Ceil(q.qa.Max.Y)))"
+  },
+  {
+    "name": "L25 Quellfläche kostet nichts",
+    "datei": "internal/render/lupe.go",
+    "paket": "./internal/render",
+    "alt": "z.auf.flaeche += fuellGewicht * quellFlaeche(z.d, v)",
+    "neu": "z.auf.flaeche += 0 * quellFlaeche(z.d, v)"
+  },
+  {
+    "name": "L26 Quellfläche nicht aufs Original begrenzt",
+    "datei": "internal/render/lupe.go",
+    "paket": "./internal/render",
+    "alt": "w := math.Min(l.Quelle.Max.X, float64(g.X)) - math.Max(l.Quelle.Min.X, 0)",
+    "neu": "w := l.Quelle.Breite()"
+  },
+  {
+    "name": "L27 Export bettet das Bild eines unsichtbaren Ziels ein",
+    "datei": "internal/fileformat/lupe.go",
+    "paket": "./internal/fileformat",
+    "alt": "if !d.Sichtbar(o.Ziel) {",
+    "neu": "if false && !d.Sichtbar(o.Ziel) {"
+  },
+  {
+    "name": "L28 Export bettet immer die Quelle ein, auch wenn das Ziel kleiner ist",
+    "datei": "internal/fileformat/lupe.go",
+    "paket": "./internal/fileformat",
+    "alt": "if flaeche(zr) < flaeche(px.Rect) {",
+    "neu": "if false && flaeche(zr) < flaeche(px.Rect) {"
+  },
+  {
+    "name": "L29 Neue Lupe: Ziel aus der Quelle im Original",
+    "datei": "internal/canvas/lupe.go",
+    "paket": "./internal/canvas",
+    "alt": "g := s.quellGroesse(quelle).Mal(LupenStart)",
+    "neu": "g := groesseImOriginal(quelle).Mal(LupenStart)"
+  },
+  {
+    "name": "L30 Griffe der Lupe ohne Ansicht",
+    "datei": "internal/canvas/griffe.go",
+    "paket": "./internal/canvas",
+    "alt": "return zieheLupenGriff(l, art, p, s.quellGroesse)",
+    "neu": "return zieheLupenGriff(l, art, p, groesseImOriginal)"
+  },
+  {
+    "name": "L31 Ziel ohne Platz nicht in die Ansicht gerückt",
+    "datei": "internal/canvas/lupe.go",
+    "paket": "./internal/canvas",
+    "alt": "rein := func(v, laenge, platz float64) float64 { return math.Max(0, math.Min(v, platz-laenge)) }",
+    "neu": "rein := func(v, laenge, platz float64) float64 { return v }"
+  },
+  {
+    "name": "L32 Merker behält Bilder gelöschter Lupen",
+    "datei": "internal/ui/lupe.go",
+    "paket": "./internal/ui",
+    "alt": "if o, ok := e.s.D.Objekt(k.id); !ok {\n\t\t\tdelete(e.lupe.bilder, k)",
+    "neu": "if o, ok := e.s.D.Objekt(k.id); !ok {\n\t\t\t_ = o"
+  },
+  {
+    "name": "L33 Editor-Export ohne Rechenbudget",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if err := render.Pruefe(e.s.D); err != nil {\n\t\tdiagnoseEditor(\"Export: %v\", err)",
+    "neu": "if err := render.Pruefe(e.s.D); false && err != nil {\n\t\tdiagnoseEditor(\"Export: %v\", err)"
+  },
+  {
+    "name": "K1 Editor-Merker ohne Vergleich der Lupe",
+    "datei": "internal/ui/lupe.go",
+    "paket": "./internal/ui",
+    "alt": "b.gueltig && b.l == l && b.stand == stand",
+    "neu": "b.gueltig && b.stand == stand"
+  },
+  {
+    "name": "K3 Editor ohne FilterNearest",
+    "datei": "internal/ui/lupe.go",
+    "paket": "./internal/ui",
+    "alt": "b.op.Filter = paint.FilterNearest",
+    "neu": "b.op.Filter = paint.FilterLinear"
+  },
+  {
+    "name": "K11 Treffer: Quelle vor Ziel",
+    "datei": "internal/canvas/lupe.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase in(l.Ziel):\n\t\treturn LupeZiel, true\n\tcase in(l.Quelle):\n\t\treturn LupeQuelle, true\n",
+    "neu": "\tcase in(l.Quelle):\n\t\treturn LupeQuelle, true\n\tcase in(l.Ziel):\n\t\treturn LupeZiel, true\n"
+  },
+  {
+    "name": "K14 Export: Bild nach dem Zielrahmen",
+    "datei": "internal/fileformat/lupe.go",
+    "paket": "./internal/fileformat",
+    "alt": "\tif !s.rundlauf {\n\t\ts.lupenBild(d, o)\n\t}\n\tif strichDa {\n\t\trahmen(o.Ziel)\n\t}\n",
+    "neu": "\tif strichDa {\n\t\trahmen(o.Ziel)\n\t}\n\tif !s.rundlauf {\n\t\ts.lupenBild(d, o)\n\t}\n"
+  },
+  {
+    "name": "K15 Export: Pixel unter der Quelle gerundet statt ab- bzw. aufgerundet",
+    "datei": "internal/document/lupe.go",
+    "paket": "./internal/fileformat",
+    "alt": "image.Rect(int(math.Floor(q.qa.Min.X)), int(math.Floor(q.qa.Min.Y)), int(math.Ceil(q.qa.Max.X)),\n\t\tint(math.Ceil(q.qa.Max.Y)))",
+    "neu": "image.Rect(int(math.Round(q.qa.Min.X)), int(math.Round(q.qa.Min.Y)), int(math.Round(q.qa.Max.X)),\n\t\tint(math.Round(q.qa.Max.Y)))"
+  },
+  {
+    "name": "K19 Gruppendeckkraft: Rand der Lupe ohne halben Strich",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "rand += 0.5 * v.Strich.Breite",
+    "neu": "rand += 0 * v.Strich.Breite"
   }
 ]

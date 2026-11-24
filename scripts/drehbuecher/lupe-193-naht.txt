@@ -1,0 +1,29 @@
+# Sichtprobe ADR-0033 Nachtrag 2 (Kritik zu Karte #193, K193-2/K193-3): Lupe über einer Stauch-Naht.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/lupe-193-naht.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen. Bei 1600 × 1000, Skala 1, rechte Leiste eingeklappt:
+# Bild 1200 × 800 bei 100 % ab (226,100); Bildschirmpunkt = Bildpunkt + (226,100) (wie rueckfall-band-f174.txt). Nach
+# dem Stauchen ist die Ansicht 1120 breit und rückt in die Mitte: Ansichtspunkt + (266,100).
+# Erwartet:
+#  01 Stauchen (X) waagerecht über die Spalten 560..640 des Originals: Naht in der Ansicht bei x = 560 (Bildschirm 826),
+#     mitten durch den weißen und den schwarzen Balken, Spalt als Schachbrett.
+#  02 Lupe (M) über die Naht, Ansicht 520..600 × 290..410 (80 × 120, Bildschirm 786..866 × 390..510): Das Ziel rechts
+#     daneben (Bildschirm 882..1042 × 390..630) ist 160 × 240 (doppelt so groß wie die Quelle in der Ansicht, nicht wie
+#     im Original 160 breit), die Balken laufen im Ziel ohne leeres Band durch; nur der Spalt der Naht ist auch im Ziel
+#     durchsichtig (vergrößert; dort scheint das Bild unter dem Ziel durch, Blau).
+#  03 Auswahl aufgehoben (Esc), sonst wie 02: Rahmen und Linie ohne Griffe.
+warte 800
+taste Strg+Umschalt+B
+warte 300
+taste X
+warte 200
+ziehe 786 600 866 600 10
+warte 400
+foto 01-naht
+taste M
+warte 300
+ziehe 786 390 866 510 10
+warte 500
+foto 02-lupe-ueber-naht
+taste Esc
+warte 400
+foto 03-ohne-auswahl
