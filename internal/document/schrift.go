@@ -50,6 +50,8 @@ var (
 	schriftMu     sync.Mutex // schützt alles hier, auch den Puffer (sfnt.Buffer ist nicht nebenläufig nutzbar)
 	schriftPuffer sfnt.Buffer
 	schriftenMass = map[*sfnt.Font]*schriftMass{} // je geladener Schriftdatei (fonts.Laden liefert je Schnitt eine)
+	// schriftenMassGrenze begrenzt schriftenMass: doppelt so viele Schriften, wie fonts zugleich geladen hält.
+	schriftenMassGrenze = 2 * fonts.MaxGeladen
 	// ohneSchrift stellt die Schrift „nicht ladbar“ (nur Tests): Dann gilt die Schätzung (TestSchaetzungIstObermass).
 	ohneSchrift bool
 )
@@ -71,6 +73,11 @@ func massVon(f *fonts.Schrift) *schriftMass {
 	// beim Tippen nicht springen). Referenz sind Versalien, Oberlängen und Unterlängen.
 	if _, t, ok := s.zeile("HdgjpÅ", 1); ok {
 		s.refOben, s.refUnten = t.Min.Y, t.Max.Y
+	}
+	// Seit der Verdrängung (F-697) kann dieselbe Datei als neues *sfnt.Font wiederkommen; der Merker hielte sonst jede
+	// alte Fassung samt Dateibytes fest (Kritik B-1). Über schriftenMassGrenze Schriften fängt er leer neu an.
+	if len(schriftenMass) >= schriftenMassGrenze {
+		clear(schriftenMass)
 	}
 	schriftenMass[f.Font] = s
 	return s

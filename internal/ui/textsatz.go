@@ -28,6 +28,9 @@ import (
 // umrissGrenze ist die Zahl der gemerkten Glyphenumrisse; darüber wird der Speicher geleert.
 const umrissGrenze = 20000
 
+// facesGrenze ist die Zahl der gemerkten Faces (Schrift und Grad); darüber werden Faces und Umrisse geleert.
+const facesGrenze = 2 * fonts.MaxGeladen
+
 type faceSchluessel struct {
 	f    *sfnt.Font
 	grad float64
@@ -58,8 +61,11 @@ func (ts *textsatz) face(s *fonts.Schrift, grad float64) font.Face {
 	if err != nil {
 		return nil
 	}
-	if len(ts.faces) > 256 {
+	// Über facesGrenze Faces fangen Faces und Umrisse leer neu an: Beide halten ihr *sfnt.Font samt Dateibytes fest, und
+	// seit der Verdrängung (F-697) kommt dieselbe Datei womöglich als neues *sfnt.Font wieder (Kritik B-1).
+	if len(ts.faces) >= facesGrenze {
 		clear(ts.faces)
+		clear(ts.umrisse)
 	}
 	ts.faces[k] = f
 	return f

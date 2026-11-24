@@ -8,12 +8,17 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 )
 
 // familienAus legt n Schriftdateien (Kopien der Testschrift) unter verschiedenen Namen an und trägt je eine Familie
 // F00, F01, … in die Suchergebnisse ein; die Namensliste der Familien kommt zurück.
 func familienAus(t *testing.T, n int) []string {
 	t.Helper()
+	// Die Verdrängungstests laden in schneller Folge; ohne Ruhefrist (sie prüft TestRuhefristVerdraengtNichtImGebrauch).
+	alt := ruhefrist
+	ruhefrist = 0
+	t.Cleanup(func() { ruhefrist = alt })
 	roh, err := os.ReadFile("../../testdata/fonts/schnapp-testkern.ttf")
 	if err != nil {
 		t.Fatal(err)
@@ -98,4 +103,24 @@ func TestVerdraengenNebenlaeufig(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+}
+
+// Kritik B-1: Eine Datei, die vor weniger als ruhefrist benutzt wurde, wird nicht verdrängt. Braucht ein Bild mehr als
+// MaxGeladen Dateien zugleich, bekommt die überzählige Ersatz Go, statt dass sich das Laden je Bild im Kreis dreht und
+// jedes Mal eine neue Fassung der Datei liest.
+func TestRuhefristVerdraengtNichtImGebrauch(t *testing.T) {
+	namen := familienAus(t, MaxGeladen+1)
+	ruhefrist = time.Hour
+	erste := map[string]*Schrift{}
+	for _, n := range namen[:MaxGeladen] {
+		erste[n] = Laden(n, Normal)
+	}
+	if s := Laden(namen[MaxGeladen], Normal); !s.Ersatz {
+		t.Errorf("Datei %d bei %d Dateien in Gebrauch geladen statt Ersatz", MaxGeladen+1, MaxGeladen)
+	}
+	for _, n := range namen[:MaxGeladen] {
+		if s := Laden(n, Normal); s.Font != erste[n].Font {
+			t.Errorf("%s: in Gebrauch verdrängt und neu gelesen", n)
+		}
+	}
 }

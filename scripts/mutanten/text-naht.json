@@ -134,5 +134,13 @@
     "alt": "\t\t\tm := abb(v.Mitte)\n\t\t\trad := float32(v.Radius)",
     "neu": "\t\t\tm := an(v.Mitte)\n\t\t\trad := float32(v.Radius)",
     "timeout": "5m"
+  },
+  {
+    "name": "N20 Text bei nur einem Bereich nicht beschnitten (Kritik A-1)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\t{ // immer auf den Bereich beschneiden, auch bei nur einem: Ein Text",
+    "neu": "\t\t\tif len(stuecke) > 1 { // immer auf den Bereich beschneiden, auch bei nur einem: Ein Text",
+    "timeout": "5m"
   }
 ]

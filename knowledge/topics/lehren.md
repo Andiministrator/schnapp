@@ -1011,4 +1011,12 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Worktree-Agenten parallel nach Dateien schneiden:** sechs Sonnet-Karten in Worktrees, je eine Welle ohne gemeinsame
   Dateien; Cherry-Picks liefen ohne Konflikt. Sonnet hielt sich trotz Verbot nicht immer an „keine Heredocs“ — es meldete
   es aber; der Diff war jeweils sauber.
+- **Trailer-Block braucht eine Leerzeile davor:** Hängen die `Co-Authored-By`-Zeilen direkt am Fließtext (abe287c, aus
+  einem Worktree-Commit übernommen), erkennt git keinen Trailer, und der Modell-Abgleich aus dem Repo greift nicht.
+  Nach jedem Cherry-Pick prüfen: `git log -1 --format='%(trailers:key=Co-Authored-By,valueonly)'`.
+- **Sitzungs-Kritik nach Sprint 13 (drei Fable-Kritiker, 23 Befunde):** „je Bereich zeichnen“ hatte ein Loch bei genau
+  einem Bereich (Text endet im Streifen, [S]) und vervielfacht Aufwand, den das Budget nicht zählt (Zeilen × Bereiche,
+  Glyphen je Bereich). Eine Behauptung im ADR („außerhalb des Kantenbands gleich“) gilt nur für die gemessenen Fälle —
+  Grenzfälle (lange Pfeile, breite Striche, Rundung) mitmessen, bevor sie im ADR steht. CI-Shell ohne `shell: bash`
+  heißt `bash -e` ohne pipefail.
 

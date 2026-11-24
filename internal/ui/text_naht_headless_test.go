@@ -162,3 +162,44 @@ func rgbaNah(a, b color.RGBA) bool {
 	d := func(x, y uint8) bool { return int(x)-int(y) <= 2 && int(y)-int(x) <= 2 }
 	return d(a.R, b.R) && d(a.G, b.G) && d(a.B, b.B) && d(a.A, b.A)
 }
+
+// Kritik A-1 ([S]): Auch ein Text, der nur einen sichtbaren Bereich berührt und im Streifen endet, ist auf diesen
+// Bereich beschnitten; der Teil im Streifen steht nicht hinter der Naht.
+func TestEditorTextEndetImStreifen(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 700, 90)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	schrift := color.NRGBA{R: 255, A: 255}
+	tx := document.Text{Ort: document.Pt(12, 30), Inhalt: "WWW Geheimnis 1234567 WWW", Schriftgrad: 22, Farbe: schrift}
+	if _, err := d.Hinzufuegen(tx); err != nil {
+		t.Fatal(err)
+	}
+	e := &editor{s: canvas.NeueSitzung(d)}
+	voll := headlessBild(t, image.Pt(700, 90), func(gtx layout.Context) { e.zeichneObjekte(gtx) })
+	ende := 0
+	for x := 699; x >= 0 && ende == 0; x-- {
+		for y := 0; y < 90; y++ {
+			if c := rgbaZuNRGBA(voll.RGBAAt(x, y)); c.R > 128 && c.A > 128 {
+				ende = x
+				break
+			}
+		}
+	}
+	if err := d.SetzeStreifen([]document.Streifen{{Von: 100, Bis: ende + 30}}); err != nil {
+		t.Fatal(err)
+	}
+	b := headlessBild(t, image.Pt(700, 90), func(gtx layout.Context) { e.zeichneObjekte(gtx) })
+	hinten := 0
+	for y := 0; y < 90; y++ {
+		for x := 100 + 20; x < 700; x++ {
+			if c := rgbaZuNRGBA(b.RGBAAt(x, y)); c.R > 128 && c.A > 128 {
+				hinten++
+			}
+		}
+	}
+	t.Logf("Textende %d, Stücke %d, Schriftpixel ab x=120 (hinter der Naht): %d", ende, len(d.TextStuecke(tx)), hinten)
+	if hinten != 0 {
+		t.Errorf("%d Pixel des im Streifen liegenden Textteils hinter der Naht", hinten)
+	}
+}

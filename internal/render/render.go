@@ -472,9 +472,9 @@ func (z zeichner) ebene(o document.Objekt) error {
 
 // ebenenRahmen ist der Umriss von o in der Ansicht, aufs Bild begrenzt, mit Rand für die Pfeilspitze (sie ragt über
 // Grenzen hinaus) und die Kantenglättung. Pfeil und Kasten bildet der Zeichner Punkt für Punkt ab, ihre Ecken reichen.
-// Text und Nummer zeichnet er dagegen starr ab einem abgebildeten Anker (je Zeile bzw. die Mitte): Hinter einer
-// Stauch-Naht liegt ihre Tinte dann weiter rechts bzw. unten als die abgebildete Ecke der Grenzen. Deshalb kommen die
-// Grenzen, um die Verschiebung jedes Ankers versetzt, dazu (F-583).
+// Text und Nummer zeichnete er früher starr ab einem abgebildeten Anker; seit ADR-0023 Nachträgen 13 und 15 zeichnet er
+// sie je sichtbarem Bereich, ihre Tinte liegt also innerhalb der abgebildeten Grenzen. Die Erweiterung um die starren
+// Anker bleibt als großzügiges Obermaß (F-583).
 func (z zeichner) ebenenRahmen(o document.Objekt) image.Rectangle {
 	g := o.Grenzen()
 	rand := 2.0
@@ -613,7 +613,8 @@ func (z zeichner) objekt(o document.Objekt) error {
 		gezaehlt := make([]bool, len(zeilen))
 		for _, st := range stuecke {
 			zs := z
-			if len(stuecke) > 1 {
+			{ // immer auf den Bereich beschneiden, auch bei nur einem: Ein Text, der im Streifen endet, stünde sonst mit dem
+				// Teil im Streifen hinter der Naht (Kritik A-1, [S])
 				ziel := st.Ziel()
 				zs.schnitt = image.Rect(int(math.Round(ziel.Min.X)), int(math.Round(ziel.Min.Y)),
 					int(math.Round(ziel.Max.X)), int(math.Round(ziel.Max.Y)))

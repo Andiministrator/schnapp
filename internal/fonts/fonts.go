@@ -129,14 +129,20 @@ var (
 	suche       = new(sync.Once)
 	fertigKanal = make(chan struct{})
 	geladen     = map[schluessel]*Schrift{}
-	fehler      = map[schluessel]bool{} // Dateien, die sich nicht laden ließen
-	dateien     = map[string][]byte{}   // geladene Schriftdateien je Pfad (Sammlungen nur einmal gelesen)
-	dateiBytes  int64                   // Summe der Bytes in dateien
-	nutzung     = map[string]uint64{}   // letzte Benutzung je Pfad in dateien (Takt), für die Verdrängung
-	takt        uint64                  // zählt jede Benutzung hoch
-	ordner      = schriftOrdner         // für Tests und SetzeOrdner austauschbar
-	maxDateien  = MaxDateien            // für Tests austauschbar
-	sucheFrist  = SucheFrist            // für Tests austauschbar
+	fehler      = map[schluessel]bool{}  // Dateien, die sich nicht laden ließen
+	dateien     = map[string][]byte{}    // geladene Schriftdateien je Pfad (Sammlungen nur einmal gelesen)
+	dateiBytes  int64                    // Summe der Bytes in dateien
+	nutzung     = map[string]uint64{}    // letzte Benutzung je Pfad in dateien (Takt), für die Verdrängung
+	takt        uint64                   // zählt jede Benutzung hoch
+	benutzt     = map[string]time.Time{} // Zeitpunkt der letzten Benutzung je Pfad in dateien (Ruhefrist der Verdrängung)
+	// ruhefrist: Eine Datei, die jünger benutzt wurde, wird nicht verdrängt (Kritik B-1): Braucht ein Bild oder ein
+	// Rendererlauf mehr als MaxGeladen Dateien zugleich, bekommt die überzählige Ersatz Go, statt dass sich das Laden
+	// je Bild im Kreis dreht. jetzt ist für Tests austauschbar.
+	ruhefrist  = 2 * time.Second
+	jetzt      = time.Now
+	ordner     = schriftOrdner // für Tests und SetzeOrdner austauschbar
+	maxDateien = MaxDateien    // für Tests austauschbar
+	sucheFrist = SucheFrist    // für Tests austauschbar
 )
 
 // SetzeOrdner legt die Schriftordner fest, statt sie aus HOME und XDG_* zu lesen (MCP-Server: aus dem Heim der
@@ -317,6 +323,7 @@ func beruehre(pfad string) {
 	}
 	takt++
 	nutzung[pfad] = takt
+	benutzt[pfad] = jetzt()
 }
 
 // verdraenge wirft die am längsten unbenutzten Schriftdateien aus dem Speicher, bis eine weitere von groesse Bytes
@@ -326,14 +333,22 @@ func beruehre(pfad string) {
 func verdraenge(groesse int64) bool {
 	for len(dateien) > 0 && (len(dateien) >= MaxGeladen || dateiBytes+groesse > MaxGeladenBytes) {
 		aelteste, ab := "", uint64(0)
+		grenze := jetzt().Add(-ruhefrist)
 		for p := range dateien {
+			if benutzt[p].After(grenze) {
+				continue // gerade in Gebrauch (Ruhefrist): nicht verdrängen
+			}
 			if n := nutzung[p]; aelteste == "" || n < ab || (n == ab && p < aelteste) {
 				aelteste, ab = p, n
 			}
 		}
+		if aelteste == "" {
+			return false // alle Dateien in Gebrauch: Grenze, Ersatz Go (Kritik B-1)
+		}
 		dateiBytes -= int64(len(dateien[aelteste]))
 		delete(dateien, aelteste)
 		delete(nutzung, aelteste)
+		delete(benutzt, aelteste)
 		for k := range geladen {
 			if f, ok := familieZu(k.familie); ok && f.schnitte[k.schnitt].pfad == aelteste {
 				delete(geladen, k)

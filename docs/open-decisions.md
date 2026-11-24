@@ -248,9 +248,10 @@ Nachgetragen in Sprint 13 (F-723); die Einzelheiten stehen in den genannten ADRs
 
 ## E-27: Claudes Entscheidungen aus Sprint 13 — ENTSCHIEDEN 24.11.2026 (Claude, Andi: „arbeite selbstständig“)
 
-- **Beschriftungen an einer Stauch-Naht** sind in allen Ausgängen abgeschnitten wie das Bild (Text, Sprechblasen-
-  Dreieck, Lupen-Linie, Pfeil, Nummer), statt gestaucht oder starr hinter der Naht (ADR-0023 Nachträge 13 bis 15,
-  F-739, F-695, F-745). Keine Texteingabe an ganz verborgenem Text (F-740).
+- **Beschriftungen an einer Stauch-Naht** sind abgeschnitten wie das Bild (Text, Sprechblasen-Dreieck, Lupen-Linie,
+  Nummer), statt gestaucht oder starr hinter der Naht (ADR-0023 Nachträge 13 bis 15, F-739, F-695, F-745). Pfeile und
+  runde Kästen bilden noch Stützpunkte bzw. Ecken ab (offen: F-748, F-749). Die SVG-Datei trägt teilweise sichtbaren Text
+  im Klartext (Ausnahmepfad, F-760). Keine Texteingabe an ganz verborgenem Text (F-740).
 - **Schriftgrenze** als Zwischenspeicher mit Verdrängung statt lebenslanger Sperre (ADR-0021 Nachtrag 15, F-697).
 - **Index der Bibliothek:** Abgleich ergänzt Aufnahmen ohne Zeile, Ablegen an fehlenden Index baut ihn neu auf
   (ADR-0016 Nachtrag 7, F-700).

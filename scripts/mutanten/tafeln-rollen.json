@@ -10,8 +10,8 @@
     "name": "T2 Mausrad rollt die Übersicht nicht",
     "datei": "internal/ui/hilfe.go",
     "paket": "./internal/ui",
-    "alt": "\tk.radLesen(gtx)\n\tk.rollen = rollBegrenze",
-    "neu": "\tk.rollen = rollBegrenze"
+    "alt": "\tk.anmelden(liste, gtx)\n\tk.radLesen(gtx)\n",
+    "neu": "\tk.anmelden(liste, gtx)\n"
   },
   {
     "name": "T3 Rolltasten ändern den Versatz der Übersicht nicht",

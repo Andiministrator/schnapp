@@ -461,8 +461,8 @@
     "name": "K220-26 Editor: Faces ohne Grenze (F-577)",
     "datei": "internal/ui/textsatz.go",
     "paket": "./internal/ui",
-    "alt": "if len(ts.faces) > 256 {",
-    "neu": "if false && len(ts.faces) > 256 {"
+    "alt": "if len(ts.faces) >= facesGrenze {",
+    "neu": "if false && len(ts.faces) >= facesGrenze {"
   },
   {
     "name": "K220-27 Editor zeichnet keine Striche (F-577)",
@@ -519,5 +519,13 @@
     "paket": "./internal/render",
     "alt": "return s.Familie == Go || s.Familie == GoMono }",
     "neu": "return !s.Ersatz && (s.Familie == Go || s.Familie == GoMono) }"
+  },
+  {
+    "name": "QA13-B1 Verdrängung ohne Ruhefrist (Kritik B-1)",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "\t\t\tif benutzt[p].After(grenze) {",
+    "neu": "\t\t\tif false && benutzt[p].After(grenze) {",
+    "timeout": "3m"
   }
 ]

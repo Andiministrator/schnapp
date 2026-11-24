@@ -146,6 +146,17 @@ func (e *editor) zeichneHilfe(gtx layout.Context) {
 	lc := clip.Rect(liste).Push(gtx.Ops)
 	k.anmelden(liste, gtx)
 	k.radLesen(gtx)
+	// Das Rad-Ziel deckt die Liste und nimmt damit auch Klicks: ein Klick auf die Liste schließt die Übersicht wie
+	// überall sonst (Kritik B-2, Regression aus F-705; ADR-0031 Nachtrag 11).
+	for {
+		ev, ok := gtx.Event(pointer.Filter{Target: &k.flaeche, Kinds: pointer.Press})
+		if !ok {
+			break
+		}
+		if pe, ok := ev.(pointer.Event); ok && pe.Kind == pointer.Press {
+			e.hilfeOffen = false
+		}
+	}
 	k.rollen = rollBegrenze(k.rollen, k.rollMax)
 	for i, z := range zeilen {
 		sp, zeile := i/pro, i%pro

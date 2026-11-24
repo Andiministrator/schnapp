@@ -1879,12 +1879,12 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 			}
 		} else {
 			// Glyphen je sichtbarem Bereich wie der Renderer (document.TextStuecke, F-739, ADR-0023 Nachtrag 13): um den
-			// Versatz des Bereichs verschoben, über einer Naht auf ihn beschnitten. Gezeichnet wird in Ansichtskoordinaten.
+			// Versatz des Bereichs verschoben und immer auf ihn beschnitten. Gezeichnet wird in Ansichtskoordinaten.
 			stuecke := e.s.D.TextStuecke(v)
 			for _, st := range stuecke {
 				stSicht := sicht
 				var schnitt clip.Stack
-				if len(stuecke) > 1 {
+				{ // immer auf den Bereich beschneiden, auch bei nur einem (Kritik A-1, [S])
 					z := st.Ziel()
 					r := image.Rect(int(math.Round(z.Min.X)), int(math.Round(z.Min.Y)), int(math.Round(z.Max.X)), int(math.Round(z.Max.Y)))
 					if stSicht = sicht.Intersect(r); stSicht.Empty() {
@@ -1896,9 +1896,7 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 					p := document.Pt(zeile.X, zeile.Grundlinie).Plus(st.Versatz)
 					e.satz.zeichneZeile(gtx, sch, zeile.Text, p.X, p.Y, v.Schriftgrad, v.Farbe, stSicht)
 				}
-				if len(stuecke) > 1 {
-					schnitt.Pop()
-				}
+				schnitt.Pop()
 			}
 		}
 		for _, st := range v.Striche() { // mit gebrochenen Ecken wie der Renderer (Sitzungs-QA B-9)

@@ -31,6 +31,7 @@ func mitOrdnern(t *testing.T, o ...string) {
 		clear(fehler)
 		clear(dateien)
 		clear(nutzung)
+		clear(benutzt)
 		dateiBytes = 0
 		mu.Unlock()
 	})
@@ -175,6 +176,7 @@ func TestLadenSuchtSelbst(t *testing.T) {
 		ordner, suche, fertigKanal = alt, altSuche, altKanal
 		clear(dateien)
 		clear(nutzung)
+		clear(benutzt)
 		dateiBytes = 0
 		mu.Lock()
 		system, gesucht = nil, false
@@ -207,6 +209,7 @@ func TestHintergrundsucheUndWarten(t *testing.T) {
 		clear(fehler)
 		clear(dateien)
 		clear(nutzung)
+		clear(benutzt)
 		dateiBytes = 0
 		mu.Unlock()
 	})

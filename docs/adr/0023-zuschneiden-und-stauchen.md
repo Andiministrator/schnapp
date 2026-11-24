@@ -457,20 +457,25 @@ die Entscheidung am 24.11.2026 an Claude gegeben („entscheide du“): Die Gren
    Nähten; in jedem gilt Ansicht = Original + Versatz. `Dokument.TextStuecke(t)` sind die Bereiche, die Tinte oder Schild
    von t berühren (dieselbe Reichweite wie `TextSichtbar`).
 2. **Renderer und Editor** zeichnen die Glyphenzeilen eines Texts je Stück, um dessen Versatz verschoben; reicht der
-   Text über eine Naht (mehr als ein Stück), beschneiden sie jedes Stück auf seinen Bereich (Renderer: `zeichner.schnitt`
-   je Glyphe, Editor: `clip.Rect`). Text verhält sich damit an der Naht wie das Bild darunter: Was im Streifen liegt,
+   Text über eine Naht, beschneiden sie jedes Stück auf seinen Bereich (Renderer: `zeichner.schnitt` je Glyphe, Editor:
+   `clip.Rect`) — seit der Sitzungs-Kritik (A-1) auch bei nur einem Stück, sonst stand ein Text, der im Streifen endet,
+   mit diesem Teil hinter der Naht. Text verhält sich damit an der Naht wie das Bild darunter: Was im Streifen liegt,
    fehlt, der Rest steht an seinem Platz. Der SVG-Export schnitt Objekte schon immer kachelweise so ab und bleibt
-   unverändert; alle drei Ausgänge zeigen jetzt dasselbe. Liegt der Text in genau einem Bereich, steht er wie bisher.
+   unverändert; alle drei Ausgänge zeigen jetzt dasselbe.
 3. **Schild, Unter- und Durchstrich** bleiben über ihre Ecken abgebildet; für achsenparallele Rechtecke ist das genau
-   dasselbe wie Abschneiden. Das Dreieck einer Sprechblase bleibt über seine Ecken abgebildet (F-695, Karte #275).
+   dasselbe wie Abschneiden. Das Dreieck einer Sprechblase zeichnen Renderer und Editor seit Nachtrag 14 je Bereich.
 4. **Texteingabe (F-740):** Liegen Glyphen und Schild eines Texts ganz in einem Streifen (nur das Dreieck einer
    Sprechblase ist zu sehen), beginnt weder Klick (Text- oder Sprechblasen-Werkzeug), Doppelklick, Enter noch der
    Menüeintrag „Text bearbeiten“ eine Eingabe (`Sitzung.TextBearbeiten`, `KannTextBearbeiten`); der Text wird gewählt,
    die Statusleiste sagt „This text lies in a compressed area. Restore cut-out areas (Image menu) to edit it.“
    (`AblehnungTextVerborgen`). Blindes Tippen entfällt.
 5. **[S]:** Unverändert gilt, dass Stauchen kein Schwärzen ist; Text im Streifen bleibt in der Arbeitsdatei. In
-   Renderer-Bild, Editor und SVG-Export steht vom Text jetzt aber nichts mehr, was im Streifen liegt (bisher konnte
-   ein knapp herausragender Text ganz hinter der Naht stehen).
+   der Darstellung von Renderer-Bild, Editor und SVG-Export steht vom Text jetzt nichts mehr, was im Streifen liegt
+   (bisher konnte ein knapp herausragender Text ganz hinter der Naht stehen). Die SVG-Datei trägt einen teilweise
+   sichtbaren Text aber weiter ganz im Klartext (`<text>`, je Kachel per `<use>` beschnitten); das ist bewusst so
+   (Ausnahmepfad [S] P3, Sitzungs-Kritik A-7, F-760): Stauchen ist kein Schwärzen, Text in Pfade je Kachel zu
+   zerlegen wäre ein großer Umbau ohne Schutzgewinn gegenüber der Arbeitsdatei. Ganz verborgener Text fehlt weiter
+   (F-66, F-181).
 
 Tests: `internal/document/stuecke_test.go`, `internal/render/text_naht_test.go`,
 `internal/ui/text_naht_headless_test.go`, `internal/canvas/text_verborgen_test.go`; Mutanten
@@ -500,15 +505,17 @@ Tests: `internal/render/schraege_naht_test.go`, `TestEditorSchneidetSchraegeKant
 **Status:** Akzeptiert (Claude Opus 5.5, Karte #284). Ersetzt in Punkt 7 den Satz „Eine Beschriftung, die über eine
 Naht läuft, wird mit dem Bild gestaucht abgebildet“.
 
-1. **Eine Regel für alle Ausgänge:** Eine Beschriftung, die über eine Naht reicht, ist dort abgeschnitten wie das Bild
+1. **Eine Regel als Ziel:** Eine Beschriftung, die über eine Naht reicht, ist dort abgeschnitten wie das Bild
    darunter; was im Streifen liegt, fehlt, der Rest steht um den Versatz seines Bereichs verschoben. So zeigte es der
    SVG-Export (Kacheln) schon immer, so rechnet der Treffer (im Original). Renderer und Editor zeichnen dafür die
    Schritt-Nummer jetzt ebenfalls je sichtbarem Bereich (`jeStueck`, wie Text, Dreieck und Lupen-Linie seit den
    Nachträgen 13 und 14). Eine Nummer, deren Mitte im Streifen liegt, steht nicht mehr ganz auf der Naht, sondern zeigt
    nur ihren herausragenden Teil.
 2. **Pfeil, Kasten, Schild, Striche und Rahmen** bleiben über Ecken bzw. Stützpunkte abgebildet: Für achsparallele
-   Rechtecke ist das dasselbe wie Abschneiden; beim Pfeil unterscheiden sich die beiden Rechnungen nur auf der Strecke
-   über dem Streifen, also im Kantenband der Naht, das Spalt und Kante überdecken. Ein Pfeil je Bereich hätte über
+   Rechtecke ohne Rundung ist das dasselbe wie Abschneiden. Beim Pfeil unterscheiden sich die Rechnungen auf der Strecke
+   über dem Streifen; liegen die 48 Stützpunkte weiter auseinander als das Kantenband breit ist (lange Pfeile), bei
+   breiten Strichen (ab 32 px) und an einer Spitze im Streifen auch daneben, ebenso ein Kasten mit Eckradius, dessen
+   Kante im Streifen liegt (Sitzungs-Kritik A-4, A-5, C-4; offen als F-748 und F-749). Ein Pfeil je Bereich hätte über
    vielen Nähten (bis `MaxStreifen`) jedes Mal den ganzen Pfeil aufgebaut; der Prüflauf beim Öffnen (F-136) wurde in
    der CI dadurch zu langsam. Glyphkosten eines Texts zählt der Trockenlauf je sichtbarer Zeile einmal, nicht je
    Bereich.

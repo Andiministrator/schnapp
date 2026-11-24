@@ -5,9 +5,9 @@ package document
 // Text an der Naht (F-739, ADR-0023 Nachtrag 13): Die Ansicht ist das Original, aus dem Streifen herausgeschnitten und
 // ein Zuschnitt abgeschnitten sind; zwischen zwei Nähten ist sie also eine reine Verschiebung. Rechtecke, Linien und
 // Schilder bilden sich über die Ecken richtig ab, Glyphen aber nicht: Eine Textzeile stand starr ab ihrem
-// abgebildeten Anfang, und ein Text, der nur knapp aus einem Streifen ragte, stand ganz hinter der Naht. Stuecke ist die
-// eine Rechnung, mit der Renderer, Editor und SVG-Export Text wie Bildinhalt behandeln: je sichtbarem Bereich einmal
-// gezeichnet, auf den Bereich beschnitten und um dessen Versatz verschoben.
+// abgebildeten Anfang, und ein Text, der nur knapp aus einem Streifen ragte, stand ganz hinter der Naht. Mit Stuecke
+// behandeln Renderer und Editor Text wie Bildinhalt: je sichtbarem Bereich einmal gezeichnet, auf den Bereich
+// beschnitten und um dessen Versatz verschoben — wie der SVG-Export mit seinen Kacheln (eigene Rechnung `intervalle`).
 
 // Stueck ist ein sichtbarer Bereich der Ansicht: Quelle ist ein Rechteck im Original zwischen Zuschnittkanten und
 // Streifen (ganzzahlige Kanten), in dem Ansicht = Original + Versatz gilt.

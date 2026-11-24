@@ -577,10 +577,13 @@ die lebenslange Sperre ließ später geöffnete Dokumente ihre Schrift als fehle
    32 Dateien/256 MiB gilt weiter für die zugleich gehaltenen Dateien. Das gilt bei jedem Laden, auch aus der
    Hintergrundsuche und aus Renderer und Export (alles unter `mu`).
 2. **Gehaltene Schriften bleiben gültig:** Wer eine `*Schrift` schon hat (laufender Renderer, Texteditor), behält sie
-   benutzbar; sie fällt nur aus der Tabelle, der Garbage Collector gibt sie frei, wenn niemand mehr sie hält. Der
-   Speicher kann daher kurz über der Grenze liegen, solange Renderer noch verdrängte Schriften benutzen.
+   benutzbar; sie fällt nur aus der Tabelle, der Garbage Collector gibt sie frei, wenn niemand mehr sie hält. Die
+   Merker je `*sfnt.Font` (`document.schriftenMass`, Faces und Umrisse in `internal/ui/textsatz.go`) halten verdrängte
+   Fassungen fest; sie fangen deshalb über 2 × 32 Schriften leer neu an (Sitzungs-Kritik B-1).
 3. **Restfall:** Eine einzelne Datei über 256 MiB oder eine Datei, die auch ohne alle anderen nicht passt, bleibt
-   `errGrenze` (Ersatz Go, nicht als Dateifehler gemerkt). Braucht ein Dokument mehr als 32 verschiedene Dateien
-   zugleich, lädt es sie reihum nach (langsamer, aber ohne Ersatz); eine eigene Meldung „Grenze erreicht“ entfällt,
-   weil die Schrift nicht mehr fehlt.
-4. Tests: `internal/fonts/verdraengung_test.go` (33 und mehr Dateien in Folge, älteste zuerst, nebenläufig unter `-race`).
+   `errGrenze` (Ersatz Go, nicht als Dateifehler gemerkt). **Ruhefrist (Sitzungs-Kritik B-1):** Eine Datei, die vor
+   weniger als 2 s benutzt wurde, wird nicht verdrängt (`ruhefrist`). Braucht ein Bild oder ein Rendererlauf mehr als
+   32 Dateien zugleich, bekommt die überzählige Ersatz Go wie vor F-697; sonst lud jedes Bild alle reihum neu und legte
+   je Bild neue Fassungen an. Über längere Zeit (Wechsel der Aufnahme) wird weiter verdrängt.
+4. Tests: `internal/fonts/verdraengung_test.go` (33 und mehr Dateien in Folge, älteste zuerst, nebenläufig unter `-race`,
+   Ruhefrist `TestRuhefristVerdraengtNichtImGebrauch`).

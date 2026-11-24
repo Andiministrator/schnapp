@@ -19,5 +19,13 @@
     "paket": "./internal/ui",
     "alt": "\t\t\te.hilfeOffen = false\n\t\t\treturn\n\t\t}\n\t}\n\tflaeche",
     "neu": "\t\t\treturn\n\t\t}\n\t}\n\tflaeche"
+  },
+  {
+    "name": "M4 Klick auf die Liste der Übersicht schließt nicht (Kritik B-2)",
+    "datei": "internal/ui/hilfe.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif pe, ok := ev.(pointer.Event); ok && pe.Kind == pointer.Press {\n\t\t\te.hilfeOffen = false",
+    "neu": "\t\tif pe, ok := ev.(pointer.Event); ok && pe.Kind == pointer.Press && false {\n\t\t\te.hilfeOffen = false",
+    "timeout": "5m"
   }
 ]
