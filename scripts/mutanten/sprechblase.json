@@ -189,5 +189,33 @@
     "paket": "./internal/document",
     "alt": "ta.Spitze != nil && *ta.Spitze != *tb.Spitze",
     "neu": "ta.Spitze != nil && ta.Spitze != tb.Spitze"
+  },
+  {
+    "name": "S28 Export schreibt den Text auch bei nur sichtbarem Dreieck (F-692)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "if s.ohneText != nil && s.ohneText(o) {",
+    "neu": "if false && s.ohneText != nil && s.ohneText(o) {"
+  },
+  {
+    "name": "S29 Export behält unsichtbare Sprechblasen (F-692)",
+    "datei": "internal/fileformat/export.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\treturn schrift || dreieck",
+    "neu": "\t\treturn true || schrift || dreieck"
+  },
+  {
+    "name": "S30 Schrift-Sichtbarkeit mit Spitze gerechnet (F-692)",
+    "datei": "internal/document/naht.go",
+    "paket": "./internal/fileformat",
+    "alt": "schrift = d.Sichtbar(textReichweite(t, t.Grenzen()))",
+    "neu": "schrift = d.Sichtbar(Reichweite(t))"
+  },
+  {
+    "name": "S31 Dreieck nie sichtbar (F-692)",
+    "datei": "internal/document/naht.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\tdreieck = d.Sichtbar(Rechteck{",
+    "neu": "\t\tdreieck = false && d.Sichtbar(Rechteck{"
   }
 ]

@@ -263,6 +263,8 @@ func exportiereSVG(w io.Writer, d *document.Dokument) error {
 	s.WriteString(`><defs><g id="objekte">`)
 	// Ausgeblendete Ebenen und solche mit Deckkraft 0 % fehlen, wie im Renderer: nichts Unsichtbares geht im Klartext
 	// hinaus (ADR-0032 Punkt 4, F-585).
+	// Eine Sprechblase, von der nur das Dreieck sichtbar ist, kommt ohne Text und Striche (F-692).
+	s.ohneText = func(t document.Text) bool { schrift, _ := d.TextSichtbar(t); return !schrift }
 	s.objekte(d, func(o document.Objekt) bool { return exportiert(d, o) })
 	s.WriteString(`</g></defs>`)
 	// Gibt es Nähte, liegen die Kacheln unter der Maske, die den Spalt jeder Naht leer lässt (ADR-0023 Nachtrag 7).
@@ -312,9 +314,18 @@ func exportiereSVG(w io.Writer, d *document.Dokument) error {
 
 // exportiert meldet, ob der SVG-Export o schreibt: sichtbar in einer Kachel, Ebene nicht ausgeblendet, Deckkraft über 0
 // (ADR-0032 Punkt 4, F-585; wie der Renderer).
+// Eine Sprechblase kommt nur, wenn Schrift oder Schild oder ihr Dreieck sichtbar ist (document.TextSichtbar, F-692);
+// ist nur das Dreieck sichtbar, schreibt der Export nur dessen Pfad (schreiber.ohneText).
 func exportiert(d *document.Dokument, o document.Objekt) bool {
 	e := o.Ebenenwerte()
-	return d.ObjektSichtbar(o) && !e.Ausgeblendet && e.Deckkraft() > 0
+	if !d.ObjektSichtbar(o) || e.Ausgeblendet || e.Deckkraft() <= 0 {
+		return false
+	}
+	if t, ok := o.(document.Text); ok && t.Spitze != nil {
+		schrift, dreieck := d.TextSichtbar(t)
+		return schrift || dreieck
+	}
+	return true
 }
 
 // hundertstel rundet v auf ganze Hundertstel (wie document.Kantenlinie.Band).

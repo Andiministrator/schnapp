@@ -505,7 +505,7 @@ Nachtrag 4 (eckig), Nachtrag 10 (Schrift) und Nachtrag 11 (Farbpaar) auf.
   das Dreieck steht an der Seite des Strahls (`document.Sprechblase`, `Text.Spitzendreieck`).
 - **Spitze und Grenzen (Punkt 1):** `Text.pruefe` verlangt für die Spitze nur endliche Koordinaten im Bereich
   ±`MaxKoordinate` wie für `Ort`; außerhalb des Bilds ist erlaubt (wie ein Pfeil über den Rand). Die Spitze zählt in
-  `Huelle` und `Reichweite` auch dann, wenn das Dreieck entfällt.
+  `Huelle` und `Reichweite` auch dann, wenn das Dreieck entfällt (für den SVG-Export eingeschränkt durch Nachtrag 14).
 - **Schenkel (Punkt 3):** Der Renderer zeichnet sie mit dem Strichzeichner des Pfeils (runde Enden und Ecken), der
   SVG-Pfad dazu mit `stroke-linecap`/`stroke-linejoin="round"`; der gefüllte Pfad trägt `stroke-linejoin="miter"` ohne
   Strich.
@@ -532,3 +532,24 @@ Nachtrag 4 (eckig), Nachtrag 10 (Schrift) und Nachtrag 11 (Farbpaar) auf.
   schrumpfen (vorher 20 dp, ADR-0031 Nachtrag 3, `werkzeugKnopfMinDp`).
 
 **Ergänzt (F-634, 24.11.2026):** Die Standard-Spitze (Klick und Schalter „Spitze“) versucht nach dem Begrenzen auf das Bild die Ecken der Reihe nach — links unten, rechts unten, links oben, rechts oben, jeweils 3 Schriftgrade vom Schild weg —, bis `Text.Spitzendreieck` ein Dreieck liefert. Sitzt das Schild in einer Bildecke, fällt die Spitze sonst ins Schild oder an dessen Rand und die Blase bliebe ohne Dreieck. Geht keine Ecke, bleibt die erste.
+
+## Nachtrag 14 (24.11.2026): Sprechblase im SVG-Export nur mit sichtbarer Schrift (F-692, F-694, Karte #265)
+
+**Status:** Akzeptiert (Claude Opus 5.5 im Auftrag Andis: „arbeite selbstständig“, 24.11.2026). Anlass: Abschluss-Kritik
+Sprint 12, A-1 und A-3. Schränkt den Satz aus Nachtrag 13 („Die Spitze zählt in `Huelle` und `Reichweite` auch dann,
+wenn das Dreieck entfällt“) für den SVG-Export ein; ADR-0023 Punkt 7 und ADR-0008 Nachtrag 2 (F-66, F-181) gehen vor.
+
+1. **Reichweite bleibt:** `Reichweite` und `ObjektSichtbar` rechnen weiter mit der Hülle samt Spitze. Sie entscheiden,
+   ob Editor, Renderer und Treffer ein Objekt überhaupt ansehen; der Griff an der Spitze bleibt so auch erreichbar,
+   wenn das Schild weggeschnitten ist. Gezeichnet wird ohnehin nur, was in der Ansicht liegt.
+2. **Export getrennt nach Teilen:** Für den SVG-Export zählt eine Sprechblase in zwei Teilen
+   (`Dokument.TextSichtbar`): **Schrift** = Reichweite ohne Spitze (Tinte der Glyphen, mit Füllung das Schild) und
+   **Dreieck** = Rechteck um `Spitzendreieck` samt halber Schenkelbreite und 1 Pixel (kein Dreieck, wenn es entfällt).
+   Ist die Schrift sichtbar, schreibt der Export die Blase wie bisher ganz. Ist nur das Dreieck sichtbar, schreibt er
+   nur den Pfad (Umriss in der Füllfarbe bzw. die Schenkel), **ohne** `<text>` und ohne Unter- und Durchstreichung.
+   Ist keins von beiden sichtbar, fehlt das Objekt im Export. Ein Text, dessen Glyphen und Schild nirgends zu sehen
+   sind, steht so nie im Klartext in einer exportierten Datei. Die Arbeitsdatei (snAP) trägt weiter alles
+   (nicht zerstörend, Kernprinzip 1).
+3. **Wertvergleich der Objekte (F-694):** Weil `Text.Spitze` ein Zeiger ist und jede Änderung einen neuen setzt,
+   vergleicht `document.Gleich` Objekte dem Wert nach (Spitze dereferenziert). `BeendeZug` und die Prüfungen „nichts
+   geändert“ in `canvas` nutzen es; ein Zug ohne Wirkung an einer Sprechblase hinterlässt so keinen Rückgängig-Schritt.

@@ -17,8 +17,8 @@
     "name": "E3 SVG-Export schreibt ausgeblendete Ebenen",
     "datei": "internal/fileformat/export.go",
     "paket": "./internal/fileformat",
-    "alt": "return d.ObjektSichtbar(o) && !e.Ausgeblendet && e.Deckkraft() > 0",
-    "neu": "return d.ObjektSichtbar(o) && e.Deckkraft() > 0"
+    "alt": "if !d.ObjektSichtbar(o) || e.Ausgeblendet || e.Deckkraft() <= 0 {",
+    "neu": "if !d.ObjektSichtbar(o) || e.Deckkraft() <= 0 {"
   },
   {
     "name": "E4 Leser übergeht s:ausgeblendet",
@@ -115,8 +115,8 @@
     "name": "E17 SVG-Export schreibt Ebenen mit Deckkraft 0 (F-585)",
     "datei": "internal/fileformat/export.go",
     "paket": "./internal/fileformat",
-    "alt": "return d.ObjektSichtbar(o) && !e.Ausgeblendet && e.Deckkraft() > 0",
-    "neu": "return d.ObjektSichtbar(o) && !e.Ausgeblendet"
+    "alt": "if !d.ObjektSichtbar(o) || e.Ausgeblendet || e.Deckkraft() <= 0 {",
+    "neu": "if !d.ObjektSichtbar(o) || e.Ausgeblendet {"
   },
   {
     "name": "E19 Leeres Namensfeld ohne eigenen Namen ist ein Fehler (F-587)",

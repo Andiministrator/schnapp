@@ -71,6 +71,9 @@ type schreiber struct {
 	rundlauf bool
 	// lupenBilder: schon eingebettete Bilder der Lupen und ihre id (ADR-0033 Nachtrag 5), nur im Export.
 	lupenBilder map[lupenSchluessel]string
+	// ohneText: Text ohne `<text>` und Striche schreiben (nur Schild bzw. Dreieck), nur im Export: eine Sprechblase,
+	// von der nur das Dreieck sichtbar ist (F-692). nil schreibt jeden Text ganz.
+	ohneText func(document.Text) bool
 }
 
 func (s *schreiber) attr(name, wert string) {
@@ -358,6 +361,10 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 				s.attr("height", zahl(g.Hoehe()))
 				s.farbeSVG("fill", o.Hintergrund)
 				s.WriteString(`/>`)
+			}
+			if s.ohneText != nil && s.ohneText(o) {
+				s.WriteString(`</g>`) // nur das Dreieck ist sichtbar: kein Text im Klartext (F-692)
+				break
 			}
 			s.WriteString(`<text`)
 			s.attr("xml:space", "preserve") // sonst falten Betrachter mehrere und führende Leerzeichen (F-343)

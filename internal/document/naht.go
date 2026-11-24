@@ -75,16 +75,7 @@ func Reichweite(o Objekt) Rechteck {
 	g := o.Grenzen()
 	switch v := o.(type) {
 	case Text:
-		r, ok, geschaetzt := textTinte(v)
-		switch {
-		case geschaetzt:
-			r = schaetzung(v, g)
-		case !ok:
-			r = Rechteck{Min: v.Ort, Max: v.Ort}
-		}
-		if !geschaetzt && v.Hintergrund.A > 0 {
-			r = r.Vereint(g)
-		}
+		r := textReichweite(v, g)
 		if v.Spitze != nil {
 			// Dreieck der Sprechblase (Füllung oder Schenkel samt Linienbreite) und 1 Pixel Reserve; die Spitze liegt immer
 			// in der Hülle, das Dreieck innerhalb von ihr (ADR-0021 Nachtrag 13 Punkt 4).
@@ -119,6 +110,38 @@ func Reichweite(o Objekt) Rechteck {
 		return g.Vereint(sp)
 	}
 	return g
+}
+
+// textReichweite ist die Reichweite eines Texts ohne Spitze (g = Grenzen): die Tinte der Glyphen, mit Hintergrund dazu
+// das Schild, ohne Tinte und Hintergrund der Ort.
+func textReichweite(v Text, g Rechteck) Rechteck {
+	r, ok, geschaetzt := textTinte(v)
+	switch {
+	case geschaetzt:
+		r = schaetzung(v, g)
+	case !ok:
+		r = Rechteck{Min: v.Ort, Max: v.Ort}
+	}
+	if !geschaetzt && v.Hintergrund.A > 0 {
+		r = r.Vereint(g)
+	}
+	return r
+}
+
+// TextSichtbar trennt für einen Text, was davon in die Ansicht reicht (F-692, ADR-0021 Nachtrag 14): schrift meldet, ob
+// Glyphen oder Schild sichtbar sind (Reichweite ohne Spitze), dreieck, ob das Dreieck einer Sprechblase sichtbar ist
+// (Spitzendreieck samt halber Schenkelbreite und 1 Pixel). Ohne Spitze oder ohne Dreieck ist dreieck false. Der
+// SVG-Export schreibt den Text nur bei schrift, das Dreieck allein ohne Text, und lässt das Objekt bei keinem von
+// beiden weg: Ein Text, dessen Glyphen und Schild nirgends sichtbar sind, steht nicht im Klartext in der Datei (F-181).
+// Reichweite (Huelle samt Spitze) bleibt für Treffer, Auswahl und Ebenen-Zwischenbild.
+func (d *Dokument) TextSichtbar(t Text) (schrift, dreieck bool) {
+	schrift = d.Sichtbar(textReichweite(t, t.Grenzen()))
+	if a, sp, b, ok := t.Spitzendreieck(); ok {
+		rand := t.SchenkelBreite()/2 + 1
+		r := Rechteck{Min: a, Max: a}.Vereint(Rechteck{Min: sp, Max: sp}).Vereint(Rechteck{Min: b, Max: b})
+		dreieck = d.Sichtbar(Rechteck{Min: r.Min.Minus(Pt(rand, rand)), Max: r.Max.Plus(Pt(rand, rand))})
+	}
+	return schrift, dreieck
 }
 
 // schaetzung ist die grobe obere Schranke für Text und Nummer ohne Schrift (sollte nie gebraucht werden): Text je
