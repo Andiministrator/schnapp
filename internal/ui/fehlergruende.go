@@ -4,6 +4,7 @@ package ui
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/Andiministrator/schnapp/internal/i18n"
 	"github.com/Andiministrator/schnapp/internal/settings"
@@ -12,35 +13,34 @@ import (
 // fehlerGrund liefert den Grund eines Fehlers für die Fußzeile (F-623): Die eigenen Fehlerwerte des Pakets settings
 // (und der Tafel) werden über errors.Is auf übersetzte Texte abgebildet; die Pakete selbst liefern weiter englische
 // Texte mit Paketpräfix (ADR-0019 Nachträge 2 und 3). Alles andere, vor allem Fehler des Betriebssystems, bleibt
-// englisch und verliert nur das Paketpräfix.
+// englisch und verliert nur das Paketpräfix. Ein Zusatz hinter dem Fehlerwert (etwa „: capture.seam“) bleibt stehen.
 func fehlerGrund(err error) string {
-	switch {
-	case errors.Is(err, settings.ErrZuGross):
-		return i18n.T("the settings file is larger than 64 KiB")
-	case errors.Is(err, settings.ErrKeineDatei):
-		return i18n.T("the settings file is not a regular file")
-	case errors.Is(err, settings.ErrKeinUTF8):
-		return i18n.T("the settings file is not valid UTF-8")
-	case errors.Is(err, settings.ErrUngueltig):
-		return i18n.T("a setting has an invalid value")
-	case errors.Is(err, settings.ErrVerweisLeer):
-		return i18n.T("the settings file is a link to nothing")
-	case errors.Is(err, settings.ErrKeinHeim):
-		return i18n.T("the home directory of the user is unknown")
-	case errors.Is(err, errKeinOrt):
-		return i18n.T("the settings file cannot be located")
-	case errors.Is(err, settings.ErrStileZuGross):
-		return i18n.T("the styles file would be larger than 64 KiB")
-	case errors.Is(err, settings.ErrStileKeineDatei):
-		return i18n.T("the styles file is not a regular file")
-	case errors.Is(err, settings.ErrStileVerweis):
-		return i18n.T("the styles file is a link to nothing")
-	case errors.Is(err, settings.ErrStileUnlesbar):
-		return i18n.T("the existing styles file cannot be read, so it is left as it is")
-	case errors.Is(err, settings.ErrStileSicherung):
-		return i18n.T("the existing styles file has parts that cannot be read and styles.ini.bak already exists, so it is left as it is")
-	case errors.Is(err, settings.ErrStileGesperrt):
-		return i18n.T("the styles file is locked by another window")
+	text := ohnePaketpraefix(err.Error())
+	for _, f := range []struct {
+		wert  error
+		grund string
+	}{
+		{settings.ErrZuGross, i18n.T("the settings file is larger than 64 KiB")},
+		{settings.ErrKeineDatei, i18n.T("the settings file is not a regular file")},
+		{settings.ErrKeinUTF8, i18n.T("the settings file is not valid UTF-8")},
+		{settings.ErrUngueltig, i18n.T("a setting has an invalid value")},
+		{settings.ErrVerweisLeer, i18n.T("the settings file is a link to nothing")},
+		{settings.ErrKeinHeim, i18n.T("the home directory of the user is unknown")},
+		{errKeinOrt, i18n.T("the settings file cannot be located")},
+		{settings.ErrStileZuGross, i18n.T("the styles file would be larger than 64 KiB")},
+		{settings.ErrStileKeineDatei, i18n.T("the styles file is not a regular file")},
+		{settings.ErrStileVerweis, i18n.T("the styles file is a link to nothing")},
+		{settings.ErrStileUnlesbar, i18n.T("the existing styles file cannot be read, so it is left as it is")},
+		{settings.ErrStileSicherung, i18n.T("the existing styles file has parts that cannot be read and styles.ini.bak already exists, so it is left as it is")},
+		{settings.ErrStileGesperrt, i18n.T("the styles file is locked by another window")},
+	} {
+		if errors.Is(err, f.wert) {
+			// Was hinter dem Fehlerwert steht (etwa der Schlüssel bei ErrUngueltig), bleibt als Zusatz stehen.
+			if _, rest, ok := strings.Cut(text, f.wert.Error()); ok && rest != "" {
+				return f.grund + rest
+			}
+			return f.grund
+		}
 	}
-	return ohnePaketpraefix(err.Error())
+	return text
 }

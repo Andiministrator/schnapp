@@ -40,6 +40,10 @@ func TestFehlerGrundUebersetzt(t *testing.T) {
 	if g := fehlerGrund(settings.ErrKeineDatei); g != "die Einstellungsdatei ist keine gewöhnliche Datei" {
 		t.Errorf("Grund %q", g)
 	}
+	// Der Schlüssel hinter dem Fehlerwert bleibt stehen, sonst weiß niemand, welcher Wert ungültig ist.
+	if g := fehlerGrund(fmt.Errorf("settings: %w", fmt.Errorf("%w: capture.seam = %q", settings.ErrUngueltig, "x"))); g != `eine Einstellung hat einen ungültigen Wert: capture.seam = "x"` {
+		t.Errorf("Zusatz verloren: %q", g)
+	}
 	if g := fehlerGrund(errors.New("settings: permission denied")); g != "permission denied" {
 		t.Errorf("Betriebssystem-Fehler: %q", g)
 	}
