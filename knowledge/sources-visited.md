@@ -97,6 +97,7 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | https://flathub.org/api/v2/search?q=schnapp | 2026-11-19 | 2026-11-19 | leer | curl | HTTP 405 (falsche Methode, kein Ergebnis) | — |
 | https://api.github.com/repos/Andiministrator/schnapp/commits/main | 2026-11-19 | 2026-11-19 | live | curl | Autor/Committer = noreply-Adresse | docs/findings.md (F-1) |
 | https://api.github.com/repos/Andiministrator/schnapp/actions/runs | 2026-11-21 | 2026-11-19 | live | curl | CI-Lauf test: success; 21.11.: Status der CI-Läufe #154–#170 | — |
+| https://api.github.com/repos/gioui/gio/pulls/204 (und /205, /issues/…/comments, /pulls/…/reviews) | 2026-11-24 | 2026-11-24 | live | curl | Review-Stand der Gio-PRs: Elias Naur (Review #204, Kommentar #205), inkeliz, qianniancn; nach Andis Posting Titel und Kopf-Commits geprüft | Karte #157, tmp/l157/antworten.md |
 | https://www.gnu.org/licenses/gpl-3.0.txt | 2026-11-19 | 2026-11-19 | live | curl | GPL-3.0-Text | LICENSE |
 | https://api.github.com/repos/Andiministrator/schnapp/commits/<sha>/check-runs | 2026-11-24 | 2026-11-23 | live | curl | CI-Status je Commit: e08a477 rot (wurzel), ab 1cb0d08 grün; 24.11.: 14aee47 grün, d6a182b grün (F-602) | docs/findings.archive.md (F-527) |
 | https://api.github.com/repos/Andiministrator/schnapp/actions/jobs/138058366566/logs | 2026-11-23 | 2026-11-23 | 403 | curl | Job-Log nur angemeldet („Must have admin rights“), wie in Lehren vermerkt | — |
