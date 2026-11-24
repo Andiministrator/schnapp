@@ -18,6 +18,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/i18n"
 	"github.com/Andiministrator/schnapp/internal/library"
 	"github.com/Andiministrator/schnapp/internal/render"
+	"github.com/Andiministrator/schnapp/internal/rescue"
 	"github.com/Andiministrator/schnapp/internal/saveprogress"
 	"github.com/Andiministrator/schnapp/internal/ui"
 )
@@ -74,7 +75,18 @@ func geoeffnetFuer(b *library.Bibliothek, abs string, g *fileformat.Gelesen, sta
 // anbindungFuer verbindet den Editor mit der Bibliothek b (ADR-0036): Die Leiste liest Index und Vorschauen, ein Klick
 // auf eine Vorschau lädt die Aufnahme über oeffnerFuer.
 func anbindungFuer(b *library.Bibliothek, kante document.Kante) *ui.Anbindung {
-	return &ui.Anbindung{Bibliothek: b, Oeffnen: oeffnerFuer(b, kante)}
+	return &ui.Anbindung{Bibliothek: b, Oeffnen: oeffnerFuer(b, kante), UmDatei: rettungUmDatei}
+}
+
+// rettungUmDatei hält die Rettungskopie einer Aufnahme anwendbar, während ihre Metadaten neu geschrieben werden
+// (Schlagworte der Bibliotheksansicht, F-703). Ohne Zustandsordner läuft aendere unverändert.
+func rettungUmDatei(pfad string, aendere func() error) error {
+	ort, err := rescue.Ort(rettungUmgebung)
+	if err != nil {
+		rettungDiagnose(err)
+		return aendere()
+	}
+	return rescue.UmDatei(ort, pfad, aendere)
 }
 
 // oeffnerFuer ist die Ladefunktion für den Wechsel der Aufnahme im selben Fenster (ADR-0036 Punkt 5): wie

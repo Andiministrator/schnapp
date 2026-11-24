@@ -832,5 +832,40 @@
     "paket": "./cmd/schnapp",
     "alt": "\tif w.Liegt {\n\t\t// F-497",
     "neu": "\tif false {\n\t\t// F-497"
+  },
+  {
+    "name": "N1 F-702 Aufräumen ignoriert die gehaltene Sperre der Kopie",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "} else if belegt {\n\t\t\t\tcontinue\n\t\t\t}",
+    "neu": "} else if belegt && false {\n\t\t\t\tcontinue\n\t\t\t}"
+  },
+  {
+    "name": "N2 F-702 Aufräumen löscht bei unprüfbarer Sperre",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "\t\t\t\tfehlerListe = append(fehlerListe, err)\n\t\t\t\tcontinue\n\t\t\t} else if belegt {",
+    "neu": "\t\t\t\tfehlerListe = append(fehlerListe, err)\n\t\t\t} else if belegt {"
+  },
+  {
+    "name": "N3 F-703 UmDatei zieht die Kennung nicht nach",
+    "datei": "internal/rescue/nachziehen.go",
+    "paket": "./internal/rescue",
+    "alt": "\tkp.Datei = nachher\n",
+    "neu": "\t_ = nachher\n"
+  },
+  {
+    "name": "N4 F-703 UmDatei zieht auch eine fremde Kopie nach",
+    "datei": "internal/rescue/nachziehen.go",
+    "paket": "./internal/rescue",
+    "alt": "passte := err == nil && kp.Datei.Gleich(vorher)",
+    "neu": "passte := err == nil || vorher.Pfad != \"\""
+  },
+  {
+    "name": "N5 F-703 Anbindung ohne UmDatei",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": ", UmDatei: rettungUmDatei}",
+    "neu": "}"
   }
 ]

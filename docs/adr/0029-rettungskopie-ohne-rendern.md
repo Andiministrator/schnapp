@@ -233,3 +233,30 @@ Was eine Bearbeitung ausmacht, ist dagegen klein und ohne Pixel beschreibbar:
   different file“ (F-496).
 - Eine liegende Kopie (beiseitegelegt oder unlesbar) steht beim Öffnen mit **vollem Dateinamen** auf der Fehlerausgabe
   (`Rescue copy file: schnapp/rescue/<Name>`); die Statusleiste behält den Kurznamen aus Nachtrag 8 (F-497).
+
+## Nachtrag 10 (24.11.2026): Kopie gegen Nebenwirkungen anderer Fenster (F-702, F-703)
+
+**Status:** Akzeptiert (Karte #271, umgesetzt von Claude Sonnet 5.5; Befunde aus der Abschluss-Kritik zu Sprint 12).
+
+- **Aufräumen lässt eine Kopie liegen, deren Sperre gehalten wird (F-702).** `Aufraeumen` prüfte nur die Sperrdatei
+  selbst, nicht die Kopie dazu: Ein Fenster, das seine Ausgangsdatei länger als 30 Tage unberührt offen hielt, verlor
+  beim nächsten Start eines anderen Fensters seine Kopie. Jetzt öffnet es zu jeder alten `<SHA>.json` die Sperre
+  `<SHA>.lock` ohne Anlegen und ohne Warten (`sperreGehalten`); gehalten: Kopie bleibt. Nicht prüfbar (Symlink,
+  Verzeichnis, Rechte): Kopie bleibt ebenfalls, der Fehler kommt in die Sammelmeldung (Ausfall in Richtung Nichtstun).
+  Fehlt die Sperrdatei oder kann das Dateisystem kein flock, gilt die Kopie als ohne Halter und fällt wie bisher.
+  Beiseitegelegte Kopien (`….alt.json`) gehören keiner Sitzung und fallen nach der Haltezeit unabhängig von Sperren.
+  Die Sperre selbst ist unverändert.
+- **Metadaten-Änderungen ziehen die Kennung nach (F-703).** `SetzeSchlagworte` schreibt die Arbeitsdatei neu (neue Größe,
+  Zeit, SHA), eine liegende Kopie galt danach als „Datei geändert“. Gewählt ist Variante (a): `rescue.UmDatei(ort, pfad,
+  aendere)` führt die Änderung aus und trägt in einer **zum alten Stand passenden** Kopie die Kennung des neuen Stands
+  ein. Die Kopie enthält Angaben und Schwärzungen seit dem Speichern, die Datei behält Bild, Original und Objekte; die
+  Kopie wendet also dasselbe an wie zuvor, keine Schwärzung geht verloren, nichts Ungeschwärztes wird sichtbar
+  (Kernprinzip 2). `UmDatei` hält währenddessen die Sperre der Ausgangsdatei; ist sie belegt (ein Fenster führt die
+  Kopie) oder nicht prüfbar, läuft nur die Änderung. Eine Kopie, die schon vorher nicht passte, eine unlesbare und ein
+  Fehler beim Schreiben der neuen Kennung lassen die Kopie unverändert (sie gilt dann wie bisher als fremd und fällt
+  nach der Haltezeit).
+- **Naht:** `library` kennt `rescue` nicht. Die Oberfläche ruft die Änderung über `ui.Anbindung.UmDatei`
+  (`cmd/schnapp`: `rettungUmDatei`, Ort wie `rettungFuer`); ohne Anbindungsfeld läuft sie unverändert. Variante (b)
+  (F2 ablehnen) wurde verworfen: Sie sperrte eine harmlose Bedienung wegen einer Kopie, die sich sauber erhalten lässt.
+- Tests `internal/rescue/nebenwirkung_test.go`, `cmd/schnapp/rettung_schlagworte_test.go`; Mutanten N1 bis N5 in
+  `scripts/mutanten/rescue.json`.

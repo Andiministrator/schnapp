@@ -302,6 +302,16 @@ func Aufraeumen(ort string, jetzt time.Time) (entfernt int, fehler error) {
 			}
 			continue
 		}
+		if strings.HasSuffix(n, ".json") && !strings.HasSuffix(n, ".alt.json") {
+			// Kopie eines Fensters, das die Ausgangsdatei noch offen hat, bleibt liegen, auch wenn es sie lange nicht
+			// geschrieben hat (F-702). Ist die Sperre nicht prüfbar, bleibt sie ebenso: Ausfall in Richtung Nichtstun.
+			if belegt, err := sperreGehalten(filepath.Join(ort, strings.TrimSuffix(n, ".json")+sperrEndung)); err != nil {
+				fehlerListe = append(fehlerListe, err)
+				continue
+			} else if belegt {
+				continue
+			}
+		}
 		if err := os.Remove(filepath.Join(ort, n)); err != nil && !errors.Is(err, os.ErrNotExist) {
 			fehlerListe = append(fehlerListe, err)
 			continue

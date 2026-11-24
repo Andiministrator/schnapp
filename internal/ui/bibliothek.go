@@ -402,8 +402,15 @@ func (e *editor) bibSchlagworteUebernehmen() {
 	}
 	b.bearbeite = ""
 	e.bibArbeiten(bibArbeit{rel: rel}, func() error {
-		_, err := e.bib.Bibliothek.SetzeSchlagworte(rel, worte)
-		return err
+		setze := func() error {
+			_, err := e.bib.Bibliothek.SetzeSchlagworte(rel, worte)
+			return err
+		}
+		if um := e.bib.UmDatei; um != nil {
+			// Die Rettungskopie dieser Aufnahme bleibt anwendbar, obwohl die Datei neu geschrieben wird (F-703).
+			return um(filepath.Join(e.bib.Bibliothek.Orte.Ablage, filepath.FromSlash(rel)), setze)
+		}
+		return setze()
 	})
 }
 

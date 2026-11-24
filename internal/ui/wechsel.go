@@ -43,6 +43,9 @@ type Oeffnen func(pfad string) (Geoeffnet, error)
 type Anbindung struct {
 	Bibliothek *library.Bibliothek
 	Oeffnen    Oeffnen
+	// UmDatei führt aendere aus, das nur Metadaten der Datei pfad (absolut) ändert (Schlagworte der Ansicht), und hält
+	// dabei eine liegende Rettungskopie dieser Datei anwendbar (rescue.UmDatei, F-703). nil: aendere läuft unverändert.
+	UmDatei func(pfad string, aendere func() error) error
 }
 
 // wechselZustand ist ein laufender Wechsel.

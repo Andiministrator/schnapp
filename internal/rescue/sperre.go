@@ -140,3 +140,18 @@ func raeumeSperre(name string) (ok bool, _ error) {
 	}
 	return err == nil, errors.Join(err, f.Close())
 }
+
+// sperreGehalten meldet, ob ein anderer die Sperrdatei name hält (F-702). Sie legt nichts an; fehlt die Datei oder kann
+// das Dateisystem kein flock, hält niemand. Jeder andere Fehler wird gemeldet, der Aufrufer fasst dann nichts an.
+func sperreGehalten(name string) (bool, error) {
+	f, belegt, err := oeffneGesperrt(name, false)
+	switch {
+	case errors.Is(err, os.ErrNotExist), errors.Is(err, errKeinFlock):
+		return false, nil
+	case err != nil:
+		return false, err
+	case belegt:
+		return true, nil
+	}
+	return false, f.Close() // freigegeben, die Datei bleibt (nur ihr Halter oder raeumeSperre entfernt sie)
+}
