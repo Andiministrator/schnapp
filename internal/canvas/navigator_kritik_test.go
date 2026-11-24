@@ -11,7 +11,6 @@ import (
 	"github.com/Andiministrator/schnapp/internal/document"
 )
 
-
 // KS-7 (#197): Sehr flache oder schmale Bilder (Leisten-Aufnahme 3840×44, gestauchte Streifen) ergeben einen Kasten von
 // 1 bis 2 Pixeln Höhe. Die Oberfläche füllt Flächen bis 2 px ganz mit dem Rand (randStreifen): vom Bild ist nichts zu
 // sehen, das Ziel für den Zeiger ist ein Strich.
