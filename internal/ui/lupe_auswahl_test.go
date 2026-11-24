@@ -71,3 +71,20 @@ func TestLupeAuswahlJeRechteckEinRahmen(t *testing.T) {
 		}
 	}
 }
+
+// QS-M3 (Sitzungs-QA QS-6, F-606): Jeder Auswahlrahmen der Lupe umfasst sein Rechteck mit dem halben Strich, wie
+// Lupe.Grenzen — bei Strich 8 also 4 Pixel um Quelle und Ziel.
+func TestLupeAuswahlRahmenMitHalbemStrich(t *testing.T) {
+	l := document.Lupe{
+		Quelle: document.R(document.Pt(10, 20), document.Pt(30, 40)),
+		Ziel:   document.R(document.Pt(50, 20), document.Pt(90, 60)),
+		Strich: document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 8}}
+	got := auswahlRechtecke(l)
+	soll := []document.Rechteck{document.R(document.Pt(6, 16), document.Pt(34, 44)), document.R(document.Pt(46, 16), document.Pt(94, 64))}
+	if len(got) != 2 || got[0] != soll[0] || got[1] != soll[1] {
+		t.Errorf("Auswahlrahmen %v, erwartet %v", got, soll)
+	}
+	if h := l.Grenzen(); h != soll[0].Vereint(soll[1]) {
+		t.Errorf("Grenzen %v umfassen nicht genau beide Rahmen %v", h, soll)
+	}
+}

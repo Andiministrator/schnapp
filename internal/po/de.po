@@ -251,6 +251,9 @@ msgstr "Export nicht möglich: Erst die laufende Aktion beenden."
 msgid "Could not export: the image has too many or too large annotations. Remove some first."
 msgstr "Export nicht möglich: Das Bild hat zu viele oder zu große Beschriftungen. Bitte zuerst einige entfernen."
 
+msgid "Could not export as SVG: the magnifiers would embed too many pixels. Export as PNG or JPG, or remove some magnifiers."
+msgstr "SVG-Export nicht möglich: Die Lupen würden zu viele Pixel einbetten. Als PNG oder JPG exportieren oder einige Lupen entfernen."
+
 msgid "The connection to the desktop portal was lost."
 msgstr "Die Verbindung zum Desktop-Portal ist abgebrochen."
 
@@ -676,6 +679,9 @@ msgstr "Konnte nicht auf die Standardausgabe schreiben: %v"
 
 msgid "No permission to write there."
 msgstr "Keine Berechtigung, dort zu schreiben."
+
+msgid "The magnifiers would embed too many pixels in the SVG. Export as PNG or JPG, or use --ignore-limit."
+msgstr "Die Lupen würden zu viele Pixel ins SVG einbetten. Als PNG oder JPG exportieren oder --ignore-limit angeben."
 
 msgid "The folder does not exist."
 msgstr "Den Ordner gibt es nicht."

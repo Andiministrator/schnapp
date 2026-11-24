@@ -18,6 +18,7 @@ import (
 
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/export"
+	"github.com/Andiministrator/schnapp/internal/fileformat"
 	"github.com/Andiministrator/schnapp/internal/i18n"
 )
 
@@ -74,7 +75,8 @@ func gibPfadAus(aus, fehler io.Writer, alsJSON bool, pfad string, g image.Point)
 // Renderns hinterlässt so nichts, ein Signal während des kurzen Schreibens fängt mitSignalwache (F-396).
 // privat (--output): eine neue Datei bekommt die Rechte 0600 (Bildschirminhalt, wie die Bibliothek; KA-4); sonst
 // (--export) gilt die umask wie beim Export aus dem Editor (ADR-0025). Eine vorhandene Zieldatei behält ihre Rechte.
-func schreibeBild(d *document.Dokument, pfad string, privat bool) (string, error) {
+// ohneGrenze (--export --ignore-limit) hebt die Grenze der Lupenpixel im SVG auf (ADR-0033 Nachtrag 5).
+func schreibeBild(d *document.Dokument, pfad string, privat, ohneGrenze bool) (string, error) {
 	f, ok := export.AusEndung(pfad)
 	if !ok {
 		// Auswerten prüft die Endung schon; hier nur gegen einen Aufruf von anderer Stelle.
@@ -84,8 +86,12 @@ func schreibeBild(d *document.Dokument, pfad string, privat bool) (string, error
 	if err != nil {
 		return "", err
 	}
+	schreibe := export.Schreibe
+	if ohneGrenze {
+		schreibe = export.SchreibeOhneGrenze
+	}
 	var inhalt bytes.Buffer
-	if err := export.Schreibe(d, f, &inhalt); err != nil {
+	if err := schreibe(d, f, &inhalt); err != nil {
 		return "", err
 	}
 	return abs, schreibeInhalt(abs, inhalt.Bytes(), privat, nil)
@@ -98,6 +104,8 @@ func schreibFehler(err error) string {
 	switch {
 	case errors.Is(err, export.ErrZielBeschaedigt):
 		return i18n.T("Writing failed and the old content could not be restored; the target file is incomplete.")
+	case errors.Is(err, fileformat.ErrLupenZuGross):
+		return i18n.T("The magnifiers would embed too many pixels in the SVG. Export as PNG or JPG, or use --ignore-limit.")
 	case errors.Is(err, fs.ErrPermission):
 		return i18n.T("No permission to write there.")
 	case errors.Is(err, fs.ErrNotExist):
@@ -141,7 +149,7 @@ func exportiere(a Aufruf, aus, fehler io.Writer) int {
 		fmt.Fprintf(fehler, i18n.T("Cannot open %s: %s")+"\n", a.Datei, nutzerFehler(err))
 		return exitFehler
 	}
-	abs, err := schreibeBild(g.Dokument, a.Ziel, false)
+	abs, err := schreibeBild(g.Dokument, a.Ziel, false, a.OhneGrenze)
 	if err != nil {
 		diagnose(fehler, "Ursache des Exports: %v", err)
 		meldeSchreibFehler(fehler, a.Ziel, err)

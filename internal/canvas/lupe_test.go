@@ -111,13 +111,13 @@ func TestZielPlatz(t *testing.T) {
 		{"zu breit für die Seiten: darunter", rechteck(150, 0, 250, 10), document.Pt(200, 20), rechteck(150, 26, 350, 46)},
 	}
 	for _, c := range fall {
-		if got := ZielPlatz(c.q, c.gr, 16, g); !naheR(got, c.want) {
+		if got := ZielPlatz(c.q, c.gr, 16, g, nil); !naheR(got, c.want) {
 			t.Errorf("%s: %v, erwartet %v", c.name, got, c.want)
 		}
 	}
 	// Höher als die Ansicht: weder rechts noch links, breiter als die Ansicht: weder darunter noch darüber. Das Ziel
 	// beginnt oben (so weit in der Ansicht, wie es geht), rechts neben der Quelle ohne Überlappung.
-	if got := ZielPlatz(rechteck(10, 10, 20, 20), document.Pt(20, 300), 16, g); !naheR(got, rechteck(36, 0, 56, 300)) {
+	if got := ZielPlatz(rechteck(10, 10, 20, 20), document.Pt(20, 300), 16, g, nil); !naheR(got, rechteck(36, 0, 56, 300)) {
 		t.Errorf("zu hoch: %v", got)
 	}
 }

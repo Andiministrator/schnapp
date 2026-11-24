@@ -59,10 +59,13 @@ func lupenTeil(l document.Lupe, p document.Punkt, tol float64) (LupenTeil, bool)
 // ZielPlatz legt ein Ziel der Größe groesse neben die Quelle q, alles in Ansichtskoordinaten einer Ansicht der Größe
 // ansicht (ADR-0033 Punkt 8): rechts im Abstand abstand; ragt es dort aus der Ansicht, links, sonst darunter, sonst
 // darüber. Quer dazu beginnt das Ziel an derselben Kante wie die Quelle (oben bzw. links) und rückt, wenn nötig, in die
-// Ansicht; ein Platz gilt nur, wenn das Ziel auch quer in die Ansicht passt. Passt es auf keiner Seite, kommt es an die
-// Stelle in der Ansicht, an der es am wenigsten mit der Quelle überlappt, ganz in die Ansicht gerückt, so weit seine
-// Größe es zulässt (Nachtrag 2 Punkt 4; bei gleicher Überlappung die nächste zur Quelle).
-func ZielPlatz(q document.Rechteck, groesse document.Punkt, abstand float64, ansicht image.Point) document.Rechteck {
+// Ansicht; ein Platz gilt nur, wenn das Ziel auch quer in die Ansicht passt und keine der Nähte naehte (Lage in der
+// Ansicht) kreuzt — an einer Naht beginnen oder enden darf es (Nachtrag 5 Punkt 3, QS-3: ein Ziel über einer Naht reichte
+// im Original in den weggestauchten Streifen). Passt es auf keiner Seite, kommt es an die Stelle in der Ansicht, an der es
+// keine Naht kreuzt und am wenigsten mit der Quelle überlappt, ganz in die Ansicht gerückt, so weit seine Größe es
+// zulässt (Nachtrag 2 Punkt 4; bei gleicher Überlappung die nächste zur Quelle); kreuzt jede solche Stelle eine Naht,
+// gilt dieselbe Wahl ohne die Nähte.
+func ZielPlatz(q document.Rechteck, groesse document.Punkt, abstand float64, ansicht image.Point, naehte []document.Naht) document.Rechteck {
 	w, h := groesse.X, groesse.Y
 	gx, gy := float64(ansicht.X), float64(ansicht.Y)
 	quer := func(start, laenge, platz float64) (float64, bool) {
@@ -72,38 +75,62 @@ func ZielPlatz(q document.Rechteck, groesse document.Punkt, abstand float64, ans
 		return math.Max(0, math.Min(start, platz-laenge)), true
 	}
 	at := func(x, y float64) document.Rechteck { return document.R(document.Pt(x, y), document.Pt(x+w, y+h)) }
+	kreuzt := func(z document.Rechteck) bool {
+		for _, n := range naehte {
+			lo, hi := z.Min.X, z.Max.X
+			if n.Zeilen {
+				lo, hi = z.Min.Y, z.Max.Y
+			}
+			if lage := float64(n.Lage); lo < lage && lage < hi {
+				return true
+			}
+		}
+		return false
+	}
 	if y, ok := quer(q.Min.Y, h, gy); ok {
-		if x := q.Max.X + abstand; x+w <= gx {
+		if x := q.Max.X + abstand; x+w <= gx && !kreuzt(at(x, y)) {
 			return at(x, y)
 		}
-		if x := q.Min.X - abstand - w; x >= 0 {
+		if x := q.Min.X - abstand - w; x >= 0 && !kreuzt(at(x, y)) {
 			return at(x, y)
 		}
 	}
 	if x, ok := quer(q.Min.X, w, gx); ok {
-		if y := q.Max.Y + abstand; y+h <= gy {
+		if y := q.Max.Y + abstand; y+h <= gy && !kreuzt(at(x, y)) {
 			return at(x, y)
 		}
-		if y := q.Min.Y - abstand - h; y >= 0 {
+		if y := q.Min.Y - abstand - h; y >= 0 && !kreuzt(at(x, y)) {
 			return at(x, y)
 		}
 	}
-	// Keine Seite passt: Kandidaten je Achse (an den Rändern der Ansicht, neben und an der Quelle), in die Ansicht
-	// gerückt; ist das Ziel größer als die Ansicht, beginnt es bei 0.
+	// Keine Seite passt: Kandidaten je Achse (an den Rändern der Ansicht, neben und an der Quelle, an beiden Seiten jeder
+	// Naht), in die Ansicht gerückt; ist das Ziel größer als die Ansicht, beginnt es bei 0.
 	rein := func(v, laenge, platz float64) float64 { return math.Max(0, math.Min(v, platz-laenge)) }
 	xs := []float64{q.Max.X + abstand, q.Min.X - abstand - w, q.Min.X, 0, gx - w}
 	ys := []float64{q.Min.Y, q.Max.Y + abstand, q.Min.Y - abstand - h, 0, gy - h}
+	for _, n := range naehte {
+		if n.Zeilen {
+			ys = append(ys, float64(n.Lage), float64(n.Lage)-h)
+		} else {
+			xs = append(xs, float64(n.Lage), float64(n.Lage)-w)
+		}
+	}
 	mq := q.Min.Plus(q.Max).Mal(0.5)
 	var best document.Rechteck
-	bestUeber, bestAbstand := math.Inf(1), math.Inf(1)
+	bestKreuzt, bestUeber, bestAbstand := true, math.Inf(1), math.Inf(1)
 	for _, x := range xs {
 		for _, y := range ys {
 			z := at(rein(x, w, gx), rein(y, h, gy))
+			kr := kreuzt(z)
 			ueber := math.Max(0, math.Min(z.Max.X, q.Max.X)-math.Max(z.Min.X, q.Min.X)) *
 				math.Max(0, math.Min(z.Max.Y, q.Max.Y)-math.Max(z.Min.Y, q.Min.Y))
 			abst := z.Min.Plus(z.Max).Mal(0.5).Minus(mq).Laenge()
-			if ueber < bestUeber || ueber == bestUeber && abst < bestAbstand {
-				best, bestUeber, bestAbstand = z, ueber, abst
+			besser := ueber < bestUeber || ueber == bestUeber && abst < bestAbstand
+			if kr != bestKreuzt {
+				besser = !kr
+			}
+			if besser {
+				best, bestKreuzt, bestUeber, bestAbstand = z, kr, ueber, abst
 			}
 		}
 	}
@@ -128,11 +155,12 @@ func (s *Sitzung) quellGroesse(q document.Rechteck) document.Punkt {
 }
 
 // neueLupe liefert eine Lupe mit der Quelle quelle (Original), der Vergrößerung LupenStart der Quelle in der Ansicht
-// (Ziel = 2 × QA, ADR-0033 Nachtrag 2 Punkt 2) und dem Ziel nach ZielPlatz in der Ansicht, im Stil der Sitzung.
+// (Ziel = 2 × QA, ADR-0033 Nachtrag 2 Punkt 2) und dem Ziel nach ZielPlatz in der Ansicht, im Stil der Sitzung. Das Ziel
+// kreuzt keine Naht (Nachtrag 5 Punkt 3), so ist es auch in der Ansicht 2 × QA groß.
 func (s *Sitzung) neueLupe(quelle document.Rechteck) document.Lupe {
 	qv := document.R(s.D.ZuAnsicht(quelle.Min), s.D.ZuAnsicht(quelle.Max))
 	g := s.quellGroesse(quelle).Mal(LupenStart)
-	zv := ZielPlatz(qv, g, LupenAbstand*float64(s.D.KantenFaktor()), s.D.Groesse())
+	zv := ZielPlatz(qv, g, LupenAbstand*float64(s.D.KantenFaktor()), s.D.Groesse(), s.D.Naehte())
 	min := s.D.ZuOriginal(zv.Min)
 	return document.Lupe{Quelle: quelle, Ziel: document.Rechteck{Min: min, Max: min.Plus(g)}, Strich: s.Stil.strich()}
 }

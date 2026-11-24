@@ -229,8 +229,24 @@ func (s *schreiber) nahtVerweise(naehte []document.Naht, praefix string, mitArt 
 // die Ansicht in Rechtecke) steht ein verschachteltes <svg> mit viewBox, das nur den Pixelausschnitt dieser Kachel als
 // eingebettetes PNG trägt und die Objekte als Vektoren zeigt. Weggeschnittene oder weggestauchte Bereiche sind in
 // der Datei nicht enthalten (F-60) — anders als in der Arbeitsdatei, die nicht zerstörend das ganze Original mitführt.
+// Betteten die Lupen mehr Pixel ein, als PruefeSVGExport zulässt, lehnt es vor dem Kodieren mit ErrLupenZuGross ab
+// (ADR-0033 Nachtrag 5); ExportiereSVGOhneGrenze schreibt trotzdem (--ignore-limit).
 func ExportiereSVG(w io.Writer, d *document.Dokument) (fehler error) {
 	defer errprefix.Defer("fileformat", &fehler)
+	if err := PruefeSVGExport(d); err != nil {
+		return err
+	}
+	return exportiereSVG(w, d)
+}
+
+// ExportiereSVGOhneGrenze ist ExportiereSVG ohne die Grenze der eingebetteten Lupenpixel (--ignore-limit, wie das
+// Rechenbudget beim Öffnen).
+func ExportiereSVGOhneGrenze(w io.Writer, d *document.Dokument) (fehler error) {
+	defer errprefix.Defer("fileformat", &fehler)
+	return exportiereSVG(w, d)
+}
+
+func exportiereSVG(w io.Writer, d *document.Dokument) error {
 	original := d.OriginalBild()
 	g := d.Groesse()
 	var s schreiber
@@ -247,10 +263,7 @@ func ExportiereSVG(w io.Writer, d *document.Dokument) (fehler error) {
 	s.WriteString(`><defs><g id="objekte">`)
 	// Ausgeblendete Ebenen und solche mit Deckkraft 0 % fehlen, wie im Renderer: nichts Unsichtbares geht im Klartext
 	// hinaus (ADR-0032 Punkt 4, F-585).
-	s.objekte(d, func(o document.Objekt) bool {
-		e := o.Ebenenwerte()
-		return d.ObjektSichtbar(o) && !e.Ausgeblendet && e.Deckkraft() > 0
-	})
+	s.objekte(d, func(o document.Objekt) bool { return exportiert(d, o) })
 	s.WriteString(`</g></defs>`)
 	// Gibt es Nähte, liegen die Kacheln unter der Maske, die den Spalt jeder Naht leer lässt (ADR-0023 Nachtrag 7).
 	maske := s.naehteDefs(d)
@@ -295,6 +308,13 @@ func ExportiereSVG(w io.Writer, d *document.Dokument) (fehler error) {
 	s.WriteString("</svg>\n")
 	_, err := io.WriteString(w, s.String())
 	return err
+}
+
+// exportiert meldet, ob der SVG-Export o schreibt: sichtbar in einer Kachel, Ebene nicht ausgeblendet, Deckkraft über 0
+// (ADR-0032 Punkt 4, F-585; wie der Renderer).
+func exportiert(d *document.Dokument, o document.Objekt) bool {
+	e := o.Ebenenwerte()
+	return d.ObjektSichtbar(o) && !e.Ausgeblendet && e.Deckkraft() > 0
 }
 
 // hundertstel rundet v auf ganze Hundertstel (wie document.Kantenlinie.Band).

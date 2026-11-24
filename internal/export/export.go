@@ -124,9 +124,24 @@ func PruefeAngehaengt(pfad string, angehaengt bool) (fehler error) {
 // Schreibe schreibt das Dokument im Format f nach w: PNG und JPG aus dem fertig gerenderten Bild (render.Bild, das
 // auch die Arbeitsdatei und die Zwischenablage speist), SVG über fileformat.ExportiereSVG. Ohne snAP/snAO-Blöcke und
 // ohne Metadaten (Kernprinzip 3). Schwärzen ist in den Pixeln endgültig (ADR-0008, Kernprinzip 2).
+// Ein SVG, dessen Lupen mehr Pixel einbetteten, als fileformat.PruefeSVGExport zulässt, lehnt es vor dem Kodieren ab
+// (fileformat.ErrLupenZuGross, ADR-0033 Nachtrag 5).
 func Schreibe(d *document.Dokument, f Format, w io.Writer) (fehler error) {
 	defer errprefix.Defer("export", &fehler)
+	return schreibe(d, f, w, false)
+}
+
+// SchreibeOhneGrenze ist Schreibe ohne die Grenze der Lupenpixel im SVG (--ignore-limit, ADR-0033 Nachtrag 5).
+func SchreibeOhneGrenze(d *document.Dokument, f Format, w io.Writer) (fehler error) {
+	defer errprefix.Defer("export", &fehler)
+	return schreibe(d, f, w, true)
+}
+
+func schreibe(d *document.Dokument, f Format, w io.Writer, ohneGrenze bool) error {
 	if f == SVG {
+		if ohneGrenze {
+			return fileformat.ExportiereSVGOhneGrenze(w, d)
+		}
 		return fileformat.ExportiereSVG(w, d)
 	}
 	b, err := render.Bild(d)

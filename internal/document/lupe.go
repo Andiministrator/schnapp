@@ -220,8 +220,7 @@ func (q *LupenQuelle) Abtasten(n, m int, spalte, zeile func(int) float64, f func
 // Naht sind durchsichtig. Mit der viewBox QA über dem Ziel zeigt es jedes Zielpixel wie Abtasten (SVG-Export, ADR-0033
 // Nachtrag 2 Punkt 3). Leer, wenn die Quelle nicht in die Ansicht reicht.
 func (q *LupenQuelle) AnsichtsAusschnitt() *image.NRGBA {
-	r := image.Rect(int(math.Floor(q.qa.Min.X)), int(math.Floor(q.qa.Min.Y)), int(math.Ceil(q.qa.Max.X)),
-		int(math.Ceil(q.qa.Max.Y))).Intersect(image.Rectangle{Max: q.d.Groesse()})
+	r := ausschnitt(q.qa, q.d.Groesse())
 	aus := image.NewNRGBA(r)
 	for vy := r.Min.Y; vy < r.Max.Y; vy++ {
 		for vx := r.Min.X; vx < r.Max.X; vx++ {
@@ -231,6 +230,21 @@ func (q *LupenQuelle) AnsichtsAusschnitt() *image.NRGBA {
 		}
 	}
 	return aus
+}
+
+// ausschnitt sind die ganzen Ansichtspixel unter qa (abgerundet bzw. aufgerundet), auf eine Ansicht der Größe g begrenzt.
+func ausschnitt(qa Rechteck, g image.Point) image.Rectangle {
+	return image.Rect(int(math.Floor(qa.Min.X)), int(math.Floor(qa.Min.Y)), int(math.Ceil(qa.Max.X)),
+		int(math.Ceil(qa.Max.Y))).Intersect(image.Rectangle{Max: g})
+}
+
+// LupenAusschnitt liefert die Quelle von l in der Ansicht (QA, wie LupenQuelle.InAnsicht) und die Grenzen des Bilds,
+// das AnsichtsAusschnitt dafür liefert, ohne Pixel zu lesen und ohne die Kantenlinien der Nähte zu rechnen: Damit plant
+// der SVG-Export, was er einbettet, bevor er kodiert (ADR-0033 Nachtrag 5). Der Inhalt von AnsichtsAusschnitt hängt nur
+// von diesen Grenzen ab (dieselben Ansichtspixel).
+func (d *Dokument) LupenAusschnitt(l Lupe) (qa Rechteck, r image.Rectangle) {
+	qa = R(d.ZuAnsicht(l.Quelle.Min), d.ZuAnsicht(l.Quelle.Max))
+	return qa, ausschnitt(qa, d.Groesse())
 }
 
 // Zielbild liefert das fertige Bild im Ziel auf dem Pixelraster des Originals in r (Grenzen des Ergebnisses): jedes

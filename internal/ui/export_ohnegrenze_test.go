@@ -12,6 +12,7 @@ import (
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/fileformat"
 	"github.com/Andiministrator/schnapp/internal/i18n"
 	"github.com/Andiministrator/schnapp/internal/portal"
 	"github.com/Andiministrator/schnapp/internal/render"
@@ -77,5 +78,52 @@ func TestNeuerEditorUebernimmtExportOhneGrenze(t *testing.T) {
 		if e := neuerEditor("datei.png", d, nil, nil); e.ohneGrenze != an {
 			t.Errorf("SetzeExportOhneGrenze(%v): Editor %v", an, e.ohneGrenze)
 		}
+	}
+}
+
+// QS-2 (ADR-0033 Nachtrag 5): Betteten die Lupen im SVG mehr Pixel ein, als fileformat.PruefeSVGExport zulässt, lehnt der
+// Export aus dem Editor das SVG vor dem Kodieren mit eigener Meldung ab; PNG geht, mit --ignore-limit auch das SVG (mit
+// dem Hinweis auf die Dauer).
+func TestEditorSVGExportLupenGrenze(t *testing.T) {
+	neu := func(ohneGrenze bool) *editor {
+		i18n.Setze(nil)
+		fehlerAbfangen(t)
+		d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 60, 40)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i := 0; i <= fileformat.LupenExportFaktor; i++ {
+			q := document.R(document.Pt(float64(i), 0), document.Pt(60, 40))
+			if _, err := d.Hinzufuegen(document.Lupe{Quelle: q, Ziel: q}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if render.Pruefe(d) != nil || fileformat.PruefeSVGExport(d) == nil {
+			t.Fatal("Aufbau: unter dem Budget und über der Grenze der Lupenpixel verlangt")
+		}
+		return &editor{s: canvas.NeueSitzung(d), ohneGrenze: ohneGrenze}
+	}
+	e := neu(false)
+	ziel := filepath.Join(t.TempDir(), "ohne.svg")
+	e.exportFertig(exportErgebnis{ergebnis: portal.Ergebnis{URI: "file://" + ziel}})
+	if _, err := os.Lstat(ziel); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("SVG über der Grenze geschrieben (%v)", err)
+	}
+	if !strings.Contains(e.meldung.Text, "magnifiers") {
+		t.Errorf("Leiste ohne Grund: %q", e.meldung.Text)
+	}
+	ziel = filepath.Join(t.TempDir(), "ohne.png")
+	e.exportFertig(exportErgebnis{ergebnis: portal.Ergebnis{URI: "file://" + ziel}})
+	if st, err := os.Stat(ziel); err != nil || st.Size() == 0 {
+		t.Errorf("PNG nicht geschrieben (%v); Leiste %q", err, e.meldung.Text)
+	}
+	e = neu(true)
+	ziel = filepath.Join(t.TempDir(), "mit.svg")
+	e.exportFertig(exportErgebnis{ergebnis: portal.Ergebnis{URI: "file://" + ziel}})
+	if st, err := os.Stat(ziel); err != nil || st.Size() == 0 {
+		t.Errorf("mit --ignore-limit kein SVG (%v); Leiste %q", err, e.meldung.Text)
+	}
+	if !strings.Contains(e.meldung.Text, "can take long") {
+		t.Errorf("mit --ignore-limit ohne Hinweis auf die Dauer: %q", e.meldung.Text)
 	}
 }

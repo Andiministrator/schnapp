@@ -17,8 +17,8 @@
     "name": "KA-4 --output nach der umask",
     "datei": "cmd/schnapp/aufnehmen.go",
     "paket": "./cmd/schnapp",
-    "alt": "abs, err := schreibeBild(d, t.Ausgabe, true)",
-    "neu": "abs, err := schreibeBild(d, t.Ausgabe, false)"
+    "alt": "abs, err := schreibeBild(d, t.Ausgabe, true, false)",
+    "neu": "abs, err := schreibeBild(d, t.Ausgabe, false, false)"
   },
   {
     "name": "KA-8 roher Paketfehler in der Meldung",

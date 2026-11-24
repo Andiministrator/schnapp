@@ -478,6 +478,8 @@ func mcpSchreibFehler(err error) string {
 	switch {
 	case errors.Is(err, export.ErrZielVorhanden):
 		return "the file already exists; Schnapp never replaces a file for an agent."
+	case errors.Is(err, fileformat.ErrLupenZuGross):
+		return "the magnifiers would embed too many pixels in an SVG; export as PNG or JPG instead."
 	case errors.Is(err, fs.ErrPermission):
 		return "no permission to write there."
 	case errors.Is(err, fs.ErrNotExist):

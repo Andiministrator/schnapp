@@ -60,7 +60,7 @@ func TestSignalwacheOhneSignal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	abs, err := schreibeBild(d, filepath.Join(dir, "aus.png"), true)
+	abs, err := schreibeBild(d, filepath.Join(dir, "aus.png"), true, false)
 	if err != nil {
 		t.Fatal(err)
 	}

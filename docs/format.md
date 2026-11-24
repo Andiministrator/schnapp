@@ -419,7 +419,10 @@ Informative: the SVG export embeds, inside a nested `svg` element at the target 
 transparent: the whole view pixels under `qa`, limited to the view, with `qa` as `viewBox`; or, if it has fewer pixels
 (magnification below 1), the finished content on the pixel grid of the original inside the target and the crop, with
 the target as `viewBox`. A magnifier whose target lies in no visible tile carries no image. Since the export embeds up
-to the source area, Schnapp counts that area in its rendering budget.
+to the source area, Schnapp counts that area in its rendering budget. An image that an earlier magnifier already
+embedded (the same view pixels, or the same finished content) is written once with an `id` and repeated with a `use`
+element. Schnapp refuses an SVG export whose magnifier images (each distinct image once) would hold more than four
+times the pixels of the view, unless told to ignore its limits.
 
 ## 9. Redaction
 

@@ -101,8 +101,8 @@
     "name": "L15 Ziel nie links der Quelle",
     "datei": "internal/canvas/lupe.go",
     "paket": "./internal/canvas",
-    "alt": "if x := q.Min.X - abstand - w; x >= 0 {",
-    "neu": "if x := q.Min.X - abstand - w; false && x >= 0 {"
+    "alt": "if x := q.Min.X - abstand - w; x >= 0 && !kreuzt(at(x, y)) {",
+    "neu": "if x := q.Min.X - abstand - w; false && x >= 0 && !kreuzt(at(x, y)) {"
   },
   {
     "name": "L16 Abstand ohne KantenFaktor",
@@ -164,8 +164,8 @@
     "name": "L24 Export bettet Ansichtspixel außerhalb der Ansicht ein",
     "datei": "internal/document/lupe.go",
     "paket": "./internal/fileformat",
-    "alt": "int(math.Ceil(q.qa.Max.Y))).Intersect(image.Rectangle{Max: q.d.Groesse()})",
-    "neu": "int(math.Ceil(q.qa.Max.Y)))"
+    "alt": "int(math.Ceil(qa.Max.Y))).Intersect(image.Rectangle{Max: g})",
+    "neu": "int(math.Ceil(qa.Max.Y)))"
   },
   {
     "name": "L25 Quellfläche kostet nichts",
@@ -192,8 +192,8 @@
     "name": "L28 Export bettet immer die Quelle ein, auch wenn das Ziel kleiner ist",
     "datei": "internal/fileformat/lupe.go",
     "paket": "./internal/fileformat",
-    "alt": "if flaeche(zr) < flaeche(px.Rect) {",
-    "neu": "if false && flaeche(zr) < flaeche(px.Rect) {"
+    "alt": "if flaeche(zr) < flaeche(px) {",
+    "neu": "if false && flaeche(zr) < flaeche(px) {"
   },
   {
     "name": "L29 Neue Lupe: Ziel aus der Quelle im Original",
@@ -262,8 +262,8 @@
     "name": "K15 Export: Pixel unter der Quelle gerundet statt ab- bzw. aufgerundet",
     "datei": "internal/document/lupe.go",
     "paket": "./internal/fileformat",
-    "alt": "image.Rect(int(math.Floor(q.qa.Min.X)), int(math.Floor(q.qa.Min.Y)), int(math.Ceil(q.qa.Max.X)),\n\t\tint(math.Ceil(q.qa.Max.Y)))",
-    "neu": "image.Rect(int(math.Round(q.qa.Min.X)), int(math.Round(q.qa.Min.Y)), int(math.Round(q.qa.Max.X)),\n\t\tint(math.Round(q.qa.Max.Y)))"
+    "alt": "image.Rect(int(math.Floor(qa.Min.X)), int(math.Floor(qa.Min.Y)), int(math.Ceil(qa.Max.X)),\n\t\tint(math.Ceil(qa.Max.Y)))",
+    "neu": "image.Rect(int(math.Round(qa.Min.X)), int(math.Round(qa.Min.Y)), int(math.Round(qa.Max.X)),\n\t\tint(math.Round(qa.Max.Y)))"
   },
   {
     "name": "K19 Gruppendeckkraft: Rand der Lupe ohne halben Strich",
@@ -278,5 +278,96 @@
     "paket": "./internal/ui",
     "alt": "return []document.Rechteck{weit(l.Quelle), weit(l.Ziel)}",
     "neu": "return []document.Rechteck{weit(l.Quelle.Vereint(l.Ziel))}"
+  },
+  {
+    "name": "QS2-1 SVG-Export legt gleiche Lupenbilder nicht zusammen (Sitzungs-QA QS-2)",
+    "datei": "internal/fileformat/lupe.go",
+    "paket": "./internal/fileformat",
+    "alt": "\tid, da := s.lupenBilder[e.schluessel]\n",
+    "neu": "\tid, da := \"\", false\n"
+  },
+  {
+    "name": "QS2-2 SVG-Export ohne Grenze der Lupenpixel (QS-2)",
+    "datei": "internal/fileformat/export.go",
+    "paket": "./internal/fileformat",
+    "alt": "\tif err := PruefeSVGExport(d); err != nil {\n\t\treturn err\n\t}\n\treturn exportiereSVG(w, d)",
+    "neu": "\treturn exportiereSVG(w, d)"
+  },
+  {
+    "name": "QS2-3 Grenze zählt gleiche Bilder mehrfach (QS-2)",
+    "datei": "internal/fileformat/lupe.go",
+    "paket": "./internal/fileformat",
+    "alt": "if !ok || gesehen[e.schluessel] {",
+    "neu": "if !ok {"
+  },
+  {
+    "name": "QS2-4 Grenze zählt auch Lupen, die der Export nicht schreibt (QS-2)",
+    "datei": "internal/fileformat/lupe.go",
+    "paket": "./internal/fileformat",
+    "alt": "if !ok || !exportiert(d, o) {",
+    "neu": "if !ok {"
+  },
+  {
+    "name": "QS2-5 Grenze ein Ansichtsbild zu knapp (QS-2)",
+    "datei": "internal/fileformat/lupe.go",
+    "paket": "./internal/fileformat",
+    "alt": "LupenExportPixel(d) > LupenExportFaktor*int64(g.X)*int64(g.Y)",
+    "neu": "LupenExportPixel(d) > (LupenExportFaktor-1)*int64(g.X)*int64(g.Y)"
+  },
+  {
+    "name": "QS2-6 Schlüssel des Zielbilds ohne Quelle (QS-2)",
+    "datei": "internal/fileformat/lupe.go",
+    "paket": "./internal/fileformat",
+    "alt": "lupenSchluessel{zielbild: true, rect: zr, qa: qa, ziel: z}",
+    "neu": "lupenSchluessel{zielbild: true, rect: zr, ziel: z}"
+  },
+  {
+    "name": "QS2-7 Schlüssel des Ansichtsausschnitts ohne Grenzen (QS-2)",
+    "datei": "internal/fileformat/lupe.go",
+    "paket": "./internal/fileformat",
+    "alt": "schluessel: lupenSchluessel{rect: px}}",
+    "neu": "schluessel: lupenSchluessel{}}"
+  },
+  {
+    "name": "QS3-1 neue Lupe: Ziel ohne Blick auf die Nähte (Sitzungs-QA QS-3)",
+    "datei": "internal/canvas/lupe.go",
+    "paket": "./internal/canvas",
+    "alt": "s.D.Groesse(), s.D.Naehte())",
+    "neu": "s.D.Groesse(), nil)"
+  },
+  {
+    "name": "QS3-2 Ziel, das an einer Naht beginnt oder endet, gilt als kreuzend (QS-3)",
+    "datei": "internal/canvas/lupe.go",
+    "paket": "./internal/canvas",
+    "alt": "lo < lage && lage < hi",
+    "neu": "lo <= lage && lage <= hi"
+  },
+  {
+    "name": "QS3-3 Platz ohne Seite: Nähte zählen nicht (QS-3)",
+    "datei": "internal/canvas/lupe.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\tif kr != bestKreuzt {",
+    "neu": "\t\t\tif false && kr != bestKreuzt {"
+  },
+  {
+    "name": "QS3-4 waagerechte Naht in der falschen Achse geprüft (QS-3)",
+    "datei": "internal/canvas/lupe.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\tlo, hi := z.Min.X, z.Max.X\n\t\t\tif n.Zeilen {",
+    "neu": "\t\t\tlo, hi := z.Min.X, z.Max.X\n\t\t\tif !n.Zeilen {"
+  },
+  {
+    "name": "QS3-5 Seitenplatz rechts trotz Naht (QS-3)",
+    "datei": "internal/canvas/lupe.go",
+    "paket": "./internal/canvas",
+    "alt": "if x := q.Max.X + abstand; x+w <= gx && !kreuzt(at(x, y)) {",
+    "neu": "if x := q.Max.X + abstand; x+w <= gx {"
+  },
+  {
+    "name": "QS-M3 Auswahlrahmen der Lupe ohne halben Strich (F-606, Sitzungs-QA QS-6)",
+    "datei": "internal/ui/lupe.go",
+    "paket": "./internal/ui",
+    "alt": "\th := l.Strich.Breite / 2\n\tweit := func",
+    "neu": "\th := 0.0\n\tweit := func"
   }
 ]

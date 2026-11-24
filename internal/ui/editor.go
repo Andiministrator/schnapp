@@ -41,6 +41,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/export"
+	"github.com/Andiministrator/schnapp/internal/fileformat"
 	"github.com/Andiministrator/schnapp/internal/fonts"
 	"github.com/Andiministrator/schnapp/internal/i18n"
 	"github.com/Andiministrator/schnapp/internal/portal"
@@ -1215,11 +1216,27 @@ func (e *editor) exportFertig(r exportErgebnis) {
 		}
 		ueberBudget = true
 	}
+	// Grenze der Lupenpixel im SVG (ADR-0033 Nachtrag 5, QS-2): eigene Meldung, auch sie vor dem Kodieren; mit
+	// --ignore-limit wie das Budget.
+	if f == export.SVG {
+		if err := fileformat.PruefeSVGExport(e.s.D); err != nil {
+			diagnoseEditor("Export: %v", err)
+			if !e.ohneGrenze {
+				e.meldeNebenbei(i18n.T("Could not export as SVG: the magnifiers would embed too many pixels. Export as PNG or JPG, or remove some magnifiers."), true)
+				return
+			}
+			ueberBudget = true
+		}
+	}
+	schreibeDok := export.Schreibe
+	if e.ohneGrenze {
+		schreibeDok = export.SchreibeOhneGrenze
+	}
 	schreibe := export.SchreibeAtomar
 	if angehaengt {
 		schreibe = export.SchreibeOhneErsetzen // Ziel könnte während des Renderns entstehen (Verify N-4)
 	}
-	err = schreibe(pfad, func(w io.Writer) error { return export.Schreibe(e.s.D, f, w) })
+	err = schreibe(pfad, func(w io.Writer) error { return schreibeDok(e.s.D, f, w) })
 	if err != nil {
 		e.meldeNebenbei(fmt.Sprintf(i18n.T("Could not export: %v"), exportFehlerText(err, "")), true)
 		return

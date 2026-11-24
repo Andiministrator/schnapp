@@ -59,6 +59,8 @@ type Metadaten struct {
 type schreiber struct {
 	strings.Builder
 	rundlauf bool
+	// lupenBilder: schon eingebettete Bilder der Lupen und ihre id (ADR-0033 Nachtrag 5), nur im Export.
+	lupenBilder map[lupenSchluessel]string
 }
 
 func (s *schreiber) attr(name, wert string) {

@@ -35,7 +35,7 @@ func TestK193ZielGrosseQuelle(t *testing.T) {
 func TestK193ZielPlatzKeineSeite(t *testing.T) {
 	ansicht := image.Pt(400, 200)
 	q := document.R(document.Pt(150, 70), document.Pt(250, 130))
-	z := ZielPlatz(q, document.Pt(200, 120), 16, ansicht)
+	z := ZielPlatz(q, document.Pt(200, 120), 16, ansicht, nil)
 	if z.Min.X < 0 || z.Min.Y < 0 || z.Max.X > 400 || z.Max.Y > 200 {
 		t.Fatalf("Ziel %v nicht ganz in der Ansicht 400×200", z)
 	}
@@ -56,7 +56,7 @@ func TestK193ZielPlatzKeineSeite(t *testing.T) {
 		}
 	}
 	// Passt das Ziel neben die Quelle, bleibt es dort (Punkt 8 unverändert).
-	if z := ZielPlatz(document.R(document.Pt(20, 20), document.Pt(60, 50)), document.Pt(80, 60), 16, ansicht); z.Min != document.Pt(76, 20) {
+	if z := ZielPlatz(document.R(document.Pt(20, 20), document.Pt(60, 50)), document.Pt(80, 60), 16, ansicht, nil); z.Min != document.Pt(76, 20) {
 		t.Errorf("rechts neben der Quelle erwartet, Ziel %v", z)
 	}
 }

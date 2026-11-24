@@ -3,15 +3,15 @@
     "name": "X1 Export über dem Budget lehnt auch mit --ignore-limit ab (F-610)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "if !e.ohneGrenze {",
-    "neu": "if true {"
+    "alt": "if !e.ohneGrenze {\n\t\t\te.meldeNebenbei(i18n.T(\"Could not export: the image",
+    "neu": "if true {\n\t\t\te.meldeNebenbei(i18n.T(\"Could not export: the image"
   },
   {
     "name": "X2 Export über dem Budget geht auch ohne --ignore-limit durch (F-610)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "if !e.ohneGrenze {",
-    "neu": "if false {"
+    "alt": "if !e.ohneGrenze {\n\t\t\te.meldeNebenbei(i18n.T(\"Could not export: the image",
+    "neu": "if false {\n\t\t\te.meldeNebenbei(i18n.T(\"Could not export: the image"
   },
   {
     "name": "X3 Editor übernimmt den Schalter nicht (F-610)",
@@ -40,5 +40,40 @@
     "paket": "./cmd/schnapp",
     "alt": "ui.SetzeExportOhneGrenze(ohneGrenze) //",
     "neu": "if ohneGrenze {\n\t\tui.SetzeExportOhneGrenze(true)\n\t} //"
+  },
+  {
+    "name": "X7 Editor prüft die Lupenpixel des SVG nicht vorab (QS-2)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif f == export.SVG {\n\t\tif err := fileformat.PruefeSVGExport(e.s.D); err != nil {",
+    "neu": "\tif false {\n\t\tif err := fileformat.PruefeSVGExport(e.s.D); err != nil {"
+  },
+  {
+    "name": "X8 Editor mit --ignore-limit schreibt das SVG trotzdem mit Grenze (QS-2)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tschreibeDok = export.SchreibeOhneGrenze\n",
+    "neu": "\t\tschreibeDok = export.Schreibe\n"
+  },
+  {
+    "name": "X9 --export --ignore-limit hebt die Grenze der Lupenpixel nicht auf (QS-2)",
+    "datei": "cmd/schnapp/agenten.go",
+    "paket": "./cmd/schnapp",
+    "alt": "schreibeBild(g.Dokument, a.Ziel, false, a.OhneGrenze)",
+    "neu": "schreibeBild(g.Dokument, a.Ziel, false, false)"
+  },
+  {
+    "name": "X10 SchreibeOhneGrenze prüft die Lupenpixel doch (QS-2)",
+    "datei": "internal/export/export.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif ohneGrenze {\n\t\t\treturn fileformat.ExportiereSVGOhneGrenze(w, d)\n\t\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "X11 SVG über der Grenze der Lupenpixel auch mit --ignore-limit abgelehnt (QS-2)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if !e.ohneGrenze {\n\t\t\t\te.meldeNebenbei(i18n.T(\"Could not export as SVG",
+    "neu": "if true {\n\t\t\t\te.meldeNebenbei(i18n.T(\"Could not export as SVG"
   }
 ]

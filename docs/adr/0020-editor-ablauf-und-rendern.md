@@ -454,7 +454,9 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
 - **Folge:** Nichts am Code außer dem Kommentar zum Kostenmodell (`internal/render/render.go`), der die Entscheidung
   nennt. Wer das Modell später ändert (andere Schrift als Go als Eichgrundlage, dichtere Muster), misst zuerst
   `BenchmarkNaehteAlleGrenzenKleineGlyphen` und trägt die neue Zeit hier und in Nachtrag 3 ein; ein gemessenes
-  Muster über 21 s widerlegt diese Entscheidung.
+  Muster über 21 s widerlegt diese Entscheidung. Das Versprechen gilt fürs Rastern (`render.Pruefe`, `render.Bild`);
+  den SVG-Export mit Lupen, der PNGs kodiert statt zu rastern, begrenzt ADR-0033 Nachtrag 5 eigens (höchstens rund das
+  Sechsfache von Zeit und Größe des Exports ohne Lupe; Sitzungs-QA QS-2).
 - **Einschränkung (F-617 d, Sammelkritik Sprint 12 KS-2):** Die 21 s galten nur für die eingebauten Schriften Go und
   Go Mono. Mit „Noto Serif CJK JP“ „龘“ rasterte dasselbe Budget-Dokument in 41,4 und 42,5 s, und `Pruefe` nahm es an.
   Seit Nachtrag 13 zählen Glyphen aus Systemschriften mit dem Faktor 2,5; das Versprechen ist dort neu gemessen.

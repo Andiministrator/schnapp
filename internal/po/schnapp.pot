@@ -32,6 +32,10 @@ msgid "Writing failed and the old content could not be restored; the target file
 msgstr ""
 
 #: cmd/schnapp/agenten.go
+msgid "The magnifiers would embed too many pixels in the SVG. Export as PNG or JPG, or use --ignore-limit."
+msgstr ""
+
+#: cmd/schnapp/agenten.go
 msgid "No permission to write there."
 msgstr ""
 
@@ -818,6 +822,10 @@ msgstr ""
 
 #: internal/ui/editor.go
 msgid "Could not export: the image has too many or too large annotations. Remove some first."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Could not export as SVG: the magnifiers would embed too many pixels. Export as PNG or JPG, or remove some magnifiers."
 msgstr ""
 
 #: internal/ui/editor.go
