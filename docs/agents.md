@@ -25,9 +25,9 @@ editor opens unless `--no-editor` is given or the setting `[capture] open-editor
 
 Rules:
 
-- Options with a value take it after an equals sign only: `--output=FILE`, `--export=TARGET`, `--screen=NAME`.
+- Options with a value take it after an equals sign only: `--output=FILE`, `--export=TARGET`, `--screen=NAME`,
+  `--annotate=LIST`. `--output FILE` (with a space) is rejected with a hint.
 - `--export` to PNG keeps transparency: where a working file has a squeeze seam, the gap is transparent (alpha 0, with a soft shadow); JPEG fills it with white.
-  `--output FILE` (with a space) is rejected with a hint.
 - The format follows the file name: `.png`, `.jpg`/`.jpeg` or `.svg`. Any other ending is rejected before capturing.
 - `--output` and `--export` replace an existing file. The image is first rendered completely in memory, then written to
   a temporary file `.schnapp-export-…` next to the target and renamed over it: the target never holds a half-written
@@ -198,12 +198,25 @@ environment points elsewhere, it says so on standard error. It reads the file on
 
 ```ini
 [agents]
-capture = no   # yes: agents may take screenshots
-library = no   # yes: agents may search the library and read images from it
-confirm = yes  # ask in a dialog before every capture (Allow / Deny, 60 s, then denied)
-image = yes    # send the image itself to the agent; no: only path and size
-edit = no      # yes: agents may annotate and redact files (tool annotate); redaction cannot be undone
+# yes: agents may take screenshots
+capture = no
+# yes: agents may search the library and read images from it
+library = no
+# ask in a dialog before every capture (Allow / Deny, 60 s, then denied)
+confirm = yes
+# send the image itself to the agent; no: only path and size
+image = yes
+# yes: agents may annotate and redact files (tool annotate); redaction cannot be undone
+edit = no
 ```
+
+A comment must stand on a line of its own. Text after a value belongs to the value: `image = no  # …` is not a valid
+value, so the line is ignored (with a warning on standard error) and the default stays in force.
+
+`annotate` on a file outside the library leaves that file unchanged and stores the result as a new capture under
+`<Pictures>/schnapp/agents/`, like a capture by an agent. **`edit` and `library` together let an agent read any image
+file you can read:** it annotates the file and then reads the result from the library. Allow both only for an agent you
+would also let open your files.
 
 A call without consent fails with `isError: true` and a sentence that names the missing switch. Every capture shows a
 desktop notification (urgency critical); if the notification service does not accept it, the screenshot is discarded.

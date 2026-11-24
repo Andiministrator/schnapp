@@ -1166,7 +1166,9 @@ func (an mcpAnschluesse) beschrifte(ctx context.Context, args json.RawMessage, _
 	// Die Lage hält ein zweites Signal zurück, solange das Speichern läuft (mcpSignale, Kritik #202 B-2).
 	lage := new(beschriftenLage)
 	defer lage.ende()
-	b, err := beschrifteDatei(ctx, p.File, es, o, einst.Kante, false, lage)
+	// Neue Aufnahmen eines Agenten kommen unter agents/ (F-699): Wer edit und library erlaubt, lässt den Agenten jede
+	// Bilddatei lesen, die er beschriftet (docs/agents.md); so steht sie wenigstens sichtbar als Agenten-Aufnahme da.
+	b, err := beschrifteDatei(ctx, p.File, es, o, einst.Kante, false, true, lage)
 	// Gespeichert oder gescheitert: Ab hier hält nichts mehr ein Signal zurück, auch nicht ein Hinweis auf einem
 	// blockierten stderr (F-603).
 	lage.ende()

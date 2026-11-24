@@ -54,7 +54,7 @@ func beschrifte(a Aufruf, aus, fehler io.Writer, kante document.Kante) int {
 	defer lage.ende()
 	var b beschriftung
 	unterbrochen := mitBeschriftenWache(lage, fehler, func(ctx context.Context) {
-		b, err = beschrifteDatei(ctx, a.Datei, es, orte, kante, a.OhneGrenze, lage)
+		b, err = beschrifteDatei(ctx, a.Datei, es, orte, kante, a.OhneGrenze, false, lage)
 	})
 	var f *annotate.Fehler
 	switch {
@@ -231,7 +231,7 @@ func mitBeschriftenWache(lage *beschriftenLage, fehler io.Writer, f func(ctx con
 // außer ohneGrenze) oder ist ctx vor dem Speichern abgebrochen, wird nichts gespeichert. Ein laufendes Speichern bricht
 // ctx nicht mehr ab. Ein Lesefehler trägt errBeschriftenLesen. lage (nil: keine) bekommt die Phasen für die Signale.
 func beschrifteDatei(ctx context.Context, datei string, es []annotate.Eintrag, orte library.Orte, kante document.Kante,
-	ohneGrenze bool, lage *beschriftenLage) (beschriftung, error) {
+	ohneGrenze, agent bool, lage *beschriftenLage) (beschriftung, error) {
 	abs, g, stand, err := ladeFuerEditor(datei, ohneGrenze)
 	if err != nil {
 		return beschriftung{}, errors.Join(errBeschriftenLesen, err)
@@ -246,7 +246,7 @@ func beschrifteDatei(ctx context.Context, datei string, es []annotate.Eintrag, o
 	// gelesenen Datei und warnt so, wenn eine Fassung mit dem Geschwärzten im Klartext stehen bleibt (F-169, F-221).
 	// ablegenIn ohne die Budget-Warnung des Editors („vor dem Schließen“), die Kommandozeile hat ihre eigene (B-7).
 	var ziel string
-	speichern := ablegenIn(library.Neu(orte), abs, g, stand, func(p string) { ziel = p })
+	speichern := ablegenIn(library.Neu(orte), abs, g, stand, func(p string) { ziel = p }, agent)
 	erg, err := annotate.Wende(ctx, d, es)
 	if err != nil {
 		return beschriftung{}, err

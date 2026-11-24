@@ -617,5 +617,21 @@
     "alt": "meldeKurz(fehler, i18n.T(\"schnapp mcp: second signal, stopping after the running save.\"))",
     "neu": "fmt.Fprintln(fehler, i18n.T(\"schnapp mcp: second signal, stopping after the running save.\"))",
     "timeout": "600s"
+  },
+  {
+    "name": "MA1 annotate eines Agenten legt eine fremde Datei als gewöhnliche Aufnahme ab (F-699)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "einst.Kante, false, true, lage)",
+    "neu": "einst.Kante, false, false, lage)",
+    "timeout": "5m"
+  },
+  {
+    "name": "MA2 ablegenIn legt Agenten-Ergebnisse nicht unter agents/ ab (F-699)",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif agent {\n\t\t\tablegen = b.AblegenAgent\n\t\t}",
+    "neu": "\t\tif agent && false {\n\t\t\tablegen = b.AblegenAgent\n\t\t}",
+    "timeout": "5m"
   }
 ]

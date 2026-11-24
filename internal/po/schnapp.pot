@@ -402,7 +402,7 @@ msgid "Schnapp %s"
 msgstr ""
 
 #: cmd/schnapp/main.go
-msgid "Usage: schnapp [option] [--json] [--output=FILE] | schnapp [--ignore-limit] [--export=TARGET [--json]] FILE"
+msgid "Usage: schnapp [option] [--json] [--output=FILE] | schnapp [--ignore-limit] [--export=TARGET | --annotate=LIST] [--json] FILE | schnapp mcp"
 msgstr ""
 
 #: cmd/schnapp/main.go

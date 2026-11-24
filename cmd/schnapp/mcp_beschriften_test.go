@@ -84,3 +84,32 @@ func TestMcpAnnotateBibliothek(t *testing.T) {
 		t.Errorf("Objekte %v", g.Dokument.Objekte())
 	}
 }
+
+// TestMcpAnnotateFremdeDateiUnterAgenten (F-699): Eine Datei außerhalb der Bibliothek, die ein Agent beschriftet, wird
+// eine Agenten-Aufnahme unter agents/, nicht eine gewöhnliche Aufnahme zwischen denen des Menschen; die Datei selbst
+// bleibt unverändert. --annotate auf der Kommandozeile legt weiter gewöhnlich ab.
+func TestMcpAnnotateFremdeDateiUnterAgenten(t *testing.T) {
+	l := neuerMcpLauf(t)
+	l.agenten.Bearbeiten = true
+	aussen := filepath.Join(l.heim, "aussen.png")
+	roh := mustPNG(t)
+	if err := os.WriteFile(aussen, roh, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	e := l.rufe(t, "annotate", `{"file":"`+aussen+`","annotations":[{"type":"redact","from":[0,0],"to":[1,1]}]}`)
+	if e.Fehler {
+		t.Fatal(text(e))
+	}
+	var b beschriftet
+	if err := json.Unmarshal([]byte(text(e)), &b); err != nil {
+		t.Fatal(err)
+	}
+	ablage := l.orte.Ablage
+	rel, err := filepath.Rel(ablage, b.Path)
+	if err != nil || !strings.HasPrefix(filepath.ToSlash(rel), "agents/") {
+		t.Errorf("Ergebnis %s liegt nicht unter agents/ der Ablage %s", b.Path, ablage)
+	}
+	if nachher, _ := os.ReadFile(aussen); string(nachher) != string(roh) {
+		t.Error("fremde Datei verändert")
+	}
+}

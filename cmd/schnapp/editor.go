@@ -164,7 +164,7 @@ func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand
 // speichernMitNachher ist speichernIn; nachher bekommt nach jedem gelungenen Speichern den absoluten Pfad der Datei,
 // die jetzt den Stand trägt (Ausgangsdatei der Rettungskopie, ADR-0029). nil: niemand.
 func speichernMitNachher(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand, nachher func(string)) ui.Speichern {
-	speichern := ablegenIn(b, abs, g, stand, nachher)
+	speichern := ablegenIn(b, abs, g, stand, nachher, false)
 	return func(d *document.Dokument) (ui.Gespeichert, error) {
 		erg, err := speichern(d)
 		if err != nil {
@@ -187,8 +187,10 @@ func speichernMitNachher(b *library.Bibliothek, abs string, g *fileformat.Gelese
 // entfernen löscht eine Bibliotheksaufnahme endgültig; Tests lassen es scheitern.
 var entfernen = (*library.Bibliothek).Entfernen
 
-// ablegenIn ist speichernIn ohne die Prüfung des Budgets.
-func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand, nachher func(string)) ui.Speichern {
+// ablegenIn ist speichernIn ohne die Prüfung des Budgets. agent: jede neue Aufnahme, die dabei entsteht, kommt unter
+// den Agenten-Ordner der Ablage (MCP-Werkzeug annotate, F-699): eine fremde Datei, die ein Agent beschriftet, steht
+// dann als Agenten-Aufnahme in der Bibliothek, nicht zwischen den eigenen Aufnahmen des Menschen.
+func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand, nachher func(string), agent bool) ui.Speichern {
 	rel, inBibliothek := b.Relativ(abs)
 	inBibliothek = inBibliothek && !g.Fremd
 	meta := g.Meta
@@ -269,7 +271,11 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 		m := meta
 		m.Bearbeitet = true
 		m.Erstellt = b.Jetzt() // neue Aufnahme der Bibliothek, Zeitpunkt des Speicherns
-		e, err := b.Ablegen(d, sichtbar, m)
+		ablegen := b.Ablegen
+		if agent {
+			ablegen = b.AblegenAgent
+		}
+		e, err := ablegen(d, sichtbar, m)
 		if e.Pfad == "" {
 			return ui.Gespeichert{}, nil, speicherFehler(errors.Join(zurueck, err))
 		}

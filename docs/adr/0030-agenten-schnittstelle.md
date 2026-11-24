@@ -433,3 +433,22 @@ standen vor dem Beenden und hingen an einem blockierten stderr, dann half nur SI
 200 ms (`meldeKurz`, `cmd/schnapp/signalwache.go`), danach wird beendet; `mcpSignale` räumt laufende temporäre Dateien
 vor der Meldung auf. Belegt mit echten Signalen im Kindprozess (`cmd/schnapp/signal_stderr_test.go`): Ein blockiertes
 stderr hält ein zweites Signal nicht mehr zurück.
+
+## Nachtrag 13 (24.11.2026): `annotate` auf fremden Dateien, Lesewirkung von `edit` + `library`, Beispiel der Einwilligungen (F-698, F-699)
+
+**Status:** Akzeptiert (Claude Opus 5.5 beim Sprint-Abschluss 12, im Auftrag Andis: „arbeite selbstständig“).
+Anlass: Abschluss-Kritik Sprint 12, B-1 und B-2.
+
+1. **Ablage unter `agents/`:** Jede neue Aufnahme, die das MCP-Werkzeug `annotate` anlegt — eine Datei außerhalb der
+   Bibliothek, ein Ausweichen nach einem Konflikt —, legt der Server über `library.AblegenAgent` unter
+   `<Bilder>/schnapp/agents/` ab (`ablegenIn(…, agent)` in `cmd/schnapp/editor.go`). Sie steht damit als
+   Agenten-Aufnahme in der Bibliothek und wird vom Schalter „Agenten-Aufnahmen“ ausgeblendet. `--annotate` auf der
+   Kommandozeile und der Editor legen weiter gewöhnlich ab. Eine Arbeitsdatei der Bibliothek wird wie bisher
+   fortgeschrieben.
+2. **Lesewirkung bewusst, aber gesagt:** Mit `edit` und `library` zusammen kann ein Agent jede Bilddatei lesen, die der
+   Mensch lesen kann (beschriften, dann aus der Bibliothek lesen). Eine eigene Einwilligung dafür gibt es nicht; beide
+   Schalter sind aus, und `docs/agents.md` sagt die Wirkung jetzt ausdrücklich. Wer das enger will, schaltet nur einen
+   der beiden ein. Andi kann die Weiche anders stellen (eigene Einwilligung für Dateien außerhalb der Bibliothek).
+3. **Beispiel ohne Kommentare am Zeilenende:** Der Leser kennt nur Kommentare am Zeilenanfang (ADR-0018). Das Beispiel
+   in `docs/agents.md` trug sie hinter den Werten; wer es kopierte, bekam still die Voreinstellung, bei `image = no`
+   also weiter das Bild. Das Beispiel steht jetzt mit eigenen Kommentarzeilen, ein Satz erklärt die Regel.
