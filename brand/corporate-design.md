@@ -1,6 +1,6 @@
 # Schnapp — Corporate Design
 
-Fassung 1.0 · 19.11.2026 · Grundlage für Oberfläche, Doku, Webseite und alles, was nach außen geht.
+Fassung 1.1 · 24.11.2026 (Symbol eckig, Auge größer, Karte #217) · Grundlage für Oberfläche, Doku, Webseite und alles, was nach außen geht.
 Logo-Dateien: `brand/logo/` · Farben im Detail: `brand/farben.md` · Erzeugt aus `brand/werkzeug/` (nie Bilder von
 Hand ändern).
 
@@ -120,8 +120,8 @@ auf jedem System); dann gehören OFL-Text und Urhebervermerk unter `licenses/` i
   Oberfläche sind eckig (`internal/icons`, Karte #188).
 - **Eckige Rechtecke** als Grundform: Radius 0 für Schaltflächen, Felder, Karten, Dialoge und Schilder (Karte #186).
   Beschriftungen im Bild (Kasten, Text-Schild) beginnen mit Eckradius 0; der Radius bleibt im Dokument einstellbar,
-  gespeicherte Dateien behalten ihren Wert. Kreise, die Inhalt sind (Schritt-Nummer, „s“ im Logo), bleiben rund. Beim
-  App-Symbol bleibt es bei rund 23 % der Kantenlänge (Logo).
+  gespeicherte Dateien behalten ihren Wert. Kreise, die Inhalt sind (Schritt-Nummer, „s“ im Logo), bleiben rund. Auch das
+  App-Symbol steht seit Karte #217 auf einer eckigen Kachel.
 - **Auswahlecken** (vier Winkel) als Motiv für alles, was „Bereich“ bedeutet.
 - Abstände im **4-px-Raster** (4, 8, 12, 16, 24, 32).
 

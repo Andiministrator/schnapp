@@ -33,7 +33,7 @@ Grund durchsichtig; **mit-grund** hat die passende Fläche dahinter (Dunkelgrau 
 | `svg/schnapp-logo-{dunkel,hell}-mit-grund.svg` | dasselbe mit Fläche |
 | `svg/schnapp-logo-ohne-unterzeile-{dunkel,hell}[-mit-grund].svg` | Logo ohne Unterzeile (klein, Fensterleisten, Kopfzeilen) |
 | `svg/schnapp-logo[-ohne-unterzeile]-einfarbig-{schwarz,weiss}.svg` | einfarbig für Druck, Prägung, Stempel; das Auge bleibt als Ring mit Pupille |
-| `svg/schnapp-symbol-{dunkel,hell}.svg` | App-Symbol: das „s“ auf abgerundeter Kachel (dunkelgrau bzw. hellgrau) |
+| `svg/schnapp-symbol-{dunkel,hell}.svg` | App-Symbol: das „s“ auf eckiger Kachel (seit Karte #217) (dunkelgrau bzw. hellgrau) |
 | `svg/schnapp-s-{dunkel,hell}.svg` | nur das „s“ mit Auge, freigestellt |
 | `png/schnapp-logo-…-{300,600,1200,2400}.png` | alle farbigen Logo-Fassungen als PNG, Breite in Pixeln (einfarbig nur 1200) |
 | `png/schnapp-symbol-{dunkel,hell}-{16…1024}.png` | App-Symbol in 16, 22, 24, 32, 48, 64, 128, 180, 192, 256, 512, 1024 px |
