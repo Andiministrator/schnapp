@@ -31,9 +31,34 @@ func exportSVG(t *testing.T, d *document.Dokument) string {
 
 var tspanX = regexp.MustCompile(`<tspan x="([^"]+)"`)
 
-// F-577: Der SVG-Export verankert Zeilen bei Ausrichtung Mitte und rechts mit text-anchor an Mitte bzw. rechtem Ende
-// (x = Mitte/Ende der Zeile im Renderer): Ein Betrachter mit anderer Schrift behält so die Ausrichtung. Links bleibt
-// ohne Angabe; die Arbeitsdatei bleibt unverändert (Zeilenanfang, kein text-anchor).
+// pruefeTextAnker prüft text-anchor und die x der tspan einer SVG-Darstellung von tx.
+func pruefeTextAnker(t *testing.T, wo, svg string, tx document.Text, anchor string, anteil float64) {
+	t.Helper()
+	if got := strings.Contains(svg, `text-anchor="`+anchor+`"`); anchor != "" && !got {
+		t.Errorf("%s, Ausrichtung %v: text-anchor=%q fehlt: %s", wo, tx.Ausrichtung, anchor, svg)
+	}
+	if anchor == "" && strings.Contains(svg, "text-anchor") {
+		t.Errorf("%s: links schreibt text-anchor: %s", wo, svg)
+	}
+	xs := tspanX.FindAllStringSubmatch(svg, -1)
+	z := tx.Zeilen()
+	if len(xs) != len(z) {
+		t.Fatalf("%s: %d tspan, erwartet %d: %s", wo, len(xs), len(z), svg)
+	}
+	for i, m := range xs {
+		x, err := strconv.ParseFloat(m[1], 64)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if want := z[i].X + anteil*z[i].Vorschub; math.Abs(x-want) > 1e-9 {
+			t.Errorf("%s, Ausrichtung %v, Zeile %d: x=%v, erwartet %v", wo, tx.Ausrichtung, i, x, want)
+		}
+	}
+}
+
+// F-577, F-607: Export und Darstellung der Arbeitsdatei verankern Zeilen bei Ausrichtung Mitte und rechts mit
+// text-anchor an Mitte bzw. rechtem Ende (x = Mitte/Ende der Zeile im Renderer): Ein Betrachter mit anderer Schrift
+// behält so die Ausrichtung. Links bleibt ohne Angabe (Zeilenanfang).
 func TestExportTextAnchor(t *testing.T) {
 	for _, c := range []struct {
 		a      document.Ausrichtung
@@ -43,40 +68,21 @@ func TestExportTextAnchor(t *testing.T) {
 		tx := document.Text{Ort: document.Pt(4, 4), Inhalt: "WWWW\nx", Schriftgrad: 9, Farbe: color.NRGBA{A: 255}, Ausrichtung: c.a}
 		d := beispielDok(t, 64, 48)
 		fuege(t, d, tx)
-		svg := exportSVG(t, d)
-		if got := strings.Contains(svg, `text-anchor="`+c.anchor+`"`); c.anchor != "" && !got {
-			t.Errorf("Ausrichtung %v: text-anchor=%q fehlt: %s", c.a, c.anchor, svg)
-		}
-		if c.anchor == "" && strings.Contains(svg, "text-anchor") {
-			t.Errorf("links schreibt text-anchor: %s", svg)
-		}
-		xs := tspanX.FindAllStringSubmatch(svg, -1)
-		z := tx.Zeilen()
-		if len(xs) != len(z) {
-			t.Fatalf("%d tspan, erwartet %d: %s", len(xs), len(z), svg)
-		}
-		for i, m := range xs {
-			x, err := strconv.ParseFloat(m[1], 64)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if want := z[i].X + c.anteil*z[i].Vorschub; math.Abs(x-want) > 1e-9 {
-				t.Errorf("Ausrichtung %v, Zeile %d: x=%v, erwartet %v", c.a, i, x, want)
-			}
-		}
-		// Arbeitsdatei: unverändert.
+		pruefeTextAnker(t, "Export", exportSVG(t, d), tx, c.anchor, c.anteil)
+		// Arbeitsdatei: dieselbe Darstellung (F-607).
 		var buf bytes.Buffer
 		if err := SchreibeArbeitsdatei(&buf, d, d.Ansichtsbild(), Metadaten{}); err != nil {
 			t.Fatal(err)
 		}
 		arbeit := string(entpackeSVG(t, buf.Bytes()))
-		if strings.Contains(arbeit, "text-anchor") {
-			t.Errorf("Arbeitsdatei schreibt text-anchor: %s", arbeit)
+		pruefeTextAnker(t, "Arbeitsdatei", arbeit, tx, c.anchor, c.anteil)
+		// Die Darstellung ändert die Bearbeitungsangaben nicht: Der Leser bekommt dieselbe Ausrichtung zurück.
+		g, err := LeseArbeitsdatei(bytes.NewReader(buf.Bytes()))
+		if err != nil {
+			t.Fatal(err)
 		}
-		for i, m := range tspanX.FindAllStringSubmatch(arbeit, -1) {
-			if x, _ := strconv.ParseFloat(m[1], 64); math.Abs(x-z[i].X) > 1e-9 {
-				t.Errorf("Arbeitsdatei, Zeile %d: x=%v, erwartet Zeilenanfang %v", i, x, z[i].X)
-			}
+		if objs := g.Dokument.Objekte(); len(objs) != 1 || objs[0].(document.Text).Ausrichtung != c.a {
+			t.Errorf("Ausrichtung %v nach dem Lesen: %#v", c.a, objs)
 		}
 	}
 }

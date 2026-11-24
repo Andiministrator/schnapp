@@ -321,6 +321,11 @@ of the longest line; a tab is shown as four spaces. `underline` draws a bar from
 The background label spans the measured text ink and bars plus `0.25 x grad` padding on every side. Example with all
 three attributes: `testdata/format/text-style`.
 
+Informative: the reference writer's presentation (section 5) shows the alignment the same way as Schnapp's SVG
+export. A centred or right-aligned text carries `text-anchor="middle"` or `"end"`, and the `x` of each line is the
+middle or the end of that line as Schnapp sets it, so that an SVG viewer with a different font keeps the alignment; a
+left-aligned text has no `text-anchor` and `x` at the line start. Like all presentation, readers ignore it.
+
 ### 8.4 `"nummer"` step number
 
 A filled circle with a number in it.

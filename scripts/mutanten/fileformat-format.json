@@ -28,5 +28,9 @@
   {"name": "K96-1 s:kante nicht geschrieben (Karte #96)", "datei": "internal/fileformat/svg.go", "paket": "./internal/fileformat",
    "alt": "\ts.attr(\"s:kante\", d.Kante().Name())", "neu": "\tif false {\n\t\ts.attr(\"s:kante\", d.Kante().Name())\n\t}"},
   {"name": "K96-2 s:kante nicht gelesen (Karte #96)", "datei": "internal/fileformat/svg.go", "paket": "./internal/fileformat",
-   "alt": "\t\t\t\tin.kante, _ = document.KanteAus(l.a[\"kante\"])", "neu": "\t\t\t\tif false {\n\t\t\t\t\tin.kante, _ = document.KanteAus(l.a[\"kante\"])\n\t\t\t\t}"}
+   "alt": "\t\t\t\tin.kante, _ = document.KanteAus(l.a[\"kante\"])", "neu": "\t\t\t\tif false {\n\t\t\t\t\tin.kante, _ = document.KanteAus(l.a[\"kante\"])\n\t\t\t\t}"},
+  {"name": "K232-1 Arbeitsdatei ohne text-anchor (F-607)", "datei": "internal/fileformat/svg.go", "paket": "./internal/fileformat",
+   "alt": "\t\t\tif wort != \"\" {\n", "neu": "\t\t\tif wort != \"\" && !s.rundlauf {\n"},
+  {"name": "K232-2 Arbeitsdatei: tspan x am Zeilenanfang (F-607)", "datei": "internal/fileformat/svg.go", "paket": "./internal/fileformat",
+   "alt": "\t\t\tif wort != \"\" {\n", "neu": "\t\t\tif s.rundlauf {\n\t\t\t\tanker = 0\n\t\t\t}\n\t\t\tif wort != \"\" {\n"}
 ]

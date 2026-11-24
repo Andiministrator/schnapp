@@ -354,29 +354,29 @@
     "name": "K220-12 SVG-Export: Mitte ohne text-anchor (F-577)",
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
-    "alt": "\t\t\t\t\ts.attr(\"text-anchor\", \"middle\")\n",
-    "neu": ""
+    "alt": "return \"middle\", 0.5",
+    "neu": "return \"\", 0.5"
   },
   {
     "name": "K220-13 SVG-Export: Mitte ohne verschobenes x (F-577)",
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
-    "alt": "\t\t\t\t\tanker = 0.5\n",
-    "neu": "\t\t\t\t\tanker = 0\n"
+    "alt": "return \"middle\", 0.5",
+    "neu": "return \"middle\", 0"
   },
   {
     "name": "K220-14 SVG-Export: rechts mit start statt end (F-577)",
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
-    "alt": "s.attr(\"text-anchor\", \"end\")",
-    "neu": "s.attr(\"text-anchor\", \"start\")"
+    "alt": "return \"end\", 1",
+    "neu": "return \"start\", 1"
   },
   {
     "name": "K220-15 SVG-Export: rechts ohne verschobenes x (F-577)",
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
-    "alt": "\t\t\t\t\tanker = 1\n",
-    "neu": "\t\t\t\t\tanker = 0\n"
+    "alt": "return \"end\", 1",
+    "neu": "return \"end\", 0"
   },
   {
     "name": "K220-16 SVG-Export: font-weight nach verlangtem Schnitt (F-577)",

@@ -189,6 +189,18 @@ func ausrichtungText(a document.Ausrichtung) string {
 	return ""
 }
 
+// textAnker liefert text-anchor und den Anteil des Zeilenvorschubs, um den das x einer Zeile vom Anfang aus nach rechts
+// rückt (Mitte 0,5, rechts 1). Links: kein Attribut, x am Zeilenanfang. Eine Rechnung für Export und Arbeitsdatei.
+func textAnker(a document.Ausrichtung) (string, float64) {
+	switch a {
+	case document.AusrichtungMitte:
+		return "middle", 0.5
+	case document.AusrichtungRechts:
+		return "end", 1
+	}
+	return "", 0
+}
+
 // leseTextStil übernimmt s:schrift, s:stil und s:ausrichtung. Alle drei sind freiwillig: fehlend, ungültig oder
 // unbekannt heißt Go, normal, links — kein Schaden (wie s:kante); unbekannte Stil-Wörter werden übergangen.
 func leseTextStil(t *document.Text, a map[string]string) {
@@ -320,19 +332,11 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			if schnitt&fonts.Kursiv != 0 {
 				s.attr("font-style", "italic")
 			}
-			// Im Export (nicht in der Arbeitsdatei, deren Zeilenanfänge das Format nicht festlegt) verankert text-anchor
-			// jede Zeile an Mitte bzw. rechtem Ende: Setzt ein Betrachter eine andere Schrift, bleibt die Ausrichtung
-			// erhalten (F-577); der Anfang einer Zeile bleibt der des Renderers.
-			anker := 0.0
-			if !s.rundlauf {
-				switch o.Ausrichtung {
-				case document.AusrichtungMitte:
-					s.attr("text-anchor", "middle")
-					anker = 0.5
-				case document.AusrichtungRechts:
-					s.attr("text-anchor", "end")
-					anker = 1
-				}
+			// Export und Darstellung der Arbeitsdatei verankern jede Zeile an Mitte bzw. rechtem Ende: Setzt ein
+			// Betrachter eine andere Schrift, bleibt die Ausrichtung erhalten (F-577, F-607).
+			wort, anker := textAnker(o.Ausrichtung)
+			if wort != "" {
+				s.attr("text-anchor", wort)
 			}
 			s.farbeSVG("fill", o.Farbe)
 			s.WriteString(`>`)
