@@ -26,7 +26,8 @@
 #       ziehe X1 Y1 X2 Y2 [SCHRITTE] | ziehe-mitte … | taste KOMBI (B, Esc, Strg+Z, Strg+Umschalt+E, Entf, …)
 #       schreibe TEXT | rad X Y SCHRITTE (negativ = hoch) | foto NAME [BILDSCHIRM]
 #       Halten (F-599): druecke[-rechts|-mitte] [X Y] | bewege X Y [SCHRITTE] | loslassen | taste-halten KOMBI | taste-loslassen KOMBI
-#       (Zug mit Fotos mittendrin: scripts/drehbuecher/einrasten-196-halten.txt; am Ende wird alles Gehaltene gelöst)
+#       (Zug mit Fotos mittendrin: scripts/drehbuecher/einrasten-196-halten.txt; am Ende wird alles Gehaltene gelöst,
+#       auch bei SIGTERM/SIGINT/SIGHUP an die Fernbedienung: sie löst dann alles und endet mit Exit 1, F-618)
 #       Buchführung (F-614): klick/doppelklick/ziehe verweigern sich mit Fehler (Exit 1), solange DIESELBE Maustaste von
 #       druecke gehalten wird, und taste/schreibe, solange eine Taste der Kombination von taste-halten gehalten wird — sie
 #       würden sie sonst still lösen. Erst loslassen/taste-loslassen; andere Tasten (z. B. rechtsklick bei gehaltener linker)

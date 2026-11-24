@@ -4,7 +4,7 @@
     "datei": "cmd/schnapp-fernbedienung/main.go",
     "paket": "./cmd/schnapp-fernbedienung",
     "tags": "probe",
-    "alt": "\tdefer func() {\n\t\tif err := a.alleLoslassen(); err != nil {\n\t\t\tfmt.Fprintln(fehler, \"Loslassen am Ende:\", err)\n\t\t}\n\t}()\n",
+    "alt": "\tdefer func() {\n\t\ta.mu.Lock()\n\t\tdefer a.mu.Unlock()\n\t\tif err := a.alleLoslassen(); err != nil {\n\t\t\tfmt.Fprintln(fehler, \"Loslassen am Ende:\", err)\n\t\t}\n\t}()\n",
     "neu": ""
   },
   {
@@ -60,8 +60,8 @@
     "datei": "cmd/schnapp-fernbedienung/main.go",
     "paket": "./cmd/schnapp-fernbedienung",
     "tags": "probe",
-    "alt": "\t\t\tfmt.Fprintf(fehler, \"Zeile %d (%s): %v\\n\", b.Zeile, b.Text, err)\n\t\t\treturn 1",
-    "neu": "\t\t\tfmt.Fprintf(fehler, \"Zeile %d (%s): %v\\n\", b.Zeile, b.Text, err)\n\t\t\treturn 0"
+    "alt": "\t\tfmt.Fprintf(fehler, \"Zeile %d (%s): %v\\n\", b.Zeile, b.Text, err)\n\t\treturn 1, false",
+    "neu": "\t\tfmt.Fprintf(fehler, \"Zeile %d (%s): %v\\n\", b.Zeile, b.Text, err)\n\t\treturn 0, false"
   },
   {
     "name": "FB9 gehaltenFehler prüft die Tasten statt der Maustasten (F-614)",
@@ -70,5 +70,29 @@
     "tags": "probe",
     "alt": "if a.haelt(a.knoepfe, knopf) {\n\t\treturn fmt.Errorf(\"Maustaste %#x",
     "neu": "if a.haelt(a.tasten, knopf) {\n\t\treturn fmt.Errorf(\"Maustaste %#x"
+  },
+  {
+    "name": "FB10 Signalwache löst Gehaltenes nicht (F-618)",
+    "datei": "cmd/schnapp-fernbedienung/main.go",
+    "paket": "./cmd/schnapp-fernbedienung",
+    "tags": "probe",
+    "alt": "\t\t\tif err := a.alleLoslassen(); err != nil {\n\t\t\t\tfmt.Fprintln(fehler, \"Loslassen bei Signal:\", err)\n\t\t\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "FB11 Signalwache beendet mit Exit 0 (F-618)",
+    "datei": "cmd/schnapp-fernbedienung/main.go",
+    "paket": "./cmd/schnapp-fernbedienung",
+    "tags": "probe",
+    "alt": "\t\t\tbeende(1)\n",
+    "neu": "\t\t\tbeende(0)\n"
+  },
+  {
+    "name": "FB12 Signalwache fängt SIGTERM nicht (F-618)",
+    "datei": "cmd/schnapp-fernbedienung/main.go",
+    "paket": "./cmd/schnapp-fernbedienung",
+    "tags": "probe",
+    "alt": "var signaleDerWache = []os.Signal{syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP}",
+    "neu": "var signaleDerWache = []os.Signal{syscall.SIGINT, syscall.SIGHUP}"
   }
 ]

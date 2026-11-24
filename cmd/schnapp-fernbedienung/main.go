@@ -21,7 +21,10 @@ import (
 	"image/png"
 	"io"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/Andiministrator/schnapp/internal/capture"
@@ -68,7 +71,9 @@ func lauf(args []string, aus, fehler io.Writer) int {
 	}
 	defer e.Close()
 	fmt.Fprintf(aus, "fake_input Version %d verbunden, %d Befehle\n", e.Version, len(befehle))
-	a := &abspieler{e: e, fotos: os.Getenv("FOTOS"), aus: aus}
+	a := &abspieler{e: e, fotos: os.Getenv("FOTOS"), aus: aus, abbruch: make(chan struct{})}
+	halt := a.signalwache(os.Exit, fehler)
+	defer halt()
 	return abspielen(a, befehle, time.Duration(*pause)*time.Millisecond, e.Abgleich, aus, fehler)
 }
 
@@ -78,25 +83,95 @@ func lauf(args []string, aus, fehler io.Writer) int {
 // gehaltener Maustaste, taste mit gehaltener Taste), ist ein Fehler, kein stilles Lösen (F-614).
 func abspielen(a *abspieler, befehle []*Befehl, pause time.Duration, abgleich func() error, aus, fehler io.Writer) int {
 	defer func() {
+		a.mu.Lock()
+		defer a.mu.Unlock()
 		if err := a.alleLoslassen(); err != nil {
 			fmt.Fprintln(fehler, "Loslassen am Ende:", err)
 		}
 	}()
 	for _, b := range befehle {
 		fmt.Fprintf(aus, "%3d: %s\n", b.Zeile, b.Text)
-		if err := a.fuehreAus(b); err != nil {
-			fmt.Fprintf(fehler, "Zeile %d (%s): %v\n", b.Zeile, b.Text, err)
-			return 1
-		}
-		if abgleich != nil {
-			if err := abgleich(); err != nil {
-				fmt.Fprintf(fehler, "Zeile %d (%s): Compositor: %v\n", b.Zeile, b.Text, err)
-				return 1
-			}
+		if code, ok := a.schritt(b, abgleich, aus, fehler); !ok {
+			return code
 		}
 		time.Sleep(pause)
 	}
 	return 0
+}
+
+// schritt führt einen Befehl samt Abgleich unter der Sperre aus, damit die Signalwache nie mitten in einer Eingabe
+// loslässt. Ist ein Signal gekommen, hält es an: die Wache löst alles Gehaltene und beendet den Prozess (F-618).
+func (a *abspieler) schritt(b *Befehl, abgleich func() error, aus, fehler io.Writer) (int, bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	select {
+	case <-a.abbruch:
+		a.mu.Unlock()
+		select {} // die Wache löst und beendet den Prozess
+	default:
+	}
+	if err := a.fuehreAus(b); err != nil {
+		fmt.Fprintf(fehler, "Zeile %d (%s): %v\n", b.Zeile, b.Text, err)
+		return 1, false
+	}
+	if abgleich != nil {
+		if err := abgleich(); err != nil {
+			fmt.Fprintf(fehler, "Zeile %d (%s): Compositor: %v\n", b.Zeile, b.Text, err)
+			return 1, false
+		}
+	}
+	return 0, true
+}
+
+// signaleDerWache sind die Signale, bei denen die Fernbedienung Gehaltenes löst (F-618); schon ignorierte (etwa
+// SIGHUP unter nohup) bleiben ignoriert, wie in cmd/schnapp/signalwache.go.
+var signaleDerWache = []os.Signal{syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP}
+
+// signalwache fängt SIGTERM/SIGINT/SIGHUP, löst alles Gehaltene und beendet den Prozess mit Exit 1 (F-618), damit
+// der Sitz des virtuellen KWin nicht mit gedrückter Taste stehen bleibt. Die Rückgabe meldet die Wache ab.
+func (a *abspieler) signalwache(beende func(int), fehler io.Writer) func() {
+	var fangen []os.Signal
+	for _, s := range signaleDerWache {
+		if !signal.Ignored(s) {
+			fangen = append(fangen, s)
+		}
+	}
+	if len(fangen) == 0 {
+		return func() {}
+	}
+	kanal := make(chan os.Signal, 2)
+	signal.Notify(kanal, fangen...)
+	return a.wacheAuf(kanal, func() { signal.Stop(kanal) }, beende, fehler)
+}
+
+// wacheAuf wartet auf ein Signal im Kanal (Naht für Tests ohne echtes Signal).
+func (a *abspieler) wacheAuf(kanal <-chan os.Signal, abmelden func(), beende func(int), fehler io.Writer) func() {
+	fertig := make(chan struct{})
+	var einmal sync.Once
+	go func() {
+		select {
+		case s := <-kanal:
+			a.abbrechen()
+			a.mu.Lock()
+			if err := a.alleLoslassen(); err != nil {
+				fmt.Fprintln(fehler, "Loslassen bei Signal:", err)
+			}
+			fmt.Fprintf(fehler, "Signal %v: Gehaltenes gelöst, Abbruch\n", s)
+			beende(1)
+			a.mu.Unlock()
+		case <-fertig:
+		}
+	}()
+	return func() { einmal.Do(func() { abmelden(); close(fertig) }) }
+}
+
+// abbrechen meldet den Abbruch an die laufenden Wartezeiten (warte).
+func (a *abspieler) abbrechen() {
+	a.abbruchEinmal.Do(func() {
+		if a.abbruch != nil {
+			close(a.abbruch)
+		}
+	})
 }
 
 // eingeber ist, was der Abspieler von der Eingabe braucht (Eingabe erfüllt es; Tests setzen eine Attrappe ein).
@@ -114,6 +189,11 @@ type abspieler struct {
 	fotos string
 	aus   io.Writer
 
+	// Signalwache (F-618): mu schützt die Eingabe, abbruch (nil = nie) unterbricht „warte“.
+	mu            sync.Mutex
+	abbruch       chan struct{}
+	abbruchEinmal sync.Once
+
 	// Zustand des Haltens (F-599).
 	zx, zy        int // zuletzt gesetzte Zeigerlage
 	zeigerBekannt bool
@@ -128,7 +208,10 @@ func (a *abspieler) fuehreAus(b *Befehl) error {
 	z := b.Zahl
 	switch b.Art {
 	case "warte":
-		time.Sleep(time.Duration(z[0]) * time.Millisecond)
+		select {
+		case <-time.After(time.Duration(z[0]) * time.Millisecond):
+		case <-a.abbruch:
+		}
 	case "zeiger":
 		return a.setzeZeiger(z[0], z[1])
 	case "klick":
