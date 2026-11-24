@@ -897,3 +897,16 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Einstellungen mit Sicherheitsbezug müssen am Ort des Lesers geschrieben werden** (F-625): Der MCP-Server liest
   bewusst nie aus `XDG_*`; eine Tafel, die nach `XDG_CONFIG_HOME` schreibt, schaltet bei abweichender Umgebung die
   Agenten-Einwilligung nur scheinbar ab. Wer schreibt, nimmt den Ort dessen, der die Einstellung auswertet.
+
+## Sprint 12, Sitzung 24.11. nachmittags (Karten #242, #241, #157, #248)
+
+- **Eine Werkzeugoption, die nie geprüft wurde, wirkt womöglich nicht** (F-636): `probe.sh --skala` reichte
+  `--scale` an `kwin_wayland --virtual` weiter, das die Option übergeht und die Skala aus
+  `tmp/probe/home/.config/kwinoutputconfig.json` nimmt. Aufgefallen erst, als ein Foto „Skala 1.00“ meldete. Bei einer
+  Probe die Messgröße im Ergebnis gegenlesen (Foto-Zeile, `preferred_scale` im `WAYLAND_DEBUG`), nicht nur den Aufruf.
+- **WASM-Bausteine binden die Laufzeitfassung** (Karte #242): Das mit gogosseract gelieferte tesseract-WASM läuft nur
+  bis wazero 1.7.3; ab 1.8 fehlt der Export `emscripten_stack_get_current`. Ein `go get …@latest` baut, scheitert aber
+  erst zur Laufzeit; deshalb ein Test mit echter Erkennung im Modul, nicht nur `go build`.
+- **Maintainer-Wünsche zu Form gehen vor eigene Gewohnheit** (Karte #157): Gio will keine Co-Authored-By-Trailer und
+  keine Werkzeughinweise in Commits und Kommentaren, und kurze Kommentare. Die Offenlegung steht im PR-Text, nicht in
+  jedem Commit.

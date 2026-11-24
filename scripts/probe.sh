@@ -281,6 +281,17 @@ fi
 
 mkdir -p "$probe/home/.config" "$probe/home/.local/share" "$probe/home/.local/state" "$probe/home/.cache" "$probe/run"
 chmod 0700 "$probe/run"
+# Skala (F-636): kwin_wayland --virtual übergeht --scale und nimmt bei jedem Start die Skala aus seiner
+# Ausgabekonfiguration, die es beim ersten Lauf mit Skala 1 anlegt. Deshalb steht --skala vor jedem Lauf dort, für alle
+# Ausgaben (auch 1, damit eine frühere Skala nicht stehen bleibt). Fehlt die Datei noch, gilt beim ersten Lauf Skala 1.
+kwinkonf="$probe/home/.config/kwinoutputconfig.json"
+if [ -f "$kwinkonf" ]; then
+	command -v jq > /dev/null || { echo "probe.sh: jq fehlt, die Skala lässt sich nicht setzen (F-636)" >&2; exit 2; }
+	jq --argjson s "$skala" '(.[] | select(.name == "outputs") | .data[].scale) = $s' "$kwinkonf" > "$kwinkonf.neu" \
+		&& mv -f -- "$kwinkonf.neu" "$kwinkonf" || { echo "probe.sh: Skala in $kwinkonf nicht gesetzt (F-636)" >&2; exit 1; }
+elif [ "$skala" != 1 ]; then
+	echo "probe.sh: $kwinkonf fehlt noch, dieser erste Lauf läuft in Skala 1; ab dem nächsten gilt --skala (F-636)" >&2
+fi
 # Ergebnisse des vorigen Laufs überschreiben, damit nie ein altes Ergebnis als neues erscheint.
 : > "$probe/ergebnis.txt"
 : > "$probe/stdout.txt"
