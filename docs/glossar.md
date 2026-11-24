@@ -9,6 +9,7 @@
 | **Overlay** | Vollbildfenster über allen Monitoren zur Bereichsauswahl, mit Lupe, Pixelraster und Maßanzeige. |
 | **Bibliothek** | Automatische Sammlung aller Aufnahmen mit Vorschau, Datum, Quellprogramm, Suche, Schlagworten. |
 | **Leiste der letzten Aufnahmen** | Englisch „Recent captures“, bei Snagit „Tray“. Leiste unter dem Bild im Editor mit den Vorschaubildern der neuesten Aufnahmen (neueste links, offene grün, ohne Agenten-Aufnahmen); ein Klick öffnet eine im selben Fenster, nachdem die offene gespeichert ist (**Wechsel**). Ansicht → „Letzte Aufnahmen“, Strg+Umschalt+R, `[library] bar`. ADR-0036, `internal/ui/leiste_unten.go`, Logik `internal/libview`. |
+| **Volle Ansicht der Bibliothek** | Englisch „Library“. Die ganze Bibliothek im Editorfenster statt Werkzeugleiste, Leinwand und Leisten (Menüzeile und Fußzeile bleiben): Raster nach Monaten, Suche nach Schlagwort, Zeitraum, Schalter für Agenten-Aufnahmen; Enter/Doppelklick öffnet (**Wechsel**), Entf legt in den Papierkorb, F2 bearbeitet Schlagworte. Datei → „Bibliothek“, Strg+Umschalt+L, Knopf in der Leiste. ADR-0036 Punkte 3 und 4, `internal/ui/bibliothek.go`, Logik `internal/libview/raster.go`. |
 | **Arbeitsdatei** | PNG mit eingebettetem SVG-Block (ADR-0008). Überall ein Bild, in Schnapp voll bearbeitbar. |
 | **SVG-Block** | Privater PNG-Chunk mit dem vollständigen SVG: Ebenen, Original, Stauch- und Zuschnittangaben. |
 | **Original** | Die unbeschnittene, ungestauchte Aufnahme in der Arbeitsdatei. Wird nur durch Schwärzen verändert. |

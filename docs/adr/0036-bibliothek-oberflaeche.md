@@ -141,3 +141,56 @@ Nachgeschärft nach der Sitzungs-QA (Kritiker B):
   Fokus in der Leiste zieht das Neulesen ihn nicht hinein.
 - **Ergänzung 9, Sichtprobe:** Die Probe-Bibliothek legt `go run ./scripts/probelibrary -heim tmp/probe/home` an
   (Aufruf im Kopf von `bibliothek-174-leiste.txt`).
+
+## Ergänzt bei der Umsetzung (Teil 2, 24.11.2026, Karte #174, Claude Opus 5.5)
+
+Teil 2 setzt die Punkte 3 und 4 und die Ansicht-Seite von 6, 7 und 9 um (`internal/ui/bibliothek.go`, Logik ohne Gio in
+`internal/libview/raster.go` und `ansicht.go`, Papierkorb `library.InPapierkorb`). Gestaltung nach Muster 174 b. Was
+die Entscheidung offen ließ oder anders kam:
+
+1. **Knopf „Library“** links in der Leiste (100 dp breit, 10 dp vom Rand), die Vorschauen beginnen dahinter; er gehört
+   zur Fokusfahrt und öffnet die Ansicht wie Datei → „Bibliothek“ (Ergänzung 1 von Teil 1 eingelöst).
+2. **Kopf:** In Fenstern unter 920 dp Breite steht er in zwei Zeilen (Suchfeld und „Back to image“ oben, Zeitraum und
+   Schalter darunter) und ohne Titel, damit nichts überlappt. Suche, Zeitraum und Schalter beginnen bei jedem Öffnen
+   leer bzw. bei „All dates“ und aus (Punkt 3 nennt das nur für den Schalter; ein gemerkter Filter, der beim nächsten
+   Öffnen Aufnahmen verbirgt, wäre verwirrender als ein Neubeginn).
+3. **Suche:** genau ein Schlagwort wie `library.Anfrage.Schlagwort` (Groß- und Kleinschreibung egal, kein Teilwort);
+   gesucht wird bei jeder Eingabe im Hintergrund, ein veraltetes Ergebnis wird verworfen. **Zeitraum:** „Today“,
+   „Last 7 days“ und „Last 30 days“ zählen ab Mitternacht und schließen heute ein, „This year“ ab dem 1. Januar
+   (`libview.Zeitraum.Von`); die Auswahl läuft über die Liste des Menüs (`listeZeitraum`).
+4. **Raster:** Kachel 206 × 128 dp Vorschau, darunter Datum mit Uhrzeit (im laufenden Jahr ohne Jahr, Kontext `date part`)
+   und „Breite × Höhe · Schlagworte“; Spalten nach der Fensterbreite, Monatsüberschrift „November 2026 · 13 captures“
+   (Monatsnamen über den Kontext `month`). Geladen werden die Vorschauen der sichtbaren Zeilen und je einer Zeile darüber
+   und darunter; der Speicher der Vorschauen ist der der Leiste (ein `libview.Vorschauen`, 64 MiB). Die Ansicht zeigt
+   alle gefundenen Aufnahmen, nicht nur die 200 der Leiste. Rollbalken eckig wie die rechte Leiste; nur das senkrechte
+   Rad rollt.
+5. **Tastatur:** Die Ansicht hält den Tastaturfokus selbst wie die Einstellungstafel (ADR-0034); **Tab** kreist zwischen
+   Suchfeld, Zeitraum, Schalter, „Back to image“ und Raster, Umschalt+Tab rückwärts; Runter oder Enter im Suchfeld geht
+   ins Raster. Hoch und runter halten die Spalte, auch über Monatsgrenzen (in einer kürzeren Zeile die letzte Kachel);
+   Bild↑/↓ blättern so viele Zeilen, wie ganz sichtbar sind. **F10** öffnet das Menü; von den übrigen Kürzeln wirken
+   nur die der bedienbaren Menüeinträge (ADR-0026 Nachtrag 10). Werkzeugtasten, Leinwand-Kürzel, getippter Text außer in
+   den Feldern, Zeiger auf der Leinwand und die Felder Farbe und Zoom der Fußzeile wirken nicht.
+6. **Öffnen:** Enter oder Doppelklick (zweiter Druck auf dieselbe Kachel innerhalb von 400 ms, wie auf der Leinwand)
+   geht über `wechselAnfrage` wie die Leiste; die Ansicht schließt erst, wenn die neue Aufnahme übernommen ist. Scheitert
+   Speichern oder Laden, bleibt sie offen, und die Fußzeile sagt warum. Enter auf der offenen Aufnahme schließt nur die
+   Ansicht.
+7. **Papierkorb (Entf):** `library.InPapierkorb` legt die Aufnahme wie das Aufräumen in den freedesktop-Papierkorb
+   (Umbenennen samt `.trashinfo`, rückholbar, Vorschau und Indexeintrag fallen weg), aber **ohne** dessen Schutzregeln
+   (Schlagworte, Bearbeitung, Alter): Der Nutzer will genau diese Aufnahme loswerden. Nur reguläre Dateien in der
+   Ablage, kein Verweis; auf einem anderen Dateisystem bleibt sie liegen (Meldung). Die offene Aufnahme ist ausgenommen
+   (Hinweis in der Fußzeile, der Menüeintrag ist grau mit Erklärung).
+8. **Schlagworte (F2):** Das Feld unter der Kachel beginnt mit den bisherigen Schlagworten („a, b“); Komma trennt,
+   Leerraum an den Enden und doppelte (ohne Rücksicht auf Groß- und Kleinschreibung) fallen weg
+   (`libview.ZerlegeSchlagworte`). Enter schreibt im Hintergrund über `SetzeSchlagworte`, Esc oder ein Klick woanders
+   bricht ab. **Abweichung:** An der offenen Aufnahme geht F2 nicht (Hinweis, Menüeintrag grau). Ihre Datei schreibt der
+   Editor beim Speichern selbst; ein zweiter Schreiber dazwischen änderte ihren Stand, und das nächste Speichern legte
+   eine neue Aufnahme an.
+9. **Hintergrund:** Index, Papierkorb und Schlagworte laufen in Goroutinen; während einer solchen Arbeit, eines
+   Speicherns oder eines Wechsels wirken Enter, Entf und F2 nicht. Danach liest die Ansicht und die Leiste den Index neu
+   (Punkt 7), die Vorschau der Aufnahme wird vergessen.
+10. **Menü:** Datei → „Library“ steht nach „Settings…“; bei offener Ansicht bedient das Menü „Bearbeiten“ die Ansicht
+    (Öffnen, Schlagworte, Papierkorb, Suche), die übrigen Bild-Einträge sind grau mit Erklärung (ADR-0026 Nachtrag 10).
+
+Getestet in `internal/libview/raster_test.go`, `ansicht_test.go`, `internal/library/papierkorb_test.go` und
+`internal/ui/bibliothek_test.go`; Mutanten `scripts/mutanten/bibliothek-ansicht.json`; Sichtprobe
+`scripts/drehbuecher/bibliothek-174-ansicht.txt` (Probe-Bibliothek mit Schlagworten aus `scripts/probelibrary`).

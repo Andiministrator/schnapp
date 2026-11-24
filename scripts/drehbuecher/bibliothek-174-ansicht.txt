@@ -1,0 +1,108 @@
+# Sichtprobe ADR-0036 Teil 2 (Karte #174): volle Ansicht der Bibliothek im Editor-Fenster (Muster 174 b).
+# Vorbereitung wie bibliothek-174-leiste.txt: Auf einer frischen Probe-Umgebung (tmp/probe/home ohne Bibliothek) aus der
+# Wurzel des Repos die Probe-Bibliothek anlegen (14 Aufnahmen, jede dritte mit „bug, login“, die danach mit „invoice“,
+# dazu eine Agenten-Aufnahme in Magenta):
+#   bild=$(go run ./scripts/probelibrary -heim tmp/probe/home)
+# Aufruf (mit der zweitneuesten Aufnahme, damit sie grün umrandet ist):
+#   scripts/probe.sh --drehbuch scripts/drehbuecher/bibliothek-174-ansicht.txt --ende 60 --bild "$bild"
+# Das Drehbuch legt eine Aufnahme in den Papierkorb der Probe-Umgebung und setzt Schlagworte; für einen zweiten Lauf die
+# Probe-Bibliothek neu anlegen.
+# Bei 1600 × 1000, Skala 1: Kopf (0,30)–(1600,92) mit Suchfeld (170,46)–(520,76), Zeitraum (536,46)–(736,76),
+# Schalter bei (766,61); Raster ab y 92, sieben Spalten, Kachel 206 × 128 (Vorschau) im Abstand 222, erste
+# Monatsüberschrift bei y 104, erste Zeile der Vorschauen y 138–266, zweite y 334–462. Mitte der Vorschau in Spalte c,
+# Zeile z (vor dem Rollen): x = 127 + 222·c, y = 202 + 196·z. Knopf „Library“ der Leiste (62,874)–(162,962).
+# Erwartet:
+#  01 Leiste eingeschaltet, links der Knopf „Library“ (Stapel aus Rahmen, „Bibliothek“).
+#  02 Klick auf den Knopf: Ansicht statt Werkzeugleiste, Leinwand und Leisten; Menüzeile und Fußzeile bleiben. Kopf mit
+#     „Bibliothek“, Suchfeld (Platzhalter), „Alle Zeiträume ▾“, Schalter „Agenten-Aufnahmen zeigen“ (aus), „Zurück zum
+#     Bild“. Darunter „November 2026 · 10 Aufnahmen“ in zwei Zeilen, dann Oktober 2026 und die Monate des Vorjahrs.
+#     Die zweite Kachel grün (offen) und orange (Fokus); unter jeder Kachel Datum und Uhrzeit, Größe und Schlagworte.
+#  03 Zweimal Rechts: Fokus (orange) auf der vierten Kachel, grün bleibt auf der zweiten; Fußzeile nennt die Kachel.
+#  04 Zeiger über der sechsten Kachel: grauer Rand, Fußzeile nennt diese.
+#  05 F2 auf der vierten, „demo, probe“ getippt: Feld mit orangem Rand unter der Kachel, Fußzeile erklärt Enter/Esc.
+#  06 Enter: unter der vierten Kachel „1200 × 800 · demo, probe“, Fußzeile „Schlagworte gespeichert.“.
+#  07 Strg+F, „login“: nur die fünf Aufnahmen mit „login“, nach Monaten.
+#  08 Suchfeld geleert, Klick auf den Zeitraum: Liste „Heute, Letzte 7 Tage, Letzte 30 Tage, Dieses Jahr, Alle
+#     Zeiträume“ unter dem Feld.
+#  09 Zweimal Runter, Enter: „Letzte 7 Tage“, nur November 2026 mit sieben Aufnahmen (heute, gestern, vor 3 und 5 Tagen).
+#  10 Klick auf den Schalter: die Agenten-Aufnahme (magenta) vorn.
+#  11 Zeitraum wieder „Alle Zeiträume“, Schalter aus, Mausrad: Raster nach unten gerollt, Balken rechts.
+#  12 Zweimal Tab (vom Schalter über „Zurück zum Bild“ ins Raster), Pos1, zweimal Rechts, Entf: die dritte Aufnahme liegt im Papierkorb, die vierte rückt nach; Fußzeile meldet es.
+#  13 Links (offene Aufnahme), Entf: bleibt, Fußzeile „Die offene Aufnahme kann nicht in den Papierkorb …“.
+#  14 Doppelklick auf die erste: Ansicht zu, Editor zeigt die neueste Aufnahme, in der Leiste ist die erste grün.
+#  15 Strg+Umschalt+L: Ansicht wieder offen, Schalter aus, Fokus auf der (neuen) offenen Aufnahme.
+#  16 Esc: zurück zum Bild.
+warte 1500
+taste Strg+Umschalt+R
+warte 2500
+foto 01-leiste-mit-knopf
+klick 112 918
+warte 2500
+foto 02-ansicht
+taste Rechts
+taste Rechts
+warte 400
+foto 03-fokus
+zeiger 1237 202
+warte 400
+foto 04-zeiger
+zeiger 800 940
+taste F2
+schreibe demo, probe
+warte 400
+foto 05-schlagwortfeld
+taste Enter
+warte 2500
+foto 06-schlagworte-gespeichert
+taste Strg+F
+schreibe login
+warte 2000
+foto 07-suche-login
+taste Rücktaste
+taste Rücktaste
+taste Rücktaste
+taste Rücktaste
+taste Rücktaste
+warte 1500
+klick 636 61
+warte 600
+foto 08-zeitraum-liste
+taste Runter
+taste Runter
+taste Enter
+warte 2000
+foto 09-sieben-tage
+klick 766 61
+warte 2000
+foto 10-agenten
+klick 636 61
+warte 400
+taste Ende
+taste Enter
+warte 800
+klick 766 61
+warte 2000
+rad 800 600 400
+warte 600
+foto 11-gerollt
+taste Tab
+taste Tab
+taste Pos1
+taste Rechts
+taste Rechts
+taste Entf
+warte 2500
+foto 12-papierkorb
+taste Links
+taste Entf
+warte 800
+foto 13-offene-geschuetzt
+doppelklick 127 202
+warte 4000
+foto 14-gewechselt
+taste Strg+Umschalt+L
+warte 2500
+foto 15-wieder-offen
+taste Esc
+warte 600
+foto 16-zurueck

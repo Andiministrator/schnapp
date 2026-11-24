@@ -1,0 +1,366 @@
+[
+  {
+    "name": "BA1 Monatsgrenze im Raster übersehen",
+    "datei": "internal/libview/raster.go",
+    "paket": "./internal/libview",
+    "alt": "if n := len(r.gruppen); n == 0 || r.gruppen[n-1].Jahr != j || r.gruppen[n-1].Monat != m {",
+    "neu": "if n := len(r.gruppen); n == 0 {"
+  },
+  {
+    "name": "BA2 Monat in UTC statt in der Zone",
+    "datei": "internal/libview/raster.go",
+    "paket": "./internal/libview",
+    "alt": "j, m, _ := e.Erstellt.In(r.zone).Date()",
+    "neu": "j, m, _ := e.Erstellt.Date()"
+  },
+  {
+    "name": "BA3 Fokus bleibt nach dem Neulesen nicht bei derselben Aufnahme",
+    "datei": "internal/libview/raster.go",
+    "paket": "./internal/libview",
+    "alt": "if i := r.Stelle(alt); i >= 0 {",
+    "neu": "if i := r.Stelle(alt); i >= 0 && false {"
+  },
+  {
+    "name": "BA4 Spalten ohne die letzte Lücke gerechnet",
+    "datei": "internal/libview/raster.go",
+    "paket": "./internal/libview",
+    "alt": "return max(1, (m.Breite-2*m.Rand+m.LueckeX)/schritt)",
+    "neu": "return max(1, (m.Breite-2*m.Rand)/schritt)"
+  },
+  {
+    "name": "BA5 Monat ohne Platz für die Überschrift",
+    "datei": "internal/libview/raster.go",
+    "paket": "./internal/libview",
+    "alt": "\t\ty += m.Kopf\n",
+    "neu": "\t\ty += 0\n"
+  },
+  {
+    "name": "BA6 Sichtbarer Bereich ohne Zeile Vorlauf",
+    "datei": "internal/libview/raster.go",
+    "paket": "./internal/libview",
+    "alt": "oben, unten := ro-schritt, ro+m.Hoehe+schritt",
+    "neu": "oben, unten := ro, ro+m.Hoehe+0*schritt"
+  },
+  {
+    "name": "BA7 Treffer in der Lücke zwischen zwei Kacheln",
+    "datei": "internal/libview/raster.go",
+    "paket": "./internal/libview",
+    "alt": "if x < 0 || schritt <= 0 || x%schritt >= m.KachelB {",
+    "neu": "if x < 0 || schritt <= 0 {"
+  },
+  {
+    "name": "BA8 Treffer hinter der letzten Kachel einer Zeile",
+    "datei": "internal/libview/raster.go",
+    "paket": "./internal/libview",
+    "alt": "if i >= r.zeilen[k].bis {",
+    "neu": "if false {"
+  },
+  {
+    "name": "BA9 Hoch und runter verlieren die Spalte",
+    "datei": "internal/libview/raster.go",
+    "paket": "./internal/libview",
+    "alt": "return min(ziel.von+spalte, ziel.bis-1)",
+    "neu": "return ziel.von + 0*spalte"
+  },
+  {
+    "name": "BA10 Bild runter blättert nur eine Zeile",
+    "datei": "internal/libview/raster.go",
+    "paket": "./internal/libview",
+    "alt": "return max(1, m.Hoehe/schritt)",
+    "neu": "return 1"
+  },
+  {
+    "name": "BA11 Erste Zeile eines Monats ohne Überschrift ins Bild gerollt",
+    "datei": "internal/libview/raster.go",
+    "paket": "./internal/libview",
+    "alt": "oben = max(0, r.koepfe[z.gruppe]-m.Oben)",
+    "neu": "oben = z.y"
+  },
+  {
+    "name": "BA12 Rad im Raster verliert den Rest unter einem Pixel",
+    "datei": "internal/libview/raster.go",
+    "paket": "./internal/libview",
+    "alt": "r.rest -= float32(n)",
+    "neu": "r.rest = 0"
+  },
+  {
+    "name": "BA13 Pfeil hoch geht im Raster runter",
+    "datei": "internal/libview/raster.go",
+    "paket": "./internal/libview",
+    "alt": "case SchrittHoch:\n\t\tzeilen = -1",
+    "neu": "case SchrittHoch:\n\t\tzeilen = 1"
+  },
+  {
+    "name": "BA14 Sieben Tage umfassen acht",
+    "datei": "internal/libview/ansicht.go",
+    "paket": "./internal/libview",
+    "alt": "return heute.AddDate(0, 0, -6)",
+    "neu": "return heute.AddDate(0, 0, -7)"
+  },
+  {
+    "name": "BA15 Dieses Jahr beginnt heute",
+    "datei": "internal/libview/ansicht.go",
+    "paket": "./internal/libview",
+    "alt": "return time.Date(j, time.January, 1, 0, 0, 0, 0, jetzt.Location())",
+    "neu": "return heute"
+  },
+  {
+    "name": "BA16 Agenten-Aufnahmen immer in der Anfrage",
+    "datei": "internal/libview/ansicht.go",
+    "paket": "./internal/libview",
+    "alt": "OhneAgenten: !agenten",
+    "neu": "OhneAgenten: false"
+  },
+  {
+    "name": "BA17 Doppelte Schlagworte mit anderer Schreibung bleiben",
+    "datei": "internal/libview/ansicht.go",
+    "paket": "./internal/libview",
+    "alt": "if strings.EqualFold(a, w) {\n\t\t\t\tdoppelt = true",
+    "neu": "if a == w {\n\t\t\t\tdoppelt = true"
+  },
+  {
+    "name": "BA18 Leerraum um Schlagworte bleibt",
+    "datei": "internal/libview/ansicht.go",
+    "paket": "./internal/libview",
+    "alt": "w = strings.TrimSpace(w)\n\t\tif w == \"\" {",
+    "neu": "if strings.TrimSpace(w) == \"\" {"
+  },
+  {
+    "name": "BA19 Steuerzeichen landen in der Eingabe",
+    "datei": "internal/libview/ansicht.go",
+    "paket": "./internal/libview",
+    "alt": "if unicode.IsControl(r) {\n\t\t\tcontinue",
+    "neu": "if false && unicode.IsControl(r) {\n\t\t\tcontinue"
+  },
+  {
+    "name": "BA20 Eingabe ohne Längengrenze",
+    "datei": "internal/libview/ansicht.go",
+    "paket": "./internal/libview",
+    "alt": "if n >= MaxEingabe {",
+    "neu": "if false {"
+  },
+  {
+    "name": "BA21 Kachel im Vorjahr ohne Jahreszahl",
+    "datei": "internal/libview/ansicht.go",
+    "paket": "./internal/libview",
+    "alt": "if t.Year() == jetzt.Year() {",
+    "neu": "if true {"
+  },
+  {
+    "name": "BA22 Papierkorb ohne Pfadprüfung",
+    "datei": "internal/library/aufraeumen.go",
+    "paket": "./internal/library",
+    "alt": "if !(Eintrag{Pfad: rel, Breite: 1, Hoehe: 1}).gueltig() {\n\t\treturn Verschoben{}, fmt.Errorf",
+    "neu": "if false {\n\t\treturn Verschoben{}, fmt.Errorf"
+  },
+  {
+    "name": "BA23 Papierkorb folgt einem Verweis",
+    "datei": "internal/library/aufraeumen.go",
+    "paket": "./internal/library",
+    "alt": "\tif !st.Mode().IsRegular() {\n\t\treturn Verschoben{}, fmt.Errorf(\"%w: keine gewöhnliche Datei\", ErrPfad)\n\t}\n\tv, err := b.verschiebe",
+    "neu": "\t_ = st\n\tv, err := b.verschiebe"
+  },
+  {
+    "name": "BA24 Papierkorb führt den Index nicht nach",
+    "datei": "internal/library/aufraeumen.go",
+    "paket": "./internal/library",
+    "alt": "if ein.Pfad != rel {",
+    "neu": "if true {"
+  },
+  {
+    "name": "BA25 Papierkorb lässt die Vorschau liegen",
+    "datei": "internal/library/aufraeumen.go",
+    "paket": "./internal/library",
+    "alt": "_ = b.entferneVorschau(rel)",
+    "neu": "_ = rel"
+  },
+  {
+    "name": "BV1 Werkzeugtaste wirkt in der Ansicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "case ok && !t.hatWerkzeug && bibliothekErlaubt(t.akt):",
+    "neu": "case ok:"
+  },
+  {
+    "name": "BV2 Übrige Tasten fallen in die Leinwand durch",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "bibliothekErlaubt(t.akt):\n\t\t\t\t\te.fuehreAus(gtx, t.akt, false)\n\t\t\t\t}\n\t\t\t}\n\t\t\tcontinue\n\t\t}",
+    "neu": "bibliothekErlaubt(t.akt):\n\t\t\t\t\te.fuehreAus(gtx, t.akt, false)\n\t\t\t\t}\n\t\t\t}\n\t\t}"
+  },
+  {
+    "name": "BV3 Jede Handlung in der Ansicht erlaubt",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "aktBibOeffnen, aktBibSchlagworte, aktBibPapierkorb, aktBibSuchen:\n\t\treturn true\n\t}\n\treturn false",
+    "neu": "aktBibOeffnen, aktBibSchlagworte, aktBibPapierkorb, aktBibSuchen:\n\t\treturn true\n\t}\n\treturn true"
+  },
+  {
+    "name": "BV4 Entf legt die offene Aufnahme in den Papierkorb",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "if e.bibIstOffen(i) {\n\t\te.melde(i18n.T(\"The open capture cannot be moved",
+    "neu": "if false {\n\t\te.melde(i18n.T(\"The open capture cannot be moved"
+  },
+  {
+    "name": "BV5 F2 an der offenen Aufnahme",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "if e.bibIstOffen(i) {\n\t\te.melde(i18n.T(\"The keywords",
+    "neu": "if false {\n\t\te.melde(i18n.T(\"The keywords"
+  },
+  {
+    "name": "BV6 Enter auf der offenen Aufnahme schließt die Ansicht nicht",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "if e.bibIstOffen(i) {\n\t\te.bibliothekSchliessen(&gtx)",
+    "neu": "if false {\n\t\te.bibliothekSchliessen(&gtx)"
+  },
+  {
+    "name": "BV7 Ansicht bleibt nach dem Wechsel offen",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\te.bibliothekNachWechsel() // aus der vollen Ansicht",
+    "neu": "\t// aus der vollen Ansicht"
+  },
+  {
+    "name": "BV8 Zwei langsame Klicks gelten als Doppelklick",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "doppel := stelle == b.letzteKachel && pe.Time-b.letzterKlick <= doppelklickZeit",
+    "neu": "doppel := stelle == b.letzteKachel"
+  },
+  {
+    "name": "BV9 Schlagworte nicht am Komma zerlegt",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "rel, worte := b.bearbeite, libview.ZerlegeSchlagworte(b.worte)",
+    "neu": "rel, worte := b.bearbeite, []string{b.worte}"
+  },
+  {
+    "name": "BV10 Tasten im Schlagwortfeld fallen durch",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tb.worte = libview.Zurueck(b.worte)\n\t\t}\n\t\treturn\n\t}",
+    "neu": "\t\t\tb.worte = libview.Zurueck(b.worte)\n\t\t}\n\t}"
+  },
+  {
+    "name": "BV11 Suche liest den Index nicht neu",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "b.suche = neu\n\t\t\te.bibliothekNeuLesen()",
+    "neu": "b.suche = neu"
+  },
+  {
+    "name": "BV12 Agenten-Schalter bleibt beim nächsten Öffnen an",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "b.suche, b.zeitraum, b.agenten = \"\", libview.ZeitraumAlle, false",
+    "neu": "b.suche, b.zeitraum = \"\", libview.ZeitraumAlle"
+  },
+  {
+    "name": "BV13 Fokus beim Öffnen nicht auf der offenen Aufnahme",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "i := b.r.Stelle(b.r.Aktuell())",
+    "neu": "i := -1"
+  },
+  {
+    "name": "BV14 Pfeil hoch wandert nach links",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "case key.NameUpArrow:\n\t\ts = libview.SchrittHoch",
+    "neu": "case key.NameUpArrow:\n\t\ts = libview.SchrittLinks"
+  },
+  {
+    "name": "BV15 Fokus wird nicht ins Bild gerollt",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tb.r.SetzeFokus(ziel)\n\t\tb.r.Zeige(ziel, b.masse)",
+    "neu": "\t\tb.r.SetzeFokus(ziel)"
+  },
+  {
+    "name": "BV16 Ende einer Arbeit liest die Leiste nicht neu",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\te.bibliothekNeuLesen()\n\te.leisteNeuLesen()\n}",
+    "neu": "\te.bibliothekNeuLesen()\n}"
+  },
+  {
+    "name": "BV17 Umschalt+Tab fährt vorwärts",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "schritt = bibZiele - 1",
+    "neu": "schritt = 1"
+  },
+  {
+    "name": "BV18 Liste des Zeitraums ohne Fokus auf dem gewählten",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "e.menue.cursor, e.menue.fokusNach = j, &e.menue.eintraege[j]",
+    "neu": "_ = j"
+  },
+  {
+    "name": "BV19 Wahl eines Zeitraums ohne Wirkung",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "case en.hatZeitraum:\n\t\t\t\te.bibSetzeZeitraum(en.zeitraum)",
+    "neu": "case en.hatZeitraum:\n\t\t\t\t_ = en.zeitraum"
+  },
+  {
+    "name": "BV20 Knopf Library ohne Wirkung",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "if k.bibKnopf.Clicked(gtx) && e.leisteAn() {\n\t\te.bibliothekOeffnen(gtx)",
+    "neu": "if k.bibKnopf.Clicked(gtx) && e.leisteAn() {\n\t\t_ = gtx"
+  },
+  {
+    "name": "BV21 Felder der Fußzeile in der Ansicht bedienbar",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "return !e.s.SpeichernLaeuft() && !e.bibl.offen }",
+    "neu": "return !e.s.SpeichernLaeuft() }"
+  },
+  {
+    "name": "BV22 Menü Bearbeiten bedient in der Ansicht das Bild",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "if i == menueBearbeiten {\n\t\treturn e.bibliothekBearbeiten()",
+    "neu": "if false {\n\t\treturn e.bibliothekBearbeiten()"
+  },
+  {
+    "name": "BV23 Einträge des Bilds in der Ansicht nicht grau",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\ten[j].an = false\n",
+    "neu": "\n"
+  },
+  {
+    "name": "BV24 Mausrad rollt das Raster nicht",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "b.r.Rad(pe.Scroll.Y, b.masse)",
+    "neu": "_ = pe"
+  },
+  {
+    "name": "BV25 Kürzel Strg+Umschalt+L fehlt",
+    "datei": "internal/ui/kuerzel.go",
+    "paket": "./internal/ui",
+    "alt": "{filter: key.Filter{Name: \"L\", Required: key.ModShortcut | key.ModShift}, akt: aktBibliothek},",
+    "neu": ""
+  },
+  {
+    "name": "BV26 Ansicht ohne Fokusziel im Bild",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "ganz := clip.Rect(r).Push(gtx.Ops)\n\tevent.Op(gtx.Ops, b)\n\tganz.Pop()",
+    "neu": "_ = r"
+  },
+  {
+    "name": "BV28 Index der Ansicht wird nicht abgeholt",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t_ = e.bibliothekAbholen()\n",
+    "neu": "\n"
+  }
+]

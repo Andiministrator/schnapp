@@ -115,8 +115,8 @@
     "name": "S17 Schließen gibt der Leinwand den Fokus nicht",
     "datei": "internal/ui/einstellungen.go",
     "paket": "./internal/ui",
-    "alt": "\t\te.menue.offen, e.menue.fokusNach = false, nil\n\t}\n\tgtx.Execute(key.FocusCmd{Tag: e})",
-    "neu": "\t\te.menue.offen, e.menue.fokusNach = false, nil\n\t}"
+    "alt": "\t\tgtx.Execute(key.FocusCmd{Tag: &e.bibl})\n\t\treturn\n\t}\n\tgtx.Execute(key.FocusCmd{Tag: e})",
+    "neu": "\t\tgtx.Execute(key.FocusCmd{Tag: &e.bibl})\n\t\treturn\n\t}"
   },
   {
     "name": "S18 geschlossene Auswahlliste gibt den Fokus nicht an die Tafel",

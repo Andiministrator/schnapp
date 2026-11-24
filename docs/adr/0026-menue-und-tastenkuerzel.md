@@ -203,3 +203,28 @@ this window: it has no library.“; im Programm kommt das nicht vor, nur in Test
 Leiste sind Knöpfe der Fokusfahrt: Tab erreicht sie, Pfeile links und rechts, Pos1 und Ende wandern zwischen ihnen
 (nicht in der Tastentabelle, wie die Kacheln der Schnellstile), Enter und Leertaste öffnen. Getestet von
 `TestMenueZeigtKuerzel`, `TestLeisteSchalter`, `TestLeisteTastatur` und `TestLeisteLeertaste`.
+
+## Nachtrag 10 (24.11.2026): Eintrag „Bibliothek/Library“ mit Strg+Umschalt+L; Menüs bei offener Ansicht (ADR-0036, Karte #174)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #174 Teil 2).
+
+- **Eintrag:** Das Menü „Datei“ trägt nach „Einstellungen…“ in derselben Gruppe **Bibliothek** (englisch „Library“,
+  `aktBibliothek`), Kürzel **Strg+Umschalt+L** in der Tastentabelle; Strg+L bleibt „Ebene sperren“, L allein ist frei.
+  Er öffnet und schließt die volle Ansicht der Bibliothek (ADR-0036 Punkt 3) und trägt bei offener Ansicht den Haken.
+  Ohne Bibliothek grau mit der Erklärung aus Nachtrag 9.
+- **Menüs bei offener Ansicht:** Was das Bild oder die Leisten darunter ändert, ist grau mit Erklärung nach Nachtrag 8
+  („Not available in the library. Esc returns to the image.“): Export und Kopieren, Ansicht, Bild, Werkzeuge, Ebene.
+  Bedienbar bleiben Speichern, Bibliothek, Einstellungen, Schließen und das Menü Hilfe; nur deren Kürzel wirken
+  (`bibliothekErlaubt`), dazu F10. Das Menü „Bearbeiten“ bedient dann die Ansicht: **Öffnen** (Enter), **Schlagworte
+  bearbeiten** (F2), **In den Papierkorb** (Entf), **Nach Schlagwort suchen** (Strg+F); die beiden mittleren sind an der
+  offenen Aufnahme grau mit Erklärung.
+- **Kürzel außerhalb der Tabelle:** Enter, F2, Entf und Strg+F holt die Ansicht selbst ab (`bibliothekFilter`, wie die
+  Einstellungstafel ihre Tasten), weil Entf, F2 und Enter in der Tabelle schon Handlungen des Bilds tragen. Der
+  Menüeintrag zeigt sein Kürzel deshalb über ein eigenes Feld (`menueEintrag.kuerzel`) statt aus der Tabelle; Punkt 6
+  (jede Taste hat einen Menüeintrag) gilt damit auch für sie. Pfeile, Pos1, Ende, Bild↑/↓, Tab und Esc der Ansicht
+  sind Bedienung des Rasters ohne eigenen Eintrag, wie die Pfeile der Leiste (Nachtrag 9).
+- **Zeitraum:** Die Auswahl des Zeitraums im Kopf der Ansicht läuft über die Liste des Menüs (`listeZeitraum`, wie die
+  Felder der Fußzeile, ADR-0031 Nachtrag 3).
+
+Getestet von `TestMenueZeigtKuerzel`, `TestBibliothekOeffnenUndSchliessen`, `TestBibliothekOhneBibliothek` und
+`TestBibliothekSperrtDasBild`; Mutanten BV1 bis BV3, BV19, BV22, BV23 und BV25 in `scripts/mutanten/bibliothek-ansicht.json`.
