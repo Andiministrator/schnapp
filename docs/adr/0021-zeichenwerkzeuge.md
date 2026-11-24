@@ -448,7 +448,7 @@ Objekten und am Bild.
   gezogene Kante weiter auf der Linie, der Griffname gehört aber zur anderen Seite.
 - f. **Nicht erreichbar:** Die Abfrage der Vollansicht des Zuschneidens in `einrastenAktiv` ist eine Absicherung; in
   diesem Werkzeug gibt es weder Objektzug noch Objektgriffe noch neue Objekte.
-- g. **Umsetzung und Tests:** `einrasten_kritik_test.go` (canvas und ui), `hilfslinienFlaechen` (Lage der Linie im
+- g. **Umsetzung und Tests:** `einrasten_grenzfaelle_test.go` (canvas und ui), `hilfslinienFlaechen` (Lage der Linie im
   Fenster, ohne Gio prüfbar), Mutanten E19 bis E35.
 
 ## Nachtrag 13 (24.11.2026): Sprechblase — Text-Schild mit Spitze (Karte #194)

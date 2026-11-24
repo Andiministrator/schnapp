@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Rückfallprobe F-144 (ADR-0029): Rettungskopie nach SIGKILL. Aufruf (die Fernbedienung baut --innen nicht selbst):
 #   GOFLAGS= go build -race -trimpath -tags novulkan,nox11,probe -o tmp/probe/fernbedienung ./cmd/schnapp-fernbedienung
 #   scripts/probe.sh --zeit 120 --innen scripts/drehbuecher/rueckfall-rettung-kill9.sh   (nie direkt starten)

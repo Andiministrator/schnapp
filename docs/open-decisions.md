@@ -216,16 +216,51 @@ Stand 21.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
   die Viererfolge ist fest, ohne `x/sys/cpu` (ADR-0028 Punkt 2).
 - **Fehlertexte:** Präfix-Regel gilt für alle Pakete, keine Ausnahmen; fünf Pakete werden nachgezogen (ADR-0019
   Nachtrag 2, F-339).
-- **Rettungskopie gegen Absturz:** ADR-0029 akzeptiert (Claude im Auftrag Andis, 21.11.2026), Umsetzung offen (F-144, Karte #77).
+- **Rettungskopie gegen Absturz:** ADR-0029 akzeptiert (Claude im Auftrag Andis, 21.11.2026), umgesetzt in Sprint 11 (F-144, Karte #77; Nachträge 1 bis 10).
 
 ## E-25: Claudes Entscheidungen beim Sprint-Abschluss 12 — ENTSCHIEDEN 24.11.2026 (Claude im Auftrag Andis: „entscheide du“)
 
 - **Agenten `edit` + `library`** (F-699): keine eigene Einwilligung; die Lesewirkung entsteht nur mit beiden Schaltern
   zusammen, wer sie nicht will, schaltet einen aus. Wirkung dokumentiert, neue Aufnahmen unter `agents/` (ADR-0030
   Nachtrag 13 Punkt 5, berichtigt F-741).
-- **Text an der Stauch-Naht** (F-739): Grenze bis Karte #281 (ADR-0023 Nachtrag 12).
+- **Text an der Stauch-Naht** (F-739): Grenze bis Karte #281 (ADR-0023 Nachtrag 12; gelöst in Sprint 13, Nachtrag 13).
 - **`.claude/settings.json` im öffentlichen Repo** (Abschluss-Kritik D-11): bleibt mit der Sperrregel, die den Zweig
   `alt-main` beim Namen nennt. Die Regel verhindert, dass die alte Geschichte versehentlich veröffentlicht wird; dass es
   einen zurückgehaltenen Zweig gibt, verrät nichts, was in ihm steht. Ohne den Namen griffe die Sperre nicht.
 - **Echtlauf-Skript** `scripts/echtlauf-mcp-hinweise.sh` (F-717): auf Andis Ja entfernt.
+
+## E-26: Entscheidungen aus Sprint 11 und Sprint 12 — ENTSCHIEDEN 22. bis 24.11.2026 (Andi bzw. Claude, Andi informiert)
+
+Nachgetragen in Sprint 13 (F-723); die Einzelheiten stehen in den genannten ADRs.
+
+- **Agenten-Schnittstelle:** MCP-Server `schnapp mcp` über stdio, Einwilligung je Fähigkeit in `[agents]` (Aufnahme,
+  Bibliothek, Beschriften aus; Bestätigung und Bild an), Bestätigungsdialog nur in der geprüften KWin-Sitzung
+  (ADR-0030 Nachträge 2 bis 13).
+- **Neue Oberfläche:** Textmenü mit „s“, Werkzeugleiste links, rechte Leiste mit Eigenschaften, Fußzeile mit Feldern,
+  eckige Formen als Voreinstellung (ADR-0031, ADR-0021 Nachtrag 4; Symbolset von Andi am 23.11. abgenommen).
+- **Ebenen** je Objekt mit Name, Sichtbarkeit, Sperre und Deckkraft (ADR-0032); **Lupe** vergrößert die Ansicht
+  (ADR-0033); **Einstellungstafel** im Editor (ADR-0034); **Schnellstile** (ADR-0037).
+- **Text aus dem Bild:** installiertes `tesseract`, sonst das eigene `schnapp-ocr` mit tesseract als WebAssembly und
+  eingebauten Sprachdaten deu/eng, ohne cgo (ADR-0035 mit Nachträgen 1 und 2).
+- **Bibliothek im Editor:** Leiste der letzten Aufnahmen und volle Ansicht, Wechsel der Aufnahme im selben Fenster
+  (ADR-0036).
+- **Stauch-Kante:** Abriss als Voreinstellung, durchsichtiger Spalt (ADR-0023 Nachträge 6 und 7).
+
+## E-27: Claudes Entscheidungen aus Sprint 13 — ENTSCHIEDEN 24.11.2026 (Claude, Andi: „arbeite selbstständig“)
+
+- **Beschriftungen an einer Stauch-Naht** sind in allen Ausgängen abgeschnitten wie das Bild (Text, Sprechblasen-
+  Dreieck, Lupen-Linie, Pfeil, Nummer), statt gestaucht oder starr hinter der Naht (ADR-0023 Nachträge 13 bis 15,
+  F-739, F-695, F-745). Keine Texteingabe an ganz verborgenem Text (F-740).
+- **Schriftgrenze** als Zwischenspeicher mit Verdrängung statt lebenslanger Sperre (ADR-0021 Nachtrag 15, F-697).
+- **Index der Bibliothek:** Abgleich ergänzt Aufnahmen ohne Zeile, Ablegen an fehlenden Index baut ihn neu auf
+  (ADR-0016 Nachtrag 7, F-700).
+- **Übersicht F1** ist modal wie die Einstellungstafel; beide Tafeln rollen in kleinen Fenstern (ADR-0031 Nachträge 10
+  und 11, F-705, F-707, F-709).
+- **Rettungskopie:** Aufräumen lässt Kopien offener Fenster liegen, Schlagworte ziehen die Kennung nach (ADR-0029
+  Nachtrag 10, F-702, F-703).
+- **CI:** übersprungene Tests sichtbar mit Liste erlaubter Sprünge, Echt-Tests mit tesseract, rsvg-convert und fester
+  Open Sans, `govulncheck` als eigener Job; `golang.org/x/image` auf v0.48.0 gehoben (F-714, F-718, F-744).
+- **Lizenztexte** der eingebauten Go-Module in `THIRD-PARTY-LICENSES/`, per Test gleich der Modulliste (F-719).
+- **Testdateien** heißen nach ihrem Gegenstand, jede eigene Quelldatei trägt den SPDX-Kopf; ein Test hält beides
+  (F-725).
 

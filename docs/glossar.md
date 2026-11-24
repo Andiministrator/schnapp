@@ -36,6 +36,11 @@
 | **Lupe (Beschriftung)** | Vergrößerter Ausschnitt, neben die Stelle gesetzt. |
 | **Blatt** | Mehrere Bilder auf einer Fläche (Vorher-nachher, Schritt-für-Schritt). |
 | **Zeichenpakete** | Die aus einem Schwesterprojekt übernommenen Go-Pakete `svg`, `raster`, `geo` (ADR-0012). |
+| **Wechsel** | Öffnen einer anderen Aufnahme im selben Editorfenster (Leiste der letzten Aufnahmen oder volle Ansicht der Bibliothek): erst wird die offene gespeichert wie mit Strg+S, dann die neue geladen; solange ruht das Bearbeiten. Kein Wechsel bei offenem Export, laufender Texteingabe, Zug, Arbeit der Ansicht oder laufendem Kopieren. ADR-0036, `internal/ui/wechsel.go`. |
+| **Navigator** | Mini-Übersicht unten rechts auf der Leinwand, nur wenn das Bild bei dieser Zoomstufe nicht ins Fenster passt; Klicken und Ziehen verschiebt die Ansicht. Ansicht → „Navigator“. ADR-0031 Nachtrag 9, `internal/canvas/navigator.go`. |
+| **Einrasten** | Englisch „snap“. Verschieben, Griffe und neue Pfeile, Kästen und Nummern rasten an Kanten und Mitten anderer sichtbarer Objekte und des Bilds ein (6 Fensterpixel), orange Hilfslinien zeigen das Ziel; Alt oder Ansicht → „An Objekten einrasten“ schaltet es ab. ADR-0021 Nachtrag 12. |
+| **Farbpaar** | Die zwei Farben einer Beschriftung: Vordergrund (Strich bzw. Schrift) und Füllung, je Werkzeug gemerkt, „Keine“ möglich, Tauschen mit Strg+Umschalt+X. ADR-0021 Nachtrag 11, `internal/canvas/farbpaar.go`. |
+| **Agenten-Aufnahme** | Aufnahme, die ein Agent über den MCP-Server (`schnapp mcp`) gemacht oder beschriftet hat; sie liegt in der Bibliothek unter `agents/`, fehlt in der Leiste der letzten Aufnahmen und erscheint in der vollen Ansicht nur mit dem Schalter. ADR-0030 (Nachträge 2 und 13). |
 
 ## Entwicklungsbegriffe
 

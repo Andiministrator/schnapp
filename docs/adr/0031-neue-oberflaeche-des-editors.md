@@ -370,7 +370,7 @@ im Fenster liegt, und sich per Klick und Ziehen verschieben lassen. Entscheidung
   Strich im Bildstreifen zu verschwinden. Für die Zeigerereignisse gilt: Nur die linke Taste führt den Ausschnitt (jeder
   andere Druck beendet ein Ziehen); Loslassen und Abbruch (`Cancel`) gelten immer, auch während des Speicherns, denn sie
   ändern nichts am Dokument, während Druck und Ziehen dann ruhen. Tests `internal/canvas/navigator_flach_test.go`,
-  `internal/ui/navigator_flach_test.go`, `internal/ui/navigator_kritik_test.go`.
+  `internal/ui/navigator_flach_test.go`, `internal/ui/navigator_grenzfaelle_test.go`.
 
 ## Nachtrag 10 (24.11.2026): Tafeln rollen in kleinen Fenstern — Übersicht F1 und Einstellungstafel (Karte #272, F-705, F-709)
 

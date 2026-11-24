@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Probe ADR-0030 Fassung 1 (Karte #43, Kritik KB-2): Schnittstelle für Skripte und Agenten im virtuellen KWin.
 # Aufruf: scripts/probe.sh --zeit 120 --innen scripts/drehbuecher/agenten-kommandozeile.sh   (nie direkt starten)
 # Erwartet:

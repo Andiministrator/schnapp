@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // Mutationsprobe für Schnapp (F-371): Mutanten stehen als Daten in *.json, das Programm wendet je Mutant eine
 // Ersetzung in einer KOPIE des Wurzelmoduls an und lässt das Paket testen. Der Arbeitsbaum bleibt unberührt.
 // Aufruf und Format: README.md in diesem Ordner.

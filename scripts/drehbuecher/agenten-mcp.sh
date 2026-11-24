@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Probe ADR-0030 Fassung 2 (Karte #173): MCP-Server `schnapp mcp` im virtuellen KWin, mit echter Aufnahme über KWin und
 # echtem D-Bus-Aufruf der Benachrichtigung (an eine Attrappe auf dem privaten Bus des Laufs).
 # Vorher bauen (außerhalb, im Repo):
