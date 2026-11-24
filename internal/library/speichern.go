@@ -85,7 +85,8 @@ func StandVon(pfad string) (_ Stand, fehler error) {
 // der Aufrufer legt dann mit Ablegen eine neue Aufnahme an.
 //
 // Der Vergleich ist race-arm, nicht race-frei: Zwischen Prüfen und Umbenennen bleiben Millisekunden, in denen ein
-// anderer Prozess schreiben könnte (keine Sperrdateien; der Mutex gilt nur in diesem Prozess).
+// anderer Prozess schreiben könnte (keine Sperre auf der Aufnahme; der Mutex gilt nur in diesem Prozess, die Sperre des
+// Index, F-686, nur für den Index).
 func (b *Bibliothek) Speichern(rel string, erwartet Stand, d *document.Dokument, sichtbar image.Image) (_ Eintrag, _ Stand, fehler error) {
 	defer errprefix.Defer("library", &fehler)
 	b.mu.Lock()
@@ -179,8 +180,13 @@ func (b *Bibliothek) Speichern(rel string, erwartet Stand, d *document.Dokument,
 	return neu, neuStand, folge
 }
 
-// ersetzeImIndex setzt den Eintrag mit demselben Pfad (oder hängt ihn an) und schreibt den Index.
+// ersetzeImIndex setzt den Eintrag mit demselben Pfad (oder hängt ihn an) und schreibt den Index, unter der Sperre des
+// Index (F-686). Läuft unter b.mu.
 func (b *Bibliothek) ersetzeImIndex(neu Eintrag) error {
+	return b.unterSperre(func() error { return b.ersetzeImIndexGesperrt(neu) })
+}
+
+func (b *Bibliothek) ersetzeImIndexGesperrt(neu Eintrag) error {
 	idx, err := b.lade()
 	if err != nil {
 		return err
@@ -242,16 +248,19 @@ func (b *Bibliothek) Entfernen(rel string, erwartet Stand) (geloescht bool, fehl
 	if err := b.entferneVorschau(rel); err != nil {
 		fehler = errors.Join(fehler, fmt.Errorf("%w: %w: %v", ErrVorschau, ErrVorschauAlt, err))
 	}
-	idx, err := b.lade()
-	if err == nil {
+	err = b.unterSperre(func() error { // Lesen-Ändern-Schreiben gegen einen zweiten Prozess (F-686)
+		idx, err := b.lade()
+		if err != nil {
+			return err
+		}
 		rest := idx.Eintraege[:0]
 		for _, e := range idx.Eintraege {
 			if e.Pfad != rel {
 				rest = append(rest, e)
 			}
 		}
-		err = b.schreibeIndex(rest)
-	}
+		return b.schreibeIndex(rest)
+	})
 	if err != nil {
 		fehler = errors.Join(fehler, fmt.Errorf("%w: %v", ErrIndex, err))
 	}

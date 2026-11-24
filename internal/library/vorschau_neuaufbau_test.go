@@ -86,6 +86,7 @@ func TestVorschauVerschwindetMitAufnahme(t *testing.T) {
 	}
 
 	f := ablegen(t, b, jetzt)
+	ablegen(t, b, jetzt.Add(time.Hour)) // eine bleibt liegen: eine Ablage ohne Aufnahme gälte als nicht erreichbar (F-685)
 	vf := b.VorschauPfad(f.Pfad)
 	pfad := b.Orte.Ablage + string(os.PathSeparator) + f.Pfad
 	ziel := b.Orte.Ablage + string(os.PathSeparator) + "weg.png.bak"

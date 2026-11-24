@@ -118,3 +118,45 @@ dann schon gespeichert. Umsetzung: Karte #54.
    Programmteil: Es gibt keinen Befehl, der den Neuaufbau auslöst (nur die Bibliothek, für Tests und eine spätere
    Prüfroutine); bewusst kein Verbraucher, bis es einen Aufrufer gibt.
 
+
+## Nachtrag 6 (24.11.2026): Index gegen zweiten Prozess, Abgleich bei fehlender Ablage, Wiederherstellen (F-673, F-675, F-678, F-685, F-686, F-689, F-690)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Sitzungs-QA zu Karte #174, Kritikberichte A und B vom 24.11.2026).
+
+1. **Sperre des Index (F-686).** `b.mu` gilt nur im eigenen Prozess; ein zweites Editor-Fenster oder der MCP-Server
+   konnte eine angehängte Indexzeile verlieren, wenn ein anderer Prozess den Index gerade gelesen hatte und danach per
+   Umbenennen ersetzte. Jedes Lesen-Ändern-Schreiben (Abgleich, Speichern und SetzeSchlagworte über `ersetzeImIndex`,
+   InPapierkorb, Entfernen, Aufräumen, Neuaufbau) und jedes Anhängen (`haengeAn`) läuft jetzt zusätzlich unter einer
+   `flock`-Sperre auf `<Index>.lock` neben dem Index (0600, Ordner wie der Index, `internal/library/indexsperre.go`).
+   Die Sperrdatei wird nie gelöscht. Lesen allein sperrt nicht. Kann das Dateisystem kein flock (ENOLCK,
+   ENOTSUP/EOPNOTSUPP), geht es ohne Sperre weiter; hält ein anderer die Sperre länger als 10 s, scheitert nur der
+   Indexschritt (`ErrIndex`), die Aufnahme bleibt. Aufräumen liest den Index unter der Sperre frisch, statt den Stand vom
+   Anfang zu schreiben. Der Neuaufbau hält die Sperre über den ganzen Lauf.
+2. **Abgleich bei fehlender oder leerer Ablage (F-685).** Fehlen Einträge und enthält die Ablage keine einzige PNG-Datei
+   (nicht eingehängt, leerer Einhängepunkt, umbenannt, Verweis ins Leere), schreibt `Abgleich` nichts und meldet
+   `ErrAblageLeer`, wie `VerwaisteVorschauen` (Nachtrag 3 Punkt 2). Preis: Hat der Nutzer wirklich jede Aufnahme im
+   Dateimanager gelöscht, bleiben ihre Einträge stehen, bis die nächste Aufnahme in der Ablage liegt; dann fallen sie
+   beim nächsten Abgleich weg.
+3. **Wiederherstellen des Index.** Fehlt die Indexdatei ganz und enthält die Ablage Aufnahmen, baut `Abgleich` den Index
+   neu auf (`Neuaufbau`, unter b.mu und der Sperre; ein leerer, aber vorhandener Index löst nichts aus, ein erster Start
+   ohne Ablage legt nichts an). Damit gibt es einen Weg für den Nutzer: **Indexdatei
+   (`$XDG_DATA_HOME/schnapp/bibliothek.jsonl`, sonst `~/.local/share/schnapp/bibliothek.jsonl`) löschen oder beiseitelegen
+   und Schnapp öffnen** — der Editor gleicht beim Start ab (ADR-0036 Zusatz F-672). Ergänzt Nachtrag 5 Punkt 4: Der
+   Neuaufbau hat damit einen Aufrufer; `NeuaufbauErgebnis.TempReste` liest er weiterhin nicht.
+4. **Abgleich prüft ohne Sperren (F-690).** Die Lstat je Eintrag laufen ohne `b.mu` und ohne die Sperre des Index. Danach
+   wird unter beiden frisch gelesen; gestrichen wird nur, was beim Prüfen fehlte und auch jetzt noch fehlt, neu
+   Hinzugekommenes bleibt. Messung `BenchmarkAbgleich10000` (10 000 vorhandene Dateien, nichts zu streichen, lokale
+   SSD, drei Läufe): rund 31 ms je Abgleich, davon rund 15 ms das Lesen des Index (vgl. `BenchmarkSuchen10000`); `b.mu`
+   ist davon nur für dieses Lesen belegt.
+5. **SetzeSchlagworte (F-673, F-675).** Wie `Speichern`: Stand der Datei vor dem Lesen merken, direkt vor dem Umbenennen
+   vergleichen, sonst `ErrGeaendert` (die Datei behält den neueren Stand, etwa eine Schwärzung aus einem zweiten
+   Fenster; Kernprinzip 2). Ein Pfad, dessen Ordner als Verweis aus der Ablage führt, ist `ErrPfad`
+   (`b.Relativ(voll) == rel`, Kritik A-11). Dieselbe Verweisprüfung hat jetzt `InPapierkorb`.
+6. **InPapierkorb: Erfolg mit Indexwarnung (F-678).** `ErrIndex` kommt nur, wenn die Datei schon im Papierkorb liegt;
+   dann ist auch `Verschoben` gefüllt. Jeder andere Fehler heißt „nicht verschoben“. Aufrufer unterscheiden mit
+   `errors.Is(err, ErrIndex)`.
+7. **Teilwort (F-689).** Die Teilwortsuche faltet wie `strings.EqualFold` (jedes Zeichen auf die kleinste Form seiner
+   `unicode.SimpleFold`-Klasse): Schluss-Sigma, langes s und Kelvin-Zeichen treffen beim Teilwort genau dann, wenn sie
+   beim ganzen Schlagwort treffen. Ein Teilwort nur aus Leerraum gilt als keins.
+
+Tests in `internal/library/haertung_test.go`, Mutanten `scripts/mutanten/bibliothek-haertung.json` (HB1–HB23).

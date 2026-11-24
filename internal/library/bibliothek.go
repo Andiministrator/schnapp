@@ -18,6 +18,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"unicode"
 
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/errprefix"
@@ -240,13 +241,18 @@ func (e Eintrag) gueltig() bool {
 		strings.EqualFold(filepath.Ext(p), ".png") && e.Breite > 0 && e.Hoehe > 0
 }
 
-// haengeAn hängt eine Zeile an den Index an (Ordner 0700, Datei 0600).
+// haengeAn hängt eine Zeile an den Index an (Ordner 0700, Datei 0600), unter der Sperre des Index (F-686).
 func (b *Bibliothek) haengeAn(e Eintrag) error {
-	if err := eigenerOrdner(filepath.Dir(b.Orte.Index)); err != nil {
-		return err
-	}
 	zeile, err := json.Marshal(e)
 	if err != nil {
+		return err
+	}
+	return b.unterSperre(func() error { return b.haengeZeileAn(zeile) })
+}
+
+// haengeZeileAn hängt die fertige Zeile an. Läuft unter der Sperre des Index.
+func (b *Bibliothek) haengeZeileAn(zeile []byte) error {
+	if err := eigenerOrdner(filepath.Dir(b.Orte.Index)); err != nil {
 		return err
 	}
 	f, err := os.OpenFile(b.Orte.Index, os.O_RDWR|os.O_APPEND|os.O_CREATE, rechteDatei)
@@ -353,10 +359,23 @@ type NeuaufbauErgebnis struct {
 // Index atomar neu. Fremde und beschädigte Dateien werden übersprungen, nie verändert oder gelöscht. Das einzige, was
 // Neuaufbau entfernt, sind liegen gebliebene eigene temporäre Dateien (`.schnapp-tmp-*`, reguläre Dateien, älter als
 // eine Minute, F-274); Zukunftsdatierte meldet er in TempReste, ohne sie zu löschen.
-func (b *Bibliothek) Neuaufbau() (_ NeuaufbauErgebnis, fehler error) {
+//
+// Er hält b.mu und die Sperre des Index (F-686) über den ganzen Lauf: Ein zweiter Prozess, der in dieser Zeit ablegt,
+// wartet mit seiner Indexzeile, bis der neue Index steht, statt dass sie beim Ersetzen verloren geht.
+func (b *Bibliothek) Neuaufbau() (erg NeuaufbauErgebnis, fehler error) {
 	defer errprefix.Defer("library", &fehler)
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	fehler = b.unterSperre(func() error {
+		var err error
+		erg, err = b.neuaufbau()
+		return err
+	})
+	return erg, fehler
+}
+
+// neuaufbau ist Neuaufbau ohne Sperren. Läuft unter b.mu und der Sperre des Index.
+func (b *Bibliothek) neuaufbau() (NeuaufbauErgebnis, error) {
 	var erg NeuaufbauErgebnis
 	var es []Eintrag
 	// Ablage vor dem Ablaufen auflösen: WalkDir steigt an einer Wurzel, die ein Symlink ist, nicht ab, der Index
@@ -443,29 +462,124 @@ func (b *Bibliothek) liesEintrag(pfad, rel string) (Eintrag, bool) {
 }
 
 // Abgleich lässt Index-Einträge fallen, deren Datei fehlt (etwa nach Verschieben im Dateimanager), und
-// auch kaputte Zeilen. Geschrieben wird nur bei einer Änderung. Rückgabe: Zahl der entfernten Einträge.
+// auch kaputte Zeilen; die Vorschauen der fehlenden fallen mit. Geschrieben wird nur bei einer Änderung. Rückgabe: Zahl
+// der entfernten Einträge.
+//
+// Fehlt die Ablage oder enthält sie keine einzige Aufnahme (keine PNG-Datei), während Einträge des Index fehlen, ist
+// das fast sicher ein nicht eingehängtes Laufwerk, ein leerer Einhängepunkt oder ein umbenannter Ordner, nicht „alles
+// gelöscht“: Dann wird nichts geschrieben und nichts entfernt, es kommt ErrAblageLeer (F-685, wie VerwaisteVorschauen,
+// F-270). Fehlt die Indexdatei ganz, während die Ablage Aufnahmen enthält, baut Abgleich den Index neu auf
+// (Neuaufbau). Das ist zugleich der Weg, einen verlorenen oder veralteten Index wiederherzustellen: Indexdatei löschen
+// oder beiseitelegen, dann gleicht der nächste Start des Editors ab (ADR-0016 Nachtrag 6).
+//
+// Die Dateiprüfung (ein Lstat je Eintrag) läuft ohne b.mu und ohne die Sperre des Index (F-690): Auf einer langsamen
+// Ablage warteten Speichern und Vorschau sonst so lange. Unter beiden wird der Index danach frisch gelesen, und nur die
+// als fehlend erkannten Pfade, die auch jetzt noch fehlen, werden gestrichen; was inzwischen dazukam, bleibt (F-686).
 func (b *Bibliothek) Abgleich() (_ int, fehler error) {
 	defer errprefix.Defer("library", &fehler)
 	b.mu.Lock()
-	defer b.mu.Unlock()
 	g, err := b.lade()
+	b.mu.Unlock()
 	if err != nil {
 		return 0, err
 	}
-	var behalten []Eintrag
-	for _, e := range g.Eintraege {
-		_, err := os.Lstat(filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad)))
-		if errors.Is(err, fs.ErrNotExist) {
-			_ = b.entferneVorschau(e.Pfad) // Vorschau der verschwundenen Aufnahme nicht liegen lassen (F-51)
-			continue
-		}
-		behalten = append(behalten, e) // andere Fehler (Rechte): im Zweifel behalten
+	if len(g.Eintraege) == 0 && g.Defekt == 0 {
+		return 0, b.neuaufbauOhneIndex()
 	}
-	entfernt := len(g.Eintraege) - len(behalten)
-	if entfernt == 0 && g.Defekt == 0 {
+	fehlt := map[string]bool{}
+	for _, e := range g.Eintraege {
+		if b.fehltInAblage(e.Pfad) { // andere Fehler (Rechte): im Zweifel behalten
+			fehlt[e.Pfad] = true
+		}
+	}
+	if len(fehlt) == 0 && g.Defekt == 0 {
 		return 0, nil
 	}
-	return entfernt, b.schreibeIndex(behalten)
+	if len(fehlt) > 0 && b.ablageOhneAufnahme() {
+		return 0, fmt.Errorf("%w: %d Einträge im Index ohne Datei", ErrAblageLeer, len(fehlt))
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	entfernt := 0
+	err = b.unterSperre(func() error {
+		g, err := b.lade()
+		if err != nil {
+			return err
+		}
+		var behalten []Eintrag
+		var weg []string
+		for _, e := range g.Eintraege {
+			if fehlt[e.Pfad] && b.fehltInAblage(e.Pfad) {
+				weg = append(weg, e.Pfad)
+				continue
+			}
+			behalten = append(behalten, e)
+		}
+		if len(weg) == 0 && g.Defekt == 0 {
+			return nil
+		}
+		for _, p := range weg {
+			_ = b.entferneVorschau(p) // Vorschau der verschwundenen Aufnahme nicht liegen lassen (F-51)
+		}
+		entfernt = len(weg)
+		return b.schreibeIndex(behalten)
+	})
+	if err != nil {
+		return 0, err
+	}
+	return entfernt, nil
+}
+
+// lstatAblage ist os.Lstat für die Dateiprüfung des Abgleichs; Tests ersetzen es, um zu sehen, unter welchen Sperren
+// sie läuft (F-690).
+var lstatAblage = os.Lstat
+
+// fehltInAblage meldet, ob die Aufnahme rel (relativ zur Ablage) sicher fehlt (ENOENT). Andere Fehler zählen nicht.
+func (b *Bibliothek) fehltInAblage(rel string) bool {
+	_, err := lstatAblage(filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel)))
+	return errors.Is(err, fs.ErrNotExist)
+}
+
+// ablageOhneAufnahme meldet, ob die Ablage fehlt, nicht lesbar ist oder keine einzige PNG-Datei enthält. Die Ablage
+// wird vorher aufgelöst (Symlink-Wurzel, F-271); die Suche endet beim ersten Fund.
+func (b *Bibliothek) ablageOhneAufnahme() bool {
+	wurzel, err := filepath.EvalSymlinks(b.Orte.Ablage)
+	if err != nil {
+		return true
+	}
+	gefunden := false
+	_ = filepath.WalkDir(wurzel, func(pfad string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil // unlesbarer Teil: weitersuchen
+		}
+		if d.Type().IsRegular() && strings.EqualFold(filepath.Ext(pfad), ".png") {
+			gefunden = true
+			return fs.SkipAll
+		}
+		return nil
+	})
+	return !gefunden
+}
+
+// neuaufbauOhneIndex baut den Index neu auf, wenn die Indexdatei fehlt und die Ablage Aufnahmen enthält (Abgleich,
+// ADR-0016 Nachtrag 6). Fehlt beides, bleibt alles, wie es ist (erster Start: nichts anlegen).
+func (b *Bibliothek) neuaufbauOhneIndex() error {
+	if _, err := os.Lstat(b.Orte.Index); !errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if b.ablageOhneAufnahme() {
+		return nil
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.unterSperre(func() error {
+		// Ein anderer Prozess kann den Index inzwischen angelegt haben (Ablegen): dann nicht ersetzen.
+		if _, err := os.Lstat(b.Orte.Index); !errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+		_, err := b.neuaufbau()
+		return err
+	})
 }
 
 // --- Suchen ---
@@ -517,15 +631,36 @@ func (b *Bibliothek) Suchen(a Anfrage) (_ []Eintrag, fehler error) {
 	return treffer, nil
 }
 
-// hatTeilwort meldet, ob w (ohne Leerraum an den Enden) in einem Schlagwort von e vorkommt, Groß-/Kleinschreibung egal.
+// hatTeilwort meldet, ob w (ohne Leerraum an den Enden) in einem Schlagwort von e vorkommt, Groß-/Kleinschreibung
+// egal. Verglichen wird mit derselben Faltung wie beim ganzen Schlagwort (strings.EqualFold, F-689): Schluss-Sigma,
+// langes s und Kelvin-Zeichen treffen hier genau dann, wenn sie dort treffen. Ein Teilwort nur aus Leerraum gilt als
+// keins und trifft alles.
 func hatTeilwort(e Eintrag, w string) bool {
-	w = strings.ToLower(strings.TrimSpace(w))
+	w = falte(strings.TrimSpace(w))
+	if w == "" {
+		return true
+	}
 	for _, s := range e.Schlagworte {
-		if strings.Contains(strings.ToLower(s), w) {
+		if strings.Contains(falte(s), w) {
 			return true
 		}
 	}
 	return false
+}
+
+// falte bildet jedes Zeichen auf die kleinste Form seiner einfachen Faltungsklasse ab (unicode.SimpleFold). Zwei
+// Texte sind genau dann gleich nach strings.EqualFold, wenn ihre Faltungen gleich sind.
+func falte(s string) string {
+	var sb strings.Builder
+	sb.Grow(len(s))
+	for _, r := range s {
+		klein := r
+		for f := unicode.SimpleFold(r); f != r; f = unicode.SimpleFold(f) {
+			klein = min(klein, f)
+		}
+		sb.WriteRune(klein)
+	}
+	return sb.String()
 }
 
 func hatSchlagwort(e Eintrag, w string) bool {
@@ -540,7 +675,12 @@ func hatSchlagwort(e Eintrag, w string) bool {
 
 // SetzeSchlagworte ersetzt die Schlagworte einer Aufnahme: Die Arbeitsdatei wird mit geänderten Metadaten atomar
 // neu geschrieben (Original, Objekte und Erstellzeit bleiben), danach folgt der Index. pfad ist relativ zur
-// Ablage, wie Eintrag.Pfad. Fremde oder beschädigte Dateien lehnt die Funktion ab (ErrFremd).
+// Ablage, wie Eintrag.Pfad. Fremde oder beschädigte Dateien lehnt die Funktion ab (ErrFremd), ebenso einen Pfad, dessen
+// Ordner als Verweis aus der Ablage führt (ErrPfad, wie Speichern, F-675).
+//
+// Hat ein anderer Prozess die Datei zwischen Lesen und Umbenennen ersetzt oder geändert (etwa ein zweites Fenster, das
+// eine Schwärzung speichert), wird nicht überschrieben: ErrGeaendert, die Datei behält den neueren Stand (F-673,
+// Kernprinzip 2). Verglichen wird der Stand wie bei Speichern (standAus) direkt vor dem Umbenennen.
 func (b *Bibliothek) SetzeSchlagworte(pfad string, worte []string) (_ Eintrag, fehler error) {
 	defer errprefix.Defer("library", &fehler)
 	b.mu.Lock()
@@ -557,6 +697,11 @@ func (b *Bibliothek) SetzeSchlagworte(pfad string, worte []string) (_ Eintrag, f
 	if !st.Mode().IsRegular() {
 		return Eintrag{}, fmt.Errorf("%w: %q", ErrPfad, pfad)
 	}
+	// Auch die Ordner auf dem Weg dürfen nicht aus der Ablage hinausführen (Monatsordner als Verweis, F-675).
+	if echt, ok := b.Relativ(voll); !ok || echt != pfad {
+		return Eintrag{}, fmt.Errorf("%w: %q", ErrPfad, pfad)
+	}
+	stand := standAus(st)
 	f, err := os.Open(voll)
 	if err != nil {
 		return Eintrag{}, err
@@ -581,8 +726,14 @@ func (b *Bibliothek) SetzeSchlagworte(pfad string, worte []string) (_ Eintrag, f
 	}
 	m := g.Meta
 	m.Schlagworte = bereinige(worte)
-	err = schreibeAtomar(voll, func(w io.Writer) error {
+	err = schreibeAtomarGeprueft(voll, func(w io.Writer) error {
 		return fileformat.SchreibeArbeitsdatei(w, g.Dokument, sichtbar, m)
+	}, func() error {
+		// Gelesen wurde der Stand stand; ist die Datei inzwischen eine andere, trüge die neue Fassung den alten Inhalt.
+		if fi, err := os.Lstat(voll); err != nil || standAus(fi) != stand {
+			return fmt.Errorf("%w: %q", ErrGeaendert, pfad)
+		}
+		return nil
 	})
 	if err != nil {
 		return Eintrag{}, err

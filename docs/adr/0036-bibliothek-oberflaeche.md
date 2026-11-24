@@ -235,3 +235,14 @@ startet, die Ansicht öffnet oder ein Öffnen bzw. Papierkorb gescheitert ist (`
 `bibAnsicht.abgleich`, `abgleichAnfordern`, `gleicheAb`); das Lesen nach jedem eigenen Speichern gleicht nicht ab
 (Kosten je Speichern, F-638). Tests `TestLeisteFehlendeDateiVerschwindet`, `TestBibliothekOeffnenGleichtAb`,
 `TestBibliothekPapierkorbFehlendeDatei`, `TestLeisteStartGleichtAb`; Mutanten `scripts/mutanten/bibliothek-abgleich.json`.
+
+## Zusatz (24.11.2026, Sitzungs-QA, F-673, F-675, F-678, F-685, F-689, Claude Opus 5.5)
+
+**Bibliothek gehärtet, Folgen für die Ansicht** (Einzelheiten ADR-0016 Nachtrag 6). Zu Punkt 7: `InPapierkorb` und
+`SetzeSchlagworte` lehnen jetzt auch einen Monatsordner ab, der als Verweis aus der Ablage führt (`ErrPfad`).
+`SetzeSchlagworte` überschreibt keine Datei, die ein anderes Fenster inzwischen gespeichert hat (`ErrGeaendert`, F2 +
+Enter meldet dann einen Fehler statt die Schwärzung zurückzunehmen). `InPapierkorb` liefert `ErrIndex` nur nach
+gelungenem Verschieben; die Ansicht soll das als Erfolg mit Hinweis melden (Aufrufer `bibliothekArbeitFertig`). Der
+Abgleich beim Start und beim Öffnen der Ansicht (Zusatz F-672) leert den Index nicht mehr, wenn die Ablage fehlt oder
+leer ist (`ErrAblageLeer`, nur Diagnose), und baut einen fehlenden Index neu auf. Das Suchfeld faltet wie das ganze
+Schlagwort (Zusatz F-671).

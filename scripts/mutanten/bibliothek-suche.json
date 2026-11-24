@@ -10,15 +10,15 @@
     "name": "BS2 Teilwort achtet auf Groß/Klein",
     "datei": "internal/library/bibliothek.go",
     "paket": "./internal/library",
-    "alt": "if strings.Contains(strings.ToLower(s), w) {",
+    "alt": "if strings.Contains(falte(s), w) {",
     "neu": "if strings.Contains(s, w) {"
   },
   {
     "name": "BS3 Teilwort mit Leerraum",
     "datei": "internal/library/bibliothek.go",
     "paket": "./internal/library",
-    "alt": "w = strings.ToLower(strings.TrimSpace(w))",
-    "neu": "w = strings.ToLower(w)"
+    "alt": "w = falte(strings.TrimSpace(w))",
+    "neu": "w = falte(w)"
   },
   {
     "name": "BS4 Ansicht sucht genaues Schlagwort",

@@ -98,13 +98,22 @@ func (b *Bibliothek) Aufraeumen(jetzt time.Time, e Einstellung) (_ AufraeumErgeb
 	if len(weg) == 0 {
 		return erg, nil
 	}
-	var rest []Eintrag
-	for _, ein := range g.Eintraege {
-		if !weg[ein.Pfad] {
-			rest = append(rest, ein)
+	// Den Index frisch lesen und unter seiner Sperre schreiben (F-686): Was ein zweiter Prozess seit dem Lesen oben
+	// angehängt hat, bleibt.
+	err = b.unterSperre(func() error {
+		g, err := b.lade()
+		if err != nil {
+			return err
 		}
-	}
-	if err := b.schreibeIndex(rest); err != nil {
+		var rest []Eintrag
+		for _, ein := range g.Eintraege {
+			if !weg[ein.Pfad] {
+				rest = append(rest, ein)
+			}
+		}
+		return b.schreibeIndex(rest)
+	})
+	if err != nil {
 		return erg, fmt.Errorf("%w: %v", ErrIndex, err)
 	}
 	return erg, nil
@@ -151,7 +160,13 @@ func (b *Bibliothek) inPapierkorb(ein Eintrag, jetzt time.Time, frist time.Durat
 // freedesktop-Papierkorb (volle Ansicht der Bibliothek, Entf; ADR-0036 Punkt 4): ohne die Schutzregeln des Aufräumens
 // (Schlagworte, Bearbeitung, Alter), sonst wie dort — nur eine reguläre Datei in der Ablage, verschoben per Umbenennen
 // samt .trashinfo, rückholbar; auf einem anderen Dateisystem bleibt sie liegen (ErrAnderesDateisystem). Danach fällt sie
-// aus dem Index, und ihre Vorschau wird entfernt. Die offene Aufnahme schließt die Oberfläche selbst aus.
+// aus dem Index, und ihre Vorschau wird entfernt. Die offene Aufnahme schließt die Oberfläche selbst aus. Ein Pfad,
+// dessen Ordner als Verweis aus der Ablage führt, wird abgelehnt (ErrPfad, wie Speichern, F-675).
+//
+// Erfolg mit Warnung (F-678): Ist die Datei verschoben, aber der Index ließ sich nicht nachführen, kommt ein Fehler mit
+// ErrIndex zurück und dazu das gefüllte Verschoben (Papierkorb nicht leer). Die Aufnahme liegt dann im Papierkorb; nur
+// ihr Eintrag steht noch im Index, bis Abgleich ihn streicht. ErrIndex kommt nie, solange nicht verschoben ist; jeder
+// andere Fehler heißt „nicht verschoben“. Der Aufrufer unterscheidet also mit errors.Is(err, ErrIndex).
 func (b *Bibliothek) InPapierkorb(rel string, jetzt time.Time) (_ Verschoben, fehler error) {
 	defer errprefix.Defer("library", &fehler)
 	if !(Eintrag{Pfad: rel, Breite: 1, Hoehe: 1}).gueltig() {
@@ -164,6 +179,10 @@ func (b *Bibliothek) InPapierkorb(rel string, jetzt time.Time) (_ Verschoben, fe
 	if err != nil {
 		return Verschoben{}, err
 	}
+	// Auch die Ordner auf dem Weg dürfen nicht aus der Ablage hinausführen (Monatsordner als Verweis, F-675).
+	if echt, ok := b.Relativ(quelle); !ok || echt != rel {
+		return Verschoben{}, fmt.Errorf("%w: %q", ErrPfad, rel)
+	}
 	if !st.Mode().IsRegular() {
 		return Verschoben{}, fmt.Errorf("%w: keine gewöhnliche Datei", ErrPfad)
 	}
@@ -172,17 +191,21 @@ func (b *Bibliothek) InPapierkorb(rel string, jetzt time.Time) (_ Verschoben, fe
 		return Verschoben{}, err
 	}
 	_ = b.entferneVorschau(rel) // keine Kopie im Cache zurücklassen (F-51)
-	g, err := b.lade()
-	if err != nil {
-		return v, fmt.Errorf("%w: %v", ErrIndex, err)
-	}
-	var rest []Eintrag
-	for _, ein := range g.Eintraege {
-		if ein.Pfad != rel {
-			rest = append(rest, ein)
+	// Lesen-Ändern-Schreiben unter der Sperre des Index, gegen einen zweiten Prozess (F-686).
+	err = b.unterSperre(func() error {
+		g, err := b.lade()
+		if err != nil {
+			return err
 		}
-	}
-	if err := b.schreibeIndex(rest); err != nil {
+		var rest []Eintrag
+		for _, ein := range g.Eintraege {
+			if ein.Pfad != rel {
+				rest = append(rest, ein)
+			}
+		}
+		return b.schreibeIndex(rest)
+	})
+	if err != nil {
 		return v, fmt.Errorf("%w: %v", ErrIndex, err)
 	}
 	return v, nil

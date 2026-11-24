@@ -1,0 +1,186 @@
+[
+  {
+    "name": "HB1 Abgleich verwirft den Index bei fehlender oder leerer Ablage (F-685)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "if len(fehlt) > 0 && b.ablageOhneAufnahme() {",
+    "neu": "if false && len(fehlt) > 0 && b.ablageOhneAufnahme() {",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB2 Abgleich baut einen fehlenden Index nicht neu auf",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\t\treturn 0, b.neuaufbauOhneIndex()",
+    "neu": "\t\treturn 0, nil",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB3 erster Start legt einen leeren Index an",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\tif b.ablageOhneAufnahme() {\n\t\treturn nil\n\t}\n\tb.mu.Lock()",
+    "neu": "\tb.mu.Lock()",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB4 Neuaufbau auch bei vorhandenem leerem Index (beide Prüfungen weg)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\tif _, err := os.Lstat(b.Orte.Index); !errors.Is(err, fs.ErrNotExist) {\n\t\treturn nil\n\t}\n\tif b.ablageOhneAufnahme() {\n\t\treturn nil\n\t}\n\tb.mu.Lock()\n\tdefer b.mu.Unlock()\n\treturn b.unterSperre(func() error {\n\t\t// Ein anderer Prozess kann den Index inzwischen angelegt haben (Ablegen): dann nicht ersetzen.\n\t\tif _, err := os.Lstat(b.Orte.Index); !errors.Is(err, fs.ErrNotExist) {\n\t\t\treturn nil\n\t\t}\n",
+    "neu": "\tif b.ablageOhneAufnahme() {\n\t\treturn nil\n\t}\n\tb.mu.Lock()\n\tdefer b.mu.Unlock()\n\treturn b.unterSperre(func() error {\n",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB5 SetzeSchlagworte ohne Standvergleich vor dem Umbenennen (F-673)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\t\tif fi, err := os.Lstat(voll); err != nil || standAus(fi) != stand {",
+    "neu": "\t\tif fi, err := os.Lstat(voll); err != nil || (standAus(fi) != stand && false) {",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB6 SetzeSchlagworte folgt einem Verweis-Ordner (F-675)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\tif echt, ok := b.Relativ(voll); !ok || echt != pfad {",
+    "neu": "\tif false {",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB7 InPapierkorb folgt einem Verweis-Ordner (F-675)",
+    "datei": "internal/library/aufraeumen.go",
+    "paket": "./internal/library",
+    "alt": "\tif echt, ok := b.Relativ(quelle); !ok || echt != rel {",
+    "neu": "\tif false {",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB8 InPapierkorb verschweigt das Verschobene bei Indexfehler (F-678)",
+    "datei": "internal/library/aufraeumen.go",
+    "paket": "./internal/library",
+    "alt": "\tif err != nil {\n\t\treturn v, fmt.Errorf(\"%w: %v\", ErrIndex, err)\n\t}\n\treturn v, nil",
+    "neu": "\tif err != nil {\n\t\treturn Verschoben{}, fmt.Errorf(\"%w: %v\", ErrIndex, err)\n\t}\n\treturn v, nil",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB9 unterSperre sperrt nicht (F-686)",
+    "datei": "internal/library/indexsperre.go",
+    "paket": "./internal/library",
+    "alt": "\tfrei, err := b.sperreIndex()\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer frei()\n\treturn f()",
+    "neu": "\treturn f()",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB10 haengeAn ohne Sperre",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "return b.unterSperre(func() error { return b.haengeZeileAn(zeile) })",
+    "neu": "return b.haengeZeileAn(zeile)",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB11 Abgleich schreibt ohne Sperre",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\tentfernt := 0\n\terr = b.unterSperre(func() error {",
+    "neu": "\tentfernt := 0\n\terr = func(f func() error) error { return f() }(func() error {",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB12 ersetzeImIndex ohne Sperre",
+    "datei": "internal/library/speichern.go",
+    "paket": "./internal/library",
+    "alt": "return b.unterSperre(func() error { return b.ersetzeImIndexGesperrt(neu) })",
+    "neu": "return b.ersetzeImIndexGesperrt(neu)",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB13 Entfernen schreibt den Index ohne Sperre",
+    "datei": "internal/library/speichern.go",
+    "paket": "./internal/library",
+    "alt": "\terr = b.unterSperre(func() error { // Lesen-Ändern-Schreiben",
+    "neu": "\terr = func(f func() error) error { return f() }(func() error { // Lesen-Ändern-Schreiben",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB14 InPapierkorb schreibt den Index ohne Sperre",
+    "datei": "internal/library/aufraeumen.go",
+    "paket": "./internal/library",
+    "alt": "(F-686).\n\terr = b.unterSperre(func() error {",
+    "neu": "(F-686).\n\terr = func(f func() error) error { return f() }(func() error {",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB15 Aufraeumen schreibt den Index ohne Sperre",
+    "datei": "internal/library/aufraeumen.go",
+    "paket": "./internal/library",
+    "alt": "bleibt.\n\terr = b.unterSperre(func() error {",
+    "neu": "bleibt.\n\terr = func(f func() error) error { return f() }(func() error {",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB16 Neuaufbau ohne Sperre",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\tfehler = b.unterSperre(func() error {\n\t\tvar err error",
+    "neu": "\tfehler = func(f func() error) error { return f() }(func() error {\n\t\tvar err error",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB17 kein flock gilt als Fehler",
+    "datei": "internal/library/indexsperre.go",
+    "paket": "./internal/library",
+    "alt": "\t\t\treturn func() {}, nil // kein flock",
+    "neu": "\t\t\treturn nil, err // kein flock",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB18 belegte Sperre ohne zweiten Versuch",
+    "datei": "internal/library/indexsperre.go",
+    "paket": "./internal/library",
+    "alt": "\t\t\ttime.Sleep(sperrTakt)",
+    "neu": "\t\t\treturn nil, errIndexBelegt",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB19 Sperrdatei für alle lesbar",
+    "datei": "internal/library/indexsperre.go",
+    "paket": "./internal/library",
+    "alt": "|syscall.O_CLOEXEC, rechteDatei)",
+    "neu": "|syscall.O_CLOEXEC, 0o644)",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB20 Abgleich streicht nach altem Stand (F-690)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "g, err := b.lade()\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\tvar behalten",
+    "neu": "var behalten",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB21 Abgleich prüft die Dateien unter b.mu (F-690)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\t\tif b.fehltInAblage(e.Pfad) { // andere Fehler",
+    "neu": "\t\tb.mu.Lock()\n\t\tweg := b.fehltInAblage(e.Pfad)\n\t\tb.mu.Unlock()\n\t\tif weg { // andere Fehler",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB22 Teilwort faltet mit ToLower (F-689)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\t\tklein := r\n\t\tfor f := unicode.SimpleFold(r); f != r; f = unicode.SimpleFold(f) {\n\t\t\tklein = min(klein, f)\n\t\t}\n\t\tsb.WriteRune(klein)",
+    "neu": "\t\tsb.WriteRune(unicode.ToLower(r))",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB23 Teilwort aus Leerraum gilt als Wort (F-689)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\tif w == \"\" {\n\t\treturn true\n\t}\n\tfor _, s := range e.Schlagworte {",
+    "neu": "\tfor _, s := range e.Schlagworte {",
+    "timeout": "3m"
+  }
+]
