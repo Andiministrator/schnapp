@@ -131,7 +131,9 @@ dann schon gespeichert. Umsetzung: Karte #54.
    Die Sperrdatei wird nie gelöscht. Lesen allein sperrt nicht. Kann das Dateisystem kein flock (ENOLCK,
    ENOTSUP/EOPNOTSUPP), geht es ohne Sperre weiter; hält ein anderer die Sperre länger als 10 s, scheitert nur der
    Indexschritt (`ErrIndex`), die Aufnahme bleibt. Aufräumen liest den Index unter der Sperre frisch, statt den Stand vom
-   Anfang zu schreiben. Der Neuaufbau hält die Sperre über den ganzen Lauf.
+   Anfang zu schreiben. Der Neuaufbau hält die Sperre über Ablaufen, Metadaten und
+   Schreiben des Index; fehlende Vorschaubilder heilt er erst danach, nur unter `b.mu` (F-691: das volle Dekodieren je
+   Bild hielt die Sperre bei großer Ablage sonst über die Frist; 10 000 Aufnahmen rund 0,8 s, `BenchmarkNeuaufbau10000`).
 2. **Abgleich bei fehlender oder leerer Ablage (F-685).** Fehlen Einträge und enthält die Ablage keine einzige PNG-Datei
    (nicht eingehängt, leerer Einhängepunkt, umbenannt, Verweis ins Leere), schreibt `Abgleich` nichts und meldet
    `ErrAblageLeer`, wie `VerwaisteVorschauen` (Nachtrag 3 Punkt 2). Preis: Hat der Nutzer wirklich jede Aufnahme im

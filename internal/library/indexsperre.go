@@ -22,8 +22,10 @@ import (
 // wie bisher. Hält ein anderer Prozess die Sperre länger als sperrFrist, kommt errIndexBelegt; der Aufrufer meldet es
 // wie jeden Indexfehler (ErrIndex).
 
-// sperrFrist ist die längste Wartezeit auf die Sperre des Index. Ein Neuaufbau über eine große Ablage hält sie länger;
-// dann scheitert nur die Indexzeile, die Aufnahme bleibt (der nächste Neuaufbau holt sie).
+// sperrFrist ist die längste Wartezeit auf die Sperre des Index. Der Neuaufbau hält sie nur für Ablaufen, Metadaten und
+// Schreiben, nicht für das Heilen der Vorschaubilder (F-691; 10 000 Aufnahmen rund 0,8 s, BenchmarkNeuaufbau10000).
+// Wird die Frist doch einmal überschritten, scheitert nur die Indexzeile, die Aufnahme bleibt (der nächste Neuaufbau
+// holt sie).
 const sperrFrist = 10 * time.Second
 
 // sperrTakt ist der Abstand der Versuche, solange ein anderer Prozess die Sperre hält.

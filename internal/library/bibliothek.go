@@ -360,32 +360,58 @@ type NeuaufbauErgebnis struct {
 // Neuaufbau entfernt, sind liegen gebliebene eigene temporäre Dateien (`.schnapp-tmp-*`, reguläre Dateien, älter als
 // eine Minute, F-274); Zukunftsdatierte meldet er in TempReste, ohne sie zu löschen.
 //
-// Er hält b.mu und die Sperre des Index (F-686) über den ganzen Lauf: Ein zweiter Prozess, der in dieser Zeit ablegt,
-// wartet mit seiner Indexzeile, bis der neue Index steht, statt dass sie beim Ersetzen verloren geht.
+// Er hält b.mu und die Sperre des Index (F-686) über das Ablaufen der Ablage und das Schreiben des Index: Ein zweiter
+// Prozess, der in dieser Zeit ablegt, wartet mit seiner Indexzeile, bis der neue Index steht, statt dass sie beim
+// Ersetzen verloren geht. Fehlende Vorschaubilder (volles Dekodieren je Bild) heilt er erst danach, nur noch unter
+// b.mu: Sonst hielt ein Neuaufbau über eine große Ablage die Sperre länger als sperrFrist, und die Indexzeile des
+// zweiten Prozesses scheiterte (F-691).
 func (b *Bibliothek) Neuaufbau() (erg NeuaufbauErgebnis, fehler error) {
 	defer errprefix.Defer("library", &fehler)
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	var heilen []heilAuftrag
 	fehler = b.unterSperre(func() error {
 		var err error
-		erg, err = b.neuaufbau()
+		erg, heilen, err = b.neuaufbau()
 		return err
 	})
+	b.heileAlle(heilen)
 	return erg, fehler
 }
 
-// neuaufbau ist Neuaufbau ohne Sperren. Läuft unter b.mu und der Sperre des Index.
-func (b *Bibliothek) neuaufbau() (NeuaufbauErgebnis, error) {
+// heilAuftrag ist eine Aufnahme, deren Vorschaubild der Neuaufbau nach der Freigabe der Index-Sperre nachzieht (F-52,
+// F-691); stand ist ihr Stand beim Ablaufen.
+type heilAuftrag struct {
+	pfad, rel string
+	stand     Stand
+}
+
+// heileNachNeuaufbau ist heileVorschau für die Aufträge des Neuaufbaus; Tests ersetzen es, um zu sehen, unter welchen
+// Sperren es läuft.
+var heileNachNeuaufbau = (*Bibliothek).heileVorschau
+
+// heileAlle zieht die fehlenden Vorschaubilder nach dem Neuaufbau nach. Läuft unter b.mu, ohne die Sperre des Index;
+// heileVorschau prüft den Stand jeder Datei selbst (F-651), eine inzwischen ersetzte bleibt ohne Vorschau.
+func (b *Bibliothek) heileAlle(as []heilAuftrag) {
+	for _, a := range as {
+		heileNachNeuaufbau(b, a.pfad, a.rel, a.stand) // scheitert es, bleibt nur die Vorschau aus
+	}
+}
+
+// neuaufbau ist Neuaufbau ohne Sperren. Läuft unter b.mu und der Sperre des Index. Die Aufnahmen, deren Vorschaubild
+// fehlt, liefert er als Aufträge, die der Aufrufer nach der Freigabe der Sperre mit heileAlle abarbeitet (F-691).
+func (b *Bibliothek) neuaufbau() (NeuaufbauErgebnis, []heilAuftrag, error) {
 	var erg NeuaufbauErgebnis
 	var es []Eintrag
+	var heilen []heilAuftrag
 	// Ablage vor dem Ablaufen auflösen: WalkDir steigt an einer Wurzel, die ein Symlink ist, nicht ab, der Index
 	// bliebe leer (F-271). Fehlt die Ablage ganz, gibt es noch keine Aufnahme.
 	wurzel, err := filepath.EvalSymlinks(b.Orte.Ablage)
 	if errors.Is(err, fs.ErrNotExist) {
-		return erg, b.schreibeIndex(nil)
+		return erg, nil, b.schreibeIndex(nil)
 	}
 	if err != nil {
-		return erg, err
+		return erg, nil, err
 	}
 	jetzt := time.Now()
 	err = filepath.WalkDir(wurzel, func(pfad string, d fs.DirEntry, err error) error {
@@ -422,17 +448,19 @@ func (b *Bibliothek) neuaufbau() (NeuaufbauErgebnis, error) {
 			return nil
 		}
 		es = append(es, e)
-		if fi, err := os.Lstat(pfad); err == nil && fi.Mode().IsRegular() {
-			b.heileVorschau(pfad, e.Pfad, standAus(fi)) // fehlende Vorschau nachziehen (F-52); scheitert das, bleibt nur die Vorschau aus
+		if _, err := os.Stat(b.VorschauPfad(e.Pfad)); err != nil {
+			if fi, err := os.Lstat(pfad); err == nil && fi.Mode().IsRegular() {
+				heilen = append(heilen, heilAuftrag{pfad: pfad, rel: e.Pfad, stand: standAus(fi)})
+			}
 		}
 		return nil
 	})
 	if err != nil {
-		return erg, err
+		return erg, nil, err
 	}
 	sortiere(es)
 	erg.Aufgenommen = len(es)
-	return erg, b.schreibeIndex(es)
+	return erg, heilen, b.schreibeIndex(es)
 }
 
 // liesEintrag liest die Angaben einer Arbeitsdatei; ok ist falsch bei fremden, beschädigten oder unlesbaren
@@ -572,14 +600,18 @@ func (b *Bibliothek) neuaufbauOhneIndex() error {
 	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return b.unterSperre(func() error {
+	var heilen []heilAuftrag
+	err := b.unterSperre(func() error {
 		// Ein anderer Prozess kann den Index inzwischen angelegt haben (Ablegen): dann nicht ersetzen.
 		if _, err := os.Lstat(b.Orte.Index); !errors.Is(err, fs.ErrNotExist) {
 			return nil
 		}
-		_, err := b.neuaufbau()
+		var err error
+		_, heilen, err = b.neuaufbau()
 		return err
 	})
+	b.heileAlle(heilen) // nach der Freigabe der Sperre (F-691)
+	return err
 }
 
 // --- Suchen ---

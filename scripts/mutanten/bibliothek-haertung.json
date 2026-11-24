@@ -27,8 +27,8 @@
     "name": "HB4 Neuaufbau auch bei vorhandenem leerem Index (beide Prüfungen weg)",
     "datei": "internal/library/bibliothek.go",
     "paket": "./internal/library",
-    "alt": "\tif _, err := os.Lstat(b.Orte.Index); !errors.Is(err, fs.ErrNotExist) {\n\t\treturn nil\n\t}\n\tif b.ablageOhneAufnahme() {\n\t\treturn nil\n\t}\n\tb.mu.Lock()\n\tdefer b.mu.Unlock()\n\treturn b.unterSperre(func() error {\n\t\t// Ein anderer Prozess kann den Index inzwischen angelegt haben (Ablegen): dann nicht ersetzen.\n\t\tif _, err := os.Lstat(b.Orte.Index); !errors.Is(err, fs.ErrNotExist) {\n\t\t\treturn nil\n\t\t}\n",
-    "neu": "\tif b.ablageOhneAufnahme() {\n\t\treturn nil\n\t}\n\tb.mu.Lock()\n\tdefer b.mu.Unlock()\n\treturn b.unterSperre(func() error {\n",
+    "alt": "\tif _, err := os.Lstat(b.Orte.Index); !errors.Is(err, fs.ErrNotExist) {\n\t\treturn nil\n\t}\n\tif b.ablageOhneAufnahme() {\n\t\treturn nil\n\t}\n\tb.mu.Lock()\n\tdefer b.mu.Unlock()\n\tvar heilen []heilAuftrag\n\terr := b.unterSperre(func() error {\n\t\t// Ein anderer Prozess kann den Index inzwischen angelegt haben (Ablegen): dann nicht ersetzen.\n\t\tif _, err := os.Lstat(b.Orte.Index); !errors.Is(err, fs.ErrNotExist) {\n\t\t\treturn nil\n\t\t}\n",
+    "neu": "\tif b.ablageOhneAufnahme() {\n\t\treturn nil\n\t}\n\tb.mu.Lock()\n\tdefer b.mu.Unlock()\n\tvar heilen []heilAuftrag\n\terr := b.unterSperre(func() error {\n",
     "timeout": "3m"
   },
   {
@@ -181,6 +181,30 @@
     "paket": "./internal/library",
     "alt": "\tif w == \"\" {\n\t\treturn true\n\t}\n\tfor _, s := range e.Schlagworte {",
     "neu": "\tfor _, s := range e.Schlagworte {",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB24 Neuaufbau heilt Vorschauen unter der Index-Sperre (F-691)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\t\terg, heilen, err = b.neuaufbau()\n\t\treturn err\n\t})\n\tb.heileAlle(heilen)",
+    "neu": "\t\terg, heilen, err = b.neuaufbau()\n\t\tb.heileAlle(heilen)\n\t\theilen = nil\n\t\treturn err\n\t})\n\tb.heileAlle(heilen)",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB25 Neuaufbau aus Abgleich heilt Vorschauen unter der Index-Sperre (F-691)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\t\t_, heilen, err = b.neuaufbau()\n\t\treturn err",
+    "neu": "\t\t_, heilen, err = b.neuaufbau()\n\t\tb.heileAlle(heilen)\n\t\theilen = nil\n\t\treturn err",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB26 Neuaufbau heilt fehlende Vorschauen gar nicht (F-52, F-691)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\t\theileNachNeuaufbau(b, a.pfad, a.rel, a.stand)",
+    "neu": "\t\t_ = a",
     "timeout": "3m"
   }
 ]
