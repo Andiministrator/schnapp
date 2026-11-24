@@ -431,7 +431,7 @@ schwerer zu prüfen).
 
 ## Nachtrag 12 (24.11.2026): Text an der Naht — Grenze bis zur zeilenweisen Lösung (F-739, F-740)
 
-**Status:** Akzeptiert (Claude Opus 5.5 beim Sprint-Abschluss 12, im Auftrag Andis: „arbeite selbstständig“). Anlass:
+**Status:** Überholt durch Nachtrag 13 (Karte #281). Zuvor: Akzeptiert (Claude Opus 5.5 beim Sprint-Abschluss 12, im Auftrag Andis: „arbeite selbstständig“). Anlass:
 dritter Verify-Lauf V3-1 und V3-2. Ausnahmepfad [S] P3 (docs/qa/sprint-abschluss.md), Lösung mit Karte #281. Andi hat
 die Entscheidung am 24.11.2026 an Claude gegeben („entscheide du“): Die Grenze gilt bis zur Umsetzung von #281.
 
@@ -448,4 +448,31 @@ die Entscheidung am 24.11.2026 an Claude gegeben („entscheide du“): Die Gren
 3. **Texteingabe (F-740):** Ein Klick mit dem Text- oder Sprechblasen-Werkzeug auf das sichtbare Dreieck einer
    Blase mit verborgenem Schild öffnet deren Eingabe; der Text erscheint erst, wenn das Schild aus dem Streifen
    wächst. Gehört zur Lösung unter Karte #281.
+
+## Nachtrag 13 (24.11.2026): Text an der Naht abgeschnitten wie das Bild (F-739, F-740)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #281). Löst Nachtrag 12 ab; dessen Grenze gilt nicht mehr.
+
+1. **Eine Rechnung:** `document.Stuecke` zerlegt die Ansicht in die sichtbaren Bereiche zwischen Zuschnittkanten und
+   Nähten; in jedem gilt Ansicht = Original + Versatz. `Dokument.TextStuecke(t)` sind die Bereiche, die Tinte oder Schild
+   von t berühren (dieselbe Reichweite wie `TextSichtbar`).
+2. **Renderer und Editor** zeichnen die Glyphenzeilen eines Texts je Stück, um dessen Versatz verschoben; reicht der
+   Text über eine Naht (mehr als ein Stück), beschneiden sie jedes Stück auf seinen Bereich (Renderer: `zeichner.schnitt`
+   je Glyphe, Editor: `clip.Rect`). Text verhält sich damit an der Naht wie das Bild darunter: Was im Streifen liegt,
+   fehlt, der Rest steht an seinem Platz. Der SVG-Export schnitt Objekte schon immer kachelweise so ab und bleibt
+   unverändert; alle drei Ausgänge zeigen jetzt dasselbe. Liegt der Text in genau einem Bereich, steht er wie bisher.
+3. **Schild, Unter- und Durchstrich** bleiben über ihre Ecken abgebildet; für achsenparallele Rechtecke ist das genau
+   dasselbe wie Abschneiden. Das Dreieck einer Sprechblase bleibt über seine Ecken abgebildet (F-695, Karte #275).
+4. **Texteingabe (F-740):** Liegen Glyphen und Schild eines Texts ganz in einem Streifen (nur das Dreieck einer
+   Sprechblase ist zu sehen), beginnt weder Klick (Text- oder Sprechblasen-Werkzeug), Doppelklick, Enter noch der
+   Menüeintrag „Text bearbeiten“ eine Eingabe (`Sitzung.TextBearbeiten`, `KannTextBearbeiten`); der Text wird gewählt,
+   die Statusleiste sagt „This text lies in a compressed area. Restore cut-out areas (Image menu) to edit it.“
+   (`AblehnungTextVerborgen`). Blindes Tippen entfällt.
+5. **[S]:** Unverändert gilt, dass Stauchen kein Schwärzen ist; Text im Streifen bleibt in der Arbeitsdatei. In
+   Renderer-Bild, Editor und SVG-Export steht vom Text jetzt aber nichts mehr, was im Streifen liegt (bisher konnte
+   ein knapp herausragender Text ganz hinter der Naht stehen).
+
+Tests: `internal/document/stuecke_test.go`, `internal/render/text_naht_test.go`,
+`internal/ui/text_naht_headless_test.go`, `internal/canvas/text_verborgen_test.go`; Mutanten
+`scripts/mutanten/text-naht.json` (N1–N10); Sichtprobe `scripts/drehbuecher/text-naht-281.txt`.
 

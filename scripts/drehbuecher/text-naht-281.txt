@@ -1,0 +1,29 @@
+# Sichtprobe Karte #281 (F-739, ADR-0023 Nachtrag 13): Text über einer Stauch-Naht ist an der Naht abgeschnitten wie das
+# Bild darunter, statt starr hinter der Naht zu stehen.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/text-naht-281.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Koordinaten wie stauchkante-formen-96.txt: rechte Leiste eingeklappt, Bild 1200x800 bei 100 % ab (226,100).
+# Erwartet:
+#  01 Text „ANFANG Mitte-geheim ENDE“ ab Bildpunkt (100, 400).
+#  02 Spalten 180 bis 330 herausgestaucht (senkrechte Naht bei x = 226+180): links der Naht der Textanfang, rechts der
+#     Naht die Fortsetzung genau ab Spalte 330 — die Buchstaben im Streifen fehlen, der Rest steht nicht verschoben.
+#  03 Stärker vergrößert an der Naht.
+warte 800
+taste Strg+Umschalt+B
+warte 200
+taste T
+klick 326 500
+warte 300
+schreibe ANFANG Mitte-geheim ENDE
+taste Return
+warte 300
+taste V
+klick 1300 850
+warte 300
+foto 01-text
+taste X
+ziehe 406 700 556 700 12
+warte 500
+foto 02-naht
+rad 406 500 -3
+warte 400
+foto 03-naht-gross

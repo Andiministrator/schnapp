@@ -206,8 +206,8 @@
     "name": "QA3-B12b Renderer ohne Ausrichtung",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "p := z.ansicht(document.Pt(zeile.X, zeile.Grundlinie))",
-    "neu": "p := z.ansicht(document.Pt(v.Ort.X, zeile.Grundlinie))"
+    "alt": "p := document.Pt(zeile.X, zeile.Grundlinie).Plus(st.Versatz)\n\t\t\t\tif !zs.zeileSichtbar",
+    "neu": "p := document.Pt(v.Ort.X, zeile.Grundlinie).Plus(st.Versatz)\n\t\t\t\tif !zs.zeileSichtbar"
   },
   {
     "name": "QA3-B12c Renderer immer in Go",

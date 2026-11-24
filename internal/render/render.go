@@ -369,6 +369,8 @@ type zeichner struct {
 	abbrechen bool
 	// ohneZaehlen: nur Bild (F-430) — Füllungen rastern, ohne ihre Kosten zu zählen.
 	ohneZaehlen bool
+	// schnitt beschneidet Glyphen auf ein Stück der Ansicht (Text über einer Naht, F-739); leer heißt kein Schnitt.
+	schnitt image.Rectangle
 }
 
 func (z zeichner) trocken() bool { return z.bild == nil }
@@ -567,18 +569,34 @@ func (z zeichner) objekt(o document.Objekt) error {
 			}
 		}
 		sch := v.Schriftdatei()
-		for _, zeile := range v.Zeilen() {
-			p := z.ansicht(document.Pt(zeile.X, zeile.Grundlinie))
-			if !z.zeileSichtbar(sch, p.X, p.Y, v.Schriftgrad) {
-				continue
+		// Glyphen je sichtbarem Bereich (document.TextStuecke, F-739, ADR-0023 Nachtrag 13): verschoben um dessen
+		// Versatz und, wenn der Text über eine Naht reicht, auf den Bereich beschnitten. So ist Text an der Naht
+		// abgeschnitten wie das Bild darunter, statt starr hinter der Naht zu stehen.
+		stuecke := z.d.TextStuecke(v)
+		for _, st := range stuecke {
+			zs := z
+			if len(stuecke) > 1 {
+				ziel := st.Ziel()
+				zs.schnitt = image.Rect(int(math.Round(ziel.Min.X)), int(math.Round(ziel.Min.Y)),
+					int(math.Round(ziel.Max.X)), int(math.Round(ziel.Max.Y)))
+				zs.rand = zs.schnitt.Intersect(z.rand)
+				if zs.rand.Empty() {
+					continue
+				}
 			}
-			z.auf.glyph += glyphKostenIn(sch, zeichenzahl(zeile.Text), v.Schriftgrad)
-			if z.trocken() {
-				continue
+			for _, zeile := range v.Zeilen() {
+				p := document.Pt(zeile.X, zeile.Grundlinie).Plus(st.Versatz)
+				if !zs.zeileSichtbar(sch, p.X, p.Y, v.Schriftgrad) {
+					continue
+				}
+				z.auf.glyph += glyphKostenIn(sch, zeichenzahl(zeile.Text), v.Schriftgrad)
+				if z.trocken() {
+					continue
+				}
+				// Tabulator als vier Leerzeichen, Wagenrücklauf weg (Zeichenbar in Zeilen): die Schriften haben für beide
+				// keine Glyphe (Kritik A-3).
+				zs.text(face, sch, zeile.Text, p.X, p.Y, v.Farbe, v.Schriftgrad)
 			}
-			// Tabulator als vier Leerzeichen, Wagenrücklauf weg (Zeichenbar in Zeilen): die Schriften haben für beide
-			// keine Glyphe (Kritik A-3).
-			z.text(face, sch, zeile.Text, p.X, p.Y, v.Farbe, v.Schriftgrad)
 		}
 		// Unter- und Durchstrich (ADR-0021 Nachtrag 10 Punkt 7): Rechtecke in der Textfarbe.
 		for _, st := range v.Striche() {
@@ -1002,6 +1020,11 @@ func (z zeichner) text(face font.Face, sch *fonts.Schrift, s string, x, grundlin
 			// Face.Glyph meldet bei unlesbaren Umrissen Vorschub 0; der Vorschub gilt trotzdem, wie in der Messung, im
 			// Editor und im Zweig oben (F-577).
 			adv, _ = face.GlyphAdvance(c)
+		}
+		if !z.schnitt.Empty() {
+			g2 := gr.Intersect(z.schnitt)
+			mp = mp.Add(g2.Min.Sub(gr.Min))
+			gr = g2
 		}
 		if !gr.Empty() {
 			glyphMischen(z.bild, gr, maske, mp, farbe)

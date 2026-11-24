@@ -1410,6 +1410,8 @@ func (e *editor) meldeAbgelehnt() {
 		e.melde(e.grenzText(canvas.AblehnungObjekte), true)
 	case canvas.AblehnungNummer:
 		e.melde(e.grenzText(canvas.AblehnungNummer), true)
+	case canvas.AblehnungTextVerborgen:
+		e.melde(i18n.T("This text lies in a compressed area. Restore cut-out areas (Image menu) to edit it."), false)
 	}
 }
 
@@ -1858,9 +1860,34 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 		// Zeilen und Striche wie im Renderer: Schrift, Anfang nach der Ausrichtung und Grundlinie aus dem Dokument,
 		// Glyphen aus den Umrissen derselben Datei (ADR-0021 Nachtrag 10 Punkt 5).
 		sch := v.Schriftdatei()
-		for _, zeile := range v.Zeilen() {
-			p := an(document.Pt(zeile.X, zeile.Grundlinie))
-			e.satz.zeichneZeile(gtx, sch, zeile.Text, float64(p.X), float64(p.Y), v.Schriftgrad, v.Farbe, sicht)
+		if vorschau {
+			for _, zeile := range v.Zeilen() {
+				p := an(document.Pt(zeile.X, zeile.Grundlinie))
+				e.satz.zeichneZeile(gtx, sch, zeile.Text, float64(p.X), float64(p.Y), v.Schriftgrad, v.Farbe, sicht)
+			}
+		} else {
+			// Glyphen je sichtbarem Bereich wie der Renderer (document.TextStuecke, F-739, ADR-0023 Nachtrag 13): um den
+			// Versatz des Bereichs verschoben, über einer Naht auf ihn beschnitten. Gezeichnet wird in Ansichtskoordinaten.
+			stuecke := e.s.D.TextStuecke(v)
+			for _, st := range stuecke {
+				stSicht := sicht
+				var schnitt clip.Stack
+				if len(stuecke) > 1 {
+					z := st.Ziel()
+					r := image.Rect(int(math.Round(z.Min.X)), int(math.Round(z.Min.Y)), int(math.Round(z.Max.X)), int(math.Round(z.Max.Y)))
+					if stSicht = sicht.Intersect(r); stSicht.Empty() {
+						continue
+					}
+					schnitt = clip.Rect(r).Push(gtx.Ops)
+				}
+				for _, zeile := range v.Zeilen() {
+					p := document.Pt(zeile.X, zeile.Grundlinie).Plus(st.Versatz)
+					e.satz.zeichneZeile(gtx, sch, zeile.Text, p.X, p.Y, v.Schriftgrad, v.Farbe, stSicht)
+				}
+				if len(stuecke) > 1 {
+					schnitt.Pop()
+				}
+			}
 		}
 		for _, st := range v.Striche() { // mit gebrochenen Ecken wie der Renderer (Sitzungs-QA B-9)
 			a, b := an(st.Min), an(st.Max)

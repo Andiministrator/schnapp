@@ -1,0 +1,82 @@
+[
+  {
+    "name": "N1 Renderer setzt Zeilen starr ab dem abgebildeten Anfang (F-739)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\t\tp := document.Pt(zeile.X, zeile.Grundlinie).Plus(st.Versatz)\n",
+    "neu": "\t\t\t\tp := z.ansicht(document.Pt(zeile.X, zeile.Grundlinie))\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "N2 Renderer beschneidet Glyphen nicht auf das Stück (F-739)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\tif !z.schnitt.Empty() {\n\t\t\tg2 := gr.Intersect(z.schnitt)",
+    "neu": "\t\tif false && !z.schnitt.Empty() {\n\t\t\tg2 := gr.Intersect(z.schnitt)",
+    "timeout": "5m"
+  },
+  {
+    "name": "N3 Renderer zeichnet nur das erste Stück (F-739)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\tfor _, st := range stuecke {\n\t\t\tzs := z",
+    "neu": "\t\tfor _, st := range stuecke[:min(1, len(stuecke))] {\n\t\t\tzs := z",
+    "timeout": "5m"
+  },
+  {
+    "name": "N4 Editor setzt Zeilen starr ab dem abgebildeten Anfang (F-739)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\t\tp := document.Pt(zeile.X, zeile.Grundlinie).Plus(st.Versatz)\n",
+    "neu": "\t\t\t\t\tq := an(document.Pt(zeile.X, zeile.Grundlinie))\n\t\t\t\t\tp := document.Pt(float64(q.X), float64(q.Y))\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "N5 Editor beschneidet nicht auf das Stück (F-739)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\t\tschnitt = clip.Rect(r).Push(gtx.Ops)\n",
+    "neu": "\t\t\t\t\tschnitt = clip.Rect(image.Rect(-1<<20, -1<<20, 1<<20, 1<<20)).Push(gtx.Ops)\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "N6 Versatz eines Abschnitts ohne die Streifen davor (F-739)",
+    "datei": "internal/document/stuecke.go",
+    "paket": "./internal/document",
+    "alt": "as = append(as, abschnitt{a, b, -float64(m.von + m.kum[k])})",
+    "neu": "as = append(as, abschnitt{a, b, -float64(m.von + m.kum[0])})",
+    "timeout": "3m"
+  },
+  {
+    "name": "N7 Abschnitte schneiden das Rechteck nicht (F-739)",
+    "datei": "internal/document/stuecke.go",
+    "paket": "./internal/document",
+    "alt": "if a < b && lo < float64(b) && hi > float64(a) {",
+    "neu": "if a < b {",
+    "timeout": "3m"
+  },
+  {
+    "name": "N8 Texteingabe an verborgenem Text (F-740)",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.textVerborgen(o) {\n\t\ts.abgelehnt = AblehnungTextVerborgen",
+    "neu": "\tif false && s.textVerborgen(o) {\n\t\ts.abgelehnt = AblehnungTextVerborgen",
+    "timeout": "3m"
+  },
+  {
+    "name": "N9 Menü „Text bearbeiten“ an verborgenem Text (F-740)",
+    "datei": "internal/canvas/menue.go",
+    "paket": "./internal/canvas",
+    "alt": "o.Ebenenwerte().Bearbeitbar() && !s.textVerborgen(o)",
+    "neu": "o.Ebenenwerte().Bearbeitbar()",
+    "timeout": "3m"
+  },
+  {
+    "name": "N10 Ablehnung ohne Meldung (F-740)",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.abgelehnt = AblehnungTextVerborgen\n\t\treturn false",
+    "neu": "\t\treturn false",
+    "timeout": "3m"
+  }
+]

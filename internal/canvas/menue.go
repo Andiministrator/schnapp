@@ -92,5 +92,6 @@ func (s *Sitzung) KannTextBearbeiten() bool {
 		return false
 	}
 	o, ok := s.D.Objekt(s.Auswahl)
-	return ok && isText(o) && o.Ebenenwerte().Bearbeitbar() // ausgeblendet oder gesperrt: kein Tippen (ADR-0032, F-587)
+	// ausgeblendet oder gesperrt: kein Tippen (ADR-0032, F-587); ganz im Stauch-Streifen: kein blindes Tippen (F-740)
+	return ok && isText(o) && o.Ebenenwerte().Bearbeitbar() && !s.textVerborgen(o)
 }

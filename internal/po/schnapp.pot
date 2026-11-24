@@ -1194,6 +1194,10 @@ msgid "Saved to the library"
 msgstr ""
 
 #: internal/ui/editor.go
+msgid "This text lies in a compressed area. Restore cut-out areas (Image menu) to edit it."
+msgstr ""
+
+#: internal/ui/editor.go
 msgid "The limit of %d annotations is reached. Delete some to add more."
 msgstr ""
 

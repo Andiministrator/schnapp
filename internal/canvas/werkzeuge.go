@@ -279,7 +279,7 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 		if id, ok := Treffer(s.sichtbareObjekte(), q, s.toleranz()); ok {
 			if o, _ := s.D.Objekt(id); isText(o) {
 				s.Auswahl = id
-				s.TextBearbeiten()
+				s.TextBearbeiten() // bei verborgener Schrift nur Auswahl und Meldung (F-740)
 				return
 			}
 		}
@@ -321,6 +321,9 @@ const (
 	AblehnungKeine   Ablehnung = iota
 	AblehnungObjekte           // das Dokument hat document.MaxObjekte Objekte
 	AblehnungNummer            // die nächste Nummer wäre größer als document.MaxNummer
+	// AblehnungTextVerborgen: Der angeklickte Text liegt ganz in einem Stauch-Streifen, nur das Dreieck seiner Sprechblase
+	// ist zu sehen; er wird nicht zum Bearbeiten geöffnet (F-740).
+	AblehnungTextVerborgen
 )
 
 // Voll meldet, warum das aktive Zeichenwerkzeug jetzt kein neues Objekt anlegen kann (AblehnungKeine, wenn es geht).
@@ -605,11 +608,31 @@ func (s *Sitzung) TextBearbeiten() bool {
 		return false
 	}
 	o, ok := s.D.Objekt(s.Auswahl)
-	if !ok || !isText(o) || !o.Ebenenwerte().Bearbeitbar() || s.D.BeginneZug(s.Auswahl) != nil {
+	if !ok || !isText(o) || !o.Ebenenwerte().Bearbeitbar() {
+		return false
+	}
+	// Liegen Schrift und Schild ganz in einem Stauch-Streifen (nur das Dreieck einer Sprechblase ist zu sehen), beginnt
+	// keine Eingabe: Man tippte blind, und der Text erschiene erst, wenn das Schild aus dem Streifen wächst (F-740,
+	// ADR-0023 Nachtrag 13). Die Auswahl bleibt, die Statusleiste sagt warum (Abgelehnt).
+	if s.textVerborgen(o) {
+		s.abgelehnt = AblehnungTextVerborgen
+		return false
+	}
+	if s.D.BeginneZug(s.Auswahl) != nil {
 		return false
 	}
 	s.zug, s.textID, s.textNeu = zugText, s.Auswahl, false
 	return true
+}
+
+// textVerborgen meldet, ob von Text o weder Glyphen noch Schild in der Ansicht liegen (document.TextSichtbar).
+func (s *Sitzung) textVerborgen(o document.Objekt) bool {
+	t, ok := o.(document.Text)
+	if !ok {
+		return false
+	}
+	schrift, _ := s.D.TextSichtbar(t)
+	return !schrift
 }
 
 // Tippe hängt Text an (Steuerzeichen fallen weg, Zeilen beginnt TextZeilenumbruch). Über der Höchstlänge bleibt der
