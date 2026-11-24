@@ -24,12 +24,13 @@
     "timeout": "3m"
   },
   {
-    "name": "HB4 Neuaufbau auch bei vorhandenem leerem Index (beide Prüfungen weg)",
+    "name": "HB4 Neuaufbau auch bei vorhandenem Index (beide Prüfungen weg) — seit F-700 äquivalent: Abgleich ruft neuaufbauOhneIndex nur bei fehlender Datei, und ein inzwischen angelegter Index wird durch einen Neuaufbau aus derselben Ablage ersetzt, der dessen Zeilen mitnimmt",
     "datei": "internal/library/bibliothek.go",
     "paket": "./internal/library",
     "alt": "\tif _, err := os.Lstat(b.Orte.Index); !errors.Is(err, fs.ErrNotExist) {\n\t\treturn nil\n\t}\n\tif b.ablageOhneAufnahme() {\n\t\treturn nil\n\t}\n\tb.mu.Lock()\n\tdefer b.mu.Unlock()\n\tvar heilen []heilAuftrag\n\terr := b.unterSperre(func() error {\n\t\t// Ein anderer Prozess kann den Index inzwischen angelegt haben (Ablegen): dann nicht ersetzen.\n\t\tif _, err := os.Lstat(b.Orte.Index); !errors.Is(err, fs.ErrNotExist) {\n\t\t\treturn nil\n\t\t}\n",
     "neu": "\tif b.ablageOhneAufnahme() {\n\t\treturn nil\n\t}\n\tb.mu.Lock()\n\tdefer b.mu.Unlock()\n\tvar heilen []heilAuftrag\n\terr := b.unterSperre(func() error {\n",
-    "timeout": "3m"
+    "timeout": "3m",
+    "aequivalent": true
   },
   {
     "name": "HB5 SetzeSchlagworte ohne Standvergleich vor dem Umbenennen (F-673)",
@@ -75,16 +76,16 @@
     "name": "HB10 haengeAn ohne Sperre",
     "datei": "internal/library/bibliothek.go",
     "paket": "./internal/library",
-    "alt": "return b.unterSperre(func() error { return b.haengeZeileAn(zeile) })",
-    "neu": "return b.haengeZeileAn(zeile)",
+    "alt": "\terr = b.unterSperre(func() error {\n\t\tif _, err := os.Lstat(b.Orte.Index); errors.Is",
+    "neu": "\terr = func(f func() error) error { return f() }(func() error {\n\t\tif _, err := os.Lstat(b.Orte.Index); errors.Is",
     "timeout": "3m"
   },
   {
     "name": "HB11 Abgleich schreibt ohne Sperre",
     "datei": "internal/library/bibliothek.go",
     "paket": "./internal/library",
-    "alt": "\tentfernt := 0\n\terr = b.unterSperre(func() error {",
-    "neu": "\tentfernt := 0\n\terr = func(f func() error) error { return f() }(func() error {",
+    "alt": "\tentfernt := 0\n\tvar heilen []heilAuftrag\n\terr = b.unterSperre(func() error {",
+    "neu": "\tentfernt := 0\n\tvar heilen []heilAuftrag\n\terr = func(f func() error) error { return f() }(func() error {",
     "timeout": "3m"
   },
   {
@@ -205,6 +206,46 @@
     "paket": "./internal/library",
     "alt": "\t\theileNachNeuaufbau(b, a.pfad, a.rel, a.stand)",
     "neu": "\t\t_ = a",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB27 Ablegen an einen fehlenden Index legt ihn mit nur einer Zeile an (F-700)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\t\tif _, err := os.Lstat(b.Orte.Index); errors.Is(err, fs.ErrNotExist) {\n\t\t\t_, hs, err := b.neuaufbau()",
+    "neu": "\t\tif _, err := os.Lstat(b.Orte.Index); false && errors.Is(err, fs.ErrNotExist) {\n\t\t\t_, hs, err := b.neuaufbau()",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB28 Abgleich ergänzt keine fehlenden Indexzeilen (F-700)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\tneu := ohneIndexzeileFn(b, bekannt)\n",
+    "neu": "\tneu := ohneIndexzeileFn(b, bekannt)[:0]\n",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB29 Abgleich ergänzt eine seit dem Lesen geänderte Datei mit veralteten Angaben (F-700)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "|| standAus(fi) != k.stand {",
+    "neu": "|| false {",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB30 Abgleich ergänzt eigene temporäre Reste (F-700)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "if !d.Type().IsRegular() || strings.HasPrefix(d.Name(), tempPraefix) || !strings.EqualFold(filepath.Ext(pfad), \".png\") {",
+    "neu": "if !d.Type().IsRegular() || !strings.EqualFold(filepath.Ext(pfad), \".png\") {",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB31 Abgleich ergänzt eine Zeile doppelt (F-700)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\t\t\tif drin[k.eintrag.Pfad] {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tif fi, err",
+    "neu": "\t\t\tif false && drin[k.eintrag.Pfad] {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tif fi, err",
     "timeout": "3m"
   }
 ]

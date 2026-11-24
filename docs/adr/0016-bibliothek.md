@@ -162,3 +162,34 @@ dann schon gespeichert. Umsetzung: Karte #54.
    beim ganzen Schlagwort treffen. Ein Teilwort nur aus Leerraum gilt als keins.
 
 Tests in `internal/library/haertung_test.go`, Mutanten `scripts/mutanten/bibliothek-haertung.json` (HB1–HB23).
+
+## Nachtrag 7 (24.11.2026): Aufnahmen ohne Indexzeile werden ergänzt (F-700)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #269, Abschluss-Kritik Sprint 12 B-3).
+
+1. **Ablegen an einen fehlenden Index.** Fehlt die Indexdatei, legte das Anhängen sie mit nur der neuen Zeile an; der
+   Abgleich danach sah einen vorhandenen Index, und alle älteren Aufnahmen blieben unsichtbar. Der übliche Start ist die
+   Aufnahme, der Weg „Index löschen, Schnapp öffnen“ aus Nachtrag 6 Punkt 3 trug also nicht. Jetzt baut `haengeAn` den
+   Index in diesem Fall unter derselben Sperre aus der Ablage neu auf (die neue Datei liegt schon dort); scheitert der
+   Neuaufbau, wird wie bisher nur angehängt. Fehlende Vorschaubilder heilt es danach ohne die Sperre (F-691), außer der
+   neuen, die das Ablegen selbst schreibt. Die allererste Aufnahme kostet damit ein Ablaufen einer Ablage mit einer
+   Datei.
+2. **Abgleich ergänzt.** `Abgleich` läuft die Ablage zusätzlich ab (`ohneIndexzeile`, ohne `b.mu` und ohne Sperre wie
+   die Dateiprüfung, Punkt 4 von Nachtrag 6) und liest die Metadaten jeder PNG-Datei, die keine Zeile hat. Unter beiden
+   Sperren werden nur die ergänzt, die noch keine Zeile haben und deren Stand (Gerät, Inode, Größe, Zeit) seit dem Lesen
+   gleich ist; eine inzwischen geänderte holt der nächste Abgleich. Der Index wird danach sortiert wie beim Neuaufbau
+   geschrieben, fehlende Vorschaubilder der ergänzten heilen nach der Freigabe der Sperre. Eigene temporäre Reste,
+   fremde und beschädigte PNG-Dateien zählen nicht. Damit holt der nächste Start einer Leiste oder Ansicht Aufnahmen
+   nach, deren Zeile fehlt (Absturz zwischen Datei und Zeile, `ErrIndex` beim Ablegen, aus einer Sicherung
+   zurückgespielter Ordner), und das Aufräumen sieht sie wieder. Der Rückgabewert bleibt die Zahl der entfernten
+   Einträge.
+3. **Leerer Index.** Ersetzt den Satz „ein leerer, aber vorhandener Index löst nichts aus“ in Nachtrag 6 Punkt 3: Ein
+   leerer Index wird wie jeder andere ergänzt, einmal — danach ist er nicht mehr leer. Den Neuaufbau aus
+   `neuaufbauOhneIndex` löst weiterhin nur das Fehlen der Datei aus.
+4. **Kosten.** Das Ablaufen liest je Monatsordner das Verzeichnis, Metadaten nur für Dateien ohne Zeile. Fremde
+   PNG-Dateien in der Ablage werden bei jedem Abgleich erneut gelesen (nur `snAP`-Suche und Kopf). Auf einer
+   Netz-Ablage kostet das Ablaufen zusätzlich zu den Lstat je Eintrag; die Widerlegungsbedingung von F-700 (spürbar
+   langsamer) ist mit einer lokalen Messung nicht zu prüfen und bleibt beobachtet.
+
+Tests in `internal/library/index_ergaenzen_test.go`, Mutanten HB27–HB31 in `scripts/mutanten/bibliothek-haertung.json`
+(HB4 seitdem äquivalent).

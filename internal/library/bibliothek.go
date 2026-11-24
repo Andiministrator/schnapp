@@ -241,13 +241,50 @@ func (e Eintrag) gueltig() bool {
 		strings.EqualFold(filepath.Ext(p), ".png") && e.Breite > 0 && e.Hoehe > 0
 }
 
-// haengeAn hängt eine Zeile an den Index an (Ordner 0700, Datei 0600), unter der Sperre des Index (F-686).
+// haengeAn hängt eine Zeile an den Index an (Ordner 0700, Datei 0600), unter der Sperre des Index (F-686). Läuft unter
+// b.mu.
+//
+// Fehlt die Indexdatei, legte das Anhängen sie mit nur dieser einen Zeile an, und jede ältere Aufnahme der Ablage
+// bliebe unsichtbar: Der Abgleich sähe danach einen vorhandenen Index (F-700, ADR-0016 Nachtrag 7). Deshalb baut
+// haengeAn den Index dann aus der Ablage neu auf; die Datei des Eintrags liegt schon dort und kommt mit. Scheitert der
+// Neuaufbau, wird wie bisher nur die Zeile angehängt. Fehlende Vorschaubilder heilt es nach der Freigabe der Sperre
+// (F-691), außer der des neuen Eintrags, die der Aufrufer selbst schreibt.
 func (b *Bibliothek) haengeAn(e Eintrag) error {
 	zeile, err := json.Marshal(e)
 	if err != nil {
 		return err
 	}
-	return b.unterSperre(func() error { return b.haengeZeileAn(zeile) })
+	var heilen []heilAuftrag
+	err = b.unterSperre(func() error {
+		if _, err := os.Lstat(b.Orte.Index); errors.Is(err, fs.ErrNotExist) {
+			_, hs, err := b.neuaufbau()
+			if err == nil && b.imIndex(e.Pfad) {
+				for _, h := range hs {
+					if h.rel != e.Pfad {
+						heilen = append(heilen, h)
+					}
+				}
+				return nil
+			}
+		}
+		return b.haengeZeileAn(zeile)
+	})
+	b.heileAlle(heilen)
+	return err
+}
+
+// imIndex meldet, ob der Index eine Zeile für rel enthält. Läuft unter b.mu.
+func (b *Bibliothek) imIndex(rel string) bool {
+	g, err := b.lade()
+	if err != nil {
+		return false
+	}
+	for _, e := range g.Eintraege {
+		if e.Pfad == rel {
+			return true
+		}
+	}
+	return false
 }
 
 // haengeZeileAn hängt die fertige Zeile an. Läuft unter der Sperre des Index.
@@ -490,8 +527,9 @@ func (b *Bibliothek) liesEintrag(pfad, rel string) (Eintrag, bool) {
 }
 
 // Abgleich lässt Index-Einträge fallen, deren Datei fehlt (etwa nach Verschieben im Dateimanager), und
-// auch kaputte Zeilen; die Vorschauen der fehlenden fallen mit. Geschrieben wird nur bei einer Änderung. Rückgabe: Zahl
-// der entfernten Einträge.
+// auch kaputte Zeilen; die Vorschauen der fehlenden fallen mit. Arbeitsdateien der Ablage ohne Indexzeile ergänzt er
+// (F-700, ohneIndexzeile), ihre fehlenden Vorschaubilder heilt er nach der Freigabe der Sperre. Geschrieben wird nur bei
+// einer Änderung, sortiert wie der Neuaufbau. Rückgabe: Zahl der entfernten Einträge.
 //
 // Fehlt die Ablage oder enthält sie keine einzige Aufnahme (keine PNG-Datei), während Einträge des Index fehlen, ist
 // das fast sicher ein nicht eingehängtes Laufwerk, ein leerer Einhängepunkt oder ein umbenannter Ordner, nicht „alles
@@ -500,7 +538,7 @@ func (b *Bibliothek) liesEintrag(pfad, rel string) (Eintrag, bool) {
 // (Neuaufbau). Das ist zugleich der Weg, einen verlorenen oder veralteten Index wiederherzustellen: Indexdatei löschen
 // oder beiseitelegen, dann gleicht der nächste Start des Editors ab (ADR-0016 Nachtrag 6).
 //
-// Die Dateiprüfung (ein Lstat je Eintrag) läuft ohne b.mu und ohne die Sperre des Index (F-690): Auf einer langsamen
+// Die Dateiprüfung (ein Lstat je Eintrag, das Ablaufen der Ablage) läuft ohne b.mu und ohne die Sperre des Index (F-690): Auf einer langsamen
 // Ablage warteten Speichern und Vorschau sonst so lange. Unter beiden wird der Index danach frisch gelesen, und nur die
 // als fehlend erkannten Pfade, die auch jetzt noch fehlen, werden gestrichen; was inzwischen dazukam, bleibt (F-686).
 func (b *Bibliothek) Abgleich() (_ int, fehler error) {
@@ -511,16 +549,19 @@ func (b *Bibliothek) Abgleich() (_ int, fehler error) {
 	if err != nil {
 		return 0, err
 	}
-	if len(g.Eintraege) == 0 && g.Defekt == 0 {
+	if _, err := os.Lstat(b.Orte.Index); errors.Is(err, fs.ErrNotExist) {
 		return 0, b.neuaufbauOhneIndex()
 	}
 	fehlt := map[string]bool{}
+	bekannt := make(map[string]bool, len(g.Eintraege))
 	for _, e := range g.Eintraege {
+		bekannt[e.Pfad] = true
 		if b.fehltInAblage(e.Pfad) { // andere Fehler (Rechte): im Zweifel behalten
 			fehlt[e.Pfad] = true
 		}
 	}
-	if len(fehlt) == 0 && g.Defekt == 0 {
+	neu := ohneIndexzeileFn(b, bekannt)
+	if len(fehlt) == 0 && g.Defekt == 0 && len(neu) == 0 {
 		return 0, nil
 	}
 	if len(fehlt) > 0 && b.ablageOhneAufnahme() {
@@ -529,6 +570,7 @@ func (b *Bibliothek) Abgleich() (_ int, fehler error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	entfernt := 0
+	var heilen []heilAuftrag
 	err = b.unterSperre(func() error {
 		g, err := b.lade()
 		if err != nil {
@@ -536,26 +578,99 @@ func (b *Bibliothek) Abgleich() (_ int, fehler error) {
 		}
 		var behalten []Eintrag
 		var weg []string
+		drin := make(map[string]bool, len(g.Eintraege))
 		for _, e := range g.Eintraege {
 			if fehlt[e.Pfad] && b.fehltInAblage(e.Pfad) {
 				weg = append(weg, e.Pfad)
 				continue
 			}
+			drin[e.Pfad] = true
 			behalten = append(behalten, e)
 		}
-		if len(weg) == 0 && g.Defekt == 0 {
+		// Ergänzen nur, was noch keine Zeile hat und seit dem Lesen unverändert ist; eine inzwischen geänderte Datei
+		// holt der nächste Abgleich (die Sperre bleibt kurz, F-691).
+		var dazu []heilAuftrag
+		for _, k := range neu {
+			if drin[k.eintrag.Pfad] {
+				continue
+			}
+			if fi, err := os.Lstat(k.pfad); err != nil || !fi.Mode().IsRegular() || standAus(fi) != k.stand {
+				continue
+			}
+			drin[k.eintrag.Pfad] = true
+			behalten = append(behalten, k.eintrag)
+			if _, err := os.Stat(b.VorschauPfad(k.eintrag.Pfad)); err != nil {
+				dazu = append(dazu, heilAuftrag{pfad: k.pfad, rel: k.eintrag.Pfad, stand: k.stand})
+			}
+		}
+		if len(weg) == 0 && g.Defekt == 0 && len(behalten) == len(g.Eintraege) {
 			return nil
 		}
 		for _, p := range weg {
 			_ = b.entferneVorschau(p) // Vorschau der verschwundenen Aufnahme nicht liegen lassen (F-51)
 		}
-		entfernt = len(weg)
-		return b.schreibeIndex(behalten)
+		sortiere(behalten)
+		if err := b.schreibeIndex(behalten); err != nil {
+			return err
+		}
+		entfernt, heilen = len(weg), dazu
+		return nil
 	})
+	b.heileAlle(heilen) // nach der Freigabe der Sperre (F-691)
 	if err != nil {
 		return 0, err
 	}
 	return entfernt, nil
+}
+
+// kandidat ist eine Aufnahme der Ablage ohne Indexzeile, gelesen beim Abgleich (F-700).
+type kandidat struct {
+	pfad    string // voller Pfad
+	eintrag Eintrag
+	stand   Stand // Stand beim Lesen der Metadaten
+}
+
+// ohneIndexzeileFn ist ohneIndexzeile; Tests ersetzen es, um eine Änderung zwischen Lesen und Sperre nachzubauen.
+var ohneIndexzeileFn = (*Bibliothek).ohneIndexzeile
+
+// ohneIndexzeile läuft die Ablage ab und liefert die Arbeitsdateien von Schnapp, deren relativer Pfad nicht in bekannt
+// steht (F-700): etwa nach einem Absturz zwischen Datei und Zeile, einem ErrIndex beim Ablegen oder einem aus einer
+// Sicherung zurückgespielten Ordner. Läuft ohne b.mu und ohne die Sperre des Index wie die Dateiprüfung (F-690);
+// gelesen werden nur die Metadaten der unbekannten Dateien (fileformat.LeseMetadaten). Eigene temporäre Dateien,
+// fremde und beschädigte PNG-Dateien zählen nicht; unlesbare Teile der Ablage werden übergangen.
+func (b *Bibliothek) ohneIndexzeile(bekannt map[string]bool) []kandidat {
+	wurzel, err := filepath.EvalSymlinks(b.Orte.Ablage)
+	if err != nil {
+		return nil
+	}
+	var ks []kandidat
+	_ = filepath.WalkDir(wurzel, func(pfad string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil // unlesbarer Teil: weiter
+		}
+		if !d.Type().IsRegular() || strings.HasPrefix(d.Name(), tempPraefix) || !strings.EqualFold(filepath.Ext(pfad), ".png") {
+			return nil
+		}
+		rel, err := filepath.Rel(wurzel, pfad)
+		if err != nil {
+			return nil
+		}
+		rel = filepath.ToSlash(rel)
+		if bekannt[rel] {
+			return nil
+		}
+		fi, err := os.Lstat(pfad)
+		if err != nil || !fi.Mode().IsRegular() {
+			return nil
+		}
+		e, ok := b.liesEintrag(pfad, rel)
+		if !ok {
+			return nil
+		}
+		ks = append(ks, kandidat{pfad: pfad, eintrag: e, stand: standAus(fi)})
+		return nil
+	})
+	return ks
 }
 
 // lstatAblage ist os.Lstat für die Dateiprüfung des Abgleichs; Tests ersetzen es, um zu sehen, unter welchen Sperren

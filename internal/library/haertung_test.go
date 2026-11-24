@@ -118,11 +118,12 @@ func TestAbgleichBautFehlendenIndexNeu(t *testing.T) {
 	if p := indexPfade(t, b); len(p) != 2 || !p[e1.Pfad] || !p[e2.Pfad] {
 		t.Errorf("Index nach Neuaufbau %v", p)
 	}
-	// Ein leerer, aber vorhandener Index bleibt leer (kein Neuaufbau bei jedem Start).
+	// Ein leerer, aber vorhandener Index wird seit F-700 ergänzt (ADR-0016 Nachtrag 7), einmal: danach ist er nicht
+	// mehr leer.
 	if err := os.WriteFile(b.Orte.Index, nil, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if n, err := b.Abgleich(); err != nil || n != 0 || len(indexPfade(t, b)) != 0 {
+	if n, err := b.Abgleich(); err != nil || n != 0 || len(indexPfade(t, b)) != 2 {
 		t.Errorf("leerer Index: %d, %v, %v", n, err, indexPfade(t, b))
 	}
 }
