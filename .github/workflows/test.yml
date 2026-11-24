@@ -13,6 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GOFLAGS: -tags=novulkan,nox11
+      # Zeichentests ohne Fenster (Editor, Navigator, Rollen der Leiste, Lupe, Text): Ein Überspringen wegen fehlendem
+      # EGL/GLES ist in jedem Schritt unten ein Fehler, nicht nur im Schritt „Editor-Zeichnen“ (F-616, Karte #235).
+      SCHNAPP_HEADLESS_PFLICHT: 1
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
@@ -27,11 +30,9 @@ jobs:
       - run: go vet ./...
       - run: go test ./...
       # Zeichnen des Editors ohne Fenster (Gio headless über EGL surfaceless, internal/ui/zeichnen_headless_test.go):
-      # SCHNAPP_HEADLESS_PFLICHT=1 macht ein Überspringen (kein EGL/GLES im Runner) zum Fehler (F-602), damit die
-      # Mutanten E37 bis E40 in der CI bewacht sind; das Protokoll zeigt PASS je Test.
-      - name: Editor-Zeichnen ohne Fenster (Pflicht)
-        env:
-          SCHNAPP_HEADLESS_PFLICHT: 1
+      # SCHNAPP_HEADLESS_PFLICHT=1 (Job-Umgebung oben) macht ein Überspringen (kein EGL/GLES im Runner) zum Fehler
+      # (F-602, F-616), damit die Mutanten E37 bis E40 in der CI bewacht sind; dieser Schritt zeigt PASS je Test im Protokoll.
+      - name: Editor-Zeichnen ohne Fenster (Protokoll)
         run: go test ./internal/ui -count=1 -run 'TestEditorZeichnet' -v
       # Alle Pakete unter internal/ zusätzlich mit dem Race-Detektor (F-368, Sitzungs-QA 22.11. Q-6; ADR-0020 Nachtrag 11)
       - run: go test -race ./internal/...
