@@ -128,7 +128,7 @@ While you edit, Schnapp keeps a small *rescue copy* of your unsaved work, so a c
 
 The desktop file lists PNG and JPEG, so file managers offer Schnapp under "Open with". It carries the absolute path of the program (KDE Plasma 6.7 and older bind the screenshot permission to it) and the default shortcut **Print** for "Capture Area". Spectacle uses **Print** as well: if both are installed, turn off Spectacle's shortcut in the system settings (Shortcuts). Make sure `~/.local/bin` is in your `PATH`.
 
-Desktop tools may update their caches as well (menu database; the icon cache only if one exists). Remove it again with `./install.sh --uninstall` (deletes only these four files). `./install.sh --help` lists the options.
+Desktop tools may update their caches as well (menu database; the icon cache only if one exists). Remove it again with `./install.sh --uninstall` (deletes only these four files). If building `schnapp-ocr` fails (for example without network access for its Go modules), Schnapp is installed anyway and the script warns. `./install.sh --help` lists the options.
 
 ## Documentation
 

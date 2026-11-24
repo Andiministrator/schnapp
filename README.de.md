@@ -126,7 +126,7 @@ Während du bearbeitest, legt Schnapp eine kleine *Rettungskopie* (englisch „r
 
 Die Desktop-Datei nennt PNG und JPEG, damit Dateimanager Schnapp unter „Öffnen mit“ anbieten. Sie trägt den absoluten Pfad des Programms (KDE Plasma 6.7 und älter binden die Aufnahme-Berechtigung daran) und das Standardkürzel **Druck** für „Bereich aufnehmen“. Spectacle belegt **Druck** ebenfalls: Sind beide installiert, schalte das Kürzel von Spectacle in den Systemeinstellungen (Kurzbefehle) ab. `~/.local/bin` muss in deinem `PATH` liegen.
 
-Desktop-Werkzeuge aktualisieren dabei gegebenenfalls ihre Caches (Menü-Datenbank; den Symbol-Cache nur, wenn es schon einen gibt). Entfernen mit `./install.sh --uninstall` (löscht nur diese vier Dateien). `./install.sh --help` listet die Optionen.
+Desktop-Werkzeuge aktualisieren dabei gegebenenfalls ihre Caches (Menü-Datenbank; den Symbol-Cache nur, wenn es schon einen gibt). Entfernen mit `./install.sh --uninstall` (löscht nur diese vier Dateien). Scheitert der Bau von `schnapp-ocr` (etwa ohne Netz für seine Go-Module), wird Schnapp trotzdem installiert und das Skript warnt. `./install.sh --help` listet die Optionen.
 
 ## Dokumentation
 

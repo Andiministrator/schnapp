@@ -910,3 +910,14 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Maintainer-Wünsche zu Form gehen vor eigene Gewohnheit** (Karte #157): Gio will keine Co-Authored-By-Trailer und
   keine Werkzeughinweise in Commits und Kommentaren, und kurze Kommentare. Die Offenlegung steht im PR-Text, nicht in
   jedem Commit.
+- **Sitzungs-QA mit drei Kritikern nach drei Karten an einem Nachmittag** (F-640 bis F-666, 27 Befunde, keiner P0):
+  Die Kritiker fanden genau dort Fehler, wo die eigenen Tests an der falschen Stelle prüften — `ocrHinweis` statt der
+  gezeichneten Fußzeile (F-640), „Text ≠ englisch“ statt Sollwert je Fehlerwert (F-660), Wechsel ohne Sperren für
+  Export, Texteingabe und Vorschau (F-651 bis F-654). Lehre: Tests gegen das prüfen, was der Nutzer sieht oder was auf
+  der Platte landet, nicht gegen eine Zwischenfunktion; je neuer Zustandswechsel (Laden, Wechsel) eine Liste „was darf
+  währenddessen nicht passieren“ mit je einem Test.
+- **Agenten-Übernahmen formatieren und Muster prüfen** (#174 Teil 1): Ein Agent lieferte gofmt-fremde Dateien; nach jeder
+  Übernahme `gofmt -l` über alle Pakete und danach den Mutanten-Trockenlauf, weil Ausrichtung Muster verschiebt.
+- **Zwei parallele Fix-Agenten konfliktfrei:** Dateien vorher fest aufteilen (probe.sh nur bei einem), gemeinsame
+  Dateien (README, CLAUDE.md, Register) nur der Orchestrator; `de.po`/`schnapp.pot` ließen sich per Cherry-Pick ohne
+  Konflikt zusammenführen, danach `TestVorlage` ohne `-update` als Probe.
