@@ -166,3 +166,11 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | 2026-11-24 | tesseract command line stdin stdout | stdin/stdout bzw. „-“ als Ein- und Ausgabe (5.x) |
 | 2026-11-24 | Flathub flatpak bundle tesseract OCR module traineddata extension | keine gemeinsame Flathub-Erweiterung; Apps bündeln Tesseract und Sprachdaten selbst |
 | 2026-11-24 | tesseract wasm wazero Go pure Go OCR without cgo | gogosseract (WASM über wazero), sonst nur cgo-Bindungen |
+| 2026-11-24 | https://raw.githubusercontent.com/emscripten-core/emscripten/main/LICENSE | Emscripten-Lizenz ungekürzt (MIT/UIUC), ersetzt den gekürzten Text in ocr/THIRD-PARTY-LICENSES (F-667) |
+| 2026-11-24 | https://raw.githubusercontent.com/emscripten-core/emscripten/main/system/lib/libc/musl/COPYRIGHT | musl-Vermerk (MIT) |
+| 2026-11-24 | https://raw.githubusercontent.com/emscripten-core/emscripten/main/system/lib/{libcxx,libcxxabi,compiler-rt}/LICENSE.TXT | LLVM-Texte (Apache-2.0 WITH LLVM-exception) für libc++, libc++abi, compiler-rt |
+| 2026-11-24 | https://raw.githubusercontent.com/pnggroup/libpng/v1.6.39/LICENSE | libpng-Lizenz v2 |
+| 2026-11-24 | https://raw.githubusercontent.com/madler/zlib/v1.2.13/LICENSE | zlib-Lizenz |
+| 2026-11-24 | https://www.ijg.org/files/jpegsrc.v9c.tar.gz | IJG-README (LEGAL ISSUES): Binärweitergabe verlangt den Satz „based in part on the work of the Independent JPEG Group“ |
+| 2026-11-24 | https://downloads.sourceforge.net/project/giflib/giflib-5.2.1.tar.gz | Fehlschlag 404 |
+| 2026-11-24 | https://storage.googleapis.com/webassembly/emscripten-ports/giflib-5.2.1.tar.gz | giflib 5.2.1 (Archiv des Emscripten-Ports): COPYING MIT, openbsd-reallocarray.c MIT (F-679) |
