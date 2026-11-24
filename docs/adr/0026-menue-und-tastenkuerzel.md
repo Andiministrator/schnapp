@@ -190,3 +190,16 @@ der Ebene. Getestet von `TestMenueZeigtKuerzel` und `TestTafelSperrtEditor`.
 Getestet von `TestMenueZeigtKuerzel`, `TestMenuePfeiltasten`, `TestMenueFokussierterEintragWirdGrau` (Ende und Umlauf
 erreichen jetzt den grauen Eintrag mit Erklärung), `TestOcrEintragGrauMitErklaerung`, `TestOcrKuerzelOhneTesseract` und
 `TestOcrUeberRouter`; Mutanten U19 bis U24 in `scripts/mutanten/ocr-ui.json`.
+
+## Nachtrag 9 (24.11.2026): Eintrag „Letzte Aufnahmen/Recent captures“ mit Strg+Umschalt+R (ADR-0036, Karte #174)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #174 Teil 1).
+
+Das Menü „Ansicht“ trägt am Ende in einer eigenen Gruppe den Schalter **Letzte Aufnahmen** (englisch „Recent captures“,
+`aktLeiste`), Kürzel **Strg+Umschalt+R** in der Tastentabelle; R allein bleibt das Werkzeug Rechteck. Er blendet die
+Leiste der letzten Aufnahmen ein und aus (ADR-0036 Punkt 2) und merkt den Zustand in `[library] bar` (ADR-0018
+Nachtrag 6). Kennt das Fenster keine Bibliothek, ist der Eintrag grau mit Erklärung nach Nachtrag 8 („Not available in
+this window: it has no library.“; im Programm kommt das nicht vor, nur in Tests ohne Anbindung). Die Vorschauen der
+Leiste sind Knöpfe der Fokusfahrt: Tab erreicht sie, Pfeile links und rechts, Pos1 und Ende wandern zwischen ihnen
+(nicht in der Tastentabelle, wie die Kacheln der Schnellstile), Enter und Leertaste öffnen. Getestet von
+`TestMenueZeigtKuerzel`, `TestLeisteSchalter`, `TestLeisteTastatur` und `TestLeisteLeertaste`.

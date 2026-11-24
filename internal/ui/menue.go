@@ -396,9 +396,6 @@ func (e *editor) knopfPerTaste(c *widget.Clickable) {
 			return
 		}
 	}
-	if e.leisteEnter(c) { // Vorschau der Leiste unten (ADR-0036)
-		return
-	}
 	switch c {
 	case &e.knoepfe.fussFarbe:
 		e.listeAmFarbKnopf = false

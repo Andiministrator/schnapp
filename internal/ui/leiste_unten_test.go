@@ -531,6 +531,27 @@ func TestLeisteNachSpeichernNeu(t *testing.T) {
 	}
 }
 
+// ADR-0036 Punkt 1: Speichert der Editor als neue Aufnahme (die offene Datei ließ sich nicht fortschreiben), wandert
+// der grüne Rand zur neuen Datei.
+func TestLeisteNachSpeichernAlsNeue(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	neu := legeAufnahmeAb(t, l.b, color.NRGBA{B: 90}, time.Date(2026, 11, 24, 21, 0, 0, 0, time.UTC), false)
+	var mu sync.Mutex
+	pfad := l.pfade[1]
+	l.e.pfad = func() string { mu.Lock(); defer mu.Unlock(); return pfad }
+	l.e.speichern = func(*document.Dokument) (Gespeichert, error) {
+		mu.Lock()
+		pfad = neu
+		mu.Unlock()
+		return Gespeichert{}, nil
+	}
+	l.taste("S", key.ModShortcut)
+	l.ruhig()
+	if !l.e.unten.l.IstAktuell(0) || l.e.unten.l.IstAktuell(2) {
+		t.Errorf("grüner Rand nach dem Speichern als neue Aufnahme: %q", l.e.unten.l.Aktuell())
+	}
+}
+
 // Leere Bibliothek: ein Satz statt Vorschauen.
 func TestLeisteLeer(t *testing.T) {
 	l := neuerLeistenLauf(t, image.Pt(1200, 800), 0)

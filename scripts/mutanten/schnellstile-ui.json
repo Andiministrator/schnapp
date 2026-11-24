@@ -226,8 +226,8 @@
     "name": "SU32 Leertaste löst die Kachel nicht aus",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "} else if c != nil && e.schnell.stelle(c) >= 0 {",
-    "neu": "} else if false {"
+    "alt": "} else if c != nil && (e.schnell.stelle(c) >= 0 || e.unten.stelle(c) >= 0) {",
+    "neu": "} else if c != nil && e.unten.stelle(c) >= 0 {"
   },
   {
     "name": "SU33 Enter erkennt die Kachel nicht als Knopf",

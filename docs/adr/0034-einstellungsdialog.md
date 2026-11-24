@@ -145,3 +145,16 @@ F-629, F-630. Ändert Punkte 3, 5 und 6.
 4. **Prüfung (F-630, Punkt 6):** `TestMCPErreichtDenSchreiberNicht` sucht über alle Pakete des Moduls jeden Selektor
    `settings.Schreibe…` (Paket über den Import aufgelöst, auch unter anderem Namen oder als Punkt-Import); erlaubt
    sind nur `internal/ui/einstellungen.go` und `SchreibeStile` in `internal/ui/schnellstile.go`.
+
+## Nachtrag 2 (24.11.2026): Zeile „Recent captures“, wirkt sofort (ADR-0036 Punkt 2, Karte #174)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #174 Teil 1). Löst Punkt 1 der Ergänzungen ein („kommt mit #174“).
+
+1. **Zeile:** Reiter Library, vor „Clean up“: „Recent captures“ mit Schalter „Show below the image“ und der Erklärung
+   „The bar with the latest captures; also View → Recent captures.“ (`[library] bar`, ADR-0018 Nachtrag 6).
+2. **Ausnahme von Punkt 3:** Speichert die Tafel diesen Schlüssel, folgt die Leiste im laufenden Editor sofort — wie
+   der Menüschalter, der dasselbe tut. Der Fuß des Reiters sagt deshalb „Recent captures apply immediately, clean-up at
+   the next start.“ statt „Applies at the next start.“.
+3. **Schreiber (Punkt 6):** Der Menüschalter merkt `[library] bar` über `merkeEinstellung` in
+   `internal/ui/einstellungen.go` mit dem Schreiber der Tafel (`schreibeEinstellungen`, Ort `settings.Pfad`); damit bleibt
+   die Tafel-Datei der einzige Ort, der `settings.Schreibe…` ruft (`TestMCPErreichtDenSchreiberNicht`).

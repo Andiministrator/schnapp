@@ -320,10 +320,11 @@ func (e *editor) leisteAuswerten(gtx layout.Context) {
 	}
 }
 
-// leisteOeffne öffnet die Aufnahme an der Stelle i, wie sie beim letzten Zeichnen stand.
+// leisteOeffne öffnet die Aufnahme an der Stelle i, wie sie beim letzten Zeichnen stand. Die offene übergeht
+// wechselAnfrage (eine Stelle für Leiste und volle Ansicht).
 func (e *editor) leisteOeffne(i int) {
 	k := &e.unten
-	if i < 0 || i >= len(k.gezeigt) || k.gezeigt[i] == "" || k.gezeigt[i] == k.l.Aktuell() {
+	if i < 0 || i >= len(k.gezeigt) || k.gezeigt[i] == "" {
 		return
 	}
 	e.wechselAnfrage(filepath.Join(e.bib.Bibliothek.Orte.Ablage, filepath.FromSlash(k.gezeigt[i])))
@@ -364,18 +365,6 @@ func (e *editor) leisteTaste(gtx layout.Context, taste key.Event) bool {
 		k.l.Zeige(ziel, k.masse)
 		k.fokusSoll = ziel
 		gtx.Execute(op.InvalidateCmd{})
-	}
-	return true
-}
-
-// leisteEnter löst die Vorschau c per Tastatur aus (knopfPerTaste); false, wenn c keine ist.
-func (e *editor) leisteEnter(c *widget.Clickable) bool {
-	i := e.unten.stelle(c)
-	if i < 0 {
-		return false
-	}
-	if e.leisteAn() {
-		e.leisteOeffne(i)
 	}
 	return true
 }

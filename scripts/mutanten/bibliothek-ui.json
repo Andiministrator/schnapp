@@ -1,0 +1,345 @@
+[
+  {
+    "name": "BL1 Agenten-Aufnahmen stehen in der Leiste",
+    "datei": "internal/libview/leiste.go",
+    "paket": "./internal/libview",
+    "alt": "if e.Agent() {\n\t\t\tcontinue\n\t\t}",
+    "neu": ""
+  },
+  {
+    "name": "BL2 Leiste ohne Grenze der Einträge",
+    "datei": "internal/libview/leiste.go",
+    "paket": "./internal/libview",
+    "alt": "if len(neu) == MaxEintraege {",
+    "neu": "if len(neu) == MaxEintraege+5 {"
+  },
+  {
+    "name": "BL3 Fokus bleibt nach dem Neulesen nicht bei derselben Aufnahme",
+    "datei": "internal/libview/leiste.go",
+    "paket": "./internal/libview",
+    "alt": "if e.Pfad == alt {",
+    "neu": "if e.Pfad == alt && false {"
+  },
+  {
+    "name": "BL4 Pfeil rechts springt zwei weiter",
+    "datei": "internal/libview/leiste.go",
+    "paket": "./internal/libview",
+    "alt": "case SchrittRechts:\n\t\ti++",
+    "neu": "case SchrittRechts:\n\t\ti += 2"
+  },
+  {
+    "name": "BL5 Ende trifft die vorletzte",
+    "datei": "internal/libview/leiste.go",
+    "paket": "./internal/libview",
+    "alt": "case SchrittEnde:\n\t\ti = n - 1",
+    "neu": "case SchrittEnde:\n\t\ti = n - 2"
+  },
+  {
+    "name": "BL6 Sichtbarer Bereich ohne Vorlauf",
+    "datei": "internal/libview/leiste.go",
+    "paket": "./internal/libview",
+    "alt": "return max(0, von), min(n, bis+1)",
+    "neu": "return max(0, von+1), min(n, bis-1)"
+  },
+  {
+    "name": "BL7 Zeigen nach links ohne Rand",
+    "datei": "internal/libview/leiste.go",
+    "paket": "./internal/libview",
+    "alt": "r = x0 - m.Rand",
+    "neu": "r = x0"
+  },
+  {
+    "name": "BL8 Rad verliert den Rest unter einem Pixel",
+    "datei": "internal/libview/leiste.go",
+    "paket": "./internal/libview",
+    "alt": "l.rest -= float32(n)",
+    "neu": "l.rest = 0"
+  },
+  {
+    "name": "BL9 Zeitangabe in UTC statt in der Zone",
+    "datei": "internal/libview/zeit.go",
+    "paket": "./internal/libview",
+    "alt": "t = t.In(jetzt.Location())",
+    "neu": "t = t.In(time.UTC)"
+  },
+  {
+    "name": "BL10 Gestern gilt für den ganzen Monat",
+    "datei": "internal/libview/zeit.go",
+    "paket": "./internal/libview",
+    "alt": "case j == gj && m == gm && d == gd:",
+    "neu": "case j == gj && m == gm && gd > 0:"
+  },
+  {
+    "name": "BL11 Anderes Jahr ohne Jahreszahl",
+    "datei": "internal/libview/zeit.go",
+    "paket": "./internal/libview",
+    "alt": "case j == hj:",
+    "neu": "case true:"
+  },
+  {
+    "name": "BL12 Verdrängt das zuletzt gebrauchte statt des ältesten",
+    "datei": "internal/libview/vorschauen.go",
+    "paket": "./internal/libview",
+    "alt": "if alt == nil || s.zuletzt < alt.zuletzt {",
+    "neu": "if alt == nil || s.zuletzt > alt.zuletzt {"
+  },
+  {
+    "name": "BL13 Das gerade geladene Bild kann sich selbst verdrängen",
+    "datei": "internal/libview/vorschauen.go",
+    "paket": "./internal/libview",
+    "alt": "if s == neu || s.zustand != Da {",
+    "neu": "if s.zustand != Da {"
+  },
+  {
+    "name": "BL14 Vergessenes Bild wird nach dem Laden doch gezählt",
+    "datei": "internal/libview/vorschauen.go",
+    "paket": "./internal/libview",
+    "alt": "if v.stuecke[rel] == s { // nicht inzwischen vergessen",
+    "neu": "if true { // nicht inzwischen vergessen"
+  },
+  {
+    "name": "BL15 Älteste Anforderung zuerst",
+    "datei": "internal/libview/vorschauen.go",
+    "paket": "./internal/libview",
+    "alt": "rel := v.warte[len(v.warte)-1]\n\t\tv.warte = v.warte[:len(v.warte)-1]",
+    "neu": "rel := v.warte[0]\n\t\tv.warte = v.warte[1:]"
+  },
+  {
+    "name": "BL16 Breite der Vorschau nicht begrenzt",
+    "datei": "internal/libview/vorschauen.go",
+    "paket": "./internal/libview",
+    "alt": "cfg.Width > maxVorschauSeite || ",
+    "neu": ""
+  },
+  {
+    "name": "BL17 Fehlende Vorschau wird nicht erzeugt",
+    "datei": "internal/libview/vorschauen.go",
+    "paket": "./internal/libview",
+    "alt": "b.ErzeugeVorschau(rel)",
+    "neu": "_ = rel"
+  },
+  {
+    "name": "BL18 Unlesbare Vorschau gilt als da",
+    "datei": "internal/libview/vorschauen.go",
+    "paket": "./internal/libview",
+    "alt": "s.zustand = Kaputt",
+    "neu": "s.zustand = Da"
+  },
+  {
+    "name": "BB1 Vorschau auch für Pfade außerhalb der Ablage",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "if !(Eintrag{Pfad: rel, Breite: 1, Hoehe: 1}).gueltig() {\n\t\treturn\n\t}\n\tpfad := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))",
+    "neu": "pfad := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))"
+  },
+  {
+    "name": "BS1 Leiste ist ohne Einstellung aus",
+    "datei": "internal/settings/einstellungen.go",
+    "paket": "./internal/settings",
+    "alt": "Leiste: true, Agenten:",
+    "neu": "Leiste: false, Agenten:"
+  },
+  {
+    "name": "BS2 bar = no wird überlesen",
+    "datei": "internal/settings/einstellungen.go",
+    "paket": "./internal/settings",
+    "alt": "e.Leiste, gueltig = w, true",
+    "neu": "e.Leiste, gueltig = w || true, true"
+  },
+  {
+    "name": "BU1 Leinwand schrumpft nicht um die Leiste",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "r.Max.Y -= gtx.Dp(leisteUntenDp)",
+    "neu": "r.Max.Y -= 0"
+  },
+  {
+    "name": "BU2 Leiste fehlt genau an der Schwelle",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "gtx.Constraints.Max.Y >= gtx.Dp(menuezeileDp+fusszeileDp+leisteUntenDp+leisteMinLeinwandDp)",
+    "neu": "gtx.Constraints.Max.Y > gtx.Dp(menuezeileDp+fusszeileDp+leisteUntenDp+leisteMinLeinwandDp)"
+  },
+  {
+    "name": "BU3 Schalter merkt immer yes",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "wert := \"no\"\n\tif k.an {\n\t\twert = \"yes\"\n\t}",
+    "neu": "wert := \"yes\""
+  },
+  {
+    "name": "BU4 Wechsel ohne vorheriges Speichern",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "default:\n\t\te.speichernStarten(abzug)",
+    "neu": "default:\n\t\t_ = abzug\n\t\te.wechselLaden()"
+  },
+  {
+    "name": "BU5 Wechsel trotz gescheitertem Speichern",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "case r.err != nil:\n\t\te.wechsel.ziel = \"\"",
+    "neu": "case r.err != nil && false:\n\t\te.wechsel.ziel = \"\""
+  },
+  {
+    "name": "BU6 Hinweis beim Speichern hält den Wechsel nicht an",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "case r.g.HaeltOffen():",
+    "neu": "case false:"
+  },
+  {
+    "name": "BU7 Änderung während des Ladens geht verloren",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "case e.s.Geaendert() || e.s.SpeichernLaeuft()",
+    "neu": "case e.s.SpeichernLaeuft()"
+  },
+  {
+    "name": "BU8 Verworfene Ladung gibt ihre Rettung nicht frei",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "if r.g.Rettung != nil {\n\t\t\tr.g.Rettung.Ende()\n\t\t}\n\t\tif !e.erzwungen",
+    "neu": "if !e.erzwungen"
+  },
+  {
+    "name": "BU9 Rettung der alten Aufnahme endet nicht",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "e.rettungEnde() // die alte Aufnahme ist gespeichert",
+    "neu": "// die alte Aufnahme ist gespeichert"
+  },
+  {
+    "name": "BU10 --ignore-limit gilt nach dem Wechsel weiter",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "e.ohneGrenze = g.OhneGrenze",
+    "neu": "_ = g.OhneGrenze"
+  },
+  {
+    "name": "BU11 Einrasten nach dem Wechsel zurückgesetzt",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "if einrasten != e.s.EinrastenAn() {",
+    "neu": "if einrasten != e.s.EinrastenAn() && false {"
+  },
+  {
+    "name": "BU12 Rettungskopie der neuen Aufnahme nicht angewendet",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "e.rettungStart()\n\te.bildStand",
+    "neu": "e.bildStand"
+  },
+  {
+    "name": "BU13 Index nach dem Speichern nicht neu gelesen",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "e.leisteNachSpeichern() // Vorschau und Index sind neu",
+    "neu": "// Vorschau und Index sind neu"
+  },
+  {
+    "name": "BU14 Klick auf die offene Aufnahme lädt sie neu",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "if e.pfad != nil && abs == e.pfad() {",
+    "neu": "if e.pfad != nil && abs == e.pfad() && false {"
+  },
+  {
+    "name": "BU15 Pfeil rechts wandert nach links",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "case key.NameRightArrow:\n\t\ts = libview.SchrittRechts",
+    "neu": "case key.NameRightArrow:\n\t\ts = libview.SchrittLinks"
+  },
+  {
+    "name": "BU16 Leertaste an einer Vorschau löst nicht aus",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "(e.schnell.stelle(c) >= 0 || e.unten.stelle(c) >= 0)",
+    "neu": "(e.schnell.stelle(c) >= 0)"
+  },
+  {
+    "name": "BU17 Senkrechtes Rad rollt nicht",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "k.l.Rad(pe.Scroll.Y+pe.Scroll.X, k.masse)",
+    "neu": "k.l.Rad(pe.Scroll.X, k.masse)"
+  },
+  {
+    "name": "BU18 Hinweis bleibt nach dem Ausblenden stehen",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "k.rahmen, k.von, k.bis, k.kacheln, k.gezeigt, k.hinweis = image.Rectangle{}, 0, 0, nil, nil, \"\"",
+    "neu": "k.rahmen, k.von, k.bis, k.kacheln = image.Rectangle{}, 0, 0, nil"
+  },
+  {
+    "name": "BU19 Leiste folgt der Tafel nicht",
+    "datei": "internal/ui/einstellungen.go",
+    "paket": "./internal/ui",
+    "alt": "e.unten.an = e.einst.wert.Leiste",
+    "neu": "_ = e.einst.wert.Leiste"
+  },
+  {
+    "name": "BU20 Leertaste an einer Vorschau nicht angemeldet",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "z = append(z, e.unten.ziele()...)",
+    "neu": ""
+  },
+  {
+    "name": "BU21 Menüeintrag ohne Bibliothek nicht grau",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "an: e.unten.l != nil, aktiv:",
+    "neu": "an: true, aktiv:"
+  },
+  {
+    "name": "BU22 Ohne Bibliothek trotzdem eine Leiste",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "return e.unten.l != nil && e.unten.an && leistePasst(gtx)",
+    "neu": "return e.unten.an && leistePasst(gtx)"
+  },
+  {
+    "name": "BU23 Offene Aufnahme nach dem Speichern nicht neu bestimmt",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\tif alt := k.l.Aktuell(); alt != \"\" {\n\t\tk.v.Vergiss(alt)\n\t}\n\te.leisteAktuell()",
+    "neu": "\tif alt := k.l.Aktuell(); alt != \"\" {\n\t\tk.v.Vergiss(alt)\n\t}"
+  },
+  {
+    "name": "BC1 Wechsel öffnet ohne Budget",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "abs, g, stand, err := ladeFuer(pfad, false)",
+    "neu": "abs, g, stand, err := ladeFuer(pfad, true)"
+  },
+  {
+    "name": "BC2 Wechsel ohne Kantenvorgabe für ein einfaches Bild",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "if g.Fremd {\n\t\t\tif err := g.Dokument.VorgabeKante(kante); err != nil {\n\t\t\t\treturn ui.Geoeffnet{}",
+    "neu": "if g.Fremd && false {\n\t\t\tif err := g.Dokument.VorgabeKante(kante); err != nil {\n\t\t\t\treturn ui.Geoeffnet{}"
+  },
+  {
+    "name": "BC3 Pfad folgt dem Speichern als neue Aufnahme nicht",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "aktuell.Store(&p)",
+    "neu": "_ = p"
+  },
+  {
+    "name": "BC4 bearbeiteNeu verliert die Kantenvorgabe",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "anbindungFuer(b, a.kante))",
+    "neu": "anbindungFuer(b, document.KanteAbriss))"
+  },
+  {
+    "name": "BC5 Fehler der Ladefunktion unübersetzt",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "return ui.Geoeffnet{}, errors.New(nutzerFehler(err))\n\t\t}\n\t\tif g.Fremd",
+    "neu": "return ui.Geoeffnet{}, err\n\t\t}\n\t\tif g.Fremd"
+  }
+]

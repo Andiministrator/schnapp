@@ -68,3 +68,46 @@ die letzten Aufnahmen als Leiste („Tray“) unter dem Bild und eine volle Bibl
 - Die Leiste nimmt der Leinwand 104 dp Höhe; Drehbücher mit festen Koordinaten setzen sie am Anfang aus (wie die
   rechte Leiste, ADR-0031 Nachtrag 3) — über den Menüeintrag, nicht über einen Umschalter, sobald die Einstellung
   gemerkt wird (Lehre aus F-539).
+
+## Ergänzt bei der Umsetzung (Teil 1, 24.11.2026, Karte #174, Claude Opus 5.5)
+
+Teil 1 setzt die Punkte 1, 2, 5, 6, 7 und die Leistenseite von 9 um; die volle Ansicht (Punkte 3 und 4) folgt in
+Teil 2. Was die Entscheidung offen ließ oder anders kam:
+
+1. **Kein Knopf „Library“ in Teil 1.** Ohne volle Ansicht hätte er kein Ziel; ein grauer Knopf mit Erklärung nähme
+   der Leiste nur Platz. Die Vorschauen beginnen links am Rand; Teil 2 setzt den Knopf davor (Muster 174 a).
+2. **Schwelle:** Die Leiste erscheint, wenn neben ihr mindestens 420 dp Leinwandhöhe bleiben (bei Skala 1 ein Fenster
+   ab 584 dp Höhe), wie die rechte Leiste ihre 400 dp Mindest-Leinwand rechnet (`leistePasst`).
+3. **Zeitangabe:** Uhrzeit, „yesterday“ und Datum kommen über den Kontext **`date part`** (Go-Muster „15:04“, „Jan 2“,
+   „Jan 2, 2006“; deutsch „15:04“, „02.01.“, „02.01.2006“), die Wochentage über den Kontext `weekday` („Mon“ … „Sun“,
+   deutsch „Mo“ … „So“). `date format` verlangt laut Prüfung (KA-7) ein Muster, das sich minutengenau zurücklesen
+   lässt; Teilmuster ohne Jahr oder Datum fielen dort durch. In einem anderen Jahr steht das Jahr dabei.
+4. **Länge der Leiste:** höchstens die 200 neuesten Aufnahmen (`libview.MaxEintraege`); ältere erreicht die volle
+   Ansicht. Geladen werden die sichtbaren Vorschauen und je eine Vorschau Vorlauf links und rechts (die Leiste hat
+   keine Zeilen), die jüngste Anforderung zuerst. Fehlt eine Vorschau, schreibt `library.ErzeugeVorschau` sie im
+   Hintergrund aus dem sichtbaren Bild der Datei (wie der Neuaufbau, nie aus dem Original). Eine Datei im
+   Vorschau-Cache über 4 MiB oder über 1024 px Seitenlänge, ein Verweis oder ein FIFO wird nicht dekodiert (grau).
+5. **Speichern vor dem Wechsel** läuft wie Strg+S (Speichern im Hintergrund, `canvas.Sitzung.SpeichernJetzt`), nicht
+   als Schließen-Anfrage: Scheitert es, bleibt die Aufnahme offen, und die Statuszeile sagt „Could not save: … The
+   other capture was not opened.“ Ein Hinweis beim Speichern (etwa „als neue Aufnahme gespeichert“) hält den Wechsel
+   einmal an, damit er gelesen wird, wie beim Schließen; der nächste Klick wechselt dann ohne Speichern. Ohne Änderung
+   wird nicht gespeichert. Ein Signal oder eine Schließen-Anfrage während des Speicherns geht vor; der Wechsel entfällt.
+6. **Laden im Hintergrund:** Die Ladefunktion aus `cmd/schnapp` (`oeffnerFuer`: `ladeFuerEditor` mit Budget,
+   Kantenvorgabe `[capture] seam` für ein einfaches oder beschädigtes Bild, eigene Rettungskopie) läuft in einer
+   Goroutine; die Statuszeile sagt „Opening…“. Wird die offene Aufnahme in der Zwischenzeit geändert, bleibt sie offen,
+   und die geladene gibt ihre Rettungskopie frei. Ein Fehler beim Laden steht übersetzt in der Statuszeile.
+   `--ignore-limit` gilt nur für die beim Start geöffnete Datei; nach einem Wechsel prüft auch der Export wieder das
+   Budget. Während eines Exportdialogs oder einer Texterkennung wechselt ein Klick nicht (Hinweis in der Statuszeile);
+   ein Klick auf die offene Aufnahme tut nichts.
+7. **Was bleibt:** Fenster, Leisten, Einrasten und Navigator. Neu sind Sitzung, Verlauf, Werkzeug (Auswählen) und die
+   eingepasste Ansicht; die eigenen Schnellstile werden aus `styles.ini` neu gelesen. Die alte Rettungskopie endet
+   (gespeichert: verworfen, Sperre frei), die neue wird angewendet wie beim Öffnen.
+8. **Grüner Rand:** Der Editor kennt die Datei, die gerade den Stand trägt (`ui.Geoeffnet.Pfad`, nach einem Speichern
+   als neue Aufnahme die neue). Eine Datei von außen hat keinen grünen Rand, bis sie als Aufnahme gespeichert ist.
+9. **Drehbücher:** Statt jedes Drehbuch die Leiste per Menü ausschalten zu lassen, startet sie im Drehbuch-Lauf aus und
+   merkt ihren Schalter nicht (`SCHNAPP_PROBE_LEISTE_AUS`, nur der Probe-Build liest es, `scripts/probe.sh` setzt es).
+   So bleiben alle Drehbücher mit festen Koordinaten gültig, und ein Umschalten kippt keinen späteren Lauf (Lehre aus
+   F-539); die Sichtprobe `bibliothek-174-leiste.txt` schaltet sie mit Strg+Umschalt+R ein.
+10. **Nummern:** Der Nachtrag zu ADR-0018 ist Nachtrag 6 (5 war schon belegt), zu ADR-0026 Nachtrag 9, zu ADR-0034
+    Nachtrag 2 (die Tafel wirkt für diesen Schlüssel sofort). Die Logik ohne Gio steht im Paket `internal/libview`.
+11. **Mausrad:** Senkrechtes und waagerechtes Rad rollen beide die Leiste.

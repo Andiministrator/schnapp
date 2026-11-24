@@ -110,3 +110,14 @@ geänderten Schlüssel, atomar). Seither gilt: Jeder neue Schlüssel bekommt im 
 Einstellungstafel (ADR-0034 Punkt 2, ein Test vergleicht). Im selben Ordner liegt `styles.ini` (ADR-0037 Punkt 6): eine
 Datei des Programms mit den eigenen Schnellstilen, die nicht in die Tafel gehört. `schnapp mcp` schreibt keine der
 beiden Dateien; der Reiter „Agents“ der Tafel schreibt die Datei, die der Server liest (ADR-0034, F-625).
+
+## Nachtrag 6 (24.11.2026): `[library] bar` (ADR-0036 Punkt 2, Karte #174)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #174 Teil 1).
+
+Neuer Schlüssel `bar` im Abschnitt `[library]`: die Leiste der letzten Aufnahmen unter dem Bild (ADR-0036 Punkt 1).
+Werte `yes`/`no` (auch `true`/`false`), Voreinstellung **`yes`**; ein ungültiger Wert warnt und lässt die Leiste an.
+`settings.Einstellungen.Leiste`. Geschrieben wird `yes`/`no` (`settings.Werte`), von der Einstellungstafel (Reiter
+Library, ADR-0034 Nachtrag 2) und vom Menüschalter Ansicht → „Recent captures“ (Strg+Umschalt+R, ADR-0026 Nachtrag 9).
+Gelesen wird der Wert beim Öffnen des Editors (`internal/ui/leiste_unten.go`, `ladeLeiste`), wie die Tafel die Datei
+frisch liest; `schnapp mcp` liest ihn nicht.
