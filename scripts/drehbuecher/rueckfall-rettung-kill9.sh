@@ -12,6 +12,7 @@ probe="$wurzel/tmp/probe"
 # Nur als Sitzung des virtuellen KWin (probe.sh --innen) und nur mit HOME und XDG-Ordnern unter tmp/probe/: Ein
 # Direktaufruf schriebe sonst in das echte HOME und überschriebe user-dirs.dirs (Sitzungs-QA 22.11., QA-3).
 [ "${PROBE_INNEN:-}" = 1 ] || { echo "probe.sh: nur über scripts/probe.sh --innen aufrufen"; exit 1; }
+[ "${SCHNAPP_PROBE_LEISTE_AUS:-}" = 1 ] || { echo "probe.sh: SCHNAPP_PROBE_LEISTE_AUS fehlt, die Leiste verschöbe die Koordinaten (F-659)"; exit 1; }
 for ordner in "${HOME:-}" "${XDG_CONFIG_HOME:-}" "${XDG_STATE_HOME:-}"; do
 	case "$ordner" in
 	"$probe/"*) ;;

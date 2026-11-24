@@ -129,3 +129,54 @@ tesseract), Tempo 4- bis 17-mal langsamer (1–6 s statt 0,2–0,6 s je Bereich,
 
 Verworfen: Sprachdaten zur Laufzeit herunterladen (verlässt den Rechner, Kernprinzip 3), `tessdata_best` (rund 4-mal
 größer, langsamer, die Messung zeigt keinen Bedarf), zwei Läufe für `deu+eng` (verdoppelt die ohnehin lange Dauer).
+
+## Nachtrag 2 (24.11.2026, Karte #251): Fortschritt, Fristen, Grenzen und Suche nach der Sitzungs-QA
+
+Befunde der Sitzungs-QA vom 24.11. nachmittags (F-640 bis F-650 ohne F-644). Ergänzt und ersetzt Nachtrag 1 Punkte 3,
+4 und 8 und den Absatz „Statuszeile“ der Ergänzung zur Oberfläche.
+
+1. **Fortschritt in der Fußzeile (F-640):** Der Start einer Erkennung setzt keine Meldung mehr. „Recognizing text…“ und
+   „… NN %“ stehen nur im Hinweis (`ocrHinweis`); eine Meldung hätte nach `canvas.StatusZeile` Vorrang und verdeckte die
+   Zahl bis zum Ende. Eine frühere, nicht haltende Meldung („Copied …“) räumt der Start weg (wie `ocrBeginnen`), eine
+   haltende bleibt. Der Hinweis gilt auch nach einer Bearbeitung während der Erkennung; die Meldung brauchte es dafür
+   nicht. Sichtprobe `scripts/drehbuecher/ocr-eigenes-640.txt` mit `scripts/probe.sh --ohne-tesseract`.
+2. **Frist für schnapp-ocr (F-641, ersetzt Nachtrag 1 Punkt 4):** Die Kritik maß 70 s für 8,3 Mpx dichten Text und
+   mehr als 8 min für 40 Mpx (nach 480 s bei 69 %). Eine feste Frist von 3 min ließ den Nutzer warten und dann scheitern.
+   Entscheidung: Die Frist läuft nur ab, solange kein neuer Fortschritt kommt (**Ruhefrist 3 min**, jede neue
+   Prozentzahl beginnt sie neu, wie die Frist des Speicherns über `saveprogress`), dazu eine **Obergrenze von 20 min**
+   auch mit Fortschritt. Begründung: schnapp-ocr meldet seinen Fortschritt in Prozentschritten; solange er kommt, ist
+   das Programm nicht hängengeblieben, und der Nutzer sieht die Zahl und kann jederzeit mit Esc abbrechen. Eine eigene,
+   kleinere Pixelgrenze hätte große Bereiche abgelehnt, die das Programm mit Geduld schafft; eine an die Pixelzahl
+   gekoppelte Frist hinge an der Messung eines Rechners. Die Obergrenze fängt ein Programm, das Fortschritt meldet, aber
+   nicht fertig wird. tesseract behält die feste Frist von 30 s (es meldet keinen Fortschritt). Fristen sind Variablen in
+   `internal/ocr` (`fristTesseract`, `fristRuhe`, `fristGesamt`, `fristSuche`), damit Tests sie verkürzen.
+3. **Suche, Frist je Programm (F-650):** Jede Abfrage (`--list-langs`) hat ihre eigene Frist von 10 s; ein hängendes
+   tesseract verbraucht nicht die Zeit von schnapp-ocr. Endet die Frist, heißt der Fehler `ErrSucheFrist`, der graue
+   Menüeintrag erklärt „The text recognition program did not answer in time.“ (übersetzt).
+4. **Vertrauen in die Nachbardatei (F-647, ergänzt Nachtrag 1 Punkt 3):** `schnapp-ocr` neben dem eigenen Programm
+   zählt nur, wenn die Datei (bei einem Verweis sein Ziel) regulär und ausführbar ist, dem eigenen Benutzer oder root
+   gehört, für Gruppe und andere nicht beschreibbar ist und in einem Ordner liegt, der ebenfalls dem eigenen Benutzer
+   oder root gehört und für Gruppe und andere nicht beschreibbar ist. Sonst könnte ein anderer Benutzer neben einem
+   `schnapp` in einem gemeinsamen Ordner ein Programm ablegen, das beim nächsten Editor-Start liefe. Gestartet wird der
+   geprüfte, aufgelöste Pfad. Scheitert die Nachbardatei (nicht vertraut, nicht startbar, Fehler beim Abfragen), wird
+   `schnapp-ocr` im PATH versucht; der PATH-Weg ist so vertrauenswürdig wie der für tesseract.
+5. **Grenzen in schnapp-ocr selbst (F-646):** Das Programm liest den Kopf des Bilds (`image.DecodeConfig`, PNG und JPEG)
+   und lehnt über 40 Mio. Pixeln oder über 32767 je Seite ab, bevor es tesseract lädt (dieselben Grenzen wie
+   `internal/ocr`). Ein kleines PNG mit riesigen Maßen belegte sonst Gigabyte im WASM. Die gelesenen Bytes sind auf 192
+   MiB begrenzt (ein PNG von 40 Mpx aus `internal/ocr` ist höchstens rund 160 MB).
+6. **Kurze Fehlertexte (F-649):** schnapp-ocr meldet eigene, kurze Texte („cannot read the image (PNG or JPEG
+   expected)“, „cannot start text recognition“, „text recognition failed“, „the image is too large for text
+   recognition …“) statt der Fehler von gogosseract mit Go-Interna. Exit 1 bei Bild- und Erkennungsfehlern, 2 bei
+   falschem Aufruf.
+7. **install.sh (F-648, ersetzt Nachtrag 1 Punkt 8):** Eine Falle räumt die Nebendateien (`schnapp.neu`,
+   `schnapp-ocr.neu`) in jedem Fall weg. Scheitert nur der Bau von schnapp-ocr (etwa ohne Netz für die Fremdpakete
+   von `ocr/`), wird schnapp trotzdem installiert, ein vorhandenes schnapp-ocr bleibt, das Skript warnt und endet mit
+   Exit 0. Begründung: schnapp-ocr ist der Ersatz für ein fehlendes tesseract; das Hauptprogramm soll nicht an einer
+   Zusatzfunktion scheitern, und mit installiertem tesseract fehlt nichts. Scheitert der Bau von schnapp, bricht das
+   Skript ab und ersetzt nichts. Testfall 6 in `scripts/install-test.sh`.
+8. **Lizenzen (F-645):** Texte und Vermerke aller einkompilierten Fremdteile liegen in `ocr/THIRD-PARTY-LICENSES/`;
+   der Ordner gehört zu jeder Weitergabe von schnapp-ocr (Flatpak, Nachtrag 1 Punkt 7). Offen ist der Vermerk von musl
+   libc in der Emscripten-Laufzeit des WASM-Moduls.
+9. **Tests (F-643):** `ocr/main_test.go` fährt das Programm als eigenen Prozess (`TestMain` spielt schnapp-ocr):
+   Exit-Codes, stdout nur Text, ohne `--progress` keine Fortschrittszeilen. Die Mutanten liegen in
+   `scripts/mutanten/ocr-eigenes.json` (Gruppe mit Feld `modul` für das Modul `ocr/`).

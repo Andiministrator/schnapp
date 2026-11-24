@@ -1,4 +1,5 @@
 # Rückfallprobe F-144 (rueckfall-rettung-kill9.sh), Teil 1: Kasten zeichnen, dann warten (Bündelung 2 s), danach schickt das Innen-Skript SIGKILL.
+# Die Leiste der letzten Aufnahmen ist aus (probe.sh setzt SCHNAPP_PROBE_LEISTE_AUS auch bei --innen, F-659); die Koordinaten gelten nur so.
 # Koordinaten seit Karte #210 (neue Oberfläche, ADR-0031): Bild 1200x800 bei 100 % ab (226,100), Bildschirmpunkt = Bildpunkt + (226,100) (vorher + (200,136)); der Zug (526,264)-(826,464) liegt ganz im Bild.
 warte 500
 # Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.

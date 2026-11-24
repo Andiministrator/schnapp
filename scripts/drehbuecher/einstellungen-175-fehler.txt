@@ -1,11 +1,16 @@
 # Sichtprobe ADR-0034 Punkte 5 und 7 (Karte #175): settings.ini lässt sich nicht schreiben.
 # Vorbereitung: tmp/probe/home/.config/schnapp/settings.ini als Ordner anlegen (kein reguläres File).
-# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/einstellungen-175-fehler.txt --bild scripts/drehbuecher/testbild-1200x800.png
-# Erwartet:
-#  01 Tafel offen; im Fuß unter „Applies after Schnapp restarts.“ orange die Warnung des Lesers (kein reguläres File,
-#     Voreinstellungen gelten).
-#  02 „Open the editor“ ausgeschaltet, Enter: Tafel bleibt offen, Fuß rot „Could not save the settings: the settings file
-#     is not a regular file“; Fußzeile des Editors ohne „Settings saved“.
+# Aufruf englisch: scripts/probe.sh --sprache en --drehbuch scripts/drehbuecher/einstellungen-175-fehler.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Aufruf deutsch:  scripts/probe.sh --sprache de --drehbuch scripts/drehbuecher/einstellungen-175-fehler.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# (--sprache macht den Lauf unabhängig von der Sprache des Rechners, F-665; settings.ini ist hier ein Ordner, eine
+# Sprache daraus kann also nicht vorgehen.)
+# Erwartet (englisch, in Klammern deutsch, Stand 24.11.2026; Fotos tmp/probe/fotos/<Zeitstempel>/):
+#  01 Tafel offen („Einstellungen“); im Fuß unter „Applies after Schnapp restarts.“ („Gilt nach dem Neustart von
+#     Schnapp.“) orange die Warnung des Lesers „settings.ini: the settings file is not a regular file; using the
+#     defaults.“ („settings.ini: Die Einstellungsdatei ist keine reguläre Datei; es gelten die Voreinstellungen.“).
+#  02 „Open the editor“ („Editor öffnen“) ausgeschaltet, Enter: Tafel bleibt offen, Fuß rot „Could not save the
+#     settings: the settings file is not a regular file“ („Einstellungen nicht gespeichert: die Einstellungsdatei ist
+#     keine gewöhnliche Datei“); Fußzeile des Editors ohne „Settings saved“ („Einstellungen gespeichert“).
 #  03 Esc: Tafel zu.
 warte 1500
 taste Strg+,

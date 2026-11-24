@@ -1,0 +1,49 @@
+# Sichtprobe F-640 (Kritik 24.11. nachmittags, A-1; ADR-0035 Nachtrag 2): Die Fußzeile zeigt den Fortschritt von
+# schnapp-ocr („Recognizing text… NN %“), keine Meldung verdeckt ihn.
+# Aufruf (ohne tesseract, mit dem eigenen schnapp-ocr neben dem Probe-Programm):
+#   scripts/probe.sh --ohne-tesseract --sprache en --drehbuch scripts/drehbuecher/ocr-eigenes-640.txt --bild scripts/drehbuecher/ocr-testbild-1200x800.png
+# Weg: --ohne-tesseract baut schnapp-ocr nach tmp/probe/schnapp-ocr (neben tmp/probe/schnapp, dort sucht internal/ocr
+# es) und startet Schnapp mit einem leeren PATH (tmp/probe/leerer-pfad). So bleibt ein installiertes tesseract
+# unsichtbar, ohne das System oder den Produktcode zu ändern. Kopf von scripts/probe.sh.
+# 1600 x 1000, Skala 1, rechte Leiste eingeklappt (Koordinaten wie ocr-195.txt).
+# Erwartet:
+#  01 Menü Bearbeiten: „Copy text from image“ bedienbar (schnapp-ocr gefunden, obwohl tesseract fehlt).
+#  02a–02d erste Erkennung mit Enter (ganzes Bild), Fotos direkt hintereinander: Fußzeile „Recognizing text…“, sobald
+#     schnapp-ocr meldet „… NN %“ mit wachsender Zahl (die Erkennung des Testbilds dauert nur rund 1 s, deshalb vier
+#     Fotos ohne Pause).
+#  03 „Recognizing text… NN %“ oder schon „Copied N characters“.
+#  04 „Copied N characters“ (grün).
+#  05a–05d zweite Erkennung direkt danach (Enter): Die Meldung „Copied …“ der ersten verdeckt den Fortschritt nicht, die
+#     Fußzeile zeigt „Recognizing text… NN %“ (Kern von F-640).
+#  06 „Copied N characters“.
+# Debug-Log (tmp/probe/stderr.txt): „Texterkennung: tesseract gefunden true“ und „Sprachen eng“ (ein Erkenner, eine
+# Sprache).
+warte 2500
+taste Strg+Umschalt+B
+warte 300
+klick 134 15
+warte 400
+foto 01-menue-bearbeiten
+taste Esc
+warte 200
+taste Strg+Umschalt+T
+warte 300
+taste Enter
+warte 600
+foto 02a-fortschritt
+foto 02b-fortschritt
+foto 02c-fortschritt
+foto 02d-fortschritt
+foto 03-fortschritt-spaeter
+warte 9000
+foto 04-kopiert
+taste Strg+Umschalt+T
+warte 300
+taste Enter
+warte 600
+foto 05a-zweite-erkennung
+foto 05b-zweite-erkennung
+foto 05c-zweite-erkennung
+foto 05d-zweite-erkennung
+warte 9000
+foto 06-kopiert

@@ -5,10 +5,18 @@
 # unter tmp/probe/ (auch XDG_STATE_HOME) — die echte Konfiguration wird weder gelesen noch beschrieben. Die Tastenbelegung ist fest US
 # (XKB_DEFAULT_LAYOUT=us), damit die evdev-Codes der Fernbedienung unabhängig vom Rechner dieselben Tasten treffen.
 #
-#   scripts/probe.sh [--monitore N] [--skala S] [-- SCHNAPP-ARGUMENTE]   (Voreinstellung: --no-editor)
+#   scripts/probe.sh [--monitore N] [--skala S] [--sprache CODE] [-- SCHNAPP-ARGUMENTE]   (Voreinstellung: --no-editor)
 #   scripts/probe.sh --innen SKRIPT
 #     führt SKRIPT (bash) als Sitzung des virtuellen KWin aus statt Schnapp; Ausgabe nach tmp/probe/ergebnis.txt.
-#     Das Programm liegt als tmp/probe/schnapp bereit.
+#     Das Programm liegt als tmp/probe/schnapp bereit. Auch hier startet die Leiste der letzten Aufnahmen aus
+#     (SCHNAPP_PROBE_LEISTE_AUS ist für SKRIPT gesetzt und erbt sich auf jedes Schnapp, das es startet; F-659).
+#   --skala S (größer als 0, höchstens 4; etwa 1, 1.5, 2): Skala aller virtuellen Monitore. Sie steht in der
+#     Ausgabekonfiguration von KWin (siehe unten bei „Skala“); fehlt dort eine Ausgabe (erster Lauf, mehr Monitore als
+#     bisher), legt ein kurzer Vorlauf von KWin sie an. Danach prüft das Skript, dass jede Ausgabe die Skala trägt, sonst
+#     endet es mit Exit 1, statt mit falscher Skala zu laufen (F-642).
+#   --sprache CODE (etwa de, en, de_DE): Sprache der Oberfläche für diesen Lauf (F-665). Setzt LANGUAGE=CODE und
+#     LC_MESSAGES (en: C.UTF-8, sonst CODE), leert LC_ALL; LANG bleibt. Ohne --sprache erbt der Lauf die Umgebung. Eine
+#     Sprache in tmp/probe/home/.config/schnapp/settings.ini ([general] language) geht vor; dann warnt das Skript.
 #   scripts/probe.sh --drehbuch DATEI [--bild BILD] [--breite W] [--hoehe H] [--skala S] [--monitore N] [--zeit SEK] [--ende SEK]
 #     Fernbedienung (Karte #95): startet den Editor (mit --bild BILD die Datei, sonst eine Aufnahme mit --region, die im
 #     Probe-Build den ersten Monitor nimmt) im Vollbild des virtuellen KWin, wartet auf die Zeile „[editor] Fenstergröße“
@@ -36,6 +44,12 @@
 #     Die Leiste der letzten Aufnahmen (ADR-0036) ist zu Beginn aus und merkt ihren Schalter nicht (SCHNAPP_PROBE_LEISTE_AUS);
 #     ein Drehbuch, das sie braucht, schaltet sie mit „taste Strg+Umschalt+R“ ein (scripts/drehbuecher/bibliothek-174-leiste.txt).
 #     foto nimmt den Bildschirm unter dem Zeiger auf, bei mehreren Monitoren BILDSCHIRM (Name) angeben.
+#   --ohne-tesseract (nur mit --drehbuch, F-640): Schnapp findet kein tesseract und nimmt das eigene schnapp-ocr. Das
+#     Skript baut schnapp-ocr (Modul ocr/) nach tmp/probe/schnapp-ocr, neben das Probe-Programm, wo internal/ocr es
+#     sucht, und startet Schnapp mit PATH=tmp/probe/leerer-pfad (ein leerer Ordner): tesseract und ein schnapp-ocr im
+#     PATH bleiben unsichtbar, ohne etwas am System oder am Produktcode zu ändern. Schnapp selbst braucht PATH im
+#     Editor nicht (der Halter der Zwischenablage startet über den eigenen Pfad). Ohne --ohne-tesseract wird ein
+#     schnapp-ocr eines früheren Laufs nach tmp/probe/schnapp-ocr.alt verschoben, damit nur dieser Schalter es benutzt.
 #   scripts/probe.sh --zwischenablage BILD.png   (--innen, --drehbuch und --zwischenablage schließen sich aus)
 #     prüft den Halter der Zwischenablage (ADR-0024): setzt BILD als image/png, liest es mit wl-paste zurück (nur aus
 #     der Zwischenablage des virtuellen KWin), ersetzt sie mit wl-copy und prüft, dass der Halter endet.
@@ -49,6 +63,8 @@ set -u
 cd "$(dirname "$0")/.." || exit 1
 monitore=1
 skala=1
+sprache=""
+ohne_tesseract=0
 ablage=""
 innen=""
 drehbuch=""
@@ -61,6 +77,8 @@ while [ $# -gt 0 ]; do
 	case "$1" in
 	--monitore) monitore="$2"; shift 2 ;;
 	--skala) skala="$2"; shift 2 ;;
+	--sprache) sprache="$2"; shift 2 ;;
+	--ohne-tesseract) ohne_tesseract=1; shift ;;
 	--innen) innen="$(realpath -e -- "$2")" || exit 2; shift 2 ;;
 	--drehbuch) drehbuch="$(realpath -e -- "$2")" || exit 2; shift 2 ;;
 	--bild) bild="$(realpath -e -- "$2")" || exit 2; shift 2 ;;
@@ -77,9 +95,14 @@ done
 # --innen, --drehbuch und --zwischenablage sind verschiedene Betriebsarten und schließen sich gegenseitig aus.
 arten=0
 for a in "$innen" "$drehbuch" "$ablage"; do [ -z "$a" ] || arten=$((arten + 1)); done
+[ "$ohne_tesseract" = 0 ] || [ -n "$drehbuch" ] || { echo "probe.sh: --ohne-tesseract geht nur mit --drehbuch" >&2; exit 2; }
 [ "$arten" -le 1 ] || { echo "probe.sh: --innen, --drehbuch und --zwischenablage schließen sich gegenseitig aus" >&2; exit 2; }
 case "$breite$hoehe$zeit$monitore" in *[!0-9]* | "") echo "probe.sh: --breite, --hoehe, --zeit und --monitore sind ganze Zahlen" >&2; exit 2 ;; esac
 case "$skala" in *[!0-9.]* | "" | . | .* | *. | *.*.*) echo "probe.sh: --skala ist eine Zahl (etwa 1 oder 1.5)" >&2; exit 2 ;; esac
+# Skala 0 (auch 0.0, 00) lehnt das Skript ab; führende Nullen fallen weg (01 → 1), damit jq und KWin dieselbe Zahl sehen.
+awk -v s="$skala" 'BEGIN { exit !(s + 0 > 0 && s + 0 <= 4) }' || { echo "probe.sh: --skala liegt über 0 und höchstens bei 4" >&2; exit 2; }
+skala="$(awk -v s="$skala" 'BEGIN { printf "%g", s + 0 }')"
+case "$sprache" in "" | [a-z][a-z] | [a-z][a-z][a-z] | [a-z][a-z]_[A-Z][A-Z]) ;; *) echo "probe.sh: --sprache ist ein Sprachcode wie de, en oder de_DE" >&2; exit 2 ;; esac
 [ "$monitore" -ge 1 ] && [ "$breite" -ge 1 ] && [ "$hoehe" -ge 1 ] || { echo "probe.sh: --monitore, --breite und --hoehe sind mindestens 1" >&2; exit 2; }
 [ "$zeit" -ge 1 ] && [ "$zeit" -le 600 ] || { echo "probe.sh: --zeit liegt zwischen 1 und 600" >&2; exit 2; }
 case "$ende" in *[!0-9]* | "") echo "probe.sh: --ende ist eine ganze Zahl (1 bis 300)" >&2; exit 2 ;; esac
@@ -133,11 +156,15 @@ zustand() {
 
 # Drehbuch-Lauf (innerer Teil, Sitzung des virtuellen KWin): Schnapp im Hintergrund, Fernbedienung im Vordergrund.
 drehbuch_innen() {
-	local skript fotos bildpfad ende pid id0 id1 fb
+	local skript fotos bildpfad ende pid id0 id1 fb pfad
 	skript="$(cat "$probe/drehbuch.txt")"
 	fotos="$(cat "$probe/fotos.txt")"
 	bildpfad="$(cat "$probe/bild.txt")"
 	ende="$(cat "$probe/ende.txt")"
+	# --ohne-tesseract: Schnapp sieht einen leeren PATH (kein tesseract, kein schnapp-ocr im PATH), schnapp-ocr liegt
+	# neben dem Programm.
+	pfad="$PATH"
+	[ "$(cat "$probe/ohne-tesseract.txt")" != 1 ] || pfad="$probe/leerer-pfad"
 	mkdir -p "$HOME/Bilder" "$fotos"
 	printf 'XDG_PICTURES_DIR="$HOME/Bilder"\n' > "$XDG_CONFIG_HOME/user-dirs.dirs"
 	: > "$probe/stdout.txt"
@@ -146,9 +173,9 @@ drehbuch_innen() {
 	# Punkt 2, Lehre aus F-539): Drehbücher mit festen Leinwandkoordinaten bleiben gültig, ein Umschalten (Strg+Umschalt+R)
 	# kippt den nächsten Lauf nicht. Nur der Probe-Build liest SCHNAPP_PROBE_LEISTE_AUS.
 	if [ -n "$bildpfad" ]; then
-		SCHNAPP_DEBUG=1 SCHNAPP_PROBE_LEISTE_AUS=1 "$probe/schnapp" "$bildpfad" > "$probe/stdout.txt" 2> "$probe/stderr.txt" &
+		PATH="$pfad" SCHNAPP_DEBUG=1 SCHNAPP_PROBE_LEISTE_AUS=1 "$probe/schnapp" "$bildpfad" > "$probe/stdout.txt" 2> "$probe/stderr.txt" &
 	else
-		SCHNAPP_DEBUG=1 SCHNAPP_PROBE_LEISTE_AUS=1 "$probe/schnapp" --region > "$probe/stdout.txt" 2> "$probe/stderr.txt" &
+		PATH="$pfad" SCHNAPP_DEBUG=1 SCHNAPP_PROBE_LEISTE_AUS=1 "$probe/schnapp" --region > "$probe/stdout.txt" 2> "$probe/stderr.txt" &
 	fi
 	pid=$!
 	# Identität sofort festhalten, bevor die PID wiederverwendet sein kann: bis zu 2 s warten, bis der Prozess nach dem
@@ -224,7 +251,9 @@ if [ "${PROBE_INNEN:-}" = 1 ]; then
 		exit 1
 	fi
 	if [ -s "$probe/innen.txt" ]; then
-		bash "$(cat "$probe/innen.txt")" > "$probe/ergebnis.txt" 2>&1
+		# Leiste der letzten Aufnahmen aus wie im Drehbuch-Lauf (F-659): Innen-Skripte wie rueckfall-rettung-kill9.sh
+		# fahren Drehbücher mit festen Leinwandkoordinaten; jedes Schnapp, das SKRIPT startet, erbt die Variable.
+		SCHNAPP_PROBE_LEISTE_AUS=1 bash "$(cat "$probe/innen.txt")" > "$probe/ergebnis.txt" 2>&1
 		echo "exit $?" >> "$probe/ergebnis.txt"
 		exit 0
 	fi
@@ -286,17 +315,54 @@ fi
 
 mkdir -p "$probe/home/.config" "$probe/home/.local/share" "$probe/home/.local/state" "$probe/home/.cache" "$probe/run"
 chmod 0700 "$probe/run"
-# Skala (F-636): kwin_wayland --virtual übergeht --scale und nimmt bei jedem Start die Skala aus seiner
-# Ausgabekonfiguration, die es beim ersten Lauf mit Skala 1 anlegt. Deshalb steht --skala vor jedem Lauf dort, für alle
-# Ausgaben (auch 1, damit eine frühere Skala nicht stehen bleibt). Fehlt die Datei noch, gilt beim ersten Lauf Skala 1.
-kwinkonf="$probe/home/.config/kwinoutputconfig.json"
-if [ -f "$kwinkonf" ]; then
-	command -v jq > /dev/null || { echo "probe.sh: jq fehlt, die Skala lässt sich nicht setzen (F-636)" >&2; exit 2; }
-	jq --argjson s "$skala" '(.[] | select(.name == "outputs") | .data[].scale) = $s' "$kwinkonf" > "$kwinkonf.neu" \
-		&& mv -f -- "$kwinkonf.neu" "$kwinkonf" || { echo "probe.sh: Skala in $kwinkonf nicht gesetzt (F-636)" >&2; exit 1; }
-elif [ "$skala" != 1 ]; then
-	echo "probe.sh: $kwinkonf fehlt noch, dieser erste Lauf läuft in Skala 1; ab dem nächsten gilt --skala (F-636)" >&2
+# Umgebung des virtuellen KWin: HOME und XDG-Ordner unter tmp/probe/home, ohne Verbindung zur echten Sitzung (siehe
+# unten beim Start), feste Tastenbelegung; mit --sprache die Sprache der Oberfläche (F-665).
+kwin_umgebung=(-u WAYLAND_DISPLAY -u WAYLAND_SOCKET -u DISPLAY -u XDG_PICTURES_DIR
+	HOME="$probe/home" XDG_CONFIG_HOME="$probe/home/.config" XDG_DATA_HOME="$probe/home/.local/share"
+	XDG_STATE_HOME="$probe/home/.local/state" XDG_CACHE_HOME="$probe/home/.cache" XDG_RUNTIME_DIR="$probe/run"
+	XKB_DEFAULT_LAYOUT=us XKB_DEFAULT_VARIANT= XKB_DEFAULT_MODEL= XKB_DEFAULT_OPTIONS=)
+if [ -n "$sprache" ]; then
+	nachrichten="$sprache"
+	[ "$sprache" != en ] || nachrichten=C.UTF-8
+	kwin_umgebung+=(LC_ALL= LC_MESSAGES="$nachrichten" LANGUAGE="$sprache")
+	einst="$probe/home/.config/schnapp/settings.ini"
+	if [ -f "$einst" ] && grep -qiE '^[[:space:]]*language[[:space:]]*=[[:space:]]*[a-z]' "$einst" &&
+		! grep -qiE '^[[:space:]]*language[[:space:]]*=[[:space:]]*auto[[:space:]]*$' "$einst"; then
+		echo "probe.sh: $einst legt [general] language fest, das geht vor --sprache $sprache" >&2
+	fi
 fi
+
+# Skala (F-636, F-642): kwin_wayland --virtual nimmt die Skala jeder Ausgabe aus seiner Ausgabekonfiguration (mit
+# --scale wächst nur die Modusgröße). Eine Ausgabe, die dort noch fehlt (erster Lauf, neuer Monitor), legt es mit
+# Skala 1 an. Deshalb: fehlt eine der Ausgaben Virtual-0 … Virtual-(N-1), legt ein kurzer Vorlauf (KWin mit /bin/true
+# als Sitzung) sie an; dann steht --skala für alle Ausgaben dort (auch 1, damit eine frühere Skala nicht stehen
+# bleibt), und das Skript prüft das Ergebnis. Eine leere oder kaputte Datei wird beiseitegelegt (….kaputt, die vorige
+# Ablage wird überschrieben), damit KWin sie neu anlegt.
+kwinkonf="$probe/home/.config/kwinoutputconfig.json"
+command -v jq > /dev/null || { echo "probe.sh: jq fehlt, die Skala lässt sich nicht setzen (F-636)" >&2; exit 2; }
+# Wahr, wenn jede Ausgabe Virtual-0 … Virtual-(monitore-1) einen Eintrag hat, mit $1 (leer: beliebig) als Skala.
+ausgaben_stimmen() {
+	jq -e --argjson n "$monitore" --arg s "${1:-}" '
+		[.[] | select(.name == "outputs") | .data[]] as $d
+		| all(range(0; $n); . as $i
+			| any($d[]; .connectorName == "Virtual-\($i)" and ($s == "" or .scale == ($s | tonumber))))' \
+		"$kwinkonf" > /dev/null 2>&1
+}
+if [ -e "$kwinkonf" ] && ! { [ -s "$kwinkonf" ] && jq -e 'type == "array"' "$kwinkonf" > /dev/null 2>&1; }; then
+	mv -f -- "$kwinkonf" "$kwinkonf.kaputt"
+	echo "probe.sh: $kwinkonf war leer oder kaputt, beiseitegelegt als $kwinkonf.kaputt" >&2
+fi
+if ! ausgaben_stimmen ""; then
+	echo "probe.sh: Vorlauf von KWin legt die Ausgabekonfiguration für $monitore Monitor(e) an (F-642)" >&2
+	env "${kwin_umgebung[@]}" timeout -k 5 30 dbus-run-session -- \
+		kwin_wayland --virtual --socket schnapp-probe-vorlauf --width "$breite" --height "$hoehe" \
+		--output-count "$monitore" --scale "$skala" --no-lockscreen --no-global-shortcuts \
+		--exit-with-session /bin/true > "$probe/kwin-vorlauf.log" 2>&1
+	ausgaben_stimmen "" || { echo "probe.sh: Vorlauf hat keine Ausgabekonfiguration für $monitore Monitor(e) angelegt, siehe tmp/probe/kwin-vorlauf.log (F-642)" >&2; exit 1; }
+fi
+jq --argjson s "$skala" '(.[] | select(.name == "outputs") | .data[].scale) = $s' "$kwinkonf" > "$kwinkonf.neu" \
+	&& mv -f -- "$kwinkonf.neu" "$kwinkonf" || { echo "probe.sh: Skala in $kwinkonf nicht gesetzt (F-636)" >&2; exit 1; }
+ausgaben_stimmen "$skala" || { echo "probe.sh: Skala $skala steht nicht bei allen $monitore Ausgaben in $kwinkonf (F-642)" >&2; exit 1; }
 # Ergebnisse des vorigen Laufs überschreiben, damit nie ein altes Ergebnis als neues erscheint.
 : > "$probe/ergebnis.txt"
 : > "$probe/stdout.txt"
@@ -309,6 +375,13 @@ printf '%s' "$innen" > "$probe/innen.txt"
 printf '%s' "$drehbuch" > "$probe/drehbuch.txt"
 printf '%s' "$bild" > "$probe/bild.txt"
 printf '%s' "$ende" > "$probe/ende.txt"
+printf '%s' "$ohne_tesseract" > "$probe/ohne-tesseract.txt"
+if [ "$ohne_tesseract" = 1 ]; then
+	mkdir -p "$probe/leerer-pfad"
+	(cd ocr && GOFLAGS= go build -trimpath -o "$probe/schnapp-ocr" .) || exit 1
+elif [ -e "$probe/schnapp-ocr" ]; then
+	mv -f -- "$probe/schnapp-ocr" "$probe/schnapp-ocr.alt"
+fi
 if [ -n "$drehbuch" ]; then
 	fotos="$probe/fotos/$(date +%Y%m%d-%H%M%S)"
 	printf '%s' "$fotos" > "$probe/fotos.txt"
@@ -322,10 +395,7 @@ fi
 # von der Grenze abgeschnitten werden; die Zeit für Start und Drehbuch bleibt --zeit.
 grenze="$zeit"
 [ -z "$drehbuch" ] || grenze=$((zeit + ende + 10))
-env -u WAYLAND_DISPLAY -u WAYLAND_SOCKET -u DISPLAY -u XDG_PICTURES_DIR PROBE_INNEN=1 PROBE_AUSSENBUS="${DBUS_SESSION_BUS_ADDRESS:-}" \
-	HOME="$probe/home" XDG_CONFIG_HOME="$probe/home/.config" XDG_DATA_HOME="$probe/home/.local/share" \
-	XDG_STATE_HOME="$probe/home/.local/state" XDG_CACHE_HOME="$probe/home/.cache" XDG_RUNTIME_DIR="$probe/run" \
-	XKB_DEFAULT_LAYOUT=us XKB_DEFAULT_VARIANT= XKB_DEFAULT_MODEL= XKB_DEFAULT_OPTIONS= \
+env "${kwin_umgebung[@]}" PROBE_INNEN=1 PROBE_AUSSENBUS="${DBUS_SESSION_BUS_ADDRESS:-}" \
 	timeout -k 5 "$grenze" dbus-run-session -- \
 	kwin_wayland --virtual --socket schnapp-probe --width "$breite" --height "$hoehe" --output-count "$monitore" \
 	--scale "$skala" --no-lockscreen --no-global-shortcuts \
