@@ -175,8 +175,13 @@ Befunde der Sitzungs-QA vom 24.11. nachmittags (F-640 bis F-650 ohne F-644). Erg
    Zusatzfunktion scheitern, und mit installiertem tesseract fehlt nichts. Scheitert der Bau von schnapp, bricht das
    Skript ab und ersetzt nichts. Testfall 6 in `scripts/install-test.sh`.
 8. **Lizenzen (F-645):** Texte und Vermerke aller einkompilierten Fremdteile liegen in `ocr/THIRD-PARTY-LICENSES/`;
-   der Ordner gehört zu jeder Weitergabe von schnapp-ocr (Flatpak, Nachtrag 1 Punkt 7). Offen ist der Vermerk von musl
-   libc in der Emscripten-Laufzeit des WASM-Moduls.
+   der Ordner gehört zu jeder Weitergabe von schnapp-ocr (Flatpak, Nachtrag 1 Punkt 7). **Nachgezogen (F-667,
+   Karte #254):** Laut Quellpfaden des Debug-Moduls und Meldungstexten des ausgelieferten Moduls stecken im WASM auch
+   musl libc, dlmalloc und embind (Emscripten), libc++, libc++abi und compiler-rt (LLVM), libjpeg 9c, libpng 1.6.39 und
+   zlib 1.2.13; ihre Texte liegen jetzt im Ordner, der Emscripten-Text ist durch das ungekürzte Original ersetzt. Die
+   IJG-Lizenz verlangt bei Weitergabe des Programms den Satz „this software is based in part on the work of the
+   Independent JPEG Group“ in der Doku: er steht in `ocr/THIRD-PARTY-LICENSES/README.md`, `ocr/README.md` und im
+   Lizenzabschnitt beider READMEs.
 9. **Tests (F-643):** `ocr/main_test.go` fährt das Programm als eigenen Prozess (`TestMain` spielt schnapp-ocr):
    Exit-Codes, stdout nur Text, ohne `--progress` keine Fortschrittszeilen. Die Mutanten liegen in
    `scripts/mutanten/ocr-eigenes.json` (Gruppe mit Feld `modul` für das Modul `ocr/`).

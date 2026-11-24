@@ -148,4 +148,6 @@ direction and review of the maintainer. Decisions are recorded in `docs/adr/`. S
 GPL-3.0-or-later, see [`LICENSE`](LICENSE). The logo uses outlines of Open Sans (SIL Open Font License 1.1). Bundled third-party code keeps its own licence: the Gio patch
 (`third_party/gio-ausgabe.patch`, applied in `third_party/gio/`) applies to Gio (Unlicense OR MIT) and contains code generated from
 wayland-protocols (MIT); `internal/raster16` is taken from golang.org/x/image/vector (BSD-3-Clause, see
-`internal/raster16/LICENSE`).
+`internal/raster16/LICENSE`). The text recognition helper `schnapp-ocr` (module `ocr/`) contains Tesseract, Leptonica
+and further third-party parts, listed with their licences in [`ocr/THIRD-PARTY-LICENSES/`](ocr/THIRD-PARTY-LICENSES/README.md);
+this software is based in part on the work of the Independent JPEG Group.
