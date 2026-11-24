@@ -132,7 +132,7 @@ func TestMCPErreichtDenSchreiberNicht(t *testing.T) {
 	}
 	_, fremd := erreichbar(start)
 	for f := range fremd {
-		if strings.HasPrefix(f, "settings.Schreibe") || f == "ui.Editor" {
+		if (strings.HasPrefix(f, "settings.") && istSchreiber(strings.TrimPrefix(f, "settings."))) || f == "ui.Editor" {
 			t.Errorf("von mcp.go aus erreichbar: %s", f)
 		}
 	}
@@ -156,11 +156,11 @@ func TestMCPErreichtDenSchreiberNicht(t *testing.T) {
 		ast.Inspect(f, func(x ast.Node) bool {
 			switch x := x.(type) {
 			case *ast.SelectorExpr:
-				if p, ok := x.X.(*ast.Ident); ok && namen[p.Name] == settingsPfad && strings.HasPrefix(x.Sel.Name, "Schreibe") {
+				if p, ok := x.X.(*ast.Ident); ok && namen[p.Name] == settingsPfad && istSchreiber(x.Sel.Name) {
 					schreiber++
 					// Ausnahme: styles.ini, die eigenen Schnellstile des Editors (ADR-0037 Punkt 6): keine Einstellung und
 					// keine Einwilligung eines Agenten, nur Farben und Maße.
-					if filepath.Base(d) != "einstellungen.go" && !(filepath.Base(d) == "schnellstile.go" && x.Sel.Name == "SchreibeStile") {
+					if filepath.Base(d) != "einstellungen.go" && !(filepath.Base(d) == "schnellstile.go" && stileSchreiber(x.Sel.Name)) {
 						t.Errorf("%s ruft settings.%s", filepath.Base(d), x.Sel.Name)
 					}
 				}
@@ -187,7 +187,7 @@ func TestMCPErreichtDenSchreiberNicht(t *testing.T) {
 	for _, a := range schreiberAufrufe(t, filepath.Join("..", "..")) {
 		switch {
 		case a.datei == "internal/ui/einstellungen.go",
-			a.datei == "internal/ui/schnellstile.go" && a.name == "SchreibeStile":
+			a.datei == "internal/ui/schnellstile.go" && stileSchreiber(a.name):
 			erlaubt++
 		default:
 			t.Errorf("%s ruft settings.%s (nur die Einstellungstafel schreibt, ADR-0034 Punkt 6)", a.datei, a.name)
@@ -270,7 +270,7 @@ func schreiberAufrufe(t *testing.T, wurzel string) []schreiberAufruf {
 		}
 		ast.Inspect(f, func(x ast.Node) bool {
 			if s, ok := x.(*ast.SelectorExpr); ok {
-				if id, ok := s.X.(*ast.Ident); ok && namen[id.Name] == settingsPfad && strings.HasPrefix(s.Sel.Name, "Schreibe") {
+				if id, ok := s.X.(*ast.Ident); ok && namen[id.Name] == settingsPfad && istSchreiber(s.Sel.Name) {
 					r = append(r, schreiberAufruf{rel, s.Sel.Name})
 				}
 			}
@@ -308,6 +308,7 @@ func TestSchreiberAufrufeFindet(t *testing.T) {
 	imp := func(name string) string { return "import " + name + " " + strconv.Quote(settingsPfad) + "\n\n" }
 	schreib("internal/canvas/a.go", "package canvas\n\n"+imp("")+"var _ = settings.Schreibe\n")
 	schreib("internal/annotate/b.go", "package annotate\n\n"+imp("einst")+"var _ = einst.SchreibeNeu\n")
+	schreib("internal/library/c.go", "package library\n\n"+imp("")+"var _ = settings.AendereStile\n")
 	schreib("internal/x/c.go", "package x\n\n"+imp(".")+"var _ = Lade\n")
 	schreib("internal/y/d.go", "package y\n\nimport settings \"example.org/anders/settings\"\n\nvar _ = settings.Schreibe\n")
 	schreib("internal/y/d_test.go", "package y\n\n"+imp("")+"var _ = settings.Schreibe\n")
@@ -319,7 +320,7 @@ func TestSchreiberAufrufeFindet(t *testing.T) {
 	for _, a := range schreiberAufrufe(t, w) {
 		got[a.datei] = a.name
 	}
-	want := map[string]string{"internal/canvas/a.go": "Schreibe", "internal/annotate/b.go": "SchreibeNeu", "internal/x/c.go": "."}
+	want := map[string]string{"internal/canvas/a.go": "Schreibe", "internal/annotate/b.go": "SchreibeNeu", "internal/x/c.go": ".", "internal/library/c.go": "AendereStile"}
 	if len(got) != len(want) {
 		t.Errorf("gefunden %v, erwartet %v", got, want)
 	}
@@ -329,3 +330,12 @@ func TestSchreiberAufrufeFindet(t *testing.T) {
 		}
 	}
 }
+
+// istSchreiber meldet, ob ein Name aus internal/settings eine Datei schreibt: Schreibe… (settings.ini, styles.ini) oder
+// Aendere… (styles.ini unter Sperre zusammenführen, F-627). Ein neuer Schreiber gehört unter eines dieser Präfixe.
+func istSchreiber(name string) bool {
+	return strings.HasPrefix(name, "Schreibe") || strings.HasPrefix(name, "Aendere")
+}
+
+// stileSchreiber sind die Schreiber, die internal/ui/schnellstile.go für styles.ini rufen darf (ADR-0037 Punkt 6).
+func stileSchreiber(name string) bool { return name == "SchreibeStile" || name == "AendereStile" }

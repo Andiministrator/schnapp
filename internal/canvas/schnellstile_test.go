@@ -509,3 +509,15 @@ func TestSchnellstilGleichWie(t *testing.T) {
 		t.Errorf("Füllungen mit anderer Deckkraft")
 	}
 }
+
+// TestSchnellWerkzeugJeArt: Jede Art mit Werkzeug führt zu genau ihrem Werkzeug; die Sprechblase hat seit #194 ihr
+// eigenes (nicht das Text-Werkzeug), sonst setzte ein Stil der Blase den Stand des Texts (Sitzungs-QA, Mutant SQ25).
+func TestSchnellWerkzeugJeArt(t *testing.T) {
+	for art, soll := range map[SchnellArt]Werkzeug{SchnellPfeil: WerkzeugPfeil, SchnellKasten: WerkzeugKasten,
+		SchnellText: WerkzeugText, SchnellSprechblase: WerkzeugSprechblase, SchnellNummer: WerkzeugNummer,
+		SchnellLupe: WerkzeugLupe} {
+		if w, ok := schnellWerkzeug(art); !ok || w != soll {
+			t.Errorf("Art %v: Werkzeug %v (%v), erwartet %v", art, w, ok, soll)
+		}
+	}
+}

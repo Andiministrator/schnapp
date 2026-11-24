@@ -168,11 +168,11 @@
     "neu": "false ||"
   },
   {
-    "name": "SQ25 Sprechblase hat ein Werkzeug",
+    "name": "SQ25 Sprechblase bekommt das Werkzeug Text",
     "datei": "internal/canvas/schnellstile.go",
     "paket": "./internal/canvas",
-    "alt": "\tcase SchnellLupe:\n\t\treturn WerkzeugLupe, true\n\t}\n\treturn WerkzeugAuswahl, false",
-    "neu": "\tcase SchnellLupe:\n\t\treturn WerkzeugLupe, true\n\tcase SchnellSprechblase:\n\t\treturn WerkzeugText, true\n\t}\n\treturn WerkzeugAuswahl, false"
+    "alt": "case SchnellSprechblase:\n\t\treturn WerkzeugSprechblase, true",
+    "neu": "case SchnellSprechblase:\n\t\treturn WerkzeugText, true"
   },
   {
     "name": "SS1 doppelter Schlüssel wird hingenommen",
