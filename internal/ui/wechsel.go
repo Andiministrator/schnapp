@@ -233,7 +233,8 @@ func (e *editor) abgleichAnfordern() {
 
 // gleicheAb gleicht den Index mit der Ablage ab (library.Abgleich: Einträge, deren Datei fehlt, fallen weg). Läuft in
 // der Lese-Goroutine; ein Fehler geht nur an die Diagnose, gelesen wird trotzdem.
-func gleicheAb(b *library.Bibliothek) {
+// Als Variable, damit Tests zählen können, wann abgeglichen wird (F-688).
+var gleicheAb = func(b *library.Bibliothek) {
 	if n, err := b.Abgleich(); err != nil || n > 0 {
 		diagnoseEditor("Abgleich des Index: %d entfernt, %v", n, err)
 	}

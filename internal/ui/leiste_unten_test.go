@@ -26,8 +26,8 @@ import (
 // leistenRettung ist eine Rettung, die Wiederherstellen und Ende zählt. Ende läuft beim Wechsel in einer Goroutine
 // (F-637); gelesen wird ende erst nach ruhig, das auf rettungEnden wartet. Mit tor wartet Ende, bis es schließt.
 type leistenRettung struct {
-	wieder, ende int
-	tor          chan struct{}
+	wieder, ende, verworfen int
+	tor                     chan struct{}
 }
 
 func (r *leistenRettung) Wiederherstellen(*document.Dokument) (string, bool) {
@@ -35,7 +35,7 @@ func (r *leistenRettung) Wiederherstellen(*document.Dokument) (string, bool) {
 	return "", false
 }
 func (r *leistenRettung) Sichere(*document.Dokument) {}
-func (r *leistenRettung) Verwirf()                   {}
+func (r *leistenRettung) Verwirf()                   { r.verworfen++ }
 func (r *leistenRettung) Ende() {
 	if r.tor != nil {
 		<-r.tor

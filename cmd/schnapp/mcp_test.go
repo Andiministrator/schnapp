@@ -540,6 +540,10 @@ func TestMcpBibliothekSuchen(t *testing.T) {
 	if a := lies(`{"tag":"Rechnung"}`); len(a.Entries) != 1 || a.Entries[0].Tags[0] != "rechnung" {
 		t.Errorf("Schlagwort: %+v", a)
 	}
+	// Agenten bekommen das ganze Schlagwort, kein Teilwort wie das Suchfeld der Ansicht (ADR-0036 Zusatz F-671, F-687).
+	if a := lies(`{"tag":"rech"}`); len(a.Entries) != 0 {
+		t.Errorf("Teilwort trifft über MCP: %+v", a)
+	}
 	if a := lies(`{"limit":1}`); len(a.Entries) != 1 || !a.More {
 		t.Errorf("limit: %+v", a)
 	}
@@ -761,5 +765,26 @@ func TestMcpAbbruchBeimSchliessen(t *testing.T) {
 	}
 	if h := *l.an.hinweis; h.id == 0 || h.text != "monitor DP-1" {
 		t.Errorf("kein Hinweis gemerkt: %+v", h)
+	}
+}
+
+// F-681: list_screens nimmt die Monitore mit Skala, die Namensprüfung von capture_screen die ohne (keine zweite
+// Wayland-Verbindung vor dem Dialog).
+func TestMcpMonitoreMitSkalaNurFuerListe(t *testing.T) {
+	l := neuerMcpLauf(t)
+	var liste, pruefung int
+	alt := l.an.monitore
+	l.an.monitore = func() ([]ui.Monitor, error) { pruefung++; return alt() }
+	l.an.monitoreListe = func() ([]ui.Monitor, error) {
+		liste++
+		return []ui.Monitor{{Name: "DP-1", Breite: 40, Hoehe: 30, Skala: 2, Bruch: 1.5}}, nil
+	}
+	e := l.rufe(t, "list_screens", `{}`)
+	if e.Fehler || !strings.Contains(text(e), `"scale":1.5`) || liste != 1 || pruefung != 0 {
+		t.Errorf("list_screens: %s, Liste %d, Prüfung %d", text(e), liste, pruefung)
+	}
+	l.rufe(t, "capture_screen", `{"screen":"DP-1"}`)
+	if liste != 1 || pruefung != 1 {
+		t.Errorf("capture_screen: Liste %d, Prüfung %d", liste, pruefung)
 	}
 }

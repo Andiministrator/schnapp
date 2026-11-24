@@ -89,12 +89,15 @@ const (
 
 // mcpAnschluesse sind die Außenanschlüsse des Servers; Tests setzen Attrappen ein.
 type mcpAnschluesse struct {
-	lade       Ladefunktion
-	quelle     func() (capture.Quelle, error)
-	monitore   func() ([]ui.Monitor, error)
-	bestaetige func(ctx context.Context, ziel, kunde string) (bool, error)
-	melde      func(ctx context.Context, titel, text string) (uint32, error)
-	schliesse  func(ctx context.Context, id uint32) error
+	lade     Ladefunktion
+	quelle   func() (capture.Quelle, error)
+	monitore func() ([]ui.Monitor, error)
+	// monitoreListe liefert die Monitore mit Skala für list_screens (ADR-0017 Nachtrag 9); nil: monitore. Die
+	// Namensprüfung von capture_screen nimmt monitore ohne zweite Wayland-Verbindung (F-681).
+	monitoreListe func() ([]ui.Monitor, error)
+	bestaetige    func(ctx context.Context, ziel, kunde string) (bool, error)
+	melde         func(ctx context.Context, titel, text string) (uint32, error)
+	schliesse     func(ctx context.Context, id uint32) error
 	// hinweis hält den letzten Hinweis dieses Servers (Kennung 0: keiner offen). Ein Zeiger, weil die Werkzeuge auf
 	// einer Kopie der Anschlüsse laufen; nil schaltet das Schließen ab (F-490).
 	hinweis     *letzterHinweis
@@ -110,12 +113,13 @@ type mcpAnschluesse struct {
 
 func echteMcpAnschluesse(fehler io.Writer) mcpAnschluesse {
 	an := mcpAnschluesse{
-		quelle:     func() (capture.Quelle, error) { return capture.NeuKWin() },
-		monitore:   ui.MonitoreMitSkala, // mit Skala für list_screens (F-668); die Namensprüfung stört sie nicht
-		bestaetige: bestaetigeImKind,
-		melde:      notify.Zeige,
-		schliesse:  notify.Schliesse,
-		hinweis:    new(letzterHinweis),
+		quelle:        func() (capture.Quelle, error) { return capture.NeuKWin() },
+		monitore:      ui.Monitore,
+		monitoreListe: ui.MonitoreMitSkala, // nur list_screens (F-668, F-681)
+		bestaetige:    bestaetigeImKind,
+		melde:         notify.Zeige,
+		schliesse:     notify.Schliesse,
+		hinweis:       new(letzterHinweis),
 		warte: func(ctx context.Context, d time.Duration) error {
 			select {
 			case <-time.After(d):
@@ -558,7 +562,11 @@ func (an mcpAnschluesse) listeMonitore(_ context.Context, args json.RawMessage, 
 	if err := liesArgs(args, &leer); err != nil {
 		return falscheArgs(err)
 	}
-	ms, err := an.monitore()
+	abfrage := an.monitoreListe
+	if abfrage == nil {
+		abfrage = an.monitore
+	}
+	ms, err := abfrage()
 	if err != nil {
 		return mcp.FehlerErgebnis("Could not query the monitors.")
 	}

@@ -20,15 +20,21 @@ type Monitor struct {
 	Bruch float64
 }
 
+// monitoreAbfrage und skalenAbfrage sind die Abfragen von MonitoreMitSkala; Tests setzen Attrappen ein (F-683).
+var (
+	monitoreAbfrage = Monitore
+	skalenAbfrage   = wloutputs.Skalen
+)
+
 // MonitoreMitSkala ist Monitore mit der wirksamen Skala je Monitor (eigene kurze Wayland-Verbindung über
 // xdg_output, ADR-0017 Nachtrag 9). Kennt der Compositor xdg_output nicht, bleibt Bruch 0; die Liste gilt trotzdem.
 // Nur --list-screens und das MCP-Werkzeug list_screens fragen sie ab, die Aufnahme braucht sie nicht.
 func MonitoreMitSkala() ([]Monitor, error) {
-	liste, err := Monitore()
+	liste, err := monitoreAbfrage()
 	if err != nil {
 		return nil, err
 	}
-	if skalen, err := wloutputs.Skalen(); err == nil {
+	if skalen, err := skalenAbfrage(); err == nil {
 		for i := range liste {
 			liste[i].Bruch = skalen[liste[i].Name]
 		}

@@ -1,0 +1,64 @@
+[
+  {
+    "name": "WL1 Enden im Hintergrund laufen nicht nacheinander",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif vorher != nil {\n\t\t\t<-vorher\n\t\t}\n\t\tr.Ende()",
+    "neu": "\t\t_ = vorher\n\t\tr.Ende()",
+    "timeout": "4m"
+  },
+  {
+    "name": "WL2 uebernimm verwirft die alte Rettung nicht",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif !e.s.Geaendert() {\n\t\t\te.rettung.Verwirf()\n\t\t}\n\t\te.rettungEndeImHintergrund(e.rettung)",
+    "neu": "\t\te.rettungEndeImHintergrund(e.rettung)",
+    "timeout": "4m"
+  },
+  {
+    "name": "WL3 Leiste gleicht bei jedem Lesen ab",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "b, ch, wecker, abgleich := e.bib.Bibliothek, k.index, e.wecker, k.abgleich",
+    "neu": "b, ch, wecker, abgleich := e.bib.Bibliothek, k.index, e.wecker, true",
+    "timeout": "4m"
+  },
+  {
+    "name": "WL4 Ansicht gleicht bei jedem Lesen ab",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "bib, ch, wecker, abgleich := e.bib.Bibliothek, b.index, e.wecker, b.abgleich",
+    "neu": "bib, ch, wecker, abgleich := e.bib.Bibliothek, b.index, e.wecker, true",
+    "timeout": "4m"
+  },
+  {
+    "name": "WL5 Leiste meldet keine Runde",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.unten.v.Runde() // Aufträge weggerollter Vorschauen verfallen (F-669)",
+    "neu": "\t\t// Aufträge weggerollter Vorschauen verfallen (F-669)",
+    "timeout": "4m"
+  },
+  {
+    "name": "WL6 MCP library_search sucht nach Teilwort",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "library.Anfrage{Schlagwort: p.Tag,",
+    "neu": "library.Anfrage{Teilwort: p.Tag,"
+  },
+  {
+    "name": "WL7 capture_screen fragt die Skala ab",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tabfrage := an.monitoreListe\n",
+    "neu": "\tabfrage := an.monitore\n"
+  },
+  {
+    "name": "WL8 MonitoreMitSkala ordnet die Skala nicht zu",
+    "datei": "internal/ui/monitore.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tliste[i].Bruch = skalen[liste[i].Name]",
+    "neu": "\t\t\tliste[i].Bruch = skalen[\"A\"]",
+    "timeout": "4m"
+  }
+]

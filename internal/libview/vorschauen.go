@@ -122,6 +122,13 @@ func (v *Vorschauen) Belegt() int64 {
 	return v.belegt
 }
 
+// Runden ist die Zahl der bisher gemeldeten Runden (für Tests der Oberfläche, F-688).
+func (v *Vorschauen) Runden() uint64 {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	return v.runde
+}
+
 // SetzeStand legt fest, wie der Stand einer Vorschaudatei bestimmt wird (StandFuer); erst danach erkennt Pruefe fremde
 // Änderungen.
 func (v *Vorschauen) SetzeStand(f func(rel string) string) {
