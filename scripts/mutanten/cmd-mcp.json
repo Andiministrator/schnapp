@@ -601,5 +601,21 @@
     "paket": "./cmd/schnapp",
     "alt": "\t\tif !(ctx.Err() != nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)) {",
     "neu": "\t\tif true {"
+  },
+  {
+    "name": "QS1-3 mcpSignale: Meldung „stopping now“ ohne Frist (Sitzungs-QA QS-1)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "meldeKurz(fehler, i18n.T(\"schnapp mcp: second signal, stopping now.\"))",
+    "neu": "fmt.Fprintln(fehler, i18n.T(\"schnapp mcp: second signal, stopping now.\"))",
+    "timeout": "600s"
+  },
+  {
+    "name": "QS1-4 mcpSignale: Meldung „stopping after the running save“ ohne Frist (Sitzungs-QA QS-1)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "meldeKurz(fehler, i18n.T(\"schnapp mcp: second signal, stopping after the running save.\"))",
+    "neu": "fmt.Fprintln(fehler, i18n.T(\"schnapp mcp: second signal, stopping after the running save.\"))",
+    "timeout": "600s"
   }
 ]

@@ -300,5 +300,21 @@
     "alt": "\tif len(fangen) > 0 {\n\t\tmeldeAb(kanal)\n\t}",
     "neu": "\tif len(fangen) > 0 {\n\t\t_ = kanal\n\t}",
     "timeout": "300s"
+  },
+  {
+    "name": "QS-M1 MCP annotate: Lage endet erst mit defer, nicht gleich nach beschrifteDatei (F-603, Sitzungs-QA QS-6)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t// blockierten stderr (F-603).\n\tlage.ende()\n",
+    "neu": "\t// blockierten stderr (F-603).\n",
+    "timeout": "600s"
+  },
+  {
+    "name": "QS1-2 Wache von --annotate: Meldung beim zweiten Signal ohne Frist (Sitzungs-QA QS-1)",
+    "datei": "cmd/schnapp/beschriften.go",
+    "paket": "./cmd/schnapp",
+    "alt": "meldeKurz(fehler, text) // ein blockiertes",
+    "neu": "fmt.Fprintln(fehler, text) // ein blockiertes",
+    "timeout": "600s"
   }
 ]

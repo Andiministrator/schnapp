@@ -207,7 +207,8 @@ func abweichendeUmgebung(heim string, umgebung func(string) string) []string {
 }
 
 // mcpSignale beendet den Server beim ersten Signal sanft (abbrechen) und beim zweiten sofort mit Exit 1 (ADR-0030
-// Nachtrag 4 Punkt 6, F-467): Hängt ein Werkzeug, hilft sonst nur SIGKILL. Endet, wenn fertig schließt.
+// Nachtrag 4 Punkt 6, F-467): Hängt ein Werkzeug, hilft sonst nur SIGKILL. Endet, wenn fertig schließt. Seine Meldungen
+// auf stderr warten höchstens meldungFrist (meldeKurz, QS-1).
 func mcpSignale(kanal <-chan os.Signal, abbrechen func(), beende func(int), fehler io.Writer, fertig <-chan struct{}) {
 	n := 0
 	for {
@@ -223,7 +224,7 @@ func mcpSignale(kanal <-chan os.Signal, abbrechen func(), beende func(int), fehl
 			if signalHalten() {
 				// Ein laufendes annotate speichert zu Ende (Vorschau, Entfernen einer ausgewichenen Fassung), solange es
 				// Fortschritt meldet (Kritik #202 B-2); weitere Signale ändern daran nichts.
-				fmt.Fprintln(fehler, i18n.T("schnapp mcp: second signal, stopping after the running save."))
+				meldeKurz(fehler, i18n.T("schnapp mcp: second signal, stopping after the running save."))
 				for signalHalten() {
 					select {
 					case <-fertig:
@@ -233,8 +234,9 @@ func mcpSignale(kanal <-chan os.Signal, abbrechen func(), beende func(int), fehl
 					}
 				}
 			}
-			fmt.Fprintln(fehler, i18n.T("schnapp mcp: second signal, stopping now."))
-			raeumeLaufendeTempsAuf() // vor dem Beenden, nicht der Signalwache überlassen (F-484)
+			raeumeLaufendeTempsAuf() // vor dem Beenden, nicht der Signalwache überlassen (F-484); vor der Meldung (QS-1)
+			// Ein blockiertes stderr (volle Pipe, die der Client nicht liest) hält das Beenden nicht auf (QS-1).
+			meldeKurz(fehler, i18n.T("schnapp mcp: second signal, stopping now."))
 			beende(exitFehler)
 			return
 		}

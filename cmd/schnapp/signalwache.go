@@ -27,7 +27,9 @@ var (
 	meldeAn       = signal.Notify
 	meldeAb       = signal.Stop
 	beendeProzess = os.Exit
-	schreibNaht   = func(w io.Writer, inhalt []byte, abgebrochen func() bool) error {
+	// wacheFehler liefert stderr der Signalwache von --output/--export (Meldung beim zweiten Signal), zur Zeit der Meldung.
+	wacheFehler = func() io.Writer { return os.Stderr }
+	schreibNaht = func(w io.Writer, inhalt []byte, abgebrochen func() bool) error {
 		_, err := w.Write(inhalt)
 		return err
 	}
@@ -95,7 +97,7 @@ func mitSignalwache(f func(abgebrochen func() bool, merkeTemp func(string)) erro
 				return
 			case <-takt.C:
 				if nimm(); kamen.Load() >= 2 {
-					fmt.Fprintln(os.Stderr, zweitesSignalMeldung(direkt.Load(), temp.Load()))
+					meldeKurz(wacheFehler(), zweitesSignalMeldung(direkt.Load(), temp.Load()))
 					beendeProzess(exitFehler)
 					return
 				}
@@ -126,6 +128,26 @@ func mitSignalwache(f func(abgebrochen func() bool, merkeTemp func(string)) erro
 		return errNachSchreiben
 	}
 	return err
+}
+
+// meldungFrist: So lange wartet ein Beenden höchstens auf seine Meldung auf stderr (Sitzungs-QA QS-1). Variable für Tests.
+var meldungFrist = 200 * time.Millisecond
+
+// meldeKurz schreibt text als Zeile nach w, wartet darauf aber höchstens meldungFrist: Hängt stderr (eine volle Pipe,
+// die niemand liest), hält die Meldung ein Beenden nicht auf (QS-1). Das Schreiben läuft in einer eigenen Goroutine;
+// kehrt es nicht zurück, bleibt sie liegen — der Prozess endet ohnehin.
+func meldeKurz(w io.Writer, text string) {
+	fertig := make(chan struct{})
+	go func() {
+		defer close(fertig)
+		fmt.Fprintln(w, text)
+	}()
+	frist := time.NewTimer(meldungFrist)
+	defer frist.Stop()
+	select {
+	case <-fertig:
+	case <-frist.C:
+	}
 }
 
 // zweitesSignalMeldung räumt, soweit möglich, auf und liefert den wahren Stand für die Meldung beim zweiten Signal

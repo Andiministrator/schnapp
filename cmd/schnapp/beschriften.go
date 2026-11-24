@@ -201,7 +201,7 @@ func mitBeschriftenWache(lage *beschriftenLage, fehler io.Writer, f func(ctx con
 				default:
 					text = i18n.T("Interrupted again; the file was already saved.")
 				}
-				fmt.Fprintln(fehler, text)
+				meldeKurz(fehler, text) // ein blockiertes stderr hält das Beenden nicht auf (QS-1)
 				beendeProzess(exitFehler)
 				return
 			}

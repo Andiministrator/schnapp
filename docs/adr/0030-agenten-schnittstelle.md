@@ -426,5 +426,10 @@ meldet sie ihre Signale ab (`signal.Stop`). Hängt danach stdout (eine volle Pip
 SIGINT oder SIGHUP den Prozess wie ohne Schnapp — auch wenn das erste Signal schon während des Speicherns kam. Der
 Verdacht aus der Behebung zu #202, dort helfe nur SIGKILL, trifft nicht zu; belegt mit echten Signalen in einem
 Kindprozess (`cmd/schnapp/beschriften_signal_kind_test.go`, Gegenprobe: ohne Abmelden hängen alle Fälle). Im
-MCP-Server endet die Lage eines `annotate` gleich nach `beschrifteDatei`, vor dem Hinweis auf stderr: Ein blockiertes
-stderr hält ein zweites Signal nicht zurück.
+MCP-Server endet die Lage eines `annotate` gleich nach `beschrifteDatei`, vor dem Hinweis auf stderr: Die Lage hält ein
+zweites Signal dann nicht mehr bis zur Frist zurück. *Berichtigt nach der Sitzungs-QA vom 24.11.2026 (QS-1):* Die
+Meldungen beim zweiten Signal selbst (Wache von `--annotate`, `mcpSignale`, Signalwache von `--output`/`--export`)
+standen vor dem Beenden und hingen an einem blockierten stderr, dann half nur SIGKILL. Sie warten jetzt höchstens
+200 ms (`meldeKurz`, `cmd/schnapp/signalwache.go`), danach wird beendet; `mcpSignale` räumt laufende temporäre Dateien
+vor der Meldung auf. Belegt mit echten Signalen im Kindprozess (`cmd/schnapp/signal_stderr_test.go`): Ein blockiertes
+stderr hält ein zweites Signal nicht mehr zurück.

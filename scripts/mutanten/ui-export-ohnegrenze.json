@@ -75,5 +75,13 @@
     "paket": "./internal/ui",
     "alt": "if !e.ohneGrenze {\n\t\t\t\te.meldeNebenbei(i18n.T(\"Could not export as SVG",
     "neu": "if true {\n\t\t\t\te.meldeNebenbei(i18n.T(\"Could not export as SVG"
+  },
+  {
+    "name": "QS-M2 bearbeiteNeu setzt den Export-Schalter nicht zurück (F-610, Sitzungs-QA QS-6)",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tui.SetzeExportOhneGrenze(false)\n",
+    "neu": "",
+    "timeout": "600s"
   }
 ]

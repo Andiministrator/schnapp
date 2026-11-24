@@ -124,5 +124,21 @@
     "paket": "./cmd/schnapp",
     "alt": "\t\tif !signal.Ignored(s) {",
     "neu": "\t\tif true || !signal.Ignored(s) {"
+  },
+  {
+    "name": "QS1-1 meldeKurz wartet unbegrenzt auf stderr (Sitzungs-QA QS-1)",
+    "datei": "cmd/schnapp/signalwache.go",
+    "paket": "./cmd/schnapp",
+    "alt": "frist := time.NewTimer(meldungFrist)",
+    "neu": "frist := time.NewTimer(time.Hour)",
+    "timeout": "600s"
+  },
+  {
+    "name": "QS1-5 Signalwache --output/--export: Meldung beim zweiten Signal ohne Frist (Sitzungs-QA QS-1)",
+    "datei": "cmd/schnapp/signalwache.go",
+    "paket": "./cmd/schnapp",
+    "alt": "meldeKurz(wacheFehler(), zweitesSignalMeldung(direkt.Load(), temp.Load()))",
+    "neu": "fmt.Fprintln(wacheFehler(), zweitesSignalMeldung(direkt.Load(), temp.Load()))",
+    "timeout": "600s"
   }
 ]
