@@ -72,8 +72,9 @@ func sMitAuge(x int, f farben, blick float64) string {
 	for _, d := range buchstabe('s', x) {
 		b.WriteString(zug(d, f["akzent"]))
 	}
-	fmt.Fprintf(&b, `<circle cx="%d" cy="125" r="11" fill="%s" stroke="%s" stroke-width="2"/>`, x+30, f["weiss"], f["akzent"])
-	fmt.Fprintf(&b, `<circle cx="%.1f" cy="125" r="5.5" fill="%s"/>`, float64(x+27)+7*blick, f["pupille"])
+	// Auge seit Karte #217 (Variante B, Andi 24.11.2026) größer: Ring r 15, Pupille r 7,5.
+	fmt.Fprintf(&b, `<circle cx="%d" cy="125" r="15" fill="%s" stroke="%s" stroke-width="2"/>`, x+30, f["weiss"], f["akzent"])
+	fmt.Fprintf(&b, `<circle cx="%.1f" cy="125" r="7.5" fill="%s"/>`, float64(x)+27.5+7.5*blick, f["pupille"])
 	return b.String()
 }
 

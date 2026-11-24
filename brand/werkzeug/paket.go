@@ -93,7 +93,8 @@ func symbol(art string, kachel bool) string {
 	if art != "dunkel" {
 		grund = "#ECEAE5"
 	}
-	return svgDatei("0 0 256 256", fmt.Sprintf(`<rect x="8" y="8" width="240" height="240" rx="56" fill="%s"/>`+
+	// Kachel eckig seit Karte #217 (Variante B, Andi 24.11.2026; vorher rx 56).
+	return svgDatei("0 0 256 256", fmt.Sprintf(`<rect x="8" y="8" width="240" height="240" fill="%s"/>`+
 		`<g transform="translate(77,-75) scale(1.35)">%s</g>`, grund, s), 0, 0)
 }
 

@@ -38,7 +38,7 @@ zurück, das Bild des Nutzers steht im Vordergrund. Die Persönlichkeit steckt i
 | mit Unterzeile, dunkel / hell | Standard: README, Webseite, Titel von Dokumenten, Präsentationen |
 | ohne Unterzeile | klein (unter 320 px Breite), Kopfzeilen, Fensterleisten |
 | einfarbig schwarz / weiß | Druck in einer Farbe, Prägung, Stempel, Aufkleber |
-| Symbol (das „s“ auf Kachel) | App-Symbol, Favicon, Avatar, Systembereich |
+| Symbol (das „s“ auf eckiger Kachel, Karte #217) | App-Symbol, Favicon, Avatar, Systembereich |
 | nur das „s“ freigestellt | Ladeanzeige, leere Zustände, kleine Markierungen |
 
 „dunkel“ heißt: für dunklen Grund (helle Schrift); „hell“: für hellen Grund (dunkle Schrift).

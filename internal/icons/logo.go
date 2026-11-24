@@ -18,8 +18,8 @@ var LogoSBox = [4]float64{-16, 84, 108, 132}
 
 // LogoSAuge: Augapfel (weiß, Rand im Akzent 2) und Pupille (Fenstergrund), Mittelpunkte und Radien.
 var (
-	LogoSAugapfel = [3]float64{30, 125, 11}
-	LogoSPupille  = [3]float64{34, 125, 5.5}
+	LogoSAugapfel = [3]float64{30, 125, 15}
+	LogoSPupille  = [3]float64{35, 125, 7.5}
 )
 
 // LogoSLinie liefert die Mittellinie des „s“ als Punktfolge (Bögen in n Schritten je Halbkreis) in den Koordinaten
