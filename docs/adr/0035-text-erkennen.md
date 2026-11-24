@@ -51,6 +51,12 @@ auf stdout; eine Probe auf diesem Rechner (tesseract 5.5.4, Bild 1600 × 1000) d
 ## Erwogene Alternativen
 - **gosseract (cgo, libtesseract):** schneller Aufruf, aber cgo gegen ADR-0011, bricht mit jeder Bibliotheksversion
   und erschwert Flatpak und Kreuzbau.
+- **Reines Go über WebAssembly (gogosseract: Tesseract als WASM im Go-Laufzeitsystem wazero, Sprachdaten per
+  `go:embed`):** kein cgo und kein externes Programm, liefe auch im Flatpak ohne Zusatzmodul. Dagegen: laut Besprechung
+  rund sechsmal langsamer als nativ (bei 1 s nativ also mehrere Sekunden), nur ein Betreuer mit Fork für wazero,
+  Pflegestand unklar, Programm um Laufzeit, WASM-Modul und Sprachdaten (je Sprache einige MiB) größer; ein Fremdpaket
+  ohne spürbaren Nutzen gegenüber dem installierten Programm (ADR-0011). Bleibt die Rückfallebene, falls das Bündeln im
+  Flatpak (Punkt 7) scheitert. Eine eigene Erkennung in Go (Netz und Gewichte selbst) steht in keinem Verhältnis.
 - **ocrs (Rust, eigenes Modell) oder PaddleOCR (Python):** selten installiert, große Modelle; Tesseract ist in jeder
   Distribution ein Paket.
 - **Ganzes Bild immer:** einfacher, aber man will meist eine Stelle; Enter deckt das ganze Bild trotzdem ab.

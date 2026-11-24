@@ -143,6 +143,8 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | https://man.archlinux.org/man/tesseract.1.en | 2026-11-24 | 2026-11-24 | indirect | WebSearch | Aufruf `tesseract FILE OUTPUTBASE`; `stdin`/`-` als Eingabe, `stdout`/`-` als Ausgabe (5.x) | docs/adr/0035-text-erkennen.md |
 | https://gitlab.gnome.org/World/OpenPaperwork/paperwork/issues/735 | 2026-11-24 | 2026-11-24 | indirect | WebSearch | Flatpak-Bau mit eigener Tesseract-Kopie: Sprachdaten nur im Sandbox-tessdata | docs/adr/0035-text-erkennen.md |
 | https://flathub.org/apps/xyz.rescribe.rescribe | 2026-11-24 | 2026-11-24 | indirect | WebSearch | OCR-Programm auf Flathub mit gebündeltem Tesseract | docs/adr/0035-text-erkennen.md |
+| https://pkg.go.dev/github.com/danlock/gogosseract | 2026-11-24 | 2026-11-24 | indirect | WebSearch | gogosseract: Tesseract (nur LSTM) als WASM über wazero, reines Go ohne cgo; Sprachdaten per go:embed möglich | docs/adr/0035-text-erkennen.md |
+| https://starlog.pages.dev/articles/developer-tools/danlock-gogosseract | 2026-11-24 | 2026-11-24 | indirect | WebSearch | Besprechung: etwa 6× langsamer als nativ, Fork für wazero-Verträglichkeit, letzte Pflege 2023/2025 unklar | docs/adr/0035-text-erkennen.md |
 
 ## Suchanfragen
 
@@ -160,3 +162,4 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | 2026-11-24 | Spectacle KDE text extraction OCR tesseract Plasma 6 | Spectacle OCR über Tesseract seit Plasma 6.6, Paketierungsfehler bei libtesseract |
 | 2026-11-24 | tesseract command line stdin stdout | stdin/stdout bzw. „-“ als Ein- und Ausgabe (5.x) |
 | 2026-11-24 | Flathub flatpak bundle tesseract OCR module traineddata extension | keine gemeinsame Flathub-Erweiterung; Apps bündeln Tesseract und Sprachdaten selbst |
+| 2026-11-24 | tesseract wasm wazero Go pure Go OCR without cgo | gogosseract (WASM über wazero), sonst nur cgo-Bindungen |
