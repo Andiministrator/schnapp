@@ -13,6 +13,8 @@
 #   4. Repo mit Tag ohne v-Schema (sprint-ende): zählt nicht, Version 0.0.0-dev+<Kurzhash> (F-364).
 #   5. schnapp-ocr (Karte #242): wird mit derselben Version aus ocr/ gebaut und neben schnapp installiert; --uninstall
 #      entfernt alle vier Dateien.
+#   6. Gescheiterter Bau (F-648): scheitert nur schnapp-ocr, wird schnapp installiert, ein vorhandenes schnapp-ocr bleibt,
+#      Warnung und Exit 0; scheitert schnapp, Exit ungleich 0 und nichts ersetzt. In keinem Fall bleibt eine *.neu liegen.
 #
 # Desktop-Werkzeuge (update-desktop-database, gtk-update-icon-cache, kbuildsycoca6) laufen im Test nur als Attrappen
 # aus scripts/install-test-stub/ (F-367): Der Ordner steht im PATH vor /usr/bin, und Attrappen mit gleichem Namen
@@ -43,12 +45,13 @@ kopie() {
 	chmod 0755 "$1/install.sh"
 }
 
-# install.sh in $1 mit eigenem HOME $2 ausführen; Ausgabe in $2/aus.txt, Rückgabe der Exit-Code.
+# install.sh in $1 mit eigenem HOME $2 ausführen; Ausgabe in $2/aus.txt, Rückgabe der Exit-Code. $3 (optional): Ordner,
+# in dem die go-Attrappe scheitert (STUB_FEHL_IN).
 lauf() {
 	mkdir -p -- "$2/home"
 	: > "$2/go.log"
 	rc=0
-	env -i HOME="$2/home" PATH="$stub:/usr/bin:/bin" STUB_LOG="$2/go.log" \
+	env -i HOME="$2/home" PATH="$stub:/usr/bin:/bin" STUB_LOG="$2/go.log" STUB_FEHL_IN="${3:-}" \
 		GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null \
 		bash "$1/install.sh" > "$2/aus.txt" 2>&1 || rc=$?
 	return "$rc"
@@ -139,6 +142,33 @@ env -i HOME="$f2/home" PATH="$stub:/usr/bin:/bin" STUB_LOG="$f2/go.log" bash "$f
 [ "$rc" -eq 0 ] || fail "Fall 5: --uninstall scheiterte: $(cat "$f2/aus-un.txt")"
 for d in bin/schnapp bin/schnapp-ocr share/applications/schnapp.desktop share/icons/hicolor/scalable/apps/schnapp.svg; do
 	[ ! -e "$f2/home/.local/$d" ] || fail "Fall 5: --uninstall ließ $d liegen"
+done
+
+# --- Fall 6: gescheiterter Bau (F-648) ---------------------------------------
+f6="$sand/f6"
+kopie "$f6/repo"
+bin6="$f6/home/.local/bin"
+mkdir -p -- "$bin6"
+printf 'alt\n' > "$bin6/schnapp"
+printf 'alt-ocr\n' > "$bin6/schnapp-ocr"
+rc=0
+lauf "$f6/repo" "$f6" ocr || rc=$?
+[ "$rc" -eq 0 ] || fail "Fall 6a: gescheiterter OCR-Bau bricht die Installation ab (Exit $rc): $(cat "$f6/aus.txt")"
+grep -q 'Warnung: schnapp-ocr ließ sich nicht bauen' "$f6/aus.txt" || fail "Fall 6a: Warnung fehlt: $(cat "$f6/aus.txt")"
+grep -qx 'alt' "$bin6/schnapp" && fail "Fall 6a: schnapp nicht neu installiert"
+grep -qx 'alt-ocr' "$bin6/schnapp-ocr" || fail "Fall 6a: vorhandenes schnapp-ocr ersetzt oder entfernt"
+[ -f "$f6/home/.local/share/applications/schnapp.desktop" ] || fail "Fall 6a: Desktop-Datei fehlt"
+for d in schnapp.neu schnapp-ocr.neu; do
+	[ ! -e "$bin6/$d" ] || fail "Fall 6a: Nebendatei $d liegen geblieben"
+done
+printf 'alt\n' > "$bin6/schnapp"
+rc=0
+lauf "$f6/repo" "$f6" repo || rc=$?
+[ "$rc" -ne 0 ] || fail "Fall 6b: gescheiterter Bau von schnapp endet mit Exit 0"
+grep -qx 'alt' "$bin6/schnapp" || fail "Fall 6b: schnapp trotz gescheitertem Bau ersetzt"
+grep -qx 'alt-ocr' "$bin6/schnapp-ocr" || fail "Fall 6b: schnapp-ocr ersetzt"
+for d in schnapp.neu schnapp-ocr.neu; do
+	[ ! -e "$bin6/$d" ] || fail "Fall 6b: Nebendatei $d liegen geblieben"
 done
 
 if [ "$fehler" -eq 0 ]; then

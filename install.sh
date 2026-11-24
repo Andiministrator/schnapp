@@ -16,9 +16,17 @@
 # Dazu aktualisieren vorhandene Desktop-Werkzeuge ihre Caches (Menü-Datenbank; den Symbol-Cache nur, wenn es ihn
 # schon gibt). --uninstall entfernt nur die vier Dateien.
 #
+# schnapp-ocr ist optional (Ersatz für ein fehlendes tesseract, ADR-0035 Nachtrag 1). Scheitert nur sein Bau (etwa ohne
+# Netz für die Fremdpakete des Moduls ocr/), wird schnapp trotzdem installiert, ein vorhandenes schnapp-ocr bleibt,
+# und das Skript warnt und endet mit Exit 0: Texterkennung geht dann über ein installiertes tesseract, und eine
+# Installation des Hauptprogramms soll nicht an einer Zusatzfunktion scheitern (ADR-0035 Nachtrag 2, F-648). Scheitert
+# der Bau von schnapp, bricht das Skript ab, und nichts wird ersetzt. Nebendateien des Baus (*.neu) bleiben in keinem
+# Fall liegen.
+#
 # Löschregel (Projekt): rm nur mit nicht leerem Ziel, das genau Präfix + wörtlich ausgeschriebenes Suffix ist. Das
 # Präfix selbst kommt aus PREFIX/XDG_DATA_HOME und ist damit Sache des Aufrufers — wer PREFIX=/usr als root setzt,
-# entfernt /usr/bin/schnapp. Mehr als diese vier fest benannten Dateien kann das Skript nicht löschen.
+# entfernt /usr/bin/schnapp. Mehr als diese vier fest benannten Dateien und ihre Nebendateien (schnapp.neu,
+# schnapp-ocr.neu, schnapp.desktop.neu) kann das Skript nicht löschen.
 set -eu
 
 case "${1:-}" in -h | --help) ;; *) [ "$#" -le 1 ] || { echo "install.sh: zu viele Argumente" >&2; exit 2; } ;; esac
@@ -89,6 +97,12 @@ cache_aktualisieren() {
 	fi
 }
 
+# Räumt die Nebendateien des Baus weg, wenn es sie gibt (Falle bei EXIT und nach gescheitertem OCR-Bau, F-648).
+nebendateien_weg() {
+	if [ -e "$PROGRAMM.neu" ] || [ -L "$PROGRAMM.neu" ]; then entferne "$PROGRAMM.neu" "$PREFIX" "/bin/schnapp.neu"; fi
+	if [ -e "$OCR.neu" ] || [ -L "$OCR.neu" ]; then entferne "$OCR.neu" "$PREFIX" "/bin/schnapp-ocr.neu"; fi
+}
+
 deinstallieren() {
 	entferne "$PROGRAMM" "$PREFIX" "/bin/schnapp"
 	entferne "$OCR" "$PREFIX" "/bin/schnapp-ocr"
@@ -138,18 +152,34 @@ installieren() {
 	mkdir -p -- "$PREFIX/bin" "$DATEN/applications" "$DATEN/icons/hicolor/scalable/apps"
 
 	echo "baue schnapp $version ..."
-	# Erst beide Programme in Nebendateien bauen, dann umbenennen: ein laufendes Programm lässt sich so ersetzen, und
-	# scheitert ein Bau, bleibt der alte Stand beider Programme. schnapp-ocr ist ein eigenes Go-Modul (ocr/, eigene
-	# Fremdpakete) und liegt neben schnapp, dort sucht es internal/ocr.
+	# Erst in Nebendateien bauen, dann umbenennen: ein laufendes Programm lässt sich so ersetzen, und scheitert ein Bau,
+	# bleibt der alte Stand. schnapp-ocr ist ein eigenes Go-Modul (ocr/, eigene Fremdpakete) und liegt neben schnapp,
+	# dort sucht es internal/ocr. Eine Nebendatei bleibt nie liegen, auch nicht bei Abbruch (F-648): Die Falle räumt
+	# beide über entferne weg (Präfix und Suffix geprüft); nach dem Umbenennen ist dort nichts mehr.
 	neu="$PROGRAMM.neu"
 	ocr_neu="$OCR.neu"
+	trap 'nebendateien_weg' EXIT
 	(cd "$wurzel" && GOFLAGS="-tags=novulkan,nox11" go build -trimpath -ldflags "-X main.version=$version" -o "$neu" ./cmd/schnapp)
-	(cd "$wurzel/ocr" && GOFLAGS= go build -trimpath -ldflags "-X main.version=$version" -o "$ocr_neu" .)
-	chmod 0755 "$neu" "$ocr_neu"
+	# schnapp-ocr ist der Ersatz, wenn tesseract fehlt (ADR-0035 Nachtrag 1); Schnapp läuft auch ohne. Scheitert sein
+	# Bau (etwa ohne Netz für die Fremdpakete von ocr/), wird schnapp trotzdem installiert, ein vorhandenes schnapp-ocr
+	# bleibt, und das Skript warnt deutlich und endet mit Exit 0 (ADR-0035 Nachtrag 2, F-648).
+	ocr_gebaut=1
+	(cd "$wurzel/ocr" && GOFLAGS= go build -trimpath -ldflags "-X main.version=$version" -o "$ocr_neu" .) || ocr_gebaut=0
+	chmod 0755 "$neu"
 	mv -f -- "$neu" "$PROGRAMM"
 	echo "installiert: $PROGRAMM"
-	mv -f -- "$ocr_neu" "$OCR"
-	echo "installiert: $OCR"
+	if [ "$ocr_gebaut" = 1 ]; then
+		chmod 0755 "$ocr_neu"
+		mv -f -- "$ocr_neu" "$OCR"
+		echo "installiert: $OCR"
+	else
+		nebendateien_weg
+		if [ -f "$OCR" ]; then
+			echo "Warnung: schnapp-ocr ließ sich nicht bauen; das vorhandene $OCR bleibt (älterer Stand)." >&2
+		else
+			echo "Warnung: schnapp-ocr ließ sich nicht bauen; Texterkennung geht nur mit installiertem tesseract." >&2
+		fi
+	fi
 
 	# Desktop-Datei: @EXEC@ durch den absoluten Pfad ersetzen (% verdoppelt). Reine Shell-Ersetzung,
 	# damit &, | und \ im Pfad nichts verfälschen. KWin entfernt die Anführungszeichen (QProcess::splitCommand),
@@ -189,7 +219,7 @@ installieren() {
 	echo "installiert: $SYMBOL"
 
 	cache_aktualisieren
-	echo "Fertig."
+	if [ "$ocr_gebaut" = 1 ]; then echo "Fertig."; else echo "Fertig (ohne neues schnapp-ocr, siehe Warnung)."; fi
 	case ":$PATH:" in *":$PREFIX/bin:"*) ;; *) echo "Hinweis: $PREFIX/bin liegt nicht in PATH." ;; esac
 }
 

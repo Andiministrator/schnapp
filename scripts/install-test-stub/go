@@ -3,6 +3,8 @@
 #
 # Attrappe für `go` im Test von install.sh (scripts/install-test.sh, F-324): baut nichts, hält die Argumente
 # in $STUB_LOG fest und legt das mit -o verlangte Programm an. Läuft nur im Sandkasten des Tests.
+# Mit STUB_FEHL_IN=<Ordnername> scheitert der Bau im Ordner dieses Namens (etwa ocr) wie ein echter Abbruch: Er legt
+# eine halbe Ausgabedatei an und endet mit Exit 1 (Fall 6, F-648).
 set -eu
 [ -n "${STUB_LOG:-}" ] || { echo "go-Attrappe: STUB_LOG fehlt" >&2; exit 1; }
 printf '%s\n' "$*" >> "$STUB_LOG"
@@ -15,4 +17,9 @@ while [ "$#" -gt 0 ]; do
 	shift
 done
 [ -n "$ziel" ] || exit 0
+if [ -n "${STUB_FEHL_IN:-}" ] && [ "$(basename "$PWD")" = "$STUB_FEHL_IN" ]; then
+	printf 'halb' > "$ziel"
+	echo "go-Attrappe: Bau in $STUB_FEHL_IN scheitert (gewollt)" >&2
+	exit 1
+fi
 printf '#!/bin/sh\nexit 0\n' > "$ziel"
