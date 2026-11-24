@@ -43,9 +43,9 @@ const (
 var (
 	farbeWarnGrund = color.NRGBA{R: 0x3D, G: 0x33, B: 0x24, A: 0xFF} // orange-900 auf grau, Warnkasten der Agenten
 	farbeWeiss     = color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
-	// farbeTafelDunkel dunkelt den Editor unter der Tafel ab (Muster #175: etwa auf die Hälfte; Gio mischt linear, daher
-	// deckender als farbeAbdunkeln des Overlays).
-	farbeTafelDunkel = color.NRGBA{R: 0x16, G: 0x18, B: 0x1B, A: 0xD0}
+	// farbeTafelDunkel dunkelt den Editor unter der Tafel ab (Muster #175: 60 % grau-950). Seit ADR-0020 Nachtrag 14
+	// mischt Gio in sRGB wie das Muster; 0x99 ergibt dieselbe Helligkeit wie dort.
+	farbeTafelDunkel = color.NRGBA{R: 0x16, G: 0x18, B: 0x1B, A: 0x99}
 )
 
 // tafelRahmen ist die Lage der Teile beim letzten Zeichnen in Fensterpixeln (Tests, Drehbücher, Liste am Feld).
