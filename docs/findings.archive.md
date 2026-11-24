@@ -730,6 +730,7 @@ Ausgelagerte Findings aus `docs/findings.md`. Einträge hier sind abgeschlossen 
 | F-736 | [S] | P3 | Sprint 12 | **Dreieck einer Sprechblase im SVG trägt seine Basis auch außerhalb der Ansicht** (zweiter Verify-Lauf V2-2): Lage einer Schildkante und Basisbreite (meist Schriftgrad) ablesbar, nicht Breite, Höhe oder Inhalt des Schilds. | akzeptiert 36bd612 (Ausnahmepfad [S] Sprint 12: bewusste Entscheidung in ADR-0021 Nachtrag 14 Punkt 5, gleicht teils sichtbaren Pfeilen und Kästen; ein Beschnitt wäre Sondercode nur für diesen Fall; Recap nennt es) |
 | F-737 | [D] | P3 | Sprint 12 | **Prüfbefehl von F-698 in der Rohfassung wirkungslos** (zweiter Verify-Lauf V2-3): der maskierte Strich ist unter `-E` ein wörtlicher Strich. | behoben im Register (Prüfbefehl ohne Strich) |
 | F-738 | [D] | P3 | Sprint 12 | **86a0587 und 6ac95a0 beheben Befunde des Fable-Verify-Laufs, tragen aber nur die Opus-Zeile** (zweiter Verify-Lauf V2-4, Commit-Konvention CLAUDE.md). | akzeptiert (Geschichte bleibt wie bei F-727; ebenso 8450865, V3-3; 36bd612 und 5b27fcc tragen beide Zeilen) |
+| F-717 | [V] | P3 | Sprint 12 | **`scripts/echtlauf-mcp-hinweise.sh` ist erledigt, liegt aber im Repo** (Abschluss-Kritik V-1): setzt vorübergehend Einwilligungen in der echten `settings.ini`. **Prüfbefehl:** `git ls-files scripts/echtlauf-mcp-hinweise.sh` → leer, oder der Kopf begründet den Zweck. | behoben (Skript entfernt auf Andis Ja, ADR-0030 Nachtrag 13 Punkt 6) |
 
 ## Archiviert (aus Sektion "Behoben / Akzeptiert")
 

@@ -432,7 +432,8 @@ schwerer zu prüfen).
 ## Nachtrag 12 (24.11.2026): Text an der Naht — Grenze bis zur zeilenweisen Lösung (F-739, F-740)
 
 **Status:** Akzeptiert (Claude Opus 5.5 beim Sprint-Abschluss 12, im Auftrag Andis: „arbeite selbstständig“). Anlass:
-dritter Verify-Lauf V3-1 und V3-2. Ausnahmepfad [S] P3 (docs/qa/sprint-abschluss.md), Lösung mit Karte #281.
+dritter Verify-Lauf V3-1 und V3-2. Ausnahmepfad [S] P3 (docs/qa/sprint-abschluss.md), Lösung mit Karte #281. Andi hat
+die Entscheidung am 24.11.2026 an Claude gegeben („entscheide du“): Die Grenze gilt bis zur Umsetzung von #281.
 
 1. **Punkt 7 stimmt für Text nicht wörtlich:** Text wird nicht gestaucht. Seine Zeilen stehen starr ab dem
    abgebildeten Anker; liegt der Anker in einem Streifen, fällt er auf die Naht und die Zeile steht dahinter. Solange

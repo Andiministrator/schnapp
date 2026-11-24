@@ -217,3 +217,14 @@ Stand 21.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 - **Fehlertexte:** Präfix-Regel gilt für alle Pakete, keine Ausnahmen; fünf Pakete werden nachgezogen (ADR-0019
   Nachtrag 2, F-339).
 - **Rettungskopie gegen Absturz:** ADR-0029 akzeptiert (Claude im Auftrag Andis, 21.11.2026), Umsetzung offen (F-144, Karte #77).
+
+## E-25: Claudes Entscheidungen beim Sprint-Abschluss 12 — ENTSCHIEDEN 24.11.2026 (Claude im Auftrag Andis: „entscheide du“)
+
+- **Agenten `edit` + `library`** (F-699): keine eigene Einwilligung, Wirkung dokumentiert, Ergebnisse unter `agents/`
+  (ADR-0030 Nachtrag 13 Punkt 5).
+- **Text an der Stauch-Naht** (F-739): Grenze bis Karte #281 (ADR-0023 Nachtrag 12).
+- **`.claude/settings.json` im öffentlichen Repo** (Abschluss-Kritik D-11): bleibt mit der Sperrregel, die den Zweig
+  `alt-main` beim Namen nennt. Die Regel verhindert, dass die alte Geschichte versehentlich veröffentlicht wird; dass es
+  einen zurückgehaltenen Zweig gibt, verrät nichts, was in ihm steht. Ohne den Namen griffe die Sperre nicht.
+- **Echtlauf-Skript** `scripts/echtlauf-mcp-hinweise.sh` (F-717): auf Andis Ja entfernt.
+
