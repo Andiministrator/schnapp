@@ -27,6 +27,10 @@
 #       schreibe TEXT | rad X Y SCHRITTE (negativ = hoch) | foto NAME [BILDSCHIRM]
 #       Halten (F-599): druecke[-rechts|-mitte] [X Y] | bewege X Y [SCHRITTE] | loslassen | taste-halten KOMBI | taste-loslassen KOMBI
 #       (Zug mit Fotos mittendrin: scripts/drehbuecher/einrasten-196-halten.txt; am Ende wird alles Gehaltene gelöst)
+#       Buchführung (F-614): klick/doppelklick/ziehe verweigern sich mit Fehler (Exit 1), solange DIESELBE Maustaste von
+#       druecke gehalten wird, und taste/schreibe, solange eine Taste der Kombination von taste-halten gehalten wird — sie
+#       würden sie sonst still lösen. Erst loslassen/taste-loslassen; andere Tasten (z. B. rechtsklick bei gehaltener linker)
+#       gehen. Nach einem Fehler oder am Ende wird alles Gehaltene trotzdem gelöst.
 #     Koordinaten sind logische Pixel des virtuellen Bildschirms (Fenster im Vollbild: gleich Fensterkoordinaten).
 #     foto nimmt den Bildschirm unter dem Zeiger auf, bei mehreren Monitoren BILDSCHIRM (Name) angeben.
 #   scripts/probe.sh --zwischenablage BILD.png   (--innen, --drehbuch und --zwischenablage schließen sich aus)

@@ -1,0 +1,74 @@
+[
+  {
+    "name": "FB1 abspielen löst am Ende nichts (KM24, F-614)",
+    "datei": "cmd/schnapp-fernbedienung/main.go",
+    "paket": "./cmd/schnapp-fernbedienung",
+    "tags": "probe",
+    "alt": "\tdefer func() {\n\t\tif err := a.alleLoslassen(); err != nil {\n\t\t\tfmt.Fprintln(fehler, \"Loslassen am Ende:\", err)\n\t\t}\n\t}()\n",
+    "neu": ""
+  },
+  {
+    "name": "FB2 taste-loslassen führt die Taste weiter als gehalten (KM25, F-614)",
+    "datei": "cmd/schnapp-fernbedienung/main.go",
+    "paket": "./cmd/schnapp-fernbedienung",
+    "tags": "probe",
+    "alt": "\t\tfor j, h := range a.tasten {\n\t\t\tif h == c {\n\t\t\t\ta.tasten = append(a.tasten[:j], a.tasten[j+1:]...)\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "FB3 Zeigerlage wird nicht gemerkt (KM26, F-614)",
+    "datei": "cmd/schnapp-fernbedienung/main.go",
+    "paket": "./cmd/schnapp-fernbedienung",
+    "tags": "probe",
+    "alt": "a.zx, a.zy, a.zeigerBekannt = x, y, true",
+    "neu": "a.zeigerBekannt = false"
+  },
+  {
+    "name": "FB4 loslassen löst nur die zuletzt gedrückte Maustaste (KM27, F-614)",
+    "datei": "cmd/schnapp-fernbedienung/main.go",
+    "paket": "./cmd/schnapp-fernbedienung",
+    "tags": "probe",
+    "alt": "\tfor len(a.knoepfe) > 0 {\n\t\tk := a.knoepfe[len(a.knoepfe)-1]",
+    "neu": "\tif len(a.knoepfe) > 0 {\n\t\tk := a.knoepfe[len(a.knoepfe)-1]"
+  },
+  {
+    "name": "FB5 klick lehnt eine gehaltene Maustaste nicht ab (F-614)",
+    "datei": "cmd/schnapp-fernbedienung/main.go",
+    "paket": "./cmd/schnapp-fernbedienung",
+    "tags": "probe",
+    "alt": "func (a *abspieler) klicke(knopf uint32, mal int, z []int) error {\n\tif err := a.gehaltenFehler(knopf); err != nil {\n\t\treturn err\n\t}\n",
+    "neu": "func (a *abspieler) klicke(knopf uint32, mal int, z []int) error {\n"
+  },
+  {
+    "name": "FB6 ziehe lehnt eine gehaltene Maustaste nicht ab (F-614)",
+    "datei": "cmd/schnapp-fernbedienung/main.go",
+    "paket": "./cmd/schnapp-fernbedienung",
+    "tags": "probe",
+    "alt": "func (a *abspieler) ziehe(knopf uint32, z []int) error {\n\tif err := a.gehaltenFehler(knopf); err != nil {\n\t\treturn err\n\t}\n",
+    "neu": "func (a *abspieler) ziehe(knopf uint32, z []int) error {\n"
+  },
+  {
+    "name": "FB7 taste lehnt eine gehaltene Taste nicht ab (F-614)",
+    "datei": "cmd/schnapp-fernbedienung/main.go",
+    "paket": "./cmd/schnapp-fernbedienung",
+    "tags": "probe",
+    "alt": "\t\tif a.haelt(a.tasten, c) {\n\t\t\treturn fmt.Errorf(\"Taste %d wird gehalten (taste-halten)",
+    "neu": "\t\tif false && a.haelt(a.tasten, c) {\n\t\t\treturn fmt.Errorf(\"Taste %d wird gehalten (taste-halten)"
+  },
+  {
+    "name": "FB8 Fehler eines Befehls endet mit Exit 0 (F-614)",
+    "datei": "cmd/schnapp-fernbedienung/main.go",
+    "paket": "./cmd/schnapp-fernbedienung",
+    "tags": "probe",
+    "alt": "\t\t\tfmt.Fprintf(fehler, \"Zeile %d (%s): %v\\n\", b.Zeile, b.Text, err)\n\t\t\treturn 1",
+    "neu": "\t\t\tfmt.Fprintf(fehler, \"Zeile %d (%s): %v\\n\", b.Zeile, b.Text, err)\n\t\t\treturn 0"
+  },
+  {
+    "name": "FB9 gehaltenFehler prüft die Tasten statt der Maustasten (F-614)",
+    "datei": "cmd/schnapp-fernbedienung/main.go",
+    "paket": "./cmd/schnapp-fernbedienung",
+    "tags": "probe",
+    "alt": "if a.haelt(a.knoepfe, knopf) {\n\t\treturn fmt.Errorf(\"Maustaste %#x",
+    "neu": "if a.haelt(a.tasten, knopf) {\n\t\treturn fmt.Errorf(\"Maustaste %#x"
+  }
+]

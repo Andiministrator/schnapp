@@ -53,6 +53,10 @@ rot zu machen (E2/E3 der Gruppe `rescue`, F-455): sonst läuft jeder bis zum Vor
 muss eine positive Dauer sein (`time.ParseDuration`), und unbekannte Schlüssel in den JSON-Dateien sind Fehler: beides
 scheitert schon beim Laden, auch mit `-trocken` (F-478).
 
+Optional `"tags": "probe"` hängt Build-Tags (kommagetrennt) an `novulkan,nox11` an, damit auch Pakete mit Tag gemutet
+werden können (Gruppe `fernbedienung`: `./cmd/schnapp-fernbedienung` baut nur mit `probe`, F-614). Der Grundlauf läuft
+einmal je Paket, `timeout` und `tags`; ungültige Namen scheitern beim Laden.
+
 ## Äquivalente Mutanten
 
 `"aequivalent": true` heißt: Die Änderung verändert das beobachtbare Verhalten nicht (etwa eine doppelte Bedingung

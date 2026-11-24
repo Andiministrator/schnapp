@@ -10,7 +10,7 @@
 // Befehle: warte MS | zeiger X Y | klick [X Y] | doppelklick X Y | rechtsklick [X Y] | mittelklick [X Y] |
 // ziehe X1 Y1 X2 Y2 [SCHRITTE] | ziehe-mitte … | taste KOMBI | druecke[-rechts|-mitte] [X Y] | bewege X Y [SCHRITTE] |
 // loslassen | taste-halten KOMBI | taste-loslassen KOMBI (Halten, F-599; am Ende des Drehbuchs wird alles Gehaltene
-// gelöst, auch nach einem Fehler) | schreibe TEXT | rad X Y SCHRITTE | foto NAME [BILDSCHIRM]
+// gelöst, auch nach einem Fehler; klick/ziehe/taste verweigern sich bei gehaltener eigener Taste, F-614) | schreibe TEXT | rad X Y SCHRITTE | foto NAME [BILDSCHIRM]
 // Fotos landen als PNG in $FOTOS (Ordner wird angelegt). Exit: 0 durch, 1 Laufzeitfehler, 2 Fehler im Drehbuch.
 package main
 
@@ -69,7 +69,14 @@ func lauf(args []string, aus, fehler io.Writer) int {
 	defer e.Close()
 	fmt.Fprintf(aus, "fake_input Version %d verbunden, %d Befehle\n", e.Version, len(befehle))
 	a := &abspieler{e: e, fotos: os.Getenv("FOTOS"), aus: aus}
-	// Was noch gehalten wird, lösen wir immer, sonst bliebe der Sitz des virtuellen KWin verklemmt (Taste „gedrückt“).
+	return abspielen(a, befehle, time.Duration(*pause)*time.Millisecond, e.Abgleich, aus, fehler)
+}
+
+// abspielen führt die Befehle der Reihe nach aus und gleicht nach jedem mit dem Compositor ab (abgleich; nil = nie).
+// Was am Ende noch gehalten wird, löst es immer, auch nach einem Fehler, sonst bliebe der Sitz des virtuellen KWin
+// verklemmt (Taste „gedrückt“). Exit 0 nur, wenn alle Befehle gelangen; ein Befehl, der das Halten verletzt (klick bei
+// gehaltener Maustaste, taste mit gehaltener Taste), ist ein Fehler, kein stilles Lösen (F-614).
+func abspielen(a *abspieler, befehle []*Befehl, pause time.Duration, abgleich func() error, aus, fehler io.Writer) int {
 	defer func() {
 		if err := a.alleLoslassen(); err != nil {
 			fmt.Fprintln(fehler, "Loslassen am Ende:", err)
@@ -81,11 +88,13 @@ func lauf(args []string, aus, fehler io.Writer) int {
 			fmt.Fprintf(fehler, "Zeile %d (%s): %v\n", b.Zeile, b.Text, err)
 			return 1
 		}
-		if err := e.Abgleich(); err != nil {
-			fmt.Fprintf(fehler, "Zeile %d (%s): Compositor: %v\n", b.Zeile, b.Text, err)
-			return 1
+		if abgleich != nil {
+			if err := abgleich(); err != nil {
+				fmt.Fprintf(fehler, "Zeile %d (%s): Compositor: %v\n", b.Zeile, b.Text, err)
+				return 1
+			}
 		}
-		time.Sleep(time.Duration(*pause) * time.Millisecond)
+		time.Sleep(pause)
 	}
 	return 0
 }
@@ -162,7 +171,19 @@ func (a *abspieler) fuehreAus(b *Befehl) error {
 	return nil
 }
 
+// gehaltenFehler meldet, wenn knopf von druecke gehalten wird: klick und ziehe würden ihn drücken und lösen, der
+// gehaltene Zug endete im Compositor still und die Buchführung stimmte nicht mehr (F-614).
+func (a *abspieler) gehaltenFehler(knopf uint32) error {
+	if a.haelt(a.knoepfe, knopf) {
+		return fmt.Errorf("Maustaste %#x wird gehalten (druecke): erst loslassen", knopf)
+	}
+	return nil
+}
+
 func (a *abspieler) klicke(knopf uint32, mal int, z []int) error {
+	if err := a.gehaltenFehler(knopf); err != nil {
+		return err
+	}
 	if len(z) == 2 {
 		if err := a.setzeZeiger(z[0], z[1]); err != nil {
 			return err
@@ -183,6 +204,9 @@ func (a *abspieler) klicke(knopf uint32, mal int, z []int) error {
 }
 
 func (a *abspieler) ziehe(knopf uint32, z []int) error {
+	if err := a.gehaltenFehler(knopf); err != nil {
+		return err
+	}
 	schritte := 10
 	if len(z) == 5 {
 		schritte = z[4]
@@ -209,6 +233,12 @@ func (a *abspieler) ziehe(knopf uint32, z []int) error {
 }
 
 func (a *abspieler) taste(k Kombi) error {
+	// Eine gehaltene Taste (taste-halten) würde die Kombination lösen; dann stimmte die Buchführung nicht mehr (F-614).
+	for _, c := range append(append([]uint32{}, k.Mods...), k.Taste) {
+		if a.haelt(a.tasten, c) {
+			return fmt.Errorf("Taste %d wird gehalten (taste-halten): erst taste-loslassen", c)
+		}
+	}
 	for _, m := range k.Mods {
 		if err := a.e.Tastatur(m, gedrueckt); err != nil {
 			return err

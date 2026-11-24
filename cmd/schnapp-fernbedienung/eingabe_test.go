@@ -8,7 +8,6 @@ import (
 	"encoding/xml"
 	"net"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -76,45 +75,22 @@ func TestOpcodesGegenProtokoll(t *testing.T) {
 	}
 }
 
-// kurzerSocketOrdner legt einen Ordner für einen Unix-Socket an. Der Pfad darf samt "/s" höchstens 107 Byte lang
-// sein; ein langer TMPDIR (Sub-Agents, Mutantenlauf) sprengt das (F-605). Ist der Ordner im Testordner zu lang,
-// weicht der Test auf XDG_RUNTIME_DIR aus (dafür gedacht, Sockets zu tragen), sonst überspringt er mit Meldung.
-func kurzerSocketOrdner(t *testing.T) string {
-	t.Helper()
-	const grenze = 100
-	dir, err := os.MkdirTemp("", "fb")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(dir) > grenze {
-		os.Remove(dir)
-		rt := os.Getenv("XDG_RUNTIME_DIR")
-		if rt == "" || !filepath.IsAbs(rt) {
-			t.Skipf("Socketpfad zu lang (TMPDIR %d Zeichen) und kein XDG_RUNTIME_DIR", len(dir))
-		}
-		dir, err = os.MkdirTemp(rt, "fb")
-		if err != nil || len(dir) > grenze {
-			if err == nil {
-				os.Remove(dir)
-			}
-			t.Skipf("kein kurzer Ordner für den Socket gefunden (%v)", err)
-		}
-	}
-	return dir
-}
-
 // attrappeKWin lauscht auf einem Socket im Testordner und spielt den Anfang (Registry, Bind) eines KWin mit
 // fake_input in der Version version; die Verbindung der Fernbedienung kommt über den Kanal zurück.
 func attrappeKWin(t *testing.T, version uint32) <-chan *wlwire.Verbindung {
 	t.Helper()
-	dir := kurzerSocketOrdner(t)
-	t.Cleanup(func() { os.Remove(filepath.Join(dir, "s")); os.Remove(dir) })
-	pfad := filepath.Join(dir, "s")
+	// Ein Unix-Socket-Pfad darf höchstens 107 Byte lang sein, ein langer TMPDIR (Sub-Agents, Mutantenlauf) sprengt das
+	// (F-605). Statt in ein anderes Verzeichnis auszuweichen (nie ins echte XDG_RUNTIME_DIR, F-614), wechselt der Test in
+	// den eigenen Testordner und benutzt den relativen Namen „s“: SocketPfad macht aus XDG_RUNTIME_DIR=„.“ und
+	// WAYLAND_DISPLAY=„s“ den Pfad „s“, der gegen das Arbeitsverzeichnis aufgelöst wird.
+	t.Chdir(t.TempDir())
+	const pfad = "s"
 	l, err := net.ListenUnix("unix", &net.UnixAddr{Name: pfad, Net: "unix"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { l.Close() })
+	t.Setenv("XDG_RUNTIME_DIR", ".")
 	t.Setenv("WAYLAND_DISPLAY", pfad)
 	ch := make(chan *wlwire.Verbindung, 1)
 	go func() {
