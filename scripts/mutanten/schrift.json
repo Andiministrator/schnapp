@@ -171,8 +171,15 @@
     "name": "QA3-B2 keine Grenze geladener Dateien",
     "datei": "internal/fonts/fonts.go",
     "paket": "./internal/fonts",
-    "alt": "\t\t\tif len(dateien) >= MaxGeladen || dateiBytes+st.Size() > MaxGeladenBytes {",
+    "alt": "\t\t\tif !verdraenge(st.Size()) {",
     "neu": "\t\t\tif false {"
+  },
+  {
+    "name": "F-697 Grenze verdrängt nicht",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/fonts",
+    "alt": "\tfor len(dateien) > 0 && (len(dateien) >= MaxGeladen",
+    "neu": "\tfor false && (len(dateien) >= MaxGeladen"
   },
   {
     "name": "QA3-B3 MCP folgt XDG_DATA_DIRS",

@@ -132,6 +132,8 @@ var (
 	fehler      = map[schluessel]bool{} // Dateien, die sich nicht laden ließen
 	dateien     = map[string][]byte{}   // geladene Schriftdateien je Pfad (Sammlungen nur einmal gelesen)
 	dateiBytes  int64                   // Summe der Bytes in dateien
+	nutzung     = map[string]uint64{}   // letzte Benutzung je Pfad in dateien (Takt), für die Verdrängung
+	takt        uint64                  // zählt jede Benutzung hoch
 	ordner      = schriftOrdner         // für Tests und SetzeOrdner austauschbar
 	maxDateien  = MaxDateien            // für Tests austauschbar
 	sucheFrist  = SucheFrist            // für Tests austauschbar
@@ -234,7 +236,7 @@ func Laden(name string, s Schnitt) *Schrift {
 }
 
 // ladeSchnitt lädt den Schnitt w von f (aus dem Zwischenspeicher); nil, wenn er fehlt, kaputt ist oder die Grenzen
-// MaxGeladen/MaxGeladenBytes erreicht sind. Nur mit mu.
+// MaxGeladen/MaxGeladenBytes auch nach dem Verdrängen nicht reichen (F-697). Nur mit mu.
 func ladeSchnitt(f *familie, w Schnitt) *Schrift {
 	q := f.schnitte[w]
 	if !q.da {
@@ -242,6 +244,7 @@ func ladeSchnitt(f *familie, w Schnitt) *Schrift {
 	}
 	k := schluessel{f.name, w}
 	if s, ok := geladen[k]; ok {
+		beruehre(q.pfad)
 		return s
 	}
 	if fehler[k] {
@@ -275,13 +278,21 @@ func ladeQuelle(q quelle) (*sfnt.Font, error) {
 			if !st.Mode().IsRegular() || st.Size() > MaxDateiGroesse {
 				return nil, errors.New("fonts: keine reguläre Datei oder zu groß")
 			}
-			if len(dateien) >= MaxGeladen || dateiBytes+st.Size() > MaxGeladenBytes {
+			// Die Grenze ist ein Zwischenspeicher, keine lebenslange Sperre (F-697): Platz schafft die am längsten
+			// unbenutzte Datei. Passt die neue auch ohne alle anderen nicht, bleibt es bei errGrenze.
+			if st.Size() > MaxGeladenBytes {
+				return nil, errGrenze
+			}
+			if !verdraenge(st.Size()) {
 				return nil, errGrenze
 			}
 			if roh, err = os.ReadFile(q.pfad); err != nil {
 				return nil, err
 			}
-			if int64(len(roh)) > MaxDateiGroesse || dateiBytes+int64(len(roh)) > MaxGeladenBytes {
+			if int64(len(roh)) > MaxDateiGroesse || int64(len(roh)) > MaxGeladenBytes {
+				return nil, errGrenze
+			}
+			if !verdraenge(int64(len(roh))) { // die Datei kann seit Stat gewachsen sein
 				return nil, errGrenze
 			}
 			// Erst nach gelungenem Parsen behalten (Verify V-2): eine kaputte Datei belegt keinen Platz.
@@ -291,10 +302,45 @@ func ladeQuelle(q quelle) (*sfnt.Font, error) {
 			}
 			dateien[q.pfad] = roh
 			dateiBytes += int64(len(roh))
+			beruehre(q.pfad)
 			return fnt, nil
 		}
+		beruehre(q.pfad)
 	}
 	return parse(roh, q)
+}
+
+// beruehre merkt die Benutzung der Datei pfad (eingebaute Schriften haben keinen). Nur mit mu.
+func beruehre(pfad string) {
+	if pfad == "" {
+		return
+	}
+	takt++
+	nutzung[pfad] = takt
+}
+
+// verdraenge wirft die am längsten unbenutzten Schriftdateien aus dem Speicher, bis eine weitere von groesse Bytes
+// unter MaxGeladen und MaxGeladenBytes passt (F-697). Mit ihnen fallen die geladenen Schnitte aus der Tabelle; wer
+// eine *Schrift noch hält, behält sie gültig, bis er sie loslässt (Garbage Collector). Liefert false, wenn die Datei
+// auch ohne alle anderen nicht passt. Nur mit mu.
+func verdraenge(groesse int64) bool {
+	for len(dateien) > 0 && (len(dateien) >= MaxGeladen || dateiBytes+groesse > MaxGeladenBytes) {
+		aelteste, ab := "", uint64(0)
+		for p := range dateien {
+			if n := nutzung[p]; aelteste == "" || n < ab || (n == ab && p < aelteste) {
+				aelteste, ab = p, n
+			}
+		}
+		dateiBytes -= int64(len(dateien[aelteste]))
+		delete(dateien, aelteste)
+		delete(nutzung, aelteste)
+		for k := range geladen {
+			if f, ok := familieZu(k.familie); ok && f.schnitte[k.schnitt].pfad == aelteste {
+				delete(geladen, k)
+			}
+		}
+	}
+	return dateiBytes+groesse <= MaxGeladenBytes
 }
 
 // parse liest den Schnitt q aus roh (Einzelschrift oder Sammlung).

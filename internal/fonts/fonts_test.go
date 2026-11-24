@@ -30,6 +30,7 @@ func mitOrdnern(t *testing.T, o ...string) {
 		clear(geladen)
 		clear(fehler)
 		clear(dateien)
+		clear(nutzung)
 		dateiBytes = 0
 		mu.Unlock()
 	})
@@ -173,6 +174,7 @@ func TestLadenSuchtSelbst(t *testing.T) {
 	t.Cleanup(func() {
 		ordner, suche, fertigKanal = alt, altSuche, altKanal
 		clear(dateien)
+		clear(nutzung)
 		dateiBytes = 0
 		mu.Lock()
 		system, gesucht = nil, false
@@ -204,6 +206,7 @@ func TestHintergrundsucheUndWarten(t *testing.T) {
 		clear(geladen)
 		clear(fehler)
 		clear(dateien)
+		clear(nutzung)
 		dateiBytes = 0
 		mu.Unlock()
 	})
@@ -241,21 +244,11 @@ func TestGrenzeGeladen(t *testing.T) {
 	if s := Laden(GoMono, Fett); s.Ersatz {
 		t.Errorf("eingebaute Schrift: %+v", s)
 	}
-	// Ebenso über der Zahl der Dateien (eigene Prüfung vor dem Lesen).
+	// Die Grenze wird nicht als Fehler der Datei gemerkt: Ist wieder Platz, lädt dieselbe Familie (Verify V-2).
 	mu.Lock()
 	dateiBytes = 0
 	clear(geladen)
 	clear(fehler)
-	for i := range MaxGeladen {
-		dateien[filepath.Join(d, "andere", string(rune('a'+i%26))+string(rune('0'+i/26)))] = nil
-	}
-	mu.Unlock()
-	if s := Laden("Go Medium", Kursiv); !s.Ersatz {
-		t.Errorf("über der Dateizahl: %+v", s)
-	}
-	// Die Grenze wird nicht als Fehler der Datei gemerkt: Ist wieder Platz, lädt dieselbe Familie (Verify V-2).
-	mu.Lock()
-	clear(dateien)
 	mu.Unlock()
 	if s := Laden("Go Medium", Kursiv); s.Ersatz {
 		t.Errorf("nach Freigabe: %+v", s)

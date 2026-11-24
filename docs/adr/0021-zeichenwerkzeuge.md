@@ -296,7 +296,7 @@ Regular) und präzisiert Nachtrag 3 (gleiche Maße überall).
    fontconfig, nichts wird auf die Platte geschrieben (Gio selbst würde einen Index im Cache anlegen). Gelesen werden
    TrueType und OpenType (`.ttf`, `.otf`) sowie Sammlungen (`.ttc`, `.otc`); höchstens 20 000 Dateien und 64 MiB je
    Datei, Verweise auf Ordner werden nicht verfolgt. Nach der Sitzungs-QA: höchstens 32 geladene Schriftdateien bzw.
-   256 MiB je Prozess (darüber Go; die Grenze gilt nicht als Fehler der Datei), die Suche bricht nach 10 s ab und
+   256 MiB zugleich im Speicher (Nachtrag 15: darüber verdrängt die am längsten unbenutzte Datei, F-697; passt eine Datei auch dann nicht, Go; die Grenze gilt nicht als Fehler der Datei), die Suche bricht nach 10 s ab und
    `Laden` wartet höchstens 11 s; `schnapp mcp` sucht nur im Heim der Benutzerdatenbank und den Systemordnern;
    Farb-Bitmap-Schriften fehlen in der Liste. Aus jeder Schrift zählen der Familienname (typografische Familie,
    sonst Familie) und die vier Grundschnitte (normal, fett, kursiv, fett kursiv, erkannt am Namen des Schnitts: „Bold“,
@@ -565,3 +565,22 @@ wenn das Dreieck entfällt“) für den SVG-Export ein; ADR-0023 Punkt 7 und ADR
    Schriftgrad) ablesen, nicht aber Breite, Höhe oder Inhalt des Schilds. Das gleicht dem Bestand (teils sichtbare
    Pfeile und Kästen stehen ganz im SVG, ADR-0023 Punkt 7) und bleibt so; ein Beschnitt auf die sichtbaren Kacheln
    wäre eigener Code nur für diesen Fall. Ausnahmepfad [S] P3 (docs/qa/sprint-abschluss.md).
+
+## Nachtrag 15 (24.11.2026): Schriftgrenze ist ein Zwischenspeicher mit Verdrängung (F-697, Karte #276)
+
+Ändert die Grenze aus Nachtrag 10 Punkt 3 („höchstens 32 geladene Schriftdateien bzw. 256 MiB“) in ihrer Wirkung, nicht
+in ihrer Höhe. Anlass: Seit dem Wechsel der Aufnahme im selben Fenster (ADR-0036) lebt der Prozess über viele Dokumente;
+die lebenslange Sperre ließ später geöffnete Dokumente ihre Schrift als fehlend (Ersatz Go) zeigen.
+
+1. **Verdrängen statt Sperren:** Ist die Grenze erreicht, wirft `fonts` die am längsten unbenutzten Schriftdateien aus
+   dem Speicher (`verdraenge`, Takt je Benutzung), bis die neue passt, samt ihren geladenen Schnitten. Die Obergrenze
+   32 Dateien/256 MiB gilt weiter für die zugleich gehaltenen Dateien. Das gilt bei jedem Laden, auch aus der
+   Hintergrundsuche und aus Renderer und Export (alles unter `mu`).
+2. **Gehaltene Schriften bleiben gültig:** Wer eine `*Schrift` schon hat (laufender Renderer, Texteditor), behält sie
+   benutzbar; sie fällt nur aus der Tabelle, der Garbage Collector gibt sie frei, wenn niemand mehr sie hält. Der
+   Speicher kann daher kurz über der Grenze liegen, solange Renderer noch verdrängte Schriften benutzen.
+3. **Restfall:** Eine einzelne Datei über 256 MiB oder eine Datei, die auch ohne alle anderen nicht passt, bleibt
+   `errGrenze` (Ersatz Go, nicht als Dateifehler gemerkt). Braucht ein Dokument mehr als 32 verschiedene Dateien
+   zugleich, lädt es sie reihum nach (langsamer, aber ohne Ersatz); eine eigene Meldung „Grenze erreicht“ entfällt,
+   weil die Schrift nicht mehr fehlt.
+4. Tests: `internal/fonts/verdraengung_test.go` (33 und mehr Dateien in Folge, älteste zuerst, nebenläufig unter `-race`).
