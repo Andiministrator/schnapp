@@ -1633,6 +1633,10 @@ msgid "Drag over the text to copy; Enter takes the whole image; Esc cancels."
 msgstr ""
 
 #: internal/ui/ocr.go
+msgid "Recognizing text… %d %%"
+msgstr ""
+
+#: internal/ui/ocr.go
 msgid "Recognizing text…"
 msgstr ""
 

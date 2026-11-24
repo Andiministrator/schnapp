@@ -96,3 +96,36 @@ Wo die Oberfläche von den Punkten 1 bis 6 abweicht oder sie genauer fasst (`int
   Variable `sucheErkenner`); `internal/ocr` braucht dafür keine exportierte Naht.
 
 - **Ergänzt (F-633, 24.11.2026) zu Punkt 4:** Verdoppelt wird nur, wenn das Ergebnis noch passt: Fläche höchstens 40 Mio. Pixel und jede Seite höchstens 32767 (`ocr.MaxSeite`, Grenze von Leptonica). Sonst geht der Bereich unvergrößert weiter, ein 590 × 18000 großer Streifen wird also erkannt, nicht abgelehnt. Mit `ErrZuGross` ablehnen nur noch Bereiche, die schon unvergrößert über 40 Mio. Pixel oder über 32767 auf einer Seite liegen.
+
+## Nachtrag 1 (24.11.2026, Karte #242): eigenes Hilfsprogramm schnapp-ocr, wenn tesseract fehlt
+
+Entscheidung Andis vom 24.11.2026 („ja, so“): erst das installierte tesseract, dann ein eigenes Hilfsprogramm. Messung
+(Karte #242, synthetisches Bild, 6 Zeilen mit Umlauten): Güte der WASM-Fassung gleich (deu 98–99 %, zeichengleich mit
+tesseract), Tempo 4- bis 17-mal langsamer (1–6 s statt 0,2–0,6 s je Bereich, Start 0,5 s). Brauchbar als Ersatz.
+
+1. **Programm `schnapp-ocr`** im eigenen Go-Modul `ocr/` (wie `draw/`, damit die Fremdpakete nur dort liegen):
+   tesseract (nur LSTM) als WebAssembly über `github.com/danlock/gogosseract` (Apache-2.0) und wazero, ohne cgo.
+   Schnittstelle ist die Teilmenge von tesseract, die `internal/ocr` braucht: `--list-langs`, `- - -l LANG --psm N`,
+   dazu `--progress` (Zeilen `progress N` auf stderr) und `--version`. Je Aufruf **eine** Sprache: Die WASM-Fassung
+   lädt Sprachdaten aus dem Speicher, das geht nur für ein Modell; `Erkenner.Sprachen` liefert dann nur die erste
+   Sprache der Wahl aus Punkt 3 (deutsche Oberfläche: `deu`, das liest englischen Text in der Messung gleich gut).
+2. **Sprachdaten** `deu` und `eng` aus `tessdata_fast` (Apache-2.0, Stand 87416418, 2024-08-01; zusammen 5,6 MB) liegen
+   in `ocr/tessdata/` mit Lizenz und sind per `go:embed` eingebaut. Weitere Sprachen bleiben dem installierten
+   tesseract vorbehalten.
+3. **Suche** (Punkt 1 erweitert): `tesseract` im PATH hat Vorrang. Fehlt es oder hat es keine Sprache, sucht
+   `internal/ocr.Suche` `schnapp-ocr` neben dem eigenen Programm (`os.Executable`; dorthin legt `install.sh` es), dann
+   im PATH. Fehlen beide, bleibt die Erklärung „Install tesseract to recognize text.“.
+4. **Frist** (Punkt 2): für `schnapp-ocr` 3 Minuten statt 30 s. Der Fortschritt steht in der Statuszeile
+   („Recognizing text… 42 %“); tesseract meldet keinen, dort bleibt der Text ohne Zahl.
+5. **Abbruch:** gogosseract startet wazero ohne `CloseOnContextDone`, ein Kontext erreicht die laufende Erkennung im
+   Programm nicht. Abgebrochen wird wie bei tesseract, indem `internal/ocr` den Kindprozess beendet.
+6. **wazero 1.7.3:** Ab wazero 1.8 scheitert das von gogosseract mitgelieferte WASM (`emscripten_stack_get_current not
+   exported`; mit wazero-emscripten-embind 1.5.2 und wazero 1.12 geprüft). Neuere wazero-Fassungen erst mit einem neu
+   übersetzten WASM; bis dahin bleibt 1.7.3 fest. Das WASM ist vertrauter Code aus dem Modul, keine fremde Eingabe.
+7. **Flatpak (Punkt 7 ersetzt):** statt tesseract und leptonica als Module zu bündeln, kommt `schnapp-ocr` neben
+   `schnapp` in das Paket; das tesseract des Systems ist in der Sandbox ohnehin nicht sichtbar.
+8. **Bau:** `install.sh` baut beide Programme in Nebendateien und tauscht erst, wenn beide gebaut sind; `--uninstall`
+   entfernt vier Dateien. Die CI hat einen eigenen Job `ocr` (gofmt, vet, Test mit echter Erkennung in deu und eng).
+
+Verworfen: Sprachdaten zur Laufzeit herunterladen (verlässt den Rechner, Kernprinzip 3), `tessdata_best` (rund 4-mal
+größer, langsamer, die Messung zeigt keinen Bedarf), zwei Läufe für `deu+eng` (verdoppelt die ohnehin lange Dauer).

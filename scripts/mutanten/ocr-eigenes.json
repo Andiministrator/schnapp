@@ -1,0 +1,79 @@
+[
+  {
+    "name": "OE1 schnapp-ocr bekommt zwei Sprachen (Karte #242)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "\tif e.eigenes {\n\t\twahl = wahl[:1]\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "OE2 schnapp-ocr ohne --progress (Karte #242)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "frist, argumente = FristEigenes, append(argumente, \"--progress\")",
+    "neu": "frist = FristEigenes"
+  },
+  {
+    "name": "OE3 tesseract verliert den Vorrang (Karte #242)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "if p, err := suchePfad(programmName); err == nil {",
+    "neu": "if p, err := suchePfad(programmName); err == nil && p == \"\" {"
+  },
+  {
+    "name": "OE4 Fortschritt über 100 angenommen (Karte #242)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "n >= 0 && n <= 100",
+    "neu": "n >= 0"
+  },
+  {
+    "name": "OE5 letzte Fehlerzeile ohne Zeilenende geht verloren (Karte #242)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "\tif fl != nil && len(fl.zeile) > 0 {\n\t\tfl.zeileFertig() // letzte Zeile ohne Zeilenende\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "OE6 nicht ausführbares schnapp-ocr neben dem Programm zählt (Karte #242)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": " && fi.Mode().Perm()&0o111 != 0",
+    "neu": ""
+  },
+  {
+    "name": "OE7 schnapp-ocr nimmt deu+eng an (Karte #242)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "if e.eigenes && len(teile) > 1 {",
+    "neu": "if e.eigenes && len(teile) > 9 {"
+  },
+  {
+    "name": "OE8 ohne tesseract kein Rückfall auf schnapp-ocr (Karte #242)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "\tp := sucheEigenes()\n",
+    "neu": "\tp := \"\"\n"
+  },
+  {
+    "name": "OE9 Statuszeile ohne Fortschritt (Karte #242)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif p := e.ocr.stand.Load(); p >= 0 {",
+    "neu": "\t\t\tif p := e.ocr.stand.Load(); p >= 1000 {"
+  },
+  {
+    "name": "OE10 Fortschritt geht nicht an die Oberfläche (Karte #242)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "r.text, r.err = er.Erkenne(ctx, b, sprachen, fortschritt)",
+    "neu": "_ = fortschritt\n\t\t\tr.text, r.err = er.Erkenne(ctx, b, sprachen, func(int) {})"
+  },
+  {
+    "name": "OE11 Fehlermeldung nennt die Fortschrittszeilen (Karte #242)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "\t\tcmd.Stderr = fl\n",
+    "neu": ""
+  }
+]

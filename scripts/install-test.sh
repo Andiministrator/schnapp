@@ -11,6 +11,8 @@
 #   2. Repo ohne Tag: Version 0.0.0-dev+<Kurzhash>, mit .dirty bei geändertem Baum; mit Tag die Tag-Version (F-113).
 #   3. Ordner in fremdem Repo (mit Tag), selbst ohne Repo: der fremde Tag zählt nicht, Version 0.0.0-dev (F-113).
 #   4. Repo mit Tag ohne v-Schema (sprint-ende): zählt nicht, Version 0.0.0-dev+<Kurzhash> (F-364).
+#   5. schnapp-ocr (Karte #242): wird mit derselben Version aus ocr/ gebaut und neben schnapp installiert; --uninstall
+#      entfernt alle vier Dateien.
 #
 # Desktop-Werkzeuge (update-desktop-database, gtk-update-icon-cache, kbuildsycoca6) laufen im Test nur als Attrappen
 # aus scripts/install-test-stub/ (F-367): Der Ordner steht im PATH vor /usr/bin, und Attrappen mit gleichem Namen
@@ -34,7 +36,7 @@ fail() { echo "FEHLER: $*" >&2; fehler=1; }
 
 # Kopie der für install.sh nötigen Dateien nach $1.
 kopie() {
-	mkdir -p -- "$1/data" "$1/brand/logo/svg" "$1/cmd/schnapp"
+	mkdir -p -- "$1/data" "$1/brand/logo/svg" "$1/cmd/schnapp" "$1/ocr"
 	cp -- "${INSTALL_SH:-$wurzel/install.sh}" "$1/install.sh"
 	cp -- "$wurzel/data/schnapp.desktop.in" "$1/data/schnapp.desktop.in"
 	cp -- "$wurzel/brand/logo/svg/schnapp-symbol-dunkel.svg" "$1/brand/logo/svg/schnapp-symbol-dunkel.svg"
@@ -125,6 +127,19 @@ rc=0
 lauf "$f4/repo" "$f4" || rc=$?
 [ "$rc" -eq 0 ] || fail "Fall 4: install.sh scheiterte: $(cat "$f4/aus.txt")"
 grep -qF -- "-X main.version=0.0.0-dev+$kurz4 " "$f4/go.log" || fail "Fall 4: erwartet 0.0.0-dev+$kurz4 (Tag sprint-ende zählt nicht), go-Aufruf: $(cat "$f4/go.log")"
+
+# --- Fall 5: schnapp-ocr und --uninstall (Karte #242) ------------------------
+grep -qF -- "-X main.version=1.2.3 -o $f2/home/.local/bin/schnapp-ocr.neu ." "$f2/go.log" \
+	|| fail "Fall 5: schnapp-ocr nicht mit Version gebaut, go-Aufruf: $(cat "$f2/go.log")"
+[ -x "$f2/home/.local/bin/schnapp-ocr" ] || fail "Fall 5: schnapp-ocr nicht installiert"
+[ ! -e "$f2/home/.local/bin/schnapp-ocr.neu" ] || fail "Fall 5: Nebendatei schnapp-ocr.neu liegen geblieben"
+rc=0
+env -i HOME="$f2/home" PATH="$stub:/usr/bin:/bin" STUB_LOG="$f2/go.log" bash "$f2/repo/install.sh" --uninstall \
+	> "$f2/aus-un.txt" 2>&1 || rc=$?
+[ "$rc" -eq 0 ] || fail "Fall 5: --uninstall scheiterte: $(cat "$f2/aus-un.txt")"
+for d in bin/schnapp bin/schnapp-ocr share/applications/schnapp.desktop share/icons/hicolor/scalable/apps/schnapp.svg; do
+	[ ! -e "$f2/home/.local/$d" ] || fail "Fall 5: --uninstall ließ $d liegen"
+done
 
 if [ "$fehler" -eq 0 ]; then
 	echo "install-test: alle Fälle bestanden"

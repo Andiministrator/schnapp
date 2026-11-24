@@ -68,6 +68,28 @@ jobs:
       - run: go vet ./...
       - run: go test ./...
 
+  # schnapp-ocr (ADR-0035 Nachtrag 1): eigenes Modul mit tesseract als WebAssembly; der Test erkennt deu und eng
+  ocr:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ocr
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          # Wurzelmodul: der letzte Schritt testet internal/ocr, das braucht dessen Go-Fassung
+          go-version-file: go.mod
+      - name: gofmt
+        run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - run: go test ./...
+      # internal/ocr gegen das gebaute Programm (Suche ohne tesseract, Fortschritt); internal/ocr braucht kein Gio
+      - name: internal/ocr mit schnapp-ocr
+        run: |
+          go build -trimpath -o "$RUNNER_TEMP/schnapp-ocr" .
+          cd .. && SCHNAPP_OCR_PROGRAMM="$RUNNER_TEMP/schnapp-ocr" go test -count=1 -run 'TestErkenneEigenesEcht' -v ./internal/ocr
+
   # Gepatchtes Gio (ADR-0015): third_party/gio muss genau Gio + third_party/gio-ausgabe.patch sein.
   gio-patch:
     runs-on: ubuntu-latest

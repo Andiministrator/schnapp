@@ -1319,6 +1319,9 @@ msgstr "Über den Text ziehen, um ihn zu kopieren; Enter nimmt das ganze Bild; E
 msgid "Recognizing text…"
 msgstr "Text wird erkannt …"
 
+msgid "Recognizing text… %d %%"
+msgstr "Text wird erkannt … %d %%"
+
 msgid "Could not recognize text: finish the current action first."
 msgstr "Text nicht erkannt: Erst die laufende Aktion beenden."
 

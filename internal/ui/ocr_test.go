@@ -37,6 +37,7 @@ type erkennerAttrappe struct {
 	abgebr    bool
 	aufrufe   int
 	gestartet chan struct{}
+	stufe     int // > 0: meldet diesen Fortschritt, bevor die Erkennung startet
 }
 
 func neueAttrappe(text string) *erkennerAttrappe {
@@ -53,11 +54,14 @@ func (a *erkennerAttrappe) Sprachen(oberflaeche string) string {
 	return "eng"
 }
 
-func (a *erkennerAttrappe) Erkenne(ctx context.Context, b image.Image, sprachen string) (string, error) {
+func (a *erkennerAttrappe) Erkenne(ctx context.Context, b image.Image, sprachen string, fortschritt func(int)) (string, error) {
 	a.mu.Lock()
 	a.bild, a.sprachen, a.aufrufe = b, sprachen, a.aufrufe+1
-	warten := a.warten
+	warten, stufe := a.warten, a.stufe
 	a.mu.Unlock()
+	if stufe > 0 {
+		fortschritt(stufe)
+	}
 	a.gestartet <- struct{}{}
 	if warten {
 		<-ctx.Done()
@@ -394,6 +398,35 @@ func TestOcrEscBrichtAb(t *testing.T) {
 	}
 	if e.ocrEsc() {
 		t.Error("Esc ohne Erkennung verbraucht")
+	}
+}
+
+// Meldet der Erkenner (schnapp-ocr) Fortschritt, zeigt die Statuszeile ihn; nach dem Abbruch nicht mehr (Karte #242).
+func TestOcrFortschrittInDerStatuszeile(t *testing.T) {
+	a := neueAttrappe("x")
+	a.warten = true
+	e := ocrEditor(t, a)
+	e.ocrBeginnen()
+	e.s.TextBereichGanz()
+	e.ocrBereichPruefen()
+	<-a.gestartet
+	if h := e.ocrHinweis(); h != "Recognizing text…" {
+		t.Errorf("ohne Fortschritt: %q", h)
+	}
+	e.ocrAbbrechen()
+	a.mu.Lock()
+	a.warten, a.stufe = true, 57
+	a.mu.Unlock()
+	e.ocrBeginnen()
+	e.s.TextBereichGanz()
+	e.ocrBereichPruefen()
+	<-a.gestartet
+	if h := e.ocrHinweis(); h != "Recognizing text… 57 %" {
+		t.Errorf("mit Fortschritt: %q", h)
+	}
+	e.ocrAbbrechen()
+	if h := e.ocrHinweis(); h != "" {
+		t.Errorf("nach Abbruch: %q", h)
 	}
 }
 

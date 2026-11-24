@@ -27,7 +27,8 @@
 | **Sprechblase** | Text mit Spitze (`document.Text.Spitze`), kein eigenes Objekt; Werkzeug K. Ohne Füllung zwei Schenkel statt Fläche (ADR-0021 Nachtrag 13). |
 | **Spitze (Sprechblase)** | Punkt im Original, auf den die Sprechblase zeigt; nicht die Pfeilspitze. |
 | **Einstellungstafel** | Tafel über dem Editor (Strg+,), die `settings.ini` liest und nur geänderte Schlüssel schreibt; kein eigenes Fenster (ADR-0034). |
-| **Text aus dem Bild** | Texterkennung über ein installiertes `tesseract` auf dem sichtbaren Bild (nie dem Original); Ergebnis in die Zwischenablage (ADR-0035). |
+| **Text aus dem Bild** | Texterkennung über ein installiertes `tesseract`, sonst über `schnapp-ocr`, auf dem sichtbaren Bild (nie dem Original); Ergebnis in die Zwischenablage (ADR-0035). |
+| **schnapp-ocr** | Eigenes Hilfsprogramm (Modul `ocr/`): tesseract als WebAssembly mit eingebautem Deutsch und Englisch, springt ein, wenn kein `tesseract` installiert ist; langsamer, eine Sprache je Lauf (ADR-0035 Nachtrag 1). |
 | **Bereichsmodus** | Einmaliger Zustand nach Strg+Umschalt+T: Ziehen wählt den Bereich der Texterkennung, das Werkzeug bleibt. |
 | **Spotlight** | Alles außer einem Bereich abdunkeln. |
 | **Lupe (Beschriftung)** | Vergrößerter Ausschnitt, neben die Stelle gesetzt. |

@@ -145,6 +145,8 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | https://flathub.org/apps/xyz.rescribe.rescribe | 2026-11-24 | 2026-11-24 | indirect | WebSearch | OCR-Programm auf Flathub mit gebündeltem Tesseract | docs/adr/0035-text-erkennen.md |
 | https://pkg.go.dev/github.com/danlock/gogosseract | 2026-11-24 | 2026-11-24 | indirect | WebSearch | gogosseract: Tesseract (nur LSTM) als WASM über wazero, reines Go ohne cgo; Sprachdaten per go:embed möglich | docs/adr/0035-text-erkennen.md |
 | https://starlog.pages.dev/articles/developer-tools/danlock-gogosseract | 2026-11-24 | 2026-11-24 | indirect | WebSearch | Besprechung: etwa 6× langsamer als nativ, Fork für wazero-Verträglichkeit, letzte Pflege 2023/2025 unklar | docs/adr/0035-text-erkennen.md |
+| https://github.com/tesseract-ocr/tessdata_fast | 2026-11-24 | 2026-11-24 | live | curl | `deu.traineddata` (1,5 MB) und `eng.traineddata` (4,1 MB), Stand 87416418 (2024-08-01), Lizenz Apache-2.0; nach `ocr/tessdata/` (Karte #242) | docs/adr/0035-text-erkennen.md |
+| https://proxy.golang.org (github.com/danlock/gogosseract v0.0.11-0ad3421) | 2026-11-24 | 2026-11-24 | live | go get | Apache-2.0; WASM aus dem Fork von tesseract-wasm, nur LSTM; ab wazero 1.8 scheitert das WASM (`emscripten_stack_get_current`), 1.7.3 geht | docs/adr/0035-text-erkennen.md |
 
 ## Suchanfragen
 

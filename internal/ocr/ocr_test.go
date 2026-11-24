@@ -46,9 +46,7 @@ esac
 	if err := os.WriteFile(skript, []byte(inhalt), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	alt := suchePfad
-	suchePfad = func(string) (string, error) { return skript, nil }
-	t.Cleanup(func() { suchePfad = alt })
+	setzeSuche(t, map[string]string{programmName: skript}, t.TempDir())
 	e, err := Suche(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -77,9 +75,7 @@ func TestSucheUndSprachen(t *testing.T) {
 		t.Errorf("ohne passende Sprache: %q", got)
 	}
 
-	alt := suchePfad
-	defer func() { suchePfad = alt }()
-	suchePfad = func(string) (string, error) { return "", exec.ErrNotFound }
+	setzeSuche(t, nil, t.TempDir())
 	if _, err := Suche(context.Background()); !errors.Is(err, ErrKeinProgramm) || !strings.HasPrefix(err.Error(), "ocr: ") {
 		t.Errorf("ohne Programm: %v", err)
 	}
@@ -94,7 +90,7 @@ func TestLeseSprachen(t *testing.T) {
 
 func TestErkenneAttrappe(t *testing.T) {
 	e, protokoll := attrappe(t, "text")
-	text, err := e.Erkenne(context.Background(), testbild(800, 700), "deu+eng")
+	text, err := e.Erkenne(context.Background(), testbild(800, 700), "deu+eng", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,14 +105,14 @@ func TestErkenneAttrappe(t *testing.T) {
 	if n := strings.TrimSpace(zeilen[1]); n == "0" {
 		t.Error("kein Bild auf stdin")
 	}
-	if _, err := e.Erkenne(context.Background(), testbild(10, 10), "deu+klingon"); err == nil {
+	if _, err := e.Erkenne(context.Background(), testbild(10, 10), "deu+klingon", nil); err == nil {
 		t.Error("unbekannte Sprache angenommen")
 	}
 }
 
 func TestErkenneFehlerFristLeer(t *testing.T) {
 	e, _ := attrappe(t, "fehl")
-	_, err := e.Erkenne(context.Background(), testbild(10, 10), "deu")
+	_, err := e.Erkenne(context.Background(), testbild(10, 10), "deu", nil)
 	if err == nil || !strings.Contains(err.Error(), "Failed loading language deu") || !strings.HasPrefix(err.Error(), "ocr: ") {
 		t.Errorf("Fehler %v", err)
 	}
@@ -125,7 +121,7 @@ func TestErkenneFehlerFristLeer(t *testing.T) {
 	ctx, ende := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer ende()
 	start := time.Now()
-	_, err = e.Erkenne(ctx, testbild(10, 10), "deu")
+	_, err = e.Erkenne(ctx, testbild(10, 10), "deu", nil)
 	if !errors.Is(err, ErrFrist) {
 		t.Errorf("Frist: %v", err)
 	}
@@ -134,12 +130,12 @@ func TestErkenneFehlerFristLeer(t *testing.T) {
 	}
 	ctx2, ab := context.WithCancel(context.Background())
 	ab()
-	if _, err := e.Erkenne(ctx2, testbild(10, 10), "deu"); !errors.Is(err, context.Canceled) {
+	if _, err := e.Erkenne(ctx2, testbild(10, 10), "deu", nil); !errors.Is(err, context.Canceled) {
 		t.Errorf("Abbruch: %v", err)
 	}
 
 	e, _ = attrappe(t, "leer")
-	if text, err := e.Erkenne(context.Background(), testbild(10, 10), "deu"); err != nil || text != "" {
+	if text, err := e.Erkenne(context.Background(), testbild(10, 10), "deu", nil); err != nil || text != "" {
 		t.Errorf("leer: %q, %v", text, err)
 	}
 }
@@ -186,15 +182,9 @@ func TestBereinige(t *testing.T) {
 	}
 }
 
-// TestErkenneEcht fährt das installierte tesseract mit einem synthetischen Bild (übersprungen, wenn es fehlt).
-func TestErkenneEcht(t *testing.T) {
-	if _, err := exec.LookPath(programmName); err != nil {
-		t.Skip("tesseract nicht installiert")
-	}
-	e, err := Suche(context.Background())
-	if err != nil {
-		t.Skip(err)
-	}
+// schriftBild ist text in Go Regular 18 px, hell auf dunklem Grund (wie ein dunkles Fenster).
+func schriftBild(t *testing.T, text string) image.Image {
+	t.Helper()
 	ft, err := opentype.Parse(goregular.TTF)
 	if err != nil {
 		t.Fatal(err)
@@ -206,8 +196,20 @@ func TestErkenneEcht(t *testing.T) {
 	b := image.NewNRGBA(image.Rect(0, 0, 360, 60))
 	draw.Draw(b, b.Bounds(), image.NewUniform(color.NRGBA{0x1E, 0x21, 0x24, 0xFF}), image.Point{}, draw.Src)
 	d := &font.Drawer{Dst: b, Src: image.NewUniform(color.White), Face: fc, Dot: fixed.P(12, 36)}
-	d.DrawString("Schnapp 2026 Text")
-	text, err := e.Erkenne(context.Background(), b, e.Sprachen("en"))
+	d.DrawString(text)
+	return b
+}
+
+// TestErkenneEcht fährt das installierte tesseract mit einem synthetischen Bild (übersprungen, wenn es fehlt).
+func TestErkenneEcht(t *testing.T) {
+	if _, err := exec.LookPath(programmName); err != nil {
+		t.Skip("tesseract nicht installiert")
+	}
+	e, err := Suche(context.Background())
+	if err != nil {
+		t.Skip(err)
+	}
+	text, err := e.Erkenne(context.Background(), schriftBild(t, "Schnapp 2026 Text"), e.Sprachen("en"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -228,7 +230,7 @@ func TestErkenneLangSchmalEcht(t *testing.T) {
 	}
 	b := image.NewNRGBA(image.Rect(0, 0, 500, 16500))
 	draw.Draw(b, b.Bounds(), image.NewUniform(color.White), image.Point{}, draw.Src)
-	if _, err := e.Erkenne(context.Background(), b, e.Sprachen("en")); err != nil {
+	if _, err := e.Erkenne(context.Background(), b, e.Sprachen("en"), nil); err != nil {
 		t.Errorf("lang und schmal: %v", err)
 	}
 }

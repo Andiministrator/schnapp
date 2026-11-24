@@ -17,6 +17,7 @@ import (
 	"image/color"
 	"image/draw"
 	"math"
+	"sync/atomic"
 	"time"
 	"unicode/utf8"
 
@@ -31,11 +32,12 @@ import (
 	"github.com/Andiministrator/schnapp/internal/wlclip"
 )
 
-// textErkenner ist, was die Oberfläche vom gefundenen tesseract braucht (*ocr.Erkenner). Eigene Schnittstelle, damit
-// Tests eine Attrappe einsetzen, ohne ein Programm zu starten.
+// textErkenner ist, was die Oberfläche vom gefundenen tesseract oder schnapp-ocr braucht (*ocr.Erkenner). Eigene
+// Schnittstelle, damit Tests eine Attrappe einsetzen, ohne ein Programm zu starten. Erkenne ruft fortschritt (Prozent)
+// aus einer anderen Goroutine auf, nur schnapp-ocr meldet ihn (ADR-0035 Nachtrag 1).
 type textErkenner interface {
 	Sprachen(oberflaeche string) string
-	Erkenne(ctx context.Context, b image.Image, sprachen string) (string, error)
+	Erkenne(ctx context.Context, b image.Image, sprachen string, fortschritt func(int)) (string, error)
 }
 
 // sucheErkenner sucht tesseract (ocr.Suche); Naht für Tests.
@@ -67,6 +69,9 @@ type ocrZustand struct {
 	laeuft   bool               // eine Erkennung läuft
 	abbruch  context.CancelFunc // beendet die laufende Erkennung (Esc, Schließen)
 	antwort  chan ocrErgebnis   // je Erkennung neu: Eine abgebrochene liefert in einen verlassenen Kanal
+	// stand ist der Fortschritt der laufenden Erkennung in Prozent, -1: keiner gemeldet; je Erkennung neu, weil eine
+	// abgebrochene noch in ihren alten Zähler schreiben darf.
+	stand *atomic.Int32
 }
 
 // ocrKontext ist der Kontext des Editors (endet mit dem Fenster, Editor); ohne Fenster (Tests) der Hintergrund.
@@ -131,6 +136,11 @@ func (e *editor) ocrHinweis() string {
 	case e.s.TextBereichLaeuft():
 		return i18n.T("Drag over the text to copy; Enter takes the whole image; Esc cancels.")
 	case e.ocr.laeuft:
+		if e.ocr.stand != nil {
+			if p := e.ocr.stand.Load(); p >= 0 {
+				return fmt.Sprintf(i18n.T("Recognizing text… %d %%"), p)
+			}
+		}
 		return i18n.T("Recognizing text…")
 	}
 	return ""
@@ -157,15 +167,22 @@ func (e *editor) ocrStarten(bereich image.Rectangle) {
 	sprachen := e.ocr.erkenner.Sprachen(i18n.Sprache())
 	ctx, abbruch := context.WithCancel(e.ocrKontext())
 	ch := make(chan ocrErgebnis, 1)
-	e.ocr.laeuft, e.ocr.abbruch, e.ocr.antwort = true, abbruch, ch
+	stand := new(atomic.Int32)
+	stand.Store(-1)
+	e.ocr.laeuft, e.ocr.abbruch, e.ocr.antwort, e.ocr.stand = true, abbruch, ch, stand
 	er, wecker := e.ocr.erkenner, e.wecker
+	fortschritt := func(p int) {
+		if stand.Swap(int32(p)) != int32(p) && wecker != nil {
+			wecker.Anfordern() // die Statuszeile zeigt den neuen Stand
+		}
+	}
 	diagnoseEditor("Texterkennung: Bereich %v, Sprachen %s", bereich, sprachen)
 	e.melde(i18n.T("Recognizing text…"), false)
 	go func() {
 		var r ocrErgebnis
 		b, err := ocrBild(abzug, bereich)
 		if err == nil {
-			r.text, r.err = er.Erkenne(ctx, b, sprachen)
+			r.text, r.err = er.Erkenne(ctx, b, sprachen, fortschritt)
 		} else {
 			r.err = err
 		}
@@ -248,7 +265,7 @@ func (e *editor) ocrAbbrechen() {
 	if e.ocr.abbruch != nil {
 		e.ocr.abbruch()
 	}
-	e.ocr.laeuft, e.ocr.abbruch, e.ocr.antwort = false, nil, nil
+	e.ocr.laeuft, e.ocr.abbruch, e.ocr.antwort, e.ocr.stand = false, nil, nil, nil
 }
 
 // textMime ist der Typ, unter dem Gio Text anbietet (die üblichen Text-Typen, ADR-0015).

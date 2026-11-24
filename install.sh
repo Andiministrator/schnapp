@@ -4,20 +4,21 @@
 # Installationsskript für Schnapp (Karte #42, ADR-0017).
 #
 #   ./install.sh              baut und installiert
-#   ./install.sh --uninstall  entfernt die drei installierten Dateien
+#   ./install.sh --uninstall  entfernt die vier installierten Dateien
 #   ./install.sh --help       zeigt diese Hilfe
 #
 # Umgebung: PREFIX (Vorgabe $HOME/.local), XDG_DATA_HOME (Vorgabe $HOME/.local/share).
-# Installiert werden drei Dateien:
+# Installiert werden vier Dateien:
 #   $PREFIX/bin/schnapp
+#   $PREFIX/bin/schnapp-ocr   (Texterkennung ohne tesseract, Modul ocr/, ADR-0035 Nachtrag 1)
 #   $XDG_DATA_HOME/applications/schnapp.desktop
 #   $XDG_DATA_HOME/icons/hicolor/scalable/apps/schnapp.svg
 # Dazu aktualisieren vorhandene Desktop-Werkzeuge ihre Caches (Menü-Datenbank; den Symbol-Cache nur, wenn es ihn
-# schon gibt). --uninstall entfernt nur die drei Dateien.
+# schon gibt). --uninstall entfernt nur die vier Dateien.
 #
 # Löschregel (Projekt): rm nur mit nicht leerem Ziel, das genau Präfix + wörtlich ausgeschriebenes Suffix ist. Das
 # Präfix selbst kommt aus PREFIX/XDG_DATA_HOME und ist damit Sache des Aufrufers — wer PREFIX=/usr als root setzt,
-# entfernt /usr/bin/schnapp. Mehr als diese drei fest benannten Dateien kann das Skript nicht löschen.
+# entfernt /usr/bin/schnapp. Mehr als diese vier fest benannten Dateien kann das Skript nicht löschen.
 set -eu
 
 case "${1:-}" in -h | --help) ;; *) [ "$#" -le 1 ] || { echo "install.sh: zu viele Argumente" >&2; exit 2; } ;; esac
@@ -27,7 +28,7 @@ hilfe() {
 Usage: ./install.sh [--uninstall | --help]
 
   (no argument)  build schnapp and install it for the current user
-  --uninstall    remove the three installed files (program, desktop file, icon)
+  --uninstall    remove the four installed files (program, text recognition helper, desktop file, icon)
   --help         show this help
 
 Environment:
@@ -48,6 +49,7 @@ case "$PREFIX" in /*) ;; *) echo "install.sh: PREFIX muss ein absoluter Pfad sei
 case "$DATEN" in /*) ;; *) echo "install.sh: XDG_DATA_HOME muss ein absoluter Pfad sein: $DATEN" >&2; exit 1 ;; esac
 
 PROGRAMM="$PREFIX/bin/schnapp"
+OCR="$PREFIX/bin/schnapp-ocr"
 DESKTOP="$DATEN/applications/schnapp.desktop"
 SYMBOL="$DATEN/icons/hicolor/scalable/apps/schnapp.svg"
 
@@ -89,6 +91,7 @@ cache_aktualisieren() {
 
 deinstallieren() {
 	entferne "$PROGRAMM" "$PREFIX" "/bin/schnapp"
+	entferne "$OCR" "$PREFIX" "/bin/schnapp-ocr"
 	entferne "$DESKTOP" "$DATEN" "/applications/schnapp.desktop"
 	entferne "$SYMBOL" "$DATEN" "/icons/hicolor/scalable/apps/schnapp.svg"
 	cache_aktualisieren
@@ -135,12 +138,18 @@ installieren() {
 	mkdir -p -- "$PREFIX/bin" "$DATEN/applications" "$DATEN/icons/hicolor/scalable/apps"
 
 	echo "baue schnapp $version ..."
-	# Erst in eine Nebendatei bauen, dann umbenennen: ein laufendes Programm lässt sich so ersetzen.
+	# Erst beide Programme in Nebendateien bauen, dann umbenennen: ein laufendes Programm lässt sich so ersetzen, und
+	# scheitert ein Bau, bleibt der alte Stand beider Programme. schnapp-ocr ist ein eigenes Go-Modul (ocr/, eigene
+	# Fremdpakete) und liegt neben schnapp, dort sucht es internal/ocr.
 	neu="$PROGRAMM.neu"
+	ocr_neu="$OCR.neu"
 	(cd "$wurzel" && GOFLAGS="-tags=novulkan,nox11" go build -trimpath -ldflags "-X main.version=$version" -o "$neu" ./cmd/schnapp)
-	chmod 0755 "$neu"
+	(cd "$wurzel/ocr" && GOFLAGS= go build -trimpath -ldflags "-X main.version=$version" -o "$ocr_neu" .)
+	chmod 0755 "$neu" "$ocr_neu"
 	mv -f -- "$neu" "$PROGRAMM"
 	echo "installiert: $PROGRAMM"
+	mv -f -- "$ocr_neu" "$OCR"
+	echo "installiert: $OCR"
 
 	# Desktop-Datei: @EXEC@ durch den absoluten Pfad ersetzen (% verdoppelt). Reine Shell-Ersetzung,
 	# damit &, | und \ im Pfad nichts verfälschen. KWin entfernt die Anführungszeichen (QProcess::splitCommand),

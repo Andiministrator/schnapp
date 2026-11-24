@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package ocr erkennt Text in einem Bild über das Programm tesseract, wenn es installiert ist (ADR-0035). Das Bild
-// geht als PNG über stdin, der Text kommt über stdout; es entsteht keine temporäre Datei und nichts verlässt den
+// Package ocr erkennt Text in einem Bild über das Programm tesseract, wenn es installiert ist (ADR-0035), sonst über
+// das eigene Hilfsprogramm schnapp-ocr (tesseract als WebAssembly, Modul ocr/, ADR-0035 Nachtrag 1). Das Bild geht
+// als PNG über stdin, der Text kommt über stdout; es entsteht keine temporäre Datei und nichts verlässt den
 // Rechner. Das Paket kennt weder Gio noch das Dokument: Der Aufrufer übergibt das sichtbare Bild (mit Schwärzungen),
 // nie das Original.
 package ocr
@@ -14,8 +15,11 @@ import (
 	"image"
 	"image/png"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -26,8 +30,10 @@ import (
 )
 
 const (
-	// Frist ist die längste Dauer einer Erkennung (ADR-0035 Punkt 2).
-	Frist = 30 * time.Second
+	// Frist ist die längste Dauer einer Erkennung mit tesseract (ADR-0035 Punkt 2), FristEigenes die mit schnapp-ocr:
+	// Die WASM-Fassung ist 4- bis 17-mal langsamer (Messung Karte #242, ADR-0035 Nachtrag 1).
+	Frist        = 30 * time.Second
+	FristEigenes = 3 * time.Minute
 	// maxAusgabe begrenzt den gelesenen Text, maxFehlerausgabe die gelesene Fehlerausgabe.
 	maxAusgabe       = 1 << 20
 	maxFehlerausgabe = 64 << 10
@@ -37,8 +43,9 @@ const (
 	MaxPixel = 40_000_000
 	// MaxSeite ist die längste Seite, die tesseract (Leptonica) annimmt; darüber lehnt Vorbereite ab (F-633).
 	MaxSeite = 32767
-	// programmName ist der Name im PATH.
+	// programmName ist der Name im PATH, eigenesName der des eigenen Hilfsprogramms (neben schnapp oder im PATH).
 	programmName = "tesseract"
+	eigenesName  = "schnapp-ocr"
 )
 
 // Fehler der Erkennung.
@@ -50,31 +57,78 @@ var (
 	ErrFrist        = errors.New("text recognition took too long")
 )
 
-// Erkenner ist ein gefundenes tesseract mit seinen installierten Sprachen.
+// Erkenner ist ein gefundenes tesseract oder schnapp-ocr mit seinen Sprachen.
 type Erkenner struct {
 	programm string
 	sprachen []string // installierte Sprachen ohne osd, in der Reihenfolge von --list-langs
+	eigenes  bool     // schnapp-ocr: eine Sprache je Aufruf, längere Frist, meldet Fortschritt
 }
 
-// suchePfad ist exec.LookPath, für Tests austauschbar.
-var suchePfad = exec.LookPath
+// Eigenes sagt, ob der Erkenner das eigene Hilfsprogramm schnapp-ocr ist (langsamer als tesseract).
+func (e *Erkenner) Eigenes() bool { return e.eigenes }
 
-// Suche findet tesseract im PATH und fragt seine Sprachen ab. Fehlt das Programm, kommt ErrKeinProgramm; hat es keine
-// Sprache außer osd, ErrKeineSprache.
-func Suche(ctx context.Context) (*Erkenner, error) {
-	p, err := suchePfad(programmName)
-	if err != nil {
-		return nil, errprefix.Wrap("ocr", ErrKeinProgramm)
+// suchePfad ist exec.LookPath, eigenerOrdner der Ordner des laufenden Programms; beide für Tests austauschbar.
+var (
+	suchePfad     = exec.LookPath
+	eigenerOrdner = func() (string, error) {
+		p, err := os.Executable()
+		if err != nil {
+			return "", err
+		}
+		return filepath.Dir(p), nil
 	}
+)
+
+// Suche findet erst tesseract im PATH, dann schnapp-ocr neben dem eigenen Programm oder im PATH (ADR-0035 Nachtrag 1),
+// und fragt die Sprachen ab. Geht tesseract nicht (keine Sprache, Fehler beim Abfragen), wird schnapp-ocr versucht;
+// fehlt das auch, kommt der Fehler von tesseract. Fehlen beide, kommt ErrKeinProgramm; hat das Programm keine Sprache
+// außer osd, ErrKeineSprache.
+func Suche(ctx context.Context) (*Erkenner, error) {
 	ctx, ende := context.WithTimeout(ctx, 10*time.Second)
 	defer ende()
-	aus, err := lauf(ctx, p, nil, "--list-langs")
-	if err != nil {
-		return nil, errprefix.Wrap("ocr", fmt.Errorf("list languages: %w", err))
+	var errTesseract error
+	if p, err := suchePfad(programmName); err == nil {
+		e, err := frage(ctx, p, false)
+		if err == nil {
+			return e, nil
+		}
+		errTesseract = err
 	}
-	e := &Erkenner{programm: p, sprachen: leseSprachen(aus)}
+	p := sucheEigenes()
+	if p == "" {
+		if errTesseract != nil {
+			return nil, errprefix.Wrap("ocr", errTesseract)
+		}
+		return nil, errprefix.Wrap("ocr", ErrKeinProgramm)
+	}
+	e, err := frage(ctx, p, true)
+	return e, errprefix.Wrap("ocr", err)
+}
+
+// sucheEigenes liefert den Pfad von schnapp-ocr: neben dem eigenen Programm (install.sh legt beide in denselben
+// Ordner), sonst im PATH; leer, wenn es fehlt.
+func sucheEigenes() string {
+	if o, err := eigenerOrdner(); err == nil {
+		p := filepath.Join(o, eigenesName)
+		if fi, err := os.Stat(p); err == nil && fi.Mode().IsRegular() && fi.Mode().Perm()&0o111 != 0 {
+			return p
+		}
+	}
+	if p, err := suchePfad(eigenesName); err == nil {
+		return p
+	}
+	return ""
+}
+
+// frage fragt die Sprachen des Programms p ab.
+func frage(ctx context.Context, p string, eigenes bool) (*Erkenner, error) {
+	aus, err := lauf(ctx, p, nil, nil, "--list-langs")
+	if err != nil {
+		return nil, fmt.Errorf("list languages: %w", err)
+	}
+	e := &Erkenner{programm: p, sprachen: leseSprachen(aus), eigenes: eigenes}
 	if len(e.sprachen) == 0 {
-		return nil, errprefix.Wrap("ocr", ErrKeineSprache)
+		return nil, ErrKeineSprache
 	}
 	return e, nil
 }
@@ -110,7 +164,8 @@ var iso639 = map[string]string{
 }
 
 // Sprachen liefert das Argument für -l (ADR-0035 Punkt 3): die Sprache der Oberfläche (etwa „de“ oder „pt_BR“) und
-// Englisch, soweit installiert; sonst die erste installierte Sprache.
+// Englisch, soweit installiert; sonst die erste installierte Sprache. schnapp-ocr kann je Aufruf nur eine Sprache:
+// dann die erste dieser Wahl.
 func (e *Erkenner) Sprachen(oberflaeche string) string {
 	var wahl []string
 	code, _, _ := strings.Cut(oberflaeche, "_")
@@ -121,6 +176,9 @@ func (e *Erkenner) Sprachen(oberflaeche string) string {
 	}
 	if len(wahl) == 0 {
 		wahl = e.sprachen[:1]
+	}
+	if e.eigenes {
+		wahl = wahl[:1]
 	}
 	return strings.Join(wahl, "+")
 }
@@ -150,13 +208,18 @@ func Vorbereite(b image.Image) (image.Image, error) {
 
 // Erkenne liefert den Text im Bild b mit den Sprachen sprachen (Argument für -l, aus Sprachen). Der Text ist gültiges
 // UTF-8 mit Zeilenenden \n, ohne Seitenvorschub und ohne Leerzeilen am Rand; leer, wenn nichts erkannt wurde.
-func (e *Erkenner) Erkenne(ctx context.Context, b image.Image, sprachen string) (string, error) {
-	text, err := e.erkenne(ctx, b, sprachen)
+// fortschritt (darf nil sein) bekommt bei schnapp-ocr den Fortschritt in Prozent, aus einer anderen Goroutine.
+func (e *Erkenner) Erkenne(ctx context.Context, b image.Image, sprachen string, fortschritt func(int)) (string, error) {
+	text, err := e.erkenne(ctx, b, sprachen, fortschritt)
 	return text, errprefix.Wrap("ocr", err)
 }
 
-func (e *Erkenner) erkenne(ctx context.Context, b image.Image, sprachen string) (string, error) {
-	for _, s := range strings.Split(sprachen, "+") {
+func (e *Erkenner) erkenne(ctx context.Context, b image.Image, sprachen string, fortschritt func(int)) (string, error) {
+	teile := strings.Split(sprachen, "+")
+	if e.eigenes && len(teile) > 1 {
+		return "", fmt.Errorf("%s takes one language, not %q", eigenesName, sprachen)
+	}
+	for _, s := range teile {
 		if !slices.Contains(e.sprachen, s) {
 			return "", fmt.Errorf("unknown language %q", s)
 		}
@@ -169,9 +232,15 @@ func (e *Erkenner) erkenne(ctx context.Context, b image.Image, sprachen string) 
 	if err := (&png.Encoder{CompressionLevel: png.BestSpeed}).Encode(&eingabe, bild); err != nil {
 		return "", err
 	}
-	ctx, ende := context.WithTimeout(ctx, Frist)
+	frist, argumente := Frist, []string{"-", "-", "-l", sprachen, "--psm", "3"}
+	if e.eigenes {
+		frist, argumente = FristEigenes, append(argumente, "--progress")
+	} else {
+		fortschritt = nil
+	}
+	ctx, ende := context.WithTimeout(ctx, frist)
 	defer ende()
-	aus, err := lauf(ctx, e.programm, &eingabe, "-", "-", "-l", sprachen, "--psm", "3")
+	aus, err := lauf(ctx, e.programm, &eingabe, fortschritt, argumente...)
 	if err != nil {
 		return "", err
 	}
@@ -179,14 +248,23 @@ func (e *Erkenner) erkenne(ctx context.Context, b image.Image, sprachen string) 
 }
 
 // lauf startet das Programm mit festen Argumenten (kein Shell) und liefert stdout; stdout und stderr sind begrenzt.
-func lauf(ctx context.Context, programm string, eingabe io.Reader, argumente ...string) (string, error) {
+// Mit fortschritt gehen Zeilen „progress N“ der Fehlerausgabe an fortschritt statt in die Meldung.
+func lauf(ctx context.Context, programm string, eingabe io.Reader, fortschritt func(int), argumente ...string) (string, error) {
 	cmd := exec.CommandContext(ctx, programm, argumente...)
 	cmd.Stdin = eingabe
 	var aus, fehler grenzPuffer
 	aus.grenze, fehler.grenze = maxAusgabe, maxFehlerausgabe
 	cmd.Stdout, cmd.Stderr = &aus, &fehler
+	var fl *fortschrittLeser
+	if fortschritt != nil {
+		fl = &fortschrittLeser{ziel: &fehler, melde: fortschritt}
+		cmd.Stderr = fl
+	}
 	cmd.WaitDelay = 2 * time.Second
 	err := cmd.Run()
+	if fl != nil && len(fl.zeile) > 0 {
+		fl.zeileFertig() // letzte Zeile ohne Zeilenende
+	}
 	if ctx.Err() == context.DeadlineExceeded {
 		return "", ErrFrist
 	}
@@ -199,9 +277,9 @@ func lauf(ctx context.Context, programm string, eingabe io.Reader, argumente ...
 			meldung = meldung[i+1:] // die letzte Zeile sagt meist, was fehlt
 		}
 		if meldung != "" {
-			return "", fmt.Errorf("%s failed: %w (%s)", programmName, err, meldung)
+			return "", fmt.Errorf("%s failed: %w (%s)", filepath.Base(programm), err, meldung)
 		}
-		return "", fmt.Errorf("%s failed: %w", programmName, err)
+		return "", fmt.Errorf("%s failed: %w", filepath.Base(programm), err)
 	}
 	return aus.String(), nil
 }
@@ -217,6 +295,39 @@ func (g *grenzPuffer) Write(p []byte) (int, error) {
 		g.Buffer.Write(p[:min(len(p), frei)])
 	}
 	return len(p), nil
+}
+
+// fortschrittLeser trennt die Fehlerausgabe von schnapp-ocr in Zeilen: „progress N“ (0 ≤ N ≤ 100) geht an melde, alles
+// andere an ziel. Eine Zeile wird höchstens bis maxFehlerausgabe gesammelt.
+type fortschrittLeser struct {
+	ziel  io.Writer
+	melde func(int)
+	zeile []byte
+}
+
+func (f *fortschrittLeser) Write(p []byte) (int, error) {
+	for _, c := range p {
+		if c != '\n' {
+			if len(f.zeile) < maxFehlerausgabe {
+				f.zeile = append(f.zeile, c)
+			}
+			continue
+		}
+		f.zeileFertig()
+	}
+	return len(p), nil
+}
+
+func (f *fortschrittLeser) zeileFertig() {
+	z := string(f.zeile)
+	f.zeile = f.zeile[:0]
+	if rest, ok := strings.CutPrefix(z, "progress "); ok {
+		if n, err := strconv.Atoi(rest); err == nil && n >= 0 && n <= 100 {
+			f.melde(n)
+			return
+		}
+	}
+	f.ziel.Write([]byte(z + "\n"))
 }
 
 // bereinige macht aus der Ausgabe von tesseract den Text für die Zwischenablage.
