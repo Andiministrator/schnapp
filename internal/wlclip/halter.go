@@ -4,14 +4,16 @@
 // (ext-data-control-v1, sonst wlr-data-control-unstable-v1), das Zwischenablage-Verwalter wie Klipper benutzen. So
 // bleibt ein im Editor kopiertes Bild erhalten, nachdem der Editor geschlossen ist (ADR-0024, E-19).
 //
-// Der Halter spricht das Wayland-Leitungsformat selbst (Paket internal/wlwire), ohne libwayland und ohne cgo. Er bietet den übergebenen
-// MIME-Typ an (Schnapp: image/png) und zusätzlich den leeren MarkeKlipper, liefert die Bytes an jeden, der einfügt, und endet, sobald eine andere Anwendung die Zwischenablage
+// Der Halter spricht das Wayland-Leitungsformat selbst (Paket internal/wlwire), ohne libwayland und ohne cgo. Er bietet die Typen
+// seiner Art an (ArtBild: image/png und zusätzlich den leeren MarkeKlipper; ArtText: die üblichen Text-Typen, ADR-0024
+// Nachtrag 9), liefert die Bytes an jeden, der einfügt, und endet, sobald eine andere Anwendung die Zwischenablage
 // übernimmt, der Compositor die Verbindung schließt oder die Zeitgrenze erreicht ist. Er greift in nichts ein.
 package wlclip
 
 import (
 	"errors"
 	"os"
+	"slices"
 	"sync"
 	"syscall"
 	"time"
@@ -87,25 +89,56 @@ var monoSeit = time.Since
 // nachLies wird im Test zwischen Lesen und Verarbeiten eines Ereignisses gerufen (in Produktion nil).
 var nachLies func()
 
+// Art ist, was der Halter anbietet: ein Bild (Strg+C im Editor) oder Text (Text aus dem Bild, ADR-0035, ADR-0024
+// Nachtrag 9).
+type Art int
+
+const (
+	ArtBild Art = iota
+	ArtText
+)
+
+// TextTypen sind die MIME-Typen, unter denen der Halter Text anbietet, in dieser Reihenfolge: UTF-8 ausdrücklich, dann
+// die Namen, die ältere und X11-nahe Programme erfragen (Xwayland, Qt, GTK).
+var TextTypen = []string{"text/plain;charset=utf-8", "text/plain", "UTF8_STRING"}
+
+// typen sind die Typen, für die der Halter die Bytes liefert; marken die zusätzlich angebotenen leeren Typen.
+func (a Art) typen() []string {
+	if a == ArtText {
+		return TextTypen
+	}
+	return []string{MIME}
+}
+
+func (a Art) marken() []string {
+	if a == ArtText {
+		return nil // die Klipper-Marke gilt nur Bildern (Nachtrag 2)
+	}
+	return []string{MarkeKlipper}
+}
+
+// angebot sind alle angebotenen Typen in der Reihenfolge der offer-Anfragen.
+func (a Art) angebot() []string { return append(append([]string(nil), a.typen()...), a.marken()...) }
+
 // Halter bietet einen Inhalt in der Zwischenablage an.
 type Halter struct {
 	v       *wlwire.Verbindung
 	daten   []byte
-	mime    string
+	typen   []string // Typen, die die Bytes bekommen
 	quelle  uint32
 	geraet  uint32
 	Manager string // benutzte Manager-Schnittstelle (ManagerExt oder ManagerWlr)
 	senden  sync.WaitGroup
 }
 
-// Biete verbindet sich mit dem Compositor der Sitzung und setzt daten mit dem MIME-Typ mime als Zwischenablage. Es
+// Biete verbindet sich mit dem Compositor der Sitzung und setzt daten mit den Typen der Art a als Zwischenablage. Es
 // kehrt zurück, wenn der Compositor das Setzen verarbeitet hat; danach liefert Diene die Bytes aus.
-func Biete(daten []byte, mime string) (*Halter, error) {
+func Biete(daten []byte, a Art) (*Halter, error) {
 	v, err := wlwire.Verbinde()
 	if err != nil {
 		return nil, err
 	}
-	h, err := biete(v, daten, mime)
+	h, err := biete(v, daten, a)
 	if err != nil {
 		v.Close()
 		return nil, err
@@ -113,7 +146,7 @@ func Biete(daten []byte, mime string) (*Halter, error) {
 	return h, nil
 }
 
-func biete(v *wlwire.Verbindung, daten []byte, mime string) (*Halter, error) {
+func biete(v *wlwire.Verbindung, daten []byte, a Art) (*Halter, error) {
 	registry := v.NeueID()
 	if err := v.Sende(idDisplay, opDisplayGetRegistry, new(wlwire.Nachricht).U32(registry)); err != nil {
 		return nil, err
@@ -144,7 +177,7 @@ func biete(v *wlwire.Verbindung, daten []byte, mime string) (*Halter, error) {
 	if err != nil {
 		return nil, err
 	}
-	h := &Halter{v: v, daten: daten, mime: mime}
+	h := &Halter{v: v, daten: daten, typen: a.typen()}
 	var mgr global
 	for _, kandidat := range []string{ManagerExt, ManagerWlr} {
 		if g, ok := globals[kandidat]; ok {
@@ -169,7 +202,7 @@ func biete(v *wlwire.Verbindung, daten []byte, mime string) (*Halter, error) {
 	if err := v.Sende(mgrID, opManagerCreateSource, new(wlwire.Nachricht).U32(h.quelle)); err != nil {
 		return nil, err
 	}
-	for _, m := range []string{mime, MarkeKlipper} {
+	for _, m := range a.angebot() {
 		if err := v.Sende(h.quelle, opSourceOffer, new(wlwire.Nachricht).Str(m)); err != nil {
 			return nil, err
 		}
@@ -212,7 +245,7 @@ func (h *Halter) verarbeite(e wlwire.Ereignis) (ende bool, err error) {
 		if err != nil {
 			return false, err
 		}
-		if mime != h.mime { // auch MarkeKlipper: leer, der Leser sieht sofort das Ende
+		if !slices.Contains(h.typen, mime) { // auch MarkeKlipper: leer, der Leser sieht sofort das Ende
 			syscall.Close(fd)
 			return false, nil
 		}

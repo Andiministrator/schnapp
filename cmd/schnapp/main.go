@@ -41,7 +41,7 @@ const (
 )
 
 func main() {
-	if code, ok := halter(os.Args[1:], os.Stderr, wlclip.HelferLauf); ok {
+	if code, ok := halter(os.Args[1:], os.Stderr, wlclip.HelferLauf); ok { // Bild oder Text (ADR-0024 Nachtrag 9)
 		os.Exit(code)
 	}
 	starteSprache(settings.Lade)
@@ -72,19 +72,23 @@ func starteSprache(lade Ladefunktion) string {
 	return s
 }
 
-// halter führt den Halter der Zwischenablage aus (ADR-0024), wenn args genau das Helfer-Argument ist: vom Editor
+// halter führt den Halter der Zwischenablage aus (ADR-0024), wenn args genau ein Helfer-Argument ist (Bild oder Text,
+// ADR-0024 Nachtrag 9): vom Editor
 // gestartet, ohne Gio, ohne Einstellungen, ohne Sprache. ok ist false bei jedem anderen Aufruf. Der Probe-Build läuft
 // nur im virtuellen KWin (F-229); lauf kommt von außen, damit der Test den Schutz ohne echte Zwischenablage prüft
 // (F-244).
-func halter(args []string, fehler io.Writer, lauf func() int) (code int, ok bool) {
-	if len(args) != 1 || args[0] != wlclip.HelferArgument {
+func halter(args []string, fehler io.Writer, lauf func(argument string) int) (code int, ok bool) {
+	if len(args) != 1 {
+		return 0, false
+	}
+	if _, ist := wlclip.ArtVon(args[0]); !ist {
 		return 0, false
 	}
 	if err := probeGuard(); err != nil {
 		fmt.Fprintln(fehler, "schnapp (Probe-Build):", err)
 		return exitFehler, true
 	}
-	return lauf(), true
+	return lauf(args[0]), true
 }
 
 // Ladefunktion lädt die Einstellungen und liefert die Warnungen dazu (settings.Lade); sie kommt von außen, damit

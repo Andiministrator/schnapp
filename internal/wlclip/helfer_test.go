@@ -19,10 +19,18 @@ import (
 // TestMain: Mit HelferArgument startet das Testprogramm als Attrappe des Halters (Verhalten aus WLCLIP_ATTRAPPE), damit
 // Uebergib ohne Compositor geprüft werden kann.
 func TestMain(m *testing.M) {
-	if len(os.Args) == 2 && os.Args[1] == HelferArgument {
+	if _, ok := ArtVon(argument(os.Args)); ok {
 		os.Exit(attrappe(os.Getenv("WLCLIP_ATTRAPPE"), os.Getenv("WLCLIP_ORDNER")))
 	}
 	os.Exit(m.Run())
+}
+
+// argument ist das einzige Argument des Testprogramms (leer bei keinem oder mehreren).
+func argument(args []string) string {
+	if len(args) == 2 {
+		return args[1]
+	}
+	return ""
 }
 
 func attrappe(art, ordner string) int {
@@ -32,6 +40,7 @@ func attrappe(art, ordner string) int {
 	case "ok":
 		daten, _ := io.ReadAll(os.Stdin)
 		os.WriteFile(filepath.Join(ordner, "daten"), daten, 0o600)
+		os.WriteFile(filepath.Join(ordner, "argument"), []byte(argument(os.Args)), 0o600)
 		wd, _ := os.Getwd()
 		os.WriteFile(filepath.Join(ordner, "ordner"), []byte(wd), 0o600)
 		// Ablösung: eigene Sitzung, stdout und stderr auf /dev/null, fd 3 eine Pipe (Kritik Fable, Befund 4)
@@ -102,7 +111,7 @@ func uebergibMit(t *testing.T, art string, frist time.Duration) (string, int, st
 	if err != nil {
 		t.Fatal(err)
 	}
-	pid, manager, err := Uebergib(programm, []byte("png-bytes"), frist)
+	pid, manager, err := Uebergib(programm, ArtBild, []byte("png-bytes"), frist)
 	return ordner, pid, manager, err
 }
 
@@ -126,6 +135,47 @@ func TestUebergibOK(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(filepath.Join(ordner, "abgeloest")); string(b) != "sitzung null1 null2 pipe3" {
 		t.Errorf("Ablösung %q, erwartet „sitzung null1 null2 pipe3“", b)
+	}
+	if b, _ := os.ReadFile(filepath.Join(ordner, "argument")); string(b) != HelferArgument {
+		t.Errorf("Argument %q, erwartet %q", b, HelferArgument)
+	}
+}
+
+// TestUebergibText: Im Textmodus startet der Halter mit HelferArgumentText und bekommt den Text auf der Standardeingabe
+// (ADR-0024 Nachtrag 9).
+func TestUebergibText(t *testing.T) {
+	ordner := t.TempDir()
+	t.Setenv("WLCLIP_ATTRAPPE", "ok")
+	t.Setenv("WLCLIP_ORDNER", ordner)
+	programm, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := Uebergib(programm, ArtText, []byte("Grüße\n"), 10*time.Second); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(filepath.Join(ordner, "argument")); string(b) != HelferArgumentText {
+		t.Errorf("Argument %q, erwartet %q", b, HelferArgumentText)
+	}
+	if b, _ := os.ReadFile(filepath.Join(ordner, "daten")); string(b) != "Grüße\n" {
+		t.Errorf("Daten %q", b)
+	}
+}
+
+// TestArtVon: genau die beiden Helfer-Argumente, Argument ist die Umkehrung.
+func TestArtVon(t *testing.T) {
+	for _, a := range []Art{ArtBild, ArtText} {
+		if b, ok := ArtVon(a.Argument()); !ok || b != a {
+			t.Errorf("ArtVon(%q) = %v %v, erwartet %v", a.Argument(), b, ok, a)
+		}
+	}
+	if HelferArgument == HelferArgumentText {
+		t.Error("beide Arten mit demselben Argument")
+	}
+	for _, s := range []string{"", "--internal-keep-clipboard=text", HelferArgument + " ", "--region"} {
+		if _, ok := ArtVon(s); ok {
+			t.Errorf("ArtVon(%q) gilt", s)
+		}
 	}
 }
 
@@ -172,7 +222,7 @@ func TestHelferOhneCompositor(t *testing.T) {
 	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
 	t.Setenv("WAYLAND_DISPLAY", "nicht-da")
 	var m meldePuffer
-	if code := Helfer(strings.NewReader("bild"), &m, time.Second); code != 1 {
+	if code := Helfer(strings.NewReader("bild"), &m, time.Second, ArtBild); code != 1 {
 		t.Errorf("Exit %d, erwartet 1", code)
 	}
 	if !strings.HasPrefix(m.String(), "fehler: ") || m.zu != 1 || strings.Count(m.String(), "\n") != 1 {
@@ -183,7 +233,7 @@ func TestHelferOhneCompositor(t *testing.T) {
 // TestHelferLeereEingabe: ohne Daten setzt der Helfer nichts.
 func TestHelferLeereEingabe(t *testing.T) {
 	var m meldePuffer
-	if code := Helfer(strings.NewReader(""), &m, time.Second); code != 1 || !strings.HasPrefix(m.String(), "fehler: ") {
+	if code := Helfer(strings.NewReader(""), &m, time.Second, ArtBild); code != 1 || !strings.HasPrefix(m.String(), "fehler: ") {
 		t.Errorf("Exit %d, Meldung %q", code, m.String())
 	}
 }

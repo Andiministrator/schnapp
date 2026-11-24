@@ -114,6 +114,8 @@ type Sitzung struct {
 	ansichtMeldung   AnsichtMeldung
 	// hg ist das Speichern im Hintergrund (hintergrund.go, ADR-0020 Nachtrag 6).
 	hg hintergrund
+	// tb ist der Bereichsmodus „Text aus dem Bild kopieren“ (textbereich.go, ADR-0035 Punkt 5).
+	tb textBereich
 }
 
 // NeueSitzung beginnt mit eingepasster Ansicht, ohne Auswahl, mit dem Werkzeug Auswählen und dem Standardstil.
@@ -239,6 +241,9 @@ func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
 		s.pipetteKlick(p)
 		return
 	}
+	if s.textBereichDruck(p, t) { // Bereichsmodus „Text aus dem Bild kopieren“ (ADR-0035)
+		return
+	}
 	s.TextBestaetigen()
 	if s.zug != keinZug || s.D.ZugLaeuft() {
 		return
@@ -297,6 +302,9 @@ func (s *Sitzung) Ziehen(p document.Punkt) {
 		}
 		return
 	}
+	if s.textBereichZiehen(p) {
+		return
+	}
 	if s.zug == keinZug || s.zug == zugText || s.gesperrt() {
 		return
 	}
@@ -339,6 +347,9 @@ func (s *Sitzung) Loslassen(p document.Punkt) {
 	if s.pan {
 		s.Ziehen(p)
 		s.pan = false
+		return
+	}
+	if s.textBereichLoslassen(p) {
 		return
 	}
 	if s.zug == zugText || s.gesperrt() {
@@ -390,6 +401,9 @@ func (s *Sitzung) klemmeAnsicht(a document.Punkt) document.Punkt {
 // Abbrechen stellt den Stand vor dem Zug wieder her (Esc während des Ziehens, Zeiger-Cancel). Eine Texteingabe bleibt
 // (sie verwirft nur TextAbbrechen).
 func (s *Sitzung) Abbrechen() {
+	if s.textBereichAbbrechen() {
+		return
+	}
 	if s.farbZug { // Ziehen im Farbwähler: Objekt wie vorher (Sitzungs-QA A-1)
 		s.BrecheFarbZugAb()
 		return
@@ -417,7 +431,9 @@ func (s *Sitzung) Abbrechen() {
 }
 
 // Zieht meldet einen laufenden Zug mit der Maus (nicht die Texteingabe, dafür TextLaeuft).
-func (s *Sitzung) Zieht() bool { return s.pan || s.farbZug || (s.zug != keinZug && s.zug != zugText) }
+func (s *Sitzung) Zieht() bool {
+	return s.pan || s.farbZug || s.tb.zieht || (s.zug != keinZug && s.zug != zugText)
+}
 
 // Rueckgaengig nimmt die letzte Änderung zurück (nicht während eines Zugs, F-18). Verschwindet dabei das
 // ausgewählte Objekt, endet die Auswahl.

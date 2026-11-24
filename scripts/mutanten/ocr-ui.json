@@ -1,0 +1,345 @@
+[
+  {
+    "name": "O1 Bereichsmodus beginnt während des Speicherns (Karte #195)",
+    "datei": "internal/canvas/textbereich.go",
+    "paket": "./internal/canvas",
+    "alt": "func (s *Sitzung) BeginneTextBereich() bool {\n\tif s.gesperrt() || s.Zieht() {",
+    "neu": "func (s *Sitzung) BeginneTextBereich() bool {\n\tif s.Zieht() {"
+  },
+  {
+    "name": "O2 Werkzeugwechsel beendet den Bereichsmodus nicht (Karte #195)",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.tb = textBereich{} // ein Werkzeugwechsel beendet den Bereichsmodus (ADR-0035)\n",
+    "neu": ""
+  },
+  {
+    "name": "O3 Esc beendet den Bereichsmodus nicht (Karte #195)",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase s.tb.an: // Bereichsmodus „Text aus dem Bild kopieren“ abbrechen, auch mitten im Zug (ADR-0035)\n\t\ts.BeendeTextBereich()\n",
+    "neu": ""
+  },
+  {
+    "name": "O4 Enter nimmt im Bereichsmodus nicht das ganze Bild (Karte #195)",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\treturn s.TextBereichGanz()\n",
+    "neu": "\t\treturn false\n"
+  },
+  {
+    "name": "O5 Druck im Bereichsmodus trifft Werkzeug und Objekte (Karte #195)",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.textBereichDruck(p, t) { // Bereichsmodus",
+    "neu": "\tif false && s.textBereichDruck(p, t) { // Bereichsmodus"
+  },
+  {
+    "name": "O6 Klick unter der Ziehschwelle wählt einen Bereich (Karte #195)",
+    "datei": "internal/canvas/textbereich.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif p.Minus(s.tb.start).Laenge() < Ziehschwelle {",
+    "neu": "\tif false {"
+  },
+  {
+    "name": "O7 SichtPixel rundet rechts nicht nach außen (Karte #195)",
+    "datei": "internal/canvas/textbereich.go",
+    "paket": "./internal/canvas",
+    "alt": "klemme(math.Ceil(r.Max.X), groesse.X)",
+    "neu": "klemme(math.Floor(r.Max.X), groesse.X)"
+  },
+  {
+    "name": "O8 SichtPixel begrenzt nicht auf das Bild (Karte #195)",
+    "datei": "internal/canvas/textbereich.go",
+    "paket": "./internal/canvas",
+    "alt": "klemme := func(v float64, max int) int { return int(math.Max(0, math.Min(float64(max), v))) }",
+    "neu": "klemme := func(v float64, max int) int { return int(v) }"
+  },
+  {
+    "name": "O9 Zieht kennt den Zug des Bereichsmodus nicht (Karte #195)",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "s.pan || s.farbZug || s.tb.zieht ||",
+    "neu": "s.pan || s.farbZug ||"
+  },
+  {
+    "name": "O10 Doppelklick im Bereichsmodus wirkt wie mit dem Werkzeug (Karte #195)",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.textBereichDruck(p, TastePrimaer) { // im Bereichsmodus",
+    "neu": "\tif false && s.textBereichDruck(p, TastePrimaer) { // im Bereichsmodus"
+  },
+  {
+    "name": "O11 NimmTextBereich liefert den Bereich mehrfach (Karte #195)",
+    "datei": "internal/canvas/textbereich.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.tb.fertig, s.tb.hatFertig = image.Rectangle{}, false\n",
+    "neu": ""
+  },
+  {
+    "name": "O12 Zeiger-Cancel im Bereichsmodus beendet den Zug nicht (Karte #195)",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.textBereichAbbrechen() {\n\t\treturn\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "O13 Rahmen während des Zugs ohne Umrechnung in die Ansicht (Karte #195)",
+    "datei": "internal/canvas/textbereich.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.tb.b = s.Abb.ZuAnsicht(p)\n\treturn true\n}",
+    "neu": "\ts.tb.b = p\n\treturn true\n}"
+  },
+  {
+    "name": "O14 Ziehen-Haken fehlt: der Zug landet beim Werkzeug (Karte #195)",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.textBereichZiehen(p) {",
+    "neu": "\tif false && s.textBereichZiehen(p) {"
+  },
+  {
+    "name": "O15 Loslassen-Haken fehlt: kein Bereich (Karte #195)",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.textBereichLoslassen(p) {",
+    "neu": "\tif false && s.textBereichLoslassen(p) {"
+  },
+  {
+    "name": "U1 Erkennung auf dem Original statt dem sichtbaren Bild (Karte #195, Kernprinzip 2)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tb, err := render.Bild(d)\n",
+    "neu": "\tb, err := d.Original(), error(nil)\n\t_ = render.Bild\n"
+  },
+  {
+    "name": "U2 Bild nicht auf Weiß gelegt (Karte #195)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tdraw.Draw(weiss, weiss.Bounds(), image.White, image.Point{}, draw.Src)\n",
+    "neu": ""
+  },
+  {
+    "name": "U3 Sprache fest Englisch statt Sprache der Oberfläche (Karte #195)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "e.ocr.erkenner.Sprachen(i18n.Sprache())",
+    "neu": "e.ocr.erkenner.Sprachen(\"en\")"
+  },
+  {
+    "name": "U4 ganzes Bild statt des Bereichs (Karte #195)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tbereich = bereich.Intersect(b.Bounds())\n",
+    "neu": "\tbereich = b.Bounds()\n"
+  },
+  {
+    "name": "U5 Antwort der Erkennung trotz laufendem Kopieren angenommen (Karte #195)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.ocr.laeuft || e.kopierLaeuft {",
+    "neu": "\tif !e.ocr.laeuft {"
+  },
+  {
+    "name": "U6 leerer Text wird kopiert statt „No text found“ (Karte #195)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase errors.Is(r.err, ocr.ErrLeer), r.err == nil && r.text == \"\":",
+    "neu": "\tcase errors.Is(r.err, ocr.ErrLeer):"
+  },
+  {
+    "name": "U7 Esc im Bereichsmodus bricht die laufende Erkennung ab (Karte #195)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.ocr.laeuft || e.s.TextBereichLaeuft() || e.s.Zieht() || e.s.TextLaeuft() {",
+    "neu": "\tif !e.ocr.laeuft || e.s.Zieht() || e.s.TextLaeuft() {"
+  },
+  {
+    "name": "U8 Schließen beendet die Erkennung nicht (Karte #195)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.ocrAbbrechen() // eine laufende Texterkennung endet mit dem Fenster (ADR-0035 Punkt 2)\n",
+    "neu": ""
+  },
+  {
+    "name": "U9 Esc über die Tastatur erreicht die Erkennung nicht (Karte #195)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif e.ocrEsc() { // zuerst",
+    "neu": "\t\t\tif false && e.ocrEsc() { // zuerst"
+  },
+  {
+    "name": "U10 Fenster bietet Text als Bild an (Karte #195)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\ttyp = r.typ\n",
+    "neu": ""
+  },
+  {
+    "name": "U11 Meldung „Copied N characters“ fehlt (Karte #195)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\ttext = r.meldung\n",
+    "neu": ""
+  },
+  {
+    "name": "U12 Warnung beim Schließen spricht beim Text vom Bild (Karte #195)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.kopieIstText = r.typ != \"\" // Text",
+    "neu": "\t\te.kopieIstText = false // Text"
+  },
+  {
+    "name": "U13 Halter im Bildmodus für Text (Karte #195)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "halteZwischenablage([]byte(text), wlclip.ArtText)",
+    "neu": "halteZwischenablage([]byte(text), wlclip.ArtBild)"
+  },
+  {
+    "name": "U14 Bereich wird nach dem Loslassen nicht abgeholt (Karte #195)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.ocrBereichPruefen() // Bereich gewählt",
+    "neu": "\t// e.ocrBereichPruefen() // Bereich gewählt"
+  },
+  {
+    "name": "U15 Antwort der Erkennung wird im Bild nicht abgeholt (Karte #195)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.ocrAbholen() // Suche und Texterkennung",
+    "neu": "\t// e.ocrAbholen() // Suche und Texterkennung"
+  },
+  {
+    "name": "U16 gezogener Bereich wird nicht gezeichnet (Karte #195)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.zeichneTextBereich(gtx)\n",
+    "neu": ""
+  },
+  {
+    "name": "U17 Statuszeile ohne Anleitung im Bereichsmodus (Karte #195)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif t := e.ocrHinweis(); t != \"\" { // Bereichsmodus und Erkennung (ADR-0035)\n\t\treturn t\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "U18 Suche läuft bei jedem Aufruf neu (Karte #195)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.ocr.suche != nil {\n\t\treturn\n\t}",
+    "neu": "\tif false {\n\t\treturn\n\t}"
+  },
+  {
+    "name": "U19 fehlende Sprachdaten melden „Install tesseract“ (Karte #195)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase e.ocr.erkenner == nil && errors.Is(e.ocr.sucheErr, ocr.ErrKeineSprache):",
+    "neu": "\tcase false:"
+  },
+  {
+    "name": "U20 Eintrag während der Erkennung bedienbar (Karte #195)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase e.ocr.laeuft:\n\t\treturn i18n.T(\"Text recognition is already running.\")",
+    "neu": "\tcase false:\n\t\treturn i18n.T(\"Text recognition is already running.\")"
+  },
+  {
+    "name": "U21 Kürzel ohne tesseract schaltet den Modus trotzdem ein (Karte #195)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tif t := e.ocrGrau(); t != \"\" {\n\t\te.melde(t, false)\n\t\treturn\n\t}",
+    "neu": "\tif t := e.ocrGrau(); t != \"\" {\n\t\te.melde(t, false)\n\t}"
+  },
+  {
+    "name": "U22 grauer Eintrag mit Erklärung per Tastatur nicht erreichbar (ADR-0026 Nachtrag 8)",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif en[i].an || en[i].erklaerung != \"\" {",
+    "neu": "\t\tif en[i].an {"
+  },
+  {
+    "name": "U23 grauer Eintrag mit Erklärung meldet sich nicht an (ADR-0026 Nachtrag 8)",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\tif en.an || en.erklaerung != \"\" {\n\t\t// Ein grauer Eintrag",
+    "neu": "\tif en.an {\n\t\t// Ein grauer Eintrag"
+  },
+  {
+    "name": "U24 Erklärung auch ohne Zeiger und Fokus (ADR-0026 Nachtrag 8)",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif c := &e.menue.eintraege[i]; c.Hovered() || gtx.Focused(c) {",
+    "neu": "\t\tif c := &e.menue.eintraege[i]; c != nil {"
+  },
+  {
+    "name": "U25 alte Meldung verdeckt die Anleitung des Bereichsmodus (Karte #195)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.s.BeginneTextBereich() && !e.haltendeMeldung() {",
+    "neu": "\tif e.s.BeginneTextBereich() && false {"
+  },
+  {
+    "name": "U26 Bereichsmodus verdrängt eine haltende Meldung (Karte #195)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.s.BeginneTextBereich() && !e.haltendeMeldung() {",
+    "neu": "\tif e.s.BeginneTextBereich() {"
+  },
+  {
+    "name": "L1 Text ohne UTF8_STRING angeboten (ADR-0024 Nachtrag 9)",
+    "datei": "internal/wlclip/halter.go",
+    "paket": "./internal/wlclip",
+    "alt": "var TextTypen = []string{\"text/plain;charset=utf-8\", \"text/plain\", \"UTF8_STRING\"}",
+    "neu": "var TextTypen = []string{\"text/plain;charset=utf-8\", \"text/plain\"}"
+  },
+  {
+    "name": "L2 Klipper-Marke auch für Text (ADR-0024 Nachtrag 9)",
+    "datei": "internal/wlclip/halter.go",
+    "paket": "./internal/wlclip",
+    "alt": "\t\treturn nil // die Klipper-Marke gilt nur Bildern (Nachtrag 2)",
+    "neu": "\t\treturn []string{MarkeKlipper}"
+  },
+  {
+    "name": "L3 nur der erste Typ bekommt die Bytes (ADR-0024 Nachtrag 9)",
+    "datei": "internal/wlclip/halter.go",
+    "paket": "./internal/wlclip",
+    "alt": "\t\tif !slices.Contains(h.typen, mime) {",
+    "neu": "\t\tif !slices.Contains(h.typen[:1], mime) {"
+  },
+  {
+    "name": "L4 Textmodus startet mit dem Bild-Argument (ADR-0024 Nachtrag 9)",
+    "datei": "internal/wlclip/helfer.go",
+    "paket": "./internal/wlclip",
+    "alt": "\t\treturn HelferArgumentText\n",
+    "neu": "\t\treturn HelferArgument\n"
+  },
+  {
+    "name": "L5 ArtVon erkennt den Textmodus als Bild (ADR-0024 Nachtrag 9)",
+    "datei": "internal/wlclip/helfer.go",
+    "paket": "./internal/wlclip",
+    "alt": "\t\treturn ArtText, true\n",
+    "neu": "\t\treturn ArtBild, true\n"
+  },
+  {
+    "name": "M1 main nimmt das Text-Argument nicht als Halter (ADR-0024 Nachtrag 9)",
+    "datei": "cmd/schnapp/main.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif _, ist := wlclip.ArtVon(args[0]); !ist {",
+    "neu": "\tif args[0] != wlclip.HelferArgument {"
+  },
+  {
+    "name": "M2 main reicht das Argument nicht an den Halter (ADR-0024 Nachtrag 9)",
+    "datei": "cmd/schnapp/main.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\treturn lauf(args[0]), true",
+    "neu": "\treturn lauf(wlclip.HelferArgument), true"
+  },
+  {
+    "name": "I1 i18n.Sprache nennt immer Englisch (ADR-0035 Punkt 3)",
+    "datei": "internal/i18n/katalog.go",
+    "paket": "./internal/i18n",
+    "alt": "\t\treturn k.Sprache\n",
+    "neu": "\t\treturn Ausgangssprache\n"
+  }
+]

@@ -153,6 +153,7 @@ func Editor(titel string, d *document.Dokument, speichern Speichern, rettung Ret
 	defer e.wecker.Ende()
 	wecker := e.wecker // der Rückruf liest nur diese Kopie, nie e.wecker (Datenwettlauf)
 	zwischenablageRueckrufSetzen(wecker.Anfordern)
+	e.ocrSucheStarten() // tesseract einmal im Hintergrund suchen (ADR-0035 Punkt 1)
 	ctx, abbruch := context.WithCancel(context.Background())
 	defer abbruch() // schließt einen offenen Exportdialog mit dem Fenster
 	e.exportCtx = ctx
@@ -263,6 +264,10 @@ type editor struct {
 	// fensterHaeltKopie: Die Zwischenablage trägt das Bild nur über dieses Fenster (kein Halter möglich, Rückfall,
 	// ADR-0015 Nachtrag 2); fensterWarnung: Das Schließen wurde deswegen schon einmal angehalten (F-295).
 	fensterHaeltKopie, fensterWarnung bool
+	// kopieIstText: Die Kopie, die das Fenster hält, ist Text (Text aus dem Bild, ADR-0024 Nachtrag 9); die Warnung sagt das.
+	kopieIstText bool
+	// ocr: Text aus dem Bild kopieren (ocr.go, ADR-0035).
+	ocr ocrZustand
 
 	// ohneGrenze: mit --ignore-limit geöffnet, der Export lehnt über dem Rechenbudget nicht ab (ADR-0033 Nachtrag 4).
 	ohneGrenze bool
@@ -542,6 +547,7 @@ func (e *editor) zwischenablageUebernommenMelden() bool {
 // weiterer Versuch nach einem Signal läuft ebenso. Ein laufendes Kopieren bekommt seine Frist, damit der Halter der
 // Zwischenablage noch startet (F-281).
 func (e *editor) zerstoert(fensterErr error) error {
+	e.ocrAbbrechen() // eine laufende Texterkennung endet mit dem Fenster (ADR-0035 Punkt 2)
 	e.speichernAbwarten()
 	if e.speichernAufgegeben {
 		select { // kam die Antwort inzwischen doch, zählt sie (F-298); gewartet wird nicht
@@ -633,7 +639,11 @@ func (e *editor) fensterWarnen() bool {
 		return false
 	}
 	e.fensterWarnung = true
-	e.meldeHaltend(haltFenster, i18n.T("The clipboard holds the image only while this window is open. Close again to discard it."), true)
+	text := i18n.T("The clipboard holds the image only while this window is open. Close again to discard it.")
+	if e.kopieIstText {
+		text = i18n.T("The clipboard holds the text only while this window is open. Close again to discard it.")
+	}
+	e.meldeHaltend(haltFenster, text, true)
 	if e.w != nil {
 		e.w.Invalidate()
 	}
@@ -951,6 +961,9 @@ func (e *editor) speichernJetzt() {
 type kopierErgebnis struct {
 	daten []byte
 	err   error
+	// typ ist der Typ, unter dem das Fenster selbst anbietet (leer: wlclip.MIME); meldung ersetzt „Copied to clipboard“.
+	// Beides setzt nur textKopieren (ocr.go).
+	typ, meldung string
 }
 
 // kopieren legt das fertig gerenderte Bild als PNG (ohne Bearbeitungsdaten) in die Zwischenablage (Karte #39). Rendern,
@@ -984,7 +997,7 @@ func (e *editor) kopieren(gtx layout.Context) {
 		case err != nil:
 			r.err = err
 		default:
-			if err := halteZwischenablage(daten); err != nil {
+			if err := halteZwischenablage(daten, wlclip.ArtBild); err != nil {
 				diagnoseEditor("Halter der Zwischenablage nicht gestartet, Fenster bietet selbst an: %v", err)
 				r.daten = daten
 			}
@@ -1023,14 +1036,22 @@ func (e *editor) kopierenAbholen(gtx layout.Context) {
 		// Ein Abbruch bis hierher betraf eine ältere Quelle; er darf die neue Kopie nicht abräumen (F-328, QA-5).
 		zwischenablageUebernommen.Store(false)
 		e.fensterHaeltKopie, e.fensterWarnung = r.daten != nil, false
+		e.kopieIstText = r.typ != "" // Text aus dem Bild: die Warnung beim Schließen sagt „Text“
 		if r.daten != nil {
-			gtx.Execute(clipboard.WriteCmd{Type: wlclip.MIME, Data: io.NopCloser(bytes.NewReader(r.daten))})
+			typ := wlclip.MIME
+			if r.typ != "" {
+				typ = r.typ
+			}
+			gtx.Execute(clipboard.WriteCmd{Type: typ, Data: io.NopCloser(bytes.NewReader(r.daten))})
 		}
 		// Die Zwischenablage trägt den Stand beim Tastendruck. Wurde seitdem bearbeitet, sagt die Meldung das, statt
 		// den Eindruck zu wecken, das jetzt Sichtbare (etwa eine neue Schwärzung) sei kopiert (F-285).
 		text := i18n.T("Copied to clipboard")
 		if e.s.D.Stand() != e.kopierStand {
 			text = i18n.T("Copied to clipboard as it was when copying began; later changes are not included.")
+		}
+		if r.meldung != "" { // Text aus dem Bild: „Copied N characters“ (ADR-0035)
+			text = r.meldung
 		}
 		if e.meldungHaelt == haltFenster && e.haltendeMeldung() && r.daten == nil {
 			// Die Fenster-Warnung stimmt nicht mehr: Ein Halter hat das Bild übernommen (V6-3).
@@ -1257,10 +1278,13 @@ func (e *editor) exportFertig(r exportErgebnis) {
 // vergeblichen Halter mehr (Kritik Fable, Befund 6).
 var ohneDataControl atomic.Bool
 
-// halteZwischenablage übergibt das Bild an einen Halter-Prozess (dasselbe Programm, wlclip.Uebergib). Mit
-// WAYLAND_SOCKET (geerbte Verbindung, etwa in verschachtelten Sitzungen) fände der Halter nicht sicher denselben
-// Compositor; dann bietet das Fenster selbst an (Befund 5).
-func halteZwischenablage(daten []byte) error {
+// uebergib startet den Halter-Prozess (wlclip.Uebergib); Naht für Tests, die die Art (Bild oder Text) prüfen.
+var uebergib = wlclip.Uebergib
+
+// halteZwischenablage übergibt das Bild bzw. den Text (art) an einen Halter-Prozess (dasselbe Programm,
+// wlclip.Uebergib). Mit WAYLAND_SOCKET (geerbte Verbindung, etwa in verschachtelten Sitzungen) fände der Halter nicht
+// sicher denselben Compositor; dann bietet das Fenster selbst an (Befund 5).
+func halteZwischenablage(daten []byte, art wlclip.Art) error {
 	if err := wlclip.HalterMoeglich(os.Getenv); err != nil {
 		return err
 	}
@@ -1271,7 +1295,7 @@ func halteZwischenablage(daten []byte) error {
 	if err != nil {
 		return err
 	}
-	pid, manager, err := wlclip.Uebergib(programm, daten, wlclip.Frist)
+	pid, manager, err := uebergib(programm, art, daten, wlclip.Frist)
 	if err != nil {
 		if errors.Is(err, wlclip.ErrKeinDataControl) {
 			ohneDataControl.Store(true)
@@ -1374,6 +1398,7 @@ func (e *editor) frame(gtx layout.Context) {
 	_ = e.exportAbholen()
 	_ = e.speichernAbholen() // ebenso die Antwort des Speicherns und des Kopierens (ADR-0020 Nachtrag 6)
 	e.kopierenAbholen(gtx)
+	e.ocrAbholen() // Suche und Texterkennung (ADR-0035), nach dem Kopieren
 	// Vor allen anderen: Klicks und Tasten der offenen Einstellungstafel (ADR-0034).
 	e.einstellungenAuswerten(gtx)
 	e.feldTasten(gtx) // vor tasten: Enter, Esc und Rücktaste gehören dem fokussierten Eingabefeld (ADR-0031 Nachtrag 5)
@@ -1410,6 +1435,7 @@ func (e *editor) leinwand(gtx layout.Context) {
 	groesse := gtx.Constraints.Max
 	e.s.SetzeFenster(groesse)
 	e.zeiger(gtx)
+	e.ocrBereichPruefen() // Bereich gewählt (Loslassen hier, Enter in tasten): Erkennung starten (ADR-0035)
 	e.bildPruefen()
 
 	c := clip.Rect(image.Rectangle{Max: groesse}).Push(gtx.Ops)
@@ -1437,11 +1463,12 @@ func (e *editor) leinwand(gtx layout.Context) {
 	af.Pop()
 	e.zeichneAuswahl(gtx)
 	e.zeichneRahmen(gtx)
+	e.zeichneTextBereich(gtx)
 	e.zeichneHilfslinien(gtx)
 	e.zeichneEinfuegemarke(gtx)
 
 	switch {
-	case e.s.PipetteLaeuft():
+	case e.s.PipetteLaeuft(), e.s.TextBereichLaeuft():
 		pointer.CursorCrosshair.Add(gtx.Ops)
 	case e.s.Werkzeug == canvas.WerkzeugAuswahl:
 		pointer.CursorDefault.Add(gtx.Ops)
@@ -2144,6 +2171,9 @@ func (e *editor) tasten(gtx layout.Context) {
 		case t.hatWerkzeug:
 			e.s.SetzeWerkzeug(t.werkzeug)
 		case t.akt == aktEsc:
+			if e.ocrEsc() { // zuerst eine laufende Texterkennung (ADR-0035 Punkt 5)
+				continue
+			}
 			e.s.Esc() // in Stufen: Text verwerfen, Ziehen abbrechen, abwählen, zurück zu Auswählen
 		case t.akt == aktEnter:
 			// Ohne Texteingabe löst Enter einen per Tastatur fokussierten Knopf aus, statt von der Leinwand
@@ -2269,6 +2299,9 @@ func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
 func (e *editor) hinweis() string {
 	if e.exportOffen {
 		return i18n.T("File dialog is open.") // der Dialog kann hinter dem Fenster liegen (A-12)
+	}
+	if t := e.ocrHinweis(); t != "" { // Bereichsmodus und Erkennung (ADR-0035)
+		return t
 	}
 	if e.s.PipetteLaeuft() {
 		return i18n.T("Click in the image to pick its color. Esc cancels.")

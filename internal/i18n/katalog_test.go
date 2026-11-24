@@ -44,6 +44,24 @@ func TestKatalog(t *testing.T) {
 	}
 }
 
+// Sprache nennt die Sprache des aktiven Katalogs, ohne Katalog die Ausgangssprache (Texterkennung, ADR-0035).
+func TestSprache(t *testing.T) {
+	alt := aktiv.Load()
+	t.Cleanup(func() { Setze(alt) })
+	Setze(probeKatalog(t))
+	if s := Sprache(); s != "de" {
+		t.Errorf("Sprache %q, erwartet de", s)
+	}
+	Setze(nil)
+	if s := Sprache(); s != Ausgangssprache {
+		t.Errorf("ohne Katalog %q, erwartet %q", s, Ausgangssprache)
+	}
+	Setze(&Katalog{})
+	if s := Sprache(); s != Ausgangssprache {
+		t.Errorf("leerer Katalog %q, erwartet %q", s, Ausgangssprache)
+	}
+}
+
 func TestKatalogNil(t *testing.T) {
 	var k *Katalog
 	if k.T("a") != "a" || k.TK("c", "a") != "a" || k.N("a", "b", 1) != "a" || k.N("a", "b", 2) != "b" {

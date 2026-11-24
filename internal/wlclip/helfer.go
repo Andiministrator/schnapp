@@ -24,6 +24,28 @@ import (
 // allein; main prüft es vor allem anderen (kein Gio, keine Einstellungen).
 const HelferArgument = "--internal-keep-clipboard"
 
+// HelferArgumentText startet den Halter im Textmodus (ArtText, ADR-0024 Nachtrag 9); sonst wie HelferArgument.
+const HelferArgumentText = "--internal-keep-clipboard-text"
+
+// Argument ist das Helfer-Argument der Art.
+func (a Art) Argument() string {
+	if a == ArtText {
+		return HelferArgumentText
+	}
+	return HelferArgument
+}
+
+// ArtVon liefert die Art zu einem Helfer-Argument; ok ist false bei jedem anderen Text.
+func ArtVon(argument string) (a Art, ok bool) {
+	switch argument {
+	case HelferArgument:
+		return ArtBild, true
+	case HelferArgumentText:
+		return ArtText, true
+	}
+	return ArtBild, false
+}
+
 // Haltezeit ist die harte Zeitgrenze des Halters; danach gibt er die Zwischenablage frei und endet (ADR-0024,
 // Wächter-Regel „harte Zeitgrenze“).
 const Haltezeit = 12 * time.Hour
@@ -31,7 +53,7 @@ const Haltezeit = 12 * time.Hour
 // Frist ist, wie lange der Editor höchstens auf die Meldung des Halters wartet.
 const Frist = 3 * time.Second
 
-// MIME ist der angebotene Typ.
+// MIME ist der angebotene Typ eines Bilds (ArtBild).
 const MIME = "image/png"
 
 // maxDaten begrenzt, was der Halter von der Standardeingabe annimmt.
@@ -39,9 +61,9 @@ const maxDaten = 1 << 30
 
 const meldungOK = "ok"
 
-// Helfer ist der Lauf des Halter-Prozesses: Bild von ein lesen, als Zwischenablage setzen, auf meldung „ok“ oder den
+// Helfer ist der Lauf des Halter-Prozesses: Bild oder Text (Art a) von ein lesen, als Zwischenablage setzen, auf meldung „ok“ oder den
 // Fehler schreiben und meldung schließen, dann bis zum Ende ausliefern (Halter.Diene). Rückgabe ist der Exit-Code.
-func Helfer(ein io.Reader, meldung io.WriteCloser, grenze time.Duration) int {
+func Helfer(ein io.Reader, meldung io.WriteCloser, grenze time.Duration, a Art) int {
 	melde := func(text string) {
 		if meldung != nil {
 			io.WriteString(meldung, text+"\n")
@@ -59,7 +81,7 @@ func Helfer(ein io.Reader, meldung io.WriteCloser, grenze time.Duration) int {
 		melde(fmt.Sprintf("fehler: %d Byte auf der Standardeingabe", len(daten)))
 		return 1
 	}
-	h, err := Biete(daten, MIME)
+	h, err := Biete(daten, a)
 	if err != nil {
 		melde("fehler: " + err.Error())
 		return 1
@@ -73,17 +95,18 @@ func Helfer(ein io.Reader, meldung io.WriteCloser, grenze time.Duration) int {
 	}
 }
 
-// HelferLauf ist Helfer für main: Standardeingabe, Dateideskriptor 3, Haltezeit. Fd 3 gilt nur als Meldeweg, wenn er
+// HelferLauf ist Helfer für main: Art aus dem Helfer-Argument, Standardeingabe, Dateideskriptor 3, Haltezeit. Fd 3 gilt nur als Meldeweg, wenn er
 // beim Start eine Pipe ist; sonst (Aufruf von Hand ohne fd 3) bekäme der erste Socket die Nummer 3, und die Meldung
 // landete in der Wayland-Verbindung (Kritik Fable, Befund 1).
-func HelferLauf() int {
+func HelferLauf(argument string) int {
+	a, _ := ArtVon(argument) // main ruft nur mit einem gültigen Argument (ArtVon)
 	zu := schliesseGeerbte()
 	diagnose("Halter: %d geerbte Deskriptoren ohne CLOEXEC geschlossen (F-189): %v", len(zu), zu)
 	var meldung io.WriteCloser
 	if istPipe(3) {
 		meldung = os.NewFile(3, "wlclip-meldung")
 	}
-	return Helfer(os.Stdin, meldung, Haltezeit)
+	return Helfer(os.Stdin, meldung, Haltezeit, a)
 }
 
 // schliesseGeerbte schließt alle Dateideskriptoren ab 4, die ohne FD_CLOEXEC geerbt wurden (F-189): Was der Editor
@@ -157,19 +180,19 @@ func HalterMoeglich(getenv func(string) string) error {
 	return nil
 }
 
-// Uebergib startet programm mit HelferArgument als abgelösten Prozess (eigene Sitzung, Arbeitsordner /, ohne
+// Uebergib startet programm mit dem Helfer-Argument der Art a als abgelösten Prozess (eigene Sitzung, Arbeitsordner /, ohne
 // Terminal-Ausgaben), schreibt daten auf seine Standardeingabe und wartet bis zu frist auf seine Meldung. Bei Erfolg
 // hält der Halter die Zwischenablage, und Uebergib liefert seine PID und die benutzte Manager-Schnittstelle. Sonst beendet Uebergib den eigenen Kindprozess
 // (Ziel steht beim Start fest, keine Suche; die Goroutine unten holt ihn direkt nach dem Start ab, Kill trifft also nur
 // einen noch laufenden) und liefert den Fehler; der Aufrufer bietet dann
 // selbst an.
-func Uebergib(programm string, daten []byte, frist time.Duration) (pid int, manager string, err error) {
+func Uebergib(programm string, a Art, daten []byte, frist time.Duration) (pid int, manager string, err error) {
 	r, w, err := os.Pipe()
 	if err != nil {
 		return 0, "", err
 	}
 	defer r.Close()
-	cmd := exec.Command(programm, HelferArgument)
+	cmd := exec.Command(programm, a.Argument())
 	cmd.Stdin = bytes.NewReader(daten)
 	cmd.ExtraFiles = []*os.File{w} // Dateideskriptor 3 im Kind
 	cmd.Dir = "/"

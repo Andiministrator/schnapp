@@ -158,3 +158,12 @@ func TK(kontext, text string) string { return aktiv.Load().TK(kontext, text) }
 
 // N wählt die Mehrzahlform für n mit dem aktiven Katalog.
 func N(einzahl, mehrzahl string, n int) string { return aktiv.Load().N(einzahl, mehrzahl, n) }
+
+// Sprache ist die Sprache des aktiven Katalogs (etwa „de“); ohne Katalog die Ausgangssprache. Die Texterkennung wählt
+// danach ihre Sprachdaten (ADR-0035 Punkt 3).
+func Sprache() string {
+	if k := aktiv.Load(); k != nil && k.Sprache != "" {
+		return k.Sprache
+	}
+	return Ausgangssprache
+}

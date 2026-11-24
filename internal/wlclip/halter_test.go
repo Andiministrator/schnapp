@@ -86,7 +86,7 @@ type ids struct{ sitz, mgr, quelle, geraet uint32 }
 
 // setzen erwartet bind(Sitz), bind(Manager), create_data_source, offer, get_data_device, set_selection und den
 // zweiten sync; vor dessen Antwort ruft es vorAntwort.
-func (c *compositor) setzen(reg, sitzName, mgrName uint32, mgr, mime string, vorAntwort func(ids, uint32)) ids {
+func (c *compositor) setzen(reg, sitzName, mgrName uint32, mgr string, angebot []string, vorAntwort func(ids, uint32)) ids {
 	var i ids
 	l := c.erwarte(reg, opRegistryBind, "bind wl_seat")
 	if n, s, v := l.U32(), l.Str(), l.U32(); n != sitzName || s != "wl_seat" || v != 1 {
@@ -99,7 +99,7 @@ func (c *compositor) setzen(reg, sitzName, mgrName uint32, mgr, mime string, vor
 	}
 	i.mgr = l.U32()
 	i.quelle = c.erwarte(i.mgr, opManagerCreateSource, "create_data_source").U32()
-	for _, want := range []string{mime, MarkeKlipper} {
+	for _, want := range angebot {
 		if m := c.erwarte(i.quelle, opSourceOffer, "offer").Str(); m != want {
 			c.t.Errorf("offer %q, erwartet %q", m, want)
 		}
@@ -143,7 +143,7 @@ func TestBieteUndDiene(t *testing.T) {
 	go func() {
 		defer close(fertig)
 		reg := c.anmeldung(normaleGlobals)
-		i := c.setzen(reg, 3, 5, ManagerExt, "image/png", func(i ids, _ uint32) {
+		i := c.setzen(reg, 3, 5, ManagerExt, ArtBild.angebot(), func(i ids, _ uint32) {
 			c.Sende(i.geraet, evDeviceDataOffer, new(wlwire.Nachricht).U32(0xff000001))
 		})
 		c.erwarte(0xff000001, opOfferDestroy, "Angebot freigeben")
@@ -168,7 +168,7 @@ func TestBieteUndDiene(t *testing.T) {
 		}
 		c.Sende(i.quelle, evSourceCancel, nil)
 	}()
-	h, err := biete(client, daten, "image/png")
+	h, err := biete(client, daten, ArtBild)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,15 +181,52 @@ func TestBieteUndDiene(t *testing.T) {
 	<-fertig
 }
 
+// TestBieteText: Der Textmodus bietet genau die drei Text-Typen an, ohne Klipper-Marke; jeder davon bekommt die Bytes,
+// ein Bild-Typ nichts (ADR-0024 Nachtrag 9).
+func TestBieteText(t *testing.T) {
+	client, server := paar(t)
+	daten := []byte("Grüße aus dem Bild\nZeile 2")
+	c := &compositor{t: t, v: server}
+	fertig := make(chan struct{})
+	go func() {
+		defer close(fertig)
+		reg := c.anmeldung(normaleGlobals)
+		i := c.setzen(reg, 3, 5, ManagerExt, []string{"text/plain;charset=utf-8", "text/plain", "UTF8_STRING"}, nil)
+		for _, typ := range []string{"text/plain;charset=utf-8", "text/plain", "UTF8_STRING", "image/png", MarkeKlipper} {
+			r, w, _ := os.Pipe()
+			c.Sende(i.quelle, evSourceSend, new(wlwire.Nachricht).Str(typ).FD(int(w.Fd())))
+			w.Close()
+			b, _ := io.ReadAll(r)
+			r.Close()
+			want := daten
+			if typ == "image/png" || typ == MarkeKlipper {
+				want = nil
+			}
+			if !bytes.Equal(b, want) {
+				t.Errorf("%s bekam %q, erwartet %q", typ, b, want)
+			}
+		}
+		c.Sende(i.quelle, evSourceCancel, nil)
+	}()
+	h, err := biete(client, daten, ArtText)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := h.Diene(5 * time.Second); err != nil {
+		t.Errorf("Diene: %v", err)
+	}
+	<-fertig
+}
+
 // TestNurWlr: ohne ext-data-control nimmt der Halter zwlr_data_control_manager_v1.
 func TestNurWlr(t *testing.T) {
 	client, server := paar(t)
 	c := &compositor{t: t, v: server}
 	go func() {
 		reg := c.anmeldung([]globalImTest{{3, "wl_seat", 9}, {4, ManagerWlr, 2}})
-		c.setzen(reg, 3, 4, ManagerWlr, "image/png", nil)
+		c.setzen(reg, 3, 4, ManagerWlr, ArtBild.angebot(), nil)
 	}()
-	h, err := biete(client, []byte{1}, "image/png")
+	h, err := biete(client, []byte{1}, ArtBild)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +249,7 @@ func TestOhneDataControlOderSitz(t *testing.T) {
 			client, server := paar(t)
 			c := &compositor{t: t, v: server}
 			go c.anmeldung(fall.globals)
-			if _, err := biete(client, []byte{1}, "image/png"); !errors.Is(err, fall.want) {
+			if _, err := biete(client, []byte{1}, ArtBild); !errors.Is(err, fall.want) {
 				t.Errorf("Fehler %v, erwartet %v", err, fall.want)
 			}
 		})
@@ -228,11 +265,11 @@ func TestProtokollfehler(t *testing.T) {
 	go func() {
 		defer close(fertig)
 		reg := c.anmeldung(normaleGlobals)
-		c.setzen(reg, 3, 5, ManagerExt, "image/png", func(i ids, _ uint32) {
+		c.setzen(reg, 3, 5, ManagerExt, ArtBild.angebot(), func(i ids, _ uint32) {
 			c.Sende(idDisplay, evDisplayError, new(wlwire.Nachricht).U32(i.geraet).U32(1).Str("used source"))
 		})
 	}()
-	_, err := biete(client, []byte{1}, "image/png")
+	_, err := biete(client, []byte{1}, ArtBild)
 	if err == nil || !strings.Contains(err.Error(), "used source") {
 		t.Errorf("Fehler %v, erwartet den Protokollfehler", err)
 	}
@@ -247,11 +284,11 @@ func TestSofortAbgeloest(t *testing.T) {
 	go func() {
 		defer close(fertig)
 		reg := c.anmeldung(normaleGlobals)
-		c.setzen(reg, 3, 5, ManagerExt, "image/png", func(i ids, _ uint32) {
+		c.setzen(reg, 3, 5, ManagerExt, ArtBild.angebot(), func(i ids, _ uint32) {
 			c.Sende(i.quelle, evSourceCancel, nil)
 		})
 	}()
-	if _, err := biete(client, []byte{1}, "image/png"); !errors.Is(err, ErrAbgeloest) {
+	if _, err := biete(client, []byte{1}, ArtBild); !errors.Is(err, ErrAbgeloest) {
 		t.Errorf("Fehler %v, erwartet ErrAbgeloest", err)
 	}
 }
@@ -264,9 +301,9 @@ func bereit(t *testing.T) (*Halter, *compositor, ids) {
 	ch := make(chan ids, 1)
 	go func() {
 		reg := c.anmeldung(normaleGlobals)
-		ch <- c.setzen(reg, 3, 5, ManagerExt, "image/png", nil)
+		ch <- c.setzen(reg, 3, 5, ManagerExt, ArtBild.angebot(), nil)
 	}()
-	h, err := biete(client, []byte("bild"), "image/png")
+	h, err := biete(client, []byte("bild"), ArtBild)
 	if err != nil {
 		t.Fatal(err)
 	}

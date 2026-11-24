@@ -30,6 +30,10 @@ type menueEintrag struct {
 	text   string
 	an     bool
 	gruppe bool // beginnt eine neue Gruppe (Trennlinie davor)
+	// erklaerung sagt bei einem grauen Eintrag, warum er nicht geht (etwa „Install tesseract …“, ADR-0026 Nachtrag 8):
+	// Sie steht in der Statuszeile, solange der Eintrag überfahren oder per Tastatur angesteuert ist. Ein grauer Eintrag
+	// mit Erklärung ist deshalb per Tastatur erreichbar; auslösen lässt er sich nicht.
+	erklaerung string
 	// Menü „Werkzeuge“ (ADR-0031 Punkt 1): wählt ein Werkzeug statt einer Handlung; aktiv markiert das gewählte.
 	werkzeug    canvas.Werkzeug
 	hatWerkzeug bool
@@ -123,7 +127,8 @@ type menue struct {
 }
 
 // menueNaechster liefert den Index des nächsten bedienbaren Eintrags von von aus in Richtung dir (+1 abwärts, -1
-// aufwärts), die Liste läuft an den Enden um (wie die Menüs in KDE/Qt); graue Einträge werden übersprungen. von = -1:
+// aufwärts), die Liste läuft an den Enden um (wie die Menüs in KDE/Qt); graue Einträge werden übersprungen, außer sie
+// tragen eine Erklärung (ADR-0026 Nachtrag 8). von = -1:
 // keiner angesteuert, dann der erste (abwärts) bzw. letzte (aufwärts). -1, wenn nichts bedienbar ist.
 func menueNaechster(en []menueEintrag, von, dir int) int {
 	n := len(en)
@@ -139,7 +144,7 @@ func menueNaechster(en []menueEintrag, von, dir int) int {
 	}
 	for k := 1; k <= n; k++ {
 		i := ((start+dir*k)%n + n) % n
-		if en[i].an {
+		if en[i].an || en[i].erklaerung != "" {
 			return i
 		}
 	}
@@ -271,6 +276,8 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 		return func(layout.Context) { e.hilfeOffen = !e.hilfeOffen }
 	case aktEinstellungen:
 		return func(gtx layout.Context) { e.einstellungenOeffnen(gtx) }
+	case aktTextKopieren:
+		return func(layout.Context) { e.ocrBeginnen() }
 	case aktUeber:
 		return func(layout.Context) {
 			e.melde(fmt.Sprintf(i18n.T("Schnapp %s — screenshots and annotations for Linux. Free software under the GPL 3.0 or later."),
@@ -620,7 +627,7 @@ func menueZeilenhoehe(fensterHoehe, rand, kleinst, groesst, zeilen int) int {
 // farbFeld > 0: Vor dem Text steht ein Farbquadrat der Breite farbFeld (Farbliste der Fußzeile).
 func (e *editor) menueZeile(gtx layout.Context, c *widget.Clickable, en menueEintrag, ecke, groesse image.Point, innen, farbFeld int) {
 	t := op.Offset(ecke).Push(gtx.Ops)
-	fokus := en.an && gtx.Focused(c)
+	fokus := (en.an || en.erklaerung != "") && gtx.Focused(c) // graue mit Erklärung: Ring ohne Hintergrund
 	if en.an && (c.Hovered() || fokus) {
 		paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(image.Rectangle{Max: groesse}).Op())
 	}
@@ -664,12 +671,33 @@ func (e *editor) menueZeile(gtx layout.Context, c *widget.Clickable, en menueEin
 	if k := menueKuerzel(en); k != "" {
 		schreibe(k, neben, true)
 	}
-	if en.an {
+	if en.an || en.erklaerung != "" {
+		// Ein grauer Eintrag mit Erklärung meldet sich an, damit Überfahren und Fokus die Erklärung zeigen
+		// (menueErklaerung); auslösen kann er nichts (menueAuswerten verlangt en.an), der Zeiger bleibt der Pfeil.
 		g.Constraints = layout.Exact(groesse)
 		c.Layout(g, func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: groesse} })
-		pointer.CursorPointer.Add(gtx.Ops)
+		if en.an {
+			pointer.CursorPointer.Add(gtx.Ops)
+		}
 	}
 	t.Pop()
+}
+
+// menueErklaerung ist die Erklärung des grauen Eintrags im offenen Menü, der gerade überfahren oder per Tastatur
+// angesteuert ist (leer: keiner). Die Fußzeile zeigt sie statt der Meldung (ADR-0026 Nachtrag 8).
+func (e *editor) menueErklaerung(gtx layout.Context) string {
+	if !e.menue.offen {
+		return ""
+	}
+	for i, en := range e.menueEintraege() {
+		if en.an || en.erklaerung == "" || i >= len(e.menue.eintraege) {
+			continue
+		}
+		if c := &e.menue.eintraege[i]; c.Hovered() || gtx.Focused(c) {
+			return en.erklaerung
+		}
+	}
+	return ""
 }
 
 // hinweisKnoepfe sind die Werkzeugknöpfe, über denen ein Hinweis steht: bei Zeiger und bei Tastaturfokus; ist ein

@@ -137,6 +137,7 @@ func (s *Sitzung) SetzeWerkzeug(w Werkzeug) bool {
 	}
 	s.TextBestaetigen()
 	s.pipette = false
+	s.tb = textBereich{} // ein Werkzeugwechsel beendet den Bereichsmodus (ADR-0035)
 	if ohneGriffe(w) {
 		s.Auswahl = 0 // F-174: sonst zöge ein Zug nahe einem Griff den Griff statt den Rahmen
 	}
@@ -697,6 +698,8 @@ func (s *Sitzung) Esc() {
 	switch {
 	case s.farbZug: // laufendes Ziehen im Farbwähler abbrechen (ADR-0021 Punkt 2, Sitzungs-QA A-4)
 		s.BrecheFarbZugAb()
+	case s.tb.an: // Bereichsmodus „Text aus dem Bild kopieren“ abbrechen, auch mitten im Zug (ADR-0035)
+		s.BeendeTextBereich()
 	case s.pipette:
 		s.pipette = false
 	case s.zug == zugText:
@@ -715,6 +718,9 @@ func (s *Sitzung) Enter(umschalt bool) bool {
 	if s.gesperrt() {
 		return false
 	}
+	if s.tb.an { // Bereichsmodus: Enter nimmt das ganze sichtbare Bild (ADR-0035 Punkt 5)
+		return s.TextBereichGanz()
+	}
 	if s.zug == zugText {
 		if umschalt {
 			return s.TextZeilenumbruch()
@@ -729,6 +735,9 @@ func (s *Sitzung) Enter(umschalt bool) bool {
 // ein Druck der linken Taste (der erste Klick hat dann schon gewirkt, ADR-0021).
 func (s *Sitzung) Doppelklick(p document.Punkt) {
 	if s.gesperrt() {
+		return
+	}
+	if s.textBereichDruck(p, TastePrimaer) { // im Bereichsmodus beginnt auch der zweite Druck nur einen Zug
 		return
 	}
 	s.TextBestaetigen()

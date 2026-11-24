@@ -1252,3 +1252,53 @@ msgstr[1] "%d Zeilen in settings.ini sind ungültig und bleiben, wie sie sind."
 
 msgid "More than %d lines in settings.ini are invalid and stay as they are."
 msgstr "Mehr als %d Zeilen in settings.ini sind ungültig und bleiben, wie sie sind."
+
+msgid "Copy text from image"
+msgstr "Text aus dem Bild kopieren"
+
+msgid "Looking for tesseract…"
+msgstr "Suche nach tesseract …"
+
+msgid "Install tesseract to recognize text."
+msgstr "Installiere tesseract, um Text zu erkennen."
+
+msgid "Install language data for tesseract to recognize text."
+msgstr "Installiere Sprachdaten für tesseract, um Text zu erkennen."
+
+msgid "Text recognition is not available: %v"
+msgstr "Texterkennung ist nicht verfügbar: %v"
+
+msgid "Text recognition is already running."
+msgstr "Die Texterkennung läuft schon."
+
+msgid "Drag over the text to copy; Enter takes the whole image; Esc cancels."
+msgstr "Über den Text ziehen, um ihn zu kopieren; Enter nimmt das ganze Bild; Esc bricht ab."
+
+msgid "Recognizing text…"
+msgstr "Text wird erkannt …"
+
+msgid "Could not recognize text: finish the current action first."
+msgstr "Text nicht erkannt: Erst die laufende Aktion beenden."
+
+msgid "The area is too large for text recognition."
+msgstr "Der Bereich ist zu groß für die Texterkennung."
+
+msgid "Text recognition took too long."
+msgstr "Die Texterkennung hat zu lange gedauert."
+
+msgid "No text found"
+msgstr "Kein Text gefunden"
+
+msgid "Could not recognize text: %v"
+msgstr "Text nicht erkannt: %v"
+
+msgid "Text recognition cancelled."
+msgstr "Texterkennung abgebrochen."
+
+msgid "Copied %d character"
+msgid_plural "Copied %d characters"
+msgstr[0] "%d Zeichen kopiert"
+msgstr[1] "%d Zeichen kopiert"
+
+msgid "The clipboard holds the text only while this window is open. Close again to discard it."
+msgstr "Die Zwischenablage hält den Text nur, solange dieses Fenster offen ist. Erneutes Schließen verwirft ihn."

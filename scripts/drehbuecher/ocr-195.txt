@@ -1,0 +1,53 @@
+# Sichtprobe ADR-0035 (Karte #195): Text aus dem Bild kopieren — Menüeintrag, Strg+Umschalt+T, Bereich, Enter, Esc.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/ocr-195.txt --bild scripts/drehbuecher/ocr-testbild-1200x800.png
+# Braucht tesseract mit Sprachdaten „eng“ im PATH (das Testbild ist synthetisch, Go-Schrift: „Schnapp OCR test 195“,
+# „Error 404: file not found“, „Serial number ABC-1234-XYZ“, „Grüße aus der Probe“, unten „Second block below“ und
+# „Inside the box“ im grauen Kasten).
+# 1600 x 1000, Skala 1, rechte Leiste eingeklappt: Das Bild liegt bei 100 % ab (226,100); Bildschirmpunkt = Bildpunkt +
+# (226,100). Menü „Bearbeiten“ bei (134,15); „Copy text from image“ ist der letzte Eintrag (eigene Gruppe).
+# Erwartet:
+#  01 Menü Bearbeiten offen: letzter Eintrag „Copy text from image“ mit „Ctrl+Shift+T“, bedienbar (tesseract gefunden).
+#  02 nach Strg+Umschalt+T: Fußzeile „Drag over the text to copy; Enter takes the whole image; Esc cancels.“, Werkzeug
+#     bleibt Auswählen.
+#  03 mitten im Zug: hell orange getönter Rahmen mit hellem Rand über den Zeilen „Error 404“ bis „Grüße“.
+#  04 nach dem Loslassen und der Erkennung: Fußzeile „Copied N characters“ (grün), kein Rahmen mehr, kein Objekt.
+#  04b erneut Strg+Umschalt+T: die Anleitung ersetzt „Copied …“.
+#  05 Enter im Modus: das ganze Bild, danach „Copied N characters“ mit größerem N.
+#  06 Zug über leere weiße Fläche: „No text found“.
+#  07 Strg+Umschalt+T und Esc: Hinweis weg, Fußzeile ohne Anleitung.
+# Debug-Log (tmp/probe/stderr.txt): „Texterkennung: Bereich …, Sprachen …“ und „Zwischenablage an Halter übergeben: …“
+# (Halter im Textmodus) bzw. „Halter für Text nicht gestartet“.
+warte 2500
+taste Strg+Umschalt+B
+warte 300
+klick 134 15
+warte 400
+foto 01-menue-bearbeiten
+taste Esc
+warte 200
+taste Strg+Umschalt+T
+warte 300
+foto 02-bereichsmodus
+druecke 276 290
+bewege 946 500 12
+warte 300
+foto 03-ziehen
+loslassen
+warte 4000
+foto 04-kopiert
+taste Strg+Umschalt+T
+warte 300
+foto 04b-modus-erneut
+taste Enter
+warte 5000
+foto 05-ganzes-bild
+taste Strg+Umschalt+T
+warte 200
+ziehe 856 540 1006 590 8
+warte 3000
+foto 06-kein-text
+taste Strg+Umschalt+T
+warte 300
+taste Esc
+warte 300
+foto 07-esc

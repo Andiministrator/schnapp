@@ -106,6 +106,8 @@ func (e *editor) menueEintraegeVon(i int) []menueEintrag {
 			{akt: aktTextBearbeiten, text: i18n.T("Edit text"), an: s.KannTextBearbeiten(), gruppe: true},
 			{akt: aktLoeschen, text: i18n.T("Delete"), an: s.KannLoeschen()},
 			{akt: aktFarbenTauschen, text: i18n.T("Swap colors"), an: s.KannTauschen(), gruppe: true},
+			{akt: aktTextKopieren, text: i18n.T("Copy text from image"), an: e.ocrGrau() == "", erklaerung: e.ocrGrau(),
+				gruppe: true},
 		}
 	case menueAnsicht:
 		return []menueEintrag{
@@ -656,6 +658,9 @@ func (e *editor) zeichneFusszeile(gtx layout.Context) {
 	// zwei Drittel der Breite reichen; die Felder weichen von links her. Der bloße Bedienhinweis des Werkzeugs weicht
 	// dagegen den Feldern (mindestens ein Drittel bleibt ihm).
 	links, fehler, meldung := canvas.StatusZeile(&e.meldung, e.s.D.Stand(), e.s.Werkzeug, e.hinweis(), e.s.TextLaeuft())
+	if t := e.menueErklaerung(gtx); t != "" { // grauer Menüeintrag unter Zeiger oder Fokus (ADR-0026 Nachtrag 8)
+		links, fehler, meldung = t, false, false
+	}
 	grenze := mx.X / 3
 	if (meldung || fehler) && links != "" {
 		lbl := material.Label(e.thema, unit.Sp(12), links)

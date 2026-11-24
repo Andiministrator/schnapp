@@ -136,10 +136,10 @@ func TestMenueFokussierterEintragWirdGrau(t *testing.T) {
 		t.Errorf("Enter auf grau gewordenem Eintrag wirkt: offen %v, Text %v", l.e.menue.offen, l.e.s.TextLaeuft())
 	}
 	l.taste(key.NameDownArrow, 0)
-	// Nächster bedienbarer Eintrag im Menü „Bearbeiten“: Löschen ist ohne Auswahl grau, Wiederholen ohne Verlauf;
-	// der Umlauf führt zu Rückgängig.
-	if i := menueFokusNr(l); i != l.index(aktRueckgaengig) {
-		t.Errorf("Runter nach Grauwerden: Fokus %d (%s), soll Rückgängig", i, menueFokusName(l))
+	// Nächster erreichbarer Eintrag im Menü „Bearbeiten“: Löschen und Farben tauschen sind ohne Auswahl grau; „Text aus
+	// dem Bild kopieren“ ist ohne Suchergebnis grau, aber mit Erklärung erreichbar (ADR-0026 Nachtrag 8).
+	if i := menueFokusNr(l); i != l.index(aktTextKopieren) {
+		t.Errorf("Runter nach Grauwerden: Fokus %d (%s), soll Text aus dem Bild kopieren", i, menueFokusName(l))
 	}
 	l.taste(key.NameUpArrow, 0)
 	if i := menueFokusNr(l); i != l.index(aktRueckgaengig) {

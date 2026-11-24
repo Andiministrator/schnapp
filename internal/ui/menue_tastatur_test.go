@@ -229,11 +229,11 @@ func TestMenuePfeiltasten(t *testing.T) {
 	l.taste(key.NameUpArrow, 0)
 	zu(aktRueckgaengig, "hoch über den grauen Eintrag Wiederholen")
 	l.taste(key.NameEnd, 0)
-	zu(aktFarbenTauschen, "Ende")
+	zu(aktTextKopieren, "Ende") // grau mit Erklärung, erreichbar (ADR-0026 Nachtrag 8)
 	l.taste(key.NameDownArrow, 0)
 	zu(aktRueckgaengig, "Umlauf abwärts vom letzten zum ersten")
 	l.taste(key.NameUpArrow, 0)
-	zu(aktFarbenTauschen, "Umlauf aufwärts vom ersten zum letzten")
+	zu(aktTextKopieren, "Umlauf aufwärts vom ersten zum letzten")
 	l.taste(key.NameHome, 0)
 	zu(aktRueckgaengig, "Pos1")
 	if !m.offen {

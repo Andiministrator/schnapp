@@ -829,6 +829,10 @@ msgid "The clipboard holds the image only while this window is open. Close again
 msgstr ""
 
 #: internal/ui/editor.go
+msgid "The clipboard holds the text only while this window is open. Close again to discard it."
+msgstr ""
+
+#: internal/ui/editor.go
 msgid "Saving…"
 msgstr ""
 
@@ -1419,6 +1423,10 @@ msgid "Swap colors"
 msgstr ""
 
 #: internal/ui/oberflaeche.go
+msgid "Copy text from image"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
 msgid "Fit"
 msgstr ""
 
@@ -1531,6 +1539,64 @@ msgstr ""
 #: internal/ui/oberflaeche.go
 msgid "saved"
 msgstr ""
+
+#: internal/ui/ocr.go
+msgid "Looking for tesseract…"
+msgstr ""
+
+#: internal/ui/ocr.go
+msgid "Install language data for tesseract to recognize text."
+msgstr ""
+
+#: internal/ui/ocr.go
+msgid "Install tesseract to recognize text."
+msgstr ""
+
+#: internal/ui/ocr.go
+msgid "Text recognition is not available: %v"
+msgstr ""
+
+#: internal/ui/ocr.go
+msgid "Text recognition is already running."
+msgstr ""
+
+#: internal/ui/ocr.go
+msgid "Drag over the text to copy; Enter takes the whole image; Esc cancels."
+msgstr ""
+
+#: internal/ui/ocr.go
+msgid "Recognizing text…"
+msgstr ""
+
+#: internal/ui/ocr.go
+msgid "Could not recognize text: finish the current action first."
+msgstr ""
+
+#: internal/ui/ocr.go
+msgid "The area is too large for text recognition."
+msgstr ""
+
+#: internal/ui/ocr.go
+msgid "Text recognition took too long."
+msgstr ""
+
+#: internal/ui/ocr.go
+msgid "No text found"
+msgstr ""
+
+#: internal/ui/ocr.go
+msgid "Could not recognize text: %v"
+msgstr ""
+
+#: internal/ui/ocr.go
+msgid "Text recognition cancelled."
+msgstr ""
+
+#: internal/ui/ocr.go
+msgid "Copied %d character"
+msgid_plural "Copied %d characters"
+msgstr[0] ""
+msgstr[1] ""
 
 #: internal/ui/overlay.go
 msgid "Click a monitor or drag an area · Enter: monitor under the pointer · Esc or right-click: cancel"

@@ -101,7 +101,7 @@ func TestProbeHalterEndetVorDerZwischenablage(t *testing.T) {
 	t.Setenv("WAYLAND_DISPLAY", "wayland-0")
 	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
 	gerufen := 0
-	lauf := func() int { gerufen++; return exitOK }
+	lauf := func(string) int { gerufen++; return exitOK }
 	var fehler bytes.Buffer
 	code, ok := halter([]string{wlclip.HelferArgument}, &fehler, lauf)
 	if !ok || code != exitFehler || gerufen != 0 || fehler.Len() == 0 {

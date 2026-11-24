@@ -169,3 +169,24 @@ ist, wirkt keine Taste der Tabelle: Die Tafel holt ihre Tasten (Tab, Umschalt+Ta
 Pfeile, −/+, Rücktaste) vor `tasten` ab, `tasten` verwirft den Rest; ihre Auswahllisten laufen als Liste des Menüs
 (`listeEinstellung`) und werden wie jede Liste in `tasten` bedient. Strg+Bild↑/↓ wechselt in der Tafel den Reiter statt
 der Ebene. Getestet von `TestMenueZeigtKuerzel` und `TestTafelSperrtEditor`.
+
+## Nachtrag 8 (24.11.2026): Eintrag „Text aus dem Bild kopieren“ mit Strg+Umschalt+T; graue Einträge mit Erklärung (ADR-0035, Karte #195)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #195).
+
+- **Eintrag:** Das Menü „Bearbeiten“ trägt am Ende in einer eigenen Gruppe **Text aus dem Bild kopieren** (englisch
+  „Copy text from image“, `aktTextKopieren`), Kürzel **Strg+Umschalt+T** in der Tastentabelle. Das Kürzel war frei: T
+  allein wählt das Werkzeug Text, und die Tabelle trennt Umschalter genau (`passt`). Der Eintrag schaltet den
+  Bereichsmodus nach ADR-0035 Punkt 5 ein.
+- **Grau mit Erklärung (neu):** Ein grauer Eintrag kann eine Erklärung tragen (`menueEintrag.erklaerung`). Solange er
+  überfahren oder per Tastatur angesteuert ist, zeigt die Fußzeile sie statt Meldung oder Hinweis (`menueErklaerung`). Er
+  meldet sich dafür als Klickfläche an (ohne Hand-Zeiger) und ist, anders als Nachtrag 2 für graue Einträge sagt
+  („werden übersprungen“), mit Pfeilen, Pos1 und Ende erreichbar (Fokusring ohne Hintergrund); auslösen lässt er sich weder per Klick noch
+  per Enter. Graue Einträge ohne Erklärung bleiben, wie sie waren. Bisher trägt nur „Text aus dem Bild kopieren“ eine:
+  „Looking for tesseract…“ (Suche läuft), „Install tesseract to recognize text.“, „Install language data for tesseract to
+  recognize text.“, „Text recognition is not available: …“ und „Text recognition is already running.“. Das Kürzel zeigt
+  dieselbe Erklärung als Meldung, statt still nichts zu tun.
+
+Getestet von `TestMenueZeigtKuerzel`, `TestMenuePfeiltasten`, `TestMenueFokussierterEintragWirdGrau` (Ende und Umlauf
+erreichen jetzt den grauen Eintrag mit Erklärung), `TestOcrEintragGrauMitErklaerung`, `TestOcrKuerzelOhneTesseract` und
+`TestOcrUeberRouter`; Mutanten U19 bis U24 in `scripts/mutanten/ocr-ui.json`.

@@ -191,3 +191,27 @@ und werden hier nachgetragen (F-372); die übrigen setzt Sprint 11 um (Karte #15
 löscht den Merker, bevor es `fensterHaeltKopie` für eine neue Kopie setzt: Ein Abbruch bis dahin betraf eine ältere
 Quelle und darf die neue Kopie nicht abräumen (sonst verschwände das Bild beim Schließen ohne Warnung). Mutantengruppe
 `scripts/mutanten/ui-zwischenablage.json`.
+
+## Nachtrag 9 (24.11.2026): Textmodus des Halters (Text aus dem Bild, ADR-0035, Karte #195)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #195).
+
+- **Art des Halters:** `wlclip.Art` ist `ArtBild` (wie bisher: `image/png` und die leere Klipper-Marke) oder `ArtText`
+  (`text/plain;charset=utf-8`, `text/plain`, `UTF8_STRING`, in dieser Reihenfolge; ohne Klipper-Marke, die gilt nur
+  Bildern). Jeder angebotene Text-Typ bekommt dieselben UTF-8-Bytes; ein fremder Typ bekommt nichts.
+- **Start:** Der Textmodus startet mit dem eigenen internen Argument `--internal-keep-clipboard-text` (`HelferArgumentText`),
+  sonst genau wie das Bild (abgelöst, Text über die Standardeingabe, Meldung über fd 3, Haltezeit 12 h, Ende bei neuem
+  Inhalt). `main` nimmt beide Argumente (`wlclip.ArtVon`) und reicht das Argument an `HelferLauf`; jedes andere geht wie
+  bisher an das normale Programm. `Uebergib`, `Helfer` und `Biete` tragen die Art.
+- **Editor:** Der erkannte Text geht denselben Weg wie die Bild-Kopie (`kopierAntwort`, `kopierLaeuft`): Halter im
+  Textmodus, sonst bietet das Fenster selbst an, mit dem Text-Typ von Gio (`application/text`, Gio bietet daraus die
+  Text-Typen an; kein Patch nötig). Damit gelten Warten beim Schließen (F-281), Rückfall und Fenster-Warnung (Nachtrag 6),
+  haltende Meldungen (Nachtrag 7) und `ClipboardCancelled` (Nachtrag 8) unverändert; die Fenster-Warnung sagt beim Text
+  „holds the text only while this window is open“ (`kopieIstText`). Die Bestätigung ist „Copied N characters“ statt
+  „Copied to clipboard“. Läuft gerade ein Kopieren, wartet die Antwort der Erkennung, bis es fertig ist.
+- **Leerer Text** wird nie übergeben (der Halter lehnt null Byte ab); der Editor meldet dann „No text found“ und lässt
+  die Zwischenablage, wie sie ist.
+
+Getestet von `TestBieteText`, `TestUebergibText`, `TestArtVon` (`internal/wlclip`), `TestHalterNurMitHelferArgument`
+(`cmd/schnapp`) und den Tests `TestOcr…` in `internal/ui/ocr_test.go` (Halter-Start über die Naht `uebergib`); Mutanten L1 bis L5, M1, M2, U10 bis U13 in
+`scripts/mutanten/ocr-ui.json`.

@@ -67,3 +67,30 @@ auf stdout; eine Probe auf diesem Rechner (tesseract 5.5.4, Bild 1600 × 1000) d
 - ADR-0026: Menüeintrag und Strg+Umschalt+T; ADR-0024: Textmodus des Halters.
 - `docs/anforderungen.md`: OCR als optionale Abhängigkeit in der README nennen („install tesseract for text
   recognition“).
+
+## Ergänzt bei der Umsetzung (24.11.2026, Oberfläche, Karte #195)
+
+Wo die Oberfläche von den Punkten 1 bis 6 abweicht oder sie genauer fasst (`internal/ui/ocr.go`,
+`internal/canvas/textbereich.go`, ADR-0024 Nachtrag 9, ADR-0026 Nachtrag 8):
+
+- **Auf Weiß (Punkt 4):** Das Bild aus `render.Bild` wird vor der Erkennung auf Weiß gelegt. Der Spalt einer Stauch-Naht
+  ist durchsichtig (ADR-0023 Nachtrag 7); wie tesseract Alpha liest, hängt vom Leser ab, Weiß ist eindeutig.
+- **Bereich (Punkt 5):** Der Bereich gilt in Ansichtskoordinaten (unabhängig vom Zoom, nach Zuschnitt und Stauchen), wird
+  nach außen auf ganze Pixel gerundet und auf das sichtbare Bild begrenzt (`canvas.SichtPixel`). Ein Klick unter der
+  Ziehschwelle oder ein Zug ganz neben dem Bild wählt nichts, der Modus wartet weiter. Beim Werkzeug Zuschneiden
+  (Vollansicht) zählt nur der Teil im Zuschnitt. Die mittlere Taste und das Rad verschieben und zoomen wie sonst; ein
+  Werkzeugwechsel beendet den Modus. Der Modus ändert das Werkzeug nie, „danach steht das vorige Werkzeug wieder“ gilt
+  damit von selbst.
+- **Esc (Punkt 5):** Im Bereichsmodus beendet Esc den Modus (auch mitten im Zug). Während der Erkennung bricht Esc sie ab
+  („Text recognition cancelled.“), solange Esc nichts mit Vorrang zu tun hat (Bereichsmodus, Zug, Texteingabe); danach
+  wirkt Esc wieder in seinen Stufen.
+- **Grau (Punkt 1):** Der Eintrag ist grau, solange die Suche läuft („Looking for tesseract…“), ohne Programm („Install
+  tesseract to recognize text.“), ohne Sprachdaten („Install language data for tesseract to recognize text.“), bei einem
+  anderen Fehler der Suche und während einer Erkennung. Die Erklärung steht beim Überfahren und bei Tastaturfokus in der
+  Fußzeile (neues Muster, ADR-0026 Nachtrag 8) und als Meldung, wenn das Kürzel gedrückt wird.
+- **Sprache (Punkt 3):** Die Sprache der Oberfläche kommt aus dem aktiven Katalog (`i18n.Sprache`, neu).
+- **Statuszeile:** „Recognizing text…“ steht als Meldung und als Hinweis, damit es auch nach einer Bearbeitung während der
+  Erkennung sichtbar bleibt. Fehler „area too large“ und „took too long“ sind eigene übersetzte Texte, andere Fehler
+  stehen als „Could not recognize text: …“ (ohne Paketpräfix).
+- **Testnaht:** Die Oberfläche spricht tesseract über eine eigene Schnittstelle an (`textErkenner`, Suche über die
+  Variable `sucheErkenner`); `internal/ocr` braucht dafür keine exportierte Naht.
