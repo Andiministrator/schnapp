@@ -345,7 +345,7 @@ func NewWithDevice(d driver.Device) (GPU, error) {
 	defer d.EndFrame()
 	feats := d.Caps().Features
 	switch {
-	case feats.Has(driver.FeatureFloatRenderTargets) && feats.Has(driver.FeatureSRGB):
+	case feats.Has(driver.FeatureFloatRenderTargets):
 		return newGPU(d), nil
 	}
 	return nil, errors.New("no available GPU driver")

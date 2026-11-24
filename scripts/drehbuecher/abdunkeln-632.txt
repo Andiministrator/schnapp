@@ -1,0 +1,10 @@
+# Sichtprobe F-632 (Karte #245): Abdunklung des Zuschneidens nach der Nachstimmung (0x55 Schwarz, wirkt wie 0x99 vor der sRGB-Mischung)
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/abdunkeln-632.txt --bild scripts/drehbuecher/testbild-1200x800.png --zeit 60
+# Erwartung: das Bild außerhalb des Rahmens ist abgedunkelt, aber gut erkennbar (über Weiß Helligkeit rund 170 von 255).
+warte 800
+taste Strg+Umschalt+B
+warte 200
+taste C
+ziehe 426 286 926 586 12
+warte 300
+foto 01-zuschneiden-abgedunkelt

@@ -5,6 +5,7 @@ package ui
 import (
 	"image"
 	"image/color"
+	"math"
 	"testing"
 
 	"gioui.org/layout"
@@ -122,6 +123,99 @@ func TestZwischenebeneMischtImSRGBRaum(t *testing.T) {
 	p := ist.RGBAAt(20, 10)
 	if absInt(int(p.R)-sR) > 3 || absInt(int(p.G)-sG) > 3 || absInt(int(p.B)-sB) > 3 {
 		t.Errorf("Pixel in der Überlappung %v, Soll (%d,%d,%d) im sRGB-Raum", p, sR, sG, sB)
+	}
+}
+
+// F-631 (Kritik C-11), ADR-0020 Nachtrag 14: Wie TestZwischenebeneMischtImSRGBRaum, aber über einem Verlauf und mit
+// vielen Pixeln: Jedes Pixel der Überlappung weicht höchstens um 1 je Kanal von der Handrechnung im sRGB-Raum ab. Mit
+// dem Mutanten M215-4 (Zwischenebene als sRGB-Textur) gemessen: dieselbe Grenze, also hebt sich Kodieren und Dekodieren
+// der Zwischenebene auf (GLES kennt kein abschaltbares FRAMEBUFFER_SRGB; nur die 8-Bit-Rundung liegt anders).
+func TestZwischenebeneVieleStellen(t *testing.T) {
+	const w, h = 64, 48
+	hinten := func(x, y int) (float64, float64, float64) {
+		return float64(x*4) / 255, float64(255-y*5) / 255, float64(x*2+y*3) / 255
+	}
+	ist := headlessBild(t, image.Pt(w, h), func(gtx layout.Context) {
+		for y := 0; y < h; y++ {
+			for x := 0; x < w; x++ {
+				r, g, b := hinten(x, y)
+				func() {
+					defer clip.Rect(image.Rect(x, y, x+1, y+1)).Push(gtx.Ops).Pop()
+					paint.Fill(gtx.Ops, color.NRGBA{R: uint8(r*255 + 0.5), G: uint8(g*255 + 0.5), B: uint8(b*255 + 0.5), A: 255})
+				}()
+			}
+		}
+		defer paint.PushOpacity(gtx.Ops, 0.5).Pop()
+		flaeche := func(r image.Rectangle, c color.NRGBA) {
+			defer clip.Rect(r).Push(gtx.Ops).Pop()
+			paint.Fill(gtx.Ops, c)
+		}
+		flaeche(image.Rect(4, 4, 44, 44), color.NRGBA{R: 255, G: 40, A: 128})
+		flaeche(image.Rect(20, 4, 60, 44), color.NRGBA{B: 255, G: 90, A: 128})
+	})
+	a1 := 128.0 / 255
+	gA := a1 + a1*(1-a1)
+	const d = 0.5
+	grösst, n := 0, 0
+	for y := 4; y < 44; y++ {
+		for x := 20; x < 44; x++ { // Überlappung
+			hr, hg, hb := hinten(x, y)
+			gR := a1 * (1 - a1) * 1
+			gG := a1*(1-a1)*40/255 + a1*90/255
+			gB := a1
+			soll := func(g, hi float64) int { return int(255*(g*d+hi*(1-gA*d)) + 0.5) }
+			p := ist.RGBAAt(x, y)
+			grösst = max(grösst, absInt(int(p.R)-soll(gR, hr)), absInt(int(p.G)-soll(gG, hg)), absInt(int(p.B)-soll(gB, hb)))
+			n++
+		}
+	}
+	t.Logf("%d Pixel, größte Abweichung %d", n, grösst)
+	if grösst > 1 {
+		t.Errorf("größte Abweichung %d je Kanal über %d Pixel, Soll höchstens 1", grösst, n)
+	}
+}
+
+// F-632, ADR-0020 Nachtrag 14: Die Abdunklung von Auswahl-Overlay und Zuschneiden wirkt wie vor der Umstellung auf das
+// Mischen im sRGB-Raum, als Gio linear mischte und 0x99 Schwarzanteil über Weiß 170 ergab. Soll: die alte Linearmischung,
+// gerechnet; Ist: das Zeichnen mit den heutigen Konstanten in Gio ohne Fenster. Über Weiß, Grau 128 und Dunkelgrau 40.
+func TestAbdunkelnWieVorDerUmstellung(t *testing.T) {
+	lin := func(v float64) float64 {
+		if v <= 0.04045 {
+			return v / 12.92
+		}
+		return math.Pow((v+0.055)/1.055, 2.4)
+	}
+	kodiere := func(l float64) float64 {
+		if l <= 0.0031308 {
+			return l * 12.92
+		}
+		return 1.055*math.Pow(l, 1/2.4) - 0.055
+	}
+	alt := func(grund, farbe uint8) int { // 0x99 linear gemischt, wie Gio vor 26fd556
+		a := 0x99 / 255.0
+		return int(255*kodiere(lin(float64(grund)/255)*(1-a)+lin(float64(farbe)/255)*a) + 0.5)
+	}
+	if got := alt(255, 0x16); got < 169 || got > 171 {
+		t.Fatalf("Rechnung der alten Mischung über Weiß: %d, Soll 170", got)
+	}
+	for _, c := range []struct {
+		name  string
+		farbe color.NRGBA
+	}{{"Overlay grau-950", farbeAbdunkeln}, {"Zuschneiden Schwarz", farbeZuschnittDunkel}} {
+		for _, grund := range []uint8{255, 128, 40} {
+			b := headlessBild(t, image.Pt(4, 4), func(gtx layout.Context) {
+				paint.Fill(gtx.Ops, color.NRGBA{R: grund, G: grund, B: grund, A: 255})
+				paint.FillShape(gtx.Ops, c.farbe, clip.Rect(image.Rect(0, 0, 4, 4)).Op())
+			})
+			ist := int(b.RGBAAt(2, 2).G)
+			soll := alt(grund, c.farbe.G)
+			if absInt(ist-soll) > 5 {
+				t.Errorf("%s über %d: Pixel %d, Soll (alte Linearmischung) %d ±5", c.name, grund, ist, soll)
+			}
+			if grund == 255 && absInt(ist-170) > 3 {
+				t.Errorf("%s über Weiß: %d, Soll 170", c.name, ist)
+			}
+		}
 	}
 }
 

@@ -61,15 +61,26 @@ func diagnose(format string, args ...any) {
 	}
 }
 
+// Abdunkelungs-Alphawerte (F-632, ADR-0020 Nachtrag 14). Vor der Umstellung auf Mischen im sRGB-Raum (26fd556) mischte
+// Gio linear: 0x99 (60 %) grau-950 über Weiß ergab sRGB 170 (Linearwert 0,4·1 + 0,6·0,008 = 0,405 → sRGB 0,669).
+// Dasselbe ergibt im sRGB-Raum 255 − (255 − 22)·a = 170 für a = 85/233 = 0,365, also 0x5D (93/255 = 0,365). Über
+// Grau 128 liefert die alte Linearmischung 85, die neue 89; über Dunkelgrau 40 alt 30, neu 33. Reines Schwarz (Zuschneiden)
+// braucht für 170 über Weiß a = 1/3, also 0x55. Geprüft von TestAbdunkelnWieVorDerUmstellung.
+const (
+	abdunkelnAlpha        = 0x5D
+	abdunkelnSchwarzAlpha = 0x55
+)
+
 // Farben laut brand/corporate-design.md.
 var (
-	farbeAbdunkeln = color.NRGBA{R: 0x16, G: 0x18, B: 0x1B, A: 0x99} // grau-950, durchscheinend
-	farbeLeiste    = color.NRGBA{R: 0x2A, G: 0x2E, B: 0x33, A: 0xF0} // grau-800
-	farbeLinie     = color.NRGBA{R: 0x3A, G: 0x3F, B: 0x45, A: 0xFF} // grau-700
-	farbeText      = color.NRGBA{R: 0xEC, G: 0xEA, B: 0xE5, A: 0xFF} // grau-100
-	farbeAuswahl   = color.NRGBA{R: 0x4F, G: 0x94, B: 0x79, A: 0xFF} // gruen-500
-	farbeAkzent    = color.NRGBA{R: 0xF5, G: 0xA6, B: 0x5B, A: 0xFF} // orange-500
-	farbeGrund     = color.NRGBA{R: 0x16, G: 0x18, B: 0x1B, A: 0xFF} // grau-950
+	farbeZuschnittDunkel = color.NRGBA{A: abdunkelnSchwarzAlpha}                     // Zuschneiden: schwarz, wirkt wie 0x99 vor der sRGB-Mischung
+	farbeAbdunkeln       = color.NRGBA{R: 0x16, G: 0x18, B: 0x1B, A: abdunkelnAlpha} // grau-950, durchscheinend
+	farbeLeiste          = color.NRGBA{R: 0x2A, G: 0x2E, B: 0x33, A: 0xF0}           // grau-800
+	farbeLinie           = color.NRGBA{R: 0x3A, G: 0x3F, B: 0x45, A: 0xFF}           // grau-700
+	farbeText            = color.NRGBA{R: 0xEC, G: 0xEA, B: 0xE5, A: 0xFF}           // grau-100
+	farbeAuswahl         = color.NRGBA{R: 0x4F, G: 0x94, B: 0x79, A: 0xFF}           // gruen-500
+	farbeAkzent          = color.NRGBA{R: 0xF5, G: 0xA6, B: 0x5B, A: 0xFF}           // orange-500
+	farbeGrund           = color.NRGBA{R: 0x16, G: 0x18, B: 0x1B, A: 0xFF}           // grau-950
 )
 
 // Overlay zeigt je Monitor sein eingefrorenes Bild im randlosen Vollbild und lässt einen Bereich wählen (im

@@ -378,9 +378,9 @@ func (e *editor) bildNeu() {
 }
 
 // leinwandBild baut die Pixel des Leinwandbilds und liefert den Stand, mit dem es gebaut wurde (ohne Gio, damit ein
-// Test die Verdrahtung prüfen kann, F-407). Fasersaum und Abdunklung der Nähte mischt der Renderer ins Bild: Gio mischt
-// halbdurchsichtige Flächen linear, der Renderer in sRGB; im Fasersaum zeigte der Editor so im Mittel 22 von 255 zu
-// hell. Beim Werkzeug Zuschneiden (Vollansicht) bleibt das Bild, wie es ist.
+// Test die Verdrahtung prüfen kann, F-407). Fasersaum und Abdunklung der Nähte mischt der Renderer ins Bild: Gio mischte
+// damals halbdurchsichtige Flächen linear, der Renderer in sRGB; im Fasersaum zeigte der Editor so im Mittel 22 von 255
+// zu hell (F-407; seit ADR-0020 Nachtrag 14 mischt Gio in sRGB, das Vorrastern bleibt). Beim Werkzeug Zuschneiden (Vollansicht) bleibt das Bild, wie es ist.
 func leinwandBild(s *canvas.Sitzung) (*image.NRGBA, kantenBild) {
 	img := s.Leinwandbild()
 	stand := kantenBildStand(s)
@@ -1503,7 +1503,7 @@ func (e *editor) zeichneRahmen(gtx layout.Context) {
 	}
 	rund := func(p document.Punkt) image.Point { return image.Pt(int(math.Round(p.X)), int(math.Round(p.Y))) }
 	r := image.Rectangle{Min: rund(a), Max: rund(b)}.Canon()
-	dunkel := color.NRGBA{A: 0x99}
+	dunkel := farbeZuschnittDunkel
 	if zuschneiden {
 		f := e.s.Bildflaeche()
 		bild := image.Rectangle{Min: rund(e.s.Abb.ZuFenster(document.Pt(float64(f.Min.X), float64(f.Min.Y)))),

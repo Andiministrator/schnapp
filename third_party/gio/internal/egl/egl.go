@@ -229,17 +229,10 @@ func createContext(disp _EGLDisplay) (*eglContext, error) {
 func createSurface(disp _EGLDisplay, eglCtx *eglContext, win NativeWindowType) (_EGLSurface, error) {
 	// Schnapp (ADR-0020 Nachtrag 14, F-520): keine sRGB-Fläche, die Werte werden unverändert geschrieben und im
 	// sRGB-Raum gemischt (wie der Renderer).
-	var surfAttribs []_EGLint
-	surfAttribs = append(surfAttribs, _EGL_NONE)
+	surfAttribs := []_EGLint{_EGL_NONE}
 	eglSurf := eglCreateWindowSurface(disp, eglCtx.config, win, surfAttribs)
-	if eglSurf == nilEGLSurface && eglCtx.srgb {
-		// Try again without sRGB.
-		eglCtx.srgb = false
-		surfAttribs = []_EGLint{_EGL_NONE}
-		eglSurf = eglCreateWindowSurface(disp, eglCtx.config, win, surfAttribs)
-	}
 	if eglSurf == nilEGLSurface {
-		return nilEGLSurface, fmt.Errorf("newContext: eglCreateWindowSurface failed 0x%x (sRGB=%v)", eglGetError(), eglCtx.srgb)
+		return nilEGLSurface, fmt.Errorf("newContext: eglCreateWindowSurface failed 0x%x", eglGetError())
 	}
 	return eglSurf, nil
 }

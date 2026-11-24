@@ -27,6 +27,20 @@
     "alt": "r.layerFBOs.resize(r.ctx, driver.TextureFormatRGBA8,",
     "neu": "r.layerFBOs.resize(r.ctx, driver.TextureFormatSRGBA,",
     "aequivalent": true,
-    "grund": "F-621: Gio legt die Zwischenebene an (gemessen: eine Ebene, SRGBA-Textur mit Bindung Textur+Framebuffer), aber die Ausgabe ist mit und ohne Mutant Bit für Bit gleich, auch für halbdurchsichtige Überlappung in der Gruppe (TestZwischenebeneMischtImSRGBRaum, Pixel 32,125,64 in beiden Fällen). Warum die sRGB-Textur in dieser EGL-GLES-Umgebung ohne Fenster nichts ändert, ist nicht geklärt (vermutet: Treiber, Mesa); unter Desktop-GL mit FRAMEBUFFER_SRGB aus wäre ein Unterschied zu erwarten, das ist hier nicht prüfbar."
+    "grund": "F-621, F-631: Gio legt die Zwischenebene an (gemessen: eine Ebene, SRGBA-Textur mit Bindung Textur+Framebuffer), aber die Ausgabe bleibt gleich (TestZwischenebeneMischtImSRGBRaum Pixel 32,125,64 in beiden Fällen; TestZwischenebeneVieleStellen: 960 Pixel über einem Verlauf, größte Abweichung von der Handrechnung mit und ohne Mutant 1 je Kanal, also nur 8-Bit-Rundung). Grund (OpenGL ES 3, gemessen bestätigt): Bei einem SRGB8_ALPHA8-Anhang ist die Umrechnung immer an, es gibt in GLES kein abschaltbares FRAMEBUFFER_SRGB; beim Schreiben wird kodiert, vor dem Mischen dekodiert, beim Abtasten der Textur wieder dekodiert, für eine Zwischenebene ein Rundlauf. M215-2 (Endfläche) und M215-3 (Bild-Textur) sterben, weil dort kein passendes Gegenstück den Rundlauf schließt."
+  },
+  {
+    "name": "M632-1 Overlay-Abdunklung wieder 0x99",
+    "datei": "internal/ui/overlay.go",
+    "paket": "./internal/ui",
+    "alt": "abdunkelnAlpha        = 0x5D",
+    "neu": "abdunkelnAlpha        = 0x99"
+  },
+  {
+    "name": "M632-2 Zuschneide-Abdunklung wieder 0x99",
+    "datei": "internal/ui/overlay.go",
+    "paket": "./internal/ui",
+    "alt": "abdunkelnSchwarzAlpha = 0x55",
+    "neu": "abdunkelnSchwarzAlpha = 0x99"
   }
 ]

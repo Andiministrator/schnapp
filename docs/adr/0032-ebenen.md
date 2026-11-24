@@ -78,8 +78,8 @@ der Farbe? Folgen für Dokumentmodell, Rückgängig, Arbeitsdatei und Rettungsko
     jedes starr gezeichneten Ankers durch Stauch-Nähte versetzt, F-583; Rand für die Pfeilspitze) und mischt dieses
     dann mit der Deckkraft ein (gleiche sRGB-Rechnung wie jede Füllung). Deckkraft 0 % zeichnet nichts; der SVG-Export
     lässt solche Ebenen wie ausgeblendete weg (F-585).
-    Der Editor nimmt Gios Deckkraft-Ebene (`paint.PushOpacity`); Gio mischt linear, die bekannte Abweichung F-520 gilt
-    auch hier.
+    Der Editor nimmt Gios Deckkraft-Ebene (`paint.PushOpacity`); Gio mischte linear, die bekannte Abweichung F-520 galt
+    auch hier. *Überholt durch ADR-0020 Nachtrag 14 (24.11.2026): Gio mischt seither in sRGB, die Abweichung F-520 ist behoben.*
 
 ## Begründung
 - Die Angaben am Objekt statt in einer eigenen Ebenenliste halten Kopien (`Abzug`), Rettungskopie und Format ohne

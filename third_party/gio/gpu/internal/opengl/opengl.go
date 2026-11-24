@@ -254,28 +254,11 @@ func (b *Backend) BeginFrame(target driver.RenderTarget, clear bool, viewport im
 		}
 		b.glstate.bindVertexArray(b.funcs, b.vertArray)
 	}
-	if b.sRGBFBO != nil {
-		b.sRGBFBO.Release()
-		b.sRGBFBO = nil
-	}
 	b.glstate.bindFramebuffer(b.funcs, gl.FRAMEBUFFER, renderFBO)
-	if b.sRGBFBO != nil && !clear {
-		b.clearOutput(0, 0, 0, 0)
-	}
 	return &texture{backend: b, fbo: renderFBO, hasFBO: true, foreign: true}
 }
 
 func (b *Backend) EndFrame() {
-	if b.sRGBFBO != nil {
-		b.glstate.bindFramebuffer(b.funcs, gl.FRAMEBUFFER, b.outputFBO)
-		if b.clear {
-			b.SetBlend(false)
-		} else {
-			b.BlendFunc(driver.BlendFactorOne, driver.BlendFactorOneMinusSrcAlpha)
-			b.SetBlend(true)
-		}
-		b.sRGBFBO.Blit()
-	}
 	if b.sharedCtx {
 		b.restoreState(b.savedState)
 	} else if runtime.GOOS == "android" {

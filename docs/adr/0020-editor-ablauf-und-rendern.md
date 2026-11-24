@@ -541,10 +541,24 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
   Grafikhardware (nur Mesa-Software im virtuellen KWin und ohne Fenster).
   Ergänzt (F-621): Der Mutant „Zwischenebene der Deckkraft als sRGB-Textur“ (M215-4) überlebt, weil er hier nichts
   ändert: Gio legt die Zwischenebene an (eine Ebene, SRGBA-Textur mit Bindung Textur und Framebuffer), das Pixelbild ist
-  mit und ohne Mutant Bit für Bit gleich, auch bei halbdurchsichtiger Überlappung in der Gruppe
+  mit und ohne Mutant gleich, auch bei halbdurchsichtiger Überlappung in der Gruppe
   (`TestZwischenebeneMischtImSRGBRaum`, von Hand im sRGB-Raum gerechnet). Der Mutant ist deshalb als äquivalent
-  geführt; warum die sRGB-Textur in dieser GLES-Umgebung nichts ändert, ist nicht geklärt, unter Desktop-GL mit
-  `FRAMEBUFFER_SRGB` aus wäre ein Unterschied zu erwarten.
+  geführt. Warum (F-631, Kritik C-11, **gemessen**): In OpenGL ES 3 ist die Umrechnung bei einem
+  `SRGB8_ALPHA8`-Anhang immer an (es gibt kein abschaltbares `FRAMEBUFFER_SRGB`): beim Schreiben wird kodiert, vor dem
+  Mischen der Zielwert dekodiert, beim Abtasten der Textur wieder dekodiert. Für eine Zwischenebene ist das ein
+  Rundlauf; gemischt wird in den Zahlen des Shaders, nur die 8-Bit-Rundung liegt anders. Bei der Endfläche (M215-2) und
+  bei Bild-Texturen (M215-3) fehlt je eine Hälfte des Rundlaufs, deshalb ändern sie das Bild. Messung:
+  `TestZwischenebeneVieleStellen` vergleicht 960 Pixel einer Gruppe über einem Verlauf mit der Handrechnung, größte
+  Abweichung 1 je Kanal mit und ohne Mutant, keine systematische Verschiebung. Folge für F-622: Unter GLES ist die
+  Zwischenebene auf echter Hardware kein eigenes Risiko, es bleibt die EGL-Fenster-Fläche. Unter Desktop-GL mit
+  `FRAMEBUFFER_SRGB` aus würde nur noch dekodiert; dort ist `RGBA8` nötig (nicht gemessen).
+- **Abdunklung (F-632, Kritik C-5):** Auch Auswahl-Overlay und Zuschneiden wirkten seit der Umstellung dunkler: 0x99
+  grau-950 über Weiß ergab 170 bei linearer Mischung, in sRGB rund 115. Nachgestimmt (`abdunkelnAlpha` 0x5D,
+  `abdunkelnSchwarzAlpha` 0x55 für das reine Schwarz des Zuschneidens, Rechnung in `internal/ui/overlay.go`): über
+  Weiß 170 wie vorher, über Grau 128 neu 89 statt 85, über Dunkelgrau 40 neu 33 statt 30
+  (`TestAbdunkelnWieVorDerUmstellung`, Mutanten M632-1 und -2). Die Einstellungstafel (`farbeTafelDunkel`, 0x99) bleibt
+  absichtlich bei 60 % der Zahlenwerte wie im Muster. Die weißen Rahmenlinien des Zuschneidens (0xCC) wurden nicht
+  angefasst. Sichtprobe im Echtlauf F-622 ergänzt.
 - **Widerlegungsbedingung:** Zeigt echte Hardware (Intel, AMD, NVIDIA unter Plasma) ein anderes Bild als der virtuelle
   KWin — etwa zu dunkle oder helle Oberfläche, weil der Treiber die Fläche doch als sRGB behandelt —, ist der EGL-Teil
   (Punkt 3) zurückzunehmen und das Vorrastern zu bauen.

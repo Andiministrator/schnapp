@@ -204,8 +204,9 @@ func (z zeichner) alles() error {
 
 // KantenOhneSchatten legt die Kanten der Stauch-Nähte von d über b, das Ansichtsbild von d (wird verändert), mit
 // derselben Mischung wie Bild — aber ohne den Schatten im Spalt (document.Schicht.ImSpalt). Der Editor mischt die
-// halbdurchsichtigen Schichten so im Renderer statt in Gio, das sie linear statt in sRGB mischt und den Fasersaum um
-// im Mittel 22 von 255 zu hell zeigte (F-407, ADR-0023 Nachtrag 11); den durchsichtigen Spalt zeigt er weiter als
+// halbdurchsichtigen Schichten so im Renderer statt in Gio, das sie bis ADR-0020 Nachtrag 14 linear statt in sRGB
+// mischte und den Fasersaum um im Mittel 22 von 255 zu hell zeigte (F-407, ADR-0023 Nachtrag 11); seit Nachtrag 14
+// nicht mehr nötig, bleibt aber; den durchsichtigen Spalt zeigt er weiter als
 // Schachbrett mit dem Schatten darüber. Der Spalt ist danach durchsichtig (Alpha 0), wie in Bild.
 func KantenOhneSchatten(b *image.NRGBA, d *document.Dokument) {
 	if len(d.Naehte()) == 0 {
