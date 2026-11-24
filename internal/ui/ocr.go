@@ -109,6 +109,8 @@ func (e *editor) ocrGrau() string {
 		return i18n.T("Install language data for tesseract to recognize text.")
 	case e.ocr.erkenner == nil && (e.ocr.sucheErr == nil || errors.Is(e.ocr.sucheErr, ocr.ErrKeinProgramm)):
 		return i18n.T("Install tesseract to recognize text.")
+	case e.ocr.erkenner == nil && errors.Is(e.ocr.sucheErr, ocr.ErrSucheFrist):
+		return i18n.T("The text recognition program did not answer in time.")
 	case e.ocr.erkenner == nil:
 		return fmt.Sprintf(i18n.T("Text recognition is not available: %v"), ohnePaketpraefix(e.ocr.sucheErr.Error()))
 	case e.ocr.laeuft:
@@ -177,7 +179,11 @@ func (e *editor) ocrStarten(bereich image.Rectangle) {
 		}
 	}
 	diagnoseEditor("Texterkennung: Bereich %v, Sprachen %s", bereich, sprachen)
-	e.melde(i18n.T("Recognizing text…"), false)
+	// „Recognizing text…“ und der Fortschritt stehen im Hinweis (ocrHinweis). Eine Meldung hätte vor ihm Vorrang und
+	// verdeckte die Prozentzahl (F-640); eine frühere Meldung räumen wir weg, eine haltende bleibt (wie ocrBeginnen).
+	if !e.haltendeMeldung() {
+		e.melde("", false)
+	}
 	go func() {
 		var r ocrErgebnis
 		b, err := ocrBild(abzug, bereich)

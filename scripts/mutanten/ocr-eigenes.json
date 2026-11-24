@@ -10,8 +10,8 @@
     "name": "OE2 schnapp-ocr ohne --progress (Karte #242)",
     "datei": "internal/ocr/ocr.go",
     "paket": "./internal/ocr",
-    "alt": "frist, argumente = FristEigenes, append(argumente, \"--progress\")",
-    "neu": "frist = FristEigenes"
+    "alt": "\t\targumente = append(argumente, \"--progress\")\n",
+    "neu": ""
   },
   {
     "name": "OE3 tesseract verliert den Vorrang (Karte #242)",
@@ -38,7 +38,7 @@
     "name": "OE6 nicht ausführbares schnapp-ocr neben dem Programm zählt (Karte #242)",
     "datei": "internal/ocr/ocr.go",
     "paket": "./internal/ocr",
-    "alt": " && fi.Mode().Perm()&0o111 != 0",
+    "alt": " || fi.Mode().Perm()&0o111 == 0",
     "neu": ""
   },
   {
@@ -52,8 +52,8 @@
     "name": "OE8 ohne tesseract kein Rückfall auf schnapp-ocr (Karte #242)",
     "datei": "internal/ocr/ocr.go",
     "paket": "./internal/ocr",
-    "alt": "\tp := sucheEigenes()\n",
-    "neu": "\tp := \"\"\n"
+    "alt": "\tfor _, p := range eigeneKandidaten() {\n",
+    "neu": "\tfor _, p := range []string{} {\n"
   },
   {
     "name": "OE9 Statuszeile ohne Fortschritt (Karte #242)",
@@ -75,5 +75,253 @@
     "paket": "./internal/ocr",
     "alt": "\t\tcmd.Stderr = fl\n",
     "neu": ""
+  },
+  {
+    "name": "KA1 Ordner namens schnapp-ocr neben dem Programm zählt (F-643)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "if err != nil || !fi.Mode().IsRegular() || fi.Mode().Perm()&0o111 == 0",
+    "neu": "if err != nil || fi.Mode().Perm()&0o111 == 0"
+  },
+  {
+    "name": "KA2 schnapp-ocr bekommt nur die Frist von tesseract (F-643, F-641)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "ctx, ende, fortschritt = ruheFrist(ctx, fortschritt)",
+    "neu": "ctx, ende = context.WithTimeoutCause(ctx, fristTesseract, ErrFrist)"
+  },
+  {
+    "name": "KA3 PATH vor dem Nachbarordner (F-643)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "\tvar r []string\n\tif o, err := eigenerOrdner(); err == nil {",
+    "neu": "\tvar r []string\n\tif p, err := suchePfad(eigenesName); err == nil {\n\t\tr = append(r, p)\n\t}\n\tif o, err := eigenerOrdner(); err == nil {"
+  },
+  {
+    "name": "KA4 tesseract bekommt den Fortschrittsleser (F-643)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "\t\tfortschritt = nil // tesseract meldet keinen Fortschritt",
+    "neu": "\t\t// tesseract meldet keinen Fortschritt"
+  },
+  {
+    "name": "KA5 Zeile der Fehlerausgabe unbegrenzt gesammelt (F-643)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "if len(f.zeile) < maxFehlerausgabe {",
+    "neu": "if true {"
+  },
+  {
+    "name": "KA6 Fehler beim Abfragen von tesseract: kein Rückfall auf schnapp-ocr (F-643)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "\t\terrTesseract = err\n",
+    "neu": "\t\terrTesseract = err\n\t\tif !errors.Is(err, ErrKeineSprache) {\n\t\t\treturn nil, errprefix.Wrap(\"ocr\", err)\n\t\t}\n"
+  },
+  {
+    "name": "KA7 Fortschritt weckt die Oberfläche nicht (F-643)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "if stand.Swap(int32(p)) != int32(p) && wecker != nil {",
+    "neu": "if stand.Swap(int32(p)) != int32(p) && false {"
+  },
+  {
+    "name": "KA8 neue Erkennung übernimmt den alten Zähler (F-643)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tstand.Store(-1)\n",
+    "neu": ""
+  },
+  {
+    "name": "KA9 Abfrage der Suche ohne Frist (F-650)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "\tctx, ende := context.WithTimeout(ctx, fristSuche)\n\tdefer ende()\n\te, err := frage(ctx, p, eigenes)",
+    "neu": "\te, err := frage(ctx, p, eigenes)",
+    "timeout": "120s"
+  },
+  {
+    "name": "KA10 Verweis neben dem Programm wird nicht verfolgt (Lstat, F-647)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "fi, err := os.Stat(ziel)",
+    "neu": "fi, err := os.Lstat(p)"
+  },
+  {
+    "name": "OC1 Erkennung lässt eine frühere Meldung stehen (F-640)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.haltendeMeldung() {\n\t\te.melde(\"\", false)\n\t}\n\tgo func() {",
+    "neu": "\tgo func() {"
+  },
+  {
+    "name": "OC2 Erkennung setzt wieder eine Meldung vor den Fortschritt (F-640)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.haltendeMeldung() {\n\t\te.melde(\"\", false)\n\t}\n\tgo func() {",
+    "neu": "\te.melde(i18n.T(\"Recognizing text…\"), false)\n\tgo func() {"
+  },
+  {
+    "name": "OC3 Erkennung verdrängt eine haltende Meldung (F-640)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.haltendeMeldung() {\n\t\te.melde(\"\", false)\n\t}\n\tgo func() {",
+    "neu": "\te.melde(\"\", false)\n\tgo func() {"
+  },
+  {
+    "name": "OC4 Fortschritt verlängert die Ruhefrist nicht (F-641)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "\t\tuhr.Reset(fristRuhe)\n",
+    "neu": ""
+  },
+  {
+    "name": "OC5 keine Obergrenze mit Fortschritt (F-641)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "ctx, gesamtEnde := context.WithTimeoutCause(ctx, fristGesamt, ErrFrist)",
+    "neu": "ctx, gesamtEnde := context.WithTimeoutCause(ctx, time.Hour, ErrFrist)"
+  },
+  {
+    "name": "OC6 Fortschritt geht bei schnapp-ocr nicht mehr an den Aufrufer (F-641)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "\t\tif fortschritt != nil {\n\t\t\tfortschritt(p)\n\t\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "OC7 Ruhefrist meldet Abbruch statt Frist (F-641)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "uhr := time.AfterFunc(fristRuhe, func() { abbruch(ErrFrist) })",
+    "neu": "uhr := time.AfterFunc(fristRuhe, func() { abbruch(context.Canceled) })"
+  },
+  {
+    "name": "OC8 fremder Eigentümer der Nachbardatei zählt (F-647)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "\t\treturn ok && (uid == uint32(eigeneUID()) || uid == 0) && fi.Mode().Perm()&0o022 == 0",
+    "neu": "\t\t_ = uid\n\t\treturn ok && fi.Mode().Perm()&0o022 == 0"
+  },
+  {
+    "name": "OC9 für andere beschreibbar zählt (F-647)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "\t\treturn ok && (uid == uint32(eigeneUID()) || uid == 0) && fi.Mode().Perm()&0o022 == 0",
+    "neu": "\t\treturn ok && (uid == uint32(eigeneUID()) || uid == 0)"
+  },
+  {
+    "name": "OC10 Ordner der Nachbardatei ungeprüft (F-647)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "if err != nil || !oi.IsDir() || !vertraut(oi) {",
+    "neu": "if err != nil || !oi.IsDir() {"
+  },
+  {
+    "name": "OC11 kein Rückfall auf PATH nach gescheiterter Nachbardatei (F-647)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "\t\terrEigenes = err\n\t\tif ctx.Err() != nil {",
+    "neu": "\t\terrEigenes = err\n\t\tif true {"
+  },
+  {
+    "name": "OC12 root als Eigentümer abgelehnt (F-647)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "(uid == uint32(eigeneUID()) || uid == 0)",
+    "neu": "(uid == uint32(eigeneUID()))"
+  },
+  {
+    "name": "OC13 Frist der Suche heißt nicht ErrSucheFrist (F-650)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "\tif errors.Is(err, ErrFrist) {\n\t\treturn nil, ErrSucheFrist\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "OC14 eine gemeinsame Frist für beide Programme (F-650)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "func Suche(ctx context.Context) (*Erkenner, error) {\n\tvar errTesseract error",
+    "neu": "func Suche(ctx context.Context) (*Erkenner, error) {\n\tctx, ende0 := context.WithTimeout(ctx, fristSuche)\n\tdefer ende0()\n\tvar errTesseract error"
+  },
+  {
+    "name": "OC15 graue Erklärung ohne eigenen Text für die Suchfrist (F-650)",
+    "datei": "internal/ui/ocr.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase e.ocr.erkenner == nil && errors.Is(e.ocr.sucheErr, ocr.ErrSucheFrist):\n\t\treturn i18n.T(\"The text recognition program did not answer in time.\")\n",
+    "neu": ""
+  },
+  {
+    "name": "OP1 --progress wirkungslos (Fortschritt immer, F-643)",
+    "datei": "ocr/main.go",
+    "modul": "ocr",
+    "paket": ".",
+    "alt": "if a.fortschritt && p != letzter",
+    "neu": "if p != letzter"
+  },
+  {
+    "name": "OP2 --psm wirkungslos (F-643)",
+    "datei": "ocr/main.go",
+    "modul": "ocr",
+    "paket": ".",
+    "alt": "strconv.Itoa(a.psm)}",
+    "neu": "\"3\"}"
+  },
+  {
+    "name": "OP3 Eingabegrenze ohne Wirkung (F-643)",
+    "datei": "ocr/main.go",
+    "modul": "ocr",
+    "paket": ".",
+    "alt": "if int64(len(bild)) > grenze {",
+    "neu": "if false {"
+  },
+  {
+    "name": "OP4 Ausgaben von tesseract nicht verworfen (F-643)",
+    "datei": "ocr/main.go",
+    "modul": "ocr",
+    "paket": ".",
+    "alt": "cfg.Stdout, cfg.Stderr = io.Discard, io.Discard",
+    "neu": "cfg.Stdout, cfg.Stderr = os.Stdout, os.Stderr"
+  },
+  {
+    "name": "OP5 keine Pixelgrenze (F-646)",
+    "datei": "ocr/main.go",
+    "modul": "ocr",
+    "paket": ".",
+    "alt": "\tif err == nil {\n\t\terr = pruefeBild(bild)\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "OP6 Seitengrenze fehlt (F-646)",
+    "datei": "ocr/main.go",
+    "modul": "ocr",
+    "paket": ".",
+    "alt": "k.Width > maxSeite || k.Height > maxSeite || ",
+    "neu": ""
+  },
+  {
+    "name": "OP7 Fehler beim Laden mit Go-Interna (F-649)",
+    "datei": "ocr/main.go",
+    "modul": "ocr",
+    "paket": ".",
+    "alt": "\t\treturn \"\", errUnlesbar\n\t}\n\tletzter",
+    "neu": "\t\treturn \"\", fmt.Errorf(\"load image: %w\", err)\n\t}\n\tletzter"
+  },
+  {
+    "name": "OP8 Exit-Code 1 statt 2 bei falschem Aufruf (F-643)",
+    "datei": "ocr/main.go",
+    "modul": "ocr",
+    "paket": ".",
+    "alt": "\t\tfmt.Fprintln(fehler, \"schnapp-ocr:\", err)\n\t\treturn 2\n",
+    "neu": "\t\tfmt.Fprintln(fehler, \"schnapp-ocr:\", err)\n\t\treturn 1\n"
+  },
+  {
+    "name": "OP9 main gibt den Exit-Code nicht weiter (F-643)",
+    "datei": "ocr/main.go",
+    "modul": "ocr",
+    "paket": ".",
+    "alt": "\tos.Exit(lauf(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))",
+    "neu": "\tlauf(os.Args[1:], os.Stdin, os.Stdout, os.Stderr)"
   }
 ]

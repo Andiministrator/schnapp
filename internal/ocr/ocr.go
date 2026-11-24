@@ -21,6 +21,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 	"unicode/utf8"
 
@@ -29,11 +30,20 @@ import (
 	"github.com/Andiministrator/schnapp/internal/errprefix"
 )
 
+// Fristen (ADR-0035 Punkt 2, Nachtrag 1 Punkt 4, Nachtrag 2 Punkte 2 und 5); Variablen, damit Tests sie verkürzen.
+var (
+	// fristTesseract ist die längste Dauer einer Erkennung mit tesseract.
+	fristTesseract = 30 * time.Second
+	// fristRuhe: schnapp-ocr ist 4- bis 17-mal langsamer und braucht für große Bereiche Minuten (Kritik 24.11., F-641).
+	// Es meldet aber Fortschritt; die Frist läuft deshalb nur ab, solange keine neue Prozentzahl kommt, und beginnt mit
+	// jeder neu. fristGesamt ist die Obergrenze auch mit Fortschritt (der Nutzer kann jederzeit mit Esc abbrechen).
+	fristRuhe   = 3 * time.Minute
+	fristGesamt = 20 * time.Minute
+	// fristSuche gilt je abgefragtem Programm: Ein hängendes tesseract verbraucht nicht die Zeit von schnapp-ocr (F-650).
+	fristSuche = 10 * time.Second
+)
+
 const (
-	// Frist ist die längste Dauer einer Erkennung mit tesseract (ADR-0035 Punkt 2), FristEigenes die mit schnapp-ocr:
-	// Die WASM-Fassung ist 4- bis 17-mal langsamer (Messung Karte #242, ADR-0035 Nachtrag 1).
-	Frist        = 30 * time.Second
-	FristEigenes = 3 * time.Minute
 	// maxAusgabe begrenzt den gelesenen Text, maxFehlerausgabe die gelesene Fehlerausgabe.
 	maxAusgabe       = 1 << 20
 	maxFehlerausgabe = 64 << 10
@@ -55,6 +65,8 @@ var (
 	ErrZuGross      = errors.New("the area is too large for text recognition")
 	ErrLeer         = errors.New("the area is empty")
 	ErrFrist        = errors.New("text recognition took too long")
+	// ErrSucheFrist: Das Programm hat --list-langs nicht in der Frist beantwortet (F-650).
+	ErrSucheFrist = errors.New("the text recognition program did not answer in time")
 )
 
 // Erkenner ist ein gefundenes tesseract oder schnapp-ocr mit seinen Sprachen.
@@ -67,7 +79,8 @@ type Erkenner struct {
 // Eigenes sagt, ob der Erkenner das eigene Hilfsprogramm schnapp-ocr ist (langsamer als tesseract).
 func (e *Erkenner) Eigenes() bool { return e.eigenes }
 
-// suchePfad ist exec.LookPath, eigenerOrdner der Ordner des laufenden Programms; beide für Tests austauschbar.
+// suchePfad ist exec.LookPath, eigenerOrdner der Ordner des laufenden Programms, eigeneUID die Benutzernummer des
+// Prozesses und besitzer die Benutzernummer einer Datei; alle für Tests austauschbar (Eigentümer per Attrappe, F-647).
 var (
 	suchePfad     = exec.LookPath
 	eigenerOrdner = func() (string, error) {
@@ -77,47 +90,99 @@ var (
 		}
 		return filepath.Dir(p), nil
 	}
+	eigeneUID = os.Getuid
+	besitzer  = func(fi os.FileInfo) (uint32, bool) {
+		st, ok := fi.Sys().(*syscall.Stat_t)
+		if !ok {
+			return 0, false
+		}
+		return st.Uid, true
+	}
 )
 
-// Suche findet erst tesseract im PATH, dann schnapp-ocr neben dem eigenen Programm oder im PATH (ADR-0035 Nachtrag 1),
-// und fragt die Sprachen ab. Geht tesseract nicht (keine Sprache, Fehler beim Abfragen), wird schnapp-ocr versucht;
-// fehlt das auch, kommt der Fehler von tesseract. Fehlen beide, kommt ErrKeinProgramm; hat das Programm keine Sprache
-// außer osd, ErrKeineSprache.
+// Suche findet erst tesseract im PATH, dann schnapp-ocr neben dem eigenen Programm, dann im PATH (ADR-0035 Nachtrag
+// 1), und fragt die Sprachen ab; jede Abfrage hat ihre eigene Frist (F-650). Geht tesseract nicht (keine Sprache,
+// Fehler oder Frist beim Abfragen), wird schnapp-ocr versucht; scheitert die Nachbardatei, die im PATH (F-647). Geht
+// keins, kommt der Fehler von tesseract, sonst der des letzten schnapp-ocr. Fehlen beide, kommt ErrKeinProgramm; hat
+// das Programm keine Sprache außer osd, ErrKeineSprache.
 func Suche(ctx context.Context) (*Erkenner, error) {
-	ctx, ende := context.WithTimeout(ctx, 10*time.Second)
-	defer ende()
 	var errTesseract error
 	if p, err := suchePfad(programmName); err == nil {
-		e, err := frage(ctx, p, false)
+		e, err := frageMitFrist(ctx, p, false)
 		if err == nil {
 			return e, nil
 		}
 		errTesseract = err
 	}
-	p := sucheEigenes()
-	if p == "" {
-		if errTesseract != nil {
-			return nil, errprefix.Wrap("ocr", errTesseract)
+	var errEigenes error
+	for _, p := range eigeneKandidaten() {
+		e, err := frageMitFrist(ctx, p, true)
+		if err == nil {
+			return e, nil
 		}
-		return nil, errprefix.Wrap("ocr", ErrKeinProgramm)
+		errEigenes = err
+		if ctx.Err() != nil {
+			break // der Editor schließt: keine weitere Abfrage
+		}
 	}
-	e, err := frage(ctx, p, true)
-	return e, errprefix.Wrap("ocr", err)
+	switch {
+	case errTesseract != nil:
+		return nil, errprefix.Wrap("ocr", errTesseract)
+	case errEigenes != nil:
+		return nil, errprefix.Wrap("ocr", errEigenes)
+	}
+	return nil, errprefix.Wrap("ocr", ErrKeinProgramm)
 }
 
-// sucheEigenes liefert den Pfad von schnapp-ocr: neben dem eigenen Programm (install.sh legt beide in denselben
-// Ordner), sonst im PATH; leer, wenn es fehlt.
-func sucheEigenes() string {
+// frageMitFrist fragt p mit der Frist fristSuche ab; eine abgelaufene Frist heißt ErrSucheFrist.
+func frageMitFrist(ctx context.Context, p string, eigenes bool) (*Erkenner, error) {
+	ctx, ende := context.WithTimeout(ctx, fristSuche)
+	defer ende()
+	e, err := frage(ctx, p, eigenes)
+	if errors.Is(err, ErrFrist) {
+		return nil, ErrSucheFrist
+	}
+	return e, err
+}
+
+// eigeneKandidaten liefert die Pfade von schnapp-ocr in der Reihenfolge der Suche: neben dem eigenen Programm
+// (install.sh legt beide in denselben Ordner), wenn diese Datei vertrauenswürdig ist, dann im PATH (ohne Doppel).
+func eigeneKandidaten() []string {
+	var r []string
 	if o, err := eigenerOrdner(); err == nil {
-		p := filepath.Join(o, eigenesName)
-		if fi, err := os.Stat(p); err == nil && fi.Mode().IsRegular() && fi.Mode().Perm()&0o111 != 0 {
-			return p
+		if p, ok := nachbarVertraut(filepath.Join(o, eigenesName)); ok {
+			r = append(r, p)
 		}
 	}
-	if p, err := suchePfad(eigenesName); err == nil {
-		return p
+	if p, err := suchePfad(eigenesName); err == nil && !slices.Contains(r, p) {
+		r = append(r, p)
 	}
-	return ""
+	return r
+}
+
+// nachbarVertraut prüft schnapp-ocr neben dem eigenen Programm (F-647): Ein Verweis zählt mit seinem Ziel. Das Ziel ist
+// eine reguläre, ausführbare Datei des eigenen Benutzers oder von root, nicht für Gruppe oder andere beschreibbar, in
+// einem Ordner desselben Eigentümers (eigener Benutzer oder root), den weder Gruppe noch andere beschreiben dürfen.
+// Sonst könnte ein anderer Benutzer eine Datei danebenlegen, die beim nächsten Editor-Start liefe. Geliefert wird der
+// aufgelöste Pfad: Geprüft und gestartet wird dieselbe Datei.
+func nachbarVertraut(p string) (string, bool) {
+	ziel, err := filepath.EvalSymlinks(p)
+	if err != nil {
+		return "", false
+	}
+	vertraut := func(fi os.FileInfo) bool {
+		uid, ok := besitzer(fi)
+		return ok && (uid == uint32(eigeneUID()) || uid == 0) && fi.Mode().Perm()&0o022 == 0
+	}
+	fi, err := os.Stat(ziel)
+	if err != nil || !fi.Mode().IsRegular() || fi.Mode().Perm()&0o111 == 0 || !vertraut(fi) {
+		return "", false
+	}
+	oi, err := os.Stat(filepath.Dir(ziel))
+	if err != nil || !oi.IsDir() || !vertraut(oi) {
+		return "", false
+	}
+	return ziel, true
 }
 
 // frage fragt die Sprachen des Programms p ab.
@@ -232,19 +297,41 @@ func (e *Erkenner) erkenne(ctx context.Context, b image.Image, sprachen string, 
 	if err := (&png.Encoder{CompressionLevel: png.BestSpeed}).Encode(&eingabe, bild); err != nil {
 		return "", err
 	}
-	frist, argumente := Frist, []string{"-", "-", "-l", sprachen, "--psm", "3"}
+	argumente := []string{"-", "-", "-l", sprachen, "--psm", "3"}
+	var ende context.CancelFunc
 	if e.eigenes {
-		frist, argumente = FristEigenes, append(argumente, "--progress")
+		argumente = append(argumente, "--progress")
+		ctx, ende, fortschritt = ruheFrist(ctx, fortschritt)
 	} else {
-		fortschritt = nil
+		fortschritt = nil // tesseract meldet keinen Fortschritt; Zeilen „progress N“ von ihm sind gewöhnliche Fehlerausgabe
+		ctx, ende = context.WithTimeoutCause(ctx, fristTesseract, ErrFrist)
 	}
-	ctx, ende := context.WithTimeout(ctx, frist)
 	defer ende()
 	aus, err := lauf(ctx, e.programm, &eingabe, fortschritt, argumente...)
 	if err != nil {
 		return "", err
 	}
 	return bereinige(aus), nil
+}
+
+// ruheFrist liefert für schnapp-ocr einen Kontext, der mit ErrFrist endet, wenn fristRuhe lang kein neuer Fortschritt
+// kommt oder fristGesamt um ist (F-641), und die Meldung des Fortschritts, die die Ruhefrist neu beginnen lässt und an
+// fortschritt (darf nil sein) weitergibt.
+func ruheFrist(ctx context.Context, fortschritt func(int)) (context.Context, context.CancelFunc, func(int)) {
+	ctx, gesamtEnde := context.WithTimeoutCause(ctx, fristGesamt, ErrFrist)
+	ctx, abbruch := context.WithCancelCause(ctx)
+	uhr := time.AfterFunc(fristRuhe, func() { abbruch(ErrFrist) })
+	melde := func(p int) {
+		uhr.Reset(fristRuhe)
+		if fortschritt != nil {
+			fortschritt(p)
+		}
+	}
+	return ctx, func() {
+		uhr.Stop()
+		abbruch(context.Canceled)
+		gesamtEnde()
+	}, melde
 }
 
 // lauf startet das Programm mit festen Argumenten (kein Shell) und liefert stdout; stdout und stderr sind begrenzt.
@@ -265,10 +352,11 @@ func lauf(ctx context.Context, programm string, eingabe io.Reader, fortschritt f
 	if fl != nil && len(fl.zeile) > 0 {
 		fl.zeileFertig() // letzte Zeile ohne Zeilenende
 	}
-	if ctx.Err() == context.DeadlineExceeded {
-		return "", ErrFrist
-	}
 	if ctx.Err() != nil {
+		// Eigene Fristen enden mit der Ursache ErrFrist, eine Frist des Aufrufers mit DeadlineExceeded.
+		if c := context.Cause(ctx); errors.Is(c, ErrFrist) || errors.Is(c, context.DeadlineExceeded) {
+			return "", ErrFrist
+		}
 		return "", ctx.Err()
 	}
 	if err != nil {

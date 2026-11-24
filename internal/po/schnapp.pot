@@ -1715,6 +1715,10 @@ msgid "Install tesseract to recognize text."
 msgstr ""
 
 #: internal/ui/ocr.go
+msgid "The text recognition program did not answer in time."
+msgstr ""
+
+#: internal/ui/ocr.go
 msgid "Text recognition is not available: %v"
 msgstr ""
 

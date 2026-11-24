@@ -5,10 +5,12 @@ package ui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -208,8 +210,9 @@ func TestOcrAblaufBereich(t *testing.T) {
 	e.s.Ziehen(document.Pt(52, 50))
 	e.s.Loslassen(document.Pt(52, 50))
 	e.ocrBereichPruefen()
-	if !e.ocr.laeuft || e.meldung.Text != "Recognizing text…" || e.hinweis() != "Recognizing text…" {
-		t.Fatalf("läuft %v, Meldung %q, Hinweis %q", e.ocr.laeuft, e.meldung.Text, e.hinweis())
+	// Die Fußzeile zeigt den Hinweis (keine Meldung davor, F-640).
+	if links, _, meldung := canvas.StatusZeile(&e.meldung, e.s.D.Stand(), e.s.Werkzeug, e.hinweis(), e.s.TextLaeuft()); !e.ocr.laeuft || meldung || links != "Recognizing text…" {
+		t.Fatalf("läuft %v, Fußzeile %q (Meldung %v)", e.ocr.laeuft, links, meldung)
 	}
 	if e.s.Werkzeug != canvas.WerkzeugPfeil || e.s.TextBereichLaeuft() {
 		t.Errorf("nach dem Zug: Werkzeug %v, Modus %v", e.s.Werkzeug, e.s.TextBereichLaeuft())
@@ -427,6 +430,64 @@ func TestOcrFortschrittInDerStatuszeile(t *testing.T) {
 	e.ocrAbbrechen()
 	if h := e.ocrHinweis(); h != "" {
 		t.Errorf("nach Abbruch: %q", h)
+	}
+}
+
+// Die Fußzeile (canvas.StatusZeile wie in zeichneFusszeile) zeigt den Fortschritt, auch wenn vorher eine Meldung stand;
+// eine haltende Meldung bleibt stehen (F-640, Kritik 24.11. nachmittags A-1).
+func TestOcrFortschrittInDerFusszeile(t *testing.T) {
+	a := neueAttrappe("x")
+	a.warten, a.stufe = true, 57
+	e := ocrEditor(t, a)
+	links := func() (string, bool) {
+		s, _, m := canvas.StatusZeile(&e.meldung, e.s.D.Stand(), e.s.Werkzeug, e.hinweis(), e.s.TextLaeuft())
+		return s, m
+	}
+	e.ocrBeginnen()
+	e.s.TextBereichGanz()
+	e.melde("Copied 3 characters", false) // eine frühere Meldung, die nach dem Modus noch stünde
+	e.ocrBereichPruefen()
+	<-a.gestartet
+	if s, m := links(); s != "Recognizing text… 57 %" || m {
+		t.Errorf("Fußzeile %q (Meldung %v), erwartet den Fortschritt", s, m)
+	}
+	e.ocrAbbrechen()
+
+	e.meldeHaltend(haltFenster, "The clipboard holds the image only while this window is open.", true)
+	e.ocrBeginnen()
+	e.s.TextBereichGanz()
+	e.ocrBereichPruefen()
+	<-a.gestartet
+	if s, _ := links(); !strings.HasPrefix(s, "The clipboard holds") {
+		t.Errorf("haltende Meldung verdrängt: %q", s)
+	}
+	e.ocrAbbrechen()
+}
+
+// Jeder neue Fortschritt weckt die Oberfläche, damit die Fußzeile ihn zeigt (Mutant KA7).
+func TestOcrFortschrittWeckt(t *testing.T) {
+	a := neueAttrappe("x")
+	a.warten, a.stufe = true, 12
+	e := ocrEditor(t, a)
+	var n atomic.Int32
+	e.wecker = canvas.NeuerWecker(func() { n.Add(1) }, time.Hour, time.Hour)
+	t.Cleanup(e.wecker.Ende)
+	e.ocrBeginnen()
+	e.s.TextBereichGanz()
+	e.ocrBereichPruefen()
+	<-a.gestartet // die Attrappe meldete 12, bevor sie wartet; das Ende der Erkennung weckt erst nach dem Abbruch
+	if n.Load() == 0 {
+		t.Error("Fortschritt weckt die Oberfläche nicht")
+	}
+	e.ocrAbbrechen()
+}
+
+// Antwortet das Programm in der Suche nicht rechtzeitig, sagt der graue Eintrag das übersetzt (F-650).
+func TestOcrSucheFrist(t *testing.T) {
+	e := testEditor(t)
+	e.ocr.gesucht, e.ocr.sucheErr = true, fmt.Errorf("ocr: %w", ocr.ErrSucheFrist)
+	if got := e.ocrGrau(); got != "The text recognition program did not answer in time." {
+		t.Errorf("Erklärung %q", got)
 	}
 }
 

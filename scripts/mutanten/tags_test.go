@@ -54,3 +54,23 @@ func TestTagsMachenGetaggtesPaketMutierbar(t *testing.T) {
 		t.Errorf("ohne tags: Exit 0, der Mutant hätte überleben müssen:\n%s", aus.String())
 	}
 }
+
+// Das Feld „modul“ lässt go test in einem Unterordner mit eigenem go.mod laufen (schnapp-ocr, F-643); ohne modul fände
+// go test das Paket des Untermoduls nicht. Ein modul außerhalb des Baums scheitert beim Laden.
+func TestModulMachtUntermodulMutierbar(t *testing.T) {
+	test := "package p\n\nimport \"testing\"\n\nfunc TestF(t *testing.T) {\n\tif F() != 1 {\n\t\tt.Fatal(\"F\")\n\t}\n}\n"
+	w := kritikWurzel(t, test, `[{"name":"rot","datei":"sub/p/p.go","modul":"sub","paket":"./p","alt":"return 1","neu":"return 2"}]`)
+	schreibe(t, filepath.Join(w, "sub", "go.mod"), "module sub\n\ngo 1.27\n")
+	schreibe(t, filepath.Join(w, "sub", "p", "p.go"), "package p\n\nfunc F() int { return 1 }\n")
+	schreibe(t, filepath.Join(w, "sub", "p", "p_test.go"), test)
+	var aus bytes.Buffer
+	if code := lauf([]string{"-wurzel", w, "-mutanten", filepath.Join(w, "mutanten")}, &aus); code != 0 || !strings.Contains(aus.String(), "rot: ROT") {
+		t.Errorf("mit modul: Exit %d, erwartet ROT:\n%s", code, aus.String())
+	}
+	if ausgangSchluessel(Mutant{Paket: "./p"}) == ausgangSchluessel(Mutant{Paket: "./p", Modul: "sub"}) {
+		t.Error("Schlüssel muss das Modul unterscheiden")
+	}
+	if code, aus := trockenMit(t, `[{"name":"x","datei":"p/p.go","paket":"./p","alt":"return 1","neu":"return 2","modul":"../x"}]`); code == 0 || !strings.Contains(aus, "modul") {
+		t.Errorf("modul außerhalb: Exit %d:\n%s", code, aus)
+	}
+}

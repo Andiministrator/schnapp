@@ -30,7 +30,10 @@ type Mutant struct {
 	Grund       string `json:"grund"`
 	Timeout     string `json:"timeout"` // optional: -timeout für go test (z. B. "45s"); für Mutanten, die hängen statt rot zu werden (F-455)
 	// Tags: zusätzliche Build-Tags, kommagetrennt (z. B. "probe" für cmd/schnapp-fernbedienung); zu novulkan,nox11 dazu.
-	Tags   string `json:"tags"`
+	Tags string `json:"tags"`
+	// Modul: Unterordner mit eigenem go.mod (etwa "ocr" für schnapp-ocr), in dem go test läuft; datei bleibt relativ
+	// zur Wurzel, paket relativ zum Modul. Leer: die Wurzel.
+	Modul  string `json:"modul"`
 	Gruppe string `json:"-"`
 }
 
@@ -162,6 +165,9 @@ func ladeGruppen(dir string) ([]Mutant, error) {
 			if !filepath.IsLocal(filepath.FromSlash(ms[i].Datei)) {
 				return nil, fmt.Errorf("%s: Eintrag %d: datei %q liegt nicht im Baum", g, i+1, ms[i].Datei)
 			}
+			if ms[i].Modul != "" && !filepath.IsLocal(filepath.FromSlash(ms[i].Modul)) {
+				return nil, fmt.Errorf("%s: Eintrag %d: modul %q liegt nicht im Baum", g, i+1, ms[i].Modul)
+			}
 		}
 		alle = append(alle, ms...)
 	}
@@ -206,7 +212,7 @@ func testeMutant(baum, lauf string, m Mutant) (status string, rote []string, det
 	}
 	defer os.WriteFile(datei, orig, 0o644)
 
-	text, runErr := goTest(baum, lauf, m.Paket, m.Timeout, m.Tags)
+	text, runErr := goTest(baum, lauf, m)
 	for _, z := range strings.Split(text, "\n") {
 		if strings.HasPrefix(z, "--- FAIL") {
 			if f := strings.Fields(z); len(f) >= 3 {
@@ -254,16 +260,16 @@ func haengendeTests(text string) []string {
 	return namen
 }
 
-// goTest testet paket in der Kopie baum.
-func goTest(baum, lauf, paket, timeout, tags string) (string, error) {
+// goTest testet das Paket des Mutanten m in der Kopie baum (im Unterordner m.Modul, wenn gesetzt).
+func goTest(baum, lauf string, m Mutant) (string, error) {
 	args := []string{"test", "-count=1"}
-	if timeout != "" {
-		args = append(args, "-timeout", timeout)
+	if m.Timeout != "" {
+		args = append(args, "-timeout", m.Timeout)
 	}
-	cmd := exec.Command("go", append(args, paket)...)
-	cmd.Dir = baum
+	cmd := exec.Command("go", append(args, m.Paket)...)
+	cmd.Dir = filepath.Join(baum, filepath.FromSlash(m.Modul))
 	g := filepath.Join(lauf, "g")
-	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS="+goFlags(tags), "TMPDIR="+g, "GOTMPDIR="+g)
+	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS="+goFlags(m.Tags), "TMPDIR="+g, "GOTMPDIR="+g)
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
@@ -275,8 +281,10 @@ func kurz(s string) string {
 	return strings.ReplaceAll(strings.TrimSpace(s), "\n", " | ")
 }
 
-// ausgangSchluessel kennzeichnet den Test-Aufruf eines Mutanten: Paket, timeout und Tags (F-489, F-614).
-func ausgangSchluessel(m Mutant) string { return m.Paket + "\x00" + m.Timeout + "\x00" + m.Tags }
+// ausgangSchluessel kennzeichnet den Test-Aufruf eines Mutanten: Modul, Paket, timeout und Tags (F-489, F-614).
+func ausgangSchluessel(m Mutant) string {
+	return m.Modul + "\x00" + m.Paket + "\x00" + m.Timeout + "\x00" + m.Tags
+}
 
 // jetzt ist die Uhr für den Laufordner; Tests setzen sie fest (F-495).
 var jetzt = time.Now
@@ -352,7 +360,7 @@ func lauf(args []string, aus io.Writer) int {
 				continue
 			}
 			ausgangRot[k] = ""
-			if text, err := goTest(baum, laufDir, m.Paket, m.Timeout, m.Tags); err != nil {
+			if text, err := goTest(baum, laufDir, m); err != nil {
 				ausgangRot[k] = "Ausgangslage rot (ohne Mutation)"
 				if m.Timeout != "" {
 					ausgangRot[k] += " mit timeout " + m.Timeout

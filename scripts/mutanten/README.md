@@ -57,6 +57,10 @@ Optional `"tags": "probe"` hängt Build-Tags (kommagetrennt) an `novulkan,nox11`
 werden können (Gruppe `fernbedienung`: `./cmd/schnapp-fernbedienung` baut nur mit `probe`, F-614). Der Grundlauf läuft
 einmal je Paket, `timeout` und `tags`; ungültige Namen scheitern beim Laden.
 
+Optional `"modul": "ocr"` lässt `go test` im Unterordner mit eigenem `go.mod` laufen (Programm-Modul `ocr/`,
+schnapp-ocr, F-643); `datei` bleibt relativ zur Wurzel, `paket` gilt im Modul (meist `.`). Ein `modul` außerhalb des
+Baums scheitert beim Laden; der Grundlauf unterscheidet auch nach Modul.
+
 ## Äquivalente Mutanten
 
 `"aequivalent": true` heißt: Die Änderung verändert das beobachtbare Verhalten nicht (etwa eine doppelte Bedingung

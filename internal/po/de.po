@@ -1304,6 +1304,9 @@ msgstr "Suche nach tesseract …"
 msgid "Install tesseract to recognize text."
 msgstr "Installiere tesseract, um Text zu erkennen."
 
+msgid "The text recognition program did not answer in time."
+msgstr "Das Programm zur Texterkennung hat nicht rechtzeitig geantwortet."
+
 msgid "Install language data for tesseract to recognize text."
 msgstr "Installiere Sprachdaten für tesseract, um Text zu erkennen."
 
