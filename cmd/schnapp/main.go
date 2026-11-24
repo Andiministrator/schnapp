@@ -182,7 +182,7 @@ func plane(a Aufruf, e settings.Einstellungen) Auftrag {
 
 // hilfe liefert den Hilfetext.
 func hilfe() string {
-	return i18n.T("Usage: schnapp [option] [--json] [--output=FILE] | schnapp [--ignore-limit] [--export=TARGET | --annotate=LIST] [--json] FILE | schnapp mcp") + "\n\n" +
+	return i18n.T("Usage: schnapp [option] [--json] [--output=FILE] | schnapp [--ignore-limit] [--export=TARGET [--json] | --annotate=LIST [--json]] FILE | schnapp mcp") + "\n\n" +
 		i18n.T("Take a screenshot. Without an option, you select an area (--region).") + "\n\n" +
 		"  --region       " + i18n.T("Select an area") + "\n" +
 		"  --screen       " + i18n.T("Capture a monitor, as set in the settings (default: pick by click)") + "\n" +

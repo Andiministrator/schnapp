@@ -40,7 +40,7 @@ GitHub Actions, `.github/workflows/test.yml` (ADR-0010), läuft bei jedem Push u
 
 | Job | Inhalt |
 |---|---|
-| `wurzel` | gofmt, vet, test, Programm bauen; dazu vet/test mit Tag `probe` |
+| `wurzel` | gofmt (auch mit Tag `probe`), vet, test, Zeichnen des Editors ohne Fenster (Protokoll), `go test -race ./internal/...`, Mutanten-Trockenlauf, `brand/werkzeug`, `scripts/install-test.sh`, Programm bauen; dazu vet/test mit Tag `probe` |
 | `draw` | gofmt, vet, test im Modul `draw/` |
 | `gio-patch` | Patch passt zu `third_party/gio/` |
 | `ocr` | gofmt, vet, test im Modul `ocr/` (echte Erkennung deu und eng), dann `internal/ocr` gegen das gebaute schnapp-ocr |

@@ -35,8 +35,8 @@ msgstr "Die verfügbaren Optionen zeigt --help."
 msgid "Schnapp %s"
 msgstr "Schnapp %s"
 
-msgid "Usage: schnapp [option] [--json] [--output=FILE] | schnapp [--ignore-limit] [--export=TARGET | --annotate=LIST] [--json] FILE | schnapp mcp"
-msgstr "Aufruf: schnapp [Option] [--json] [--output=DATEI] | schnapp [--ignore-limit] [--export=ZIEL | --annotate=LISTE] [--json] DATEI | schnapp mcp"
+msgid "Usage: schnapp [option] [--json] [--output=FILE] | schnapp [--ignore-limit] [--export=TARGET [--json] | --annotate=LIST [--json]] FILE | schnapp mcp"
+msgstr "Aufruf: schnapp [Option] [--json] [--output=DATEI] | schnapp [--ignore-limit] [--export=ZIEL [--json] | --annotate=LISTE [--json]] DATEI | schnapp mcp"
 
 msgid "Take a screenshot. Without an option, you select an area (--region)."
 msgstr "Nimmt einen Screenshot auf. Ohne Option wird ein Bereich gewählt (--region)."
