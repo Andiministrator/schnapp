@@ -557,7 +557,8 @@ func reiterWirkung(r tafelReiter) string {
 	case reiterAufnahme:
 		return i18n.T("Applies from the next capture.")
 	case reiterBibliothek:
-		return i18n.T("Applies at the next start.")
+		// Die Leiste der letzten Aufnahmen folgt sofort (ADR-0034 Nachtrag 2), das Aufräumen läuft beim Start.
+		return i18n.T("Recent captures apply immediately, clean-up at the next start.")
 	case reiterAgenten:
 		return i18n.T("Applies immediately.")
 	}

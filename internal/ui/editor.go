@@ -1454,7 +1454,7 @@ func (e *editor) frame(gtx layout.Context) {
 	if e.leisteSichtbar(gtx) { // unter der Leinwand, so breit wie sie (ADR-0036 Punkt 1)
 		e.zeichneLeisteUnten(gtx, image.Rect(flaeche.Min.X, flaeche.Max.Y, flaeche.Max.X, flaeche.Max.Y+gtx.Dp(leisteUntenDp)))
 	} else {
-		e.unten.rahmen, e.unten.von, e.unten.bis, e.unten.kacheln = image.Rectangle{}, 0, 0, nil
+		e.leisteVerborgen()
 	}
 	e.zeichneFusszeile(gtx)
 	e.zeichneSchriftliste(gtx) // über Leisten und Fußzeile, unter Hilfe und Menü

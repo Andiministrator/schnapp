@@ -457,6 +457,13 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 	k.ops = neueOps
 }
 
+// leisteVerborgen räumt den Stand des letzten Zeichnens ab, wenn die Leiste nicht gezeigt wird: kein Hinweis in der
+// Statuszeile, keine Vorschau für Klicks und die Fokusfahrt.
+func (e *editor) leisteVerborgen() {
+	k := &e.unten
+	k.rahmen, k.von, k.bis, k.kacheln, k.gezeigt, k.hinweis = image.Rectangle{}, 0, 0, nil, nil, ""
+}
+
 // zeichneLeistenBild zeichnet das Vorschaubild von rel eingepasst in r, bis es geladen ist ein graues Feld.
 func (e *editor) zeichneLeistenBild(gtx layout.Context, rel string, r image.Rectangle, ops map[string]leisteBild) {
 	k := &e.unten

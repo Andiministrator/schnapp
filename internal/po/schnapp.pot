@@ -1205,7 +1205,7 @@ msgid "Applies from the next capture."
 msgstr ""
 
 #: internal/ui/einstellungen_logik.go
-msgid "Applies at the next start."
+msgid "Recent captures apply immediately, clean-up at the next start."
 msgstr ""
 
 #: internal/ui/einstellungen_logik.go

@@ -1203,9 +1203,6 @@ msgstr "Gilt nach dem Neustart von Schnapp."
 msgid "Applies from the next capture."
 msgstr "Gilt ab der nächsten Aufnahme."
 
-msgid "Applies at the next start."
-msgstr "Gilt beim nächsten Start."
-
 msgid "Applies immediately."
 msgstr "Gilt sofort."
 
@@ -1480,3 +1477,6 @@ msgstr "Der Index der Bibliothek ist nicht lesbar."
 
 msgid "The other capture was not opened: this one was changed meanwhile."
 msgstr "Die andere Aufnahme wurde nicht geöffnet: Diese wurde inzwischen geändert."
+
+msgid "Recent captures apply immediately, clean-up at the next start."
+msgstr "Letzte Aufnahmen gelten sofort, das Aufräumen beim nächsten Start."

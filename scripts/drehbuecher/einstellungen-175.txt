@@ -13,8 +13,9 @@
 #  03 Leertaste: Liste unter dem Feld mit drei Einträgen, „Pick by clicking“ grün markiert, Fokus auf ihm.
 #  04 Pfeil runter, Enter: Feld zeigt „Monitor under the pointer“, Liste zu, Fokusrahmen wieder am Feld.
 #  05 Tab: Fokusrahmen um das Kästchen „Open the editor“.
-#  06 Klick auf „Library“: Schalter „Old captures to the trash“ an mit Fokusrahmen, „After days“ − 90 +.
-#  07 Tab, „30“ getippt: Zahl 30 mit Fokusrahmen.
+#  06 Klick auf „Library“: Schalter „Show below the image“ (Recent captures, ADR-0036) an mit Fokusrahmen, darunter
+#     „Old captures to the trash“ an, „After days“ − 90 +.
+#  07 Tab zweimal (über „Clean up“), „30“ getippt: Zahl 30 mit Fokusrahmen.
 #  08 Klick auf „Agents“, Leertaste: „Capture screen“ an, darunter der Warnkasten (oranger Balken links).
 #  09 Tab dreimal, Leertaste: „Read the library“ an, zweiter Warnkasten.
 #  10 Enter: Tafel zu, Fußzeile des Editors „Settings saved“.
@@ -40,6 +41,7 @@ foto 05-fokus-schalter
 klick 490 336
 warte 300
 foto 06-bibliothek
+taste Tab
 taste Tab
 schreibe 30
 warte 300

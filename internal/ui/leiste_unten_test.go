@@ -226,6 +226,12 @@ func TestLeisteZeigtBibliothek(t *testing.T) {
 	if !strings.Contains(l.e.hinweis(), "open now") {
 		t.Errorf("Hinweis zur offenen: %q", l.e.hinweis())
 	}
+	// Verschwindet die Leiste unter dem Zeiger, verschwindet ihr Hinweis mit (Sichtprobe 07).
+	l.e.unten.an = false
+	l.setle()
+	if h := l.e.hinweis(); strings.Contains(h, "Capture of") || len(l.e.unten.gezeigt) != 0 {
+		t.Errorf("Hinweis ohne Leiste: %q", h)
+	}
 }
 
 // ADR-0036 Punkt 2: Strg+Umschalt+R schaltet die Leiste und merkt es in settings.ini; ohne Bibliothek ist der
