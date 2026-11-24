@@ -33,22 +33,22 @@
     "name": "SU5 Entfernen schreibt styles.ini nicht",
     "datei": "internal/ui/schnellstile.go",
     "paket": "./internal/ui",
-    "alt": "e.stileSpeichern(i18n.T(\"Style removed\"))",
-    "neu": "e.melde(i18n.T(\"Style removed\"), false)"
+    "alt": "e.stileSpeichern(i18n.T(\"Style removed\"), func(alt []settings.Stil) []settings.Stil { return settings.StilEntfernt(alt, weg) })",
+    "neu": "_ = weg\n\te.melde(i18n.T(\"Style removed\"), false)"
   },
   {
     "name": "SU6 Plus legt auch bei Doppelten an (Ergebnis nicht geprüft)",
     "datei": "internal/ui/schnellstile.go",
     "paket": "./internal/ui",
-    "alt": "r == canvas.HinzuOK {\n\t\t\te.stileSpeichern",
-    "neu": "r != canvas.HinzuNichts {\n\t\t\te.stileSpeichern"
+    "alt": "r == canvas.HinzuOK {\n\t\t\tneu := st.Einstellung()",
+    "neu": "r != canvas.HinzuNichts {\n\t\t\tneu := st.Einstellung()"
   },
   {
     "name": "SU7 Plus meldet das Speichern nicht",
     "datei": "internal/ui/schnellstile.go",
     "paket": "./internal/ui",
-    "alt": "e.stileSpeichern(i18n.T(\"Style saved\"))",
-    "neu": "e.melde(\"\", false)"
+    "alt": "e.stileSpeichern(i18n.T(\"Style saved\"), func",
+    "neu": "e.stileSpeichern(\"\", func"
   },
   {
     "name": "SU8 Pfeil rechts wandert nach links",
@@ -180,10 +180,10 @@
   },
   {
     "name": "SU26 Speichern schreibt nur den ersten Stil",
-    "datei": "internal/ui/schnellstile.go",
+    "datei": "internal/settings/stile.go",
     "paket": "./internal/ui",
-    "alt": "roh := make([]settings.Stil, len(eigene))",
-    "neu": "roh := make([]settings.Stil, min(1, len(eigene)))"
+    "alt": "append(slices.Clone(liste), s)",
+    "neu": "append([]Stil{s}, liste...)"
   },
   {
     "name": "SU27 Speicherfehler wird nicht gemeldet",
@@ -270,5 +270,40 @@
     "paket": "./internal/ui",
     "alt": "e.s.SchnellArt(); ok { // Schnellstile",
     "neu": "e.s.SchnellArt(); !ok { // Schnellstile"
+  },
+  {
+    "name": "SU39 Nach dem Schreiben gilt nicht der Stand der Datei",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "e.eigeneAusDatei(neu)\n",
+    "neu": "_ = neu\n"
+  },
+  {
+    "name": "SU40 Sicherung wird nicht gemeldet",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "if gesichert {",
+    "neu": "if false && gesichert {"
+  },
+  {
+    "name": "SU41 Entfernen entfernt in der Datei einen anderen Stil",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "settings.StilEntfernt(alt, weg)",
+    "neu": "settings.StilEntfernt(alt[:0:0], weg)"
+  },
+  {
+    "name": "SU42 Hinzufügen ändert die Datei nicht",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "return settings.StilHinzu(alt, neu)",
+    "neu": "return settings.StilHinzu(alt, neu)[:len(alt)]"
+  },
+  {
+    "name": "SU43 Grauer Knopf ohne Erklärung bei unbrauchbarem Stand",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "case canvas.HinzuUnbrauchbar:",
+    "neu": "case canvas.HinzuNichts:"
   }
 ]

@@ -257,5 +257,103 @@
     "paket": "./internal/settings",
     "alt": "\tb.WriteString(kopfStile)\n",
     "neu": ""
+  },
+  {
+    "name": "SS13 Zusammenführen ohne Sperre",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "sp, err := stileSperreNehmen(pfad + \".lock\")",
+    "neu": "var sp *os.File\n\tvar err error"
+  },
+  {
+    "name": "SS14 Unlesbares ohne Sicherung ersetzt",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "if err := sichereStile(pfad+\".bak\", daten); err != nil {",
+    "neu": "if err := error(nil); err != nil {"
+  },
+  {
+    "name": "SS15 Sicherung überschreibt eine vorhandene",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "os.O_WRONLY|os.O_CREATE|os.O_EXCL|syscall.O_NOFOLLOW",
+    "neu": "os.O_WRONLY|os.O_CREATE|os.O_TRUNC|syscall.O_NOFOLLOW"
+  },
+  {
+    "name": "SS16 Sicherung nicht privat",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "0o600)\n\tif err != nil {\n\t\tif errors.Is(err, os.ErrExist) {",
+    "neu": "0o644)\n\tif err != nil {\n\t\tif errors.Is(err, os.ErrExist) {"
+  },
+  {
+    "name": "SS17 Unlesbare Datei wird ersetzt",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "return nil, false, errors.Join(ErrStileUnlesbar, err)",
+    "neu": "daten, da = nil, false"
+  },
+  {
+    "name": "SS18 Verworfene Stile lösen keine Sicherung aus",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "if len(warn) > 0 {",
+    "neu": "if len(warn) > 1<<30 {"
+  },
+  {
+    "name": "SS19 StilHinzu legt Doppeltes an",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "if e.Bereinigt() == s {\n\t\t\treturn slices.Clone(liste)\n\t\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "SS20 StilEntfernt entfernt auch bei Fehlen den ersten",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "if e.Bereinigt() == s {\n\t\t\treturn slices.Delete",
+    "neu": "if e.Bereinigt() == s || true {\n\t\t\treturn slices.Delete"
+  },
+  {
+    "name": "SS21 StilHinzu ohne Grenze je Art",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "if n >= MaxEigeneStile {\n\t\treturn slices.Clone(liste)",
+    "neu": "if false {\n\t\treturn slices.Clone(liste)"
+  },
+  {
+    "name": "SS22 Dateisystem ohne flock bricht ab",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "errors.Is(err, syscall.ENOLCK), ",
+    "neu": ""
+  },
+  {
+    "name": "SS23 Sperrdatei nicht privat",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0o600)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tif st, err := f.Stat()",
+    "neu": "syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0o666)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tif st, err := f.Stat()"
+  },
+  {
+    "name": "SS24 PruefeStil prüft nichts",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "func PruefeStil(s Stil) error { return pruefeStil(s) }",
+    "neu": "func PruefeStil(s Stil) error { return nil }"
+  },
+  {
+    "name": "SQ26 „+“ nimmt unspeicherbare Stände an",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "if !st.gueltig() || settings.PruefeStil(st.Einstellung()) != nil {",
+    "neu": "if false {"
+  },
+  {
+    "name": "SQ27 „+“ prüft nur die Größen, nicht die Schreibbarkeit",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "|| settings.PruefeStil(st.Einstellung()) != nil {",
+    "neu": "{"
   }
 ]

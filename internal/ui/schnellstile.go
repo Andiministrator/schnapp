@@ -43,8 +43,10 @@ const (
 
 // Lesen und Schreiben der Datei; Tests tauschen sie nicht, sie setzen XDG_CONFIG_HOME (TestMain).
 var (
-	ladeStile     = settings.LadeStile
-	schreibeStile = settings.SchreibeStile
+	ladeStile = settings.LadeStile
+	// aendereStile liest styles.ini unter einer Sperre neu und wendet die Änderung an (F-627); der Aufruf heißt nicht
+	// Schreibe…, denn die Prüfung in cmd/schnapp erlaubt hier nur den Schreiber der Stile.
+	aendereStile = settings.AendereStile
 )
 
 // schnellLeiste hält Knöpfe, Lage und Zustand des Abschnitts.
@@ -116,6 +118,28 @@ func (e *editor) stileLaden() {
 	for _, w := range warn {
 		fmt.Fprintln(fehlerAusgabe, w)
 	}
+	e.eigeneAusDatei(roh)
+}
+
+// stileSpeichern ändert styles.ini um genau die eigene Änderung aend (F-627: die Datei wird unter einer Sperre neu
+// gelesen, damit ein zweites Fenster nichts zurückholt oder verliert), setzt danach die eigenen Stile der Sitzung auf
+// den Stand der Datei und sagt in der Statuszeile, was geschah; ein Fehler bleibt dort. Musste eine Datei mit
+// Unlesbarem ersetzt werden, steht in der Meldung, wo die alte liegt (F-629 b).
+func (e *editor) stileSpeichern(erfolg string, aend func([]settings.Stil) []settings.Stil) {
+	neu, gesichert, err := aendereStile(aend)
+	if err != nil {
+		e.melde(fmt.Sprintf(i18n.T("Could not save the styles: %v"), ohnePaketpraefix(err.Error())), true)
+		return
+	}
+	e.eigeneAusDatei(neu)
+	if gesichert {
+		erfolg = i18n.T("Style saved. Unreadable parts of the old styles file are kept in styles.ini.bak.")
+	}
+	e.melde(erfolg, false)
+}
+
+// eigeneAusDatei setzt die eigenen Stile der Sitzung auf die Liste der Datei.
+func (e *editor) eigeneAusDatei(roh []settings.Stil) {
 	var liste []canvas.Schnellstil
 	for _, r := range roh {
 		if st, ok := canvas.SchnellstilAus(r); ok {
@@ -123,20 +147,6 @@ func (e *editor) stileLaden() {
 		}
 	}
 	e.s.SetzeEigeneSchnellstile(liste)
-}
-
-// stileSpeichern schreibt die eigenen Stile ganz neu und sagt in der Statuszeile, was geschah; ein Fehler bleibt dort.
-func (e *editor) stileSpeichern(erfolg string) {
-	eigene := e.s.EigeneSchnellstile()
-	roh := make([]settings.Stil, len(eigene))
-	for i, st := range eigene {
-		roh[i] = st.Einstellung()
-	}
-	if err := schreibeStile(roh); err != nil {
-		e.melde(fmt.Sprintf(i18n.T("Could not save the styles: %v"), ohnePaketpraefix(err.Error())), true)
-		return
-	}
-	e.melde(erfolg, false)
 }
 
 // schnellAuswerten verarbeitet Klicks, Rechtsklicks und die Überschrift (aus seiteAuswerten). Sie beziehen sich auf die
@@ -163,8 +173,9 @@ func (e *editor) schnellAuswerten(gtx layout.Context) {
 		}
 	}
 	if k.plus.Clicked(gtx) && e.seiteAn() && gueltig {
-		if _, r := e.s.FuegeSchnellstilHinzu(art); r == canvas.HinzuOK {
-			e.stileSpeichern(i18n.T("Style saved"))
+		if st, r := e.s.FuegeSchnellstilHinzu(art); r == canvas.HinzuOK {
+			neu := st.Einstellung()
+			e.stileSpeichern(i18n.T("Style saved"), func(alt []settings.Stil) []settings.Stil { return settings.StilHinzu(alt, neu) })
 		}
 	}
 }
@@ -179,13 +190,14 @@ func (e *editor) schnellEntferne(gtx layout.Context, j int) {
 	if aktuell := e.s.Schnellstile(k.art); j >= len(aktuell) || aktuell[j] != k.liste[j] {
 		return
 	}
+	weg := k.liste[j].Einstellung()
 	if !e.s.EntferneSchnellstil(k.art, j) {
 		return
 	}
 	if gtx.Focused(&k.kacheln[j]) && j >= len(e.s.Schnellstile(k.art)) {
 		gtx.Execute(key.FocusCmd{Tag: &k.plus})
 	}
-	e.stileSpeichern(i18n.T("Style removed"))
+	e.stileSpeichern(i18n.T("Style removed"), func(alt []settings.Stil) []settings.Stil { return settings.StilEntfernt(alt, weg) })
 }
 
 // schnellTaste behandelt Pfeile und Entf, solange eine Kachel oder „+“ den Fokus hat (ADR-0037 Punkt 7); Enter und
@@ -244,8 +256,11 @@ func schnellName(st canvas.Schnellstil) string {
 // schnellPlusText ist der Hinweis zum Knopf „+“.
 func (e *editor) schnellPlusText() string {
 	k := &e.schnell
-	if e.s.KannSchnellstilHinzufuegen(k.art) {
+	switch e.s.PruefeSchnellstilHinzu(k.art) {
+	case canvas.HinzuOK:
 		return i18n.T("Save the current settings as a custom style")
+	case canvas.HinzuUnbrauchbar:
+		return i18n.T("The current settings cannot be saved as a style (stroke width, font name).")
 	}
 	n := 0
 	for _, st := range k.liste {

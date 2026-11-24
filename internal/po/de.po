@@ -1140,6 +1140,12 @@ msgstr "Höchstens %d eigene Stile je Art."
 msgid "The current settings are already a style."
 msgstr "Die aktuellen Einstellungen sind schon ein Stil."
 
+msgid "The current settings cannot be saved as a style (stroke width, font name)."
+msgstr "Die aktuellen Einstellungen lassen sich nicht als Stil speichern (Strichstärke, Schriftname)."
+
+msgid "Style saved. Unreadable parts of the old styles file are kept in styles.ini.bak."
+msgstr "Stil gespeichert. Unlesbare Teile der alten Stildatei liegen in styles.ini.bak."
+
 msgid "Black, no label"
 msgstr "Schwarz ohne Schild"
 # ui: Einstellungstafel (ADR-0034)

@@ -497,10 +497,11 @@ func (s *Sitzung) SetzeEigeneSchnellstile(stile []Schnellstil) {
 type HinzuErgebnis int
 
 const (
-	HinzuOK      HinzuErgebnis = iota // der Stil steht am Ende der Reihe
-	HinzuVoll                         // schon MaxEigeneSchnellstile eigene dieser Art („+“ ist grau)
-	HinzuDoppelt                      // ein Stil mit denselben Werten steht schon da (eingebaut oder eigen)
-	HinzuNichts                       // die Art hat keinen Stand (kein Werkzeug)
+	HinzuOK          HinzuErgebnis = iota // der Stil steht am Ende der Reihe
+	HinzuVoll                             // schon MaxEigeneSchnellstile eigene dieser Art („+“ ist grau)
+	HinzuDoppelt                          // ein Stil mit denselben Werten steht schon da (eingebaut oder eigen)
+	HinzuNichts                           // die Art hat keinen Stand (kein Werkzeug)
+	HinzuUnbrauchbar                      // der Stand ließe sich nicht in styles.ini schreiben (Strich 0, Schriftname mit Leerraum, F-628)
 )
 
 // KannSchnellstilHinzufuegen meldet, ob „+“ wirkt: Die Art hat Stile, ist nicht voll und der Stand ist neu.
@@ -509,10 +510,20 @@ func (s *Sitzung) KannSchnellstilHinzufuegen(a SchnellArt) bool {
 	return r == HinzuOK
 }
 
+// PruefeSchnellstilHinzu sagt, was „+“ für die Art a täte, ohne es zu tun (die Oberfläche erklärt damit den grauen Knopf).
+func (s *Sitzung) PruefeSchnellstilHinzu(a SchnellArt) HinzuErgebnis {
+	_, r := s.neuerStil(a)
+	return r
+}
+
 func (s *Sitzung) neuerStil(a SchnellArt) (Schnellstil, HinzuErgebnis) {
 	st, ok := s.SchnellstilAusStand(a)
 	if !ok {
 		return Schnellstil{}, HinzuNichts
+	}
+	// Dieselbe Prüfung wie beim Schreiben (F-628): Was die Datei nicht aufnimmt, wird keine Kachel.
+	if !st.gueltig() || settings.PruefeStil(st.Einstellung()) != nil {
+		return Schnellstil{}, HinzuUnbrauchbar
 	}
 	n := 0
 	for _, e := range s.eigene {

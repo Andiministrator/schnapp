@@ -3,7 +3,7 @@
 package settings
 
 // Eigene Schnellstile (ADR-0037 Punkt 6): `styles.ini` im Konfigurationsordner, neben `settings.ini`. Anders als diese
-// gehört die Datei dem Programm: Schnapp schreibt sie jedes Mal ganz neu (Kopfkommentar sagt das), der Leser folgt
+// gehört die Datei dem Programm: Schnapp schreibt sie jedes Mal ganz neu, aber aus dem frisch gelesenen Stand unter einer Sperre (F-627; Kopfkommentar sagt das), der Leser folgt
 // aber denselben Regeln wie bei `settings.ini` (höchstens 64 KiB, Warnungen statt Abbruch, ohne Blockieren öffnen).
 //
 // Format: ein Abschnitt je Stil, Name = Objektart (`[arrow]`, `[box]`, `[text]`, `[callout]`, `[step]`,
@@ -22,9 +22,11 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 	"unicode/utf8"
 
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -59,6 +61,10 @@ var (
 	ErrStileKeineDatei = errors.New("the styles file is not a regular file")
 	ErrStileVerweis    = errors.New("the styles file is a link to nothing")
 	ErrStileKeinUTF8   = errors.New("a style contains text that is not valid UTF-8")
+	// Zusammenführen (F-627, F-629 b): Die vorhandene Datei wird nie stillschweigend ersetzt.
+	ErrStileUnlesbar  = errors.New("the existing styles file cannot be read, so it is left as it is")
+	ErrStileSicherung = errors.New("the existing styles file has parts that cannot be read and styles.ini.bak already exists, so it is left as it is")
+	ErrStileGesperrt  = errors.New("the styles file is locked by another window")
 )
 
 // Stil ist ein Schnellstil, wie er in styles.ini steht. Nicht alle Felder gelten für jede Art (schluesselFuer).
@@ -375,6 +381,10 @@ const kopfStile = `# Quick styles of Schnapp (custom styles of the editor's righ
 # Sizes are given for a 1080-pixel image and grow with the image size.
 `
 
+// PruefeStil meldet, warum s nicht in die Datei geschrieben werden kann (nil: in Ordnung). Dieselbe Prüfung wie beim
+// Schreiben, damit die Oberfläche keinen Stil annimmt, der jedes weitere Speichern blockierte (F-628).
+func PruefeStil(s Stil) error { return pruefeStil(s) }
+
 // pruefeStil meldet, warum s nicht geschrieben werden kann (nil: in Ordnung).
 func pruefeStil(s Stil) error {
 	if schluesselFuer(s.Art) == nil {
@@ -527,3 +537,169 @@ func bereinigt(s Stil) Stil {
 
 // Bereinigt ist s ohne die Angaben, die für seine Art nicht gelten (so liest ParseStile einen Stil).
 func (s Stil) Bereinigt() Stil { return bereinigt(s) }
+
+// StilHinzu hängt s an liste, wenn kein gleicher Stil (nach Bereinigen) der Art darin steht und die Art noch Platz hat
+// (MaxEigeneStile); sonst bleibt liste. Liefert eine neue Liste.
+func StilHinzu(liste []Stil, s Stil) []Stil {
+	s = s.Bereinigt()
+	n := 0
+	for _, e := range liste {
+		if e.Art != s.Art {
+			continue
+		}
+		if e.Bereinigt() == s {
+			return slices.Clone(liste)
+		}
+		n++
+	}
+	if n >= MaxEigeneStile {
+		return slices.Clone(liste)
+	}
+	return append(slices.Clone(liste), s)
+}
+
+// StilEntfernt entfernt den ersten Stil aus liste, der s gleicht (nach Bereinigen); fehlt er, bleibt liste.
+func StilEntfernt(liste []Stil, s Stil) []Stil {
+	s = s.Bereinigt()
+	for i, e := range liste {
+		if e.Bereinigt() == s {
+			return slices.Delete(slices.Clone(liste), i, i+1)
+		}
+	}
+	return slices.Clone(liste)
+}
+
+// stileFlock ist das Sperren selbst (Naht für Tests).
+var stileFlock = syscall.Flock
+
+// AendereStile liest die Datei am Ort von StilePfad unter einer Sperre neu, wendet aend an und schreibt das Ergebnis
+// (F-627). Liefert den Stand der Datei danach und ob die alte Datei Unlesbares enthielt und als styles.ini.bak gesichert
+// wurde (F-629 b).
+func AendereStile(aend func([]Stil) []Stil) ([]Stil, bool, error) {
+	pfad, err := stileOrt()
+	if err != nil {
+		return nil, false, errprefix.Wrap("settings", err)
+	}
+	return AendereStileDatei(pfad, aend)
+}
+
+// AendereStileDatei ist AendereStile für die Stildatei pfad. Unter einer flock-Sperre `<pfad>.lock` (0600, neben der
+// Datei; ohne flock-Unterstützung ohne Sperre) wird die Datei neu gelesen, aend auf die gelesenen Stile angewandt und
+// geschrieben wie bei SchreibeStileDatei; so gehen Änderungen eines zweiten Fensters nicht verloren. Ist die Datei
+// nicht lesbar (keine reguläre Datei, zu groß, Lesefehler), bleibt sie unberührt (ErrStileUnlesbar). Wurden beim Lesen
+// Stile oder Zeilen verworfen, legt der erste Schreibzug vorher eine Sicherung `<pfad>.bak` an (exklusiv, 0600); gibt es
+// sie schon, wird nichts geschrieben (ErrStileSicherung): Eine frühere Sicherung geht nie verloren.
+func AendereStileDatei(pfad string, aend func([]Stil) []Stil) ([]Stil, bool, error) {
+	neu, gesichert, err := aendereStileDatei(pfad, aend)
+	return neu, gesichert, errprefix.Wrap("settings", err)
+}
+
+func aendereStileDatei(pfad string, aend func([]Stil) []Stil) (_ []Stil, gesichert bool, _ error) {
+	ordner := filepath.Dir(pfad)
+	if err := os.MkdirAll(ordner, 0o700); err != nil {
+		return nil, false, err
+	}
+	sp, err := stileSperreNehmen(pfad + ".lock")
+	if err != nil {
+		return nil, false, err
+	}
+	if sp != nil {
+		defer sp.Close()
+	}
+	var alt []Stil
+	daten, da, err := leseStileRoh(pfad)
+	if err != nil {
+		return nil, false, errors.Join(ErrStileUnlesbar, err)
+	}
+	if da {
+		var warn []string
+		alt, warn = ParseStile(pfad, string(daten))
+		if len(warn) > 0 {
+			if err := sichereStile(pfad+".bak", daten); err != nil {
+				return nil, false, err
+			}
+			gesichert = true
+		}
+	}
+	neu := aend(slices.Clone(alt))
+	if err := schreibeStileDatei(pfad, neu); err != nil {
+		return nil, false, err
+	}
+	return neu, gesichert, nil
+}
+
+// leseStileRoh liest die Bytes der Stildatei (da: sie existiert); jedes Hindernis außer „fehlt“ ist ein Fehler.
+func leseStileRoh(pfad string) (daten []byte, da bool, _ error) {
+	f, err := os.OpenFile(pfad, os.O_RDONLY|syscall.O_NONBLOCK, 0)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return nil, false, err
+	}
+	if !info.Mode().IsRegular() {
+		return nil, false, ErrStileKeineDatei
+	}
+	daten, err = io.ReadAll(io.LimitReader(f, maxDateigroesse+1))
+	if err != nil {
+		return nil, false, err
+	}
+	if len(daten) > maxDateigroesse {
+		return nil, false, ErrStileZuGross
+	}
+	return daten, true, nil
+}
+
+// sichereStile legt die Sicherung name neu an (exklusiv, 0600, ohne Verweis zu folgen) und schreibt daten hinein.
+func sichereStile(name string, daten []byte) error {
+	f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL|syscall.O_NOFOLLOW, 0o600)
+	if err != nil {
+		if errors.Is(err, os.ErrExist) {
+			return ErrStileSicherung
+		}
+		return err
+	}
+	_, err = f.Write(daten)
+	if err == nil {
+		err = f.Sync()
+	}
+	return errors.Join(err, f.Close())
+}
+
+// stileSperreNehmen nimmt die flock-Sperre name (wartet bis 3 s auf ein anderes Fenster). nil ohne Fehler: das
+// Dateisystem kennt kein flock, es geht ohne Sperre weiter.
+func stileSperreNehmen(name string) (*os.File, error) {
+	f, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0o600)
+	if err != nil {
+		return nil, err
+	}
+	if st, err := f.Stat(); err != nil || !st.Mode().IsRegular() {
+		_ = f.Close()
+		return nil, errors.Join(err, errors.New("the lock file is not a regular file"))
+	}
+	ende := time.Now().Add(3 * time.Second)
+	for {
+		err := stileFlock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
+		switch {
+		case err == nil:
+			return f, nil
+		case errors.Is(err, syscall.ENOLCK), errors.Is(err, syscall.ENOTSUP), errors.Is(err, syscall.EOPNOTSUPP):
+			_ = f.Close()
+			return nil, nil
+		case errors.Is(err, syscall.EWOULDBLOCK):
+			if time.Now().After(ende) {
+				_ = f.Close()
+				return nil, ErrStileGesperrt
+			}
+			time.Sleep(20 * time.Millisecond)
+		default:
+			_ = f.Close()
+			return nil, err
+		}
+	}
+}

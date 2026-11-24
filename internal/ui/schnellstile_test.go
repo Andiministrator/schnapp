@@ -440,9 +440,11 @@ func TestSchnellstileMehrereEigeneUndGrauesPlus(t *testing.T) {
 // Scheitert das Schreiben von styles.ini, steht der Fehler in der Fußzeile; der Stil gilt in der Sitzung weiter.
 func TestSchnellstileSpeicherfehlerWirdGemeldet(t *testing.T) {
 	l, _ := schnellLauf(t)
-	alt := schreibeStile
-	schreibeStile = func([]settings.Stil) error { return errors.New("settings: kein Platz") }
-	t.Cleanup(func() { schreibeStile = alt })
+	alt := aendereStile
+	aendereStile = func(func([]settings.Stil) []settings.Stil) ([]settings.Stil, bool, error) {
+		return nil, false, errors.New("settings: kein Platz")
+	}
+	t.Cleanup(func() { aendereStile = alt })
 	k := &l.e.schnell
 	l.e.s.SetzeBreite(6)
 	l.setle()
