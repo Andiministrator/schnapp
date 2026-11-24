@@ -38,15 +38,15 @@
     "name": "S6 Save schreibt alle Schlüssel statt der geänderten (ADR-0034 Punkt 5)",
     "datei": "internal/ui/einstellungen_logik.go",
     "paket": "./internal/ui",
-    "alt": "\ta := settings.Unterschiede(t.geladen, t.wert)",
-    "neu": "\ta := settings.Werte(t.wert)"
+    "alt": "for _, a := range settings.Unterschiede(t.geladen, t.wert) {",
+    "neu": "for _, a := range settings.Werte(t.wert) {"
   },
   {
     "name": "S7 Fehler beim Speichern schließt die Tafel",
     "datei": "internal/ui/einstellungen_logik.go",
     "paket": "./internal/ui",
-    "alt": "\t\treturn false, false",
-    "neu": "\t\treturn false, true"
+    "alt": "return geschrieben, false",
+    "neu": "return geschrieben, true"
   },
   {
     "name": "S8 Zahl 0 gilt als gültig",
@@ -108,8 +108,8 @@
     "name": "S16 Save schreibt nichts",
     "datei": "internal/ui/einstellungen.go",
     "paket": "./internal/ui",
-    "alt": "var schreibeEinstellungen = settings.Schreibe",
-    "neu": "var schreibeEinstellungen = func([]settings.Aenderung) error { return nil }"
+    "alt": "var schreibeEinstellungen = settings.SchreibeDatei",
+    "neu": "var schreibeEinstellungen = func(string, []settings.Aenderung) error { return nil }"
   },
   {
     "name": "S17 Schließen gibt der Leinwand den Fokus nicht",
@@ -173,5 +173,89 @@
     "paket": "./cmd/schnapp",
     "alt": "\tzeigeDialog = ui.Bestaetige\n",
     "neu": "\tzeigeDialog = func(ctx context.Context, z, k string) (bool, error) {\n\t\t_ = ui.Editor\n\t\treturn ui.Bestaetige(ctx, z, k)\n\t}\n"
+  },
+  {
+    "name": "S26 F-626 Save trotz ungültigem Zahlfeld",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "if t.zahlFehler {\n\t\tt.fehler = fmt.Sprintf(",
+    "neu": "if false && t.zahlFehler {\n\t\tt.fehler = fmt.Sprintf("
+  },
+  {
+    "name": "S27 F-626 Zwischenstand des Tippens bleibt bei ungültigem Text",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "t.wert.Bibliothek.Tage = t.zahlVorher\n",
+    "neu": "_ = t.zahlVorher\n"
+  },
+  {
+    "name": "S28 F-625 Reiter Agents zeigt nicht die Werte des Servers",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "t.geladen.Agenten, t.wert.Agenten = werte.Agenten, werte.Agenten",
+    "neu": "_ = werte"
+  },
+  {
+    "name": "S29 F-625 Agenten werden nach XDG geschrieben",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "if t.agentenDatei != \"\" && a.Abschnitt == \"agents\" {",
+    "neu": "if false && a.Abschnitt == \"agents\" {"
+  },
+  {
+    "name": "S30 F-625 kein Hinweis mit beiden Orten",
+    "datei": "internal/ui/einstellungen.go",
+    "paket": "./internal/ui",
+    "alt": "if s := t.agentenHinweis(); s != \"\" && t.reiter == reiterAgenten {",
+    "neu": "if s := t.agentenHinweis(); false && s != \"\" {"
+  },
+  {
+    "name": "S31 F-625 Hinweis zum Ort auf allen Reitern",
+    "datei": "internal/ui/einstellungen.go",
+    "paket": "./internal/ui",
+    "alt": "if s := t.agentenHinweis(); s != \"\" && t.reiter == reiterAgenten {",
+    "neu": "if s := t.agentenHinweis(); s != \"\" {"
+  },
+  {
+    "name": "S32 F-625 Ordner über Verweis gilt als andere Datei",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "return ea == nil && eb == nil && os.SameFile(da, db)",
+    "neu": "return false && ea == nil && eb == nil && os.SameFile(da, db)"
+  },
+  {
+    "name": "S33 F-625 Fehler an der Datei des Servers hält die andere nicht auf",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "return false, false\n\t\t}\n\t\tt.geladen.Agenten = t.wert.Agenten",
+    "neu": "_ = 0\n\t\t}\n\t\tt.geladen.Agenten = t.wert.Agenten"
+  },
+  {
+    "name": "S34 F-625 Server liest einen anderen Ort als die Tafel",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "ini, _ := settings.AgentenPfadIn(heim)",
+    "neu": "ini := filepath.Join(heim, \"schnapp\", \"settings.ini\")"
+  },
+  {
+    "name": "S35 F-625 AgentenPfadIn ohne .config",
+    "datei": "internal/settings/einstellungen.go",
+    "paket": "./internal/settings",
+    "alt": "filepath.Join(filepath.Clean(heim), \".config\", \"schnapp\", \"settings.ini\"), nil",
+    "neu": "filepath.Join(filepath.Clean(heim), \"schnapp\", \"settings.ini\"), nil"
+  },
+  {
+    "name": "S36 F-629 Ergebnis über 64 KiB wird geschrieben",
+    "datei": "internal/settings/schreiben.go",
+    "paket": "./internal/settings",
+    "alt": "if len(neu) > maxDateigroesse {",
+    "neu": "if false && len(neu) > maxDateigroesse {"
+  },
+  {
+    "name": "S37 F-630 Schreiber in einem dritten Paket (canvas)",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./cmd/schnapp",
+    "alt": "const MaxEigeneSchnellstile = settings.MaxEigeneStile\n",
+    "neu": "const MaxEigeneSchnellstile = settings.MaxEigeneStile\n\nvar _ = settings.Schreibe\n"
   }
 ]

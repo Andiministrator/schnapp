@@ -120,3 +120,28 @@ Die Entscheidung gilt unverändert; diese Punkte legen fest, was sie offen ließ
    Lesers wörtlich (ohne den Pfad, „settings.ini: …“) statt einer Zeilenzahl; Save scheitert dann am Schreiber und zeigt
    dessen Fehler rot. Über der Grenze des Lesers (20 Warnungen) sagt der Fuß „More than 20 lines …“.
 5. **Ohne Änderung** schließt Save die Tafel, ohne die Datei anzulegen oder anzufassen, und ohne Meldung.
+
+## Nachtrag 1 (24.11.2026): Reiter Agents am Ort des MCP-Servers, kein Speichern ungültiger Zahlen (Karte #243)
+
+Entscheidung des Orchestrators (Claude Opus 5.5) nach der Sitzungs-Kritik A (Claude Fable 5.2), Befunde F-625, F-626,
+F-629, F-630. Ändert Punkte 3, 5 und 6.
+
+1. **Ort der Agenten (F-625, Punkte 3 und 6):** `schnapp mcp` liest `<Heim der Benutzerdatenbank>/.config/schnapp/
+   settings.ini`, nie `XDG_CONFIG_HOME` (ADR-0030 Nachtrag 4 Punkt 1). Die Tafel schrieb dagegen nach `settings.Pfad()`
+   (XDG). Mit abweichendem `XDG_CONFIG_HOME` hätte „Capture screen“ aus in der Tafel beim Agenten nicht gewirkt, obwohl
+   der Fuß „Applies immediately“ sagt. Seitdem **liest und schreibt der Reiter Agents die Datei des Servers**; die
+   übrigen Reiter bleiben bei `settings.Pfad()`. Beide bestimmen den Ort über dieselben Funktionen:
+   `settings.BenutzerHeim` (Benutzerdatenbank per `user.LookupId`, im Probe-Build `HOME`; vorher `benutzerHeim` in
+   `cmd/schnapp/mcp.go`) und `settings.AgentenPfadIn(heim)`/`settings.AgentenPfad()`. Ist es dieselbe Datei (gleicher
+   Pfad oder derselbe Ordner über einen Verweis), ändert sich nichts. Weichen die Orte ab, zeigt der Reiter Agents
+   einen Hinweis mit beiden Orten; Save schreibt zuerst die Datei der Agenten (scheitert sie, bleibt auch die andere
+   unberührt), dann die übrigen Schlüssel. Kennt die Benutzerdatenbank kein Heim, nimmt der Server die
+   Voreinstellungen: Der Reiter schreibt dann nach XDG und sagt, dass Agenten davon nichts sehen.
+2. **Ungültiges Zahlfeld (F-626, Punkt 5):** Solange der Text im Feld „After days“ keine Zahl von 1 bis 36500 ist,
+   gilt der Wert vor dem Tippen, kein Zwischenstand (aus 90 wird beim Leerlöschen nicht 9). Save und Enter speichern
+   dann nicht: Der Fuß nennt den Fehler rot, die Tafel bleibt offen. Wer das Feld verlässt, sieht wieder den Wert.
+3. **Größe (F-629 a, Punkt 5):** Wüchse die Datei durch das Schreiben über 64 KiB (die Grenze des Lesers), schreibt
+   der Schreiber nichts und meldet `ErrZuGross`; sonst verwürfe der Leser danach die ganze Datei.
+4. **Prüfung (F-630, Punkt 6):** `TestMCPErreichtDenSchreiberNicht` sucht über alle Pakete des Moduls jeden Selektor
+   `settings.Schreibe…` (Paket über den Import aufgelöst, auch unter anderem Namen oder als Punkt-Import); erlaubt
+   sind nur `internal/ui/einstellungen.go` und `SchreibeStile` in `internal/ui/schnellstile.go`.

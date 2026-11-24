@@ -1155,6 +1155,15 @@ msgstr "Einstellungen gespeichert"
 msgid "Could not save the settings: %v"
 msgstr "Einstellungen nicht gespeichert: %v"
 
+msgid "Could not save the settings: “%s” must be a number from 1 to %d."
+msgstr "Einstellungen nicht gespeichert: „%s“ muss eine Zahl von 1 bis %d sein."
+
+msgid "Agents (schnapp mcp) read %s, not %s from XDG_CONFIG_HOME. This tab edits the file of the agents; the other tabs edit the other file."
+msgstr "Agenten (schnapp mcp) lesen %s, nicht %s aus XDG_CONFIG_HOME. Dieser Reiter bearbeitet die Datei der Agenten, die übrigen Reiter die andere."
+
+msgid "The home directory of the user is unknown: agents (schnapp mcp) find no settings file and keep the defaults, whatever this tab saves."
+msgstr "Das Heimverzeichnis des Benutzers ist unbekannt: Agenten (schnapp mcp) finden keine Einstellungsdatei und behalten die Voreinstellungen, gleich was dieser Reiter speichert."
+
 msgid "Cancel"
 msgstr "Abbrechen"
 

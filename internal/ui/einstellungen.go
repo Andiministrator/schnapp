@@ -51,6 +51,7 @@ var (
 // tafelRahmen ist die Lage der Teile beim letzten Zeichnen in Fensterpixeln (Tests, Drehbücher, Liste am Feld).
 type tafelRahmen struct {
 	tafel, kreuz, abbrechen, ok, minus, plus image.Rectangle
+	hinweis                                  image.Rectangle // Hinweis zum Ort der Agenten (F-625)
 	reiter                                   [reiterAnzahl]image.Rectangle
 	feld                                     [len(tafelZeilen)]image.Rectangle
 	warnung                                  [len(tafelZeilen)]image.Rectangle
@@ -96,8 +97,11 @@ func tafelKnopf(gtx layout.Context, c *widget.Clickable, r image.Rectangle) {
 // einstellungenOeffnen liest die Einstellungen frisch (ADR-0034 Punkt 4 der Karte: beim Öffnen) und öffnet die Tafel.
 func (e *editor) einstellungenOeffnen(gtx layout.Context) {
 	werte, warn := settings.Lade()
-	pfad, _ := settings.Pfad()
+	pfad, pfadFehler := settings.Pfad()
 	e.einst.oeffne(werte, warn, pfad, tafelSprachen())
+	e.einst.pfadFehler = pfadFehler
+	ag, _ := settings.AgentenPfad() // der Ort, den `schnapp mcp` liest (ADR-0034 Nachtrag 1, F-625)
+	e.einst.agentenOrt(ag, settings.LadeDatei)
 	e.hilfeOffen = false
 	gtx.Execute(key.FocusCmd{Tag: &e.einst})
 }
@@ -111,8 +115,9 @@ func (e *editor) einstellungenSchliessen(gtx layout.Context) {
 	gtx.Execute(key.FocusCmd{Tag: e})
 }
 
-// schreibeEinstellungen ist der Schreiber der Tafel (Tests tauschen ihn nicht: sie setzen XDG_CONFIG_HOME).
-var schreibeEinstellungen = settings.Schreibe
+// schreibeEinstellungen ist der Schreiber der Tafel (Tests tauschen ihn nicht: sie setzen XDG_CONFIG_HOME und
+// settings.BenutzerHeim).
+var schreibeEinstellungen = settings.SchreibeDatei
 
 // einstellungenSpeichern schreibt die Änderungen; gelingt es, schließt die Tafel und die Fußzeile sagt es. Die im
 // laufenden Editor schon wirksamen Werte bleiben, wie sie sind (ADR-0034 Punkt 3).
@@ -341,6 +346,17 @@ func (e *editor) zeichneEinstellungen(gtx layout.Context) {
 		ei := e.tafelText(gtx, s, unit.Sp(12), farbeNebentext, min(breite, dp(440)), 0, false)
 		ei.setze(gtx, image.Pt(x0, y))
 		y += ei.groesse.Y + dp(12)
+	}
+	if s := t.agentenHinweis(); s != "" && t.reiter == reiterAgenten {
+		// Der Server liest eine andere Datei als die übrigen Reiter (oder keine): Kasten wie die Warnungen (F-625).
+		wb := min(breite, dp(560))
+		ht := e.tafelText(gtx, s, unit.Sp(12), farbeText, wb-dp(30), 0, false)
+		hr := image.Rect(x0, y, x0+wb, y+ht.groesse.Y+dp(20))
+		paint.FillShape(gtx.Ops, farbeWarnGrund, clip.Rect(hr).Op())
+		paint.FillShape(gtx.Ops, farbeAkzent, clip.Rect(image.Rect(hr.Min.X, hr.Min.Y, hr.Min.X+dp(3), hr.Max.Y)).Op())
+		ht.setze(gtx, image.Pt(hr.Min.X+dp(14), hr.Min.Y+dp(10)))
+		t.rahmen.hinweis = fenster(hr)
+		y = hr.Max.Y + dp(12)
 	}
 	for _, z := range zeilenDes(t.reiter) {
 		fh := dp(tafelFeldDp)

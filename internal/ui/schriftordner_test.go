@@ -3,10 +3,12 @@
 package ui
 
 import (
+	"errors"
 	"os"
 	"testing"
 
 	"github.com/Andiministrator/schnapp/internal/fonts"
+	"github.com/Andiministrator/schnapp/internal/settings"
 )
 
 // TestMain macht die Tests unabhängig von den Schriften des Rechners (Sitzungs-QA B-12): Eine fremde Familie in einem
@@ -21,6 +23,9 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	os.Setenv("XDG_CONFIG_HOME", ordner)
+	// Die Einstellungstafel liest und schreibt den Reiter Agents am Ort des MCP-Servers im Heim der Benutzerdatenbank
+	// (ADR-0034 Nachtrag 1): nie das echte Heim. Tests, die ein Heim brauchen, setzen es selbst (eigeneEinstellungen).
+	settings.BenutzerHeim = func() (string, error) { return "", errors.New("tests: no home directory") }
 	code := m.Run()
 	os.RemoveAll(ordner)
 	os.Exit(code)

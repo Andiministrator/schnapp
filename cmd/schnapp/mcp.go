@@ -19,7 +19,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"os/user"
 	"path/filepath"
 	"reflect"
 	"slices"
@@ -63,17 +62,8 @@ var (
 	kindProgramm = os.Executable
 	// zeigeDialog ist der Dialog im Kind (Naht für Tests, F-471).
 	zeigeDialog = ui.Bestaetige
-	// benutzerHeim liefert das Heimverzeichnis aus der Benutzerdatenbank (Naht für Tests, F-461).
-	// LookupId statt Current: Current fällt ohne cgo (oder mit Tag osusergo) für eine UID, die nicht in /etc/passwd
-	// steht, auf $HOME zurück — damit käme das Heim wieder aus der Umgebung (Verify N-6, F-479). LookupId kennt
-	// keinen solchen Rückfall; findet es die UID nicht, gilt das Heim als unbekannt (Voreinstellungen, kein Ort).
-	benutzerHeim = func() (string, error) {
-		u, err := user.LookupId(strconv.Itoa(os.Getuid()))
-		if err != nil {
-			return "", err
-		}
-		return u.HomeDir, nil
-	}
+	// Das Heimverzeichnis aus der Benutzerdatenbank liefert settings.BenutzerHeim (Naht für Tests, F-461): Die
+	// Einstellungstafel des Editors bestimmt damit dieselbe Datei wie der Server (ADR-0034 Nachtrag 1, F-625).
 	// kindZugabe: Das Kind schließt den Dialog nach bestaetigenFrist + kindZugabe selbst und lehnt ab; kindHart
 	// danach beendet es sich hart (ADR-0030 Nachtrag 4 Punkt 5, F-469).
 	kindZugabe = 5 * time.Second
@@ -136,7 +126,7 @@ func echteMcpAnschluesse(fehler io.Writer) mcpAnschluesse {
 		},
 		fehler: fehler,
 	}
-	heim, err := benutzerHeim()
+	heim, err := settings.BenutzerHeim()
 	if err != nil {
 		diagnose(fehler, "Heimverzeichnis aus der Benutzerdatenbank: %v", err)
 		heim = ""
@@ -175,7 +165,7 @@ func (an *mcpAnschluesse) mitHeim(heim string, umgebung func(string) string) {
 		}
 		return ""
 	}
-	ini := filepath.Join(heim, ".config", "schnapp", "settings.ini")
+	ini, _ := settings.AgentenPfadIn(heim) // heim ist absolut, also kein Fehler; derselbe Ort wie der Reiter Agents (F-625)
 	an.lade = func() (settings.Einstellungen, []string) { return settings.LadeDatei(ini) }
 	an.orte = func() (library.Orte, error) { return library.OrteAus(nurHeim) }
 	an.letzterPfad = selection.LetzterPfad(nurHeim)

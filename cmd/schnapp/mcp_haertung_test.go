@@ -127,10 +127,10 @@ func TestMcpKeineWarnungBeiPassenderUmgebung(t *testing.T) {
 // ist es unbekannt, gelten die Voreinstellungen, und kein Ort ist bekannt.
 func TestEchteMcpAnschluesseNutzenBenutzerHeim(t *testing.T) {
 	heim := t.TempDir()
-	alt := benutzerHeim
-	t.Cleanup(func() { benutzerHeim = alt })
+	alt := settings.BenutzerHeim
+	t.Cleanup(func() { settings.BenutzerHeim = alt })
 	t.Setenv("HOME", t.TempDir())
-	benutzerHeim = func() (string, error) { return heim, nil }
+	settings.BenutzerHeim = func() (string, error) { return heim, nil }
 	var fehler bytes.Buffer
 	an := echteMcpAnschluesse(&fehler)
 	o, err := an.orte()
@@ -145,7 +145,7 @@ func TestEchteMcpAnschluesseNutzenBenutzerHeim(t *testing.T) {
 	}
 
 	schreibeText(t, filepath.Join(os.Getenv("HOME"), ".config", "schnapp", "settings.ini"), "[agents]\ncapture = yes\n")
-	benutzerHeim = func() (string, error) { return "", errors.New("unbekannt") }
+	settings.BenutzerHeim = func() (string, error) { return "", errors.New("unbekannt") }
 	an = echteMcpAnschluesse(&fehler)
 	if e, _ := an.lade(); e.Agenten.Aufnehmen || e.Agenten.Bibliothek {
 		t.Errorf("ohne Heim trotzdem erlaubt: %+v", e.Agenten)

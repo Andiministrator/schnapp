@@ -141,6 +141,10 @@ func schreibeDatei(pfad string, aenderungen []Aenderung) error {
 		modus = 0o600
 	}
 	neu := setzeZeilen(inhalt, aenderungen)
+	if len(neu) > maxDateigroesse {
+		// Größer als der Leser annimmt: Danach gälten die Voreinstellungen, und jede Korrektur scheiterte (F-629).
+		return ErrZuGross
+	}
 	return schreibeAtomar(ordner, ziel, []byte(neu), modus)
 }
 

@@ -1079,6 +1079,14 @@ msgid "Save"
 msgstr ""
 
 #: internal/ui/einstellungen_logik.go
+msgid "Agents (schnapp mcp) read %s, not %s from XDG_CONFIG_HOME. This tab edits the file of the agents; the other tabs edit the other file."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "The home directory of the user is unknown: agents (schnapp mcp) find no settings file and keep the defaults, whatever this tab saves."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
 msgid "Like the system"
 msgstr ""
 
@@ -1092,6 +1100,10 @@ msgstr ""
 
 #: internal/ui/einstellungen_logik.go
 msgid "All monitors"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Could not save the settings: “%s” must be a number from 1 to %d."
 msgstr ""
 
 #: internal/ui/einstellungen_logik.go

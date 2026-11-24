@@ -212,6 +212,29 @@ func TestSchreibeDatei(t *testing.T) {
 	if d, _ := os.ReadFile(gross); string(d) != inhalt {
 		t.Error("zu große Datei verändert")
 	}
+	// F-629 a: Eine Datei knapp unter der Grenze wüchse durch die neue Zeile darüber; danach verwürfe der Leser sie
+	// ganz, und jede Korrektur scheiterte. Der Schreiber lehnt ab und lässt die Datei stehen.
+	knapp := filepath.Join(ordner, "knapp.ini")
+	inhalt = "[agents]\ncapture = yes\n" + strings.Repeat("# x\n", (maxDateigroesse-len("[agents]\ncapture = yes\n"))/4)
+	if len(inhalt) > maxDateigroesse || len(inhalt) < maxDateigroesse-3 {
+		t.Fatalf("Prüfdatei hat %d Bytes", len(inhalt))
+	}
+	if err := os.WriteFile(knapp, []byte(inhalt), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := SchreibeDatei(knapp, []Aenderung{{"capture", "screen", "all"}}); !errors.Is(err, ErrZuGross) {
+		t.Errorf("über die Grenze gewachsen: %v", err)
+	}
+	if d, _ := os.ReadFile(knapp); string(d) != inhalt {
+		t.Error("über die Grenze gewachsene Datei geschrieben")
+	}
+	if e, warn := LadeDatei(knapp); !e.Agenten.Aufnehmen || len(warn) > 0 {
+		t.Errorf("Datei nach dem Versuch unbrauchbar: %+v %v", e.Agenten, warn)
+	}
+	// Ein Ersetzen, das nicht wächst, gelingt weiter.
+	if err := SchreibeDatei(knapp, []Aenderung{{"agents", "capture", "no"}}); err != nil {
+		t.Errorf("Ersetzen ohne Wachsen: %v", err)
+	}
 	kaputt := filepath.Join(ordner, "kaputt.ini")
 	if err := os.WriteFile(kaputt, []byte("[capture]\n\xff\n"), 0o600); err != nil {
 		t.Fatal(err)
@@ -261,5 +284,32 @@ func TestSchreibeMitXDG(t *testing.T) {
 	e, warn := Lade()
 	if len(warn) > 0 || !e.Agenten.Aufnehmen {
 		t.Errorf("gelesen %+v, %v", e.Agenten, warn)
+	}
+}
+
+// ADR-0034 Nachtrag 1 (F-625): Der Ort der Datei des MCP-Servers kommt aus dem übergebenen Heim, nie aus
+// XDG_CONFIG_HOME oder HOME; ohne bekanntes Heim gibt es keinen Ort.
+func TestAgentenPfad(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv("HOME", t.TempDir())
+	heim := t.TempDir()
+	p, err := AgentenPfadIn(heim + "/")
+	if err != nil || p != filepath.Join(heim, ".config", "schnapp", "settings.ini") {
+		t.Errorf("AgentenPfadIn: %q %v", p, err)
+	}
+	for _, h := range []string{"", "relativ/heim"} {
+		if _, err := AgentenPfadIn(h); !errors.Is(err, ErrKeinHeim) || !strings.HasPrefix(err.Error(), "settings: ") {
+			t.Errorf("%q: %v", h, err)
+		}
+	}
+	alt := BenutzerHeim
+	t.Cleanup(func() { BenutzerHeim = alt })
+	BenutzerHeim = func() (string, error) { return heim, nil }
+	if q, err := AgentenPfad(); err != nil || q != p {
+		t.Errorf("AgentenPfad: %q %v", q, err)
+	}
+	BenutzerHeim = func() (string, error) { return "", errors.New("unbekannt") }
+	if _, err := AgentenPfad(); !errors.Is(err, ErrKeinHeim) {
+		t.Errorf("ohne Heim: %v", err)
 	}
 }

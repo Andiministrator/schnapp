@@ -14,9 +14,11 @@
 package settings
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -159,6 +161,44 @@ func konfigOrdner() (string, error) {
 		return "", err
 	}
 	return filepath.Join(heim, ".config", "schnapp"), nil
+}
+
+// ErrKeinHeim: Das Heimverzeichnis des Benutzers steht nicht in der Benutzerdatenbank (AgentenPfad).
+var ErrKeinHeim = errors.New("the home directory of the user is unknown")
+
+// BenutzerHeim liefert das Heimverzeichnis aus der Benutzerdatenbank, nie aus HOME oder XDG_* (ADR-0030 Nachtrag 4
+// Punkt 1, F-461): `schnapp mcp` und der Reiter Agents der Einstellungstafel bestimmen damit dieselbe Datei
+// (AgentenPfad, ADR-0034 Nachtrag 1, F-625). Variable als Naht für Tests; der Probe-Build setzt HOME
+// (cmd/schnapp/probe_an.go).
+//
+// LookupId statt Current: Current fällt ohne cgo (oder mit Tag osusergo) für eine UID, die nicht in /etc/passwd steht,
+// auf $HOME zurück — damit käme das Heim wieder aus der Umgebung (Verify N-6, F-479). LookupId kennt keinen solchen
+// Rückfall; findet es die UID nicht, gilt das Heim als unbekannt.
+var BenutzerHeim = func() (string, error) {
+	u, err := user.LookupId(strconv.Itoa(os.Getuid()))
+	if err != nil {
+		return "", err
+	}
+	return u.HomeDir, nil
+}
+
+// AgentenPfadIn liefert die Einstellungsdatei, die `schnapp mcp` liest, für das Heimverzeichnis heim:
+// <heim>/.config/schnapp/settings.ini, ohne XDG_CONFIG_HOME (ADR-0030 Nachtrag 4). Ist heim nicht absolut, kommt
+// ErrKeinHeim.
+func AgentenPfadIn(heim string) (string, error) {
+	if !filepath.IsAbs(heim) {
+		return "", errprefix.Wrap("settings", ErrKeinHeim)
+	}
+	return filepath.Join(filepath.Clean(heim), ".config", "schnapp", "settings.ini"), nil
+}
+
+// AgentenPfad ist AgentenPfadIn mit dem Heim aus BenutzerHeim (ADR-0034 Nachtrag 1, F-625).
+func AgentenPfad() (string, error) {
+	heim, err := BenutzerHeim()
+	if err != nil {
+		return "", errprefix.Wrap("settings", fmt.Errorf("%w: %v", ErrKeinHeim, err))
+	}
+	return AgentenPfadIn(heim)
 }
 
 // Lade liest die Einstellungsdatei am Ort von Pfad. Es gibt immer brauchbare Einstellungen zurück; die Warnungen

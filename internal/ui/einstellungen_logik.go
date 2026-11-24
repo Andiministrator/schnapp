@@ -3,11 +3,15 @@
 package ui
 
 // Einstellungstafel im Editor (ADR-0034): Zustand und Bedienung ohne Zeichnen. Die Tafel liest beim Öffnen
-// settings.Lade, hält die bearbeiteten Werte und übergibt beim Speichern nur die geänderten Schlüssel an
-// settings.Schreibe. Lage, Klicks und Zeichnen stehen in einstellungen.go.
+// settings.Lade (den Reiter Agents aus der Datei des MCP-Servers, ADR-0034 Nachtrag 1), hält die bearbeiteten Werte
+// und übergibt beim Speichern nur die geänderten Schlüssel an den Schreiber. Lage, Klicks und Zeichnen stehen in
+// einstellungen.go.
 
 import (
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -97,11 +101,20 @@ type tafel struct {
 	warnMehr   bool
 	warnDatei  string
 	fehler     string // Fehler beim letzten Speichern (rot im Fuß)
-	fokus      int    // Stelle in ziele()
+	// Orte (ADR-0034 Nachtrag 1, F-625): pfad ist die Datei aus settings.Pfad (XDG), pfadFehler der Grund, wenn es
+	// keinen gibt. agentenDatei ist die Datei, die `schnapp mcp` liest, nur wenn sie eine andere ist: Dann liest und
+	// schreibt der Reiter Agents sie. agentenOhneOrt: Der Server kennt kein Heim und nimmt die Voreinstellungen.
+	pfad           string
+	pfadFehler     error
+	agentenDatei   string
+	agentenOhneOrt bool
+	fokus          int // Stelle in ziele()
 	// Zahlfeld: getippter Text, solange zahlNeu falsch ist; zahlFehler: der Text ist keine gültige Zahl.
+	// zahlVorher: der Wert vor dem Tippen; solange der Text ungültig ist, gilt er (F-626).
 	zahlText   string
 	zahlNeu    bool
 	zahlFehler bool
+	zahlVorher int
 	listeZeile int      // Zeile, deren Auswahlliste offen ist bzw. zuletzt offen war
 	sprachen   []string // wählbare Sprachen (ohne „auto“)
 
@@ -119,6 +132,7 @@ type tafel struct {
 func (t *tafel) oeffne(werte settings.Einstellungen, warn []string, pfad string, sprachen []string) {
 	t.offen, t.reiter, t.fehler = true, reiterAllgemein, ""
 	t.geladen, t.wert = werte, werte
+	t.pfad, t.pfadFehler, t.agentenDatei, t.agentenOhneOrt = pfad, nil, "", false
 	t.warnZeilen, t.warnMehr, t.warnDatei = warnungenZaehlen(pfad, warn)
 	t.sprachen = sprachen
 	if s := werte.Sprache; s != "" && !slices.Contains(t.sprachen, s) {
@@ -126,6 +140,55 @@ func (t *tafel) oeffne(werte settings.Einstellungen, warn []string, pfad string,
 	}
 	t.listeZeile = -1
 	t.setzeFokus(0)
+}
+
+// agentenOrt setzt nach oeffne den Ort der Datei, die `schnapp mcp` liest (ADR-0034 Nachtrag 1, F-625): ort aus
+// settings.AgentenPfad ("" = der Server kennt kein Heim und nimmt die Voreinstellungen), lade liest ihn. Ist es eine
+// andere Datei als t.pfad, kommen die Werte des Reiters Agents aus ihr, und Save schreibt sie dorthin.
+func (t *tafel) agentenOrt(ort string, lade func(string) (settings.Einstellungen, []string)) {
+	t.agentenDatei, t.agentenOhneOrt = "", ort == ""
+	if ort == "" || gleicheDatei(ort, t.pfad) {
+		return
+	}
+	werte, warn := lade(ort)
+	t.agentenDatei = ort
+	t.geladen.Agenten, t.wert.Agenten = werte.Agenten, werte.Agenten
+	z, m, d := warnungenZaehlen(ort, warn)
+	t.warnZeilen += z
+	t.warnMehr = t.warnMehr || m
+	if t.warnDatei == "" {
+		t.warnDatei = d
+	}
+}
+
+// gleicheDatei meldet, ob a und b dieselbe Einstellungsdatei meinen: gleicher Pfad, oder gleicher Name in demselben
+// Ordner (auch über einen Verweis, etwa XDG_CONFIG_HOME als Link auf ~/.config). Die Datei selbst darf fehlen.
+func gleicheDatei(a, b string) bool {
+	if a == "" || b == "" {
+		return false
+	}
+	if filepath.Clean(a) == filepath.Clean(b) {
+		return true
+	}
+	if filepath.Base(a) != filepath.Base(b) {
+		return false
+	}
+	da, ea := os.Stat(filepath.Dir(a))
+	db, eb := os.Stat(filepath.Dir(b))
+	return ea == nil && eb == nil && os.SameFile(da, db)
+}
+
+// agentenHinweis ist der Hinweis im Reiter Agents, wenn der Server eine andere Datei liest als die übrigen Reiter
+// oder keine (ADR-0034 Nachtrag 1); sonst leer.
+func (t *tafel) agentenHinweis() string {
+	switch {
+	case t.agentenDatei != "":
+		return fmt.Sprintf(i18n.T("Agents (schnapp mcp) read %s, not %s from XDG_CONFIG_HOME. This tab edits the file of the agents; the other tabs edit the other file."),
+			t.agentenDatei, t.pfad)
+	case t.agentenOhneOrt:
+		return i18n.T("The home directory of the user is unknown: agents (schnapp mcp) find no settings file and keep the defaults, whatever this tab saves.")
+	}
+	return ""
 }
 
 // warnungenZaehlen teilt die Warnungen des Lesers: Zeilenwarnungen beginnen mit „<pfad>:<Zeile>:“; die letzte
@@ -295,10 +358,11 @@ func (t *tafel) zahlSchritt(d int) {
 }
 
 // zahlTippe nimmt Ziffern ins Zahlfeld; der erste Tastendruck ersetzt den Wert. Eine gültige Zahl gilt sofort, eine
-// ungültige (0, über MaxTage) lässt den Wert stehen und zeigt den Fehler.
+// ungültige (leer, 0, über MaxTage) zeigt den Fehler, und es gilt wieder der Wert vor dem Tippen (F-626): Kein
+// Zwischenstand des Tippens („9“ auf dem Weg von 90 zu leer) bleibt stehen.
 func (t *tafel) zahlTippe(s string) {
 	if t.zahlNeu {
-		t.zahlNeu, t.zahlText = false, ""
+		t.zahlNeu, t.zahlText, t.zahlVorher = false, "", t.wert.Bibliothek.Tage
 	}
 	for _, r := range s {
 		if r >= '0' && r <= '9' && utf8.RuneCountInString(t.zahlText) < len(strconv.Itoa(library.MaxTage)) {
@@ -311,7 +375,7 @@ func (t *tafel) zahlTippe(s string) {
 // zahlZurueck löscht die letzte Ziffer der Eingabe (vom angezeigten Wert aus).
 func (t *tafel) zahlZurueck() {
 	if t.zahlNeu {
-		t.zahlNeu, t.zahlText = false, strconv.Itoa(t.wert.Bibliothek.Tage)
+		t.zahlNeu, t.zahlText, t.zahlVorher = false, strconv.Itoa(t.wert.Bibliothek.Tage), t.wert.Bibliothek.Tage
 	}
 	if n := len(t.zahlText); n > 0 {
 		t.zahlText = t.zahlText[:n-1]
@@ -322,7 +386,9 @@ func (t *tafel) zahlZurueck() {
 func (t *tafel) zahlUebernimm() {
 	n, err := strconv.Atoi(t.zahlText)
 	t.zahlFehler = err != nil || n < 1 || n > library.MaxTage
-	if !t.zahlFehler {
+	if t.zahlFehler {
+		t.wert.Bibliothek.Tage = t.zahlVorher
+	} else {
 		t.wert.Bibliothek.Tage = n
 	}
 }
@@ -389,18 +455,51 @@ func (t *tafel) tippe(s string) {
 	}
 }
 
-// speichere schreibt die Änderungen gegenüber dem Stand beim Öffnen (ADR-0034 Punkte 3 und 5). ok ist falsch bei einem
-// Fehler (dann steht er in t.fehler, die Tafel bleibt offen); geschrieben, wenn es etwas zu schreiben gab.
-func (t *tafel) speichere(schreibe func([]settings.Aenderung) error) (geschrieben, ok bool) {
-	a := settings.Unterschiede(t.geladen, t.wert)
-	if len(a) == 0 {
-		return false, true
-	}
-	if err := schreibe(a); err != nil {
-		t.fehler = fmt.Sprintf(i18n.T("Could not save the settings: %v"), ohnePaketpraefix(err.Error()))
+// errKeinOrt: Es gibt keinen Ort für die Einstellungsdatei (settings.Pfad scheiterte ohne Grund).
+var errKeinOrt = errors.New("cannot locate the settings file")
+
+// speichere schreibt die Änderungen gegenüber dem Stand beim Öffnen (ADR-0034 Punkte 3 und 5): die des Reiters Agents
+// in die Datei des MCP-Servers, wenn sie eine andere ist (Nachtrag 1, F-625), die übrigen nach t.pfad. Ein ungültiges
+// Zahlfeld speichert nichts (F-626). ok ist falsch bei einem Fehler (dann steht er in t.fehler, die Tafel bleibt
+// offen); geschrieben, wenn etwas geschrieben wurde.
+func (t *tafel) speichere(schreibe func(string, []settings.Aenderung) error) (geschrieben, ok bool) {
+	if t.zahlFehler {
+		t.fehler = fmt.Sprintf(i18n.T("Could not save the settings: “%s” must be a number from 1 to %d."),
+			zeileTitel(zahlZeile()), library.MaxTage)
 		return false, false
 	}
-	return true, true
+	var agenten, uebrige []settings.Aenderung
+	for _, a := range settings.Unterschiede(t.geladen, t.wert) {
+		if t.agentenDatei != "" && a.Abschnitt == "agents" {
+			agenten = append(agenten, a)
+		} else {
+			uebrige = append(uebrige, a)
+		}
+	}
+	// Agenten zuerst: Scheitert danach die andere Datei, gilt das Abschalten für den Server schon.
+	if len(agenten) > 0 {
+		if err := schreibe(t.agentenDatei, agenten); err != nil {
+			t.fehler = fmt.Sprintf(i18n.T("Could not save the settings: %v"), ohnePaketpraefix(err.Error()))
+			return false, false
+		}
+		t.geladen.Agenten = t.wert.Agenten
+		geschrieben = true
+	}
+	if len(uebrige) > 0 {
+		err := t.pfadFehler
+		if t.pfad != "" {
+			err = schreibe(t.pfad, uebrige)
+		} else if err == nil {
+			err = errKeinOrt
+		}
+		if err != nil {
+			t.fehler = fmt.Sprintf(i18n.T("Could not save the settings: %v"), ohnePaketpraefix(err.Error()))
+			return geschrieben, false
+		}
+		t.geladen = t.wert
+		geschrieben = true
+	}
+	return geschrieben, true
 }
 
 // sprachName ist der Name einer Sprache in ihr selbst (so findet man die eigene auch in einer fremden Oberfläche).

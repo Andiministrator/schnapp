@@ -22,10 +22,13 @@ import (
 )
 
 // eigeneEinstellungen legt einen eigenen Ordner für settings.ini an (XDG_CONFIG_HOME) und liefert den Pfad der Datei;
-// inhalt "" legt keine Datei an.
+// inhalt "" legt keine Datei an. Das Heim der Benutzerdatenbank (settings.BenutzerHeim) zeigt so, dass der MCP-Server
+// dieselbe Datei liest (<heim>/.config = XDG_CONFIG_HOME).
 func eigeneEinstellungen(t *testing.T, inhalt string) string {
 	t.Helper()
-	d := t.TempDir()
+	heim := t.TempDir()
+	setzeHeim(t, heim)
+	d := filepath.Join(heim, ".config")
 	t.Setenv("XDG_CONFIG_HOME", d)
 	p := filepath.Join(d, "schnapp", "settings.ini")
 	if inhalt != "" {
@@ -37,6 +40,14 @@ func eigeneEinstellungen(t *testing.T, inhalt string) string {
 		}
 	}
 	return p
+}
+
+// setzeHeim setzt das Heim der Benutzerdatenbank für den Test.
+func setzeHeim(t *testing.T, heim string) {
+	t.Helper()
+	alt := settings.BenutzerHeim
+	t.Cleanup(func() { settings.BenutzerHeim = alt })
+	settings.BenutzerHeim = func() (string, error) { return heim, nil }
 }
 
 // offeneTafel liefert eine geöffnete Tafel mit den Werten aus inhalt (ohne Editor).
@@ -213,21 +224,22 @@ func TestTafelZahl(t *testing.T) {
 	if tf.wert.Bibliothek.Tage != 4 {
 		t.Errorf("Rücktaste: %d", tf.wert.Bibliothek.Tage)
 	}
+	// Leer oder ungültig: Es gilt wieder der Wert vor dem Tippen (3), nicht der Zwischenstand 4 (F-626).
 	tf.taste(key.NameDeleteBackward, 0)
-	if !tf.zahlFehler || tf.wert.Bibliothek.Tage != 4 || tf.zahlAnzeige() != "" {
+	if !tf.zahlFehler || tf.wert.Bibliothek.Tage != 3 || tf.zahlAnzeige() != "" {
 		t.Errorf("leer: Fehler %v, Tage %d, Anzeige %q", tf.zahlFehler, tf.wert.Bibliothek.Tage, tf.zahlAnzeige())
 	}
 	tf.tippe("0")
-	if !tf.zahlFehler || tf.wert.Bibliothek.Tage != 4 {
+	if !tf.zahlFehler || tf.wert.Bibliothek.Tage != 3 {
 		t.Errorf("0: Fehler %v, Tage %d", tf.zahlFehler, tf.wert.Bibliothek.Tage)
 	}
 	tf.taste(key.NameTab, 0) // Fokus weg: die Anzeige zeigt wieder den Wert
 	tf.taste(key.NameTab, key.ModShift)
-	if tf.zahlFehler || tf.zahlAnzeige() != "4" {
+	if tf.zahlFehler || tf.zahlAnzeige() != "3" {
 		t.Errorf("nach Fokuswechsel: %v %q", tf.zahlFehler, tf.zahlAnzeige())
 	}
 	tf.tippe("99999")
-	if !tf.zahlFehler || tf.wert.Bibliothek.Tage != 4 {
+	if !tf.zahlFehler || tf.wert.Bibliothek.Tage != 3 {
 		t.Errorf("über MaxTage: %v %d", tf.zahlFehler, tf.wert.Bibliothek.Tage)
 	}
 	tf.tippe("1") // höchstens fünf Ziffern
@@ -345,7 +357,7 @@ func TestTafelSpeichern(t *testing.T) {
 	alt := "# von Hand\n[capture]\nscreen = gross\nseam = wave\n"
 	tf := offeneTafel(t, alt)
 	p, _ := settings.Pfad()
-	geschrieben, ok := tf.speichere(settings.Schreibe)
+	geschrieben, ok := tf.speichere(settings.SchreibeDatei)
 	if !ok || geschrieben {
 		t.Fatalf("ohne Änderung: geschrieben %v, ok %v", geschrieben, ok)
 	}
@@ -354,7 +366,7 @@ func TestTafelSpeichern(t *testing.T) {
 	}
 	tf.schalte(2) // open-editor aus
 	tf.waehle(3, 2)
-	geschrieben, ok = tf.speichere(settings.Schreibe)
+	geschrieben, ok = tf.speichere(settings.SchreibeDatei)
 	if !ok || !geschrieben || tf.fehler != "" {
 		t.Fatalf("speichern: %v %v %q", geschrieben, ok, tf.fehler)
 	}
@@ -370,7 +382,7 @@ func TestTafelSpeichern(t *testing.T) {
 		t.Fatal(err)
 	}
 	tf.schalte(6)
-	geschrieben, ok = tf.speichere(settings.Schreibe)
+	geschrieben, ok = tf.speichere(settings.SchreibeDatei)
 	if ok || geschrieben || !strings.HasSuffix(tf.fehler, ": the settings file is not a regular file") || strings.Contains(tf.fehler, ": settings: ") {
 		t.Errorf("Fehler: %v %v %q", geschrieben, ok, tf.fehler)
 	}
