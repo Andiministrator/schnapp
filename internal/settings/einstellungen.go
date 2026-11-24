@@ -142,14 +142,23 @@ func Pfad() (string, error) {
 // ort ist Pfad ohne Paketpräfix im Fehler: Lade setzt die Ursache in eine übersetzte Warnung, dort gehört der
 // Paketname nicht hin (KA-8).
 func ort() (string, error) {
+	o, err := konfigOrdner()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(o, "settings.ini"), nil
+}
+
+// konfigOrdner ist der Konfigurationsordner des Programms: $XDG_CONFIG_HOME/schnapp, sonst $HOME/.config/schnapp.
+func konfigOrdner() (string, error) {
 	if w := os.Getenv("XDG_CONFIG_HOME"); filepath.IsAbs(w) {
-		return filepath.Join(filepath.Clean(w), "schnapp", "settings.ini"), nil
+		return filepath.Join(filepath.Clean(w), "schnapp"), nil
 	}
 	heim, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(heim, ".config", "schnapp", "settings.ini"), nil
+	return filepath.Join(heim, ".config", "schnapp"), nil
 }
 
 // Lade liest die Einstellungsdatei am Ort von Pfad. Es gibt immer brauchbare Einstellungen zurück; die Warnungen

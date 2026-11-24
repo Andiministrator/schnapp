@@ -592,6 +592,58 @@ msgstr ""
 msgid "Could not write %s: %s"
 msgstr ""
 
+#: internal/canvas/schnellstile.go internal/ui/oberflaeche.go
+msgid "Red"
+msgstr ""
+
+#: internal/canvas/schnellstile.go internal/ui/oberflaeche.go
+msgid "Blue"
+msgstr ""
+
+#: internal/canvas/schnellstile.go internal/ui/oberflaeche.go
+msgid "Green"
+msgstr ""
+
+#: internal/canvas/schnellstile.go
+msgid "Black"
+msgstr ""
+
+#: internal/canvas/schnellstile.go
+msgid "White"
+msgstr ""
+
+#: internal/canvas/schnellstile.go
+msgid "Red, thick"
+msgstr ""
+
+#: internal/canvas/schnellstile.go
+msgid "White on black"
+msgstr ""
+
+#: internal/canvas/schnellstile.go
+msgid "Marker"
+msgstr ""
+
+#: internal/canvas/schnellstile.go
+msgid "White on red"
+msgstr ""
+
+#: internal/canvas/schnellstile.go
+msgid "Black on yellow"
+msgstr ""
+
+#: internal/canvas/schnellstile.go
+msgid "White on blue"
+msgstr ""
+
+#: internal/canvas/schnellstile.go
+msgid "Red, no label"
+msgstr ""
+
+#: internal/canvas/schnellstile.go
+msgid "Black, no label"
+msgstr ""
+
 #: internal/capture/aufnahme.go
 msgid "Schnapp is not registered as a screenshot program. Install its desktop file and try again."
 msgstr ""
@@ -629,19 +681,19 @@ msgstr ""
 msgid "%s: the settings file is larger than 64 KiB; using the defaults."
 msgstr ""
 
-#: internal/settings/einstellungen.go
+#: internal/settings/einstellungen.go internal/settings/stile.go
 msgid "Broken section header; its settings up to the next section are ignored."
 msgstr ""
 
-#: internal/settings/einstellungen.go
+#: internal/settings/einstellungen.go internal/settings/stile.go
 msgid "Unknown section [%s]; its keys are ignored."
 msgstr ""
 
-#: internal/settings/einstellungen.go
+#: internal/settings/einstellungen.go internal/settings/stile.go
 msgid "Line is neither a section, a comment nor \"key = value\"; ignored."
 msgstr ""
 
-#: internal/settings/einstellungen.go
+#: internal/settings/einstellungen.go internal/settings/stile.go
 msgid "Setting %q is outside of any section; ignored."
 msgstr ""
 
@@ -657,11 +709,47 @@ msgstr ""
 msgid "Key %q in section [%s] is set again; the last value counts."
 msgstr ""
 
-#: internal/settings/einstellungen.go
+#: internal/settings/einstellungen.go internal/settings/stile.go
 msgid "… and %d more warning"
 msgid_plural "… and %d more warnings"
 msgstr[0] ""
 msgstr[1] ""
+
+#: internal/settings/stile.go
+msgid "Cannot locate the styles file (%v); using no custom styles."
+msgstr ""
+
+#: internal/settings/stile.go
+msgid "%s: cannot read the styles file (%v); using no custom styles."
+msgstr ""
+
+#: internal/settings/stile.go
+msgid "%s: the styles file is not a regular file; using no custom styles."
+msgstr ""
+
+#: internal/settings/stile.go
+msgid "%s: the styles file is larger than 64 KiB; using no custom styles."
+msgstr ""
+
+#: internal/settings/stile.go
+msgid "Style [%s] ignored: key %q is missing."
+msgstr ""
+
+#: internal/settings/stile.go
+msgid "Style [%s] ignored: more than %d styles of this kind."
+msgstr ""
+
+#: internal/settings/stile.go
+msgid "Style [%s] ignored: unknown key %q."
+msgstr ""
+
+#: internal/settings/stile.go
+msgid "Style [%s] ignored: key %q is set twice."
+msgstr ""
+
+#: internal/settings/stile.go
+msgid "Style [%s] ignored: invalid value %q for key %q."
+msgstr ""
 
 #: internal/ui/bestaetigen.go
 msgid "Schnapp — agent request"
@@ -1202,18 +1290,6 @@ msgstr ""
 
 #: internal/ui/oberflaeche.go
 msgid "About Schnapp"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
-msgid "Red"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
-msgid "Blue"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
-msgid "Green"
 msgstr ""
 
 #: internal/ui/oberflaeche.go

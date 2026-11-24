@@ -103,6 +103,8 @@ type Sitzung struct {
 	paarW Werkzeug
 	paare map[Werkzeug]farbpaar
 	feld  Farbfeld
+	// eigene sind die eigenen Schnellstile aller Arten in der Reihenfolge der Datei (schnellstile.go, ADR-0037).
+	eigene []Schnellstil
 	// Schwärzen (ADR-0022): Rahmen in Ansichtspunkten, solange gezogen wird.
 	rahmen           bool
 	rahmenA, rahmenB document.Punkt

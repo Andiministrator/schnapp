@@ -1047,3 +1047,62 @@ msgstr "Gespeichert, aber die Datei hat zu viele oder zu große Beschriftungen, 
 
 msgid "schnapp mcp: second signal, stopping after the running save."
 msgstr "schnapp mcp: zweites Signal, Ende nach dem laufenden Speichern."
+
+# internal/settings/stile.go: Schnellstile (styles.ini)
+msgid "Cannot locate the styles file (%v); using no custom styles."
+msgstr "Die Stildatei lässt sich nicht finden (%v); es gibt keine eigenen Stile."
+
+msgid "%s: cannot read the styles file (%v); using no custom styles."
+msgstr "%s: Die Stildatei lässt sich nicht lesen (%v); es gibt keine eigenen Stile."
+
+msgid "%s: the styles file is not a regular file; using no custom styles."
+msgstr "%s: Die Stildatei ist keine reguläre Datei; es gibt keine eigenen Stile."
+
+msgid "%s: the styles file is larger than 64 KiB; using no custom styles."
+msgstr "%s: Die Stildatei ist größer als 64 KiB; es gibt keine eigenen Stile."
+
+msgid "Style [%s] ignored: key %q is missing."
+msgstr "Stil [%s] ignoriert: Der Schlüssel %q fehlt."
+
+msgid "Style [%s] ignored: more than %d styles of this kind."
+msgstr "Stil [%s] ignoriert: mehr als %d Stile dieser Art."
+
+msgid "Style [%s] ignored: unknown key %q."
+msgstr "Stil [%s] ignoriert: unbekannter Schlüssel %q."
+
+msgid "Style [%s] ignored: key %q is set twice."
+msgstr "Stil [%s] ignoriert: Der Schlüssel %q steht zweimal."
+
+msgid "Style [%s] ignored: invalid value %q for key %q."
+msgstr "Stil [%s] ignoriert: ungültiger Wert %q für den Schlüssel %q."
+
+# internal/canvas/schnellstile.go: Namen der eingebauten Stile
+msgid "Black"
+msgstr "Schwarz"
+
+msgid "White"
+msgstr "Weiß"
+
+msgid "Red, thick"
+msgstr "Rot, dick"
+
+msgid "White on black"
+msgstr "Weiß auf Schwarz"
+
+msgid "Marker"
+msgstr "Marker"
+
+msgid "White on red"
+msgstr "Weiß auf Rot"
+
+msgid "Black on yellow"
+msgstr "Schwarz auf Gelb"
+
+msgid "White on blue"
+msgstr "Weiß auf Blau"
+
+msgid "Red, no label"
+msgstr "Rot ohne Schild"
+
+msgid "Black, no label"
+msgstr "Schwarz ohne Schild"

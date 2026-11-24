@@ -1,0 +1,261 @@
+[
+  {
+    "name": "SQ1 Passt ignoriert den Bildfaktor",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "ist.gleichWie(st.mal(s.faktor()))",
+    "neu": "ist.gleichWie(st)"
+  },
+  {
+    "name": "SQ2 Anwenden ohne Bildfaktor",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\tg := st.mal(f)\n",
+    "neu": "\tg := st\n"
+  },
+  {
+    "name": "SQ3 Stand des Werkzeugs zieht den Vordergrund nicht mit",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.merkePaarFarbe(w, FeldVordergrund, g.Farbe)\n",
+    "neu": "\t_ = w\n"
+  },
+  {
+    "name": "SQ4 Stand des Werkzeugs zieht die Füllung nicht mit",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "s.merkePaarFarbe(w, FeldFuellung, g.Fuellung)",
+    "neu": "_ = g"
+  },
+  {
+    "name": "SQ5 gewähltes Objekt bleibt unverändert",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "neu := mitSchnellstil(o, g)",
+    "neu": "neu := o"
+  },
+  {
+    "name": "SQ6 Texteingabe übernimmt den Stil nicht",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t_ = s.D.ZugSetze(neu)\n\t\treturn false\n",
+    "neu": "\t\treturn false\n"
+  },
+  {
+    "name": "SQ7 Objekt wird nicht ersetzt",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "ok = s.D.Ersetzen(neu) == nil",
+    "neu": "ok = neu != nil"
+  },
+  {
+    "name": "SQ8 Anwenden während eines Zugs",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.Zieht() || s.gesperrt() {\n\t\treturn false\n\t}\n\tw, ok := schnellWerkzeug(st.Art)",
+    "neu": "\tw, ok := schnellWerkzeug(st.Art)"
+  },
+  {
+    "name": "SQ9 gleicher Stil ergibt einen Schritt",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif neu == o {\n\t\treturn false\n\t}\n\tvor := s.D.Stand()\n\tok = s.D.Ersetzen",
+    "neu": "\tvor := s.D.Stand()\n\tok = s.D.Ersetzen"
+  },
+  {
+    "name": "SQ10 Grenze eigener Stile beim Laden",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "n[st.Art] >= MaxEigeneSchnellstile",
+    "neu": "n[st.Art] > MaxEigeneSchnellstile"
+  },
+  {
+    "name": "SQ11 Grenze eigener Stile beim Anlegen",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "if n >= MaxEigeneSchnellstile {",
+    "neu": "if n > MaxEigeneSchnellstile {"
+  },
+  {
+    "name": "SQ12 Doppelte Stile werden angelegt",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "if v.gleichWie(st) {",
+    "neu": "if false && v.gleichWie(st) {"
+  },
+  {
+    "name": "SQ13 Stil aus Stand ohne Teilen durch den Faktor",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "return ist.durch(s.faktor()).bereinigt(), true",
+    "neu": "return ist.bereinigt(), true"
+  },
+  {
+    "name": "SQ14 Entfernen trifft den falschen Stil",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "k := i - len(EingebauteSchnellstile(a))",
+    "neu": "k := i"
+  },
+  {
+    "name": "SQ15 Entfernen löscht nichts",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "slices.Delete(s.eigene, j, j+1)",
+    "neu": "slices.Delete(s.eigene, j, j)"
+  },
+  {
+    "name": "SQ16 Kasten ohne Füllung bereinigt",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "r.Fuellung, r.Breite = st.Fuellung, st.Breite",
+    "neu": "r.Breite = st.Breite"
+  },
+  {
+    "name": "SQ17 Vergleich ohne Breite",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "if !gleichNah(a.Breite, b.Breite) || ",
+    "neu": "if "
+  },
+  {
+    "name": "SQ18 Stil ohne Breite gilt als gültig",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\treturn st.Breite > 0\n",
+    "neu": "\t\treturn true\n"
+  },
+  {
+    "name": "SQ19 Nummer ohne Radius im Stand",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "Radius: s.Stil.Radius, Schrift:",
+    "neu": "Radius: 0, Schrift:"
+  },
+  {
+    "name": "SQ20 Text ohne Ausrichtung am Objekt",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "v.Unterstrichen, v.Durchgestrichen, v.Ausrichtung = st.Unterstrichen, st.Durchgestrichen, st.Ausrichtung",
+    "neu": "v.Unterstrichen, v.Durchgestrichen = st.Unterstrichen, st.Durchgestrichen"
+  },
+  {
+    "name": "SQ21 Marker ohne 40 % Deckkraft",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "B: stilGelb.B, A: 0x66}",
+    "neu": "B: stilGelb.B, A: 0x65}"
+  },
+  {
+    "name": "SQ22 dicker Pfeil dünner",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "Kennung: \"red-thick\", Farbe: stilRot, Breite: 8},\n\t{Art: SchnellPfeil, Kennung: \"white\"",
+    "neu": "Kennung: \"red-thick\", Farbe: stilRot, Breite: 7},\n\t{Art: SchnellPfeil, Kennung: \"white\""
+  },
+  {
+    "name": "SQ23 Text-Voreinstellung mit anderer Größe",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "Kennung: \"white-on-red\", Farbe: Weiss, Fuellung: stilRot, Schriftgrad: 20}",
+    "neu": "Kennung: \"white-on-red\", Farbe: Weiss, Fuellung: stilRot, Schriftgrad: 21}"
+  },
+  {
+    "name": "SQ24 Größenprüfung vor dem Anwenden fehlt",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "st.Breite*f > document.MaxGroesse ||",
+    "neu": "false ||"
+  },
+  {
+    "name": "SQ25 Sprechblase hat ein Werkzeug",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase SchnellLupe:\n\t\treturn WerkzeugLupe, true\n\t}\n\treturn WerkzeugAuswahl, false",
+    "neu": "\tcase SchnellLupe:\n\t\treturn WerkzeugLupe, true\n\tcase SchnellSprechblase:\n\t\treturn WerkzeugText, true\n\t}\n\treturn WerkzeugAuswahl, false"
+  },
+  {
+    "name": "SS1 doppelter Schlüssel wird hingenommen",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "if gesehen[schluessel] {",
+    "neu": "if false && gesehen[schluessel] {"
+  },
+  {
+    "name": "SS2 fehlende Farbe wird hingenommen",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "if !gesehen[\"color\"] {",
+    "neu": "if false {"
+  },
+  {
+    "name": "SS3 Grenze je Art beim Lesen",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "anzahl[cur.Art] >= MaxEigeneStile",
+    "neu": "anzahl[cur.Art] > MaxEigeneStile"
+  },
+  {
+    "name": "SS4 Farbe ohne Raute",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "len(w) != 9 || w[0] != '#'",
+    "neu": "len(w) != 9"
+  },
+  {
+    "name": "SS5 Größe 0 gilt",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "!(g > 0) || g > grenze",
+    "neu": "g > grenze"
+  },
+  {
+    "name": "SS6 Datei mit offenen Rechten",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "[]byte(inhalt), 0o600)",
+    "neu": "[]byte(inhalt), 0o644)"
+  },
+  {
+    "name": "SS7 Ordner mit offenen Rechten",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "os.MkdirAll(ordner, 0o700); err != nil {\n\t\treturn err\n\t}\n\treturn schreibeAtomar",
+    "neu": "os.MkdirAll(ordner, 0o755); err != nil {\n\t\treturn err\n\t}\n\treturn schreibeAtomar"
+  },
+  {
+    "name": "SS8 64-KiB-Grenze beim Schreiben",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "if b.Len() > maxDateigroesse {",
+    "neu": "if false {"
+  },
+  {
+    "name": "SS9 unbekannter Abschnitt",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "if schluesselFuer(art) == nil {",
+    "neu": "if false {"
+  },
+  {
+    "name": "SS10 Stil nicht bereinigt",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "append(stile, bereinigt(cur))",
+    "neu": "append(stile, cur)"
+  },
+  {
+    "name": "SS11 Verweis wird ersetzt",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "\t\t\tziel = z\n",
+    "neu": "\t\t\t_ = z\n"
+  },
+  {
+    "name": "SS12 Kopfkommentar fehlt",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "\tb.WriteString(kopfStile)\n",
+    "neu": ""
+  }
+]

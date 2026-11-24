@@ -61,3 +61,18 @@ gelbe Markierung), stellt heute Farbe, Füllung, Strich und Schrift jedes Mal ei
 ## Konsequenzen
 - Neue Datei im Konfigurationsordner (README nennt sie neben `settings.ini`).
 - Die Sprechblase (ADR-0021 Nachtrag 13) bekommt eigene Stile; bis sie umgesetzt ist, entfällt die Art `callout`.
+
+## Ergänzt bei der Umsetzung (Teil 1: Logik und Speicher, Karte #192)
+- **Pfeil „Weiß auf Schwarz“:** Ein Pfeil hat keine Füllung, ein weißer Pfeil „auf Schwarz“ wäre irreführend benannt. Der
+  sechste Pfeil-Stil heißt deshalb **Weiß** (weiße Linie); Kasten und Text behalten „Weiß auf Schwarz“. „Schwarz“ ist
+  überall das Dunkelgrau der Palette (`canvas.Beschriftungsfarben[3]`).
+- **„+“ bei einem Stand, der schon als Kachel da ist:** Der Stand ist dann eingebaut oder bereits eigen; ein zweiter,
+  gleicher Stil wird nicht angelegt (`HinzuDoppelt`, „+“ ist wie bei 16 Stilen grau, `KannSchnellstilHinzufuegen`).
+- **Ein Stil der anderen Art** als das gewählte Objekt ändert das Objekt nicht, wohl aber den Stand seines Werkzeugs.
+- **Texteingabe:** Ein Stil wirkt auf den Text in der Eingabe und gehört zu ihr (kein eigener Rückgängig-Schritt).
+- **Fehlende Schlüssel** in `styles.ini` nehmen die Voreinstellung bei Faktor 1 (Strich 4, Schriftgrad 20, Radius 14,
+  Füllung durchsichtig); nur `color` ist Pflicht. Ein Schlüssel, der für die Art nicht vorgesehen ist (`fill` beim Pfeil),
+  macht den Stil ungültig. Stile der Sprechblase (`[callout]`) bleiben beim Lesen und Schreiben erhalten, auch wenn es das
+  Werkzeug noch nicht gibt.
+- **Zuordnung:** Das Paket `settings` kennt `canvas` nicht; `settings.Stil` ist ein neutraler Datentyp, `canvas`
+  wandelt (`Schnellstil.Einstellung`, `SchnellstilAus`).
