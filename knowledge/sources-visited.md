@@ -149,6 +149,20 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | https://github.com/tesseract-ocr/tessdata_fast | 2026-11-24 | 2026-11-24 | live | curl | `deu.traineddata` (1,5 MB) und `eng.traineddata` (4,1 MB), Stand 87416418 (2024-08-01), Lizenz Apache-2.0; nach `ocr/tessdata/` (Karte #242) | docs/adr/0035-text-erkennen.md |
 | https://proxy.golang.org (github.com/danlock/gogosseract v0.0.11-0ad3421) | 2026-11-24 | 2026-11-24 | live | go get | Apache-2.0; WASM aus dem Fork von tesseract-wasm, nur LSTM; ab wazero 1.8 scheitert das WASM (`emscripten_stack_get_current`), 1.7.3 geht | docs/adr/0035-text-erkennen.md |
 
+
+## Lizenzen der Teile im WASM von schnapp-ocr (24.11.2026, F-667, F-679)
+
+| URL | Letzter Besuch | Erstbesuch | Status | Weg | Inhalt | Zieldatei |
+|---|---|---|---|---|---|---|
+| https://raw.githubusercontent.com/emscripten-core/emscripten/main/LICENSE | 2026-11-24 | 2026-11-24 | 200 | curl | Emscripten-Lizenz ungekürzt (MIT/UIUC), ersetzt den gekürzten Text | ocr/THIRD-PARTY-LICENSES/emscripten-LICENSE.txt |
+| https://raw.githubusercontent.com/emscripten-core/emscripten/main/system/lib/libc/musl/COPYRIGHT | 2026-11-24 | 2026-11-24 | 200 | curl | musl-Vermerk (MIT) | ocr/THIRD-PARTY-LICENSES/musl-COPYRIGHT.txt |
+| https://raw.githubusercontent.com/emscripten-core/emscripten/main/system/lib/{libcxx,libcxxabi,compiler-rt}/LICENSE.TXT | 2026-11-24 | 2026-11-24 | 200 | curl | LLVM-Texte (Apache-2.0 WITH LLVM-exception) | ocr/THIRD-PARTY-LICENSES/llvm-*.txt |
+| https://raw.githubusercontent.com/pnggroup/libpng/v1.6.39/LICENSE | 2026-11-24 | 2026-11-24 | 200 | curl | libpng-Lizenz v2 | ocr/THIRD-PARTY-LICENSES/libpng-LICENSE.txt |
+| https://raw.githubusercontent.com/madler/zlib/v1.2.13/LICENSE | 2026-11-24 | 2026-11-24 | 200 | curl | zlib-Lizenz | ocr/THIRD-PARTY-LICENSES/zlib-LICENSE.txt |
+| https://www.ijg.org/files/jpegsrc.v9c.tar.gz | 2026-11-24 | 2026-11-24 | 200 | curl | README „LEGAL ISSUES“: Binärweitergabe verlangt den IJG-Satz in der Doku | ocr/THIRD-PARTY-LICENSES/ijg-libjpeg-README.txt |
+| https://downloads.sourceforge.net/project/giflib/giflib-5.2.1.tar.gz | 2026-11-24 | 2026-11-24 | 404 | curl | Fehlschlag | — |
+| https://storage.googleapis.com/webassembly/emscripten-ports/giflib-5.2.1.tar.gz | 2026-11-24 | 2026-11-24 | 200 | curl | Archiv des Emscripten-Ports: COPYING (MIT), openbsd-reallocarray.c (MIT) | ocr/THIRD-PARTY-LICENSES/giflib-COPYING.txt |
+
 ## Suchanfragen
 
 | Datum | Anfrage | Ergebnis |
@@ -166,11 +180,3 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | 2026-11-24 | tesseract command line stdin stdout | stdin/stdout bzw. „-“ als Ein- und Ausgabe (5.x) |
 | 2026-11-24 | Flathub flatpak bundle tesseract OCR module traineddata extension | keine gemeinsame Flathub-Erweiterung; Apps bündeln Tesseract und Sprachdaten selbst |
 | 2026-11-24 | tesseract wasm wazero Go pure Go OCR without cgo | gogosseract (WASM über wazero), sonst nur cgo-Bindungen |
-| 2026-11-24 | https://raw.githubusercontent.com/emscripten-core/emscripten/main/LICENSE | Emscripten-Lizenz ungekürzt (MIT/UIUC), ersetzt den gekürzten Text in ocr/THIRD-PARTY-LICENSES (F-667) |
-| 2026-11-24 | https://raw.githubusercontent.com/emscripten-core/emscripten/main/system/lib/libc/musl/COPYRIGHT | musl-Vermerk (MIT) |
-| 2026-11-24 | https://raw.githubusercontent.com/emscripten-core/emscripten/main/system/lib/{libcxx,libcxxabi,compiler-rt}/LICENSE.TXT | LLVM-Texte (Apache-2.0 WITH LLVM-exception) für libc++, libc++abi, compiler-rt |
-| 2026-11-24 | https://raw.githubusercontent.com/pnggroup/libpng/v1.6.39/LICENSE | libpng-Lizenz v2 |
-| 2026-11-24 | https://raw.githubusercontent.com/madler/zlib/v1.2.13/LICENSE | zlib-Lizenz |
-| 2026-11-24 | https://www.ijg.org/files/jpegsrc.v9c.tar.gz | IJG-README (LEGAL ISSUES): Binärweitergabe verlangt den Satz „based in part on the work of the Independent JPEG Group“ |
-| 2026-11-24 | https://downloads.sourceforge.net/project/giflib/giflib-5.2.1.tar.gz | Fehlschlag 404 |
-| 2026-11-24 | https://storage.googleapis.com/webassembly/emscripten-ports/giflib-5.2.1.tar.gz | giflib 5.2.1 (Archiv des Emscripten-Ports): COPYING MIT, openbsd-reallocarray.c MIT (F-679) |
