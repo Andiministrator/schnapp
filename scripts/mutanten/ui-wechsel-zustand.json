@@ -1,0 +1,37 @@
+[
+  {
+    "name": "WZ1 Zug der Ebenenliste überlebt den Wechsel",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\te.ebenen.druck = ebenenDruck{} // ein Zug in der Ebenenliste gehört der alten Aufnahme (F-706)\n",
+    "neu": ""
+  },
+  {
+    "name": "WZ2 Wechsel bei laufendem Kopieren erlaubt",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase e.kopierLaeuft:\n\t\t// Die Antwort",
+    "neu": "\tcase false && e.kopierLaeuft:\n\t\t// Die Antwort"
+  },
+  {
+    "name": "WZ3 Zerstören wartet nicht auf die Arbeit der Ansicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.bibliothekArbeitAbwarten(wechselFrist) //",
+    "neu": "\t//"
+  },
+  {
+    "name": "WZ4 Warten auf die Arbeit der Ansicht ohne Frist",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase <-t.C:\n\t}\n}",
+    "neu": "\tcase <-t.C:\n\t\t<-b.arbeit\n\t\tb.arbeitLaeuft = false\n\t}\n}"
+  },
+  {
+    "name": "WZ5 Arbeit der Ansicht bleibt nach dem Warten als laufend gemerkt",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase <-b.arbeit:\n\t\tb.arbeitLaeuft = false\n\tcase <-t.C:",
+    "neu": "\tcase <-b.arbeit:\n\tcase <-t.C:"
+  }
+]

@@ -67,6 +67,10 @@ func (e *editor) wechselAnfrage(abs string) {
 		return
 	case e.wechsel.laedt || e.s.SpeichernLaeuft() || e.erzwungen || e.s.SignalVorgemerkt():
 		return // ein Wechsel oder ein Speichern läuft schon; das Fenster schließt
+	case e.kopierLaeuft:
+		// Die Antwort des Kopierens gehörte sonst zur vorigen Aufnahme, verglichen würde sie mit dem Stand der neuen:
+		// „Copied to clipboard“ stünde unter der falschen Aufnahme (F-710). Der Klick gilt nicht, wie bei laufender Arbeit.
+		return
 	case e.bibl.arbeitLaeuft:
 		// Die Ansicht schreibt gerade Schlagworte oder verschiebt in den Papierkorb: erst danach laden, sonst hielte der
 		// Editor einen veralteten Stand oder eine Datei im Papierkorb (F-676).
@@ -215,6 +219,7 @@ func (e *editor) uebernimm(g Geoeffnet) {
 	e.naht.gueltig = false
 	e.ebenen.umbenennen, e.ebenen.umbenennenFokus, e.ebenen.nameHatteFokus = 0, false, false
 	e.hatDruck, e.letzterDruck = false, 0
+	e.ebenen.druck = ebenenDruck{} // ein Zug in der Ebenenliste gehört der alten Aufnahme (F-706)
 	e.nav = navigatorZustand{}
 	e.rett = rettungZustand{}
 	e.stileLaden() // eigene Schnellstile gehören der Sitzung (ADR-0037)

@@ -588,7 +588,8 @@ func (e *editor) zerstoert(fensterErr error) error {
 		}
 	}
 	e.kopierenAbwarten()
-	e.s.TextBestaetigen() // getippter Text geht nicht verloren (ADR-0021 Punkt 6)
+	e.bibliothekArbeitAbwarten(wechselFrist) // Schlagworte/Papierkorb der Ansicht schreiben zu Ende (F-708)
+	e.s.TextBestaetigen()                    // getippter Text geht nicht verloren (ADR-0021 Punkt 6)
 	if e.s.Zieht() {
 		e.s.Abbrechen()
 	}

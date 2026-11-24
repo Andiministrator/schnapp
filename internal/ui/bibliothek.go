@@ -431,6 +431,23 @@ func (e *editor) bibArbeiten(a bibArbeit, f func() error) {
 	}()
 }
 
+// bibliothekArbeitAbwarten wartet beim Zerstören höchstens frist auf eine laufende Arbeit der Ansicht (Schlagworte,
+// Papierkorb), damit das Schreiben nicht mit dem Prozessende abreißt (F-708). Das Ergebnis zählt nicht mehr: Das Fenster
+// ist zu, es gibt nichts mehr zu melden.
+func (e *editor) bibliothekArbeitAbwarten(frist time.Duration) {
+	b := &e.bibl
+	if !b.arbeitLaeuft {
+		return
+	}
+	t := time.NewTimer(frist)
+	defer t.Stop()
+	select {
+	case <-b.arbeit:
+		b.arbeitLaeuft = false
+	case <-t.C:
+	}
+}
+
 // bibZeitraumListe öffnet die Auswahl des Zeitraums über die Liste des Menüs (wie die Felder der Fußzeile); per
 // Tastatur steht der Fokus auf dem gewählten Zeitraum.
 func (e *editor) bibZeitraumListe(perTaste bool) {

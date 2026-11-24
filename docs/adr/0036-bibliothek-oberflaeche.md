@@ -246,3 +246,16 @@ gelungenem Verschieben; die Ansicht soll das als Erfolg mit Hinweis melden (Aufr
 Abgleich beim Start und beim Öffnen der Ansicht (Zusatz F-672) leert den Index nicht mehr, wenn die Ablage fehlt oder
 leer ist (`ErrAblageLeer`, nur Diagnose), und baut einen fehlenden Index neu auf. Das Suchfeld faltet wie das ganze
 Schlagwort (Zusatz F-671).
+
+## Zusatz (24.11.2026, Karte #273, F-706, F-708, F-710, Claude Sonnet 5.5)
+
+**Oberflächenzustand beim Wechsel und beim Schließen** (Abschluss-Kritik C, Sprint 12). (1) `uebernimm` beendet einen
+laufenden Zug der Ebenenliste (`e.ebenen.druck`); ein späteres Loslassen ordnet in der neuen Aufnahme nichts um
+(F-706). (2) `zerstoert` wartet nach dem Kopieren höchstens `wechselFrist` (5 s, wie bei den Rettungskopien) auf eine
+laufende Arbeit der Ansicht (Schlagworte, Papierkorb, `bibliothekArbeitAbwarten`); das Ergebnis wird nicht mehr
+gemeldet, das Schreiben reißt aber nicht mit dem Prozessende ab (F-708). Das Fenster bleibt dafür nicht offen: Das
+Muster der Rettung ist Warten mit Frist, und `schliessen()` hat für diese Arbeit keine Rückfrage an Andi. (3) Ein
+laufendes Kopieren sperrt den Wechsel (`wechselAnfrage`, `kopierLaeuft`): der Klick gilt nicht, genau wie bei laufender
+Arbeit der Ansicht (F-676). So vergleicht die Antwort nie mit dem Stand der neuen Sitzung. Der Wechsel wird nicht
+vorgemerkt; nach der Antwort genügt ein weiterer Klick. Tests `internal/ui/wechsel_zustand_test.go`, Mutanten
+`scripts/mutanten/ui-wechsel-zustand.json`.
