@@ -1,7 +1,8 @@
 # Sichtprobe ADR-0031 Nachtrag 5 / ADR-0021 Nachtrag 9 (Karte #189): Farbwähler der rechten Leiste.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/farbwaehler-189.txt --bild scripts/drehbuecher/testbild-1200x800.png
-# Bei 1600 × 1000, Skala 1, Werkzeug Pfeil: Farbfläche x 1316–1520, y 164–278; Felder 1530–1584 (Pipette 1560–1584,
-# y 254–278); Farbton-Regler y 290–302, Deckkraft-Regler y 312–324 (x 1316–1584); Hex-Feld x 1352–1452, y 338–364.
+# Bei 1600 × 1000, Skala 1, Werkzeug Pfeil: Farbfläche x 1316–1520, y 338–450; Felder 1530–1584 (Pipette 1560–1584,
+# y 428–452); Farbton-Regler y 462–476, Deckkraft-Regler y 484–498 (x 1316–1584); Hex-Feld x 1352–1452, y 512–538
+# (nach den Schnellstilen, ADR-0037, und dem Farbpaar, #219; die alten Maße galten schon seit #219 nicht mehr).
 # Erwartet: 01 roter Pfeil; 02 Pfeil blau (Farbton); 03 dunkleres, matteres Blau (Fläche); 04 halb durchsichtig
 # (Deckkraft um 50 %, Felder darunter zeigen Schachbrett); 05 orange nach Hex „ff8800“ (Deckkraft bleibt), die gezogenen
 # Farben stehen als zuletzt benutzte im Raster; 06 Pipette aus dem grünen Streifen: Pfeil grün und deckend;
@@ -12,22 +13,22 @@ warte 300
 ziehe 400 300 700 500
 warte 400
 foto 01-pfeil-rot
-ziehe 1330 296 1460 296
+ziehe 1330 469 1460 469
 warte 300
 foto 02-farbton-blau
-ziehe 1500 180 1450 210
+ziehe 1500 354 1450 384
 warte 300
 foto 03-flaeche
-ziehe 1580 318 1450 318
+ziehe 1580 491 1450 491
 warte 300
 foto 04-deckkraft-halb
-klick 1400 351
+klick 1400 525
 warte 150
 schreibe ff8800
 taste Enter
 warte 300
 foto 05-hex-orange
-klick 1572 266
+klick 1572 440
 warte 200
 foto 06a-pipette-an
 klick 700 750

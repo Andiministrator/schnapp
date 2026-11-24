@@ -1606,6 +1606,42 @@ msgstr ""
 msgid "Drag an area · Enter: whole monitor under the pointer · Esc or right-click: cancel"
 msgstr ""
 
+#: internal/ui/schnellstile.go
+msgid "Could not save the styles: %v"
+msgstr ""
+
+#: internal/ui/schnellstile.go
+msgid "Style saved"
+msgstr ""
+
+#: internal/ui/schnellstile.go
+msgid "Style removed"
+msgstr ""
+
+#: internal/ui/schnellstile.go
+msgid "Custom style. Right-click or Del removes it."
+msgstr ""
+
+#: internal/ui/schnellstile.go
+msgid "%s Font “%s” is not installed."
+msgstr ""
+
+#: internal/ui/schnellstile.go
+msgid "Save the current settings as a custom style"
+msgstr ""
+
+#: internal/ui/schnellstile.go
+msgid "At most %d custom styles per kind."
+msgstr ""
+
+#: internal/ui/schnellstile.go
+msgid "The current settings are already a style."
+msgstr ""
+
+#: internal/ui/schnellstile.go
+msgid "Quick styles"
+msgstr ""
+
 #: internal/ui/schriftwahl.go
 msgctxt "text style"
 msgid "B"

@@ -161,6 +161,7 @@ func (e *editor) seiteAuswerten(gtx layout.Context) {
 		}
 	}
 	e.rollAuswerten(gtx)
+	e.schnellAuswerten(gtx)
 	e.farbeAuswerten(gtx)
 	e.schriftAuswerten(gtx)
 	e.ebenenAuswerten(gtx)
@@ -212,6 +213,7 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	k := &e.seite
 	k.kopf, k.farbeGezeigt, k.sw.gezeigt = "", false, false
 	e.spitze.rahmen = image.Rectangle{}
+	e.schnell.gezeigt, e.schnell.hinweis = false, ""
 	k.farbRahmen, k.kantRahmen, k.strRahmen = [farbPlaetze]image.Rectangle{}, [3]image.Rectangle{}, [2]image.Rectangle{}
 	k.fw.flaeche, k.fw.ton, k.fw.deck, k.fw.pipRahmen = image.Rectangle{}, image.Rectangle{}, image.Rectangle{}, image.Rectangle{}
 	k.fw.hex.rahmen, k.fw.deckkraft.rahmen = image.Rectangle{}, image.Rectangle{}
@@ -242,6 +244,10 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	k.kopf = e.seitenKopf(inhalt)
 	y += e.seiteText(gtx, k.kopf, 12, farbeNebentext, image.Pt(x, y), breite, 1) + gtx.Dp(12)
 
+	if art, ok := e.s.SchnellArt(); ok { // Schnellstile über den Eigenschaften (ADR-0037 Punkt 2)
+		y = e.zeichneSchnellstile(gtx, art, x, y, breite)
+		trenne()
+	}
 	if inhalt.Kante {
 		hoch := gtx.Dp(26)
 		e.seiteText(gtx, i18n.T("Seam style"), 13, farbeNebentext, image.Pt(x, y+gtx.Dp(4)), spalte-gtx.Dp(4), 1)

@@ -1,7 +1,7 @@
 # Sichtprobe ADR-0031 Schritt (b) (Karte #187): rechte Leiste, Listen der Fußzeile, Einklappen.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/oberflaeche-187b.txt --bild scripts/drehbuecher/testbild-1200x800.png
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen. Bei 1600 × 1000, Skala 1: rechte Leiste ab x = 1300,
-# Farben 28 px ab x = 1316 im Abstand 36 px.
+# Palette der Beschriftungsfarben 2 × 2 rechts neben der Farbfläche (beim gewählten Text Blau bei 1572,488; nach ADR-0037 und #219).
 warte 800
 foto 01-start
 taste T
@@ -10,7 +10,7 @@ warte 200
 schreibe Hallo
 warte 300
 foto 02-text-ausgewaehlt
-klick 1352 142
+klick 1572 488
 warte 300
 foto 03-blau
 klick 1478 985

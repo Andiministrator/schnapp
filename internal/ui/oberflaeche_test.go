@@ -365,7 +365,7 @@ func TestFarbHinweisNichtUeberOffenerListe(t *testing.T) {
 // (ADR-0031 Nachtrag 3), Pipette, Hex und Deckkraft (Nachtrag 5) zu den klickbaren Feldern der Fußzeile von links nach
 // rechts: erst Farbe, dann Zoom.
 func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
-	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	l := neuerMenueLauf(t, image.Pt(1200, 960)) // hoch genug für Schnellstile (ADR-0037), Farbe und Ebenen zugleich
 	l.fokusiere(&l.e.knoepfe.farbe)
 	// Farbpaar der Werkzeugleiste: Vordergrund, Füllung, Tauschen (ADR-0021 Nachtrag 11).
 	for i, k := range []*widget.Clickable{&l.e.knoepfe.fuellung, &l.e.knoepfe.tausch} {
@@ -373,6 +373,22 @@ func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 		l.setle()
 		if !l.fokus(k) {
 			t.Fatalf("Tab %d im Farbpaar: Fokus auf %s", i+1, menueFokusName(l))
+		}
+	}
+	// Zuerst der Abschnitt Schnellstile (ADR-0037): Überschrift, die Kacheln, „+“.
+	schnell := []*widget.Clickable{&l.e.schnell.kopf}
+	for j := range l.e.schnell.liste {
+		schnell = append(schnell, &l.e.schnell.kacheln[j])
+	}
+	schnell = append(schnell, &l.e.schnell.plus)
+	if len(l.e.schnell.liste) < 6 {
+		t.Fatalf("Kontrolle: %d Kacheln der Schnellstile für den Text", len(l.e.schnell.liste))
+	}
+	for i, k := range schnell {
+		l.r.MoveFocus(key.FocusForward)
+		l.setle()
+		if !l.fokus(k) {
+			t.Fatalf("Tab %d im Abschnitt Schnellstile: Fokus woanders (%s)", i+1, menueFokusName(l))
 		}
 	}
 	// Gewählt ist ein Text: erst Schrift, Größe, Stil und Ausrichtung (ADR-0031 Nachtrag 6).

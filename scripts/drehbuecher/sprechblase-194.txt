@@ -29,10 +29,10 @@ warte 300
 ziehe 600 532 760 480 8
 warte 400
 foto 03-verschoben
-klick 1417 224
+klick 1417 367
 warte 400
 foto 04-spitze-aus
-klick 1417 224
+klick 1417 367
 warte 400
 foto 05-spitze-an
 klick 1440 782
@@ -52,8 +52,8 @@ schreibe Klick
 taste Return
 warte 500
 foto 07-klick-blase
-klick 1360 314
+klick 1360 457
 warte 200
-klick 1447 313
+klick 1447 456
 warte 400
 foto 08-ohne-fuellung

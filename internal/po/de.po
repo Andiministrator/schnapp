@@ -1113,6 +1113,33 @@ msgstr "Weiß auf Blau"
 msgid "Red, no label"
 msgstr "Rot ohne Schild"
 
+msgid "Quick styles"
+msgstr "Schnellstile"
+
+msgid "Style saved"
+msgstr "Stil gespeichert"
+
+msgid "Style removed"
+msgstr "Stil entfernt"
+
+msgid "Could not save the styles: %v"
+msgstr "Die Stile konnten nicht gespeichert werden: %v"
+
+msgid "Custom style. Right-click or Del removes it."
+msgstr "Eigener Stil. Rechtsklick oder Entf entfernt ihn."
+
+msgid "%s Font “%s” is not installed."
+msgstr "%s Die Schrift „%s“ ist nicht installiert."
+
+msgid "Save the current settings as a custom style"
+msgstr "Die aktuellen Einstellungen als eigenen Stil speichern"
+
+msgid "At most %d custom styles per kind."
+msgstr "Höchstens %d eigene Stile je Art."
+
+msgid "The current settings are already a style."
+msgstr "Die aktuellen Einstellungen sind schon ein Stil."
+
 msgid "Black, no label"
 msgstr "Schwarz ohne Schild"
 # ui: Einstellungstafel (ADR-0034)

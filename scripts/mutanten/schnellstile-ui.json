@@ -1,0 +1,274 @@
+[
+  {
+    "name": "SU1 Klick auf die Kachel wendet den Stil nicht an",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "e.s.WendeSchnellstilAn(k.liste[j])",
+    "neu": "_ = k.liste[j]"
+  },
+  {
+    "name": "SU2 Rechtsklick gilt für jede Taste",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "pe.Buttons == pointer.ButtonSecondary",
+    "neu": "pe.Buttons != 0"
+  },
+  {
+    "name": "SU3 Entfernen ohne Eigen-Prüfung der Oberfläche",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "!k.liste[j].Eigen() {\n\t\treturn\n\t}",
+    "neu": "false {\n\t\treturn\n\t}",
+    "aequivalent": true,
+    "grund": "Sitzung.EntferneSchnellstil lehnt eingebaute Stile selbst ab (doppelte Absicherung)"
+  },
+  {
+    "name": "SU4 Fokus bleibt nach dem Entfernen der letzten Kachel am verschwundenen Knopf",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "j >= len(e.s.Schnellstile(k.art))",
+    "neu": "false"
+  },
+  {
+    "name": "SU5 Entfernen schreibt styles.ini nicht",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "e.stileSpeichern(i18n.T(\"Style removed\"))",
+    "neu": "e.melde(i18n.T(\"Style removed\"), false)"
+  },
+  {
+    "name": "SU6 Plus legt auch bei Doppelten an (Ergebnis nicht geprüft)",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "r == canvas.HinzuOK {\n\t\t\te.stileSpeichern",
+    "neu": "r != canvas.HinzuNichts {\n\t\t\te.stileSpeichern"
+  },
+  {
+    "name": "SU7 Plus meldet das Speichern nicht",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "e.stileSpeichern(i18n.T(\"Style saved\"))",
+    "neu": "e.melde(\"\", false)"
+  },
+  {
+    "name": "SU8 Pfeil rechts wandert nach links",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "ziel = i + 1",
+    "neu": "ziel = i - 1"
+  },
+  {
+    "name": "SU9 Pfeil runter geht nur eine Kachel weiter",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "ziel = i + schnellSpalten",
+    "neu": "ziel = i + 1"
+  },
+  {
+    "name": "SU10 Pfeil hoch geht nur eine Kachel zurück",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "ziel = i - schnellSpalten",
+    "neu": "ziel = i - 1"
+  },
+  {
+    "name": "SU11 Der Knopf Plus ist per Pfeil nicht erreichbar",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "ziel <= len(k.liste) && ziel != i",
+    "neu": "ziel < len(k.liste) && ziel != i"
+  },
+  {
+    "name": "SU12 Pos1 geht nicht zur ersten Kachel",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "ziel = 0",
+    "neu": "ziel = i"
+  },
+  {
+    "name": "SU13 Ende geht nicht zu Plus",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "ziel = len(k.liste)\n\tcase key.NameDeleteForward",
+    "neu": "ziel = i\n\tcase key.NameDeleteForward"
+  },
+  {
+    "name": "SU14 Entf an der Kachel läuft an das Objekt weiter",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "e.schnellEntferne(gtx, i)\n\t\treturn true",
+    "neu": "e.schnellEntferne(gtx, i)\n\t\treturn false"
+  },
+  {
+    "name": "SU15 Entf entfernt nichts",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "e.schnellEntferne(gtx, i)\n\t\treturn true",
+    "neu": "return true"
+  },
+  {
+    "name": "SU16 Fehlende Schrift gilt als vorhanden",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "!fonts.Bekannt(st.Schrift)",
+    "neu": "fonts.Bekannt(st.Schrift)"
+  },
+  {
+    "name": "SU17 Fehlende Schrift schon während der Suche",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "fonts.SucheFertig() && !fonts.Bekannt",
+    "neu": "!fonts.Bekannt"
+  },
+  {
+    "name": "SU18 Hinweis nennt fehlende Schrift nicht",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "if schriftFehlt(st) {\n\t\tt = fmt",
+    "neu": "if false {\n\t\tt = fmt"
+  },
+  {
+    "name": "SU19 Passender Stil bekommt keinen Rand",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "passt := e.s.SchnellstilPasst(st)",
+    "neu": "passt := false"
+  },
+  {
+    "name": "SU20 Eigene Kachel ohne graue Ecke",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "if st.Eigen() { // graue Ecke oben rechts",
+    "neu": "if false { // graue Ecke oben rechts"
+  },
+  {
+    "name": "SU21 Plus immer wirksam",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "k.plusAn = e.s.KannSchnellstilHinzufuegen(art)",
+    "neu": "k.plusAn = true"
+  },
+  {
+    "name": "SU22 Überschrift klappt nur ein",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "k.zu = !k.zu",
+    "neu": "k.zu = true"
+  },
+  {
+    "name": "SU23 Eigene Stile werden nicht geladen",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "e.s.SetzeEigeneSchnellstile(liste)",
+    "neu": "e.s.SetzeEigeneSchnellstile(nil)"
+  },
+  {
+    "name": "SU24 Warnungen der Stildatei gehen verloren",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "fmt.Fprintln(fehlerAusgabe, w)",
+    "neu": "_ = w"
+  },
+  {
+    "name": "SU25 Ungültige Stile werden übernommen statt verworfen",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "if st, ok := canvas.SchnellstilAus(r); ok {",
+    "neu": "if st, _ := canvas.SchnellstilAus(r); true {",
+    "aequivalent": true,
+    "grund": "SetzeEigeneSchnellstile verwirft den Nullstil über gueltig() selbst (zweite Absicherung)"
+  },
+  {
+    "name": "SU26 Speichern schreibt nur den ersten Stil",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "roh := make([]settings.Stil, len(eigene))",
+    "neu": "roh := make([]settings.Stil, min(1, len(eigene)))"
+  },
+  {
+    "name": "SU27 Speicherfehler wird nicht gemeldet",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "e.melde(fmt.Sprintf(i18n.T(\"Could not save the styles: %v\"), ohnePaketpraefix(err.Error())), true)",
+    "neu": "_ = err"
+  },
+  {
+    "name": "SU28 Klick wirkt auch bei veralteter Art",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "gueltig := ok && k.gezeigt && art == k.art",
+    "neu": "gueltig := ok || !ok",
+    "aequivalent": true,
+    "grund": "schützt nur vor einem Klick auf eine Kachel der vorigen Art, die im selben Bild verschwindet; wendet WendeSchnellstilAn dennoch korrekt an (Stil trägt seine Art), nicht beobachtbar"
+  },
+  {
+    "name": "SU29 Rechtsklick auf Eigene mit veralteter Liste",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "aktuell[j] != k.liste[j]",
+    "neu": "false"
+  },
+  {
+    "name": "SU30 Fokus geht dem Zeiger nicht vor",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "if gtx.Focused(&k.kacheln[j]) || (k.hinweis == \"\" && k.kacheln[j].Hovered()) {",
+    "neu": "if k.kacheln[j].Hovered() || (k.hinweis == \"\" && gtx.Focused(&k.kacheln[j])) {"
+  },
+  {
+    "name": "SU31 Leertaste erreicht die Kacheln nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "z = append(z, e.schnell.ziele()...)\n",
+    "neu": ""
+  },
+  {
+    "name": "SU32 Leertaste löst die Kachel nicht aus",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "} else if c != nil && e.schnell.stelle(c) >= 0 {",
+    "neu": "} else if false {"
+  },
+  {
+    "name": "SU33 Enter erkennt die Kachel nicht als Knopf",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "alle = append(alle, e.schnell.alle()...)\n",
+    "neu": ""
+  },
+  {
+    "name": "SU34 Statuszeile nennt die Kachel nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if e.schnell.hinweis != \"\" {",
+    "neu": "if false {"
+  },
+  {
+    "name": "SU35 Pfeile und Entf der Kachel nicht abgefangen",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if !e.s.TextLaeuft() && e.schnellTaste(gtx, k) {",
+    "neu": "if false {"
+  },
+  {
+    "name": "SU36 Editor liest styles.ini beim Öffnen nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "e.stileLaden()\n",
+    "neu": ""
+  },
+  {
+    "name": "SU37 Klicks und Rechtsklicks der Leiste nicht ausgewertet",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "e.schnellAuswerten(gtx)\n",
+    "neu": ""
+  },
+  {
+    "name": "SU38 Abschnitt Schnellstile fehlt in der Leiste",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "e.s.SchnellArt(); ok { // Schnellstile",
+    "neu": "e.s.SchnellArt(); !ok { // Schnellstile"
+  }
+]

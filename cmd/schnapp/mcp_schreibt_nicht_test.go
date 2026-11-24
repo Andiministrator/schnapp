@@ -22,7 +22,7 @@ import (
 //     der eine Funktion oder Methode des Pakets nennt, zählt als Aufruf) weder settings.Schreibe noch
 //     settings.SchreibeDatei erreichbar, und auch nicht ui.Editor — nur der Editor öffnet die Tafel, die schreibt.
 //  3. Gegenprobe: Von main aus ist ui.Editor erreichbar (sonst prüfte 2 nichts).
-//  4. Im Paket ui ruft nur die Tafel (einstellungen.go) den Schreiber, und ui.Bestaetige (der Dialog des MCP-Servers)
+//  4. Im Paket ui ruft nur die Tafel (einstellungen.go) den Schreiber (und schnellstile.go SchreibeStile für styles.ini), und ui.Bestaetige (der Dialog des MCP-Servers)
 //     steht in einer Datei ohne Bezug auf die Tafel.
 func TestMCPErreichtDenSchreiberNicht(t *testing.T) {
 	// 1.
@@ -130,7 +130,9 @@ func TestMCPErreichtDenSchreiberNicht(t *testing.T) {
 			case *ast.SelectorExpr:
 				if p, ok := x.X.(*ast.Ident); ok && p.Name == "settings" && strings.HasPrefix(x.Sel.Name, "Schreibe") {
 					schreiber++
-					if filepath.Base(d) != "einstellungen.go" {
+					// Ausnahme: styles.ini, die eigenen Schnellstile des Editors (ADR-0037 Punkt 6): keine Einstellung und
+					// keine Einwilligung eines Agenten, nur Farben und Maße.
+					if filepath.Base(d) != "einstellungen.go" && !(filepath.Base(d) == "schnellstile.go" && x.Sel.Name == "SchreibeStile") {
 						t.Errorf("%s ruft settings.%s", filepath.Base(d), x.Sel.Name)
 					}
 				}

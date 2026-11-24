@@ -1,0 +1,59 @@
+# Sichtprobe ADR-0037 (Karte #192, Teil 2): Schnellstile in der rechten Leiste.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/schnellstile-192.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1: das Bild liegt bei (76,100)–(1276,900). Die Leiste beginnt bei x 1300; die Kacheln stehen
+# ab (1316,104), 40 × 40 mit 5 Abstand, sechs je Reihe: Kachel j hat die Mitte (1336 + 45·(j mod 6), 124 + 45·(j div 6)).
+# Beim Kasten (sieben Stile) ist „+“ die Kachel 7 (Mitte 1381,169); die Strichstärke-Zeile steht danach bei y 218 bis 244
+# („+“ der Stufen: 1513,229). Bei Text und Sprechblase gibt es sechs Stile, „+“ ist die Kachel 6 (Mitte 1336,169).
+# Erwartet:
+#  01 Taste R: Kopf „WERKZEUG: KASTEN“, darunter „SCHNELLSTILE“ mit sieben Kacheln und „+“ (grau: der Stand ist Rot), die
+#     erste Kachel (Rot) orange umrandet.
+#  02 Kasten aufgezogen, gewählt: Kopf „AUSWAHL: KASTEN“, Kachel Rot orange.
+#  03 Klick auf „Weiß auf Schwarz“ (Kachel 5): der Kasten ist schwarz gefüllt mit weißem Rand, diese Kachel orange.
+#  04 Klick auf „Marker“ (Kachel 6): gelber Rand, halb durchsichtiges Gelb.
+#  05 Strichstärke eine Stufe größer: keine Kachel orange, „+“ ist hell.
+#  06 „+“ geklickt: Kachel 7 mit grauer Ecke, orange; Statuszeile „Style saved“; „+“ wieder grau, dahinter in Reihe 2.
+#  07 Rechtsklick auf die eigene Kachel: sie ist weg; Statuszeile „Style removed“.
+#  08 Text „Hallo“ (Taste T) und Klick auf „Black on yellow“ (Kachel 1): gelbes Schild, dunkle Schrift.
+#  09 Sprechblase (Taste K, aufgezogen): Klick auf „White on blue“ (Kachel 3): blaues Schild mit weißer Schrift und Spitze.
+warte 1500
+taste R
+warte 400
+foto 01-kasten-werkzeug
+ziehe 300 300 600 420 10
+warte 400
+foto 02-kasten-gewaehlt
+klick 1561 124
+warte 400
+foto 03-weiss-auf-schwarz
+klick 1336 169
+warte 400
+foto 04-marker
+klick 1513 229
+warte 400
+foto 05-strich-groesser
+klick 1381 169
+warte 400
+foto 06-eigener-stil
+rechtsklick 1381 169
+warte 400
+foto 07-entfernt
+taste T
+warte 300
+klick 300 680
+warte 300
+schreibe Hallo
+taste Return
+warte 400
+klick 1381 124
+warte 400
+foto 08-text-schwarz-auf-gelb
+taste K
+warte 300
+ziehe 700 700 860 560 10
+warte 300
+schreibe Blase
+taste Return
+warte 400
+klick 1471 124
+warte 400
+foto 09-sprechblase-blau

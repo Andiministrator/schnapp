@@ -210,6 +210,7 @@ func TestEbenenAusblendenMeldungUndNiedrigesFenster(t *testing.T) {
 	}
 	l.e.s.WaehleEbene(l.id) // Text: höchster Inhalt über dem Abschnitt (Schrift, Farbe)
 	eb, seite := &l.e.ebenen, &l.e.seite
+	l.e.schnell.zu = true // der Test gilt Farbe und Ebenen; offene Schnellstile (ADR-0037) brauchen mehr Höhe
 	for _, h := range []int{560, 470, 430} {
 		l.fenst = image.Pt(1200, h)
 		l.setle()

@@ -76,3 +76,22 @@ gelbe Markierung), stellt heute Farbe, Füllung, Strich und Schrift jedes Mal ei
   Werkzeug noch nicht gibt.
 - **Zuordnung:** Das Paket `settings` kennt `canvas` nicht; `settings.Stil` ist ein neutraler Datentyp, `canvas`
   wandelt (`Schnellstil.Einstellung`, `SchnellstilAus`).
+
+## Ergänzt bei der Umsetzung (Teil 2: Leiste in der Oberfläche, Karte #192)
+- **Name als Hinweis in der Statuszeile**, nicht als Tooltip: Die Oberfläche kennt keine Tooltips; wie bei den
+  Werkzeugknöpfen zeigt die Fußzeile den Namen der Kachel mit Tastaturfokus, sonst der unter dem Zeiger. Eine eigene
+  Kachel nennt „Custom style“ samt Weg zum Entfernen; der Knopf „+“ sagt, was er tut oder warum er grau ist (Stand schon
+  eine Kachel, 16 eigene erreicht).
+- **Entf** an einer eingebauten Kachel tut nichts und löscht **nicht** das gewählte Objekt dahinter; an einer eigenen
+  entfernt es den Stil. Die Rücktaste bleibt bei „Objekt löschen“ wie an jedem Knopf der Leiste. Nach dem Entfernen der
+  letzten Kachel wandert der Fokus auf „+“, sonst ginge er mit der Kachel verloren.
+- **Pfeile, Pos1 und Ende** wandern durch die Kacheln und „+“ (Pfeile hoch und runter eine Reihe von sechs); Tab fährt
+  die Kacheln wie jeden Knopf der Leiste ab (Überschrift, Kacheln, „+“, danach Schrift und die übrigen Eigenschaften).
+- **Fehlende Schriftfamilie:** Die Mini-Darstellung setzt „Aa“ blass und schräg (wie ein Ersatz), der Hinweis nennt die
+  Familie. Geprüft wird erst, wenn die Suche nach Systemschriften fertig ist; vorher gilt keine als fehlend.
+- **Ein Speicherfehler** (styles.ini nicht schreibbar) bleibt als Fehlermeldung in der Fußzeile; der Stil gilt in der
+  laufenden Sitzung trotzdem.
+- **Einklappen** der Überschrift gilt für die Sitzung des Editors und wird nicht gespeichert (wie „Farbe“).
+- **Höhe:** Der Abschnitt macht die Leiste bei Pfeil, Kasten, Text und Sprechblase um 143 dp höher (zwei Reihen, „+“ wandert
+  mit den sechs bis sieben Kacheln in die zweite), bei Nummer und Lupe um 98 dp. Wo das Fenster nicht reicht, rollt die
+  Leiste (ADR-0031 Nachtrag 8); der Abschnitt klappt nicht von selbst ein.

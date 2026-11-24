@@ -19,7 +19,7 @@ warte 300
 ziehe 556 420 616 480 10
 warte 400
 foto 01-lupe-angelegt
-klick 1512 122
+klick 1512 220
 warte 400
 foto 02-vergroesserung-3
 taste B

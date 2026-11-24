@@ -174,6 +174,7 @@ func neuerEditor(titel string, d *document.Dokument, speichern Speichern, rettun
 		ohneGrenze: exportOhneGrenze.Load()}
 	// Systemschriften im Hintergrund suchen, damit die Schriftliste sie kennt (ADR-0021 Nachtrag 10 Punkt 3).
 	fonts.StarteSuche(e.w.Invalidate)
+	e.stileLaden()
 	e.rettungStart() // vor dem ersten Bild: Wiederholte Schwärzungen ändern die Pixel
 	e.bildNeu()
 	return e
@@ -212,6 +213,7 @@ type editor struct {
 	titel     string
 	speichern Speichern
 	bildOp    paint.ImageOp
+	schnell   schnellLeiste  // Abschnitt „Schnellstile“ der rechten Leiste (ADR-0037)
 	meldung   canvas.Meldung // Zeile in der Fußzeile (Speichern, Hinweis, Fehler); Vorrang regelt canvas.StatusZeile (F-151)
 	titelSet  string
 
@@ -2024,6 +2026,7 @@ func (e *editor) leertastenZiele() []event.Tag {
 	for i := range e.menue.titel {
 		z = append(z, &e.menue.titel[i])
 	}
+	z = append(z, e.schnell.ziele()...)
 	return append(z, &e.knoepfe.fussFarbe, &e.knoepfe.fussZoom, &e.knoepfe.farbe, &e.knoepfe.fuellung)
 }
 
@@ -2113,6 +2116,8 @@ func (e *editor) tasten(gtx layout.Context) {
 			} else if c := e.fokussierterKnopf(gtx); c == &e.knoepfe.fussFarbe || c == &e.knoepfe.fussZoom ||
 				c == &e.knoepfe.farbe || c == &e.knoepfe.fuellung {
 				e.knopfPerTaste(c)
+			} else if c != nil && e.schnell.stelle(c) >= 0 { // Kachel der Schnellstile (ADR-0037)
+				e.knopfPerTaste(c)
 			}
 			continue
 		}
@@ -2147,6 +2152,9 @@ func (e *editor) tasten(gtx layout.Context) {
 				}
 			}
 			continue
+		}
+		if !e.s.TextLaeuft() && e.schnellTaste(gtx, k) {
+			continue // Pfeile und Entf an einer Kachel der Schnellstile (ADR-0037 Punkt 7)
 		}
 		t, ok := findeTaste(k.Name, k.Modifiers, e.s.TextLaeuft())
 		if e.fokusFeld(gtx) != nil && ((ok && t.hatWerkzeug) || k.Name == key.NameDeleteForward) {
@@ -2200,6 +2208,7 @@ func (e *editor) fokussierterKnopf(gtx layout.Context) *widget.Clickable {
 	alle = append(alle, e.ebenen.alleKnoepfe()...)
 	alle = append(alle, e.lupe.alle()...)
 	alle = append(alle, &e.spitze.knopf)
+	alle = append(alle, e.schnell.alle()...)
 	for i := range e.menue.titel {
 		alle = append(alle, &e.menue.titel[i])
 	}
@@ -2302,6 +2311,9 @@ func (e *editor) hinweis() string {
 	}
 	if t := e.ocrHinweis(); t != "" { // Bereichsmodus und Erkennung (ADR-0035)
 		return t
+	}
+	if e.schnell.hinweis != "" { // Name der Kachel mit Fokus oder Zeiger (ADR-0037 Punkt 2)
+		return e.schnell.hinweis
 	}
 	if e.s.PipetteLaeuft() {
 		return i18n.T("Click in the image to pick its color. Esc cancels.")

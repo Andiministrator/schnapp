@@ -16,6 +16,7 @@ import (
 func niedrigerLauf(t *testing.T) *menueLauf {
 	t.Helper()
 	l, _ := ebenenLauf(t)
+	l.e.schnell.zu = true // die Tests gelten der Schriftliste; die Schnellstile (ADR-0037) schöben das Feld aus der Sicht
 	l.fenst = image.Pt(1200, 330)
 	l.setle()
 	return l
@@ -92,6 +93,8 @@ func TestSchriftlisteSchliesstOhnePlatzUnterDemFeld(t *testing.T) {
 		t.Fatalf("Kontrolle: Liste offen %v, Lage %v", sw.offen, sw.rahmen)
 	}
 	l.fenst = image.Pt(1200, 140)
+	l.setle()
+	l.e.seite.roll.rollen = 30 // der Abschnitt Schnellstile (zu) schiebt das Feld nach unten; ins Bild rollen
 	l.setle()
 	feld := sw.feldRahmen.Sub(image.Pt(0, l.e.seite.roll.rollen))
 	unten := l.fenst.Y - l.gtx().Dp(fusszeileDp)

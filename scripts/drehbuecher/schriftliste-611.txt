@@ -1,6 +1,6 @@
 # Sichtprobe ADR-0031 Nachtrag 8 (Karte #235, F-611): Die Schriftliste hängt bei gerollter Leiste am sichtbaren Feld.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/schriftliste-611.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 1000 --hoehe 330
-# Bei 1000 × 330, Skala 1, Text gewählt, nach rad 750 60 3: Feld „Schrift“ x 805–985, y 28–52.
+# Bei 1000 × 330, Skala 1, Text gewählt, nach rad 750 60 12: Feld „Schrift“ x 805–985, y rund 24–50 (die Schnellstile, ADR-0037, schieben es nach unten; vorher reichten 3 Schritte).
 # Erwartet: 01 Text steht, Leiste ungerollt; 02 Leiste ist um einige Pixel gerollt (Balken rechts); 03 die Liste klappt
 # bündig unter dem sichtbaren Feld „Schrift“ auf (früher um den Rollversatz zu tief, bei wenig Platz gar nicht);
 # 04 nach Esc ist die Liste zu.
@@ -13,7 +13,7 @@ schreibe Hallo Welt
 taste Enter
 warte 400
 foto 01-text
-rad 750 60 3
+rad 750 60 12
 warte 300
 foto 02-gerollt
 klick 900 40
