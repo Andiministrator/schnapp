@@ -990,3 +990,25 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Worktree-Agent und Cherry-Pick mit Konflikt in CLAUDE.md:** Beide Seiten änderten dieselbe lange Zeile. Die Seite
   des Agenten nehmen und die eigenen Zahlen nachtragen; danach weicht der Branch ab und fällt nicht unter die
   Löschregel ohne Rückfrage.
+
+## Sprint 13 (24.11.2026 abends, Karten #269 bis #284)
+
+- **Headless-Zeichentests nie pixelgenau gegen sich selbst verschoben vergleichen:** Die CI rastert mit llvmpipe; an
+  anderer Lage glättet Gio Kanten um eine Stufe anders (lokal mit GPU exakt gleich). Toleranz 2 Stufen je Kanal; lokal
+  nachstellen mit `LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe SCHNAPP_HEADLESS_PFLICHT=1`.
+- **„Je Bereich zeichnen“ vervielfacht die Arbeit über vielen Nähten:** Bis `MaxStreifen` Nähte heißt bis zu 1025 Bereiche
+  je Objekt. Der Prüflauf beim Öffnen (F-136, `TestPruefeVieleStreifenUndPfeile`) wurde in der CI unter `-race` zu langsam.
+  Je Bereich nur, wo die Rechnungen außerhalb des Kantenbands wirklich verschieden sind (Text, Nummer, schräge Kanten
+  eines Dreiecks); Kosten im Trockenlauf einmal zählen, nicht je Bereich.
+- **CI-Protokoll lesen ohne `gh`:** Die API liefert Job-Logs nur mit Admin-Rechten; Schritte und Ergebnis gibt
+  `api.github.com/repos/<o>/<r>/actions/jobs/<id>` öffentlich. Den Text liefert im Browser
+  `github.com/<o>/<r>/commit/<sha>/checks/<job>/logs` (leitet auf eine Blob-Adresse um), gefiltert per JavaScript auf
+  `--- FAIL`/`DATA RACE`; Tab danach schließen.
+- **`git --work-tree=… checkout REV -- pfad` ändert auch den Index:** Danach `git restore --staged pfad`. Für einen alten
+  Stand zum Vergleich besser `git show REV:datei > tmp/…` je Datei oder `go test -overlay` mit einer Ersetzungsliste.
+- **govulncheck findet echte Treffer:** `golang.org/x/image` v0.26.0 hatte fünf erreichbare Schwachstellen (SFNT, TIFF,
+  F-744). Ein neuer Prüfschritt in der CI ist erst fertig, wenn sein erster Lauf ausgewertet ist.
+- **Worktree-Agenten parallel nach Dateien schneiden:** sechs Sonnet-Karten in Worktrees, je eine Welle ohne gemeinsame
+  Dateien; Cherry-Picks liefen ohne Konflikt. Sonnet hielt sich trotz Verbot nicht immer an „keine Heredocs“ — es meldete
+  es aber; der Diff war jeweils sauber.
+
