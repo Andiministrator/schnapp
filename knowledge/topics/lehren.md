@@ -855,3 +855,18 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Ein schwebendes Element über der Leinwand (Navigator) wird **nach** dem `Pop()` des Leinwand-Ausschnitts angemeldet,
   sonst erreicht der Druck auch die Werkzeuge. Test prüft, dass kein Objekt entsteht.
 - **Ein Test „Klick zentriert“ ist leer, wenn die Ansicht vorher schon mittig stand**: Zielpunkt abseits der Mitte wählen.
+
+## Sitzungs-QA und Aufräumen (24.11.2026 früh)
+
+- **Ein Fix, den die Kritik „halb“ nennt, braucht eine zweite Prüfung** (F-609 → F-620): Das Budget zählte die Quelle,
+  aber viele gleiche Lupen unter dem Budget bauten den Export trotzdem auf Gigabyte. Grenzen gehören an die Stelle, die
+  den Speicher belegt (Export), nicht nur ans Rechenmodell.
+- **Eine Meldung vor dem Beenden kann selbst blockieren** (QS-1): Wer beim zweiten Signal erst auf stderr schreibt und
+  dann beendet, hängt an einer vollen Pipe. Meldung mit Frist (200 ms), Beenden unabhängig davon.
+- **Mutanten, die Speicher fressen, früh abbrechen lassen**: Ein Mutant der Exportgrenze wollte 9 GiB belegen; der
+  Test begrenzt jetzt selbst und bricht ab, bevor der Rechner leidet.
+- **Worktree-Agenten mit eigenem HOME legen den Go-Modulcache schreibgeschützt in den Worktree**: HOME für go-Befehle
+  nicht umsetzen; vor dem Abräumen `GOMODCACHE=<pfad> go clean -modcache`, sonst scheitert `git worktree remove`.
+- **Prüfmuster F-1 trifft auch Bezeichner** (`tg` mit `-i`): Variablen in Tests so benennen, dass das Muster sauber bleibt.
+- **Cherry-Pick-Konflikt am Ende eines ADR**: Zwei Stränge hängen Nachträge an dieselbe Stelle; beide behalten,
+  Nachtragsnummern prüfen.
