@@ -83,6 +83,19 @@ func (e *editor) lupenInhalt(l document.Lupe, vorschau bool) (paint.ImageOp, ima
 	return b.op, b.rahmen, b.vorhanden
 }
 
+// lupenAufraeumen verwirft nach jedem Bild die gemerkten Bilder von Lupen, die es nicht mehr gibt (gelöscht, Anlegen
+// rückgängig gemacht; ADR-0033 Nachtrag 2 Punkt 5): Sie hielten sonst Bilder bis zur Größe der Ansicht bis zum Ende des
+// Editors, auch solche von vor einer späteren Schwärzung.
+func (e *editor) lupenAufraeumen() {
+	for k := range e.lupe.bilder {
+		if o, ok := e.s.D.Objekt(k.id); !ok {
+			delete(e.lupe.bilder, k)
+		} else if _, ist := o.(document.Lupe); !ist {
+			delete(e.lupe.bilder, k)
+		}
+	}
+}
+
 // zeichneLupe zeichnet l wie der Renderer: Linie, Rahmen um die Quelle, Bild im Ziel, Rahmen um das Ziel. an bildet
 // Originalpunkte in die Zeichenfläche ab; in der Vorschau ist das das Original selbst, das Bild wird dann aufs Ziel
 // gestreckt.

@@ -248,6 +248,9 @@ msgstr "Eine Datei mit diesem Namen gibt es schon: %s"
 msgid "Could not export: finish the current action first."
 msgstr "Export nicht möglich: Erst die laufende Aktion beenden."
 
+msgid "Could not export: the image has too many or too large annotations. Remove some first."
+msgstr "Export nicht möglich: Das Bild hat zu viele oder zu große Beschriftungen. Bitte zuerst einige entfernen."
+
 msgid "The connection to the desktop portal was lost."
 msgstr "Die Verbindung zum Desktop-Portal ist abgebrochen."
 

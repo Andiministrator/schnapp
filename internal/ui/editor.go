@@ -1186,6 +1186,13 @@ func (e *editor) exportFertig(r exportErgebnis) {
 		e.meldeNebenbei(i18n.T("Could not export: finish the current action first."), true)
 		return
 	}
+	// Rechenbudget vor dem Kodieren (ADR-0033 Nachtrag 2 Punkt 3): Im Editor kann ein Dokument über das Budget wachsen,
+	// das beim Öffnen geprüft wurde; der Export (auch der SVG-Export mit den Bildern der Lupen) liefe dann unbegrenzt.
+	if err := render.Pruefe(e.s.D); err != nil {
+		diagnoseEditor("Export: %v", err)
+		e.meldeNebenbei(i18n.T("Could not export: the image has too many or too large annotations. Remove some first."), true)
+		return
+	}
 	schreibe := export.SchreibeAtomar
 	if angehaengt {
 		schreibe = export.SchreibeOhneErsetzen // Ziel könnte während des Renderns entstehen (Verify N-4)
@@ -1606,6 +1613,7 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 		}
 		e.zeichneObjekt(gtx, o, an, sicht, false)
 	}
+	e.lupenAufraeumen()
 }
 
 // zeichneObjekt zeichnet o; an bildet Originalpunkte in die Zeichenfläche ab, sicht begrenzt die Textzeilen (in

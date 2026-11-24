@@ -817,6 +817,10 @@ msgid "Could not export: finish the current action first."
 msgstr ""
 
 #: internal/ui/editor.go
+msgid "Could not export: the image has too many or too large annotations. Remove some first."
+msgstr ""
+
+#: internal/ui/editor.go
 msgid "Exported to %s"
 msgstr ""
 
