@@ -402,3 +402,19 @@ Tests `internal/ui/hilfe_rollen_test.go`, `internal/ui/einstellungen_rollen_test
 1200×800 bis 480×320, Fuß bleibt, Klick auf ein gerolltes Feld, Reiterwechsel), Mutanten
 `scripts/mutanten/tafeln-rollen.json` (T1–T7, E1–E7), Sichtprobe `scripts/drehbuecher/tafeln-klein-272.txt` (1200×800,
 640×480, 480×320). ADR-0034 gilt unverändert; die Tafel rollt, ihre Maße (800×640) bleiben.
+
+## Nachtrag 11 (24.11.2026): Die Übersicht F1 ist modal wie die Einstellungstafel (Karte #274, F-707)
+
+**Status:** Akzeptiert (Claude Sonnet 5.5). Ersetzt aus Nachtrag 4 den Satz „Klicks in der rechten Leiste ruhen bei offener Hilfetafel“.
+
+**Befund.** Das Zeigerziel der Übersicht deckte nur die Leinwand. Linke Werkzeugleiste, Farbfelder samt ⇄, Fußfelder und
+Menüzeile blieben bedienbar, ein Klick auf ⇄ tauschte die Farben des Objekts hinter der Tafel (Abschluss-Kritik C-3).
+
+**Regel.** Die Übersicht ist **konsequent modal**: ihr Zeigerziel deckt das ganze Fenster (`zeichneHilfe`, wie die
+Einstellungstafel, ADR-0034). Menüzeile, Werkzeugleiste, Farbfelder, rechte Leiste, Leiste der letzten Aufnahmen und Fußfelder
+bekommen keinen Klick; **ein Klick irgendwo schließt nur die Tafel** und löst dahinter nichts aus. **Menüzeile:** auch sie
+schließt nur die Tafel (kein Menü öffnet sich im selben Klick). Begründung: eine Ausnahme für die Menüzeile bräuchte eine
+zweite Regel, F10 öffnet das Menü weiter über die Tastatur, und ein Klick, der zwei Dinge tut, ist schwerer vorherzusagen.
+Das Mausrad rollt die Tafel weiter (Nachtrag 10), die Tastatur bleibt unverändert (Esc/F1 schließen, Rolltasten rollen).
+Tests `internal/ui/hilfe_modal_test.go`, Mutanten `scripts/mutanten/hilfe-modal.json`, Sichtprobe
+`scripts/drehbuecher/hilfe-modal-274.txt`.

@@ -100,9 +100,19 @@ func TestFarbwaehlerUnterHilfe(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
 	fw := &l.e.seite.fw
 	vor, farbe := l.e.s.D.Stand(), l.e.s.Stil.Farbe
+	// Die Tafel ist modal (ADR-0031 Nachtrag 11, F-707): Der Druck schließt sie nur, je einmal für Ziehen und Pipette.
 	l.e.hilfeOffen = true
+	l.setle()
 	l.ziehe(lageIn(fw.flaeche, 0.5, 0.5), lageIn(fw.flaeche, 0.9, 0.1))
+	if l.e.hilfeOffen {
+		t.Error("Ziehen im Farbwähler hat die Hilfetafel nicht geschlossen")
+	}
+	l.e.hilfeOffen = true
+	l.setle()
 	l.klick(mittenPunkt(fw.pipRahmen))
+	if l.e.hilfeOffen {
+		t.Error("Klick auf die Pipette hat die Hilfetafel nicht geschlossen")
+	}
 	if l.e.s.D.Stand() != vor || l.e.s.Stil.Farbe != farbe || l.e.s.PipetteLaeuft() {
 		t.Error("Farbwähler wirkte unter der Hilfetafel")
 	}

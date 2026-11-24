@@ -82,7 +82,7 @@ func hilfeAufteilung(n int, flaeche image.Point, hoehe, innen, kopf, spalteText,
 	return spalten, pro, text
 }
 
-// zeichneHilfe legt die Übersicht über die Leinwand; ein Klick irgendwohin oder Esc schließt sie.
+// zeichneHilfe legt die Übersicht über die Leinwand; ein Klick irgendwohin im Fenster oder Esc schließt sie.
 func (e *editor) zeichneHilfe(gtx layout.Context) {
 	if !e.hilfeOffen {
 		e.hilfeRoll.rollen, e.hilfeRoll.rest = 0, 0
@@ -99,7 +99,9 @@ func (e *editor) zeichneHilfe(gtx layout.Context) {
 		}
 	}
 	flaeche := e.leinwandFlaeche(gtx)
-	ha := clip.Rect(flaeche).Push(gtx.Ops)
+	// Modal wie die Einstellungstafel (ADR-0031 Nachtrag 11, F-707): Das Zeigerziel deckt das ganze Fenster, Menüzeile,
+	// Werkzeugleiste, Leisten und Fußfelder bekommen keinen Klick, ein Klick irgendwo schließt nur die Tafel.
+	ha := clip.Rect(image.Rectangle{Max: gtx.Constraints.Max}).Push(gtx.Ops)
 	event.Op(gtx.Ops, &e.hilfeOffen)
 	ha.Pop()
 

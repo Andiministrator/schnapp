@@ -1,0 +1,23 @@
+[
+  {
+    "name": "M1 Zeigerziel der Übersicht deckt nur die Leinwand",
+    "datei": "internal/ui/hilfe.go",
+    "paket": "./internal/ui",
+    "alt": "ha := clip.Rect(image.Rectangle{Max: gtx.Constraints.Max}).Push(gtx.Ops)",
+    "neu": "ha := clip.Rect(flaeche).Push(gtx.Ops)"
+  },
+  {
+    "name": "M2 Zeigerziel der Übersicht gehört einem fremden Tag",
+    "datei": "internal/ui/hilfe.go",
+    "paket": "./internal/ui",
+    "alt": "\tevent.Op(gtx.Ops, &e.hilfeOffen)\n\tha.Pop()",
+    "neu": "\tevent.Op(gtx.Ops, &e.hilfeRoll)\n\tha.Pop()"
+  },
+  {
+    "name": "M3 Klick neben der Tafel schließt sie nicht",
+    "datei": "internal/ui/hilfe.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.hilfeOffen = false\n\t\t\treturn\n\t\t}\n\t}\n\tflaeche",
+    "neu": "\t\t\treturn\n\t\t}\n\t}\n\tflaeche"
+  }
+]

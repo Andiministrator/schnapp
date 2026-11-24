@@ -1,0 +1,21 @@
+# Sichtprobe ADR-0031 Nachtrag 11 (Karte #274, F-707): Die Übersicht F1 ist modal.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/hilfe-modal-274.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 1200 --hoehe 800
+#   01 F1 offen. 02 nach einem Klick in die linke Werkzeugleiste (zweiter Knopf): Tafel zu, Werkzeug unverändert (Auswählen).
+#   03 F1 erneut, Klick auf die Menüzeile (Datei): Tafel zu, kein Menü offen. 04 F1, Klick auf die Fußzeile rechts: Tafel zu.
+warte 800
+taste F1
+warte 400
+foto 01-hilfe-offen
+klick 20 90
+warte 400
+foto 02-nach-klick-werkzeugleiste
+taste F1
+warte 400
+klick 30 12
+warte 400
+foto 03-nach-klick-menuezeile
+taste F1
+warte 400
+klick 1100 785
+warte 400
+foto 04-nach-klick-fusszeile
