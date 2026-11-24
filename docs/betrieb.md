@@ -48,7 +48,7 @@ F-309; öffentliche Check-Run-API je Job, `knowledge/topics/lehren.md` Sprint 9)
 
 ```bash
 ./install.sh              # baut und installiert nach ~/.local (PREFIX, XDG_DATA_HOME einstellbar)
-./install.sh --uninstall  # entfernt genau die drei installierten Dateien
+./install.sh --uninstall  # entfernt genau die vier installierten Dateien (schnapp, schnapp-ocr, Desktop-Datei, Symbol)
 ```
 
 Installiert werden Programm, Desktop-Datei (aus `data/schnapp.desktop.in`, ADR-0017; mit `MimeType` für PNG und JPEG
