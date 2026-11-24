@@ -35,6 +35,8 @@ const (
 	kleinSeite = 600
 	// MaxPixel ist die größte Pixelzahl, die an tesseract geht (nach dem Vergrößern).
 	MaxPixel = 40_000_000
+	// MaxSeite ist die längste Seite, die tesseract (Leptonica) annimmt; darüber lehnt Vorbereite ab (F-633).
+	MaxSeite = 32767
 	// programmName ist der Name im PATH.
 	programmName = "tesseract"
 )
@@ -123,23 +125,25 @@ func (e *Erkenner) Sprachen(oberflaeche string) string {
 	return strings.Join(wahl, "+")
 }
 
-// Vorbereite vergrößert ein kleines Bild auf das Doppelte und prüft die Größe (ADR-0035 Punkt 4).
+// Vorbereite vergrößert ein kleines Bild auf das Doppelte, wenn das Ergebnis noch passt (Fläche höchstens MaxPixel,
+// jede Seite höchstens MaxSeite), sonst geht es unvergrößert weiter. Liegt schon das Bild selbst über einer Grenze,
+// kommt ErrZuGross (ADR-0035 Punkt 4, F-633).
 func Vorbereite(b image.Image) (image.Image, error) {
 	r := b.Bounds()
 	if r.Empty() {
 		return nil, errprefix.Wrap("ocr", ErrLeer)
 	}
-	faktor := 1
-	if min(r.Dx(), r.Dy()) < kleinSeite {
-		faktor = 2
+	passt := func(f int64) bool {
+		return int64(r.Dx())*f <= MaxSeite && int64(r.Dy())*f <= MaxSeite &&
+			int64(r.Dx())*int64(r.Dy())*f*f <= MaxPixel
 	}
-	if int64(r.Dx())*int64(r.Dy())*int64(faktor*faktor) > MaxPixel {
+	if !passt(1) {
 		return nil, errprefix.Wrap("ocr", ErrZuGross)
 	}
-	if faktor == 1 {
+	if min(r.Dx(), r.Dy()) >= kleinSeite || !passt(2) {
 		return b, nil
 	}
-	gross := image.NewNRGBA(image.Rect(0, 0, r.Dx()*faktor, r.Dy()*faktor))
+	gross := image.NewNRGBA(image.Rect(0, 0, r.Dx()*2, r.Dy()*2))
 	xdraw.BiLinear.Scale(gross, gross.Bounds(), b, r, xdraw.Src, nil)
 	return gross, nil
 }

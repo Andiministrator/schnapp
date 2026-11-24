@@ -2,9 +2,9 @@
   {"name": "UB1 Standard-Spitze nur 2 Schriftgrade versetzt", "datei": "internal/canvas/sprechblase.go", "paket": "./internal/canvas",
    "alt": "const SpitzeVersatz = 3.0", "neu": "const SpitzeVersatz = 2.0"},
   {"name": "UB2 Standard-Spitze rechts statt links", "datei": "internal/canvas/sprechblase.go", "paket": "./internal/canvas",
-   "alt": "g.Min.X-SpitzeVersatz*t.Schriftgrad", "neu": "g.Min.X+SpitzeVersatz*t.Schriftgrad"},
+   "alt": "document.Pt(g.Min.X-v, g.Max.Y+v), document.Pt(g.Max.X+v, g.Max.Y+v),", "neu": "document.Pt(g.Min.X+v, g.Max.Y+v), document.Pt(g.Max.X+v, g.Max.Y+v),"},
   {"name": "UB3 Standard-Spitze nicht ins Bild begrenzt", "datei": "internal/canvas/sprechblase.go", "paket": "./internal/canvas",
-   "alt": "return s.D.ZuOriginal(s.klemmeAnsicht(s.D.ZuAnsicht(p)))", "neu": "return p"},
+   "alt": "p = s.D.ZuOriginal(s.klemmeAnsicht(s.D.ZuAnsicht(p)))", "neu": "p = s.D.ZuOriginal(s.D.ZuAnsicht(p))"},
   {"name": "UB4 Sprechblase hat ein eigenes Farbpaar", "datei": "internal/canvas/sprechblase.go", "paket": "./internal/canvas",
    "alt": "\t\treturn WerkzeugText\n", "neu": "\t\treturn WerkzeugSprechblase\n"},
   {"name": "UB5 Schalter wirkt an gesperrter Ebene", "datei": "internal/canvas/sprechblase.go", "paket": "./internal/canvas",
@@ -96,5 +96,6 @@
   {"name": "UB48 Schalter Spitze fehlt in der Leiste", "datei": "internal/ui/seitenleiste.go", "paket": "./internal/ui",
    "alt": "if inhalt.Spitze { // Schalter", "neu": "if false { // Schalter"},
   {"name": "UB49 Klicks auf den Schalter werden nicht ausgewertet", "datei": "internal/ui/seitenleiste.go", "paket": "./internal/ui",
-   "alt": "\te.spitzeAuswerten(gtx)\n", "neu": ""}
+   "alt": "\te.spitzeAuswerten(gtx)\n", "neu": ""},
+  {"name": "UB60 Standard-Spitze versucht keine andere Ecke (F-634)", "datei": "internal/canvas/sprechblase.go", "paket": "./internal/canvas", "alt": "if _, _, _, ok := t.Spitzendreieck(); ok {\n\t\t\treturn p", "neu": "if false {\n\t\t\treturn p"}
 ]

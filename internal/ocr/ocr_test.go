@@ -153,8 +153,20 @@ func TestVorbereite(t *testing.T) {
 	if b, err := Vorbereite(gross); err != nil || b != gross {
 		t.Errorf("groß unverändert erwartet: %v", err)
 	}
-	if _, err := Vorbereite(image.NewNRGBA(image.Rect(0, 0, 18000, 590))); !errors.Is(err, ErrZuGross) {
-		t.Errorf("zu groß nach dem Vergrößern: %v", err)
+	// F-633: Passt das Doppelte nicht mehr, geht das Bild unvergrößert weiter, statt abgelehnt zu werden.
+	for _, g := range [][2]int{{590, 18000}, {18000, 590}, {500, 16500}, {16500, 500}} {
+		b := image.NewNRGBA(image.Rect(0, 0, g[0], g[1]))
+		if got, err := Vorbereite(b); err != nil || got != image.Image(b) {
+			t.Errorf("%dx%d: unvergrößert ohne Fehler erwartet, bekam %v %v", g[0], g[1], got.Bounds(), err)
+		}
+	}
+	if b, err := Vorbereite(testbild(500, 16000)); err != nil || b.Bounds().Dy() != 32000 {
+		t.Errorf("500x16000 wird verdoppelt: %v", err)
+	}
+	for _, g := range [][2]int{{700, 33000}, {33000, 700}, {7000, 7000}} {
+		if _, err := Vorbereite(image.NewNRGBA(image.Rect(0, 0, g[0], g[1]))); !errors.Is(err, ErrZuGross) {
+			t.Errorf("%dx%d zu groß: %v", g[0], g[1], err)
+		}
 	}
 	if _, err := Vorbereite(image.NewNRGBA(image.Rectangle{})); !errors.Is(err, ErrLeer) {
 		t.Errorf("leer: %v", err)
@@ -201,5 +213,22 @@ func TestErkenneEcht(t *testing.T) {
 	}
 	if !strings.Contains(text, "Schnapp") || !strings.Contains(text, "2026") {
 		t.Errorf("erkannt %q", text)
+	}
+}
+
+// TestErkenneLangSchmalEcht: Ein 500 × 16500 großer Bereich (verdoppelt wären es 33000 Zeilen) geht ohne Fehler durch
+// tesseract (F-633; übersprungen, wenn es fehlt).
+func TestErkenneLangSchmalEcht(t *testing.T) {
+	if _, err := exec.LookPath(programmName); err != nil {
+		t.Skip("tesseract nicht installiert")
+	}
+	e, err := Suche(context.Background())
+	if err != nil {
+		t.Skip(err)
+	}
+	b := image.NewNRGBA(image.Rect(0, 0, 500, 16500))
+	draw.Draw(b, b.Bounds(), image.NewUniform(color.White), image.Point{}, draw.Src)
+	if _, err := e.Erkenne(context.Background(), b, e.Sprachen("en")); err != nil {
+		t.Errorf("lang und schmal: %v", err)
 	}
 }

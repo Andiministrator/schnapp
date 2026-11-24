@@ -32,7 +32,7 @@ auf stdout; eine Probe auf diesem Rechner (tesseract 5.5.4, Bild 1600 × 1000) d
    Stauchung, Schwärzungen und Beschriftungen), im gewählten Bereich. Nie das Original: Geschwärztes darf auch als
    Text nicht herauskommen (Kernprinzip 2). Ist der Bereich klein (kürzere Seite unter 600 px), wird er vor der
    Erkennung auf das Doppelte vergrößert (bilinear, `x/image/draw`), weil Tesseract kleine Bildschirmschrift sonst
-   häufiger verliest (Umlaute in der Probe). Über 40 Mio. Pixel nach dem Vergrößern lehnt Schnapp mit Meldung ab.
+   häufiger verliest (Umlaute in der Probe). Über 40 Mio. Pixel lehnt Schnapp mit Meldung ab (Ergänzt F-633: nur unvergrößert gemessen, siehe unten).
 5. **Bedienung:** Menü Bearbeiten → „Copy text from image“/„Text aus dem Bild kopieren“, Kürzel **Strg+Umschalt+T**
    (frei; T wie Text). Danach ist ein einmaliger Bereichsmodus aktiv (Zeiger Fadenkreuz, Statuszeile „Drag over the text
    to copy; Enter takes the whole image; Esc cancels“): Ziehen wählt den Bereich in der Ansicht, Enter nimmt das ganze
@@ -94,3 +94,5 @@ Wo die Oberfläche von den Punkten 1 bis 6 abweicht oder sie genauer fasst (`int
   stehen als „Could not recognize text: …“ (ohne Paketpräfix).
 - **Testnaht:** Die Oberfläche spricht tesseract über eine eigene Schnittstelle an (`textErkenner`, Suche über die
   Variable `sucheErkenner`); `internal/ocr` braucht dafür keine exportierte Naht.
+
+- **Ergänzt (F-633, 24.11.2026) zu Punkt 4:** Verdoppelt wird nur, wenn das Ergebnis noch passt: Fläche höchstens 40 Mio. Pixel und jede Seite höchstens 32767 (`ocr.MaxSeite`, Grenze von Leptonica). Sonst geht der Bereich unvergrößert weiter, ein 590 × 18000 großer Streifen wird also erkannt, nicht abgelehnt. Mit `ErrZuGross` ablehnen nur noch Bereiche, die schon unvergrößert über 40 Mio. Pixel oder über 32767 auf einer Seite liegen.

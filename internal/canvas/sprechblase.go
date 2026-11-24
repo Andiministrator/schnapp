@@ -32,11 +32,28 @@ func (s *Sitzung) neueBlase(spitze, ort document.Punkt) document.Text {
 }
 
 // StandardSpitze ist die Spitze, die ein Klick (und der Schalter „Spitze“) für t setzt: SpitzeVersatz Schriftgrade
-// links und unter der linken unteren Ecke des Schilds, auf das sichtbare Bild begrenzt (Original).
+// links und unter der linken unteren Ecke des Schilds, auf das sichtbare Bild begrenzt (Original). Ergibt das nach dem
+// Begrenzen kein Dreieck (das Schild sitzt in der Bildecke), kommt die nächste Ecke an die Reihe: rechts unten, links
+// oben, rechts oben (F-634); geht keine, bleibt es bei der ersten.
 func (s *Sitzung) StandardSpitze(t document.Text) document.Punkt {
 	g := t.Grenzen()
-	p := document.Pt(g.Min.X-SpitzeVersatz*t.Schriftgrad, g.Max.Y+SpitzeVersatz*t.Schriftgrad)
-	return s.D.ZuOriginal(s.klemmeAnsicht(s.D.ZuAnsicht(p)))
+	v := SpitzeVersatz * t.Schriftgrad
+	ecken := [4]document.Punkt{
+		document.Pt(g.Min.X-v, g.Max.Y+v), document.Pt(g.Max.X+v, g.Max.Y+v),
+		document.Pt(g.Min.X-v, g.Min.Y-v), document.Pt(g.Max.X+v, g.Min.Y-v),
+	}
+	var erste document.Punkt
+	for i, p := range ecken {
+		p = s.D.ZuOriginal(s.klemmeAnsicht(s.D.ZuAnsicht(p)))
+		if i == 0 {
+			erste = p
+		}
+		t.Spitze = &p
+		if _, _, _, ok := t.Spitzendreieck(); ok {
+			return p
+		}
+	}
+	return erste
 }
 
 // beendeBlase beendet das Aufziehen einer Sprechblase: Der Text (bei einem Klick ohne Zug erst jetzt, an der

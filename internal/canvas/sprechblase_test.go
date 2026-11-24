@@ -448,6 +448,33 @@ func TestSprechblaseStandardSpitzeImBild(t *testing.T) {
 	}
 }
 
+// F-634: Sitzt das Schild in der Bildecke, hat die Standard-Spitze trotzdem ein Dreieck (nächste Ecke), auch beim
+// Schalter „Spitze“.
+func TestSprechblaseStandardSpitzeEckeHatDreieck(t *testing.T) {
+	for _, ort := range []document.Punkt{f(2, 280), f(30, 270), f(2, 150), f(200, 290), f(390, 290), f(2, 5)} {
+		s := blasenSitzung(t)
+		s.SetzeWerkzeug(WerkzeugSprechblase)
+		s.Druecken(ort, TastePrimaer)
+		s.Loslassen(ort)
+		tx := bestaetigeBlase(t, s, "Hallo")
+		if _, _, _, ok := tx.Spitzendreieck(); !ok {
+			t.Errorf("Klick %v: Spitze %v ohne Dreieck, Schild %v", ort, *tx.Spitze, tx.Grenzen())
+		}
+		tx.Spitze = nil
+		if err := s.D.Ersetzen(tx); err != nil {
+			t.Fatal(err)
+		}
+		s.Auswahl = tx.ID
+		if !s.SchalteSpitze() {
+			t.Fatalf("Klick %v: Schalter wirkt nicht", ort)
+		}
+		o, _ := s.D.Objekt(tx.ID)
+		if _, _, _, ok := o.(document.Text).Spitzendreieck(); !ok {
+			t.Errorf("Klick %v: Schalter ohne Dreieck", ort)
+		}
+	}
+}
+
 // Beim Aufziehen rasten Spitze (Druckpunkt) und Schild (Loslassen) an anderen Objekten ein (ADR-0021 Nachtrag 12).
 func TestSprechblaseAufziehenRastetEin(t *testing.T) {
 	s := blasenSitzung(t)

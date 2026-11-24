@@ -530,3 +530,5 @@ Nachtrag 4 (eckig), Nachtrag 10 (Schrift) und Nachtrag 11 (Farbpaar) auf.
   eingegebenen Text; in der Eingabe gehört er zur Eingabe, sonst ein Rückgängig-Schritt.
 - **Werkzeugleiste:** Mit elf Werkzeugen und dem Farbfeld passt die Leiste in 480 × 320 nur, wenn die Knöpfe bis auf 18 dp
   schrumpfen (vorher 20 dp, ADR-0031 Nachtrag 3, `werkzeugKnopfMinDp`).
+
+**Ergänzt (F-634, 24.11.2026):** Die Standard-Spitze (Klick und Schalter „Spitze“) versucht nach dem Begrenzen auf das Bild die Ecken der Reihe nach — links unten, rechts unten, links oben, rechts oben, jeweils 3 Schriftgrade vom Schild weg —, bis `Text.Spitzendreieck` ein Dreieck liefert. Sitzt das Schild in einer Bildecke, fällt die Spitze sonst ins Schild oder an dessen Rand und die Blase bliebe ohne Dreieck. Geht keine Ecke, bleibt die erste.
