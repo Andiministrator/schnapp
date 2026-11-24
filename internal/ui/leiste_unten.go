@@ -429,6 +429,9 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 	k.fokusHier = -1
 	jetzt := leisteUhr()
 	neueOps := map[string]leisteBild{}
+	if e.unten.v != nil {
+		e.unten.v.Runde() // Aufträge weggerollter Vorschauen verfallen (F-669)
+	}
 	y0 := r.Min.Y + gtx.Dp(leisteObenDp)
 	for i := k.von; i < k.bis; i++ {
 		x0, x1 := k.l.Lage(i, k.masse)

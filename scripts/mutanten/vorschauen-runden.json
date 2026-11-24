@@ -1,0 +1,30 @@
+[
+  {
+    "name": "VR1 weggerollte Aufträge werden doch geladen",
+    "datei": "internal/libview/vorschauen.go",
+    "paket": "./internal/libview",
+    "alt": "if s != nil && s.zustand == Laedt && s.runde+veraltetNach < v.runde {",
+    "neu": "if false && s != nil && s.zustand == Laedt && s.runde+veraltetNach < v.runde {"
+  },
+  {
+    "name": "VR2 auch die vorige Runde verfällt",
+    "datei": "internal/libview/vorschauen.go",
+    "paket": "./internal/libview",
+    "alt": "const veraltetNach = 1",
+    "neu": "const veraltetNach = 0"
+  },
+  {
+    "name": "VR3 Abfrage merkt die Runde nicht",
+    "datei": "internal/libview/vorschauen.go",
+    "paket": "./internal/libview",
+    "alt": "s.zuletzt, s.runde = v.takt, v.runde",
+    "neu": "s.zuletzt = v.takt"
+  },
+  {
+    "name": "VR4 verfallener Auftrag bleibt als Laedt stehen",
+    "datei": "internal/libview/vorschauen.go",
+    "paket": "./internal/libview",
+    "alt": "\t\t\tdelete(v.stuecke, rel) // weggerollt",
+    "neu": "\t\t\t_ = rel // weggerollt"
+  }
+]

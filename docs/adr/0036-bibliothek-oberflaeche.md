@@ -206,3 +206,13 @@ zurück zu derselben Datei, ist deren Sperre dann frei, und die neue Sicherung l
 Fensters wartet höchstens `wechselFrist` (5 s) auf diese Enden. Tests `TestWechselWartetNichtAufAlteRettung`,
 `TestWechselVerworfenEndetImHintergrund`, `TestZerstoerenWartetAufAlteRettung`; Mutanten
 `scripts/mutanten/wechsel-rettung.json` (WR1–WR4).
+
+## Zusatz (24.11.2026, Karte #256, F-669, Claude Opus 5.5)
+
+**Weggerollte Vorschauen werden nicht mehr geladen.** Zu Punkt 6: `libview.Vorschauen` zählt Runden; die Leiste und
+die volle Ansicht rufen je gezeichnetem Bild einmal `Runde()` und fragen danach die sichtbaren Vorschauen ab. Ein
+wartender Auftrag, der seit zwei Runden nicht mehr abgefragt wurde, verfällt in der Lade-Goroutine (`veraltetNach` =
+1); eine spätere Abfrage fordert ihn neu an. Ohne Neuzeichnen verfällt nichts. Tests
+`TestVorschauenWeggerollteVerfallen`, `TestVorschauenOhneRundeVerfaelltNichts`; Mutanten
+`scripts/mutanten/vorschauen-runden.json`. Den Aufruf von `Runde()` in der Oberfläche deckt kein Test (ohne ihn
+verfiele nur nichts, wie vorher).

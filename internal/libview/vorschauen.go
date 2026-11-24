@@ -44,6 +44,7 @@ type stueck struct {
 	bild    *image.NRGBA
 	zustand Zustand
 	zuletzt uint64 // Zähler der letzten Abfrage (Verdrängen nach Alter)
+	runde   uint64 // Runde der letzten Abfrage (Verwerfen weggerollter Aufträge, F-669)
 	groesse int64  // belegte Bytes
 }
 
@@ -57,6 +58,7 @@ type Vorschauen struct {
 	grenze  int64
 	belegt  int64
 	takt    uint64
+	runde   uint64 // zählt Runde hoch: je gezeichnetem Bild einmal
 	stuecke map[string]*stueck
 	warte   []string // Aufträge in der Reihenfolge der Anforderung; die jüngste zuerst geladen (gerade sichtbar)
 	laeuft  bool
@@ -84,8 +86,17 @@ func (v *Vorschauen) Bild(rel string) (*image.NRGBA, Zustand) {
 			go v.arbeite()
 		}
 	}
-	s.zuletzt = v.takt
+	s.zuletzt, s.runde = v.takt, v.runde
 	return s.bild, s.zustand
+}
+
+// Runde meldet ein neues Bild der Oberfläche: Sie fragt danach die gerade sichtbaren Vorschauen ab (Bild). Ein Auftrag,
+// den seit zwei Runden niemand mehr abgefragt hat (aus dem Bild gerollt), wird nicht mehr geladen; fragt die
+// Oberfläche später wieder, wird er neu angefordert (F-669). Ohne Neuzeichnen verfällt nichts.
+func (v *Vorschauen) Runde() {
+	v.mu.Lock()
+	v.runde++
+	v.mu.Unlock()
 }
 
 // Vergiss wirft das Bild von rel weg, etwa nach dem eigenen Speichern (die Vorschau ist neu geschrieben); die nächste
@@ -106,6 +117,10 @@ func (v *Vorschauen) Belegt() int64 {
 	return v.belegt
 }
 
+// veraltetNach ist die Zahl der Runden ohne Abfrage, nach der ein wartender Auftrag verfällt; eine Runde Spiel für ein
+// Bild, das gerade zwischen Runde und Abfrage steht.
+const veraltetNach = 1
+
 // arbeite lädt die Aufträge nacheinander, bis keiner mehr wartet.
 func (v *Vorschauen) arbeite() {
 	for {
@@ -118,9 +133,13 @@ func (v *Vorschauen) arbeite() {
 		rel := v.warte[len(v.warte)-1]
 		v.warte = v.warte[:len(v.warte)-1]
 		s := v.stuecke[rel]
+		if s != nil && s.zustand == Laedt && s.runde+veraltetNach < v.runde {
+			delete(v.stuecke, rel) // weggerollt: nicht laden, eine neue Abfrage fordert neu an (F-669)
+			s = nil
+		}
 		v.mu.Unlock()
 		if s == nil || s.zustand != Laedt {
-			continue // inzwischen vergessen oder verdrängt
+			continue // inzwischen vergessen, verdrängt oder weggerollt
 		}
 		bild, err := v.lade(rel)
 		v.mu.Lock()

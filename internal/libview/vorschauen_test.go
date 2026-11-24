@@ -257,3 +257,64 @@ func TestLaderFuer(t *testing.T) {
 		t.Error("fehlende Aufnahme ohne Fehler")
 	}
 }
+
+// F-669: Aufträge, die seit zwei Runden niemand mehr abgefragt hat (weggerollt), lädt die Goroutine nicht mehr; was in
+// der laufenden oder der vorigen Runde gefragt wurde, schon. Eine spätere Abfrage fordert neu an.
+func TestVorschauenWeggerollteVerfallen(t *testing.T) {
+	var reihe []string
+	var mu sync.Mutex
+	tor := make(chan struct{})
+	erst := true
+	lade := func(rel string) (*image.NRGBA, error) {
+		if erst {
+			erst = false
+			<-tor
+		}
+		mu.Lock()
+		reihe = append(reihe, rel)
+		mu.Unlock()
+		return image.NewNRGBA(image.Rect(0, 0, 1, 1)), nil
+	}
+	v := NeueVorschauen(lade, nil, 1<<20)
+	v.Runde()
+	v.Bild("blockiert")
+	warteBis(t, func() bool { v.mu.Lock(); defer v.mu.Unlock(); return len(v.warte) == 0 })
+	v.Bild("weg1") // Runde 1, danach weggerollt
+	v.Bild("weg2")
+	v.Runde()
+	v.Bild("vorige") // Runde 2: noch gültig in Runde 3
+	v.Runde()
+	v.Bild("sichtbar") // Runde 3
+	close(tor)
+	warteBis(t, func() bool { v.mu.Lock(); defer v.mu.Unlock(); return !v.laeuft })
+	mu.Lock()
+	got := append([]string(nil), reihe...)
+	mu.Unlock()
+	if len(got) != 3 || got[0] != "blockiert" || got[1] != "sichtbar" || got[2] != "vorige" {
+		t.Fatalf("geladen %v, erwartet [blockiert sichtbar vorige]", got)
+	}
+	if _, z := v.Bild("weg1"); z != Laedt {
+		t.Errorf("weggerollter Auftrag: Zustand %v nach neuer Abfrage", z)
+	}
+	warteBis(t, func() bool { _, z := v.Bild("weg1"); return z == Da })
+}
+
+// Ohne neue Runde (die Oberfläche zeichnet nicht) verfällt nichts.
+func TestVorschauenOhneRundeVerfaelltNichts(t *testing.T) {
+	var n atomic.Int32
+	tor := make(chan struct{})
+	lade := func(rel string) (*image.NRGBA, error) {
+		if rel == "a" {
+			<-tor
+		}
+		n.Add(1)
+		return image.NewNRGBA(image.Rect(0, 0, 1, 1)), nil
+	}
+	v := NeueVorschauen(lade, nil, 1<<20)
+	v.Bild("a")
+	warteBis(t, func() bool { v.mu.Lock(); defer v.mu.Unlock(); return len(v.warte) == 0 })
+	v.Bild("b")
+	v.Bild("c")
+	close(tor)
+	warteBis(t, func() bool { return n.Load() == 3 })
+}

@@ -899,6 +899,9 @@ func (e *editor) zeichneBibliothekRaster(gtx layout.Context) {
 	b.von, b.bis = b.r.Sichtbar(m)
 	jetzt := leisteUhr()
 	neueOps := map[string]leisteBild{}
+	if e.unten.v != nil {
+		e.unten.v.Runde() // Aufträge weggerollter Vorschauen verfallen (F-669)
+	}
 	fokus := b.r.Fokus()
 	for i := b.von; i < b.bis; i++ {
 		kr := b.r.Lage(i, m).Add(sicht.Min)
