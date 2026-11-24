@@ -9,8 +9,8 @@
 
 *English · [Deutsch](README.de.md)*
 
-Screenshot and annotation tool for Linux/Wayland — KDE Plasma first. Inspired by the workflow of Snagit: capture
-fast, annotate (straight and curved arrows, boxes, step numbers, stamps), redact for real, cut out the middle of long
+Screenshot and annotation tool for Linux/Wayland — KDE Plasma first. The workflow in short:
+capture fast, annotate (straight and curved arrows, boxes, step numbers, stamps), redact for real, cut out the middle of long
 pages, share. Also meant as a simple image editor.
 
 ## Status

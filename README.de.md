@@ -9,7 +9,7 @@
 
 *[English](README.md) · Deutsch*
 
-Screenshot- und Beschriftungswerkzeug für Linux/Wayland — KDE Plasma zuerst. Vorbild ist die Arbeitsweise von Snagit:
+Screenshot- und Beschriftungswerkzeug für Linux/Wayland — KDE Plasma zuerst. Die Arbeitsweise kurz:
 schnell aufnehmen, beschriften (gerade und gebogene Pfeile, Kästen, Schritt-Nummern, Stempel), wirklich schwärzen, die
 Mitte langer Seiten herausschneiden, teilen. Nebenbei ein einfaches Bildbearbeitungsprogramm.
 
