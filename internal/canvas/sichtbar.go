@@ -68,12 +68,12 @@ func (s *Sitzung) begrenzeGriff(o document.Objekt, art GriffArt, q document.Punk
 		}
 	}
 	tx := begrenzeSichtbar(func(t float64) bool {
-		x, _ := s.sichtbarIn(ZieheGriff(o, art, document.Pt(h.X+(q.X-h.X)*t, h.Y)))
+		x, _ := s.sichtbarIn(s.zieheGriff(o, art, document.Pt(h.X+(q.X-h.X)*t, h.Y)))
 		return x
 	})
 	ty := begrenzeSichtbar(func(t float64) bool {
-		_, y := s.sichtbarIn(ZieheGriff(o, art, document.Pt(h.X, h.Y+(q.Y-h.Y)*t)))
+		_, y := s.sichtbarIn(s.zieheGriff(o, art, document.Pt(h.X, h.Y+(q.Y-h.Y)*t)))
 		return y
 	})
-	return ZieheGriff(o, art, document.Pt(h.X+(q.X-h.X)*tx, h.Y+(q.Y-h.Y)*ty))
+	return s.zieheGriff(o, art, document.Pt(h.X+(q.X-h.X)*tx, h.Y+(q.Y-h.Y)*ty))
 }

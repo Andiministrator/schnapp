@@ -114,7 +114,16 @@ func ZieheGriff(o document.Objekt, art GriffArt, p document.Punkt) document.Obje
 		v.Bereich = document.R(r.Min, r.Max)
 		return v
 	case document.Lupe:
-		return zieheLupenGriff(v, art, p)
+		return zieheLupenGriff(v, art, p, groesseImOriginal)
 	}
 	return o
+}
+
+// zieheGriff ist ZieheGriff in der Ansicht der Sitzung: Bei der Lupe folgen Größe und Seitenverhältnis der Quelle in
+// der Ansicht (ADR-0033 Nachtrag 2 Punkt 2); ZieheGriff allein kennt keine Ansicht und nimmt die Quelle im Original.
+func (s *Sitzung) zieheGriff(o document.Objekt, art GriffArt, p document.Punkt) document.Objekt {
+	if l, ok := o.(document.Lupe); ok {
+		return zieheLupenGriff(l, art, p, s.quellGroesse)
+	}
+	return ZieheGriff(o, art, p)
 }

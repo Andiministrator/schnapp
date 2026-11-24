@@ -90,8 +90,8 @@ func TestLupeAnlegen(t *testing.T) {
 	}
 }
 
-// TestZielPlatz: rechts, sonst links, darunter, darüber, sonst rechts über den Rand; quer an der Kante der Quelle,
-// in die Ansicht gerückt.
+// TestZielPlatz: rechts, sonst links, darunter, darüber, sonst so wenig Überlappung mit der Quelle wie möglich ganz in
+// der Ansicht (ADR-0033 Nachtrag 2 Punkt 4); quer an der Kante der Quelle, in die Ansicht gerückt.
 func TestZielPlatz(t *testing.T) {
 	g := image.Pt(400, 200)
 	fall := []struct {
@@ -107,7 +107,7 @@ func TestZielPlatz(t *testing.T) {
 		{"darunter", rechteck(150, 10, 250, 40), document.Pt(200, 60), rechteck(150, 56, 350, 116)},
 		{"darunter, quer nach links gerückt", rechteck(300, 10, 390, 40), document.Pt(300, 60), rechteck(100, 56, 400, 116)},
 		{"darüber", rechteck(150, 130, 250, 160), document.Pt(200, 60), rechteck(150, 54, 350, 114)},
-		{"nichts passt: rechts", rechteck(100, 50, 300, 150), document.Pt(400, 200), rechteck(316, 50, 716, 250)},
+		{"nichts passt: so groß wie die Ansicht", rechteck(100, 50, 300, 150), document.Pt(400, 200), rechteck(0, 0, 400, 200)},
 		{"zu breit für die Seiten: darunter", rechteck(150, 0, 250, 10), document.Pt(200, 20), rechteck(150, 26, 350, 46)},
 	}
 	for _, c := range fall {
@@ -115,8 +115,9 @@ func TestZielPlatz(t *testing.T) {
 			t.Errorf("%s: %v, erwartet %v", c.name, got, c.want)
 		}
 	}
-	// Höher als die Ansicht: weder rechts noch links; breiter als die Ansicht: weder darunter noch darüber.
-	if got := ZielPlatz(rechteck(10, 10, 20, 20), document.Pt(20, 300), 16, g); !naheR(got, rechteck(36, 10, 56, 310)) {
+	// Höher als die Ansicht: weder rechts noch links, breiter als die Ansicht: weder darunter noch darüber. Das Ziel
+	// beginnt oben (so weit in der Ansicht, wie es geht), rechts neben der Quelle ohne Überlappung.
+	if got := ZielPlatz(rechteck(10, 10, 20, 20), document.Pt(20, 300), 16, g); !naheR(got, rechteck(36, 0, 56, 300)) {
 		t.Errorf("zu hoch: %v", got)
 	}
 }
@@ -280,7 +281,7 @@ func TestLupeVergroesserung(t *testing.T) {
 	}
 	// Zwischenwert 2,5: + geht zu 3, − zu 2.
 	o, _ = s.D.Objekt(l.ID)
-	if err := s.D.Ersetzen(MitVergroesserung(o.(document.Lupe), 2.5)); err != nil {
+	if err := s.D.Ersetzen(MitVergroesserung(o.(document.Lupe), 2.5, s.quellGroesse(o.(document.Lupe).Quelle))); err != nil {
 		t.Fatal(err)
 	}
 	if k, _ := s.VergroesserungStufe(1); k != 3 {

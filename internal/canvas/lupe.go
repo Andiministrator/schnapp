@@ -58,8 +58,10 @@ func lupenTeil(l document.Lupe, p document.Punkt, tol float64) (LupenTeil, bool)
 
 // ZielPlatz legt ein Ziel der Größe groesse neben die Quelle q, alles in Ansichtskoordinaten einer Ansicht der Größe
 // ansicht (ADR-0033 Punkt 8): rechts im Abstand abstand; ragt es dort aus der Ansicht, links, sonst darunter, sonst
-// darüber, sonst doch rechts über den Rand. Quer dazu beginnt das Ziel an derselben Kante wie die Quelle (oben bzw.
-// links) und rückt, wenn nötig, in die Ansicht; ein Platz gilt nur, wenn das Ziel auch quer in die Ansicht passt.
+// darüber. Quer dazu beginnt das Ziel an derselben Kante wie die Quelle (oben bzw. links) und rückt, wenn nötig, in die
+// Ansicht; ein Platz gilt nur, wenn das Ziel auch quer in die Ansicht passt. Passt es auf keiner Seite, kommt es an die
+// Stelle in der Ansicht, an der es am wenigsten mit der Quelle überlappt, ganz in die Ansicht gerückt, so weit seine
+// Größe es zulässt (Nachtrag 2 Punkt 4; bei gleicher Überlappung die nächste zur Quelle).
 func ZielPlatz(q document.Rechteck, groesse document.Punkt, abstand float64, ansicht image.Point) document.Rechteck {
 	w, h := groesse.X, groesse.Y
 	gx, gy := float64(ansicht.X), float64(ansicht.Y)
@@ -86,14 +88,50 @@ func ZielPlatz(q document.Rechteck, groesse document.Punkt, abstand float64, ans
 			return at(x, y)
 		}
 	}
-	return at(q.Max.X+abstand, q.Min.Y)
+	// Keine Seite passt: Kandidaten je Achse (an den Rändern der Ansicht, neben und an der Quelle), in die Ansicht
+	// gerückt; ist das Ziel größer als die Ansicht, beginnt es bei 0.
+	rein := func(v, laenge, platz float64) float64 { return math.Max(0, math.Min(v, platz-laenge)) }
+	xs := []float64{q.Max.X + abstand, q.Min.X - abstand - w, q.Min.X, 0, gx - w}
+	ys := []float64{q.Min.Y, q.Max.Y + abstand, q.Min.Y - abstand - h, 0, gy - h}
+	mq := q.Min.Plus(q.Max).Mal(0.5)
+	var best document.Rechteck
+	bestUeber, bestAbstand := math.Inf(1), math.Inf(1)
+	for _, x := range xs {
+		for _, y := range ys {
+			z := at(rein(x, w, gx), rein(y, h, gy))
+			ueber := math.Max(0, math.Min(z.Max.X, q.Max.X)-math.Max(z.Min.X, q.Min.X)) *
+				math.Max(0, math.Min(z.Max.Y, q.Max.Y)-math.Max(z.Min.Y, q.Min.Y))
+			abst := z.Min.Plus(z.Max).Mal(0.5).Minus(mq).Laenge()
+			if ueber < bestUeber || ueber == bestUeber && abst < bestAbstand {
+				best, bestUeber, bestAbstand = z, ueber, abst
+			}
+		}
+	}
+	return best
 }
 
-// neueLupe liefert eine Lupe mit der Quelle quelle (Original), der Vergrößerung LupenStart und dem Ziel nach ZielPlatz
-// in der Ansicht, im Stil der Sitzung.
+// groesseImOriginal ist die Größe von q im Original (ZieheGriff ohne Ansicht).
+func groesseImOriginal(q document.Rechteck) document.Punkt { return document.Pt(q.Breite(), q.Hoehe()) }
+
+// quellGroesse ist die Größe der Quelle q in der Ansicht (ADR-0033 Nachtrag 2 Punkt 2): weggestauchte Streifen fallen
+// heraus. Hat q in einer Achse in der Ansicht keine Ausdehnung (ganz in einem Streifen), gilt dort die Größe im Original.
+func (s *Sitzung) quellGroesse(q document.Rechteck) document.Punkt {
+	a, b := s.D.ZuAnsicht(q.Min), s.D.ZuAnsicht(q.Max)
+	g := document.Pt(b.X-a.X, b.Y-a.Y)
+	if !(g.X > 0) {
+		g.X = q.Breite()
+	}
+	if !(g.Y > 0) {
+		g.Y = q.Hoehe()
+	}
+	return g
+}
+
+// neueLupe liefert eine Lupe mit der Quelle quelle (Original), der Vergrößerung LupenStart der Quelle in der Ansicht
+// (Ziel = 2 × QA, ADR-0033 Nachtrag 2 Punkt 2) und dem Ziel nach ZielPlatz in der Ansicht, im Stil der Sitzung.
 func (s *Sitzung) neueLupe(quelle document.Rechteck) document.Lupe {
 	qv := document.R(s.D.ZuAnsicht(quelle.Min), s.D.ZuAnsicht(quelle.Max))
-	g := document.Pt(quelle.Breite()*LupenStart, quelle.Hoehe()*LupenStart)
+	g := s.quellGroesse(quelle).Mal(LupenStart)
 	zv := ZielPlatz(qv, g, LupenAbstand*float64(s.D.KantenFaktor()), s.D.Groesse())
 	min := s.D.ZuOriginal(zv.Min)
 	return document.Lupe{Quelle: quelle, Ziel: document.Rechteck{Min: min, Max: min.Plus(g)}, Strich: s.Stil.strich()}
@@ -132,14 +170,14 @@ func (s *Sitzung) gewaehlteLupe() (document.Lupe, bool) {
 	return l, ok && ist
 }
 
-// Vergroesserung ist die waagerechte Vergrößerung der gewählten Lupe (ok = false ohne gewählte Lupe).
+// Vergroesserung ist die waagerechte Vergrößerung der gewählten Lupe gegenüber ihrer Quelle in der Ansicht (ok = false
+// ohne gewählte Lupe).
 func (s *Sitzung) Vergroesserung() (float64, bool) {
 	l, ok := s.gewaehlteLupe()
 	if !ok {
 		return 0, false
 	}
-	x, _ := l.Vergroesserung()
-	return x, true
+	return l.Ziel.Breite() / s.quellGroesse(l.Quelle).X, true
 }
 
 // VergroesserungStufe geht von der Vergrößerung der gewählten Lupe zur nächsten Stufe aus LupenStufen (dir > 0:
@@ -167,9 +205,10 @@ func (s *Sitzung) VergroesserungStufe(dir int) (float64, bool) {
 	return jetzt, false
 }
 
-// MitVergroesserung liefert l mit der Vergrößerung k in beiden Achsen: Das Ziel behält seine linke obere Ecke.
-func MitVergroesserung(l document.Lupe, k float64) document.Lupe {
-	l.Ziel.Max = l.Ziel.Min.Plus(document.Pt(l.Quelle.Breite()*k, l.Quelle.Hoehe()*k))
+// MitVergroesserung liefert l mit der Vergrößerung k in beiden Achsen gegenüber der Quellgröße g (in der Ansicht): Das
+// Ziel behält seine linke obere Ecke.
+func MitVergroesserung(l document.Lupe, k float64, g document.Punkt) document.Lupe {
+	l.Ziel.Max = l.Ziel.Min.Plus(g.Mal(k))
 	return l
 }
 
@@ -183,7 +222,7 @@ func (s *Sitzung) SetzeVergroesserung(k float64) bool {
 	if !ok || !l.Bearbeitbar() {
 		return false
 	}
-	neu := MitVergroesserung(l, k)
+	neu := MitVergroesserung(l, k, s.quellGroesse(l.Quelle))
 	if neu == l {
 		return false
 	}
@@ -227,26 +266,30 @@ func richtung(v, vor float64) float64 {
 	return vor
 }
 
-// zieheLupenGriff liefert l mit dem Griff art an p (Original). Ecken der Quelle ändern die Quelle bei gleicher
-// Vergrößerung, das Ziel wächst von seiner linken oberen Ecke aus mit; die Quelle bleibt mindestens ein Pixel groß.
-// Ecken des Ziels halten das Seitenverhältnis der Quelle und ändern die Vergrößerung (LupeMinFaktor bis
-// LupeMaxFaktor); die gegenüberliegende Ecke bleibt stehen (ADR-0033 Punkt 8).
-func zieheLupenGriff(l document.Lupe, art GriffArt, p document.Punkt) document.Lupe {
+// zieheLupenGriff liefert l mit dem Griff art an p (Original); groesse ist die Größe einer Quelle in der Ansicht
+// (ADR-0033 Nachtrag 2 Punkt 2). Ecken der Quelle ändern die Quelle bei gleicher Vergrößerung, das Ziel wächst von
+// seiner linken oberen Ecke aus mit; die Quelle bleibt mindestens ein Pixel groß. Ecken des Ziels halten das
+// Seitenverhältnis der Quelle in der Ansicht und ändern die Vergrößerung (LupeMinFaktor bis LupeMaxFaktor); die
+// gegenüberliegende Ecke bleibt stehen (ADR-0033 Punkt 8).
+func zieheLupenGriff(l document.Lupe, art GriffArt, p document.Punkt, groesse func(document.Rechteck) document.Punkt) document.Lupe {
 	switch {
 	case art >= GriffQuelleNW && art <= GriffQuelleSW:
-		kx, ky := l.Vergroesserung()
+		g0 := groesse(l.Quelle)
+		kx, ky := l.Ziel.Breite()/g0.X, l.Ziel.Hoehe()/g0.Y
 		fest, sx, sy := gegenueber(l.Quelle, int(art-GriffQuelleNW))
 		d := p.Minus(fest)
 		bx := math.Max(1, math.Abs(d.X)) * richtung(d.X, sx)
 		by := math.Max(1, math.Abs(d.Y)) * richtung(d.Y, sy)
 		l.Quelle = document.R(fest, fest.Plus(document.Pt(bx, by)))
-		l.Ziel.Max = l.Ziel.Min.Plus(document.Pt(l.Quelle.Breite()*kx, l.Quelle.Hoehe()*ky))
+		g1 := groesse(l.Quelle)
+		l.Ziel.Max = l.Ziel.Min.Plus(document.Pt(g1.X*kx, g1.Y*ky))
 	case art >= GriffZielNW && art <= GriffZielSW:
+		g := groesse(l.Quelle)
 		fest, sx, sy := gegenueber(l.Ziel, int(art-GriffZielNW))
 		d := p.Minus(fest)
-		k := math.Max(math.Abs(d.X)/l.Quelle.Breite(), math.Abs(d.Y)/l.Quelle.Hoehe())
+		k := math.Max(math.Abs(d.X)/g.X, math.Abs(d.Y)/g.Y)
 		k = math.Max(LupeMinFaktor, math.Min(LupeMaxFaktor, k))
-		l.Ziel = document.R(fest, fest.Plus(document.Pt(richtung(d.X, sx)*l.Quelle.Breite()*k, richtung(d.Y, sy)*l.Quelle.Hoehe()*k)))
+		l.Ziel = document.R(fest, fest.Plus(document.Pt(richtung(d.X, sx)*g.X*k, richtung(d.Y, sy)*g.Y*k)))
 	}
 	return l
 }
