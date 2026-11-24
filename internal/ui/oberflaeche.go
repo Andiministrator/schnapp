@@ -116,6 +116,8 @@ func (e *editor) menueEintraegeVon(i int) []menueEintrag {
 			{akt: aktSeitenleiste, text: i18n.T("Sidebar"), an: true, aktiv: !e.seiteZu, gruppe: true},
 			{akt: aktEinrasten, text: i18n.T("Snap to objects"), an: true, aktiv: s.EinrastenAn()},
 			{akt: aktNavigator, text: i18n.T("Navigator"), an: true, aktiv: s.NavigatorAn()},
+			{akt: aktLeiste, text: i18n.T("Recent captures"), an: e.unten.l != nil, aktiv: e.unten.l != nil && e.unten.an,
+				erklaerung: e.leisteGrau(), gruppe: true},
 		}
 	case menueBild:
 		return []menueEintrag{
@@ -210,6 +212,9 @@ func (e *editor) leinwandFlaeche(gtx layout.Context) image.Rectangle {
 		rechts -= gtx.Dp(seiteDp)
 	}
 	r := image.Rect(gtx.Dp(werkzeugeDp), gtx.Dp(menuezeileDp), rechts, mx.Y-gtx.Dp(fusszeileDp))
+	if e.leisteSichtbar(gtx) {
+		r.Max.Y -= gtx.Dp(leisteUntenDp) // Leiste der letzten Aufnahmen darunter (ADR-0036 Punkt 1)
+	}
 	if r.Dx() < 1 {
 		r.Max.X = r.Min.X + 1
 	}

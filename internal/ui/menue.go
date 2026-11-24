@@ -300,6 +300,8 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 		return func(layout.Context) { e.s.SchalteEinrasten() }
 	case aktNavigator:
 		return func(layout.Context) { e.s.SchalteNavigator() }
+	case aktLeiste:
+		return func(gtx layout.Context) { e.schalteLeiste(gtx) }
 	case aktDoppeln:
 		return func(layout.Context) { e.s.Doppeln() }
 	case aktUmbenennen:
@@ -393,6 +395,9 @@ func (e *editor) knopfPerTaste(c *widget.Clickable) {
 			e.menueOeffne(i, true)
 			return
 		}
+	}
+	if e.leisteEnter(c) { // Vorschau der Leiste unten (ADR-0036)
+		return
 	}
 	switch c {
 	case &e.knoepfe.fussFarbe:

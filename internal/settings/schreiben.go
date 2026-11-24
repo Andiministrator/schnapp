@@ -56,6 +56,7 @@ func Werte(e Einstellungen) []Aenderung {
 		{"capture", "screen", string(e.Bildschirm)},
 		{"capture", "open-editor", wahr(e.Editor)},
 		{"capture", "seam", e.Kante.Name()},
+		{"library", "bar", ja(e.Leiste)},
 		{"library", "cleanup", wahr(e.Bibliothek.An)},
 		{"library", "cleanup-days", strconv.Itoa(e.Bibliothek.Tage)},
 		{"agents", "capture", ja(e.Agenten.Aufnehmen)},

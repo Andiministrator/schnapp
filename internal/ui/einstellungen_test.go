@@ -135,7 +135,7 @@ func TestTafelFokusUndReiter(t *testing.T) {
 	}
 	tf.taste(key.NamePageUp, key.ModShortcut)
 	tf.taste(key.NamePageUp, key.ModShortcut)
-	if tf.reiter != reiterAgenten || tf.ziel() != 6 {
+	if tf.reiter != reiterAgenten || tf.ziel() != 7 {
 		t.Errorf("Strg+Bild↑ läuft nicht um: Reiter %d, Ziel %d", tf.reiter, tf.ziel())
 	}
 	tf.taste(key.NamePageDown, 0) // ohne Strg: nichts
@@ -201,6 +201,7 @@ func TestTafelZahl(t *testing.T) {
 	testEditor(t)
 	tf := offeneTafel(t, "[library]\ncleanup-days = 2\n")
 	tf.waehleReiter(reiterBibliothek)
+	tf.taste(key.NameTab, 0) // bar, dann cleanup (ADR-0036 Punkt 2), dann die Zahl
 	tf.taste(key.NameTab, 0)
 	if tf.ziel() != zahlZeile() {
 		t.Fatalf("Ziel %d", tf.ziel())
@@ -381,7 +382,7 @@ func TestTafelSpeichern(t *testing.T) {
 	if err := os.MkdirAll(p, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	tf.schalte(6)
+	tf.schalte(7) // agents.capture
 	geschrieben, ok = tf.speichere(settings.SchreibeDatei)
 	if ok || geschrieben || !strings.HasSuffix(tf.fehler, ": the settings file is not a regular file") || strings.Contains(tf.fehler, ": settings: ") {
 		t.Errorf("Fehler: %v %v %q", geschrieben, ok, tf.fehler)

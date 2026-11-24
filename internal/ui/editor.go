@@ -136,6 +136,12 @@ func (g Gespeichert) HaeltOffen() bool { return g.Warnung || g.Hinweis != "" }
 //
 // rettung führt die Rettungskopie gegen Absturz und SIGKILL (ADR-0029); nil: keine.
 func Editor(titel string, d *document.Dokument, speichern Speichern, rettung Rettung) error {
+	return EditorMit(Geoeffnet{Titel: titel, Dokument: d, Speichern: speichern, Rettung: rettung, OhneGrenze: exportOhneGrenze.Load()}, nil)
+}
+
+// EditorMit ist Editor mit der Anbindung an die Bibliothek (ADR-0036): Leiste der letzten Aufnahmen und Wechsel im
+// selben Fenster. bib nil: ohne Leiste. g.OhneGrenze gilt für den Export (ADR-0033 Nachtrag 4).
+func EditorMit(g Geoeffnet, bib *Anbindung) error {
 	frist := time.Now().Add(2 * time.Second)
 	for offeneOverlays.Load() > 0 {
 		if time.Now().After(frist) {
@@ -147,10 +153,13 @@ func Editor(titel string, d *document.Dokument, speichern Speichern, rettung Ret
 		diagnoseEditor("Zwischenablage nicht geschrieben: %v", err)
 		zwischenablageFehlt.Store(true)
 	}
-	e := neuerEditor(titel, d, speichern, rettung)
+	exportOhneGrenze.Store(g.OhneGrenze)
+	e := neuerEditor(g.Titel, g.Dokument, g.Speichern, g.Rettung)
+	e.pfad, e.bib = g.Pfad, bib
 	// Wecker statt einzelnem Invalidate: Gio verwirft ein Invalidate nach einem schon angenommenen (F-231).
 	e.wecker = canvas.NeuerWecker(e.w.Invalidate, weckTakt, weckGrenze)
 	defer e.wecker.Ende()
+	e.leisteStart() // Index und Vorschauen im Hintergrund (ADR-0036 Punkt 7); braucht den Wecker
 	wecker := e.wecker // der Rückruf liest nur diese Kopie, nie e.wecker (Datenwettlauf)
 	zwischenablageRueckrufSetzen(wecker.Anfordern)
 	e.ocrSucheStarten() // tesseract einmal im Hintergrund suchen (ADR-0035 Punkt 1)
@@ -276,6 +285,14 @@ type editor struct {
 
 	rettung Rettung        // Rettungskopie (ADR-0029); nil: keine
 	rett    rettungZustand // Bündelung der Rettungskopie
+
+	// Bibliothek in der Oberfläche (ADR-0036): bib verbindet mit Index, Vorschauen und Ladefunktion (nil: keine Leiste,
+	// kein Wechsel); pfad liefert die Datei, die den Stand trägt; unten ist die Leiste der letzten Aufnahmen
+	// (leiste_unten.go), wechsel ein laufender Wechsel der Aufnahme (wechsel.go).
+	bib     *Anbindung
+	pfad    func() string
+	unten   untenLeiste
+	wechsel wechselZustand
 
 	speicherStart       time.Time     // Beginn des laufenden Speicherns (F-283)
 	haengtGemeldet      bool          // die Fußzeile sagt schon, dass das Speichern nicht antwortet
@@ -483,6 +500,9 @@ func (e *editor) nachEreignis() {
 	if e.speichernAbholen() {
 		e.wecker.Anfordern()
 	}
+	if e.wechselAbholen() || e.leisteIndexAbholen() { // Wechsel und Index der Leiste (ADR-0036)
+		e.wecker.Anfordern()
+	}
 	if e.wache.Angekommen() && !e.erzwungen && !e.s.SignalVorgemerkt() {
 		e.nachSignal()
 	}
@@ -550,6 +570,7 @@ func (e *editor) zwischenablageUebernommenMelden() bool {
 // Zwischenablage noch startet (F-281).
 func (e *editor) zerstoert(fensterErr error) error {
 	e.ocrAbbrechen() // eine laufende Texterkennung endet mit dem Fenster (ADR-0035 Punkt 2)
+	e.wechselAbbrechen() // ein laufender Wechsel gibt die Rettungskopie der geladenen Aufnahme frei (ADR-0036)
 	e.speichernAbwarten()
 	if e.speichernAufgegeben {
 		select { // kam die Antwort inzwischen doch, zählt sie (F-298); gewartet wird nicht
@@ -891,6 +912,10 @@ func (e *editor) speichernFertig(r speicherErgebnis) {
 	// Fenster für den Kopierfehler offen; auch dann verdrängt „Saved“ ihn nicht (F-353). Läuft schon ein neues Kopieren,
 	// entscheidet dessen Antwort (F-354), und das Speicher-Ende meldet sich wie sonst (F-359).
 	e.speichernMelden(r, ende, halt || (e.kopierFehlerHaelt && e.schliessenNachKopie && !e.kopierLaeuft), hinweisHaelt)
+	if r.err == nil {
+		e.leisteNachSpeichern() // Vorschau und Index sind neu (ADR-0036 Punkt 7)
+	}
+	e.wechselNachSpeichern(r, ende) // ein wartender Wechsel der Aufnahme (ADR-0036 Punkt 5)
 	switch {
 	case ende.Erneut != nil:
 		e.speichernStarten(ende.Erneut)
@@ -1399,6 +1424,8 @@ func (e *editor) frame(gtx layout.Context) {
 	// Ereignis sie annimmt (F-231).
 	_ = e.exportAbholen()
 	_ = e.speichernAbholen() // ebenso die Antwort des Speicherns und des Kopierens (ADR-0020 Nachtrag 6)
+	_ = e.wechselAbholen()   // und des Wechsels der Aufnahme und des Index der Leiste (ADR-0036)
+	_ = e.leisteIndexAbholen()
 	e.kopierenAbholen(gtx)
 	e.ocrAbholen() // Suche und Texterkennung (ADR-0035), nach dem Kopieren
 	// Vor allen anderen: Klicks und Tasten der offenen Einstellungstafel (ADR-0034).
@@ -1410,6 +1437,7 @@ func (e *editor) frame(gtx layout.Context) {
 	e.knoepfeAuswerten(gtx)
 	e.fussAuswerten(gtx)
 	e.seiteAuswerten(gtx)
+	e.leisteAuswerten(gtx)
 	paint.Fill(gtx.Ops, farbeFenster)
 	flaeche := e.leinwandFlaeche(gtx) // zwischen Menüzeile, Werkzeugleiste, Fußzeile und rechter Leiste (ADR-0031)
 
@@ -1423,6 +1451,11 @@ func (e *editor) frame(gtx layout.Context) {
 	e.zeichneMenuezeile(gtx)
 	e.zeichneWerkzeugleiste(gtx)
 	e.zeichneSeitenleiste(gtx)
+	if e.leisteSichtbar(gtx) { // unter der Leinwand, so breit wie sie (ADR-0036 Punkt 1)
+		e.zeichneLeisteUnten(gtx, image.Rect(flaeche.Min.X, flaeche.Max.Y, flaeche.Max.X, flaeche.Max.Y+gtx.Dp(leisteUntenDp)))
+	} else {
+		e.unten.rahmen, e.unten.von, e.unten.bis, e.unten.kacheln = image.Rectangle{}, 0, 0, nil
+	}
 	e.zeichneFusszeile(gtx)
 	e.zeichneSchriftliste(gtx) // über Leisten und Fußzeile, unter Hilfe und Menü
 	e.zeichneHilfe(gtx)
@@ -2027,6 +2060,7 @@ func (e *editor) leertastenZiele() []event.Tag {
 		z = append(z, &e.menue.titel[i])
 	}
 	z = append(z, e.schnell.ziele()...)
+	z = append(z, e.unten.ziele()...)
 	return append(z, &e.knoepfe.fussFarbe, &e.knoepfe.fussZoom, &e.knoepfe.farbe, &e.knoepfe.fuellung)
 }
 
@@ -2116,7 +2150,7 @@ func (e *editor) tasten(gtx layout.Context) {
 			} else if c := e.fokussierterKnopf(gtx); c == &e.knoepfe.fussFarbe || c == &e.knoepfe.fussZoom ||
 				c == &e.knoepfe.farbe || c == &e.knoepfe.fuellung {
 				e.knopfPerTaste(c)
-			} else if c != nil && e.schnell.stelle(c) >= 0 { // Kachel der Schnellstile (ADR-0037)
+			} else if c != nil && (e.schnell.stelle(c) >= 0 || e.unten.stelle(c) >= 0) { // Schnellstile, Leiste unten
 				e.knopfPerTaste(c)
 			}
 			continue
@@ -2155,6 +2189,9 @@ func (e *editor) tasten(gtx layout.Context) {
 		}
 		if !e.s.TextLaeuft() && e.schnellTaste(gtx, k) {
 			continue // Pfeile und Entf an einer Kachel der Schnellstile (ADR-0037 Punkt 7)
+		}
+		if !e.s.TextLaeuft() && e.leisteTaste(gtx, k) {
+			continue // Pfeile, Pos1 und Ende an einer Vorschau der Leiste (ADR-0036 Punkt 1)
 		}
 		t, ok := findeTaste(k.Name, k.Modifiers, e.s.TextLaeuft())
 		if e.fokusFeld(gtx) != nil && ((ok && t.hatWerkzeug) || k.Name == key.NameDeleteForward) {
@@ -2209,6 +2246,7 @@ func (e *editor) fokussierterKnopf(gtx layout.Context) *widget.Clickable {
 	alle = append(alle, e.lupe.alle()...)
 	alle = append(alle, &e.spitze.knopf)
 	alle = append(alle, e.schnell.alle()...)
+	alle = append(alle, e.unten.alle()...) // Vorschauen der Leiste (ADR-0036)
 	for i := range e.menue.titel {
 		alle = append(alle, &e.menue.titel[i])
 	}
@@ -2314,6 +2352,9 @@ func (e *editor) hinweis() string {
 	}
 	if e.schnell.hinweis != "" { // Name der Kachel mit Fokus oder Zeiger (ADR-0037 Punkt 2)
 		return e.schnell.hinweis
+	}
+	if e.unten.hinweis != "" { // Vorschau der Leiste mit Fokus oder Zeiger (ADR-0036)
+		return e.unten.hinweis
 	}
 	if e.s.PipetteLaeuft() {
 		return i18n.T("Click in the image to pick its color. Esc cancels.")

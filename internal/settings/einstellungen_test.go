@@ -81,7 +81,7 @@ func TestGueltigeDateiMitKommentaren(t *testing.T) {
 	schreibe(t, pfad, "\xef\xbb\xbf# Kommentar\r\n; noch einer\n\n  [capture]  \n   # eingerückt\n  screen   =   pointer  \nopen-editor = false\n\n"+
 		"[library]\ncleanup=false\n\tcleanup-days =\t30\r\n")
 	e, warn := Lade()
-	want := Einstellungen{Bildschirm: WahlZeiger, Editor: false, Bibliothek: library.Einstellung{An: false, Tage: 30}, Agenten: Voreinstellungen().Agenten}
+	want := Einstellungen{Bildschirm: WahlZeiger, Editor: false, Bibliothek: library.Einstellung{An: false, Tage: 30}, Leiste: true, Agenten: Voreinstellungen().Agenten}
 	if e != want || len(warn) != 0 {
 		t.Errorf("%+v, Warnungen %q; erwartet %+v ohne Warnung", e, warn, want)
 	}
@@ -177,7 +177,7 @@ func TestUnbekanntes(t *testing.T) {
 	pfad := umgebung(t)
 	schreibe(t, pfad, "[capture]\nscreen = all\nfarbe = rot\n[quatsch]\na = 1\nb = 2\n[library]\ncleanup-days = 7\nfrist = 3\n")
 	e, warn := Lade()
-	want := Einstellungen{Bildschirm: WahlAlle, Editor: true, Bibliothek: library.Einstellung{An: true, Tage: 7}, Agenten: Voreinstellungen().Agenten}
+	want := Einstellungen{Bildschirm: WahlAlle, Editor: true, Bibliothek: library.Einstellung{An: true, Tage: 7}, Leiste: true, Agenten: Voreinstellungen().Agenten}
 	if e != want {
 		t.Errorf("Werte %+v, erwartet %+v", e, want)
 	}
@@ -470,5 +470,30 @@ func TestSchluesselAusserhalbGekuerzt(t *testing.T) {
 	_, warn := Parse("p", strings.Repeat("y", 200)+" = 1\n")
 	if len(warn) != 1 || strings.Contains(warn[0], strings.Repeat("y", 81)) || !strings.Contains(warn[0], "…") {
 		t.Errorf("nicht gekürzt: %q", warn)
+	}
+}
+
+// ADR-0036 Punkt 2, ADR-0018 Nachtrag 6: [library] bar schaltet die Leiste der letzten Aufnahmen; Voreinstellung an,
+// ein ungültiger Wert lässt sie an und warnt.
+func TestLeiste(t *testing.T) {
+	i18n.Setze(nil)
+	if !Voreinstellungen().Leiste {
+		t.Fatal("Voreinstellung muss an sein")
+	}
+	for _, tc := range []struct {
+		wert      string
+		an, warnt bool
+	}{{"yes", true, false}, {"no", false, false}, {"true", true, false}, {"false", false, false}, {"aus", true, true}} {
+		e, warn := Parse("p", "[library]\nbar = "+tc.wert+"\n")
+		if e.Leiste != tc.an || (len(warn) > 0) != tc.warnt {
+			t.Errorf("bar = %s: Leiste %v, Warnungen %q", tc.wert, e.Leiste, warn)
+		}
+	}
+	gefunden := false
+	for _, w := range Werte(Einstellungen{Leiste: false}) {
+		gefunden = gefunden || w == Aenderung{"library", "bar", "no"}
+	}
+	if !gefunden {
+		t.Errorf("Werte schreibt bar nicht als no: %v", Werte(Einstellungen{}))
 	}
 }

@@ -82,8 +82,8 @@ func TestRettungskopieNachAbbruch(t *testing.T) {
 		dok       *document.Dokument
 	)
 	altStart := editorStarten
-	editorStarten = func(_ string, d *document.Dokument, s ui.Speichern, r ui.Rettung) error {
-		speichern, rettung, dok = s, r, d
+	editorStarten = func(g ui.Geoeffnet, _ *ui.Anbindung) error {
+		speichern, rettung, dok = g.Speichern, g.Rettung, g.Dokument
 		return nil
 	}
 	t.Cleanup(func() { editorStarten = altStart })

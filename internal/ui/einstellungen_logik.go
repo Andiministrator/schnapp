@@ -61,6 +61,7 @@ var tafelZeilen = [...]tafelZeile{
 	{reiterAufnahme, "capture", "screen", artAuswahl},
 	{reiterAufnahme, "capture", "open-editor", artSchalter},
 	{reiterAufnahme, "capture", "seam", artAuswahl},
+	{reiterBibliothek, "library", "bar", artSchalter},
 	{reiterBibliothek, "library", "cleanup", artSchalter},
 	{reiterBibliothek, "library", "cleanup-days", artZahl},
 	{reiterAgenten, "agents", "capture", artSchalter},
@@ -269,6 +270,8 @@ func (t *tafel) schalte(z int) {
 	switch tafelZeilen[z].abschnitt + "." + tafelZeilen[z].schluessel {
 	case "capture.open-editor":
 		w.Editor = !w.Editor
+	case "library.bar":
+		w.Leiste = !w.Leiste
 	case "library.cleanup":
 		w.Bibliothek.An = !w.Bibliothek.An
 	case "agents.capture":
@@ -581,6 +584,8 @@ func zeileTitel(z int) string {
 		return i18n.T("After capture")
 	case "capture.seam":
 		return i18n.T("Seam edge")
+	case "library.bar":
+		return i18n.T("Recent captures")
 	case "library.cleanup":
 		return i18n.T("Clean up")
 	case "library.cleanup-days":
@@ -601,6 +606,8 @@ func zeileSchalterText(z int) string {
 	switch tafelZeilen[z].abschnitt + "." + tafelZeilen[z].schluessel {
 	case "capture.open-editor":
 		return i18n.T("Open the editor")
+	case "library.bar":
+		return i18n.T("Show below the image")
 	case "library.cleanup":
 		return i18n.T("Old captures to the trash")
 	case "agents.confirm":
@@ -619,6 +626,8 @@ func zeileErklaerung(z int) string {
 		return i18n.T("What “Capture screen” does without a monitor name: pick by clicking, the monitor under the pointer or all monitors.")
 	case "capture.seam":
 		return i18n.T("Applies to new captures and opened images; a working file keeps its edge.")
+	case "library.bar":
+		return i18n.T("The bar with the latest captures; also View → Recent captures.")
 	case "library.cleanup-days":
 		return i18n.T("Older than this number of days, checked at start.")
 	}

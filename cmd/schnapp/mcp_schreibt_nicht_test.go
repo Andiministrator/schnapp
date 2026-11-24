@@ -132,15 +132,15 @@ func TestMCPErreichtDenSchreiberNicht(t *testing.T) {
 	}
 	_, fremd := erreichbar(start)
 	for f := range fremd {
-		if (strings.HasPrefix(f, "settings.") && istSchreiber(strings.TrimPrefix(f, "settings."))) || f == "ui.Editor" {
+		if (strings.HasPrefix(f, "settings.") && istSchreiber(strings.TrimPrefix(f, "settings."))) || f == "ui.Editor" || f == "ui.EditorMit" {
 			t.Errorf("von mcp.go aus erreichbar: %s", f)
 		}
 	}
 	if !fremd["settings.LadeDatei"] && !fremd["settings.Lade"] {
 		t.Error("Gegenprobe: mcp.go liest die Einstellungen nicht (Graph unvollständig?)")
 	}
-	if _, f := erreichbar([]string{"main"}); !f["ui.Editor"] {
-		t.Error("Gegenprobe: ui.Editor ist auch von main aus nicht erreichbar (Graph unvollständig?)")
+	if _, f := erreichbar([]string{"main"}); !f["ui.EditorMit"] { // seit ADR-0036 startet main den Editor mit Anbindung
+		t.Error("Gegenprobe: ui.EditorMit ist auch von main aus nicht erreichbar (Graph unvollständig?)")
 	}
 
 	// 4.

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"syscall"
 
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -23,7 +24,7 @@ import (
 
 // editorStarten öffnet das Editorfenster. Eine Variable, damit Tests das Fenster durch eine Attrappe ersetzen und die
 // Speicherfunktion prüfen können, die oeffneImEditor und bearbeiteNeu dem Editor übergeben (F-282).
-var editorStarten = ui.Editor
+var editorStarten = ui.EditorMit
 
 // oeffneImEditor öffnet eine Datei im Editor (ADR-0020). Speichern schreibt eine Aufnahme der Bibliothek an ihren
 // Platz zurück; alles andere (Datei außerhalb, fremdes oder beschädigtes Bild, neuere Fassung) kommt beim ersten
@@ -47,10 +48,56 @@ func oeffneImEditor(pfad string, ohneGrenze bool, kante document.Kante) error {
 	if err != nil {
 		return err
 	}
+	b := library.Neu(orte)
 	r := rettungFuer(abs, ohneGrenze)
 	ui.SetzeExportOhneGrenze(ohneGrenze) // auch der Export aus dem Editor prüft das Budget dann nicht (ADR-0033 Nachtrag 4)
-	return editorStarten(filepath.Base(abs), g.Dokument, speichernMitNachher(library.Neu(orte), abs, g, stand, r.nachSpeichern()), r.ui())
+	return editorStarten(geoeffnetFuer(b, abs, g, stand, r, ohneGrenze), anbindungFuer(b, kante))
 }
+
+// geoeffnetFuer stellt zusammen, was der Editor für ein Dokument braucht: die Speicherfunktion, die Rettungskopie und
+// den Pfad der Datei, die den Stand trägt (nach einem Speichern als neue Aufnahme die neue; die Leiste der letzten
+// Aufnahmen umrandet sie, ADR-0036 Punkt 1).
+func geoeffnetFuer(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand, r *rettung, ohneGrenze bool) ui.Geoeffnet {
+	var aktuell atomic.Pointer[string] // das Speichern läuft in einer Goroutine (ADR-0020 Nachtrag 6)
+	aktuell.Store(&abs)
+	rett := r.nachSpeichern()
+	nachher := func(p string) {
+		aktuell.Store(&p)
+		if rett != nil {
+			rett(p)
+		}
+	}
+	return ui.Geoeffnet{Titel: filepath.Base(abs), Dokument: g.Dokument, Speichern: speichernMitNachher(b, abs, g, stand, nachher),
+		Rettung: r.ui(), Pfad: func() string { return *aktuell.Load() }, OhneGrenze: ohneGrenze}
+}
+
+// anbindungFuer verbindet den Editor mit der Bibliothek b (ADR-0036): Die Leiste liest Index und Vorschauen, ein Klick
+// auf eine Vorschau lädt die Aufnahme über oeffnerFuer.
+func anbindungFuer(b *library.Bibliothek, kante document.Kante) *ui.Anbindung {
+	return &ui.Anbindung{Bibliothek: b, Oeffnen: oeffnerFuer(b, kante)}
+}
+
+// oeffnerFuer ist die Ladefunktion für den Wechsel der Aufnahme im selben Fenster (ADR-0036 Punkt 5): wie
+// oeffneImEditor ohne --ignore-limit — ladeFuerEditor mit Budget-Prüfung, ein einfaches oder beschädigtes Bild bekommt
+// die Kantenform aus [capture] seam, eine eigene Rettungskopie (wendet der Editor beim Übernehmen an). Der Fehler ist
+// übersetzt wie beim Öffnen von der Kommandozeile.
+func oeffnerFuer(b *library.Bibliothek, kante document.Kante) ui.Oeffnen {
+	return func(pfad string) (ui.Geoeffnet, error) {
+		abs, g, stand, err := ladeFuer(pfad, false)
+		if err != nil {
+			return ui.Geoeffnet{}, errors.New(nutzerFehler(err))
+		}
+		if g.Fremd {
+			if err := g.Dokument.VorgabeKante(kante); err != nil {
+				return ui.Geoeffnet{}, errors.New(nutzerFehler(err))
+			}
+		}
+		return geoeffnetFuer(b, abs, g, stand, rettungFuer(abs, false), false), nil
+	}
+}
+
+// ladeFuer ist ladeFuerEditor; Tests lassen das Laden beim Wechsel scheitern.
+var ladeFuer = ladeFuerEditor
 
 // bearbeiteNeu öffnet eine eben abgelegte Aufnahme im Editor (F-112): mit dem Dokument aus dem Speicher, ohne die
 // Datei neu zu lesen. Was das Lesen sonst liefert, ist hier bekannt: eine Schnapp-Datei der Bibliothek (nicht fremd),
@@ -67,9 +114,10 @@ func bearbeiteNeu(a abgelegt) error {
 		return err
 	}
 	g := &fileformat.Gelesen{Dokument: a.d}
+	b := library.Neu(orte)
 	r := rettungFuer(abs, false)
 	ui.SetzeExportOhneGrenze(false)
-	return editorStarten(filepath.Base(abs), a.d, speichernMitNachher(library.Neu(orte), abs, g, a.stand, r.nachSpeichern()), r.ui())
+	return editorStarten(geoeffnetFuer(b, abs, g, a.stand, r, false), anbindungFuer(b, a.kante))
 }
 
 // ladeFuerEditor liest eine Datei für den Editor (von außen oder aus der Bibliothek) und lehnt ein Dokument ab, dessen

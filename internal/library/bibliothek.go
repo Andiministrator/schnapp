@@ -568,6 +568,21 @@ func (b *Bibliothek) SetzeSchlagworte(pfad string, worte []string) (_ Eintrag, f
 	return neu, nil
 }
 
+// ErzeugeVorschau schreibt das Vorschaubild der Aufnahme rel (Pfad relativ zur Ablage, wie im Index) neu, wenn es
+// fehlt, aus dem sichtbaren Bild der Datei, nie aus dem Original (Leiste der letzten Aufnahmen, ADR-0036 Punkt 6). Ein
+// Pfad, der aus der Ablage hinausführt, und alles außer einer regulären Datei bleiben unberührt; ein Fehler bleibt still,
+// die Leiste zeigt dann weiter das graue Feld.
+func (b *Bibliothek) ErzeugeVorschau(rel string) {
+	if !(Eintrag{Pfad: rel, Breite: 1, Hoehe: 1}).gueltig() {
+		return
+	}
+	pfad := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))
+	if fi, err := os.Lstat(pfad); err != nil || !fi.Mode().IsRegular() {
+		return
+	}
+	b.heileVorschau(pfad, rel)
+}
+
 // heileVorschau schreibt das Vorschaubild einer Arbeitsdatei neu, wenn es fehlt.
 func (b *Bibliothek) heileVorschau(pfad, rel string) {
 	if _, err := os.Stat(b.VorschauPfad(rel)); err == nil {

@@ -10,3 +10,6 @@ const ProbeBuild = probeAutoWahl
 
 // probeOhneFolgebildBeiZug gibt es nur im Probe-Build (probe_an.go); hier fällt der Zweig beim Übersetzen weg.
 const probeOhneFolgebildBeiZug = false
+
+// probeLeisteAus gibt es nur im Probe-Build (probe_an.go); hier fällt der Zweig beim Übersetzen weg.
+const probeLeisteAus = false

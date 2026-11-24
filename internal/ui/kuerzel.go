@@ -50,6 +50,7 @@ const (
 	aktNavigator      // Menü Ansicht: Navigator (Mini-Übersicht) ein/aus, ohne Kürzel (ADR-0031 Nachtrag 9)
 	aktEinstellungen  // Menü Datei: Einstellungstafel (Strg+,, ADR-0034)
 	aktTextKopieren   // Menü Bearbeiten: Text aus dem Bild kopieren (Strg+Umschalt+T, ADR-0035)
+	aktLeiste         // Menü Ansicht: Leiste der letzten Aufnahmen ein/aus (Strg+Umschalt+R, ADR-0036 Punkt 2)
 )
 
 // taste ist ein Tastenkürzel des Editors. Genau eines gilt: akt (Handlung), werkzeug (wählt ein Werkzeug, hatWerkzeug)
@@ -116,6 +117,8 @@ func tastenTabelle() []taste {
 		{filter: key.Filter{Name: "X", Required: key.ModShortcut | key.ModShift}, akt: aktFarbenTauschen},
 		// T allein ist das Werkzeug Text; Strg+Umschalt+T war frei (ADR-0035 Punkt 5).
 		{filter: key.Filter{Name: "T", Required: key.ModShortcut | key.ModShift}, akt: aktTextKopieren},
+		// R allein ist das Werkzeug Kasten; Strg+Umschalt+R war frei (ADR-0036 Punkt 2).
+		{filter: key.Filter{Name: "R", Required: key.ModShortcut | key.ModShift}, akt: aktLeiste},
 		wz("V", canvas.WerkzeugAuswahl),
 		wz("A", canvas.WerkzeugPfeil),
 		wz("R", canvas.WerkzeugKasten),

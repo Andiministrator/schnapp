@@ -175,6 +175,7 @@ func TestTafelZahlUngueltigSpeichertNicht(t *testing.T) {
 		l.taste(",", key.ModShortcut)
 		tf.waehleReiter(reiterBibliothek)
 		l.setle()
+		l.taste(key.NameTab, 0) // vom Schalter bar über cleanup zur Zahl (ADR-0036 Punkt 2)
 		l.taste(key.NameTab, 0)
 		if tf.ziel() != zahlZeile() {
 			t.Fatalf("Ziel %d", tf.ziel())

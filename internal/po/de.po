@@ -1390,3 +1390,93 @@ msgstr "die vorhandene Stildatei hat unlesbare Teile und styles.ini.bak existier
 
 msgid "the styles file is locked by another window"
 msgstr "die Stildatei ist von einem anderen Fenster gesperrt"
+
+# Leiste der letzten Aufnahmen (ADR-0036). „date part“ sind Go-Zeitmuster für Teile (nur Uhrzeit, Datum ohne Jahr;
+# Referenzzeit Mon Jan 2 15:04:05 2006), „weekday“ die kurzen Namen der Wochentage vor dem Datum.
+msgid "yesterday"
+msgstr "gestern"
+
+msgctxt "date part"
+msgid "15:04"
+msgstr "15:04"
+
+msgctxt "date part"
+msgid "Jan 2"
+msgstr "02.01."
+
+msgctxt "date part"
+msgid "Jan 2, 2006"
+msgstr "02.01.2006"
+
+msgctxt "weekday"
+msgid "Mon"
+msgstr "Mo"
+
+msgctxt "weekday"
+msgid "Tue"
+msgstr "Di"
+
+msgctxt "weekday"
+msgid "Wed"
+msgstr "Mi"
+
+msgctxt "weekday"
+msgid "Thu"
+msgstr "Do"
+
+msgctxt "weekday"
+msgid "Fri"
+msgstr "Fr"
+
+msgctxt "weekday"
+msgid "Sat"
+msgstr "Sa"
+
+msgctxt "weekday"
+msgid "Sun"
+msgstr "So"
+
+msgid "Recent captures"
+msgstr "Letzte Aufnahmen"
+
+msgid "Show below the image"
+msgstr "Unter dem Bild zeigen"
+
+msgid "The bar with the latest captures; also View → Recent captures."
+msgstr "Die Leiste mit den neuesten Aufnahmen; auch über Ansicht → Letzte Aufnahmen."
+
+msgid "Capture of %s, %d × %d px — open now"
+msgstr "Aufnahme vom %s, %d × %d px — gerade offen"
+
+msgid "Capture of %s, %d × %d px — click or Enter opens it here (this one is saved first)"
+msgstr "Aufnahme vom %s, %d × %d px — Klick oder Enter öffnet sie hier (die offene wird vorher gespeichert)"
+
+msgid "Could not open the capture: %v"
+msgstr "Aufnahme nicht geöffnet: %v"
+
+msgid "Could not remember the setting: %v"
+msgstr "Einstellung nicht gemerkt: %v"
+
+msgid "Could not save: %v. The other capture was not opened."
+msgstr "Speichern gescheitert: %v. Die andere Aufnahme wurde nicht geöffnet."
+
+msgid "Finish the export first."
+msgstr "Erst den Export abschließen."
+
+msgid "No captures in the library yet."
+msgstr "Noch keine Aufnahmen in der Bibliothek."
+
+msgid "Not available in this window: it has no library."
+msgstr "In diesem Fenster nicht verfügbar: Es kennt keine Bibliothek."
+
+msgid "Opening…"
+msgstr "Öffnen …"
+
+msgid "Text recognition is running. Press Esc to cancel it first."
+msgstr "Die Texterkennung läuft. Erst mit Esc abbrechen."
+
+msgid "The library index could not be read."
+msgstr "Der Index der Bibliothek ist nicht lesbar."
+
+msgid "The other capture was not opened: this one was changed meanwhile."
+msgstr "Die andere Aufnahme wurde nicht geöffnet: Diese wurde inzwischen geändert."

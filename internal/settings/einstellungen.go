@@ -102,7 +102,10 @@ type Einstellungen struct {
 	// tear (Voreinstellung), wave oder zigzag (ADR-0023 Nachtrag 6, ADR-0018 Nachtrag 3).
 	Kante      document.Kante
 	Bibliothek library.Einstellung // [library] cleanup, cleanup-days
-	Agenten    Agenten             // [agents] (ADR-0030 Nachtrag 2)
+	// Leiste ist [library] bar: die Leiste der letzten Aufnahmen unter dem Bild (ADR-0036 Punkt 2, ADR-0018 Nachtrag 6),
+	// yes (Voreinstellung) oder no; true/false gelten auch.
+	Leiste  bool
+	Agenten Agenten // [agents] (ADR-0030 Nachtrag 2)
 }
 
 // Agenten ist der Abschnitt [agents]: Einwilligungen für den MCP-Server `schnapp mcp` (ADR-0030 Nachtrag 2). Werte
@@ -130,7 +133,7 @@ func janein(w string) (wert, ok bool) {
 // Voreinstellungen liefert die Werte, die gelten, wenn nichts eingestellt ist.
 func Voreinstellungen() Einstellungen {
 	return Einstellungen{Bildschirm: WahlKlick, Editor: true, Kante: document.KanteAbriss, Bibliothek: library.Voreinstellung,
-		Agenten: Agenten{Bestaetigen: true, Bild: true}}
+		Leiste: true, Agenten: Agenten{Bestaetigen: true, Bild: true}}
 }
 
 // Pfad liefert den Ort der Datei: $XDG_CONFIG_HOME/schnapp/settings.ini, ohne gesetztes oder mit relativem
@@ -327,6 +330,11 @@ func Parse(name, inhalt string) (Einstellungen, []string) {
 				e.Bibliothek.An, gueltig = true, true
 			case "false":
 				e.Bibliothek.An, gueltig = false, true
+			}
+		case "library.bar":
+			bekannterSchluessel = true
+			if w, ok := janein(wert); ok {
+				e.Leiste, gueltig = w, true
 			}
 		case "agents.capture", "agents.library", "agents.confirm", "agents.image", "agents.edit":
 			bekannterSchluessel = true

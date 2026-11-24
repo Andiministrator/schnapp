@@ -29,6 +29,8 @@ type gestartet struct {
 	speichern ui.Speichern
 	rettung   ui.Rettung
 	dok       *document.Dokument
+	geoeffnet ui.Geoeffnet  // alles, was der Editor bekam (ADR-0036)
+	bib       *ui.Anbindung // Anbindung an die Bibliothek für Leiste und Wechsel
 }
 
 // rettungsLauf richtet eine eigene Umgebung ein (HOME, Zustandsordner) und ersetzt das Fenster durch eine Attrappe.
@@ -57,8 +59,9 @@ func rettungsLauf(t *testing.T) (ort, aussen string, g *gestartet) {
 	aussen = schreibeDatei(t, t.TempDir(), "bild.png", d0)
 	g = &gestartet{}
 	altStart := editorStarten
-	editorStarten = func(_ string, d *document.Dokument, s ui.Speichern, r ui.Rettung) error {
-		g.speichern, g.rettung, g.dok = s, r, d
+	editorStarten = func(o ui.Geoeffnet, bib *ui.Anbindung) error {
+		g.speichern, g.rettung, g.dok = o.Speichern, o.Rettung, o.Dokument
+		g.geoeffnet, g.bib = o, bib
 		return nil
 	}
 	t.Cleanup(func() { editorStarten = altStart })

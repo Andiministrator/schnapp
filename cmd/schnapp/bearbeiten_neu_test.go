@@ -45,7 +45,7 @@ func TestBearbeiteNeuGibtStandVomAblegenWeiter(t *testing.T) {
 	// editor liefert die Speicherfunktion, die bearbeiteNeu dem (nicht gestarteten) Editor übergibt.
 	var speichern ui.Speichern
 	alt := editorStarten
-	editorStarten = func(_ string, _ *document.Dokument, s ui.Speichern, _ ui.Rettung) error { speichern = s; return nil }
+	editorStarten = func(g ui.Geoeffnet, _ *ui.Anbindung) error { speichern = g.Speichern; return nil }
 	t.Cleanup(func() { editorStarten = alt })
 
 	// Unverändert: Speichern schreibt an den Platz der abgelegten Aufnahme zurück.

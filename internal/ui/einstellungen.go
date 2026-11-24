@@ -119,6 +119,17 @@ func (e *editor) einstellungenSchliessen(gtx layout.Context) {
 // settings.BenutzerHeim).
 var schreibeEinstellungen = settings.SchreibeDatei
 
+// merkeEinstellung schreibt einen einzelnen Schlüssel mit dem Schreiber der Tafel (schreibeEinstellungen) an den Ort
+// von settings.Pfad: der Menüschalter der Leiste der letzten Aufnahmen (ADR-0036 Punkt 2, ADR-0034 Nachtrag 2). Er
+// steht hier, weil nur die Tafel schreibt (ADR-0034 Punkt 6, TestMCPErreichtDenSchreiberNicht).
+func merkeEinstellung(a settings.Aenderung) error {
+	pfad, err := settings.Pfad()
+	if err != nil {
+		return err
+	}
+	return schreibeEinstellungen(pfad, []settings.Aenderung{a})
+}
+
 // einstellungenSpeichern schreibt die Änderungen; gelingt es, schließt die Tafel und die Fußzeile sagt es. Die im
 // laufenden Editor schon wirksamen Werte bleiben, wie sie sind (ADR-0034 Punkt 3).
 func (e *editor) einstellungenSpeichern(gtx layout.Context) {
@@ -129,6 +140,11 @@ func (e *editor) einstellungenSpeichern(gtx layout.Context) {
 	e.einstellungenSchliessen(gtx)
 	if geschrieben {
 		e.melde(i18n.T("Settings saved"), false)
+	}
+	// Ausnahme von ADR-0034 Punkt 3: Die Leiste der letzten Aufnahmen folgt der Tafel sofort, wie dem Menüschalter
+	// (ADR-0034 Nachtrag 2, ADR-0036 Punkt 2).
+	if e.unten.l != nil && e.unten.an != e.einst.wert.Leiste {
+		e.unten.an = e.einst.wert.Leiste
 	}
 }
 

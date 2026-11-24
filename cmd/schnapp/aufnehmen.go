@@ -151,6 +151,7 @@ type abgelegt struct {
 	pfad  string             // absoluter Pfad der Datei
 	d     *document.Dokument // das abgelegte Dokument; hält nur den gewählten Bereich, nicht die Monitorbilder
 	stand library.Stand      // Stand der Datei unmittelbar nach dem Ablegen (F-110)
+	kante document.Kante     // [capture] seam: Kantenform für ein einfaches Bild, das der Editor später öffnet (ADR-0036)
 }
 
 // aufnehmen nimmt auf und legt in der Bibliothek ab. Zurück kommen der Exit-Code und bei Erfolg die abgelegte
@@ -322,7 +323,7 @@ func (an anschluesse) speichere(b *image.NRGBA, bereich image.Rectangle, t Auftr
 	// (ADR-0030 Punkt 1).
 	gibPfadAus(aus, fehler, t.JSON, pfad, d.Groesse())
 	an.raeumeAuf(t.Aufraeumen, time.Now(), fehler)
-	return exitOK, &abgelegt{pfad: pfad, d: d, stand: stand}
+	return exitOK, &abgelegt{pfad: pfad, d: d, stand: stand, kante: t.Kante}
 }
 
 // raeumeAuf räumt nach dem Speichern die Bibliothek auf, höchstens einmal am Tag (ADR-0016 Nachtrag 2). Die Aufnahme

@@ -33,6 +33,8 @@
 #       würden sie sonst still lösen. Erst loslassen/taste-loslassen; andere Tasten (z. B. rechtsklick bei gehaltener linker)
 #       gehen. Nach einem Fehler oder am Ende wird alles Gehaltene trotzdem gelöst.
 #     Koordinaten sind logische Pixel des virtuellen Bildschirms (Fenster im Vollbild: gleich Fensterkoordinaten).
+#     Die Leiste der letzten Aufnahmen (ADR-0036) ist zu Beginn aus und merkt ihren Schalter nicht (SCHNAPP_PROBE_LEISTE_AUS);
+#     ein Drehbuch, das sie braucht, schaltet sie mit „taste Strg+Umschalt+R“ ein (scripts/drehbuecher/bibliothek-174-leiste.txt).
 #     foto nimmt den Bildschirm unter dem Zeiger auf, bei mehreren Monitoren BILDSCHIRM (Name) angeben.
 #   scripts/probe.sh --zwischenablage BILD.png   (--innen, --drehbuch und --zwischenablage schließen sich aus)
 #     prüft den Halter der Zwischenablage (ADR-0024): setzt BILD als image/png, liest es mit wl-paste zurück (nur aus
@@ -140,10 +142,13 @@ drehbuch_innen() {
 	printf 'XDG_PICTURES_DIR="$HOME/Bilder"\n' > "$XDG_CONFIG_HOME/user-dirs.dirs"
 	: > "$probe/stdout.txt"
 	: > "$probe/stderr.txt"
+	# Die Leiste der letzten Aufnahmen startet im Drehbuch-Lauf ausgeschaltet und merkt ihren Schalter nicht (ADR-0036
+	# Punkt 2, Lehre aus F-539): Drehbücher mit festen Leinwandkoordinaten bleiben gültig, ein Umschalten (Strg+Umschalt+R)
+	# kippt den nächsten Lauf nicht. Nur der Probe-Build liest SCHNAPP_PROBE_LEISTE_AUS.
 	if [ -n "$bildpfad" ]; then
-		SCHNAPP_DEBUG=1 "$probe/schnapp" "$bildpfad" > "$probe/stdout.txt" 2> "$probe/stderr.txt" &
+		SCHNAPP_DEBUG=1 SCHNAPP_PROBE_LEISTE_AUS=1 "$probe/schnapp" "$bildpfad" > "$probe/stdout.txt" 2> "$probe/stderr.txt" &
 	else
-		SCHNAPP_DEBUG=1 "$probe/schnapp" --region > "$probe/stdout.txt" 2> "$probe/stderr.txt" &
+		SCHNAPP_DEBUG=1 SCHNAPP_PROBE_LEISTE_AUS=1 "$probe/schnapp" --region > "$probe/stdout.txt" 2> "$probe/stderr.txt" &
 	fi
 	pid=$!
 	# Identität sofort festhalten, bevor die PID wiederverwendet sein kann: bis zu 2 s warten, bis der Prozess nach dem

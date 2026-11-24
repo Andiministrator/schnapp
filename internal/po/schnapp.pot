@@ -519,7 +519,7 @@ msgstr ""
 msgid "Allow"
 msgstr ""
 
-#: cmd/schnapp/rettung.go
+#: cmd/schnapp/rettung.go internal/ui/leiste_unten.go
 msgctxt "date format"
 msgid "2006-01-02 15:04"
 msgstr ""
@@ -663,6 +663,60 @@ msgstr ""
 #: internal/i18n/formate_test.go
 msgctxt "status bar"
 msgid "%d × %d · %d%%"
+msgstr ""
+
+#: internal/libview/zeit.go
+msgctxt "date part"
+msgid "15:04"
+msgstr ""
+
+#: internal/libview/zeit.go
+msgid "yesterday"
+msgstr ""
+
+#: internal/libview/zeit.go
+msgctxt "date part"
+msgid "Jan 2"
+msgstr ""
+
+#: internal/libview/zeit.go
+msgctxt "date part"
+msgid "Jan 2, 2006"
+msgstr ""
+
+#: internal/libview/zeit.go
+msgctxt "weekday"
+msgid "Mon"
+msgstr ""
+
+#: internal/libview/zeit.go
+msgctxt "weekday"
+msgid "Tue"
+msgstr ""
+
+#: internal/libview/zeit.go
+msgctxt "weekday"
+msgid "Wed"
+msgstr ""
+
+#: internal/libview/zeit.go
+msgctxt "weekday"
+msgid "Thu"
+msgstr ""
+
+#: internal/libview/zeit.go
+msgctxt "weekday"
+msgid "Fri"
+msgstr ""
+
+#: internal/libview/zeit.go
+msgctxt "weekday"
+msgid "Sat"
+msgstr ""
+
+#: internal/libview/zeit.go
+msgctxt "weekday"
+msgid "Sun"
 msgstr ""
 
 #: internal/settings/einstellungen.go
@@ -1182,6 +1236,10 @@ msgstr ""
 msgid "Seam edge"
 msgstr ""
 
+#: internal/ui/einstellungen_logik.go internal/ui/oberflaeche.go
+msgid "Recent captures"
+msgstr ""
+
 #: internal/ui/einstellungen_logik.go
 msgid "Clean up"
 msgstr ""
@@ -1211,6 +1269,10 @@ msgid "Open the editor"
 msgstr ""
 
 #: internal/ui/einstellungen_logik.go
+msgid "Show below the image"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
 msgid "Old captures to the trash"
 msgstr ""
 
@@ -1232,6 +1294,10 @@ msgstr ""
 
 #: internal/ui/einstellungen_logik.go
 msgid "Applies to new captures and opened images; a working file keeps its edge."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "The bar with the latest captures; also View → Recent captures."
 msgstr ""
 
 #: internal/ui/einstellungen_logik.go
@@ -1402,6 +1468,30 @@ msgstr ""
 
 #: internal/ui/kuerzel.go
 msgid "PgDn"
+msgstr ""
+
+#: internal/ui/leiste_unten.go
+msgid "Could not remember the setting: %v"
+msgstr ""
+
+#: internal/ui/leiste_unten.go
+msgid "Not available in this window: it has no library."
+msgstr ""
+
+#: internal/ui/leiste_unten.go
+msgid "No captures in the library yet."
+msgstr ""
+
+#: internal/ui/leiste_unten.go
+msgid "The library index could not be read."
+msgstr ""
+
+#: internal/ui/leiste_unten.go
+msgid "Capture of %s, %d × %d px — open now"
+msgstr ""
+
+#: internal/ui/leiste_unten.go
+msgid "Capture of %s, %d × %d px — click or Enter opens it here (this one is saved first)"
 msgstr ""
 
 #: internal/ui/lupe.go
@@ -1812,4 +1902,28 @@ msgstr ""
 
 #: internal/ui/spitze.go
 msgid "Tail"
+msgstr ""
+
+#: internal/ui/wechsel.go
+msgid "Finish the export first."
+msgstr ""
+
+#: internal/ui/wechsel.go
+msgid "Text recognition is running. Press Esc to cancel it first."
+msgstr ""
+
+#: internal/ui/wechsel.go
+msgid "Could not save: %v. The other capture was not opened."
+msgstr ""
+
+#: internal/ui/wechsel.go
+msgid "Opening…"
+msgstr ""
+
+#: internal/ui/wechsel.go
+msgid "Could not open the capture: %v"
+msgstr ""
+
+#: internal/ui/wechsel.go
+msgid "The other capture was not opened: this one was changed meanwhile."
 msgstr ""
