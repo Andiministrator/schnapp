@@ -4,6 +4,7 @@ package ui
 
 import (
 	"errors"
+	"fmt"
 	"image"
 	"os"
 	"path/filepath"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/library"
 	"github.com/Andiministrator/schnapp/internal/libview"
 )
 
@@ -641,4 +643,16 @@ func TestBibliothekOeffnetNichtWaehrendWechsel(t *testing.T) {
 	}
 	close(l.tor)
 	l.ruhig()
+}
+
+// F-678 Punkt 2: Liegt die Aufnahme im Papierkorb und ist nur der Index nicht nachgeführt (library.ErrIndex), meldet
+// die Ansicht den Erfolg und gleicht beim nächsten Lesen ab.
+func TestBibliothekPapierkorbIndexfehlerIstErfolg(t *testing.T) {
+	l := bibLauf(t, 3)
+	l.e.unten.abgleich, l.e.bibl.abgleich = false, false
+	l.e.bibliothekArbeitFertig(bibArbeit{rel: l.rel(0), papierkorb: true, err: fmt.Errorf("library: %w", library.ErrIndex)})
+	if l.e.meldung.Fehler || !strings.Contains(l.e.meldung.Text, "trash") {
+		t.Errorf("Meldung %+v", l.e.meldung)
+	}
+	l.bibRuhig()
 }

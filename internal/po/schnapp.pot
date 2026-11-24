@@ -929,11 +929,11 @@ msgid "Opening another capture. Open the library afterwards."
 msgstr ""
 
 #: internal/ui/bibliothek.go
-msgid "Could not move the capture to the trash: %v"
+msgid "Moved to the trash. It can be restored from there."
 msgstr ""
 
 #: internal/ui/bibliothek.go
-msgid "Moved to the trash. It can be restored from there."
+msgid "Could not move the capture to the trash: %v"
 msgstr ""
 
 #: internal/ui/bibliothek.go
@@ -1603,6 +1603,22 @@ msgstr ""
 
 #: internal/ui/fehlergruende.go
 msgid "the styles file is locked by another window"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the capture was changed in another window or program in the meantime"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the capture is not inside the library folder"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the file is not a Schnapp capture"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the trash is on another file system"
 msgstr ""
 
 #: internal/ui/hilfe.go

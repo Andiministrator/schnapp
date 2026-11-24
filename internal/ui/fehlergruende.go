@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
 	"github.com/Andiministrator/schnapp/internal/settings"
 )
 
@@ -41,10 +42,15 @@ func fehlerGrund(err error) string {
 		{settings.ErrStileUnlesbar, i18n.T("the existing styles file cannot be read, so it is left as it is")},
 		{settings.ErrStileSicherung, i18n.T("the existing styles file has parts that cannot be read and styles.ini.bak already exists, so it is left as it is")},
 		{settings.ErrStileGesperrt, i18n.T("the styles file is locked by another window")},
+		// Bibliothek (volle Ansicht: Schlagworte, Papierkorb; Sitzungs-QA 24.11. abends)
+		{library.ErrGeaendert, i18n.T("the capture was changed in another window or program in the meantime")},
+		{library.ErrPfad, i18n.T("the capture is not inside the library folder")},
+		{library.ErrFremd, i18n.T("the file is not a Schnapp capture")},
+		{library.ErrAnderesDateisystem, i18n.T("the trash is on another file system")},
 	} {
 		if errors.Is(err, f.wert) {
 			// Was hinter dem Fehlerwert steht (etwa der Schlüssel bei ErrUngueltig), bleibt als Zusatz stehen.
-			if _, rest, ok := strings.Cut(text, f.wert.Error()); ok && rest != "" {
+			if _, rest, ok := strings.Cut(text, ohnePaketpraefix(f.wert.Error())); ok && rest != "" { // Präfixe auf beiden Seiten weg
 				return f.grund + rest
 			}
 			return f.grund

@@ -1,16 +1,64 @@
 [
-  {"name": "AQ1 Fußlisten bei offener Ansicht nicht gesperrt", "datei": "internal/ui/menue.go", "paket": "./internal/ui",
-   "alt": "if e.bibl.offen && (i == listeFarbe || i == listeZoom) {", "neu": "if false && e.bibl.offen && (i == listeFarbe || i == listeZoom) {", "timeout": "4m"},
-  {"name": "AQ2 Wechsel wartet nicht auf die Arbeit der Ansicht", "datei": "internal/ui/wechsel.go", "paket": "./internal/ui",
-   "alt": "\tcase e.bibl.arbeitLaeuft:\n", "neu": "\tcase false && e.bibl.arbeitLaeuft:\n", "timeout": "4m"},
-  {"name": "AQ3 Leiste bedienbar während der Arbeit", "datei": "internal/ui/leiste_unten.go", "paket": "./internal/ui",
-   "alt": "&& !e.einst.offen && !e.bibl.arbeitLaeuft // F-676", "neu": "&& !e.einst.offen // F-676", "timeout": "4m"},
-  {"name": "AQ4 Schlagwortfeld schließt trotz beschäftigter Bibliothek", "datei": "internal/ui/bibliothek.go", "paket": "./internal/ui",
-   "alt": "\tif !e.bibliothekFrei() {\n\t\t// Speichern, Wechsel oder eine andere Arbeit läuft", "neu": "\tb.bearbeite = \"\"\n\tif !e.bibliothekFrei() {\n\t\t// Speichern, Wechsel oder eine andere Arbeit läuft", "timeout": "4m"},
-  {"name": "AQ5 Ansicht öffnet während eines Wechsels", "datei": "internal/ui/bibliothek.go", "paket": "./internal/ui",
-   "alt": "\tif e.wechsel.laedt {\n\t\t// Die übernommene Aufnahme schlösse", "neu": "\tif false && e.wechsel.laedt {\n\t\t// Die übernommene Aufnahme schlösse", "timeout": "4m"},
-  {"name": "AQ6 Pruefe wirft geänderte Vorschau nicht weg", "datei": "internal/libview/vorschauen.go", "paket": "./internal/libview",
-   "alt": "if neu := stand(m.rel); neu == \"\" || neu != m.stand {", "neu": "if neu := stand(m.rel); neu == \"\" {"},
-  {"name": "AQ7 Stand wird beim Laden nicht gemerkt", "datei": "internal/libview/vorschauen.go", "paket": "./internal/libview",
-   "alt": "s.bild, s.zustand, s.stand = bild, Da, stand", "neu": "s.bild, s.zustand, s.stand = bild, Da, stand[:0]"}
+  {
+    "name": "AQ1 Fußlisten bei offener Ansicht nicht gesperrt",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "if e.bibl.offen && (i == listeFarbe || i == listeZoom) {",
+    "neu": "if false && e.bibl.offen && (i == listeFarbe || i == listeZoom) {",
+    "timeout": "4m"
+  },
+  {
+    "name": "AQ2 Wechsel wartet nicht auf die Arbeit der Ansicht",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase e.bibl.arbeitLaeuft:\n",
+    "neu": "\tcase false && e.bibl.arbeitLaeuft:\n",
+    "timeout": "4m"
+  },
+  {
+    "name": "AQ3 Leiste bedienbar während der Arbeit",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "&& !e.einst.offen && !e.bibl.arbeitLaeuft // F-676",
+    "neu": "&& !e.einst.offen // F-676",
+    "timeout": "4m"
+  },
+  {
+    "name": "AQ4 Schlagwortfeld schließt trotz beschäftigter Bibliothek",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.bibliothekFrei() {\n\t\t// Speichern, Wechsel oder eine andere Arbeit läuft",
+    "neu": "\tb.bearbeite = \"\"\n\tif !e.bibliothekFrei() {\n\t\t// Speichern, Wechsel oder eine andere Arbeit läuft",
+    "timeout": "4m"
+  },
+  {
+    "name": "AQ5 Ansicht öffnet während eines Wechsels",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.wechsel.laedt {\n\t\t// Die übernommene Aufnahme schlösse",
+    "neu": "\tif false && e.wechsel.laedt {\n\t\t// Die übernommene Aufnahme schlösse",
+    "timeout": "4m"
+  },
+  {
+    "name": "AQ6 Pruefe wirft geänderte Vorschau nicht weg",
+    "datei": "internal/libview/vorschauen.go",
+    "paket": "./internal/libview",
+    "alt": "if neu := stand(m.rel); neu == \"\" || neu != m.stand {",
+    "neu": "if neu := stand(m.rel); neu == \"\" {"
+  },
+  {
+    "name": "AQ7 Stand wird beim Laden nicht gemerkt",
+    "datei": "internal/libview/vorschauen.go",
+    "paket": "./internal/libview",
+    "alt": "s.bild, s.zustand, s.stand = bild, Da, stand",
+    "neu": "s.bild, s.zustand, s.stand = bild, Da, stand[:0]"
+  },
+  {
+    "name": "AQ8 Indexfehler nach dem Papierkorb gilt als Fehlschlag",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase r.papierkorb && errors.Is(r.err, library.ErrIndex):\n",
+    "neu": "\tcase false && r.papierkorb && errors.Is(r.err, library.ErrIndex):\n",
+    "timeout": "4m"
+  }
 ]

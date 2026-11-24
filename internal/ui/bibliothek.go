@@ -15,6 +15,7 @@ package ui
 // der Schlagworte stehen ohne Gio in internal/libview.
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"image/color"
@@ -33,6 +34,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
 	"github.com/Andiministrator/schnapp/internal/libview"
 )
 
@@ -300,6 +302,11 @@ func (e *editor) bibliothekAbholen() bool {
 // bibliothekArbeitFertig meldet das Ende von Papierkorb bzw. Schlagworten und liest Ansicht und Leiste neu.
 func (e *editor) bibliothekArbeitFertig(r bibArbeit) {
 	switch {
+	case r.papierkorb && errors.Is(r.err, library.ErrIndex):
+		// Die Datei liegt im Papierkorb, nur der Index ist nicht nachgeführt (ADR-0016 Nachtrag 6, F-678 Punkt 2): Erfolg
+		// melden, beim nächsten Lesen abgleichen.
+		e.melde(i18n.T("Moved to the trash. It can be restored from there."), false)
+		e.abgleichAnfordern()
 	case r.papierkorb && r.err != nil:
 		e.melde(fmt.Sprintf(i18n.T("Could not move the capture to the trash: %v"), fehlerGrund(r.err)), true)
 		e.abgleichAnfordern() // die Datei fehlt womöglich (F-672)

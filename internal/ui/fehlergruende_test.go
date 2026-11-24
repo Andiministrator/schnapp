@@ -14,6 +14,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
 	"github.com/Andiministrator/schnapp/internal/po"
 	"github.com/Andiministrator/schnapp/internal/settings"
 )
@@ -51,6 +52,10 @@ func TestFehlerGrundUebersetzt(t *testing.T) {
 		{settings.ErrStileUnlesbar, "die vorhandene Stildatei ist nicht lesbar und bleibt deshalb unverändert"},
 		{settings.ErrStileSicherung, "die vorhandene Stildatei hat unlesbare Teile und styles.ini.bak existiert schon, deshalb bleibt sie unverändert"},
 		{settings.ErrStileGesperrt, "die Stildatei ist von einem anderen Fenster gesperrt"},
+		{library.ErrGeaendert, "die Aufnahme wurde inzwischen in einem anderen Fenster oder Programm geändert"},
+		{library.ErrPfad, "die Aufnahme liegt nicht im Ordner der Bibliothek"},
+		{library.ErrFremd, "die Datei ist keine Aufnahme von Schnapp"},
+		{library.ErrAnderesDateisystem, "der Papierkorb liegt auf einem anderen Dateisystem"},
 	} {
 		if g := fehlerGrund(f.wert); g != f.soll {
 			t.Errorf("%q: %q, Soll %q", f.wert, g, f.soll)

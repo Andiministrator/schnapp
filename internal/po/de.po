@@ -1635,3 +1635,15 @@ msgstr "Die offene Aufnahme kann nicht in den Papierkorb. Erst eine andere öffn
 
 msgid "This is the open capture. Open another one first."
 msgstr "Das ist die offene Aufnahme. Erst eine andere öffnen."
+
+msgid "the capture was changed in another window or program in the meantime"
+msgstr "die Aufnahme wurde inzwischen in einem anderen Fenster oder Programm geändert"
+
+msgid "the capture is not inside the library folder"
+msgstr "die Aufnahme liegt nicht im Ordner der Bibliothek"
+
+msgid "the file is not a Schnapp capture"
+msgstr "die Datei ist keine Aufnahme von Schnapp"
+
+msgid "the trash is on another file system"
+msgstr "der Papierkorb liegt auf einem anderen Dateisystem"
