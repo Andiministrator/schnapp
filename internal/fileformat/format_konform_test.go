@@ -142,6 +142,11 @@ func beispiele() []beispiel {
 			d := beispielDok(t, 64, 48)
 			fuege(t, d, document.Lupe{Quelle: document.R(document.Pt(6, 30), document.Pt(16.5, 38)),
 				Ziel: document.R(document.Pt(30, 6), document.Pt(51, 22)), Strich: beispielRot})
+			// Ein Spaltenstreifen in der Quelle: Die Lupe vergrößert die Ansicht, der Streifen fällt heraus
+			// (ADR-0033 Nachtrag 2; Quelle in der Ansicht 6..14,5).
+			if err := d.SetzeStreifen([]document.Streifen{{Von: 10, Bis: 12}}); err != nil {
+				t.Fatal(err)
+			}
 			return d
 		}, Metadaten{}, false},
 		{"minimal", func(t *testing.T) *document.Dokument { return beispielDok(t, 32, 24) }, Metadaten{}, false},

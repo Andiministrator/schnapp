@@ -30,7 +30,7 @@ func rahmenPfad(r document.Rechteck, breite float64) string {
 // lupe schreibt eine Lupe (ADR-0033 Punkte 4 bis 6, docs/format.md 8.5): die Daten s:quelle, s:ziel, s:strich und die
 // Darstellung von unten nach oben — Verbindungslinie, Rahmen um die Quelle, Bild im Ziel, Rahmen um das Ziel. In der
 // Arbeitsdatei (rundlauf) steht kein Bild: Die Pixel liegen im Original (snAO), eine Kopie trüge nach einer späteren
-// Schwärzung den Klartext weiter. Der Export bettet die sichtbaren Pixel der Quelle als PNG ein, vergrößert ohne Glätten.
+// Schwärzung den Klartext weiter. Der Export bettet die sichtbaren Pixel als PNG ein, vergrößert ohne Glätten.
 func (s *schreiber) lupe(d *document.Dokument, o document.Lupe) {
 	s.WriteString(`<g`)
 	s.attr("s:typ", "lupe")
@@ -67,14 +67,28 @@ func (s *schreiber) lupe(d *document.Dokument, o document.Lupe) {
 	s.WriteString(`</g>`)
 }
 
-// lupenBild schreibt das Bild im Ziel für den Export: ein <svg> in der Lage des Ziels, dessen viewBox die Quelle ist
-// (preserveAspectRatio none, beschneidet auf das Ziel), darin die ganzen Pixel unter der Quelle als PNG mit
-// image-rendering pixelated. So nimmt jedes Zielpixel das Quellpixel floor(Quelle.Min + (z − Ziel.Min) · Quelle/Ziel)
-// wie im Renderer (ADR-0033 Punkt 3). Was die Ansicht nicht zeigt, ist im PNG durchsichtig (Punkt 2).
+// lupenBild schreibt das Bild im Ziel für den Export (ADR-0033 Punkt 6, Nachtrag 2 Punkte 1 und 3): ein <svg> in der
+// Lage des Ziels, das auf das Ziel beschneidet, darin ein PNG mit image-rendering pixelated. Eingebettet wird nur, was
+// das Ziel braucht, und davon das Kleinere: die Ansichtspixel unter der Quelle (viewBox = Quelle in der Ansicht) oder,
+// bei weniger Pixeln (Vergrößerung kleiner 1), das fertige Bild auf dem Pixelraster des Ziels (viewBox = Ziel). Beide
+// rechnet document.LupenQuelle, so zeigt jedes Zielpixel dasselbe wie im Renderer; Unsichtbares (vor dem Zuschnitt, im
+// Spalt einer Naht) ist durchsichtig. Liegt das Ziel in keiner Kachel der Ansicht, entfällt das Bild.
 func (s *schreiber) lupenBild(d *document.Dokument, o document.Lupe) {
-	q := o.Quelle
-	r := image.Rect(int(math.Floor(q.Min.X)), int(math.Floor(q.Min.Y)), int(math.Ceil(q.Max.X)), int(math.Ceil(q.Max.Y)))
-	px := d.SichtbarerAusschnitt(r)
+	if !d.Sichtbar(o.Ziel) {
+		return
+	}
+	q := d.LupenQuelle(o)
+	box := q.InAnsicht()
+	if !(box.Breite() > 0 && box.Hoehe() > 0) {
+		return // Quelle ganz in einem Streifen: das Ziel bleibt leer
+	}
+	px := q.AnsichtsAusschnitt()
+	z := o.Ziel
+	zr := image.Rect(int(math.Floor(z.Min.X)), int(math.Floor(z.Min.Y)), int(math.Ceil(z.Max.X)), int(math.Ceil(z.Max.Y))).
+		Intersect(d.Zuschnitt())
+	if flaeche(zr) < flaeche(px.Rect) {
+		px, box = q.Zielbild(zr), z
+	}
 	if px.Rect.Empty() {
 		return
 	}
@@ -83,11 +97,11 @@ func (s *schreiber) lupenBild(d *document.Dokument, o document.Lupe) {
 		return // ein NRGBA im Speicher kodiert immer; ohne Bild bleibt das Ziel leer
 	}
 	s.WriteString(`<svg`)
-	s.attr("x", zahl(o.Ziel.Min.X))
-	s.attr("y", zahl(o.Ziel.Min.Y))
-	s.attr("width", zahl(o.Ziel.Breite()))
-	s.attr("height", zahl(o.Ziel.Hoehe()))
-	s.attr("viewBox", zahl(q.Min.X)+" "+zahl(q.Min.Y)+" "+zahl(q.Breite())+" "+zahl(q.Hoehe()))
+	s.attr("x", zahl(z.Min.X))
+	s.attr("y", zahl(z.Min.Y))
+	s.attr("width", zahl(z.Breite()))
+	s.attr("height", zahl(z.Hoehe()))
+	s.attr("viewBox", zahl(box.Min.X)+" "+zahl(box.Min.Y)+" "+zahl(box.Breite())+" "+zahl(box.Hoehe()))
 	s.attr("preserveAspectRatio", "none")
 	s.WriteString(`><image`)
 	s.attr("x", zahl(float64(px.Rect.Min.X)))
@@ -99,3 +113,6 @@ func (s *schreiber) lupenBild(d *document.Dokument, o document.Lupe) {
 	s.attr("href", "data:image/png;base64,"+base64.StdEncoding.EncodeToString(kodiert.Bytes()))
 	s.WriteString(`/></svg>`)
 }
+
+// flaeche ist die Pixelzahl von r.
+func flaeche(r image.Rectangle) int { return r.Dx() * r.Dy() }

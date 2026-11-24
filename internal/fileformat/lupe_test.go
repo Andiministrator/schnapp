@@ -149,18 +149,16 @@ func exportBild(t *testing.T, svg string) (*image.NRGBA, bool) {
 	return n, true
 }
 
-// TestLupeExportSVG: Der Export trägt die sichtbaren Pixel der Quelle (mit Schwärzung), Verborgenes durchsichtig, in
-// einem <svg> mit der Quelle als viewBox und pixelated.
+// TestLupeExportSVG: Der Export trägt die Ansichtspixel unter der Quelle (mit Schwärzung), auf die Ansicht begrenzt,
+// in einem <svg> mit der Quelle in der Ansicht als viewBox und pixelated (ADR-0033 Nachtrag 2 Punkte 1 und 3).
 func TestLupeExportSVG(t *testing.T) {
 	d, _ := lupenDok(t)
 	if err := d.Schwaerzen(image.Rect(4, 4, 6, 6), document.Schwaerzung{Farbe: color.NRGBA{0, 0, 0, 255}}); err != nil {
 		t.Fatal(err)
 	}
-	// Zuschnitt ab x = 8 (Spalten 4 bis 7 der Quelle verborgen) und ein Zeilenstreifen 6..7 in der Quelle.
+	// Zuschnitt ab x = 8: Die Quelle 4..12 liegt in der Ansicht bei −4..4, eingebettet werden nur die Spalten 0..4 der
+	// Ansicht (Original 8..12); was vor dem Zuschnitt liegt, steht nicht im PNG und bleibt im Ziel leer.
 	if err := d.SetzeZuschnitt(image.Rect(8, 0, 64, 48)); err != nil {
-		t.Fatal(err)
-	}
-	if err := d.SetzeStreifen([]document.Streifen{{Zeilen: true, Von: 6, Bis: 7}}); err != nil {
 		t.Fatal(err)
 	}
 	var buf bytes.Buffer
@@ -168,25 +166,20 @@ func TestLupeExportSVG(t *testing.T) {
 		t.Fatal(err)
 	}
 	svg := buf.String()
-	if !strings.Contains(svg, `viewBox="4 4 8 6" preserveAspectRatio="none"><image x="4" y="4" width="8" height="6" preserveAspectRatio="none"`) {
+	if !strings.Contains(svg, `viewBox="-4 4 8 6" preserveAspectRatio="none"><image x="0" y="4" width="4" height="6" preserveAspectRatio="none"`) {
 		t.Errorf("Bild der Lupe fehlt oder liegt falsch: %.2000s", svg)
 	}
 	px, ok := exportBild(t, svg)
 	if !ok {
 		t.Fatal("kein eingebettetes PNG der Lupe")
 	}
-	if px.Bounds().Size() != image.Pt(8, 6) {
+	if px.Bounds().Size() != image.Pt(4, 6) {
 		t.Fatalf("PNG %v", px.Bounds())
 	}
 	orig := beispielBild(64, 48)
 	for y := 0; y < 6; y++ {
-		for x := 0; x < 8; x++ {
-			ox, oy := 4+x, 4+y
-			want := orig.NRGBAAt(ox, oy)
-			if ox < 8 || oy == 6 {
-				want = color.NRGBA{} // weggeschnitten bzw. weggestaucht
-			}
-			if got := px.NRGBAAt(x, y); got != want {
+		for x := 0; x < 4; x++ {
+			if got, want := px.NRGBAAt(x, y), orig.NRGBAAt(8+x, 4+y); got != want {
 				t.Errorf("PNG (%d,%d): %v, erwartet %v", x, y, got, want)
 			}
 		}

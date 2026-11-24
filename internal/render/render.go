@@ -77,6 +77,8 @@ var ErrZuAufwendig = errors.New("render: Dokument zu aufwendig zu rastern")
 //     belassen: Das Zeitversprechen rund 21 s gilt (ADR-0020 Nachtrag 12, F-601);
 //   - je Füllung fuellGewicht × Fläche ihres aufs Bild beschnittenen Rechtecks: rund 7 ns je Pixel mit einmischer
 //     (F-130, Messung 20.11.2026; vorher rund 30 bis 36 ns über den allgemeinen Weg von x/image/vector, Gewicht 100);
+//     eine Lupe, deren Ziel in die Ansicht reicht, zählt so ihr Ziel und zusätzlich ihre aufs Original begrenzte Quelle,
+//     weil der SVG-Export bis zu so viele Pixel einbettet (ADR-0033 Nachtrag 2 Punkt 3, K193-1);
 //   - je Polygonecke punktGewicht (Geometrie, Ausrichten, LineTo; rund 30 ns) und je Kante kantenGewicht ×
 //     Zeilenschritte (kantenSchritte, kreisSchritte): Der Rasterizer läuft jede Kante zeilenweise ab, auch die Zeilen
 //     über dem Ausschnitt, und in jeder Zeile im Ausschnitt über ihre ganze waagerechte Spanne, auch außerhalb. Breite

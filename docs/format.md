@@ -377,31 +377,44 @@ damaged.
 | `s:strich` | stroke of both frames and of the connecting line |
 
 Width and height of both areas MUST be greater than 0 and at most `max_size`. The magnification is not stored: it is
-`target width / source width` horizontally and `target height / source height` vertically. Schnapp keeps both equal;
-a file in which they differ is valid and is drawn stretched.
+`target width / source width` horizontally and `target height / source height` vertically, with the source measured
+**in the view** (section 7, see below). Schnapp keeps both equal; a file in which they differ is valid and is drawn
+stretched.
 
-**The content is not stored.** The target shows the pixels of the original (`snAO`) under the source, read anew
-whenever the object is drawn. A redaction in the source therefore shows in the magnifier at once, and no part of the
-file keeps a copy of the redacted content (section 9). Only what the view shows is magnified: source pixels outside the
-crop, inside a squeeze strip or outside the original are transparent in the target, so that a magnifier never carries
-anything cropped or squeezed away into an export. Annotations under the source are not part of the content. The
-`snAP` document carries the frames and the line as presentation, never pixels.
+**The content is not stored, and it is the view that is magnified.** Both areas are stored in pixels of the original,
+like all objects, but the target shows the source as the view shows it, read anew from the original (`snAO`) whenever
+the object is drawn. A redaction in the source therefore shows in the magnifier at once, and no part of the file keeps a
+copy of the redacted content (section 9). The source is mapped into the view per axis without clamping to the crop
+(`view(v) = v - crop.min - removed`, where `removed` counts the squeezed-away pixels before `v` inside the crop, and a
+point inside a strip falls on its edge): strips squeezed away inside the source drop out, so the target has no empty
+band for them, and what lies before or after the crop keeps its width. Only what the view shows is magnified: a target
+pixel whose view pixel lies outside the view (outside the crop or the original) or whose centre lies in the transparent
+gap of a seam (7.2) stays transparent, so that a magnifier never carries anything cropped or squeezed away, nor
+anything the gap hides, into an export. Annotations under the source are not part of the content. The `snAP` document
+carries the frames and the line as presentation, never pixels.
 
 Drawing, bottom to top, all in the colour and width of `s:strich`:
 
 1. the connecting line between the centres of source and target, cut off where it enters either area (from the edge of
    the source to the edge of the target), with round caps; no line if the areas overlap;
 2. the frame around the source;
-3. the enlarged content in the target, by **nearest neighbour** without smoothing: the target pixel whose centre is at
-   `z` (original pixels) shows the source pixel `floor(quelle.min + (z - ziel.min) x quelle.size / ziel.size)`, per
-   axis;
+3. the enlarged content in the target, by **nearest neighbour** without smoothing: with `qa` the source in the view
+   (both corners mapped as above), the target pixel whose centre is at `z` (original pixels) shows the view pixel
+   `floor(qa.min + (z - ziel.min) x qa.size / ziel.size)`, per axis, and that is the original pixel the view shows
+   there; if `qa` has no extent on an axis (the source lies inside a strip), the target stays transparent;
 4. the frame around the target.
 
-Each frame is centred on the edge of its area and has square outer corners, like a `kasten` with corner radius 0. The
-layer attributes (8.5) apply to the object as a whole. Example: `testdata/format/magnifier`.
+Without crop offset and strips the view is the original, and step 3 reads
+`floor(quelle.min + (z - ziel.min) x quelle.size / ziel.size)`. Each frame is centred on the edge of its area and has
+square outer corners, like a `kasten` with corner radius 0. The layer attributes (8.5) apply to the object as a whole.
+Example: `testdata/format/magnifier`.
 
-Informative: the SVG export embeds the visible source pixels as a PNG inside a nested `svg` element at the target whose
-`viewBox` is the source, with `preserveAspectRatio="none"` and `image-rendering:pixelated`.
+Informative: the SVG export embeds, inside a nested `svg` element at the target that clips to it
+(`preserveAspectRatio="none"`, `image-rendering:pixelated`), the smaller of two PNG images, both with the hidden pixels
+transparent: the whole view pixels under `qa`, limited to the view, with `qa` as `viewBox`; or, if it has fewer pixels
+(magnification below 1), the finished content on the pixel grid of the original inside the target and the crop, with
+the target as `viewBox`. A magnifier whose target lies in no visible tile carries no image. Since the export embeds up
+to the source area, Schnapp counts that area in its rendering budget.
 
 ## 9. Redaction
 
@@ -523,7 +536,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `redaction` | one filled and one pixelated redaction, applied to the pixels |
 | `text-style` | one text with all optional text attributes: a family that is not installed, `bold italic underline strike`, `center` |
 | `layers` | three objects with layer attributes: a named, half-opaque box, a hidden and locked arrow, a step number without them |
-| `magnifier` | format version 2: one magnifier with a non-integer source; the visible image shows no annotations, as in all examples |
+| `magnifier` | format version 2: one magnifier with a non-integer source over a column strip (the strip drops out of the magnified view, 8.7); the visible image shows no annotations, as in all examples |
 
 In the examples the visible image is the view *without* annotations (annotation rendering depends on a font
 rasteriser and is not part of the format).

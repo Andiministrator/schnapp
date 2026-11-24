@@ -8,6 +8,7 @@ import (
 	"image/color"
 	"math"
 	"slices"
+	"sort"
 )
 
 // Kante ist die Form der Stauch-Kante eines Dokuments (ADR-0023 Nachtrag 6). Der Nullwert ist der Abriss, die
@@ -196,6 +197,25 @@ func (l *Kantenlinie) Band(dst []Punkt, n Naht, von, bis float64) []Punkt {
 		dst[2*anz+1-i] = quer(n, t, float64(m+bisH)/100)
 	}
 	return dst
+}
+
+// quer liefert die Querlage der Kanten des Bands von bis bis (wie Band) an der Stelle t entlang der Naht n, in Pixeln
+// der Ansicht: zwischen zwei Stützpunkten linear wie die Kanten des Vielecks, vor dem ersten und hinter dem letzten wie
+// diese. So prüft die Lupe, ob ein Ansichtspixel im durchsichtigen Spalt liegt (ADR-0033 Nachtrag 2 Punkt 1).
+func (l *Kantenlinie) quer(n Naht, t, von, bis float64) (a, b float64) {
+	i := sort.SearchFloat64s(l.t, t) // erster Stützpunkt mit l.t[i] >= t
+	var m float64
+	switch {
+	case i == 0:
+		m = float64(l.m[0])
+	case i == len(l.t):
+		m = float64(l.m[len(l.m)-1])
+	default:
+		anteil := (t - l.t[i-1]) / (l.t[i] - l.t[i-1])
+		m = float64(l.m[i-1]) + anteil*float64(l.m[i]-l.m[i-1])
+	}
+	mitte := float64(n.Lage*100) + m
+	return (mitte + float64(hundertstel(von)*l.f)) / 100, (mitte + float64(hundertstel(bis)*l.f)) / 100
 }
 
 // hundertstel rundet v auf ganze Hundertstel.

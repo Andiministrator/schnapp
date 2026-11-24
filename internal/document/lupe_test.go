@@ -66,23 +66,34 @@ func TestLupeGrenzen(t *testing.T) {
 	}
 }
 
-// TestLupeQuellpixel: nächster Nachbar nach ADR-0033 Punkt 3.
+// TestLupeQuellpixel: nächster Nachbar nach ADR-0033 Punkt 3 (ohne Zuschnitt und Stauchen ist die Quelle in der
+// Ansicht die Quelle im Original).
 func TestLupeQuellpixel(t *testing.T) {
+	d, err := Neu(image.NewNRGBA(image.Rect(0, 0, 100, 40)))
+	if err != nil {
+		t.Fatal(err)
+	}
 	l := testLupe() // Quelle x 10..20, Ziel x 40..60: Zielspalten 40 und 41 zeigen 10, 58 und 59 zeigen 19
+	q := d.LupenQuelle(l)
 	for _, f := range []struct {
 		z    float64
 		want int
 	}{{40.5, 10}, {41.5, 10}, {42.5, 11}, {58.5, 19}, {59.5, 19}} {
-		if got := l.QuellSpalte(f.z); got != f.want {
-			t.Errorf("QuellSpalte(%v) = %d, erwartet %d", f.z, got, f.want)
+		if got, ok := q.Spalte(f.z); !ok || got != f.want {
+			t.Errorf("Spalte(%v) = %d %v, erwartet %d", f.z, got, ok, f.want)
+		}
+	}
+	for _, z := range []float64{39.5, 60, 60.5} {
+		if _, ok := q.Spalte(z); ok {
+			t.Errorf("Spalte(%v) außerhalb des Ziels angenommen", z)
 		}
 	}
 	l.Ziel = R(Pt(40, 10), Pt(70, 28)) // 3×
-	if got := l.QuellZeile(10.5 + 3*4); got != 14 {
-		t.Errorf("QuellZeile = %d, erwartet 14", got)
+	if got, ok := d.LupenQuelle(l).Zeile(10.5 + 3*4); !ok || got != 14 {
+		t.Errorf("Zeile = %d, erwartet 14", got)
 	}
 	l.Quelle = R(Pt(10.5, 10), Pt(20.5, 16)) // halbe Pixel: Ziel 40.5 zeigt floor(10.5 + 0.25) = 10
-	if got := l.QuellSpalte(40.5); got != 10 {
+	if got, _ := d.LupenQuelle(l).Spalte(40.5); got != 10 {
 		t.Errorf("halbe Quelle: %d", got)
 	}
 }
@@ -127,45 +138,118 @@ func TestLupeLinie(t *testing.T) {
 	}
 }
 
-// TestSichtbarerAusschnitt: Pixel außerhalb des Zuschnitts, in Streifen und außerhalb des Originals sind durchsichtig.
-func TestSichtbarerAusschnitt(t *testing.T) {
-	b := image.NewNRGBA(image.Rect(0, 0, 10, 8))
-	for i := range b.Pix {
-		b.Pix[i] = uint8(i%251 + 1)
+// lupenMuster ist ein Dokument mit eigener Farbe je Pixel.
+func lupenMuster(t *testing.T, w, h int) *Dokument {
+	t.Helper()
+	b := image.NewNRGBA(image.Rect(0, 0, w, h))
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			b.SetNRGBA(x, y, color.NRGBA{uint8(x), uint8(y), uint8(x/256 + 1), 255})
+		}
 	}
 	d, err := Neu(b)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := d.SetzeZuschnitt(image.Rect(2, 0, 10, 8)); err != nil {
+	return d
+}
+
+// TestLupenQuelleAnsicht (ADR-0033 Nachtrag 2 Punkt 1): Die Lupe vergrößert die Ansicht. Ein weggestauchter Streifen
+// in der Quelle fällt heraus (keine Lücke im Ziel), was vor dem Zuschnitt liegt, behält seine Breite und bleibt leer,
+// und Pixel im Spalt der Naht bleiben leer.
+func TestLupenQuelleAnsicht(t *testing.T) {
+	d := lupenMuster(t, 300, 100)
+	if err := d.SetzeZuschnitt(image.Rect(20, 0, 300, 100)); err != nil {
 		t.Fatal(err)
 	}
-	if err := d.SetzeStreifen([]Streifen{{Zeilen: true, Von: 3, Bis: 5}, {Von: 6, Bis: 7}}); err != nil {
+	if err := d.SetzeStreifen([]Streifen{{Von: 100, Bis: 140}}); err != nil {
 		t.Fatal(err)
 	}
-	a := d.SichtbarerAusschnitt(image.Rect(-3, -3, 20, 20))
-	if a.Rect != b.Rect {
-		t.Fatalf("Grenzen %v", a.Rect)
+	// Naht in der Ansicht bei x = 80 (Original 100 − 20). Quelle Original 10..180: Ansicht −10..120, also 130 breit.
+	l := Lupe{Quelle: R(Pt(10, 60), Pt(180, 70)), Ziel: R(Pt(0, 0), Pt(260, 20))}
+	q := d.LupenQuelle(l)
+	if qa := q.InAnsicht(); qa != R(Pt(-10, 60), Pt(120, 70)) {
+		t.Fatalf("Quelle in der Ansicht %v", qa)
 	}
-	for y := 0; y < 8; y++ {
-		for x := 0; x < 10; x++ {
-			sichtbar := x >= 2 && x != 6 && (y < 3 || y >= 5)
-			if d.SpalteSichtbar(x) != (x >= 2 && x != 6) || d.ZeileSichtbar(y) != (y < 3 || y >= 5) {
-				t.Fatalf("Sichtbar (%d,%d)", x, y)
+	orig := d.OriginalBild()
+	gezeigt, leer, spalt := 0, 0, 0
+	q.Abtasten(260, 20, func(i int) float64 { return float64(i) + 0.5 }, func(j int) float64 { return float64(j) + 0.5 },
+		func(i, j int, px []byte) {
+			vx, vy := -10+i/2, 60+j/2 // 2× in beiden Achsen
+			ox := vx + 20
+			if vx >= 80 {
+				ox = vx + 60
 			}
-			want := color.NRGBA{}
-			if sichtbar {
-				want = b.NRGBAAt(x, y)
+			if vx < 0 || q.ImSpalt(vx, vy) {
+				t.Fatalf("Ziel (%d,%d) zeigt Ansicht (%d,%d) (vor dem Zuschnitt oder im Spalt)", i, j, vx, vy)
 			}
-			if got := a.NRGBAAt(x, y); got != want {
-				t.Errorf("(%d,%d): %v, erwartet %v", x, y, got, want)
+			if ox >= 100 && ox < 140 {
+				t.Fatalf("Ziel (%d,%d) zeigt Streifenspalte %d", i, j, ox)
+			}
+			o := orig.PixOffset(ox, vy)
+			if string(px) != string(orig.Pix[o:o+4]) {
+				t.Fatalf("Ziel (%d,%d): %v, erwartet Original (%d,%d)", i, j, px, ox, vy)
+			}
+			gezeigt++
+		}, nil)
+	for j := 0; j < 20; j++ {
+		for i := 0; i < 260; i++ {
+			vx, vy := -10+i/2, 60+j/2
+			if vx < 0 || q.ImSpalt(vx, vy) {
+				leer++
+				if vx >= 0 {
+					spalt++
+				}
 			}
 		}
 	}
-	if !d.SichtbarerAusschnitt(image.Rect(20, 20, 30, 30)).Rect.Empty() {
-		t.Error("Ausschnitt neben dem Bild nicht leer")
+	// Leer bleiben genau die Pixel vor dem Zuschnitt (10 Ansichtsspalten, also 20 Zielspalten) und im Spalt.
+	if gezeigt+leer != 260*20 {
+		t.Errorf("Abtasten zeigte %d Pixel, %d bleiben leer: Summe nicht 5200", gezeigt, leer)
 	}
-	if d.SpalteSichtbar(-1) || d.SpalteSichtbar(10) || d.ZeileSichtbar(8) {
-		t.Error("außerhalb sichtbar")
+	if spalt == 0 {
+		t.Error("kein Pixel im Spalt: der Test prüft den Spalt nicht")
+	}
+	// Spaltband: ±8 um die Mittellinie (Faktor 1), die höchstens 6 auslenkt.
+	for vy := 60; vy < 70; vy++ {
+		if q.ImSpalt(80+15, vy) || q.ImSpalt(80-16, vy) || !q.ImSpalt(80, vy) && !q.ImSpalt(79, vy) {
+			t.Errorf("Spalt in Zeile %d falsch begrenzt", vy)
+		}
+	}
+	// AnsichtsAusschnitt: die ganzen Ansichtspixel unter der Quelle, auf die Ansicht begrenzt, Spalt durchsichtig.
+	a := q.AnsichtsAusschnitt()
+	if a.Rect != image.Rect(0, 60, 120, 70) {
+		t.Fatalf("Ansichtsausschnitt %v", a.Rect)
+	}
+	for vy := 60; vy < 70; vy++ {
+		for vx := 0; vx < 120; vx++ {
+			ox := vx + 20
+			if vx >= 80 {
+				ox = vx + 60
+			}
+			want := orig.NRGBAAt(ox, vy)
+			if q.ImSpalt(vx, vy) {
+				want = color.NRGBA{}
+			}
+			if got := a.NRGBAAt(vx, vy); got != want {
+				t.Errorf("Ausschnitt (%d,%d) = %v, erwartet %v", vx, vy, got, want)
+			}
+		}
+	}
+	// Zielbild: dieselben Pixel wie Abtasten auf dem Raster des Originals, außerhalb des Ziels durchsichtig.
+	z := q.Zielbild(image.Rect(-2, -2, 262, 22))
+	q.Abtasten(260, 20, func(i int) float64 { return float64(i) + 0.5 }, func(j int) float64 { return float64(j) + 0.5 },
+		func(i, j int, px []byte) {
+			if got := z.NRGBAAt(i, j); got != (color.NRGBA{px[0], px[1], px[2], px[3]}) {
+				t.Fatalf("Zielbild (%d,%d) = %v", i, j, got)
+			}
+		}, nil)
+	if z.NRGBAAt(-1, 5) != (color.NRGBA{}) || z.NRGBAAt(261, 5) != (color.NRGBA{}) {
+		t.Error("Zielbild außerhalb des Ziels nicht durchsichtig")
+	}
+	// Liegt die Quelle ganz im Streifen, hat sie in der Ansicht keine Breite: Das Ziel bleibt leer.
+	l.Quelle = R(Pt(105, 60), Pt(135, 70))
+	if _, ok := d.LupenQuelle(l).Spalte(5.5); ok {
+		t.Error("Quelle ganz im Streifen zeigt etwas")
 	}
 }
