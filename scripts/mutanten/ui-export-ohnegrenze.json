@@ -1,0 +1,44 @@
+[
+  {
+    "name": "X1 Export über dem Budget lehnt auch mit --ignore-limit ab (F-610)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if !e.ohneGrenze {",
+    "neu": "if true {"
+  },
+  {
+    "name": "X2 Export über dem Budget geht auch ohne --ignore-limit durch (F-610)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if !e.ohneGrenze {",
+    "neu": "if false {"
+  },
+  {
+    "name": "X3 Editor übernimmt den Schalter nicht (F-610)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "ohneGrenze: exportOhneGrenze.Load()}",
+    "neu": "ohneGrenze: false}"
+  },
+  {
+    "name": "X4 Hinweis auf die Dauer fehlt nach dem Export über dem Budget (F-610)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif ueberBudget {\n\t\te.meldeNebenbei(",
+    "neu": "\tif false && ueberBudget {\n\t\te.meldeNebenbei("
+  },
+  {
+    "name": "X5 oeffneImEditor reicht --ignore-limit nicht an die Oberfläche durch (F-610)",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "ui.SetzeExportOhneGrenze(ohneGrenze) //",
+    "neu": "ui.SetzeExportOhneGrenze(false) //"
+  },
+  {
+    "name": "X6 Schalter des vorigen Editors bleibt bei jeder weiteren Öffnung hängen (F-610)",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "ui.SetzeExportOhneGrenze(ohneGrenze) //",
+    "neu": "if ohneGrenze {\n\t\tui.SetzeExportOhneGrenze(true)\n\t} //"
+  }
+]

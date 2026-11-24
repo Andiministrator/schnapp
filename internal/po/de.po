@@ -272,6 +272,9 @@ msgstr "SVG-Bild"
 msgid "Exported to %s"
 msgstr "Exportiert nach %s"
 
+msgid "Exported to %s. The image is over the render limit (--ignore-limit); exporting can take long."
+msgstr "Exportiert nach %s. Das Bild liegt über der Rechengrenze (--ignore-limit); der Export kann lange dauern."
+
 msgid "Could not export: %v"
 msgstr "Export nicht möglich: %v"
 

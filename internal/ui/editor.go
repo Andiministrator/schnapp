@@ -70,6 +70,17 @@ var zwischenablageFehlt atomic.Bool
 // Zwischenablage übernommen hat: Das Fenster hält die Kopie dann nicht mehr, die Warnung beim Schließen entfällt.
 var zwischenablageUebernommen atomic.Bool
 
+// exportOhneGrenze: Der Editor wurde mit --ignore-limit geöffnet; der Export prüft das Rechenbudget dann nicht
+// (ADR-0033 Nachtrag 4, F-610). Gesetzt von cmd/schnapp vor Editor, gelesen von neuerEditor.
+var exportOhneGrenze atomic.Bool
+
+// SetzeExportOhneGrenze legt fest, ob der nächste Editor auch über dem Rechenbudget exportiert: nur für ein Dokument, das
+// mit --ignore-limit geöffnet wurde (ADR-0033 Nachtrag 4, F-610). Ohne Aufruf, und mit false, lehnt der Export ab.
+func SetzeExportOhneGrenze(an bool) { exportOhneGrenze.Store(an) }
+
+// ExportOhneGrenze liefert die Einstellung von SetzeExportOhneGrenze (für Tests der Verdrahtung).
+func ExportOhneGrenze() bool { return exportOhneGrenze.Load() }
+
 // ErrOverlayOffen: Nach der Frist waren noch Overlay-Fenster offen; der Editor öffnet dann nicht (F-82).
 var ErrOverlayOffen = errors.New("ui: Overlay-Fenster noch offen")
 
@@ -157,7 +168,8 @@ func neuerEditor(titel string, d *document.Dokument, speichern Speichern, rettun
 	// Nur die Go-Schriften, wie im Renderer: sonst zeigte der Bildschirm Zeichen aus Systemschriften, die in der
 	// gespeicherten Datei als Kästchen erscheinen (Kritik A-3).
 	th.Shaper = text.NewShaper(text.NoSystemFonts(), text.WithCollection(gofont.Collection()))
-	e := &editor{w: new(app.Window), thema: th, s: canvas.NeueSitzung(d), titel: titel, speichern: speichern, rettung: rettung}
+	e := &editor{w: new(app.Window), thema: th, s: canvas.NeueSitzung(d), titel: titel, speichern: speichern, rettung: rettung,
+		ohneGrenze: exportOhneGrenze.Load()}
 	// Systemschriften im Hintergrund suchen, damit die Schriftliste sie kennt (ADR-0021 Nachtrag 10 Punkt 3).
 	fonts.StarteSuche(e.w.Invalidate)
 	e.rettungStart() // vor dem ersten Bild: Wiederholte Schwärzungen ändern die Pixel
@@ -250,6 +262,9 @@ type editor struct {
 	// fensterHaeltKopie: Die Zwischenablage trägt das Bild nur über dieses Fenster (kein Halter möglich, Rückfall,
 	// ADR-0015 Nachtrag 2); fensterWarnung: Das Schließen wurde deswegen schon einmal angehalten (F-295).
 	fensterHaeltKopie, fensterWarnung bool
+
+	// ohneGrenze: mit --ignore-limit geöffnet, der Export lehnt über dem Rechenbudget nicht ab (ADR-0033 Nachtrag 4).
+	ohneGrenze bool
 
 	rettung Rettung        // Rettungskopie (ADR-0029); nil: keine
 	rett    rettungZustand // Bündelung der Rettungskopie
@@ -1188,10 +1203,17 @@ func (e *editor) exportFertig(r exportErgebnis) {
 	}
 	// Rechenbudget vor dem Kodieren (ADR-0033 Nachtrag 2 Punkt 3): Im Editor kann ein Dokument über das Budget wachsen,
 	// das beim Öffnen geprüft wurde; der Export (auch der SVG-Export mit den Bildern der Lupen) liefe dann unbegrenzt.
+	// Mit --ignore-limit geöffnet (ADR-0033 Nachtrag 4, F-610): kein Abbruch, wie Speichern und --export --ignore-limit;
+	// die Leiste sagt nach dem Schreiben, dass es lange dauern kann (der Export läuft in der Ereignisschleife, vorher
+	// käme kein Bild mehr dazwischen).
+	ueberBudget := false
 	if err := render.Pruefe(e.s.D); err != nil {
 		diagnoseEditor("Export: %v", err)
-		e.meldeNebenbei(i18n.T("Could not export: the image has too many or too large annotations. Remove some first."), true)
-		return
+		if !e.ohneGrenze {
+			e.meldeNebenbei(i18n.T("Could not export: the image has too many or too large annotations. Remove some first."), true)
+			return
+		}
+		ueberBudget = true
 	}
 	schreibe := export.SchreibeAtomar
 	if angehaengt {
@@ -1200,6 +1222,10 @@ func (e *editor) exportFertig(r exportErgebnis) {
 	err = schreibe(pfad, func(w io.Writer) error { return export.Schreibe(e.s.D, f, w) })
 	if err != nil {
 		e.meldeNebenbei(fmt.Sprintf(i18n.T("Could not export: %v"), exportFehlerText(err, "")), true)
+		return
+	}
+	if ueberBudget {
+		e.meldeNebenbei(fmt.Sprintf(i18n.T("Exported to %s. The image is over the render limit (--ignore-limit); exporting can take long."), filepath.Base(pfad)), false)
 		return
 	}
 	e.meldeNebenbei(fmt.Sprintf(i18n.T("Exported to %s"), filepath.Base(pfad)), false)

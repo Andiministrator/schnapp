@@ -48,6 +48,7 @@ func oeffneImEditor(pfad string, ohneGrenze bool, kante document.Kante) error {
 		return err
 	}
 	r := rettungFuer(abs, ohneGrenze)
+	ui.SetzeExportOhneGrenze(ohneGrenze) // auch der Export aus dem Editor prüft das Budget dann nicht (ADR-0033 Nachtrag 4)
 	return editorStarten(filepath.Base(abs), g.Dokument, speichernMitNachher(library.Neu(orte), abs, g, stand, r.nachSpeichern()), r.ui())
 }
 
@@ -67,6 +68,7 @@ func bearbeiteNeu(a abgelegt) error {
 	}
 	g := &fileformat.Gelesen{Dokument: a.d}
 	r := rettungFuer(abs, false)
+	ui.SetzeExportOhneGrenze(false)
 	return editorStarten(filepath.Base(abs), a.d, speichernMitNachher(library.Neu(orte), abs, g, a.stand, r.nachSpeichern()), r.ui())
 }
 
