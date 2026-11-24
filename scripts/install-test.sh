@@ -15,6 +15,7 @@
 #      entfernt alle vier Dateien.
 #   6. Gescheiterter Bau (F-648): scheitert nur schnapp-ocr, wird schnapp installiert, ein vorhandenes schnapp-ocr bleibt,
 #      Warnung und Exit 0; scheitert schnapp, Exit ungleich 0 und nichts ersetzt. In keinem Fall bleibt eine *.neu liegen.
+#   7. Pfad mit @EXEC@ (F-716): Abbruch vor dem Bau, nichts angelegt.
 #
 # Desktop-Werkzeuge (update-desktop-database, gtk-update-icon-cache, kbuildsycoca6) laufen im Test nur als Attrappen
 # aus scripts/install-test-stub/ (F-367): Der Ordner steht im PATH vor /usr/bin, und Attrappen mit gleichem Namen
@@ -170,6 +171,21 @@ grep -qx 'alt-ocr' "$bin6/schnapp-ocr" || fail "Fall 6b: schnapp-ocr ersetzt"
 for d in schnapp.neu schnapp-ocr.neu; do
 	[ ! -e "$bin6/$d" ] || fail "Fall 6b: Nebendatei $d liegen geblieben"
 done
+
+# --- Fall 7: Pfad mit @EXEC@ (F-716) ------------------------------------------
+# Vor dem Bau abgelehnt: nichts gebaut, nichts installiert, keine Nebendatei (auch nicht schnapp.desktop.neu).
+f7="$sand/f7"
+kopie "$f7/repo"
+mkdir -p -- "$f7/home"
+: > "$f7/go.log"
+rc=0
+env -i HOME="$f7/home" PREFIX="$f7/home/pre@EXEC@fix" PATH="$stub:/usr/bin:/bin" STUB_LOG="$f7/go.log" STUB_FEHL_IN="" \
+	GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null \
+	bash "$f7/repo/install.sh" > "$f7/aus.txt" 2>&1 || rc=$?
+[ "$rc" -ne 0 ] || fail "Fall 7: Pfad mit @EXEC@ angenommen"
+grep -q '@EXEC@ wird nicht unterstützt' "$f7/aus.txt" || fail "Fall 7: Meldung fehlt: $(cat "$f7/aus.txt")"
+grep -q -- '-o ' "$f7/go.log" && fail "Fall 7: es wurde gebaut: $(cat "$f7/go.log")"
+[ -z "$(find "$f7/home" -type f)" ] || fail "Fall 7: Dateien angelegt: $(find "$f7/home" -type f)"
 
 if [ "$fehler" -eq 0 ]; then
 	echo "install-test: alle Fälle bestanden"

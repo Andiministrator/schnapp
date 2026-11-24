@@ -25,8 +25,9 @@ jobs:
         # libegl-mesa0 und libgl1-mesa-dri: Mesa mit Software-Rasterung für die Zeichentests ohne Fenster (Karte #224);
         # libgles2 liefert libGLESv2.so.2, ohne die Gio headless im Runner übersprang (CI-Befund, F-602, Karte #227)
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwayland-dev libegl-dev libxkbcommon-dev libegl-mesa0 libgl1-mesa-dri libgles2
+      # Mit Tag probe, sonst fehlen Pakete, deren Dateien alle //go:build probe tragen (cmd/schnapp-fernbedienung, F-715)
       - name: gofmt
-        run: test -z "$(gofmt -l $(go list -f '{{.Dir}}' ./...))"
+        run: test -z "$(gofmt -l $(go list -f '{{.Dir}}' ./...) $(GOFLAGS=-tags=novulkan,nox11,probe go list -f '{{.Dir}}' ./...))"
       - run: go vet ./...
       - run: go test ./...
       # Zeichnen des Editors ohne Fenster (Gio headless über EGL surfaceless, internal/ui/zeichnen_headless_test.go):

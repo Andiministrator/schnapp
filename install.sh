@@ -101,6 +101,7 @@ cache_aktualisieren() {
 nebendateien_weg() {
 	if [ -e "$PROGRAMM.neu" ] || [ -L "$PROGRAMM.neu" ]; then entferne "$PROGRAMM.neu" "$PREFIX" "/bin/schnapp.neu"; fi
 	if [ -e "$OCR.neu" ] || [ -L "$OCR.neu" ]; then entferne "$OCR.neu" "$PREFIX" "/bin/schnapp-ocr.neu"; fi
+	if [ -e "$DESKTOP.neu" ] || [ -L "$DESKTOP.neu" ]; then entferne "$DESKTOP.neu" "$DATEN" "/applications/schnapp.desktop.neu"; fi
 }
 
 deinstallieren() {
@@ -129,6 +130,9 @@ installieren() {
 			echo "install.sh: Pfad mit \" \` \$ oder \\ wird nicht unterstützt: $PROGRAMM" >&2; exit 1 ;;
 	esac
 	case "$PROGRAMM" in *$'\n'*) echo "install.sh: Pfad mit Zeilenumbruch" >&2; exit 1 ;; esac
+	# @EXEC@ ist der Platzhalter der Vorlage; ein Pfad, der ihn enthält, ließe die Ersetzung unten nie enden. Vor dem
+	# Bau ablehnen, nicht erst nach dem Installieren der Programme (F-716).
+	case "$PROGRAMM" in *@EXEC@*) echo "install.sh: Pfad mit @EXEC@ wird nicht unterstützt: $PROGRAMM" >&2; exit 1 ;; esac
 
 	# Version aus git, ohne führendes v (ADR-0006). Nur ein Tag dieses Repos zählt: Liegt der Ordner in einem fremden
 	# Repo (Tarball im Home-Repo), gilt dessen Stand nicht. Nur v-Tags zählen (F-364), ein Tag wie sprint-ende
