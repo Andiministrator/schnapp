@@ -77,12 +77,12 @@ func TestEditorSchneidetTextAnDerNaht(t *testing.T) {
 	links, rechts, tinte := 0, 0, 0
 	for y := 0; y < 90; y++ {
 		for x := 0; x < 96; x++ {
-			if rgbaZuNRGBA(mit.RGBAAt(x, y)) != rgbaZuNRGBA(ohne.RGBAAt(x, y)) {
+			if !rgbaNah(mit.RGBAAt(x, y), ohne.RGBAAt(x, y)) {
 				links++
 			}
 		}
 		for x := 104; x < 320; x++ {
-			if rgbaZuNRGBA(mit.RGBAAt(x, y)) != rgbaZuNRGBA(ohne.RGBAAt(x+40, y)) {
+			if !rgbaNah(mit.RGBAAt(x, y), ohne.RGBAAt(x+40, y)) {
 				rechts++
 			}
 			if rgbaZuNRGBA(mit.RGBAAt(x, y)) == schrift {
@@ -154,4 +154,11 @@ func TestEditorSchneidetSchraegeKantenAnDerNaht(t *testing.T) {
 			t.Errorf("%s: über der Naht nicht abgeschnitten: links %d, rechts %d Pixel abweichend", name, links, rechts)
 		}
 	}
+}
+
+// rgbaNah lässt 2 Stufen je Kanal zu: Software-Rasterung (llvmpipe in der CI) glättet Kanten an anderer Lage um eine
+// Stufe anders; ein falsch gesetzter oder unbeschnittener Text weicht um viele Stufen ab.
+func rgbaNah(a, b color.RGBA) bool {
+	d := func(x, y uint8) bool { return int(x)-int(y) <= 2 && int(y)-int(x) <= 2 }
+	return d(a.R, b.R) && d(a.G, b.G) && d(a.B, b.B) && d(a.A, b.A)
 }
