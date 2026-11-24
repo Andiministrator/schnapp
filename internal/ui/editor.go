@@ -1169,7 +1169,7 @@ type exportErgebnis struct {
 // Antwort kommt erst nach der Wahl des Nutzers; sie weckt das Fenster, geschrieben wird in der Ereignisschleife
 // (exportAbholen), wie bei der Signalwache (F-77). Nur ein Dialog zugleich.
 func (e *editor) exportStarten() {
-	if e.exportOffen || e.s.Zieht() {
+	if e.exportOffen || e.s.Zieht() || e.wechsel.laedt { // während des Ladens einer anderen Aufnahme nicht (F-652)
 		return
 	}
 	e.exportOffen = true

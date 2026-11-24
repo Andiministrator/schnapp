@@ -111,3 +111,33 @@ Teil 2. Was die Entscheidung offen ließ oder anders kam:
 10. **Nummern:** Der Nachtrag zu ADR-0018 ist Nachtrag 6 (5 war schon belegt), zu ADR-0026 Nachtrag 9, zu ADR-0034
     Nachtrag 2 (die Tafel wirkt für diesen Schlüssel sofort). Die Logik ohne Gio steht im Paket `internal/libview`.
 11. **Mausrad:** Senkrechtes und waagerechtes Rad rollen beide die Leiste.
+
+## Zusatz (24.11.2026, Sitzungs-QA, Karte #252, Claude Opus 5.5)
+
+Wo die Entscheidung oben und die Ergänzungen sich widersprechen, **gelten die Ergänzungen** (F-659):
+
+- **Punkt 1, „Sprache über `date format`“:** überholt durch Ergänzung 3 (Kontexte `date part` und `weekday`).
+- **Konsequenzen, „ADR-0018 Nachtrag 5“:** gemeint ist Nachtrag 6 (Ergänzung 10).
+- **Konsequenzen, „über den Menüeintrag, nicht über einen Umschalter“:** überholt durch Ergänzung 9: Im Drehbuch-Lauf
+  startet die Leiste aus (`SCHNAPP_PROBE_LEISTE_AUS`) und merkt ihren Schalter nicht. Die Einstellung bleibt dabei
+  unberührt, die Lehre aus F-539 also gewahrt.
+- **Punkt 1 und 3, Knopf „Library“ in der Leiste:** erst mit Teil 2 (Ergänzung 1).
+
+Nachgeschärft nach der Sitzungs-QA (Kritiker B):
+
+- **Ergänzung 6, Sperre in beiden Richtungen (F-652, F-653):** Solange die andere Aufnahme lädt, ruht das Bearbeiten
+  wie beim Speichern (`canvas.Sitzung.SetzeRuhe`): kein Export-Dialog, kein Bereich der Texterkennung, keine Texteingabe,
+  kein Zug. Speichern, Schließen und Signale bleiben möglich und halten den Wechsel an. Ist beim Abholen doch ein
+  Export-Dialog, eine Texteingabe oder ein Zug offen, bleibt die offene Aufnahme. „Wird die offene Aufnahme in der
+  Zwischenzeit geändert“ meint damit nur noch Änderungen an der Ruhe vorbei.
+- **Ergänzung 6, Fehler beim Laden:** übersetzt, soweit die Ladefunktion den Fehler kennt; sonst englisch ohne
+  Paketpräfix und ohne Pfad (ADR-0019 Nachtrag 4, F-663).
+- **Ergänzung 6, „ein Klick auf die offene Aufnahme tut nichts“:** auch wenn einer der Pfade über einen Verweis führt;
+  verglichen wird wie beim grünen Rand über `library.Relativ` (F-657).
+- **Ergänzung 4, `ErzeugeVorschau`:** läuft unter der Sperre der Bibliothek wie Speichern und Entfernen und schreibt nur,
+  solange die Datei den geprüften Stand behält (vor dem Lesen, vor und nach dem Umbenennen); nur reguläre Dateien, kein
+  Verweis, kein Ordner-Verweis aus der Ablage (F-651, Kernprinzip 2).
+- **Tastaturfokus:** Kommt beim Neulesen vorn eine Aufnahme dazu, bleibt der Fokus bei derselben Aufnahme (F-656); ohne
+  Fokus in der Leiste zieht das Neulesen ihn nicht hinein.
+- **Ergänzung 9, Sichtprobe:** Die Probe-Bibliothek legt `go run ./scripts/probelibrary -heim tmp/probe/home` an
+  (Aufruf im Kopf von `bibliothek-174-leiste.txt`).

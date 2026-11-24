@@ -114,6 +114,9 @@ type Sitzung struct {
 	ansichtMeldung   AnsichtMeldung
 	// hg ist das Speichern im Hintergrund (hintergrund.go, ADR-0020 Nachtrag 6).
 	hg hintergrund
+	// ruht: Das Bearbeiten ruht von außen, ohne dass gespeichert wird (die Oberfläche lädt eine andere Aufnahme,
+	// ADR-0036 Ergänzung 6, F-652, F-653); siehe SetzeRuhe.
+	ruht bool
 	// tb ist der Bereichsmodus „Text aus dem Bild kopieren“ (textbereich.go, ADR-0035 Punkt 5).
 	tb textBereich
 }

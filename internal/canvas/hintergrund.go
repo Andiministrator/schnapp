@@ -54,8 +54,18 @@ func (s *Sitzung) SpeichernLaeuft() bool { return s.hg.laeuft }
 // gesperrt meldet, ob Änderungen am Dokument gerade ruhen (F-280): Während des Speicherns nimmt die Sitzung keine an,
 // gleich welcher Weg der Oberfläche sie auslöst (Zeiger, Knopf, Menü, Taste, mehrere Klicks in einem Bild). Jeder
 // ändernde Einstieg fragt das zuerst, ebenso Werkzeug- und Farbwahl (beide bestätigen eine Eingabe oder färben um).
-// Die Ansicht (Zoom, Einpassen) ändert das Dokument nicht; sie sperrt nur die Oberfläche.
-func (s *Sitzung) gesperrt() bool { return s.hg.laeuft }
+// Die Ansicht (Zoom, Einpassen) ändert das Dokument nicht; sie sperrt nur die Oberfläche. Dasselbe gilt, solange das
+// Bearbeiten von außen ruht (SetzeRuhe).
+func (s *Sitzung) gesperrt() bool { return s.hg.laeuft || s.ruht }
+
+// SetzeRuhe lässt das Bearbeiten ruhen wie während des Speicherns (an) oder gibt es wieder frei, ohne dass gespeichert
+// wird: Die Oberfläche lädt eine andere Aufnahme (ADR-0036 Ergänzung 6, F-652, F-653). Eine Änderung, eine
+// Texteingabe oder ein Zug, die in dieser Zeit begännen, gingen mit dem Wechsel verloren. Speichern, Schließen und
+// Signale bleiben möglich.
+func (s *Sitzung) SetzeRuhe(an bool) { s.ruht = an }
+
+// Ruht meldet, ob das Bearbeiten von außen ruht (SetzeRuhe).
+func (s *Sitzung) Ruht() bool { return s.ruht }
 
 // SignalVorgemerkt meldet, ob ein Signal angenommen wurde: Das Fenster schließt, sobald das Speichern zurück ist.
 func (s *Sitzung) SignalVorgemerkt() bool { return s.hg.signal }

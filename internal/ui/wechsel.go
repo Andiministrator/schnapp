@@ -71,7 +71,7 @@ func (e *editor) wechselAnfrage(abs string) {
 		e.melde(i18n.T("Text recognition is running. Press Esc to cancel it first."), false)
 		return
 	}
-	if e.pfad != nil && abs == e.pfad() {
+	if e.istOffen(abs) {
 		return // die offene Aufnahme
 	}
 	e.wechsel.ziel = abs
@@ -107,8 +107,13 @@ func (e *editor) wechselNachSpeichern(r speicherErgebnis, ende canvas.Ende) {
 }
 
 // wechselLaden startet die Ladefunktion in einer Goroutine.
+//
+// Solange ruht das Bearbeiten wie beim Speichern (F-652, F-653): Ein Export-Dialog, eine Texterkennung, eine Texteingabe
+// oder ein Zug, die jetzt begännen, gehörten zur alten Aufnahme und gingen mit dem Wechsel verloren oder träfen die neue.
+// Den Export und die Texterkennung hält exportStarten bzw. die Sitzung (BeginneTextBereich) an.
 func (e *editor) wechselLaden() {
 	e.wechsel.laedt = true
+	e.s.SetzeRuhe(true)
 	e.melde(i18n.T("Opening…"), false)
 	ch := make(chan wechselErgebnis, 1)
 	e.wechsel.antwort = ch
@@ -134,16 +139,24 @@ func (e *editor) wechselAbholen() bool {
 		return false
 	}
 	e.wechsel = wechselZustand{}
+	e.s.SetzeRuhe(false)
 	switch {
 	case r.err != nil:
-		e.melde(fmt.Sprintf(i18n.T("Could not open the capture: %v"), r.err), true)
-	case e.s.Geaendert() || e.s.SpeichernLaeuft() || e.erzwungen || e.s.SignalVorgemerkt():
-		// Während des Ladens bearbeitet, gespeichert oder zum Schließen freigegeben: die offene Aufnahme nicht
-		// verlassen. Die geladene gibt ihre Rettungskopie frei.
+		// Die Ladefunktion übersetzt bekannte Fehler; was sie nicht kennt, verliert hier Paketpräfix und Pfad (F-663).
+		e.melde(fmt.Sprintf(i18n.T("Could not open the capture: %v"), fehlerGrund(r.err)), true)
+	case e.s.Geaendert() || e.s.SpeichernLaeuft() || e.erzwungen || e.s.SignalVorgemerkt() ||
+		e.exportOffen || e.s.TextLaeuft() || e.s.Zieht():
+		// Während des Ladens bearbeitet, gespeichert oder zum Schließen freigegeben, oder ein Export-Dialog, eine
+		// Texteingabe oder ein Zug ist offen (an der Ruhe vorbei, F-652, F-653): die offene Aufnahme nicht verlassen.
+		// Die geladene gibt ihre Rettungskopie frei.
 		if r.g.Rettung != nil {
 			r.g.Rettung.Ende()
 		}
-		if !e.erzwungen && !e.s.SignalVorgemerkt() {
+		switch {
+		case e.erzwungen || e.s.SignalVorgemerkt():
+		case e.exportOffen:
+			e.melde(i18n.T("The other capture was not opened: the export is still open."), false)
+		default:
 			e.melde(i18n.T("The other capture was not opened: this one was changed meanwhile."), false)
 		}
 	default:
@@ -206,4 +219,25 @@ func (e *editor) wechselAbbrechen() {
 	case <-time.After(wechselFrist):
 	}
 	e.wechsel = wechselZustand{}
+	e.s.SetzeRuhe(false)
+}
+
+// istOffen meldet, ob abs die offene Aufnahme ist, auch wenn einer der beiden Pfade über einen Verweis führt
+// (Bilderordner als Symlink, „Öffnen mit“; F-657): wie der grüne Rand (leisteAktuell) über library.Relativ.
+func (e *editor) istOffen(abs string) bool {
+	if e.pfad == nil {
+		return false
+	}
+	offen := e.pfad()
+	switch {
+	case offen == "":
+		return false
+	case abs == offen:
+		return true
+	case e.bib == nil || e.bib.Bibliothek == nil:
+		return false
+	}
+	a, okA := e.bib.Bibliothek.Relativ(abs)
+	o, okO := e.bib.Bibliothek.Relativ(offen)
+	return okA && okO && a == o
 }

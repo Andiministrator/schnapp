@@ -76,6 +76,7 @@ type untenLeiste struct {
 	von, bis  int               // gezeichnete Stellen
 	ops       map[string]leisteBild
 	fokusSoll int    // Stelle, die den Tastaturfokus bekommen soll, sobald sie angemeldet ist; -1: keine
+	fokusHier int    // Stelle, deren Knopf beim letzten Zeichnen den Tastaturfokus hatte; -1: keine
 	hinweis   string // Text für die Statuszeile zur Vorschau mit Fokus oder Zeiger
 }
 
@@ -121,7 +122,7 @@ func (k *untenLeiste) ziele() []event.Tag {
 // leisteStart richtet die Leiste ein (Editor mit Anbindung): Schalter aus der Einstellung, Index im Hintergrund lesen.
 func (e *editor) leisteStart() {
 	k := &e.unten
-	k.fokusSoll = -1
+	k.fokusSoll, k.fokusHier = -1, -1
 	if e.bib == nil || e.bib.Bibliothek == nil {
 		return
 	}
@@ -192,7 +193,14 @@ func (e *editor) leisteIndexAbholen() bool {
 		if r.err != nil {
 			diagnoseEditor("Index der Leiste: %v", r.err)
 		} else {
+			vorher := k.l.Fokus()
 			k.l.Setze(r.es)
+			// Setze hält den Fokus bei derselben Aufnahme; der Tastaturfokus von Gio hängt aber am Knopf der Stelle. Hatte
+			// ein Knopf der Leiste ihn, folgt er der Aufnahme an ihre neue Stelle (F-656) — sonst öffnete Enter nach einer
+			// neuen Aufnahme vorn die Nachbarin.
+			if f := k.l.Fokus(); f >= 0 && f != vorher && vorher >= 0 && k.fokusHier == vorher {
+				k.fokusSoll = f
+			}
 			if i := k.aktuelleStelle(); i >= 0 && k.masse.Breite > 0 {
 				k.l.Zeige(i, k.masse)
 			}
@@ -401,6 +409,7 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 		k.l.Zeige(f, k.masse) // vor dem Zeichnen: die Vorschau muss angemeldet werden, damit sie den Fokus bekommt
 	}
 	k.von, k.bis = k.l.Sichtbar(k.masse)
+	k.fokusHier = -1
 	jetzt := leisteUhr()
 	neueOps := map[string]leisteBild{}
 	y0 := r.Min.Y + gtx.Dp(leisteObenDp)
@@ -420,6 +429,9 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 		}
 		seiteKnopf(gtx, &k.knoepfe[i], kr)
 		fokus := gtx.Focused(&k.knoepfe[i])
+		if fokus {
+			k.fokusHier = i
+		}
 		if fokus && k.l.Fokus() != i {
 			k.l.SetzeFokus(i) // per Tab hierher: ganz zeigen
 			k.l.Zeige(i, k.masse)
