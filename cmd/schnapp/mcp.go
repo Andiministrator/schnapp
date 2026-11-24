@@ -111,7 +111,7 @@ type mcpAnschluesse struct {
 func echteMcpAnschluesse(fehler io.Writer) mcpAnschluesse {
 	an := mcpAnschluesse{
 		quelle:     func() (capture.Quelle, error) { return capture.NeuKWin() },
-		monitore:   ui.Monitore,
+		monitore:   ui.MonitoreMitSkala, // mit Skala für list_screens (F-668); die Namensprüfung stört sie nicht
 		bestaetige: bestaetigeImKind,
 		melde:      notify.Zeige,
 		schliesse:  notify.Schliesse,
@@ -562,17 +562,7 @@ func (an mcpAnschluesse) listeMonitore(_ context.Context, args json.RawMessage, 
 	if err != nil {
 		return mcp.FehlerErgebnis("Could not query the monitors.")
 	}
-	type bildschirm struct {
-		Name   string `json:"name"`
-		Width  int    `json:"width"`
-		Height int    `json:"height"`
-	}
-	liste := struct {
-		Screens []bildschirm `json:"screens"`
-	}{Screens: []bildschirm{}}
-	for _, m := range ms {
-		liste.Screens = append(liste.Screens, bildschirm{m.Name, m.Breite, m.Hoehe})
-	}
+	liste := bildschirmeJSON(ms)
 	text, _ := json.Marshal(liste)
 	return mcp.Ergebnis{Inhalt: []mcp.Inhalt{mcp.TextInhalt(string(text))}, Strukturiert: liste}
 }

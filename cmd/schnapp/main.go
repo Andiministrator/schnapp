@@ -18,6 +18,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/settings"
 	"github.com/Andiministrator/schnapp/internal/ui"
 	"github.com/Andiministrator/schnapp/internal/wlclip"
+	"github.com/Andiministrator/schnapp/internal/wloutputs"
 )
 
 // version wird beim Bau gesetzt: go build -ldflags "-X main.version=0.1.0".
@@ -58,7 +59,7 @@ func main() {
 		case len(args) == 1 && args[0] == bestaetigenArgument:
 			return laufeBestaetigung(os.Stdin, os.Stderr)
 		}
-		return laufe(os.Args[1:], os.Stdout, os.Stderr, ui.Monitore, settings.Lade, echteAnschluesse().Ausfuehren)
+		return laufe(os.Args[1:], os.Stdout, os.Stderr, ui.MonitoreMitSkala, settings.Lade, echteAnschluesse().Ausfuehren)
 	})
 }
 
@@ -213,23 +214,38 @@ func gibMonitoreAus(aus, fehler io.Writer, monitore func() ([]ui.Monitor, error)
 		return exitFehler
 	}
 	if alsJSON {
-		type bildschirm struct {
-			Name   string `json:"name"`
-			Width  int    `json:"width"`
-			Height int    `json:"height"`
-		}
-		j := struct {
-			Screens []bildschirm `json:"screens"`
-		}{Screens: []bildschirm{}}
-		for _, m := range liste {
-			j.Screens = append(j.Screens, bildschirm{m.Name, m.Breite, m.Hoehe})
-		}
-		return gibJSONAus(aus, fehler, j)
+		return gibJSONAus(aus, fehler, bildschirmeJSON(liste))
 	}
 	fmt.Fprintf(aus, i18n.N("%d monitor found:", "%d monitors found:", len(liste))+"\n", len(liste))
 	for _, m := range liste {
-		// Ohne Skala: die ganzzahlige Pufferskala (2 bei 1,6) führte in die Irre (F-57).
+		// Nur die wirksame Skala aus xdg_output (F-668); die ganzzahlige Pufferskala (2 bei 1,6) führte in die
+		// Irre (F-57). Unbekannt: ohne Skala.
+		if p := wloutputs.Prozent(m.Bruch); p > 0 {
+			fmt.Fprintf(aus, i18n.T("  %s: %d × %d pixels, scale %d %%")+"\n", m.Name, m.Breite, m.Hoehe, p)
+			continue
+		}
 		fmt.Fprintf(aus, i18n.T("  %s: %d × %d pixels")+"\n", m.Name, m.Breite, m.Hoehe)
 	}
 	return exitOK
+}
+
+// bildschirmJSON ist ein Monitor in --list-screens --json und im MCP-Werkzeug list_screens; scale fehlt, wenn der
+// Compositor die logische Größe nicht meldet (ADR-0017 Nachtrag 9).
+type bildschirmJSON struct {
+	Name   string  `json:"name"`
+	Width  int     `json:"width"`
+	Height int     `json:"height"`
+	Scale  float64 `json:"scale,omitempty"`
+}
+
+type bildschirmListe struct {
+	Screens []bildschirmJSON `json:"screens"`
+}
+
+func bildschirmeJSON(liste []ui.Monitor) bildschirmListe {
+	j := bildschirmListe{Screens: []bildschirmJSON{}}
+	for _, m := range liste {
+		j.Screens = append(j.Screens, bildschirmJSON{m.Name, m.Breite, m.Hoehe, m.Bruch})
+	}
+	return j
 }

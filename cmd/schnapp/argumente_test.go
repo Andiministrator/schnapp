@@ -180,6 +180,20 @@ func TestMonitorliste(t *testing.T) {
 	if code != exitOK || aus != want {
 		t.Errorf("Code %d, Ausgabe %q, erwartet %q", code, aus, want)
 	}
+	// Mit wirksamer Skala aus xdg_output (F-668): ganze Prozent; die ganzzahlige Pufferskala zählt nicht.
+	mitSkala := func() ([]ui.Monitor, error) {
+		return []ui.Monitor{{Name: "A", Breite: 2560, Hoehe: 1440, Skala: 2, Bruch: 1.25}, {Name: "B", Breite: 1920, Hoehe: 1080, Skala: 1}}, nil
+	}
+	code, aus, _ = fuehre(t, mitSkala, "--list-screens")
+	want = "2 monitors found:\n  A: 2560 × 1440 pixels, scale 125 %\n  B: 1920 × 1080 pixels\n"
+	if code != exitOK || aus != want {
+		t.Errorf("mit Skala: Code %d, Ausgabe %q, erwartet %q", code, aus, want)
+	}
+	code, aus, _ = fuehre(t, mitSkala, "--list-screens", "--json")
+	want = `{"screens":[{"name":"A","width":2560,"height":1440,"scale":1.25},{"name":"B","width":1920,"height":1080}]}` + "\n"
+	if code != exitOK || aus != want {
+		t.Errorf("JSON mit Skala: Code %d, Ausgabe %q, erwartet %q", code, aus, want)
+	}
 	eins := func() ([]ui.Monitor, error) { return []ui.Monitor{{Name: "A"}}, nil }
 	if _, aus, _ = fuehre(t, eins, "--list-screens"); !strings.HasPrefix(aus, "1 monitor found:") {
 		t.Errorf("Einzahl: %q", aus)

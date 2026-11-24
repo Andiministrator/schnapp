@@ -71,12 +71,14 @@ for a capture (with or without `--output`) and for `--export`. `path` is absolut
 the image in pixels.
 
 ```json
-{"screens":[{"name":"DP-1","width":2560,"height":1440},{"name":"HDMI-A-1","width":1920,"height":1080}]}
+{"screens":[{"name":"DP-1","width":2560,"height":1440,"scale":1.25},{"name":"HDMI-A-1","width":1920,"height":1080,"scale":1}]}
 ```
 
 for `--list-screens --json`. `name` is exactly the value for `--screen=NAME`; the size is the current mode in physical
 pixels, as the monitor shows it: for a monitor rotated by 90 or 270 degrees, width and height are swapped, so the size
-matches the image of `--screen=NAME`.
+matches the image of `--screen=NAME`. `scale` is the effective (possibly fractional) scale of the monitor, rounded
+to hundredths; it is missing if the compositor does not report the logical size (xdg-output). `list_screens` over MCP
+returns the same JSON.
 
 ```json
 {"version":"0.5.0"}

@@ -57,7 +57,7 @@ Vorhanden ist:
 | Aufruf | Was passiert |
 |---|---|
 | `schnapp` oder `schnapp --region` | Bereich in einem eingefrorenen Vollbild-Overlay wählen (Voreinstellung, **Druck**) |
-| `schnapp --screen[=NAME]` | einen Monitor aufnehmen (ohne Namen laut Einstellung, `[capture] screen = all` setzt alle Monitore zu einem Bild zusammen; `--list-screens` nennt die Namen) |
+| `schnapp --screen[=NAME]` | einen Monitor aufnehmen (ohne Namen laut Einstellung, `[capture] screen = all` setzt alle Monitore zu einem Bild zusammen; `--list-screens` nennt Namen, Größen und Skalierung) |
 | `schnapp --window` | ein Fenster wählen |
 | `schnapp --repeat` | den letzten Bereich noch einmal aufnehmen |
 | `schnapp --no-editor …` | aufnehmen, ohne danach den Editor zu öffnen |

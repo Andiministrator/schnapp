@@ -4,13 +4,36 @@
 // third_party/gio ein (ADR-0015); alles andere im Programm kennt Gio nicht.
 package ui
 
-import "gioui.org/app"
+import (
+	"gioui.org/app"
+
+	"github.com/Andiministrator/schnapp/internal/wloutputs"
+)
 
 // Monitor beschreibt einen Bildschirm (Wayland-Ausgabe).
 type Monitor struct {
 	Name          string
 	Breite, Hoehe int // aktueller Modus in physischen Pixeln
 	Skala         int // ganzzahlige Pufferskala
+	// Bruch ist die wirksame Skala (auch gebrochen, etwa 1,25) aus physischer und logischer Größe; 0 = unbekannt.
+	// Nur MonitoreMitSkala setzt sie (F-668).
+	Bruch float64
+}
+
+// MonitoreMitSkala ist Monitore mit der wirksamen Skala je Monitor (eigene kurze Wayland-Verbindung über
+// xdg_output, ADR-0017 Nachtrag 9). Kennt der Compositor xdg_output nicht, bleibt Bruch 0; die Liste gilt trotzdem.
+// Nur --list-screens und das MCP-Werkzeug list_screens fragen sie ab, die Aufnahme braucht sie nicht.
+func MonitoreMitSkala() ([]Monitor, error) {
+	liste, err := Monitore()
+	if err != nil {
+		return nil, err
+	}
+	if skalen, err := wloutputs.Skalen(); err == nil {
+		for i := range liste {
+			liste[i].Bruch = skalen[liste[i].Name]
+		}
+	}
+	return liste, nil
 }
 
 // Monitore fragt die Wayland-Ausgaben ab, nach Name sortiert. Ausgaben ohne Namen fehlen, weil sie nicht

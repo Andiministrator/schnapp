@@ -79,6 +79,9 @@ msgstr[1] "%d Monitore gefunden:"
 msgid "  %s: %d × %d pixels"
 msgstr "  %s: %d × %d Pixel"
 
+msgid "  %s: %d × %d pixels, scale %d %%"
+msgstr "  %s: %d × %d Pixel, Skalierung %d %%"
+
 # aufnahme: Aufnahmeschicht
 msgid "Schnapp is not registered as a screenshot program. Install its desktop file and try again."
 msgstr "Schnapp ist nicht als Aufnahmeprogramm eingetragen. Die Desktop-Datei von Schnapp muss installiert sein."

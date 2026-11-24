@@ -476,6 +476,10 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: cmd/schnapp/main.go
+msgid "  %s: %d × %d pixels, scale %d %%"
+msgstr ""
+
+#: cmd/schnapp/main.go
 msgid "  %s: %d × %d pixels"
 msgstr ""
 

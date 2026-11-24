@@ -1,0 +1,58 @@
+[
+  {
+    "name": "W1 jeder Modus zählt, nicht nur der aktuelle",
+    "datei": "internal/wloutputs/skalen.go",
+    "paket": "./internal/wloutputs",
+    "alt": "if l.Err == nil && flags&modusAktuell != 0 {",
+    "neu": "if l.Err == nil && flags|modusAktuell != 0 {"
+  },
+  {
+    "name": "W2 Skala aus der kürzeren Seite (Drehung zählt)",
+    "datei": "internal/wloutputs/skalen.go",
+    "paket": "./internal/wloutputs",
+    "alt": "phys, logi := max(breite, hoehe), max(logBreite, logHoehe)",
+    "neu": "phys, logi := max(breite, hoehe), min(logBreite, logHoehe)"
+  },
+  {
+    "name": "W3 ohne Rundung auf Hundertstel",
+    "datei": "internal/wloutputs/skalen.go",
+    "paket": "./internal/wloutputs",
+    "alt": "return math.Round(float64(phys)/float64(logi)*100) / 100, true",
+    "neu": "return float64(phys) / float64(logi), true"
+  },
+  {
+    "name": "W4 kein Rückgriff auf den xdg-Namen",
+    "datei": "internal/wloutputs/skalen.go",
+    "paket": "./internal/wloutputs",
+    "alt": "\t\tif name == \"\" {\n\t\t\tname = a.xdgName",
+    "neu": "\t\tif name == \"-\" {\n\t\t\tname = a.xdgName"
+  },
+  {
+    "name": "W5 fehlender Manager ist kein Fehler",
+    "datei": "internal/wloutputs/skalen.go",
+    "paket": "./internal/wloutputs",
+    "alt": "\tif manager == nil {\n\t\treturn nil, ErrOhneXdgOutput",
+    "neu": "\tif manager == nil {\n\t\treturn map[string]float64{}, nil"
+  },
+  {
+    "name": "W6 leere logische Größe zählt",
+    "datei": "internal/wloutputs/skalen.go",
+    "paket": "./internal/wloutputs",
+    "alt": "if phys <= 0 || logi <= 0 {",
+    "neu": "if phys <= 0 {"
+  },
+  {
+    "name": "W7 Textzeile ohne Skala",
+    "datei": "cmd/schnapp/main.go",
+    "paket": "./cmd/schnapp",
+    "alt": "if p := wloutputs.Prozent(m.Bruch); p > 0 {",
+    "neu": "if p := wloutputs.Prozent(m.Bruch); p > 1e6 {"
+  },
+  {
+    "name": "W8 JSON ohne Skala",
+    "datei": "cmd/schnapp/main.go",
+    "paket": "./cmd/schnapp",
+    "alt": "bildschirmJSON{m.Name, m.Breite, m.Hoehe, m.Bruch}",
+    "neu": "bildschirmJSON{m.Name, m.Breite, m.Hoehe, 0}"
+  }
+]

@@ -55,7 +55,7 @@ What exists:
 | Command | What it does |
 |---|---|
 | `schnapp` or `schnapp --region` | select an area in a frozen full-screen overlay (default, **Print**) |
-| `schnapp --screen[=NAME]` | capture a monitor (without a name as set in the settings, `[capture] screen = all` joins all monitors into one image; `--list-screens` lists the names) |
+| `schnapp --screen[=NAME]` | capture a monitor (without a name as set in the settings, `[capture] screen = all` joins all monitors into one image; `--list-screens` lists the names, sizes and scales) |
 | `schnapp --window` | select a window |
 | `schnapp --repeat` | capture the last area again |
 | `schnapp --no-editor …` | capture without opening the editor afterwards |

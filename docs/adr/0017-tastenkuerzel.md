@@ -155,3 +155,19 @@ sind Rückgängig, Löschen, Speichern und Zoomen gesperrt (F-18, Kritik A-6). N
   zusätzlich ein RGBA an, 4 Byte je Pixel; ein Adobe-Segment zählt auch hinter dem ersten Scan, wo `DecodeConfig` es
   nicht sieht) und der Flex-Modus (nicht standardmäßige Abtastung, Go legt die drei Farbebenen dann voll an). RGB
   Baseline 4:4:4 geht damit bis etwa 195 Megapixel, progressiv bis etwa 93.
+
+## Nachtrag 9 (24.11.2026): `--list-screens` nennt die wirksame Skala (F-668)
+
+**Status:** Akzeptiert (Claude Opus 5.5, im Auftrag Andis: „arbeite selbstständig“). Umgesetzt in Sprint 12, Karte #255.
+
+- `--list-screens` nennt je Monitor die wirksame Skala in ganzen Prozent, wie die Systemeinstellungen
+  („`DP-1: 2560 × 1440 pixels, scale 125 %`“); `--list-screens --json` und das MCP-Werkzeug `list_screens` tragen sie als
+  Zahl `scale` (auf Hundertstel gerundet, etwa `1.25`). Die Schlüssel `name`, `width`, `height` bleiben (ADR-0030).
+- Quelle ist nicht die ganzzahlige Pufferskala von `wl_output` (bei 1,6 meldet sie 2, darum fehlte die Skala seit F-57),
+  sondern der Quotient aus physischer Modusgröße (`wl_output.mode`) und logischer Größe (`zxdg_output_v1.logical_size`),
+  jeweils die längere Seite, damit die Drehung keine Rolle spielt. Neues Paket `internal/wloutputs` in reinem Go über
+  `internal/wlwire` (kein cgo, kein Eingriff in den Gio-Patch); eine eigene kurze Verbindung je Abfrage
+  (`ui.MonitoreMitSkala`). Die Aufnahme fragt die Skala nicht ab.
+- Kennt der Compositor `zxdg_output_manager_v1` nicht oder scheitert die Abfrage, fehlt die Skala (Text ohne
+  „scale“, JSON ohne `scale`); die Liste selbst bleibt gültig. Geprüft im virtuellen KWin mit `scripts/probe.sh --skala
+  1.5 --monitore 2` und `--skala 1.25` (150 % bzw. `1.25`); auf echter Hardware mit gebrochener Skala noch nicht.
