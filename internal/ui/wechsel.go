@@ -149,6 +149,13 @@ func (e *editor) wechselAbholen() bool {
 	case r.err != nil:
 		// Die Ladefunktion übersetzt bekannte Fehler; was sie nicht kennt, verliert hier Paketpräfix und Pfad (F-663).
 		e.melde(fmt.Sprintf(i18n.T("Could not open the capture: %v"), fehlerGrund(r.err)), true)
+		// Fehlt die Datei (im Dateimanager gelöscht, verschoben), verschwindet ihr Eintrag nach dem Abgleich aus Leiste
+		// und Ansicht (F-672); bei anderen Fehlern ändert der Abgleich nichts.
+		e.abgleichAnfordern()
+		e.leisteNeuLesen()
+		if e.bibl.offen {
+			e.bibliothekNeuLesen()
+		}
 	case e.s.Geaendert() || e.s.SpeichernLaeuft() || e.erzwungen || e.s.SignalVorgemerkt() ||
 		e.exportOffen || e.s.TextLaeuft() || e.s.Zieht():
 		// Während des Ladens bearbeitet, gespeichert oder zum Schließen freigegeben, oder ein Export-Dialog, eine
@@ -212,6 +219,19 @@ func (e *editor) uebernimm(g Geoeffnet) {
 	diagnoseEditor("Wechsel zu %s", g.Titel)
 	if e.w != nil {
 		e.w.Invalidate()
+	}
+}
+
+// abgleichAnfordern lässt das nächste Lesen von Leiste und Ansicht den Index vorher mit der Ablage abgleichen (F-672).
+func (e *editor) abgleichAnfordern() {
+	e.unten.abgleich, e.bibl.abgleich = true, true
+}
+
+// gleicheAb gleicht den Index mit der Ablage ab (library.Abgleich: Einträge, deren Datei fehlt, fallen weg). Läuft in
+// der Lese-Goroutine; ein Fehler geht nur an die Diagnose, gelesen wird trotzdem.
+func gleicheAb(b *library.Bibliothek) {
+	if n, err := b.Abgleich(); err != nil || n > 0 {
+		diagnoseEditor("Abgleich des Index: %d entfernt, %v", n, err)
 	}
 }
 

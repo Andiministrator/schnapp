@@ -55,10 +55,13 @@ var leisteUhr = time.Now
 
 // untenLeiste ist der Zustand der Leiste im Editor.
 type untenLeiste struct {
-	an      bool // eingeschaltet ([library] bar bzw. Ansicht → Recent captures)
-	l       *libview.Leiste
-	v       *libview.Vorschauen
-	knoepfe [libview.MaxEintraege]widget.Clickable
+	// abgleich: das nächste Lesen gleicht den Index vorher mit der Ablage ab (library.Abgleich: Einträge ohne Datei
+	// fallen weg, etwa im Dateimanager gelöscht; F-672). Beim Start und nach einem gescheiterten Öffnen.
+	abgleich bool
+	an       bool // eingeschaltet ([library] bar bzw. Ansicht → Recent captures)
+	l        *libview.Leiste
+	v        *libview.Vorschauen
+	knoepfe  [libview.MaxEintraege]widget.Clickable
 	// bibKnopf ist der Knopf „Library“ links in der Leiste: öffnet die volle Ansicht (ADR-0036 Punkte 1 und 3).
 	bibKnopf widget.Clickable
 	rad      int // Ziel der Mausrad-Ereignisse (nur die Adresse zählt)
@@ -142,6 +145,7 @@ func (e *editor) leisteStart() {
 	k.v = libview.NeueVorschauen(libview.LaderFuer(e.bib.Bibliothek), wecke, libview.SpeicherGrenze)
 	e.leisteAktuell()
 	e.bibliothekStart()
+	k.abgleich = true
 	e.leisteNeuLesen()
 }
 
@@ -175,8 +179,12 @@ func (e *editor) leisteNeuLesen() {
 	if k.index == nil {
 		k.index = make(chan indexErgebnis, 1)
 	}
-	b, ch, wecker := e.bib.Bibliothek, k.index, e.wecker
+	b, ch, wecker, abgleich := e.bib.Bibliothek, k.index, e.wecker, k.abgleich
+	k.abgleich = false
 	go func() {
+		if abgleich {
+			gleicheAb(b)
+		}
 		es, err := b.Suchen(library.Anfrage{OhneAgenten: true})
 		ch <- indexErgebnis{es, err}
 		if wecker != nil {

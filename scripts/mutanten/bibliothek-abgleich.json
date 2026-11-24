@@ -1,0 +1,42 @@
+[
+  {
+    "name": "BA1 gescheitertes Öffnen gleicht nicht ab",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.abgleichAnfordern()\n\t\te.leisteNeuLesen()",
+    "neu": "\t\te.leisteNeuLesen()",
+    "timeout": "4m"
+  },
+  {
+    "name": "BA2 Ansicht gleicht beim Öffnen nicht ab",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\tb.abgleich = true\n\te.bibliothekNeuLesen()",
+    "neu": "\te.bibliothekNeuLesen()",
+    "timeout": "4m"
+  },
+  {
+    "name": "BA3 Leiste wertet die Marke nicht aus",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif abgleich {\n\t\t\tgleicheAb(b)",
+    "neu": "\t\tif false && abgleich {\n\t\t\tgleicheAb(b)",
+    "timeout": "4m"
+  },
+  {
+    "name": "BA4 Leiste gleicht beim Start nicht ab",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\tk.abgleich = true\n\te.leisteNeuLesen()",
+    "neu": "\te.leisteNeuLesen()",
+    "timeout": "4m"
+  },
+  {
+    "name": "BA5 Papierkorb-Fehler gleicht nicht ab",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.abgleichAnfordern() // die Datei fehlt womöglich (F-672)",
+    "neu": "\t\t// die Datei fehlt womöglich (F-672)",
+    "timeout": "4m"
+  }
+]

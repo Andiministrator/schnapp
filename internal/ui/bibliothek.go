@@ -65,6 +65,7 @@ const (
 
 // bibAnsicht ist der Zustand der vollen Ansicht.
 type bibAnsicht struct {
+	abgleich bool // das nächste Lesen gleicht den Index vorher ab (F-672), wie untenLeiste.abgleich
 	offen    bool
 	r        *libview.Raster
 	suche    string
@@ -166,6 +167,7 @@ func (e *editor) bibliothekOeffnen(gtx layout.Context) {
 	b.r.SetzeAktuell(e.offenRel())
 	b.fokusAnfang = true
 	gtx.Execute(key.FocusCmd{Tag: b})
+	b.abgleich = true
 	e.bibliothekNeuLesen()
 }
 
@@ -222,8 +224,12 @@ func (e *editor) bibliothekNeuLesen() {
 		b.index = make(chan indexErgebnis, 1)
 	}
 	a := libview.Anfrage(b.suche, b.zeitraum, b.agenten, leisteUhr())
-	bib, ch, wecker := e.bib.Bibliothek, b.index, e.wecker
+	bib, ch, wecker, abgleich := e.bib.Bibliothek, b.index, e.wecker, b.abgleich
+	b.abgleich = false
 	go func() {
+		if abgleich {
+			gleicheAb(bib)
+		}
 		es, err := bib.Suchen(a)
 		ch <- indexErgebnis{es, err}
 		if wecker != nil {
@@ -287,6 +293,7 @@ func (e *editor) bibliothekArbeitFertig(r bibArbeit) {
 	switch {
 	case r.papierkorb && r.err != nil:
 		e.melde(fmt.Sprintf(i18n.T("Could not move the capture to the trash: %v"), fehlerGrund(r.err)), true)
+		e.abgleichAnfordern() // die Datei fehlt womöglich (F-672)
 	case r.papierkorb:
 		e.melde(i18n.T("Moved to the trash. It can be restored from there."), false)
 	case r.err != nil:

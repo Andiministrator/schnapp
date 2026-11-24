@@ -511,3 +511,64 @@ func TestBibliothekUeberholteSuche(t *testing.T) {
 		t.Errorf("Ergebnis der alten Suche gilt: %d Treffer", len(es))
 	}
 }
+
+// F-672: Ist die Datei einer Aufnahme außerhalb von Schnapp verschwunden (im Dateimanager gelöscht), scheitert das
+// Öffnen mit Meldung; danach gleicht das Lesen den Index ab, und der Eintrag verschwindet aus der Leiste.
+func TestLeisteFehlendeDateiVerschwindet(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	l.e.s.Gespeichert()
+	weg := l.rel(0) // vor dem Löschen: Relativ prüft die Datei
+	if err := os.Remove(l.pfade[0]); err != nil {
+		t.Fatal(err)
+	}
+	l.fehler = errors.New("Die Datei gibt es nicht.")
+	l.klick(l.kachel(0))
+	l.ruhig()
+	if !l.e.meldung.Fehler || !strings.Contains(l.e.meldung.Text, "Datei gibt es nicht") {
+		t.Errorf("Meldung %+v", l.e.meldung)
+	}
+	l.warte(func() bool { return !l.e.unten.indexLaeuft && len(l.e.unten.l.Eintraege()) == 2 })
+	for _, e := range l.e.unten.l.Eintraege() {
+		if e.Pfad == weg {
+			t.Error("Eintrag der fehlenden Datei steht noch in der Leiste")
+		}
+	}
+}
+
+// F-672: Beim Öffnen der vollen Ansicht wird der Index vorher abgeglichen.
+func TestBibliothekOeffnenGleichtAb(t *testing.T) {
+	l := bibLauf(t, 3)
+	l.taste(key.NameEscape, 0)
+	l.bibRuhig()
+	if err := os.Remove(l.pfade[2]); err != nil {
+		t.Fatal(err)
+	}
+	l.taste("L", key.ModShortcut|key.ModShift)
+	l.warte(func() bool { return l.e.bibl.offen && !l.e.bibl.indexLaeuft && len(l.e.bibl.r.Eintraege()) == 2 })
+}
+
+// F-672: Scheitert der Papierkorb, weil die Datei inzwischen fehlt, verschwindet der Eintrag nach dem Abgleich.
+func TestBibliothekPapierkorbFehlendeDatei(t *testing.T) {
+	l := bibLauf(t, 4)
+	b := &l.e.bibl
+	if err := os.Remove(l.pfade[2]); err != nil {
+		t.Fatal(err)
+	}
+	l.taste(key.NameRightArrow, 0) // Stelle 2
+	l.taste(key.NameDeleteForward, 0)
+	l.bibRuhig()
+	if !l.e.meldung.Fehler {
+		t.Errorf("keine Fehlermeldung: %+v", l.e.meldung)
+	}
+	l.warte(func() bool { return !b.indexLaeuft && len(b.r.Eintraege()) == 3 && len(l.e.unten.l.Eintraege()) == 3 })
+}
+
+// F-672: Beim Start liest die Leiste den Index abgeglichen.
+func TestLeisteStartGleichtAb(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	if err := os.Remove(l.pfade[0]); err != nil {
+		t.Fatal(err)
+	}
+	l.e.leisteStart()
+	l.warte(func() bool { return !l.e.unten.indexLaeuft && len(l.e.unten.l.Eintraege()) == 2 })
+}

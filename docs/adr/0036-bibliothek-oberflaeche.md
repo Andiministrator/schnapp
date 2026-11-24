@@ -225,3 +225,13 @@ eines Schlagworts („ogi“ findet „login“), ohne Groß-/Kleinschreibung un
 genauen Vergleich (`Schlagwort`, ADR-0030), damit sich das Verhalten für Agenten nicht still ändert. Dass ein spätes
 Ergebnis einer überholten Suche verworfen wird (`indexNochmal`), prüft jetzt `TestBibliothekUeberholteSuche`. Mutanten
 `scripts/mutanten/bibliothek-suche.json` (BS1–BS5).
+
+## Zusatz (24.11.2026, F-672, Echtlauf Andi, Claude Opus 5.5)
+
+**Index mit der Ablage abgleichen.** `library.Abgleich` (Einträge ohne Datei fallen weg, ihre Vorschau auch) rief das
+Programm bisher nirgends auf: Eine im Dateimanager gelöschte oder verschobene Aufnahme stand weiter in Leiste und
+Ansicht, Öffnen und Papierkorb scheiterten. Zu Punkt 7: Die Lese-Goroutine gleicht jetzt vorher ab, wenn die Leiste
+startet, die Ansicht öffnet oder ein Öffnen bzw. Papierkorb gescheitert ist (`untenLeiste.abgleich`,
+`bibAnsicht.abgleich`, `abgleichAnfordern`, `gleicheAb`); das Lesen nach jedem eigenen Speichern gleicht nicht ab
+(Kosten je Speichern, F-638). Tests `TestLeisteFehlendeDateiVerschwindet`, `TestBibliothekOeffnenGleichtAb`,
+`TestBibliothekPapierkorbFehlendeDatei`, `TestLeisteStartGleichtAb`; Mutanten `scripts/mutanten/bibliothek-abgleich.json`.
