@@ -216,3 +216,12 @@ wartender Auftrag, der seit zwei Runden nicht mehr abgefragt wurde, verfällt in
 `TestVorschauenWeggerollteVerfallen`, `TestVorschauenOhneRundeVerfaelltNichts`; Mutanten
 `scripts/mutanten/vorschauen-runden.json`. Den Aufruf von `Runde()` in der Oberfläche deckt kein Test (ohne ihn
 verfiele nur nichts, wie vorher).
+
+## Zusatz (24.11.2026, Karte #257, F-671, Claude Opus 5.5)
+
+**Suche nach Teilwort.** Abweichend von Ergänzung 3 aus Teil 2 trifft das Suchfeld der vollen Ansicht jetzt jeden Teil
+eines Schlagworts („ogi“ findet „login“), ohne Groß-/Kleinschreibung und Leerraum an den Enden: neues Feld
+`library.Anfrage.Teilwort`, das `libview.Anfrage` statt `Schlagwort` setzt. Das MCP-Werkzeug `library_search` behält den
+genauen Vergleich (`Schlagwort`, ADR-0030), damit sich das Verhalten für Agenten nicht still ändert. Dass ein spätes
+Ergebnis einer überholten Suche verworfen wird (`indexNochmal`), prüft jetzt `TestBibliothekUeberholteSuche`. Mutanten
+`scripts/mutanten/bibliothek-suche.json` (BS1–BS5).

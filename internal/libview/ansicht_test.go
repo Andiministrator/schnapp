@@ -43,14 +43,14 @@ func TestZeitraumVon(t *testing.T) {
 	}
 }
 
-// Die Anfrage der Ansicht: Schlagwort ohne Leerraum, Zeitraum, Agenten nur mit dem Schalter.
+// Die Anfrage der Ansicht: Teilwort ohne Leerraum (F-671, nicht das genaue Schlagwort), Zeitraum, Agenten nur mit dem Schalter.
 func TestAnfrage(t *testing.T) {
 	jetzt := time.Date(2026, 11, 24, 10, 0, 0, 0, time.UTC)
 	a := Anfrage("  bug ", ZeitraumHeute, false, jetzt)
-	if a.Schlagwort != "bug" || !a.Von.Equal(time.Date(2026, 11, 24, 0, 0, 0, 0, time.UTC)) || !a.OhneAgenten || !a.Bis.IsZero() {
+	if a.Teilwort != "bug" || a.Schlagwort != "" || !a.Von.Equal(time.Date(2026, 11, 24, 0, 0, 0, 0, time.UTC)) || !a.OhneAgenten || !a.Bis.IsZero() {
 		t.Errorf("%+v", a)
 	}
-	if a := Anfrage("", ZeitraumAlle, true, jetzt); a.OhneAgenten || !a.Von.IsZero() || a.Schlagwort != "" {
+	if a := Anfrage("", ZeitraumAlle, true, jetzt); a.OhneAgenten || !a.Von.IsZero() || a.Teilwort != "" {
 		t.Errorf("mit Agenten: %+v", a)
 	}
 }

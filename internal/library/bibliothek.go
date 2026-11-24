@@ -472,9 +472,12 @@ func (b *Bibliothek) Abgleich() (_ int, fehler error) {
 
 // Anfrage für Suchen. Leere Angaben schränken nicht ein.
 type Anfrage struct {
-	Schlagwort string    // ein Schlagwort, Groß-/Kleinschreibung egal
-	Von        time.Time // Erstellt >= Von
-	Bis        time.Time // Erstellt < Bis
+	Schlagwort string // ein Schlagwort, Groß-/Kleinschreibung egal
+	// Teilwort trifft jede Aufnahme, in deren Schlagworten es vorkommt, Groß-/Kleinschreibung egal (Suchfeld der
+	// vollen Ansicht, F-671); Schlagwort bleibt der genaue Vergleich (MCP library_search).
+	Teilwort string
+	Von      time.Time // Erstellt >= Von
+	Bis      time.Time // Erstellt < Bis
 	// OhneAgenten blendet Aufnahmen über den MCP-Server aus (Eintrag.Agent).
 	OhneAgenten bool
 }
@@ -499,6 +502,9 @@ func (b *Bibliothek) Suchen(a Anfrage) (_ []Eintrag, fehler error) {
 		if a.Schlagwort != "" && !hatSchlagwort(e, a.Schlagwort) {
 			continue
 		}
+		if a.Teilwort != "" && !hatTeilwort(e, a.Teilwort) {
+			continue
+		}
 		if a.OhneAgenten && e.Agent() {
 			continue
 		}
@@ -509,6 +515,17 @@ func (b *Bibliothek) Suchen(a Anfrage) (_ []Eintrag, fehler error) {
 		treffer[i], treffer[j] = treffer[j], treffer[i]
 	}
 	return treffer, nil
+}
+
+// hatTeilwort meldet, ob w (ohne Leerraum an den Enden) in einem Schlagwort von e vorkommt, Groß-/Kleinschreibung egal.
+func hatTeilwort(e Eintrag, w string) bool {
+	w = strings.ToLower(strings.TrimSpace(w))
+	for _, s := range e.Schlagworte {
+		if strings.Contains(strings.ToLower(s), w) {
+			return true
+		}
+	}
+	return false
 }
 
 func hatSchlagwort(e Eintrag, w string) bool {

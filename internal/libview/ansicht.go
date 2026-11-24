@@ -60,10 +60,10 @@ func (z Zeitraum) Text() string {
 	return i18n.T("All dates")
 }
 
-// Anfrage baut die Suche der vollen Ansicht: Schlagwort aus dem Suchfeld (leer: alle), Zeitraum, Agenten-Aufnahmen nur
+// Anfrage baut die Suche der vollen Ansicht: Teil eines Schlagworts aus dem Suchfeld (leer: alle; F-671), Zeitraum, Agenten-Aufnahmen nur
 // mit dem Schalter (ADR-0036 Punkt 3).
 func Anfrage(suche string, z Zeitraum, agenten bool, jetzt time.Time) library.Anfrage {
-	return library.Anfrage{Schlagwort: strings.TrimSpace(suche), Von: z.Von(jetzt), OhneAgenten: !agenten}
+	return library.Anfrage{Teilwort: strings.TrimSpace(suche), Von: z.Von(jetzt), OhneAgenten: !agenten}
 }
 
 // ZerlegeSchlagworte zerlegt die Eingabe unter einer Kachel (F2) in Schlagworte: Komma trennt, Leerraum an den Enden

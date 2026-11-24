@@ -360,6 +360,12 @@ func TestSuchen(t *testing.T) {
 		{"Von inklusive", Anfrage{Von: zeit("2026-11-01T10:00:00Z")}, []string{d.Pfad, c.Pfad}},
 		{"Bis exklusive", Anfrage{Bis: zeit("2026-11-01T10:00:00Z")}, []string{a.Pfad}},
 		{"Zeitraum und Schlagwort", Anfrage{Schlagwort: "bank", Von: zeit("2026-10-15T00:00:00Z"), Bis: zeit("2026-12-01T00:00:00Z")}, []string{c.Pfad}},
+		// Teilwort (Suchfeld der vollen Ansicht, F-671): Teil eines Schlagworts, ohne Groß/Klein und Leerraum.
+		{"Teilwort", Anfrage{Teilwort: " AN "}, []string{c.Pfad, a.Pfad}},
+		{"Teilwort im zweiten Schlagwort", Anfrage{Teilwort: "chn"}, []string{a.Pfad}},
+		{"Teilwort gegen Großbuchstaben im Schlagwort", Anfrage{Teilwort: "RECH"}, []string{a.Pfad}},
+		{"Teilwort ohne Treffer", Anfrage{Teilwort: "xyz"}, nil},
+		{"Teilwort und Zeitraum", Anfrage{Teilwort: "ban", Von: zeit("2026-10-15T00:00:00Z")}, []string{c.Pfad}},
 	}
 	for _, f := range faelle {
 		if got := pfade(f.a); !reflect.DeepEqual(got, f.want) {

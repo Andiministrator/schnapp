@@ -383,6 +383,15 @@ func TestBibliothekSchlagworte(t *testing.T) {
 	if len(b.r.Eintraege()) != 1 {
 		t.Errorf("nach Rücktaste: %d", len(b.r.Eintraege()))
 	}
+	// Teil eines Schlagworts genügt (F-671).
+	for range len("LOGIN") {
+		l.taste(key.NameDeleteBackward, 0)
+	}
+	l.tippe("OGI")
+	l.bibRuhig()
+	if len(b.r.Eintraege()) != 1 || b.gezeigteSuche != "OGI" {
+		t.Errorf("Teilwort: %d Treffer, Feld %q", len(b.r.Eintraege()), b.gezeigteSuche)
+	}
 }
 
 // Tab fährt durch Suchfeld, Zeitraum, Schalter, Zurück und Raster; der Zeitraum öffnet per Enter seine Liste, eine Wahl
@@ -479,5 +488,26 @@ func TestBibliothekWechselScheitert(t *testing.T) {
 	}
 	if !strings.Contains(l.e.hinweis(), "Capture of") {
 		t.Errorf("Hinweis %q", l.e.hinweis())
+	}
+}
+
+// F-671: Ändert sich die Suche, während der Index noch gelesen wird, gilt das Ergebnis der neuen Suche; das späte
+// Ergebnis der alten wird verworfen.
+func TestBibliothekUeberholteSuche(t *testing.T) {
+	l := bibLauf(t, 3)
+	if _, err := l.b.SetzeSchlagworte(l.rel(0), []string{"login"}); err != nil {
+		t.Fatal(err)
+	}
+	b := &l.e.bibl
+	b.suche = "zzz"
+	l.e.bibliothekNeuLesen()
+	b.suche = "log"
+	l.e.bibliothekNeuLesen() // läuft noch: wird vorgemerkt
+	if !b.indexNochmal {
+		t.Fatal("zweite Suche nicht vorgemerkt")
+	}
+	l.bibRuhig()
+	if es := b.r.Eintraege(); len(es) != 1 || es[0].Pfad != l.rel(0) {
+		t.Errorf("Ergebnis der alten Suche gilt: %d Treffer", len(es))
 	}
 }

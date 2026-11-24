@@ -1,0 +1,38 @@
+[
+  {
+    "name": "BS1 Teilwort wird nicht ausgewertet",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "if a.Teilwort != \"\" && !hatTeilwort(e, a.Teilwort) {",
+    "neu": "if false && a.Teilwort != \"\" && !hatTeilwort(e, a.Teilwort) {"
+  },
+  {
+    "name": "BS2 Teilwort achtet auf Groß/Klein",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "if strings.Contains(strings.ToLower(s), w) {",
+    "neu": "if strings.Contains(s, w) {"
+  },
+  {
+    "name": "BS3 Teilwort mit Leerraum",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "w = strings.ToLower(strings.TrimSpace(w))",
+    "neu": "w = strings.ToLower(w)"
+  },
+  {
+    "name": "BS4 Ansicht sucht genaues Schlagwort",
+    "datei": "internal/libview/ansicht.go",
+    "paket": "./internal/libview",
+    "alt": "library.Anfrage{Teilwort: strings.TrimSpace(suche),",
+    "neu": "library.Anfrage{Schlagwort: strings.TrimSpace(suche),"
+  },
+  {
+    "name": "BS5 überholtes Suchergebnis gilt",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tcase b.indexNochmal: // veraltet",
+    "neu": "\t\t\tcase false && b.indexNochmal: // veraltet",
+    "timeout": "4m"
+  }
+]
