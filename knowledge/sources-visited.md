@@ -98,7 +98,9 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | https://api.github.com/repos/Andiministrator/schnapp/commits/main | 2026-11-19 | 2026-11-19 | live | curl | Autor/Committer = noreply-Adresse | docs/findings.md (F-1) |
 | https://api.github.com/repos/Andiministrator/schnapp/actions/runs | 2026-11-21 | 2026-11-19 | live | curl | CI-Lauf test: success; 21.11.: Status der CI-Läufe #154–#170 | — |
 | https://www.gnu.org/licenses/gpl-3.0.txt | 2026-11-19 | 2026-11-19 | live | curl | GPL-3.0-Text | LICENSE |
-| https://api.github.com/repos/Andiministrator/schnapp/commits/<sha>/check-runs | 2026-11-23 | 2026-11-23 | live | curl | CI-Status je Commit: e08a477 rot (wurzel), ab 1cb0d08 grün | docs/findings.archive.md (F-527) |
+| https://api.github.com/repos/Andiministrator/schnapp/commits/<sha>/check-runs | 2026-11-24 | 2026-11-23 | live | curl | CI-Status je Commit: e08a477 rot (wurzel), ab 1cb0d08 grün; 24.11.: 14aee47 grün, d6a182b grün (F-602) | docs/findings.archive.md (F-527) |
+| https://api.github.com/repos/Andiministrator/schnapp/actions/jobs/138058366566/logs | 2026-11-23 | 2026-11-23 | 403 | curl | Job-Log nur angemeldet („Must have admin rights“), wie in Lehren vermerkt | — |
+| https://github.com/Andiministrator/schnapp/actions/runs/45279053677/job/138058366566 | 2026-11-23 | 2026-11-23 | live | Chrome (nur lesen, Tab zu) | Schritt „Editor-Zeichnen ohne Fenster“: beide Tests SKIP, `gl: no OpenGL implementation could be loaded (libGLESv2.so.3.0, .so.2)` → F-602 | tmp/sprint12/ci/f602-ci-befund.md |
 | https://github.com/Andiministrator/schnapp/actions/runs/45170788427/job/137679469084 | 2026-11-23 | 2026-11-23 | live | Chrome (nur lesen) | Job-Log: TestAbbruchWaehrendDesAufrufs rot unter -race | docs/findings.archive.md (F-527) |
 | https://www.techsmith.com/snagit/ | 2026-11-23 | 2026-11-23 | live | Chrome (nur lesen, Cookie-Banner nicht bedient) | Seite trägt Camtasia-Marke, Snagit-Symbol nicht sichtbar | — |
 | https://en.wikipedia.org/wiki/Snagit | 2026-11-23 | 2026-11-23 | live | Chrome (nur lesen) | Symbole: weißes, kantiges S auf blauer Kachel; Snagit Capture auf rot-oranger Kachel | Board-Karte #217 |
