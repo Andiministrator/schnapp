@@ -22,10 +22,10 @@ func TestGoFlags(t *testing.T) {
 }
 
 func TestUngueltigeTagsScheitern(t *testing.T) {
-	for _, tg := range []string{"a b", "-x", "a,,b", ",a", "a;b", "a\\n"} {
-		code, aus := trockenMit(t, `[{"name":"x","datei":"p/p.go","paket":"./p","alt":"return 1","neu":"return 2","tags":"`+tg+`"}]`)
+	for _, wert := range []string{"a b", "-x", "a,,b", ",a", "a;b", "a\\n"} {
+		code, aus := trockenMit(t, `[{"name":"x","datei":"p/p.go","paket":"./p","alt":"return 1","neu":"return 2","tags":"`+wert+`"}]`)
 		if code == 0 || !strings.Contains(aus, "tags") {
-			t.Errorf("tags %q: Exit %d, erwartet Fehler:\n%s", tg, code, aus)
+			t.Errorf("tags %q: Exit %d, erwartet Fehler:\n%s", wert, code, aus)
 		}
 	}
 	if code, aus := trockenMit(t, `[{"name":"x","datei":"p/p.go","paket":"./p","alt":"return 1","neu":"return 2","tags":"probe,zwei"}]`); code != 0 {
