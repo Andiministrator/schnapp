@@ -269,8 +269,8 @@
     "name": "K219-1 Tausch gleicher Farben legt einen Schritt an",
     "datei": "internal/canvas/farbpaar.go",
     "paket": "./internal/canvas",
-    "alt": "\tif neu == o {\n\t\treturn true // gleiche Farben",
-    "neu": "\tif false && neu == o {\n\t\treturn true // gleiche Farben"
+    "alt": "\tif document.Gleich(neu, o) {\n\t\treturn true // gleiche Farben",
+    "neu": "\tif false && document.Gleich(neu, o) {\n\t\treturn true // gleiche Farben"
   },
   {
     "name": "K219-2 Feldwechsel während des Farbzugs",

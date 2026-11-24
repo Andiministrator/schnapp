@@ -101,8 +101,8 @@
     "name": "S216-3 SetzeBreite ändert das gewählte Objekt nicht",
     "datei": "internal/canvas/werkzeuge.go",
     "paket": "./internal/canvas",
-    "alt": "\tneu := mitBreite(o, b)\n\tif neu == o {",
-    "neu": "\tneu := o\n\tif neu == o {"
+    "alt": "\tneu := mitBreite(o, b)\n\tif document.Gleich(neu, o) {",
+    "neu": "\tneu := o\n\tif document.Gleich(neu, o) {"
   },
   {
     "name": "S216-4 Stufe hoch nimmt gleiche Breite",

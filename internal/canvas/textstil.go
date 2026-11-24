@@ -93,7 +93,7 @@ func (s *Sitzung) textAendern(werkzeug func(*Stil), text func(*document.Text)) b
 	}
 	neu := t
 	text(&neu)
-	if neu == t {
+	if document.Gleich(neu, t) {
 		return false
 	}
 	if eingabe {

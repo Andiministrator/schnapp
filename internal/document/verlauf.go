@@ -322,8 +322,8 @@ func (d *Dokument) ZugSetze(o Objekt) error {
 	return nil
 }
 
-// BeendeZug übernimmt den Zug als eine Änderung in den Verlauf. Ein unveränderter Zug an einem vorhandenen Objekt
-// hinterlässt nichts.
+// BeendeZug übernimmt den Zug als eine Änderung in den Verlauf. Ein unveränderter Zug an einem vorhandenen Objekt (Gleich,
+// die Spitze einer Sprechblase dem Wert nach, F-694) hinterlässt nichts.
 func (d *Dokument) BeendeZug() error {
 	if d.zug == nil {
 		return ErrKeinZug
@@ -338,7 +338,7 @@ func (d *Dokument) BeendeZug() error {
 		d.fuehreAus(einfuegen{neu, i})
 		return nil
 	}
-	if neu != z.alt {
+	if !Gleich(neu, z.alt) {
 		d.objekte[i] = z.alt
 		d.fuehreAus(ersetzen{z.alt, neu})
 	}

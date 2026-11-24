@@ -175,5 +175,19 @@
     "paket": "./internal/annotate",
     "alt": "sp, err := punkt(\"tip\", e.Tip)",
     "neu": "sp, err := punkt(\"at\", e.At)"
+  },
+  {
+    "name": "S26 BeendeZug vergleicht die Spitze per Adresse (F-694)",
+    "datei": "internal/document/verlauf.go",
+    "paket": "./internal/document",
+    "alt": "\tif !Gleich(neu, z.alt) {",
+    "neu": "\tif neu != z.alt {"
+  },
+  {
+    "name": "S27 Gleich vergleicht die Zeiger statt der Punkte (F-694)",
+    "datei": "internal/document/objekte.go",
+    "paket": "./internal/document",
+    "alt": "ta.Spitze != nil && *ta.Spitze != *tb.Spitze",
+    "neu": "ta.Spitze != nil && ta.Spitze != tb.Spitze"
   }
 ]

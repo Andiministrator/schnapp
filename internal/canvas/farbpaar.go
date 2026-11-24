@@ -299,7 +299,7 @@ func (s *Sitzung) TauscheFarben() bool {
 	if s.zug == zugText {
 		return s.D.ZugSetze(neu) == nil
 	}
-	if neu == o {
+	if document.Gleich(neu, o) {
 		return true // gleiche Farben: nichts zu tauschen, kein Schritt
 	}
 	vor := s.D.Stand()

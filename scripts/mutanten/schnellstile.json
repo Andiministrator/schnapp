@@ -59,7 +59,7 @@
     "name": "SQ9 gleicher Stil ergibt einen Schritt",
     "datei": "internal/canvas/schnellstile.go",
     "paket": "./internal/canvas",
-    "alt": "\tif neu == o {\n\t\treturn false\n\t}\n\tvor := s.D.Stand()\n\tok = s.D.Ersetzen",
+    "alt": "\tif document.Gleich(neu, o) {\n\t\treturn false\n\t}\n\tvor := s.D.Stand()\n\tok = s.D.Ersetzen",
     "neu": "\tvor := s.D.Stand()\n\tok = s.D.Ersetzen"
   },
   {

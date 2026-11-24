@@ -175,6 +175,22 @@ type Text struct {
 	Spitze *Punkt
 }
 
+// Gleich meldet, ob a und b dasselbe Objekt mit denselben Werten sind. Anders als a == b vergleicht es die Spitze einer
+// Sprechblase dem Wert nach, nicht ihre Adresse: Wer die Spitze ändert, setzt einen neuen Zeiger (auch bei gleichem
+// Punkt), und das darf nicht als Änderung zählen (F-694). Wer Objekte auf Gleichheit prüft, nimmt diese Funktion.
+func Gleich(a, b Objekt) bool {
+	ta, okA := a.(Text)
+	tb, okB := b.(Text)
+	if !okA || !okB {
+		return a == b
+	}
+	if (ta.Spitze == nil) != (tb.Spitze == nil) || ta.Spitze != nil && *ta.Spitze != *tb.Spitze {
+		return false
+	}
+	ta.Spitze, tb.Spitze = nil, nil // nur die Kopien, nie durch den Zeiger schreiben
+	return ta == tb
+}
+
 // Ausrichtung ist die Lage jeder Zeile in der Breite des Textblocks (der längsten Zeile).
 type Ausrichtung uint8
 

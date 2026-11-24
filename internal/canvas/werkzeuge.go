@@ -173,7 +173,7 @@ func (s *Sitzung) SetzeFarbe(c color.NRGBA) bool {
 		_ = s.D.ZugSetze(neu)
 		return false
 	}
-	if neu == o {
+	if document.Gleich(neu, o) {
 		return false
 	}
 	vor := s.D.Stand()
@@ -223,7 +223,7 @@ func (s *Sitzung) SetzeBreite(b float64) bool {
 		return false
 	}
 	neu := mitBreite(o, b)
-	if neu == o {
+	if document.Gleich(neu, o) {
 		return false
 	}
 	vor := s.D.Stand()

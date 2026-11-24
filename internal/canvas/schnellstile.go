@@ -464,7 +464,7 @@ func (s *Sitzung) WendeSchnellstilAn(st Schnellstil) bool {
 		_ = s.D.ZugSetze(neu)
 		return false
 	}
-	if neu == o {
+	if document.Gleich(neu, o) {
 		return false
 	}
 	vor := s.D.Stand()
