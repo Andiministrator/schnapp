@@ -73,8 +73,8 @@
     "name": "C202-2 Speicherfunktion erst nach dem Anwenden (Warnung fehlt)",
     "datei": "cmd/schnapp/beschriften.go",
     "paket": "./cmd/schnapp",
-    "alt": "\tspeichern := ablegenIn(library.Neu(orte), abs, g, stand, func(p string) { ziel = p })\n\terg, err := annotate.Wende(ctx, d, es)\n\tif err != nil {\n\t\treturn beschriftung{}, err\n\t}",
-    "neu": "\terg, err := annotate.Wende(ctx, d, es)\n\tif err != nil {\n\t\treturn beschriftung{}, err\n\t}\n\tspeichern := ablegenIn(library.Neu(orte), abs, g, stand, func(p string) { ziel = p })"
+    "alt": "\tspeichern := ablegenIn(library.Neu(orte), abs, g, stand, func(p string) { ziel = p }, agent)\n\terg, err := annotate.Wende(ctx, d, es)\n\tif err != nil {\n\t\treturn beschriftung{}, err\n\t}",
+    "neu": "\terg, err := annotate.Wende(ctx, d, es)\n\tif err != nil {\n\t\treturn beschriftung{}, err\n\t}\n\tspeichern := ablegenIn(library.Neu(orte), abs, g, stand, func(p string) { ziel = p }, agent)"
   },
   {
     "name": "C202-3 annotate ohne Einwilligung edit",
@@ -108,8 +108,8 @@
     "name": "K202-M3 MCP ohne Rechenbudget",
     "datei": "cmd/schnapp/mcp.go",
     "paket": "./cmd/schnapp",
-    "alt": "beschrifteDatei(ctx, p.File, es, o, einst.Kante, false, lage)",
-    "neu": "beschrifteDatei(ctx, p.File, es, o, einst.Kante, true, lage)"
+    "alt": "beschrifteDatei(ctx, p.File, es, o, einst.Kante, false, true, lage)",
+    "neu": "beschrifteDatei(ctx, p.File, es, o, einst.Kante, true, true, lage)"
   },
   {
     "name": "K202-M4 Lesefehler unterscheidbar",
