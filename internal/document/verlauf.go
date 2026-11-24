@@ -100,8 +100,10 @@ func (d *Dokument) VerlaufPlatz() int64 {
 
 // Stand kennzeichnet den Verlaufsstand des Dokuments (F-109): Jede neue Änderung bekommt eine neue Kennung, die nie
 // wiederkehrt; Rückgängig und Wiederholen kehren zu früheren Kennungen zurück. Gleiche Kennung heißt gleicher Inhalt
-// — so erkennt der Editor, ob der gespeicherte Stand wieder erreicht ist. Ein laufender Zug zählt nicht (er landet
-// erst mit BeendeZug im Verlauf).
+// — so erkennt der Editor, ob der gespeicherte Stand wieder erreicht ist. Eine Ausnahme ist das Verpixeln: Wiederholen
+// führt das Mosaik neu aus, sein Rauschen ist dann ein anderes, die Kennung dieselbe (F-711). Das Mosaik trägt nichts
+// vom Inhalt (ADR-0022 Nachtrag 1), „gleich“ heißt dort also: gleich verdeckt. Ein laufender Zug zählt nicht (er
+// landet erst mit BeendeZug im Verlauf).
 func (d *Dokument) Stand() uint64 {
 	if n := len(d.verlauf.erledigt); n > 0 {
 		return d.verlauf.erledigt[n-1].stand
