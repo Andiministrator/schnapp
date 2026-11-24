@@ -450,3 +450,49 @@ Objekten und am Bild.
   diesem Werkzeug gibt es weder Objektzug noch Objektgriffe noch neue Objekte.
 - g. **Umsetzung und Tests:** `einrasten_kritik_test.go` (canvas und ui), `hilfslinienFlaechen` (Lage der Linie im
   Fenster, ohne Gio prüfbar), Mutanten E19 bis E35.
+
+## Nachtrag 13 (24.11.2026): Sprechblase — Text-Schild mit Spitze (Karte #194)
+
+**Status:** Akzeptiert (Claude Opus 5.5 im Auftrag Andis: „arbeite selbstständig“, 24.11.2026). Grundlage: Wunsch
+Andis vom 22.11.2026 (Ideenliste, Idee 5), Anforderung A-21 („Sprechblasen“). Baut auf Nachtrag 3 (Schild-Maße),
+Nachtrag 4 (eckig), Nachtrag 10 (Schrift) und Nachtrag 11 (Farbpaar) auf.
+
+1. **Kein eigenes Objekt:** Eine Sprechblase ist ein `document.Text` mit Spitze. `Text` bekommt das Feld
+   `Spitze *Punkt` (Originalkoordinaten; `nil` = keine Spitze, also der bisherige Text). Schrift, Stil, Ausrichtung,
+   Farbpaar, Ebene, Rückgängig, Treffer und Texteingabe gelten unverändert. So gibt es keine zweite Textmessung und
+   keine zweite Satzregel.
+2. **Form (eine Rechnung für alle):** `document.Sprechblase(t Text) []Punkt` liefert den Umriss als ein Vieleck: das
+   eckige Schild (`Text.Grenzen`, Nachtrag 3) mit einem eingesetzten Dreieck zur Spitze. Die Basis des Dreiecks liegt
+   auf der Schildseite, die der Strahl von der Schildmitte zur Spitze schneidet; ihre Mitte ist dieser Schnittpunkt,
+   so verschoben, dass die Basis ganz auf der Seite liegt und von jeder Ecke mindestens 0,25 Schriftgrad Abstand hält.
+   Basisbreite: 1 Schriftgrad, höchstens die halbe Länge dieser Seite abzüglich der Eckabstände. Liegt die Spitze im
+   Schild oder näher als 0,25 Schriftgrad an ihm, entfällt das Dreieck (Umriss = Schild). Renderer, SVG-Export
+   (Pfad mit `stroke-linejoin="miter"`, kein Strich), Editor, Treffer und Einrasten nutzen nur diese Funktion.
+3. **Farben:** Die Spitze trägt die **Füllung** (Schild-Farbe, Nachtrag 11). Ist die Füllung „keine“, zeichnen alle
+   Ausgänge die beiden Schenkel des Dreiecks als Linie in der Schriftfarbe, Breite `max(1, 0,06 × Schriftgrad)` (wie
+   Unterstreichen, Nachtrag 10), damit die Blase auch ohne Schild auf ihre Stelle zeigt.
+4. **Grenzen:** `Text.Grenzen` bleibt das Schild (Textmessung, Texteingabe, Ausrichtung). Neu `Text.Huelle()` =
+   Schild plus Spitze; sie gilt für Auswahlrahmen, Einrasten (Ziele: Kanten und Mitten des Schilds, die Spitze als
+   Punkt), Budget (`render.Pruefe`) und Ebenen-Zwischenbild (`ebenenRahmen`). Treffer: Punkt im Vieleck aus Punkt 2.
+5. **Werkzeug Sprechblase:** eigener Knopf in der Werkzeugleiste unter Text, Kürzel **K** (frei; vorher prüfen, dass
+   kein Eintrag der Tastentabelle und kein Menü-Kürzel K allein belegt), Symbol im eckigen Satz (`internal/icons`).
+   Bedienung: **Aufziehen** — der Druckpunkt ist die Spitze (die Stelle, auf die gezeigt wird), das Loslassen setzt den
+   Text dort (Ort = linke obere Ecke wie beim Text-Werkzeug), dann Texteingabe. **Klick** ohne Zug setzt den Text an die
+   Klickstelle mit Spitze 3 Schriftgrade links unter der linken unteren Ecke des Schilds. Leerer Text am Ende der
+   Eingabe verwirft das Objekt wie beim Text-Werkzeug. Das Farbpaar der Sprechblase ist das des Text-Werkzeugs
+   (ein gemeinsames Paar „Text“, Nachtrag 11 Punkt 2).
+6. **Bearbeiten:** Verschieben bewegt Schild und Spitze gemeinsam. Ein Griff an der Spitze verschiebt nur die Spitze;
+   er rastet ein wie andere Griffe (Nachtrag 12). Die rechte Leiste zeigt bei gewähltem Text einen Schalter „Spitze“
+   (an: Spitze an der Stelle aus Punkt 5 „Klick“; aus: `Spitze = nil`), je ein Rückgängig-Schritt. Doppelklick in die
+   Blase bearbeitet den Text wie bisher.
+7. **Format:** Attribut `s:spitze` (Punkt, 5.2) am Objekt `"text"`, OPTIONAL. Die Spitze gehört zu **Format-Version
+   2** (wie die Lupe, ADR-0033): Version 2 ist noch nicht ausgeliefert (v0.5.0 schreibt 1), deshalb keine neue
+   Nummer. Ein Schreiber schreibt Version 2, sobald eine Lupe **oder** eine Spitze vorkommt, sonst 1. In einer Datei
+   der Version 1 ist `s:spitze` unbekannter Inhalt (§11 Regel 3, ignoriert, kein Schaden); so verliert ein Leser der
+   Version 1 die Spitze nie still beim Speichern, weil er Version 2 nur als Bild öffnet. Die Darstellung im SVG-Block
+   zeigt die Blase als Pfad; Beispiel `testdata/format/callout`, `docs/format.md` §8.3 und die Versionsliste im selben
+   Commit wie `FormatVersion` (ADR-0008 Nachtrag 3).
+8. **Agenten:** `--annotate` und das MCP-Werkzeug `annotate` bekommen beim Typ `text` den optionalen Schlüssel
+   `tip: [x, y]` (Koordinaten im sichtbaren Bild wie `at`); `docs/agents.md` nennt ihn.
+9. **Nicht in diesem Schritt:** runde oder ovale Blasen, gebogene Spitzen, mehrere Spitzen, Gedankenblasen. Eckig
+   bleibt Vorgabe (Nachtrag 4, `brand/corporate-design.md` §1).
