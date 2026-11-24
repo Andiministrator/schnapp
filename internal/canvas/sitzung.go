@@ -320,6 +320,9 @@ func (s *Sitzung) Ziehen(p document.Punkt) {
 		_ = s.D.ZugSetze(Verschiebe(s.startObj, e))
 	case zugGriff:
 		q, linien := s.rastePunkt(s.original(p), s.startObj.Kennung())
+		if s.griff == GriffSpitze { // die Spitze bleibt im sichtbaren Bild, sonst wäre sie nicht mehr zu greifen
+			q = s.D.ZuOriginal(s.klemmeAnsicht(s.D.ZuAnsicht(q)))
+		}
 		o := s.begrenzeGriff(s.startObj, s.griff, q)
 		s.linien = linienAmGriff(linien, o, s.griff)
 		_ = s.D.ZugSetze(o)
@@ -356,7 +359,9 @@ func (s *Sitzung) Loslassen(p document.Punkt) {
 		s.zuschneideRahmen()
 	}
 	s.merkeAenderung(vor)
-	s.zug = keinZug
+	if s.zug != zugText { // eine aufgezogene Sprechblase geht in die Texteingabe über (beendeBlase)
+		s.zug = keinZug
+	}
 }
 
 // merkeAenderung hebt die Verwerfen-Marke auf, wenn sich der Stand seit vor geändert hat: Jede neue Bearbeitung nach

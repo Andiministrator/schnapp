@@ -76,6 +76,14 @@ func (s *Sitzung) rastZiele(ohne int) (xs, ys []float64) {
 		if l, ok := o.(document.Lupe); ok {
 			rs = []document.Rechteck{l.Quelle, l.Ziel} // beide Rechtecke zählen, nicht ihre Hülle (ADR-0033 Punkt 9)
 		}
+		if t, ok := o.(document.Text); ok && t.Spitze != nil { // die Spitze einer Sprechblase zählt als Punkt
+			if s.linieSichtbar(t.Spitze.X, false) {
+				xs = append(xs, t.Spitze.X)
+			}
+			if s.linieSichtbar(t.Spitze.Y, true) {
+				ys = append(ys, t.Spitze.Y)
+			}
+		}
 		for _, r := range rs {
 			for _, x := range []float64{r.Min.X, (r.Min.X + r.Max.X) / 2, r.Max.X} {
 				if s.linieSichtbar(x, false) {

@@ -67,7 +67,7 @@ func indexVon(t *testing.T, s *Sitzung, a SchnellArt, kennung string) int {
 }
 
 func TestSchnellstileTabelle(t *testing.T) {
-	zahl := map[SchnellArt]int{SchnellPfeil: 6, SchnellKasten: 7, SchnellText: 6, SchnellNummer: 4, SchnellLupe: 3}
+	zahl := map[SchnellArt]int{SchnellPfeil: 6, SchnellKasten: 7, SchnellText: 6, SchnellSprechblase: 6, SchnellNummer: 4, SchnellLupe: 3}
 	for a := SchnellPfeil; a <= SchnellLupe; a++ {
 		liste := EingebauteSchnellstile(a)
 		if len(liste) != zahl[a] {
@@ -87,8 +87,13 @@ func TestSchnellstileTabelle(t *testing.T) {
 			}
 		}
 	}
-	if len(EingebauteSchnellstile(SchnellSprechblase)) != 0 {
-		t.Errorf("die Sprechblase hat keine eingebauten Stile, solange es das Werkzeug nicht gibt")
+	// Die Sprechblase hat dieselben eingebauten Stile wie der Text, mit ihrer Art (ADR-0021 Nachtrag 13 Punkt 5).
+	for i, st := range EingebauteSchnellstile(SchnellSprechblase) {
+		tx := EingebauteSchnellstile(SchnellText)[i]
+		tx.Art = SchnellSprechblase
+		if st != tx {
+			t.Errorf("Sprechblasen-Stil %d: %+v, Soll %+v", i, st, tx)
+		}
 	}
 	// Die Kopie schützt die Tabelle.
 	k := EingebauteSchnellstile(SchnellPfeil)
@@ -368,7 +373,7 @@ func TestEigeneSchnellstile(t *testing.T) {
 	if s.KannSchnellstilHinzufuegen(SchnellKasten) {
 		t.Errorf("„+“ wirkt bei Doppeltem")
 	}
-	if _, r := s.FuegeSchnellstilHinzu(SchnellSprechblase); r != HinzuNichts {
+	if _, r := s.FuegeSchnellstilHinzu(SchnellSprechblase); r != HinzuDoppelt { // Stand des Werkzeugs = „Weiß auf Rot“
 		t.Errorf("Sprechblase: %v", r)
 	}
 	var eigene []Schnellstil
@@ -447,7 +452,8 @@ func TestSetzeEigeneSchnellstile(t *testing.T) {
 	if got[MaxEigeneSchnellstile].Art != SchnellSprechblase || got[len(got)-1] != (Schnellstil{Art: SchnellNummer, Farbe: stilRot, Radius: 14}) {
 		t.Errorf("Sprechblase oder Nummer falsch: %+v", got[MaxEigeneSchnellstile:])
 	}
-	if l := s.Schnellstile(SchnellSprechblase); len(l) != 1 || !l[0].Eigen() {
+	l := s.Schnellstile(SchnellSprechblase)
+	if len(l) != len(EingebauteSchnellstile(SchnellSprechblase))+1 || !l[len(l)-1].Eigen() {
 		t.Errorf("Sprechblasen-Stile: %v", l)
 	}
 	s.SetzeEigeneSchnellstile(nil)

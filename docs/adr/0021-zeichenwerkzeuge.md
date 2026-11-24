@@ -513,3 +513,20 @@ Nachtrag 4 (eckig), Nachtrag 10 (Schrift) und Nachtrag 11 (Farbpaar) auf.
   macht eine Version-2-Datei beschädigt wie jeder andere Punkt, in Version 1 bleibt er unbeachtet.
 - **Rettungskopie:** keine Änderung nötig, ihre Angaben sind das snAP-SVG (`AngabenSVG`) und tragen die Spitze mit
   (`internal/rescue/spitze_test.go`).
+
+**Ergänzt bei der Umsetzung (Teil 2, 24.11.2026, Oberfläche):**
+
+- **Farbpaar und Art (Punkte 5 und 6):** Die Sprechblase hat ein eigenes Werkzeug (`WerkzeugSprechblase`), aber kein eigenes
+  Farbpaar: `paarSchluessel` bildet sie auf das Paar „Text“ ab. Ein Text mit Spitze gilt für Leiste, Ebenenliste und
+  Schnellstile als Art Sprechblase (`objektWerkzeug`); die eingebauten Schnellstile der Sprechblase sind die des Texts.
+- **Aufziehen (Punkt 5):** Schon während des Ziehens steht der Text (leer) im Zug des Dokuments, damit der Editor die Blase
+  mit der wandernden Spitze-und-Schild-Lage zeigt; beim Loslassen geht derselbe Zug in die Texteingabe über. Spitze und
+  Schild rasten dabei ein (Nachtrag 12). Ein Klick ohne Zug legt den Text erst beim Loslassen an. Die Standard-Spitze
+  (Klick und Schalter) wird ins sichtbare Bild begrenzt (`StandardSpitze`), ebenso die Spitze beim Ziehen am Griff;
+  eine Spitze außerhalb des Bilds bleibt für geladene Dateien erlaubt (Teil 1).
+- **Griff (Punkt 6):** Ein Text mit Spitze hat genau einen Griff, `GriffSpitze` an der Spitze; die Auswahl zeigt den Rahmen der
+  Hülle (`Text.Huelle`). Treffer: Schild mit Toleranz, Dreieck (`Text.Enthaelt`) und die Spitze selbst mit Toleranz.
+- **Schalter (Punkt 6):** „Spitze“/„Tail“ in der rechten Leiste unter der Schrift, nur bei einem gewählten oder gerade
+  eingegebenen Text; in der Eingabe gehört er zur Eingabe, sonst ein Rückgängig-Schritt.
+- **Werkzeugleiste:** Mit elf Werkzeugen und dem Farbfeld passt die Leiste in 480 × 320 nur, wenn die Knöpfe bis auf 18 dp
+  schrumpfen (vorher 20 dp, ADR-0031 Nachtrag 3, `werkzeugKnopfMinDp`).

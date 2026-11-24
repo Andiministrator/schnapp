@@ -26,6 +26,7 @@ type farbpaar struct{ vorn, fuellung color.NRGBA }
 // standardPaar ist die Voreinstellung je Werkzeug: Rot, beim Text weiße Schrift auf rotem Schild (ein neuer Text
 // sieht aus wie vor Nachtrag 11), der Kasten ohne Füllung.
 func standardPaar(w Werkzeug) farbpaar {
+	w = paarSchluessel(w)
 	rot := Beschriftungsfarben[0]
 	if w == WerkzeugText {
 		return farbpaar{vorn: Weiss, fuellung: rot}
@@ -41,7 +42,9 @@ func StandardPaar(w Werkzeug) (vorn, fuellung color.NRGBA) {
 }
 
 // fuellWerkzeug meldet, ob ein Werkzeug eine Füllung zeichnet (Kasten, Text).
-func fuellWerkzeug(w Werkzeug) bool { return w == WerkzeugKasten || w == WerkzeugText }
+func fuellWerkzeug(w Werkzeug) bool {
+	return w == WerkzeugKasten || w == WerkzeugText || w == WerkzeugSprechblase
+}
 
 // hatFuellung meldet, ob o eine Füllung hat (Kasten, Text).
 func hatFuellung(o document.Objekt) bool {
@@ -140,6 +143,7 @@ func (s *Sitzung) paarWerkzeug() Werkzeug {
 
 // paar liefert das gemerkte Paar des Werkzeugs w.
 func (s *Sitzung) paar(w Werkzeug) farbpaar {
+	w = paarSchluessel(w)
 	if w == s.paarWerkzeug() {
 		return farbpaar{vorn: s.Stil.Farbe, fuellung: s.Stil.Fuellung}
 	}
@@ -151,6 +155,7 @@ func (s *Sitzung) paar(w Werkzeug) farbpaar {
 
 // wechslePaar legt das Paar des Werkzeugs w in Stil (beim Wechsel auf ein Werkzeug mit Farbe).
 func (s *Sitzung) wechslePaar(w Werkzeug) {
+	w = paarSchluessel(w)
 	alt := s.paarWerkzeug()
 	if !farbWerkzeug(w) || w == alt {
 		return
@@ -167,6 +172,7 @@ func (s *Sitzung) wechslePaar(w Werkzeug) {
 
 // merkePaarFarbe setzt die Farbe c im Feld f des Paars von w (ohne Füllung beim Pfeil und der Nummer).
 func (s *Sitzung) merkePaarFarbe(w Werkzeug, f Farbfeld, c color.NRGBA) {
+	w = paarSchluessel(w)
 	if f == FeldFuellung && !fuellWerkzeug(w) {
 		return
 	}

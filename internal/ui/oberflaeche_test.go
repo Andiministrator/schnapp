@@ -383,6 +383,12 @@ func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 			t.Fatalf("Tab %d nach dem Farbfeld: Fokus nicht auf Knopf %d der Schrift (%s)", i+1, i, menueFokusName(l))
 		}
 	}
+	// Der Schalter „Spitze“ steht unter der Schrift (ADR-0021 Nachtrag 13 Punkt 6).
+	l.r.MoveFocus(key.FocusForward)
+	l.setle()
+	if !l.fokus(&l.e.spitze.knopf) {
+		t.Fatalf("Tab nach der Schrift: Fokus nicht auf dem Schalter Spitze (%s)", menueFokusName(l))
+	}
 	// Die Überschrift „Farbe“ klappt den Abschnitt ein und aus (ADR-0032 Punkt 6).
 	l.r.MoveFocus(key.FocusForward)
 	l.setle()

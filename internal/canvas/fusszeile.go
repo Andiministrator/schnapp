@@ -80,7 +80,7 @@ func (s *Sitzung) FussFelder(zeiger *document.Punkt) []FussFeld {
 	switch {
 	case text != nil:
 		f = append(f, FussFeld{Art: FeldSchrift, Grad: int(math.Round(text.Schriftgrad))})
-	case s.Werkzeug == WerkzeugText:
+	case textWerkzeug(s.Werkzeug):
 		f = append(f, FussFeld{Art: FeldSchrift, Grad: int(math.Round(s.Stil.Schriftgrad))})
 	}
 	f = append(f,

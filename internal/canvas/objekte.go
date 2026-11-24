@@ -62,6 +62,13 @@ func trifft(o document.Objekt, p document.Punkt, tol float64) bool {
 			return document.Rechteck{Min: z.Min.Minus(document.Pt(tol, tol)), Max: z.Max.Plus(document.Pt(tol, tol))}.Enthaelt(p)
 		}
 		return false
+	case document.Text:
+		g := v.Grenzen()
+		if (document.Rechteck{Min: g.Min.Minus(document.Pt(tol, tol)), Max: g.Max.Plus(document.Pt(tol, tol))}).Enthaelt(p) {
+			return true
+		}
+		// Sprechblase: das Dreieck bis zur Spitze zählt mit (ADR-0021 Nachtrag 13 Punkt 4), die Spitze selbst mit Toleranz.
+		return v.Spitze != nil && (v.Enthaelt(p) || p.Minus(*v.Spitze).Laenge() <= tol)
 	default:
 		g := o.Grenzen()
 		return document.Rechteck{Min: g.Min.Minus(document.Pt(tol, tol)), Max: g.Max.Plus(document.Pt(tol, tol))}.Enthaelt(p)
@@ -106,6 +113,10 @@ func Verschiebe(o document.Objekt, d document.Punkt) document.Objekt {
 		return v
 	case document.Text:
 		v.Ort = v.Ort.Plus(d)
+		if v.Spitze != nil { // Schild und Spitze gemeinsam; ein neuer Zeiger, der alte gehört dem Rückgängig-Stand
+			sp := v.Spitze.Plus(d)
+			v.Spitze = &sp
+		}
 		return v
 	case document.Nummer:
 		v.Mitte = v.Mitte.Plus(d)

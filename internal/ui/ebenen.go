@@ -575,6 +575,9 @@ func (e *editor) zeichneVorschau(gtx layout.Context, o document.Objekt, v image.
 		paint.FillShape(gtx.Ops, farbeLinie, clip.Stroke{Path: clip.Rect(v).Path(), Width: float32(gtx.Dp(1))}.Op())
 	}()
 	g := o.Grenzen()
+	if t, ok := o.(document.Text); ok { // Sprechblase: samt Spitze
+		g = t.Huelle()
+	}
 	if p, ok := o.(document.Pfeil); ok { // die Spitze ragt über die Grenzen hinaus
 		m := math.Max(8, 4*p.Strich.Breite) / 2
 		g = document.Rechteck{Min: g.Min.Minus(document.Pt(m, m)), Max: g.Max.Plus(document.Pt(m, m))}

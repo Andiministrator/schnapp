@@ -117,6 +117,7 @@ func tastenTabelle() []taste {
 		wz("A", canvas.WerkzeugPfeil),
 		wz("R", canvas.WerkzeugKasten),
 		wz("T", canvas.WerkzeugText),
+		wz("K", canvas.WerkzeugSprechblase), // K wie Kommentar-Blase; frei (ADR-0021 Nachtrag 13 Punkt 5)
 		wz("N", canvas.WerkzeugNummer),
 		wz("M", canvas.WerkzeugLupe), // M wie magnifier (ADR-0033 Punkt 8)
 		wz("B", canvas.WerkzeugSchwaerzen),

@@ -279,6 +279,7 @@ type editor struct {
 	// Handlungen stehen in der Menüzeile.
 	knoepfe struct {
 		auswahl, pfeil, kasten, text, nummer, farbe  widget.Clickable
+		sprechblase                                  widget.Clickable // Werkzeug Sprechblase (ADR-0021 Nachtrag 13)
 		lupe                                         widget.Clickable // Werkzeug Lupe (ADR-0033)
 		fuellung, tausch                             widget.Clickable // Farbpaar der Werkzeugleiste (ADR-0021 Nachtrag 11)
 		schwaerzen, verpixeln, zuschneiden, stauchen widget.Clickable
@@ -293,7 +294,9 @@ type editor struct {
 	ebenen ebenenLeiste
 	// lupe: Abschnitt „Vergrößerung“ der rechten Leiste und gemerkte Bilder der Lupen (ADR-0033, lupe.go).
 	lupe lupenLeiste
-	satz textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
+	// spitze: Schalter „Spitze“ der rechten Leiste (ADR-0021 Nachtrag 13, spitze.go).
+	spitze spitzenLeiste
+	satz   textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
 	// nav: Zustand des Navigators auf der Leinwand (navigator.go, ADR-0031 Nachtrag 9); die Adresse ist das Zeigerziel.
 	nav navigatorZustand
 	// fussFeldRahmen: Lage der Felder Farbe und Zoom beim letzten Zeichnen (leer: nicht gezeigt), farbKnopfRahmen die des
@@ -1442,7 +1445,7 @@ func (e *editor) leinwand(gtx layout.Context) {
 		pointer.CursorCrosshair.Add(gtx.Ops)
 	case e.s.Werkzeug == canvas.WerkzeugAuswahl:
 		pointer.CursorDefault.Add(gtx.Ops)
-	case e.s.Werkzeug == canvas.WerkzeugText:
+	case e.s.Werkzeug == canvas.WerkzeugText, e.s.Werkzeug == canvas.WerkzeugSprechblase:
 		pointer.CursorText.Add(gtx.Ops)
 	default:
 		pointer.CursorCrosshair.Add(gtx.Ops)
@@ -1731,7 +1734,30 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 	case document.Lupe:
 		e.zeichneLupe(gtx, v, an, vorschau)
 	case document.Text:
-		if v.Hintergrund.A > 0 {
+		if sa, sp, sb, ok := v.Spitzendreieck(); ok {
+			// Sprechblase (ADR-0021 Nachtrag 13 Punkte 2 und 3): Schild samt Dreieck als ein Vieleck in der Füllfarbe, ohne
+			// Füllung nur die beiden Schenkel in der Schriftfarbe — dieselben Funktionen des Dokuments wie der Renderer.
+			if v.Hintergrund.A > 0 {
+				var pfad clip.Path
+				pfad.Begin(gtx.Ops)
+				for i, p := range document.Sprechblase(v) {
+					if i == 0 {
+						pfad.MoveTo(an(p))
+					} else {
+						pfad.LineTo(an(p))
+					}
+				}
+				pfad.Close()
+				paint.FillShape(gtx.Ops, v.Hintergrund, clip.Outline{Path: pfad.End()}.Op())
+			} else {
+				var pfad clip.Path
+				pfad.Begin(gtx.Ops)
+				pfad.MoveTo(an(sa))
+				pfad.LineTo(an(sp))
+				pfad.LineTo(an(sb))
+				paint.FillShape(gtx.Ops, v.Farbe, clip.Stroke{Path: pfad.End(), Width: float32(v.SchenkelBreite())}.Op())
+			}
+		} else if v.Hintergrund.A > 0 {
 			g := v.Grenzen()
 			a, b := an(g.Min), an(g.Max)
 			paint.FillShape(gtx.Ops, v.Hintergrund, clip.Rect(image.Rect(int(a.X), int(a.Y), int(b.X), int(b.Y))).Op())
@@ -2143,6 +2169,7 @@ func (e *editor) fokussierterKnopf(gtx layout.Context) *widget.Clickable {
 	alle = append(alle, e.seite.alle()...)
 	alle = append(alle, e.ebenen.alleKnoepfe()...)
 	alle = append(alle, e.lupe.alle()...)
+	alle = append(alle, &e.spitze.knopf)
 	for i := range e.menue.titel {
 		alle = append(alle, &e.menue.titel[i])
 	}
@@ -2228,6 +2255,7 @@ func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
 		{&k.pfeil, canvas.WerkzeugPfeil, i18n.T("Arrow")},
 		{&k.kasten, canvas.WerkzeugKasten, i18n.T("Rectangle")},
 		{&k.text, canvas.WerkzeugText, i18n.T("Text")},
+		{&k.sprechblase, canvas.WerkzeugSprechblase, i18n.T("Speech bubble")},
 		{&k.nummer, canvas.WerkzeugNummer, i18n.T("Step")},
 		{&k.lupe, canvas.WerkzeugLupe, i18n.T("Magnifier")},
 		{&k.schwaerzen, canvas.WerkzeugSchwaerzen, i18n.T("Redact")},
@@ -2255,6 +2283,8 @@ func (e *editor) hinweis() string {
 		return i18n.T("Drag to draw a rectangle. Shift: square.")
 	case canvas.WerkzeugText:
 		return i18n.T("Click to place text, or click a text to edit it.")
+	case canvas.WerkzeugSprechblase:
+		return i18n.T("Drag from the spot to point at; let go where the text goes. Or click to place a bubble, or click a text to edit it.")
 	case canvas.WerkzeugNummer:
 		if a := e.s.Voll(); a != canvas.AblehnungKeine {
 			return e.grenzText(a) // keine Nummer versprechen, die nicht kommt (F-154)

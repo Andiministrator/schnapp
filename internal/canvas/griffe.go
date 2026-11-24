@@ -29,6 +29,8 @@ const (
 	GriffZielNO
 	GriffZielSO
 	GriffZielSW
+	// Sprechblase (ADR-0021 Nachtrag 13 Punkt 6): die Spitze allein.
+	GriffSpitze
 )
 
 // Griff ist ein Griff mit seinem Ort im Original.
@@ -37,9 +39,14 @@ type Griff struct {
 	Ort document.Punkt
 }
 
-// Griffe liefert die Griffe eines Objekts; Text und Nummer haben keine (sie werden nur verschoben).
+// Griffe liefert die Griffe eines Objekts; Text und Nummer haben keine (sie werden nur verschoben), eine Sprechblase
+// (Text mit Spitze) den einen an der Spitze.
 func Griffe(o document.Objekt) []Griff {
 	switch v := o.(type) {
+	case document.Text:
+		if v.Spitze != nil {
+			return []Griff{{GriffSpitze, *v.Spitze}}
+		}
 	case document.Pfeil:
 		return []Griff{{GriffAnfang, v.A}, {GriffEnde, v.B}, {GriffBogen, v.Griff()}}
 	case document.Kasten:
@@ -76,6 +83,12 @@ func GriffTreffer(o document.Objekt, p document.Punkt, toleranz float64) (GriffA
 // ergebnis — so bleibt ein Griff derselbe, auch wenn der Kasten beim Überziehen umklappt.
 func ZieheGriff(o document.Objekt, art GriffArt, p document.Punkt) document.Objekt {
 	switch v := o.(type) {
+	case document.Text:
+		if art == GriffSpitze && v.Spitze != nil {
+			sp := p // neuer Zeiger: der alte gehört dem Stand vor dem Zug
+			v.Spitze = &sp
+			return v
+		}
 	case document.Pfeil:
 		switch art {
 		case GriffBogen:

@@ -28,7 +28,7 @@ const (
 	SchnellPfeil SchnellArt = iota
 	SchnellKasten
 	SchnellText
-	SchnellSprechblase // das Werkzeug fehlt noch (ADR-0021 Nachtrag 13): keine eingebauten Stile, Anwenden wirkt nicht
+	SchnellSprechblase // Text mit Spitze (Werkzeug Sprechblase, ADR-0021 Nachtrag 13); eingebaute Stile = die des Texts
 	SchnellNummer
 	SchnellLupe
 )
@@ -95,9 +95,11 @@ func (st Schnellstil) Name() string {
 	return ""
 }
 
-// schnellWerkzeug ist das Werkzeug der Art (false: keines, die Sprechblase).
+// schnellWerkzeug ist das Werkzeug der Art (false: keines, unbekannte Art).
 func schnellWerkzeug(a SchnellArt) (Werkzeug, bool) {
 	switch a {
+	case SchnellSprechblase:
+		return WerkzeugSprechblase, true
 	case SchnellPfeil:
 		return WerkzeugPfeil, true
 	case SchnellKasten:
@@ -115,6 +117,8 @@ func schnellWerkzeug(a SchnellArt) (Werkzeug, bool) {
 // werkzeugArt ist die Stilart eines Werkzeugs (false: das Werkzeug hat keine Stile).
 func werkzeugArt(w Werkzeug) (SchnellArt, bool) {
 	switch w {
+	case WerkzeugSprechblase:
+		return SchnellSprechblase, true
 	case WerkzeugPfeil:
 		return SchnellPfeil, true
 	case WerkzeugKasten:
@@ -239,11 +243,17 @@ var eingebaut = []Schnellstil{
 	{Art: SchnellLupe, Kennung: "white", Farbe: Weiss, Breite: 4},
 }
 
-// EingebauteSchnellstile liefert die eingebauten Stile der Art a in der Reihenfolge der Kacheln (eine Kopie).
+// EingebauteSchnellstile liefert die eingebauten Stile der Art a in der Reihenfolge der Kacheln (eine Kopie). Die
+// Sprechblase hat dieselben wie der Text (ADR-0021 Nachtrag 13 Punkt 5: ein gemeinsames Paar), mit ihrer Art.
 func EingebauteSchnellstile(a SchnellArt) []Schnellstil {
+	quelle := a
+	if a == SchnellSprechblase {
+		quelle = SchnellText
+	}
 	var r []Schnellstil
 	for _, st := range eingebaut {
-		if st.Art == a {
+		if st.Art == quelle {
+			st.Art = a
 			r = append(r, st)
 		}
 	}
@@ -327,7 +337,11 @@ func objektStand(o document.Objekt) (Schnellstil, bool) {
 	case document.Kasten:
 		return Schnellstil{Art: SchnellKasten, Farbe: v.Strich.Farbe, Fuellung: v.Fuellung, Breite: v.Strich.Breite}, true
 	case document.Text:
-		return Schnellstil{Art: SchnellText, Farbe: v.Farbe, Fuellung: v.Hintergrund, Schriftgrad: v.Schriftgrad,
+		art := SchnellText
+		if v.Spitze != nil {
+			art = SchnellSprechblase
+		}
+		return Schnellstil{Art: art, Farbe: v.Farbe, Fuellung: v.Hintergrund, Schriftgrad: v.Schriftgrad,
 			Schrift: v.Schrift, Fett: v.Fett, Kursiv: v.Kursiv, Unterstrichen: v.Unterstrichen,
 			Durchgestrichen: v.Durchgestrichen, Ausrichtung: v.Ausrichtung}, true
 	case document.Nummer:
@@ -409,7 +423,7 @@ func mitSchnellstil(o document.Objekt, st Schnellstil) document.Objekt {
 // WendeSchnellstilAn wendet st an (ADR-0037 Punkt 3): Der Stand des Werkzeugs der Art wird st (Farbpaar und Maße, mal
 // Faktor des Bilds). Ist ein Objekt dieser Art gewählt (oder der Text in der Eingabe), ändert st es zusätzlich als
 // **einen** Rückgängig-Schritt, in der Texteingabe als Teil der Eingabe. Liefert, ob sich das Dokument geändert hat.
-// Während eines Zugs oder des Speicherns, bei der Sprechblase (ohne Werkzeug), bei einem ungültigen Stil (gueltig) und
+// Während eines Zugs oder des Speicherns, bei einem ungültigen Stil (gueltig) und
 // bei einem, dessen Größen mal Faktor die Grenzen des Dokuments sprengten, geschieht nichts.
 func (s *Sitzung) WendeSchnellstilAn(st Schnellstil) bool {
 	if s.Zieht() || s.gesperrt() {
@@ -434,7 +448,7 @@ func (s *Sitzung) WendeSchnellstilAn(st Schnellstil) bool {
 	switch st.Art {
 	case SchnellPfeil, SchnellKasten, SchnellLupe:
 		s.Stil.Breite = g.Breite
-	case SchnellText:
+	case SchnellText, SchnellSprechblase:
 		s.Stil.Schriftgrad, s.Stil.Schrift = g.Schriftgrad, g.Schrift
 		s.Stil.Fett, s.Stil.Kursiv = g.Fett, g.Kursiv
 		s.Stil.Unterstrichen, s.Stil.Durchgestrichen, s.Stil.Ausrichtung = g.Unterstrichen, g.Durchgestrichen, g.Ausrichtung
@@ -465,7 +479,7 @@ func (s *Sitzung) WendeSchnellstilAn(st Schnellstil) bool {
 func (s *Sitzung) EigeneSchnellstile() []Schnellstil { return slices.Clone(s.eigene) }
 
 // SetzeEigeneSchnellstile übernimmt die eigenen Stile aus der Datei (Editor beim Öffnen): je Art höchstens
-// MaxEigeneSchnellstile, der Rest fällt weg; Stile der Sprechblase bleiben für die Datei erhalten.
+// MaxEigeneSchnellstile, der Rest fällt weg.
 func (s *Sitzung) SetzeEigeneSchnellstile(stile []Schnellstil) {
 	s.eigene = nil
 	var n [len(artNamen)]int

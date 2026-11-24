@@ -28,6 +28,9 @@ import (
 // liegenden Rechtecken einen großen Rahmen über leere Fläche zeigte (F-606, Karte #231). Jedes Rechteck mit dem halben
 // Strich, wie Lupe.Grenzen.
 func auswahlRechtecke(o document.Objekt) []document.Rechteck {
+	if t, ok := o.(document.Text); ok { // Sprechblase: Schild samt Spitze (ADR-0021 Nachtrag 13 Punkt 4)
+		return []document.Rechteck{t.Huelle()}
+	}
 	l, ok := o.(document.Lupe)
 	if !ok {
 		return []document.Rechteck{o.Grenzen()}

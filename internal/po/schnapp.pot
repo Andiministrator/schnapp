@@ -979,6 +979,10 @@ msgid "Text"
 msgstr ""
 
 #: internal/ui/editor.go
+msgid "Speech bubble"
+msgstr ""
+
+#: internal/ui/editor.go
 msgid "Step"
 msgstr ""
 
@@ -1024,6 +1028,10 @@ msgstr ""
 
 #: internal/ui/editor.go
 msgid "Click to place text, or click a text to edit it."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Drag from the spot to point at; let go where the text goes. Or click to place a bubble, or click a text to edit it."
 msgstr ""
 
 #: internal/ui/editor.go
@@ -1618,4 +1626,8 @@ msgstr ""
 
 #: internal/ui/seitenleiste.go
 msgid "Color"
+msgstr ""
+
+#: internal/ui/spitze.go
+msgid "Tail"
 msgstr ""

@@ -1,0 +1,59 @@
+# Sichtprobe ADR-0021 Nachtrag 13 (Karte #194, Teil 2): Werkzeug Sprechblase aufziehen, tippen, Spitze ziehen,
+# Schalter „Spitze“ aus und an, Ebene mit Deckkraft 50 %, Klick-Blase, ohne Füllung.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/sprechblase-194.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1: das Bild liegt bei (76,100)–(1276,900), Zoom 1 (Original = Bildschirm − (76,100)).
+# Erwartet:
+#  01 Taste K, Aufziehen von (400,700) nach (560,520): Blase mit Spitze am Druckpunkt, Text darin, nach Enter gewählt;
+#     Kopf der Leiste „AUSWAHL: SPRECHBLASE“, Schalter „Spitze“ an, Griff (Quadrat) an der Spitze.
+#  02 Spitze mit dem Griff nach (330,760) gezogen: nur sie wandert, das Schild bleibt.
+#  03 Auswählen (V), Schild nach rechts oben gezogen: Schild und Spitze wandern gemeinsam.
+#  04 Schalter „Spitze“ aus: ein Rechteck ohne Spitze, kein Griff.
+#  05 Schalter wieder an: Spitze wie bei einem Klick (links unter dem Schild).
+#  06 Deckkraft der Ebene 50 %: Schild samt Spitze gleichmäßig halb durchsichtig (keine dunklere Naht an der Basis).
+#  07 Klick-Blase (Taste K, Klick ohne Zug): Spitze links unter dem Schild.
+#  08 Füllung „Keine“ (Leiste Farbe): nur zwei Schenkel in Schriftfarbe, Schild durchsichtig.
+warte 1500
+taste K
+warte 300
+ziehe 400 700 560 520 10
+warte 300
+schreibe Hallo Welt
+taste Return
+warte 500
+foto 01-aufgezogen
+ziehe 400 700 330 760 8
+warte 400
+foto 02-spitze-gezogen
+taste V
+warte 300
+ziehe 600 532 760 480 8
+warte 400
+foto 03-verschoben
+klick 1417 224
+warte 400
+foto 04-spitze-aus
+klick 1417 224
+warte 400
+foto 05-spitze-an
+klick 1440 782
+warte 200
+taste Strg+A
+schreibe 50
+taste Return
+warte 400
+foto 06-ebene-50
+klick 1100 700
+warte 300
+taste K
+warte 300
+klick 900 300
+warte 300
+schreibe Klick
+taste Return
+warte 500
+foto 07-klick-blase
+klick 1360 314
+warte 200
+klick 1447 313
+warte 400
+foto 08-ohne-fuellung

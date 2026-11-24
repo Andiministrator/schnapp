@@ -29,18 +29,22 @@ type SeitenInhalt struct {
 	Text           bool // Schrift, Größe, Stil und Ausrichtung wählbar (Text; ADR-0021 Nachtrag 10)
 	Kante          bool // Kantenform wählbar (Stauchen)
 	KanteAn        bool // die Knöpfe der Kantenform wirken (KannKanteWechseln)
+	Spitze         bool // Schalter „Spitze“ (gewählter Text oder Sprechblase, ADR-0021 Nachtrag 13 Punkt 6)
 	Vergroesserung bool // Vergrößerung wählbar (gewählte Lupe, ADR-0033 Punkt 8)
 	Hinweis        SeitenHinweis
 }
 
 // objektWerkzeug ist das Werkzeug, das o zeichnet (false: keines, etwa eine unbekannte Art).
 func objektWerkzeug(o document.Objekt) (Werkzeug, bool) {
-	switch o.(type) {
+	switch v := o.(type) {
 	case document.Pfeil:
 		return WerkzeugPfeil, true
 	case document.Kasten:
 		return WerkzeugKasten, true
 	case document.Text:
+		if v.Spitze != nil { // ein Text mit Spitze ist eine Sprechblase (ADR-0021 Nachtrag 13)
+			return WerkzeugSprechblase, true
+		}
 		return WerkzeugText, true
 	case document.Nummer:
 		return WerkzeugNummer, true
@@ -52,8 +56,12 @@ func objektWerkzeug(o document.Objekt) (Werkzeug, bool) {
 
 // farbWerkzeug meldet, ob ein Werkzeug eine Beschriftungsfarbe verwendet.
 func farbWerkzeug(w Werkzeug) bool {
-	return w == WerkzeugPfeil || w == WerkzeugKasten || w == WerkzeugText || w == WerkzeugNummer || w == WerkzeugLupe
+	return w == WerkzeugPfeil || w == WerkzeugKasten || w == WerkzeugText || w == WerkzeugNummer || w == WerkzeugLupe ||
+		w == WerkzeugSprechblase
 }
+
+// textWerkzeug meldet, ob w Text setzt (Text, Sprechblase): Schrift, Größe, Stil und Ausrichtung gelten dafür.
+func textWerkzeug(w Werkzeug) bool { return w == WerkzeugText || w == WerkzeugSprechblase }
 
 // strichWerkzeug meldet, ob ein Werkzeug einen Strich zeichnet (Pfeil, Kasten, Lupe).
 func strichWerkzeug(w Werkzeug) bool {
@@ -67,12 +75,12 @@ func (s *Sitzung) Seitenleiste() SeitenInhalt {
 		if o, ok := s.D.Objekt(s.Auswahl); ok {
 			if w, ok := objektWerkzeug(o); ok {
 				return SeitenInhalt{Auswahl: true, Werkzeug: w, Farbe: true,
-					Strich: strichWerkzeug(w), Text: w == WerkzeugText, Vergroesserung: w == WerkzeugLupe}
+					Strich: strichWerkzeug(w), Text: textWerkzeug(w), Spitze: textWerkzeug(w), Vergroesserung: w == WerkzeugLupe}
 			}
 		}
 	}
 	i := SeitenInhalt{Werkzeug: s.Werkzeug, Farbe: farbWerkzeug(s.Werkzeug),
-		Strich: strichWerkzeug(s.Werkzeug), Text: s.Werkzeug == WerkzeugText}
+		Strich: strichWerkzeug(s.Werkzeug), Text: textWerkzeug(s.Werkzeug)}
 	switch s.Werkzeug {
 	case WerkzeugAuswahl:
 		i.Hinweis = SeitenHinweisNichts

@@ -388,6 +388,12 @@ msgstr "Rechteck"
 msgid "Text"
 msgstr "Text"
 
+msgid "Speech bubble"
+msgstr "Sprechblase"
+
+msgid "Tail"
+msgstr "Spitze"
+
 msgid "Step"
 msgstr "Nummer"
 
@@ -422,6 +428,9 @@ msgstr "Ziehen zeichnet ein Rechteck. Umschalt: Quadrat."
 
 msgid "Click to place text, or click a text to edit it."
 msgstr "Klick setzt einen Text, Klick auf einen Text bearbeitet ihn."
+
+msgid "Drag from the spot to point at; let go where the text goes. Or click to place a bubble, or click a text to edit it."
+msgstr "Ziehen von der Stelle, auf die die Blase zeigt, bis dorthin, wo der Text stehen soll. Klick setzt eine Blase, Klick auf einen Text bearbeitet ihn."
 
 msgid "Click to place step number %d."
 msgstr "Klick setzt die Schritt-Nummer %d."

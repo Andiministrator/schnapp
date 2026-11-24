@@ -27,6 +27,7 @@ const (
 	WerkzeugZuschneiden                 // Rahmen ziehen: sichtbarer Ausschnitt (ADR-0023)
 	WerkzeugStauchen                    // Band ziehen: Zeilen oder Spalten herausnehmen (ADR-0023)
 	WerkzeugLupe                        // Quelle aufziehen, das Ziel erscheint vergrößert daneben (ADR-0033)
+	WerkzeugSprechblase                 // Spitze setzen, zum Ort des Texts ziehen, tippen (ADR-0021 Nachtrag 13)
 )
 
 // Werte des Verpixelns (ADR-0022 Nachtrag 1), Größen in Pixeln des Originals. Die Blockgröße ist nur noch Optik: Die
@@ -273,7 +274,7 @@ func mitBreite(o document.Objekt, b float64) document.Objekt {
 func (s *Sitzung) beginneNeu(q document.Punkt) {
 	s.neuArt, s.neuID = s.Werkzeug, 0
 	// Klick auf einen vorhandenen Text bearbeitet ihn auch bei vollem Dokument (kein neues Objekt nötig).
-	if s.Werkzeug == WerkzeugText {
+	if s.Werkzeug == WerkzeugText || s.Werkzeug == WerkzeugSprechblase {
 		if id, ok := Treffer(s.sichtbareObjekte(), q, s.toleranz()); ok {
 			if o, _ := s.D.Objekt(id); isText(o) {
 				s.Auswahl = id
@@ -287,7 +288,7 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 		return
 	}
 	switch s.Werkzeug {
-	case WerkzeugPfeil, WerkzeugKasten, WerkzeugLupe:
+	case WerkzeugPfeil, WerkzeugKasten, WerkzeugLupe, WerkzeugSprechblase:
 		s.zug = zugNeu
 	case WerkzeugSchwaerzen, WerkzeugVerpixeln, WerkzeugZuschneiden, WerkzeugStauchen:
 		s.zug, s.rahmen = zugNeu, false
@@ -372,6 +373,15 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 		l := s.neueLupe(document.R(a, b))
 		l.ID = s.neuID
 		o = l
+	case WerkzeugSprechblase: // Druckpunkt = Spitze, Zeigerort = Ort des Texts (ADR-0021 Nachtrag 13 Punkt 5)
+		b2, l1 := s.rastePunkt(a, s.neuID)
+		t := s.neueBlase(b2, b)
+		g := t.Grenzen()
+		d, l2 := s.rasteRechteck(g, document.Punkt{}, s.neuID)
+		t.Ort = t.Ort.Plus(d)
+		s.linien = append(l1, l2...)
+		t.ID = s.neuID
+		o = t
 	case WerkzeugNummer:
 		d, linien := s.rasteRechteck(s.startObj.Grenzen(), b.Minus(a), s.neuID)
 		s.linien = linien
@@ -445,6 +455,10 @@ func (s *Sitzung) beendeNeu() {
 		return
 	case s.neuArt == WerkzeugStauchen:
 		s.staucheRahmen()
+		return
+	}
+	if s.neuArt == WerkzeugSprechblase {
+		s.beendeBlase()
 		return
 	}
 	if s.neuID == 0 {

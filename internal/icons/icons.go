@@ -127,6 +127,10 @@ var (
 	Text    = Symbol{"text", teile(flaeche(5, 4, 14, 3), flaeche(10.5, 4, 3, 16), flaeche(8, 18, 8, 2))}
 	Nummer  = Symbol{"step", teile(rahmen(3, 3, 18, 18), flaeche(11, 7, 2.5, 10), flaeche(8.5, 7, 3, 2.5),
 		flaeche(8.5, 15, 7.5, 2))}
+
+	// Sprechblase: Rahmen mit Textzeile und Spitze unten links (ADR-0021 Nachtrag 13).
+	Sprechblase = Symbol{"speech-bubble", teile(rahmen(3, 3, 18, 12), flaeche(7, 8, 10, 2), vieleck(6, 15, 6, 21, 12, 15))}
+
 	Schwaerzen = Symbol{"redact", teile(rahmen(2, 5, 20, 14), flaeche(6, 10, 12, 4))}
 	Verpixeln  = Symbol{"pixelate", teile(
 		flaeche(4, 4, 4, 4), flaeche(12, 4, 4, 4), flaeche(8, 8, 4, 4), flaeche(16, 8, 4, 4),
@@ -208,7 +212,7 @@ var (
 // Gruppen liefert alle Symbole in Gruppen (Musterblatt, Doku, Test).
 func Gruppen() []Gruppe {
 	return []Gruppe{
-		{"tools", []Symbol{Auswahl, Pfeil, Kasten, Text, Nummer, LupeWerkzeug, Schwaerzen, Verpixeln, Zuschneiden, Stauchen}},
+		{"tools", []Symbol{Auswahl, Pfeil, Kasten, Text, Sprechblase, Nummer, LupeWerkzeug, Schwaerzen, Verpixeln, Zuschneiden, Stauchen}},
 		{"actions", []Symbol{Aufnehmen, Oeffnen, Speichern, Exportieren, Kopieren, Rueck, Wieder, Einpassen, EinsZuEins,
 			Lupe, GanzesBild, Zurueckholen, Schliessen}},
 		{"properties", []Symbol{Farbe, Strichstaerke, Schriftgroesse, KanteAbriss, KanteWelle, KanteZacken}},
