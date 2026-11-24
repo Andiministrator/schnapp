@@ -217,5 +217,13 @@
     "paket": "./internal/fileformat",
     "alt": "\t\tdreieck = d.Sichtbar(Rechteck{",
     "neu": "\t\tdreieck = false && d.Sichtbar(Rechteck{"
+  },
+  {
+    "name": "S32 Nur sichtbares Dreieck schreibt den Umriss samt Schild ins SVG (F-728)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "if o.Hintergrund.A > 0 && s.ohneText != nil && s.ohneText(o) {",
+    "neu": "if false && o.Hintergrund.A > 0 && s.ohneText != nil && s.ohneText(o) {",
+    "timeout": "3m"
   }
 ]

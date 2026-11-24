@@ -69,6 +69,15 @@ func TestSprechblaseNurSpitzeSichtbarOhneText(t *testing.T) {
 	if !strings.Contains(svg, `<path d="M`) || !strings.Contains(svg, `fill="#1e5ac8"`) {
 		t.Errorf("sichtbares Dreieck fehlt im SVG:\n%s", svg)
 	}
+	// Nur das Dreieck, nicht der Umriss mit dem Schild: sonst stünden Breite und Höhe des unsichtbaren Schilds in der
+	// Datei (F-728). Das Dreieck hat drei Ecken, also genau zwei „L“.
+	if i := strings.Index(svg, `<path d="M`); i >= 0 {
+		d := svg[i+len(`<path d="`):]
+		d = d[:strings.Index(d, `"`)]
+		if n := strings.Count(d, " L"); n != 2 {
+			t.Errorf("Pfad mit %d Strecken statt des Dreiecks (Umriss des Schilds im SVG): %s", n, d)
+		}
+	}
 	// Treffer und Auswahl rechnen weiter mit der Hülle samt Spitze (Reichweite unverändert).
 	if !d.ObjektSichtbar(d.Objekte()[0]) {
 		t.Error("ObjektSichtbar ist false, obwohl das Dreieck sichtbar ist")

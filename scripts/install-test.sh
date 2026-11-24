@@ -16,6 +16,7 @@
 #   6. Gescheiterter Bau (F-648): scheitert nur schnapp-ocr, wird schnapp installiert, ein vorhandenes schnapp-ocr bleibt,
 #      Warnung und Exit 0; scheitert schnapp, Exit ungleich 0 und nichts ersetzt. In keinem Fall bleibt eine *.neu liegen.
 #   7. Pfad mit @EXEC@ (F-716): Abbruch vor dem Bau, nichts angelegt.
+#   8. Abbruch beim Schreiben der Desktop-Datei (F-729): keine schnapp.desktop.neu bleibt liegen.
 #
 # Desktop-Werkzeuge (update-desktop-database, gtk-update-icon-cache, kbuildsycoca6) laufen im Test nur als Attrappen
 # aus scripts/install-test-stub/ (F-367): Der Ordner steht im PATH vor /usr/bin, und Attrappen mit gleichem Namen
@@ -186,6 +187,23 @@ env -i HOME="$f7/home" PREFIX="$f7/home/pre@EXEC@fix" PATH="$stub:/usr/bin:/bin"
 grep -q '@EXEC@ wird nicht unterstützt' "$f7/aus.txt" || fail "Fall 7: Meldung fehlt: $(cat "$f7/aus.txt")"
 grep -q -- '-o ' "$f7/go.log" && fail "Fall 7: es wurde gebaut: $(cat "$f7/go.log")"
 [ -z "$(find "$f7/home" -type f)" ] || fail "Fall 7: Dateien angelegt: $(find "$f7/home" -type f)"
+
+# --- Fall 8: Abbruch beim Schreiben der Desktop-Datei (F-729) -----------------
+# Eine chmod-Attrappe scheitert an schnapp.desktop.neu (wie volle Platte oder Signal zwischen Anlegen und Umbenennen):
+# install.sh endet mit Fehler, die Falle räumt die Nebendatei weg.
+f8="$sand/f8"
+kopie "$f8/repo"
+mkdir -p -- "$f8/home" "$f8/chmod"
+printf '%s\n' '#!/bin/sh' 'for a in "$@"; do case "$a" in *.desktop.neu) echo "chmod-Attrappe: scheitert (gewollt)" >&2; exit 1 ;; esac; done' 'exec /usr/bin/chmod "$@"' > "$f8/chmod/chmod"
+/usr/bin/chmod 0755 "$f8/chmod/chmod"
+: > "$f8/go.log"
+rc=0
+env -i HOME="$f8/home" PATH="$f8/chmod:$stub:/usr/bin:/bin" STUB_LOG="$f8/go.log" STUB_FEHL_IN="" \
+	GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null \
+	bash "$f8/repo/install.sh" > "$f8/aus.txt" 2>&1 || rc=$?
+[ "$rc" -ne 0 ] || fail "Fall 8: Abbruch beim Schreiben der Desktop-Datei endet mit Exit 0"
+grep -q 'chmod-Attrappe: scheitert' "$f8/aus.txt" || fail "Fall 8: Attrappe lief nicht: $(cat "$f8/aus.txt")"
+[ ! -e "$f8/home/.local/share/applications/schnapp.desktop.neu" ] || fail "Fall 8: schnapp.desktop.neu liegen geblieben"
 
 if [ "$fehler" -eq 0 ]; then
 	echo "install-test: alle Fälle bestanden"

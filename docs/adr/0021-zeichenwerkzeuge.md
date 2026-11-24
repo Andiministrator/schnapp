@@ -546,7 +546,7 @@ wenn das Dreieck entfällt“) für den SVG-Export ein; ADR-0023 Punkt 7 und ADR
    (`Dokument.TextSichtbar`): **Schrift** = Reichweite ohne Spitze (Tinte der Glyphen, mit Füllung das Schild) und
    **Dreieck** = Rechteck um `Spitzendreieck` samt halber Schenkelbreite und 1 Pixel (kein Dreieck, wenn es entfällt).
    Ist die Schrift sichtbar, schreibt der Export die Blase wie bisher ganz. Ist nur das Dreieck sichtbar, schreibt er
-   nur den Pfad (Umriss in der Füllfarbe bzw. die Schenkel), **ohne** `<text>` und ohne Unter- und Durchstreichung.
+   nur das Dreieck (in der Füllfarbe, **ohne** den Umriss des Schilds, dessen Breite und Höhe sonst die ungefähre Länge und Zeilenzahl des Texts verrieten, F-728) bzw. die Schenkel, **ohne** `<text>` und ohne Unter- und Durchstreichung.
    Ist keins von beiden sichtbar, fehlt das Objekt im Export. Ein Text, dessen Glyphen und Schild nirgends zu sehen
    sind, steht so nie im Klartext in einer exportierten Datei. Die Arbeitsdatei (snAP) trägt weiter alles
    (nicht zerstörend, Kernprinzip 1).

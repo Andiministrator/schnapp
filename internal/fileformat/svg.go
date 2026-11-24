@@ -331,7 +331,13 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 				// Sprechblase (ADR-0021 Nachtrag 13 Punkte 2 und 3): ein Pfad aus Schild und Dreieck in der Füllfarbe,
 				// ohne Füllung nur die beiden Schenkel als Linie in der Schriftfarbe (wie document.Sprechblase im Renderer).
 				s.WriteString(`<path`)
-				if o.Hintergrund.A > 0 {
+				if o.Hintergrund.A > 0 && s.ohneText != nil && s.ohneText(o) {
+					// Nur das Dreieck ist sichtbar: auch der Umriss des Schilds bleibt draußen, sonst stünden dessen
+					// Breite und Höhe (ungefähre Länge und Zeilenzahl des Texts) in der Datei (F-728).
+					s.attr("d", "M"+punkt(a)+" L"+punkt(sp)+" L"+punkt(b)+" Z")
+					s.farbeSVG("fill", o.Hintergrund)
+					s.attr("stroke-linejoin", "miter")
+				} else if o.Hintergrund.A > 0 {
 					var pfad strings.Builder
 					for i, p := range document.Sprechblase(o) {
 						if i == 0 {
