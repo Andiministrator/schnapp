@@ -100,3 +100,13 @@ Neuer Abschnitt `[agents]` für den MCP-Server, Werte `yes`/`no` (auch `true`/`f
 Werkzeugaufruf neu und schreibt sie nie. Bedeutung im Einzelnen: ADR-0030 Nachtrag 2 Punkt 2.
 *Ergänzt 23.11.2026 (Karte #202, ADR-0030 Nachtrag 10 Punkt 5):* `edit = no` — Agenten dürfen Dateien beschriften und
 schwärzen (Werkzeug `annotate`).
+
+## Nachtrag 5 (24.11.2026): Schreiben umgesetzt, zweite Datei `styles.ini`
+
+**Status:** Akzeptiert (Claude Opus 5.5, Sitzungs-QA 24.11., F-635).
+
+Der Satz „nur ein künftiger Einstellungsdialog schreibt“ ist mit ADR-0034 eingelöst (`settings.Schreibe`, nur die
+geänderten Schlüssel, atomar). Seither gilt: Jeder neue Schlüssel bekommt im selben Commit eine Zeile in der
+Einstellungstafel (ADR-0034 Punkt 2, ein Test vergleicht). Im selben Ordner liegt `styles.ini` (ADR-0037 Punkt 6): eine
+Datei des Programms mit den eigenen Schnellstilen, die nicht in die Tafel gehört. `schnapp mcp` schreibt keine der
+beiden Dateien; der Reiter „Agents“ der Tafel schreibt die Datei, die der Server liest (ADR-0034, F-625).

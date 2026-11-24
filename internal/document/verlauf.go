@@ -168,7 +168,7 @@ func (d *Dokument) Abzug() (*Dokument, error) {
 	}
 	a := &Dokument{
 		original:          d.Original(),
-		objekte:           append([]Objekt(nil), d.objekte...), // Objekte sind Werte ohne geteilte Felder
+		objekte:           append([]Objekt(nil), d.objekte...), // Objekte sind Werte; einziger geteilter Zeiger ist Text.Spitze, durch den nie geschrieben wird (neu setzen, ADR-0021 Nachtrag 13)
 		naechsteID:        d.naechsteID,
 		kante:             d.kante,
 		geschwaerzt:       d.geschwaerzt,

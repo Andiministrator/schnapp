@@ -67,7 +67,7 @@ What exists:
 
 Unless `--output` is given, every capture is saved to the library (`~/Pictures/schnapp/YYYY-MM/`) and its path printed on standard output before
 the editor opens. Scripts and AI agents: see [`docs/agents.md`](docs/agents.md), including annotating and redacting a file without a window (`--annotate`) and the MCP server `schnapp mcp` (off until you allow it under `[agents]`). Settings live in `~/.config/schnapp/settings.ini`, for example `[capture] open-editor = false`, `[capture] seam = wave` (edge at cut-out seams: `tear`, `wave` or `zigzag`) or
-`[general] language = de` (default `auto`: the language of the system). The editor's quick styles that you save yourself (the "+" in the right-hand panel) are kept next to it in `~/.config/schnapp/styles.ini`; Schnapp rewrites that file as a whole, so edit styles in the editor, not by hand.
+`[general] language = de` (default `auto`: the language of the system). The editor's quick styles that you save yourself (the "+" in the right-hand panel) are kept next to it in `~/.config/schnapp/styles.ini`; Schnapp rewrites that file as a whole, so edit styles in the editor, not by hand. You can change all settings in the editor as well: *File → Settings…* (**Ctrl+,**) writes only the keys you change and keeps your comments; the *Agents* tab writes the file that `schnapp mcp` reads.
 
 In the editor, tools: **V** select, **A** arrow (drag; **Shift** snaps to 45°; drag the middle handle to bend it),
 **R** box (**Shift**: square), **T** text (click, type, **Enter** confirms, **Shift+Enter** new line, **Esc** discards;

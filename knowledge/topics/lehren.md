@@ -688,8 +688,10 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Ein Cache über Pfadkoordinaten ist nur bitgleich, wenn der Schlüssel vollständig verglichen wird** (Hash nur zur
   Vorsortierung). Eine Maske in Spaltenstreifen abspielen ist bitgleich; eine Füllung in Kacheln rastern nicht
   (float32-Summen im Rasterkern).
-- **Gio mischt halbdurchsichtig linear, `render` in sRGB** (F-407 gemessen: bis 43 je Kanal). Was im Editor gleich
-  aussehen muss wie im Export, wird vorgerastert (`render.KantenOhneSchatten`); Rest F-520.
+- **~~Gio mischt halbdurchsichtig linear~~ — überholt seit 24.11.2026** (ADR-0020 Nachtrag 14, F-520): Das gepatchte
+  Gio mischt im sRGB-Raum wie `render`. Vorrastern für Farbgleichheit ist nicht mehr nötig (die Nähte bleiben
+  vorgerastert, F-407). Deckkräfte der Oberfläche gelten jetzt als Anteil der Zahlenwerte: 60 % Dunkel ist `0x99`, nicht
+  mehr „deckender, weil Gio linear mischt“.
 
 ## Sitzungs-QA 23.11.2026 nachmittags (Kritiker A/B, Fable)
 
@@ -870,3 +872,28 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Prüfmuster F-1 trifft auch Bezeichner** (eine Testvariable mit dem Kürzel aus dem Muster, `-i`): Variablen in Tests so benennen, dass das Muster sauber bleibt.
 - **Cherry-Pick-Konflikt am Ende eines ADR**: Zwei Stränge hängen Nachträge an dieselbe Stelle; beide behalten,
   Nachtragsnummern prüfen.
+- **Wer eine Grundannahme umstellt, sucht ihre Spuren im ganzen Repo, nicht nur im Code** (Sitzungs-QA 24.11., F-635):
+  Nach der Umstellung der Gio-Mischung auf sRGB standen „Gio mischt linear“ noch in einer Lehre, zwei Kommentaren und
+  einem ADR, und auf Sicht abgestimmte Deckkräfte (Overlay, Einstellungstafel) waren falsch. Vor dem Commit `git grep -i`
+  nach dem Stichwort über `internal`, `docs`, `knowledge`, `third_party/README.md`, und jede auf Sicht abgestimmte
+  Konstante einmal ansehen.
+- **Ein Agent auf alter Basis stimmt Werte auf den alten Stand ab**: Die Einstellungstafel entstand parallel zur
+  sRGB-Umstellung und bekam eine „deckendere“ Abdunklung, die nach dem Zusammenführen zu dunkel war. Nach jedem
+  Cherry-Pick, der eine Grundannahme kreuzt, die Werte des Agenten gegen den neuen Stand halten (Sichtprobe).
+- **Ein überlebender Mutant an einer Zwischenstufe kann echt äquivalent sein**: Eine sRGB-Zwischenebene kodiert beim
+  Schreiben und dekodiert beim Lesen; das hebt sich auf, nur die Enden einer Kette ändern das Bild (F-621). Erst die
+  Umrechnung zu Ende denken, dann Tests nachschärfen.
+- **Ein neues Kürzel oder ein neuer Menüeintrag ist erst fertig mit README en/de, Glossar, Vermerk im eingelösten
+  Alt-ADR und den Zählern in CLAUDE.md** („Nachträge 2 bis N“, ADR-Spanne) — in der Sitzung vom 24.11. fehlte das für
+  die Einstellungstafel und ADR-0018.
+- **Regeln in CLAUDE.md nennen fremde Skripte mit Herkunft**: `install.sh` gibt es im Projekt und im Framework; eine
+  Regel ohne Herkunft trifft das falsche Skript.
+- **Mutanten-Muster nicht mit einem Tabulator-Escape direkt vor einem Wort beginnen**: Das Escape plus Wortanfang kann
+  das Prüfmuster aus CLAUDE.local.md als Wort treffen (Fehlalarm in schnellstile.json); Muster ohne führenden Tabulator
+  sind ebenso eindeutig.
+- **Parallele Kritiker brauchen getrennte Probeorte**: Drei Kritiker liefen gleichzeitig nur lesend im Hauptbaum; jeder
+  bekam `tmp/sprint12/kritik-<x>/` und blendete Probetests per `go test -overlay` ein, statt Dateien in Pakete zu legen.
+  Kein `./...`-Build und kein `probe.sh` bei parallelen Kritikern.
+- **Einstellungen mit Sicherheitsbezug müssen am Ort des Lesers geschrieben werden** (F-625): Der MCP-Server liest
+  bewusst nie aus `XDG_*`; eine Tafel, die nach `XDG_CONFIG_HOME` schreibt, schaltet bei abweichender Umgebung die
+  Agenten-Einwilligung nur scheinbar ab. Wer schreibt, nimmt den Ort dessen, der die Einstellung auswertet.

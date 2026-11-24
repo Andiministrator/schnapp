@@ -69,7 +69,7 @@ Vorhanden ist:
 
 Ohne `--output` landet jede Aufnahme in der Bibliothek (`~/Bilder/schnapp/JJJJ-MM/`), ihr Pfad steht auf der Standardausgabe, bevor
 der Editor öffnet. Skripte und KI-Agenten: siehe [`docs/agents.md`](docs/agents.md) (englisch), auch zum Beschriften und Schwärzen einer Datei ohne Fenster (`--annotate`) und zum MCP-Server `schnapp mcp` (aus, bis du ihn unter `[agents]` erlaubst). Einstellungen stehen in `~/.config/schnapp/settings.ini`, etwa `[capture] open-editor = false`, `[capture] seam = wave` (Kante an Stauch-Nähten: `tear`, `wave` oder `zigzag`) oder
-`[general] language = en` (Voreinstellung `auto`: die Sprache des Systems). Die Schnellstile, die du im Editor selbst speicherst (das „+“ in der rechten Leiste), liegen daneben in `~/.config/schnapp/styles.ini`; Schnapp schreibt diese Datei jeweils ganz neu, bearbeite Stile also im Editor, nicht von Hand.
+`[general] language = en` (Voreinstellung `auto`: die Sprache des Systems). Die Schnellstile, die du im Editor selbst speicherst (das „+“ in der rechten Leiste), liegen daneben in `~/.config/schnapp/styles.ini`; Schnapp schreibt diese Datei jeweils ganz neu, bearbeite Stile also im Editor, nicht von Hand. Dieselben Einstellungen ändert auch der Editor: *Datei → Einstellungen…* (**Strg+,**) schreibt nur die geänderten Schlüssel und lässt deine Kommentare stehen; der Reiter *Agenten* schreibt die Datei, die `schnapp mcp` liest.
 
 Im Editor, Werkzeuge: **V** Auswählen, **A** Pfeil (ziehen; **Umschalt** rastet auf 45°; mittleren Griff ziehen
 biegt ihn), **R** Kasten (**Umschalt**: Quadrat), **T** Text (klicken, tippen, **Enter** bestätigt, **Umschalt+Enter**

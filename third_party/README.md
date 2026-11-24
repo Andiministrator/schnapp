@@ -21,6 +21,14 @@ erweitert um `gio-ausgabe.patch`:
   `writeAllFD` ganz in die Pipe (PNG größer als der Pipe-Puffer). Der Deskriptor wird vorher nicht blockierend geschaltet,
   sonst griffe die Frist nie; nach 10 s ohne Fortschritt gibt er auf. Fehlen Sitz oder Datengerät, meldet
   `ErrClipboardUnavailable` über `ClipboardWriteError` (Editor zeigt einen Fehler statt „Copied to clipboard“).
+- **Rückmeldung `ClipboardCancelled` (ADR-0015 Nachtrag 3, F-328):** `app.ClipboardCancelled` meldet, dass ein anderes
+  Programm die Zwischenablage übernommen hat.
+- **Mischen im sRGB-Raum (ADR-0015 Nachtrag 4, ADR-0020 Nachtrag 14, F-520):** Farben werden nicht linearisiert
+  (`f32color.PremulSRGB` in `gpu/gpu.go`), Bild-Texturen, Deckkraft-Zwischenebenen und die Fläche von `gpu/headless` sind
+  `RGBA8`, OpenGL ohne sRGB-Nachbildung und ohne `FRAMEBUFFER_SRGB`, EGL ohne sRGB-Fläche. Nur Linux/OpenGL; Vulkan,
+  Metal und Direct3D sind nicht umgestellt. Gios eigene Tests unter `gpu/` erwarten weiter lineare Mischung und passen
+  bei halbdurchsichtigen Fällen nicht zum Patch. Beim Gio-Update: `go test ./internal/ui -run 'Misch|Deckend|Zwischenebene'`
+  und die Mutanten-Gruppe `ui-mischen`.
 
 Warum eine Kopie im Repo und kein Fork: `docs/adr/0015-gepatchtes-gio-im-repo.md`. Hintergrund:
 `knowledge/topics/gio-wayland.md`.

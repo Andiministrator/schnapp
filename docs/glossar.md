@@ -23,7 +23,12 @@
 | **Vollansicht** | Das ganze Original mit denselben Stauch-Streifen, ohne Zuschnitt; nur beim Werkzeug Zuschneiden gezeigt. Die Ansicht liegt darin bei `VollVersatz` (ADR-0023 Nachtrag 5). |
 | **Schritt-Nummer** | Nummerierter Kreis, der beim Setzen selbst hochzählt. |
 | **Stempel** | Fertiges Symbol aus einer durchsuchbaren Sammlung (Icon-Sets oder eigene). |
-| **Schnellstil** | Gespeicherter Satz aus Farbe, Strichstärke, Schrift für ein Werkzeug. |
+| **Schnellstil** | Gespeicherter Satz aus Farbe, Strichstärke, Schrift für ein Werkzeug. Eingebaute stehen fest im Programm, eigene (höchstens 16 je Art) in `styles.ini` (ADR-0037). |
+| **Sprechblase** | Text mit Spitze (`document.Text.Spitze`), kein eigenes Objekt; Werkzeug K. Ohne Füllung zwei Schenkel statt Fläche (ADR-0021 Nachtrag 13). |
+| **Spitze (Sprechblase)** | Punkt im Original, auf den die Sprechblase zeigt; nicht die Pfeilspitze. |
+| **Einstellungstafel** | Tafel über dem Editor (Strg+,), die `settings.ini` liest und nur geänderte Schlüssel schreibt; kein eigenes Fenster (ADR-0034). |
+| **Text aus dem Bild** | Texterkennung über ein installiertes `tesseract` auf dem sichtbaren Bild (nie dem Original); Ergebnis in die Zwischenablage (ADR-0035). |
+| **Bereichsmodus** | Einmaliger Zustand nach Strg+Umschalt+T: Ziehen wählt den Bereich der Texterkennung, das Werkzeug bleibt. |
 | **Spotlight** | Alles außer einem Bereich abdunkeln. |
 | **Lupe (Beschriftung)** | Vergrößerter Ausschnitt, neben die Stelle gesetzt. |
 | **Blatt** | Mehrere Bilder auf einer Fläche (Vorher-nachher, Schritt-für-Schritt). |
