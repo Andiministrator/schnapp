@@ -285,6 +285,9 @@ type editor struct {
 
 	rettung Rettung        // Rettungskopie (ADR-0029); nil: keine
 	rett    rettungZustand // Bündelung der Rettungskopie
+	// rettungEnden schließt, wenn alle im Hintergrund gestarteten Rettung.Ende eines Wechsels durch sind (F-637); nil:
+	// keins.
+	rettungEnden chan struct{}
 
 	// Bibliothek in der Oberfläche (ADR-0036): bib verbindet mit Index, Vorschauen und Ladefunktion (nil: keine Leiste,
 	// kein Wechsel); pfad liefert die Datei, die den Stand trägt; unten ist die Leiste der letzten Aufnahmen
@@ -602,6 +605,7 @@ func (e *editor) zerstoert(fensterErr error) error {
 		}
 	}
 	e.rettungEnde()
+	e.rettungEndenAbwarten(wechselFrist) // Rettungskopien früherer Aufnahmen dieses Fensters (F-637)
 	return errors.Join(fensterErr, e.schlussErr, err)
 }
 

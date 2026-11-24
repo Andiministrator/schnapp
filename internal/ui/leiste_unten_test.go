@@ -23,30 +23,40 @@ import (
 	"github.com/Andiministrator/schnapp/internal/libview"
 )
 
-// leistenRettung ist eine Rettung, die Wiederherstellen und Ende zählt (nur aus der Ereignisschleife gerufen).
-type leistenRettung struct{ wieder, ende int }
+// leistenRettung ist eine Rettung, die Wiederherstellen und Ende zählt. Ende läuft beim Wechsel in einer Goroutine
+// (F-637); gelesen wird ende erst nach ruhig, das auf rettungEnden wartet. Mit tor wartet Ende, bis es schließt.
+type leistenRettung struct {
+	wieder, ende int
+	tor          chan struct{}
+}
 
 func (r *leistenRettung) Wiederherstellen(*document.Dokument) (string, bool) {
 	r.wieder++
 	return "", false
 }
-func (r *leistenRettung) Sichere(*document.Dokument)   {}
-func (r *leistenRettung) Verwirf()                     {}
-func (r *leistenRettung) Ende()                        { r.ende++ }
+func (r *leistenRettung) Sichere(*document.Dokument) {}
+func (r *leistenRettung) Verwirf()                   {}
+func (r *leistenRettung) Ende() {
+	if r.tor != nil {
+		<-r.tor
+	}
+	r.ende++
+}
 func (r *leistenRettung) Lage() (string, bool, uint64) { return "", false, 0 }
 
 // leistenLauf ist ein Editor mit Bibliothek in einem Testordner und einer Ladefunktion, die mitschreibt.
 type leistenLauf struct {
 	*menueLauf
-	b      *library.Bibliothek
-	pfade  []string // absolute Pfade der Aufnahmen, neueste zuerst (ohne Agenten-Aufnahme)
-	mu     sync.Mutex
-	offen  []string // Aufrufe der Ladefunktion
-	fehler error    // Ladefunktion scheitert
-	tor    chan struct{}
-	neu    map[string]*document.Dokument // geladene Dokumente je Pfad
-	rett   map[string]*leistenRettung
-	alt    *leistenRettung // Rettung des ersten Dokuments
+	b       *library.Bibliothek
+	pfade   []string // absolute Pfade der Aufnahmen, neueste zuerst (ohne Agenten-Aufnahme)
+	mu      sync.Mutex
+	offen   []string // Aufrufe der Ladefunktion
+	fehler  error    // Ladefunktion scheitert
+	tor     chan struct{}
+	neu     map[string]*document.Dokument // geladene Dokumente je Pfad
+	rett    map[string]*leistenRettung
+	alt     *leistenRettung // Rettung des ersten Dokuments
+	endeTor chan struct{}   // Ende der geladenen Rettungen wartet darauf (nil: sofort)
 }
 
 // legeAufnahmeAb legt eine Aufnahme 40 × 30 in der Farbe c mit Zeit zeit ab und liefert den absoluten Pfad.
@@ -116,8 +126,8 @@ func (l *leistenLauf) oeffnen(pfad string) (Geoeffnet, error) {
 	if err != nil {
 		return Geoeffnet{}, err
 	}
-	r := &leistenRettung{}
 	l.mu.Lock()
+	r := &leistenRettung{tor: l.endeTor}
 	l.neu[pfad], l.rett[pfad] = d, r
 	l.mu.Unlock()
 	return Geoeffnet{Titel: filepath.Base(pfad), Dokument: d, Rettung: r, Pfad: func() string { return pfad },
@@ -148,6 +158,7 @@ func (l *leistenLauf) warte(f func() bool) {
 func (l *leistenLauf) ruhig() {
 	l.t.Helper()
 	l.warte(func() bool { return !l.e.s.SpeichernLaeuft() && !l.e.wechsel.laedt && !l.e.unten.indexLaeuft })
+	l.e.rettungEndenAbwarten(5 * time.Second) // Rettung.Ende läuft beim Wechsel im Hintergrund (F-637)
 }
 
 // kachel ist die Mitte der gezeichneten Vorschau an der Stelle i.

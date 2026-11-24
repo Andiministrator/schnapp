@@ -117,8 +117,13 @@ func (e *editor) wechselLaden() {
 	e.melde(i18n.T("Opening…"), false)
 	ch := make(chan wechselErgebnis, 1)
 	e.wechsel.antwort = ch
-	oeffnen, ziel, wecker := e.bib.Oeffnen, e.wechsel.ziel, e.wecker
+	oeffnen, ziel, wecker, enden := e.bib.Oeffnen, e.wechsel.ziel, e.wecker, e.rettungEnden
 	go func() {
+		// Erst die Rettungskopien früherer Wechsel freigeben: Führt der Wechsel zurück zu einer davon, fände die neue
+		// Sicherung deren Sperre sonst noch belegt und liefe als fremd (F-637). Ende selbst ist auf 5 s begrenzt.
+		if enden != nil {
+			<-enden
+		}
 		g, err := oeffnen(ziel)
 		ch <- wechselErgebnis{g, err}
 		if wecker != nil {
@@ -150,7 +155,7 @@ func (e *editor) wechselAbholen() bool {
 		// Texteingabe oder ein Zug ist offen (an der Ruhe vorbei, F-652, F-653): die offene Aufnahme nicht verlassen.
 		// Die geladene gibt ihre Rettungskopie frei.
 		if r.g.Rettung != nil {
-			r.g.Rettung.Ende()
+			e.rettungEndeImHintergrund(r.g.Rettung)
 		}
 		switch {
 		case e.erzwungen || e.s.SignalVorgemerkt():
@@ -170,7 +175,14 @@ func (e *editor) wechselAbholen() bool {
 // und die Schalter der Ansicht (Einrasten, Navigator) bleiben.
 func (e *editor) uebernimm(g Geoeffnet) {
 	e.ocrAbbrechen()
-	e.rettungEnde() // die alte Aufnahme ist gespeichert: Kopie verwerfen, Sperre freigeben
+	// Die alte Aufnahme ist gespeichert: Kopie verwerfen, Sperre freigeben — im Hintergrund, Ende wartet bis zu 5 s auf
+	// die Schreibkette (F-637).
+	if e.rettung != nil {
+		if !e.s.Geaendert() {
+			e.rettung.Verwirf()
+		}
+		e.rettungEndeImHintergrund(e.rettung)
+	}
 	einrasten, navigator := e.s.EinrastenAn(), e.s.NavigatorAn()
 	e.s = canvas.NeueSitzung(g.Dokument)
 	if einrasten != e.s.EinrastenAn() {
@@ -200,6 +212,34 @@ func (e *editor) uebernimm(g Geoeffnet) {
 	diagnoseEditor("Wechsel zu %s", g.Titel)
 	if e.w != nil {
 		e.w.Invalidate()
+	}
+}
+
+// rettungEndeImHintergrund ruft r.Ende in einer Goroutine (F-637): Ende wartet bis zu 5 s auf die Schreibkette der
+// Rettungskopie (F-417), in der Ereignisschleife zeichnete das Fenster so lange nicht. Die Aufrufe laufen
+// nacheinander; rettungEnden schließt nach dem letzten.
+func (e *editor) rettungEndeImHintergrund(r Rettung) {
+	vorher, fertig := e.rettungEnden, make(chan struct{})
+	e.rettungEnden = fertig
+	go func() {
+		if vorher != nil {
+			<-vorher
+		}
+		r.Ende()
+		close(fertig)
+	}()
+}
+
+// rettungEndenAbwarten wartet beim Zerstören höchstens frist auf die Enden im Hintergrund, damit Löschen und Freigeben
+// der Sperren vor dem Prozessende fertig werden.
+func (e *editor) rettungEndenAbwarten(frist time.Duration) {
+	if e.rettungEnden == nil {
+		return
+	}
+	select {
+	case <-e.rettungEnden:
+	case <-time.After(frist):
+		diagnoseEditor("Rettungskopien früherer Aufnahmen nach %v nicht freigegeben", frist)
 	}
 }
 

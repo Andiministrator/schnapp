@@ -201,15 +201,15 @@
     "name": "BU8 Verworfene Ladung gibt ihre Rettung nicht frei",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "if r.g.Rettung != nil {\n\t\t\tr.g.Rettung.Ende()\n\t\t}\n\t\tswitch {",
+    "alt": "if r.g.Rettung != nil {\n\t\t\te.rettungEndeImHintergrund(r.g.Rettung)\n\t\t}\n\t\tswitch {",
     "neu": "switch {"
   },
   {
     "name": "BU9 Rettung der alten Aufnahme endet nicht",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "e.rettungEnde() // die alte Aufnahme ist gespeichert",
-    "neu": "// die alte Aufnahme ist gespeichert"
+    "alt": "\t\te.rettungEndeImHintergrund(e.rettung)\n",
+    "neu": "\t\t_ = e.rettung\n"
   },
   {
     "name": "BU10 --ignore-limit gilt nach dem Wechsel weiter",
@@ -404,8 +404,8 @@
     "name": "KM17 Texterkennung läuft über den Wechsel weiter",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "e.ocrAbbrechen()\n\te.rettungEnde()",
-    "neu": "e.rettungEnde()"
+    "alt": "e.ocrAbbrechen()\n\t// Die alte Aufnahme ist gespeichert",
+    "neu": "// Die alte Aufnahme ist gespeichert"
   },
   {
     "name": "KM23 Opening bleibt nach dem Wechsel stehen",

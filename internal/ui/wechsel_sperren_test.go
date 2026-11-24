@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -375,5 +376,95 @@ func TestLeisteKlickAufOffeneUeberVerweis(t *testing.T) {
 	l.ruhig()
 	if a := l.aufrufe(); len(a) != 1 {
 		t.Errorf("andere Aufnahme: %v", a)
+	}
+}
+
+// F-637: Hängt das Ende der alten Rettungskopie (Schreibkette, bis zu 5 s), wechselt das Fenster trotzdem sofort und
+// zeichnet weiter. Ein Wechsel zurück lädt erst, wenn das Ende durch ist (sonst fände die neue Sicherung die Sperre
+// derselben Datei belegt).
+func TestWechselWartetNichtAufAlteRettung(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	l.e.s.Gespeichert()
+	tor := make(chan struct{})
+	var einmal sync.Once
+	oeffne := func() { einmal.Do(func() { close(tor) }) }
+	t.Cleanup(oeffne)
+	l.alt.tor = tor
+	// Notbremse: Liefe Ende in der Ereignisschleife, hinge der Test sonst für immer im Zeichnen.
+	go func() { time.Sleep(3 * time.Second); oeffne() }()
+	start := time.Now()
+	l.klick(l.kachel(0))
+	l.warte(func() bool { return !l.e.wechsel.laedt && l.e.s.D == l.neu[l.pfade[0]] })
+	if d := time.Since(start); d > time.Second {
+		t.Fatalf("Wechsel dauerte %v: das Ende der alten Rettung hält die Ereignisschleife an", d)
+	}
+	l.bild() // das Fenster zeichnet weiter
+	// Zurück zur vorigen Aufnahme: Das Laden wartet auf das Ende der alten Rettung.
+	l.klick(l.kachel(1))
+	l.warte(func() bool { return l.e.wechsel.laedt })
+	time.Sleep(50 * time.Millisecond)
+	if a := l.aufrufe(); len(a) != 1 {
+		t.Fatalf("geladen, bevor die alte Rettung frei ist: %v", a)
+	}
+	oeffne()
+	l.ruhig()
+	if a := l.aufrufe(); len(a) != 2 || a[1] != l.pfade[1] {
+		t.Errorf("Ladeaufrufe %v", a)
+	}
+	if l.alt.ende != 1 {
+		t.Errorf("Ende der alten Rettung: %d", l.alt.ende)
+	}
+}
+
+// F-637: Bleibt die offene Aufnahme, weil sie während des Ladens geändert wurde, endet die Rettung der geladenen im
+// Hintergrund; das Abholen hält die Ereignisschleife nicht an.
+func TestWechselVerworfenEndetImHintergrund(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	l.e.s.Gespeichert()
+	altD := l.e.s.D
+	endeTor := make(chan struct{})
+	var einmal sync.Once
+	oeffne := func() { einmal.Do(func() { close(endeTor) }) }
+	t.Cleanup(oeffne)
+	go func() { time.Sleep(3 * time.Second); oeffne() }() // Notbremse
+	l.endeTor = endeTor
+	l.tor = make(chan struct{})
+	l.klick(l.kachel(0))
+	l.warte(func() bool { return len(l.aufrufe()) == 1 })
+	if _, err := l.e.s.D.Hinzufuegen(document.Text{Ort: document.Pt(5, 15), Inhalt: "neu", Schriftgrad: 12, Farbe: color.NRGBA{A: 255}}); err != nil {
+		t.Fatal(err)
+	}
+	start := time.Now()
+	close(l.tor)
+	l.warte(func() bool { return !l.e.wechsel.laedt })
+	if d := time.Since(start); d > time.Second {
+		t.Fatalf("Abholen dauerte %v: das Ende der geladenen Rettung hält die Ereignisschleife an", d)
+	}
+	if l.e.s.D != altD {
+		t.Fatal("trotz Änderung gewechselt")
+	}
+	oeffne()
+	l.ruhig()
+	if r := l.rett[l.pfade[0]]; r == nil || r.ende != 1 {
+		t.Errorf("Rettung der geladenen: %+v", r)
+	}
+}
+
+// F-637: Das Zerstören wartet auf die Enden im Hintergrund, damit die Sperren vor dem Prozessende frei sind.
+func TestZerstoerenWartetAufAlteRettung(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	l.e.s.Gespeichert()
+	tor := make(chan struct{})
+	var einmal sync.Once
+	oeffne := func() { einmal.Do(func() { close(tor) }) }
+	t.Cleanup(oeffne)
+	go func() { time.Sleep(3 * time.Second); oeffne() }() // Notbremse, falls der Wechsel selbst auf Ende wartet
+	l.alt.tor = tor
+	l.klick(l.kachel(0))
+	l.warte(func() bool { return !l.e.wechsel.laedt && l.e.s.D == l.neu[l.pfade[0]] })
+	go func() { time.Sleep(100 * time.Millisecond); oeffne() }()
+	_ = l.e.zerstoert(nil)
+	if l.alt.ende != 1 {
+		t.Errorf("Ende der alten Rettung beim Zerstören: %d", l.alt.ende)
 	}
 }

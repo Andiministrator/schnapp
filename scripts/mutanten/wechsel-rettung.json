@@ -1,0 +1,34 @@
+[
+  {
+    "name": "WR1 uebernimm beendet die alte Rettung in der Ereignisschleife",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.rettungEndeImHintergrund(e.rettung)\n",
+    "neu": "\t\te.rettung.Ende()\n",
+    "timeout": "4m"
+  },
+  {
+    "name": "WR2 verworfene Ladung beendet ihre Rettung in der Ereignisschleife",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.rettungEndeImHintergrund(r.g.Rettung)\n",
+    "neu": "\t\t\tr.g.Rettung.Ende()\n",
+    "timeout": "4m"
+  },
+  {
+    "name": "WR3 Laden wartet nicht auf frühere Enden",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif enden != nil {\n\t\t\t<-enden",
+    "neu": "\t\tif enden != nil && false {\n\t\t\t<-enden",
+    "timeout": "4m"
+  },
+  {
+    "name": "WR4 Zerstören wartet nicht auf Enden im Hintergrund",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.rettungEndenAbwarten(wechselFrist) // Rettungskopien",
+    "neu": "\t_ = wechselFrist // Rettungskopien",
+    "timeout": "4m"
+  }
+]

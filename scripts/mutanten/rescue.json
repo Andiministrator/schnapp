@@ -318,8 +318,8 @@
     "name": "U13 zerstoert ohne rettungEnde",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\te.rettungEnde()\n\treturn errors.Join(fensterErr, e.schlussErr, err)",
-    "neu": "\treturn errors.Join(fensterErr, e.schlussErr, err)"
+    "alt": "\te.rettungEnde()\n\te.rettungEndenAbwarten(wechselFrist)",
+    "neu": "\te.rettungEndenAbwarten(wechselFrist)"
   },
   {
     "name": "U14 verwirft auch nach gescheitertem Speichern",

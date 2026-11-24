@@ -194,3 +194,15 @@ die Entscheidung offen ließ oder anders kam:
 Getestet in `internal/libview/raster_test.go`, `ansicht_test.go`, `internal/library/papierkorb_test.go` und
 `internal/ui/bibliothek_test.go`; Mutanten `scripts/mutanten/bibliothek-ansicht.json`; Sichtprobe
 `scripts/drehbuecher/bibliothek-174-ansicht.txt` (Probe-Bibliothek mit Schlagworten aus `scripts/probelibrary`).
+
+## Zusatz (24.11.2026, Karte #249, F-637, Claude Opus 5.5)
+
+**Ende der Rettungskopie im Hintergrund.** Beim Wechsel (Ergänzung 7 von Teil 1) und wenn eine geladene Aufnahme
+verworfen wird (Zusatz zu Ergänzung 6), wartete `Rettung.Ende` in der Ereignisschleife bis zu 5 s auf die
+Schreibkette (F-417); so lange zeichnete das Fenster nicht. Jetzt läuft `Ende` in einer Goroutine
+(`rettungEndeImHintergrund` in `internal/ui/wechsel.go`), mehrere nacheinander; der Kanal `rettungEnden` schließt nach
+dem letzten. Ein folgender Wechsel lädt erst danach (in seiner Lade-Goroutine, die Oberfläche wartet nicht): Führt er
+zurück zu derselben Datei, ist deren Sperre dann frei, und die neue Sicherung läuft nicht als fremd. Das Zerstören des
+Fensters wartet höchstens `wechselFrist` (5 s) auf diese Enden. Tests `TestWechselWartetNichtAufAlteRettung`,
+`TestWechselVerworfenEndetImHintergrund`, `TestZerstoerenWartetAufAlteRettung`; Mutanten
+`scripts/mutanten/wechsel-rettung.json` (WR1–WR4).
