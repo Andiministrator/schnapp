@@ -157,7 +157,7 @@
     "name": "U8 Schließen beendet die Erkennung nicht (Karte #195)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\te.ocrAbbrechen() // eine laufende Texterkennung endet mit dem Fenster (ADR-0035 Punkt 2)\n",
+    "alt": "\te.ocrAbbrechen()     // eine laufende Texterkennung endet mit dem Fenster (ADR-0035 Punkt 2)\n",
     "neu": ""
   },
   {
@@ -342,7 +342,25 @@
     "alt": "\t\treturn k.Sprache\n",
     "neu": "\t\treturn Ausgangssprache\n"
   },
-  {"name": "O20 Vorbereite verdoppelt auch, wenn das Doppelte nicht mehr passt (F-633)", "datei": "internal/ocr/ocr.go", "paket": "./internal/ocr", "alt": "kleinSeite || !passt(2) {", "neu": "kleinSeite {"},
-  {"name": "O21 Vorbereite lehnt ein zu großes Bild nicht ab (F-633)", "datei": "internal/ocr/ocr.go", "paket": "./internal/ocr", "alt": "if !passt(1) {", "neu": "if false {"},
-  {"name": "O22 Vorbereite prüft die Seitenlänge nicht (F-633)", "datei": "internal/ocr/ocr.go", "paket": "./internal/ocr", "alt": "int64(r.Dx())*f <= MaxSeite && int64(r.Dy())*f <= MaxSeite &&", "neu": "true &&"}
+  {
+    "name": "O20 Vorbereite verdoppelt auch, wenn das Doppelte nicht mehr passt (F-633)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "kleinSeite || !passt(2) {",
+    "neu": "kleinSeite {"
+  },
+  {
+    "name": "O21 Vorbereite lehnt ein zu großes Bild nicht ab (F-633)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "if !passt(1) {",
+    "neu": "if false {"
+  },
+  {
+    "name": "O22 Vorbereite prüft die Seitenlänge nicht (F-633)",
+    "datei": "internal/ocr/ocr.go",
+    "paket": "./internal/ocr",
+    "alt": "int64(r.Dx())*f <= MaxSeite && int64(r.Dy())*f <= MaxSeite &&",
+    "neu": "true &&"
+  }
 ]

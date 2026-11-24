@@ -20,13 +20,13 @@ func TestZeitangabe(t *testing.T) {
 		en, de string
 	}{
 		{time.Date(2026, 11, 24, 0, 10, 0, 0, zone), "00:10", "00:10"},
-		{time.Date(2026, 11, 23, 22, 5, 0, 0, time.UTC), "00:05", "00:05"}, // in UTC gestern, in der Zone heute
-		{time.Date(2026, 11, 23, 23, 50, 0, 0, zone), "yesterday", "gestern"},           // 40 Minuten her, aber gestern
-		{time.Date(2026, 11, 21, 22, 50, 0, 0, time.UTC), "Sun Nov 22", "So 22.11."},     // in der Zone von jetzt schon der 22.
-		{time.Date(2026, 11, 23, 0, 0, 0, 0, zone), "yesterday", "gestern"},              // Anfang von gestern
-		{time.Date(2026, 11, 22, 23, 59, 0, 0, zone), "Sun Nov 22", "So 22.11."},         // Ende von vorgestern
+		{time.Date(2026, 11, 23, 22, 5, 0, 0, time.UTC), "00:05", "00:05"},                // in UTC gestern, in der Zone heute
+		{time.Date(2026, 11, 23, 23, 50, 0, 0, zone), "yesterday", "gestern"},             // 40 Minuten her, aber gestern
+		{time.Date(2026, 11, 21, 22, 50, 0, 0, time.UTC), "Sun Nov 22", "So 22.11."},      // in der Zone von jetzt schon der 22.
+		{time.Date(2026, 11, 23, 0, 0, 0, 0, zone), "yesterday", "gestern"},               // Anfang von gestern
+		{time.Date(2026, 11, 22, 23, 59, 0, 0, zone), "Sun Nov 22", "So 22.11."},          // Ende von vorgestern
 		{time.Date(2025, 12, 31, 12, 0, 0, 0, zone), "Wed Dec 31, 2025", "Mi 31.12.2025"}, // anderes Jahr
-		{time.Date(2026, 11, 25, 9, 0, 0, 0, zone), "Wed Nov 25", "Mi 25.11."},           // Uhr vorgegangen: Datum
+		{time.Date(2026, 11, 25, 9, 0, 0, 0, zone), "Wed Nov 25", "Mi 25.11."},            // Uhr vorgegangen: Datum
 	}
 	for _, sprache := range []string{"en", "de"} {
 		k, err := i18n.Lade(po.Dateien, sprache)

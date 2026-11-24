@@ -159,7 +159,7 @@ func EditorMit(g Geoeffnet, bib *Anbindung) error {
 	// Wecker statt einzelnem Invalidate: Gio verwirft ein Invalidate nach einem schon angenommenen (F-231).
 	e.wecker = canvas.NeuerWecker(e.w.Invalidate, weckTakt, weckGrenze)
 	defer e.wecker.Ende()
-	e.leisteStart() // Index und Vorschauen im Hintergrund (ADR-0036 Punkt 7); braucht den Wecker
+	e.leisteStart()    // Index und Vorschauen im Hintergrund (ADR-0036 Punkt 7); braucht den Wecker
 	wecker := e.wecker // der Rückruf liest nur diese Kopie, nie e.wecker (Datenwettlauf)
 	zwischenablageRueckrufSetzen(wecker.Anfordern)
 	e.ocrSucheStarten() // tesseract einmal im Hintergrund suchen (ADR-0035 Punkt 1)
@@ -569,7 +569,7 @@ func (e *editor) zwischenablageUebernommenMelden() bool {
 // weiterer Versuch nach einem Signal läuft ebenso. Ein laufendes Kopieren bekommt seine Frist, damit der Halter der
 // Zwischenablage noch startet (F-281).
 func (e *editor) zerstoert(fensterErr error) error {
-	e.ocrAbbrechen() // eine laufende Texterkennung endet mit dem Fenster (ADR-0035 Punkt 2)
+	e.ocrAbbrechen()     // eine laufende Texterkennung endet mit dem Fenster (ADR-0035 Punkt 2)
 	e.wechselAbbrechen() // ein laufender Wechsel gibt die Rettungskopie der geladenen Aufnahme frei (ADR-0036)
 	e.speichernAbwarten()
 	if e.speichernAufgegeben {

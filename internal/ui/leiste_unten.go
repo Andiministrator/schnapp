@@ -70,11 +70,11 @@ type untenLeiste struct {
 	indexFehler  bool
 
 	// Stand beim letzten Zeichnen: Klicks beziehen sich auf die Vorschauen, die der Nutzer gesehen hat.
-	gezeigt  []string          // Pfade relativ zur Ablage je Stelle
-	rahmen   image.Rectangle   // Lage der Leiste im Fenster (leer: nicht gezeigt)
-	kacheln  []image.Rectangle // Lage der gezeichneten Vorschauen je Stelle von von bis bis (Tests)
-	von, bis int               // gezeichnete Stellen
-	ops      map[string]leisteBild
+	gezeigt   []string          // Pfade relativ zur Ablage je Stelle
+	rahmen    image.Rectangle   // Lage der Leiste im Fenster (leer: nicht gezeigt)
+	kacheln   []image.Rectangle // Lage der gezeichneten Vorschauen je Stelle von von bis bis (Tests)
+	von, bis  int               // gezeichnete Stellen
+	ops       map[string]leisteBild
 	fokusSoll int    // Stelle, die den Tastaturfokus bekommen soll, sobald sie angemeldet ist; -1: keine
 	hinweis   string // Text für die Statuszeile zur Vorschau mit Fokus oder Zeiger
 }

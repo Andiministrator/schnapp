@@ -26,11 +26,14 @@ import (
 // leistenRettung ist eine Rettung, die Wiederherstellen und Ende zählt (nur aus der Ereignisschleife gerufen).
 type leistenRettung struct{ wieder, ende int }
 
-func (r *leistenRettung) Wiederherstellen(*document.Dokument) (string, bool) { r.wieder++; return "", false }
-func (r *leistenRettung) Sichere(*document.Dokument)                         {}
-func (r *leistenRettung) Verwirf()                                           {}
-func (r *leistenRettung) Ende()                                              { r.ende++ }
-func (r *leistenRettung) Lage() (string, bool, uint64)                       { return "", false, 0 }
+func (r *leistenRettung) Wiederherstellen(*document.Dokument) (string, bool) {
+	r.wieder++
+	return "", false
+}
+func (r *leistenRettung) Sichere(*document.Dokument)   {}
+func (r *leistenRettung) Verwirf()                     {}
+func (r *leistenRettung) Ende()                        { r.ende++ }
+func (r *leistenRettung) Lage() (string, bool, uint64) { return "", false, 0 }
 
 // leistenLauf ist ein Editor mit Bibliothek in einem Testordner und einer Ladefunktion, die mitschreibt.
 type leistenLauf struct {
