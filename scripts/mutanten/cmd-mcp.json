@@ -192,8 +192,8 @@
     "name": "M28 p2 Abbruch ohne normID (F-471)",
     "datei": "internal/mcp/mcp.go",
     "paket": "./internal/mcp",
-    "alt": "return bytes.Equal(normID(p.ID), normID(id))",
-    "neu": "return bytes.Equal(p.ID, id)"
+    "alt": "return ok \u0026\u0026 bytes.Equal(normID(ziel), normID(id))",
+    "neu": "return ok \u0026\u0026 bytes.Equal(ziel, id)"
   },
   {
     "name": "M29 p3 Altversion ohne initialize angenommen (F-471)",
@@ -633,5 +633,19 @@
     "alt": "\t\tif agent {\n\t\t\tablegen = b.AblegenAgent\n\t\t}",
     "neu": "\t\tif agent && false {\n\t\t\tablegen = b.AblegenAgent\n\t\t}",
     "timeout": "5m"
+  },
+  {
+    "name": "MW1 Abbruch einer wartenden Anfrage überhört (F-701)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "ok && q.streiche(id) {",
+    "neu": "ok && false && q.streiche(id) {"
+  },
+  {
+    "name": "MW2 streiche zählt die Bytes nicht mit (F-701)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "\t\tq.bytes -= len(z.daten)\n\t\tq.zeilen = slices.Delete",
+    "neu": "\t\tq.zeilen = slices.Delete"
   }
 ]

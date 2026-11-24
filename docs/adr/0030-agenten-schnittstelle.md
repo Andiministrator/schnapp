@@ -469,3 +469,14 @@ Anlass: Abschluss-Kritik Sprint 12, B-1 und B-2.
    vorübergehend Einwilligungen in der echten `settings.ini`; die Echtläufe sind erledigt, das Skript ist aus dem Repo
    genommen (Andi, 24.11.2026, F-717). Es steht in der git-Geschichte.
 
+## Nachtrag 14 (24.11.2026): Abbruch einer wartenden Anfrage wirkt (F-701, Karte #270)
+
+**Status:** Akzeptiert (Claude Sonnet 5.5, Umsetzung der Abschluss-Kritik Sprint 12, B-4).
+
+Ein `notifications/cancelled` für eine Anfrage, die schon gelesen ist, aber hinter einer laufenden in der Schlange wartet,
+streicht sie jetzt sofort (`schlange.streiche`, `internal/mcp/mcp.go`): Sie läuft nie an, es entsteht keine Aufnahme und
+keine Antwort — dieselbe Regel wie für die laufende Anfrage (der Client hat sie abgebrochen und erwartet keine Antwort).
+Die Abbruchnachricht selbst wird dann nicht mehr eingereiht. Tragen zwei wartende Anfragen dieselbe Kennung, trifft ein
+Abbruch nur die ältere; die laufende Anfrage hat Vorrang vor der wartenden. Ein Abbruch ohne passende wartende oder
+laufende Anfrage bleibt wirkungslos.
+

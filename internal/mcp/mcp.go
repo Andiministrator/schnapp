@@ -478,6 +478,24 @@ func (q *schlange) stelle(z zeile) bool {
 	return true
 }
 
+// streiche entfernt die älteste wartende Anfrage mit der Kennung id (nur Zeilen mit Methode und Kennung, also keine
+// Benachrichtigungen) und meldet, ob eine gefunden wurde (F-701).
+func (q *schlange) streiche(id json.RawMessage) bool {
+	for i, z := range q.zeilen {
+		if z.zuLang || len(z.daten) == 0 || z.daten[0] != '{' {
+			continue
+		}
+		var n nachricht
+		if json.Unmarshal(z.daten, &n) != nil || n.Methode == "" || len(n.ID) == 0 || !bytes.Equal(normID(n.ID), normID(id)) {
+			continue
+		}
+		q.bytes -= len(z.daten)
+		q.zeilen = slices.Delete(q.zeilen, i, i+1)
+		return true
+	}
+	return false
+}
+
 // ueberlauf ist die Antwort auf eine Zeile, die nicht mehr in die Schlange passt: eine Anfrage mit gültiger Kennung
 // bekommt -32600, alles andere (Benachrichtigungen, Antworten des Clients, Unlesbares) fällt still weg.
 func ueberlauf(z zeile) *antwort {
@@ -548,6 +566,9 @@ func (s *Server) rufeAuf(ctx context.Context, n nachricht, zeilen <-chan zeile, 
 				abbrechen()
 				continue
 			}
+			if id, ok := abbruchZiel(z); ok && q.streiche(id) {
+				continue // Abbruch einer wartenden Anfrage: sie läuft nie an und bekommt keine Antwort (F-701)
+			}
 			if !q.stelle(z) {
 				s.log("Warteschlange voll (%d Nachrichten, %d Bytes), Nachricht verworfen", q.laenge(), q.bytes)
 				if a := ueberlauf(z); a != nil {
@@ -566,20 +587,26 @@ func (s *Server) rufeAuf(ctx context.Context, n nachricht, zeilen <-chan zeile, 
 
 // istAbbruchFuer erkennt notifications/cancelled mit requestId == id.
 func istAbbruchFuer(z zeile, id json.RawMessage) bool {
+	ziel, ok := abbruchZiel(z)
+	return ok && bytes.Equal(normID(ziel), normID(id))
+}
+
+// abbruchZiel liefert die requestId einer notifications/cancelled.
+func abbruchZiel(z zeile) (json.RawMessage, bool) {
 	if z.zuLang || len(z.daten) == 0 {
-		return false
+		return nil, false
 	}
 	var n nachricht
 	if json.Unmarshal(z.daten, &n) != nil || n.Methode != "notifications/cancelled" || len(n.ID) != 0 {
-		return false
+		return nil, false
 	}
 	var p struct {
 		ID json.RawMessage `json:"requestId"`
 	}
-	if json.Unmarshal(n.Params, &p) != nil {
-		return false
+	if json.Unmarshal(n.Params, &p) != nil || len(p.ID) == 0 {
+		return nil, false
 	}
-	return bytes.Equal(normID(p.ID), normID(id))
+	return p.ID, true
 }
 
 // normID macht 1 und 1.0 vergleichbar; Zeichenketten bleiben, wie sie sind.
