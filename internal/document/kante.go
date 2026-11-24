@@ -9,6 +9,7 @@ import (
 	"math"
 	"slices"
 	"sort"
+	"sync/atomic"
 )
 
 // Kante ist die Form der Stauch-Kante eines Dokuments (ADR-0023 Nachtrag 6). Der Nullwert ist der Abriss, die
@@ -122,9 +123,13 @@ type Kantenlinie struct {
 	m []int     // Auslenkung quer zur Naht in Hundertsteln, schon mit dem Faktor multipliziert
 }
 
+// kantenlinienGerechnet zählt die Aufrufe von NeueKantenlinie, nur für Tests (F-693: wie oft Lupen die Linie rechnen).
+var kantenlinienGerechnet atomic.Int64
+
 // NeueKantenlinie rechnet die Mittellinie der Form k über die Länge laenge beim Faktor faktor (mindestens 1); Schritt,
 // Zahl und Lage der Stützpunkte wie in Kantenband beschrieben.
 func NeueKantenlinie(k Kante, laenge, faktor int) *Kantenlinie {
+	kantenlinienGerechnet.Add(1)
 	f := max(faktor, 1)
 	s := k.schritt()
 	anz := int(math.Ceil(float64(max(laenge, 1)) / (s * float64(f))))

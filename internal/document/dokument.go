@@ -49,6 +49,9 @@ type Dokument struct {
 	// schwaerzVerworfen: Die Grenze des Verlaufs hat seit dem letzten VergissVerlauf eine Schwärzung verworfen
 	// (SchwaerzungenImVerlauf ist dann unvollständig, ADR-0029).
 	schwaerzVerworfen bool
+	// linien merkt die Mittellinien der Kante je Achse für LupenQuelle (F-693); prüft bei jedem Abruf Form, Länge und
+	// Faktor, braucht also keine Pflege bei Änderungen.
+	linien kantenMerker
 }
 
 // Fehler der Änderungen.

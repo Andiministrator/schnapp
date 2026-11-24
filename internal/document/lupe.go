@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"math"
+	"sync"
 )
 
 // Lupe ist ein vergrößerter Bildausschnitt als eigenes Objekt (ADR-0033): Quelle ist der Ausschnitt im Original, Ziel
@@ -107,12 +108,13 @@ type spaltNaht struct {
 	linie *Kantenlinie
 }
 
-// LupenQuelle liefert die Zuordnung für l im jetzigen Stand der Ansicht.
+// LupenQuelle liefert die Zuordnung für l im jetzigen Stand der Ansicht. Die Mittellinie der Kante je Achse rechnet
+// sie nicht je Lupe neu, sondern holt sie aus dem Merker des Dokuments (F-693): Viele Lupen neben einer Naht kosten so
+// eine Linie je Achse, wie die Kanten im Renderer (F-418), statt einer je Lupe, die das Budget nicht zählt.
 func (d *Dokument) LupenQuelle(l Lupe) *LupenQuelle {
 	q := &LupenQuelle{d: d, l: l, qa: R(d.ZuAnsicht(l.Quelle.Min), d.ZuAnsicht(l.Quelle.Max))}
 	f, g := d.KantenFaktor(), d.Groesse()
 	reich := (KantenAuslenkung+KantenSpaltHalb)*float64(f) + 1 // so weit reicht der Spalt höchstens über die Naht
-	var linien [2]*Kantenlinie
 	for _, n := range d.Naehte() {
 		lo, hi, achse, laenge := q.qa.Min.X, q.qa.Max.X, 1, g.Y // senkrechte Naht: Linie entlang y (wie render.kanten)
 		if n.Zeilen {
@@ -121,12 +123,32 @@ func (d *Dokument) LupenQuelle(l Lupe) *LupenQuelle {
 		if float64(n.Lage)+reich <= lo || float64(n.Lage)-reich >= hi {
 			continue
 		}
-		if linien[achse] == nil {
-			linien[achse] = NeueKantenlinie(d.kante, laenge, f)
-		}
-		q.spalt = append(q.spalt, spaltNaht{n, linien[achse]})
+		q.spalt = append(q.spalt, spaltNaht{n, d.linien.linie(achse, d.kante, laenge, f)})
 	}
 	return q
+}
+
+// kantenMerker hält die zuletzt gerechnete Mittellinie der Kante je Achse (0: waagrechte Nähte, 1: senkrechte) für
+// LupenQuelle (F-693). Eine Kantenlinie hängt nur von Form, Länge und Faktor ab und wird nach dem Rechnen nur gelesen;
+// passt eins davon nicht mehr (anderer Zuschnitt, andere Streifen, andere Form), rechnet der Merker neu. So braucht er
+// keine Benachrichtigung bei Änderungen des Dokuments. Die Sperre schützt Aufrufe aus mehreren Goroutinen.
+type kantenMerker struct {
+	mu sync.Mutex
+	e  [2]struct {
+		k         Kante
+		laenge, f int
+		l         *Kantenlinie
+	}
+}
+
+func (m *kantenMerker) linie(achse int, k Kante, laenge, f int) *Kantenlinie {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	e := &m.e[achse]
+	if e.l == nil || e.k != k || e.laenge != laenge || e.f != f {
+		e.k, e.laenge, e.f, e.l = k, laenge, f, NeueKantenlinie(k, laenge, f)
+	}
+	return e.l
 }
 
 // InAnsicht ist die Quelle in der Ansicht (QA). Liegt sie in einer Achse ganz in einem Streifen, ist sie dort 0 breit.

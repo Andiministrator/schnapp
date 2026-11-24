@@ -369,5 +369,33 @@
     "paket": "./internal/ui",
     "alt": "\th := l.Strich.Breite / 2\n\tweit := func",
     "neu": "\th := 0.0\n\tweit := func"
+  },
+  {
+    "name": "LM1 Kantenlinie je Lupe neu statt gemerkt (F-693)",
+    "datei": "internal/document/lupe.go",
+    "paket": "./internal/document",
+    "alt": "\tif e.l == nil || e.k != k || e.laenge != laenge || e.f != f {",
+    "neu": "\tif true {"
+  },
+  {
+    "name": "LM2 Merker folgt der Kantenform nicht (F-693)",
+    "datei": "internal/document/lupe.go",
+    "paket": "./internal/document",
+    "alt": "\tif e.l == nil || e.k != k || e.laenge != laenge || e.f != f {",
+    "neu": "\tif e.l == nil || e.laenge != laenge || e.f != f {"
+  },
+  {
+    "name": "LM3 Merker folgt der Länge der Ansicht nicht (F-693)",
+    "datei": "internal/document/lupe.go",
+    "paket": "./internal/document",
+    "alt": "\tif e.l == nil || e.k != k || e.laenge != laenge || e.f != f {",
+    "neu": "\tif e.l == nil || e.k != k || e.f != f {"
+  },
+  {
+    "name": "LM4 eine Linie für beide Achsen (F-693)",
+    "datei": "internal/document/lupe.go",
+    "paket": "./internal/document",
+    "alt": "\te := &m.e[achse]",
+    "neu": "\te := &m.e[0]"
   }
 ]
