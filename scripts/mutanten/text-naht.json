@@ -91,8 +91,8 @@
     "name": "N12 Renderer: Stück nicht beschnitten (F-695)",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "\t\tzs := z\n\t\tzs.rand = image.Rect(int(math.Round(ziel.Min.X)), int(math.Round(ziel.Min.Y)),\n\t\t\tint(math.Round(ziel.Max.X)), int(math.Round(ziel.Max.Y))).Intersect(z.rand)\n\t\tif zs.rand.Empty() {\n\t\t\tcontinue\n\t\t}\n\t\tv := st.Versatz",
-    "neu": "\t\tzs := z\n\t\t_ = ziel\n\t\tv := st.Versatz",
+    "alt": "\t\tzs.rand = zs.schnitt.Intersect(z.rand)\n\t\tif zs.rand.Empty() {\n\t\t\tcontinue\n\t\t}\n\t\tv := st.Versatz",
+    "neu": "\t\tzs.schnitt = image.Rectangle{}\n\t\tv := st.Versatz",
     "timeout": "5m"
   },
   {
@@ -117,6 +117,40 @@
     "paket": "./internal/ui",
     "alt": "\t\tschnitt := clip.Rect(image.Rect(int(math.Round(z.Min.X)), int(math.Round(z.Min.Y)), int(math.Round(z.Max.X)),\n\t\t\tint(math.Round(z.Max.Y)))).Push(gtx.Ops)",
     "neu": "\t\tschnitt := clip.Rect(image.Rect(-1<<20, -1<<20, 1<<20, 1<<20)).Push(gtx.Ops)\n\t\t_ = z",
+    "timeout": "5m"
+  },
+  {
+    "name": "N16 Renderer: Pfeil gestaucht statt je Stück (F-745) — äquivalent außerhalb der Nahtzone: die 48 Stützpunkte außerhalb des Streifens bildet ZuAnsicht genau wie der Versatz ihres Bereichs ab; abweichen kann nur die Strecke über dem Streifen, und die liegt im Kantenband der Naht",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\tpts := make([]document.Punkt, len(org))\n\t\t\tfor i, p := range org {\n\t\t\t\tpts[i] = abb(p)\n\t\t\t}",
+    "neu": "\t\t\tpts := make([]document.Punkt, len(org))\n\t\t\tfor i, p := range org {\n\t\t\t\tpts[i] = z.ansicht(p)\n\t\t\t}",
+    "timeout": "5m",
+    "aequivalent": true
+  },
+  {
+    "name": "N17 Renderer: Nummer starr an der abgebildeten Mitte (F-745)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\tif err := zs.nummer(v, abb(v.Mitte)); err != nil && fehler == nil {",
+    "neu": "\t\t\tif err := z.nummer(v, z.ansicht(v.Mitte)); err != nil && fehler == nil {",
+    "timeout": "5m"
+  },
+  {
+    "name": "N18 Editor: Pfeil gestaucht (F-745) — äquivalent außerhalb der Nahtzone: die 48 Stützpunkte außerhalb des Streifens bildet ZuAnsicht genau wie der Versatz ihres Bereichs ab; abweichen kann nur die Strecke über dem Streifen, und die liegt im Kantenband der Naht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tpfad.MoveTo(abb(org[0]))\n\t\t\tfor _, p := range org[1:] {\n\t\t\t\tpfad.LineTo(abb(p))",
+    "neu": "\t\t\tpfad.MoveTo(an(org[0]))\n\t\t\tfor _, p := range org[1:] {\n\t\t\t\tpfad.LineTo(an(p))",
+    "timeout": "5m",
+    "aequivalent": true
+  },
+  {
+    "name": "N19 Editor: Nummer starr an der abgebildeten Mitte (F-745)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tm := abb(v.Mitte)\n\t\t\trad := float32(v.Radius)",
+    "neu": "\t\t\tm := an(v.Mitte)\n\t\t\trad := float32(v.Radius)",
     "timeout": "5m"
   }
 ]

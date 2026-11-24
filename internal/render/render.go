@@ -422,8 +422,9 @@ func (z zeichner) jeStueck(r document.Rechteck, f func(zs zeichner, abb func(doc
 	for _, st := range z.d.Stuecke(r) {
 		ziel := st.Ziel()
 		zs := z
-		zs.rand = image.Rect(int(math.Round(ziel.Min.X)), int(math.Round(ziel.Min.Y)),
-			int(math.Round(ziel.Max.X)), int(math.Round(ziel.Max.Y))).Intersect(z.rand)
+		zs.schnitt = image.Rect(int(math.Round(ziel.Min.X)), int(math.Round(ziel.Min.Y)),
+			int(math.Round(ziel.Max.X)), int(math.Round(ziel.Max.Y))) // auch Glyphen (Ziffern einer Nummer)
+		zs.rand = zs.schnitt.Intersect(z.rand)
 		if zs.rand.Empty() {
 			continue
 		}
@@ -532,17 +533,25 @@ func (z zeichner) objekt(o document.Objekt) error {
 	switch v := o.(type) {
 	case document.Pfeil:
 		const n = 48
-		pts := make([]document.Punkt, 0, n+1)
+		org := make([]document.Punkt, 0, n+1)
 		for i := 0; i <= n; i++ {
-			pts = append(pts, z.ansicht(v.Punkt(float64(i)/n)))
+			org = append(org, v.Punkt(float64(i)/n))
 		}
-		z.strich(pts, false, v.Strich)
 		r := v.RichtungAmEnde()
 		g := math.Max(8, 4*v.Strich.Breite)
 		nrm := document.Pt(-r.Y, r.X)
 		fuss := v.B.Minus(r.Mal(g))
-		z.fuelle([][]document.Punkt{{z.ansicht(v.B), z.ansicht(fuss.Plus(nrm.Mal(g / 2))),
-			z.ansicht(fuss.Minus(nrm.Mal(g / 2)))}}, nil, v.Strich.Farbe)
+		spitze := []document.Punkt{v.B, fuss.Plus(nrm.Mal(g / 2)), fuss.Minus(nrm.Mal(g / 2))}
+		// Je sichtbarem Bereich und auf ihn beschnitten wie der SVG-Export: Ein Pfeil über einer Naht ist dort
+		// abgeschnitten wie das Bild, nicht gestaucht (F-745, ADR-0023 Nachtrag 15).
+		z.jeStueck(huelleVon(append(org, spitze...), v.Strich.Breite/2+1), func(zs zeichner, abb func(document.Punkt) document.Punkt) {
+			pts := make([]document.Punkt, len(org))
+			for i, p := range org {
+				pts[i] = abb(p)
+			}
+			zs.strich(pts, false, v.Strich)
+			zs.fuelle([][]document.Punkt{{abb(spitze[0]), abb(spitze[1]), abb(spitze[2])}}, nil, v.Strich.Farbe)
+		})
 	case document.Kasten:
 		r := document.R(z.ansicht(v.Bereich.Min), z.ansicht(v.Bereich.Max))
 		umriss := rundesRechteck(r, v.Eckradius)
@@ -635,32 +644,46 @@ func (z zeichner) objekt(o document.Objekt) error {
 			z.fuelle([][]document.Punkt{rundesRechteck(r, 0)}, nil, v.Farbe)
 		}
 	case document.Nummer:
-		m := z.ansicht(v.Mitte)
-		z.fuelle(nil, []kreisform{{m, v.Radius}}, v.Farbe)
-		s := strconv.Itoa(v.Wert)
-		grad := v.Radius * 1.2
-		// Die Ziffern stehen mittig um m, weniger als len(s) × 0,8 em breit (Go Bold, mit Rand) und nicht höher als der
-		// Schriftgrad; was dieses Rechteck nicht ins Bild bringt, kostet nichts und wird nicht gezeichnet.
-		halb := grad * (0.4*float64(len(s)) + 1)
-		if !image.Rect(int(math.Floor(m.X-halb)), int(math.Floor(m.Y-grad)),
-			int(math.Ceil(m.X+halb)), int(math.Ceil(m.Y+grad))).Overlaps(z.rand) {
-			return nil
+		// Je sichtbarem Bereich und auf ihn beschnitten wie der SVG-Export (F-745, ADR-0023 Nachtrag 15).
+		var fehler error
+		z.jeStueck(document.Reichweite(v), func(zs zeichner, abb func(document.Punkt) document.Punkt) {
+			if err := zs.nummer(v, abb(v.Mitte)); err != nil && fehler == nil {
+				fehler = err
+			}
+		})
+		if fehler != nil {
+			return fehler
 		}
-		z.auf.glyph += glyphKosten(len(s), grad) // Ziffern immer in Go Fett
-		if z.trocken() {
-			return nil
-		}
-		face, err := z.schrift(fonts.Laden(fonts.Go, fonts.Fett), grad)
-		if err != nil {
-			return err
-		}
-		breite := zeilenBreite(face, fonts.Laden(fonts.Go, fonts.Fett), s, grad)
-		// Senkrecht mittig wie dominant-baseline="central": Grundlinie um die halbe Ziffernhöhe unter der Mitte.
-		hoehe := float64(face.Metrics().CapHeight) / 64
-		z.text(face, fonts.Laden(fonts.Go, fonts.Fett), s, m.X-breite/2, m.Y+hoehe/2, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, grad)
 	case document.Lupe:
 		z.lupe(v)
 	}
+	return nil
+}
+
+// nummer zeichnet die Schritt-Nummer v mit der Mitte m in der Ansicht.
+func (z zeichner) nummer(v document.Nummer, m document.Punkt) error {
+	z.fuelle(nil, []kreisform{{m, v.Radius}}, v.Farbe)
+	s := strconv.Itoa(v.Wert)
+	grad := v.Radius * 1.2
+	// Die Ziffern stehen mittig um m, weniger als len(s) × 0,8 em breit (Go Bold, mit Rand) und nicht höher als der
+	// Schriftgrad; was dieses Rechteck nicht ins Bild bringt, kostet nichts und wird nicht gezeichnet.
+	halb := grad * (0.4*float64(len(s)) + 1)
+	if !image.Rect(int(math.Floor(m.X-halb)), int(math.Floor(m.Y-grad)),
+		int(math.Ceil(m.X+halb)), int(math.Ceil(m.Y+grad))).Overlaps(z.rand) {
+		return nil
+	}
+	z.auf.glyph += glyphKosten(len(s), grad) // Ziffern immer in Go Fett
+	if z.trocken() {
+		return nil
+	}
+	face, err := z.schrift(fonts.Laden(fonts.Go, fonts.Fett), grad)
+	if err != nil {
+		return err
+	}
+	breite := zeilenBreite(face, fonts.Laden(fonts.Go, fonts.Fett), s, grad)
+	// Senkrecht mittig wie dominant-baseline="central": Grundlinie um die halbe Ziffernhöhe unter der Mitte.
+	hoehe := float64(face.Metrics().CapHeight) / 64
+	z.text(face, fonts.Laden(fonts.Go, fonts.Fett), s, m.X-breite/2, m.Y+hoehe/2, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, grad)
 	return nil
 }
 

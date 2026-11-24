@@ -51,7 +51,7 @@ zusammengedrückt, der SVG-Export ließ sie weg (F-66) — drei Ausgänge, zwei 
    (`render.Pruefe`) wie jede Füllung.
 7. **Beschriftungen und Nähte/Zuschnitt:** Zuschneiden und Stauchen ändern keine Beschriftung (nicht zerstörend).
    Eine Beschriftung, die über eine Naht läuft, wird mit dem Bild gestaucht abgebildet (ihre Punkte folgen der
-   Abbildung; Teile im Streifen liegen auf der Naht). Eine Beschriftung, die **ganz** im Verborgenen liegt
+   Abbildung; Teile im Streifen liegen auf der Naht). *(Seit Nachtrag 15: abgeschnitten wie das Bild, in allen Ausgängen.)* Eine Beschriftung, die **ganz** im Verborgenen liegt
    (außerhalb des Zuschnitts oder ganz in einem Streifen), ist **überall unsichtbar**: Editor, Renderer, SVG-Export,
    Trefferprüfung und der Zähler der verborgenen Beschriftungen folgen derselben Regel `Dokument.ObjektSichtbar`
    (die bisherige Regel des SVG-Exports, F-66): `Sichtbar` für die `Reichweite` des Objekts. Bei Text und
@@ -489,9 +489,28 @@ Tests: `internal/document/stuecke_test.go`, `internal/render/text_naht_test.go`,
 2. Die Spitze eines Dreiecks, die in einem Streifen liegt, fällt so weg (bisher lag sie auf der Naht). Die
    Kantenglättung an Bereichskanten rundet um höchstens eine Stufe anders (anderer Ausschnittursprung im Rasterkern).
 3. Pfeile bleiben vorerst über ihre 48 Stützpunkte abgebildet (Punkt 7: mit dem Bild gestaucht), der SVG-Export schneidet
-   sie kachelweise ab; der Unterschied ist als F-745 erfasst. Rechtecke (Kasten, Schild, Rahmen der Lupe, Striche)
+   sie kachelweise ab; der Unterschied ist als F-745 erfasst (gelöst mit Nachtrag 15). Rechtecke (Kasten, Schild, Rahmen der Lupe, Striche)
    sind von beiden Rechnungen gleich abgebildet.
 
 Tests: `internal/render/schraege_naht_test.go`, `TestEditorSchneidetSchraegeKantenAnDerNaht`
 (`internal/ui/text_naht_headless_test.go`); Mutanten N11–N15 in `scripts/mutanten/text-naht.json`, S15/S34 nachgezogen.
+
+## Nachtrag 15 (24.11.2026): Beschriftungen über einer Naht überall abgeschnitten (F-745)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #284). Ersetzt in Punkt 7 den Satz „Eine Beschriftung, die über eine
+Naht läuft, wird mit dem Bild gestaucht abgebildet“.
+
+1. **Eine Regel für alle Ausgänge:** Eine Beschriftung, die über eine Naht reicht, ist dort abgeschnitten wie das Bild
+   darunter; was im Streifen liegt, fehlt, der Rest steht um den Versatz seines Bereichs verschoben. So zeigte es der
+   SVG-Export (Kacheln) schon immer, so rechnet der Treffer (im Original). Renderer und Editor zeichnen dafür Pfeil und
+   Schritt-Nummer jetzt ebenfalls je sichtbarem Bereich (`jeStueck`, wie Text, Dreieck und Lupen-Linie seit den
+   Nachträgen 13 und 14). Eine Nummer, deren Mitte im Streifen liegt, steht nicht mehr ganz auf der Naht, sondern zeigt
+   nur ihren herausragenden Teil.
+2. **Kasten, Schild, Striche und Rahmen** bleiben über ihre Ecken abgebildet: Für achsparallele Rechtecke ist das
+   dasselbe wie Abschneiden. Bei einem Pfeil unterscheiden sich die beiden Rechnungen nur auf der Strecke über dem
+   Streifen, also im Kantenband der Naht (Mutanten N16/N18 äquivalent).
+3. **Auswahlrahmen, Griffe und Hilfslinien** des Editors bilden weiter die Ecken ab; sie sind Bedienung, keine Ausgabe.
+
+Tests `TestPfeilUndNummerUeberNaht` (`internal/render/schraege_naht_test.go`) und
+`TestEditorSchneidetSchraegeKantenAnDerNaht`; Mutanten N16–N19 in `scripts/mutanten/text-naht.json`.
 

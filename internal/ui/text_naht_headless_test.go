@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"gioui.org/layout"
+	"gioui.org/widget/material"
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -110,6 +111,8 @@ func TestEditorSchneidetSchraegeKantenAnDerNaht(t *testing.T) {
 			Farbe: color.NRGBA{A: 255}, Hintergrund: fuell, Spitze: &sp},
 		"Lupe": document.Lupe{Quelle: document.R(document.Pt(20, 20), document.Pt(50, 50)),
 			Ziel: document.R(document.Pt(280, 110), document.Pt(340, 170)), Strich: document.Strich{Farbe: gruen, Breite: 3}},
+		"Pfeil":  document.GeraderPfeil(document.Pt(20, 40), document.Pt(380, 160), document.Strich{Farbe: gruen, Breite: 4}),
+		"Nummer": document.Nummer{Mitte: document.Pt(170, 100), Wert: 7, Radius: 45, Farbe: gruen},
 	} {
 		d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 400, 200)))
 		if err != nil {
@@ -118,7 +121,7 @@ func TestEditorSchneidetSchraegeKantenAnDerNaht(t *testing.T) {
 		if _, err := d.Hinzufuegen(o); err != nil {
 			t.Fatal(err)
 		}
-		e := &editor{s: canvas.NeueSitzung(d)}
+		e := &editor{s: canvas.NeueSitzung(d), thema: material.NewTheme()}
 		ohne := headlessBild(t, image.Pt(400, 200), func(gtx layout.Context) { e.zeichneObjekte(gtx) })
 		if err := d.SetzeStreifen([]document.Streifen{{Von: 150, Bis: 190}}); err != nil {
 			t.Fatal(err)
@@ -144,7 +147,7 @@ func TestEditorSchneidetSchraegeKantenAnDerNaht(t *testing.T) {
 				}
 			}
 		}
-		if sichtbar == 0 {
+		if sichtbar == 0 && name != "Nummer" {
 			t.Fatalf("%s: rechts der Naht nichts gezeichnet", name)
 		}
 		if links != 0 || rechts != 0 {

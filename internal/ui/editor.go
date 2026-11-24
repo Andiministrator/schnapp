@@ -1763,25 +1763,37 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 	}
 	switch v := o.(type) {
 	case document.Pfeil:
-		var pfad clip.Path
-		pfad.Begin(gtx.Ops)
-		pfad.MoveTo(an(v.A))
 		const n = 48
-		for i := 1; i <= n; i++ {
-			pfad.LineTo(an(v.Punkt(float64(i) / n)))
+		org := make([]document.Punkt, 0, n+1)
+		for i := 0; i <= n; i++ {
+			org = append(org, v.Punkt(float64(i)/n))
 		}
-		paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Stroke{Path: pfad.End(), Width: float32(v.Strich.Breite)}.Op())
 		r := v.RichtungAmEnde()
 		gl := math.Max(8, 4*v.Strich.Breite)
 		nrm := document.Pt(-r.Y, r.X)
 		fuss := v.B.Minus(r.Mal(gl))
-		var spitze clip.Path
-		spitze.Begin(gtx.Ops)
-		spitze.MoveTo(an(v.B))
-		spitze.LineTo(an(fuss.Plus(nrm.Mal(gl / 2))))
-		spitze.LineTo(an(fuss.Minus(nrm.Mal(gl / 2))))
-		spitze.Close()
-		paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Outline{Path: spitze.End()}.Op())
+		spitzeOrg := []document.Punkt{v.B, fuss.Plus(nrm.Mal(gl / 2)), fuss.Minus(nrm.Mal(gl / 2))}
+		huelle := document.Rechteck{Min: org[0], Max: org[0]}
+		for _, p := range append(org[1:], spitzeOrg...) {
+			huelle = huelle.Vereint(document.Rechteck{Min: p, Max: p})
+		}
+		// Je sichtbarem Bereich und auf ihn beschnitten wie Renderer und SVG-Export (F-745, ADR-0023 Nachtrag 15).
+		e.jeStueck(gtx, huelle, v.Strich.Breite/2+1, an, vorschau, func(abb func(document.Punkt) f32.Point) {
+			var pfad clip.Path
+			pfad.Begin(gtx.Ops)
+			pfad.MoveTo(abb(org[0]))
+			for _, p := range org[1:] {
+				pfad.LineTo(abb(p))
+			}
+			paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Stroke{Path: pfad.End(), Width: float32(v.Strich.Breite)}.Op())
+			var spitze clip.Path
+			spitze.Begin(gtx.Ops)
+			spitze.MoveTo(abb(spitzeOrg[0]))
+			spitze.LineTo(abb(spitzeOrg[1]))
+			spitze.LineTo(abb(spitzeOrg[2]))
+			spitze.Close()
+			paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Outline{Path: spitze.End()}.Op())
+		})
 	case document.Kasten:
 		min, max := an(v.Bereich.Min), an(v.Bereich.Max)
 		r := image.Rect(int(math.Round(float64(min.X))), int(math.Round(float64(min.Y))),
@@ -1808,14 +1820,17 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 			}
 		}
 	case document.Nummer:
-		m := an(v.Mitte)
-		rad := float32(v.Radius)
-		kr := image.Rect(int(math.Round(float64(m.X-rad))), int(math.Round(float64(m.Y-rad))),
-			int(math.Round(float64(m.X+rad))), int(math.Round(float64(m.Y+rad))))
-		paint.FillShape(gtx.Ops, v.Farbe, clip.Ellipse(kr).Op(gtx.Ops))
-		// Grundlinie wie im Renderer: eine halbe Versalhöhe unter der Mitte (document.Nummer.Grundlinie).
-		e.textBei(gtx, fmt.Sprint(v.Wert), float32(v.Radius*1.2), f32.Pt(m.X, m.Y+nummerGrundlinieAnsicht(v)), true,
-			color.NRGBA{R: 255, G: 255, B: 255, A: 255})
+		// Je sichtbarem Bereich und auf ihn beschnitten wie Renderer und SVG-Export (F-745, ADR-0023 Nachtrag 15).
+		e.jeStueck(gtx, document.Reichweite(v), 0, an, vorschau, func(abb func(document.Punkt) f32.Point) {
+			m := abb(v.Mitte)
+			rad := float32(v.Radius)
+			kr := image.Rect(int(math.Round(float64(m.X-rad))), int(math.Round(float64(m.Y-rad))),
+				int(math.Round(float64(m.X+rad))), int(math.Round(float64(m.Y+rad))))
+			paint.FillShape(gtx.Ops, v.Farbe, clip.Ellipse(kr).Op(gtx.Ops))
+			// Grundlinie wie im Renderer: eine halbe Versalhöhe unter der Mitte (document.Nummer.Grundlinie).
+			e.textBei(gtx, fmt.Sprint(v.Wert), float32(v.Radius*1.2), f32.Pt(m.X, m.Y+nummerGrundlinieAnsicht(v)), true,
+				color.NRGBA{R: 255, G: 255, B: 255, A: 255})
+		})
 	case document.Lupe:
 		e.zeichneLupe(gtx, v, an, vorschau)
 	case document.Text:

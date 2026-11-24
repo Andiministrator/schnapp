@@ -106,3 +106,21 @@ func TestLupenLinieUeberNaht(t *testing.T) {
 		t.Errorf("Lupen-Linie über der Naht nicht abgeschnitten: links %d, rechts %d Pixel abweichend", links, rechts)
 	}
 }
+
+// F-745 (ADR-0023 Nachtrag 15): Pfeil und Schritt-Nummer über einer Naht sind dort abgeschnitten wie im SVG-Export,
+// nicht gestaucht bzw. starr an der abgebildeten Mitte.
+func TestPfeilUndNummerUeberNaht(t *testing.T) {
+	rot := color.NRGBA{R: 200, A: 255}
+	for name, o := range map[string]document.Objekt{
+		"Pfeil":  document.GeraderPfeil(document.Pt(20, 40), document.Pt(380, 160), document.Strich{Farbe: rot, Breite: 4}),
+		"Nummer": document.Nummer{Mitte: document.Pt(170, 100), Wert: 7, Radius: 45, Farbe: rot},
+	} {
+		links, rechts, farbig := vergleicheUmNaht(t, o, 150, 190, rot)
+		if name == "Pfeil" && farbig == 0 {
+			t.Fatalf("%s: rechts der Naht nichts", name)
+		}
+		if links != 0 || rechts != 0 {
+			t.Errorf("%s über der Naht nicht abgeschnitten: links %d, rechts %d Pixel abweichend", name, links, rechts)
+		}
+	}
+}
