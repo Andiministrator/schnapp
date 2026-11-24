@@ -32,6 +32,8 @@ const (
 //  3. Gegenprobe: Von main aus ist ui.Editor erreichbar (sonst prüfte 2 nichts).
 //  4. Im Paket ui ruft nur die Tafel (einstellungen.go) den Schreiber (und schnellstile.go SchreibeStile für
 //     styles.ini), und ui.Bestaetige (der Dialog des MCP-Servers) steht in einer Datei ohne Bezug auf die Tafel.
+//     merkeEinstellung (schreibt einen Schlüssel mit dem Schreiber der Tafel, nur library.bar, F-658) nennen genau
+//     einstellungen.go und leiste_unten.go, nie die Datei von Bestaetige.
 //  5. Über alle Pakete des Moduls (F-630): Ein Selektor auf das Paket …/internal/settings, dessen Name mit „Schreibe“
 //     beginnt, steht nur in internal/ui/einstellungen.go und (nur SchreibeStile) internal/ui/schnellstile.go; einen
 //     Punkt-Import des Pakets gibt es nicht.
@@ -146,12 +148,13 @@ func TestMCPErreichtDenSchreiberNicht(t *testing.T) {
 	// 4.
 	ui := filepath.Join("..", "..", "internal", "ui")
 	schreiber := 0
+	var merker []string // Dateien, die merkeEinstellung nennen
 	for _, d := range goDateien(t, ui) {
 		f, err := parser.ParseFile(token.NewFileSet(), d, nil, 0) // ohne Kommentare
 		if err != nil {
 			t.Fatal(err)
 		}
-		bestaetige, tafel := false, false
+		bestaetige, tafel, merke := false, false, false
 		namen := importNamen(f)
 		ast.Inspect(f, func(x ast.Node) bool {
 			switch x := x.(type) {
@@ -171,12 +174,25 @@ func TestMCPErreichtDenSchreiberNicht(t *testing.T) {
 				bestaetige = bestaetige || (x.Recv == nil && x.Name.Name == "Bestaetige")
 			case *ast.Ident:
 				tafel = tafel || x.Name == "tafel"
+				merke = merke || x.Name == "merkeEinstellung"
 			}
 			return true
 		})
 		if bestaetige && tafel {
 			t.Errorf("%s: Bestaetige steht neben der Einstellungstafel", filepath.Base(d))
 		}
+		// merkeEinstellung (F-658) schreibt wie die Tafel: nur die Tafel selbst und der Menüschalter der Leiste der
+		// letzten Aufnahmen dürfen ihn nennen, und nie die Datei von Bestaetige.
+		if merke {
+			merker = append(merker, filepath.Base(d))
+			if bestaetige {
+				t.Errorf("%s: Bestaetige steht neben merkeEinstellung", filepath.Base(d))
+			}
+		}
+	}
+	slices.Sort(merker)
+	if want := []string{"einstellungen.go", "leiste_unten.go"}; !slices.Equal(merker, want) {
+		t.Errorf("merkeEinstellung steht in %v, erlaubt sind genau %v", merker, want)
 	}
 	if schreiber == 0 {
 		t.Error("Gegenprobe: die Tafel in internal/ui ruft den Schreiber gar nicht")

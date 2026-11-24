@@ -10,6 +10,8 @@ package ui
 // (listeEinstellung). Bedeutung und Zustand stehen in einstellungen_logik.go.
 
 import (
+	"errors"
+	"fmt"
 	"image"
 	"image/color"
 
@@ -119,10 +121,21 @@ func (e *editor) einstellungenSchliessen(gtx layout.Context) {
 // settings.BenutzerHeim).
 var schreibeEinstellungen = settings.SchreibeDatei
 
+// merkbar sind die Schlüssel (Abschnitt, Schlüssel), die merkeEinstellung außerhalb der Tafel schreiben darf.
+var merkbar = map[[2]string]bool{{"library", "bar"}: true}
+
+// errNichtMerkbar: merkeEinstellung bekam einen Schlüssel außerhalb von merkbar (ein Programmfehler).
+var errNichtMerkbar = errors.New("setting cannot be remembered outside the settings panel")
+
 // merkeEinstellung schreibt einen einzelnen Schlüssel mit dem Schreiber der Tafel (schreibeEinstellungen) an den Ort
 // von settings.Pfad: der Menüschalter der Leiste der letzten Aufnahmen (ADR-0036 Punkt 2, ADR-0034 Nachtrag 2). Er
-// steht hier, weil nur die Tafel schreibt (ADR-0034 Punkt 6, TestMCPErreichtDenSchreiberNicht).
+// steht hier, weil nur die Tafel schreibt (ADR-0034 Punkt 6, TestMCPErreichtDenSchreiberNicht). Er nimmt nur die
+// Schlüssel aus merkbar an (F-658): Sonst wäre er aus jeder Datei des Pakets ein Schreiber für beliebige Schlüssel,
+// auch die Einwilligungen der Agenten.
 func merkeEinstellung(a settings.Aenderung) error {
+	if !merkbar[[2]string{a.Abschnitt, a.Schluessel}] {
+		return fmt.Errorf("%w: %s.%s", errNichtMerkbar, a.Abschnitt, a.Schluessel)
+	}
 	pfad, err := settings.Pfad()
 	if err != nil {
 		return err
@@ -133,6 +146,7 @@ func merkeEinstellung(a settings.Aenderung) error {
 // einstellungenSpeichern schreibt die Änderungen; gelingt es, schließt die Tafel und die Fußzeile sagt es. Die im
 // laufenden Editor schon wirksamen Werte bleiben, wie sie sind (ADR-0034 Punkt 3).
 func (e *editor) einstellungenSpeichern(gtx layout.Context) {
+	leisteVorher := e.einst.geladen.Leiste // speichere setzt geladen auf den geschriebenen Stand
 	geschrieben, ok := e.einst.speichere(schreibeEinstellungen)
 	if !ok {
 		return
@@ -142,8 +156,10 @@ func (e *editor) einstellungenSpeichern(gtx layout.Context) {
 		e.melde(i18n.T("Settings saved"), false)
 	}
 	// Ausnahme von ADR-0034 Punkt 3: Die Leiste der letzten Aufnahmen folgt der Tafel sofort, wie dem Menüschalter
-	// (ADR-0034 Nachtrag 2, ADR-0036 Punkt 2).
-	if e.unten.l != nil && e.unten.an != e.einst.wert.Leiste {
+	// (ADR-0034 Nachtrag 2, ADR-0036 Punkt 2) — aber nur, wenn die Tafel diesen Schlüssel geändert hat (F-655): Weicht
+	// das Fenster von der Datei ab (Probe-Lauf startet ohne Leiste, Merken scheiterte, ein zweites Fenster schaltete),
+	// kippte sonst jedes Speichern die Leiste.
+	if e.unten.l != nil && e.einst.wert.Leiste != leisteVorher && e.unten.an != e.einst.wert.Leiste {
 		e.unten.an = e.einst.wert.Leiste
 	}
 }
