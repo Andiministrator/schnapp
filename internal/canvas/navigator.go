@@ -16,6 +16,9 @@ import (
 const (
 	NavigatorSeite = 160
 	NavigatorRand  = 12
+	// NavigatorMinSeite ist das Mindestmaß der kurzen Kastenseite in dp (F-613, KS-7): Sehr flache oder schmale Bilder
+	// bekommen einen Kasten dieser Dicke, das Bild steht darin mittig.
+	NavigatorMinSeite = 16
 )
 
 // navigatorToleranz ist der Überstand in Pixeln, ab dem das Bild „nicht ins Fenster passt“: Beim Einpassen runden Zoom
@@ -35,6 +38,7 @@ func NavigatorSichtbar(bild image.Rectangle, zoom float64, fenster image.Point) 
 // Navigator ist die Lage des Kastens und die Abbildung zwischen Bildfläche und Kasten.
 type Navigator struct {
 	Flaeche image.Rectangle // Lage des Kastens in Leinwandpixeln
+	Inhalt  image.Rectangle // Lage des Bilds im Kasten (Seitenverhältnis gewahrt; bei flachen Bildern kleiner als Flaeche)
 	Bild    image.Rectangle // gezeigte Bildfläche in Ansichtskoordinaten (Sitzung.Bildflaeche)
 	Faktor  float64         // Kastenpixel je Ansichtspixel
 }
@@ -48,25 +52,30 @@ func NeuerNavigator(bild image.Rectangle, fenster image.Point, seite, rand int) 
 	f := float64(seite) / float64(max(bild.Dx(), bild.Dy()))
 	b := max(1, int(math.Round(float64(bild.Dx())*f)))
 	h := max(1, int(math.Round(float64(bild.Dy())*f)))
+	// Kurze Seite mindestens seite/10 (16 dp bei 160 dp): das Bild bleibt in seinem Maßstab, der Kasten wird dicker.
+	mind := max(1, seite*NavigatorMinSeite/NavigatorSeite)
+	kb, kh := max(b, mind), max(h, mind)
 	ende := image.Pt(fenster.X-rand, fenster.Y-rand)
-	r := image.Rectangle{Min: ende.Sub(image.Pt(b, h)), Max: ende}
+	r := image.Rectangle{Min: ende.Sub(image.Pt(kb, kh)), Max: ende}
 	if r.Min.X < rand || r.Min.Y < rand {
 		return Navigator{}, false
 	}
-	return Navigator{Flaeche: r, Bild: bild, Faktor: f}, true
+	in := image.Rectangle{Min: r.Min.Add(image.Pt((kb-b)/2, (kh-h)/2))}
+	in.Max = in.Min.Add(image.Pt(b, h))
+	return Navigator{Flaeche: r, Inhalt: in, Bild: bild, Faktor: f}, true
 }
 
 // ZuKasten rechnet einen Ansichtspunkt in Leinwandpixel im Kasten um.
 func (n Navigator) ZuKasten(a document.Punkt) document.Punkt {
-	return document.Pt(float64(n.Flaeche.Min.X)+(a.X-float64(n.Bild.Min.X))*n.Faktor,
-		float64(n.Flaeche.Min.Y)+(a.Y-float64(n.Bild.Min.Y))*n.Faktor)
+	return document.Pt(float64(n.Inhalt.Min.X)+(a.X-float64(n.Bild.Min.X))*n.Faktor,
+		float64(n.Inhalt.Min.Y)+(a.Y-float64(n.Bild.Min.Y))*n.Faktor)
 }
 
 // ZuAnsicht rechnet einen Leinwandpunkt im Kasten in einen Ansichtspunkt um; Punkte außerhalb des Kastens liegen am
 // nächsten Rand der Bildfläche (Ziehen darf den Kasten verlassen).
 func (n Navigator) ZuAnsicht(p document.Punkt) document.Punkt {
-	a := document.Pt(float64(n.Bild.Min.X)+(p.X-float64(n.Flaeche.Min.X))/n.Faktor,
-		float64(n.Bild.Min.Y)+(p.Y-float64(n.Flaeche.Min.Y))/n.Faktor)
+	a := document.Pt(float64(n.Bild.Min.X)+(p.X-float64(n.Inhalt.Min.X))/n.Faktor,
+		float64(n.Bild.Min.Y)+(p.Y-float64(n.Inhalt.Min.Y))/n.Faktor)
 	return document.Pt(math.Max(float64(n.Bild.Min.X), math.Min(float64(n.Bild.Max.X), a.X)),
 		math.Max(float64(n.Bild.Min.Y), math.Min(float64(n.Bild.Max.Y), a.Y)))
 }

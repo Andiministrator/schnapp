@@ -108,22 +108,22 @@
     "name": "NU3 Ziehen führt den Ausschnitt nicht",
     "datei": "internal/ui/navigator.go",
     "paket": "./internal/ui",
-    "alt": "if e.nav.zieht {\n\t\t\t\te.s.NavigatorZu(n, p)",
-    "neu": "if false {\n\t\t\t\te.s.NavigatorZu(n, p)"
+    "alt": "case pointer.Drag:\n\t\t\tif e.nav.zieht {",
+    "neu": "case pointer.Drag:\n\t\t\tif false {"
   },
   {
     "name": "NU4 Klick zentriert nicht",
     "datei": "internal/ui/navigator.go",
     "paket": "./internal/ui",
-    "alt": "e.nav.zieht = true\n\t\t\t\te.s.NavigatorZu(n, p)",
-    "neu": "e.nav.zieht = true"
+    "alt": "if e.nav.zieht {\n\t\t\t\te.s.NavigatorZu(n, p)\n\t\t\t\tgtx.Execute(key.FocusCmd{Tag: e})",
+    "neu": "if e.nav.zieht {\n\t\t\t\tgtx.Execute(key.FocusCmd{Tag: e})"
   },
   {
     "name": "NU5 Loslassen beendet das Ziehen nicht",
     "datei": "internal/ui/navigator.go",
     "paket": "./internal/ui",
-    "alt": "case pointer.Release, pointer.Cancel:\n\t\t\te.nav.zieht = false",
-    "neu": "case pointer.Release, pointer.Cancel:\n\t\t\t_ = n"
+    "alt": "pe.Kind == pointer.Cancel {\n\t\t\te.nav.zieht = false\n\t\t\tcontinue",
+    "neu": "pe.Kind == pointer.Cancel {\n\t\t\t_ = n\n\t\t\tcontinue"
   },
   {
     "name": "NU6 Ausschnitt-Rahmen nur 1 dp",
@@ -166,5 +166,117 @@
     "paket": "./internal/ui",
     "alt": "\t\thilfeZeile{text: i18n.T(\"Move the view in the navigator\"), taste: i18n.T(\"Click, drag\")},\n",
     "neu": ""
+  },
+  {
+    "name": "NU12 Navigator arbeitet während des Speicherns",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "if e.s.SpeichernLaeuft() {",
+    "neu": "if false {"
+  },
+  {
+    "name": "NU13 Klick gibt der Leinwand den Fokus nicht",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "gtx.Execute(key.FocusCmd{Tag: e})",
+    "neu": "gtx.Execute(key.FocusCmd{Tag: &e.nav})"
+  },
+  {
+    "name": "NU14 Kasten in Pixeln statt dp",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "seite, rand := gtx.Dp(canvas.NavigatorSeite), gtx.Dp(canvas.NavigatorRand)",
+    "neu": "seite, rand := canvas.NavigatorSeite, canvas.NavigatorRand"
+  },
+  {
+    "name": "NU15 Navigator ohne Nähte",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "\te.zeichneObjekte(gtx)\n\te.zeichneNaehte(gtx)\n\tbc.Pop()",
+    "neu": "\te.zeichneObjekte(gtx)\n\tbc.Pop()"
+  },
+  {
+    "name": "NU16 Bild ohne bildOrt",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "bo := op.Offset(e.bildOrt).Push(gtx.Ops)",
+    "neu": "bo := op.Offset(image.Point{}).Push(gtx.Ops)"
+  },
+  {
+    "name": "NU17 Abbruch beendet das Ziehen nicht",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "if pe.Kind == pointer.Release || pe.Kind == pointer.Cancel {",
+    "neu": "if pe.Kind == pointer.Release {"
+  },
+  {
+    "name": "NU18 Jede Maustaste führt den Ausschnitt",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "e.nav.zieht = pe.Buttons.Contain(pointer.ButtonPrimary)",
+    "neu": "e.nav.zieht = true"
+  },
+  {
+    "name": "NU19 Loslassen erst nach der Speichersperre",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "if pe.Kind == pointer.Release || pe.Kind == pointer.Cancel {\n\t\t\te.nav.zieht = false\n\t\t\tcontinue\n\t\t}\n\t\tif e.s.SpeichernLaeuft() {\n\t\t\tcontinue\n\t\t}",
+    "neu": "if e.s.SpeichernLaeuft() {\n\t\t\tcontinue\n\t\t}\n\t\tif pe.Kind == pointer.Release || pe.Kind == pointer.Cancel {\n\t\t\te.nav.zieht = false\n\t\t\tcontinue\n\t\t}"
+  },
+  {
+    "name": "NU20 Ausschnitt füllt den Kasten bei flachem Bild nicht",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "if n.Inhalt.Dy() < n.Flaeche.Dy() &&",
+    "neu": "if false &&"
+  },
+  {
+    "name": "NU21 Ausschnitt füllt den Kasten bei schmalem Bild nicht",
+    "datei": "internal/ui/navigator.go",
+    "paket": "./internal/ui",
+    "alt": "if n.Inhalt.Dx() < n.Flaeche.Dx() &&",
+    "neu": "if false &&"
+  },
+  {
+    "name": "N14 Navigator nimmt die Dokumentgröße statt der Bildfläche",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "bild := s.Bildflaeche()",
+    "neu": "bild := image.Rectangle{Max: s.D.Groesse()}"
+  },
+  {
+    "name": "N15 Kein Mindestmaß der kurzen Kastenseite",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "mind := max(1, seite*NavigatorMinSeite/NavigatorSeite)",
+    "neu": "mind := 1"
+  },
+  {
+    "name": "N16 Bild steht im flachen Kasten nicht mittig (X)",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "image.Pt((kb-b)/2, (kh-h)/2)",
+    "neu": "image.Pt(0, (kh-h)/2)"
+  },
+  {
+    "name": "N17 Bild steht im flachen Kasten nicht mittig (Y)",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "image.Pt((kb-b)/2, (kh-h)/2)",
+    "neu": "image.Pt((kb-b)/2, 0)"
+  },
+  {
+    "name": "N18 Abbildung ZuKasten ignoriert den Inhalt",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "float64(n.Inhalt.Min.X)+(a.X",
+    "neu": "float64(n.Flaeche.Min.X)+(a.X"
+  },
+  {
+    "name": "N19 Abbildung ZuAnsicht ignoriert den Inhalt",
+    "datei": "internal/canvas/navigator.go",
+    "paket": "./internal/canvas",
+    "alt": "(p.Y-float64(n.Inhalt.Min.Y))/n.Faktor",
+    "neu": "(p.Y-float64(n.Flaeche.Min.Y))/n.Faktor"
   }
 ]

@@ -73,6 +73,14 @@ func navigatorAusschnitt(n canvas.Navigator, abb canvas.Abbildung, fenster image
 	if r.Dy() < 1 {
 		r.Max.Y = r.Min.Y + 1
 	}
+	// Flache oder schmale Bilder (F-613, KS-7): Deckt der Ausschnitt das ganze Bild in einer Achse, in der das Bild
+	// dünner ist als der Kasten, füllt er den Kasten in dieser Achse, sonst bliebe er ein Strich.
+	if n.Inhalt.Dx() < n.Flaeche.Dx() && r.Min.X <= n.Inhalt.Min.X && r.Max.X >= n.Inhalt.Max.X {
+		r.Min.X, r.Max.X = n.Flaeche.Min.X, n.Flaeche.Max.X
+	}
+	if n.Inhalt.Dy() < n.Flaeche.Dy() && r.Min.Y <= n.Inhalt.Min.Y && r.Max.Y >= n.Inhalt.Max.Y {
+		r.Min.Y, r.Max.Y = n.Flaeche.Min.Y, n.Flaeche.Max.Y
+	}
 	return r
 }
 
@@ -94,7 +102,7 @@ func randStreifen(r image.Rectangle, w int) []image.Rectangle {
 func (e *editor) zeichneNavigatorBild(gtx layout.Context, n canvas.Navigator) {
 	f := float32(n.Faktor)
 	af := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Pt(f, f)).
-		Offset(f32.Pt(float32(n.Flaeche.Min.X)-float32(n.Bild.Min.X)*f, float32(n.Flaeche.Min.Y)-float32(n.Bild.Min.Y)*f))).Push(gtx.Ops)
+		Offset(f32.Pt(float32(n.Inhalt.Min.X)-float32(n.Bild.Min.X)*f, float32(n.Inhalt.Min.Y)-float32(n.Bild.Min.Y)*f))).Push(gtx.Ops)
 	bo := op.Offset(e.bildOrt).Push(gtx.Ops)
 	bi := clip.Rect(image.Rectangle{Max: e.bildOp.Size()}).Push(gtx.Ops)
 	e.bildOp.Add(gtx.Ops)
@@ -125,14 +133,21 @@ func (e *editor) navigatorEreignisse(gtx layout.Context, n canvas.Navigator) {
 			continue
 		}
 		gtx.Execute(op.InvalidateCmd{})
+		// Loslassen und Abbruch gelten immer, auch während des Speicherns: Sie ändern nichts am Dokument, und ein
+		// verlorenes Loslassen ließe `zieht` stehen (F-613, KS-3).
+		if pe.Kind == pointer.Release || pe.Kind == pointer.Cancel {
+			e.nav.zieht = false
+			continue
+		}
 		if e.s.SpeichernLaeuft() {
 			continue
 		}
 		p := document.Pt(float64(pe.Position.X), float64(pe.Position.Y))
 		switch pe.Kind {
 		case pointer.Press:
-			if pe.Buttons.Contain(pointer.ButtonPrimary) {
-				e.nav.zieht = true
+			// Nur die linke Taste führt den Ausschnitt; jeder andere Druck beendet ein stehengebliebenes Ziehen.
+			e.nav.zieht = pe.Buttons.Contain(pointer.ButtonPrimary)
+			if e.nav.zieht {
 				e.s.NavigatorZu(n, p)
 				gtx.Execute(key.FocusCmd{Tag: e}) // wie ein Klick auf die Leinwand: Tasten gehören ihr
 			}
@@ -140,8 +155,6 @@ func (e *editor) navigatorEreignisse(gtx layout.Context, n canvas.Navigator) {
 			if e.nav.zieht {
 				e.s.NavigatorZu(n, p)
 			}
-		case pointer.Release, pointer.Cancel:
-			e.nav.zieht = false
 		case pointer.Scroll:
 			e.s.NavigatorZoom(radSchritt(pe.Scroll.Y))
 		}

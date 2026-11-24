@@ -353,3 +353,12 @@ im Fenster liegt, und sich per Klick und Ziehen verschieben lassen. Entscheidung
   Kasten, Ausschnitt, Zentrieren mit Begrenzung; `Sitzung.NavigatorZu`, `Sitzung.NavigatorZoom`); Zeichnen und
   Ereignisse in `internal/ui/navigator.go`. Tests `internal/canvas/navigator_test.go`, `internal/ui/navigator_test.go`,
   Mutanten `scripts/mutanten/navigator.json`, Sichtprobe `scripts/drehbuecher/navigator-197.txt`.
+- **Ergänzung — flache und schmale Bilder, Zeiger (F-613, Karte #236):** Die kurze Seite des Kastens ist mindestens
+  16 dp dick (`NavigatorMinSeite`, ein Zehntel der langen Seite, bei Skala 2 also 32 px). Das Bild behält seinen
+  Maßstab (Faktor aus der langen Seite, Seitenverhältnis gewahrt) und steht in der dünnen Achse mittig im Kasten
+  (`Navigator.Inhalt`; `ZuKasten` und `ZuAnsicht` rechnen mit dieser Lage, `Enthaelt` und das Zeigerziel mit dem ganzen
+  Kasten). Deckt der Ausschnitt das Bild in der dünnen Achse ganz, füllt das orange Rechteck dort den Kasten, statt als
+  Strich im Bildstreifen zu verschwinden. Für die Zeigerereignisse gilt: Nur die linke Taste führt den Ausschnitt (jeder
+  andere Druck beendet ein Ziehen); Loslassen und Abbruch (`Cancel`) gelten immer, auch während des Speicherns, denn sie
+  ändern nichts am Dokument, während Druck und Ziehen dann ruhen. Tests `internal/canvas/navigator_flach_test.go`,
+  `internal/ui/navigator_flach_test.go`, `internal/ui/navigator_kritik_test.go`.

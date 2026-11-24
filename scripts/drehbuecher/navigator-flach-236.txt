@@ -1,0 +1,15 @@
+# Sichtprobe ADR-0031 Nachtrag 9, Ergänzung (Karte #236, F-613): Navigator bei einem sehr flachen Bild.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/navigator-flach-236.txt --bild <flaches Bild, z. B. 3000 × 200>
+# Erwartet:
+#  01 eingepasst: kein Navigator.
+#  02 gezoomt: unten rechts ein Kasten, 160 × 16 dp (nicht 160 × 11 oder ein Strich), das Bild als dünner Streifen
+#     mittig darin; der orange Rahmen füllt die Kastenhöhe und deckt nur einen Teil der Breite.
+#  03 Klick in die linke Kastenhälfte (auch ober- oder unterhalb des Bildstreifens): Ansicht springt dorthin.
+warte 1500
+foto 01-eingepasst-ohne-navigator
+rad 600 450 -30
+warte 400
+foto 02-gezoomt-flacher-kasten
+klick 1140 910
+warte 400
+foto 03-klick-im-kasten
