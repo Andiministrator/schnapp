@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"gioui.org/f32"
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
@@ -60,8 +59,10 @@ type untenLeiste struct {
 	l       *libview.Leiste
 	v       *libview.Vorschauen
 	knoepfe [libview.MaxEintraege]widget.Clickable
-	rad     int // Ziel der Mausrad-Ereignisse (nur die Adresse zählt)
-	masse   libview.Masse
+	// bibKnopf ist der Knopf „Library“ links in der Leiste: öffnet die volle Ansicht (ADR-0036 Punkte 1 und 3).
+	bibKnopf widget.Clickable
+	rad      int // Ziel der Mausrad-Ereignisse (nur die Adresse zählt)
+	masse    libview.Masse
 
 	// Index im Hintergrund (ADR-0036 Punkt 7): höchstens ein Lesen zugleich; nochmal heißt, nach dem laufenden erneut.
 	index        chan indexErgebnis
@@ -94,6 +95,9 @@ type indexErgebnis struct {
 // alle sind die Knöpfe der Leiste in Tab-Reihenfolge (editor.fokussierterKnopf).
 func (k *untenLeiste) alle() []*widget.Clickable {
 	var a []*widget.Clickable
+	if !k.rahmen.Empty() {
+		a = append(a, &k.bibKnopf)
+	}
 	for i := k.von; i < k.bis && i < len(k.knoepfe); i++ {
 		a = append(a, &k.knoepfe[i])
 	}
@@ -137,6 +141,7 @@ func (e *editor) leisteStart() {
 	}
 	k.v = libview.NeueVorschauen(libview.LaderFuer(e.bib.Bibliothek), wecke, libview.SpeicherGrenze)
 	e.leisteAktuell()
+	e.bibliothekStart()
 	e.leisteNeuLesen()
 }
 
@@ -240,6 +245,7 @@ func (e *editor) leisteNachSpeichern() {
 		k.v.Vergiss(neu)
 	}
 	e.leisteNeuLesen()
+	e.bibliothekNachSpeichern()
 }
 
 // leisteNachWechsel: eine andere Aufnahme ist offen.
@@ -321,6 +327,9 @@ func (e *editor) leisteAuswerten(gtx layout.Context) {
 			k.l.Rad(pe.Scroll.Y+pe.Scroll.X, k.masse) // senkrechtes Rad rollt waagerecht (ADR-0036 Punkt 1)
 		}
 	}
+	if k.bibKnopf.Clicked(gtx) && e.leisteAn() {
+		e.bibliothekOeffnen(gtx)
+	}
 	for i := range k.gezeigt {
 		if k.knoepfe[i].Clicked(gtx) && e.leisteAn() {
 			e.leisteOeffne(i)
@@ -383,7 +392,11 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 	k.rahmen, k.kacheln, k.hinweis, k.von, k.bis = r, nil, "", 0, 0
 	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(r).Op())
 	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(image.Rect(r.Min.X, r.Min.Y, r.Max.X, r.Min.Y+gtx.Dp(1))).Op())
-	k.masse = leisteMasseFuer(gtx, r.Dx())
+	// Links der Knopf „Library“ (Teil 2, Muster 174 a), dahinter die Spur der Vorschauen.
+	kn := image.Rect(r.Min.X+gtx.Dp(leisteKnopfRand), r.Min.Y+gtx.Dp(leisteObenDp), r.Min.X+gtx.Dp(leisteKnopfRand+leisteKnopfB),
+		r.Min.Y+gtx.Dp(leisteObenDp+leisteKachelH+20))
+	spur := image.Rect(kn.Max.X, r.Min.Y, max(kn.Max.X, r.Max.X), r.Max.Y)
+	k.masse = leisteMasseFuer(gtx, spur.Dx())
 	es := k.l.Eintraege()
 	k.gezeigt = k.gezeigt[:0]
 	for _, eintrag := range es {
@@ -393,6 +406,9 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 	// wenn eine Vorschau unter dem Zeiger liegt (Lehre aus F-598).
 	c := clip.Rect(r).Push(gtx.Ops)
 	event.Op(gtx.Ops, &k.rad)
+	e.zeichneLeisteKnopf(gtx, kn)
+	r = spur
+	cs := clip.Rect(spur).Push(gtx.Ops) // gerollte Vorschauen laufen nicht über den Knopf
 	if len(es) == 0 {
 		text := i18n.T("No captures in the library yet.")
 		if k.indexLaeuft {
@@ -401,6 +417,7 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 			text = i18n.T("The library index could not be read.")
 		}
 		e.leisteText(gtx, text, image.Pt(r.Min.X+k.masse.Rand, r.Min.Y+gtx.Dp(leisteObenDp+leisteKachelH/2)), r.Dx(), false)
+		cs.Pop()
 		c.Pop()
 		k.ops = nil
 		return
@@ -454,6 +471,7 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 			k.hinweis = leisteHinweis(eintrag, aktuell)
 		}
 	}
+	cs.Pop()
 	c.Pop()
 	k.ops = neueOps
 }
@@ -467,28 +485,7 @@ func (e *editor) leisteVerborgen() {
 
 // zeichneLeistenBild zeichnet das Vorschaubild von rel eingepasst in r, bis es geladen ist ein graues Feld.
 func (e *editor) zeichneLeistenBild(gtx layout.Context, rel string, r image.Rectangle, ops map[string]leisteBild) {
-	k := &e.unten
-	paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(r).Op())
-	bild, z := k.v.Bild(rel)
-	if z != libview.Da || bild == nil || bild.Rect.Dx() == 0 || bild.Rect.Dy() == 0 {
-		paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(r).Op()) // Platzhalter (ADR-0036 Punkt 6)
-		return
-	}
-	lb, ok := k.ops[rel]
-	if !ok || lb.bild != bild {
-		lb = leisteBild{bild: bild, op: paint.NewImageOp(bild)}
-	}
-	ops[rel] = lb
-	bw, bh := float32(bild.Rect.Dx()), float32(bild.Rect.Dy())
-	s := min(float32(r.Dx())/bw, float32(r.Dy())/bh)
-	w, h := bw*s, bh*s
-	ecke := f32.Pt(float32(r.Min.X)+(float32(r.Dx())-w)/2, float32(r.Min.Y)+(float32(r.Dy())-h)/2)
-	cl := clip.Rect(r).Push(gtx.Ops)
-	t := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Pt(s, s)).Offset(ecke)).Push(gtx.Ops)
-	lb.op.Add(gtx.Ops)
-	paint.PaintOp{}.Add(gtx.Ops)
-	t.Pop()
-	cl.Pop()
+	zeichneVorschau(gtx, e.unten.v, e.unten.ops, rel, r, ops)
 }
 
 // leisteText setzt eine Zeile ab der linken oberen Ecke p, höchstens breite Pixel breit.

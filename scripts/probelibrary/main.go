@@ -3,7 +3,7 @@
 // Command probelibrary legt die Probe-Bibliothek für die Sichtprobe der Leiste der letzten Aufnahmen an
 // (scripts/drehbuecher/bibliothek-174-leiste.txt, ADR-0036, F-659): 14 synthetische Aufnahmen 1200 × 800 über heute,
 // gestern, die letzten Wochen und das Vorjahr, dazu eine Agenten-Aufnahme (magenta), die in der Leiste nicht erscheinen
-// darf. Die Orte sind die der Probe-Umgebung von scripts/probe.sh unter HEIM (Bilder/schnapp, .local/share/schnapp,
+// darf. Jede dritte trägt die Schlagworte „bug, login“, die danach „invoice“ (volle Ansicht, bibliothek-174-ansicht.txt). Die Orte sind die der Probe-Umgebung von scripts/probe.sh unter HEIM (Bilder/schnapp, .local/share/schnapp,
 // .cache/schnapp/vorschau). Am Ende steht der Pfad der zweitneuesten Aufnahme auf stdout (für --bild).
 //
 //	go run ./scripts/probelibrary -heim tmp/probe/home
@@ -65,14 +65,14 @@ func lege(heim string, jetzt time.Time) (string, error) {
 	}
 	var pfade []string
 	for i, z := range zeiten {
-		p, err := ablegen(b, bild(i, farbe(i)), z, false)
+		p, err := ablegen(b, bild(i, farbe(i)), z, false, schlagworte(i)...)
 		if err != nil {
 			return "", err
 		}
 		pfade = append(pfade, p)
 	}
 	// Agenten-Aufnahme, die neueste: darf in der Leiste nicht erscheinen.
-	if _, err := ablegen(b, bild(99, color.NRGBA{R: 0xE0, B: 0xE0, A: 0xFF}), jetzt.Add(-time.Minute), true); err != nil {
+	if _, err := ablegen(b, bild(99, color.NRGBA{R: 0xE0, B: 0xE0, A: 0xFF}), jetzt.Add(-time.Minute), true, "agent"); err != nil {
 		return "", err
 	}
 	return pfade[1], nil
@@ -103,7 +103,19 @@ func bild(i int, c color.NRGBA) *image.NRGBA {
 	return m
 }
 
-func ablegen(b *library.Bibliothek, m *image.NRGBA, zeit time.Time, agent bool) (string, error) {
+// schlagworte sind die Schlagworte der Aufnahme i: jede dritte „bug, login“, die danach „invoice“ (Suche in der vollen
+// Ansicht, ADR-0036 Punkt 3).
+func schlagworte(i int) []string {
+	switch i % 3 {
+	case 1:
+		return []string{"bug", "login"}
+	case 2:
+		return []string{"invoice"}
+	}
+	return nil
+}
+
+func ablegen(b *library.Bibliothek, m *image.NRGBA, zeit time.Time, agent bool, worte ...string) (string, error) {
 	d, err := document.Neu(m)
 	if err != nil {
 		return "", err
@@ -112,7 +124,7 @@ func ablegen(b *library.Bibliothek, m *image.NRGBA, zeit time.Time, agent bool) 
 	if agent {
 		ab = b.AblegenAgent
 	}
-	e, err := ab(d, d.Original(), fileformat.Metadaten{Erstellt: zeit})
+	e, err := ab(d, d.Original(), fileformat.Metadaten{Erstellt: zeit, Schlagworte: worte})
 	if err != nil {
 		return "", err
 	}

@@ -196,6 +196,7 @@ func (e *editor) uebernimm(g Geoeffnet) {
 	e.bildStand = e.s.BildAenderung()
 	e.bildNeu()
 	e.leisteNachWechsel()
+	e.bibliothekNachWechsel() // aus der vollen Ansicht geöffnet: sie schließt (ADR-0036 Punkt 4)
 	diagnoseEditor("Wechsel zu %s", g.Titel)
 	if e.w != nil {
 		e.w.Invalidate()

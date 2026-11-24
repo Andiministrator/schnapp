@@ -1492,3 +1492,140 @@ msgstr "Die andere Aufnahme wurde nicht geöffnet: Der Export ist noch offen."
 
 msgid "Recent captures apply immediately, clean-up at the next start."
 msgstr "Letzte Aufnahmen gelten sofort, das Aufräumen beim nächsten Start."
+
+# Volle Ansicht der Bibliothek (ADR-0036 Punkte 3 und 4). „month“ sind die Namen der Monate in den Überschriften des
+# Rasters (Go kennt nur englische Namen).
+msgid "%d capture"
+msgid_plural "%d captures"
+msgstr[0] "%d Aufnahme"
+msgstr[1] "%d Aufnahmen"
+
+msgctxt "status bar"
+msgid "%d × %d"
+msgstr "%d × %d"
+
+msgid "All dates"
+msgstr "Alle Zeiträume"
+
+msgid "Today"
+msgstr "Heute"
+
+msgid "Last 7 days"
+msgstr "Letzte 7 Tage"
+
+msgid "Last 30 days"
+msgstr "Letzte 30 Tage"
+
+msgid "This year"
+msgstr "Dieses Jahr"
+
+msgctxt "month"
+msgid "January"
+msgstr "Januar"
+
+msgctxt "month"
+msgid "February"
+msgstr "Februar"
+
+msgctxt "month"
+msgid "March"
+msgstr "März"
+
+msgctxt "month"
+msgid "April"
+msgstr "April"
+
+msgctxt "month"
+msgid "May"
+msgstr "Mai"
+
+msgctxt "month"
+msgid "June"
+msgstr "Juni"
+
+msgctxt "month"
+msgid "July"
+msgstr "Juli"
+
+msgctxt "month"
+msgid "August"
+msgstr "August"
+
+msgctxt "month"
+msgid "September"
+msgstr "September"
+
+msgctxt "month"
+msgid "October"
+msgstr "Oktober"
+
+msgctxt "month"
+msgid "November"
+msgstr "November"
+
+msgctxt "month"
+msgid "December"
+msgstr "Dezember"
+
+msgid "Back to image"
+msgstr "Zurück zum Bild"
+
+msgid "Search by keyword …"
+msgstr "Schlagwort suchen …"
+
+msgid "Search by keyword"
+msgstr "Nach Schlagwort suchen"
+
+msgid "Show agent captures"
+msgstr "Agenten-Aufnahmen zeigen"
+
+msgid "Open"
+msgstr "Öffnen"
+
+msgid "Edit keywords"
+msgstr "Schlagworte bearbeiten"
+
+msgid "Move to trash"
+msgstr "In den Papierkorb"
+
+msgid "Open the library (%s)"
+msgstr "Bibliothek öffnen (%s)"
+
+msgid "Capture of %s, %d × %d px — Enter or double-click opens it, Del moves it to the trash, F2 edits keywords"
+msgstr "Aufnahme vom %s, %d × %d px — Enter oder Doppelklick öffnet sie, Entf legt sie in den Papierkorb, F2 bearbeitet die Schlagworte"
+
+msgid "Capture of %s, %d × %d px — open now. Enter or Esc returns to it."
+msgstr "Aufnahme vom %s, %d × %d px — gerade offen. Enter oder Esc führt zu ihr zurück."
+
+msgid "Could not move the capture to the trash: %v"
+msgstr "Aufnahme nicht in den Papierkorb gelegt: %v"
+
+msgid "Moved to the trash. It can be restored from there."
+msgstr "In den Papierkorb gelegt. Von dort lässt sie sich wiederherstellen."
+
+msgid "Could not save the keywords: %v"
+msgstr "Schlagworte nicht gespeichert: %v"
+
+msgid "Keywords saved."
+msgstr "Schlagworte gespeichert."
+
+msgid "Keywords, separated by commas. Enter saves, Esc cancels."
+msgstr "Schlagworte, durch Komma getrennt. Enter speichert, Esc bricht ab."
+
+msgid "Type a keyword to show only captures with it. Down or Enter goes to the captures."
+msgstr "Schlagwort eingeben, um nur Aufnahmen damit zu zeigen. Runter oder Enter führt zu den Aufnahmen."
+
+msgid "No captures match the search."
+msgstr "Keine Aufnahme passt zur Suche."
+
+msgid "Not available in the library. Esc returns to the image."
+msgstr "In der Bibliothek nicht verfügbar. Esc führt zurück zum Bild."
+
+msgid "The keywords of the open capture cannot be changed here. Open another one first."
+msgstr "Die Schlagworte der offenen Aufnahme lassen sich hier nicht ändern. Erst eine andere öffnen."
+
+msgid "The open capture cannot be moved to the trash. Open another one first."
+msgstr "Die offene Aufnahme kann nicht in den Papierkorb. Erst eine andere öffnen."
+
+msgid "This is the open capture. Open another one first."
+msgstr "Das ist die offene Aufnahme. Erst eine andere öffnen."

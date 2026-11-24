@@ -527,7 +527,7 @@ msgstr ""
 msgid "Allow"
 msgstr ""
 
-#: cmd/schnapp/rettung.go internal/ui/leiste_unten.go
+#: cmd/schnapp/rettung.go internal/ui/bibliothek.go internal/ui/leiste_unten.go
 msgctxt "date format"
 msgid "2006-01-02 15:04"
 msgstr ""
@@ -673,23 +673,114 @@ msgctxt "status bar"
 msgid "%d × %d · %d%%"
 msgstr ""
 
-#: internal/libview/zeit.go
+#: internal/libview/ansicht.go
+msgid "Today"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgid "Last 7 days"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgid "Last 30 days"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgid "This year"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgid "All dates"
+msgstr ""
+
+#: internal/libview/ansicht.go internal/libview/zeit.go
 msgctxt "date part"
 msgid "15:04"
 msgstr ""
 
-#: internal/libview/zeit.go
-msgid "yesterday"
-msgstr ""
-
-#: internal/libview/zeit.go
+#: internal/libview/ansicht.go internal/libview/zeit.go
 msgctxt "date part"
 msgid "Jan 2"
 msgstr ""
 
-#: internal/libview/zeit.go
+#: internal/libview/ansicht.go internal/libview/zeit.go
 msgctxt "date part"
 msgid "Jan 2, 2006"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgctxt "status bar"
+msgid "%d × %d"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgid "%d capture"
+msgid_plural "%d captures"
+msgstr[0] ""
+msgstr[1] ""
+
+#: internal/libview/ansicht.go
+msgctxt "month"
+msgid "January"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgctxt "month"
+msgid "February"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgctxt "month"
+msgid "March"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgctxt "month"
+msgid "April"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgctxt "month"
+msgid "May"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgctxt "month"
+msgid "June"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgctxt "month"
+msgid "July"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgctxt "month"
+msgid "August"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgctxt "month"
+msgid "September"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgctxt "month"
+msgid "October"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgctxt "month"
+msgid "November"
+msgstr ""
+
+#: internal/libview/ansicht.go
+msgctxt "month"
+msgid "December"
+msgstr ""
+
+#: internal/libview/zeit.go
+msgid "yesterday"
 msgstr ""
 
 #: internal/libview/zeit.go
@@ -831,6 +922,102 @@ msgstr ""
 
 #: internal/ui/bestaetigen.go
 msgid "Name reported by the agent (unverified):"
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Could not move the capture to the trash: %v"
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Moved to the trash. It can be restored from there."
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Could not save the keywords: %v"
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Keywords saved."
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "The open capture cannot be moved to the trash. Open another one first."
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "The keywords of the open capture cannot be changed here. Open another one first."
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Not available in the library. Esc returns to the image."
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "This is the open capture. Open another one first."
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Open"
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Edit keywords"
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Move to trash"
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Search by keyword"
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Back to image"
+msgstr ""
+
+#: internal/ui/bibliothek.go internal/ui/einstellungen_logik.go internal/ui/oberflaeche.go
+msgid "Library"
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Search by keyword …"
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Show agent captures"
+msgstr ""
+
+#: internal/ui/bibliothek.go internal/ui/leiste_unten.go
+msgid "The library index could not be read."
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "No captures match the search."
+msgstr ""
+
+#: internal/ui/bibliothek.go internal/ui/leiste_unten.go
+msgid "No captures in the library yet."
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Keywords, separated by commas. Enter saves, Esc cancels."
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Type a keyword to show only captures with it. Down or Enter goes to the captures."
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Capture of %s, %d × %d px — open now. Enter or Esc returns to it."
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Capture of %s, %d × %d px — Enter or double-click opens it, Del moves it to the trash, F2 edits keywords"
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Open the library (%s)"
 msgstr ""
 
 #: internal/ui/ebenen.go
@@ -1181,10 +1368,6 @@ msgid "Capture"
 msgstr ""
 
 #: internal/ui/einstellungen_logik.go
-msgid "Library"
-msgstr ""
-
-#: internal/ui/einstellungen_logik.go
 msgid "Agents"
 msgstr ""
 
@@ -1484,14 +1667,6 @@ msgstr ""
 
 #: internal/ui/leiste_unten.go
 msgid "Not available in this window: it has no library."
-msgstr ""
-
-#: internal/ui/leiste_unten.go
-msgid "No captures in the library yet."
-msgstr ""
-
-#: internal/ui/leiste_unten.go
-msgid "The library index could not be read."
 msgstr ""
 
 #: internal/ui/leiste_unten.go

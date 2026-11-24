@@ -61,6 +61,7 @@ const (
 	listeFarbe = menueAnzahl + iota
 	listeZoom
 	listeEinstellung // Auswahl in der Einstellungstafel (ADR-0034), Anker am Feld der Tafel
+	listeZeitraum    // Zeitraum in der vollen Ansicht der Bibliothek (ADR-0036 Punkt 3), Anker am Feld im Kopf
 )
 
 // istListe meldet, ob i eine Aufklappliste der Fußzeile ist (kein Menü der Zeile).
@@ -87,8 +88,18 @@ func menueTitel(i int) string {
 	return ""
 }
 
-// menueEintraegeVon liefert die Einträge des Menüs i mit dem Zustand der Sitzung (an oder grau).
+// menueEintraegeVon liefert die Einträge des Menüs i mit dem Zustand der Sitzung (an oder grau); bei offener Ansicht der
+// Bibliothek angepasst (bibliothekMenue, ADR-0036 Punkt 4).
 func (e *editor) menueEintraegeVon(i int) []menueEintrag {
+	en := e.menueEintraegeRoh(i)
+	if e.bibl.offen && !istListe(i) {
+		return e.bibliothekMenue(i, en)
+	}
+	return en
+}
+
+// menueEintraegeRoh liefert die Einträge des Menüs i ohne Rücksicht auf die Ansicht der Bibliothek.
+func (e *editor) menueEintraegeRoh(i int) []menueEintrag {
 	s := e.s
 	switch i {
 	case menueDatei:
@@ -97,6 +108,8 @@ func (e *editor) menueEintraegeVon(i int) []menueEintrag {
 			{akt: aktExport, text: i18n.T("Export…"), an: !e.exportOffen},
 			{akt: aktKopieren, text: i18n.T("Copy"), an: true},
 			{akt: aktEinstellungen, text: i18n.T("Settings…"), an: true, gruppe: true},
+			{akt: aktBibliothek, text: i18n.T("Library"), aktiv: e.bibl.offen, an: e.unten.l != nil,
+				erklaerung: e.bibliothekGrau()},
 			{akt: aktSchliessen, text: i18n.T("Close"), an: true, gruppe: true},
 		}
 	case menueBearbeiten:
@@ -173,6 +186,8 @@ func (e *editor) menueEintraegeVon(i int) []menueEintrag {
 		return en
 	case listeEinstellung:
 		return e.einstellungsListe()
+	case listeZeitraum:
+		return e.zeitraumListe()
 	}
 	return nil
 }
@@ -802,7 +817,7 @@ func zeichneAufklappPfeil(gtx layout.Context, m image.Point, c color.NRGBA) {
 // fussAuswerten: Ein Klick auf das Feld Farbe oder Zoom klappt dessen Liste auf (ADR-0031 Punkt 4, Nachtrag 3); Enter
 // auf dem fokussierten Feld öffnet sie mit Fokus auf dem ersten Eintrag (knopfPerTaste).
 func (e *editor) fussAuswerten(gtx layout.Context) {
-	an := func() bool { return !e.s.SpeichernLaeuft() }
+	an := func() bool { return !e.s.SpeichernLaeuft() && !e.bibl.offen }
 	if e.knoepfe.fussFarbe.Clicked(gtx) && an() {
 		e.listeAmFarbKnopf = false
 		e.menueOeffne(listeFarbe, false)
@@ -815,6 +830,9 @@ func (e *editor) fussAuswerten(gtx layout.Context) {
 // listenAnker ist das Rechteck, an dem die Liste i aufklappt: das Feld der Fußzeile; fehlt es (schmales Fenster), bei
 // der Farbe das Farbfeld der Werkzeugleiste, sonst die rechte untere Ecke über der Fußzeile.
 func (e *editor) listenAnker(i int) image.Rectangle {
+	if i == listeZeitraum { // Zeitraum der Ansicht der Bibliothek: am Feld im Kopf (ADR-0036)
+		return e.bibl.zeitRahmen
+	}
 	if i == listeEinstellung { // Auswahl der Einstellungstafel: am Feld (ADR-0034)
 		if z := e.einst.listeZeile; z >= 0 && z < len(tafelZeilen) {
 			return e.einst.rahmen.feld[z]

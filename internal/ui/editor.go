@@ -293,6 +293,8 @@ type editor struct {
 	pfad    func() string
 	unten   untenLeiste
 	wechsel wechselZustand
+	// bibl ist die volle Ansicht der Bibliothek (bibliothek.go, ADR-0036 Punkte 3 und 4).
+	bibl bibAnsicht
 
 	speicherStart       time.Time     // Beginn des laufenden Speicherns (F-283)
 	haengtGemeldet      bool          // die Fußzeile sagt schon, dass das Speichern nicht antwortet
@@ -500,7 +502,7 @@ func (e *editor) nachEreignis() {
 	if e.speichernAbholen() {
 		e.wecker.Anfordern()
 	}
-	if e.wechselAbholen() || e.leisteIndexAbholen() { // Wechsel und Index der Leiste (ADR-0036)
+	if e.wechselAbholen() || e.leisteIndexAbholen() || e.bibliothekAbholen() { // Wechsel, Index der Leiste und der Ansicht (ADR-0036)
 		e.wecker.Anfordern()
 	}
 	if e.wache.Angekommen() && !e.erzwungen && !e.s.SignalVorgemerkt() {
@@ -1426,38 +1428,51 @@ func (e *editor) frame(gtx layout.Context) {
 	_ = e.speichernAbholen() // ebenso die Antwort des Speicherns und des Kopierens (ADR-0020 Nachtrag 6)
 	_ = e.wechselAbholen()   // und des Wechsels der Aufnahme und des Index der Leiste (ADR-0036)
 	_ = e.leisteIndexAbholen()
+	_ = e.bibliothekAbholen()
 	e.kopierenAbholen(gtx)
 	e.ocrAbholen() // Suche und Texterkennung (ADR-0035), nach dem Kopieren
 	// Vor allen anderen: Klicks und Tasten der offenen Einstellungstafel (ADR-0034).
 	e.einstellungenAuswerten(gtx)
+	// Ebenso die volle Ansicht der Bibliothek: ihre Tasten vor feldTasten und tasten (ADR-0036).
+	e.bibliothekAuswerten(gtx)
 	e.feldTasten(gtx) // vor tasten: Enter, Esc und Rücktaste gehören dem fokussierten Eingabefeld (ADR-0031 Nachtrag 5)
 	e.tasten(gtx)
 	// Menü zuerst: Startet ein Eintrag das Speichern, wirken Klicks auf Leisten im selben Bild nicht mehr (F-280).
+	// Bei offener Ansicht der Bibliothek sind Werkzeugleiste, rechte Leiste und Leiste unten nicht gezeichnet und
+	// bekommen keine Klicks; die Felder der Fußzeile sperrt fussAuswerten selbst (ADR-0036 Punkt 4).
 	e.menueAuswerten(gtx)
 	e.knoepfeAuswerten(gtx)
 	e.fussAuswerten(gtx)
 	e.seiteAuswerten(gtx)
 	e.leisteAuswerten(gtx)
 	paint.Fill(gtx.Ops, farbeFenster)
-	flaeche := e.leinwandFlaeche(gtx) // zwischen Menüzeile, Werkzeugleiste, Fußzeile und rechter Leiste (ADR-0031)
-
-	// Leinwand: eigener Ursprung, damit Zeigerpositionen schon Leinwandkoordinaten sind.
-	t := op.Offset(flaeche.Min).Push(gtx.Ops)
-	g := gtx
-	g.Constraints = layout.Exact(flaeche.Size())
-	e.leinwand(g)
-	t.Pop()
-
-	e.zeichneMenuezeile(gtx)
-	e.zeichneWerkzeugleiste(gtx)
-	e.zeichneSeitenleiste(gtx)
-	if e.leisteSichtbar(gtx) { // unter der Leinwand, so breit wie sie (ADR-0036 Punkt 1)
-		e.zeichneLeisteUnten(gtx, image.Rect(flaeche.Min.X, flaeche.Max.Y, flaeche.Max.X, flaeche.Max.Y+gtx.Dp(leisteUntenDp)))
-	} else {
+	if e.bibl.offen {
+		mx := gtx.Constraints.Max
+		e.zeichneBibliothek(gtx, image.Rect(0, gtx.Dp(menuezeileDp), mx.X, max(gtx.Dp(menuezeileDp), mx.Y-gtx.Dp(fusszeileDp))))
 		e.leisteVerborgen()
+		e.zeichneMenuezeile(gtx)
+		e.zeichneFusszeile(gtx)
+	} else {
+		flaeche := e.leinwandFlaeche(gtx) // zwischen Menüzeile, Werkzeugleiste, Fußzeile und rechter Leiste (ADR-0031)
+
+		// Leinwand: eigener Ursprung, damit Zeigerpositionen schon Leinwandkoordinaten sind.
+		t := op.Offset(flaeche.Min).Push(gtx.Ops)
+		g := gtx
+		g.Constraints = layout.Exact(flaeche.Size())
+		e.leinwand(g)
+		t.Pop()
+
+		e.zeichneMenuezeile(gtx)
+		e.zeichneWerkzeugleiste(gtx)
+		e.zeichneSeitenleiste(gtx)
+		if e.leisteSichtbar(gtx) { // unter der Leinwand, so breit wie sie (ADR-0036 Punkt 1)
+			e.zeichneLeisteUnten(gtx, image.Rect(flaeche.Min.X, flaeche.Max.Y, flaeche.Max.X, flaeche.Max.Y+gtx.Dp(leisteUntenDp)))
+		} else {
+			e.leisteVerborgen()
+		}
+		e.zeichneFusszeile(gtx)
+		e.zeichneSchriftliste(gtx) // über Leisten und Fußzeile, unter Hilfe und Menü
 	}
-	e.zeichneFusszeile(gtx)
-	e.zeichneSchriftliste(gtx) // über Leisten und Fußzeile, unter Hilfe und Menü
 	e.zeichneHilfe(gtx)
 	e.zeichneEinstellungen(gtx)
 	e.zeichneMenue(gtx)     // über allem, unter dem Titel des offenen Menüs
@@ -2096,6 +2111,21 @@ func (e *editor) tasten(gtx layout.Context) {
 		if e.einst.offen && !e.menue.offen {
 			continue // Einstellungstafel: ihre Tasten holt einstellungenAuswerten vorher ab, die übrigen wirken nicht (ADR-0034)
 		}
+		if e.bibl.offen && !e.menue.offen && !e.s.SpeichernLaeuft() {
+			// Volle Ansicht der Bibliothek (ADR-0036 Punkt 4): Ihre Tasten holt bibliothekAuswerten vorher ab. Von den
+			// übrigen wirken nur F10 und die Kürzel der Menüeinträge, die in der Ansicht bedienbar sind; Werkzeugtasten,
+			// Leinwand-Kürzel und getippter Text gehen nicht an das Bild darunter.
+			if k, ok := ev.(key.Event); ok && k.State == key.Press {
+				t, ok := findeTaste(k.Name, k.Modifiers, false)
+				switch {
+				case k.Name == key.NameF10:
+					e.menueOeffne(menueDatei, true)
+				case ok && !t.hatWerkzeug && bibliothekErlaubt(t.akt):
+					e.fuehreAus(gtx, t.akt, false)
+				}
+			}
+			continue
+		}
 		if e.s.SpeichernLaeuft() {
 			// Während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6): abholen, damit Filter und Fokus
 			// bestehen bleiben, und verwerfen. Nur Strg+C wirkt: Kopieren ändert nichts am Dokument, und während des
@@ -2151,6 +2181,8 @@ func (e *editor) tasten(gtx layout.Context) {
 				c == &e.knoepfe.farbe || c == &e.knoepfe.fuellung {
 				e.knopfPerTaste(c)
 			} else if c != nil && (e.schnell.stelle(c) >= 0 || e.unten.stelle(c) >= 0) { // Schnellstile, Leiste unten
+				e.knopfPerTaste(c)
+			} else if c != nil && c == &e.unten.bibKnopf { // Knopf „Library“ der Leiste (ADR-0036 Punkt 1)
 				e.knopfPerTaste(c)
 			}
 			continue
@@ -2344,6 +2376,9 @@ func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
 
 // hinweis ist die Bedienung des aktiven Werkzeugs bzw. der Texteingabe für die Fußzeile (ADR-0021).
 func (e *editor) hinweis() string {
+	if e.bibl.offen { // volle Ansicht der Bibliothek (ADR-0036)
+		return e.bibl.hinweis
+	}
 	if e.exportOffen {
 		return i18n.T("File dialog is open.") // der Dialog kann hinter dem Fenster liegen (A-12)
 	}

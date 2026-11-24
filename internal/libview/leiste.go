@@ -16,7 +16,8 @@ type Masse struct {
 	Rand, Kachel, Luecke, Breite int
 }
 
-// Schritt ist eine Taste, die den Fokus in der Leiste bewegt (ADR-0036 Punkt 1, Fokusfahrt).
+// Schritt ist eine Taste, die den Fokus in der Leiste (ADR-0036 Punkt 1, Fokusfahrt) oder im Raster der vollen Ansicht
+// (Punkt 4) bewegt. Hoch, runter und blättern gibt es nur im Raster.
 type Schritt int
 
 const (
@@ -24,6 +25,10 @@ const (
 	SchrittRechts
 	SchrittAnfang
 	SchrittEnde
+	SchrittHoch
+	SchrittRunter
+	SchrittSeiteHoch
+	SchrittSeiteRunter
 )
 
 // Leiste ist der Zustand der Leiste der letzten Aufnahmen: die gezeigten Einträge (neueste links), die offene Aufnahme,

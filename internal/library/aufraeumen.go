@@ -144,7 +144,52 @@ func (b *Bibliothek) inPapierkorb(ein Eintrag, jetzt time.Time, frist time.Durat
 	if jetzt.Sub(erstellt) <= frist {
 		return Verschoben{}, ErrGeschuetzt
 	}
+	return b.verschiebe(ein.Pfad, quelle, jetzt)
+}
 
+// InPapierkorb legt die Aufnahme rel (Pfad relativ zur Ablage, wie im Index) auf Wunsch des Nutzers in den
+// freedesktop-Papierkorb (volle Ansicht der Bibliothek, Entf; ADR-0036 Punkt 4): ohne die Schutzregeln des Aufräumens
+// (Schlagworte, Bearbeitung, Alter), sonst wie dort — nur eine reguläre Datei in der Ablage, verschoben per Umbenennen
+// samt .trashinfo, rückholbar; auf einem anderen Dateisystem bleibt sie liegen (ErrAnderesDateisystem). Danach fällt sie
+// aus dem Index, und ihre Vorschau wird entfernt. Die offene Aufnahme schließt die Oberfläche selbst aus.
+func (b *Bibliothek) InPapierkorb(rel string, jetzt time.Time) (_ Verschoben, fehler error) {
+	defer errprefix.Defer("library", &fehler)
+	if !(Eintrag{Pfad: rel, Breite: 1, Hoehe: 1}).gueltig() {
+		return Verschoben{}, fmt.Errorf("%w: %q", ErrPfad, rel)
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	quelle := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))
+	st, err := os.Lstat(quelle)
+	if err != nil {
+		return Verschoben{}, err
+	}
+	if !st.Mode().IsRegular() {
+		return Verschoben{}, fmt.Errorf("%w: keine gewöhnliche Datei", ErrPfad)
+	}
+	v, err := b.verschiebe(rel, quelle, jetzt)
+	if err != nil {
+		return Verschoben{}, err
+	}
+	_ = b.entferneVorschau(rel) // keine Kopie im Cache zurücklassen (F-51)
+	g, err := b.lade()
+	if err != nil {
+		return v, fmt.Errorf("%w: %v", ErrIndex, err)
+	}
+	var rest []Eintrag
+	for _, ein := range g.Eintraege {
+		if ein.Pfad != rel {
+			rest = append(rest, ein)
+		}
+	}
+	if err := b.schreibeIndex(rest); err != nil {
+		return v, fmt.Errorf("%w: %v", ErrIndex, err)
+	}
+	return v, nil
+}
+
+// verschiebe legt die Datei quelle (Aufnahme rel) samt .trashinfo in den Papierkorb. Läuft unter b.mu.
+func (b *Bibliothek) verschiebe(rel, quelle string, jetzt time.Time) (Verschoben, error) {
 	dateien := filepath.Join(b.Orte.Papierkorb, "files")
 	infos := filepath.Join(b.Orte.Papierkorb, "info")
 	for _, o := range []string{b.Orte.Papierkorb, dateien, infos} {
@@ -202,7 +247,7 @@ func (b *Bibliothek) inPapierkorb(ein Eintrag, jetzt time.Time, frist time.Durat
 		}
 		return Verschoben{}, err
 	}
-	return Verschoben{Pfad: ein.Pfad, Papierkorb: ziel}, nil
+	return Verschoben{Pfad: rel, Papierkorb: ziel}, nil
 }
 
 // entferneEigeneInfo löscht eine .trashinfo, die dieser Lauf eben selbst exklusiv angelegt hat (Reservierung

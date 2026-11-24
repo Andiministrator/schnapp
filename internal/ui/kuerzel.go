@@ -51,6 +51,14 @@ const (
 	aktEinstellungen  // Menü Datei: Einstellungstafel (Strg+,, ADR-0034)
 	aktTextKopieren   // Menü Bearbeiten: Text aus dem Bild kopieren (Strg+Umschalt+T, ADR-0035)
 	aktLeiste         // Menü Ansicht: Leiste der letzten Aufnahmen ein/aus (Strg+Umschalt+R, ADR-0036 Punkt 2)
+	aktBibliothek     // Menü Datei: volle Ansicht der Bibliothek auf/zu (Strg+Umschalt+L, ADR-0036 Punkt 3)
+	// Menü Bearbeiten bei offener Ansicht der Bibliothek (ADR-0036 Punkt 4). Ihre Tasten (Enter, F2, Entf, Strg+F) holt
+	// die Ansicht selbst ab (bibliothekFilter); sie stehen deshalb nicht in der Tabelle, der Menüeintrag zeigt sie über
+	// menueEintrag.kuerzel (ADR-0026 Nachtrag 10).
+	aktBibOeffnen
+	aktBibSchlagworte
+	aktBibPapierkorb
+	aktBibSuchen
 )
 
 // taste ist ein Tastenkürzel des Editors. Genau eines gilt: akt (Handlung), werkzeug (wählt ein Werkzeug, hatWerkzeug)
@@ -119,6 +127,8 @@ func tastenTabelle() []taste {
 		{filter: key.Filter{Name: "T", Required: key.ModShortcut | key.ModShift}, akt: aktTextKopieren},
 		// R allein ist das Werkzeug Kasten; Strg+Umschalt+R war frei (ADR-0036 Punkt 2).
 		{filter: key.Filter{Name: "R", Required: key.ModShortcut | key.ModShift}, akt: aktLeiste},
+		// L allein ist frei, Strg+L sperrt die Ebene; Strg+Umschalt+L war frei (ADR-0036 Punkt 3).
+		{filter: key.Filter{Name: "L", Required: key.ModShortcut | key.ModShift}, akt: aktBibliothek},
 		wz("V", canvas.WerkzeugAuswahl),
 		wz("A", canvas.WerkzeugPfeil),
 		wz("R", canvas.WerkzeugKasten),

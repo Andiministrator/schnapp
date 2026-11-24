@@ -22,6 +22,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/libview"
 )
 
 // menueEintrag ist eine Zeile des Menüs (ADR-0026 Punkt 2).
@@ -47,6 +48,12 @@ type menueEintrag struct {
 	// Auswahlliste der Einstellungstafel (ADR-0034): Stelle der Option in tafel.optionen.
 	wahl    int
 	hatWahl bool
+	// Auswahl des Zeitraums in der vollen Ansicht der Bibliothek (ADR-0036 Punkt 3).
+	zeitraum    libview.Zeitraum
+	hatZeitraum bool
+	// kuerzel zeigt ein Kürzel, das nicht in der Tastentabelle steht, weil ein eigener Bereich es abholt (Menü
+	// Bearbeiten der vollen Ansicht, ADR-0026 Nachtrag 10).
+	kuerzel string
 }
 
 // menueEintraege liefert die Einträge des offenen Menüs (ADR-0031 Punkt 1) mit dem Zustand der Sitzung.
@@ -77,6 +84,9 @@ func (e *editor) schliessenEintrag() *widget.Clickable {
 // menueKuerzel ist das angezeigte Kürzel eines Eintrags; „Text bearbeiten“ geht mit Enter, ein Werkzeug mit seinem
 // Buchstaben.
 func menueKuerzel(en menueEintrag) string {
+	if en.kuerzel != "" {
+		return en.kuerzel
+	}
 	if en.hatWerkzeug {
 		return werkzeugKuerzel(en.werkzeug)
 	}
@@ -201,6 +211,10 @@ func (e *editor) menueSchliesse(gtx layout.Context, zuKnopf bool) {
 		gtx.Execute(key.FocusCmd{Tag: &e.einst})
 		return
 	}
+	if e.bibl.offen { // volle Ansicht der Bibliothek: Fokus zurück an die Ansicht (ADR-0036 Punkt 4)
+		gtx.Execute(key.FocusCmd{Tag: &e.bibl})
+		return
+	}
 	if zuKnopf {
 		gtx.Execute(key.FocusCmd{Tag: e.listenKnopf(m.welches)})
 	} else {
@@ -302,6 +316,38 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 		return func(layout.Context) { e.s.SchalteNavigator() }
 	case aktLeiste:
 		return func(gtx layout.Context) { e.schalteLeiste(gtx) }
+	case aktBibliothek:
+		return func(gtx layout.Context) {
+			if e.bibl.offen {
+				e.bibliothekSchliessen(&gtx)
+			} else {
+				e.bibliothekOeffnen(gtx)
+			}
+		}
+	case aktBibOeffnen:
+		return func(gtx layout.Context) {
+			if e.bibl.offen {
+				e.bibOeffne(gtx, e.bibl.r.Fokus())
+			}
+		}
+	case aktBibSchlagworte:
+		return func(layout.Context) {
+			if e.bibl.offen {
+				e.bibSchlagworteBeginnen()
+			}
+		}
+	case aktBibPapierkorb:
+		return func(layout.Context) {
+			if e.bibl.offen {
+				e.bibPapierkorb()
+			}
+		}
+	case aktBibSuchen:
+		return func(layout.Context) {
+			if e.bibl.offen {
+				e.bibl.ziel, e.bibl.bearbeite = bibZielSuche, ""
+			}
+		}
 	case aktDoppeln:
 		return func(layout.Context) { e.s.Doppeln() }
 	case aktUmbenennen:
@@ -436,6 +482,8 @@ func (e *editor) listenKnopf(i int) *widget.Clickable {
 		return &e.knoepfe.fussZoom
 	case listeEinstellung:
 		return &e.einst.feldKnopf[max(0, e.einst.listeZeile)]
+	case listeZeitraum:
+		return &e.bibl.zeitraumKnopf
 	}
 	return &e.menue.titel[i]
 }
@@ -505,6 +553,9 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 				continue
 			case en.hatWahl:
 				e.einst.waehle(e.einst.listeZeile, en.wahl)
+				continue
+			case en.hatZeitraum:
+				e.bibSetzeZeitraum(en.zeitraum)
 				continue
 			}
 			e.fuehreAus(gtx, en.akt, true)

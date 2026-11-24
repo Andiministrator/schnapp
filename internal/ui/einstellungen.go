@@ -114,6 +114,10 @@ func (e *editor) einstellungenSchliessen(gtx layout.Context) {
 	if e.menue.offen && e.menue.welches == listeEinstellung {
 		e.menue.offen, e.menue.fokusNach = false, nil
 	}
+	if e.bibl.offen { // über der vollen Ansicht der Bibliothek geöffnet: Fokus zurück an sie (ADR-0036)
+		gtx.Execute(key.FocusCmd{Tag: &e.bibl})
+		return
+	}
 	gtx.Execute(key.FocusCmd{Tag: e})
 }
 

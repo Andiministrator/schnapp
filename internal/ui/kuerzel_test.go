@@ -71,7 +71,8 @@ func TestMenueZeigtKuerzel(t *testing.T) {
 		aktSeitenleiste: "Ctrl+Shift+B", aktDoppeln: "Ctrl+D", aktUmbenennen: "F2", aktAusblenden: "Ctrl+H",
 		aktSperren: "Ctrl+L", aktEbeneVor: "Ctrl+PgUp", aktEbeneZurueck: "Ctrl+PgDn", aktEbeneDarueber: "Alt+PgUp",
 		aktEbeneDarunter: "Alt+PgDn", aktFarbenTauschen: "Ctrl+Shift+X", aktEinrasten: "", aktNavigator: "",
-		aktEinstellungen: "Ctrl+,", aktTextKopieren: "Ctrl+Shift+T", aktLeiste: "Ctrl+Shift+R"}
+		aktEinstellungen: "Ctrl+,", aktTextKopieren: "Ctrl+Shift+T", aktLeiste: "Ctrl+Shift+R",
+		aktBibliothek: "Ctrl+Shift+L"}
 	for i := 0; i < menueAnzahl; i++ {
 		for _, en := range e.menueEintraegeVon(i) {
 			if en.hatWerkzeug {

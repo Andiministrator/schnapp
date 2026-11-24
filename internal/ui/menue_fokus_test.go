@@ -307,7 +307,9 @@ func TestMenueTabFahrtBeiOffenemMenue(t *testing.T) {
 		l.r.MoveFocus(key.FocusForward)
 		l.setle()
 		weg = append(weg, menueFokusName(l))
-		if i := menueFokusNr(l); i >= 0 && !l.e.menueEintraege()[i].an {
+		// Ein grauer Eintrag mit Erklärung ist per Tastatur erreichbar (ADR-0026 Nachtrag 8; im Testfenster ohne
+		// Bibliothek: Datei → Library), einer ohne nicht.
+		if i := menueFokusNr(l); i >= 0 && !l.e.menueEintraege()[i].an && l.e.menueEintraege()[i].erklaerung == "" {
 			t.Errorf("Tab erreicht grauen Eintrag %d", i)
 		}
 	}

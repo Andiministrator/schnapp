@@ -35,6 +35,9 @@ func TestLege(t *testing.T) {
 	if len(ohne) != 14 || len(alle) != 15 {
 		t.Fatalf("%d ohne Agenten, %d insgesamt", len(ohne), len(alle))
 	}
+	if bug, _ := b.Suchen(library.Anfrage{Schlagwort: "login", OhneAgenten: true}); len(bug) != 5 {
+		t.Errorf("Aufnahmen mit „login“: %d", len(bug))
+	}
 	if want := filepath.Join(b.Orte.Ablage, filepath.FromSlash(ohne[1].Pfad)); zweite != want {
 		t.Errorf("zweitneueste %q, Soll %q", zweite, want)
 	}
