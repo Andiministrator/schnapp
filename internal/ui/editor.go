@@ -2146,7 +2146,7 @@ func (e *editor) tasten(gtx layout.Context) {
 						}
 					}
 				} else if t, ok := findeTaste(k.Name, k.Modifiers, e.s.TextLaeuft()); ok && !t.hatWerkzeug &&
-					(t.akt == aktKopieren || t.akt == aktSchliessen) {
+					((t.akt == aktKopieren && !e.bibl.offen) || t.akt == aktSchliessen) { // Strg+C nicht an der Ansicht vorbei (F-678 Punkt 3)
 					e.fuehreAus(gtx, t.akt, false)
 				}
 			}

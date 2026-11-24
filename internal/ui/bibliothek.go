@@ -149,6 +149,12 @@ func (e *editor) bibliothekOeffnen(gtx layout.Context) {
 	if e.unten.l == nil || b.r == nil || b.offen || e.s.Zieht() {
 		return
 	}
+	if e.wechsel.laedt {
+		// Die übernommene Aufnahme schlösse die Ansicht gleich wieder (bibliothekNachWechsel); erst nach dem Laden
+		// öffnen (F-678 Punkt 4).
+		e.melde(i18n.T("Opening another capture. Open the library afterwards."), false)
+		return
+	}
 	e.s.TextBestaetigen()
 	if f := e.fokusFeld(gtx); f != nil {
 		f.neu, f.text, f.fehler = true, "", false
@@ -169,6 +175,9 @@ func (e *editor) bibliothekOeffnen(gtx layout.Context) {
 	gtx.Execute(key.FocusCmd{Tag: b})
 	b.abgleich = true
 	e.bibliothekNeuLesen()
+	if e.unten.v != nil {
+		e.unten.v.Pruefe() // fremd geänderte Vorschauen nicht weiter zeigen (F-677)
+	}
 }
 
 // bibliothekSchliessen schließt die Ansicht; der Fokus geht an die Leinwand (ohne gtx im nächsten Bild).
@@ -375,10 +384,16 @@ func (e *editor) bibSchlagworteBeginnen() {
 func (e *editor) bibSchlagworteUebernehmen() {
 	b := &e.bibl
 	rel, worte := b.bearbeite, libview.ZerlegeSchlagworte(b.worte)
-	b.bearbeite = ""
-	if rel == "" || !e.bibliothekFrei() {
+	if rel == "" {
 		return
 	}
+	if !e.bibliothekFrei() {
+		// Speichern, Wechsel oder eine andere Arbeit läuft: das Feld bleibt offen mit der Eingabe, statt sie still zu
+		// verwerfen (F-678 Punkt 1); Enter danach übernimmt.
+		e.melde(i18n.T("Please wait a moment, then press Enter again."), false)
+		return
+	}
+	b.bearbeite = ""
 	e.bibArbeiten(bibArbeit{rel: rel}, func() error {
 		_, err := e.bib.Bibliothek.SetzeSchlagworte(rel, worte)
 		return err

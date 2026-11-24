@@ -4,6 +4,7 @@ package libview
 
 import (
 	"errors"
+	"fmt"
 	"image"
 	"image/draw"
 	"image/png"
@@ -45,6 +46,7 @@ type stueck struct {
 	zustand Zustand
 	zuletzt uint64 // Zähler der letzten Abfrage (Verdrängen nach Alter)
 	runde   uint64 // Runde der letzten Abfrage (Verwerfen weggerollter Aufträge, F-669)
+	stand   string // Stand der Vorschaudatei vor dem Laden (F-677); leer: unbekannt
 	groesse int64  // belegte Bytes
 }
 
@@ -62,6 +64,9 @@ type Vorschauen struct {
 	stuecke map[string]*stueck
 	warte   []string // Aufträge in der Reihenfolge der Anforderung; die jüngste zuerst geladen (gerade sichtbar)
 	laeuft  bool
+	// stand liefert den Stand der Vorschaudatei von rel (Größe, Zeit, Inode; leer: unlesbar); nil: kein Vergleich.
+	stand   func(rel string) string
+	pruefen bool // eine Prüfung läuft (Pruefe)
 }
 
 // NeueVorschauen legt den Speicher an: lade liest ein Vorschaubild (in der Goroutine), wecke weckt die Oberfläche (darf
@@ -117,6 +122,60 @@ func (v *Vorschauen) Belegt() int64 {
 	return v.belegt
 }
 
+// SetzeStand legt fest, wie der Stand einer Vorschaudatei bestimmt wird (StandFuer); erst danach erkennt Pruefe fremde
+// Änderungen.
+func (v *Vorschauen) SetzeStand(f func(rel string) string) {
+	v.mu.Lock()
+	v.stand = f
+	v.mu.Unlock()
+}
+
+// Pruefe vergleicht im Hintergrund den Stand jeder geladenen Vorschau mit ihrer Datei und wirft geänderte weg: Hat ein
+// anderes Fenster oder Programm die Aufnahme geschwärzt und gespeichert, zeigt die Oberfläche nicht weiter das alte
+// Bild (F-677, Kernprinzip 2). Die nächste Abfrage lädt neu. Die Oberfläche ruft es beim Öffnen der Ansicht und nach
+// jedem Neulesen der Leiste; sie wartet nie darauf.
+func (v *Vorschauen) Pruefe() {
+	v.mu.Lock()
+	if v.stand == nil || v.pruefen {
+		v.mu.Unlock()
+		return
+	}
+	type merk struct {
+		rel   string
+		s     *stueck
+		stand string
+	}
+	var liste []merk
+	for rel, s := range v.stuecke {
+		if s.zustand == Da {
+			liste = append(liste, merk{rel, s, s.stand})
+		}
+	}
+	v.pruefen = true
+	stand, wecke := v.stand, v.wecke
+	v.mu.Unlock()
+	go func() {
+		var weg []merk
+		for _, m := range liste {
+			if neu := stand(m.rel); neu == "" || neu != m.stand {
+				weg = append(weg, m)
+			}
+		}
+		v.mu.Lock()
+		for _, m := range weg {
+			if v.stuecke[m.rel] == m.s {
+				v.belegt -= m.s.groesse
+				delete(v.stuecke, m.rel)
+			}
+		}
+		v.pruefen = false
+		v.mu.Unlock()
+		if len(weg) > 0 && wecke != nil {
+			wecke()
+		}
+	}()
+}
+
 // veraltetNach ist die Zahl der Runden ohne Abfrage, nach der ein wartender Auftrag verfällt; eine Runde Spiel für ein
 // Bild, das gerade zwischen Runde und Abfrage steht.
 const veraltetNach = 1
@@ -141,13 +200,17 @@ func (v *Vorschauen) arbeite() {
 		if s == nil || s.zustand != Laedt {
 			continue // inzwischen vergessen, verdrängt oder weggerollt
 		}
+		stand := ""
+		if v.stand != nil {
+			stand = v.stand(rel) // vor dem Lesen: ändert sich die Datei währenddessen, sieht die nächste Prüfung es
+		}
 		bild, err := v.lade(rel)
 		v.mu.Lock()
 		if v.stuecke[rel] == s { // nicht inzwischen vergessen
 			if err != nil || bild == nil {
 				s.zustand = Kaputt
 			} else {
-				s.bild, s.zustand = bild, Da
+				s.bild, s.zustand, s.stand = bild, Da, stand
 				s.groesse = int64(len(bild.Pix))
 				v.belegt += s.groesse
 				v.verdraenge(s)
@@ -234,5 +297,21 @@ func LaderFuer(b *library.Bibliothek) func(rel string) (*image.NRGBA, error) {
 			bild, err = LadeDatei(b.VorschauPfad(rel))
 		}
 		return bild, err
+	}
+}
+
+// StandFuer liefert den Stand der Vorschaudatei einer Aufnahme in b: Größe, Änderungszeit und Inode (Ersetzen per
+// Umbenennen ändert den Inode); leer, wenn sie fehlt oder unlesbar ist.
+func StandFuer(b *library.Bibliothek) func(rel string) string {
+	return func(rel string) string {
+		fi, err := os.Lstat(b.VorschauPfad(rel))
+		if err != nil {
+			return ""
+		}
+		ino := uint64(0)
+		if st, ok := fi.Sys().(*syscall.Stat_t); ok {
+			ino = st.Ino
+		}
+		return fmt.Sprintf("%d/%d/%d", fi.Size(), fi.ModTime().UnixNano(), ino)
 	}
 }

@@ -925,6 +925,10 @@ msgid "Name reported by the agent (unverified):"
 msgstr ""
 
 #: internal/ui/bibliothek.go
+msgid "Opening another capture. Open the library afterwards."
+msgstr ""
+
+#: internal/ui/bibliothek.go
 msgid "Could not move the capture to the trash: %v"
 msgstr ""
 
@@ -946,6 +950,10 @@ msgstr ""
 
 #: internal/ui/bibliothek.go
 msgid "The keywords of the open capture cannot be changed here. Open another one first."
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Please wait a moment, then press Enter again."
 msgstr ""
 
 #: internal/ui/bibliothek.go

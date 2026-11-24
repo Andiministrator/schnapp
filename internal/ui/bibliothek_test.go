@@ -15,6 +15,7 @@ import (
 	"gioui.org/f32"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
+	"gioui.org/widget"
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -571,4 +572,73 @@ func TestLeisteStartGleichtAb(t *testing.T) {
 	}
 	l.e.leisteStart()
 	l.warte(func() bool { return !l.e.unten.indexLaeuft && len(l.e.unten.l.Eintraege()) == 2 })
+}
+
+// F-674: Bei offener Ansicht öffnen Farb- und Zoomfeld der Fußzeile ihre Liste auch per Tastatur (Enter) nicht.
+func TestBibliothekFusslistenGesperrt(t *testing.T) {
+	l := bibLauf(t, 3)
+	e := l.e
+	for _, c := range []*widget.Clickable{&e.knoepfe.fussFarbe, &e.knoepfe.fussZoom} {
+		e.knopfPerTaste(c)
+		if e.menue.offen && (e.menue.welches == listeFarbe || e.menue.welches == listeZoom) {
+			t.Errorf("Liste %d bei offener Ansicht geöffnet", e.menue.welches)
+		}
+	}
+	l.taste(key.NameEscape, 0)
+	l.bibRuhig()
+	e.knopfPerTaste(&e.knoepfe.fussZoom) // ohne Ansicht geht es wie immer
+	if !e.menue.offen || e.menue.welches != listeZoom {
+		t.Error("Zoomliste ohne Ansicht nicht geöffnet")
+	}
+}
+
+// F-676: Solange die Ansicht Schlagworte schreibt oder in den Papierkorb legt, lädt kein Wechsel.
+func TestWechselWartetAufArbeitDerAnsicht(t *testing.T) {
+	l := bibLauf(t, 3)
+	e := l.e
+	e.s.Gespeichert() // ohne Änderung lädt ein Wechsel sofort (sonst wartete er schon aufs Speichern)
+	tor := make(chan struct{})
+	e.bibArbeiten(bibArbeit{rel: l.rel(0)}, func() error { <-tor; return nil })
+	e.wechselAnfrage(l.pfade[0])
+	time.Sleep(50 * time.Millisecond)
+	if a := l.aufrufe(); len(a) != 0 || e.wechsel.laedt {
+		t.Errorf("geladen während der Arbeit: %v", a)
+	}
+	if e.leisteAn() {
+		t.Error("Leiste bedienbar während der Arbeit")
+	}
+	close(tor)
+	l.bibRuhig()
+}
+
+// F-678 Punkt 1: Ist die Bibliothek beschäftigt, bleibt das Schlagwortfeld mit der Eingabe offen (statt still zu
+// verwerfen), und die Statuszeile sagt es.
+func TestBibliothekSchlagworteWartenStattVerwerfen(t *testing.T) {
+	l := bibLauf(t, 3)
+	b := &l.e.bibl
+	b.bearbeite, b.worte = l.rel(0), "neu"
+	b.arbeitLaeuft = true
+	l.e.bibSchlagworteUebernehmen()
+	b.arbeitLaeuft = false
+	if b.bearbeite != l.rel(0) || b.worte != "neu" {
+		t.Errorf("Feld geschlossen oder Eingabe verloren: %q %q", b.bearbeite, b.worte)
+	}
+	if !strings.Contains(l.e.meldung.Text, "wait") {
+		t.Errorf("Meldung %q", l.e.meldung.Text)
+	}
+}
+
+// F-678 Punkt 4: Während eine andere Aufnahme lädt, öffnet die Ansicht nicht (sie schlösse gleich wieder).
+func TestBibliothekOeffnetNichtWaehrendWechsel(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	l.e.s.Gespeichert()
+	l.tor = make(chan struct{})
+	l.klick(l.kachel(0))
+	l.warte(func() bool { return len(l.aufrufe()) == 1 })
+	l.taste("L", key.ModShortcut|key.ModShift)
+	if l.e.bibl.offen {
+		t.Error("Ansicht während des Wechsels geöffnet")
+	}
+	close(l.tor)
+	l.ruhig()
 }

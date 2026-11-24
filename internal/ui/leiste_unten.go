@@ -143,6 +143,7 @@ func (e *editor) leisteStart() {
 		wecke = e.w.Invalidate
 	}
 	k.v = libview.NeueVorschauen(libview.LaderFuer(e.bib.Bibliothek), wecke, libview.SpeicherGrenze)
+	k.v.SetzeStand(libview.StandFuer(e.bib.Bibliothek)) // fremdes Speichern erkennen (F-677)
 	e.leisteAktuell()
 	e.bibliothekStart()
 	k.abgleich = true
@@ -208,6 +209,7 @@ func (e *editor) leisteIndexAbholen() bool {
 		} else {
 			vorher := k.l.Fokus()
 			k.l.Setze(r.es)
+			k.v.Pruefe() // eine andere Instanz kann eine Aufnahme inzwischen geschwärzt haben (F-677)
 			// Setze hält den Fokus bei derselben Aufnahme; der Tastaturfokus von Gio hängt aber am Knopf der Stelle. Hatte
 			// ein Knopf der Leiste ihn, folgt er der Aufnahme an ihre neue Stelle (F-656) — sonst öffnete Enter nach einer
 			// neuen Aufnahme vorn die Nachbarin.
@@ -277,7 +279,9 @@ func (e *editor) leisteSichtbar(gtx layout.Context) bool {
 
 // leisteAn meldet, ob Klicks und Tasten der Leiste wirken (wie die rechte Leiste: nicht während des Speicherns und
 // unter der Hilfe; dazu nicht, solange ein Wechsel lädt).
-func (e *editor) leisteAn() bool { return e.seiteAn() && !e.wechsel.laedt && !e.einst.offen }
+func (e *editor) leisteAn() bool {
+	return e.seiteAn() && !e.wechsel.laedt && !e.einst.offen && !e.bibl.arbeitLaeuft // F-676
+}
 
 // schalteLeiste schaltet die Leiste ein oder aus und merkt es in settings.ini (ADR-0036 Punkt 2). Im Probe-Lauf eines
 // Drehbuchs (probeLeisteAus) wird nichts gemerkt, sonst kippte der nächste Lauf (Lehre aus F-539).

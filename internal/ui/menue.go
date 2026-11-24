@@ -385,6 +385,11 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 // nächsten Bild (F-255 V-3).
 func (e *editor) menueOeffne(i int, perTaste bool) {
 	m := &e.menue
+	if e.bibl.offen && (i == listeFarbe || i == listeZoom) {
+		// Die volle Ansicht der Bibliothek sperrt Farbe und Zoom der Fußzeile auf jedem Weg, auch per F10, Tab und
+		// Enter (ADR-0036 Teil 2 Punkt 5, ADR-0026 Nachtrag 10, F-674).
+		return
+	}
 	if m.offen && m.welches == i {
 		m.offen = false
 		return

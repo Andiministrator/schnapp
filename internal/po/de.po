@@ -1478,6 +1478,12 @@ msgstr "In diesem Fenster nicht verfügbar: Es kennt keine Bibliothek."
 msgid "Opening…"
 msgstr "Öffnen …"
 
+msgid "Opening another capture. Open the library afterwards."
+msgstr "Eine andere Aufnahme wird geöffnet. Die Bibliothek danach öffnen."
+
+msgid "Please wait a moment, then press Enter again."
+msgstr "Bitte kurz warten, dann noch einmal Enter drücken."
+
 msgid "Text recognition is running. Press Esc to cancel it first."
 msgstr "Die Texterkennung läuft. Erst mit Esc abbrechen."
 

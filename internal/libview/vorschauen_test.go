@@ -318,3 +318,35 @@ func TestVorschauenOhneRundeVerfaelltNichts(t *testing.T) {
 	close(tor)
 	warteBis(t, func() bool { return n.Load() == 3 })
 }
+
+// F-677: Pruefe wirft eine geladene Vorschau weg, deren Datei sich geändert hat (fremdes Speichern, etwa eine Schwärzung
+// in einem anderen Fenster); unveränderte bleiben. Die nächste Abfrage lädt neu.
+func TestVorschauenPruefeErkenntFremdesSpeichern(t *testing.T) {
+	var mu sync.Mutex
+	staende := map[string]string{"a": "1", "b": "1"}
+	var geladen atomic.Int32
+	lade := func(rel string) (*image.NRGBA, error) {
+		geladen.Add(1)
+		return image.NewNRGBA(image.Rect(0, 0, 1, 1)), nil
+	}
+	v := NeueVorschauen(lade, nil, 1<<20)
+	v.SetzeStand(func(rel string) string { mu.Lock(); defer mu.Unlock(); return staende[rel] })
+	v.Bild("a")
+	v.Bild("b")
+	warteBis(t, func() bool { _, za := v.Bild("a"); _, zb := v.Bild("b"); return za == Da && zb == Da })
+	mu.Lock()
+	staende["a"] = "2" // eine andere Instanz hat a gespeichert
+	mu.Unlock()
+	v.Pruefe()
+	warteBis(t, func() bool { v.mu.Lock(); defer v.mu.Unlock(); return !v.pruefen })
+	if _, z := v.Bild("a"); z != Laedt {
+		t.Errorf("geänderte Vorschau bleibt: Zustand %v", z)
+	}
+	if _, z := v.Bild("b"); z != Da {
+		t.Errorf("unveränderte Vorschau verworfen: Zustand %v", z)
+	}
+	warteBis(t, func() bool { _, z := v.Bild("a"); return z == Da })
+	if n := geladen.Load(); n != 3 {
+		t.Errorf("%d Ladevorgänge, erwartet 3 (a, b, a neu)", n)
+	}
+}

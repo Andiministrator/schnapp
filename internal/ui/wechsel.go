@@ -64,6 +64,10 @@ func (e *editor) wechselAnfrage(abs string) {
 		return
 	case e.wechsel.laedt || e.s.SpeichernLaeuft() || e.erzwungen || e.s.SignalVorgemerkt():
 		return // ein Wechsel oder ein Speichern läuft schon; das Fenster schließt
+	case e.bibl.arbeitLaeuft:
+		// Die Ansicht schreibt gerade Schlagworte oder verschiebt in den Papierkorb: erst danach laden, sonst hielte der
+		// Editor einen veralteten Stand oder eine Datei im Papierkorb (F-676).
+		return
 	case e.exportOffen:
 		e.melde(i18n.T("Finish the export first."), false)
 		return
