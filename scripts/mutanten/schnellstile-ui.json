@@ -189,7 +189,7 @@
     "name": "SU27 Speicherfehler wird nicht gemeldet",
     "datei": "internal/ui/schnellstile.go",
     "paket": "./internal/ui",
-    "alt": "e.melde(fmt.Sprintf(i18n.T(\"Could not save the styles: %v\"), ohnePaketpraefix(err.Error())), true)",
+    "alt": "e.melde(fmt.Sprintf(i18n.T(\"Could not save the styles: %v\"), fehlerGrund(err)), true)",
     "neu": "_ = err"
   },
   {
