@@ -428,3 +428,23 @@ schwerer zu prüfen).
   gleich bleiben, oder nur das geänderte Rechteck neu mischen (F-525).
 
 - **Überholt durch ADR-0020 Nachtrag 14 (F-520):** Gio mischt seither ebenfalls in sRGB; das Vorrastern des Fasersaums bleibt, ist aber nicht mehr nötig.
+
+## Nachtrag 12 (24.11.2026): Text an der Naht — Grenze bis zur zeilenweisen Lösung (F-739, F-740)
+
+**Status:** Akzeptiert (Claude Opus 5.5 beim Sprint-Abschluss 12, im Auftrag Andis: „arbeite selbstständig“). Anlass:
+dritter Verify-Lauf V3-1 und V3-2. Ausnahmepfad [S] P3 (docs/qa/sprint-abschluss.md), Lösung mit Karte #281.
+
+1. **Punkt 7 stimmt für Text nicht wörtlich:** Text wird nicht gestaucht. Seine Zeilen stehen starr ab dem
+   abgebildeten Anker; liegt der Anker in einem Streifen, fällt er auf die Naht und die Zeile steht dahinter. Solange
+   ein Teil von Tinte oder Schild sichtbar bleibt (`ObjektSichtbar`, `TextSichtbar`), zeichnen Editor, Renderer und
+   SVG-Export den **ganzen** Text so; ein Text, der nur wenige Pixel aus einem Streifen ragt, steht also lesbar hinter
+   der Naht. Ganz verborgener Text fällt weg (Punkt 7), eine Sprechblase mit nur sichtbarer Spitze zeigt nur das
+   Dreieck (ADR-0021 Nachtrag 14 Punkt 4, F-735).
+2. **Warum vorerst so:** Alle Ausgänge zeigen dasselbe, was der Editor zeigt — kein verdecktes Leck. Stauchen ist
+   kein Schwärzen (Kernprinzip 2 gilt nur für Schwärzen und Verpixeln); wer einen Text loswerden will, löscht oder
+   schwärzt ihn. Die saubere Lösung (Zeilen einzeln prüfen oder Text an der Naht beschneiden, in allen drei
+   Ausgängen gleich) ist eigene Arbeit für einen Sprint, Karte #281.
+3. **Texteingabe (F-740):** Ein Klick mit dem Text- oder Sprechblasen-Werkzeug auf das sichtbare Dreieck einer
+   Blase mit verborgenem Schild öffnet deren Eingabe; der Text erscheint erst, wenn das Schild aus dem Streifen
+   wächst. Gehört zur Lösung unter Karte #281.
+

@@ -543,7 +543,7 @@ wenn das Dreieck entfällt“) für den SVG-Export ein; ADR-0023 Punkt 7 und ADR
    ob Editor, Renderer und Treffer ein Objekt überhaupt ansehen; der Griff an der Spitze bleibt so auch erreichbar,
    wenn das Schild weggeschnitten ist. *(Berichtigt, F-735:)* Der frühere Satz „Gezeichnet wird ohnehin nur, was in der
    Ansicht liegt“ stimmte für Stauch-Streifen nicht: Text wird starr ab seinem Anker gesetzt, ein Anker im Streifen
-   fällt auf die Naht, und die Zeilen standen dahinter lesbar im Bild. Siehe Punkt 4.
+   fällt auf die Naht, und die Zeilen standen dahinter lesbar im Bild. Punkt 4 behebt das, wenn Schrift und Schild ganz verborgen sind; ragt ein Teil heraus, steht der Text weiter ganz hinter der Naht (Grenze, ADR-0023 Nachtrag 12, F-739).
 2. **Export getrennt nach Teilen:** Für den SVG-Export zählt eine Sprechblase in zwei Teilen
    (`Dokument.TextSichtbar`): **Schrift** = Reichweite ohne Spitze (Tinte der Glyphen, mit Füllung das Schild) und
    **Dreieck** = Rechteck um `Spitzendreieck` samt halber Schenkelbreite und 1 Pixel (kein Dreieck, wenn es entfällt).
