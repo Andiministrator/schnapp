@@ -78,5 +78,45 @@
     "alt": "\t\ts.abgelehnt = AblehnungTextVerborgen\n\t\treturn false",
     "neu": "\t\treturn false",
     "timeout": "3m"
+  },
+  {
+    "name": "N11 Renderer: schräge Kanten über abgebildete Ecken statt je Stück (F-695)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\tv := st.Versatz\n\t\tf(zs, func(p document.Punkt) document.Punkt { return p.Plus(v) })",
+    "neu": "\t\t_ = st\n\t\tf(z, z.ansicht)\n\t\tbreak",
+    "timeout": "5m"
+  },
+  {
+    "name": "N12 Renderer: Stück nicht beschnitten (F-695)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\tzs := z\n\t\tzs.rand = image.Rect(int(math.Round(ziel.Min.X)), int(math.Round(ziel.Min.Y)),\n\t\t\tint(math.Round(ziel.Max.X)), int(math.Round(ziel.Max.Y))).Intersect(z.rand)\n\t\tif zs.rand.Empty() {\n\t\t\tcontinue\n\t\t}\n\t\tv := st.Versatz",
+    "neu": "\t\tzs := z\n\t\t_ = ziel\n\t\tv := st.Versatz",
+    "timeout": "5m"
+  },
+  {
+    "name": "N13 Lupen-Linie über abgebildete Ecken (F-695)",
+    "datei": "internal/render/lupe.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\t\tzs.strich([]document.Punkt{abb(a), abb(b)}, false, v.Strich)",
+    "neu": "\t\t\t\tzs.strich([]document.Punkt{z.ansicht(a), z.ansicht(b)}, false, v.Strich)",
+    "timeout": "5m"
+  },
+  {
+    "name": "N14 Editor: schräge Kanten ohne Stücke (F-695)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif vorschau {\n\t\tf(an)\n\t\treturn\n\t}\n\tr = document.Rechteck",
+    "neu": "\tif true || vorschau {\n\t\tf(an)\n\t\treturn\n\t}\n\tr = document.Rechteck",
+    "timeout": "5m"
+  },
+  {
+    "name": "N15 Editor: Stück nicht beschnitten (F-695)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tschnitt := clip.Rect(image.Rect(int(math.Round(z.Min.X)), int(math.Round(z.Min.Y)), int(math.Round(z.Max.X)),\n\t\t\tint(math.Round(z.Max.Y)))).Push(gtx.Ops)",
+    "neu": "\t\tschnitt := clip.Rect(image.Rect(-1<<20, -1<<20, 1<<20, 1<<20)).Push(gtx.Ops)\n\t\t_ = z",
+    "timeout": "5m"
   }
 ]

@@ -21,7 +21,10 @@ func (z zeichner) lupe(v document.Lupe) {
 	strich := v.Strich.Breite > 0 && v.Strich.Farbe.A > 0
 	if strich {
 		if a, b, ok := v.Linie(); ok {
-			z.strich([]document.Punkt{z.ansicht(a), z.ansicht(b)}, false, v.Strich)
+			// Je sichtbarem Bereich und auf ihn beschnitten, wie SVG-Export und Treffer (F-695).
+			z.jeStueck(huelleVon([]document.Punkt{a, b}, v.Strich.Breite/2+1), func(zs zeichner, abb func(document.Punkt) document.Punkt) {
+				zs.strich([]document.Punkt{abb(a), abb(b)}, false, v.Strich)
+			})
 		}
 		z.eckigerRahmen(v.Quelle, v.Strich)
 	}

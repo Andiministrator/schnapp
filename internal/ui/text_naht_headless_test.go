@@ -98,3 +98,57 @@ func TestEditorSchneidetTextAnDerNaht(t *testing.T) {
 }
 
 func rgbaZuNRGBA(c color.RGBA) color.NRGBA { return color.NRGBAModel.Convert(c).(color.NRGBA) }
+
+// F-695 (ADR-0023 Nachtrag 14): Dreieck einer Sprechblase und Verbindungslinie einer Lupe über einer Naht schneidet
+// der Editor ab wie Renderer und SVG-Export: links der Naht wie ohne Stauchen, rechts um die Streifenbreite verschoben.
+func TestEditorSchneidetSchraegeKantenAnDerNaht(t *testing.T) {
+	sp := document.Pt(330, 170)
+	fuell := color.NRGBA{R: 30, G: 90, B: 200, A: 255}
+	gruen := color.NRGBA{G: 160, A: 255}
+	for name, o := range map[string]document.Objekt{
+		"Sprechblase": document.Text{Ort: document.Pt(20, 20), Inhalt: "Hi", Schriftgrad: 40,
+			Farbe: color.NRGBA{A: 255}, Hintergrund: fuell, Spitze: &sp},
+		"Lupe": document.Lupe{Quelle: document.R(document.Pt(20, 20), document.Pt(50, 50)),
+			Ziel: document.R(document.Pt(280, 110), document.Pt(340, 170)), Strich: document.Strich{Farbe: gruen, Breite: 3}},
+	} {
+		d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 400, 200)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := d.Hinzufuegen(o); err != nil {
+			t.Fatal(err)
+		}
+		e := &editor{s: canvas.NeueSitzung(d)}
+		ohne := headlessBild(t, image.Pt(400, 200), func(gtx layout.Context) { e.zeichneObjekte(gtx) })
+		if err := d.SetzeStreifen([]document.Streifen{{Von: 150, Bis: 190}}); err != nil {
+			t.Fatal(err)
+		}
+		mit := headlessBild(t, image.Pt(400, 200), func(gtx layout.Context) { e.zeichneObjekte(gtx) })
+		links, rechts, sichtbar := 0, 0, 0
+		nah := func(a, b color.RGBA) bool {
+			d := func(x, y uint8) bool { return int(x)-int(y) <= 2 && int(y)-int(x) <= 2 }
+			return d(a.R, b.R) && d(a.G, b.G) && d(a.B, b.B) && d(a.A, b.A)
+		}
+		for y := 0; y < 200; y++ {
+			for x := 0; x < 146; x++ {
+				if !nah(mit.RGBAAt(x, y), ohne.RGBAAt(x, y)) {
+					links++
+				}
+			}
+			for x := 154; x < 360; x++ {
+				if !nah(mit.RGBAAt(x, y), ohne.RGBAAt(x+40, y)) {
+					rechts++
+				}
+				if mit.RGBAAt(x, y).A > 0 {
+					sichtbar++
+				}
+			}
+		}
+		if sichtbar == 0 {
+			t.Fatalf("%s: rechts der Naht nichts gezeichnet", name)
+		}
+		if links != 0 || rechts != 0 {
+			t.Errorf("%s: über der Naht nicht abgeschnitten: links %d, rechts %d Pixel abweichend", name, links, rechts)
+		}
+	}
+}

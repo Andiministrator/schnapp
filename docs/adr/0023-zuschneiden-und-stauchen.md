@@ -476,3 +476,22 @@ Tests: `internal/document/stuecke_test.go`, `internal/render/text_naht_test.go`,
 `internal/ui/text_naht_headless_test.go`, `internal/canvas/text_verborgen_test.go`; Mutanten
 `scripts/mutanten/text-naht.json` (N1–N10); Sichtprobe `scripts/drehbuecher/text-naht-281.txt`.
 
+## Nachtrag 14 (24.11.2026): Schräge Kanten über einer Naht wie im SVG-Export (F-695)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #275, Abschluss-Kritik Sprint 12 A-4).
+
+1. Das Dreieck einer Sprechblase (gefüllt mit Schild oder als Schenkel) und die Verbindungslinie einer Lupe zeichnen
+   Renderer (`zeichner.jeStueck`) und Editor (`editor.jeStueck`) je sichtbarem Bereich (`document.Stuecke`, Nachtrag
+   13), um dessen Versatz verschoben und auf ihn beschnitten. Eine schräge Kante, die eine Naht kreuzt, ist dort
+   abgeschnitten wie im SVG-Export (Kacheln) und im Treffer (`Text.Enthaelt` im Original); vorher zog der Renderer sie
+   zwischen den abgebildeten Ecken neu (841 von 896 Pixeln abweichend). ADR-0021 Nachtrag 13 Punkt 2 und ADR-0033
+   Punkt 4 („eine Rechnung wie die Kacheln des SVG-Exports“) stimmen damit auch über einer Naht.
+2. Die Spitze eines Dreiecks, die in einem Streifen liegt, fällt so weg (bisher lag sie auf der Naht). Die
+   Kantenglättung an Bereichskanten rundet um höchstens eine Stufe anders (anderer Ausschnittursprung im Rasterkern).
+3. Pfeile bleiben vorerst über ihre 48 Stützpunkte abgebildet (Punkt 7: mit dem Bild gestaucht), der SVG-Export schneidet
+   sie kachelweise ab; der Unterschied ist als F-745 erfasst. Rechtecke (Kasten, Schild, Rahmen der Lupe, Striche)
+   sind von beiden Rechnungen gleich abgebildet.
+
+Tests: `internal/render/schraege_naht_test.go`, `TestEditorSchneidetSchraegeKantenAnDerNaht`
+(`internal/ui/text_naht_headless_test.go`); Mutanten N11–N15 in `scripts/mutanten/text-naht.json`, S15/S34 nachgezogen.
+

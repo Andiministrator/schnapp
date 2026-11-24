@@ -103,8 +103,8 @@
     "name": "S15 Blase ohne Füllung gezeichnet",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "z.fuelle([][]document.Punkt{umriss}, nil, v.Hintergrund)",
-    "neu": "z.fuelle(nil, nil, v.Hintergrund)"
+    "alt": "zs.fuelle([][]document.Punkt{pts}, nil, v.Hintergrund)",
+    "neu": "zs.fuelle(nil, nil, v.Hintergrund)"
   },
   {
     "name": "S16 Schenkel ohne Breite",
@@ -235,11 +235,11 @@
     "timeout": "3m"
   },
   {
-    "name": "S34 Renderer zeichnet bei nur sichtbarer Spitze den Umriss samt Schild (F-735; äquivalent: die Schildecken liegen dann auf der Naht oder außerhalb der Ansicht, das Vieleck deckt dieselben Pixel wie das Dreieck)",
+    "name": "S34 Renderer zeichnet bei nur sichtbarer Spitze den Umriss samt Schild (F-735; äquivalent: das Schild liegt dann ganz im Streifen oder außerhalb der Ansicht, je Stück beschnitten deckt das Vieleck dieselben Pixel wie das Dreieck, F-695)",
     "datei": "internal/render/render.go",
     "paket": "./internal/fileformat",
-    "alt": "\t\t\t\tif nurSpitze {\n\t\t\t\t\tumriss = []document.Punkt{z.ansicht(sa), z.ansicht(sp), z.ansicht(sb)}",
-    "neu": "\t\t\t\tif false {\n\t\t\t\t\tumriss = []document.Punkt{z.ansicht(sa), z.ansicht(sp), z.ansicht(sb)}",
+    "alt": "\t\t\tif nurSpitze || v.Hintergrund.A == 0 {\n\t\t\t\tumriss = []document.Punkt{sa, sp, sb}",
+    "neu": "\t\t\tif v.Hintergrund.A == 0 {\n\t\t\t\tumriss = []document.Punkt{sa, sp, sb}",
     "timeout": "3m",
     "aequivalent": true
   }

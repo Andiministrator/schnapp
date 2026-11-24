@@ -1829,26 +1829,33 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 			if nurSpitze {
 				umriss = []document.Punkt{sa, sp, sb}
 			}
-			if v.Hintergrund.A > 0 {
-				var pfad clip.Path
-				pfad.Begin(gtx.Ops)
-				for i, p := range umriss {
-					if i == 0 {
-						pfad.MoveTo(an(p))
-					} else {
-						pfad.LineTo(an(p))
-					}
-				}
-				pfad.Close()
-				paint.FillShape(gtx.Ops, v.Hintergrund, clip.Outline{Path: pfad.End()}.Op())
-			} else {
-				var pfad clip.Path
-				pfad.Begin(gtx.Ops)
-				pfad.MoveTo(an(sa))
-				pfad.LineTo(an(sp))
-				pfad.LineTo(an(sb))
-				paint.FillShape(gtx.Ops, v.Farbe, clip.Stroke{Path: pfad.End(), Width: float32(v.SchenkelBreite())}.Op())
+			r := document.Rechteck{Min: umriss[0], Max: umriss[0]}
+			for _, p := range umriss[1:] {
+				r = r.Vereint(document.Rechteck{Min: p, Max: p})
 			}
+			// Je sichtbarem Bereich und auf ihn beschnitten wie Renderer, SVG-Export und Treffer (F-695).
+			e.jeStueck(gtx, r, v.SchenkelBreite()/2+1, an, vorschau, func(abb func(document.Punkt) f32.Point) {
+				if v.Hintergrund.A > 0 {
+					var pfad clip.Path
+					pfad.Begin(gtx.Ops)
+					for i, p := range umriss {
+						if i == 0 {
+							pfad.MoveTo(abb(p))
+						} else {
+							pfad.LineTo(abb(p))
+						}
+					}
+					pfad.Close()
+					paint.FillShape(gtx.Ops, v.Hintergrund, clip.Outline{Path: pfad.End()}.Op())
+				} else {
+					var pfad clip.Path
+					pfad.Begin(gtx.Ops)
+					pfad.MoveTo(abb(sa))
+					pfad.LineTo(abb(sp))
+					pfad.LineTo(abb(sb))
+					paint.FillShape(gtx.Ops, v.Farbe, clip.Stroke{Path: pfad.End(), Width: float32(v.SchenkelBreite())}.Op())
+				}
+			})
 		} else if v.Hintergrund.A > 0 && !nurSpitze {
 			g := v.Grenzen()
 			a, b := an(g.Min), an(g.Max)
@@ -1900,6 +1907,27 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 			sp.Close()
 			paint.FillShape(gtx.Ops, v.Farbe, clip.Outline{Path: sp.End()}.Op())
 		}
+	}
+}
+
+// jeStueck ruft f je sichtbarem Bereich der Ansicht, den r (Original, um rand vergrößert) berührt, auf diesen Bereich
+// beschnitten und mit der Abbildung Original → Ansicht in diesem Bereich (document.Stuecke): Schräge Kanten über einer
+// Naht stehen so wie im Renderer, im SVG-Export und im Treffer (F-695, ADR-0023 Nachtrag 14). Die Vorschau der
+// Ebenenliste bildet das Original ohne Ansicht ab (an) und zeichnet einmal ohne Schnitt.
+func (e *editor) jeStueck(gtx layout.Context, r document.Rechteck, rand float64, an func(document.Punkt) f32.Point,
+	vorschau bool, f func(abb func(document.Punkt) f32.Point)) {
+	if vorschau {
+		f(an)
+		return
+	}
+	r = document.Rechteck{Min: r.Min.Minus(document.Pt(rand, rand)), Max: r.Max.Plus(document.Pt(rand, rand))}
+	for _, st := range e.s.D.Stuecke(r) {
+		z := st.Ziel()
+		schnitt := clip.Rect(image.Rect(int(math.Round(z.Min.X)), int(math.Round(z.Min.Y)), int(math.Round(z.Max.X)),
+			int(math.Round(z.Max.Y)))).Push(gtx.Ops)
+		v := st.Versatz
+		f(func(p document.Punkt) f32.Point { q := p.Plus(v); return f32.Pt(float32(q.X), float32(q.Y)) })
+		schnitt.Pop()
 	}
 }
 

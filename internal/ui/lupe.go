@@ -122,11 +122,14 @@ func (e *editor) zeichneLupe(gtx layout.Context, l document.Lupe, an func(docume
 	strich := l.Strich.Breite > 0 && l.Strich.Farbe.A > 0
 	if strich {
 		if a, b, ok := l.Linie(); ok {
-			var p clip.Path
-			p.Begin(gtx.Ops)
-			p.MoveTo(an(a))
-			p.LineTo(an(b))
-			paint.FillShape(gtx.Ops, l.Strich.Farbe, clip.Stroke{Path: p.End(), Width: float32(l.Strich.Breite)}.Op())
+			// Je sichtbarem Bereich und auf ihn beschnitten wie Renderer, SVG-Export und Treffer (F-695).
+			e.jeStueck(gtx, document.R(a, b), l.Strich.Breite/2+1, an, vorschau, func(abb func(document.Punkt) f32.Point) {
+				var p clip.Path
+				p.Begin(gtx.Ops)
+				p.MoveTo(abb(a))
+				p.LineTo(abb(b))
+				paint.FillShape(gtx.Ops, l.Strich.Farbe, clip.Stroke{Path: p.End(), Width: float32(l.Strich.Breite)}.Op())
+			})
 		}
 		e.lupenRahmen(gtx, l.Quelle, l.Strich, an)
 	}

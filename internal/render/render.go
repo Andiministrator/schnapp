@@ -413,6 +413,34 @@ func (z zeichner) schliessen() {
 
 func (z zeichner) ansicht(p document.Punkt) document.Punkt { return z.d.ZuAnsicht(p) }
 
+// jeStueck ruft f je sichtbarem Bereich der Ansicht, den r (Original) berührt (document.Stuecke), mit einem Zeichner,
+// der auf diesen Bereich beschnitten ist, und der Abbildung Original → Ansicht in diesem Bereich (p + Versatz). So
+// zeichnen Renderer und Editor schräge Kanten über einer Naht wie der SVG-Export und der Treffer: abgeschnitten, nicht
+// zwischen abgebildeten Ecken gerade verbunden (F-695, ADR-0023 Nachtrag 14). Für achsparallele Rechtecke ist das
+// dasselbe wie die Abbildung der Ecken.
+func (z zeichner) jeStueck(r document.Rechteck, f func(zs zeichner, abb func(document.Punkt) document.Punkt)) {
+	for _, st := range z.d.Stuecke(r) {
+		ziel := st.Ziel()
+		zs := z
+		zs.rand = image.Rect(int(math.Round(ziel.Min.X)), int(math.Round(ziel.Min.Y)),
+			int(math.Round(ziel.Max.X)), int(math.Round(ziel.Max.Y))).Intersect(z.rand)
+		if zs.rand.Empty() {
+			continue
+		}
+		v := st.Versatz
+		f(zs, func(p document.Punkt) document.Punkt { return p.Plus(v) })
+	}
+}
+
+// huelleVon ist das umschließende Rechteck der Punkte, um rand vergrößert (Original).
+func huelleVon(pts []document.Punkt, rand float64) document.Rechteck {
+	r := document.Rechteck{Min: pts[0], Max: pts[0]}
+	for _, p := range pts[1:] {
+		r = r.Vereint(document.Rechteck{Min: p, Max: p})
+	}
+	return document.Rechteck{Min: r.Min.Minus(document.Pt(rand, rand)), Max: r.Max.Plus(document.Pt(rand, rand))}
+}
+
 // ebene zeichnet o. Ist die Deckkraft der Ebene unter 100 %, entsteht das Objekt erst in einem durchsichtigen
 // Zwischenbild in der Größe seines Umrisses und wird dann als Ganzes mit der Deckkraft eingemischt (Gruppendeckkraft,
 // ADR-0032 Punkte 2 und 10): Schaft und Spitze, Schild und Schrift überlagern sich nicht doppelt. Im Trockenlauf zählt
@@ -538,21 +566,24 @@ func (z zeichner) objekt(o document.Objekt) error {
 		nurSpitze := z.d.NurSpitzeSichtbar(v)
 		if sa, sp, sb, ok := v.Spitzendreieck(); ok {
 			// Sprechblase (ADR-0021 Nachtrag 13 Punkte 2 und 3): Schild samt Dreieck als ein Vieleck in der Füllfarbe, ohne
-			// Füllung nur die beiden Schenkel als Linie in der Schriftfarbe.
-			if v.Hintergrund.A > 0 {
-				var umriss []document.Punkt
-				if nurSpitze {
-					umriss = []document.Punkt{z.ansicht(sa), z.ansicht(sp), z.ansicht(sb)}
-				} else {
-					for _, p := range document.Sprechblase(v) {
-						umriss = append(umriss, z.ansicht(p))
-					}
-				}
-				z.fuelle([][]document.Punkt{umriss}, nil, v.Hintergrund)
-			} else {
-				z.strich([]document.Punkt{z.ansicht(sa), z.ansicht(sp), z.ansicht(sb)}, false,
-					document.Strich{Farbe: v.Farbe, Breite: v.SchenkelBreite()})
+			// Füllung nur die beiden Schenkel als Linie in der Schriftfarbe. Je sichtbarem Bereich gezeichnet und auf ihn
+			// beschnitten wie im SVG-Export und im Treffer: Eine schräge Kante über einer Naht ist dort abgeschnitten, nicht
+			// zwischen abgebildeten Ecken neu gezogen (F-695, ADR-0023 Nachtrag 14).
+			umriss := document.Sprechblase(v)
+			if nurSpitze || v.Hintergrund.A == 0 {
+				umriss = []document.Punkt{sa, sp, sb}
 			}
+			z.jeStueck(huelleVon(umriss, v.SchenkelBreite()/2+1), func(zs zeichner, abb func(document.Punkt) document.Punkt) {
+				pts := make([]document.Punkt, len(umriss))
+				for i, p := range umriss {
+					pts[i] = abb(p)
+				}
+				if v.Hintergrund.A > 0 {
+					zs.fuelle([][]document.Punkt{pts}, nil, v.Hintergrund)
+				} else {
+					zs.strich(pts, false, document.Strich{Farbe: v.Farbe, Breite: v.SchenkelBreite()})
+				}
+			})
 		} else if v.Hintergrund.A > 0 && !nurSpitze {
 			g := v.Grenzen()
 			r := document.R(z.ansicht(g.Min), z.ansicht(g.Max))
