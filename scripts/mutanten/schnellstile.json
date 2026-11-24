@@ -10,8 +10,8 @@
     "name": "SQ2 Anwenden ohne Bildfaktor",
     "datei": "internal/canvas/schnellstile.go",
     "paket": "./internal/canvas",
-    "alt": "\tg := st.mal(f)\n",
-    "neu": "\tg := st\n"
+    "alt": "g := st.mal(f)\n",
+    "neu": "g := st\n"
   },
   {
     "name": "SQ3 Stand des Werkzeugs zieht den Vordergrund nicht mit",
