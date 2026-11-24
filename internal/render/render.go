@@ -532,23 +532,32 @@ func (z zeichner) objekt(o document.Objekt) error {
 			}
 		}
 	case document.Text:
+		// Nur die Spitze sichtbar (Schild weggeschnitten oder ganz im Streifen): nur das Dreieck, keine Zeile (F-735).
+		nurSpitze := z.d.NurSpitzeSichtbar(v)
 		if sa, sp, sb, ok := v.Spitzendreieck(); ok {
 			// Sprechblase (ADR-0021 Nachtrag 13 Punkte 2 und 3): Schild samt Dreieck als ein Vieleck in der Füllfarbe, ohne
 			// Füllung nur die beiden Schenkel als Linie in der Schriftfarbe.
 			if v.Hintergrund.A > 0 {
 				var umriss []document.Punkt
-				for _, p := range document.Sprechblase(v) {
-					umriss = append(umriss, z.ansicht(p))
+				if nurSpitze {
+					umriss = []document.Punkt{z.ansicht(sa), z.ansicht(sp), z.ansicht(sb)}
+				} else {
+					for _, p := range document.Sprechblase(v) {
+						umriss = append(umriss, z.ansicht(p))
+					}
 				}
 				z.fuelle([][]document.Punkt{umriss}, nil, v.Hintergrund)
 			} else {
 				z.strich([]document.Punkt{z.ansicht(sa), z.ansicht(sp), z.ansicht(sb)}, false,
 					document.Strich{Farbe: v.Farbe, Breite: v.SchenkelBreite()})
 			}
-		} else if v.Hintergrund.A > 0 {
+		} else if v.Hintergrund.A > 0 && !nurSpitze {
 			g := v.Grenzen()
 			r := document.R(z.ansicht(g.Min), z.ansicht(g.Max))
 			z.fuelle([][]document.Punkt{rundesRechteck(r, 0)}, nil, v.Hintergrund)
+		}
+		if nurSpitze {
+			return nil
 		}
 		var face font.Face
 		if !z.trocken() {

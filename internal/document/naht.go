@@ -144,6 +144,18 @@ func (d *Dokument) TextSichtbar(t Text) (schrift, dreieck bool) {
 	return schrift, dreieck
 }
 
+// NurSpitzeSichtbar meldet, ob von einer Sprechblase t nur noch die Spitze in der Ansicht liegt: Schrift und Schild sind
+// weggeschnitten oder ganz in einem Streifen. Renderer und Editor zeichnen dann nur das Dreieck (bzw. die Schenkel),
+// nie die Zeilen: sonst stünde ein weggestauchter Text, starr am Anker gesetzt, hinter der Naht im Bild (F-735), wie
+// der SVG-Export ihn seit F-692 weglässt. Ein Text ohne Spitze fällt dort ohnehin über ObjektSichtbar weg.
+func (d *Dokument) NurSpitzeSichtbar(t Text) bool {
+	if t.Spitze == nil {
+		return false
+	}
+	schrift, _ := d.TextSichtbar(t)
+	return !schrift
+}
+
 // schaetzung ist die grobe obere Schranke für Text und Nummer ohne Schrift (sollte nie gebraucht werden): Text je
 // Zeichen höchstens 1,1 Schriftgrad (Tabulator vier Zeichen), Glyphen bis 0,25 Schriftgrad links und rechts über, von
 // 0,2 Schriftgrad über der Zeile bis 0,3 unter der letzten Grundlinie; Nummer die Ziffernbox des Renderers (halbe

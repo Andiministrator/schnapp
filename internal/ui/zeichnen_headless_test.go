@@ -13,6 +13,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
+	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
 )
 
@@ -129,5 +130,42 @@ func TestEditorZeichnetAuswahlRahmenUndGriffe(t *testing.T) {
 	r3, g3 := zaehle()
 	if r3 != 0 || g3 != 0 {
 		t.Errorf("ausgeblendet: %d Rahmen-, %d Griffpixel, Soll keine", r3, g3)
+	}
+}
+
+// Editor wie Renderer (F-735): Liegt das Schild einer Sprechblase ganz in einem Stauch-Streifen und ragt nur die Spitze
+// heraus, zeichnet zeichneObjekte nur das Dreieck, keine Zeile hinter der Naht.
+func TestEditorZeichnetSprechblaseImStreifenNurDreieck(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 300, 200)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	schrift := color.NRGBA{R: 255, G: 0, B: 0, A: 255}
+	fuell := color.NRGBA{R: 30, G: 90, B: 200, A: 255}
+	sp := document.Pt(270, 95)
+	tx := document.Text{Ort: document.Pt(100.3, 80.6), Inhalt: "GEHEIM-4711\nzwei", Schriftgrad: 14, Farbe: schrift,
+		Hintergrund: fuell, Spitze: &sp}
+	if _, err := d.Hinzufuegen(tx); err != nil {
+		t.Fatal(err)
+	}
+	e := &editor{s: canvas.NeueSitzung(d)}
+	vorher := headlessBild(t, image.Pt(300, 200), func(gtx layout.Context) { e.zeichneObjekte(gtx) })
+	if zaehleFarbe(vorher, schrift) == 0 {
+		t.Fatal("Kontrolle: ohne Streifen keine Schrift gezeichnet")
+	}
+	g := tx.Grenzen()
+	st := document.Streifen{Von: int(g.Min.X) - 6, Bis: int(g.Max.X) + 7}
+	if err := d.SetzeStreifen([]document.Streifen{st}); err != nil {
+		t.Fatal(err)
+	}
+	if !d.NurSpitzeSichtbar(tx) {
+		t.Fatal("Aufbau: Schrift soll im Streifen liegen")
+	}
+	b := headlessBild(t, image.Pt(300, 200), func(gtx layout.Context) { e.zeichneObjekte(gtx) })
+	if n := zaehleFarbe(b, schrift); n > 0 {
+		t.Errorf("%d Pixel in Schriftfarbe: Text hinter der Naht gezeichnet", n)
+	}
+	if zaehleFarbe(b, fuell) == 0 {
+		t.Error("Dreieck fehlt")
 	}
 }

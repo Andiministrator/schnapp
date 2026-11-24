@@ -118,3 +118,82 @@ func TestSprechblaseNichtsSichtbarNichtImSVG(t *testing.T) {
 		t.Errorf("unsichtbare Sprechblase steht im SVG:\n%s", svg)
 	}
 }
+
+// TestSprechblaseImStreifenNurDreieck (F-735): Liegt das Schild einer Sprechblase ganz in einem Stauch-Streifen und
+// ragt nur die Spitze heraus, zeichnet der Renderer nur das Dreieck bzw. die Schenkel. Vorher setzte er die Zeilen starr
+// ab dem Anker auf der Naht, der weggestauchte Text stand lesbar dahinter im Bild (PNG, JPG, Zwischenablage, OCR).
+func TestSprechblaseImStreifenNurDreieck(t *testing.T) {
+	rot := color.NRGBA{255, 0, 0, 255}
+	for _, f := range []struct {
+		name   string
+		zeilen bool
+		sp     document.Punkt
+		fuell  color.NRGBA
+	}{
+		{"Spaltenstreifen gefüllt", false, document.Pt(270, 95), color.NRGBA{30, 90, 200, 255}},
+		{"Zeilenstreifen gefüllt", true, document.Pt(140, 190), color.NRGBA{30, 90, 200, 255}},
+		{"Spaltenstreifen ohne Füllung", false, document.Pt(270, 95), color.NRGBA{}},
+		{"Zeilenstreifen ohne Füllung", true, document.Pt(140, 190), color.NRGBA{}},
+	} {
+		d, err := document.Neu(sichtbarBild(300, 200))
+		if err != nil {
+			t.Fatal(err)
+		}
+		sp := f.sp
+		tx := document.Text{Ort: document.Pt(100.3, 80.6), Inhalt: "GEHEIM-4711\nzwei", Schriftgrad: 14, Farbe: rot,
+			Hintergrund: f.fuell, Spitze: &sp}
+		if _, err := d.Hinzufuegen(tx); err != nil {
+			t.Fatal(err)
+		}
+		g := tx.Grenzen()
+		st := document.Streifen{Von: int(math.Floor(g.Min.X)) - 6, Bis: int(math.Ceil(g.Max.X)) + 6}
+		if f.zeilen {
+			st = document.Streifen{Zeilen: true, Von: int(math.Floor(g.Min.Y)) - 6, Bis: int(math.Ceil(g.Max.Y)) + 6}
+		}
+		if err := d.SetzeStreifen([]document.Streifen{st}); err != nil {
+			t.Fatalf("%s: %v", f.name, err)
+		}
+		if !d.NurSpitzeSichtbar(tx) {
+			t.Fatalf("%s: Aufbau: Schrift soll unsichtbar sein", f.name)
+		}
+		b, err := render.Bild(d)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Ohne Objekt: Vergleichsbild. Jedes geänderte Pixel muss beim abgebildeten Dreieck liegen.
+		leer, err := document.Neu(sichtbarBild(300, 200))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := leer.SetzeStreifen([]document.Streifen{st}); err != nil {
+			t.Fatal(err)
+		}
+		ohne, err := render.Bild(leer)
+		if err != nil {
+			t.Fatal(err)
+		}
+		a, s, c, _ := tx.Spitzendreieck()
+		va, vs, vc := d.ZuAnsicht(a), d.ZuAnsicht(s), d.ZuAnsicht(c)
+		rand := 2 + tx.SchenkelBreite()
+		box := image.Rect(int(math.Floor(min(va.X, vs.X, vc.X)-rand)), int(math.Floor(min(va.Y, vs.Y, vc.Y)-rand)),
+			int(math.Ceil(max(va.X, vs.X, vc.X)+rand)), int(math.Ceil(max(va.Y, vs.Y, vc.Y)+rand)))
+		aussen, schrift := 0, 0
+		for y := b.Bounds().Min.Y; y < b.Bounds().Max.Y; y++ {
+			for x := b.Bounds().Min.X; x < b.Bounds().Max.X; x++ {
+				p, q := b.NRGBAAt(x, y), ohne.NRGBAAt(x, y)
+				if p == q {
+					continue
+				}
+				if !image.Pt(x, y).In(box) {
+					aussen++
+				}
+				if f.fuell.A > 0 && p.R > 200 && p.G < 80 && p.B < 80 {
+					schrift++
+				}
+			}
+		}
+		if aussen > 0 || schrift > 0 {
+			t.Errorf("%s: %d geänderte Pixel außerhalb des Dreiecks, %d in Schriftfarbe (Text hinter der Naht)", f.name, aussen, schrift)
+		}
+	}
+}

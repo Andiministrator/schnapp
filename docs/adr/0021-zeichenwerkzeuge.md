@@ -541,7 +541,9 @@ wenn das Dreieck entfällt“) für den SVG-Export ein; ADR-0023 Punkt 7 und ADR
 
 1. **Reichweite bleibt:** `Reichweite` und `ObjektSichtbar` rechnen weiter mit der Hülle samt Spitze. Sie entscheiden,
    ob Editor, Renderer und Treffer ein Objekt überhaupt ansehen; der Griff an der Spitze bleibt so auch erreichbar,
-   wenn das Schild weggeschnitten ist. Gezeichnet wird ohnehin nur, was in der Ansicht liegt.
+   wenn das Schild weggeschnitten ist. *(Berichtigt, F-735:)* Der frühere Satz „Gezeichnet wird ohnehin nur, was in der
+   Ansicht liegt“ stimmte für Stauch-Streifen nicht: Text wird starr ab seinem Anker gesetzt, ein Anker im Streifen
+   fällt auf die Naht, und die Zeilen standen dahinter lesbar im Bild. Siehe Punkt 4.
 2. **Export getrennt nach Teilen:** Für den SVG-Export zählt eine Sprechblase in zwei Teilen
    (`Dokument.TextSichtbar`): **Schrift** = Reichweite ohne Spitze (Tinte der Glyphen, mit Füllung das Schild) und
    **Dreieck** = Rechteck um `Spitzendreieck` samt halber Schenkelbreite und 1 Pixel (kein Dreieck, wenn es entfällt).
@@ -553,3 +555,13 @@ wenn das Dreieck entfällt“) für den SVG-Export ein; ADR-0023 Punkt 7 und ADR
 3. **Wertvergleich der Objekte (F-694):** Weil `Text.Spitze` ein Zeiger ist und jede Änderung einen neuen setzt,
    vergleicht `document.Gleich` Objekte dem Wert nach (Spitze dereferenziert). `BeendeZug` und die Prüfungen „nichts
    geändert“ in `canvas` nutzen es; ein Zug ohne Wirkung an einer Sprechblase hinterlässt so keinen Rückgängig-Schritt.
+4. **Renderer und Editor wie der Export (F-735, Verify-Lauf V2-1):** `Dokument.NurSpitzeSichtbar(t)` (Spitze gesetzt,
+   Schrift laut `TextSichtbar` unsichtbar) gilt für alle Zeichenwege. Renderer (`render.Bild`, also PNG, JPG,
+   Zwischenablage, Vorschau, Texterkennung) und Editor zeichnen dann nur das Dreieck (gefüllt) bzw. die Schenkel,
+   keine Zeile, keinen Strich und kein Schild. Die Vorschau der Ebenenliste zeigt das Objekt weiter ganz (sie bildet
+   das Original ohne Ansicht ab).
+5. **Basis des Dreiecks im SVG (F-736, bewusst):** Das Dreieck steht im SVG in Originalkoordinaten, auch wenn seine
+   Basis außerhalb der Ansicht liegt. Daraus lassen sich die Lage einer Schildkante und die Basisbreite (meist der
+   Schriftgrad) ablesen, nicht aber Breite, Höhe oder Inhalt des Schilds. Das gleicht dem Bestand (teils sichtbare
+   Pfeile und Kästen stehen ganz im SVG, ADR-0023 Punkt 7) und bleibt so; ein Beschnitt auf die sichtbaren Kacheln
+   wäre eigener Code nur für diesen Fall. Ausnahmepfad [S] P3 (docs/qa/sprint-abschluss.md).

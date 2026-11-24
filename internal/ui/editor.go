@@ -1815,13 +1815,20 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 	case document.Lupe:
 		e.zeichneLupe(gtx, v, an, vorschau)
 	case document.Text:
+		// Wie der Renderer (F-735): Liegt nur die Spitze in der Ansicht, nur das Dreieck, keine Zeile. Die Vorschau der
+		// Ebenenliste zeigt das Objekt ganz.
+		nurSpitze := !vorschau && e.s.D.NurSpitzeSichtbar(v)
 		if sa, sp, sb, ok := v.Spitzendreieck(); ok {
 			// Sprechblase (ADR-0021 Nachtrag 13 Punkte 2 und 3): Schild samt Dreieck als ein Vieleck in der Füllfarbe, ohne
 			// Füllung nur die beiden Schenkel in der Schriftfarbe — dieselben Funktionen des Dokuments wie der Renderer.
+			umriss := document.Sprechblase(v)
+			if nurSpitze {
+				umriss = []document.Punkt{sa, sp, sb}
+			}
 			if v.Hintergrund.A > 0 {
 				var pfad clip.Path
 				pfad.Begin(gtx.Ops)
-				for i, p := range document.Sprechblase(v) {
+				for i, p := range umriss {
 					if i == 0 {
 						pfad.MoveTo(an(p))
 					} else {
@@ -1838,10 +1845,13 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 				pfad.LineTo(an(sb))
 				paint.FillShape(gtx.Ops, v.Farbe, clip.Stroke{Path: pfad.End(), Width: float32(v.SchenkelBreite())}.Op())
 			}
-		} else if v.Hintergrund.A > 0 {
+		} else if v.Hintergrund.A > 0 && !nurSpitze {
 			g := v.Grenzen()
 			a, b := an(g.Min), an(g.Max)
 			paint.FillShape(gtx.Ops, v.Hintergrund, clip.Rect(image.Rect(int(a.X), int(a.Y), int(b.X), int(b.Y))).Op())
+		}
+		if nurSpitze {
+			return
 		}
 		// Zeilen und Striche wie im Renderer: Schrift, Anfang nach der Ausrichtung und Grundlinie aus dem Dokument,
 		// Glyphen aus den Umrissen derselben Datei (ADR-0021 Nachtrag 10 Punkt 5).
