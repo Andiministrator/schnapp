@@ -81,7 +81,7 @@ to hundredths; it is missing if the compositor does not report the logical size 
 returns the same JSON.
 
 ```json
-{"version":"0.5.0"}
+{"version":"0.6.0"}
 ```
 
 for `--version --json`.

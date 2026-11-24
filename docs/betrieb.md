@@ -25,6 +25,9 @@ Weitere Module, je mit eigenem `go.mod`:
 | Modul | Prüfung |
 |---|---|
 | `draw/` (Zeichenpakete, ADR-0012) | `cd draw && go vet ./... && go test ./...` |
+| `ocr/` (schnapp-ocr, tesseract als WebAssembly, ADR-0035 Nachtrag 1) | `cd ocr && go vet ./... && go test ./...` (echte Erkennung, einige Sekunden) |
+| `scripts/mutanten/` (Mutationsprobe, F-371) | `cd scripts/mutanten && go vet . && go test . && go run . -wurzel ../.. -trocken` |
+| `brand/werkzeug/` (Logo und CD, erzeugt) | `cd brand/werkzeug && go vet . && go test .` |
 | `third_party/gio/` (gepatchtes Gio, ADR-0015) | `third_party/gio-patch.sh pruefen` |
 
 **Probeläufe der Oberfläche** ohne echten Bildschirm: `scripts/probe.sh` startet einen virtuellen KWin, Drehbücher
@@ -33,13 +36,14 @@ liegen unter `scripts/drehbuecher/` (Anleitung in `knowledge/topics/lehren.md`).
 
 ## CI
 
-GitHub Actions, `.github/workflows/test.yml` (ADR-0010), läuft bei jedem Push und Pull-Request. Drei Jobs:
+GitHub Actions, `.github/workflows/test.yml` (ADR-0010), läuft bei jedem Push und Pull-Request. Vier Jobs:
 
 | Job | Inhalt |
 |---|---|
 | `wurzel` | gofmt, vet, test, Programm bauen; dazu vet/test mit Tag `probe` |
 | `draw` | gofmt, vet, test im Modul `draw/` |
 | `gio-patch` | Patch passt zu `third_party/gio/` |
+| `ocr` | gofmt, vet, test im Modul `ocr/` (echte Erkennung deu und eng), dann `internal/ocr` gegen das gebaute schnapp-ocr |
 
 Nach einem Push den Lauf ansehen, auch auf **Annotationen** (Abkündigungen kommen dort, solange der Lauf grün ist;
 F-309; öffentliche Check-Run-API je Job, `knowledge/topics/lehren.md` Sprint 9). Die Aktionen sind per Commit-SHA gepinnt (F-43). Die Pins werden beim Sprint-Abschluss geprüft (Punkt „CI-Pins prüfen“ in `docs/qa/sprint-abschluss.md`, F-316). Kein Dependabot: Dessen Pull Requests würden im öffentlichen Repo auflaufen.
@@ -51,7 +55,7 @@ F-309; öffentliche Check-Run-API je Job, `knowledge/topics/lehren.md` Sprint 9)
 ./install.sh --uninstall  # entfernt genau die vier installierten Dateien (schnapp, schnapp-ocr, Desktop-Datei, Symbol)
 ```
 
-Installiert werden Programm, Desktop-Datei (aus `data/schnapp.desktop.in`, ADR-0017; mit `MimeType` für PNG und JPEG
+Installiert werden Programm, schnapp-ocr (scheitert sein Bau, nur eine Warnung, ADR-0035 Nachtrag 2), Desktop-Datei (aus `data/schnapp.desktop.in`, ADR-0017; mit `MimeType` für PNG und JPEG
 und `%f`, also „Öffnen mit“ im Dateimanager) und Symbol. Die Version kommt aus `git describe`; ohne erreichbaren Tag
 `0.0.0-dev+<Kurzhash>` (geänderter Baum `.dirty`), ohne git oder in einem fremden Repo `0.0.0-dev` (F-113). Fehlt in
 der Vorlage die Zeile `[Desktop Entry]`, bricht `install.sh` vor dem Bau ab (F-122).

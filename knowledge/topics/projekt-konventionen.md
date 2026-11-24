@@ -26,7 +26,7 @@ muss.
   `capture`, `library`, `settings`, `selection`, `canvas`, `render`, `ui`, `wlclip` (Zwischenablage-Halter), `portal`
   (Dateidialog), `export`, `wlwire`, `probeguard`, `saveprogress`, `raster16` (Rasterkern, BSD, ADR-0028); dazu `cmd/schnapp`, `cmd/schnapp-fernbedienung` (nur mit Tag `probe`; Tests dann
   `GOFLAGS=-tags=novulkan,nox11,probe go test ./cmd/schnapp-fernbedienung ./cmd/schnapp ./internal/probeguard`). Probeläufe nur über
-  `scripts/probe.sh` (virtueller KWin), nie ein Programm aus `tmp/probe/` von Hand starten. Eigene Module `draw/` (früher `zeichnen/`), `third_party/gio/`, `tmp/` (trennt den Arbeitsordner ab).
+  `scripts/probe.sh` (virtueller KWin), nie ein Programm aus `tmp/probe/` von Hand starten. Eigene Module `draw/` (früher `zeichnen/`), `ocr/` (schnapp-ocr, ADR-0035 Nachtrag 1), `third_party/gio/`, `scripts/mutanten/`, `brand/werkzeug/`, `tmp/` (trennt den Arbeitsordner ab).
 - **Pfade und eigene Dateinamen:** `schnapp` immer klein (`~/Bilder/schnapp/`, `schnapp.desktop`), im Text „Schnapp“.
 - **Kommandozeile englisch:** `--region` (Voreinstellung), `--screen[=NAME]`, `--list-screens`, `--window`, `--repeat`,
   `--no-editor`, `DATEI`, `--ignore-limit DATEI` (ADR-0017 Nachträge 2–6); sie ist Oberfläche und künftig auch Schnittstelle für Agenten (E-14).

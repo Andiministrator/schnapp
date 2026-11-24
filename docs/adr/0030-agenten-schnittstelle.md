@@ -452,3 +452,7 @@ Anlass: Abschluss-Kritik Sprint 12, B-1 und B-2.
 3. **Beispiel ohne Kommentare am Zeilenende:** Der Leser kennt nur Kommentare am Zeilenanfang (ADR-0018). Das Beispiel
    in `docs/agents.md` trug sie hinter den Werten; wer es kopierte, bekam still die Voreinstellung, bei `image = no`
    also weiter das Bild. Das Beispiel steht jetzt mit eigenen Kommentarzeilen, ein Satz erklärt die Regel.
+4. **Fremdpaket `golang.org/x/sys` (ADR-0011, F-726):** Seit Nachtrag 5 ist es eine direkte Abhängigkeit, ohne dass
+   eine Begründung dastand: `cmd/schnapp/sitzung.go` braucht `SO_PEERCRED` (Prozess hinter dem Wayland-Socket) und
+   `internal/export` `renameat2` mit `RENAME_NOREPLACE` (Schreiben ohne Ersetzen). Die Standardbibliothek bietet
+   beides nicht; das Paket (BSD-3-Clause, Go-Projekt) kam schon vorher über Gio in den Bau, neuer Code entsteht nicht.
