@@ -271,5 +271,12 @@
     "paket": "./internal/render",
     "alt": "rand += 0.5 * v.Strich.Breite",
     "neu": "rand += 0 * v.Strich.Breite"
+  },
+  {
+    "name": "K20 Auswahl der Lupe: eine Hülle über beide Rechtecke statt je Rechteck ein Rahmen (F-606)",
+    "datei": "internal/ui/lupe.go",
+    "paket": "./internal/ui",
+    "alt": "return []document.Rechteck{weit(l.Quelle), weit(l.Ziel)}",
+    "neu": "return []document.Rechteck{weit(l.Quelle.Vereint(l.Ziel))}"
   }
 ]

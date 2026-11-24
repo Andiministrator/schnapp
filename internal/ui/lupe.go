@@ -23,6 +23,22 @@ import (
 	"github.com/Andiministrator/schnapp/internal/render"
 )
 
+// auswahlRechtecke sind die Rechtecke, um die die Auswahl einen Rahmen zeichnet (Original): bei den meisten Objekten ihre
+// Grenzen, bei einer Lupe je ein Rahmen um Quelle und um Ziel statt einer Hülle über beide, die bei weit auseinander
+// liegenden Rechtecken einen großen Rahmen über leere Fläche zeigte (F-606, Karte #231). Jedes Rechteck mit dem halben
+// Strich, wie Lupe.Grenzen.
+func auswahlRechtecke(o document.Objekt) []document.Rechteck {
+	l, ok := o.(document.Lupe)
+	if !ok {
+		return []document.Rechteck{o.Grenzen()}
+	}
+	h := l.Strich.Breite / 2
+	weit := func(r document.Rechteck) document.Rechteck {
+		return document.R(r.Min.Minus(document.Pt(h, h)), r.Max.Plus(document.Pt(h, h)))
+	}
+	return []document.Rechteck{weit(l.Quelle), weit(l.Ziel)}
+}
+
 // lupenVorschauSeite ist die größte Seite des Bilds einer Lupe in der Vorschau der Ebenenliste (Pixel).
 const lupenVorschauSeite = 96
 

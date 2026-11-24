@@ -1878,9 +1878,10 @@ func (e *editor) zeichneAuswahl(gtx layout.Context) {
 		q := e.s.Abb.ZuFenster(e.s.D.ZuAnsicht(p))
 		return image.Pt(int(math.Round(q.X)), int(math.Round(q.Y)))
 	}
-	g := o.Grenzen()
-	r := image.Rectangle{Min: fe(g.Min), Max: fe(g.Max)}.Canon()
-	rahmen(gtx.Ops, r.Inset(-gtx.Dp(2)), gtx.Dp(1), farbeAuswahl)
+	for _, g := range auswahlRechtecke(o) {
+		r := image.Rectangle{Min: fe(g.Min), Max: fe(g.Max)}.Canon()
+		rahmen(gtx.Ops, r.Inset(-gtx.Dp(2)), gtx.Dp(1), farbeAuswahl)
+	}
 	h := gtx.Dp(5)
 	if o.Ebenenwerte().Gesperrt {
 		return // gesperrt: Rahmen ohne Griffe (Punkt 5)
