@@ -7,9 +7,10 @@
 //	schnapp-ocr --list-langs
 //	schnapp-ocr - - -l deu [--psm 3] [--progress]
 //
-// Das Bild kommt als PNG (oder JPEG) über stdin, der Text geht über stdout. Mit --progress meldet das Programm den
+// Das Bild kommt als PNG oder JPEG über stdin, der Text geht über stdout. Mit --progress meldet das Programm den
 // Fortschritt auf stderr als Zeilen „progress N“ (N von 0 bis 100). Je Aufruf genau eine Sprache: Die WASM-Fassung
-// lädt Sprachdaten aus dem Speicher, und das kann tesseract nur für ein Modell.
+// lädt Sprachdaten aus dem Speicher, und das kann tesseract nur für ein Modell. Exit 0: erkannt, 1: Fehler beim Bild
+// oder bei der Erkennung, 2: falscher Aufruf.
 package main
 
 import (
@@ -18,6 +19,9 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"image"
+	_ "image/jpeg" // Kopf von JPEG für die Pixelgrenze
+	_ "image/png"  // Kopf von PNG für die Pixelgrenze
 	"io"
 	"os"
 	"slices"
@@ -35,8 +39,27 @@ var tessdata embed.FS
 // sprachen sind die eingebauten Sprachen in der Reihenfolge von --list-langs.
 var sprachen = []string{"deu", "eng"}
 
-// maxEingabe begrenzt das gelesene Bild (internal/ocr schickt höchstens 40 Mpx als PNG).
-const maxEingabe = 512 << 20
+// Grenzen des Bilds (F-646): dieselben wie in internal/ocr (MaxPixel, MaxSeite), damit ein direkter Aufruf mit einem
+// kleinen, aber riesig angekündigten Bild nicht Gigabyte belegt (WASM bis 4 GiB). Geprüft wird der Kopf, vor dem
+// Laden. maxEingabe begrenzt die gelesenen Bytes: ein PNG von 40 Mio. Pixeln mit BestSpeed aus internal/ocr ist
+// höchstens rund 160 MB groß (4 Byte je Pixel, kaum komprimiert).
+const (
+	maxPixel   = 40_000_000
+	maxSeite   = 32767
+	maxEingabe = 192 << 20
+)
+
+// Kurze eigene Fehlertexte (F-649): Die Fehler von gogosseract tragen Go-Interna („gogosseract.(*Tesseract)…“,
+// „%!w(<nil>)“), die als letzte Zeile bis in die Fußzeile von Schnapp gingen.
+var (
+	errAufruf       = errors.New("usage: schnapp-ocr --list-langs | schnapp-ocr - - -l LANG [--psm N] [--progress]")
+	errKeinBild     = errors.New("no image on standard input")
+	errZuGrossDatei = errors.New("the image is too large")
+	errZuGross      = errors.New("the image is too large for text recognition (at most 40 million pixels, 32767 per side)")
+	errUnlesbar     = errors.New("cannot read the image (PNG or JPEG expected)")
+	errStart        = errors.New("cannot start text recognition")
+	errErkennung    = errors.New("text recognition failed")
+)
 
 // auftrag ist ein gelesener Aufruf.
 type auftrag struct {
@@ -46,8 +69,6 @@ type auftrag struct {
 	psm         int
 	fortschritt bool
 }
-
-var errAufruf = errors.New("usage: schnapp-ocr --list-langs | schnapp-ocr - - -l LANG [--psm N] [--progress]")
 
 // leseArgumente versteht genau die Aufrufe oben; alles andere ist ein Fehler (kein stilles Übergehen).
 func leseArgumente(args []string) (auftrag, error) {
@@ -96,69 +117,107 @@ func leseArgumente(args []string) (auftrag, error) {
 }
 
 func main() {
-	a, err := leseArgumente(os.Args[1:])
+	os.Exit(lauf(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
+}
+
+// lauf ist das Programm ohne Prozess: liest args und das Bild aus ein, schreibt Text nach aus und Meldungen nach
+// fehler, liefert den Exit-Code.
+func lauf(args []string, ein io.Reader, aus, fehler io.Writer) int {
+	a, err := leseArgumente(args)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "schnapp-ocr:", err)
-		os.Exit(2)
+		fmt.Fprintln(fehler, "schnapp-ocr:", err)
+		return 2
 	}
 	switch {
 	case a.liste:
-		fmt.Printf("List of available languages in \"schnapp-ocr\" (%d):\n", len(sprachen))
+		fmt.Fprintf(aus, "List of available languages in \"schnapp-ocr\" (%d):\n", len(sprachen))
 		for _, s := range sprachen {
-			fmt.Println(s)
+			fmt.Fprintln(aus, s)
 		}
-		return
+		return 0
 	case a.ver:
-		fmt.Println("schnapp-ocr", version)
-		return
+		fmt.Fprintln(aus, "schnapp-ocr", version)
+		return 0
 	}
 	// Abbruch: SIGTERM/SIGINT beenden den Prozess (Voreinstellung von Go). Ein Kontext erreichte die laufende
 	// Erkennung nicht, gogosseract startet wazero ohne CloseOnContextDone; internal/ocr beendet den Prozess.
-	ctx := context.Background()
-	bild, err := io.ReadAll(io.LimitReader(os.Stdin, maxEingabe+1))
-	if err == nil && len(bild) > maxEingabe {
-		err = errors.New("the image is too large")
+	bild, err := leseBild(ein, maxEingabe)
+	if err == nil {
+		err = pruefeBild(bild)
 	}
 	if err == nil {
 		var text string
-		text, err = erkenne(ctx, a, bild, os.Stderr)
+		text, err = erkenne(context.Background(), a, bild, fehler)
 		if err == nil {
-			_, err = io.WriteString(os.Stdout, text)
+			_, err = io.WriteString(aus, text)
 		}
 	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "schnapp-ocr:", err)
-		os.Exit(1)
+		fmt.Fprintln(fehler, "schnapp-ocr:", err)
+		return 1
 	}
+	return 0
+}
+
+// leseBild liest höchstens grenze Bytes; ein größeres Bild ist ein Fehler.
+func leseBild(ein io.Reader, grenze int64) ([]byte, error) {
+	bild, err := io.ReadAll(io.LimitReader(ein, grenze+1))
+	if err != nil {
+		return nil, errUnlesbar
+	}
+	if int64(len(bild)) > grenze {
+		return nil, errZuGrossDatei
+	}
+	return bild, nil
+}
+
+// pruefeBild liest nur den Kopf (PNG oder JPEG) und lehnt ein Bild über den Grenzen ab, bevor tesseract es lädt.
+func pruefeBild(bild []byte) error {
+	if len(bild) == 0 {
+		return errKeinBild
+	}
+	k, _, err := image.DecodeConfig(bytes.NewReader(bild))
+	if err != nil || k.Width <= 0 || k.Height <= 0 {
+		return errUnlesbar
+	}
+	if k.Width > maxSeite || k.Height > maxSeite || int64(k.Width)*int64(k.Height) > maxPixel {
+		return errZuGross
+	}
+	return nil
+}
+
+// konfig ist die Einstellung von tesseract für den Auftrag a mit den Sprachdaten daten. Die Ausgaben von tesseract
+// selbst (etwa „Estimating resolution“) werden verworfen: Sie gehören weder in den Text noch in die Meldung.
+func konfig(a auftrag, daten []byte) gogosseract.Config {
+	cfg := gogosseract.Config{
+		Language:     a.sprache,
+		TrainingData: bytes.NewReader(daten),
+		Variables:    map[string]string{"tessedit_pageseg_mode": strconv.Itoa(a.psm)},
+	}
+	cfg.Stdout, cfg.Stderr = io.Discard, io.Discard
+	return cfg
 }
 
 // erkenne startet tesseract in WebAssembly mit der Sprache a.sprache, lädt das Bild und liefert den Text. Mit
 // a.fortschritt gehen Zeilen „progress N“ an fehler.
 func erkenne(ctx context.Context, a auftrag, bild []byte, fehler io.Writer) (string, error) {
 	if len(bild) == 0 {
-		return "", errors.New("no image on standard input")
+		return "", errKeinBild
 	}
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
 	daten, err := tessdata.ReadFile("tessdata/" + a.sprache + ".traineddata")
 	if err != nil {
-		return "", err
+		return "", errStart
 	}
-	cfg := gogosseract.Config{
-		Language:     a.sprache,
-		TrainingData: bytes.NewReader(daten),
-		Variables:    map[string]string{"tessedit_pageseg_mode": strconv.Itoa(a.psm)},
-	}
-	// tesseract schreibt Hinweise (etwa „Estimating resolution“) auf seine Ausgaben; die gehören nicht in den Text.
-	cfg.Stdout, cfg.Stderr = io.Discard, io.Discard
-	t, err := gogosseract.New(ctx, cfg)
+	t, err := gogosseract.New(ctx, konfig(a, daten))
 	if err != nil {
-		return "", fmt.Errorf("start: %w", err)
+		return "", errStart
 	}
 	defer t.Close(context.WithoutCancel(ctx))
 	if err := t.LoadImage(ctx, bytes.NewReader(bild), gogosseract.LoadImageOptions{}); err != nil {
-		return "", fmt.Errorf("load image: %w", err)
+		return "", errUnlesbar
 	}
 	letzter := int32(-1)
 	melde := func(p int32) {
@@ -169,7 +228,7 @@ func erkenne(ctx context.Context, a auftrag, bild []byte, fehler io.Writer) (str
 	}
 	text, err := t.GetText(ctx, melde)
 	if err != nil {
-		return "", fmt.Errorf("recognize: %w", err)
+		return "", errErkennung
 	}
 	return text, nil
 }
