@@ -17,7 +17,9 @@ import (
 func TestRepoRegelnSPDXUndTestnamen(t *testing.T) {
 	wurzel := filepath.Join("..", "..")
 	auslassen := map[string]bool{"third_party": true, "tmp": true, ".git": true, ".claude": true, "raster16": true}
-	arbeitsschritt := regexp.MustCompile(`(kritik|_qa|verify|_k[0-9]+|_[0-9]{3}|_s[0-9]+)[a-z0-9]*_test\.go$`)
+	// Namen nach Kritik, Prüflauf, Karte, Finding, Sprint oder Runde (Kritik C-5); eine Zahl allein als letzter Teil
+	// (`farbwahl_220_test.go`) ebenso, Sachnamen mit Zahl in der Mitte (`sha_256_…`) nicht.
+	arbeitsschritt := regexp.MustCompile(`(kritik|_qa|verify|(^|_)qs[0-9]+|_k[0-9]+|_f[0-9]+|karte[0-9]+|sprint[0-9]+|nacharbeit|runde[0-9]+|_s[0-9]+|_[0-9]{3})_test\.go$|(kritik|(^|_)qa_|_verify)`)
 	geprueft := 0
 	err := filepath.WalkDir(wurzel, func(pfad string, d fs.DirEntry, err error) error {
 		if err != nil {

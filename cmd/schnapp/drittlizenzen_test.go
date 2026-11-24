@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -84,5 +85,71 @@ func pruefeDatei(t *testing.T, ordner, name string) {
 	t.Helper()
 	if st, err := os.Stat(filepath.Join(ordner, name)); err != nil || st.Size() == 0 {
 		t.Errorf("Lizenzdatei %s fehlt oder ist leer: %v", name, err)
+	}
+}
+
+// Kritik C-3 (F-719): Lizenz-, Copying-, Notice- und Patents-Dateien liegen auch unterhalb der Modulwurzel (etwa
+// go-text/typesetting/harfbuzz, MIT; x/exp/shiny/materialdesign/icons, Apache-2.0). Jede solche Datei in der Ordnerkette
+// eines eingebauten Pakets bis zur Modulwurzel muss inhaltsgleich in THIRD-PARTY-LICENSES liegen.
+func TestDrittlizenzenAufPaketebene(t *testing.T) {
+	gehe, err := exec.LookPath("go")
+	if err != nil {
+		t.Fatalf("go nicht gefunden: %v", err)
+	}
+	cmd := exec.Command(gehe, "list", "-deps", "-f", "{{.Dir}}|{{with .Module}}{{if .Version}}{{.Dir}}{{end}}{{end}}", ".")
+	cmd.Env = append(os.Environ(), "GOFLAGS=-tags=novulkan,nox11")
+	aus, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("go list: %v", err)
+	}
+	ordner := filepath.Join("..", "..", "THIRD-PARTY-LICENSES")
+	eintraege, err := os.ReadDir(ordner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var vorhanden [][]byte
+	for _, e := range eintraege {
+		if b, err := os.ReadFile(filepath.Join(ordner, e.Name())); err == nil {
+			vorhanden = append(vorhanden, b)
+		}
+	}
+	lizenz := regexp.MustCompile(`(?i)^(licen[cs]e|copying|notice|patents|unlicense)`)
+	geprueft := map[string]bool{}
+	for _, z := range strings.Split(string(aus), "\n") {
+		dir, modul, ok := strings.Cut(z, "|")
+		if !ok || modul == "" {
+			continue // Standardbibliothek und eigenes Modul (go-LICENSE.txt bzw. GPL)
+		}
+		for d := dir; ; d = filepath.Dir(d) {
+			if !geprueft[d] {
+				geprueft[d] = true
+				dateien, _ := os.ReadDir(d)
+				for _, f := range dateien {
+					if f.IsDir() || !lizenz.MatchString(f.Name()) {
+						continue
+					}
+					inhalt, err := os.ReadFile(filepath.Join(d, f.Name()))
+					if err != nil {
+						t.Fatal(err)
+					}
+					gefunden := false
+					for _, v := range vorhanden {
+						if bytes.Equal(v, inhalt) {
+							gefunden = true
+							break
+						}
+					}
+					if !gefunden {
+						t.Errorf("Lizenzdatei %s fehlt in THIRD-PARTY-LICENSES", filepath.Join(d, f.Name()))
+					}
+				}
+			}
+			if d == modul || len(d) <= len(modul) {
+				break
+			}
+		}
+	}
+	if len(geprueft) == 0 {
+		t.Fatal("keine Fremdpakete geprüft")
 	}
 }

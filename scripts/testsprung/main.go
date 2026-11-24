@@ -5,7 +5,7 @@
 // wenn ein Test scheiterte oder ein Test übersprungen wurde, der nicht in der Liste der erlaubten Sprünge steht. So
 // bleibt die CI nicht still grün, wenn etwa tesseract oder rsvg-convert fehlt.
 //
-// Aufruf (bash mit pipefail, wie in der CI):
+// Aufruf (bash mit pipefail, in der CI über defaults.run.shell: bash):
 //
 //	go test -json ./... | go run ./scripts/testsprung -erlaubt scripts/testsprung/erlaubt.txt
 //
@@ -46,6 +46,7 @@ type ergebnis struct {
 	sprünge                []sprung
 	fehlerAusgabe          []string // Ausgabe gescheiterter Tests und Pakete, in Reihenfolge
 	ungenutzt              []string // erlaubte Sprünge, die nicht vorkamen
+	ohneEnde               []string // gestartete Pakete ohne pass/fail/skip: der Lauf wurde abgeschnitten
 	ereignisse             int
 }
 
@@ -86,6 +87,7 @@ func werte(r io.Reader, erlaubt map[schluessel]bool) (ergebnis, error) {
 	var erg ergebnis
 	ausgabe := map[schluessel][]string{}
 	genutzt := map[schluessel]bool{}
+	offen := map[string]bool{} // gestartete Pakete ohne Ende-Ereignis
 	s := bufio.NewScanner(r)
 	s.Buffer(make([]byte, 1<<20), 16<<20)
 	for s.Scan() {
@@ -101,6 +103,14 @@ func werte(r io.Reader, erlaubt map[schluessel]bool) (ergebnis, error) {
 			e.Package = e.ImportPath
 		}
 		k := schluessel{e.Package, e.Test}
+		if e.Test == "" {
+			switch e.Action {
+			case "start":
+				offen[e.Package] = true
+			case "pass", "fail", "skip":
+				delete(offen, e.Package)
+			}
+		}
 		switch e.Action {
 		case "output", "build-output":
 			ausgabe[k] = append(ausgabe[k], e.Output)
@@ -133,6 +143,10 @@ func werte(r io.Reader, erlaubt map[schluessel]bool) (ergebnis, error) {
 	if err := s.Err(); err != nil {
 		return erg, err
 	}
+	for p := range offen {
+		erg.ohneEnde = append(erg.ohneEnde, p)
+	}
+	sort.Strings(erg.ohneEnde)
 	for k := range erlaubt {
 		if !genutzt[k] {
 			erg.ungenutzt = append(erg.ungenutzt, k.paket+" "+k.test)
@@ -177,7 +191,10 @@ func bericht(w io.Writer, erg ergebnis) bool {
 	for _, u := range erg.ungenutzt {
 		fmt.Fprintf(w, "  Hinweis: erlaubter Sprung kam nicht vor: %s\n", u)
 	}
-	ok := erg.gescheitert == 0 && unerlaubt == 0 && erg.ereignisse > 0 && len(erg.fehlerAusgabe) == 0
+	for _, p := range erg.ohneEnde {
+		fmt.Fprintf(w, "testsprung: Paket %s ohne Ende (Lauf abgeschnitten?)\n", p)
+	}
+	ok := erg.gescheitert == 0 && unerlaubt == 0 && erg.ereignisse > 0 && len(erg.fehlerAusgabe) == 0 && len(erg.ohneEnde) == 0
 	switch {
 	case erg.ereignisse == 0:
 		fmt.Fprintln(w, "testsprung: keine Ereignisse gelesen (lief go test mit -json?)")

@@ -7,6 +7,12 @@ on:
 permissions:
   contents: read
 
+# bash mit pipefail in jedem Schritt: ohne ausdrückliche Shell startet der Runner nur `bash -e {0}`, dann zählt in einer
+# Pipe allein das letzte Glied, und ein scheiterndes `go test` vor `testsprung` bliebe ungesehen (Kritik C-1).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   # Wurzelmodul (Programm, ui, i18n, po) gegen das gepatchte Gio (cgo, nur Wayland)
   wurzel:
@@ -32,7 +38,8 @@ jobs:
         run: test -z "$(gofmt -l $(go list -f '{{.Dir}}' ./...) $(GOFLAGS=-tags=novulkan,nox11,probe go list -f '{{.Dir}}' ./...))"
       - run: go vet ./...
       # Jeder übersprungene Test steht im Protokoll; ein Sprung, der nicht in scripts/testsprung/erlaubt.txt steht, lässt
-      # den Schritt scheitern (F-714). bash der Runner läuft mit pipefail: ein Fehler von go test schlägt ebenfalls durch.
+      # den Schritt scheitern (F-714). Mit `defaults.run.shell: bash` (oben) läuft der Schritt mit pipefail: ein Fehler von
+      # go test schlägt ebenfalls durch; einen abgeschnittenen Lauf erkennt testsprung selbst (Paket ohne Ende).
       - name: go test (Sprünge sichtbar)
         run: go test -json ./... | go run ./scripts/testsprung -erlaubt scripts/testsprung/erlaubt.txt
       # Zeichnen des Editors ohne Fenster (Gio headless über EGL surfaceless, internal/ui/zeichnen_headless_test.go):
@@ -55,7 +62,8 @@ jobs:
         run: |
           curl -sSfL -o "$SCHNAPP_SCHRIFT" https://raw.githubusercontent.com/googlefonts/opensans/bd7e37632246368c60fdcbd374dbf9bad11969b6/fonts/ttf/OpenSans-SemiBold.ttf
           echo "4a413711684a9dd564ef0f1c10cb62b5d9f7eb6df2cff962f5341a6ecd5f64ae  $SCHNAPP_SCHRIFT" | sha256sum -c -
-          test -z "$(gofmt -l .)" && go vet .
+          test -z "$(gofmt -l .)"
+          go vet .
           go test -json . | (cd ../.. && go run ./scripts/testsprung)
       # install.sh mit eigenem HOME und go-Attrappe (F-324)
       - run: scripts/install-test.sh

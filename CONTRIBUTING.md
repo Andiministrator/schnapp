@@ -47,7 +47,7 @@ logo files in [`brand/logo/`](brand/logo/README.md).
 
 ## Commits and checks
 
-- Conventional Commits: `<type>(<scope>): <description>`, types `feat fix docs refactor chore style test perf`.
+- Conventional Commits: `<type>(<scope>): <description>`, types `feat fix docs refactor chore style test perf ci`.
 - Before a pull request: `gofmt`, `go vet ./...` and `go test ./...` in every module you touched.
 - The root module links Gio, which needs cgo (`libwayland-dev`, `libegl-dev`, `libxkbcommon-dev`) and the build tags
   `novulkan,nox11` (no Vulkan headers, Wayland only). Pass them through the environment, e.g.

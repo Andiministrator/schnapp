@@ -99,3 +99,21 @@ func TestListeMitFalscherZeile(t *testing.T) {
 		t.Error("Zeile ohne Testname angenommen")
 	}
 }
+
+// Ein abgeschnittener Lauf (Paket gestartet, kein Ende) scheitert, auch ohne gescheiterten Test (Kritik C-1).
+func TestAbgeschnittenerLaufScheitert(t *testing.T) {
+	ereignisse := `{"Action":"start","Package":"x/a"}
+{"Action":"run","Package":"x/a","Test":"TestGut"}
+{"Action":"output","Package":"x/a","Test":"TestGut","Output":"=== RUN   TestGut\n"}
+`
+	_, text, ok := lies(t, "", ereignisse)
+	if ok || !strings.Contains(text, "Paket x/a ohne Ende") {
+		t.Errorf("abgeschnittener Lauf: ok=%v\n%s", ok, text)
+	}
+	vollstaendig := ereignisse + `{"Action":"pass","Package":"x/a","Test":"TestGut"}
+{"Action":"pass","Package":"x/a"}
+`
+	if _, text, ok := lies(t, "", vollstaendig); !ok {
+		t.Errorf("vollständiger Lauf gilt als Fehler:\n%s", text)
+	}
+}

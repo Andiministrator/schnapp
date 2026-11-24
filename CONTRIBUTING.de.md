@@ -50,7 +50,7 @@ PDF); Logo-Dateien in [`brand/logo/`](brand/logo/README.md).
 
 ## Commits und Prüfungen
 
-- Conventional Commits: `<typ>(<bereich>): <beschreibung>`, Typen `feat fix docs refactor chore style test perf`.
+- Conventional Commits: `<typ>(<bereich>): <beschreibung>`, Typen `feat fix docs refactor chore style test perf ci`.
 - Vor einem Pull Request: `gofmt`, `go vet ./...` und `go test ./...` in jedem berührten Modul.
 - Das Wurzelmodul bindet Gio ein; das braucht cgo (`libwayland-dev`, `libegl-dev`, `libxkbcommon-dev`) und die Build-Tags
   `novulkan,nox11` (keine Vulkan-Header, nur Wayland). Sie kommen über die Umgebung, etwa
