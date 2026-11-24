@@ -532,26 +532,20 @@ func mischeEbene(bild, q *image.NRGBA, p int) {
 func (z zeichner) objekt(o document.Objekt) error {
 	switch v := o.(type) {
 	case document.Pfeil:
+		// Über die 48 Stützpunkte abgebildet (ADR-0023 Nachtrag 15 Punkt 2): Außerhalb des Kantenbands einer Naht ist das
+		// dasselbe wie das Abschneiden des SVG-Exports, und es kostet nicht je Bereich (F-136: bis zu MaxStreifen Nähte).
 		const n = 48
-		org := make([]document.Punkt, 0, n+1)
+		pts := make([]document.Punkt, 0, n+1)
 		for i := 0; i <= n; i++ {
-			org = append(org, v.Punkt(float64(i)/n))
+			pts = append(pts, z.ansicht(v.Punkt(float64(i)/n)))
 		}
+		z.strich(pts, false, v.Strich)
 		r := v.RichtungAmEnde()
 		g := math.Max(8, 4*v.Strich.Breite)
 		nrm := document.Pt(-r.Y, r.X)
 		fuss := v.B.Minus(r.Mal(g))
-		spitze := []document.Punkt{v.B, fuss.Plus(nrm.Mal(g / 2)), fuss.Minus(nrm.Mal(g / 2))}
-		// Je sichtbarem Bereich und auf ihn beschnitten wie der SVG-Export: Ein Pfeil über einer Naht ist dort
-		// abgeschnitten wie das Bild, nicht gestaucht (F-745, ADR-0023 Nachtrag 15).
-		z.jeStueck(huelleVon(append(org, spitze...), v.Strich.Breite/2+1), func(zs zeichner, abb func(document.Punkt) document.Punkt) {
-			pts := make([]document.Punkt, len(org))
-			for i, p := range org {
-				pts[i] = abb(p)
-			}
-			zs.strich(pts, false, v.Strich)
-			zs.fuelle([][]document.Punkt{{abb(spitze[0]), abb(spitze[1]), abb(spitze[2])}}, nil, v.Strich.Farbe)
-		})
+		z.fuelle([][]document.Punkt{{z.ansicht(v.B), z.ansicht(fuss.Plus(nrm.Mal(g / 2))),
+			z.ansicht(fuss.Minus(nrm.Mal(g / 2)))}}, nil, v.Strich.Farbe)
 	case document.Kasten:
 		r := document.R(z.ansicht(v.Bereich.Min), z.ansicht(v.Bereich.Max))
 		umriss := rundesRechteck(r, v.Eckradius)
@@ -613,6 +607,10 @@ func (z zeichner) objekt(o document.Objekt) error {
 		// Versatz und, wenn der Text über eine Naht reicht, auf den Bereich beschnitten. So ist Text an der Naht
 		// abgeschnitten wie das Bild darunter, statt starr hinter der Naht zu stehen.
 		stuecke := z.d.TextStuecke(v)
+		// Kosten einmal je sichtbarer Zeile, nicht je Bereich: Über vielen Nähten zählte der Trockenlauf sonst dieselben
+		// Glyphen vielfach (F-136).
+		zeilen := v.Zeilen()
+		gezaehlt := make([]bool, len(zeilen))
 		for _, st := range stuecke {
 			zs := z
 			if len(stuecke) > 1 {
@@ -624,12 +622,15 @@ func (z zeichner) objekt(o document.Objekt) error {
 					continue
 				}
 			}
-			for _, zeile := range v.Zeilen() {
+			for i, zeile := range zeilen {
 				p := document.Pt(zeile.X, zeile.Grundlinie).Plus(st.Versatz)
 				if !zs.zeileSichtbar(sch, p.X, p.Y, v.Schriftgrad) {
 					continue
 				}
-				z.auf.glyph += glyphKostenIn(sch, zeichenzahl(zeile.Text), v.Schriftgrad)
+				if !gezaehlt[i] {
+					z.auf.glyph += glyphKostenIn(sch, zeichenzahl(zeile.Text), v.Schriftgrad)
+					gezaehlt[i] = true
+				}
 				if z.trocken() {
 					continue
 				}

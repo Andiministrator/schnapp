@@ -502,15 +502,18 @@ Naht läuft, wird mit dem Bild gestaucht abgebildet“.
 
 1. **Eine Regel für alle Ausgänge:** Eine Beschriftung, die über eine Naht reicht, ist dort abgeschnitten wie das Bild
    darunter; was im Streifen liegt, fehlt, der Rest steht um den Versatz seines Bereichs verschoben. So zeigte es der
-   SVG-Export (Kacheln) schon immer, so rechnet der Treffer (im Original). Renderer und Editor zeichnen dafür Pfeil und
+   SVG-Export (Kacheln) schon immer, so rechnet der Treffer (im Original). Renderer und Editor zeichnen dafür die
    Schritt-Nummer jetzt ebenfalls je sichtbarem Bereich (`jeStueck`, wie Text, Dreieck und Lupen-Linie seit den
    Nachträgen 13 und 14). Eine Nummer, deren Mitte im Streifen liegt, steht nicht mehr ganz auf der Naht, sondern zeigt
    nur ihren herausragenden Teil.
-2. **Kasten, Schild, Striche und Rahmen** bleiben über ihre Ecken abgebildet: Für achsparallele Rechtecke ist das
-   dasselbe wie Abschneiden. Bei einem Pfeil unterscheiden sich die beiden Rechnungen nur auf der Strecke über dem
-   Streifen, also im Kantenband der Naht (Mutanten N16/N18 äquivalent).
+2. **Pfeil, Kasten, Schild, Striche und Rahmen** bleiben über Ecken bzw. Stützpunkte abgebildet: Für achsparallele
+   Rechtecke ist das dasselbe wie Abschneiden; beim Pfeil unterscheiden sich die beiden Rechnungen nur auf der Strecke
+   über dem Streifen, also im Kantenband der Naht, das Spalt und Kante überdecken. Ein Pfeil je Bereich hätte über
+   vielen Nähten (bis `MaxStreifen`) jedes Mal den ganzen Pfeil aufgebaut; der Prüflauf beim Öffnen (F-136) wurde in
+   der CI dadurch zu langsam. Glyphkosten eines Texts zählt der Trockenlauf je sichtbarer Zeile einmal, nicht je
+   Bereich.
 3. **Auswahlrahmen, Griffe und Hilfslinien** des Editors bilden weiter die Ecken ab; sie sind Bedienung, keine Ausgabe.
 
 Tests `TestPfeilUndNummerUeberNaht` (`internal/render/schraege_naht_test.go`) und
-`TestEditorSchneidetSchraegeKantenAnDerNaht`; Mutanten N16–N19 in `scripts/mutanten/text-naht.json`.
+`TestEditorSchneidetSchraegeKantenAnDerNaht`; Mutanten N17 und N19 in `scripts/mutanten/text-naht.json`.
 

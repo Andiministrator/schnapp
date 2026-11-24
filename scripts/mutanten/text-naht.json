@@ -120,30 +120,12 @@
     "timeout": "5m"
   },
   {
-    "name": "N16 Renderer: Pfeil gestaucht statt je Stück (F-745) — äquivalent außerhalb der Nahtzone: die 48 Stützpunkte außerhalb des Streifens bildet ZuAnsicht genau wie der Versatz ihres Bereichs ab; abweichen kann nur die Strecke über dem Streifen, und die liegt im Kantenband der Naht",
-    "datei": "internal/render/render.go",
-    "paket": "./internal/render",
-    "alt": "\t\t\tpts := make([]document.Punkt, len(org))\n\t\t\tfor i, p := range org {\n\t\t\t\tpts[i] = abb(p)\n\t\t\t}",
-    "neu": "\t\t\tpts := make([]document.Punkt, len(org))\n\t\t\tfor i, p := range org {\n\t\t\t\tpts[i] = z.ansicht(p)\n\t\t\t}",
-    "timeout": "5m",
-    "aequivalent": true
-  },
-  {
     "name": "N17 Renderer: Nummer starr an der abgebildeten Mitte (F-745)",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
     "alt": "\t\t\tif err := zs.nummer(v, abb(v.Mitte)); err != nil && fehler == nil {",
     "neu": "\t\t\tif err := z.nummer(v, z.ansicht(v.Mitte)); err != nil && fehler == nil {",
     "timeout": "5m"
-  },
-  {
-    "name": "N18 Editor: Pfeil gestaucht (F-745) — äquivalent außerhalb der Nahtzone: die 48 Stützpunkte außerhalb des Streifens bildet ZuAnsicht genau wie der Versatz ihres Bereichs ab; abweichen kann nur die Strecke über dem Streifen, und die liegt im Kantenband der Naht",
-    "datei": "internal/ui/editor.go",
-    "paket": "./internal/ui",
-    "alt": "\t\t\tpfad.MoveTo(abb(org[0]))\n\t\t\tfor _, p := range org[1:] {\n\t\t\t\tpfad.LineTo(abb(p))",
-    "neu": "\t\t\tpfad.MoveTo(an(org[0]))\n\t\t\tfor _, p := range org[1:] {\n\t\t\t\tpfad.LineTo(an(p))",
-    "timeout": "5m",
-    "aequivalent": true
   },
   {
     "name": "N19 Editor: Nummer starr an der abgebildeten Mitte (F-745)",
