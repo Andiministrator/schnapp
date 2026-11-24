@@ -132,7 +132,7 @@ stays unchanged and the result becomes a new screenshot in the library. `LIST` i
 |---|---|
 | `arrow` | **`from`**, **`to`**, `color`, `width` |
 | `rect` | **`from`**, **`to`** (opposite corners), `color` (line), `fill`, `width` |
-| `text` | **`at`** (top left), **`text`** (`\n` for a new line), `size`, `color` (letters), `fill` (label), `font`, `bold`, `italic`, `underline`, `strikethrough`, `align` (`left`, `center`, `right`) |
+| `text` | **`at`** (top left), **`text`** (`\n` for a new line), `size`, `color` (letters), `fill` (label), `font`, `bold`, `italic`, `underline`, `strikethrough`, `align` (`left`, `center`, `right`), `tip` (makes a speech bubble: a point the label points at, same coordinates as `at`) |
 | `step` | **`at`** (centre), `color`, `radius` — the number is the next free one |
 | `redact`, `pixelate` | **`from`**, **`to`** — overwrites the pixels for good; an area too narrow to pixelate is blacked out |
 

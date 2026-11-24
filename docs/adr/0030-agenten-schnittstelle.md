@@ -364,7 +364,7 @@ MCP-Protokoll, nicht bei hartem Prozessende.
    - `arrow` — `from`, `to` (Punkte `[x, y]`), optional `color`, `width`;
    - `rect` — `from`, `to` (gegenüberliegende Ecken), optional `color`, `fill`, `width`;
    - `text` — `at` (linke obere Ecke), `text` (nicht leer, Zeilenumbruch `\n`), optional `size`, `color`, `fill`,
-     `font`, `bold`, `italic`, `underline`, `strikethrough`, `align` (`left`/`center`/`right`);
+     `font`, `bold`, `italic`, `underline`, `strikethrough`, `align` (`left`/`center`/`right`), `tip` (Sprechblase, ADR-0021 Nachtrag 13);
    - `step` — `at` (Mitte), optional `color`, `radius`; die Zahl ist die nächste freie (wie im Editor);
    - `redact`, `pixelate` — `from`, `to`: Bereich wird **endgültig** überschrieben (Kernprinzip 2), wie im Editor
      (zu schmal zum Verpixeln: geschwärzt).

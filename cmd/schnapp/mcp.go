@@ -331,6 +331,7 @@ func (an mcpAnschluesse) werkzeuge() []mcp.Werkzeug {
 				`"from":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},` +
 				`"to":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},` +
 				`"at":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},` +
+				`"tip":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2,"description":"text only: makes a speech bubble pointing at this point"},` +
 				`"text":{"type":"string"},"color":{"type":"string","description":"#RRGGBB or #RRGGBBAA"},` +
 				`"fill":{"type":"string","description":"#RRGGBB, #RRGGBBAA or none"},` +
 				`"width":{"type":"number"},"size":{"type":"number"},"radius":{"type":"number"},"font":{"type":"string"},` +

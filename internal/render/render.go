@@ -446,6 +446,11 @@ func (z zeichner) ebene(o document.Objekt) error {
 func (z zeichner) ebenenRahmen(o document.Objekt) image.Rectangle {
 	g := o.Grenzen()
 	rand := 2.0
+	if t, ok := o.(document.Text); ok && t.Spitze != nil {
+		// Sprechblase: Schild plus Spitze, die Schenkel ragen mit halber Linienbreite darüber (ADR-0021 Nachtrag 13 Punkt 4).
+		g = t.Huelle()
+		rand += t.SchenkelBreite() / 2
+	}
 	switch v := o.(type) {
 	case document.Pfeil:
 		rand += math.Max(8, 4*v.Strich.Breite)
@@ -526,7 +531,20 @@ func (z zeichner) objekt(o document.Objekt) error {
 			}
 		}
 	case document.Text:
-		if v.Hintergrund.A > 0 {
+		if sa, sp, sb, ok := v.Spitzendreieck(); ok {
+			// Sprechblase (ADR-0021 Nachtrag 13 Punkte 2 und 3): Schild samt Dreieck als ein Vieleck in der Füllfarbe, ohne
+			// Füllung nur die beiden Schenkel als Linie in der Schriftfarbe.
+			if v.Hintergrund.A > 0 {
+				var umriss []document.Punkt
+				for _, p := range document.Sprechblase(v) {
+					umriss = append(umriss, z.ansicht(p))
+				}
+				z.fuelle([][]document.Punkt{umriss}, nil, v.Hintergrund)
+			} else {
+				z.strich([]document.Punkt{z.ansicht(sa), z.ansicht(sp), z.ansicht(sb)}, false,
+					document.Strich{Farbe: v.Farbe, Breite: v.SchenkelBreite()})
+			}
+		} else if v.Hintergrund.A > 0 {
 			g := v.Grenzen()
 			r := document.R(z.ansicht(g.Min), z.ansicht(g.Max))
 			z.fuelle([][]document.Punkt{rundesRechteck(r, 0)}, nil, v.Hintergrund)

@@ -19,17 +19,27 @@ import (
 
 // FormatVersion ist die höchste Version des SVG-Blocks, die dieser Stand liest und schreibt (ADR-0006, ADR-0008).
 // Ältere Versionen müssen lesbar bleiben. Geschrieben wird die kleinste Version, die den Inhalt trägt (schreibVersion):
-// 2 nur mit einer Lupe (ADR-0033 Punkt 5), sonst 1 — Dateien ohne Lupe bleiben für ältere Leser lesbar.
+// 2 nur mit einer Lupe (ADR-0033 Punkt 5) oder einer Sprechblasen-Spitze (ADR-0021 Nachtrag 13 Punkt 7), sonst 1 —
+// Dateien ohne beides bleiben für ältere Leser lesbar.
 const FormatVersion = 2
 
-// versionLupe ist die erste Formatversion mit dem Objekttyp „lupe“ (ADR-0033 Punkt 5).
-const versionLupe = 2
+// versionLupe ist die erste Formatversion mit dem Objekttyp „lupe“ (ADR-0033 Punkt 5); versionSpitze die erste mit
+// dem Attribut s:spitze am Text (ADR-0021 Nachtrag 13 Punkt 7). Beide sind Version 2.
+const (
+	versionLupe   = 2
+	versionSpitze = 2
+)
 
 // schreibVersion ist die Version, die der Schreiber für die Objekte objekte angibt.
 func schreibVersion(objekte []document.Objekt) int {
 	for _, o := range objekte {
-		if _, ok := o.(document.Lupe); ok {
+		switch v := o.(type) {
+		case document.Lupe:
 			return versionLupe
+		case document.Text:
+			if v.Spitze != nil {
+				return versionSpitze
+			}
 		}
 	}
 	return 1
@@ -300,6 +310,9 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			s.attr("s:farbe", farbeHex(o.Farbe))
 			s.attr("s:hintergrund", farbeHex(o.Hintergrund))
 			s.attr("s:umbruch", zahl(o.BreiteGrenze))
+			if o.Spitze != nil {
+				s.attr("s:spitze", punkt(*o.Spitze))
+			}
 			// Schrift, Stil und Ausrichtung nur, wo sie von der Voreinstellung abweichen (docs/format.md 8.3).
 			if o.Schrift != "" && o.Schrift != fonts.Go { // Go ist die Voreinstellung (Sitzungs-QA B-11)
 				s.attr("s:schrift", o.Schrift)
@@ -311,7 +324,32 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 				s.attr("s:ausrichtung", a)
 			}
 			s.WriteString(`>`)
-			if o.Hintergrund.A > 0 {
+			if a, sp, b, ok := o.Spitzendreieck(); ok {
+				// Sprechblase (ADR-0021 Nachtrag 13 Punkte 2 und 3): ein Pfad aus Schild und Dreieck in der Füllfarbe,
+				// ohne Füllung nur die beiden Schenkel als Linie in der Schriftfarbe (wie document.Sprechblase im Renderer).
+				s.WriteString(`<path`)
+				if o.Hintergrund.A > 0 {
+					var pfad strings.Builder
+					for i, p := range document.Sprechblase(o) {
+						if i == 0 {
+							pfad.WriteString("M" + punkt(p))
+						} else {
+							pfad.WriteString(" L" + punkt(p))
+						}
+					}
+					s.attr("d", pfad.String()+" Z")
+					s.farbeSVG("fill", o.Hintergrund)
+					s.attr("stroke-linejoin", "miter")
+				} else {
+					s.attr("d", "M"+punkt(a)+" L"+punkt(sp)+" L"+punkt(b))
+					s.attr("fill", "none")
+					s.farbeSVG("stroke", o.Farbe)
+					s.attr("stroke-width", zahl(o.SchenkelBreite()))
+					s.attr("stroke-linecap", "round")
+					s.attr("stroke-linejoin", "round")
+				}
+				s.WriteString(`/>`)
+			} else if o.Hintergrund.A > 0 {
 				g := o.Grenzen()
 				s.WriteString(`<rect`)
 				s.attr("x", zahl(g.Min.X))
@@ -467,8 +505,9 @@ func attrs(e xml.StartElement) map[string]string {
 }
 
 type leser struct {
-	a   map[string]string
-	err error
+	a       map[string]string
+	err     error
+	version int // Formatversion der Datei; 0 = unbekannt (nur für Angaben, die erst ab einer Version gelten)
 }
 
 func (l *leser) fehler(format string, args ...any) {
@@ -594,6 +633,12 @@ func (l *leser) objektOhneEbene(typ string) document.Objekt {
 		t := document.Text{Ort: l.punkt("ort"), Inhalt: l.text("inhalt"), Schriftgrad: l.zahl("grad"),
 			Farbe: l.farbe("farbe"), Hintergrund: l.farbe("hintergrund"), BreiteGrenze: l.zahl("umbruch")}
 		leseTextStil(&t, l.a)
+		// s:spitze gibt es erst ab Version 2 (ADR-0021 Nachtrag 13 Punkt 7); in Version 1 ist es unbekannter Inhalt,
+		// ignoriert (docs/format.md 11, Regel 3).
+		if _, da := l.a["spitze"]; da && l.version >= versionSpitze {
+			sp := l.punkt("spitze")
+			t.Spitze = &sp
+		}
 		return t
 	case "nummer":
 		return document.Nummer{Mitte: l.punkt("mitte"), Wert: l.ganz("wert"), Radius: l.zahl("radius"),
@@ -642,7 +687,7 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 			if inObjekt > 0 {
 				continue // Darstellung eines Objekts
 			}
-			l := &leser{a: attrs(t)}
+			l := &leser{a: attrs(t), version: version}
 			// Ein Element mit s:typ ist ein Objekt (docs/format.md 8); die Strukturelemente tragen es nie, auch nicht
 			// leer. Ein leeres s:typ ist ebenfalls beschädigt, nicht „kein Objekt“.
 			_, hatTyp := l.a["typ"]

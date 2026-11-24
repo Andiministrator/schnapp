@@ -144,7 +144,7 @@ Root element `svg`:
 
 | Attribute | Value | Required |
 |---|---|---|
-| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7; writers use the lowest version that carries the content, section 12) | MUST |
+| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7, and the attribute `s:spitze` of the text, 8.3; writers use the lowest version that carries the content, section 12) | MUST |
 | `width`, `height` | size of the original in pixels, plain decimal integers without unit | MUST |
 | `viewBox` | `0 0 <width> <height>` | writer MUST, reader ignores |
 | `xmlns`, `xmlns:s` | the namespaces above | writer MUST |
@@ -300,13 +300,14 @@ rounding is circular, never elliptic.
 | `s:schrift` | OPTIONAL. Font family name: 1 to 128 Unicode scalar values, not only white space, no control characters (Unicode category Cc: U+0000 to U+001F, U+007F to U+009F) and none of U+FFFD, U+FFFE, U+FFFF. Missing, empty, `Go`, or not a valid name: the built-in family Go; writers omit it for Go |
 | `s:stil` | OPTIONAL. Words separated by spaces from `bold`, `italic`, `underline`, `strike`; unknown words are ignored. Missing: none |
 | `s:ausrichtung` | OPTIONAL. Alignment of each line: `left`, `center` or `right`. Missing or any other value: `left` |
+| `s:spitze` | OPTIONAL, format version 2 only. Point (5.2): the tip of a speech bubble, in original pixels, which makes the text a callout (below). Missing: a plain text. In a file with `s:format="1"` the attribute is unknown content (section 11, rule 3) and is ignored, whatever it holds |
 
 `s:inhalt` is the text as typed. Line feed (U+000A) separates lines. The value MUST be valid UTF-8 with at most
 `max_text_chars` characters (Unicode scalar values) and MUST NOT contain control characters below U+0020 other than
 tab, line feed and carriage return, nor U+FFFE or U+FFFF. Writers MUST escape line feed, carriage return and tab as
 character references (`&#xA;`, `&#xD;`, `&#x9;`) so that XML attribute-value normalisation keeps them.
 
-The three optional attributes were added without changing the format version (like `s:kante`, 7.1): writers emit
+The three optional attributes `s:schrift`, `s:stil` and `s:ausrichtung` were added without changing the format version (like `s:kante`, 7.1): writers emit
 them only when they differ from the default, a reader that does not know them ignores them (section 11, rule 3) and
 shows the text in Go Regular, and no value of them makes a file damaged. The family is a name, never a path; a reader
 that lacks the family sets the text in Go and SHOULD keep the name when it saves the file.
@@ -325,6 +326,22 @@ Informative: the reference writer's presentation (section 5) shows the alignment
 export. A centred or right-aligned text carries `text-anchor="middle"` or `"end"`, and the `x` of each line is the
 middle or the end of that line as Schnapp sets it, so that an SVG viewer with a different font keeps the alignment; a
 left-aligned text has no `text-anchor` and `x` at the line start. Like all presentation, readers ignore it.
+
+**Callout (speech bubble).** A text with `s:spitze` is a callout; there is no separate object type. The tip may lie
+anywhere inside the coordinate range (inside or outside the image and the label). `s:spitze` is part of format version
+2: a writer emits `s:format="2"` if the document contains a magnifier or a text with `s:spitze` (section 12), and a
+version-1 reader that meets a version-2 file reports it as newer instead of dropping the tip silently. A value that
+does not parse as a point makes a version-2 file damaged (section 11, rule 4).
+
+Informative: the callout is drawn as one polygon, the label (the rectangle of the background label) with a triangle
+inserted. The triangle's base lies on the side of the label that the ray from the label centre to the tip crosses; its
+centre is that crossing, moved so that the whole base lies on the side and keeps at least `0.25 x grad` from each
+corner. The base is `grad` wide, at most half of the side's length minus the two corner margins. The triangle is
+omitted (the polygon is the label) if the tip is inside the label or closer to it than `0.25 x grad`, or if the side
+is too short for a base. The polygon is filled with the label colour (`s:hintergrund`). If that has alpha `00`, the
+reference renderer draws the two legs of the triangle (base corner, tip, base corner) as a line in the text colour,
+`max(1, 0.06 x grad)` wide with round ends and joins, so that the bubble still points. The presentation (section 5)
+shows this as one `path`. Example: `testdata/format/callout`.
 
 ### 8.4 `"nummer"` step number
 
@@ -454,7 +471,7 @@ value here and to the code must happen in the same commit.
 
 | Key | Value | Meaning |
 |---|---|---|
-| `format_version` | 2 | highest value of `s:format` read and written by this version (`2` only with a `lupe`, section 12) |
+| `format_version` | 2 | highest value of `s:format` read and written by this version (`2` only with a `lupe` or an `s:spitze`, section 12) |
 | `namespace` | `urn:x-schnapp:1` | Schnapp XML namespace |
 | `chunk_svg` | `snAP` | chunk with the compressed SVG |
 | `chunk_orig` | `snAO` | chunk with the original PNG |
@@ -514,8 +531,8 @@ Original width and height are at least 1.
 6. A program that stores a changed view of the file SHOULD rewrite all of it (visible image, `snAP`, `snAO`) rather
    than patch single chunks.
 7. Write the lowest format version that carries the content: `s:format="2"` if and only if the document contains a
-   `lupe` (8.7), otherwise `1`. A reader that knows only version 1 then still reads every file without a magnifier,
-   and reports a file with one as newer instead of damaged.
+   `lupe` (8.7) or a text with `s:spitze` (8.3), otherwise `1`. A reader that knows only version 1 then still reads
+   every file without them, and reports a file with one as newer instead of damaged.
 
 ## 13. What is not stored
 
@@ -544,6 +561,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `redaction` | one filled and one pixelated redaction, applied to the pixels |
 | `text-style` | one text with all optional text attributes: a family that is not installed, `bold italic underline strike`, `center` |
 | `layers` | three objects with layer attributes: a named, half-opaque box, a hidden and locked arrow, a step number without them |
+| `callout` | format version 2: two texts with `s:spitze`, one with a label (filled polygon) and one without (legs as a line) |
 | `magnifier` | format version 2: one magnifier with a non-integer source over a column strip (the strip drops out of the magnified view, 8.7); the visible image shows no annotations, as in all examples |
 
 In the examples the visible image is the view *without* annotations (annotation rendering depends on a font

@@ -496,3 +496,20 @@ Nachtrag 4 (eckig), Nachtrag 10 (Schrift) und Nachtrag 11 (Farbpaar) auf.
    `tip: [x, y]` (Koordinaten im sichtbaren Bild wie `at`); `docs/agents.md` nennt ihn.
 9. **Nicht in diesem Schritt:** runde oder ovale Blasen, gebogene Spitzen, mehrere Spitzen, Gedankenblasen. Eckig
    bleibt Vorgabe (Nachtrag 4, `brand/corporate-design.md` §1).
+
+**Ergänzt bei der Umsetzung (Teil 1, 24.11.2026, ohne Oberfläche):**
+
+- **Basisbreite (Punkt 2):** „höchstens die halbe Länge dieser Seite abzüglich der Eckabstände“ ist als
+  `min(1 Schriftgrad, (Seitenlänge − 2 × 0,25 Schriftgrad) / 2)` umgesetzt; ist das nicht positiv (Seite höchstens zwei
+  Eckabstände lang), entfällt das Dreieck wie bei zu naher Spitze. Der Umriss läuft im Uhrzeigersinn (y nach unten),
+  das Dreieck steht an der Seite des Strahls (`document.Sprechblase`, `Text.Spitzendreieck`).
+- **Spitze und Grenzen (Punkt 1):** `Text.pruefe` verlangt für die Spitze nur endliche Koordinaten im Bereich
+  ±`MaxKoordinate` wie für `Ort`; außerhalb des Bilds ist erlaubt (wie ein Pfeil über den Rand). Die Spitze zählt in
+  `Huelle` und `Reichweite` auch dann, wenn das Dreieck entfällt.
+- **Schenkel (Punkt 3):** Der Renderer zeichnet sie mit dem Strichzeichner des Pfeils (runde Enden und Ecken), der
+  SVG-Pfad dazu mit `stroke-linecap`/`stroke-linejoin="round"`; der gefüllte Pfad trägt `stroke-linejoin="miter"` ohne
+  Strich.
+- **Format (Punkt 7):** `s:spitze` wird nur in Dateien ab Version 2 gelesen (`leser.version`); ein nicht lesbarer Wert
+  macht eine Version-2-Datei beschädigt wie jeder andere Punkt, in Version 1 bleibt er unbeachtet.
+- **Rettungskopie:** keine Änderung nötig, ihre Angaben sind das snAP-SVG (`AngabenSVG`) und tragen die Spitze mit
+  (`internal/rescue/spitze_test.go`).

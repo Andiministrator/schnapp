@@ -169,6 +169,10 @@ type Text struct {
 	Unterstrichen   bool
 	Durchgestrichen bool
 	Ausrichtung     Ausrichtung
+	// Spitze macht den Text zur Sprechblase (ADR-0021 Nachtrag 13): die Stelle, auf die die Blase zeigt, in Pixeln des
+	// Originals; nil = keine Spitze. Objekte sind Werte: Wer die Spitze ändert, setzt einen neuen Zeiger, schreibt nie
+	// durch den alten.
+	Spitze *Punkt
 }
 
 // Ausrichtung ist die Lage jeder Zeile in der Breite des Textblocks (der längsten Zeile).
@@ -209,6 +213,9 @@ func (t Text) mitKennung(id int) Objekt { t.ID = id; return t }
 func (t Text) pruefe() error {
 	if !endlich(t.Ort.X, t.Ort.Y) || !groesse(t.Schriftgrad, t.BreiteGrenze) || t.Schriftgrad <= 0 || t.Schriftgrad > MaxSchrift {
 		return fmt.Errorf("document: Text mit ungültigen Werten")
+	}
+	if t.Spitze != nil && !endlich(t.Spitze.X, t.Spitze.Y) {
+		return fmt.Errorf("document: Text mit ungültiger Spitze")
 	}
 	if (t.Schrift != "" && !fonts.NameGueltig(t.Schrift)) || t.Ausrichtung > AusrichtungRechts {
 		return fmt.Errorf("document: Text mit ungültiger Schrift oder Ausrichtung")

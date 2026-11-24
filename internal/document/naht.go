@@ -78,12 +78,19 @@ func Reichweite(o Objekt) Rechteck {
 		r, ok, geschaetzt := textTinte(v)
 		switch {
 		case geschaetzt:
-			return schaetzung(v, g)
+			r = schaetzung(v, g)
 		case !ok:
 			r = Rechteck{Min: v.Ort, Max: v.Ort}
 		}
-		if v.Hintergrund.A > 0 {
+		if !geschaetzt && v.Hintergrund.A > 0 {
 			r = r.Vereint(g)
+		}
+		if v.Spitze != nil {
+			// Dreieck der Sprechblase (Füllung oder Schenkel samt Linienbreite) und 1 Pixel Reserve; die Spitze liegt immer
+			// in der Hülle, das Dreieck innerhalb von ihr (ADR-0021 Nachtrag 13 Punkt 4).
+			h := v.Huelle()
+			rand := v.SchenkelBreite()/2 + 1
+			r = r.Vereint(Rechteck{Min: h.Min.Minus(Pt(rand, rand)), Max: h.Max.Plus(Pt(rand, rand))})
 		}
 		return r
 	case Nummer:

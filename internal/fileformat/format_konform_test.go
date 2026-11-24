@@ -138,6 +138,14 @@ func beispiele() []beispiel {
 			fuege(t, d, document.Nummer{Mitte: document.Pt(52, 10), Wert: 1, Radius: 6, Farbe: color.NRGBA{217, 58, 51, 255}})
 			return d
 		}, Metadaten{}, false},
+		{"callout", func(t *testing.T) *document.Dokument { // Sprechblase mit und ohne Füllung, Formatversion 2 (ADR-0021 Nachtrag 13)
+			d := beispielDok(t, 64, 48)
+			fuege(t, d, document.Text{Ort: document.Pt(4, 4), Inhalt: "Look", Schriftgrad: 9, Farbe: color.NRGBA{0, 0, 0, 255},
+				Hintergrund: color.NRGBA{255, 255, 255, 255}, Spitze: &document.Punkt{X: 40, Y: 30}})
+			fuege(t, d, document.Text{Ort: document.Pt(24, 34), Inhalt: "Here", Schriftgrad: 9, Farbe: color.NRGBA{0, 0, 255, 255},
+				Spitze: &document.Punkt{X: 12, Y: 22.5}})
+			return d
+		}, Metadaten{}, false},
 		{"magnifier", func(t *testing.T) *document.Dokument { // Lupe, Formatversion 2 (ADR-0033)
 			d := beispielDok(t, 64, 48)
 			fuege(t, d, document.Lupe{Quelle: document.R(document.Pt(6, 30), document.Pt(16.5, 38)),
@@ -705,7 +713,7 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 	wortliste := []string{"format", "meta", "autor", "erstellt", "quelle", "bearbeitet", "schlagwort", "ansicht", "zuschnitt",
 		"kante",
 		"streifen", "zeilen", "von", "bis", "ebene", "typ", "a", "b", "k", "strich", "bereich", "fuellung", "eckradius",
-		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "schrift", "stil", "ausrichtung", "mitte", "wert", "radius",
+		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "schrift", "stil", "ausrichtung", "spitze", "mitte", "wert", "radius",
 		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel"}
 	for _, w := range wortliste {
 		if !gesehen[w] {

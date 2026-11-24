@@ -55,6 +55,7 @@ type Eintrag struct {
 	From          *Punkt   `json:"from,omitempty"`
 	To            *Punkt   `json:"to,omitempty"`
 	At            *Punkt   `json:"at,omitempty"`
+	Tip           *Punkt   `json:"tip,omitempty"`
 	Text          *string  `json:"text,omitempty"`
 	Color         *string  `json:"color,omitempty"`
 	Fill          *string  `json:"fill,omitempty"`
@@ -90,7 +91,7 @@ var (
 	erlaubt = map[string][]string{
 		"arrow":    {"from", "to", "color", "width"},
 		"rect":     {"from", "to", "color", "fill", "width"},
-		"text":     {"at", "text", "size", "color", "fill", "font", "bold", "italic", "underline", "strikethrough", "align"},
+		"text":     {"at", "text", "size", "color", "fill", "font", "bold", "italic", "underline", "strikethrough", "align", "tip"},
 		"step":     {"at", "color", "radius"},
 		"redact":   {"from", "to"},
 		"pixelate": {"from", "to"},
@@ -411,6 +412,13 @@ func Wende(ctx context.Context, d *document.Dokument, es []Eintrag) (Ergebnis, e
 				default:
 					return erg, f(`"align" must be "left", "center" or "right"`)
 				}
+			}
+			if e.Tip != nil { // Sprechblase (ADR-0021 Nachtrag 13 Punkt 8): gleiche Prüfung wie "at"
+				sp, err := punkt("tip", e.Tip)
+				if err != nil {
+					return erg, err
+				}
+				t.Spitze = &sp
 			}
 			o = t
 		case "step":

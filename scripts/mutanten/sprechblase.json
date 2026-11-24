@@ -1,0 +1,179 @@
+[
+  {
+    "name": "S1 Eckabstand der Basis doppelt",
+    "datei": "internal/document/sprechblase.go",
+    "paket": "./internal/document",
+    "alt": "const SpitzeAbstand = 0.25",
+    "neu": "const SpitzeAbstand = 0.5"
+  },
+  {
+    "name": "S2 Basis doppelt so breit",
+    "datei": "internal/document/sprechblase.go",
+    "paket": "./internal/document",
+    "alt": "const SpitzeBasis = 1.0",
+    "neu": "const SpitzeBasis = 2.0"
+  },
+  {
+    "name": "S3 Seite des Strahls vertauscht",
+    "datei": "internal/document/sprechblase.go",
+    "paket": "./internal/document",
+    "alt": "senkrecht := tx < ty",
+    "neu": "senkrecht := tx > ty"
+  },
+  {
+    "name": "S4 Basis nicht auf die halbe Seite begrenzt",
+    "datei": "internal/document/sprechblase.go",
+    "paket": "./internal/document",
+    "alt": "b := math.Min(SpitzeBasis*grad, (laenge-2*e)/2)",
+    "neu": "b := math.Min(SpitzeBasis*grad, laenge-2*e)"
+  },
+  {
+    "name": "S5 Basis rutscht über die Ecke (nur unten begrenzt)",
+    "datei": "internal/document/sprechblase.go",
+    "paket": "./internal/document",
+    "alt": "c = math.Min(math.Max(c, e+b/2), laenge-e-b/2)",
+    "neu": "c = math.Max(c, e+b/2)"
+  },
+  {
+    "name": "S6 Dreieck auch bei Spitze im Schild",
+    "datei": "internal/document/sprechblase.go",
+    "paket": "./internal/document",
+    "alt": "math.Hypot(dx, dy) < e ||",
+    "neu": "math.Hypot(dx, dy) < 0 ||"
+  },
+  {
+    "name": "S7 Dreieck an der Folgeseite eingesetzt",
+    "datei": "internal/document/sprechblase.go",
+    "paket": "./internal/document",
+    "alt": "if i == seite {",
+    "neu": "if i == (seite+1)%4 {"
+  },
+  {
+    "name": "S8 Schenkelbreite ohne Mindestbreite",
+    "datei": "internal/document/sprechblase.go",
+    "paket": "./internal/document",
+    "alt": "math.Max(1, StrichDicke*t.Schriftgrad)",
+    "neu": "StrichDicke * t.Schriftgrad"
+  },
+  {
+    "name": "S9 Hülle ohne Spitze",
+    "datei": "internal/document/sprechblase.go",
+    "paket": "./internal/document",
+    "alt": "return g.Vereint(Rechteck{Min: *t.Spitze, Max: *t.Spitze})",
+    "neu": "return g"
+  },
+  {
+    "name": "S10 Treffer nur im Schild",
+    "datei": "internal/document/sprechblase.go",
+    "paket": "./internal/document",
+    "alt": "return imVieleck(Sprechblase(t), p)",
+    "neu": "return t.Grenzen().Enthaelt(p)"
+  },
+  {
+    "name": "S11 Strahlverfahren vertauscht",
+    "datei": "internal/document/sprechblase.go",
+    "paket": "./internal/document",
+    "alt": "&& p.X < (b.X-a.X)*(p.Y-a.Y)/(b.Y-a.Y)+a.X {",
+    "neu": "&& p.X > (b.X-a.X)*(p.Y-a.Y)/(b.Y-a.Y)+a.X {",
+    "aequivalent": true,
+    "grund": "Der Strahl nach links statt nach rechts liefert für ein einfaches Vieleck dasselbe Urteil (gerade Zahl Kreuzungen auf beiden Seiten gleich)."
+  },
+  {
+    "name": "S12 Spitze wird nicht geprüft",
+    "datei": "internal/document/objekte.go",
+    "paket": "./internal/document",
+    "alt": "if t.Spitze != nil && !endlich(t.Spitze.X, t.Spitze.Y) {",
+    "neu": "if false {"
+  },
+  {
+    "name": "S13 Reichweite ohne Spitze",
+    "datei": "internal/document/naht.go",
+    "paket": "./internal/document",
+    "alt": "h := v.Huelle()",
+    "neu": "h := v.Grenzen()"
+  },
+  {
+    "name": "S14 Ebenen-Zwischenbild nur ums Schild",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "g = t.Huelle()",
+    "neu": "g = t.Grenzen()"
+  },
+  {
+    "name": "S15 Blase ohne Füllung gezeichnet",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "z.fuelle([][]document.Punkt{umriss}, nil, v.Hintergrund)",
+    "neu": "z.fuelle(nil, nil, v.Hintergrund)"
+  },
+  {
+    "name": "S16 Schenkel ohne Breite",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "Breite: v.SchenkelBreite()})",
+    "neu": "Breite: 0})"
+  },
+  {
+    "name": "S17 Schenkel in der Füllfarbe statt der Schriftfarbe",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "document.Strich{Farbe: v.Farbe, Breite: v.SchenkelBreite()})",
+    "neu": "document.Strich{Farbe: v.Hintergrund, Breite: v.SchenkelBreite()})"
+  },
+  {
+    "name": "S18 Spitze schreibt Version 1",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "return versionSpitze",
+    "neu": "return 1"
+  },
+  {
+    "name": "S19 Spitze auch in Version 1 gelesen",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "da && l.version >= versionSpitze",
+    "neu": "da"
+  },
+  {
+    "name": "S20 Spitze falsch geschrieben",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "s.attr(\"s:spitze\", punkt(*o.Spitze))",
+    "neu": "s.attr(\"s:spitze\", punkt(o.Ort))"
+  },
+  {
+    "name": "S21 Schenkel im SVG gefüllt",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "s.attr(\"fill\", \"none\")\n\t\t\t\t\ts.farbeSVG(\"stroke\", o.Farbe)",
+    "neu": "s.attr(\"fill\", \"#000000\")\n\t\t\t\t\ts.farbeSVG(\"stroke\", o.Farbe)"
+  },
+  {
+    "name": "S22 Blasenpfad ohne spitze Ecken",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "s.attr(\"stroke-linejoin\", \"miter\")\n\t\t\t\t} else {\n\t\t\t\t\ts.attr(\"d\", \"M\"+punkt(a)",
+    "neu": "s.attr(\"stroke-linejoin\", \"round\")\n\t\t\t\t} else {\n\t\t\t\t\ts.attr(\"d\", \"M\"+punkt(a)"
+  },
+  {
+    "name": "S23 annotate ignoriert tip",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "t.Spitze = &sp",
+    "neu": "_ = sp"
+  },
+  {
+    "name": "S24 annotate erlaubt tip nicht",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\"align\", \"tip\"},",
+    "neu": "\"align\"},"
+  },
+  {
+    "name": "S25 annotate prüft tip nicht im Bild",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "sp, err := punkt(\"tip\", e.Tip)",
+    "neu": "sp, err := punkt(\"at\", e.At)"
+  }
+]
