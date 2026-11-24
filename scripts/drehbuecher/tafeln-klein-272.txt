@@ -1,0 +1,45 @@
+# Sichtprobe ADR-0031 Nachtrag 10 (Karte #272, F-705, F-709): Übersicht F1 und Einstellungstafel passen in kleine Fenster.
+# Aufruf A: scripts/probe.sh --drehbuch scripts/drehbuecher/tafeln-klein-272.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 1200 --hoehe 800
+#   01 F1 ohne Leiste: alle 48 Zeilen in zwei Spalten, kein Balken. 02 F1 mit Leiste der letzten Aufnahmen: ebenso.
+#   03 Einstellungstafel, Reiter Agents: alle Felder sichtbar, kein Balken.
+# Aufruf B: dasselbe mit --breite 640 --hoehe 480
+#   01/02 F1 rollt: eckiger Balken rechts, Bild ab zeigt die Zeilen weiter unten, Ende die letzten. 03 Einstellungstafel
+#   rollt: Balken im Inhalt, der Fuß (Cancel, Save) bleibt stehen; 04 nach Tab bis zum letzten Feld ist es im Bild.
+warte 800
+taste F1
+warte 400
+foto 01-hilfe-ohne-leiste
+taste Bildab
+warte 300
+foto 01b-hilfe-bild-ab
+taste Ende
+warte 300
+foto 01c-hilfe-ende
+taste Esc
+warte 300
+taste Strg+Umschalt+R
+warte 600
+taste F1
+warte 400
+foto 02-hilfe-mit-leiste
+taste Esc
+warte 300
+taste Strg+,
+warte 600
+taste Strg+Bildab
+taste Strg+Bildab
+taste Strg+Bildab
+warte 300
+foto 03-einstellungen-reiter
+rad 330 150 3
+warte 300
+foto 03b-einstellungen-gerollt
+taste Tab
+taste Tab
+taste Tab
+taste Tab
+taste Tab
+taste Tab
+warte 300
+foto 04-einstellungen-tab-fokus
+taste Esc

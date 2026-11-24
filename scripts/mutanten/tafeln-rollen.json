@@ -1,0 +1,100 @@
+[
+  {
+    "name": "T1 Übersicht bleibt einspaltig",
+    "datei": "internal/ui/hilfe.go",
+    "paket": "./internal/ui",
+    "alt": "spalten, pro = 2, (n+1)/2",
+    "neu": "spalten, pro = 1, n"
+  },
+  {
+    "name": "T2 Mausrad rollt die Übersicht nicht",
+    "datei": "internal/ui/hilfe.go",
+    "paket": "./internal/ui",
+    "alt": "\tk.radLesen(gtx)\n\tk.rollen = rollBegrenze",
+    "neu": "\tk.rollen = rollBegrenze"
+  },
+  {
+    "name": "T3 Rolltasten ändern den Versatz der Übersicht nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\t\tr.rollen = n // F-705",
+    "neu": "\t\t\t\t\t_ = n // F-705"
+  },
+  {
+    "name": "T4 Bild auf/ab erreichen die Übersicht nicht (Filter fehlt)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.hilfeOffen { // Bild auf/ab",
+    "neu": "\tif false && e.hilfeOffen { // Bild auf/ab"
+  },
+  {
+    "name": "T5 Übersicht beginnt nach dem Schließen nicht oben",
+    "datei": "internal/ui/hilfe.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.hilfeRoll.rollen, e.hilfeRoll.rest = 0, 0",
+    "neu": "\t\te.hilfeRoll.rest = 0"
+  },
+  {
+    "name": "T6 Bild ab rollt nicht",
+    "datei": "internal/ui/tafelrollen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\trollen += max(zeile, seite-zeile)",
+    "neu": "\t\trollen += 0"
+  },
+  {
+    "name": "T7 Ende rollt nur bis Null",
+    "datei": "internal/ui/tafelrollen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\trollen = rollMax\n",
+    "neu": "\t\trollen = 0\n"
+  },
+  {
+    "name": "E1 Mausrad rollt die Einstellungstafel nicht",
+    "datei": "internal/ui/einstellungen.go",
+    "paket": "./internal/ui",
+    "alt": "\trk.anmelden(inhalt, gtx)\n",
+    "neu": "\trk.sicht = inhalt\n"
+  },
+  {
+    "name": "E2 Lagen der Felder ohne Versatz",
+    "datei": "internal/ui/einstellungen.go",
+    "paket": "./internal/ui",
+    "alt": "return fenster(r.Sub(image.Pt(0, rk.rollen)))",
+    "neu": "return fenster(r)"
+  },
+  {
+    "name": "E3 Tab rollt nicht zum Fokus",
+    "datei": "internal/ui/tafelrollen.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !k.fokus.Empty() && k.fokus != k.fokusAlt {",
+    "neu": "\tif false && !k.fokus.Empty() && k.fokus != k.fokusAlt {"
+  },
+  {
+    "name": "E4 Reiterwechsel behält den Versatz",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "\tt.roll.rollen, t.roll.rest = 0, 0 // jeder Reiter",
+    "neu": "\tt.roll.rest = 0 // jeder Reiter"
+  },
+  {
+    "name": "E5 Bild ab rollt die Einstellungstafel nicht",
+    "datei": "internal/ui/einstellungen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tk.rollen, _ = rollTaste(",
+    "neu": "\t\t\t\t_, _ = rollTaste("
+  },
+  {
+    "name": "E6 Der Inhalt rollt nie (größter Versatz 0)",
+    "datei": "internal/ui/tafelrollen.go",
+    "paket": "./internal/ui",
+    "alt": "\tk.rollMax = rollEnde(inhaltEnde, k.sicht.Max.Y)",
+    "neu": "\tk.rollMax = 0"
+  },
+  {
+    "name": "E7 Der Versatz wird nicht gezeichnet",
+    "datei": "internal/ui/einstellungen.go",
+    "paket": "./internal/ui",
+    "alt": "op.Offset(image.Pt(0, -rk.rollen)).Push(gtx.Ops) // der Inhalt rollt",
+    "neu": "op.Offset(image.Pt(0, 0)).Push(gtx.Ops) // der Inhalt rollt"
+  }
+]

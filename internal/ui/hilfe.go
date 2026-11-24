@@ -53,16 +53,39 @@ func (e *editor) hilfeZeilen() []hilfeZeile {
 	return append(z,
 		hilfeZeile{text: i18n.T("Other keys"), ueberschrift: true},
 		hilfeZeile{text: i18n.T("Menu bar"), taste: "F10"},
-		hilfeZeile{text: i18n.T("Cancel, deselect, back to Select"), taste: "Esc"},
+		hilfeZeile{text: i18n.T("Cancel, deselect, Select tool"), taste: "Esc"},
 		hilfeZeile{text: i18n.T("New line in a text"), taste: i18n.T("Shift") + "+" + i18n.T("Enter")},
 		hilfeZeile{text: i18n.T("Snapping off while dragging"), taste: "Alt"},
 		hilfeZeile{text: i18n.T("Move the view in the navigator"), taste: i18n.T("Click, drag")},
 	)
 }
 
+// Maße der Übersicht in dp (F-705: so, dass die 48 Zeilen im Startfenster ohne Rollen in zwei Spalten stehen).
+const (
+	hilfeZeileDp = 20
+	hilfeTextDp  = 220
+	hilfeTasteDp = 170
+)
+
+// hilfeAufteilung teilt n Zeilen auf Spalten: zwei nur, wenn eine nicht in die Höhe passt und zwei in die Breite;
+// schmale Fenster verkürzen die Textspalte (nicht unter 120/250 der gegebenen Breite). Alle Maße in Pixeln. Passt auch
+// das nicht in die Höhe, rollt die Liste.
+func hilfeAufteilung(n int, flaeche image.Point, hoehe, innen, kopf, spalteText, spalteTaste int) (spalten, pro, text int) {
+	pro, spalten = n, 1
+	if kopf+innen+pro*hoehe > flaeche.Y && innen*2+2*(spalteText+spalteTaste+innen) <= flaeche.X {
+		spalten, pro = 2, (n+1)/2
+	}
+	text = spalteText
+	if frei := flaeche.X - innen*2 - spalten*(spalteTaste+innen); text*spalten > frei {
+		text = max(spalteText*120/hilfeTextDp, frei/spalten)
+	}
+	return spalten, pro, text
+}
+
 // zeichneHilfe legt die Übersicht über die Leinwand; ein Klick irgendwohin oder Esc schließt sie.
 func (e *editor) zeichneHilfe(gtx layout.Context) {
 	if !e.hilfeOffen {
+		e.hilfeRoll.rollen, e.hilfeRoll.rest = 0, 0
 		return
 	}
 	for {
@@ -81,20 +104,12 @@ func (e *editor) zeichneHilfe(gtx layout.Context) {
 	ha.Pop()
 
 	zeilen := e.hilfeZeilen()
-	hoehe, innen := gtx.Dp(22), gtx.Dp(16)
-	spalteText, spalteTaste := gtx.Dp(300), gtx.Dp(170)
-	// Die Tafel passt sich der Leinwand an (Sitzungs-QA B-3): zwei Spalten nur, wenn eine nicht in die Höhe passt und
-	// zwei in die Breite; schmale Fenster verkürzen die Textspalte; was dann noch übersteht, schneidet die Tafel ab.
-	pro := len(zeilen)
-	spalten := 1
-	if innen*2+gtx.Dp(14)+pro*hoehe > flaeche.Dy() && innen*2+2*(spalteText+spalteTaste+innen) <= flaeche.Dx() {
-		spalten, pro = 2, (len(zeilen)+1)/2
-	}
-	if frei := flaeche.Dx() - innen*2 - spalten*(spalteTaste+innen); spalteText*spalten > frei {
-		spalteText = max(gtx.Dp(120), frei/spalten)
-	}
+	hoehe, innen := gtx.Dp(hilfeZeileDp), gtx.Dp(12)
+	kopf := innen + gtx.Dp(14) // Oberkante der Liste in der Tafel; darüber steht die feste Überschrift
+	spalten, pro, spalteText := hilfeAufteilung(len(zeilen), flaeche.Size(), hoehe, innen, kopf, gtx.Dp(hilfeTextDp), gtx.Dp(hilfeTasteDp))
+	spalteTaste := gtx.Dp(hilfeTasteDp)
 	spalteB := spalteText + spalteTaste + innen
-	groesse := image.Pt(min(flaeche.Dx(), innen*2+spalten*spalteB), min(flaeche.Dy(), innen*2+gtx.Dp(14)+pro*hoehe))
+	groesse := image.Pt(min(flaeche.Dx(), innen*2+spalten*spalteB), min(flaeche.Dy(), kopf+innen+pro*hoehe))
 	e.hilfeGroesse = groesse
 	ecke := flaeche.Min.Add(flaeche.Size().Sub(groesse).Div(2))
 	t := op.Offset(ecke).Push(gtx.Ops)
@@ -102,7 +117,7 @@ func (e *editor) zeichneHilfe(gtx layout.Context) {
 	rand := clip.Rect(r).Push(gtx.Ops) // nichts läuft über die Tafel hinaus
 	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(r).Op())
 	paint.FillShape(gtx.Ops, farbeLinie, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
-	schreibe := func(s string, x, y int, sp unit.Sp, c, fett bool) {
+	schreibe := func(s string, x, y, breite int, sp unit.Sp, c, fett bool) {
 		lbl := material.Label(e.thema, sp, s)
 		lbl.Color = farbeText
 		if c {
@@ -114,7 +129,7 @@ func (e *editor) zeichneHilfe(gtx layout.Context) {
 		lbl.MaxLines = 1
 		g := gtx
 		g.Constraints.Min = image.Point{}
-		g.Constraints.Max.X = spalteText - gtx.Dp(12)
+		g.Constraints.Max.X = breite
 		m := op.Record(gtx.Ops)
 		lbl.Layout(g)
 		call := m.Stop()
@@ -122,18 +137,32 @@ func (e *editor) zeichneHilfe(gtx layout.Context) {
 		call.Add(gtx.Ops)
 		tt.Pop()
 	}
-	schreibe(i18n.T("Keyboard shortcuts")+" · "+i18n.T("click or Esc to close"), innen, innen/2, unit.Sp(12), true, false)
+	// Die Liste rollt unter der festen Überschrift (F-705): Passt sie nicht in die Tafel, rollt sie mit Mausrad und
+	// Tasten; die Rechnung steht in seitenrollen.go/tafelrollen.go.
+	k := &e.hilfeRoll
+	liste := image.Rect(0, kopf, groesse.X, groesse.Y)
+	lc := clip.Rect(liste).Push(gtx.Ops)
+	k.anmelden(liste, gtx)
+	k.radLesen(gtx)
+	k.rollen = rollBegrenze(k.rollen, k.rollMax)
 	for i, z := range zeilen {
 		sp, zeile := i/pro, i%pro
 		x := innen + sp*spalteB
-		y := innen + gtx.Dp(14) + zeile*hoehe
-		if z.ueberschrift {
-			schreibe(z.text, x, y, unit.Sp(13), false, true)
+		y := kopf + zeile*hoehe - k.rollen
+		if y+hoehe < liste.Min.Y || y > liste.Max.Y {
 			continue
 		}
-		schreibe(z.text, x+gtx.Dp(8), y, unit.Sp(13), false, false)
-		schreibe(z.taste, x+spalteText, y, unit.Sp(13), true, false)
+		if z.ueberschrift {
+			schreibe(z.text, x, y, spalteText-gtx.Dp(12), unit.Sp(12), false, true)
+			continue
+		}
+		schreibe(z.text, x+gtx.Dp(8), y, spalteText-gtx.Dp(20), unit.Sp(12), false, false)
+		schreibe(z.taste, x+spalteText, y, spalteTaste, unit.Sp(12), true, false)
 	}
+	k.abschluss(gtx, kopf+pro*hoehe+innen/2, 0)
+	k.balken(gtx, liste)
+	lc.Pop()
+	schreibe(i18n.T("Keyboard shortcuts")+" · "+i18n.T("click or Esc to close"), innen, innen/2, groesse.X-2*innen, unit.Sp(12), true, false)
 	rand.Pop()
 	t.Pop()
 }

@@ -831,8 +831,8 @@ msgstr "%d %%"
 msgid "About Schnapp"
 msgstr "Über Schnapp"
 
-msgid "Cancel, deselect, back to Select"
-msgstr "Abbrechen, abwählen, zurück zu Auswählen"
+msgid "Cancel, deselect, Select tool"
+msgstr "Abbrechen, abwählen, Auswählen"
 
 msgid "Help"
 msgstr "Hilfe"

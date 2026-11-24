@@ -371,3 +371,34 @@ im Fenster liegt, und sich per Klick und Ziehen verschieben lassen. Entscheidung
   andere Druck beendet ein Ziehen); Loslassen und Abbruch (`Cancel`) gelten immer, auch während des Speicherns, denn sie
   ändern nichts am Dokument, während Druck und Ziehen dann ruhen. Tests `internal/canvas/navigator_flach_test.go`,
   `internal/ui/navigator_flach_test.go`, `internal/ui/navigator_kritik_test.go`.
+
+## Nachtrag 10 (24.11.2026): Tafeln rollen in kleinen Fenstern — Übersicht F1 und Einstellungstafel (Karte #272, F-705, F-709)
+
+**Befund.** Die Übersicht der Tastenkürzel zeigte im Startfenster 1200×800 nur 31 von 48 Zeilen (eine Spalte, weil zwei
+Spalten 1004 dp Leinwandbreite brauchten, die Leinwand aber 848 dp breit ist), und die Einstellungstafel ließ in
+kleinen Fenstern Felder im Fuß verschwinden. Beide schnitten ab, ohne dass man den Rest erreichen konnte.
+
+**Regel.** Eine modale Tafel zeigt nie weniger, als sie hat: **Passt der Inhalt nicht, rollt er** — nicht die Tafel als
+Ganzes, sondern ihr Inhaltsbereich, der Kopf (Überschrift bzw. Titel und Reiter) und der Fuß (Save/Cancel, Fehlertext)
+bleiben stehen. Dieselbe Rechnung wie die rechte Leiste (Nachtrag 8: `rollEnde`, `rollZeige`, `rollRad`, `rollDaumen` in
+`internal/ui/seitenrollen.go`), die gemeinsamen Teile der Tafeln in `internal/ui/tafelrollen.go`:
+
+- **Bedienung:** Mausrad über dem Inhalt (die Anmeldung steht im Ausschnitt des Inhalts vor diesem, wie in Nachtrag 8),
+  Bild auf/ab (eine Seite minus eine Zeile), in der Übersicht zusätzlich Pfeil auf/ab, Pos1 und Ende (die Einstellungstafel
+  braucht Pfeile und Pos1/Ende für Zahlfelder); ein eckiger Balken rechts im Inhalt, wenn gerollt werden kann
+  (`rollZustand.balken`). Ein Klick oder Esc schließt die Übersicht weiter; Rolltasten schließen sie nicht.
+- **Tastaturfokus rollt ins Bild:** in der Einstellungstafel rollt Tab das fokussierte Feld samt 8 dp Rand in den
+  sichtbaren Bereich (nur bei einem Fokuswechsel, damit das Mausrad nichts bekämpft). Die Lagen in `tafelRahmen` sind
+  Fensterpixel **mit** Versatz (`fensterR`), Klicks, Tests und Drehbücher treffen also, was man sieht; ein
+  weggerolltes Feld hat eine Lage außerhalb der Inhaltsfläche. Jeder Reiter und jedes Öffnen beginnt oben.
+- **Übersicht dichter:** Zeilen 20 dp, Schrift 12 sp, Spalten 220 + 170 dp, Rand 12 dp; zwei Spalten ab 800 dp
+  Leinwandbreite (`hilfeAufteilung`), wenn eine nicht in die Höhe passt. Im Startfenster stehen damit alle 48 Zeilen
+  ohne Rollen da, mit und ohne Leiste der letzten Aufnahmen (848 × 636 dp). Der Text „Cancel, deselect, back to Select“
+  wurde zu „Cancel, deselect, Select tool“ gekürzt (die Spalte kürzt sonst mit „…“).
+- **Untergrenze:** Das Fenster ist mindestens 480×320 dp (`app.MinSize`); bis dahin sind alle Zeilen und Felder
+  erreichbar. Was kleiner ist, ist nicht unterstützt.
+
+Tests `internal/ui/hilfe_rollen_test.go`, `internal/ui/einstellungen_rollen_test.go` (Felder per Tab erreichbar bei
+1200×800 bis 480×320, Fuß bleibt, Klick auf ein gerolltes Feld, Reiterwechsel), Mutanten
+`scripts/mutanten/tafeln-rollen.json` (T1–T7, E1–E7), Sichtprobe `scripts/drehbuecher/tafeln-klein-272.txt` (1200×800,
+640×480, 480×320). ADR-0034 gilt unverändert; die Tafel rollt, ihre Maße (800×640) bleiben.

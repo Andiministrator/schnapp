@@ -116,8 +116,9 @@ type tafel struct {
 	zahlNeu    bool
 	zahlFehler bool
 	zahlVorher int
-	listeZeile int      // Zeile, deren Auswahlliste offen ist bzw. zuletzt offen war
-	sprachen   []string // wählbare Sprachen (ohne „auto“)
+	listeZeile int         // Zeile, deren Auswahlliste offen ist bzw. zuletzt offen war
+	sprachen   []string    // wählbare Sprachen (ohne „auto“)
+	roll       rollZustand // Rollen des Inhalts, wenn er nicht in die Tafel passt (F-709, tafelrollen.go)
 
 	// Knöpfe und Lage beim letzten Zeichnen (Fensterpixel; Tests und Drehbücher).
 	reiterKnopf    [reiterAnzahl]widget.Clickable
@@ -140,6 +141,7 @@ func (t *tafel) oeffne(werte settings.Einstellungen, warn []string, pfad string,
 		t.sprachen = append(slices.Clone(t.sprachen), s) // von Hand eingetragen: bleibt wählbar und sichtbar
 	}
 	t.listeZeile = -1
+	t.roll.rollen, t.roll.rest = 0, 0
 	t.setzeFokus(0)
 }
 
@@ -253,6 +255,7 @@ func (t *tafel) fokusAuf(z int) {
 // waehleReiter wechselt den Reiter; der Fokus geht auf das erste Feld.
 func (t *tafel) waehleReiter(r tafelReiter) {
 	t.reiter = (r%reiterAnzahl + reiterAnzahl) % reiterAnzahl
+	t.roll.rollen, t.roll.rest = 0, 0 // jeder Reiter beginnt oben (F-709)
 	t.setzeFokus(0)
 }
 

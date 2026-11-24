@@ -202,7 +202,8 @@ func (e *editor) einstellungenFilter() []event.Filter {
 		f = append(f, key.Filter{Name: n, Optional: key.ModShift})
 	}
 	for _, n := range []key.Name{key.NamePageUp, key.NamePageDown} {
-		f = append(f, key.Filter{Name: n, Required: key.ModShortcut})
+		f = append(f, key.Filter{Name: n, Required: key.ModShortcut},
+			key.Filter{Name: n}) // ohne Umschalter: der Inhalt rollt seitenweise (F-709)
 	}
 	return f
 }
@@ -213,7 +214,8 @@ func (e *editor) einstellungenAuswerten(gtx layout.Context) {
 	if !t.offen {
 		return
 	}
-	for { // Klicks und Mausrad auf die Fläche über dem Fenster: abholen, ohne Wirkung (modal)
+	t.roll.radLesen(gtx) // Mausrad über dem Inhalt rollt ihn (F-709)
+	for {                // Klicks und Mausrad auf die Fläche über dem Fenster: abholen, ohne Wirkung (modal)
 		if _, ok := gtx.Event(pointer.Filter{Target: t, Kinds: pointer.Press | pointer.Scroll,
 			ScrollX: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20},
 			ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}}); !ok {
@@ -279,6 +281,12 @@ func (e *editor) einstellungenAuswerten(gtx layout.Context) {
 			t.tippe(ev.Text)
 		case key.Event:
 			if ev.State != key.Press {
+				continue
+			}
+			if ev.Modifiers == 0 && (ev.Name == key.NamePageUp || ev.Name == key.NamePageDown) {
+				k := &t.roll
+				k.rollen, _ = rollTaste(ev.Name, k.rollen, k.rollMax, gtx.Dp(tafelFeldDp), k.sicht.Dy())
+				gtx.Execute(op.InvalidateCmd{})
 				continue
 			}
 			switch t.taste(ev.Name, ev.Modifiers) {
@@ -370,6 +378,11 @@ func (e *editor) zeichneEinstellungen(gtx layout.Context) {
 
 	// Zeilen des Reiters
 	ic := clip.Rect(inhalt).Push(gtx.Ops)
+	rk := &t.roll
+	rk.anmelden(inhalt, gtx)
+	rk.rollen = rollBegrenze(rk.rollen, rk.rollMax)
+	vers := op.Offset(image.Pt(0, -rk.rollen)).Push(gtx.Ops) // der Inhalt rollt (F-709), Lagen in Inhaltskoordinaten
+	fensterR := func(r image.Rectangle) image.Rectangle { return fenster(r.Sub(image.Pt(0, rk.rollen))) }
 	x0 := links + dp(20)
 	feldX := x0 + min(dp(240), (W-x0)/3)
 	feldB := max(dp(60), min(dp(300), W-feldX-dp(24)))
@@ -391,7 +404,7 @@ func (e *editor) zeichneEinstellungen(gtx layout.Context) {
 		paint.FillShape(gtx.Ops, farbeWarnGrund, clip.Rect(hr).Op())
 		paint.FillShape(gtx.Ops, farbeAkzent, clip.Rect(image.Rect(hr.Min.X, hr.Min.Y, hr.Min.X+dp(3), hr.Max.Y)).Op())
 		ht.setze(gtx, image.Pt(hr.Min.X+dp(14), hr.Min.Y+dp(10)))
-		t.rahmen.hinweis = fenster(hr)
+		t.rahmen.hinweis = fensterR(hr)
 		y = hr.Max.Y + dp(12)
 	}
 	for _, z := range zeilenDes(t.reiter) {
@@ -415,6 +428,7 @@ func (e *editor) zeichneEinstellungen(gtx layout.Context) {
 			r.Max.X = min(r.Max.X, kr.Max.X+dp(10)+s.groesse.X+dp(4))
 			if ziel == z {
 				ring(kr)
+				rk.fokus = kr
 			}
 		case artZahl:
 			kn := dp(tafelFeldDp)
@@ -435,7 +449,7 @@ func (e *editor) zeichneEinstellungen(gtx layout.Context) {
 				s.setze(gtx, kk.r.Min.Add(kk.r.Size().Sub(s.groesse).Div(2)))
 				tafelKnopf(gtx, kk.c, kk.r)
 			}
-			t.rahmen.minus, t.rahmen.plus = fenster(mr), fenster(pr)
+			t.rahmen.minus, t.rahmen.plus = fensterR(mr), fensterR(pr)
 			paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(wr).Op())
 			rc := farbeLinie
 			if t.zahlFehler {
@@ -448,9 +462,10 @@ func (e *editor) zeichneEinstellungen(gtx layout.Context) {
 		}
 		if ziel == z && tafelZeilen[z].art != artSchalter {
 			ring(r)
+			rk.fokus = r
 		}
 		tafelKnopf(gtx, &t.feldKnopf[z], r)
-		t.rahmen.feld[z] = fenster(r)
+		t.rahmen.feld[z] = fensterR(r)
 		y += fh
 		if s := zeileErklaerung(z); s != "" {
 			er := e.tafelText(gtx, s, unit.Sp(12), farbeNebentext, max(feldB, W-feldX-dp(24)), 0, false)
@@ -464,11 +479,14 @@ func (e *editor) zeichneEinstellungen(gtx layout.Context) {
 			paint.FillShape(gtx.Ops, farbeWarnGrund, clip.Rect(wr).Op())
 			paint.FillShape(gtx.Ops, farbeAkzent, clip.Rect(image.Rect(wr.Min.X, wr.Min.Y, wr.Min.X+dp(3), wr.Max.Y)).Op())
 			wt.setze(gtx, image.Pt(wr.Min.X+dp(14), wr.Min.Y+dp(10)))
-			t.rahmen.warnung[z] = fenster(wr)
+			t.rahmen.warnung[z] = fensterR(wr)
 			y = wr.Max.Y
 		}
 		y += dp(10)
 	}
+	vers.Pop()
+	rk.abschluss(gtx, y, dp(8)) // y ist das Ende in Inhaltskoordinaten
+	rk.balken(gtx, inhalt)
 	ic.Pop()
 
 	// Fuß: Wirkung bzw. Fehler links, Abbrechen und Speichern rechts

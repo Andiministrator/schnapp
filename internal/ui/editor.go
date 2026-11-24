@@ -343,6 +343,8 @@ type editor struct {
 	hilfeGroesse image.Point
 	// hilfeOffen: die Übersicht der Tastenkürzel liegt über der Leinwand (Menü Hilfe, F1; hilfe.go).
 	hilfeOffen bool
+	// hilfeRoll: Rollen der Liste der Übersicht, wenn sie nicht in die Tafel passt (F-705, tafelrollen.go).
+	hilfeRoll rollZustand
 	// einst: Einstellungstafel (Menü Datei → „Settings…“, Strg+,; ADR-0034, einstellungen.go).
 	einst tafel
 
@@ -2075,6 +2077,9 @@ func (e *editor) alleTastenFilter() []event.Filter {
 		filter = append(filter, f)
 	}
 	filter = append(filter, key.FocusFilter{Target: e})
+	if e.hilfeOffen { // Bild auf/ab rollen die offene Übersicht (F-705); Pfeile, Pos1 und Ende stehen im Menüfilter
+		filter = append(filter, key.Filter{Name: key.NamePageUp}, key.Filter{Name: key.NamePageDown})
+	}
 	for _, f := range menueNavigationsFilter(e.leertastenZiele()...) {
 		filter = append(filter, f)
 	}
@@ -2117,8 +2122,15 @@ func (e *editor) tasten(gtx layout.Context) {
 			// Übersicht der Tastenkürzel offen (F1): Esc und F1 schließen sie, auch während des Speicherns; alle anderen
 			// Tasten und getippter Text wirken nicht, damit nichts unbemerkt hinter der Tafel die Leinwand ändert (wie
 			// beim offenen Menü, F-257; Sitzungs-QA B-2).
-			if k, ok := ev.(key.Event); ok && k.State == key.Press && (k.Name == key.NameEscape || k.Name == key.NameF1) {
-				e.hilfeOffen = false
+			if k, ok := ev.(key.Event); ok && k.State == key.Press {
+				r := &e.hilfeRoll
+				if k.Name == key.NameEscape || k.Name == key.NameF1 {
+					e.hilfeOffen = false
+				} else if n, rolle := rollTaste(k.Name, r.rollen, r.rollMax, gtx.Dp(hilfeZeileDp), r.sicht.Dy()); rolle &&
+					!k.Modifiers.Contain(key.ModShortcut) && !k.Modifiers.Contain(key.ModAlt) {
+					r.rollen = n // F-705: Pfeile, Bild auf/ab, Pos1, Ende rollen die Liste
+					gtx.Execute(op.InvalidateCmd{})
+				}
 			}
 			continue
 		}

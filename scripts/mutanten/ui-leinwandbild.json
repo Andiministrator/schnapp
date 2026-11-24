@@ -52,8 +52,8 @@
     "name": "L8 F-509 Tafel der Übersicht nicht auf die Leinwand begrenzt",
     "datei": "internal/ui/hilfe.go",
     "paket": "./internal/ui",
-    "alt": "groesse := image.Pt(min(flaeche.Dx(), innen*2+spalten*spalteB), min(flaeche.Dy(), innen*2+gtx.Dp(14)+pro*hoehe))",
-    "neu": "groesse := image.Pt(innen*2+spalten*spalteB, innen*2+gtx.Dp(14)+pro*hoehe)"
+    "alt": "groesse := image.Pt(min(flaeche.Dx(), innen*2+spalten*spalteB), min(flaeche.Dy(), kopf+innen+pro*hoehe))",
+    "neu": "groesse := image.Pt(innen*2+spalten*spalteB, kopf+innen+pro*hoehe)"
   },
   {
     "name": "L9 F-507 Meldung bekommt keinen Vorrang vor den Feldern",

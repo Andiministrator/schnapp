@@ -1630,7 +1630,7 @@ msgid "Menu bar"
 msgstr ""
 
 #: internal/ui/hilfe.go
-msgid "Cancel, deselect, back to Select"
+msgid "Cancel, deselect, Select tool"
 msgstr ""
 
 #: internal/ui/hilfe.go
