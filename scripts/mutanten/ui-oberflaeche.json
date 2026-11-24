@@ -108,8 +108,8 @@
     "name": "U6 Logo-s: Pupille links statt rechts",
     "datei": "internal/icons/logo.go",
     "paket": "./internal/icons",
-    "alt": "LogoSPupille  = [3]float64{34, 125, 5.5}",
-    "neu": "LogoSPupille  = [3]float64{26, 125, 5.5}"
+    "alt": "LogoSPupille  = [3]float64{35, 125, 7.5}",
+    "neu": "LogoSPupille  = [3]float64{25, 125, 7.5}"
   },
   {
     "name": "U7 Logo-s: zweiter Bogen gestaucht",
