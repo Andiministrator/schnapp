@@ -867,6 +867,6 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Test begrenzt jetzt selbst und bricht ab, bevor der Rechner leidet.
 - **Worktree-Agenten mit eigenem HOME legen den Go-Modulcache schreibgeschützt in den Worktree**: HOME für go-Befehle
   nicht umsetzen; vor dem Abräumen `GOMODCACHE=<pfad> go clean -modcache`, sonst scheitert `git worktree remove`.
-- **Prüfmuster F-1 trifft auch Bezeichner** (`tg` mit `-i`): Variablen in Tests so benennen, dass das Muster sauber bleibt.
+- **Prüfmuster F-1 trifft auch Bezeichner** (eine Testvariable mit dem Kürzel aus dem Muster, `-i`): Variablen in Tests so benennen, dass das Muster sauber bleibt.
 - **Cherry-Pick-Konflikt am Ende eines ADR**: Zwei Stränge hängen Nachträge an dieselbe Stelle; beide behalten,
   Nachtragsnummern prüfen.
