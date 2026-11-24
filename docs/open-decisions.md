@@ -220,8 +220,9 @@ Stand 21.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
 
 ## E-25: Claudes Entscheidungen beim Sprint-Abschluss 12 — ENTSCHIEDEN 24.11.2026 (Claude im Auftrag Andis: „entscheide du“)
 
-- **Agenten `edit` + `library`** (F-699): keine eigene Einwilligung, Wirkung dokumentiert, Ergebnisse unter `agents/`
-  (ADR-0030 Nachtrag 13 Punkt 5).
+- **Agenten `edit` + `library`** (F-699): keine eigene Einwilligung; die Lesewirkung entsteht nur mit beiden Schaltern
+  zusammen, wer sie nicht will, schaltet einen aus. Wirkung dokumentiert, neue Aufnahmen unter `agents/` (ADR-0030
+  Nachtrag 13 Punkt 5, berichtigt F-741).
 - **Text an der Stauch-Naht** (F-739): Grenze bis Karte #281 (ADR-0023 Nachtrag 12).
 - **`.claude/settings.json` im öffentlichen Repo** (Abschluss-Kritik D-11): bleibt mit der Sperrregel, die den Zweig
   `alt-main` beim Namen nennt. Die Regel verhindert, dass die alte Geschichte versehentlich veröffentlicht wird; dass es

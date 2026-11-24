@@ -457,11 +457,14 @@ Anlass: Abschluss-Kritik Sprint 12, B-1 und B-2.
    `internal/export` `renameat2` mit `RENAME_NOREPLACE` (Schreiben ohne Ersetzen). Die Standardbibliothek bietet
    beides nicht; das Paket (BSD-3-Clause, Go-Projekt) kam schon vorher über Gio in den Bau, neuer Code entsteht nicht.
 5. **Weiche aus Punkt 2 entschieden (Andi, 24.11.2026: „entscheide du das, du kennst agents besser als ich“):** Keine
-   eigene Einwilligung. `edit` ist ohnehin die Erlaubnis, beliebige Dateien des Menschen zu öffnen und dauerhaft zu
-   ändern; wer das einem Agenten gibt, gibt ihm Lesezugriff auf diese Dateien schon über die Antwort (Größe, Zählung)
-   und über jedes Ergebnis. Eine dritte Einwilligung nur für „Ergebnis aus der Bibliothek lesen“ wäre eine Schranke,
-   die mit `library` sofort wieder fällt, und ein weiterer Schalter, den man falsch setzen kann. Beide Schalter bleiben
-   aus, die Wirkung steht in `docs/agents.md`, Ergebnisse liegen sichtbar unter `agents/`.
+   eigene Einwilligung. Mit `edit` allein öffnet ein Agent beliebige Bilddateien des Menschen und legt ein Ergebnis
+   unter `agents/` ab, ändert aber keine vorhandene Datei und liest das Ergebnis über MCP nicht zurück (das braucht
+   `library`). Die Lesewirkung entsteht erst mit beiden Schaltern zusammen — und genau diese Kombination ist schon die
+   Entscheidung des Menschen. Eine dritte Einwilligung nur für „Ergebnis einer fremden Datei lesen“ wäre ein weiterer
+   Schalter, den man falsch setzen kann, ohne eine Wirkung, die nicht schon „nur einen der beiden einschalten“ (Punkt 2)
+   bietet. Beide Schalter bleiben aus, die Wirkung steht in `docs/agents.md`; neue Aufnahmen liegen sichtbar unter
+   `agents/`, eine Arbeitsdatei der Bibliothek (mit `library`) wird wie bisher fortgeschrieben. *(Begründung berichtigt
+   nach der Sitzungs-QA, F-741.)*
 6. **Echtlauf-Skript entfernt:** `scripts/echtlauf-mcp-hinweise.sh` (weiter oben für F-490 und F-506 genannt) setzte
    vorübergehend Einwilligungen in der echten `settings.ini`; die Echtläufe sind erledigt, das Skript ist aus dem Repo
    genommen (Andi, 24.11.2026, F-717). Es steht in der git-Geschichte.

@@ -54,3 +54,8 @@ behoben · alle `[B]` behoben · Sprint-Definition erfüllt. Maßgeblich: `~/.cl
 4. Das Finding wird im Recap der 🏁-Sprint-Abschluss-Karte unter „Ausnahmepfad [S]“ namentlich genannt.
 
 Fehlt eine Bedingung, blockiert das Finding.
+
+**Dauerhaft akzeptiert** (F-742): Ist die Entscheidung nicht vorläufig, sondern endgültig (der ADR-Nachtrag sagt
+„bleibt so“, keine Karte, kein Termin), steht das Finding mit Status `akzeptiert` und dem ADR-Verweis im Register und
+darf ins Archiv. Bedingung 3 heißt dann: Status „akzeptiert (Ausnahmepfad [S] Sprint N, dauerhaft: ADR-…)“. Beispiel:
+F-736 (ADR-0021 Nachtrag 14 Punkt 5).
