@@ -24,12 +24,17 @@ jobs:
       - name: Bibliotheken für Gio (Wayland, EGL, xkbcommon)
         # libegl-mesa0 und libgl1-mesa-dri: Mesa mit Software-Rasterung für die Zeichentests ohne Fenster (Karte #224);
         # libgles2 liefert libGLESv2.so.2, ohne die Gio headless im Runner übersprang (CI-Befund, F-602, Karte #227)
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwayland-dev libegl-dev libxkbcommon-dev libegl-mesa0 libgl1-mesa-dri libgles2
+        # tesseract (deu, eng) und rsvg-convert für die Echt-Tests (TestErkenneEcht, TestSVGKastenOhneFlaecheWieRenderer):
+        # ohne sie sprangen die Tests still, F-714
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwayland-dev libegl-dev libxkbcommon-dev libegl-mesa0 libgl1-mesa-dri libgles2 tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng librsvg2-bin
       # Mit Tag probe, sonst fehlen Pakete, deren Dateien alle //go:build probe tragen (cmd/schnapp-fernbedienung, F-715)
       - name: gofmt
         run: test -z "$(gofmt -l $(go list -f '{{.Dir}}' ./...) $(GOFLAGS=-tags=novulkan,nox11,probe go list -f '{{.Dir}}' ./...))"
       - run: go vet ./...
-      - run: go test ./...
+      # Jeder übersprungene Test steht im Protokoll; ein Sprung, der nicht in scripts/testsprung/erlaubt.txt steht, lässt
+      # den Schritt scheitern (F-714). bash der Runner läuft mit pipefail: ein Fehler von go test schlägt ebenfalls durch.
+      - name: go test (Sprünge sichtbar)
+        run: go test -json ./... | go run ./scripts/testsprung -erlaubt scripts/testsprung/erlaubt.txt
       # Zeichnen des Editors ohne Fenster (Gio headless über EGL surfaceless, internal/ui/zeichnen_headless_test.go):
       # SCHNAPP_HEADLESS_PFLICHT=1 (Job-Umgebung oben) macht ein Überspringen (kein EGL/GLES im Runner) zum Fehler
       # (F-602, F-616), damit die Mutanten E37 bis E40 in der CI bewacht sind; dieser Schritt zeigt PASS je Test im Protokoll.
@@ -41,10 +46,17 @@ jobs:
       - name: scripts/mutanten
         working-directory: scripts/mutanten
         run: test -z "$(gofmt -l .)" && go vet . && go test . && go run . -wurzel ../.. -trocken
-      # Marken-Werkzeug (Karte #23): bauen und prüfen; der Vergleich mit den SVGs braucht Open Sans und überspringt hier
+      # Marken-Werkzeug (Karte #23): bauen und prüfen. Der Vergleich mit den eingecheckten SVGs (TestSVGWieEingecheckt)
+      # braucht genau Open Sans 3.003 SemiBold: festen Stand laden, Prüfsumme vergleichen, kein Sprung erlaubt (F-714).
       - name: brand/werkzeug
         working-directory: brand/werkzeug
-        run: test -z "$(gofmt -l .)" && go vet . && go test .
+        env:
+          SCHNAPP_SCHRIFT: ${{ runner.temp }}/OpenSans-SemiBold.ttf
+        run: |
+          curl -sSfL -o "$SCHNAPP_SCHRIFT" https://raw.githubusercontent.com/googlefonts/opensans/bd7e37632246368c60fdcbd374dbf9bad11969b6/fonts/ttf/OpenSans-SemiBold.ttf
+          echo "4a413711684a9dd564ef0f1c10cb62b5d9f7eb6df2cff962f5341a6ecd5f64ae  $SCHNAPP_SCHRIFT" | sha256sum -c -
+          test -z "$(gofmt -l .)" && go vet .
+          go test -json . | (cd ../.. && go run ./scripts/testsprung)
       # install.sh mit eigenem HOME und go-Attrappe (F-324)
       - run: scripts/install-test.sh
       - run: go build -trimpath -o /dev/null ./cmd/schnapp
@@ -90,6 +102,27 @@ jobs:
         run: |
           go build -trimpath -o "$RUNNER_TEMP/schnapp-ocr" .
           cd .. && SCHNAPP_OCR_PROGRAMM="$RUNNER_TEMP/schnapp-ocr" go test -count=1 -run 'TestErkenneEigenesEcht' -v ./internal/ocr
+
+  # Schwachstellen der Go-Module (F-718): govulncheck in fester Fassung über alle Module mit Programmcode. Meldet es eine
+  # erreichbare Schwachstelle, scheitert der Job; Abhilfe ist das Heben des Moduls (Beispiel F-744: golang.org/x/image).
+  govulncheck:
+    runs-on: ubuntu-latest
+    env:
+      GOFLAGS: -tags=novulkan,nox11
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: go.mod
+      - name: Bibliotheken für Gio (Wayland, EGL, xkbcommon)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwayland-dev libegl-dev libxkbcommon-dev
+      - run: go install golang.org/x/vuln/cmd/govulncheck@v1.10.0
+      - name: govulncheck je Modul
+        run: |
+          for m in . draw ocr brand/werkzeug scripts/mutanten; do
+            echo "== $m"
+            (cd "$m" && govulncheck ./...)
+          done
 
   # Gepatchtes Gio (ADR-0015): third_party/gio muss genau Gio + third_party/gio-ausgabe.patch sein.
   gio-patch:

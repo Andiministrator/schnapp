@@ -34,6 +34,13 @@ Code-Änderung triagiert wurden (im Recap vermerken). Ein **zweiter** Durchlauf 
 ## Phase 3 — Aufräumen & Triage
 - `tmp/` aufgeräumt (nur ausgeschriebene Pfade), Knowledge und Glossar aktuell.
 - Alle Findings triagieren: sofort · eingeplant · backlog · akzeptiert. Jedes offene Finding hat eine Board-Karte.
+- Schwachstellen der Go-Module (F-718): der CI-Job `govulncheck` muss für den getaggten Commit grün sein; dazu die
+  Fassung von govulncheck selbst prüfen (`curl -s -A ci-check https://proxy.golang.org/golang.org/x/vuln/@latest | jq -r .Version`)
+  und neuere Fassungen der direkt eingebundenen Module ansehen (`go list -m -u golang.org/x/image golang.org/x/sys
+  github.com/godbus/dbus/v5`). Ein Modul mit erreichbarer Schwachstelle wird vor dem Tag gehoben (Beispiel F-744).
+- Übersprungene Tests (F-714): Der CI-Schritt „go test (Sprünge sichtbar)“ listet jeden Sprung; die Liste
+  `scripts/testsprung/erlaubt.txt` enthält nur Messungen und Tests, die ein anderer Job fährt. Ein Eintrag dort braucht
+  einen Grund.
 - CI-Pins prüfen (F-316): für jede gepinnte Aktion in `.github/workflows/test.yml` die neueste Version über die öffentliche API ansehen (`curl -s -A ci-pin-check https://api.github.com/repos/<besitzer>/<aktion>/releases/latest | jq -r .tag_name`, SHA des Tags über `…/git/ref/tags/<tag>`). Ist sie neuer, Pin und Versionskommentar heben, CI-Lauf abwarten, Annotationen ansehen. Ergebnis eine Zeile im Recap.
 
 ## Freigabekriterien

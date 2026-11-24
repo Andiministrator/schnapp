@@ -1,0 +1,7 @@
+# Erlaubte Sprünge im Job „wurzel“ der CI (F-714, scripts/testsprung). Je Zeile: Importpfad, Testname, Grund nach #.
+# Jeder andere übersprungene Test lässt die CI scheitern: Fehlt ein Werkzeug (tesseract, rsvg-convert, EGL), gehört es in
+# die CI, nicht in diese Liste.
+github.com/Andiministrator/schnapp/internal/ocr TestErkenneEigenesEcht # läuft im Job „ocr“ gegen das gebaute schnapp-ocr
+github.com/Andiministrator/schnapp/cmd/schnapp TestKopierzeitPNG # Messung von Hand, SCHNAPP_MESSUNG=1
+github.com/Andiministrator/schnapp/internal/render TestEditorFotoGegenRenderer # Messung F-407 mit Foto aus dem virtuellen KWin
+github.com/Andiministrator/schnapp/internal/render TestNahtGrenzeMessen # Messung von Hand

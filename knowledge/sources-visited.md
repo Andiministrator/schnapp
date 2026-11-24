@@ -164,6 +164,16 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | https://downloads.sourceforge.net/project/giflib/giflib-5.2.1.tar.gz | 2026-11-24 | 2026-11-24 | 404 | curl | Fehlschlag | — |
 | https://storage.googleapis.com/webassembly/emscripten-ports/giflib-5.2.1.tar.gz | 2026-11-24 | 2026-11-24 | 200 | curl | Archiv des Emscripten-Ports: COPYING (MIT), openbsd-reallocarray.c (MIT) | ocr/THIRD-PARTY-LICENSES/giflib-COPYING.txt |
 
+## CI: Sprünge, Schrift, Schwachstellen (24.11.2026, Karte #277, F-714, F-718, F-744)
+
+| URL | Letzter Besuch | Erstbesuch | Status | Weg | Inhalt | Zieldatei |
+|---|---|---|---|---|---|---|
+| https://gitlab.archlinux.org/archlinux/packaging/packages/ttf-opensans/-/raw/main/PKGBUILD | 2026-11-24 | 2026-11-24 | 200 | curl | ttf-opensans 3.003 aus googlefonts/opensans Commit bd7e376…, Dateien fonts/ttf/*.ttf | .github/workflows/test.yml |
+| https://raw.githubusercontent.com/googlefonts/opensans/bd7e37632246368c60fdcbd374dbf9bad11969b6/fonts/ttf/OpenSans-SemiBold.ttf | 2026-11-24 | 2026-11-24 | 200 | curl | SHA-256 4a413711…64ae, gleich der Arch-Datei, die die eingecheckten SVGs erzeugt hat | .github/workflows/test.yml |
+| https://proxy.golang.org/golang.org/x/vuln/@latest | 2026-11-24 | 2026-11-24 | 200 | curl | govulncheck v1.10.0 (17.11.2026) | .github/workflows/test.yml |
+| https://proxy.golang.org/golang.org/x/image/@latest | 2026-11-24 | 2026-11-24 | 200 | curl | v0.48.0; dazu x/net v0.63.0, x/text v0.44.0, x/sys v0.50.0 über dieselbe Abfrage | go.mod |
+| https://vuln.go.dev (über govulncheck) | 2026-11-24 | 2026-11-24 | 200 | govulncheck | x/image v0.26.0: GO-2026-4815, -4962, -5032, -5062, -5066 erreichbar (SFNT, TIFF), behoben ab v0.43.0 | docs/findings.md (F-744) |
+
 ## Suchanfragen
 
 | Datum | Anfrage | Ergebnis |

@@ -178,6 +178,7 @@ ADR-0003 Nachtrag 2, ADR-0015.
 - **Zeichenpakete** (eigenes Modul `github.com/Andiministrator/schnapp/draw`, Ordner `draw/`, ADR-0012):
   `cd draw && go vet ./... && go test ./...`. Ein Schwesterprojekt bindet dieses Modul ein — öffentliche Schnittstellen nur nach
   Abstimmung ändern (wer, steht in `CLAUDE.local.md`).
+- **CI-Prüfungen** (`.github/workflows/test.yml`, Karte #277): `go test -json ./...` läuft durch `scripts/testsprung` (listet jeden übersprungenen Test, scheitert an einem, der nicht mit Grund in `scripts/testsprung/erlaubt.txt` steht, F-714); die CI installiert tesseract (deu, eng) und rsvg-convert und lädt Open Sans 3.003 SemiBold per festem Commit mit Prüfsumme für `TestSVGWieEingecheckt`; Job `govulncheck` (v1.10.0) über alle Module mit Programmcode (F-718); lokal `go install golang.org/x/vuln/cmd/govulncheck@v1.10.0` mit `GOBIN` unter `tmp/`.
 - **Gepatchtes Gio** `third_party/gio/` (ADR-0015): eigenes Modul, eingebunden per `replace gioui.org => …/third_party/gio`.
   Änderungen dort, dann `third_party/gio-patch.sh erzeugen` (Patch im selben Commit); Prüfung `third_party/gio-patch.sh pruefen`.
 - **Wurzelmodul** `github.com/Andiministrator/schnapp` (bindet Gio per `replace gioui.org => ./third_party/gio`, ADR-0015):
