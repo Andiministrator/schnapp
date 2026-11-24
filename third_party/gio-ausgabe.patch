@@ -1783,3 +1783,168 @@ index a5558f7..f030bfc 100644
  // Decorated controls whether Gio and/or the platform are responsible
  // for drawing window decorations. Providing false indicates that
  // the application will either be undecorated or will draw its own decorations.
+diff --git a/gpu/gpu.go b/gpu/gpu.go
+index bd8950f..87d5ee2 100644
+--- a/gpu/gpu.go
++++ b/gpu/gpu.go
+@@ -363,7 +363,7 @@ func newGPU(ctx driver.Device) *gpu {
+ 
+ func (g *gpu) Clear(col color.NRGBA) {
+ 	g.drawOps.clear = true
+-	g.drawOps.clearColor = f32color.LinearFromSRGB(col)
++	g.drawOps.clearColor = f32color.PremulSRGB(col)
+ }
+ 
+ func (g *gpu) Release() {
+@@ -474,7 +474,7 @@ func (r *renderer) texHandle(cache *textureCache, data imageOpData) driver.Textu
+ 		minFilter, magFilter = driver.FilterNearest, driver.FilterNearest
+ 	}
+ 
+-	handle, err := r.ctx.NewTexture(driver.TextureFormatSRGBA,
++	handle, err := r.ctx.NewTexture(driver.TextureFormatRGBA8,
+ 		data.src.Bounds().Dx(), data.src.Bounds().Dy(),
+ 		minFilter, magFilter,
+ 		driver.BufferBindingTexture,
+@@ -590,7 +590,7 @@ func createColorPrograms(b driver.Device, vsSrc shader.Sources, fsSrc [3]shader.
+ 		return pipelines, err
+ 	}
+ 	defer vsh.Release()
+-	for i, format := range []driver.TextureFormat{driver.TextureFormatOutput, driver.TextureFormatSRGBA} {
++	for i, format := range []driver.TextureFormat{driver.TextureFormatOutput, driver.TextureFormatRGBA8} {
+ 		{
+ 			fsh, err := b.NewFragmentShader(fsSrc[materialTexture])
+ 			if err != nil {
+@@ -846,7 +846,7 @@ func (r *renderer) drawLayers(layers []opacityLayer, ops []imageOp) {
+ 		return
+ 	}
+ 	fbo := -1
+-	r.layerFBOs.resize(r.ctx, driver.TextureFormatSRGBA, r.layers.sizes)
++	r.layerFBOs.resize(r.ctx, driver.TextureFormatRGBA8, r.layers.sizes)
+ 	for _, l := range slices.Backward(layers) {
+ 
+ 		if fbo != l.place.Idx {
+@@ -1166,13 +1166,13 @@ func (d *drawState) materialFor(rect f32.Rectangle, off f32.Point, partTrans f32
+ 	switch d.matType {
+ 	case materialColor:
+ 		m.material = materialColor
+-		m.color = f32color.LinearFromSRGB(d.color)
++		m.color = f32color.PremulSRGB(d.color)
+ 		m.opaque = m.color.A == 1.0
+ 	case materialLinearGradient:
+ 		m.material = materialLinearGradient
+ 
+-		m.color1 = f32color.LinearFromSRGB(d.color1)
+-		m.color2 = f32color.LinearFromSRGB(d.color2)
++		m.color1 = f32color.PremulSRGB(d.color1)
++		m.color2 = f32color.PremulSRGB(d.color2)
+ 		m.opaque = m.color1.A == 1.0 && m.color2.A == 1.0
+ 
+ 		m.uvTrans = partTrans.Mul(gradientSpaceTransform(clip, off, d.stop1, d.stop2))
+diff --git a/gpu/headless/headless.go b/gpu/headless/headless.go
+index 08a51d6..3baebd3 100644
+--- a/gpu/headless/headless.go
++++ b/gpu/headless/headless.go
+@@ -73,7 +73,7 @@ func NewWindow(width, height int) (*Window, error) {
+ 			return err
+ 		}
+ 		fboTex, err := dev.NewTexture(
+-			driver.TextureFormatSRGBA,
++			driver.TextureFormatRGBA8,
+ 			width, height,
+ 			driver.FilterNearest, driver.FilterNearest,
+ 			driver.BufferBindingFramebuffer,
+diff --git a/gpu/internal/opengl/opengl.go b/gpu/internal/opengl/opengl.go
+index 43f4b5b..e7c9301 100644
+--- a/gpu/internal/opengl/opengl.go
++++ b/gpu/internal/opengl/opengl.go
+@@ -244,41 +244,20 @@ func (b *Backend) BeginFrame(target driver.RenderTarget, clear bool, viewport im
+ 	}
+ 	b.outputFBO = renderFBO
+ 	b.glstate.bindFramebuffer(b.funcs, gl.FRAMEBUFFER, renderFBO)
+-	if b.gles {
+-		// If the output framebuffer is not in the sRGB colorspace already, emulate it.
+-		fbSRGB := false
+-		if !b.gles || b.glver[0] > 2 {
+-			var fbEncoding int
+-			if !renderFBO.Valid() {
+-				fbEncoding = b.funcs.GetFramebufferAttachmentParameteri(gl.FRAMEBUFFER, gl.BACK, gl.FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING)
+-			} else {
+-				fbEncoding = b.funcs.GetFramebufferAttachmentParameteri(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING)
+-			}
+-			fbSRGB = fbEncoding != gl.LINEAR
+-		}
+-		if !fbSRGB && viewport != (image.Point{}) {
+-			if b.sRGBFBO == nil {
+-				sfbo, err := NewSRGBFBO(b.funcs, &b.glstate)
+-				if err != nil {
+-					panic(err)
+-				}
+-				b.sRGBFBO = sfbo
+-			}
+-			if err := b.sRGBFBO.Refresh(viewport); err != nil {
+-				panic(err)
+-			}
+-			renderFBO = b.sRGBFBO.Framebuffer()
+-		} else if b.sRGBFBO != nil {
+-			b.sRGBFBO.Release()
+-			b.sRGBFBO = nil
+-		}
+-	} else {
+-		b.glstate.set(b.funcs, gl.FRAMEBUFFER_SRGB, true)
++	// Schnapp (ADR-0020 Nachtrag 14, F-520): Alles wird im sRGB-Raum gemischt wie im Renderer. Farben werden nicht
++	// linearisiert (gpu.go), Texturen sind RGBA8 und der Ausgabepuffer wandelt nichts um: keine sRGB-Nachbildung
++	// (SRGBFBO), unter Desktop-GL FRAMEBUFFER_SRGB aus. Die EGL-Fläche ist dafür keine sRGB-Fläche (internal/egl).
++	if !b.gles {
++		b.glstate.set(b.funcs, gl.FRAMEBUFFER_SRGB, false)
+ 		if !b.vertArray.Valid() {
+ 			b.vertArray = b.funcs.CreateVertexArray()
+ 		}
+ 		b.glstate.bindVertexArray(b.funcs, b.vertArray)
+ 	}
++	if b.sRGBFBO != nil {
++		b.sRGBFBO.Release()
++		b.sRGBFBO = nil
++	}
+ 	b.glstate.bindFramebuffer(b.funcs, gl.FRAMEBUFFER, renderFBO)
+ 	if b.sRGBFBO != nil && !clear {
+ 		b.clearOutput(0, 0, 0, 0)
+diff --git a/internal/egl/egl.go b/internal/egl/egl.go
+index d6ad7b6..c8683a7 100644
+--- a/internal/egl/egl.go
++++ b/internal/egl/egl.go
+@@ -227,10 +227,9 @@ func createContext(disp _EGLDisplay) (*eglContext, error) {
+ }
+ 
+ func createSurface(disp _EGLDisplay, eglCtx *eglContext, win NativeWindowType) (_EGLSurface, error) {
++	// Schnapp (ADR-0020 Nachtrag 14, F-520): keine sRGB-Fläche, die Werte werden unverändert geschrieben und im
++	// sRGB-Raum gemischt (wie der Renderer).
+ 	var surfAttribs []_EGLint
+-	if eglCtx.srgb {
+-		surfAttribs = append(surfAttribs, _EGL_GL_COLORSPACE_KHR, _EGL_GL_COLORSPACE_SRGB_KHR)
+-	}
+ 	surfAttribs = append(surfAttribs, _EGL_NONE)
+ 	eglSurf := eglCreateWindowSurface(disp, eglCtx.config, win, surfAttribs)
+ 	if eglSurf == nilEGLSurface && eglCtx.srgb {
+diff --git a/internal/f32color/rgba.go b/internal/f32color/rgba.go
+index 5488a0c..41b08a7 100644
+--- a/internal/f32color/rgba.go
++++ b/internal/f32color/rgba.go
+@@ -62,6 +62,18 @@ func LinearFromSRGB(col color.NRGBA) RGBA {
+ 	}
+ }
+ 
++// PremulSRGB wandelt col (sRGB, nicht vormultipliziert) in vormultiplizierte Werte, OHNE sie zu linearisieren: Schnapp
++// mischt im sRGB-Raum wie sein Renderer (ADR-0020 Nachtrag 14, F-520).
++func PremulSRGB(col color.NRGBA) RGBA {
++	af := float32(col.A) / 0xFF
++	return RGBA{
++		R: float32(col.R) / 0xFF * af,
++		G: float32(col.G) / 0xFF * af,
++		B: float32(col.B) / 0xFF * af,
++		A: af,
++	}
++}
++
+ // NRGBAToRGBA converts from non-premultiplied sRGB color to premultiplied sRGB color.
+ //
+ // Each component in the result is `sRGBToLinear(c * alpha)`, where `c`

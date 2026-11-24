@@ -1,0 +1,23 @@
+[
+  {
+    "name": "M215-1 Farbe wieder linearisiert",
+    "datei": "third_party/gio/gpu/gpu.go",
+    "paket": "./internal/ui",
+    "alt": "m.color = f32color.PremulSRGB(d.color)",
+    "neu": "m.color = f32color.LinearFromSRGB(d.color)"
+  },
+  {
+    "name": "M215-2 Ausgabefläche ohne Gio als sRGB-Textur",
+    "datei": "third_party/gio/gpu/headless/headless.go",
+    "paket": "./internal/ui",
+    "alt": "driver.TextureFormatRGBA8,",
+    "neu": "driver.TextureFormatSRGBA,"
+  },
+  {
+    "name": "M215-3 Bilder als sRGB-Textur (Lupe, Leinwandbild)",
+    "datei": "third_party/gio/gpu/gpu.go",
+    "paket": "./internal/ui",
+    "alt": "r.ctx.NewTexture(driver.TextureFormatRGBA8,",
+    "neu": "r.ctx.NewTexture(driver.TextureFormatSRGBA,"
+  }
+]

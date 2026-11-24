@@ -504,3 +504,41 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
 - **Widerlegungsbedingung:** Eine installierte Schrift, deren Budget-Dokument (nach dem Muster von
   `BenchmarkNaehteAlleGrenzenSystemschrift`) ungestört deutlich über rund 21 s rastert, verlangt einen größeren Faktor
   oder den Faktor je Schrift.
+
+## Nachtrag 14 (24.11.2026): Der Editor mischt im sRGB-Raum wie der Renderer (F-520, Karte #215)
+
+**Status:** Akzeptiert (Claude Sonnet 5.5 mit Claude Opus 5.5, Karte #215).
+
+- **Befund (F-520):** Gio rechnet linear: Es linearisiert Farben auf der CPU (`f32color.LinearFromSRGB`), hält Texturen
+  als sRGB-Texturen und schreibt in einen sRGB-Ausgabepuffer, mischt also im linearen Raum. Renderer, Export und die
+  gespeicherte Datei mischen die Zahlenwerte (sRGB). Gemessen mit `TestEditorMischtWieRenderer` (Gio ohne Fenster über
+  einem Streifenbild, Zoom 100 %): Füllung 50 % bis 42, Strich 63 % bis 64, Ebene 40 % bis 40 von 255 je Kanal zu hell.
+  Nach F-407 (ADR-0023 Nachtrag 11) betraf es alle übrigen halbdurchsichtigen Zeichnungen: Beschriftungen mit freier
+  Farbe und Deckkraft, Ebenen-Deckkraft, Schild-Hintergründe, Schatten der Nähte, Hinweisflächen.
+- **Weg (a) statt Vorrastern:** Vorgerasterte Beschriftungen wären beim Zoomen unscharf (das Leinwandbild ist ein Bild
+  in Ansichtsgröße; Vektoren sind im Editor bei Zoom 400 % scharf) und müssten bei jedem Zug neu gerechnet werden.
+  Stattdessen mischt Gio selbst im sRGB-Raum — die Widerlegungsbedingung des Findings („lässt sich nicht umstellen, ohne
+  andere Teile zu verfälschen“) trat nicht ein, weil deckende Flächen dabei dieselben Werte schreiben. Der Patch
+  (`third_party/gio-ausgabe.patch`, ADR-0015) ist klein und nur für Linux/OpenGL gemeint (Schnapp ist Wayland-only,
+  ADR-0007; Vulkan, Direct3D, Metal sind nicht umgestellt und nicht gebaut):
+  1. `f32color.PremulSRGB` (vormultipliziert, **nicht linearisiert**) statt `LinearFromSRGB` für Farben, Verläufe und
+     Klarfarbe in `gpu/gpu.go`;
+  2. Bild-Texturen, Zwischenebenen der Deckkraft (`paint.PushOpacity`) und die Fläche von `gpu/headless` als `RGBA8`
+     statt `SRGBA`;
+  3. OpenGL: keine sRGB-Nachbildung (`SRGBFBO`), unter Desktop-GL `FRAMEBUFFER_SRGB` aus; EGL: keine sRGB-Fläche
+     (`EGL_GL_COLORSPACE_SRGB_KHR` entfällt), der Compositor sieht die Werte unverändert.
+- **Folgen:** Deckende Flächen (Menü, Leisten, Schachbrett, Auswahlrahmen) schreiben dieselben Werte wie vorher
+  (`TestEditorDeckendBleibtUnveraendert`, Sichtprobe `scripts/drehbuecher/mischen-215.txt`). Halbdurchsichtiges der
+  Oberfläche (Schatten der Nähte, Hinweisflächen) und alle geglätteten Ränder (Schrift, Kanten) mischen jetzt in sRGB
+  wie Renderer und Export: Schrift wirkt am Rand minimal anders (die übliche Wirkung von Mischen ohne Gamma). Ein
+  verkleinert dargestelltes Bild (Zoom unter 100 %, Mipmaps) wird jetzt ohne Gamma gemittelt, wie in den meisten
+  Bildbetrachtern. Das Vorrastern der Nähte (F-407) bleibt, ist aber nicht mehr nötig; die Aussage „Gio mischt linear“
+  in ADR-0023 Nachtrag 11 gilt seit diesem Nachtrag nicht mehr.
+- **Ergebnis:** Editor gegen Renderer höchstens 1 je Kanal (vorher 42, 64, 40); in der echten EGL-Fläche des virtuellen
+  KWin (Probelauf, Strich mit Ebenen-Deckkraft 50 %) 3390 Pixel, größte Abweichung 1.
+- **Tests und Mutanten:** `internal/ui/mischen_test.go` (`TestEditorMischtWieRenderer`: Füllung, Strich, Ebene, Schild;
+  `TestEditorDeckendBleibtUnveraendert`), Mutanten M215-1 bis -3 in `scripts/mutanten/ui-mischen.json`. Ungeprüft: echte
+  Grafikhardware (nur Mesa-Software im virtuellen KWin und ohne Fenster).
+- **Widerlegungsbedingung:** Zeigt echte Hardware (Intel, AMD, NVIDIA unter Plasma) ein anderes Bild als der virtuelle
+  KWin — etwa zu dunkle oder helle Oberfläche, weil der Treiber die Fläche doch als sRGB behandelt —, ist der EGL-Teil
+  (Punkt 3) zurückzunehmen und das Vorrastern zu bauen.

@@ -160,7 +160,8 @@ der Wegwerf-Prototyp `prototype/` (entfernt in Sprint 9, ADR-0027; Stand in der 
   virtuellen KWin von `scripts/probe.sh` (F-229); das Paket selbst hat kein Build-Tag.
 
 Gio trägt, mit einem kleinen Patch (Monitorwahl, gebrochene Skalierung, Mauszeiger bei gemischter Skala F-78, Bild-Typ in
-der Zwischenablage ADR-0015 Nachtrag 2, Rückmeldung `ClipboardCancelled` Nachtrag 3) —
+der Zwischenablage ADR-0015 Nachtrag 2, Rückmeldung `ClipboardCancelled` Nachtrag 3, Mischen im sRGB-Raum wie der Renderer Nachtrag 4 / ADR-0020 Nachtrag 14, F-520:
+`f32color.PremulSRGB`, RGBA8-Texturen, keine sRGB-EGL-Fläche, `internal/ui/mischen_test.go`) —
 ADR-0003 Nachtrag 2, ADR-0015.
 
 ## Entwicklungsstand

@@ -426,3 +426,5 @@ schwerer zu prüfen).
   zusätzlich zu `Ansichtsbild`. Im Alltag unkritisch; nur präparierte Grenzdokumente lassen das Fenster je Schwärzung
   gut eine Sekunde stocken. Abhilfe, falls nötig: den Maskenspeicher am Editor halten, solange Größe, Form und Faktor
   gleich bleiben, oder nur das geänderte Rechteck neu mischen (F-525).
+
+- **Überholt durch ADR-0020 Nachtrag 14 (F-520):** Gio mischt seither ebenfalls in sRGB; das Vorrastern des Fasersaums bleibt, ist aber nicht mehr nötig.

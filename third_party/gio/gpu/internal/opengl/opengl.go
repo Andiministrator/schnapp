@@ -244,40 +244,19 @@ func (b *Backend) BeginFrame(target driver.RenderTarget, clear bool, viewport im
 	}
 	b.outputFBO = renderFBO
 	b.glstate.bindFramebuffer(b.funcs, gl.FRAMEBUFFER, renderFBO)
-	if b.gles {
-		// If the output framebuffer is not in the sRGB colorspace already, emulate it.
-		fbSRGB := false
-		if !b.gles || b.glver[0] > 2 {
-			var fbEncoding int
-			if !renderFBO.Valid() {
-				fbEncoding = b.funcs.GetFramebufferAttachmentParameteri(gl.FRAMEBUFFER, gl.BACK, gl.FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING)
-			} else {
-				fbEncoding = b.funcs.GetFramebufferAttachmentParameteri(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING)
-			}
-			fbSRGB = fbEncoding != gl.LINEAR
-		}
-		if !fbSRGB && viewport != (image.Point{}) {
-			if b.sRGBFBO == nil {
-				sfbo, err := NewSRGBFBO(b.funcs, &b.glstate)
-				if err != nil {
-					panic(err)
-				}
-				b.sRGBFBO = sfbo
-			}
-			if err := b.sRGBFBO.Refresh(viewport); err != nil {
-				panic(err)
-			}
-			renderFBO = b.sRGBFBO.Framebuffer()
-		} else if b.sRGBFBO != nil {
-			b.sRGBFBO.Release()
-			b.sRGBFBO = nil
-		}
-	} else {
-		b.glstate.set(b.funcs, gl.FRAMEBUFFER_SRGB, true)
+	// Schnapp (ADR-0020 Nachtrag 14, F-520): Alles wird im sRGB-Raum gemischt wie im Renderer. Farben werden nicht
+	// linearisiert (gpu.go), Texturen sind RGBA8 und der Ausgabepuffer wandelt nichts um: keine sRGB-Nachbildung
+	// (SRGBFBO), unter Desktop-GL FRAMEBUFFER_SRGB aus. Die EGL-Fläche ist dafür keine sRGB-Fläche (internal/egl).
+	if !b.gles {
+		b.glstate.set(b.funcs, gl.FRAMEBUFFER_SRGB, false)
 		if !b.vertArray.Valid() {
 			b.vertArray = b.funcs.CreateVertexArray()
 		}
 		b.glstate.bindVertexArray(b.funcs, b.vertArray)
+	}
+	if b.sRGBFBO != nil {
+		b.sRGBFBO.Release()
+		b.sRGBFBO = nil
 	}
 	b.glstate.bindFramebuffer(b.funcs, gl.FRAMEBUFFER, renderFBO)
 	if b.sRGBFBO != nil && !clear {

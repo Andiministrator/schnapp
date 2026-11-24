@@ -1,0 +1,23 @@
+# Sichtprobe ADR-0020 Nachtrag 14 (Karte #215, F-520): halbdurchsichtige Beschriftungen mischt der Editor im sRGB-Raum
+# wie der Renderer, über die echte EGL-Fläche des virtuellen KWin (nicht nur über Gio ohne Fenster).
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/mischen-215.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1. Das Rechteck hat nur einen Strich (Füllung „Keine“); Strichstärke − / + klickt die Leiste,
+# das Feld „Deckkraft“ der Ebene liegt bei nur einer Ebene (plus Bild) bei x 1404–1474, y 769–795.
+# Erwartet: 01 deckender dicker Strich; 02 derselbe Strich mit Deckkraft 50 %, das Bild scheint zur Hälfte durch,
+# Farbton wie die 50-%-Mischung der Pixelwerte (Foto gegen render.Bild der gespeicherten Datei, höchstens 2 je Kanal);
+# die Leisten und Menüs sehen in beiden Fotos gleich aus.
+warte 800
+taste R
+ziehe 300 300 700 520
+warte 300
+klick 1512 86
+klick 1512 86
+klick 1512 86
+klick 1512 86
+warte 300
+foto 01-deckend
+klick 1440 782
+schreibe 50
+taste Enter
+warte 300
+foto 02-deckkraft-50

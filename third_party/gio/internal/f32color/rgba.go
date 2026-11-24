@@ -62,6 +62,18 @@ func LinearFromSRGB(col color.NRGBA) RGBA {
 	}
 }
 
+// PremulSRGB wandelt col (sRGB, nicht vormultipliziert) in vormultiplizierte Werte, OHNE sie zu linearisieren: Schnapp
+// mischt im sRGB-Raum wie sein Renderer (ADR-0020 Nachtrag 14, F-520).
+func PremulSRGB(col color.NRGBA) RGBA {
+	af := float32(col.A) / 0xFF
+	return RGBA{
+		R: float32(col.R) / 0xFF * af,
+		G: float32(col.G) / 0xFF * af,
+		B: float32(col.B) / 0xFF * af,
+		A: af,
+	}
+}
+
 // NRGBAToRGBA converts from non-premultiplied sRGB color to premultiplied sRGB color.
 //
 // Each component in the result is `sRGBToLinear(c * alpha)`, where `c`

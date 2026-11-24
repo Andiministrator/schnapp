@@ -91,3 +91,7 @@ Der Patch ergänzt `app.ClipboardCancelled func()` in `app/os_wayland.go`: Gio r
 auf, wenn die eigene aktuelle `wl_data_source` abgelöst wird (ein anderes Programm hat die Zwischenablage übernommen),
 gleiche Art wie `ClipboardWriteError`; aus Gios Wayland-Schleife, vor dem Fenster zu setzen, das kopiert (Schnapp setzt ihn in `Editor()` vor dessen Fenster; die Overlay-Fenster davor kopieren nie, darum ist der Satz „before any window opens“ im Gio-Kommentar für Schnapp gleichwertig). Verwendung: ADR-0024
 Nachtrag 8.
+
+## Nachtrag 4 (24.11.2026): Mischen im sRGB-Raum (F-520, Karte #215)
+
+Der Patch stellt die Mischung von Gio von linear auf sRGB um (Farben nicht linearisiert, RGBA8-Texturen, kein sRGB-Ausgabepuffer, keine sRGB-EGL-Fläche), damit der Editor halbdurchsichtige Beschriftungen wie Renderer und Export zeigt. Nur Linux/OpenGL; Begründung, Messung und Widerlegungsbedingung: ADR-0020 Nachtrag 14.
