@@ -539,6 +539,12 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
 - **Tests und Mutanten:** `internal/ui/mischen_test.go` (`TestEditorMischtWieRenderer`: Füllung, Strich, Ebene, Schild;
   `TestEditorDeckendBleibtUnveraendert`), Mutanten M215-1 bis -3 in `scripts/mutanten/ui-mischen.json`. Ungeprüft: echte
   Grafikhardware (nur Mesa-Software im virtuellen KWin und ohne Fenster).
+  Ergänzt (F-621): Der Mutant „Zwischenebene der Deckkraft als sRGB-Textur“ (M215-4) überlebt, weil er hier nichts
+  ändert: Gio legt die Zwischenebene an (eine Ebene, SRGBA-Textur mit Bindung Textur und Framebuffer), das Pixelbild ist
+  mit und ohne Mutant Bit für Bit gleich, auch bei halbdurchsichtiger Überlappung in der Gruppe
+  (`TestZwischenebeneMischtImSRGBRaum`, von Hand im sRGB-Raum gerechnet). Der Mutant ist deshalb als äquivalent
+  geführt; warum die sRGB-Textur in dieser GLES-Umgebung nichts ändert, ist nicht geklärt, unter Desktop-GL mit
+  `FRAMEBUFFER_SRGB` aus wäre ein Unterschied zu erwarten.
 - **Widerlegungsbedingung:** Zeigt echte Hardware (Intel, AMD, NVIDIA unter Plasma) ein anderes Bild als der virtuelle
   KWin — etwa zu dunkle oder helle Oberfläche, weil der Treiber die Fläche doch als sRGB behandelt —, ist der EGL-Teil
   (Punkt 3) zurückzunehmen und das Vorrastern zu bauen.

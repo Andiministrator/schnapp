@@ -19,5 +19,14 @@
     "paket": "./internal/ui",
     "alt": "r.ctx.NewTexture(driver.TextureFormatRGBA8,",
     "neu": "r.ctx.NewTexture(driver.TextureFormatSRGBA,"
+  },
+  {
+    "name": "M215-4 Zwischenebenen der Deckkraft als sRGB-Textur",
+    "datei": "third_party/gio/gpu/gpu.go",
+    "paket": "./internal/ui",
+    "alt": "r.layerFBOs.resize(r.ctx, driver.TextureFormatRGBA8,",
+    "neu": "r.layerFBOs.resize(r.ctx, driver.TextureFormatSRGBA,",
+    "aequivalent": true,
+    "grund": "F-621: Gio legt die Zwischenebene an (gemessen: eine Ebene, SRGBA-Textur mit Bindung Textur+Framebuffer), aber die Ausgabe ist mit und ohne Mutant Bit für Bit gleich, auch für halbdurchsichtige Überlappung in der Gruppe (TestZwischenebeneMischtImSRGBRaum, Pixel 32,125,64 in beiden Fällen). Warum die sRGB-Textur in dieser EGL-GLES-Umgebung ohne Fenster nichts ändert, ist nicht geklärt (vermutet: Treiber, Mesa); unter Desktop-GL mit FRAMEBUFFER_SRGB aus wäre ein Unterschied zu erwarten, das ist hier nicht prüfbar."
   }
 ]

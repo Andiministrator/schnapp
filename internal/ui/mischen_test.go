@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"gioui.org/layout"
+	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
@@ -93,6 +94,34 @@ func TestEditorDeckendBleibtUnveraendert(t *testing.T) {
 	b := headlessBild(t, image.Pt(8, 8), func(gtx layout.Context) { paint.Fill(gtx.Ops, farbe) })
 	if p := b.RGBAAt(3, 3); p.R != 37 || p.G != 142 || p.B != 201 || p.A != 255 {
 		t.Errorf("deckende Fläche: Pixel %v, Soll (37,142,201,255)", p)
+	}
+}
+
+// F-621, ADR-0020 Nachtrag 14: Die Zwischenebene einer Deckkraftgruppe (`paint.PushOpacity`) ist eine RGBA8-Textur, kein
+// sRGB-Puffer. Das zeigt nur eine Gruppe, in der sich Halbdurchsichtiges selbst überlappt: Im sRGB-Puffer mischt die
+// Hardware dort linear (die Ebenen-Fälle von TestEditorMischtWieRenderer mit deckender Füllung und deckendem Strich
+// blieben gleich, der Mutant überlebte). Die Gruppe wird hier von Hand im sRGB-Raum gerechnet: Rot 50 %, darüber Blau
+// 50 %, dann als Ganzes mit 50 % über Grün.
+func TestZwischenebeneMischtImSRGBRaum(t *testing.T) {
+	ist := headlessBild(t, image.Pt(40, 20), func(gtx layout.Context) {
+		paint.Fill(gtx.Ops, color.NRGBA{G: 200, A: 255})
+		defer paint.PushOpacity(gtx.Ops, 0.5).Pop()
+		flaeche := func(r image.Rectangle, c color.NRGBA) {
+			defer clip.Rect(r).Push(gtx.Ops).Pop()
+			paint.Fill(gtx.Ops, c)
+		}
+		flaeche(image.Rect(2, 2, 30, 18), color.NRGBA{R: 255, A: 128})
+		flaeche(image.Rect(10, 2, 38, 18), color.NRGBA{B: 255, A: 128})
+	})
+	// Gruppe in der Überlappung (x 10..30), vormultipliziert, 0..1: Blau (a1) über Rot (a1).
+	a1 := 128.0 / 255
+	gR, gB, gA := a1*(1-a1), a1, a1+a1*(1-a1)
+	const d = 0.5 // Gruppendeckkraft, hinten Grün (0, 200/255, 0)
+	soll := func(g, hinten float64) int { return int(255*(g*d+hinten*(1-gA*d)) + 0.5) }
+	sR, sG, sB := soll(gR, 0), soll(0, 200.0/255), soll(gB, 0)
+	p := ist.RGBAAt(20, 10)
+	if absInt(int(p.R)-sR) > 3 || absInt(int(p.G)-sG) > 3 || absInt(int(p.B)-sB) > 3 {
+		t.Errorf("Pixel in der Überlappung %v, Soll (%d,%d,%d) im sRGB-Raum", p, sR, sG, sB)
 	}
 }
 
