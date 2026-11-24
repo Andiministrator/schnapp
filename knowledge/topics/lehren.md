@@ -921,3 +921,45 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Zwei parallele Fix-Agenten konfliktfrei:** Dateien vorher fest aufteilen (probe.sh nur bei einem), gemeinsame
   Dateien (README, CLAUDE.md, Register) nur der Orchestrator; `de.po`/`schnapp.pot` ließen sich per Cherry-Pick ohne
   Konflikt zusammenführen, danach `TestVorlage` ohne `-update` als Probe.
+
+## Sitzung 24.11. abends (Karten #174 Teil 2, #249, #250, #254 bis #257, #217, F-672, Sitzungs-QA)
+
+- **Echtlauf-Heim vorher mit einem Ladetest prüfen:** Ein Probe-Heim ohne `.config/user-dirs.dirs` hat als Bilderordner
+  `Pictures`, `scripts/probelibrary` legt aber nach `Bilder` ab (wie `probe.sh`). Der Index zeigte dann auf Dateien,
+  die Schnapp nicht findet; im Echtlauf „gingen nur die grün umrandeten auf“. Vor einem Echtlauf mit eigenem Heim die
+  `user-dirs.dirs` anlegen und eine Probe-Datei per `--export` laden.
+- **Echtläufe finden nie gerufene Funktionen:** `library.Abgleich` war getestet, aber im Programm nirgends aufgerufen
+  (F-672). Beim Echtlauf einmal eine Datei außerhalb von Schnapp löschen/verschieben und die Oberfläche ansehen.
+- **Register-Status nur aus dem Vokabular:** `widerlegt …` rotiert nie (findings-rotate meldet „HINSEHEN“); „behoben …
+  (widerlegt durch Messung)“ schreiben.
+- **`register-schreiben einfuege-nach`: Anker ohne Zeilenumbruch** (`printf '%s' "$(grep …)" > anker.txt`), sonst „Anker
+  kommt nicht vor“.
+- **aboard-op:** neue Karte per `card.upsert` braucht `card.id` (UUID selbst setzen); `--value @datei` liest keine
+  Datei, Freitext über `--payload @datei.json` (`{"cardId","field","value"}`).
+- **Testnotbremse bei hängenden Pfaden:** Ein Test, der prüft, dass etwas NICHT in der Ereignisschleife wartet, braucht
+  eine Goroutine, die das Tor nach wenigen Sekunden öffnet; sonst hängt der Mutant bis zum Timeout (WR1: 242 s statt
+  17 s).
+- **Mutant überlebt → Testfall betritt den Zweig nicht:** W1 (Reihenfolge der Modi: der letzte gewann zufällig), BS2
+  (Groß/Klein: Testwort ohne Großbuchstaben im Schlagwort). Testdaten so wählen, dass nur der richtige Code besteht.
+- **Shell:** `cat > datei` ohne Eingabe blockiert den Aufruf bis zum Timeout; Dateien mit dem Write-Werkzeug anlegen.
+- **Agenten-Worktree-Abgabe:** Bericht und Fotos vor `git worktree remove` in den Hauptbaum kopieren und mit
+  `cmp`/`diff -rq` gegenprüfen; `git cherry main <branch>` muss nur „-“ zeigen, dann Branch löschen.
+- **Lizenzprüfung eines eingebetteten WASM:** Quellpfade im Debug-Modul (`strings … | grep system/lib`, `ports/`)
+  zeigen die Bestandteile; Meldungstexte im Release-Modul bestätigen sie. Gekürzte Lizenztexte sind kein Original.
+
+- **Sitzungs-QA 24.11. abends (18 Befunde F-673 bis F-690, drei Fable-Kritiker):** Neue Funktionen öffnen alte
+  Lücken: `SetzeSchlagworte` und `InPapierkorb` gab es schon, erst die Ansicht machte sie per Taste erreichbar —
+  und damit fehlende Standvergleiche (F-673), Verweis-Ordner (F-675) und Prozesswettläufe (F-686). Lehre: Wird eine
+  Bibliotheksfunktion neu von der Oberfläche gerufen, ihre Schutzregeln gegen `Speichern` halten (Standvergleich,
+  `Relativ`, Sperre), nicht nur gegen ihre eigenen Tests.
+- **Ein neuer Aufrufer macht eine harmlose Funktion gefährlich:** `Abgleich` war ungenutzt und deshalb harmlos; mit
+  dem Aufruf bei jedem Start leerte eine nicht eingehängte Ablage den ganzen Index (F-685). Vor dem ersten Aufruf
+  einer bisher toten Funktion fragen: was tut sie, wenn ihre Eingabe (Ordner, Datei, Netz) gerade fehlt?
+- **Sperre der Ansicht über JEDEN Eingabeweg:** Klick gesperrt, aber F10 → Tab → Enter öffnete die Fußliste (F-674).
+  Die Sperre gehört an die Stelle, die die Wirkung auslöst (`menueOeffne`), nicht an einen Eingabeweg.
+- **`sed` mit Freitext:** Kommt im Ersatztext der Trenner vor (`/` in „Farb-/Zoom“, `#` in „Karte #259“), bricht
+  `sed` ab, und `register-schreiben` schreibt nichts. Registerzeilen mit Freitext aus Python setzen.
+- **`ohnePaketpraefix` entfernt alle Präfixe:** Ein Vergleich mit `err.Error()` des Fehlerwerts scheitert dann; beide
+  Seiten gleich kürzen (F-678/fehlergruende).
+- **Kritiker-Arbeitskopien und Probetests:** Kritiker legen Probetests in ihre Kopie; vor `git worktree remove` nach
+  `tmp/…/proben/` kopieren — sie sind die Vorlage der Regressionstests.
