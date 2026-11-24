@@ -76,10 +76,11 @@ type ebenenLeiste struct {
 
 	liste   image.Rectangle // sichtbare Fläche der Liste beim letzten Zeichnen; der Zeiger ist das Ziel der Ereignisse
 	zeilen  []ebenenZeileLage
-	zeileH  int // Zeilenhöhe in Pixeln beim letzten Zeichnen
-	augeB   int // Breite der Klickflächen von Auge und Schloss
-	versatz int // geblättert, in Pixeln
-	inhaltH int // Höhe aller Zeilen
+	zeileH  int     // Zeilenhöhe in Pixeln beim letzten Zeichnen
+	augeB   int     // Breite der Klickflächen von Auge und Schloss
+	versatz int     // geblättert, in Pixeln
+	rest    float32 // Radweg unter einem Pixel, der noch nicht geblättert ist (Touchpad, F-619)
+	inhaltH int     // Höhe aller Zeilen
 	druck   ebenenDruck
 	letzter struct {
 		id   int
@@ -257,7 +258,7 @@ func (e *editor) ebenenZeiger(gtx layout.Context, pe pointer.Event, an bool) {
 	p := pe.Position.Round()
 	switch pe.Kind {
 	case pointer.Scroll:
-		k.versatz = max(0, min(k.inhaltH-k.liste.Dy(), k.versatz+int(math.Round(float64(pe.Scroll.Y)))))
+		k.versatz, k.rest = rollRad(k.versatz, k.rest, pe.Scroll.Y, max(0, k.inhaltH-k.liste.Dy()))
 	case pointer.Press:
 		if pe.Buttons != pointer.ButtonPrimary || !an {
 			return

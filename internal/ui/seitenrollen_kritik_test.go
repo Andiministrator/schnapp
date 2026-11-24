@@ -204,6 +204,25 @@ func TestRadUeberEbenenlisteBlaettertErstDieListe(t *testing.T) {
 	}
 }
 
+// F-619 (Karte #239): Radwege unter einem Pixel je Ereignis gehen in der Ebenenliste nicht verloren, der Rest wird wie
+// in der Leiste aufgehoben (rollRad).
+func TestKleineRadschritteBlaetternDieEbenenliste(t *testing.T) {
+	l := niedrigerLauf(t)
+	eb, roll := &l.e.ebenen, &l.e.seite.roll
+	l.fokusiere(&eb.kopf)
+	l.taste(key.NameReturn, 0)
+	l.rolle(1 << 20)
+	li := eb.liste.Sub(image.Pt(0, roll.rollen)).Intersect(roll.sicht)
+	if li.Empty() || eb.inhaltH-eb.liste.Dy() < 16 {
+		t.Fatalf("Kontrolle: Liste %v, Inhalt %d, zu wenig zum Blättern", eb.liste, eb.inhaltH)
+	}
+	vor := roll.rollen
+	l.radSchritte(mitte(li), 40, 0.4) // zusammen 16 px
+	if eb.versatz < 15 || eb.versatz > 16 || roll.rollen != vor {
+		t.Errorf("40 Radereignisse zu 0,4 px über der Liste: Listenversatz %d (Soll 15 bis 16), Leiste %d (Soll %d)", eb.versatz, roll.rollen, vor)
+	}
+}
+
 // F-612 (KS-9, KM10): Die Fokuswache rechnet die Zeigerlage ins Bild der gerollten Leiste um. Ein Klick in das fokussierte,
 // gerollte Feld ist ein Klick ins Feld: Fokus und halbe Eingabe bleiben.
 func TestKlickInsFokussierteGerollteFeld(t *testing.T) {

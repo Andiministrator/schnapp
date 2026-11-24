@@ -530,5 +530,12 @@
     "paket": "./internal/ui",
     "alt": "laenge := max(bahn/10, bahn*sicht/gesamt)",
     "neu": "laenge := bahn * sicht / gesamt"
+  },
+  {
+    "name": "KU239-1 Ebenenliste rundet den Radweg auf ganze Pixel (F-619)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "k.versatz, k.rest = rollRad(k.versatz, k.rest, pe.Scroll.Y, max(0, k.inhaltH-k.liste.Dy()))",
+    "neu": "k.versatz = max(0, min(k.inhaltH-k.liste.Dy(), k.versatz+int(math.Round(float64(pe.Scroll.Y)))))"
   }
 ]
