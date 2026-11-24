@@ -1,0 +1,177 @@
+[
+  {
+    "name": "S1 Tasten wirken hinter der Tafel (ADR-0034 Punkt 4)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif e.einst.offen && !e.menue.offen {\n\t\t\tcontinue",
+    "neu": "\t\tif false && e.einst.offen && !e.menue.offen {\n\t\t\tcontinue"
+  },
+  {
+    "name": "S2 Tab bewegt den Fokus nicht",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tt.setzeFokus(t.fokus + 1)",
+    "neu": "\t\t\tt.setzeFokus(t.fokus)"
+  },
+  {
+    "name": "S3 Umschalt+Tab läuft vorwärts",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tt.setzeFokus(t.fokus - 1)",
+    "neu": "\t\t\tt.setzeFokus(t.fokus + 1)"
+  },
+  {
+    "name": "S4 Reiterwechsel läuft nicht um",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "\tt.reiter = (r%reiterAnzahl + reiterAnzahl) % reiterAnzahl",
+    "neu": "\tt.reiter = min(max(r, 0), reiterAnzahl-1)"
+  },
+  {
+    "name": "S5 Enter auf Abbrechen speichert",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif z == zielAbbrechen {\n\t\t\treturn folgeSchliessen\n\t\t}\n\t\treturn folgeSpeichern // auch aus einem Feld",
+    "neu": "\t\treturn folgeSpeichern // auch aus einem Feld"
+  },
+  {
+    "name": "S6 Save schreibt alle Schlüssel statt der geänderten (ADR-0034 Punkt 5)",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "\ta := settings.Unterschiede(t.geladen, t.wert)",
+    "neu": "\ta := settings.Werte(t.wert)"
+  },
+  {
+    "name": "S7 Fehler beim Speichern schließt die Tafel",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "\t\treturn false, false",
+    "neu": "\t\treturn false, true"
+  },
+  {
+    "name": "S8 Zahl 0 gilt als gültig",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "\tt.zahlFehler = err != nil || n < 1 || n > library.MaxTage",
+    "neu": "\tt.zahlFehler = err != nil || n > library.MaxTage"
+  },
+  {
+    "name": "S9 − und + ohne Obergrenze",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "\tt.wert.Bibliothek.Tage = min(library.MaxTage, max(1, t.wert.Bibliothek.Tage+d))",
+    "neu": "\tt.wert.Bibliothek.Tage = max(1, t.wert.Bibliothek.Tage+d)"
+  },
+  {
+    "name": "S10 Agenten-Warnung auch bei ausgeschaltetem Schalter (ADR-0034 Punkt 6)",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn tafelZeilen[z].art == artSchalter && zeileWarnung(z) != \"\" && t.schalter(z)",
+    "neu": "\treturn tafelZeilen[z].art == artSchalter && zeileWarnung(z) != \"\""
+  },
+  {
+    "name": "S11 ungültige Zeilen nicht gezählt (ADR-0034 Punkt 7)",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tzeilen++",
+    "neu": ""
+  },
+  {
+    "name": "S12 Tafel holt den Tastaturfokus nicht zurück",
+    "datei": "internal/ui/einstellungen.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !gtx.Focused(t) { // nach dem Schließen",
+    "neu": "\tif false && !gtx.Focused(t) { // nach dem Schließen"
+  },
+  {
+    "name": "S13 Zeigerfläche über dem Fenster fehlt (Klicks erreichen den Editor)",
+    "datei": "internal/ui/einstellungen.go",
+    "paket": "./internal/ui",
+    "alt": "\tevent.Op(gtx.Ops, t)\n",
+    "neu": "\n"
+  },
+  {
+    "name": "S14 Klick auf Schalter schaltet nicht",
+    "datei": "internal/ui/einstellungen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tcase artSchalter:\n\t\t\tt.schalte(z)",
+    "neu": "\t\tcase artSchalter:"
+  },
+  {
+    "name": "S15 Tafel liest beim Öffnen nicht frisch",
+    "datei": "internal/ui/einstellungen.go",
+    "paket": "./internal/ui",
+    "alt": "\twerte, warn := settings.Lade()",
+    "neu": "\twerte, warn := e.einst.geladen, []string(nil)"
+  },
+  {
+    "name": "S16 Save schreibt nichts",
+    "datei": "internal/ui/einstellungen.go",
+    "paket": "./internal/ui",
+    "alt": "var schreibeEinstellungen = settings.Schreibe",
+    "neu": "var schreibeEinstellungen = func([]settings.Aenderung) error { return nil }"
+  },
+  {
+    "name": "S17 Schließen gibt der Leinwand den Fokus nicht",
+    "datei": "internal/ui/einstellungen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.menue.offen, e.menue.fokusNach = false, nil\n\t}\n\tgtx.Execute(key.FocusCmd{Tag: e})",
+    "neu": "\t\te.menue.offen, e.menue.fokusNach = false, nil\n\t}"
+  },
+  {
+    "name": "S18 geschlossene Auswahlliste gibt den Fokus nicht an die Tafel",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.einst.offen { // Auswahlliste",
+    "neu": "\tif false && e.einst.offen { // Auswahlliste"
+  },
+  {
+    "name": "S19 Eintrag der Auswahlliste setzt nichts",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\te.einst.waehle(e.einst.listeZeile, en.wahl)\n",
+    "neu": "\n"
+  },
+  {
+    "name": "S20 Menüeintrag Settings… ohne Wirkung",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\treturn func(gtx layout.Context) { e.einstellungenOeffnen(gtx) }",
+    "neu": "\t\treturn func(gtx layout.Context) {}"
+  },
+  {
+    "name": "S21 Kürzel Strg+, auf eine andere Taste",
+    "datei": "internal/ui/kuerzel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tstrg(\",\", aktEinstellungen),",
+    "neu": "\t\tstrg(\";\", aktEinstellungen),"
+  },
+  {
+    "name": "S22 Zeilen der Tafel nicht in der Reihenfolge des Lesers (ADR-0034 Punkt 2)",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "\t{reiterAgenten, \"agents\", \"library\", artSchalter},\n\t{reiterAgenten, \"agents\", \"edit\", artSchalter},",
+    "neu": "\t{reiterAgenten, \"agents\", \"edit\", artSchalter},\n\t{reiterAgenten, \"agents\", \"library\", artSchalter},"
+  },
+  {
+    "name": "S23 Option mit einem Wert, den der Leser nicht annimmt",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t{string(settings.WahlZeiger), i18n.T(\"Monitor under the pointer\")},",
+    "neu": "\t\t\t{\"zeiger\", i18n.T(\"Monitor under the pointer\")},"
+  },
+  {
+    "name": "S24 schnapp mcp erreicht den Schreiber (ADR-0034 Punkt 6)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tzeigeDialog = ui.Bestaetige\n",
+    "neu": "\tzeigeDialog = func(ctx context.Context, z, k string) (bool, error) {\n\t\t_ = settings.Schreibe\n\t\treturn ui.Bestaetige(ctx, z, k)\n\t}\n"
+  },
+  {
+    "name": "S25 schnapp mcp öffnet den Editor (Weg zur Tafel, ADR-0034 Punkt 6)",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tzeigeDialog = ui.Bestaetige\n",
+    "neu": "\tzeigeDialog = func(ctx context.Context, z, k string) (bool, error) {\n\t\t_ = ui.Editor\n\t\treturn ui.Bestaetige(ctx, z, k)\n\t}\n"
+  }
+]

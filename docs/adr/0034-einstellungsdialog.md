@@ -100,3 +100,23 @@ Einwilligungen der Agenten (`[agents]`) dürfen nur vom Menschen kommen (ADR-003
 - ADR-0026: neuer Menüeintrag Datei → „Settings…“ mit Strg+, in der Tastentabelle.
 - F-539 entfällt (Punkt 8).
 - Andi nimmt die Gestaltung am Sprint-Ende an der Umsetzung ab.
+
+## Ergänzt bei der Umsetzung (24.11.2026, Karte #175, Claude Opus 5.5)
+
+Die Entscheidung gilt unverändert; diese Punkte legen fest, was sie offen ließ:
+
+1. **Beschriftungen nach dem Muster:** Ein Schalter trägt links die Zeilenbeschriftung und rechts neben dem Kästchen einen
+   kurzen Text (Muster a und b). Aus „After capture: open editor“ wird so „After capture“ / „Open the editor“, aus „Ask
+   before each capture“ „Before each capture“ / „Ask“, aus „Send the image“ „Image to the agent“ / „Send along“; die
+   Agenten-Schalter heißen „Allowed“. Die Zeile „Leiste unten (Karte #174)“ aus Muster c fehlt, sie kommt mit #174
+   (Punkt 9).
+2. **Tastatur:** Tab läuft durch die Felder des Reiters, dann „Cancel“ und „Save“, und an den Enden um; Reiter und Kreuz
+   stehen nicht in der Tab-Folge (Reiter: Strg+Bild↑/↓, läuft ebenfalls um; Kreuz: Esc). Enter auf dem fokussierten
+   „Cancel“ bricht ab statt zu speichern, sonst speichert Enter. Die Tafel hält den Tastaturfokus selbst, damit Tab nicht
+   in die Leisten darunter läuft.
+3. **Klick neben die Tafel** wirkt nicht (die Tafel bleibt offen, anders als die Hilfe): Ein versehentlicher Klick soll
+   keine Eingaben verwerfen.
+4. **Warnung zur ganzen Datei:** Ist die Datei unlesbar, zu groß oder kein reguläres File, zeigt der Fuß die Warnung des
+   Lesers wörtlich (ohne den Pfad, „settings.ini: …“) statt einer Zeilenzahl; Save scheitert dann am Schreiber und zeigt
+   dessen Fehler rot. Über der Grenze des Lesers (20 Warnungen) sagt der Fuß „More than 20 lines …“.
+5. **Ohne Änderung** schließt Save die Tafel, ohne die Datei anzulegen oder anzufassen, und ohne Meldung.

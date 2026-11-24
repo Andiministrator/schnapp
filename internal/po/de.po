@@ -1106,3 +1106,140 @@ msgstr "Rot ohne Schild"
 
 msgid "Black, no label"
 msgstr "Schwarz ohne Schild"
+# ui: Einstellungstafel (ADR-0034)
+msgid "Settings…"
+msgstr "Einstellungen…"
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "Settings saved"
+msgstr "Einstellungen gespeichert"
+
+msgid "Could not save the settings: %v"
+msgstr "Einstellungen nicht gespeichert: %v"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "General"
+msgstr "Allgemein"
+
+msgid "Capture"
+msgstr "Aufnahme"
+
+msgid "Library"
+msgstr "Bibliothek"
+
+msgid "Agents"
+msgstr "Agenten"
+
+msgid "GENERAL"
+msgstr "ALLGEMEIN"
+
+msgid "CAPTURE"
+msgstr "AUFNAHME"
+
+msgid "LIBRARY"
+msgstr "BIBLIOTHEK"
+
+msgid "AGENTS (MCP SERVER “schnapp mcp”)"
+msgstr "AGENTEN (MCP-SERVER „schnapp mcp“)"
+
+msgid "Applies after Schnapp restarts."
+msgstr "Gilt nach dem Neustart von Schnapp."
+
+msgid "Applies from the next capture."
+msgstr "Gilt ab der nächsten Aufnahme."
+
+msgid "Applies at the next start."
+msgstr "Gilt beim nächsten Start."
+
+msgid "Applies immediately."
+msgstr "Gilt sofort."
+
+msgid "What an AI agent may do through Schnapp. Only changeable here or in the file, never by the agent itself. Applies from the agent's next tool call."
+msgstr "Was ein KI-Agent über Schnapp darf. Nur hier oder in der Datei änderbar, nie vom Agenten selbst. Gilt sofort beim nächsten Werkzeugaufruf."
+
+msgid "Language"
+msgstr "Sprache"
+
+msgid "Like the system"
+msgstr "Wie das System"
+
+msgid "Capture screen"
+msgstr "Bildschirm aufnehmen"
+
+msgid "Pick by clicking"
+msgstr "Per Klick wählen"
+
+msgid "Monitor under the pointer"
+msgstr "Monitor unter dem Zeiger"
+
+msgid "All monitors"
+msgstr "Alle Monitore"
+
+msgid "What “Capture screen” does without a monitor name: pick by clicking, the monitor under the pointer or all monitors."
+msgstr "Was „Bildschirm aufnehmen“ ohne Monitornamen tut: per Klick wählen, Monitor unter dem Zeiger oder alle Monitore."
+
+msgid "After capture"
+msgstr "Nach der Aufnahme"
+
+msgid "Open the editor"
+msgstr "Editor öffnen"
+
+msgid "Seam edge"
+msgstr "Kante beim Stauchen"
+
+msgid "Applies to new captures and opened images; a working file keeps its edge."
+msgstr "Gilt für neue Aufnahmen und geöffnete Bilder; eine Arbeitsdatei behält ihre Form."
+
+msgid "Clean up"
+msgstr "Aufräumen"
+
+msgid "Old captures to the trash"
+msgstr "Alte Aufnahmen in den Papierkorb"
+
+msgid "After days"
+msgstr "Nach Tagen"
+
+msgid "Older than this number of days, checked at start."
+msgstr "Älter als diese Zahl Tage, beim Start geprüft."
+
+msgid "Before each capture"
+msgstr "Vor jeder Aufnahme"
+
+msgid "Ask"
+msgstr "Fragen"
+
+msgid "Image to the agent"
+msgstr "Bild an den Agenten"
+
+msgid "Send along"
+msgstr "Mitschicken"
+
+msgid "Read the library"
+msgstr "Bibliothek lesen"
+
+msgid "Annotate and redact files"
+msgstr "Beschriften/Schwärzen"
+
+msgid "Allowed"
+msgstr "Erlaubt"
+
+msgid "An agent then sees what is on the screen — including mails, passwords in plain text, names. Every capture shows a notice first; with “Ask” below, every capture must be confirmed."
+msgstr "Ein Agent sieht dann, was auf dem Bildschirm steht — auch Mails, Passwörter im Klartext, Namen. Jede Aufnahme zeigt vorher einen Hinweis; mit „Fragen“ unten muss jede Aufnahme bestätigt werden."
+
+msgid "An agent can then search and read every capture in the library, old ones included."
+msgstr "Ein Agent kann dann jede Aufnahme der Bibliothek durchsuchen und lesen, auch alte."
+
+msgid "An agent can then annotate and black out image and working files; the files change on disk."
+msgstr "Ein Agent kann dann Bild- und Arbeitsdateien beschriften und schwärzen; die Dateien ändern sich auf der Platte."
+
+msgid "%d line in settings.ini is invalid and stays as it is."
+msgid_plural "%d lines in settings.ini are invalid and stay as they are."
+msgstr[0] "%d Zeile in settings.ini ist ungültig und bleibt, wie sie ist."
+msgstr[1] "%d Zeilen in settings.ini sind ungültig und bleiben, wie sie sind."
+
+msgid "More than %d lines in settings.ini are invalid and stay as they are."
+msgstr "Mehr als %d Zeilen in settings.ini sind ungültig und bleiben, wie sie sind."

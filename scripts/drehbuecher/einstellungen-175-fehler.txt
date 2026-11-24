@@ -1,0 +1,22 @@
+# Sichtprobe ADR-0034 Punkte 5 und 7 (Karte #175): settings.ini lässt sich nicht schreiben.
+# Vorbereitung: tmp/probe/home/.config/schnapp/settings.ini als Ordner anlegen (kein reguläres File).
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/einstellungen-175-fehler.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Erwartet:
+#  01 Tafel offen; im Fuß unter „Applies after Schnapp restarts.“ orange die Warnung des Lesers (kein reguläres File,
+#     Voreinstellungen gelten).
+#  02 „Open the editor“ ausgeschaltet, Enter: Tafel bleibt offen, Fuß rot „Could not save the settings: the settings file
+#     is not a regular file“; Fußzeile des Editors ohne „Settings saved“.
+#  03 Esc: Tafel zu.
+warte 1500
+taste Strg+,
+warte 500
+foto 01-warnung-im-fuss
+taste Strg+Bildab
+taste Tab
+taste Leertaste
+taste Enter
+warte 400
+foto 02-fehler-rot
+taste Esc
+warte 300
+foto 03-zu

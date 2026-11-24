@@ -1,0 +1,66 @@
+# Sichtprobe ADR-0034 (Karte #175): Einstellungstafel im Editor, Menü Datei → „Settings…“, Strg+,.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/einstellungen-175.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Danach tmp/probe/home/.config/schnapp/settings.ini ansehen (erwartet: screen = pointer, cleanup-days = 30,
+# capture = yes, library = yes; sonst nichts, keine Kopfzeile fehlt).
+# Gegenprobe Fehler im Fuß: settings.ini vorher als Ordner anlegen und einstellungen-175-fehler.txt fahren.
+# Bei 1600 × 1000, Skala 1: Tafel (400,180)–(1200,820); Reiter bei x 410–570, y 244 (Allgemein), 282 (Aufnahme),
+# 320 (Bibliothek), 358 (Agenten), je 32 hoch; Speichern (1072,794)–(1180,826).
+# Erwartet:
+#  01 Tafel offen auf „General“, Editor darunter abgedunkelt; Feld „Language“ = „Like the system“ mit orangem Fokusrahmen;
+#     Fuß „Applies after Schnapp restarts.“, rechts Cancel und Save (grün).
+#  02 Strg+Bild↓: Reiter „Capture“ grün, Fokus auf „Capture screen“ (Pick by clicking), Schalter „Open the editor“ an,
+#     „Seam edge“ = Torn edge, graue Erklärungen; Fuß „Applies from the next capture.“
+#  03 Leertaste: Liste unter dem Feld mit drei Einträgen, „Pick by clicking“ grün markiert, Fokus auf ihm.
+#  04 Pfeil runter, Enter: Feld zeigt „Monitor under the pointer“, Liste zu, Fokusrahmen wieder am Feld.
+#  05 Tab: Fokusrahmen um das Kästchen „Open the editor“.
+#  06 Klick auf „Library“: Schalter „Old captures to the trash“ an mit Fokusrahmen, „After days“ − 90 +.
+#  07 Tab, „30“ getippt: Zahl 30 mit Fokusrahmen.
+#  08 Klick auf „Agents“, Leertaste: „Capture screen“ an, darunter der Warnkasten (oranger Balken links).
+#  09 Tab dreimal, Leertaste: „Read the library“ an, zweiter Warnkasten.
+#  10 Enter: Tafel zu, Fußzeile des Editors „Settings saved“.
+#  11 Strg+, erneut: Tafel liest frisch, Reiter „Agents“ per Strg+Bild↑ zeigt beide Schalter an.
+#  12 Esc: Tafel zu, Editor wie vorher.
+warte 1500
+taste Strg+,
+warte 500
+foto 01-allgemein
+taste Strg+Bildab
+warte 300
+foto 02-aufnahme
+taste Leertaste
+warte 300
+foto 03-liste
+taste Runter
+taste Enter
+warte 300
+foto 04-gewaehlt
+taste Tab
+warte 300
+foto 05-fokus-schalter
+klick 490 336
+warte 300
+foto 06-bibliothek
+taste Tab
+schreibe 30
+warte 300
+foto 07-zahl
+klick 490 374
+taste Leertaste
+warte 300
+foto 08-agenten-warnung
+taste Tab
+taste Tab
+taste Tab
+taste Leertaste
+warte 300
+foto 09-zwei-warnungen
+taste Enter
+warte 500
+foto 10-gespeichert
+taste Strg+,
+taste Strg+Bildauf
+warte 400
+foto 11-wieder-offen
+taste Esc
+warte 300
+foto 12-zu

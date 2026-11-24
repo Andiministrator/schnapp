@@ -1050,6 +1050,188 @@ msgstr ""
 msgid "Drag across the part to cut out: vertically for rows, horizontally for columns. Double-click a seam to restore it. Cut-out parts stay in the working file; redact what must go."
 msgstr ""
 
+#: internal/ui/einstellungen.go
+msgid "Settings saved"
+msgstr ""
+
+#: internal/ui/einstellungen.go
+msgid "Settings"
+msgstr ""
+
+#: internal/ui/einstellungen.go
+msgid "Cancel"
+msgstr ""
+
+#: internal/ui/einstellungen.go internal/ui/oberflaeche.go
+msgid "Save"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Like the system"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Pick by clicking"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Monitor under the pointer"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "All monitors"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Could not save the settings: %v"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Capture"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Library"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Agents"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "General"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "CAPTURE"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "LIBRARY"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "AGENTS (MCP SERVER “schnapp mcp”)"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "GENERAL"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Applies from the next capture."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Applies at the next start."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Applies immediately."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Applies after Schnapp restarts."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "What an AI agent may do through Schnapp. Only changeable here or in the file, never by the agent itself. Applies from the agent's next tool call."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Language"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Capture screen"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "After capture"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Seam edge"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Clean up"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "After days"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Before each capture"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Image to the agent"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Read the library"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Annotate and redact files"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Open the editor"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Old captures to the trash"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Ask"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Send along"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Allowed"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "What “Capture screen” does without a monitor name: pick by clicking, the monitor under the pointer or all monitors."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Applies to new captures and opened images; a working file keeps its edge."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Older than this number of days, checked at start."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "An agent then sees what is on the screen — including mails, passwords in plain text, names. Every capture shows a notice first; with “Ask” below, every capture must be confirmed."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "An agent can then search and read every capture in the library, old ones included."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "An agent can then annotate and black out image and working files; the files change on disk."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "More than %d lines in settings.ini are invalid and stay as they are."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "%d line in settings.ini is invalid and stays as it is."
+msgid_plural "%d lines in settings.ini are invalid and stay as they are."
+msgstr[0] ""
+msgstr[1] ""
+
 #: internal/ui/exportfehler.go
 msgid "A file with this name already exists: %s"
 msgstr ""
@@ -1197,15 +1379,15 @@ msgid "Help"
 msgstr ""
 
 #: internal/ui/oberflaeche.go
-msgid "Save"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
 msgid "Export…"
 msgstr ""
 
 #: internal/ui/oberflaeche.go
 msgid "Copy"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Settings…"
 msgstr ""
 
 #: internal/ui/oberflaeche.go

@@ -369,8 +369,8 @@ func TestMenueAuswertenKlicks(t *testing.T) {
 		l := neuerMenueLauf(t, image.Pt(1200, 800))
 		l.titel().Click()
 		l.setle()
-		// Trennlinie zwischen „Kopieren“ und „Schließen“ im Menü Datei (Gruppenabstand).
-		a, b := l.e.menue.rahmen[l.index(aktKopieren)], l.e.menue.rahmen[l.index(aktSchliessen)]
+		// Trennlinie zwischen „Kopieren“ und „Einstellungen…“ im Menü Datei (Gruppenabstand, seit ADR-0034).
+		a, b := l.e.menue.rahmen[l.index(aktKopieren)], l.e.menue.rahmen[l.index(aktEinstellungen)]
 		l.klick(image.Pt(a.Min.X+5, (a.Max.Y+b.Min.Y)/2))
 		if !l.e.menue.offen {
 			t.Error("Klick zwischen Einträgen schließt das Menü")

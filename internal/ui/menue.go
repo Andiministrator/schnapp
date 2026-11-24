@@ -40,6 +40,9 @@ type menueEintrag struct {
 	hatFarbe bool
 	zoom     int
 	hatZoom  bool
+	// Auswahlliste der Einstellungstafel (ADR-0034): Stelle der Option in tafel.optionen.
+	wahl    int
+	hatWahl bool
 }
 
 // menueEintraege liefert die Einträge des offenen Menüs (ADR-0031 Punkt 1) mit dem Zustand der Sitzung.
@@ -189,6 +192,10 @@ func (e *editor) menueTaste(gtx layout.Context, name key.Name) {
 func (e *editor) menueSchliesse(gtx layout.Context, zuKnopf bool) {
 	m := &e.menue
 	m.offen, m.fokusNach = false, nil
+	if e.einst.offen { // Auswahlliste der Einstellungstafel: Fokus zurück an die Tafel (ADR-0034)
+		gtx.Execute(key.FocusCmd{Tag: &e.einst})
+		return
+	}
 	if zuKnopf {
 		gtx.Execute(key.FocusCmd{Tag: e.listenKnopf(m.welches)})
 	} else {
@@ -262,6 +269,8 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 		}
 	case aktTastenkuerzel:
 		return func(layout.Context) { e.hilfeOffen = !e.hilfeOffen }
+	case aktEinstellungen:
+		return func(gtx layout.Context) { e.einstellungenOeffnen(gtx) }
 	case aktUeber:
 		return func(layout.Context) {
 			e.melde(fmt.Sprintf(i18n.T("Schnapp %s — screenshots and annotations for Linux. Free software under the GPL 3.0 or later."),
@@ -416,6 +425,8 @@ func (e *editor) listenKnopf(i int) *widget.Clickable {
 		return &e.knoepfe.fussFarbe
 	case listeZoom:
 		return &e.knoepfe.fussZoom
+	case listeEinstellung:
+		return &e.einst.feldKnopf[max(0, e.einst.listeZeile)]
 	}
 	return &e.menue.titel[i]
 }
@@ -482,6 +493,9 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 				continue
 			case en.hatZoom:
 				e.s.SetzeZoom(en.zoom)
+				continue
+			case en.hatWahl:
+				e.einst.waehle(e.einst.listeZeile, en.wahl)
 				continue
 			}
 			e.fuehreAus(gtx, en.akt, true)

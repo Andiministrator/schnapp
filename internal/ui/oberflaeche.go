@@ -60,6 +60,7 @@ const (
 const (
 	listeFarbe = menueAnzahl + iota
 	listeZoom
+	listeEinstellung // Auswahl in der Einstellungstafel (ADR-0034), Anker am Feld der Tafel
 )
 
 // istListe meldet, ob i eine Aufklappliste der Fußzeile ist (kein Menü der Zeile).
@@ -95,6 +96,7 @@ func (e *editor) menueEintraegeVon(i int) []menueEintrag {
 			{akt: aktSpeichern, text: i18n.T("Save"), an: true},
 			{akt: aktExport, text: i18n.T("Export…"), an: !e.exportOffen},
 			{akt: aktKopieren, text: i18n.T("Copy"), an: true},
+			{akt: aktEinstellungen, text: i18n.T("Settings…"), an: true, gruppe: true},
 			{akt: aktSchliessen, text: i18n.T("Close"), an: true, gruppe: true},
 		}
 	case menueBearbeiten:
@@ -165,6 +167,8 @@ func (e *editor) menueEintraegeVon(i int) []menueEintrag {
 				an: true, aktiv: !s.Eingepasst() && jetzt == z})
 		}
 		return en
+	case listeEinstellung:
+		return e.einstellungsListe()
 	}
 	return nil
 }
@@ -799,6 +803,12 @@ func (e *editor) fussAuswerten(gtx layout.Context) {
 // listenAnker ist das Rechteck, an dem die Liste i aufklappt: das Feld der Fußzeile; fehlt es (schmales Fenster), bei
 // der Farbe das Farbfeld der Werkzeugleiste, sonst die rechte untere Ecke über der Fußzeile.
 func (e *editor) listenAnker(i int) image.Rectangle {
+	if i == listeEinstellung { // Auswahl der Einstellungstafel: am Feld (ADR-0034)
+		if z := e.einst.listeZeile; z >= 0 && z < len(tafelZeilen) {
+			return e.einst.rahmen.feld[z]
+		}
+		return image.Rectangle{}
+	}
 	art := canvas.FeldZoom
 	if i == listeFarbe {
 		art = canvas.FeldFarbe

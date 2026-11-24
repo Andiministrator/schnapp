@@ -157,3 +157,15 @@ folgt damit ADR-0023 Nachträgen 6 und 7:
 
 Getestet von `TestMenueKantenform` in `internal/ui/menue_test.go` (Eintrag vorhanden, Text gleich der aktuellen Form, grau
 ohne Naht, Reihenfolge, Rückgängig).
+
+## Nachtrag 7 (24.11.2026): Eintrag „Einstellungen…/Settings…“ mit Strg+, (ADR-0034, Karte #175)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #175).
+
+Das Menü „Datei“ trägt hinter „Kopieren“ in einer eigenen Gruppe den Eintrag **Einstellungen…** (englisch „Settings…“,
+`aktEinstellungen`), Kürzel **Strg+,** (Komma) in der Tastentabelle `internal/ui/kuerzel.go`; die Hilfe (F1) nennt es
+damit von selbst. Er öffnet die Einstellungstafel nach ADR-0034 (`internal/ui/einstellungen.go`). Solange die Tafel offen
+ist, wirkt keine Taste der Tabelle: Die Tafel holt ihre Tasten (Tab, Umschalt+Tab, Strg+Bild↑/↓, Leertaste, Enter, Esc,
+Pfeile, −/+, Rücktaste) vor `tasten` ab, `tasten` verwirft den Rest; ihre Auswahllisten laufen als Liste des Menüs
+(`listeEinstellung`) und werden wie jede Liste in `tasten` bedient. Strg+Bild↑/↓ wechselt in der Tafel den Reiter statt
+der Ebene. Getestet von `TestMenueZeigtKuerzel` und `TestTafelSperrtEditor`.

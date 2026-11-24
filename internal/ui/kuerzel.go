@@ -48,6 +48,7 @@ const (
 	aktFarbenTauschen // Menü Bearbeiten: Vordergrund und Füllung tauschen (ADR-0021 Nachtrag 11 Punkt 5)
 	aktEinrasten      // Menü Ansicht: Einrasten an Objekten ein/aus, ohne Kürzel (ADR-0021 Nachtrag 12)
 	aktNavigator      // Menü Ansicht: Navigator (Mini-Übersicht) ein/aus, ohne Kürzel (ADR-0031 Nachtrag 9)
+	aktEinstellungen  // Menü Datei: Einstellungstafel (Strg+,, ADR-0034)
 )
 
 // taste ist ein Tastenkürzel des Editors. Genau eines gilt: akt (Handlung), werkzeug (wählt ein Werkzeug, hatWerkzeug)
@@ -100,6 +101,7 @@ func tastenTabelle() []taste {
 		strg("1", aktEins),
 		{filter: key.Filter{Name: "B", Required: key.ModShortcut | key.ModShift}, akt: aktSeitenleiste},
 		strg("W", aktSchliessen),
+		strg(",", aktEinstellungen), // Komma: in Bildprogrammen und Editoren üblich (ADR-0034 Punkt 1)
 		{filter: key.Filter{Name: key.NameF1}, akt: aktTastenkuerzel},
 		strg("D", aktDoppeln),
 		{filter: key.Filter{Name: key.NameF2}, akt: aktUmbenennen},

@@ -311,6 +311,8 @@ type editor struct {
 	hilfeGroesse image.Point
 	// hilfeOffen: die Übersicht der Tastenkürzel liegt über der Leinwand (Menü Hilfe, F1; hilfe.go).
 	hilfeOffen bool
+	// einst: Einstellungstafel (Menü Datei → „Settings…“, Strg+,; ADR-0034, einstellungen.go).
+	einst tafel
 
 	// Doppelklick erkennen (ADR-0021: Text bearbeiten): Zeit und Ort des letzten Drucks der linken Taste.
 	bildStand    uint64      // canvas.Sitzung.BildAenderung beim letzten bildNeu (Schwärzen ändert die Pixel)
@@ -1369,6 +1371,8 @@ func (e *editor) frame(gtx layout.Context) {
 	_ = e.exportAbholen()
 	_ = e.speichernAbholen() // ebenso die Antwort des Speicherns und des Kopierens (ADR-0020 Nachtrag 6)
 	e.kopierenAbholen(gtx)
+	// Vor allen anderen: Klicks und Tasten der offenen Einstellungstafel (ADR-0034).
+	e.einstellungenAuswerten(gtx)
 	e.feldTasten(gtx) // vor tasten: Enter, Esc und Rücktaste gehören dem fokussierten Eingabefeld (ADR-0031 Nachtrag 5)
 	e.tasten(gtx)
 	// Menü zuerst: Startet ein Eintrag das Speichern, wirken Klicks auf Leisten im selben Bild nicht mehr (F-280).
@@ -1392,6 +1396,7 @@ func (e *editor) frame(gtx layout.Context) {
 	e.zeichneFusszeile(gtx)
 	e.zeichneSchriftliste(gtx) // über Leisten und Fußzeile, unter Hilfe und Menü
 	e.zeichneHilfe(gtx)
+	e.zeichneEinstellungen(gtx)
 	e.zeichneMenue(gtx)     // über allem, unter dem Titel des offenen Menüs
 	e.zeichneFeldWache(gtx) // durchlässig über allem: Klick woanders übernimmt eine Feldeingabe (A-2)
 }
@@ -1997,6 +2002,9 @@ func (e *editor) tasten(gtx layout.Context) {
 				e.hilfeOffen = false
 			}
 			continue
+		}
+		if e.einst.offen && !e.menue.offen {
+			continue // Einstellungstafel: ihre Tasten holt einstellungenAuswerten vorher ab, die übrigen wirken nicht (ADR-0034)
 		}
 		if e.s.SpeichernLaeuft() {
 			// Während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6): abholen, damit Filter und Fokus
