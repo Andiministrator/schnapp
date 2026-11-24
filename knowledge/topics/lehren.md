@@ -963,3 +963,30 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Seiten gleich kürzen (F-678/fehlergruende).
 - **Kritiker-Arbeitskopien und Probetests:** Kritiker legen Probetests in ihre Kopie; vor `git worktree remove` nach
   `tmp/…/proben/` kopieren — sie sind die Vorlage der Regressionstests.
+
+## Sprint-Abschluss 12 (24.11.2026 nachts, F-691, F-692 bis F-740, Tag v0.6.0)
+
+- **Kritiker nach Bereichen teilen:** Über 360 Commits und rund 29 000 Zeilen Produktcode trägt ein Kritiker nicht.
+  Vier parallele Fable-Kritiker (Modell/Format/Render, Programm/MCP/Bibliothek, Oberfläche, Doku/CI/Repo) mit je
+  eigenem Laufordner unter `tmp/sprint12/abschluss/<Teil>/` fanden 35 Befunde, davon sechs Release-Blocker.
+- **Belege per `go test -overlay`:** Kritiker und Verify-Läufe legen Probetests und geänderte Kopien unter ihren
+  Laufordner und blenden sie mit `-overlay` ein. Der Arbeitsbaum bleibt unberührt, mehrere Läufe können parallel lesen,
+  und die Probetests taugen als Vorlage der Regressionstests.
+- **Jede [S]-Behebung verlangt einen weiteren Verify-Lauf — die Kette endet erst mit einer Entscheidung:** V1 fand am
+  Fix F-692 ein Restleck (F-728), V2 einen alten Nachbarfall auf dem Pixelweg (F-735), V3 dessen Nachbarn (F-739).
+  Ein P3, das im Editor genauso sichtbar ist (kein verdecktes Leck), wird als bewusste Grenze im ADR festgehalten
+  (Ausnahmepfad), sonst läuft die Kette weiter. Ein Fix am SVG ist zu Ende gedacht erst, wenn Renderer und Editor
+  dieselbe Regel haben („eine Rechnung“ gilt auch für Sichtbarkeit).
+- **Signaturänderung bricht Mutanten:** `ablegenIn`/`beschrifteDatei` bekamen einen Parameter; die `alt`-Muster von
+  C202-2 und K202-M3 passten nicht mehr. Nach jeder Signaturänderung `go run . -wurzel ../.. -trocken` vor dem Commit.
+- **Prüfbefehle im Register roh lesbar halten:** In der Tabelle wird `|` als `\|` maskiert; unter `grep -E` ist `\|`
+  ein wörtlicher Strich, der Befehl schlug nie an (F-737). Prüfbefehle ohne Alternation schreiben (`[a-z]+` statt
+  `(yes|no)`) oder BRE nehmen.
+- **Behauptungen über Trailer und Zahlen veralten im nächsten Commit:** „die folgenden Commits tragen beide Zeilen“
+  stimmte einen Commit später nicht mehr (F-738). Nacharbeit an Befunden eines Fable-Laufs trägt die Fable- und die
+  Opus-Zeile, auch reine Doku-Nachzüge.
+- **Abschnitts-Sammelkarten statt einer Karte je Befund:** 35 Befunde → 4 Nacharbeits- und 12 Backlog-Karten, nach
+  gemeinsamer Handlung gebündelt; der Abgleich `findings-karten-abgleich.mjs` blieb grün.
+- **Worktree-Agent und Cherry-Pick mit Konflikt in CLAUDE.md:** Beide Seiten änderten dieselbe lange Zeile. Die Seite
+  des Agenten nehmen und die eigenen Zahlen nachtragen; danach weicht der Branch ab und fällt nicht unter die
+  Löschregel ohne Rückfrage.
