@@ -423,7 +423,7 @@
     "name": "KU225-6 Mausrad ruht (F-598)",
     "datei": "internal/ui/seitenrollen.go",
     "paket": "./internal/ui",
-    "alt": "k.rollen = rollBegrenze(k.rollen+int(pe.Scroll.Y), k.rollMax)",
+    "alt": "k.rollen, k.rest = rollRad(k.rollen, k.rest, pe.Scroll.Y, k.rollMax)",
     "neu": "_ = pe"
   },
   {
@@ -439,5 +439,96 @@
     "paket": "./internal/ui",
     "alt": "\tevent.Op(gtx.Ops, &k.flaeche)\n}",
     "neu": "\tc := clip.Rect(r).Push(gtx.Ops)\n\tevent.Op(gtx.Ops, &k.flaeche)\n\tc.Pop()\n}"
+  },
+  {
+    "name": "KU235-1 Schriftliste ohne Rollversatz am Feld (F-611)",
+    "datei": "internal/ui/schriftwahl.go",
+    "paket": "./internal/ui",
+    "alt": "feld := sw.feldRahmen.Sub(image.Pt(0, e.seite.roll.rollen))",
+    "neu": "feld := sw.feldRahmen"
+  },
+  {
+    "name": "KU235-2 Schriftliste bleibt offen, wenn das Feld aus der Sicht rollt (F-611)",
+    "datei": "internal/ui/schriftwahl.go",
+    "paket": "./internal/ui",
+    "alt": "if feld.Intersect(e.seite.roll.sicht).Empty() {",
+    "neu": "if false && feld.Intersect(e.seite.roll.sicht).Empty() {"
+  },
+  {
+    "name": "KU235-3 Schriftliste bleibt ohne Platz offen, aber ungezeichnet (F-611)",
+    "datei": "internal/ui/schriftwahl.go",
+    "paket": "./internal/ui",
+    "alt": "e.schriftListeSchliesse(gtx, false) // nie offen ohne gezeichnete Liste (F-611)",
+    "neu": "_ = 0"
+  },
+  {
+    "name": "KU235-4 Höhe der Schriftliste mit der Unterkante des ungerollten Felds (F-611)",
+    "datei": "internal/ui/schriftwahl.go",
+    "paket": "./internal/ui",
+    "alt": "unten-feld.Max.Y)",
+    "neu": "unten-sw.feldRahmen.Max.Y)"
+  },
+  {
+    "name": "KU235-5 Radweg unter 1 px ohne Rest (F-612)",
+    "datei": "internal/ui/seitenrollen.go",
+    "paket": "./internal/ui",
+    "alt": "\trest += dy\n",
+    "neu": "\trest = dy\n"
+  },
+  {
+    "name": "KU235-6 Rest bleibt am Anschlag liegen (F-612)",
+    "datei": "internal/ui/seitenrollen.go",
+    "paket": "./internal/ui",
+    "alt": "if neu != rollen+n || (neu == 0 && rest < 0) || (neu == rollMax && rest > 0) {",
+    "neu": "if false {"
+  },
+  {
+    "name": "KU235-7 Ebenenliste nimmt das Rad immer, auch am Anschlag (F-612)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "ScrollY: pointer.ScrollRange{Min: -k.versatz, Max: max(0, k.inhaltH-k.liste.Dy()-k.versatz)}}",
+    "neu": "ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}}"
+  },
+  {
+    "name": "KU235-8 Fokuswache ohne Rollversatz (KM10, F-612)",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "pe.Position.Round().Add(image.Pt(0, e.seite.roll.rollen)).In(f.rahmen)",
+    "neu": "pe.Position.Round().In(f.rahmen)"
+  },
+  {
+    "name": "KU235-9 Fokus rollt in jedem Bild (KM11, F-612)",
+    "datei": "internal/ui/seitenrollen.go",
+    "paket": "./internal/ui",
+    "alt": "if !k.fokus.Empty() && k.fokus != k.fokusAlt {",
+    "neu": "if !k.fokus.Empty() {"
+  },
+  {
+    "name": "KU235-10 Fokuslage wird je Bild nicht zurückgesetzt (KM12, F-612)",
+    "datei": "internal/ui/seitenrollen.go",
+    "paket": "./internal/ui",
+    "alt": "\tk.fokus = image.Rectangle{}\n\tevent.Op",
+    "neu": "\tevent.Op"
+  },
+  {
+    "name": "KU235-11 Knöpfe melden ihre Fokuslage nicht (KM13, F-612)",
+    "datei": "internal/ui/seitenrollen.go",
+    "paket": "./internal/ui",
+    "alt": "if gtx.Focused(c) {\n\t\te.seite.roll.fokus = r\n\t}\n\tseiteKnopf",
+    "neu": "seiteKnopf"
+  },
+  {
+    "name": "KU235-12 Versatz nach dem Zeichnen nicht neu begrenzt (KM15, F-612)",
+    "datei": "internal/ui/seitenrollen.go",
+    "paket": "./internal/ui",
+    "alt": "k.rollen = rollBegrenze(k.rollen, k.rollMax)\n\tif !k.fokus",
+    "neu": "if !k.fokus"
+  },
+  {
+    "name": "KU235-13 Daumen ohne Mindestlänge (KM16, F-612)",
+    "datei": "internal/ui/seitenrollen.go",
+    "paket": "./internal/ui",
+    "alt": "laenge := max(bahn/10, bahn*sicht/gesamt)",
+    "neu": "laenge := bahn * sicht / gesamt"
   }
 ]

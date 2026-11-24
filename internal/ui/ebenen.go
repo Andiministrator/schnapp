@@ -235,9 +235,11 @@ func (e *editor) ebenenAuswerten(gtx layout.Context) {
 		}
 	}
 	for {
+		// Der Bereich ist der Weg, den die Liste noch blättern kann: Gio reicht den Rest des Rads an die Leiste weiter,
+		// wenn die Liste am Anschlag steht oder nichts zu blättern hat (F-612, KS-6).
 		ev, ok := gtx.Event(pointer.Filter{Target: &k.liste,
 			Kinds:   pointer.Press | pointer.Drag | pointer.Release | pointer.Cancel | pointer.Scroll,
-			ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}})
+			ScrollY: pointer.ScrollRange{Min: -k.versatz, Max: max(0, k.inhaltH-k.liste.Dy()-k.versatz)}})
 		if !ok {
 			break
 		}

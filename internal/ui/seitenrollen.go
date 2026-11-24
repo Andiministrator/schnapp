@@ -2,7 +2,7 @@
 
 package ui
 
-// Rollen der rechten Leiste (ADR-0031 Nachtrag 7, F-598): Reicht die Höhe des Fensters nicht für den ganzen Inhalt der
+// Rollen der rechten Leiste (ADR-0031 Nachtrag 8, F-598): Reicht die Höhe des Fensters nicht für den ganzen Inhalt der
 // Leiste (Werkzeug-Eigenschaften, Farbwähler, Ebenen), rollt die Leiste senkrecht, statt Hex und Deckkraft unter der
 // Fußzeile zu verlieren. Der Inhalt wird wie sonst in Inhaltskoordinaten gezeichnet und ganz um `rollen` Pixel nach oben
 // verschoben (op.Offset); die Lagen in den Zustandsstrukturen und die Zeigerlagen der Handler sind deshalb
@@ -43,6 +43,20 @@ func rollZeige(rollen int, r image.Rectangle, oben, unten, rand, rollMax int) in
 	return rollBegrenze(rollen, rollMax)
 }
 
+// rollRad rollt um den Radweg dy; der Bruchteil unter einem Pixel bleibt als Rest für das nächste Ereignis (ein
+// Touchpad liefert langsam Wege unter 1 px je Ereignis, F-612). Am Anschlag verfällt der Rest, sonst müsste man den
+// aufgesparten Weg erst wieder abrollen, bevor die Gegenrichtung wirkt.
+func rollRad(rollen int, rest, dy float32, rollMax int) (int, float32) {
+	rest += dy
+	n := int(rest)
+	rest -= float32(n)
+	neu := rollBegrenze(rollen+n, rollMax)
+	if neu != rollen+n || (neu == 0 && rest < 0) || (neu == rollMax && rest > 0) {
+		rest = 0
+	}
+	return neu, rest
+}
+
 // rollDaumen liefert Oberkante und Länge des Daumens einer Rollleiste der Länge bahn für eine sichtbare Höhe sicht über
 // einem Inhalt der Höhe gesamt bei Versatz rollen.
 func rollDaumen(bahn, sicht, gesamt, rollen int) (int, int) {
@@ -57,6 +71,7 @@ func rollDaumen(bahn, sicht, gesamt, rollen int) (int, int) {
 type rollZustand struct {
 	rollen     int             // Versatz in Pixeln, 0 = ganz oben
 	rollMax    int             // größter Versatz beim letzten Zeichnen
+	rest       float32         // Radweg unter einem Pixel, der noch nicht gerollt ist (Touchpad, F-612)
 	flaeche    int             // Ziel der Mausrad-Ereignisse (Zeiger)
 	fokus      image.Rectangle // Lage des Elements mit Tastaturfokus beim letzten Zeichnen (Inhaltskoordinaten)
 	fokusAlt   image.Rectangle // dasselbe im Bild davor: nur ein Wechsel rollt, damit das Mausrad nichts bekämpft
@@ -82,7 +97,7 @@ func (e *editor) rollAuswerten(gtx layout.Context) {
 			return
 		}
 		if pe, ok := ev.(pointer.Event); ok && pe.Kind == pointer.Scroll {
-			k.rollen = rollBegrenze(k.rollen+int(pe.Scroll.Y), k.rollMax)
+			k.rollen, k.rest = rollRad(k.rollen, k.rest, pe.Scroll.Y, k.rollMax)
 		}
 	}
 }

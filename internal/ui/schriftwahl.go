@@ -419,6 +419,14 @@ func (e *editor) zeichneSchriftliste(gtx layout.Context) {
 		return
 	}
 	mx := gtx.Constraints.Max
+	// Das Feld liegt in Inhaltskoordinaten der Leiste, die Liste wird in Fensterkoordinaten gezeichnet: Bei gerollter
+	// Leiste hängt sie am sichtbaren Feld (F-611). Liegt das Feld ganz außerhalb der Sicht, gibt es nichts, woran sie
+	// hängen könnte; sie schließt, statt offen und ungezeichnet den nächsten Klick abzufangen.
+	feld := sw.feldRahmen.Sub(image.Pt(0, e.seite.roll.rollen))
+	if feld.Intersect(e.seite.roll.sicht).Empty() {
+		e.schriftListeSchliesse(gtx, false)
+		return
+	}
 	// Klicks daneben schließen die Liste (wie bei den Menüs).
 	ac := clip.Rect(image.Rectangle{Max: mx}).Push(gtx.Ops)
 	event.Op(gtx.Ops, &sw.aussen)
@@ -426,11 +434,12 @@ func (e *editor) zeichneSchriftliste(gtx layout.Context) {
 
 	zeile := gtx.Dp(26)
 	unten := mx.Y - gtx.Dp(fusszeileDp)
-	hoehe := min(len(sw.familien)*zeile, gtx.Dp(320), unten-sw.feldRahmen.Max.Y)
+	hoehe := min(len(sw.familien)*zeile, gtx.Dp(320), unten-feld.Max.Y)
 	if hoehe < zeile {
+		e.schriftListeSchliesse(gtx, false) // nie offen ohne gezeichnete Liste (F-611)
 		return
 	}
-	sw.rahmen = image.Rect(sw.feldRahmen.Min.X, sw.feldRahmen.Max.Y, sw.feldRahmen.Max.X, sw.feldRahmen.Max.Y+hoehe)
+	sw.rahmen = image.Rect(feld.Min.X, feld.Max.Y, feld.Max.X, feld.Max.Y+hoehe)
 	t := op.Offset(sw.rahmen.Min).Push(gtx.Ops)
 	flaeche := image.Rectangle{Max: sw.rahmen.Size()}
 	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(flaeche).Op())

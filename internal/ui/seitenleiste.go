@@ -56,7 +56,7 @@ type seitenKnoepfe struct {
 	// Farbpaar über dem Farbwähler (ADR-0021 Nachtrag 11): Vordergrund, Füllung, Tauschen, Keine; Rahmen für Tests.
 	paar       [4]widget.Clickable
 	paarRahmen [4]image.Rectangle
-	roll       rollZustand // Rollen der Leiste bei wenig Höhe (ADR-0031 Nachtrag 7, F-598)
+	roll       rollZustand // Rollen der Leiste bei wenig Höhe (ADR-0031 Nachtrag 8, F-598)
 }
 
 // Plätze in seitenKnoepfe.paar.

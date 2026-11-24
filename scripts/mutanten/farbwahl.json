@@ -399,5 +399,12 @@
     "paket": "./internal/ui",
     "alt": "\t\t\tif e.s.TextLaeuft() {\n\t\t\t\t// Während einer Texteingabe gibt Tab",
     "neu": "\t\t\tif false && e.s.TextLaeuft() {\n\t\t\t\t// Während einer Texteingabe gibt Tab"
+  },
+  {
+    "name": "K235-1 Verschwundenes Feld behält seine halbe Eingabe (KM19, F-615)",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "h.neu, h.text, h.fehler = true, \"\", false\n\t\t\tgtx.Execute(key.FocusCmd{Tag: e})",
+    "neu": "gtx.Execute(key.FocusCmd{Tag: e})"
   }
 ]

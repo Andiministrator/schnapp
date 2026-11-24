@@ -321,9 +321,17 @@ die Farbe von selbst einzuklappen sperrte den Farbwähler aus (F-592) und ist au
   Bereiche unter einem undurchlässigen Treffer, es sei denn, der Eintrag ist ein Vorfahre; in einem eigenen Ausschnitt
   stand das Rad deshalb nach 75 px still, sobald Knopf, Feld oder Farbfläche unter den Zeiger wanderte. So behalten
   Ebenen- und Schriftliste ihr Rad (tiefere Einträge werden zuerst bedient), alles andere rollt die Leiste.
+- **Nachbesserung (Karte #235, F-611, F-612):** Die Ebenenliste meldet als Rad-Bereich nur den Weg, den sie selbst noch
+  blättern kann (`Min: -versatz`, `Max: inhaltH - Höhe - versatz`); am Anschlag oder ohne Überstand reicht Gio den
+  Rest an die Leiste weiter, die Schriftliste (`layout.List`) tut das ohnehin. Radwege unter 1 px (Touchpad) sammelt
+  `rollRad` als Rest (`rollZustand.rest`), am Anschlag verfällt er. Die Schriftliste liegt außerhalb der Leiste in
+  Fensterkoordinaten: `zeichneSchriftliste` rechnet das Feld um den Versatz zurück, hängt die Liste an das sichtbare Feld
+  und schließt sie, wenn das Feld ganz aus der Sicht ist oder unter ihm keine Zeile mehr Platz hat. Offen: die echte
+  Schrittweite eines Mausrads (Gio multipliziert diskrete Schritte mit 10, rund 150 px je Raste) steht in Andis gebündelter
+  Echtprobe.
 - Tests: `internal/ui/seitenrollen_test.go` (Sonde aus der Kritik zu #219 über alle Höhen 320 bis 800 in 2-px-Schritten,
-  Tab-Weg, Klicks im gerollten Bild, Ebenen-Vorrang, Zeichnen ohne Fenster), Mutanten KU225-1 bis KU225-7 in
-  `scripts/mutanten/ui-seitenleiste.json`.
+  Tab-Weg, Klicks im gerollten Bild, Ebenen-Vorrang, Zeichnen ohne Fenster), Mutanten KU225-1 bis KU225-8 und KU235-1 bis KU235-13
+  (Nachbesserung, Karte #235) in `scripts/mutanten/ui-seitenleiste.json`.
 
 ## Nachtrag 9 (24.11.2026): Navigator — Mini-Übersicht bei starkem Zoom (Karte #197)
 
