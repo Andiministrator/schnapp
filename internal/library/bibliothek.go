@@ -16,6 +16,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -72,7 +73,13 @@ const tempPraefix = ".schnapp-tmp-"
 
 // schreibeAtomar schreibt ziel über eine temporäre Datei (0600) im selben Ordner: schreiben, fsync, umbenennen.
 // Der Ordner muss existieren. Bei einem Fehler wird genau die eigene temporäre Datei entfernt.
-func schreibeAtomar(ziel string, schreibe func(io.Writer) error) (fehler error) {
+func schreibeAtomar(ziel string, schreibe func(io.Writer) error) error {
+	return schreibeAtomarGeprueft(ziel, schreibe, nil)
+}
+
+// schreibeAtomarGeprueft wie schreibeAtomar; vorUmbenennen (nil: keine Prüfung) läuft nach dem Schreiben und vor dem
+// Umbenennen. Liefert es einen Fehler, bleibt das Ziel unberührt und die temporäre Datei wird entfernt.
+func schreibeAtomarGeprueft(ziel string, schreibe func(io.Writer) error, vorUmbenennen func() error) (fehler error) {
 	ordner := filepath.Dir(ziel)
 	tmp, err := os.CreateTemp(ordner, tempPraefix+"*")
 	if err != nil {
@@ -106,6 +113,11 @@ func schreibeAtomar(ziel string, schreibe func(io.Writer) error) (fehler error) 
 	geschlossen = true
 	if err := tmp.Close(); err != nil {
 		return err
+	}
+	if vorUmbenennen != nil {
+		if err := vorUmbenennen(); err != nil {
+			return err
+		}
 	}
 	if err := umbenenne(name, ziel); err != nil {
 		return err
@@ -391,7 +403,9 @@ func (b *Bibliothek) Neuaufbau() (_ NeuaufbauErgebnis, fehler error) {
 			return nil
 		}
 		es = append(es, e)
-		b.heileVorschau(pfad, e.Pfad) // fehlende Vorschau nachziehen (F-52); scheitert das, bleibt nur die Vorschau aus
+		if fi, err := os.Lstat(pfad); err == nil && fi.Mode().IsRegular() {
+			b.heileVorschau(pfad, e.Pfad, standAus(fi)) // fehlende Vorschau nachziehen (F-52); scheitert das, bleibt nur die Vorschau aus
+		}
 		return nil
 	})
 	if err != nil {
@@ -572,28 +586,67 @@ func (b *Bibliothek) SetzeSchlagworte(pfad string, worte []string) (_ Eintrag, f
 // fehlt, aus dem sichtbaren Bild der Datei, nie aus dem Original (Leiste der letzten Aufnahmen, ADR-0036 Punkt 6). Ein
 // Pfad, der aus der Ablage hinausführt, und alles außer einer regulären Datei bleiben unberührt; ein Fehler bleibt still,
 // die Leiste zeigt dann weiter das graue Feld.
+//
+// Es läuft unter b.mu wie Speichern und Entfernen (F-651, Kernprinzip 2): Sonst könnte es eine Datei vor einem
+// Speichern mit Schwärzung lesen und sein Bild danach über die neue Vorschau legen, oder die Vorschau einer eben
+// entfernten Aufnahme als Waise neu anlegen. Gegen einen zweiten Prozess vergleicht es den Stand der Datei vor dem
+// Lesen, vor dem Umbenennen und danach; weicht er ab, wird nicht geschrieben bzw. die eben geschriebene Vorschau
+// wieder entfernt.
 func (b *Bibliothek) ErzeugeVorschau(rel string) {
 	if !(Eintrag{Pfad: rel, Breite: 1, Hoehe: 1}).gueltig() {
 		return
 	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	pfad := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))
-	if fi, err := os.Lstat(pfad); err != nil || !fi.Mode().IsRegular() {
+	fi, err := os.Lstat(pfad)
+	if err != nil || !fi.Mode().IsRegular() {
 		return
 	}
-	b.heileVorschau(pfad, rel)
+	// Auch die Ordner auf dem Weg dürfen nicht aus der Ablage hinausführen (Monatsordner als Symlink).
+	if echt, ok := b.Relativ(pfad); !ok || echt != rel {
+		return
+	}
+	b.heileVorschau(pfad, rel, standAus(fi))
 }
 
-// heileVorschau schreibt das Vorschaubild einer Arbeitsdatei neu, wenn es fehlt.
-func (b *Bibliothek) heileVorschau(pfad, rel string) {
+// heileVorschau schreibt das Vorschaubild einer Arbeitsdatei neu, wenn es fehlt. stand ist der Stand der Datei, wie
+// ihn der Aufrufer geprüft hat; gelesen und geschrieben wird nur, solange die Datei diesen Stand behält (F-651).
+// Läuft unter b.mu.
+func (b *Bibliothek) heileVorschau(pfad, rel string, stand Stand) {
 	if _, err := os.Stat(b.VorschauPfad(rel)); err == nil {
 		return
 	}
-	f, err := os.Open(pfad)
+	unveraendert := func() bool {
+		fi, err := os.Lstat(pfad)
+		return err == nil && fi.Mode().IsRegular() && standAus(fi) == stand
+	}
+	f, err := os.OpenFile(pfad, os.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0)
 	if err != nil {
 		return
 	}
 	defer f.Close()
-	if bild, err := fileformat.LeseBild(f); err == nil {
-		_ = b.schreibeVorschau(rel, bild)
+	if fi, err := f.Stat(); err != nil || !fi.Mode().IsRegular() || standAus(fi) != stand {
+		return // zwischen Prüfen und Öffnen ersetzt
+	}
+	bild, err := fileformat.LeseBild(f)
+	if err != nil || !unveraendert() {
+		return
+	}
+	if err := eigenerOrdner(b.Orte.Vorschau); err != nil {
+		return
+	}
+	klein := verkleinere(bild, VorschauSeite)
+	err = schreibeAtomarGeprueft(b.VorschauPfad(rel), func(w io.Writer) error { return kodiereVorschau(w, klein) },
+		func() error {
+			if !unveraendert() {
+				return ErrGeaendert
+			}
+			return nil
+		})
+	if err == nil && !unveraendert() {
+		// Ein anderer Prozess hat die Datei zwischen Prüfen und Umbenennen ersetzt oder entfernt: Die Vorschau zeigte
+		// einen alten Stand (etwa vor einer Schwärzung) oder wäre eine Waise.
+		_ = b.entferneVorschau(rel)
 	}
 }
