@@ -1344,3 +1344,46 @@ msgstr[1] "%d Zeichen kopiert"
 
 msgid "The clipboard holds the text only while this window is open. Close again to discard it."
 msgstr "Die Zwischenablage hält den Text nur, solange dieses Fenster offen ist. Erneutes Schließen verwirft ihn."
+
+msgid "Speech bubble “%s”"
+msgstr "Sprechblase „%s“"
+
+# ui: Gründe eigener Fehler in der Fußzeile (F-623)
+msgid "the settings file is larger than 64 KiB"
+msgstr "die Einstellungsdatei ist größer als 64 KiB"
+
+msgid "the settings file is not a regular file"
+msgstr "die Einstellungsdatei ist keine gewöhnliche Datei"
+
+msgid "the settings file is not valid UTF-8"
+msgstr "die Einstellungsdatei ist kein gültiges UTF-8"
+
+msgid "a setting has an invalid value"
+msgstr "eine Einstellung hat einen ungültigen Wert"
+
+msgid "the settings file is a link to nothing"
+msgstr "die Einstellungsdatei ist ein Verweis ins Leere"
+
+msgid "the home directory of the user is unknown"
+msgstr "das Heimverzeichnis des Benutzers ist unbekannt"
+
+msgid "the settings file cannot be located"
+msgstr "der Ort der Einstellungsdatei ist nicht bestimmbar"
+
+msgid "the styles file would be larger than 64 KiB"
+msgstr "die Stildatei würde größer als 64 KiB"
+
+msgid "the styles file is not a regular file"
+msgstr "die Stildatei ist keine gewöhnliche Datei"
+
+msgid "the styles file is a link to nothing"
+msgstr "die Stildatei ist ein Verweis ins Leere"
+
+msgid "the existing styles file cannot be read, so it is left as it is"
+msgstr "die vorhandene Stildatei ist nicht lesbar und bleibt deshalb unverändert"
+
+msgid "the existing styles file has parts that cannot be read and styles.ini.bak already exists, so it is left as it is"
+msgstr "die vorhandene Stildatei hat unlesbare Teile und styles.ini.bak existiert schon, deshalb bleibt sie unverändert"
+
+msgid "the styles file is locked by another window"
+msgstr "die Stildatei ist von einem anderen Fenster gesperrt"

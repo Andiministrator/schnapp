@@ -128,7 +128,7 @@ func (e *editor) stileLaden() {
 func (e *editor) stileSpeichern(erfolg string, aend func([]settings.Stil) []settings.Stil) {
 	neu, gesichert, err := aendereStile(aend)
 	if err != nil {
-		e.melde(fmt.Sprintf(i18n.T("Could not save the styles: %v"), ohnePaketpraefix(err.Error())), true)
+		e.melde(fmt.Sprintf(i18n.T("Could not save the styles: %v"), fehlerGrund(err)), true)
 		return
 	}
 	e.eigeneAusDatei(neu)

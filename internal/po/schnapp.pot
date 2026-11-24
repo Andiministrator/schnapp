@@ -772,6 +772,10 @@ msgid "Name reported by the agent (unverified):"
 msgstr ""
 
 #: internal/ui/ebenen.go
+msgid "Speech bubble “%s”"
+msgstr ""
+
+#: internal/ui/ebenen.go
 msgid "Text “%s”"
 msgstr ""
 
@@ -1282,6 +1286,58 @@ msgstr ""
 
 #: internal/ui/farbwaehler.go
 msgid "None"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the settings file is larger than 64 KiB"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the settings file is not a regular file"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the settings file is not valid UTF-8"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "a setting has an invalid value"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the settings file is a link to nothing"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the home directory of the user is unknown"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the settings file cannot be located"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the styles file would be larger than 64 KiB"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the styles file is not a regular file"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the styles file is a link to nothing"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the existing styles file cannot be read, so it is left as it is"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the existing styles file has parts that cannot be read and styles.ini.bak already exists, so it is left as it is"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the styles file is locked by another window"
 msgstr ""
 
 #: internal/ui/hilfe.go

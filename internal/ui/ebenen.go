@@ -123,6 +123,9 @@ func (e *editor) ebenenName(z canvas.EbenenZeile) string {
 		if utf8.RuneCountInString(zeile) > 24 {
 			zeile = string([]rune(zeile)[:23]) + "…"
 		}
+		if v.Spitze != nil { // ein Text mit Spitze ist eine Sprechblase (ADR-0021 Nachtrag 13, F-624)
+			return fmt.Sprintf(i18n.T("Speech bubble “%s”"), document.Zeichenbar(zeile))
+		}
 		return fmt.Sprintf(i18n.T("Text “%s”"), document.Zeichenbar(zeile))
 	case document.Nummer:
 		return fmt.Sprintf(i18n.T("Step %d"), v.Wert)

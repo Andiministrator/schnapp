@@ -479,7 +479,7 @@ func (t *tafel) speichere(schreibe func(string, []settings.Aenderung) error) (ge
 	// Agenten zuerst: Scheitert danach die andere Datei, gilt das Abschalten für den Server schon.
 	if len(agenten) > 0 {
 		if err := schreibe(t.agentenDatei, agenten); err != nil {
-			t.fehler = fmt.Sprintf(i18n.T("Could not save the settings: %v"), ohnePaketpraefix(err.Error()))
+			t.fehler = fmt.Sprintf(i18n.T("Could not save the settings: %v"), fehlerGrund(err))
 			return false, false
 		}
 		t.geladen.Agenten = t.wert.Agenten
@@ -493,7 +493,7 @@ func (t *tafel) speichere(schreibe func(string, []settings.Aenderung) error) (ge
 			err = errKeinOrt
 		}
 		if err != nil {
-			t.fehler = fmt.Sprintf(i18n.T("Could not save the settings: %v"), ohnePaketpraefix(err.Error()))
+			t.fehler = fmt.Sprintf(i18n.T("Could not save the settings: %v"), fehlerGrund(err))
 			return geschrieben, false
 		}
 		t.geladen = t.wert
