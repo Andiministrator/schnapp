@@ -1,10 +1,12 @@
 # Sichtprobe ADR-0036 Teil 1 (Karte #174): Leiste der letzten Aufnahmen unter der Leinwand, Wechsel im selben Fenster.
-# Vorbereitung: Die Bibliothek der Probe-Umgebung braucht mehrere Aufnahmen (synthetisch, etwa 14 Stück über heute,
-# gestern, die letzten Wochen und das Vorjahr, dazu eine Agenten-Aufnahme, die nicht erscheinen darf), angelegt mit
-# library.Ablegen/AblegenAgent unter tmp/probe/home (Bilder/schnapp, .local/share/schnapp, .cache/schnapp/vorschau).
-# Aufruf (mit einer Aufnahme der Bibliothek, der zweitneuesten, damit sie grün umrandet ist):
-#   scripts/probe.sh --drehbuch scripts/drehbuecher/bibliothek-174-leiste.txt --ende 60 \
-#     --bild tmp/probe/home/Bilder/schnapp/<JJJJ-MM>/<zweitneueste>.png
+# Vorbereitung (F-659): Die Bibliothek der Probe-Umgebung braucht mehrere Aufnahmen. Das Werkzeug
+# scripts/probelibrary legt 14 synthetische Aufnahmen über heute, gestern, die letzten Wochen und das Vorjahr an, dazu
+# eine Agenten-Aufnahme (magenta), die nicht erscheinen darf, unter tmp/probe/home (Bilder/schnapp,
+# .local/share/schnapp, .cache/schnapp/vorschau), und nennt die zweitneueste. Auf einer frischen Probe-Umgebung
+# (tmp/probe/home ohne Bibliothek) aus der Wurzel des Repos:
+#   bild=$(go run ./scripts/probelibrary -heim tmp/probe/home)
+# Aufruf (mit der zweitneuesten Aufnahme, damit sie grün umrandet ist):
+#   scripts/probe.sh --drehbuch scripts/drehbuecher/bibliothek-174-leiste.txt --ende 60 --bild "$bild"
 # Im Drehbuch-Lauf startet die Leiste aus (SCHNAPP_PROBE_LEISTE_AUS, probe.sh) und merkt ihren Schalter nicht.
 # Bei 1600 × 1000, Skala 1: Leinwand (52,30)–(1300,866), Leiste (52,866)–(1300,970); Vorschauen 120 × 68 ab y 874,
 # die Mitte der Vorschau i liegt bei x = 124 + 132·i, y = 908.

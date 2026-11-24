@@ -129,8 +129,10 @@
     "name": "BB1 Vorschau auch für Pfade außerhalb der Ablage",
     "datei": "internal/library/bibliothek.go",
     "paket": "./internal/library",
-    "alt": "if !(Eintrag{Pfad: rel, Breite: 1, Hoehe: 1}).gueltig() {\n\t\treturn\n\t}\n\tpfad := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))",
-    "neu": "pfad := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))"
+    "alt": "if !(Eintrag{Pfad: rel, Breite: 1, Hoehe: 1}).gueltig() {\n\t\treturn\n\t}\n\tb.mu.Lock()",
+    "neu": "b.mu.Lock()",
+    "aequivalent": true,
+    "grund": "Seit F-651 prüft ErzeugeVorschau zusätzlich library.Relativ: Ein Pfad aus der Ablage hinaus fällt dort durch, gueltig ist davor nur noch die billige erste Schranke (Karte #252)."
   },
   {
     "name": "BS1 Leiste ist ohne Einstellung aus",
@@ -199,8 +201,8 @@
     "name": "BU8 Verworfene Ladung gibt ihre Rettung nicht frei",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "if r.g.Rettung != nil {\n\t\t\tr.g.Rettung.Ende()\n\t\t}\n\t\tif !e.erzwungen",
-    "neu": "if !e.erzwungen"
+    "alt": "if r.g.Rettung != nil {\n\t\t\tr.g.Rettung.Ende()\n\t\t}\n\t\tswitch {",
+    "neu": "switch {"
   },
   {
     "name": "BU9 Rettung der alten Aufnahme endet nicht",
@@ -241,8 +243,8 @@
     "name": "BU14 Klick auf die offene Aufnahme lädt sie neu",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "if e.pfad != nil && abs == e.pfad() {",
-    "neu": "if e.pfad != nil && abs == e.pfad() && false {"
+    "alt": "if e.istOffen(abs) {",
+    "neu": "if false {"
   },
   {
     "name": "BU15 Pfeil rechts wandert nach links",
@@ -341,5 +343,208 @@
     "paket": "./cmd/schnapp",
     "alt": "return ui.Geoeffnet{}, errors.New(nutzerFehler(err))\n\t\t}\n\t\tif g.Fremd",
     "neu": "return ui.Geoeffnet{}, err\n\t\t}\n\t\tif g.Fremd"
+  },
+  {
+    "name": "KM1 Wechsel trotz offenem Exportdialog",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "case e.exportOffen:\n\t\te.melde(i18n.T(\"Finish the export first.\"), false)",
+    "neu": "case false:\n\t\te.melde(i18n.T(\"Finish the export first.\"), false)"
+  },
+  {
+    "name": "KM2 Wechsel trotz laufender Texterkennung",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "case e.ocr.laeuft:",
+    "neu": "case false:"
+  },
+  {
+    "name": "KM3 Zerstören gibt die Rettung der geladenen Aufnahme nicht frei",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "case r := <-e.wechsel.antwort:\n\t\tif r.g.Rettung != nil {\n\t\t\tr.g.Rettung.Ende()\n\t\t}\n\tcase <-time.After(wechselFrist):",
+    "neu": "case <-e.wechsel.antwort:\n\tcase <-time.After(wechselFrist):"
+  },
+  {
+    "name": "KM5 Wechsel trotz Schließen-Anfrage oder Signal während des Speicherns",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "case ende.Schliessen || ende.Erneut != nil || ende.Schluss != canvas.SchlussZu || e.s.SignalVorgemerkt():\n\t\te.wechsel.ziel = \"\"\n\tcase r.err != nil:",
+    "neu": "case r.err != nil:"
+  },
+  {
+    "name": "KM6 Abholen prüft Speichern, Freigabe und Signal nicht",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "case e.s.Geaendert() || e.s.SpeichernLaeuft() || e.erzwungen || e.s.SignalVorgemerkt() ||\n",
+    "neu": "case e.s.Geaendert() ||\n"
+  },
+  {
+    "name": "KM13 Lupenbilder der alten Aufnahme bleiben",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "e.lupe.bilder = nil\n",
+    "neu": ""
+  },
+  {
+    "name": "KM14 Naht-Merker der alten Aufnahme bleibt",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "e.naht.gueltig = false\n",
+    "neu": ""
+  },
+  {
+    "name": "KM16 Anfrage trotz Signal oder erzwungenem Schließen",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "case e.wechsel.laedt || e.s.SpeichernLaeuft() || e.erzwungen || e.s.SignalVorgemerkt():",
+    "neu": "case e.wechsel.laedt || e.s.SpeichernLaeuft():"
+  },
+  {
+    "name": "KM17 Texterkennung läuft über den Wechsel weiter",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "e.ocrAbbrechen()\n\te.rettungEnde()",
+    "neu": "e.rettungEnde()"
+  },
+  {
+    "name": "KM23 Opening bleibt nach dem Wechsel stehen",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "e.meldung, e.meldungHaelt = canvas.Meldung{}, keinHalt\n",
+    "neu": ""
+  },
+  {
+    "name": "KM24 Vorschau im Speicher nach dem Speichern nicht vergessen",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "if alt := k.l.Aktuell(); alt != \"\" {\n\t\tk.v.Vergiss(alt)\n\t}\n\te.leisteAktuell()\n\tif neu := k.l.Aktuell(); neu != \"\" {\n\t\tk.v.Vergiss(neu)\n\t}",
+    "neu": "e.leisteAktuell()"
+  },
+  {
+    "name": "KM25 Wechsel während des Zerstörens nicht abgeräumt",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "e.wechselAbbrechen()",
+    "neu": "_ = 0"
+  },
+  {
+    "name": "KM26 ErzeugeVorschau ohne Pfadprüfung der Ablage (Monatsordner als Verweis)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\tif echt, ok := b.Relativ(pfad); !ok || echt != rel {\n\t\treturn\n\t}\n\tb.heileVorschau(pfad, rel, standAus(fi))",
+    "neu": "\tb.heileVorschau(pfad, rel, standAus(fi))"
+  },
+  {
+    "name": "WL1 ErzeugeVorschau ohne Sperre der Bibliothek",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\tb.mu.Lock()\n\tdefer b.mu.Unlock()\n\tpfad := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))\n\tfi, err := os.Lstat(pfad)",
+    "neu": "\tpfad := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))\n\tfi, err := os.Lstat(pfad)"
+  },
+  {
+    "name": "WL2 ErzeugeVorschau ohne Standvergleich vor dem Umbenennen",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\t\tfunc() error {\n\t\t\tif !unveraendert() {\n\t\t\t\treturn ErrGeaendert\n\t\t\t}\n\t\t\treturn nil\n\t\t})",
+    "neu": "\t\tnil)"
+  },
+  {
+    "name": "WL3 ErzeugeVorschau ohne Standvergleich nach dem Umbenennen",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "if err == nil && !unveraendert() {",
+    "neu": "if false {"
+  },
+  {
+    "name": "WS1 Export-Dialog während des Ladens",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if e.exportOffen || e.s.Zieht() || e.wechsel.laedt {",
+    "neu": "if e.exportOffen || e.s.Zieht() {"
+  },
+  {
+    "name": "WS2 Bearbeiten ruht während des Ladens nicht",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\te.wechsel.laedt = true\n\te.s.SetzeRuhe(true)",
+    "neu": "\te.wechsel.laedt = true"
+  },
+  {
+    "name": "WS3 Ruhe bleibt nach dem Abholen",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\te.wechsel = wechselZustand{}\n\te.s.SetzeRuhe(false)\n\tswitch {",
+    "neu": "\te.wechsel = wechselZustand{}\n\tswitch {"
+  },
+  {
+    "name": "WS4 Abholen übersieht den offenen Export-Dialog",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "e.exportOffen || e.s.TextLaeuft() || e.s.Zieht():",
+    "neu": "e.s.TextLaeuft() || e.s.Zieht():"
+  },
+  {
+    "name": "WS5 Abholen übersieht eine laufende Texteingabe",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "e.exportOffen || e.s.TextLaeuft() || e.s.Zieht():",
+    "neu": "e.exportOffen || e.s.Zieht():"
+  },
+  {
+    "name": "WS6 Abholen übersieht einen laufenden Zug",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "e.exportOffen || e.s.TextLaeuft() || e.s.Zieht():",
+    "neu": "e.exportOffen || e.s.TextLaeuft():"
+  },
+  {
+    "name": "WS7 Sitzung sperrt bei Ruhe nicht",
+    "datei": "internal/canvas/hintergrund.go",
+    "paket": "./internal/ui",
+    "alt": "return s.hg.laeuft || s.ruht",
+    "neu": "return s.hg.laeuft"
+  },
+  {
+    "name": "WS8 Offene Aufnahme nur per Zeichenkettenvergleich erkannt",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "return okA && okO && a == o",
+    "neu": "return okA && okO && a == o && false"
+  },
+  {
+    "name": "WS9 Tafel schaltet die Leiste ohne Änderung an bar",
+    "datei": "internal/ui/einstellungen.go",
+    "paket": "./internal/ui",
+    "alt": "e.einst.wert.Leiste != leisteVorher && ",
+    "neu": "e.einst.wert.Leiste != leisteVorher || "
+  },
+  {
+    "name": "WS10 Fokus folgt der Aufnahme beim Neulesen nicht",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tk.fokusSoll = f\n",
+    "neu": ""
+  },
+  {
+    "name": "WS11 Neulesen zieht den Fokus in die Leiste",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": " && k.fokusHier == vorher {",
+    "neu": " {"
+  },
+  {
+    "name": "WS12 merkeEinstellung nimmt jeden Schlüssel",
+    "datei": "internal/ui/einstellungen.go",
+    "paket": "./internal/ui",
+    "alt": "if !merkbar[[2]string{a.Abschnitt, a.Schluessel}] {",
+    "neu": "if false {"
+  },
+  {
+    "name": "WS13 Ladefehler roh mit Paketpräfix und Pfad",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "fehlerGrund(r.err)), true)",
+    "neu": "r.err), true)"
   }
 ]

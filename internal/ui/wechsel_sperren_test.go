@@ -43,6 +43,9 @@ func (l *leistenLauf) ladeAngehalten(i int) {
 func TestWechselKeinExportWaehrendLaden(t *testing.T) {
 	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
 	t.Setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path="+filepath.Join(t.TempDir(), "kein-bus"))
+	// Ohne Sperre liefe die Goroutine des Dialogs an (kein Bus: sofort ein Fehler) und weckte über den Wecker.
+	l.e.wecker = canvas.NeuerWecker(func() {}, time.Hour, time.Hour)
+	t.Cleanup(l.e.wecker.Ende)
 	l.ladeAngehalten(0)
 	l.fokusiere(l.e)
 	l.taste("E", key.ModShortcut|key.ModShift)
