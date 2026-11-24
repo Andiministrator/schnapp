@@ -30,6 +30,16 @@ const (
 // Frist ist die längste Wartezeit je Rundlauf mit dem Compositor.
 const Frist = 2 * time.Second
 
+// Grenzen gegen einen fehlerhaften Compositor (Kritik C-2, 24.11.2026): höchstens so viele Globale und Ausgaben; darüber
+// bricht die Abfrage ab (die Skala fehlt dann, die Monitorliste bleibt).
+const (
+	maxGlobale  = 4096
+	maxAusgaben = 64
+)
+
+// ErrZuViele meldet mehr Globale oder Ausgaben, als die Abfrage annimmt.
+var ErrZuViele = errors.New("wloutputs: zu viele Globale oder Ausgaben")
+
 // ErrOhneXdgOutput meldet einen Compositor ohne zxdg_output_manager_v1: die logische Größe ist unbekannt.
 var ErrOhneXdgOutput = errors.New("wloutputs: zxdg_output_manager_v1 fehlt")
 
@@ -57,6 +67,12 @@ type global struct {
 
 // lies fragt über v ab (im Test ein nachgebauter Compositor).
 func lies(v *wlwire.Verbindung, frist time.Duration) (map[string]float64, error) {
+	// Schreiben hat sonst keine Frist: Liest der Compositor nicht mehr, blockierte Sende bei vollem Puffer für immer.
+	// Zwei Rundläufe plus Schreiben bleiben so in drei Fristen (C-2).
+	if err := v.SetWriteDeadline(time.Now().Add(3 * frist)); err != nil {
+		return nil, err
+	}
+	defer v.SetWriteDeadline(time.Time{})
 	registry := v.NeueID()
 	if err := v.Sende(wlwire.IDDisplay, wlwire.OpDisplayGetRegistry, new(wlwire.Nachricht).U32(registry)); err != nil {
 		return nil, err
@@ -70,6 +86,9 @@ func lies(v *wlwire.Verbindung, frist time.Duration) (map[string]float64, error)
 		g := global{name: l.U32(), schnitt: l.Str(), version: l.U32()}
 		if l.Err != nil {
 			return l.Err
+		}
+		if len(globale) >= maxGlobale || (g.schnitt == "wl_output" && zaehle(globale, "wl_output") >= maxAusgaben) {
+			return ErrZuViele
 		}
 		globale = append(globale, g)
 		return nil
@@ -140,14 +159,25 @@ func lies(v *wlwire.Verbindung, frist time.Duration) (map[string]float64, error)
 	if err != nil {
 		return nil, err
 	}
+	name := func(a *ausgabe) string {
+		if a.name != "" {
+			return a.name
+		}
+		return a.xdgName
+	}
+	anzahl := map[string]int{}
+	for _, a := range ausgaben {
+		anzahl[name(a)]++
+	}
 	res := map[string]float64{}
 	for _, a := range ausgaben {
-		name := a.name
-		if name == "" {
-			name = a.xdgName
+		n := name(a)
+		// Ohne Namen nicht zuzuordnen; zwei Ausgaben gleichen Namens: unklar, welche gemeint ist — keine Skala.
+		if n == "" || anzahl[n] > 1 {
+			continue
 		}
-		if s, ok := Skala(a.breite, a.hoehe, a.logBreite, a.logHoehe); ok && name != "" {
-			res[name] = s
+		if s, ok := Skala(a.breite, a.hoehe, a.logBreite, a.logHoehe); ok {
+			res[n] = s
 		}
 	}
 	return res, nil
@@ -166,3 +196,14 @@ func Skala(breite, hoehe, logBreite, logHoehe int32) (float64, bool) {
 
 // Prozent ist die Skala als ganze Prozent (1,25 → 125), wie die Systemeinstellungen sie zeigen.
 func Prozent(s float64) int { return int(math.Round(s * 100)) }
+
+// zaehle ist die Zahl der Globale mit der Schnittstelle schnitt.
+func zaehle(gs []global, schnitt string) int {
+	n := 0
+	for _, g := range gs {
+		if g.schnitt == schnitt {
+			n++
+		}
+	}
+	return n
+}

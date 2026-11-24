@@ -24,8 +24,8 @@
     "name": "W4 kein Rückgriff auf den xdg-Namen",
     "datei": "internal/wloutputs/skalen.go",
     "paket": "./internal/wloutputs",
-    "alt": "\t\tif name == \"\" {\n\t\t\tname = a.xdgName",
-    "neu": "\t\tif name == \"-\" {\n\t\t\tname = a.xdgName"
+    "alt": "\t\tif a.name != \"\" {\n\t\t\treturn a.name\n\t\t}\n\t\treturn a.xdgName",
+    "neu": "\t\tif a.name != \"\" {\n\t\t\treturn a.name\n\t\t}\n\t\treturn \"\""
   },
   {
     "name": "W5 fehlender Manager ist kein Fehler",
@@ -54,5 +54,54 @@
     "paket": "./cmd/schnapp",
     "alt": "bildschirmJSON{m.Name, m.Breite, m.Hoehe, m.Bruch}",
     "neu": "bildschirmJSON{m.Name, m.Breite, m.Hoehe, 0}"
+  },
+  {
+    "name": "W9 falscher Opcode wl_output.mode",
+    "datei": "internal/wloutputs/skalen.go",
+    "paket": "./internal/wloutputs",
+    "alt": "evOutputMode = 1 ",
+    "neu": "evOutputMode = 0 "
+  },
+  {
+    "name": "W10 falscher Opcode zxdg_output_v1.logical_size",
+    "datei": "internal/wloutputs/skalen.go",
+    "paket": "./internal/wloutputs",
+    "alt": "evXdgLogicalSize = 1 ",
+    "neu": "evXdgLogicalSize = 0 "
+  },
+  {
+    "name": "W11 falscher Opcode zxdg_output_v1.name",
+    "datei": "internal/wloutputs/skalen.go",
+    "paket": "./internal/wloutputs",
+    "alt": "evXdgName        = 3 ",
+    "neu": "evXdgName        = 4 "
+  },
+  {
+    "name": "W12 wl_output in zu hoher Version gebunden",
+    "datei": "internal/wloutputs/skalen.go",
+    "paket": "./internal/wloutputs",
+    "alt": "min(g.version, 4)",
+    "neu": "min(g.version, 9)"
+  },
+  {
+    "name": "W13 Manager in zu hoher Version gebunden",
+    "datei": "internal/wloutputs/skalen.go",
+    "paket": "./internal/wloutputs",
+    "alt": "min(manager.version, 3)",
+    "neu": "min(manager.version, 9)"
+  },
+  {
+    "name": "W14 keine Obergrenze der Ausgaben",
+    "datei": "internal/wloutputs/skalen.go",
+    "paket": "./internal/wloutputs",
+    "alt": "zaehle(globale, \"wl_output\") >= maxAusgaben",
+    "neu": "zaehle(globale, \"wl_output\") >= 1<<30"
+  },
+  {
+    "name": "W15 doppelte Namen bekommen eine Skala",
+    "datei": "internal/wloutputs/skalen.go",
+    "paket": "./internal/wloutputs",
+    "alt": "if n == \"\" || anzahl[n] > 1 {",
+    "neu": "if n == \"\" {"
   }
 ]
