@@ -1,0 +1,31 @@
+# Third-party licenses of schnapp
+
+The `schnapp` program (`./cmd/schnapp`) compiles in the following third-party Go modules. Their license texts and
+notices are in this folder; ship the whole folder together with the `schnapp` binary (for example in a Flatpak or a
+release archive). `schnapp-ocr` has its own list in [`../ocr/THIRD-PARTY-LICENSES/`](../ocr/THIRD-PARTY-LICENSES/README.md).
+
+The list follows `go list -deps -f '{{with .Module}}{{.Path}} {{.Version}}{{end}}' ./cmd/schnapp` with
+`GOFLAGS=-tags=novulkan,nox11`; the test `TestDrittlizenzenWieModule` (`cmd/schnapp/drittlizenzen_test.go`) keeps the
+table and the module list equal. After a module update: copy the new license file from the module cache, update the
+version here, run the test.
+
+| Module | Version | License | Text / notice in this folder |
+|---|---|---|---|
+| Go standard library and runtime | toolchain of the build (`go.mod`) | BSD-3-Clause, patent grant as in the `golang.org/x` PATENTS files | `go-LICENSE.txt` |
+| gioui.org | v0.10.3 (patched, `third_party/gio/`) | Unlicense OR MIT | `gioui.org-LICENSE.txt` |
+| gioui.org/shader | v1.0.9 | Unlicense OR MIT | `gioui.org-shader-LICENSE.txt` |
+| github.com/go-text/typesetting | v0.3.5 | Unlicense OR BSD-3-Clause | `github.com-go-text-typesetting-LICENSE.txt` |
+| github.com/godbus/dbus/v5 | v5.2.4 | BSD-2-Clause | `github.com-godbus-dbus-LICENSE.txt` |
+| golang.org/x/exp/shiny | v0.0.0-20250408133849-7e4ce0ab07d0 | BSD-3-Clause | `golang.org-x-exp-shiny-LICENSE.txt` |
+| golang.org/x/image | v0.48.0 | BSD-3-Clause, with PATENTS; includes the Go fonts (same license) | `golang.org-x-image-LICENSE.txt`, `golang.org-x-image-PATENTS.txt` |
+| golang.org/x/net | v0.63.0 | BSD-3-Clause, with PATENTS | `golang.org-x-net-LICENSE.txt`, `golang.org-x-net-PATENTS.txt` |
+| golang.org/x/sys | v0.50.0 | BSD-3-Clause, with PATENTS | `golang.org-x-sys-LICENSE.txt`, `golang.org-x-sys-PATENTS.txt` |
+| golang.org/x/text | v0.44.0 | BSD-3-Clause, with PATENTS | `golang.org-x-text-LICENSE.txt`, `golang.org-x-text-PATENTS.txt` |
+
+Code inside the repository with its own license: `internal/raster16` (from golang.org/x/image/vector, BSD-3-Clause,
+`internal/raster16/LICENSE`) and the Gio patch, which contains code generated from wayland-protocols (MIT); see the
+license section of the [README](../README.md).
+
+Not compiled in: the C libraries `libwayland-client`, `libwayland-cursor`, `libwayland-egl`, `libEGL`,
+`libxkbcommon` and the C library (`libc`, `libm`, `libresolv`) are linked dynamically and come from the system or the
+Flatpak runtime (`readelf -d schnapp | grep NEEDED`).
