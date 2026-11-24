@@ -133,6 +133,17 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | https://modelcontextprotocol.io/specification/2026-07-28/server/discover | 2026-11-22 | 2026-11-22 | live | WebFetch | Antwortform `server/discover` | `knowledge/sources/mcp-2026-07-28.md` |
 | https://modelcontextprotocol.io/specification/2026-07-28/server/tools | 2026-11-22 | 2026-11-22 | live | WebFetch | Werkzeug- und Ergebnisform, `isError`, Bildinhalt | `knowledge/sources/mcp-2026-07-28.md` |
 
+## OCR (Karte #195, ADR-0035)
+
+| URL | Letzter Besuch | Erstbesuch | Status | Weg | Inhalt | Zieldatei |
+|---|---|---|---|---|---|---|
+| https://blogs.kde.org/2025/11/15/this-week-in-plasma-ocr-in-spectacle-and-many-ui-improvements/ | 2026-11-24 | 2026-11-24 | indirect | WebSearch | Spectacle bekommt OCR über Tesseract, Text in die Zwischenablage (Plasma 6.6) | docs/adr/0035-text-erkennen.md |
+| https://invent.kde.org/plasma/spectacle/-/merge_requests/462 | 2026-11-24 | 2026-11-24 | indirect | WebSearch | MR „Add OCR functionality to Spectacle“, Tesseract-Engine | docs/adr/0035-text-erkennen.md |
+| https://bugzilla.redhat.com/show_bug.cgi?id=2435519 | 2026-11-24 | 2026-11-24 | indirect | WebSearch | Spectacle bindet libtesseract; ohne Entwicklungspaket grau — Bibliotheksbindung ist zerbrechlich | docs/adr/0035-text-erkennen.md |
+| https://man.archlinux.org/man/tesseract.1.en | 2026-11-24 | 2026-11-24 | indirect | WebSearch | Aufruf `tesseract FILE OUTPUTBASE`; `stdin`/`-` als Eingabe, `stdout`/`-` als Ausgabe (5.x) | docs/adr/0035-text-erkennen.md |
+| https://gitlab.gnome.org/World/OpenPaperwork/paperwork/issues/735 | 2026-11-24 | 2026-11-24 | indirect | WebSearch | Flatpak-Bau mit eigener Tesseract-Kopie: Sprachdaten nur im Sandbox-tessdata | docs/adr/0035-text-erkennen.md |
+| https://flathub.org/apps/xyz.rescribe.rescribe | 2026-11-24 | 2026-11-24 | indirect | WebSearch | OCR-Programm auf Flathub mit gebündeltem Tesseract | docs/adr/0035-text-erkennen.md |
+
 ## Suchanfragen
 
 | Datum | Anfrage | Ergebnis |
@@ -146,3 +157,6 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | 2026-11-21 | gioui contribute AI generated code policy LLM patches Elias Naur | keine Gio-eigene KI-Regel gefunden |
 | 2026-11-22 | Model Context Protocol specification latest protocol version 2026 stdio lifecycle initialize (nur modelcontextprotocol.io) | aktuelle Revision 2026-07-28 ohne initialize-Handshake |
 | 2026-11-23 | Snagit logo icon design TechSmith 2024 | kein Designbeleg; Markenliste mit „S Icon“ in der Snagit-Hilfe 2024 |
+| 2026-11-24 | Spectacle KDE text extraction OCR tesseract Plasma 6 | Spectacle OCR über Tesseract seit Plasma 6.6, Paketierungsfehler bei libtesseract |
+| 2026-11-24 | tesseract command line stdin stdout | stdin/stdout bzw. „-“ als Ein- und Ausgabe (5.x) |
+| 2026-11-24 | Flathub flatpak bundle tesseract OCR module traineddata extension | keine gemeinsame Flathub-Erweiterung; Apps bündeln Tesseract und Sprachdaten selbst |
