@@ -152,6 +152,8 @@ Glyphen von Systemschriften (Noto Serif CJK) rastern 1,9- bis 2,6-mal langsamer 
 4000×4000, 72 000 Glyphen bei Grad 8), der Glyphenanteil des Zeitversprechens wächst also höchstens um den Faktor 3 und
 nur, wenn eine präparierte Datei dieselbe Systemschrift nutzt. Das Modell liegt bei kleinen Graden rund zehnfach unter
 der Messung (rund 0,5 µs gegen rund 5 µs je Glyphe); das Budget bleibt Obergrenze, die Neueichung ist F-589.
+*Überholt durch Nachtrag 13 (Karte #238, F-601): Im Budget-Dokument verdoppelte eine dichte Systemschrift die Zeit
+(rund 42 s statt 21 s); Glyphen aus Systemschriften zählen seither mit dem festen Faktor 2,5.*
 
 **Ergänzung (23.11.2026, Karte #224, F-589): Neueichung der kleinen Glyphen.** Messung mit `BenchmarkGlyphKosten`
 (`internal/render/glyphkosten_test.go`; ein Kern, ohne `-race`, 4000×4000, Go-Schrift, Zeit des leeren Bildes
@@ -203,7 +205,8 @@ Glyphen knapp unter `GlyphBudget` brauchen damit nicht höchstens rund 5 s, sond
 Glyphen) rund 11 s. Ein Dokument knapp unter allen drei Grenzen rastert mit diesem Muster in 21,1 s
 (`BenchmarkNaehteAlleGrenzenKleineGlyphen/Klammeraffe74`; `…/Fliesstext64` 16,2 s, `BenchmarkNaehteAlleGrenzen` mit den
 „W“ 12,4 s). **Das Zeitversprechen lautet rund 21 s** (Go-Schrift; für dichte Systemschriften gilt weiter der Faktor
-unter 3 auf den Glyphenanteil aus der Ergänzung zu F-576). `glyphGrund` und `GlyphBudget` bleiben: Der Abstand 50 zum
+unter 3 auf den Glyphenanteil aus der Ergänzung zu F-576). *Seit Nachtrag 13 (Karte #238, F-601) zählen Glyphen aus
+Systemschriften mit dem Faktor 2,5; das Versprechen gilt damit, gemessen mit eingebauten und Systemschriften.* `glyphGrund` und `GlyphBudget` bleiben: Der Abstand 50 zum
 Alltagsdokument schützt echte Bearbeitungen, und Speichern bricht ohnehin nie ab. Offen ist die Form des Modells
 (Summe oder linearer Anteil statt max, damit die Mitte nicht bis zum 3,7-Fachen unterschätzt wird); das verschiebt die
 Sollwerte der Kostentests und den Abstand des Alltagsdokuments und ist ein eigener Befund.
@@ -452,3 +455,50 @@ Nachtrag 6 und 7; die 15-s-Frist zählt seit Nachtrag 9 ab dem letzten Fortschri
   nennt. Wer das Modell später ändert (andere Schrift als Go als Eichgrundlage, dichtere Muster), misst zuerst
   `BenchmarkNaehteAlleGrenzenKleineGlyphen` und trägt die neue Zeit hier und in Nachtrag 3 ein; ein gemessenes
   Muster über 21 s widerlegt diese Entscheidung.
+- **Einschränkung (F-617 d, Sammelkritik Sprint 12 KS-2):** Die 21 s galten nur für die eingebauten Schriften Go und
+  Go Mono. Mit „Noto Serif CJK JP“ „龘“ rasterte dasselbe Budget-Dokument in 41,4 und 42,5 s, und `Pruefe` nahm es an.
+  Seit Nachtrag 13 zählen Glyphen aus Systemschriften mit dem Faktor 2,5; das Versprechen ist dort neu gemessen.
+
+## Nachtrag 13 (24.11.2026): Glyphen aus Systemschriften zählen mit dem Faktor 2,5 (F-601, F-617 d, Karte #238)
+
+**Status:** Akzeptiert (Claude als Orchestrator, Andi informiert).
+
+- **Befund (Sammelkritik Sprint 12 KS-2, F-601):** Das Kostenmodell `n · max(Grad², glyphGrund)` kennt die Schrift
+  nicht; `glyphGrund` und `GlyphBudget` sind an Go geeicht. Systemschriften rastern je Glyphe bis 2,39-mal so lange wie
+  Go (lateinische bis 1,21-mal). Das Budget-Dokument von `BenchmarkNaehteAlleGrenzenKleineGlyphen/Klammeraffe74`
+  (90 Nähte, Glyphen und Flächen knapp unter den Grenzen) rasterte mit „Noto Serif CJK JP“ „龘“ statt Go „@“ in 41,4
+  und 42,5 s (Kritiker, ungestört), in der Nachmessung zu dieser Karte in 39,5 s (ein Lauf, Last rund 5); `Pruefe` nahm
+  es an. Das Zeitversprechen von rund 21 s (Nachträge 3 und 12) galt also nur für die eingebauten Schriften.
+- **Entscheidung:** Glyphen aus **Systemschriften** (jede Familie außer den eingebauten Go und Go Mono) zählen
+  **pessimistisch mit dem festen Faktor 2,5** (`systemFaktor` in `internal/render/render.go`, eine Stelle:
+  `glyphKostenIn`); die eingebauten Schriften bleiben bei 1. Ein Ersatz (verlangte Familie fehlt, gerastert wird Go)
+  zählt wie Go (`fonts.Schrift.Eingebaut`), die Ziffern einer Nummer (immer Go Fett) ebenso. `glyphGrund`,
+  `GlyphBudget` und `Budget` bleiben. Ein feinerer Faktor je Schrift, aus den Umrissen beim Laden gemessen, ist
+  ausdrücklich nicht Teil dieser Entscheidung.
+- **Folge:** Ein Dokument mit Systemschrift erreicht `GlyphBudget` schon bei 1/2,5 der Glyphen und wird früher
+  abgelehnt (Editor: beim Öffnen; `--ignore-limit` bleibt der Ausweg; Speichern bricht nie ab). Das Alltagsdokument
+  (`alltagsDokument`, 200 Texte à 50 Zeichen) liegt mit Go weiter 53,5-mal unter `GlyphBudget`
+  (`TestAlltagsdokumentWeitUnterDemBudget`, Soll mindestens 50), ganz in einer Systemschrift 21,7-mal
+  (`TestAlltagsdokumentSystemschriftWeitUnterDemBudget`, Soll mindestens 20).
+- **Messung (24.11.2026, ein Kern, ohne `-race`, `-count 3`, aus dieser Sitzung nichts parallel; auf dem Rechner
+  liefen andere Sitzungen, Last in Klammern).** Aufruf:
+  `SCHNAPP_MESS_SCHRIFTEN=/usr/share/fonts/noto-cjk SCHNAPP_MESS_FAMILIE="Noto Serif CJK JP" SCHNAPP_MESS_ZEICHEN=龘`
+  `go test ./internal/render -run x -bench "NaehteAlleGrenzenSystemschrift|NaehteAlleGrenzenKleineGlyphen" -cpu 1 -count 3`
+
+  | Lauf | `…Systemschrift` (CJK „龘“, Faktor 2,5) | `…KleineGlyphen/Klammeraffe74` (Go „@“) | `…/Fliesstext64` |
+  |---|---|---|---|
+  | 1 (Last 3,7 bis 5,2) | 24,5 / 25,0 / 24,6 s | 24,0 / 22,8 / 21,8 s | 18,0 / 17,4 / 16,8 s |
+  | 2 (Last rund 2,2) | 20,9 / 22,1 / 21,7 s | 20,5 / 20,8 / 20,9 s | — |
+
+  Das CJK-Dokument (24 Texte à 8800 „龘“, rund 211 000 Glyphen statt rund 530 000, dazu mehr bildgroße Flächen bis
+  `Budget`) rastert im ruhigeren Lauf 2 bis 6 % langsamer als der Go-Bezug, in Lauf 1 bis 13 %. **Das Zeitversprechen
+  lautet weiter rund 21 s, gemessen mit eingebauten und Systemschriften** (dichteste gemessene Systemschrift bis rund
+  22 s). Lateinische Systemschriften (bis 1,21 × Go) liegen mit dem Faktor 2,5 deutlich darunter.
+- **Tests und Mutanten:** `internal/render/systemschrift_test.go` (`TestSystemschriftAmRandAbgelehnt`: Go, Go Mono und
+  Ersatz am Rand angenommen, Systemschrift abgelehnt, die Lage des Faktors zwischen 2,39 und 2,5;
+  `TestSystemschriftFaktor`; `TestAlltagsdokumentSystemschriftWeitUnterDemBudget`; Benchmark
+  `BenchmarkNaehteAlleGrenzenSystemschrift`, ohne die drei Umgebungsvariablen übersprungen). Mutanten S238-1 bis -7 in
+  `scripts/mutanten/schrift.json`.
+- **Widerlegungsbedingung:** Eine installierte Schrift, deren Budget-Dokument (nach dem Muster von
+  `BenchmarkNaehteAlleGrenzenSystemschrift`) ungestört deutlich über rund 21 s rastert, verlangt einen größeren Faktor
+  oder den Faktor je Schrift.

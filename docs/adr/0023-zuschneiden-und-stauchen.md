@@ -349,7 +349,8 @@ rund 24 % sichtbare Pixel, auch bei 16 px bleiben 2,5 bis 8 px.
   (`BenchmarkNaehteAlleGrenzen`). *Seit Karte #224 (23.11.2026, F-589, ADR-0020 Nachtrag 3 mit Ergänzungen) lautet das
   Zeitversprechen **rund 21 s**: `GlyphBudget` 3e9 statt 1e9 (177 × „W“ statt 59), und gemessen wird mit dem teuersten
   Glyphenmuster („@“ im Grad 74, `BenchmarkNaehteAlleGrenzenKleineGlyphen/Klammeraffe74`); mit den „W“ sind es rund
-  12 s.*
+  12 s. Mit Systemschriften gilt es erst seit ADR-0020 Nachtrag 13 (Karte #238, F-601: Glyphen aus Systemschriften
+  zählen mit dem Faktor 2,5), gemessen mit eingebauten und Systemschriften.*
 - **Grenze der Nahtzahl (F-444, F-408):** `KantenBudget` bleibt 1e10. `Pruefe` nimmt bei Abriss-Nähten auf 8192 px Länge
   rund 364, auf 32768 px rund 91 an (seit F-438 mit der zweiten Leerung; vorher 392 und 98); mehr lehnt der Editor beim
   Öffnen ab, Speichern bricht nie ab. Das Heben der Grenze auf 600 Nähte bei 8192 px hieße rund 1,6e10 und (hochgerechnet) rund 9 s
@@ -415,7 +416,8 @@ schwerer zu prüfen).
   Einmischen auf deckendem Grund. 120 Abriss-Nähte auf 32768×2100, Bild bitgleich (`TestNahtPruefsumme`): 6,46 s auf
   4,4 s mit einem Kern, 3,0 s mit zwei, 2,5 s mit allen Kernen des Entwicklungsrechners. `BenchmarkNaehteAlleGrenzen`
   (ein Kern): rund 11 s statt rund 14 s. *Seit Karte #224 (dreifaches `GlyphBudget`) rund 12 s mit den „W“, mit dem
-  teuersten Glyphenmuster rund 21 s — das Zeitversprechen, siehe Nachtrag 9 und ADR-0020 Nachtrag 3.*
+  teuersten Glyphenmuster rund 21 s — das Zeitversprechen, siehe Nachtrag 9 und ADR-0020 Nachtrag 3; mit
+  Systemschriften seit ADR-0020 Nachtrag 13.*
 - **Test (F-499):** `TestNahtAblaufZweiteLeerung` und `TestKantenOhneSchatten` (Sollpixel im Spalt bei kreuzenden Nähten).
 - **Grenze, bewusst hingenommen (Sitzungs-QA 23.11.2026, Kritiker A-4/B-11):** `KantenOhneSchatten` läuft in `bildNeu`
   synchron in der Ereignisschleife (jede Schwärzung, Rückgängig/Wiederholen, Kantenform, Wechsel zu oder von

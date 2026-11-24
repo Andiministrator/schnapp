@@ -240,6 +240,12 @@ func TestKostenmodellLueckenF132(t *testing.T) {
 // diagonale Pfeile über das ganze Bild, 100 Nummern, 200 Texte à 50 Zeichen mit Hintergrund.
 func alltagsDokument(t testing.TB) *document.Dokument {
 	t.Helper()
+	return alltagsDokumentIn(t, "")
+}
+
+// alltagsDokumentIn ist alltagsDokument mit allen Texten in der Familie schrift (leer = Go; Karte #238).
+func alltagsDokumentIn(t testing.TB, schrift string) *document.Dokument {
+	t.Helper()
 	d := weissesDokument(t, 7680, 2160)
 	for i := 0; i < 50; i++ {
 		f := float64(i)
@@ -255,7 +261,7 @@ func alltagsDokument(t testing.TB) *document.Dokument {
 	}
 	for i := 0; i < 200; i++ {
 		hinzu(t, d, document.Text{Ort: document.Pt(30+float64(i*30), float64(i*10)), Inhalt: strings.Repeat("Hallo Welt ", 5)[:50],
-			Schriftgrad: 24, Farbe: rot, Hintergrund: color.NRGBA{R: 255, G: 255, A: 200}})
+			Schriftgrad: 24, Farbe: rot, Hintergrund: color.NRGBA{R: 255, G: 255, A: 200}, Schrift: schrift})
 	}
 	return d
 }

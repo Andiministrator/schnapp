@@ -463,5 +463,54 @@
     "paket": "./internal/ui",
     "alt": "for _, st := range v.Striche() {",
     "neu": "for _, st := range v.Striche()[:0] {"
+  },
+  {
+    "name": "S238-1 Systemschrift ohne Faktor (F-601)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "const systemFaktor = 2.5",
+    "neu": "const systemFaktor = 1"
+  },
+  {
+    "name": "S238-2 Faktor unter der Messung (F-601)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "const systemFaktor = 2.5",
+    "neu": "const systemFaktor = 2.2"
+  },
+  {
+    "name": "S238-3 Faktor zu pessimistisch (F-601)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "const systemFaktor = 2.5",
+    "neu": "const systemFaktor = 3"
+  },
+  {
+    "name": "S238-4 Text zählt ohne Schrift (F-601)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "z.auf.glyph += glyphKostenIn(sch, zeichenzahl(zeile.Text), v.Schriftgrad)",
+    "neu": "z.auf.glyph += glyphKosten(zeichenzahl(zeile.Text), v.Schriftgrad)"
+  },
+  {
+    "name": "S238-5 Faktor vertauscht (F-601)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\tif sch.Eingebaut() {\n\t\treturn glyphKosten(n, grad)",
+    "neu": "\tif !sch.Eingebaut() {\n\t\treturn glyphKosten(n, grad)"
+  },
+  {
+    "name": "S238-6 Go Mono zählt als Systemschrift (F-601)",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/render",
+    "alt": "return s.Familie == Go || s.Familie == GoMono }",
+    "neu": "return s.Familie == Go }"
+  },
+  {
+    "name": "S238-7 Ersatz zählt als Systemschrift (F-601)",
+    "datei": "internal/fonts/fonts.go",
+    "paket": "./internal/render",
+    "alt": "return s.Familie == Go || s.Familie == GoMono }",
+    "neu": "return !s.Ersatz && (s.Familie == Go || s.Familie == GoMono) }"
   }
 ]

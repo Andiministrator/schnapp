@@ -109,6 +109,11 @@ type Schrift struct {
 	Ersatz  bool // die verlangte Familie fehlt, geliefert ist Go
 }
 
+// Eingebaut meldet, ob s eine der eingebauten Familien Go und Go Mono ist (auch als Ersatz). Eine Systemschrift
+// gleichen Namens überschreibt sie nie (leseDatei, familieZu), der Name genügt also. Das Kostenmodell von render zählt Glyphen
+// anderer Familien mit einem Faktor (ADR-0020 Nachtrag 13, F-601).
+func (s *Schrift) Eingebaut() bool { return s.Familie == Go || s.Familie == GoMono }
+
 var (
 	mu        sync.Mutex
 	eingebaut = []familie{

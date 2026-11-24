@@ -74,7 +74,8 @@ var ErrZuAufwendig = errors.New("render: Dokument zu aufwendig zu rastern")
 //     „rund 0,3 ns“ oben gelten seit ADR-0028 nicht mehr). Das gilt für gemischten Fließtext. Die Form max(…) zählt in
 //     der Mitte zu wenig: Dichte Glyphen an der Knickstelle (Grad 74, 74² = glyphGrund) kosten bis rund 20 µs, also
 //     rund 3,7 ns je Einheit („@“; „W“ rund 3 ns, Fließtext rund 2 ns; Kritik zu Karte #224, 23.11.2026), bewusst so
-//     belassen: Das Zeitversprechen rund 21 s gilt (ADR-0020 Nachtrag 12, F-601);
+//     belassen: Das Zeitversprechen rund 21 s gilt (ADR-0020 Nachtrag 12), gemessen mit eingebauten und Systemschriften,
+//     seit Glyphen aus Systemschriften mit systemFaktor zählen (ADR-0020 Nachtrag 13, F-601);
 //   - je Füllung fuellGewicht × Fläche ihres aufs Bild beschnittenen Rechtecks: rund 7 ns je Pixel mit einmischer
 //     (F-130, Messung 20.11.2026; vorher rund 30 bis 36 ns über den allgemeinen Weg von x/image/vector, Gewicht 100);
 //     eine Lupe, deren Ziel in die Ansicht reicht, zählt so ihr Ziel und zusätzlich ihre aufs Original begrenzte Quelle,
@@ -124,6 +125,10 @@ const (
 //     (BenchmarkNaehteAlleGrenzen); mit kleinen Glyphen statt der „W“ (BenchmarkNaehteAlleGrenzenKleineGlyphen) in
 //     rund 16 s (Fließtext Grad 64, rund 520 000 Glyphen) und mit dem teuersten gefundenen Muster („@“ Grad 74, rund
 //     530 000 Glyphen) in rund 21 s. Zusammen also rund 21 s (Messung 23.11.2026, F-589 und Kritik zu Karte #224).
+//     Gemessen mit eingebauten und Systemschriften (ADR-0020 Nachtrag 13, Karte #238, F-601): Dasselbe Dokument mit
+//     „Noto Serif CJK JP“ „龘“ (BenchmarkNaehteAlleGrenzenSystemschrift; Glyphen mit systemFaktor gezählt, rund
+//     210 000 statt 530 000) rastert in 20,9 bis 22,1 s, Go „@“ im selben Lauf 20,5 bis 20,9 s (24.11.2026, ein Kern,
+//     Last rund 2 durch andere Läufe); ohne den Faktor waren es 41,4 und 42,5 s.
 //     Die Gewichte unten stammen aus den Messungen vor ADR-0028 und bleiben (die Grenzen sind Obergrenzen).
 //     So werden die präparierten Fälle aus F-125 und F-132 (10000 große Glyphen oder Nummern, 10000 sehr breite
 //     Pfeile, 10000 Texte à 10000 winziger Glyphen, Hunderte bildgroßer Flächen) beim Öffnen abgelehnt.
@@ -367,12 +372,29 @@ type zeichner struct {
 
 func (z zeichner) trocken() bool { return z.bild == nil }
 
-// glyphKosten sind die Kosten von n Glyphen im Schriftgrad grad (Kostenmodell). Je Schrift wird nicht skaliert
-// (F-576, Messung 23.11.2026, ein Kern): Einheiten je em spielen keine Rolle (der Grad ist in Pixeln); die dichtesten
-// Glyphen einer Systemschrift (Noto Serif CJK „鬱龍蠶麤“) rastern bei Grad 8 mit rund 14 µs je Glyphe gegen rund 5,4 µs
-// in Go (Faktor 2,6), bei Grad 40 mit rund 30 gegen 16 µs (Faktor 1,9) — das verlängert das Zeitversprechen
-// (ADR-0020 Nachtrag 3) um einen Faktor unter 3 für den Glyphenanteil, es sprengt es nicht.
+// glyphKosten sind die Kosten von n Glyphen im Schriftgrad grad in einer eingebauten Schrift (Kostenmodell, Faktor 1).
+// Einheiten je em spielen keine Rolle (der Grad ist in Pixeln, F-576).
 func glyphKosten(n int, grad float64) float64 { return float64(n) * math.Max(grad*grad, glyphGrund) }
+
+// systemFaktor ist der feste Kostenfaktor für Glyphen aus Systemschriften, also jeder Familie außer den eingebauten
+// Go und Go Mono (ADR-0020 Nachtrag 13, Karte #238, F-601). glyphGrund und GlyphBudget sind an Go geeicht; Systemschriften
+// rastern je Glyphe teurer, gemessen (ein Kern, ungestört; Sammelkritik Sprint 12 KS-2, F-576) bis 2,39-mal so lange
+// wie Go: „Noto Serif CJK JP“ „龘“ im Grad 74 im Budget-Dokument 41,4 und 42,5 s gegen 19,8 bis 20,5 s für Go „@“,
+// lateinische Systemschriften bis 1,21-mal (dichte CJK-Glyphen im Grad 8 einzeln rund 14 gegen 5,4 µs, F-576). Gezählt
+// wird pessimistisch mit 2,5 statt je Schrift aus den Umrissen gemessen (bewusst nicht Teil von Karte #238): Ein
+// Dokument mit Systemschrift erreicht GlyphBudget so schon bei 1/2,5 der Glyphen und hält das Zeitversprechen von rund
+// 21 s (CJK-Budget-Dokument 20,9 bis 22,1 s, siehe Budget); das Alltagsdokument bleibt auch ganz in einer
+// Systemschrift rund 21-mal unter GlyphBudget (TestAlltagsdokumentSystemschriftWeitUnterDemBudget).
+const systemFaktor = 2.5
+
+// glyphKostenIn sind die Kosten von n Glyphen im Grad grad in der Schrift sch: glyphKosten, für Systemschriften mal
+// systemFaktor. Ersatz (die Familie fehlt, gerastert wird Go) zählt wie Go.
+func glyphKostenIn(sch *fonts.Schrift, n int, grad float64) float64 {
+	if sch.Eingebaut() {
+		return glyphKosten(n, grad)
+	}
+	return systemFaktor * glyphKosten(n, grad)
+}
 
 // zeichenzahl zählt die Glyphen, die eine Zeile höchstens erzeugt: Tabulator wird zu vier Leerzeichen
 // (document.Zeichenbar), entfernte Steuerzeichen zählen mit (obere Schranke, billig ohne Umwandeln).
@@ -522,7 +544,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 			if !z.zeileSichtbar(sch, p.X, p.Y, v.Schriftgrad) {
 				continue
 			}
-			z.auf.glyph += glyphKosten(zeichenzahl(zeile.Text), v.Schriftgrad)
+			z.auf.glyph += glyphKostenIn(sch, zeichenzahl(zeile.Text), v.Schriftgrad)
 			if z.trocken() {
 				continue
 			}
@@ -547,7 +569,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 			int(math.Ceil(m.X+halb)), int(math.Ceil(m.Y+grad))).Overlaps(z.rand) {
 			return nil
 		}
-		z.auf.glyph += glyphKosten(len(s), grad)
+		z.auf.glyph += glyphKosten(len(s), grad) // Ziffern immer in Go Fett
 		if z.trocken() {
 			return nil
 		}
@@ -916,7 +938,7 @@ func (z zeichner) strich(pts []document.Punkt, geschlossen bool, s document.Stri
 // text zeichnet eine Zeile. Was das Bild nicht schneidet, wird nicht gerastert (F-118): eine Zeile, deren Höhe ganz
 // über oder unter dem Bild liegt, entfällt, ebenso jede Glyphe, deren Ursprung mehr als die seitliche Hülle der Schrift (mindestens
 // 1,25 Schriftgrade, fonts.Schrift.Huelle) links oder rechts vom Bild liegt (Vorschub und Unterschneidung laufen weiter, damit sichtbare Glyphen am selben Ort stehen).
-// Die Kosten zählt der Aufrufer (glyphKosten), auch im Trockenlauf.
+// Die Kosten zählt der Aufrufer (glyphKostenIn bzw. glyphKosten), auch im Trockenlauf.
 func (z zeichner) text(face font.Face, sch *fonts.Schrift, s string, x, grundlinie float64, farbe color.NRGBA, grad float64) {
 	var puffer sfnt.Buffer // je Aufruf: Zeilen können nebenläufig gezeichnet werden
 	sf := sch.Font
