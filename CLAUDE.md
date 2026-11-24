@@ -321,7 +321,7 @@ verbrauchen andere Karten Nummern.
 
 ## Board-Felder (aBoard)
 
-> Typ A lokal, migriert (Op-Inbox) seit 19.11.2026, Ordner verbunden. aBoard nur per `update-aboard.sh` aktualisieren.
+> Typ A lokal, migriert (Op-Inbox) seit 19.11.2026, Ordner verbunden. aBoard nur per `update-aboard.sh` aktualisieren, und das nur durch die aBoard-Sitzung.
 > Langfassung: `~/.aboard-framework/framework/claude-md-board-felder.md`.
 
 Board-Mutation = Op über `node ~/.aboard-framework/tools/aboard-op.mjs <op-typ> --<schlüssel> <wert> --actor "<wer>" --dir .` — `aboard-sync.json` ist projektor-geschrieben und read-only.
@@ -342,7 +342,8 @@ Board-Mutation = Op über `node ~/.aboard-framework/tools/aboard-op.mjs <op-typ>
 - **Swimlanes:** `kind` = `sprint` (Meta-Karten, `/sprint-abschluss`), `lane` (ohne Sprint-Mechanik), `backlog` (`__backlog__`), `service` (Mail-Eingang, nur Server-Board).
 - **Meta-Karten** (📋 Sprint-Start, 🏁 Sprint-Abschluss, `kind: 'sprint-meta'`): legt nur der Browser an, nie ein Werkzeug. Nicht löschen, nicht archivieren, kein Drag-and-Drop; sonst nur Beschreibung und Kommentare ändern. Start-Karte in Erledigt = Sprint läuft. Auf Ansage „Starte Sprint N“: Start-Karte per `card.move` nach `col-erledigt` und `qa: true`. Beim `/sprint-abschluss` Recap in die 🏁-Karte, dann `qa: true` und Erledigt.
 - **Verweise** (`links`): `blocks`↔`blocked-by`, `depends-on`↔`required-for`, `related`↔`related`, immer beidseitig — nur über `card.listAdd`/`card.listRemove` ändern, die pflegen die Rückseite (`card.field`/`card.upsert` auf `links` nicht, dort warnt `aboard-op` nur). Ready-Karte mit offenem `blocked-by` überspringen oder fragen; vor dem Verschieben offene Blocker nennen.
-- **[nur Typ A lokal]** aBoard nur per `update-aboard.sh` holen und aktualisieren, nie per `cp`. Werkzeuge aus `~/.aboard-framework/`, **nie aus einem aBoard-Arbeitsbaum**; dort nichts bauen (er trägt fremde Zwischenstände).
+- **Installieren und Aktualisieren macht nur die aBoard-Sitzung** (Andi, 24.11.2026): `install.sh`, `update-aboard.sh`, `aboard.html`-Tausch nie selbst und nie Andi um Freigabe bitten; Abweichung per `SendMessage` an die aBoard-Sitzung, sonst im Bericht. Ausnahme: ausdrückliche Ansage.
+- **[nur Typ A lokal]** Dann aBoard nur per `update-aboard.sh` holen und aktualisieren, nie per `cp`. Werkzeuge aus `~/.aboard-framework/`, **nie aus einem aBoard-Arbeitsbaum**; dort nichts bauen (er trägt fremde Zwischenstände).
 
 ### Board ändern — Kurzregeln
 
