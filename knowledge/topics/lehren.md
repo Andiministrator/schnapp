@@ -826,7 +826,7 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
 - **Ein Sub-Agent kann von einem Sicherheitsfilter der API abgebrochen werden** (Sonnet, #224), auch bei harmloser
   Arbeit. Commit und Bericht waren schon da; nichts wiederholen, Lage im Bericht an Andi weitergeben.
 
-## Nachlauf Sprint 12 (Karten #226, #227, #228, 23./24.11.2026 nachts)
+## Nachlauf Sprint 12 (Karten #226, #227, #228, #225, #220, #197, #233, 23./24.11.2026 nachts)
 
 - **Was nur während eines Zugs zu sehen ist, fotografiert das Drehbuch mit `druecke` … `foto` … `loslassen`** (F-599,
   `einrasten-196-halten.txt`). Alt loslassen wirkt mitten im Zug sofort, ohne Zeigerbewegung.
