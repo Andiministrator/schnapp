@@ -647,5 +647,19 @@
     "paket": "./internal/mcp",
     "alt": "\t\tq.bytes -= len(z.daten)\n\t\tq.zeilen = slices.Delete",
     "neu": "\t\tq.zeilen = slices.Delete"
+  },
+  {
+    "name": "MW3 streiche streicht auch initialize (F-758)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "n.Methode == \"\" || n.Methode == \"initialize\" || len(n.ID) == 0",
+    "neu": "n.Methode == \"\" || len(n.ID) == 0"
+  },
+  {
+    "name": "MW4 normID vergleicht Zahlen wieder über float64 (F-758)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "\t\tif r, ok := new(big.Rat).SetString(string(t)); ok {\n\t\t\treturn []byte(r.RatString())\n\t\t}",
+    "neu": "\t\tif r, ok := new(big.Rat).SetString(string(t)); ok {\n\t\t\tf, _ := r.Float64()\n\t\t\treturn []byte(fmt.Sprint(f))\n\t\t}"
   }
 ]

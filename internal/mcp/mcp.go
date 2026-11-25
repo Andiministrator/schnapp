@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"slices"
 	"strings"
 
@@ -479,14 +480,15 @@ func (q *schlange) stelle(z zeile) bool {
 }
 
 // streiche entfernt die älteste wartende Anfrage mit der Kennung id (nur Zeilen mit Methode und Kennung, also keine
-// Benachrichtigungen) und meldet, ob eine gefunden wurde (F-701).
+// Benachrichtigungen) und meldet, ob eine gefunden wurde (F-701). Ein `initialize` streicht ein Abbruch nie: Die
+// Spezifikation erlaubt es nicht, ihn abzubrechen (F-758).
 func (q *schlange) streiche(id json.RawMessage) bool {
 	for i, z := range q.zeilen {
 		if z.zuLang || len(z.daten) == 0 || z.daten[0] != '{' {
 			continue
 		}
 		var n nachricht
-		if json.Unmarshal(z.daten, &n) != nil || n.Methode == "" || len(n.ID) == 0 || !bytes.Equal(normID(n.ID), normID(id)) {
+		if json.Unmarshal(z.daten, &n) != nil || n.Methode == "" || n.Methode == "initialize" || len(n.ID) == 0 || !bytes.Equal(normID(n.ID), normID(id)) {
 			continue
 		}
 		q.bytes -= len(z.daten)
@@ -609,13 +611,17 @@ func abbruchZiel(z zeile) (json.RawMessage, bool) {
 	return p.ID, true
 }
 
-// normID macht 1 und 1.0 vergleichbar; Zeichenketten bleiben, wie sie sind.
+// normID macht 1 und 1.0 vergleichbar, ohne Zahlen über float64 zu führen: Kennungen über 2^53 bleiben verschieden
+// (F-758). Zahlen werden als genauer Bruch kanonisiert (big.Rat), Zeichenketten bleiben, wie sie sind; eine Zahl mit
+// mehr als 64 Zeichen wird nicht gerechnet, sondern als Text verglichen (riesige Exponenten lehnt big.Rat selbst ab).
 func normID(id json.RawMessage) []byte {
-	var f float64
-	if json.Unmarshal(id, &f) == nil {
-		return []byte(fmt.Sprint(f))
+	t := bytes.TrimSpace(id)
+	if len(t) > 0 && len(t) <= 64 && (t[0] == '-' || (t[0] >= '0' && t[0] <= '9')) {
+		if r, ok := new(big.Rat).SetString(string(t)); ok {
+			return []byte(r.RatString())
+		}
 	}
-	return bytes.TrimSpace(id)
+	return t
 }
 
 func werkzeugErgebnis(e Ergebnis) map[string]any {
