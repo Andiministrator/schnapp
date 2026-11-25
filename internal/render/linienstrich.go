@@ -24,9 +24,9 @@ func bogenSchritt(r float64) float64 {
 
 // linienStrich sind die Teile des Strichs um einen Linienzug mit runden Gelenken und Enden (ADR-0023 Nachtrag 22,
 // F-796): je Strecke ein Sechseck zwischen ihren Enden, je Gelenk ein Fächer auf der Außenseite, je offenem Ende eine
-// halbe Scheibe. Die Teile überlappen nicht und schließen lückenlos aneinander (gemeinsame Kanten aus denselben
-// Punkten); in einer Füllung heben sich ihre gemeinsamen Kanten im Rasterizer genau auf, und jedes Pixel ist so gedeckt
-// wie die Fläche des Strichs. Vorher füllte der Renderer je Strecke ein Rechteck und je Punkt einen Kreis; an jedem
+// halbe Scheibe. Die Teile überlappen nicht (außer an gefalteten Gelenken, siehe unten) und schließen lückenlos
+// aneinander (gemeinsame Kanten aus denselben Punkten); in einer Füllung heben sich ihre gemeinsamen Kanten im
+// Rasterizer genau auf, und jedes Pixel ist so gedeckt wie die Fläche des Strichs. Vorher füllte der Renderer je Strecke ein Rechteck und je Punkt einen Kreis; an jedem
 // Gelenk addierte sich deren Kantenglättung (äußere Randpixel bis 255 statt rund 128).
 //
 // Das Sechseck der Strecke i (pts[i] → pts[i+1]) läuft je Seite vom Ende bei pts[i] zum Ende bei pts[i+1] und über die
@@ -39,7 +39,8 @@ func bogenSchritt(r float64) float64 {
 // Faltung: Reichen die Gehrungen beider Enden einer Seite zusammen weiter als die Strecke lang ist (Krümmungsradius
 // unter hw, ein Schwalbenschwanz der inneren Kante), liefen die Sechsecke gegeneinander und höben sich auf (ein Loch
 // wie F-783). An einem solchen Gelenk enden beide Nachbarn innen senkrecht wie außen; sie überlappen dann auf der
-// Innenseite und addieren dort die Kantenglättung wie früher, aber nur an gefalteten Gelenken.
+// Innenseite und addieren dort die Kantenglättung wie früher, aber nur an gefalteten Gelenken — außer an einer
+// Kehrtwende: Dort überlappt die doppelt überstrichene Strecke auf ganzer Länge (bewusste Grenze, F-814).
 type linienStrich struct {
 	pts      []document.Punkt // ohne doppelte Punkte
 	teile    [][]document.Punkt

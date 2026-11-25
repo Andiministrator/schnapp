@@ -274,8 +274,12 @@ func TestEditorGanzesBildUeberVielenNaehten(t *testing.T) {
 		dt := time.Since(s)
 		t.Logf("%s: ganzes Bild %v (erstes %v, Bereiche %d, Objektebene %v)", fall.name, dt, erstes,
 			e.objEbene.bereiche, e.objEbene.an)
-		if editorBildZeit > 0 && dt > editorBildZeit {
-			t.Errorf("%s: ganzes Bild %v, Grenze %v", fall.name, dt, editorBildZeit)
+		grenze := editorBildZeit
+		if strings.Contains(fall.name, "knapp unter bereichGrenze") {
+			grenze = editorGrenzBildZeit // teuerstes Muster ohne Objektebene (F-812)
+		}
+		if grenze > 0 && dt > grenze {
+			t.Errorf("%s: ganzes Bild %v, Grenze %v", fall.name, dt, grenze)
 		}
 		// Das erste Bild baut die Objektebene (Renderer auf bis zu acht Kernen); es darf länger dauern, aber nicht
 		// so lange wie vorher jedes Bild.

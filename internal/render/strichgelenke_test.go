@@ -198,7 +198,9 @@ func strichBild(t *testing.T, pts []document.Punkt, breite float64) *image.NRGBA
 // längere Gehrungen bräuchte als seine Strecken lang sind, enden die Teile innen senkrecht und überlappen. Dort bleibt
 // kein Loch und nichts daneben; an der Kante addiert sich die Glättung nur an diesen Gelenken (gemessen, nicht
 // begrenzt; vorher galt das an jedem Gelenk). Abseits der gefalteten Gelenke bleibt die Kante wie analytisch: Der
-// zweite Teil misst nur Pixel mindestens hw+2 von ihnen entfernt. Beim spitzen, kurzen V entfällt er: Ein V-Gelenk
+// zweite Teil misst nur Pixel mindestens hw+2 von ihnen entfernt. Ausnahme Kehrtwende: Die doppelt überstrichene
+// Strecke überlappt auf ganzer Länge; die Fälle hier sind nur grün, weil ihre Kanten auf Pixelgrenzen liegen (bewusste
+// Grenze F-814, gebrochene Lagen in TestBewussteGrenzenBleibenKlein). Beim spitzen, kurzen V entfällt er: Ein V-Gelenk
 // faltet nur, wenn seine Enden näher als 2·hw beieinander liegen (hw·cot(α/2) > Länge heißt 2·Länge·sin(α/2) < 2·hw·
 // cos(α/2)); dann überlappen auch die Kappen, das ganze V ist Faltung.
 func TestStrichGefaltetOhneLoch(t *testing.T) {

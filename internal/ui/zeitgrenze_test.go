@@ -10,6 +10,10 @@ import "time"
 const (
 	// editorBildZeit: ein ganzes Bild über die Zeichenfläche ohne Fenster (llvmpipe), großzügig (ADR-0023 Nachtrag 18).
 	editorBildZeit = 2 * time.Second
+	// editorGrenzBildZeit: der Fall knapp unter bereichGrenze, das teuerste Muster, das der Editor noch selbst zeichnet
+	// (Füllung je Bereich, 189 585 Bereiche). Gemessen 0,4 bis 0,56 s auf 16 Kernen, 2,12 s auf dem CI-Runner (Lauf
+	// #389, F-812); großzügig für Runner mit wenigen Kernen.
+	editorGrenzBildZeit = 5 * time.Second
 	// editorAufbauZeit: nur der Befehlsaufbau von zeichneObjekte (ADR-0023 Nachtrag 16).
 	editorAufbauZeit = time.Second
 	// ebeneAufbauZeit: erstes Bild, das die Objektebene des Renderers baut (F-787, ADR-0023 Nachtrag 20); gemessen

@@ -753,7 +753,8 @@ Punkte 1 und 3.
      Kreis), rücken ihre Fangpunkte mindestens 0,25 px auseinander (ρ mindestens 0,25/√2); ist das Loch in einer
      Richtung schmaler als 0,25 px, fallen sie dort auf seine Mitte zusammen.
    Ergebnis: Im Band hat kein Teil eine Kante unter 0,25 px (Radius 20: kürzeste 0,66, Pille 0,25; ohne Fang 0,0009
-   bei Strich 39,9). *Berichtigt nach Verify 5 (F-808):* Das gilt erst ab Radius rund 8; darunter ist die Kante vom
+   bei Strich 39,9). *Berichtigt nach Verify 5 (F-808) und Sitzungs-Kritik (F-815):* Das gilt nur für gerade Seiten ab
+   rund 0,065·hw + 0,25 px und erst ab Radius rund 8; darunter ist die Kante vom
    Tangentenpunkt zum Fangpunkt rund 0,033·Radius lang (Radius 3: 0,099, Radius 1: 0,033 am oberen Ende des Bands).
    Die Teile mit dieser Kante sind breit (schmalster Teil ab Radius 3 mindestens 0,10 px), kein Splitter.
 
@@ -786,9 +787,14 @@ Punkte 1 und 3.
    Strich 39,5: 0,136 statt höchstens 0,084; bis F-804 0,266). Außerhalb des Bands war das schon vorher so und blieb
    unter der Grenze. Beides betrifft höchstens ein Pixel in der Mitte von Kreis oder Fast-Kreis; eine eigene Rechnung
    dafür (Tangentenpunkte zusammenlegen, Loch als Kreis) lohnt den Umbau eines geprüften Pfads nicht. Die Aussage
-   „konvex, überlappungsfrei“ gilt für alle Formen mit gerader Seite ab 0,065·hw. Tests:
+   „konvex, überlappungsfrei“ ist für die geprüften Formen belegt (gerade Seiten ab 10 px, Pille, Kreis;
+   `TestKastenStrichFaecherJeRundung`). Bei Fast-Kreisen und Fast-Pillen (gerade Seite unter rund 0,3 px oder unter
+   0,065·hw) können Teile einspringen und sich im Inneren des Strichs überlappen; im Bild gemessen höchstens 0,136
+   (Fall oben), sonst unter 0,01 (Sitzungs-Kritik 25.11., F-815). `TestBewussteGrenzenBleibenKlein` hält F-807 und
+   F-809 fest. Tests:
    `TestKastenStrichDecktWieAnalytisch` mit den Fällen der Tabelle (auch Radius 3/Strich 5,6, Radius 1/Strich 1,6,
-   Pille und Kreis; seitdem auch abseits der Kante ≤ 0,01), `TestKastenStrichFangHaeltSeitenkante` (innere Ecken der
+   Pille und Kreis; seitdem auch abseits der Kante ≤ 0,01; die Tabellenzeilen „Pille“ stehen im Test quer bei
+   39,5/39,6 und hoch bei (30,7/30,3)–(70,7/140,3), gleiche Werte), `TestKastenStrichFangHaeltSeitenkante` (innere Ecken der
    Seiten genau hw vom Umriss, keine Kante unter 0,25 px, Strich 39,3 ohne Fang), Bandfälle in
    `TestEditorDickerStrichKleinerKastenWieRenderer` (auch mit zwei Kernen grün). Mutanten KS1 und KS6 nachgezogen,
    BK6 auf `klemme`, KS7 (Fang bis 2 px), KS8 (Tangentenpunkte im Fang), KS9 (Fangpunkt auf dem Mittelpunkt), KS10
@@ -797,7 +803,8 @@ Punkte 1 und 3.
 3. **Bild:** Die Gehrung der Teile (Knick 7,5°) reicht höchstens 0,22 % der halben Breite über den runden Strich hinaus
    (Strich 60: 0,064 Pixel); das SVG sagt weiter `stroke-linejoin="round"`. Das Kostenmodell zählt die Teile wie jede
    Füllung (weniger Ecken als Rechtecke und Kreise). Pfeil, Lupen-Linie und Schenkel der Sprechblase füllen weiter
-   Rechtecke und Kreise; dort addiert sich die Glättung an den Gelenken nach wie vor (offen).
+   Rechtecke und Kreise; dort addiert sich die Glättung an den Gelenken nach wie vor (offen; *geschlossen durch
+   Nachtrag 22*, F-796).
 4. **Abgleich Editor–Renderer:** Weil beide dieselben Teile füllen, steht in den geprüften Fällen kein Pixel voll gegen
    leer, auch bei Radius 0,5 und Strich 30 bis 139 (vorher 12 bis 26 Pixel, F-793). An den Kanten darf Gios Glättung
    weiter abweichen.
@@ -840,16 +847,18 @@ Abgewogen:
    von seiner Strecke, die Suche über `document.StreckenStuecke` mit hw+1 bleibt.
 2. **Faltung:** Reichen die Gehrungen beider Enden einer Seite zusammen weiter, als die Strecke lang ist
    (hw·tan(|Knick|/2) je Ende; bei einer Kurve heißt das Krümmungsradius unter hw, bei einem V Enden näher als 2·hw,
-   dazu jede Kehrtwende), liefen die Sechsecke gegeneinander und höben sich auf. *Ergänzt nach Verify 5 (F-810):* Wo
-   ein Pfeil auf sich selbst zurückläuft, überstreicht er eine Strecke doppelt; dort addiert sich die Glättung auf der
-   ganzen Länge, nicht nur am Gelenk (Kante bis 0,31, schräg bis 0,59). Altbestand, nur dieser Sonderfall; die Kappe
-   am Umkehrpunkt stimmt (F-803). An einem solchen Gelenk enden beide
+   dazu jede Kehrtwende), liefen die Sechsecke gegeneinander und höben sich auf. An einem solchen Gelenk enden beide
    Nachbarn innen senkrecht wie außen; sie überlappen dann auf der Innenseite. Kein Loch, nichts daneben; die Glättung
    addiert sich nur noch an diesen Gelenken und nur, wo die Überlappung eine Kante berührt: Haarnadel Strich 24
    (6 gefaltete Gelenke) 0,018, Kehrtwende 0,017, knapp gefaltetes V (Gehrung 1,3-mal die Schenkel) 0,078, sehr
    spitzes kurzes V Strich 12 0,30 an der Spitze. Ohne die Faltung entstand im knappen V ein Loch (abseits der Kante
    0,77). Gelenke werden
    nur gefaltet, nie zurückgenommen; die Prüfung endet.
+   *Ergänzt nach Verify 5 und Sitzungs-Kritik (F-810, F-814), bewusste Grenze:* Läuft ein Linienzug auf sich selbst
+   zurück (Kehrtwende), überstreicht er eine Strecke doppelt; dort überlappen die Sechsecke auf ganzer Länge, und die
+   Glättung beider Kanten addiert sich (achsparallel bis 0,5 bei Kante auf halbem Pixel, 0,41 bei 0,4 px, schräg
+   gemessen 0,34 bis 0,59). Die Werte „Kehrtwende 0,017“ oben gelten nur für Kanten auf Pixelgrenzen. Altbestand, nur
+   dieser Sonderfall; die Kappe am Umkehrpunkt stimmt (F-803). `TestBewussteGrenzenBleibenKlein` hält die Werte fest.
    *Zusatz F-803 (Karte #304):* An einer achsparallelen Kehrtwende ist der Sinus des Knicks ±0. Die Seite wurde links
    gewählt, der Knick aber aus Atan2(±0, −1) = ±π genommen; bei −0 (nach links und nach unten) drehte der Fächer
    rückwärts, und die runde Kappe am Umkehrpunkt fehlte (Pfeil A=(300,100), K=(−150,100), B=(250,100), Strich 12:
@@ -867,7 +876,7 @@ Abgewogen:
    - Alltagsdokument (50 Pfeile Strich 6) unverändert 4,07e10, 2,3 → 2,5 s; diagonaler Pfeil auf 8000×8000 0,25 →
      0,28 s; gebogene Pfeile Strich 24 auf 2000×2000 bis `Budget` 1404 → 1406 Stück, 7,3 → 7,7 s.
    - An `KantenBudget` nimmt `Pruefe` mehr Pfeile an, weil die alten Kreise viel zu teuer zählten: breite Pfeile
-     (Strich 1e5) weit außerhalb eines 10×10-Bilds 171 → 429 Stück, 0,32 → 4,3 s (0,43 ns je Einheit; vorher 0,03);
+     (Strich 1e5) weit außerhalb eines 10×10-Bilds 171 → 429 Stück, 0,32 → 4,3 s (0,43 ns je Einheit; vorher 0,03; im eingecheckten Benchmark später 3,6 bis 3,8 s gemessen);
      gebogene Pfeile Strich 24 über 4096 Kacheln 275 → 417 Stück, 4,5 → 4,9 s (0,48 ns je Einheit). Beides liegt bei
      der Annahme rund 0,5 ns je Kanten-Einheit (ADR-0020, Ergänzung zu F-418) und unter den rund 6,5 s der Abriss-Nähte
      an derselben Grenze; das Zeitversprechen rund 21 s (ADR-0020 Nachtrag 12) bleibt. Budgets und Gewichte bleiben.
