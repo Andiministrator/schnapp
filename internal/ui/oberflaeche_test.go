@@ -428,6 +428,12 @@ func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 			t.Fatalf("Tab %d im Farbpaar der Leiste: Fokus woanders (%s)", i+1, menueFokusName(l))
 		}
 	}
+	// Die Pipette steht seit Karte #318 rechts in der Zeile des Farbpaars.
+	l.r.MoveFocus(key.FocusForward)
+	l.setle()
+	if !l.fokus(&l.e.seite.fw.pipette) {
+		t.Fatalf("Tab nach dem Farbpaar der Leiste: Fokus nicht auf der Pipette (%s)", menueFokusName(l))
+	}
 	for i := range canvas.Beschriftungsfarben {
 		l.r.MoveFocus(key.FocusForward) // wie die Tab-Taste (Gio)
 		l.setle()
@@ -435,11 +441,11 @@ func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 			t.Fatalf("Tab %d nach dem Farbfeld: Fokus nicht auf Farbe %d der rechten Leiste (%s)", i+1, i, menueFokusName(l))
 		}
 	}
-	// Danach Pipette, Hex und Deckkraft (ADR-0031 Nachtrag 5).
+	// Danach Hex und Deckkraft (ADR-0031 Nachtrag 5; die Pipette kam schon mit dem Farbpaar, Karte #318).
 	for _, z := range []struct {
 		tag  any
 		name string
-	}{{&l.e.seite.fw.pipette, "Pipette"}, {&l.e.seite.fw.hex, "Hex"}, {&l.e.seite.fw.deckkraft, "Deckkraft"}} {
+	}{{&l.e.seite.fw.hex, "Hex"}, {&l.e.seite.fw.deckkraft, "Deckkraft"}} {
 		l.r.MoveFocus(key.FocusForward)
 		l.setle()
 		if !l.fokus(z.tag) {

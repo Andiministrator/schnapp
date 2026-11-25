@@ -10,6 +10,8 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
+
+	"github.com/Andiministrator/schnapp/internal/canvas"
 )
 
 // rolle dreht das Mausrad über dem Kopf der Leiste (dort liegt keine Liste, die das Rad für sich nimmt).
@@ -123,11 +125,11 @@ func TestTabRolltFokusInsBild(t *testing.T) {
 		t.Fatal("Kontrolle: Im Fenster von 330 px Höhe muss die Leiste rollen")
 	}
 	l.fokusiere(&se.farben[0])
-	l.fokusiere(&se.fw.pipette)
+	l.fokusiere(&se.farben[len(canvas.Beschriftungsfarben)-1]) // letztes Farbfeld (keine zuletzt benutzten)
 	l.r.MoveFocus(key.FocusForward)
 	l.setle()
 	if !l.fokus(&se.fw.hex) {
-		t.Fatalf("Tab nach der Pipette: Fokus nicht auf Hex (%s)", menueFokusName(l))
+		t.Fatalf("Tab nach dem letzten Farbfeld: Fokus nicht auf Hex (%s)", menueFokusName(l))
 	}
 	if !l.imSichtfeld(se.fw.hex.rahmen) {
 		t.Errorf("Hex %v nicht im Bild %v (Versatz %d)", se.fw.hex.rahmen, roll.sicht, roll.rollen)

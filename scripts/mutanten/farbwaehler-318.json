@@ -1,0 +1,30 @@
+[
+  {
+    "name": "FW318-1 Hex zeigt wieder acht Ziffern",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn \"#\" + strings.ToUpper(strconv.FormatUint(uint64(c.R)<<16|uint64(c.G)<<8|uint64(c.B)|1<<24, 16)[1:])\n}",
+    "neu": "\tif c.A != 255 {\n\t\treturn \"#\" + strings.ToUpper(strconv.FormatUint(uint64(c.R)<<24|uint64(c.G)<<16|uint64(c.B)<<8|uint64(c.A)|1<<32, 16)[1:])\n\t}\n\treturn \"#\" + strings.ToUpper(strconv.FormatUint(uint64(c.R)<<16|uint64(c.G)<<8|uint64(c.B)|1<<24, 16)[1:])\n}"
+  },
+  {
+    "name": "FW318-2 Pipette unter der Zeile",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\tfw.pipRahmen = image.Rect(x+breite-q, y, x+breite, y+q)",
+    "neu": "\tfw.pipRahmen = image.Rect(x+breite-q, y+q, x+breite, y+2*q)"
+  },
+  {
+    "name": "FW318-3 nur drei zuletzt benutzte Farben",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/ui",
+    "alt": "const ZuletztGrenze = 4",
+    "neu": "const ZuletztGrenze = 3"
+  },
+  {
+    "name": "FW318-4 Pipette ohne Knopf",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.knopfAn(gtx, &fw.pipette, r)",
+    "neu": "\t\t_ = r"
+  }
+]

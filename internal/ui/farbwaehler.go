@@ -30,10 +30,11 @@ import (
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/icons"
 )
 
 // farbPlaetze ist die Zahl der Farbfelder: die Beschriftungsfarben und die zuletzt benutzten.
-const farbPlaetze = 7
+const farbPlaetze = 8
 
 // farbRegler ist das Bedienelement, in dem gerade gezogen wird.
 type farbRegler int
@@ -528,20 +529,6 @@ func (e *editor) farbFeld(gtx layout.Context, c color.NRGBA, r image.Rectangle, 
 	paint.FillShape(gtx.Ops, farbeNebentext, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
 }
 
-// zeichnePipette zeichnet das Symbol der Pipette in r: ein schräger Stab mit Spitze unten links.
-func zeichnePipette(gtx layout.Context, r image.Rectangle, c color.NRGBA) {
-	s := float32(r.Dx())
-	var p clip.Path
-	p.Begin(gtx.Ops)
-	o := f32.Pt(float32(r.Min.X), float32(r.Min.Y))
-	pt := func(x, y float32) f32.Point { return o.Add(f32.Pt(x*s, y*s)) }
-	p.MoveTo(pt(0.22, 0.78))
-	p.LineTo(pt(0.70, 0.30))
-	paint.FillShape(gtx.Ops, c, clip.Stroke{Path: p.End(), Width: float32(gtx.Dp(2))}.Op())
-	kopf := image.Rect(int(o.X+0.62*s), int(o.Y+0.18*s), int(o.X+0.82*s), int(o.Y+0.38*s))
-	paint.FillShape(gtx.Ops, c, clip.Rect(kopf).Op())
-}
-
 // zeichneFarbwaehler zeichnet den Farbwähler ab y in der Breite breite bei x und liefert das neue y.
 func (e *editor) zeichneFarbwaehler(gtx layout.Context, x, y, breite, spalte int) int {
 	k := &e.seite
@@ -565,7 +552,7 @@ func (e *editor) zeichneFarbwaehler(gtx layout.Context, x, y, breite, spalte int
 	}
 	reglerAnmelden(gtx, &fw.flaeche, fw.flaeche)
 
-	// Raster rechts: Beschriftungsfarben, zuletzt benutzte, Pipette.
+	// Raster rechts: Beschriftungsfarben, zuletzt benutzte (die Pipette steht seit Karte #318 in der Zeile des Farbpaars).
 	rx := x + breite - raster
 	platz := func(i int) image.Rectangle {
 		px, py := rx+(i%2)*(q+abst), y+(i/2)*(q+abst)
@@ -583,21 +570,6 @@ func (e *editor) zeichneFarbwaehler(gtx layout.Context, x, y, breite, spalte int
 		k.farbRahmen[j] = r
 		e.farbFeld(gtx, c, r, c == aktuell, k.farben[j].Hovered())
 		e.knopfAn(gtx, &k.farben[j], r)
-	}
-	fw.pipRahmen = platz(farbPlaetze)
-	{
-		r, an := fw.pipRahmen, e.s.PipetteLaeuft()
-		grund, rnd := farbeGrund, farbeLinie
-		switch {
-		case an:
-			grund, rnd = farbeAuswahl, farbeAuswahl
-		case fw.pipette.Hovered():
-			rnd = farbeNebentext
-		}
-		paint.FillShape(gtx.Ops, grund, clip.Rect(r).Op())
-		paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
-		zeichnePipette(gtx, r.Inset(gtx.Dp(3)), farbeText)
-		e.knopfAn(gtx, &fw.pipette, r)
 	}
 	y += hoch + gtx.Dp(12)
 
@@ -660,6 +632,24 @@ func (e *editor) zeichneFarbpaarZeile(gtx layout.Context, x, y, breite, q int) i
 		paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(rk).Path(), Width: float32(gtx.Dp(1))}.Op())
 		e.textMittig(gtx, i18n.T("None"), 12, text, rk)
 		e.knopfAn(gtx, c, rk)
+	}
+	// Pipette rechts in der Zeile (Karte #318): Sie holt eine Farbe für das aktive Feld, gehört also zum Farbpaar.
+	fw := &k.fw
+	fw.pipRahmen = image.Rect(x+breite-q, y, x+breite, y+q)
+	{
+		r, an := fw.pipRahmen, e.s.PipetteLaeuft()
+		grund, rnd := farbeGrund, farbeLinie
+		switch {
+		case an:
+			grund, rnd = farbeAuswahl, farbeAuswahl
+		case fw.pipette.Hovered():
+			rnd = farbeNebentext
+		}
+		paint.FillShape(gtx.Ops, grund, clip.Rect(r).Op())
+		paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
+		seite := r.Dx() - 2*gtx.Dp(2)
+		zeichneSymbol(gtx, icons.Pipette, r.Min.Add(image.Pt(gtx.Dp(2), gtx.Dp(2))), seite, farbeText, farbeAkzent)
+		e.knopfAn(gtx, &fw.pipette, r)
 	}
 	return y + q + gtx.Dp(10)
 }

@@ -173,6 +173,13 @@ var (
 	Strichstaerke  = Symbol{"stroke-width", teile(flaeche(3, 4, 18, 1), flaeche(3, 9, 18, 2), flaeche(3, 15, 18, 4))}
 	Schriftgroesse = Symbol{"font-size", teile(flaeche(2, 10, 8, 2), flaeche(5, 10, 2, 9), flaeche(11, 4, 11, 3),
 		flaeche(15, 4, 3, 16))}
+	// Pipette (Karte #318): schräg von unten links nach oben rechts — Spitze mit Tropfen in Akzentfarbe, Röhrchen,
+	// quer stehender Kragen, Druckkappe; alle Teile sind um 45° gedrehte Rechtecke.
+	Pipette = Symbol{"eyedropper", teile(
+		vieleck(20.1, 7.58, 16.42, 3.9, 11.9, 8.42, 15.58, 12.1),      // Druckkappe
+		vieleck(16.89, 13.47, 10.53, 7.11, 9.11, 8.53, 15.47, 14.89),  // Kragen
+		vieleck(13.36, 12.77, 11.23, 10.64, 4.44, 17.43, 6.57, 19.56), // Röhrchen
+		akzent(vieleck(4.44, 17.43, 6.57, 19.56, 2.5, 21.5)))}         // Spitze mit Tropfen
 	KanteAbriss = Symbol{"seam-tear", teile(vieleck(3, 3, 21, 3, 21, 12, 18.5, 14, 16, 11, 13, 15, 10, 11.5, 7.5, 14,
 		5, 11, 3, 13))}
 	KanteWelle = Symbol{"seam-wave", teile(vieleck(3, 3, 21, 3, 21, 12, 19, 13.5, 17, 14, 15, 13.5, 13, 12, 11, 10.5,
@@ -215,7 +222,7 @@ func Gruppen() []Gruppe {
 		{"tools", []Symbol{Auswahl, Pfeil, Kasten, Text, Sprechblase, Nummer, LupeWerkzeug, Schwaerzen, Verpixeln, Zuschneiden, Stauchen}},
 		{"actions", []Symbol{Aufnehmen, Oeffnen, Speichern, Exportieren, Kopieren, Rueck, Wieder, Einpassen, EinsZuEins,
 			Lupe, GanzesBild, Zurueckholen, Schliessen}},
-		{"properties", []Symbol{Farbe, Strichstaerke, Schriftgroesse, KanteAbriss, KanteWelle, KanteZacken}},
+		{"properties", []Symbol{Farbe, Pipette, Strichstaerke, Schriftgroesse, KanteAbriss, KanteWelle, KanteZacken}},
 		{"layers", []Symbol{Sichtbar, Verborgen, Hoch, Runter, Doppeln, Loeschen, Sperren}},
 		{"status", []Symbol{Gespeichert, Ungesichert, Warnung, Fehler}},
 		{"other", []Symbol{Bibliothek, Einstellungen}},

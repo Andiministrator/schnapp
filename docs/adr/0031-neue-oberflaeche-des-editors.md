@@ -221,7 +221,8 @@ Farbe und der Deckkraft in ADR-0021 Nachtrag 9.
 
 - **Aufbau** (von oben): links die **Farbfläche** (Sättigung nach rechts, Hellwert nach oben, zum Farbton des Reglers),
   rechts daneben ein Raster aus 2 × 4 Feldern: die vier Beschriftungsfarben, bis zu drei zuletzt benutzte Farben (leere
-  Plätze bleiben leer) und als letztes Feld die **Pipette**. Darunter über die volle Breite der **Farbton-Regler** und
+  Plätze bleiben leer) und als letztes Feld die **Pipette** (*seit ADR-0021 Nachtrag 17:* vier zuletzt benutzte, die
+  Pipette rechts in der Zeile des Farbpaars, Hex immer sechsstellig). Darunter über die volle Breite der **Farbton-Regler** und
   der **Deckkraft-Regler** (Schachbrett unter einem Verlauf von durchsichtig zur Farbe), darunter die Felder **Hex**
   (`#RRGGBB`, bei Deckkraft unter 100 % `#RRGGBBAA`) und **Deckkraft** (`100 %`).
 - **Maus:** Drücken und Ziehen in Fläche oder Regler setzt die Farbe laufend (Marke folgt dem Zeiger, auch außerhalb

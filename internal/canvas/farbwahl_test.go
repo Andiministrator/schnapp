@@ -51,7 +51,7 @@ func TestLeseHex(t *testing.T) {
 		}
 	}
 	if HexText(color.NRGBA{R: 0xD9, G: 0x3A, B: 0x03, A: 0xFF}) != "#D93A03" ||
-		HexText(color.NRGBA{R: 1, G: 2, B: 3, A: 0x80}) != "#01020380" || HexText(color.NRGBA{}) != "#00000000" {
+		HexText(color.NRGBA{R: 1, G: 2, B: 3, A: 0x80}) != "#010203" || HexText(color.NRGBA{}) != "#000000" {
 		t.Error("HexText")
 	}
 }

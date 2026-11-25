@@ -16,7 +16,7 @@ import (
 )
 
 // ZuletztGrenze ist die Zahl der zuletzt benutzten Farben, die die Leiste zeigt.
-const ZuletztGrenze = 3
+const ZuletztGrenze = 4
 
 // HSV ist eine Farbe als Farbton H (0 bis unter 360), Sättigung S und Hellwert V (je 0 bis 1). Nur Bedienung:
 // gespeichert wird RGB.
@@ -99,12 +99,10 @@ func LeseHex(text string, alt color.NRGBA) (color.NRGBA, bool) {
 	return color.NRGBA{R: uint8(n >> 24), G: uint8(n >> 16), B: uint8(n >> 8), A: uint8(n)}, true
 }
 
-// HexText ist die Anzeige einer Farbe: #RRGGBB, bei Deckkraft unter 100 % #RRGGBBAA.
+// HexText ist die Anzeige einer Farbe: immer #RRGGBB, ohne Deckkraft — die steht im eigenen Feld daneben (Karte #318,
+// ADR-0021 Nachtrag 17; vorher #RRGGBBAA unter 100 %, das verwirrte). LeseHex nimmt weiter acht Ziffern an.
 func HexText(c color.NRGBA) string {
-	if c.A == 255 {
-		return "#" + strings.ToUpper(strconv.FormatUint(uint64(c.R)<<16|uint64(c.G)<<8|uint64(c.B)|1<<24, 16)[1:])
-	}
-	return "#" + strings.ToUpper(strconv.FormatUint(uint64(c.R)<<24|uint64(c.G)<<16|uint64(c.B)<<8|uint64(c.A)|1<<32, 16)[1:])
+	return "#" + strings.ToUpper(strconv.FormatUint(uint64(c.R)<<16|uint64(c.G)<<8|uint64(c.B)|1<<24, 16)[1:])
 }
 
 // LeseDeckkraft liest eine ganze Zahl 0 bis 100, mit oder ohne „%“, und liefert das Alpha dazu.

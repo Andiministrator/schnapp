@@ -599,3 +599,23 @@ Sprechblase ohne Füllung. Die eingebauten Schnellstile (ADR-0037) ziehen mit: n
 Stand eines frischen Werkzeugs weiter zur ersten Kachel passt; fehlt in `styles.ini` die Breite, gilt ebenfalls 6
 (`settings.stilBreite`). Schriftgrad 20 und Nummernradius 14 bleiben. Gespeicherte Dateien und eigene Schnellstile behalten
 ihre Breite.
+
+## Nachtrag 17 (25.11.2026): Hex ohne Deckkraft, Pipette im Farbpaar (Karte #318)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Ändert aus Nachtrag 9 und ADR-0031 Nachtrag 5 die Anzeige des Hex-Felds und den
+Platz der Pipette.
+
+Andi (25.11.2026): „wenn ich die transparenz ändere, ändert sich der hex-farbwert – das verwirrt mich … das
+pipettensymbol sieht nicht nach einer pipette aus und ist auch deplatziert.“
+
+1. **Hex zeigt immer `#RRGGBB`** (`canvas.HexText`), auch unter 100 % Deckkraft; die Deckkraft steht nur im Feld daneben
+   und in der Fußzeile („#D93A33 · 74 %“). Sechs eingegebene Ziffern lassen die Deckkraft stehen, **acht Ziffern**
+   (`#RRGGBBAA`) werden weiter angenommen und setzen beide (`LeseHex` unverändert).
+2. **Pipette** mit eigenem Symbol `icons.Pipette` („eyedropper“: Druckkappe, Kragen, Röhrchen, Spitze mit Tropfen in
+   Akzentfarbe, schräg wie das Werkzeug in der Hand). Sie steht **rechts in der Zeile des Farbpaars** — sie holt eine Farbe
+   für das aktive Feld und gehört dorthin —, nicht mehr als letztes Feld im Raster. Tab-Reihenfolge: Farbpaar, „Keine“,
+   Pipette, Farbfelder, Hex, Deckkraft.
+3. Das frei gewordene Feld im Raster nimmt eine **vierte zuletzt benutzte Farbe** (`canvas.ZuletztGrenze` 4, Raster 2 × 4).
+
+Tests `internal/ui/farbwaehler_hex6_test.go`, Mutanten `scripts/mutanten/farbwaehler-318.json`, Sichtprobe
+`scripts/drehbuecher/farbwaehler-318.txt`.
