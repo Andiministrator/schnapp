@@ -173,7 +173,8 @@ in `internal/ui/hilfe.go`; Tastentabelle in `internal/ui/kuerzel.go`; Logik der 
 - **Farbfeld der Werkzeugleiste:** Ein Klick klappt die eingeklappte Leiste auf, wenn sie Platz hat und die Farbe zeigt;
   sonst (Leiste schon offen, Fenster zu schmal, Werkzeug ohne Farbe) öffnet er die Farbliste am Farbfeld. Per Tastatur
   (Enter) öffnet es immer die Liste mit Fokus auf dem ersten Eintrag. Die Liste ersetzt das bisherige Weiterschalten
-  der Farbe. *Seit ADR-0021 Nachtrag 11 (#219):* Das Farbfeld ist ein Farbpaar (Vordergrund oben links, Füllung unten
+  der Farbe. *Seit Nachtrag 12:* per Maus zeigt der Klick den Farbwähler der Leiste, die Liste nur noch, wo die Leiste
+  die Farbe nicht zeigen kann. *Seit ADR-0021 Nachtrag 11 (#219):* Das Farbfeld ist ein Farbpaar (Vordergrund oben links, Füllung unten
   rechts, ⇄ oben rechts); ein Klick auf ein Feld macht es aktiv und wirkt dann wie hier beschrieben, das graue Feld
   Füllung tut nichts. Tab: Vordergrund, Füllung, ⇄; in der rechten Leiste steht unter der Überschrift „Farbe“ die Zeile
   Vordergrund, Füllung, ⇄, „Keine“ vor den Farbfeldern.
@@ -242,7 +243,7 @@ Farbe und der Deckkraft in ADR-0021 Nachtrag 9.
 - **Tastatur:** Farbfläche und Regler sind nur mit der Maus zu bedienen; per Tastatur gehen Farbfelder, Pipette (Enter)
   und die beiden Eingabefelder. **Tab-Reihenfolge** (ersetzt die Liste aus Nachtrag 4 ab „Farben der rechten Leiste“):
   … Farbfelder der Leiste (Beschriftungsfarben, dann zuletzt benutzte), Pipette, Hex, Deckkraft, Fußfeld Farbe, Fußfeld
-  Zoom.
+  Zoom. *Seit ADR-0021 Nachtrag 17:* Pipette nach „Keine“, vor den Farbfeldern.
 - **Pipette:** Solange sie an ist, ist ihr Feld grün, der Zeiger ein Fadenkreuz und die Statuszeile sagt „Click in the
   image to pick its color. Esc cancels.“.
 - **Eine Farbe überall:** Leiste, Farbfeld links, Farbliste und Fußzeile zeigen dieselbe Farbe — die des gewählten

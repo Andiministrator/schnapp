@@ -3,14 +3,14 @@
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
 # Lauf 8d: Export ohne Portal, danach Taste R — stimmt der Zustand und fehlt nur das Neuzeichnen?
 # Seit Karte #210 (ADR-0031) gibt es keinen Export-Knopf mehr: Export über das Menü Datei, Titel (62,15), Eintrag
-# „Exportieren …“ (100,84); Taste R wählt das Rechteck-Werkzeug (Knopf bei (26,154) wird aktiv).
+# „Exportieren …“ (100,125; seit Karte #326 steht „Öffnen“ davor); Taste R wählt das Rechteck-Werkzeug (Knopf bei (26,154) wird aktiv).
 warte 800
 # Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
 taste Strg+Umschalt+B
 warte 200
 klick 62 15
 warte 300
-klick 100 84
+klick 100 125
 warte 6000
 foto 01-nach-6s
 taste R

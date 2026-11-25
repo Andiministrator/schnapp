@@ -4,7 +4,7 @@
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
 # Die alte Knopfleiste, die in mehrere Zeilen umbrach, gibt es nicht mehr: Die Werkzeugleiste links ist 52 breit und
 # umbricht nie, die Menüzeile ist 30 hoch. Koordinaten bei 480 x 800: Werkzeugknöpfe x = 26, Stauchen y = 434,
-# Schwärzen y = 294; Menü Datei (62,15), Eintrag „Exportieren“ (100,84).
+# Schwärzen y = 294; Menü Datei (62,15), Eintrag „Exportieren“ (100,125; seit Karte #326 steht „Öffnen“ davor).
 # Lauf 8 (480x800): Werkzeugknopf weit unten klickbar (Stauchen), Hinweis in der Fußzeile gekürzt, Export per Menü ohne Portal
 warte 800
 # Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
@@ -25,9 +25,9 @@ zeiger 62 15
 warte 200
 klick 62 15
 warte 300
-zeiger 100 84
+zeiger 100 125
 warte 200
-klick 100 84
+klick 100 125
 warte 2500
 foto 03-export-menue
 taste Esc

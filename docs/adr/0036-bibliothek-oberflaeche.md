@@ -16,7 +16,7 @@ die letzten Aufnahmen als Leiste („Tray“) unter dem Bild und eine volle Bibl
 ## Entscheidung
 
 1. **Leiste der letzten Aufnahmen** unten im Editor zwischen Leinwand und Fußzeile, so breit wie die Leinwand
-   (Werkzeugleiste und rechte Leiste bleiben voll hoch), Höhe 104 dp. Links der Knopf „Library“ (öffnet Punkt 3),
+   (Werkzeugleiste und rechte Leiste bleiben voll hoch), Höhe 104 dp (*seit Zusatz Karte #311:* 118 dp). Links der Knopf „Library“ (öffnet Punkt 3),
    daneben die Vorschaubilder der Bibliothek, **neueste links**, je 120 × 68 dp mit Zeitangabe darunter (heute: Uhrzeit,
    gestern: „yesterday“, sonst Wochentag und Datum, Sprache über `date format`). Die offene Aufnahme ist grün umrandet.
    Mausrad rollt waagerecht, Tastatur über die Fokusfahrt. Agenten-Aufnahmen stehen nicht in der Leiste.
@@ -65,7 +65,7 @@ die letzten Aufnahmen als Leiste („Tray“) unter dem Bild und eine volle Bibl
 
 ## Konsequenzen
 - ADR-0018 Nachtrag 5: `[library] bar`; ADR-0034: Zeile in der Tafel; ADR-0026: zwei Menüeinträge mit Kürzeln.
-- Die Leiste nimmt der Leinwand 104 dp Höhe; Drehbücher mit festen Koordinaten setzen sie am Anfang aus (wie die
+- Die Leiste nimmt der Leinwand 104 dp Höhe (*seit Zusatz Karte #311:* 118 dp); Drehbücher mit festen Koordinaten setzen sie am Anfang aus (wie die
   rechte Leiste, ADR-0031 Nachtrag 3) — über den Menüeintrag, nicht über einen Umschalter, sobald die Einstellung
   gemerkt wird (Lehre aus F-539).
 
@@ -148,7 +148,7 @@ Teil 2 setzt die Punkte 3 und 4 und die Ansicht-Seite von 6, 7 und 9 um (`intern
 `internal/libview/raster.go` und `ansicht.go`, Papierkorb `library.InPapierkorb`). Gestaltung nach Muster 174 b. Was
 die Entscheidung offen ließ oder anders kam:
 
-1. **Knopf „Library“** links in der Leiste (100 dp breit, 10 dp vom Rand), die Vorschauen beginnen dahinter; er gehört
+1. **Knopf „Library“** links in der Leiste (100 dp breit, 10 dp vom Rand; *seit Zusatz Karte #311:* 40 dp, Symbol), die Vorschauen beginnen dahinter; er gehört
    zur Fokusfahrt und öffnet die Ansicht wie Datei → „Bibliothek“ (Ergänzung 1 von Teil 1 eingelöst).
 2. **Kopf:** In Fenstern unter 920 dp Breite steht er in zwei Zeilen (Suchfeld und „Back to image“ oben, Zeitraum und
    Schalter darunter) und ohne Titel, damit nichts überlappt. Suche, Zeitraum und Schalter beginnen bei jedem Öffnen
@@ -278,7 +278,7 @@ nicht nur das änderungsdatum, sondern auch die auflösung stehen.“
   Die Vorschauen beginnen 60 dp weiter links.
 - **Zwei Zeilen unter jeder Vorschau:** Zeitangabe wie bisher, darunter im Nebentext die Auflösung der Ansicht aus dem
   Index (`leisteAufloesung`, Kontext `status bar` „%d × %d“). Die Leiste wird dafür 118 statt 104 dp hoch (Punkt 1 und
-  Abschnitt „Folgen“); die Schwelle von 420 dp Leinwandhöhe bleibt. Die volle Ansicht zeigte die Auflösung schon
+  Abschnitt „Konsequenzen“); die Schwelle von 420 dp Leinwandhöhe bleibt. Die volle Ansicht zeigte die Auflösung schon
   (`libview.KachelAngaben`).
 - Tests `internal/ui/leiste_knopf_aufloesung_test.go`, Drehbuch `bibliothek-174-leiste.txt` auf die neuen Lagen nachgezogen.
 
@@ -295,5 +295,8 @@ bibliotheks-ansicht selbst so sein.“
   gemeinsamer Weg `papierkorbAnfrage` für Ansicht und Leiste. Die **offene Aufnahme** zeigt kein ✕, Entf an ihr meldet
   nur. Während Speichern, Wechsel oder einer Arbeit der Ansicht wartet die Anfrage nicht, die Fußzeile sagt warum.
 - **Entf an einer Vorschau der Leiste** legt sie ebenfalls in den Papierkorb (vorher wirkungslos).
+- *Kritik Fable 25.11. (K-2, K-3):* Nach einem Löschen gilt `loeschRuhe` (Doppelklickzeit + 200 ms) kein ✕ und kein
+  Klick auf die Vorschau der Leiste, sonst träfe der zweite Klick eines Doppelklicks die nachgerückte Aufnahme;
+  `langDruck` beginnt bei −1 und fällt nach jedem Neulesen der Liste weg.
 - Tests `internal/ui/papierkorb_kreuz_test.go`, Mutanten `scripts/mutanten/papierkorb-kreuz.json` (PK1–PK9), Sichtprobe
   `scripts/drehbuecher/papierkorb-kreuz-312.txt`.

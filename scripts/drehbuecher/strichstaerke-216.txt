@@ -1,18 +1,19 @@
 # Sichtprobe ADR-0021 Nachtrag 7 (Karte #216): Strichstärke in der rechten Leiste.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/strichstaerke-216.txt --bild scripts/drehbuecher/testbild-1200x800.png
 # Bei 1600 × 1000, Skala 1: Zeile „Strichstärke“ ab y = 216 (hinter den Schnellstilen, ADR-0037; vorher 73), − bei x 1404–1434, Wert bis 1498, + bei 1498–1528.
-# Erwartet: 01 zeigt 4 px, 02 nach zweimal + 8 px und einen dicken Pfeil, 03 nach − am gewählten Pfeil 6 px.
+# Erwartet (Voreinstellung 6 px seit Karte #316): 01 zeigt 6 px, 02 nach zweimal + 12 px und einen dicken Pfeil, 03 nach
+# − am gewählten Pfeil 8 px.
 warte 800
 taste A
 warte 300
-foto 01-pfeil-4px
+foto 01-pfeil-6px
 klick 1513 229
 warte 150
 klick 1513 229
 warte 200
 ziehe 400 300 700 500
 warte 400
-foto 02-pfeil-8px
+foto 02-pfeil-12px
 klick 1419 229
 warte 300
-foto 03-gewaehlt-6px
+foto 03-gewaehlt-8px

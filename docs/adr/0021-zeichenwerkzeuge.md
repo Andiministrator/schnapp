@@ -51,7 +51,7 @@ Bedienung vor Funktionsfülle).
 4. **Voreinstellungen:** Die Beschriftungsfarben sind laut Corporate Design (§3, letzte Regel) eine eigene Auswahl für
    Bilder, nicht die Oberflächenpalette. Erste Fassung: vier kräftige Farben, auf denen weiße Schrift lesbar bleibt —
    **Rot `#D93A33`** (Voreinstellung, auf Bildschirmfotos am auffälligsten), Blau `#2F6FDB`, Grün `#2E8B57`,
-   Dunkelgrau `#1E2124` (grau-900). Strichstärke Pfeil und Kasten 4 px (Spitze damit 16 px), Kasten ungefüllt mit
+   Dunkelgrau `#1E2124` (grau-900). Strichstärke Pfeil und Kasten 4 px (Spitze damit 16 px; *seit Nachtrag 16:* 6 px), Kasten ungefüllt mit
    Eckradius 4 px (CD §5: runde Ecken), Text 20 px weiß auf einem Schild in der gewählten Farbe, Nummer Radius 14 px
    mit weißer, fetter Ziffer (wie Renderer und SVG-Export). Größen in Pixeln des Originals, unabhängig vom Zoom.
    *Seit Nachtrag 11:* zwei Farben je Werkzeug; beim Text ist die gewählte Vordergrundfarbe die Schrift, das Schild die
@@ -206,7 +206,7 @@ Größen) und ergänzt Punkt 5 (nur die Farbe).
 
 1. **Voreinstellung nach Bildgröße:** Beim Öffnen gelten Strich, Schriftgrad und Nummernradius aus Punkt 4 mal dem
    Faktor der Stauch-Kante, `document.KantenFaktor(Originalgröße)` = max(1, kurze Seite / 1080), ganzzahlig
-   (`canvas.StilFuer`): Full HD und kleiner 4 / 20 / 14 px, 4K 8 / 40 / 28 px, 8K 16 / 80 / 56 px. Ganzzahlig, damit
+   (`canvas.StilFuer`): Full HD und kleiner 4 / 20 / 14 px, 4K 8 / 40 / 28 px, 8K 16 / 80 / 56 px (*seit Nachtrag 16:* Strich 6 / 12 / 24 px). Ganzzahlig, damit
    die Werte die Stufen unten treffen und gleiche Bilder gleiche Größen bekommen. Maßgeblich ist das Original (wie bei
    der Kante, ADR-0023 Nachtrag 2), nicht der Zuschnitt. Gespeicherte Objekte ändern sich nie; die Voreinstellung gilt
    je Fenster und wird nicht gespeichert (Einstellungen mit #175).
@@ -230,7 +230,8 @@ Größen) und ergänzt Punkt 5 (nur die Farbe).
 - **Stufen:** Der Satz „Ganzzahlig, damit die Werte die Stufen unten treffen“ gilt nur für die Faktoren 1, 2, 3, 4, 6
   und 8. Faktor 5 (20 px) und 7 (28 px) liegen zwischen zwei Stufen, ab Faktor 9 liegt die Voreinstellung über 32 px;
   − und + gehen dann zur nächsten Stufe in der Richtung (+ ist grau, − springt auf 32). Das ist gewollt: Die
-  Voreinstellung folgt dem Bild, die Stufen der Bedienung.
+  Voreinstellung folgt dem Bild, die Stufen der Bedienung. *Seit Nachtrag 16 (Strich 6 px)* gelten andere Faktoren,
+  siehe dort.
 - Nachtrag 7 löst den Satz in ADR-0031 Nachtrag 3 „… und Strichstärke fehlen noch“ ab; siehe ADR-0031 Nachtrag 4.
 
 ## Nachtrag 9 (23.11.2026): Freie Farbe mit Deckkraft, zuletzt benutzte Farben, Pipette (Karte #189)
@@ -256,7 +257,7 @@ Nachtrag 6: Neben den vier Beschriftungsfarben ist jede Farbe wählbar, mit Deck
    Ziehen in der Fläche den Ton nicht verlieren; HSV ist nur Bedienung, gespeichert wird RGB.
 4. **Zuletzt benutzte Farben:** Jede Farbe, die nicht über ein Farbfeld gewählt wurde (Fläche, Regler beim Loslassen,
    Hex, Deckkraft, Pipette) und nicht unter den Beschriftungsfarben steht, kommt vorn in eine Liste von höchstens drei
-   (`canvas.ZuletztGrenze`); dieselbe Farbe rückt nach vorn statt doppelt zu stehen. Die Liste gilt je Fenster und wird
+   (`canvas.ZuletztGrenze`; *seit Nachtrag 17:* vier); dieselbe Farbe rückt nach vorn statt doppelt zu stehen. Die Liste gilt je Fenster und wird
    nicht gespeichert (Einstellungen mit #175).
 5. **Pipette:** Ein Klick auf die Pipette schaltet sie ein; der nächste Linksklick ins Bild übernimmt die Farbe des
    Bildpunkts darunter aus dem Original **mit** Schwärzungen und **ohne** Beschriftungen, deckend (Alpha 255) — so
@@ -590,7 +591,7 @@ die lebenslange Sperre ließ später geöffnete Dokumente ihre Schrift als fehle
 
 ## Nachtrag 16 (25.11.2026): Voreinstellung der Strichstärke 6 statt 4 (Karte #316)
 
-**Status:** Akzeptiert (Claude Opus 5.5). Ändert die Strichstärke aus Punkt 3 und Nachtrag 7.
+**Status:** Akzeptiert (Claude Opus 5.5). Ändert die Strichstärke aus Punkt 4 und Nachtrag 7 sowie die Stufen-Zahlen aus Nachtrag 8.
 
 Andi (25.11.2026): „die defaulteinstellungen für die strichstärke von pfeilen, umrandungen usw könnte einen tick stärker
 sein.“ Die Voreinstellung (`canvas.StandardStil`) steigt um eine Stufe von `StrichStufen` auf **6 px** bei Faktor 1, also
@@ -598,7 +599,9 @@ Full HD 6, 4K 12, 8K 24 (Nachtrag 7, mal `KantenFaktor`). Sie gilt für Pfeil, K
 Sprechblase ohne Füllung. Die eingebauten Schnellstile (ADR-0037) ziehen mit: normal 6, „dick“ 12 statt 8, damit der
 Stand eines frischen Werkzeugs weiter zur ersten Kachel passt; fehlt in `styles.ini` die Breite, gilt ebenfalls 6
 (`settings.stilBreite`). Schriftgrad 20 und Nummernradius 14 bleiben. Gespeicherte Dateien und eigene Schnellstile behalten
-ihre Breite.
+ihre Breite. Die Voreinstellung trifft die Stufen von `StrichStufen` damit nur noch bei Faktor 1, 2 und 4 (6, 12,
+24 px); Faktor 3 (18) und 5 (30) liegen zwischen zwei Stufen, ab Faktor 6 liegt sie über 32 px (ersetzt die Zahlen in
+Nachtrag 8, Punkt „Stufen“).
 
 ## Nachtrag 17 (25.11.2026): Hex ohne Deckkraft, Pipette im Farbpaar (Karte #318)
 
@@ -645,4 +648,10 @@ Griffe gelten wie beim Drücken nur an einer bearbeitbaren Auswahl und nicht bei
 behält seine Form, auch wenn der Zeiger den Griff verlässt. Ändert sich die Form beim Bewegen, folgt ein Bild, auch wenn
 das Pixel unter dem Zeiger gleich bleibt (starker Zoom). Der Drehgriff kommt mit Karte #324. Tests
 `internal/canvas/zeiger_test.go`, `internal/ui/zeiger_form_test.go`, Mutanten `scripts/mutanten/zeiger-form.json`.
-Ob KDE für „all-scroll“ die vier Pfeile zeigt, prüft Andi im Echtlauf (der virtuelle KWin fotografiert keinen Zeiger).
+Im Echtlauf vom 25.11.2026 wechselte der Zeiger in der Plasma-Sitzung nicht (F-818, Karte #342). Ursachen (Kritiker
+Fable 5.2): (1) Knöpfe setzten `pointer.CursorPointer` nach `Clickable.Layout`, also außerhalb ihres Ausschnitts —
+die Hand galt für den umgebenden Bereich und lag über der Leinwand; jetzt `ui.handZeiger` mit eigenem Ausschnitt,
+belegt über den Gio-Router (`TestZeigerFormErreichtDenRouter`, `TestZeigerHandUeberWerkzeugknopf`). (2) Breeze kennt
+einige X11-Namen nicht: Ausweichliste im Gio-Patch (ADR-0015 Nachtrag 5). (3) Während Speichern oder Laden zeigt der
+Zeiger keine Griffe (`gesperrt`, Kritik K-5); die Form wird je Bewegung einmal gerechnet (`editor.zeigerForm`).
+Ob er jetzt in der echten Sitzung wechselt, zeigt Andis nächster Echtlauf.

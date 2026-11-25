@@ -20,7 +20,7 @@ warte 200
 taste Enter
 warte 300
 foto 01-text-gesetzt
-# F10 öffnet das Menü Datei, der erste Eintrag hat den Fokusring.
+# F10 öffnet das Menü Datei, der erste Eintrag („Öffnen …“ seit Karte #326) hat den Fokusring.
 taste F10
 warte 300
 foto 02-f10-datei-fokus

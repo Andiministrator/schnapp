@@ -1109,3 +1109,18 @@ Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13, Verify 2 bis 5 und Karte
   im Sprint eingebauter und wieder behobener Fehler (8 s je Bild, fehlende Kappe) ist keine Verbesserung gegenüber
   v0.6.0; jede Zeile gegen `git log v<vorher>..v<neu>` und den Code des vorigen Tags prüfen.
 
+- **„Funktioniert nicht“ heißt erst nachstellen, dann deuten** (F-817, Sprint 14): Im virtuellen KWin kamen alle Klicks
+  aufs Farbpaar an; der Mangel war die Wirkung (kleine Liste statt Farbwähler). Drehbuch mit Fotos je Klick klärt in
+  Minuten, ob Zeigerziel oder Verhalten fehlt — und das Ergebnis gehört als Frage in den Schlussblock an Andi.
+- **Was der virtuelle KWin nicht fotografiert, ist ungeprüft** (F-818): Zeigerformen sind in Screenshots unsichtbar;
+  grüne Tests von `canvas.Sitzung.Zeiger` belegen die Entscheidung, nicht die Anzeige. Solche Karten gehen erst nach
+  Andis Echtlauf auf erledigt — oder mit dem Vermerk „Echtlauf offen“.
+- **`… | grep … | head; echo $?` misst `head`, nicht `grep`** (Sprint 14): zweimal ging rot als grün durch. Vor dem
+  Commit `go test ./...` ohne Pipe-Ende oder mit `PIPESTATUS` auswerten; Pakete einzeln testen ersetzt den vollen Lauf
+  nicht (TestVorlage in i18n und TestRepoRegeln in cmd/schnapp prüfen andere Pakete mit).
+- **Eine Änderung der Voreinstellung zieht alle eingebauten Stile und Vorgaben mit** (#316): Strich 4 → 6 berührte
+  `StandardStil`, die Schnellstil-Tabelle, `settings.stilBreite` und ~20 Testerwartungen; Tests mit „eine Breite, die
+  keine Kachel hat“ (6) wurden still zu Doppelten.
+- **Ein Klick-Mutant, der den Zweig nur über den Nebeneffekt eines anderen Tests betritt, überlebt** (OF4, ZF9):
+  Vorher stehende Meldungen und gleichzeitig wechselnde Pixel verdecken die geprüfte Wirkung; Meldung vor dem Schritt
+  leeren bzw. den Fall so bauen (starker Zoom), dass nur die geprüfte Größe sich ändert.

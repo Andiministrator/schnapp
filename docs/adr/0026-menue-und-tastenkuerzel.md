@@ -242,7 +242,11 @@ Andi (25.11.2026): „es gibt im menu keinen punkt, um eine datei zu öffnen und
   (ADR-0036): erst speichern, dann laden; ein einfaches Bild wird beim nächsten Speichern eine neue Aufnahme in der
   Bibliothek, eine Arbeitsdatei bleibt, wo sie liegt. Abbruch tut nichts; ohne Portal, bei einer entfernten Adresse oder
   einem Dialogfehler sagt es die Fußzeile.
-- Ohne Anbindung an die Bibliothek (Fenster, das keine andere Datei laden kann) ist der Eintrag grau mit Erklärung.
+- Ohne Anbindung an die Bibliothek (Fenster, das keine andere Datei laden kann) ist der Eintrag grau mit Erklärung,
+  während eines Exports grau ohne Erklärung.
+- *Kritik Fable 25.11. (K-4):* Hält ein Speicher-Hinweis (etwa „als neue Aufnahme gespeichert“) den Wechsel auf, hängt
+  die Meldung an, dass die gewählte Datei noch nicht geöffnet ist und mit Strg+O erneut geöffnet wird
+  (`wechselZustand.ausDialog`).
 - **Speichern unter** und **Neue Aufnahme** brauchen eigene Entscheidungen (was „Speichern unter“ neben dem Export für eine
   Arbeitsdatei in der Bibliothek heißt; ob eine neue Aufnahme im selben Fenster oder einem neuen Prozess entsteht) und
   folgen mit eigener Karte.

@@ -8,7 +8,7 @@
 # Erwartet:
 #  01 Zeiger über der dritten Vorschau: ✕ oben rechts in ihr, an der offenen (zweiten) nie.
 #  02 Zeiger auf dem ✕: rot, Statuszeile „In den Papierkorb (Entf)“ bzw. englisch.
-#  03 nach dem Klick: Vorschau weg, die übrigen rücken nach, Meldung „In den Papierkorb verschoben …“.
+#  03 nach dem Klick: Vorschau weg, die übrigen rücken nach, Meldung „In den Papierkorb gelegt …“.
 #  04 volle Ansicht (Strg+Umschalt+L), Zeiger über einer Kachel: ✕ oben rechts.
 warte 1500
 taste Strg+Umschalt+R

@@ -5,7 +5,7 @@
 # Neue Oberfläche (Karte #210, ADR-0031): Menüzeile oben (Titel bei y = 15: Datei x 62, Werkzeuge x 336), Fußzeile unten
 # (y 290..320). Das längste Menü ist „Werkzeuge“ mit neun Einträgen (im großen Fenster Auswählen y 52 … Stauchen y 308, im 320 hohen Fenster rückt die Liste hoch: Auswählen y 42 … Stauchen y 298).
 # Erst Werkzeuge öffnen und den untersten Eintrag „Stauchen“ anklicken (Foto 02: Werkzeug Stauchen aktiv), dann Datei
-# öffnen und „Schließen“ anklicken: Der Editor beendet sich (Probe-Skript meldet Exit 0) oder zeigt den Hinweis.
+# öffnen und „Schließen“ (y 271, seit Karte #326 mit „Öffnen“) anklicken: Der Editor beendet sich (Probe-Skript meldet Exit 0) oder zeigt den Hinweis.
 warte 800
 # Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
 taste Strg+Umschalt+B
@@ -19,6 +19,6 @@ foto 02-nach-klick-stauchen
 klick 62 15
 warte 300
 foto 03-datei-klein
-klick 100 157
+klick 100 271
 warte 1500
 foto 04-nach-klick-auf-schliessen

@@ -123,3 +123,8 @@ fremd; `zenity`/`kdialog` wären Laufzeit-Fremdprogramme (ADR-0011).
 - *Ergänzt (F-344, Karte #153):* `ErrZielBeschaedigt` nur, wenn die Datei verändert wurde (Kürzen gelang) und die
   Wiederherstellung scheiterte; scheitert schon das erste Kürzen, kommt die Ursache zurück. Ein `Close`-Fehler nach
   gelungenem `Sync` ist kein Exportfehler (der Inhalt steht vollständig), er geht in die Diagnose.
+
+## Hinweis (25.11.2026): Dialog zum Öffnen
+
+Das Paket `internal/portal` kennt seit Karte #326 auch `FileChooser.OpenFile` (`Dialog.Oeffnen`, gemeinsamer Ablauf
+`Dialog.dialog`); Bedienung und Entscheidung stehen in ADR-0026 Nachtrag 11.
