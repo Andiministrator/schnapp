@@ -86,5 +86,13 @@
     "alt": "\t\t\t\tpunkte = append(punkte, p.Plus(v))\n",
     "neu": "\t\t\t\tpunkte = append(punkte, z.ansicht(p.Plus(v.Mal(0))))\n",
     "timeout": "5m"
+  },
+  {
+    "name": "SG12 Linienstrich: Kehrtwende mit Atan2(±0, −1), Fächer dreht rückwärts (F-803)",
+    "datei": "internal/render/linienstrich.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\tknick[k] = math.Pi\n",
+    "neu": "",
+    "timeout": "5m"
   }
 ]

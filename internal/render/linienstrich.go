@@ -127,7 +127,10 @@ func neuerLinienStrich(roh []document.Punkt, geschlossen bool, hw float64) linie
 		case sin < 0:
 			seite[k] = -1
 		case cos < 0:
-			seite[k] = 1 // Kehrtwende: eine Seite wählen, das Gelenk ist gefaltet
+			// Kehrtwende: Seite links, das Gelenk ist gefaltet. Der Sinus ist hier ±0, und Atan2(−0, −1) = −π dreht den
+			// Fächer rückwärts; Seite und Drehsinn gehören zusammen (F-803), sonst fehlt die Kappe am Umkehrpunkt.
+			seite[k] = 1
+			knick[k] = math.Pi
 		}
 		if 1+cos < 1e-9 {
 			gefaltet[k] = true

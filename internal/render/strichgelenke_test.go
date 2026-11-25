@@ -217,6 +217,11 @@ func TestStrichGefaltetOhneLoch(t *testing.T) {
 		// Gehrung 1,3-mal so lang wie die Schenkel (Spitze 13,2°, Schenkel 40, Strich 12): knapp gefaltet.
 		{"Schenkel spitz knapp gefaltet Strich 12", []document.Punkt{document.Pt(160.27, 115.4), document.Pt(200, 120), document.Pt(160.27, 124.6)}, 12, false},
 		{"Kehrtwende Strich 10", []document.Punkt{document.Pt(60, 100), document.Pt(200, 100), document.Pt(120, 100)}, 10, true},
+		// F-803: An einer achsparallelen Kehrtwende ist der Sinus ±0; in zwei der vier Richtungen drehte der Fächer
+		// rückwärts, die runde Kappe am Umkehrpunkt fehlte (abseits der Kante 1,0).
+		{"Kehrtwende nach links Strich 10", []document.Punkt{document.Pt(200, 100), document.Pt(60, 100), document.Pt(120, 100)}, 10, true},
+		{"Kehrtwende nach unten Strich 10", []document.Punkt{document.Pt(100, 40), document.Pt(100, 180), document.Pt(100, 120)}, 10, true},
+		{"Kehrtwende nach oben Strich 10", []document.Punkt{document.Pt(100, 180), document.Pt(100, 40), document.Pt(100, 120)}, 10, true},
 	} {
 		ls := neuerLinienStrich(fall.pts, false, fall.breite/2)
 		var falten []document.Punkt
@@ -248,5 +253,37 @@ func TestStrichGefaltetOhneLoch(t *testing.T) {
 			return false
 		}
 		pruefeAbweichung(t, fall.name+" fern der Faltung", linienAbweichung(b, fall.pts, fall.breite/2, fern), linienGrenze, 20)
+	}
+}
+
+// F-803: Ein Pfeil, dessen Kontrollpunkt auf der Linie hinter dem Ziel liegt, kehrt an einem Stützpunkt genau um. In
+// allen vier Achsrichtungen trägt der Umkehrpunkt die runde Kappe: abseits der Kante kein Pixel daneben und kein Loch.
+// Vorher fehlte sie nach links und nach oben (Ende flach, abseits der Kante 1,0).
+func TestPfeilKehrtwendeAlleRichtungen(t *testing.T) {
+	schwarz := color.NRGBA{A: 255}
+	for _, fall := range []struct {
+		name    string
+		a, k, b document.Punkt
+	}{
+		{"nach links, kehrt um", document.Pt(300, 100), document.Pt(-150, 100), document.Pt(250, 100)},
+		{"nach rechts, kehrt um", document.Pt(20, 100), document.Pt(470, 100), document.Pt(70, 100)},
+		{"nach unten, kehrt um", document.Pt(100, 20), document.Pt(100, 370), document.Pt(100, 60)},
+		{"nach oben, kehrt um", document.Pt(100, 220), document.Pt(100, -130), document.Pt(100, 180)},
+	} {
+		v := document.Pfeil{A: fall.a, B: fall.b, K: fall.k, Strich: document.Strich{Farbe: schwarz, Breite: 12}}
+		d := weissesDokument(t, 320, 240)
+		hinzu(t, d, v)
+		b := bild(t, d)
+		pts, nahSpitze := pfeilLinie(v)
+		a := linienAbweichung(b, pts, 6, nahSpitze)
+		t.Logf("%s: an der Kante höchstens %.4f (Pixel %v), abseits %.4f (Pixel %v)", fall.name, a.kante, a.woKante,
+			a.innen, a.woInnen)
+		if a.geprueft < 50 {
+			t.Fatalf("%s: nur %d Kantenpixel", fall.name, a.geprueft)
+		}
+		if a.innen > 0.01 {
+			t.Errorf("%s: abseits der Kante weicht die Deckung bis %.3f ab (Pixel %v): Kappe am Umkehrpunkt fehlt",
+				fall.name, a.innen, a.woInnen)
+		}
 	}
 }
