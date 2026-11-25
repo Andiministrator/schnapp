@@ -13,6 +13,7 @@ const (
 	// editorAufbauZeit: nur der Befehlsaufbau von zeichneObjekte (ADR-0023 Nachtrag 16).
 	editorAufbauZeit = time.Second
 	// ebeneAufbauZeit: erstes Bild, das die Objektebene des Renderers baut (F-787, ADR-0023 Nachtrag 20); gemessen
-	// 1,8 bis 3,3 s auf 16 Kernen, der Renderer rastert auf bis zu acht. Großzügig für Runner mit wenigen Kernen.
+	// 0,7 bis 1,9 s auf 16 Kernen (2 Kerne: 2,3 s; F-801), der Renderer rastert auf bis zu acht. Großzügig für
+	// Runner mit wenigen Kernen.
 	ebeneAufbauZeit = 10 * time.Second
 )

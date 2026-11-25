@@ -372,8 +372,8 @@
     "name": "OE2 Editor baut die Objektebene jedes Bild neu (F-787)",
     "datei": "internal/ui/objektebene.go",
     "paket": "./internal/ui",
-    "alt": "if !o.an || d.Stand() != o.stand",
-    "neu": "if true || !o.an || d.Stand() != o.stand",
+    "alt": "if !o.an || d != o.dok || d.Stand() != o.stand",
+    "neu": "if true || !o.an || d != o.dok || d.Stand() != o.stand",
     "timeout": "10m"
   },
   {
@@ -417,10 +417,34 @@
     "timeout": "5m"
   },
   {
+    "name": "OE8 Objektebene: Dokument nicht verglichen (F-799)",
+    "datei": "internal/ui/objektebene.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !o.an || d != o.dok || d.Stand() != o.stand || e.s.BildAenderung() != o.pixel || d.Groesse() != o.groesse {\n",
+    "neu": "\tif !o.an || d.Stand() != o.stand || e.s.BildAenderung() != o.pixel || d.Groesse() != o.groesse {\n",
+    "timeout": "10m"
+  },
+  {
+    "name": "OE9 Objektebene: Pixelstand nicht verglichen (F-800)",
+    "datei": "internal/ui/objektebene.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !o.an || d != o.dok || d.Stand() != o.stand || e.s.BildAenderung() != o.pixel || d.Groesse() != o.groesse {\n",
+    "neu": "\tif !o.an || d != o.dok || d.Stand() != o.stand || d.Groesse() != o.groesse {\n",
+    "timeout": "10m"
+  },
+  {
+    "name": "OE10 Objektebene: Größe nicht verglichen (F-800)",
+    "datei": "internal/ui/objektebene.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !o.an || d != o.dok || d.Stand() != o.stand || e.s.BildAenderung() != o.pixel || d.Groesse() != o.groesse {\n",
+    "neu": "\tif !o.an || d != o.dok || d.Stand() != o.stand || e.s.BildAenderung() != o.pixel {\n",
+    "timeout": "10m"
+  },
+  {
     "name": "KS1 Kastenstrich: innere Ecken bei Gehrung ab Radius nicht auf den Mittelpunkt (F-792)",
     "datei": "internal/document/kastenstrich.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif gehrung[k].Laenge() >= rad {\n",
+    "alt": "\t\tif gehrung[k].Laenge() >= rad-mittelpunktFang {\n",
     "neu": "\t\tif gehrung[k].Laenge() >= rad+hw*0.01 {\n",
     "timeout": "10m"
   },
@@ -454,6 +478,14 @@
     "paket": "./internal/render",
     "alt": "teil[k] = p.Plus(st.Versatz)",
     "neu": "teil[k] = p",
+    "timeout": "5m"
+  },
+  {
+    "name": "KS6 Kastenstrich: kein Fang knapp vor dem Mittelpunkt der Rundung (F-798)",
+    "datei": "internal/document/kastenstrich.go",
+    "paket": "./internal/document",
+    "alt": "\t\tif gehrung[k].Laenge() >= rad-mittelpunktFang {\n",
+    "neu": "\t\tif gehrung[k].Laenge() >= rad {\n",
     "timeout": "5m"
   }
 ]

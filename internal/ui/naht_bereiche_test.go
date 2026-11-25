@@ -236,7 +236,7 @@ func TestEditorGanzesBildUeberVielenNaehten(t *testing.T) {
 		// Knapp unter bereichGrenze zeichnet der Editor selbst, das teuerste Muster (Füllung je Bereich).
 		{"45 gefüllte runde Kästen, 4096 Kacheln (knapp unter bereichGrenze)", 256, 256, kacheln,
 			kaestenMit(45, 1, halbrot), true, false},
-		// F-782 (ADR-0023 Nachtrag 19): breiter Strich (bis Nachtrag 21 nahm Pruefe höchstens Strich 41 an, seitdem auch 120); vorher
+		// F-782 (ADR-0023 Nachtrag 19): breiter Strich (bis Nachtrag 21 nahm Pruefe höchstens Strich 41 an, seitdem bis 132); vorher
 		// 1,6 bis 1,8 s je Bild mit llvmpipe, jeder Bereich spielte alle Kanten seiner Vierecke.
 		{"200 runde Kästen, Strich 40, 4096 Kacheln", 256, 256, kacheln, kaesten(40), true, false},
 		{"4 Texte, 1 lange und 399 kurze Zeilen, 1023 Spaltenstreifen", 2048, 1000, spalten(1023, 2), texte, false, false},

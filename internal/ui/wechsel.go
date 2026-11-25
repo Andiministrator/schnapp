@@ -225,6 +225,7 @@ func (e *editor) uebernimm(g Geoeffnet) {
 	e.schliessenNachSpeichern = false
 	e.lupe.bilder = nil
 	e.naht.gueltig = false
+	e.objEbene.frei() // die Objektebene gehört der alten Aufnahme (F-799)
 	e.ebenen.umbenennen, e.ebenen.umbenennenFokus, e.ebenen.nameHatteFokus = 0, false, false
 	e.hatDruck, e.letzterDruck = false, 0
 	e.ebenen.druck = ebenenDruck{} // ein Zug in der Ebenenliste gehört der alten Aufnahme (F-706)

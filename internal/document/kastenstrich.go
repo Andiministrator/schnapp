@@ -43,6 +43,12 @@ type KastenStrich struct {
 // Spitze) statt zu einzelnen Dreiecken: Liefen viele schmale Dreiecke in einem Punkt zusammen, verlöre Gio dort durch
 // die gegeneinander aufgerechneten Kanten Deckung. Liegen alle inneren Ecken auf einer Stelle, ist der Strich der äußere
 // Umriss.
+// mittelpunktFang (F-798): Endet die Gehrung einer Rundung weniger als so viele Pixel vor ihrem Mittelpunkt, liegt die
+// innere Ecke auf dem Mittelpunkt. Sonst entstehen Teile, die dort nur Bruchteile eines Pixels breit sind; solche Splitter
+// rastert llvmpipe je nach Mesa-Fassung verschieden (Strich 39,9 bei Radius 20: 26 Pixel Abweichung in der CI, lokal
+// keine). Die Fläche, die dabei dazukommt, ist ein Keil von höchstens 0,25 px Tiefe innerhalb des Strichs.
+const mittelpunktFang = 0.25
+
 func NeuerKastenStrich(r Rechteck, radius, hw float64) KastenStrich {
 	rad := WirksamerEckradius(radius, r.Breite(), r.Hoehe())
 	if rad <= 0 || !(hw > 0) {
@@ -102,8 +108,8 @@ func NeuerKastenStrich(r Rechteck, radius, hw float64) KastenStrich {
 	for k, p := range pts {
 		aussen[k] = p.Plus(gehrung[k].Mal(vorz))
 		i := p.Minus(gehrung[k].Mal(vorz))
-		if gehrung[k].Laenge() >= rad {
-			i = mitte[k] // F-792: nicht über den Mittelpunkt der Rundung hinaus
+		if gehrung[k].Laenge() >= rad-mittelpunktFang {
+			i = mitte[k] // F-792: nicht über den Mittelpunkt der Rundung hinaus; F-798: knapp davor ebenso
 		}
 		innen[k] = Pt(min(max(i.X, loch.Min.X), loch.Max.X), min(max(i.Y, loch.Min.Y), loch.Max.Y))
 	}

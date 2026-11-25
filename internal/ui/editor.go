@@ -1773,7 +1773,9 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 		e.objEbene.zeige(gtx)
 		return
 	}
-	e.objEbene.an = false
+	if e.objEbene.an || e.objEbene.objekte != nil {
+		e.objEbene.frei()
+	}
 	aufruf.Add(gtx.Ops)
 }
 
