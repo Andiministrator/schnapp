@@ -736,6 +736,52 @@ Punkte 1 und 3.
    Mesa-Fassung verschieden rastert (Strich 39,9 bei Radius 20: in der CI 26 Pixel Abweichung zwischen Editor und
    Renderer, lokal keine). Hinzu kommt ein Keil von höchstens 0,25 px Tiefe innerhalb des Strichs. Test: Strich 39,6
    und 39,9 in `TestKastenStrichFaecherJeRundung`, Mutant KS6.
+   *Zusatz F-804 (Karte #304), berichtigt den Zusatz F-798:* Der „Keil“ lag nicht im Strich, sondern im Loch, und der
+   Fang griff auch an den beiden Tangentenpunkten jeder Rundung, wo eine gerade Seite anschließt (Gehrung
+   hw/cos 1,875°). Dann lagen die inneren Ecken jeder geraden Seite auf den Mittelpunkten, ihre innere Kante rückte um
+   Radius − hw (bis 0,25 px) ins Loch: Kasten (30,30)–(150,110), Radius 20, Strich 39,5 wich 0,25 von der analytischen
+   Deckung ab (zulässig 0,084), Radius 3/Strich 5,5 0,30 (zulässig 0,047). Betroffen war ein Band von rund 0,5 px
+   Strichbreite knapp unter 2·Radius; Editor und Renderer füllten dieselben Teile, abweichend war nur der SVG-Export.
+   Jetzt gilt:
+   - Der Fang betrifft nur die Ecken im Bogen (Gehrung hw/cos 3,75°). Sie liegen alle auf dem *Fangpunkt*: der wahren
+     inneren Ecke der mittleren Bogenecke, ρ = Radius − Gehrung im Bogen vor dem Mittelpunkt auf der Diagonale nach
+     außen (bei ρ ≤ 0 der Mittelpunkt wie in Punkt 2). Je Rundung bleiben ein Fächer und am Übergang zu jeder Seite ein
+     Viereck.
+   - Die Tangentenpunkte behalten ihre Gehrung (erreicht sie den Mittelpunkt, gilt Punkt 2); die innere Kante der
+     Seiten liegt genau hw vom Umriss.
+   - Liegen die Mittelpunkte benachbarter Rundungen näher als 0,25 px beieinander (Seite ohne geraden Teil: Pille,
+     Kreis), rücken ihre Fangpunkte mindestens 0,25 px auseinander (ρ mindestens 0,25/√2); ist das Loch in einer
+     Richtung schmaler als 0,25 px, fallen sie dort auf seine Mitte zusammen.
+   Ergebnis: Im Band hat kein Teil eine Kante unter 0,25 px (Radius 20: kürzeste 0,66, Pille 0,25; ohne Fang 0,0009
+   bei Strich 39,9). Nur bei sehr kleinem Radius ist alles klein (Radius 1: 0,18, Radius 0,6: 0,12).
+
+   Abgewogen (größte Abweichung von der analytischen Deckung an der Kante, 32×32 Stichproben je Pixel; abseits der
+   Kante überall 0):
+
+   | Kasten | Radius | Strich | bis F-804 | ohne Fang | Fang auf Mittelpunkt, Tangenten frei | Fangpunkt (gewählt) | zulässig |
+   |---|---|---|---|---|---|---|---|
+   | (30,30)–(150,110) | 20 | 39,42 | 0,076 | 0,027 | 0,076 | 0,027 | 0,084 |
+   | (30,30)–(150,110) | 20 | 39,5 | 0,250 | 0,028 | 0,069 | 0,028 | 0,084 |
+   | (30,30)–(150,110) | 20 | 39,6 | 0,188 | 0,029 | 0,047 | 0,029 | 0,084 |
+   | (30,30)–(150,110) | 20 | 39,9 | 0,063 | 0,030 | 0,030 | 0,030 | 0,084 |
+   | (30,3/30,7)–(150,3/110,7) | 20 | 39,42 | 0,206 | 0,030 | 0,206 | 0,042 | 0,084 |
+   | (30,3/30,7)–(150,3/110,7) | 20 | 39,5 | 0,353 | 0,032 | 0,164 | 0,032 | 0,084 |
+   | (30,5/30,5)–(150,5/110,5) | 20 | 39,45 | 0,183 | 0,033 | 0,183 | 0,038 | 0,084 |
+   | (40,5/40,5)–(60,5/60,5) | 3 | 5,5 | 0,300 | 0,003 | 0,068 | 0,010 | 0,047 |
+   | (40,40)–(60,60) | 1 | 1,5 | 0,250 | 0,004 | 0,051 | 0,012 | 0,043 |
+   | Pille (30,3/30,7)–(70,3/150,7) | 20 | 39,42 | – | 0,031 | 0,256 | 0,064 | 0,084 |
+   | Pille (30,3/30,7)–(70,3/150,7) | 20 | 39,6 | – | 0,031 | 0,143 | 0,031 | 0,084 |
+
+   „Ohne Fang“ ist am genauesten, hat aber die Splitter von F-798. „Fang auf den Mittelpunkt, Tangenten frei“ hält die
+   Seitenkante, lässt aber zwischen Tangentenpunkt und Mittelpunkt den Rand des Lochs weg (bis 0,21, bei Pillen 0,26).
+   Der Fangpunkt liegt auf dem Rand des Lochs; was dazukommt, liegt zwischen den wahren inneren Ecken und den beiden
+   Kanten zum Fangpunkt (gegenüber ohne Fang höchstens 0,012 mehr, bei Pillen 0,033). Tests:
+   `TestKastenStrichDecktWieAnalytisch` mit den Fällen der Tabelle (auch Radius 3/Strich 5,6, Radius 1/Strich 1,6,
+   Pille und Kreis; seitdem auch abseits der Kante ≤ 0,01), `TestKastenStrichFangHaeltSeitenkante` (innere Ecken der
+   Seiten genau hw vom Umriss, keine Kante unter 0,25 px, Strich 39,3 ohne Fang), Bandfälle in
+   `TestEditorDickerStrichKleinerKastenWieRenderer` (auch mit zwei Kernen grün). Mutanten KS1 und KS6 nachgezogen,
+   BK6 auf `klemme`, KS7 (Fang bis 2 px), KS8 (Tangentenpunkte im Fang), KS9 (Fangpunkt auf dem Mittelpunkt), KS10
+   und KS11 (Pille).
 3. **Bild:** Die Gehrung der Teile (Knick 7,5°) reicht höchstens 0,22 % der halben Breite über den runden Strich hinaus
    (Strich 60: 0,064 Pixel); das SVG sagt weiter `stroke-linejoin="round"`. Das Kostenmodell zählt die Teile wie jede
    Füllung (weniger Ecken als Rechtecke und Kreise). Pfeil, Lupen-Linie und Schenkel der Sprechblase füllen weiter
@@ -789,6 +835,12 @@ Abgewogen:
    spitzes kurzes V Strich 12 0,30 an der Spitze. Ohne die Faltung entstand im knappen V ein Loch (abseits der Kante
    0,77). Gelenke werden
    nur gefaltet, nie zurückgenommen; die Prüfung endet.
+   *Zusatz F-803 (Karte #304):* An einer achsparallelen Kehrtwende ist der Sinus des Knicks ±0. Die Seite wurde links
+   gewählt, der Knick aber aus Atan2(±0, −1) = ±π genommen; bei −0 (nach links und nach unten) drehte der Fächer
+   rückwärts, und die runde Kappe am Umkehrpunkt fehlte (Pfeil A=(300,100), K=(−150,100), B=(250,100), Strich 12:
+   abseits der Kante 1,0). Eine Kehrtwende setzt jetzt Seite und Knick gemeinsam (links, +π); „jede Kehrtwende“ gilt
+   damit in allen vier Richtungen. Tests: `TestStrichGefaltetOhneLoch` mit allen vier Richtungen,
+   `TestPfeilKehrtwendeAlleRichtungen` (abseits der Kante 0); Mutant SG12.
 3. **Bögen:** Fächer und Kappen bekommen so viele Ecken, dass die Sehne höchstens 0,02 Pixel unter dem Bogen liegt
    (`bogenSehne`; bis hw 4250, darüber höchstens 1024 Ecken je Vollkreis). Die bisherigen Kreise mit max(16, 2r) Ecken
    lagen bis 0,1 Pixel darunter (Strich 24). Die Kreise der Schritt-Nummer bleiben.
