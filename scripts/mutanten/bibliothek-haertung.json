@@ -303,5 +303,13 @@
     "alt": "if letzte[e.Pfad] != i {",
     "neu": "if letzte[e.Pfad] != i && false {",
     "timeout": "3m"
+  },
+  {
+    "name": "HB39 Abgleich steigt bei gleicher Zeilenzahl trotz Doppelzeile aus (F-781)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "if len(weg) == 0 && g.Defekt == 0 && !doppelt && len(behalten) == len(g.Eintraege) {",
+    "neu": "if len(weg) == 0 && g.Defekt == 0 && !doppelt && len(behalten) == len(g.Eintraege) || len(weg) == 0 && g.Defekt == 0 && len(behalten) == len(g.Eintraege) {",
+    "timeout": "3m"
   }
 ]

@@ -52,3 +52,36 @@ func TestAbgleichHeiltDoppelteZeilen(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// F-781 (Verify Sprint 13 V-1): Eine Doppelzeile für A und eine Aufnahme B ohne Indexzeile — gleich viele Zeilen fallen
+// weg wie dazukommen. Der Abgleich muss trotzdem schreiben: danach je eine Zeile für A und B.
+func TestAbgleichHeiltDoppelzeilePlusNeueAufnahme(t *testing.T) {
+	b, _ := neueBibliothek(t)
+	a := ablegen(t, b, fileformat.Metadaten{Erstellt: zeit("2026-10-01T10:00:00Z")})
+	bb := ablegen(t, b, fileformat.Metadaten{Erstellt: zeit("2026-10-02T10:00:00Z")})
+	z, _ := json.Marshal(a)
+	zeile := append(z, '\n')
+	if err := os.WriteFile(b.Orte.Index, append(append([]byte{}, zeile...), zeile...), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if g, _ := b.Laden(); len(g.Eintraege) != 2 || g.Eintraege[0].Pfad != a.Pfad || g.Eintraege[1].Pfad != a.Pfad {
+		t.Fatalf("Vorbereitung: %+v", g.Eintraege)
+	}
+	for lauf := 1; lauf <= 3; lauf++ {
+		if _, err := b.Abgleich(); err != nil {
+			t.Fatal(err)
+		}
+		g, err := b.Laden()
+		if err != nil {
+			t.Fatal(err)
+		}
+		var pfade []string
+		for _, e := range g.Eintraege {
+			pfade = append(pfade, e.Pfad)
+		}
+		t.Logf("nach Abgleich %d: %d Zeilen %v (A=%s, B=%s)", lauf, len(pfade), pfade, a.Pfad, bb.Pfad)
+		if lauf == 3 && (len(pfade) != 2 || pfade[0] == pfade[1]) {
+			t.Errorf("nach drei Abgleichen: Doppelzeile nicht geheilt oder B ohne Indexzeile: %v", pfade)
+		}
+	}
+}

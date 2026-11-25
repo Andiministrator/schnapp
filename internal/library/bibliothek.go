@@ -612,7 +612,11 @@ func (b *Bibliothek) Abgleich() (_ int, fehler error) {
 				dazu = append(dazu, heilAuftrag{pfad: k.pfad, rel: k.eintrag.Pfad, stand: k.stand})
 			}
 		}
-		if len(weg) == 0 && g.Defekt == 0 && len(behalten) == len(g.Eintraege) {
+		// Nichts zu schreiben nur ohne weggefallene, defekte oder doppelte Zeilen und ohne Ergänzung. Die Zeilenzahl allein
+		// reicht nicht: Fallen gleich viele Doppelzeilen weg, wie Aufnahmen dazukommen, bliebe der Index sonst stehen
+		// (Verify Sprint 13 V-1, F-781).
+		doppelt := len(letzte) != len(g.Eintraege)
+		if len(weg) == 0 && g.Defekt == 0 && !doppelt && len(behalten) == len(g.Eintraege) {
 			return nil
 		}
 		for _, p := range weg {
