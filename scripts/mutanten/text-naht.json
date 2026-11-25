@@ -12,7 +12,7 @@
     "datei": "internal/render/textbaender.go",
     "paket": "./internal/render",
     "alt": "\t\t\t\tg2 := g.Intersect(ziel)\n",
-    "neu": "\t\t\t\tg2 := g.Intersect(z.bild.Rect)\n",
+    "neu": "\t\t\t\tg2 := g.Intersect(z.bild.Rect)\n\t\t\t\t_ = ziel\n",
     "timeout": "5m"
   },
   {
@@ -164,16 +164,17 @@
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
     "alt": "rs := baenderIn(reihen, zeile.Grundlinie-grad*oben, zeile.Grundlinie+grad*unten)",
-    "neu": "rs := reihen",
+    "neu": "rs := reihen\n\t\t\t\t_, _ = oben, unten",
     "timeout": "5m"
   },
   {
-    "name": "NA3 Nummer zählt ohne Sichtbarkeit der Ziffern (F-750)",
+    "name": "NA3 Nummer zählt ohne Sichtbarkeit der Ziffern (F-750) — äquivalent: das Ziffernrechteck (±1,68 r waagerecht, ±1,2 r senkrecht) umschließt den Kreis, ein sichtbarer Kreis hat immer sichtbare Ziffernbereiche",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
     "alt": "\tif len(spalten) == 0 || len(reihen) == 0 {\n\t\treturn nil\n\t}\n\tz.auf.glyph += glyphKosten(len(s), grad)",
     "neu": "\tif false {\n\t\treturn nil\n\t}\n\tz.auf.glyph += glyphKosten(len(s), grad)",
-    "timeout": "5m"
+    "timeout": "5m",
+    "aequivalent": true
   },
   {
     "name": "NA4 Editor verschiebt Stücke nicht (F-750)",
