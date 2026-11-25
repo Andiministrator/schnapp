@@ -887,7 +887,7 @@
     "datei": "internal/rescue/nachziehen.go",
     "paket": "./internal/rescue",
     "alt": "for time.Now().Before(ende) {",
-    "neu": "for time.Now().Before(ende) \u0026\u0026 false {"
+    "neu": "for time.Now().Before(ende) && false {"
   },
   {
     "name": "N9 F-757 Schlagworte-Weg bestätigt den Stand nicht",
@@ -895,5 +895,12 @@
     "paket": "./cmd/schnapp",
     "alt": "\t\tunveraendert()\n\t\treturn aendere()",
     "neu": "\t\treturn aendere()"
+  },
+  {
+    "name": "N10 Öffnen wartet nicht auf UmDatei (F-757, Nachtrag Karte #288)",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\trescue.WarteUmDatei(ort, abs, 20*time.Second)\n",
+    "neu": "\t_ = time.Second\n"
   }
 ]
