@@ -1062,10 +1062,13 @@ Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13, Verify 2 bis 5 und Karte
   (CLAUDE.md §Commit-Konvention, dritter Fall) — auch wenn ein Agent den Commit schreibt: im Agenten-Prompt vorgeben
   (F-780, F-786).
 
-## Sprint 13, Verify 2 und Karte #299 (25.11.2026 nachmittags, F-787 bis F-797)
+## Sprint 13, Verify 2 bis 5, Karten #299 bis #306 und Sitzungs-Kritik (25.11.2026, F-787 bis F-816)
 
-- **Fehlermails der CI sind ein Befund, kein Rauschen** (F-791): Der Job `wurzel` war seit dem 24.11. bei jedem Push
-  rot, weil ein neuer Zeittest unter `-race` eine feste Grenze von 2 s prüfte (4,8–5,7 s). Zeitgrenzen gehören in
+- **Fehlermails der CI sind ein Befund, kein Rauschen** (F-791, F-812): Der Job `wurzel` war am 25.11. von 09:40 bis
+  16:08 Uhr bei sieben Pushes in Folge rot (gofmt, viermal eine feste Zeitgrenze von 2 s unter `-race` mit 4,8–5,7 s,
+  F-798, F-802); schon am 24.11. gab es zehn rote Läufe, seit dem 24.11. 18 von 89. Danach wackelte noch Lauf #389
+  bei unverändertem Code (Grenzfall 2,12 s gegen 2 s auf dem Runner, F-812) — „grün ab …“ erst nach mehreren Läufen
+  schreiben, und jeden roten Lauf eintragen, auch zwischen zwei grünen. Zeitgrenzen gehören in
   Konstanten mit Build-Tag `race`/`!race` (Muster `zeitgrenze_test.go` in `render`, `fileformat`, `ui`); nach jedem Push
   die check-runs ansehen, nicht nur bei Verdacht. Lokal nachfahren ist schneller als das Protokoll zu holen.
 - **Erst messen, wohin die Zeit geht** (F-787): 90 % der Bildzeit über vielen Kacheln war das Abspielen einer leeren
@@ -1092,10 +1095,17 @@ Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13, Verify 2 bis 5 und Karte
   nicht auf einen bequemen Punkt (Mittelpunkt), sonst wandert eine exakte Kante mit; analytische Tests brauchen Fälle
   im Band des Fangs, sonst bleibt selbst `mittelpunktFang = 2.0` grün.
 - **Jede Verify-Runde nach [K]-Nacharbeit fand neue Fehler der Nacharbeit** (Runden 2 bis 4): Die Kette endet erst,
-  wenn eine Runde ohne [K]-Befund durchläuft; Fixes kleiner schneiden verkürzt sie.
+  Fixes kleiner schneiden verkürzt die Kette; wie sie endet, steht im nächsten Punkt.
 - **Die Verify-Kette endet mit einer Entscheidung, nicht mit null Befunden** (Verify 5): Ein [K]-P3-Altbestand, den die
   Nacharbeit verkleinert hat und der höchstens ein Pixel betrifft, wird als bewusste Grenze mit Messwert ins ADR und als
   „akzeptiert“ ins Register geschrieben, statt einen geprüften Pfad ein weiteres Mal umzubauen (F-807, F-809).
 - **Ein Mutant, den `klemme` o. ä. verdeckt, braucht einen Geometrietest statt eines Deckungstests** (F-811): Die
   Deckung blieb ohne die Regel in der Toleranz; erst die Prüfung der kürzesten Teilkante machte ihn rot.
+- **Jedes Finding bekommt eine Karte, auch eines, das im selben Zug behoben oder akzeptiert wird** (Sitzungs-Kritik,
+  F-815): F-807 bis F-811 gingen ohne Karte direkt ins Archiv; der Abgleich prüft nur offene Findings und blieb grün.
+- **Agenten-Prompts nennen die Trailer-Zeile des Befund-Modells** (F-816, wie F-780): Fix-Commits zu Fable-Befunden
+  trugen nur „Opus“ bzw. „Sonnet“; gepusht ist das nicht mehr heilbar.
+- **Öffentliche Release-Notizen vergleichen mit dem vorigen Tag, nicht mit Zwischenständen des Sprints** (F-813): Ein
+  im Sprint eingebauter und wieder behobener Fehler (8 s je Bild, fehlende Kappe) ist keine Verbesserung gegenüber
+  v0.6.0; jede Zeile gegen `git log v<vorher>..v<neu>` und den Code des vorigen Tags prüfen.
 
