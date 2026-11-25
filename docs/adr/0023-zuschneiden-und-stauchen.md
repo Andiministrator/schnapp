@@ -637,6 +637,7 @@ Berichtigt Nachtrag 18 Punkt 1.
    konvexer Fächer (äußere Ecken, dann die Spitze), nicht einzelne Dreiecke — liefen viele schmale Dreiecke in einem
    Punkt zusammen, verlöre Gio dort durch die gegeneinander aufgerechneten Kanten bis zu 3 Stufen Deckung. Liegen alle
    inneren Ecken auf einer Stelle, ist der Strich der äußere Umriss. Alle Teile laufen gleich herum und überlappen nicht.
+   *Berichtigt durch Nachtrag 21:* Das galt nicht für hw zwischen Radius·cos(3,75°) und Radius (F-792).
 2. **Volle Bereiche als Rechteck (F-782):** Ein Bereich, den die beschnittenen Teile ganz decken (Summe ihrer Flächen
    gleich der Fläche des Bereichs; sie überlappen nicht), wird ein Rechteck; benachbarte volle Bereiche einer Zeile
    werden ein Rechteck. Gio rasterte vorher je Bereich alle Kanten der Vierecke; der Rand der Teile gegen den Bereich
@@ -652,6 +653,8 @@ Berichtigt Nachtrag 18 Punkt 1.
    die Kantenglättung der überlappenden Teile (bis 255 statt rund 128 auf dem äußeren Rand), der Editor glättet die
    Gehrungsteile einfach. Über Nähten zeigt jedes Pixel der Ansicht, was der Editor ohne Naht an seiner Stelle im
    Original zeigt.
+   *Berichtigt durch Nachtrag 21:* „Kein Pixel steht voll gegen leer“ galt nur für die geprüften Fälle; bei kleinem
+   Radius (0,5) und breitem Strich standen bis 26 Pixel voll gegen leer, weil der Renderer die Glättung addierte (F-793).
 
 Tests: `TestEditorDickerStrichKleinerKastenWieRenderer` (40/20/60, 30/10/50, 20/10/24, 42/20/60, 200×130/8/24,
 60×50/12/20; je ohne Naht gegen den Renderer und über Nähten gegen das Bild ohne Naht), Fall „Strich 40“ in
@@ -699,3 +702,38 @@ Tests: `TestObjektebeneUeberAnsichtWieBild`, `TestObjektebeneBaenderWieEinBand` 
 Fälle „2000 runde Kästen ohne Füllung (Budget)“, „120 gefüllte runde Kästen (Budget)“ und „45 gefüllte runde Kästen
 (knapp unter bereichGrenze)“ in `TestEditorGanzesBildUeberVielenNaehten`. Unter `-race` loggen die Zeittests nur
 (`internal/ui/zeitgrenze_race_test.go`, F-791).
+
+## Nachtrag 21 (25.11.2026): Ein Strich des runden Kastens für Renderer, Editor und Vorschau (F-788, F-789, F-792, F-793)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #299; F-792, F-793 aus dem Verify-Lauf Sprint 13). Berichtigt Nachtrag 19
+Punkte 1 und 3.
+
+1. **Eine Zerlegung für alle (F-788, F-789):** Die konvexen, überlappungsfreien, gleich herum laufenden Teile des
+   Strichs (Gehrungsvierecke, Fächer je Rundung; Nachtrag 19 Punkt 1) rechnet jetzt `document.NeuerKastenStrich`, nicht
+   mehr der Editor allein. Der Renderer füllt je sichtbarem Bereich dieselben Teile in einer Füllung
+   (`render.kastenStrich`); ihre gemeinsamen Kanten heben sich im Rasterizer genau auf, jedes Pixel ist so gedeckt wie
+   die Fläche des Strichs. Vorher füllte er je Strecke ein Rechteck und je Gelenk einen Kreis in einer Füllung; die
+   Kantenglättung der überlappenden Teile addierte sich, die äußeren Randpixel einer Rundung standen bis 255 statt rund
+   128 (Abweichung von der analytischen Deckung bis 0,45 bis 0,82, nachher höchstens 0,06 bei Strich 60, sonst unter
+   0,035). Die Vorschau der Ebenenliste füllt dieselben Teile als einen Pfad (`kastenStrichVorschau`) statt mit Gios
+   Strich, der bei Strich > 2·Radius dasselbe Loch zeigte wie F-783.
+2. **Innere Ecke höchstens bis zum Mittelpunkt der Rundung (F-792):** Die Gehrung reicht hw/cos(Knick/2) weit, an einer
+   Rundung 1,00214·hw. Für hw zwischen Radius·cos(3,75°) und Radius lagen die inneren Ecken einer Rundung jenseits ihres
+   Mittelpunkts, aber noch im Loch; sie wurden nicht begrenzt, die Vierecke liefen gegeneinander (Kasten 120×80,
+   Radius 20, Strich 40: Editor 249–252 statt 255 auf einer Linie vom Mittelpunkt nach außen). Reicht die Gehrung einer
+   Ecke bis zum Mittelpunkt ihrer Rundung (g ≥ Radius), liegt die innere Ecke jetzt auf dem Mittelpunkt; die wahre
+   innere Kante ist dort ein Kreis vom Radius Radius − hw < 0,0022·Radius. Die Begrenzung auf das Loch bleibt.
+3. **Bild:** Die Gehrung der Teile (Knick 7,5°) reicht höchstens 0,22 % der halben Breite über den runden Strich hinaus
+   (Strich 60: 0,064 Pixel); das SVG sagt weiter `stroke-linejoin="round"`. Das Kostenmodell zählt die Teile wie jede
+   Füllung (weniger Ecken als Rechtecke und Kreise). Pfeil, Lupen-Linie und Schenkel der Sprechblase füllen weiter
+   Rechtecke und Kreise; dort addiert sich die Glättung an den Gelenken nach wie vor (offen).
+4. **Abgleich Editor–Renderer:** Weil beide dieselben Teile füllen, steht in den geprüften Fällen kein Pixel voll gegen
+   leer, auch bei Radius 0,5 und Strich 30 bis 139 (vorher 12 bis 26 Pixel, F-793). An den Kanten darf Gios Glättung
+   weiter abweichen.
+
+Tests: `TestKastenStrichDecktWieAnalytisch` (`internal/render/strichdeckung_test.go`, 32×32 Stichproben je Pixel gegen
+die Fläche aller Punkte höchstens hw vom Umriss), `TestKastenStrichFaecherJeRundung` (`internal/document`),
+`TestVorschauRundKastenWieRenderer`, Fälle für F-792 (120×80/20/40, 39,9, 41, 40,2; 40×40/8/16; 100×40/20/40;
+120×80/50/80; 120×80/10/20) und F-793 (40×40/0,5/30, 61, 90, 139) in `TestEditorDickerStrichKleinerKastenWieRenderer`.
+Mutanten B1, B2, B6, B8, B9, BK6 nachgezogen (B6, B8, BK6 jetzt in `internal/document/kastenstrich.go`), KS1–KS5 neu
+(`scripts/mutanten/text-naht.json`).
