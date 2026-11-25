@@ -150,8 +150,8 @@
     "name": "SQ22 dicker Pfeil dünner",
     "datei": "internal/canvas/schnellstile.go",
     "paket": "./internal/canvas",
-    "alt": "Kennung: \"red-thick\", Farbe: stilRot, Breite: 8},\n\t{Art: SchnellPfeil, Kennung: \"white\"",
-    "neu": "Kennung: \"red-thick\", Farbe: stilRot, Breite: 7},\n\t{Art: SchnellPfeil, Kennung: \"white\""
+    "alt": "Kennung: \"red-thick\", Farbe: stilRot, Breite: 12},\n\t{Art: SchnellPfeil, Kennung: \"white\"",
+    "neu": "Kennung: \"red-thick\", Farbe: stilRot, Breite: 11},\n\t{Art: SchnellPfeil, Kennung: \"white\""
   },
   {
     "name": "SQ23 Text-Voreinstellung mit anderer Größe",
