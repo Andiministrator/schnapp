@@ -239,3 +239,62 @@ func TestEditorTextEndetImStreifen(t *testing.T) {
 		t.Errorf("nach der Eingabe %d Pixel hinter der Naht, Soll 0 (wieder beschnitten)", n)
 	}
 }
+
+// F-767: Während einer Eingabe steht nur der bearbeitete Text ungeschnitten (Bedingung `eingabe.ID == v.ID`); ein
+// zweiter Text, dessen Ende ebenfalls im Streifen liegt, bleibt beschnitten, keine Schriftpixel hinter der Naht.
+func TestEditorNurBearbeiteterTextUngeschnitten(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 700, 130)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	schrift := color.NRGBA{R: 255, A: 255}
+	inhalt := "WWW Geheimnis 1234567 WWW"
+	erster := document.Text{Ort: document.Pt(12, 30), Inhalt: inhalt, Schriftgrad: 22, Farbe: schrift}
+	zweiter := document.Text{Ort: document.Pt(12, 90), Inhalt: inhalt, Schriftgrad: 22, Farbe: schrift}
+	for _, tx := range []document.Text{erster, zweiter} {
+		if _, err := d.Hinzufuegen(tx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	e := &editor{s: canvas.NeueSitzung(d)}
+	zeichne := func() *image.RGBA {
+		return headlessBild(t, image.Pt(700, 130), func(gtx layout.Context) { e.zeichneObjekte(gtx) })
+	}
+	voll := zeichne()
+	ende := 0
+	for x := 699; x >= 0 && ende == 0; x-- {
+		for y := 0; y < 130; y++ {
+			if c := rgbaZuNRGBA(voll.RGBAAt(x, y)); c.R > 128 && c.A > 128 {
+				ende = x
+				break
+			}
+		}
+	}
+	if err := d.SetzeStreifen([]document.Streifen{{Von: 100, Bis: ende + 30}}); err != nil {
+		t.Fatal(err)
+	}
+	// Schriftpixel hinter der Naht (ab x=120) in den Zeilen von y0 bis y1.
+	hinten := func(y0, y1 int) int {
+		b := zeichne()
+		n := 0
+		for y := y0; y < y1; y++ {
+			for x := 120; x < 700; x++ {
+				if c := rgbaZuNRGBA(b.RGBAAt(x, y)); c.R > 128 && c.A > 128 {
+					n++
+				}
+			}
+		}
+		return n
+	}
+	// Erster Text liegt in y 0 bis 60, zweiter in y 60 bis 130.
+	e.s.Auswahl = d.Objekte()[0].Kennung()
+	if !e.s.TextBearbeiten() || !e.s.Tippe("ii") {
+		t.Fatal("Eingabe beginnt nicht")
+	}
+	if n := hinten(0, 60); n == 0 {
+		t.Error("der bearbeitete Text steht nicht ungeschnitten hinter der Naht")
+	}
+	if n := hinten(60, 130); n != 0 {
+		t.Errorf("der nicht bearbeitete Text zeigt %d Schriftpixel hinter der Naht, Soll 0", n)
+	}
+}
