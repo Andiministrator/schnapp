@@ -1050,3 +1050,15 @@ Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13). Kurze Regeln aus Fehler
   zum Schreiben (und kürzt), bevor gelesen wird — das Finding-Archiv schrumpfte so auf 5 Zeilen und wurde gepusht.
   Erst lesen, dann schreiben; nach jedem Register-Schreiben `grep -c '^| F-'` gegen den Stand davor halten
   (`register-schreiben.mjs pruefe` prüft nur `docs/findings.md`, nicht das Archiv).
+- **Verify über die Nacharbeit findet Regressionen in „behoben“-Fixes:** Das Entdoppeln der Indexzeilen (F-773) machte
+  „gleiche Zeilenzahl“ zu einem falschen Beleg für „nichts zu tun“ (F-781). Wer eine Bedingung um einen Fall erweitert,
+  prüft jeden Ausstieg, der auf dem alten Zusammenhang beruht.
+- **Hochrechnungen ohne Grundlast täuschen:** Die Kritik rechnete „mit Streifen“ auf 46 s hoch; rund 2,5 s davon waren
+  die Kanten der 1023 Nähte selbst, die auch ohne Text anfallen (F-766). Erst die Grundlast ohne Objekte messen.
+- **Editor-Zeit über ganze Bilder messen, nicht über den Befehlsaufbau:** 4 ms Befehlsaufbau waren 3,5 s je Bild mit
+  llvmpipe (F-765). Gio rechnet jede beschnittene Füllung einzeln; ein Pfad mit vielen kleinen, selbst beschnittenen
+  Trapezen statt vieler Schnitte war 40-mal schneller.
+- **Trailer bei Nacharbeit nach Kritik:** Fix-Commits, die Befunde eines Fable-Kritikers beheben, tragen Fable mit
+  (CLAUDE.md §Commit-Konvention, dritter Fall) — auch wenn ein Agent den Commit schreibt: im Agenten-Prompt vorgeben
+  (F-780, F-786).
+
