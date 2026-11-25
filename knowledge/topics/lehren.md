@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13, Verify 2 und Karte #299). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13, Verify 2 bis 4 und Karten #299 bis #305). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -1085,4 +1085,12 @@ Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13, Verify 2 und Karte #299)
 - **Zeittests knapp unter ihrer Grenze sind Wackelkandidaten** (F-802): 0,8–1,0 s unter `-race` gegen 1 s kippt unter
   Last. Jede Rechenzeit-Grenze gehört in `zeitgrenze_test.go`/`zeitgrenze_race_test.go`; einen rot gewordenen Lauf
   immer mit `tee` sichern, sonst bleibt die Ursache Vermutung.
+- **Vorzeichen-Entscheidung und Atan2 widersprechen sich bei −0** (F-803): `sin < 0` ist für −0 falsch, `Atan2(−0, −1)`
+  liefert −π. An exakten Sonderfällen (Kehrtwende) Seite und Winkel aus einer Entscheidung setzen und alle vier
+  Achsrichtungen testen.
+- **Ein Fang gegen Splitter zieht nur die Punkte, die ihn brauchen** (F-804): Den Zielpunkt auf den wahren Rand legen,
+  nicht auf einen bequemen Punkt (Mittelpunkt), sonst wandert eine exakte Kante mit; analytische Tests brauchen Fälle
+  im Band des Fangs, sonst bleibt selbst `mittelpunktFang = 2.0` grün.
+- **Jede Verify-Runde nach [K]-Nacharbeit fand neue Fehler der Nacharbeit** (Runden 2 bis 4): Die Kette endet erst,
+  wenn eine Runde ohne [K]-Befund durchläuft; Fixes kleiner schneiden verkürzt sie.
 

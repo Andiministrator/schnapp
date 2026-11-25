@@ -701,7 +701,7 @@ Zusatz nach Verify 3 (F-799, F-800): Die Ebene gilt auch nur für ihr Dokument (
 geöffnete Dokumente mit gleichen Objekten tragen denselben Stand und Pixelstand, ohne den Vergleich zeigte ein Wechsel
 der Aufnahme die Ebene der alten (unter einer Lupe deren ungeschwärzte Pixel). Wird die Ebene nicht mehr gezeigt
 (unter der Grenze, Wechsel der Aufnahme in `uebernimm`, Fehler beim Bauen), gibt `frei` Bild und Objekte frei; vorher
-blieb das Bild in Ansichtsgröße (bis 275 MiB) bis zum nächsten Aufbau liegen. Jede Bedingung von `passt` prüft
+blieb das Bild in Ansichtsgröße (bis rund 262 MiB; berichtigt nach Verify 4, F-806) bis zum nächsten Aufbau liegen. Jede Bedingung von `passt` prüft
 `TestObjektebenePasstJeBedingung` einzeln (Mutanten OE8 bis OE10). Aufbau gemessen 0,7 bis 1,9 s auf 16 Kernen,
 2,3 s auf 2 Kernen (F-801).
 
