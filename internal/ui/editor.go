@@ -1531,16 +1531,7 @@ func (e *editor) leinwand(gtx layout.Context) {
 	e.zeichneHilfslinien(gtx)
 	e.zeichneEinfuegemarke(gtx)
 
-	switch {
-	case e.s.PipetteLaeuft(), e.s.TextBereichLaeuft():
-		pointer.CursorCrosshair.Add(gtx.Ops)
-	case e.s.Werkzeug == canvas.WerkzeugAuswahl:
-		pointer.CursorDefault.Add(gtx.Ops)
-	case e.s.Werkzeug == canvas.WerkzeugText, e.s.Werkzeug == canvas.WerkzeugSprechblase:
-		pointer.CursorText.Add(gtx.Ops)
-	default:
-		pointer.CursorCrosshair.Add(gtx.Ops)
-	}
+	systemZeiger(e.s.Zeiger(e.zeigerFenster)).Add(gtx.Ops) // je Lage: Griffe, Objekte, Werkzeug (Karte #323)
 	event.Op(gtx.Ops, e)
 	c.Pop()
 	// Außerhalb des Ausschnitts der Leinwand angemeldet: Gio gibt ein Zeigerereignis auch den Zielen weiter, die im selben
@@ -1720,8 +1711,33 @@ func (e *editor) zeigerAnsicht() *document.Punkt {
 	return &p
 }
 
+// systemZeiger bildet die Zeigerform der Sitzung auf die Zeiger des Systems ab (Karte #323).
+func systemZeiger(z canvas.ZeigerArt) pointer.Cursor {
+	switch z {
+	case canvas.ZeigerFadenkreuz:
+		return pointer.CursorCrosshair
+	case canvas.ZeigerText:
+		return pointer.CursorText
+	case canvas.ZeigerVerschieben:
+		return pointer.CursorAllScroll
+	case canvas.ZeigerGreifen:
+		return pointer.CursorGrab
+	case canvas.ZeigerGreifend:
+		return pointer.CursorGrabbing
+	case canvas.ZeigerNWSO:
+		return pointer.CursorNorthWestSouthEastResize
+	case canvas.ZeigerNOSW:
+		return pointer.CursorNorthEastSouthWestResize
+	case canvas.ZeigerNS:
+		return pointer.CursorNorthSouthResize
+	case canvas.ZeigerOW:
+		return pointer.CursorEastWestResize
+	}
+	return pointer.CursorDefault
+}
+
 // merkeZeiger hält die Fensterposition des Zeigers für die Fußzeile fest und meldet, ob sich das angezeigte Pixel
-// geändert hat.
+// oder die Form des Zeigers geändert hat (dann braucht es ein Folgebild).
 func (e *editor) merkeZeiger(pe pointer.Event) bool {
 	zeigt := func() (image.Point, bool) {
 		if a := e.zeigerAnsicht(); a != nil {
@@ -1730,6 +1746,7 @@ func (e *editor) merkeZeiger(pe pointer.Event) bool {
 		return image.Point{}, false
 	}
 	altOrt, altDa := zeigt()
+	altForm := e.s.Zeiger(e.zeigerFenster)
 	if pe.Kind == pointer.Leave {
 		e.zeigerFenster = nil
 	} else {
@@ -1737,7 +1754,7 @@ func (e *editor) merkeZeiger(pe pointer.Event) bool {
 		e.zeigerFenster = &p
 	}
 	ort, da := zeigt()
-	return altDa != da || altOrt != ort
+	return altDa != da || altOrt != ort || altForm != e.s.Zeiger(e.zeigerFenster)
 }
 
 // zeichneObjekte zeichnet in Ansichtskoordinaten (die Affine-Abbildung liegt schon auf dem Stapel). Schrift in

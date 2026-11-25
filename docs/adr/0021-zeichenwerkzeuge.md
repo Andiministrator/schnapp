@@ -619,3 +619,30 @@ pipettensymbol sieht nicht nach einer pipette aus und ist auch deplatziert.“
 
 Tests `internal/ui/farbwaehler_hex6_test.go`, Mutanten `scripts/mutanten/farbwaehler-318.json`, Sichtprobe
 `scripts/drehbuecher/farbwaehler-318.txt`.
+
+## Nachtrag 18 (25.11.2026): Mauszeiger je Lage (Karte #323)
+
+**Status:** Akzeptiert (Claude Opus 5.5).
+
+Andi (25.11.2026): „wenn ich ein objekt mit dem auswahlwerkzeug markiere, sollte sich der mauszeiger sinnvoll anpassen,
+wenn ich auf einen der punkte (ecke) oder so komme … das sollte überall sinnvoll eingebaut werden.“
+
+Die Form entscheidet `canvas.Sitzung.Zeiger(p)` (`internal/canvas/zeiger.go`) nach denselben Regeln wie `Druecken`, die
+Oberfläche bildet sie über `ui.systemZeiger` auf die Zeiger des Systems ab:
+
+| Lage | Form | System |
+|---|---|---|
+| Ecke links oben/rechts unten (Kasten, Quelle und Ziel der Lupe, Zuschnittrahmen) | `ZeigerNWSO` | ↖↘ |
+| Ecke rechts oben/links unten | `ZeigerNOSW` | ↗↙ |
+| Kante oben/unten bzw. links/rechts | `ZeigerNS` / `ZeigerOW` | ↕ / ↔ |
+| Pfeilende, Bogengriff, Spitze der Sprechblase | `ZeigerGreifen` | Hand |
+| über einem greifbaren Objekt (Auswählen) und beim Verschieben | `ZeigerVerschieben` | vier Pfeile |
+| Ansicht ziehen (nach der Ziehschwelle) | `ZeigerGreifend` | greifende Hand |
+| Zeichenwerkzeuge, Pipette, Bereich „Text aus dem Bild“ | `ZeigerFadenkreuz` | Fadenkreuz |
+| Text, Sprechblase | `ZeigerText` | Textcursor |
+
+Griffe gelten wie beim Drücken nur an einer bearbeitbaren Auswahl und nicht beim Zuschneiden/Stauchen; ein laufender Zug
+behält seine Form, auch wenn der Zeiger den Griff verlässt. Ändert sich die Form beim Bewegen, folgt ein Bild, auch wenn
+das Pixel unter dem Zeiger gleich bleibt (starker Zoom). Der Drehgriff kommt mit Karte #324. Tests
+`internal/canvas/zeiger_test.go`, `internal/ui/zeiger_form_test.go`, Mutanten `scripts/mutanten/zeiger-form.json`.
+Ob KDE für „all-scroll“ die vier Pfeile zeigt, prüft Andi im Echtlauf (der virtuelle KWin fotografiert keinen Zeiger).
