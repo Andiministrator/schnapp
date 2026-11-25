@@ -708,7 +708,7 @@ msgctxt "date part"
 msgid "Jan 2, 2006"
 msgstr ""
 
-#: internal/libview/ansicht.go
+#: internal/libview/ansicht.go internal/ui/leiste_unten.go
 msgctxt "status bar"
 msgid "%d × %d"
 msgstr ""
