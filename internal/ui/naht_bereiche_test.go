@@ -295,8 +295,10 @@ func TestEditorGanzesBildUeberVielenNaehten(t *testing.T) {
 // Gehrungsvierecke um. Gefüllt als Schleife hoben sich die Umlaufzahlen auf, und ein kleiner runder Kasten zeigte im
 // Editor ein Loch, wo der Renderer füllt (Gios eigener Strich hatte es auch). Verglichen wird mit dem Renderer: Wo der
 // Renderer ein Pixel samt allen Pixeln bis zwei Schritte weit gleich deckt (ganz oder gar nicht), muss der Editor
-// dasselbe zeigen (rgbaNah); an den Kanten darf die Glättung abweichen (der Renderer addiert sie an den Gelenken seiner
-// Kreise und Rechtecke, der Editor glättet die Gehrungsvierecke einfach), aber kein Pixel darf voll gegen leer stehen.
+// dasselbe zeigen (rgbaNah); an den Kanten darf die Glättung von Gio und Renderer abweichen, aber kein Pixel darf voll
+// gegen leer stehen. Seit ADR-0023 Nachtrag 21 füllen beide dieselben Teile (document.NeuerKastenStrich); vorher
+// addierte der Renderer die Glättung seiner Kreise und Rechtecke, und bei kleinem Radius standen Pixel voll gegen leer
+// (F-793), was die damaligen sechs Fälle nicht trafen.
 // Über Nähten (volle Bereiche als ein Rechteck, Hüllen je Bereich beschnitten; F-782) zeigt jedes Pixel der Ansicht,
 // was der Editor ohne Naht an seiner Stelle im Original zeigt: Der Renderer zeichnet dort die Kante der Naht mit.
 func TestEditorDickerStrichKleinerKastenWieRenderer(t *testing.T) {
@@ -304,7 +306,12 @@ func TestEditorDickerStrichKleinerKastenWieRenderer(t *testing.T) {
 	for _, fall := range []struct {
 		seiteX, seiteY int
 		radius, breite float64
-	}{{40, 40, 20, 60}, {30, 30, 10, 50}, {20, 20, 10, 24}, {42, 42, 20, 60}, {200, 130, 8, 24}, {60, 50, 12, 20}} {
+	}{{40, 40, 20, 60}, {30, 30, 10, 50}, {20, 20, 10, 24}, {42, 42, 20, 60}, {200, 130, 8, 24}, {60, 50, 12, 20},
+		// F-792: halber Strich gleich Radius (die Gehrung reicht 0,2 % weiter, über den Mittelpunkt der Rundung).
+		{120, 80, 20, 40}, {120, 80, 20, 39.9}, {120, 80, 20, 41}, {40, 40, 8, 16}, {100, 40, 20, 40}, {120, 80, 50, 80},
+		{120, 80, 10, 20}, {120, 80, 20, 40.2},
+		// F-793: kleiner Radius, breiter Strich (der Renderer addierte die Glättung seiner Kreise und Rechtecke).
+		{40, 40, 0.5, 30}, {40, 40, 0.5, 61}, {40, 40, 0.5, 90}, {40, 40, 0.5, 139}} {
 		min := image.Pt(80, 80)
 		bereich := image.Rectangle{Min: min, Max: min.Add(image.Pt(fall.seiteX, fall.seiteY))}
 		name := fmt.Sprintf("Kasten %d×%d Radius %v Strich %v", fall.seiteX, fall.seiteY, fall.radius, fall.breite)

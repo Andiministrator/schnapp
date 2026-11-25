@@ -583,7 +583,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 				})
 			}
 			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
-				z.strichJeStueck(umriss, true, v.Strich)
+				z.kastenStrich(document.NeuerKastenStrich(b, v.Eckradius, v.Strich.Breite/2), v.Strich.Farbe)
 			}
 			break
 		}
@@ -1100,6 +1100,41 @@ func (z zeichner) strichJeStueck(pts []document.Punkt, geschlossen bool, s docum
 			}
 		}
 		zs.fuelle(polys, kreise, s.Farbe)
+	}
+}
+
+// kastenStrich zeichnet den Strich eines runden Kastens aus seinen Teilen ks (Original; document.NeuerKastenStrich)
+// je sichtbarem Bereich, den sein Umriss berührt (document.StreckenStuecke mit ks.Rand): dort die Teile der Strecken in
+// der Nähe, um den Versatz verschoben und auf den Bereich beschnitten, in einer Füllung. Die Teile überlappen nicht und
+// laufen gleich herum; ihre gemeinsamen Kanten heben sich im Rasterizer genau auf, die Füllung deckt jedes Pixel wie die
+// Fläche des Strichs (F-788, ADR-0023 Nachtrag 21). Vorher füllte der Renderer je Strecke ein Rechteck und je Gelenk
+// einen Kreis; deren Kantenglättung addierte sich, die äußeren Randpixel einer Rundung standen bis 255 statt rund 128.
+// Editor und Vorschau der Ebenenliste füllen dieselben Teile.
+func (z zeichner) kastenStrich(ks document.KastenStrich, farbe color.NRGBA) {
+	if len(ks.Teile) == 0 {
+		return
+	}
+	gesehen, marke := make([]int, len(ks.Teile)), 0
+	for _, st := range z.d.StreckenStuecke(ks.Umriss, true, ks.Rand) {
+		zs, ok := z.aufStueck(st.Stueck)
+		if !ok {
+			continue
+		}
+		marke++
+		var polys [][]document.Punkt
+		for _, i := range st.Strecken {
+			t := ks.TeilVon[i]
+			if gesehen[t] == marke {
+				continue // Fächer mehrerer Strecken: einmal je Bereich
+			}
+			gesehen[t] = marke
+			teil := make([]document.Punkt, len(ks.Teile[t]))
+			for k, p := range ks.Teile[t] {
+				teil[k] = p.Plus(st.Versatz)
+			}
+			polys = append(polys, teil)
+		}
+		zs.fuelle(polys, nil, farbe)
 	}
 }
 

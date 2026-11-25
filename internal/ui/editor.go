@@ -1865,19 +1865,18 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 			// Gerundet: je Bereich abgeschnitten wie Renderer und SVG-Export statt über die Ecken neu gerundet (F-749,
 			// ADR-0023 Nachtrag 17). Die Füllung in jedem Bereich des Rechtecks, der Strich wie im Renderer nur in den
 			// Bereichen, die sein Umriss berührt (document.StreckenStuecke von document.RundesRechteck; F-765, ADR-0023
-			// Nachtrag 18): Über 4096 Kacheln spielte der Editor sonst jeden Strich in allen Bereichen ab. Rand: halber
-			// Strich, ein Pixel für das ganzzahlige Rechteck und den Radius von Gio, eines plus die Pfeilhöhe der Sehnen des
-			// Umrisses (13 Punkte je Viertelkreis) für den Bogen außerhalb der Sehnen.
+			// Nachtrag 18): Über 4096 Kacheln spielte der Editor sonst jeden Strich in allen Bereichen ab. Die Teile des
+			// Strichs sind dieselben wie im Renderer (document.NeuerKastenStrich, ADR-0023 Nachtrag 21), auch in der
+			// Vorschau der Ebenenliste (F-789: Gios Strich zeigte dort bei Strich > 2·Radius ein Loch).
 			if v.Fuellung.A > 0 { // ohne Füllung kein leeres Abspielen in jedem Bereich (F-787)
 				e.jeStueck(gtx, b, v.Strich.Breite/2+1, an, vorschau, fuellung)
 			}
 			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
-				rad := document.WirksamerEckradius(v.Eckradius, b.Breite(), b.Hoehe())
-				rand := v.Strich.Breite/2 + 2 + rad*(1-math.Cos(math.Pi/48))
+				ks := document.NeuerKastenStrich(b, v.Eckradius, v.Strich.Breite/2)
 				if vorschau {
-					strich(an)
+					kastenStrichVorschau(gtx, ks, v.Strich.Farbe, an)
 				} else {
-					e.strichJeStueck(gtx, document.RundesRechteck(b, v.Eckradius), v.Strich, rand)
+					e.strichJeStueck(gtx, ks, v.Strich)
 				}
 			}
 		} else {
@@ -2052,35 +2051,38 @@ func (e *editor) jeStueckIn(gtx layout.Context, stuecke []document.Stueck, an fu
 	}
 }
 
-// strichJeStueck zeichnet den Strich des geschlossenen, fein geknickten Umrisses pts (Original; document.RundesRechteck)
-// je sichtbarem Bereich, den er berührt (document.StreckenStuecke mit rand), und dort nur die Strecken in der Nähe —
-// in denselben Bereichen wie der Renderer (render.strichJeStueck; F-765, ADR-0023 Nachträge 18 und 19). Jede Strecke
-// ist ein Viereck zwischen den Gehrungslinien ihrer beiden Ecken (der Umriss knickt höchstens um 7,5°), selbst auf den
-// Bereich beschnitten und um dessen Versatz verschoben; Nachbarn teilen sich die Gehrungslinie, überlappen also nicht
-// (sonst addierte Gio die Kantenglättung doppelt). Die inneren Ecken liegen höchstens auf dem Rand des Lochs, des um
-// den halben Strich verkleinerten Rechtecks (strichVierecke): Ist der halbe Strich breiter als die Rundung, liefen sie
-// sonst gegen die Strecke, jedes Viereck wäre eine Schleife, deren Hälften sich in der Füllung aufheben, und ein kleiner
-// runder Kasten zeigte ein Loch, wo der Renderer füllt (F-783). Ein Bereich, den die Vierecke ganz decken, ist ein
-// Rechteck; benachbarte volle Bereiche einer Zeile werden ein Rechteck (F-782: Gio rastert sonst je Bereich alle Kanten
-// der Vierecke). Alle zusammen sind ein Pfad mit einer Füllung. Eine Füllung mit Schnitt je Bereich kostete Gio über
-// 4096 Kacheln rund 40 µs je Bereich mit llvmpipe (200 Kästen: 3,3 s je Bild).
-func (e *editor) strichJeStueck(gtx layout.Context, pts []document.Punkt, s document.Strich, rand float64) {
-	hw := s.Breite / 2
-	// Doppelte Punkte (Seite ohne geraden Teil) fallen weg: Eine Strecke ohne Länge hat keine Richtung.
-	var eindeutig []document.Punkt
-	for _, p := range pts {
-		if len(eindeutig) == 0 || p.Minus(eindeutig[len(eindeutig)-1]).Laenge() > 1e-9 {
-			eindeutig = append(eindeutig, p)
-		}
-	}
-	for len(eindeutig) > 1 && eindeutig[0].Minus(eindeutig[len(eindeutig)-1]).Laenge() <= 1e-9 {
-		eindeutig = eindeutig[:len(eindeutig)-1]
-	}
-	pts = eindeutig
-	if len(pts) < 3 || hw <= 0 {
+// kastenStrichVorschau füllt die Teile des Strichs eines runden Kastens (document.NeuerKastenStrich) als einen Pfad, mit
+// an abgebildet: die Vorschau der Ebenenliste, ohne Nähte. Dieselben Teile wie Leinwand und Renderer (F-789).
+func kastenStrichVorschau(gtx layout.Context, ks document.KastenStrich, farbe color.NRGBA, an func(document.Punkt) f32.Point) {
+	if len(ks.Teile) == 0 {
 		return
 	}
-	vierecke := strichVierecke(pts, hw)
+	var pfad clip.Path
+	pfad.Begin(gtx.Ops)
+	for _, teil := range ks.Teile {
+		pfad.MoveTo(an(teil[0]))
+		for _, p := range teil[1:] {
+			pfad.LineTo(an(p))
+		}
+		pfad.Close()
+	}
+	paint.FillShape(gtx.Ops, farbe, clip.Outline{Path: pfad.End()}.Op())
+}
+
+// strichJeStueck zeichnet den Strich eines runden Kastens aus seinen Teilen ks (Original; document.NeuerKastenStrich:
+// konvex, überlappungsfrei, gleich herum, dieselben wie im Renderer, ADR-0023 Nachtrag 21) je sichtbarem Bereich, den
+// sein Umriss berührt (document.StreckenStuecke mit ks.Rand), und dort nur die Teile der Strecken in der Nähe — in
+// denselben Bereichen wie der Renderer (F-765, ADR-0023 Nachträge 18 und 19). Jeder Teil ist selbst auf den Bereich
+// beschnitten und um dessen Versatz verschoben; weil die Teile nicht überlappen, addiert Gio keine Kantenglättung
+// doppelt, und weil ihre inneren Ecken nie gegeneinander laufen, zeigt ein kleiner runder Kasten kein Loch (F-783,
+// F-792). Ein Bereich, den die Teile ganz decken, ist ein Rechteck; benachbarte volle Bereiche einer Zeile werden ein
+// Rechteck (F-782: Gio rastert sonst je Bereich alle Kanten der Teile). Alle zusammen sind ein Pfad mit einer Füllung.
+// Eine Füllung mit Schnitt je Bereich kostete Gio über 4096 Kacheln rund 40 µs je Bereich mit llvmpipe (200 Kästen:
+// 3,3 s je Bild).
+func (e *editor) strichJeStueck(gtx layout.Context, ks document.KastenStrich, s document.Strich) {
+	if len(ks.Teile) == 0 {
+		return
+	}
 	var pfad clip.Path
 	pfad.Begin(gtx.Ops)
 	vieleck := func(ecken []document.Punkt, v document.Punkt) {
@@ -2101,7 +2103,7 @@ func (e *editor) strichJeStueck(gtx layout.Context, pts []document.Punkt, s docu
 		if laufOffen {
 			r := []document.Punkt{lauf.Min, document.Pt(lauf.Max.X, lauf.Min.Y), lauf.Max,
 				document.Pt(lauf.Min.X, lauf.Max.Y)}
-			if vierecke.umlauf < 0 {
+			if ks.Umlauf < 0 {
 				slices.Reverse(r)
 			}
 			vieleck(r, document.Punkt{})
@@ -2109,15 +2111,15 @@ func (e *editor) strichJeStueck(gtx layout.Context, pts []document.Punkt, s docu
 		}
 	}
 	groesst := 0
-	for _, t := range vierecke.teile {
+	for _, t := range ks.Teile {
 		groesst = max(groesst, len(t))
 	}
 	// Ein konvexes Vieleck mit m Ecken hat nach den vier Schnitten höchstens m+4.
 	arbeit, puffer := make([]document.Punkt, 0, groesst+4), make([]document.Punkt, 0, groesst+4)
-	gesehen, marke := make([]int, len(vierecke.teile)), 0
+	gesehen, marke := make([]int, len(ks.Teile)), 0
 	var teile []document.Punkt // beschnittene Vielecke eines Bereichs hintereinander
 	var laengen []int
-	for _, st := range e.s.D.StreckenStuecke(pts, true, rand) {
+	for _, st := range e.s.D.StreckenStuecke(ks.Umriss, true, ks.Rand) {
 		z := st.Ziel()
 		v := document.Pt(math.Round(st.Versatz.X), math.Round(st.Versatz.Y))
 		q := document.Rechteck{Min: document.Pt(math.Round(z.Min.X), math.Round(z.Min.Y)).Minus(v),
@@ -2126,20 +2128,20 @@ func (e *editor) strichJeStueck(gtx layout.Context, pts []document.Punkt, s docu
 		flaeche := 0.0
 		marke++
 		for _, i := range st.Strecken {
-			t := vierecke.teilVon[i]
+			t := ks.TeilVon[i]
 			if gesehen[t] == marke {
 				continue // Fächer mehrerer Strecken: einmal je Bereich
 			}
 			gesehen[t] = marke
-			g := vierecke.grenzen[t]
+			g := ks.Grenzen[t]
 			if g.Max.X <= q.Min.X || g.Min.X >= q.Max.X || g.Max.Y <= q.Min.Y || g.Min.Y >= q.Max.Y {
 				continue
 			}
-			ecken := schneideVieleck(append(arbeit[:0], vierecke.teile[t]...), q, puffer[:0])
+			ecken := schneideVieleck(append(arbeit[:0], ks.Teile[t]...), q, puffer[:0])
 			if len(ecken) < 3 {
 				continue
 			}
-			flaeche += math.Abs(vieleckFlaeche(ecken))
+			flaeche += math.Abs(document.VieleckFlaeche(ecken))
 			teile = append(teile, ecken...)
 			laengen = append(laengen, len(ecken))
 		}
@@ -2168,121 +2170,6 @@ func (e *editor) strichJeStueck(gtx layout.Context, pts []document.Punkt, s docu
 	}
 	laufEnde()
 	paint.FillShape(gtx.Ops, s.Farbe, clip.Outline{Path: pfad.End()}.Op())
-}
-
-// strichViereckListe sind die konvexen Teile des Strichs (Original): je Strecke ein Viereck, Strecken mit gemeinsamer
-// innerer Spitze ein Fächer. teilVon nennt den Teil je Strecke, grenzen umschließt jeden Teil; umlauf ist das
-// Vorzeichen ihrer Fläche (alle laufen gleich herum).
-type strichViereckListe struct {
-	teile   [][]document.Punkt
-	teilVon []int
-	grenzen []document.Rechteck
-	umlauf  float64
-}
-
-// strichVierecke baut je Strecke i→i+1 des geschlossenen, konvexen Umrisses pts (ohne doppelte Punkte, mindestens drei)
-// das Viereck außen i, außen i+1, innen i+1, innen i. Außen liegt die Ecke um die Gehrung verschoben, 2·hw·(n₁+n₂)/
-// |n₁+n₂|² (reicht hw/cos(Knick/2) weit), innen ebenso, aber begrenzt auf das Loch: das umschließende Rechteck von pts
-// um hw verkleinert, bei zu kleinem Rechteck seine Mittellinie bzw. Mitte. Das ist die Menge der Punkte weiter als hw
-// vom Umriss, die auch der Renderer frei lässt; ohne Begrenzung lägen die inneren Ecken einer Rundung kleiner als hw
-// jenseits ihres Mittelpunkts, in umgekehrter Reihenfolge (F-783). Mit Begrenzung fallen sie auf die Ecke des Lochs, die
-// Vierecke der Rundung werden ein Fächer aus Dreiecken.
-func strichVierecke(pts []document.Punkt, hw float64) strichViereckListe {
-	n := len(pts)
-	normale := make([]document.Punkt, n)
-	for i := range pts {
-		d := pts[(i+1)%n].Minus(pts[i])
-		normale[i] = document.Pt(-d.Y, d.X).Mal(1 / d.Laenge())
-	}
-	gehrung := make([]document.Punkt, n)
-	g := document.Rechteck{Min: pts[0], Max: pts[0]}
-	for k, p := range pts {
-		g = g.Vereint(document.Rechteck{Min: p, Max: p})
-		sum := normale[(k+n-1)%n].Plus(normale[k])
-		q := sum.X*sum.X + sum.Y*sum.Y
-		if q < 1e-6 { // Kehrtwende, kommt im Umriss nicht vor
-			gehrung[k] = normale[k].Mal(hw)
-			continue
-		}
-		gehrung[k] = sum.Mal(2 * hw / q)
-	}
-	// Das Loch; die linke Normale zeigt je nach Umlaufsinn nach außen oder innen.
-	loch := document.Rechteck{Min: g.Min.Plus(document.Pt(hw, hw)), Max: g.Max.Minus(document.Pt(hw, hw))}
-	if loch.Min.X > loch.Max.X {
-		loch.Min.X, loch.Max.X = (g.Min.X+g.Max.X)/2, (g.Min.X+g.Max.X)/2
-	}
-	if loch.Min.Y > loch.Max.Y {
-		loch.Min.Y, loch.Max.Y = (g.Min.Y+g.Max.Y)/2, (g.Min.Y+g.Max.Y)/2
-	}
-	mitte := document.Pt((g.Min.X+g.Max.X)/2, (g.Min.Y+g.Max.Y)/2)
-	vorz := 1.0
-	if pts[0].Plus(gehrung[0]).Minus(mitte).Laenge() < pts[0].Minus(gehrung[0]).Minus(mitte).Laenge() {
-		vorz = -1
-	}
-	aussen := make([]document.Punkt, n)
-	innen := make([]document.Punkt, n)
-	for k, p := range pts {
-		aussen[k] = p.Plus(gehrung[k].Mal(vorz))
-		i := p.Minus(gehrung[k].Mal(vorz))
-		innen[k] = document.Pt(min(max(i.X, loch.Min.X), loch.Max.X), min(max(i.Y, loch.Min.Y), loch.Max.Y))
-	}
-	// Fächer: Strecken, deren beide inneren Ecken auf derselben Stelle liegen, gehören zur Spitze dort. Aufeinanderfolgende
-	// Strecken derselben Spitze werden ein Vieleck (ihre äußeren Ecken, dann die Spitze): Liefen ihre Dreiecke einzeln in
-	// der Spitze zusammen, rechnete Gio dort die Kanten vieler schmaler Dreiecke gegeneinander auf und verlöre Deckung.
-	faecher := func(i int) bool { return innen[i] == innen[(i+1)%n] }
-	start := 0 // erste Strecke eines Teils: nicht Fortsetzung des Fächers der vorigen
-	for start < n {
-		vor := (start + n - 1) % n
-		if !(faecher(start) && faecher(vor) && innen[start] == innen[vor]) {
-			break
-		}
-		start++
-	}
-	l := strichViereckListe{teilVon: make([]int, n)}
-	if start == n {
-		// Alle inneren Ecken auf einer Stelle (das Loch ist ein Punkt): der ganze äußere Umriss.
-		l.teile = append(l.teile, slices.Clone(aussen))
-	} else {
-		for k := 0; k < n; {
-			i := (start + k) % n
-			teil := []document.Punkt{aussen[i]}
-			l.teilVon[i] = len(l.teile)
-			k++
-			if faecher(i) {
-				for k < n && faecher((start+k)%n) && innen[(start+k)%n] == innen[i] {
-					teil = append(teil, aussen[(start+k)%n])
-					l.teilVon[(start+k)%n] = len(l.teile)
-					k++
-				}
-				teil = append(teil, aussen[(start+k)%n], innen[i])
-			} else {
-				j := (i + 1) % n
-				teil = append(teil, aussen[j], innen[j], innen[i])
-			}
-			l.teile = append(l.teile, teil)
-		}
-	}
-	for _, teil := range l.teile {
-		r := document.Rechteck{Min: teil[0], Max: teil[0]}
-		for _, e := range teil[1:] {
-			r = r.Vereint(document.Rechteck{Min: e, Max: e})
-		}
-		l.grenzen = append(l.grenzen, r)
-		if f := vieleckFlaeche(teil); l.umlauf == 0 && f != 0 {
-			l.umlauf = math.Copysign(1, f)
-		}
-	}
-	return l
-}
-
-// vieleckFlaeche ist die vorzeichenbehaftete Fläche des Vielecks p (Schnürsenkelformel).
-func vieleckFlaeche(p []document.Punkt) float64 {
-	f := 0.0
-	for i, a := range p {
-		b := p[(i+1)%len(p)]
-		f += a.X*b.Y - b.X*a.Y
-	}
-	return f / 2
 }
 
 // schneideVieleck schneidet das konvexe Vieleck p auf das Rechteck r zu (Sutherland-Hodgman, Umlaufsinn bleibt) und

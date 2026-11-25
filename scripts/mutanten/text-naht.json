@@ -260,16 +260,16 @@
     "name": "B1 Editor: Strich des runden Kastens in allen Bereichen des Rechtecks (F-765)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\t\t\te.strichJeStueck(gtx, document.RundesRechteck(b, v.Eckradius), v.Strich, rand)\n",
-    "neu": "\t\t\t\t\te.jeStueck(gtx, b, rand, an, false, strich)\n",
+    "alt": "\t\t\t\t\te.strichJeStueck(gtx, ks, v.Strich)\n",
+    "neu": "\t\t\t\t\te.jeStueck(gtx, b, ks.Rand, an, false, strich)\n",
     "timeout": "10m"
   },
   {
     "name": "B2 Editor: Strich des runden Kastens nicht auf den Bereich beschnitten (F-765)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "ecken := schneideVieleck(append(arbeit[:0], vierecke.teile[t]...), q, puffer[:0])",
-    "neu": "ecken := append(arbeit[:0], vierecke.teile[t]...); _ = puffer",
+    "alt": "ecken := schneideVieleck(append(arbeit[:0], ks.Teile[t]...), q, puffer[:0])",
+    "neu": "ecken := append(arbeit[:0], ks.Teile[t]...); _ = puffer",
     "timeout": "10m"
   },
   {
@@ -321,26 +321,26 @@
     "timeout": "5m"
   },
   {
-    "name": "B6 Editor: runder Kasten ohne Rand für den Strich je Bereich (F-784, F-765)",
-    "datei": "internal/ui/editor.go",
+    "name": "B6 Kastenstrich ohne Rand für die Bereichssuche (F-784, F-765)",
+    "datei": "internal/document/kastenstrich.go",
     "paket": "./internal/ui",
-    "alt": "rand := v.Strich.Breite/2 + 2 + rad*(1-math.Cos(math.Pi/48))",
-    "neu": "rand := 0 * rad",
+    "alt": "\ts.Rand++\n",
+    "neu": "\ts.Rand = 0\n",
     "timeout": "10m"
   },
   {
     "name": "B9 Editor: Vorschau zeichnet den runden Kasten über strichJeStueck (F-784)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\t\tif vorschau {\n\t\t\t\t\tstrich(an)\n\t\t\t\t} else {",
-    "neu": "\t\t\t\tif false {\n\t\t\t\t\tstrich(an)\n\t\t\t\t} else {",
+    "alt": "\t\t\t\tif vorschau {\n\t\t\t\t\tkastenStrichVorschau(gtx, ks, v.Strich.Farbe, an)\n\t\t\t\t} else {",
+    "neu": "\t\t\t\tif false {\n\t\t\t\t\tkastenStrichVorschau(gtx, ks, v.Strich.Farbe, an)\n\t\t\t\t} else {",
     "timeout": "10m"
   },
   {
-    "name": "BK6 Editor: innere Ecken des Strichs nicht auf das Loch begrenzt (F-783)",
-    "datei": "internal/ui/editor.go",
+    "name": "BK6 Kastenstrich: innere Ecken nicht auf das Loch begrenzt (F-783)",
+    "datei": "internal/document/kastenstrich.go",
     "paket": "./internal/ui",
-    "alt": "innen[k] = document.Pt(min(max(i.X, loch.Min.X), loch.Max.X), min(max(i.Y, loch.Min.Y), loch.Max.Y))",
+    "alt": "innen[k] = Pt(min(max(i.X, loch.Min.X), loch.Max.X), min(max(i.Y, loch.Min.Y), loch.Max.Y))",
     "neu": "innen[k] = i",
     "timeout": "10m"
   },
@@ -353,9 +353,9 @@
     "timeout": "10m"
   },
   {
-    "name": "B8 Editor: Fächer einer Rundung als einzelne Dreiecke (F-783)",
-    "datei": "internal/ui/editor.go",
-    "paket": "./internal/ui",
+    "name": "B8 Kastenstrich: Fächer einer Rundung als einzelne Dreiecke (F-783, F-789)",
+    "datei": "internal/document/kastenstrich.go",
+    "paket": "./internal/document",
     "alt": "\t\t\tif faecher(i) {\n",
     "neu": "\t\t\tif false && faecher(i) {\n",
     "timeout": "10m"
@@ -414,6 +414,46 @@
     "paket": "./internal/render",
     "alt": "band := image.Rect(0, g.Y*i/n, g.X, g.Y*(i+1)/n)",
     "neu": "band := image.Rect(0, g.Y*i/n, g.X, g.Y*(i+1)/n)\n\t\tif i > 0 {\n\t\t\tband = image.Rectangle{}\n\t\t}",
+    "timeout": "5m"
+  },
+  {
+    "name": "KS1 Kastenstrich: innere Ecken bei Gehrung ab Radius nicht auf den Mittelpunkt (F-792)",
+    "datei": "internal/document/kastenstrich.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif gehrung[k].Laenge() >= rad {\n",
+    "neu": "\t\tif gehrung[k].Laenge() >= rad+hw*0.01 {\n",
+    "timeout": "10m"
+  },
+  {
+    "name": "KS2 Renderer: runder Kasten mit Rechtecken und Kreisen (F-788)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "z.kastenStrich(document.NeuerKastenStrich(b, v.Eckradius, v.Strich.Breite/2), v.Strich.Farbe)",
+    "neu": "z.strichJeStueck(umriss, true, v.Strich)",
+    "timeout": "5m"
+  },
+  {
+    "name": "KS3 Editor: Vorschau mit Gios Strich (F-789)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "kastenStrichVorschau(gtx, ks, v.Strich.Farbe, an)",
+    "neu": "strich(an)",
+    "timeout": "10m"
+  },
+  {
+    "name": "KS4 Renderer: Fächer je Strecke einmal statt je Bereich (F-788)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\tif gesehen[t] == marke {\n\t\t\t\tcontinue // Fächer mehrerer Strecken: einmal je Bereich\n\t\t\t}\n\t\t\tgesehen[t] = marke\n\t\t\tteil :=",
+    "neu": "\t\t\t_ = gesehen\n\t\t\tteil :=",
+    "timeout": "5m"
+  },
+  {
+    "name": "KS5 Renderer: Teile des Kastenstrichs ohne Versatz des Bereichs (F-788)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "teil[k] = p.Plus(st.Versatz)",
+    "neu": "teil[k] = p",
     "timeout": "5m"
   }
 ]
