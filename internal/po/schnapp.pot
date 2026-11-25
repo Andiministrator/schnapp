@@ -2120,6 +2120,10 @@ msgid "Tail"
 msgstr ""
 
 #: internal/ui/wechsel.go
+msgid "Copying is still running. Please wait a moment, then try again."
+msgstr ""
+
+#: internal/ui/wechsel.go
 msgid "Finish the export first."
 msgstr ""
 

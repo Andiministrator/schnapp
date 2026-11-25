@@ -69,7 +69,9 @@ func (e *editor) wechselAnfrage(abs string) {
 		return // ein Wechsel oder ein Speichern läuft schon; das Fenster schließt
 	case e.kopierLaeuft:
 		// Die Antwort des Kopierens gehörte sonst zur vorigen Aufnahme, verglichen würde sie mit dem Stand der neuen:
-		// „Copied to clipboard“ stünde unter der falschen Aufnahme (F-710). Der Klick gilt nicht, wie bei laufender Arbeit.
+		// „Copied to clipboard“ stünde unter der falschen Aufnahme (F-710). Der Klick gilt nicht, die Fußzeile sagt es
+		// (F-759); eine haltende Meldung bleibt stehen (meldeNebenbei).
+		e.meldeNebenbei(i18n.T("Copying is still running. Please wait a moment, then try again."), false)
 		return
 	case e.bibl.arbeitLaeuft:
 		// Die Ansicht schreibt gerade Schlagworte oder verschiebt in den Papierkorb: erst danach laden, sonst hielte der

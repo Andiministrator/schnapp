@@ -259,3 +259,5 @@ laufendes Kopieren sperrt den Wechsel (`wechselAnfrage`, `kopierLaeuft`): der Kl
 Arbeit der Ansicht (F-676). So vergleicht die Antwort nie mit dem Stand der neuen Sitzung. Der Wechsel wird nicht
 vorgemerkt; nach der Antwort genügt ein weiterer Klick. Tests `internal/ui/wechsel_zustand_test.go`, Mutanten
 `scripts/mutanten/ui-wechsel-zustand.json`.
+
+Nachtrag (25.11.2026, Karte #288, F-759, Claude Sonnet 5.5): Der gesperrte Klick bleibt nicht mehr still. `wechselAnfrage` meldet bei laufendem Kopieren „Copying is still running. Please wait a moment, then try again.“ in der Fußzeile, über `meldeNebenbei` (eine haltende Meldung wie die Verwerfen-Warnung bleibt stehen). Tests `internal/ui/wechsel_kopieren_meldung_test.go`, Mutanten WZ6 und WZ7 in `scripts/mutanten/ui-wechsel-zustand.json`.

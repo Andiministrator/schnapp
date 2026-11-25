@@ -33,5 +33,19 @@
     "paket": "./internal/ui",
     "alt": "\tcase <-b.arbeit:\n\t\tb.arbeitLaeuft = false\n\tcase <-t.C:",
     "neu": "\tcase <-b.arbeit:\n\tcase <-t.C:"
+  },
+  {
+    "name": "WZ6 F-759 Wechsel während des Kopierens ohne Hinweis",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.meldeNebenbei(i18n.T(\"Copying is still running. Please wait a moment, then try again.\"), false)\n",
+    "neu": ""
+  },
+  {
+    "name": "WZ7 F-759 Hinweis verdrängt eine haltende Meldung",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "e.meldeNebenbei(i18n.T(\"Copying is still running.",
+    "neu": "e.melde(i18n.T(\"Copying is still running."
   }
 ]

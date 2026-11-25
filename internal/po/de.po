@@ -1469,6 +1469,9 @@ msgstr "Speichern gescheitert: %v. Die andere Aufnahme wurde nicht geöffnet."
 msgid "Finish the export first."
 msgstr "Erst den Export abschließen."
 
+msgid "Copying is still running. Please wait a moment, then try again."
+msgstr "Das Kopieren läuft noch. Einen Moment warten, dann erneut versuchen."
+
 msgid "No captures in the library yet."
 msgstr "Noch keine Aufnahmen in der Bibliothek."
 
