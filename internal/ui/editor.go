@@ -2696,12 +2696,18 @@ func (e *editor) knoepfeAuswerten(gtx layout.Context) {
 	}
 }
 
-// farbKnopfGeklickt: Das Farbfeld der Werkzeugleiste zeigt die Farbe in der rechten Leiste (ADR-0031 Punkt 2). Ist die
-// Leiste eingeklappt, klappt es sie auf; kann sie die Farbe nicht zeigen (Fenster zu schmal, Werkzeug ohne Farbe) oder
-// zeigt sie sie schon, öffnet es die Farbliste am Farbfeld (ADR-0031 Nachtrag 3).
+// farbKnopfGeklickt: Das Farbfeld der Werkzeugleiste zeigt die Farbe in der rechten Leiste (ADR-0031 Punkt 2). Kann die
+// Leiste die Farbe zeigen, klappt es Leiste und Abschnitt „Farbe“ auf, gibt der Farbe den Vorrang vor den Ebenen und
+// rollt den Farbwähler ins Bild — auch wenn die Leiste schon offen ist (ADR-0031 Nachtrag 12, F-817: vorher öffnete
+// der Klick dann nur die kleine Farbliste, und ein eingeklappter Abschnitt blieb zu). Nur wenn die Leiste die Farbe
+// nicht zeigen kann (Fenster zu schmal, Werkzeug ohne Farbe), öffnet es die Farbliste am Farbfeld.
 func (e *editor) farbKnopfGeklickt(gtx layout.Context) {
-	if e.seiteZu && seitePasst(gtx) && e.s.Seitenleiste().Farbe {
+	if seitePasst(gtx) && e.s.Seitenleiste().Farbe {
 		e.seiteZu = false
+		e.seite.farbeZu = false
+		e.ebenen.vorrang = false
+		e.seite.farbeZeigen = true
+		gtx.Execute(op.InvalidateCmd{})
 		return
 	}
 	e.listeAmFarbKnopf = true

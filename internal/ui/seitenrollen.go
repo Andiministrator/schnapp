@@ -77,6 +77,7 @@ type rollZustand struct {
 	fokusAlt   image.Rectangle // dasselbe im Bild davor: nur ein Wechsel rollt, damit das Mausrad nichts bekämpft
 	sicht      image.Rectangle // sichtbare Fläche der Leiste in Fensterkoordinaten beim letzten Zeichnen
 	inhaltEnde int             // Ende des Inhalts in Inhaltskoordinaten beim letzten Zeichnen
+	ziel       image.Rectangle // einmal ins Bild rollen (Inhaltskoordinaten), etwa den Farbwähler nach F-817; danach leer
 }
 
 // knopfAn meldet den Knopf c bei r an (seiteKnopf) und merkt sich r, wenn er den Tastaturfokus hat (Rollen zum Fokus).
@@ -126,6 +127,10 @@ func (e *editor) rollAbschluss(gtx layout.Context, inhaltEnde int) {
 		k.rollen = rollZeige(k.rollen, k.fokus, k.sicht.Min.Y, k.sicht.Max.Y, gtx.Dp(8), k.rollMax)
 	}
 	k.fokusAlt = k.fokus
+	if !k.ziel.Empty() {
+		k.rollen = rollZeige(k.rollen, k.ziel, k.sicht.Min.Y, k.sicht.Max.Y, gtx.Dp(8), k.rollMax)
+		k.ziel = image.Rectangle{}
+	}
 	if k.rollen != alt {
 		gtx.Execute(op.InvalidateCmd{})
 	}

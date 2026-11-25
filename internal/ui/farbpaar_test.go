@@ -23,13 +23,11 @@ func TestFarbpaarWerkzeugleiste(t *testing.T) {
 	if vorn.Overlaps(fuel) || vorn.Overlaps(tausch) || fuel.Overlaps(tausch) || !tausch.In(farbe) {
 		t.Fatalf("Lage: vorn %v, Füllung %v, Tauschen %v in %v", vorn, fuel, tausch, farbe)
 	}
-	l.klick(mittenPunkt(vorn))
-	l.taste(key.NameEscape, 0) // Liste zu
-	if l.e.s.AktivesFeld() != canvas.FeldVordergrund {
-		t.Fatalf("Klick auf Vordergrund: Feld %v", l.e.s.AktivesFeld())
+	l.klick(mittenPunkt(vorn)) // zeigt den Farbwähler der Leiste, keine Liste (F-817)
+	if l.e.s.AktivesFeld() != canvas.FeldVordergrund || l.e.menue.offen {
+		t.Fatalf("Klick auf Vordergrund: Feld %v, Liste offen %v", l.e.s.AktivesFeld(), l.e.menue.offen)
 	}
 	l.klick(mittenPunkt(fuel))
-	l.taste(key.NameEscape, 0)
 	if l.e.s.AktivesFeld() != canvas.FeldFuellung {
 		t.Fatalf("Klick auf Füllung: Feld %v", l.e.s.AktivesFeld())
 	}

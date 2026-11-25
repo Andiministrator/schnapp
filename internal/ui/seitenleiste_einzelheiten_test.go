@@ -23,8 +23,9 @@ func vornVon(r image.Rectangle) image.Rectangle { v, _, _ := farbpaarRahmen(r); 
 // A-1: Nach der Farbliste am Farbfeld links hängt die Zoomliste trotzdem am Zoomfeld, per Maus und per Tastatur.
 func TestZoomListeNachFarbKnopf(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
-	_, farbe := werkzeugRahmen(l.gtx(), l.e.werkzeugKnoepfe())
-	l.klick(mittenPunkt(vornVon(farbe))) // Leiste ist offen und zeigt die Farbe: Liste am Farbfeld
+	// Per Tastatur öffnet das Farbfeld links immer die Liste an sich (die Maus zeigt seit F-817 den Farbwähler).
+	l.fokusiere(&l.e.knoepfe.farbe)
+	l.taste(key.NameReturn, 0)
 	if !l.e.menue.offen || !l.e.listeAmFarbKnopf {
 		t.Fatalf("Vorbedingung: Farbliste am Farbfeld offen %v, Merker %v", l.e.menue.offen, l.e.listeAmFarbKnopf)
 	}

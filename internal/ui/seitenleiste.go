@@ -53,6 +53,7 @@ type seitenKnoepfe struct {
 	farbeGezeigt bool             // der Abschnitt Farbe stand beim letzten Zeichnen da
 	farbeKopf    widget.Clickable // Überschrift „Farbe“: klappt den Abschnitt ein und aus (ADR-0032 Punkt 6)
 	farbeZu      bool
+	farbeZeigen  bool // nächstes Bild: den Abschnitt Farbe ins Bild rollen (Klick aufs Farbpaar links, F-817)
 	// Farbpaar über dem Farbwähler (ADR-0021 Nachtrag 11): Vordergrund, Füllung, Tauschen, Keine; Rahmen für Tests.
 	paar       [4]widget.Clickable
 	paarRahmen [4]image.Rectangle
@@ -329,12 +330,17 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	if inhalt.Farbe {
 		trenne()
 		zu := k.farbeZu || (eng && e.ebenen.vorrang)
+		kopfY := y
 		y += e.abschnittKopf(gtx, &k.farbeKopf, i18n.T("Color"), zu, x, y, breite) + gtx.Dp(12)
 		if !zu {
 			k.farbeGezeigt = true
 			y = e.zeichneFarbwaehler(gtx, x, y, breite, spalte)
+			if k.farbeZeigen {
+				k.roll.ziel = image.Rect(x, kopfY, x+breite, y)
+			}
 		}
 	}
+	k.farbeZeigen = false
 	y = e.zeichneEbenen(gtx, x, y, breite, spalte, unten) // mit eigener Trennlinie, am unteren Rand (ADR-0032 Punkt 6)
 	versatz.Pop()
 	e.rollAbschluss(gtx, y)

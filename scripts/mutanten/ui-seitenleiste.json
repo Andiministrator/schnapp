@@ -73,8 +73,8 @@
     "name": "S187-11 Farbfeld links klappt die Leiste nicht auf",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\t\te.seiteZu = false\n\t\treturn\n\t}\n\te.listeAmFarbKnopf = true",
-    "neu": "\t\treturn\n\t}\n\te.listeAmFarbKnopf = true"
+    "alt": "\t\te.seiteZu = false\n\t\te.seite.farbeZu = false",
+    "neu": "\t\te.seite.farbeZu = false"
   },
   {
     "name": "S187-12 Zoomliste: Eintrag setzt den Zoom nicht",
@@ -178,15 +178,15 @@
     "name": "QA-U4a Farbfeld klappt auch ohne Farbe auf",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "if e.seiteZu && seitePasst(gtx) && e.s.Seitenleiste().Farbe {",
-    "neu": "if e.seiteZu && seitePasst(gtx) {"
+    "alt": "if seitePasst(gtx) && e.s.Seitenleiste().Farbe {",
+    "neu": "if seitePasst(gtx) {"
   },
   {
     "name": "QA-U4b Farbfeld klappt im schmalen Fenster auf",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "if e.seiteZu && seitePasst(gtx) && e.s.Seitenleiste().Farbe {",
-    "neu": "if e.seiteZu && e.s.Seitenleiste().Farbe {"
+    "alt": "if seitePasst(gtx) && e.s.Seitenleiste().Farbe {",
+    "neu": "if e.s.Seitenleiste().Farbe {"
   },
   {
     "name": "QA-U5 Haken Seitenleiste falsch herum",

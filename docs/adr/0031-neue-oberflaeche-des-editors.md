@@ -418,3 +418,26 @@ zweite Regel, F10 öffnet das Menü weiter über die Tastatur, und ein Klick, de
 Das Mausrad rollt die Tafel weiter (Nachtrag 10), die Tastatur bleibt unverändert (Esc/F1 schließen, Rolltasten rollen).
 Tests `internal/ui/hilfe_modal_test.go`, Mutanten `scripts/mutanten/hilfe-modal.json`, Sichtprobe
 `scripts/drehbuecher/hilfe-modal-274.txt`.
+
+## Nachtrag 12 (25.11.2026): Ein Klick aufs Farbpaar zeigt den Farbwähler (Karte #310, F-817)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Ersetzt aus Nachtrag 3 den Teilsatz „sonst (Leiste schon offen, …) öffnet er
+die Farbliste am Farbfeld“ für die Maus; die Tastatur bleibt, wie sie ist.
+
+**Befund.** Andi (25.11.2026): „die farbauswahl unter der werkzeugleiste funktioniert nicht“. Die Klicks kamen an
+(Sichtprobe im virtuellen KWin bei Skala 1 und 1,25), aber bei offener Leiste öffnete ein Klick nur die kleine Liste mit
+den vier Beschriftungsfarben statt des Farbwählers daneben, und ein eingeklappter Abschnitt „Farbe“ oder eine nach unten
+gerollte Leiste blieben, wie sie waren. Der Klick wirkte also, als täte er nichts Brauchbares.
+
+**Regel.** Ein **Mausklick** auf Vordergrund oder Füllung des Farbpaars macht das Feld aktiv und zeigt den
+**Farbwähler der rechten Leiste**, sobald die Leiste die Farbe zeigen kann (Platz für die Leiste, Werkzeug oder Auswahl mit
+Farbe): Leiste aufklappen, Abschnitt „Farbe“ aufklappen, den Ebenen den Vorrang nehmen (Platzmangel, ADR-0032 Punkt 6),
+den Abschnitt von der Überschrift bis unter Hex/Deckkraft einmal ins Bild rollen (`seitenKnoepfe.farbeZeigen`,
+`rollZustand.ziel`; ist er höher als die Leiste, gilt seine Oberkante). Die **Farbliste** am Farbfeld öffnet ein Klick
+nur noch, wo die Leiste die Farbe nicht zeigen kann (Fenster unter 752 dp, Werkzeug ohne Farbe). **Enter/Leertaste** am
+Farbfeld öffnen weiter die Liste (Nachträge 3 und 4): Die Tastatur bleibt bei der Werkzeugleiste, statt in die rechte
+Leiste zu springen.
+
+Tests `internal/ui/farbpaar_klick_test.go`, Mutanten `scripts/mutanten/farbpaar-klick.json` (FK1–FK8) und die
+nachgezogenen S187-11, QA-U4a/b in `ui-seitenleiste.json`. Die deutlichere Darstellung von Vorder- und Füllfarbe folgt
+mit Karte #317.

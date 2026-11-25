@@ -1,0 +1,58 @@
+[
+  {
+    "name": "FK1 Klick klappt den Abschnitt Farbe nicht auf",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.seite.farbeZu = false\n",
+    "neu": "\n"
+  },
+  {
+    "name": "FK2 Klick nimmt den Ebenen den Vorrang nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.ebenen.vorrang = false\n\t\te.seite.farbeZeigen = true\n",
+    "neu": "\t\te.seite.farbeZeigen = true\n"
+  },
+  {
+    "name": "FK3 Klick rollt nicht ins Bild",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.seite.farbeZeigen = true\n",
+    "neu": "\n"
+  },
+  {
+    "name": "FK4 offene Leiste öffnet wieder die Liste (alter Stand)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif seitePasst(gtx) && e.s.Seitenleiste().Farbe {\n\t\te.seiteZu = false\n\t\te.seite.farbeZu = false",
+    "neu": "\tif e.seiteZu && seitePasst(gtx) && e.s.Seitenleiste().Farbe {\n\t\te.seiteZu = false\n\t\te.seite.farbeZu = false"
+  },
+  {
+    "name": "FK5 schmales Fenster öffnet keine Liste",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif seitePasst(gtx) && e.s.Seitenleiste().Farbe {\n\t\te.seiteZu = false\n\t\te.seite.farbeZu = false",
+    "neu": "\tif e.s.Seitenleiste().Farbe {\n\t\te.seiteZu = false\n\t\te.seite.farbeZu = false"
+  },
+  {
+    "name": "FK6 Rollziel wird nicht gesetzt",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tk.roll.ziel = image.Rect(x, kopfY, x+breite, y)\n",
+    "neu": "\t\t\t\tk.roll.ziel = image.Rect(x, kopfY, x+breite, kopfY)\n"
+  },
+  {
+    "name": "FK7 Rollziel wird nicht verbraucht",
+    "datei": "internal/ui/seitenrollen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tk.ziel = image.Rectangle{}\n",
+    "neu": "\n"
+  },
+  {
+    "name": "FK8 Rollziel wird ignoriert",
+    "datei": "internal/ui/seitenrollen.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !k.ziel.Empty() {\n\t\tk.rollen = rollZeige(",
+    "neu": "\tif false && !k.ziel.Empty() {\n\t\tk.rollen = rollZeige("
+  }
+]

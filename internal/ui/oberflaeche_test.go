@@ -116,8 +116,17 @@ func TestWerkzeugleisteKlick(t *testing.T) {
 		t.Fatalf("Klick auf das Farbfeld bei eingeklappter Leiste: zu %v, Liste offen %v", l.e.seiteZu, l.e.menue.offen)
 	}
 	l.klick(mittenPunkt(vornVon(farbe)))
+	if l.e.menue.offen || !l.e.seite.farbeGezeigt {
+		t.Fatalf("zweiter Klick auf das Farbfeld (F-817): Liste offen %v, Farbe gezeigt %v", l.e.menue.offen,
+			l.e.seite.farbeGezeigt)
+	}
+	// Die Farbliste am Farbfeld gibt es nur noch, wo die Leiste die Farbe nicht zeigen kann: im schmalen Fenster.
+	l.fenst = image.Pt(700, 800)
+	l.setle()
+	_, farbe = werkzeugRahmen(l.gtx(), ws)
+	l.klick(mittenPunkt(vornVon(farbe)))
 	if !l.e.menue.offen || l.e.menue.welches != listeFarbe {
-		t.Fatalf("zweiter Klick auf das Farbfeld: Liste offen %v (%d)", l.e.menue.offen, l.e.menue.welches)
+		t.Fatalf("Klick auf das Farbfeld im schmalen Fenster: Liste offen %v (%d)", l.e.menue.offen, l.e.menue.welches)
 	}
 	if r := l.e.menue.rahmen[0]; r.Min.Y < farbe.Max.Y || r.Min.X != farbe.Min.X {
 		t.Errorf("Farbliste hängt nicht unter dem Farbfeld: %v, Farbfeld %v", r, farbe)
