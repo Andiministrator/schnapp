@@ -1020,3 +1020,28 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Grenzfälle (lange Pfeile, breite Striche, Rundung) mitmessen, bevor sie im ADR steht. CI-Shell ohne `shell: bash`
   heißt `bash -e` ohne pipefail.
 
+## Sprint 13, Restkarten und Abschluss (25.11.2026, Karten #285 bis #288)
+
+- **Rasterkern nicht verschiebungsfest (F-764):** Der Festkomma-Weg aus `x/image/vector` summiert x je Zeile mit
+  Abschneiden; `dxdy` in float32 hängt von der Lage des Ausschnitts ab. Dieselbe Form wich je nach Ausschnitt um bis
+  22 % Deckung entlang langer Kanten ab — sichtbar erst, als ein beschnittener Bereich mit dem ungestauchten Bild
+  verglichen wurde. Erster Verdacht war die eigene Änderung; die Gegenprobe mit reinem Zuschnitt auf dem alten Stand
+  (`go test -overlay` mit `git show HEAD:… > tmp/…`) zeigte die Altlast. Zufallsformen fanden sie nicht; der Test
+  braucht den gemessenen Fall und Koordinaten wie im Renderer (float64 verschieben, dann float32).
+- **Referenz für Bitgleichheit muss denselben Weg rechnen:** `vector` wählt den Gleitkomma-Weg über Breite **oder Höhe**
+  > 512. Mit gleicher Breite und Höhe ≥ 513 rechnet die Referenz in derselben Speicheranordnung; eine größere Breite
+  verschiebt den Übertrag über Zeilenenden und rundet anders.
+- **Mutanten nach jedem Umbau trocken prüfen:** Ein Umbau verschiebt Muster anderer Gruppen (`schrift`, `text-naht`); `go
+  run ./scripts/mutanten -trocken` über alle Gruppen findet sie in Sekunden. Ein Mutant, dessen Ersetzung eine Variable
+  ungenutzt lässt, baut nicht (FEHLER, nicht ROT) — im Muster `_ = x` ergänzen.
+- **Überlebende Mutanten zeigen Testlücken genau:** N3/N3b (Text über einer Naht nie pixelweise verglichen), P5/P6
+  (Editor-Pfeil und -Kasten nur in Fällen getestet, in denen die alte Abbildung zufällig gleich aussah). Testfall so
+  wählen, dass alt und neu außerhalb des Kantenbands sichtbar verschieden sind (breiter Strich, Rundung im Streifen).
+- **Eine bestehende Datei nicht mit Write überschreiben:** `naht_aufwand_test.go` gab es schon; Write meldete „updated“
+  statt „created“ — vor dem Anlegen `ls` auf den Namen.
+- **Integration von Agenten-Commits braucht die volle Kette:** `TestSpeichernDateiWegWaehrendEditor` (cmd/schnapp) fing
+  eine Folge des F-755-Fixes, die der Agent im Paket `library` nicht sehen konnte; der gofmt-Schritt der CI fing eine
+  unformatierte Testdatei aus einem Agenten-Worktree. Vor dem Push `gofmt -l` über beide Build-Varianten wie in der CI.
+- **Sichtprobe statt Raten bei Drehbuch-Koordinaten:** Die Fußzeile („bei X, Y“) im Foto zeigt, wo der Zeiger im Bild
+  lag; das Fenster der Probe ist 1600 breit, das Bild steht dann ab x = 321, nicht 226 wie in älteren Drehbüchern.
+
