@@ -211,20 +211,20 @@ var (
 // eingebaut ist die Tabelle; die Reihenfolge ist die der Kacheln.
 var eingebaut = []Schnellstil{
 	// Pfeil. „Weiß auf Schwarz“ fällt hier auf „Weiß“: ein Pfeil hat keine Füllung (ADR-0037, Ergänzt bei der Umsetzung).
-	{Art: SchnellPfeil, Kennung: "red", Farbe: stilRot, Breite: 4},
-	{Art: SchnellPfeil, Kennung: "blue", Farbe: stilBlau, Breite: 4},
-	{Art: SchnellPfeil, Kennung: "green", Farbe: stilGruen, Breite: 4},
-	{Art: SchnellPfeil, Kennung: "black", Farbe: stilDunkl, Breite: 4},
-	{Art: SchnellPfeil, Kennung: "red-thick", Farbe: stilRot, Breite: 8},
-	{Art: SchnellPfeil, Kennung: "white", Farbe: Weiss, Breite: 4},
+	{Art: SchnellPfeil, Kennung: "red", Farbe: stilRot, Breite: 6},
+	{Art: SchnellPfeil, Kennung: "blue", Farbe: stilBlau, Breite: 6},
+	{Art: SchnellPfeil, Kennung: "green", Farbe: stilGruen, Breite: 6},
+	{Art: SchnellPfeil, Kennung: "black", Farbe: stilDunkl, Breite: 6},
+	{Art: SchnellPfeil, Kennung: "red-thick", Farbe: stilRot, Breite: 12},
+	{Art: SchnellPfeil, Kennung: "white", Farbe: Weiss, Breite: 6},
 	// Kasten
-	{Art: SchnellKasten, Kennung: "red", Farbe: stilRot, Fuellung: stilKein, Breite: 4},
-	{Art: SchnellKasten, Kennung: "blue", Farbe: stilBlau, Fuellung: stilKein, Breite: 4},
-	{Art: SchnellKasten, Kennung: "green", Farbe: stilGruen, Fuellung: stilKein, Breite: 4},
-	{Art: SchnellKasten, Kennung: "black", Farbe: stilDunkl, Fuellung: stilKein, Breite: 4},
-	{Art: SchnellKasten, Kennung: "red-thick", Farbe: stilRot, Fuellung: stilKein, Breite: 8},
-	{Art: SchnellKasten, Kennung: "white-on-black", Farbe: Weiss, Fuellung: stilDunkl, Breite: 4},
-	{Art: SchnellKasten, Kennung: "marker", Farbe: stilGelb, Fuellung: color.NRGBA{R: stilGelb.R, G: stilGelb.G, B: stilGelb.B, A: 0x66}, Breite: 4},
+	{Art: SchnellKasten, Kennung: "red", Farbe: stilRot, Fuellung: stilKein, Breite: 6},
+	{Art: SchnellKasten, Kennung: "blue", Farbe: stilBlau, Fuellung: stilKein, Breite: 6},
+	{Art: SchnellKasten, Kennung: "green", Farbe: stilGruen, Fuellung: stilKein, Breite: 6},
+	{Art: SchnellKasten, Kennung: "black", Farbe: stilDunkl, Fuellung: stilKein, Breite: 6},
+	{Art: SchnellKasten, Kennung: "red-thick", Farbe: stilRot, Fuellung: stilKein, Breite: 12},
+	{Art: SchnellKasten, Kennung: "white-on-black", Farbe: Weiss, Fuellung: stilDunkl, Breite: 6},
+	{Art: SchnellKasten, Kennung: "marker", Farbe: stilGelb, Fuellung: color.NRGBA{R: stilGelb.R, G: stilGelb.G, B: stilGelb.B, A: 0x66}, Breite: 6},
 	// Text
 	{Art: SchnellText, Kennung: "white-on-red", Farbe: Weiss, Fuellung: stilRot, Schriftgrad: 20},
 	{Art: SchnellText, Kennung: "black-on-yellow", Farbe: stilDunkl, Fuellung: stilGelb, Schriftgrad: 20},
@@ -238,9 +238,9 @@ var eingebaut = []Schnellstil{
 	{Art: SchnellNummer, Kennung: "green", Farbe: stilGruen, Radius: 14},
 	{Art: SchnellNummer, Kennung: "black", Farbe: stilDunkl, Radius: 14},
 	// Lupe
-	{Art: SchnellLupe, Kennung: "red", Farbe: stilRot, Breite: 4},
-	{Art: SchnellLupe, Kennung: "black", Farbe: stilDunkl, Breite: 4},
-	{Art: SchnellLupe, Kennung: "white", Farbe: Weiss, Breite: 4},
+	{Art: SchnellLupe, Kennung: "red", Farbe: stilRot, Breite: 6},
+	{Art: SchnellLupe, Kennung: "black", Farbe: stilDunkl, Breite: 6},
+	{Art: SchnellLupe, Kennung: "white", Farbe: Weiss, Breite: 6},
 }
 
 // EingebauteSchnellstile liefert die eingebauten Stile der Art a in der Reihenfolge der Kacheln (eine Kopie). Die

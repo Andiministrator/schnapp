@@ -132,14 +132,14 @@ func TestStilFuerBildgroesse(t *testing.T) {
 // den Enden; ein Kasten zeigt seine eigene Breite.
 func TestSetzeBreiteUndStufen(t *testing.T) {
 	s := randSitzung(t)
-	if s.Breite() != 4 {
+	if s.Breite() != 6 {
 		t.Fatalf("Voreinstellung %v", s.Breite())
 	}
-	if b, ok := s.BreiteStufe(1); !ok || b != 6 {
-		t.Errorf("Stufe hoch von 4: %v %v", b, ok)
+	if b, ok := s.BreiteStufe(1); !ok || b != 8 {
+		t.Errorf("Stufe hoch von 6: %v %v", b, ok)
 	}
-	if b, ok := s.BreiteStufe(-1); !ok || b != 3 {
-		t.Errorf("Stufe runter von 4: %v %v", b, ok)
+	if b, ok := s.BreiteStufe(-1); !ok || b != 4 {
+		t.Errorf("Stufe runter von 6: %v %v", b, ok)
 	}
 	id, err := s.D.Hinzufuegen(document.GeraderPfeil(document.Pt(10, 10), document.Pt(80, 60),
 		document.Strich{Farbe: Beschriftungsfarben[0], Breite: 5}))
@@ -190,13 +190,13 @@ func TestSetzeBreiteUndStufen(t *testing.T) {
 }
 
 // NeueSitzung nimmt die Voreinstellung nach der Größe des Originals (ADR-0021 Nachtrag 7): ein 4K-Bild beginnt mit
-// Strich 8.
+// Strich 12.
 func TestNeueSitzungStilNachBildgroesse(t *testing.T) {
 	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 3840, 2160)))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s := NeueSitzung(d); s.Stil != StilFuer(image.Pt(3840, 2160)) || s.Stil.Breite != 8 {
+	if s := NeueSitzung(d); s.Stil != StilFuer(image.Pt(3840, 2160)) || s.Stil.Breite != 12 {
 		t.Errorf("Stil %+v", s.Stil)
 	}
 }

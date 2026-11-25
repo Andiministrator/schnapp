@@ -50,7 +50,7 @@ const MaxEigeneStile = 16
 
 // Werte, die gelten, wenn ein Schlüssel fehlt (Faktor 1, wie die Voreinstellung in canvas.StandardStil).
 const (
-	stilBreite      = 4.0
+	stilBreite      = 6.0
 	stilSchriftgrad = 20.0
 	stilRadius      = 14.0
 )

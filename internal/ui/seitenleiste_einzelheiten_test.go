@@ -81,7 +81,7 @@ func TestStrichSperren(t *testing.T) {
 		t.Fatal("Vorbedingung: Speichern läuft nicht")
 	}
 	l.klick(mittenPunkt(plus))
-	if l.e.s.Stil.Breite != 4 {
+	if l.e.s.Stil.Breite != 6 {
 		t.Errorf("+ während des Speicherns: %v", l.e.s.Stil.Breite)
 	}
 	close(v.frei)

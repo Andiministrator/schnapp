@@ -28,7 +28,7 @@ func fremdHinzu(t *testing.T, s settings.Stil) {
 func TestSchnellstileZweiFensterZusammenfuehren(t *testing.T) {
 	l, _ := schnellLauf(t)
 	k := &l.e.schnell
-	l.e.s.SetzeBreite(6)
+	l.e.s.SetzeBreite(5)
 	l.setle()
 	l.klick(mitte(k.plusRahmen)) // eigener Stil A
 	fremdHinzu(t, fremderKasten(11))
@@ -64,7 +64,7 @@ func TestSchnellstileUnlesbareDateiGesichert(t *testing.T) {
 	if err := os.WriteFile(pfad, []byte(kaputt), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	l.e.s.SetzeBreite(6)
+	l.e.s.SetzeBreite(5)
 	l.setle()
 	l.klick(mitte(k.plusRahmen))
 	if l.e.meldung.Fehler || !strings.Contains(l.e.meldung.Text, "styles.ini.bak") {

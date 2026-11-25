@@ -65,7 +65,7 @@ func TestPfeilAnlegen(t *testing.T) {
 	if !nah(pf.A, document.Pt(60, 70)) || !nah(pf.B, document.Pt(100, 90)) || !nah(pf.K, document.Pt(80, 80)) {
 		t.Errorf("Pfeil %v → %v, K %v", pf.A, pf.B, pf.K)
 	}
-	if pf.Strich != (document.Strich{Farbe: Beschriftungsfarben[0], Breite: 4}) {
+	if pf.Strich != (document.Strich{Farbe: Beschriftungsfarben[0], Breite: 6}) {
 		t.Errorf("Strich %+v", pf.Strich)
 	}
 	if s.Auswahl != pf.ID || s.Werkzeug != WerkzeugPfeil || s.Zieht() || !s.Geaendert() {
@@ -149,7 +149,7 @@ func TestKastenAnlegen(t *testing.T) {
 	if k.Bereich != document.R(document.Pt(60, 60), document.Pt(90, 80)) {
 		t.Errorf("Bereich %v", k.Bereich)
 	}
-	if k.Eckradius != 0 || k.Fuellung.A != 0 || k.Strich.Breite != 4 || k.Strich.Farbe != Beschriftungsfarben[0] {
+	if k.Eckradius != 0 || k.Fuellung.A != 0 || k.Strich.Breite != 6 || k.Strich.Farbe != Beschriftungsfarben[0] {
 		t.Errorf("Stil %+v", k)
 	}
 	s.Umschalt = true

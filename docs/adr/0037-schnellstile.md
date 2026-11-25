@@ -70,7 +70,7 @@ gelbe Markierung), stellt heute Farbe, Füllung, Strich und Schrift jedes Mal ei
   gleicher Stil wird nicht angelegt (`HinzuDoppelt`, „+“ ist wie bei 16 Stilen grau, `KannSchnellstilHinzufuegen`).
 - **Ein Stil der anderen Art** als das gewählte Objekt ändert das Objekt nicht, wohl aber den Stand seines Werkzeugs.
 - **Texteingabe:** Ein Stil wirkt auf den Text in der Eingabe und gehört zu ihr (kein eigener Rückgängig-Schritt).
-- **Fehlende Schlüssel** in `styles.ini` nehmen die Voreinstellung bei Faktor 1 (Strich 4, Schriftgrad 20, Radius 14,
+- **Fehlende Schlüssel** in `styles.ini` nehmen die Voreinstellung bei Faktor 1 (Strich 6 seit ADR-0021 Nachtrag 16, vorher 4; Schriftgrad 20, Radius 14,
   Füllung durchsichtig); nur `color` ist Pflicht. Ein Schlüssel, der für die Art nicht vorgesehen ist (`fill` beim Pfeil),
   macht den Stil ungültig. Stile der Sprechblase (`[callout]`) bleiben beim Lesen und Schreiben erhalten, auch wenn es das
   Werkzeug noch nicht gibt.

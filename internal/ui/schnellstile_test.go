@@ -66,8 +66,8 @@ func TestSchnellstileKlickWirdStandDesWerkzeugs(t *testing.T) {
 	}
 	stand := l.e.s.D.Stand()
 	l.klick(l.kachel(4)) // Rot, dick
-	if b := l.e.s.Breite(); b != 8 {
-		t.Errorf("Strichstärke nach „Rot, dick“ %v, Soll 8", b)
+	if b := l.e.s.Breite(); b != 12 {
+		t.Errorf("Strichstärke nach „Rot, dick“ %v, Soll 12", b)
 	}
 	if !l.e.s.SchnellstilPasst(k.liste[4]) || l.e.s.SchnellstilPasst(k.liste[0]) {
 		t.Error("nach dem Klick passt nicht genau die gewählte Kachel")
@@ -99,7 +99,7 @@ func TestSchnellstileKlickAendertGewaehltesObjekt(t *testing.T) {
 func TestSchnellstilePlusUndRechtsklick(t *testing.T) {
 	l, _ := schnellLauf(t)
 	k := &l.e.schnell
-	l.e.s.SetzeBreite(6) // keine eingebaute Kachel hat 6
+	l.e.s.SetzeBreite(5) // keine eingebaute Kachel hat 5
 	l.setle()
 	if !k.plusAn {
 		t.Fatal("„+“ ist bei neuem Stand grau")
@@ -142,7 +142,7 @@ func TestSchnellstileRechtsklickWendetNichtAn(t *testing.T) {
 	l, _ := schnellLauf(t)
 	k := &l.e.schnell
 	l.rechtsklick(l.kachel(4))
-	if l.e.s.Breite() == 8 {
+	if l.e.s.Breite() == 12 {
 		t.Error("Rechtsklick wendete den Stil an")
 	}
 	if len(k.liste) != 7 {
@@ -198,7 +198,7 @@ func TestSchnellstileTastatur(t *testing.T) {
 	}
 	// Eigenen Stil anlegen und per Entf entfernen; der Fokus geht auf „+“.
 	l.e.s.Auswahl = 0
-	l.e.s.SetzeBreite(6)
+	l.e.s.SetzeBreite(5)
 	l.setle()
 	l.fokusiere(&k.plus)
 	l.taste(key.NameReturn, 0)
@@ -223,7 +223,7 @@ func TestSchnellstileHinweisInDerStatuszeile(t *testing.T) {
 	if h := l.e.hinweis(); h != "Green" {
 		t.Errorf("Hinweis bei Fokus auf der dritten Kachel %q, Soll „Green“", h)
 	}
-	l.e.s.SetzeBreite(6)
+	l.e.s.SetzeBreite(5)
 	l.fokusiere(&k.plus)
 	if h := l.e.hinweis(); !strings.Contains(h, "custom style") {
 		t.Errorf("Hinweis am Knopf „+“: %q", h)
@@ -366,7 +366,7 @@ func TestSchnellstileHinweisFokusVorZeiger(t *testing.T) {
 func TestSchnellstileZeichnen(t *testing.T) {
 	l, _ := schnellLauf(t)
 	k := &l.e.schnell
-	l.e.s.SetzeBreite(6)
+	l.e.s.SetzeBreite(5)
 	l.klick(mitte(k.plusRahmen)) // eigener Stil, passt zum Stand
 	l.setle()
 	flaeche := image.Pt(1200, 1200)
@@ -420,7 +420,7 @@ func TestSchnellstileHochUndEnde(t *testing.T) {
 func TestSchnellstileMehrereEigeneUndGrauesPlus(t *testing.T) {
 	l, _ := schnellLauf(t)
 	k := &l.e.schnell
-	l.e.s.SetzeBreite(6)
+	l.e.s.SetzeBreite(5)
 	l.setle()
 	l.klick(mitte(k.plusRahmen))
 	l.e.s.SetzeBreite(7)
@@ -446,7 +446,7 @@ func TestSchnellstileSpeicherfehlerWirdGemeldet(t *testing.T) {
 	}
 	t.Cleanup(func() { aendereStile = alt })
 	k := &l.e.schnell
-	l.e.s.SetzeBreite(6)
+	l.e.s.SetzeBreite(5)
 	l.setle()
 	l.klick(mitte(k.plusRahmen))
 	if !l.e.meldung.Fehler || !strings.Contains(l.e.meldung.Text, "kein Platz") || strings.Contains(l.e.meldung.Text, "settings:") {
@@ -461,7 +461,7 @@ func TestSchnellstileSpeicherfehlerWirdGemeldet(t *testing.T) {
 func TestSchnellstileEntfernenMitVeralteterListe(t *testing.T) {
 	l, _ := schnellLauf(t)
 	k := &l.e.schnell
-	l.e.s.SetzeBreite(6)
+	l.e.s.SetzeBreite(5)
 	l.setle()
 	l.klick(mitte(k.plusRahmen))
 	l.e.s.SetzeBreite(7)

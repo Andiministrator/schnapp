@@ -587,3 +587,15 @@ die lebenslange Sperre ließ später geöffnete Dokumente ihre Schrift als fehle
    je Bild neue Fassungen an. Über längere Zeit (Wechsel der Aufnahme) wird weiter verdrängt.
 4. Tests: `internal/fonts/verdraengung_test.go` (33 und mehr Dateien in Folge, älteste zuerst, nebenläufig unter `-race`,
    Ruhefrist `TestRuhefristVerdraengtNichtImGebrauch`).
+
+## Nachtrag 16 (25.11.2026): Voreinstellung der Strichstärke 6 statt 4 (Karte #316)
+
+**Status:** Akzeptiert (Claude Opus 5.5). Ändert die Strichstärke aus Punkt 3 und Nachtrag 7.
+
+Andi (25.11.2026): „die defaulteinstellungen für die strichstärke von pfeilen, umrandungen usw könnte einen tick stärker
+sein.“ Die Voreinstellung (`canvas.StandardStil`) steigt um eine Stufe von `StrichStufen` auf **6 px** bei Faktor 1, also
+Full HD 6, 4K 12, 8K 24 (Nachtrag 7, mal `KantenFaktor`). Sie gilt für Pfeil, Kasten, Lupe und die Schenkel der
+Sprechblase ohne Füllung. Die eingebauten Schnellstile (ADR-0037) ziehen mit: normal 6, „dick“ 12 statt 8, damit der
+Stand eines frischen Werkzeugs weiter zur ersten Kachel passt; fehlt in `styles.ini` die Breite, gilt ebenfalls 6
+(`settings.stilBreite`). Schriftgrad 20 und Nummernradius 14 bleiben. Gespeicherte Dateien und eigene Schnellstile behalten
+ihre Breite.

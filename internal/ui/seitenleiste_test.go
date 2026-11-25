@@ -168,8 +168,8 @@ func TestSeitenleisteStrichstaerke(t *testing.T) {
 		t.Fatal("keine Strichstärke beim Pfeil")
 	}
 	l.klick(plus.Min.Add(plus.Max).Div(2))
-	if l.e.s.Stil.Breite != 6 {
-		t.Errorf("+ beim Pfeil: %v, soll 6", l.e.s.Stil.Breite)
+	if l.e.s.Stil.Breite != 8 {
+		t.Errorf("+ beim Pfeil: %v, soll 8", l.e.s.Stil.Breite)
 	}
 	id, err := l.e.s.D.Hinzufuegen(document.Kasten{Bereich: document.Rechteck{Min: document.Pt(5, 5), Max: document.Pt(40, 30)},
 		Strich: document.Strich{Farbe: canvas.Beschriftungsfarben[0], Breite: 8}})

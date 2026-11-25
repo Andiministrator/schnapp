@@ -22,7 +22,7 @@ func stilSitzung(t *testing.T, b image.Point) (s *Sitzung, ids [5]int) {
 		t.Fatal(err)
 	}
 	fk := float64(d.KantenFaktor())
-	strich := document.Strich{Farbe: Beschriftungsfarben[0], Breite: 4 * fk}
+	strich := document.Strich{Farbe: Beschriftungsfarben[0], Breite: 6 * fk}
 	objekte := []document.Objekt{
 		document.GeraderPfeil(document.Pt(100, 50), document.Pt(180, 50), strich),
 		document.Kasten{Bereich: document.R(document.Pt(10, 10), document.Pt(50, 50)), Strich: strich},
@@ -173,7 +173,7 @@ func TestSchnellstilOhneAuswahl(t *testing.T) {
 	// Dicker Pfeil: nur die Breite.
 	s.SetzeWerkzeug(WerkzeugPfeil)
 	s.WendeSchnellstilAn(schnell(t, SchnellPfeil, "red-thick"))
-	if s.Stil.Breite != 8 || s.PassenderSchnellstil(SchnellPfeil) != indexVon(t, s, SchnellPfeil, "red-thick") {
+	if s.Stil.Breite != 12 || s.PassenderSchnellstil(SchnellPfeil) != indexVon(t, s, SchnellPfeil, "red-thick") {
 		t.Errorf("Breite %v", s.Stil.Breite)
 	}
 }
@@ -186,7 +186,7 @@ func TestSchnellstilFaktor(t *testing.T) {
 	}
 	s.SetzeWerkzeug(WerkzeugPfeil)
 	s.WendeSchnellstilAn(schnell(t, SchnellPfeil, "red-thick"))
-	if s.Stil.Breite != 16 {
+	if s.Stil.Breite != 24 {
 		t.Errorf("dicker Pfeil bei Faktor 2: Breite %v, Soll 16", s.Stil.Breite)
 	}
 	s.SetzeWerkzeug(WerkzeugAuswahl)
@@ -195,14 +195,14 @@ func TestSchnellstilFaktor(t *testing.T) {
 		t.Fatal("blauer Pfeil ändert den gewählten Pfeil")
 	}
 	o, _ := s.D.Objekt(ids[0])
-	if p := o.(document.Pfeil); p.Strich.Farbe != Beschriftungsfarben[1] || p.Strich.Breite != 8 {
-		t.Errorf("Pfeil %+v, Soll Blau und Breite 8", p.Strich)
+	if p := o.(document.Pfeil); p.Strich.Farbe != Beschriftungsfarben[1] || p.Strich.Breite != 12 {
+		t.Errorf("Pfeil %+v, Soll Blau und Breite 12", p.Strich)
 	}
 	if s.PassenderSchnellstil(SchnellPfeil) != indexVon(t, s, SchnellPfeil, "blue") {
 		t.Errorf("gewählter Pfeil passt nicht zu Blau")
 	}
 	st, ok := s.SchnellstilAusStand(SchnellPfeil)
-	if !ok || st.Breite != 4 || st.Farbe != Beschriftungsfarben[1] || !st.Eigen() {
+	if !ok || st.Breite != 6 || st.Farbe != Beschriftungsfarben[1] || !st.Eigen() {
 		t.Errorf("Stil aus dem Stand: %+v", st)
 	}
 	// Ein Stil mit Größen über den Grenzen wirkt nicht.
@@ -378,18 +378,18 @@ func TestEigeneSchnellstile(t *testing.T) {
 	}
 	var eigene []Schnellstil
 	for i := 0; i < MaxEigeneSchnellstile; i++ {
-		s.SetzeBreite(float64(10 + i))
+		s.SetzeBreite(float64(13 + i))
 		if !s.KannSchnellstilHinzufuegen(SchnellKasten) {
 			t.Fatalf("Stil %d: „+“ wirkt nicht", i)
 		}
 		st, r := s.FuegeSchnellstilHinzu(SchnellKasten)
-		if r != HinzuOK || !st.Eigen() || st.Breite != float64(10+i) {
+		if r != HinzuOK || !st.Eigen() || st.Breite != float64(13+i) {
 			t.Fatalf("Stil %d: %+v %v", i, st, r)
 		}
 		eigene = append(eigene, st)
 	}
 	liste := s.Schnellstile(SchnellKasten)
-	if len(liste) != 7+16 || !liste[7].Eigen() || liste[7].Breite != 10 || liste[22].Breite != 25 {
+	if len(liste) != 7+16 || !liste[7].Eigen() || liste[7].Breite != 13 || liste[22].Breite != 28 {
 		t.Fatalf("Kacheln: %d, Reihenfolge falsch", len(liste))
 	}
 	if s.PassenderSchnellstil(SchnellKasten) != 22 {
@@ -413,7 +413,7 @@ func TestEigeneSchnellstile(t *testing.T) {
 		t.Fatal("eigener Stil nicht entfernt")
 	}
 	liste = s.Schnellstile(SchnellKasten)
-	if len(liste) != 7+15 || liste[10].Breite != 14 || liste[7].Breite != 10 {
+	if len(liste) != 7+15 || liste[10].Breite != 17 || liste[7].Breite != 13 {
 		t.Errorf("Reihenfolge nach dem Entfernen: %v", liste[10].Breite)
 	}
 	if got := s.Schnellstile(SchnellNummer); len(got) != 5 || !got[4].Eigen() {

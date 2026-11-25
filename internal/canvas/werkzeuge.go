@@ -79,7 +79,7 @@ type Stil struct {
 
 // StandardStil ist die Voreinstellung (ADR-0021 Punkt 4).
 func StandardStil() Stil {
-	return Stil{Farbe: Beschriftungsfarben[0], Breite: 4, Eckradius: 0, Schriftgrad: 20, Radius: 14}
+	return Stil{Farbe: Beschriftungsfarben[0], Breite: 6, Eckradius: 0, Schriftgrad: 20, Radius: 14}
 }
 
 // StilFuer ist die Voreinstellung für ein Bild der Größe g (ADR-0021 Nachtrag 7): Strich, Schriftgrad und
