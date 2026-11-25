@@ -358,7 +358,7 @@
   },
   {
     "name": "C5 oeffneImEditor reicht ignore-limit nicht durch",
-    "datei": "cmd/schnapp/editor.go",
+    "datei": "cmd/schnapp/rettung.go",
     "paket": "./cmd/schnapp",
     "alt": "r := rettungFuer(abs, ohneGrenze)",
     "neu": "r := rettungFuer(abs, false)"
@@ -395,8 +395,8 @@
     "name": "R8b Aufräumen ohne Haltezeit",
     "datei": "internal/rescue/rescue.go",
     "paket": "./internal/rescue",
-    "alt": "jetzt.Sub(info.ModTime()) < Haltezeit",
-    "neu": "jetzt.Sub(info.ModTime()) < 0"
+    "alt": "if alter < Haltezeit {",
+    "neu": "if alter < 0 {"
   },
   {
     "name": "S1b Schreiben trotz Verwirf",
@@ -897,10 +897,45 @@
     "neu": "\t\treturn aendere()"
   },
   {
-    "name": "N10 Öffnen wartet nicht auf UmDatei (F-757, Nachtrag Karte #288)",
+    "name": "N10 Öffnen wartet nicht auf UmDatei (F-757, F-769)",
     "datei": "cmd/schnapp/rettung.go",
     "paket": "./cmd/schnapp",
-    "alt": "\trescue.WarteUmDatei(ort, abs, 20*time.Second)\n",
-    "neu": "\t_ = time.Second\n"
+    "alt": "\t\twarteAufUmDatei(pfad)\n",
+    "neu": "\t\t_ = warteAufUmDatei\n"
+  },
+  {
+    "name": "N11 F-770 UmDatei nimmt die Marke erst nach der Sperre",
+    "datei": "internal/rescue/nachziehen.go",
+    "paket": "./internal/rescue",
+    "alt": "\tif m, err := sperreAuf(ort, pfad, umMarkeName(pfad)); err == nil {\n\t\tdefer func() { fehler = errors.Join(fehler, m.frei()) }()\n\t}\n\tsp, err := sperreNehmen(ort, pfad)\n",
+    "neu": "\tsp, err := sperreNehmen(ort, pfad)\n\tif m, err := sperreAuf(ort, pfad, umMarkeName(pfad)); err == nil {\n\t\tdefer func() { fehler = errors.Join(fehler, m.frei()) }()\n\t}\n"
+  },
+  {
+    "name": "N12 F-771 eine liegen gebliebene Marke hält auf (Datei statt flock)",
+    "datei": "internal/rescue/nachziehen.go",
+    "paket": "./internal/rescue",
+    "alt": "\treturn err == nil && belegt\n",
+    "neu": "\t_, _ = belegt, err\n\t_, e := os.Lstat(filepath.Join(ort, umMarkeName(pfad)))\n\treturn e == nil\n"
+  },
+  {
+    "name": "N13 F-771 Aufräumen kennt die Marke nicht",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "rest == sperrEndung || rest == umMarke {",
+    "neu": "rest == sperrEndung {"
+  },
+  {
+    "name": "N14 F-771 Marke aus der Zukunft gilt nie als alt",
+    "datei": "internal/rescue/rescue.go",
+    "paket": "./internal/rescue",
+    "alt": "if alter <= -umMarkeAlt || alter >= umMarkeAlt {",
+    "neu": "if alter >= umMarkeAlt {"
+  },
+  {
+    "name": "N15 F-770 Öffnen prüft den Stand nach der Sperre nicht",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "if versuch >= ladeVersuche || r.passtZu(abs, stand) {",
+    "neu": "if true || r.passtZu(abs, stand) {"
   }
 ]

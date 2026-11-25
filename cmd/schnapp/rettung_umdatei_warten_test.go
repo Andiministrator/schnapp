@@ -17,8 +17,9 @@ import (
 )
 
 // F-757 (Nachtrag aus Karte #288): Öffnet ein Fenster eine Aufnahme, während ein anderes über die Bibliotheksansicht
-// ihre Schlagworte schreibt (Anbindung.UmDatei), wartet rettungFuer (Öffnen und Wechsel der Aufnahme) auf das Ende und
-// wendet die liegende Kopie danach an, statt fremd zu werden.
+// ihre Schlagworte schreibt (Anbindung.UmDatei), wartet ladeMitRettung (Öffnen und Wechsel der Aufnahme) vor dem Laden
+// auf das Ende und wendet die liegende Kopie danach an, statt fremd zu werden (F-769: Speichern danach in
+// rettung_umdatei_laden_test.go).
 func TestOeffnenWaehrendSchlagwortenWartetUndWendetAn(t *testing.T) {
 	i18n.Setze(nil)
 	staat := t.TempDir()

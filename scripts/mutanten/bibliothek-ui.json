@@ -313,15 +313,15 @@
     "name": "BC1 Wechsel öffnet ohne Budget",
     "datei": "cmd/schnapp/editor.go",
     "paket": "./cmd/schnapp",
-    "alt": "abs, g, stand, err := ladeFuer(pfad, false)",
-    "neu": "abs, g, stand, err := ladeFuer(pfad, true)"
+    "alt": "abs, g, stand, r, err := ladeMitRettung(pfad, false, ladeFuer)",
+    "neu": "abs, g, stand, r, err := ladeMitRettung(pfad, true, ladeFuer)"
   },
   {
     "name": "BC2 Wechsel ohne Kantenvorgabe für ein einfaches Bild",
     "datei": "cmd/schnapp/editor.go",
     "paket": "./cmd/schnapp",
-    "alt": "if g.Fremd {\n\t\t\tif err := g.Dokument.VorgabeKante(kante); err != nil {\n\t\t\t\treturn ui.Geoeffnet{}",
-    "neu": "if g.Fremd && false {\n\t\t\tif err := g.Dokument.VorgabeKante(kante); err != nil {\n\t\t\t\treturn ui.Geoeffnet{}"
+    "alt": "if g.Fremd {\n\t\t\tif err := g.Dokument.VorgabeKante(kante); err != nil {\n\t\t\t\tr.ende()\n\t\t\t\treturn ui.Geoeffnet{}",
+    "neu": "if g.Fremd && false {\n\t\t\tif err := g.Dokument.VorgabeKante(kante); err != nil {\n\t\t\t\tr.ende()\n\t\t\t\treturn ui.Geoeffnet{}"
   },
   {
     "name": "BC3 Pfad folgt dem Speichern als neue Aufnahme nicht",

@@ -49,11 +49,17 @@ var (
 // ErrBelegt, kann das Dateisystem kein flock, errKeinFlock. Wurde die Sperrdatei zwischen Öffnen und Sperren entfernt
 // (ein anderes Fenster endete, Aufräumen), sperrt der Deskriptor eine verwaiste Datei; dann von vorn.
 func sperreNehmen(ort, pfad string) (_ *sperre, fehler error) {
+	return sperreAuf(ort, pfad, sperrName(pfad))
+}
+
+// sperreAuf nimmt wie sperreNehmen die Sperre auf die Datei datei (Name im Ordner ort); auch für die Marke <SHA>.um,
+// die UmDatei während seiner Arbeit hält (F-770, F-771).
+func sperreAuf(ort, pfad, datei string) (_ *sperre, fehler error) {
 	defer errprefix.Defer("rescue", &fehler)
 	if err := os.MkdirAll(ort, 0o700); err != nil {
 		return nil, err
 	}
-	name := filepath.Join(ort, sperrName(pfad))
+	name := filepath.Join(ort, datei)
 	for range 10 {
 		f, belegt, err := oeffneGesperrt(name, true)
 		if err != nil {

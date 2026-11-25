@@ -8,10 +8,13 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/fileformat"
 	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
 	"github.com/Andiministrator/schnapp/internal/render"
 	"github.com/Andiministrator/schnapp/internal/rescue"
 	"github.com/Andiministrator/schnapp/internal/ui"
@@ -41,8 +44,6 @@ func rettungFuer(abs string, ohneGrenze bool) *rettung {
 	if n, err := rescue.Aufraeumen(ort, time.Now()); err != nil || n > 0 {
 		rettungDiagnose(fmt.Errorf("aufgeräumt: %d, %v", n, err))
 	}
-	// Läuft gerade eine Änderung der Schlagworte dieser Aufnahme, erst danach lesen (F-757).
-	rescue.WarteUmDatei(ort, abs, 20*time.Second)
 	k, err := rescue.KennungVon(abs)
 	if err != nil {
 		rettungDiagnose(err)
@@ -51,6 +52,62 @@ func rettungFuer(abs string, ohneGrenze bool) *rettung {
 	s := rescue.NeueSicherung(ort, k)
 	s.Diagnose = rettungDiagnose
 	return &rettung{s: s, ohneGrenze: ohneGrenze}
+}
+
+// umDateiFrist ist die längste Wartezeit je Versuch auf ein laufendes UmDatei beim Öffnen (F-771). SetzeSchlagworte
+// liest und schreibt die Arbeitsdatei einmal, bei gewöhnlichen Aufnahmen in Millisekunden, bei sehr großen in rund einer
+// Sekunde. Eine liegen gebliebene Marke hält seit F-771 gar nicht mehr auf (flock); die Frist begrenzt nur ein
+// hängendes UmDatei. ladeMitRettung versucht es bis zu ladeVersuche Mal, zusammen also höchstens rund 9 s.
+const (
+	umDateiFrist = 3 * time.Second
+	ladeVersuche = 3
+)
+
+// ladeMitRettung lädt die Datei pfad mit lade (ladeFuerEditor oder die Naht ladeFuer) und legt danach ihre Rettung an
+// (F-769, F-770). Läuft gerade UmDatei für diese Aufnahme (Schlagworte aus der Bibliotheksansicht eines anderen
+// Fensters), wartet es vorher darauf: Dokument, Metadaten und Stand stammen dann vom neuen Stand, das Speichern
+// schreibt in die geöffnete Aufnahme zurück, und die nachgezogene Kopie passt. Beginnt UmDatei erst zwischen Warten und
+// Sperre, merkt es das danach (Stand anders als beim Laden, oder fremd mit laufendem UmDatei), gibt die Rettung frei
+// und versucht es noch einmal, höchstens ladeVersuche Mal; danach bleibt es beim letzten Ergebnis (wie vor F-757).
+func ladeMitRettung(pfad string, ohneGrenze bool, lade func(string, bool) (string, *fileformat.Gelesen, library.Stand, error)) (string, *fileformat.Gelesen, library.Stand, *rettung, error) {
+	for versuch := 1; ; versuch++ {
+		warteAufUmDatei(pfad)
+		abs, g, stand, err := lade(pfad, ohneGrenze)
+		if err != nil {
+			return "", nil, library.Stand{}, nil, err
+		}
+		r := rettungFuer(abs, ohneGrenze)
+		if versuch >= ladeVersuche || r.passtZu(abs, stand) {
+			return abs, g, stand, r, nil
+		}
+		r.Ende()
+	}
+}
+
+// warteAufUmDatei wartet vor dem Laden auf ein laufendes UmDatei für pfad (rescue.WarteUmDatei, F-769).
+func warteAufUmDatei(pfad string) {
+	abs, err := filepath.Abs(pfad)
+	if err != nil {
+		return
+	}
+	ort, err := rescue.Ort(rettungUmgebung)
+	if err != nil {
+		return
+	}
+	rescue.WarteUmDatei(ort, abs, umDateiFrist)
+}
+
+// passtZu meldet, ob die Rettung zum geladenen Stand stand gehört: Die Datei ist seit dem Laden unverändert (ihre
+// Kennung entstand also aus demselben Inhalt), und die Sitzung ist nicht nur deshalb fremd, weil gerade UmDatei die
+// Sperre hält (F-770). Ohne Rettung passt sie immer.
+func (r *rettung) passtZu(abs string, stand library.Stand) bool {
+	if r == nil {
+		return true
+	}
+	if jetzt, _ := library.StandVon(abs); jetzt != stand {
+		return false
+	}
+	return !(r.s.Lage().Fremd && rescue.UmDateiLaeuft(r.s.Ort(), abs))
 }
 
 func rettungDiagnose(err error) {
@@ -163,6 +220,13 @@ func (r *rettung) Sichere(d *document.Dokument) { r.s.Sichere(d) }
 
 // Verwirf löscht die Rettungskopie.
 func (r *rettung) Verwirf() { r.s.Verwirf() }
+
+// ende gibt eine angelegte Rettung wieder frei, die kein Editor übernimmt (Öffnen gescheitert); ohne Rettung nichts.
+func (r *rettung) ende() {
+	if r != nil {
+		r.Ende()
+	}
+}
 
 // Ende wartet auf begonnene Aufträge, höchstens die Frist der Sicherung (F-417), und gibt die Sperre frei.
 func (r *rettung) Ende() { r.s.Ende() }

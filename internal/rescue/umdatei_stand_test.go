@@ -3,7 +3,8 @@
 package rescue
 
 // F-757: UmDatei zieht die Kopie nur bei bestätigtem Stand nach, und ein Fenster, das die Aufnahme während UmDatei
-// öffnet, wartet auf die Marke, statt fremd zu werden. Mutanten: scripts/mutanten/rescue.json (N6 bis N8).
+// öffnet, wartet auf die Marke, statt fremd zu werden. Mutanten: scripts/mutanten/rescue.json (N6 bis N8, N12; N9 und
+// N10 in cmd/schnapp). Marke als flock-Sperre und Aufräumen: umdatei_marke_test.go (F-770, F-771).
 
 import (
 	"os"
@@ -94,7 +95,7 @@ func TestFensterWaehrendUmDateiWartetUndWendetAn(t *testing.T) {
 	}
 }
 
-// Ohne Marke oder mit abgelaufener Marke kehrt WarteUmDatei sofort zurück.
+// Ohne Marke oder mit einer liegen gebliebenen (nicht gehaltenen) Marke kehrt WarteUmDatei sofort zurück.
 func TestWarteUmDateiOhneMarkeKehrtSofortZurueck(t *testing.T) {
 	ort := t.TempDir()
 	t0 := time.Now()

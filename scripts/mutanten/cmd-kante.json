@@ -3,7 +3,7 @@
     "name": "K96-8 einfaches Bild bekommt die eingestellte Form nicht (Karte #96)",
     "datei": "cmd/schnapp/editor.go",
     "paket": "./cmd/schnapp",
-    "alt": "\tif g.Fremd {\n\t\tif err := g.Dokument.VorgabeKante(kante); err != nil {\n\t\t\treturn err\n",
-    "neu": "\tif false && g.Fremd {\n\t\tif err := g.Dokument.VorgabeKante(kante); err != nil {\n\t\t\treturn err\n"
+    "alt": "\tif g.Fremd {\n\t\tif err := g.Dokument.VorgabeKante(kante); err != nil {\n\t\t\tr.ende()\n\t\t\treturn err\n",
+    "neu": "\tif false && g.Fremd {\n\t\tif err := g.Dokument.VorgabeKante(kante); err != nil {\n\t\t\tr.ende()\n\t\t\treturn err\n"
   }
 ]

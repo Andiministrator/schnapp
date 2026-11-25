@@ -273,7 +273,8 @@ func Loesche(ort, pfad string) (fehler error) {
 }
 
 // Aufraeumen entfernt Rettungskopien und liegen gebliebene temporäre Dateien, die älter als Haltezeit sind
-// (ADR-0029 Punkt 6). Nur Dateien dieses Ordners mit eigenen Namen; ein fehlender Ordner ist kein Fehler.
+// (ADR-0029 Punkt 6). Nur Dateien dieses Ordners mit eigenen Namen; ein fehlender Ordner ist kein Fehler. Eine freie
+// Marke <SHA>.um fällt schon nach umMarkeAlt, auch mit einer Änderungszeit in der Zukunft (F-771).
 func Aufraeumen(ort string, jetzt time.Time) (entfernt int, fehler error) {
 	defer errprefix.Defer("rescue", &fehler)
 	eintraege, err := os.ReadDir(ort)
@@ -290,7 +291,23 @@ func Aufraeumen(ort string, jetzt time.Time) (entfernt int, fehler error) {
 			continue
 		}
 		info, err := e.Info()
-		if err != nil || jetzt.Sub(info.ModTime()) < Haltezeit {
+		if err != nil {
+			continue
+		}
+		alter := jetzt.Sub(info.ModTime())
+		if strings.HasSuffix(n, umMarke) {
+			// Marke eines abgestürzten UmDatei (F-771): Sie hält niemanden auf, wird aber nach einer Minute entfernt, wenn
+			// niemand sie hält; eine Änderungszeit mehr als eine Minute in der Zukunft (verstellte Uhr) gilt als alt.
+			if alter <= -umMarkeAlt || alter >= umMarkeAlt {
+				if ok, err := raeumeSperre(filepath.Join(ort, n)); err != nil {
+					fehlerListe = append(fehlerListe, err)
+				} else if ok {
+					entfernt++
+				}
+			}
+			continue
+		}
+		if alter < Haltezeit {
 			continue
 		}
 		if strings.HasSuffix(n, sperrEndung) {
@@ -401,7 +418,8 @@ func pruefeBudget(d *document.Dokument, liste []document.SchwaerzAngabe, platz i
 }
 
 // eigenerName erkennt die Dateinamen dieses Pakets: Kopie (<64 hex>.json), beiseitegelegte Kopie
-// (<64 hex>.<Zeit>.alt.json), Sperre einer Sitzung (<64 hex>.lock) und temporäre Datei beim Schreiben (.schreibt-…).
+// (<64 hex>.<Zeit>.alt.json), Sperre einer Sitzung (<64 hex>.lock), Marke eines laufenden UmDatei (<64 hex>.um, F-771)
+// und temporäre Datei beim Schreiben (.schreibt-…).
 func eigenerName(n string) bool {
 	if strings.HasPrefix(n, ".schreibt-") {
 		return true
@@ -410,7 +428,7 @@ func eigenerName(n string) bool {
 		return false
 	}
 	rest := n[64:]
-	if rest == ".json" || rest == sperrEndung {
+	if rest == ".json" || rest == sperrEndung || rest == umMarke {
 		return true
 	}
 	mitte, ok := strings.CutSuffix(rest, ".alt.json")

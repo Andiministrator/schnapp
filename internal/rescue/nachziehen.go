@@ -7,32 +7,38 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/Andiministrator/schnapp/internal/errprefix"
 )
 
-// umMarke ist die Endung der Marke „UmDatei läuft“ neben der Sperre (F-757).
+// umMarke ist die Endung der Marke „UmDatei läuft“ neben der Sperre (F-757). UmDatei hält sie als flock-Sperre, solange
+// es arbeitet (F-771): Ein Prozess, der darin abstürzt, gibt sie mit dem Ende frei, eine liegen gebliebene Datei hält also
+// niemanden auf. Aufraeumen entfernt eine freie Marke nach umMarkeAlt.
 const umMarke = ".um"
 
-// umMarkeAlt: Eine ältere Marke gilt als Rest eines abgestürzten Prozesses und hält niemanden auf.
+// umMarkeAlt: Eine freie Marke, die älter ist (oder deren Änderungszeit in der Zukunft liegt), räumt Aufraeumen weg.
+// Eine Minute, damit Aufräumen nicht in die Mikrosekunden zwischen Anlegen und Sperren einer neuen Marke greift.
 const umMarkeAlt = time.Minute
 
 func umMarkeName(pfad string) string { return strings.TrimSuffix(Name(pfad), ".json") + umMarke }
 
-// WarteUmDatei wartet höchstens frist, solange UmDatei für die Ausgangsdatei pfad läuft (Marke da, Sperre gehalten, Marke
-// jünger als eine Minute). Ein Fenster, das dieselbe Aufnahme öffnet, ruft es vor KennungVon und NeueSicherung auf: Es
-// bekommt dann die Sperre, liest den neuen Stand und wendet die nachgezogene Kopie an, statt fremd zu werden und die
-// Kopie beim nächsten Sichern beiseitezulegen (F-757). Ohne Marke kehrt es sofort zurück.
+// UmDateiLaeuft meldet, ob gerade UmDatei für die Ausgangsdatei pfad läuft (die Marke <SHA>.um ist gesperrt). Fehlt die
+// Marke, ist sie frei (Rest eines Absturzes) oder nicht prüfbar (kein flock, Symlink, Rechte), läuft keins: Ausfall in
+// Richtung „nicht warten“, wie vor F-757.
+func UmDateiLaeuft(ort, pfad string) bool {
+	belegt, err := sperreGehalten(filepath.Join(ort, umMarkeName(pfad)))
+	return err == nil && belegt
+}
+
+// WarteUmDatei wartet höchstens frist, solange UmDatei für die Ausgangsdatei pfad läuft (UmDateiLaeuft). Ein Fenster,
+// das dieselbe Aufnahme öffnet, ruft es vor dem Laden der Datei auf (F-769): Es liest dann den neuen Stand, bekommt die
+// Sperre und wendet die nachgezogene Kopie an, statt fremd zu werden und die Kopie beim nächsten Sichern beiseitezulegen
+// (F-757). Ohne laufendes UmDatei kehrt es sofort zurück, auch bei einer liegen gebliebenen Marke (F-771).
 func WarteUmDatei(ort, pfad string, frist time.Duration) {
 	ende := time.Now().Add(frist)
 	for time.Now().Before(ende) {
-		st, err := os.Lstat(filepath.Join(ort, umMarkeName(pfad)))
-		if err != nil || time.Since(st.ModTime()) > umMarkeAlt {
-			return
-		}
-		if belegt, err := sperreGehalten(filepath.Join(ort, sperrName(pfad))); err != nil || !belegt {
+		if !UmDateiLaeuft(ort, pfad) {
 			return
 		}
 		time.Sleep(20 * time.Millisecond)
@@ -53,12 +59,18 @@ func WarteUmDatei(ort, pfad string, frist time.Duration) {
 //
 // Die Kopie wird nur angefasst, wenn niemand die Sperre der Ausgangsdatei hält: Eine gehaltene Sperre heißt, ein anderes
 // Fenster führt die Kopie. Dann läuft aendere ohne Nachziehen, und die Kopie bleibt, wie sie ist. Während aendere läuft,
-// hält UmDatei selbst die Sperre, damit kein Fenster die Kopie dazwischen anwendet oder beiseitelegt, und legt die Marke
-// <SHA>.um an, auf die ein öffnendes Fenster mit WarteUmDatei wartet (F-757). Eine Kopie, die nicht zum Stand vor aendere
+// hält UmDatei selbst die Sperre, damit kein Fenster die Kopie dazwischen anwendet oder beiseitelegt, und davor schon die
+// Marke <SHA>.um, auf die ein öffnendes Fenster mit WarteUmDatei wartet (F-757, F-770). Eine Kopie, die nicht zum Stand vor aendere
 // passte, eine unlesbare Kopie und ein Fehler beim Schreiben der neuen Kennung lassen die Kopie unverändert. Scheitert
 // aendere, bleibt die Kopie ebenfalls unberührt.
 func UmDatei(ort, pfad string, aendere func(unveraendert func() bool) error) (fehler error) {
 	defer errprefix.Defer("rescue", &fehler)
+	// Die Marke kommt vor der Sperre (F-770): Wer die Sperre belegt sieht, sieht auch die Marke und wartet. Sie wird nach
+	// der Sperre freigegeben (Defer-Reihenfolge), sonst fände ein wartendes Fenster die Sperre noch belegt. Ist sie
+	// belegt (ein zweites UmDatei) oder nicht anzulegen, läuft UmDatei ohne Marke weiter.
+	if m, err := sperreAuf(ort, pfad, umMarkeName(pfad)); err == nil {
+		defer func() { fehler = errors.Join(fehler, m.frei()) }()
+	}
 	sp, err := sperreNehmen(ort, pfad)
 	if err != nil {
 		// Belegt (anderes Fenster führt die Kopie), nicht prüfbar oder ohne flock: nichts nachziehen.
@@ -68,12 +80,6 @@ func UmDatei(ort, pfad string, aendere func(unveraendert func() bool) error) (fe
 	kp, err := Lies(ort, pfad)
 	if err != nil {
 		return aendere(func() bool { return false }) // keine oder unlesbare Kopie: nichts nachzuziehen
-	}
-	marke := filepath.Join(ort, umMarkeName(pfad))
-	if f, err := os.OpenFile(marke, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|syscall.O_NOFOLLOW, 0o600); err == nil {
-		_ = f.Close()
-		// Die Marke wird vor der Sperre entfernt (Defer-Reihenfolge), sonst sähe ein wartendes Fenster sie ohne Sperre.
-		defer os.Remove(marke)
 	}
 	vorher, err := KennungVon(pfad)
 	passte := err == nil && kp.Datei.Gleich(vorher)

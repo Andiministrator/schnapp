@@ -36,21 +36,22 @@ var editorStarten = ui.EditorMit
 // [capture] seam (ADR-0023 Nachtrag 6): Ein einfaches PNG/JPEG (auch eine beschädigte oder neuere Arbeitsdatei, die als
 // Bild geöffnet wird) ist ein neues Dokument und bekommt diese Form; eine Arbeitsdatei behält ihre eigene.
 func oeffneImEditor(pfad string, ohneGrenze bool, kante document.Kante) error {
-	abs, g, stand, err := ladeFuerEditor(pfad, ohneGrenze)
+	orte, err := library.OrteAus(os.Getenv)
+	if err != nil {
+		return err
+	}
+	// Erst auf ein laufendes UmDatei warten, dann laden, dann die Rettung (F-769, F-770).
+	abs, g, stand, r, err := ladeMitRettung(pfad, ohneGrenze, ladeFuerEditor)
 	if err != nil {
 		return err
 	}
 	if g.Fremd {
 		if err := g.Dokument.VorgabeKante(kante); err != nil {
+			r.ende()
 			return err
 		}
 	}
-	orte, err := library.OrteAus(os.Getenv)
-	if err != nil {
-		return err
-	}
 	b := library.Neu(orte)
-	r := rettungFuer(abs, ohneGrenze)
 	ui.SetzeExportOhneGrenze(ohneGrenze) // auch der Export aus dem Editor prüft das Budget dann nicht (ADR-0033 Nachtrag 4)
 	return editorStarten(geoeffnetFuer(b, abs, g, stand, r, ohneGrenze), anbindungFuer(b, kante))
 }
@@ -99,16 +100,17 @@ func rettungUmDatei(pfad string, aendere func() error) error {
 // übersetzt wie beim Öffnen von der Kommandozeile.
 func oeffnerFuer(b *library.Bibliothek, kante document.Kante) ui.Oeffnen {
 	return func(pfad string) (ui.Geoeffnet, error) {
-		abs, g, stand, err := ladeFuer(pfad, false)
+		abs, g, stand, r, err := ladeMitRettung(pfad, false, ladeFuer) // wartet vor dem Laden (F-769)
 		if err != nil {
 			return ui.Geoeffnet{}, errors.New(nutzerFehler(err))
 		}
 		if g.Fremd {
 			if err := g.Dokument.VorgabeKante(kante); err != nil {
+				r.ende()
 				return ui.Geoeffnet{}, errors.New(nutzerFehler(err))
 			}
 		}
-		return geoeffnetFuer(b, abs, g, stand, rettungFuer(abs, false), false), nil
+		return geoeffnetFuer(b, abs, g, stand, r, false), nil
 	}
 }
 
