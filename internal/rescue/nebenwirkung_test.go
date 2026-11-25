@@ -95,7 +95,11 @@ func ueberschreibe(t *testing.T, pfad, inhalt string) {
 // F-703: Eine liegende Kopie bleibt nach einer Änderung der Metadaten anwendbar, mit allen Schwärzungen.
 func TestUmDateiZiehtKennungNach(t *testing.T) {
 	pfad, ort, vorher := aufnahmeMitKopie(t)
-	err := UmDatei(ort, pfad, func(unv func() bool) error { unv(); ueberschreibe(t, pfad, "bild mit schlagwort b, länger"); return nil })
+	err := UmDatei(ort, pfad, func(unv func() bool) error {
+		unv()
+		ueberschreibe(t, pfad, "bild mit schlagwort b, länger")
+		return nil
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
