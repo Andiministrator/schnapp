@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13, Verify 2 bis 4 und Karten #299 bis #305). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13, Verify 2 bis 5 und Karten #299 bis #305). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -1093,4 +1093,9 @@ Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13, Verify 2 bis 4 und Karte
   im Band des Fangs, sonst bleibt selbst `mittelpunktFang = 2.0` grün.
 - **Jede Verify-Runde nach [K]-Nacharbeit fand neue Fehler der Nacharbeit** (Runden 2 bis 4): Die Kette endet erst,
   wenn eine Runde ohne [K]-Befund durchläuft; Fixes kleiner schneiden verkürzt sie.
+- **Die Verify-Kette endet mit einer Entscheidung, nicht mit null Befunden** (Verify 5): Ein [K]-P3-Altbestand, den die
+  Nacharbeit verkleinert hat und der höchstens ein Pixel betrifft, wird als bewusste Grenze mit Messwert ins ADR und als
+  „akzeptiert“ ins Register geschrieben, statt einen geprüften Pfad ein weiteres Mal umzubauen (F-807, F-809).
+- **Ein Mutant, den `klemme` o. ä. verdeckt, braucht einen Geometrietest statt eines Deckungstests** (F-811): Die
+  Deckung blieb ohne die Regel in der Toleranz; erst die Prüfung der kürzesten Teilkante machte ihn rot.
 
