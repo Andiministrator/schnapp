@@ -94,6 +94,12 @@ const (
 	fuellGewicht  = 25.0
 	kantenGewicht = 3.0
 	punktGewicht  = 100.0
+	// aufrufGewicht sind die Grundkosten je Füllung (Rasterizer zurücksetzen, Pfad, Ausschnitt, Puls), unabhängig von
+	// Fläche und Kanten: rund 5,5 µs, bei 0,5 ns je Kanten-Einheit 11 000, aufgerundet. Im Alltag fällt das nicht ins
+	// Gewicht (wenige Tausend Füllungen), aber über vielen Nähten zeichnet jedes schräge Objekt je Bereich eine eigene
+	// Füllung: 1000 Sprechblasen über 4096 Kacheln rasterten in 26 s bei 63 % von KantenBudget (F-750, ADR-0023
+	// Nachtrag 16). Gezählt bei den Kanten.
+	aufrufGewicht = 12000.0
 )
 
 // Budget, GlyphBudget und KantenBudget sind die Obergrenzen des Rechenaufwands je Dokument, die der Editor beim
@@ -606,38 +612,30 @@ func (z zeichner) objekt(o document.Objekt) error {
 		// Glyphen je sichtbarem Bereich (document.TextStuecke, F-739, ADR-0023 Nachtrag 13): verschoben um dessen
 		// Versatz und, wenn der Text über eine Naht reicht, auf den Bereich beschnitten. So ist Text an der Naht
 		// abgeschnitten wie das Bild darunter, statt starr hinter der Naht zu stehen.
-		stuecke := z.d.TextStuecke(v)
-		// Kosten einmal je sichtbarer Zeile, nicht je Bereich: Über vielen Nähten zählte der Trockenlauf sonst dieselben
-		// Glyphen vielfach (F-136).
-		zeilen := v.Zeilen()
-		gezaehlt := make([]bool, len(zeilen))
-		for _, st := range stuecke {
-			zs := z
-			{ // immer auf den Bereich beschneiden, auch bei nur einem: Ein Text, der im Streifen endet, stünde sonst mit dem
-				// Teil im Streifen hinter der Naht (Kritik A-1, [S])
-				ziel := st.Ziel()
-				zs.schnitt = image.Rect(int(math.Round(ziel.Min.X)), int(math.Round(ziel.Min.Y)),
-					int(math.Round(ziel.Max.X)), int(math.Round(ziel.Max.Y)))
-				zs.rand = zs.schnitt.Intersect(z.rand)
-				if zs.rand.Empty() {
+		// Immer auf den Bereich beschnitten, auch bei nur einem: Ein Text, der im Streifen endet, stünde sonst mit dem Teil
+		// im Streifen hinter der Naht (Kritik A-1, [S]). Zeilenweise über die Abschnitte statt je Bereich über alle Zeilen,
+		// jede Glyphe einmal gerastert (textBaender, F-747, F-750, ADR-0023 Nachtrag 16).
+		xs, ys := z.d.TextAbschnitte(v)
+		spalten := baender(xs, z.rand.Min.X, z.rand.Max.X)
+		reihen := baender(ys, z.rand.Min.Y, z.rand.Max.Y)
+		if len(spalten) > 0 && len(reihen) > 0 {
+			oben, unten, seitlich := sch.Huelle()
+			grad := v.Schriftgrad
+			rechts := float64(spalten[len(spalten)-1].B) + seitlich*grad
+			for _, zeile := range v.Zeilen() {
+				// Sichtbar wie zeileSichtbar: senkrecht in einem Abschnitt, Anfang nicht rechts aller Bereiche.
+				rs := baenderIn(reihen, zeile.Grundlinie-grad*oben, zeile.Grundlinie+grad*unten)
+				if len(rs) == 0 || zeile.X > rechts {
 					continue
 				}
-			}
-			for i, zeile := range zeilen {
-				p := document.Pt(zeile.X, zeile.Grundlinie).Plus(st.Versatz)
-				if !zs.zeileSichtbar(sch, p.X, p.Y, v.Schriftgrad) {
-					continue
-				}
-				if !gezaehlt[i] {
-					z.auf.glyph += glyphKostenIn(sch, zeichenzahl(zeile.Text), v.Schriftgrad)
-					gezaehlt[i] = true
-				}
+				// Kosten einmal je sichtbarer Zeile, nicht je Bereich (F-136).
+				z.auf.glyph += glyphKostenIn(sch, zeichenzahl(zeile.Text), grad)
 				if z.trocken() {
 					continue
 				}
 				// Tabulator als vier Leerzeichen, Wagenrücklauf weg (Zeichenbar in Zeilen): die Schriften haben für beide
 				// keine Glyphe (Kritik A-3).
-				zs.text(face, sch, zeile.Text, p.X, p.Y, v.Farbe, v.Schriftgrad)
+				z.textBaender(face, sch, zeile.Text, zeile.X, zeile.Grundlinie, v.Farbe, grad, spalten, rs)
 			}
 		}
 		// Unter- und Durchstrich (ADR-0021 Nachtrag 10 Punkt 7): Rechtecke in der Textfarbe.
@@ -646,15 +644,13 @@ func (z zeichner) objekt(o document.Objekt) error {
 			z.fuelle([][]document.Punkt{rundesRechteck(r, 0)}, nil, v.Farbe)
 		}
 	case document.Nummer:
-		// Je sichtbarem Bereich und auf ihn beschnitten wie der SVG-Export (F-745, ADR-0023 Nachtrag 15).
-		var fehler error
+		// Je sichtbarem Bereich und auf ihn beschnitten wie der SVG-Export (F-745, ADR-0023 Nachtrag 15): der Kreis je
+		// Bereich, die Ziffern zeilenweise über die Abschnitte, jede einmal gerastert (F-750, ADR-0023 Nachtrag 16).
 		z.jeStueck(document.Reichweite(v), func(zs zeichner, abb func(document.Punkt) document.Punkt) {
-			if err := zs.nummer(v, abb(v.Mitte)); err != nil && fehler == nil {
-				fehler = err
-			}
+			zs.fuelle(nil, []kreisform{{abb(v.Mitte), v.Radius}}, v.Farbe)
 		})
-		if fehler != nil {
-			return fehler
+		if err := z.nummer(v); err != nil {
+			return err
 		}
 	case document.Lupe:
 		z.lupe(v)
@@ -662,30 +658,34 @@ func (z zeichner) objekt(o document.Objekt) error {
 	return nil
 }
 
-// nummer zeichnet die Schritt-Nummer v mit der Mitte m in der Ansicht.
-func (z zeichner) nummer(v document.Nummer, m document.Punkt) error {
-	z.fuelle(nil, []kreisform{{m, v.Radius}}, v.Farbe)
+// nummer zeichnet die Ziffern der Schritt-Nummer v in jeden sichtbaren Bereich (document.Abschnitte), weiß, mittig um
+// die Mitte. Die Ziffern stehen weniger als len(s) × 0,8 em breit (Go Bold, mit Rand) und nicht höher als der Schriftgrad
+// um die Mitte; berührt dieses Rechteck keinen Bereich, kosten sie nichts und werden nicht gezeichnet. Sonst zählen sie
+// einmal, wie Text (F-750).
+func (z zeichner) nummer(v document.Nummer) error {
 	s := strconv.Itoa(v.Wert)
 	grad := v.Radius * 1.2
-	// Die Ziffern stehen mittig um m, weniger als len(s) × 0,8 em breit (Go Bold, mit Rand) und nicht höher als der
-	// Schriftgrad; was dieses Rechteck nicht ins Bild bringt, kostet nichts und wird nicht gezeichnet.
 	halb := grad * (0.4*float64(len(s)) + 1)
-	if !image.Rect(int(math.Floor(m.X-halb)), int(math.Floor(m.Y-grad)),
-		int(math.Ceil(m.X+halb)), int(math.Ceil(m.Y+grad))).Overlaps(z.rand) {
+	m := v.Mitte
+	xs, ys := z.d.Abschnitte(document.Reichweite(v))
+	spalten := baenderIn(baender(xs, z.rand.Min.X, z.rand.Max.X), math.Floor(m.X-halb), math.Ceil(m.X+halb))
+	reihen := baenderIn(baender(ys, z.rand.Min.Y, z.rand.Max.Y), math.Floor(m.Y-grad), math.Ceil(m.Y+grad))
+	if len(spalten) == 0 || len(reihen) == 0 {
 		return nil
 	}
 	z.auf.glyph += glyphKosten(len(s), grad) // Ziffern immer in Go Fett
 	if z.trocken() {
 		return nil
 	}
-	face, err := z.schrift(fonts.Laden(fonts.Go, fonts.Fett), grad)
+	sch := fonts.Laden(fonts.Go, fonts.Fett)
+	face, err := z.schrift(sch, grad)
 	if err != nil {
 		return err
 	}
-	breite := zeilenBreite(face, fonts.Laden(fonts.Go, fonts.Fett), s, grad)
+	breite := zeilenBreite(face, sch, s, grad)
 	// Senkrecht mittig wie dominant-baseline="central": Grundlinie um die halbe Ziffernhöhe unter der Mitte.
 	hoehe := float64(face.Metrics().CapHeight) / 64
-	z.text(face, fonts.Laden(fonts.Go, fonts.Fett), s, m.X-breite/2, m.Y+hoehe/2, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, grad)
+	z.textBaender(face, sch, s, m.X-breite/2, m.Y+hoehe/2, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, grad, spalten, reihen)
 	return nil
 }
 
@@ -777,7 +777,7 @@ func (z zeichner) fuelleMit(polys [][]document.Punkt, kreise []kreisform, farbe 
 	}
 	oy := float64(huelle.Min.Y)
 	z.auf.flaeche += fuellGewicht * float64(huelle.Dx()) * float64(huelle.Dy())
-	z.auf.kanten += punktGewicht*float64(punkte) +
+	z.auf.kanten += aufrufGewicht + punktGewicht*float64(punkte) +
 		kantenGewicht*(kantenSchritte(polys, oy, huelle.Dy())+kreisSchritte(kreise, oy, huelle.Dy()))
 	if z.trocken() {
 		return

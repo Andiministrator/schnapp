@@ -1878,25 +1878,41 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 				e.satz.zeichneZeile(gtx, sch, zeile.Text, float64(p.X), float64(p.Y), v.Schriftgrad, v.Farbe, sicht)
 			}
 		} else {
-			// Glyphen je sichtbarem Bereich wie der Renderer (document.TextStuecke, F-739, ADR-0023 Nachtrag 13): um den
-			// Versatz des Bereichs verschoben und immer auf ihn beschnitten. Gezeichnet wird in Ansichtskoordinaten.
-			stuecke := e.s.D.TextStuecke(v)
-			for _, st := range stuecke {
-				stSicht := sicht
-				var schnitt clip.Stack
-				{ // immer auf den Bereich beschneiden, auch bei nur einem (Kritik A-1, [S])
-					z := st.Ziel()
-					r := image.Rect(int(math.Round(z.Min.X)), int(math.Round(z.Min.Y)), int(math.Round(z.Max.X)), int(math.Round(z.Max.Y)))
-					if stSicht = sicht.Intersect(r); stSicht.Empty() {
+			// Glyphen je sichtbarem Bereich wie der Renderer (F-739, ADR-0023 Nachtrag 13): um den Versatz des Bereichs
+			// verschoben und immer auf ihn beschnitten, auch bei nur einem (Kritik A-1, [S]). Zeilenweise über die Abschnitte
+			// (document.Abschnitte, F-747, F-750, ADR-0023 Nachtrag 16): Jede Zeile sucht die senkrechten Abschnitte ihrer
+			// Höhe per Binärsuche, wird einmal im Original als Pfad aufgezeichnet und je Bereich nur verschoben abgespielt.
+			xs, ys := e.s.D.TextAbschnitte(v)
+			spalten := document.Beschneide(xs, sicht.Min.X, sicht.Max.X)
+			reihen := document.Beschneide(ys, sicht.Min.Y, sicht.Max.Y)
+			if len(spalten) > 0 && len(reihen) > 0 {
+				oben, unten, seitlich := sch.Huelle()
+				grad := v.Schriftgrad
+				for _, zeile := range v.Zeilen() {
+					rs := document.AbschnitteIn(reihen, zeile.Grundlinie-grad*oben, zeile.Grundlinie+grad*unten)
+					ss := document.AbschnitteIn(spalten, zeile.X-seitlich*grad, math.Inf(1))
+					if len(rs) == 0 || len(ss) == 0 {
 						continue
 					}
-					schnitt = clip.Rect(r).Push(gtx.Ops)
+					// Sicht im Original: alle Spalten ab der ersten berührten, die Reihen der Zeile.
+					fenster := image.Rect(ss[0].A, rs[0].A, ss[len(ss)-1].B, rs[len(rs)-1].B)
+					m := op.Record(gtx.Ops)
+					n := e.satz.zeichneZeile(gtx, sch, zeile.Text, zeile.X, zeile.Grundlinie, grad, v.Farbe, fenster)
+					aufruf := m.Stop()
+					if n == 0 {
+						continue
+					}
+					for _, sp := range ss {
+						for _, ze := range rs {
+							versatz := image.Pt(sp.Versatz, ze.Versatz)
+							schnitt := clip.Rect(image.Rect(sp.A, ze.A, sp.B, ze.B).Add(versatz)).Push(gtx.Ops)
+							t := op.Offset(versatz).Push(gtx.Ops)
+							aufruf.Add(gtx.Ops)
+							t.Pop()
+							schnitt.Pop()
+						}
+					}
 				}
-				for _, zeile := range v.Zeilen() {
-					p := document.Pt(zeile.X, zeile.Grundlinie).Plus(st.Versatz)
-					e.satz.zeichneZeile(gtx, sch, zeile.Text, p.X, p.Y, v.Schriftgrad, v.Farbe, stSicht)
-				}
-				schnitt.Pop()
 			}
 		}
 		for _, st := range v.Striche() { // mit gebrochenen Ecken wie der Renderer (Sitzungs-QA B-9)
@@ -1913,7 +1929,7 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 	}
 }
 
-// jeStueck ruft f je sichtbarem Bereich der Ansicht, den r (Original, um rand vergrößert) berührt, auf diesen Bereich
+// jeStueck zeichnet f je sichtbarem Bereich der Ansicht, den r (Original, um rand vergrößert) berührt, auf diesen Bereich
 // beschnitten und mit der Abbildung Original → Ansicht in diesem Bereich (document.Stuecke): Schräge Kanten über einer
 // Naht stehen so wie im Renderer, im SVG-Export und im Treffer (F-695, ADR-0023 Nachtrag 14). Die Vorschau der
 // Ebenenliste bildet das Original ohne Ansicht ab (an) und zeichnet einmal ohne Schnitt.
@@ -1924,12 +1940,22 @@ func (e *editor) jeStueck(gtx layout.Context, r document.Rechteck, rand float64,
 		return
 	}
 	r = document.Rechteck{Min: r.Min.Minus(document.Pt(rand, rand)), Max: r.Max.Plus(document.Pt(rand, rand))}
-	for _, st := range e.s.D.Stuecke(r) {
+	stuecke := e.s.D.Stuecke(r)
+	if len(stuecke) == 0 {
+		return
+	}
+	// Einmal im Original aufgezeichnet und je Bereich um dessen Versatz (ganze Pixel) verschoben abgespielt: Über vielen
+	// Nähten baute der Editor sonst je Bereich Pfad und Schrift neu (F-750, ADR-0023 Nachtrag 16).
+	m := op.Record(gtx.Ops)
+	f(func(p document.Punkt) f32.Point { return f32.Pt(float32(p.X), float32(p.Y)) })
+	aufruf := m.Stop()
+	for _, st := range stuecke {
 		z := st.Ziel()
 		schnitt := clip.Rect(image.Rect(int(math.Round(z.Min.X)), int(math.Round(z.Min.Y)), int(math.Round(z.Max.X)),
 			int(math.Round(z.Max.Y)))).Push(gtx.Ops)
-		v := st.Versatz
-		f(func(p document.Punkt) f32.Point { q := p.Plus(v); return f32.Pt(float32(q.X), float32(q.Y)) })
+		t := op.Offset(image.Pt(int(math.Round(st.Versatz.X)), int(math.Round(st.Versatz.Y)))).Push(gtx.Ops)
+		aufruf.Add(gtx.Ops)
+		t.Pop()
 		schnitt.Pop()
 	}
 }

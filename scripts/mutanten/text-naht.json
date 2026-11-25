@@ -1,42 +1,42 @@
 [
   {
     "name": "N1 Renderer setzt Zeilen starr ab dem abgebildeten Anfang (F-739)",
-    "datei": "internal/render/render.go",
+    "datei": "internal/render/textbaender.go",
     "paket": "./internal/render",
-    "alt": "\t\t\t\tp := document.Pt(zeile.X, zeile.Grundlinie).Plus(st.Versatz)\n",
-    "neu": "\t\t\t\tp := z.ansicht(document.Pt(zeile.X, zeile.Grundlinie))\n",
+    "alt": "\t\t\t\tv := image.Pt(sp.Versatz, ze.Versatz)\n",
+    "neu": "\t\t\t\tv := image.Pt(spalten[0].Versatz, zeilen[0].Versatz)\n",
     "timeout": "5m"
   },
   {
     "name": "N2 Renderer beschneidet Glyphen nicht auf das Stück (F-739)",
-    "datei": "internal/render/render.go",
+    "datei": "internal/render/textbaender.go",
     "paket": "./internal/render",
-    "alt": "\t\tif !z.schnitt.Empty() {\n\t\t\tg2 := gr.Intersect(z.schnitt)",
-    "neu": "\t\tif false && !z.schnitt.Empty() {\n\t\t\tg2 := gr.Intersect(z.schnitt)",
+    "alt": "\t\t\t\tg2 := g.Intersect(ziel)\n",
+    "neu": "\t\t\t\tg2 := g.Intersect(z.bild.Rect)\n",
     "timeout": "5m"
   },
   {
     "name": "N3 Renderer zeichnet nur das erste Stück (F-739)",
-    "datei": "internal/render/render.go",
+    "datei": "internal/render/textbaender.go",
     "paket": "./internal/render",
-    "alt": "\t\tfor _, st := range stuecke {\n\t\t\tzs := z",
-    "neu": "\t\tfor _, st := range stuecke[:min(1, len(stuecke))] {\n\t\t\tzs := z",
+    "alt": "\t\t\tfor _, ze := range zeilen {\n",
+    "neu": "\t\t\tfor _, ze := range zeilen[:1] {\n",
     "timeout": "5m"
   },
   {
     "name": "N4 Editor setzt Zeilen starr ab dem abgebildeten Anfang (F-739)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\t\t\tp := document.Pt(zeile.X, zeile.Grundlinie).Plus(st.Versatz)\n",
-    "neu": "\t\t\t\t\tq := an(document.Pt(zeile.X, zeile.Grundlinie))\n\t\t\t\t\tp := document.Pt(float64(q.X), float64(q.Y))\n",
+    "alt": "\t\t\t\t\t\t\tversatz := image.Pt(sp.Versatz, ze.Versatz)\n",
+    "neu": "\t\t\t\t\t\t\tversatz := image.Pt(ss[0].Versatz, rs[0].Versatz)\n",
     "timeout": "5m"
   },
   {
     "name": "N5 Editor beschneidet nicht auf das Stück (F-739)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\t\t\tschnitt = clip.Rect(r).Push(gtx.Ops)\n",
-    "neu": "\t\t\t\t\tschnitt = clip.Rect(image.Rect(-1<<20, -1<<20, 1<<20, 1<<20)).Push(gtx.Ops)\n",
+    "alt": "schnitt := clip.Rect(image.Rect(sp.A, ze.A, sp.B, ze.B).Add(versatz)).Push(gtx.Ops)",
+    "neu": "schnitt := clip.Rect(image.Rect(-1<<20, -1<<20, 1<<20, 1<<20)).Push(gtx.Ops)",
     "timeout": "5m"
   },
   {
@@ -123,8 +123,8 @@
     "name": "N17 Renderer: Nummer starr an der abgebildeten Mitte (F-745)",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "\t\t\tif err := zs.nummer(v, abb(v.Mitte)); err != nil && fehler == nil {",
-    "neu": "\t\t\tif err := z.nummer(v, z.ansicht(v.Mitte)); err != nil && fehler == nil {",
+    "alt": "\t\t\tzs.fuelle(nil, []kreisform{{abb(v.Mitte), v.Radius}}, v.Farbe)",
+    "neu": "\t\t\tzs.fuelle(nil, []kreisform{{z.ansicht(v.Mitte), v.Radius}}, v.Farbe)",
     "timeout": "5m"
   },
   {
@@ -137,10 +137,58 @@
   },
   {
     "name": "N20 Text bei nur einem Bereich nicht beschnitten (Kritik A-1)",
+    "datei": "internal/render/textbaender.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\t\tg2 := g.Intersect(ziel)\n",
+    "neu": "\t\t\t\tg2 := g.Intersect(ziel)\n\t\t\t\tif len(spalten)*len(zeilen) == 1 {\n\t\t\t\t\tg2 = g.Intersect(z.bild.Rect)\n\t\t\t\t}\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "N3b Renderer zeichnet je Glyphe nur in die erste Spalte (F-750)",
+    "datei": "internal/render/textbaender.go",
+    "paket": "./internal/render",
+    "alt": "for k := i; k < len(spalten) && float64(spalten[k].A)-sg <= px; k++ {",
+    "neu": "for k := i; k < i+1 && float64(spalten[k].A)-sg <= px; k++ {",
+    "timeout": "5m"
+  },
+  {
+    "name": "NA1 Grundkosten je Füllung nicht gezählt (F-750)",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "\t\t\t{ // immer auf den Bereich beschneiden, auch bei nur einem: Ein Text",
-    "neu": "\t\t\tif len(stuecke) > 1 { // immer auf den Bereich beschneiden, auch bei nur einem: Ein Text",
+    "alt": "\taufrufGewicht = 12000.0\n",
+    "neu": "\taufrufGewicht = 0.0\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "NA2 Zeile prüft ihre senkrechten Bereiche nicht (F-747)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "rs := baenderIn(reihen, zeile.Grundlinie-grad*oben, zeile.Grundlinie+grad*unten)",
+    "neu": "rs := reihen",
+    "timeout": "5m"
+  },
+  {
+    "name": "NA3 Nummer zählt ohne Sichtbarkeit der Ziffern (F-750)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\tif len(spalten) == 0 || len(reihen) == 0 {\n\t\treturn nil\n\t}\n\tz.auf.glyph += glyphKosten(len(s), grad)",
+    "neu": "\tif false {\n\t\treturn nil\n\t}\n\tz.auf.glyph += glyphKosten(len(s), grad)",
+    "timeout": "5m"
+  },
+  {
+    "name": "NA4 Editor verschiebt Stücke nicht (F-750)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "t := op.Offset(image.Pt(int(math.Round(st.Versatz.X)), int(math.Round(st.Versatz.Y)))).Push(gtx.Ops)",
+    "neu": "t := op.Offset(image.Point{}).Push(gtx.Ops)",
+    "timeout": "5m"
+  },
+  {
+    "name": "NA5 Beschneide rechnet den Versatz nicht ein (F-747)",
+    "datei": "internal/document/stuecke.go",
+    "paket": "./internal/render",
+    "alt": "b := Abschnitt{A: max(a.A, lo-a.Versatz), B: min(a.B, hi-a.Versatz), Versatz: a.Versatz}",
+    "neu": "b := Abschnitt{A: max(a.A, lo), B: min(a.B, hi), Versatz: a.Versatz}",
     "timeout": "5m"
   }
 ]

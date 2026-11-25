@@ -254,24 +254,26 @@ func TestKostenmodellSollwerte(t *testing.T) {
 	// Gefüllter Kasten (10,10)–(30,30), keine Ecken: 4 Punkte. Hülle (10,10)–(31,31) = 21×21 Pixel.
 	//   Fläche  = fuellGewicht · 21 · 21 = 25 · 441 = 11025
 	//   Kanten  = punktGewicht · 4 + kantenGewicht · Schritte; die Schritte: zwei senkrechte Kanten à
-	//             1 + 20 (Zeilen) + 2·20 (Spanne) = 61, zwei waagerechte à 1 → 124; also 400 + 3 · 124 = 772
+	//             1 + 20 (Zeilen) + 2·20 (Spanne) = 61, zwei waagerechte à 1 → 124; also 400 + 3 · 124 = 772,
+	//             dazu aufrufGewicht 12000 je Füllung (F-750) → 12772
 	d := weissesDokument(t, 100, 100)
 	hinzu(t, d, document.Kasten{Bereich: document.R(document.Pt(10, 10), document.Pt(30, 30)), Fuellung: rot})
-	if a := trockenlauf(d, false); a.flaeche != 11025 || a.kanten != 772 || a.glyph != 0 {
-		t.Errorf("Kasten: %+v, Soll Fläche 11025, Kanten 772, Glyphen 0", a)
+	if a := trockenlauf(d, false); a.flaeche != 11025 || a.kanten != 12772 || a.glyph != 0 {
+		t.Errorf("Kasten: %+v, Soll Fläche 11025, Kanten 12772, Glyphen 0", a)
 	}
 	// Nummer Mitte (50,50), Radius 20, Wert 7: Kreis mit kreisEcken(20) = 40 Ecken, Hülle (30,30)–(71,71) = 41×41.
 	//   Fläche = 25 · 41 · 41 = 42025
 	//   Kanten = punktGewicht · 40 + kantenGewicht · kreisSchritte; kreisSchritte = 2·40 (Aufrufe)
-	//            + 2·40 (Zeilen von Rand zu Rand) + 2·(2·40 + 40) + 4·20 = 80 + 80 + 240 + 80 = 480 → 4000 + 1440 = 5440
+	//            + 2·40 (Zeilen von Rand zu Rand) + 2·(2·40 + 40) + 4·20 = 80 + 80 + 240 + 80 = 480 → 4000 + 1440 = 5440,
+	//            dazu aufrufGewicht 12000 → 17440
 	//   Glyphen = eine Ziffer, Grad 24 (Grundkosten 1700)
 	e := weissesDokument(t, 100, 100)
 	hinzu(t, e, document.Nummer{Mitte: document.Pt(50, 50), Radius: 20, Wert: 7, Farbe: blau})
-	if a := trockenlauf(e, false); a.flaeche != 42025 || a.kanten != 5440 || a.glyph != glyphGrund {
-		t.Errorf("Nummer: %+v, Soll Fläche 42025, Kanten 5440, Glyphen %v", a, glyphGrund)
+	if a := trockenlauf(e, false); a.flaeche != 42025 || a.kanten != 17440 || a.glyph != glyphGrund {
+		t.Errorf("Nummer: %+v, Soll Fläche 42025, Kanten 17440, Glyphen %v", a, glyphGrund)
 	}
-	if a := Aufwand(e); a != 42025+5440+glyphGrund {
-		t.Errorf("Aufwand der Nummer %v, Soll %v", a, 42025+5440+glyphGrund)
+	if a := Aufwand(e); a != 42025+17440+glyphGrund {
+		t.Errorf("Aufwand der Nummer %v, Soll %v", a, 42025+17440+glyphGrund)
 	}
 }
 

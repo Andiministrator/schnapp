@@ -206,8 +206,8 @@
     "name": "QA3-B12b Renderer ohne Ausrichtung",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "p := document.Pt(zeile.X, zeile.Grundlinie).Plus(st.Versatz)\n\t\t\t\tif !zs.zeileSichtbar",
-    "neu": "p := document.Pt(v.Ort.X, zeile.Grundlinie).Plus(st.Versatz)\n\t\t\t\tif !zs.zeileSichtbar"
+    "alt": "z.textBaender(face, sch, zeile.Text, zeile.X, zeile.Grundlinie,",
+    "neu": "z.textBaender(face, sch, zeile.Text, v.Ort.X, zeile.Grundlinie,"
   },
   {
     "name": "QA3-B12c Renderer immer in Go",
@@ -496,8 +496,8 @@
     "name": "S238-4 Text zählt ohne Schrift (F-601)",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "z.auf.glyph += glyphKostenIn(sch, zeichenzahl(zeile.Text), v.Schriftgrad)",
-    "neu": "z.auf.glyph += glyphKosten(zeichenzahl(zeile.Text), v.Schriftgrad)"
+    "alt": "z.auf.glyph += glyphKostenIn(sch, zeichenzahl(zeile.Text), grad)",
+    "neu": "z.auf.glyph += glyphKosten(zeichenzahl(zeile.Text), grad)"
   },
   {
     "name": "S238-5 Faktor vertauscht (F-601)",

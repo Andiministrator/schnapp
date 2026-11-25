@@ -524,3 +524,30 @@ Naht läuft, wird mit dem Bild gestaucht abgebildet“.
 Tests `TestPfeilUndNummerUeberNaht` (`internal/render/schraege_naht_test.go`) und
 `TestEditorSchneidetSchraegeKantenAnDerNaht`; Mutanten N17 und N19 in `scripts/mutanten/text-naht.json`.
 
+## Nachtrag 16 (25.11.2026): Text und Schritt-Nummer über vielen Nähten zeilenweise, Grundkosten je Füllung (F-747, F-750)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #285). Ergänzt die Nachträge 13 und 15; das Bild bleibt dasselbe.
+
+1. **Zeilenweise statt je Bereich:** Die sichtbaren Bereiche sind das Kreuzprodukt waagerechter und senkrechter
+   Abschnitte, zwischen zwei Nähten ist die Ansicht eine Verschiebung um ganze Pixel (`document.Abschnitte`,
+   `TextAbschnitte`, `Beschneide`, `AbschnitteIn`). Renderer und Editor laufen deshalb einmal über die Zeilen eines
+   Texts; jede Zeile sucht die senkrechten Abschnitte ihrer Höhe per Binärsuche. Vorher lief jeder Bereich über alle
+   Zeilen: 20 Texte à 10 000 Zeilen über 1024 Zeilenstreifen prüfte `Pruefe` in 5,2 s statt 22 ms, der Editor brauchte
+   5,3 s je Bild (Sitzungs-Kritik A-2, F-747). Jetzt rund 30 ms bzw. 4 ms.
+2. **Jede Glyphe einmal:** Der Renderer rastert jede Glyphe einmal und mischt sie je Bereich um dessen Versatz
+   verschoben und auf ihn beschnitten ein (`render.textBaender`); der Editor zeichnet jede Zeile einmal im Original auf
+   und spielt sie je Bereich verschoben ab, ebenso alles, was er über `jeStueck` zeichnet (Nummer, Dreieck der
+   Sprechblase, Lupen-Linie). Über 1023 Spaltenstreifen rasterte der Renderer vorher 76 650 statt 1 740 Glyphen (Bild
+   4,6 s statt 33 ms), gezählt war jede nur einmal (A-3, F-750). Die Ziffern der Schritt-Nummer zählen damit wie Text
+   einmal statt je Bereich; der Kreis bleibt je Bereich eine Füllung.
+3. **Grundkosten je Füllung:** Jede Füllung kostet unabhängig von Fläche und Kanten rund 5,5 µs (Rasterizer, Pfad,
+   Ausschnitt). Über vielen Nähten zeichnet jedes schräge Objekt je Bereich eine eigene Füllung: 1000 Sprechblasen über
+   4096 Kacheln rasterten in 26 s bei 63 % von `KantenBudget`. Das Kostenmodell zählt deshalb je Füllung
+   `aufrufGewicht` = 12 000 Einheiten bei den Kanten. Im Alltag sind es wenige Tausend Füllungen (unter 1 % von
+   `KantenBudget`); Sprechblasen über 4096 Kacheln passen bis rund 183 unter die Grenze und rastern dort in rund 4,6 s
+   (`BenchmarkSprechblasenKantenGrenze`, ein Lauf, 25.11.2026). Das Zeitversprechen von rund 21 s (ADR-0020
+   Nachtrag 12) gilt damit auch für dieses Muster.
+
+Tests `internal/render/naht_bereiche_test.go`, `TestEditorBildUeberVielenNaehten` (`internal/ui/naht_bereiche_test.go`),
+Sollwerte in `TestKostenmodellSollwerte`; Mutanten N1–N5, N17, N20 nachgezogen, N3b und NA1–NA5 neu
+(`scripts/mutanten/text-naht.json`), QA3-B12b und S238-4 nachgezogen (`scripts/mutanten/schrift.json`).

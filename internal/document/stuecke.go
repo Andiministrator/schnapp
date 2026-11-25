@@ -2,6 +2,8 @@
 
 package document
 
+import "sort"
+
 // Text an der Naht (F-739, ADR-0023 Nachtrag 13): Die Ansicht ist das Original, aus dem Streifen herausgeschnitten und
 // ein Zuschnitt abgeschnitten sind; zwischen zwei Nähten ist sie also eine reine Verschiebung. Rechtecke, Linien und
 // Schilder bilden sich über die Ecken richtig ab, Glyphen aber nicht: Eine Textzeile stand starr ab ihrem
@@ -71,4 +73,54 @@ func (d *Dokument) Stuecke(r Rechteck) []Stueck {
 // dessen Ziel. Ein Text mit nur sichtbarer Spitze hat keine Stücke (NurSpitzeSichtbar).
 func (d *Dokument) TextStuecke(t Text) []Stueck {
 	return d.Stuecke(textReichweite(t, t.Grenzen()))
+}
+
+// Abschnitt ist ein sichtbarer Bereich [A, B) einer Achse des Originals; dort gilt Ansicht = Original + Versatz
+// (ganzzahlig, die Nähte und der Zuschnitt liegen auf ganzen Pixeln).
+type Abschnitt struct {
+	A, B, Versatz int
+}
+
+// Abschnitte liefert die sichtbaren Bereiche je Achse, die r mit positiver Länge schneiden, aufsteigend; Stuecke(r) ist
+// ihr Kreuzprodukt. Renderer und Editor zeichnen Text damit zeilenweise statt je Stück (F-747, F-750, ADR-0023
+// Nachtrag 16): Eine Zeile berührt nur die waagerechten Abschnitte ihrer Höhe, und jede Glyphe wird einmal gesetzt und
+// je Bereich nur verschoben.
+func (d *Dokument) Abschnitte(r Rechteck) (xs, ys []Abschnitt) {
+	umwandeln := func(as []abschnitt) []Abschnitt {
+		out := make([]Abschnitt, len(as))
+		for i, a := range as {
+			out[i] = Abschnitt{A: a.a, B: a.b, Versatz: int(a.versatz)}
+		}
+		return out
+	}
+	return umwandeln(d.abbX.abschnitte(r.Min.X, r.Max.X)), umwandeln(d.abbY.abschnitte(r.Min.Y, r.Max.Y))
+}
+
+// TextAbschnitte sind die Abschnitte zu TextStuecke (dieselbe Reichweite).
+func (d *Dokument) TextAbschnitte(t Text) (xs, ys []Abschnitt) {
+	return d.Abschnitte(textReichweite(t, t.Grenzen()))
+}
+
+// Beschneide schneidet die Abschnitte einer Achse auf [lo, hi) der Ansicht zu; leere fallen weg, die Reihenfolge bleibt
+// aufsteigend und überlappungsfrei.
+func Beschneide(as []Abschnitt, lo, hi int) []Abschnitt {
+	out := make([]Abschnitt, 0, len(as))
+	for _, a := range as {
+		b := Abschnitt{A: max(a.A, lo-a.Versatz), B: min(a.B, hi-a.Versatz), Versatz: a.Versatz}
+		if b.A < b.B {
+			out = append(out, b)
+		}
+	}
+	return out
+}
+
+// AbschnitteIn liefert die Abschnitte, die [lo, hi] im Original berühren (geschlossene Grenzen), per Binärsuche; as
+// ist aufsteigend und überlappungsfrei.
+func AbschnitteIn(as []Abschnitt, lo, hi float64) []Abschnitt {
+	i := sort.Search(len(as), func(k int) bool { return float64(as[k].B) >= lo })
+	j := i
+	for j < len(as) && float64(as[j].A) <= hi {
+		j++
+	}
+	return as[i:j]
 }
