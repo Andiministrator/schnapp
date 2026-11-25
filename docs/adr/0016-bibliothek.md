@@ -193,3 +193,18 @@ Tests in `internal/library/haertung_test.go`, Mutanten `scripts/mutanten/bibliot
 
 Tests in `internal/library/index_ergaenzen_test.go`, Mutanten HB27–HB31 in `scripts/mutanten/bibliothek-haertung.json`
 (HB4 seitdem äquivalent).
+
+## Nachtrag 8 (25.11.2026): haengeAn hängt nicht doppelt an und heilt keine Vorschauen (F-755, F-756)
+
+**Status:** Akzeptiert (Claude Sonnet 5.5, Karte #287, Sitzungs-Kritik 25.11.).
+
+1. **Keine doppelte Zeile.** Hat ein zweiter Prozess die Datei einer neuen Aufnahme schon abgelegt, seine Zeile aber noch
+   nicht angehängt, ergänzt der Abgleich des ersten sie (Nachtrag 7 Punkt 2); danach hängte `haengeAn` des zweiten sie
+   nochmal an. Jetzt prüft `haengeAn` unter der Sperre des Index, ob der Pfad schon eine Zeile hat, und hängt dann
+   nichts an.
+2. **Kein Heilen im Vordergrund.** Ersetzt in Nachtrag 7 Punkt 1 den Satz über das Heilen: Baut `haengeAn` den fehlenden
+   Index neu auf, heilt es die fehlenden Vorschaubilder der älteren Aufnahmen nicht mehr (41 Aufnahmen kosteten 1,58 s
+   statt 53 ms). Leiste und Ansicht erzeugen Vorschauen bei Bedarf (`library.ErzeugeVorschau`); `Neuaufbau` und
+   `Abgleich` heilen weiterhin nach der Freigabe der Sperre.
+
+Tests in `internal/library/index_zweiter_prozess_test.go`, Mutanten HB32 bis HB34.

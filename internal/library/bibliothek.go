@@ -247,30 +247,26 @@ func (e Eintrag) gueltig() bool {
 // Fehlt die Indexdatei, legte das Anhängen sie mit nur dieser einen Zeile an, und jede ältere Aufnahme der Ablage
 // bliebe unsichtbar: Der Abgleich sähe danach einen vorhandenen Index (F-700, ADR-0016 Nachtrag 7). Deshalb baut
 // haengeAn den Index dann aus der Ablage neu auf; die Datei des Eintrags liegt schon dort und kommt mit. Scheitert der
-// Neuaufbau, wird wie bisher nur die Zeile angehängt. Fehlende Vorschaubilder heilt es nach der Freigabe der Sperre
-// (F-691), außer der des neuen Eintrags, die der Aufrufer selbst schreibt.
+// Neuaufbau, wird wie bisher nur die Zeile angehängt. Fehlende Vorschaubilder heilt es nicht (F-756). Hat der Index die
+// Zeile des Eintrags schon (ein zweiter Prozess gleicht ab, F-755), hängt es nichts an.
 func (b *Bibliothek) haengeAn(e Eintrag) error {
 	zeile, err := json.Marshal(e)
 	if err != nil {
 		return err
 	}
-	var heilen []heilAuftrag
-	err = b.unterSperre(func() error {
+	return b.unterSperre(func() error {
 		if _, err := os.Lstat(b.Orte.Index); errors.Is(err, fs.ErrNotExist) {
-			_, hs, err := b.neuaufbau()
-			if err == nil && b.imIndex(e.Pfad) {
-				for _, h := range hs {
-					if h.rel != e.Pfad {
-						heilen = append(heilen, h)
-					}
-				}
+			// Fehlende Vorschaubilder der übrigen Aufnahmen heilt das Ablegen nicht (F-756): Der Neuaufbau kostet je
+			// alter Aufnahme ein volles Dekodieren; die Leiste und die Ansicht erzeugen Vorschauen bei Bedarf.
+			if _, _, err := b.neuaufbau(); err == nil && b.imIndex(e.Pfad) {
 				return nil
 			}
+		} else if b.imIndex(e.Pfad) {
+			// Ein zweiter Prozess hat die Zeile schon ergänzt (Abgleich, F-700): nicht doppelt anhängen (F-755).
+			return nil
 		}
 		return b.haengeZeileAn(zeile)
 	})
-	b.heileAlle(heilen)
-	return err
 }
 
 // imIndex meldet, ob der Index eine Zeile für rel enthält. Läuft unter b.mu.

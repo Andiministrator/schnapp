@@ -76,8 +76,8 @@
     "name": "HB10 haengeAn ohne Sperre",
     "datei": "internal/library/bibliothek.go",
     "paket": "./internal/library",
-    "alt": "\terr = b.unterSperre(func() error {\n\t\tif _, err := os.Lstat(b.Orte.Index); errors.Is",
-    "neu": "\terr = func(f func() error) error { return f() }(func() error {\n\t\tif _, err := os.Lstat(b.Orte.Index); errors.Is",
+    "alt": "\treturn b.unterSperre(func() error {\n\t\tif _, err := os.Lstat(b.Orte.Index); errors.Is",
+    "neu": "\treturn func(f func() error) error { return f() }(func() error {\n\t\tif _, err := os.Lstat(b.Orte.Index); errors.Is",
     "timeout": "3m"
   },
   {
@@ -212,8 +212,8 @@
     "name": "HB27 Ablegen an einen fehlenden Index legt ihn mit nur einer Zeile an (F-700)",
     "datei": "internal/library/bibliothek.go",
     "paket": "./internal/library",
-    "alt": "\t\tif _, err := os.Lstat(b.Orte.Index); errors.Is(err, fs.ErrNotExist) {\n\t\t\t_, hs, err := b.neuaufbau()",
-    "neu": "\t\tif _, err := os.Lstat(b.Orte.Index); false && errors.Is(err, fs.ErrNotExist) {\n\t\t\t_, hs, err := b.neuaufbau()",
+    "alt": "\t\tif _, err := os.Lstat(b.Orte.Index); errors.Is(err, fs.ErrNotExist) {\n\t\t\t// Fehlende",
+    "neu": "\t\tif _, err := os.Lstat(b.Orte.Index); false && errors.Is(err, fs.ErrNotExist) {\n\t\t\t// Fehlende",
     "timeout": "3m"
   },
   {
@@ -246,6 +246,30 @@
     "paket": "./internal/library",
     "alt": "\t\t\tif drin[k.eintrag.Pfad] {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tif fi, err",
     "neu": "\t\t\tif false && drin[k.eintrag.Pfad] {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tif fi, err",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB32 haengeAn hängt eine schon ergänzte Zeile doppelt an (F-755)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\t\t} else if b.imIndex(e.Pfad) {",
+    "neu": "\t\t} else if false && b.imIndex(e.Pfad) {",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB33 haengeAn heilt nach dem Neuaufbau Vorschauen im Vordergrund (F-756)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\t\t\tif _, _, err := b.neuaufbau(); err == nil && b.imIndex(e.Pfad) {\n\t\t\t\treturn nil\n\t\t\t}",
+    "neu": "\t\t\tif _, hs, err := b.neuaufbau(); err == nil && b.imIndex(e.Pfad) {\n\t\t\t\tb.heileAlle(hs)\n\t\t\t\treturn nil\n\t\t\t}",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB34 haengeAn hängt nach dem Neuaufbau die Zeile trotzdem an (F-755)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "err == nil && b.imIndex(e.Pfad) {\n\t\t\t\treturn nil",
+    "neu": "err == nil && b.imIndex(e.Pfad) && false {\n\t\t\t\treturn nil",
     "timeout": "3m"
   }
 ]

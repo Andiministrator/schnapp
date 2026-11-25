@@ -41,7 +41,7 @@ func TestAblegenOhneIndexBautIhnNeuAuf(t *testing.T) {
 	if err := os.Rename(b.Orte.Index, b.Orte.Index+".beiseite"); err != nil {
 		t.Fatal(err)
 	}
-	// Vorschau einer alten Aufnahme fehlt: der Neuaufbau beim Ablegen heilt sie mit.
+	// Vorschau einer alten Aufnahme fehlt: der Neuaufbau beim Ablegen heilt sie nicht im Vordergrund (F-756).
 	if err := os.Remove(b.VorschauPfad(alt[0].Pfad)); err != nil {
 		t.Fatal(err)
 	}
@@ -55,8 +55,8 @@ func TestAblegenOhneIndexBautIhnNeuAuf(t *testing.T) {
 			t.Errorf("alte Aufnahme %s fehlt im Index", e.Pfad)
 		}
 	}
-	if _, err := os.Stat(b.VorschauPfad(alt[0].Pfad)); err != nil {
-		t.Errorf("Vorschau der alten Aufnahme nicht geheilt: %v", err)
+	if _, err := os.Stat(b.VorschauPfad(alt[0].Pfad)); err == nil {
+		t.Error("Vorschau der alten Aufnahme im Vordergrund geheilt, Soll: fehlt")
 	}
 	if _, err := os.Stat(b.VorschauPfad(neu.Pfad)); err != nil {
 		t.Errorf("Vorschau der neuen Aufnahme fehlt: %v", err)
