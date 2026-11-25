@@ -24,7 +24,7 @@ ADR-0011 verlangt für Fremdcode spürbaren Nutzen. Ein Fork ist Fremdcode im Re
    `golang.org/x/sys/cpu` folgte `GODEBUG=cpu.sse41=off`, die CPUID-Abfrage von `vector` nicht (Sitzungs-QA, K-3).
    Abweichung bewusst angenommen: auf amd64-CPUs ohne SSE4.1 (Intel vor 2008, AMD vor 2011) rechnet `vector` skalar,
    `raster16` nicht.
-   Außerhalb dieser Bedingung rechnen beide skalar. Im Festkommaweg (bis 512 px) nimmt `vector` auf amd64 ebenfalls
+   Außerhalb dieser Bedingung rechnen beide skalar. (Den Festkommaweg wählt `raster16` seit Nachtrag 1 nicht mehr.) Im Festkommaweg (bis 512 px) nimmt `vector` auf amd64 ebenfalls
    eine SIMD-Fassung, `raster16` die skalare; Ganzzahlen ergeben dieselben Werte (bis auf einen Überlauf bei
    Windungszahl ±8192, aus `render` nicht erreichbar). `TestMaskeGleichVector` (beide Rechenwege, Breiten um 512) und `TestMaskeGleichVectorZufall`
    (600 Zufallsfälle im Gleitkommaweg) vergleichen die Maske Wert für Wert mit `vector`, `TestFuellenBitgleich` das gerenderte Bild.
@@ -69,7 +69,7 @@ internal/raster16/raster_floating.go`), geprüft gegen das Original über die Te
    verschiebungsfest bis auf Rundung (`TestVerschiebungsfest`, Grenze 256 von 65 535, mit dem gemessenen Fall). Gleich
    schnell gemessen (`BenchmarkSprechblasenKantenGrenze` 4,65/4,67 s, `BenchmarkGrossesBild` 23,0/22,7 ms,
    `BenchmarkAufwandAlltag` 2,10/2,12 s, je 3 Läufe, vorher/nachher). Der Festkomma-Weg bleibt im Code.
-3. **Ersetzt in Punkt 5** die Bitgleichheit zu `vector` für kleine Ausschnitte: `TestMaskeGleichVector` und
+3. **Ersetzt in Punkt 2** die Bitgleichheit zu `vector` für kleine Ausschnitte (Festkommaweg, Vergleich „beide Rechenwege“): `TestMaskeGleichVector` und
    `TestFuellenBitgleich` vergleichen mit `vector` im Gleitkomma-Weg (gleiche Breite, mindestens 513 Zeilen hoch, damit
    `vector` ihn wählt, verglichen werden die eigenen Zeilen) und bleiben bitgleich.
 

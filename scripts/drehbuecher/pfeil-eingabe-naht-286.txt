@@ -1,13 +1,13 @@
 # Sichtprobe Karte #286 (F-748, F-752, ADR-0023 Nachtrag 17): Pfeil über einer Stauch-Naht ist abgeschnitten wie das
 # Bild darunter; während der Texteingabe steht ein Text, dessen Ende im Streifen liegt, ungeschnitten.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/pfeil-eingabe-naht-286.txt --bild scripts/drehbuecher/testbild-1200x800.png
-# Rechte Leiste eingeklappt, Fenster 1600 breit: Bild 1200x800 bei 100 % ab Fensterpunkt (321,100); der Text beginnt
-# bei Fensterpunkt x = 686 (Klick 591 plus Innenabstand des Werkzeugs, aus dem Foto).
+# Rechte Leiste eingeklappt, Fenster 1600 breit: Das Bild 1200x800 steht bei 100 % ab Fensterpunkt (226,100). Nach dem
+# Stauchen ist es 1010 breit und wird neu zentriert, dann ab (321,100); Klicks nach Schritt 02 rechnen mit 321.
 # Erwartet:
-#  01 Breiter Pfeil von links oben nach rechts unten, Text „ANFANG Mitte ENDE“ ab Bildpunkt (270, 500).
-#  02 Spalten 330 bis 520 herausgestaucht (Naht bei Fensterpunkt 651): Pfeil links und rechts der Naht auf derselben
-#     Geraden wie ohne Stauchen, nur um die Streifenbreite verschoben (kein Knick zwischen abgebildeten Stützpunkten);
-#     vom Text links der Naht der Anfang, sein Ende liegt im Streifen und fehlt.
+#  01 Breiter Pfeil von links oben nach rechts unten, Text „ANFANG Mitte ENDE“ ab Bildpunkt (365, 500).
+#  02 Spalten 425 bis 615 herausgestaucht (Naht danach bei Fensterpunkt 746): Pfeil links und rechts der Naht auf
+#     derselben Geraden wie ohne Stauchen, nur um die Streifenbreite verschoben (kein Knick zwischen abgebildeten
+#     Stützpunkten); vom Text links der Naht der Anfang „ANFA“ (ab Fensterpunkt 686), sein Ende liegt im Streifen.
 #  03 Doppelklick auf den Text, „XYZ“ getippt: Der Text steht während der Eingabe ungeschnitten ab seinem Anfang, das
 #     Getippte ist rechts der Naht zu sehen, die Einfügemarke dahinter.
 #  04 Nach Enter wieder beschnitten wie in 02.

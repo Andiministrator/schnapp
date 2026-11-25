@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -1020,7 +1020,7 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   Grenzfälle (lange Pfeile, breite Striche, Rundung) mitmessen, bevor sie im ADR steht. CI-Shell ohne `shell: bash`
   heißt `bash -e` ohne pipefail.
 
-## Sprint 13, Restkarten und Abschluss (25.11.2026, Karten #285 bis #288)
+## Sprint 13, Restkarten und Abschluss-Kritik (25.11.2026, Karten #285 bis #295)
 
 - **Rasterkern nicht verschiebungsfest (F-764):** Der Festkomma-Weg aus `x/image/vector` summiert x je Zeile mit
   Abschneiden; `dxdy` in float32 hängt von der Lage des Ausschnitts ab. Dieselbe Form wich je nach Ausschnitt um bis
@@ -1043,5 +1043,10 @@ Stand: 2026-11-22 (ergänzt nach Sprint 10 und der ersten Sitzung von Sprint 11)
   eine Folge des F-755-Fixes, die der Agent im Paket `library` nicht sehen konnte; der gofmt-Schritt der CI fing eine
   unformatierte Testdatei aus einem Agenten-Worktree. Vor dem Push `gofmt -l` über beide Build-Varianten wie in der CI.
 - **Sichtprobe statt Raten bei Drehbuch-Koordinaten:** Die Fußzeile („bei X, Y“) im Foto zeigt, wo der Zeiger im Bild
-  lag; das Fenster der Probe ist 1600 breit, das Bild steht dann ab x = 321, nicht 226 wie in älteren Drehbüchern.
-
+  lag. Im 1600 breiten Probefenster steht ein 1200 breites Bild ab x = 226; nach dem Stauchen wird es neu zentriert
+  (1010 breit ab x = 321). Klicks vor dem Stauchen rechnen mit 226, danach mit der neuen Lage (Kritik 2 C, C2-1: der
+  erste Eintrag hier verwechselte beides).
+- **Eine Datei lesen und neu schreiben, in dieser Reihenfolge (F-778):** `open(a,'w').write(open(a).read()+…)` öffnet
+  zum Schreiben (und kürzt), bevor gelesen wird — das Finding-Archiv schrumpfte so auf 5 Zeilen und wurde gepusht.
+  Erst lesen, dann schreiben; nach jedem Register-Schreiben `grep -c '^| F-'` gegen den Stand davor halten
+  (`register-schreiben.mjs pruefe` prüft nur `docs/findings.md`, nicht das Archiv).
