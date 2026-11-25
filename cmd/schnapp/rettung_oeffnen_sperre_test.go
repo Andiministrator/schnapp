@@ -2,7 +2,7 @@
 
 package main
 
-// F-784 (Verify Sprint 13, V-4): Lücken der Tests zu F-765, F-769 und F-770. Mutanten A1 bis A8 in
+// F-784 (Verify Sprint 13, V-4): Lücken der Tests zu F-765, F-769 und F-770. Mutanten A1, A2, A3, A5 und A8 in
 // scripts/mutanten/rescue.json. Umgebung und Hilfen: rettung_umdatei_laden_test.go.
 
 import (

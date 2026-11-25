@@ -644,7 +644,7 @@ Berichtigt Nachtrag 18 Punkt 1.
    liegt auf ganzen Pixeln, das Bild bleibt gleich. Das umschließende Rechteck je Teil spart den Schnitt mit Bereichen,
    die es nicht berührt. 200 runde Kästen über 4096 Kacheln, llvmpipe, ganzes Bild (Messungen schwanken auf dem
    geteilten Rechner um bis zu 50 %): Strich 1 0,45–0,5 s (unverändert), Strich 40 1,4–1,8 s → 0,55–1,0 s, Strich 120
-   2,7–3,2 s → 0,8–1,1 s. Strich 40 ist bei 200 Kästen der breiteste, den `render.Pruefe` annimmt (44 lehnt es ab); der
+   2,7–3,2 s → 0,8–1,1 s. Strich 41 war bei 200 Kästen der breiteste, den `render.Pruefe` annahm (42 lehnte es ab; berichtigt nach Verify 2, F-795; seit Nachtrag 21 nimmt es auch Strich 120 an, weil der Strich ohne Kreise gefüllt wird); der
    Fall steht in `TestEditorGanzesBildUeberVielenNaehten` (Grenze 2 s), der Test verlangt, dass `Pruefe` ihn annimmt.
    Das Budget bleibt unverändert.
 3. **Abgleich mit dem Renderer:** Abseits der Kanten (das Pixel und alle bis zwei Schritte weit deckt der Renderer gleich)
@@ -658,7 +658,7 @@ Berichtigt Nachtrag 18 Punkt 1.
 
 Tests: `TestEditorDickerStrichKleinerKastenWieRenderer` (40/20/60, 30/10/50, 20/10/24, 42/20/60, 200×130/8/24,
 60×50/12/20; je ohne Naht gegen den Renderer und über Nähten gegen das Bild ohne Naht), Fall „Strich 40“ in
-`TestEditorGanzesBildUeberVielenNaehten`. Mutanten B6–B8 neu, B2 nachgezogen (`scripts/mutanten/text-naht.json`).
+`TestEditorGanzesBildUeberVielenNaehten`. Mutanten BK6 (F-783), B7 (F-782) und B8 neu, B2 nachgezogen; B6 ist der Rand-Mutant aus F-784 (`scripts/mutanten/text-naht.json`; Namen berichtigt nach Verify 2, F-794).
 
 ## Nachtrag 20 (25.11.2026): Editor über vielen Nähten mit Bereichsgrenze und Objektebene (F-787)
 
