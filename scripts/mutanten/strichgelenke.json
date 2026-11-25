@@ -1,0 +1,90 @@
+[
+  {
+    "name": "SG1 Linienstrich: innen keine Gehrung, Teile überlappen an jedem Gelenk (F-796)",
+    "datei": "internal/render/linienstrich.go",
+    "paket": "./internal/render",
+    "alt": "if vor(k) >= 0 && nach(k) >= 0 && !gefaltet[k] && seite[k] == s {",
+    "neu": "if false && vor(k) >= 0 && nach(k) >= 0 && !gefaltet[k] && seite[k] == s {",
+    "timeout": "5m"
+  },
+  {
+    "name": "SG2 Linienstrich: kein Fächer auf der Außenseite der Gelenke (F-796)",
+    "datei": "internal/render/linienstrich.go",
+    "paket": "./internal/render",
+    "alt": "\t\tcase seite[k] != 0: // Fächer",
+    "neu": "\t\tcase false && seite[k] != 0: // Fächer",
+    "timeout": "5m"
+  },
+  {
+    "name": "SG3 Linienstrich: Gehrung auch an gefalteten Gelenken (F-796)",
+    "datei": "internal/render/linienstrich.go",
+    "paket": "./internal/render",
+    "alt": "if vor(k) >= 0 && nach(k) >= 0 && !gefaltet[k] && seite[k] == s {",
+    "neu": "if vor(k) >= 0 && nach(k) >= 0 && seite[k] == s {",
+    "timeout": "5m"
+  },
+  {
+    "name": "SG4 Linienstrich: Kappe am Anfang nur ein Viertelkreis (F-796)",
+    "datei": "internal/render/linienstrich.go",
+    "paket": "./internal/render",
+    "alt": "bogen(p, hw, normale[b].Mal(hw), normale[b].Mal(-hw), math.Pi))",
+    "neu": "bogen(p, hw, normale[b].Mal(hw), normale[b].Mal(-hw), math.Pi/2))",
+    "timeout": "5m"
+  },
+  {
+    "name": "SG5 Linienstrich: Bögen achtmal gröber als bogenSehne erlaubt (F-796)",
+    "datei": "internal/render/linienstrich.go",
+    "paket": "./internal/render",
+    "alt": "\t\ts = 2 * math.Acos(x)\n",
+    "neu": "\t\ts = 16 * math.Acos(x)\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "SG6 Renderer: Pfeil je Bereich ohne Fächer und Kappen (F-796)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "if gesehen[k] != marke && ls.gelenk[k] >= 0 {",
+    "neu": "if false && gesehen[k] != marke && ls.gelenk[k] >= 0 {",
+    "timeout": "5m"
+  },
+  {
+    "name": "SG7 Renderer: Fächer und Kappen je Bereich doppelt (F-796)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "if gesehen[k] != marke && ls.gelenk[k] >= 0 {",
+    "neu": "if ls.gelenk[k] >= 0 {",
+    "timeout": "5m"
+  },
+  {
+    "name": "SG8 Linienstrich: Gehrung mit falscher Länge (F-796)",
+    "datei": "internal/render/linienstrich.go",
+    "paket": "./internal/render",
+    "alt": "gehrung[k] = normale[a].Plus(normale[b]).Mal(hw / (1 + cos))",
+    "neu": "gehrung[k] = normale[a].Plus(normale[b]).Mal(hw / 2)",
+    "timeout": "5m"
+  },
+  {
+    "name": "SG9 Linienstrich: Faltung erst ab doppelter Streckenlänge (F-796)",
+    "datei": "internal/render/linienstrich.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\t\tif summe > laenge[i] {\n",
+    "neu": "\t\t\t\tif summe > 2*laenge[i] {\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "SG10 Renderer: Lupen-Linie und Schenkel wieder mit Rechtecken und Kreisen (F-796)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\tz.fuelle(neuerLinienStrich(pts, geschlossen, s.Breite/2).teile, nil, s.Farbe)\n",
+    "neu": "\tz.fuelle(neuerLinienStrich(pts, geschlossen, s.Breite/2).teile, []kreisform{{pts[0], s.Breite / 2}}, s.Farbe)\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "SG11 Renderer: Pfeil über abgebildete Stützpunkte statt je Bereich (F-748, Nachfolger von P1)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\t\tpunkte = append(punkte, p.Plus(v))\n",
+    "neu": "\t\t\t\tpunkte = append(punkte, z.ansicht(p.Plus(v.Mal(0))))\n",
+    "timeout": "5m"
+  }
+]

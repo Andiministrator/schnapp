@@ -1032,74 +1032,62 @@ func kreisSchritte(kreise []kreisform, oy float64, hoehe int) float64 {
 	return s
 }
 
-// strich zieht einen Linienzug der Breite s.Breite mit runden Enden und Ecken: je Strecke ein Viereck, je Punkt ein
-// Kreis, alles gleich ausgerichtet und in einem Durchgang gefüllt (keine doppelte Deckung an den Stößen).
+// strich zieht einen Linienzug (Ansicht) der Breite s.Breite mit runden Enden und Gelenken: die überlappungsfreien
+// Teile aus neuerLinienStrich in einer Füllung (F-796, ADR-0023 Nachtrag 22).
 func (z zeichner) strich(pts []document.Punkt, geschlossen bool, s document.Strich) {
-	hw := s.Breite / 2
-	if hw <= 0 || len(pts) == 0 {
-		return
-	}
-	var polys [][]document.Punkt
-	n := len(pts)
-	strecken := n - 1
-	if geschlossen {
-		strecken = n
-	}
-	for i := 0; i < strecken; i++ {
-		a, b := pts[i], pts[(i+1)%n]
-		d := b.Minus(a)
-		l := d.Laenge()
-		if l < 1e-9 {
-			continue
-		}
-		nrm := document.Pt(-d.Y/l*hw, d.X/l*hw)
-		polys = append(polys, []document.Punkt{a.Plus(nrm), b.Plus(nrm), b.Minus(nrm), a.Minus(nrm)})
-	}
-	kreise := make([]kreisform, len(pts))
-	for i, p := range pts {
-		kreise[i] = kreisform{p, hw}
-	}
-	z.fuelle(polys, kreise, s.Farbe)
+	z.fuelle(neuerLinienStrich(pts, geschlossen, s.Breite/2).teile, nil, s.Farbe)
 }
 
-// strichJeStueck zeichnet den Strich der Linie pts (Original) wie strich, aber je sichtbarem Bereich: nur die Strecken
-// in seiner Nähe (document.StreckenStuecke), um seinen Versatz verschoben und auf ihn beschnitten, mit den runden
-// Gelenken an ihren Enden. Über einer Naht ist der Strich so abgeschnitten wie im SVG-Export (F-748, ADR-0023
-// Nachtrag 17); ohne Naht ist es eine Füllung mit allen Strecken und Gelenken in derselben Reihenfolge wie strich.
+// strichJeStueck zeichnet den Strich der Linie pts (Original) wie strich, aber je sichtbarem Bereich: nur die Teile der
+// Strecken in seiner Nähe (document.StreckenStuecke) samt Fächern und Kappen an ihren Enden, um seinen Versatz
+// verschoben und auf ihn beschnitten. Über einer Naht ist der Strich so abgeschnitten wie im SVG-Export (F-748,
+// ADR-0023 Nachtrag 17); ohne Naht ist es eine Füllung aller Teile wie strich. Jeder Teil liegt höchstens hw von seiner
+// Strecke entfernt; die Suche mit hw+1 findet also jeden Bereich, den er berührt.
 func (z zeichner) strichJeStueck(pts []document.Punkt, geschlossen bool, s document.Strich) {
 	hw := s.Breite / 2
-	if hw <= 0 || len(pts) == 0 {
+	ls := neuerLinienStrich(pts, geschlossen, hw)
+	if len(ls.teile) == 0 {
 		return
 	}
+	pts, geschlossen = ls.pts, ls.zu // ohne doppelte Punkte; die Strecken zählen wie ls.strecke
 	n := len(pts)
-	ende := make([]bool, n)
+	gesehen, marke := make([]int, n), 0
+	// Ein Puffer für die verschobenen Ecken, für jeden Bereich wiederverwendet (über vielen Nähten sonst eine Zuweisung je
+	// Teil und Bereich): so groß wie alle Teile zusammen, je Bereich kommt jeder Teil höchstens einmal hinein, Anhängen
+	// zieht also nie um. Die Füllung hält nichts davon über ihren Aufruf hinaus fest.
+	gesamt := 0
+	for _, t := range ls.teile {
+		gesamt += len(t)
+	}
+	punkte := make([]document.Punkt, 0, gesamt)
+	var polys [][]document.Punkt
 	for _, st := range z.d.StreckenStuecke(pts, geschlossen, hw+1) {
 		zs, ok := z.aufStueck(st.Stueck)
 		if !ok {
 			continue
 		}
+		marke++
 		v := st.Versatz
-		clear(ende)
-		var polys [][]document.Punkt
+		punkte, polys = punkte[:0], polys[:0]
+		verschoben := func(t []document.Punkt) {
+			von := len(punkte)
+			for _, p := range t {
+				punkte = append(punkte, p.Plus(v))
+			}
+			polys = append(polys, punkte[von:len(punkte):len(punkte)])
+		}
 		for _, i := range st.Strecken {
-			j := (i + 1) % n
-			ende[i], ende[j] = true, true
-			a, b := pts[i].Plus(v), pts[j].Plus(v)
-			d := b.Minus(a)
-			l := d.Laenge()
-			if l < 1e-9 {
-				continue
+			if i < len(ls.strecke) {
+				verschoben(ls.teile[ls.strecke[i]])
 			}
-			nrm := document.Pt(-d.Y/l*hw, d.X/l*hw)
-			polys = append(polys, []document.Punkt{a.Plus(nrm), b.Plus(nrm), b.Minus(nrm), a.Minus(nrm)})
-		}
-		var kreise []kreisform
-		for i, ja := range ende {
-			if ja {
-				kreise = append(kreise, kreisform{pts[i].Plus(v), hw})
+			for _, k := range []int{i, (i + 1) % n} {
+				if gesehen[k] != marke && ls.gelenk[k] >= 0 {
+					gesehen[k] = marke // Fächer und Kappen einmal je Bereich
+					verschoben(ls.teile[ls.gelenk[k]])
+				}
 			}
 		}
-		zs.fuelle(polys, kreise, s.Farbe)
+		zs.fuelle(polys, nil, s.Farbe)
 	}
 }
 
