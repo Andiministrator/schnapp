@@ -785,7 +785,9 @@ Abgewogen:
    dazu jede Kehrtwende), liefen die Sechsecke gegeneinander und höben sich auf. An einem solchen Gelenk enden beide
    Nachbarn innen senkrecht wie außen; sie überlappen dann auf der Innenseite. Kein Loch, nichts daneben; die Glättung
    addiert sich nur noch an diesen Gelenken und nur, wo die Überlappung eine Kante berührt: Haarnadel Strich 24
-   (6 gefaltete Gelenke) 0,018, Kehrtwende 0,017, sehr spitzes kurzes V Strich 12 0,30 an der Spitze. Gelenke werden
+   (6 gefaltete Gelenke) 0,018, Kehrtwende 0,017, knapp gefaltetes V (Gehrung 1,3-mal die Schenkel) 0,078, sehr
+   spitzes kurzes V Strich 12 0,30 an der Spitze. Ohne die Faltung entstand im knappen V ein Loch (abseits der Kante
+   0,77). Gelenke werden
    nur gefaltet, nie zurückgenommen; die Prüfung endet.
 3. **Bögen:** Fächer und Kappen bekommen so viele Ecken, dass die Sehne höchstens 0,02 Pixel unter dem Bogen liegt
    (`bogenSehne`; bis hw 4250, darüber höchstens 1024 Ecken je Vollkreis). Die bisherigen Kreise mit max(16, 2r) Ecken
@@ -802,6 +804,9 @@ Abgewogen:
      gebogene Pfeile Strich 24 über 4096 Kacheln 275 → 417 Stück, 4,5 → 4,9 s (0,48 ns je Einheit). Beides liegt bei
      der Annahme rund 0,5 ns je Kanten-Einheit (ADR-0020, Ergänzung zu F-418) und unter den rund 6,5 s der Abriss-Nähte
      an derselben Grenze; das Zeitversprechen rund 21 s (ADR-0020 Nachtrag 12) bleibt. Budgets und Gewichte bleiben.
+   - `Pruefe` über 1023 Spaltenstreifen mit 300 Pfeilen (`TestPruefeVieleStreifenUndPfeile`, Grenze 1 s): zuerst 0,18 →
+     0,21 s, unter `-race` 0,88 → 1,01 s (rot); mit einem Eckenpuffer je Pfeil statt einer Zuweisung je Teil und
+     Bereich 0,15 s, unter `-race` 0,87 s.
 6. **Editor und SVG:** Der Editor zeichnet Pfeil, Lupen-Linie und Schenkel weiter mit Gios Strich: ein Umriss mit runden
    Gelenken und Kappen, dessen Glättung Gio einfach rechnet; dort gab es den Befund nicht, angeglichen wird nichts. An
    den Kanten darf Gios Glättung wie bisher abweichen. Der SVG-Export schreibt weiter `stroke-linecap="round"` bzw.
