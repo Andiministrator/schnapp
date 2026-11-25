@@ -66,8 +66,10 @@ func TestEditorBildUeberVielenNaehten(t *testing.T) {
 		ops.Reset()
 		s := time.Now()
 		e.zeichneObjekte(gtx)
-		if dt := time.Since(s); dt > time.Second {
-			t.Errorf("%s: zeichneObjekte %v, Grenze 1 s", fall.name, dt)
+		dt := time.Since(s)
+		t.Logf("%s: zeichneObjekte %v", fall.name, dt)
+		if editorAufbauZeit > 0 && dt > editorAufbauZeit {
+			t.Errorf("%s: zeichneObjekte %v, Grenze %v", fall.name, dt, editorAufbauZeit)
 		}
 	}
 }
@@ -250,8 +252,8 @@ func TestEditorGanzesBildUeberVielenNaehten(t *testing.T) {
 		headlessBild(t, d.Groesse(), func(gtx layout.Context) { e.zeichneObjekte(gtx) })
 		dt := time.Since(s)
 		t.Logf("%s: ganzes Bild %v", fall.name, dt)
-		if dt > 2*time.Second {
-			t.Errorf("%s: ganzes Bild %v, Grenze 2 s", fall.name, dt)
+		if editorBildZeit > 0 && dt > editorBildZeit {
+			t.Errorf("%s: ganzes Bild %v, Grenze %v", fall.name, dt, editorBildZeit)
 		}
 	}
 }
