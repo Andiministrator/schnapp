@@ -656,3 +656,46 @@ Berichtigt Nachtrag 18 Punkt 1.
 Tests: `TestEditorDickerStrichKleinerKastenWieRenderer` (40/20/60, 30/10/50, 20/10/24, 42/20/60, 200×130/8/24,
 60×50/12/20; je ohne Naht gegen den Renderer und über Nähten gegen das Bild ohne Naht), Fall „Strich 40“ in
 `TestEditorGanzesBildUeberVielenNaehten`. Mutanten B6–B8 neu, B2 nachgezogen (`scripts/mutanten/text-naht.json`).
+
+## Nachtrag 20 (25.11.2026): Editor über vielen Nähten mit Bereichsgrenze und Objektebene (F-787)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #299). Ergänzt Nachträge 18 und 19.
+
+`render.Pruefe` schützt den Export, nicht das Editorbild: An seiner Grenze zeichnete der Editor über 4096 Kacheln
+2000 runde Kästen ohne Füllung in 7,6 bis 9 s je Bild (llvmpipe, 16 Kerne), 120 gefüllte in 1,7 s; über dem Budget
+(`--ignore-limit`) beliebig länger. Abgewogen wurden (a) eine Grenze je Bild für Objekte × Bereiche und (b) eine
+zwischengespeicherte Objektebene. Gewählt ist beides zusammen:
+
+1. **Leeres Abspielen fällt weg:** Ein runder Kasten ohne Füllung spielte seine (leere) Füllung trotzdem in jedem
+   Bereich seines Rechtecks ab, 4096-mal je Kasten. Das war fast die ganze Zeit: 2000 Kästen 7,6–9 s → 0,63 s, 200
+   Kästen 0,5 s → 0,07 s je Bild. Der Strich selbst kostet wenig (Nachtrag 19).
+2. **Bereichsgrenze:** Der Editor zählt beim Zeichnen die abgespielten Bereiche (`jeStueckIn`, Läufe einer Textzeile,
+   Bereiche und Läufe voller Bereiche des Kastenstrichs). Gio braucht mit llvmpipe je Bereich rund 1,3 µs (Strich) bis
+   3,3 µs (Füllung eines runden Kastens). Über `bereichGrenze` = 200 000 (höchstens rund 0,7 s je Bild) verwirft er
+   seine Aufzeichnung und zeigt stattdessen
+3. **die Objektebene des Renderers** (`render.Objektebene`): dieselben Objekte, auf durchsichtigem Grund in der Größe
+   der Ansicht gerastert, ohne Bild und ohne Kanten der Nähte (die zeichnet der Editor wie immer darüber), in
+   waagerechten Bändern auf bis zu acht Kernen. In Bändern weicht die Kantenglättung um höchstens 1 von einem Band ab
+   (float32 relativ zum Ausschnitt); über das Ansichtsbild gemischt ist sie das Bild des Renderers bis auf 2 je Kanal.
+   Sie gilt, solange Dokumentstand, Pixelstand, Ansichtsgröße und alle Objekte (`document.Gleich`; während eines Zugs
+   ändern sie sich ohne Schritt) gleich bleiben; jedes weitere Bild ist dann eine Textur (rund 5 ms). Ändert sich
+   etwas, zählt der Editor neu und baut sie wieder: an der Grenze von `Pruefe` 0,7 s (120 gefüllte Kästen) bis 1,8 s
+   (2000 Kästen) auf 16 Kernen; auf einem Rechner mit weniger Kernen entsprechend länger, höchstens so lange wie der
+   Renderer selbst (Zeitversprechen rund 21 s, ADR-0020 Nachtrag 12).
+
+Das Ziel „Bild unter 2 s an der Grenze“ hält damit jedes Bild ohne Änderung (5 bis 7 ms) und jedes eigene Zeichnen unter
+der Grenze (gemessen 0,4 s knapp darunter); ein Bild nach einer Änderung über der Grenze dauert so lange wie der Aufbau
+der Objektebene (gemessen 0,7 bis 1,8 s, im Test bis 10 s zugelassen für Runner mit wenigen Kernen). Bewusst nicht
+gewählt: eine eigene Grenze in `Pruefe` für das Editorbild (sie lehnte Dokumente ab, die der Renderer schafft) und das
+Rastern im Hintergrund (eine veraltete Ebene nach jeder Änderung wäre verwirrender als ein langsames Bild in einem
+Dokument, das ohnehin niemand von Hand so baut).
+
+Grenzen der Objektebene: Sie zeigt die Objekte so, wie der Renderer sie rastert (Kantenglättung des Renderers, beim
+Vergrößern die Pixel der Ansicht statt Vektoren), und der gerade bearbeitete Text steht wie nach der Eingabe auf seinen
+Bereich beschnitten (Nachtrag 17 Punkt 3 gilt dort nicht). Das betrifft nur Dokumente über der Bereichsgrenze.
+
+Tests: `TestObjektebeneUeberAnsichtWieBild`, `TestObjektebeneBaenderWieEinBand` (`internal/render/objektebene_test.go`),
+`TestObjektebeneGiltNurFuerIhrenStand`, `TestEditorZeigtObjektebeneWieRenderer` (`internal/ui/objektebene_test.go`),
+Fälle „2000 runde Kästen ohne Füllung (Budget)“, „120 gefüllte runde Kästen (Budget)“ und „45 gefüllte runde Kästen
+(knapp unter bereichGrenze)“ in `TestEditorGanzesBildUeberVielenNaehten`. Unter `-race` loggen die Zeittests nur
+(`internal/ui/zeitgrenze_race_test.go`, F-791).
