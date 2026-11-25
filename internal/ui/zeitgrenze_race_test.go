@@ -12,4 +12,5 @@ import "time"
 const (
 	editorBildZeit   time.Duration = 0 // TestEditorGanzesBildUeberVielenNaehten
 	editorAufbauZeit time.Duration = 0 // TestEditorBildUeberVielenNaehten (Befehlsaufbau)
+	ebeneAufbauZeit  time.Duration = 0 // erstes Bild mit Objektebene (F-787)
 )

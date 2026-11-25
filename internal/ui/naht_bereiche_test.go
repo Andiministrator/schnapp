@@ -193,14 +193,16 @@ func TestEditorGanzesBildUeberVielenNaehten(t *testing.T) {
 		kacheln = append(kacheln, document.Streifen{Von: 4 * i, Bis: 4*i + 1},
 			document.Streifen{Zeilen: true, Von: 4 * i, Bis: 4*i + 1})
 	}
-	kaesten := func(breite float64) []document.Objekt {
+	kaestenMit := func(n int, breite float64, fuellung color.NRGBA) []document.Objekt {
 		var k []document.Objekt
-		for i := 0; i < 200; i++ {
+		for i := 0; i < n; i++ {
 			k = append(k, document.Kasten{Bereich: document.R(document.Pt(2, 2), document.Pt(250, 250)),
-				Eckradius: 20, Strich: document.Strich{Farbe: schwarz, Breite: breite}})
+				Eckradius: 20, Strich: document.Strich{Farbe: schwarz, Breite: breite}, Fuellung: fuellung})
 		}
 		return k
 	}
+	kaesten := func(breite float64) []document.Objekt { return kaestenMit(200, breite, color.NRGBA{}) }
+	halbrot := color.NRGBA{R: 200, A: 100}
 	langKurz := strings.Repeat("x", 1700) + strings.Repeat("\nx", 399)
 	var texte []document.Objekt
 	for i := 0; i < 4; i++ {
@@ -222,14 +224,24 @@ func TestEditorGanzesBildUeberVielenNaehten(t *testing.T) {
 		st      []document.Streifen
 		objekte []document.Objekt
 		budget  bool // render.Pruefe muss das Dokument annehmen (Fall knapp unter dem Budget)
+		ebene   bool // der Editor zeigt die Objektebene des Renderers (über bereichGrenze, F-787)
 	}{
-		{"200 runde Kästen ohne Füllung, 4096 Kacheln", 256, 256, kacheln, kaesten(1), false},
+		{"200 runde Kästen ohne Füllung, 4096 Kacheln", 256, 256, kacheln, kaesten(1), false, false},
+		// F-787 (ADR-0023 Nachtrag 20): an der Grenze von render.Pruefe. 2000 runde Kästen ohne Füllung spielten vorher
+		// eine leere Füllung in allen 4096 Bereichen ab (7,6 bis 9 s je Bild), 120 gefüllte spielten 506 000 Bereiche
+		// (1,7 s); jetzt baut das erste Bild die Objektebene, jedes weitere zeigt sie.
+		{"2000 runde Kästen ohne Füllung, 4096 Kacheln (Budget)", 256, 256, kacheln, kaestenMit(2000, 1, color.NRGBA{}),
+			true, true},
+		{"120 gefüllte runde Kästen, 4096 Kacheln (Budget)", 256, 256, kacheln, kaestenMit(120, 1, halbrot), true, true},
+		// Knapp unter bereichGrenze zeichnet der Editor selbst, das teuerste Muster (Füllung je Bereich).
+		{"45 gefüllte runde Kästen, 4096 Kacheln (knapp unter bereichGrenze)", 256, 256, kacheln,
+			kaestenMit(45, 1, halbrot), true, false},
 		// F-782 (ADR-0023 Nachtrag 19): breiter Strich knapp unter KantenBudget (Strich 44 lehnt Pruefe ab); vorher
 		// 1,6 bis 1,8 s je Bild mit llvmpipe, jeder Bereich spielte alle Kanten seiner Vierecke.
-		{"200 runde Kästen, Strich 40, 4096 Kacheln", 256, 256, kacheln, kaesten(40), true},
-		{"4 Texte, 1 lange und 399 kurze Zeilen, 1023 Spaltenstreifen", 2048, 1000, spalten(1023, 2), texte, false},
-		{"50 Texte à 200 kurze Zeilen, 1023 Spaltenstreifen", 2048, 1000, spalten(1023, 2), kurze, false},
-		{"5 Texte 6×60 @ Grad 74, 1023 Spaltenstreifen", 4200, 520, spalten(1023, 4), at, false},
+		{"200 runde Kästen, Strich 40, 4096 Kacheln", 256, 256, kacheln, kaesten(40), true, false},
+		{"4 Texte, 1 lange und 399 kurze Zeilen, 1023 Spaltenstreifen", 2048, 1000, spalten(1023, 2), texte, false, false},
+		{"50 Texte à 200 kurze Zeilen, 1023 Spaltenstreifen", 2048, 1000, spalten(1023, 2), kurze, false, false},
+		{"5 Texte 6×60 @ Grad 74, 1023 Spaltenstreifen", 4200, 520, spalten(1023, 4), at, false, false},
 	} {
 		d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, fall.w, fall.h)))
 		if err != nil {
@@ -247,13 +259,34 @@ func TestEditorGanzesBildUeberVielenNaehten(t *testing.T) {
 			t.Fatalf("%s: %v", fall.name, err)
 		}
 		e := &editor{s: canvas.NeueSitzung(d)}
-		headlessBild(t, d.Groesse(), func(gtx layout.Context) { e.zeichneObjekte(gtx) }) // Fläche, Zwischenspeicher
 		s := time.Now()
+		headlessBild(t, d.Groesse(), func(gtx layout.Context) { e.zeichneObjekte(gtx) }) // Fläche, Zwischenspeicher
+		erstes := time.Since(s)
+		if e.objEbene.an != fall.ebene || (fall.ebene && e.objEbene.gebaut != 1) {
+			t.Errorf("%s: Objektebene %v (gebaut %d, Bereiche %d), erwartet %v", fall.name, e.objEbene.an,
+				e.objEbene.gebaut, e.objEbene.bereiche, fall.ebene)
+		}
+		if strings.Contains(fall.name, "knapp unter bereichGrenze") && e.objEbene.bereiche < bereichGrenze*3/4 {
+			t.Errorf("%s: %d Bereiche, nicht knapp unter bereichGrenze %d", fall.name, e.objEbene.bereiche, bereichGrenze)
+		}
+		s = time.Now()
 		headlessBild(t, d.Groesse(), func(gtx layout.Context) { e.zeichneObjekte(gtx) })
 		dt := time.Since(s)
-		t.Logf("%s: ganzes Bild %v", fall.name, dt)
+		t.Logf("%s: ganzes Bild %v (erstes %v, Bereiche %d, Objektebene %v)", fall.name, dt, erstes,
+			e.objEbene.bereiche, e.objEbene.an)
 		if editorBildZeit > 0 && dt > editorBildZeit {
 			t.Errorf("%s: ganzes Bild %v, Grenze %v", fall.name, dt, editorBildZeit)
+		}
+		// Das erste Bild baut die Objektebene (Renderer auf bis zu acht Kernen); es darf länger dauern, aber nicht
+		// so lange wie vorher jedes Bild.
+		if fall.ebene && ebeneAufbauZeit > 0 && erstes > ebeneAufbauZeit {
+			t.Errorf("%s: erstes Bild mit Aufbau der Objektebene %v, Grenze %v", fall.name, erstes, ebeneAufbauZeit)
+		}
+		if e.objEbene.an != fall.ebene {
+			t.Errorf("%s: zweites Bild mit Objektebene %v, erwartet %v", fall.name, e.objEbene.an, fall.ebene)
+		}
+		if fall.ebene && e.objEbene.gebaut != 1 {
+			t.Errorf("%s: Objektebene %d-mal gebaut, das zweite Bild muss sie wiederverwenden", fall.name, e.objEbene.gebaut)
 		}
 	}
 }

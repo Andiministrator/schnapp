@@ -356,6 +356,11 @@ type editor struct {
 	letzterOrt   document.Punkt
 	hatDruck     bool
 
+	// objEbene: über bereichGrenze zeigt der Editor die Objekte aus der Objektebene des Renderers (objektebene.go,
+	// ADR-0023 Nachtrag 20, F-787); bereiche zählt die abgespielten Bereiche des laufenden eigenen Zeichnens.
+	objEbene objektEbene
+	bereiche int
+
 	// naht hält die Kanten der Nähte als aufgezeichnete Ops (Ansichtskoordinaten), bis sich Ansichtsgröße, Nähte,
 	// Kantenform oder KantenFaktor ändern (F-183, ADR-0023 Nachtrag 6): Bei vielen Nähten in einem breiten Bild baute der
 	// Editor sonst jedes Bild alle Pfade neu.
@@ -1744,13 +1749,32 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 		return f32.Pt(float32(q.X), float32(q.Y))
 	}
 	sicht := image.Rectangle{Max: d.Groesse()}
+	defer e.lupenAufraeumen()
+	// Über vielen Nähten zeigt der Editor ab bereichGrenze abgespielten Bereichen die Objektebene des Renderers statt
+	// eigener Pfade (ADR-0023 Nachtrag 20, F-787): Gio rastert jedes Bild alle Bereiche neu, an der Grenze von
+	// render.Pruefe rund 500 000 (120 gefüllte runde Kästen über 4096 Kacheln: 1,7 s je Bild mit llvmpipe, Dateien über
+	// dem Budget öffnet --ignore-limit beliebig teuer). Die Ebene gilt, bis sich Dokument, Pixel oder Objekte ändern;
+	// dann zählt der Editor neu.
+	if e.objEbene.passt(e) {
+		e.objEbene.zeige(gtx)
+		return
+	}
+	m := op.Record(gtx.Ops)
+	e.bereiche = 0
 	for _, o := range d.Objekte() {
 		if !d.ObjektSichtbar(o) || o.Ebenenwerte().Ausgeblendet {
 			continue // ganz im Verborgenen oder ausgeblendet: wie Renderer und SVG-Export (ADR-0023 Punkt 7, ADR-0032)
 		}
 		e.zeichneObjekt(gtx, o, an, sicht, false)
 	}
-	e.lupenAufraeumen()
+	aufruf := m.Stop()
+	e.objEbene.bereiche = e.bereiche
+	if e.bereiche > bereichGrenze && e.objEbene.baue(e) {
+		e.objEbene.zeige(gtx)
+		return
+	}
+	e.objEbene.an = false
+	aufruf.Add(gtx.Ops)
 }
 
 // zeichneObjekt zeichnet o; an bildet Originalpunkte in die Zeichenfläche ab, sicht begrenzt die Textzeilen (in
@@ -1844,7 +1868,9 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 			// Nachtrag 18): Über 4096 Kacheln spielte der Editor sonst jeden Strich in allen Bereichen ab. Rand: halber
 			// Strich, ein Pixel für das ganzzahlige Rechteck und den Radius von Gio, eines plus die Pfeilhöhe der Sehnen des
 			// Umrisses (13 Punkte je Viertelkreis) für den Bogen außerhalb der Sehnen.
-			e.jeStueck(gtx, b, v.Strich.Breite/2+1, an, vorschau, fuellung)
+			if v.Fuellung.A > 0 { // ohne Füllung kein leeres Abspielen in jedem Bereich (F-787)
+				e.jeStueck(gtx, b, v.Strich.Breite/2+1, an, vorschau, fuellung)
+			}
 			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
 				rad := document.WirksamerEckradius(v.Eckradius, b.Breite(), b.Hoehe())
 				rand := v.Strich.Breite/2 + 2 + rad*(1-math.Cos(math.Pi/48))
@@ -1957,6 +1983,7 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 					// Zeile mit ihrer letzten Glyphe, und eine lange Zeile spielt je Spalte nur ihre Glyphen in der Nähe.
 					for _, l := range laeufe {
 						for _, sp := range document.AbschnitteIn(ss, l.von, l.bis) {
+							e.bereiche += len(rs)
 							for _, ze := range rs {
 								versatz := image.Pt(sp.Versatz, ze.Versatz)
 								schnitt := clip.Rect(image.Rect(sp.A, ze.A, sp.B, ze.B).Add(versatz)).Push(gtx.Ops)
@@ -2013,6 +2040,7 @@ func (e *editor) jeStueckIn(gtx layout.Context, stuecke []document.Stueck, an fu
 	m := op.Record(gtx.Ops)
 	f(func(p document.Punkt) f32.Point { return f32.Pt(float32(p.X), float32(p.Y)) })
 	aufruf := m.Stop()
+	e.bereiche += len(stuecke)
 	for _, st := range stuecke {
 		z := st.Ziel()
 		schnitt := clip.Rect(image.Rect(int(math.Round(z.Min.X)), int(math.Round(z.Min.Y)), int(math.Round(z.Max.X)),
@@ -2127,9 +2155,11 @@ func (e *editor) strichJeStueck(gtx layout.Context, pts []document.Punkt, s docu
 			}
 			laufEnde()
 			lauf, laufOffen = r, true
+			e.bereiche++ // ein Rechteck je Lauf voller Bereiche
 			continue
 		}
 		laufEnde()
+		e.bereiche++
 		k := 0
 		for _, l := range laengen {
 			vieleck(teile[k:k+l], v)

@@ -194,6 +194,15 @@ func trockenlauf(d *document.Dokument, abbrechen bool) aufwand {
 // und zählen im Trockenlauf (Pruefe) mit. Objekte ganz im Verborgenen (Dokument.ObjektSichtbar) fallen weg, wie im
 // SVG-Export und im Editor.
 func (z zeichner) alles() error {
+	if err := z.objekte(); err != nil {
+		return err
+	}
+	z.kanten(true)
+	return nil
+}
+
+// objekte zeichnet die sichtbaren Objekte ohne die Kanten der Nähte (alles, Objektebene).
+func (z zeichner) objekte() error {
 	for _, o := range z.d.Objekte() {
 		if z.abgebrochen() {
 			return nil
@@ -205,7 +214,6 @@ func (z zeichner) alles() error {
 			return err
 		}
 	}
-	z.kanten(true)
 	return nil
 }
 

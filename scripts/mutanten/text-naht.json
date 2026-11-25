@@ -359,5 +359,61 @@
     "alt": "\t\t\tif faecher(i) {\n",
     "neu": "\t\t\tif false && faecher(i) {\n",
     "timeout": "10m"
+  },
+  {
+    "name": "OE1 Editor spielt die leere Füllung eines runden Kastens in jedem Bereich ab (F-787)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if v.Fuellung.A > 0 { // ohne Füllung kein leeres Abspielen in jedem Bereich (F-787)",
+    "neu": "if true { // ohne Füllung kein leeres Abspielen in jedem Bereich (F-787)",
+    "timeout": "10m"
+  },
+  {
+    "name": "OE2 Editor baut die Objektebene jedes Bild neu (F-787)",
+    "datei": "internal/ui/objektebene.go",
+    "paket": "./internal/ui",
+    "alt": "if !o.an || d.Stand() != o.stand",
+    "neu": "if true || !o.an || d.Stand() != o.stand",
+    "timeout": "10m"
+  },
+  {
+    "name": "OE3 Editor zeigt nie die Objektebene (F-787)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if e.bereiche > bereichGrenze && e.objEbene.baue(e) {",
+    "neu": "if e.bereiche > 1<<40 && e.objEbene.baue(e) {",
+    "timeout": "10m"
+  },
+  {
+    "name": "OE4 Objektebene übersieht geänderte Objekte ohne Schritt (F-787)",
+    "datei": "internal/ui/objektebene.go",
+    "paket": "./internal/ui",
+    "alt": "if !document.Gleich(obj[i], o.objekte[i]) {",
+    "neu": "if false && !document.Gleich(obj[i], o.objekte[i]) {",
+    "timeout": "10m"
+  },
+  {
+    "name": "OE5 Editor zählt Bereiche über Bilder hinweg (F-787)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.bereiche = 0\n",
+    "neu": "\n",
+    "timeout": "10m"
+  },
+  {
+    "name": "OE6 Editor zählt die abgespielten Bereiche von jeStueckIn nicht (F-787)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.bereiche += len(stuecke)\n",
+    "neu": "\n",
+    "timeout": "10m"
+  },
+  {
+    "name": "OE7 Objektebene rastert nur das erste Band (F-787)",
+    "datei": "internal/render/objektebene.go",
+    "paket": "./internal/render",
+    "alt": "band := image.Rect(0, g.Y*i/n, g.X, g.Y*(i+1)/n)",
+    "neu": "band := image.Rect(0, g.Y*i/n, g.X, g.Y*(i+1)/n)\n\t\tif i > 0 {\n\t\t\tband = image.Rectangle{}\n\t\t}",
+    "timeout": "5m"
   }
 ]
