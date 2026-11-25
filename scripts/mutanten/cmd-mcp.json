@@ -192,8 +192,8 @@
     "name": "M28 p2 Abbruch ohne normID (F-471)",
     "datei": "internal/mcp/mcp.go",
     "paket": "./internal/mcp",
-    "alt": "return ok \u0026\u0026 bytes.Equal(normID(ziel), normID(id))",
-    "neu": "return ok \u0026\u0026 bytes.Equal(ziel, id)"
+    "alt": "return ok && bytes.Equal(normID(ziel), normID(id))",
+    "neu": "return ok && bytes.Equal(ziel, id)"
   },
   {
     "name": "M29 p3 Altversion ohne initialize angenommen (F-471)",
@@ -656,10 +656,45 @@
     "neu": "n.Methode == \"\" || len(n.ID) == 0"
   },
   {
-    "name": "MW4 normID vergleicht Zahlen wieder über float64 (F-758)",
+    "name": "MW4 normID vergleicht Zahlen wieder über float64 (F-758, F-772)",
     "datei": "internal/mcp/mcp.go",
     "paket": "./internal/mcp",
-    "alt": "\t\tif r, ok := new(big.Rat).SetString(string(t)); ok {\n\t\t\treturn []byte(r.RatString())\n\t\t}",
-    "neu": "\t\tif r, ok := new(big.Rat).SetString(string(t)); ok {\n\t\t\tf, _ := r.Float64()\n\t\t\treturn []byte(fmt.Sprint(f))\n\t\t}"
+    "alt": "\tif k, ok := kanonZahl(t); ok {\n\t\treturn k\n\t}",
+    "neu": "\tvar f float64\n\tif _, err := fmt.Sscan(string(t), &f); err == nil {\n\t\treturn []byte(fmt.Sprint(f))\n\t}"
+  },
+  {
+    "name": "MW5 normID: Nullen am Ende der Mantisse bleiben (F-772)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "\tm = bytes.TrimRight(m, \"0\")\n",
+    "neu": "\t_ = bytes.TrimRight\n"
+  },
+  {
+    "name": "MW6 normID: Nachkommastellen ohne Wirkung (F-772)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "roh-len(m)-skala)",
+    "neu": "roh-len(m))"
+  },
+  {
+    "name": "MW7 normID: Vorzeichen fällt weg (F-772)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "\tif neg {\n\t\tout",
+    "neu": "\tif false && neg {\n\t\tout"
+  },
+  {
+    "name": "MW8 normID: negativer Exponent als positiver (F-772)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "\t\tif eneg {\n\t\t\texp.Neg(exp)\n\t\t}\n",
+    "neu": "\t\t_ = eneg\n"
+  },
+  {
+    "name": "MW9 normID rechnet Exponenten wieder aus (big.Rat, F-772)",
+    "datei": "internal/mcp/mcp.go",
+    "paket": "./internal/mcp",
+    "alt": "\tif k, ok := kanonZahl(t); ok {\n\t\treturn k\n\t}",
+    "neu": "\tif len(t) > 0 && len(t) <= 64 && (t[0] == '-' || (t[0] >= '0' && t[0] <= '9')) {\n\t\tif r, ok := new(big.Rat).SetString(string(t)); ok {\n\t\t\treturn []byte(r.RatString())\n\t\t}\n\t}"
   }
 ]

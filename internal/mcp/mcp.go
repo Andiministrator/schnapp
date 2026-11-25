@@ -483,12 +483,13 @@ func (q *schlange) stelle(z zeile) bool {
 // Benachrichtigungen) und meldet, ob eine gefunden wurde (F-701). Ein `initialize` streicht ein Abbruch nie: Die
 // Spezifikation erlaubt es nicht, ihn abzubrechen (F-758).
 func (q *schlange) streiche(id json.RawMessage) bool {
+	ziel := normID(id) // einmal vor der Schleife, nicht je Zeile (F-772)
 	for i, z := range q.zeilen {
 		if z.zuLang || len(z.daten) == 0 || z.daten[0] != '{' {
 			continue
 		}
 		var n nachricht
-		if json.Unmarshal(z.daten, &n) != nil || n.Methode == "" || n.Methode == "initialize" || len(n.ID) == 0 || !bytes.Equal(normID(n.ID), normID(id)) {
+		if json.Unmarshal(z.daten, &n) != nil || n.Methode == "" || n.Methode == "initialize" || len(n.ID) == 0 || !bytes.Equal(normID(n.ID), ziel) {
 			continue
 		}
 		q.bytes -= len(z.daten)
@@ -611,17 +612,92 @@ func abbruchZiel(z zeile) (json.RawMessage, bool) {
 	return p.ID, true
 }
 
-// normID macht 1 und 1.0 vergleichbar, ohne Zahlen über float64 zu führen: Kennungen über 2^53 bleiben verschieden
-// (F-758). Zahlen werden als genauer Bruch kanonisiert (big.Rat), Zeichenketten bleiben, wie sie sind; eine Zahl mit
-// mehr als 64 Zeichen wird nicht gerechnet, sondern als Text verglichen (riesige Exponenten lehnt big.Rat selbst ab).
+// normID macht 1, 1.0 und 10e-1 vergleichbar, ohne Zahlen über float64 zu führen: Kennungen über 2^53 bleiben
+// verschieden (F-758). Eine Zahl wird ohne Ausmultiplizieren kanonisiert (Vorzeichen, Ziffern ohne führende und
+// abschließende Nullen, Exponent als ganze Zahl; F-772: ein big.Rat rechnete Exponenten bis 1e6 aus, 80 ms und
+// 13 MiB je Kennung). Zeichenketten und alles, was keine JSON-Zahl ist, bleiben, wie sie sind.
 func normID(id json.RawMessage) []byte {
 	t := bytes.TrimSpace(id)
-	if len(t) > 0 && len(t) <= 64 && (t[0] == '-' || (t[0] >= '0' && t[0] <= '9')) {
-		if r, ok := new(big.Rat).SetString(string(t)); ok {
-			return []byte(r.RatString())
-		}
+	if k, ok := kanonZahl(t); ok {
+		return k
 	}
 	return t
+}
+
+// kanonZahl liest eine JSON-Zahl (-?ganz(.bruch)?([eE][+-]?exp)?) und liefert „<Vorzeichen><Ziffern>e<Exponent>“;
+// Null ist immer „0“. Mehr als 64 Zeichen werden nicht gedeutet (dann Text, wie bisher).
+func kanonZahl(t []byte) ([]byte, bool) {
+	if len(t) == 0 || len(t) > 64 {
+		return nil, false
+	}
+	i := 0
+	neg := false
+	if t[i] == '-' {
+		neg = true
+		i++
+	}
+	var ziffern []byte
+	skala := 0 // Zahl der Nachkommastellen
+	n := 0
+	for i < len(t) && t[i] >= '0' && t[i] <= '9' {
+		ziffern = append(ziffern, t[i])
+		i++
+		n++
+	}
+	if n == 0 {
+		return nil, false
+	}
+	if i < len(t) && t[i] == '.' {
+		i++
+		f := 0
+		for i < len(t) && t[i] >= '0' && t[i] <= '9' {
+			ziffern = append(ziffern, t[i])
+			skala++
+			f++
+			i++
+		}
+		if f == 0 {
+			return nil, false
+		}
+	}
+	exp := new(big.Int)
+	if i < len(t) && (t[i] == 'e' || t[i] == 'E') {
+		i++
+		eneg := false
+		if i < len(t) && (t[i] == '+' || t[i] == '-') {
+			eneg = t[i] == '-'
+			i++
+		}
+		start := i
+		for i < len(t) && t[i] >= '0' && t[i] <= '9' {
+			i++
+		}
+		if i == start {
+			return nil, false
+		}
+		exp.SetString(string(t[start:i]), 10)
+		if eneg {
+			exp.Neg(exp)
+		}
+	}
+	if i != len(t) {
+		return nil, false
+	}
+	m := bytes.TrimLeft(ziffern, "0")
+	if len(m) == 0 {
+		return []byte("0"), true
+	}
+	// abschließende Nullen der Mantisse wandern in den Exponenten
+	roh := len(m)
+	m = bytes.TrimRight(m, "0")
+	exp.Add(exp, big.NewInt(int64(roh-len(m)-skala)))
+	out := make([]byte, 0, len(m)+8)
+	if neg {
+		out = append(out, '-')
+	}
+	out = append(out, m...)
+	out = append(out, 'e')
+	return exp.Append(out, 10), true
 }
 
 func werkzeugErgebnis(e Ergebnis) map[string]any {

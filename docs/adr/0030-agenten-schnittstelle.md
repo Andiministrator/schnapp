@@ -488,3 +488,12 @@ laufende Anfrage bleibt wirkungslos.
 - **Ändert Nachtrag 14.** `normID` verglich Zahlen über `float64`: zwei Kennungen über 2^53 (etwa 9007199254740992 und 9007199254740993) galten als gleich, ein Abbruch strich eine fremde wartende Anfrage. Zahlen werden jetzt als genauer Bruch (`big.Rat`) kanonisiert, `1` und `1.0` bleiben gleich, eine Zeichenkette `"1"` bleibt von der Zahl 1 verschieden; Zahlen über 64 Zeichen werden als Text verglichen.
 - Ein wartendes `initialize` streicht `schlange.streiche` nie: Die Spezifikation erlaubt kein Abbrechen von `initialize`, und der Client erwartet seine Antwort.
 - Tests `internal/mcp/abbruch_kennung_test.go`; Mutanten MW3 und MW4 in `scripts/mutanten/cmd-mcp.json`.
+
+
+## Nachtrag 16 (25.11.2026): Kennungen ohne Ausmultiplizieren (F-772, Karte #293)
+
+**Status:** Akzeptiert (Claude Sonnet 5.5; Befund B-4 und B-10 der Sitzungs-Kritik 25.11.).
+
+- **Ändert Nachtrag 15.** `normID` rechnete Zahlen über `big.Rat` aus: `1e1000000` kostete 80 ms und 13 MiB, 64 wartende Anfragen mit solchen Kennungen und ein Abbruch hielten die Leseschleife 7,8 s auf. Zahlen werden jetzt ohne Ausmultiplizieren kanonisiert (`kanonZahl`): Vorzeichen, Mantisse ohne führende und abschließende Nullen, Exponent als ganze Zahl (`big.Int`, nur Addition). `1`, `1.0` und `10e-1` bleiben gleich, Kennungen über 2^53 verschieden, eine Zeichenkette `"1"` von der Zahl 1 verschieden; Zahlen über 64 Zeichen bleiben Text.
+- `schlange.streiche` normalisiert die gesuchte Kennung einmal vor der Schleife, nicht je wartender Zeile.
+- Tests `internal/mcp/kennung_kosten_test.go` (Zeitgrenze 50 bzw. 500 ms, hält unter `-race`); Mutanten MW4 bis MW9 in `scripts/mutanten/cmd-mcp.json`.
