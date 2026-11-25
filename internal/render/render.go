@@ -1156,30 +1156,10 @@ func kreis(m document.Punkt, r float64) []document.Punkt {
 	return pts
 }
 
-// rundesRechteck liefert den Umriss eines Rechtecks mit Eckradius (auf die halbe kürzere Seite begrenzt).
+// rundesRechteck liefert den Umriss eines Rechtecks mit Eckradius (auf die halbe kürzere Seite begrenzt); dieselbe
+// Rechnung wie die Bereichssuche des Editors (document.RundesRechteck, F-765).
 func rundesRechteck(r document.Rechteck, radius float64) []document.Punkt {
-	radius = document.WirksamerEckradius(radius, r.Breite(), r.Hoehe())
-	if radius == 0 {
-		return []document.Punkt{r.Min, document.Pt(r.Max.X, r.Min.Y), r.Max, document.Pt(r.Min.X, r.Max.Y)}
-	}
-	ecken := []struct {
-		m document.Punkt
-		w float64
-	}{
-		{document.Pt(r.Max.X-radius, r.Min.Y+radius), -math.Pi / 2},
-		{document.Pt(r.Max.X-radius, r.Max.Y-radius), 0},
-		{document.Pt(r.Min.X+radius, r.Max.Y-radius), math.Pi / 2},
-		{document.Pt(r.Min.X+radius, r.Min.Y+radius), math.Pi},
-	}
-	const schritte = 12
-	var pts []document.Punkt
-	for _, e := range ecken {
-		for i := 0; i <= schritte; i++ {
-			w := e.w + math.Pi/2*float64(i)/schritte
-			pts = append(pts, document.Pt(e.m.X+radius*math.Cos(w), e.m.Y+radius*math.Sin(w)))
-		}
-	}
-	return pts
+	return document.RundesRechteck(r, radius)
 }
 
 func flaeche(p []document.Punkt) float64 {

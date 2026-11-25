@@ -5,6 +5,7 @@ package document
 import (
 	"fmt"
 	"image/color"
+	"math"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -117,6 +118,34 @@ func WirksamerEckradius(radius, breite, hoehe float64) float64 {
 		return 0
 	}
 	return radius
+}
+
+// RundesRechteck liefert den Umriss des Rechtecks r mit dem Eckradius radius (WirksamerEckradius), je Ecke 13 Punkte auf
+// dem Viertelkreis, ohne Rundung die vier Ecken. Der Renderer zeichnet damit Füllung und Strich eines Kastens, der Editor
+// sucht damit die Bereiche, die der Strich eines runden Kastens berührt (StreckenStuecke, F-765, ADR-0023 Nachtrag 18).
+func RundesRechteck(r Rechteck, radius float64) []Punkt {
+	radius = WirksamerEckradius(radius, r.Breite(), r.Hoehe())
+	if radius == 0 {
+		return []Punkt{r.Min, Pt(r.Max.X, r.Min.Y), r.Max, Pt(r.Min.X, r.Max.Y)}
+	}
+	ecken := []struct {
+		m Punkt
+		w float64
+	}{
+		{Pt(r.Max.X-radius, r.Min.Y+radius), -math.Pi / 2},
+		{Pt(r.Max.X-radius, r.Max.Y-radius), 0},
+		{Pt(r.Min.X+radius, r.Max.Y-radius), math.Pi / 2},
+		{Pt(r.Min.X+radius, r.Min.Y+radius), math.Pi},
+	}
+	const schritte = 12
+	pts := make([]Punkt, 0, 4*(schritte+1))
+	for _, e := range ecken {
+		for i := 0; i <= schritte; i++ {
+			w := e.w + math.Pi/2*float64(i)/schritte
+			pts = append(pts, Pt(e.m.X+radius*math.Cos(w), e.m.Y+radius*math.Sin(w)))
+		}
+	}
+	return pts
 }
 
 // EckigerRahmen zerlegt den Strich eines Kastens ohne Rundung (WirksamerEckradius = 0) in überlappungsfreie

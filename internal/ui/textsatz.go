@@ -14,6 +14,7 @@ import (
 
 	"gioui.org/f32"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"golang.org/x/image/font"
@@ -97,13 +98,48 @@ func (ts *textsatz) umriss(f *sfnt.Font, gi sfnt.GlyphIndex, ppem fixed.Int26_6)
 // Das Ergebnis ist die Zahl der gezeichneten Glyphenumrisse (für Tests ohne Fenster, F-590).
 func (ts *textsatz) zeichneZeile(gtx layout.Context, s *fonts.Schrift, text string, x, y, grad float64, c color.NRGBA,
 	sicht image.Rectangle) int {
+	n, _ := ts.setzeZeile(gtx, s, text, x, y, grad, c, sicht, 0)
+	return n
+}
+
+// zeilenLauf ist ein Lauf aufeinanderfolgender Glyphen einer Zeile, einzeln aufgezeichnet, mit der Lage seiner Tinte
+// (von, bis) entlang der Zeile: Ursprung der ersten Glyphe minus, der letzten plus die seitliche Hülle der Schrift.
+type zeilenLauf struct {
+	aufruf   op.CallOp
+	von, bis float64
+}
+
+// zeileInLaeufen zeichnet die Zeile wie zeichneZeile, aber in Läufen, deren Glyphenursprünge höchstens vier seitliche
+// Hüllen auseinanderliegen, jeden für sich aufgezeichnet (F-765, ADR-0023 Nachtrag 18): Der Editor spielt einen Lauf
+// nur in den Spalten ab, die seine Tinte berührt. Vorher spielte er die ganze Zeile in jeder Spalte rechts ihres Anfangs
+// ab, über 1023 Spaltenstreifen auch eine Zeile „x“ tausendfach und jede lange Zeile mit allen Glyphen je Spalte. Das
+// Ergebnis sind die Läufe mit mindestens einer gezeichneten Glyphe und deren Zahl.
+func (ts *textsatz) zeileInLaeufen(gtx layout.Context, s *fonts.Schrift, text string, x, y, grad float64, c color.NRGBA,
+	sicht image.Rectangle) ([]zeilenLauf, int) {
+	_, _, seitlich := s.Huelle()
+	n, laeufe := ts.setzeZeile(gtx, s, text, x, y, grad, c, sicht, 4*seitlich*grad)
+	return laeufe, n
+}
+
+// setzeZeile ist zeichneZeile und zeileInLaeufen: Ohne lauf (0) eine Füllung für die ganze Zeile in gtx, sonst je Lauf
+// von höchstens lauf Breite (Glyphenursprünge) eine aufgezeichnete Füllung.
+func (ts *textsatz) setzeZeile(gtx layout.Context, s *fonts.Schrift, text string, x, y, grad float64, c color.NRGBA,
+	sicht image.Rectangle, lauf float64) (int, []zeilenLauf) {
 	oben, unten, seitlich := s.Huelle() // wie im Renderer (F-576)
 	if text == "" || y-grad*oben > float64(sicht.Max.Y) || y+grad*unten < float64(sicht.Min.Y) {
-		return 0
+		return 0, nil
 	}
 	face := ts.face(s, grad)
 	if face == nil {
-		return 0
+		return 0, nil
+	}
+	var (
+		laeufe     []zeilenLauf
+		aufnahme   op.MacroOp
+		anfang, zu float64 // Ursprung der ersten und der letzten Glyphe des laufenden Laufs
+	)
+	if lauf > 0 {
+		aufnahme = op.Record(gtx.Ops)
 	}
 	ppem := fixed.Int26_6(math.Round(grad * 64))
 	links, rechts := float64(sicht.Min.X)-seitlich*grad, float64(sicht.Max.X)+seitlich*grad
@@ -127,6 +163,15 @@ func (ts *textsatz) zeichneZeile(gtx layout.Context, s *fonts.Schrift, text stri
 		if px >= links {
 			gi, err := s.Font.GlyphIndex(&ts.puffer, r)
 			if err == nil {
+				if lauf > 0 && !leer && px-anfang > lauf {
+					// Lauf voll: abschließen und einen neuen beginnen.
+					paint.FillShape(gtx.Ops, c, clip.Outline{Path: p.End()}.Op())
+					laeufe = append(laeufe, zeilenLauf{aufnahme.Stop(), anfang - seitlich*grad, zu + seitlich*grad})
+					aufnahme = op.Record(gtx.Ops)
+					p.Begin(gtx.Ops)
+					leer = true
+				}
+				warLeer := leer
 				o := f32.Pt(float32(dot)/64, gy)
 				pt := func(a fixed.Point26_6) f32.Point { return o.Add(f32.Pt(float32(a.X)/64, float32(a.Y)/64)) }
 				offen := false
@@ -149,6 +194,10 @@ func (ts *textsatz) zeichneZeile(gtx layout.Context, s *fonts.Schrift, text stri
 				if offen {
 					p.Close()
 					gezeichnet++
+					if warLeer {
+						anfang = px
+					}
+					zu = px
 				}
 			}
 		}
@@ -158,5 +207,11 @@ func (ts *textsatz) zeichneZeile(gtx layout.Context, s *fonts.Schrift, text stri
 	if !leer {
 		paint.FillShape(gtx.Ops, c, clip.Outline{Path: spec}.Op())
 	}
-	return gezeichnet
+	if lauf > 0 {
+		aufruf := aufnahme.Stop()
+		if !leer {
+			laeufe = append(laeufe, zeilenLauf{aufruf, anfang - seitlich*grad, zu + seitlich*grad})
+		}
+	}
+	return gezeichnet, laeufe
 }

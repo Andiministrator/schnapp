@@ -236,8 +236,8 @@
     "name": "P6 Editor: runder Kasten über die Abbildung (F-749)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\te.jeStueck(gtx, b, v.Strich.Breite/2+1, an, vorschau, zeichne)\n",
-    "neu": "\t\t\tzeichne(an)\n",
+    "alt": "\t\t\te.jeStueck(gtx, b, v.Strich.Breite/2+1, an, vorschau, fuellung)\n",
+    "neu": "\t\t\tfuellung(an)\n",
     "timeout": "5m"
   },
   {
@@ -255,5 +255,45 @@
     "alt": "\tz.setUseFloatingPointMath(true)\n",
     "neu": "\tz.setUseFloatingPointMath(w > floatingPointMathThreshold || h > floatingPointMathThreshold)\n",
     "timeout": "5m"
+  },
+  {
+    "name": "B1 Editor: Strich des runden Kastens in allen Bereichen des Rechtecks (F-765)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\t\te.strichJeStueck(gtx, document.RundesRechteck(b, v.Eckradius), v.Strich, rand)\n",
+    "neu": "\t\t\t\t\te.jeStueck(gtx, b, rand, an, false, strich)\n",
+    "timeout": "10m"
+  },
+  {
+    "name": "B2 Editor: Strich des runden Kastens nicht auf den Bereich beschnitten (F-765)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tecken = schneideVieleck(ecken, q, puffer[:0])\n",
+    "neu": "\t\t\t_, _ = q, puffer\n",
+    "timeout": "10m"
+  },
+  {
+    "name": "B3 Editor: Textlauf über die ganze Zeile (F-765)",
+    "datei": "internal/ui/textsatz.go",
+    "paket": "./internal/ui",
+    "alt": "sicht, 4*seitlich*grad)",
+    "neu": "sicht, math.Inf(1)+seitlich)",
+    "timeout": "10m"
+  },
+  {
+    "name": "B4 Editor: Textlauf ohne rechte Hülle der letzten Glyphe (F-765)",
+    "datei": "internal/ui/textsatz.go",
+    "paket": "./internal/ui",
+    "alt": "zeilenLauf{aufruf, anfang - seitlich*grad, zu + seitlich*grad}",
+    "neu": "zeilenLauf{aufruf, anfang - seitlich*grad, zu}",
+    "timeout": "10m"
+  },
+  {
+    "name": "B5 Editor: Textlauf in allen Spalten rechts seines Anfangs (F-765)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "document.AbschnitteIn(ss, l.von, l.bis)",
+    "neu": "document.AbschnitteIn(ss, l.von, math.Inf(1))",
+    "timeout": "10m"
   }
 ]

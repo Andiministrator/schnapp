@@ -118,6 +118,9 @@ func TestEditorSchneidetSchraegeKantenAnDerNaht(t *testing.T) {
 		"PfeilBreit": document.GeraderPfeil(document.Pt(20, 10), document.Pt(380, 190), document.Strich{Farbe: gruen, Breite: 48}),
 		"KastenRund": document.Kasten{Bereich: document.R(document.Pt(40, 30), document.Pt(215, 170)), Eckradius: 60,
 			Strich: document.Strich{Farbe: gruen, Breite: 4}, Fuellung: fuell},
+		// F-765 (ADR-0023 Nachtrag 18): ohne Füllung zeichnet der Editor den Strich selbst je Bereich beschnitten.
+		"KastenRundOhneFuellung": document.Kasten{Bereich: document.R(document.Pt(40, 30), document.Pt(215, 170)),
+			Eckradius: 60, Strich: document.Strich{Farbe: gruen, Breite: 9}},
 	} {
 		d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 400, 200)))
 		if err != nil {

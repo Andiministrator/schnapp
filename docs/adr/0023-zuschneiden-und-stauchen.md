@@ -581,3 +581,27 @@ Tests `internal/render/pfeil_kasten_naht_test.go`, `TestEditorKreuzendeNaehteMit
 `scripts/mutanten/text-naht.json`, N12 nachgezogen; `render.text` läuft über `textBaender` (ein Bereich), das Feld
 `zeichner.schnitt` entfällt.
 
+## Nachtrag 18 (25.11.2026): Editor und Renderer über vielen Nähten ohne ungezählte Wiederholung (F-765, F-766)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karten #289, #290). Ergänzt Nachträge 16 und 17.
+
+1. **Runder Kasten im Editor (F-765):** Die Füllung bleibt je Bereich des Rechtecks (`jeStueck`). Den Strich zeichnet der
+   Editor wie der Renderer nur in den Bereichen, die der Umriss berührt (`document.StreckenStuecke` über
+   `document.RundesRechteck`, dieselbe Rechnung wie `render.rundesRechteck`), und dort nur die Strecken in der Nähe:
+   jede Strecke ein Trapez zwischen den Gehrungslinien ihrer Ecken (der Umriss knickt höchstens um 7,5°), selbst auf den
+   Bereich beschnitten (Sutherland-Hodgman) und verschoben, alle zusammen **ein** Pfad mit **einer** Füllung
+   (`editor.strichJeStueck`). Nachbarn teilen sich die Gehrungslinie und überlappen nicht, sonst addierte Gio die
+   Kantenglättung doppelt. Eine Füllung mit eigenem Schnitt je Bereich kostete mit llvmpipe rund 40 µs je Bereich
+   (200 Kästen über 4096 Kacheln: 23,7 s je Bild vorher, 3,3 s mit Schnitt je Bereich, 0,5 bis 0,7 s als ein Pfad).
+   Ohne Naht sieht der Strich aus wie Gios Strich um das abgerundete Rechteck (`TestEditorRunderKastenStrichWieGio`).
+2. **Text im Editor (F-765):** Jede Zeile wird in Läufen von Glyphen aufgezeichnet, deren Ursprünge höchstens vier
+   seitliche Hüllen auseinanderliegen (`textsatz.zeileInLaeufen`); jeder Lauf spielt nur in den Spalten, die seine Tinte
+   berührt (erste Glyphe minus, letzte plus seitliche Hülle). Rechts endet eine Zeile so mit ihrer letzten Glyphe, und
+   eine lange Zeile spielt je Spalte nur ihre Glyphen in der Nähe. Über 1023 Spaltenstreifen: 4 Texte mit einer langen
+   und 399 kurzen Zeilen 4,6 s → 0,2 s, 5 Texte 6×60 „@“ Grad 74 2,8 s → 0,6 s je Bild mit llvmpipe.
+3. **Messung:** `TestEditorGanzesBildUeberVielenNaehten` misst ein ganzes Bild über die Zeichenfläche ohne Fenster
+   (Grenze 2 s, großzügig für llvmpipe), nicht nur den Befehlsaufbau.
+
+Tests `internal/ui/naht_bereiche_test.go` (`TestEditorGanzesBildUeberVielenNaehten`, `TestEditorRunderKastenStrichWieGio`,
+`TestEditorTextUeberSchmalenSpalten`), Fall „KastenRundOhneFuellung“ in `TestEditorSchneidetSchraegeKantenAnDerNaht`;
+Mutanten B1–B5 neu, P6 nachgezogen (`scripts/mutanten/text-naht.json`).

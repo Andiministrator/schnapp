@@ -1805,14 +1805,20 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 			paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Outline{Path: sp.End()}.Op())
 		})
 	case document.Kasten:
-		zeichne := func(abb func(document.Punkt) f32.Point) {
+		rechteck := func(abb func(document.Punkt) f32.Point) (image.Rectangle, clip.RRect) {
 			min, max := abb(v.Bereich.Min), abb(v.Bereich.Max)
 			r := image.Rect(int(math.Round(float64(min.X))), int(math.Round(float64(min.Y))),
 				int(math.Round(float64(max.X))), int(math.Round(float64(max.Y))))
-			rr := clip.UniformRRect(r, kastenRundung(v, r))
+			return r, clip.UniformRRect(r, kastenRundung(v, r))
+		}
+		fuellung := func(abb func(document.Punkt) f32.Point) {
 			if v.Fuellung.A > 0 {
+				_, rr := rechteck(abb)
 				paint.FillShape(gtx.Ops, v.Fuellung, rr.Op(gtx.Ops))
 			}
+		}
+		strich := func(abb func(document.Punkt) f32.Point) {
+			r, rr := rechteck(abb)
 			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
 				if eckig := kastenStrich(v, r); eckig != nil {
 					// Ohne Rundung spitze Außenecken (F-498); Gios Strich kennt nur runde Ecken.
@@ -1833,10 +1839,24 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 		}
 		if b := document.R(v.Bereich.Min, v.Bereich.Max); document.WirksamerEckradius(v.Eckradius, b.Breite(), b.Hoehe()) > 0 {
 			// Gerundet: je Bereich abgeschnitten wie Renderer und SVG-Export statt über die Ecken neu gerundet (F-749,
-			// ADR-0023 Nachtrag 17).
-			e.jeStueck(gtx, b, v.Strich.Breite/2+1, an, vorschau, zeichne)
+			// ADR-0023 Nachtrag 17). Die Füllung in jedem Bereich des Rechtecks, der Strich wie im Renderer nur in den
+			// Bereichen, die sein Umriss berührt (document.StreckenStuecke von document.RundesRechteck; F-765, ADR-0023
+			// Nachtrag 18): Über 4096 Kacheln spielte der Editor sonst jeden Strich in allen Bereichen ab. Rand: halber
+			// Strich, ein Pixel für das ganzzahlige Rechteck und den Radius von Gio, eines plus die Pfeilhöhe der Sehnen des
+			// Umrisses (13 Punkte je Viertelkreis) für den Bogen außerhalb der Sehnen.
+			e.jeStueck(gtx, b, v.Strich.Breite/2+1, an, vorschau, fuellung)
+			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
+				rad := document.WirksamerEckradius(v.Eckradius, b.Breite(), b.Hoehe())
+				rand := v.Strich.Breite/2 + 2 + rad*(1-math.Cos(math.Pi/48))
+				if vorschau {
+					strich(an)
+				} else {
+					e.strichJeStueck(gtx, document.RundesRechteck(b, v.Eckradius), v.Strich, rand)
+				}
+			}
 		} else {
-			zeichne(an)
+			fuellung(an)
+			strich(an)
 		}
 	case document.Nummer:
 		// Je sichtbarem Bereich und auf ihn beschnitten wie Renderer und SVG-Export (F-745, ADR-0023 Nachtrag 15).
@@ -1929,20 +1949,22 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 					}
 					// Sicht im Original: alle Spalten ab der ersten berührten, die Reihen der Zeile.
 					fenster := image.Rect(ss[0].A, rs[0].A, ss[len(ss)-1].B, rs[len(rs)-1].B)
-					m := op.Record(gtx.Ops)
-					n := e.satz.zeichneZeile(gtx, sch, zeile.Text, zeile.X, zeile.Grundlinie, grad, v.Farbe, fenster)
-					aufruf := m.Stop()
+					laeufe, n := e.satz.zeileInLaeufen(gtx, sch, zeile.Text, zeile.X, zeile.Grundlinie, grad, v.Farbe, fenster)
 					if n == 0 {
 						continue
 					}
-					for _, sp := range ss {
-						for _, ze := range rs {
-							versatz := image.Pt(sp.Versatz, ze.Versatz)
-							schnitt := clip.Rect(image.Rect(sp.A, ze.A, sp.B, ze.B).Add(versatz)).Push(gtx.Ops)
-							t := op.Offset(versatz).Push(gtx.Ops)
-							aufruf.Add(gtx.Ops)
-							t.Pop()
-							schnitt.Pop()
+					// Jeder Lauf nur in den Spalten, die seine Tinte berührt (F-765, ADR-0023 Nachtrag 18): rechts endet die
+					// Zeile mit ihrer letzten Glyphe, und eine lange Zeile spielt je Spalte nur ihre Glyphen in der Nähe.
+					for _, l := range laeufe {
+						for _, sp := range document.AbschnitteIn(ss, l.von, l.bis) {
+							for _, ze := range rs {
+								versatz := image.Pt(sp.Versatz, ze.Versatz)
+								schnitt := clip.Rect(image.Rect(sp.A, ze.A, sp.B, ze.B).Add(versatz)).Push(gtx.Ops)
+								t := op.Offset(versatz).Push(gtx.Ops)
+								l.aufruf.Add(gtx.Ops)
+								t.Pop()
+								schnitt.Pop()
+							}
 						}
 					}
 				}
@@ -2000,6 +2022,111 @@ func (e *editor) jeStueckIn(gtx layout.Context, stuecke []document.Stueck, an fu
 		t.Pop()
 		schnitt.Pop()
 	}
+}
+
+// strichJeStueck zeichnet den Strich des geschlossenen, fein geknickten Umrisses pts (Original; document.RundesRechteck)
+// je sichtbarem Bereich, den er berührt (document.StreckenStuecke mit rand), und dort nur die Strecken in der Nähe —
+// wie der Renderer (render.strichJeStueck; F-765, ADR-0023 Nachtrag 18). Jede Strecke ist ein Trapez zwischen den
+// Gehrungslinien ihrer beiden Ecken (der Umriss knickt höchstens um 7,5°), selbst auf den Bereich beschnitten und um
+// dessen Versatz verschoben; Nachbarn teilen sich die Gehrungslinie, überlappen also nicht (sonst addierte Gio die
+// Kantenglättung doppelt). Alle zusammen sind ein Pfad mit einer Füllung (non-zero). Eine Füllung mit Schnitt je
+// Bereich kostete Gio über 4096 Kacheln rund 40 µs je Bereich mit llvmpipe (200 Kästen: 3,3 s je Bild).
+func (e *editor) strichJeStueck(gtx layout.Context, pts []document.Punkt, s document.Strich, rand float64) {
+	hw := s.Breite / 2
+	// Doppelte Punkte (Seite ohne geraden Teil) fallen weg: Eine Strecke ohne Länge hat keine Richtung.
+	var eindeutig []document.Punkt
+	for _, p := range pts {
+		if len(eindeutig) == 0 || p.Minus(eindeutig[len(eindeutig)-1]).Laenge() > 1e-9 {
+			eindeutig = append(eindeutig, p)
+		}
+	}
+	for len(eindeutig) > 1 && eindeutig[0].Minus(eindeutig[len(eindeutig)-1]).Laenge() <= 1e-9 {
+		eindeutig = eindeutig[:len(eindeutig)-1]
+	}
+	pts = eindeutig
+	n := len(pts)
+	if n < 3 || hw <= 0 {
+		return
+	}
+	// Linke Normale je Strecke, Gehrung je Ecke: 2·hw·(n₁+n₂)/|n₁+n₂|² reicht hw/cos(Knick/2) weit.
+	normale := make([]document.Punkt, n)
+	for i := range pts {
+		d := pts[(i+1)%n].Minus(pts[i])
+		normale[i] = document.Pt(-d.Y, d.X).Mal(1 / d.Laenge())
+	}
+	gehrung := make([]document.Punkt, n)
+	for k := range pts {
+		sum := normale[(k+n-1)%n].Plus(normale[k])
+		q := sum.X*sum.X + sum.Y*sum.Y
+		if q < 1e-6 { // Kehrtwende, kommt im Umriss nicht vor
+			gehrung[k] = normale[k].Mal(hw)
+			continue
+		}
+		gehrung[k] = sum.Mal(2 * hw / q)
+	}
+	var pfad clip.Path
+	pfad.Begin(gtx.Ops)
+	var viereck, puffer [8]document.Punkt
+	for _, st := range e.s.D.StreckenStuecke(pts, true, rand) {
+		z := st.Ziel()
+		v := document.Pt(math.Round(st.Versatz.X), math.Round(st.Versatz.Y))
+		q := document.Rechteck{Min: document.Pt(math.Round(z.Min.X), math.Round(z.Min.Y)).Minus(v),
+			Max: document.Pt(math.Round(z.Max.X), math.Round(z.Max.Y)).Minus(v)}
+		for _, i := range st.Strecken {
+			j := (i + 1) % n
+			a, b := pts[i], pts[j]
+			ecken := append(viereck[:0], a.Plus(gehrung[i]), b.Plus(gehrung[j]), b.Minus(gehrung[j]), a.Minus(gehrung[i]))
+			ecken = schneideVieleck(ecken, q, puffer[:0])
+			if len(ecken) < 3 {
+				continue
+			}
+			for k, p := range ecken {
+				p = p.Plus(v)
+				if k == 0 {
+					pfad.MoveTo(f32.Pt(float32(p.X), float32(p.Y)))
+				} else {
+					pfad.LineTo(f32.Pt(float32(p.X), float32(p.Y)))
+				}
+			}
+			pfad.Close()
+		}
+	}
+	paint.FillShape(gtx.Ops, s.Farbe, clip.Outline{Path: pfad.End()}.Op())
+}
+
+// schneideVieleck schneidet das konvexe Vieleck p auf das Rechteck r zu (Sutherland-Hodgman, Umlaufsinn bleibt) und
+// liefert das Ergebnis in p (Platz für 8 Ecken; ein Viereck hat nach vier Schnitten höchstens 8). puffer ist
+// Arbeitsplatz derselben Größe.
+func schneideVieleck(p []document.Punkt, r document.Rechteck, puffer []document.Punkt) []document.Punkt {
+	schnitt := func(ein []document.Punkt, aus []document.Punkt, innen func(document.Punkt) bool,
+		kreuz func(a, b document.Punkt) document.Punkt) []document.Punkt {
+		aus = aus[:0]
+		for k := range ein {
+			a, b := ein[k], ein[(k+1)%len(ein)]
+			ia, ib := innen(a), innen(b)
+			if ia {
+				aus = append(aus, a)
+			}
+			if ia != ib {
+				aus = append(aus, kreuz(a, b))
+			}
+		}
+		return aus
+	}
+	senkrecht := func(x float64) func(a, b document.Punkt) document.Punkt {
+		return func(a, b document.Punkt) document.Punkt {
+			return document.Pt(x, a.Y+(b.Y-a.Y)*(x-a.X)/(b.X-a.X))
+		}
+	}
+	waagerecht := func(y float64) func(a, b document.Punkt) document.Punkt {
+		return func(a, b document.Punkt) document.Punkt {
+			return document.Pt(a.X+(b.X-a.X)*(y-a.Y)/(b.Y-a.Y), y)
+		}
+	}
+	p2 := schnitt(p, puffer, func(q document.Punkt) bool { return q.X >= r.Min.X }, senkrecht(r.Min.X))
+	p = schnitt(p2, p, func(q document.Punkt) bool { return q.X <= r.Max.X }, senkrecht(r.Max.X))
+	p2 = schnitt(p, p2, func(q document.Punkt) bool { return q.Y >= r.Min.Y }, waagerecht(r.Min.Y))
+	return schnitt(p2, p, func(q document.Punkt) bool { return q.Y <= r.Max.Y }, waagerecht(r.Max.Y))
 }
 
 // kastenRundung ist der Eckradius in Bildpunkten, mit dem der Editor den Kasten auf dem ganzzahligen Rechteck r
