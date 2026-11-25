@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13, Verify 2 und Karte #299). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -1061,4 +1061,21 @@ Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13). Kurze Regeln aus Fehler
 - **Trailer bei Nacharbeit nach Kritik:** Fix-Commits, die Befunde eines Fable-Kritikers beheben, tragen Fable mit
   (CLAUDE.md §Commit-Konvention, dritter Fall) — auch wenn ein Agent den Commit schreibt: im Agenten-Prompt vorgeben
   (F-780, F-786).
+
+## Sprint 13, Verify 2 und Karte #299 (25.11.2026 nachmittags, F-787 bis F-797)
+
+- **Fehlermails der CI sind ein Befund, kein Rauschen** (F-791): Der Job `wurzel` war seit dem 24.11. bei jedem Push
+  rot, weil ein neuer Zeittest unter `-race` eine feste Grenze von 2 s prüfte (4,8–5,7 s). Zeitgrenzen gehören in
+  Konstanten mit Build-Tag `race`/`!race` (Muster `zeitgrenze_test.go` in `render`, `fileformat`, `ui`); nach jedem Push
+  die check-runs ansehen, nicht nur bei Verdacht. Lokal nachfahren ist schneller als das Protokoll zu holen.
+- **Erst messen, wohin die Zeit geht** (F-787): 90 % der Bildzeit über vielen Kacheln war das Abspielen einer leeren
+  Füllung (Alpha 0) in 4096 Bereichen, nicht der vermutete Strich.
+- **Bänder eines Rasters vergleicht man mit ±1, nicht bitgleich**: Der Rasterizer rechnet float32 relativ zum Ausschnitt.
+- **Eine Zahl im ADR veraltet mit dem nächsten Umbau** (F-795): Die Budgetgrenze „Strich 41“ galt nur bis Nachtrag 21;
+  vor dem Berichtigen auf dem aktuellen Stand nachmessen und beide Stände nennen.
+- **Mutanten-Namen in Commit, ADR und Testkopf wörtlich aus der JSON übernehmen** (F-794), nicht als Bereich „A1 bis A8“.
+- **Grenzfälle der Geometrie gezielt treffen** (F-792): sechs Testfälle verfehlten genau Strich = 2·Radius; Fälle
+  an den Umschaltpunkten der Rechnung (Gehrung erreicht Mittelpunkt) gehören in die Tabelle.
+- **Ein abgelaufener Login beendet Agenten mitten im Lauf**: Sie lassen sich mit SendMessage an derselben Stelle
+  fortsetzen; vorher Hauptbaum und Worktree auf Zwischenstände prüfen.
 
