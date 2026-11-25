@@ -644,7 +644,7 @@ Berichtigt Nachtrag 18 Punkt 1.
    liegt auf ganzen Pixeln, das Bild bleibt gleich. Das umschließende Rechteck je Teil spart den Schnitt mit Bereichen,
    die es nicht berührt. 200 runde Kästen über 4096 Kacheln, llvmpipe, ganzes Bild (Messungen schwanken auf dem
    geteilten Rechner um bis zu 50 %): Strich 1 0,45–0,5 s (unverändert), Strich 40 1,4–1,8 s → 0,55–1,0 s, Strich 120
-   2,7–3,2 s → 0,8–1,1 s. Strich 41 war bei 200 Kästen der breiteste, den `render.Pruefe` annahm (42 lehnte es ab; berichtigt nach Verify 2, F-795; seit Nachtrag 21 nimmt es auch Strich 120 an, weil der Strich ohne Kreise gefüllt wird); der
+   2,7–3,2 s → 0,8–1,1 s. Strich 41 war bei 200 Kästen der breiteste, den `render.Pruefe` annahm (42 lehnte es ab; berichtigt nach Verify 2, F-795; seit Nachtrag 21 nimmt es bis Strich 132 an und lehnt 133 ab, weil der Strich ohne Kreise gefüllt wird; gemessen nach Verify 3, F-801); der
    Fall steht in `TestEditorGanzesBildUeberVielenNaehten` (Grenze 2 s), der Test verlangt, dass `Pruefe` ihn annimmt.
    Das Budget bleibt unverändert.
 3. **Abgleich mit dem Renderer:** Abseits der Kanten (das Pixel und alle bis zwei Schritte weit deckt der Renderer gleich)
@@ -697,6 +697,14 @@ Grenzen der Objektebene: Sie zeigt die Objekte so, wie der Renderer sie rastert 
 Vergrößern die Pixel der Ansicht statt Vektoren), und der gerade bearbeitete Text steht wie nach der Eingabe auf seinen
 Bereich beschnitten (Nachtrag 17 Punkt 3 gilt dort nicht). Das betrifft nur Dokumente über der Bereichsgrenze.
 
+Zusatz nach Verify 3 (F-799, F-800): Die Ebene gilt auch nur für ihr Dokument (`objektEbene.dok`); zwei frisch
+geöffnete Dokumente mit gleichen Objekten tragen denselben Stand und Pixelstand, ohne den Vergleich zeigte ein Wechsel
+der Aufnahme die Ebene der alten (unter einer Lupe deren ungeschwärzte Pixel). Wird die Ebene nicht mehr gezeigt
+(unter der Grenze, Wechsel der Aufnahme in `uebernimm`, Fehler beim Bauen), gibt `frei` Bild und Objekte frei; vorher
+blieb das Bild in Ansichtsgröße (bis 275 MiB) bis zum nächsten Aufbau liegen. Jede Bedingung von `passt` prüft
+`TestObjektebenePasstJeBedingung` einzeln (Mutanten OE8 bis OE10). Aufbau gemessen 0,7 bis 1,9 s auf 16 Kernen,
+2,3 s auf 2 Kernen (F-801).
+
 Tests: `TestObjektebeneUeberAnsichtWieBild`, `TestObjektebeneBaenderWieEinBand` (`internal/render/objektebene_test.go`),
 `TestObjektebeneGiltNurFuerIhrenStand`, `TestEditorZeigtObjektebeneWieRenderer` (`internal/ui/objektebene_test.go`),
 Fälle „2000 runde Kästen ohne Füllung (Budget)“, „120 gefüllte runde Kästen (Budget)“ und „45 gefüllte runde Kästen
@@ -723,6 +731,11 @@ Punkte 1 und 3.
    Radius 20, Strich 40: Editor 249–252 statt 255 auf einer Linie vom Mittelpunkt nach außen). Reicht die Gehrung einer
    Ecke bis zum Mittelpunkt ihrer Rundung (g ≥ Radius), liegt die innere Ecke jetzt auf dem Mittelpunkt; die wahre
    innere Kante ist dort ein Kreis vom Radius Radius − hw < 0,0022·Radius. Die Begrenzung auf das Loch bleibt.
+   Zusatz F-798: Die innere Ecke springt schon auf den Mittelpunkt, wenn die Gehrung weniger als `mittelpunktFang`
+   = 0,25 px davor endet. Sonst entstehen dort Teile von Bruchteilen eines Pixels Breite, die llvmpipe je nach
+   Mesa-Fassung verschieden rastert (Strich 39,9 bei Radius 20: in der CI 26 Pixel Abweichung zwischen Editor und
+   Renderer, lokal keine). Hinzu kommt ein Keil von höchstens 0,25 px Tiefe innerhalb des Strichs. Test: Strich 39,6
+   und 39,9 in `TestKastenStrichFaecherJeRundung`, Mutant KS6.
 3. **Bild:** Die Gehrung der Teile (Knick 7,5°) reicht höchstens 0,22 % der halben Breite über den runden Strich hinaus
    (Strich 60: 0,064 Pixel); das SVG sagt weiter `stroke-linejoin="round"`. Das Kostenmodell zählt die Teile wie jede
    Füllung (weniger Ecken als Rechtecke und Kreise). Pfeil, Lupen-Linie und Schenkel der Sprechblase füllen weiter
