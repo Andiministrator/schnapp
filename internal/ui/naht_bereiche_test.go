@@ -3,6 +3,7 @@
 package ui
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"strings"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/render"
 )
 
 // Zeit je Editor-Bild über vielen Nähten (F-747, F-750, ADR-0023 Nachtrag 16): Gemessen wird nur der Aufbau der
@@ -189,10 +191,13 @@ func TestEditorGanzesBildUeberVielenNaehten(t *testing.T) {
 		kacheln = append(kacheln, document.Streifen{Von: 4 * i, Bis: 4*i + 1},
 			document.Streifen{Zeilen: true, Von: 4 * i, Bis: 4*i + 1})
 	}
-	var kaesten []document.Objekt
-	for i := 0; i < 200; i++ {
-		kaesten = append(kaesten, document.Kasten{Bereich: document.R(document.Pt(2, 2), document.Pt(250, 250)),
-			Eckradius: 20, Strich: document.Strich{Farbe: schwarz, Breite: 1}})
+	kaesten := func(breite float64) []document.Objekt {
+		var k []document.Objekt
+		for i := 0; i < 200; i++ {
+			k = append(k, document.Kasten{Bereich: document.R(document.Pt(2, 2), document.Pt(250, 250)),
+				Eckradius: 20, Strich: document.Strich{Farbe: schwarz, Breite: breite}})
+		}
+		return k
 	}
 	langKurz := strings.Repeat("x", 1700) + strings.Repeat("\nx", 399)
 	var texte []document.Objekt
@@ -214,11 +219,15 @@ func TestEditorGanzesBildUeberVielenNaehten(t *testing.T) {
 		w, h    int
 		st      []document.Streifen
 		objekte []document.Objekt
+		budget  bool // render.Pruefe muss das Dokument annehmen (Fall knapp unter dem Budget)
 	}{
-		{"200 runde Kästen ohne Füllung, 4096 Kacheln", 256, 256, kacheln, kaesten},
-		{"4 Texte, 1 lange und 399 kurze Zeilen, 1023 Spaltenstreifen", 2048, 1000, spalten(1023, 2), texte},
-		{"50 Texte à 200 kurze Zeilen, 1023 Spaltenstreifen", 2048, 1000, spalten(1023, 2), kurze},
-		{"5 Texte 6×60 @ Grad 74, 1023 Spaltenstreifen", 4200, 520, spalten(1023, 4), at},
+		{"200 runde Kästen ohne Füllung, 4096 Kacheln", 256, 256, kacheln, kaesten(1), false},
+		// F-782 (ADR-0023 Nachtrag 19): breiter Strich knapp unter KantenBudget (Strich 44 lehnt Pruefe ab); vorher
+		// 1,6 bis 1,8 s je Bild mit llvmpipe, jeder Bereich spielte alle Kanten seiner Vierecke.
+		{"200 runde Kästen, Strich 40, 4096 Kacheln", 256, 256, kacheln, kaesten(40), true},
+		{"4 Texte, 1 lange und 399 kurze Zeilen, 1023 Spaltenstreifen", 2048, 1000, spalten(1023, 2), texte, false},
+		{"50 Texte à 200 kurze Zeilen, 1023 Spaltenstreifen", 2048, 1000, spalten(1023, 2), kurze, false},
+		{"5 Texte 6×60 @ Grad 74, 1023 Spaltenstreifen", 4200, 520, spalten(1023, 4), at, false},
 	} {
 		d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, fall.w, fall.h)))
 		if err != nil {
@@ -232,6 +241,9 @@ func TestEditorGanzesBildUeberVielenNaehten(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
+		if err := render.Pruefe(d); fall.budget && err != nil {
+			t.Fatalf("%s: %v", fall.name, err)
+		}
 		e := &editor{s: canvas.NeueSitzung(d)}
 		headlessBild(t, d.Groesse(), func(gtx layout.Context) { e.zeichneObjekte(gtx) }) // Fläche, Zwischenspeicher
 		s := time.Now()
@@ -240,6 +252,118 @@ func TestEditorGanzesBildUeberVielenNaehten(t *testing.T) {
 		t.Logf("%s: ganzes Bild %v", fall.name, dt)
 		if dt > 2*time.Second {
 			t.Errorf("%s: ganzes Bild %v, Grenze 2 s", fall.name, dt)
+		}
+	}
+}
+
+// F-783 (ADR-0023 Nachtrag 19): Ist der halbe Strich breiter als der Eckradius, kehren sich die inneren Kanten der
+// Gehrungsvierecke um. Gefüllt als Schleife hoben sich die Umlaufzahlen auf, und ein kleiner runder Kasten zeigte im
+// Editor ein Loch, wo der Renderer füllt (Gios eigener Strich hatte es auch). Verglichen wird mit dem Renderer: Wo der
+// Renderer ein Pixel samt allen Pixeln bis zwei Schritte weit gleich deckt (ganz oder gar nicht), muss der Editor
+// dasselbe zeigen (rgbaNah); an den Kanten darf die Glättung abweichen (der Renderer addiert sie an den Gelenken seiner
+// Kreise und Rechtecke, der Editor glättet die Gehrungsvierecke einfach), aber kein Pixel darf voll gegen leer stehen.
+// Über Nähten (volle Bereiche als ein Rechteck, Hüllen je Bereich beschnitten; F-782) zeigt jedes Pixel der Ansicht,
+// was der Editor ohne Naht an seiner Stelle im Original zeigt: Der Renderer zeichnet dort die Kante der Naht mit.
+func TestEditorDickerStrichKleinerKastenWieRenderer(t *testing.T) {
+	gruen := color.NRGBA{G: 160, A: 255}
+	for _, fall := range []struct {
+		seiteX, seiteY int
+		radius, breite float64
+	}{{40, 40, 20, 60}, {30, 30, 10, 50}, {20, 20, 10, 24}, {42, 42, 20, 60}, {200, 130, 8, 24}, {60, 50, 12, 20}} {
+		min := image.Pt(80, 80)
+		bereich := image.Rectangle{Min: min, Max: min.Add(image.Pt(fall.seiteX, fall.seiteY))}
+		name := fmt.Sprintf("Kasten %d×%d Radius %v Strich %v", fall.seiteX, fall.seiteY, fall.radius, fall.breite)
+		bild := func(st []document.Streifen) (*image.RGBA, *document.Dokument) {
+			d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 360, 300)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := d.SetzeStreifen(st); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := d.Hinzufuegen(document.Kasten{Bereich: document.R(document.Pt(float64(bereich.Min.X),
+				float64(bereich.Min.Y)), document.Pt(float64(bereich.Max.X), float64(bereich.Max.Y))),
+				Eckradius: fall.radius, Strich: document.Strich{Farbe: gruen, Breite: fall.breite}}); err != nil {
+				t.Fatal(err)
+			}
+			e := &editor{s: canvas.NeueSitzung(d)}
+			return headlessBild(t, d.Groesse(), func(gtx layout.Context) { e.zeichneObjekte(gtx) }), d
+		}
+		editor, d := bild(nil)
+		rend, err := render.Bild(d)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rgba := func(x, y int) color.RGBA { return color.RGBAModel.Convert(rend.At(x, y)).(color.RGBA) }
+		innen, ab, loch, deckung := 0, 0, 0, 0
+		for y := 2; y < 298; y++ {
+			for x := 2; x < 358; x++ {
+				ed, r := editor.RGBAAt(x, y), rgba(x, y)
+				if r.A > 0 {
+					deckung++
+				}
+				if (ed.A < 64 && r.A > 192) || (ed.A > 192 && r.A < 64) {
+					loch++
+				}
+				gleich := r.A == 0 || r.A == 255
+				for dy := -2; dy <= 2 && gleich; dy++ {
+					for dx := -2; dx <= 2 && gleich; dx++ {
+						gleich = rgba(x+dx, y+dy).A == r.A
+					}
+				}
+				if gleich {
+					innen++
+					if !rgbaNah(ed, r) {
+						ab++
+					}
+				}
+			}
+		}
+		if deckung == 0 || innen == 0 {
+			t.Fatalf("%s: Renderer hat nichts gezeichnet", name)
+		}
+		if ab != 0 || loch != 0 {
+			m := bereich.Min.Add(bereich.Size().Div(2))
+			t.Errorf("%s: %d von %d Pixeln abseits der Kanten weichen vom Renderer ab, %d stehen voll gegen leer "+
+				"(Mitte: Editor %d, Renderer %d)", name, ab, innen, loch, editor.RGBAAt(m.X, m.Y).A, rgba(m.X, m.Y).A)
+		}
+
+		// Über Nähten: eine Spalten- und eine Zeilennaht durch die Mitte, links davon schmale Spalten alle 4 Pixel.
+		m := bereich.Min.Add(bereich.Size().Div(2))
+		st := []document.Streifen{{Von: m.X - 2, Bis: m.X + 2}, {Zeilen: true, Von: m.Y - 2, Bis: m.Y + 2}}
+		imStreifenX := map[int]bool{}
+		for x := m.X - 2; x < m.X+2; x++ {
+			imStreifenX[x] = true
+		}
+		for x := 30; x < m.X-8; x += 4 {
+			st = append(st, document.Streifen{Von: x, Bis: x + 1})
+			imStreifenX[x] = true
+		}
+		var qx, qy []int // Spalte bzw. Zeile des Originals je Spalte bzw. Zeile der Ansicht
+		for x := 0; x < 360; x++ {
+			if !imStreifenX[x] {
+				qx = append(qx, x)
+			}
+		}
+		for y := 0; y < 300; y++ {
+			if y < m.Y-2 || y >= m.Y+2 {
+				qy = append(qy, y)
+			}
+		}
+		mit, dm := bild(st)
+		if g := dm.Groesse(); g != image.Pt(len(qx), len(qy)) {
+			t.Fatalf("%s: Ansicht %v, erwartet %d×%d", name, g, len(qx), len(qy))
+		}
+		abNaht := 0
+		for vy, y := range qy {
+			for vx, x := range qx {
+				if !rgbaNah(mit.RGBAAt(vx, vy), editor.RGBAAt(x, y)) {
+					abNaht++
+				}
+			}
+		}
+		if abNaht != 0 {
+			t.Errorf("%s: über den Nähten weichen %d Pixel vom Bild ohne Naht ab", name, abNaht)
 		}
 	}
 }

@@ -268,8 +268,8 @@
     "name": "B2 Editor: Strich des runden Kastens nicht auf den Bereich beschnitten (F-765)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\tecken = schneideVieleck(ecken, q, puffer[:0])\n",
-    "neu": "\t\t\t_, _ = q, puffer\n",
+    "alt": "ecken := schneideVieleck(append(arbeit[:0], vierecke.teile[t]...), q, puffer[:0])",
+    "neu": "ecken := append(arbeit[:0], vierecke.teile[t]...); _ = puffer",
     "timeout": "10m"
   },
   {
@@ -334,6 +334,30 @@
     "paket": "./internal/ui",
     "alt": "\t\t\t\tif vorschau {\n\t\t\t\t\tstrich(an)\n\t\t\t\t} else {",
     "neu": "\t\t\t\tif false {\n\t\t\t\t\tstrich(an)\n\t\t\t\t} else {",
+    "timeout": "10m"
+  },
+  {
+    "name": "BK6 Editor: innere Ecken des Strichs nicht auf das Loch begrenzt (F-783)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "innen[k] = document.Pt(min(max(i.X, loch.Min.X), loch.Max.X), min(max(i.Y, loch.Min.Y), loch.Max.Y))",
+    "neu": "innen[k] = i",
+    "timeout": "10m"
+  },
+  {
+    "name": "B7 Editor: teilweise gedeckter Bereich als volles Rechteck (F-782)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if flaeche >= q.Breite()*q.Hoehe()-1e-6 {",
+    "neu": "if flaeche >= q.Breite()*q.Hoehe()/2 {",
+    "timeout": "10m"
+  },
+  {
+    "name": "B8 Editor: Fächer einer Rundung als einzelne Dreiecke (F-783)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif faecher(i) {\n",
+    "neu": "\t\t\tif false && faecher(i) {\n",
     "timeout": "10m"
   }
 ]

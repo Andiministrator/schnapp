@@ -586,12 +586,15 @@ Tests `internal/render/pfeil_kasten_naht_test.go`, `TestEditorKreuzendeNaehteMit
 **Status:** Akzeptiert (Claude Opus 5.5, Karten #289, #290). Ergänzt Nachträge 16 und 17.
 
 1. **Runder Kasten im Editor (F-765):** Die Füllung bleibt je Bereich des Rechtecks (`jeStueck`). Den Strich zeichnet der
-   Editor wie der Renderer nur in den Bereichen, die der Umriss berührt (`document.StreckenStuecke` über
-   `document.RundesRechteck`, dieselbe Rechnung wie `render.rundesRechteck`), und dort nur die Strecken in der Nähe:
+   Editor in denselben Bereichen wie der Renderer, nämlich nur in denen, die der Umriss berührt
+   (`document.StreckenStuecke` über `document.RundesRechteck`, dieselbe Rechnung wie `render.rundesRechteck`), und dort
+   nur die Strecken in der Nähe:
    jede Strecke ein Trapez zwischen den Gehrungslinien ihrer Ecken (der Umriss knickt höchstens um 7,5°), selbst auf den
    Bereich beschnitten (Sutherland-Hodgman) und verschoben, alle zusammen **ein** Pfad mit **einer** Füllung
    (`editor.strichJeStueck`). Nachbarn teilen sich die Gehrungslinie und überlappen nicht, sonst addierte Gio die
-   Kantenglättung doppelt. Eine Füllung mit eigenem Schnitt je Bereich kostete mit llvmpipe rund 40 µs je Bereich
+   Kantenglättung doppelt. *Berichtigt durch Nachtrag 19:* Die Form deckt sich mit dem Renderer nur, solange der halbe
+   Strich nicht breiter ist als der Eckradius; darüber kreuzten sich die inneren Ecken, die Trapeze wurden Schleifen und
+   der Editor zeigte ein Loch (F-783). Eine Füllung mit eigenem Schnitt je Bereich kostete mit llvmpipe rund 40 µs je Bereich
    (200 Kästen über 4096 Kacheln: 23,7 s je Bild vorher, 3,3 s mit Schnitt je Bereich, 0,5 bis 0,7 s als ein Pfad).
    Ohne Naht sieht der Strich aus wie Gios Strich um das abgerundete Rechteck (`TestEditorRunderKastenStrichWieGio`).
 2. **Text im Editor (F-765):** Jede Zeile wird in Läufen von Glyphen aufgezeichnet, deren Ursprünge höchstens vier
@@ -618,3 +621,38 @@ N1–N3 und N3b auf `glyphBaender` nachgezogen.
 Editor: Tests `internal/ui/naht_bereiche_test.go` (`TestEditorGanzesBildUeberVielenNaehten`, `TestEditorRunderKastenStrichWieGio`,
 `TestEditorTextUeberSchmalenSpalten`), Fall „KastenRundOhneFuellung“ in `TestEditorSchneidetSchraegeKantenAnDerNaht`;
 Mutanten B1–B5 neu, P6 nachgezogen (`scripts/mutanten/text-naht.json`).
+
+## Nachtrag 19 (25.11.2026): Strich des runden Kastens im Editor bei breitem Strich (F-782, F-783)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #297; Befunde aus dem Verify-Lauf Sprint 13, Claude Fable 5.2).
+Berichtigt Nachtrag 18 Punkt 1.
+
+1. **Kein Loch bei Strich breiter als die Rundung (F-783):** Ist der halbe Strich hw größer als der Eckradius, liegen die
+   inneren Gehrungsecken einer Rundung jenseits ihres Mittelpunkts in umgekehrter Reihenfolge; jedes Trapez war eine
+   Schleife, deren Hälften sich in der Füllung (non-zero) aufhoben. Ein Kasten 40×40, Radius 20, Strich 60 zeigte im
+   Editor ein Loch (Mitte Deckung 2), der Renderer füllt (255); Gios eigener Strich hatte dasselbe Loch. Jetzt liegen die
+   inneren Ecken höchstens auf dem Rand des **Lochs**, des um hw verkleinerten umschließenden Rechtecks (bei zu kleinem
+   Rechteck dessen Mittellinie bzw. Mitte): genau die Punkte weiter als hw vom Umriss, die auch der Renderer frei lässt
+   (`editor.strichVierecke`). Die Strecken einer Rundung fallen dann auf eine gemeinsame innere Spitze; sie werden ein
+   konvexer Fächer (äußere Ecken, dann die Spitze), nicht einzelne Dreiecke — liefen viele schmale Dreiecke in einem
+   Punkt zusammen, verlöre Gio dort durch die gegeneinander aufgerechneten Kanten bis zu 3 Stufen Deckung. Liegen alle
+   inneren Ecken auf einer Stelle, ist der Strich der äußere Umriss. Alle Teile laufen gleich herum und überlappen nicht.
+2. **Volle Bereiche als Rechteck (F-782):** Ein Bereich, den die beschnittenen Teile ganz decken (Summe ihrer Flächen
+   gleich der Fläche des Bereichs; sie überlappen nicht), wird ein Rechteck; benachbarte volle Bereiche einer Zeile
+   werden ein Rechteck. Gio rasterte vorher je Bereich alle Kanten der Vierecke; der Rand der Teile gegen den Bereich
+   liegt auf ganzen Pixeln, das Bild bleibt gleich. Das umschließende Rechteck je Teil spart den Schnitt mit Bereichen,
+   die es nicht berührt. 200 runde Kästen über 4096 Kacheln, llvmpipe, ganzes Bild (Messungen schwanken auf dem
+   geteilten Rechner um bis zu 50 %): Strich 1 0,45–0,5 s (unverändert), Strich 40 1,4–1,8 s → 0,55–1,0 s, Strich 120
+   2,7–3,2 s → 0,8–1,1 s. Strich 40 ist bei 200 Kästen der breiteste, den `render.Pruefe` annimmt (44 lehnt es ab); der
+   Fall steht in `TestEditorGanzesBildUeberVielenNaehten` (Grenze 2 s), der Test verlangt, dass `Pruefe` ihn annimmt.
+   Das Budget bleibt unverändert.
+3. **Abgleich mit dem Renderer:** Abseits der Kanten (das Pixel und alle bis zwei Schritte weit deckt der Renderer gleich)
+   zeigt der Editor dasselbe wie der Renderer (`rgbaNah`), kein Pixel steht voll gegen leer. An den Kanten weicht die
+   Glättung ab: Der Renderer füllt Rechtecke je Strecke und Kreise an den Gelenken in einem Durchgang und addiert dort
+   die Kantenglättung der überlappenden Teile (bis 255 statt rund 128 auf dem äußeren Rand), der Editor glättet die
+   Gehrungsteile einfach. Über Nähten zeigt jedes Pixel der Ansicht, was der Editor ohne Naht an seiner Stelle im
+   Original zeigt.
+
+Tests: `TestEditorDickerStrichKleinerKastenWieRenderer` (40/20/60, 30/10/50, 20/10/24, 42/20/60, 200×130/8/24,
+60×50/12/20; je ohne Naht gegen den Renderer und über Nähten gegen das Bild ohne Naht), Fall „Strich 40“ in
+`TestEditorGanzesBildUeberVielenNaehten`. Mutanten B6–B8 neu, B2 nachgezogen (`scripts/mutanten/text-naht.json`).
