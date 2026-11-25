@@ -340,6 +340,7 @@ type editor struct {
 	// zeigerFenster ist der Zeigerort über der Leinwand in Fensterpixeln (nil: außerhalb), für die
 	// Fußzeile (ADR-0031 Punkt 4).
 	zeigerFenster *document.Punkt
+	zeigerForm    canvas.ZeigerArt // Form beim letzten Rechnen (merkeZeiger, Zeichnen); einmal je Bewegung (Kritik K-5)
 	// fussRahmen: Lage der Felder, die die Fußzeile beim letzten Zeichnen zeigte (von rechts nach links; Tests, F-514).
 	fussRahmen []image.Rectangle
 	// hilfeGroesse: Größe der Tastenübersicht beim letzten Zeichnen (Tests, F-509: sie passt auf die Leinwand).
@@ -1538,7 +1539,8 @@ func (e *editor) leinwand(gtx layout.Context) {
 	e.zeichneHilfslinien(gtx)
 	e.zeichneEinfuegemarke(gtx)
 
-	systemZeiger(e.s.Zeiger(e.zeigerFenster)).Add(gtx.Ops) // je Lage: Griffe, Objekte, Werkzeug (Karte #323)
+	e.zeigerForm = e.s.Zeiger(e.zeigerFenster) // ein Zug oder die Sperre ändern die Form auch ohne Bewegung
+	systemZeiger(e.zeigerForm).Add(gtx.Ops)    // je Lage: Griffe, Objekte, Werkzeug (Karte #323)
 	event.Op(gtx.Ops, e)
 	c.Pop()
 	// Außerhalb des Ausschnitts der Leinwand angemeldet: Gio gibt ein Zeigerereignis auch den Zielen weiter, die im selben
@@ -1753,7 +1755,7 @@ func (e *editor) merkeZeiger(pe pointer.Event) bool {
 		return image.Point{}, false
 	}
 	altOrt, altDa := zeigt()
-	altForm := e.s.Zeiger(e.zeigerFenster)
+	altForm := e.zeigerForm
 	if pe.Kind == pointer.Leave {
 		e.zeigerFenster = nil
 	} else {
@@ -1761,7 +1763,8 @@ func (e *editor) merkeZeiger(pe pointer.Event) bool {
 		e.zeigerFenster = &p
 	}
 	ort, da := zeigt()
-	return altDa != da || altOrt != ort || altForm != e.s.Zeiger(e.zeigerFenster)
+	e.zeigerForm = e.s.Zeiger(e.zeigerFenster)
+	return altDa != da || altOrt != ort || altForm != e.zeigerForm
 }
 
 // zeichneObjekte zeichnet in Ansichtskoordinaten (die Affine-Abbildung liegt schon auf dem Stapel). Schrift in

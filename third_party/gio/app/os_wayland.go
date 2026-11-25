@@ -568,15 +568,16 @@ func (w *window) loadCursor(name pointer.Cursor) *C.struct_wl_cursor {
 	if name == pointer.CursorNone {
 		return nil
 	}
-	xcursor := xCursor[name]
-	cname := C.CString(xcursor)
-	defer C.free(unsafe.Pointer(cname))
-	c := C.wl_cursor_theme_get_cursor(w.cursor.theme, cname)
-	if c == nil {
-		// Fall back to default cursor.
-		c = w.cursor.cursors.pointer
+	for _, xcursor := range xCursorNames(name) {
+		cname := C.CString(xcursor)
+		c := C.wl_cursor_theme_get_cursor(w.cursor.theme, cname)
+		C.free(unsafe.Pointer(cname))
+		if c != nil {
+			return c
+		}
 	}
-	return c
+	// Fall back to default cursor.
+	return w.cursor.cursors.pointer
 }
 
 func callbackDelete(k unsafe.Pointer) {

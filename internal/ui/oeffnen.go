@@ -34,7 +34,8 @@ func (e *editor) oeffnenGrau() string {
 	return ""
 }
 
-// oeffnenStarten öffnet den Dialog; nur einer zugleich, nicht während eines Zugs, Wechsels oder Speicherns.
+// oeffnenStarten öffnet den Dialog; nur einer zugleich, nicht während eines Zugs, Exports oder Wechsels (das Speichern
+// sperrt erst die Wahl, über wechselAnfrage).
 func (e *editor) oeffnenStarten() {
 	if e.oeffnenGrau() != "" || e.oeffnenOffen || e.exportOffen || e.s.Zieht() || e.wechsel.laedt {
 		return
@@ -95,4 +96,7 @@ func (e *editor) oeffnenFertig(r exportErgebnis) {
 		return
 	}
 	e.wechselAnfrage(pfad)
+	if e.wechsel.ziel == pfad {
+		e.wechsel.ausDialog = true // nach wechselAnfrage: die setzt es zurück
+	}
 }

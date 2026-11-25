@@ -122,3 +122,17 @@ func TestZeigerImZug(t *testing.T) {
 		t.Errorf("Pipette: %v", z)
 	}
 }
+
+// Kritik K-5: Während Speichern oder Laden (Ruhe) reagieren Griffe und Objekte nicht; der Zeiger verspricht es auch nicht.
+func TestZeigerBeiSperre(t *testing.T) {
+	s, k, _ := sitzung(t)
+	s.Auswahl = k
+	s.SetzeRuhe(true)
+	if z := zeigerBei(s, f(50, 50)); z != ZeigerStandard {
+		t.Errorf("Griff während der Ruhe: %v", z)
+	}
+	s.SetzeRuhe(false)
+	if z := zeigerBei(s, f(50, 50)); z != ZeigerNWSO {
+		t.Errorf("Griff nach der Ruhe: %v", z)
+	}
+}

@@ -92,7 +92,7 @@ func tafelKnopf(gtx layout.Context, c *widget.Clickable, r image.Rectangle) {
 	g := gtx
 	g.Constraints = layout.Exact(r.Size())
 	c.Layout(g, func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: r.Size()} })
-	pointer.CursorPointer.Add(gtx.Ops)
+	handZeiger(gtx, r.Size())
 	t.Pop()
 }
 

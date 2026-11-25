@@ -205,8 +205,18 @@ func seiteKnopf(gtx layout.Context, c *widget.Clickable, r image.Rectangle) {
 	g := gtx
 	g.Constraints = layout.Exact(r.Size())
 	c.Layout(g, func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: r.Size()} })
-	pointer.CursorPointer.Add(gtx.Ops)
+	handZeiger(gtx, r.Size())
 	t.Pop()
+}
+
+// handZeiger setzt die Zeigehand für die Fläche (0,0)–groesse am aktuellen Ursprung. Die Op braucht einen eigenen
+// Ausschnitt: Nach Clickable.Layout ist dessen Ausschnitt schon abgelegt, ein bloßes pointer.CursorPointer.Add gälte dann
+// für den umgebenden Bereich — bis Karte #342 lag so die Hand über der ganzen Leinwand und verdeckte die Zeigerformen
+// der Griffe (F-818).
+func handZeiger(gtx layout.Context, groesse image.Point) {
+	c := clip.Rect(image.Rectangle{Max: groesse}).Push(gtx.Ops)
+	pointer.CursorPointer.Add(gtx.Ops)
+	c.Pop()
 }
 
 // zeichneSeitenleiste zeichnet die rechte Leiste, wenn sie sichtbar ist (seiteSichtbar).

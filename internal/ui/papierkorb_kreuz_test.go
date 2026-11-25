@@ -146,7 +146,8 @@ func TestAnsichtKreuzUndLangerDruck(t *testing.T) {
 	if len(b.r.Eintraege()) != 3 {
 		t.Errorf("%d Einträge nach dem ✕", len(b.r.Eintraege()))
 	}
-	// Langer Druck (Finger: kein Zeiger darüber) zeigt das ✕ der Kachel.
+	// Langer Druck (Finger: kein Zeiger darüber) zeigt das ✕ der Kachel — nach der Ruhe, die dem Löschen folgt (K-2).
+	b.loeschRuheBis = time.Time{}
 	l.maus(pointer.Leave, image.Pt(0, 0), 0)
 	l.setle()
 	p := l.bibKachel(2)
@@ -167,5 +168,37 @@ func TestAnsichtKreuzUndLangerDruck(t *testing.T) {
 	l.setle()
 	if b.langDruck != -1 {
 		t.Errorf("kurzer Druck zeigte das ✕ (Stelle %d)", b.langDruck)
+	}
+}
+
+// Kritik K-2: Der zweite Klick eines Doppelklicks auf das ✕ legt nicht die nachgerückte Aufnahme in den Papierkorb und
+// öffnet sie auch nicht.
+func TestLeisteKreuzDoppelklickLoeschtNurEine(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 4)
+	k := &l.e.unten
+	l.maus(pointer.Move, l.kachel(2), 0)
+	l.setle()
+	lr := k.loeschRahmen[2]
+	l.maus(pointer.Move, mittenPunkt(lr), 0)
+	l.setle()
+	l.klick(mittenPunkt(lr))
+	l.warte(func() bool { return !l.e.bibl.arbeitLaeuft && !k.indexLaeuft && len(k.l.Eintraege()) == 3 })
+	l.klick(mittenPunkt(lr)) // sofort danach, an derselben Stelle steht jetzt die nächste Aufnahme
+	l.warte(func() bool { return !l.e.bibl.arbeitLaeuft && !k.indexLaeuft })
+	if n := papierkorbDateien(t, l); n != 1 {
+		t.Errorf("Papierkorb hat %d Dateien nach Doppelklick, Soll 1", n)
+	}
+	if len(l.aufrufe()) != 0 {
+		t.Errorf("zweiter Klick öffnete %v", l.aufrufe())
+	}
+}
+
+// Kritik K-3: Eine frisch geöffnete Ansicht zeigt ohne Zeiger kein ✕, auch nicht an Kachel 0.
+func TestAnsichtOhneZeigerOhneKreuz(t *testing.T) {
+	l := bibLauf(t, 3)
+	for i, r := range l.e.bibl.loesch {
+		if !r.Empty() {
+			t.Errorf("✕ an Stelle %d ohne Zeiger", i+l.e.bibl.von)
+		}
 	}
 }

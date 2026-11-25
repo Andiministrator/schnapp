@@ -8,12 +8,14 @@ package ui
 import (
 	"context"
 	"image"
+	"image/color"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"gioui.org/io/key"
 
+	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/portal"
 )
 
@@ -85,5 +87,27 @@ func TestOeffnenAbbruchUndOhnePortal(t *testing.T) {
 	l.warte(func() bool { return !l.e.oeffnenOffen })
 	if len(l.aufrufe()) != 0 || !l.e.meldung.Fehler || !strings.Contains(l.e.meldung.Text, "local") {
 		t.Errorf("entfernte Adresse: geladen %v, Meldung %q", l.aufrufe(), l.e.meldung.Text)
+	}
+}
+
+// Kritik K-4: Hält ein Speicher-Hinweis den Wechsel auf, sagt die Meldung, dass die gewählte Datei nicht geöffnet ist.
+func TestOeffnenNachSpeicherHinweis(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 2)
+	l.e.speichern = func(*document.Dokument) (Gespeichert, error) {
+		return Gespeichert{Hinweis: "Saved as a new capture."}, nil
+	}
+	if _, err := l.e.s.D.Hinzufuegen(document.Kasten{Bereich: document.R(document.Pt(1, 1), document.Pt(9, 9)),
+		Strich: document.Strich{Farbe: color.NRGBA{R: 200, A: 255}, Breite: 2}}); err != nil {
+		t.Fatal(err)
+	}
+	ziel := filepath.Join(t.TempDir(), "fremd.png")
+	mitOeffnenDialog(t, portal.Ergebnis{URI: "file://" + ziel}, nil)
+	l.taste("O", key.ModShortcut)
+	l.warte(func() bool { return !l.e.oeffnenOffen && !l.e.s.SpeichernLaeuft() && !l.e.wechsel.laedt })
+	if len(l.aufrufe()) != 0 {
+		t.Errorf("trotz Hinweis geladen: %v", l.aufrufe())
+	}
+	if !strings.Contains(l.e.meldung.Text, "Saved as a new capture.") || !strings.Contains(l.e.meldung.Text, "Ctrl+O") {
+		t.Errorf("Meldung %q", l.e.meldung.Text)
 	}
 }

@@ -12,6 +12,49 @@ index 6da6d34..9cd4084 100644
  	// decoHeight is the height of the fallback decoration for platforms such
  	// as Wayland that may need fallback client-side decorations.
  	decoHeight unit.Dp
+diff --git a/app/os_unix.go b/app/os_unix.go
+index d8215ac..cad9a24 100644
+--- a/app/os_unix.go
++++ b/app/os_unix.go
+@@ -98,3 +98,38 @@ var xCursor = [...]string{
+ 	pointer.CursorNorthEastSouthWestResize: "fd_double_arrow",
+ 	pointer.CursorNorthWestSouthEastResize: "bd_double_arrow",
+ }
++
++// xCursorFallback lists further names per cursor, tried in order after the
++// CSS name and before the X11 name of xCursor. Themes differ: Breeze, for
++// example, has neither fd_double_arrow nor bd_double_arrow but nesw-resize and
++// size_bdiag, so a single name falls back to the default arrow.
++var xCursorFallback = map[pointer.Cursor][]string{
++	pointer.CursorNorthWestSouthEastResize: {"nwse-resize", "size_fdiag"},
++	pointer.CursorNorthEastSouthWestResize: {"nesw-resize", "size_bdiag"},
++	pointer.CursorNorthSouthResize:         {"ns-resize", "size_ver"},
++	pointer.CursorEastWestResize:           {"ew-resize", "size_hor"},
++	pointer.CursorRowResize:                {"row-resize", "size_ver"},
++	pointer.CursorColResize:                {"col-resize", "size_hor"},
++	pointer.CursorAllScroll:                {"all-scroll", "size_all"},
++	pointer.CursorGrab:                     {"grab", "openhand"},
++	pointer.CursorGrabbing:                 {"grabbing", "closedhand"},
++	pointer.CursorPointer:                  {"pointer"},
++	pointer.CursorNotAllowed:               {"not-allowed", "forbidden"},
++	pointer.CursorNorthWestResize:          {"nw-resize"},
++	pointer.CursorNorthEastResize:          {"ne-resize"},
++	pointer.CursorSouthWestResize:          {"sw-resize"},
++	pointer.CursorSouthEastResize:          {"se-resize"},
++	pointer.CursorNorthResize:              {"n-resize"},
++	pointer.CursorSouthResize:              {"s-resize"},
++	pointer.CursorWestResize:               {"w-resize"},
++	pointer.CursorEastResize:               {"e-resize"},
++}
++
++// xCursorNames returns the theme names to try for c, most specific first.
++func xCursorNames(c pointer.Cursor) []string {
++	names := append([]string(nil), xCursorFallback[c]...)
++	if x := xCursor[c]; x != "" {
++		names = append(names, x)
++	}
++	return names
++}
 diff --git a/app/os_wayland.c b/app/os_wayland.c
 index 4db5b0b..e3b37fc 100644
 --- a/app/os_wayland.c
@@ -48,7 +91,7 @@ index 4db5b0b..e3b37fc 100644
  
  const struct wl_seat_listener gio_seat_listener = {
 diff --git a/app/os_wayland.go b/app/os_wayland.go
-index 3c893a7..7d6f289 100644
+index 3c893a7..1397eb7 100644
 --- a/app/os_wayland.go
 +++ b/app/os_wayland.go
 @@ -10,11 +10,14 @@ import (
@@ -248,7 +291,7 @@ index 3c893a7..7d6f289 100644
  	C.xdg_wm_base_add_listener(d.wm, &C.gio_xdg_wm_base_listener, unsafe.Pointer(w.surf))
  	C.wl_surface_add_listener(w.surf, &C.gio_surface_listener, unsafe.Pointer(w.surf))
  	C.xdg_surface_add_listener(w.wmSurf, &C.gio_xdg_surface_listener, unsafe.Pointer(w.surf))
-@@ -435,6 +502,68 @@ func (w *window) loadCursors() {
+@@ -435,19 +502,82 @@ func (w *window) loadCursors() {
  	w.cursor.cursors.resizeNorthEast = w.loadCursor(pointer.CursorNorthEastResize)
  }
  
@@ -317,7 +360,29 @@ index 3c893a7..7d6f289 100644
  func (w *window) loadCursor(name pointer.Cursor) *C.struct_wl_cursor {
  	if name == pointer.CursorNone {
  		return nil
-@@ -623,6 +752,106 @@ func gio_onOutputMode(data unsafe.Pointer, output *C.struct_wl_output, flags C.u
+ 	}
+-	xcursor := xCursor[name]
+-	cname := C.CString(xcursor)
+-	defer C.free(unsafe.Pointer(cname))
+-	c := C.wl_cursor_theme_get_cursor(w.cursor.theme, cname)
+-	if c == nil {
+-		// Fall back to default cursor.
+-		c = w.cursor.cursors.pointer
++	for _, xcursor := range xCursorNames(name) {
++		cname := C.CString(xcursor)
++		c := C.wl_cursor_theme_get_cursor(w.cursor.theme, cname)
++		C.free(unsafe.Pointer(cname))
++		if c != nil {
++			return c
++		}
+ 	}
+-	return c
++	// Fall back to default cursor.
++	return w.cursor.cursors.pointer
+ }
+ 
+ func callbackDelete(k unsafe.Pointer) {
+@@ -623,6 +753,106 @@ func gio_onOutputMode(data unsafe.Pointer, output *C.struct_wl_output, flags C.u
  	c.height = int(height)
  }
  
@@ -424,7 +489,7 @@ index 3c893a7..7d6f289 100644
  //export gio_onOutputGeometry
  func gio_onOutputGeometry(data unsafe.Pointer, output *C.struct_wl_output, x, y, physWidth, physHeight, subpixel C.int32_t, make, model *C.char, transform C.int32_t) {
  	d := callbackLoad(data).(*wlDisplay)
-@@ -689,8 +918,12 @@ func gio_onRegistryGlobal(data unsafe.Pointer, reg *C.struct_wl_registry, name C
+@@ -689,8 +919,12 @@ func gio_onRegistryGlobal(data unsafe.Pointer, reg *C.struct_wl_registry, name C
  	switch C.GoString(cintf) {
  	case "wl_compositor":
  		d.compositor = (*C.struct_wl_compositor)(C.wl_registry_bind(reg, name, &C.wl_compositor_interface, 3))
@@ -438,7 +503,7 @@ index 3c893a7..7d6f289 100644
  		C.wl_output_add_listener(output, &C.gio_output_listener, unsafe.Pointer(d.disp))
  		d.outputMap[name] = output
  		d.outputConfig[output] = new(wlOutput)
-@@ -811,8 +1044,8 @@ func gio_onTouchDown(data unsafe.Pointer, touch *C.struct_wl_touch, serial, t C.
+@@ -811,8 +1045,8 @@ func gio_onTouchDown(data unsafe.Pointer, touch *C.struct_wl_touch, serial, t C.
  	w := callbackLoad(unsafe.Pointer(surf)).(*window)
  	s.touchFoci[id] = w
  	w.lastTouch = f32.Point{
@@ -449,7 +514,7 @@ index 3c893a7..7d6f289 100644
  	}
  	w.ProcessEvent(pointer.Event{
  		Kind:      pointer.Press,
-@@ -845,8 +1078,8 @@ func gio_onTouchMotion(data unsafe.Pointer, touch *C.struct_wl_touch, t C.uint32
+@@ -845,8 +1079,8 @@ func gio_onTouchMotion(data unsafe.Pointer, touch *C.struct_wl_touch, t C.uint32
  	s := callbackLoad(data).(*wlSeat)
  	w := s.touchFoci[id]
  	w.lastTouch = f32.Point{
@@ -460,7 +525,7 @@ index 3c893a7..7d6f289 100644
  	}
  	w.ProcessEvent(pointer.Event{
  		Kind:      pointer.Move,
-@@ -1078,7 +1311,10 @@ func (w *window) ReadClipboard() {
+@@ -1078,7 +1312,10 @@ func (w *window) ReadClipboard() {
  }
  
  func (w *window) WriteClipboard(mime string, s []byte) {
@@ -472,7 +537,7 @@ index 3c893a7..7d6f289 100644
  }
  
  func (w *window) Configure(options []Option) {
-@@ -1095,7 +1331,7 @@ func (w *window) Configure(options []Option) {
+@@ -1095,7 +1332,7 @@ func (w *window) Configure(options []Option) {
  		default:
  			w.config.Mode = Fullscreen
  			w.wsize = w.config.Size
@@ -481,7 +546,7 @@ index 3c893a7..7d6f289 100644
  		}
  	case Minimized:
  		switch prev.Mode {
-@@ -1117,20 +1353,20 @@ func (w *window) Configure(options []Option) {
+@@ -1117,20 +1354,20 @@ func (w *window) Configure(options []Option) {
  		switch prev.Mode {
  		case Fullscreen:
  			w.config.Mode = Windowed
@@ -506,7 +571,7 @@ index 3c893a7..7d6f289 100644
  		}
  		w.config.MinSize = cnf.MinSize
  		w.config.MaxSize = cnf.MaxSize
-@@ -1141,10 +1377,10 @@ func (w *window) Configure(options []Option) {
+@@ -1141,10 +1378,10 @@ func (w *window) Configure(options []Option) {
  
  func (w *window) setWindowConstraints() {
  	decoHeight := w.decoHeight()
@@ -519,7 +584,7 @@ index 3c893a7..7d6f289 100644
  		C.xdg_toplevel_set_max_size(w.topLvl, C.int32_t(scaled.X), C.int32_t(scaled.Y+decoHeight))
  	}
  }
-@@ -1197,6 +1433,7 @@ func (w *window) resize(serial, edge C.uint32_t) {
+@@ -1197,6 +1434,7 @@ func (w *window) resize(serial, edge C.uint32_t) {
  }
  
  func (w *window) SetCursor(cursor pointer.Cursor) {
@@ -527,7 +592,7 @@ index 3c893a7..7d6f289 100644
  	w.cursor.cursor = w.loadCursor(cursor)
  	w.updateCursor()
  }
-@@ -1211,6 +1448,7 @@ func (w *window) updateCursor() {
+@@ -1211,6 +1449,7 @@ func (w *window) updateCursor() {
  }
  
  func (w *window) setCursor(pointer *C.struct_wl_pointer, serial C.uint32_t) {
@@ -535,7 +600,7 @@ index 3c893a7..7d6f289 100644
  	c := w.cursor.system
  	if c == nil {
  		c = w.cursor.cursor
-@@ -1225,7 +1463,31 @@ func (w *window) setCursor(pointer *C.struct_wl_pointer, serial C.uint32_t) {
+@@ -1225,7 +1464,31 @@ func (w *window) setCursor(pointer *C.struct_wl_pointer, serial C.uint32_t) {
  	if buf == nil {
  		return
  	}
@@ -568,7 +633,7 @@ index 3c893a7..7d6f289 100644
  	C.wl_surface_attach(w.cursor.surf, buf, 0, 0)
  	C.wl_surface_damage(w.cursor.surf, 0, 0, C.int32_t(img.width), C.int32_t(img.height))
  	C.wl_surface_commit(w.cursor.surf)
-@@ -1573,12 +1835,21 @@ func (w *window) destroy() {
+@@ -1573,12 +1836,21 @@ func (w *window) destroy() {
  		C.wl_callback_destroy(w.lastFrameCallback)
  		w.lastFrameCallback = nil
  	}
@@ -590,7 +655,7 @@ index 3c893a7..7d6f289 100644
  	if w.topLvl != nil {
  		C.xdg_toplevel_destroy(w.topLvl)
  	}
-@@ -1653,7 +1924,7 @@ func (s *wlSeat) sendCursorRectangle(w *window) {
+@@ -1653,7 +1925,7 @@ func (s *wlSeat) sendCursorRectangle(w *window) {
  	sel := w.w.EditorState().Selection
  	top := sel.Transform.Transform(sel.Caret.Pos.Sub(f32.Pt(0, sel.Caret.Ascent)))
  	bottom := sel.Transform.Transform(sel.Caret.Pos.Add(f32.Pt(0, sel.Caret.Descent)))
@@ -599,7 +664,7 @@ index 3c893a7..7d6f289 100644
  	minX, maxX := min(top.X, bottom.X)/scale, max(top.X, bottom.X)/scale
  	minY, maxY := min(top.Y, bottom.Y)/scale, max(top.Y, bottom.Y)/scale
  	x, y := math.Floor(float64(minX)), math.Floor(float64(minY))
-@@ -1795,18 +2066,67 @@ func gio_onDataSourceSend(data unsafe.Pointer, source *C.struct_wl_data_source,
+@@ -1795,18 +2067,67 @@ func gio_onDataSourceSend(data unsafe.Pointer, source *C.struct_wl_data_source,
  	content := s.content
  	go func() {
  		defer syscall.Close(int(fd))
@@ -669,7 +734,7 @@ index 3c893a7..7d6f289 100644
  }
  
  //export gio_onDataSourceDNDDropPerformed
-@@ -1863,8 +2183,8 @@ func (w *window) flushScroll() {
+@@ -1863,8 +2184,8 @@ func (w *window) flushScroll() {
  func (w *window) onPointerMotion(x, y C.wl_fixed_t, t C.uint32_t) {
  	w.flushScroll()
  	w.lastPos = f32.Point{
@@ -680,7 +745,7 @@ index 3c893a7..7d6f289 100644
  	}
  	w.ProcessEvent(pointer.Event{
  		Kind:      pointer.Move,
-@@ -1941,7 +2261,12 @@ func (w *window) updateOutputs() {
+@@ -1941,7 +2262,12 @@ func (w *window) updateOutputs() {
  	}
  	if found && scale != w.scale {
  		w.scale = scale
@@ -694,7 +759,7 @@ index 3c893a7..7d6f289 100644
  		w.draw(true)
  	}
  	if found {
-@@ -1950,10 +2275,42 @@ func (w *window) updateOutputs() {
+@@ -1950,10 +2276,42 @@ func (w *window) updateOutputs() {
  }
  
  func (w *window) getConfig() (image.Point, unit.Metric) {
@@ -740,7 +805,7 @@ index 3c893a7..7d6f289 100644
  	}
  }
  
-@@ -1966,6 +2323,9 @@ func (w *window) draw(sync bool) {
+@@ -1966,6 +2324,9 @@ func (w *window) draw(sync bool) {
  	if cfg == (unit.Metric{}) {
  		return
  	}
@@ -750,7 +815,7 @@ index 3c893a7..7d6f289 100644
  	if size != w.config.Size {
  		w.config.Size = size
  		w.ProcessEvent(ConfigEvent{Config: w.config})
-@@ -2198,6 +2558,14 @@ func (d *wlDisplay) destroy() {
+@@ -2198,6 +2559,14 @@ func (d *wlDisplay) destroy() {
  	if d.wm != nil {
  		C.xdg_wm_base_destroy(d.wm)
  	}
@@ -767,10 +832,10 @@ index 3c893a7..7d6f289 100644
  	}
 diff --git a/app/os_wayland_test.go b/app/os_wayland_test.go
 new file mode 100644
-index 0000000..765bc25
+index 0000000..537fee9
 --- /dev/null
 +++ b/app/os_wayland_test.go
-@@ -0,0 +1,159 @@
+@@ -0,0 +1,186 @@
 +// SPDX-License-Identifier: Unlicense OR MIT
 +
 +//go:build ((linux && !android) || freebsd) && !nowayland
@@ -786,6 +851,8 @@ index 0000000..765bc25
 +	"time"
 +
 +	syscall "golang.org/x/sys/unix"
++
++	"gioui.org/io/pointer"
 +)
 +
 +// Schnapp patch (F-176): writeAllFD writes several MB through a non-blocking
@@ -928,6 +995,31 @@ index 0000000..765bc25
 +		if naturalLess(tc.a, tc.b) && naturalLess(tc.b, tc.a) {
 +			t.Errorf("naturalLess(%q, %q) not antisymmetric", tc.a, tc.b)
 +		}
++	}
++}
++
++// Every resize, move and grab cursor has more than one theme name, so a theme
++// without the X11 name (Breeze lacks fd_double_arrow and bd_double_arrow)
++// still finds one before falling back to the default arrow.
++func TestXCursorNamesHaveFallbacks(t *testing.T) {
++	for _, c := range []pointer.Cursor{
++		pointer.CursorNorthWestSouthEastResize, pointer.CursorNorthEastSouthWestResize,
++		pointer.CursorNorthSouthResize, pointer.CursorEastWestResize, pointer.CursorAllScroll,
++		pointer.CursorGrab, pointer.CursorGrabbing,
++	} {
++		names := xCursorNames(c)
++		if len(names) < 3 {
++			t.Errorf("%v: names %v, want at least three", c, names)
++		}
++		if names[len(names)-1] != xCursor[c] {
++			t.Errorf("%v: X11 name %q not last in %v", c, xCursor[c], names)
++		}
++	}
++	if got := xCursorNames(pointer.CursorNorthWestSouthEastResize); got[0] != "nwse-resize" || got[1] != "size_fdiag" {
++		t.Errorf("NWSE: %v", got)
++	}
++	if got := xCursorNames(pointer.CursorNone); len(got) != 0 {
++		t.Errorf("None: %v", got)
 +	}
 +}
 diff --git a/app/wayland_fractional_scale.c b/app/wayland_fractional_scale.c

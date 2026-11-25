@@ -1,0 +1,37 @@
+[
+  {
+    "name": "KS14-1 Zeigehand ohne eigenen Ausschnitt (F-818)",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\tc := clip.Rect(image.Rectangle{Max: groesse}).Push(gtx.Ops)\n\tpointer.CursorPointer.Add(gtx.Ops)\n\tc.Pop()",
+    "neu": "\tpointer.CursorPointer.Add(gtx.Ops)"
+  },
+  {
+    "name": "KS14-2 Werkzeugknopf setzt die Hand auf den umgebenden Bereich",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "\tc.Layout(g, func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: r.Size()} })\n\thandZeiger(gtx, r.Size())\n\tt.Pop()",
+    "neu": "\tc.Layout(g, func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: r.Size()} })\n\tclip.Rect(image.Rectangle{Max: r.Size()}).Push(gtx.Ops).Pop()\n\tt.Pop()"
+  },
+  {
+    "name": "KS14-3 keine Ruhe nach dem ✕",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\te.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)\n",
+    "neu": ""
+  },
+  {
+    "name": "KS14-5 Öffnen ohne Hinweis auf erneutes Öffnen",
+    "datei": "internal/ui/oeffnen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.wechsel.ausDialog = true",
+    "neu": "\t\te.wechsel.ausDialog = false"
+  },
+  {
+    "name": "KS14-6 Zeiger ignoriert die Sperre",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase s.gesperrt():\n\t\treturn s.werkzeugZeiger()",
+    "neu": "\tcase false:\n\t\treturn s.werkzeugZeiger()"
+  }
+]

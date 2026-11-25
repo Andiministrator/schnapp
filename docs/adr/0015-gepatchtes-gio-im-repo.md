@@ -95,3 +95,14 @@ Nachtrag 8.
 ## Nachtrag 4 (24.11.2026): Mischen im sRGB-Raum (F-520, Karte #215)
 
 Der Patch stellt die Mischung von Gio von linear auf sRGB um (Farben nicht linearisiert, RGBA8-Texturen, kein sRGB-Ausgabepuffer, keine sRGB-EGL-Fläche), damit der Editor halbdurchsichtige Beschriftungen wie Renderer und Export zeigt. Nur Linux/OpenGL; Begründung, Messung und Widerlegungsbedingung: ADR-0020 Nachtrag 14. Bereinigt (F-631): der Wiederholungsversuch ohne sRGB in `internal/egl/egl.go`, die unerreichbaren `sRGBFBO`-Zweige in `BeginFrame`/`EndFrame` und die Pflicht `FeatureSRGB` in `gpu.NewWithDevice` sind entfernt. Bewusst bleiben das Feld `sRGBFBO` samt `Release` und der Typ `SRGBFBO` (ungenutzt, kleiner Diff beim Gio-Update) sowie `FeatureSRGB`/`srgbaTriple` im OpenGL-Gerät und `eglCtx.srgb` (nur noch gelesen, nie verlangt).
+
+## Nachtrag 5 (25.11.2026): Zeigernamen mit Ausweichliste (F-818, Karte #342)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Befund des Kritikers Fable 5.2).
+
+Gio lädt unter Wayland je `pointer.Cursor` genau einen X11-Namen aus dem Zeigerthema (`xCursor` in `app/os_unix.go`)
+und fällt sonst still auf den Pfeil zurück. Breeze kennt `fd_double_arrow` und `bd_double_arrow` nicht (dort
+`nesw-resize`/`size_bdiag` bzw. `nwse-resize`/`size_fdiag`), `hand1` ist dort die Zeigehand statt der offenen. Der Patch
+ergänzt `xCursorFallback` und `xCursorNames`: je Form zuerst der CSS-Name, dann der KDE/Qt-Name, zuletzt der bisherige
+X11-Name; `loadCursor` nimmt den ersten Treffer. Test `TestXCursorNamesHaveFallbacks` (`app/os_wayland_test.go`).
+Kandidat für einen Upstream-PR (wie #204/#205).

@@ -2168,6 +2168,10 @@ msgid "Could not save: %v. The other capture was not opened."
 msgstr ""
 
 #: internal/ui/wechsel.go
+msgid "The chosen file was not opened yet: open it again with Ctrl+O."
+msgstr ""
+
+#: internal/ui/wechsel.go
 msgid "Opening…"
 msgstr ""
 

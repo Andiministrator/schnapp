@@ -1677,3 +1677,6 @@ msgstr "Der Dateidialog ließ sich nicht anzeigen."
 
 msgid "Only local files can be opened."
 msgstr "Nur lokale Dateien lassen sich öffnen."
+
+msgid "The chosen file was not opened yet: open it again with Ctrl+O."
+msgstr "Die gewählte Datei ist noch nicht geöffnet: mit Strg+O erneut öffnen."

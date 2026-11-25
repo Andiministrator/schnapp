@@ -77,7 +77,7 @@ type Stil struct {
 	Ausrichtung     document.Ausrichtung
 }
 
-// StandardStil ist die Voreinstellung (ADR-0021 Punkt 4).
+// StandardStil ist die Voreinstellung (ADR-0021 Punkt 4, Strich seit Nachtrag 16).
 func StandardStil() Stil {
 	return Stil{Farbe: Beschriftungsfarben[0], Breite: 6, Eckradius: 0, Schriftgrad: 20, Radius: 14}
 }

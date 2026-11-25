@@ -1,22 +1,72 @@
 [
-  {"name": "ZF1 Ecken vertauscht", "datei": "internal/canvas/zeiger.go", "paket": "./internal/canvas",
-   "alt": "\tcase GriffNW, GriffSO, GriffQuelleNW, GriffQuelleSO, GriffZielNW, GriffZielSO:\n\t\treturn ZeigerNWSO", "neu": "\tcase GriffNW, GriffSO, GriffQuelleNW, GriffQuelleSO, GriffZielNW, GriffZielSO:\n\t\treturn ZeigerNOSW"},
-  {"name": "ZF2 Kanten waagerecht statt senkrecht", "datei": "internal/canvas/zeiger.go", "paket": "./internal/canvas",
-   "alt": "\tcase GriffN, GriffS:\n\t\treturn ZeigerNS", "neu": "\tcase GriffN, GriffS:\n\t\treturn ZeigerOW"},
-  {"name": "ZF3 Punktgriffe ohne Hand", "datei": "internal/canvas/zeiger.go", "paket": "./internal/canvas",
-   "alt": "\tcase GriffAnfang, GriffEnde, GriffBogen, GriffSpitze:\n\t\treturn ZeigerGreifen", "neu": "\tcase GriffAnfang, GriffEnde, GriffBogen, GriffSpitze:\n\t\treturn ZeigerStandard"},
-  {"name": "ZF4 Griffzug verliert die Form", "datei": "internal/canvas/zeiger.go", "paket": "./internal/canvas",
-   "alt": "\tcase s.zug == zugGriff, s.zug == zugZuschnitt:", "neu": "\tcase s.zug == zugZuschnitt:"},
-  {"name": "ZF5 Objekte ohne Verschieben-Zeiger", "datei": "internal/canvas/zeiger.go", "paket": "./internal/canvas",
-   "alt": "\tif _, ok := Treffer(s.sichtbareObjekte(), q, s.toleranz()); ok {\n\t\treturn ZeigerVerschieben", "neu": "\tif _, ok := Treffer(s.sichtbareObjekte(), q, s.toleranz()); ok {\n\t\treturn ZeigerStandard"},
-  {"name": "ZF6 gesperrte Auswahl zeigt Griffe", "datei": "internal/canvas/zeiger.go", "paket": "./internal/canvas",
-   "alt": "!ohneGriffe(s.Werkzeug) && sel.Ebenenwerte().Bearbeitbar() {\n\t\tif art, ok := GriffTreffer(sel, q, s.toleranz()); ok {\n\t\t\treturn griffZeiger(art)", "neu": "!ohneGriffe(s.Werkzeug) {\n\t\tif art, ok := GriffTreffer(sel, q, s.toleranz()); ok {\n\t\t\treturn griffZeiger(art)"},
-  {"name": "ZF7 Zuschneiden ohne Rahmengriffe", "datei": "internal/canvas/zeiger.go", "paket": "./internal/canvas",
-   "alt": "\tif s.Werkzeug == WerkzeugZuschneiden {\n\t\tif art, ok := s.zuschnittGriff(*p); ok {", "neu": "\tif false {\n\t\tif art, ok := s.zuschnittGriff(*p); ok {"},
-  {"name": "ZF8 Pan ohne greifende Hand", "datei": "internal/canvas/zeiger.go", "paket": "./internal/canvas",
-   "alt": "\t\treturn ZeigerGreifend\n", "neu": "\t\treturn ZeigerStandard\n"},
-  {"name": "ZF9 Formwechsel ohne Folgebild", "datei": "internal/ui/editor.go", "paket": "./internal/ui",
-   "alt": "\treturn altDa != da || altOrt != ort || altForm != e.s.Zeiger(e.zeigerFenster)", "neu": "\t_ = altForm\n\treturn altDa != da || altOrt != ort"},
-  {"name": "ZF10 Verschieben als Hand", "datei": "internal/ui/editor.go", "paket": "./internal/ui",
-   "alt": "\tcase canvas.ZeigerVerschieben:\n\t\treturn pointer.CursorAllScroll", "neu": "\tcase canvas.ZeigerVerschieben:\n\t\treturn pointer.CursorGrab"}
+  {
+    "name": "ZF1 Ecken vertauscht",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase GriffNW, GriffSO, GriffQuelleNW, GriffQuelleSO, GriffZielNW, GriffZielSO:\n\t\treturn ZeigerNWSO",
+    "neu": "\tcase GriffNW, GriffSO, GriffQuelleNW, GriffQuelleSO, GriffZielNW, GriffZielSO:\n\t\treturn ZeigerNOSW"
+  },
+  {
+    "name": "ZF2 Kanten waagerecht statt senkrecht",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase GriffN, GriffS:\n\t\treturn ZeigerNS",
+    "neu": "\tcase GriffN, GriffS:\n\t\treturn ZeigerOW"
+  },
+  {
+    "name": "ZF3 Punktgriffe ohne Hand",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase GriffAnfang, GriffEnde, GriffBogen, GriffSpitze:\n\t\treturn ZeigerGreifen",
+    "neu": "\tcase GriffAnfang, GriffEnde, GriffBogen, GriffSpitze:\n\t\treturn ZeigerStandard"
+  },
+  {
+    "name": "ZF4 Griffzug verliert die Form",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase s.zug == zugGriff, s.zug == zugZuschnitt:",
+    "neu": "\tcase s.zug == zugZuschnitt:"
+  },
+  {
+    "name": "ZF5 Objekte ohne Verschieben-Zeiger",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif _, ok := Treffer(s.sichtbareObjekte(), q, s.toleranz()); ok {\n\t\treturn ZeigerVerschieben",
+    "neu": "\tif _, ok := Treffer(s.sichtbareObjekte(), q, s.toleranz()); ok {\n\t\treturn ZeigerStandard"
+  },
+  {
+    "name": "ZF6 gesperrte Auswahl zeigt Griffe",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "!ohneGriffe(s.Werkzeug) && sel.Ebenenwerte().Bearbeitbar() {\n\t\tif art, ok := GriffTreffer(sel, q, s.toleranz()); ok {\n\t\t\treturn griffZeiger(art)",
+    "neu": "!ohneGriffe(s.Werkzeug) {\n\t\tif art, ok := GriffTreffer(sel, q, s.toleranz()); ok {\n\t\t\treturn griffZeiger(art)"
+  },
+  {
+    "name": "ZF7 Zuschneiden ohne Rahmengriffe",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.Werkzeug == WerkzeugZuschneiden {\n\t\tif art, ok := s.zuschnittGriff(*p); ok {",
+    "neu": "\tif false {\n\t\tif art, ok := s.zuschnittGriff(*p); ok {"
+  },
+  {
+    "name": "ZF8 Pan ohne greifende Hand",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\treturn ZeigerGreifend\n",
+    "neu": "\t\treturn ZeigerStandard\n"
+  },
+  {
+    "name": "ZF9 Formwechsel ohne Folgebild",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn altDa != da || altOrt != ort || altForm != e.zeigerForm",
+    "neu": "\t_ = altForm\n\treturn altDa != da || altOrt != ort"
+  },
+  {
+    "name": "ZF10 Verschieben als Hand",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase canvas.ZeigerVerschieben:\n\t\treturn pointer.CursorAllScroll",
+    "neu": "\tcase canvas.ZeigerVerschieben:\n\t\treturn pointer.CursorGrab"
+  }
 ]

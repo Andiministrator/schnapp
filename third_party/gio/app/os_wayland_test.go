@@ -13,6 +13,8 @@ import (
 	"time"
 
 	syscall "golang.org/x/sys/unix"
+
+	"gioui.org/io/pointer"
 )
 
 // Schnapp patch (F-176): writeAllFD writes several MB through a non-blocking
@@ -155,5 +157,30 @@ func TestNaturalLess(t *testing.T) {
 		if naturalLess(tc.a, tc.b) && naturalLess(tc.b, tc.a) {
 			t.Errorf("naturalLess(%q, %q) not antisymmetric", tc.a, tc.b)
 		}
+	}
+}
+
+// Every resize, move and grab cursor has more than one theme name, so a theme
+// without the X11 name (Breeze lacks fd_double_arrow and bd_double_arrow)
+// still finds one before falling back to the default arrow.
+func TestXCursorNamesHaveFallbacks(t *testing.T) {
+	for _, c := range []pointer.Cursor{
+		pointer.CursorNorthWestSouthEastResize, pointer.CursorNorthEastSouthWestResize,
+		pointer.CursorNorthSouthResize, pointer.CursorEastWestResize, pointer.CursorAllScroll,
+		pointer.CursorGrab, pointer.CursorGrabbing,
+	} {
+		names := xCursorNames(c)
+		if len(names) < 3 {
+			t.Errorf("%v: names %v, want at least three", c, names)
+		}
+		if names[len(names)-1] != xCursor[c] {
+			t.Errorf("%v: X11 name %q not last in %v", c, xCursor[c], names)
+		}
+	}
+	if got := xCursorNames(pointer.CursorNorthWestSouthEastResize); got[0] != "nwse-resize" || got[1] != "size_fdiag" {
+		t.Errorf("NWSE: %v", got)
+	}
+	if got := xCursorNames(pointer.CursorNone); len(got) != 0 {
+		t.Errorf("None: %v", got)
 	}
 }

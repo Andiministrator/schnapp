@@ -12,7 +12,6 @@ import (
 
 	"gioui.org/f32"
 	"gioui.org/io/event"
-	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -104,7 +103,7 @@ func (e *editor) menueEintraegeRoh(i int) []menueEintrag {
 	switch i {
 	case menueDatei:
 		return []menueEintrag{
-			{akt: aktOeffnen, text: i18n.T("Open…"), an: e.oeffnenGrau() == "" && !e.oeffnenOffen, erklaerung: e.oeffnenGrau()},
+			{akt: aktOeffnen, text: i18n.T("Open…"), an: e.oeffnenGrau() == "" && !e.oeffnenOffen && !e.exportOffen, erklaerung: e.oeffnenGrau()},
 			{akt: aktSpeichern, text: i18n.T("Save"), an: true, gruppe: true},
 			{akt: aktExport, text: i18n.T("Export…"), an: !e.exportOffen},
 			{akt: aktKopieren, text: i18n.T("Copy"), an: true},
@@ -281,7 +280,7 @@ func (e *editor) zeichneMenuezeile(gtx layout.Context) {
 		ft := op.Offset(r.Min).Push(gtx.Ops)
 		g.Constraints = layout.Exact(r.Size())
 		c.Layout(g, func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: r.Size()} })
-		pointer.CursorPointer.Add(gtx.Ops)
+		handZeiger(gtx, r.Size())
 		ft.Pop()
 		x = r.Max.X
 	}
@@ -462,7 +461,7 @@ func (e *editor) werkzeugKnopfZeichnen(gtx layout.Context, c *widget.Clickable, 
 	g := gtx
 	g.Constraints = layout.Exact(r.Size())
 	c.Layout(g, func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: r.Size()} })
-	pointer.CursorPointer.Add(gtx.Ops)
+	handZeiger(gtx, r.Size())
 	t.Pop()
 }
 
@@ -774,7 +773,7 @@ func (e *editor) zeichneFusszeile(gtx layout.Context) {
 		g := gtx
 		g.Constraints = layout.Exact(r.Size())
 		k.Layout(g, func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: r.Size()} })
-		pointer.CursorPointer.Add(gtx.Ops)
+		handZeiger(gtx, r.Size())
 		ft.Pop()
 	}
 	// Meldung bzw. Hinweis links, bis vor die Felder (gekürzt).

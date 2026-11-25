@@ -85,3 +85,46 @@ func TestZeigerFormWechselOhnePixelwechsel(t *testing.T) {
 		t.Errorf("an der Ecke: %v", z)
 	}
 }
+
+// Die Zeiger-Op erreicht den Router (Kritik K-1/F-818): nach einer Bewegung auf den Eckgriff eines gewählten Kastens
+// meldet der Gio-Router die Diagonale, über dem Kasten die vier Pfeile.
+func TestZeigerFormErreichtDenRouter(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	e := l.e
+	k, err := e.s.D.Hinzufuegen(document.Kasten{Bereich: document.R(document.Pt(5, 5), document.Pt(35, 25)),
+		Strich: document.Strich{Farbe: canvas.Beschriftungsfarben[0], Breite: 2}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.s.SetzeWerkzeug(canvas.WerkzeugAuswahl)
+	e.s.Auswahl = k
+	e.s.SetzeZoom(800) // Testbild 40 × 30: groß genug, dass Griffe und Strich getrennt liegen
+	l.setle()
+	// Fensterpunkt = Leinwandpunkt + Lage der Leinwand.
+	f := e.leinwandFlaeche(l.gtx())
+	fenster := func(p document.Punkt) image.Point {
+		q := e.s.Abb.ZuFenster(p)
+		return f.Min.Add(image.Pt(int(q.X+0.5), int(q.Y+0.5)))
+	}
+	l.maus(pointer.Move, fenster(document.Pt(35, 25)), 0)
+	l.setle()
+	if got := l.r.Cursor(); got != pointer.CursorNorthWestSouthEastResize {
+		t.Errorf("Eckgriff rechts unten: Router-Zeiger %v", got)
+	}
+	l.maus(pointer.Move, fenster(document.Pt(12, 5)), 0) // auf dem Strich, zwischen zwei Griffen (ungefüllt: innen kein Treffer)
+	l.setle()
+	if got := l.r.Cursor(); got != pointer.CursorAllScroll {
+		t.Errorf("auf dem Strich: Router-Zeiger %v", got)
+	}
+}
+
+// Über einem Werkzeugknopf zeigt der Router die Hand (der eigene Ausschnitt von handZeiger, Kritik K-1/F-818).
+func TestZeigerHandUeberWerkzeugknopf(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	rahmen, _ := werkzeugRahmen(l.gtx(), l.e.werkzeugKnoepfe())
+	l.maus(pointer.Move, mittenPunkt(rahmen[0]), 0)
+	l.setle()
+	if got := l.r.Cursor(); got != pointer.CursorPointer {
+		t.Errorf("über dem Werkzeugknopf: Router-Zeiger %v", got)
+	}
+}

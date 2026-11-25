@@ -3,8 +3,8 @@
 package ui
 
 // Farbwähler im Abschnitt „Farbe“ der rechten Leiste (ADR-0031 Nachtrag 5, Bedeutung ADR-0021 Nachtrag 9): Farbfläche,
-// Felder (Beschriftungsfarben, zuletzt benutzte, Pipette), Farbton- und Deckkraft-Regler, Eingaben für Hex und
-// Deckkraft. Was eine Lage oder Eingabe bewirkt, entscheidet canvas.Sitzung; hier stehen Lage, Bilder und Ereignisse.
+// Felder (Beschriftungsfarben, zuletzt benutzte; die Pipette steht in der Zeile des Farbpaars), Farbton- und
+// Deckkraft-Regler, Eingaben für Hex und Deckkraft. Was eine Lage oder Eingabe bewirkt, entscheidet canvas.Sitzung; hier stehen Lage, Bilder und Ereignisse.
 
 import (
 	"fmt"

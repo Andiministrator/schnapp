@@ -100,18 +100,22 @@ type bibAnsicht struct {
 	flaeche                                               int // Zeigerziel des Rasters (Klick, Mausrad, Zeiger)
 
 	// Stand beim letzten Zeichnen (Fensterpixel): Klicks und Treffer beziehen sich auf das, was zu sehen war.
-	masse                            libview.RasterMasse
-	sicht                            image.Rectangle // Raster
-	suchRahmen, zeitRahmen           image.Rectangle
-	agentenRahmen, zurueckRahmen     image.Rectangle
-	kacheln                          []image.Rectangle // Vorschauen der gezeichneten Stellen von bis bis (Tests)
-	von, bis                         int
-	ueber                            int               // Kachel unter dem Zeiger; -1: keine
-	zeiger                           image.Point       // letzte Lage des Zeigers über dem Raster (Hinweis am ✕)
-	loesch                           []image.Rectangle // ✕ je gezeichneter Stelle von bis bis, leer ohne ✕ (Karte #312)
-	langDruck                        int               // Stelle, deren ✕ ein langer Druck zeigt; -1: keine
-	druckStelle                      int               // Stelle des laufenden Drucks (langer Druck)
-	druckZeit                        time.Duration
+	masse                        libview.RasterMasse
+	sicht                        image.Rectangle // Raster
+	suchRahmen, zeitRahmen       image.Rectangle
+	agentenRahmen, zurueckRahmen image.Rectangle
+	kacheln                      []image.Rectangle // Vorschauen der gezeichneten Stellen von bis bis (Tests)
+	von, bis                     int
+	ueber                        int               // Kachel unter dem Zeiger; -1: keine
+	zeiger                       image.Point       // letzte Lage des Zeigers über dem Raster (Hinweis am ✕)
+	loesch                       []image.Rectangle // ✕ je gezeichneter Stelle von bis bis, leer ohne ✕ (Karte #312)
+	langDruck                    int               // Stelle, deren ✕ ein langer Druck zeigt; -1: keine
+	druckStelle                  int               // Stelle des laufenden Drucks (langer Druck)
+	druckZeit                    time.Duration
+	// loeschRuheBis: Nach einem ✕ (oder Entf) rückt die nächste Aufnahme an dieselbe Stelle; bis dahin gilt kein ✕,
+	// sonst legte der zweite Klick eines Doppelklicks sie gleich mit in den Papierkorb (Kritik K-2). Gilt für Leiste und
+	// Ansicht.
+	loeschRuheBis                    time.Time
 	ops                              map[string]leisteBild
 	letzterKlick                     time.Duration // Zeit des letzten Drucks (Doppelklick)
 	letzteKachel                     int
@@ -175,7 +179,7 @@ func (e *editor) bibliothekOeffnen(gtx layout.Context) {
 	b.offen = true
 	b.suche, b.zeitraum, b.agenten = "", libview.ZeitraumAlle, false
 	b.ziel, b.bearbeite, b.worte, b.hinweis = bibZielRaster, "", "", ""
-	b.ueber, b.letzteKachel = -1, -1
+	b.ueber, b.letzteKachel, b.langDruck, b.druckStelle = -1, -1, -1, -1 // Kritik K-3: 0 wäre Kachel 0
 	b.r.SetzeFokus(-1)
 	b.r.SetzeRollen(0)
 	b.r.SetzeAktuell(e.offenRel())
@@ -194,7 +198,7 @@ func (e *editor) bibliothekSchliessen(gtx *layout.Context) {
 	if !b.offen {
 		return
 	}
-	b.offen, b.bearbeite, b.hinweis, b.ueber = false, "", "", -1
+	b.offen, b.bearbeite, b.hinweis, b.ueber, b.langDruck, b.druckStelle = false, "", "", -1, -1, -1
 	b.kacheln, b.von, b.bis = nil, 0, 0
 	if e.menue.offen && e.menue.welches == listeZeitraum {
 		e.menue.offen, e.menue.fokusNach = false, nil
@@ -275,6 +279,7 @@ func (e *editor) bibliothekAbholen() bool {
 			default:
 				b.indexFehler = false
 				b.r.Setze(r.es)
+				b.langDruck = -1 // die Stelle zeigt nach dem Neulesen womöglich eine andere Aufnahme (K-3)
 				if b.bearbeite != "" && b.r.Stelle(b.bearbeite) < 0 {
 					b.bearbeite = "" // die bearbeitete Aufnahme ist nicht mehr da
 				}
@@ -391,6 +396,7 @@ func (e *editor) papierkorbAnfrage(rel string, offen bool) {
 		e.meldeNebenbei(i18n.T("The library is still working. Please wait a moment, then try again."), false)
 		return
 	}
+	e.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)
 	e.bibArbeiten(bibArbeit{papierkorb: true, rel: rel}, func() error {
 		_, err := e.bib.Bibliothek.InPapierkorb(rel, leisteUhr())
 		return err
@@ -399,6 +405,12 @@ func (e *editor) papierkorbAnfrage(rel string, offen bool) {
 
 // langDruckZeit: So lange gedrückt (Finger oder Maus) zeigt eine Vorschau ihr ✕, statt sie zu öffnen (Karte #312).
 const langDruckZeit = 500 * time.Millisecond
+
+// loeschRuhe ist die Zeit nach einem Löschen, in der kein ✕ gilt: länger als ein Doppelklick (Kritik K-2).
+const loeschRuhe = doppelklickZeit + 200*time.Millisecond
+
+// loeschRuht meldet, ob ein ✕ gerade nicht gilt (kurz nach einem Löschen).
+func (e *editor) loeschRuht() bool { return leisteUhr().Before(e.bibl.loeschRuheBis) }
 
 // loeschRahmen ist das ✕ oben rechts in der Vorschau br.
 func loeschRahmen(gtx layout.Context, br image.Rectangle) image.Rectangle {
@@ -689,7 +701,7 @@ func (e *editor) bibliothekZeiger(gtx layout.Context) {
 			if pe.Buttons != pointer.ButtonPrimary {
 				continue
 			}
-			if stelle >= 0 && e.bibLoeschTreffer(stelle, pe.Position.Round()) {
+			if stelle >= 0 && e.bibLoeschTreffer(stelle, pe.Position.Round()) && !e.loeschRuht() {
 				b.r.SetzeFokus(stelle)
 				b.langDruck, b.letzteKachel = -1, -1
 				e.bibPapierkorb()
@@ -1049,7 +1061,7 @@ func (e *editor) zeichneBibliothekRaster(gtx layout.Context) {
 		}
 		// ✕ oben rechts unter dem Zeiger oder nach langem Druck; nicht an der offenen Aufnahme (Karte #312).
 		var lr image.Rectangle
-		if (i == b.ueber || i == b.langDruck) && !e.bibIstOffen(i) && b.bearbeite != eintrag.Pfad {
+		if (i == b.ueber || i == b.langDruck) && !e.bibIstOffen(i) && b.bearbeite != eintrag.Pfad && !e.loeschRuht() {
 			lr = loeschRahmen(gtx, br)
 			zeichneLoeschX(gtx, lr, b.zeiger.In(lr))
 		}

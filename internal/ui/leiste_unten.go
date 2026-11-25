@@ -213,7 +213,8 @@ func (e *editor) leisteIndexAbholen() bool {
 		} else {
 			vorher := k.l.Fokus()
 			k.l.Setze(r.es)
-			k.v.Pruefe() // eine andere Instanz kann eine Aufnahme inzwischen geschwärzt haben (F-677)
+			k.langDruck = -1 // die Stelle zeigt nach dem Neulesen womöglich eine andere Aufnahme (K-3)
+			k.v.Pruefe()     // eine andere Instanz kann eine Aufnahme inzwischen geschwärzt haben (F-677)
 			// Setze hält den Fokus bei derselben Aufnahme; der Tastaturfokus von Gio hängt aber am Knopf der Stelle. Hatte
 			// ein Knopf der Leiste ihn, folgt er der Aufnahme an ihre neue Stelle (F-656) — sonst öffnete Enter nach einer
 			// neuen Aufnahme vorn die Nachbarin.
@@ -347,12 +348,12 @@ func (e *editor) leisteAuswerten(gtx layout.Context) {
 		e.bibliothekOeffnen(gtx)
 	}
 	for i := range k.gezeigt {
-		if k.loesch[i].Clicked(gtx) && e.leisteAn() {
+		if k.loesch[i].Clicked(gtx) && e.leisteAn() && !e.loeschRuht() {
 			k.langDruck = -1
 			e.leistePapierkorb(i)
 			continue
 		}
-		if k.knoepfe[i].Clicked(gtx) && e.leisteAn() {
+		if k.knoepfe[i].Clicked(gtx) && e.leisteAn() && !e.loeschRuht() { // zweiter Klick nach dem ✕ öffnet nichts (K-2)
 			if langerDruck(k.knoepfe[i].History()) {
 				k.langDruck = i // zeigt das ✕, statt zu öffnen
 				continue
@@ -498,7 +499,7 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 		seiteKnopf(gtx, &k.knoepfe[i], kr)
 		// ✕ oben rechts (Karte #312), über der Vorschau angemeldet, damit es den Klick bekommt.
 		var lr image.Rectangle
-		if !aktuell && (k.knoepfe[i].Hovered() || k.loesch[i].Hovered() || k.langDruck == i) {
+		if !aktuell && !e.loeschRuht() && (k.knoepfe[i].Hovered() || k.loesch[i].Hovered() || k.langDruck == i) {
 			lr = loeschRahmen(gtx, kr)
 			zeichneLoeschX(gtx, lr, k.loesch[i].Hovered())
 			seiteKnopf(gtx, &k.loesch[i], lr)

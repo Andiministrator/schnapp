@@ -3,8 +3,8 @@
     "name": "PK1 ✕ auch an der offenen Aufnahme (Leiste)",
     "datei": "internal/ui/leiste_unten.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif !aktuell && (k.knoepfe[i].Hovered() || k.loesch[i].Hovered() || k.langDruck == i) {",
-    "neu": "\t\tif k.knoepfe[i].Hovered() || k.loesch[i].Hovered() || k.langDruck == i {"
+    "alt": "\t\tif !aktuell && !e.loeschRuht() && (k.knoepfe[i].Hovered()",
+    "neu": "\t\tif !e.loeschRuht() && (k.knoepfe[i].Hovered()"
   },
   {
     "name": "PK2 ✕-Klick öffnet nur",
@@ -38,8 +38,8 @@
     "name": "PK6 Ansicht: Druck aufs ✕ legt nicht in den Papierkorb",
     "datei": "internal/ui/bibliothek.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\tif stelle >= 0 && e.bibLoeschTreffer(stelle, pe.Position.Round()) {",
-    "neu": "\t\t\tif false && stelle >= 0 && e.bibLoeschTreffer(stelle, pe.Position.Round()) {"
+    "alt": "\t\t\tif stelle >= 0 && e.bibLoeschTreffer(stelle, pe.Position.Round()) && !e.loeschRuht() {",
+    "neu": "\t\t\tif false && stelle >= 0 && e.bibLoeschTreffer(stelle, pe.Position.Round()) && !e.loeschRuht() {"
   },
   {
     "name": "PK7 Ansicht: langer Druck zeigt kein ✕",

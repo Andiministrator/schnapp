@@ -50,9 +50,12 @@ type Anbindung struct {
 
 // wechselZustand ist ein laufender Wechsel.
 type wechselZustand struct {
-	ziel    string // absoluter Pfad der gewählten Aufnahme; leer: kein Wechsel angefragt
-	laedt   bool   // die Ladefunktion läuft
-	antwort chan wechselErgebnis
+	ziel string // absoluter Pfad der gewählten Aufnahme; leer: kein Wechsel angefragt
+	// ausDialog: Das Ziel kam aus Datei → Öffnen… Hält ein Speicher-Hinweis den Wechsel auf, sagt die Meldung, dass die
+	// gewählte Datei nicht geöffnet ist (Kritik K-4): Anders als in der Leiste gibt es keinen zweiten Klick auf dasselbe.
+	ausDialog bool
+	laedt     bool // die Ladefunktion läuft
+	antwort   chan wechselErgebnis
 }
 
 type wechselErgebnis struct {
@@ -93,7 +96,7 @@ func (e *editor) wechselAnfrage(abs string) {
 		e.melde(i18n.T("Text recognition is running. Press Esc to cancel it first."), false)
 		return
 	}
-	e.wechsel.ziel = abs
+	e.wechsel.ziel, e.wechsel.ausDialog = abs, false
 	abzug, err := e.s.SpeichernJetzt()
 	switch {
 	case errors.Is(err, canvas.ErrNichtsZuSpeichern):
@@ -120,6 +123,9 @@ func (e *editor) wechselNachSpeichern(r speicherErgebnis, ende canvas.Ende) {
 		e.melde(fmt.Sprintf(i18n.T("Could not save: %v. The other capture was not opened."), ohnePaketpraefix(r.err.Error())), true)
 	case r.g.HaeltOffen():
 		e.wechsel.ziel = "" // der Hinweis bleibt stehen; ein weiterer Klick wechselt (gespeichert ist nichts mehr offen)
+		if e.wechsel.ausDialog {
+			e.meldung.Text += " " + i18n.T("The chosen file was not opened yet: open it again with Ctrl+O.")
+		}
 	default:
 		e.wechselLaden()
 	}

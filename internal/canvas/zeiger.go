@@ -56,6 +56,8 @@ func (s *Sitzung) Zeiger(p *document.Punkt) ZeigerArt {
 	switch {
 	case s.pipette || s.TextBereichLaeuft():
 		return ZeigerFadenkreuz
+	case s.gesperrt():
+		return s.werkzeugZeiger() // Speichern oder Laden: Griffe und Objekte reagieren nicht (Kritik K-5)
 	case s.pan && s.bewegt, s.zug == zugAnsicht && s.bewegt:
 		return ZeigerGreifend
 	case s.zug == zugGriff, s.zug == zugZuschnitt:

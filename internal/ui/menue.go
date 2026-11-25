@@ -737,7 +737,7 @@ func (e *editor) menueZeile(gtx layout.Context, c *widget.Clickable, en menueEin
 		g.Constraints = layout.Exact(groesse)
 		c.Layout(g, func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: groesse} })
 		if en.an {
-			pointer.CursorPointer.Add(gtx.Ops)
+			handZeiger(gtx, groesse)
 		}
 	}
 	t.Pop()
