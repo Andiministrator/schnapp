@@ -124,3 +124,83 @@ func AbschnitteIn(as []Abschnitt, lo, hi float64) []Abschnitt {
 	}
 	return as[i:j]
 }
+
+// StreckenStueck ist ein sichtbarer Bereich mit den Strecken einer Linie, die ihn berühren (Indizes i der Strecke
+// pts[i] → pts[i+1], bei geschlossener Linie auch die letzte zurück zum Anfang).
+type StreckenStueck struct {
+	Stueck
+	Strecken []int
+}
+
+// StreckenStuecke ordnet die Strecken der Linie pts (Original) den sichtbaren Bereichen zu, die sie mit dem Rand rand
+// (halbe Strichbreite und Glättung) berühren, in der Reihenfolge von Stuecke. So zeichnen Renderer und Editor einen
+// Strich über einer Naht abgeschnitten wie der SVG-Export, und jeder Bereich baut nur die Strecken in seiner Nähe (F-748,
+// ADR-0023 Nachtrag 17): Ein Strich je Bereich ganz hätte über vielen Nähten jedes Mal die ganze Linie gebaut (F-136).
+// Aufwand: Strecken × berührte Bereiche.
+func (d *Dokument) StreckenStuecke(pts []Punkt, geschlossen bool, rand float64) []StreckenStueck {
+	if len(pts) == 0 {
+		return nil
+	}
+	g := Rechteck{Min: pts[0], Max: pts[0]}
+	for _, p := range pts[1:] {
+		g = g.Vereint(Rechteck{Min: p, Max: p})
+	}
+	g = Rechteck{Min: g.Min.Minus(Pt(rand, rand)), Max: g.Max.Plus(Pt(rand, rand))}
+	xs, ys := d.Abschnitte(g)
+	if len(xs) == 0 || len(ys) == 0 {
+		return nil
+	}
+	index := func(as []Abschnitt, lo, hi float64) (int, int) {
+		i := sort.Search(len(as), func(k int) bool { return float64(as[k].B) > lo })
+		j := i
+		for j < len(as) && float64(as[j].A) < hi {
+			j++
+		}
+		return i, j
+	}
+	n := len(pts)
+	strecken := n - 1
+	if geschlossen && n > 1 {
+		strecken = n
+	}
+	if n == 1 {
+		strecken = 1 // ein Punkt: eine Strecke der Länge 0 (Kreis)
+	}
+	faecher := map[[2]int][]int{}
+	for i := 0; i < strecken; i++ {
+		a, b := pts[i], pts[(i+1)%n]
+		lx, hx := min(a.X, b.X)-rand, max(a.X, b.X)+rand
+		ly, hy := min(a.Y, b.Y)-rand, max(a.Y, b.Y)+rand
+		x0, x1 := index(xs, lx, hx)
+		y0, y1 := index(ys, ly, hy)
+		for yi := y0; yi < y1; yi++ {
+			for xi := x0; xi < x1; xi++ {
+				k := [2]int{yi, xi}
+				faecher[k] = append(faecher[k], i)
+			}
+		}
+	}
+	// Nur die berührten Bereiche, in der Reihenfolge von Stuecke (Zeile, dann Spalte); nicht alle Bereiche ablaufen.
+	schluessel := make([][2]int, 0, len(faecher))
+	for k := range faecher {
+		schluessel = append(schluessel, k)
+	}
+	sort.Slice(schluessel, func(i, j int) bool {
+		if schluessel[i][0] != schluessel[j][0] {
+			return schluessel[i][0] < schluessel[j][0]
+		}
+		return schluessel[i][1] < schluessel[j][1]
+	})
+	out := make([]StreckenStueck, 0, len(schluessel))
+	for _, k := range schluessel {
+		y, x, st := ys[k[0]], xs[k[1]], faecher[k]
+		out = append(out, StreckenStueck{
+			Stueck: Stueck{
+				Quelle:  Rechteck{Min: Pt(float64(x.A), float64(y.A)), Max: Pt(float64(x.B), float64(y.B))},
+				Versatz: Pt(float64(x.Versatz), float64(y.Versatz)),
+			},
+			Strecken: st,
+		})
+	}
+	return out
+}

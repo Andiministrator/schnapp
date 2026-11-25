@@ -375,8 +375,6 @@ type zeichner struct {
 	abbrechen bool
 	// ohneZaehlen: nur Bild (F-430) — Füllungen rastern, ohne ihre Kosten zu zählen.
 	ohneZaehlen bool
-	// schnitt beschneidet Glyphen auf ein Stück der Ansicht (Text über einer Naht, F-739); leer heißt kein Schnitt.
-	schnitt image.Rectangle
 }
 
 func (z zeichner) trocken() bool { return z.bild == nil }
@@ -426,17 +424,23 @@ func (z zeichner) ansicht(p document.Punkt) document.Punkt { return z.d.ZuAnsich
 // dasselbe wie die Abbildung der Ecken.
 func (z zeichner) jeStueck(r document.Rechteck, f func(zs zeichner, abb func(document.Punkt) document.Punkt)) {
 	for _, st := range z.d.Stuecke(r) {
-		ziel := st.Ziel()
-		zs := z
-		zs.schnitt = image.Rect(int(math.Round(ziel.Min.X)), int(math.Round(ziel.Min.Y)),
-			int(math.Round(ziel.Max.X)), int(math.Round(ziel.Max.Y))) // auch Glyphen (Ziffern einer Nummer)
-		zs.rand = zs.schnitt.Intersect(z.rand)
-		if zs.rand.Empty() {
+		zs, ok := z.aufStueck(st)
+		if !ok {
 			continue
 		}
 		v := st.Versatz
 		f(zs, func(p document.Punkt) document.Punkt { return p.Plus(v) })
 	}
+}
+
+// aufStueck liefert den Zeichner, der auf den Bereich st beschnitten ist (Ziel in der Ansicht, ganze Pixel), und ob
+// davon etwas im Bild liegt.
+func (z zeichner) aufStueck(st document.Stueck) (zeichner, bool) {
+	ziel := st.Ziel()
+	zs := z
+	zs.rand = image.Rect(int(math.Round(ziel.Min.X)), int(math.Round(ziel.Min.Y)),
+		int(math.Round(ziel.Max.X)), int(math.Round(ziel.Max.Y))).Intersect(z.rand)
+	return zs, !zs.rand.Empty()
 }
 
 // huelleVon ist das umschließende Rechteck der Punkte, um rand vergrößert (Original).
@@ -538,21 +542,42 @@ func mischeEbene(bild, q *image.NRGBA, p int) {
 func (z zeichner) objekt(o document.Objekt) error {
 	switch v := o.(type) {
 	case document.Pfeil:
-		// Über die 48 Stützpunkte abgebildet (ADR-0023 Nachtrag 15 Punkt 2): Außerhalb des Kantenbands einer Naht ist das
-		// dasselbe wie das Abschneiden des SVG-Exports, und es kostet nicht je Bereich (F-136: bis zu MaxStreifen Nähte).
+		// Abgeschnitten wie im SVG-Export (F-748, ADR-0023 Nachtrag 17): Jeder sichtbare Bereich zeichnet die Strecken in
+		// seiner Nähe um seinen Versatz verschoben und auf sich beschnitten (strichJeStueck), die Spitze ebenso. Über vielen
+		// Nähten baut so kein Bereich den ganzen Pfeil (F-136).
 		const n = 48
 		pts := make([]document.Punkt, 0, n+1)
 		for i := 0; i <= n; i++ {
-			pts = append(pts, z.ansicht(v.Punkt(float64(i)/n)))
+			pts = append(pts, v.Punkt(float64(i)/n))
 		}
-		z.strich(pts, false, v.Strich)
+		z.strichJeStueck(pts, false, v.Strich)
 		r := v.RichtungAmEnde()
 		g := math.Max(8, 4*v.Strich.Breite)
 		nrm := document.Pt(-r.Y, r.X)
 		fuss := v.B.Minus(r.Mal(g))
-		z.fuelle([][]document.Punkt{{z.ansicht(v.B), z.ansicht(fuss.Plus(nrm.Mal(g / 2))),
-			z.ansicht(fuss.Minus(nrm.Mal(g / 2)))}}, nil, v.Strich.Farbe)
+		spitze := []document.Punkt{v.B, fuss.Plus(nrm.Mal(g / 2)), fuss.Minus(nrm.Mal(g / 2))}
+		z.jeStueck(huelleVon(spitze, 1), func(zs zeichner, abb func(document.Punkt) document.Punkt) {
+			zs.fuelle([][]document.Punkt{{abb(spitze[0]), abb(spitze[1]), abb(spitze[2])}}, nil, v.Strich.Farbe)
+		})
 	case document.Kasten:
+		if b := document.R(v.Bereich.Min, v.Bereich.Max); document.WirksamerEckradius(v.Eckradius, b.Breite(), b.Hoehe()) > 0 {
+			// Gerundet: je Bereich abgeschnitten wie im SVG-Export, nicht über die abgebildeten Ecken neu gerundet (F-749,
+			// ADR-0023 Nachtrag 17). Ohne Naht ist das dasselbe.
+			umriss := rundesRechteck(b, v.Eckradius)
+			if v.Fuellung.A > 0 {
+				z.jeStueck(huelleVon(umriss, 1), func(zs zeichner, abb func(document.Punkt) document.Punkt) {
+					pts := make([]document.Punkt, len(umriss))
+					for i, p := range umriss {
+						pts[i] = abb(p)
+					}
+					zs.fuelle([][]document.Punkt{pts}, nil, v.Fuellung)
+				})
+			}
+			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
+				z.strichJeStueck(umriss, true, v.Strich)
+			}
+			break
+		}
 		r := document.R(z.ansicht(v.Bereich.Min), z.ansicht(v.Bereich.Max))
 		umriss := rundesRechteck(r, v.Eckradius)
 		if v.Fuellung.A > 0 {
@@ -1037,56 +1062,58 @@ func (z zeichner) strich(pts []document.Punkt, geschlossen bool, s document.Stri
 	z.fuelle(polys, kreise, s.Farbe)
 }
 
-// text zeichnet eine Zeile. Was das Bild nicht schneidet, wird nicht gerastert (F-118): eine Zeile, deren Höhe ganz
-// über oder unter dem Bild liegt, entfällt, ebenso jede Glyphe, deren Ursprung mehr als die seitliche Hülle der Schrift (mindestens
-// 1,25 Schriftgrade, fonts.Schrift.Huelle) links oder rechts vom Bild liegt (Vorschub und Unterschneidung laufen weiter, damit sichtbare Glyphen am selben Ort stehen).
-// Die Kosten zählt der Aufrufer (glyphKostenIn bzw. glyphKosten), auch im Trockenlauf.
-func (z zeichner) text(face font.Face, sch *fonts.Schrift, s string, x, grundlinie float64, farbe color.NRGBA, grad float64) {
-	var puffer sfnt.Buffer // je Aufruf: Zeilen können nebenläufig gezeichnet werden
-	sf := sch.Font
-	rand := z.rand
-	oben, unten, seitlich := sch.Huelle()
-	if grundlinie-grad*oben > float64(rand.Max.Y) || grundlinie+grad*unten < float64(rand.Min.Y) {
+// strichJeStueck zeichnet den Strich der Linie pts (Original) wie strich, aber je sichtbarem Bereich: nur die Strecken
+// in seiner Nähe (document.StreckenStuecke), um seinen Versatz verschoben und auf ihn beschnitten, mit den runden
+// Gelenken an ihren Enden. Über einer Naht ist der Strich so abgeschnitten wie im SVG-Export (F-748, ADR-0023
+// Nachtrag 17); ohne Naht ist es eine Füllung mit allen Strecken und Gelenken in derselben Reihenfolge wie strich.
+func (z zeichner) strichJeStueck(pts []document.Punkt, geschlossen bool, s document.Strich) {
+	hw := s.Breite / 2
+	if hw <= 0 || len(pts) == 0 {
 		return
 	}
-	dot := fixed.Point26_6{X: fixed.Int26_6(math.Round(x * 64)), Y: fixed.Int26_6(math.Round(grundlinie * 64))}
-	// Seitlicher Rand: mindestens 1,25 Schriftgrad (Glyphen sind bis gut 1,07 em breit, z. B. U+20A7), bei breiteren
-	// Schriften ihr head-Rahmen (Huelle).
-	links, rechts := float64(rand.Min.X)-seitlich*grad, float64(rand.Max.X)+seitlich*grad
-	vorher := rune(-1)
-	for _, c := range s {
-		saveprogress.Puls() // je Zeichen: Glyphen kosten am Budget Sekunden (F-147, F-298)
-		if vorher >= 0 {
-			dot.X += document.KernPaar(sf, &puffer, vorher, c, grad) // im Grad wie die Messung (Sitzungs-QA B-4)
-		}
-		vorher = c
-		if px := float64(dot.X) / 64; px > rechts {
-			return // alles Weitere liegt rechts vom Bild
-		} else if px < links {
-			// Vorschub wie font.Drawer.DrawString: auch ohne Glyphe (ok = false) zählt der Vorschub des Ersatzkästchens.
-			adv, _ := face.GlyphAdvance(c)
-			dot.X += adv
+	n := len(pts)
+	ende := make([]bool, n)
+	for _, st := range z.d.StreckenStuecke(pts, geschlossen, hw+1) {
+		zs, ok := z.aufStueck(st.Stueck)
+		if !ok {
 			continue
 		}
-		z.auf.glyphen++
-		// Wie font.Drawer.DrawString mit einem Zeichen (ohne Kerning, das steht oben), aber mit eigenem Einmischen
-		// statt draw.DrawMask, das für *image.NRGBA nur den allgemeinen Weg kennt (F-147).
-		gr, maske, mp, adv, ok := face.Glyph(dot, c)
-		if !ok {
-			// Face.Glyph meldet bei unlesbaren Umrissen Vorschub 0; der Vorschub gilt trotzdem, wie in der Messung, im
-			// Editor und im Zweig oben (F-577).
-			adv, _ = face.GlyphAdvance(c)
+		v := st.Versatz
+		clear(ende)
+		var polys [][]document.Punkt
+		for _, i := range st.Strecken {
+			j := (i + 1) % n
+			ende[i], ende[j] = true, true
+			a, b := pts[i].Plus(v), pts[j].Plus(v)
+			d := b.Minus(a)
+			l := d.Laenge()
+			if l < 1e-9 {
+				continue
+			}
+			nrm := document.Pt(-d.Y/l*hw, d.X/l*hw)
+			polys = append(polys, []document.Punkt{a.Plus(nrm), b.Plus(nrm), b.Minus(nrm), a.Minus(nrm)})
 		}
-		if !z.schnitt.Empty() {
-			g2 := gr.Intersect(z.schnitt)
-			mp = mp.Add(g2.Min.Sub(gr.Min))
-			gr = g2
+		var kreise []kreisform
+		for i, ja := range ende {
+			if ja {
+				kreise = append(kreise, kreisform{pts[i].Plus(v), hw})
+			}
 		}
-		if !gr.Empty() {
-			glyphMischen(z.bild, gr, maske, mp, farbe)
-		}
-		dot.X += adv
+		zs.fuelle(polys, kreise, s.Farbe)
 	}
+}
+
+// text zeichnet eine Zeile in den Rand des Zeichners: ein Bereich für textBaender (F-118: was das Bild nicht schneidet,
+// wird nicht gerastert; senkrecht entfällt eine Zeile, deren Höhe ganz über oder unter dem Rand liegt, waagerecht jede
+// Glyphe, deren Ursprung mehr als die seitliche Hülle der Schrift neben ihm liegt). Die Kosten zählt der Aufrufer.
+func (z zeichner) text(face font.Face, sch *fonts.Schrift, s string, x, grundlinie float64, farbe color.NRGBA, grad float64) {
+	oben, unten, _ := sch.Huelle()
+	rand := z.rand
+	if rand.Empty() || grundlinie-grad*oben > float64(rand.Max.Y) || grundlinie+grad*unten < float64(rand.Min.Y) {
+		return
+	}
+	z.textBaender(face, sch, s, x, grundlinie, farbe, grad, []band{{A: rand.Min.X, B: rand.Max.X}},
+		[]band{{A: rand.Min.Y, B: rand.Max.Y}})
 }
 
 // glyphMischen mischt die Glyphenmaske einfarbig in bild, bitgleich zu draw.DrawMask(bild, gr, image.NewUniform(farbe),

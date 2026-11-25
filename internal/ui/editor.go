@@ -1764,50 +1764,79 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 	}
 	switch v := o.(type) {
 	case document.Pfeil:
-		// Über die 48 Stützpunkte abgebildet wie im Renderer (ADR-0023 Nachtrag 15 Punkt 2).
-		var pfad clip.Path
-		pfad.Begin(gtx.Ops)
-		pfad.MoveTo(an(v.A))
+		// Abgeschnitten wie Renderer und SVG-Export (F-748, ADR-0023 Nachtrag 17): einmal im Original aufgezeichnet und in
+		// jedem Bereich abgespielt, den eine Strecke berührt (document.StreckenStuecke), die Spitze ebenso.
 		const n = 48
-		for i := 1; i <= n; i++ {
-			pfad.LineTo(an(v.Punkt(float64(i) / n)))
+		pts := make([]document.Punkt, 0, n+1)
+		for i := 0; i <= n; i++ {
+			pts = append(pts, v.Punkt(float64(i)/n))
 		}
-		paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Stroke{Path: pfad.End(), Width: float32(v.Strich.Breite)}.Op())
+		var stuecke []document.Stueck
+		if !vorschau {
+			for _, st := range e.s.D.StreckenStuecke(pts, false, v.Strich.Breite/2+1) {
+				stuecke = append(stuecke, st.Stueck)
+			}
+		}
+		e.jeStueckIn(gtx, stuecke, an, vorschau, func(abb func(document.Punkt) f32.Point) {
+			var pfad clip.Path
+			pfad.Begin(gtx.Ops)
+			pfad.MoveTo(abb(pts[0]))
+			for _, p := range pts[1:] {
+				pfad.LineTo(abb(p))
+			}
+			paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Stroke{Path: pfad.End(), Width: float32(v.Strich.Breite)}.Op())
+		})
 		r := v.RichtungAmEnde()
 		gl := math.Max(8, 4*v.Strich.Breite)
 		nrm := document.Pt(-r.Y, r.X)
 		fuss := v.B.Minus(r.Mal(gl))
-		var spitze clip.Path
-		spitze.Begin(gtx.Ops)
-		spitze.MoveTo(an(v.B))
-		spitze.LineTo(an(fuss.Plus(nrm.Mal(gl / 2))))
-		spitze.LineTo(an(fuss.Minus(nrm.Mal(gl / 2))))
-		spitze.Close()
-		paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Outline{Path: spitze.End()}.Op())
-	case document.Kasten:
-		min, max := an(v.Bereich.Min), an(v.Bereich.Max)
-		r := image.Rect(int(math.Round(float64(min.X))), int(math.Round(float64(min.Y))),
-			int(math.Round(float64(max.X))), int(math.Round(float64(max.Y))))
-		rr := clip.UniformRRect(r, kastenRundung(v, r))
-		if v.Fuellung.A > 0 {
-			paint.FillShape(gtx.Ops, v.Fuellung, rr.Op(gtx.Ops))
+		spitze := []document.Punkt{v.B, fuss.Plus(nrm.Mal(gl / 2)), fuss.Minus(nrm.Mal(gl / 2))}
+		h := document.Rechteck{Min: spitze[0], Max: spitze[0]}
+		for _, p := range spitze[1:] {
+			h = h.Vereint(document.Rechteck{Min: p, Max: p})
 		}
-		if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
-			if eckig := kastenStrich(v, r); eckig != nil {
-				// Ohne Rundung spitze Außenecken (F-498); Gios Strich kennt nur runde Ecken.
-				var pfad clip.Path
-				pfad.Begin(gtx.Ops)
-				for _, q := range eckig {
-					pfad.MoveTo(f32.Pt(float32(q.Min.X), float32(q.Min.Y)))
-					pfad.LineTo(f32.Pt(float32(q.Max.X), float32(q.Min.Y)))
-					pfad.LineTo(f32.Pt(float32(q.Max.X), float32(q.Max.Y)))
-					pfad.LineTo(f32.Pt(float32(q.Min.X), float32(q.Max.Y)))
-					pfad.Close()
-				}
-				paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Outline{Path: pfad.End()}.Op())
-			} else {
-				paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(v.Strich.Breite)}.Op())
+		e.jeStueck(gtx, h, 1, an, vorschau, func(abb func(document.Punkt) f32.Point) {
+			var sp clip.Path
+			sp.Begin(gtx.Ops)
+			sp.MoveTo(abb(spitze[0]))
+			sp.LineTo(abb(spitze[1]))
+			sp.LineTo(abb(spitze[2]))
+			sp.Close()
+			paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Outline{Path: sp.End()}.Op())
+		})
+	case document.Kasten:
+		zeichne := func(abb func(document.Punkt) f32.Point) {
+			min, max := abb(v.Bereich.Min), abb(v.Bereich.Max)
+			r := image.Rect(int(math.Round(float64(min.X))), int(math.Round(float64(min.Y))),
+				int(math.Round(float64(max.X))), int(math.Round(float64(max.Y))))
+			rr := clip.UniformRRect(r, kastenRundung(v, r))
+			if v.Fuellung.A > 0 {
+				paint.FillShape(gtx.Ops, v.Fuellung, rr.Op(gtx.Ops))
 			}
+			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
+				if eckig := kastenStrich(v, r); eckig != nil {
+					// Ohne Rundung spitze Außenecken (F-498); Gios Strich kennt nur runde Ecken.
+					var pfad clip.Path
+					pfad.Begin(gtx.Ops)
+					for _, q := range eckig {
+						pfad.MoveTo(f32.Pt(float32(q.Min.X), float32(q.Min.Y)))
+						pfad.LineTo(f32.Pt(float32(q.Max.X), float32(q.Min.Y)))
+						pfad.LineTo(f32.Pt(float32(q.Max.X), float32(q.Max.Y)))
+						pfad.LineTo(f32.Pt(float32(q.Min.X), float32(q.Max.Y)))
+						pfad.Close()
+					}
+					paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Outline{Path: pfad.End()}.Op())
+				} else {
+					paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(v.Strich.Breite)}.Op())
+				}
+			}
+		}
+		if b := document.R(v.Bereich.Min, v.Bereich.Max); document.WirksamerEckradius(v.Eckradius, b.Breite(), b.Hoehe()) > 0 {
+			// Gerundet: je Bereich abgeschnitten wie Renderer und SVG-Export statt über die Ecken neu gerundet (F-749,
+			// ADR-0023 Nachtrag 17).
+			e.jeStueck(gtx, b, v.Strich.Breite/2+1, an, vorschau, zeichne)
+		} else {
+			zeichne(an)
 		}
 	case document.Nummer:
 		// Je sichtbarem Bereich und auf ihn beschnitten wie Renderer und SVG-Export (F-745, ADR-0023 Nachtrag 15).
@@ -1872,7 +1901,11 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 		// Zeilen und Striche wie im Renderer: Schrift, Anfang nach der Ausrichtung und Grundlinie aus dem Dokument,
 		// Glyphen aus den Umrissen derselben Datei (ADR-0021 Nachtrag 10 Punkt 5).
 		sch := v.Schriftdatei()
-		if vorschau {
+		// Während der Eingabe steht der bearbeitete Text ungeschnitten ab dem abgebildeten Anfang jeder Zeile, wie die
+		// Einfügemarke: Liegt sein Ende im Streifen, sähe man sonst nicht, was man tippt (F-752, ADR-0023 Nachtrag 17).
+		// Nach der Eingabe ist er wieder beschnitten; Renderer, Export und Datei ändern sich nicht.
+		eingabe, inEingabe := e.s.TextObjekt()
+		if vorschau || (inEingabe && eingabe.ID == v.ID) {
 			for _, zeile := range v.Zeilen() {
 				p := an(document.Pt(zeile.X, zeile.Grundlinie))
 				e.satz.zeichneZeile(gtx, sch, zeile.Text, float64(p.X), float64(p.Y), v.Schriftgrad, v.Farbe, sicht)
@@ -1940,12 +1973,21 @@ func (e *editor) jeStueck(gtx layout.Context, r document.Rechteck, rand float64,
 		return
 	}
 	r = document.Rechteck{Min: r.Min.Minus(document.Pt(rand, rand)), Max: r.Max.Plus(document.Pt(rand, rand))}
-	stuecke := e.s.D.Stuecke(r)
+	e.jeStueckIn(gtx, e.s.D.Stuecke(r), an, false, f)
+}
+
+// jeStueckIn zeichnet f einmal im Original auf und spielt es in jedem der Bereiche stuecke ab, auf ihn beschnitten und um
+// seinen Versatz (ganze Pixel) verschoben: Über vielen Nähten baute der Editor sonst je Bereich Pfad und Schrift neu
+// (F-750, ADR-0023 Nachtrag 16). Die Vorschau der Ebenenliste zeichnet einmal mit an, ohne Schnitt.
+func (e *editor) jeStueckIn(gtx layout.Context, stuecke []document.Stueck, an func(document.Punkt) f32.Point,
+	vorschau bool, f func(abb func(document.Punkt) f32.Point)) {
+	if vorschau {
+		f(an)
+		return
+	}
 	if len(stuecke) == 0 {
 		return
 	}
-	// Einmal im Original aufgezeichnet und je Bereich um dessen Versatz (ganze Pixel) verschoben abgespielt: Über vielen
-	// Nähten baute der Editor sonst je Bereich Pfad und Schrift neu (F-750, ADR-0023 Nachtrag 16).
 	m := op.Record(gtx.Ops)
 	f(func(p document.Punkt) f32.Point { return f32.Pt(float32(p.X), float32(p.Y)) })
 	aufruf := m.Stop()

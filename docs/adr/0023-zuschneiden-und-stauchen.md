@@ -515,7 +515,7 @@ Naht läuft, wird mit dem Bild gestaucht abgebildet“.
    Rechtecke ohne Rundung ist das dasselbe wie Abschneiden. Beim Pfeil unterscheiden sich die Rechnungen auf der Strecke
    über dem Streifen; liegen die 48 Stützpunkte weiter auseinander als das Kantenband breit ist (lange Pfeile), bei
    breiten Strichen (ab 32 px) und an einer Spitze im Streifen auch daneben, ebenso ein Kasten mit Eckradius, dessen
-   Kante im Streifen liegt (Sitzungs-Kritik A-4, A-5, C-4; offen als F-748 und F-749). Ein Pfeil je Bereich hätte über
+   Kante im Streifen liegt (Sitzungs-Kritik A-4, A-5, C-4; F-748 und F-749, gelöst mit Nachtrag 17). Ein Pfeil je Bereich hätte über
    vielen Nähten (bis `MaxStreifen`) jedes Mal den ganzen Pfeil aufgebaut; der Prüflauf beim Öffnen (F-136) wurde in
    der CI dadurch zu langsam. Glyphkosten eines Texts zählt der Trockenlauf je sichtbarer Zeile einmal, nicht je
    Bereich.
@@ -551,3 +551,33 @@ Tests `TestPfeilUndNummerUeberNaht` (`internal/render/schraege_naht_test.go`) un
 Tests `internal/render/naht_bereiche_test.go`, `TestEditorBildUeberVielenNaehten` (`internal/ui/naht_bereiche_test.go`),
 Sollwerte in `TestKostenmodellSollwerte`; Mutanten N1–N5, N17, N20 nachgezogen, N3b und NA1–NA5 neu
 (`scripts/mutanten/text-naht.json`), QA3-B12b und S238-4 nachgezogen (`scripts/mutanten/schrift.json`).
+
+## Nachtrag 17 (25.11.2026): Pfeil und runder Kasten abgeschnitten, Eingabe am verborgenen Textende (F-748, F-749, F-751, F-752)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #286). Ersetzt Nachtrag 15 Punkt 2 für Pfeil und Kasten mit Eckradius.
+
+1. **Pfeil:** Renderer und Editor zeichnen den Strich je sichtbarem Bereich, aber nur mit den Strecken in dessen Nähe
+   (`document.StreckenStuecke`: jede der 48 Strecken samt halber Strichbreite den Bereichen zugeordnet, die sie berührt;
+   Aufwand Strecken × berührte Bereiche). Der Renderer füllt je Bereich diese Strecken und ihre runden Gelenke, um den
+   Versatz verschoben und beschnitten (`render.strichJeStueck`); der Editor zeichnet den Pfeil einmal auf und spielt
+   ihn in diesen Bereichen ab (`editor.jeStueckIn`). Die Spitze läuft über `jeStueck`. Damit ist der Pfeil über einer
+   Naht abgeschnitten wie im SVG-Export, auch bei langen Pfeilen, breiten Strichen und einer Spitze im Streifen
+   (Sitzungs-Kritik A-4, C-4). Über 1023 Spaltenstreifen trägt ein bildbreiter Pfeil rund 1024 Bereiche mit je ein bis
+   zwei Strecken, nicht 1024 ganze Pfeile (F-136; `TestPfeilUeberVielenNaehtenNurBeruehrteBereiche`).
+2. **Kasten mit Eckradius:** je Bereich abgeschnitten (Füllung über `jeStueck`, Strich über `strichJeStueck` bzw. die
+   Aufzeichnung im Editor), statt über die abgebildeten Ecken neu gerundet (A-5). Ein Kasten ohne Rundung bleibt über
+   die Ecken abgebildet; dort ist das dasselbe.
+3. **Eingabe am verborgenen Textende:** Während der Texteingabe zeichnet der Editor den bearbeiteten Text ungeschnitten
+   ab dem abgebildeten Anfang jeder Zeile, wie die Einfügemarke ihn schon immer setzte. Liegt das Textende im Streifen,
+   sieht man so, was man tippt (A-9). Nach der Eingabe ist der Text wieder beschnitten; Renderer, Export und Datei
+   ändern sich nicht. Gesperrt wird die Eingabe nur, wenn Schrift und Schild ganz verborgen sind (Nachtrag 13).
+4. **Editor-Tests:** `TestEditorKreuzendeNaehteMitZuschnitt` vergleicht über Spalten- und Zeilennaht mit Zuschnitt,
+   auch mit Deckkraft unter 100 %, für Text, Nummer, Sprechblase, Lupe, Pfeil und runden Kasten (A-6).
+5. Beim Vergleich fiel auf, dass der Rasterkern im Festkomma-Weg je nach Ausschnitt entlang langer Kanten driftet; er
+   rechnet seitdem immer im Gleitkomma-Weg (ADR-0028 Nachtrag 1, F-764).
+
+Tests `internal/render/pfeil_kasten_naht_test.go`, `TestEditorKreuzendeNaehteMitZuschnitt`
+(`internal/ui/naht_kreuz_headless_test.go`), `TestEditorTextEndetImStreifen` (Eingabe); Mutanten P1–P8 in
+`scripts/mutanten/text-naht.json`, N12 nachgezogen; `render.text` läuft über `textBaender` (ein Bereich), das Feld
+`zeichner.schnitt` entfällt.
+

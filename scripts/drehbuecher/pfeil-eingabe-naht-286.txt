@@ -1,0 +1,46 @@
+# Sichtprobe Karte #286 (F-748, F-752, ADR-0023 Nachtrag 17): Pfeil über einer Stauch-Naht ist abgeschnitten wie das
+# Bild darunter; während der Texteingabe steht ein Text, dessen Ende im Streifen liegt, ungeschnitten.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/pfeil-eingabe-naht-286.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Rechte Leiste eingeklappt, Fenster 1600 breit: Bild 1200x800 bei 100 % ab Fensterpunkt (321,100); der Text beginnt
+# bei Fensterpunkt x = 686 (Klick 591 plus Innenabstand des Werkzeugs, aus dem Foto).
+# Erwartet:
+#  01 Breiter Pfeil von links oben nach rechts unten, Text „ANFANG Mitte ENDE“ ab Bildpunkt (270, 500).
+#  02 Spalten 330 bis 520 herausgestaucht (Naht bei Fensterpunkt 651): Pfeil links und rechts der Naht auf derselben
+#     Geraden wie ohne Stauchen, nur um die Streifenbreite verschoben (kein Knick zwischen abgebildeten Stützpunkten);
+#     vom Text links der Naht der Anfang, sein Ende liegt im Streifen und fehlt.
+#  03 Doppelklick auf den Text, „XYZ“ getippt: Der Text steht während der Eingabe ungeschnitten ab seinem Anfang, das
+#     Getippte ist rechts der Naht zu sehen, die Einfügemarke dahinter.
+#  04 Nach Enter wieder beschnitten wie in 02.
+warte 800
+taste Strg+Umschalt+B
+warte 200
+taste A
+ziehe 300 180 1350 820 24
+warte 300
+taste T
+klick 591 600
+warte 300
+schreibe ANFANG Mitte ENDE
+taste Return
+warte 300
+taste V
+klick 1300 870
+warte 300
+foto 01-pfeil-text
+taste X
+ziehe 651 860 841 860 12
+warte 500
+foto 02-naht
+taste V
+warte 200
+doppelklick 705 612
+warte 300
+schreibe XYZ
+warte 300
+foto 03-eingabe
+taste Return
+warte 300
+taste V
+klick 1300 870
+warte 300
+foto 04-nach-eingabe

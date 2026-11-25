@@ -310,10 +310,10 @@
   },
   {
     "name": "K221-11 Renderer: seitliche Grenze fest 1,25 Schriftgrade (F-593)",
-    "datei": "internal/render/render.go",
+    "datei": "internal/render/textbaender.go",
     "paket": "./internal/render",
-    "alt": "links, rechts := float64(rand.Min.X)-seitlich*grad, float64(rand.Max.X)+seitlich*grad",
-    "neu": "links, rechts := float64(rand.Min.X)-(seitlich*0+1.25)*grad, float64(rand.Max.X)+(seitlich*0+1.25)*grad"
+    "alt": "\tsg := seitlich * grad\n",
+    "neu": "\tsg := (seitlich*0 + 1.25) * grad\n"
   },
   {
     "name": "K221-12 Editor: Unterlänge fest 1 Schriftgrad in zeichneZeile (F-590)",
@@ -352,9 +352,9 @@
   },
   {
     "name": "K220-11 Renderer: unlesbare Glyphe ohne Vorschub (F-577)",
-    "datei": "internal/render/render.go",
+    "datei": "internal/render/textbaender.go",
     "paket": "./internal/render",
-    "alt": "\t\t\tadv, _ = face.GlyphAdvance(c)\n",
+    "alt": "\t\t\tadv, _ = face.GlyphAdvance(c) // F-577: Face.Glyph meldet bei unlesbaren Umrissen Vorschub 0\n",
     "neu": "\t\t\t_ = adv\n"
   },
   {

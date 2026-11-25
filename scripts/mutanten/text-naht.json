@@ -84,15 +84,15 @@
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
     "alt": "\t\tv := st.Versatz\n\t\tf(zs, func(p document.Punkt) document.Punkt { return p.Plus(v) })",
-    "neu": "\t\t_ = st\n\t\tf(z, z.ansicht)\n\t\tbreak",
+    "neu": "\t\t_, _ = st, zs\n\t\tf(z, z.ansicht)\n\t\tbreak",
     "timeout": "5m"
   },
   {
     "name": "N12 Renderer: Stück nicht beschnitten (F-695)",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "\t\tzs.rand = zs.schnitt.Intersect(z.rand)\n\t\tif zs.rand.Empty() {\n\t\t\tcontinue\n\t\t}\n\t\tv := st.Versatz",
-    "neu": "\t\tzs.schnitt = image.Rectangle{}\n\t\tv := st.Versatz",
+    "alt": "\t\tint(math.Round(ziel.Max.X)), int(math.Round(ziel.Max.Y))).Intersect(z.rand)\n\treturn zs, !zs.rand.Empty()",
+    "neu": "\t\tint(math.Round(ziel.Max.X)), int(math.Round(ziel.Max.Y))).Intersect(z.rand)\n\tzs.rand = z.rand\n\treturn zs, !zs.rand.Empty()",
     "timeout": "5m"
   },
   {
@@ -190,6 +190,70 @@
     "paket": "./internal/render",
     "alt": "b := Abschnitt{A: max(a.A, lo-a.Versatz), B: min(a.B, hi-a.Versatz), Versatz: a.Versatz}",
     "neu": "b := Abschnitt{A: max(a.A, lo), B: min(a.B, hi), Versatz: a.Versatz}",
+    "timeout": "5m"
+  },
+  {
+    "name": "P1 Renderer: Pfeil über abgebildete Stützpunkte statt je Bereich (F-748)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\ta, b := pts[i].Plus(v), pts[j].Plus(v)\n",
+    "neu": "\t\t\ta, b := z.ansicht(pts[i]), z.ansicht(pts[j])\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "P2 Renderer: Spitze über abgebildete Ecken (F-748)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "zs.fuelle([][]document.Punkt{{abb(spitze[0]), abb(spitze[1]), abb(spitze[2])}}, nil, v.Strich.Farbe)",
+    "neu": "zs.fuelle([][]document.Punkt{{z.ansicht(spitze[0]), z.ansicht(spitze[1]), z.ansicht(spitze[2])}}, nil, v.Strich.Farbe)",
+    "timeout": "5m"
+  },
+  {
+    "name": "P3 Renderer: Strecken ohne Strichbreite zugeordnet (F-748)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "z.d.StreckenStuecke(pts, geschlossen, hw+1)",
+    "neu": "z.d.StreckenStuecke(pts, geschlossen, 0)",
+    "timeout": "5m"
+  },
+  {
+    "name": "P4 Renderer: runder Kasten über die Ecken neu gerundet (F-749)",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "document.WirksamerEckradius(v.Eckradius, b.Breite(), b.Hoehe()) > 0 {\n\t\t\t// Gerundet: je Bereich",
+    "neu": "document.WirksamerEckradius(v.Eckradius, b.Breite(), b.Hoehe()) > 1e9 {\n\t\t\t// Gerundet: je Bereich",
+    "timeout": "5m"
+  },
+  {
+    "name": "P5 Editor: Pfeil über die Abbildung statt je Bereich (F-748)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "e.jeStueckIn(gtx, stuecke, an, vorschau, func(abb func(document.Punkt) f32.Point) {\n\t\t\tvar pfad clip.Path",
+    "neu": "e.jeStueckIn(gtx, stuecke, an, true, func(abb func(document.Punkt) f32.Point) {\n\t\t\tvar pfad clip.Path",
+    "timeout": "5m"
+  },
+  {
+    "name": "P6 Editor: runder Kasten über die Abbildung (F-749)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.jeStueck(gtx, b, v.Strich.Breite/2+1, an, vorschau, zeichne)\n",
+    "neu": "\t\t\tzeichne(an)\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "P7 Editor: bearbeiteter Text auch während der Eingabe beschnitten (F-752)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if vorschau || (inEingabe && eingabe.ID == v.ID) {",
+    "neu": "if vorschau || (false && inEingabe && eingabe.ID == v.ID) {",
+    "timeout": "5m"
+  },
+  {
+    "name": "P8 Rasterkern wieder mit Festkomma-Weg (F-764)",
+    "datei": "internal/raster16/raster.go",
+    "paket": "./internal/raster16",
+    "alt": "\tz.setUseFloatingPointMath(true)\n",
+    "neu": "\tz.setUseFloatingPointMath(w > floatingPointMathThreshold || h > floatingPointMathThreshold)\n",
     "timeout": "5m"
   }
 ]

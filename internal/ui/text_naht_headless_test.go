@@ -113,6 +113,11 @@ func TestEditorSchneidetSchraegeKantenAnDerNaht(t *testing.T) {
 			Ziel: document.R(document.Pt(280, 110), document.Pt(340, 170)), Strich: document.Strich{Farbe: gruen, Breite: 3}},
 		"Pfeil":  document.GeraderPfeil(document.Pt(20, 40), document.Pt(380, 160), document.Strich{Farbe: gruen, Breite: 4}),
 		"Nummer": document.Nummer{Mitte: document.Pt(170, 100), Wert: 7, Radius: 45, Farbe: gruen},
+		// F-748, F-749 (ADR-0023 Nachtrag 17): breiter Strich und Rundung im Streifen weichen über die abgebildeten
+		// Stützpunkte bzw. Ecken auch außerhalb des Kantenbands ab (Mutanten P5, P6).
+		"PfeilBreit": document.GeraderPfeil(document.Pt(20, 10), document.Pt(380, 190), document.Strich{Farbe: gruen, Breite: 48}),
+		"KastenRund": document.Kasten{Bereich: document.R(document.Pt(40, 30), document.Pt(215, 170)), Eckradius: 60,
+			Strich: document.Strich{Farbe: gruen, Breite: 4}, Fuellung: fuell},
 	} {
 		d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 400, 200)))
 		if err != nil {
@@ -201,5 +206,33 @@ func TestEditorTextEndetImStreifen(t *testing.T) {
 	t.Logf("Textende %d, Stücke %d, Schriftpixel ab x=120 (hinter der Naht): %d", ende, len(d.TextStuecke(tx)), hinten)
 	if hinten != 0 {
 		t.Errorf("%d Pixel des im Streifen liegenden Textteils hinter der Naht", hinten)
+	}
+
+	// F-752 (ADR-0023 Nachtrag 17): Während der Eingabe steht der Text ungeschnitten ab dem abgebildeten Anfang; was man
+	// am Ende tippt, ist hinter der Naht zu sehen. Nach der Eingabe ist er wieder beschnitten.
+	e.s.Auswahl = d.Objekte()[0].Kennung()
+	if !e.s.TextBearbeiten() || !e.s.Tippe("ii") { // kurz: das Ende bleibt im Streifen (bis 30 px hinter dem alten Ende)
+		t.Fatal("Eingabe beginnt nicht")
+	}
+	zaehle := func() int {
+		b := headlessBild(t, image.Pt(700, 90), func(gtx layout.Context) { e.zeichneObjekte(gtx) })
+		n := 0
+		for y := 0; y < 90; y++ {
+			for x := 100 + 20; x < 700; x++ {
+				if c := rgbaZuNRGBA(b.RGBAAt(x, y)); c.R > 128 && c.A > 128 {
+					n++
+				}
+			}
+		}
+		return n
+	}
+	if n := zaehle(); n == 0 {
+		t.Error("während der Eingabe ist der Text hinter der Naht nicht zu sehen")
+	}
+	if !e.s.TextBestaetigen() {
+		t.Fatal("Eingabe endet nicht")
+	}
+	if n := zaehle(); n != 0 {
+		t.Errorf("nach der Eingabe %d Pixel hinter der Naht, Soll 0 (wieder beschnitten)", n)
 	}
 }

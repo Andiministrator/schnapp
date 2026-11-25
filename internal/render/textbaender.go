@@ -67,7 +67,7 @@ func (z zeichner) textBaender(face font.Face, sch *fonts.Schrift, s string, x, g
 		z.auf.glyphen++
 		gr, maske, mp, adv, ok := face.Glyph(dot, c)
 		if !ok {
-			adv, _ = face.GlyphAdvance(c) // F-577, wie in text
+			adv, _ = face.GlyphAdvance(c) // F-577: Face.Glyph meldet bei unlesbaren Umrissen Vorschub 0
 		}
 		for k := i; k < len(spalten) && float64(spalten[k].A)-sg <= px; k++ {
 			sp := spalten[k]
