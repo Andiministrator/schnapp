@@ -310,6 +310,8 @@ func TestEditorDickerStrichKleinerKastenWieRenderer(t *testing.T) {
 		// F-792: halber Strich gleich Radius (die Gehrung reicht 0,2 % weiter, über den Mittelpunkt der Rundung).
 		{120, 80, 20, 40}, {120, 80, 20, 39.9}, {120, 80, 20, 41}, {40, 40, 8, 16}, {100, 40, 20, 40}, {120, 80, 50, 80},
 		{120, 80, 10, 20}, {120, 80, 20, 40.2},
+		// F-804: Band des Fangs (Fangpunkt statt Mittelpunkt, Tangentenpunkte mit Gehrung), auch als Pille.
+		{120, 80, 20, 39.42}, {120, 80, 20, 39.5}, {120, 40, 20, 39.6}, {120, 40, 20, 39.9},
 		// F-793: kleiner Radius, breiter Strich (der Renderer addierte die Glättung seiner Kreise und Rechtecke).
 		{40, 40, 0.5, 30}, {40, 40, 0.5, 61}, {40, 40, 0.5, 90}, {40, 40, 0.5, 139}} {
 		min := image.Pt(80, 80)

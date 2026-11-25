@@ -45,6 +45,24 @@ func TestKastenStrichDecktWieAnalytisch(t *testing.T) {
 		{25.5, 25.25, 65.5, 65.25, 0.5, 30},
 		{30, 30, 150, 110, 20, 40},
 		{30, 30, 70, 70, 20, 60},
+		// F-804: Band knapp unter 2·Radius, in dem die inneren Ecken der Rundung auf den Fangpunkt springen
+		// (mittelpunktFang, F-798); die innere Kante der geraden Seiten bleibt dabei, wo sie ist.
+		{30, 30, 150, 110, 20, 39.42},
+		{30, 30, 150, 110, 20, 39.5},
+		{30, 30, 150, 110, 20, 39.6},
+		{30, 30, 150, 110, 20, 39.9},
+		{30.3, 30.7, 150.3, 110.7, 20, 39.42},
+		{30.3, 30.7, 150.3, 110.7, 20, 39.5},
+		{30.5, 30.5, 150.5, 110.5, 20, 39.45},
+		{40, 40, 60, 60, 3, 5.5},
+		{40, 40, 60, 60, 3, 5.6},
+		{40.5, 40.5, 60.5, 60.5, 3, 5.5},
+		{40, 40, 60, 60, 1, 1.5},
+		{40.5, 40.5, 60.5, 60.5, 1, 1.6},
+		// Pille und Kreis: Die Mittelpunkte benachbarter Rundungen fallen zusammen, ihre Fangpunkte rücken auseinander.
+		{30.3, 30.7, 150.3, 70.7, 20, 39.5},
+		{30.3, 30.7, 150.3, 70.7, 20, 39.6},
+		{30.5, 30.5, 70.5, 70.5, 20, 39.9},
 	} {
 		name := fmt.Sprintf("Kasten (%v,%v)–(%v,%v) Radius %v Strich %v", fall.x0, fall.y0, fall.x1, fall.y1, fall.radius, fall.breite)
 		r := document.R(document.Pt(fall.x0, fall.y0), document.Pt(fall.x1, fall.y1))
@@ -54,13 +72,21 @@ func TestKastenStrichDecktWieAnalytisch(t *testing.T) {
 		umriss := document.RundesRechteck(r, fall.radius)
 		hw := fall.breite / 2
 		const n = 32
-		schlimmst, geprueft := 0.0, 0
-		var wo [2]int
+		schlimmst, geprueft, abseits := 0.0, 0, 0.0
+		var wo, woAb [2]int
 		for y := 0; y < 150; y++ {
 			for x := 0; x < 200; x++ {
 				m := abstandZumUmriss(document.Pt(float64(x)+0.5, float64(y)+0.5), umriss)
-				if math.Abs(m-hw) > 1 {
-					continue // ganz drinnen oder draußen
+				ist := 1 - float64(b.NRGBAAt(x, y).R)/255 // schwarz auf weiß
+				if math.Abs(m-hw) > 1 {                   // ganz drinnen oder draußen: voll bzw. leer
+					soll := 0.0
+					if m < hw {
+						soll = 1
+					}
+					if f := math.Abs(ist - soll); f > abseits {
+						abseits, woAb = f, [2]int{x, y}
+					}
+					continue
 				}
 				treffer := 0
 				for sy := 0; sy < n; sy++ {
@@ -72,7 +98,6 @@ func TestKastenStrichDecktWieAnalytisch(t *testing.T) {
 					}
 				}
 				soll := float64(treffer) / (n * n)
-				ist := 1 - float64(b.NRGBAAt(x, y).R)/255 // schwarz auf weiß
 				geprueft++
 				if f := math.Abs(ist - soll); f > schlimmst {
 					schlimmst, wo = f, [2]int{x, y}
@@ -82,7 +107,12 @@ func TestKastenStrichDecktWieAnalytisch(t *testing.T) {
 		if geprueft < 100 {
 			t.Fatalf("%s: nur %d Kantenpixel", name, geprueft)
 		}
-		t.Logf("%s: höchstens %.4f Abweichung über %d Kantenpixel", name, schlimmst, geprueft)
+		t.Logf("%s: höchstens %.4f Abweichung über %d Kantenpixel (Pixel %v), abseits %.4f", name, schlimmst, geprueft, wo,
+			abseits)
+		if abseits > 0.01 {
+			t.Errorf("%s: abseits der Kante weicht die Deckung bis %.3f ab (Pixel %v): Loch oder Deckung daneben", name,
+				abseits, woAb)
+		}
 		// Zulässig: Stichprobenfehler (1/32), die Gehrung über den runden Strich hinaus (hw·(1/cos 3,75° − 1)) und Rundung.
 		grenze := 1.0/n + hw*(1/math.Cos(3.75*math.Pi/180)-1) + 0.01
 		if schlimmst > grenze {

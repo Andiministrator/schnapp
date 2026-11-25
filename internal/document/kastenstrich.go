@@ -26,16 +26,30 @@ type KastenStrich struct {
 	Rand float64
 }
 
+// mittelpunktFang (F-798, F-804): Endet die Gehrung im Bogen einer Rundung weniger als so viele Pixel vor ihrem
+// Mittelpunkt, liegen alle inneren Ecken im Bogen auf einem Punkt, dem Fangpunkt. Sonst lägen sie auf einem Kreis von
+// weniger als 0,25 px Radius um den Mittelpunkt, und dort liefen zwölf Teile mit Kanten von Bruchteilen eines Pixels
+// zusammen; solche Splitter rastert llvmpipe je nach Mesa-Fassung verschieden (Strich 39,9 bei Radius 20: 26 Pixel
+// Abweichung zwischen Editor und Renderer in der CI, lokal keine). Der Fangpunkt ist die wahre innere Ecke der mittleren
+// Ecke des Bogens (auf der Diagonale, auf dem Rand des Lochs); die Fläche, die dazukommt, liegt im Loch zwischen den
+// wahren inneren Ecken und den beiden Kanten zum Fangpunkt (gemessen gegen die analytische Deckung höchstens 0,012 mehr
+// als ohne Fang, bei Pillen 0,033). Bis F-804 sprangen auch die Tangentenpunkte auf den Mittelpunkt, und die innere
+// Kante jeder geraden Seite rückte um Radius − hw (bis 0,25 px) ins Loch.
+const mittelpunktFang = 0.25
+
 // NeuerKastenStrich zerlegt den Strich der Breite 2·hw um das Rechteck r mit Eckradius radius. Ohne wirksame Rundung
 // (WirksamerEckradius = 0) oder ohne Strich ist das Ergebnis leer; dann gilt EckigerRahmen.
 //
 // Je Strecke i→i+1 des Umrisses ein Viereck: außen i, außen i+1, innen i+1, innen i. Außen liegt jede Ecke um die
 // Gehrung 2·hw·(n₁+n₂)/|n₁+n₂|² verschoben (hw/cos(Knick/2) weit; der Umriss knickt höchstens um 7,5°), innen ebenso
-// nach innen, mit zwei Begrenzungen:
+// nach innen, mit drei Begrenzungen:
 //   - Reicht die Gehrung g einer Ecke bis zum Mittelpunkt ihrer Rundung oder darüber (g ≥ Radius), liegt die innere
 //     Ecke auf dem Mittelpunkt. Sonst läge sie jenseits davon, die inneren Ecken der Rundung in umgekehrter Reihenfolge,
 //     und jedes Viereck wäre eine Schleife (F-783). Das gilt schon ab hw ≥ Radius·cos(3,75°), nicht erst ab hw ≥ Radius
 //     (F-792); zwischen beiden ist die wahre innere Kante ein Kreis vom Radius r − hw < 0,0022·r um den Mittelpunkt.
+//   - Endet die Gehrung im Bogen weniger als mittelpunktFang vor dem Mittelpunkt, liegen die inneren Ecken im Bogen
+//     alle auf dem Fangpunkt der Rundung (F-798, F-804; siehe mittelpunktFang). Die beiden Tangentenpunkte, an denen
+//     eine gerade Seite anschließt, behalten ihre Gehrung: Die innere Kante der Seite bleibt genau hw vom Umriss.
 //   - Die innere Ecke liegt höchstens auf dem Rand des Lochs, des um hw verkleinerten umschließenden Rechtecks (bei zu
 //     kleinem Rechteck seine Mittellinie bzw. Mitte): genau die Punkte weiter als hw vom Umriss.
 //
@@ -43,12 +57,6 @@ type KastenStrich struct {
 // Spitze) statt zu einzelnen Dreiecken: Liefen viele schmale Dreiecke in einem Punkt zusammen, verlöre Gio dort durch
 // die gegeneinander aufgerechneten Kanten Deckung. Liegen alle inneren Ecken auf einer Stelle, ist der Strich der äußere
 // Umriss.
-// mittelpunktFang (F-798): Endet die Gehrung einer Rundung weniger als so viele Pixel vor ihrem Mittelpunkt, liegt die
-// innere Ecke auf dem Mittelpunkt. Sonst entstehen Teile, die dort nur Bruchteile eines Pixels breit sind; solche Splitter
-// rastert llvmpipe je nach Mesa-Fassung verschieden (Strich 39,9 bei Radius 20: 26 Pixel Abweichung in der CI, lokal
-// keine). Die Fläche, die dabei dazukommt, ist ein Keil von höchstens 0,25 px Tiefe innerhalb des Strichs.
-const mittelpunktFang = 0.25
-
 func NeuerKastenStrich(r Rechteck, radius, hw float64) KastenStrich {
 	rad := WirksamerEckradius(radius, r.Breite(), r.Hoehe())
 	if rad <= 0 || !(hw > 0) {
@@ -61,14 +69,16 @@ func NeuerKastenStrich(r Rechteck, radius, hw float64) KastenStrich {
 	mitten := []Punkt{Pt(r.Max.X-rad, r.Min.Y+rad), Pt(r.Max.X-rad, r.Max.Y-rad), Pt(r.Min.X+rad, r.Max.Y-rad),
 		Pt(r.Min.X+rad, r.Min.Y+rad)}
 	var pts, mitte []Punkt
+	var ecke []int
 	for i, p := range roh {
 		if len(pts) == 0 || p.Minus(pts[len(pts)-1]).Laenge() > 1e-9 {
 			pts = append(pts, p)
 			mitte = append(mitte, mitten[i/je])
+			ecke = append(ecke, i/je)
 		}
 	}
 	for len(pts) > 1 && pts[0].Minus(pts[len(pts)-1]).Laenge() <= 1e-9 {
-		pts, mitte = pts[:len(pts)-1], mitte[:len(mitte)-1]
+		pts, mitte, ecke = pts[:len(pts)-1], mitte[:len(mitte)-1], ecke[:len(ecke)-1]
 	}
 	n := len(pts)
 	if n < 3 {
@@ -105,13 +115,47 @@ func NeuerKastenStrich(r Rechteck, radius, hw float64) KastenStrich {
 	}
 	aussen := make([]Punkt, n)
 	innen := make([]Punkt, n)
+	klemme := func(i Punkt) Punkt {
+		return Pt(min(max(i.X, loch.Min.X), loch.Max.X), min(max(i.Y, loch.Min.Y), loch.Max.Y))
+	}
+	// Fangpunkt je Rundung (F-798, F-804): die wahre innere Ecke der mittleren Ecke des Bogens, ρ = Radius − Gehrung
+	// im Bogen vor dem Mittelpunkt auf der Diagonale nach außen. Liegt der Mittelpunkt der Nachbarrundung näher als
+	// mittelpunktFang (Seite ohne geraden Teil, Pille, Kreis), rücken beide Fangpunkte mindestens so weit auseinander;
+	// ist das Loch in einer Richtung schmaler als mittelpunktFang, fallen sie dort auf seine Mitte zusammen.
+	gBogen := hw / math.Cos(math.Pi/48) // Gehrung im Bogen (Knick 7,5°); an den Tangentenpunkten hw/cos(1,875°)
+	imBogen := hw * (1/math.Cos(math.Pi/96) + 1/math.Cos(math.Pi/48)) / 2
+	fangen := gBogen >= rad-mittelpunktFang
+	rho := max(rad-gBogen, 0)
+	nah := func(c int) bool {
+		return mitten[c].Minus(mitten[(c+1)%4]).Laenge() < mittelpunktFang ||
+			mitten[c].Minus(mitten[(c+3)%4]).Laenge() < mittelpunktFang
+	}
+	s2 := 1 / math.Sqrt2
+	diag := [4]Punkt{Pt(s2, -s2), Pt(s2, s2), Pt(-s2, s2), Pt(-s2, -s2)} // nach außen, Reihenfolge wie mitten
+	var fang [4]Punkt
+	for c := range 4 {
+		r := rho
+		if r > 0 && nah(c) {
+			r = max(r, mittelpunktFang/math.Sqrt2)
+		}
+		fang[c] = klemme(mitten[c].Plus(diag[c].Mal(r)))
+		if loch.Max.X-loch.Min.X < mittelpunktFang {
+			fang[c].X = (loch.Min.X + loch.Max.X) / 2
+		}
+		if loch.Max.Y-loch.Min.Y < mittelpunktFang {
+			fang[c].Y = (loch.Min.Y + loch.Max.Y) / 2
+		}
+	}
 	for k, p := range pts {
 		aussen[k] = p.Plus(gehrung[k].Mal(vorz))
 		i := p.Minus(gehrung[k].Mal(vorz))
-		if gehrung[k].Laenge() >= rad-mittelpunktFang {
-			i = mitte[k] // F-792: nicht über den Mittelpunkt der Rundung hinaus; F-798: knapp davor ebenso
+		switch {
+		case fangen && gehrung[k].Laenge() > imBogen:
+			i = fang[ecke[k]] // F-798, F-804: nur Ecken im Bogen, die Tangentenpunkte halten die Kante der Seite
+		case gehrung[k].Laenge() >= rad:
+			i = mitte[k] // F-792: nicht über den Mittelpunkt der Rundung hinaus
 		}
-		innen[k] = Pt(min(max(i.X, loch.Min.X), loch.Max.X), min(max(i.Y, loch.Min.Y), loch.Max.Y))
+		innen[k] = klemme(i)
 	}
 	faecher := func(i int) bool { return innen[i] == innen[(i+1)%n] }
 	start := 0 // erste Strecke eines Teils: nicht Fortsetzung des Fächers der vorigen

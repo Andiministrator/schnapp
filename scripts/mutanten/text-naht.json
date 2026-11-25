@@ -332,8 +332,8 @@
     "name": "BK6 Kastenstrich: innere Ecken nicht auf das Loch begrenzt (F-783)",
     "datei": "internal/document/kastenstrich.go",
     "paket": "./internal/ui",
-    "alt": "innen[k] = Pt(min(max(i.X, loch.Min.X), loch.Max.X), min(max(i.Y, loch.Min.Y), loch.Max.Y))",
-    "neu": "innen[k] = i",
+    "alt": "\t\tinnen[k] = klemme(i)\n",
+    "neu": "\t\tinnen[k] = i\n",
     "timeout": "10m"
   },
   {
@@ -436,8 +436,8 @@
     "name": "KS1 Kastenstrich: innere Ecken bei Gehrung ab Radius nicht auf den Mittelpunkt (F-792)",
     "datei": "internal/document/kastenstrich.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif gehrung[k].Laenge() >= rad-mittelpunktFang {\n",
-    "neu": "\t\tif gehrung[k].Laenge() >= rad+hw*0.01 {\n",
+    "alt": "\tfangen := gBogen >= rad-mittelpunktFang\n",
+    "neu": "\tfangen := gBogen >= rad+hw*0.01\n",
     "timeout": "10m"
   },
   {
@@ -476,8 +476,48 @@
     "name": "KS6 Kastenstrich: kein Fang knapp vor dem Mittelpunkt der Rundung (F-798)",
     "datei": "internal/document/kastenstrich.go",
     "paket": "./internal/document",
-    "alt": "\t\tif gehrung[k].Laenge() >= rad-mittelpunktFang {\n",
-    "neu": "\t\tif gehrung[k].Laenge() >= rad {\n",
+    "alt": "\tfangen := gBogen >= rad-mittelpunktFang\n",
+    "neu": "\tfangen := gBogen >= rad\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "KS7 Kastenstrich: Fang bis 2 px vor dem Mittelpunkt statt 0,25 (F-804, Obergrenze)",
+    "datei": "internal/document/kastenstrich.go",
+    "paket": "./internal/document",
+    "alt": "const mittelpunktFang = 0.25\n",
+    "neu": "const mittelpunktFang = 2.0\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "KS8 Kastenstrich: auch die Tangentenpunkte springen auf den Fangpunkt (F-804)",
+    "datei": "internal/document/kastenstrich.go",
+    "paket": "./internal/document",
+    "alt": "\t\tcase fangen && gehrung[k].Laenge() > imBogen:\n",
+    "neu": "\t\tcase fangen && gehrung[k].Laenge() > imBogen*0:\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "KS9 Kastenstrich: Fangpunkt auf dem Mittelpunkt statt auf der Diagonale (F-804)",
+    "datei": "internal/document/kastenstrich.go",
+    "paket": "./internal/render",
+    "alt": "\t\tfang[c] = klemme(mitten[c].Plus(diag[c].Mal(r)))\n",
+    "neu": "\t\tfang[c] = klemme(mitten[c].Plus(diag[c].Mal(r*0)))\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "KS10 Kastenstrich: Fangpunkte geteilter Mittelpunkte rücken nicht auseinander (F-804, Pille)",
+    "datei": "internal/document/kastenstrich.go",
+    "paket": "./internal/document",
+    "alt": "\t\tif r > 0 && nah(c) {\n",
+    "neu": "\t\tif false && r > 0 && nah(c) {\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "KS11 Kastenstrich: Fangpunkte im schmalen Loch fallen nicht zusammen (F-804)",
+    "datei": "internal/document/kastenstrich.go",
+    "paket": "./internal/document",
+    "alt": "\t\tif loch.Max.Y-loch.Min.Y < mittelpunktFang {\n",
+    "neu": "\t\tif false {\n",
     "timeout": "5m"
   }
 ]
