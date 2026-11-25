@@ -319,5 +319,21 @@
     "alt": "for y := max(ze.A, q.Min.Y); y < min(ze.B, q.Max.Y); y++ {",
     "neu": "for y := q.Min.Y; y < q.Max.Y; y++ {",
     "timeout": "5m"
+  },
+  {
+    "name": "B6 Editor: runder Kasten ohne Rand für den Strich je Bereich (F-784, F-765)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "rand := v.Strich.Breite/2 + 2 + rad*(1-math.Cos(math.Pi/48))",
+    "neu": "rand := 0 * rad",
+    "timeout": "10m"
+  },
+  {
+    "name": "B9 Editor: Vorschau zeichnet den runden Kasten über strichJeStueck (F-784)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tif vorschau {\n\t\t\t\t\tstrich(an)\n\t\t\t\t} else {",
+    "neu": "\t\t\t\tif false {\n\t\t\t\t\tstrich(an)\n\t\t\t\t} else {",
+    "timeout": "10m"
   }
 ]

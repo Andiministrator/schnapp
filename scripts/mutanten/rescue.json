@@ -937,5 +937,40 @@
     "paket": "./cmd/schnapp",
     "alt": "if versuch >= ladeVersuche || r.passtZu(abs, stand) {",
     "neu": "if true || r.passtZu(abs, stand) {"
+  },
+  {
+    "name": "A1 F-769 Wechsel der Aufnahme lädt ohne ladeMitRettung (F-784)",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tabs, g, stand, r, err := ladeMitRettung(pfad, false, ladeFuer) // wartet vor dem Laden (F-769)\n",
+    "neu": "\t\tabs, g, stand, err := ladeFuer(pfad, false)\n\t\tvar r *rettung\n\t\tif err == nil {\n\t\t\tr = rettungFuer(abs, false)\n\t\t}\n"
+  },
+  {
+    "name": "A2 F-770 Wechsel gibt die Rettung nach gescheitertem VorgabeKante nicht frei (F-784)",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\t\tr.ende()\n\t\t\t\treturn ui.Geoeffnet{}, errors.New(nutzerFehler(err))",
+    "neu": "\t\t\t\treturn ui.Geoeffnet{}, errors.New(nutzerFehler(err))"
+  },
+  {
+    "name": "A3 F-770 Öffnen gibt die Rettung nach gescheitertem VorgabeKante nicht frei (F-784)",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\tr.ende()\n\t\t\treturn err\n",
+    "neu": "\t\t\treturn err\n"
+  },
+  {
+    "name": "A5 F-770 passtZu ignoriert Fremdheit durch laufendes UmDatei (F-784)",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\treturn !(r.s.Lage().Fremd && rescue.UmDateiLaeuft(r.s.Ort(), abs))\n",
+    "neu": "\treturn true\n"
+  },
+  {
+    "name": "A8 F-770 ladeVersuche 2 statt 3 (F-784)",
+    "datei": "cmd/schnapp/rettung.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tladeVersuche = 3\n",
+    "neu": "\tladeVersuche = 2\n"
   }
 ]
