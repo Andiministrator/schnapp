@@ -173,6 +173,10 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | https://proxy.golang.org/golang.org/x/vuln/@latest | 2026-11-24 | 2026-11-24 | 200 | curl | govulncheck v1.10.0 (17.11.2026) | .github/workflows/test.yml |
 | https://proxy.golang.org/golang.org/x/image/@latest | 2026-11-24 | 2026-11-24 | 200 | curl | v0.48.0; dazu x/net v0.63.0, x/text v0.44.0, x/sys v0.50.0 über dieselbe Abfrage | go.mod |
 | https://vuln.go.dev (über govulncheck) | 2026-11-24 | 2026-11-24 | 200 | govulncheck | x/image v0.26.0: GO-2026-4815, -4962, -5032, -5062, -5066 erreichbar (SFNT, TIFF), behoben ab v0.43.0 | docs/findings.md (F-744) |
+| https://api.github.com/repos/Andiministrator/schnapp/actions/jobs/<id> | 2026-11-25 | 2026-11-24 | 200 | curl | Schritte eines CI-Jobs mit Ergebnis öffentlich; Job-Logs über die API nur mit Admin-Rechten (403) | knowledge/topics/lehren.md |
+| https://github.com/Andiministrator/schnapp/commit/<sha>/checks/<job>/logs | 2026-11-25 | 2026-11-24 | 200 | Chrome (eigener Tab, danach geschlossen) | leitet auf eine Blob-Adresse mit dem vollen Job-Log; per JavaScript auf `--- FAIL` gefiltert (TestPruefeVieleStreifenUndPfeile 1,26 s) | knowledge/topics/lehren.md |
+| https://raw.githubusercontent.com/tdewolff/canvas/master/LICENSE.md | 2026-11-25 | 2026-11-25 | 200 | curl | MIT, Copyright (c) 2015 Taco de Wolff; Strich-Algorithmen in Gio `internal/stroke` daraus übernommen | THIRD-PARTY-LICENSES/github.com-tdewolff-canvas-LICENSE.txt |
+| https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax | 2026-11-25 | 2026-11-25 | 200 | curl (Kritiker C) | Shell ohne Angabe: `bash -e {0}`; mit `shell: bash`: `bash --noprofile --norc -eo pipefail {0}` | .github/workflows/test.yml |
 
 ## Suchanfragen
 
