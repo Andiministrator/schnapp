@@ -750,3 +750,63 @@ die Fläche aller Punkte höchstens hw vom Umriss), `TestKastenStrichFaecherJeRu
 120×80/50/80; 120×80/10/20) und F-793 (40×40/0,5/30, 61, 90, 139) in `TestEditorDickerStrichKleinerKastenWieRenderer`.
 Mutanten B1, B2, B6, B8, B9, BK6 nachgezogen (B6, B8, BK6 jetzt in `internal/document/kastenstrich.go`), KS1–KS5 neu
 (`scripts/mutanten/text-naht.json`).
+
+## Nachtrag 22 (25.11.2026): Strich von Pfeil, Lupen-Linie und Schenkeln ohne doppelte Kantenglättung (F-796)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #301). Schließt den offenen Rest aus Nachtrag 21 Punkt 3.
+
+Pfeil (auch gebogen), Lupen-Linie und Schenkel der Sprechblase ohne Füllung füllte der Renderer als Rechteck je Strecke
+und Kreis je Punkt in einer Füllung. Der Rasterizer summiert die Deckung; wo zwei Teile dieselbe Kante in einem
+Randpixel teilen, zählte sie doppelt. Gemessen gegen die analytische Deckung (32×32 Stichproben je Pixel, Fläche aller
+Punkte höchstens hw vom Linienzug): Pfeil gerade Strich 24 bis 0,46, gebogen Strich 3/24/60 bis 0,45/0,58/0,63,
+Lupen-Linie Strich 2/8 bis 0,18/0,31, Schenkel Strich 6/12 bis 0,39/0,34, eine Scheibe (ein Punkt) 0,15.
+
+Abgewogen:
+
+- **(a) Überlappungsfreie Teile wie beim Kasten** (Nachtrag 21) — gewählt.
+- **(b) Deckung je Pixel als Maximum statt Summe:** Jeder Teil bräuchte eine eigene Maske (beim Pfeil rund 100 je
+  Objekt), und das Maximum ist nicht genau: An der Innenseite eines spitzen Gelenks (eine einspringende Ecke) läge die
+  Deckung bis rund 0,25 zu niedrig, und Teile, die sich nicht überlappen, hinterließen eine Fuge.
+- **(c) Umriss als ein Pfad** (wie Gios Strich): Auf der Innenseite jedes Gelenks schneidet sich der Umriss selbst; die
+  Schleifen laufen entgegen und höben in der summierenden Füllung Fläche auf (ein Loch wie F-783), oder man rechnet die
+  innere Kante aus — das tut (a) ohnehin, ohne die Schleifen.
+
+1. **Zerlegung** (`render.neuerLinienStrich`, `internal/render/linienstrich.go`): je Strecke ein Sechseck, das je Seite
+   vom Ende am Anfang zum Ende am Schluss und über die beiden Punkte zurück läuft; je Gelenk ein Fächer auf der
+   Außenseite (Bogen von der Normalen der vorigen zu der der nächsten Strecke); je offenem Ende eine halbe Scheibe. Ein
+   Ende liegt außen und an einem offenen Ende senkrecht hw neben dem Punkt, innen auf dem Schnittpunkt der beiden
+   inneren Kanten (Gehrung hw/cos(Knick/2)), den beide Nachbarn teilen. Gemeinsame Kanten entstehen aus denselben
+   Punkten und heben sich in der Füllung genau auf. Ein einzelner Punkt ist eine Scheibe. `strich` (Lupen-Linie,
+   Schenkel, in der Ansicht) füllt alle Teile; `strichJeStueck` (Pfeil, je sichtbarem Bereich) füllt die Sechsecke der
+   Strecken in der Nähe samt Fächern und Kappen an ihren Enden, jeden einmal je Bereich. Jeder Teil liegt höchstens hw
+   von seiner Strecke, die Suche über `document.StreckenStuecke` mit hw+1 bleibt.
+2. **Faltung:** Reichen die Gehrungen beider Enden einer Seite zusammen weiter, als die Strecke lang ist
+   (hw·tan(|Knick|/2) je Ende; bei einer Kurve heißt das Krümmungsradius unter hw, bei einem V Enden näher als 2·hw,
+   dazu jede Kehrtwende), liefen die Sechsecke gegeneinander und höben sich auf. An einem solchen Gelenk enden beide
+   Nachbarn innen senkrecht wie außen; sie überlappen dann auf der Innenseite. Kein Loch, nichts daneben; die Glättung
+   addiert sich nur noch an diesen Gelenken und nur, wo die Überlappung eine Kante berührt: Haarnadel Strich 24
+   (6 gefaltete Gelenke) 0,018, Kehrtwende 0,017, sehr spitzes kurzes V Strich 12 0,30 an der Spitze. Gelenke werden
+   nur gefaltet, nie zurückgenommen; die Prüfung endet.
+3. **Bögen:** Fächer und Kappen bekommen so viele Ecken, dass die Sehne höchstens 0,02 Pixel unter dem Bogen liegt
+   (`bogenSehne`; bis hw 4250, darüber höchstens 1024 Ecken je Vollkreis). Die bisherigen Kreise mit max(16, 2r) Ecken
+   lagen bis 0,1 Pixel darunter (Strich 24). Die Kreise der Schritt-Nummer bleiben.
+4. **Ergebnis:** alle Fälle oben höchstens 0,022 (gebogen Strich 60), sonst 0,014 bis 0,021; zulässig im Test
+   1/32 + `bogenSehne` + 0,01 = 0,061. Ganz innen und außen weicht kein Pixel ab.
+5. **Kosten:** Das Kostenmodell zählt die Teile wie jede Füllung, eine eigene Rechnung braucht es nicht. Es sind weniger
+   Ecken als vorher (gebogener Pfeil Strich 24: 487 statt 1368), und Kanten zählen die Polygone selbst statt der
+   oberen Schranke der Kreise (`kreisSchritte`). Messung (25.11.2026, ein Lauf, geteilter Rechner):
+   - Alltagsdokument (50 Pfeile Strich 6) unverändert 4,07e10, 2,3 → 2,5 s; diagonaler Pfeil auf 8000×8000 0,25 →
+     0,28 s; gebogene Pfeile Strich 24 auf 2000×2000 bis `Budget` 1404 → 1406 Stück, 7,3 → 7,7 s.
+   - An `KantenBudget` nimmt `Pruefe` mehr Pfeile an, weil die alten Kreise viel zu teuer zählten: breite Pfeile
+     (Strich 1e5) weit außerhalb eines 10×10-Bilds 171 → 429 Stück, 0,32 → 4,3 s (0,43 ns je Einheit; vorher 0,03);
+     gebogene Pfeile Strich 24 über 4096 Kacheln 275 → 417 Stück, 4,5 → 4,9 s (0,48 ns je Einheit). Beides liegt bei
+     der Annahme rund 0,5 ns je Kanten-Einheit (ADR-0020, Ergänzung zu F-418) und unter den rund 6,5 s der Abriss-Nähte
+     an derselben Grenze; das Zeitversprechen rund 21 s (ADR-0020 Nachtrag 12) bleibt. Budgets und Gewichte bleiben.
+6. **Editor und SVG:** Der Editor zeichnet Pfeil, Lupen-Linie und Schenkel weiter mit Gios Strich: ein Umriss mit runden
+   Gelenken und Kappen, dessen Glättung Gio einfach rechnet; dort gab es den Befund nicht, angeglichen wird nichts. An
+   den Kanten darf Gios Glättung wie bisher abweichen. Der SVG-Export schreibt weiter `stroke-linecap="round"` bzw.
+   `stroke-linejoin="round"`; der Pfeil bleibt dort die Kurve, im Renderer und Editor der Linienzug aus 48 Strecken.
+
+Tests `TestPfeilStrichDecktWieAnalytisch`, `TestStrichDecktWieAnalytisch`, `TestStrichGefaltetOhneLoch`
+(`internal/render/strichgelenke_test.go`). Mutanten SG1–SG11 (`scripts/mutanten/strichgelenke.json`); SG11 übernimmt
+die Absicht von P1 (`text-naht.json`), dessen Muster im neuen Code nicht mehr steht.
