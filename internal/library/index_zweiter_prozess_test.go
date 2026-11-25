@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 package library
 
 import (
@@ -89,5 +91,28 @@ func TestAblegenOhneIndexHeiltKeineAltenVorschauen(t *testing.T) {
 	}
 	if n := vorschauZahl(t, b); n != 1 {
 		t.Errorf("%d Vorschaubilder, soll nur das der neuen Aufnahme (1)", n)
+	}
+}
+
+// F-755, Gegenrichtung: Steht für den Pfad schon eine Zeile (etwa einer verschwundenen Datei, deren Namen die neue
+// Aufnahme wieder trägt), ersetzt haengeAn sie mit den Angaben des neuen Eintrags, statt sie stehen zu lassen.
+func TestHaengeAnErsetztVorhandeneZeile(t *testing.T) {
+	b, _ := neueBibliothek(t)
+	e := ablegen(t, b, fileformat.Metadaten{Erstellt: zeit("2026-10-01T10:00:00Z")})
+	neu := e
+	neu.Bearbeitet = true
+	neu.Breite = e.Breite + 7
+	b.mu.Lock()
+	err := b.haengeAn(neu)
+	b.mu.Unlock()
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, err := b.Laden()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(g.Eintraege) != 1 || !g.Eintraege[0].Bearbeitet || g.Eintraege[0].Breite != e.Breite+7 {
+		t.Errorf("Index %+v, Soll eine Zeile mit den neuen Angaben (Bearbeitet, Breite %d)", g.Eintraege, e.Breite+7)
 	}
 }

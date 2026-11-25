@@ -247,8 +247,8 @@ func (e Eintrag) gueltig() bool {
 // Fehlt die Indexdatei, legte das Anhängen sie mit nur dieser einen Zeile an, und jede ältere Aufnahme der Ablage
 // bliebe unsichtbar: Der Abgleich sähe danach einen vorhandenen Index (F-700, ADR-0016 Nachtrag 7). Deshalb baut
 // haengeAn den Index dann aus der Ablage neu auf; die Datei des Eintrags liegt schon dort und kommt mit. Scheitert der
-// Neuaufbau, wird wie bisher nur die Zeile angehängt. Fehlende Vorschaubilder heilt es nicht (F-756). Hat der Index die
-// Zeile des Eintrags schon (ein zweiter Prozess gleicht ab, F-755), hängt es nichts an.
+// Neuaufbau, wird wie bisher nur die Zeile angehängt. Fehlende Vorschaubilder heilt es nicht (F-756). Hat der Index eine
+// Zeile für den Pfad des Eintrags schon (ein zweiter Prozess gleicht ab, F-755), ersetzt es sie statt anzuhängen.
 func (b *Bibliothek) haengeAn(e Eintrag) error {
 	zeile, err := json.Marshal(e)
 	if err != nil {
@@ -262,8 +262,10 @@ func (b *Bibliothek) haengeAn(e Eintrag) error {
 				return nil
 			}
 		} else if b.imIndex(e.Pfad) {
-			// Ein zweiter Prozess hat die Zeile schon ergänzt (Abgleich, F-700): nicht doppelt anhängen (F-755).
-			return nil
+			// Eine Zeile für den Pfad steht schon da: Ein zweiter Prozess hat sie ergänzt (Abgleich, F-700), oder sie gehört
+			// zu einer verschwundenen Datei, deren Name die neue Aufnahme wieder trägt. Nicht doppelt anhängen (F-755),
+			// sondern ersetzen: Die Zeile trägt dann die Angaben dieses Eintrags.
+			return b.ersetzeImIndexGesperrt(e)
 		}
 		return b.haengeZeileAn(zeile)
 	})

@@ -271,5 +271,13 @@
     "alt": "err == nil && b.imIndex(e.Pfad) {\n\t\t\t\treturn nil",
     "neu": "err == nil && b.imIndex(e.Pfad) && false {\n\t\t\t\treturn nil",
     "timeout": "3m"
+  },
+  {
+    "name": "HB35 haengeAn lässt eine vorhandene Zeile stehen statt sie zu ersetzen (F-755)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\t\t\treturn b.ersetzeImIndexGesperrt(e)\n\t\t}",
+    "neu": "\t\t\treturn nil\n\t\t}",
+    "timeout": "3m"
   }
 ]
