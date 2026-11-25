@@ -28,7 +28,9 @@ func TestPruefeVieleStreifenUndPfeile(t *testing.T) {
 	}
 	s := time.Now()
 	_ = Pruefe(d) // abgelehnt oder geprüft, beides gilt; es kommt auf die Dauer an
-	if dt := time.Since(s); dt > time.Second {
-		t.Errorf("Pruefe dauert %v, soll unter 1 s bleiben", dt)
+	dt := time.Since(s)
+	t.Logf("Pruefe: %v", dt)
+	if pruefeStreifenZeit > 0 && dt > pruefeStreifenZeit {
+		t.Errorf("Pruefe dauert %v, soll unter %v bleiben", dt, pruefeStreifenZeit)
 	}
 }

@@ -12,3 +12,6 @@ const zeichenZeit time.Duration = 0
 
 // pruefeNahtZeit ist unter dem Race-Detektor 0: TestPruefeVieleAbrissNaehte (F-418) entfällt dort ganz.
 const pruefeNahtZeit time.Duration = 0
+
+// pruefeStreifenZeit ist unter dem Race-Detektor 0: TestPruefeVieleStreifenUndPfeile loggt die Dauer nur (F-802).
+const pruefeStreifenZeit time.Duration = 0

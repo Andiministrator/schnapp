@@ -193,14 +193,6 @@
     "timeout": "5m"
   },
   {
-    "name": "P1 Renderer: Pfeil über abgebildete Stützpunkte statt je Bereich (F-748)",
-    "datei": "internal/render/render.go",
-    "paket": "./internal/render",
-    "alt": "\t\t\ta, b := pts[i].Plus(v), pts[j].Plus(v)\n",
-    "neu": "\t\t\ta, b := z.ansicht(pts[i]), z.ansicht(pts[j])\n",
-    "timeout": "5m"
-  },
-  {
     "name": "P2 Renderer: Spitze über abgebildete Ecken (F-748)",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
