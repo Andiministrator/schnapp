@@ -279,5 +279,29 @@
     "alt": "\t\t\treturn b.ersetzeImIndexGesperrt(e)\n\t\t}",
     "neu": "\t\t\treturn nil\n\t\t}",
     "timeout": "3m"
+  },
+  {
+    "name": "HB36 Abgleich steigt bei Doppelzeilen früh aus (F-773)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "len(neu) == 0 && !doppelt {",
+    "neu": "len(neu) == 0 && (!doppelt || true) {",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB37 Abgleich behält je Pfad die erste statt der letzten Zeile (F-773)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "\t\t\tletzte[e.Pfad] = i\n",
+    "neu": "\t\t\tif _, da := letzte[e.Pfad]; !da {\n\t\t\t\tletzte[e.Pfad] = i\n\t\t\t}\n",
+    "timeout": "3m"
+  },
+  {
+    "name": "HB38 Abgleich lässt Doppelzeilen stehen (F-773)",
+    "datei": "internal/library/bibliothek.go",
+    "paket": "./internal/library",
+    "alt": "if letzte[e.Pfad] != i {",
+    "neu": "if letzte[e.Pfad] != i && false {",
+    "timeout": "3m"
   }
 ]

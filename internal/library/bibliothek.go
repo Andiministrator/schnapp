@@ -552,14 +552,18 @@ func (b *Bibliothek) Abgleich() (_ int, fehler error) {
 	}
 	fehlt := map[string]bool{}
 	bekannt := make(map[string]bool, len(g.Eintraege))
+	doppelt := false // Doppelzeilen aus der Zeit vor F-755 (F-773)
 	for _, e := range g.Eintraege {
+		if bekannt[e.Pfad] {
+			doppelt = true
+		}
 		bekannt[e.Pfad] = true
 		if b.fehltInAblage(e.Pfad) { // andere Fehler (Rechte): im Zweifel behalten
 			fehlt[e.Pfad] = true
 		}
 	}
 	neu := ohneIndexzeileFn(b, bekannt)
-	if len(fehlt) == 0 && g.Defekt == 0 && len(neu) == 0 {
+	if len(fehlt) == 0 && g.Defekt == 0 && len(neu) == 0 && !doppelt {
 		return 0, nil
 	}
 	if len(fehlt) > 0 && b.ablageOhneAufnahme() {
@@ -577,7 +581,14 @@ func (b *Bibliothek) Abgleich() (_ int, fehler error) {
 		var behalten []Eintrag
 		var weg []string
 		drin := make(map[string]bool, len(g.Eintraege))
-		for _, e := range g.Eintraege {
+		letzte := make(map[string]int, len(g.Eintraege)) // je Pfad nur die letzte Zeile behalten (F-773)
+		for i, e := range g.Eintraege {
+			letzte[e.Pfad] = i
+		}
+		for i, e := range g.Eintraege {
+			if letzte[e.Pfad] != i {
+				continue
+			}
 			if fehlt[e.Pfad] && b.fehltInAblage(e.Pfad) {
 				weg = append(weg, e.Pfad)
 				continue

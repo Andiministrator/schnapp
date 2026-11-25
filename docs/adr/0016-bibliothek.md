@@ -210,3 +210,10 @@ Tests in `internal/library/index_ergaenzen_test.go`, Mutanten HB27–HB31 in `sc
    `Abgleich` heilen weiterhin nach der Freigabe der Sperre.
 
 Tests in `internal/library/index_zweiter_prozess_test.go`, Mutanten HB32 bis HB35.
+
+## Nachtrag 9 (25.11.2026): Abgleich heilt doppelte Indexzeilen (F-773, Karte #294)
+
+**Status:** Akzeptiert (Claude Sonnet 5.5; Befund B-5 der Sitzungs-Kritik 25.11.).
+
+- **Ergänzt Nachtrag 8.** Doppelte Zeilen, die `haengeAn` vor F-755 hinterlassen hat, blieben stehen: `Abgleich` stieg ohne Fehlendes früh aus, und `ersetzeImIndexGesperrt` ersetzt beide Doppel gleich. `Abgleich` erkennt nun mehrfach vorkommende Pfade, behält unter der Index-Sperre je Pfad nur die **letzte** Zeile (die jüngste Fassung) und schreibt den Index neu; `lade` bleibt lesend. Ein zweiter Abgleich findet nichts mehr zu tun.
+- Test `internal/library/abgleich_doppel_test.go`, Mutanten HB36 bis HB38 in `scripts/mutanten/bibliothek-haertung.json`.
