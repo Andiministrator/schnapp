@@ -267,3 +267,17 @@ Der gesperrte Klick bleibt nicht mehr still. `wechselAnfrage` meldet bei laufend
 ## Zusatz (25.11.2026, Karte #295, F-774, F-775, Claude Sonnet 5.5)
 
 `wechselAnfrage` prüft die offene Aufnahme (`istOffen`) vor allen Sperrfällen: Ein Klick auf sie meldet nie etwas, auch nicht während des Kopierens (F-774). Die übrigen gesperrten Klicks sagen es in der Fußzeile über `meldeNebenbei`, auch bei laufender Arbeit der Ansicht („The library is still working…“), beim Laden einer anderen Aufnahme („Another capture is still loading…“) und beim Speichern („Saving is still running…“, jeweils „Please wait a moment, then try again.“); beim Schließen des Fensters (Signal, erzwungen) bleibt der Klick still (F-775). Tests `internal/ui/wechsel_klick_meldung_test.go`, Mutanten WZ8 bis WZ11 in `scripts/mutanten/ui-wechsel-zustand.json`.
+
+## Zusatz (25.11.2026, Karte #311, Claude Opus 5.5)
+
+Andi (25.11.2026): „geht die "Bibliothek" Kachel unten links platzsparender und sinnvoller? … unten drunter sollte
+nicht nur das änderungsdatum, sondern auch die auflösung stehen.“
+
+- **Knopf „Library“** ist ein schmaler Symbolknopf (`leisteKnopfB` 40 statt 100 dp, so hoch wie eine Vorschau) mit dem
+  Symbol `icons.Bibliothek`; Name und Kürzel stehen im Hinweis der Statuszeile wie bei den Werkzeugen, Fokusring orange.
+  Die Vorschauen beginnen 60 dp weiter links.
+- **Zwei Zeilen unter jeder Vorschau:** Zeitangabe wie bisher, darunter im Nebentext die Auflösung der Ansicht aus dem
+  Index (`leisteAufloesung`, Kontext `status bar` „%d × %d“). Die Leiste wird dafür 118 statt 104 dp hoch (Punkt 1 und
+  Abschnitt „Folgen“); die Schwelle von 420 dp Leinwandhöhe bleibt. Die volle Ansicht zeigte die Auflösung schon
+  (`libview.KachelAngaben`).
+- Tests `internal/ui/leiste_knopf_311_test.go`, Drehbuch `bibliothek-174-leiste.txt` auf die neuen Lagen nachgezogen.

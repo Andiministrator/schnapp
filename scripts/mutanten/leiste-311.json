@@ -1,0 +1,23 @@
+[
+  {
+    "name": "L311-1 Knopf wieder breit",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\tleisteKnopfB    = 40\n",
+    "neu": "\tleisteKnopfB    = 100\n"
+  },
+  {
+    "name": "L311-2 Auflösung fehlt",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn fmt.Sprintf(i18n.TK(\"status bar\", \"%d × %d\"), e.Breite, e.Hoehe)\n}",
+    "neu": "\treturn \"\"\n}"
+  },
+  {
+    "name": "L311-3 Leiste zu niedrig für zwei Zeilen",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\tleisteUntenDp  = 118",
+    "neu": "\tleisteUntenDp  = 104"
+  }
+]

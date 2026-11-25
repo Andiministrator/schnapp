@@ -34,6 +34,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/icons"
 	"github.com/Andiministrator/schnapp/internal/library"
 	"github.com/Andiministrator/schnapp/internal/libview"
 )
@@ -1027,38 +1028,30 @@ func (e *editor) bibliothekHinweis() string {
 
 // --- Knopf „Library“ in der Leiste der letzten Aufnahmen ---
 
-// leisteKnopfB ist die Breite des Knopfs „Library“ links in der Leiste (Muster 174 a); die Vorschauen beginnen dahinter.
+// leisteKnopfB ist die Breite des Knopfs „Library“ links in der Leiste; die Vorschauen beginnen dahinter. Seit Karte
+// #311 ein schmaler Knopf mit Symbol, so hoch wie eine Vorschau (vorher 100 dp mit Stapel und Namen, Muster 174 a).
 const (
-	leisteKnopfB    = 100
+	leisteKnopfB    = 40
 	leisteKnopfRand = 10
 )
 
-// zeichneLeisteKnopf zeichnet den Knopf „Library“ in r (Fensterpixel): ein Stapel Rahmen und der Name darunter.
+// zeichneLeisteKnopf zeichnet den Knopf „Library“ in r (Fensterpixel): das Symbol der Bibliothek; den Namen und das
+// Kürzel nennt der Hinweis in der Statuszeile.
 func (e *editor) zeichneLeisteKnopf(gtx layout.Context, r image.Rectangle) {
 	k := &e.unten
-	g := farbeLeisteVoll
+	g, rand := farbeLeisteVoll, farbeLinie
 	if k.bibKnopf.Hovered() {
-		g = farbeGrund
+		g, rand = farbeGrund, farbeNebentext
 	}
-	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(r).Op())
+	paint.FillShape(gtx.Ops, rand, clip.Rect(r).Op())
 	paint.FillShape(gtx.Ops, g, clip.Rect(r.Inset(gtx.Dp(1))).Op())
-	// Symbol: drei versetzte Rahmen, eckig aus Flächen (Gios Strich kennt nur runde Ecken).
-	s := gtx.Dp(2)
-	w, h := gtx.Dp(28), gtx.Dp(18)
-	m := image.Pt((r.Min.X+r.Max.X)/2, r.Min.Y+gtx.Dp(30))
-	for j := 2; j >= 0; j-- {
-		o := image.Pt(m.X-w/2+j*gtx.Dp(4)-gtx.Dp(4), m.Y-h/2-j*gtx.Dp(4)+gtx.Dp(4))
-		f := image.Rectangle{Min: o, Max: o.Add(image.Pt(w, h))}
-		paint.FillShape(gtx.Ops, g, clip.Rect(f).Op())
-		for _, kante := range []image.Rectangle{
-			image.Rect(f.Min.X, f.Min.Y, f.Max.X, f.Min.Y+s), image.Rect(f.Min.X, f.Max.Y-s, f.Max.X, f.Max.Y),
-			image.Rect(f.Min.X, f.Min.Y, f.Min.X+s, f.Max.Y), image.Rect(f.Max.X-s, f.Min.Y, f.Max.X, f.Max.Y),
-		} {
-			paint.FillShape(gtx.Ops, farbeText, clip.Rect(kante).Op())
-		}
+	if gtx.Focused(&k.bibKnopf) {
+		paint.FillShape(gtx.Ops, farbeAkzent, clip.Stroke{Path: clip.Rect(r.Inset(-gtx.Dp(3))).Path(),
+			Width: float32(gtx.Dp(2))}.Op())
 	}
-	t := e.bibText(gtx, i18n.T("Library"), unit.Sp(12), farbeText, r.Dx()-gtx.Dp(8), false)
-	t.setze(gtx, image.Pt((r.Min.X+r.Max.X-t.groesse.X)/2, r.Max.Y-gtx.Dp(10)-t.groesse.Y))
+	seite := min(gtx.Dp(24), r.Dx()-gtx.Dp(8))
+	zeichneSymbol(gtx, icons.Bibliothek, image.Pt((r.Min.X+r.Max.X-seite)/2, (r.Min.Y+r.Max.Y-seite)/2), seite,
+		farbeText, farbeAkzent)
 	seiteKnopf(gtx, &k.bibKnopf, r)
 	if k.bibKnopf.Hovered() || gtx.Focused(&k.bibKnopf) {
 		k.hinweis = fmt.Sprintf(i18n.T("Open the library (%s)"), kuerzelText(aktBibliothek))

@@ -32,7 +32,7 @@ import (
 
 // Maße der Leiste in dp (ADR-0036 Punkt 1, Muster 174 a).
 const (
-	leisteUntenDp  = 104 // Höhe
+	leisteUntenDp  = 118 // Höhe; zwei Zeilen unter der Vorschau: Zeit und Auflösung (Karte #311)
 	leisteKachelB  = 120 // Vorschau
 	leisteKachelH  = 68
 	leisteRandDp   = 12 // links und rechts der Spur
@@ -406,7 +406,7 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(image.Rect(r.Min.X, r.Min.Y, r.Max.X, r.Min.Y+gtx.Dp(1))).Op())
 	// Links der Knopf „Library“ (Teil 2, Muster 174 a), dahinter die Spur der Vorschauen.
 	kn := image.Rect(r.Min.X+gtx.Dp(leisteKnopfRand), r.Min.Y+gtx.Dp(leisteObenDp), r.Min.X+gtx.Dp(leisteKnopfRand+leisteKnopfB),
-		r.Min.Y+gtx.Dp(leisteObenDp+leisteKachelH+20))
+		r.Min.Y+gtx.Dp(leisteObenDp+leisteKachelH))
 	spur := image.Rect(kn.Max.X, r.Min.Y, max(kn.Max.X, r.Max.X), r.Max.Y)
 	k.masse = leisteMasseFuer(gtx, spur.Dx())
 	es := k.l.Eintraege()
@@ -482,6 +482,8 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 			farbe = farbeText
 		}
 		e.leisteText(gtx, libview.Zeitangabe(eintrag.Erstellt, jetzt), image.Pt(kr.Min.X, kr.Max.Y+gtx.Dp(4)), kr.Dx(), farbe == farbeText)
+		// Auflösung der Ansicht darunter, immer im Nebentext (Karte #311).
+		e.leisteText(gtx, leisteAufloesung(eintrag), image.Pt(kr.Min.X, kr.Max.Y+gtx.Dp(18)), kr.Dx(), false)
 		if fokus || (k.hinweis == "" && k.knoepfe[i].Hovered()) {
 			k.hinweis = leisteHinweis(eintrag, aktuell)
 		}
@@ -489,6 +491,14 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 	cs.Pop()
 	c.Pop()
 	k.ops = neueOps
+}
+
+// leisteAufloesung ist die zweite Zeile unter einer Vorschau: Breite × Höhe der Ansicht aus dem Index.
+func leisteAufloesung(e library.Eintrag) string {
+	if e.Breite <= 0 || e.Hoehe <= 0 {
+		return ""
+	}
+	return fmt.Sprintf(i18n.TK("status bar", "%d × %d"), e.Breite, e.Hoehe)
 }
 
 // leisteVerborgen räumt den Stand des letzten Zeichnens ab, wenn die Leiste nicht gezeigt wird: kein Hinweis in der

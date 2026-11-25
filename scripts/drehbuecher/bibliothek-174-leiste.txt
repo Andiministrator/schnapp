@@ -8,8 +8,9 @@
 # Aufruf (mit der zweitneuesten Aufnahme, damit sie grün umrandet ist):
 #   scripts/probe.sh --drehbuch scripts/drehbuecher/bibliothek-174-leiste.txt --ende 60 --bild "$bild"
 # Im Drehbuch-Lauf startet die Leiste aus (SCHNAPP_PROBE_LEISTE_AUS, probe.sh) und merkt ihren Schalter nicht.
-# Bei 1600 × 1000, Skala 1: Leinwand (52,30)–(1300,866), Leiste (52,866)–(1300,970); links der Knopf „Library“
-# (62,874)–(162,962) (seit Teil 2), Vorschauen 120 × 68 ab y 874, die Mitte der Vorschau i liegt bei x = 234 + 132·i, y = 908.
+# Bei 1600 × 1000, Skala 1: Leinwand (52,30)–(1300,852), Leiste (52,852)–(1300,970); links der Knopf „Library“
+# (62,860)–(102,928) als Symbol (seit Karte #311), Vorschauen 120 × 68 ab y 860, darunter Zeit und Auflösung; die Mitte
+# der Vorschau i liegt bei x = 174 + 132·i, y = 894.
 # Erwartet:
 #  01 ohne Leiste: Leinwand bis zur Fußzeile (Drehbuch-Lauf).
 #  02 Strg+Umschalt+R: Leiste unten, links der Knopf „Library“, neueste links, die zweite (die offene) grün umrandet, darunter Uhrzeiten,
@@ -27,19 +28,19 @@ foto 01-ohne-leiste
 taste Strg+Umschalt+R
 warte 2500
 foto 02-leiste-an
-zeiger 762 908
+zeiger 702 894
 warte 400
 foto 03-hinweis
-klick 234 908
+klick 174 894
 warte 2500
 foto 04-gewechselt
 taste B
 ziehe 300 300 700 600
 warte 400
-klick 498 908
+klick 438 894
 warte 8000
 foto 05-gespeichert-und-gewechselt
-rad 810 908 40
+rad 750 894 40
 warte 600
 foto 06-gerollt
 taste Strg+Umschalt+R
