@@ -264,7 +264,9 @@ func BenchmarkAufwandNaheKantenBudget(b *testing.B) {
 // referenzEinmischen ist der Weg vor F-130: vector zeichnet über den allgemeinen Weg mit draw.Over ins NRGBA-Bild.
 // Seit ADR-0028 baut der Test die Pfade in x/image/vector selbst nach, der Renderer nutzt raster16.
 func referenzEinmischen(_ *raster16.Rasterizer, pfade func(pfad), bild *image.NRGBA, ausschnitt image.Rectangle, farbe color.NRGBA) {
-	r := vector.NewRasterizer(ausschnitt.Dx(), ausschnitt.Dy())
+	// Mindestens 513 hoch: vector rechnet dann im Gleitkomma-Weg wie raster16 seit F-764 immer, bei gleicher Breite in
+	// derselben Reihenfolge; gezeichnet wird nur der Ausschnitt.
+	r := vector.NewRasterizer(ausschnitt.Dx(), max(ausschnitt.Dy(), 513))
 	pfade(r)
 	r.DrawOp = draw.Over
 	r.Draw(bild, ausschnitt, image.NewUniform(farbe), image.Point{})

@@ -19,7 +19,9 @@ func TestMaskeGleichVector(t *testing.T) {
 		rnd := rand.New(rand.NewSource(int64(g.X*10007 + g.Y)))
 		var z Rasterizer
 		z.Reset(g.X, g.Y)
-		v := vector.NewRasterizer(g.X, g.Y)
+		// Mindestens 513 hoch: vector rechnet dann wie raster16 im Gleitkomma-Weg (seit F-764 immer, ADR-0028 Nachtrag 1);
+		// verglichen werden die ersten g.Y Zeilen.
+		v := vector.NewRasterizer(g.X, max(g.Y, 513))
 		v.DrawOp = draw.Src
 		for p := 0; p < 12; p++ {
 			n := 3 + rnd.Intn(6)
@@ -38,7 +40,7 @@ func TestMaskeGleichVector(t *testing.T) {
 			z.ClosePath()
 			v.ClosePath()
 		}
-		ziel := image.NewRGBA64(image.Rect(0, 0, g.X, g.Y))
+		ziel := image.NewRGBA64(image.Rect(0, 0, g.X, max(g.Y, 513)))
 		v.Draw(ziel, ziel.Bounds(), image.Opaque, image.Point{})
 		maske := z.Maske()
 		abw := 0
@@ -170,6 +172,52 @@ func TestMaskeGleichVectorZufall(t *testing.T) {
 		for i, m := range maske {
 			if uint32(ziel.RGBA64At(i%g.X, i/g.X).A) != m {
 				t.Fatalf("Lauf %d %v: Pixel %d weicht von x/image/vector ab", lauf, g, i)
+			}
+		}
+	}
+}
+
+// F-764: Dieselbe Form (Koordinaten wie im Renderer in float64 verschoben, dann float32) an einer um ganze Pixel verschobenen Stelle ergibt dieselbe Maske (bis auf Rundung), auch wenn der
+// Ausschnitt sie links anschneidet (Grenze 256 von 65535, rund eine 8-Bit-Stufe). Der Festkomma-Weg wich hier entlang
+// langer Kanten um bis 22 % ab.
+func TestVerschiebungsfest(t *testing.T) {
+	rnd := rand.New(rand.NewSource(764))
+	for lauf := 0; lauf < 201; lauf++ {
+		w, h := 60+rnd.Intn(300), 60+rnd.Intn(300)
+		var pts [][2]float64
+		for k := 0; k < 3+rnd.Intn(4); k++ {
+			pts = append(pts, [2]float64{rnd.Float64() * float64(w), rnd.Float64() * float64(h)})
+		}
+		if lauf == 200 {
+			// Der gemessene Fall: Spitze eines Pfeils, Breite 32, Ausschnitt ab 64 (Sitzung 25.11., Karte #286).
+			w, h = 145, 116
+			pts = [][2]float64{{380 - 236, 190 - 75}, {236.89164944001348 - 236, 190 - 75}, {294.1349896640081 - 236, 75.51331955201078 - 75}}
+		}
+		maske := func(ox int, breite int) []uint32 {
+			var z Rasterizer
+			z.Reset(breite, h)
+			for k, p := range pts {
+				if k == 0 {
+					z.MoveTo(float32(p[0]-float64(ox)), float32(p[1]))
+				} else {
+					z.LineTo(float32(p[0]-float64(ox)), float32(p[1]))
+				}
+			}
+			z.ClosePath()
+			return z.Maske()
+		}
+		voll := maske(0, w)
+		ox := 1 + rnd.Intn(w-2)
+		if lauf == 200 {
+			ox = 64
+		}
+		teil := maske(ox, w-ox)
+		for y := 0; y < h; y++ {
+			for x := 0; x < w-ox; x++ {
+				a, b := int(voll[y*w+x+ox]), int(teil[y*(w-ox)+x])
+				if a-b > 256 || b-a > 256 {
+					t.Fatalf("Lauf %d, Ausschnitt ab %d: Pixel (%d,%d) %d statt %d", lauf, ox, x+ox, y, b, a)
+				}
 			}
 		}
 	}

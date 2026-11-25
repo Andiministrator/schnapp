@@ -58,7 +58,11 @@ func (z *Rasterizer) Reset(w, h int) {
 	z.firstY = 0
 	z.penX = 0
 	z.penY = 0
-	z.setUseFloatingPointMath(w > floatingPointMathThreshold || h > floatingPointMathThreshold)
+	// Immer der Gleitkomma-Weg (F-764, ADR-0028 Nachtrag 1): Der Festkomma-Weg führt x je Zeile aufsummiert und
+	// abgeschnitten mit und driftet auf langen Kanten um bis 1/512 px je Zeile, je nach Lage des Ausschnitts verschieden
+	// (bis 22 % Deckung entlang einer Kante, die über den Rand eines beschnittenen Ausschnitts ragt). Gleich schnell
+	// gemessen; der Festkomma-Weg bleibt für den Vergleich mit x/image/vector im Code.
+	z.setUseFloatingPointMath(true)
 }
 
 func (z *Rasterizer) setUseFloatingPointMath(b bool) {

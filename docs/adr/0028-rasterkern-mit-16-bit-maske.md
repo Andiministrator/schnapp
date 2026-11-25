@@ -54,3 +54,22 @@ Die Budgets (ADR-0020 Nachtrag 3) bleiben unverändert; ein präpariertes Dokume
 in rund 7 s statt rund 35 s; zusammen mit Glyphen und Kanten knapp unter ihren Budgets rund 9,7 s statt gemessen 41,4 s (Nachtrag 3 schätzte 45 s).
 663 Zeilen übernommener Code (`wc -l internal/raster16/raster.go internal/raster16/raster_fixed.go
 internal/raster16/raster_floating.go`), geprüft gegen das Original über die Tests oben.
+
+## Nachtrag 1 (25.11.2026): Immer der Gleitkomma-Weg (F-764)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Karte #286).
+
+1. **Befund:** Der Festkomma-Weg (Ausschnitte bis 512 px, wie in `x/image/vector`) führt die x-Lage einer Kante je
+   Zeile aufsummiert mit (`x + int1ϕ(dy·dxdy)`, abgeschnitten). `dxdy` hängt in float32 von der Lage relativ zum
+   Ausschnitt ab, die Summe driftet deshalb je nach Ausschnitt verschieden um bis 1/512 px je Zeile. Dieselbe Spitze
+   eines Pfeils (Strich 32) wich mit und ohne Zuschnitt entlang ihrer langen Kante um bis 22 % Deckung ab (14 718 von
+   65 535). Über einer Naht, wo jeder Bereich auf sich beschnitten rastert (ADR-0023 Nachträge 13 bis 17), stand die
+   Kante dann sichtbar anders als ohne Stauchen.
+2. **Entscheidung:** `Reset` wählt immer den Gleitkomma-Weg; er rechnet x je Zeile in float32 ohne Abschneiden und ist
+   verschiebungsfest bis auf Rundung (`TestVerschiebungsfest`, Grenze 256 von 65 535, mit dem gemessenen Fall). Gleich
+   schnell gemessen (`BenchmarkSprechblasenKantenGrenze` 4,65/4,67 s, `BenchmarkGrossesBild` 23,0/22,7 ms,
+   `BenchmarkAufwandAlltag` 2,10/2,12 s, je 3 Läufe, vorher/nachher). Der Festkomma-Weg bleibt im Code.
+3. **Ersetzt in Punkt 5** die Bitgleichheit zu `vector` für kleine Ausschnitte: `TestMaskeGleichVector` und
+   `TestFuellenBitgleich` vergleichen mit `vector` im Gleitkomma-Weg (gleiche Breite, mindestens 513 Zeilen hoch, damit
+   `vector` ihn wählt, verglichen werden die eigenen Zeilen) und bleiben bitgleich.
+
