@@ -95,7 +95,7 @@ func ueberschreibe(t *testing.T, pfad, inhalt string) {
 // F-703: Eine liegende Kopie bleibt nach einer Änderung der Metadaten anwendbar, mit allen Schwärzungen.
 func TestUmDateiZiehtKennungNach(t *testing.T) {
 	pfad, ort, vorher := aufnahmeMitKopie(t)
-	err := UmDatei(ort, pfad, func() error { ueberschreibe(t, pfad, "bild mit schlagwort b, länger"); return nil })
+	err := UmDatei(ort, pfad, func(unv func() bool) error { unv(); ueberschreibe(t, pfad, "bild mit schlagwort b, länger"); return nil })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +126,7 @@ func TestUmDateiZiehtKennungNach(t *testing.T) {
 func TestUmDateiLaesstFremdeKopieUnberuehrt(t *testing.T) {
 	pfad, ort, vorher := aufnahmeMitKopie(t)
 	ueberschreibe(t, pfad, "schon vorher anders")
-	if err := UmDatei(ort, pfad, func() error { ueberschreibe(t, pfad, "und nochmal anders"); return nil }); err != nil {
+	if err := UmDatei(ort, pfad, func(unv func() bool) error { unv(); ueberschreibe(t, pfad, "und nochmal anders"); return nil }); err != nil {
 		t.Fatal(err)
 	}
 	if b, _ := os.ReadFile(filepath.Join(ort, Name(pfad))); !bytes.Equal(b, vorher) {
@@ -142,7 +142,7 @@ func TestUmDateiMitGehaltenerSperre(t *testing.T) {
 	s := NeueSicherung(ort, k)
 	defer s.Ende()
 	lief := false
-	err := UmDatei(ort, pfad, func() error { lief = true; ueberschreibe(t, pfad, "anders"); return nil })
+	err := UmDatei(ort, pfad, func(unv func() bool) error { unv(); lief = true; ueberschreibe(t, pfad, "anders"); return nil })
 	if err != nil || !lief {
 		t.Fatalf("aendere lief nicht oder scheiterte: %v %v", lief, err)
 	}
@@ -155,7 +155,7 @@ func TestUmDateiMitGehaltenerSperre(t *testing.T) {
 func TestUmDateiBeiFehlerVonAendere(t *testing.T) {
 	pfad, ort, vorher := aufnahmeMitKopie(t)
 	boese := errors.New("kaputt")
-	if err := UmDatei(ort, pfad, func() error { return boese }); !errors.Is(err, boese) {
+	if err := UmDatei(ort, pfad, func(func() bool) error { return boese }); !errors.Is(err, boese) {
 		t.Errorf("Fehler: %v", err)
 	}
 	if b, _ := os.ReadFile(filepath.Join(ort, Name(pfad))); !bytes.Equal(b, vorher) {
@@ -168,7 +168,7 @@ func TestUmDateiOhneKopie(t *testing.T) {
 	pfad, _ := ausgang(t, "bild")
 	ort := t.TempDir()
 	lief := false
-	if err := UmDatei(ort, pfad, func() error { lief = true; return nil }); err != nil || !lief {
+	if err := UmDatei(ort, pfad, func(func() bool) error { lief = true; return nil }); err != nil || !lief {
 		t.Fatalf("%v %v", lief, err)
 	}
 	if _, err := os.Stat(filepath.Join(ort, Name(pfad))); !os.IsNotExist(err) {

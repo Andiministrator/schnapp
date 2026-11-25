@@ -867,5 +867,33 @@
     "paket": "./cmd/schnapp",
     "alt": ", UmDatei: rettungUmDatei}",
     "neu": "}"
+  },
+  {
+    "name": "N6 F-757 UmDatei zieht ohne bestätigten Stand nach",
+    "datei": "internal/rescue/nachziehen.go",
+    "paket": "./internal/rescue",
+    "alt": "if !passte || !bestaetigt {",
+    "neu": "if !passte {"
+  },
+  {
+    "name": "N7 F-757 unveraendert meldet immer wahr",
+    "datei": "internal/rescue/nachziehen.go",
+    "paket": "./internal/rescue",
+    "alt": "passte && err == nil && st.Mode().IsRegular() && st.Size() == vorher.Groesse && st.ModTime().Equal(vorher.Zeit)",
+    "neu": "passte"
+  },
+  {
+    "name": "N8 F-757 WarteUmDatei wartet nicht",
+    "datei": "internal/rescue/nachziehen.go",
+    "paket": "./internal/rescue",
+    "alt": "for time.Now().Before(ende) {",
+    "neu": "for false {"
+  },
+  {
+    "name": "N9 F-757 Schlagworte-Weg bestätigt den Stand nicht",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tunveraendert()\n\t\treturn aendere()",
+    "neu": "\t\treturn aendere()"
   }
 ]

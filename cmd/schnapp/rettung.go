@@ -41,6 +41,8 @@ func rettungFuer(abs string, ohneGrenze bool) *rettung {
 	if n, err := rescue.Aufraeumen(ort, time.Now()); err != nil || n > 0 {
 		rettungDiagnose(fmt.Errorf("aufgeräumt: %d, %v", n, err))
 	}
+	// Läuft gerade eine Änderung der Schlagworte dieser Aufnahme, erst danach lesen (F-757).
+	rescue.WarteUmDatei(ort, abs, 20*time.Second)
 	k, err := rescue.KennungVon(abs)
 	if err != nil {
 		rettungDiagnose(err)

@@ -86,7 +86,11 @@ func rettungUmDatei(pfad string, aendere func() error) error {
 		rettungDiagnose(err)
 		return aendere()
 	}
-	return rescue.UmDatei(ort, pfad, aendere)
+	return rescue.UmDatei(ort, pfad, func(unveraendert func() bool) error {
+		// Unmittelbar vor dem Lesen durch aendere: Nur ein unveränderter Stand zieht die Kopie nach (F-757).
+		unveraendert()
+		return aendere()
+	})
 }
 
 // oeffnerFuer ist die Ladefunktion für den Wechsel der Aufnahme im selben Fenster (ADR-0036 Punkt 5): wie

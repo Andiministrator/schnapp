@@ -260,3 +260,11 @@ Was eine Bearbeitung ausmacht, ist dagegen klein und ohne Pixel beschreibbar:
   (F2 ablehnen) wurde verworfen: Sie sperrte eine harmlose Bedienung wegen einer Kopie, die sich sauber erhalten lässt.
 - Tests `internal/rescue/nebenwirkung_test.go`, `cmd/schnapp/rettung_schlagworte_test.go`; Mutanten N1 bis N5 in
   `scripts/mutanten/rescue.json`.
+
+## Nachtrag 11 (25.11.2026): `UmDatei` prüft den Stand, ein öffnendes Fenster wartet (F-757)
+
+**Status:** Akzeptiert (Karte #288, umgesetzt von Claude Sonnet 5.5; Befund B-5 der Sitzungs-Kritik 25.11.).
+
+- **Ändert Nachtrag 10 (F-703).** `UmDatei` zog die Kennung nach, ohne zu prüfen, dass `aendere` dieselbe Datei las, die es vorher gemessen hatte. `aendere` bekommt jetzt `unveraendert func() bool` und ruft es unmittelbar vor dem Lesen der Datei auf: wahr, wenn Größe und Änderungszeit noch die der Kennung vor `aendere` sind. Ohne Aufruf oder bei falsch (ein anderer Schreiber hat die Datei dazwischen ersetzt) läuft `aendere` trotzdem, die Kopie wird aber nicht nachgezogen und gilt wie bisher als fremd. Den Inhalt prüft UmDatei nicht (es gibt keinen Unterschied zwischen Metadaten und Bild ohne Dekodieren); bleibt ein Fenster zwischen der Bestätigung und dem Lesen von `SetzeSchlagworte` (Mikrosekunden) unbemerkt, ist das als Restrisiko akzeptiert, `SetzeSchlagworte` vergleicht den Stand danach selbst (F-673). `cmd/schnapp` ruft `unveraendert` vor `SetzeSchlagworte` auf.
+- **Ein Fenster wird während `UmDatei` nicht mehr fremd.** `UmDatei` legt neben der Sperre die Marke `<SHA>.um` an (vor dem Freigeben der Sperre entfernt). `rescue.WarteUmDatei` wartet, solange Marke (jünger als eine Minute) und gehaltene Sperre beide da sind, höchstens 20 s; `rettungFuer` ruft es vor `KennungVon` und `NeueSicherung` auf. Das Fenster liest so den neuen Stand, bekommt die Sperre und wendet die nachgezogene Kopie an. Ohne Marke kehrt es sofort zurück; eine Marke eines abgestürzten Prozesses hält niemanden länger als eine Minute auf. Der Wechsel der Aufnahme im selben Fenster (`NeueBasis`) wartet nicht.
+- Tests `internal/rescue/umdatei_stand_test.go`; Mutanten N6 bis N9 in `scripts/mutanten/rescue.json`.
