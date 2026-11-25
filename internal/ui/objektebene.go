@@ -22,6 +22,10 @@ import (
 // also höchstens rund 0,7 s je Bild. Im Alltag sind es wenige Hundert bis Tausend Bereiche.
 const bereichGrenze = 200_000
 
+// objektebeneRendern ist der Renderaufruf von baue; ein Test ersetzt ihn, weil sich ein Fehler des Renderers sonst nicht
+// erzeugen lässt (F-805).
+var objektebeneRendern = render.Objektebene
+
 // objektEbene ist die zwischengespeicherte Objektebene des Renderers (render.Objektebene) samt dem Stand, für den sie
 // gilt: Dokument, Dokumentstand, Pixelstand, Ansichtsgröße und die Objekte selbst (während eines Zugs ändern sie sich
 // ohne Rückgängig-Schritt). Das Dokument zählt mit, weil zwei frisch geöffnete Dokumente denselben Stand und Pixelstand
@@ -60,7 +64,7 @@ func (o *objektEbene) passt(e *editor) bool {
 // eigenen Zeichnen.
 func (o *objektEbene) baue(e *editor) bool {
 	d := e.s.D
-	b, err := render.Objektebene(d)
+	b, err := objektebeneRendern(d)
 	if err != nil {
 		diagnoseEditor("Objektebene: %v", err)
 		o.frei()
@@ -73,7 +77,7 @@ func (o *objektEbene) baue(e *editor) bool {
 	return true
 }
 
-// frei schaltet die Ebene ab und gibt Bild, Dokument und Objekte frei (F-799: das Bild in Ansichtsgröße, bis 275 MiB
+// frei schaltet die Ebene ab und gibt Bild, Dokument und Objekte frei (F-799: das Bild in Ansichtsgröße, bis rund 262 MiB
 // bei 32768×2100, blieb sonst bis zum nächsten Aufbau liegen). Die Zähler für Tests bleiben.
 func (o *objektEbene) frei() {
 	o.an, o.dok, o.bild, o.objekte = false, nil, paint.ImageOp{}, nil

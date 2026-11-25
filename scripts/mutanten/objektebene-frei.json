@@ -1,0 +1,26 @@
+[
+  {
+    "name": "FR1 Editor gibt die Objektebene unter der Bereichsgrenze nicht frei (F-805)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.objEbene.frei()\n\t}\n\taufruf.Add(gtx.Ops)",
+    "neu": "\t\te.objEbene.an = false\n\t}\n\taufruf.Add(gtx.Ops)",
+    "timeout": "5m"
+  },
+  {
+    "name": "FR2 uebernimm gibt die Objektebene der alten Aufnahme nicht frei (F-805)",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\te.objEbene.frei() // die Objektebene gehört der alten Aufnahme (F-799)\n",
+    "neu": "",
+    "timeout": "5m"
+  },
+  {
+    "name": "FR3 baue gibt die Objektebene im Fehlerweg nicht frei (F-805)",
+    "datei": "internal/ui/objektebene.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tdiagnoseEditor(\"Objektebene: %v\", err)\n\t\to.frei()\n",
+    "neu": "\t\tdiagnoseEditor(\"Objektebene: %v\", err)\n\t\to.an = false\n",
+    "timeout": "5m"
+  }
+]
