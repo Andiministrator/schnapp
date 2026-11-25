@@ -1472,6 +1472,15 @@ msgstr "Erst den Export abschließen."
 msgid "Copying is still running. Please wait a moment, then try again."
 msgstr "Das Kopieren läuft noch. Einen Moment warten, dann erneut versuchen."
 
+msgid "Another capture is still loading. Please wait a moment, then try again."
+msgstr "Eine andere Aufnahme wird noch geladen. Einen Moment warten, dann erneut versuchen."
+
+msgid "Saving is still running. Please wait a moment, then try again."
+msgstr "Das Speichern läuft noch. Einen Moment warten, dann erneut versuchen."
+
+msgid "The library is still working. Please wait a moment, then try again."
+msgstr "Die Bibliothek arbeitet noch. Einen Moment warten, dann erneut versuchen."
+
 msgid "No captures in the library yet."
 msgstr "Noch keine Aufnahmen in der Bibliothek."
 

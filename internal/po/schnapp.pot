@@ -2120,7 +2120,19 @@ msgid "Tail"
 msgstr ""
 
 #: internal/ui/wechsel.go
+msgid "Another capture is still loading. Please wait a moment, then try again."
+msgstr ""
+
+#: internal/ui/wechsel.go
+msgid "Saving is still running. Please wait a moment, then try again."
+msgstr ""
+
+#: internal/ui/wechsel.go
 msgid "Copying is still running. Please wait a moment, then try again."
+msgstr ""
+
+#: internal/ui/wechsel.go
+msgid "The library is still working. Please wait a moment, then try again."
 msgstr ""
 
 #: internal/ui/wechsel.go

@@ -65,8 +65,16 @@ func (e *editor) wechselAnfrage(abs string) {
 	switch {
 	case e.bib == nil || e.bib.Oeffnen == nil || abs == "":
 		return
-	case e.wechsel.laedt || e.s.SpeichernLaeuft() || e.erzwungen || e.s.SignalVorgemerkt():
-		return // ein Wechsel oder ein Speichern läuft schon; das Fenster schließt
+	case e.istOffen(abs):
+		return // die offene Aufnahme: nichts zu wechseln, also auch keine Sperrmeldung (F-774)
+	case e.erzwungen || e.s.SignalVorgemerkt():
+		return // das Fenster schließt
+	case e.wechsel.laedt:
+		e.meldeNebenbei(i18n.T("Another capture is still loading. Please wait a moment, then try again."), false)
+		return
+	case e.s.SpeichernLaeuft():
+		e.meldeNebenbei(i18n.T("Saving is still running. Please wait a moment, then try again."), false)
+		return
 	case e.kopierLaeuft:
 		// Die Antwort des Kopierens gehörte sonst zur vorigen Aufnahme, verglichen würde sie mit dem Stand der neuen:
 		// „Copied to clipboard“ stünde unter der falschen Aufnahme (F-710). Der Klick gilt nicht, die Fußzeile sagt es
@@ -75,7 +83,8 @@ func (e *editor) wechselAnfrage(abs string) {
 		return
 	case e.bibl.arbeitLaeuft:
 		// Die Ansicht schreibt gerade Schlagworte oder verschiebt in den Papierkorb: erst danach laden, sonst hielte der
-		// Editor einen veralteten Stand oder eine Datei im Papierkorb (F-676).
+		// Editor einen veralteten Stand oder eine Datei im Papierkorb (F-676); der Klick sagt es (F-775).
+		e.meldeNebenbei(i18n.T("The library is still working. Please wait a moment, then try again."), false)
 		return
 	case e.exportOffen:
 		e.melde(i18n.T("Finish the export first."), false)
@@ -83,9 +92,6 @@ func (e *editor) wechselAnfrage(abs string) {
 	case e.ocr.laeuft:
 		e.melde(i18n.T("Text recognition is running. Press Esc to cancel it first."), false)
 		return
-	}
-	if e.istOffen(abs) {
-		return // die offene Aufnahme
 	}
 	e.wechsel.ziel = abs
 	abzug, err := e.s.SpeichernJetzt()

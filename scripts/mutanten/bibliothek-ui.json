@@ -243,8 +243,8 @@
     "name": "BU14 Klick auf die offene Aufnahme lädt sie neu",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "if e.istOffen(abs) {",
-    "neu": "if false {"
+    "alt": "\tcase e.istOffen(abs):\n",
+    "neu": "\tcase false:\n"
   },
   {
     "name": "BU15 Pfeil rechts wandert nach links",
@@ -397,8 +397,8 @@
     "name": "KM16 Anfrage trotz Signal oder erzwungenem Schließen",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "case e.wechsel.laedt || e.s.SpeichernLaeuft() || e.erzwungen || e.s.SignalVorgemerkt():",
-    "neu": "case e.wechsel.laedt || e.s.SpeichernLaeuft():"
+    "alt": "\tcase e.erzwungen || e.s.SignalVorgemerkt():\n\t\treturn // das Fenster schließt",
+    "neu": "\tcase false:\n\t\treturn // das Fenster schließt"
   },
   {
     "name": "KM17 Texterkennung läuft über den Wechsel weiter",
