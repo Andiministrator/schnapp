@@ -258,7 +258,7 @@ func TestStrichGefaltetOhneLoch(t *testing.T) {
 
 // F-803: Ein Pfeil, dessen Kontrollpunkt auf der Linie hinter dem Ziel liegt, kehrt an einem Stützpunkt genau um. In
 // allen vier Achsrichtungen trägt der Umkehrpunkt die runde Kappe: abseits der Kante kein Pixel daneben und kein Loch.
-// Vorher fehlte sie nach links und nach oben (Ende flach, abseits der Kante 1,0).
+// Vorher fehlte sie nach links und nach unten (Ende flach, abseits der Kante 1,0).
 func TestPfeilKehrtwendeAlleRichtungen(t *testing.T) {
 	schwarz := color.NRGBA{A: 255}
 	for _, fall := range []struct {

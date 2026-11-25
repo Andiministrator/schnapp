@@ -8,7 +8,9 @@ import (
 )
 
 // KastenStrich sind die konvexen, überlappungsfreien und gleich herum laufenden Teile des Strichs eines Kastens mit
-// Eckradius (ADR-0023 Nachträge 19 und 21). Renderer, Editor und die Vorschau der Ebenenliste füllen genau diese Teile:
+// Eckradius (ADR-0023 Nachträge 19 und 21). Ausnahme, bewusst hingenommen (F-809): Ist eine gerade Seite kürzer als
+// rund 0,065·hw, kreuzen sich die inneren Gehrungen ihrer Tangentenpunkte (höchstens ein Pixel in der Mitte eines
+// Fast-Kreises). Renderer, Editor und die Vorschau der Ebenenliste füllen genau diese Teile:
 // Weil sie sich nicht überlappen, addiert keine Füllung die Kantenglättung zweier Teile (F-788), und weil ihre inneren
 // Ecken nie gegeneinander laufen, entsteht kein Loch (F-783, F-792, F-789).
 type KastenStrich struct {
@@ -33,8 +35,9 @@ type KastenStrich struct {
 // Abweichung zwischen Editor und Renderer in der CI, lokal keine). Der Fangpunkt ist die wahre innere Ecke der mittleren
 // Ecke des Bogens (auf der Diagonale, auf dem Rand des Lochs); die Fläche, die dazukommt, liegt im Loch zwischen den
 // wahren inneren Ecken und den beiden Kanten zum Fangpunkt (gemessen gegen die analytische Deckung höchstens 0,012 mehr
-// als ohne Fang, bei Pillen 0,033). Bis F-804 sprangen auch die Tangentenpunkte auf den Mittelpunkt, und die innere
-// Kante jeder geraden Seite rückte um Radius − hw (bis 0,25 px) ins Loch.
+// als ohne Fang, bei Pillen 0,033; beim Kreis bis 0,07, F-807). Kanten unter 0,25 px gibt es im Band erst unter Radius
+// rund 8 (rund 0,033·Radius, F-808), die Teile daran sind breit. Bis F-804 sprangen auch die Tangentenpunkte auf den
+// Mittelpunkt, und die innere Kante jeder geraden Seite rückte um Radius − hw (bis 0,25 px) ins Loch.
 const mittelpunktFang = 0.25
 
 // NeuerKastenStrich zerlegt den Strich der Breite 2·hw um das Rechteck r mit Eckradius radius. Ohne wirksame Rundung

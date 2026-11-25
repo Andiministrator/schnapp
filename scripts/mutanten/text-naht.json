@@ -433,7 +433,7 @@
     "timeout": "10m"
   },
   {
-    "name": "KS1 Kastenstrich: innere Ecken bei Gehrung ab Radius nicht auf den Mittelpunkt (F-792)",
+    "name": "KS1 Kastenstrich: Bogenecken greifen später (seit F-804 über fangen; F-792, F-798)",
     "datei": "internal/document/kastenstrich.go",
     "paket": "./internal/ui",
     "alt": "\tfangen := gBogen >= rad-mittelpunktFang\n",
@@ -517,6 +517,14 @@
     "datei": "internal/document/kastenstrich.go",
     "paket": "./internal/document",
     "alt": "\t\tif loch.Max.Y-loch.Min.Y < mittelpunktFang {\n",
+    "neu": "\t\tif false {\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "KS12 Kastenstrich: Fangpunkte im schmalen Loch in X nicht zusammengelegt (F-804, Verify 5 V5-4)",
+    "datei": "internal/document/kastenstrich.go",
+    "paket": "./internal/document",
+    "alt": "\t\tif loch.Max.X-loch.Min.X < mittelpunktFang {\n",
     "neu": "\t\tif false {\n",
     "timeout": "5m"
   }

@@ -54,7 +54,8 @@ func TestKastenStrichFangHaeltSeitenkante(t *testing.T) {
 		{R(Pt(30.3, 30.7), Pt(150.3, 70.7)), 39.42}, // Pille
 		{R(Pt(30.3, 30.7), Pt(150.3, 70.7)), 39.6},
 		{R(Pt(30.3, 30.7), Pt(150.3, 70.7)), 39.9},
-		{R(Pt(30.5, 30.5), Pt(70.5, 70.5)), 39.5}, // Kreis
+		{R(Pt(30.7, 30.3), Pt(70.7, 150.3)), 39.9}, // hohe Pille: Schmal-Loch-Regel in X (Verify 5, V5-4)
+		{R(Pt(30.5, 30.5), Pt(70.5, 70.5)), 39.5},  // Kreis
 	} {
 		hw := fall.breite / 2
 		ks := NeuerKastenStrich(fall.r, 20, hw)

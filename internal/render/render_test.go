@@ -252,8 +252,8 @@ func BenchmarkAufwandNaheGlyphBudget(b *testing.B) {
 }
 
 // Kanten knapp unter KantenBudget: sehr breite Pfeile weit außerhalb eines winzigen Bildes (F-132). 429 Pfeile sind
-// 9,986e9 Kanten-Einheiten (99,9 % des Budgets), 430 lehnt Pruefe ab (gemessen 25.11.2026, F-806; bis ADR-0023
-// Nachtrag 22 lag die Grenze bei 171, weil die Kreise an den Gelenken viel zu teuer zählten). Bild rund 3,8 s.
+// 9,984e9 Kanten-Einheiten (99,84 % des Budgets; Aufwand gesamt 9,986e9), 430 lehnt Pruefe ab (gemessen 25.11.2026, F-806; bis ADR-0023
+// Nachtrag 22 lag die Grenze bei 171, weil die Kreise an den Gelenken viel zu teuer zählten). Bild rund 3,6 bis 3,8 s.
 func BenchmarkAufwandNaheKantenBudget(b *testing.B) {
 	d := weissesDokument(b, 10, 10)
 	for i := 0; i < 429; i++ {

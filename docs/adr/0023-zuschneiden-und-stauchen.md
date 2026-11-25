@@ -753,7 +753,9 @@ Punkte 1 und 3.
      Kreis), rücken ihre Fangpunkte mindestens 0,25 px auseinander (ρ mindestens 0,25/√2); ist das Loch in einer
      Richtung schmaler als 0,25 px, fallen sie dort auf seine Mitte zusammen.
    Ergebnis: Im Band hat kein Teil eine Kante unter 0,25 px (Radius 20: kürzeste 0,66, Pille 0,25; ohne Fang 0,0009
-   bei Strich 39,9). Nur bei sehr kleinem Radius ist alles klein (Radius 1: 0,18, Radius 0,6: 0,12).
+   bei Strich 39,9). *Berichtigt nach Verify 5 (F-808):* Das gilt erst ab Radius rund 8; darunter ist die Kante vom
+   Tangentenpunkt zum Fangpunkt rund 0,033·Radius lang (Radius 3: 0,099, Radius 1: 0,033 am oberen Ende des Bands).
+   Die Teile mit dieser Kante sind breit (schmalster Teil ab Radius 3 mindestens 0,10 px), kein Splitter.
 
    Abgewogen (größte Abweichung von der analytischen Deckung an der Kante, 32×32 Stichproben je Pixel; abseits der
    Kante überall 0):
@@ -775,13 +777,23 @@ Punkte 1 und 3.
    „Ohne Fang“ ist am genauesten, hat aber die Splitter von F-798. „Fang auf den Mittelpunkt, Tangenten frei“ hält die
    Seitenkante, lässt aber zwischen Tangentenpunkt und Mittelpunkt den Rand des Lochs weg (bis 0,21, bei Pillen 0,26).
    Der Fangpunkt liegt auf dem Rand des Lochs; was dazukommt, liegt zwischen den wahren inneren Ecken und den beiden
-   Kanten zum Fangpunkt (gegenüber ohne Fang höchstens 0,012 mehr, bei Pillen 0,033). Tests:
+   Kanten zum Fangpunkt (gegenüber ohne Fang höchstens 0,012 mehr, bei Pillen 0,033).
+   **Bewusste Grenzen nach Verify 5 (F-807, F-809, akzeptiert):** (1) Beim Kreis fallen die Tangentenpunkte weg, das
+   Loch ist im Band das Quadrat der vier Fangpunkte statt einer Scheibe; bei Radius ≤ 8 und Strich 2·Radius − 0,5
+   weicht ein Pixel in der Mitte bis 0,08 von der analytischen Deckung ab (ohne Fang 0,01, bis F-804 0,20).
+   (2) Ist die gerade Seite kürzer als rund 0,065·hw (2·hw·tan 1,875°), kreuzen sich die inneren Gehrungen ihrer
+   Tangentenpunkte; das Viereck der Seite wird eine Schleife, Nachbarteile überlappen (Kasten 40,1×40,2, Radius 20,
+   Strich 39,5: 0,136 statt höchstens 0,084; bis F-804 0,266). Außerhalb des Bands war das schon vorher so und blieb
+   unter der Grenze. Beides betrifft höchstens ein Pixel in der Mitte von Kreis oder Fast-Kreis; eine eigene Rechnung
+   dafür (Tangentenpunkte zusammenlegen, Loch als Kreis) lohnt den Umbau eines geprüften Pfads nicht. Die Aussage
+   „konvex, überlappungsfrei“ gilt für alle Formen mit gerader Seite ab 0,065·hw. Tests:
    `TestKastenStrichDecktWieAnalytisch` mit den Fällen der Tabelle (auch Radius 3/Strich 5,6, Radius 1/Strich 1,6,
    Pille und Kreis; seitdem auch abseits der Kante ≤ 0,01), `TestKastenStrichFangHaeltSeitenkante` (innere Ecken der
    Seiten genau hw vom Umriss, keine Kante unter 0,25 px, Strich 39,3 ohne Fang), Bandfälle in
    `TestEditorDickerStrichKleinerKastenWieRenderer` (auch mit zwei Kernen grün). Mutanten KS1 und KS6 nachgezogen,
    BK6 auf `klemme`, KS7 (Fang bis 2 px), KS8 (Tangentenpunkte im Fang), KS9 (Fangpunkt auf dem Mittelpunkt), KS10
-   und KS11 (Pille).
+   und KS11 (Pille); nach Verify 5 hohe Pille (KS12, Schmal-Loch-Regel in X) und KS1 umbenannt (prüft seit F-804 den
+   Bogen-Fang).
 3. **Bild:** Die Gehrung der Teile (Knick 7,5°) reicht höchstens 0,22 % der halben Breite über den runden Strich hinaus
    (Strich 60: 0,064 Pixel); das SVG sagt weiter `stroke-linejoin="round"`. Das Kostenmodell zählt die Teile wie jede
    Füllung (weniger Ecken als Rechtecke und Kreise). Pfeil, Lupen-Linie und Schenkel der Sprechblase füllen weiter
@@ -828,7 +840,10 @@ Abgewogen:
    von seiner Strecke, die Suche über `document.StreckenStuecke` mit hw+1 bleibt.
 2. **Faltung:** Reichen die Gehrungen beider Enden einer Seite zusammen weiter, als die Strecke lang ist
    (hw·tan(|Knick|/2) je Ende; bei einer Kurve heißt das Krümmungsradius unter hw, bei einem V Enden näher als 2·hw,
-   dazu jede Kehrtwende), liefen die Sechsecke gegeneinander und höben sich auf. An einem solchen Gelenk enden beide
+   dazu jede Kehrtwende), liefen die Sechsecke gegeneinander und höben sich auf. *Ergänzt nach Verify 5 (F-810):* Wo
+   ein Pfeil auf sich selbst zurückläuft, überstreicht er eine Strecke doppelt; dort addiert sich die Glättung auf der
+   ganzen Länge, nicht nur am Gelenk (Kante bis 0,31, schräg bis 0,59). Altbestand, nur dieser Sonderfall; die Kappe
+   am Umkehrpunkt stimmt (F-803). An einem solchen Gelenk enden beide
    Nachbarn innen senkrecht wie außen; sie überlappen dann auf der Innenseite. Kein Loch, nichts daneben; die Glättung
    addiert sich nur noch an diesen Gelenken und nur, wo die Überlappung eine Kante berührt: Haarnadel Strich 24
    (6 gefaltete Gelenke) 0,018, Kehrtwende 0,017, knapp gefaltetes V (Gehrung 1,3-mal die Schenkel) 0,078, sehr

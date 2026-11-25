@@ -62,6 +62,11 @@ func TestKastenStrichDecktWieAnalytisch(t *testing.T) {
 		// Pille und Kreis: Die Mittelpunkte benachbarter Rundungen fallen zusammen, ihre Fangpunkte rücken auseinander.
 		{30.3, 30.7, 150.3, 70.7, 20, 39.5},
 		{30.3, 30.7, 150.3, 70.7, 20, 39.6},
+		{30.7, 30.3, 70.7, 140.3, 20, 39.5}, // hohe Pille: Schmal-Loch-Regel in X (Verify 5, V5-4)
+		{30.7, 30.3, 70.7, 140.3, 20, 39.6},
+		{30.7, 30.3, 70.7, 140.3, 20, 39.8}, // Loch 0,2 px breit: Fangpunkte auf seine Mitte
+		{30.7, 30.3, 70.7, 140.3, 20, 39.9},
+		{30.3, 30.7, 140.3, 70.7, 20, 39.8}, // dasselbe quer
 		{30.5, 30.5, 70.5, 70.5, 20, 39.9},
 	} {
 		name := fmt.Sprintf("Kasten (%v,%v)–(%v,%v) Radius %v Strich %v", fall.x0, fall.y0, fall.x1, fall.y1, fall.radius, fall.breite)
