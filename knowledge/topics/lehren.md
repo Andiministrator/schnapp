@@ -1078,4 +1078,11 @@ Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13, Verify 2 und Karte #299)
   an den Umschaltpunkten der Rechnung (Gehrung erreicht Mittelpunkt) gehören in die Tabelle.
 - **Ein abgelaufener Login beendet Agenten mitten im Lauf**: Sie lassen sich mit SendMessage an derselben Stelle
   fortsetzen; vorher Hauptbaum und Worktree auf Zwischenstände prüfen.
+- **Eine summierende Füllung deckt nur dann wie die Fläche, wenn sich die Teile nicht überlappen** (F-788, F-796):
+  Rechteck plus Kreis je Gelenk addiert die Glättung an jedem Gelenk (bis 0,63 Abweichung). Gilt für jeden Strich.
+- **Eine billigere Zerlegung senkt die gezählten Kosten**: Dann nimmt `Pruefe` mehr Objekte an (breite Pfeile 171 → 429);
+  die Zeit an der Grenze nachmessen, nicht nur je Objekt.
+- **Zeittests knapp unter ihrer Grenze sind Wackelkandidaten** (F-802): 0,8–1,0 s unter `-race` gegen 1 s kippt unter
+  Last. Jede Rechenzeit-Grenze gehört in `zeitgrenze_test.go`/`zeitgrenze_race_test.go`; einen rot gewordenen Lauf
+  immer mit `tee` sichern, sonst bleibt die Ursache Vermutung.
 
