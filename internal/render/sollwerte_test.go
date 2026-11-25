@@ -152,7 +152,7 @@ func TestHalbtransparenterStrich(t *testing.T) {
 
 // F-133: Rechter Rand der Glyphen in text: Eine Glyphe, deren Ursprung bis 1,25 Schriftgrade rechts vom Bild liegt,
 // wird gezeichnet, eine dahinter nicht. Bild 60 breit, Grad 20: Grenze bei 85. Der Text beginnt links vom Bild, damit
-// die Zeile selbst sichtbar bleibt (zeileSichtbar prüft nur den Anfang).
+// die Zeile selbst sichtbar bleibt (zeileSichtbar, Testhilfe in zeichnerhilfen_test.go, prüft nur den Anfang).
 func TestTextRechterRand(t *testing.T) {
 	d := weissesDokument(t, 60, 30)
 	z := zeichner{d: d, faces: map[faceSchluessel]font.Face{}}

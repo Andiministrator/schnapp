@@ -68,8 +68,16 @@ internal/raster16/raster_floating.go`), geprüft gegen das Original über die Te
 2. **Entscheidung:** `Reset` wählt immer den Gleitkomma-Weg; er rechnet x je Zeile in float32 ohne Abschneiden und ist
    verschiebungsfest bis auf Rundung (`TestVerschiebungsfest`, Grenze 256 von 65 535, mit dem gemessenen Fall). Gleich
    schnell gemessen (`BenchmarkSprechblasenKantenGrenze` 4,65/4,67 s, `BenchmarkGrossesBild` 23,0/22,7 ms,
-   `BenchmarkAufwandAlltag` 2,10/2,12 s, je 3 Läufe, vorher/nachher). Der Festkomma-Weg bleibt im Code.
+   `BenchmarkAufwandAlltag` 2,10/2,12 s, je 3 Läufe, vorher/nachher). Der Festkomma-Weg blieb zunächst im Code (entfernt in Nachtrag 2).
 3. **Ersetzt in Punkt 2** die Bitgleichheit zu `vector` für kleine Ausschnitte (Festkommaweg, Vergleich „beide Rechenwege“): `TestMaskeGleichVector` und
    `TestFuellenBitgleich` vergleichen mit `vector` im Gleitkomma-Weg (gleiche Breite, mindestens 513 Zeilen hoch, damit
    `vector` ihn wählt, verglichen werden die eigenen Zeilen) und bleiben bitgleich.
 
+
+## Nachtrag 2 (25.11.2026): Festkomma-Weg entfernt (F-768)
+
+Seit Nachtrag 1 war `raster_fixed.go` unerreichbar. Entfernt sind die Datei, `floatingPointMathThreshold`, das Feld
+`useFloatingPointMath`, `lerp` und alle Zweige darauf; der Kern nimmt immer den Gleitkomma-Weg (`Reset`, `LineTo`, `Maske`,
+`Bloecke`). Der Mutant P8 (`text-naht.json`), der den Festkomma-Weg wieder einsetzte, entfällt. Die Bitgleichheit zu
+`vector` (Nachtrag 1 Punkt 3) und `TestVerschiebungsfest` gelten unverändert; `LICENSE` bleibt, der Gleitkomma-Weg stammt weiter aus
+`x/image/vector`.

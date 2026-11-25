@@ -13,7 +13,7 @@ import (
 
 // TestMaskeGleichVector: Die Maske ist Wert für Wert die Deckung, die x/image/vector seinem allgemeinen Zeichenweg
 // übergibt. Mit DrawOp Src, deckender Quelle und *image.RGBA64 als Ziel schreibt vector genau diese Deckung als Alpha.
-// Beide Rechenwege: Festkomma bis 512 px, Gleitkomma darüber (dort auf amd64 die Summenfolge der SIMD-Fassung).
+// Es gibt nur den Gleitkomma-Weg (ADR-0028 Nachtrag 2); auf amd64 gilt dabei die Summenfolge der SIMD-Fassung.
 func TestMaskeGleichVector(t *testing.T) {
 	for _, g := range []image.Point{{300, 200}, {512, 64}, {513, 7}, {1100, 700}, {37, 1300}} {
 		rnd := rand.New(rand.NewSource(int64(g.X*10007 + g.Y)))
@@ -178,8 +178,8 @@ func TestMaskeGleichVectorZufall(t *testing.T) {
 }
 
 // F-764: Dieselbe Form (Koordinaten wie im Renderer in float64 verschoben, dann float32) an einer um ganze Pixel verschobenen Stelle ergibt dieselbe Maske (bis auf Rundung), auch wenn der
-// Ausschnitt sie links anschneidet (Grenze 256 von 65535, rund eine 8-Bit-Stufe). Der Festkomma-Weg wich hier entlang
-// langer Kanten um bis 22 % ab.
+// Ausschnitt sie links anschneidet (Grenze 256 von 65535, rund eine 8-Bit-Stufe). Der frühere Festkomma-Weg wich hier
+// entlang langer Kanten um bis 22 % ab.
 func TestVerschiebungsfest(t *testing.T) {
 	rnd := rand.New(rand.NewSource(764))
 	for lauf := 0; lauf < 201; lauf++ {

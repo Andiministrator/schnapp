@@ -249,11 +249,11 @@
     "timeout": "5m"
   },
   {
-    "name": "P8 Rasterkern wieder mit Festkomma-Weg (F-764)",
-    "datei": "internal/raster16/raster.go",
-    "paket": "./internal/raster16",
-    "alt": "\tz.setUseFloatingPointMath(true)\n",
-    "neu": "\tz.setUseFloatingPointMath(w > floatingPointMathThreshold || h > floatingPointMathThreshold)\n",
+    "name": "P9 Editor: während der Eingabe stehen alle Texte ungeschnitten (F-767)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if vorschau || (inEingabe && eingabe.ID == v.ID) {",
+    "neu": "if vorschau || (inEingabe && eingabe.ID == eingabe.ID) {",
     "timeout": "5m"
   },
   {

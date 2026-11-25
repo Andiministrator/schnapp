@@ -71,6 +71,8 @@ func (d *Dokument) Stuecke(r Rechteck) []Stueck {
 // Schild von t berühren (Reichweite ohne Spitze, wie TextSichtbar). Bei genau einem Stück steht der Text wie bisher,
 // verschoben um den Versatz dieses Bereichs; bei mehreren zeichnet jeder Ausgang die Zeilen je Stück, beschnitten auf
 // dessen Ziel. Ein Text mit nur sichtbarer Spitze hat keine Stücke (NurSpitzeSichtbar).
+// Der Produktcode zeichnet seit F-747 zeilenweise über TextAbschnitte; TextStuecke bleibt als Bezugsrechnung (Kreuzprodukt
+// der Abschnitte), mit der Tests in document, render und ui die Zahl der Bereiche eines Texts prüfen (F-768).
 func (d *Dokument) TextStuecke(t Text) []Stueck {
 	return d.Stuecke(textReichweite(t, t.Grenzen()))
 }

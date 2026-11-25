@@ -649,7 +649,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 			grad := v.Schriftgrad
 			rechts := float64(spalten[len(spalten)-1].B) + seitlich*grad
 			for _, zeile := range v.Zeilen() {
-				// Sichtbar wie zeileSichtbar: senkrecht in einem Abschnitt, Anfang nicht rechts aller Bereiche.
+				// Sichtbar wie zeileSichtbar (Testhilfe): senkrecht in einem Abschnitt, Anfang nicht rechts aller Bereiche.
 				rs := baenderIn(reihen, zeile.Grundlinie-grad*oben, zeile.Grundlinie+grad*unten)
 				if len(rs) == 0 || zeile.X > rechts {
 					continue
@@ -730,15 +730,6 @@ func zeilenBreite(face font.Face, sch *fonts.Schrift, s string, grad float64) fl
 		b += a
 	}
 	return float64(b) / 64
-}
-
-// zeileSichtbar meldet, ob eine Textzeile ab x auf dieser Grundlinie das Bild schneiden kann — dieselben Grenzen wie
-// in text (senkrecht; rechts beginnt die erste Glyphe hinter dem Rand). Die Grenzen folgen der Schrift sch
-// (fonts.Schrift.Huelle, F-576).
-func (z zeichner) zeileSichtbar(sch *fonts.Schrift, x, grundlinie, grad float64) bool {
-	oben, unten, seitlich := sch.Huelle()
-	return grundlinie-grad*oben <= float64(z.rand.Max.Y) && grundlinie+grad*unten >= float64(z.rand.Min.Y) &&
-		x <= float64(z.rand.Max.X)+seitlich*grad
 }
 
 // kreisform ist ein Kreis, der erst beim Rastern zum Polygon wird (kreis): Der Trockenlauf zählt seine Kosten aus
@@ -1102,19 +1093,6 @@ func (z zeichner) strichJeStueck(pts []document.Punkt, geschlossen bool, s docum
 		}
 		zs.fuelle(polys, kreise, s.Farbe)
 	}
-}
-
-// text zeichnet eine Zeile in den Rand des Zeichners: ein Bereich für textBaender (F-118: was das Bild nicht schneidet,
-// wird nicht gerastert; senkrecht entfällt eine Zeile, deren Höhe ganz über oder unter dem Rand liegt, waagerecht jede
-// Glyphe, deren Ursprung mehr als die seitliche Hülle der Schrift neben ihm liegt). Die Kosten zählt der Aufrufer.
-func (z zeichner) text(face font.Face, sch *fonts.Schrift, s string, x, grundlinie float64, farbe color.NRGBA, grad float64) {
-	oben, unten, _ := sch.Huelle()
-	rand := z.rand
-	if rand.Empty() || grundlinie-grad*oben > float64(rand.Max.Y) || grundlinie+grad*unten < float64(rand.Min.Y) {
-		return
-	}
-	z.textBaender(face, sch, s, x, grundlinie, farbe, grad, []band{{A: rand.Min.X, B: rand.Max.X}},
-		[]band{{A: rand.Min.Y, B: rand.Max.Y}})
 }
 
 // glyphMischen mischt die Glyphenmaske einfarbig in bild, bitgleich zu draw.DrawMask(bild, gr, image.NewUniform(farbe),

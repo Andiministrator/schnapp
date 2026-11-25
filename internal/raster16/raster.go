@@ -15,13 +15,6 @@ package raster16
 
 import "image"
 
-// floatingPointMathThreshold: ab dieser Breite oder Höhe rechnet der Rasterizer in Gleitkomma (wie x/image/vector).
-const floatingPointMathThreshold = 512
-
-func lerp(t, px, py, qx, qy float32) (x, y float32) {
-	return px + t*(qx-px), py + t*(qy-py)
-}
-
 func clamp(i, width int32) uint {
 	if i < 0 {
 		return 0
@@ -37,7 +30,6 @@ type Rasterizer struct {
 	bufF32 []float32
 	bufU32 []uint32
 
-	useFloatingPointMath bool
 	// sauber: bufF32 ist auf seiner ganzen Kapazität null (Bloecke leert jeden Block nach dem Lesen); Reset spart sich
 	// dann das Leeren.
 	sauber bool
@@ -58,37 +50,23 @@ func (z *Rasterizer) Reset(w, h int) {
 	z.firstY = 0
 	z.penX = 0
 	z.penY = 0
-	// Immer der Gleitkomma-Weg (F-764, ADR-0028 Nachtrag 1): Der Festkomma-Weg führt x je Zeile aufsummiert und
-	// abgeschnitten mit und driftet auf langen Kanten um bis 1/512 px je Zeile, je nach Lage des Ausschnitts verschieden
-	// (bis 22 % Deckung entlang einer Kante, die über den Rand eines beschnittenen Ausschnitts ragt). Gleich schnell
-	// gemessen; der Festkomma-Weg bleibt für den Vergleich mit x/image/vector im Code.
-	z.setUseFloatingPointMath(true)
-}
-
-func (z *Rasterizer) setUseFloatingPointMath(b bool) {
-	z.useFloatingPointMath = b
-	if z.useFloatingPointMath {
-		if n := z.size.X * z.size.Y; n > cap(z.bufF32) {
-			z.bufF32 = make([]float32, n)
+	// Immer der Gleitkomma-Weg (F-764, ADR-0028 Nachträge 1 und 2): Der frühere Festkomma-Weg führte x je Zeile
+	// aufsummiert und abgeschnitten mit und driftete auf langen Kanten um bis 1/512 px je Zeile, je nach Lage des
+	// Ausschnitts verschieden (bis 22 % Deckung entlang einer Kante, die über den Rand eines beschnittenen Ausschnitts
+	// ragt). Er ist entfernt.
+	if n := z.size.X * z.size.Y; n > cap(z.bufF32) {
+		z.bufF32 = make([]float32, n)
+		z.restSauber = true
+	} else {
+		z.bufF32 = z.bufF32[:n]
+		if z.sauber {
 			z.restSauber = true
 		} else {
-			z.bufF32 = z.bufF32[:n]
-			if z.sauber {
-				z.restSauber = true
-			} else {
-				clear(z.bufF32)
-				z.restSauber = n == cap(z.bufF32)
-			}
-		}
-		z.sauber = false
-	} else {
-		if n := z.size.X * z.size.Y; n > cap(z.bufU32) {
-			z.bufU32 = make([]uint32, n)
-		} else {
-			z.bufU32 = z.bufU32[:n]
-			clear(z.bufU32)
+			clear(z.bufF32)
+			z.restSauber = n == cap(z.bufF32)
 		}
 	}
+	z.sauber = false
 }
 
 // Size gibt Breite und Höhe der Maske zurück.
@@ -107,46 +85,31 @@ func (z *Rasterizer) MoveTo(ax, ay float32) {
 
 // LineTo fügt eine Strecke vom Stift nach (bx, by) an.
 func (z *Rasterizer) LineTo(bx, by float32) {
-	if z.useFloatingPointMath {
-		z.floatingLineTo(bx, by)
-	} else {
-		z.fixedLineTo(bx, by)
-	}
+	z.floatingLineTo(bx, by)
 }
 
 // Maske akkumuliert die Pfade und gibt die Deckung je Pixel zurück, zeilenweise, Breite Size().X, Werte 0 bis 0xffff —
 // dieselben Zahlen, die x/image/vector seinem allgemeinen Zeichenweg übergibt. Die Maske gehört dem Rasterizer und
 // gilt bis zum nächsten Reset; Maske darf je Reset nur einmal aufgerufen werden.
 func (z *Rasterizer) Maske() []uint32 {
-	if z.useFloatingPointMath {
-		if n := z.size.X * z.size.Y; n > cap(z.bufU32) {
-			z.bufU32 = make([]uint32, n)
-		} else {
-			z.bufU32 = z.bufU32[:n]
-		}
-		floatingAccumulateMask(z.bufU32, z.bufF32)
+	if n := z.size.X * z.size.Y; n > cap(z.bufU32) {
+		z.bufU32 = make([]uint32, n)
 	} else {
-		fixedAccumulateMask(z.bufU32)
+		z.bufU32 = z.bufU32[:n]
 	}
+	floatingAccumulateMask(z.bufU32, z.bufF32)
 	return z.bufU32
 }
 
 // Bloecke akkumuliert die Pfade wie Maske, aber in Blöcken von je n Zeilen (n ein Vielfaches von 4), und ruft f je
 // Block mit dessen erster Zeile und der Deckung dieser Zeilen auf (Breite Size().X). Auf großen Flächen spart das den
-// Umweg über eine bildgroße Maske: Im Gleitkommaweg ist der Puffer nur n Zeilen groß und bleibt im Cache (F-145). Die
+// Umweg über eine bildgroße Maske: Der Puffer ist nur n Zeilen groß und bleibt im Cache (F-145). Die
 // Werte sind dieselben wie bei Maske. Der Block gilt nur während des Aufrufs von f; je Reset nur einmal aufrufen.
 func (z *Rasterizer) Bloecke(n int, f func(y0 int, maske []uint32)) {
 	if n <= 0 || n%4 != 0 {
 		panic("raster16: Blockhöhe kein positives Vielfaches von 4")
 	}
 	w, h := z.size.X, z.size.Y
-	if !z.useFloatingPointMath {
-		m := z.Maske()
-		for y0 := 0; y0 < h; y0 += n {
-			f(y0, m[y0*w:min(y0+n, h)*w])
-		}
-		return
-	}
 	if k := n * w; k > cap(z.bufU32) {
 		z.bufU32 = make([]uint32, k)
 	}

@@ -247,17 +247,17 @@
   },
   {
     "name": "K221-2 Unterlänge fest 1 Schriftgrad in zeileSichtbar",
-    "datei": "internal/render/render.go",
+    "datei": "internal/render/zeichnerhilfen_test.go",
     "paket": "./internal/render",
     "alt": "grundlinie+grad*unten >= float64(z.rand.Min.Y)",
     "neu": "grundlinie+grad*unten*0+grad >= float64(z.rand.Min.Y)"
   },
   {
-    "name": "K221-3 Unterlänge fest 1 Schriftgrad in text",
+    "name": "K221-3 Unterlänge fest 1 Schriftgrad in der Zeilensuche von textBaender-Aufruf (render.go)",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "grundlinie+grad*unten < float64(rand.Min.Y)",
-    "neu": "grundlinie+grad*unten*0+grad < float64(rand.Min.Y)"
+    "alt": "zeile.Grundlinie+grad*unten)",
+    "neu": "zeile.Grundlinie+grad*unten*0+grad)"
   },
   {
     "name": "K221-4 Liste liest nach der Suche nicht neu",
