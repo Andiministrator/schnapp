@@ -280,4 +280,4 @@ nicht nur das änderungsdatum, sondern auch die auflösung stehen.“
   Index (`leisteAufloesung`, Kontext `status bar` „%d × %d“). Die Leiste wird dafür 118 statt 104 dp hoch (Punkt 1 und
   Abschnitt „Folgen“); die Schwelle von 420 dp Leinwandhöhe bleibt. Die volle Ansicht zeigte die Auflösung schon
   (`libview.KachelAngaben`).
-- Tests `internal/ui/leiste_knopf_311_test.go`, Drehbuch `bibliothek-174-leiste.txt` auf die neuen Lagen nachgezogen.
+- Tests `internal/ui/leiste_knopf_aufloesung_test.go`, Drehbuch `bibliothek-174-leiste.txt` auf die neuen Lagen nachgezogen.
