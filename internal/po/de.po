@@ -1662,3 +1662,6 @@ msgstr "der Papierkorb liegt auf einem anderen Dateisystem"
 
 msgid "This text lies in a compressed area. Restore cut-out areas (Image menu) to edit it."
 msgstr "Dieser Text liegt im gestauchten Bereich. Zum Bearbeiten Gestauchtes zurückholen (Menü Bild)."
+
+msgid "Move to trash (Del)"
+msgstr "In den Papierkorb (Entf)"

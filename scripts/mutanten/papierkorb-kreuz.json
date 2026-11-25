@@ -1,0 +1,65 @@
+[
+  {
+    "name": "PK1 ✕ auch an der offenen Aufnahme (Leiste)",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif !aktuell && (k.knoepfe[i].Hovered() || k.loesch[i].Hovered() || k.langDruck == i) {",
+    "neu": "\t\tif k.knoepfe[i].Hovered() || k.loesch[i].Hovered() || k.langDruck == i {"
+  },
+  {
+    "name": "PK2 ✕-Klick öffnet nur",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tk.langDruck = -1\n\t\t\te.leistePapierkorb(i)\n\t\t\tcontinue",
+    "neu": "\t\t\tk.langDruck = -1\n\t\t\te.leisteOeffne(i)\n\t\t\tcontinue"
+  },
+  {
+    "name": "PK3 Entf an der Vorschau wirkungslos",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase key.NameDeleteForward: // in den Papierkorb, wie in der vollen Ansicht (Karte #312)\n\t\te.leistePapierkorb(i)\n\t\treturn true\n",
+    "neu": ""
+  },
+  {
+    "name": "PK4 offene Aufnahme nicht geschützt",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\tif offen {\n\t\te.melde(i18n.T(\"The open capture cannot be moved to the trash. Open another one first.\"), false)\n\t\treturn\n\t}\n\tswitch {",
+    "neu": "\tswitch {"
+  },
+  {
+    "name": "PK5 langer Druck ab jeder Dauer",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "p.End.Sub(p.Start) >= langDruckZeit",
+    "neu": "p.End.Sub(p.Start) >= 0"
+  },
+  {
+    "name": "PK6 Ansicht: Druck aufs ✕ legt nicht in den Papierkorb",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif stelle >= 0 && e.bibLoeschTreffer(stelle, pe.Position.Round()) {",
+    "neu": "\t\t\tif false && stelle >= 0 && e.bibLoeschTreffer(stelle, pe.Position.Round()) {"
+  },
+  {
+    "name": "PK7 Ansicht: langer Druck zeigt kein ✕",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tb.langDruck = stelle\n",
+    "neu": "\n"
+  },
+  {
+    "name": "PK8 Ansicht: kurzer Druck reicht",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "pe.Time-b.druckZeit >= langDruckZeit",
+    "neu": "pe.Time-b.druckZeit >= 0"
+  },
+  {
+    "name": "PK9 Hinweis am ✕ fehlt (Ansicht)",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\tif i >= 0 && e.bibLoeschTreffer(i, b.zeiger) {\n\t\treturn loeschHinweis()\n\t}\n",
+    "neu": ""
+  }
+]

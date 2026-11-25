@@ -199,8 +199,8 @@
     "name": "BV4 Entf legt die offene Aufnahme in den Papierkorb",
     "datei": "internal/ui/bibliothek.go",
     "paket": "./internal/ui",
-    "alt": "if e.bibIstOffen(i) {\n\t\te.melde(i18n.T(\"The open capture cannot be moved",
-    "neu": "if false {\n\t\te.melde(i18n.T(\"The open capture cannot be moved"
+    "alt": "\te.papierkorbAnfrage(b.r.Eintraege()[i].Pfad, e.bibIstOffen(i))",
+    "neu": "\te.papierkorbAnfrage(b.r.Eintraege()[i].Pfad, false)"
   },
   {
     "name": "BV5 F2 an der offenen Aufnahme",

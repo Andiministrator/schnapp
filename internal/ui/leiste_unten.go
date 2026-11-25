@@ -62,6 +62,10 @@ type untenLeiste struct {
 	l        *libview.Leiste
 	v        *libview.Vorschauen
 	knoepfe  [libview.MaxEintraege]widget.Clickable
+	// loesch sind die ✕ oben rechts in den Vorschauen (Karte #312): sichtbar unter dem Zeiger oder nach langem Druck.
+	loesch       [libview.MaxEintraege]widget.Clickable
+	loeschRahmen []image.Rectangle // ✕ je gezeichneter Stelle von bis bis, leer ohne ✕ (Tests)
+	langDruck    int               // Stelle, deren ✕ ein langer Druck zeigt; -1: keine
 	// bibKnopf ist der Knopf „Library“ links in der Leiste: öffnet die volle Ansicht (ADR-0036 Punkte 1 und 3).
 	bibKnopf widget.Clickable
 	rad      int // Ziel der Mausrad-Ereignisse (nur die Adresse zählt)
@@ -129,7 +133,7 @@ func (k *untenLeiste) ziele() []event.Tag {
 // leisteStart richtet die Leiste ein (Editor mit Anbindung): Schalter aus der Einstellung, Index im Hintergrund lesen.
 func (e *editor) leisteStart() {
 	k := &e.unten
-	k.fokusSoll, k.fokusHier = -1, -1
+	k.fokusSoll, k.fokusHier, k.langDruck = -1, -1, -1
 	if e.bib == nil || e.bib.Bibliothek == nil {
 		return
 	}
@@ -343,10 +347,39 @@ func (e *editor) leisteAuswerten(gtx layout.Context) {
 		e.bibliothekOeffnen(gtx)
 	}
 	for i := range k.gezeigt {
+		if k.loesch[i].Clicked(gtx) && e.leisteAn() {
+			k.langDruck = -1
+			e.leistePapierkorb(i)
+			continue
+		}
 		if k.knoepfe[i].Clicked(gtx) && e.leisteAn() {
+			if langerDruck(k.knoepfe[i].History()) {
+				k.langDruck = i // zeigt das ✕, statt zu öffnen
+				continue
+			}
+			k.langDruck = -1
 			e.leisteOeffne(i)
 		}
 	}
+}
+
+// langerDruck meldet, ob der letzte beendete Druck der Historie mindestens langDruckZeit dauerte (Karte #312).
+func langerDruck(h []widget.Press) bool {
+	if len(h) == 0 {
+		return false
+	}
+	p := h[len(h)-1]
+	return !p.Cancelled && !p.End.IsZero() && p.End.Sub(p.Start) >= langDruckZeit
+}
+
+// leistePapierkorb legt die Aufnahme an der Stelle i in den Papierkorb (✕, Entf); die offene ist ausgenommen.
+func (e *editor) leistePapierkorb(i int) {
+	k := &e.unten
+	if i < 0 || i >= len(k.gezeigt) || k.gezeigt[i] == "" {
+		return
+	}
+	abs := filepath.Join(e.bib.Bibliothek.Orte.Ablage, filepath.FromSlash(k.gezeigt[i]))
+	e.papierkorbAnfrage(k.gezeigt[i], k.l.IstAktuell(i) || e.istOffen(abs))
 }
 
 // leisteOeffne öffnet die Aufnahme an der Stelle i, wie sie beim letzten Zeichnen stand. Die offene übergeht
@@ -377,6 +410,9 @@ func (e *editor) leisteTaste(gtx layout.Context, taste key.Event) bool {
 	}
 	var s libview.Schritt
 	switch taste.Name {
+	case key.NameDeleteForward: // in den Papierkorb, wie in der vollen Ansicht (Karte #312)
+		e.leistePapierkorb(i)
+		return true
 	case key.NameLeftArrow:
 		s = libview.SchrittLinks
 	case key.NameRightArrow:
@@ -401,7 +437,7 @@ func (e *editor) leisteTaste(gtx layout.Context, taste key.Event) bool {
 // zeichneLeisteUnten zeichnet die Leiste in r (Fensterpixel).
 func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 	k := &e.unten
-	k.rahmen, k.kacheln, k.hinweis, k.von, k.bis = r, nil, "", 0, 0
+	k.rahmen, k.kacheln, k.hinweis, k.von, k.bis, k.loeschRahmen = r, nil, "", 0, 0, k.loeschRahmen[:0]
 	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(r).Op())
 	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(image.Rect(r.Min.X, r.Min.Y, r.Max.X, r.Min.Y+gtx.Dp(1))).Op())
 	// Links der Knopf „Library“ (Teil 2, Muster 174 a), dahinter die Spur der Vorschauen.
@@ -460,6 +496,17 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 			paint.FillShape(gtx.Ops, farbeNebentext, clip.Stroke{Path: clip.Rect(kr).Path(), Width: float32(gtx.Dp(1))}.Op())
 		}
 		seiteKnopf(gtx, &k.knoepfe[i], kr)
+		// ✕ oben rechts (Karte #312), über der Vorschau angemeldet, damit es den Klick bekommt.
+		var lr image.Rectangle
+		if !aktuell && (k.knoepfe[i].Hovered() || k.loesch[i].Hovered() || k.langDruck == i) {
+			lr = loeschRahmen(gtx, kr)
+			zeichneLoeschX(gtx, lr, k.loesch[i].Hovered())
+			seiteKnopf(gtx, &k.loesch[i], lr)
+			if k.loesch[i].Hovered() {
+				k.hinweis = loeschHinweis()
+			}
+		}
+		k.loeschRahmen = append(k.loeschRahmen, lr)
 		fokus := gtx.Focused(&k.knoepfe[i])
 		if fokus {
 			k.fokusHier = i

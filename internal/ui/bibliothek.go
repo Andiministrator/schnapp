@@ -106,7 +106,12 @@ type bibAnsicht struct {
 	agentenRahmen, zurueckRahmen     image.Rectangle
 	kacheln                          []image.Rectangle // Vorschauen der gezeichneten Stellen von bis bis (Tests)
 	von, bis                         int
-	ueber                            int // Kachel unter dem Zeiger; -1: keine
+	ueber                            int               // Kachel unter dem Zeiger; -1: keine
+	zeiger                           image.Point       // letzte Lage des Zeigers über dem Raster (Hinweis am ✕)
+	loesch                           []image.Rectangle // ✕ je gezeichneter Stelle von bis bis, leer ohne ✕ (Karte #312)
+	langDruck                        int               // Stelle, deren ✕ ein langer Druck zeigt; -1: keine
+	druckStelle                      int               // Stelle des laufenden Drucks (langer Druck)
+	druckZeit                        time.Duration
 	ops                              map[string]leisteBild
 	letzterKlick                     time.Duration // Zeit des letzten Drucks (Doppelklick)
 	letzteKachel                     int
@@ -354,23 +359,67 @@ func (e *editor) bibOeffne(gtx layout.Context, i int) {
 	e.wechselAnfrage(e.bibAbs(i))
 }
 
-// bibPapierkorb legt die Aufnahme mit Fokus in den Papierkorb (Entf); die offene ist ausgenommen.
+// bibPapierkorb legt die Aufnahme mit Fokus in den Papierkorb (Entf, ✕); die offene ist ausgenommen.
 func (e *editor) bibPapierkorb() {
 	b := &e.bibl
 	i := b.r.Fokus()
-	if i < 0 || i >= len(b.r.Eintraege()) || !e.bibliothekFrei() {
+	if i < 0 || i >= len(b.r.Eintraege()) {
 		return
 	}
-	if e.bibIstOffen(i) {
+	e.papierkorbAnfrage(b.r.Eintraege()[i].Pfad, e.bibIstOffen(i))
+}
+
+// papierkorbAnfrage legt die Aufnahme rel (relativ zur Ablage) im Hintergrund in den freedesktop-Papierkorb — für die
+// volle Ansicht und die Leiste (Entf und ✕, Karte #312). Die offene Aufnahme ist ausgenommen; während Speichern,
+// Wechsel oder einer anderen Arbeit der Ansicht geschieht nichts, die Fußzeile sagt warum.
+func (e *editor) papierkorbAnfrage(rel string, offen bool) {
+	if rel == "" {
+		return
+	}
+	if offen {
 		e.melde(i18n.T("The open capture cannot be moved to the trash. Open another one first."), false)
 		return
 	}
-	rel := b.r.Eintraege()[i].Pfad
+	switch {
+	case e.s.SpeichernLaeuft():
+		e.meldeNebenbei(i18n.T("Saving is still running. Please wait a moment, then try again."), false)
+		return
+	case e.wechsel.laedt:
+		e.meldeNebenbei(i18n.T("Another capture is still loading. Please wait a moment, then try again."), false)
+		return
+	case e.bibl.arbeitLaeuft:
+		e.meldeNebenbei(i18n.T("The library is still working. Please wait a moment, then try again."), false)
+		return
+	}
 	e.bibArbeiten(bibArbeit{papierkorb: true, rel: rel}, func() error {
 		_, err := e.bib.Bibliothek.InPapierkorb(rel, leisteUhr())
 		return err
 	})
 }
+
+// langDruckZeit: So lange gedrückt (Finger oder Maus) zeigt eine Vorschau ihr ✕, statt sie zu öffnen (Karte #312).
+const langDruckZeit = 500 * time.Millisecond
+
+// loeschRahmen ist das ✕ oben rechts in der Vorschau br.
+func loeschRahmen(gtx layout.Context, br image.Rectangle) image.Rectangle {
+	s, rand := gtx.Dp(20), gtx.Dp(4)
+	return image.Rect(br.Max.X-rand-s, br.Min.Y+rand, br.Max.X-rand, br.Min.Y+rand+s)
+}
+
+// zeichneLoeschX zeichnet das ✕ in r: dunkles Feld mit Rand, rot unter dem Zeiger.
+func zeichneLoeschX(gtx layout.Context, r image.Rectangle, heiss bool) {
+	grund := farbeGrund
+	if heiss {
+		grund = farbeRot
+	}
+	paint.FillShape(gtx.Ops, farbeNebentext, clip.Rect(r).Op())
+	paint.FillShape(gtx.Ops, grund, clip.Rect(r.Inset(gtx.Dp(1))).Op())
+	seite := r.Dx() - 2*gtx.Dp(3)
+	zeichneSymbol(gtx, icons.Schliessen, r.Min.Add(image.Pt(gtx.Dp(3), gtx.Dp(3))), seite, farbeText, farbeAkzent)
+}
+
+// loeschHinweis ist der Hinweis am ✕.
+func loeschHinweis() string { return i18n.T("Move to trash (Del)") }
 
 // bibSchlagworteBeginnen öffnet das Feld unter der Kachel mit Fokus (F2); die offene Aufnahme ist ausgenommen: Ihre
 // Datei schreibt der Editor beim Speichern selbst, ein zweiter Schreiber dazwischen machte daraus eine neue Aufnahme.
@@ -610,8 +659,8 @@ func (e *editor) bibliothekAuswerten(gtx layout.Context) {
 func (e *editor) bibliothekZeiger(gtx layout.Context) {
 	b := &e.bibl
 	for {
-		ev, ok := gtx.Event(pointer.Filter{Target: &b.flaeche, Kinds: pointer.Press | pointer.Scroll | pointer.Move |
-			pointer.Enter | pointer.Leave, ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}})
+		ev, ok := gtx.Event(pointer.Filter{Target: &b.flaeche, Kinds: pointer.Press | pointer.Release | pointer.Scroll |
+			pointer.Move | pointer.Enter | pointer.Leave, ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}})
 		if !ok {
 			return
 		}
@@ -624,13 +673,29 @@ func (e *editor) bibliothekZeiger(gtx layout.Context) {
 		case pointer.Scroll:
 			b.r.Rad(pe.Scroll.Y, b.masse)
 		case pointer.Move, pointer.Enter:
-			b.ueber = stelle
+			b.ueber, b.zeiger = stelle, pe.Position.Round()
+			if stelle != b.langDruck {
+				b.langDruck = -1
+			}
 		case pointer.Leave:
 			b.ueber = -1
+		case pointer.Release:
+			// Langer Druck auf derselben Kachel zeigt ihr ✕ (Finger: kein Zeiger, der darüber steht; Karte #312).
+			if stelle >= 0 && stelle == b.druckStelle && pe.Time-b.druckZeit >= langDruckZeit {
+				b.langDruck = stelle
+			}
+			b.druckStelle = -1
 		case pointer.Press:
 			if pe.Buttons != pointer.ButtonPrimary {
 				continue
 			}
+			if stelle >= 0 && e.bibLoeschTreffer(stelle, pe.Position.Round()) {
+				b.r.SetzeFokus(stelle)
+				b.langDruck, b.letzteKachel = -1, -1
+				e.bibPapierkorb()
+				continue
+			}
+			b.druckStelle, b.druckZeit = stelle, pe.Time
 			if b.bearbeite != "" && (stelle < 0 || b.r.Eintraege()[stelle].Pfad != b.bearbeite) {
 				b.bearbeite = "" // Klick woanders bricht die Bearbeitung ab
 			}
@@ -649,6 +714,13 @@ func (e *editor) bibliothekZeiger(gtx layout.Context) {
 			}
 		}
 	}
+}
+
+// bibLoeschTreffer meldet, ob p (Fensterpixel) auf dem ✕ der Stelle i liegt, wie es beim letzten Zeichnen stand.
+func (e *editor) bibLoeschTreffer(i int, p image.Point) bool {
+	b := &e.bibl
+	j := i - b.von
+	return j >= 0 && j < len(b.loesch) && p.In(b.loesch[j])
 }
 
 // bibliothekTippe nimmt getippten Text an: ins Schlagwortfeld, sonst ins Suchfeld, wenn es den Fokus hat.
@@ -957,6 +1029,7 @@ func (e *editor) zeichneBibliothekRaster(gtx layout.Context) {
 		e.unten.v.Runde() // Aufträge weggerollter Vorschauen verfallen (F-669)
 	}
 	fokus := b.r.Fokus()
+	b.loesch = b.loesch[:0]
 	for i := b.von; i < b.bis; i++ {
 		kr := b.r.Lage(i, m).Add(sicht.Min)
 		br := image.Rect(kr.Min.X, kr.Min.Y, kr.Max.X, kr.Min.Y+dp(bibBildH))
@@ -974,6 +1047,13 @@ func (e *editor) zeichneBibliothekRaster(gtx layout.Context) {
 		if i == fokus && b.ziel == bibZielRaster {
 			bibRing(gtx, br)
 		}
+		// ✕ oben rechts unter dem Zeiger oder nach langem Druck; nicht an der offenen Aufnahme (Karte #312).
+		var lr image.Rectangle
+		if (i == b.ueber || i == b.langDruck) && !e.bibIstOffen(i) && b.bearbeite != eintrag.Pfad {
+			lr = loeschRahmen(gtx, br)
+			zeichneLoeschX(gtx, lr, b.zeiger.In(lr))
+		}
+		b.loesch = append(b.loesch, lr)
 		z := e.bibText(gtx, libview.KachelZeit(eintrag.Erstellt, jetzt), unit.Sp(12), farbeText, kr.Dx(), false)
 		z.setze(gtx, image.Pt(kr.Min.X, br.Max.Y+dp(6)))
 		zeile2 := image.Pt(kr.Min.X, br.Max.Y+dp(24))
@@ -1012,6 +1092,9 @@ func (e *editor) bibliothekHinweis() string {
 		return i18n.T("Type a keyword to show only captures with it. Down or Enter goes to the captures.")
 	}
 	i := b.ueber
+	if i >= 0 && e.bibLoeschTreffer(i, b.zeiger) {
+		return loeschHinweis()
+	}
 	if i < 0 && b.ziel == bibZielRaster {
 		i = b.r.Fokus()
 	}

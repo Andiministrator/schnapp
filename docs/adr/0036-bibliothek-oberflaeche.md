@@ -281,3 +281,19 @@ nicht nur das änderungsdatum, sondern auch die auflösung stehen.“
   Abschnitt „Folgen“); die Schwelle von 420 dp Leinwandhöhe bleibt. Die volle Ansicht zeigte die Auflösung schon
   (`libview.KachelAngaben`).
 - Tests `internal/ui/leiste_knopf_aufloesung_test.go`, Drehbuch `bibliothek-174-leiste.txt` auf die neuen Lagen nachgezogen.
+
+## Zusatz (25.11.2026, Karte #312, Claude Opus 5.5)
+
+Andi (25.11.2026): „wenn ich mit der maus über den vorschau-bildern bin (oder dem finger lang drücke oder so) dann sollte
+ein x oben rechts erscheinen, mit dem ich das vorschaubild (bzw. das ganze bild) löschen kann – dies sollte auch in der
+bibliotheks-ansicht selbst so sein.“
+
+- **✕ oben rechts** (20 dp, 4 dp vom Rand) in jeder Vorschau der Leiste und jeder Kachel der vollen Ansicht, sobald der
+  Zeiger darüber steht oder nach einem **langen Druck** (`langDruckZeit` 500 ms, Finger oder Maus; in der Leiste über die
+  Druck-Historie des Knopfs, der lange Druck öffnet dann nicht). Rot unter dem Zeiger, Hinweis „Move to trash (Del)“.
+- **Löschen heißt Papierkorb** wie Entf in der vollen Ansicht (Punkt 4): `library.InPapierkorb`, rückholbar; ein
+  gemeinsamer Weg `papierkorbAnfrage` für Ansicht und Leiste. Die **offene Aufnahme** zeigt kein ✕, Entf an ihr meldet
+  nur. Während Speichern, Wechsel oder einer Arbeit der Ansicht wartet die Anfrage nicht, die Fußzeile sagt warum.
+- **Entf an einer Vorschau der Leiste** legt sie ebenfalls in den Papierkorb (vorher wirkungslos).
+- Tests `internal/ui/papierkorb_kreuz_test.go`, Mutanten `scripts/mutanten/papierkorb-kreuz.json` (PK1–PK9), Sichtprobe
+  `scripts/drehbuecher/papierkorb-kreuz-312.txt`.

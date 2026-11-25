@@ -948,6 +948,22 @@ msgstr ""
 msgid "The open capture cannot be moved to the trash. Open another one first."
 msgstr ""
 
+#: internal/ui/bibliothek.go internal/ui/wechsel.go
+msgid "Saving is still running. Please wait a moment, then try again."
+msgstr ""
+
+#: internal/ui/bibliothek.go internal/ui/wechsel.go
+msgid "Another capture is still loading. Please wait a moment, then try again."
+msgstr ""
+
+#: internal/ui/bibliothek.go internal/ui/wechsel.go
+msgid "The library is still working. Please wait a moment, then try again."
+msgstr ""
+
+#: internal/ui/bibliothek.go
+msgid "Move to trash (Del)"
+msgstr ""
+
 #: internal/ui/bibliothek.go
 msgid "The keywords of the open capture cannot be changed here. Open another one first."
 msgstr ""
@@ -2120,19 +2136,7 @@ msgid "Tail"
 msgstr ""
 
 #: internal/ui/wechsel.go
-msgid "Another capture is still loading. Please wait a moment, then try again."
-msgstr ""
-
-#: internal/ui/wechsel.go
-msgid "Saving is still running. Please wait a moment, then try again."
-msgstr ""
-
-#: internal/ui/wechsel.go
 msgid "Copying is still running. Please wait a moment, then try again."
-msgstr ""
-
-#: internal/ui/wechsel.go
-msgid "The library is still working. Please wait a moment, then try again."
 msgstr ""
 
 #: internal/ui/wechsel.go
