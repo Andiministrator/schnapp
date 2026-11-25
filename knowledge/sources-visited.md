@@ -195,3 +195,6 @@ Was beim Abrufen auffiel (Sperren, Umwege, verlässliche Primärquellen).
 | 2026-11-24 | tesseract command line stdin stdout | stdin/stdout bzw. „-“ als Ein- und Ausgabe (5.x) |
 | 2026-11-24 | Flathub flatpak bundle tesseract OCR module traineddata extension | keine gemeinsame Flathub-Erweiterung; Apps bündeln Tesseract und Sprachdaten selbst |
 | 2026-11-24 | tesseract wasm wazero Go pure Go OCR without cgo | gogosseract (WASM über wazero), sonst nur cgo-Bindungen |
+| https://github.com/Andiministrator/schnapp/actions/runs/45633030206/job/139271014275 | 2026-11-25 | 2026-11-25 | live | Chrome (nur lesen, Tab zu) | Schritt „go test (Sprünge sichtbar)“: `TestEditorDickerStrichKleinerKastenWieRenderer` Strich 39,9 26 Pixel → F-798 | docs/findings.archive.md (F-798) |
+| https://github.com/Andiministrator/schnapp/actions/runs/45641823984/job/139302221522 | 2026-11-25 | 2026-11-25 | live | Chrome (nur lesen, Tab zu) | Schritt `go test -race`: `TestPruefeVieleStreifenUndPfeile` 1,27 s gegen 1 s → F-802 | docs/findings.archive.md (F-802) |
+| https://api.github.com/repos/Andiministrator/schnapp/commits/<sha>/check-runs, …/actions/jobs/<id> | 2026-11-25 | 2026-11-25 | live | curl | Job `wurzel` seit 24.11. rot im Race-Schritt (F-791), grün ab ae507ad | docs/findings.archive.md (F-791, F-798, F-802) |
