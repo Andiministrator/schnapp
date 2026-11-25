@@ -129,9 +129,9 @@ func (t *dbusTransport) Abonniere(pfad dbus.ObjectPath) (<-chan Antwort, func(),
 	return aus, ab, nil
 }
 
-func (t *dbusTransport) SaveFile(ctx context.Context, elternfenster, titel string, optionen map[string]dbus.Variant) (dbus.ObjectPath, error) {
+func (t *dbusTransport) Rufe(ctx context.Context, methode, elternfenster, titel string, optionen map[string]dbus.Variant) (dbus.ObjectPath, error) {
 	var handle dbus.ObjectPath
-	err := t.conn.Object(dienst, objekt).CallWithContext(ctx, fileChooser+".SaveFile", 0, elternfenster, titel, optionen).Store(&handle)
+	err := t.conn.Object(dienst, objekt).CallWithContext(ctx, fileChooser+"."+methode, 0, elternfenster, titel, optionen).Store(&handle)
 	if err != nil {
 		var de dbus.Error
 		if e, ok := err.(dbus.Error); ok {

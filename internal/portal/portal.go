@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package portal spricht das Desktop-Portal über D-Bus an, ohne Gio: den Dateidialog zum Speichern
-// (org.freedesktop.portal.FileChooser.SaveFile, ADR-0025). Der Busaufruf liegt hinter der Schnittstelle transport,
+// Package portal spricht das Desktop-Portal über D-Bus an, ohne Gio: die Dateidialoge zum Speichern und Öffnen
+// (org.freedesktop.portal.FileChooser.SaveFile/OpenFile, ADR-0025, ADR-0026 Nachtrag 11). Der Busaufruf liegt hinter der Schnittstelle transport,
 // damit Aufbau der Anfrage und Auswertung der Antwort ohne echten Bus prüfbar sind.
 package portal
 
@@ -77,7 +77,8 @@ type transport interface {
 	Name() string
 	// Abonniere meldet sich für Response auf pfad an; erst wenn die Methode zurückkehrt, ist die Anmeldung wirksam.
 	Abonniere(pfad dbus.ObjectPath) (<-chan Antwort, func(), error)
-	SaveFile(ctx context.Context, elternfenster, titel string, optionen map[string]dbus.Variant) (dbus.ObjectPath, error)
+	// Rufe ruft FileChooser.<methode> auf ("SaveFile" oder "OpenFile") und liefert den Pfad der Anfrage.
+	Rufe(ctx context.Context, methode, elternfenster, titel string, optionen map[string]dbus.Variant) (dbus.ObjectPath, error)
 	// Schliesse bricht eine offene Anfrage ab (Request.Close), soweit möglich.
 	Schliesse(pfad dbus.ObjectPath)
 	Close() error
@@ -162,7 +163,24 @@ func baueOptionen(token string, a Anfrage) map[string]dbus.Variant {
 
 // Speichern zeigt den Dialog und wartet auf die Antwort (oder auf ctx). Die Anmeldung für Request.Response steht vor
 // dem Aufruf von SaveFile: Das Portal kann antworten, bevor der Aufruf zurückkehrt (bekannte Wettlauf-Falle).
-func (d *Dialog) Speichern(ctx context.Context, a Anfrage) (erg Ergebnis, fehler error) {
+func (d *Dialog) Speichern(ctx context.Context, a Anfrage) (Ergebnis, error) {
+	return d.dialog(ctx, "SaveFile", a, baueOptionen)
+}
+
+// Oeffnen zeigt den Dialog zum Öffnen einer Datei (OpenFile, eine Datei, ohne Vorschlag für den Namen) und wartet wie
+// Speichern auf die Antwort (ADR-0026 Nachtrag 11, Karte #326).
+func (d *Dialog) Oeffnen(ctx context.Context, a Anfrage) (Ergebnis, error) {
+	return d.dialog(ctx, "OpenFile", a, func(token string, a Anfrage) map[string]dbus.Variant {
+		a.Dateiname = "" // OpenFile kennt kein current_name
+		opt := baueOptionen(token, a)
+		opt["multiple"] = dbus.MakeVariant(false)
+		return opt
+	})
+}
+
+// dialog ist der gemeinsame Ablauf beider Dialoge.
+func (d *Dialog) dialog(ctx context.Context, methode string, a Anfrage,
+	optionen func(string, Anfrage) map[string]dbus.Variant) (erg Ergebnis, fehler error) {
 	defer errprefix.Defer("portal", &fehler) // ADR-0019 Nachtrag 2: D-Bus- und Kontextfehler tragen das Präfix (F-379)
 	token := d.token()
 	pfad := RequestPfad(d.t.Name(), token)
@@ -171,7 +189,7 @@ func (d *Dialog) Speichern(ctx context.Context, a Anfrage) (erg Ergebnis, fehler
 		return Ergebnis{}, err
 	}
 	defer ab()
-	handle, err := d.t.SaveFile(ctx, "", a.Titel, baueOptionen(token, a))
+	handle, err := d.t.Rufe(ctx, methode, "", a.Titel, optionen(token, a))
 	if err != nil {
 		if ctx.Err() != nil { // der Kontext endete während des Aufrufs: das Portal kann die Anfrage schon angelegt haben (A-8)
 			d.t.Schliesse(pfad)

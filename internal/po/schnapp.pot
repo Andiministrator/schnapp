@@ -980,7 +980,7 @@ msgstr ""
 msgid "This is the open capture. Open another one first."
 msgstr ""
 
-#: internal/ui/bibliothek.go
+#: internal/ui/bibliothek.go internal/ui/oeffnen.go
 msgid "Open"
 msgstr ""
 
@@ -1173,7 +1173,7 @@ msgstr ""
 msgid "SVG image"
 msgstr ""
 
-#: internal/ui/editor.go
+#: internal/ui/editor.go internal/ui/oeffnen.go
 msgid "No file dialog available (desktop portal missing)."
 msgstr ""
 
@@ -1776,6 +1776,10 @@ msgid "Help"
 msgstr ""
 
 #: internal/ui/oberflaeche.go
+msgid "Open…"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
 msgid "Export…"
 msgstr ""
 
@@ -1990,6 +1994,18 @@ msgid "Copied %d character"
 msgid_plural "Copied %d characters"
 msgstr[0] ""
 msgstr[1] ""
+
+#: internal/ui/oeffnen.go
+msgid "Images"
+msgstr ""
+
+#: internal/ui/oeffnen.go
+msgid "Could not show the file dialog."
+msgstr ""
+
+#: internal/ui/oeffnen.go
+msgid "Only local files can be opened."
+msgstr ""
 
 #: internal/ui/overlay.go
 msgid "Click a monitor or drag an area · Enter: monitor under the pointer · Esc or right-click: cancel"

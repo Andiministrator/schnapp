@@ -59,6 +59,7 @@ const (
 	aktBibSchlagworte
 	aktBibPapierkorb
 	aktBibSuchen
+	aktOeffnen // Menü Datei: Öffnen… (Strg+O, ADR-0026 Nachtrag 11)
 )
 
 // taste ist ein Tastenkürzel des Editors. Genau eines gilt: akt (Handlung), werkzeug (wählt ein Werkzeug, hatWerkzeug)
@@ -105,6 +106,7 @@ func tastenTabelle() []taste {
 		{filter: key.Filter{Name: "Z", Required: key.ModShortcut | key.ModShift}, akt: aktWiederholen},
 		strg("Y", aktWiederholen),
 		strg("S", aktSpeichern),
+		strg("O", aktOeffnen),
 		strg("C", aktKopieren),
 		{filter: key.Filter{Name: "E", Required: key.ModShortcut | key.ModShift}, akt: aktExport},
 		strg("0", aktEinpassen),

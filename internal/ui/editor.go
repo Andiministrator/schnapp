@@ -238,6 +238,9 @@ type editor struct {
 	exportCtx     context.Context
 	exportOffen   bool // ein Dialog läuft (nur einer zugleich); nur die Ereignisschleife liest und setzt es
 	exportAntwort chan exportErgebnis
+	// Dialog Öffnen (Karte #326): wie der Export, eigene Antwort; nur die Ereignisschleife liest und setzt es.
+	oeffnenOffen   bool
+	oeffnenAntwort chan exportErgebnis
 
 	// perform setzt eine Fensteraktion ab; nil heißt e.w.Perform. Naht für Tests ohne Fenster (F-299).
 	perform func(system.Action)
@@ -506,6 +509,9 @@ func (e *editor) nachEreignis() {
 	// Auch nach Ereignissen ohne Bild (Gio sendet bei inaktivem Fenster nur ein Weckereignis) die Dialogantwort
 	// annehmen, sonst läge sie bis zum nächsten Bild (F-231); ein Folgebild zeigt sie. Ebenso die Antwort des
 	// Speicherns (ADR-0020 Nachtrag 6).
+	if e.oeffnenAbholen() {
+		e.wecker.Anfordern()
+	}
 	if e.exportAbholen() {
 		e.wecker.Anfordern()
 	}
@@ -1439,6 +1445,7 @@ func (e *editor) frame(gtx layout.Context) {
 	// zum nächsten Ereignis stehen (F-216). Kam die Antwort erst nach diesem Abholen, weckt der Wecker weiter, bis ein
 	// Ereignis sie annimmt (F-231).
 	_ = e.exportAbholen()
+	_ = e.oeffnenAbholen()
 	_ = e.speichernAbholen() // ebenso die Antwort des Speicherns und des Kopierens (ADR-0020 Nachtrag 6)
 	_ = e.wechselAbholen()   // und des Wechsels der Aufnahme und des Index der Leiste (ADR-0036)
 	_ = e.leisteIndexAbholen()

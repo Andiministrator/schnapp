@@ -104,7 +104,8 @@ func (e *editor) menueEintraegeRoh(i int) []menueEintrag {
 	switch i {
 	case menueDatei:
 		return []menueEintrag{
-			{akt: aktSpeichern, text: i18n.T("Save"), an: true},
+			{akt: aktOeffnen, text: i18n.T("Open…"), an: e.oeffnenGrau() == "" && !e.oeffnenOffen, erklaerung: e.oeffnenGrau()},
+			{akt: aktSpeichern, text: i18n.T("Save"), an: true, gruppe: true},
 			{akt: aktExport, text: i18n.T("Export…"), an: !e.exportOffen},
 			{akt: aktKopieren, text: i18n.T("Copy"), an: true},
 			{akt: aktEinstellungen, text: i18n.T("Settings…"), an: true, gruppe: true},

@@ -1,0 +1,16 @@
+[
+  {"name": "OF1 Strg+O fehlt", "datei": "internal/ui/kuerzel.go", "paket": "./internal/ui",
+   "alt": "\t\tstrg(\"O\", aktOeffnen),\n", "neu": ""},
+  {"name": "OF2 Wahl öffnet nicht", "datei": "internal/ui/oeffnen.go", "paket": "./internal/ui",
+   "alt": "\te.wechselAnfrage(pfad)\n}", "neu": "\t_ = pfad\n}"},
+  {"name": "OF3 Abbruch meldet Fehler", "datei": "internal/ui/oeffnen.go", "paket": "./internal/ui",
+   "alt": "\tcase errors.Is(r.err, portal.ErrAbgebrochen), errors.Is(r.err, context.Canceled):\n\t\treturn\n", "neu": ""},
+  {"name": "OF4 entfernte Adresse wird geladen", "datei": "internal/ui/oeffnen.go", "paket": "./internal/ui",
+   "alt": "\tpfad, err := portal.URIZuPfad(r.ergebnis.URI)\n\tif err != nil {", "neu": "\tpfad, err := portal.URIZuPfad(r.ergebnis.URI)\n\tif err != nil && false {"},
+  {"name": "OF5 ohne Bibliothek nicht grau", "datei": "internal/ui/oeffnen.go", "paket": "./internal/ui",
+   "alt": "\tif e.bib == nil || e.bib.Oeffnen == nil {\n\t\treturn e.bibliothekGrau()", "neu": "\tif false {\n\t\treturn e.bibliothekGrau()"},
+  {"name": "OF6 OpenFile mit mehreren Dateien", "datei": "internal/portal/portal.go", "paket": "./internal/portal",
+   "alt": "\t\topt[\"multiple\"] = dbus.MakeVariant(false)", "neu": "\t\topt[\"multiple\"] = dbus.MakeVariant(true)"},
+  {"name": "OF7 Öffnen ruft SaveFile", "datei": "internal/portal/portal.go", "paket": "./internal/portal",
+   "alt": "\treturn d.dialog(ctx, \"OpenFile\", a,", "neu": "\treturn d.dialog(ctx, \"SaveFile\", a,"}
+]

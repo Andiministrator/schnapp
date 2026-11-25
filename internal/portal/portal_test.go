@@ -41,8 +41,8 @@ func (a *attrappe) Abonniere(pfad dbus.ObjectPath) (<-chan Antwort, func(), erro
 	return c, func() { a.ablauf = append(a.ablauf, "abgemeldet") }, nil
 }
 
-func (a *attrappe) SaveFile(_ context.Context, elt, _ string, opt map[string]dbus.Variant) (dbus.ObjectPath, error) {
-	a.ablauf = append(a.ablauf, "SaveFile")
+func (a *attrappe) Rufe(_ context.Context, methode, elt, _ string, opt map[string]dbus.Variant) (dbus.ObjectPath, error) {
+	a.ablauf = append(a.ablauf, methode)
 	a.letzteOpt, a.letzteElt = opt, elt
 	if a.fehler != nil {
 		return "", a.fehler
@@ -351,5 +351,29 @@ func TestAbsenderSpaeterBekannt(t *testing.T) {
 	}
 	if !pruefe(":1.99") {
 		t.Error("Besitzer nicht gemerkt")
+	}
+}
+
+// ADR-0026 Nachtrag 11 (Karte #326): Oeffnen ruft OpenFile mit einer Datei, ohne current_name, mit den Filtern, und
+// liefert die gewählte Adresse wie Speichern.
+func TestOeffnenRuftOpenFile(t *testing.T) {
+	uris := dbus.MakeVariant([]string{"file:///tmp/x.png"})
+	a := &attrappe{name: ":1.7", antwort: &Antwort{Code: 0, Ergebnisse: map[string]dbus.Variant{"uris": uris}}}
+	d := &Dialog{t: a, token: func() string { return "t1" }}
+	erg, err := d.Oeffnen(context.Background(), Anfrage{Titel: "Open", Dateiname: "soll-weg.png", Filter: []Filter{pngFilter()}})
+	if err != nil || erg.URI != "file:///tmp/x.png" {
+		t.Fatalf("Ergebnis %+v, %v", erg, err)
+	}
+	if len(a.ablauf) < 2 || a.ablauf[1] != "OpenFile" {
+		t.Errorf("Ablauf %v", a.ablauf)
+	}
+	if _, ok := a.letzteOpt["current_name"]; ok {
+		t.Error("OpenFile mit current_name")
+	}
+	if m, ok := a.letzteOpt["multiple"]; !ok || m.Value() != false {
+		t.Errorf("multiple %v", a.letzteOpt["multiple"])
+	}
+	if _, ok := a.letzteOpt["filters"]; !ok {
+		t.Error("OpenFile ohne Filter")
 	}
 }

@@ -228,3 +228,24 @@ Leiste sind Knöpfe der Fokusfahrt: Tab erreicht sie, Pfeile links und rechts, P
 
 Getestet von `TestMenueZeigtKuerzel`, `TestBibliothekOeffnenUndSchliessen`, `TestBibliothekOhneBibliothek` und
 `TestBibliothekSperrtDasBild`; Mutanten BV1 bis BV3, BV19, BV22, BV23 und BV25 in `scripts/mutanten/bibliothek-ansicht.json`.
+
+## Nachtrag 11 (25.11.2026): Datei → „Öffnen…/Open…“ mit Strg+O (Karte #326)
+
+**Status:** Akzeptiert (Claude Opus 5.5).
+
+Andi (25.11.2026): „es gibt im menu keinen punkt, um eine datei zu öffnen und auch keinen wie speichern unter.“
+
+- **Eintrag** „Open…“ als erster im Menü Datei, Kürzel **Strg+O** (war frei). Er zeigt den Dateidialog des
+  Desktop-Portals (`portal.Dialog.Oeffnen`, `FileChooser.OpenFile` mit einer Datei, Filter „Images“ für PNG und JPEG;
+  gemeinsamer Ablauf mit dem Speichern-Dialog in `portal.Dialog.dialog`).
+- Die gewählte Datei öffnet sich **im selben Fenster** über `wechselAnfrage`, wie eine Aufnahme aus der Leiste
+  (ADR-0036): erst speichern, dann laden; ein einfaches Bild wird beim nächsten Speichern eine neue Aufnahme in der
+  Bibliothek, eine Arbeitsdatei bleibt, wo sie liegt. Abbruch tut nichts; ohne Portal, bei einer entfernten Adresse oder
+  einem Dialogfehler sagt es die Fußzeile.
+- Ohne Anbindung an die Bibliothek (Fenster, das keine andere Datei laden kann) ist der Eintrag grau mit Erklärung.
+- **Speichern unter** und **Neue Aufnahme** brauchen eigene Entscheidungen (was „Speichern unter“ neben dem Export für eine
+  Arbeitsdatei in der Bibliothek heißt; ob eine neue Aufnahme im selben Fenster oder einem neuen Prozess entsteht) und
+  folgen mit eigener Karte.
+
+Tests `internal/ui/oeffnen_test.go`, `internal/portal/portal_test.go` (`TestOeffnenRuftOpenFile`), Mutanten
+`scripts/mutanten/oeffnen.json` (OF1–OF7). Den echten Dialog prüft Andi im Echtlauf (der virtuelle KWin hat kein Portal).

@@ -1665,3 +1665,15 @@ msgstr "Dieser Text liegt im gestauchten Bereich. Zum Bearbeiten Gestauchtes zur
 
 msgid "Move to trash (Del)"
 msgstr "In den Papierkorb (Entf)"
+
+msgid "Open…"
+msgstr "Öffnen …"
+
+msgid "Images"
+msgstr "Bilder"
+
+msgid "Could not show the file dialog."
+msgstr "Der Dateidialog ließ sich nicht anzeigen."
+
+msgid "Only local files can be opened."
+msgstr "Nur lokale Dateien lassen sich öffnen."
