@@ -169,6 +169,7 @@ var grenzen = struct {
 type aufwand struct {
 	glyph, flaeche, kanten float64
 	glyphen                int // Anzahl gerasterter Glyphen (Zählnahtstelle für Tests; im Trockenlauf 0)
+	einmischungen          int // Aufrufe zum Einmischen von Glyphen (Zählnahtstelle für Tests, F-766; im Trockenlauf 0)
 }
 
 // summe ist der ganze Rechenaufwand.

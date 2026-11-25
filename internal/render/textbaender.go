@@ -37,8 +37,9 @@ func baenderIn(bs []band, lo, hi float64) []band { return document.AbschnitteIn(
 
 // textBaender zeichnet die Zeile s ab (x, grundlinie) im Original in alle Bereiche spalten × zeilen: jede Glyphe, deren
 // Ursprung höchstens die seitliche Hülle der Schrift (fonts.Schrift.Huelle) neben einer Spalte liegt, wird einmal
-// gerastert und je Bereich um dessen Versatz verschoben, auf ihn beschnitten eingemischt. Vorschub und Unterschneidung
-// laufen wie in text auch über ausgelassene Glyphen. Die Kosten zählt der Aufrufer. spalten und zeilen sind nicht leer.
+// gerastert und in einem Aufruf (glyphBaender) je Bereich um dessen Versatz verschoben, auf ihn beschnitten
+// eingemischt. Vorschub und Unterschneidung laufen wie in text auch über ausgelassene Glyphen. Die Kosten zählt der
+// Aufrufer. spalten und zeilen sind nicht leer.
 func (z zeichner) textBaender(face font.Face, sch *fonts.Schrift, s string, x, grundlinie float64, farbe color.NRGBA,
 	grad float64, spalten, zeilen []band) {
 	var puffer sfnt.Buffer
@@ -48,6 +49,7 @@ func (z zeichner) textBaender(face font.Face, sch *fonts.Schrift, s string, x, g
 	rechts := float64(spalten[len(spalten)-1].B) + sg
 	dot := fixed.Point26_6{X: fixed.Int26_6(math.Round(x * 64)), Y: fixed.Int26_6(math.Round(grundlinie * 64))}
 	vorher := rune(-1)
+	var spur mischSpur
 	for _, c := range s {
 		saveprogress.Puls() // je Zeichen wie in text (F-147, F-298)
 		if vorher >= 0 {
@@ -69,8 +71,36 @@ func (z zeichner) textBaender(face font.Face, sch *fonts.Schrift, s string, x, g
 		if !ok {
 			adv, _ = face.GlyphAdvance(c) // F-577: Face.Glyph meldet bei unlesbaren Umrissen Vorschub 0
 		}
-		for k := i; k < len(spalten) && float64(spalten[k].A)-sg <= px; k++ {
-			sp := spalten[k]
+		k := i
+		for k < len(spalten) && float64(spalten[k].A)-sg <= px {
+			k++
+		}
+		z.auf.einmischungen += glyphBaender(z.bild, gr, maske, mp, farbe, spalten[i:k], zeilen, &spur)
+		dot.X += adv
+	}
+}
+
+// bahn ist eine Spalte bzw. Zeile, in die glyphBaender einmischt: Stelle im Bild (Bytes ab Zeilen- bzw. Bildanfang)
+// und in der Maske.
+type bahn struct{ ziel, quelle int }
+
+// mischSpur hält die Bahnen einer Glyphe; textBaender legt sie einmal an und nutzt sie für alle Glyphen der Zeile.
+type mischSpur struct{ xs, ys []bahn }
+
+// glyphBaender mischt die gerasterte Glyphe (gr im Original, maske ab mp) in einem Aufruf in alle Bereiche spalten ×
+// zeilen ein, jeden um seinen Versatz verschoben und auf ihn beschnitten (F-766, ADR-0023 Nachtrag 18). Vorher mischte
+// je Bereich ein eigener Aufruf (glyphMischen) ein, über 1023 Spaltenstreifen mit Abstand 2 jede Glyphe in rund 30
+// Streifen zu je einer Spalte; das kostete mehr als das Rastern, und das Budget zählte es nicht. Jetzt bildet glyphBaender
+// je Spalte und Zeile der Glyphe die Stelle in der Ansicht ab (die Bereiche liegen überlappungsfrei, jedes Pixel gehört
+// zu genau einem) und mischt Zeile für Zeile: dieselben Pixel mit derselben Formel wie glyphMischen, also dasselbe Bild.
+// Eine Maske, die kein *image.Alpha ist, mischt wie bisher je Bereich. Das Ergebnis ist die Zahl der Aufrufe zum
+// Einmischen (Zählnahtstelle für Tests): 1, ohne *image.Alpha die Zahl der Bereiche.
+func glyphBaender(bild *image.NRGBA, gr image.Rectangle, maske image.Image, mp image.Point, farbe color.NRGBA,
+	spalten, zeilen []band, spur *mischSpur) int {
+	alpha, ok := maske.(*image.Alpha)
+	if !ok {
+		n := 0
+		for _, sp := range spalten {
 			for _, ze := range zeilen {
 				v := image.Pt(sp.Versatz, ze.Versatz)
 				ziel := image.Rect(sp.A, ze.A, sp.B, ze.B).Add(v)
@@ -79,9 +109,46 @@ func (z zeichner) textBaender(face font.Face, sch *fonts.Schrift, s string, x, g
 				if g2.Empty() {
 					continue
 				}
-				glyphMischen(z.bild, g2, maske, mp.Add(g2.Min.Sub(g.Min)), farbe)
+				glyphMischen(bild, g2, maske, mp.Add(g2.Min.Sub(g.Min)), farbe)
+				n++
 			}
 		}
-		dot.X += adv
+		return n
 	}
+	// Teil der Glyphe, den die Maske trägt, im Original.
+	q := gr.Intersect(alpha.Rect.Add(gr.Min.Sub(mp)))
+	xs := spur.xs[:0]
+	for _, sp := range spalten {
+		for x := max(sp.A, q.Min.X); x < min(sp.B, q.Max.X); x++ {
+			if vx := x + sp.Versatz; vx >= bild.Rect.Min.X && vx < bild.Rect.Max.X {
+				xs = append(xs, bahn{ziel: 4 * (vx - bild.Rect.Min.X), quelle: x - gr.Min.X + mp.X - alpha.Rect.Min.X})
+			}
+		}
+	}
+	ys := spur.ys[:0]
+	for _, ze := range zeilen {
+		for y := max(ze.A, q.Min.Y); y < min(ze.B, q.Max.Y); y++ {
+			if vy := y + ze.Versatz; vy >= bild.Rect.Min.Y && vy < bild.Rect.Max.Y {
+				ys = append(ys, bahn{ziel: (vy - bild.Rect.Min.Y) * bild.Stride,
+					quelle: (y - gr.Min.Y + mp.Y - alpha.Rect.Min.Y) * alpha.Stride})
+			}
+		}
+	}
+	spur.xs, spur.ys = xs, ys
+	if len(xs) == 0 || len(ys) == 0 {
+		return 1
+	}
+	e := neuerEinmischer(bild, farbe)
+	for _, y := range ys {
+		m := alpha.Pix[y.quelle:]
+		zeile := bild.Pix[y.ziel:]
+		for _, x := range xs {
+			a := m[x.quelle]
+			if a == 0 {
+				continue
+			}
+			e.misch(zeile[x.ziel:x.ziel+4:x.ziel+4], uint32(a)*0x101)
+		}
+	}
+	return 1
 }

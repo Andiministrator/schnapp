@@ -3,24 +3,24 @@
     "name": "N1 Renderer setzt Zeilen starr ab dem abgebildeten Anfang (F-739)",
     "datei": "internal/render/textbaender.go",
     "paket": "./internal/render",
-    "alt": "\t\t\t\tv := image.Pt(sp.Versatz, ze.Versatz)\n",
-    "neu": "\t\t\t\tv := image.Pt(spalten[0].Versatz, zeilen[0].Versatz)\n",
+    "alt": "if vx := x + sp.Versatz;",
+    "neu": "if vx := x + spalten[0].Versatz;",
     "timeout": "5m"
   },
   {
     "name": "N2 Renderer beschneidet Glyphen nicht auf das Stück (F-739)",
     "datei": "internal/render/textbaender.go",
     "paket": "./internal/render",
-    "alt": "\t\t\t\tg2 := g.Intersect(ziel)\n",
-    "neu": "\t\t\t\tg2 := g.Intersect(z.bild.Rect)\n\t\t\t\t_ = ziel\n",
+    "alt": "for x := max(sp.A, q.Min.X); x < min(sp.B, q.Max.X); x++ {",
+    "neu": "for x := q.Min.X; x < q.Max.X; x++ {",
     "timeout": "5m"
   },
   {
     "name": "N3 Renderer zeichnet nur das erste Stück (F-739)",
     "datei": "internal/render/textbaender.go",
     "paket": "./internal/render",
-    "alt": "\t\t\tfor _, ze := range zeilen {\n",
-    "neu": "\t\t\tfor _, ze := range zeilen[:1] {\n",
+    "alt": "\tfor _, ze := range zeilen {\n\t\tfor y := max(ze.A, q.Min.Y)",
+    "neu": "\tfor _, ze := range zeilen[:1] {\n\t\tfor y := max(ze.A, q.Min.Y)",
     "timeout": "5m"
   },
   {
@@ -147,8 +147,8 @@
     "name": "N3b Renderer zeichnet je Glyphe nur in die erste Spalte (F-750)",
     "datei": "internal/render/textbaender.go",
     "paket": "./internal/render",
-    "alt": "for k := i; k < len(spalten) && float64(spalten[k].A)-sg <= px; k++ {",
-    "neu": "for k := i; k < i+1 && float64(spalten[k].A)-sg <= px; k++ {",
+    "alt": "spalten[i:k], zeilen, &spur)",
+    "neu": "spalten[i:i+1], zeilen, &spur)",
     "timeout": "5m"
   },
   {
@@ -295,5 +295,29 @@
     "alt": "document.AbschnitteIn(ss, l.von, l.bis)",
     "neu": "document.AbschnitteIn(ss, l.von, math.Inf(1))",
     "timeout": "10m"
+  },
+  {
+    "name": "G1 Renderer mischt jede Glyphe je Bereich einzeln ein (F-766)",
+    "datei": "internal/render/textbaender.go",
+    "paket": "./internal/render",
+    "alt": "\talpha, ok := maske.(*image.Alpha)\n\tif !ok {\n",
+    "neu": "\talpha, ok := maske.(*image.Alpha)\n\tif ok || !ok {\n",
+    "timeout": "5m"
+  },
+  {
+    "name": "G2 Renderer: Zeilenbänder ohne Versatz eingemischt (F-766)",
+    "datei": "internal/render/textbaender.go",
+    "paket": "./internal/render",
+    "alt": "if vy := y + ze.Versatz;",
+    "neu": "if vy := y;",
+    "timeout": "5m"
+  },
+  {
+    "name": "G3 Renderer: Zeilenbahnen nicht auf das Band beschnitten (F-766)",
+    "datei": "internal/render/textbaender.go",
+    "paket": "./internal/render",
+    "alt": "for y := max(ze.A, q.Min.Y); y < min(ze.B, q.Max.Y); y++ {",
+    "neu": "for y := q.Min.Y; y < q.Max.Y; y++ {",
+    "timeout": "5m"
   }
 ]

@@ -601,7 +601,20 @@ Tests `internal/render/pfeil_kasten_naht_test.go`, `TestEditorKreuzendeNaehteMit
    und 399 kurzen Zeilen 4,6 s → 0,2 s, 5 Texte 6×60 „@“ Grad 74 2,8 s → 0,6 s je Bild mit llvmpipe.
 3. **Messung:** `TestEditorGanzesBildUeberVielenNaehten` misst ein ganzes Bild über die Zeichenfläche ohne Fenster
    (Grenze 2 s, großzügig für llvmpipe), nicht nur den Befehlsaufbau.
+4. **Glyphen im Renderer (F-766):** `textBaender` mischt jede Glyphe in **einem** Aufruf in alle Bereiche ein, die sie
+   berührt (`glyphBaender`): je Spalte und Zeile der Glyphe die Stelle in der Ansicht, dann Zeile für Zeile mit derselben
+   Formel wie `glyphMischen` — dasselbe Bild Bit für Bit (`TestGlyphenGebuendeltBitgleich`), ein Aufruf je Glyphe statt
+   einer je Bereich (`TestGlyphEinAufrufUeberVielenNaehten`; 270 „@“ über 1023 Spaltenstreifen vorher 7880 Aufrufe).
+   Das Kostenmodell bleibt: Die Pixel einer Glyphe mischt der Renderer ohnehin, nur die Grundkosten je Aufruf fallen
+   weg. Die Messung der Kritik (4,5 s statt 1,1 s, hochgerechnet 46 s) enthielt rund 2,5 s für die Kanten der 1023 Nähte
+   selbst, die bei jeder Textmenge gleich bleiben und unter `KantenBudget` zählen; hochgerechnet wurden sie mit.
+   An der Grenze (`BenchmarkGlyphenSpaltenGrenze`, 2019 Texte à 270 „@“ Grad 74, Glyphkosten = `GlyphBudget`, über
+   1023 Spaltenstreifen; ein Lauf, 25.11.2026): vorher 11,6 s, jetzt 9,6 s (davon rund 2,5 s Kanten), ohne Streifen
+   8,8 s. Das Zeitversprechen von rund 21 s (ADR-0020 Nachtrag 12) hält.
 
-Tests `internal/ui/naht_bereiche_test.go` (`TestEditorGanzesBildUeberVielenNaehten`, `TestEditorRunderKastenStrichWieGio`,
+Renderer: Tests `internal/render/glyphen_mischen_test.go`, Zählnahtstelle `aufwand.einmischungen`; Mutanten G1–G3 neu,
+N1–N3 und N3b auf `glyphBaender` nachgezogen.
+
+Editor: Tests `internal/ui/naht_bereiche_test.go` (`TestEditorGanzesBildUeberVielenNaehten`, `TestEditorRunderKastenStrichWieGio`,
 `TestEditorTextUeberSchmalenSpalten`), Fall „KastenRundOhneFuellung“ in `TestEditorSchneidetSchraegeKantenAnDerNaht`;
 Mutanten B1–B5 neu, P6 nachgezogen (`scripts/mutanten/text-naht.json`).
