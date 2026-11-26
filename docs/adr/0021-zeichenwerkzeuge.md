@@ -907,9 +907,12 @@ halb durchsichtig, gewellt, ...)“; Ausgestaltung Claude Opus 5.5, Andi: „arb
    26.11. (5), F-845): Renderer und Editor verteilen das Muster eines **eckigen** Rahmens auf dem in die Ansicht
    abgebildeten Rechteck, über einer Stauch-Naht also neu; der SVG-Export rechnet im Original und schneidet je Kachel.
    An der Naht liegen Striche und Punkte deshalb verschieden.
-   **Obergrenze (F-840):** Hätte das Muster eines Objekts mehr als `document.MaxMusterStuecke` = 16384 Stücke, wird der
-   Strich voll (`Strichmuster.Ersatz`); jedes Stück kostet im Trockenlauf `musterGewicht` (`render.musterKosten`), so
-   lehnt `render.Pruefe` Dateien mit sehr vielen Mustern ab, statt beim Öffnen lange zu rechnen.
+   **Obergrenze (F-840):** Hätte das Muster eines Strichs (Schaft, Kastenumriss, jeder Lupenrahmen, Lupenlinie; geschätzt
+   als Länge ÷ (Strich + Lücke) + 1, beim eckigen Rahmen je Seite) mehr als `document.MaxMusterStuecke` = 16384 Stücke,
+   wird er voll (`Strichmuster.Ersatz`; ohne Spitze dann mit geraden statt runden Enden, bewusst). Jedes Stück kostet im
+   Trockenlauf `musterGewicht` (`render.musterKosten`) auf allen Wegen — Pfeil, runder Kasten, Lupenlinie und eckige
+   Rahmen (`zeichner.rahmen`, ganz außerhalb des Bilds gar nicht zerlegt; V-1 der Sitzungs-Kritik 26.11. (5)) —, so lehnt
+   `render.Pruefe` Dateien mit sehr vielen Mustern ab, statt beim Öffnen lange zu rechnen.
 5. **SVG-Export:** Striche als Linienzüge (`stroke-linecap="butt"`, `stroke-linejoin="round"`), Punkte als Kreise, eckige
    Rahmen als gefüllter Pfad — ausdrücklich, nicht über `stroke-dasharray`, denn die Länge einer Bézier-Kurve misst jeder
    Betrachter anders und die Muster lägen verschoben. Ein Kasten mit Strichart steht im Export als `<g>` mit seinen Daten
@@ -976,7 +979,9 @@ Opus 5.5, Andi: „arbeite selbstständig“).
    (`render.Pruefe`, `schattenGewicht`).
 4. **Editor:** Der Schatten kommt aus derselben Rechnung (`render.Schattenbild`, CPU), je Objekt zwischengespeichert,
    solange Objekt und Ansicht (Dokument, Zuschnitt, Streifen, Pixel) gleich bleiben, nicht neu bei jeder Änderung eines
-   anderen Objekts; alle Bilder zusammen höchstens 256 MiB, beim Wechsel der Aufnahme verworfen (F-843), und wird unter dem Objekt gezeichnet, innerhalb der Gruppendeckkraft der
+   anderen Objekts (bei der Lupe gehören Stand und Kantenform dazu, ihr Inhalt hängt an Pixeln und Spalt, V-2); alle
+   Bilder zusammen höchstens 256 MiB, verdrängt werden die am längsten nicht gezeichneten, nie eines aus dem laufenden
+   Bild (V-3), beim Wechsel der Aufnahme verworfen (F-843), und wird unter dem Objekt gezeichnet, innerhalb der Gruppendeckkraft der
    Ebene. Die Vorschau der Ebenenliste zeigt keinen Schatten.
 5. **SVG:** je Objekt mit Schatten ein `<filter>` (`feGaussianBlur` auf `SourceAlpha` — bei Weich 0 entfällt es, der
    Versatz liest `SourceAlpha` direkt —, `feOffset`, `feFlood`, `feComposite`, `feMerge`, `filterUnits="userSpaceOnUse"`

@@ -353,6 +353,7 @@ type editor struct {
 	schatten      map[int]schattenBild
 	schattenBytes int
 	schattenNeu   int      // Zahl der neu gerechneten Schattenbilder (für Tests)
+	schattenRunde int      // zählt die gezeichneten Bilder (Verdrängen, V-3)
 	satz          textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
 	// nav: Zustand des Navigators auf der Leinwand (navigator.go, ADR-0031 Nachtrag 9); die Adresse ist das Zeigerziel.
 	nav navigatorZustand

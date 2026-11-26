@@ -23,7 +23,9 @@ func (z zeichner) lupe(v document.Lupe) {
 		if a, b, ok := v.Linie(); ok {
 			// Je sichtbarem Bereich und auf ihn beschnitten, wie SVG-Export und Treffer (F-695).
 			z.jeStueck(huelleVon([]document.Punkt{a, b}, v.Strich.Breite/2+1), func(zs zeichner, abb func(document.Punkt) document.Punkt) {
-				zs.fuelle(ZerlegeStrich([]document.Punkt{abb(a), abb(b)}, v.Strich).Teile, nil, v.Strich.Farbe)
+				teile := ZerlegeStrich([]document.Punkt{abb(a), abb(b)}, v.Strich).Teile
+				zs.musterKosten(v.Strich, len(teile)) // auch die Linie zählt ihre Stücke (V-1)
+				zs.fuelle(teile, nil, v.Strich.Farbe)
 			})
 		}
 		z.eckigerRahmen(v.Quelle, v.Strich)
@@ -38,7 +40,7 @@ func (z zeichner) lupe(v document.Lupe) {
 // spitze Außenecken (document.EckigerRahmen, F-498), gemustert nach der Strichart (RahmenTeile).
 func (z zeichner) eckigerRahmen(r document.Rechteck, s document.Strich) {
 	q := document.R(z.ansicht(r.Min), z.ansicht(r.Max))
-	z.fuelle(RahmenTeile(q, s), nil, s.Farbe) // gemustert auch Scheiben (ADR-0021 Nachtrag 25)
+	z.rahmen(q, s) // gemustert auch Scheiben (ADR-0021 Nachtrag 25)
 }
 
 // lupenRahmen ist das Rechteck der Ansichtspixel, die das Ziel von l bedecken kann (nicht beschnitten).

@@ -107,9 +107,11 @@ func weichzeichnen(m []float32, w, h int, sigma float64) {
 		for y := 0; y < h; y++ {
 			falten(m[y*w:(y+1)*w], 1, w, kern, puffer)
 		}
+		saveprogress.Puls()
 		for x := 0; x < w; x++ {
 			falten(m[x:], w, h, kern, puffer)
 		}
+		saveprogress.Puls()
 		return
 	}
 	for _, b := range kastenBreiten(sigma) {

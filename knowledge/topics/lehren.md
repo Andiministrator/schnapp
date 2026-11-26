@@ -1267,4 +1267,12 @@ Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #353 bis #364 und
 - **Commit-Nachrichten per Datei, nie per Heredoc** (Projektkonvention, Kompaktblatt): In dieser Sitzung liefen die
   Commits mit `git commit -F -` und Heredoc; die Inhalte stimmen, die Regel nicht. Nachricht mit dem Write-Werkzeug nach
   `tmp/<lauf>/` schreiben und `git commit -F` darauf.
+- **Wer einen Schlüssel schmaler macht, prüft, was der alte nebenbei abdeckte** (Verify V-2): `D.Stand()` im Schlüssel
+  der Schattenbilder war zu grob (F-843), deckte aber Kantenform und Rückgängig einer Schwärzung mit ab, an denen der
+  Lupeninhalt hängt. Vor dem Entfernen jede Eingabe der gemerkten Rechnung aufzählen.
+- **Eine Speichergrenze verdrängt einzeln, nie das gerade Gebrauchte** (V-3): „über der Grenze alles leeren“ machte aus
+  einem Speicher eine Dauer-Neuberechnung, sobald ein Bild allein über der Grenze lag.
+- **Eine Obergrenze gilt erst, wenn jeder Weg sie zählt** (V-1, Rest F-840): Pfeil und runder Kasten zählten ihre
+  Stücke, eckige Rahmen nicht, weil `fuelle` nur Teile im Bild zählt. Beim Schließen einer Budgetlücke alle Aufrufer der
+  vervielfachenden Rechnung durchgehen (hier `RahmenTeile`: Kasten, beide Lupenrahmen, Editor).
 

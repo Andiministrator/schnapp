@@ -208,5 +208,26 @@
     "paket": "./internal/ui",
     "alt": "\treturn a.d == b.d && a.zuschnitt == b.zuschnitt",
     "neu": "\treturn a.d == b.d && a.d.Stand() == 0 && a.zuschnitt == b.zuschnitt"
+  },
+  {
+    "name": "SH31 Lupe ohne Stand im Schlüssel (V-2)",
+    "datei": "internal/ui/schatten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tansicht.stand, ansicht.kante = e.s.D.Stand(), e.s.D.Kante()",
+    "neu": "\t\tansicht.kante = e.s.D.Kante()"
+  },
+  {
+    "name": "SH32 Verdrängen auch aus der laufenden Runde (V-3)",
+    "datei": "internal/ui/schatten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif b.runde < e.schattenRunde {",
+    "neu": "\t\tif _ = b; true {"
+  },
+  {
+    "name": "SH33 Reglerzug ohne Nullwert (V-4)",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif !sch.An {\n\t\tsch = document.Schatten{} // am Objekt wie in SetzeSchatten der Nullwert (V-4)",
+    "neu": "\tif false {\n\t\tsch = document.Schatten{} // am Objekt wie in SetzeSchatten der Nullwert (V-4)"
   }
 ]

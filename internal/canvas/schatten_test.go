@@ -157,3 +157,23 @@ func TestSchattenAlleAnlegewege(t *testing.T) {
 		t.Errorf("nach Abbruch %+v, vorher %+v", n.Ebenenwerte().Schatten, o.Ebenenwerte().Schatten)
 	}
 }
+
+// V-4 der Sitzungs-Kritik 26.11. (5): Ein Reglerzug an einem Objekt ohne Schatten schreibt den Nullwert, nicht einen
+// ausgeschalteten Schatten mit Werten; das Werkzeug merkt die Werte.
+func TestSchattenZugOhneSchatten(t *testing.T) {
+	s, k, _ := sitzung(t)
+	s.Auswahl = k
+	if !s.BeginneSchattenZug() {
+		t.Fatal("Zug nicht begonnen")
+	}
+	sch := s.Schatten()
+	sch.Laenge = 12
+	s.SchattenZugSetze(sch)
+	s.BeendeBreiteZug()
+	if o, _ := s.D.Objekt(k); o.Ebenenwerte().Schatten != (document.Schatten{}) {
+		t.Errorf("am Objekt %+v", o.Ebenenwerte().Schatten)
+	}
+	if s.Stil.Schatten.Laenge != 12 {
+		t.Errorf("Werkzeug merkt %v", s.Stil.Schatten.Laenge)
+	}
+}

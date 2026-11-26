@@ -500,8 +500,10 @@ rounded and all lengths are scaled by the same factor, so that the pattern fits:
   middle of the next.
 
 On a square outline the horizontal dashes include the corners (like the solid stroke). Where an arrow has a head, the
-line's last dash ends under the head; a dotted line has, instead of its last dot, the half disc behind the head. A
-pattern that would have more than 16384 pieces in one object is drawn solid. Informative: the SVG export draws the
+line's last dash ends under the head; a dotted line has, instead of its last dot, the half disc behind the head.
+Informative: the reference renderer draws a stroke solid when its pattern would have more than 16384 pieces (estimated
+per stroke — the arrow's line, a box outline, each magnifier frame and its line — as length ÷ (dash + gap) + 1, per side
+for square outlines); the SVG export draws the
 pieces explicitly (dashes as one path, dots as circles), not with `stroke-dasharray`; the presentation in a working file
 only approximates the pattern with `stroke-dasharray` on the solid shape (magnifier frames solid), which keeps `snAP`
 small — readers use `s:strichart` alone.

@@ -99,8 +99,8 @@
     "name": "N13 Lupen-Linie über abgebildete Ecken (F-695)",
     "datei": "internal/render/lupe.go",
     "paket": "./internal/render",
-    "alt": "\t\t\t\tzs.fuelle(ZerlegeStrich([]document.Punkt{abb(a), abb(b)}, v.Strich).Teile, nil, v.Strich.Farbe)",
-    "neu": "\t\t\t\tzs.fuelle(ZerlegeStrich([]document.Punkt{z.ansicht(a), z.ansicht(b)}, v.Strich).Teile, nil, v.Strich.Farbe)",
+    "alt": "\t\t\t\tteile := ZerlegeStrich([]document.Punkt{abb(a), abb(b)}, v.Strich).Teile",
+    "neu": "\t\t\t\tteile := ZerlegeStrich([]document.Punkt{z.ansicht(a), z.ansicht(b)}, v.Strich).Teile",
     "timeout": "5m"
   },
   {

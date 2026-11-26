@@ -264,5 +264,19 @@
     "paket": "./internal/fileformat",
     "alt": "\tif len(angaben) > schreibGrenzeSVG {",
     "neu": "\tif false {"
+  },
+  {
+    "name": "ST39 eckiger Rahmen ohne Kosten (V-1)",
+    "datei": "internal/render/strichart.go",
+    "paket": "./internal/render",
+    "alt": "\tteile := RahmenTeile(r, s)\n\tz.musterKosten(s, len(teile))",
+    "neu": "\tteile := RahmenTeile(r, s)"
+  },
+  {
+    "name": "ST40 Rahmen ganz außerhalb wird zerlegt (V-1)",
+    "datei": "internal/render/strichart.go",
+    "paket": "./internal/render",
+    "alt": "float64(z.rand.Max.Y) {\n\t\treturn\n\t}\n\tteile",
+    "neu": "float64(z.rand.Max.Y) {\n\t}\n\tteile"
   }
 ]

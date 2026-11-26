@@ -204,3 +204,30 @@ func TestStrichartMusterBegrenzt(t *testing.T) {
 		t.Errorf("Pruefe brauchte %v", dauer)
 	}
 }
+
+// V-1 der Sitzungs-Kritik 26.11. (5) (Rest von F-840): Gepunktete eckige Rahmen, die fast ganz außerhalb des Bilds
+// liegen, zählen ihre Stücke; viele solcher Lupen lehnt Pruefe ab, statt das Öffnen lange aufzuhalten. Ein Rahmen ganz
+// außerhalb wird gar nicht zerlegt.
+func TestStrichartRahmenAusserhalbGezaehlt(t *testing.T) {
+	l := document.Lupe{Quelle: document.R(document.Pt(201, 0), document.Pt(8401, 8200)),
+		Ziel:   document.R(document.Pt(190, 0), document.Pt(200, 10)),
+		Strich: document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 0.01, Art: document.StrichGepunktet}}
+	d := weissesDokument(t, 200, 100)
+	for range 2000 {
+		hinzu(t, d, l)
+	}
+	t0 := time.Now()
+	if err := Pruefe(d); err == nil {
+		t.Error("2000 Lupen mit riesigem gepunktetem Rahmen: Pruefe nimmt sie an")
+	}
+	if dauer := time.Since(t0); dauer > 15*time.Second {
+		t.Errorf("Pruefe brauchte %v", dauer)
+	}
+	ganz := l
+	ganz.Quelle = document.R(document.Pt(1000, 1000), document.Pt(9000, 9000))
+	d2 := weissesDokument(t, 200, 100)
+	hinzu(t, d2, ganz)
+	if a := trockenlauf(d2, false); a.kanten > 5e6 { // Ziel und Linie zählen, der Quellrahmen allein läge bei 1,6e7
+		t.Errorf("Rahmen ganz außerhalb kostet %v", a.kanten)
+	}
+}

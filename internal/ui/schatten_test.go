@@ -124,3 +124,84 @@ func TestSchattenZwischenspeicher(t *testing.T) {
 		t.Errorf("geändertes Objekt: %d Neuberechnungen, %d Bytes", e.schattenNeu, e.schattenBytes)
 	}
 }
+
+// V-2 der Sitzungs-Kritik 26.11. (5): Der Schatten einer Lupe hängt an Pixeln und Kante; er wird nach jeder
+// Dokumentänderung neu gerechnet (Stand im Schlüssel), der eines Kastens nicht.
+func TestSchattenLupeNeuNachAenderung(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 300, 200)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := document.Lupe{Quelle: document.R(document.Pt(10, 10), document.Pt(40, 40)), Ziel: document.R(document.Pt(100, 20),
+		document.Pt(160, 80)), Strich: document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 2}}
+	idL, _ := d.Hinzufuegen(document.MitEbene(l, document.Ebene{Schatten: document.StandardSchatten(1)}))
+	idK, _ := d.Hinzufuegen(document.Kasten{Bereich: document.R(document.Pt(200, 100), document.Pt(250, 150)),
+		Fuellung: color.NRGBA{A: 255}})
+	e := &editor{s: canvas.NeueSitzung(d)}
+	lo, _ := d.Objekt(idL)
+	e.schattenFuer(lo)
+	k, _ := d.Objekt(idK)
+	if err := d.Ersetzen(canvas.Verschiebe(k, document.Pt(3, 0))); err != nil {
+		t.Fatal(err)
+	}
+	e.schattenFuer(lo)
+	if e.schattenNeu != 2 {
+		t.Errorf("Lupe nach einer Dokumentänderung: %d Neuberechnungen, Soll 2", e.schattenNeu)
+	}
+}
+
+// V-3: Über der Speichergrenze fallen nur Bilder früherer Runden weg; die Schatten eines Bilds bleiben gemerkt, auch
+// wenn sie zusammen über der Grenze liegen — das zweite Bild rechnet nichts neu.
+func TestSchattenVerdraengtEinzeln(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 400, 300)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ids []int
+	for i := range 4 {
+		k := document.Kasten{Bereich: document.R(document.Pt(float64(20+90*i), 20), document.Pt(float64(80+90*i), 80)),
+			Fuellung: color.NRGBA{A: 255}}
+		id, _ := d.Hinzufuegen(document.MitEbene(k, document.Ebene{Schatten: document.StandardSchatten(1)}))
+		ids = append(ids, id)
+	}
+	e := &editor{s: canvas.NeueSitzung(d)}
+	alt := schattenSpeicher
+	defer func() { schattenSpeicher = alt }()
+	o0, _ := d.Objekt(ids[0])
+	eins := e.schattenFuer(o0).bytes
+	e.schatten, e.schattenBytes, e.schattenNeu = nil, 0, 0
+	schattenSpeicher = 2*eins + eins/2 // Platz für zweieinhalb Bilder
+	runde := func() {
+		for _, id := range ids {
+			o, _ := d.Objekt(id)
+			e.schattenFuer(o)
+		}
+		e.schattenAufraeumen()
+	}
+	runde()
+	if e.schattenNeu != 4 {
+		t.Fatalf("erste Runde: %d", e.schattenNeu)
+	}
+	runde()
+	if e.schattenNeu != 4 {
+		t.Errorf("zweite Runde rechnete neu: %d", e.schattenNeu)
+	}
+	// Nur zwei Objekte gezeichnet, dann ein fünftes: Die zwei nicht gezeichneten fallen weg; die drei der laufenden Runde
+	// bleiben, auch wenn sie zusammen über der Grenze liegen.
+	k := document.Kasten{Bereich: document.R(document.Pt(20, 150), document.Pt(80, 210)), Fuellung: color.NRGBA{A: 255}}
+	id5, _ := d.Hinzufuegen(document.MitEbene(k, document.Ebene{Schatten: document.StandardSchatten(1)}))
+	for _, id := range ids[:2] {
+		o, _ := d.Objekt(id)
+		e.schattenFuer(o)
+	}
+	o5, _ := d.Objekt(id5)
+	e.schattenFuer(o5)
+	if _, ok := e.schatten[ids[0]]; !ok {
+		t.Error("ein Bild der laufenden Runde wurde verdrängt")
+	}
+	_, drei := e.schatten[ids[2]]
+	_, vier := e.schatten[ids[3]]
+	if len(e.schatten) != 3 || drei || vier || e.schattenBytes != 3*eins {
+		t.Errorf("%d Bilder (nicht gezeichnete noch da: %v %v), %d Bytes", len(e.schatten), drei, vier, e.schattenBytes)
+	}
+}

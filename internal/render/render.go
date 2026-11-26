@@ -596,7 +596,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 			if document.WirksamerEckradius(v.Eckradius, r.Breite(), r.Hoehe()) == 0 {
 				// Ohne Rundung spitze Außenecken (F-498): Strich als überlappungsfreie Rechtecke, gemustert auch Scheiben
 				// (ADR-0021 Nachtrag 25).
-				z.fuelle(RahmenTeile(r, v.Strich), nil, v.Strich.Farbe)
+				z.rahmen(r, v.Strich)
 			} else {
 				z.strich(umriss, true, v.Strich)
 			}

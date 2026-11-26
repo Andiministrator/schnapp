@@ -24,6 +24,20 @@ func (z zeichner) musterKosten(s document.Strich, teile int) {
 	}
 }
 
+// rahmen zeichnet den eckigen Rahmen um r (Ansicht) mit dem Strich s (RahmenTeile). Liegt er ganz außerhalb des Bilds,
+// wird er nicht zerlegt; ein gemusterter zählt seine Stücke im Aufwand, auch wenn nur ein Teil ins Bild reicht (V-1 der
+// Sitzungs-Kritik 26.11. (5), Rest von F-840: fuelle zählt nur Teile im Bild).
+func (z zeichner) rahmen(r document.Rechteck, s document.Strich) {
+	h := s.Breite/2 + 1
+	if r.Max.X+h < float64(z.rand.Min.X) || r.Min.X-h > float64(z.rand.Max.X) ||
+		r.Max.Y+h < float64(z.rand.Min.Y) || r.Min.Y-h > float64(z.rand.Max.Y) {
+		return
+	}
+	teile := RahmenTeile(r, s)
+	z.musterKosten(s, len(teile))
+	z.fuelle(teile, nil, s.Farbe)
+}
+
 // musterLinie fügt die Stücke des Musters m zu einem linienStrich zusammen: Zwischen zwei Stücken liegt eine Lücke
 // ohne Teil (strecke −1). So läuft der gemusterte Strich über dieselbe Bereichssuche wie ein voller (strichJeStueckMit).
 func musterLinie(m document.Strichmuster, hw float64) linienStrich {

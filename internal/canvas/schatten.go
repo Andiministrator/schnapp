@@ -122,6 +122,9 @@ func (s *Sitzung) SchattenZugSetze(sch document.Schatten) {
 	}
 	sch = gueltigerSchatten(sch)
 	s.Stil.Schatten = sch
+	if !sch.An {
+		sch = document.Schatten{} // am Objekt wie in SetzeSchatten der Nullwert (V-4)
+	}
 	if s.breiteZugObj {
 		if o, ok := s.D.Objekt(s.Auswahl); ok {
 			_ = s.D.ZugSetze(mitSchatten(o, sch))
