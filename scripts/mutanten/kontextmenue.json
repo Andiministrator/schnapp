@@ -59,8 +59,8 @@
     "name": "KM9 Umschalt+F10 wirkungslos",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "e.kontextPerTaste() // Kontextmenü der Auswahl (ADR-0038 Punkt 6)",
-    "neu": "_ = 0"
+    "alt": "\t\t\t\te.kontextPerTaste()\n",
+    "neu": ""
   },
   {
     "name": "KM10 immer die Einträge für das Bild",
@@ -94,8 +94,8 @@
     "name": "KM14 Umschalt+F10 in der Bibliothek öffnet Datei",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "case k.Name == key.NameF10 && !k.Modifiers.Contain(key.ModShift):",
-    "neu": "case k.Name == key.NameF10:"
+    "alt": "case k.Name == key.NameF10 && k.Modifiers.Contain(key.ModShift):\n\t\t\t\t\t// Kontextmenü der Vorschau",
+    "neu": "case false:\n\t\t\t\t\t// Kontextmenü der Vorschau"
   },
   {
     "name": "KM15 Übersicht ohne Kontextmenü",
@@ -134,10 +134,10 @@
   },
   {
     "name": "KM20 zweiter Rechtsklick schließt nur",
-    "datei": "internal/ui/menue.go",
+    "datei": "internal/ui/kontext_vorschau.go",
     "paket": "./internal/ui",
-    "alt": "e.kontextRechtsklick(q.Sub(e.leinwandUrsprung))",
-    "neu": "_ = q"
+    "alt": "\t\te.kontextRechtsklick(q.Sub(e.leinwandUrsprung))",
+    "neu": "\t\t_ = q"
   },
   {
     "name": "KM21 Zuschneiden löscht die Auswahl",
@@ -145,5 +145,152 @@
     "paket": "./internal/canvas",
     "alt": "\t\treturn true, false // die Auswahl bleibt",
     "neu": "\t\ts.Auswahl = 0\n\t\treturn true, false // die Auswahl bleibt"
+  },
+  {
+    "name": "KV1 Leiste: Rechtsklick ohne Wirkung",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\te.leisteKontext(i, k.kacheln[i-k.von].Min.Add(pe.Position.Round()), false)\n",
+    "neu": "\t\t\t\t_ = pe\n"
+  },
+  {
+    "name": "KV2 Leiste: Rechtsklick nicht angemeldet",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\trechtsAnmelden(gtx, &k.rechts[i], kr)",
+    "neu": "\t\t_ = kr"
+  },
+  {
+    "name": "KV3 Leiste: Anker ohne Lage der Kachel",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "k.kacheln[i-k.von].Min.Add(pe.Position.Round())",
+    "neu": "pe.Position.Round()"
+  },
+  {
+    "name": "KV4 Leiste: kein Fokus auf die Vorschau",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\tk.fokusSoll, k.langDruck = i, -1\n",
+    "neu": "\tk.langDruck = -1\n"
+  },
+  {
+    "name": "KV5 Ansicht: Rechtsklick ohne Wirkung",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\te.bibKontext(gtx, stelle, pe.Position.Round(), false)\n",
+    "neu": ""
+  },
+  {
+    "name": "KV6 Ansicht: kein Fokus auf die Vorschau",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\tb.r.SetzeFokus(i)\n\tb.ziel, b.langDruck",
+    "neu": "\tb.ziel, b.langDruck"
+  },
+  {
+    "name": "KV7 Schlagworte auch in der Leiste",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.kontext.inLeiste {\n\t\tgrau := \"\"",
+    "neu": "\tif true {\n\t\tgrau := \"\""
+  },
+  {
+    "name": "KV8 Öffnen an der offenen der Leiste nicht grau",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\tif offen && e.kontext.inLeiste { // in der vollen Ansicht",
+    "neu": "\tif false { // in der vollen Ansicht"
+  },
+  {
+    "name": "KV9 Eintrag nach Fokus statt nach Vorschau",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.bibl.r.SetzeFokus(i)\n\t\t\te.bibPapierkorb()",
+    "neu": "\t\t\te.bibPapierkorb()"
+  },
+  {
+    "name": "KV10 Leiste: Papierkorb an der Stelle mit Fokus",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\t\te.leistePapierkorb(i)\n",
+    "neu": "\t\t\t\t\te.leistePapierkorb(e.unten.l.Fokus())\n"
+  },
+  {
+    "name": "KV11 verschwundene Vorschau nicht erkannt",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\ti := e.vorschauStelle()\n\t\tif i < 0 || !e.vorschauFrei() {",
+    "neu": "\t\ti := max(0, e.vorschauStelle())\n\t\tif !e.vorschauFrei() {"
+  },
+  {
+    "name": "KV12 Dateimanager zweimal zugleich",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\tif abs == \"\" || d.laeuft {",
+    "neu": "\tif abs == \"\" {"
+  },
+  {
+    "name": "KV13 Fehlender Dateimanager wie anderer Fehler",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tcase errors.Is(err, portal.ErrKeinDateimanager):",
+    "neu": "\t\tcase false && errors.Is(err, portal.ErrKeinDateimanager):"
+  },
+  {
+    "name": "KV14 Umschalt+F10 in der Ansicht öffnet Datei",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\t\te.vorschauKontextPerTaste(gtx)\n\t\t\t\tcase k.Name == key.NameF10:",
+    "neu": "\t\t\t\t\te.menueOeffne(menueDatei, true)\n\t\t\t\tcase k.Name == key.NameF10:"
+  },
+  {
+    "name": "KV15 Umschalt+F10 an der Leiste öffnet das Bildmenü",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif !e.vorschauKontextPerTaste(gtx) {\n\t\t\t\te.kontextPerTaste()\n\t\t\t}",
+    "neu": "\t\t\te.kontextPerTaste()"
+  },
+  {
+    "name": "KV16 Umschalt+F10 im Suchfeld",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif b.ziel != bibZielRaster || b.bearbeite != \"\" ||",
+    "neu": "\t\tif b.bearbeite != \"\" ||"
+  },
+  {
+    "name": "KV17 Esc: Fokus nicht zurück an die Vorschau",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif i := e.vorschauStelle(); i >= 0 {\n\t\t\te.unten.fokusSoll = i",
+    "neu": "\t\tif i := e.vorschauStelle(); i >= 0 && false {\n\t\t\te.unten.fokusSoll = i"
+  },
+  {
+    "name": "KV18 zweiter Rechtsklick nur auf der Leinwand",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif i := e.leisteStelleBei(q); i >= 0 {\n\t\t\te.leisteKontext(i, q, false)",
+    "neu": "\t\tif i := e.leisteStelleBei(q); i >= 0 && false {\n\t\t\te.leisteKontext(i, q, false)"
+  },
+  {
+    "name": "KV19 Dateimanager: Dienst fehlt nicht erkannt",
+    "datei": "internal/portal/dateimanager.go",
+    "paket": "./internal/portal",
+    "alt": "\tif err != nil && keinDienst(err) {",
+    "neu": "\tif false {"
+  },
+  {
+    "name": "KV20 Dateimanager: Zeiger-Fehler nicht erkannt",
+    "datei": "internal/portal/dateimanager.go",
+    "paket": "./internal/portal",
+    "alt": "\tcase *dbus.Error:\n\t\tde = *e\n",
+    "neu": ""
+  },
+  {
+    "name": "KV21 Pfad nicht kodiert",
+    "datei": "internal/portal/dateimanager.go",
+    "paket": "./internal/portal",
+    "alt": "\treturn (&url.URL{Scheme: \"file\", Path: filepath.Clean(pfad)}).String(), nil",
+    "neu": "\t_ = url.URL{}\n\treturn \"file://\" + pfad, nil"
   }
 ]

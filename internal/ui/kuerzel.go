@@ -61,6 +61,12 @@ const (
 	aktBibSuchen
 	aktOeffnen            // Menü Datei: Öffnen… (Strg+O, ADR-0026 Nachtrag 11)
 	aktSchnellstilSichern // Kontextmenü: Stil des Objekts als Schnellstil sichern (ADR-0038 Punkt 2)
+	// Kontextmenü einer Vorschau der Bibliothek (ADR-0038 Punkt 3): Sie gelten der Vorschau, an der es geöffnet wurde
+	// (kontextMenue.vorschau), nicht der mit Fokus; deshalb eigene Handlungen neben aktBib….
+	aktVorschauOeffnen
+	aktVorschauZeigen
+	aktVorschauSchlagworte
+	aktVorschauPapierkorb
 )
 
 // taste ist ein Tastenkürzel des Editors. Genau eines gilt: akt (Handlung), werkzeug (wählt ein Werkzeug, hatWerkzeug)

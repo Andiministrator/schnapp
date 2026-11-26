@@ -5,7 +5,6 @@ package portal
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/godbus/dbus/v5"
 )
@@ -133,14 +132,7 @@ func (t *dbusTransport) Rufe(ctx context.Context, methode, elternfenster, titel 
 	var handle dbus.ObjectPath
 	err := t.conn.Object(dienst, objekt).CallWithContext(ctx, fileChooser+"."+methode, 0, elternfenster, titel, optionen).Store(&handle)
 	if err != nil {
-		var de dbus.Error
-		if e, ok := err.(dbus.Error); ok {
-			de = e
-		}
-		switch {
-		case strings.HasSuffix(de.Name, ".ServiceUnknown"), strings.HasSuffix(de.Name, ".NameHasNoOwner"),
-			strings.HasSuffix(de.Name, ".UnknownMethod"), strings.HasSuffix(de.Name, ".UnknownObject"),
-			strings.HasSuffix(de.Name, ".UnknownInterface"):
+		if keinDienst(err) {
 			return "", errKeinPortal(err)
 		}
 		return "", err

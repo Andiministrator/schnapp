@@ -1008,19 +1008,19 @@ msgstr ""
 msgid "Not available in the library. Esc returns to the image."
 msgstr ""
 
-#: internal/ui/bibliothek.go
+#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go
 msgid "This is the open capture. Open another one first."
 msgstr ""
 
-#: internal/ui/bibliothek.go internal/ui/oeffnen.go
+#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go internal/ui/oeffnen.go
 msgid "Open"
 msgstr ""
 
-#: internal/ui/bibliothek.go
+#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go
 msgid "Edit keywords"
 msgstr ""
 
-#: internal/ui/bibliothek.go
+#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go
 msgid "Move to trash"
 msgstr ""
 
@@ -1859,6 +1859,22 @@ msgstr ""
 
 #: internal/ui/kontext.go internal/ui/schnellstile.go
 msgid "Style saved"
+msgstr ""
+
+#: internal/ui/kontext_vorschau.go
+msgid "This capture is already open."
+msgstr ""
+
+#: internal/ui/kontext_vorschau.go
+msgid "Show in file manager"
+msgstr ""
+
+#: internal/ui/kontext_vorschau.go
+msgid "No file manager available to show the file (org.freedesktop.FileManager1 missing)."
+msgstr ""
+
+#: internal/ui/kontext_vorschau.go
+msgid "Could not show the file in the file manager."
 msgstr ""
 
 #: internal/ui/kuerzel.go

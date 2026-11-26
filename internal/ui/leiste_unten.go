@@ -66,6 +66,8 @@ type untenLeiste struct {
 	loesch       [libview.MaxEintraege]widget.Clickable
 	loeschRahmen []image.Rectangle // ✕ je gezeichneter Stelle von bis bis, leer ohne ✕ (Tests)
 	langDruck    int               // Stelle, deren ✕ ein langer Druck zeigt; -1: keine
+	// rechts sind die Zeigerziele des Rechtsklicks je Vorschau (Kontextmenü, ADR-0038 Punkt 3; nur die Adresse zählt).
+	rechts [libview.MaxEintraege]byte
 	// bibKnopf ist der Knopf „Library“ links in der Leiste: öffnet die volle Ansicht (ADR-0036 Punkte 1 und 3).
 	bibKnopf widget.Clickable
 	rad      int // Ziel der Mausrad-Ereignisse (nur die Adresse zählt)
@@ -349,6 +351,15 @@ func (e *editor) leisteAuswerten(gtx layout.Context) {
 		e.bibliothekOeffnen(gtx)
 	}
 	for i := range k.gezeigt {
+		for { // Rechtsklick: Kontextmenü der Vorschau am Klickpunkt (ADR-0038 Punkt 3)
+			ev, ok := gtx.Event(pointer.Filter{Target: &k.rechts[i], Kinds: pointer.Press})
+			if !ok {
+				break
+			}
+			if pe, ok := ev.(pointer.Event); ok && pe.Buttons == pointer.ButtonSecondary && i-k.von >= 0 && i-k.von < len(k.kacheln) {
+				e.leisteKontext(i, k.kacheln[i-k.von].Min.Add(pe.Position.Round()), false)
+			}
+		}
 		if k.loesch[i].Clicked(gtx) && e.leisteAn() && !e.loeschRuht() {
 			k.langDruck = -1
 			e.leistePapierkorb(i)
@@ -510,6 +521,7 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 			k.punkt = zeichneUngesichertPunkt(gtx, kr)
 		}
 		seiteKnopf(gtx, &k.knoepfe[i], kr)
+		rechtsAnmelden(gtx, &k.rechts[i], kr) // über dem Knopf, lässt ihm Zeiger und Linksklick (PassOp)
 		// ✕ oben rechts (Karte #312), über der Vorschau angemeldet, damit es den Klick bekommt.
 		var lr image.Rectangle
 		if !e.loeschRuht() && (k.knoepfe[i].Hovered() || k.loesch[i].Hovered() || k.langDruck == i) {

@@ -63,3 +63,24 @@ Leinwand umgesetzt wie Punkte 1, 2, 6 und 7. In der vollen Ansicht der Bibliothe
 wirkungslos (öffnet nicht das Menü Datei, F-860). Die Übersicht F1 nennt Umschalt+F10 unter „Other keys“ (F-861).
 Punkte 3 bis 5 (Bibliothek) folgen mit Teil 2. Tests `internal/canvas/kontext_test.go`, `internal/ui/kontext_test.go`,
 Mutanten `scripts/mutanten/kontextmenue.json` (KM1–KM21), Sichtprobe `scripts/drehbuecher/kontextmenue-313.txt`.
+
+## Umsetzung Teil 2 (26.11.2026)
+Bibliothek umgesetzt wie Punkte 3 bis 6. Die Einträge gelten der Vorschau, an der die Liste aufging (Pfad relativ zur
+Ablage, `kontextMenue.vorschau`), nicht der Vorschau mit Fokus; liest der Index inzwischen neu, sucht der Eintrag sie
+wieder, fehlt sie, tut er nichts. Eigene Handlungen `aktVorschau…` neben `aktBib…` (Menü Bearbeiten der vollen Ansicht).
+Entscheidungen im Rahmen des Auftrags:
+- **Öffnen an der offenen Aufnahme:** in der Leiste grau mit Erklärung (ein Klick darauf bleibt dort ohnehin still), in
+  der vollen Ansicht führt es zurück zum Bild wie Enter.
+- **Umschalt+F10 auch in der Leiste:** Hat eine Vorschau der Leiste den Fokus, öffnet Umschalt+F10 deren Menü statt des
+  Menüs der Auswahl. In der vollen Ansicht nur, wenn das Raster den Fokus hat (nicht im Suchfeld, nicht beim Bearbeiten
+  der Schlagworte); Anker ist die Mitte der Vorschau.
+- **Fokus:** Rechtsklick setzt ihn auf die Vorschau; Esc und ein Eintrag geben ihn in der Leiste an die Vorschau zurück,
+  in der vollen Ansicht an die Ansicht.
+- **Dateimanager:** `org.freedesktop.FileManager1.ShowItems` in einer Goroutine (Frist 10 s, höchstens ein Aufruf zugleich,
+  der Eintrag ist solange grau), eigene kurze Busverbindung (`internal/portal/dateimanager.go`). Fehlt der Dienst
+  (ServiceUnknown, NameHasNoOwner, Unknown*), sagt die Fußzeile es; andere Fehler allgemein.
+- Ein zweiter Rechtsklick bei offenem Menü öffnet es auch an einer anderen Vorschau bzw. von der Vorschau auf der
+  Leinwand neu (`kontextErneut`).
+Tests `internal/ui/kontext_vorschau_test.go`, `internal/portal/dateimanager_test.go`, Mutanten KV1–KV21 in
+`scripts/mutanten/kontextmenue.json`, Sichtprobe `scripts/drehbuecher/kontextmenue-313-bibliothek.txt`. Gegen einen echten
+Dolphin ist ShowItems noch ungeprüft (Echtlauf Andi).

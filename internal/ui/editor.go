@@ -354,6 +354,8 @@ type editor struct {
 	kontext          kontextMenue
 	leinwandUrsprung image.Point
 	leinwandRahmen   image.Rectangle // Fläche der Leinwand im Fenster (zweiter Rechtsklick, Kritik K-6 #313a)
+	// dateimanager: „Im Dateimanager zeigen“ aus dem Kontextmenü einer Vorschau (ADR-0038 Punkt 3, kontext_vorschau.go).
+	dateimanager dateimanagerZustand
 	pfeilform        pfeilformLeiste
 	strichart        strichartLeiste // Klappfeld „Line style“ (ADR-0021 Nachtrag 25, strichart.go)
 	// schatten: gemerkte Schattenbilder je Objekt (ADR-0021 Nachtrag 26, schatten.go).
@@ -550,6 +552,9 @@ func (e *editor) nachEreignis() {
 		e.wecker.Anfordern()
 	}
 	if e.speichernAbholen() {
+		e.wecker.Anfordern()
+	}
+	if e.dateimanagerAbholen() {
 		e.wecker.Anfordern()
 	}
 	if e.wechselAbholen() || e.leisteIndexAbholen() || e.bibliothekAbholen() { // Wechsel, Index der Leiste und der Ansicht (ADR-0036)
@@ -2594,8 +2599,11 @@ func (e *editor) tasten(gtx layout.Context) {
 			if k, ok := ev.(key.Event); ok && k.State == key.Press {
 				t, ok := findeTaste(k.Name, k.Modifiers, false)
 				switch {
-				case k.Name == key.NameF10 && !k.Modifiers.Contain(key.ModShift):
-					// Umschalt+F10 ist hier bis ADR-0038 Teil 2 wirkungslos, öffnet nicht das Menü Datei (Kritik K-1 #313a).
+				case k.Name == key.NameF10 && k.Modifiers.Contain(key.ModShift):
+					// Kontextmenü der Vorschau mit Fokus (ADR-0038 Punkt 6); ohne Vorschau mit Fokus nichts, nie das Menü
+					// Datei (Kritik K-1 #313a).
+					e.vorschauKontextPerTaste(gtx)
+				case k.Name == key.NameF10:
 					e.menueOeffne(menueDatei, true)
 				case ok && !t.hatWerkzeug && bibliothekErlaubt(t.akt):
 					e.fuehreAus(gtx, t.akt, false)
@@ -2665,7 +2673,10 @@ func (e *editor) tasten(gtx layout.Context) {
 			continue
 		}
 		if k.Name == key.NameF10 && k.Modifiers.Contain(key.ModShift) && !e.menue.offen && !e.bibl.offen {
-			e.kontextPerTaste() // Kontextmenü der Auswahl (ADR-0038 Punkt 6)
+			// Kontextmenü der Vorschau mit Fokus in der Leiste, sonst der Auswahl (ADR-0038 Punkt 6)
+			if !e.vorschauKontextPerTaste(gtx) {
+				e.kontextPerTaste()
+			}
 			continue
 		}
 		if k.Name == key.NameF10 { // öffnet das erste Menü bzw. schließt das offene (ADR-0031 Punkt 1)

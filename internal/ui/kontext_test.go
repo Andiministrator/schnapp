@@ -130,20 +130,6 @@ func TestKontextmenueSchnellstilGrau(t *testing.T) {
 	}
 }
 
-// Kritik K-1 #313a: In der vollen Ansicht der Bibliothek öffnet Umschalt+F10 (bis ADR-0038 Teil 2) nichts, F10 allein
-// weiter das Menü Datei.
-func TestKontextmenueBibliothekUmschaltF10(t *testing.T) {
-	l := bibLauf(t, 3)
-	l.taste(key.NameF10, key.ModShift)
-	if l.e.menue.offen {
-		t.Errorf("Umschalt+F10 in der Bibliothek öffnet Menü %d", l.e.menue.welches)
-	}
-	l.taste(key.NameF10, 0)
-	if !l.e.menue.offen || l.e.menue.welches != menueDatei {
-		t.Errorf("F10 in der Bibliothek: offen %v, Menü %d", l.e.menue.offen, l.e.menue.welches)
-	}
-}
-
 // Kritik K-2 #313a: Die Übersicht F1 nennt Umschalt+F10.
 func TestKontextmenueInDerUebersicht(t *testing.T) {
 	e := testEditor(t)

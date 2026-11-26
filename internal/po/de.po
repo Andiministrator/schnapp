@@ -1878,3 +1878,15 @@ msgstr "Für dieses Objekt gibt es keine Schnellstile."
 
 msgid "Context menu"
 msgstr "Kontextmenü"
+
+msgid "Show in file manager"
+msgstr "Im Dateimanager zeigen"
+
+msgid "This capture is already open."
+msgstr "Diese Aufnahme ist schon offen."
+
+msgid "No file manager available to show the file (org.freedesktop.FileManager1 missing)."
+msgstr "Kein Dateimanager, der die Datei zeigen kann (org.freedesktop.FileManager1 fehlt)."
+
+msgid "Could not show the file in the file manager."
+msgstr "Die Datei ließ sich nicht im Dateimanager zeigen."

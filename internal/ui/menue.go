@@ -223,6 +223,15 @@ func (e *editor) menueSchliesse(gtx layout.Context, zuKnopf bool) {
 		gtx.Execute(key.FocusCmd{Tag: &e.bibl})
 		return
 	}
+	if m.welches == listeKontext && e.kontext.inLeiste {
+		// Kontextmenü einer Vorschau der Leiste: Fokus zurück an die Vorschau (ADR-0038 Punkt 3), sobald sie gezeichnet
+		// ist; ist sie weg, an die Leinwand.
+		if i := e.vorschauStelle(); i >= 0 {
+			e.unten.fokusSoll = i
+			gtx.Execute(op.InvalidateCmd{})
+			return
+		}
+	}
 	if zuKnopf && m.welches != listeKontext { // das Kontextmenü hat keinen Knopf: Fokus an die Leinwand (ADR-0038)
 		gtx.Execute(key.FocusCmd{Tag: e.listenKnopf(m.welches)})
 	} else {
@@ -362,6 +371,8 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 		return func(layout.Context) { e.s.Doppeln() }
 	case aktSchnellstilSichern:
 		return e.schnellstilSichernAktion
+	case aktVorschauOeffnen, aktVorschauZeigen, aktVorschauSchlagworte, aktVorschauPapierkorb:
+		return e.vorschauWirkung(a)
 	case aktUmbenennen:
 		return func(gtx layout.Context) { e.umbenennenBeginnen(gtx) }
 	case aktAusblenden:
@@ -551,8 +562,8 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 			// Ein zweiter Rechtsklick auf die Leinwand öffnet das Kontextmenü am neuen Punkt für das neue Ziel, wie in
 			// Qt/KDE (Kritik K-6 #313a); sonst bräuchte es drei Klicks.
 			q := image.Pt(int(p.Position.X), int(p.Position.Y))
-			if m.welches == listeKontext && p.Buttons == pointer.ButtonSecondary && q.In(e.leinwandRahmen) {
-				e.kontextRechtsklick(q.Sub(e.leinwandUrsprung))
+			if m.welches == listeKontext && p.Buttons == pointer.ButtonSecondary {
+				e.kontextErneut(gtx, q)
 			}
 		}
 	}

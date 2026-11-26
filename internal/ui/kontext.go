@@ -23,11 +23,20 @@ import (
 type kontextMenue struct {
 	anker  image.Rectangle // Fensterpunkt des Aufrufs als Rechteck 1×1 (listenAnker)
 	objekt bool            // die Liste gilt dem gewählten Objekt, sonst dem Bild
+	// vorschau: Die Liste gilt der Vorschau mit diesem Pfad relativ zur Ablage (ADR-0038 Punkt 3, kontext_vorschau.go);
+	// leer: der Leinwand. inLeiste: Vorschau der Leiste unten, sonst der vollen Ansicht.
+	vorschau string
+	inLeiste bool
 }
 
-// kontextAmPunkt öffnet das Kontextmenü am Fensterpunkt p (Leinwandkoordinaten plus Ursprung der Leinwand).
+// kontextAmPunkt öffnet das Kontextmenü der Leinwand am Fensterpunkt p (Leinwandkoordinaten plus Ursprung der Leinwand).
 func (e *editor) kontextAmPunkt(p image.Point, objekt, perTaste bool) {
-	e.kontext = kontextMenue{anker: image.Rectangle{Min: p, Max: p.Add(image.Pt(1, 1))}, objekt: objekt}
+	e.kontextOeffnen(kontextMenue{anker: image.Rectangle{Min: p, Max: p.Add(image.Pt(1, 1))}, objekt: objekt}, perTaste)
+}
+
+// kontextOeffnen öffnet die Liste mit dem Zustand k.
+func (e *editor) kontextOeffnen(k kontextMenue, perTaste bool) {
+	e.kontext = k
 	e.menue.offen = false // ein offenes Kontextmenü (zweiter Rechtsklick, menueAuswerten) öffnet am neuen Punkt neu
 	e.menueOeffne(listeKontext, perTaste)
 }
@@ -58,6 +67,9 @@ func (e *editor) kontextPerTaste() {
 
 // kontextEintraege sind die Einträge der Liste (ADR-0038 Punkt 2), je nachdem, ob sie einem Objekt gilt.
 func (e *editor) kontextEintraege() []menueEintrag {
+	if e.kontext.vorschau != "" {
+		return e.vorschauEintraege()
+	}
 	s := e.s
 	if !e.kontext.objekt || s.Auswahl == 0 {
 		en := []menueEintrag{

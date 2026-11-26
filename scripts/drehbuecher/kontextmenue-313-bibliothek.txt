@@ -1,0 +1,46 @@
+# Sichtprobe ADR-0038 Teil 2 (Karte #313): Kontextmenü an den Vorschauen der Leiste und der vollen Ansicht.
+# Vorbereitung wie bibliothek-174-leiste.txt, auf einer frischen Probe-Umgebung aus der Wurzel des Repos:
+#   bild=$(go run ./scripts/probelibrary -heim tmp/probe/home)
+#   scripts/probe.sh --drehbuch scripts/drehbuecher/kontextmenue-313-bibliothek.txt --ende 60 --bild "$bild"
+# Legt nichts in den Papierkorb und ändert keine Schlagworte. „Im Dateimanager zeigen“ wird nicht ausgelöst (im
+# virtuellen KWin gibt es keinen Dateimanager; Echtlauf Andi).
+# Bei 1600 × 1000, Skala 1: Leiste (52,866)–(1300,970), Mitte der Vorschau i bei x = 174 + 132·i, y = 908.
+# Erwartet:
+#  01 Rechtsklick auf die erste Vorschau: Liste am Zeiger, nach oben ins Fenster gerückt: Open (Enter) · Show in file
+#     manager │ Move to trash (Del); die Vorschau hat den orangen Fokusring.
+#  02 Rechtsklick auf die offene (grün umrandet; nach probelibrary die vierte, x 570): Open grau, beim Ansteuern per Pfeil sagt die Statuszeile
+#     „This capture is already open.“
+#  03 Esc: Liste zu, Fokusring an der offenen Vorschau; Umschalt+F10: Liste in deren Mitte, erster
+#     bedienbarer Eintrag mit Fokusring.
+#  04 volle Ansicht (Strg+Umschalt+L), Rechtsklick auf eine Vorschau im Raster: Fokus dort, Liste mit Open · Show in file
+#     manager │ Edit keywords (F2) │ Move to trash (Del).
+#  05 Esc, Umschalt+F10: dieselbe Liste in der Mitte der Vorschau mit Fokus.
+warte 1500
+taste Strg+Umschalt+R
+warte 2500
+rechtsklick 174 908
+warte 400
+foto 01-leiste-kontext
+rechtsklick 570 908
+warte 400
+taste Runter
+warte 300
+foto 02-leiste-offene
+taste Esc
+warte 300
+taste Umschalt+F10
+warte 400
+foto 03-leiste-umschalt-f10
+taste Esc
+taste Strg+Umschalt+L
+warte 2500
+rechtsklick 400 300
+warte 400
+foto 04-ansicht-kontext
+taste Esc
+warte 300
+taste Umschalt+F10
+warte 400
+foto 05-ansicht-umschalt-f10
+taste Esc
+taste Esc

@@ -819,6 +819,10 @@ func (e *editor) bibliothekZeiger(gtx layout.Context) {
 			}
 			b.druckStelle = -1
 		case pointer.Press:
+			if pe.Buttons == pointer.ButtonSecondary && stelle >= 0 { // Kontextmenü der Vorschau (ADR-0038 Punkt 3)
+				e.bibKontext(gtx, stelle, pe.Position.Round(), false)
+				continue
+			}
 			if pe.Buttons != pointer.ButtonPrimary {
 				continue
 			}
