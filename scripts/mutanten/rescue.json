@@ -949,8 +949,8 @@
     "name": "A2 F-770 Wechsel gibt die Rettung nach gescheitertem VorgabeKante nicht frei (F-784)",
     "datei": "cmd/schnapp/editor.go",
     "paket": "./cmd/schnapp",
-    "alt": "\t\t\t\tr.ende()\n\t\t\t\treturn ui.Geoeffnet{}, errors.New(nutzerFehler(err))",
-    "neu": "\t\t\t\treturn ui.Geoeffnet{}, errors.New(nutzerFehler(err))"
+    "alt": "\t\t\tr.ende()\n\t\t\treturn ui.Geoeffnet{}, errors.New(nutzerFehler(err))",
+    "neu": "\t\t\treturn ui.Geoeffnet{}, errors.New(nutzerFehler(err))"
   },
   {
     "name": "A3 F-770 Öffnen gibt die Rettung nach gescheitertem VorgabeKante nicht frei (F-784)",

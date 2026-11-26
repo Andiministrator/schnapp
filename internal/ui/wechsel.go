@@ -35,6 +35,8 @@ type Geoeffnet struct {
 	// Aussen: eine Datei außerhalb der Bibliothek, die der Editor bei der ersten Änderung speichert und damit als neue
 	// Aufnahme ablegt (ADR-0016 Nachtrag 11); bis dahin kommt nichts in die Bibliothek.
 	Aussen bool
+	// Fortgesetzt: Dokument ist das gemerkte einer früher verlassenen Aufnahme, mit Verlauf (Anbindung.Fortsetzen).
+	Fortgesetzt bool
 }
 
 // Oeffnen lädt die Datei pfad für den Wechsel (cmd/schnapp: ladeFuerEditor, Rettungskopie, Kantenvorgabe). Läuft in
@@ -52,6 +54,9 @@ type Anbindung struct {
 	// Zuordnen bildet eine in Datei → Öffnen… gewählte Datei auf die Aufnahme ab, die Oeffnen laden würde (eine früher
 	// übernommene Datei von außen auf ihre Aufnahme, F-828). Läuft in der Goroutine des Dialogs. nil: der Pfad selbst.
 	Zuordnen func(pfad string) string
+	// Fortsetzen lädt eine früher verlassene Aufnahme mit ihrem gemerkten Dokument samt Verlauf, wenn die Datei
+	// unverändert ist (ADR-0036 Zusatz Karte #356). nil: Ein Wechsel lädt immer neu, der Verlauf beginnt leer.
+	Fortsetzen Fortsetzen
 }
 
 // wechselZustand ist ein laufender Wechsel.
@@ -162,6 +167,12 @@ func (e *editor) wechselLaden() {
 	ch := make(chan wechselErgebnis, 1)
 	e.wechsel.antwort = ch
 	oeffnen, ziel, wecker, enden := e.bib.Oeffnen, e.wechsel.ziel, e.wecker, e.rettungEnden
+	// Früher verlassen und gemerkt: mit dem gemerkten Dokument fortsetzen, wenn die Datei unverändert ist (Karte #356).
+	// Der Eintrag ist damit verbraucht; uebernimm merkt die Aufnahme beim nächsten Verlassen neu.
+	if m, ok := e.verlaeufe.nimm(ziel); ok && e.bib.Fortsetzen != nil {
+		fortsetzen := e.bib.Fortsetzen
+		oeffnen = func(p string) (Geoeffnet, error) { return fortsetzen(p, m.d, m.stand) }
+	}
 	go func() {
 		// Erst die Rettungskopien früherer Wechsel freigeben: Führt der Wechsel zurück zu einer davon, fände die neue
 		// Sicherung deren Sperre sonst noch belegt und liefe als fremd (F-637). Ende selbst ist auf 5 s begrenzt.
@@ -247,6 +258,7 @@ func (e *editor) wechselAbholen() bool {
 		e.wechselBehaeltAnsicht = true
 		e.uebernimm(r.g)
 		e.wechselBehaeltAnsicht = false
+		e.verlaeufe.vergiss(alt) // sie geht in den Papierkorb (ADR-0036 Zusatz Karte #356 Punkt 3)
 		if rel, ok := e.bib.Bibliothek.Relativ(alt); ok && alt != "" {
 			e.papierkorbAnfrage(rel, false, nil)
 		}
@@ -261,6 +273,7 @@ func (e *editor) wechselAbholen() bool {
 // und die Schalter der Ansicht (Einrasten, Navigator) bleiben.
 func (e *editor) uebernimm(g Geoeffnet) {
 	e.ocrAbbrechen()
+	e.merkeVerlassene() // Verlauf der alten Aufnahme für einen späteren Wechsel zurück (Karte #356)
 	// Die alte Aufnahme ist gespeichert: Kopie verwerfen, Sperre freigeben — im Hintergrund, Ende wartet bis zu 5 s auf
 	// die Schreibkette (F-637).
 	if e.rettung != nil {

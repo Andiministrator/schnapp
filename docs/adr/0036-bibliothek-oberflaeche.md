@@ -381,3 +381,28 @@ Frage Andi, 26.11.2026: „sollten wir bilder mit ungespeicherten änderungen in
 - Eine Datei von außen hat bis zur ersten Änderung keine Vorschau in der Leiste (ADR-0016 Nachtrag 11). Mit der
   ersten Änderung speichert der Editor sie sofort, der Punkt erscheint dort also nur kurz.
 - Mutanten `scripts/mutanten/leiste-355.json`.
+
+## Zusatz (26.11.2026, Karte #356, Claude Opus 5.5)
+
+Frage Andi, 26.11.2026: „wenn man unten in der leiste zwischen bilder wechselt, behalten diese dann ihre historie? also
+wenn ich bei einem bild nach einem wechsel STRG-Z drücke, geht das dann?“ Bisher nicht: Punkt 5 lädt die Aufnahme neu,
+der Verlauf beginnt leer.
+
+1. **Verlauf je Aufnahme, solange das Fenster offen ist.** Beim Wechsel merkt sich der Editor das Dokument der
+   verlassenen Aufnahme mit seinem Rückgängig-Verlauf (`internal/ui/verlaufmerker.go`). Führt ein späterer Wechsel
+   zurück, nimmt er dieses Dokument statt des neu gelesenen; Strg+Z geht dann hinter den gespeicherten Stand zurück
+   (das Dokument gilt danach als geändert und wird beim nächsten Wechsel wieder gespeichert).
+2. **Nur bei unveränderter Datei.** Gemerkt wird mit dem Dateistand (`library.StandVon`: Gerät, Inode, Größe, Zeit)
+   nach dem Speichern, das jedem Wechsel vorausgeht. Die Anbindung bekommt dafür `Fortsetzen(pfad, d, stand)`
+   (`cmd/schnapp`: `fortsetzerFuer`): Sie lädt wie `Oeffnen` (mit Rettungskopie und Budget-Prüfung) und nimmt das
+   gemerkte Dokument nur, wenn der geladene Stand gleich dem gemerkten ist; sonst gilt das frisch gelesene (geändert von
+   außen, Schlagworte in der Ansicht, ein zweites Fenster). Die Speicherfunktion entsteht für das gemerkte Dokument neu,
+   sein Schwärzungsstand gilt als geschrieben (er ist es: gemerkt wird nur ein gespeicherter Stand).
+3. **Nicht gemerkt** werden: eine Aufnahme mit ungesicherten Änderungen (gescheitertes Speichern, Verwerfen), eine mit
+   einer Schwärzung im Verlauf (er hielte die Pixel im Klartext; das Speichern leert ihn ohnehin, ADR-0022 Punkt 3), eine
+   Datei von außen vor ihrer Übernahme, eine Aufnahme ohne Verlauf (nichts zu gewinnen) und eine, die mit dem Wechsel in
+   den Papierkorb geht (Zusatz Karte #347).
+4. **Grenzen:** höchstens 4 gemerkte Aufnahmen und zusammen höchstens 512 MiB (Pixel des Originals plus Pixelkopien im
+   Verlauf, `document.Speicherbedarf`); darüber fällt die am längsten verlassene weg. Ein einzelnes Dokument über der
+   Grenze wird nicht gemerkt. Nichts davon geht auf die Platte; mit dem Fenster ist der Verlauf weg.
+5. Tests `internal/ui/verlaufmerker_test.go`, `cmd/schnapp` `TestFortsetzen…`; Mutanten `scripts/mutanten/verlaufmerker.json`.

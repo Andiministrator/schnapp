@@ -320,8 +320,8 @@
     "name": "BC2 Wechsel ohne Kantenvorgabe für ein einfaches Bild",
     "datei": "cmd/schnapp/editor.go",
     "paket": "./cmd/schnapp",
-    "alt": "if g.Fremd {\n\t\t\tif err := g.Dokument.VorgabeKante(kante); err != nil {\n\t\t\t\tr.ende()\n\t\t\t\treturn ui.Geoeffnet{}",
-    "neu": "if g.Fremd && false {\n\t\t\tif err := g.Dokument.VorgabeKante(kante); err != nil {\n\t\t\t\tr.ende()\n\t\t\t\treturn ui.Geoeffnet{}"
+    "alt": "if g.Fremd {\n\t\tif err := g.Dokument.VorgabeKante(kante); err != nil {\n\t\t\tr.ende()\n\t\t\treturn ui.Geoeffnet{}",
+    "neu": "if g.Fremd && false {\n\t\tif err := g.Dokument.VorgabeKante(kante); err != nil {\n\t\t\tr.ende()\n\t\t\treturn ui.Geoeffnet{}"
   },
   {
     "name": "BC3 Pfad folgt dem Speichern als neue Aufnahme nicht",
@@ -341,8 +341,8 @@
     "name": "BC5 Fehler der Ladefunktion unübersetzt",
     "datei": "cmd/schnapp/editor.go",
     "paket": "./cmd/schnapp",
-    "alt": "return ui.Geoeffnet{}, errors.New(nutzerFehler(err))\n\t\t}\n\t\tif g.Fremd",
-    "neu": "return ui.Geoeffnet{}, err\n\t\t}\n\t\tif g.Fremd"
+    "alt": "return ui.Geoeffnet{}, errors.New(nutzerFehler(err))\n\t\t}\n\t\treturn geladenFuer(b, kante, abs, g, stand, r, aussen)",
+    "neu": "return ui.Geoeffnet{}, err\n\t\t}\n\t\treturn geladenFuer(b, kante, abs, g, stand, r, aussen)"
   },
   {
     "name": "KM1 Wechsel trotz offenem Exportdialog",
@@ -404,8 +404,8 @@
     "name": "KM17 Texterkennung läuft über den Wechsel weiter",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "e.ocrAbbrechen()\n\t// Die alte Aufnahme ist gespeichert",
-    "neu": "// Die alte Aufnahme ist gespeichert"
+    "alt": "e.ocrAbbrechen()\n\te.merkeVerlassene()",
+    "neu": "e.merkeVerlassene()"
   },
   {
     "name": "KM23 Opening bleibt nach dem Wechsel stehen",

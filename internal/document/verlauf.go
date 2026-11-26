@@ -98,6 +98,21 @@ func (d *Dokument) VerlaufPlatz() int64 {
 	return max(verlaufGrenze-summe, 0)
 }
 
+// Speicherbedarf schätzt, wie viel Speicher das Dokument hält: Pixel des Originals plus die Pixelkopien im
+// Rückgängig-Verlauf (erledigt und zurückgenommen). Grundlage der Grenze für gemerkte Aufnahmen beim Wechsel im selben
+// Fenster (ADR-0036 Zusatz Karte #356); Objekte und Verwaltung zählen nicht, sie sind klein dagegen.
+func (d *Dokument) Speicherbedarf() int64 {
+	summe := int64(len(d.original.Pix))
+	for _, l := range [][]schritt{d.verlauf.erledigt, d.verlauf.zurueckgenommen} {
+		for _, s := range l {
+			if g, ok := s.b.(groessenBefehl); ok {
+				summe += g.pixelBytes()
+			}
+		}
+	}
+	return summe
+}
+
 // Stand kennzeichnet den Verlaufsstand des Dokuments (F-109): Jede neue Änderung bekommt eine neue Kennung, die nie
 // wiederkehrt; Rückgängig und Wiederholen kehren zu früheren Kennungen zurück. Gleiche Kennung heißt gleicher Inhalt
 // — so erkennt der Editor, ob der gespeicherte Stand wieder erreicht ist. Eine Ausnahme ist das Verpixeln: Wiederholen

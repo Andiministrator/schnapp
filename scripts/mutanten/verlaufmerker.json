@@ -1,0 +1,123 @@
+[
+  {
+    "name": "V1 ungespeichert gemerkt",
+    "datei": "internal/ui/verlaufmerker.go",
+    "paket": "./internal/ui",
+    "alt": "e.aussen || e.s.Geaendert() || e.s.Zieht()",
+    "neu": "e.aussen || e.s.Zieht()"
+  },
+  {
+    "name": "V2 Schwärzung im Verlauf gemerkt",
+    "datei": "internal/ui/verlaufmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\tif d.VerlaufMitSchwaerzung() || !(d.KannRueckgaengig() || d.KannWiederholen()) {",
+    "neu": "\tif !(d.KannRueckgaengig() || d.KannWiederholen()) {",
+    "aequivalent": true,
+    "grund": "canvas.Sitzung.Gespeichert und SpeichernEnde leeren einen Verlauf mit Schwärzung (VergissVerlauf, ADR-0022 Punkt 3); gemerkt wird nur nach dem Speichern, der Verlauf ist dann ohne Schwärzung. Die Prüfung in merkeVerlassene ist ein zweiter Schutz für den [S]-Pfad (26.11., Karte #356)."
+  },
+  {
+    "name": "V3 ohne Verlauf gemerkt",
+    "datei": "internal/ui/verlaufmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\tif d.VerlaufMitSchwaerzung() || !(d.KannRueckgaengig() || d.KannWiederholen()) {",
+    "neu": "\tif d.VerlaufMitSchwaerzung() {"
+  },
+  {
+    "name": "V4 Datei von außen gemerkt",
+    "datei": "internal/ui/verlaufmerker.go",
+    "paket": "./internal/ui",
+    "alt": "e.pfad == nil || e.aussen || e.s.Geaendert()",
+    "neu": "e.pfad == nil || e.s.Geaendert()"
+  },
+  {
+    "name": "V5 ohne Grenze der Anzahl",
+    "datei": "internal/ui/verlaufmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\tfor len(m.liste) > merkerAnzahl || summe > merkerGrenze {",
+    "neu": "\tfor summe > merkerGrenze {"
+  },
+  {
+    "name": "V6 ohne Speichergrenze",
+    "datei": "internal/ui/verlaufmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\tfor len(m.liste) > merkerAnzahl || summe > merkerGrenze {",
+    "neu": "\tfor len(m.liste) > merkerAnzahl {"
+  },
+  {
+    "name": "V7 übergroßes Dokument gemerkt",
+    "datei": "internal/ui/verlaufmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\tif g.bedarf > merkerGrenze {\n\t\treturn\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "V8 nimm entfernt nicht",
+    "datei": "internal/ui/verlaufmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tm.liste = append(m.liste[:i:i], m.liste[i+1:]...)\n",
+    "neu": "\t\t\t_ = i\n"
+  },
+  {
+    "name": "V9 Pfad nicht bereinigt",
+    "datei": "internal/ui/verlaufmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\tpfad = filepath.Clean(pfad)\n\tfor i, e := range m.liste {",
+    "neu": "\tfor i, e := range m.liste {"
+  },
+  {
+    "name": "V10 ohne Fortsetzen nicht geprüft",
+    "datei": "internal/ui/verlaufmerker.go",
+    "paket": "./internal/ui",
+    "alt": "e.bib == nil || e.bib.Fortsetzen == nil || e.pfad == nil",
+    "neu": "e.bib == nil || e.pfad == nil"
+  },
+  {
+    "name": "V11 Wechsel nimmt Gemerktes nicht",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\tif m, ok := e.verlaeufe.nimm(ziel); ok && e.bib.Fortsetzen != nil {",
+    "neu": "\tif m, ok := e.verlaeufe.nimm(ziel); ok && false {"
+  },
+  {
+    "name": "V12 Verlassene nicht gemerkt",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\te.merkeVerlassene() // Verlauf",
+    "neu": "\t// Verlauf"
+  },
+  {
+    "name": "V13 Papierkorb vergisst nicht",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.verlaeufe.vergiss(alt) //",
+    "neu": "\t\t//"
+  },
+  {
+    "name": "V14 Fortsetzen ohne Standvergleich",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif st != stand || g.Fremd || d == nil {",
+    "neu": "\t\tif g.Fremd || d == nil {"
+  },
+  {
+    "name": "V15 Anbindung ohne Fortsetzen",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tFortsetzen: fortsetzerFuer(b, kante)}",
+    "neu": "\t}"
+  },
+  {
+    "name": "V16 Fortsetzen nie fortgesetzt",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tfort.Dokument = d\n",
+    "neu": ""
+  },
+  {
+    "name": "V17 Speicherbedarf ohne Verlauf",
+    "datei": "internal/document/verlauf.go",
+    "paket": "./internal/document",
+    "alt": "\tsumme := int64(len(d.original.Pix))\n\tfor _, l := range [][]schritt{d.verlauf.erledigt, d.verlauf.zurueckgenommen} {",
+    "neu": "\tsumme := int64(len(d.original.Pix))\n\tfor _, l := range [][]schritt{} {"
+  }
+]

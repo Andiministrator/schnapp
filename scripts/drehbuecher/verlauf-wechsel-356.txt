@@ -1,0 +1,32 @@
+# Sichtprobe ADR-0036 Zusatz Karte #356: Der Rückgängig-Verlauf einer Aufnahme bleibt beim Wechsel in der Leiste.
+# Vorbereitung wie bibliothek-174-leiste.txt (Probe-Bibliothek unter tmp/probe/home):
+#   bild=$(go run ./scripts/probelibrary -heim tmp/probe/home)
+# Aufruf (mit einer Aufnahme der Bibliothek, sonst gilt sie als Datei von außen und wird nicht gemerkt):
+#   scripts/probe.sh --drehbuch scripts/drehbuecher/verlauf-wechsel-356.txt --ende 60 --bild "$bild"
+# Bei 1600 × 1000, Skala 1: Mitte der Vorschau i in der Leiste bei x = 174 + 132·i, y = 908 (seit Karte #353).
+# Erwartet:
+#  01 Kasten gezeichnet, Fußzeile „ungesichert“, oranger Punkt an der offenen Vorschau.
+#  02 nach dem Wechsel zur neuesten: andere Aufnahme offen.
+#  03 zurück zur vorigen: der Kasten ist da, Fußzeile „gespeichert“.
+#  04 Strg+Z: der Kasten ist weg, Fußzeile „ungesichert“ — der Verlauf hat den Wechsel überlebt.
+warte 1500
+taste Strg+Umschalt+R
+warte 2500
+taste R
+ziehe 400 300 800 600
+warte 400
+taste Escape
+zeiger 900 700
+warte 400
+foto 01-kasten
+klick 174 908
+warte 4000
+foto 02-gewechselt
+klick 306 908
+warte 4000
+zeiger 900 700
+warte 400
+foto 03-zurueck
+taste Strg+Z
+warte 600
+foto 04-rueckgaengig

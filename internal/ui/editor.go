@@ -289,6 +289,8 @@ type editor struct {
 	// wechselBehaeltAnsicht: uebernimm lässt die volle Ansicht der Bibliothek offen (die offene Aufnahme wurde aus ihr
 	// weggeworfen, Karte #347).
 	wechselBehaeltAnsicht bool
+	// verlaeufe: Dokumente verlassener Aufnahmen mit ihrem Verlauf (ADR-0036 Zusatz Karte #356).
+	verlaeufe verlaufMerker
 	// kopieIstText: Die Kopie, die das Fenster hält, ist Text (Text aus dem Bild, ADR-0024 Nachtrag 9); die Warnung sagt das.
 	kopieIstText bool
 	// ocr: Text aus dem Bild kopieren (ocr.go, ADR-0035).

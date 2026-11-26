@@ -80,7 +80,8 @@ func geoeffnetFuer(b *library.Bibliothek, abs string, g *fileformat.Gelesen, sta
 // anbindungFuer verbindet den Editor mit der Bibliothek b (ADR-0036): Die Leiste liest Index und Vorschauen, ein Klick
 // auf eine Vorschau lädt die Aufnahme über oeffnerFuer.
 func anbindungFuer(b *library.Bibliothek, kante document.Kante) *ui.Anbindung {
-	return &ui.Anbindung{Bibliothek: b, Oeffnen: oeffnerFuer(b, kante), UmDatei: rettungUmDatei, Zuordnen: zuordnerFuer(b)}
+	return &ui.Anbindung{Bibliothek: b, Oeffnen: oeffnerFuer(b, kante), UmDatei: rettungUmDatei, Zuordnen: zuordnerFuer(b),
+		Fortsetzen: fortsetzerFuer(b, kante)}
 }
 
 // rettungUmDatei hält die Rettungskopie einer Aufnahme anwendbar, während ihre Metadaten neu geschrieben werden
@@ -110,13 +111,42 @@ func oeffnerFuer(b *library.Bibliothek, kante document.Kante) ui.Oeffnen {
 		if err != nil {
 			return ui.Geoeffnet{}, errors.New(nutzerFehler(err))
 		}
-		if g.Fremd {
-			if err := g.Dokument.VorgabeKante(kante); err != nil {
-				r.ende()
-				return ui.Geoeffnet{}, errors.New(nutzerFehler(err))
-			}
+		return geladenFuer(b, kante, abs, g, stand, r, aussen)
+	}
+}
+
+// geladenFuer macht aus einer frisch geladenen Datei das Geoeffnet des Wechsels: ein einfaches oder beschädigtes Bild
+// bekommt die Kantenform aus [capture] seam.
+func geladenFuer(b *library.Bibliothek, kante document.Kante, abs string, g *fileformat.Gelesen, stand library.Stand,
+	r *rettung, aussen bool) (ui.Geoeffnet, error) {
+	if g.Fremd {
+		if err := g.Dokument.VorgabeKante(kante); err != nil {
+			r.ende()
+			return ui.Geoeffnet{}, errors.New(nutzerFehler(err))
 		}
-		return geoeffnetFuer(b, abs, g, stand, r, false, aussen), nil
+	}
+	return geoeffnetFuer(b, abs, g, stand, r, false, aussen), nil
+}
+
+// fortsetzerFuer setzt eine früher verlassene Aufnahme mit ihrem gemerkten Dokument d fort (ADR-0036 Zusatz Karte #356):
+// Sie lädt die Datei wie oeffnerFuer (Rettungskopie, Budget-Prüfung) und nimmt d nur, wenn der geladene Stand gleich
+// dem gemerkten ist und die Datei eine Schnapp-Datei ist; dann trägt die Datei genau den gespeicherten Stand von d,
+// auch seine Schwärzungen (geschriebenBei in ablegenIn ist d.SchwaerzStand()). Sonst gilt das gelesene Dokument wie
+// beim gewöhnlichen Wechsel.
+func fortsetzerFuer(b *library.Bibliothek, kante document.Kante) ui.Fortsetzen {
+	return func(pfad string, d *document.Dokument, stand library.Stand) (ui.Geoeffnet, error) {
+		abs, g, st, r, err := ladeMitRettung(pfad, false, ladeFuer) // wartet vor dem Laden (F-769)
+		if err != nil {
+			return ui.Geoeffnet{}, errors.New(nutzerFehler(err))
+		}
+		if st != stand || g.Fremd || d == nil {
+			return geladenFuer(b, kante, abs, g, st, r, false) // geändert: das gelesene gilt
+		}
+		fort := *g
+		fort.Dokument = d
+		geo := geoeffnetFuer(b, abs, &fort, st, r, false, false)
+		geo.Fortgesetzt = true
+		return geo, nil
 	}
 }
 

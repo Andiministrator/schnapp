@@ -31,8 +31,8 @@
     "name": "IM5 Datei → Öffnen… ohne Merker aussen",
     "datei": "cmd/schnapp/editor.go",
     "paket": "./cmd/schnapp",
-    "alt": "\t\treturn geoeffnetFuer(b, abs, g, stand, r, false, aussen), nil",
-    "neu": "\t\treturn geoeffnetFuer(b, abs, g, stand, r, false, false && aussen), nil"
+    "alt": "\treturn geoeffnetFuer(b, abs, g, stand, r, false, aussen), nil",
+    "neu": "\treturn geoeffnetFuer(b, abs, g, stand, r, false, false && aussen), nil"
   },
   {
     "name": "IM6 Liste: erste statt letzte Zeile",
@@ -143,8 +143,8 @@
     "name": "IO-F828-2 Anbindung ohne Zuordnung",
     "datei": "cmd/schnapp/editor.go",
     "paket": "./cmd/schnapp",
-    "alt": ", Zuordnen: zuordnerFuer(b)}",
-    "neu": "}"
+    "alt": ", Zuordnen: zuordnerFuer(b),\n\t\tFortsetzen",
+    "neu": ",\n\t\tFortsetzen"
   },
   {
     "name": "IO-F828-3 Zuordnung trotz abgeschalteter Übernahme",
