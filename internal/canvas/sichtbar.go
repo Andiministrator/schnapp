@@ -13,10 +13,10 @@ import (
 // greifbar. Ein Objekt, das kleiner ist, muss ganz im Bild bleiben.
 const MinSichtbar = 8.0
 
-// sichtbarIn meldet je Achse, ob die Grenzen von o das sichtbare Bild (Ansicht) um mindestens MinSichtbar Fensterpixel
-// schneiden (bei kleineren Objekten: um ihre ganze Ausdehnung).
+// sichtbarIn meldet je Achse, ob die Gestalt von o das sichtbare Bild (Ansicht) um mindestens MinSichtbar Fensterpixel
+// schneidet (bei kleineren Objekten: um ihre ganze Ausdehnung).
 func (s *Sitzung) sichtbarIn(o document.Objekt) (x, y bool) {
-	g, gr := o.Grenzen(), s.D.Groesse()
+	g, gr := gestalt(o), s.D.Groesse()
 	lo, hi := s.D.ZuAnsicht(g.Min), s.D.ZuAnsicht(g.Max)
 	mind := MinSichtbar / s.Abb.Zoom
 	ok := func(lo, hi, max float64) bool {
@@ -24,6 +24,15 @@ func (s *Sitzung) sichtbarIn(o document.Objekt) (x, y bool) {
 		return math.Min(hi, max)-math.Max(lo, 0) >= need-1e-9
 	}
 	return ok(lo.X, hi.X, float64(gr.X)), ok(lo.Y, hi.Y, float64(gr.Y))
+}
+
+// gestalt ist das Rechteck um das Sichtbare von o: beim Pfeil samt Köpfen und ohne Kontrollpunkt (Pfeil.Gestalt,
+// F-829), sonst die Grenzen.
+func gestalt(o document.Objekt) document.Rechteck {
+	if p, ok := o.(document.Pfeil); ok {
+		return p.Gestalt()
+	}
+	return o.Grenzen()
 }
 
 // begrenzeSichtbar liefert den größten Faktor t in [0, 1] (Bisektion), für den ok(t) gilt: ok(0) ist der Ausgangsstand,

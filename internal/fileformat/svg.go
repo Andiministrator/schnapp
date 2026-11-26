@@ -822,25 +822,40 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 // pfeilDarstellung schreibt die sichtbare Gestalt eines Pfeils (ADR-0021 Nachtrag 19): ohne Kopf die Kurve als Strich mit
 // runden Enden; mit Kopf den gekürzten Schaft als Strich mit geraden Enden, je Kopf ein gefülltes Vieleck und an einem
 // Ende ohne Kopf eine halbe Scheibe.
+//
+// Kopf und halbe Scheibe reichen um pfeilFuge (höchstens die Länge des Schafts) in den Schaft zurück: SVG-Renderer glätten
+// jede Form für sich, an einer gemeinsamen Kante bliebe eine helle Fuge (F-826). Damit eine durchscheinende Farbe die
+// Überlappung nicht doppelt deckt, steht sie dann deckend in einer Gruppe mit opacity — wie im Renderer, der den Pfeil
+// in einer Füllung zeichnet.
 func (s *schreiber) pfeilDarstellung(o document.Pfeil) {
 	f := o.Form()
 	hw := o.Strich.Breite / 2
+	farbe := o.Strich.Farbe
 	if len(f.Koepfe) == 0 {
 		s.WriteString(`<path`)
 		s.attr("d", "M"+punkt(o.A)+" Q"+punkt(o.K)+" "+punkt(o.B))
 		s.attr("fill", "none")
-		s.farbeSVG("stroke", o.Strich.Farbe)
+		s.farbeSVG("stroke", farbe)
 		s.attr("stroke-width", zahl(o.Strich.Breite))
 		s.attr("stroke-linecap", "round")
 		s.WriteString(`/>`)
 		return
 	}
+	if farbe.A > 0 && farbe.A < 255 {
+		s.WriteString(`<g`)
+		s.attr("opacity", zahl(float64(farbe.A)/255))
+		s.WriteString(`>`)
+		farbe.A = 255
+		defer s.WriteString(`</g>`)
+	}
+	fuge := 0.0
 	if f.TB > f.TA {
+		fuge = min(pfeilFuge, linienLaenge(f.Schaft))
 		a, k, b := o.Teilstueck(f.TA, f.TB)
 		s.WriteString(`<path`)
 		s.attr("d", "M"+punkt(a)+" Q"+punkt(k)+" "+punkt(b))
 		s.attr("fill", "none")
-		s.farbeSVG("stroke", o.Strich.Farbe)
+		s.farbeSVG("stroke", farbe)
 		s.attr("stroke-width", zahl(o.Strich.Breite))
 		s.WriteString(`/>`)
 		if len(f.Koepfe) == 1 && len(f.Schaft) >= 2 { // das andere Ende rund
@@ -848,24 +863,44 @@ func (s *schreiber) pfeilDarstellung(o document.Pfeil) {
 			if f.Koepfe[0].AmAnfang {
 				ende, nach = f.Schaft[len(f.Schaft)-1], f.Schaft[len(f.Schaft)-2]
 			}
-			s.halbeScheibe(ende, nach, hw, o.Strich.Farbe)
+			s.halbeScheibe(ende, nach, hw, fuge, farbe)
 		}
 	}
 	for _, k := range f.Koepfe {
 		u := k.Umriss(hw)
+		if fuge > 0 {
+			// Zurück in den Schaft: entgegen der Richtung nach außen, die zur Schaftnormalen n gehört (links(r) = n).
+			n := k.SchaftNormale
+			zurueck := document.Pt(-n.Y, n.X).Mal(fuge)
+			u = append(append([]document.Punkt{u[0].Plus(zurueck)}, u...), u[len(u)-1].Plus(zurueck))
+		}
 		d := "M" + punkt(u[0])
 		for _, q := range u[1:] {
 			d += " L" + punkt(q)
 		}
 		s.WriteString(`<path`)
 		s.attr("d", d+" Z")
-		s.farbeSVG("fill", o.Strich.Farbe)
+		s.farbeSVG("fill", farbe)
 		s.WriteString(`/>`)
 	}
 }
 
-// halbeScheibe schreibt die runde Kappe am Ende ende eines Strichs der halben Breite hw, dessen Nachbarpunkt nach ist.
-func (s *schreiber) halbeScheibe(ende, nach document.Punkt, hw float64, farbe color.NRGBA) {
+// pfeilFuge ist, wie weit Kopf und halbe Scheibe eines Pfeils im SVG in den Schaft zurückreichen (Pixel des Originals):
+// ein ganzes Pixel, damit jedes Pixel an der Kante von einer der beiden Formen ganz gedeckt ist (F-826).
+const pfeilFuge = 1.0
+
+// linienLaenge ist die Länge des Linienzugs pts.
+func linienLaenge(pts []document.Punkt) float64 {
+	l := 0.0
+	for i := 1; i < len(pts); i++ {
+		l += pts[i].Minus(pts[i-1]).Laenge()
+	}
+	return l
+}
+
+// halbeScheibe schreibt die runde Kappe am Ende ende eines Strichs der halben Breite hw, dessen Nachbarpunkt nach ist;
+// sie reicht um fuge in den Strich zurück (pfeilDarstellung).
+func (s *schreiber) halbeScheibe(ende, nach document.Punkt, hw, fuge float64, farbe color.NRGBA) {
 	d := ende.Minus(nach)
 	l := d.Laenge()
 	if l < 1e-9 || !(hw > 0) {
@@ -874,9 +909,15 @@ func (s *schreiber) halbeScheibe(ende, nach document.Punkt, hw float64, farbe co
 	r := d.Mal(1 / l)
 	n := document.Pt(-r.Y, r.X)
 	von, bis := ende.Minus(n.Mal(hw)), ende.Plus(n.Mal(hw))
+	zurueck := r.Mal(-fuge)
 	// Von rechts (−n) über die Außenseite ende + r·hw nach links (+n) wächst der Winkel immer: SVG-Flag 1.
+	pfad := "M" + punkt(von.Plus(zurueck)) + " L" + punkt(von) + " A" + zahl(hw) + " " + zahl(hw) + " 0 0 1 " + punkt(bis) +
+		" L" + punkt(bis.Plus(zurueck)) + " Z"
+	if fuge <= 0 {
+		pfad = "M" + punkt(von) + " A" + zahl(hw) + " " + zahl(hw) + " 0 0 1 " + punkt(bis) + " Z"
+	}
 	s.WriteString(`<path`)
-	s.attr("d", "M"+punkt(von)+" A"+zahl(hw)+" "+zahl(hw)+" 0 0 1 "+punkt(bis)+" Z")
+	s.attr("d", pfad)
 	s.farbeSVG("fill", farbe)
 	s.WriteString(`/>`)
 }

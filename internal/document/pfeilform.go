@@ -370,6 +370,17 @@ func (p Pfeil) andereEnde(e Punkt) Punkt {
 	return p.B
 }
 
+// Gestalt ist das Rechteck um das, was vom Pfeil zu sehen ist: Schaft mit halber Strichstärke und Köpfe (Form().Huelle).
+// Anders als Grenzen enthält es Köpfe, die über die Enden hinausragen (Punkt, Quadrat, Balken), und nicht den
+// Kontrollpunkt K. Verschieben, Griffe und Fußzeile rechnen damit (F-829); Einrasten und Treffer bleiben bei Grenzen.
+func (p Pfeil) Gestalt() Rechteck {
+	h := p.Form().Huelle(p.Strich.Breite)
+	if !(h.Min.X <= h.Max.X && h.Min.Y <= h.Max.Y) { // nichts gezeichnet: kein Schaft, kein Kopf
+		return p.Grenzen()
+	}
+	return h
+}
+
 // Huelle umfasst Schaft (mit halber Strichstärke) und Köpfe.
 func (f PfeilForm) Huelle(w float64) Rechteck {
 	hw := w / 2

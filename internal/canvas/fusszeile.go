@@ -62,7 +62,7 @@ func (s *Sitzung) FussFelder(zeiger *document.Punkt) []FussFeld {
 	var text *document.Text
 	if s.Auswahl != 0 {
 		if o, ok := s.D.Objekt(s.Auswahl); ok {
-			g := o.Grenzen()
+			g := gestalt(o)
 			f = append(f, FussFeld{Art: FeldAuswahl, Groesse: image.Pt(int(math.Round(g.Max.X-g.Min.X)),
 				int(math.Round(g.Max.Y-g.Min.Y)))})
 			if t, ok := o.(document.Text); ok {

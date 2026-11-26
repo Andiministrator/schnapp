@@ -765,3 +765,28 @@ Tests: `internal/document/pfeilform_test.go` (Nullwerte, Maße, Kerbe und Raute 
 Verworfen: FormatVersion 1 behalten (Nachtrag 19; ein älterer Leser zeigte einen anderen Pfeil und verlöre die Attribute
 beim Speichern, F-830); `s:kopf`/`s:enden` weiter lesen (kein Release hat sie geschrieben); zweimal zehn Symbolknöpfe
 statt der Klappfelder (zu hoch für die Leiste, kein Platz für Namen); ein Ring (Loch im Umriss).
+
+## Nachtrag 21 (26.11.2026): Gestalt des Pfeils, SVG ohne Fuge (Karte #349, F-826, F-829)
+
+**Status:** Akzeptiert (Claude Opus 5.5 aus der Sitzungs-Kritik 26.11., K-6 und K-11; Andi: „arbeite selbstständig“).
+
+1. **Gestalt statt Grenzen, wo es um das Sichtbare geht (F-829).** `document.Pfeil.Gestalt()` ist das Rechteck um
+   Schaft (mit halber Strichstärke) und Köpfe (`Form().Huelle`), ohne den Kontrollpunkt K. Damit rechnen
+   `canvas.sichtbarIn` (Verschieben und Griffe halten mindestens `MinSichtbar` im Bild, Nachtrag 2) und das Feld
+   „Auswahl“ der Fußzeile (Größe samt Kopf). Ein Punkt-, Quadrat- oder Balkenkopf, der über das Ende ragt, zählt also
+   als sichtbar; ein Pfeil, von dem nur der Kontrollpunkt im Bild läge, nicht.
+2. **`Pfeil.Grenzen` bleibt** (Endpunkte, K und Strich): Treffer, Einrasten (Ziele sind die Enden, an denen Pfeile
+   andocken) und die Griffe rechnen weiter damit. Grenzen auf die Gestalt umzustellen bräche Einrasten und Verschieben
+   (erster Versuch vom 26.11., zurückgesetzt).
+3. **SVG ohne Fuge (F-826).** Schaft (Strich), Kopf und halbe Scheibe bleiben getrennte Formen; Kopf und halbe Scheibe
+   reichen um `pfeilFuge` = 1 Pixel (höchstens die Schaftlänge) in den Schaft zurück, sodass jedes Pixel an der
+   gemeinsamen Kante von einer Form ganz gedeckt ist. Bei durchscheinender Farbe stehen die Formen deckend in einer
+   Gruppe `<g opacity="…">`, damit die Überlappung nicht doppelt deckt — wie der Renderer, der den Pfeil in einer
+   Füllung zeichnet. Gemessen mit rsvg 12-fach am Beispiel `arrow-heads`: 129 auffällige Pixel vorher, 38 nachher; die
+   übrigen sind Ecken nach innen an Winkel und Kerbe, keine Fuge. Das Beispiel wächst von 3,3 auf 3,7 KB.
+
+Tests: `internal/canvas/pfeil_gestalt_test.go`, `internal/fileformat/svg_pfeil_fuge_test.go` (rsvg, Mittellinie gleich
+der Schaftmitte, deckend und durchscheinend); Mutanten PF30–PF33 in `scripts/mutanten/pfeilform.json`.
+
+Verworfen: der ganze Pfeil als ein Pfad aus `render.ZerlegePfeil` (Datei elffach größer, Importzyklus fileformat →
+render); Schaft als Umriss mit Versatzkurve (eine quadratische Kurve hat keine exakte Versatzkurve als Bézier).

@@ -201,5 +201,33 @@
     "paket": "./internal/render",
     "alt": "\t\t\tzs.fuelle(teile, nil, v.Strich.Farbe)\n",
     "neu": "\t\t\tfor _, t := range teile {\n\t\t\t\tzs.fuelle([][]document.Punkt{t}, nil, v.Strich.Farbe)\n\t\t\t}\n"
+  },
+  {
+    "name": "PF30 SVG: Kopf ohne Überlappung mit dem Schaft (F-826)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "const pfeilFuge = 1.0",
+    "neu": "const pfeilFuge = 0.0"
+  },
+  {
+    "name": "PF31 SVG: durchscheinender Pfeil ohne Gruppendeckkraft (F-826)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\tif farbe.A > 0 && farbe.A < 255 {",
+    "neu": "\tif false {"
+  },
+  {
+    "name": "PF32 sichtbarIn mit Grenzen statt Gestalt (F-829)",
+    "datei": "internal/canvas/sichtbar.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\treturn p.Gestalt()",
+    "neu": "\t\treturn p.Grenzen()"
+  },
+  {
+    "name": "PF33 Gestalt ohne Köpfe (F-829)",
+    "datei": "internal/document/pfeilform.go",
+    "paket": "./internal/canvas",
+    "alt": "\th := p.Form().Huelle(p.Strich.Breite)\n\tif !(h.Min.X",
+    "neu": "\th := p.Grenzen()\n\tif !(h.Min.X"
   }
 ]

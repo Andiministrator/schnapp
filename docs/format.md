@@ -292,6 +292,11 @@ and `half`; for `notched` and `diamond` the point where the edges of the line me
 its side; for `bar` `w/2`; the head's
 direction is the chord from that point to the end. If the curve is shorter than a head, the line is left out.
 
+Informative: the SVG export and the presentation in a work file draw an arrow with a head as the line (a stroke), one
+polygon per head and, at an end without a head, a half disc. Head and half disc reach 1 pixel back into the line, so that
+renderers that smooth each shape on its own leave no light seam; with a translucent colour these parts are drawn opaque
+inside a group with `opacity`, so the overlap is covered once.
+
 ### 8.2 `"kasten"` box
 
 | Attribute | Value |
