@@ -1454,6 +1454,9 @@ msgstr "Die Leiste mit den neuesten Aufnahmen; auch über Ansicht → Letzte Auf
 msgid "Capture of %s, %d × %d px — open now"
 msgstr "Aufnahme vom %s, %d × %d px — gerade offen"
 
+msgid "Capture of %s, %d × %d px — open now, with unsaved changes"
+msgstr "Aufnahme vom %s, %d × %d px — gerade offen, mit ungespeicherten Änderungen"
+
 msgid "Capture of %s, %d × %d px — click or Enter opens it here (this one is saved first)"
 msgstr "Aufnahme vom %s, %d × %d px — Klick oder Enter öffnet sie hier (die offene wird vorher gespeichert)"
 

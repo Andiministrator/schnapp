@@ -19,6 +19,7 @@
 #     opens it here …“.
 #  04 Klick auf die erste (unverändert, kein Speichern): Titel wechselt auf die neueste Aufnahme, grüner Rand auf der
 #     ersten.
+#  05a nach dem Schwärzen: oranger Punkt oben links an der offenen (ersten) Vorschau (Karte #355).
 #  05 Fläche geschwärzt (B), dann Klick auf die dritte: erst gespeichert, dann gewechselt; grüner Rand auf der dritten,
 #     die Vorschau der ersten zeigt die schwarze Fläche (neu geladen nach dem Speichern).
 #  06 Mausrad über der Leiste: Die Vorschauen rollen nach links bis zum Anschlag, rechts die ältesten mit Jahr.
@@ -37,6 +38,9 @@ foto 04-gewechselt
 taste B
 ziehe 300 300 700 600
 warte 400
+zeiger 900 400
+warte 400
+foto 05a-ungesichert
 klick 438 908
 warte 8000
 foto 05-gespeichert-und-gewechselt

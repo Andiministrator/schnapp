@@ -81,6 +81,7 @@ type untenLeiste struct {
 	gezeigt   []string          // Pfade relativ zur Ablage je Stelle
 	rahmen    image.Rectangle   // Lage der Leiste im Fenster (leer: nicht gezeigt)
 	kacheln   []image.Rectangle // Lage der gezeichneten Vorschauen je Stelle von von bis bis (Tests)
+	punkt     image.Rectangle   // Lage des Punkts „ungesichert“ an der offenen Vorschau (leer: keiner; Karte #355)
 	von, bis  int               // gezeichnete Stellen
 	ops       map[string]leisteBild
 	fokusSoll int    // Stelle, die den Tastaturfokus bekommen soll, sobald sie angemeldet ist; -1: keine
@@ -445,6 +446,7 @@ func (e *editor) leisteTaste(gtx layout.Context, taste key.Event) bool {
 func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 	k := &e.unten
 	k.rahmen, k.kacheln, k.hinweis, k.von, k.bis, k.loeschRahmen = r, nil, "", 0, 0, k.loeschRahmen[:0]
+	k.punkt = image.Rectangle{}
 	paint.FillShape(gtx.Ops, farbeLeisteVoll, clip.Rect(r).Op())
 	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(image.Rect(r.Min.X, r.Min.Y, r.Max.X, r.Min.Y+gtx.Dp(1))).Op())
 	// Links der Knopf „Library“ (Teil 2, Muster 174 a), dahinter die Spur der Vorschauen.
@@ -503,6 +505,10 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 		case k.knoepfe[i].Hovered():
 			paint.FillShape(gtx.Ops, farbeNebentext, clip.Stroke{Path: clip.Rect(kr).Path(), Width: float32(gtx.Dp(1))}.Op())
 		}
+		ungesichert := aktuell && e.s.Ungesichert()
+		if ungesichert {
+			k.punkt = zeichneUngesichertPunkt(gtx, kr)
+		}
 		seiteKnopf(gtx, &k.knoepfe[i], kr)
 		// ✕ oben rechts (Karte #312), über der Vorschau angemeldet, damit es den Klick bekommt.
 		var lr image.Rectangle
@@ -538,7 +544,7 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 		}
 		e.leisteZeile(gtx, eintrag, jetzt, kr, farbe == farbeText)
 		if fokus || (k.hinweis == "" && k.knoepfe[i].Hovered()) {
-			k.hinweis = leisteHinweis(eintrag, aktuell)
+			k.hinweis = leisteHinweis(eintrag, aktuell, ungesichert)
 		}
 	}
 	cs.Pop()
@@ -626,6 +632,7 @@ func (e *editor) leisteTextBreite(gtx layout.Context, s string) int {
 func (e *editor) leisteVerborgen() {
 	k := &e.unten
 	k.rahmen, k.von, k.bis, k.kacheln, k.gezeigt, k.hinweis = image.Rectangle{}, 0, 0, nil, nil, ""
+	k.punkt = image.Rectangle{}
 }
 
 // zeichneLeistenBild zeichnet das Vorschaubild von rel eingepasst in r, bis es geladen ist ein graues Feld.
@@ -653,10 +660,26 @@ func (e *editor) leisteText(gtx layout.Context, s string, p image.Point, breite 
 
 // leisteHinweis ist der Text der Statuszeile zu einer Vorschau: Datum, Uhrzeit und Größe, bei der offenen der Hinweis,
 // dass sie offen ist.
-func leisteHinweis(e library.Eintrag, aktuell bool) string {
+func leisteHinweis(e library.Eintrag, aktuell, ungesichert bool) string {
 	zeit := e.Erstellt.Local().Format(i18n.TK("date format", "2006-01-02 15:04"))
+	if ungesichert {
+		return fmt.Sprintf(i18n.T("Capture of %s, %d × %d px — open now, with unsaved changes"), zeit, e.Breite, e.Hoehe)
+	}
 	if aktuell {
 		return fmt.Sprintf(i18n.T("Capture of %s, %d × %d px — open now"), zeit, e.Breite, e.Hoehe)
 	}
 	return fmt.Sprintf(i18n.T("Capture of %s, %d × %d px — click or Enter opens it here (this one is saved first)"), zeit, e.Breite, e.Hoehe)
+}
+
+// zeichneUngesichertPunkt setzt oben links in die Vorschau kr einen orangen Punkt mit dunklem Ring: Die offene Aufnahme
+// hat Änderungen, die noch nicht gespeichert sind (Karte #355; dieselbe Quelle wie das Feld „ungesichert“ der
+// Fußzeile, canvas.Sitzung.Ungesichert). Andere Vorschauen können nie ungesichert sein, ein Wechsel speichert vorher.
+// Rückgabe ist die Lage des Punkts.
+func zeichneUngesichertPunkt(gtx layout.Context, kr image.Rectangle) image.Rectangle {
+	d, ring := gtx.Dp(10), gtx.Dp(2)
+	p := kr.Min.Add(image.Pt(gtx.Dp(6), gtx.Dp(6)))
+	r := image.Rectangle{Min: p, Max: p.Add(image.Pt(d, d))}
+	paint.FillShape(gtx.Ops, farbeGrund, clip.Ellipse(r.Inset(-ring)).Op(gtx.Ops))
+	paint.FillShape(gtx.Ops, farbeAkzent, clip.Ellipse(r).Op(gtx.Ops))
+	return r
 }

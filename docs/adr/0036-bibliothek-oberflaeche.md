@@ -368,3 +368,16 @@ Wunsch Andi, 26.11.2026: „gehen zeit und auflösung in eine zeile? dann würde
   Auch dann steht die Auflösung im Hinweis der Statuszeile (`leisteHinweis`), sie geht also nicht verloren.
 - Die Drehbücher mit Leistenkoordinaten (`bibliothek-174-leiste`, `bibliothek-174-ansicht`, `papierkorb-kreuz-312`,
   `papierkorb-offen-347`) liegen 14 px tiefer: Mitte der Vorschauen bei y 908.
+
+## Zusatz (26.11.2026, Karte #355, Claude Opus 5.5)
+
+Frage Andi, 26.11.2026: „sollten wir bilder mit ungespeicherten änderungen in der bibliotheks-leiste markieren?“
+
+- Ungesichert kann nur die **offene** Aufnahme sein, denn ein Wechsel speichert vorher. Solange
+  `canvas.Sitzung.Ungesichert()` gilt (dieselbe Quelle wie das Feld „ungesichert“ der Fußzeile), trägt ihre Vorschau
+  oben links einen **orangen Punkt** (10 dp, Akzentfarbe, 2 dp dunkler Ring; `zeichneUngesichertPunkt`). Oben rechts
+  bleibt Platz für das ✕ (Zusatz Karte #312).
+- Der Hinweis der Statuszeile zur offenen Vorschau sagt dann „… — open now, with unsaved changes“.
+- Eine Datei von außen hat bis zur ersten Änderung keine Vorschau in der Leiste (ADR-0016 Nachtrag 11). Mit der
+  ersten Änderung speichert der Editor sie sofort, der Punkt erscheint dort also nur kurz.
+- Mutanten `scripts/mutanten/leiste-355.json`.

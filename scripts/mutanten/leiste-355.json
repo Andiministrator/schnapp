@@ -1,0 +1,37 @@
+[
+  {
+    "name": "L355-1 Punkt nie",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tungesichert := aktuell && e.s.Ungesichert()\n",
+    "neu": "\t\tungesichert := false\n"
+  },
+  {
+    "name": "L355-2 Punkt immer an der offenen",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tungesichert := aktuell && e.s.Ungesichert()\n",
+    "neu": "\t\tungesichert := aktuell\n"
+  },
+  {
+    "name": "L355-3 Punkt an jeder Vorschau",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tungesichert := aktuell && e.s.Ungesichert()\n",
+    "neu": "\t\tungesichert := e.s.Ungesichert()\n"
+  },
+  {
+    "name": "L355-4 Hinweis ohne ungesichert",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\tif ungesichert {\n\t\treturn fmt.Sprintf(i18n.T(\"Capture of %s, %d × %d px — open now, with unsaved changes\")",
+    "neu": "\tif false {\n\t\treturn fmt.Sprintf(i18n.T(\"Capture of %s, %d × %d px — open now, with unsaved changes\")"
+  },
+  {
+    "name": "L355-5 Punkt oben rechts unter dem Kreuz",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\tp := kr.Min.Add(image.Pt(gtx.Dp(6), gtx.Dp(6)))\n",
+    "neu": "\tp := image.Pt(kr.Max.X-gtx.Dp(16), kr.Min.Y+gtx.Dp(6))\n"
+  }
+]

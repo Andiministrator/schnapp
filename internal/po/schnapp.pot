@@ -1723,6 +1723,10 @@ msgid "%d×%d"
 msgstr ""
 
 #: internal/ui/leiste_unten.go
+msgid "Capture of %s, %d × %d px — open now, with unsaved changes"
+msgstr ""
+
+#: internal/ui/leiste_unten.go
 msgid "Capture of %s, %d × %d px — open now"
 msgstr ""
 
