@@ -1,12 +1,12 @@
 # Sichtprobe ADR-0021 Nachtrag 26 Punkt 7 (Karte #363 Teil 2): Abschnitt „Shadow“ der rechten Leiste.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/schatten-363.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 1600 --hoehe 1000
 # Bei 1600 × 1000, Skala 1, Werkzeug Kasten (R): Schalter „Shadow“ bei (1417, 321) unter „Line style“. Bei an:
-# „Direction“ − (1419, 357) / + (1513, 357), Regler „Distance“ y 393 und „Softness“ y 425 von x 1404 bis 1530 (Wert
-# rechts daneben), Farbfeld „Color“ bei (1417, 457). Der Abschnitt Farbe rückt dadurch um 136 px nach unten; die
+# „Direction“ − (1419, 357) / + (1513, 357), Zeilen „Distance“ y 393 und „Softness“ y 425: − bei x 1404–1426, Regler
+# x 1432–1512, + bei x 1518–1540, Wert rechts daneben (Knöpfe seit Kritik K-4), Farbfeld „Color“ bei (1417, 457). Der Abschnitt Farbe rückt dadurch um 136 px nach unten; die
 # eigenen Farbfelder stehen dann bei y 787 (Orange bei x 1482).
 # Erwartet:
 #  01 Schalter an: darunter Richtung 135°, Abstand 6 px, Weichheit 8 px, Farbfeld schwarz-durchscheinend.
-#  02 ein Kasten auf Blau mit Schatten, Richtung 165° (zweimal +), Abstand etwa 30 px: der Schatten liegt deutlich
+#  02 ein Kasten auf Blau mit Schatten, Richtung 165° (zweimal +), Abstand etwa 34 px: der Schatten liegt deutlich
 #     rechts und ein wenig unten; nach dem Klick aufs Farbfeld heißt das Feld neben dem Farbpaar „Schatten“, das
 #     Farbfeld der Leiste ist grün umrandet.
 #  03 nach Orange aus den Farbfeldern: der Schatten ist orange, der Rahmen bleibt rot.
@@ -25,7 +25,7 @@ klick 1513 357
 warte 200
 klick 1513 357
 warte 200
-ziehe 1420 393 1500 393 10
+ziehe 1440 393 1500 393 10
 warte 300
 klick 1417 457
 warte 500

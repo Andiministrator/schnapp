@@ -246,6 +246,9 @@ func schnellName(st canvas.Schnellstil) string {
 	t := st.Name()
 	if st.Eigen() {
 		t = i18n.T("Custom style. Right-click or Del removes it.")
+		if st.Schatten.An {
+			t = i18n.T("Custom style with drop shadow. Right-click or Del removes it.")
+		}
 	}
 	if schriftFehlt(st) {
 		t = fmt.Sprintf(i18n.T("%s Font “%s” is not installed."), t, st.Schrift)
@@ -371,6 +374,12 @@ func (e *editor) zeichneKachel(gtx layout.Context, st canvas.Schnellstil, r imag
 		p.LineTo(f32.Pt(float32(r.Max.X), float32(r.Min.Y)+s))
 		p.Close()
 		paint.FillShape(gtx.Ops, farbeNebentext, clip.Outline{Path: p.End()}.Op())
+	}
+	if st.Schatten.An { // Stil mit Schatten: dunkler Winkel unten rechts (Kritik K-3 #363b)
+		d := gtx.Dp(3)
+		schatten := color.NRGBA{A: 0xB0}
+		paint.FillShape(gtx.Ops, schatten, clip.Rect(image.Rect(r.Min.X+gtx.Dp(6), r.Max.Y-d, r.Max.X, r.Max.Y)).Op())
+		paint.FillShape(gtx.Ops, schatten, clip.Rect(image.Rect(r.Max.X-d, r.Min.Y+gtx.Dp(6), r.Max.X, r.Max.Y-d)).Op())
 	}
 	switch {
 	case passt:

@@ -403,8 +403,25 @@ func (s *Sitzung) stand(a SchnellArt) (Schnellstil, bool) {
 // SchnellstilPasst meldet, ob st zum aktuellen Stand passt (gleiche Werte, ADR-0037 Punkt 2): die Kachel bekommt dann
 // den orangen Rand.
 //
-// Ein Stil ohne Schatten passt unabhängig vom Schatten des Stands (ADR-0021 Nachtrag 26 Punkt 8).
+// Ein Stil ohne Schatten passt unabhängig vom Schatten des Stands (ADR-0021 Nachtrag 26 Punkt 8) — außer ein Stil mit
+// Schatten derselben Art passt genau: Dann ist nur er orange, nicht zwei gleich aussehende Kacheln (Kritik K-3 #363b).
 func (s *Sitzung) SchnellstilPasst(st Schnellstil) bool {
+	if !s.passtGenau(st) {
+		return false
+	}
+	if st.Schatten.An {
+		return true
+	}
+	for _, v := range s.eigene {
+		if v.Art == st.Art && v.Schatten.An && s.passtGenau(v) {
+			return false
+		}
+	}
+	return true
+}
+
+// passtGenau vergleicht st mit dem Stand; ein Stil ohne Schatten sieht den Schatten des Stands nicht an.
+func (s *Sitzung) passtGenau(st Schnellstil) bool {
 	ist, ok := s.stand(st.Art)
 	if ok && !st.Schatten.An {
 		ist.Schatten = document.Schatten{}

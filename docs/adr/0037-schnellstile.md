@@ -113,7 +113,9 @@ um und entscheidet die offene Frage aus ADR-0021 Nachtrag 25 Punkt 8.
    Schatten lässt den des Werkzeugs und des Objekts stehen und **passt unabhängig davon** (`SchnellstilPasst` sieht den
    Schatten des Stands dann nicht an); sonst verlöre ein Objekt mit Schatten den orangen Rand seiner eingebauten Kachel.
    Für „schon vorhanden“ (`HinzuDoppelt`) zählt der Schatten dagegen mit: ein Stand mit Schatten neben einer
-   eingebauten Kachel ohne ist ein neuer Stil. Die eingebauten Stile haben keinen Schatten.
+   eingebauten Kachel ohne ist ein neuer Stil. Die eingebauten Stile haben keinen Schatten. Passt ein eigener Stil
+   **mit** Schatten genau, passen die Stile ohne Schatten derselben Art nicht: Orange ist immer nur die genauere
+   Kachel (F-856).
 2. **`styles.ini`:** freiwilliger Schlüssel `shadow = WINKEL LÄNGE WEICH #RRGGBBAA` bei jeder Art, nur geschrieben, wenn
    der Stil einen Schatten hat. Lesen: vier Werte, Zahlen endlich, Länge 0 bis 1000, Weich 0 bis 200, der Winkel wird
    auf 0 bis 360 gebracht; sonst ist der Stil ungültig wie bei jedem anderen kaputten Wert. `PruefeStil` lehnt einen
@@ -121,7 +123,8 @@ um und entscheidet die offene Frage aus ADR-0021 Nachtrag 25 Punkt 8.
 3. **Strichart:** Schnellstile tragen sie weiterhin nicht (wie die Spitzen des Pfeils): Sie ist eine Eigenschaft der
    Form, nicht der Ansicht, und eine gestrichelte Kachel neben einer durchgezogenen verdoppelte die Reihe für wenig
    Nutzen. Wer sie braucht, wählt sie im Klappfeld; ein späterer Wunsch kann sie wie den Schatten freiwillig aufnehmen.
-4. **Kacheln:** Die Mini-Darstellung zeigt den Schatten nicht; der Hinweis in der Statuszeile bleibt der Name.
+4. **Kacheln:** Die Mini-Darstellung zeigt den Schatten nicht; eine Kachel mit Schatten trägt unten rechts einen dunklen
+   Winkel, der Hinweis in der Statuszeile sagt „mit Schatten“ (F-856).
 
 Tests: `internal/canvas/schnellstile_test.go` (`TestSchnellstilSchatten`), `internal/settings/stile_test.go`
 (Rundlauf, Parse-Regeln, `TestStileSchattenGrenzen`).

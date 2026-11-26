@@ -157,8 +157,8 @@
     "name": "SH23 Zug ohne Objekt",
     "datei": "internal/canvas/schatten.go",
     "paket": "./internal/canvas",
-    "alt": "\t\t\t_ = s.D.ZugSetze(mitSchatten(o, sch))",
-    "neu": "\t\t\t_ = o"
+    "alt": "\t\tif o, ok := s.D.Objekt(s.Auswahl); ok {\n\t\t\t_ = s.D.ZugSetze(mitSchatten(o, sch))",
+    "neu": "\t\tif o, ok := s.D.Objekt(s.Auswahl); ok {\n\t\t\t_ = o"
   },
   {
     "name": "SH24 Editor ohne Schatten",
@@ -411,5 +411,61 @@
     "paket": "./internal/canvas",
     "alt": "if s.feld == FeldSchatten && w != s.Werkzeug {",
     "neu": "if false {"
+  },
+  {
+    "name": "SH60 Schattenzug in der Texteingabe gesperrt",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.zug == zugText {\n\t\tif o, ok := s.D.Objekt(s.textID); ok {\n\t\t\ts.schattenZugText = o\n\t\t}\n\t\treturn true\n\t}",
+    "neu": "\tif s.zug == zugText {\n\t\treturn false\n\t}"
+  },
+  {
+    "name": "SH61 Abbruch stellt den Text nicht her",
+    "datei": "internal/canvas/breitezug.go",
+    "paket": "./internal/canvas",
+    "alt": "_ = s.D.ZugSetze(s.schattenZugText)",
+    "neu": "_ = s.schattenZugText"
+  },
+  {
+    "name": "SH62 Feld Schatten ohne Objektbindung",
+    "datei": "internal/canvas/farbpaar.go",
+    "paket": "./internal/canvas",
+    "alt": " && s.schattenZiel() == s.feldSchattenID",
+    "neu": ""
+  },
+  {
+    "name": "SH63 Schalter ohne Sperre vor dem Feld",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.Zieht() || s.gesperrt() { // vor jeder Änderung am Feld: sonst liefen Schalter und Feld auseinander (K-5 #363b)\n\t\treturn false\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "SH64 zwei Kacheln orange",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "if v.Art == st.Art && v.Schatten.An && s.passtGenau(v) {",
+    "neu": "if v.Art == st.Art && v.Schatten.An && false {"
+  },
+  {
+    "name": "SH65 Stufe Weich ändert die Länge",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif weich {\n\t\tw = &sch.Weich\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "SH66 Anzeige 360°",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "int(math.Round(sch.Winkel))%360",
+    "neu": "int(math.Round(sch.Winkel))"
+  },
+  {
+    "name": "SH67 Stufenknöpfe wirkungslos",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "e.s.SchattenWertStufe(i == 1, dir)",
+    "neu": "_ = dir"
   }
 ]

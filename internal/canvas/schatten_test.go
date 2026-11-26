@@ -3,6 +3,7 @@
 package canvas
 
 import (
+	"image"
 	"image/color"
 	"testing"
 
@@ -239,5 +240,92 @@ func TestSchattenFeldEndetBeimWerkzeugwechsel(t *testing.T) {
 	s.SetzeWerkzeug(WerkzeugText)
 	if s.AktivesFeld() != FeldVordergrund {
 		t.Errorf("nach dem Wechsel zum Text: Feld %v", s.AktivesFeld())
+	}
+}
+
+// Kritik K-1 #363b: In der Texteingabe wirken die Regler als Teil der Eingabe (kein eigener Schritt); ein Abbruch
+// stellt den Text wie vor dem Ziehen her, die Eingabe läuft weiter.
+func TestSchattenReglerInTexteingabe(t *testing.T) {
+	s, _ := stilSitzung(t, image.Pt(200, 100))
+	n := len(s.D.Objekte())
+	s.SetzeWerkzeug(WerkzeugText)
+	s.Druecken(f(120, 20), TastePrimaer)
+	s.Loslassen(f(120, 20))
+	s.Tippe("hallo")
+	s.SchalteSchatten()
+	if !s.BeginneSchattenZug() {
+		t.Fatal("Regler in der Texteingabe tot")
+	}
+	sch := s.Schatten()
+	sch.Laenge = 20
+	s.SchattenZugSetze(sch)
+	s.BeendeBreiteZug()
+	if s.Schatten().Laenge != 20 || !s.TextLaeuft() {
+		t.Fatalf("nach dem Zug: Länge %v, Eingabe %v", s.Schatten().Laenge, s.TextLaeuft())
+	}
+	// Abbruch: zurück auf 20.
+	s.BeginneSchattenZug()
+	sch.Laenge = 33
+	s.SchattenZugSetze(sch)
+	s.BrecheBreiteZugAb()
+	if s.Schatten().Laenge != 20 || !s.TextLaeuft() {
+		t.Errorf("nach dem Abbruch: Länge %v", s.Schatten().Laenge)
+	}
+	s.Enter(false)
+	if tx := letztes(t, s); !tx.Ebenenwerte().Schatten.An || tx.Ebenenwerte().Schatten.Laenge != 20 {
+		t.Errorf("Text %+v", tx.Ebenenwerte().Schatten)
+	}
+	if !s.Rueckgaengig() || len(s.D.Objekte()) != n {
+		t.Error("Anlegen mit Schatten sind mehr als ein Schritt")
+	}
+}
+
+// Kritik K-2/K-5 #363b: Das Feld Schatten gehört dem Objekt, für das es gewählt wurde; ein anderes Objekt (auch nach
+// dem Einschalten seines Schattens) erbt es nicht. Gesperrt ändert der Schalter weder Schatten noch Feld.
+func TestSchattenFeldGehoertDemObjekt(t *testing.T) {
+	s, ids := stilSitzung(t, image.Pt(200, 100))
+	s.SetzeWerkzeug(WerkzeugAuswahl)
+	s.Auswahl = ids[1]
+	s.SchalteSchatten()
+	if !s.SetzeFeld(FeldSchatten) || s.AktivesFeld() != FeldSchatten {
+		t.Fatal("Feld Schatten nicht aktiv")
+	}
+	s.Auswahl = ids[0]
+	if s.AktivesFeld() != FeldVordergrund {
+		t.Error("Pfeil ohne Schatten zeigt das Feld Schatten")
+	}
+	s.SchalteSchatten()
+	if s.AktivesFeld() != FeldVordergrund {
+		t.Error("Pfeil erbt das Feld Schatten nach dem Einschalten")
+	}
+	// Gesperrt (Ruhe beim Wechsel): Schalter wirkungslos, das Feld bleibt.
+	s.Auswahl = ids[1]
+	s.SetzeRuhe(true)
+	if s.SchalteSchatten() || s.AktivesFeld() != FeldSchatten || !s.Schatten().An {
+		t.Errorf("gesperrt: Feld %v, Schatten %v", s.AktivesFeld(), s.Schatten().An)
+	}
+	s.SetzeRuhe(false)
+}
+
+// Kritik K-4 #363b: − / + neben den Reglern in ganzen Pixeln, nicht unter 0.
+func TestSchattenWertStufe(t *testing.T) {
+	s, ids := stilSitzung(t, image.Pt(200, 100))
+	s.SetzeWerkzeug(WerkzeugAuswahl)
+	s.Auswahl = ids[1]
+	if s.SchattenWertStufe(false, 1) {
+		t.Error("Stufe ohne Schatten")
+	}
+	s.SchalteSchatten()
+	if !s.SchattenWertStufe(false, 1) || s.Schatten().Laenge != 7 {
+		t.Errorf("Länge %v, Soll 7", s.Schatten().Laenge)
+	}
+	if !s.SchattenWertStufe(true, -1) || s.Schatten().Weich != 7 {
+		t.Errorf("Weich %v, Soll 7", s.Schatten().Weich)
+	}
+	for range 10 {
+		s.SchattenWertStufe(false, -1)
+	}
+	if s.Schatten().Laenge != 0 {
+		t.Errorf("Länge unter 0: %v", s.Schatten().Laenge)
 	}
 }

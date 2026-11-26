@@ -1022,6 +1022,10 @@ Feld Schatten, `--annotate`/MCP) mit Tests `internal/document/schatten_test.go`,
 das Raster —, `SchattenRichtungStufe`); ein Klick auf das Farbfeld macht den Schatten zum aktiven Feld, klappt
 „Farbe“ auf und rollt ihn ins Bild wie ein Klick aufs Farbpaar links; das Feld heißt dann „Shadow“ (`farbfeldName`). Ein Wechsel des Werkzeugs gibt das Feld Schatten auf (wieder
 Vordergrund): Sonst färbte die Farbwahl mit dem nächsten Werkzeug unerwartet den Schatten (Sichtprobe).
+Nach der Sitzungs-Kritik (F-854 bis F-859): Das Feld Schatten gehört dem Objekt (bzw. dem Stand des Werkzeugs), für das
+es gewählt wurde; ein anderes erbt es nicht, auch nicht nach dem Einschalten seines Schattens (`feldSchattenID`). Die
+Regler wirken auch in der Texteingabe, als Teil der Eingabe wie der Farbzug (Abbruch stellt den Text her). Neben jedem
+Regler stehen − und + (ein Pixel, Tastaturweg). Die Richtung zeigt die Leiste modulo 360 (nie „360°“).
 Bei ausgeschaltetem Schatten steht nur der Schalter da (eine Zeile, 36 dp): Die Leiste ist dadurch so viel höher;
 das Startfenster 1200×800 rollt mit gewähltem Kasten und offenen Ebenen um wenige Pixel. Schnellstile: ADR-0037
 Nachtrag 1. Tests `internal/ui/schattenleiste_test.go`, `internal/canvas/schatten_test.go`

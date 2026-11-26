@@ -252,7 +252,7 @@ func (s *Sitzung) AktivesFeld() Farbfeld {
 	if s.feld == FeldFuellung && s.Fuellbar() {
 		return FeldFuellung
 	}
-	if s.feld == FeldSchatten && s.Schatten().An {
+	if s.feld == FeldSchatten && s.Schatten().An && s.schattenZiel() == s.feldSchattenID {
 		return FeldSchatten
 	}
 	return FeldVordergrund
@@ -263,6 +263,9 @@ func (s *Sitzung) AktivesFeld() Farbfeld {
 func (s *Sitzung) SetzeFeld(f Farbfeld) bool {
 	if s.farbZug || (f == FeldFuellung && !s.Fuellbar()) || (f == FeldSchatten && !s.Schatten().An) {
 		return false
+	}
+	if f == FeldSchatten {
+		s.feldSchattenID = s.schattenZiel()
 	}
 	if s.feld != f {
 		s.feld, s.hsvGemerkt = f, false

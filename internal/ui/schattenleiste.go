@@ -36,10 +36,13 @@ const (
 type schattenLeiste struct {
 	schalter widget.Clickable
 	richtung [2]widget.Clickable // − und +
-	farbe    widget.Clickable
+	// stufe sind − und + neben den Reglern: [0] Länge, [1] Weich (Tastaturweg, Kritik K-4 #363b).
+	stufe [2][2]widget.Clickable
+	farbe widget.Clickable
 
 	schalterRahmen image.Rectangle
 	richtRahmen    [2]image.Rectangle
+	stufeRahmen    [2][2]image.Rectangle
 	farbRahmen     image.Rectangle
 	// laenge und weich sind die Regler, zugleich Ziele ihrer Zeigerereignisse.
 	laenge, weich image.Rectangle
@@ -54,7 +57,7 @@ func (k *schattenLeiste) alle() []*widget.Clickable {
 	}
 	a := []*widget.Clickable{&k.schalter}
 	if !k.farbRahmen.Empty() {
-		a = append(a, &k.richtung[0], &k.richtung[1], &k.farbe)
+		a = append(a, &k.richtung[0], &k.richtung[1], &k.stufe[0][0], &k.stufe[0][1], &k.stufe[1][0], &k.stufe[1][1], &k.farbe)
 	}
 	return a
 }
@@ -62,7 +65,7 @@ func (k *schattenLeiste) alle() []*widget.Clickable {
 // leeren vergisst die Lagen vor dem Zeichnen (zeichneSeitenleiste).
 func (k *schattenLeiste) leeren() {
 	k.schalterRahmen, k.farbRahmen, k.laenge, k.weich = image.Rectangle{}, image.Rectangle{}, image.Rectangle{}, image.Rectangle{}
-	k.richtRahmen, k.richtText = [2]image.Rectangle{}, ""
+	k.richtRahmen, k.stufeRahmen, k.richtText = [2]image.Rectangle{}, [2][2]image.Rectangle{}, ""
 }
 
 // schattenAuswerten verarbeitet Klicks und Ziehen des Abschnitts; während des Speicherns ruht das Bearbeiten.
@@ -74,6 +77,13 @@ func (e *editor) schattenAuswerten(gtx layout.Context) {
 	for j, dir := range []int{-1, 1} {
 		if k.richtung[j].Clicked(gtx) && e.seiteAn() {
 			e.s.SchattenRichtungStufe(dir)
+		}
+	}
+	for i := range k.stufe {
+		for j, dir := range []int{-1, 1} {
+			if k.stufe[i][j].Clicked(gtx) && e.seiteAn() {
+				e.s.SchattenWertStufe(i == 1, dir)
+			}
 		}
 	}
 	if k.farbe.Clicked(gtx) && e.seiteAn() && e.s.SetzeFeld(canvas.FeldSchatten) {
@@ -195,14 +205,15 @@ func (e *editor) zeichneSchattenLeiste(gtx layout.Context, x, y, breite, spalte 
 		e.textMittig(gtx, zeichen, 14, farbeText, r)
 		e.knopfAn(gtx, &k.richtung[j], r)
 	}
-	k.richtText = fmt.Sprintf(i18n.TK("shadow", "%d°"), int(math.Round(sch.Winkel)))
+	// Gerundet modulo 360: 359,6° aus einer Datei hieße sonst „360°“ (Kritik K-6 #363b).
+	k.richtText = fmt.Sprintf(i18n.TK("shadow", "%d°"), int(math.Round(sch.Winkel))%360)
 	e.textMittig(gtx, k.richtText, 13, farbeText, wert)
 	y += hoch + gtx.Dp(10)
 
 	// Regler Länge und Weich, rechts daneben der Wert
 	laengeBis, weichBis := e.s.SchattenReglerMax()
-	y = e.zeichneSchattenRegler(gtx, &k.laenge, i18n.TK("shadow", "Distance"), sch.Laenge, laengeBis, x, y, breite, spalte)
-	y = e.zeichneSchattenRegler(gtx, &k.weich, i18n.TK("shadow", "Softness"), sch.Weich, weichBis, x, y, breite, spalte)
+	y = e.zeichneSchattenRegler(gtx, &k.laenge, 0, i18n.TK("shadow", "Distance"), sch.Laenge, laengeBis, x, y, breite, spalte)
+	y = e.zeichneSchattenRegler(gtx, &k.weich, 1, i18n.TK("shadow", "Softness"), sch.Weich, weichBis, x, y, breite, spalte)
 
 	// Farbfeld
 	beschrift(i18n.TK("shadow", "Color"), y)
@@ -213,12 +224,26 @@ func (e *editor) zeichneSchattenLeiste(gtx layout.Context, x, y, breite, spalte 
 	return y + hoch + gtx.Dp(10)
 }
 
-// zeichneSchattenRegler zeichnet eine Zeile mit Beschriftung, Regler (Wert w von 0 bis bis) und Wert in px; meldet den
-// Regler unter ziel an und liefert das neue y.
-func (e *editor) zeichneSchattenRegler(gtx layout.Context, ziel *image.Rectangle, text string, w, bis float64, x, y, breite, spalte int) int {
-	hoch, schiene, wertBreite := gtx.Dp(26), gtx.Dp(4), gtx.Dp(48)
+// zeichneSchattenRegler zeichnet eine Zeile mit Beschriftung, − , Regler (Wert w von 0 bis bis), + und Wert in px;
+// meldet den Regler unter ziel und die Knöpfe stufe[nr] an und liefert das neue y.
+func (e *editor) zeichneSchattenRegler(gtx layout.Context, ziel *image.Rectangle, nr int, text string, w, bis float64, x, y, breite, spalte int) int {
+	k := &e.schattenL
+	hoch, schiene, wertBreite, kb := gtx.Dp(26), gtx.Dp(4), gtx.Dp(44), gtx.Dp(22)
 	e.seiteText(gtx, text, 13, farbeNebentext, image.Pt(x, y+gtx.Dp(4)), spalte-gtx.Dp(4), 1)
-	links, rechts := x+spalte, x+breite-wertBreite-gtx.Dp(6)
+	minus := image.Rect(x+spalte, y, x+spalte+kb, y+hoch)
+	plus := image.Rect(x+breite-wertBreite-kb, y, x+breite-wertBreite, y+hoch)
+	for j, r := range []image.Rectangle{minus, plus} {
+		k.stufeRahmen[nr][j] = r
+		rnd := farbeLinie
+		if k.stufe[nr][j].Hovered() {
+			rnd = farbeNebentext
+		}
+		paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(r).Op())
+		paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
+		e.textMittig(gtx, [2]string{"−", "+"}[j], 14, farbeText, r)
+		e.knopfAn(gtx, &k.stufe[nr][j], r)
+	}
+	links, rechts := minus.Max.X+gtx.Dp(6), plus.Min.X-gtx.Dp(6)
 	*ziel = image.Rect(links, y+gtx.Dp(5), rechts, y+hoch-gtx.Dp(5))
 	mitte := y + hoch/2
 	px := links + int(math.Round(canvas.SchattenReglerLage(w, bis)*float64(rechts-links)))

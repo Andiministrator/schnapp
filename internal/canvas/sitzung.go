@@ -90,22 +90,28 @@ type Sitzung struct {
 	abgelehnt  Ablehnung
 
 	// Farbwahl (ADR-0021 Nachtrag 9, farbwahl.go)
-	hsv           HSV  // gemerkter Farbton der Fläche
-	hsvGemerkt    bool // hsv gilt, solange er zur aktuellen Farbe passt
-	farbZug       bool // in Farbfläche oder Regler wird gezogen
-	breiteZug     bool // am Regler der Strichstärke wird gezogen (breitezug.go)
-	breiteZugObj  bool // ... und das gewählte Objekt ändert sich mit
-	breiteZugVor  uint64
-	farbZugObjekt bool // der Farbzug läuft als Zug des Dokuments am gewählten Objekt
-	farbZugVor    uint64
-	farbZugText   document.Objekt // Text der Eingabe vor dem Farbzug (Abbruch stellt ihn her, Verify V-3)
-	zuletzt       []color.NRGBA
-	pipette       bool // der nächste Klick ins Bild nimmt eine Farbe auf
+	hsv          HSV  // gemerkter Farbton der Fläche
+	hsvGemerkt   bool // hsv gilt, solange er zur aktuellen Farbe passt
+	farbZug      bool // in Farbfläche oder Regler wird gezogen
+	breiteZug    bool // am Regler der Strichstärke wird gezogen (breitezug.go)
+	breiteZugObj bool // ... und das gewählte Objekt ändert sich mit
+	breiteZugVor uint64
+	// schattenZugText: Text der Eingabe vor dem Ziehen an einem Schattenregler (Abbruch stellt ihn her, Kritik K-1 #363b);
+	// nil: kein Schattenzug in der Texteingabe.
+	schattenZugText document.Objekt
+	farbZugObjekt   bool // der Farbzug läuft als Zug des Dokuments am gewählten Objekt
+	farbZugVor      uint64
+	farbZugText     document.Objekt // Text der Eingabe vor dem Farbzug (Abbruch stellt ihn her, Verify V-3)
+	zuletzt         []color.NRGBA
+	pipette         bool // der nächste Klick ins Bild nimmt eine Farbe auf
 	// Farbpaare (ADR-0021 Nachtrag 11, farbpaar.go): paarW ist das Werkzeug, dessen Paar in Stil steht; paare hält die
 	// Paare der anderen Werkzeuge; feld ist das gewählte Feld (wirksam nur mit Füllung, AktivesFeld).
 	paarW Werkzeug
 	paare map[Werkzeug]farbpaar
 	feld  Farbfeld
+	// feldSchattenID ist das Objekt (0: der Stand des Werkzeugs), für das das Feld Schatten gewählt wurde: Ein anderes
+	// erbt es nicht (Kritik K-2 #363b).
+	feldSchattenID int
 	// eigene sind die eigenen Schnellstile aller Arten in der Reihenfolge der Datei (schnellstile.go, ADR-0037).
 	eigene []Schnellstil
 	// Schwärzen (ADR-0022): Rahmen in Ansichtspunkten, solange gezogen wird.

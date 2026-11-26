@@ -149,3 +149,28 @@ func TestSchattenLeisteNurMitFarbe(t *testing.T) {
 		t.Error("Abschnitt Shadow ohne Farbe gezeigt")
 	}
 }
+
+// Kritik K-4/K-6 #363b: − / + neben den Reglern sind Knöpfe (auch per Tab erreichbar) und ändern um einen Pixel;
+// 359,6° zeigt die Leiste als „0°“, nicht als „360°“.
+func TestSchattenLeisteStufenUndAnzeige(t *testing.T) {
+	l, id := schattenLauf(t)
+	k := &l.e.schattenL
+	l.klick(mitte(k.schalterRahmen))
+	l.setle()
+	if len(k.alle()) != 8 {
+		t.Fatalf("%d Knöpfe im Abschnitt, Soll 8", len(k.alle()))
+	}
+	l.klick(mitte(k.stufeRahmen[0][1]))
+	l.klick(mitte(k.stufeRahmen[1][0]))
+	l.setle()
+	if sch := schattenVon(t, l, id); sch.Laenge != 7 || sch.Weich != 7 {
+		t.Errorf("nach + Abstand und − Weichheit: %+v", sch)
+	}
+	sch := schattenVon(t, l, id)
+	sch.Winkel = 359.6
+	l.e.s.SetzeSchatten(sch)
+	l.setle()
+	if k.richtText != "0°" {
+		t.Errorf("Anzeige %q, Soll 0°", k.richtText)
+	}
+}

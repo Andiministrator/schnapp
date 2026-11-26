@@ -21,6 +21,14 @@ func (s *Sitzung) schattenObjekt() (document.Objekt, bool) {
 	return s.D.Objekt(id)
 }
 
+// schattenZiel ist die Kennung des Objekts, dessen Schatten die Leiste zeigt, 0 für den Stand des Werkzeugs.
+func (s *Sitzung) schattenZiel() int {
+	if o, ok := s.schattenObjekt(); ok {
+		return o.Kennung()
+	}
+	return 0
+}
+
 // Schatten ist der Schatten, den die rechte Leiste zeigt.
 func (s *Sitzung) Schatten() document.Schatten {
 	if o, ok := s.schattenObjekt(); ok {
@@ -87,6 +95,9 @@ func (s *Sitzung) SetzeSchatten(sch document.Schatten) bool {
 // SchalteSchatten schaltet den Schatten an oder aus. Beim Einschalten eines Schattens ohne eigene Werte (etwa aus einer
 // Datei ohne Schatten) gelten die des Werkzeugs, sonst die Voreinstellung zum Faktor des Bilds.
 func (s *Sitzung) SchalteSchatten() bool {
+	if s.Zieht() || s.gesperrt() { // vor jeder Änderung am Feld: sonst liefen Schalter und Feld auseinander (K-5 #363b)
+		return false
+	}
 	sch := s.Schatten()
 	if sch.An {
 		sch.An = false
@@ -108,11 +119,20 @@ func (s *Sitzung) SchalteSchatten() bool {
 // BeginneSchattenZug beginnt das Ziehen an einem Regler des Schattens (Länge, Weich): wie am Regler der Strichstärke
 // ändert sich das gewählte Objekt bis zum Loslassen mit und wird ein Rückgängig-Schritt (BeendeBreiteZug,
 // BrecheBreiteZugAb beenden beide Züge).
+//
+// In der Texteingabe gehört der Zug zur Eingabe wie beim Farbzug: kein eigener Schritt, ein Abbruch stellt den Text wie
+// vor dem Ziehen her (Kritik K-1 #363b).
 func (s *Sitzung) BeginneSchattenZug() bool {
-	if s.Zieht() || s.gesperrt() || s.zug == zugText {
+	if s.Zieht() || s.gesperrt() {
 		return false
 	}
-	s.breiteZug, s.breiteZugObj = true, false
+	s.breiteZug, s.breiteZugObj, s.schattenZugText = true, false, nil
+	if s.zug == zugText {
+		if o, ok := s.D.Objekt(s.textID); ok {
+			s.schattenZugText = o
+		}
+		return true
+	}
 	if o, ok := s.schattenObjekt(); ok && s.D.BeginneZug(o.Kennung()) == nil {
 		s.breiteZugObj, s.breiteZugVor = true, s.D.Stand()
 	}
@@ -128,6 +148,12 @@ func (s *Sitzung) SchattenZugSetze(sch document.Schatten) {
 	s.Stil.Schatten = sch
 	if !sch.An {
 		sch = document.Schatten{} // am Objekt wie in SetzeSchatten der Nullwert (V-4)
+	}
+	if s.schattenZugText != nil {
+		if o, ok := s.D.Objekt(s.textID); ok {
+			_ = s.D.ZugSetze(mitSchatten(o, sch))
+		}
+		return
 	}
 	if s.breiteZugObj {
 		if o, ok := s.D.Objekt(s.Auswahl); ok {
@@ -186,5 +212,21 @@ func (s *Sitzung) SchattenRichtungStufe(dir int) bool {
 		return false
 	}
 	sch.Winkel = NaechsteSchattenRichtung(sch.Winkel, dir)
+	return s.SetzeSchatten(sch)
+}
+
+// SchattenWertStufe ändert Länge (weich false) bzw. Weich um einen ganzen Pixel in Richtung dir (− / + neben den
+// Reglern, Tastaturweg, Kritik K-4 #363b); gerundet und in den Grenzen des Dokuments. Liefert, ob sich das Dokument
+// geändert hat.
+func (s *Sitzung) SchattenWertStufe(weich bool, dir int) bool {
+	sch := s.Schatten()
+	if !sch.An || dir == 0 {
+		return false
+	}
+	w := &sch.Laenge
+	if weich {
+		w = &sch.Weich
+	}
+	*w = max(0, math.Round(*w)+float64(dir))
 	return s.SetzeSchatten(sch)
 }

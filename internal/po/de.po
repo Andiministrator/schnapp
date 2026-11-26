@@ -1864,3 +1864,6 @@ msgstr "%d°"
 msgctxt "color field"
 msgid "Shadow"
 msgstr "Schatten"
+
+msgid "Custom style with drop shadow. Right-click or Del removes it."
+msgstr "Eigener Stil mit Schatten. Rechtsklick oder Entf entfernt ihn."

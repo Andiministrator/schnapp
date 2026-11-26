@@ -2243,6 +2243,10 @@ msgid "Custom style. Right-click or Del removes it."
 msgstr ""
 
 #: internal/ui/schnellstile.go
+msgid "Custom style with drop shadow. Right-click or Del removes it."
+msgstr ""
+
+#: internal/ui/schnellstile.go
 msgid "%s Font “%s” is not installed."
 msgstr ""
 

@@ -70,7 +70,7 @@ func (s *Sitzung) BeendeBreiteZug() {
 	if !s.breiteZug {
 		return
 	}
-	s.breiteZug = false
+	s.breiteZug, s.schattenZugText = false, nil
 	if s.breiteZugObj {
 		s.breiteZugObj = false
 		_ = s.D.BeendeZug()
@@ -85,6 +85,12 @@ func (s *Sitzung) BrecheBreiteZugAb() {
 		return
 	}
 	s.breiteZug = false
+	if s.schattenZugText != nil { // Schattenzug in der Texteingabe: Text wie vor dem Ziehen (Kritik K-1 #363b)
+		if s.zug == zugText {
+			_ = s.D.ZugSetze(s.schattenZugText)
+		}
+		s.schattenZugText = nil
+	}
 	if s.breiteZugObj {
 		s.breiteZugObj = false
 		_ = s.D.BrecheZugAb()

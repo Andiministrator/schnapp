@@ -590,3 +590,33 @@ func TestSchnellstilSchatten(t *testing.T) {
 		t.Errorf("styles.ini nimmt den Stil nicht: %v", err)
 	}
 }
+
+// Kritik K-3 #363b: Passt ein eigener Stil mit Schatten genau, ist nur er orange, nicht zusätzlich die eingebaute Kachel
+// ohne Schatten; ohne Schatten am Objekt passt wieder die eingebaute.
+func TestSchnellstilGenauEinePassendeMitSchatten(t *testing.T) {
+	s, ids := stilSitzung(t, image.Pt(200, 100))
+	s.SetzeWerkzeug(WerkzeugAuswahl)
+	s.Auswahl = ids[1]
+	rot := schnell(t, SchnellKasten, "red")
+	if !s.SchnellstilPasst(rot) {
+		t.Fatal("Kontrolle: der Kasten passt nicht zu Rot")
+	}
+	s.SchalteSchatten()
+	if !s.SchnellstilPasst(rot) {
+		t.Error("ohne eigenen Stil mit Schatten passt Rot nicht mehr")
+	}
+	st, r := s.FuegeSchnellstilHinzu(SchnellKasten)
+	if r != HinzuOK {
+		t.Fatalf("+: %v", r)
+	}
+	if s.SchnellstilPasst(rot) || !s.SchnellstilPasst(st) {
+		t.Errorf("Rot passt %v, eigener %v", s.SchnellstilPasst(rot), s.SchnellstilPasst(st))
+	}
+	if i := s.PassenderSchnellstil(SchnellKasten); i != len(s.Schnellstile(SchnellKasten))-1 {
+		t.Errorf("passender Stil %d, Soll der eigene", i)
+	}
+	s.SchalteSchatten()
+	if !s.SchnellstilPasst(rot) || s.SchnellstilPasst(st) {
+		t.Error("ohne Schatten: Rot soll passen, der eigene nicht")
+	}
+}
