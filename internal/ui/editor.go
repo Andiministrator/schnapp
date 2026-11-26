@@ -2714,6 +2714,9 @@ func (e *editor) tasten(gtx layout.Context) {
 		if !e.s.TextLaeuft() && e.schnellTaste(gtx, k) {
 			continue // Pfeile und Entf an einer Kachel der Schnellstile (ADR-0037 Punkt 7)
 		}
+		if !e.s.TextLaeuft() && e.scheibeTaste(gtx, k) {
+			continue // Pfeile an der Richtungsscheibe des Schattens (ADR-0031 Nachtrag 13)
+		}
 		if !e.s.TextLaeuft() && e.farbfeldTaste(gtx, k) {
 			continue // Entf an einem Farbfeld (Karte #364)
 		}

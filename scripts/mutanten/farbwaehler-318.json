@@ -10,8 +10,8 @@
     "name": "FW318-2 Pipette unter der Zeile",
     "datei": "internal/ui/farbwaehler.go",
     "paket": "./internal/ui",
-    "alt": "\tfw.pipRahmen = image.Rect(x+breite-q, y, x+breite, y+q)",
-    "neu": "\tfw.pipRahmen = image.Rect(x+breite-q, y+q, x+breite, y+2*q)"
+    "alt": "\tfw.pipRahmen = image.Rect(x+breite-q, y+(h-q)/2, x+breite, y+(h-q)/2+q)",
+    "neu": "\tfw.pipRahmen = image.Rect(x+breite-q, y+h, x+breite, y+h+q)"
   },
   {
     "name": "FW318-3 nur sieben zuletzt benutzte Farben",

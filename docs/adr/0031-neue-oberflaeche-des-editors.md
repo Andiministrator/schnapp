@@ -447,7 +447,7 @@ Tests `internal/ui/farbpaar_klick_test.go`, Mutanten `scripts/mutanten/farbpaar-
 nachgezogenen S187-11, QA-U4a/b in `ui-seitenleiste.json`. Die deutlichere Darstellung von Vorder- und Füllfarbe folgt
 mit Karte #317.
 
-## Nachtrag 13 (26.11.2026): Farbziel als Auswahl, Schatten als Kästchen, Richtung als Scheibe (Karte folgt)
+## Nachtrag 13 (26.11.2026): Farbziel als Auswahl, Schatten als Kästchen, Richtung als Scheibe (Karte #369)
 
 **Status:** Akzeptiert (Claude Opus 5.5 im Auftrag Andis: „arbeite selbstständig“). Ändert die Bedienung aus ADR-0021
 Nachträge 11, 23 und 26 Punkt 7; das Farbmodell (Felder Vordergrund, Füllung, Schatten in `canvas`) bleibt.
@@ -459,23 +459,33 @@ ab dann den Schatten, obwohl oben im Abschnitt Farbe weiter das rote Farbpaar st
 verstellt man nur mit − / + in 15°.
 
 **Regel.**
-1. **Farbziel sichtbar wählen.** Der Abschnitt „Farbe“ beginnt mit einer Reihe gleich breiter Reiter, je Feld einer mit
-   Farbmuster und Namen: **Strich** (bei Text „Schrift“) · **Füllung** (nur, wo es eine gibt) · **Schatten** (nur, wenn
-   er an ist). Der Reiter des Felds, das der Farbwähler bearbeitet, ist hervorgehoben (Fläche `farbeAuswahl`, orange
-   Unterkante); Hex, Deckkraft, Fläche, Ton und Farbfelder darunter gelten genau ihm. Tauschen (Strg+Umschalt+X) steht als
-   kleines Symbol zwischen Strich und Füllung, „Keine“ bleibt ein Farbfeld der Palette. Das Wort neben dem Farbpaar
-   entfällt. Pfeile links/rechts wechseln den Reiter, wenn er den Fokus hat.
+1. **Farbziel sichtbar wählen.** Der Abschnitt „Farbe“ beginnt mit einer Reihe Reiter, je Feld einer mit Farbmuster
+   und Namen: **Farbe** · **Füllung** (nur, wo es eine gibt) · **Schatten** (nur, wenn er an ist). Der Reiter des Felds,
+   das der Farbwähler bearbeitet, ist hervorgehoben (helle Fläche, grüner Rand und grüne Unterkante; Grün heißt aktiv,
+   Orange bleibt dem Fokus); Hex, Deckkraft, Fläche, Ton und Farbfelder darunter gelten genau ihm. Tauschen
+   (Strg+Umschalt+X) steht als kleines Symbol zwischen Farbe und Füllung, rechts die Pipette. „Keine“ steht als erstes
+   Feld vorn in den eigenen Farbfeldern, solange die Füllung das Ziel ist. Das Wort neben dem Farbpaar entfällt. Jeder
+   Reiter bekommt die Breite, die sein Name braucht, der Rest der Zeile verteilt sich gleich (`farbReiterBreiten`);
+   reicht sie nicht, sind alle gleich breit und die Namen gekürzt. Die Reiter sind Knöpfe der Tab-Folge (Farbe,
+   Tauschen, Füllung, Schatten), Enter oder Leertaste wählt.
 2. **Schatten an/aus ist ein Kästchen** („☐ Schatten“, Haken wie „Agenten-Aufnahmen zeigen“ der Bibliothek), Klick auf
    Kästchen oder Wort, Leertaste schaltet. Das Farbfeld im Abschnitt Schatten bleibt als Kurzweg: Ein Klick wählt den
    Reiter „Schatten“ und zeigt den Farbwähler (wie Nachtrag 12).
+   Ebenso wird der Schalter „Spitze“ der Sprechblase (ADR-0021 Nachtrag 13) ein Kästchen mit Wort: Die beiden standen
+   untereinander und sahen sonst verschieden aus.
 3. **Richtung als Scheibe.** Eine runde Scheibe (Durchmesser 56 dp) zeigt in der Mitte ein kleines Quadrat und seinen
    Schatten in der eingestellten Richtung, dazu einen Punkt am Rand; Klicken oder Ziehen setzt die Richtung zum Zeiger hin
-   (der Schatten fällt dorthin, wo man zeigt), rastet in 15°-Schritten ein, mit Umschalt frei in 1°. Mausrad und Pfeile
-   ±15° (mit Umschalt ±1°), ein Ziehen ist ein Rückgängig-Schritt (`BeginneSchattenZug`). Daneben steht die Zahl; sie
-   bleibt der Winkel des Lichts wie in Photoshop und im Format (`s:schatten`), also Fallrichtung + 180°. Die Knöpfe
+   (der Schatten fällt dorthin, wo man zeigt), rastet in 15°-Schritten ein, mit Umschalt frei in 1°. Hat die Scheibe den
+   Tastaturfokus, drehen die Pfeile um 15° (rechts/hoch mehr, links/runter weniger); das Mausrad bleibt beim Rollen der
+   Leiste. Ein Ziehen ist ein Rückgängig-Schritt (`BeginneSchattenZug`), die Rechnung `canvas.SchattenWinkelZu`.
+   Daneben steht die Zahl; sie bleibt der Winkel des Lichts wie in Photoshop und im Format (`s:schatten`), also Fallrichtung + 180°. Die Knöpfe
    − / + der Richtung entfallen.
 4. **Feinabstimmung** (Andis Frage, ob ein Kästchen „Feinabstimmung“ bei vielen Werkzeugen hilft): offen bis zu Andis
    Antwort, siehe Karte.
+
+Tests `internal/ui/farbpaar_einfach_test.go`, `schattenleiste_test.go`, `internal/canvas/schatten_test.go`
+(`TestSchattenWinkelZu`), Mutanten `scripts/mutanten/farbziel-369.json` (FZ1–FZ19), Sichtprobe
+`scripts/drehbuecher/farbziel-schatten-369.txt`; `farbwaehlerHoeheDp` 238 (Reiterzeile 28 + 10).
 
 **Erwogene Alternativen.** Farbwähler je Feld in jedem Abschnitt (doppelter Platz, drei Hex-Felder); Ziel nur über das
 Farbpaar links (unsichtbar, wenn die Leiste offen ist); Richtung als Liste von acht Pfeilen (kein Zwischenwinkel).

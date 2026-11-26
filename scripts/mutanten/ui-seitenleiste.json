@@ -381,7 +381,7 @@
     "name": "KU219-8 Höhe des Farbwählers ungebunden (B-5)",
     "datei": "internal/ui/seitenleiste.go",
     "paket": "./internal/ui",
-    "alt": "\tfarbwaehlerHoeheDp = 234",
+    "alt": "\tfarbwaehlerHoeheDp = 238",
     "neu": "\tfarbwaehlerHoeheDp = 200"
   },
   {

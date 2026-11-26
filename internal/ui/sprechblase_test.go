@@ -280,28 +280,29 @@ func TestEbenenVorschauZeigtSpitze(t *testing.T) {
 	}
 }
 
-// Der Schalter „Spitze“ der Leiste zeigt den Zustand: gefülltes Kästchen bei einer Blase, leeres bei einem Text.
+// Das Kästchen „Spitze“ der Leiste zeigt den Zustand (seit Karte #369 ein Kästchen mit Haken wie „Shadow“): grün bei
+// einer Blase, leer bei einem Text. Gemessen oben links im Kästchen, abseits des Hakens.
 func TestSpitzenSchalterZeigtZustand(t *testing.T) {
 	e := blasenEditor(t, color.NRGBA{R: 200, A: 255}, 100)
 	e.thema = material.NewTheme()
 	id := e.s.D.Objekte()[0].Kennung()
 	e.s.Auswahl = id
-	mitteFarbe := func() color.NRGBA {
-		var r image.Rectangle
+	kaestchenFarbe := func() color.NRGBA {
 		b := headlessBild(t, image.Pt(160, 60), func(gtx layout.Context) {
 			e.zeichneSpitze(gtx, 4, 4, 100)
-			r = e.spitze.rahmen
 		})
-		m := r.Min.Add(r.Max).Div(2)
-		p := b.RGBAAt(m.X, m.Y)
+		p := b.RGBAAt(4+4, 4+(26-18)/2+4) // Kästchen 18 dp ab (4, 8), Haken ab 22 % der Breite
 		return color.NRGBA{R: p.R, G: p.G, B: p.B, A: p.A}
 	}
-	if got := mitteFarbe(); got != farbeAuswahl {
-		t.Errorf("Schalter bei einer Blase: Mitte %v, Soll die Auswahlfarbe %v", got, farbeAuswahl)
+	if got := kaestchenFarbe(); got != farbeAuswahl {
+		t.Errorf("Kästchen bei einer Blase: %v, Soll die Auswahlfarbe %v", got, farbeAuswahl)
 	}
 	e.s.SchalteSpitze()
-	if got := mitteFarbe(); got != farbeGrund {
-		t.Errorf("Schalter bei einem Text: Mitte %v, Soll der Grund %v", got, farbeGrund)
+	if got := kaestchenFarbe(); got == farbeAuswahl {
+		t.Errorf("Kästchen bei einem Text: %v, Soll leer", got)
+	}
+	if r := e.spitze.rahmen; r.Min.X != 4 || r.Dx() < 100 {
+		t.Errorf("Klickfläche %v umfasst nicht Kästchen und Wort", r)
 	}
 }
 

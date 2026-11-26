@@ -325,8 +325,8 @@
     "name": "UB47 Schalter zeigt den Zustand verkehrt",
     "datei": "internal/ui/spitze.go",
     "paket": "./internal/ui",
-    "alt": "if an { // eckiges",
-    "neu": "if !an { // eckiges"
+    "alt": "\tzeichneKaestchen(gtx, kr, e.s.SpitzeAn())",
+    "neu": "\tzeichneKaestchen(gtx, kr, !e.s.SpitzeAn())"
   },
   {
     "name": "UB48 Schalter Spitze fehlt in der Leiste",

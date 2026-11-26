@@ -45,9 +45,9 @@ func TestHexFeldOhneDeckkraft(t *testing.T) {
 func TestPipetteInDerZeileDesFarbpaars(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
 	se := &l.e.seite
-	pip, vorn, keine := se.fw.pipRahmen, se.paarRahmen[paarVorn], se.paarRahmen[paarKeine]
-	if pip.Empty() || pip.Min.Y != vorn.Min.Y || pip.Dy() != vorn.Dy() || pip.Min.X < keine.Max.X {
-		t.Fatalf("Pipette %v, Vordergrund %v, Keine %v: nicht rechts in derselben Zeile", pip, vorn, keine)
+	pip, vorn, fuel := se.fw.pipRahmen, se.paarRahmen[paarVorn], se.paarRahmen[paarFuellung]
+	if pip.Empty() || (pip.Min.Y+pip.Max.Y)/2 != (vorn.Min.Y+vorn.Max.Y)/2 || pip.Min.X < fuel.Max.X {
+		t.Fatalf("Pipette %v, Farbe %v, Füllung %v: nicht rechts in derselben Zeile", pip, vorn, fuel)
 	}
 	if pip.Max.X > l.fenst.X {
 		t.Errorf("Pipette ragt aus der Leiste: %v", pip)

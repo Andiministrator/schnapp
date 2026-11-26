@@ -6,8 +6,6 @@ import (
 	"image"
 
 	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/widget"
 
 	"github.com/Andiministrator/schnapp/internal/i18n"
@@ -27,23 +25,17 @@ func (e *editor) spitzeAuswerten(gtx layout.Context) {
 	}
 }
 
-// zeichneSpitze zeichnet die Zeile „Spitze [ ]“ bei y (Beschriftung links, Schalter rechts) und liefert das neue y.
+// zeichneSpitze zeichnet die Zeile „[ ] Spitze“ bei y (Kästchen mit Wort) und liefert das neue y.
 func (e *editor) zeichneSpitze(gtx layout.Context, x, y, spalte int) int {
 	k := &e.spitze
 	hoch := gtx.Dp(26)
-	e.seiteText(gtx, i18n.T("Tail"), 13, farbeNebentext, image.Pt(x, y+gtx.Dp(4)), spalte-gtx.Dp(4), 1)
-	r := image.Rect(x+spalte, y, x+spalte+hoch, y+hoch)
+	// Kästchen mit Wort wie „Shadow“ (ADR-0031 Nachtrag 13 Punkt 2, Karte #369): Kästchen und Wort sind eine Klickfläche.
+	q := gtx.Dp(18)
+	kr := image.Rect(x, y+(hoch-q)/2, x+q, y+(hoch-q)/2+q)
+	zeichneKaestchen(gtx, kr, e.s.SpitzeAn())
+	e.seiteText(gtx, i18n.T("Tail"), 13, farbeText, image.Pt(kr.Max.X+gtx.Dp(8), y+gtx.Dp(4)), spalte, 1)
+	r := image.Rect(x, y, x+spalte+gtx.Dp(40), y+hoch)
 	k.rahmen = r
-	an := e.s.SpitzeAn()
-	rnd := farbeLinie
-	if k.knopf.Hovered() {
-		rnd = farbeNebentext
-	}
-	paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(r).Op())
-	paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
-	if an { // eckiges Kästchen, innen gefüllt (Corporate Design: eckig)
-		paint.FillShape(gtx.Ops, farbeAuswahl, clip.Rect(r.Inset(gtx.Dp(6))).Op())
-	}
 	seiteKnopf(gtx, &k.knopf, r)
 	return y + hoch + gtx.Dp(10)
 }

@@ -1,0 +1,135 @@
+[
+  {
+    "name": "FZ1 Winkel ohne Raster",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "\tschritt := SchattenRichtungSchritt\n\tif frei {",
+    "neu": "\tschritt := 1.0\n\tif frei {"
+  },
+  {
+    "name": "FZ2 frei rastet trotzdem",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif frei {\n\t\tschritt = 1\n\t}",
+    "neu": "\tif frei {\n\t}"
+  },
+  {
+    "name": "FZ3 Fallrichtung gespiegelt",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "\tw := math.Atan2(dy, -dx) * 180 / math.Pi",
+    "neu": "\tw := math.Atan2(dy, dx) * 180 / math.Pi"
+  },
+  {
+    "name": "FZ4 Mitte ohne Prüfung",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif math.Hypot(dx, dy) < 1e-9 {\n\t\treturn 0, false\n\t}\n\tw := math.Atan2",
+    "neu": "\tw := math.Atan2"
+  },
+  {
+    "name": "FZ5 Scheibe nicht angemeldet",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\treglerAnmelden(gtx, &k.scheibeRahmen, sr)\n",
+    "neu": ""
+  },
+  {
+    "name": "FZ6 Scheibe nicht ausgewertet",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\te.schattenReglerAuswerten(gtx, &k.scheibeRahmen, schattenReglerRichtung)\n",
+    "neu": ""
+  },
+  {
+    "name": "FZ7 Scheibe ohne Mitte",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "canvas.SchattenWinkelZu(float64(p.X)-m, float64(p.Y)-m, frei)",
+    "neu": "canvas.SchattenWinkelZu(float64(p.X)-0*m, float64(p.Y)-0*m, frei)"
+  },
+  {
+    "name": "FZ8 Umschalt nicht durchgereicht",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.schattenZiehen(art, pe.Position, pe.Modifiers.Contain(key.ModShift))\n\t\t\tif pe.Kind == pointer.Release {",
+    "neu": "\t\t\te.schattenZiehen(art, pe.Position, false)\n\t\t\tif pe.Kind == pointer.Release {"
+  },
+  {
+    "name": "FZ9 Ziehen an der Scheibe ohne Zug",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tsch.Winkel = w\n\t\t\te.s.SchattenZugSetze(sch)",
+    "neu": "\t\t\tsch.Winkel = w\n\t\t\te.s.SetzeSchatten(sch)"
+  },
+  {
+    "name": "FZ10 Pfeile an der Scheibe wirkungslos",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif !e.s.TextLaeuft() && e.scheibeTaste(gtx, k) {",
+    "neu": "\t\tif false && e.scheibeTaste(gtx, k) {"
+  },
+  {
+    "name": "FZ11 Pfeil dreht falsch herum",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase key.NameRightArrow, key.NameUpArrow:\n\t\te.s.SchattenRichtungStufe(1)",
+    "neu": "\tcase key.NameRightArrow, key.NameUpArrow:\n\t\te.s.SchattenRichtungStufe(-1)"
+  },
+  {
+    "name": "FZ12 Reiter Schatten ohne Wirkung",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\tif k.paar[paarSchatten].Clicked(gtx) && an() {\n\t\te.s.SetzeFeld(canvas.FeldSchatten)",
+    "neu": "\tif k.paar[paarSchatten].Clicked(gtx) && an() {\n\t\te.s.SetzeFeld(canvas.FeldVordergrund)"
+  },
+  {
+    "name": "FZ13 Reiter Schatten immer",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\tif schatten {\n\t\tfelder = append(felder, canvas.FeldSchatten)",
+    "neu": "\tif true {\n\t\tfelder = append(felder, canvas.FeldSchatten)"
+  },
+  {
+    "name": "FZ14 Reiter Schatten nie gezeichnet",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\tif schatten {\n\t\treiter(paarSchatten, canvas.FeldSchatten)\n\t}",
+    "neu": ""
+  },
+  {
+    "name": "FZ15 Breiten ohne Rest",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tb[i] += (frei - summe) / len(felder)",
+    "neu": "\t\tb[i] += 0"
+  },
+  {
+    "name": "FZ16 zu eng ohne Gleichverteilung",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\tif summe > frei {\n\t\tfor i := range b {",
+    "neu": "\tif false {\n\t\tfor i := range b {"
+  },
+  {
+    "name": "FZ17 Keine verschiebt die Farbfelder nicht",
+    "datei": "internal/ui/farbfelder.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tr := platz(j + vorn)",
+    "neu": "\t\tr := platz(j)"
+  },
+  {
+    "name": "FZ18 Kästchen ohne Klickfläche",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\te.knopfAn(gtx, &k.schalter, r)\n\ty += hoch + gtx.Dp(10)\n\tif !sch.An {",
+    "neu": "\ty += hoch + gtx.Dp(10)\n\tif !sch.An {"
+  },
+  {
+    "name": "FZ19 Scheibe ohne Tastaturfokus",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\t\ta = append(a, &k.scheibe, &k.stufe[0][0]",
+    "neu": "\t\ta = append(a, &k.stufe[0][0]"
+  }
+]

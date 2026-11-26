@@ -427,11 +427,11 @@ func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 	if !l.fokus(&l.e.seite.farbeKopf) {
 		t.Fatalf("Tab nach der Schrift: Fokus nicht auf der Überschrift Farbe (%s)", menueFokusName(l))
 	}
-	// Die Zeile des Farbpaars: Vordergrund, Füllung, Tauschen, Keine (ADR-0021 Nachtrag 11).
-	for i := range l.e.seite.paar {
+	// Die Reiter: Farbe, Tauschen, Füllung (ADR-0031 Nachtrag 13; „Keine“ steht vorn in den Farbfeldern).
+	for i, j := range []int{paarVorn, paarTausch, paarFuellung} {
 		l.r.MoveFocus(key.FocusForward)
 		l.setle()
-		if !l.fokus(&l.e.seite.paar[i]) {
+		if !l.fokus(&l.e.seite.paar[j]) {
 			t.Fatalf("Tab %d im Farbpaar der Leiste: Fokus woanders (%s)", i+1, menueFokusName(l))
 		}
 	}
@@ -446,7 +446,7 @@ func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 	ziele := []struct {
 		tag  any
 		name string
-	}{{&l.e.seite.fw.hex, "Hex"}, {&l.e.seite.fw.deckkraft, "Deckkraft"}}
+	}{{&l.e.seite.fw.hex, "Hex"}, {&l.e.seite.fw.deckkraft, "Deckkraft"}, {&l.e.seite.paar[paarKeine], "Keine"}}
 	for i := range canvas.StandardFarbfelder {
 		ziele = append(ziele, struct {
 			tag  any

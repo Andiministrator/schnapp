@@ -173,8 +173,23 @@ func (e *editor) zeichneFarbfelder(gtx layout.Context, x, y, breite int) int {
 		return image.Rect(px, py, px+q, py+q)
 	}
 	aktuell := e.s.AktuelleFarbe()
+	// „Keine“ vorn, solange die Füllung das Ziel ist (ADR-0031 Nachtrag 13; vorher in der Zeile des Farbpaars): weiß mit
+	// rotem Schrägstrich wie Inkscape/Photoshop, ein Klick macht die Füllung durchsichtig.
+	vorn := 0
+	if e.keineZeigen() {
+		k := &e.seite
+		rk, c := platz(0), &k.paar[paarKeine]
+		k.paarRahmen[paarKeine] = rk
+		e.farbFeld(gtx, farbeText, rk, aktuell.A == 0, c.Hovered())
+		zeichneKeine(gtx, rk)
+		e.knopfAn(gtx, c, rk)
+		if c.Hovered() || gtx.Focused(c) {
+			f.hinweis = i18n.T("No fill")
+		}
+		vorn = 1
+	}
 	for j, c := range f.farben {
-		r := platz(j)
+		r := platz(j + vorn)
 		f.rahmen[j] = r
 		e.farbFeld(gtx, c, r, c == aktuell, f.knoepfe[j].Hovered())
 		e.knopfAn(gtx, &f.knoepfe[j], r)
@@ -183,7 +198,7 @@ func (e *editor) zeichneFarbfelder(gtx layout.Context, x, y, breite int) int {
 			f.hinweis = fmt.Sprintf(i18n.T("Color swatch %s. Right-click or Del removes it."), canvas.HexText(c))
 		}
 	}
-	pr := platz(len(f.farben))
+	pr := platz(len(f.farben) + vorn)
 	f.plusRahmen = pr
 	an := e.kannFarbfeldHinzu()
 	zeichnePlus(gtx, pr, an, f.plus.Hovered())
@@ -200,8 +215,17 @@ func (e *editor) zeichneFarbfelder(gtx layout.Context, x, y, breite int) int {
 func (e *editor) farbfelderHoehe(gtx layout.Context, breite int) int {
 	q, abst := gtx.Dp(farbfeldDp), gtx.Dp(farbfeldAbstDp)
 	je := max(1, (breite+abst)/(q+abst))
-	reihen := (len(e.seite.ff.liste()) + 1 + je - 1) / je
+	vorn := 0
+	if e.keineZeigen() {
+		vorn = 1
+	}
+	reihen := (len(e.seite.ff.liste()) + vorn + 1 + je - 1) / je
 	return gtx.Dp(farbfelderAbstandDp) + reihen*(q+abst) - abst
+}
+
+// keineZeigen meldet, ob vorn in den Farbfeldern „Keine“ steht: wenn die Füllung das Ziel des Farbwählers ist.
+func (e *editor) keineZeigen() bool {
+	return e.s.Fuellbar() && e.s.AktivesFeld() == canvas.FeldFuellung
 }
 
 // farbfeldPlusText ist der Hinweis zu „+“.

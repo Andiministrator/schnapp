@@ -58,8 +58,8 @@ func TestFarbpaarWerkzeugleiste(t *testing.T) {
 func TestFarbpaarRechteLeiste(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
 	k := &l.e.seite
-	for i, r := range k.paarRahmen {
-		if r.Empty() {
+	for _, i := range []int{paarVorn, paarFuellung, paarTausch, paarKeine} { // Keine: die Füllung ist das Ziel
+		if r := k.paarRahmen[i]; r.Empty() {
 			t.Fatalf("Knopf %d der Zeile nicht gezeichnet", i)
 		}
 	}

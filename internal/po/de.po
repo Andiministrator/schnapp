@@ -1762,9 +1762,8 @@ msgctxt "color field"
 msgid "Fill"
 msgstr "Füllung"
 
-msgctxt "color field"
-msgid "Fill: none"
-msgstr "Füllung: keine"
+msgid "No fill"
+msgstr "Keine Füllung"
 
 msgid "the color swatches file cannot be read, so it is left as it is"
 msgstr "die Datei der Farbfelder ist nicht lesbar und bleibt deshalb unverändert"

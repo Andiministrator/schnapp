@@ -11,6 +11,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"slices"
 	"strconv"
 	"unicode"
 	"unicode/utf8"
@@ -608,43 +609,55 @@ func (e *editor) zeichneFarbwaehler(gtx layout.Context, x, y, breite, spalte int
 	return e.zeichneFarbfelder(gtx, x, y+fh+gtx.Dp(farbfelderAbstandDp), breite)
 }
 
-// zeichneFarbpaarZeile zeichnet über dem Farbwähler die Zeile des Farbpaars (ADR-0021 Nachtrag 11, vereinfacht in
-// Nachtrag 23, Karte #359): mit Füllung Vordergrund, Füllung, Tauschen und das Feld „keine Füllung“ (Schrägstrich),
-// ohne Füllung nur das eine Farbfeld; daneben der Name des aktiven Felds, rechts die Pipette. Liefert das neue y.
+// zeichneFarbpaarZeile zeichnet über dem Farbwähler die Reiter der Farbfelder (ADR-0031 Nachtrag 13, Karte #369; vorher
+// das Farbpaar mit dem Namen des aktiven Felds, ADR-0021 Nachtrag 23): je Feld ein Reiter mit Farbmuster und Namen —
+// „Farbe“, „Füllung“ (nur, wo es eine gibt), „Schatten“ (nur, wenn er an ist) —, der Reiter des Felds, das der Farbwähler
+// bearbeitet, hervorgehoben; zwischen Farbe und Füllung Tauschen, rechts die Pipette. „Keine“ steht seitdem vorn in den
+// Farbfeldern (zeichneFarbfelder). Liefert das neue y.
 func (e *editor) zeichneFarbpaarZeile(gtx layout.Context, x, y, breite, q int) int {
 	k := &e.seite
 	aktiv := e.s.AktivesFeld()
-	fuellbar := e.s.Fuellbar()
-	abst := gtx.Dp(8)
-	k.paarRahmen[paarVorn] = image.Rect(x, y, x+q, y+q)
-	k.paarRahmen[paarFuellung], k.paarRahmen[paarTausch], k.paarRahmen[paarKeine] = image.Rectangle{}, image.Rectangle{}, image.Rectangle{}
-	e.paarFeld(gtx, &k.paar[paarVorn], k.paarRahmen[paarVorn], e.s.Farbe(canvas.FeldVordergrund), true,
-		aktiv == canvas.FeldVordergrund)
-	rechts := k.paarRahmen[paarVorn].Max.X
-	if fuellbar {
-		k.paarRahmen[paarFuellung] = k.paarRahmen[paarVorn].Add(image.Pt(q+abst, 0))
-		k.paarRahmen[paarTausch] = k.paarRahmen[paarFuellung].Add(image.Pt(q+abst, 0))
-		k.paarRahmen[paarKeine] = k.paarRahmen[paarTausch].Add(image.Pt(q+abst, 0))
-		e.paarFeld(gtx, &k.paar[paarFuellung], k.paarRahmen[paarFuellung], e.s.Farbe(canvas.FeldFuellung), true,
-			aktiv == canvas.FeldFuellung)
-		e.tauschKnopf(gtx, &k.paar[paarTausch], k.paarRahmen[paarTausch])
-		// „keine Füllung“ als Farbfeld (weiß mit rotem Schrägstrich, wie Inkscape/Photoshop) statt eines Textknopfs:
-		// Ein Klick macht die Füllung aktiv und durchsichtig.
-		rk, c := k.paarRahmen[paarKeine], &k.paar[paarKeine]
-		keine := aktiv == canvas.FeldFuellung && e.s.Farbe(canvas.FeldFuellung).A == 0
-		e.farbFeld(gtx, farbeText, rk, keine, c.Hovered())
-		zeichneKeine(gtx, rk)
-		e.knopfAn(gtx, c, rk)
-		rechts = rk.Max.X
+	fuellbar, schatten := e.s.Fuellbar(), e.s.Schatten().An
+	h, abst, tauschB := gtx.Dp(28), gtx.Dp(4), gtx.Dp(18)
+	for i := range k.paarRahmen {
+		k.paarRahmen[i] = image.Rectangle{}
 	}
-	// Name des aktiven Felds, damit klar ist, worauf Farbfläche, Hex und Deckkraft wirken.
 	fw := &k.fw
-	fw.pipRahmen = image.Rect(x+breite-q, y, x+breite, y+q)
-	if nx := rechts + gtx.Dp(10); fw.pipRahmen.Min.X-gtx.Dp(6) > nx {
-		e.seiteText(gtx, farbfeldName(fuellbar, aktiv, e.s.Farbe(canvas.FeldFuellung)), 12, farbeNebentext,
-			image.Pt(nx, y+(q-gtx.Dp(16))/2), fw.pipRahmen.Min.X-gtx.Dp(6)-nx, 1)
+	fw.pipRahmen = image.Rect(x+breite-q, y+(h-q)/2, x+breite, y+(h-q)/2+q)
+	ende := fw.pipRahmen.Min.X - gtx.Dp(8)
+	felder := []canvas.Farbfeld{canvas.FeldVordergrund}
+	if fuellbar {
+		felder = append(felder, canvas.FeldFuellung)
 	}
-	// Pipette rechts in der Zeile (Karte #318): Sie holt eine Farbe für das aktive Feld, gehört also zum Farbpaar.
+	if schatten {
+		felder = append(felder, canvas.FeldSchatten)
+	}
+	frei := ende - x - (len(felder)-1)*abst
+	if fuellbar {
+		frei -= tauschB + abst
+	}
+	breiten := farbReiterBreiten(frei, func(f canvas.Farbfeld) int {
+		return gtx.Dp(farbReiterRandDp) + e.feldTextBreite(gtx, farbReiterName(f), 12)
+	}, felder)
+	px := x
+	reiter := func(i int, f canvas.Farbfeld) {
+		w := breiten[slices.Index(felder, f)]
+		r := image.Rect(px, y, px+w, y+h)
+		k.paarRahmen[i] = r
+		e.zeichneFarbReiter(gtx, &k.paar[i], r, e.s.Farbe(f), farbReiterName(f), aktiv == f)
+		px = r.Max.X + abst
+	}
+	reiter(paarVorn, canvas.FeldVordergrund)
+	if fuellbar {
+		k.paarRahmen[paarTausch] = image.Rect(px, y+(h-tauschB)/2, px+tauschB, y+(h-tauschB)/2+tauschB)
+		e.tauschKnopf(gtx, &k.paar[paarTausch], k.paarRahmen[paarTausch])
+		px += tauschB + abst
+		reiter(paarFuellung, canvas.FeldFuellung)
+	}
+	if schatten {
+		reiter(paarSchatten, canvas.FeldSchatten)
+	}
+	// Pipette rechts in der Zeile (Karte #318): Sie holt eine Farbe für das aktive Feld.
 	{
 		r, an := fw.pipRahmen, e.s.PipetteLaeuft()
 		grund, rnd := farbeGrund, farbeLinie
@@ -660,7 +673,69 @@ func (e *editor) zeichneFarbpaarZeile(gtx layout.Context, x, y, breite, q int) i
 		zeichneSymbol(gtx, icons.Pipette, r.Min.Add(image.Pt(gtx.Dp(2), gtx.Dp(2))), seite, farbeText, farbeAkzent)
 		e.knopfAn(gtx, &fw.pipette, r)
 	}
-	return y + q + gtx.Dp(10)
+	return y + h + gtx.Dp(10)
+}
+
+// zeichneFarbReiter zeichnet einen Reiter des Farbziels in r: Farbmuster (Schachbrett unter Durchsichtigem, roter
+// Schrägstrich bei „keine“) und Name; aktiv mit heller Fläche, grünem Rand und grüner Unterkante (Grün heißt aktiv,
+// Orange bleibt dem Fokus).
+func (e *editor) zeichneFarbReiter(gtx layout.Context, c *widget.Clickable, r image.Rectangle, farbe color.NRGBA, name string, aktiv bool) {
+	rnd, text := farbeLinie, farbeNebentext
+	switch {
+	case aktiv:
+		paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(r).Op())
+		rnd, text = farbeAuswahl, farbeText
+	case c.Hovered():
+		rnd = farbeNebentext
+	}
+	paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
+	if aktiv {
+		paint.FillShape(gtx.Ops, farbeAuswahl, clip.Rect(image.Rect(r.Min.X, r.Max.Y-gtx.Dp(3), r.Max.X, r.Max.Y)).Op())
+	}
+	sq := gtx.Dp(12)
+	mr := image.Rect(r.Min.X+gtx.Dp(5), r.Min.Y+(r.Dy()-sq)/2, r.Min.X+gtx.Dp(5)+sq, r.Min.Y+(r.Dy()-sq)/2+sq)
+	e.farbFeld(gtx, farbe, mr, false, false)
+	if farbe.A == 0 {
+		zeichneKeine(gtx, mr)
+	}
+	tx := mr.Max.X + gtx.Dp(4)
+	e.seiteText(gtx, name, 12, text, image.Pt(tx, r.Min.Y+(r.Dy()-gtx.Dp(16))/2), max(0, r.Max.X-gtx.Dp(2)-tx), 1)
+	e.knopfAn(gtx, c, r)
+}
+
+// farbReiterRandDp ist, was ein Reiter neben seinem Namen braucht: Rand, Farbmuster, Abstand, Rand (5 + 12 + 4 + 3).
+const farbReiterRandDp = 24
+
+// farbReiterBreiten verteilt frei Pixel auf die Reiter der Felder: Jeder bekommt, was sein Name braucht (bedarf), der
+// Rest geht zu gleichen Teilen dazu; reicht frei nicht, gleich breit (die Namen kürzt dann die Leiste mit „…“).
+func farbReiterBreiten(frei int, bedarf func(canvas.Farbfeld) int, felder []canvas.Farbfeld) []int {
+	b := make([]int, len(felder))
+	summe := 0
+	for i, f := range felder {
+		b[i] = bedarf(f)
+		summe += b[i]
+	}
+	if summe > frei {
+		for i := range b {
+			b[i] = max(0, frei/len(felder))
+		}
+		return b
+	}
+	for i := range b {
+		b[i] += (frei - summe) / len(felder)
+	}
+	return b
+}
+
+// farbReiterName ist der Name des Reiters zum Feld f (Karte #359, ADR-0031 Nachtrag 13).
+func farbReiterName(f canvas.Farbfeld) string {
+	switch f {
+	case canvas.FeldFuellung:
+		return i18n.TK("color field", "Fill")
+	case canvas.FeldSchatten:
+		return i18n.TK("color field", "Shadow")
+	}
+	return i18n.TK("color field", "Color")
 }
 
 // zeichneEingabe zeichnet ein Eingabefeld: Rand orange mit Fokus, rot bei ungültiger Eingabe, Schreibmarke am Ende.
@@ -710,18 +785,4 @@ func (e *editor) feldTextBreite(gtx layout.Context, text string, sp float32) int
 	d := lbl.Layout(g)
 	m.Stop()
 	return d.Size.X
-}
-
-// farbfeldName ist der Name des aktiven Felds neben dem Farbpaar (Karte #359): ohne Füllung schlicht „Farbe“, sonst
-// „Farbe“ oder „Füllung“, eine durchsichtige Füllung als „Füllung: keine“, der Schatten als „Schatten“.
-func farbfeldName(fuellbar bool, aktiv canvas.Farbfeld, fuellung color.NRGBA) string {
-	switch {
-	case aktiv == canvas.FeldSchatten: // der Farbwähler färbt den Schatten (ADR-0021 Nachtrag 26 Punkt 7)
-		return i18n.TK("color field", "Shadow")
-	case !fuellbar || aktiv != canvas.FeldFuellung:
-		return i18n.TK("color field", "Color")
-	case fuellung.A == 0:
-		return i18n.TK("color field", "Fill: none")
-	}
-	return i18n.TK("color field", "Fill")
 }

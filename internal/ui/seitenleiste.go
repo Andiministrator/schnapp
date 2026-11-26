@@ -31,7 +31,7 @@ import (
 // zwei Regler, Felder) und der kleinste Ebenen-Abschnitt ohne Hinweis (zeichneEbenen: Trennlinie, Kopf, Deckkraft,
 // eine Zeile, Knöpfe, drei Zeilen Hinweis).
 const (
-	farbwaehlerHoeheDp = 234 // bis unter Hex und Deckkraft, seit #219 mit der Zeile des Farbpaars (24 + 10); die Farbfelder darunter rechnet farbfelderHoehe (#364)
+	farbwaehlerHoeheDp = 238 // bis unter Hex und Deckkraft, seit #369 mit der Zeile der Reiter (28 + 10, vorher Farbpaar 24 + 10); die Farbfelder darunter rechnet farbfelderHoehe (#364)
 	ebenenMindestDp    = 230
 )
 
@@ -59,9 +59,10 @@ type seitenKnoepfe struct {
 	farbeKopf    widget.Clickable // Überschrift „Farbe“: klappt den Abschnitt ein und aus (ADR-0032 Punkt 6)
 	farbeZu      bool
 	farbeZeigen  bool // nächstes Bild: den Abschnitt Farbe ins Bild rollen (Klick aufs Farbpaar links, F-817)
-	// Farbpaar über dem Farbwähler (ADR-0021 Nachtrag 11): Vordergrund, Füllung, Tauschen, Keine; Rahmen für Tests.
-	paar       [4]widget.Clickable
-	paarRahmen [4]image.Rectangle
+	// Reiter über dem Farbwähler (ADR-0031 Nachtrag 13): Vordergrund, Füllung, Tauschen, Keine (vorn in den
+	// Farbfeldern), Schatten; Rahmen für Tests (leer: nicht gezeigt).
+	paar       [5]widget.Clickable
+	paarRahmen [5]image.Rectangle
 	roll       rollZustand // Rollen der Leiste bei wenig Höhe (ADR-0031 Nachtrag 8, F-598)
 }
 
@@ -71,6 +72,7 @@ const (
 	paarFuellung
 	paarTausch
 	paarKeine
+	paarSchatten
 )
 
 // alle sind die Knöpfe der Leiste (Tastaturfokus, editor.fokussierterKnopf).
@@ -154,6 +156,9 @@ func (e *editor) seiteAuswerten(gtx layout.Context) {
 	}
 	if k.paar[paarFuellung].Clicked(gtx) && an() {
 		e.s.SetzeFeld(canvas.FeldFuellung)
+	}
+	if k.paar[paarSchatten].Clicked(gtx) && an() {
+		e.s.SetzeFeld(canvas.FeldSchatten)
 	}
 	if k.paar[paarTausch].Clicked(gtx) && an() {
 		e.s.TauscheFarben()

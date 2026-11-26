@@ -1,0 +1,34 @@
+# Sichtprobe ADR-0031 Nachtrag 13 (Karte #369): Farbziel als Reiter, Schatten als Kästchen, Richtung als Scheibe.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/farbziel-schatten-369.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 1600 --hoehe 1000
+# Bei 1600 × 1000, Skala 1, Werkzeug Kasten (R), Kasten gewählt: Kästchen „Schatten“ bei (1325, 321). Bei an steht
+# darunter die Richtungsscheibe (1404,344)–(1460,400), Mitte (1432, 372), daneben der Winkel; der Abschnitt Farbe rückt
+# nach unten.
+# Erwartet:
+#  01 Reiter „Farbe“ (grün, aktiv) · ⇄ · „Füllung“ (Schrägstrich, durchsichtig) und rechts die Pipette; Kästchen
+#     „Schatten“ leer, darunter nichts.
+#  02 Kästchen an (grün mit Haken): Scheibe mit kleinem Quadrat, sein Schatten und der orange Punkt zeigen nach rechts
+#     unten, daneben 135°; Abstand, Weichheit, Farbe darunter; oben ein dritter Reiter „Schatten“.
+#  03 Klick rechts auf die Scheibe: Schatten und Punkt zeigen nach rechts, 180°; der Kasten wirft den Schatten nach
+#     rechts.
+#  04 Reiter „Schatten“ geklickt: er ist grün, Hex zeigt #000000 und 40 %; dann Orange aus den Farbfeldern: der
+#     Schatten des Kastens ist orange, der Rahmen bleibt rot, der Reiter zeigt Orange.
+#  05 Reiter „Füllung“: vorn in den Farbfeldern steht „Keine“ (weiß mit rotem Schrägstrich, grün umrandet).
+warte 1500
+taste R
+ziehe 950 200 1200 400 10
+warte 400
+foto 01-reiter
+klick 1325 321
+warte 400
+foto 02-schatten-an
+klick 1452 372
+warte 400
+foto 03-scheibe-rechts
+klick 1511 579
+warte 300
+klick 1482 821
+warte 400
+foto 04-schatten-orange
+klick 1436 579
+warte 400
+foto 05-fuellung-keine

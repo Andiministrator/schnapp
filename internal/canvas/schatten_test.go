@@ -347,3 +347,38 @@ func TestSchattenFeldKehrtNachZielwechselNichtZurueck(t *testing.T) {
 		t.Error("Feld Schatten kehrt nach dem Färben eines anderen Ziels ohne Klick zurück")
 	}
 }
+
+// ADR-0031 Nachtrag 13: Die Richtungsscheibe setzt den Lichtwinkel so, dass der Schatten zum Zeiger hin fällt — die
+// Umkehrung von Versatz —, im 15°-Raster, frei auf ganze Grad.
+func TestSchattenWinkelZu(t *testing.T) {
+	for _, f := range []struct {
+		dx, dy float64
+		frei   bool
+		soll   float64
+	}{
+		{1, 1, false, 135},   // rechts unten (Voreinstellung)
+		{1, 0, false, 180},   // rechts
+		{0, 1, false, 90},    // unten
+		{-1, 0, false, 0},    // links
+		{0, -1, false, 270},  // oben
+		{-1, -1, false, 315}, // links oben
+		{1, 0.2, false, 165}, // 168,7° rastet auf 165°
+		{1, 0.2, true, 169},
+	} {
+		w, ok := SchattenWinkelZu(f.dx, f.dy, f.frei)
+		if !ok || w != f.soll {
+			t.Errorf("(%v, %v, frei %v): %v (%v), Soll %v", f.dx, f.dy, f.frei, w, ok, f.soll)
+		}
+		// Der Versatz zeigt in dieselbe Richtung wie (dx, dy).
+		v := document.Schatten{An: true, Winkel: w, Laenge: 10}.Versatz()
+		if !f.frei && v.X*f.dx+v.Y*f.dy <= 0 {
+			t.Errorf("(%v, %v): Versatz %v zeigt nicht zum Zeiger", f.dx, f.dy, v)
+		}
+	}
+	if _, ok := SchattenWinkelZu(0, 0, false); ok {
+		t.Error("ohne Richtung ok")
+	}
+	if w, _ := SchattenWinkelZu(1, -0.01, false); w != 180 {
+		t.Errorf("knapp über rechts: %v, Soll 180 (nicht 360)", w)
+	}
+}

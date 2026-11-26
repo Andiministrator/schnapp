@@ -315,10 +315,10 @@
     "neu": ""
   },
   {
-    "name": "SH46 Feldname ohne Schatten",
+    "name": "SH46 Reiter Schatten heißt Farbe",
     "datei": "internal/ui/farbwaehler.go",
     "paket": "./internal/ui",
-    "alt": "\tcase aktiv == canvas.FeldSchatten: // der Farbwähler färbt den Schatten (ADR-0021 Nachtrag 26 Punkt 7)\n\t\treturn i18n.TK(\"color field\", \"Shadow\")\n",
+    "alt": "\tcase canvas.FeldSchatten:\n\t\treturn i18n.TK(\"color field\", \"Shadow\")\n",
     "neu": ""
   },
   {

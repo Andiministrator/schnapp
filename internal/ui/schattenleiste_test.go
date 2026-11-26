@@ -8,7 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"gioui.org/f32"
 	"gioui.org/io/key"
+	"gioui.org/io/pointer"
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -37,15 +39,16 @@ func schattenVon(t *testing.T, l *menueLauf, id int) document.Schatten {
 	return o.Ebenenwerte().Schatten
 }
 
-// ADR-0021 Nachtrag 26 Punkt 7: Der Schalter schaltet den Schatten des gewählten Kastens an (ein Rückgängig-Schritt),
-// erst dann stehen Richtung, Regler und Farbe da; − / + drehen in 15°-Schritten.
+// ADR-0021 Nachtrag 26 Punkt 7, ADR-0031 Nachtrag 13: Das Kästchen schaltet den Schatten des gewählten Kastens an (ein
+// Rückgängig-Schritt), erst dann stehen Richtung, Regler und Farbe da. Ein Klick auf die Scheibe setzt die Richtung zum
+// Zeiger hin (15°-Raster), Pfeile an der Scheibe mit Fokus drehen um 15°.
 func TestSchattenLeisteSchalterUndRichtung(t *testing.T) {
 	l, id := schattenLauf(t)
 	k := &l.e.schattenL
 	if k.schalterRahmen.Empty() {
-		t.Fatal("Schalter nicht gezeichnet")
+		t.Fatal("Kästchen nicht gezeichnet")
 	}
-	if !k.farbRahmen.Empty() || !k.laenge.Empty() {
+	if !k.farbRahmen.Empty() || !k.laenge.Empty() || !k.scheibeRahmen.Empty() {
 		t.Error("Einstellungen stehen bei ausgeschaltetem Schatten da")
 	}
 	l.klick(mitte(k.schalterRahmen))
@@ -53,19 +56,25 @@ func TestSchattenLeisteSchalterUndRichtung(t *testing.T) {
 	if sch := schattenVon(t, l, id); !sch.An || sch.Winkel != 135 {
 		t.Fatalf("nach dem Einschalten %+v", sch)
 	}
-	if k.farbRahmen.Empty() || k.laenge.Empty() || k.weich.Empty() || k.richtText != "135°" {
+	if k.farbRahmen.Empty() || k.laenge.Empty() || k.weich.Empty() || k.scheibeRahmen.Empty() || k.richtText != "135°" {
 		t.Fatalf("Einstellungen fehlen: Richtung %q", k.richtText)
 	}
-	l.klick(mitte(k.richtRahmen[1]))
+	m, d := mitte(k.scheibeRahmen), k.scheibeRahmen.Dx()/3
+	l.klick(m.Add(image.Pt(d, 0))) // rechts: der Schatten fällt nach rechts, Licht von links (180°)
 	l.setle()
-	if sch := schattenVon(t, l, id); sch.Winkel != 150 || k.richtText != "150°" {
-		t.Errorf("nach +: %v, Anzeige %q", sch.Winkel, k.richtText)
+	if sch := schattenVon(t, l, id); sch.Winkel != 180 || k.richtText != "180°" {
+		t.Errorf("nach Klick rechts: %v, Anzeige %q", sch.Winkel, k.richtText)
 	}
-	l.klick(mitte(k.richtRahmen[0]))
-	l.klick(mitte(k.richtRahmen[0]))
+	l.klick(m.Add(image.Pt(d/5, d))) // unten, ein wenig rechts: 101,3° rastet auf 105° (90° ist genau unten)
+	l.setle()
+	if sch := schattenVon(t, l, id); sch.Winkel != 105 {
+		t.Errorf("nach Klick unten: %v, Soll 105", sch.Winkel)
+	}
+	l.fokusiere(&k.scheibe)
+	l.taste(key.NameRightArrow, 0)
 	l.setle()
 	if sch := schattenVon(t, l, id); sch.Winkel != 120 {
-		t.Errorf("nach zweimal −: %v", sch.Winkel)
+		t.Errorf("nach Pfeil rechts: %v, Soll 120", sch.Winkel)
 	}
 	for range 3 {
 		l.e.s.Rueckgaengig()
@@ -131,8 +140,8 @@ func TestSchattenLeisteFarbe(t *testing.T) {
 	if l.e.s.AktivesFeld() != canvas.FeldSchatten || l.e.seite.farbeZu || !l.e.seite.farbeGezeigt {
 		t.Fatalf("Feld %v, Farbe zu %v", l.e.s.AktivesFeld(), l.e.seite.farbeZu)
 	}
-	if n := farbfeldName(l.e.s.Fuellbar(), l.e.s.AktivesFeld(), color.NRGBA{}); n != "Shadow" {
-		t.Errorf("Name des aktiven Felds %q", n)
+	if l.e.seite.paarRahmen[paarSchatten].Empty() {
+		t.Error("Reiter Schatten fehlt")
 	}
 	gruen := color.NRGBA{G: 180, A: 90}
 	l.e.s.SetzeFarbe(gruen)
@@ -160,8 +169,8 @@ func TestSchattenLeisteStufenUndAnzeige(t *testing.T) {
 	k := &l.e.schattenL
 	l.klick(mitte(k.schalterRahmen))
 	l.setle()
-	if len(k.alle()) != 8 {
-		t.Fatalf("%d Knöpfe im Abschnitt, Soll 8", len(k.alle()))
+	if len(k.alle()) != 7 {
+		t.Fatalf("%d Knöpfe im Abschnitt, Soll 7", len(k.alle()))
 	}
 	l.klick(mitte(k.stufeRahmen[0][1]))
 	l.klick(mitte(k.stufeRahmen[1][0]))
@@ -203,5 +212,34 @@ func TestSchnellNameMitSchatten(t *testing.T) {
 	st.Schatten = document.Schatten{}
 	if strings.Contains(schnellName(st), "drop shadow") {
 		t.Errorf("Hinweis %q nennt einen Schatten, den es nicht gibt", schnellName(st))
+	}
+}
+
+// ADR-0031 Nachtrag 13 Punkt 3: Ziehen an der Scheibe ist ein Rückgängig-Schritt; mit Umschalt rastet die Richtung nicht
+// ein (ganze Grad).
+func TestSchattenScheibeZiehenUndUmschalt(t *testing.T) {
+	l, id := schattenLauf(t)
+	k := &l.e.schattenL
+	l.klick(mitte(k.schalterRahmen))
+	l.setle()
+	m, d := mitte(k.scheibeRahmen), float32(k.scheibeRahmen.Dx()/3)
+	mf := f32.Pt(float32(m.X), float32(m.Y))
+	senden := func(kind pointer.Kind, p f32.Point, b pointer.Buttons, mod key.Modifiers) {
+		l.r.Queue(pointer.Event{Kind: kind, Source: pointer.Mouse, Buttons: b, Position: p, Modifiers: mod})
+	}
+	senden(pointer.Move, mf.Add(f32.Pt(d, 0)), 0, 0)
+	senden(pointer.Press, mf.Add(f32.Pt(d, 0)), pointer.ButtonPrimary, 0)
+	senden(pointer.Move, mf.Add(f32.Pt(d, d*0.2)), pointer.ButtonPrimary, key.ModShift) // 168,7° frei: 169° (Router: Move statt Drag)
+	senden(pointer.Release, mf.Add(f32.Pt(d, d*0.2)), 0, key.ModShift)
+	l.setle()
+	if sch := schattenVon(t, l, id); sch.Winkel != 169 {
+		t.Errorf("mit Umschalt gezogen: %v, Soll 169", sch.Winkel)
+	}
+	if k.zieht != schattenReglerKeiner || l.e.s.BreiteZugLaeuft() {
+		t.Error("Zug hängt nach dem Loslassen")
+	}
+	l.e.s.Rueckgaengig()
+	if sch := schattenVon(t, l, id); sch.Winkel != 135 {
+		t.Errorf("ein Rückgängig nach dem Ziehen: %v, Soll 135", sch.Winkel)
 	}
 }

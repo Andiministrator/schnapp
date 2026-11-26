@@ -190,6 +190,21 @@ func SchattenAusRegler(f, bis float64) float64 {
 	return math.Round(max(0, min(1, f)) * bis)
 }
 
+// SchattenWinkelZu ist der Lichtwinkel, bei dem der Schatten in Richtung (dx, dy) fällt (Fensterrichtung, y nach unten;
+// Richtungsscheibe, ADR-0031 Nachtrag 13): die Umkehrung von document.Schatten.Versatz. frei: auf ganze Grad gerundet,
+// sonst auf das Raster SchattenRichtungSchritt. ok=false ohne Richtung (Zeiger genau in der Mitte).
+func SchattenWinkelZu(dx, dy float64, frei bool) (float64, bool) {
+	if math.Hypot(dx, dy) < 1e-9 {
+		return 0, false
+	}
+	w := math.Atan2(dy, -dx) * 180 / math.Pi
+	schritt := SchattenRichtungSchritt
+	if frei {
+		schritt = 1
+	}
+	return document.NormWinkel(math.Round(w/schritt) * schritt), true
+}
+
 // NaechsteSchattenRichtung ist die Richtung nach einem Schritt dir (−1, +1) von w: auf das nächste Vielfache von
 // SchattenRichtungSchritt in dieser Richtung (ein Winkel dazwischen springt erst auf das Raster), 0 bis 360.
 func NaechsteSchattenRichtung(w float64, dir int) float64 {

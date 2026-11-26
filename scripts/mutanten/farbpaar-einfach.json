@@ -3,8 +3,8 @@
     "name": "F359-1 Füllfeld rechts auch ohne Füllung",
     "datei": "internal/ui/farbwaehler.go",
     "paket": "./internal/ui",
-    "alt": "\trechts := k.paarRahmen[paarVorn].Max.X\n\tif fuellbar {\n",
-    "neu": "\trechts := k.paarRahmen[paarVorn].Max.X\n\tif true {\n"
+    "alt": "\tif fuellbar {\n\t\tfelder = append(felder, canvas.FeldFuellung)",
+    "neu": "\tif true {\n\t\tfelder = append(felder, canvas.FeldFuellung)"
   },
   {
     "name": "F359-2 Füllfeld links auch ohne Füllung",
@@ -18,25 +18,27 @@
     "datei": "internal/ui/seitenleiste.go",
     "paket": "./internal/ui",
     "alt": "\tif k.paar[paarKeine].Clicked(gtx) && an() && e.s.SetzeFeld(canvas.FeldFuellung) {",
-    "neu": "\tif k.paar[paarKeine].Clicked(gtx) && an() {"
+    "neu": "\tif k.paar[paarKeine].Clicked(gtx) && an() {",
+    "aequivalent": true,
+    "grund": "Seit Karte #369 steht „Keine“ nur, solange die Füllung das Ziel ist (keineZeigen); SetzeFeld(FeldFuellung) ändert dann nichts, die Wache bleibt als Schutz gegen ein gezeichnetes Feld aus einem älteren Bild."
   },
   {
-    "name": "F359-4 Name ohne keine",
+    "name": "F359-4 Keine fehlt in den Farbfeldern",
+    "datei": "internal/ui/farbfelder.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn e.s.Fuellbar() && e.s.AktivesFeld() == canvas.FeldFuellung",
+    "neu": "\treturn false"
+  },
+  {
+    "name": "F359-5 Reiter Füllung heißt Farbe",
     "datei": "internal/ui/farbwaehler.go",
     "paket": "./internal/ui",
-    "alt": "\tcase fuellung.A == 0:\n\t\treturn i18n.TK(\"color field\", \"Fill: none\")\n",
+    "alt": "\tcase canvas.FeldFuellung:\n\t\treturn i18n.TK(\"color field\", \"Fill\")\n",
     "neu": ""
   },
   {
-    "name": "F359-5 Name immer Farbe",
-    "datei": "internal/ui/farbwaehler.go",
-    "paket": "./internal/ui",
-    "alt": "\tcase !fuellbar || aktiv != canvas.FeldFuellung:\n",
-    "neu": "\tcase true:\n"
-  },
-  {
     "name": "F359-6 keine nicht angemeldet",
-    "datei": "internal/ui/farbwaehler.go",
+    "datei": "internal/ui/farbfelder.go",
     "paket": "./internal/ui",
     "alt": "\t\tzeichneKeine(gtx, rk)\n\t\te.knopfAn(gtx, c, rk)\n",
     "neu": "\t\tzeichneKeine(gtx, rk)\n"
