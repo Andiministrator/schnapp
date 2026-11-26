@@ -15,3 +15,9 @@ const pruefeNahtZeit time.Duration = 0
 
 // pruefeStreifenZeit ist unter dem Race-Detektor 0: TestPruefeVieleStreifenUndPfeile loggt die Dauer nur (F-802).
 const pruefeStreifenZeit time.Duration = 0
+
+// musterZerlegZeit und musterPruefeZeit sind unter dem Race-Detektor 0: die Muster-Tests loggen die Dauer nur.
+const (
+	musterZerlegZeit time.Duration = 0
+	musterPruefeZeit time.Duration = 0
+)

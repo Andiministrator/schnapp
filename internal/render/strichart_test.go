@@ -184,8 +184,10 @@ func TestStrichartMusterBegrenzt(t *testing.T) {
 	if pz := ZerlegePfeil(riesig); len(pz.Teile) > 60 {
 		t.Errorf("riesiger gepunkteter Pfeil: %d Teile, Soll voll (wenige)", len(pz.Teile))
 	}
-	if d := time.Since(t0); d > 100*time.Millisecond {
+	if d := time.Since(t0); musterZerlegZeit > 0 && d > musterZerlegZeit {
 		t.Errorf("Zerlegen dauerte %v", d)
+	} else {
+		t.Logf("Zerlegen %v", d)
 	}
 	knapp := document.GeraderPfeil(document.Pt(-30000, 50), document.Pt(34000, 50),
 		document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 1, Art: document.StrichGepunktet})
@@ -200,8 +202,10 @@ func TestStrichartMusterBegrenzt(t *testing.T) {
 	if err := Pruefe(d); err == nil {
 		t.Error("1000 Muster knapp unter der Grenze: Pruefe nimmt sie an")
 	}
-	if dauer := time.Since(t0); dauer > 15*time.Second {
+	if dauer := time.Since(t0); musterPruefeZeit > 0 && dauer > musterPruefeZeit {
 		t.Errorf("Pruefe brauchte %v", dauer)
+	} else {
+		t.Logf("Pruefe %v", dauer)
 	}
 }
 
@@ -220,8 +224,10 @@ func TestStrichartRahmenAusserhalbGezaehlt(t *testing.T) {
 	if err := Pruefe(d); err == nil {
 		t.Error("2000 Lupen mit riesigem gepunktetem Rahmen: Pruefe nimmt sie an")
 	}
-	if dauer := time.Since(t0); dauer > 15*time.Second {
+	if dauer := time.Since(t0); musterPruefeZeit > 0 && dauer > musterPruefeZeit {
 		t.Errorf("Pruefe brauchte %v", dauer)
+	} else {
+		t.Logf("Pruefe %v", dauer)
 	}
 	ganz := l
 	ganz.Quelle = document.R(document.Pt(1000, 1000), document.Pt(9000, 9000))
