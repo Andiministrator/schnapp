@@ -42,9 +42,9 @@ func fehlerGrund(err error) string {
 		{settings.ErrStileUnlesbar, i18n.T("the existing styles file cannot be read, so it is left as it is")},
 		{settings.ErrStileSicherung, i18n.T("the existing styles file has parts that cannot be read and styles.ini.bak already exists, so it is left as it is")},
 		{settings.ErrStileGesperrt, i18n.T("the styles file is locked by another window")},
-		{settings.ErrFarbenUnlesbar, i18n.T("the colour swatches file cannot be read, so it is left as it is")},
-		{settings.ErrFarbenGesperrt, i18n.T("the colour swatches file is locked by another window")},
-		{settings.ErrFarbenSicherung, i18n.T("the colour swatches file has parts that cannot be read and colors.ini.bak already exists, so it is left as it is")},
+		{settings.ErrFarbenUnlesbar, i18n.T("the color swatches file cannot be read, so it is left as it is")},
+		{settings.ErrFarbenGesperrt, i18n.T("the color swatches file is locked by another window")},
+		{settings.ErrFarbenSicherung, i18n.T("the color swatches file has parts that cannot be read and colors.ini.bak already exists, so it is left as it is")},
 		// Bibliothek (volle Ansicht: Schlagworte, Papierkorb; Sitzungs-QA 24.11. abends)
 		{library.ErrGeaendert, i18n.T("the capture was changed in another window or program in the meantime")},
 		{library.ErrPfad, i18n.T("the capture is not inside the library folder")},

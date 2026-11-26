@@ -11,9 +11,7 @@
     "datei": "internal/ui/verlaufmerker.go",
     "paket": "./internal/ui",
     "alt": "\tif d.VerlaufMitSchwaerzung() || !(d.KannRueckgaengig() || d.KannWiederholen()) {",
-    "neu": "\tif !(d.KannRueckgaengig() || d.KannWiederholen()) {",
-    "aequivalent": true,
-    "grund": "canvas.Sitzung.Gespeichert und SpeichernEnde leeren einen Verlauf mit Schwärzung (VergissVerlauf, ADR-0022 Punkt 3); gemerkt wird nur nach dem Speichern, der Verlauf ist dann ohne Schwärzung. Die Prüfung in merkeVerlassene ist ein zweiter Schutz für den [S]-Pfad (26.11., Karte #356)."
+    "neu": "\tif !(d.KannRueckgaengig() || d.KannWiederholen()) {"
   },
   {
     "name": "V3 ohne Verlauf gemerkt",
@@ -75,8 +73,8 @@
     "name": "V11 Wechsel nimmt Gemerktes nicht",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "\tif m, ok := e.verlaeufe.nimm(ziel); ok && e.bib.Fortsetzen != nil {",
-    "neu": "\tif m, ok := e.verlaeufe.nimm(ziel); ok && false {"
+    "alt": "\tif m, ok := e.verlaeufe.hole(ziel); ok && e.bib.Fortsetzen != nil {",
+    "neu": "\tif m, ok := e.verlaeufe.hole(ziel); ok && false {"
   },
   {
     "name": "V12 Verlassene nicht gemerkt",
@@ -84,13 +82,6 @@
     "paket": "./internal/ui",
     "alt": "\te.merkeVerlassene() // Verlauf",
     "neu": "\t// Verlauf"
-  },
-  {
-    "name": "V13 Papierkorb vergisst nicht",
-    "datei": "internal/ui/wechsel.go",
-    "paket": "./internal/ui",
-    "alt": "\t\te.verlaeufe.vergiss(alt) //",
-    "neu": "\t\t//"
   },
   {
     "name": "V14 Fortsetzen ohne Standvergleich",
@@ -119,5 +110,54 @@
     "paket": "./internal/document",
     "alt": "\tsumme := int64(len(d.original.Pix))\n\tfor _, l := range [][]schritt{d.verlauf.erledigt, d.verlauf.zurueckgenommen} {",
     "neu": "\tsumme := int64(len(d.original.Pix))\n\tfor _, l := range [][]schritt{} {"
+  },
+  {
+    "name": "V18 Stand der Platte statt der eigenen Speicherfunktion (F-834)",
+    "datei": "internal/ui/verlaufmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\tif err != nil || platte != eigen {",
+    "neu": "\t_ = platte\n\tif err != nil {"
+  },
+  {
+    "name": "V19 ohne eigenen Stand trotzdem merken (F-834)",
+    "datei": "internal/ui/verlaufmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\tif p == \"\" || e.stand == nil {\n\t\treturn\n\t}\n\t// Der Stand",
+    "neu": "\tif p == \"\" {\n\t\treturn\n\t}\n\tif e.stand == nil {\n\t\te.stand = func() library.Stand { s, _ := library.StandVon(p); return s }\n\t}\n\t// Der Stand"
+  },
+  {
+    "name": "V20 Eintrag schon beim Laden verbraucht (F-838)",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\tif m, ok := e.verlaeufe.hole(ziel); ok && e.bib.Fortsetzen != nil {",
+    "neu": "\tif m, ok := e.verlaeufe.nimm(ziel); ok && e.bib.Fortsetzen != nil {"
+  },
+  {
+    "name": "V21 übernommene bleibt gemerkt (F-838)",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.verlaeufe.vergiss(g.Pfad()) //",
+    "neu": "\t\t_ = g.Pfad() //"
+  },
+  {
+    "name": "V22 Papierkorb einer nicht offenen vergisst nicht (F-838)",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\te.verlaeufe.vergiss(filepath.Join(e.bib.Bibliothek.Orte.Ablage, filepath.FromSlash(rel)))\n",
+    "neu": ""
+  },
+  {
+    "name": "V23 Stand nach eigenem Schreiben nicht nachgeführt (F-834)",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\taktStand.Store(&st)\n",
+    "neu": "\t\t_ = st\n"
+  },
+  {
+    "name": "V24 Geoeffnet ohne Stand (F-834)",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tStand: func() library.Stand { return *aktStand.Load() }}",
+    "neu": "\t}"
   }
 ]

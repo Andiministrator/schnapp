@@ -3,15 +3,15 @@
     "name": "FF1 Klick setzt die Farbe nicht",
     "datei": "internal/ui/farbfelder.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif f.knoepfe[j].Clicked(gtx) && e.seiteAn() {\n\t\t\te.s.SetzeFarbe(f.farben[j])",
-    "neu": "\t\tif f.knoepfe[j].Clicked(gtx) && e.seiteAn() {\n\t\t\t_ = 0"
+    "alt": "\t\tif f.knoepfe[j].Clicked(gtx) && e.seiteAn() && j < len(f.farben) && len(f.farben) == n {\n\t\t\te.s.SetzeFarbe(f.farben[j])",
+    "neu": "\t\tif f.knoepfe[j].Clicked(gtx) && e.seiteAn() && j < len(f.farben) && len(f.farben) == n {\n\t\t\t_ = 0"
   },
   {
     "name": "FF2 Rechtsklick entfernt nicht",
     "datei": "internal/ui/farbfelder.go",
     "paket": "./internal/ui",
-    "alt": "pe.Buttons == pointer.ButtonSecondary && e.seiteAn() {\n\t\t\t\te.farbfeldEntferne(gtx, j)",
-    "neu": "pe.Buttons == pointer.ButtonSecondary && e.seiteAn() {\n\t\t\t\t_ = j"
+    "alt": "pe.Buttons == pointer.ButtonSecondary && e.seiteAn() && len(f.farben) == n {\n\t\t\t\te.farbfeldEntferne(gtx, j)",
+    "neu": "pe.Buttons == pointer.ButtonSecondary && e.seiteAn() && len(f.farben) == n {\n\t\t\t\t_ = j"
   },
   {
     "name": "FF3 Plus ohne Wirkung",
@@ -38,8 +38,8 @@
     "name": "FF6 Fehler übernimmt trotzdem",
     "datei": "internal/ui/farbfelder.go",
     "paket": "./internal/ui",
-    "alt": "\t\te.melde(fmt.Sprintf(i18n.T(\"Could not save the colour swatches: %v\"), fehlerGrund(err)), true)\n\t\treturn\n",
-    "neu": "\t\te.melde(fmt.Sprintf(i18n.T(\"Could not save the colour swatches: %v\"), fehlerGrund(err)), true)\n"
+    "alt": "\t\te.melde(fmt.Sprintf(i18n.T(\"Could not save the color swatches: %v\"), fehlerGrund(err)), true)\n\t\treturn\n",
+    "neu": "\t\te.melde(fmt.Sprintf(i18n.T(\"Could not save the color swatches: %v\"), fehlerGrund(err)), true)\n"
   },
   {
     "name": "FF7 ohne Datei keine eingebauten",
@@ -52,7 +52,7 @@
     "name": "FF8 Hinweis zu Plus fehlt",
     "datei": "internal/ui/farbfelder.go",
     "paket": "./internal/ui",
-    "alt": "\tcase slices.Contains(f.farben, c):\n\t\treturn i18n.T(\"The current colour is already a swatch.\")\n",
+    "alt": "\tcase slices.Contains(f.farben, c):\n\t\treturn i18n.T(\"The current color is already a swatch.\")\n",
     "neu": ""
   },
   {
@@ -110,5 +110,61 @@
     "paket": "./internal/settings",
     "alt": "[]byte(FormatFarben(neu)), 0o600)",
     "neu": "[]byte(FormatFarben(neu)), 0o644)"
+  },
+  {
+    "name": "F36-1 Klick nach Entfernen im selben Bild (F-836)",
+    "datei": "internal/ui/farbfelder.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif f.knoepfe[j].Clicked(gtx) && e.seiteAn() && j < len(f.farben) && len(f.farben) == n {",
+    "neu": "\t\tif f.knoepfe[j].Clicked(gtx) && e.seiteAn() && j < len(f.farben) {"
+  },
+  {
+    "name": "FS7 Sperre nicht als ErrFarbenGesperrt (F-835)",
+    "datei": "internal/settings/farben.go",
+    "paket": "./internal/settings",
+    "alt": "\tif errors.Is(err, ErrStileGesperrt) {\n\t\treturn nil, ErrFarbenGesperrt\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "FS8 Verweis durch Datei ersetzt (F-835)",
+    "datei": "internal/settings/farben.go",
+    "paket": "./internal/settings",
+    "alt": "\t\t\tziel = z\n",
+    "neu": "\t\t\t_ = z\n"
+  },
+  {
+    "name": "FS9 ohne Kürzung beim Schreiben (F-835)",
+    "datei": "internal/settings/farben.go",
+    "paket": "./internal/settings",
+    "alt": "\tif len(neu) > MaxFarbfelder {\n\t\tneu = neu[:MaxFarbfelder]\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "FS10 „#“ kein Kommentar (F-837)",
+    "datei": "internal/settings/farben.go",
+    "paket": "./internal/settings",
+    "alt": " || strings.HasPrefix(z, \"#\"): // wie styles.ini (F-837)",
+    "neu": ": // wie styles.ini (F-837)"
+  },
+  {
+    "name": "FS11 Lesefehler mit dem Fehlerwert der Stildatei (F-837)",
+    "datei": "internal/settings/farben.go",
+    "paket": "./internal/settings",
+    "alt": "\t\treturn nil, fmt.Errorf(\"%w (%s)\", ErrFarbenUnlesbar, farbenUrsache(err))\n\t}\n\tvar alt",
+    "neu": "\t\treturn nil, errors.Join(ErrFarbenUnlesbar, err)\n\t}\n\tvar alt"
+  },
+  {
+    "name": "FH1 Schwelle ohne Farbfelder (F-839, D-9)",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "+e.farbfelderHoehe(gtx, breite)",
+    "neu": ""
+  },
+  {
+    "name": "FH2 Höhe der Farbfelder ohne Abstand (F-839, D-9)",
+    "datei": "internal/ui/farbfelder.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn gtx.Dp(farbfelderAbstandDp) + reihen*(q+abst) - abst",
+    "neu": "\treturn reihen*(q+abst) - abst"
   }
 ]

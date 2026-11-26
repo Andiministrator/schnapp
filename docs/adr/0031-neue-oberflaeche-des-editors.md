@@ -177,7 +177,8 @@ in `internal/ui/hilfe.go`; Tastentabelle in `internal/ui/kuerzel.go`; Logik der 
   die Farbe nicht zeigen kann. *Seit ADR-0021 Nachtrag 11 (#219):* Das Farbfeld ist ein Farbpaar (Vordergrund oben links, Füllung unten
   rechts, ⇄ oben rechts); ein Klick auf ein Feld macht es aktiv und wirkt dann wie hier beschrieben, das graue Feld
   Füllung tut nichts. Tab: Vordergrund, Füllung, ⇄; in der rechten Leiste steht unter der Überschrift „Farbe“ die Zeile
-  Vordergrund, Füllung, ⇄, „Keine“ vor den Farbfeldern.
+  Vordergrund, Füllung, ⇄, „Keine“ vor den Farbfeldern. *Seit ADR-0021 Nachtrag 23:* ohne Füllung nur das Feld des
+  Vordergrunds, „Keine“ als Feld mit Schrägstrich.
 - **Listen der Fußzeile:** Farbe und Zoom klappen eine Liste über dem Feld auf (▾ am Feld): Farbe mit Farbquadrat,
   Name und Hex; Zoom mit Einpassen (Strg+0), 25, 50, 100 (Strg+1), 200, 400 % (`canvas.ZoomStufen`,
   `canvas.Sitzung.SetzeZoom` um die Fenstermitte). Die aktuelle Wahl ist grün. Die Listen laufen über dieselbe
@@ -223,7 +224,8 @@ Farbe und der Deckkraft in ADR-0021 Nachtrag 9.
 - **Aufbau** (von oben): links die **Farbfläche** (Sättigung nach rechts, Hellwert nach oben, zum Farbton des Reglers),
   rechts daneben ein Raster aus 2 × 4 Feldern: die vier Beschriftungsfarben, bis zu drei zuletzt benutzte Farben (leere
   Plätze bleiben leer) und als letztes Feld die **Pipette** (*seit ADR-0021 Nachtrag 17:* vier zuletzt benutzte, die
-  Pipette rechts in der Zeile des Farbpaars, Hex immer sechsstellig). Darunter über die volle Breite der **Farbton-Regler** und
+  Pipette rechts in der Zeile des Farbpaars, Hex immer sechsstellig; *seit ADR-0021 Nachtrag 24:* das Raster zeigt nur
+  die acht zuletzt benutzten, eigene Farbfelder stehen unter Hex und Deckkraft). Darunter über die volle Breite der **Farbton-Regler** und
   der **Deckkraft-Regler** (Schachbrett unter einem Verlauf von durchsichtig zur Farbe), darunter die Felder **Hex**
   (`#RRGGBB`, bei Deckkraft unter 100 % `#RRGGBBAA`) und **Deckkraft** (`100 %`).
 - **Maus:** Drücken und Ziehen in Fläche oder Regler setzt die Farbe laufend (Marke folgt dem Zeiger, auch außerhalb
@@ -243,7 +245,8 @@ Farbe und der Deckkraft in ADR-0021 Nachtrag 9.
 - **Tastatur:** Farbfläche und Regler sind nur mit der Maus zu bedienen; per Tastatur gehen Farbfelder, Pipette (Enter)
   und die beiden Eingabefelder. **Tab-Reihenfolge** (ersetzt die Liste aus Nachtrag 4 ab „Farben der rechten Leiste“):
   … Farbfelder der Leiste (Beschriftungsfarben, dann zuletzt benutzte), Pipette, Hex, Deckkraft, Fußfeld Farbe, Fußfeld
-  Zoom. *Seit ADR-0021 Nachtrag 17:* Pipette nach „Keine“, vor den Farbfeldern.
+  Zoom. *Seit ADR-0021 Nachtrag 17:* Pipette nach „Keine“, vor den Farbfeldern. *Seit ADR-0021 Nachtrag 24 Punkt 5:*
+  Farbpaar, Pipette, zuletzt benutzte, Hex, Deckkraft, eigene Farbfelder, „+“.
 - **Pipette:** Solange sie an ist, ist ihr Feld grün, der Zeiger ein Fadenkreuz und die Statuszeile sagt „Click in the
   image to pick its color. Esc cancels.“.
 - **Eine Farbe überall:** Leiste, Farbfeld links, Farbliste und Fußzeile zeigen dieselbe Farbe — die des gewählten

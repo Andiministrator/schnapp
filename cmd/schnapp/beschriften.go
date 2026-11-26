@@ -246,7 +246,7 @@ func beschrifteDatei(ctx context.Context, datei string, es []annotate.Eintrag, o
 	// gelesenen Datei und warnt so, wenn eine Fassung mit dem Geschwärzten im Klartext stehen bleibt (F-169, F-221).
 	// ablegenIn ohne die Budget-Warnung des Editors („vor dem Schließen“), die Kommandozeile hat ihre eigene (B-7).
 	var ziel string
-	speichern := ablegenIn(library.Neu(orte), abs, g, stand, func(p string) { ziel = p }, agent)
+	speichern := ablegenIn(library.Neu(orte), abs, g, stand, func(p string, _ library.Stand) { ziel = p }, agent)
 	erg, err := annotate.Wende(ctx, d, es)
 	if err != nil {
 		return beschriftung{}, err

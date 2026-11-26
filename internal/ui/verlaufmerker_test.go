@@ -5,6 +5,7 @@ package ui
 // ADR-0036 Zusatz Karte #356: Verlauf je Aufnahme beim Wechsel im selben Fenster.
 
 import (
+	"errors"
 	"image"
 	"os"
 	"sync"
@@ -25,7 +26,23 @@ type fortsetzerLauf struct {
 	aufrufe int
 }
 
+// Wie cmd/schnapp führt jedes Geoeffnet den Dateistand vom Laden (Geoeffnet.Stand, F-834); die Speicherfunktion des
+// Tests schreibt nicht, der Stand bleibt also der vom Laden.
+func mitStand(g Geoeffnet, pfad string) Geoeffnet {
+	st, _ := library.StandVon(pfad)
+	g.Stand = func() library.Stand { return st }
+	return g
+}
+
 func (f *fortsetzerLauf) anbinden(l *leistenLauf) {
+	if p := l.e.pfad(); p != "" {
+		st, _ := library.StandVon(p)
+		l.e.stand = func() library.Stand { return st }
+	}
+	l.e.bib.Oeffnen = func(pfad string) (Geoeffnet, error) {
+		g, err := l.oeffnen(pfad)
+		return mitStand(g, pfad), err
+	}
 	l.e.bib.Fortsetzen = func(pfad string, d *document.Dokument, stand library.Stand) (Geoeffnet, error) {
 		f.mu.Lock()
 		f.aufrufe++
@@ -37,7 +54,7 @@ func (f *fortsetzerLauf) anbinden(l *leistenLauf) {
 		if st, err := library.StandVon(pfad); err == nil && st == stand {
 			g.Dokument, g.Fortgesetzt = d, true
 		}
-		return g, nil
+		return mitStand(g, pfad), nil
 	}
 }
 
@@ -237,4 +254,98 @@ func TestKreuzAnDerOffenenMerktNicht(t *testing.T) {
 	if len(l.e.verlaeufe.liste) != 0 {
 		t.Errorf("die weggeworfene ist gemerkt: %+v", l.e.verlaeufe.liste)
 	}
+}
+
+// F-834: Trägt die Datei beim Verlassen einen anderen Stand als den der eigenen Speicherfunktion (ein anderes Fenster
+// oder `--annotate` hat sie geändert, etwa geschwärzt), wird nicht gemerkt: der Rückwechsel liest neu.
+func TestMerkeVerlasseneNichtBeiFremdemStand(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 2)
+	f := &fortsetzerLauf{}
+	f.anbinden(l)
+	l.e.s.Gespeichert() // gespeichert, mit Verlauf (die Vorrichtung legt einen Text an)
+	spaeter := time.Now().Add(time.Hour)
+	if err := os.Chtimes(l.e.pfad(), spaeter, spaeter); err != nil {
+		t.Fatal(err)
+	}
+	l.e.merkeVerlassene()
+	if len(l.e.verlaeufe.liste) != 0 {
+		t.Error("gemerkt, obwohl die Datei einen fremden Stand trägt")
+	}
+	l.e.stand = nil
+	if err := os.Chtimes(l.e.pfad(), time.Now(), time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	l.e.merkeVerlassene()
+	if len(l.e.verlaeufe.liste) != 0 {
+		t.Error("ohne eigenen Stand gemerkt")
+	}
+}
+
+// F-835 (K-2): Schwärzen und Rückgängig ohne Speichern ist ungeändert, hält die Schwärzung aber im Verlauf
+// (zurückgenommen, wiederholbar) — nicht merken.
+func TestMerkeVerlasseneNichtMitZurueckgenommenerSchwaerzung(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 2)
+	f := &fortsetzerLauf{}
+	f.anbinden(l)
+	l.e.s.Gespeichert()
+	if err := l.e.s.D.Schwaerzen(image.Rect(0, 0, 10, 10), document.Schwaerzung{Farbe: canvas.Schwaerzfarbe}); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.e.s.D.Rueckgaengig(); err != nil {
+		t.Fatal(err)
+	}
+	if l.e.s.Geaendert() || !l.e.s.D.VerlaufMitSchwaerzung() {
+		t.Fatalf("Vorbedingung: geändert %v, Schwärzung im Verlauf %v", l.e.s.Geaendert(), l.e.s.D.VerlaufMitSchwaerzung())
+	}
+	l.e.merkeVerlassene()
+	if len(l.e.verlaeufe.liste) != 0 {
+		t.Error("mit zurückgenommener Schwärzung im Verlauf gemerkt")
+	}
+}
+
+// F-838: Scheitert das Laden beim Rückwechsel, bleibt der Eintrag gemerkt.
+func TestWechselZurueckLadenScheitertBehaeltEintrag(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	f := &fortsetzerLauf{}
+	f.anbinden(l)
+	l.e.s.Gespeichert()
+	docA := l.e.s.D
+	l.klick(l.kachel(0))
+	l.ruhig()
+	if len(l.e.verlaeufe.liste) != 1 {
+		t.Fatalf("%d gemerkt, Soll 1", len(l.e.verlaeufe.liste))
+	}
+	l.mu.Lock()
+	l.fehlerFuer = map[string]error{l.pfade[1]: errors.New("kaputt")}
+	l.mu.Unlock()
+	l.klick(l.kachel(1))
+	l.ruhig()
+	if l.e.s.D == docA {
+		t.Fatal("trotz Ladefehler gewechselt")
+	}
+	if len(l.e.verlaeufe.liste) != 1 || l.e.verlaeufe.liste[0].d != docA {
+		t.Errorf("nach gescheitertem Laden: %d gemerkt", len(l.e.verlaeufe.liste))
+	}
+}
+
+// F-838: Eine nicht offene, gemerkte Aufnahme, die in den Papierkorb geht, wird vergessen.
+func TestPapierkorbNichtOffeneVergisst(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	f := &fortsetzerLauf{}
+	f.anbinden(l)
+	l.e.s.Gespeichert()
+	l.klick(l.kachel(0))
+	l.ruhig()
+	if len(l.e.verlaeufe.liste) != 1 {
+		t.Fatalf("%d gemerkt, Soll 1", len(l.e.verlaeufe.liste))
+	}
+	rel, ok := l.b.Relativ(l.pfade[1])
+	if !ok {
+		t.Fatal("Pfad nicht in der Ablage")
+	}
+	l.e.papierkorbAnfrage(rel, false, nil)
+	if len(l.e.verlaeufe.liste) != 0 {
+		t.Error("die weggeworfene, nicht offene Aufnahme ist noch gemerkt")
+	}
+	l.ruhig()
 }

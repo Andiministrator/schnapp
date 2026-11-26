@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"syscall"
 	"testing"
 )
 
@@ -36,6 +37,10 @@ func TestParseFarben(t *testing.T) {
 	}
 	if _, warn := ParseFarben("x", "color = #FFFFFF\n"); len(warn) != 1 {
 		t.Errorf("Zeile vor [swatches]: %q", warn)
+	}
+	// „#“ ist ein Kommentar wie in styles.ini (F-837), auch innerhalb des Abschnitts.
+	if farben, warn := ParseFarben("x", "# meine Farben\n[swatches]\n# rot\ncolor = #FF0000\n"); len(warn) != 0 || len(farben) != 1 {
+		t.Errorf("„#“-Kommentar: %v, Warnungen %q", farben, warn)
 	}
 }
 
@@ -141,8 +146,86 @@ func TestAendereFarbenUnlesbarBleibt(t *testing.T) {
 	if err := os.Mkdir(pfad, 0o700); err != nil { // keine reguläre Datei
 		t.Fatal(err)
 	}
-	if _, err := AendereFarbenDatei(pfad, func(alt []color.NRGBA, _ bool) []color.NRGBA { return alt }); !errors.Is(err, ErrFarbenUnlesbar) {
+	_, err := AendereFarbenDatei(pfad, func(alt []color.NRGBA, _ bool) []color.NRGBA { return alt })
+	if !errors.Is(err, ErrFarbenUnlesbar) {
 		t.Errorf("Ordner statt Datei: %v", err)
+	}
+	// Der Fehler trägt keinen Fehlerwert der Stildatei: fehlerGrund spräche sonst von styles.ini (F-837).
+	if errors.Is(err, ErrStileKeineDatei) || err != nil && strings.Contains(err.Error(), "styles") {
+		t.Errorf("Fehler nennt die Stildatei: %v", err)
+	}
+}
+
+// F-835 (K-4): Hält ein anderes Fenster die Sperre, bleibt die Datei, wie sie ist (ErrFarbenGesperrt).
+func TestAendereFarbenGesperrt(t *testing.T) {
+	alt := stileFlock
+	stileFlock = func(int, int) error { return syscall.EWOULDBLOCK }
+	t.Cleanup(func() { stileFlock = alt })
+	pfad := filepath.Join(t.TempDir(), "colors.ini")
+	roh := FormatFarben([]color.NRGBA{ffRot})
+	if err := os.WriteFile(pfad, []byte(roh), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := AendereFarbenDatei(pfad, func([]color.NRGBA, bool) []color.NRGBA { return nil })
+	if !errors.Is(err, ErrFarbenGesperrt) {
+		t.Errorf("gesperrt: %v", err)
+	}
+	if b, _ := os.ReadFile(pfad); string(b) != roh {
+		t.Errorf("trotz Sperre geschrieben: %q", b)
+	}
+}
+
+// F-835 (K-4): Ist colors.ini ein Verweis, wird das Ziel geschrieben und der Verweis bleibt; ein hängender Verweis
+// bleibt unberührt.
+func TestAendereFarbenVerweis(t *testing.T) {
+	ordner := t.TempDir()
+	ziel := filepath.Join(ordner, "woanders", "farben.ini")
+	if err := os.MkdirAll(filepath.Dir(ziel), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(ziel, []byte(FormatFarben(nil)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	pfad := filepath.Join(ordner, "colors.ini")
+	if err := os.Symlink(ziel, pfad); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := AendereFarbenDatei(pfad, func(alt []color.NRGBA, _ bool) []color.NRGBA { return FarbeHinzu(alt, ffRot) }); err != nil {
+		t.Fatal(err)
+	}
+	if info, err := os.Lstat(pfad); err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Errorf("Verweis ersetzt: %v, %v", info, err)
+	}
+	if farben, _, _ := LadeFarbenDatei(ziel); !slices.Equal(farben, []color.NRGBA{ffRot}) {
+		t.Errorf("Ziel: %v", farben)
+	}
+	haengend := filepath.Join(ordner, "haengend.ini")
+	if err := os.Symlink(filepath.Join(ordner, "fehlt", "x.ini"), haengend); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := AendereFarbenDatei(haengend, func(alt []color.NRGBA, _ bool) []color.NRGBA { return alt }); err == nil {
+		t.Error("hängender Verweis: kein Fehler")
+	}
+	if info, err := os.Lstat(haengend); err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Errorf("hängender Verweis ersetzt: %v, %v", info, err)
+	}
+}
+
+// F-835 (K-4): Liefert die Änderung mehr als MaxFarbfelder, wird beim Schreiben gekürzt.
+func TestAendereFarbenKuerzt(t *testing.T) {
+	pfad := filepath.Join(t.TempDir(), "colors.ini")
+	neu, err := AendereFarbenDatei(pfad, func([]color.NRGBA, bool) []color.NRGBA {
+		viele := make([]color.NRGBA, MaxFarbfelder+6)
+		for i := range viele {
+			viele[i] = color.NRGBA{G: uint8(i), A: 255}
+		}
+		return viele
+	})
+	if err != nil || len(neu) != MaxFarbfelder {
+		t.Fatalf("%d Farben, %v", len(neu), err)
+	}
+	if farben, _, warn := LadeFarbenDatei(pfad); len(farben) != MaxFarbfelder || len(warn) != 0 {
+		t.Errorf("gelesen %d, Warnungen %q", len(farben), warn)
 	}
 }
 

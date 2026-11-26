@@ -73,8 +73,8 @@
     "name": "C202-2 Speicherfunktion erst nach dem Anwenden (Warnung fehlt)",
     "datei": "cmd/schnapp/beschriften.go",
     "paket": "./cmd/schnapp",
-    "alt": "\tspeichern := ablegenIn(library.Neu(orte), abs, g, stand, func(p string) { ziel = p }, agent)\n\terg, err := annotate.Wende(ctx, d, es)\n\tif err != nil {\n\t\treturn beschriftung{}, err\n\t}",
-    "neu": "\terg, err := annotate.Wende(ctx, d, es)\n\tif err != nil {\n\t\treturn beschriftung{}, err\n\t}\n\tspeichern := ablegenIn(library.Neu(orte), abs, g, stand, func(p string) { ziel = p }, agent)"
+    "alt": "\tspeichern := ablegenIn(library.Neu(orte), abs, g, stand, func(p string, _ library.Stand) { ziel = p }, agent)\n\terg, err := annotate.Wende(ctx, d, es)\n\tif err != nil {\n\t\treturn beschriftung{}, err\n\t}",
+    "neu": "\terg, err := annotate.Wende(ctx, d, es)\n\tif err != nil {\n\t\treturn beschriftung{}, err\n\t}\n\tspeichern := ablegenIn(library.Neu(orte), abs, g, stand, func(p string, _ library.Stand) { ziel = p }, agent)"
   },
   {
     "name": "C202-3 annotate ohne Einwilligung edit",

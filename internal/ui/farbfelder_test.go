@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"gioui.org/io/key"
+	"gioui.org/io/pointer"
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/settings"
@@ -122,5 +123,30 @@ func TestFarbfelderLaden(t *testing.T) {
 	e.farbfelderLaden()
 	if len(e.seite.ff.liste()) != 0 {
 		t.Errorf("leere Datei: %v, Soll keine Farbfelder", e.seite.ff.farben)
+	}
+}
+
+// F-836: Rechtsklick auf das erste und Klick auf ein späteres Feld im selben Bild: Nach dem Entfernen verfällt der
+// Klick (keine Panik hinter dem Ende, keine Farbe des Nachbarn, der inzwischen an dieser Stelle steht).
+func TestFarbfelderEntfernenUndKlickImSelbenBild(t *testing.T) {
+	farbfelderDatei(t)
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	f := &l.e.seite.ff
+	vorher := l.e.s.AktuelleFarbe()
+	n := len(f.liste())
+	erstes, spaeteres := mittenPunkt(f.rahmen[0]), mittenPunkt(f.rahmen[2])
+	l.maus(pointer.Move, erstes, 0)
+	l.setle()
+	l.maus(pointer.Press, erstes, pointer.ButtonSecondary)
+	l.maus(pointer.Release, erstes, 0)
+	l.maus(pointer.Move, spaeteres, 0)
+	l.maus(pointer.Press, spaeteres, pointer.ButtonPrimary)
+	l.maus(pointer.Release, spaeteres, 0)
+	l.setle()
+	if len(f.farben) != n-1 {
+		t.Fatalf("%d Farbfelder, Soll %d", len(f.farben), n-1)
+	}
+	if got := l.e.s.AktuelleFarbe(); got != vorher {
+		t.Errorf("der Klick im selben Bild setzte %v (vorher %v)", got, vorher)
 	}
 }

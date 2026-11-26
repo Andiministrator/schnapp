@@ -39,7 +39,7 @@ die letzten Aufnahmen als Leiste („Tray“) unter dem Bild und eine volle Bibl
    gespeichert wie beim Schließen (Speichern im Hintergrund mit den Fristen aus ADR-0020 Nachträgen 6 bis 9; scheitert
    es, bleibt sie offen und die Statuszeile meldet es — gewechselt wird dann nicht). Danach lädt der Editor die gewählte
    Datei wie `schnapp DATEI` (`ladeFuerEditor` mit Budget-Prüfung, Rettungskopie nach ADR-0029, eigene Sitzung,
-   eigener Rückgängig-Verlauf; der Verlauf der vorigen ist danach weg). Fenster, Zoomstufe-Voreinstellung, Zustand
+   eigener Rückgängig-Verlauf; der Verlauf der vorigen ist danach weg; *seit Zusatz Karte #356:* er bleibt im Fenster gemerkt, wenn die Aufnahme gespeichert ist und keine Schwärzung im Verlauf liegt). Fenster, Zoomstufe-Voreinstellung, Zustand
    der Leisten bleiben. Ist eine Datei beschädigt oder neuer, öffnet sie als einfaches Bild wie bisher.
 6. **Vorschaubilder** nur aus dem Vorschau-Cache (`library.VorschauPfad`), nie aus dem Original; fehlt eine, wird sie
    im Hintergrund erzeugt (wie heute beim Ablegen) und bis dahin ein graues Feld gezeigt. Geladen werden nur die
@@ -279,7 +279,7 @@ nicht nur das änderungsdatum, sondern auch die auflösung stehen.“
 - **Zwei Zeilen unter jeder Vorschau:** Zeitangabe wie bisher, darunter im Nebentext die Auflösung der Ansicht aus dem
   Index (`leisteAufloesung`, Kontext `status bar` „%d × %d“). Die Leiste wird dafür 118 statt 104 dp hoch (Punkt 1 und
   Abschnitt „Konsequenzen“); die Schwelle von 420 dp Leinwandhöhe bleibt. Die volle Ansicht zeigte die Auflösung schon
-  (`libview.KachelAngaben`).
+  (`libview.KachelAngaben`). *Abgelöst durch den Zusatz zu Karte #353:* eine Zeile, wieder 104 dp.
 - Tests `internal/ui/leiste_knopf_aufloesung_test.go`, Drehbuch `bibliothek-174-leiste.txt` auf die neuen Lagen nachgezogen.
 
 ## Zusatz (25.11.2026, Karte #312, Claude Opus 5.5)
@@ -378,6 +378,7 @@ Frage Andi, 26.11.2026: „sollten wir bilder mit ungespeicherten änderungen in
   oben links einen **orangen Punkt** (10 dp, Akzentfarbe, 2 dp dunkler Ring; `zeichneUngesichertPunkt`). Oben rechts
   bleibt Platz für das ✕ (Zusatz Karte #312).
 - Der Hinweis der Statuszeile zur offenen Vorschau sagt dann „… — open now, with unsaved changes“.
+- Sichtprobe: Foto `05a-ungesichert` in `scripts/drehbuecher/bibliothek-174-leiste.txt`.
 - Eine Datei von außen hat bis zur ersten Änderung keine Vorschau in der Leiste (ADR-0016 Nachtrag 11). Mit der
   ersten Änderung speichert der Editor sie sofort, der Punkt erscheint dort also nur kurz.
 - Mutanten `scripts/mutanten/leiste-355.json`.
@@ -395,7 +396,8 @@ der Verlauf beginnt leer.
 2. **Nur bei unveränderter Datei.** Gemerkt wird mit dem Dateistand (`library.StandVon`: Gerät, Inode, Größe, Zeit)
    nach dem Speichern, das jedem Wechsel vorausgeht. Die Anbindung bekommt dafür `Fortsetzen(pfad, d, stand)`
    (`cmd/schnapp`: `fortsetzerFuer`): Sie lädt wie `Oeffnen` (mit Rettungskopie und Budget-Prüfung) und nimmt das
-   gemerkte Dokument nur, wenn der geladene Stand gleich dem gemerkten ist; sonst gilt das frisch gelesene (geändert von
+   gemerkte Dokument nur, wenn der geladene Stand gleich dem gemerkten ist und die Datei als Schnapp-Datei gelesen wurde
+   (nicht als einfaches oder beschädigtes Bild); sonst gilt das frisch gelesene (geändert von
    außen, Schlagworte in der Ansicht, ein zweites Fenster). Die Speicherfunktion entsteht für das gemerkte Dokument neu,
    sein Schwärzungsstand gilt als geschrieben (er ist es: gemerkt wird nur ein gespeicherter Stand).
 3. **Nicht gemerkt** werden: eine Aufnahme mit ungesicherten Änderungen (gescheitertes Speichern, Verwerfen), eine mit
@@ -405,4 +407,13 @@ der Verlauf beginnt leer.
 4. **Grenzen:** höchstens 4 gemerkte Aufnahmen und zusammen höchstens 512 MiB (Pixel des Originals plus Pixelkopien im
    Verlauf, `document.Speicherbedarf`); darüber fällt die am längsten verlassene weg. Ein einzelnes Dokument über der
    Grenze wird nicht gemerkt. Nichts davon geht auf die Platte; mit dem Fenster ist der Verlauf weg.
-5. Tests `internal/ui/verlaufmerker_test.go`, `cmd/schnapp` `TestFortsetzen…`; Mutanten `scripts/mutanten/verlaufmerker.json`.
+5. Tests `internal/ui/verlaufmerker_test.go`, `cmd/schnapp` `TestFortsetzen…`; Mutanten `scripts/mutanten/verlaufmerker.json`;
+   Sichtprobe `scripts/drehbuecher/verlauf-wechsel-356.txt`.
+6. **Nach der Sitzungs-Kritik (26.11.2026, F-834, F-838):** Gemerkt wird mit dem Stand, den die **eigene
+   Speicherfunktion** vom Laden bzw. letzten eigenen Schreiben kennt (`Geoeffnet.Stand`, in `geoeffnetFuer` nachgeführt),
+   und nur, wenn die Datei auf der Platte genau diesen Stand trägt. Vorher nahm `merkeVerlassene` den Stand der Platte:
+   War die Aufnahme unverändert (kein Speichern vor dem Wechsel) und hatte ein anderes Fenster oder `--annotate` die
+   Datei inzwischen geschwärzt, nahm der Rückwechsel das alte Dokument, und das nächste Speichern hätte das Ungeschwärzte
+   zurückgeschrieben ([S], F-834). Der Eintrag wird erst verbraucht, wenn `uebernimm` die Aufnahme zeigt; scheitert das
+   Laden oder lehnt der Editor die Übernahme ab, bleibt er gemerkt. Geht eine gemerkte, nicht offene Aufnahme in den
+   Papierkorb, wird sie vergessen (F-838).

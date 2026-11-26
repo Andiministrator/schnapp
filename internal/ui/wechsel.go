@@ -7,7 +7,9 @@ package ui
 // sagt es; bringt es einen Hinweis (etwa „als neue Aufnahme gespeichert“), bleibt sie für diesen einen Hinweis offen wie
 // beim Schließen, ein weiterer Klick wechselt. Danach lädt die Ladefunktion von cmd/schnapp die Datei in einer
 // Goroutine wie `schnapp DATEI` (Budget, Rettungskopie, Kantenvorgabe), und der Editor übernimmt sie mit neuer Sitzung
-// und neuem Verlauf; Fenster, Leisten und die Schalter der Ansicht bleiben.
+// und neuem Verlauf — oder mit dem gemerkten Dokument samt Verlauf, wenn sie früher in diesem Fenster offen war und die
+// Datei unverändert ist (verlaufmerker.go, ADR-0036 Zusatz Karte #356); Fenster, Leisten und die Schalter der Ansicht
+// bleiben.
 
 import (
 	"errors"
@@ -37,6 +39,10 @@ type Geoeffnet struct {
 	Aussen bool
 	// Fortgesetzt: Dokument ist das gemerkte einer früher verlassenen Aufnahme, mit Verlauf (Anbindung.Fortsetzen).
 	Fortgesetzt bool
+	// Stand liefert den Dateistand, den die Speicherfunktion vom Laden bzw. letzten eigenen Schreiben kennt (F-834): Nur
+	// wenn die Datei beim Wechsel genau diesen Stand trägt, wird das Dokument gemerkt. nil: unbekannt, nie merken. Darf
+	// aus jeder Goroutine gerufen werden.
+	Stand func() library.Stand
 }
 
 // Oeffnen lädt die Datei pfad für den Wechsel (cmd/schnapp: ladeFuerEditor, Rettungskopie, Kantenvorgabe). Läuft in
@@ -168,8 +174,9 @@ func (e *editor) wechselLaden() {
 	e.wechsel.antwort = ch
 	oeffnen, ziel, wecker, enden := e.bib.Oeffnen, e.wechsel.ziel, e.wecker, e.rettungEnden
 	// Früher verlassen und gemerkt: mit dem gemerkten Dokument fortsetzen, wenn die Datei unverändert ist (Karte #356).
-	// Der Eintrag ist damit verbraucht; uebernimm merkt die Aufnahme beim nächsten Verlassen neu.
-	if m, ok := e.verlaeufe.nimm(ziel); ok && e.bib.Fortsetzen != nil {
+	// Der Eintrag bleibt gemerkt, bis uebernimm die Aufnahme zeigt (F-838): Scheitert das Laden oder lehnt wechselAbholen
+	// die Übernahme ab, ist der Verlauf nicht verloren. Das Dokument fasst bis dahin niemand an.
+	if m, ok := e.verlaeufe.hole(ziel); ok && e.bib.Fortsetzen != nil {
 		fortsetzen := e.bib.Fortsetzen
 		oeffnen = func(p string) (Geoeffnet, error) { return fortsetzen(p, m.d, m.stand) }
 	}
@@ -258,7 +265,6 @@ func (e *editor) wechselAbholen() bool {
 		e.wechselBehaeltAnsicht = true
 		e.uebernimm(r.g)
 		e.wechselBehaeltAnsicht = false
-		e.verlaeufe.vergiss(alt) // sie geht in den Papierkorb (ADR-0036 Zusatz Karte #356 Punkt 3)
 		if rel, ok := e.bib.Bibliothek.Relativ(alt); ok && alt != "" {
 			e.papierkorbAnfrage(rel, false, nil)
 		}
@@ -274,6 +280,9 @@ func (e *editor) wechselAbholen() bool {
 func (e *editor) uebernimm(g Geoeffnet) {
 	e.ocrAbbrechen()
 	e.merkeVerlassene() // Verlauf der alten Aufnahme für einen späteren Wechsel zurück (Karte #356)
+	if g.Pfad != nil {
+		e.verlaeufe.vergiss(g.Pfad()) // jetzt offen: der Eintrag ist verbraucht oder veraltet (F-838)
+	}
 	// Die alte Aufnahme ist gespeichert: Kopie verwerfen, Sperre freigeben — im Hintergrund, Ende wartet bis zu 5 s auf
 	// die Schreibkette (F-637).
 	if e.rettung != nil {
@@ -290,7 +299,7 @@ func (e *editor) uebernimm(g Geoeffnet) {
 	if navigator != e.s.NavigatorAn() {
 		e.s.SchalteNavigator()
 	}
-	e.titel, e.speichern, e.rettung, e.pfad = g.Titel, g.Speichern, g.Rettung, g.Pfad
+	e.titel, e.speichern, e.rettung, e.pfad, e.stand = g.Titel, g.Speichern, g.Rettung, g.Pfad, g.Stand
 	e.ohneGrenze = g.OhneGrenze
 	exportOhneGrenze.Store(g.OhneGrenze)
 	// Zustand, der am Dokument hängt.

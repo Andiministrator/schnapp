@@ -30,8 +30,9 @@ var (
 
 // Maße der Farbfelder in dp.
 const (
-	farbfeldDp     = 20
-	farbfeldAbstDp = 6
+	farbfeldDp          = 20
+	farbfeldAbstDp      = 6
+	farbfelderAbstandDp = 8 // zwischen Hex/Deckkraft und der ersten Reihe
 )
 
 // farbfeldLeiste ist der Zustand der Farbfelder; die Rahmen halten die Lage beim letzten Zeichnen (Tests).
@@ -85,7 +86,7 @@ func (e *editor) farbfelderAendern(erfolg string, aend func([]color.NRGBA) []col
 		return aend(alt)
 	})
 	if err != nil {
-		e.melde(fmt.Sprintf(i18n.T("Could not save the colour swatches: %v"), fehlerGrund(err)), true)
+		e.melde(fmt.Sprintf(i18n.T("Could not save the color swatches: %v"), fehlerGrund(err)), true)
 		return
 	}
 	e.seite.ff.farben, e.seite.ff.geladen = neu, true
@@ -96,8 +97,11 @@ func (e *editor) farbfelderAendern(erfolg string, aend func([]color.NRGBA) []col
 func (e *editor) farbfelderAuswerten(gtx layout.Context) {
 	f := &e.seite.ff
 	f.liste()
-	for j := range f.farben {
-		if f.knoepfe[j].Clicked(gtx) && e.seiteAn() {
+	// Nach einem Entfernen gilt die Lage des letzten Bilds nicht mehr (die Felder rücken nach): weitere Klicks dieses
+	// Bilds verfallen, sonst träfen sie den Nachbarn oder lägen hinter dem Ende der kürzeren Liste (F-836).
+	n := len(f.farben)
+	for j := 0; j < n; j++ {
+		if f.knoepfe[j].Clicked(gtx) && e.seiteAn() && j < len(f.farben) && len(f.farben) == n {
 			e.s.SetzeFarbe(f.farben[j])
 		}
 		for {
@@ -105,14 +109,14 @@ func (e *editor) farbfelderAuswerten(gtx layout.Context) {
 			if !ok {
 				break
 			}
-			if pe, ok := ev.(pointer.Event); ok && pe.Buttons == pointer.ButtonSecondary && e.seiteAn() {
+			if pe, ok := ev.(pointer.Event); ok && pe.Buttons == pointer.ButtonSecondary && e.seiteAn() && len(f.farben) == n {
 				e.farbfeldEntferne(gtx, j)
 			}
 		}
 	}
 	if f.plus.Clicked(gtx) && e.seiteAn() && e.kannFarbfeldHinzu() {
 		c := e.s.AktuelleFarbe()
-		e.farbfelderAendern(i18n.T("Colour swatch added"), func(alt []color.NRGBA) []color.NRGBA {
+		e.farbfelderAendern(i18n.T("Color swatch added"), func(alt []color.NRGBA) []color.NRGBA {
 			return settings.FarbeHinzu(alt, c)
 		})
 	}
@@ -136,7 +140,7 @@ func (e *editor) farbfeldEntferne(gtx layout.Context, j int) {
 	if gtx.Focused(&f.knoepfe[j]) && j == len(f.farben)-1 {
 		gtx.Execute(key.FocusCmd{Tag: &f.plus})
 	}
-	e.farbfelderAendern(i18n.T("Colour swatch removed"), func(alt []color.NRGBA) []color.NRGBA {
+	e.farbfelderAendern(i18n.T("Color swatch removed"), func(alt []color.NRGBA) []color.NRGBA {
 		return settings.FarbeEntfernt(alt, weg)
 	})
 }
@@ -176,7 +180,7 @@ func (e *editor) zeichneFarbfelder(gtx layout.Context, x, y, breite int) int {
 		e.knopfAn(gtx, &f.knoepfe[j], r)
 		rechtsAnmelden(gtx, &f.rechts[j], r)
 		if f.knoepfe[j].Hovered() || gtx.Focused(&f.knoepfe[j]) {
-			f.hinweis = fmt.Sprintf(i18n.T("Colour swatch %s. Right-click or Del removes it."), canvas.HexText(c))
+			f.hinweis = fmt.Sprintf(i18n.T("Color swatch %s. Right-click or Del removes it."), canvas.HexText(c))
 		}
 	}
 	pr := platz(len(f.farben))
@@ -190,6 +194,16 @@ func (e *editor) zeichneFarbfelder(gtx layout.Context, x, y, breite int) int {
 	return pr.Max.Y
 }
 
+// farbfelderHoehe ist die Höhe, die die Farbfelder unter Hex und Deckkraft dem Farbwähler hinzufügen (Abstand und Reihen
+// einschließlich „+“), in Pixeln bei der Breite breite: Die Schwelle für das Einklappen der Ebenen rechnet damit
+// (farbwaehlerHoeheDp reicht bis unter Hex und Deckkraft; ADR-0021 Nachtrag 24 Punkt 7).
+func (e *editor) farbfelderHoehe(gtx layout.Context, breite int) int {
+	q, abst := gtx.Dp(farbfeldDp), gtx.Dp(farbfeldAbstDp)
+	je := max(1, (breite+abst)/(q+abst))
+	reihen := (len(e.seite.ff.liste()) + 1 + je - 1) / je
+	return gtx.Dp(farbfelderAbstandDp) + reihen*(q+abst) - abst
+}
+
 // farbfeldPlusText ist der Hinweis zu „+“.
 func (e *editor) farbfeldPlusText() string {
 	f := &e.seite.ff
@@ -197,11 +211,11 @@ func (e *editor) farbfeldPlusText() string {
 	f.liste()
 	switch {
 	case c.A == 0:
-		return i18n.T("“No fill” cannot be a colour swatch.")
+		return i18n.T("A fully transparent color cannot be a swatch.")
 	case slices.Contains(f.farben, c):
-		return i18n.T("The current colour is already a swatch.")
+		return i18n.T("The current color is already a swatch.")
 	case len(f.farben) >= settings.MaxFarbfelder:
-		return fmt.Sprintf(i18n.T("At most %d colour swatches. Remove one first."), settings.MaxFarbfelder)
+		return fmt.Sprintf(i18n.T("At most %d color swatches. Remove one first."), settings.MaxFarbfelder)
 	}
-	return i18n.T("Adds the current colour as a swatch.")
+	return i18n.T("Adds the current color as a swatch.")
 }

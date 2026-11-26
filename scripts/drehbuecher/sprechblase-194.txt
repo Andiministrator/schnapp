@@ -11,7 +11,7 @@
 #  05 Schalter wieder an: Spitze wie bei einem Klick (links unter dem Schild).
 #  06 Deckkraft der Ebene 50 %: Schild samt Spitze gleichmäßig halb durchsichtig (keine dunklere Naht an der Basis).
 #  07 Klick-Blase (Taste K, Klick ohne Zug): Spitze links unter dem Schild.
-#  08 Füllung „Keine“ (Leiste Farbe): nur zwei Schenkel in Schriftfarbe, Schild durchsichtig.
+#  08 Füllung „keine“ (Feld mit Schrägstrich rechts von ⇄ in der Zeile des Farbpaars, seit ADR-0021 Nachtrag 23): nur zwei Schenkel in Schriftfarbe, Schild durchsichtig.
 warte 1500
 taste K
 warte 300
@@ -54,6 +54,6 @@ warte 500
 foto 07-klick-blase
 klick 1360 457
 warte 200
-klick 1447 456
+klick 1424 456
 warte 400
 foto 08-ohne-fuellung

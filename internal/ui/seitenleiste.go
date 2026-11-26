@@ -31,7 +31,7 @@ import (
 // zwei Regler, Felder) und der kleinste Ebenen-Abschnitt ohne Hinweis (zeichneEbenen: Trennlinie, Kopf, Deckkraft,
 // eine Zeile, Knöpfe, drei Zeilen Hinweis).
 const (
-	farbwaehlerHoeheDp = 234 // seit #219 mit der Zeile des Farbpaars (24 + 10)
+	farbwaehlerHoeheDp = 234 // bis unter Hex und Deckkraft, seit #219 mit der Zeile des Farbpaars (24 + 10); die Farbfelder darunter rechnet farbfelderHoehe (#364)
 	ebenenMindestDp    = 230
 )
 
@@ -348,7 +348,7 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	// Reicht die Leiste nicht für Farbwähler und den kleinsten Ebenen-Abschnitt (Verify V23-2, V23-3), klappen die
 	// Ebenen in diesem Bild ein — die Farbe braucht man öfter; ein Klick auf „Ebenen“ gibt ihnen den Vorrang.
 	eng := inhalt.Farbe && !k.farbeZu && !e.ebenen.zu &&
-		unten-y-gtx.Dp(30) < gtx.Dp(unit.Dp(farbwaehlerHoeheDp+ebenenMindestDp))
+		unten-y-gtx.Dp(30) < gtx.Dp(unit.Dp(farbwaehlerHoeheDp+ebenenMindestDp))+e.farbfelderHoehe(gtx, breite)
 	if !eng {
 		e.ebenen.vorrang = false
 	}

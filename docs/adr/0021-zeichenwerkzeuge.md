@@ -257,7 +257,7 @@ Nachtrag 6: Neben den vier Beschriftungsfarben ist jede Farbe wählbar, mit Deck
    Ziehen in der Fläche den Ton nicht verlieren; HSV ist nur Bedienung, gespeichert wird RGB.
 4. **Zuletzt benutzte Farben:** Jede Farbe, die nicht über ein Farbfeld gewählt wurde (Fläche, Regler beim Loslassen,
    Hex, Deckkraft, Pipette) und nicht unter den Beschriftungsfarben steht, kommt vorn in eine Liste von höchstens drei
-   (`canvas.ZuletztGrenze`; *seit Nachtrag 17:* vier); dieselbe Farbe rückt nach vorn statt doppelt zu stehen. Die Liste gilt je Fenster und wird
+   (`canvas.ZuletztGrenze`; *seit Nachtrag 17:* vier; *seit Nachtrag 24:* acht, und jede benutzte sichtbare Farbe zählt, auch eine aus den Farbfeldern oder eine Beschriftungsfarbe); dieselbe Farbe rückt nach vorn statt doppelt zu stehen. Die Liste gilt je Fenster und wird
    nicht gespeichert (Einstellungen mit #175).
 5. **Pipette:** Ein Klick auf die Pipette schaltet sie ein; der nächste Linksklick ins Bild übernimmt die Farbe des
    Bildpunkts darunter aus dem Original **mit** Schwärzungen und **ohne** Beschriftungen, deckend (Alpha 255) — so
@@ -357,7 +357,8 @@ Nachtrag 9 Punkt 8 ein; ändert Punkt 4 (eine Farbe für alles) und die Bedeutun
    Farbwähler der rechten Leiste. Hat das Werkzeug bzw. Objekt keine Füllung, ist Vordergrund aktiv. Ist ein Objekt
    gewählt, zeigen und ändern die Felder seine Farben (ein Rückgängig-Schritt je Änderung, wie bisher).
 4. **Keine Füllung:** Knopf „Keine“ neben den beiden Feldern der Leiste (nur bei aktiver Füllung an); gleichbedeutend mit
-   Deckkraft 0 %. Ein Text ohne Schild zeigt nur die Schrift.
+   Deckkraft 0 %. Ein Text ohne Schild zeigt nur die Schrift. *Seit Nachtrag 23:* ein Feld mit rotem Schrägstrich statt des
+   Knopfs; ein Klick macht die Füllung aktiv und durchsichtig.
 5. **Tauschen:** Knopf ⇄ neben den Feldern (Werkzeugleiste und rechte Leiste), Menü Bearbeiten → „Farben tauschen“,
    Kürzel **Strg+Umschalt+X** (X allein ist Stauchen; Umschalt+X allein träfe beim Tippen eines großen X im Text). Mit
    gewähltem Objekt werden seine beiden Farben getauscht (ein Rückgängig-Schritt), sonst das Paar des Werkzeugs; ohne
@@ -374,10 +375,11 @@ Nachtrag 9 Punkt 8 ein; ändert Punkt 4 (eine Farbe für alles) und die Bedeutun
    zeichnet (ein umgefärbter Kasten färbt auch die nächsten Kästen); Tauschen am Objekt ändert das Paar nicht.
    Werkzeugleiste: das Quadrat unter den Werkzeugen ist geviertelt, Vordergrund oben links, Füllung unten rechts,
    ⇄ oben rechts, ohne Überlappung (`farbpaarRahmen`). Rechte Leiste: Zeile Vordergrund, Füllung, ⇄, „Keine“ über der
-   Farbfläche (`zeichneFarbpaarZeile`).
+   Farbfläche (`zeichneFarbpaarZeile`). *Seit Nachtrag 23:* ohne Füllung nur das Feld des Vordergrunds, daneben der Name
+   des aktiven Felds.
 9. **Umsetzung nach Kritik** (23.11.2026, Kritik zu #219): Ohne gewähltes Objekt gilt die Füllung nur beim gewählten
    Werkzeug mit Füllung (Kasten, Text). Bei einem Werkzeug ohne Farbe — Auswählen ohne Objekt, Schwärzen, Verpixeln,
-   Zuschneiden, Stauchen — sind Feld Füllung, „Keine“ und Tauschen grau, obwohl `Stil` das Paar des zuletzt benutzten
+   Zuschneiden, Stauchen — sind Feld Füllung, „Keine“ und Tauschen grau (*seit Nachtrag 23:* gar nicht gezeichnet), obwohl `Stil` das Paar des zuletzt benutzten
    Farbwerkzeugs trägt; sonst tauschte Strg+Umschalt+X unsichtbar dessen Paar. Einzige Quelle dafür ist
    `Sitzung.Fuellbar` (das Feld `SeitenInhalt.Fuellung` entfällt). Der Farbton-Regler auf einer ganz durchsichtigen
    Farbe setzt Sättigung und Helligkeit voll, damit Punkt 7 einen sichtbaren Ton ergibt statt Schwarz (Füllung „keine“
@@ -617,8 +619,10 @@ pipettensymbol sieht nicht nach einer pipette aus und ist auch deplatziert.“
 2. **Pipette** mit eigenem Symbol `icons.Pipette` („eyedropper“: Druckkappe, Kragen, Röhrchen, Spitze mit Tropfen in
    Akzentfarbe, schräg wie das Werkzeug in der Hand). Sie steht **rechts in der Zeile des Farbpaars** — sie holt eine Farbe
    für das aktive Feld und gehört dorthin —, nicht mehr als letztes Feld im Raster. Tab-Reihenfolge: Farbpaar, „Keine“,
-   Pipette, Farbfelder, Hex, Deckkraft.
+   Pipette, Farbfelder, Hex, Deckkraft. *Seit Nachtrag 24 Punkt 5:* Farbpaar, Pipette, zuletzt benutzte, Hex, Deckkraft,
+   eigene Farbfelder, „+“.
 3. Das frei gewordene Feld im Raster nimmt eine **vierte zuletzt benutzte Farbe** (`canvas.ZuletztGrenze` 4, Raster 2 × 4).
+   *Seit Nachtrag 24:* acht zuletzt benutzte, das Raster zeigt nur noch sie.
 
 Tests `internal/ui/farbwaehler_hex6_test.go`, Mutanten `scripts/mutanten/farbwaehler-318.json`, Sichtprobe
 `scripts/drehbuecher/farbwaehler-318.txt`.
@@ -821,14 +825,14 @@ bei Pfeile – dann verwirrt das symbol mit der hg-farbe und auch das farbe taus
 überleg mal, ob man den farb-bereich nicht prinzipiell einfacher/userfreundlicher machen könnte“; Ausgestaltung Claude
 Opus 5.5, Andi: „arbeite selbstständig“).
 
-Ändert Nachtrag 11 Punkte 4 und 9 für die Oberfläche; Logik (`canvas.Fuellbar`, `AktivesFeld`, `KeineFuellung`) bleibt.
+Ändert Nachtrag 11 Punkte 4, 8 und 9 für die Oberfläche („Feld“ heißt hier ein Feld des Farbpaars, nicht ein Farbfeld der Palette aus Nachtrag 24); Logik (`canvas.Fuellbar`, `AktivesFeld`, `KeineFuellung`) bleibt.
 
 1. **Ohne Füllung nur ein Feld.** Wo `Fuellbar` nicht gilt (Pfeil, Lupe, Nummer, Werkzeuge ohne Farbe), zeigen die Zeile
    über dem Farbwähler und das Paar unter der Werkzeugleiste nur das Farbfeld. Füllfeld, ⇄ und „keine“ werden weder
    gezeichnet noch angemeldet (kein graues Feld, kein grauer Pfeil, nicht per Tab erreichbar). Der Hinweis am Feld
    unter der Werkzeugleiste heißt dann „Color“ statt „Foreground“. Menü und Strg+Umschalt+X bleiben grau bzw. wirkungslos
    wie bisher.
-2. **„Keine“ ist ein Farbfeld,** kein Textknopf: weiß mit rotem Schrägstrich (dasselbe Zeichen wie auf einer
+2. **„Keine“ ist ein Feld des Paars,** kein Textknopf: weiß mit rotem Schrägstrich (dasselbe Zeichen wie auf einer
    durchsichtigen Füllung, `zeichneKeine`), nach ⇄. Ein Klick macht die Füllung zum aktiven Feld **und** durchsichtig
    (vorher wirkte der Knopf nur bei schon aktiver Füllung und war sonst grau). Grün umrandet, wenn die aktive Füllung
    durchsichtig ist.
@@ -845,7 +849,7 @@ Tests `internal/ui/farbpaar_einfach_test.go`; Mutanten `scripts/mutanten/farbpaa
 **Status:** Akzeptiert (Andi, 26.11.2026: „bei den favoriten farben rechts sollten die vorhandenen aber gelöscht und
 auch neue hinzugefügt werden können, oder?“ und „entscheide du das“; Ausgestaltung Claude Opus 5.5).
 
-Ändert Nachtrag 9 (Raster neben der Farbfläche) und Nachtrag 17 (vier zuletzt benutzte).
+Ändert Nachtrag 9 (Raster neben der Farbfläche), Nachtrag 17 (vier zuletzt benutzte) und ADR-0031 Nachtrag 5 (Aufbau und Tab-Reihenfolge des Farbwählers).
 
 1. **Zwei Arten, klar getrennt.** *Farbfelder* sind die eigene, gepflegte Palette; *zuletzt benutzt* füllt sich von
    selbst. Vorher standen die vier eingebauten Beschriftungsfarben fest im Raster und ließen sich weder entfernen noch
@@ -864,5 +868,12 @@ auch neue hinzugefügt werden können, oder?“ und „entscheide du das“; Aus
    weiter nicht.
 5. Tab-Reihenfolge: Farbpaar, Pipette, zuletzt benutzte, Hex, Deckkraft, Farbfelder, „+“. Ein Klick auf ein Farbfeld
    verwirft eine schwebende Hex-Eingabe wie die übrigen Farbziele (`inFarbwahl`).
+6. Die Farbliste der Fußzeile und des Paars unter den Werkzeugen zeigt weiter die vier benannten Beschriftungsfarben
+   (`canvas.Beschriftungsfarben`); sie hängt nicht an `colors.ini`. Ob sie den Farbfeldern folgt, entscheidet #317.
+7. Der Farbabschnitt wird um 8 dp plus 26 dp je Reihe Farbfelder höher; die Schwelle, ab der die Ebenen von selbst
+   einklappen, rechnet die Reihen mit (`farbwaehlerHoehe`).
+8. **Nach der Sitzungs-Kritik (F-836, F-837):** Nach einem Entfernen verfallen weitere Klicks desselben Bilds (die
+   Felder rücken nach); `#` ist in `colors.ini` ein Kommentar wie in `styles.ini`; ein Lesefehler nennt die Farbdatei,
+   nicht die Stildatei.
 
 Tests `internal/settings/farben_test.go`, `internal/ui/farbfelder_test.go`; Mutanten `scripts/mutanten/farbfelder.json`.

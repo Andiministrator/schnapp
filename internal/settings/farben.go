@@ -28,9 +28,9 @@ const MaxFarbfelder = 24
 
 // Fehler beim Ändern der Farbfelder.
 var (
-	ErrFarbenUnlesbar  = errors.New("the colour swatches file cannot be read, so it is left as it is")
-	ErrFarbenGesperrt  = errors.New("the colour swatches file is locked by another window")
-	ErrFarbenSicherung = errors.New("the colour swatches file has parts that cannot be read and colors.ini.bak already exists, so it is left as it is")
+	ErrFarbenUnlesbar  = errors.New("the color swatches file cannot be read, so it is left as it is")
+	ErrFarbenGesperrt  = errors.New("the color swatches file is locked by another window")
+	ErrFarbenSicherung = errors.New("the color swatches file has parts that cannot be read and colors.ini.bak already exists, so it is left as it is")
 )
 
 func farbenOrt() (string, error) {
@@ -46,7 +46,7 @@ func farbenOrt() (string, error) {
 func LadeFarben() (farben []color.NRGBA, da bool, warn []string) {
 	pfad, err := farbenOrt()
 	if err != nil {
-		return nil, false, []string{fmt.Sprintf(i18n.T("Cannot locate the colour swatches file (%v); using the built-in swatches."), maske(err.Error()))}
+		return nil, false, []string{fmt.Sprintf(i18n.T("Cannot locate the color swatches file (%v); using the built-in swatches."), maske(err.Error()))}
 	}
 	return LadeFarbenDatei(pfad)
 }
@@ -55,7 +55,7 @@ func LadeFarben() (farben []color.NRGBA, da bool, warn []string) {
 func LadeFarbenDatei(pfad string) (farben []color.NRGBA, da bool, warn []string) {
 	daten, da, err := leseStileRoh(pfad)
 	if err != nil {
-		return nil, false, []string{fmt.Sprintf(i18n.T("%s: cannot read the colour swatches file (%v); using the built-in swatches."), maske(pfad), maske(err.Error()))}
+		return nil, false, []string{fmt.Sprintf(i18n.T("%s: cannot read the color swatches file (%v); using the built-in swatches."), maske(pfad), maske(err.Error()))}
 	}
 	if !da {
 		return nil, false, nil
@@ -82,7 +82,7 @@ func ParseFarben(name, inhalt string) ([]color.NRGBA, []string) {
 		nr := i + 1
 		z := strings.TrimSpace(strings.TrimSuffix(zeile, "\r"))
 		switch {
-		case z == "" || strings.HasPrefix(z, ";"):
+		case z == "" || strings.HasPrefix(z, ";") || strings.HasPrefix(z, "#"): // wie styles.ini (F-837)
 			continue
 		case strings.HasPrefix(z, "[") && strings.HasSuffix(z, "]"):
 			abschnitt = strings.TrimSpace(z[1 : len(z)-1])
@@ -105,14 +105,14 @@ func ParseFarben(name, inhalt string) ([]color.NRGBA, []string) {
 		}
 		c, ok := farbeAus(w)
 		if !ok {
-			melde(nr, i18n.T("Colour %q ignored: not #RRGGBB or #RRGGBBAA."), w)
+			melde(nr, i18n.T("Color %q ignored: not #RRGGBB or #RRGGBBAA."), w)
 			continue
 		}
 		if slices.Contains(farben, c) {
 			continue
 		}
 		if len(farben) >= MaxFarbfelder {
-			melde(nr, i18n.T("Colour ignored: more than %d colour swatches."), MaxFarbfelder)
+			melde(nr, i18n.T("Color ignored: more than %d color swatches."), MaxFarbfelder)
 			continue
 		}
 		farben = append(farben, c)
@@ -123,7 +123,7 @@ func ParseFarben(name, inhalt string) ([]color.NRGBA, []string) {
 // FormatFarben ist der Inhalt einer Farbdatei für farben.
 func FormatFarben(farben []color.NRGBA) string {
 	var b strings.Builder
-	b.WriteString("; Schnapp colour swatches. Written by Schnapp: changes made here while Schnapp is open may be lost.\n")
+	b.WriteString("; Schnapp color swatches. Written by Schnapp: changes made here while Schnapp is open may be lost.\n")
 	b.WriteString("[swatches]\n")
 	for _, c := range farben {
 		fmt.Fprintf(&b, "color = %s\n", farbeText(c))
@@ -165,7 +165,8 @@ func aendereFarbenDatei(pfad string, aend func([]color.NRGBA, bool) []color.NRGB
 	}
 	daten, da, err := leseStileRoh(pfad)
 	if err != nil {
-		return nil, errors.Join(ErrFarbenUnlesbar, err)
+		// Nicht mit den Fehlerwerten der Stildatei verbinden: fehlerGrund nähme deren Text („the styles file …“, F-837).
+		return nil, fmt.Errorf("%w (%s)", ErrFarbenUnlesbar, farbenUrsache(err))
 	}
 	var alt []color.NRGBA
 	if da {
@@ -189,7 +190,7 @@ func aendereFarbenDatei(pfad string, aend func([]color.NRGBA, bool) []color.NRGB
 		if info.Mode()&os.ModeSymlink != 0 {
 			z, err := filepath.EvalSymlinks(pfad)
 			if err != nil {
-				return nil, errors.Join(ErrFarbenUnlesbar, err)
+				return nil, fmt.Errorf("%w (%s)", ErrFarbenUnlesbar, farbenUrsache(err))
 			}
 			ziel = z
 		}
@@ -215,4 +216,16 @@ func FarbeEntfernt(farben []color.NRGBA, c color.NRGBA) []color.NRGBA {
 		return slices.Delete(slices.Clone(farben), i, i+1)
 	}
 	return slices.Clone(farben)
+}
+
+// farbenUrsache ist die Ursache eines Lesefehlers der Farbdatei als Text, ohne die Fehlerwerte der Stildatei, deren
+// Texte von styles.ini sprächen (F-837).
+func farbenUrsache(err error) string {
+	switch {
+	case errors.Is(err, ErrStileKeineDatei):
+		return "not a regular file"
+	case errors.Is(err, ErrStileZuGross):
+		return "larger than 64 KiB"
+	}
+	return maske(err.Error())
 }

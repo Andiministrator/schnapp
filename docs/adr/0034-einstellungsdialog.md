@@ -157,7 +157,7 @@ F-629, F-630. Ändert Punkte 3, 5 und 6.
    the next start.“ statt „Applies at the next start.“.
 3. **Schreiber (Punkt 6):** Der Menüschalter merkt `[library] bar` über `merkeEinstellung` in
    `internal/ui/einstellungen.go` mit dem Schreiber der Tafel (`schreibeEinstellungen`, Ort `settings.Pfad`); damit bleibt
-   die Tafel-Datei der einzige Ort, der `settings.Schreibe…` für `settings.ini` ruft (`TestMCPErreichtDenSchreiberNicht`; die Stil-Schreiber `SchreibeStile`/`AendereStile` ruft daneben `internal/ui/schnellstile.go`, ADR-0037).
+   die Tafel-Datei der einzige Ort, der `settings.Schreibe…` für `settings.ini` ruft (`TestMCPErreichtDenSchreiberNicht`; die Stil-Schreiber `SchreibeStile`/`AendereStile` ruft daneben `internal/ui/schnellstile.go`, ADR-0037, und `AendereFarben` für `colors.ini` `internal/ui/farbfelder.go`, ADR-0021 Nachtrag 24).
 4. **Präzisiert (24.11.2026, Sitzungs-QA, Karte #252):** „Speichert die Tafel diesen Schlüssel“ heißt: Der Wert in
    der Tafel weicht von dem beim Öffnen gelesenen ab (F-655). Ein Speichern ohne Änderung an `bar` lässt die Leiste,
    wie sie ist, auch wenn das Fenster von der Datei abweicht (Probe-Lauf, gescheitertes Merken, zweites Fenster).

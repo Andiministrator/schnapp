@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #349 bis #352, #358 und Sitzungs-Kritik). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -1031,8 +1031,9 @@ Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #349 bis #352, #3
 - **Referenz für Bitgleichheit muss denselben Weg rechnen:** `vector` wählt den Gleitkomma-Weg über Breite **oder Höhe**
   > 512. Mit gleicher Breite und Höhe ≥ 513 rechnet die Referenz in derselben Speicheranordnung; eine größere Breite
   verschiebt den Übertrag über Zeilenenden und rundet anders.
-- **Mutanten nach jedem Umbau trocken prüfen:** Ein Umbau verschiebt Muster anderer Gruppen (`schrift`, `text-naht`); `go
-  run ./scripts/mutanten -trocken` über alle Gruppen findet sie in Sekunden. Ein Mutant, dessen Ersetzung eine Variable
+- **Mutanten nach jedem Umbau trocken prüfen:** Ein Umbau verschiebt Muster anderer Gruppen (`schrift`, `text-naht`); `cd
+  scripts/mutanten && go run . -wurzel ../.. -trocken` über alle Gruppen findet sie in Sekunden (eigenes Modul: `go run
+  ./scripts/mutanten` aus der Wurzel findet es nicht). Ein Mutant, dessen Ersetzung eine Variable
   ungenutzt lässt, baut nicht (FEHLER, nicht ROT) — im Muster `_ = x` ergänzen.
 - **Überlebende Mutanten zeigen Testlücken genau:** N3/N3b (Text über einer Naht nie pixelweise verglichen), P5/P6
   (Editor-Pfeil und -Kasten nur in Fällen getestet, in denen die alte Abbildung zufällig gleich aussah). Testfall so
@@ -1198,3 +1199,37 @@ Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #349 bis #352, #3
   Lauf, Leeren nur mit exklusivem Griff ohne Warten (`scripts/mutanten`, `gocache.lock`).
 - Vermutung widerlegt statt umgebaut (K-7): Gio liefert Loslassen auch an ein Ziel, das nach dem Einklappen nicht mehr
   gezeichnet wird; der Test `TestStrichReglerLeisteVerschwindetImZug` hält das fest.
+
+## Sprint 14, Karten #353 bis #364 und Sitzungs-Kritik (4) (26.11.2026)
+
+- **Wer ein Dokument über einen Wechsel hinweg aufhebt, braucht den Dateistand der eigenen Speicherfunktion, nicht den
+  der Platte** (F-834, [S]): Der Stand beim Verlassen von der Platte zu lesen, nahm einen fremden Stand mit (ein anderes
+  Fenster hatte geschwärzt), und der Rückwechsel hätte das Ungeschwärzte zurückgeschrieben. Der Stand, gegen den F-110
+  schützt, ist der, den das eigene Schreiben zuletzt gesehen hat (`Geoeffnet.Stand`); nur wenn die Platte ihn noch
+  trägt, ist das gemerkte Dokument aktuell.
+- **Ein Zwischenspeicher wird erst verbraucht, wenn sein Inhalt wirklich übernommen ist** (F-838): beim Start eines
+  Ladens herausnehmen verlor ihn bei jedem Fehlschlag. Holen ohne Entfernen, Entfernen in der Übernahme.
+- **„Äquivalent“ nur nach dem Gegenbeispiel-Versuch:** V2 (Schwärzung im Verlauf) schien äquivalent, weil Speichern den
+  Verlauf leert — aber Schwärzen und Rückgängig ohne Speichern ist ungeändert und hält die Schwärzung im Verlauf (F-835).
+  Vor dem Markieren den Zustand suchen, in dem die Klausel allein entscheidet.
+- **Eine Schleife, die ihren eigenen Gegenstand ändern kann, hört danach auf** (F-836): `for j := range f.farben` lief
+  nach dem Entfernen mit der alten Länge weiter (Index hinter dem Ende). Nach einer Änderung verfallen weitere Klicks
+  desselben Bilds.
+- **Fehlerwerte eines geborgten Helfers tragen dessen Text** (F-837): `leseStileRoh` lieferte `ErrStileKeineDatei`, und
+  `fehlerGrund` meldete „the styles file …“ für `colors.ini`. Ursache als Text anhängen, nicht mit `errors.Join`.
+- **`testEditor` umgeht `neuerEditor`:** Was nur dort geschieht (`stileLaden`, `farbfelderLaden`), haben Tests nicht.
+  Zustand, den das Zeichnen braucht, bekommt einen Ausweichwert am Ort des Lesens (`farbfeldLeiste.liste()`) und eine
+  Naht für die Datei (`ladeFarben`/`aendereFarben`), statt im Test `neuerEditor` nachzubauen.
+- **Ein neuer Schreiber im Paket `settings` braucht seine Ausnahme im Graph-Test** `TestMCPErreichtDenSchreiberNicht`
+  (jeder Aufruf `settings.Schreibe…`/`Aendere…` außerhalb von `einstellungen.go` fällt sonst durch); die Ausnahme dort
+  begründen (nur Farben, keine Einwilligung eines Agenten).
+- **Vor einem neuen Begriff `git grep -i` über Code, ADRs und de.po:** „Farbfeld“ hieß in ADR-0021 Nachtrag 23 das Feld
+  des Farbpaars, in Nachtrag 24 die eigene Palette. Glossar-Eintrag im selben Commit.
+- **Oberflächentexte englisch amerikanisch** („color“, wie die übrigen msgids); die Nutzer-Doku darf britisch bleiben.
+  Deutsch einheitlich „ungesichert“ und „ignoriert“ wie in den vorhandenen Einträgen.
+- **Eine Leiste, die wächst, hat Nachbarn mit Schwellen:** Die Farbfelder verlängern den Farbabschnitt; die Schwelle für
+  das Einklappen der Ebenen (`farbwaehlerHoehe`) muss mitwachsen, und Drehbücher mit Leistenkoordinaten gehören neu
+  gefahren.
+- **Testvorrichtungen müssen neue Pflichtangaben mitliefern:** Seit `Geoeffnet.Stand` merkt der Editor ohne Stand nichts;
+  die Leisten-Tests bekamen `mitStand`, sonst wären die Verlaufs-Tests still grün geworden, ohne etwas zu prüfen.
+

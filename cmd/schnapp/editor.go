@@ -66,15 +66,19 @@ func oeffneImEditor(pfad string, ohneGrenze bool, kante document.Kante) error {
 func geoeffnetFuer(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand, r *rettung, ohneGrenze, aussen bool) ui.Geoeffnet {
 	var aktuell atomic.Pointer[string] // das Speichern läuft in einer Goroutine (ADR-0020 Nachtrag 6)
 	aktuell.Store(&abs)
+	var aktStand atomic.Pointer[library.Stand] // Stand der Datei nach Laden bzw. letztem eigenen Schreiben (F-834)
+	aktStand.Store(&stand)
 	rett := r.nachSpeichern()
-	nachher := func(p string) {
+	nachher := func(p string, st library.Stand) {
 		aktuell.Store(&p)
+		aktStand.Store(&st)
 		if rett != nil {
 			rett(p)
 		}
 	}
 	return ui.Geoeffnet{Titel: filepath.Base(abs), Dokument: g.Dokument, Speichern: speichernMitNachher(b, abs, g, stand, nachher),
-		Rettung: r.ui(), Pfad: func() string { return *aktuell.Load() }, OhneGrenze: ohneGrenze, Aussen: aussen}
+		Rettung: r.ui(), Pfad: func() string { return *aktuell.Load() }, OhneGrenze: ohneGrenze, Aussen: aussen,
+		Stand: func() library.Stand { return *aktStand.Load() }}
 }
 
 // anbindungFuer verbindet den Editor mit der Bibliothek b (ADR-0036): Die Leiste liest Index und Vorschauen, ein Klick
@@ -217,7 +221,7 @@ func speichernIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand
 
 // speichernMitNachher ist speichernIn; nachher bekommt nach jedem gelungenen Speichern den absoluten Pfad der Datei,
 // die jetzt den Stand trägt (Ausgangsdatei der Rettungskopie, ADR-0029). nil: niemand.
-func speichernMitNachher(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand, nachher func(string)) ui.Speichern {
+func speichernMitNachher(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand, nachher func(string, library.Stand)) ui.Speichern {
 	speichern := ablegenIn(b, abs, g, stand, nachher, false)
 	return func(d *document.Dokument) (ui.Gespeichert, error) {
 		erg, err := speichern(d)
@@ -244,7 +248,7 @@ var entfernen = (*library.Bibliothek).Entfernen
 // ablegenIn ist speichernIn ohne die Prüfung des Budgets. agent: jede neue Aufnahme, die dabei entsteht, kommt unter
 // den Agenten-Ordner der Ablage (MCP-Werkzeug annotate, F-699): eine fremde Datei, die ein Agent beschriftet, steht
 // dann als Agenten-Aufnahme in der Bibliothek, nicht zwischen den eigenen Aufnahmen des Menschen.
-func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand, nachher func(string), agent bool) ui.Speichern {
+func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand, nachher func(string, library.Stand), agent bool) ui.Speichern {
 	rel, inBibliothek := b.Relativ(abs)
 	inBibliothek = inBibliothek && !g.Fremd
 	meta := g.Meta
@@ -433,7 +437,8 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 		erg, reste = rueckblick(b, d, reste, rel, erg)
 		reste = append(reste, neue...)
 		if nachher != nil {
-			nachher(filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))) // Datei, die jetzt den Stand trägt (ADR-0029)
+			// Datei, die jetzt den Stand trägt (ADR-0029), und ihr Stand nach diesem Schreiben (F-834).
+			nachher(filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel)), stand)
 		}
 		return erg, nil
 	}

@@ -35,7 +35,7 @@ const (
 //     merkeEinstellung (schreibt einen Schlüssel mit dem Schreiber der Tafel, nur library.bar, F-658) nennen genau
 //     einstellungen.go und leiste_unten.go, nie die Datei von Bestaetige.
 //  5. Über alle Pakete des Moduls (F-630): Ein Selektor auf das Paket …/internal/settings, dessen Name mit „Schreibe“
-//     beginnt, steht nur in internal/ui/einstellungen.go, (nur SchreibeStile) internal/ui/schnellstile.go und (nur
+//     oder „Aendere“ beginnt, steht nur in internal/ui/einstellungen.go, (nur SchreibeStile) internal/ui/schnellstile.go und (nur
 //     AendereFarben) internal/ui/farbfelder.go; einen
 //     Punkt-Import des Pakets gibt es nicht.
 //

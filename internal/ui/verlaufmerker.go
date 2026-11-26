@@ -68,6 +68,17 @@ func (m *verlaufMerker) nimm(pfad string) (gemerkteSitzung, bool) {
 	return gemerkteSitzung{}, false
 }
 
+// hole liefert den Eintrag für pfad, ohne ihn zu entfernen (F-838).
+func (m *verlaufMerker) hole(pfad string) (gemerkteSitzung, bool) {
+	pfad = filepath.Clean(pfad)
+	for _, e := range m.liste {
+		if e.pfad == pfad {
+			return e, true
+		}
+	}
+	return gemerkteSitzung{}, false
+}
+
 // vergiss entfernt den Eintrag für pfad, falls es einen gibt.
 func (m *verlaufMerker) vergiss(pfad string) {
 	m.nimm(pfad)
@@ -75,7 +86,8 @@ func (m *verlaufMerker) vergiss(pfad string) {
 
 // merkeVerlassene merkt die offene Aufnahme, bevor uebernimm sie ersetzt — nur wenn es sich lohnt und sicher ist
 // (Punkt 3): Fortsetzen vorhanden, Pfad bekannt, keine Datei von außen, gespeichert, keine Schwärzung im Verlauf, und
-// es gibt einen Verlauf. Der Stand ist der der Datei jetzt, direkt nach dem Speichern vor dem Wechsel.
+// es gibt einen Verlauf. Der Stand ist der, den die eigene Speicherfunktion kennt; trägt die Datei einen anderen, wird
+// nicht gemerkt (F-834).
 func (e *editor) merkeVerlassene() {
 	if e.bib == nil || e.bib.Fortsetzen == nil || e.pfad == nil || e.aussen || e.s.Geaendert() || e.s.Zieht() {
 		return
@@ -85,12 +97,16 @@ func (e *editor) merkeVerlassene() {
 		return
 	}
 	p := e.pfad()
-	if p == "" {
+	if p == "" || e.stand == nil {
 		return
 	}
-	stand, err := library.StandVon(p)
-	if err != nil {
+	// Der Stand der eigenen Speicherfunktion, nicht der der Platte (F-834): Hat ein anderes Fenster oder `--annotate` die
+	// Datei seit dem letzten eigenen Schreiben geändert (etwa geschwärzt), trägt sie einen fremden Stand, und das
+	// Dokument hier ist veraltet. Dann nicht merken, der Rückwechsel liest die Datei neu.
+	eigen := e.stand()
+	platte, err := library.StandVon(p)
+	if err != nil || platte != eigen {
 		return
 	}
-	e.verlaeufe.merke(gemerkteSitzung{pfad: p, d: d, stand: stand, bedarf: d.Speicherbedarf()})
+	e.verlaeufe.merke(gemerkteSitzung{pfad: p, d: d, stand: eigen, bedarf: d.Speicherbedarf()})
 }

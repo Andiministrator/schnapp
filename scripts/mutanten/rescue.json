@@ -353,8 +353,8 @@
     "name": "C4 Speichern ruft nachher nicht",
     "datei": "cmd/schnapp/editor.go",
     "paket": "./cmd/schnapp",
-    "alt": "\t\tif nachher != nil {\n\t\t\tnachher(",
-    "neu": "\t\tif false {\n\t\t\tnachher("
+    "alt": "\t\tif nachher != nil {\n\t\t\t// Datei",
+    "neu": "\t\tif false {\n\t\t\t// Datei"
   },
   {
     "name": "C5 oeffneImEditor reicht ignore-limit nicht durch",

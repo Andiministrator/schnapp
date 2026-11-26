@@ -144,3 +144,41 @@ func TestAnbindungHatFortsetzen(t *testing.T) {
 		t.Error("Anbindung ohne Fortsetzen: der Verlauf ginge beim Wechsel verloren")
 	}
 }
+
+// F-834: Geoeffnet.Stand ist der Stand der eigenen Speicherfunktion — nach dem eigenen Schreiben gleich dem der Platte,
+// nach dem Schreiben eines anderen Fensters (hier: eine zweite Ladung, die schwärzt und speichert) nicht mehr. So merkt
+// der Editor ein veraltetes Dokument nicht (merkeVerlassene vergleicht beide).
+func TestGeoeffnetStandFolgtNurEigenemSchreiben(t *testing.T) {
+	b, abs := fortsetzenUmgebung(t)
+	geo, err := oeffnerFuer(b, document.KanteAbriss)(abs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if geo.Stand == nil {
+		t.Fatal("Geoeffnet ohne Stand")
+	}
+	if _, err := geo.Dokument.Hinzufuegen(fortsetzenKasten(2)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := geo.Speichern(geo.Dokument); err != nil {
+		t.Fatal(err)
+	}
+	geo.Rettung.Ende()
+	if platte, _ := library.StandVon(abs); geo.Stand() != platte {
+		t.Fatal("nach dem eigenen Speichern weicht der Stand von der Platte ab")
+	}
+	zweit, err := oeffnerFuer(b, document.KanteAbriss)(abs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := zweit.Dokument.Schwaerzen(image.Rect(0, 0, 8, 8), document.Schwaerzung{Farbe: color.NRGBA{A: 255}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := zweit.Speichern(zweit.Dokument); err != nil {
+		t.Fatal(err)
+	}
+	zweit.Rettung.Ende()
+	if platte, _ := library.StandVon(abs); geo.Stand() == platte {
+		t.Error("nach fremdem Schreiben gleicht der eigene Stand der Platte: ein veraltetes Dokument würde gemerkt")
+	}
+}

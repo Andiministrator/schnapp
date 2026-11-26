@@ -90,4 +90,9 @@ func TestFarbwaehlerHoehe(t *testing.T) {
 	if h != farbwaehlerHoeheDp {
 		t.Errorf("Farbwähler %d dp hoch, farbwaehlerHoeheDp = %d", h, farbwaehlerHoeheDp)
 	}
+	// Die Farbfelder darunter (ADR-0021 Nachtrag 24 Punkt 7): bis zur Unterkante von „+“.
+	breite := se.fw.pipRahmen.Max.X - se.paarRahmen[paarVorn].Min.X // die Pipette steht am rechten Rand
+	if ff := se.ff.plusRahmen.Max.Y - h - se.paarRahmen[paarVorn].Min.Y; ff != l.e.farbfelderHoehe(l.gtx(), breite) {
+		t.Errorf("Farbfelder %d dp hoch, farbfelderHoehe = %d", ff, l.e.farbfelderHoehe(l.gtx(), breite))
+	}
 }

@@ -502,6 +502,9 @@ func (e *editor) papierkorbAnfrage(rel string, offen bool, nachbarn []string) {
 		return
 	}
 	e.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)
+	// Ein gemerkter Verlauf dieser Aufnahme hielte sonst bis zu 512 MiB für eine Datei im Papierkorb (F-838); scheitert
+	// das Verschieben, ist nur der Verlauf weg, die Aufnahme bleibt.
+	e.verlaeufe.vergiss(filepath.Join(e.bib.Bibliothek.Orte.Ablage, filepath.FromSlash(rel)))
 	e.bibArbeiten(bibArbeit{papierkorb: true, rel: rel}, func() error {
 		_, err := e.bib.Bibliothek.InPapierkorb(rel, leisteUhr())
 		return err

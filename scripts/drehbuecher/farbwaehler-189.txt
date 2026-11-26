@@ -6,7 +6,7 @@
 # mit Karte #351, die Maße davor galten schon seit #315 nicht mehr).
 # Erwartet: 01 roter Pfeil; 02 Pfeil blau (Farbton); 03 dunkleres, matteres Blau (Fläche); 04 halb durchsichtig
 # (Deckkraft um 50 %, Felder darunter zeigen Schachbrett); 05 orange nach Hex „ff8800“ (Deckkraft bleibt), die gezogenen
-# Farben stehen als zuletzt benutzte im Raster; 06 Pipette aus dem grünen Streifen: Pfeil grün und deckend;
+# Farben stehen als zuletzt benutzte im Raster (seit Karte #364 nur sie, die eigenen Farbfelder stehen unter Hex); 06 Pipette aus dem grünen Streifen: Pfeil grün und deckend;
 # 07 nach Strg+Z wieder orange.
 warte 800
 taste A

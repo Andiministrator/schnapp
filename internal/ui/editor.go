@@ -44,6 +44,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/fileformat"
 	"github.com/Andiministrator/schnapp/internal/fonts"
 	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
 	"github.com/Andiministrator/schnapp/internal/portal"
 	"github.com/Andiministrator/schnapp/internal/render"
 	"github.com/Andiministrator/schnapp/internal/saveprogress"
@@ -143,7 +144,7 @@ func Editor(titel string, d *document.Dokument, speichern Speichern, rettung Ret
 // (ADR-0016 Nachtrag 11; eigene Funktion, damit Tests die Verdrahtung ohne Fenster prüfen, F-832).
 func editorFuer(g Geoeffnet, bib *Anbindung) *editor {
 	e := neuerEditor(g.Titel, g.Dokument, g.Speichern, g.Rettung)
-	e.pfad, e.bib = g.Pfad, bib
+	e.pfad, e.stand, e.bib = g.Pfad, g.Stand, bib
 	e.aussenSetzen(g.Aussen)
 	return e
 }
@@ -314,6 +315,7 @@ type editor struct {
 	// (leiste_unten.go), wechsel ein laufender Wechsel der Aufnahme (wechsel.go).
 	bib     *Anbindung
 	pfad    func() string
+	stand   func() library.Stand // Dateistand der eigenen Speicherfunktion (Geoeffnet.Stand, F-834)
 	unten   untenLeiste
 	wechsel wechselZustand
 	// bibl ist die volle Ansicht der Bibliothek (bibliothek.go, ADR-0036 Punkte 3 und 4).

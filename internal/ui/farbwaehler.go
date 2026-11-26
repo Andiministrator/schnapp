@@ -3,7 +3,7 @@
 package ui
 
 // Farbwähler im Abschnitt „Farbe“ der rechten Leiste (ADR-0031 Nachtrag 5, Bedeutung ADR-0021 Nachtrag 9): Farbfläche,
-// Felder (Beschriftungsfarben, zuletzt benutzte; die Pipette steht in der Zeile des Farbpaars), Farbton- und
+// Raster der zuletzt benutzten Farben (darunter die eigenen Farbfelder, farbfelder.go, ADR-0021 Nachtrag 24; die Pipette steht in der Zeile des Farbpaars), Farbton- und
 // Deckkraft-Regler, Eingaben für Hex und Deckkraft. Was eine Lage oder Eingabe bewirkt, entscheidet canvas.Sitzung; hier stehen Lage, Bilder und Ereignisse.
 
 import (
@@ -605,7 +605,7 @@ func (e *editor) zeichneFarbwaehler(gtx layout.Context, x, y, breite, spalte int
 	e.seiteText(gtx, i18n.T("Opacity"), 13, farbeNebentext, image.Pt(dl, y+gtx.Dp(5)), x+breite-gtx.Dp(58)-dl, 1)
 	fw.deckkraft.rahmen = image.Rect(x+breite-gtx.Dp(54), y, x+breite, y+fh)
 	e.zeichneEingabe(gtx, &fw.deckkraft)
-	return e.zeichneFarbfelder(gtx, x, y+fh+gtx.Dp(8), breite)
+	return e.zeichneFarbfelder(gtx, x, y+fh+gtx.Dp(farbfelderAbstandDp), breite)
 }
 
 // zeichneFarbpaarZeile zeichnet über dem Farbwähler die Zeile des Farbpaars (ADR-0021 Nachtrag 11, vereinfacht in
