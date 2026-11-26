@@ -144,7 +144,7 @@ Root element `svg`:
 
 | Attribute | Value | Required |
 |---|---|---|
-| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7, the attribute `s:spitze` of the text, 8.3, the attributes `s:ende`/`s:anfang` of the arrow, 8.1, and the attribute `s:strichart` of arrow, box and magnifier, 8.8; writers use the lowest version that carries the content, section 12) | MUST |
+| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7, the attribute `s:spitze` of the text, 8.3, the attributes `s:ende`/`s:anfang` of the arrow, 8.1, the attribute `s:strichart` of arrow, box and magnifier, 8.8, and the layer attribute `s:schatten`, 8.5; writers use the lowest version that carries the content, section 12) | MUST |
 | `width`, `height` | size of the original in pixels, plain decimal integers without unit | MUST |
 | `viewBox` | `0 0 <width> <height>` | writer MUST, reader ignores |
 | `xmlns`, `xmlns:s` | the namespaces above | writer MUST |
@@ -392,6 +392,7 @@ appear on the element of any object type:
 | `s:ausgeblendet` | `true`: the layer is hidden. Any other value or missing: visible |
 | `s:gesperrt` | `true`: the layer is locked against changes with the pointer. Any other value or missing: not locked |
 | `s:deckkraft` | Layer opacity in percent, integer `0` to `100` (syntax of 5.2). Missing or invalid: `100` |
+| `s:schatten` | Drop shadow, format version 2 only: `ANGLE DISTANCE SOFTNESS COLOUR`, three numbers and a colour (5.2) separated by single spaces. Missing, invalid or in a version-1 file: no shadow (see below) |
 
 Writers emit them only when they differ from the default. They were added without changing the format version
 (like the text attributes of 8.3): a reader that does not know them ignores them (section 11, rule 3) and shows every
@@ -405,6 +406,18 @@ compounded), in addition to the alpha of its colours.
 Informative: for viewers of the `snAP` document the reference writer adds `display="none"` to a hidden object and
 `opacity` (the percentage as a fraction) to a translucent one; the SVG export omits hidden objects and objects
 with opacity 0, and writes `opacity`. Example: `testdata/format/layers`.
+
+**Drop shadow (`s:schatten`).** `ANGLE` is the direction the light comes from, in degrees, 0 from the right and
+counter-clockwise (readers reduce it to `0 <= angle < 360`); the shadow is the object's coverage moved by `DISTANCE`
+away from the light, that is by `(−cos(angle)·d, +sin(angle)·d)` with y pointing down, blurred with a Gaussian of
+standard deviation `SOFTNESS / 2` and filled with `COLOUR` (alpha included); it lies under the object, and the layer
+opacity applies to object and shadow together. `0 <= DISTANCE <= 1000`, `0 <= SOFTNESS <= 200`, both in original pixels;
+a value outside these, or a value that does not parse, means no shadow and does not make the file damaged. The attribute
+belongs to format version 2: a writer emits `s:format="2"` if any object has it (section 12), and in a version-1 file it
+is ignored. Informative: the reference renderer moves the coverage by whole pixels of the view and approximates the
+Gaussian with three box filters; the SVG export and the presentation in a working file use a `filter` element
+(`feGaussianBlur`, `feOffset`, `feFlood`, `feComposite`, `feMerge`) referenced from the object. Example:
+`testdata/format/shadow`.
 
 ### 8.6 Unknown object types
 
@@ -579,7 +592,7 @@ Original width and height are at least 1.
    than patch single chunks.
 7. Write the lowest format version that carries the content: `s:format="2"` if and only if the document contains a
    `lupe` (8.7), a text with `s:spitze` (8.3), an arrow with `s:ende` or `s:anfang` (8.1) or an object with
-   `s:strichart` (8.8), otherwise `1`. A reader that knows only version 1 then still reads
+   `s:strichart` (8.8) or `s:schatten` (8.5), otherwise `1`. A reader that knows only version 1 then still reads
    every file without them, and reports a file with one as newer instead of damaged.
 
 ## 13. What is not stored
@@ -611,6 +624,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `layers` | three objects with layer attributes: a named, half-opaque box, a hidden and locked arrow, a step number without them |
 | `arrow-heads` | format version 2: four arrows: `open` head at `B`, `dot` at `A` only on a curve, `diamond` at `A` and `notched` at `B`, and a curved line without heads |
 | `line-styles` | format version 2: a `dashed` arrow with the default head, a curved `dotted` line, a `dotted` square box and a `dashed` box with rounded corners |
+| `shadow` | format version 2: a filled box with the default shadow (down and to the right, soft, black at 40 %) and an arrow with a sharp blue shadow from the left |
 | `callout` | format version 2: two texts with `s:spitze`, one with a label (filled polygon) and one without (legs as a line) |
 | `magnifier` | format version 2: one magnifier with a non-integer source over a column strip (the strip drops out of the magnified view, 8.7); the visible image shows no annotations, as in all examples |
 

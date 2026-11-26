@@ -19,6 +19,7 @@ type Farbfeld int
 const (
 	FeldVordergrund Farbfeld = iota // Linie, Schrift, Kreis der Nummer
 	FeldFuellung                    // Fläche des Kastens, Schild des Texts; Deckkraft 0 ist „keine“
+	FeldSchatten                    // Schatten der Ebene (ADR-0021 Nachtrag 26 Punkt 7), nur wenn er an ist
 )
 
 type farbpaar struct{ vorn, fuellung color.NRGBA }
@@ -57,6 +58,9 @@ func hatFuellung(o document.Objekt) bool {
 
 // objektFarbe ist die Farbe des Felds f an o (false: o hat dieses Feld nicht).
 func objektFarbe(o document.Objekt, f Farbfeld) (color.NRGBA, bool) {
+	if f == FeldSchatten {
+		return o.Ebenenwerte().Schatten.Farbe, true
+	}
 	switch v := o.(type) {
 	case document.Pfeil:
 		if f == FeldVordergrund {
@@ -86,6 +90,11 @@ func objektFarbe(o document.Objekt, f Farbfeld) (color.NRGBA, bool) {
 
 // UmgefaerbtIn liefert o mit der Farbe c im Feld f; hat o dieses Feld nicht, bleibt o, wie es ist.
 func UmgefaerbtIn(o document.Objekt, f Farbfeld, c color.NRGBA) document.Objekt {
+	if f == FeldSchatten {
+		sch := o.Ebenenwerte().Schatten
+		sch.Farbe = c
+		return mitSchatten(o, sch)
+	}
 	switch v := o.(type) {
 	case document.Pfeil:
 		if f == FeldVordergrund {
@@ -172,6 +181,10 @@ func (s *Sitzung) wechslePaar(w Werkzeug) {
 
 // merkePaarFarbe setzt die Farbe c im Feld f des Paars von w (ohne Füllung beim Pfeil und der Nummer).
 func (s *Sitzung) merkePaarFarbe(w Werkzeug, f Farbfeld, c color.NRGBA) {
+	if f == FeldSchatten { // ein Schatten für alle Werkzeuge
+		s.Stil.Schatten.Farbe = c
+		return
+	}
 	w = paarSchluessel(w)
 	if f == FeldFuellung && !fuellWerkzeug(w) {
 		return
@@ -239,13 +252,16 @@ func (s *Sitzung) AktivesFeld() Farbfeld {
 	if s.feld == FeldFuellung && s.Fuellbar() {
 		return FeldFuellung
 	}
+	if s.feld == FeldSchatten && s.Schatten().An {
+		return FeldSchatten
+	}
 	return FeldVordergrund
 }
 
 // SetzeFeld macht f zum aktiven Feld (Klick auf eines der beiden Felder). Die Füllung geht nur, wenn es eine gibt;
 // während eines Farbzugs bleibt das Feld. Liefert, ob f jetzt aktiv ist.
 func (s *Sitzung) SetzeFeld(f Farbfeld) bool {
-	if s.farbZug || (f == FeldFuellung && !s.Fuellbar()) {
+	if s.farbZug || (f == FeldFuellung && !s.Fuellbar()) || (f == FeldSchatten && !s.Schatten().An) {
 		return false
 	}
 	if s.feld != f {
@@ -261,8 +277,11 @@ func (s *Sitzung) Farbe(f Farbfeld) color.NRGBA {
 			return c
 		}
 	}
-	if f == FeldFuellung {
+	switch f {
+	case FeldFuellung:
 		return s.Stil.Fuellung
+	case FeldSchatten:
+		return s.Stil.Schatten.Farbe
 	}
 	return s.Stil.Farbe
 }

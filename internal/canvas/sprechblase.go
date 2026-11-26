@@ -65,7 +65,7 @@ func (s *Sitzung) beendeBlase() {
 		s.Stil.aufText(&t)
 		sp := s.StandardSpitze(t)
 		t.Spitze = &sp
-		id, err := s.D.BeginneNeuenZug(t)
+		id, err := s.D.BeginneNeuenZug(s.mitStilSchatten(t))
 		if err != nil {
 			return
 		}

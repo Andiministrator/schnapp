@@ -1,0 +1,177 @@
+[
+  {
+    "name": "SH1 Versatz zum Licht hin",
+    "datei": "internal/document/ebene.go",
+    "paket": "./internal/document",
+    "alt": "return Pt(-math.Cos(w)*s.Laenge, math.Sin(w)*s.Laenge)",
+    "neu": "return Pt(math.Cos(w)*s.Laenge, -math.Sin(w)*s.Laenge)"
+  },
+  {
+    "name": "SH2 Winkel nicht normiert",
+    "datei": "internal/document/ebene.go",
+    "paket": "./internal/document",
+    "alt": "\tw = math.Mod(w, 360)\n\tif w < 0 {\n\t\tw += 360\n\t}",
+    "neu": "\tw = math.Mod(w, 360)"
+  },
+  {
+    "name": "SH3 Länge ungeprüft",
+    "datei": "internal/document/ebene.go",
+    "paket": "./internal/document",
+    "alt": "s.Laenge < 0 || s.Laenge > MaxSchattenLaenge ||",
+    "neu": ""
+  },
+  {
+    "name": "SH4 Voreinstellung ohne Faktor",
+    "datei": "internal/document/ebene.go",
+    "paket": "./internal/document",
+    "alt": "Laenge: 6 * f, Weich: 8 * f,",
+    "neu": "Laenge: 6, Weich: 8,"
+  },
+  {
+    "name": "SH5 Schatten auch ganz durchsichtig",
+    "datei": "internal/document/ebene.go",
+    "paket": "./internal/document",
+    "alt": "func (s Schatten) Sichtbar() bool { return s.An && s.Farbe.A > 0 }",
+    "neu": "func (s Schatten) Sichtbar() bool { return s.An }"
+  },
+  {
+    "name": "SH6 Renderer ohne Schatten",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\tif schatten { // Schatten und Objekt zusammen im Zwischenbild",
+    "neu": "\tif false { // Schatten und Objekt zusammen im Zwischenbild"
+  },
+  {
+    "name": "SH7 Objekt nicht über dem Schatten",
+    "datei": "internal/render/schatten.go",
+    "paket": "./internal/render",
+    "alt": "\tif mitObjekt {\n\t\tdraw.Draw(out, obj.Rect, obj, obj.Rect.Min, draw.Over)",
+    "neu": "\tif false {\n\t\tdraw.Draw(out, obj.Rect, obj, obj.Rect.Min, draw.Over)"
+  },
+  {
+    "name": "SH8 nicht weichgezeichnet",
+    "datei": "internal/render/schatten.go",
+    "paket": "./internal/render",
+    "alt": "\tweichzeichnen(maske, w, h, s.Weich/2)",
+    "neu": ""
+  },
+  {
+    "name": "SH9 Deckung der Farbe ignoriert",
+    "datei": "internal/render/schatten.go",
+    "paket": "./internal/render",
+    "alt": "\ta := float32(s.Farbe.A)",
+    "neu": "\ta := float32(255)"
+  },
+  {
+    "name": "SH10 Kastenfilter ohne Subtraktion",
+    "datei": "internal/render/schatten.go",
+    "paket": "./internal/render",
+    "alt": "\t\tif j := i - r; j >= 0 {\n\t\t\tsumme -= puffer[j]\n\t\t}",
+    "neu": ""
+  },
+  {
+    "name": "SH11 Schatten kostet nichts",
+    "datei": "internal/render/schatten.go",
+    "paket": "./internal/render",
+    "alt": "z.auf.flaeche += fuellGewicht * schattenGewicht * float64(ziel.Dx()) * float64(ziel.Dy())",
+    "neu": "_ = ziel"
+  },
+  {
+    "name": "SH12 Schatten ohne Versatz",
+    "datei": "internal/render/schatten.go",
+    "paket": "./internal/render",
+    "alt": "\treturn image.Pt(int(math.Round(v.X)), int(math.Round(v.Y)))",
+    "neu": "\t_ = v\n\treturn image.Pt(0, 0)"
+  },
+  {
+    "name": "SH13 Version nicht gehoben",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\tif o.Ebenenwerte().Schatten.An {\n\t\t\treturn versionSchatten\n\t\t}",
+    "neu": ""
+  },
+  {
+    "name": "SH14 Version 1 liest Schatten",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "da && version >= versionSchatten {",
+    "neu": "da {"
+  },
+  {
+    "name": "SH15 Objekt ohne filter-Attribut",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\ts.attr(\"filter\", \"url(#\"+s.schattenID+\")\")\n",
+    "neu": ""
+  },
+  {
+    "name": "SH16 Filter versetzt zum Licht",
+    "datei": "internal/fileformat/schatten.go",
+    "paket": "./internal/fileformat",
+    "alt": "`<feOffset dx=\"` + zahl(v.X) + `\" dy=\"` + zahl(v.Y)",
+    "neu": "`<feOffset dx=\"` + zahl(-v.X) + `\" dy=\"` + zahl(-v.Y)"
+  },
+  {
+    "name": "SH17 ungültige Länge angenommen",
+    "datei": "internal/fileformat/schatten.go",
+    "paket": "./internal/fileformat",
+    "alt": "s.Laenge >= 0 && s.Laenge <= document.MaxSchattenLaenge &&",
+    "neu": ""
+  },
+  {
+    "name": "SH18 neues Objekt ohne Schatten des Werkzeugs",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\to = s.mitStilSchatten(o) // ADR-0021 Nachtrag 26\n",
+    "neu": ""
+  },
+  {
+    "name": "SH19 Feld Schatten färbt den Vordergrund",
+    "datei": "internal/canvas/farbpaar.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif f == FeldSchatten {\n\t\tsch := o.Ebenenwerte().Schatten\n\t\tsch.Farbe = c\n\t\treturn mitSchatten(o, sch)\n\t}",
+    "neu": ""
+  },
+  {
+    "name": "SH20 Feld Schatten auch ohne Schatten",
+    "datei": "internal/canvas/farbpaar.go",
+    "paket": "./internal/canvas",
+    "alt": " || (f == FeldSchatten && !s.Schatten().An)",
+    "neu": ""
+  },
+  {
+    "name": "SH21 Ausschalten lässt das Feld",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif s.feld == FeldSchatten {\n\t\t\ts.feld, s.hsvGemerkt = FeldVordergrund, false\n\t\t}",
+    "neu": ""
+  },
+  {
+    "name": "SH22 Schatten nicht begrenzt",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "\tsch.Laenge = max(0, min(document.MaxSchattenLaenge, sch.Laenge))",
+    "neu": ""
+  },
+  {
+    "name": "SH23 Zug ohne Objekt",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\t_ = s.D.ZugSetze(mitSchatten(o, sch))",
+    "neu": "\t\t\t_ = o"
+  },
+  {
+    "name": "SH24 Editor ohne Schatten",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.zeichneSchatten(gtx, o)\n",
+    "neu": ""
+  },
+  {
+    "name": "SH25 annotate ohne Schatten",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\t\to = document.MitEbene(o, document.Ebene{Schatten: sch})",
+    "neu": "\t\t\t_ = sch"
+  }
+]

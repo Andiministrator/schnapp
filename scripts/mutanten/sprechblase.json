@@ -166,8 +166,8 @@
     "name": "S24 annotate erlaubt tip nicht",
     "datei": "internal/annotate/annotate.go",
     "paket": "./internal/annotate",
-    "alt": "\"align\", \"tip\"},",
-    "neu": "\"align\"},"
+    "alt": "\"align\", \"tip\", \"shadow\"},",
+    "neu": "\"align\", \"shadow\"},"
   },
   {
     "name": "S25 annotate prüft tip nicht im Bild",

@@ -192,8 +192,8 @@
     "name": "UB28 Farbe der Sprechblase landet nicht im Paar des Texts",
     "datei": "internal/canvas/farbpaar.go",
     "paket": "./internal/canvas",
-    "alt": "func (s *Sitzung) merkePaarFarbe(w Werkzeug, f Farbfeld, c color.NRGBA) {\n\tw = paarSchluessel(w)\n",
-    "neu": "func (s *Sitzung) merkePaarFarbe(w Werkzeug, f Farbfeld, c color.NRGBA) {\n"
+    "alt": "\t\treturn\n\t}\n\tw = paarSchluessel(w)\n",
+    "neu": "\t\treturn\n\t}\n"
   },
   {
     "name": "UB29 Text mit Spitze zählt als Text",

@@ -166,6 +166,16 @@ func beispiele() []beispiel {
 					Strich: st(document.StrichGestrichelt)})
 			return d
 		}, Metadaten{}, false},
+		{"shadow", func(t *testing.T) *document.Dokument { // Schatten, Formatversion 2 (ADR-0021 Nachtrag 26)
+			d := beispielDok(t, 64, 48)
+			k := document.Kasten{Bereich: document.R(document.Pt(6, 6), document.Pt(34, 30)), Fuellung: color.NRGBA{255, 255, 255, 255},
+				Strich: document.Strich{Farbe: color.NRGBA{220, 30, 30, 255}, Breite: 2}}
+			k.Ebene.Schatten = document.StandardSchatten(1)
+			p := document.GeraderPfeil(document.Pt(10, 40), document.Pt(56, 38), document.Strich{Farbe: color.NRGBA{220, 30, 30, 255}, Breite: 2})
+			p.Ebene.Schatten = document.Schatten{An: true, Winkel: 180, Laenge: 3, Farbe: color.NRGBA{30, 60, 220, 255}}
+			fuege(t, d, k, p)
+			return d
+		}, Metadaten{}, false},
 		{"callout", func(t *testing.T) *document.Dokument { // Sprechblase mit und ohne Füllung, Formatversion 2 (ADR-0021 Nachtrag 13)
 			d := beispielDok(t, 64, 48)
 			fuege(t, d, document.Text{Ort: document.Pt(4, 4), Inhalt: "Look", Schriftgrad: 9, Farbe: color.NRGBA{0, 0, 0, 255},
@@ -742,7 +752,7 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 		"kante",
 		"streifen", "zeilen", "von", "bis", "ebene", "typ", "a", "b", "k", "strich", "bereich", "fuellung", "eckradius",
 		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "schrift", "stil", "ausrichtung", "spitze", "mitte", "wert", "radius",
-		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel", "ende", "anfang", "strichart"}
+		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel", "ende", "anfang", "strichart", "schatten"}
 	for _, w := range wortliste {
 		if !gesehen[w] {
 			t.Errorf("Beispiele enthalten s:%s nicht (Beispielabdeckung)", w)

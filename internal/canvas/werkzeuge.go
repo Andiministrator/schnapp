@@ -88,11 +88,15 @@ type Stil struct {
 	KopfAnfang document.Anfangskopf
 	// Strichart neuer Pfeile, Kästen und Lupen (ADR-0021 Nachtrag 25), wie die Breite ein Wert für alle drei.
 	Strichart document.Strichart
+	// Schatten neuer Objekte (ADR-0021 Nachtrag 26), ein Wert für alle Werkzeuge; aus, mit der Voreinstellung als Werten.
+	Schatten document.Schatten
 }
 
 // StandardStil ist die Voreinstellung (ADR-0021 Punkt 4, Strich seit Nachtrag 16).
 func StandardStil() Stil {
-	return Stil{Farbe: Beschriftungsfarben[0], Breite: 6, Eckradius: 0, Schriftgrad: 20, Radius: 14}
+	sch := document.StandardSchatten(1)
+	sch.An = false // aus, mit der Voreinstellung als Werten (ADR-0021 Nachtrag 26)
+	return Stil{Farbe: Beschriftungsfarben[0], Breite: 6, Eckradius: 0, Schriftgrad: 20, Radius: 14, Schatten: sch}
 }
 
 // StilFuer ist die Voreinstellung für ein Bild der Größe g (ADR-0021 Nachtrag 7): Strich, Schriftgrad und
@@ -109,6 +113,8 @@ func StilMitFaktor(faktor int) Stil {
 	st.Breite *= f
 	st.Schriftgrad *= f
 	st.Radius *= f
+	st.Schatten.Laenge *= f
+	st.Schatten.Weich *= f
 	return st
 }
 
@@ -310,6 +316,7 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 		s.zug, s.rahmen = zugNeu, false
 	case WerkzeugNummer:
 		n := document.Nummer{Mitte: q, Wert: s.D.NaechsteNummer(), Radius: s.Stil.Radius, Farbe: s.Stil.Farbe}
+		n = s.mitStilSchatten(n).(document.Nummer)
 		id, err := s.D.BeginneNeuenZug(n)
 		if err != nil {
 			return
@@ -319,7 +326,7 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 	case WerkzeugText:
 		t := document.Text{Ort: q, Schriftgrad: s.Stil.Schriftgrad, Farbe: s.Stil.Farbe, Hintergrund: s.Stil.Fuellung}
 		s.Stil.aufText(&t)
-		id, err := s.D.BeginneNeuenZug(t)
+		id, err := s.D.BeginneNeuenZug(s.mitStilSchatten(t))
 		if err != nil {
 			return
 		}
@@ -414,6 +421,7 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 	default:
 		return
 	}
+	o = s.mitStilSchatten(o) // ADR-0021 Nachtrag 26
 	if s.neuID == 0 {
 		id, err := s.D.BeginneNeuenZug(o)
 		if err == nil {

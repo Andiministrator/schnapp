@@ -71,6 +71,16 @@ type Eintrag struct {
 	StartHead     *string  `json:"start_head,omitempty"` // arrow: head at "from" (default none; ADR-0021 Nachtrag 20)
 	EndHead       *string  `json:"end_head,omitempty"`   // arrow: head at "to" (default triangle)
 	LineStyle     *string  `json:"line_style,omitempty"` // arrow, rect: solid, dashed, dotted (ADR-0021 Nachtrag 25)
+	// Shadow: true, false oder {"angle", "distance", "softness", "color"} (ADR-0021 Nachtrag 26 Punkt 9).
+	Shadow json.RawMessage `json:"shadow,omitempty"`
+}
+
+// schattenAngabe ist die ausführliche Form von "shadow".
+type schattenAngabe struct {
+	Angle    *float64 `json:"angle"`
+	Distance *float64 `json:"distance"`
+	Softness *float64 `json:"softness"`
+	Color    *string  `json:"color"`
 }
 
 // Punkt ist ein Punkt [x, y] im sichtbaren Bild; genau zwei Zahlen (encoding/json füllte ein kürzeres Array still mit
@@ -92,10 +102,10 @@ func (p *Punkt) UnmarshalJSON(b []byte) error {
 // erlaubt sind die Schlüssel je Typ; Pflicht die, ohne die ein Eintrag nicht geht.
 var (
 	erlaubt = map[string][]string{
-		"arrow":    {"from", "to", "color", "width", "start_head", "end_head", "line_style"},
-		"rect":     {"from", "to", "color", "fill", "width", "line_style"},
-		"text":     {"at", "text", "size", "color", "fill", "font", "bold", "italic", "underline", "strikethrough", "align", "tip"},
-		"step":     {"at", "color", "radius"},
+		"arrow":    {"from", "to", "color", "width", "start_head", "end_head", "line_style", "shadow"},
+		"rect":     {"from", "to", "color", "fill", "width", "line_style", "shadow"},
+		"text":     {"at", "text", "size", "color", "fill", "font", "bold", "italic", "underline", "strikethrough", "align", "tip", "shadow"},
+		"step":     {"at", "color", "radius", "shadow"},
 		"redact":   {"from", "to"},
 		"pixelate": {"from", "to"},
 	}
@@ -487,6 +497,13 @@ func Wende(ctx context.Context, d *document.Dokument, es []Eintrag) (Ergebnis, e
 			erg.Schwaerzungen++
 			continue
 		}
+		if e.Shadow != nil {
+			sch, err := leseSchatten(e.Shadow, float64(d.KantenFaktor()))
+			if err != nil {
+				return erg, f("%s", err.Error())
+			}
+			o = document.MitEbene(o, document.Ebene{Schatten: sch})
+		}
 		if _, err := d.Hinzufuegen(o); err != nil {
 			return erg, f("rejected by the document (values or limits out of range)")
 		}
@@ -508,6 +525,49 @@ func leseFarbe(s string) (color.NRGBA, bool) {
 }
 
 // kopfListe nennt die Namen der Spitzenarten für Fehlertexte: "triangle", "narrow", … or "none".
+// leseSchatten liest "shadow": true (Voreinstellung zum Faktor f), false (keiner) oder die ausführliche Form; fehlende
+// Angaben gelten wie die Voreinstellung.
+func leseSchatten(roh json.RawMessage, f float64) (document.Schatten, error) {
+	var an bool
+	if json.Unmarshal(roh, &an) == nil {
+		if !an {
+			return document.Schatten{}, nil
+		}
+		return document.StandardSchatten(f), nil
+	}
+	var a schattenAngabe
+	if err := streng(roh, &a); err != nil {
+		return document.Schatten{}, errors.New(`"shadow" must be true, false or an object with "angle", "distance", "softness", "color"`)
+	}
+	sch := document.StandardSchatten(f)
+	if a.Angle != nil {
+		if !endlich(*a.Angle) {
+			return sch, errors.New(`"shadow" "angle" must be a number`)
+		}
+		sch.Winkel = document.NormWinkel(*a.Angle)
+	}
+	if a.Distance != nil {
+		if !endlich(*a.Distance) || *a.Distance < 0 || *a.Distance > document.MaxSchattenLaenge {
+			return sch, fmt.Errorf(`"shadow" "distance" must be between 0 and %d`, document.MaxSchattenLaenge)
+		}
+		sch.Laenge = *a.Distance
+	}
+	if a.Softness != nil {
+		if !endlich(*a.Softness) || *a.Softness < 0 || *a.Softness > document.MaxSchattenWeich {
+			return sch, fmt.Errorf(`"shadow" "softness" must be between 0 and %d`, document.MaxSchattenWeich)
+		}
+		sch.Weich = *a.Softness
+	}
+	if a.Color != nil {
+		c, ok := leseFarbe(*a.Color)
+		if !ok {
+			return sch, errors.New(`"shadow" "color" must be #RRGGBB or #RRGGBBAA`)
+		}
+		sch.Farbe = c
+	}
+	return sch, nil
+}
+
 func kopfListe() string { return namenListe(document.KopfNamen()) }
 
 // namenListe ist die Liste der Namen n für Fehlertexte: "a", "b" or "c".

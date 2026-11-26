@@ -940,3 +940,58 @@ leer, gerade Enden), `internal/fileformat/strichart_test.go` (Lesen, Version, rs
 Verworfen: `stroke-dasharray` im SVG (siehe Punkt 5); Strich und Lücke in festen Pixeln (wirkt bei dicken Strichen
 gepunktet); runde Enden der Striche (die Lücke schrumpft sichtbar um eine Strichstärke); eine eigene Strichart
 „halbdurchsichtig“ (Punkt 1).
+
+## Nachtrag 26 (26.11.2026): Schatten je Objekt (Karte #363)
+
+**Status:** Akzeptiert (Andi, 26.11.2026: „sollten wir bei allen figuren eine schatten-option hinzufügen?“ und „bei den
+schatten sollten wir aber schon die richtung, stärke, farbe und länge angeben können, oder?“; Ausgestaltung Claude
+Opus 5.5, Andi: „arbeite selbstständig“).
+
+1. **Ein Ebeneneffekt, kein Objektfeld:** `document.Ebene.Schatten` (`Schatten`: `An`, `Winkel` in Grad, `Laenge` und
+   `Weich` in Pixeln des Originals, `Farbe` mit Deckkraft). Er steht damit an jedem Objekt — Pfeil, Kasten, Text,
+   Sprechblase, Nummer, Lupe — und geht mit Doppeln, Rückgängig, Abzug und Rettungskopie mit wie Name und Deckkraft
+   (ADR-0032). Nullwert: aus. Wie bei Photoshop und Krita ist der Schatten eine Eigenschaft der Ebene.
+2. **Bedeutung der Werte:** `Winkel` ist die Richtung, aus der das Licht kommt (0° von rechts, gegen den Uhrzeigersinn
+   wie in Photoshop); der Schatten liegt um `Laenge` in die Gegenrichtung versetzt, im Bild also um
+   `(−cos·L, +sin·L)`. Voreinstellung 135° = Schatten nach rechts unten. `Weich` ist der Radius der Unschärfe:
+   Gaußsche Unschärfe mit σ = Weich/2 (0 = scharf). Voreinstellung Länge 6, Weich 8, Farbe Schwarz mit 40 % Deckkraft,
+   Länge und Weich mal `KantenFaktor` wie die Strichstärke (`canvas.StilMitFaktor`). Grenzen: Länge 0 bis 1000, Weich 0
+   bis 200, der Winkel wird auf 0 bis 360 gebracht.
+3. **Renderer:** Ein Objekt mit Schatten entsteht wie bei der Gruppendeckkraft in einem Zwischenbild (`render.ebene`),
+   aus dessen Deckung die Schattenmaske wird: um ganze Pixel der Ansicht versetzt, mit drei Kastenfiltern je Richtung
+   weichgezeichnet (Näherung der Gauß-Unschärfe), in der Schattenfarbe; darüber das Objekt; das Ganze mit der Deckkraft
+   der Ebene eingemischt (Schatten und Objekt zusammen, wie bei Photoshop). Der Schatten entsteht aus dem sichtbaren
+   Objekt in der Ansicht, also nach Zuschnitt und Nähten; ein Objektteil außerhalb des Bilds wirft keinen Schatten
+   hinein (bewusste Grenze). Kosten: Zwischenbild plus Weichzeichnen über die Fläche des Schattens zählen im Trockenlauf
+   (`render.Pruefe`, `schattenGewicht`).
+4. **Editor:** Der Schatten kommt aus derselben Rechnung (`render.Schattenbild`, CPU), je Objekt zwischengespeichert,
+   solange Objekt und Ansicht gleich bleiben, und wird unter dem Objekt gezeichnet, innerhalb der Gruppendeckkraft der
+   Ebene. Die Vorschau der Ebenenliste zeigt keinen Schatten.
+5. **SVG:** je Objekt mit Schatten ein `<filter>` (`feGaussianBlur` auf `SourceAlpha`, `feOffset`, `feFlood`,
+   `feComposite`, `feMerge`, `filterUnits="userSpaceOnUse"` mit Platz für Versatz und Unschärfe) direkt vor dem Objekt
+   und `filter="url(#…)"` am Objekt. Über einer Naht schneidet jede Kachel Objekt und Schatten für sich ab (bewusste
+   Grenze, wie die Kacheln selbst).
+6. **Format:** Ebenen-Attribut `s:schatten="WINKEL LÄNGE WEICH #RRGGBBAA"` (§8.5), fehlt ohne Schatten; mit Schatten
+   **FormatVersion 2** (`versionSchatten`), in Version 1 ignoriert; ein unlesbarer Wert ist kein Schatten.
+7. **Bedienung:** Abschnitt „Shadow“ der rechten Leiste bei jedem Werkzeug und Objekt mit Farbe: Schalter an/aus, darunter
+   bei an „Direction“ (− / Wert / + in 15°-Schritten), „Distance“ (Regler 0–40 px), „Softness“ (Regler 0–20 px, beide
+   mal Faktor; größere Werte aus einer Datei zeigen die Marke am Ende) und „Color“: ein Farbfeld, das den Schatten zum
+   aktiven Feld des Farbwählers macht (`canvas.FeldSchatten`, dritter Wert neben Vordergrund und Füllung): Farbfläche,
+   Hex, Deckkraft, Farbfelder und Pipette wirken dann auf den Schatten, der Name des aktiven Felds heißt „Shadow“. Ohne
+   Auswahl gilt alles für folgende Objekte (`canvas.Stil.Schatten`), mit Auswahl ist jede Änderung ein Rückgängig-Schritt,
+   Ziehen an einem Regler einer.
+8. **Schnellstile** tragen einen Schatten, wenn sie einen haben (eigene Stile, mit „+“ aus einem Stand mit Schatten);
+   ein Stil ohne Schatten lässt den des Objekts stehen und passt unabhängig davon. Die eingebauten haben keinen.
+   `styles.ini`: Schlüssel `shadow = WINKEL LÄNGE WEICH #RRGGBBAA`.
+9. **`--annotate` und MCP:** freiwilliger Schlüssel `shadow` bei allen zeichnenden Typen: `true` (Voreinstellung) oder ein
+   Objekt mit `angle`, `distance`, `softness`, `color`.
+10. Treffer, Grenzen, Einrasten und Auswahlrahmen beachten den Schatten nicht: Er ist Darstellung, kein Teil der Gestalt.
+
+**Umsetzung in zwei Teilen:** Teil 1 (Dokument, Format, Renderer, SVG, Editor-Darstellung, Logik der Sitzung samt
+Feld Schatten, `--annotate`/MCP) mit Tests `internal/document/schatten_test.go`, `internal/render/schatten_test.go`,
+`internal/fileformat/schatten_test.go` (Lesen, Version, rsvg), `internal/canvas/schatten_test.go`,
+`internal/ui/schatten_test.go` (Editor gegen Renderer), `internal/annotate`, Mutanten `scripts/mutanten/schatten.json`
+(SH1–SH25); Teil 2 die rechte Leiste (Punkt 7) und die Schnellstile (Punkt 8).
+
+Verworfen: Schatten als eigenes Objekt (ginge beim Verschieben verloren); `feDropShadow` (jünger, nicht überall
+unterstützt); Farbe über eine feste Liste (Andi: Farbe frei wählbar).

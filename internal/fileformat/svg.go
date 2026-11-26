@@ -33,11 +33,15 @@ const (
 	versionSpitze      = 2
 	versionPfeilKoepfe = 2
 	versionStrichart   = 2
+	versionSchatten    = 2
 )
 
 // schreibVersion ist die Version, die der Schreiber für die Objekte objekte angibt.
 func schreibVersion(objekte []document.Objekt) int {
 	for _, o := range objekte {
+		if o.Ebenenwerte().Schatten.An {
+			return versionSchatten
+		}
 		switch v := o.(type) {
 		case document.Lupe:
 			return versionLupe
@@ -90,6 +94,10 @@ type schreiber struct {
 	// ohneText: Text ohne `<text>` und Striche schreiben (nur Schild bzw. Dreieck), nur im Export: eine Sprechblase,
 	// von der nur das Dreieck sichtbar ist (F-692). nil schreibt jeden Text ganz.
 	ohneText func(document.Text) bool
+	// schattenNr zählt die Filter der Schatten, schattenID ist der Filter des Objekts, das gerade geschrieben wird
+	// (ADR-0021 Nachtrag 26 Punkt 5); ebene setzt ihn als filter-Attribut.
+	schattenNr int
+	schattenID string
 }
 
 func (s *schreiber) attr(name, wert string) {
@@ -165,11 +173,19 @@ func (s *schreiber) ebene(e document.Ebene) {
 		s.attr("s:deckkraft", strconv.Itoa(p))
 		s.attr("opacity", zahl(float64(p)/100))
 	}
+	if sch := e.Schatten; sch.An { // ADR-0021 Nachtrag 26 Punkt 6, docs/format.md 8.5
+		s.attr("s:schatten", zahl(sch.Winkel)+" "+zahl(sch.Laenge)+" "+zahl(sch.Weich)+" "+farbeHex(sch.Farbe))
+	}
+	if s.schattenID != "" {
+		s.attr("filter", "url(#"+s.schattenID+")")
+		s.schattenID = ""
+	}
 }
 
-// leseEbene übernimmt s:name, s:ausgeblendet, s:gesperrt und s:deckkraft. Alle sind freiwillig: fehlend oder ungültig
-// heißt kein Name, sichtbar, offen, deckend — kein Schaden (wie s:schrift).
-func leseEbene(a map[string]string) document.Ebene {
+// leseEbene übernimmt s:name, s:ausgeblendet, s:gesperrt, s:deckkraft und (ab Version 2) s:schatten. Alle sind
+// freiwillig: fehlend oder ungültig heißt kein Name, sichtbar, offen, deckend, kein Schatten — kein Schaden (wie
+// s:schrift).
+func leseEbene(a map[string]string, version int) document.Ebene {
 	var e document.Ebene
 	if n := a["name"]; document.EbenenNameGueltig(n) {
 		e.Name = n
@@ -178,6 +194,9 @@ func leseEbene(a map[string]string) document.Ebene {
 	e.Gesperrt = a["gesperrt"] == "true"
 	if p, ok := parseGanz(a["deckkraft"]); ok && p >= 0 && p <= 100 {
 		e = e.MitDeckkraft(p)
+	}
+	if v, da := a["schatten"]; da && version >= versionSchatten {
+		e.Schatten = leseSchatten(v)
 	}
 	return e
 }
@@ -269,6 +288,7 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 		if behalten != nil && !behalten(o) {
 			continue
 		}
+		s.schattenFilter(o)
 		switch o := o.(type) {
 		case document.Pfeil:
 			s.WriteString(`<g`)
@@ -667,7 +687,7 @@ func (l *leser) objekt(typ string) document.Objekt {
 	if o == nil {
 		return nil
 	}
-	return document.MitEbene(o, leseEbene(l.a))
+	return document.MitEbene(o, leseEbene(l.a, l.version))
 }
 
 func (l *leser) objektOhneEbene(typ string) document.Objekt {

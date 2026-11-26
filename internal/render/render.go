@@ -468,12 +468,16 @@ func huelleVon(pts []document.Punkt, rand float64) document.Rechteck {
 // das Einmischen wie eine Füllung über dem Umriss.
 func (z zeichner) ebene(o document.Objekt) error {
 	p := o.Ebenenwerte().Deckkraft()
-	if p >= 100 {
+	schatten := o.Ebenenwerte().Schatten.Sichtbar()
+	if p >= 100 && !schatten {
 		return z.objekt(o)
 	}
 	r := z.ebenenRahmen(o)
 	if r.Empty() || p <= 0 {
 		return nil
+	}
+	if schatten { // Schatten und Objekt zusammen im Zwischenbild (ADR-0021 Nachtrag 26 Punkt 3)
+		return z.schattenEbene(o, r, p)
 	}
 	if !z.ohneZaehlen {
 		z.auf.flaeche += fuellGewicht * float64(r.Dx()) * float64(r.Dy())

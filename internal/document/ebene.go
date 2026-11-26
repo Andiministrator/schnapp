@@ -4,6 +4,8 @@ package document
 
 import (
 	"fmt"
+	"image/color"
+	"math"
 	"unicode"
 	"unicode/utf8"
 )
@@ -27,6 +29,72 @@ type Ebene struct {
 	Gesperrt bool
 	// Transparenz ist 100 − Deckkraft in Prozent (0 = deckend), damit der Nullwert deckend ist (Punkt 2).
 	Transparenz uint8
+	// Schatten der Ebene (ADR-0021 Nachtrag 26); Nullwert: keiner.
+	Schatten Schatten
+}
+
+// Schatten ist der Schatten einer Ebene (ADR-0021 Nachtrag 26): Winkel ist die Richtung, aus der das Licht kommt (Grad,
+// 0° von rechts, gegen den Uhrzeigersinn), Laenge der Versatz und Weich der Radius der Unschärfe (σ = Weich/2), beide in
+// Pixeln des Originals, Farbe mit Deckkraft.
+type Schatten struct {
+	An     bool
+	Winkel float64
+	Laenge float64
+	Weich  float64
+	Farbe  color.NRGBA
+}
+
+// Grenzen des Schattens (ADR-0021 Nachtrag 26 Punkt 2).
+const (
+	MaxSchattenLaenge = 1000
+	MaxSchattenWeich  = 200
+)
+
+// StandardSchatten ist die Voreinstellung zum Faktor f (document.KantenFaktor): nach rechts unten, Länge 6, Weich 8,
+// Schwarz mit 40 % Deckkraft.
+func StandardSchatten(f float64) Schatten {
+	f = max(f, 1)
+	return Schatten{An: true, Winkel: 135, Laenge: 6 * f, Weich: 8 * f, Farbe: color.NRGBA{A: 102}}
+}
+
+// Versatz ist die Verschiebung des Schattens im Bild (y nach unten): entgegen der Richtung des Lichts.
+func (s Schatten) Versatz() Punkt {
+	w := s.Winkel * math.Pi / 180
+	return Pt(-math.Cos(w)*s.Laenge, math.Sin(w)*s.Laenge)
+}
+
+// Rand ist, wie weit der Schatten über das Objekt hinausreicht: Versatz plus drei σ der Unschärfe (0 ohne Schatten).
+func (s Schatten) Rand() float64 {
+	if !s.Sichtbar() {
+		return 0
+	}
+	return s.Laenge + 1.5*s.Weich + 1
+}
+
+// Sichtbar meldet, ob der Schatten gezeichnet wird: an und nicht ganz durchsichtig.
+func (s Schatten) Sichtbar() bool { return s.An && s.Farbe.A > 0 }
+
+// NormWinkel bringt einen Winkel auf [0, 360).
+func NormWinkel(w float64) float64 {
+	w = math.Mod(w, 360)
+	if w < 0 {
+		w += 360
+	}
+	if w >= 360 {
+		w = 0
+	}
+	return w
+}
+
+func (s Schatten) pruefe() error {
+	if !s.An {
+		return nil
+	}
+	if !endlich(s.Winkel, s.Laenge, s.Weich) || s.Laenge < 0 || s.Laenge > MaxSchattenLaenge || s.Weich < 0 ||
+		s.Weich > MaxSchattenWeich {
+		return fmt.Errorf("document: Schatten ungültig")
+	}
+	return nil
 }
 
 // Ebenenwerte liefert die Angaben der Ebene (über die Einbettung eine Methode jedes Objekts).
@@ -65,7 +133,7 @@ func (e Ebene) pruefe() error {
 	if e.Transparenz > 100 {
 		return fmt.Errorf("document: Deckkraft der Ebene ungültig")
 	}
-	return nil
+	return e.Schatten.pruefe()
 }
 
 // MitEbene liefert o mit den Angaben e (gleiche Kennung). Für Ersetzen: Umbenennen, Ausblenden, Sperren, Deckkraft.

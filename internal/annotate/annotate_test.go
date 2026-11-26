@@ -185,6 +185,41 @@ func TestWendeStrichart(t *testing.T) {
 	}
 }
 
+// ADR-0021 Nachtrag 26 Punkt 9: shadow true, false und ausführlich; bei redact unbekannt; ungültige Angaben ein Fehler.
+func TestWendeSchatten(t *testing.T) {
+	d := dokument(t, 200, 100)
+	es := lies(t, `{"annotations":[
+		{"type":"rect","from":[10,10],"to":[60,40],"shadow":true},
+		{"type":"arrow","from":[70,10],"to":[120,40],"shadow":{"angle":90,"distance":4,"softness":0,"color":"#0000ff80"}},
+		{"type":"step","at":[150,50],"shadow":false},
+		{"type":"text","at":[10,60],"text":"Hi","shadow":{"distance":3}}]}`)
+	if _, err := Wende(context.Background(), d, es); err != nil {
+		t.Fatal(err)
+	}
+	o := d.Objekte()
+	if s := o[0].Ebenenwerte().Schatten; s != document.StandardSchatten(1) {
+		t.Errorf("true: %+v", s)
+	}
+	if s := o[1].Ebenenwerte().Schatten; !s.An || s.Winkel != 90 || s.Laenge != 4 || s.Weich != 0 || s.Farbe != (color.NRGBA{B: 255, A: 128}) {
+		t.Errorf("ausführlich: %+v", s)
+	}
+	if o[2].Ebenenwerte().Schatten.An {
+		t.Error("false: Schatten an")
+	}
+	if s := o[3].Ebenenwerte().Schatten; !s.An || s.Laenge != 3 || s.Winkel != 135 {
+		t.Errorf("teilweise: %+v", s)
+	}
+	if _, err := Lies(strings.NewReader(`{"annotations":[{"type":"redact","from":[1,1],"to":[9,9],"shadow":true}]}`)); err == nil {
+		t.Error("shadow bei redact angenommen")
+	}
+	for _, falsch := range []string{`"yes"`, `{"distance":-1}`, `{"softness":1000}`, `{"color":"black"}`, `{"blur":3}`} {
+		es := lies(t, `{"annotations":[{"type":"rect","from":[10,10],"to":[60,40],"shadow":`+falsch+`}]}`)
+		if _, err := Wende(context.Background(), dokument(t, 200, 100), es); err == nil || !strings.Contains(err.Error(), `"shadow"`) {
+			t.Errorf("%s: %v", falsch, err)
+		}
+	}
+}
+
 // TestWendeFehler: Werte außerhalb, falsche Farben, leerer Text, gleiche Punkte — mit Index; der Fehler nennt den
 // Eintrag.
 func TestWendeFehler(t *testing.T) {

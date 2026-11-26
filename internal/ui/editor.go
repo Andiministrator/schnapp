@@ -349,7 +349,9 @@ type editor struct {
 	spitze    spitzenLeiste
 	pfeilform pfeilformLeiste
 	strichart strichartLeiste // Klappfeld „Line style“ (ADR-0021 Nachtrag 25, strichart.go)
-	satz      textsatz        // Glyphenumrisse der Beschriftungen (textsatz.go)
+	// schatten: gemerkte Schattenbilder je Objekt (ADR-0021 Nachtrag 26, schatten.go).
+	schatten map[int]schattenBild
+	satz     textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
 	// nav: Zustand des Navigators auf der Leinwand (navigator.go, ADR-0031 Nachtrag 9); die Adresse ist das Zeigerziel.
 	nav navigatorZustand
 	// fussFeldRahmen: Lage der Felder Farbe und Zoom beim letzten Zeichnen (leer: nicht gezeigt), farbKnopfRahmen die des
@@ -1805,6 +1807,7 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 	}
 	sicht := image.Rectangle{Max: d.Groesse()}
 	defer e.lupenAufraeumen()
+	defer e.schattenAufraeumen()
 	// Über vielen Nähten zeigt der Editor ab bereichGrenze abgespielten Bereichen die Objektebene des Renderers statt
 	// eigener Pfade (ADR-0023 Nachtrag 20, F-787): Gio rastert jedes Bild alle Bereiche neu, an der Grenze von
 	// render.Pruefe rund 500 000 (120 gefüllte runde Kästen über 4096 Kacheln: 1,7 s je Bild mit llvmpipe, Dateien über
@@ -1842,6 +1845,9 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 	vorschau bool) {
 	if p := o.Ebenenwerte().Deckkraft(); p < 100 {
 		defer paint.PushOpacity(gtx.Ops, float32(p)/100).Pop()
+	}
+	if !vorschau { // Schatten unter dem Objekt, in der Deckkraft der Ebene (ADR-0021 Nachtrag 26 Punkt 4)
+		e.zeichneSchatten(gtx, o)
 	}
 	switch v := o.(type) {
 	case document.Pfeil:

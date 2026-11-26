@@ -3,7 +3,7 @@
     "name": "E1 Deckkraft der Ebene wirkt im Renderer nicht",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "\tif p >= 100 {\n\t\treturn z.objekt(o)",
+    "alt": "\tif p >= 100 && !schatten {\n\t\treturn z.objekt(o)",
     "neu": "\tif true {\n\t\treturn z.objekt(o)"
   },
   {

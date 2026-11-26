@@ -269,8 +269,8 @@
     "name": "K219-2 Feldwechsel während des Farbzugs",
     "datei": "internal/canvas/farbpaar.go",
     "paket": "./internal/canvas",
-    "alt": "\tif s.farbZug || (f == FeldFuellung && !s.Fuellbar()) {",
-    "neu": "\tif f == FeldFuellung && !s.Fuellbar() {"
+    "alt": "\tif s.farbZug || (f == FeldFuellung && !s.Fuellbar()) || (f == FeldSchatten && !s.Schatten().An) {",
+    "neu": "\tif (f == FeldFuellung && !s.Fuellbar()) || (f == FeldSchatten && !s.Schatten().An) {"
   },
   {
     "name": "K219-3 Tauschen während des Speicherns",
