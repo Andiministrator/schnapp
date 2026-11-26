@@ -126,7 +126,7 @@ func TestFokusWennFarbabschnittVerschwindet(t *testing.T) {
 func TestZeigerCancelImFarbzug(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
 	fw := &l.e.seite.fw
-	l.klick(mittenPunkt(l.e.seite.farbRahmen[0])) // Rot, deckend: Ausgang
+	l.klick(mittenPunkt(l.e.seite.ff.rahmen[0])) // Rot, deckend: Ausgang
 	vor, stand := l.textHintergrund(), l.e.s.D.Stand()
 	a, b := lageIn(fw.ton, 0.3, 0.5), lageIn(fw.ton, 0.6, 0.5)
 	l.maus(pointer.Move, a, 0)

@@ -248,7 +248,7 @@ func TestHilfeOffenSperrtLeiste(t *testing.T) {
 	vor := l.e.s.D.Stand()
 	l.e.hilfeOffen = true
 	l.setle()
-	l.klick(mittenPunkt(l.e.seite.farbRahmen[1]))
+	l.klick(mittenPunkt(l.e.seite.ff.rahmen[1]))
 	if l.e.s.D.Stand() != vor || l.e.s.Stil.Farbe == canvas.Beschriftungsfarben[1] {
 		t.Error("Klick in die Leiste hinter der Hilfetafel hat etwas geändert")
 	}

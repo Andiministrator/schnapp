@@ -33,7 +33,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/icons"
 )
 
-// farbPlaetze ist die Zahl der Farbfelder: die Beschriftungsfarben und die zuletzt benutzten.
+// farbPlaetze ist die Zahl der Plätze im Raster rechts der Farbfläche: die zuletzt benutzten Farben (Karte #364).
 const farbPlaetze = 8
 
 // farbRegler ist das Bedienelement, in dem gerade gezogen wird.
@@ -298,7 +298,9 @@ func (e *editor) feldTasten(gtx layout.Context) {
 func (e *editor) inFarbwahl(p image.Point) bool {
 	fw := &e.seite.fw
 	p = p.Add(image.Pt(0, e.seite.roll.rollen)) // die Lagen sind Inhaltskoordinaten der rollenden Leiste
-	for _, r := range append(e.seite.farbRahmen[:], fw.pipRahmen, fw.flaeche, fw.ton, fw.deck) {
+	ziele := append(e.seite.farbRahmen[:], fw.pipRahmen, fw.flaeche, fw.ton, fw.deck, e.seite.ff.plusRahmen)
+	for _, r := range append(ziele, e.seite.ff.rahmen[:]...) { // seit Karte #364 auch die eigenen Farbfelder
+
 		if p.In(r) {
 			return true
 		}
@@ -552,15 +554,19 @@ func (e *editor) zeichneFarbwaehler(gtx layout.Context, x, y, breite, spalte int
 	}
 	reglerAnmelden(gtx, &fw.flaeche, fw.flaeche)
 
-	// Raster rechts: Beschriftungsfarben, zuletzt benutzte (die Pipette steht seit Karte #318 in der Zeile des Farbpaars).
+	// Raster rechts: die zuletzt benutzten Farben (seit Karte #364; die eigenen Farbfelder stehen unter Hex und
+	// Deckkraft, die Pipette seit Karte #318 in der Zeile des Farbpaars). Freie Plätze zeigen einen leeren Rahmen.
 	rx := x + breite - raster
 	platz := func(i int) image.Rectangle {
 		px, py := rx+(i%2)*(q+abst), y+(i/2)*(q+abst)
 		return image.Rect(px, py, px+q, py+q)
 	}
-	farben := append(append([]color.NRGBA(nil), canvas.Beschriftungsfarben...), e.s.Zuletzt()...)
+	farben := e.s.Zuletzt()
 	for j := range k.farbRahmen {
 		k.farbRahmen[j] = image.Rectangle{}
+		if j >= len(farben) {
+			paint.FillShape(gtx.Ops, farbeLinie, clip.Stroke{Path: clip.Rect(platz(j)).Path(), Width: float32(gtx.Dp(1))}.Op())
+		}
 	}
 	for j, c := range farben {
 		if j >= farbPlaetze {
@@ -599,7 +605,7 @@ func (e *editor) zeichneFarbwaehler(gtx layout.Context, x, y, breite, spalte int
 	e.seiteText(gtx, i18n.T("Opacity"), 13, farbeNebentext, image.Pt(dl, y+gtx.Dp(5)), x+breite-gtx.Dp(58)-dl, 1)
 	fw.deckkraft.rahmen = image.Rect(x+breite-gtx.Dp(54), y, x+breite, y+fh)
 	e.zeichneEingabe(gtx, &fw.deckkraft)
-	return y + fh
+	return e.zeichneFarbfelder(gtx, x, y+fh+gtx.Dp(8), breite)
 }
 
 // zeichneFarbpaarZeile zeichnet über dem Farbwähler die Zeile des Farbpaars (ADR-0021 Nachtrag 11, vereinfacht in

@@ -56,6 +56,14 @@ var Beschriftungsfarben = []color.NRGBA{
 	{R: 0x1E, G: 0x21, B: 0x24, A: 0xFF}, // Dunkelgrau (grau-900)
 }
 
+// StandardFarbfelder sind die eigenen Farbfelder, solange es keine colors.ini gibt (ADR-0021 Nachtrag 24, Karte #364):
+// die Beschriftungsfarben, dazu Weiß, Gelb und Orange.
+var StandardFarbfelder = append(append([]color.NRGBA(nil), Beschriftungsfarben...),
+	color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}, // Weiß
+	color.NRGBA{R: 0xF2, G: 0xC2, B: 0x30, A: 0xFF}, // Gelb
+	color.NRGBA{R: 0xF5, G: 0x8A, B: 0x1F, A: 0xFF}, // Orange
+)
+
 // Weiss ist die Schriftfarbe auf Text-Schildern (Nummern zeichnen Renderer und Export ohnehin weiß).
 var Weiss = color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 

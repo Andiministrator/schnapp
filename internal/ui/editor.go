@@ -192,6 +192,7 @@ func neuerEditor(titel string, d *document.Dokument, speichern Speichern, rettun
 	// Systemschriften im Hintergrund suchen, damit die Schriftliste sie kennt (ADR-0021 Nachtrag 10 Punkt 3).
 	fonts.StarteSuche(e.w.Invalidate)
 	e.stileLaden()
+	e.farbfelderLaden()
 	e.rettungStart() // vor dem ersten Bild: Wiederholte Schwärzungen ändern die Pixel
 	e.bildNeu()
 	return e
@@ -2638,6 +2639,9 @@ func (e *editor) tasten(gtx layout.Context) {
 		if !e.s.TextLaeuft() && e.schnellTaste(gtx, k) {
 			continue // Pfeile und Entf an einer Kachel der Schnellstile (ADR-0037 Punkt 7)
 		}
+		if !e.s.TextLaeuft() && e.farbfeldTaste(gtx, k) {
+			continue // Entf an einem Farbfeld (Karte #364)
+		}
 		if !e.s.TextLaeuft() && e.leisteTaste(gtx, k) {
 			continue // Pfeile, Pos1 und Ende an einer Vorschau der Leiste (ADR-0036 Punkt 1)
 		}
@@ -2810,6 +2814,9 @@ func (e *editor) hinweis() string {
 	}
 	if e.schnell.hinweis != "" { // Name der Kachel mit Fokus oder Zeiger (ADR-0037 Punkt 2)
 		return e.schnell.hinweis
+	}
+	if e.seite.ff.hinweis != "" { // Farbfeld oder „+“ mit Fokus oder Zeiger (Karte #364)
+		return e.seite.ff.hinweis
 	}
 	if e.pfeilform.hinweis != "" { // Feld der Spitze am Anfang oder Ende (ADR-0021 Nachtrag 20)
 		return e.pfeilform.hinweis

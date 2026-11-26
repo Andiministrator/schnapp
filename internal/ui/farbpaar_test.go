@@ -63,7 +63,7 @@ func TestFarbpaarRechteLeiste(t *testing.T) {
 			t.Fatalf("Knopf %d der Zeile nicht gezeichnet", i)
 		}
 	}
-	l.klick(mittenPunkt(k.farbRahmen[1])) // Füllung (Voreinstellung der Vorrichtung) auf Blau
+	l.klick(mittenPunkt(k.ff.rahmen[1])) // Füllung (Voreinstellung der Vorrichtung) auf Blau
 	if l.text().Hintergrund != canvas.Beschriftungsfarben[1] {
 		t.Fatalf("Schild %v", l.text().Hintergrund)
 	}
@@ -72,7 +72,7 @@ func TestFarbpaarRechteLeiste(t *testing.T) {
 		t.Errorf("„Keine“: Deckkraft %d", a)
 	}
 	l.klick(mittenPunkt(k.paarRahmen[paarVorn]))
-	l.klick(mittenPunkt(k.farbRahmen[2]))
+	l.klick(mittenPunkt(k.ff.rahmen[2]))
 	if tx := l.text(); tx.Farbe != canvas.Beschriftungsfarben[2] || tx.Hintergrund.A != 0 {
 		t.Errorf("Vordergrund: Schrift %v, Schild %v", tx.Farbe, tx.Hintergrund)
 	}

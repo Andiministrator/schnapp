@@ -35,13 +35,6 @@
     "neu": "B: uint8(n), A: 255}, true"
   },
   {
-    "name": "F189-6 Beschriftungsfarben landen in den zuletzt benutzten",
-    "datei": "internal/canvas/farbwahl.go",
-    "paket": "./internal/canvas",
-    "alt": "\t\tif b == c {\n\t\t\treturn\n\t\t}",
-    "neu": "\t\tif b == c {\n\t\t\tbreak\n\t\t}"
-  },
-  {
     "name": "F189-7 zuletzt benutzte ohne Grenze",
     "datei": "internal/canvas/farbwahl.go",
     "paket": "./internal/canvas",
@@ -334,8 +327,8 @@
     "name": "K219-10 ganz durchsichtige Farbe in den zuletzt benutzten (B-3)",
     "datei": "internal/canvas/farbwahl.go",
     "paket": "./internal/canvas",
-    "alt": "\tif c.A == 0 {\n\t\treturn\n\t}\n\tfor _, b := range Beschriftungsfarben {",
-    "neu": "\tfor _, b := range Beschriftungsfarben {"
+    "alt": "\tif c.A == 0 {\n\t\treturn\n\t}\n\tneu := []color.NRGBA{c}",
+    "neu": "\tneu := []color.NRGBA{c}"
   },
   {
     "name": "K220-1 Pipette ohne Zoom-Umrechnung (F-574)",

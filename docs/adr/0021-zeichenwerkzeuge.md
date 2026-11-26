@@ -839,3 +839,30 @@ Opus 5.5, Andi: „arbeite selbstständig“).
    „Text“/„Label“) wäre genauer, braucht aber Platz; erst mit dem neuen Muster von #317 entscheiden.
 
 Tests `internal/ui/farbpaar_einfach_test.go`; Mutanten `scripts/mutanten/farbpaar-einfach.json`, U219-3 nachgezogen.
+
+## Nachtrag 24 (26.11.2026): Eigene Farbfelder (Karte #364)
+
+**Status:** Akzeptiert (Andi, 26.11.2026: „bei den favoriten farben rechts sollten die vorhandenen aber gelöscht und
+auch neue hinzugefügt werden können, oder?“ und „entscheide du das“; Ausgestaltung Claude Opus 5.5).
+
+Ändert Nachtrag 9 (Raster neben der Farbfläche) und Nachtrag 17 (vier zuletzt benutzte).
+
+1. **Zwei Arten, klar getrennt.** *Farbfelder* sind die eigene, gepflegte Palette; *zuletzt benutzt* füllt sich von
+   selbst. Vorher standen die vier eingebauten Beschriftungsfarben fest im Raster und ließen sich weder entfernen noch
+   ergänzen.
+2. **Farbfelder** stehen unter Hex und Deckkraft in Reihen (20 dp, so viele je Reihe wie die Leiste breit ist), „+“ am
+   Ende nimmt die aktuelle Farbe auf (grau, wenn sie durchsichtig ist, schon ein Feld ist oder schon 24 Felder da sind;
+   der Hinweis sagt, warum). Rechtsklick oder Entf an einem Feld entfernt es, wie bei eigenen Schnellstilen (ADR-0037).
+   Ein Klick setzt die Farbe wie bisher. Ohne Datei gelten die eingebauten Felder `canvas.StandardFarbfelder` (die vier
+   Beschriftungsfarben, dazu Weiß, Gelb und Orange); wer alle entfernt, hat keine.
+3. **Datei** `colors.ini` neben `styles.ini` (`internal/settings/farben.go`): Abschnitt `[swatches]`, je Feld
+   `color = #RRGGBBAA`. Jede Änderung liest die Datei unter der Sperre `colors.ini.lock` neu und schreibt sie atomar
+   (0600/0700), so verliert ein zweites Fenster nichts; Unlesbares wird vorher als `colors.ini.bak` gesichert, gibt es die
+   schon, bleibt alles (`ErrFarbenSicherung`). Höchstens 24 Felder, 64 KiB, Warnungen statt Abbruch.
+4. **Zuletzt benutzt:** Das Raster neben der Farbfläche zeigt nur noch die acht zuletzt benutzten Farben
+   (`canvas.ZuletztGrenze` 8), auch Farben aus den Farbfeldern; freie Plätze sind leere Rahmen. Durchsichtig zählt
+   weiter nicht.
+5. Tab-Reihenfolge: Farbpaar, Pipette, zuletzt benutzte, Hex, Deckkraft, Farbfelder, „+“. Ein Klick auf ein Farbfeld
+   verwirft eine schwebende Hex-Eingabe wie die übrigen Farbziele (`inFarbwahl`).
+
+Tests `internal/settings/farben_test.go`, `internal/ui/farbfelder_test.go`; Mutanten `scripts/mutanten/farbfelder.json`.

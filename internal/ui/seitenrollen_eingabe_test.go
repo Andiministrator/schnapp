@@ -17,7 +17,7 @@ func TestEingabeVerworfenBeiFarbfeldImGerolltenBild(t *testing.T) {
 	l.rolle(1 << 20)
 	l.klick(mitte(se.fw.hex.rahmen).Sub(image.Pt(0, roll.rollen)))
 	l.tippe("00ff00ff")
-	feld := se.farbRahmen[1]
+	feld := se.ff.rahmen[1]
 	if !l.imSichtfeld(feld) {
 		t.Fatalf("Kontrolle: Farbfeld %v nicht im Bild %v (Versatz %d)", feld, roll.sicht, roll.rollen)
 	}

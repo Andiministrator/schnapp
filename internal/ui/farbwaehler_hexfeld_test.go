@@ -62,7 +62,7 @@ func TestSitzungsQAHexDannFarbfeld(t *testing.T) {
 	fw := &l.e.seite.fw
 	l.klick(mittenPunkt(fw.hex.rahmen))
 	l.tippe("00ff00")
-	l.klick(mittenPunkt(l.e.seite.farbRahmen[1]))
+	l.klick(mittenPunkt(l.e.seite.ff.rahmen[1]))
 	want := canvas.Beschriftungsfarben[1]
 	t.Logf("nach Farbfeld: Schild %v, Fokus Hex %v, Feld zeigt %q, aktuelle Farbe %s", l.textHintergrund(), l.fokus(&fw.hex), fw.hex.gezeigt, canvas.HexText(l.e.s.AktuelleFarbe()))
 	if fw.hex.gezeigt != canvas.HexText(l.e.s.AktuelleFarbe()) {
@@ -165,12 +165,12 @@ func TestSitzungsQAZuletztFeldKlick(t *testing.T) {
 	l.tippe("123456")
 	l.taste(key.NameReturn, 0)
 	l.taste(key.NameEscape, 0)
-	l.klick(mittenPunkt(l.e.seite.farbRahmen[0]))
+	l.klick(mittenPunkt(l.e.seite.ff.rahmen[0]))
 	l.setle()
-	if l.e.seite.farbRahmen[4].Empty() {
+	if l.e.seite.farbRahmen[0].Empty() {
 		t.Fatal("kein fünftes Feld")
 	}
-	l.klick(mittenPunkt(l.e.seite.farbRahmen[4]))
+	l.klick(mittenPunkt(l.e.seite.farbRahmen[0]))
 	if l.textHintergrund() != (color.NRGBA{R: 0x12, G: 0x34, B: 0x56, A: l.textHintergrund().A}) {
 		t.Errorf("Klick auf zuletzt benutzte Farbe: Schild %v", l.textHintergrund())
 	}

@@ -14,11 +14,11 @@
     "neu": "\tfw.pipRahmen = image.Rect(x+breite-q, y+q, x+breite, y+2*q)"
   },
   {
-    "name": "FW318-3 nur drei zuletzt benutzte Farben",
+    "name": "FW318-3 nur sieben zuletzt benutzte Farben",
     "datei": "internal/canvas/farbwahl.go",
     "paket": "./internal/ui",
-    "alt": "const ZuletztGrenze = 4",
-    "neu": "const ZuletztGrenze = 3"
+    "alt": "const ZuletztGrenze = 8",
+    "neu": "const ZuletztGrenze = 7"
   },
   {
     "name": "FW318-4 Pipette ohne Knopf",

@@ -33,10 +33,9 @@ func TestSitzungsVerifyZuletztVerschiebt(t *testing.T) {
 	if len(z) != 2 || z[0] != b || z[1] != a {
 		t.Fatalf("Ausgang: zuletzt %v", z)
 	}
-	n := len(canvas.Beschriftungsfarben)
 	l.klick(mittenPunkt(fw.hex.rahmen))
-	l.tippe("778899ff")                            // schwebt
-	ziel := mittenPunkt(l.e.seite.farbRahmen[n+1]) // zeigt a
+	l.tippe("778899ff")                          // schwebt
+	ziel := mittenPunkt(l.e.seite.farbRahmen[1]) // zeigt a
 	l.klick(ziel)
 	t.Logf("nach Klick auf das Feld mit %v: aktuelle Farbe %v, zuletzt %v", a, l.e.s.AktuelleFarbe(), l.e.s.Zuletzt())
 	if l.e.s.AktuelleFarbe() != a {
@@ -52,11 +51,10 @@ func TestSitzungsVerifyZuletztErstesFeld(t *testing.T) {
 	l.klick(mittenPunkt(fw.hex.rahmen))
 	l.tippe("112233ff")
 	l.taste(key.NameReturn, 0)
-	l.klick(mittenPunkt(l.e.seite.farbRahmen[0])) // Rot, damit a nicht schon gilt
-	n := len(canvas.Beschriftungsfarben)
+	l.klick(mittenPunkt(l.e.seite.ff.rahmen[0])) // Rot, damit a nicht schon gilt
 	l.klick(mittenPunkt(fw.hex.rahmen))
 	l.tippe("778899ff")                       // schwebt
-	p := mittenPunkt(l.e.seite.farbRahmen[n]) // zeigt a
+	p := mittenPunkt(l.e.seite.farbRahmen[0]) // zeigt a
 	l.maus(pointer.Move, p, 0)
 	l.setle()
 	l.maus(pointer.Press, p, pointer.ButtonPrimary)

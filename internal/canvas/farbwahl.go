@@ -16,7 +16,7 @@ import (
 )
 
 // ZuletztGrenze ist die Zahl der zuletzt benutzten Farben, die die Leiste zeigt.
-const ZuletztGrenze = 4
+const ZuletztGrenze = 8
 
 // HSV ist eine Farbe als Farbton H (0 bis unter 360), Sättigung S und Hellwert V (je 0 bis 1). Nur Bedienung:
 // gespeichert wird RGB.
@@ -132,16 +132,12 @@ func (s *Sitzung) FarbeHSV() HSV {
 // Zuletzt sind die zuletzt benutzten Farben, die jüngste zuerst (höchstens ZuletztGrenze).
 func (s *Sitzung) Zuletzt() []color.NRGBA { return append([]color.NRGBA(nil), s.zuletzt...) }
 
-// merkeZuletzt setzt c vorn in die zuletzt benutzten Farben, wenn sie keine Beschriftungsfarbe und nicht ganz
-// durchsichtig ist (Deckkraft 0 ist „keine“, ein solches Feld zeigte nichts; Kritik B-3).
+// merkeZuletzt setzt c vorn in die zuletzt benutzten Farben, wenn sie nicht ganz durchsichtig ist (Deckkraft 0 ist
+// „keine“, ein solches Feld zeigte nichts; Kritik B-3). Seit Karte #364 zählt jede benutzte Farbe, auch eine aus den
+// Farbfeldern: das Raster zeigt nur noch die zuletzt benutzten.
 func (s *Sitzung) merkeZuletzt(c color.NRGBA) {
 	if c.A == 0 {
 		return
-	}
-	for _, b := range Beschriftungsfarben {
-		if b == c {
-			return
-		}
 	}
 	neu := []color.NRGBA{c}
 	for _, z := range s.zuletzt {

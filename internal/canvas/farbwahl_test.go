@@ -205,20 +205,23 @@ func TestHexUndDeckkraftEingabe(t *testing.T) {
 	}
 }
 
+// Seit Karte #364 zählt jede benutzte Farbe, auch eine Beschriftungsfarbe (das Raster zeigt nur die zuletzt benutzten);
+// doppelte rücken nach vorn, höchstens ZuletztGrenze („keine“ prüft TestZuletztOhneDurchsichtige).
 func TestZuletztBenutzt(t *testing.T) {
 	s, _, _ := sitzung(t)
 	a, b, c, d := color.NRGBA{R: 1, A: 255}, color.NRGBA{R: 2, A: 255}, color.NRGBA{R: 3, A: 255}, color.NRGBA{R: 4, A: 255}
 	for _, x := range []color.NRGBA{a, b, Beschriftungsfarben[2], c, b, d} {
 		s.SetzeHex(HexText(x))
-		for _, z := range s.Zuletzt() {
-			if z == Beschriftungsfarben[2] {
-				t.Fatalf("Beschriftungsfarbe in den zuletzt benutzten: %v", s.Zuletzt())
-			}
-		}
 	}
 	z := s.Zuletzt()
-	if len(z) != ZuletztGrenze || z[0] != d || z[1] != b || z[2] != c {
+	if len(z) != 5 || z[0] != d || z[1] != b || z[2] != c || z[3] != Beschriftungsfarben[2] || z[4] != a {
 		t.Errorf("zuletzt %v", z)
+	}
+	for i := range ZuletztGrenze + 3 {
+		s.SetzeHex(HexText(color.NRGBA{G: uint8(10 + i), A: 255}))
+	}
+	if n := len(s.Zuletzt()); n != ZuletztGrenze {
+		t.Errorf("%d zuletzt benutzte, Grenze %d", n, ZuletztGrenze)
 	}
 }
 

@@ -868,6 +868,34 @@ msgid_plural "… and %d more warnings"
 msgstr[0] ""
 msgstr[1] ""
 
+#: internal/settings/farben.go
+msgid "Cannot locate the colour swatches file (%v); using the built-in swatches."
+msgstr ""
+
+#: internal/settings/farben.go
+msgid "%s: cannot read the colour swatches file (%v); using the built-in swatches."
+msgstr ""
+
+#: internal/settings/farben.go
+msgid "Unknown section [%s] ignored."
+msgstr ""
+
+#: internal/settings/farben.go
+msgid "Line outside of [swatches] ignored."
+msgstr ""
+
+#: internal/settings/farben.go
+msgid "Line ignored: only “color = #RRGGBBAA” is allowed here."
+msgstr ""
+
+#: internal/settings/farben.go
+msgid "Colour %q ignored: not #RRGGBB or #RRGGBBAA."
+msgstr ""
+
+#: internal/settings/farben.go
+msgid "Colour ignored: more than %d colour swatches."
+msgstr ""
+
 #: internal/settings/stile.go
 msgid "Cannot locate the styles file (%v); using no custom styles."
 msgstr ""
@@ -1569,6 +1597,38 @@ msgstr ""
 msgid "The file dialog returned no file."
 msgstr ""
 
+#: internal/ui/farbfelder.go
+msgid "Could not save the colour swatches: %v"
+msgstr ""
+
+#: internal/ui/farbfelder.go
+msgid "Colour swatch added"
+msgstr ""
+
+#: internal/ui/farbfelder.go
+msgid "Colour swatch removed"
+msgstr ""
+
+#: internal/ui/farbfelder.go
+msgid "Colour swatch %s. Right-click or Del removes it."
+msgstr ""
+
+#: internal/ui/farbfelder.go
+msgid "“No fill” cannot be a colour swatch."
+msgstr ""
+
+#: internal/ui/farbfelder.go
+msgid "The current colour is already a swatch."
+msgstr ""
+
+#: internal/ui/farbfelder.go
+msgid "At most %d colour swatches. Remove one first."
+msgstr ""
+
+#: internal/ui/farbfelder.go
+msgid "Adds the current colour as a swatch."
+msgstr ""
+
 #: internal/ui/farbwaehler.go
 msgid "Hex"
 msgstr ""
@@ -1638,6 +1698,18 @@ msgstr ""
 
 #: internal/ui/fehlergruende.go
 msgid "the styles file is locked by another window"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the colour swatches file cannot be read, so it is left as it is"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the colour swatches file is locked by another window"
+msgstr ""
+
+#: internal/ui/fehlergruende.go
+msgid "the colour swatches file has parts that cannot be read and colors.ini.bak already exists, so it is left as it is"
 msgstr ""
 
 #: internal/ui/fehlergruende.go

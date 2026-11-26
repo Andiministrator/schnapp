@@ -63,16 +63,19 @@ func TestPipetteInDerZeileDesFarbpaars(t *testing.T) {
 	}
 }
 
+// Seit Karte #364 zeigt das Raster acht zuletzt benutzte Farben (vorher vier neben den Beschriftungsfarben).
 func TestVierZuletztBenutzteFarben(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
-	for i := range 4 {
+	for i := range canvas.ZuletztGrenze + 1 {
 		l.e.s.SetzeHex(canvas.HexText(color.NRGBA{R: uint8(10 + i), A: 255}))
 	}
 	l.setle()
 	se := &l.e.seite
-	n := len(canvas.Beschriftungsfarben)
-	for i := range 4 {
-		if se.farbRahmen[n+i].Empty() {
+	if n := len(l.e.s.Zuletzt()); n != farbPlaetze {
+		t.Fatalf("%d zuletzt benutzte, Soll %d", n, farbPlaetze)
+	}
+	for i := range farbPlaetze {
+		if se.farbRahmen[i].Empty() {
 			t.Fatalf("zuletzt benutzte Farbe %d nicht gezeichnet (%v)", i+1, l.e.s.Zuletzt())
 		}
 	}

@@ -5,6 +5,7 @@ package ui
 // Tests zum Rahmen nach ADR-0031 (Karte #187): Menüzeile, Werkzeugleiste, Fußzeile.
 
 import (
+	"fmt"
 	"image"
 	"strings"
 	"testing"
@@ -434,18 +435,23 @@ func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 	if !l.fokus(&l.e.seite.fw.pipette) {
 		t.Fatalf("Tab nach dem Farbpaar der Leiste: Fokus nicht auf der Pipette (%s)", menueFokusName(l))
 	}
-	for i := range canvas.Beschriftungsfarben {
-		l.r.MoveFocus(key.FocusForward) // wie die Tab-Taste (Gio)
-		l.setle()
-		if !l.fokus(&l.e.seite.farben[i]) {
-			t.Fatalf("Tab %d nach dem Farbfeld: Fokus nicht auf Farbe %d der rechten Leiste (%s)", i+1, i, menueFokusName(l))
-		}
-	}
-	// Danach Hex und Deckkraft (ADR-0031 Nachtrag 5; die Pipette kam schon mit dem Farbpaar, Karte #318).
-	for _, z := range []struct {
+	// Ohne zuletzt benutzte Farben hat das Raster keinen Knopf (Karte #364): Danach Hex und Deckkraft (ADR-0031
+	// Nachtrag 5; die Pipette kam schon mit dem Farbpaar, Karte #318), dann die eigenen Farbfelder und „+“.
+	ziele := []struct {
 		tag  any
 		name string
-	}{{&l.e.seite.fw.hex, "Hex"}, {&l.e.seite.fw.deckkraft, "Deckkraft"}} {
+	}{{&l.e.seite.fw.hex, "Hex"}, {&l.e.seite.fw.deckkraft, "Deckkraft"}}
+	for i := range canvas.StandardFarbfelder {
+		ziele = append(ziele, struct {
+			tag  any
+			name string
+		}{&l.e.seite.ff.knoepfe[i], fmt.Sprintf("Farbfeld %d", i)})
+	}
+	ziele = append(ziele, struct {
+		tag  any
+		name string
+	}{&l.e.seite.ff.plus, "+ der Farbfelder"})
+	for _, z := range ziele {
 		l.r.MoveFocus(key.FocusForward)
 		l.setle()
 		if !l.fokus(z.tag) {

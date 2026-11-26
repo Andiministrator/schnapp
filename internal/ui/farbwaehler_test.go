@@ -47,7 +47,7 @@ func TestFarbflaecheUndRegler(t *testing.T) {
 	if fw.flaeche.Empty() || fw.ton.Empty() || fw.deck.Empty() || fw.pipRahmen.Empty() {
 		t.Fatalf("Farbwähler nicht gezeichnet: %v %v %v %v", fw.flaeche, fw.ton, fw.deck, fw.pipRahmen)
 	}
-	l.klick(mittenPunkt(l.e.seite.farbRahmen[0])) // Rot, deckend: Ausgang für die Regler
+	l.klick(mittenPunkt(l.e.seite.ff.rahmen[0])) // Rot, deckend: Ausgang für die Regler
 	vor := l.e.s.D.Stand()
 	// Farbton: ein Drittel → Grün (120°). Gedrückt wird innen, losgelassen darf außerhalb sein.
 	l.ziehe(lageIn(fw.ton, 0.9, 0.5), lageIn(fw.ton, 1.0/3, 0.5))
@@ -78,7 +78,7 @@ func TestFarbflaecheUndRegler(t *testing.T) {
 	}
 	// Die zuletzt benutzte Farbe steht als fünftes Feld und ist wählbar.
 	l.setle()
-	if l.e.seite.farbRahmen[4].Empty() {
+	if l.e.seite.farbRahmen[0].Empty() {
 		t.Fatal("kein Feld für die zuletzt benutzte Farbe")
 	}
 }

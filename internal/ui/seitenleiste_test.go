@@ -47,7 +47,7 @@ func TestSeitenleisteFarbeUndKante(t *testing.T) {
 		t.Fatalf("Kopf %q, Farbe gezeigt %v", l.e.seite.kopf, l.e.seite.farbeGezeigt)
 	}
 	vor := l.e.s.D.Stand()
-	r := l.e.seite.farbRahmen[1]
+	r := l.e.seite.ff.rahmen[1]
 	l.klick(r.Min.Add(r.Max).Div(2))
 	o, _ := l.e.s.D.Objekt(l.id)
 	if l.e.s.AktuelleFarbe() != canvas.Beschriftungsfarben[1] || o.(document.Text).Hintergrund != canvas.Beschriftungsfarben[1] {

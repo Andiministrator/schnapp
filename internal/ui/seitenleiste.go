@@ -40,7 +40,8 @@ var kantenFormen = []document.Kante{document.KanteAbriss, document.KanteWelle, d
 
 // seitenKnoepfe sind die Knöpfe der rechten Leiste; die Rahmen halten ihre Lage beim letzten Zeichnen (Tests).
 type seitenKnoepfe struct {
-	farben     [farbPlaetze]widget.Clickable // Beschriftungsfarben, dann zuletzt benutzte (ADR-0031 Nachtrag 5)
+	farben     [farbPlaetze]widget.Clickable // zuletzt benutzte Farben (ADR-0031 Nachtrag 5, seit Karte #364 nur diese)
+	ff         farbfeldLeiste                // eigene Farbfelder unter Hex und Deckkraft (Karte #364)
 	kanten     [3]widget.Clickable           // je Kantenform einer (kantenFormen)
 	strich     [2]widget.Clickable           // Strichstärke − und + (ADR-0021 Nachtrag 7)
 	strRahmen  [2]image.Rectangle
@@ -85,6 +86,7 @@ func (k *seitenKnoepfe) alle() []*widget.Clickable {
 		a = append(a, &k.kanten[i])
 	}
 	a = append(a, k.sw.knoepfe()...)
+	a = append(a, k.ff.alle()...)
 	return append(a, &k.strich[0], &k.strich[1], &k.fw.pipette, &k.farbeKopf)
 }
 
@@ -140,12 +142,13 @@ func seitenHinweisText(h canvas.SeitenHinweis) string {
 func (e *editor) seiteAuswerten(gtx layout.Context) {
 	an := e.seiteAn
 	k := &e.seite
-	farben := append(append([]color.NRGBA(nil), canvas.Beschriftungsfarben...), e.s.Zuletzt()...)
+	farben := e.s.Zuletzt()
 	for j := range k.farben {
 		if k.farben[j].Clicked(gtx) && an() && j < len(farben) {
 			e.s.SetzeFarbe(farben[j])
 		}
 	}
+	e.farbfelderAuswerten(gtx)
 	if k.paar[paarVorn].Clicked(gtx) && an() {
 		e.s.SetzeFeld(canvas.FeldVordergrund)
 	}
@@ -234,6 +237,7 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	e.schnell.gezeigt, e.schnell.hinweis = false, ""
 	k.farbRahmen, k.kantRahmen, k.strRahmen = [farbPlaetze]image.Rectangle{}, [3]image.Rectangle{}, [2]image.Rectangle{}
 	k.strRegler = image.Rectangle{}
+	k.ff.rahmen, k.ff.plusRahmen, k.ff.hinweis = [len(k.ff.rahmen)]image.Rectangle{}, image.Rectangle{}, ""
 	k.fw.flaeche, k.fw.ton, k.fw.deck, k.fw.pipRahmen = image.Rectangle{}, image.Rectangle{}, image.Rectangle{}, image.Rectangle{}
 	k.fw.hex.rahmen, k.fw.deckkraft.rahmen = image.Rectangle{}, image.Rectangle{}
 	if !e.seiteSichtbar(gtx) {

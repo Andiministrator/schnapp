@@ -1,0 +1,114 @@
+[
+  {
+    "name": "FF1 Klick setzt die Farbe nicht",
+    "datei": "internal/ui/farbfelder.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif f.knoepfe[j].Clicked(gtx) && e.seiteAn() {\n\t\t\te.s.SetzeFarbe(f.farben[j])",
+    "neu": "\t\tif f.knoepfe[j].Clicked(gtx) && e.seiteAn() {\n\t\t\t_ = 0"
+  },
+  {
+    "name": "FF2 Rechtsklick entfernt nicht",
+    "datei": "internal/ui/farbfelder.go",
+    "paket": "./internal/ui",
+    "alt": "pe.Buttons == pointer.ButtonSecondary && e.seiteAn() {\n\t\t\t\te.farbfeldEntferne(gtx, j)",
+    "neu": "pe.Buttons == pointer.ButtonSecondary && e.seiteAn() {\n\t\t\t\t_ = j"
+  },
+  {
+    "name": "FF3 Plus ohne Wirkung",
+    "datei": "internal/ui/farbfelder.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\treturn settings.FarbeHinzu(alt, c)\n",
+    "neu": "\t\t\t_ = c\n\t\t\treturn alt\n"
+  },
+  {
+    "name": "FF4 Plus auch bei vorhandener Farbe an",
+    "datei": "internal/ui/farbfelder.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn c.A > 0 && !slices.Contains(f.liste(), c) && len(f.farben) < settings.MaxFarbfelder",
+    "neu": "\treturn c.A > 0 && len(f.farben) < settings.MaxFarbfelder"
+  },
+  {
+    "name": "FF5 Entf löscht das Objekt statt des Felds",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif !e.s.TextLaeuft() && e.farbfeldTaste(gtx, k) {",
+    "neu": "\t\tif false && e.farbfeldTaste(gtx, k) {"
+  },
+  {
+    "name": "FF6 Fehler übernimmt trotzdem",
+    "datei": "internal/ui/farbfelder.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.melde(fmt.Sprintf(i18n.T(\"Could not save the colour swatches: %v\"), fehlerGrund(err)), true)\n\t\treturn\n",
+    "neu": "\t\te.melde(fmt.Sprintf(i18n.T(\"Could not save the colour swatches: %v\"), fehlerGrund(err)), true)\n"
+  },
+  {
+    "name": "FF7 ohne Datei keine eingebauten",
+    "datei": "internal/ui/farbfelder.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !da {\n\t\tfarben = slices.Clone(canvas.StandardFarbfelder)\n\t}",
+    "neu": "\t_ = da\n"
+  },
+  {
+    "name": "FF8 Hinweis zu Plus fehlt",
+    "datei": "internal/ui/farbfelder.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase slices.Contains(f.farben, c):\n\t\treturn i18n.T(\"The current colour is already a swatch.\")\n",
+    "neu": ""
+  },
+  {
+    "name": "FF9 Farbfelder verwerfen schwebende Eingabe nicht",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\tfor _, r := range append(ziele, e.seite.ff.rahmen[:]...) {",
+    "neu": "\tfor _, r := range ziele {"
+  },
+  {
+    "name": "FF10 Zuletzt nur vier",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/ui",
+    "alt": "const ZuletztGrenze = 8",
+    "neu": "const ZuletztGrenze = 4"
+  },
+  {
+    "name": "FS1 doppelte Farben bleiben",
+    "datei": "internal/settings/farben.go",
+    "paket": "./internal/settings",
+    "alt": "\t\tif slices.Contains(farben, c) {\n\t\t\tcontinue\n\t\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "FS2 ohne Grenze",
+    "datei": "internal/settings/farben.go",
+    "paket": "./internal/settings",
+    "alt": "\t\tif len(farben) >= MaxFarbfelder {\n\t\t\tmelde(",
+    "neu": "\t\tif false {\n\t\t\tmelde("
+  },
+  {
+    "name": "FS3 Unlesbares ohne Sicherung überschrieben",
+    "datei": "internal/settings/farben.go",
+    "paket": "./internal/settings",
+    "alt": "\t\tif len(warn) > 0 {\n\t\t\tif err := sichereStile(pfad+\".bak\", daten); err != nil {",
+    "neu": "\t\tif len(warn) < 0 {\n\t\t\tif err := sichereStile(pfad+\".bak\", daten); err != nil {"
+  },
+  {
+    "name": "FS4 durchsichtige Farbe hinzugefügt",
+    "datei": "internal/settings/farben.go",
+    "paket": "./internal/settings",
+    "alt": "\tif c.A == 0 || slices.Contains(farben, c) || len(farben) >= MaxFarbfelder {",
+    "neu": "\tif slices.Contains(farben, c) || len(farben) >= MaxFarbfelder {"
+  },
+  {
+    "name": "FS5 Datei ohne Zeile wie fehlend",
+    "datei": "internal/settings/farben.go",
+    "paket": "./internal/settings",
+    "alt": "\tfarben, warn = ParseFarben(pfad, string(daten))\n\treturn farben, true, warn",
+    "neu": "\tfarben, warn = ParseFarben(pfad, string(daten))\n\treturn farben, len(farben) > 0, warn"
+  },
+  {
+    "name": "FS6 Rechte der Datei offen",
+    "datei": "internal/settings/farben.go",
+    "paket": "./internal/settings",
+    "alt": "[]byte(FormatFarben(neu)), 0o600)",
+    "neu": "[]byte(FormatFarben(neu)), 0o644)"
+  }
+]

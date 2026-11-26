@@ -1765,3 +1765,57 @@ msgstr "Füllung"
 msgctxt "color field"
 msgid "Fill: none"
 msgstr "Füllung: keine"
+
+msgid "the colour swatches file cannot be read, so it is left as it is"
+msgstr "die Datei der Farbfelder ist nicht lesbar und bleibt deshalb unverändert"
+
+msgid "the colour swatches file is locked by another window"
+msgstr "die Datei der Farbfelder ist von einem anderen Fenster gesperrt"
+
+msgid "the colour swatches file has parts that cannot be read and colors.ini.bak already exists, so it is left as it is"
+msgstr "die Datei der Farbfelder hat unlesbare Teile und colors.ini.bak existiert schon, deshalb bleibt sie unverändert"
+
+msgid "Cannot locate the colour swatches file (%v); using the built-in swatches."
+msgstr "Die Datei der Farbfelder ist nicht auffindbar (%v); es gelten die eingebauten Farbfelder."
+
+msgid "%s: cannot read the colour swatches file (%v); using the built-in swatches."
+msgstr "%s: Die Datei der Farbfelder ist nicht lesbar (%v); es gelten die eingebauten Farbfelder."
+
+msgid "Unknown section [%s] ignored."
+msgstr "Unbekannter Abschnitt [%s] übergangen."
+
+msgid "Line outside of [swatches] ignored."
+msgstr "Zeile außerhalb von [swatches] übergangen."
+
+msgid "Line ignored: only “color = #RRGGBBAA” is allowed here."
+msgstr "Zeile übergangen: Hier ist nur „color = #RRGGBBAA“ erlaubt."
+
+msgid "Colour %q ignored: not #RRGGBB or #RRGGBBAA."
+msgstr "Farbe %q übergangen: weder #RRGGBB noch #RRGGBBAA."
+
+msgid "Colour ignored: more than %d colour swatches."
+msgstr "Farbe übergangen: mehr als %d Farbfelder."
+
+msgid "Could not save the colour swatches: %v"
+msgstr "Die Farbfelder ließen sich nicht speichern: %v"
+
+msgid "Colour swatch added"
+msgstr "Farbfeld hinzugefügt"
+
+msgid "Colour swatch removed"
+msgstr "Farbfeld entfernt"
+
+msgid "Colour swatch %s. Right-click or Del removes it."
+msgstr "Farbfeld %s. Rechtsklick oder Entf entfernt es."
+
+msgid "“No fill” cannot be a colour swatch."
+msgstr "„Keine Füllung“ kann kein Farbfeld sein."
+
+msgid "The current colour is already a swatch."
+msgstr "Die aktuelle Farbe ist schon ein Farbfeld."
+
+msgid "At most %d colour swatches. Remove one first."
+msgstr "Höchstens %d Farbfelder. Erst eines entfernen."
+
+msgid "Adds the current colour as a swatch."
+msgstr "Nimmt die aktuelle Farbe als Farbfeld auf."
