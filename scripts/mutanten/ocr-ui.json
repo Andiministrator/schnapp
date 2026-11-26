@@ -59,8 +59,8 @@
     "name": "O9 Zieht kennt den Zug des Bereichsmodus nicht (Karte #195)",
     "datei": "internal/canvas/sitzung.go",
     "paket": "./internal/canvas",
-    "alt": "s.pan || s.farbZug || s.tb.zieht ||",
-    "neu": "s.pan || s.farbZug ||"
+    "alt": "s.pan || s.farbZug || s.breiteZug || s.tb.zieht ||",
+    "neu": "s.pan || s.farbZug || s.breiteZug ||"
   },
   {
     "name": "O10 Doppelklick im Bereichsmodus wirkt wie mit dem Werkzeug (Karte #195)",

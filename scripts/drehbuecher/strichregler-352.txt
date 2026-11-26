@@ -1,0 +1,20 @@
+# Sichtprobe Karte #352 (ADR-0021 Nachtrag 22): Regler der Strichstärke unter − / + in der rechten Leiste.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/strichregler-352.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1, Werkzeug Pfeil (A).
+# Erwartet:
+#  01 Leiste beim Werkzeug Pfeil: unter „Line width“ − 6 px + eine Schiene über die volle Breite, Marke bei 6 px.
+warte 1500
+taste A
+warte 400
+foto 01-leiste
+#  02 ein Pfeil, dann am Regler nach rechts gezogen: Pfeil und Anzeige bei 32 px, Marke am rechten Ende.
+#  03 nach Strg+Z: der Pfeil wieder 6 px (das Ziehen war ein Schritt).
+# Regler bei 1600 × 1000: Schiene von x 1316 bis 1584 auf y 252 (darunter „Pfeil-Stil“, Feld Anfang bei y 303).
+ziehe 200 200 600 300 10
+warte 300
+ziehe 1450 252 1590 252 12
+warte 400
+foto 02-gezogen
+taste Ctrl+Z
+warte 400
+foto 03-rueckgaengig

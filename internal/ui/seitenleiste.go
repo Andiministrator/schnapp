@@ -40,11 +40,15 @@ var kantenFormen = []document.Kante{document.KanteAbriss, document.KanteWelle, d
 
 // seitenKnoepfe sind die Knöpfe der rechten Leiste; die Rahmen halten ihre Lage beim letzten Zeichnen (Tests).
 type seitenKnoepfe struct {
-	farben       [farbPlaetze]widget.Clickable // Beschriftungsfarben, dann zuletzt benutzte (ADR-0031 Nachtrag 5)
-	kanten       [3]widget.Clickable           // je Kantenform einer (kantenFormen)
-	strich       [2]widget.Clickable           // Strichstärke − und + (ADR-0021 Nachtrag 7)
-	strRahmen    [2]image.Rectangle
-	strichText   string // angezeigte Strichstärke beim letzten Zeichnen (Tests)
+	farben     [farbPlaetze]widget.Clickable // Beschriftungsfarben, dann zuletzt benutzte (ADR-0031 Nachtrag 5)
+	kanten     [3]widget.Clickable           // je Kantenform einer (kantenFormen)
+	strich     [2]widget.Clickable           // Strichstärke − und + (ADR-0021 Nachtrag 7)
+	strRahmen  [2]image.Rectangle
+	strichText string // angezeigte Strichstärke beim letzten Zeichnen (Tests)
+	// strRegler ist der Regler der Strichstärke (Karte #352), zugleich Ziel seiner Zeigerereignisse; strZieht: dort
+	// wird gezogen.
+	strRegler    image.Rectangle
+	strZieht     bool
 	farbRahmen   [farbPlaetze]image.Rectangle
 	fw           farbwaehler
 	sw           schriftwahl
@@ -174,6 +178,7 @@ func (e *editor) seiteAuswerten(gtx layout.Context) {
 			e.melde(kantenMeldung(f), false)
 		}
 	}
+	e.strichReglerAuswerten(gtx)
 	for j, dir := range []int{-1, 1} {
 		if k.strich[j].Clicked(gtx) && an() {
 			if b, ok := e.s.BreiteStufe(dir); ok {
@@ -228,6 +233,7 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	e.pfeilform.rahm, e.pfeilform.hinweis = [2]image.Rectangle{}, ""
 	e.schnell.gezeigt, e.schnell.hinweis = false, ""
 	k.farbRahmen, k.kantRahmen, k.strRahmen = [farbPlaetze]image.Rectangle{}, [3]image.Rectangle{}, [2]image.Rectangle{}
+	k.strRegler = image.Rectangle{}
 	k.fw.flaeche, k.fw.ton, k.fw.deck, k.fw.pipRahmen = image.Rectangle{}, image.Rectangle{}, image.Rectangle{}, image.Rectangle{}
 	k.fw.hex.rahmen, k.fw.deckkraft.rahmen = image.Rectangle{}, image.Rectangle{}
 	if !e.seiteSichtbar(gtx) {
@@ -322,7 +328,8 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 		}
 		k.strichText = fmt.Sprintf(i18n.TK("status bar", "%d px"), int(math.Round(e.s.Breite())))
 		e.textMittig(gtx, k.strichText, 13, farbeText, wert)
-		y += hoch + gtx.Dp(10)
+		y += hoch + gtx.Dp(6)
+		y = e.zeichneStrichRegler(gtx, x, y, breite) + gtx.Dp(10)
 	}
 	if inhalt.Pfeilform { // Spitzenart und Enden (ADR-0021 Nachtrag 19)
 		y = e.zeichnePfeilform(gtx, x, y, breite, spalte)

@@ -790,3 +790,25 @@ der Schaftmitte, deckend und durchscheinend); Mutanten PF30–PF33 in `scripts/m
 
 Verworfen: der ganze Pfeil als ein Pfad aus `render.ZerlegePfeil` (Datei elffach größer, Importzyklus fileformat →
 render); Schaft als Umriss mit Versatzkurve (eine quadratische Kurve hat keine exakte Versatzkurve als Bézier).
+
+## Nachtrag 22 (26.11.2026): Regler der Strichstärke (Karte #352)
+
+**Status:** Akzeptiert (Andi, 26.11.2026: „macht bei der strichstärke eher (oder zusätzlich) ein slider sinn oder
+nicht?“; Ausgestaltung Claude Opus 5.5, Andi: „arbeite selbstständig“).
+
+1. **Zusätzlich**, nicht statt − / +: Unter der Zeile „Line width“ steht eine Schiene über die volle Breite der Leiste
+   (16 dp hoch, Marke wie im Farbwähler; `internal/ui/strichregler.go`). − / + und die Stufen (`StrichStufen`) bleiben für
+   die Tastatur und genaue Schritte; der Regler nimmt keinen Fokus.
+2. **Skala** logarithmisch von 1 bis 32 px (kleinste und größte Stufe, `canvas.ReglerMin`/`ReglerMax`), auf ganze Pixel
+   gerundet (`BreiteAusRegler`, `ReglerLage`): Die feinen Stärken bekommen so viel Weg wie die groben. Stärken über 32 px
+   (über `KantenFaktor` oder aus einer Datei) zeigt die Marke am rechten Rand.
+3. **Ziehen ist ein Rückgängig-Schritt** wie im Farbwähler (Nachtrag 9): `canvas.Sitzung.BeginneBreiteZug`,
+   `BreiteZugSetze`, `BeendeBreiteZug`; das gewählte Objekt ändert sich laufend über den Zug des Dokuments. Esc und
+   Zeiger-Cancel stellen das Objekt her (`BrecheBreiteZugAb`), die Stärke des Werkzeugs bleibt die gezogene. Während der
+   Texteingabe und während des Speicherns beginnt kein Zug; ein laufender Zug zählt als `Zieht` (Schließen und Signal
+   brechen ihn ab).
+4. Die Leiste wird beim Strich 22 dp höher; `pfeilform-351.txt`, `farbwaehler-189.txt` und `farbwaehler-318.txt` sind
+   nachgezogen, `ebenen-191.txt` und `mischen-215.txt` unverändert geprüft.
+
+Tests `internal/canvas/breitezug_test.go`, `internal/ui/strichregler_test.go`; Mutanten `scripts/mutanten/strichregler.json`
+(SR1–SR14); Sichtprobe `scripts/drehbuecher/strichregler-352.txt`.

@@ -9,13 +9,13 @@ taste R
 ziehe 300 300 600 450
 warte 300
 foto 01-kasten
-doppelklick 1556 526
+doppelklick 1556 548
 taste Strg+A
 schreibe 74
 taste Enter
 warte 300
 foto 02-deckkraft-74
-klick 1572 316
+klick 1572 338
 warte 300
 foto 03-pipette-an
 taste Esc

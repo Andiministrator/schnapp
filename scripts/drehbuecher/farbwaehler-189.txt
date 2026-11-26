@@ -14,22 +14,22 @@ warte 300
 ziehe 400 300 700 500
 warte 400
 foto 01-pfeil-rot
-ziehe 1330 559 1460 559
+ziehe 1330 581 1460 581
 warte 300
 foto 02-farbton-blau
-ziehe 1500 444 1450 474
+ziehe 1500 466 1450 496
 warte 300
 foto 03-flaeche
-ziehe 1580 581 1450 581
+ziehe 1580 603 1450 603
 warte 300
 foto 04-deckkraft-halb
-klick 1400 615
+klick 1400 637
 warte 150
 schreibe ff8800
 taste Enter
 warte 300
 foto 05-hex-orange
-klick 1572 406
+klick 1572 428
 warte 200
 foto 06a-pipette-an
 klick 700 750

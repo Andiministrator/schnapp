@@ -355,8 +355,8 @@
     "name": "K220-3 Schließen im Farbzug lässt den Zug laufen (F-574)",
     "datei": "internal/canvas/hintergrund.go",
     "paket": "./internal/canvas",
-    "alt": "\tif s.zug != keinZug || s.farbZug { // auch das Ziehen im Farbwähler (Sitzungs-QA A-1)\n\t\ts.Abbrechen()\n\t}\n\tif !s.Ungesichert() {\n\t\treturn SchlussZu, nil",
-    "neu": "\tif s.zug != keinZug { // auch das Ziehen im Farbwähler (Sitzungs-QA A-1)\n\t\ts.Abbrechen()\n\t}\n\tif !s.Ungesichert() {\n\t\treturn SchlussZu, nil"
+    "alt": "\tif s.zug != keinZug || s.farbZug || s.breiteZug { // auch das Ziehen im Farbwähler (Sitzungs-QA A-1)\n\t\ts.Abbrechen()\n\t}\n\tif !s.Ungesichert() {\n\t\treturn SchlussZu, nil",
+    "neu": "\tif s.zug != keinZug || s.breiteZug { // auch das Ziehen im Farbwähler (Sitzungs-QA A-1)\n\t\ts.Abbrechen()\n\t}\n\tif !s.Ungesichert() {\n\t\treturn SchlussZu, nil"
   },
   {
     "name": "K220-4 Tab fängt auch im Eingabefeld der Leiste ab (F-574)",

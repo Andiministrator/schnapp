@@ -725,6 +725,8 @@ func (s *Sitzung) Esc() {
 	switch {
 	case s.farbZug: // laufendes Ziehen im Farbwähler abbrechen (ADR-0021 Punkt 2, Sitzungs-QA A-4)
 		s.BrecheFarbZugAb()
+	case s.breiteZug: // ebenso am Regler der Strichstärke (Karte #352)
+		s.BrecheBreiteZugAb()
 	case s.tb.an: // Bereichsmodus „Text aus dem Bild kopieren“ abbrechen, auch mitten im Zug (ADR-0035)
 		s.BeendeTextBereich()
 	case s.pipette:

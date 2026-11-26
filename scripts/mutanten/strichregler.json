@@ -1,0 +1,100 @@
+[
+  {
+    "name": "SR1 Regler ohne Rundung",
+    "datei": "internal/canvas/breitezug.go",
+    "paket": "./internal/canvas",
+    "alt": "math.Min(ReglerMax, math.Round(b)))",
+    "neu": "math.Min(ReglerMax, b))"
+  },
+  {
+    "name": "SR2 Regler linear",
+    "datei": "internal/canvas/breitezug.go",
+    "paket": "./internal/canvas",
+    "alt": "\tb := ReglerMin * math.Pow(ReglerMax/ReglerMin, f)",
+    "neu": "\tb := ReglerMin + (ReglerMax-ReglerMin)*f"
+  },
+  {
+    "name": "SR3 Lage ohne Logarithmus",
+    "datei": "internal/canvas/breitezug.go",
+    "paket": "./internal/canvas",
+    "alt": "\treturn math.Log(b/ReglerMin) / math.Log(ReglerMax/ReglerMin)",
+    "neu": "\treturn (b - ReglerMin) / (ReglerMax - ReglerMin)"
+  },
+  {
+    "name": "SR4 Zug ohne Dokument-Zug (jeder Schritt einzeln)",
+    "datei": "internal/canvas/breitezug.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\t_ = s.D.ZugSetze(mitBreite(o, b))",
+    "neu": "\t\t\t_ = s.D.BrecheZugAb()\n\t\t\t_ = s.D.Ersetzen(mitBreite(o, b))\n\t\t\t_ = s.D.BeginneZug(o.Kennung())"
+  },
+  {
+    "name": "SR5 Abbruch stellt das Objekt nicht her",
+    "datei": "internal/canvas/breitezug.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.breiteZugObj = false\n\t\t_ = s.D.BrecheZugAb()",
+    "neu": "\t\ts.breiteZugObj = false\n\t\t_ = s.D.BeendeZug()"
+  },
+  {
+    "name": "SR6 Zieht kennt den Breitenzug nicht",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "s.farbZug || s.breiteZug || s.tb.zieht",
+    "neu": "s.farbZug || s.tb.zieht"
+  },
+  {
+    "name": "SR7 Esc bricht den Breitenzug nicht ab",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase s.breiteZug: // ebenso am Regler der Strichstärke (Karte #352)\n\t\ts.BrecheBreiteZugAb()\n",
+    "neu": ""
+  },
+  {
+    "name": "SR8 Abbrechen kennt den Breitenzug nicht",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.breiteZug {\n\t\ts.BrecheBreiteZugAb()\n\t\treturn\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "SR9 Zug während der Texteingabe",
+    "datei": "internal/canvas/breitezug.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.Zieht() || s.gesperrt() || s.zug == zugText {",
+    "neu": "if s.Zieht() || s.gesperrt() {"
+  },
+  {
+    "name": "SR10 Leiste wertet den Regler nicht aus",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\te.strichReglerAuswerten(gtx)\n",
+    "neu": ""
+  },
+  {
+    "name": "SR11 Loslassen beendet den Zug nicht",
+    "datei": "internal/ui/strichregler.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\te.s.BeendeBreiteZug()\n\t\t\t\tk.strZieht = false",
+    "neu": "\t\t\t\tk.strZieht = false"
+  },
+  {
+    "name": "SR12 Regler ohne Anmeldung",
+    "datei": "internal/ui/strichregler.go",
+    "paket": "./internal/ui",
+    "alt": "\treglerAnmelden(gtx, &k.strRegler, k.strRegler)\n",
+    "neu": ""
+  },
+  {
+    "name": "SR13 Schließen bricht den Zug nicht ab",
+    "datei": "internal/canvas/hintergrund.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.hg.schliessen = true\n\t\treturn SchlussWarten, nil\n\t}\n\ts.TextBestaetigen()\n\tif s.zug != keinZug || s.farbZug || s.breiteZug {",
+    "neu": "\t\ts.hg.schliessen = true\n\t\treturn SchlussWarten, nil\n\t}\n\ts.TextBestaetigen()\n\tif s.zug != keinZug || s.farbZug {"
+  },
+  {
+    "name": "SR14 Signal bricht den Zug nicht ab",
+    "datei": "internal/canvas/hintergrund.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\treturn false, nil\n\t}\n\ts.TextBestaetigen()\n\tif s.zug != keinZug || s.farbZug || s.breiteZug {",
+    "neu": "\t\treturn false, nil\n\t}\n\ts.TextBestaetigen()\n\tif s.zug != keinZug || s.farbZug {"
+  }
+]

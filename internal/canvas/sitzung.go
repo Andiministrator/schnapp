@@ -93,6 +93,9 @@ type Sitzung struct {
 	hsv           HSV  // gemerkter Farbton der Fläche
 	hsvGemerkt    bool // hsv gilt, solange er zur aktuellen Farbe passt
 	farbZug       bool // in Farbfläche oder Regler wird gezogen
+	breiteZug     bool // am Regler der Strichstärke wird gezogen (breitezug.go)
+	breiteZugObj  bool // ... und das gewählte Objekt ändert sich mit
+	breiteZugVor  uint64
 	farbZugObjekt bool // der Farbzug läuft als Zug des Dokuments am gewählten Objekt
 	farbZugVor    uint64
 	farbZugText   document.Objekt // Text der Eingabe vor dem Farbzug (Abbruch stellt ihn her, Verify V-3)
@@ -411,6 +414,10 @@ func (s *Sitzung) Abbrechen() {
 		s.BrecheFarbZugAb()
 		return
 	}
+	if s.breiteZug {
+		s.BrecheBreiteZugAb()
+		return
+	}
 	if s.pan {
 		s.Abb, s.pan = s.startAbb, false
 		return
@@ -435,7 +442,7 @@ func (s *Sitzung) Abbrechen() {
 
 // Zieht meldet einen laufenden Zug mit der Maus (nicht die Texteingabe, dafür TextLaeuft).
 func (s *Sitzung) Zieht() bool {
-	return s.pan || s.farbZug || s.tb.zieht || (s.zug != keinZug && s.zug != zugText)
+	return s.pan || s.farbZug || s.breiteZug || s.tb.zieht || (s.zug != keinZug && s.zug != zugText)
 }
 
 // Rueckgaengig nimmt die letzte Änderung zurück (nicht während eines Zugs, F-18). Verschwindet dabei das

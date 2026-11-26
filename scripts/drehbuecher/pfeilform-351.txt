@@ -1,8 +1,8 @@
 # Sichtprobe ADR-0021 Nachtrag 20 (Karte #351): Pfeil-Stil je Ende über zwei Klappfelder der rechten Leiste.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/pfeilform-351.txt --bild scripts/drehbuecher/testbild-1200x800.png
-# Bei 1600 × 1000, Skala 1, Werkzeug Pfeil (A): Abschnitt „Pfeil-Stil“, Feld „Anfang“ bei (1490, 281), Feld „Ende“ bei
-# (1490, 315). Die Liste klappt unter dem Feld auf, eine Zeile je 32 px in der Reihenfolge keine, Dreieck, schlank,
-# eingekerbt, offen, halb, Punkt, Raute, Quadrat, Querstrich: unter „Ende“ ab y 351, unter „Anfang“ ab y 317. Ein frisch
+# Bei 1600 × 1000, Skala 1 (Leiste seit Karte #352 mit Regler der Strichstärke, +22 px), Werkzeug Pfeil (A): Abschnitt „Pfeil-Stil“, Feld „Anfang“ bei (1490, 303), Feld „Ende“ bei
+# (1490, 337). Die Liste klappt unter dem Feld auf, eine Zeile je 32 px in der Reihenfolge keine, Dreieck, schlank,
+# eingekerbt, offen, halb, Punkt, Raute, Quadrat, Querstrich: unter „Ende“ ab y 373, unter „Anfang“ ab y 339. Ein frisch
 # gezeichneter Pfeil bleibt gewählt, eine Wahl änderte ihn: vor jeder neuen Wahl Esc (Auswahl aufheben).
 # Erwartet:
 #  01 Leiste beim Werkzeug Pfeil: „Pfeil-Stil“, Anfang „Keine“, Ende „Gefülltes Dreieck“, je mit kleiner Vorschau.
@@ -15,102 +15,102 @@ warte 1500
 taste A
 warte 400
 foto 01-leiste
-klick 1490 315
+klick 1490 337
 warte 400
 foto 02-liste-ende
 taste Esc
 warte 200
-klick 1490 315
+klick 1490 337
 warte 200
-klick 1480 383
+klick 1480 405
 warte 200
 ziehe 150 110 550 110 10
 taste Esc
-klick 1490 315
+klick 1490 337
 warte 200
-klick 1480 415
+klick 1480 437
 warte 200
 ziehe 150 180 550 180 10
 taste Esc
-klick 1490 315
+klick 1490 337
 warte 200
-klick 1480 447
+klick 1480 469
 warte 200
 ziehe 150 250 550 250 10
 taste Esc
-klick 1490 315
+klick 1490 337
 warte 200
-klick 1480 479
+klick 1480 501
 warte 200
 ziehe 150 320 550 320 10
 taste Esc
-klick 1490 315
+klick 1490 337
 warte 200
-klick 1480 511
+klick 1480 533
 warte 200
 ziehe 150 390 550 390 10
 taste Esc
-klick 1490 315
+klick 1490 337
 warte 200
-klick 1480 543
+klick 1480 565
 warte 200
 ziehe 150 460 550 460 10
 taste Esc
-klick 1490 315
+klick 1490 337
 warte 200
-klick 1480 575
+klick 1480 597
 warte 200
 ziehe 150 530 550 530 10
 taste Esc
-klick 1490 315
+klick 1490 337
 warte 200
-klick 1480 607
+klick 1480 629
 warte 200
 ziehe 150 600 550 600 10
 taste Esc
-klick 1490 315
+klick 1490 337
 warte 200
-klick 1480 639
+klick 1480 661
 warte 200
 ziehe 150 670 550 670 10
 taste Esc
-klick 1490 281
+klick 1490 303
 warte 200
-klick 1480 541
+klick 1480 563
 warte 200
-klick 1490 315
+klick 1490 337
 warte 200
-klick 1480 447
+klick 1480 469
 warte 200
 ziehe 700 150 1150 150 10
 taste Esc
-klick 1490 281
+klick 1490 303
 warte 200
-klick 1480 509
+klick 1480 531
 warte 200
-klick 1490 315
+klick 1490 337
 warte 200
-klick 1480 543
+klick 1480 565
 warte 200
 ziehe 700 300 1150 300 10
 taste Esc
-klick 1490 281
+klick 1490 303
 warte 200
-klick 1480 317
+klick 1480 339
 warte 200
-klick 1490 315
+klick 1490 337
 warte 200
-klick 1480 351
+klick 1480 373
 warte 200
 ziehe 700 450 1150 450 10
 taste Esc
-klick 1490 281
+klick 1490 303
 warte 200
-klick 1480 477
+klick 1480 499
 warte 200
-klick 1490 315
+klick 1490 337
 warte 200
-klick 1480 511
+klick 1480 533
 warte 200
 ziehe 700 600 1150 680 10
 taste Esc
@@ -123,9 +123,9 @@ klick 925 450
 warte 300
 ziehe 925 450 925 620 10
 warte 300
-klick 1490 281
+klick 1490 303
 warte 200
-klick 1480 541
+klick 1480 563
 warte 200
 warte 400
 zeiger 900 950
