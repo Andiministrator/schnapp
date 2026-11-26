@@ -126,8 +126,9 @@ Stand 21.11.2026. Je Eintrag: Frage · Impact · Tendenz · muss entschieden sei
   Reicht die Meldung auf stderr, oder muss der Ablageort sichtbar werden (F-158)?
 - **Entscheidung:** sichtbar — der Hinweis mit dem Ablageort hält das Fenster einmal offen, wie ein Ausweichen mit
   Warnung (ADR-0020 Nachtrag 4, Karte #85).
-- **Stand 26.11.2026:** Seit ADR-0016 Nachtrag 10 wird eine Datei von außen schon beim Öffnen übernommen; E-16 gilt nur
-  noch, wenn die Übernahme scheitert.
+- **Stand 26.11.2026:** ADR-0016 Nachtrag 11: Eine Datei von außen wird mit der ersten Änderung gespeichert und damit
+  Aufnahme, die Fußzeile nennt den Ablageort sofort. Der Hinweis beim Schließen aus E-16 greift nur noch, wenn dieses
+  Speichern nicht lief (etwa nach einer Schwärzung) oder scheiterte (Nachtrag 10, Übernahme beim Öffnen, ist abgelöst).
 
 ## E-17: Dürfen Verschieben und Griffe ein Objekt ganz aus dem Bild bringen? — ENTSCHIEDEN 20.11.2026 (Claude, Andi informiert)
 - **Frage:** F-150 verhindert nur die Neuanlage außerhalb; ein vorhandenes Objekt ließ sich ganz aus dem Bild ziehen

@@ -73,8 +73,8 @@
     "name": "IM11 UI: Speichern schon ohne Änderung",
     "datei": "internal/ui/uebernahme.go",
     "paket": "./internal/ui",
-    "alt": "\tif !e.aussen || !e.s.Geaendert() {",
-    "neu": "\tif !e.aussen {"
+    "alt": "\tif !e.aussen || !e.s.Geaendert() || e.s.D.VerlaufMitSchwaerzung() {",
+    "neu": "\tif !e.aussen || e.s.D.VerlaufMitSchwaerzung() {"
   },
   {
     "name": "IM12 UI: Speichern während des Zugs",
@@ -108,7 +108,28 @@
     "name": "IM16 UI: kein Hinweis beim Öffnen",
     "datei": "internal/ui/uebernahme.go",
     "paket": "./internal/ui",
-    "alt": "\tif aussen {\n\t\te.melde(",
+    "alt": "\tif aussen && e.meldung.Text == \"\" {\n\t\te.melde(",
     "neu": "\tif false {\n\t\te.melde("
+  },
+  {
+    "name": "IM17 UI: Speichern trotz Schwärzung im Verlauf",
+    "datei": "internal/ui/uebernahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.aussen || !e.s.Geaendert() || e.s.D.VerlaufMitSchwaerzung() {",
+    "neu": "\tif !e.aussen || !e.s.Geaendert() {"
+  },
+  {
+    "name": "IM18 UI: Strg+S hebt den Merker nicht auf",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.aussen = false       // jedes gelungene Speichern",
+    "neu": "\t\t_ = e.aussen           // jedes gelungene Speichern"
+  },
+  {
+    "name": "IM19 UI: Hinweis verdrängt die Rettungsmeldung",
+    "datei": "internal/ui/uebernahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif aussen && e.meldung.Text == \"\" {",
+    "neu": "\tif aussen {"
   }
 ]

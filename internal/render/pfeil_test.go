@@ -110,3 +110,26 @@ func TestPfeilDeckkraftSchneidetKopfNicht(t *testing.T) {
 		}
 	}
 }
+
+// Sitzungs-Kritik 26.11. K-6: Ein Pfeil kürzer als seine zwei Spitzen hat keinen Schaft; die beiden vollen Köpfe
+// überlappen. Halbdurchsichtig deckt die Überlappung trotzdem nur einmal (eine Füllung, ZerlegePfeil.Einzeln).
+func TestKurzerPfeilKoepfeDeckenEinmal(t *testing.T) {
+	halb := color.NRGBA{A: 128}
+	for _, art := range document.Kopfarten {
+		if art == document.KopfKeine {
+			continue
+		}
+		v := document.GeraderPfeil(document.Pt(100.3, 100.6), document.Pt(120.3, 100.6),
+			document.Strich{Farbe: halb, Breite: 6}).MitKoepfen(art, art)
+		d := weissesDokument(t, 220, 200)
+		hinzu(t, d, v)
+		b := bild(t, d)
+		dunkelst := 255
+		for i := 0; i < len(b.Pix); i += 4 {
+			dunkelst = min(dunkelst, int(b.Pix[i]))
+		}
+		if dunkelst < 125 {
+			t.Errorf("%s: dunkelstes Pixel %d, einfach gedeckt wäre 127: Köpfe decken doppelt", art.Name(), dunkelst)
+		}
+	}
+}

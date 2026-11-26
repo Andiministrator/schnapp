@@ -916,6 +916,7 @@ func (e *editor) speichernFertig(r speicherErgebnis) {
 	diagnoseEditor("Speichern zurück: %v, Ende %+v", r.err, ende)
 	if r.err == nil {
 		e.rettungGespeichert() // gespeichert: die Rettungskopie ist überflüssig (ADR-0029 Punkt 5)
+		e.aussen = false       // jedes gelungene Speichern hat die Datei von außen übernommen (K-4)
 	}
 	// Der Kopierfehler kam vor dem Speicher-Ende (F-341): Er hält das Fenster einmal offen wie bei F-337 — aber nur, wenn
 	// dieses Speichern schließen würde, kein Signal vorgemerkt ist (ein Signal schließt in jedem Fall, ADR-0020 Nachtrag
@@ -1842,13 +1843,17 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 		e.jeStueckIn(gtx, stuecke, an, vorschau, func(abb func(document.Punkt) f32.Point) {
 			fuelleTeile(gtx, pz.Teile, v.Strich.Farbe, abb)
 		})
-		for _, k := range pz.Einzeln {
-			h := document.Rechteck{Min: k[0], Max: k[0]}
-			for _, q := range k[1:] {
-				h = h.Vereint(document.Rechteck{Min: q, Max: q})
+		if len(pz.Einzeln) > 0 {
+			// Köpfe ohne Schaft in einer Füllung: Überlappen sie (kurzer Pfeil mit zwei Spitzen), deckt eine
+			// halbdurchsichtige Farbe trotzdem einmal (Sitzungs-Kritik 26.11. K-6).
+			h := document.Rechteck{Min: pz.Einzeln[0][0], Max: pz.Einzeln[0][0]}
+			for _, k := range pz.Einzeln {
+				for _, q := range k {
+					h = h.Vereint(document.Rechteck{Min: q, Max: q})
+				}
 			}
 			e.jeStueck(gtx, h, 1, an, vorschau, func(abb func(document.Punkt) f32.Point) {
-				fuelleTeile(gtx, [][]document.Punkt{k}, v.Strich.Farbe, abb)
+				fuelleTeile(gtx, pz.Einzeln, v.Strich.Farbe, abb)
 			})
 		}
 	case document.Kasten:

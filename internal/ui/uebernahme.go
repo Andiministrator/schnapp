@@ -14,7 +14,8 @@ import "github.com/Andiministrator/schnapp/internal/i18n"
 // Fußzeile: Ohne Änderung kommt sie nicht in die Bibliothek.
 func (e *editor) aussenSetzen(aussen bool) {
 	e.aussen = aussen
-	if aussen {
+	// Eine Meldung der Rettungskopie beim Start (wiederhergestellt, beiseitegelegt, nicht verfügbar) geht vor (K-3).
+	if aussen && e.meldung.Text == "" {
 		e.melde(i18n.T("This file is not in the library. It is added as a new capture as soon as you change it; the file itself stays unchanged."), false)
 	}
 }
@@ -24,8 +25,13 @@ func (e *editor) aussenSetzen(aussen bool) {
 // beim Bereich für den Text aus dem Bild), keine Texteingabe (SpeichernJetzt bestätigte sie), kein anderes Speichern,
 // kein Wechsel, kein Schließen, kein Signal. Angestoßen wird einmal; scheitert es, bleibt es beim gewöhnlichen
 // Speichern (Strg+S, Schließen). Liefert, ob es angestoßen hat.
+//
+// Trägt der Verlauf eine Schwärzung, wird nicht angestoßen (Sitzungs-Kritik 26.11. K-1, K-2): Das Speichern leerte den
+// Verlauf (ADR-0022 Punkt 3), eine versehentliche Schwärzung wäre sofort endgültig, und die Warnung vor dem
+// ungeschwärzten Original käme nur als flüchtige Meldung. Dann gilt das gewöhnliche Speichern, das beim Schließen
+// haltend warnt.
 func (e *editor) uebernahmePruefen() bool {
-	if !e.aussen || !e.s.Geaendert() {
+	if !e.aussen || !e.s.Geaendert() || e.s.D.VerlaufMitSchwaerzung() {
 		return false
 	}
 	if e.s.Zieht() || e.s.TextLaeuft() || e.s.TextBereichLaeuft() || e.s.SpeichernLaeuft() || e.s.Ruht() ||

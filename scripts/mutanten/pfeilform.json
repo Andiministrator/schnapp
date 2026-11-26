@@ -194,5 +194,12 @@
     "paket": "./internal/ui",
     "alt": "\tb := document.Pt(float64(r.Max.X)-document.KopfUeberstand(ende, w), ym)\n\treturn",
     "neu": "\tb := document.Pt(float64(r.Max.X), ym)\n\treturn"
+  },
+  {
+    "name": "PF29 Köpfe ohne Schaft je eigene Füllung",
+    "datei": "internal/render/pfeil.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\tzs.fuelle(teile, nil, v.Strich.Farbe)\n",
+    "neu": "\t\t\tfor _, t := range teile {\n\t\t\t\tzs.fuelle([][]document.Punkt{t}, nil, v.Strich.Farbe)\n\t\t\t}\n"
   }
 ]

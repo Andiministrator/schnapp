@@ -281,11 +281,15 @@ file with `s:format="1"` they are unknown content (section 11, rule 3) and are i
 
 Informative (w = stroke width, all in original pixels): `triangle` is `3w + 5` long and `4.5w + 6` wide at its base;
 `narrow` is `4w + 7` long and `3w + 4` wide; `notched` is `3.5w + 7` long and `4.5w + 7` wide with a notch cut `0.35`
-of its length into the back; `open` is the triangle as an outline whose legs are w thick; `half` is the triangle with
-only its left barb (left of the direction from the line to the end); `dot` is a disc of radius `1.5w + 3` centred on
+of its length into the back; `open` is a chevron: the two legs of the triangle, each w thick, without the base; `half`
+is the triangle with only one barb: for the unit direction `(dx, dy)` from the line to the end, the barb lies on the
+side `(-dy, dx)` (with y pointing down: below an arrow that points right); `dot` is a disc of radius `1.5w + 3` centred on
 the end; `diamond` is `4w + 8` long and `3w + 6` wide with its front corner on the end; `square` has a side of
 `2.6w + 5`, centred on the end; `bar` is w thick and `5w + 6` long, centred on the end and across the direction. The line stops under the head, at
-the point of the curve whose distance from the end equals the head's setback (triangle: its length); the head's
+the point of the curve whose distance from the end equals the head's setback: the length for `triangle`, `narrow`
+and `half`; for `notched` and `diamond` the point where the edges of the line meet the rear edges of the head; for
+`open` `w/sin(a) + w/(2·tan(a))` with `a` the half angle at the tip; for `dot` `sqrt(r² − w²/4)`; for `square` half
+its side; for `bar` `w/2`; the head's
 direction is the chord from that point to the end. If the curve is shorter than a head, the line is left out.
 
 ### 8.2 `"kasten"` box

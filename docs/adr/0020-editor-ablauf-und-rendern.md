@@ -22,7 +22,7 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
    - `schnapp DATEI.png` öffnet eine vorhandene Datei im Editor (Arbeitsdatei mit Ebenen oder fremdes PNG/JPG).
    - Speichern schreibt eine Bibliotheksaufnahme an ihren Platz zurück (Bearbeitet = wahr). Eine Datei außerhalb
      der Bibliothek wird beim ersten Speichern als neue Aufnahme in die Bibliothek gelegt; das Original bleibt
-     unberührt (seit ADR-0016 Nachtrag 10 nur noch, wenn die Übernahme beim Öffnen scheitert).
+     unberührt (seit ADR-0016 Nachtrag 11 stößt der Editor dieses erste Speichern selbst an, sobald die Datei von außen zum ersten Mal geändert ist, außer bei einer Schwärzung; Nachtrag 10 hatte sie vorübergehend schon beim Öffnen übernommen).
 2. **Aufbau:** Paket `canvas` ohne Gio (Abbildung, Zoom zum Zeiger, Treffer, Griffe, Ziehen); Änderungen nur über
    Befehle und Züge von `document` (Rückgängig ohne Grenze, F-18: nicht während eines Zugs). `ui` zeichnet Bild und
    Objekte mit Gio-Vektorpfaden und übersetzt Eingaben. Der Editor öffnet erst, wenn alle Overlay-Fenster zu sind
@@ -111,7 +111,7 @@ Schnapp nimmt auf und legt in der Bibliothek ab (Sprint 4); der Editor (Karte #3
   (`document.Dokument.Stand`); „geändert“ heißt aktuelle Kennung ≠ Kennung beim letzten Speichern. Rückgängig bis zum
   gespeicherten Stand ist ungeändert; Strg+S ohne Änderung schreibt nicht (Statusleiste „Keine Änderungen zu
   speichern.“). Folge: Eine Datei von außen landet erst mit der ersten Änderung in der Bibliothek (von Andi am 20.11.2026
-  zur Kenntnis genommen) (seit ADR-0016 Nachtrag 10 nur noch, wenn die Übernahme beim Öffnen scheitert).
+  zur Kenntnis genommen) (seit ADR-0016 Nachtrag 11 stößt der Editor dieses erste Speichern selbst an, sobald die Datei von außen zum ersten Mal geändert ist, außer bei einer Schwärzung; Nachtrag 10 hatte sie vorübergehend schon beim Öffnen übernommen).
 - **Konflikt zweier Editoren (F-110):** Beim Öffnen merkt sich der Editor den Stand der Datei (Gerät, Inode, Größe,
   Änderungszeit; `library.Stand`, gelesen vor dem Inhalt). `library.Speichern` vergleicht ihn vor dem Lesen und noch
   einmal kurz vor dem Umbenennen und überschreibt bei Abweichung nicht (`ErrGeaendert`); der Editor weicht auf eine
@@ -214,7 +214,7 @@ Sollwerte der Kostentests und den Abstand des Alltagsdokuments und ist ein eigen
 ## Nachtrag 4 (20.11.2026): Arbeitsziel nach dem Speichern einer Datei von außen (F-155)
 
 - **Neues Arbeitsziel:** Das erste Speichern einer Datei außerhalb der Bibliothek legt eine neue Aufnahme an (die
-  Ausgangsdatei bleibt unberührt, ADR-0016) (seit ADR-0016 Nachtrag 10 nur noch, wenn die Übernahme beim Öffnen scheitert). Diese Aufnahme ist danach das Arbeitsziel: Die Titelleiste nennt ihren
+  Ausgangsdatei bleibt unberührt, ADR-0016) (seit ADR-0016 Nachtrag 11 stößt der Editor dieses erste Speichern selbst an, sobald die Datei von außen zum ersten Mal geändert ist, außer bei einer Schwärzung; Nachtrag 10 hatte sie vorübergehend schon beim Öffnen übernommen). Diese Aufnahme ist danach das Arbeitsziel: Die Titelleiste nennt ihren
   Namen, jedes weitere Strg+S und das Speichern beim Schließen schreiben in genau diese Datei, nie in eine dritte
   (das war schon so, jetzt per Test `TestSpeichernDateiVonAussenArbeitsziel` festgehalten).
 - **Meldung:** „Saved as a new capture in the library: schnapp/JJJJ-MM/<Name>.png (the original file is unchanged)“ —

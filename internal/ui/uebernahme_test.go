@@ -142,3 +142,65 @@ func TestUebernahmeWartetBeiSchonGeaendertemDokument(t *testing.T) {
 		warteSpeichern(t, e)
 	}
 }
+
+// Sitzungs-Kritik 26.11. K-1, K-2: Ist die erste Änderung eine Schwärzung, wird nicht von selbst gespeichert — das
+// Speichern leerte den Verlauf, die Schwärzung wäre sofort endgültig. Rückgängig bleibt möglich; danach (ohne
+// Schwärzung im Verlauf) stößt die nächste Änderung das Speichern an.
+func TestUebernahmeNichtNachSchwaerzung(t *testing.T) {
+	e, n := uebernahmeEditor(t)
+	e.s.SetzeWerkzeug(canvas.WerkzeugSchwaerzen)
+	e.s.Druecken(e.s.Abb.ZuFenster(document.Pt(20, 20)), canvas.TastePrimaer)
+	e.s.Ziehen(e.s.Abb.ZuFenster(document.Pt(60, 50)))
+	e.s.Loslassen(e.s.Abb.ZuFenster(document.Pt(60, 50)))
+	if !e.s.Geaendert() || !e.s.D.VerlaufMitSchwaerzung() {
+		t.Fatal("keine Schwärzung")
+	}
+	if e.uebernahmePruefen() || !e.aussen {
+		t.Fatalf("nach einer Schwärzung angestoßen (aussen %v)", e.aussen)
+	}
+	if !e.s.Rueckgaengig() {
+		t.Fatal("Schwärzung lässt sich nicht zurücknehmen")
+	}
+	e.s.SetzeWerkzeug(canvas.WerkzeugKasten)
+	e.s.Druecken(e.s.Abb.ZuFenster(document.Pt(80, 80)), canvas.TastePrimaer)
+	e.s.Ziehen(e.s.Abb.ZuFenster(document.Pt(120, 110)))
+	e.s.Loslassen(e.s.Abb.ZuFenster(document.Pt(120, 110)))
+	if !e.uebernahmePruefen() {
+		t.Fatal("nach der Rücknahme nicht angestoßen")
+	}
+	warteSpeichern(t, e)
+	if n.Load() != 1 {
+		t.Errorf("Speicherfunktion %d mal", n.Load())
+	}
+}
+
+// K-4: Hat ein anderes Speichern (Strg+S) die Datei schon übernommen, stößt die nächste Änderung nichts mehr an.
+func TestUebernahmeNachStrgS(t *testing.T) {
+	e, n := uebernahmeEditor(t)
+	if _, err := e.s.D.Hinzufuegen(document.Kasten{Bereich: document.R(document.Pt(2, 2), document.Pt(20, 20)),
+		Strich: document.Strich{Farbe: canvas.Schwaerzfarbe, Breite: 2}}); err != nil {
+		t.Fatal(err)
+	}
+	e.speichernJetzt()
+	warteSpeichern(t, e)
+	if e.aussen || n.Load() != 1 {
+		t.Fatalf("nach Strg+S: aussen %v, %d Speicherungen", e.aussen, n.Load())
+	}
+	if _, err := e.s.D.Hinzufuegen(document.Kasten{Bereich: document.R(document.Pt(30, 30), document.Pt(50, 50)),
+		Strich: document.Strich{Farbe: canvas.Schwaerzfarbe, Breite: 2}}); err != nil {
+		t.Fatal(err)
+	}
+	if e.uebernahmePruefen() {
+		t.Error("nach Strg+S noch einmal angestoßen")
+	}
+}
+
+// K-3: Eine Meldung der Rettungskopie beim Start bleibt stehen; der Hinweis auf die Datei von außen verdrängt sie nicht.
+func TestUebernahmeHinweisVerdraengtRettungNicht(t *testing.T) {
+	e, _ := uebernahmeEditor(t)
+	e.melde("Restored unsaved changes", false)
+	e.aussenSetzen(true)
+	if e.meldung.Text != "Restored unsaved changes" || !e.aussen {
+		t.Errorf("Meldung %q, aussen %v", e.meldung.Text, e.aussen)
+	}
+}

@@ -1146,3 +1146,30 @@ Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #347, #315, #345 
 - **Ein Drehbuch-Lauf mit `--bild` darf keine Daten im Probe-Heim hinterlassen, die den nächsten Lauf ändern** (D-5):
   Die Übernahme legte das Testbild samt Beschriftungen ab, der zweite Lauf hätte es wiedergefunden. Der Probe-Build
   schaltet die Übernahme im Drehbuch-Lauf ab.
+
+## Sprint 14, Karten #348, #351 und Sitzungs-Kritik (26.11.2026)
+
+- **Eine Warteschleife mit `pgrep -f MUSTER` findet sich selbst** (#351): Die Befehlszeile der wartenden Shell enthält
+  das Muster, die Schleife endet nie (zwei liefen fünf Stunden). Auf einen Hintergrundlauf nicht pollen, er meldet sich
+  selbst; sonst auf eine Ergebniszeile in einer Datei warten, mit Zeitgrenze. Hängende Aufgaben mit TaskStop beenden.
+- **Ein neuer Abschnitt in der rechten Leiste verschiebt jedes Drehbuch, das beim selben Werkzeug weiter unten klickt —
+  und niemand merkt es** (#315 → #351): `farbwaehler-189.txt` klickte seit #315 um 90 px daneben; ein Drehbuch prüft
+  nichts, der Lauf blieb „grün“. Nach jeder Änderung der Leistenhöhe `git grep -l -E '^(klick|ziehe) 1[3-5][0-9][0-9] '
+  scripts/drehbuecher`, jedes Drehbuch mit demselben Werkzeug fahren und die Fotos ansehen; Maße im Kopfkommentar mit
+  Karte und Datum der letzten Messung.
+- **Zwei gleichartige Felder mit verschiedenen Voreinstellungen brauchen verschiedene Nullwerte** (#351,
+  `Pfeil.Ende`/`Anfang`): Ende ohne Angabe = Dreieck, Anfang ohne Angabe = keine. Mit demselben Typ trüge jeder alte
+  Pfeil (Nullwert) zwei Spitzen, und 40 Test-Literale samt Prüfsummen kippten. Lösung: eigener Typ `Anfangskopf`, um
+  eins verschoben, Zugriff nur über `KopfAnfang()`/`MitKoepfen()`, gehalten von Mutant PF23. Vor jedem neuen Feld an
+  einem gespeicherten Objekt fragen: Was zeigt der Nullwert in alten Dateien, Tests und Literalen?
+- **Ein Vermerk „abgelöst durch Nachtrag N“ gehört an jede Stelle, die den alten Nachtrag zitiert** (#348): ADR-0020,
+  ADR-0036 und E-16 trugen noch „seit Nachtrag 10 … beim Öffnen“. Nach einem ablösenden Nachtrag nach der alten Nummer
+  greppen (`git grep -n 'Nachtrag 10' docs/`).
+- **Was von selbst speichert, darf nichts Endgültiges auslösen** (Kritik K-1, K-2): Das automatische Speichern nach der
+  ersten Änderung leerte bei einer Schwärzung den Verlauf und machte sie sofort unumkehrbar; die haltende Warnung beim
+  Schließen wurde zur flüchtigen Meldung. Ein automatischer Auslöser prüft vorher, ob der Schritt Folgen hat, die der
+  Nutzer sonst bewusst bestätigt (hier: `VerlaufMitSchwaerzung`).
+- **Ein Ansatz, der eine Datei elffach vergrößert, ist kein Fix** (#349, F-826): Den Pfeil im SVG als einen Pfad aus den
+  Teilen des Renderers zu schreiben, beseitigte die Fuge, blähte `arrow-heads.snap.svg` von 3 auf 38 KB und band
+  `render` in `fileformat` ein (Importzyklus in render-Tests). Vor dem Bau die Größe als Grenze festlegen und messen.
+

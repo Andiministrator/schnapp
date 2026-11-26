@@ -220,7 +220,7 @@ Tests in `internal/library/index_zweiter_prozess_test.go`, Mutanten HB32 bis HB3
 
 ## Nachtrag 10 (26.11.2026): Eine Datei von außen wird beim Öffnen eine Aufnahme (Karte #345)
 
-*Punkt 1 und das „Verworfen“ zum Verweis in der Leiste sind durch Nachtrag 11 abgelöst: übernommen wird erst mit der ersten Änderung.*
+*Durch Nachtrag 11 abgelöst: Punkt 1 (Übernahme beim Öffnen, `importiere` gibt es nicht mehr), Punkt 3 (Scheitern der Übernahme beim Öffnen; heute scheitert höchstens das erste Speichern, Nachtrag 11 Punkt 2), Punkt 4 (Rettungskopie) und beide „Verworfen“. Es gelten weiter Punkt 2 (keine Doppelten, gemerkt erst beim ersten Speichern), Punkt 5 und Punkt 6.*
 
 **Status:** Akzeptiert (Claude Opus 5.5, Andi: „arbeite selbstständig“).
 
@@ -285,6 +285,17 @@ Ablage, auch eine, die man nur ansehen wollte (etwa vom USB-Stick).
    and still shows the unredacted content“, nach dem Wiederfinden über die Summe mit dem Namen der Datei.
 6. Agenten-Wege und der Drehbuch-Lauf bleiben ohne Übernahme (Nachtrag 10 Punkt 5); mit `importBeimOeffnen` aus speichert
    der Editor auch nicht bei der ersten Änderung.
+7. **Keine Übernahme von selbst nach einer Schwärzung** (Sitzungs-Kritik 26.11., K-1, K-2): Solange der Verlauf eine
+   Schwärzung oder Verpixelung trägt, stößt die Änderung kein Speichern an. Sonst wäre eine versehentliche Schwärzung
+   sofort endgültig (das Speichern leert den Verlauf, ADR-0022 Punkt 3), erneutes Öffnen führte zur geschwärzten
+   Aufnahme, und die Warnung vor dem ungeschwärzten Original käme nur als flüchtige Meldung. Es gilt dann das
+   gewöhnliche Speichern (Strg+S, Schließen mit haltender Warnung); wird die Schwärzung zurückgenommen, stößt die
+   nächste Änderung wieder an.
+8. Jedes gelungene Speichern hebt den Merker auf (K-4): Hat Strg+S die Datei schon abgelegt, stößt die nächste Änderung
+   nichts mehr an. Eine Meldung der Rettungskopie beim Start geht dem Hinweis „not in the library“ vor (K-3).
+9. `--ignore-limit DATEI` von außen: öffnet sich ohne Kopie; die erste Änderung legt sie wie jede andere als Aufnahme
+   ab. Diese Aufnahme öffnet sich später aus der Leiste nicht (Budgetmeldung), nur wieder mit `--ignore-limit` (wie
+   Nachtrag 10 Punkt 3; aus dem Codepfad `oeffneImEditor` → `vorOeffnen`, ohne eigenen Test, F-831).
 
 Verworfen: eine vorläufige Kachel der offenen Datei in der Leiste (gestrichelt, „nicht in der Bibliothek“). Die Leiste
 zählt Stellen, Fokus, ✕ und Papierkorb über Einträge des Index; eine Kachel ohne Eintrag hätte jeden dieser Wege

@@ -658,7 +658,7 @@ Ob er jetzt in der echten Sitzung wechselt, zeigt Andis nächster Echtlauf.
 
 ## Nachtrag 19 (26.11.2026): Pfeilspitze neu, Spitzenarten und Enden (Karte #315)
 
-*Punkt 1 (Kopf/Enden), Punkt 4 (Format, FormatVersion 1), Punkt 5 (Bedienung), Punkt 7 (`head`/`ends`) und das „Verworfen“ zu Spitzen je Ende sind durch Nachtrag 20 abgelöst.*
+*Punkt 1 (Kopf/Enden), Punkt 4 (Format, FormatVersion 1), Punkt 5 (Bedienung), Punkt 7 (`head`/`ends`) und das „Verworfen“ zu Spitzen je Ende sind durch Nachtrag 20 abgelöst; ebenso das „Verworfen“ zu FormatVersion 2 (jetzt gewählt, Nachtrag 20 Punkt 4). Die Sichtprobe `pfeilform-315.txt` ist entfernt (d256d16), es gilt `pfeilform-351.txt`.*
 
 **Status:** Akzeptiert (Claude Opus 5.5).
 
@@ -727,7 +727,7 @@ selbstständig“).
 2. **Arten** (`document.Kopfarten`, Reihenfolge der Bedienung; Name in Datei, `--annotate` und MCP): keine (`none`),
    gefülltes Dreieck (`triangle`), schlank (`narrow`, `4w+7` lang, `3w+4` breit), eingekerbt (`notched`, Stealth:
    `3,5w+7` lang, `4,5w+7` breit, Kerbe 35 % der Länge), offen (`open`), halbe Spitze (`half`, nur der Widerhaken links
-   der Richtung), Punkt (`dot`), Raute (`diamond`, `4w+8` lang, `3w+6` breit, vordere Ecke am Ende), Quadrat (`square`,
+   der Richtung, im Code „links“: auf der Seite `(-ry, rx)`, im Bild mit y nach unten rechts in Blickrichtung), Punkt (`dot`), Raute (`diamond`, `4w+8` lang, `3w+6` breit, vordere Ecke am Ende), Quadrat (`square`,
    Seite `2,6w+5`, um das Ende), Querstrich (`bar`). Bei Kerbe und Raute endet der Schaft dort, wo seine Kanten die
    hinteren Kanten der Spitze treffen (`KopfRueckstand`): Der Umriss schließt ohne Lücke und ohne Zipfel an die
    Schaftpunkte an. Ein Ring (offener Kreis) ist verworfen: Er hätte ein Loch, der Umriss eines Kopfs ist ein Vieleck.
@@ -746,10 +746,15 @@ selbstständig“).
    `versionPfeilKoepfe`), wie bei Lupe und Sprechblasen-Spitze: Ein älterer Leser meldet die Datei als neuer, statt
    einen anderen Pfeil zu zeigen und die Attribute beim Speichern zu verlieren (Kritik K-12). In Version 1 sind die
    Attribute unbekannter Inhalt und gelten nicht; unbekannte Werte gelten als Voreinstellung. Beispiel
-   `testdata/format/arrow-heads` (jetzt Version 2), `docs/format.md` §8.1.
+   `testdata/format/arrow-heads` (jetzt Version 2), `docs/format.md` §8.1. Dateien, die ein Zwischenstand vom 26.11.2026
+   mit `s:kopf`/`s:enden` gespeichert hat, zeigen einen gewöhnlichen Pfeil (Dreieck bei B); bewusst, betroffen ist nur die
+   Bibliothek des Maintainers.
 5. **`--annotate` und MCP:** beim Typ `arrow` die freiwilligen Schlüssel `start_head` (Voreinstellung `none`) und
    `end_head` (Voreinstellung `triangle`) mit den Namen aus Punkt 2; `head`/`ends` entfallen.
-6. Schnellstile tragen die Spitzen weiter nicht (Nachtrag 19 Punkt 6).
+6. Schnellstile tragen die Spitzen weiter nicht (Nachtrag 19 Punkt 6), obwohl der Abschnitt jetzt „Pfeil-Stil“ heißt: Der
+   Name folgt Andis Wortwahl, in der Sache bleibt die Spitze Form.
+7. Ein Pfeil kürzer als seine Spitzen hat keinen Schaft; Renderer und Editor füllen die Köpfe dann in einer Füllung,
+   damit überlappende Köpfe halbdurchsichtig einmal decken (Sitzungs-Kritik 26.11. K-6, `TestKurzerPfeilKoepfeDeckenEinmal`).
 
 Tests: `internal/document/pfeilform_test.go` (Nullwerte, Maße, Kerbe und Raute schließen an den Schaft),
 `internal/render/pfeil_test.go` (jede Art an jedem Ende deckt einmal), `internal/canvas/pfeilform_test.go`,
@@ -757,3 +762,6 @@ Tests: `internal/document/pfeilform_test.go` (Nullwerte, Maße, Kerbe und Raute 
 (Version 2, Version 1 ignoriert), `internal/annotate`; Mutanten `scripts/mutanten/pfeilform.json` (PF1–PF28); Sichtprobe
 `scripts/drehbuecher/pfeilform-351.txt` (ersetzt `pfeilform-315.txt`).
 
+Verworfen: FormatVersion 1 behalten (Nachtrag 19; ein älterer Leser zeigte einen anderen Pfeil und verlöre die Attribute
+beim Speichern, F-830); `s:kopf`/`s:enden` weiter lesen (kein Release hat sie geschrieben); zweimal zehn Symbolknöpfe
+statt der Klappfelder (zu hoch für die Leiste, kein Platz für Namen); ein Ring (Loch im Umriss).

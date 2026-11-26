@@ -17,7 +17,7 @@ type PfeilZerlegung struct {
 	Schaft []document.Punkt   // Linienzug des Schafts ohne doppelte Punkte (für die Suche nach Bereichen)
 	// Suche ist der größte Abstand eines Teils von seiner Strecke plus 1 Pixel (document.StreckenStuecke).
 	Suche float64
-	// Einzeln sind Köpfe ohne Schaft (der Pfeil ist kürzer als seine Köpfe), je eine eigene Füllung.
+	// Einzeln sind Köpfe ohne Schaft (der Pfeil ist kürzer als seine Köpfe), zusammen eine Füllung.
 	Einzeln [][]document.Punkt
 	ls      linienStrich
 }
@@ -54,17 +54,26 @@ func ZerlegePfeil(p document.Pfeil) PfeilZerlegung {
 	return z
 }
 
-// pfeil zeichnet den Pfeil v je sichtbarem Bereich (strichJeStueckMit), Köpfe ohne Schaft je für sich.
+// pfeil zeichnet den Pfeil v je sichtbarem Bereich (strichJeStueckMit), Köpfe ohne Schaft zusammen in einer Füllung.
 func (z zeichner) pfeil(v document.Pfeil) {
 	pz := ZerlegePfeil(v)
 	z.strichJeStueckMit(pz.ls, v.Strich, pz.Suche)
-	for _, k := range pz.Einzeln {
-		z.jeStueck(huelleVon(k, 1), func(zs zeichner, abb func(document.Punkt) document.Punkt) {
-			pts := make([]document.Punkt, len(k))
-			for i, q := range k {
-				pts[i] = abb(q)
+	if len(pz.Einzeln) > 0 {
+		// Köpfe ohne Schaft in einer Füllung: Überlappen sie (kurzer Pfeil mit zwei Spitzen), deckt eine
+		// halbdurchsichtige Farbe trotzdem einmal (Sitzungs-Kritik 26.11. K-6). Alle Umrisse laufen gleich herum.
+		var alle []document.Punkt
+		for _, k := range pz.Einzeln {
+			alle = append(alle, k...)
+		}
+		z.jeStueck(huelleVon(alle, 1), func(zs zeichner, abb func(document.Punkt) document.Punkt) {
+			teile := make([][]document.Punkt, len(pz.Einzeln))
+			for i, k := range pz.Einzeln {
+				teile[i] = make([]document.Punkt, len(k))
+				for j, q := range k {
+					teile[i][j] = abb(q)
+				}
 			}
-			zs.fuelle([][]document.Punkt{pts}, nil, v.Strich.Farbe)
+			zs.fuelle(teile, nil, v.Strich.Farbe)
 		})
 	}
 }
