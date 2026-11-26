@@ -1,0 +1,30 @@
+[
+  {
+    "name": "KS0126-1 keine Warnung vor der Datei von außen nach der Übernahme",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\treste = append(reste, rest{ort: ort, aussen: true, bei: geschriebenBei})\n",
+    "neu": "\t\t_ = ort\n"
+  },
+  {
+    "name": "KS0126-2 Übernahme hasht auch Nicht-Dateien",
+    "datei": "cmd/schnapp/importieren.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif err != nil || !fi.Mode().IsRegular() || fi.Size() > fileformat.MaxDatei {",
+    "neu": "\tif err != nil || fi.Size() > fileformat.MaxDatei {"
+  },
+  {
+    "name": "KS0126-3 Haarnadel ohne Schaft",
+    "datei": "internal/document/pfeilform.go",
+    "paket": "./internal/document",
+    "alt": "\t\tif lang += q.Minus(vorher).Laenge(); lang >= abstand {",
+    "neu": "\t\tif lang += q.Minus(vorher).Laenge(); false && lang >= abstand {"
+  },
+  {
+    "name": "KS0126-5 abgebrochener Wechsel verschweigt den Papierkorb",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif papierkorb && e.meldung.Text != \"\" {",
+    "neu": "\t\tif false && papierkorb && e.meldung.Text != \"\" {"
+  }
+]

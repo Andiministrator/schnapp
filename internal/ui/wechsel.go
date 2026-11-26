@@ -206,6 +206,9 @@ func (e *editor) wechselAbholen() bool {
 		default:
 			e.melde(i18n.T("The other capture was not opened: this one was changed meanwhile."), false)
 		}
+		if papierkorb && e.meldung.Text != "" { // Kritik K-9: auch hier sagen, dass nichts weggeworfen wurde
+			e.meldung.Text += " " + i18n.T("The capture was not moved to the trash.")
+		}
 	case papierkorb:
 		// Die bisher offene ist gespeichert und nicht mehr offen: jetzt in den Papierkorb, die volle Ansicht bleibt offen
 		// (Karte #347). Der Pfad ist der der Datei, die den Stand trägt (nach einem Speichern als neue Aufnahme die neue).

@@ -318,3 +318,23 @@ func TestLeisteKreuzNachRuheOhneBewegung(t *testing.T) {
 		t.Errorf("kein Bild zum Ende der Ruhe bestellt: %v %v, Soll %v", wann, ok, l.e.bibl.loeschRuheBis)
 	}
 }
+
+// Kritik K-9: Wird der Wechsel vor dem Wegwerfen der offenen Aufnahme abgebrochen (hier: ein Export-Dialog ging
+// während des Ladens auf), bleibt sie im Bestand, und die Meldung sagt auch, dass sie nicht im Papierkorb liegt.
+func TestLeisteKreuzAnDerOffenenAbbruch(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	k := &l.e.unten
+	l.tor = make(chan struct{})
+	l.e.leistePapierkorb(1)
+	l.warte(func() bool { return len(l.aufrufe()) == 1 })
+	l.e.exportOffen = true
+	close(l.tor)
+	l.warte(func() bool { return !l.e.wechsel.laedt && !l.e.bibl.arbeitLaeuft && !k.indexLaeuft })
+	l.e.exportOffen = false
+	if _, err := os.Stat(l.pfade[1]); err != nil {
+		t.Errorf("offene trotz Abbruch verschoben: %v", err)
+	}
+	if !strings.Contains(l.e.meldung.Text, "export") || !strings.Contains(l.e.meldung.Text, "not moved to the trash") {
+		t.Errorf("Meldung %q", l.e.meldung.Text)
+	}
+}

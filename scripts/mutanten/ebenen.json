@@ -101,8 +101,8 @@
     "name": "E15 Zwischenbild ohne Rand für die Pfeilspitze (F-584)",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "\t\trand += math.Max(8, 4*v.Strich.Breite)\n\tcase document.Kasten:",
-    "neu": "\t\t_ = v\n\tcase document.Kasten:"
+    "alt": "g = g.Vereint(v.Form().Huelle(v.Strich.Breite))",
+    "neu": "g = g.Vereint(document.PfeilForm{Schaft: v.Form().Schaft}.Huelle(v.Strich.Breite))"
   },
   {
     "name": "E16 Zwischenbild ohne starre Anker bei Stauchen (F-583)",

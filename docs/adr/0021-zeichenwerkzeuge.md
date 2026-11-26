@@ -679,11 +679,14 @@ Dreieck, offene Spitze, Punkt, Strich quer); Enden keine (= Linie), Ende, Anfang
    gebogenen Pfeil sitzt die Spitze so auf der Kurve, nicht auf der Tangente am Ende. Der Umriss des Kopfs schließt an
    die Normale der letzten Schaftstrecke an (`Kopfform.SchaftNormale`); bei starker Krümmung und großem Kopf weicht sie
    von der Sehne ab, die Fuge bleibt trotzdem dicht. Ohne Schaft bekommt jeder Kopf ein gedachtes Schaftende auf der
-   Sehne und so seine volle Form.
+   Sehne und so seine volle Form. Bleibt eine Kurve überall näher am Ende als der Kopf lang ist, ist aber länger
+   (Haarnadel, Schleife), endet der Schaft nach Bogenlänge (Sitzungs-Kritik 26.11. K-4); der Kopfumriss kann dann eine
+   Kerbe zum Schaft hin haben (bewusste Grenze). Der Rahmen einer Ebene mit Deckkraft unter 100 % fasst die ganze
+   Gestalt (`render.ebenenRahmen` über `Form().Huelle`, K-5).
 3. **Der Schaft endet unter der Spitze** (`PfeilForm.Schaft`, gekürzte Kurve). Der Kopf schließt den Schaft genau an
    seinem Ende ab: Der Renderer ersetzt die runde Kappe des Linienstrichs durch den Umriss des Kopfs (gemeinsame Kante aus
    denselben Punkten wie die Kappe, ADR-0023 Nachtrag 22). So überlappen Schaft und Kopf nicht, auch eine halbdurchsichtige
-   Farbe deckt gleichmäßig. Der Editor füllt dieselben Teile (`render.PfeilTeile`); Gios Strich hätte nur runde Enden.
+   Farbe deckt gleichmäßig. Der Editor füllt dieselben Teile (`render.ZerlegePfeil`, `fuelleTeile` in `internal/ui/editor.go`); Gios Strich hätte nur runde Enden.
    Ist der Pfeil kürzer als seine Köpfe, entfällt der Schaft, die Köpfe bleiben.
 4. **SVG-Export:** Linie ohne Kopf wie bisher als Strich mit runden Enden; mit Kopf der Schaft als Strich mit geraden
    Enden, je Kopf ein gefülltes Vieleck, an einem offenen Ende eine halbe Scheibe. Format: freiwillige Attribute

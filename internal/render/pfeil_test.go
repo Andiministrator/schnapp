@@ -72,3 +72,29 @@ func TestPfeilKurzNurKoepfe(t *testing.T) {
 		t.Errorf("Köpfe fehlen: %v %v", b.NRGBAAt(90, 100), b.NRGBAAt(120, 100))
 	}
 }
+
+// Kritik K-5: Mit Ebenen-Deckkraft unter 100 % zeichnet der Renderer über ein Zwischenbild im ebenenRahmen. Der Rahmen
+// muss die ganzen Köpfe fassen — vorher schnitt er die Schenkel einer offenen Spitze an kurzen Pfeilen ab.
+func TestPfeilDeckkraftSchneidetKopfNicht(t *testing.T) {
+	for _, art := range document.Kopfarten {
+		v := document.GeraderPfeil(document.Pt(140, 120), document.Pt(150, 120), document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 20})
+		v.Kopf, v.Enden = art, document.EndenBeide
+		zaehle := func(deckkraft int) int {
+			w := v
+			w.Ebene = w.Ebene.MitDeckkraft(deckkraft)
+			d := weissesDokument(t, 320, 240)
+			hinzu(t, d, w)
+			b := bild(t, d)
+			n := 0
+			for i := 0; i < len(b.Pix); i += 4 {
+				if b.Pix[i] < 250 {
+					n++
+				}
+			}
+			return n
+		}
+		if voll, fast := zaehle(100), zaehle(99); fast < voll-voll/50 {
+			t.Errorf("%s: deckend %d Pixel, mit 99 %% nur %d", art.Name(), voll, fast)
+		}
+	}
+}

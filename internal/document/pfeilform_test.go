@@ -157,3 +157,14 @@ func TestPfeilTeilstueck(t *testing.T) {
 		}
 	}
 }
+
+// Kritik K-4: Eine Haarnadel, deren Kurve überall näher am Ende bleibt als der Kopf lang ist, behält ihren Schaft
+// (Schaftende nach Bogenlänge); vor #315 war die Kurve gezeichnet.
+func TestPfeilHaarnadelBehaeltSchaft(t *testing.T) {
+	for _, breite := range []float64{6, 12} {
+		p := Pfeil{A: Pt(100, 100), K: Pt(110, 170), B: Pt(120, 100), Strich: Strich{Breite: breite}}
+		if f := p.Form(); len(f.Schaft) < 2 || len(f.Koepfe) != 1 {
+			t.Errorf("Strich %v: %d Schaftpunkte, %d Köpfe", breite, len(f.Schaft), len(f.Koepfe))
+		}
+	}
+}

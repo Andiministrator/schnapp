@@ -31,8 +31,8 @@
     "name": "IM5 Datei → Öffnen… übernimmt nicht",
     "datei": "cmd/schnapp/editor.go",
     "paket": "./cmd/schnapp",
-    "alt": "\t\tpfad = importiere(b, pfad, false, kante) //",
-    "neu": "\t\t_ = importiere //"
+    "alt": "\t\tpfad = importiere(b, pfad, false, kante)\n",
+    "neu": "\t\t_ = importiere\n"
   },
   {
     "name": "IM6 Liste: erste statt letzte Zeile",

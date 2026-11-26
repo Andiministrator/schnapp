@@ -1646,7 +1646,7 @@ msgid "This is the only capture: it stays open and is not moved to the trash."
 msgstr "Das ist die einzige Aufnahme: Sie bleibt offen und kommt nicht in den Papierkorb."
 
 msgid "The capture was not moved to the trash."
-msgstr "Die Aufnahme liegt nicht im Papierkorb."
+msgstr "Die Aufnahme wurde nicht in den Papierkorb gelegt."
 
 msgid "This is the open capture. Open another one first."
 msgstr "Das ist die offene Aufnahme. Erst eine andere öffnen."

@@ -235,12 +235,21 @@ E-16); bis dahin fehlte sie in der Leiste, und die Leiste umrandete nichts.
    der Aufnahme (`imports.jsonl` neben dem Index, 0600, nur lokal, nie in einer Bilddatei). Öffnet man dieselbe
    unveränderte Datei wieder, öffnet Schnapp die vorhandene Aufnahme samt ihren Beschriftungen, solange sie noch in der
    Ablage liegt; sonst wird neu übernommen. Geht die Liste verloren, entsteht höchstens eine weitere Kopie.
-3. **Scheitert die Übernahme** (Ablage nicht beschreibbar, Datei über dem Rechenbudget, unlesbar), öffnet der Editor die
-   Datei wie bisher; das erste Speichern legt sie dann ab (Punkt 5 bleibt als Rückfall, auch für eine Aufnahme, die
+3. **Scheitert die Übernahme** (Ablage nicht beschreibbar, Datei über dem Rechenbudget, unlesbar, keine reguläre Datei
+   oder größer als `fileformat.MaxDatei` — beides prüft sie vor dem Hashen), öffnet der Editor die Datei wie bisher.
+   Mit `--ignore-limit` wird auch eine Datei über dem Budget übernommen; die Aufnahme öffnet sich später aus der Leiste
+   nicht (Budgetmeldung), nur wieder mit `--ignore-limit`; das erste Speichern legt sie dann ab (Punkt 5 bleibt als Rückfall, auch für eine Aufnahme, die
    sich nicht zurückschreiben lässt). Einen Lade- oder Budgetfehler meldet der gewöhnliche Weg.
 4. Die Rettungskopie einer früher außerhalb bearbeiteten Datei (ADR-0029) wird beim Übernehmen nicht angewandt; sie
    bleibt liegen und verfällt nach 30 Tagen. Neue Arbeit läuft immer an der Aufnahme.
-5. Agenten-Wege (`--export`, `--annotate`, MCP) öffnen keinen Editor und übernehmen nichts.
+5. Agenten-Wege (`--export`, `--annotate`, MCP) öffnen keinen Editor und übernehmen nichts. Im Drehbuch-Lauf des
+   virtuellen KWin übernimmt der Probe-Build `--bild` nicht (`SCHNAPP_PROBE_LEISTE_AUS`), sonst öffnete der zweite Lauf
+   die beschriftete Aufnahme des ersten (Kritik D-5).
+6. **Schwärzen (ADR-0022 Punkt 4, F-221):** Die Datei von außen bleibt eine liegen gebliebene Fassung. Wird in der
+   übernommenen Aufnahme geschwärzt, warnt das Speichern einmal je neuer Schwärzung mit ihrem Namen ohne Ordner („The
+   original file %s is unchanged and still shows the unredacted content.“), auch wenn die Aufnahme über die Summe
+   wiedergefunden wurde (`herkunftVon`, Sitzungs-Kritik 26.11. K-1/D-1). Gilt für die Laufzeit des Programms; nach
+   einem Neustart weiß die Aufnahme nichts mehr von ihrer Herkunft.
 
 Verworfen: die Datei nur als Verweis in der Leiste zeigen (die Leiste liest den Index der Ablage; ein Verweis bräuchte
 eine zweite Liste und verschwände beim nächsten Start); die übernommene Kopie beim Schließen ohne Änderung wieder

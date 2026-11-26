@@ -103,7 +103,7 @@ Teil 2. Was die Entscheidung offen ließ oder anders kam:
    eingepasste Ansicht; die eigenen Schnellstile werden aus `styles.ini` neu gelesen. Die alte Rettungskopie endet
    (gespeichert: verworfen, Sperre frei), die neue wird angewendet wie beim Öffnen.
 8. **Grüner Rand:** Der Editor kennt die Datei, die gerade den Stand trägt (`ui.Geoeffnet.Pfad`, nach einem Speichern
-   als neue Aufnahme die neue). Eine Datei von außen hat keinen grünen Rand, bis sie als Aufnahme gespeichert ist.
+   als neue Aufnahme die neue). Eine Datei von außen hat keinen grünen Rand, bis sie als Aufnahme gespeichert ist (seit ADR-0016 Nachtrag 10 nur noch im Rückfall: Sie wird beim Öffnen übernommen und ist sofort grün umrandet).
 9. **Drehbücher:** Statt jedes Drehbuch die Leiste per Menü ausschalten zu lassen, startet sie im Drehbuch-Lauf aus und
    merkt ihren Schalter nicht (`SCHNAPP_PROBE_LEISTE_AUS`, nur der Probe-Build liest es, `scripts/probe.sh` setzt es).
    So bleiben alle Drehbücher mit festen Koordinaten gültig, und ein Umschalten kippt keinen späteren Lauf (Lehre aus

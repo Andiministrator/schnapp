@@ -103,7 +103,8 @@ func rettungUmDatei(pfad string, aendere func() error) error {
 // übersetzt wie beim Öffnen von der Kommandozeile.
 func oeffnerFuer(b *library.Bibliothek, kante document.Kante) ui.Oeffnen {
 	return func(pfad string) (ui.Geoeffnet, error) {
-		pfad = importiere(b, pfad, false, kante)                       // Datei → Öffnen…: von außen erst übernehmen (ADR-0016 Nachtrag 10)
+		// Datei → Öffnen…: von außen erst übernehmen (ADR-0016 Nachtrag 10).
+		pfad = importiere(b, pfad, false, kante)
 		abs, g, stand, r, err := ladeMitRettung(pfad, false, ladeFuer) // wartet vor dem Laden (F-769)
 		if err != nil {
 			return ui.Geoeffnet{}, errors.New(nutzerFehler(err))
@@ -223,6 +224,11 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 	// die andere Fassung eines Konflikts und eine Aufnahme, deren Zurückschreiben scheiterte. Wird später geschwärzt,
 	// zeigen sie das Geschwärzte noch.
 	var reste []rest
+	if ort, ok := herkunftVon(abs); ok {
+		// Aus einer Datei von außen übernommen (ADR-0016 Nachtrag 10 Punkt 6): Sie bleibt, wie sie ist, und zeigt
+		// weiter, was hier geschwärzt wird; das Speichern warnt wie bisher mit ihrem Namen (ADR-0022 Punkt 4, F-221).
+		reste = append(reste, rest{ort: ort, aussen: true, bei: geschriebenBei})
+	}
 	// schreibe ist ein Speichern ohne Blick auf frühere Fassungen; neue sind die Fassungen, die dabei liegen bleiben.
 	schreibe := func(d *document.Dokument) (_ ui.Gespeichert, neue []rest, _ error) {
 		vorher := geschriebenBei // Schwärzungsstand der Datei, die dieses Speichern ersetzen soll

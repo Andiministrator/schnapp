@@ -20,4 +20,10 @@ func probeGuard() error { return probeguard.NurVirtuell(os.Getenv) }
 // Nachtrag 4 Punkt 1), und mit ihm der Reiter Agents der Einstellungstafel (ADR-0034 Nachtrag 1); außerhalb des virtuellen KWin läuft er gar nicht (probeGuard).
 func init() {
 	settings.BenutzerHeim = func() (string, error) { return os.Getenv("HOME"), nil }
+	// Im Drehbuch-Lauf (scripts/probe.sh setzt SCHNAPP_PROBE_LEISTE_AUS) übernimmt der Editor --bild nicht in die
+	// Probe-Bibliothek: Sonst öffnete der zweite Lauf über imports.jsonl die beschriftete Aufnahme des ersten
+	// (ADR-0016 Nachtrag 10, Kritik D-5).
+	if os.Getenv("SCHNAPP_PROBE_LEISTE_AUS") != "" {
+		importBeimOeffnen = false
+	}
 }

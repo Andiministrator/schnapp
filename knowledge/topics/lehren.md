@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13, Verify 2 bis 5 und Karten #299 bis #305). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #347, #315, #345 und Sitzungs-Kritik). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -1124,3 +1124,25 @@ Stand: 2026-11-25 (laufend ergänzt, zuletzt Sprint 13, Verify 2 bis 5 und Karte
 - **Ein Klick-Mutant, der den Zweig nur über den Nebeneffekt eines anderen Tests betritt, überlebt** (OF4, ZF9):
   Vorher stehende Meldungen und gleichzeitig wechselnde Pixel verdecken die geprüfte Wirkung; Meldung vor dem Schritt
   leeren bzw. den Fall so bauen (starker Zoom), dass nur die geprüfte Größe sich ändert.
+
+## Sprint 14, Karten #347, #315, #345 und Sitzungs-Kritik (26.11.2026, F-825 bis F-831)
+
+- **Wer einen Ablauf umlenkt, prüft die Schutzwarnungen des alten Wegs** (K-1/D-1, #345): Die Übernahme beim Öffnen
+  machte jede Datei von außen zur Aufnahme — die Warnung „das Original zeigt das Geschwärzte noch“ hing am alten Weg und
+  fiel still weg. Beide Kritiker fanden es unabhängig. Vor dem Commit nach `aussen`, `Warnung`, [S]-Pfaden im
+  verlassenen Zweig suchen.
+- **Ein Schalter, den `TestMain` für alte Tests abschaltet, lässt den Standardweg ungetestet** (K-8): `importBeimOeffnen
+  = false` hielt die Rückfall-Tests richtig, aber nur zwei Tests fuhren das ausgelieferte Verhalten. Die wichtigsten
+  Altfälle (Schwärzen, Budget) auch mit eingeschaltetem Schalter fahren.
+- **Ein frisch gezeichnetes Objekt bleibt gewählt, und die Leiste ändert es** (#315 Sichtprobe): Ein Drehbuch, das nach
+  dem Zeichnen die Spitzenart für den nächsten Pfeil wählt, änderte den eben gezeichneten. Vor jeder neuen Wahl `Esc`.
+- **gofmt richtet Zeilenkommentare an der Nachbarzeile aus** (IM5): Ein Mutanten-Muster mit `… //` traf nach dem
+  Formatieren nicht mehr. Muster ohne Zeilenkommentar wählen oder den Kommentar auf eine eigene Zeile setzen.
+- **„Kürzer als der Kopf“ ist nach Abstand, nicht nach Bogenlänge, gemessen** (K-4): Bei einer Haarnadel verschwand der
+  ganze Schaft. Geometrie-Rückfälle mit gebogenen und gefalteten Kurven prüfen, nicht nur mit geraden.
+- **Ein neues Maß ersetzt alle alten Obermaße** (K-5): Die Ebenenvorschau wurde auf `Form().Huelle` umgestellt, der
+  Rahmen des Zwischenbilds im Renderer nicht; bei Deckkraft unter 100 % fehlten Schenkel. Nach einer Maßänderung nach
+  dem alten Ausdruck greppen (`max(8, 4`).
+- **Ein Drehbuch-Lauf mit `--bild` darf keine Daten im Probe-Heim hinterlassen, die den nächsten Lauf ändern** (D-5):
+  Die Übernahme legte das Testbild samt Beschriftungen ab, der zweite Lauf hätte es wiedergefunden. Der Probe-Build
+  schaltet die Übernahme im Drehbuch-Lauf ab.

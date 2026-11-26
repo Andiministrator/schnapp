@@ -5,9 +5,13 @@ package main
 import (
 	"bytes"
 	"image"
+	"image/color"
 	"os"
 	"path/filepath"
+	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/library"
@@ -119,5 +123,47 @@ func TestOeffnenOhneUebernahmeWieBisher(t *testing.T) {
 	abs, _ := filepath.Abs(aussen)
 	if g.geoeffnet.Pfad() != abs {
 		t.Errorf("Pfad %q, Soll die Datei von außen %q", g.geoeffnet.Pfad(), abs)
+	}
+}
+
+// Kritik K-1 (ADR-0016 Nachtrag 10 Punkt 6): Wird in der übernommenen Aufnahme geschwärzt, warnt das Speichern, dass
+// die Datei von außen das Geschwärzte noch zeigt — wie vor der Übernahme (ADR-0022 Punkt 4, F-221). Auch beim
+// Wiederfinden über die Summe.
+func TestUebernahmeWarntVorUngeschwaerztemOriginal(t *testing.T) {
+	aussen, g, _ := importLauf(t)
+	for runde := range 2 {
+		if err := oeffneImEditor(aussen, false, document.KanteWelle); err != nil {
+			t.Fatal(err)
+		}
+		if err := g.dok.Schwaerzen(image.Rect(2, 2, 12+runde, 12), document.Schwaerzung{Farbe: color.NRGBA{A: 255}}); err != nil {
+			t.Fatal(err)
+		}
+		erg, err := g.speichern(g.dok)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !erg.Warnung || !strings.Contains(erg.Hinweis, filepath.Base(aussen)) || !strings.Contains(erg.Hinweis, "unredacted") {
+			t.Errorf("Runde %d: keine Warnung zur Datei von außen: %q", runde, erg.Hinweis)
+		}
+		g.rettung.Ende()
+	}
+}
+
+// Kritik K-3: Eine FIFO oder ein Gerät wird nicht gehasht (blockierte sonst); der gewöhnliche Weg meldet den Fehler.
+func TestUebernahmeNurRegulaereDatei(t *testing.T) {
+	_, _, b := importLauf(t)
+	fifo := filepath.Join(t.TempDir(), "rohr")
+	if err := syscall.Mkfifo(fifo, 0o600); err != nil {
+		t.Skip(err)
+	}
+	fertig := make(chan string, 1)
+	go func() { fertig <- importiere(b, fifo, false, document.KanteWelle) }()
+	select {
+	case p := <-fertig:
+		if p != fifo {
+			t.Errorf("FIFO übernommen: %q", p)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("importiere blockiert an einer FIFO")
 	}
 }

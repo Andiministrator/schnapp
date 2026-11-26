@@ -162,8 +162,10 @@ func TestReichweiteIstObermassZufall(t *testing.T) {
 	}
 }
 
-// Gezieltes Gegenbeispiel: kurzer schräger Pfeil. Die Ecke der Spitze liegt bei B − r·g ± n·g/2, also bis g·√5/2
-// (1,118·g) von B entfernt entlang einer Achse; Reichweite nimmt nur ±g.
+// Gezieltes Gegenbeispiel: kurzer schräger Pfeil. Die Ecke der Spitze lag bei B − r·g ± n·g/2, also bis g·√5/2
+// (1,118·g) von B entfernt entlang einer Achse; Reichweite nahm nur ±g. g = max(8, 4·Breite) ist das frühere
+// Spitzenmaß und dient hier nur noch als Größenordnung für den Testaufbau; die Gestalt rechnet seit ADR-0021
+// Nachtrag 19 Pfeil.Form.
 func TestPfeilspitzeEckeNichtAbgeschnitten(t *testing.T) {
 	for _, breite := range []float64{3, 4, 10} {
 		t.Run(fmt.Sprintf("Breite%v", breite), func(t *testing.T) {

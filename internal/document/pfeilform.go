@@ -179,7 +179,8 @@ func schaftNormale(schaft []Punkt, k Kopfform) Punkt {
 }
 
 // suchePunkt sucht vom Ende B (amEnde) bzw. A her den ersten Kurvenparameter t, dessen Punkt mindestens abstand vom Ende
-// entfernt liegt, auf etwa 1e-9 genau. Gibt es keinen, das andere Ende.
+// entfernt liegt, auf etwa 1e-9 genau. Gibt es keinen, den Punkt nach Bogenlänge abstand (Haarnadel), ist die Kurve
+// kürzer, das andere Ende.
 func (p Pfeil) suchePunkt(amEnde bool, abstand float64) float64 {
 	ende, t0, schritt := p.A, 0.0, 1.0/256
 	if amEnde {
@@ -202,6 +203,18 @@ func (p Pfeil) suchePunkt(amEnde bool, abstand float64) float64 {
 			return fern
 		}
 		nah = t
+	}
+	// Bleibt die Kurve überall näher am Ende (Haarnadel, Schleife), ist sie aber länger als der Abstand, endet der
+	// Schaft dort, wo die Bogenlänge vom Ende den Abstand erreicht — sonst verschwände der ganze Schaft (Kritik K-4).
+	const n = 256
+	lang, vorher := 0.0, p.Punkt(t0)
+	for i := 1; i <= n; i++ {
+		t := t0 + schritt*float64(i)
+		q := p.Punkt(t)
+		if lang += q.Minus(vorher).Laenge(); lang >= abstand {
+			return t
+		}
+		vorher = q
 	}
 	return 1 - t0
 }

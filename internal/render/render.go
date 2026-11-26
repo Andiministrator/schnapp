@@ -490,8 +490,8 @@ func (z zeichner) ebene(o document.Objekt) error {
 	return nil
 }
 
-// ebenenRahmen ist der Umriss von o in der Ansicht, aufs Bild begrenzt, mit Rand für die Pfeilspitze (sie ragt über
-// Grenzen hinaus) und die Kantenglättung. Pfeil und Kasten bildet der Zeichner Punkt für Punkt ab, ihre Ecken reichen.
+// ebenenRahmen ist der Umriss von o in der Ansicht, aufs Bild begrenzt, mit den Köpfen eines Pfeils (sie ragen über
+// Grenzen hinaus, Pfeil.Form) und Rand für die Kantenglättung. Pfeil und Kasten bildet der Zeichner Punkt für Punkt ab, ihre Ecken reichen.
 // Text und Nummer zeichnete er früher starr ab einem abgebildeten Anker; seit ADR-0023 Nachträgen 13 und 15 zeichnet er
 // sie je sichtbarem Bereich, ihre Tinte liegt also innerhalb der abgebildeten Grenzen. Die Erweiterung um die starren
 // Anker bleibt als großzügiges Obermaß (F-583).
@@ -505,7 +505,9 @@ func (z zeichner) ebenenRahmen(o document.Objekt) image.Rectangle {
 	}
 	switch v := o.(type) {
 	case document.Pfeil:
-		rand += math.Max(8, 4*v.Strich.Breite)
+		// Schaft und Köpfe aus derselben Gestalt wie das Zeichnen (ADR-0021 Nachtrag 19, Kritik K-5): Die Schenkel der
+		// offenen Spitze reichen bis 4,67w+5 hinter das Ende, das frühere Obermaß max(8, 4w) schnitt sie ab.
+		g = g.Vereint(v.Form().Huelle(v.Strich.Breite))
 	case document.Kasten:
 		// Der Strich liegt starr mit halber Breite um das abgebildete Rechteck; fällt seine Kante auf eine Naht, ragt er
 		// über die abgebildeten Grenzen hinaus (Verify V23-1).

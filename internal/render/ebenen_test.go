@@ -61,7 +61,7 @@ func TestEbenenImRenderer(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		schaft, beides := b.NRGBAAt(12, 20), b.NRGBAAt(48, 20) // Spitze ist max(8, 24) lang: ab x = 32
+		schaft, beides := b.NRGBAAt(12, 20), b.NRGBAAt(48, 20) // Spitze ist 3·6+5 = 23 lang (ADR-0021 Nachtrag 19): ab x = 33; Schaft und Kopf überlappen seitdem nicht mehr
 		if !nah(schaft, fall.soll, 1) || !nah(beides, fall.soll, 1) {
 			t.Errorf("Deckkraft %d: Schaft %v, Schaft+Spitze %v, Soll %v", fall.deck, schaft, beides, fall.soll)
 		}

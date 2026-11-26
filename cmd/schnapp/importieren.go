@@ -7,9 +7,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/fileformat"
 	"github.com/Andiministrator/schnapp/internal/library"
 	"github.com/Andiministrator/schnapp/internal/render"
 )
@@ -33,13 +35,21 @@ func importiere(b *library.Bibliothek, pfad string, ohneGrenze bool, kante docum
 	if _, ok := b.Relativ(abs); ok {
 		return pfad
 	}
+	// Erst prüfen wie das Öffnen (reguläre Datei, höchstens fileformat.MaxDatei): Eine FIFO, ein Gerät oder eine
+	// riesige Datei würde sonst beim Hashen blockieren (Kritik K-3); der gewöhnliche Weg meldet den Fehler.
+	fi, err := os.Stat(abs)
+	if err != nil || !fi.Mode().IsRegular() || fi.Size() > fileformat.MaxDatei {
+		return pfad
+	}
 	summe, err := dateiSumme(abs)
 	if err != nil {
 		return pfad
 	}
 	if rel, ok := b.Importiert(summe); ok {
 		diagnoseImport("schon übernommen: %s", rel)
-		return filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))
+		ziel := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))
+		merkeHerkunft(ziel, abs)
+		return ziel
 	}
 	_, g, _, err := ladeFuerEditor(abs, ohneGrenze)
 	if err != nil {
@@ -67,7 +77,24 @@ func importiere(b *library.Bibliothek, pfad string, ohneGrenze bool, kante docum
 	if err := b.MerkeImport(summe, e.Pfad); err != nil {
 		diagnoseImport("Liste der Übernahmen: %v", err)
 	}
-	return filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad))
+	ziel := filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad))
+	merkeHerkunft(ziel, abs)
+	return ziel
+}
+
+// herkunft merkt je übernommener Aufnahme (absoluter Pfad) den Namen der Datei von außen ohne Ordner (F-155), damit das
+// Speichern beim Schwärzen vor ihr warnt (ADR-0016 Nachtrag 10 Punkt 6, Kritik K-1).
+var herkunft sync.Map
+
+func merkeHerkunft(aufnahme, aussen string) { herkunft.Store(aufnahme, filepath.Base(aussen)) }
+
+// herkunftVon liefert den Namen der Datei von außen, aus der die Aufnahme abs übernommen wurde.
+func herkunftVon(abs string) (string, bool) {
+	v, ok := herkunft.Load(abs)
+	if !ok {
+		return "", false
+	}
+	return v.(string), true
 }
 
 // dateiSumme ist die SHA-256-Summe des Inhalts der Datei pfad.

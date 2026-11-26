@@ -853,13 +853,9 @@ func (s *schreiber) halbeScheibe(ende, nach document.Punkt, hw float64, farbe co
 	r := d.Mal(1 / l)
 	n := document.Pt(-r.Y, r.X)
 	von, bis := ende.Minus(n.Mal(hw)), ende.Plus(n.Mal(hw))
-	// Der Bogen läuft über die Außenseite ende + r·hw: Drehsinn aus dem Kreuzprodukt (SVG-Flag 1 = wachsender Winkel).
-	sweep := "0"
-	if (von.X-ende.X)*r.Y-(von.Y-ende.Y)*r.X > 0 {
-		sweep = "1"
-	}
+	// Von rechts (−n) über die Außenseite ende + r·hw nach links (+n) wächst der Winkel immer: SVG-Flag 1.
 	s.WriteString(`<path`)
-	s.attr("d", "M"+punkt(von)+" A"+zahl(hw)+" "+zahl(hw)+" 0 0 "+sweep+" "+punkt(bis)+" Z")
+	s.attr("d", "M"+punkt(von)+" A"+zahl(hw)+" "+zahl(hw)+" 0 0 1 "+punkt(bis)+" Z")
 	s.farbeSVG("fill", farbe)
 	s.WriteString(`/>`)
 }
