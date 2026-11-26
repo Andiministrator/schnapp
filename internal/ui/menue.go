@@ -56,6 +56,9 @@ type menueEintrag struct {
 	kopf       document.Kopfart
 	hatKopf    bool
 	kopfAnfang bool
+	// Strichart (ADR-0021 Nachtrag 25): die Zeile zeigt davor eine Vorschau.
+	strichart    document.Strichart
+	hatStrichart bool
 	// kuerzel zeigt ein Kürzel, das nicht in der Tastentabelle steht, weil ein eigener Bereich es abholt (Menü
 	// Bearbeiten der vollen Ansicht, ADR-0026 Nachtrag 10).
 	kuerzel string
@@ -468,6 +471,9 @@ func (e *editor) knopfPerTaste(c *widget.Clickable) {
 	case &e.pfeilform.feld[1]:
 		e.kopfListeOeffnen(1, true)
 		return
+	case &e.strichart.feld:
+		e.strichartListeOeffnen(true)
+		return
 	case &e.knoepfe.farbe, &e.knoepfe.fuellung:
 		// Per Tastatur öffnet ein Farbfeld der Werkzeugleiste immer die Liste für sein Feld; die rechte Leiste klappt
 		// Strg+Umschalt+B auf. Das graue Feld Füllung tut nichts (ADR-0021 Nachtrag 11).
@@ -504,6 +510,8 @@ func (e *editor) listenKnopf(i int) *widget.Clickable {
 		return &e.bibl.zeitraumKnopf
 	case listeKopfAnfang, listeKopfEnde:
 		return &e.pfeilform.feld[i-listeKopfAnfang]
+	case listeStrichart:
+		return &e.strichart.feld
 	}
 	return &e.menue.titel[i]
 }
@@ -580,6 +588,9 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 			case en.hatKopf:
 				e.s.SetzeKopf(en.kopfAnfang, en.kopf)
 				continue
+			case en.hatStrichart:
+				e.s.SetzeStrichart(en.strichart)
+				continue
 			}
 			e.fuehreAus(gtx, en.akt, true)
 		}
@@ -635,8 +646,8 @@ func (e *editor) zeichneMenue(gtx layout.Context) {
 		farbFeld = gtx.Dp(14 + 10) // Farbquadrat vor dem Namen
 		breite += farbFeld
 	}
-	if liste && (m.welches == listeKopfAnfang || m.welches == listeKopfEnde) {
-		farbFeld = gtx.Dp(44 + 12) // Vorschau der Spitze vor dem Namen
+	if liste && (m.welches == listeKopfAnfang || m.welches == listeKopfEnde || m.welches == listeStrichart) {
+		farbFeld = gtx.Dp(44 + 12) // Vorschau der Spitze bzw. Strichart vor dem Namen
 		breite += farbFeld
 	}
 	if liste {
@@ -751,6 +762,11 @@ func (e *editor) menueZeile(gtx layout.Context, c *widget.Clickable, en menueEin
 		h := gtx.Dp(16)
 		vr := image.Rect(innen, (groesse.Y-h)/2, innen+gtx.Dp(44), (groesse.Y-h)/2+h)
 		zeichneKopfMuster(gtx, en.kopf, en.kopfAnfang, vr, farbe)
+		textX += farbFeld
+	}
+	if farbFeld > 0 && en.hatStrichart {
+		h := gtx.Dp(16)
+		zeichneStrichMuster(gtx, en.strichart, image.Rect(innen, (groesse.Y-h)/2, innen+gtx.Dp(44), (groesse.Y-h)/2+h), farbe)
 		textX += farbFeld
 	}
 	schreibe(en.text, farbe, false)

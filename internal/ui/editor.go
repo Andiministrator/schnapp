@@ -348,7 +348,8 @@ type editor struct {
 	// spitze: Schalter „Spitze“ der rechten Leiste (ADR-0021 Nachtrag 13, spitze.go).
 	spitze    spitzenLeiste
 	pfeilform pfeilformLeiste
-	satz      textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
+	strichart strichartLeiste // Klappfeld „Line style“ (ADR-0021 Nachtrag 25, strichart.go)
+	satz      textsatz        // Glyphenumrisse der Beschriftungen (textsatz.go)
 	// nav: Zustand des Navigators auf der Leinwand (navigator.go, ADR-0031 Nachtrag 9); die Adresse ist das Zeigerziel.
 	nav navigatorZustand
 	// fussFeldRahmen: Lage der Felder Farbe und Zoom beim letzten Zeichnen (leer: nicht gezeigt), farbKnopfRahmen die des
@@ -1887,7 +1888,11 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 		strich := func(abb func(document.Punkt) f32.Point) {
 			r, rr := rechteck(abb)
 			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
-				if eckig := kastenStrich(v, r); eckig != nil {
+				if eckig := kastenStrich(v, r); eckig != nil && v.Strich.Art != document.StrichVoll {
+					// Gemustert: dieselben Rechtecke bzw. Scheiben wie der Renderer (ADR-0021 Nachtrag 25).
+					q := document.R(document.Pt(float64(r.Min.X), float64(r.Min.Y)), document.Pt(float64(r.Max.X), float64(r.Max.Y)))
+					fuelleTeile(gtx, render.RahmenTeile(q, v.Strich), v.Strich.Farbe, punktF32)
+				} else if eckig != nil {
 					// Ohne Rundung spitze Außenecken (F-498); Gios Strich kennt nur runde Ecken.
 					var pfad clip.Path
 					pfad.Begin(gtx.Ops)
@@ -1915,6 +1920,21 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 				e.jeStueck(gtx, b, v.Strich.Breite/2+1, an, vorschau, fuellung)
 			}
 			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
+				if v.Strich.Art != document.StrichVoll {
+					// Gemustert (ADR-0021 Nachtrag 25): dieselben Teile wie der Renderer, in den Bereichen, die die
+					// Striche berühren — wie der Schaft eines Pfeils.
+					sz := render.ZerlegeRundenRahmen(b, v.Eckradius, v.Strich)
+					var stuecke []document.Stueck
+					if !vorschau {
+						for _, st := range e.s.D.StreckenStuecke(sz.Zug, false, sz.Suche) {
+							stuecke = append(stuecke, st.Stueck)
+						}
+					}
+					e.jeStueckIn(gtx, stuecke, an, vorschau, func(abb func(document.Punkt) f32.Point) {
+						fuelleTeile(gtx, sz.Teile, v.Strich.Farbe, abb)
+					})
+					break
+				}
 				ks := document.NeuerKastenStrich(b, v.Eckradius, v.Strich.Breite/2)
 				if vorschau {
 					kastenStrichVorschau(gtx, ks, v.Strich.Farbe, an)
@@ -2094,8 +2114,14 @@ func (e *editor) jeStueckIn(gtx layout.Context, stuecke []document.Stueck, an fu
 	}
 }
 
+// punktF32 bildet einen Punkt ohne Umrechnung ins Fenster ab (Teile, die schon in Fensterkoordinaten stehen).
+func punktF32(p document.Punkt) f32.Point { return f32.Pt(float32(p.X), float32(p.Y)) }
+
 // fuelleTeile füllt die Vielecke teile (Original, über abb ins Fenster) als einen Pfad: Überlappungsfreie Teile mit
-// gemeinsamen Kanten decken dann lückenlos (wie kastenStrichVorschau).
+// gemeinsamen Kanten decken dann lückenlos (wie kastenStrichVorschau). Jedes Vieleck läuft dabei gleich herum wie im
+// Renderer (render.raster): Gegenläufige Nachbarn höben sich an ihrer gemeinsamen Kante auf, eine helle Fuge — so stand
+// sie am Ansatz der Pfeilspitze (Sechseck des Schafts gegen den Kopf) und in den Fächern gebogener Striche
+// (ADR-0021 Nachtrag 25 Punkt 11).
 func fuelleTeile(gtx layout.Context, teile [][]document.Punkt, farbe color.NRGBA, abb func(document.Punkt) f32.Point) {
 	var pfad clip.Path
 	pfad.Begin(gtx.Ops)
@@ -2103,9 +2129,16 @@ func fuelleTeile(gtx layout.Context, teile [][]document.Punkt, farbe color.NRGBA
 		if len(t) < 3 {
 			continue
 		}
-		pfad.MoveTo(abb(t[0]))
-		for _, q := range t[1:] {
-			pfad.LineTo(abb(q))
+		if document.VieleckFlaeche(t) < 0 {
+			pfad.MoveTo(abb(t[len(t)-1]))
+			for i := len(t) - 2; i >= 0; i-- {
+				pfad.LineTo(abb(t[i]))
+			}
+		} else {
+			pfad.MoveTo(abb(t[0]))
+			for _, q := range t[1:] {
+				pfad.LineTo(abb(q))
+			}
 		}
 		pfad.Close()
 	}
@@ -2487,7 +2520,7 @@ func (e *editor) leertastenZiele() []event.Tag {
 	}
 	z = append(z, e.schnell.ziele()...)
 	z = append(z, e.unten.ziele()...)
-	z = append(z, &e.pfeilform.feld[0], &e.pfeilform.feld[1])
+	z = append(z, &e.pfeilform.feld[0], &e.pfeilform.feld[1], &e.strichart.feld)
 	return append(z, &e.knoepfe.fussFarbe, &e.knoepfe.fussZoom, &e.knoepfe.farbe, &e.knoepfe.fuellung)
 }
 
@@ -2699,6 +2732,7 @@ func (e *editor) fokussierterKnopf(gtx layout.Context) *widget.Clickable {
 	alle = append(alle, e.ebenen.alleKnoepfe()...)
 	alle = append(alle, e.lupe.alle()...)
 	alle = append(alle, &e.spitze.knopf)
+	alle = append(alle, e.strichart.alle()...)
 	alle = append(alle, e.pfeilform.alle()...)
 	alle = append(alle, e.schnell.alle()...)
 	alle = append(alle, e.unten.alle()...) // Vorschauen der Leiste (ADR-0036)
@@ -2822,6 +2856,9 @@ func (e *editor) hinweis() string {
 	}
 	if e.pfeilform.hinweis != "" { // Feld der Spitze am Anfang oder Ende (ADR-0021 Nachtrag 20)
 		return e.pfeilform.hinweis
+	}
+	if e.strichart.hinweis != "" { // Feld der Strichart (ADR-0021 Nachtrag 25)
+		return e.strichart.hinweis
 	}
 	if e.unten.hinweis != "" { // Vorschau der Leiste mit Fokus oder Zeiger (ADR-0036)
 		return e.unten.hinweis

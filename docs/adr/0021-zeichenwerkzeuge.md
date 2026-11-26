@@ -877,3 +877,66 @@ auch neue hinzugefügt werden können, oder?“ und „entscheide du das“; Aus
    nicht die Stildatei.
 
 Tests `internal/settings/farben_test.go`, `internal/ui/farbfelder_test.go`; Mutanten `scripts/mutanten/farbfelder.json`.
+
+## Nachtrag 25 (26.11.2026): Strichart — voll, gestrichelt, gepunktet (Karte #362)
+
+**Status:** Akzeptiert (Andi, 26.11.2026: „bei pfeil wäre noch ein linien-stil cool (also, linie gestrichelt, voll,
+halb durchsichtig, gewellt, ...)“; Ausgestaltung Claude Opus 5.5, Andi: „arbeite selbstständig“).
+
+1. **Ein Feld am Strich:** `document.Strich.Art` (`Strichart`): `StrichVoll` (Nullwert, alles Bisherige), `StrichGestrichelt`,
+   `StrichGepunktet`. Es gilt für den Schaft des Pfeils, den Strich des Kastens und Rahmen samt Verbindungslinie der Lupe.
+   Spitzen bleiben voll, ebenso die Schenkel der Sprechblase. *Halbdurchsichtig* ist keine Strichart: Das gibt es schon
+   über die Deckkraft der Farbe und der Ebene. *Gewellt* folgt in einem eigenen Nachtrag (Welle entlang des Strichs, eigene
+   Rechnung wie das Kantenband).
+2. **Maße** (w = Strichstärke, Pixel des Originals): gestrichelt Strich `3w + 2`, Lücke `2w + 2`, gerade Enden;
+   gepunktet Scheiben vom Durchmesser w, Abstand Mitte zu Mitte `2w + 2`. Die festen 2 px halten dünne Striche lesbar.
+3. **Ausgleich, damit Enden und Ecken immer gedeckt sind:** Die Zahl der Striche bzw. Punkte wird gerundet, alle Längen
+   werden um denselben Faktor gestreckt oder gestaucht.
+   - Offener Zug (Schaft des Pfeils, Linie der Lupe): beginnt und endet mit einem ganzen Strich bzw. Punkt. Ist der Zug
+     kürzer als ein Strich, ist er voll.
+   - Rahmen (Kasten, Lupe): je Seite für sich, mit einem halben Strich bzw. einem Punkt an jeder Ecke. Die Ecken sind
+     damit L-förmig gedeckt und das Muster ist symmetrisch. Bei einem runden Kasten gilt dasselbe je Abschnitt von der
+     Mitte einer Rundung zur Mitte der nächsten.
+4. **Überlappungsfrei** wie der volle Strich (ADR-0023 Nachträge 19 bis 22): Eckige Rahmen sind Rechtecke, die
+   waagerechten Striche besitzen die Ecken (`document.EckigerRahmenMuster`, wie `EckigerRahmen`). Sonst ist jeder Strich ein
+   Linienstrich mit geraden Enden (`render.ZerlegeStrich`), jeder Punkt eine Scheibe. Die Rechnung steht einmal in
+   `document` (`StrichAbschnitte`, `RahmenAbschnitte`); Renderer, Editor, SVG-Export und die Vorschauen nehmen dieselben
+   Stücke. Am Pfeil schließt der Kopf bündig an den letzten Strich an; gepunktet ist der letzte Punkt vor einem Kopf
+   eine halbe Scheibe hinter dem Kopf, in einem Teil mit ihm. Bewusste Grenze: Ist ein gebogener Strich enger gekrümmt
+   als die halbe Strichstärke, können sich benachbarte Striche überlappen.
+5. **SVG-Export:** Striche als Linienzüge (`stroke-linecap="butt"`, `stroke-linejoin="round"`), Punkte als Kreise, eckige
+   Rahmen als gefüllter Pfad — ausdrücklich, nicht über `stroke-dasharray`, denn die Länge einer Bézier-Kurve misst jeder
+   Betrachter anders und die Muster lägen verschoben. Ein Kasten mit Strichart steht als `<g>` mit seinen Daten (wie der
+   Kasten ohne Fläche).
+6. **Format:** freiwilliges Attribut `s:strichart` (`dashed`, `dotted`; fehlt bei `solid`) an Pfeil, Kasten und Lupe.
+   Weicht ein Objekt ab, schreibt der Schreiber **FormatVersion 2** (`schreibVersion`, `versionStrichart`), wie bei den
+   Spitzen (Nachtrag 20 Punkt 4); in Version 1 ist das Attribut unbekannter Inhalt und gilt nicht, ein unbekannter Wert ist
+   `solid`. Beispiel `testdata/format/line-styles`, `docs/format.md` §8.
+7. **Bedienung:** Unter dem Regler der Strichstärke (Pfeil, Kasten, Lupe) ein Klappfeld „Line style“ mit Vorschau und Name,
+   Liste über die Menü-Mechanik (`listeStrichart`) mit Vorschau je Zeile, wie der Pfeil-Stil (`internal/ui/strichart.go`).
+   Ohne Auswahl gilt die Wahl für folgende Objekte (`canvas.Stil.Strichart`, ein Wert für alle drei Werkzeuge wie die
+   Strichstärke), mit gewähltem Objekt ändert sie es als einen Rückgängig-Schritt (`canvas.Sitzung.SetzeStrichart`).
+8. **Schnellstile** tragen die Strichart nicht und lassen sie beim Anwenden stehen, wie die Spitzen (Nachtrag 20 Punkt 6).
+   Ob ein Schnellstil sie einmal mitnimmt, entscheidet ein späterer Nachtrag zu ADR-0037.
+9. **`--annotate` und MCP:** beim Typ `arrow` und `rect` der freiwillige Schlüssel `line_style` (`solid`, `dashed`,
+   `dotted`; Voreinstellung `solid`).
+10. Treffer, Grenzen, Einrasten und Griffe bleiben, wie sie sind: Eine Lücke trifft wie der Strich.
+11. **Nebenbefund, behoben:** Der Editor füllte die Teile eines Strichs (`fuelleTeile`) in der Umlaufrichtung, in der sie
+    entstanden. Sechsecke des Linienstrichs und Kappen bzw. Köpfe laufen aber gegeneinander; Gio hob die gemeinsame Kante
+    auf, am Ansatz jeder Pfeilspitze stand im Editor eine helle Fuge (Renderer und Export nicht: `render.raster` dreht
+    jedes Vieleck auf positive Fläche). `fuelleTeile` dreht jetzt ebenso. Test `TestEditorZeichnetStrichartWieRenderer`
+    (voll, gestrichelt, gepunktet: keine grob verschiedenen Pixel gegen `render.Bild`).
+
+Die Leiste wird bei Pfeil, Kasten und Lupe um 38 dp höher. `pfeilform-351.txt`, `farbwaehler-189.txt`,
+`farbwaehler-318.txt` und `ebenen-191.txt` sind nachgezogen (beim gewählten Kasten reicht die Höhe von 1000 px nicht
+mehr, der Ebenen-Abschnitt beginnt dann direkt unter der Farbe), `mischen-215.txt` und `pfeil-eingabe-naht-286.txt`
+unverändert geprüft; die übrigen Drehbücher klicken nur oberhalb des Reglers.
+
+Tests `internal/document/strichart_test.go`, `internal/render/strichart_test.go` (einfach gedeckt, Fuge am Kopf, Lücken
+leer, gerade Enden), `internal/fileformat/strichart_test.go` (Lesen, Version, rsvg-Lage), `internal/canvas/strichart_test.go`,
+`internal/ui/strichart_test.go`, `internal/ui/strichart_zeichnen_test.go`, `internal/annotate`; Mutanten
+`scripts/mutanten/strichart.json` (ST1–ST34); Sichtprobe `scripts/drehbuecher/strichart-362.txt`.
+
+Verworfen: `stroke-dasharray` im SVG (siehe Punkt 5); Strich und Lücke in festen Pixeln (wirkt bei dicken Strichen
+gepunktet); runde Enden der Striche (die Lücke schrumpft sichtbar um eine Strichstärke); eine eigene Strichart
+„halbdurchsichtig“ (Punkt 1).

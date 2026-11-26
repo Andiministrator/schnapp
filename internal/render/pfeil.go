@@ -22,12 +22,20 @@ type PfeilZerlegung struct {
 	ls      linienStrich
 }
 
-// ZerlegePfeil zerlegt den Pfeil p.
+// ZerlegePfeil zerlegt den Pfeil p. Gemustert (ADR-0021 Nachtrag 25) ist der Schaft eine Folge von Strichen mit geraden
+// Enden bzw. Punkten: Der Kopf schließt bündig an den letzten Strich an (eigener Teil mit denselben Eckpunkten wie dessen
+// gerades Ende); gepunktet ersetzt er den letzten Punkt durch die halbe Scheibe hinter sich, in einem Teil mit ihm.
 func ZerlegePfeil(p document.Pfeil) PfeilZerlegung {
 	f := p.Form()
 	hw := p.Strich.Breite / 2
 	z := PfeilZerlegung{Suche: hw + 1}
-	ls := neuerLinienStrich(f.Schaft, false, hw)
+	art := p.Strich.Art
+	var ls linienStrich
+	if art == document.StrichVoll || !(hw > 0) {
+		ls = neuerLinienStrich(f.Schaft, false, hw)
+	} else {
+		ls = musterLinie(document.StrichAbschnitte(f.Schaft, art, p.Strich.Breite), hw)
+	}
 	if len(ls.pts) < 2 && len(f.Koepfe) > 0 {
 		ls = linienStrich{} // kein Schaft: nur die Köpfe
 	}
@@ -37,15 +45,27 @@ func ZerlegePfeil(p document.Pfeil) PfeilZerlegung {
 			z.Einzeln = append(z.Einzeln, k.Umriss(hw))
 			continue
 		}
-		g := ls.gelenk[n-1]
+		stelle := n - 1
 		if k.AmAnfang {
-			g = ls.gelenk[0]
+			stelle = 0
 		}
-		kappe := ls.teile[g]
-		neu := make([]document.Punkt, 0, len(k.Kontur)+2)
-		neu = append(neu, kappe[0])
-		neu = append(neu, k.Kontur...)
-		ls.teile[g] = append(neu, kappe[len(kappe)-1])
+		g := ls.gelenk[stelle]
+		switch {
+		case art == document.StrichVoll:
+			kappe := ls.teile[g]
+			neu := make([]document.Punkt, 0, len(k.Kontur)+2)
+			neu = append(neu, kappe[0])
+			neu = append(neu, k.Kontur...)
+			ls.teile[g] = append(neu, kappe[len(kappe)-1])
+		case art == document.StrichGepunktet && g >= 0:
+			// Halbe Scheibe von links (Schaftnormale) über rückwärts nach rechts, hinter den Umriss gehängt.
+			u := k.Umriss(hw)
+			hinten := bogen(k.Schaftende, hw, k.SchaftNormale.Mal(hw), k.SchaftNormale.Mal(-hw), math.Pi)
+			ls.teile[g] = append(u, hinten[1:len(hinten)-1]...)
+		default: // gestrichelt: gerades Ende ohne Teil, der Kopf wird das Gelenk
+			ls.gelenk[stelle] = len(ls.teile)
+			ls.teile = append(ls.teile, k.Umriss(hw))
+		}
 		for _, q := range k.Kontur {
 			z.Suche = math.Max(z.Suche, q.Minus(k.Schaftende).Laenge()+1)
 		}

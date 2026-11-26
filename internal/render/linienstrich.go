@@ -53,6 +53,12 @@ type linienStrich struct {
 // neuerLinienStrich zerlegt den Strich der halben Breite hw um den Linienzug roh (geschlossen: auch die Strecke vom
 // letzten zum ersten Punkt). Punkte ohne Abstand zum vorigen fallen weg; bleibt einer, ist der Strich eine Scheibe.
 func neuerLinienStrich(roh []document.Punkt, geschlossen bool, hw float64) linienStrich {
+	return zerlegeLinie(roh, geschlossen, hw, true)
+}
+
+// zerlegeLinie ist neuerLinienStrich; ohne kappen enden offene Züge gerade (Striche eines gestrichelten Strichs, ADR-0021
+// Nachtrag 25): Das Sechseck der ersten und letzten Strecke endet senkrecht am Punkt, gelenk ist dort −1.
+func zerlegeLinie(roh []document.Punkt, geschlossen bool, hw float64, kappen bool) linienStrich {
 	var ls linienStrich
 	if !(hw > 0) {
 		return ls
@@ -183,6 +189,7 @@ func neuerLinienStrich(roh []document.Punkt, geschlossen bool, hw float64) linie
 		p := ls.pts[k]
 		a, b := vor(k), nach(k)
 		switch {
+		case (a < 0 || b < 0) && !kappen:
 		case a < 0: // Anfang: halbe Scheibe von links über rückwärts nach rechts
 			ls.gelenk[k] = len(ls.teile)
 			ls.teile = append(ls.teile, bogen(p, hw, normale[b].Mal(hw), normale[b].Mal(-hw), math.Pi))

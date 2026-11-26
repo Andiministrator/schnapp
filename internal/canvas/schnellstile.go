@@ -399,10 +399,10 @@ func (s *Sitzung) SchnellstilAusStand(a SchnellArt) (Schnellstil, bool) {
 func mitSchnellstil(o document.Objekt, st Schnellstil) document.Objekt {
 	switch v := o.(type) {
 	case document.Pfeil:
-		v.Strich = document.Strich{Farbe: st.Farbe, Breite: st.Breite}
+		v.Strich.Farbe, v.Strich.Breite = st.Farbe, st.Breite // die Strichart bleibt (ADR-0021 Nachtrag 25 Punkt 8)
 		return v
 	case document.Kasten:
-		v.Strich = document.Strich{Farbe: st.Farbe, Breite: st.Breite}
+		v.Strich.Farbe, v.Strich.Breite = st.Farbe, st.Breite // die Strichart bleibt (ADR-0021 Nachtrag 25 Punkt 8)
 		v.Fuellung = st.Fuellung
 		return v
 	case document.Text:
@@ -414,7 +414,7 @@ func mitSchnellstil(o document.Objekt, st Schnellstil) document.Objekt {
 		v.Farbe, v.Radius = st.Farbe, st.Radius
 		return v
 	case document.Lupe:
-		v.Strich = document.Strich{Farbe: st.Farbe, Breite: st.Breite}
+		v.Strich.Farbe, v.Strich.Breite = st.Farbe, st.Breite // die Strichart bleibt (ADR-0021 Nachtrag 25 Punkt 8)
 		return v
 	}
 	return o

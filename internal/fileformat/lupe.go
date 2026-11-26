@@ -10,25 +10,10 @@ import (
 	"image/png"
 	"math"
 	"strconv"
-	"strings"
 
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/errprefix"
 )
-
-// rahmenPfad ist der eckige Rahmen um r als gefüllter Pfad: genau die Rechtecke des Renderers (document.EckigerRahmen,
-// F-498), wie beim Kasten ohne Fläche.
-func rahmenPfad(r document.Rechteck, breite float64) string {
-	var pfad strings.Builder
-	for i, q := range document.EckigerRahmen(r, breite) {
-		if i > 0 {
-			pfad.WriteString(" ")
-		}
-		pfad.WriteString("M" + punkt(q.Min) + " L" + punkt(document.Pt(q.Max.X, q.Min.Y)) + " L" + punkt(q.Max) +
-			" L" + punkt(document.Pt(q.Min.X, q.Max.Y)) + " Z")
-	}
-	return pfad.String()
-}
 
 // lupe schreibt eine Lupe (ADR-0033 Punkte 4 bis 6, docs/format.md 8.7): die Daten s:quelle, s:ziel, s:strich und die
 // Darstellung von unten nach oben — Verbindungslinie, Rahmen um die Quelle, Bild im Ziel, Rahmen um das Ziel. In der
@@ -41,16 +26,15 @@ func (s *schreiber) lupe(d *document.Dokument, o document.Lupe) {
 	s.attr("s:quelle", punkt(o.Quelle.Min)+" "+punkt(o.Quelle.Max))
 	s.attr("s:ziel", punkt(o.Ziel.Min)+" "+punkt(o.Ziel.Max))
 	s.attr("s:strich", strich(o.Strich))
+	s.strichart(o.Strich)
 	s.WriteString(`>`)
 	strichDa := o.Strich.Breite > 0 && o.Strich.Farbe.A > 0
-	rahmen := func(r document.Rechteck) {
-		s.WriteString(`<path`)
-		s.attr("d", rahmenPfad(r, o.Strich.Breite))
-		s.farbeSVG("fill", o.Strich.Farbe)
-		s.WriteString(`/>`)
-	}
+	rahmen := func(r document.Rechteck) { s.rahmenSVG(r, o.Strich) } // gemustert auch Punkte (ADR-0021 Nachtrag 25)
 	if strichDa {
-		if a, b, ok := o.Linie(); ok {
+		if a, b, ok := o.Linie(); ok && o.Strich.Art != document.StrichVoll {
+			s.musterSVG(document.StrichAbschnitte([]document.Punkt{a, b}, o.Strich.Art, o.Strich.Breite), o.Strich.Breite,
+				o.Strich.Farbe)
+		} else if ok {
 			s.WriteString(`<path`)
 			s.attr("d", "M"+punkt(a)+" L"+punkt(b))
 			s.attr("fill", "none")

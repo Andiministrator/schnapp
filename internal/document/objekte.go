@@ -30,15 +30,20 @@ type Objekt interface {
 	mitEbene(e Ebene) Objekt
 }
 
-// Strich beschreibt Linienfarbe und -breite in Pixeln des Originals.
+// Strich beschreibt Linienfarbe und -breite in Pixeln des Originals und das Muster (ADR-0021 Nachtrag 25; Nullwert
+// voll).
 type Strich struct {
 	Farbe  color.NRGBA
 	Breite float64
+	Art    Strichart
 }
 
 func (s Strich) pruefe() error {
 	if !groesse(s.Breite) {
 		return fmt.Errorf("document: Strichbreite ungültig: %v", s.Breite)
+	}
+	if int(s.Art) >= len(strichartNamen) {
+		return fmt.Errorf("document: Strichart ungültig: %d", s.Art)
 	}
 	return nil
 }

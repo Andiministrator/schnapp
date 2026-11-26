@@ -70,6 +70,7 @@ type Eintrag struct {
 	Align         *string  `json:"align,omitempty"`
 	StartHead     *string  `json:"start_head,omitempty"` // arrow: head at "from" (default none; ADR-0021 Nachtrag 20)
 	EndHead       *string  `json:"end_head,omitempty"`   // arrow: head at "to" (default triangle)
+	LineStyle     *string  `json:"line_style,omitempty"` // arrow, rect: solid, dashed, dotted (ADR-0021 Nachtrag 25)
 }
 
 // Punkt ist ein Punkt [x, y] im sichtbaren Bild; genau zwei Zahlen (encoding/json füllte ein kürzeres Array still mit
@@ -91,8 +92,8 @@ func (p *Punkt) UnmarshalJSON(b []byte) error {
 // erlaubt sind die Schlüssel je Typ; Pflicht die, ohne die ein Eintrag nicht geht.
 var (
 	erlaubt = map[string][]string{
-		"arrow":    {"from", "to", "color", "width", "start_head", "end_head"},
-		"rect":     {"from", "to", "color", "fill", "width"},
+		"arrow":    {"from", "to", "color", "width", "start_head", "end_head", "line_style"},
+		"rect":     {"from", "to", "color", "fill", "width", "line_style"},
 		"text":     {"at", "text", "size", "color", "fill", "font", "bold", "italic", "underline", "strikethrough", "align", "tip"},
 		"step":     {"at", "color", "radius"},
 		"redact":   {"from", "to"},
@@ -368,6 +369,13 @@ func Wende(ctx context.Context, d *document.Dokument, es []Eintrag) (Ergebnis, e
 				return erg, err
 			}
 			strich := document.Strich{Farbe: c, Breite: breite}
+			if e.LineStyle != nil {
+				art, ok := document.StrichartAus(*e.LineStyle)
+				if !ok {
+					return erg, f(`"line_style" must be one of %s`, namenListe(document.StrichartNamen()))
+				}
+				strich.Art = art
+			}
 			if e.Type == "arrow" {
 				pf := document.GeraderPfeil(a, b, strich)
 				anfang, ende := document.KopfKeine, document.KopfDreieck
@@ -500,8 +508,10 @@ func leseFarbe(s string) (color.NRGBA, bool) {
 }
 
 // kopfListe nennt die Namen der Spitzenarten für Fehlertexte: "triangle", "narrow", … or "none".
-func kopfListe() string {
-	n := document.KopfNamen()
+func kopfListe() string { return namenListe(document.KopfNamen()) }
+
+// namenListe ist die Liste der Namen n für Fehlertexte: "a", "b" or "c".
+func namenListe(n []string) string {
 	q := make([]string, len(n))
 	for i, x := range n {
 		q[i] = `"` + x + `"`

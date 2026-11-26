@@ -19,18 +19,20 @@ import (
 
 // FormatVersion ist die höchste Version des SVG-Blocks, die dieser Stand liest und schreibt (ADR-0006, ADR-0008).
 // Ältere Versionen müssen lesbar bleiben. Geschrieben wird die kleinste Version, die den Inhalt trägt (schreibVersion):
-// 2 nur mit einer Lupe (ADR-0033 Punkt 5), einer Sprechblasen-Spitze (ADR-0021 Nachtrag 13 Punkt 7) oder einem Pfeil,
-// dessen Spitzen von der Voreinstellung abweichen (ADR-0021 Nachtrag 20), sonst 1 — Dateien ohne all das bleiben für
-// ältere Leser lesbar.
+// 2 nur mit einer Lupe (ADR-0033 Punkt 5), einer Sprechblasen-Spitze (ADR-0021 Nachtrag 13 Punkt 7), einem Pfeil,
+// dessen Spitzen von der Voreinstellung abweichen (ADR-0021 Nachtrag 20), oder einem gemusterten Strich (ADR-0021
+// Nachtrag 25), sonst 1 — Dateien ohne all das bleiben für ältere Leser lesbar.
 const FormatVersion = 2
 
 // versionLupe ist die erste Formatversion mit dem Objekttyp „lupe“ (ADR-0033 Punkt 5); versionSpitze die erste mit
 // dem Attribut s:spitze am Text (ADR-0021 Nachtrag 13 Punkt 7); versionPfeilKoepfe die erste mit s:ende/s:anfang am
-// Pfeil (ADR-0021 Nachtrag 20). Alle sind Version 2.
+// Pfeil (ADR-0021 Nachtrag 20); versionStrichart die erste mit s:strichart an Pfeil, Kasten und Lupe (ADR-0021
+// Nachtrag 25). Alle sind Version 2.
 const (
 	versionLupe        = 2
 	versionSpitze      = 2
 	versionPfeilKoepfe = 2
+	versionStrichart   = 2
 )
 
 // schreibVersion ist die Version, die der Schreiber für die Objekte objekte angibt.
@@ -46,6 +48,13 @@ func schreibVersion(objekte []document.Objekt) int {
 		case document.Pfeil:
 			if v.Ende != document.KopfDreieck || v.KopfAnfang() != document.KopfKeine {
 				return versionPfeilKoepfe
+			}
+			if v.Strich.Art != document.StrichVoll {
+				return versionStrichart
+			}
+		case document.Kasten:
+			if v.Strich.Art != document.StrichVoll {
+				return versionStrichart
 			}
 		}
 	}
@@ -122,6 +131,7 @@ func (s *schreiber) kastenOhneFlaeche(o document.Kasten) {
 	s.attr("s:strich", strich(o.Strich))
 	s.attr("s:fuellung", farbeHex(o.Fuellung))
 	s.attr("s:eckradius", zahl(o.Eckradius))
+	s.strichart(o.Strich)
 	s.WriteString(`>`)
 	if o.Strich.Breite > 0 && o.Strich.Farbe.A > 0 {
 		s.WriteString(`<path`)
@@ -275,6 +285,7 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			if a := o.KopfAnfang(); a != document.KopfKeine {
 				s.attr("s:anfang", a.Name())
 			}
+			s.strichart(o.Strich)
 			s.WriteString(`>`)
 			s.pfeilDarstellung(o)
 			s.WriteString(`</g>`)
@@ -282,6 +293,10 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			b := o.Bereich
 			if b.Breite() == 0 || b.Hoehe() == 0 {
 				s.kastenOhneFlaeche(o)
+				break
+			}
+			if o.Strich.Art != document.StrichVoll {
+				s.kastenGemustert(o)
 				break
 			}
 			s.WriteString(`<rect`)
@@ -623,6 +638,23 @@ func (l *leser) strich(name string) document.Strich {
 	return document.Strich{Farbe: l.farbe("_f"), Breite: l.zahl("_b")}
 }
 
+// strichart liest s:strichart (ADR-0021 Nachtrag 25): erst ab Version 2; fehlend, unbekannt oder in Version 1 voll
+// (docs/format.md 11, Regel 3).
+func (l *leser) strichart() document.Strichart {
+	if l.version < versionStrichart {
+		return document.StrichVoll
+	}
+	a, _ := document.StrichartAus(l.a["strichart"])
+	return a
+}
+
+// strichMitArt ist strich samt s:strichart.
+func (l *leser) strichMitArt(name string) document.Strich {
+	st := l.strich(name)
+	st.Art = l.strichart()
+	return st
+}
+
 // bereich liest eine Fläche `x0,y0 x1,y1` (docs/format.md 5.2); die Ordnung der Ecken prüft das Objekt.
 func (l *leser) bereich(name string) document.Rechteck {
 	min, max, _ := strings.Cut(l.text(name), " ")
@@ -658,9 +690,10 @@ func (l *leser) objektOhneEbene(typ string) document.Objekt {
 			}
 			p = p.MitKoepfen(anfang, ende)
 		}
+		p.Strich.Art = l.strichart()
 		return p
 	case "kasten":
-		return document.Kasten{Bereich: l.bereich("bereich"), Strich: l.strich("strich"), Fuellung: l.farbe("fuellung"),
+		return document.Kasten{Bereich: l.bereich("bereich"), Strich: l.strichMitArt("strich"), Fuellung: l.farbe("fuellung"),
 			Eckradius: l.zahl("eckradius")}
 	case "text":
 		t := document.Text{Ort: l.punkt("ort"), Inhalt: l.text("inhalt"), Schriftgrad: l.zahl("grad"),
@@ -677,7 +710,7 @@ func (l *leser) objektOhneEbene(typ string) document.Objekt {
 		return document.Nummer{Mitte: l.punkt("mitte"), Wert: l.ganz("wert"), Radius: l.zahl("radius"),
 			Farbe: l.farbe("farbe")}
 	case "lupe":
-		return document.Lupe{Quelle: l.bereich("quelle"), Ziel: l.bereich("ziel"), Strich: l.strich("strich")}
+		return document.Lupe{Quelle: l.bereich("quelle"), Ziel: l.bereich("ziel"), Strich: l.strichMitArt("strich")}
 	}
 	// Unbekannte Objekttypen aus neueren Fassungen: als Fehler melden statt still verlieren.
 	l.fehler("unbekannter Objekttyp %q", typ)
@@ -831,6 +864,10 @@ func (s *schreiber) pfeilDarstellung(o document.Pfeil) {
 	f := o.Form()
 	hw := o.Strich.Breite / 2
 	farbe := o.Strich.Farbe
+	if o.Strich.Art != document.StrichVoll {
+		s.pfeilGemustert(o, f)
+		return
+	}
 	if len(f.Koepfe) == 0 {
 		s.WriteString(`<path`)
 		s.attr("d", "M"+punkt(o.A)+" Q"+punkt(o.K)+" "+punkt(o.B))

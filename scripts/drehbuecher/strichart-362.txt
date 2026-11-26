@@ -1,0 +1,85 @@
+# Sichtprobe ADR-0021 Nachtrag 25 (Karte #362): Strichart über das Klappfeld „Line style“ der rechten Leiste.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/strichart-362.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1, Werkzeug Pfeil (A) und Kasten (R): Feld „Line style“ unter dem Regler der Strichstärke bei
+# (1490, 283); die Liste klappt darunter auf, eine Zeile je 32 px: durchgezogen, gestrichelt, gepunktet ab y 320. Beim
+# Pfeil darunter „Anfang“ bei (1490, 341), Liste ab y 377 (keine, Dreieck, …). Bei der Lupe (M, eine Reihe Schnellstile)
+# steht das Feld bei (1490, 239). Ein frisch gezeichnetes Objekt bleibt gewählt, eine Wahl änderte es: vor jeder neuen
+# Wahl Esc (Auswahl aufheben).
+# Erwartet:
+#  01 Leiste beim Werkzeug Pfeil: „Strichart“ mit Vorschau „Durchgezogen“ unter dem Regler, darunter der Pfeil-Stil.
+#  02 offene Liste: drei Zeilen mit Vorschau (durchgezogen, gestrichelt, gepunktet), „Durchgezogen“ grün.
+#  03 ein gestrichelter und ein gepunkteter Pfeil: der letzte Strich bzw. die halbe Scheibe schließt bündig an die
+#     Spitze an; ein gestrichelter und ein gepunkteter Kasten
+#     (eckig, Ecken gedeckt); unten ein gebogener gestrichelter Pfeil mit Dreieck an beiden Enden; auf Blau eine
+#     gepunktete Lupe (Rahmen und Linie gepunktet).
+#  04 der gepunktete Kasten gewählt, über das Feld auf gestrichelt gestellt; Leiste zeigt „Gestrichelt“.
+#  05 nach Strg+Z wieder gepunktet.
+warte 1500
+taste A
+warte 400
+foto 01-leiste
+klick 1490 283
+warte 400
+foto 02-liste
+taste Esc
+warte 200
+klick 1490 283
+warte 200
+klick 1480 351
+warte 200
+ziehe 120 120 520 120 10
+taste Esc
+klick 1490 283
+warte 200
+klick 1480 383
+warte 200
+ziehe 120 200 520 200 10
+taste Esc
+klick 1490 283
+warte 200
+klick 1480 352
+warte 200
+klick 1490 341
+warte 200
+klick 1480 409
+warte 200
+ziehe 120 800 520 800 10
+warte 200
+ziehe 320 800 320 700 10
+taste Esc
+taste R
+warte 200
+klick 1490 283
+warte 200
+klick 1480 351
+warte 200
+ziehe 640 100 900 260 10
+taste Esc
+klick 1490 283
+warte 200
+klick 1480 383
+warte 200
+ziehe 640 320 900 480 10
+taste Esc
+taste M
+warte 200
+klick 1490 239
+warte 200
+klick 1480 340
+warte 200
+ziehe 960 560 1060 640 10
+taste Esc
+warte 400
+foto 03-alle
+taste V
+warte 200
+klick 640 400
+warte 300
+klick 1490 283
+warte 200
+klick 1480 351
+warte 400
+foto 04-kasten-gestrichelt
+taste Strg+Z
+warte 400
+foto 05-rueckgaengig

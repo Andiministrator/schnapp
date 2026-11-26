@@ -176,6 +176,7 @@ func (e *editor) seiteAuswerten(gtx layout.Context) {
 	e.lupeAuswerten(gtx)
 	e.spitzeAuswerten(gtx)
 	e.pfeilformAuswerten(gtx)
+	e.strichartAuswerten(gtx)
 	for j, f := range kantenFormen {
 		if k.kanten[j].Clicked(gtx) && an() && e.s.SetzeKante(f) {
 			e.melde(kantenMeldung(f), false)
@@ -234,6 +235,7 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	k.kopf, k.farbeGezeigt, k.sw.gezeigt = "", false, false
 	e.spitze.rahmen = image.Rectangle{}
 	e.pfeilform.rahm, e.pfeilform.hinweis = [2]image.Rectangle{}, ""
+	e.strichart.rahm, e.strichart.hinweis = image.Rectangle{}, ""
 	e.schnell.gezeigt, e.schnell.hinweis = false, ""
 	k.farbRahmen, k.kantRahmen, k.strRahmen = [farbPlaetze]image.Rectangle{}, [3]image.Rectangle{}, [2]image.Rectangle{}
 	k.strRegler = image.Rectangle{}
@@ -334,6 +336,7 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 		e.textMittig(gtx, k.strichText, 13, farbeText, wert)
 		y += hoch + gtx.Dp(6)
 		y = e.zeichneStrichRegler(gtx, x, y, breite) + gtx.Dp(10)
+		y = e.zeichneStrichart(gtx, x, y, breite, spalte) // Pfeil, Kasten, Lupe (ADR-0021 Nachtrag 25)
 	}
 	if inhalt.Pfeilform { // Spitzenart und Enden (ADR-0021 Nachtrag 19)
 		y = e.zeichnePfeilform(gtx, x, y, breite, spalte)

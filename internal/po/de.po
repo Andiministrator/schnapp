@@ -1819,3 +1819,18 @@ msgstr "Höchstens %d Farbfelder. Erst eines entfernen."
 
 msgid "Adds the current color as a swatch."
 msgstr "Nimmt die aktuelle Farbe als Farbfeld auf."
+
+msgid "Line style"
+msgstr "Strichart"
+
+msgctxt "line style"
+msgid "Solid"
+msgstr "Durchgezogen"
+
+msgctxt "line style"
+msgid "Dashed"
+msgstr "Gestrichelt"
+
+msgctxt "line style"
+msgid "Dotted"
+msgstr "Gepunktet"

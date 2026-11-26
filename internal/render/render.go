@@ -573,7 +573,12 @@ func (z zeichner) objekt(o document.Objekt) error {
 				})
 			}
 			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
-				z.kastenStrich(document.NeuerKastenStrich(b, v.Eckradius, v.Strich.Breite/2), v.Strich.Farbe)
+				if v.Strich.Art != document.StrichVoll { // gemustert (ADR-0021 Nachtrag 25)
+					sz := ZerlegeRundenRahmen(b, v.Eckradius, v.Strich)
+					z.strichJeStueckMit(sz.ls, v.Strich, sz.Suche)
+				} else {
+					z.kastenStrich(document.NeuerKastenStrich(b, v.Eckradius, v.Strich.Breite/2), v.Strich.Farbe)
+				}
 			}
 			break
 		}
@@ -584,12 +589,9 @@ func (z zeichner) objekt(o document.Objekt) error {
 		}
 		if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
 			if document.WirksamerEckradius(v.Eckradius, r.Breite(), r.Hoehe()) == 0 {
-				// Ohne Rundung spitze Außenecken (F-498): Strich als überlappungsfreie Rechtecke.
-				var polys [][]document.Punkt
-				for _, q := range document.EckigerRahmen(r, v.Strich.Breite) {
-					polys = append(polys, []document.Punkt{q.Min, document.Pt(q.Max.X, q.Min.Y), q.Max, document.Pt(q.Min.X, q.Max.Y)})
-				}
-				z.fuelle(polys, nil, v.Strich.Farbe)
+				// Ohne Rundung spitze Außenecken (F-498): Strich als überlappungsfreie Rechtecke, gemustert auch Scheiben
+				// (ADR-0021 Nachtrag 25).
+				z.fuelle(RahmenTeile(r, v.Strich), nil, v.Strich.Farbe)
 			} else {
 				z.strich(umriss, true, v.Strich)
 			}
@@ -1071,7 +1073,7 @@ func (z zeichner) strichJeStueckMit(ls linienStrich, s document.Strich, suche fl
 			polys = append(polys, punkte[von:len(punkte):len(punkte)])
 		}
 		for _, i := range st.Strecken {
-			if i < len(ls.strecke) {
+			if i < len(ls.strecke) && ls.strecke[i] >= 0 { // −1: Lücke eines gemusterten Strichs
 				verschoben(ls.teile[ls.strecke[i]])
 			}
 			for _, k := range []int{i, (i + 1) % n} {

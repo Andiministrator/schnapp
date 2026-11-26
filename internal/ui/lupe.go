@@ -121,7 +121,13 @@ func (e *editor) lupenAufraeumen() {
 func (e *editor) zeichneLupe(gtx layout.Context, l document.Lupe, an func(document.Punkt) f32.Point, vorschau bool) {
 	strich := l.Strich.Breite > 0 && l.Strich.Farbe.A > 0
 	if strich {
-		if a, b, ok := l.Linie(); ok {
+		if a, b, ok := l.Linie(); ok && l.Strich.Art != document.StrichVoll {
+			// Gemustert (ADR-0021 Nachtrag 25): dieselben Teile wie der Renderer.
+			teile := render.ZerlegeStrich([]document.Punkt{a, b}, l.Strich).Teile
+			e.jeStueck(gtx, document.R(a, b), l.Strich.Breite/2+1, an, vorschau, func(abb func(document.Punkt) f32.Point) {
+				fuelleTeile(gtx, teile, l.Strich.Farbe, abb)
+			})
+		} else if ok {
 			// Je sichtbarem Bereich und auf ihn beschnitten wie Renderer, SVG-Export und Treffer (F-695).
 			e.jeStueck(gtx, document.R(a, b), l.Strich.Breite/2+1, an, vorschau, func(abb func(document.Punkt) f32.Point) {
 				var p clip.Path
@@ -157,6 +163,10 @@ func (e *editor) zeichneLupe(gtx layout.Context, l document.Lupe, an func(docume
 func (e *editor) lupenRahmen(gtx layout.Context, r document.Rechteck, s document.Strich, an func(document.Punkt) f32.Point) {
 	a, b := an(r.Min), an(r.Max)
 	q := document.R(document.Pt(float64(a.X), float64(a.Y)), document.Pt(float64(b.X), float64(b.Y)))
+	if s.Art != document.StrichVoll { // gemustert wie der Renderer (ADR-0021 Nachtrag 25)
+		fuelleTeile(gtx, render.RahmenTeile(q, s), s.Farbe, punktF32)
+		return
+	}
 	var p clip.Path
 	p.Begin(gtx.Ops)
 	for _, k := range document.EckigerRahmen(q, s.Breite) {

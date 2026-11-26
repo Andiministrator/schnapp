@@ -2323,6 +2323,25 @@ msgstr ""
 msgid "Tail"
 msgstr ""
 
+#: internal/ui/strichart.go
+msgctxt "line style"
+msgid "Dashed"
+msgstr ""
+
+#: internal/ui/strichart.go
+msgctxt "line style"
+msgid "Dotted"
+msgstr ""
+
+#: internal/ui/strichart.go
+msgctxt "line style"
+msgid "Solid"
+msgstr ""
+
+#: internal/ui/strichart.go
+msgid "Line style"
+msgstr ""
+
 #: internal/ui/uebernahme.go
 msgid "This file is not in the library. It is added as a new capture as soon as you change it; the file itself stays unchanged."
 msgstr ""

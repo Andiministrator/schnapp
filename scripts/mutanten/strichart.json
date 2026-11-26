@@ -1,0 +1,240 @@
+[
+  {
+    "name": "ST1 Lücke so lang wie der Strich",
+    "datei": "internal/document/strichart.go",
+    "paket": "./internal/document",
+    "alt": "return 3*w + 2, 2*w + 2",
+    "neu": "return 3*w + 2, 3*w + 2"
+  },
+  {
+    "name": "ST2 offener Zug ohne gerundeten Ausgleich",
+    "datei": "internal/document/strichart.go",
+    "paket": "./internal/document",
+    "alt": "n := max(1, math.Round((s+luecke)/p))",
+    "neu": "n := max(1, math.Floor(s/p))"
+  },
+  {
+    "name": "ST3 offenes Ende nicht bis ans Ende",
+    "datei": "internal/document/strichart.go",
+    "paket": "./internal/document",
+    "alt": "\t\t\tout[len(out)-1].bis = s\n\t\t\treturn out",
+    "neu": "\t\t\treturn out"
+  },
+  {
+    "name": "ST4 Eckstriche unsymmetrisch",
+    "datei": "internal/document/strichart.go",
+    "paket": "./internal/document",
+    "alt": "musterStueck{max(0, c-strich*k/2), min(s, c+strich*k/2)}",
+    "neu": "musterStueck{max(0, c-strich*k/2), min(s, c+strich*k)}"
+  },
+  {
+    "name": "ST5 kurzer Zug nicht voll",
+    "datei": "internal/document/strichart.go",
+    "paket": "./internal/document",
+    "alt": "if s <= strich {\n\t\t\treturn []musterStueck{{0, s}}",
+    "neu": "if s <= 0 {\n\t\t\treturn []musterStueck{{0, s}}"
+  },
+  {
+    "name": "ST6 kurzer gepunkteter Zug zwei Punkte",
+    "datei": "internal/document/strichart.go",
+    "paket": "./internal/document",
+    "alt": "if s < w { // die Punkte",
+    "neu": "if s < 0 { // die Punkte"
+  },
+  {
+    "name": "ST7 Eckpunkt doppelt",
+    "datei": "internal/document/strichart.go",
+    "paket": "./internal/document",
+    "alt": "if ab.von < s { // der Punkt",
+    "neu": "if ab.von <= s { // der Punkt"
+  },
+  {
+    "name": "ST8 Strich über die Ecke getrennt",
+    "datei": "internal/document/strichart.go",
+    "paket": "./internal/document",
+    "alt": "if j == 0 && ab.von == 0 && anEnde && len(m.Striche) > 0 {",
+    "neu": "if false {"
+  },
+  {
+    "name": "ST9 Strich über den Anfang getrennt",
+    "datei": "internal/document/strichart.go",
+    "paket": "./internal/document",
+    "alt": "if a != StrichGepunktet && anEnde && ersterAnfang && len(m.Striche) > 1 {",
+    "neu": "if false && ersterAnfang {"
+  },
+  {
+    "name": "ST10 runde Abschnitte ab Ecke statt Bogenmitte",
+    "datei": "internal/document/strichart.go",
+    "paket": "./internal/document",
+    "alt": "const je, mitte = 13, 6",
+    "neu": "const je, mitte = 13, 0"
+  },
+  {
+    "name": "ST11 senkrechte Balken nicht geklemmt",
+    "datei": "internal/document/strichart.go",
+    "paket": "./internal/document",
+    "alt": "y0, y1 := max(r.Min.Y+ab.von, ia.Y), min(r.Min.Y+ab.bis, ib.Y)",
+    "neu": "y0, y1 := r.Min.Y+ab.von, r.Min.Y+ab.bis"
+  },
+  {
+    "name": "ST12 Ecke nicht nach außen gedeckt",
+    "datei": "internal/document/strichart.go",
+    "paket": "./internal/document",
+    "alt": "\t\t\t\tx0 = r.Min.X - h",
+    "neu": "\t\t\t\tx0 = r.Min.X"
+  },
+  {
+    "name": "ST13 Strichart ungeprüft",
+    "datei": "internal/document/objekte.go",
+    "paket": "./internal/document",
+    "alt": "if int(s.Art) >= len(strichartNamen) {",
+    "neu": "if false {"
+  },
+  {
+    "name": "ST14 Striche mit runden Enden",
+    "datei": "internal/render/linienstrich.go",
+    "paket": "./internal/render",
+    "alt": "case (a < 0 || b < 0) && !kappen:",
+    "neu": "case (a < 0 || b < 0) && false:"
+  },
+  {
+    "name": "ST15 Lücke als Teil",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "if i < len(ls.strecke) && ls.strecke[i] >= 0 {",
+    "neu": "if i < len(ls.strecke) {"
+  },
+  {
+    "name": "ST16 Punkt unter dem Kopf bleibt",
+    "datei": "internal/render/pfeil.go",
+    "paket": "./internal/render",
+    "alt": "case art == document.StrichGepunktet && g >= 0:",
+    "neu": "case false:"
+  },
+  {
+    "name": "ST17 halbe Scheibe nach vorn",
+    "datei": "internal/render/pfeil.go",
+    "paket": "./internal/render",
+    "alt": "k.SchaftNormale.Mal(-hw), math.Pi)",
+    "neu": "k.SchaftNormale.Mal(-hw), -math.Pi)"
+  },
+  {
+    "name": "ST18 runder Kasten gemustert voll",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "if v.Strich.Art != document.StrichVoll { // gemustert (ADR-0021 Nachtrag 25)",
+    "neu": "if false {"
+  },
+  {
+    "name": "ST19 eckiger Rahmen ohne Strichart",
+    "datei": "internal/render/strichart.go",
+    "paket": "./internal/render",
+    "alt": "document.EckigerRahmenMuster(r, s.Breite, s.Art)",
+    "neu": "document.EckigerRahmenMuster(r, s.Breite, document.StrichVoll)"
+  },
+  {
+    "name": "ST20 gemusterter Pfeil hebt die Version nicht",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\t\tif v.Strich.Art != document.StrichVoll {\n\t\t\t\treturn versionStrichart\n\t\t\t}\n\t\tcase document.Kasten:",
+    "neu": "\t\tcase document.Kasten:"
+  },
+  {
+    "name": "ST21 gemusterter Kasten hebt die Version nicht",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "case document.Kasten:\n\t\t\tif v.Strich.Art != document.StrichVoll {\n\t\t\t\treturn versionStrichart",
+    "neu": "case document.Kasten:\n\t\t\tif false {\n\t\t\t\treturn versionStrichart"
+  },
+  {
+    "name": "ST22 Leser auch in Version 1",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "if l.version < versionStrichart {",
+    "neu": "if false {"
+  },
+  {
+    "name": "ST23 Pfeil ohne s:strichart",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\t\ts.strichart(o.Strich)\n\t\t\ts.WriteString(`>`)\n\t\t\ts.pfeilDarstellung(o)",
+    "neu": "\t\t\ts.WriteString(`>`)\n\t\t\ts.pfeilDarstellung(o)"
+  },
+  {
+    "name": "ST24 Kasten im SVG voll gezeichnet",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "if o.Strich.Art != document.StrichVoll {\n\t\t\t\ts.kastenGemustert(o)",
+    "neu": "if false {\n\t\t\t\ts.kastenGemustert(o)"
+  },
+  {
+    "name": "ST25 Stil ohne Strichart",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "Breite: st.Breite, Art: st.Strichart}",
+    "neu": "Breite: st.Breite}"
+  },
+  {
+    "name": "ST26 Schnellstil setzt die Strichart zurück",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase document.Lupe:\n\t\tv.Strich.Farbe, v.Strich.Breite = st.Farbe, st.Breite",
+    "neu": "\tcase document.Lupe:\n\t\tv.Strich = document.Strich{Farbe: st.Farbe, Breite: st.Breite}"
+  },
+  {
+    "name": "ST27 Wahl nicht fürs Werkzeug gemerkt",
+    "datei": "internal/canvas/strichart.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.Stil.Strichart = a\n",
+    "neu": ""
+  },
+  {
+    "name": "ST28 Lupe bekommt keine Strichart",
+    "datei": "internal/canvas/strichart.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase document.Lupe:\n\t\tv.Strich.Art = a",
+    "neu": "\tcase document.Lupe:\n\t\t_ = a"
+  },
+  {
+    "name": "ST29 Liste setzt nichts",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "e.s.SetzeStrichart(en.strichart)",
+    "neu": "_ = en.strichart"
+  },
+  {
+    "name": "ST30 Feld nicht gezeichnet",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "y = e.zeichneStrichart(gtx, x, y, breite, spalte)",
+    "neu": "_ = spalte"
+  },
+  {
+    "name": "ST31 Teile ohne gleiche Umlaufrichtung",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if document.VieleckFlaeche(t) < 0 {",
+    "neu": "if false {"
+  },
+  {
+    "name": "ST32 Tastatur ohne Fokus auf der Art",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "case &e.strichart.feld:\n\t\te.strichartListeOeffnen(true)",
+    "neu": "case &e.strichart.feld:\n\t\te.strichartListeOeffnen(false)"
+  },
+  {
+    "name": "ST33 runder Kasten im Editor voll",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if v.Strich.Art != document.StrichVoll {\n\t\t\t\t\t// Gemustert (ADR-0021 Nachtrag 25): dieselben Teile",
+    "neu": "if false {\n\t\t\t\t\t// Gemustert (ADR-0021 Nachtrag 25): dieselben Teile"
+  },
+  {
+    "name": "ST34 line_style ignoriert",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\t\t\tstrich.Art = art\n",
+    "neu": "\t\t\t\t_ = art\n"
+  }
+]

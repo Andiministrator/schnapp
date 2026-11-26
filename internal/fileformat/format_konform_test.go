@@ -152,6 +152,20 @@ func beispiele() []beispiel {
 					MitKoepfen(document.KopfKeine, document.KopfKeine))
 			return d
 		}, Metadaten{}, false},
+		{"line-styles", func(t *testing.T) *document.Dokument { // Strichart, Formatversion 2 (ADR-0021 Nachtrag 25)
+			d := beispielDok(t, 64, 48)
+			st := func(a document.Strichart) document.Strich {
+				return document.Strich{Farbe: color.NRGBA{220, 30, 30, 255}, Breite: 2, Art: a}
+			}
+			fuege(t, d,
+				document.GeraderPfeil(document.Pt(4, 6), document.Pt(60, 6), st(document.StrichGestrichelt)),
+				document.Pfeil{A: document.Pt(4, 16), B: document.Pt(60, 16), K: document.Pt(32, 10),
+					Strich: st(document.StrichGepunktet)}.MitKoepfen(document.KopfKeine, document.KopfKeine),
+				document.Kasten{Bereich: document.R(document.Pt(4, 22), document.Pt(28, 44)), Strich: st(document.StrichGepunktet)},
+				document.Kasten{Bereich: document.R(document.Pt(34, 22), document.Pt(60, 44)), Eckradius: 6,
+					Strich: st(document.StrichGestrichelt)})
+			return d
+		}, Metadaten{}, false},
 		{"callout", func(t *testing.T) *document.Dokument { // Sprechblase mit und ohne Füllung, Formatversion 2 (ADR-0021 Nachtrag 13)
 			d := beispielDok(t, 64, 48)
 			fuege(t, d, document.Text{Ort: document.Pt(4, 4), Inhalt: "Look", Schriftgrad: 9, Farbe: color.NRGBA{0, 0, 0, 255},
@@ -728,7 +742,7 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 		"kante",
 		"streifen", "zeilen", "von", "bis", "ebene", "typ", "a", "b", "k", "strich", "bereich", "fuellung", "eckradius",
 		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "schrift", "stil", "ausrichtung", "spitze", "mitte", "wert", "radius",
-		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel", "ende", "anfang"}
+		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel", "ende", "anfang", "strichart"}
 	for _, w := range wortliste {
 		if !gesehen[w] {
 			t.Errorf("Beispiele enthalten s:%s nicht (Beispielabdeckung)", w)

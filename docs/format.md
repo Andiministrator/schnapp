@@ -144,7 +144,7 @@ Root element `svg`:
 
 | Attribute | Value | Required |
 |---|---|---|
-| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7, the attribute `s:spitze` of the text, 8.3, and the attributes `s:ende`/`s:anfang` of the arrow, 8.1; writers use the lowest version that carries the content, section 12) | MUST |
+| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7, the attribute `s:spitze` of the text, 8.3, the attributes `s:ende`/`s:anfang` of the arrow, 8.1, and the attribute `s:strichart` of arrow, box and magnifier, 8.8; writers use the lowest version that carries the content, section 12) | MUST |
 | `width`, `height` | size of the original in pixels, plain decimal integers without unit | MUST |
 | `viewBox` | `0 0 <width> <height>` | writer MUST, reader ignores |
 | `xmlns`, `xmlns:s` | the namespaces above | writer MUST |
@@ -274,6 +274,7 @@ either end the arrow is a plain line.
 | `s:strich` | stroke: colour and width of the line and the heads |
 | `s:ende` | OPTIONAL, format version 2 only. Head at `B`: `triangle`, `narrow`, `notched`, `open`, `half`, `dot`, `diamond`, `square`, `bar` or `none`. Missing or any other value: `triangle`; writers omit it for `triangle` |
 | `s:anfang` | OPTIONAL, format version 2 only. Head at `A`, same values. Missing or any other value: `none`; writers omit it for `none` |
+| `s:strichart` | OPTIONAL, format version 2 only: line style of the line (8.8); the heads stay solid |
 
 Both attributes are part of format version 2: a writer emits `s:format="2"` if an arrow has a head other than the
 defaults (section 12), so that a version-1 reader reports the file as newer instead of showing a different arrow. In a
@@ -305,6 +306,7 @@ inside a group with `opacity`, so the overlap is covered once.
 | `s:strich` | stroke of the outline, centred on the edge |
 | `s:fuellung` | fill colour; alpha `00` means no fill |
 | `s:eckradius` | corner radius, number `>= 0` |
+| `s:strichart` | OPTIONAL, format version 2 only: line style of the outline (8.8) |
 
 Informative: the effective radius is `min(radius, min(w, h) / 2)`, and below 0.5 pixel the corners are square; the
 rounding is circular, never elliptic.
@@ -351,8 +353,8 @@ left-aligned text has no `text-anchor` and `x` at the line start. Like all prese
 
 **Callout (speech bubble).** A text with `s:spitze` is a callout; there is no separate object type. The tip may lie
 anywhere inside the coordinate range (inside or outside the image and the label). `s:spitze` is part of format version
-2: a writer emits `s:format="2"` if the document contains a magnifier, a text with `s:spitze` or an arrow with
-`s:ende`/`s:anfang` (section 12), and a
+2: a writer emits `s:format="2"` if the document contains a magnifier, a text with `s:spitze`, an arrow with
+`s:ende`/`s:anfang` or a stroke with `s:strichart` (section 12), and a
 version-1 reader that meets a version-2 file reports it as newer instead of dropping the tip silently. A value that
 does not parse as a point makes a version-2 file damaged (section 11, rule 4).
 
@@ -420,6 +422,7 @@ damaged.
 | `s:quelle` | area (5.2): the source, the part of the original that is enlarged; `x0 < x1`, `y0 < y1` |
 | `s:ziel` | area: the target, where the enlarged copy is shown; `x0 < x1`, `y0 < y1` |
 | `s:strich` | stroke of both frames and of the connecting line |
+| `s:strichart` | OPTIONAL: line style of both frames and of the connecting line (8.8) |
 
 Width and height of both areas MUST be greater than 0 and at most `max_size`. The magnification is not stored: it is
 `target width / source width` horizontally and `target height / source height` vertically, with the source measured
@@ -463,6 +466,27 @@ to the source area, Schnapp counts that area in its rendering budget. An image t
 embedded (the same view pixels, or the same finished content) is written once with an `id` and repeated with a `use`
 element. Schnapp refuses an SVG export whose magnifier images (each distinct image once) would hold more than four
 times the pixels of the view, unless told to ignore its limits.
+
+### 8.8 Line style (`s:strichart`, format version 2)
+
+Arrow (8.1), box (8.2) and magnifier (8.7) MAY carry `s:strichart`: `dashed` or `dotted`. Missing or any other value:
+`solid`; writers omit it for `solid`. A writer emits `s:format="2"` if any object has it (section 12); in a file with
+`s:format="1"` it is unknown content (section 11, rule 3) and is ignored. The heads of an arrow and the legs of a callout
+are always solid.
+
+Informative (w = stroke width, original pixels): `dashed` has dashes `3w + 2` long with gaps of `2w + 2` and square
+(butt) ends; `dotted` has discs of diameter w, `2w + 2` apart from centre to centre. The number of dashes or dots is
+rounded and all lengths are scaled by the same factor, so that the pattern fits:
+
+* an open line (the arrow's line between its heads, the magnifier's connecting line) starts and ends with a whole dash or
+  a dot; a line shorter than one dash is solid, a dotted line shorter than w is one dot in its middle;
+* an outline (box, magnifier frames) is fitted side by side, from corner to corner, with half a dash or a dot on each
+  corner, so that every corner is covered; for rounded corners the sections run from the middle of one corner arc to the
+  middle of the next.
+
+On a square outline the horizontal dashes include the corners (like the solid stroke). Where an arrow has a head, the
+line's last dash ends under the head; a dotted line has, instead of its last dot, the half disc behind the head. The SVG
+export draws the pieces explicitly (dashes as one path, dots as circles), not with `stroke-dasharray`.
 
 ## 9. Redaction
 
@@ -554,7 +578,8 @@ Original width and height are at least 1.
 6. A program that stores a changed view of the file SHOULD rewrite all of it (visible image, `snAP`, `snAO`) rather
    than patch single chunks.
 7. Write the lowest format version that carries the content: `s:format="2"` if and only if the document contains a
-   `lupe` (8.7), a text with `s:spitze` (8.3) or an arrow with `s:ende` or `s:anfang` (8.1), otherwise `1`. A reader that knows only version 1 then still reads
+   `lupe` (8.7), a text with `s:spitze` (8.3), an arrow with `s:ende` or `s:anfang` (8.1) or an object with
+   `s:strichart` (8.8), otherwise `1`. A reader that knows only version 1 then still reads
    every file without them, and reports a file with one as newer instead of damaged.
 
 ## 13. What is not stored
@@ -585,6 +610,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `text-style` | one text with all optional text attributes: a family that is not installed, `bold italic underline strike`, `center` |
 | `layers` | three objects with layer attributes: a named, half-opaque box, a hidden and locked arrow, a step number without them |
 | `arrow-heads` | format version 2: four arrows: `open` head at `B`, `dot` at `A` only on a curve, `diamond` at `A` and `notched` at `B`, and a curved line without heads |
+| `line-styles` | format version 2: a `dashed` arrow with the default head, a curved `dotted` line, a `dotted` square box and a `dashed` box with rounded corners |
 | `callout` | format version 2: two texts with `s:spitze`, one with a label (filled polygon) and one without (legs as a line) |
 | `magnifier` | format version 2: one magnifier with a non-integer source over a column strip (the strip drops out of the magnified view, 8.7); the visible image shows no annotations, as in all examples |
 

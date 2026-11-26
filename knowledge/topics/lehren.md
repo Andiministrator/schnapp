@@ -1233,3 +1233,17 @@ Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #353 bis #364 und
 - **Testvorrichtungen müssen neue Pflichtangaben mitliefern:** Seit `Geoeffnet.Stand` merkt der Editor ohne Stand nichts;
   die Leisten-Tests bekamen `mitStand`, sonst wären die Verlaufs-Tests still grün geworden, ohne etwas zu prüfen.
 
+## Sprint 14, Karte #362 Strichart (26.11.2026)
+
+- **Wer Vielecke einer Zerlegung in Gio füllt, richtet sie gleich herum aus:** Der Renderer dreht jedes Vieleck auf
+  positive Fläche (`render.raster`), `fuelleTeile` im Editor tat es nicht. Sechseck des Linienstrichs und Kappe bzw. Kopf
+  laufen gegeneinander; Gio hob die gemeinsame Kante auf, am Ansatz jeder Pfeilspitze stand im Editor eine helle Fuge —
+  unbemerkt, bis ein Pixelvergleich Editor gegen Renderer mit vollem Strich lief. Ein neuer Zeichenweg bekommt diesen
+  Vergleich (`TestEditorZeichnetStrichartWieRenderer`), nicht nur Deckungstests im Renderer.
+- **Gemusterte Striche aus derselben Rechnung wie der volle:** Die Stücke rechnet `document`, Renderer, Editor und SVG
+  machen daraus Teile. Im SVG ausdrücklich statt `stroke-dasharray` (die Bogenlänge einer Bézier misst jeder Betrachter
+  anders). Eine Lücke im zusammengesetzten Linienstrich ist eine Strecke ohne Teil (`strecke` −1), so bleibt die
+  Bereichssuche über Nähte dieselbe.
+- **Ein Mutant, der eine geänderte Zeile trifft, gehört mitgezogen** (Trockenlauf zeigt FEHLER, hier N13 in
+  `text-naht.json`): Muster auf die neue Zeile setzen, Absicht des Mutanten behalten.
+

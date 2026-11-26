@@ -63,6 +63,7 @@ const (
 	listeZeitraum    // Zeitraum in der vollen Ansicht der Bibliothek (ADR-0036 Punkt 3), Anker am Feld im Kopf
 	listeKopfAnfang  // Spitze am Anfang des Pfeils (ADR-0021 Nachtrag 20), Anker am Feld der rechten Leiste
 	listeKopfEnde    // Spitze am Ende des Pfeils
+	listeStrichart   // Strichart (ADR-0021 Nachtrag 25), Anker am Feld der rechten Leiste
 )
 
 // istListe meldet, ob i eine Aufklappliste der Fußzeile ist (kein Menü der Zeile).
@@ -192,6 +193,8 @@ func (e *editor) menueEintraegeRoh(i int) []menueEintrag {
 		return e.zeitraumListe()
 	case listeKopfAnfang, listeKopfEnde:
 		return e.kopfListe(i == listeKopfAnfang)
+	case listeStrichart:
+		return e.strichartListe()
 	}
 	return nil
 }
@@ -851,6 +854,12 @@ func (e *editor) listenAnker(i int) image.Rectangle {
 			return image.Rectangle{}
 		}
 		return r.Sub(image.Pt(0, e.seite.roll.rollen))
+	}
+	if i == listeStrichart { // Strichart: am Feld der rechten Leiste (Inhaltskoordinaten)
+		if e.strichart.rahm.Empty() {
+			return image.Rectangle{}
+		}
+		return e.strichart.rahm.Sub(image.Pt(0, e.seite.roll.rollen))
 	}
 	if i == listeEinstellung { // Auswahl der Einstellungstafel: am Feld (ADR-0034)
 		if z := e.einst.listeZeile; z >= 0 && z < len(tafelZeilen) {

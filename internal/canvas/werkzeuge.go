@@ -86,6 +86,8 @@ type Stil struct {
 	// Spitzenarten neuer Pfeile je Ende (ADR-0021 Nachträge 19 und 20); Nullwerte: Dreieck bei B, keine bei A.
 	KopfEnde   document.Kopfart
 	KopfAnfang document.Anfangskopf
+	// Strichart neuer Pfeile, Kästen und Lupen (ADR-0021 Nachtrag 25), wie die Breite ein Wert für alle drei.
+	Strichart document.Strichart
 }
 
 // StandardStil ist die Voreinstellung (ADR-0021 Punkt 4, Strich seit Nachtrag 16).
@@ -113,7 +115,9 @@ func StilMitFaktor(faktor int) Stil {
 // StrichStufen sind die Strichstärken der rechten Leiste in Pixeln des Originals (− und + gehen von Stufe zu Stufe).
 var StrichStufen = []float64{1, 2, 3, 4, 6, 8, 12, 16, 24, 32}
 
-func (st Stil) strich() document.Strich { return document.Strich{Farbe: st.Farbe, Breite: st.Breite} }
+func (st Stil) strich() document.Strich {
+	return document.Strich{Farbe: st.Farbe, Breite: st.Breite, Art: st.Strichart}
+}
 
 // Rasten45 liefert b so gedreht um a, dass die Richtung a→b ein Vielfaches von 45° ist; die Länge bleibt.
 func Rasten45(a, b document.Punkt) document.Punkt {

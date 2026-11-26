@@ -154,6 +154,37 @@ func TestWendePfeilform(t *testing.T) {
 	}
 }
 
+// ADR-0021 Nachtrag 25 Punkt 9: line_style bei arrow und rect; ohne ihn voll; bei text unbekannt, unbekannte Art ein
+// Fehler mit der Liste der Namen.
+func TestWendeStrichart(t *testing.T) {
+	d := dokument(t, 200, 100)
+	es := lies(t, `{"annotations":[
+		{"type":"arrow","from":[10,10],"to":[60,40],"line_style":"dashed"},
+		{"type":"rect","from":[70,10],"to":[120,40],"line_style":"dotted"},
+		{"type":"rect","from":[130,10],"to":[180,40]}]}`)
+	if _, err := Wende(context.Background(), d, es); err != nil {
+		t.Fatal(err)
+	}
+	o := d.Objekte()
+	if p := o[0].(document.Pfeil); p.Strich.Art != document.StrichGestrichelt {
+		t.Errorf("Pfeil: %v", p.Strich.Art)
+	}
+	if k := o[1].(document.Kasten); k.Strich.Art != document.StrichGepunktet {
+		t.Errorf("Kasten: %v", k.Strich.Art)
+	}
+	if k := o[2].(document.Kasten); k.Strich.Art != document.StrichVoll {
+		t.Errorf("Kasten ohne line_style: %v", k.Strich.Art)
+	}
+	if _, err := Lies(strings.NewReader(`{"annotations":[{"type":"text","at":[1,1],"text":"x","line_style":"dashed"}]}`)); err == nil {
+		t.Error("line_style bei text angenommen")
+	}
+	falsch := lies(t, `{"annotations":[{"type":"rect","from":[10,10],"to":[60,40],"line_style":"wavy"}]}`)
+	if _, err := Wende(context.Background(), dokument(t, 200, 100), falsch); err == nil ||
+		!strings.Contains(err.Error(), `"line_style" must be one of "solid", "dashed" or "dotted"`) {
+		t.Errorf("unbekannte Strichart: %v", err)
+	}
+}
+
 // TestWendeFehler: Werte außerhalb, falsche Farben, leerer Text, gleiche Punkte — mit Index; der Fehler nennt den
 // Eintrag.
 func TestWendeFehler(t *testing.T) {
