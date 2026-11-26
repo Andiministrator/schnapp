@@ -297,12 +297,12 @@ Ablage, auch eine, die man nur ansehen wollte (etwa vom USB-Stick).
    ab. Diese Aufnahme öffnet sich später aus der Leiste nicht (Budgetmeldung), nur wieder mit `--ignore-limit` (wie
    Nachtrag 10 Punkt 3; Test `TestUebernahmeMitIgnoreLimit`, F-831).
 
-
 Tests der Randfälle (F-831, F-832, Karte #350): `cmd/schnapp/uebernahme_faelle_test.go` (`--ignore-limit`, gescheitertes
 erstes Speichern — die Datei bleibt außen, nichts gemerkt, das nächste Speichern legt ab —, Rettungskopie vor und nach der
 Übernahme); `internal/ui/uebernahme_test.go` (`TestUebernahmeVerdrahtung` über `editorFuer` und `nachEreignis`,
 `TestUebernahmeWartetJeBedingung`, `TestUebernahmeNichtWaehrendSpeichern`); Mutanten UE-F832-1–9 und IO-F831-1 in
 `scripts/mutanten/import-oeffnen.json` (UE-F832-4 „Signal“ äquivalent: ein Signal speichert selbst oder schließt).
+
 Verworfen: eine vorläufige Kachel der offenen Datei in der Leiste (gestrichelt, „nicht in der Bibliothek“). Die Leiste
 zählt Stellen, Fokus, ✕ und Papierkorb über Einträge des Index; eine Kachel ohne Eintrag hätte jeden dieser Wege
 berührt. Die Fußzeile sagt dasselbe, und mit der ersten Änderung steht die echte Kachel da. Übernahme erst beim

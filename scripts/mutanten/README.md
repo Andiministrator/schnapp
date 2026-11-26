@@ -27,11 +27,20 @@ Kombination aus Paket und `timeout`; scheitert er am `timeout`, melden alle betr
 „TIMEOUT-ZU-KNAPP“ (Exit 1) — dann den `timeout` erhöhen.
 
 Das Programm arbeitet **nie im Arbeitsbaum**: Es kopiert die Wurzel (ohne `tmp/`, `.git/`, `.claude/` der obersten
-Ebene) nach `<wurzel>/tmp/mutanten/lauf-<Zeit>-<Zufall>/baum` (eindeutig auch bei zwei Läufen in derselben Sekunde, F-495), mutiert und testet dort mit `GOFLAGS=-tags=novulkan,nox11`
+Ebene) nach `<wurzel>/tmp/mutanten/lauf-<Zeit>-<Zufall>/baum` (eindeutig auch bei zwei Läufen in derselben Sekunde, F-495), mutiert und testet dort mit `GOFLAGS=-trimpath -tags=novulkan,nox11`
 sowie `TMPDIR`/`GOTMPDIR` unter dem Laufordner und stellt die Datei in der Kopie nach jedem Mutanten wieder her. Alte
 Läufe bleiben (gitignoriert) liegen. Ein Lauf über alle Gruppen dauert einige Minuten.
 
-`go test` in diesem Modul legt Testordner über `t.TempDir()` an; `TMPDIR` dafür auf einen Ordner unter `tmp/` setzen.
+**Build-Cache (F-833):** Gebaut wird in einen eigenen Cache `<wurzel>/tmp/mutanten/gocache`, nicht in den des Benutzers.
+`-trimpath` hält die Cache-Schlüssel über Läufe gleich (ohne trimpath stünde der wechselnde Laufordner in jedem
+Schlüssel, und jeder Lauf legte alles neu ab — am 26.11.2026 116 GB und eine volle Platte). Über `cacheGrenze` (8 GiB)
+leert das Programm den Cache mit `go clean -cache`, vor dem Lauf und alle `cachePruefTakt` (25) Mutanten; nutzt ein
+paralleler Lauf ihn gerade (geteilte flock-Sperre `gocache.lock`), wird nicht geleert. Von Hand leeren:
+`GOCACHE=$PWD/tmp/mutanten/gocache go clean -cache` in der Wurzel. Der erste Lauf nach dem Leeren baut alles neu (Gio mit
+cgo, einige Minuten).
+
+`go test` in diesem Modul legt Testordner über `t.TempDir()` an; `TMPDIR` dafür auf einen Ordner unter `tmp/` setzen. Die eigenen Tests bauen dabei die Standardbibliothek in einen frischen Cache unter `t.TempDir()` (einige Sekunden
+länger, gewollt).
 
 ## Format
 

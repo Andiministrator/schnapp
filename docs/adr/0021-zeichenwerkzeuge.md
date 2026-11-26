@@ -754,7 +754,8 @@ selbstständig“).
 6. Schnellstile tragen die Spitzen weiter nicht (Nachtrag 19 Punkt 6), obwohl der Abschnitt jetzt „Pfeil-Stil“ heißt: Der
    Name folgt Andis Wortwahl, in der Sache bleibt die Spitze Form.
 7. Ein Pfeil kürzer als seine Spitzen hat keinen Schaft; Renderer und Editor füllen die Köpfe dann in einer Füllung,
-   damit überlappende Köpfe halbdurchsichtig einmal decken (Sitzungs-Kritik 26.11. K-6, `TestKurzerPfeilKoepfeDeckenEinmal`).
+   damit überlappende Köpfe halbdurchsichtig einmal decken (Sitzungs-Kritik 26.11. K-6, `TestKurzerPfeilKoepfeDeckenEinmal`,
+   Mutant PF29).
 
 Tests: `internal/document/pfeilform_test.go` (Nullwerte, Maße, Kerbe und Raute schließen an den Schaft),
 `internal/render/pfeil_test.go` (jede Art an jedem Ende deckt einmal), `internal/canvas/pfeilform_test.go`,
@@ -775,8 +776,8 @@ statt der Klappfelder (zu hoch für die Leiste, kein Platz für Namen); ein Ring
    `canvas.sichtbarIn` (Verschieben und Griffe halten mindestens `MinSichtbar` im Bild, Nachtrag 2) und das Feld
    „Auswahl“ der Fußzeile (Größe samt Kopf). Ein Punkt-, Quadrat- oder Balkenkopf, der über das Ende ragt, zählt also
    als sichtbar; ein Pfeil, von dem nur der Kontrollpunkt im Bild läge, nicht.
-2. **`Pfeil.Grenzen` bleibt** (Endpunkte, K und Strich): Treffer, Einrasten (Ziele sind die Enden, an denen Pfeile
-   andocken) und die Griffe rechnen weiter damit. Grenzen auf die Gestalt umzustellen bräche Einrasten und Verschieben
+2. **`Pfeil.Grenzen` bleibt** (Endpunkte, K und Strich): Treffer und Einrasten (Ziele sind die Enden, an denen Pfeile
+   andocken) rechnen weiter damit; die Griffe sitzen an A, B und K. Grenzen auf die Gestalt umzustellen bräche Einrasten und Verschieben
    (erster Versuch vom 26.11., zurückgesetzt).
 3. **SVG ohne Fuge (F-826).** Schaft (Strich), Kopf und halbe Scheibe bleiben getrennte Formen; Kopf und halbe Scheibe
    reichen um `pfeilFuge` = 1 Pixel (höchstens die Schaftlänge) in den Schaft zurück, sodass jedes Pixel an der

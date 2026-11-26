@@ -4,6 +4,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -133,11 +134,23 @@ func dateiSumme(pfad string) ([]byte, error) {
 	}
 	defer f.Close()
 	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
+	// Höchstens MaxDatei+1 Bytes: Eine Datei, die nach dem Stat wächst oder endlos liefert (FUSE), hielte die Goroutine
+	// sonst fest — beim Öffnen… den Dialog (Kritik 26.11. K-8). Größer als erlaubt öffnet sie sich ohnehin nicht.
+	n, err := io.Copy(h, io.LimitReader(f, summeGrenze+1))
+	if err != nil {
 		return nil, err
+	}
+	if n > summeGrenze {
+		return nil, errZuGrossZumPruefen
 	}
 	return h.Sum(nil), nil
 }
+
+// summeGrenze ist die größte Datei, deren Summe dateiSumme bildet (fileformat.MaxDatei; Tests setzen sie klein).
+var summeGrenze int64 = fileformat.MaxDatei
+
+// errZuGrossZumPruefen: Die Datei ist größer als fileformat.MaxDatei; ihre Summe wird nicht gebildet.
+var errZuGrossZumPruefen = errors.New("schnapp: Datei zu groß für die Prüfsumme")
 
 // diagnoseImport schreibt nur mit SCHNAPP_DEBUG (Pfade gehören nicht in die normale Ausgabe).
 func diagnoseImport(format string, args ...any) { diagnose(os.Stderr, "Übernahme: "+format, args...) }

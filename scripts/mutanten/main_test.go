@@ -97,7 +97,7 @@ func TestErsetzungNurInDerKopie(t *testing.T) {
 	}
 	want := map[string]string{"rot": Rot, "lebt": Ueberlebt, "bau": Fehler, "muster": Fehler}
 	for _, m := range alle {
-		st, _, detail := testeMutant(baum, lauf, m)
+		st, _, detail := testeMutant(baum, lauf, cacheOrdner(q), m)
 		if st != want[m.Name] {
 			t.Errorf("%s: %s (%s), will %s", m.Name, st, detail, want[m.Name])
 		}

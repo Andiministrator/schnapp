@@ -397,8 +397,8 @@
     "name": "KM16 Anfrage trotz Signal oder erzwungenem Schließen",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "\tcase e.erzwungen || e.s.SignalVorgemerkt():\n\t\treturn // das Fenster schließt",
-    "neu": "\tcase false:\n\t\treturn // das Fenster schließt"
+    "alt": "\tcase e.erzwungen || e.s.SignalVorgemerkt():\n\t\treturn false // das Fenster schließt",
+    "neu": "\tcase false:\n\t\treturn false // das Fenster schließt"
   },
   {
     "name": "KM17 Texterkennung läuft über den Wechsel weiter",

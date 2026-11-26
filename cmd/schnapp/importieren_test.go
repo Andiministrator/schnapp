@@ -238,3 +238,57 @@ func TestZuordnerFindetUebernommeneAufnahme(t *testing.T) {
 		t.Errorf("ohne Übernahme: %q, Soll unverändert %q", z, arbeit)
 	}
 }
+
+// Kritik 26.11. K-8: dateiSumme liest höchstens summeGrenze+1 Bytes und lehnt Größeres ab.
+func TestDateiSummeBegrenzt(t *testing.T) {
+	alt := summeGrenze
+	t.Cleanup(func() { summeGrenze = alt })
+	summeGrenze = 16
+	p := filepath.Join(t.TempDir(), "gross.png")
+	if err := os.WriteFile(p, make([]byte, 17), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := dateiSumme(p); err == nil {
+		t.Error("Summe über der Grenze gebildet")
+	}
+	if err := os.WriteFile(p, make([]byte, 16), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := dateiSumme(p); err != nil {
+		t.Errorf("an der Grenze: %v", err)
+	}
+}
+
+// Kritik 26.11. K-8: Eine Quelle, die endlos liefert (hier eine FIFO mit endlosem Schreiber), hält dateiSumme nicht fest.
+func TestDateiSummeEndloseQuelle(t *testing.T) {
+	alt := summeGrenze
+	t.Cleanup(func() { summeGrenze = alt })
+	summeGrenze = 1 << 16
+	p := filepath.Join(t.TempDir(), "endlos")
+	if err := syscall.Mkfifo(p, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	go func() {
+		w, err := os.OpenFile(p, os.O_WRONLY, 0)
+		if err != nil {
+			return
+		}
+		defer w.Close()
+		b := make([]byte, 4096)
+		for {
+			if _, err := w.Write(b); err != nil {
+				return // Leser zu
+			}
+		}
+	}()
+	fertig := make(chan error, 1)
+	go func() { _, err := dateiSumme(p); fertig <- err }()
+	select {
+	case err := <-fertig:
+		if err == nil {
+			t.Error("Summe einer endlosen Quelle gebildet")
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("dateiSumme hängt an einer endlosen Quelle")
+	}
+}

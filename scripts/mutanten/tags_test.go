@@ -91,10 +91,38 @@ func TestCacheBegrenzen(t *testing.T) {
 		t.Fatal(err)
 	}
 	var aus strings.Builder
-	if n := cacheBegrenzen(c, 4096, &aus); n != 2048 || ordnerGroesse(c) != 2048 || aus.Len() != 0 {
+	if n := cacheBegrenzen(c, 4096, neueCacheSperre(c), &aus); n != 2048 || ordnerGroesse(c) != 2048 || aus.Len() != 0 {
 		t.Errorf("unter der Grenze: %d, danach %d, Ausgabe %q", n, ordnerGroesse(c), aus.String())
 	}
-	if n := cacheBegrenzen(c, 1024, &aus); n != 2048 || ordnerGroesse(c) >= 2048 || !strings.Contains(aus.String(), "go clean -cache") {
+	if n := cacheBegrenzen(c, 1024, neueCacheSperre(c), &aus); n != 2048 || ordnerGroesse(c) >= 2048 || !strings.Contains(aus.String(), "go clean -cache") {
 		t.Errorf("über der Grenze: %d, danach %d, Ausgabe %q", n, ordnerGroesse(c), aus.String())
+	}
+}
+
+// Kritik 26.11. K-2: Hält ein anderer Lauf die Sperre geteilt, wird nicht geleert.
+func TestCacheNichtLeerenWaehrendAndererLauf(t *testing.T) {
+	w := t.TempDir()
+	c := cacheOrdner(w)
+	if err := os.MkdirAll(filepath.Join(c, "ab"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(c, "ab", "x-d"), make([]byte, 2048), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	andere := neueCacheSperre(c)
+	defer andere.schliessen()
+	andere.geteilt()
+	var aus strings.Builder
+	cacheBegrenzen(c, 1024, neueCacheSperre(c), &aus)
+	if ordnerGroesse(c) != 2048 || !strings.Contains(aus.String(), "nicht geleert") {
+		t.Errorf("trotz fremder Sperre geleert: %d, Ausgabe %q", ordnerGroesse(c), aus.String())
+	}
+}
+
+// Kritik 26.11. K-3: Der Testaufruf bekommt genau den übergebenen Cache.
+func TestTestUmgebungMitCache(t *testing.T) {
+	env := testUmgebung(Mutant{}, "/g", "/irgendwo/gocache")
+	if env[len(env)-1] != "GOCACHE=/irgendwo/gocache" {
+		t.Errorf("Umgebung endet mit %q", env[len(env)-1])
 	}
 }

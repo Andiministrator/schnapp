@@ -421,7 +421,7 @@ func (e *editor) bibNachbarn(i int) []string {
 // Ansicht zeigt wegen Suche oder Zeitraum keine, und die Leiste kennt keine (F-827).
 func (e *editor) einzigText() string {
 	if e.bibl.offen && e.bibGefiltert() {
-		return i18n.T("No other capture to switch to: clear the search and the period, then try again.")
+		return i18n.T("No other capture to switch to: clear the search and choose “All dates”, then try again.")
 	}
 	return i18n.T("This is the only capture: it stays open and is not moved to the trash.")
 }
@@ -484,8 +484,7 @@ func (e *editor) papierkorbAnfrage(rel string, offen bool, nachbarn []string) {
 			e.melde(e.einzigText(), false)
 			return
 		}
-		e.wechselAnfrage(nachbarn[0])
-		if e.wechsel.ziel == nachbarn[0] {
+		if e.wechselAnfrage(nachbarn[0]) {
 			e.wechsel.papierkorb, e.wechsel.weitere = true, nachbarn[1:]
 			e.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)
 		}

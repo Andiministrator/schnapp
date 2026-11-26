@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -189,8 +190,12 @@ func goFlags(tags string) string {
 	return "-trimpath -tags=novulkan,nox11," + tags
 }
 
-// cacheGrenze ist die Größe des eigenen Build-Caches der Mutationsläufe, ab der er vor einem Lauf geleert wird (F-833).
-const cacheGrenze = 8 << 30
+// cacheGrenze ist die Größe des eigenen Build-Caches der Mutationsläufe, ab der er geleert wird (F-833): vor dem Lauf
+// und während des Laufs alle cachePruefTakt Mutanten (Kritik 26.11. K-1).
+const (
+	cacheGrenze    = 8 << 30
+	cachePruefTakt = 25
+)
 
 // cacheOrdner ist der eigene Build-Cache der Mutationsläufe unter <wurzel>/tmp/mutanten (F-833): sichtbar im Projekt,
 // begrenzt, getrennt vom Cache der übrigen Arbeit.
@@ -210,12 +215,54 @@ func ordnerGroesse(dir string) int64 {
 	return n
 }
 
-// cacheBegrenzen leert den Cache cache mit go clean -cache, wenn er größer als grenze ist; liefert die Größe davor.
-func cacheBegrenzen(cache string, grenze int64, aus io.Writer) int64 {
+// cacheSperre hält den gemeinsamen Cache gegen ein Leeren durch einen parallelen Lauf (Kritik 26.11. K-2): Jeder Lauf
+// hält sie geteilt, während er baut; geleert wird nur mit exklusivem Griff, und nur wenn niemand sonst baut.
+type cacheSperre struct{ f *os.File }
+
+// neueCacheSperre öffnet die Sperrdatei neben dem Cache (<cache>.lock); ohne sie (Fehler) läuft alles ohne Sperre.
+func neueCacheSperre(cache string) *cacheSperre {
+	if err := os.MkdirAll(filepath.Dir(cache), 0o755); err != nil {
+		return &cacheSperre{}
+	}
+	f, err := os.OpenFile(cache+".lock", os.O_CREATE|os.O_RDWR, 0o644)
+	if err != nil {
+		return &cacheSperre{}
+	}
+	return &cacheSperre{f: f}
+}
+
+func (c *cacheSperre) flock(art int) error {
+	if c.f == nil {
+		return nil
+	}
+	return syscall.Flock(int(c.f.Fd()), art)
+}
+
+// geteilt hält die Sperre geteilt (blockierend), frei gibt sie frei.
+func (c *cacheSperre) geteilt() { _ = c.flock(syscall.LOCK_SH) }
+func (c *cacheSperre) frei()    { _ = c.flock(syscall.LOCK_UN) }
+
+// schliessen gibt die Sperre frei und schließt die Datei.
+func (c *cacheSperre) schliessen() {
+	if c.f != nil {
+		c.frei()
+		_ = c.f.Close()
+	}
+}
+
+// cacheBegrenzen leert den Cache cache mit go clean -cache, wenn er größer als grenze ist und kein anderer Lauf ihn
+// gerade nutzt (exklusiver Griff ohne Warten); liefert die Größe davor. Die eigene geteilte Sperre muss frei sein.
+func cacheBegrenzen(cache string, grenze int64, sperre *cacheSperre, aus io.Writer) int64 {
 	n := ordnerGroesse(cache)
 	if n <= grenze {
 		return n
 	}
+	if err := sperre.flock(syscall.LOCK_EX | syscall.LOCK_NB); err != nil {
+		fmt.Fprintf(aus, "Build-Cache %s hat %.1f GiB, über der Grenze; ein anderer Lauf nutzt ihn, nicht geleert\n", cache,
+			float64(n)/(1<<30))
+		return n
+	}
+	defer sperre.frei()
 	fmt.Fprintf(aus, "Build-Cache %s hat %.1f GiB, über der Grenze: go clean -cache\n", cache, float64(n)/(1<<30))
 	cmd := exec.Command("go", "clean", "-cache")
 	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOCACHE="+cache)
@@ -237,7 +284,7 @@ func waehle(alle []Mutant, gruppe, nur string) []Mutant {
 }
 
 // testeMutant wendet m auf die Kopie baum an, testet das Paket und stellt die Datei wieder her.
-func testeMutant(baum, lauf string, m Mutant) (status string, rote []string, detail string) {
+func testeMutant(baum, lauf, cache string, m Mutant) (status string, rote []string, detail string) {
 	datei := filepath.Join(baum, filepath.FromSlash(m.Datei))
 	orig, err := os.ReadFile(datei)
 	if err != nil {
@@ -252,7 +299,7 @@ func testeMutant(baum, lauf string, m Mutant) (status string, rote []string, det
 	}
 	defer os.WriteFile(datei, orig, 0o644)
 
-	text, runErr := goTest(baum, lauf, m)
+	text, runErr := goTest(baum, lauf, cache, m)
 	for _, z := range strings.Split(text, "\n") {
 		if strings.HasPrefix(z, "--- FAIL") {
 			if f := strings.Fields(z); len(f) >= 3 {
@@ -300,8 +347,9 @@ func haengendeTests(text string) []string {
 	return namen
 }
 
-// goTest testet das Paket des Mutanten m in der Kopie baum (im Unterordner m.Modul, wenn gesetzt).
-func goTest(baum, lauf string, m Mutant) (string, error) {
+// goTest testet das Paket des Mutanten m in der Kopie baum (im Unterordner m.Modul, wenn gesetzt) mit dem Build-Cache
+// cache (F-833).
+func goTest(baum, lauf, cache string, m Mutant) (string, error) {
 	args := []string{"test", "-count=1"}
 	if m.Timeout != "" {
 		args = append(args, "-timeout", m.Timeout)
@@ -309,10 +357,15 @@ func goTest(baum, lauf string, m Mutant) (string, error) {
 	cmd := exec.Command("go", append(args, m.Paket)...)
 	cmd.Dir = filepath.Join(baum, filepath.FromSlash(m.Modul))
 	g := filepath.Join(lauf, "g")
-	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS="+goFlags(m.Tags), "TMPDIR="+g, "GOTMPDIR="+g,
-		"GOCACHE="+cacheOrdner(filepath.Dir(filepath.Dir(filepath.Dir(lauf)))))
+	cmd.Env = testUmgebung(m, g, cache)
 	out, err := cmd.CombinedOutput()
 	return string(out), err
+}
+
+// testUmgebung ist die Umgebung eines Testaufrufs: Toolchain, Flags, eigene Temp-Ordner g und der Build-Cache cache.
+func testUmgebung(m Mutant, g, cache string) []string {
+	return append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS="+goFlags(m.Tags), "TMPDIR="+g, "GOTMPDIR="+g,
+		"GOCACHE="+cache)
 }
 
 func kurz(s string) string {
@@ -371,7 +424,11 @@ func lauf(args []string, aus io.Writer) int {
 	}
 
 	baum, laufDir := w, ""
+	cache := cacheOrdner(w)
+	sperre := &cacheSperre{}
 	if !*trocken {
+		sperre = neueCacheSperre(cache)
+		defer sperre.schliessen()
 		// Eindeutiger Ordner auch bei zwei Läufen in derselben Sekunde (F-495).
 		laufDir, err = neuerLaufordner(w, jetzt())
 		if err != nil {
@@ -383,7 +440,8 @@ func lauf(args []string, aus io.Writer) int {
 			fmt.Fprintln(aus, "Fehler:", err)
 			return 2
 		}
-		cacheBegrenzen(cacheOrdner(w), cacheGrenze, aus)
+		cacheBegrenzen(cache, cacheGrenze, sperre, aus)
+		sperre.geteilt()
 		fmt.Fprintf(aus, "Kopie nach %s\n", baum)
 		if err := kopiereBaum(w, baum); err != nil {
 			fmt.Fprintln(aus, "Fehler beim Kopieren:", err)
@@ -402,7 +460,7 @@ func lauf(args []string, aus io.Writer) int {
 				continue
 			}
 			ausgangRot[k] = ""
-			if text, err := goTest(baum, laufDir, m); err != nil {
+			if text, err := goTest(baum, laufDir, cache, m); err != nil {
 				ausgangRot[k] = "Ausgangslage rot (ohne Mutation)"
 				if m.Timeout != "" {
 					ausgangRot[k] += " mit timeout " + m.Timeout
@@ -418,7 +476,12 @@ func lauf(args []string, aus io.Writer) int {
 
 	zaehler := map[string]int{}
 	schlecht := 0
-	for _, m := range ms {
+	for i, m := range ms {
+		if !*trocken && i > 0 && i%cachePruefTakt == 0 { // auch während eines langen Laufs begrenzen (K-1)
+			sperre.frei()
+			cacheBegrenzen(cache, cacheGrenze, sperre, aus)
+			sperre.geteilt()
+		}
 		var status, detail string
 		var rote []string
 		t := time.Now()
@@ -434,7 +497,7 @@ func lauf(args []string, aus io.Writer) int {
 		} else if grund := ausgangRot[ausgangSchluessel(m)]; grund != "" {
 			status, detail = Fehler, grund
 		} else {
-			status, rote, detail = testeMutant(baum, laufDir, m)
+			status, rote, detail = testeMutant(baum, laufDir, cache, m)
 		}
 		anzeige := status
 		switch {

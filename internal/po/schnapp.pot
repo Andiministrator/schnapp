@@ -945,7 +945,7 @@ msgid "Keywords saved."
 msgstr ""
 
 #: internal/ui/bibliothek.go
-msgid "No other capture to switch to: clear the search and the period, then try again."
+msgid "No other capture to switch to: clear the search and choose “All dates”, then try again."
 msgstr ""
 
 #: internal/ui/bibliothek.go

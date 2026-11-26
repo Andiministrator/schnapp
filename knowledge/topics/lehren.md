@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #347, #315, #345 und Sitzungs-Kritik). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #349 bis #352, #358 und Sitzungs-Kritik). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -1186,6 +1186,15 @@ Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #347, #315, #345 
   speichert der Wechsel); der alte Test bestand nur, weil das Speichern schnell war. Fertig ist ein Wechsel erst, wenn
   `wechsel.ziel` leer ist.
 - **Ein Mutant, der in einer Goroutine eine nil-Funktion ruft, endet als Panik ohne Testnamen** (FEHLER statt ROT). Vor
-  dem Aufruf im Test auf nil prüfen und mit `t.Fatal` benennen (N5).
-- **Doppelter Schutz macht einen Mutanten gleichwertig** (BV21: `menueOeffne` sperrt die Listen selbst): als äquivalent mit
+  dem Aufruf im Test auf nil prüfen und mit `t.Fatal` benennen (N5 in `scripts/mutanten/rescue.json`).
+- **Doppelter Schutz macht einen Mutanten gleichwertig** (BV21 in `scripts/mutanten/bibliothek-ansicht.json`: `menueOeffne` sperrt die Listen selbst): als äquivalent mit
   Grund vermerken, nicht den Test verbiegen.
+- **Ein Merker richtet sich nach dem Ergebnis der Anfrage, nicht nach einem Zustandsvergleich danach** (Kritik 26.11.
+  K-6): `if e.wechsel.ziel == x` nach `wechselAnfrage(x)` war auch wahr, wenn die Anfrage abgelehnt wurde und schon ein
+  Wechsel zu x lief. Seitdem liefert `wechselAnfrage` ein `bool`.
+- **Eine Grenze, die nur gegen endliche Daten getestet ist, ist nicht getestet** (K-8): `io.LimitReader` in
+  `dateiSumme` überlebte die Mutation, bis ein Test mit endlos schreibender FIFO dazukam.
+- **Ein gemeinsamer Cache mehrerer gleichzeitiger Läufe braucht eine Sperre vor dem Leeren** (K-2): geteilte flock je
+  Lauf, Leeren nur mit exklusivem Griff ohne Warten (`scripts/mutanten`, `gocache.lock`).
+- Vermutung widerlegt statt umgebaut (K-7): Gio liefert Loslassen auch an ein Ziel, das nach dem Einklappen nicht mehr
+  gezeichnet wird; der Test `TestStrichReglerLeisteVerschwindetImZug` hält das fest.

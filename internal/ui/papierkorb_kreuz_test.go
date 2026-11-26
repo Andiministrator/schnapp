@@ -447,3 +447,51 @@ func TestNachbarinnenOhneOffene(t *testing.T) {
 		t.Errorf("Nachbarinnen %v, Soll ohne die offene", n)
 	}
 }
+
+// Kritik 26.11. K-5: Scheitert die erste Nachbarin (Datei im Dateimanager gelöscht) und lädt die zweite, fällt der tote
+// Eintrag nach dem Abgleich trotzdem weg.
+func TestZweiteNachbarinGleichtAb(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 4)
+	k := &l.e.unten
+	n := zaehleAbgleich(t)
+	if err := os.Remove(l.pfade[2]); err != nil {
+		t.Fatal(err)
+	}
+	l.fehlerFuer = map[string]error{l.pfade[2]: os.ErrNotExist}
+	vor := n.Load()
+	l.e.leistePapierkorb(1)
+	l.warte(func() bool {
+		return l.e.wechsel.ziel == "" && !l.e.wechsel.laedt && !l.e.bibl.arbeitLaeuft && !k.indexLaeuft &&
+			len(k.l.Eintraege()) == 2
+	})
+	if n.Load() == vor {
+		t.Error("kein Abgleich nach der gescheiterten Nachbarin")
+	}
+	for _, e := range k.l.Eintraege() {
+		if filepath.Join(l.b.Orte.Ablage, filepath.FromSlash(e.Pfad)) == l.pfade[2] {
+			t.Error("toter Eintrag der gelöschten Nachbarin steht noch in der Leiste")
+		}
+	}
+}
+
+// Kritik 26.11. K-6: Lädt gerade ein gewöhnlicher Wechsel genau zu der Nachbarin, lehnt das ✕ an der offenen ab
+// („still loading“) und setzt keinen Papierkorb-Merker: Nach dem Laden liegt die bisher offene nicht im Papierkorb.
+func TestKreuzWaehrendWechselZurNachbarinMerktNichts(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 4)
+	k := &l.e.unten
+	l.tor = make(chan struct{})
+	l.e.leisteOeffne(2) // gewöhnlicher Wechsel zur nächst älteren
+	l.warte(func() bool { return len(l.aufrufe()) == 1 })
+	l.e.leistePapierkorb(1) // ✕ an der offenen: Nachbarin ist dieselbe
+	if l.e.wechsel.papierkorb || len(l.e.wechsel.weitere) != 0 {
+		t.Errorf("Merker gesetzt, obwohl die Anfrage abgelehnt wurde: papierkorb %v, weitere %v", l.e.wechsel.papierkorb,
+			l.e.wechsel.weitere)
+	}
+	close(l.tor)
+	l.warte(func() bool {
+		return l.e.wechsel.ziel == "" && !l.e.wechsel.laedt && !l.e.bibl.arbeitLaeuft && !k.indexLaeuft
+	})
+	if _, err := os.Stat(l.pfade[1]); err != nil {
+		t.Errorf("bisher offene trotz abgelehnter Anfrage im Papierkorb: %v", err)
+	}
+}

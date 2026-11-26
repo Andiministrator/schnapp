@@ -75,38 +75,40 @@ type wechselErgebnis struct {
 	err error
 }
 
-// wechselAnfrage nimmt einen Klick oder Enter auf die Vorschau mit dem absoluten Pfad abs an.
-func (e *editor) wechselAnfrage(abs string) {
+// wechselAnfrage nimmt einen Klick oder Enter auf die Vorschau mit dem absoluten Pfad abs an und liefert, ob der Wechsel
+// angenommen ist (Speichern oder Laden begonnen). Aufrufer, die einen Merker setzen (Papierkorb, Dialog), richten sich
+// danach, nicht nach wechsel.ziel (Kritik 26.11. K-6).
+func (e *editor) wechselAnfrage(abs string) bool {
 	switch {
 	case e.bib == nil || e.bib.Oeffnen == nil || abs == "":
-		return
+		return false
 	case e.istOffen(abs):
-		return // die offene Aufnahme: nichts zu wechseln, also auch keine Sperrmeldung (F-774)
+		return false // die offene Aufnahme: nichts zu wechseln, also auch keine Sperrmeldung (F-774)
 	case e.erzwungen || e.s.SignalVorgemerkt():
-		return // das Fenster schließt
+		return false // das Fenster schließt
 	case e.wechsel.laedt:
 		e.meldeNebenbei(i18n.T("Another capture is still loading. Please wait a moment, then try again."), false)
-		return
+		return false
 	case e.s.SpeichernLaeuft():
 		e.meldeNebenbei(i18n.T("Saving is still running. Please wait a moment, then try again."), false)
-		return
+		return false
 	case e.kopierLaeuft:
 		// Die Antwort des Kopierens gehörte sonst zur vorigen Aufnahme, verglichen würde sie mit dem Stand der neuen:
 		// „Copied to clipboard“ stünde unter der falschen Aufnahme (F-710). Der Klick gilt nicht, die Fußzeile sagt es
 		// (F-759); eine haltende Meldung bleibt stehen (meldeNebenbei).
 		e.meldeNebenbei(i18n.T("Copying is still running. Please wait a moment, then try again."), false)
-		return
+		return false
 	case e.bibl.arbeitLaeuft:
 		// Die Ansicht schreibt gerade Schlagworte oder verschiebt in den Papierkorb: erst danach laden, sonst hielte der
 		// Editor einen veralteten Stand oder eine Datei im Papierkorb (F-676); der Klick sagt es (F-775).
 		e.meldeNebenbei(i18n.T("The library is still working. Please wait a moment, then try again."), false)
-		return
+		return false
 	case e.exportOffen:
 		e.melde(i18n.T("Finish the export first."), false)
-		return
+		return false
 	case e.ocr.laeuft:
 		e.melde(i18n.T("Text recognition is running. Press Esc to cancel it first."), false)
-		return
+		return false
 	}
 	e.wechsel.ziel, e.wechsel.ausDialog, e.wechsel.papierkorb, e.wechsel.weitere = abs, false, false, nil
 	abzug, err := e.s.SpeichernJetzt()
@@ -115,9 +117,11 @@ func (e *editor) wechselAnfrage(abs string) {
 		e.wechselLaden()
 	case err != nil:
 		e.wechsel.ziel = "" // Ziehen läuft: der Klick gilt nicht
+		return false
 	default:
 		e.speichernStarten(abzug)
 	}
+	return true
 }
 
 // wechselNachSpeichern läuft nach der Antwort des Speicherns (speichernFertig): Wartet ein Wechsel, lädt er nach einem
@@ -192,6 +196,10 @@ func (e *editor) wechselAbholen() bool {
 			weitere = weitere[1:]
 		}
 		if len(weitere) > 0 {
+			// Fehlt die Datei der gescheiterten (im Dateimanager gelöscht), fällt ihr Eintrag nach dem Abgleich weg, auch
+			// wenn eine spätere Nachbarin lädt (F-672; Kritik 26.11. K-5).
+			diagnoseEditor("Wechsel: Nachbarin nicht geladen (%v), nächste", r.err)
+			e.abgleichAnfordern()
 			e.wechsel.ziel, e.wechsel.papierkorb, e.wechsel.weitere = weitere[0], true, weitere[1:]
 			e.wechselLaden()
 			return true

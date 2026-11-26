@@ -224,5 +224,12 @@
     "paket": "./cmd/schnapp",
     "alt": "\tsummen.Store(abs, summe)\n\treturn pfad, true",
     "neu": "\treturn pfad, true"
+  },
+  {
+    "name": "IO-K8 Summe ohne Grenze",
+    "datei": "cmd/schnapp/importieren.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tn, err := io.Copy(h, io.LimitReader(f, summeGrenze+1))",
+    "neu": "\tn, err := io.Copy(h, f)"
   }
 ]

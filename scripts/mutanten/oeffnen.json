@@ -10,8 +10,8 @@
     "name": "OF2 Wahl öffnet nicht",
     "datei": "internal/ui/oeffnen.go",
     "paket": "./internal/ui",
-    "alt": "\te.wechselAnfrage(pfad)\n\tif e.wechsel.ziel == pfad {",
-    "neu": "\t_ = pfad\n\tif e.wechsel.ziel == pfad {"
+    "alt": "\tif e.wechselAnfrage(pfad) {",
+    "neu": "\tif _ = pfad; false {"
   },
   {
     "name": "OF3 Abbruch meldet Fehler",

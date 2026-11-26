@@ -311,10 +311,10 @@ Löst die Ausnahme der offenen Aufnahme aus dem Zusatz zu Karte #312 ab (dort �
 - **✕, Entf und Bearbeiten → „Move to trash“ gelten auch an der offenen Aufnahme**, in Leiste und voller Ansicht. Der Weg
   ist ein Wechsel (Punkt 5) mit Merker `wechselZustand.papierkorb`: erst Speichern wie Strg+S (der letzte Stand samt
   Beschriftungen landet im Papierkorb und ist rückholbar), dann Laden der **Nachbarin** (`nachbarStelle`: die nächst
-  ältere, an der ältesten die nächst jüngere), Übernehmen, erst dann `papierkorbAnfrage` für die Datei, die den Stand
+  ältere, an der ältesten die nächst jüngere) *(abgelöst durch den Zusatz zu Karte #350: `nachbarStellen`, bis zu 8 Nachbarinnen nacheinander)*, Übernehmen, erst dann `papierkorbAnfrage` für die Datei, die den Stand
   trug (`Geoeffnet.Pfad` vor der Übernahme, nach einem Speichern als neue Aufnahme die neue). Das Fenster zeigt so nie
   eine weggeworfene Datei, und ein Schließen mitten im Ablauf speichert nicht in den Papierkorb hinein.
-- Scheitert Speichern oder Laden, oder hält ein Speicher-Hinweis den Wechsel auf, bleibt die Aufnahme offen und im
+- Scheitert Speichern oder Laden *(seit Karte #350: das Laden erst nach allen Nachbarinnen)*, oder hält ein Speicher-Hinweis den Wechsel auf, bleibt die Aufnahme offen und im
   Bestand; die Meldung sagt zusätzlich „The capture was not moved to the trash.“ Die **einzige** Aufnahme bleibt offen
   (Meldung, Menüeintrag grau mit Erklärung): Der Editor hat keinen leeren Zustand.
 - Aus der **vollen Ansicht** weggeworfen, bleibt die Ansicht offen (`editor.wechselBehaeltAnsicht`, grüner Rand über
@@ -340,11 +340,16 @@ Sitzungs-Kritik 26.11. K-9 und K-10.
   einem Signal. Erst wenn alle scheitern, sagt die Meldung „The capture was not moved to the trash.“
 - **Gefilterte Ansicht (F-827).** Zeigt die volle Ansicht wegen Suche oder Zeitraum keine andere Aufnahme, gelten die
   Nachbarinnen der Leiste der letzten Aufnahmen (ungefiltert, `bibNachbarn`). Gibt es auch dort keine, sagt die Meldung
-  „No other capture to switch to: clear the search and the period, then try again.“ statt „only capture“ (`einzigText`).
+  „No other capture to switch to: clear the search and choose “All dates”, then try again.“ statt „only capture“ (`einzigText`).
 - **Öffnen… der offenen Aufnahme (F-828).** `Anbindung.Zuordnen` (`cmd/schnapp` `zuordnerFuer`, ohne Nebenwirkung) bildet
   die im Dateidialog gewählte Datei in dessen Goroutine auf die Aufnahme ab, die das Laden öffnen würde: eine früher
   übernommene Datei von außen auf ihre Aufnahme (ADR-0016 Nachtrag 10 Punkt 2). Ist das die offene, wird weder gespeichert
-  noch neu geladen (der Rückgängig-Verlauf bleibt); die Fußzeile sagt „This file is already open.“
+  noch neu geladen (der Rückgängig-Verlauf bleibt); die Fußzeile sagt „This file is already open.“ Bewusst: Eine Datei
+  von außen wird dabei zweimal gehasht (Zuordnung im Dialog, danach `vorOeffnen` beim Laden); beide lesen höchstens
+  `fileformat.MaxDatei` (`dateiSumme`, Kritik 26.11. K-8).
+- **Nachbesserung nach der Sitzungs-Kritik 26.11. (K-5, K-6):** Scheitert eine Nachbarin, fordert der Editor auch beim
+  Weiterversuch den Abgleich an (der Eintrag einer gelöschten Datei fällt weg, F-672); `wechselAnfrage` liefert, ob der
+  Wechsel angenommen ist, und nur dann setzen Papierkorb und Dialog ihre Merker.
 
 Tests `TestLeisteKreuzAnDerOffenenZweiteNachbarin`, `TestLeisteKreuzZweiteNachbarinNichtNachAenderung`,
 `TestAnsichtGefiltertNimmtNachbarinDerLeiste`, `TestNachbarinnenOhneOffene`, `TestOeffnenDerOffenenUeberZuordnung`

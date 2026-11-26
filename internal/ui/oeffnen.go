@@ -107,8 +107,7 @@ func (e *editor) oeffnenFertig(r exportErgebnis) {
 		e.meldeNebenbei(i18n.T("This file is already open."), false)
 		return
 	}
-	e.wechselAnfrage(pfad)
-	if e.wechsel.ziel == pfad {
+	if e.wechselAnfrage(pfad) {
 		e.wechsel.ausDialog = true // nach wechselAnfrage: die setzt es zurück
 	}
 }

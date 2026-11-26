@@ -24,7 +24,7 @@
     "name": "PK4 offene Aufnahme ohne Wechsel in den Papierkorb",
     "datei": "internal/ui/bibliothek.go",
     "paket": "./internal/ui",
-    "alt": "\t\te.wechselAnfrage(nachbarn[0])\n\t\tif e.wechsel.ziel == nachbarn[0] {\n\t\t\te.wechsel.papierkorb, e.wechsel.weitere = true, nachbarn[1:]\n\t\t\te.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)\n\t\t}\n\t\treturn\n",
+    "alt": "\t\tif e.wechselAnfrage(nachbarn[0]) {\n\t\t\te.wechsel.papierkorb, e.wechsel.weitere = true, nachbarn[1:]\n\t\t\te.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)\n\t\t}\n\t\treturn\n",
     "neu": ""
   },
   {
@@ -115,8 +115,8 @@
     "name": "PK-N1 keine zweite Nachbarin (F-827)",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif len(weitere) > 0 {\n\t\t\te.wechsel.ziel",
-    "neu": "\t\tif false && len(weitere) > 0 {\n\t\t\te.wechsel.ziel"
+    "alt": "\t\tif len(weitere) > 0 {\n\t\t\t// Fehlt die Datei",
+    "neu": "\t\tif false && len(weitere) > 0 {\n\t\t\t// Fehlt die Datei"
   },
   {
     "name": "PK-N2 zweite Nachbarin trotz Änderung (F-827)",
@@ -152,5 +152,19 @@
     "paket": "./internal/ui",
     "alt": "\t\tif !e.istOffen(abs) {\n\t\t\taus = append(aus, abs)",
     "neu": "\t\tif true {\n\t\t\taus = append(aus, abs)"
+  },
+  {
+    "name": "PK-N7 Weiterversuch ohne Abgleich (K-5)",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tdiagnoseEditor(\"Wechsel: Nachbarin nicht geladen (%v), nächste\", r.err)\n\t\t\te.abgleichAnfordern()\n",
+    "neu": "\t\t\tdiagnoseEditor(\"Wechsel: Nachbarin nicht geladen (%v), nächste\", r.err)\n"
+  },
+  {
+    "name": "PK-N8 Merker trotz abgelehnter Anfrage (K-6)",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif e.wechselAnfrage(nachbarn[0]) {",
+    "neu": "\t\tif e.wechselAnfrage(nachbarn[0]); e.wechsel.ziel == nachbarn[0] {"
   }
 ]
