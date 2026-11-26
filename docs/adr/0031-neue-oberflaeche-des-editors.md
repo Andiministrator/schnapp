@@ -446,3 +446,36 @@ Leiste zu springen.
 Tests `internal/ui/farbpaar_klick_test.go`, Mutanten `scripts/mutanten/farbpaar-klick.json` (FK1–FK8) und die
 nachgezogenen S187-11, QA-U4a/b in `ui-seitenleiste.json`. Die deutlichere Darstellung von Vorder- und Füllfarbe folgt
 mit Karte #317.
+
+## Nachtrag 13 (26.11.2026): Farbziel als Auswahl, Schatten als Kästchen, Richtung als Scheibe (Karte folgt)
+
+**Status:** Akzeptiert (Claude Opus 5.5 im Auftrag Andis: „arbeite selbstständig“). Ändert die Bedienung aus ADR-0021
+Nachträge 11, 23 und 26 Punkt 7; das Farbmodell (Felder Vordergrund, Füllung, Schatten in `canvas`) bleibt.
+
+**Befund.** Andi (26.11.2026): „Das mit Pfeil-Farbe und Schatten-Farbe ist usabilitytechnisch sehr ungünstig“. Heute
+bearbeitet der Farbwähler ein unsichtbares „aktives Feld“: Wer im Abschnitt Schatten auf dessen Farbfeld klickt, färbt
+ab dann den Schatten, obwohl oben im Abschnitt Farbe weiter das rote Farbpaar steht und nur ein kleines Wort
+(„Schatten“) neben dem Paar den Wechsel verrät. Der Schalter „Schatten“ sieht aus wie ein Farbfeld, die Richtung
+verstellt man nur mit − / + in 15°.
+
+**Regel.**
+1. **Farbziel sichtbar wählen.** Der Abschnitt „Farbe“ beginnt mit einer Reihe gleich breiter Reiter, je Feld einer mit
+   Farbmuster und Namen: **Strich** (bei Text „Schrift“) · **Füllung** (nur, wo es eine gibt) · **Schatten** (nur, wenn
+   er an ist). Der Reiter des Felds, das der Farbwähler bearbeitet, ist hervorgehoben (Fläche `farbeAuswahl`, orange
+   Unterkante); Hex, Deckkraft, Fläche, Ton und Farbfelder darunter gelten genau ihm. Tauschen (Strg+Umschalt+X) steht als
+   kleines Symbol zwischen Strich und Füllung, „Keine“ bleibt ein Farbfeld der Palette. Das Wort neben dem Farbpaar
+   entfällt. Pfeile links/rechts wechseln den Reiter, wenn er den Fokus hat.
+2. **Schatten an/aus ist ein Kästchen** („☐ Schatten“, Haken wie „Agenten-Aufnahmen zeigen“ der Bibliothek), Klick auf
+   Kästchen oder Wort, Leertaste schaltet. Das Farbfeld im Abschnitt Schatten bleibt als Kurzweg: Ein Klick wählt den
+   Reiter „Schatten“ und zeigt den Farbwähler (wie Nachtrag 12).
+3. **Richtung als Scheibe.** Eine runde Scheibe (Durchmesser 56 dp) zeigt in der Mitte ein kleines Quadrat und seinen
+   Schatten in der eingestellten Richtung, dazu einen Punkt am Rand; Klicken oder Ziehen setzt die Richtung zum Zeiger hin
+   (der Schatten fällt dorthin, wo man zeigt), rastet in 15°-Schritten ein, mit Umschalt frei in 1°. Mausrad und Pfeile
+   ±15° (mit Umschalt ±1°), ein Ziehen ist ein Rückgängig-Schritt (`BeginneSchattenZug`). Daneben steht die Zahl; sie
+   bleibt der Winkel des Lichts wie in Photoshop und im Format (`s:schatten`), also Fallrichtung + 180°. Die Knöpfe
+   − / + der Richtung entfallen.
+4. **Feinabstimmung** (Andis Frage, ob ein Kästchen „Feinabstimmung“ bei vielen Werkzeugen hilft): offen bis zu Andis
+   Antwort, siehe Karte.
+
+**Erwogene Alternativen.** Farbwähler je Feld in jedem Abschnitt (doppelter Platz, drei Hex-Felder); Ziel nur über das
+Farbpaar links (unsichtbar, wenn die Leiste offen ist); Richtung als Liste von acht Pfeilen (kein Zwischenwinkel).
