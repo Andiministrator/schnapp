@@ -48,7 +48,9 @@ jobs:
       - name: Editor-Zeichnen ohne Fenster (Protokoll)
         run: go test ./internal/ui -count=1 -run 'TestEditorZeichnet' -v
       # Alle Pakete unter internal/ zusätzlich mit dem Race-Detektor (F-368, Sitzungs-QA 22.11. Q-6; ADR-0020 Nachtrag 11)
-      - run: go test -race ./internal/...
+      # -timeout 30m: render braucht unter -race lokal (16 Kerne) knapp 6 min, im Runner über die Voreinstellung 10 min
+      # (CI 59515e4, Muster- und Schatten-Tests aus Karten #362/#363); ein hängender Test fällt trotzdem auf.
+      - run: go test -race -timeout 30m ./internal/...
       # Mutationsprobe (F-371): Werkzeug prüfen und Muster gegen den Code zählen (Sekunden); der volle Lauf bleibt von Hand
       - name: scripts/mutanten
         working-directory: scripts/mutanten
