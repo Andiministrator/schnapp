@@ -176,7 +176,7 @@ func (l *leistenLauf) kachel(i int) image.Point {
 	return r.Min.Add(r.Size().Div(2))
 }
 
-// ADR-0036 Punkte 1 und 2: Die Leiste liegt unter der Leinwand und nimmt ihr leisteUntenDp (118 dp seit Karte #311); unter 420 dp verbleibender
+// ADR-0036 Punkte 1 und 2: Die Leiste liegt unter der Leinwand und nimmt ihr leisteUntenDp (104 dp seit Karte #353, vorher 118 dp seit #311); unter 420 dp verbleibender
 // Leinwandhöhe, ausgeschaltet oder ohne Bibliothek fehlt sie.
 func TestLeisteFlaeche(t *testing.T) {
 	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)

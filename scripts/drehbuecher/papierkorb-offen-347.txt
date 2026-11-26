@@ -3,8 +3,8 @@
 #   bild=$(go run ./scripts/probelibrary -heim tmp/probe/home)
 #   scripts/probe.sh --drehbuch scripts/drehbuecher/papierkorb-offen-347.txt --ende 60 --bild "$bild"
 # Danach tmp/probe/home neu anlegen: die Probe legt zwei Aufnahmen in den Papierkorb.
-# Bei 1600 × 1000, Skala 1: Vorschau i der Leiste hat die Mitte x = 174 + 132·i, y = 894, ihr ✕ liegt oben rechts
-# (x0+96..x0+116, 864..884 mit x0 = 114 + 132·i).
+# Bei 1600 × 1000, Skala 1: Vorschau i der Leiste hat die Mitte x = 174 + 132·i, y = 908, ihr ✕ liegt oben rechts
+# (x0+96..x0+116, 878..898 mit x0 = 114 + 132·i).
 # Erwartet:
 #  01 Zeiger über der offenen (zweiten, grüner Rand) Vorschau: ✕ oben rechts auch dort.
 #  02 Klick aufs ✕ der dritten, Zeiger bleibt stehen: nach der Ruhe zeigt die nachgerückte dritte ihr ✕ (rot).
@@ -13,21 +13,21 @@
 warte 1500
 taste Strg+Umschalt+R
 warte 2500
-zeiger 306 894
+zeiger 306 908
 warte 400
 foto 01-kreuz-offen
-zeiger 438 894
+zeiger 438 908
 warte 400
-zeiger 480 874
+zeiger 480 888
 warte 400
-klick 480 874
+klick 480 888
 warte 2500
 foto 02-nachgerueckt
-zeiger 306 894
+zeiger 306 908
 warte 400
-zeiger 348 874
+zeiger 348 888
 warte 400
-klick 348 874
+klick 348 888
 warte 3500
 zeiger 900 400
 warte 400

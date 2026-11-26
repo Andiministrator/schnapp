@@ -1522,6 +1522,10 @@ msgctxt "status bar"
 msgid "%d × %d"
 msgstr "%d × %d"
 
+msgctxt "status bar"
+msgid "%d×%d"
+msgstr "%d×%d"
+
 msgid "All dates"
 msgstr "Alle Zeiträume"
 

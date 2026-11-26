@@ -1718,6 +1718,11 @@ msgid "Not available in this window: it has no library."
 msgstr ""
 
 #: internal/ui/leiste_unten.go
+msgctxt "status bar"
+msgid "%d×%d"
+msgstr ""
+
+#: internal/ui/leiste_unten.go
 msgid "Capture of %s, %d × %d px — open now"
 msgstr ""
 

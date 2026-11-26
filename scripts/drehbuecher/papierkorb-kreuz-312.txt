@@ -3,8 +3,8 @@
 #   bild=$(go run ./scripts/probelibrary -heim tmp/probe/home)
 #   scripts/probe.sh --drehbuch scripts/drehbuecher/papierkorb-kreuz-312.txt --ende 60 --bild "$bild"
 # Danach tmp/probe/home neu anlegen: die Probe legt eine Aufnahme in den Papierkorb.
-# Bei 1600 × 1000, Skala 1: Vorschau i der Leiste hat die Mitte x = 174 + 132·i, y = 894, ihr ✕ liegt oben rechts
-# (x0+96..x0+116, 864..884 mit x0 = 114 + 132·i).
+# Bei 1600 × 1000, Skala 1: Vorschau i der Leiste hat die Mitte x = 174 + 132·i, y = 908, ihr ✕ liegt oben rechts
+# (x0+96..x0+116, 878..898 mit x0 = 114 + 132·i).
 # Erwartet:
 #  01 Zeiger über der dritten Vorschau: ✕ oben rechts in ihr, an der offenen (zweiten) nie.
 #  02 Zeiger auf dem ✕: rot, Statuszeile „In den Papierkorb (Entf)“ bzw. englisch.
@@ -13,13 +13,13 @@
 warte 1500
 taste Strg+Umschalt+R
 warte 2500
-zeiger 438 894
+zeiger 438 908
 warte 400
 foto 01-kreuz
-zeiger 480 874
+zeiger 480 888
 warte 400
 foto 02-kreuz-rot
-klick 480 874
+klick 480 888
 warte 3000
 foto 03-weg
 taste Strg+Umschalt+L

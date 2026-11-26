@@ -16,7 +16,7 @@ die letzten Aufnahmen als Leiste („Tray“) unter dem Bild und eine volle Bibl
 ## Entscheidung
 
 1. **Leiste der letzten Aufnahmen** unten im Editor zwischen Leinwand und Fußzeile, so breit wie die Leinwand
-   (Werkzeugleiste und rechte Leiste bleiben voll hoch), Höhe 104 dp (*seit Zusatz Karte #311:* 118 dp). Links der Knopf „Library“ (öffnet Punkt 3),
+   (Werkzeugleiste und rechte Leiste bleiben voll hoch), Höhe 104 dp (*seit Zusatz Karte #311:* 118 dp, *seit Zusatz Karte #353:* wieder 104 dp). Links der Knopf „Library“ (öffnet Punkt 3),
    daneben die Vorschaubilder der Bibliothek, **neueste links**, je 120 × 68 dp mit Zeitangabe darunter (heute: Uhrzeit,
    gestern: „yesterday“, sonst Wochentag und Datum, Sprache über `date format`). Die offene Aufnahme ist grün umrandet.
    Mausrad rollt waagerecht, Tastatur über die Fokusfahrt. Agenten-Aufnahmen stehen nicht in der Leiste.
@@ -65,7 +65,7 @@ die letzten Aufnahmen als Leiste („Tray“) unter dem Bild und eine volle Bibl
 
 ## Konsequenzen
 - ADR-0018 Nachtrag 5: `[library] bar`; ADR-0034: Zeile in der Tafel; ADR-0026: zwei Menüeinträge mit Kürzeln.
-- Die Leiste nimmt der Leinwand 104 dp Höhe (*seit Zusatz Karte #311:* 118 dp); Drehbücher mit festen Koordinaten setzen sie am Anfang aus (wie die
+- Die Leiste nimmt der Leinwand 104 dp Höhe (*seit Zusatz Karte #311:* 118 dp, *seit Zusatz Karte #353:* wieder 104 dp); Drehbücher mit festen Koordinaten setzen sie am Anfang aus (wie die
   rechte Leiste, ADR-0031 Nachtrag 3) — über den Menüeintrag, nicht über einen Umschalter, sobald die Einstellung
   gemerkt wird (Lehre aus F-539).
 
@@ -355,3 +355,16 @@ Tests `TestLeisteKreuzAnDerOffenenZweiteNachbarin`, `TestLeisteKreuzZweiteNachba
 `TestAnsichtGefiltertNimmtNachbarinDerLeiste`, `TestNachbarinnenOhneOffene`, `TestOeffnenDerOffenenUeberZuordnung`
 (`internal/ui`), `TestZuordnerFindetUebernommeneAufnahme` (`cmd/schnapp`); Mutanten PK-N1–PK-N6, OE-F828-1/2,
 IO-F828-1–3.
+
+## Zusatz (26.11.2026, Karte #353, Claude Opus 5.5)
+
+Wunsch Andi, 26.11.2026: „gehen zeit und auflösung in eine zeile? dann würden wir dort platz sparen.“
+
+- Unter jeder Vorschau steht nur noch **eine** Zeile: links die Zeitangabe (hell an der offenen Aufnahme), rechtsbündig
+  die Auflösung im Nebentext. Die Leiste ist damit wieder **104 dp** hoch (vorher 118 dp seit Zusatz Karte #311).
+- Ob die Auflösung passt, entscheidet `leisteZeileWahl` ohne Gio aus den gemessenen Textbreiten (Abstand mindestens
+  6 dp): zuerst die lange Form „1920 × 1080“, sonst die kurze ohne Leerzeichen „1920×1080“ (Kontext `status bar`,
+  `leisteAufloesungKurz`), sonst nur die Zeit. Das trifft vor allem ältere Aufnahmen mit Wochentag, Datum und Jahr.
+  Auch dann steht die Auflösung im Hinweis der Statuszeile (`leisteHinweis`), sie geht also nicht verloren.
+- Die Drehbücher mit Leistenkoordinaten (`bibliothek-174-leiste`, `bibliothek-174-ansicht`, `papierkorb-kreuz-312`,
+  `papierkorb-offen-347`) liegen 14 px tiefer: Mitte der Vorschauen bei y 908.

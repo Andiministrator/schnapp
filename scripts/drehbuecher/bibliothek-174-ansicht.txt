@@ -10,7 +10,7 @@
 # Bei 1600 × 1000, Skala 1: Kopf (0,30)–(1600,92) mit Suchfeld (170,46)–(520,76), Zeitraum (536,46)–(736,76),
 # Schalter bei (766,61); Raster ab y 92, sieben Spalten, Kachel 206 × 128 (Vorschau) im Abstand 222, erste
 # Monatsüberschrift bei y 104, erste Zeile der Vorschauen y 138–266, zweite y 334–462. Mitte der Vorschau in Spalte c,
-# Zeile z (vor dem Rollen): x = 127 + 222·c, y = 202 + 196·z. Knopf „Library“ der Leiste (62,860)–(102,928), seit Karte #311 ein Symbolknopf.
+# Zeile z (vor dem Rollen): x = 127 + 222·c, y = 202 + 196·z. Knopf „Library“ der Leiste (62,874)–(102,942), seit Karte #311 ein Symbolknopf.
 # Erwartet:
 #  01 Leiste eingeschaltet, links der Symbolknopf der Bibliothek (2 × 2 Rahmen).
 #  02 Klick auf den Knopf: Ansicht statt Werkzeugleiste, Leinwand und Leisten; Menüzeile und Fußzeile bleiben. Kopf mit
@@ -36,7 +36,7 @@ warte 1500
 taste Strg+Umschalt+R
 warte 2500
 foto 01-leiste-mit-knopf
-klick 82 894
+klick 82 908
 warte 2500
 foto 02-ansicht
 taste Rechts

@@ -32,7 +32,7 @@ import (
 
 // Maße der Leiste in dp (ADR-0036 Punkt 1, Muster 174 a).
 const (
-	leisteUntenDp  = 118 // Höhe; zwei Zeilen unter der Vorschau: Zeit und Auflösung (Karte #311)
+	leisteUntenDp  = 104 // Höhe; eine Zeile unter der Vorschau: Zeit links, Auflösung rechts (Karten #311, #353)
 	leisteKachelB  = 120 // Vorschau
 	leisteKachelH  = 68
 	leisteRandDp   = 12 // links und rechts der Spur
@@ -536,9 +536,7 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 		if aktuell {
 			farbe = farbeText
 		}
-		e.leisteText(gtx, libview.Zeitangabe(eintrag.Erstellt, jetzt), image.Pt(kr.Min.X, kr.Max.Y+gtx.Dp(4)), kr.Dx(), farbe == farbeText)
-		// Auflösung der Ansicht darunter, immer im Nebentext (Karte #311).
-		e.leisteText(gtx, leisteAufloesung(eintrag), image.Pt(kr.Min.X, kr.Max.Y+gtx.Dp(18)), kr.Dx(), false)
+		e.leisteZeile(gtx, eintrag, jetzt, kr, farbe == farbeText)
 		if fokus || (k.hinweis == "" && k.knoepfe[i].Hovered()) {
 			k.hinweis = leisteHinweis(eintrag, aktuell)
 		}
@@ -548,12 +546,79 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 	k.ops = neueOps
 }
 
-// leisteAufloesung ist die zweite Zeile unter einer Vorschau: Breite × Höhe der Ansicht aus dem Index.
+// leisteAufloesung ist die Auflösung unter einer Vorschau: Breite × Höhe der Ansicht aus dem Index.
 func leisteAufloesung(e library.Eintrag) string {
 	if e.Breite <= 0 || e.Hoehe <= 0 {
 		return ""
 	}
 	return fmt.Sprintf(i18n.TK("status bar", "%d × %d"), e.Breite, e.Hoehe)
+}
+
+// leisteAufloesungKurz ist die Auflösung ohne Leerzeichen, für eine Zeile, in die die lange Form nicht passt.
+func leisteAufloesungKurz(e library.Eintrag) string {
+	if e.Breite <= 0 || e.Hoehe <= 0 {
+		return ""
+	}
+	return fmt.Sprintf(i18n.TK("status bar", "%d×%d"), e.Breite, e.Hoehe)
+}
+
+// Wahl der Zeile unter einer Vorschau (Karte #353).
+const (
+	zeileVoll    = iota // Zeit links, Auflösung „1920 × 1080“ rechts
+	zeileKurz           // Zeit links, Auflösung „1920×1080“ rechts
+	zeileNurZeit        // nur die Zeit; die Auflösung steht weiter im Hinweis der Statuszeile
+)
+
+// leisteZeileWahl entscheidet ohne Gio, was in die eine Zeile unter einer Vorschau passt: breite ist die Kachelbreite,
+// zeit, voll und kurz die gemessenen Textbreiten, luecke der Mindestabstand zwischen Zeit und Auflösung. Ohne
+// Auflösung (voll = 0) bleibt die Zeit allein.
+func leisteZeileWahl(breite, zeit, voll, kurz, luecke int) int {
+	switch {
+	case voll <= 0:
+		return zeileNurZeit
+	case zeit+luecke+voll <= breite:
+		return zeileVoll
+	case zeit+luecke+kurz <= breite:
+		return zeileKurz
+	}
+	return zeileNurZeit
+}
+
+// leisteZeile setzt unter die Vorschau kr eine Zeile: links die Zeitangabe (hell bei der offenen), rechtsbündig die
+// Auflösung im Nebentext, so weit sie neben die Zeit passt (Karte #353, vorher zwei Zeilen seit #311). Rückgabe ist die
+// gezeichnete Auflösung, leer, wenn nur die Zeit passte.
+func (e *editor) leisteZeile(gtx layout.Context, eintrag library.Eintrag, jetzt time.Time, kr image.Rectangle, hell bool) string {
+	y := kr.Max.Y + gtx.Dp(4)
+	zeit := libview.Zeitangabe(eintrag.Erstellt, jetzt)
+	voll, kurz := leisteAufloesung(eintrag), leisteAufloesungKurz(eintrag)
+	wahl := leisteZeileWahl(kr.Dx(), e.leisteTextBreite(gtx, zeit), e.leisteTextBreite(gtx, voll),
+		e.leisteTextBreite(gtx, kurz), gtx.Dp(6))
+	e.leisteText(gtx, zeit, image.Pt(kr.Min.X, y), kr.Dx(), hell)
+	aufl := voll
+	switch wahl {
+	case zeileNurZeit:
+		return ""
+	case zeileKurz:
+		aufl = kurz
+	}
+	w := e.leisteTextBreite(gtx, aufl)
+	e.leisteText(gtx, aufl, image.Pt(kr.Max.X-w, y), w, false)
+	return aufl
+}
+
+// leisteTextBreite misst die Breite einer Zeile in der Schrift der Leiste, ohne sie zu zeichnen.
+func (e *editor) leisteTextBreite(gtx layout.Context, s string) int {
+	if s == "" {
+		return 0
+	}
+	lbl := material.Label(e.thema, unit.Sp(11), s)
+	lbl.MaxLines = 1
+	g := gtx
+	g.Constraints = layout.Constraints{Max: image.Pt(1<<20, gtx.Dp(20))}
+	m := op.Record(gtx.Ops)
+	d := lbl.Layout(g)
+	m.Stop()
+	return d.Size.X
 }
 
 // leisteVerborgen räumt den Stand des letzten Zeichnens ab, wenn die Leiste nicht gezeigt wird: kein Hinweis in der

@@ -14,10 +14,45 @@
     "neu": "\treturn \"\"\n}"
   },
   {
-    "name": "L311-3 Leiste zu niedrig für zwei Zeilen",
+    "name": "L353-1 Leiste wieder hoch für zwei Zeilen",
     "datei": "internal/ui/leiste_unten.go",
     "paket": "./internal/ui",
-    "alt": "\tleisteUntenDp  = 118",
-    "neu": "\tleisteUntenDp  = 104"
+    "alt": "\tleisteUntenDp  = 104",
+    "neu": "\tleisteUntenDp  = 118"
+  },
+  {
+    "name": "L353-2 lange Form auch ohne Platz",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase zeit+luecke+voll <= breite:\n",
+    "neu": "\tcase zeit+luecke+voll <= breite+10:\n"
+  },
+  {
+    "name": "L353-3 kurze Form nie",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase zeit+luecke+kurz <= breite:\n\t\treturn zeileKurz\n",
+    "neu": "\tcase false:\n\t\treturn zeileKurz\n"
+  },
+  {
+    "name": "L353-4 ohne Auflösung trotzdem voll",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase voll <= 0:\n\t\treturn zeileNurZeit\n",
+    "neu": "\tcase false:\n\t\treturn zeileNurZeit\n"
+  },
+  {
+    "name": "L353-5 gezeichnet wird immer die lange Form",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase zeileKurz:\n\t\taufl = kurz\n",
+    "neu": "\tcase zeileKurz:\n"
+  },
+  {
+    "name": "L353-6 kurze Form mit Leerzeichen",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\"%d×%d\"), e.Breite",
+    "neu": "\"%d × %d\"), e.Breite"
   }
 ]
