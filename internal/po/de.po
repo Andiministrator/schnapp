@@ -1713,3 +1713,6 @@ msgstr "Spitze am Anfang"
 
 msgid "Heads at both ends"
 msgstr "Spitzen an beiden Enden"
+
+msgid "This file is not in the library. It is added as a new capture as soon as you change it; the file itself stays unchanged."
+msgstr "Diese Datei liegt nicht in der Bibliothek. Mit der ersten Änderung kommt sie als neue Aufnahme hinein; die Datei selbst bleibt unverändert."

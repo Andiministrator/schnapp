@@ -2191,6 +2191,10 @@ msgstr ""
 msgid "Tail"
 msgstr ""
 
+#: internal/ui/uebernahme.go
+msgid "This file is not in the library. It is added as a new capture as soon as you change it; the file itself stays unchanged."
+msgstr ""
+
 #: internal/ui/wechsel.go
 msgid "Copying is still running. Please wait a moment, then try again."
 msgstr ""

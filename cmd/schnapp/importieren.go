@@ -8,78 +8,71 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"time"
 
-	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/fileformat"
 	"github.com/Andiministrator/schnapp/internal/library"
-	"github.com/Andiministrator/schnapp/internal/render"
 )
 
-// importBeimOeffnen schaltet die Übernahme beim Öffnen (ADR-0016 Nachtrag 10). Tests, die den Rückfall „erstes
-// Speichern legt ab“ prüfen, schalten sie ab.
+// importBeimOeffnen schaltet die Übernahme einer Datei von außen (ADR-0016 Nachträge 10 und 11): das Wiederfinden einer
+// früher übernommenen Aufnahme beim Öffnen, das Speichern bei der ersten Änderung und das Merken in imports.jsonl. Tests,
+// die den Rückfall „erstes Speichern legt ab“ prüfen, und der Drehbuch-Lauf schalten sie ab.
 var importBeimOeffnen = true
 
-// importiere übernimmt eine Datei außerhalb der Ablage vor dem Öffnen als Aufnahme der Bibliothek und liefert den Pfad,
-// den der Editor öffnen soll: die neue oder eine früher aus demselben Inhalt übernommene Aufnahme. Eine Datei in der
-// Ablage und jeder Fehler liefern pfad unverändert; dann öffnet der gewöhnliche Weg die Datei selbst und meldet einen
-// Lade- oder Budgetfehler (Punkt 3). Die Datei von außen bleibt unberührt.
-func importiere(b *library.Bibliothek, pfad string, ohneGrenze bool, kante document.Kante) string {
+// vorOeffnen bereitet das Öffnen einer Datei vor (ADR-0016 Nachtrag 11): Liegt sie außerhalb der Ablage und wurde
+// derselbe Inhalt schon einmal übernommen, liefert es den Pfad dieser Aufnahme (sie öffnet sich samt Beschriftungen).
+// Sonst bleibt pfad, wie er ist; aussen sagt dann, dass die Datei von außen kommt: Der Editor speichert sie bei der
+// ersten Änderung, und dieses Speichern legt sie als neue Aufnahme ab und merkt die Summe (merkeUebernahme). Ohne
+// Änderung kommt nichts in die Bibliothek. Die Datei von außen bleibt immer unberührt.
+func vorOeffnen(b *library.Bibliothek, pfad string) (ziel string, aussen bool) {
 	if !importBeimOeffnen || b == nil {
-		return pfad
+		return pfad, false
 	}
 	abs, err := filepath.Abs(pfad)
 	if err != nil {
-		return pfad
+		return pfad, false
 	}
 	if _, ok := b.Relativ(abs); ok {
-		return pfad
+		return pfad, false
 	}
 	// Erst prüfen wie das Öffnen (reguläre Datei, höchstens fileformat.MaxDatei): Eine FIFO, ein Gerät oder eine
-	// riesige Datei würde sonst beim Hashen blockieren (Kritik K-3); der gewöhnliche Weg meldet den Fehler.
+	// riesige Datei würde sonst beim Hashen blockieren (Kritik K-3); das Öffnen meldet den Fehler.
 	fi, err := os.Stat(abs)
 	if err != nil || !fi.Mode().IsRegular() || fi.Size() > fileformat.MaxDatei {
-		return pfad
+		return pfad, false
 	}
 	summe, err := dateiSumme(abs)
 	if err != nil {
-		return pfad
+		summen.Store(abs, []byte(nil)) // übernommen wird trotzdem, nur später nicht wiedergefunden
+		return pfad, true
 	}
 	if rel, ok := b.Importiert(summe); ok {
 		diagnoseImport("schon übernommen: %s", rel)
 		ziel := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))
 		merkeHerkunft(ziel, abs)
-		return ziel
+		return ziel, false
 	}
-	_, g, _, err := ladeFuerEditor(abs, ohneGrenze)
-	if err != nil {
-		return pfad
+	summen.Store(abs, summe)
+	return pfad, true
+}
+
+// summen merkt je geöffneter Datei von außen (absoluter Pfad) die SHA-256-Summe ihres Inhalts beim Öffnen, bis das
+// erste Speichern sie als Aufnahme ablegt (merkeUebernahme).
+var summen sync.Map
+
+// merkeUebernahme: Das Speichern hat die Datei von außen aussen als neue Aufnahme ziel (absolut, rel relativ zur Ablage)
+// abgelegt. Die Bibliothek merkt sich den Inhalt beim Öffnen (imports.jsonl, Nachtrag 10 Punkt 2), und die Aufnahme
+// merkt ihre Herkunft für die Warnung beim Schwärzen (Punkt 6).
+func merkeUebernahme(b *library.Bibliothek, aussen, rel, ziel string) {
+	v, ok := summen.LoadAndDelete(aussen)
+	if !ok {
+		return
 	}
-	if g.Fremd {
-		if err := g.Dokument.VorgabeKante(kante); err != nil {
-			return pfad
+	if summe := v.([]byte); summe != nil {
+		if err := b.MerkeImport(summe, rel); err != nil {
+			diagnoseImport("Liste der Übernahmen: %v", err)
 		}
 	}
-	sichtbar, err := render.Bild(g.Dokument)
-	if err != nil {
-		return pfad
-	}
-	m := g.Meta
-	m.Erstellt = time.Time{} // Zeitpunkt des Öffnens: vorn in der Leiste
-	e, err := b.Ablegen(g.Dokument, sichtbar, m)
-	if e.Pfad == "" {
-		diagnoseImport("Übernahme gescheitert: %v", err)
-		return pfad
-	}
-	if err != nil { // abgelegt, aber Index oder Vorschau scheiterten: die Aufnahme gilt trotzdem
-		diagnoseImport("übernommen mit Fehler: %v", err)
-	}
-	if err := b.MerkeImport(summe, e.Pfad); err != nil {
-		diagnoseImport("Liste der Übernahmen: %v", err)
-	}
-	ziel := filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad))
-	merkeHerkunft(ziel, abs)
-	return ziel
+	merkeHerkunft(ziel, aussen)
 }
 
 // herkunft merkt je übernommener Aufnahme (absoluter Pfad) den Namen der Datei von außen ohne Ordner (F-155), damit das

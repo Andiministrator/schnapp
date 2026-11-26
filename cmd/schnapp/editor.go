@@ -27,11 +27,11 @@ import (
 // Speicherfunktion prüfen können, die oeffneImEditor und bearbeiteNeu dem Editor übergeben (F-282).
 var editorStarten = ui.EditorMit
 
-// oeffneImEditor öffnet eine Datei im Editor (ADR-0020). Eine Datei außerhalb der Ablage wird zuerst als Aufnahme
-// übernommen und diese geöffnet (ADR-0016 Nachtrag 10). Speichern schreibt eine Aufnahme der Bibliothek an ihren
-// Platz zurück; alles andere (scheiterte die Übernahme, fremdes oder beschädigtes Bild, neuere Fassung) kommt beim
-// ersten Speichern als neue Aufnahme in die Bibliothek, danach wird diese fortgeschrieben. Die geöffnete Datei selbst
-// bleibt unberührt.
+// oeffneImEditor öffnet eine Datei im Editor (ADR-0020). Speichern schreibt eine Aufnahme der Bibliothek an ihren
+// Platz zurück; alles andere (Datei von außen, fremdes oder beschädigtes Bild, neuere Fassung) kommt beim ersten
+// Speichern als neue Aufnahme in die Bibliothek, danach wird diese fortgeschrieben. Eine Datei von außen speichert der
+// Editor schon bei der ersten Änderung; wurde ihr Inhalt früher übernommen, öffnet sich gleich diese Aufnahme (ADR-0016
+// Nachtrag 11). Die geöffnete Datei selbst bleibt unberührt.
 //
 // ohneGrenze ist --ignore-limit (ADR-0017 Nachtrag 6): Die Datei wird auch über dem Rechenbudget geöffnet. kante ist
 // [capture] seam (ADR-0023 Nachtrag 6): Ein einfaches PNG/JPEG (auch eine beschädigte oder neuere Arbeitsdatei, die als
@@ -42,8 +42,8 @@ func oeffneImEditor(pfad string, ohneGrenze bool, kante document.Kante) error {
 		return err
 	}
 	b := library.Neu(orte)
-	// Eine Datei von außen wird zuerst eine Aufnahme der Bibliothek (ADR-0016 Nachtrag 10).
-	pfad = importiere(b, pfad, ohneGrenze, kante)
+	// Eine Datei von außen: früher übernommene Aufnahme wiederfinden (ADR-0016 Nachtrag 11).
+	pfad, aussen := vorOeffnen(b, pfad)
 	// Erst auf ein laufendes UmDatei warten, dann laden, dann die Rettung (F-769, F-770).
 	abs, g, stand, r, err := ladeMitRettung(pfad, ohneGrenze, ladeFuerEditor)
 	if err != nil {
@@ -56,13 +56,14 @@ func oeffneImEditor(pfad string, ohneGrenze bool, kante document.Kante) error {
 		}
 	}
 	ui.SetzeExportOhneGrenze(ohneGrenze) // auch der Export aus dem Editor prüft das Budget dann nicht (ADR-0033 Nachtrag 4)
-	return editorStarten(geoeffnetFuer(b, abs, g, stand, r, ohneGrenze), anbindungFuer(b, kante))
+	return editorStarten(geoeffnetFuer(b, abs, g, stand, r, ohneGrenze, aussen), anbindungFuer(b, kante))
 }
 
 // geoeffnetFuer stellt zusammen, was der Editor für ein Dokument braucht: die Speicherfunktion, die Rettungskopie und
 // den Pfad der Datei, die den Stand trägt (nach einem Speichern als neue Aufnahme die neue; die Leiste der letzten
-// Aufnahmen umrandet sie, ADR-0036 Punkt 1).
-func geoeffnetFuer(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand, r *rettung, ohneGrenze bool) ui.Geoeffnet {
+// Aufnahmen umrandet sie, ADR-0036 Punkt 1). aussen: eine Datei von außen, die der Editor bei der ersten Änderung
+// speichert (vorOeffnen, ADR-0016 Nachtrag 11).
+func geoeffnetFuer(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand library.Stand, r *rettung, ohneGrenze, aussen bool) ui.Geoeffnet {
 	var aktuell atomic.Pointer[string] // das Speichern läuft in einer Goroutine (ADR-0020 Nachtrag 6)
 	aktuell.Store(&abs)
 	rett := r.nachSpeichern()
@@ -73,7 +74,7 @@ func geoeffnetFuer(b *library.Bibliothek, abs string, g *fileformat.Gelesen, sta
 		}
 	}
 	return ui.Geoeffnet{Titel: filepath.Base(abs), Dokument: g.Dokument, Speichern: speichernMitNachher(b, abs, g, stand, nachher),
-		Rettung: r.ui(), Pfad: func() string { return *aktuell.Load() }, OhneGrenze: ohneGrenze}
+		Rettung: r.ui(), Pfad: func() string { return *aktuell.Load() }, OhneGrenze: ohneGrenze, Aussen: aussen}
 }
 
 // anbindungFuer verbindet den Editor mit der Bibliothek b (ADR-0036): Die Leiste liest Index und Vorschauen, ein Klick
@@ -103,8 +104,8 @@ func rettungUmDatei(pfad string, aendere func() error) error {
 // übersetzt wie beim Öffnen von der Kommandozeile.
 func oeffnerFuer(b *library.Bibliothek, kante document.Kante) ui.Oeffnen {
 	return func(pfad string) (ui.Geoeffnet, error) {
-		// Datei → Öffnen…: von außen erst übernehmen (ADR-0016 Nachtrag 10).
-		pfad = importiere(b, pfad, false, kante)
+		// Datei → Öffnen…: früher übernommene Aufnahme wiederfinden (ADR-0016 Nachtrag 11).
+		pfad, aussen := vorOeffnen(b, pfad)
 		abs, g, stand, r, err := ladeMitRettung(pfad, false, ladeFuer) // wartet vor dem Laden (F-769)
 		if err != nil {
 			return ui.Geoeffnet{}, errors.New(nutzerFehler(err))
@@ -115,7 +116,7 @@ func oeffnerFuer(b *library.Bibliothek, kante document.Kante) ui.Oeffnen {
 				return ui.Geoeffnet{}, errors.New(nutzerFehler(err))
 			}
 		}
-		return geoeffnetFuer(b, abs, g, stand, r, false), nil
+		return geoeffnetFuer(b, abs, g, stand, r, false, aussen), nil
 	}
 }
 
@@ -140,7 +141,7 @@ func bearbeiteNeu(a abgelegt) error {
 	b := library.Neu(orte)
 	r := rettungFuer(abs, false)
 	ui.SetzeExportOhneGrenze(false)
-	return editorStarten(geoeffnetFuer(b, abs, g, a.stand, r, false), anbindungFuer(b, a.kante))
+	return editorStarten(geoeffnetFuer(b, abs, g, a.stand, r, false, false), anbindungFuer(b, a.kante))
 }
 
 // ladeFuerEditor liest eine Datei für den Editor (von außen oder aus der Bibliothek) und lehnt ein Dokument ab, dessen
@@ -373,8 +374,12 @@ func ablegenIn(b *library.Bibliothek, abs string, g *fileformat.Gelesen, stand l
 			erg.Warnung = true
 		}
 		if !versucht {
-			// Datei von außen (oder fremd): bleibt unberührt; bei späterer Schwärzung warnen (F-221).
+			// Datei von außen (oder fremd): bleibt unberührt; bei späterer Schwärzung warnen (F-221). Die Bibliothek merkt
+			// sich ihren Inhalt, damit erneutes Öffnen diese Aufnahme findet (ADR-0016 Nachtrag 11).
 			neue = append(neue, rest{ort: filepath.Base(abs), aussen: true, bei: gezeigt})
+			if !agent {
+				merkeUebernahme(b, abs, e.Pfad, filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad)))
+			}
 		}
 		if errors.Is(err, library.ErrVorschauAlt) {
 			erg.Hinweis += " " + i18n.T("The old preview could not be removed.")

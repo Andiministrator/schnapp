@@ -220,6 +220,8 @@ Tests in `internal/library/index_zweiter_prozess_test.go`, Mutanten HB32 bis HB3
 
 ## Nachtrag 10 (26.11.2026): Eine Datei von außen wird beim Öffnen eine Aufnahme (Karte #345)
 
+*Punkt 1 und das „Verworfen“ zum Verweis in der Leiste sind durch Nachtrag 11 abgelöst: übernommen wird erst mit der ersten Änderung.*
+
 **Status:** Akzeptiert (Claude Opus 5.5, Andi: „arbeite selbstständig“).
 
 Andi (25.11.2026, nach Datei → Öffnen…, Karte #326): „sie sollte aber dann auch unten in der bibliotheksleiste
@@ -254,3 +256,38 @@ E-16); bis dahin fehlte sie in der Leiste, und die Leiste umrandete nichts.
 Verworfen: die Datei nur als Verweis in der Leiste zeigen (die Leiste liest den Index der Ablage; ein Verweis bräuchte
 eine zweite Liste und verschwände beim nächsten Start); die übernommene Kopie beim Schließen ohne Änderung wieder
 entfernen (Andi hat sie geöffnet, um damit zu arbeiten; Löschen geht über ✕, Karte #347).
+
+## Nachtrag 11 (26.11.2026): Übernahme erst mit der ersten Änderung (Karte #348, F-825)
+
+**Status:** Akzeptiert (Andi, 26.11.2026: „vielleicht nur dann in die bibliothek übernehmen, wenn wir änderungen daran
+durchführen, oder?“; Ausgestaltung Claude Opus 5.5, Andi: „arbeite selbstständig“).
+
+Kritik K-2 (F-825): Nach Nachtrag 10 lag jede geöffnete Datei von außen danach still als Kopie samt Vorschau in der
+Ablage, auch eine, die man nur ansehen wollte (etwa vom USB-Stick).
+
+1. **Öffnen kopiert nicht.** Eine Datei außerhalb der Ablage öffnet sich selbst (`vorOeffnen` in
+   `cmd/schnapp/importieren.go`, `ui.Geoeffnet.Aussen`); die Fußzeile sagt beim Öffnen, dass sie nicht in der
+   Bibliothek liegt und mit der ersten Änderung hineinkommt. Wird sie ohne Änderung geschlossen oder gewechselt, bleibt
+   die Bibliothek, wie sie war.
+2. **Die erste Änderung speichert sofort.** Sobald das Dokument zum ersten Mal geändert ist, stößt der Editor ein
+   Speichern wie Strg+S an (`uebernahmePruefen` in `internal/ui/uebernahme.go`), aber erst, wenn kein Zug, keine
+   Texteingabe (Strg+S bestätigte sie), kein Bereich für den Text aus dem Bild, kein anderes Speichern, kein Wechsel und
+   kein Schließen läuft. Das Speichern ist der bisherige Weg „erstes Speichern legt ab“ (Punkt 5, E-16): neue Aufnahme
+   mit dem Zeitpunkt des Speicherns, vorn in der Leiste, grün umrandet; die Fußzeile nennt sie. Angestoßen wird einmal je
+   geöffneter Datei; scheitert es, gilt das gewöhnliche Speichern (Strg+S, Schließen) mit seinen Meldungen. Während des
+   Speicherns ruht das Bearbeiten wie bei Strg+S (ADR-0020 Nachtrag 6).
+3. **Keine Doppelten** bleibt (Nachtrag 10 Punkt 2): Beim Öffnen wird die Summe des Inhalts gebildet; ist er schon
+   übernommen und liegt die Aufnahme noch in der Ablage, öffnet sich diese. Gemerkt wird die Summe vom Öffnen erst, wenn
+   das erste Speichern abgelegt hat (`merkeUebernahme` in `ablegenIn`, nicht für Agenten-Wege).
+4. Die Rettungskopie (ADR-0029) gilt bis zur ersten Änderung für die Datei von außen, danach für die Aufnahme — wie vor
+   Nachtrag 10. Punkt 4 von Nachtrag 10 entfällt damit.
+5. Die Warnung beim Schwärzen (Nachtrag 10 Punkt 6) bleibt: beim ersten Speichern als „The original file is unchanged
+   and still shows the unredacted content“, nach dem Wiederfinden über die Summe mit dem Namen der Datei.
+6. Agenten-Wege und der Drehbuch-Lauf bleiben ohne Übernahme (Nachtrag 10 Punkt 5); mit `importBeimOeffnen` aus speichert
+   der Editor auch nicht bei der ersten Änderung.
+
+Verworfen: eine vorläufige Kachel der offenen Datei in der Leiste (gestrichelt, „nicht in der Bibliothek“). Die Leiste
+zählt Stellen, Fokus, ✕ und Papierkorb über Einträge des Index; eine Kachel ohne Eintrag hätte jeden dieser Wege
+berührt. Die Fußzeile sagt dasselbe, und mit der ersten Änderung steht die echte Kachel da. Übernahme erst beim
+Speichern (Strg+S oder Schließen): Dann fehlte die Aufnahme während der Arbeit in der Leiste, worum es in Karte #345 ging.
+

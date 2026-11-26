@@ -17,7 +17,9 @@ import (
 	"github.com/Andiministrator/schnapp/internal/library"
 )
 
-// ADR-0016 Nachtrag 10 (Karte #345): Eine Datei von außen wird beim Öffnen eine Aufnahme der Bibliothek.
+// ADR-0016 Nachtrag 10 (Karte #345) und Nachtrag 11 (Karte #348, F-825): Eine Datei von außen wird mit dem ersten
+// Speichern (der Editor speichert sie bei der ersten Änderung) eine Aufnahme der Bibliothek; ohne Änderung bleibt die
+// Bibliothek leer. Ein früher übernommener Inhalt öffnet gleich seine Aufnahme.
 
 // importLauf schaltet die Übernahme für den Test ein (TestMain schaltet sie für die Tests des Rückfalls ab).
 func importLauf(t *testing.T) (aussen string, g *gestartet, b *library.Bibliothek) {
@@ -45,84 +47,94 @@ func aufnahmen(t *testing.T, b *library.Bibliothek) int {
 	return n
 }
 
-func TestOeffnenUebernimmtDateiVonAussen(t *testing.T) {
-	aussen, g, b := importLauf(t)
+func TestOeffnenUebernimmtErstBeimSpeichern(t *testing.T) {
+	_, g, b := importLauf(t)
 	d0, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 40, 30)))
 	if err != nil {
 		t.Fatal(err)
 	}
 	mitKasten(t, d0)
 	arbeit := schreibeDatei(t, t.TempDir(), "mit-kasten.png", d0) // Arbeitsdatei von außen mit einem Objekt
+	abs, _ := filepath.Abs(arbeit)
 	vorher, _ := os.ReadFile(arbeit)
 	if err := oeffneImEditor(arbeit, false, document.KanteWelle); err != nil {
 		t.Fatal(err)
 	}
-	rel, ok := b.Relativ(g.geoeffnet.Pfad())
-	if !ok || aufnahmen(t, b) != 1 {
-		t.Fatalf("nicht übernommen: Pfad %q, %d Aufnahmen", g.geoeffnet.Pfad(), aufnahmen(t, b))
+	// Ohne Änderung: die Datei selbst, nichts in der Bibliothek, der Editor soll bei der ersten Änderung speichern.
+	if g.geoeffnet.Pfad() != abs || !g.geoeffnet.Aussen || aufnahmen(t, b) != 0 {
+		t.Fatalf("beim Öffnen: Pfad %q, Aussen %v, %d Aufnahmen", g.geoeffnet.Pfad(), g.geoeffnet.Aussen, aufnahmen(t, b))
 	}
 	if len(g.dok.Objekte()) != 1 {
-		t.Errorf("Objekte der Arbeitsdatei nicht übernommen: %d", len(g.dok.Objekte()))
+		t.Errorf("Objekte der Arbeitsdatei fehlen: %d", len(g.dok.Objekte()))
+	}
+	// Das Speichern nach der ersten Änderung legt sie als Aufnahme ab und merkt den Inhalt.
+	if _, err := g.speichern(g.dok); err != nil {
+		t.Fatal(err)
+	}
+	rel, ok := b.Relativ(g.geoeffnet.Pfad())
+	if !ok || aufnahmen(t, b) != 1 {
+		t.Fatalf("nach dem Speichern: Pfad %q, %d Aufnahmen", g.geoeffnet.Pfad(), aufnahmen(t, b))
 	}
 	if nachher, _ := os.ReadFile(arbeit); !bytes.Equal(vorher, nachher) {
 		t.Error("die Datei von außen wurde verändert")
 	}
-	// Dieselbe unveränderte Datei: die vorhandene Aufnahme, keine zweite.
+	g.rettung.Ende()
+	// Dieselbe unveränderte Datei: die vorhandene Aufnahme samt Objekt, keine zweite, kein erneutes Speichern.
 	if err := oeffneImEditor(arbeit, false, document.KanteWelle); err != nil {
 		t.Fatal(err)
 	}
-	if r2, _ := b.Relativ(g.geoeffnet.Pfad()); r2 != rel || aufnahmen(t, b) != 1 {
-		t.Errorf("zweites Öffnen: %q statt %q, %d Aufnahmen", r2, rel, aufnahmen(t, b))
+	if r2, _ := b.Relativ(g.geoeffnet.Pfad()); r2 != rel || g.geoeffnet.Aussen || aufnahmen(t, b) != 1 || len(g.dok.Objekte()) != 1 {
+		t.Errorf("zweites Öffnen: %q statt %q, Aussen %v, %d Aufnahmen, %d Objekte", r2, rel, g.geoeffnet.Aussen,
+			aufnahmen(t, b), len(g.dok.Objekte()))
 	}
-	// Ein einfaches Bild über die Ladefunktion von Datei → Öffnen…: übernommen mit der Kantenvorgabe.
+	g.rettung.Ende()
+	// Ein einfaches Bild über die Ladefunktion von Datei → Öffnen…: nicht übernommen, Kantenvorgabe gesetzt.
 	einfach := schreibeEinfachesPNG(t, t.TempDir(), "einfach.png")
 	geo, err := oeffnerFuer(b, document.KanteWelle)(einfach)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer geo.Rettung.Ende()
-	if _, ok := b.Relativ(geo.Pfad()); !ok || aufnahmen(t, b) != 2 || geo.Dokument.Kante() != document.KanteWelle {
-		t.Errorf("Datei → Öffnen…: Pfad %q, %d Aufnahmen, Kante %v", geo.Pfad(), aufnahmen(t, b), geo.Dokument.Kante())
+	einfachAbs, _ := filepath.Abs(einfach)
+	if geo.Pfad() != einfachAbs || !geo.Aussen || aufnahmen(t, b) != 1 || geo.Dokument.Kante() != document.KanteWelle {
+		t.Errorf("Datei → Öffnen…: Pfad %q, Aussen %v, %d Aufnahmen, Kante %v", geo.Pfad(), geo.Aussen, aufnahmen(t, b), geo.Dokument.Kante())
 	}
-	// Eine Aufnahme der Ablage wird nicht noch einmal übernommen.
-	if err := oeffneImEditor(g.geoeffnet.Pfad(), false, document.KanteWelle); err != nil {
+	if _, err := geo.Speichern(geo.Dokument); err != nil {
 		t.Fatal(err)
 	}
-	if aufnahmen(t, b) != 2 {
-		t.Errorf("Aufnahme der Ablage übernommen: %d", aufnahmen(t, b))
+	if _, ok := b.Relativ(geo.Pfad()); !ok || aufnahmen(t, b) != 2 {
+		t.Errorf("Datei → Öffnen… gespeichert: Pfad %q, %d Aufnahmen", geo.Pfad(), aufnahmen(t, b))
 	}
-	// Liegt die übernommene Aufnahme nicht mehr in der Ablage (Papierkorb), wird neu übernommen.
+	geo.Rettung.Ende()
+	// Eine Aufnahme der Ablage kommt nicht von außen.
+	aufnahme := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))
+	if err := oeffneImEditor(aufnahme, false, document.KanteWelle); err != nil {
+		t.Fatal(err)
+	}
+	if g.geoeffnet.Aussen || aufnahmen(t, b) != 2 {
+		t.Errorf("Aufnahme der Ablage: Aussen %v, %d Aufnahmen", g.geoeffnet.Aussen, aufnahmen(t, b))
+	}
+	g.rettung.Ende()
+	// Liegt die übernommene Aufnahme nicht mehr in der Ablage (Papierkorb), öffnet sich wieder die Datei selbst.
 	if _, err := b.InPapierkorb(rel, b.Jetzt()); err != nil {
 		t.Fatal(err)
 	}
 	if err := oeffneImEditor(arbeit, false, document.KanteWelle); err != nil {
 		t.Fatal(err)
 	}
-	// (Der Name ist sekundengenau und darf derselbe sein wie der der weggeworfenen.)
-	if _, ok := b.Relativ(g.geoeffnet.Pfad()); !ok || aufnahmen(t, b) != 2 {
-		t.Errorf("nach dem Papierkorb: %q, %d Aufnahmen", g.geoeffnet.Pfad(), aufnahmen(t, b))
+	if g.geoeffnet.Pfad() != abs || !g.geoeffnet.Aussen {
+		t.Errorf("nach dem Papierkorb: %q, Aussen %v", g.geoeffnet.Pfad(), g.geoeffnet.Aussen)
 	}
-	if _, err := os.Stat(g.geoeffnet.Pfad()); err != nil {
-		t.Errorf("neu übernommene Aufnahme fehlt: %v", err)
-	}
-	_ = aussen
 }
 
-// Scheitert die Übernahme (Ablage nicht anlegbar), öffnet der Editor die Datei von außen wie bisher.
-func TestOeffnenOhneUebernahmeWieBisher(t *testing.T) {
+// Ohne Übernahme (Tests des Rückfalls, Drehbuch-Lauf) speichert der Editor nicht bei der ersten Änderung.
+func TestOhneUebernahmeKeinSpeichernBeiAenderung(t *testing.T) {
 	aussen, g, b := importLauf(t)
-	if err := os.MkdirAll(filepath.Dir(b.Orte.Ablage), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(b.Orte.Ablage, []byte("keine Ablage"), 0o600); err != nil { // eine Datei, wo der Ordner hingehört
-		t.Fatal(err)
-	}
+	importBeimOeffnen = false
 	if err := oeffneImEditor(aussen, false, document.KanteWelle); err != nil {
 		t.Fatal(err)
 	}
-	abs, _ := filepath.Abs(aussen)
-	if g.geoeffnet.Pfad() != abs {
-		t.Errorf("Pfad %q, Soll die Datei von außen %q", g.geoeffnet.Pfad(), abs)
+	if g.geoeffnet.Aussen || aufnahmen(t, b) != 0 {
+		t.Errorf("Aussen %v, %d Aufnahmen", g.geoeffnet.Aussen, aufnahmen(t, b))
 	}
 }
 
@@ -142,7 +154,13 @@ func TestUebernahmeWarntVorUngeschwaerztemOriginal(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !erg.Warnung || !strings.Contains(erg.Hinweis, filepath.Base(aussen)) || !strings.Contains(erg.Hinweis, "unredacted") {
+		// Runde 0 legt die Datei von außen ab („The original file is unchanged …“), Runde 1 findet die Aufnahme über die
+		// Summe und nennt die Datei von außen mit Namen.
+		nennt := "original file"
+		if runde == 1 {
+			nennt = filepath.Base(aussen)
+		}
+		if !erg.Warnung || !strings.Contains(erg.Hinweis, nennt) || !strings.Contains(erg.Hinweis, "unredacted") {
 			t.Errorf("Runde %d: keine Warnung zur Datei von außen: %q", runde, erg.Hinweis)
 		}
 		g.rettung.Ende()
@@ -157,13 +175,16 @@ func TestUebernahmeNurRegulaereDatei(t *testing.T) {
 		t.Skip(err)
 	}
 	fertig := make(chan string, 1)
-	go func() { fertig <- importiere(b, fifo, false, document.KanteWelle) }()
+	go func() {
+		p, _ := vorOeffnen(b, fifo)
+		fertig <- p
+	}()
 	select {
 	case p := <-fertig:
 		if p != fifo {
-			t.Errorf("FIFO übernommen: %q", p)
+			t.Errorf("FIFO umgelenkt: %q", p)
 		}
 	case <-time.After(3 * time.Second):
-		t.Fatal("importiere blockiert an einer FIFO")
+		t.Fatal("vorOeffnen blockiert an einer FIFO")
 	}
 }

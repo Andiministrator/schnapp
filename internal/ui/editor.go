@@ -156,6 +156,7 @@ func EditorMit(g Geoeffnet, bib *Anbindung) error {
 	exportOhneGrenze.Store(g.OhneGrenze)
 	e := neuerEditor(g.Titel, g.Dokument, g.Speichern, g.Rettung)
 	e.pfad, e.bib = g.Pfad, bib
+	e.aussenSetzen(g.Aussen)
 	// Wecker statt einzelnem Invalidate: Gio verwirft ein Invalidate nach einem schon angenommenen (F-231).
 	e.wecker = canvas.NeuerWecker(e.w.Invalidate, weckTakt, weckGrenze)
 	defer e.wecker.Ende()
@@ -288,6 +289,9 @@ type editor struct {
 
 	// ohneGrenze: mit --ignore-limit geöffnet, der Export lehnt über dem Rechenbudget nicht ab (ADR-0033 Nachtrag 4).
 	ohneGrenze bool
+	// aussen: Die offene Datei liegt außerhalb der Bibliothek und wird bei der ersten Änderung gespeichert
+	// (uebernahmePruefen, ADR-0016 Nachtrag 11); nach dem Anstoßen des Speicherns false.
+	aussen bool
 
 	rettung Rettung        // Rettungskopie (ADR-0029); nil: keine
 	rett    rettungZustand // Bündelung der Rettungskopie
@@ -537,6 +541,9 @@ func (e *editor) nachEreignis() {
 	}
 	if e.nachKopieSchliessen() {
 		e.w.Perform(system.ActionClose) // erneut anfragen; schliessen entscheidet wie sonst (F-281)
+	}
+	if e.uebernahmePruefen() {
+		e.wecker.Anfordern()
 	}
 	e.rettungPruefen() // Rettungskopie gebündelt nach Änderungen (ADR-0029)
 }

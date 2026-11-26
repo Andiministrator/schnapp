@@ -1,10 +1,10 @@
 [
   {
-    "name": "IM1 keine Übernahme beim Öffnen",
+    "name": "IM1 Datei von außen nicht als solche gemeldet",
     "datei": "cmd/schnapp/importieren.go",
     "paket": "./cmd/schnapp",
-    "alt": "\tif !importBeimOeffnen || b == nil {",
-    "neu": "\tif true || !importBeimOeffnen || b == nil {"
+    "alt": "\tsummen.Store(abs, summe)\n\treturn pfad, true\n",
+    "neu": "\tsummen.Store(abs, summe)\n\treturn pfad, false\n"
   },
   {
     "name": "IM2 Doppelte: vorhandene Aufnahme übergangen",
@@ -17,22 +17,22 @@
     "name": "IM3 Übernahme nicht gemerkt",
     "datei": "cmd/schnapp/importieren.go",
     "paket": "./cmd/schnapp",
-    "alt": "\tif err := b.MerkeImport(summe, e.Pfad); err != nil {",
-    "neu": "\tif err := error(nil); err != nil {"
+    "alt": "\t\tif err := b.MerkeImport(summe, rel); err != nil {",
+    "neu": "\t\tif err := error(nil); err != nil {"
   },
   {
-    "name": "IM4 Aufnahme der Ablage noch einmal übernommen",
+    "name": "IM4 Aufnahme der Ablage als Datei von außen",
     "datei": "cmd/schnapp/importieren.go",
     "paket": "./cmd/schnapp",
-    "alt": "\tif _, ok := b.Relativ(abs); ok {\n\t\treturn pfad\n\t}",
-    "neu": "\tif _, ok := b.Relativ(abs); false && ok {\n\t\treturn pfad\n\t}"
+    "alt": "\tif _, ok := b.Relativ(abs); ok {\n\t\treturn pfad, false\n\t}",
+    "neu": "\tif _, ok := b.Relativ(abs); false && ok {\n\t\treturn pfad, false\n\t}"
   },
   {
-    "name": "IM5 Datei → Öffnen… übernimmt nicht",
+    "name": "IM5 Datei → Öffnen… ohne Merker aussen",
     "datei": "cmd/schnapp/editor.go",
     "paket": "./cmd/schnapp",
-    "alt": "\t\tpfad = importiere(b, pfad, false, kante)\n",
-    "neu": "\t\t_ = importiere\n"
+    "alt": "\t\treturn geoeffnetFuer(b, abs, g, stand, r, false, aussen), nil",
+    "neu": "\t\treturn geoeffnetFuer(b, abs, g, stand, r, false, false && aussen), nil"
   },
   {
     "name": "IM6 Liste: erste statt letzte Zeile",
@@ -54,5 +54,61 @@
     "paket": "./internal/library",
     "alt": "\tif err != nil || !fi.Mode().IsRegular() {",
     "neu": "\tif false && (err != nil || !fi.Mode().IsRegular()) {"
+  },
+  {
+    "name": "IM9 erstes Ablegen merkt die Übernahme nicht",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\tif !agent {\n\t\t\t\tmerkeUebernahme(",
+    "neu": "\t\t\tif agent {\n\t\t\t\tmerkeUebernahme("
+  },
+  {
+    "name": "IM10 Übernahme ohne Schalter",
+    "datei": "cmd/schnapp/importieren.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif !importBeimOeffnen || b == nil {",
+    "neu": "\tif b == nil {"
+  },
+  {
+    "name": "IM11 UI: Speichern schon ohne Änderung",
+    "datei": "internal/ui/uebernahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.aussen || !e.s.Geaendert() {",
+    "neu": "\tif !e.aussen {"
+  },
+  {
+    "name": "IM12 UI: Speichern während des Zugs",
+    "datei": "internal/ui/uebernahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.s.Zieht() || e.s.TextLaeuft()",
+    "neu": "\tif e.s.TextLaeuft()"
+  },
+  {
+    "name": "IM13 UI: Speichern bestätigt die Texteingabe",
+    "datei": "internal/ui/uebernahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.s.Zieht() || e.s.TextLaeuft() ||",
+    "neu": "\tif e.s.Zieht() ||"
+  },
+  {
+    "name": "IM14 UI: mehrfach angestoßen",
+    "datei": "internal/ui/uebernahme.go",
+    "paket": "./internal/ui",
+    "alt": "\te.aussen = false\n\te.speichernJetzt()",
+    "neu": "\te.speichernJetzt()"
+  },
+  {
+    "name": "IM15 UI: Wechsel übernimmt den Merker nicht",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\te.aussenSetzen(g.Aussen)\n",
+    "neu": "\t_ = g.Aussen\n"
+  },
+  {
+    "name": "IM16 UI: kein Hinweis beim Öffnen",
+    "datei": "internal/ui/uebernahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif aussen {\n\t\te.melde(",
+    "neu": "\tif false {\n\t\te.melde("
   }
 ]

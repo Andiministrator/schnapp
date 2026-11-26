@@ -32,6 +32,9 @@ type Geoeffnet struct {
 	// OhneGrenze: mit --ignore-limit geöffnet; der Export prüft das Budget dann nicht (ADR-0033 Nachtrag 4). Ein Wechsel
 	// öffnet immer mit Budget.
 	OhneGrenze bool
+	// Aussen: eine Datei außerhalb der Bibliothek, die der Editor bei der ersten Änderung speichert und damit als neue
+	// Aufnahme ablegt (ADR-0016 Nachtrag 11); bis dahin kommt nichts in die Bibliothek.
+	Aussen bool
 }
 
 // Oeffnen lädt die Datei pfad für den Wechsel (cmd/schnapp: ladeFuerEditor, Rettungskopie, Kantenvorgabe). Läuft in
@@ -254,6 +257,7 @@ func (e *editor) uebernimm(g Geoeffnet) {
 	exportOhneGrenze.Store(g.OhneGrenze)
 	// Zustand, der am Dokument hängt.
 	e.meldung, e.meldungHaelt = canvas.Meldung{}, keinHalt
+	e.aussenSetzen(g.Aussen)
 	e.schliessenNachSpeichern = false
 	e.lupe.bilder = nil
 	e.naht.gueltig = false
