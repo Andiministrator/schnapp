@@ -62,8 +62,14 @@ func TestZweiLaeufeGleicheSekunde(t *testing.T) {
 			t.Errorf("Lauf %d: Exit %d:\n%s", i, codes[i], ausgabe[i].String())
 		}
 	}
-	laeufe, err := os.ReadDir(filepath.Join(q, "tmp", "mutanten"))
-	if err != nil || len(laeufe) != 2 {
-		t.Errorf("erwartet 2 Laufordner, gefunden %d (%v)", len(laeufe), err)
+	eintraege, err := os.ReadDir(filepath.Join(q, "tmp", "mutanten"))
+	laeufe := 0
+	for _, e := range eintraege {
+		if strings.HasPrefix(e.Name(), "lauf-") {
+			laeufe++
+		}
+	}
+	if err != nil || laeufe != 2 {
+		t.Errorf("erwartet 2 Laufordner, gefunden %d (%v)", laeufe, err)
 	}
 }

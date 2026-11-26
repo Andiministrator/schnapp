@@ -181,10 +181,48 @@ var tagsOK = regexp.MustCompile(`^([A-Za-z0-9_]+(,[A-Za-z0-9_]+)*)?$`)
 
 // goFlags liefert den Wert für GOFLAGS: die festen Tags plus die des Mutanten.
 func goFlags(tags string) string {
+	// -trimpath: Jeder Lauf kopiert den Baum an einen neuen Ort; ohne trimpath stünde der Pfad in jedem Cache-Schlüssel,
+	// und jeder Lauf baute alles (auch Gio mit cgo) neu in den Cache (F-833).
 	if tags == "" {
-		return "-tags=novulkan,nox11"
+		return "-trimpath -tags=novulkan,nox11"
 	}
-	return "-tags=novulkan,nox11," + tags
+	return "-trimpath -tags=novulkan,nox11," + tags
+}
+
+// cacheGrenze ist die Größe des eigenen Build-Caches der Mutationsläufe, ab der er vor einem Lauf geleert wird (F-833).
+const cacheGrenze = 8 << 30
+
+// cacheOrdner ist der eigene Build-Cache der Mutationsläufe unter <wurzel>/tmp/mutanten (F-833): sichtbar im Projekt,
+// begrenzt, getrennt vom Cache der übrigen Arbeit.
+func cacheOrdner(wurzel string) string { return filepath.Join(wurzel, "tmp", "mutanten", "gocache") }
+
+// ordnerGroesse zählt die Bytes der regulären Dateien unter dir (fehlt er: 0).
+func ordnerGroesse(dir string) int64 {
+	var n int64
+	_ = filepath.WalkDir(dir, func(_ string, d os.DirEntry, err error) error {
+		if err == nil && d.Type().IsRegular() {
+			if i, err := d.Info(); err == nil {
+				n += i.Size()
+			}
+		}
+		return nil
+	})
+	return n
+}
+
+// cacheBegrenzen leert den Cache cache mit go clean -cache, wenn er größer als grenze ist; liefert die Größe davor.
+func cacheBegrenzen(cache string, grenze int64, aus io.Writer) int64 {
+	n := ordnerGroesse(cache)
+	if n <= grenze {
+		return n
+	}
+	fmt.Fprintf(aus, "Build-Cache %s hat %.1f GiB, über der Grenze: go clean -cache\n", cache, float64(n)/(1<<30))
+	cmd := exec.Command("go", "clean", "-cache")
+	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOCACHE="+cache)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		fmt.Fprintf(aus, "go clean -cache: %v %s\n", err, kurz(string(out)))
+	}
+	return n
 }
 
 // waehle filtert nach Gruppe und Name (leer = alle).
@@ -271,7 +309,8 @@ func goTest(baum, lauf string, m Mutant) (string, error) {
 	cmd := exec.Command("go", append(args, m.Paket)...)
 	cmd.Dir = filepath.Join(baum, filepath.FromSlash(m.Modul))
 	g := filepath.Join(lauf, "g")
-	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS="+goFlags(m.Tags), "TMPDIR="+g, "GOTMPDIR="+g)
+	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=local", "GOFLAGS="+goFlags(m.Tags), "TMPDIR="+g, "GOTMPDIR="+g,
+		"GOCACHE="+cacheOrdner(filepath.Dir(filepath.Dir(filepath.Dir(lauf)))))
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
@@ -344,6 +383,7 @@ func lauf(args []string, aus io.Writer) int {
 			fmt.Fprintln(aus, "Fehler:", err)
 			return 2
 		}
+		cacheBegrenzen(cacheOrdner(w), cacheGrenze, aus)
 		fmt.Fprintf(aus, "Kopie nach %s\n", baum)
 		if err := kopiereBaum(w, baum); err != nil {
 			fmt.Fprintln(aus, "Fehler beim Kopieren:", err)

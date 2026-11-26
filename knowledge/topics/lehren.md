@@ -1173,3 +1173,19 @@ Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #347, #315, #345 
   Teilen des Renderers zu schreiben, beseitigte die Fuge, blähte `arrow-heads.snap.svg` von 3 auf 38 KB und band
   `render` in `fileformat` ein (Importzyklus in render-Tests). Vor dem Bau die Größe als Grenze festlegen und messen.
 
+
+## Sprint 14, Karten #349 bis #352 und #358 (26.11.2026, F-826 bis F-833)
+
+- **Kopien eines Baums an wechselnden Orten füllen den Go-Build-Cache.** Ohne `-trimpath` steht der absolute Quellpfad in
+  jedem Cache-Schlüssel; jeder Mutationslauf (neuer Ordner `lauf-…`, darin auch `third_party/gio` mit cgo) baute alles neu
+  und legte es neu ab. `~/.cache/go-build` war am 26.11. 116 GB groß, `/home` voll (F-833). Seitdem: `-trimpath` und ein
+  eigener Cache `tmp/mutanten/gocache`, über 8 GiB vor dem Lauf mit `go clean -cache` geleert (kein `rm`). Gemessen: zwei
+  Läufe hintereinander, der Cache bleibt bei 181 MB. Lehre allgemein: Wer Werkzeug-Läufe in wechselnden Ordnern baut,
+  prüft den Cache nach zwei Läufen (`du -sh $(go env GOCACHE)`), nicht erst, wenn die Platte voll ist.
+- **Eine Wartebedingung im Test muss das Ende des ganzen Ablaufs treffen.** `!laedt` war schon vor dem Laden wahr (erst
+  speichert der Wechsel); der alte Test bestand nur, weil das Speichern schnell war. Fertig ist ein Wechsel erst, wenn
+  `wechsel.ziel` leer ist.
+- **Ein Mutant, der in einer Goroutine eine nil-Funktion ruft, endet als Panik ohne Testnamen** (FEHLER statt ROT). Vor
+  dem Aufruf im Test auf nil prüfen und mit `t.Fatal` benennen (N5).
+- **Doppelter Schutz macht einen Mutanten gleichwertig** (BV21: `menueOeffne` sperrt die Listen selbst): als äquivalent mit
+  Grund vermerken, nicht den Test verbiegen.

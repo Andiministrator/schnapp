@@ -7,16 +7,17 @@ package main
 
 import (
 	"bytes"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestGoFlags(t *testing.T) {
-	if got := goFlags(""); got != "-tags=novulkan,nox11" {
+	if got := goFlags(""); got != "-trimpath -tags=novulkan,nox11" {
 		t.Errorf("ohne Tags: %q", got)
 	}
-	if got := goFlags("probe"); got != "-tags=novulkan,nox11,probe" {
+	if got := goFlags("probe"); got != "-trimpath -tags=novulkan,nox11,probe" {
 		t.Errorf("mit Tag: %q", got)
 	}
 }
@@ -72,5 +73,28 @@ func TestModulMachtUntermodulMutierbar(t *testing.T) {
 	}
 	if code, aus := trockenMit(t, `[{"name":"x","datei":"p/p.go","paket":"./p","alt":"return 1","neu":"return 2","modul":"../x"}]`); code == 0 || !strings.Contains(aus, "modul") {
 		t.Errorf("modul außerhalb: Exit %d:\n%s", code, aus)
+	}
+}
+
+// F-833: Der eigene Cache liegt unter tmp/mutanten der Wurzel; über der Grenze leert ihn go clean -cache, darunter
+// bleibt er.
+func TestCacheBegrenzen(t *testing.T) {
+	w := t.TempDir()
+	c := cacheOrdner(w)
+	if c != filepath.Join(w, "tmp", "mutanten", "gocache") {
+		t.Fatalf("Ort %s", c)
+	}
+	if err := os.MkdirAll(filepath.Join(c, "ab"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(c, "ab", "x-d"), make([]byte, 2048), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var aus strings.Builder
+	if n := cacheBegrenzen(c, 4096, &aus); n != 2048 || ordnerGroesse(c) != 2048 || aus.Len() != 0 {
+		t.Errorf("unter der Grenze: %d, danach %d, Ausgabe %q", n, ordnerGroesse(c), aus.String())
+	}
+	if n := cacheBegrenzen(c, 1024, &aus); n != 2048 || ordnerGroesse(c) >= 2048 || !strings.Contains(aus.String(), "go clean -cache") {
+		t.Errorf("über der Grenze: %d, danach %d, Ausgabe %q", n, ordnerGroesse(c), aus.String())
 	}
 }
