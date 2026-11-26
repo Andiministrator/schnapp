@@ -1247,3 +1247,24 @@ Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #353 bis #364 und
 - **Ein Mutant, der eine geänderte Zeile trifft, gehört mitgezogen** (Trockenlauf zeigt FEHLER, hier N13 in
   `text-naht.json`): Muster auf die neue Zeile setzen, Absicht des Mutanten behalten.
 
+## Sprint 14, Karte #363 Teil 1 und Sitzungs-Kritik (5) (26.11.2026, F-840 bis F-848)
+
+- **Geometrie, die aus Dateiwerten wächst, braucht eine Obergrenze vor dem Budget** (F-840, [S]): Gemusterte Striche
+  erzeugten je Objekt so viele Stücke, wie die Länge hergab (±1e6 Koordinaten: 1,4 Mio. Scheiben, 0,35 s), und das schon
+  im Trockenlauf von `render.Pruefe`, der nur die sichtbaren Teile zählte. Regel: Was eine Rechnung aus einer Länge
+  vervielfacht, hat eine feste Obergrenze je Objekt (`MaxMusterStuecke`), und seine Kosten zählen, bevor gezeichnet wird.
+- **Der Schreiber hält die Grenzen des Lesers** (F-841): Das SVG der Arbeitsdatei konnte über `maxSVG` wachsen; die
+  Datei ließ sich danach nicht mehr öffnen. Jede Lesegrenze bekommt eine Prüfung im Schreibweg, bevor die alte Datei
+  ersetzt wird — und Darstellung, die der Leser nicht braucht, bleibt in der Arbeitsdatei knapp.
+- **Jede neue Angabe, die aus der Ausdehnung eines Objekts folgt, verrät, was die Ausdehnung verrät** (F-842, Klasse
+  F-728): Die Filterfläche des Schattens trug die Breite des verborgenen Schilds. Bei einem neuen Attribut mit Maßen
+  prüfen, ob der Export das Objekt nur teilweise schreibt (`ohneText`), und die Maße aus dem Geschriebenen nehmen.
+- **Ein Zwischenspeicher je Objekt hängt nicht am Stand des ganzen Dokuments** (F-843): Sonst rechnet jede Änderung an
+  einem Objekt alle Einträge neu. Schlüssel = das Objekt selbst plus genau das, was sein Bild außerdem bestimmt; dazu
+  eine Speichergrenze und Leeren beim Wechsel der Aufnahme (Klasse F-799).
+- **Kastenfilter-Näherungen haben eine Untergrenze** (F-846): Drei Kästen der Breite 1 tun nichts; unter σ = 2 rechnet
+  ein echter Gaußkern.
+- **Commit-Nachrichten per Datei, nie per Heredoc** (Projektkonvention, Kompaktblatt): In dieser Sitzung liefen die
+  Commits mit `git commit -F -` und Heredoc; die Inhalte stimmen, die Regel nicht. Nachricht mit dem Write-Werkzeug nach
+  `tmp/<lauf>/` schreiben und `git commit -F` darauf.
+

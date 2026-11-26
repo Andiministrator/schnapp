@@ -9,7 +9,7 @@ warte 400
 foto 01-leiste
 #  02 ein Pfeil, dann am Regler nach rechts gezogen: Pfeil und Anzeige bei 32 px, Marke am rechten Ende.
 #  03 nach Strg+Z: der Pfeil wieder 6 px (das Ziehen war ein Schritt).
-# Regler bei 1600 × 1000: Schiene von x 1316 bis 1584 auf y 252 (darunter „Pfeil-Stil“, Feld Anfang bei y 303).
+# Regler bei 1600 × 1000: Schiene von x 1316 bis 1584 auf y 252 (darunter seit Karte #362 „Line style“ bei y 283, dann „Pfeil-Stil“, Feld Anfang bei y 341).
 ziehe 200 200 600 300 10
 warte 300
 ziehe 1450 252 1590 252 12

@@ -1,7 +1,8 @@
 # Sichtprobe ADR-0031 Nachtrag 5 / ADR-0021 Nachtrag 9 (Karte #189): Farbwähler der rechten Leiste.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/farbwaehler-189.txt --bild scripts/drehbuecher/testbild-1200x800.png
 # Seit Karte #362 (Feld „Line style“ unter dem Regler, ADR-0021 Nachtrag 25) liegt alles darunter 38 px tiefer; die
-# Klicks sind verschoben, die Maße in den folgenden Zeilen gelten davor.
+# Klicks sind verschoben; die Maße in den folgenden Zeilen stammen vom Stand vor Karte #352 und liegen jetzt 60 px tiefer
+# (22 px Regler der Strichstärke, 38 px „Line style“).
 # Bei 1600 × 1000, Skala 1, Werkzeug Pfeil: Farbfläche x 1316–1520, y 428–542; Felder 1530–1584 (seit Karte #318 ohne Pipette;
 # die Pipette liegt in der Zeile des Farbpaars bei x 1560–1584, y 394–418); Farbton-Regler y 554–566, Deckkraft-Regler y 577–589 (x 1316–1584); Hex-Feld x 1352–1452, y 603–627
 # (nach den Schnellstilen, ADR-0037, dem Farbpaar, #219, und dem Abschnitt Pfeil-Stil, ADR-0021 Nachtrag 20; nachgemessen

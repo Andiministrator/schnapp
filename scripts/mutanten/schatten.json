@@ -108,8 +108,8 @@
     "name": "SH16 Filter versetzt zum Licht",
     "datei": "internal/fileformat/schatten.go",
     "paket": "./internal/fileformat",
-    "alt": "`<feOffset dx=\"` + zahl(v.X) + `\" dy=\"` + zahl(v.Y)",
-    "neu": "`<feOffset dx=\"` + zahl(-v.X) + `\" dy=\"` + zahl(-v.Y)"
+    "alt": "`<feOffset` + quelle + ` dx=\"` + zahl(v.X) + `\" dy=\"` + zahl(v.Y)",
+    "neu": "`<feOffset` + quelle + ` dx=\"` + zahl(-v.X) + `\" dy=\"` + zahl(-v.Y)"
   },
   {
     "name": "SH17 ungültige Länge angenommen",
@@ -173,5 +173,40 @@
     "paket": "./internal/annotate",
     "alt": "\t\t\to = document.MitEbene(o, document.Ebene{Schatten: sch})",
     "neu": "\t\t\t_ = sch"
+  },
+  {
+    "name": "SH26 Filterfläche mit Schild (F-842)",
+    "datei": "internal/fileformat/schatten.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\tif s.ohneText != nil && s.ohneText(v) {",
+    "neu": "\t\tif false {"
+  },
+  {
+    "name": "SH27 Schattenbild bei jedem Aufruf neu (F-843)",
+    "datei": "internal/ui/schatten.go",
+    "paket": "./internal/ui",
+    "alt": "\tif ok && b.ansicht.gleich(ansicht) && document.Gleich(b.o, o) {",
+    "neu": "\tif false {"
+  },
+  {
+    "name": "SH28 kleiner Gaußkern fehlt (F-846)",
+    "datei": "internal/render/schatten.go",
+    "paket": "./internal/render",
+    "alt": "\tif sigma < 2 { // drei Kastenfilter",
+    "neu": "\tif false { // drei Kastenfilter"
+  },
+  {
+    "name": "SH29 ausgeschaltet bleiben Werte am Objekt",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif !sch.An {\n\t\t// Am Objekt",
+    "neu": "\tif false {\n\t\t// Am Objekt"
+  },
+  {
+    "name": "SH30 Zwischenspeicher am Dokumentstand (F-843)",
+    "datei": "internal/ui/schatten.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn a.d == b.d && a.zuschnitt == b.zuschnitt",
+    "neu": "\treturn a.d == b.d && a.d.Stand() == 0 && a.zuschnitt == b.zuschnitt"
   }
 ]

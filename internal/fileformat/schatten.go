@@ -61,16 +61,33 @@ func (s *schreiber) schattenFilter(o document.Objekt) {
 		if v.Spitze != nil {
 			g = g.Vereint(v.Huelle())
 		}
+		// Schreibt der Export nur das Dreieck (Schild verborgen, F-692), darf die Fläche des Filters die Maße des
+		// Schilds nicht verraten (F-842, wie F-728): nur das Dreieck mit den Schenkeln.
+		if s.ohneText != nil && s.ohneText(v) {
+			if a, sp, b, ok := v.Spitzendreieck(); ok {
+				g = document.R(a, sp).Vereint(document.R(sp, b))
+				g = document.Rechteck{Min: g.Min.Minus(document.Pt(v.SchenkelBreite(), v.SchenkelBreite())),
+					Max: g.Max.Plus(document.Pt(v.SchenkelBreite(), v.SchenkelBreite()))}
+			}
+		}
 	}
 	rand := sch.Rand() + 8
 	v := sch.Versatz()
+	v = document.Pt(math.Round(v.X*1e6)/1e6, math.Round(v.Y*1e6)/1e6) // kein 3.67e-16 aus cos(180°)
 	s.WriteString(`<filter`)
 	s.WriteString(` id="` + s.schattenID + `"`)
 	s.WriteString(` filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"`)
 	s.WriteString(fmt.Sprintf(` x="%s" y="%s" width="%s" height="%s">`, zahl(g.Min.X-rand), zahl(g.Min.Y-rand),
 		zahl(g.Breite()+2*rand), zahl(g.Hoehe()+2*rand)))
-	s.WriteString(`<feGaussianBlur in="SourceAlpha" stdDeviation="` + zahl(sch.Weich/2) + `"/>`)
-	s.WriteString(`<feOffset dx="` + zahl(v.X) + `" dy="` + zahl(v.Y) + `" result="schatten"/>`)
+	// Ohne Unschärfe kein feGaussianBlur: stdDeviation 0 legen ältere Fassungen der Spezifikation anders aus
+	// (abgeschaltetes Primitiv statt durchgereichter Eingabe); der Versatz liest dann die Deckung direkt.
+	quelle := ""
+	if sch.Weich > 0 {
+		s.WriteString(`<feGaussianBlur in="SourceAlpha" stdDeviation="` + zahl(sch.Weich/2) + `"/>`)
+	} else {
+		quelle = ` in="SourceAlpha"`
+	}
+	s.WriteString(`<feOffset` + quelle + ` dx="` + zahl(v.X) + `" dy="` + zahl(v.Y) + `" result="schatten"/>`)
 	s.WriteString(fmt.Sprintf(`<feFlood flood-color="#%02x%02x%02x" flood-opacity="%s"/>`, sch.Farbe.R, sch.Farbe.G,
 		sch.Farbe.B, zahl(float64(sch.Farbe.A)/255)))
 	s.WriteString(`<feComposite in2="schatten" operator="in"/>`)

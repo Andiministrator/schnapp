@@ -350,8 +350,10 @@ type editor struct {
 	pfeilform pfeilformLeiste
 	strichart strichartLeiste // Klappfeld „Line style“ (ADR-0021 Nachtrag 25, strichart.go)
 	// schatten: gemerkte Schattenbilder je Objekt (ADR-0021 Nachtrag 26, schatten.go).
-	schatten map[int]schattenBild
-	satz     textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
+	schatten      map[int]schattenBild
+	schattenBytes int
+	schattenNeu   int      // Zahl der neu gerechneten Schattenbilder (für Tests)
+	satz          textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
 	// nav: Zustand des Navigators auf der Leinwand (navigator.go, ADR-0031 Nachtrag 9); die Adresse ist das Zeigerziel.
 	nav navigatorZustand
 	// fussFeldRahmen: Lage der Felder Farbe und Zoom beim letzten Zeichnen (leer: nicht gezeigt), farbKnopfRahmen die des

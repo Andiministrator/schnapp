@@ -41,6 +41,9 @@ func imBlock(block string, err error) error { return &blockFehler{block: block, 
 // Aufrufer gerendert), dazu die Blöcke snAP (SVG) und snAO (Original). Schwärzungen stecken schon im Original des
 // Dokuments (Kernprinzip 2). Die Datei trägt keine weiteren Metadaten (keine tEXt-Blöcke, keine Zeitstempel außer
 // Metadaten.Erstellt).
+// schreibGrenzeSVG ist die Grenze des Schreibers, gleich maxSVG des Lesers; nur Tests setzen sie kleiner.
+var schreibGrenzeSVG = maxSVG
+
 func SchreibeArbeitsdatei(w io.Writer, d *document.Dokument, sichtbar image.Image, m Metadaten) (fehler error) {
 	defer errprefix.Defer("fileformat", &fehler)
 	var sicht, orig bytes.Buffer
@@ -68,9 +71,15 @@ func SchreibeArbeitsdatei(w io.Writer, d *document.Dokument, sichtbar image.Imag
 	if origFehler != nil {
 		return origFehler
 	}
+	angaben := svgArbeitsdatei(d, m)
+	if len(angaben) > schreibGrenzeSVG {
+		// Der Leser lehnte die Datei ab (maxSVG); lieber jetzt scheitern, solange die alte Datei noch steht (F-841).
+		return fmt.Errorf("die Beschriftungen ergeben %d MiB SVG, mehr als die %d MiB, die eine Arbeitsdatei tragen darf",
+			len(angaben)>>20, schreibGrenzeSVG>>20)
+	}
 	var svg bytes.Buffer
 	zw, _ := zlib.NewWriterLevel(&svg, zlib.BestCompression)
-	if _, err := zw.Write(svgArbeitsdatei(d, m)); err != nil {
+	if _, err := zw.Write(angaben); err != nil {
 		return err
 	}
 	if err := zw.Close(); err != nil {

@@ -900,14 +900,23 @@ halb durchsichtig, gewellt, ...)“; Ausgestaltung Claude Opus 5.5, Andi: „arb
 4. **Überlappungsfrei** wie der volle Strich (ADR-0023 Nachträge 19 bis 22): Eckige Rahmen sind Rechtecke, die
    waagerechten Striche besitzen die Ecken (`document.EckigerRahmenMuster`, wie `EckigerRahmen`). Sonst ist jeder Strich ein
    Linienstrich mit geraden Enden (`render.ZerlegeStrich`), jeder Punkt eine Scheibe. Die Rechnung steht einmal in
-   `document` (`StrichAbschnitte`, `RahmenAbschnitte`); Renderer, Editor, SVG-Export und die Vorschauen nehmen dieselben
+   `document` (`StrichAbschnitte`, `RundRahmenAbschnitte`, `EckigerRahmenMuster`); Renderer, Editor, SVG-Export und die Vorschauen nehmen dieselben
    Stücke. Am Pfeil schließt der Kopf bündig an den letzten Strich an; gepunktet ist der letzte Punkt vor einem Kopf
    eine halbe Scheibe hinter dem Kopf, in einem Teil mit ihm. Bewusste Grenze: Ist ein gebogener Strich enger gekrümmt
-   als die halbe Strichstärke, können sich benachbarte Striche überlappen.
+   als die halbe Strichstärke, können sich benachbarte Striche überlappen. Zweite bewusste Grenze (Sitzungs-Kritik
+   26.11. (5), F-845): Renderer und Editor verteilen das Muster eines **eckigen** Rahmens auf dem in die Ansicht
+   abgebildeten Rechteck, über einer Stauch-Naht also neu; der SVG-Export rechnet im Original und schneidet je Kachel.
+   An der Naht liegen Striche und Punkte deshalb verschieden.
+   **Obergrenze (F-840):** Hätte das Muster eines Objekts mehr als `document.MaxMusterStuecke` = 16384 Stücke, wird der
+   Strich voll (`Strichmuster.Ersatz`); jedes Stück kostet im Trockenlauf `musterGewicht` (`render.musterKosten`), so
+   lehnt `render.Pruefe` Dateien mit sehr vielen Mustern ab, statt beim Öffnen lange zu rechnen.
 5. **SVG-Export:** Striche als Linienzüge (`stroke-linecap="butt"`, `stroke-linejoin="round"`), Punkte als Kreise, eckige
    Rahmen als gefüllter Pfad — ausdrücklich, nicht über `stroke-dasharray`, denn die Länge einer Bézier-Kurve misst jeder
-   Betrachter anders und die Muster lägen verschoben. Ein Kasten mit Strichart steht als `<g>` mit seinen Daten (wie der
-   Kasten ohne Fläche).
+   Betrachter anders und die Muster lägen verschoben. Ein Kasten mit Strichart steht im Export als `<g>` mit seinen Daten
+   (wie der Kasten ohne Fläche). In der Arbeitsdatei (`snAP`) steht nur eine Näherung über `stroke-dasharray` an der
+   vollen Darstellung, Lupenrahmen voll (F-841, `schreiber.strichNaeherung`): Die ausgeschriebenen Stücke machten das
+   SVG so groß, dass der Leser die Datei ablehnte; zudem lehnt der Schreiber ein SVG über der Lesegrenze ab, bevor die
+   alte Datei ersetzt wird.
 6. **Format:** freiwilliges Attribut `s:strichart` (`dashed`, `dotted`; fehlt bei `solid`) an Pfeil, Kasten und Lupe.
    Weicht ein Objekt ab, schreibt der Schreiber **FormatVersion 2** (`schreibVersion`, `versionStrichart`), wie bei den
    Spitzen (Nachtrag 20 Punkt 4); in Version 1 ist das Attribut unbekannter Inhalt und gilt nicht, ein unbekannter Wert ist
@@ -959,18 +968,23 @@ Opus 5.5, Andi: „arbeite selbstständig“).
    bis 200, der Winkel wird auf 0 bis 360 gebracht.
 3. **Renderer:** Ein Objekt mit Schatten entsteht wie bei der Gruppendeckkraft in einem Zwischenbild (`render.ebene`),
    aus dessen Deckung die Schattenmaske wird: um ganze Pixel der Ansicht versetzt, mit drei Kastenfiltern je Richtung
-   weichgezeichnet (Näherung der Gauß-Unschärfe), in der Schattenfarbe; darüber das Objekt; das Ganze mit der Deckkraft
+   weichgezeichnet (Näherung der Gauß-Unschärfe; unter σ = 2 ein echter Gaußkern, sonst täten die Kästen nichts, F-846),
+   in der Schattenfarbe; darüber das Objekt; das Ganze mit der Deckkraft
    der Ebene eingemischt (Schatten und Objekt zusammen, wie bei Photoshop). Der Schatten entsteht aus dem sichtbaren
    Objekt in der Ansicht, also nach Zuschnitt und Nähten; ein Objektteil außerhalb des Bilds wirft keinen Schatten
    hinein (bewusste Grenze). Kosten: Zwischenbild plus Weichzeichnen über die Fläche des Schattens zählen im Trockenlauf
    (`render.Pruefe`, `schattenGewicht`).
 4. **Editor:** Der Schatten kommt aus derselben Rechnung (`render.Schattenbild`, CPU), je Objekt zwischengespeichert,
-   solange Objekt und Ansicht gleich bleiben, und wird unter dem Objekt gezeichnet, innerhalb der Gruppendeckkraft der
+   solange Objekt und Ansicht (Dokument, Zuschnitt, Streifen, Pixel) gleich bleiben, nicht neu bei jeder Änderung eines
+   anderen Objekts; alle Bilder zusammen höchstens 256 MiB, beim Wechsel der Aufnahme verworfen (F-843), und wird unter dem Objekt gezeichnet, innerhalb der Gruppendeckkraft der
    Ebene. Die Vorschau der Ebenenliste zeigt keinen Schatten.
-5. **SVG:** je Objekt mit Schatten ein `<filter>` (`feGaussianBlur` auf `SourceAlpha`, `feOffset`, `feFlood`,
-   `feComposite`, `feMerge`, `filterUnits="userSpaceOnUse"` mit Platz für Versatz und Unschärfe) direkt vor dem Objekt
-   und `filter="url(#…)"` am Objekt. Über einer Naht schneidet jede Kachel Objekt und Schatten für sich ab (bewusste
-   Grenze, wie die Kacheln selbst).
+5. **SVG:** je Objekt mit Schatten ein `<filter>` (`feGaussianBlur` auf `SourceAlpha` — bei Weich 0 entfällt es, der
+   Versatz liest `SourceAlpha` direkt —, `feOffset`, `feFlood`, `feComposite`, `feMerge`, `filterUnits="userSpaceOnUse"`
+   mit Platz für Versatz und Unschärfe) direkt vor dem Objekt und `filter="url(#…)"` am Objekt. Ist von einer
+   Sprechblase nur das Dreieck sichtbar, umfasst die Filterfläche nur das Dreieck (F-842, wie F-728). Bewusste Grenzen:
+   Über einer Naht schneidet jede Kachel Objekt und Schatten für sich ab, wie die Kacheln selbst; und der Filter wirkt
+   auf das ganze Objekt im Original, auch auf Teile im Stauch-Streifen oder außerhalb des Zuschnitts, deren Schatten in
+   eine sichtbare Kachel fallen kann — der Renderer rechnet nur aus dem sichtbaren Teil (F-844).
 6. **Format:** Ebenen-Attribut `s:schatten="WINKEL LÄNGE WEICH #RRGGBBAA"` (§8.5), fehlt ohne Schatten; mit Schatten
    **FormatVersion 2** (`versionSchatten`), in Version 1 ignoriert; ein unlesbarer Wert ist kein Schatten.
 7. **Bedienung:** Abschnitt „Shadow“ der rechten Leiste bei jedem Werkzeug und Objekt mit Farbe: Schalter an/aus, darunter
@@ -982,9 +996,13 @@ Opus 5.5, Andi: „arbeite selbstständig“).
    Ziehen an einem Regler einer.
 8. **Schnellstile** tragen einen Schatten, wenn sie einen haben (eigene Stile, mit „+“ aus einem Stand mit Schatten);
    ein Stil ohne Schatten lässt den des Objekts stehen und passt unabhängig davon. Die eingebauten haben keinen.
-   `styles.ini`: Schlüssel `shadow = WINKEL LÄNGE WEICH #RRGGBBAA`.
-9. **`--annotate` und MCP:** freiwilliger Schlüssel `shadow` bei allen zeichnenden Typen: `true` (Voreinstellung) oder ein
-   Objekt mit `angle`, `distance`, `softness`, `color`.
+   `styles.ini`: Schlüssel `shadow = WINKEL LÄNGE WEICH #RRGGBBAA`. Mit der Umsetzung (Teil 2) bekommt ADR-0037 einen
+   Nachtrag, der darauf verweist; ebenso entscheidet dort ein Nachtrag über die Strichart (Nachtrag 25 Punkt 8).
+   Ausgeschaltet ist der Schatten am Objekt der Nullwert (die Werte merkt nur das Werkzeug), damit ein Objekt nach
+   Speichern und Laden gleich bleibt.
+9. **`--annotate` und MCP:** freiwilliger Schlüssel `shadow` bei `arrow`, `rect`, `text` und `step`: `true` (der
+   voreingestellte Schatten), `false` (keiner, wie ohne Angabe) oder ein Objekt mit `angle`, `distance`, `softness`,
+   `color` (fehlende Werte aus der Voreinstellung).
 10. Treffer, Grenzen, Einrasten und Auswahlrahmen beachten den Schatten nicht: Er ist Darstellung, kein Teil der Gestalt.
 
 **Umsetzung in zwei Teilen:** Teil 1 (Dokument, Format, Renderer, SVG, Editor-Darstellung, Logik der Sitzung samt

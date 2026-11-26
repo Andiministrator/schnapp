@@ -2,7 +2,8 @@
 # vier zuletzt benutzte Farben (seit Karte #364 acht, das Raster zeigt nur noch sie).
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/farbwaehler-318.txt --bild scripts/drehbuecher/testbild-1200x800.png
 # Seit Karte #362 (Feld „Line style“ unter dem Regler, ADR-0021 Nachtrag 25) liegt alles darunter 38 px tiefer; die
-# Klicks sind verschoben, die Maße in den folgenden Zeilen gelten davor.
+# Klicks sind verschoben; die Maße in den folgenden Zeilen stammen vom Stand vor Karte #352 und liegen jetzt 60 px tiefer
+# (22 px Regler der Strichstärke, 38 px „Line style“).
 # Bei 1600 × 1000, Skala 1: Deckkraft-Feld bei (1530,513)–(1584,539).
 # Erwartet: 01 Kasten gewählt, Pipette mit Spitze unten links und orangem Tropfen am rechten Ende der Zeile des Farbpaars; 02 Deckkraft
 # 74 %, Hex zeigt weiter #D93A33 (sechs Ziffern); 03 Pipette aktiv (grün).

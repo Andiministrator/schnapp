@@ -12,6 +12,18 @@ import (
 // EckigerRahmenMuster); hier werden sie zu Teilen wie der volle Strich — je Strich ein Linienstrich mit geraden Enden, je
 // Punkt eine Scheibe. Renderer, Editor und die Vorschauen füllen dieselben Teile.
 
+// musterGewicht sind die Kosten je Stück eines gemusterten Strichs (F-840): Zerlegen kostet rund 0,25 µs je Stück, auch
+// für Stücke außerhalb des Bilds, die strichJeStueckMit nicht zählt (gemessen 1,4 Mio. Scheiben in 352 ms).
+const musterGewicht = 1000.0
+
+// musterKosten zählt die Stücke eines gemusterten Strichs im Aufwand (Trockenlauf von Pruefe), damit viele große
+// Muster das Öffnen nicht beliebig lange aufhalten (F-840).
+func (z zeichner) musterKosten(s document.Strich, teile int) {
+	if s.Art != document.StrichVoll && !z.ohneZaehlen {
+		z.auf.kanten += musterGewicht * float64(teile)
+	}
+}
+
 // musterLinie fügt die Stücke des Musters m zu einem linienStrich zusammen: Zwischen zwei Stücken liegt eine Lücke
 // ohne Teil (strecke −1). So läuft der gemusterte Strich über dieselbe Bereichssuche wie ein voller (strichJeStueckMit).
 func musterLinie(m document.Strichmuster, hw float64) linienStrich {

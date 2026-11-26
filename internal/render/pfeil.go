@@ -77,6 +77,7 @@ func ZerlegePfeil(p document.Pfeil) PfeilZerlegung {
 // pfeil zeichnet den Pfeil v je sichtbarem Bereich (strichJeStueckMit), Köpfe ohne Schaft zusammen in einer Füllung.
 func (z zeichner) pfeil(v document.Pfeil) {
 	pz := ZerlegePfeil(v)
+	z.musterKosten(v.Strich, len(pz.Teile))
 	z.strichJeStueckMit(pz.ls, v.Strich, pz.Suche)
 	if len(pz.Einzeln) > 0 {
 		// Köpfe ohne Schaft in einer Füllung: Überlappen sie (kurzer Pfeil mit zwei Spitzen), deckt eine

@@ -164,8 +164,8 @@
     "name": "ST24 Kasten im SVG voll gezeichnet",
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
-    "alt": "if o.Strich.Art != document.StrichVoll {\n\t\t\t\ts.kastenGemustert(o)",
-    "neu": "if false {\n\t\t\t\ts.kastenGemustert(o)"
+    "alt": "if o.Strich.Art != document.StrichVoll && !s.rundlauf {\n\t\t\t\ts.kastenGemustert(o)",
+    "neu": "if false && !s.rundlauf {\n\t\t\t\ts.kastenGemustert(o)"
   },
   {
     "name": "ST25 Stil ohne Strichart",
@@ -236,5 +236,33 @@
     "paket": "./internal/annotate",
     "alt": "\t\t\t\tstrich.Art = art\n",
     "neu": "\t\t\t\t_ = art\n"
+  },
+  {
+    "name": "ST35 Muster ohne Obergrenze (F-840)",
+    "datei": "internal/document/strichart.go",
+    "paket": "./internal/document",
+    "alt": "\tif musterZahl(cum[len(cum)-1], a, w) > MaxMusterStuecke {",
+    "neu": "\tif false {"
+  },
+  {
+    "name": "ST36 Muster ohne Kosten (F-840)",
+    "datei": "internal/render/strichart.go",
+    "paket": "./internal/render",
+    "alt": "\t\tz.auf.kanten += musterGewicht * float64(teile)",
+    "neu": "\t\t_ = teile"
+  },
+  {
+    "name": "ST37 Arbeitsdatei schreibt Kasten-Stücke aus (F-841)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "if o.Strich.Art != document.StrichVoll && !s.rundlauf {\n\t\t\t\ts.kastenGemustert(o)",
+    "neu": "if o.Strich.Art != document.StrichVoll {\n\t\t\t\ts.kastenGemustert(o)"
+  },
+  {
+    "name": "ST38 Schreiber ohne Grenze (F-841)",
+    "datei": "internal/fileformat/arbeitsdatei.go",
+    "paket": "./internal/fileformat",
+    "alt": "\tif len(angaben) > schreibGrenzeSVG {",
+    "neu": "\tif false {"
   }
 ]

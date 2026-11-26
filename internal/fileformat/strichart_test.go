@@ -218,3 +218,26 @@ func TestSVGStrichartLage(t *testing.T) {
 }
 
 func m0(z []document.Punkt) document.Punkt { return z[len(z)-1] }
+
+// F-841: In der Arbeitsdatei steht ein gemustertes Objekt als Näherung (stroke-dasharray), nicht Stück für Stück; ein
+// SVG über der Lesegrenze lehnt schon der Schreiber ab, statt eine unlesbare Datei zu schreiben.
+func TestStrichartArbeitsdateiKlein(t *testing.T) {
+	d := beispielDok(t, 64, 48)
+	leer := len(AngabenSVG(d))
+	fuege(t, d, document.Kasten{Bereich: document.R(document.Pt(0, 0), document.Pt(8000, 8000)),
+		Strich: document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 1, Art: document.StrichGepunktet}})
+	if n := len(AngabenSVG(d)) - leer; n > 1000 {
+		t.Errorf("gepunkteter Kasten 8000 × 8000: %d Bytes in den Angaben", n)
+	}
+	var export bytes.Buffer
+	if err := ExportiereSVG(&export, d); err != nil || !strings.Contains(export.String(), " a0.5 0.5 0 1 0 1 0") {
+		t.Errorf("Export schreibt die Punkte nicht aus: %v", err)
+	}
+	alt := schreibGrenzeSVG
+	defer func() { schreibGrenzeSVG = alt }()
+	schreibGrenzeSVG = leer + 10
+	var buf bytes.Buffer
+	if err := SchreibeArbeitsdatei(&buf, d, d.Ansichtsbild(), Metadaten{}); err == nil || !strings.Contains(err.Error(), "MiB") {
+		t.Errorf("über der Grenze: %v", err)
+	}
+}

@@ -276,9 +276,10 @@ either end the arrow is a plain line.
 | `s:anfang` | OPTIONAL, format version 2 only. Head at `A`, same values. Missing or any other value: `none`; writers omit it for `none` |
 | `s:strichart` | OPTIONAL, format version 2 only: line style of the line (8.8); the heads stay solid |
 
-Both attributes are part of format version 2: a writer emits `s:format="2"` if an arrow has a head other than the
-defaults (section 12), so that a version-1 reader reports the file as newer instead of showing a different arrow. In a
-file with `s:format="1"` they are unknown content (section 11, rule 3) and are ignored.
+`s:ende` and `s:anfang` are part of format version 2: a writer emits `s:format="2"` if an arrow has a head other than
+the defaults (section 12), so that a version-1 reader reports the file as newer instead of showing a different arrow. In
+a file with `s:format="1"` they are unknown content (section 11, rule 3) and are ignored. The same holds for
+`s:strichart` (8.8).
 
 Informative (w = stroke width, all in original pixels): `triangle` is `3w + 5` long and `4.5w + 6` wide at its base;
 `narrow` is `4w + 7` long and `3w + 4` wide; `notched` is `3.5w + 7` long and `4.5w + 7` wide with a notch cut `0.35`
@@ -354,7 +355,7 @@ left-aligned text has no `text-anchor` and `x` at the line start. Like all prese
 **Callout (speech bubble).** A text with `s:spitze` is a callout; there is no separate object type. The tip may lie
 anywhere inside the coordinate range (inside or outside the image and the label). `s:spitze` is part of format version
 2: a writer emits `s:format="2"` if the document contains a magnifier, a text with `s:spitze`, an arrow with
-`s:ende`/`s:anfang` or a stroke with `s:strichart` (section 12), and a
+`s:ende`/`s:anfang`, a stroke with `s:strichart` or an object with `s:schatten` (section 12), and a
 version-1 reader that meets a version-2 file reports it as newer instead of dropping the tip silently. A value that
 does not parse as a point makes a version-2 file damaged (section 11, rule 4).
 
@@ -383,7 +384,7 @@ Informative: the number is drawn in bold white, centred, with font size `1.2 x r
 
 ### 8.5 Layer attributes (all object types)
 
-Every object is a layer above the image; stacking order is document order (section 8). Four OPTIONAL attributes may
+Every object is a layer above the image; stacking order is document order (section 8). Five OPTIONAL attributes may
 appear on the element of any object type:
 
 | Attribute | Value |
@@ -394,9 +395,10 @@ appear on the element of any object type:
 | `s:deckkraft` | Layer opacity in percent, integer `0` to `100` (syntax of 5.2). Missing or invalid: `100` |
 | `s:schatten` | Drop shadow, format version 2 only: `ANGLE DISTANCE SOFTNESS COLOUR`, three numbers and a colour (5.2) separated by single spaces. Missing, invalid or in a version-1 file: no shadow (see below) |
 
-Writers emit them only when they differ from the default. They were added without changing the format version
-(like the text attributes of 8.3): a reader that does not know them ignores them (section 11, rule 3) and shows every
-object visible, unlocked and opaque; no value of them makes a file damaged.
+Writers emit them only when they differ from the default. The first four were added without changing the format
+version (like the text attributes of 8.3): a reader that does not know them ignores them (section 11, rule 3) and shows
+every object visible, unlocked and opaque. `s:schatten` belongs to format version 2 (below). No value of any of them
+makes a file damaged.
 
 A hidden layer is **kept** in the working file but drawn nowhere: not in the visible image, the exports, the
 clipboard or the library preview. Hiding is not redaction; the content of a hidden object stays readable in `snAP`.
@@ -498,8 +500,11 @@ rounded and all lengths are scaled by the same factor, so that the pattern fits:
   middle of the next.
 
 On a square outline the horizontal dashes include the corners (like the solid stroke). Where an arrow has a head, the
-line's last dash ends under the head; a dotted line has, instead of its last dot, the half disc behind the head. The SVG
-export draws the pieces explicitly (dashes as one path, dots as circles), not with `stroke-dasharray`.
+line's last dash ends under the head; a dotted line has, instead of its last dot, the half disc behind the head. A
+pattern that would have more than 16384 pieces in one object is drawn solid. Informative: the SVG export draws the
+pieces explicitly (dashes as one path, dots as circles), not with `stroke-dasharray`; the presentation in a working file
+only approximates the pattern with `stroke-dasharray` on the solid shape (magnifier frames solid), which keeps `snAP`
+small — readers use `s:strichart` alone.
 
 ## 9. Redaction
 
@@ -531,7 +536,7 @@ value here and to the code must happen in the same commit.
 
 | Key | Value | Meaning |
 |---|---|---|
-| `format_version` | 2 | highest value of `s:format` read and written by this version (`2` only with a `lupe`, an `s:spitze` or an arrow head other than the defaults, section 12) |
+| `format_version` | 2 | highest value of `s:format` read and written by this version (`2` only with a `lupe`, an `s:spitze`, an arrow head other than the defaults, an `s:strichart` or an `s:schatten`, section 12) |
 | `namespace` | `urn:x-schnapp:1` | Schnapp XML namespace |
 | `chunk_svg` | `snAP` | chunk with the compressed SVG |
 | `chunk_orig` | `snAO` | chunk with the original PNG |
@@ -624,7 +629,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `layers` | three objects with layer attributes: a named, half-opaque box, a hidden and locked arrow, a step number without them |
 | `arrow-heads` | format version 2: four arrows: `open` head at `B`, `dot` at `A` only on a curve, `diamond` at `A` and `notched` at `B`, and a curved line without heads |
 | `line-styles` | format version 2: a `dashed` arrow with the default head, a curved `dotted` line, a `dotted` square box and a `dashed` box with rounded corners |
-| `shadow` | format version 2: a filled box with the default shadow (down and to the right, soft, black at 40 %) and an arrow with a sharp blue shadow from the left |
+| `shadow` | format version 2: a filled box with the default shadow (down and to the right, soft, black at 40 %) and an arrow with a sharp blue shadow 3 pixels to the right (light from the left, angle 180) |
 | `callout` | format version 2: two texts with `s:spitze`, one with a label (filled polygon) and one without (legs as a line) |
 | `magnifier` | format version 2: one magnifier with a non-integer source over a column strip (the strip drops out of the magnified view, 8.7); the visible image shows no annotations, as in all examples |
 

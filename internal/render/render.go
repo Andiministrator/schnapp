@@ -579,6 +579,7 @@ func (z zeichner) objekt(o document.Objekt) error {
 			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
 				if v.Strich.Art != document.StrichVoll { // gemustert (ADR-0021 Nachtrag 25)
 					sz := ZerlegeRundenRahmen(b, v.Eckradius, v.Strich)
+					z.musterKosten(v.Strich, len(sz.Teile))
 					z.strichJeStueckMit(sz.ls, v.Strich, sz.Suche)
 				} else {
 					z.kastenStrich(document.NeuerKastenStrich(b, v.Eckradius, v.Strich.Breite/2), v.Strich.Farbe)

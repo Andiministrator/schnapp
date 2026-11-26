@@ -20,14 +20,15 @@ import (
 // FormatVersion ist die höchste Version des SVG-Blocks, die dieser Stand liest und schreibt (ADR-0006, ADR-0008).
 // Ältere Versionen müssen lesbar bleiben. Geschrieben wird die kleinste Version, die den Inhalt trägt (schreibVersion):
 // 2 nur mit einer Lupe (ADR-0033 Punkt 5), einer Sprechblasen-Spitze (ADR-0021 Nachtrag 13 Punkt 7), einem Pfeil,
-// dessen Spitzen von der Voreinstellung abweichen (ADR-0021 Nachtrag 20), oder einem gemusterten Strich (ADR-0021
-// Nachtrag 25), sonst 1 — Dateien ohne all das bleiben für ältere Leser lesbar.
+// dessen Spitzen von der Voreinstellung abweichen (ADR-0021 Nachtrag 20), einem gemusterten Strich (ADR-0021
+// Nachtrag 25) oder einem Schatten (ADR-0021 Nachtrag 26), sonst 1 — Dateien ohne all das bleiben für ältere Leser lesbar.
 const FormatVersion = 2
 
 // versionLupe ist die erste Formatversion mit dem Objekttyp „lupe“ (ADR-0033 Punkt 5); versionSpitze die erste mit
 // dem Attribut s:spitze am Text (ADR-0021 Nachtrag 13 Punkt 7); versionPfeilKoepfe die erste mit s:ende/s:anfang am
 // Pfeil (ADR-0021 Nachtrag 20); versionStrichart die erste mit s:strichart an Pfeil, Kasten und Lupe (ADR-0021
-// Nachtrag 25). Alle sind Version 2.
+// Nachtrag 25); versionSchatten die erste mit s:schatten an jeder Ebene (ADR-0021 Nachtrag 26 Punkt 6). Alle sind
+// Version 2.
 const (
 	versionLupe        = 2
 	versionSpitze      = 2
@@ -315,7 +316,7 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 				s.kastenOhneFlaeche(o)
 				break
 			}
-			if o.Strich.Art != document.StrichVoll {
+			if o.Strich.Art != document.StrichVoll && !s.rundlauf {
 				s.kastenGemustert(o)
 				break
 			}
@@ -326,6 +327,7 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			s.attr("s:strich", strich(o.Strich))
 			s.attr("s:fuellung", farbeHex(o.Fuellung))
 			s.attr("s:eckradius", zahl(o.Eckradius))
+			s.strichart(o.Strich)
 			s.attr("x", zahl(b.Min.X))
 			s.attr("y", zahl(b.Min.Y))
 			s.attr("width", zahl(b.Breite()))
@@ -340,6 +342,7 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			} else {
 				s.attr("stroke-linejoin", "round")
 			}
+			s.strichNaeherung(o.Strich, false)
 			s.WriteString(`/>`)
 		case document.Text:
 			s.WriteString(`<g`)
@@ -884,7 +887,7 @@ func (s *schreiber) pfeilDarstellung(o document.Pfeil) {
 	f := o.Form()
 	hw := o.Strich.Breite / 2
 	farbe := o.Strich.Farbe
-	if o.Strich.Art != document.StrichVoll {
+	if o.Strich.Art != document.StrichVoll && !s.rundlauf {
 		s.pfeilGemustert(o, f)
 		return
 	}
@@ -895,6 +898,7 @@ func (s *schreiber) pfeilDarstellung(o document.Pfeil) {
 		s.farbeSVG("stroke", farbe)
 		s.attr("stroke-width", zahl(o.Strich.Breite))
 		s.attr("stroke-linecap", "round")
+		s.strichNaeherung(o.Strich, true)
 		s.WriteString(`/>`)
 		return
 	}
@@ -914,6 +918,7 @@ func (s *schreiber) pfeilDarstellung(o document.Pfeil) {
 		s.attr("fill", "none")
 		s.farbeSVG("stroke", farbe)
 		s.attr("stroke-width", zahl(o.Strich.Breite))
+		s.strichNaeherung(o.Strich, false)
 		s.WriteString(`/>`)
 		if len(f.Koepfe) == 1 && len(f.Schaft) >= 2 { // das andere Ende rund
 			ende, nach := f.Schaft[0], f.Schaft[1]

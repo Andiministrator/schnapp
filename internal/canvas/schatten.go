@@ -56,10 +56,15 @@ func (s *Sitzung) SetzeSchatten(sch document.Schatten) bool {
 		return false
 	}
 	sch = gueltigerSchatten(sch)
-	s.Stil.Schatten = sch
+	s.Stil.Schatten = sch // das Werkzeug behält die Werte auch ausgeschaltet
 	o, ok := s.schattenObjekt()
 	if !ok {
 		return false
+	}
+	if !sch.An {
+		// Am Objekt ist ein ausgeschalteter Schatten der Nullwert: Die Datei schreibt ihn nicht, nach Speichern und Laden
+		// wäre das Objekt sonst ein anderes (Sitzungs-Kritik 26.11. (5)).
+		sch = document.Schatten{}
 	}
 	neu := mitSchatten(o, sch)
 	if s.zug == zugText {

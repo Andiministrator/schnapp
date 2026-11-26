@@ -102,6 +102,16 @@ func weichzeichnen(m []float32, w, h int, sigma float64) {
 		return
 	}
 	puffer := make([]float32, max(w, h))
+	if sigma < 2 { // drei Kastenfilter der Breite 1 täten nichts (F-846): kleiner Gaußkern, getrennt je Richtung
+		kern := gaussKern(sigma)
+		for y := 0; y < h; y++ {
+			falten(m[y*w:(y+1)*w], 1, w, kern, puffer)
+		}
+		for x := 0; x < w; x++ {
+			falten(m[x:], w, h, kern, puffer)
+		}
+		return
+	}
 	for _, b := range kastenBreiten(sigma) {
 		r := b / 2
 		if r == 0 {
@@ -115,6 +125,37 @@ func weichzeichnen(m []float32, w, h int, sigma float64) {
 			kasten(m[x:], w, h, r, puffer)
 		}
 		saveprogress.Puls()
+	}
+}
+
+// gaussKern ist der normierte Gaußkern zu σ mit Radius ⌈3σ⌉.
+func gaussKern(sigma float64) []float32 {
+	r := int(math.Ceil(3 * sigma))
+	k := make([]float32, 2*r+1)
+	summe := 0.0
+	for i := -r; i <= r; i++ {
+		v := math.Exp(-float64(i*i) / (2 * sigma * sigma))
+		k[i+r] = float32(v)
+		summe += v
+	}
+	for i := range k {
+		k[i] /= float32(summe)
+	}
+	return k
+}
+
+// falten faltet n Werte von z (Abstand schritt) mit kern (ungerade Länge, Mitte in der Mitte), außerhalb 0.
+func falten(z []float32, schritt, n int, kern []float32, puffer []float32) {
+	for i := range n {
+		puffer[i] = z[i*schritt]
+	}
+	r := len(kern) / 2
+	for i := range n {
+		var v float32
+		for j := max(0, i-r); j <= min(n-1, i+r); j++ {
+			v += puffer[j] * kern[j-i+r]
+		}
+		z[i*schritt] = v
 	}
 }
 

@@ -81,3 +81,46 @@ func TestEditorZeichnetSchattenWieRenderer(t *testing.T) {
 		t.Errorf("kein Schatten rechts unter dem Kasten: Editor %v, Bild %v", a, b)
 	}
 }
+
+// F-843: Ein Schattenbild wird nur neu gerechnet, wenn sich sein Objekt oder die Ansicht ändert — nicht bei jeder
+// Änderung eines anderen Objekts; die Pixel aller gemerkten Bilder bleiben unter schattenSpeicher.
+func TestSchattenZwischenspeicher(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 200, 120)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	k := document.Kasten{Bereich: document.R(document.Pt(20, 20), document.Pt(80, 60)), Fuellung: color.NRGBA{A: 255}}
+	idA, _ := d.Hinzufuegen(document.MitEbene(k, document.Ebene{Schatten: document.StandardSchatten(1)}))
+	idB, _ := d.Hinzufuegen(document.Kasten{Bereich: document.R(document.Pt(100, 20), document.Pt(150, 60)),
+		Fuellung: color.NRGBA{R: 255, A: 255}})
+	e := &editor{s: canvas.NeueSitzung(d)}
+	a, _ := d.Objekt(idA)
+	e.schattenFuer(a)
+	e.schattenFuer(a)
+	if e.schattenNeu != 1 {
+		t.Fatalf("zweimal dasselbe: %d Neuberechnungen", e.schattenNeu)
+	}
+	b, _ := d.Objekt(idB)
+	if err := d.Ersetzen(canvas.Verschiebe(b, document.Pt(5, 0))); err != nil {
+		t.Fatal(err)
+	}
+	e.schattenFuer(a)
+	if e.schattenNeu != 1 {
+		t.Errorf("Änderung an einem anderen Objekt rechnete den Schatten neu (%d)", e.schattenNeu)
+	}
+	if err := d.SetzeZuschnitt(image.Rect(10, 0, 200, 120)); err != nil {
+		t.Fatal(err)
+	}
+	e.schattenFuer(a)
+	if e.schattenNeu != 2 {
+		t.Errorf("Zuschnitt rechnete den Schatten nicht neu (%d)", e.schattenNeu)
+	}
+	a2 := canvas.Verschiebe(a, document.Pt(3, 3))
+	if err := d.Ersetzen(a2); err != nil {
+		t.Fatal(err)
+	}
+	e.schattenFuer(a2)
+	if e.schattenNeu != 3 || e.schattenBytes <= 0 || e.schattenBytes > schattenSpeicher {
+		t.Errorf("geändertes Objekt: %d Neuberechnungen, %d Bytes", e.schattenNeu, e.schattenBytes)
+	}
+}

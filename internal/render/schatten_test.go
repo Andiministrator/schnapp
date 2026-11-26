@@ -134,3 +134,20 @@ func TestSchattenbildOhneObjekt(t *testing.T) {
 		t.Error("Schattenbild ohne Schatten")
 	}
 }
+
+// F-846: Auch eine kleine Weichheit (Weich 1, σ = 0,5) zeichnet weich, wie feGaussianBlur im SVG; die Masse bleibt.
+func TestWeichzeichnenKlein(t *testing.T) {
+	for _, sigma := range []float64{0.5, 1, 1.9} {
+		w, h := 32, 32
+		m := make([]float32, w*h)
+		m[16*w+16] = 1
+		weichzeichnen(m, w, h, sigma)
+		summe := float32(0)
+		for _, x := range m {
+			summe += x
+		}
+		if m[16*w+17] <= 0.01 || m[16*w+16] >= 0.9 || math.Abs(float64(summe)-1) > 1e-4 {
+			t.Errorf("σ %v: Nachbar %v, Mitte %v, Summe %v", sigma, m[16*w+17], m[16*w+16], summe)
+		}
+	}
+}

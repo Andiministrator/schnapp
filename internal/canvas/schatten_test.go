@@ -85,8 +85,75 @@ func TestSchattenWerkzeugUndAuswahl(t *testing.T) {
 	if s.Schatten().An || s.AktivesFeld() == FeldSchatten {
 		t.Error("Ausschalten ließ Schatten oder Feld")
 	}
+	if o, _ := s.D.Objekt(k); o.Ebenenwerte().Schatten != (document.Schatten{}) {
+		t.Errorf("ausgeschaltet bleibt am Objekt %+v", o.Ebenenwerte().Schatten)
+	}
 	s.SchalteSchatten() // wieder an: das Feld bleibt der Vordergrund
 	if !s.Schatten().An || s.AktivesFeld() != FeldVordergrund {
 		t.Errorf("wieder an: Feld %v", s.AktivesFeld())
+	}
+}
+
+// F-847: Jeder Anlegeweg gibt einem neuen Objekt den Schatten des Werkzeugs — Pfeil, Lupe, Nummer, Text, Sprechblase
+// per Klick und per Ziehen; in der Texteingabe gehört eine Änderung zur Eingabe; ein abgebrochener Reglerzug stellt das
+// Objekt wieder her.
+func TestSchattenAlleAnlegewege(t *testing.T) {
+	s := blasenSitzung(t)
+	s.SetzeWerkzeug(WerkzeugPfeil)
+	s.SchalteSchatten()
+	hat := func(name string) {
+		t.Helper()
+		if o := letztes(t, s); !o.Ebenenwerte().Schatten.An {
+			t.Errorf("%s (%T) ohne Schatten", name, o)
+		}
+	}
+	zieh(s, f(20, 20), f(120, 60))
+	hat("Pfeil")
+	s.SetzeWerkzeug(WerkzeugLupe)
+	zieh(s, f(20, 120), f(60, 150))
+	hat("Lupe")
+	s.SetzeWerkzeug(WerkzeugNummer)
+	s.Druecken(f(300, 40), TastePrimaer)
+	s.Loslassen(f(300, 40))
+	hat("Nummer")
+	s.SetzeWerkzeug(WerkzeugText)
+	s.Druecken(f(300, 200), TastePrimaer)
+	s.Loslassen(f(300, 200))
+	s.Tippe("Hi")
+	// In der Eingabe: Schatten ändern ist Teil der Eingabe, kein eigener Schritt.
+	sch := s.Schatten()
+	sch.Laenge = 3
+	vor := s.D.Stand()
+	s.SetzeSchatten(sch)
+	if s.D.Stand() != vor {
+		t.Error("Schatten in der Texteingabe ist ein eigener Schritt")
+	}
+	s.Enter(false)
+	hat("Text")
+	if o := letztes(t, s); o.Ebenenwerte().Schatten.Laenge != 3 {
+		t.Errorf("Text: Länge %v", o.Ebenenwerte().Schatten.Laenge)
+	}
+	s.SetzeWerkzeug(WerkzeugSprechblase)
+	s.Druecken(f(200, 100), TastePrimaer)
+	s.Loslassen(f(200, 100))
+	bestaetigeBlase(t, s, "Klick")
+	hat("Sprechblase per Klick")
+	s.SetzeWerkzeug(WerkzeugSprechblase)
+	zieh(s, f(100, 250), f(200, 200))
+	bestaetigeBlase(t, s, "Zug")
+	hat("Sprechblase per Ziehen")
+	// Reglerzug abbrechen: das Objekt wie vorher.
+	s.SetzeWerkzeug(WerkzeugAuswahl)
+	o := letztes(t, s)
+	s.Auswahl = o.Kennung()
+	if !s.BeginneSchattenZug() {
+		t.Fatal("Zug nicht begonnen")
+	}
+	sch = s.Schatten()
+	sch.Laenge = 30
+	s.SchattenZugSetze(sch)
+	s.BrecheBreiteZugAb()
+	if n, _ := s.D.Objekt(o.Kennung()); n.Ebenenwerte().Schatten != o.Ebenenwerte().Schatten {
+		t.Errorf("nach Abbruch %+v, vorher %+v", n.Ebenenwerte().Schatten, o.Ebenenwerte().Schatten)
 	}
 }

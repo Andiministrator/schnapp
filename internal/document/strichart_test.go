@@ -226,3 +226,21 @@ func TestRundRahmenAbschnitte(t *testing.T) {
 		}
 	}
 }
+
+// F-840: Über MaxMusterStuecke Stücke wird der Strich voll (offen, rund, eckig).
+func TestMusterObergrenze(t *testing.T) {
+	m := StrichAbschnitte([]Punkt{Pt(-1e6, 0), Pt(1e6, 0)}, StrichGepunktet, 1)
+	if !m.Ersatz || len(m.Striche) != 1 || len(m.Punkte) != 0 {
+		t.Errorf("offen: %d Striche, %d Punkte, Ersatz %v", len(m.Striche), len(m.Punkte), m.Ersatz)
+	}
+	r := RundRahmenAbschnitte(R(Pt(-1e6, -1e6), Pt(1e6, 1e6)), 50, StrichGestrichelt, 1)
+	if !r.Ersatz || len(r.Striche) != 1 {
+		t.Errorf("rund: %d Striche, Ersatz %v", len(r.Striche), r.Ersatz)
+	}
+	if b, p := EckigerRahmenMuster(R(Pt(-1e6, -1e6), Pt(1e6, 1e6)), 1, StrichGepunktet); len(b) != 4 || p != nil {
+		t.Errorf("eckig: %d Balken, %d Punkte", len(b), len(p))
+	}
+	if _, p := EckigerRahmenMuster(R(Pt(0, 0), Pt(8000, 8000)), 1, StrichGepunktet); len(p) < 7000 {
+		t.Errorf("8000er-Rahmen gepunktet: nur %d Punkte", len(p))
+	}
+}

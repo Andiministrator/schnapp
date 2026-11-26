@@ -29,9 +29,15 @@ func (s *schreiber) lupe(d *document.Dokument, o document.Lupe) {
 	s.strichart(o.Strich)
 	s.WriteString(`>`)
 	strichDa := o.Strich.Breite > 0 && o.Strich.Farbe.A > 0
-	rahmen := func(r document.Rechteck) { s.rahmenSVG(r, o.Strich) } // gemustert auch Punkte (ADR-0021 Nachtrag 25)
+	rahmen := func(r document.Rechteck) { // gemustert auch Punkte (ADR-0021 Nachtrag 25); in der Arbeitsdatei voll (F-841)
+		st := o.Strich
+		if s.rundlauf {
+			st.Art = document.StrichVoll
+		}
+		s.rahmenSVG(r, st)
+	}
 	if strichDa {
-		if a, b, ok := o.Linie(); ok && o.Strich.Art != document.StrichVoll {
+		if a, b, ok := o.Linie(); ok && o.Strich.Art != document.StrichVoll && !s.rundlauf {
 			s.musterSVG(document.StrichAbschnitte([]document.Punkt{a, b}, o.Strich.Art, o.Strich.Breite), o.Strich.Breite,
 				o.Strich.Farbe)
 		} else if ok {
@@ -41,6 +47,7 @@ func (s *schreiber) lupe(d *document.Dokument, o document.Lupe) {
 			s.farbeSVG("stroke", o.Strich.Farbe)
 			s.attr("stroke-width", zahl(o.Strich.Breite))
 			s.attr("stroke-linecap", "round")
+			s.strichNaeherung(o.Strich, true)
 			s.WriteString(`/>`)
 		}
 		rahmen(o.Quelle)

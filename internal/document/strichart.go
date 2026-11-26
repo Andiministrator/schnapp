@@ -59,6 +59,23 @@ func StrichMasse(a Strichart, w float64) (strich, luecke float64) {
 type Strichmuster struct {
 	Striche [][]Punkt
 	Punkte  []Punkt
+	// Ersatz: Das Muster hätte mehr als MaxMusterStuecke Stücke; Striche trägt dann den ganzen Zug voll (F-840).
+	Ersatz bool
+}
+
+// MaxMusterStuecke begrenzt die Stücke eines gemusterten Strichs je Objekt (F-840): Darüber wird der Strich voll
+// gezeichnet. Eine präparierte Datei mit Strichen über die ganze Koordinatenspanne (±1e6) hätte sonst Millionen Stücke je
+// Objekt erzeugt, vor jeder Budgetprüfung. Ein gepunkteter Rahmen 32767 × 32767 mit Strich 1 hat 32768 Punkte; er wird
+// voll, alles bis rund 16000 × 16000 bleibt gemustert.
+const MaxMusterStuecke = 16384
+
+// musterZahl schätzt die Stücke eines Wegs der Länge s (ohne Ausgleich, obere Schranke bis auf eins).
+func musterZahl(s float64, a Strichart, w float64) float64 {
+	strich, luecke := StrichMasse(a, w)
+	if a == StrichVoll || !(strich+luecke > 0) {
+		return 1
+	}
+	return s/(strich+luecke) + 1
 }
 
 // musterStueck ist ein Stück [Von, Bis] eines Wegs nach Länge; bei Punkten ist Von = Bis.
@@ -152,6 +169,9 @@ func StrichAbschnitte(pts []Punkt, a Strichart, w float64) Strichmuster {
 		return Strichmuster{}
 	}
 	cum := zugLaengen(pts)
+	if musterZahl(cum[len(cum)-1], a, w) > MaxMusterStuecke {
+		return Strichmuster{Striche: [][]Punkt{pts}, Ersatz: true}
+	}
 	var m Strichmuster
 	for _, ab := range musterAbschnitte(cum[len(cum)-1], a, w, false) {
 		if a == StrichGepunktet {
@@ -167,6 +187,21 @@ func StrichAbschnitte(pts []Punkt, a Strichart, w float64) Strichmuster {
 // eines Abschnitts ist der Anfang des nächsten) mit halbem Strich bzw. Punkt an jeder Ecke. Striche über eine Ecke werden
 // ein Linienzug, jeder Eckpunkt ist ein Punkt.
 func rahmenMuster(abschnitte [][]Punkt, a Strichart, w float64) Strichmuster {
+	zahl := 0.0
+	for _, pts := range abschnitte {
+		cum := zugLaengen(pts)
+		zahl += musterZahl(cum[len(cum)-1], a, w)
+	}
+	if zahl > MaxMusterStuecke { // voll, als ein geschlossener Zug
+		var zug []Punkt
+		for _, pts := range abschnitte {
+			if len(zug) > 0 {
+				pts = pts[1:]
+			}
+			zug = append(zug, pts...)
+		}
+		return Strichmuster{Striche: [][]Punkt{zug}, Ersatz: true}
+	}
 	var m Strichmuster
 	anEnde := false       // der letzte Strich reicht bis ans Ende seines Abschnitts
 	ersterAnfang := false // der erste Strich beginnt am Anfang des ersten Abschnitts
@@ -233,8 +268,8 @@ func RundRahmenAbschnitte(r Rechteck, radius float64, a Strichart, w float64) St
 func EckigerRahmenMuster(r Rechteck, w float64, a Strichart) (balken []Rechteck, punkte []Punkt) {
 	h := w / 2
 	ia, ib := r.Min.Plus(Pt(h, h)), r.Max.Minus(Pt(h, h))
-	if a == StrichVoll || ia.X >= ib.X || ia.Y >= ib.Y {
-		return EckigerRahmen(r, w), nil
+	if a == StrichVoll || ia.X >= ib.X || ia.Y >= ib.Y || musterZahl(2*(r.Breite()+r.Hoehe()), a, w) > MaxMusterStuecke {
+		return EckigerRahmen(r, w), nil // F-840: zu viele Stücke → voll
 	}
 	ecken := []Punkt{r.Min, Pt(r.Max.X, r.Min.Y), r.Max, Pt(r.Min.X, r.Max.Y)}
 	if a == StrichGepunktet {

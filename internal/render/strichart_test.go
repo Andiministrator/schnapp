@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/color"
 	"testing"
+	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
 )
@@ -171,5 +172,35 @@ func TestStrichartLupeZeichnet(t *testing.T) {
 		if rot < 100 {
 			t.Errorf("%s: nur %d rote Pixel", art.Name(), rot)
 		}
+	}
+}
+
+// F-840: Ein präparierter gemusterter Strich über die ganze Koordinatenspanne wird voll (MaxMusterStuecke), statt
+// Millionen Stücke zu zerlegen; viele Muster knapp unter der Grenze zählen im Aufwand, Pruefe lehnt sie ab.
+func TestStrichartMusterBegrenzt(t *testing.T) {
+	riesig := document.GeraderPfeil(document.Pt(-1e6, -1e6), document.Pt(1e6, 1e6),
+		document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 0.01, Art: document.StrichGepunktet})
+	t0 := time.Now()
+	if pz := ZerlegePfeil(riesig); len(pz.Teile) > 60 {
+		t.Errorf("riesiger gepunkteter Pfeil: %d Teile, Soll voll (wenige)", len(pz.Teile))
+	}
+	if d := time.Since(t0); d > 100*time.Millisecond {
+		t.Errorf("Zerlegen dauerte %v", d)
+	}
+	knapp := document.GeraderPfeil(document.Pt(-30000, 50), document.Pt(34000, 50),
+		document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 1, Art: document.StrichGepunktet})
+	if pz := ZerlegePfeil(knapp); len(pz.Teile) < 10000 || len(pz.Teile) > document.MaxMusterStuecke {
+		t.Fatalf("knapp unter der Grenze: %d Teile", len(pz.Teile))
+	}
+	d := weissesDokument(t, 200, 100)
+	for range 1000 {
+		hinzu(t, d, knapp)
+	}
+	t0 = time.Now()
+	if err := Pruefe(d); err == nil {
+		t.Error("1000 Muster knapp unter der Grenze: Pruefe nimmt sie an")
+	}
+	if dauer := time.Since(t0); dauer > 15*time.Second {
+		t.Errorf("Pruefe brauchte %v", dauer)
 	}
 }

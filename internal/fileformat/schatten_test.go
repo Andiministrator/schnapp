@@ -8,9 +8,12 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -124,5 +127,46 @@ func TestSVGSchattenSichtbar(t *testing.T) {
 	}
 	if g := grau(35, 35); g < 250 {
 		t.Errorf("oben links %d (kein Schatten gegen das Licht)", g)
+	}
+}
+
+// F-842 (wie F-728): Ist von einer Sprechblase mit Schatten nur das Dreieck sichtbar, verrät die Fläche des Filters die
+// Größe des verborgenen Schilds nicht: Sie reicht nur um das Dreieck (das ohnehin sichtbar im SVG steht) plus den Rand
+// des Schattens, nicht über die Breite des Schilds.
+func TestSVGSchattenFilterOhneSchildmasse(t *testing.T) {
+	breite := regexp.MustCompile(`<filter[^>]* width="([0-9.]+)"`)
+	inhalt := "GEHEIM-4711 und noch viel mehr Text\nzweite Zeile"
+	d, err := document.Neu(sichtbarBild(600, 200))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sp := document.Pt(30, 150)
+	tx := document.Text{Ort: document.Pt(10, 10), Inhalt: inhalt, Schriftgrad: 12, Farbe: color.NRGBA{A: 255},
+		Hintergrund: color.NRGBA{R: 30, G: 90, B: 200, A: 255}, Spitze: &sp}
+	sch := document.StandardSchatten(1)
+	if _, err := d.Hinzufuegen(document.MitEbene(tx, document.Ebene{Schatten: sch})); err != nil {
+		t.Fatal(err)
+	}
+	g := tx.Grenzen()
+	if err := d.SetzeZuschnitt(image.Rect(0, int(math.Ceil(g.Max.Y))+3, 600, 200)); err != nil {
+		t.Fatal(err)
+	}
+	if schrift, dreieck := d.TextSichtbar(tx); schrift || !dreieck {
+		t.Fatalf("Aufbau: TextSichtbar = (%v, %v)", schrift, dreieck)
+	}
+	svg := sichtbarSVG(t, d)
+	if strings.Contains(svg, "GEHEIM") {
+		t.Error("Klartext im SVG")
+	}
+	a, spitze, b, _ := tx.Spitzendreieck()
+	dreieck := document.R(a, spitze).Vereint(document.R(spitze, b))
+	m := breite.FindStringSubmatch(svg)
+	if m == nil {
+		t.Fatal("kein Filter")
+	}
+	w, _ := strconv.ParseFloat(m[1], 64)
+	soll := dreieck.Breite() + 2*(sch.Rand()+8+tx.SchenkelBreite()) + 1e-6
+	if w > soll || w >= g.Breite() {
+		t.Errorf("Filter %v breit, Dreieck %v (Soll höchstens %v), Schild %v", w, dreieck.Breite(), soll, g.Breite())
 	}
 }
