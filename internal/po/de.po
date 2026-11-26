@@ -1684,12 +1684,6 @@ msgstr "Nur lokale Dateien lassen sich öffnen."
 msgid "The chosen file was not opened yet: open it again with Ctrl+O."
 msgstr "Die gewählte Datei ist noch nicht geöffnet: mit Strg+O erneut öffnen."
 
-msgid "Head"
-msgstr "Pfeilspitze"
-
-msgid "Ends"
-msgstr "Enden"
-
 msgid "Filled triangle"
 msgstr "Gefülltes Dreieck"
 
@@ -1702,17 +1696,35 @@ msgstr "Punkt"
 msgid "Bar"
 msgstr "Querstrich"
 
-msgid "No head (line)"
-msgstr "Keine Spitze (Linie)"
-
-msgid "Head at the end"
-msgstr "Spitze am Ende"
-
-msgid "Head at the start"
-msgstr "Spitze am Anfang"
-
-msgid "Heads at both ends"
-msgstr "Spitzen an beiden Enden"
-
 msgid "This file is not in the library. It is added as a new capture as soon as you change it; the file itself stays unchanged."
 msgstr "Diese Datei liegt nicht in der Bibliothek. Mit der ersten Änderung kommt sie als neue Aufnahme hinein; die Datei selbst bleibt unverändert."
+
+msgid "Arrow style"
+msgstr "Pfeil-Stil"
+
+msgid "Arrow style at the start"
+msgstr "Pfeil-Stil am Anfang"
+
+msgid "Arrow style at the end"
+msgstr "Pfeil-Stil am Ende"
+
+msgid "Start"
+msgstr "Anfang"
+
+msgid "End"
+msgstr "Ende"
+
+msgid "Narrow"
+msgstr "Schlank"
+
+msgid "Notched"
+msgstr "Eingekerbt"
+
+msgid "Half head"
+msgstr "Halbe Spitze"
+
+msgid "Diamond"
+msgstr "Raute"
+
+msgid "Square"
+msgstr "Quadrat"

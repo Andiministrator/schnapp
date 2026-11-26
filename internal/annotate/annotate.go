@@ -68,8 +68,8 @@ type Eintrag struct {
 	Underline     *bool    `json:"underline,omitempty"`
 	Strikethrough *bool    `json:"strikethrough,omitempty"`
 	Align         *string  `json:"align,omitempty"`
-	Head          *string  `json:"head,omitempty"` // arrow: triangle, open, dot, bar (ADR-0021 Nachtrag 19)
-	Ends          *string  `json:"ends,omitempty"` // arrow: end, start, both, none
+	StartHead     *string  `json:"start_head,omitempty"` // arrow: head at "from" (default none; ADR-0021 Nachtrag 20)
+	EndHead       *string  `json:"end_head,omitempty"`   // arrow: head at "to" (default triangle)
 }
 
 // Punkt ist ein Punkt [x, y] im sichtbaren Bild; genau zwei Zahlen (encoding/json füllte ein kürzeres Array still mit
@@ -91,7 +91,7 @@ func (p *Punkt) UnmarshalJSON(b []byte) error {
 // erlaubt sind die Schlüssel je Typ; Pflicht die, ohne die ein Eintrag nicht geht.
 var (
 	erlaubt = map[string][]string{
-		"arrow":    {"from", "to", "color", "width", "head", "ends"},
+		"arrow":    {"from", "to", "color", "width", "start_head", "end_head"},
 		"rect":     {"from", "to", "color", "fill", "width"},
 		"text":     {"at", "text", "size", "color", "fill", "font", "bold", "italic", "underline", "strikethrough", "align", "tip"},
 		"step":     {"at", "color", "radius"},
@@ -370,20 +370,22 @@ func Wende(ctx context.Context, d *document.Dokument, es []Eintrag) (Ergebnis, e
 			strich := document.Strich{Farbe: c, Breite: breite}
 			if e.Type == "arrow" {
 				pf := document.GeraderPfeil(a, b, strich)
-				if e.Head != nil {
-					k, ok := document.KopfartAus(*e.Head)
-					if !ok {
-						return erg, f(`"head" must be "triangle", "open", "dot" or "bar"`)
+				anfang, ende := document.KopfKeine, document.KopfDreieck
+				for _, k := range []struct {
+					name string
+					wert *string
+					ziel *document.Kopfart
+				}{{"start_head", e.StartHead, &anfang}, {"end_head", e.EndHead, &ende}} {
+					if k.wert == nil {
+						continue
 					}
-					pf.Kopf = k
-				}
-				if e.Ends != nil {
-					en, ok := document.PfeilEndenAus(*e.Ends)
+					art, ok := document.KopfartAus(*k.wert)
 					if !ok {
-						return erg, f(`"ends" must be "end", "start", "both" or "none"`)
+						return erg, f(`"%s" must be one of %s`, k.name, kopfListe())
 					}
-					pf.Enden = en
+					*k.ziel = art
 				}
+				pf = pf.MitKoepfen(anfang, ende)
 				o = pf
 				break
 			}
@@ -495,4 +497,14 @@ func leseFarbe(s string) (color.NRGBA, bool) {
 		return color.NRGBA{}, false
 	}
 	return canvas.LeseHex(s, color.NRGBA{A: 255})
+}
+
+// kopfListe nennt die Namen der Spitzenarten für Fehlertexte: "triangle", "narrow", … or "none".
+func kopfListe() string {
+	n := document.KopfNamen()
+	q := make([]string, len(n))
+	for i, x := range n {
+		q[i] = `"` + x + `"`
+	}
+	return strings.Join(q[:len(q)-1], ", ") + " or " + q[len(q)-1]
 }

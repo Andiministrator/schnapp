@@ -16,8 +16,15 @@ import (
 // tragen die volle einfache Deckung.
 func TestPfeilKoepfeDeckenEinmal(t *testing.T) {
 	halb := color.NRGBA{A: 128} // Schwarz zu 50 % auf Weiß: einfach gedeckt 127, doppelt 63
+	// Jede Art am Ende (ohne am Anfang), am Anfang (mit Dreieck am Ende) und an beiden Enden (ADR-0021 Nachtrag 20).
+	type paar struct{ anfang, ende document.Kopfart }
+	var paare []paar
 	for _, art := range document.Kopfarten {
-		for _, enden := range document.PfeilEndenAlle {
+		paare = append(paare, paar{document.KopfKeine, art}, paar{art, document.KopfDreieck}, paar{art, art})
+	}
+	for _, pa := range paare {
+		art := pa.ende
+		{
 			for _, fall := range []struct {
 				name    string
 				a, k, b document.Punkt
@@ -27,9 +34,9 @@ func TestPfeilKoepfeDeckenEinmal(t *testing.T) {
 				{"schräg", document.Pt(40.2, 200.7), document.Pt(160, 140), document.Pt(280.3, 80.1), 9},
 				{"gebogen", document.Pt(30, 150), document.Pt(150, 10), document.Pt(270, 150), 12},
 			} {
-				name := fmt.Sprintf("%s/%s/%s", art.Name(), enden.Name(), fall.name)
-				v := document.Pfeil{A: fall.a, B: fall.b, K: fall.k, Strich: document.Strich{Farbe: halb, Breite: fall.breite},
-					Kopf: art, Enden: enden}
+				name := fmt.Sprintf("%s/%s/%s", pa.anfang.Name(), pa.ende.Name(), fall.name)
+				v := document.Pfeil{A: fall.a, B: fall.b, K: fall.k, Strich: document.Strich{Farbe: halb, Breite: fall.breite}}.
+					MitKoepfen(pa.anfang, pa.ende)
 				d := weissesDokument(t, 320, 240)
 				hinzu(t, d, v)
 				b := bild(t, d)
@@ -43,6 +50,11 @@ func TestPfeilKoepfeDeckenEinmal(t *testing.T) {
 				// Im Inneren jedes Kopfs (Mitte zwischen Spitze und Schaftende, etwas zur Spitze hin) ist gedeckt.
 				for _, k := range v.Form().Koepfe {
 					m := k.Spitze.Mal(0.4).Plus(k.Schaftende.Mal(0.6))
+					if k.AmAnfang {
+						art = pa.anfang
+					} else {
+						art = pa.ende
+					}
 					if art == document.KopfWinkel { // die Spitze ist innen hohl: auf dem Schenkel nahe der Spitze messen
 						m = k.Spitze.Minus(k.Richtung.Mal(fall.breite * 0.8))
 					}
@@ -59,7 +71,7 @@ func TestPfeilKoepfeDeckenEinmal(t *testing.T) {
 // Ein Pfeil kürzer als seine Köpfe zeichnet nur die Köpfe (ZerlegePfeil.Einzeln), ohne Schaft dazwischen.
 func TestPfeilKurzNurKoepfe(t *testing.T) {
 	v := document.GeraderPfeil(document.Pt(100, 100), document.Pt(110, 100), document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 6})
-	v.Enden = document.EndenBeide
+	v = v.MitKoepfen(document.KopfDreieck, document.KopfDreieck)
 	pz := ZerlegePfeil(v)
 	if len(pz.Teile) != 0 || len(pz.Einzeln) != 2 {
 		t.Fatalf("Teile %d, einzeln %d", len(pz.Teile), len(pz.Einzeln))
@@ -78,7 +90,7 @@ func TestPfeilKurzNurKoepfe(t *testing.T) {
 func TestPfeilDeckkraftSchneidetKopfNicht(t *testing.T) {
 	for _, art := range document.Kopfarten {
 		v := document.GeraderPfeil(document.Pt(140, 120), document.Pt(150, 120), document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 20})
-		v.Kopf, v.Enden = art, document.EndenBeide
+		v = v.MitKoepfen(art, art)
 		zaehle := func(deckkraft int) int {
 			w := v
 			w.Ebene = w.Ebene.MitDeckkraft(deckkraft)

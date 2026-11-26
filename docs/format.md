@@ -144,7 +144,7 @@ Root element `svg`:
 
 | Attribute | Value | Required |
 |---|---|---|
-| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7, and the attribute `s:spitze` of the text, 8.3; writers use the lowest version that carries the content, section 12) | MUST |
+| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7, the attribute `s:spitze` of the text, 8.3, and the attributes `s:ende`/`s:anfang` of the arrow, 8.1; writers use the lowest version that carries the content, section 12) | MUST |
 | `width`, `height` | size of the original in pixels, plain decimal integers without unit | MUST |
 | `viewBox` | `0 0 <width> <height>` | writer MUST, reader ignores |
 | `xmlns`, `xmlns:s` | the namespaces above | writer MUST |
@@ -265,20 +265,26 @@ damaged. Sizes and widths are numbers with `0 <= value <= max_size`.
 ### 8.1 `"pfeil"` arrow
 
 A quadratic Bézier curve from `A` to `B` with control point `K`. A straight arrow has `K` at the midpoint of `A` and
-`B`. By default the head sits at `B`; `s:enden` moves it, doubles it or removes it (a plain line).
+`B`. Each end has its own head style; by default there is a filled triangle at `B` and no head at `A`. With no head at
+either end the arrow is a plain line.
 
 | Attribute | Value |
 |---|---|
 | `s:a`, `s:b`, `s:k` | points: start, end, control point |
 | `s:strich` | stroke: colour and width of the line and the heads |
-| `s:kopf` | OPTIONAL. Head style: `triangle` (filled), `open` (outline of the triangle), `dot` (disc) or `bar` (cross bar). Missing or any other value: `triangle`; writers omit it for `triangle` |
-| `s:enden` | OPTIONAL. Which ends carry a head: `end` (at `B`), `start` (at `A`), `both` or `none` (a line). Missing or any other value: `end`; writers omit it for `end` |
+| `s:ende` | OPTIONAL, format version 2 only. Head at `B`: `triangle`, `narrow`, `notched`, `open`, `half`, `dot`, `diamond`, `square`, `bar` or `none`. Missing or any other value: `triangle`; writers omit it for `triangle` |
+| `s:anfang` | OPTIONAL, format version 2 only. Head at `A`, same values. Missing or any other value: `none`; writers omit it for `none` |
 
-Both attributes keep format version 1: an older reader shows an ordinary arrow, which loses no content.
+Both attributes are part of format version 2: a writer emits `s:format="2"` if an arrow has a head other than the
+defaults (section 12), so that a version-1 reader reports the file as newer instead of showing a different arrow. In a
+file with `s:format="1"` they are unknown content (section 11, rule 3) and are ignored.
 
-Informative (w = stroke width, all in original pixels): the triangle is `3w + 5` long and `4.5w + 6` wide at its base;
-`open` is the same triangle as an outline whose legs are w thick; `dot` is a disc of radius `1.5w + 3` centred on the
-end; `bar` is w thick and `5w + 6` long, centred on the end and across the direction. The line stops under the head, at
+Informative (w = stroke width, all in original pixels): `triangle` is `3w + 5` long and `4.5w + 6` wide at its base;
+`narrow` is `4w + 7` long and `3w + 4` wide; `notched` is `3.5w + 7` long and `4.5w + 7` wide with a notch cut `0.35`
+of its length into the back; `open` is the triangle as an outline whose legs are w thick; `half` is the triangle with
+only its left barb (left of the direction from the line to the end); `dot` is a disc of radius `1.5w + 3` centred on
+the end; `diamond` is `4w + 8` long and `3w + 6` wide with its front corner on the end; `square` has a side of
+`2.6w + 5`, centred on the end; `bar` is w thick and `5w + 6` long, centred on the end and across the direction. The line stops under the head, at
 the point of the curve whose distance from the end equals the head's setback (triangle: its length); the head's
 direction is the chord from that point to the end. If the curve is shorter than a head, the line is left out.
 
@@ -336,7 +342,8 @@ left-aligned text has no `text-anchor` and `x` at the line start. Like all prese
 
 **Callout (speech bubble).** A text with `s:spitze` is a callout; there is no separate object type. The tip may lie
 anywhere inside the coordinate range (inside or outside the image and the label). `s:spitze` is part of format version
-2: a writer emits `s:format="2"` if the document contains a magnifier or a text with `s:spitze` (section 12), and a
+2: a writer emits `s:format="2"` if the document contains a magnifier, a text with `s:spitze` or an arrow with
+`s:ende`/`s:anfang` (section 12), and a
 version-1 reader that meets a version-2 file reports it as newer instead of dropping the tip silently. A value that
 does not parse as a point makes a version-2 file damaged (section 11, rule 4).
 
@@ -478,7 +485,7 @@ value here and to the code must happen in the same commit.
 
 | Key | Value | Meaning |
 |---|---|---|
-| `format_version` | 2 | highest value of `s:format` read and written by this version (`2` only with a `lupe` or an `s:spitze`, section 12) |
+| `format_version` | 2 | highest value of `s:format` read and written by this version (`2` only with a `lupe`, an `s:spitze` or an arrow head other than the defaults, section 12) |
 | `namespace` | `urn:x-schnapp:1` | Schnapp XML namespace |
 | `chunk_svg` | `snAP` | chunk with the compressed SVG |
 | `chunk_orig` | `snAO` | chunk with the original PNG |
@@ -538,7 +545,7 @@ Original width and height are at least 1.
 6. A program that stores a changed view of the file SHOULD rewrite all of it (visible image, `snAP`, `snAO`) rather
    than patch single chunks.
 7. Write the lowest format version that carries the content: `s:format="2"` if and only if the document contains a
-   `lupe` (8.7) or a text with `s:spitze` (8.3), otherwise `1`. A reader that knows only version 1 then still reads
+   `lupe` (8.7), a text with `s:spitze` (8.3) or an arrow with `s:ende` or `s:anfang` (8.1), otherwise `1`. A reader that knows only version 1 then still reads
    every file without them, and reports a file with one as newer instead of damaged.
 
 ## 13. What is not stored
@@ -568,7 +575,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `redaction` | one filled and one pixelated redaction, applied to the pixels |
 | `text-style` | one text with all optional text attributes: a family that is not installed, `bold italic underline strike`, `center` |
 | `layers` | three objects with layer attributes: a named, half-opaque box, a hidden and locked arrow, a step number without them |
-| `arrow-heads` | four arrows: `open` head at `B`, `dot` at `A` on a curve, `bar` at both ends, and a curved line without heads |
+| `arrow-heads` | format version 2: four arrows: `open` head at `B`, `dot` at `A` only on a curve, `diamond` at `A` and `notched` at `B`, and a curved line without heads |
 | `callout` | format version 2: two texts with `s:spitze`, one with a label (filled polygon) and one without (legs as a line) |
 | `magnifier` | format version 2: one magnifier with a non-integer source over a column strip (the strip drops out of the magnified view, 8.7); the visible image shows no annotations, as in all examples |
 

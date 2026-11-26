@@ -4,6 +4,9 @@ package ui
 
 import (
 	"image"
+	"image/color"
+	"slices"
+	"strings"
 	"testing"
 
 	"gioui.org/io/pointer"
@@ -12,32 +15,50 @@ import (
 	"github.com/Andiministrator/schnapp/internal/document"
 )
 
-// ADR-0021 Nachtrag 19 Punkt 5: Die Zeilen „Head“ und „Ends“ erscheinen beim Werkzeug Pfeil und am gewählten Pfeil;
-// ein Klick setzt die Wahl fürs Werkzeug bzw. ändert den Pfeil, der Name steht in der Statuszeile.
-func TestPfeilformKnoepfe(t *testing.T) {
+// stelleDerArt ist die Zeile der Spitzenart k in der Liste (Reihenfolge document.Kopfarten).
+func stelleDerArt(k document.Kopfart) int { return slices.Index(document.Kopfarten, k) }
+
+// ADR-0021 Nachtrag 20: Der Abschnitt „Arrow style“ zeigt beim Werkzeug Pfeil und am gewählten Pfeil je Ende ein
+// Klappfeld. Ein Klick öffnet die Liste aller Spitzenarten unter dem Feld; die Wahl gilt fürs Werkzeug bzw. ändert den
+// gewählten Pfeil als einen Rückgängig-Schritt. Der Name steht im Feld und in der Statuszeile.
+func TestPfeilformKlappfelder(t *testing.T) {
 	l := neuerMenueLauf(t, image.Pt(1200, 800))
 	l.setle()
-	if !l.e.pfeilform.kopfRahm[0].Empty() {
+	if !l.e.pfeilform.rahm[0].Empty() {
 		t.Fatal("Pfeilform an einem gewählten Text")
 	}
 	l.e.s.Auswahl = 0
 	l.e.s.SetzeWerkzeug(canvas.WerkzeugPfeil)
 	l.setle()
-	r := l.e.pfeilform.kopfRahm[2] // Punkt
-	if r.Empty() || l.e.pfeilform.endenRahm[3].Empty() {
-		t.Fatalf("Knöpfe nicht gezeichnet: %v %v", l.e.pfeilform.kopfRahm, l.e.pfeilform.endenRahm)
+	anfang, ende := l.e.pfeilform.rahm[0], l.e.pfeilform.rahm[1]
+	if anfang.Empty() || ende.Empty() || ende.Min.Y <= anfang.Min.Y {
+		t.Fatalf("Felder nicht gezeichnet: %v %v", anfang, ende)
 	}
-	l.maus(pointer.Move, mitte(r), 0)
+	l.maus(pointer.Move, mitte(ende), 0)
 	l.setle()
-	if l.e.hinweis() != kopfName(document.KopfPunkt) {
-		t.Errorf("Hinweis %q", l.e.hinweis())
+	if h := l.e.hinweis(); !strings.Contains(h, "at the end") || !strings.Contains(h, kopfName(document.KopfDreieck)) {
+		t.Errorf("Hinweis %q", h)
+	}
+	// Klick aufs Feld „End“: Liste aller Arten unter dem Feld, die gewählte (Dreieck) hervorgehoben.
+	l.klick(mitte(ende))
+	l.setle()
+	m := &l.e.menue
+	if !m.offen || m.welches != listeKopfEnde || len(l.e.menueEintraege()) != len(document.Kopfarten) {
+		t.Fatalf("Liste nicht offen: offen %v, welche %d, %d Einträge", m.offen, m.welches, len(l.e.menueEintraege()))
+	}
+	if en := l.e.menueEintraege()[stelleDerArt(document.KopfDreieck)]; !en.aktiv || en.kopfAnfang {
+		t.Errorf("Dreieck nicht als gewählt markiert: %+v", en)
+	}
+	if m.rahmen[0].Min.Y < ende.Max.Y-1 {
+		t.Errorf("Liste %v nicht unter dem Feld %v", m.rahmen[0], ende)
 	}
 	vor := l.e.s.D.Stand()
-	l.klick(mitte(r))
-	if k, _ := l.e.s.Pfeilform(); k != document.KopfPunkt || l.e.s.D.Stand() != vor {
-		t.Errorf("Werkzeug: Kopf %v, Schritt %v", k, l.e.s.D.Stand() != vor)
+	l.klick(mitte(m.rahmen[stelleDerArt(document.KopfPunkt)]))
+	l.setle()
+	if _, e := l.e.s.Pfeilform(); e != document.KopfPunkt || l.e.s.D.Stand() != vor || m.offen {
+		t.Errorf("Werkzeug: Ende %v, Schritt %v, Liste offen %v", e, l.e.s.D.Stand() != vor, m.offen)
 	}
-	// Am gewählten Pfeil: „keine“ macht eine Linie, als ein Rückgängig-Schritt.
+	// Am gewählten Pfeil, per Tastatur: Enter am Feld „Start“ öffnet die Liste mit dem Fokus auf „None“.
 	id, err := l.e.s.D.Hinzufuegen(document.GeraderPfeil(document.Pt(5, 5), document.Pt(40, 30),
 		document.Strich{Farbe: canvas.Beschriftungsfarben[0], Breite: 4}))
 	if err != nil {
@@ -46,14 +67,37 @@ func TestPfeilformKnoepfe(t *testing.T) {
 	l.e.s.SetzeWerkzeug(canvas.WerkzeugAuswahl)
 	l.e.s.Auswahl = id
 	l.setle()
-	vor = l.e.s.D.Stand()
-	l.klick(mitte(l.e.pfeilform.endenRahm[0]))
-	o, _ := l.e.s.D.Objekt(id)
-	if p := o.(document.Pfeil); p.Enden != document.EndenKeine || l.e.s.D.Stand() == vor {
-		t.Errorf("gewählter Pfeil: Enden %v, Schritt %v", p.Enden, l.e.s.D.Stand() != vor)
+	l.e.knopfPerTaste(&l.e.pfeilform.feld[0])
+	l.setle()
+	if !m.offen || m.welches != listeKopfAnfang || m.cursor != stelleDerArt(document.KopfKeine) {
+		t.Fatalf("Liste per Taste: offen %v, welche %d, Cursor %d", m.offen, m.welches, m.cursor)
 	}
-	// Die gewählte Wahl ist hervorgehoben: dieselben Knöpfe, der Zustand kommt aus der Sitzung.
-	if _, e := l.e.s.Pfeilform(); e != document.EndenKeine {
-		t.Errorf("Leiste zeigt %v", e)
+	vor = l.e.s.D.Stand()
+	l.klick(mitte(m.rahmen[stelleDerArt(document.KopfRaute)]))
+	l.setle()
+	o, _ := l.e.s.D.Objekt(id)
+	if p := o.(document.Pfeil); p.KopfAnfang() != document.KopfRaute || p.Ende != document.KopfDreieck || l.e.s.D.Stand() == vor {
+		t.Errorf("gewählter Pfeil: Anfang %v, Ende %v, Schritt %v", p.KopfAnfang(), p.Ende, l.e.s.D.Stand() != vor)
+	}
+	if a, _ := l.e.s.Pfeilform(); a != document.KopfRaute {
+		t.Errorf("Leiste zeigt %v", a)
+	}
+}
+
+// Jede Vorschau der Liste ist sichtbar: Die Vorschau eines Endes zeichnet einen Pfeil, auch bei Punkt, Quadrat und
+// Balken, die über das Ende hinausragen (eingerückt um document.KopfUeberstand); ohne Spitze bleibt der Schaft.
+func TestKopfMusterPasstInsFeld(t *testing.T) {
+	for _, art := range document.Kopfarten {
+		for _, amAnfang := range []bool{false, true} {
+			anfang, ende := document.KopfKeine, art
+			if amAnfang {
+				anfang, ende = art, document.KopfKeine
+			}
+			h := musterPfeil(anfang, ende, image.Rect(0, 0, 44, 16), 2, color.NRGBA{A: 255}).Form().Huelle(2)
+			// Ein Ende ohne Spitze hat die runde Kappe des Strichs (halbe Breite 1).
+			if h.Min.X < -1-1e-9 || h.Max.X > 45+1e-9 {
+				t.Errorf("%s (Anfang %v): Hülle %v ragt aus 0…44", art.Name(), amAnfang, h)
+			}
+		}
 	}
 }

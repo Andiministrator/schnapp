@@ -8,7 +8,7 @@ import (
 	"github.com/Andiministrator/schnapp/internal/document"
 )
 
-// ADR-0021 Nachtrag 19 Punkt 5: Ohne Auswahl gilt die Wahl für folgende Pfeile; mit gewähltem Pfeil ändert sie ihn als
+// ADR-0021 Nachtrag 19 Punkt 5, Nachtrag 20 (je Ende): Ohne Auswahl gilt die Wahl für folgende Pfeile; mit gewähltem Pfeil ändert sie ihn als
 // einen Rückgängig-Schritt und merkt sie fürs Werkzeug. Die rechte Leiste zeigt die Zeilen bei Werkzeug und Auswahl.
 func TestPfeilformWerkzeugUndAuswahl(t *testing.T) {
 	s, _, _ := sitzung(t)
@@ -19,16 +19,16 @@ func TestPfeilformWerkzeugUndAuswahl(t *testing.T) {
 	if !s.Seitenleiste().Pfeilform {
 		t.Error("keine Pfeilform beim Werkzeug Pfeil")
 	}
-	if k, e := s.Pfeilform(); k != document.KopfDreieck || e != document.EndenEnde {
-		t.Errorf("Voreinstellung %v %v", k, e)
+	if a, e := s.Pfeilform(); a != document.KopfKeine || e != document.KopfDreieck {
+		t.Errorf("Voreinstellung %v %v", a, e)
 	}
 	vor := s.D.Stand()
-	if s.SetzeKopf(document.KopfPunkt) || s.SetzeEnden(document.EndenBeide) || s.D.Stand() != vor {
+	if s.SetzeKopf(true, document.KopfPunkt) || s.SetzeKopf(false, document.KopfKerbe) || s.D.Stand() != vor {
 		t.Error("ohne Auswahl ein Rückgängig-Schritt")
 	}
 	zieh(s, f(20, 20), f(150, 80))
 	pf, ok := letztes(t, s).(document.Pfeil)
-	if !ok || pf.Kopf != document.KopfPunkt || pf.Enden != document.EndenBeide {
+	if !ok || pf.KopfAnfang() != document.KopfPunkt || pf.Ende != document.KopfKerbe {
 		t.Fatalf("neuer Pfeil %+v, %v", pf, ok)
 	}
 	// Mit Auswahl: ein Schritt, rückgängig zurück; das Werkzeug merkt die Wahl.
@@ -38,37 +38,40 @@ func TestPfeilformWerkzeugUndAuswahl(t *testing.T) {
 		t.Error("keine Pfeilform am gewählten Pfeil")
 	}
 	vor = s.D.Stand()
-	if !s.SetzeEnden(document.EndenKeine) || s.D.Stand() == vor {
-		t.Fatal("SetzeEnden änderte den Pfeil nicht")
+	if !s.SetzeKopf(false, document.KopfKeine) || s.D.Stand() == vor {
+		t.Fatal("SetzeKopf am Ende änderte den Pfeil nicht")
 	}
-	if _, e := s.Pfeilform(); e != document.EndenKeine || s.Stil.Enden != document.EndenKeine {
-		t.Errorf("Enden %v, Stil %v", e, s.Stil.Enden)
+	if _, e := s.Pfeilform(); e != document.KopfKeine || s.Stil.KopfEnde != document.KopfKeine {
+		t.Errorf("Ende %v, Stil %v", e, s.Stil.KopfEnde)
 	}
-	if s.SetzeEnden(document.EndenKeine) {
+	if s.SetzeKopf(false, document.KopfKeine) {
 		t.Error("dieselbe Wahl ist ein Schritt")
 	}
-	if !s.SetzeKopf(document.KopfQuer) {
-		t.Fatal("SetzeKopf änderte den Pfeil nicht")
+	if !s.SetzeKopf(true, document.KopfQuer) {
+		t.Fatal("SetzeKopf am Anfang änderte den Pfeil nicht")
+	}
+	if a, _ := s.Pfeilform(); a != document.KopfQuer || s.Stil.KopfAnfang.Art() != document.KopfQuer {
+		t.Errorf("Anfang %v, Stil %v", a, s.Stil.KopfAnfang.Art())
 	}
 	s.Rueckgaengig()
-	if k, _ := s.Pfeilform(); k != document.KopfPunkt {
-		t.Errorf("nach Rückgängig Kopf %v", k)
+	if a, _ := s.Pfeilform(); a != document.KopfPunkt {
+		t.Errorf("nach Rückgängig Anfang %v", a)
 	}
 	s.Rueckgaengig()
-	if _, e := s.Pfeilform(); e != document.EndenBeide {
-		t.Errorf("nach Rückgängig Enden %v", e)
+	if _, e := s.Pfeilform(); e != document.KopfKerbe {
+		t.Errorf("nach Rückgängig Ende %v", e)
 	}
 	// Ein Schnellstil ändert Farbe und Breite, nicht die Form (Punkt 6).
 	st := Schnellstil{Art: SchnellPfeil, Farbe: Beschriftungsfarben[1], Breite: 12}
 	if !s.WendeSchnellstilAn(st) {
 		t.Fatal("Schnellstil nicht angewandt")
 	}
-	if p, _ := s.gewaehlterPfeil(); p.Kopf != document.KopfPunkt || p.Enden != document.EndenBeide || p.Strich.Breite != 12 {
+	if p, _ := s.gewaehlterPfeil(); p.KopfAnfang() != document.KopfPunkt || p.Ende != document.KopfKerbe || p.Strich.Breite != 12 {
 		t.Errorf("nach Schnellstil %+v", p)
 	}
 	// Während des Speicherns ruht das Bearbeiten.
 	s.SetzeRuhe(true)
-	if s.SetzeKopf(document.KopfWinkel) {
+	if s.SetzeKopf(false, document.KopfWinkel) {
 		t.Error("SetzeKopf in der Ruhe")
 	}
 }
@@ -76,7 +79,7 @@ func TestPfeilformWerkzeugUndAuswahl(t *testing.T) {
 // Ein Linie trifft man wie einen Pfeil am Schaft; ihre Enden sind rund.
 func TestPfeilformTrefferLinie(t *testing.T) {
 	linie := document.Pfeil{ID: 1, A: document.Pt(0, 0), B: document.Pt(100, 0), K: document.Pt(50, 0), Strich: rot,
-		Enden: document.EndenKeine}
+		Ende: document.KopfKeine}
 	for _, fall := range []struct {
 		p  document.Punkt
 		ok bool

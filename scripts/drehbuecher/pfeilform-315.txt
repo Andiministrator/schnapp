@@ -1,3 +1,5 @@
+# ÜBERHOLT durch pfeilform-351.txt (ADR-0021 Nachtrag 20, Karte #351): Die Zeilen „Head“/„Ends“ gibt es nicht mehr, die
+# Koordinaten unten treffen nichts. Bleibt nur als Beleg für Karte #315.
 # Sichtprobe ADR-0021 Nachtrag 19 (Karte #315): Pfeilspitze neu, Spitzenarten und Enden über die rechte Leiste.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/pfeilform-315.txt --bild scripts/drehbuecher/testbild-1200x800.png
 # Bei 1600 × 1000, Skala 1: Werkzeug Pfeil (A), Zeile „Pfeilspitze“ bei y 266 (Knöpfe x 1425/1471/1517/1563: Dreieck,

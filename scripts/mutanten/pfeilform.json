@@ -3,22 +3,22 @@
     "name": "PF1 Schaft läuft bis unter die Spitze",
     "datei": "internal/document/pfeilform.go",
     "paket": "./internal/document",
-    "alt": "\t\tkoepfe = append(koepfe, p.kopf(p.B, p.Punkt(t), w))\n\t\ttb = t\n",
-    "neu": "\t\tkoepfe = append(koepfe, p.kopf(p.B, p.Punkt(t), w))\n"
+    "alt": "\t\tkoepfe, rueck = append(koepfe, p.kopf(art, p.B, p.Punkt(t), w)), append(rueck, r)\n\t\ttb = t\n",
+    "neu": "\t\tkoepfe, rueck = append(koepfe, p.kopf(art, p.B, p.Punkt(t), w)), append(rueck, r)\n\t\t_ = t\n"
   },
   {
-    "name": "PF2 Enden Anfang ohne Kopf",
+    "name": "PF2 Anfang ohne Kopf",
     "datei": "internal/document/pfeilform.go",
     "paket": "./internal/document",
-    "alt": "\tif p.Enden == EndenAnfang || p.Enden == EndenBeide {",
-    "neu": "\tif p.Enden == EndenBeide {"
+    "alt": "\tif art := p.KopfAnfang(); art != KopfKeine {",
+    "neu": "\tif art := p.KopfAnfang(); false && art != KopfKeine {"
   },
   {
     "name": "PF3 Dreieck schmal wie früher",
     "datei": "internal/document/pfeilform.go",
     "paket": "./internal/document",
-    "alt": "\t\tl, h := 3*w+5, (4.5*w+6)/2\n\t\tfuss := e.Minus(r.Mal(l))\n\t\tk.Kontur = []Punkt{fuss.Minus(n.Mal(h)), e, fuss.Plus(n.Mal(h))}",
-    "neu": "\t\tl, h := 3*w+5, (3*w+5)/2\n\t\tfuss := e.Minus(r.Mal(l))\n\t\tk.Kontur = []Punkt{fuss.Minus(n.Mal(h)), e, fuss.Plus(n.Mal(h))}"
+    "alt": "\treturn 3*w + 5, (4.5*w + 6) / 2\n}",
+    "neu": "\treturn math.Max(8, 4*w), math.Max(8, 4*w) / 2\n}"
   },
   {
     "name": "PF4 offene Spitze: Schenkel zu dünn",
@@ -52,8 +52,8 @@
     "name": "PF8 unbekannte Spitze angenommen",
     "datei": "internal/document/pfeilform.go",
     "paket": "./internal/document",
-    "alt": "\tif p.Kopf > KopfQuer || p.Enden > EndenKeine {",
-    "neu": "\tif p.Enden > EndenKeine {"
+    "alt": "\tif p.Ende > KopfKeine || Kopfart(p.Anfang) > KopfKeine {",
+    "neu": "\tif p.Ende > KopfKeine+1 || Kopfart(p.Anfang) > KopfKeine+1 {"
   },
   {
     "name": "PF9 Renderer: Kappe statt Kopf",
@@ -66,15 +66,15 @@
     "name": "PF10 SVG schreibt die Voreinstellung",
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
-    "alt": "\t\t\tif o.Kopf != document.KopfDreieck { // freiwillig",
-    "neu": "\t\t\tif true { // freiwillig"
+    "alt": "\t\t\tif o.Ende != document.KopfDreieck {\n\t\t\t\ts.attr(\"s:ende\"",
+    "neu": "\t\t\tif true {\n\t\t\t\ts.attr(\"s:ende\""
   },
   {
-    "name": "PF11 SVG liest s:kopf nicht",
+    "name": "PF11 SVG liest s:anfang nicht",
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
-    "alt": "Strich: l.strich(\"strich\"), Kopf: kopf,",
-    "neu": "Strich: l.strich(\"strich\"), Kopf: 0*kopf,"
+    "alt": "\t\t\tif v, da := l.a[\"anfang\"]; da {",
+    "neu": "\t\t\tif v, da := l.a[\"anfang\"]; false && da {"
   },
   {
     "name": "PF12 Leiste merkt die Wahl fürs Werkzeug nicht",
@@ -94,8 +94,8 @@
     "name": "PF14 neuer Pfeil ohne Wahl der Leiste",
     "datei": "internal/canvas/werkzeuge.go",
     "paket": "./internal/canvas",
-    "alt": "\t\tpf.Kopf, pf.Enden = s.Stil.Kopf, s.Stil.Enden\n",
-    "neu": ""
+    "alt": "\t\tpf.Ende, pf.Anfang = s.Stil.KopfEnde, s.Stil.KopfAnfang\n",
+    "neu": "\t\t_ = s.Stil.KopfEnde\n"
   },
   {
     "name": "PF15 Leiste ohne Pfeilform beim Werkzeug",
@@ -105,32 +105,32 @@
     "neu": "Text: textWerkzeug(s.Werkzeug), Pfeilform: false}"
   },
   {
-    "name": "PF16 annotate übergeht head",
+    "name": "PF16 annotate übergeht die Spitzen",
     "datei": "internal/annotate/annotate.go",
     "paket": "./internal/annotate",
-    "alt": "\t\t\t\t\tpf.Kopf = k\n",
-    "neu": "\t\t\t\t\t_ = k\n"
+    "alt": "\t\t\t\tpf = pf.MitKoepfen(anfang, ende)\n",
+    "neu": "\t\t\t\t_, _ = anfang, ende\n"
   },
   {
-    "name": "PF17 Knopf Spitzenart wirkungslos",
-    "datei": "internal/ui/pfeilform.go",
+    "name": "PF17 Wahl in der Liste wirkungslos",
+    "datei": "internal/ui/menue.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\te.s.SetzeKopf(art)\n",
-    "neu": "\t\t\t_ = art\n"
+    "alt": "\t\t\t\te.s.SetzeKopf(en.kopfAnfang, en.kopf)\n",
+    "neu": "\t\t\t\t_ = en.kopf\n"
   },
   {
     "name": "PF18 kein Name in der Statuszeile",
     "datei": "internal/ui/pfeilform.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\t\tk.hinweis = name(j)\n",
-    "neu": "\t\t\t\t_ = name(j)\n"
+    "alt": "\t\t\t\tk.hinweis = i18n.T(\"Arrow style at the end\") + \": \" + kopfName(art)\n",
+    "neu": "\t\t\t\t_ = art\n"
   },
   {
-    "name": "PF19 Knopf Enden wirkungslos",
+    "name": "PF19 Feld öffnet keine Liste",
     "datei": "internal/ui/pfeilform.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\te.s.SetzeEnden(en)\n",
-    "neu": "\t\t\t_ = en\n"
+    "alt": "\t\t\te.kopfListeOeffnen(j, false)\n",
+    "neu": "\t\t\t_ = j\n"
   },
   {
     "name": "PF20 Reichweite ohne Köpfe",
@@ -138,5 +138,61 @@
     "paket": "./internal/document",
     "alt": "\t\th := v.Form().Huelle(v.Strich.Breite)\n",
     "neu": "\t\th := PfeilForm{Schaft: v.Form().Schaft}.Huelle(v.Strich.Breite)\n"
+  },
+  {
+    "name": "PF21 Kerbe: Schaft endet an der Spitze der Kerbe",
+    "datei": "internal/document/pfeilform.go",
+    "paket": "./internal/document",
+    "alt": "\t\treturn l - k + k*hw/h // dort liegen",
+    "neu": "\t\treturn l - k + 0*h // dort liegen"
+  },
+  {
+    "name": "PF22 Raute: Schaft endet an der hinteren Ecke",
+    "datei": "internal/document/pfeilform.go",
+    "paket": "./internal/document",
+    "alt": "\t\treturn l - l/2*hw/h",
+    "neu": "\t\treturn l + 0*h"
+  },
+  {
+    "name": "PF23 Anfang: Nullwert ist Dreieck",
+    "datei": "internal/document/pfeilform.go",
+    "paket": "./internal/document",
+    "alt": "\tif a == 0 || Kopfart(a-1) >= KopfKeine {\n\t\treturn KopfKeine\n\t}",
+    "neu": "\tif Kopfart(a) >= KopfKeine {\n\t\treturn KopfKeine\n\t}\n\tif a == 0 {\n\t\treturn KopfDreieck\n\t}"
+  },
+  {
+    "name": "PF24 Version 1 trotz Spitzen",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\t\tif v.Ende != document.KopfDreieck || v.KopfAnfang() != document.KopfKeine {",
+    "neu": "\t\t\tif false {"
+  },
+  {
+    "name": "PF25 Version 1 liest die Spitzen",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\tif l.version >= versionPfeilKoepfe {",
+    "neu": "\t\tif l.version >= 1 {"
+  },
+  {
+    "name": "PF26 Liste setzt immer das Ende",
+    "datei": "internal/ui/pfeilform.go",
+    "paket": "./internal/ui",
+    "alt": "\t\ten = append(en, menueEintrag{hatKopf: true, kopf: art, kopfAnfang: amAnfang,",
+    "neu": "\t\ten = append(en, menueEintrag{hatKopf: true, kopf: art, kopfAnfang: false,"
+  },
+  {
+    "name": "PF27 halbe Spitze mit beiden Widerhaken",
+    "datei": "internal/document/pfeilform.go",
+    "paket": "./internal/document",
+    "alt": "\t\tk.Kontur = []Punkt{e, e.Minus(r.Mal(l)).Plus(n.Mal(h))}",
+    "neu": "\t\tk.Kontur = []Punkt{e.Minus(r.Mal(l)).Minus(n.Mal(h)), e, e.Minus(r.Mal(l)).Plus(n.Mal(h))}"
+  },
+  {
+    "name": "PF28 Vorschau ragt aus dem Feld",
+    "datei": "internal/ui/pfeilform.go",
+    "paket": "./internal/ui",
+    "alt": "\tb := document.Pt(float64(r.Max.X)-document.KopfUeberstand(ende, w), ym)\n\treturn",
+    "neu": "\tb := document.Pt(float64(r.Max.X), ym)\n\treturn"
   }
 ]

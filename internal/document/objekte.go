@@ -43,16 +43,17 @@ func (s Strich) pruefe() error {
 	return nil
 }
 
-// Pfeil ist eine quadratische Bézier-Kurve von A nach B mit Kontrollpunkt K; die Spitze sitzt nach Enden bei B, A,
-// beiden oder keinem (dann eine Linie), in der Form Kopf (ADR-0021 Nachtrag 19; Gestalt über Form). Gerade ist er, wenn
-// K auf der Mitte liegt. Der Nutzer zieht am Griff (Kurvenpunkt bei t = 0,5), nicht an K.
+// Pfeil ist eine quadratische Bézier-Kurve von A nach B mit Kontrollpunkt K; je Ende eine Spitzenart, Ende bei B
+// (Nullwert Dreieck), Anfang bei A (Nullwert keine), beide KopfKeine ist eine Linie (ADR-0021 Nachträge 19 und 20;
+// Gestalt über Form). Gerade ist er, wenn K auf der Mitte liegt. Der Nutzer zieht am Griff (Kurvenpunkt bei t = 0,5),
+// nicht an K.
 type Pfeil struct {
 	Ebene
 	ID      int
 	A, B, K Punkt
 	Strich  Strich
-	Kopf    Kopfart
-	Enden   PfeilEnden
+	Ende    Kopfart
+	Anfang  Anfangskopf
 }
 
 // GeraderPfeil liefert einen ungebogenen Pfeil von a nach b.

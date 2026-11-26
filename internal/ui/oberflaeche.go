@@ -61,6 +61,8 @@ const (
 	listeZoom
 	listeEinstellung // Auswahl in der Einstellungstafel (ADR-0034), Anker am Feld der Tafel
 	listeZeitraum    // Zeitraum in der vollen Ansicht der Bibliothek (ADR-0036 Punkt 3), Anker am Feld im Kopf
+	listeKopfAnfang  // Spitze am Anfang des Pfeils (ADR-0021 Nachtrag 20), Anker am Feld der rechten Leiste
+	listeKopfEnde    // Spitze am Ende des Pfeils
 )
 
 // istListe meldet, ob i eine Aufklappliste der Fußzeile ist (kein Menü der Zeile).
@@ -188,6 +190,8 @@ func (e *editor) menueEintraegeRoh(i int) []menueEintrag {
 		return e.einstellungsListe()
 	case listeZeitraum:
 		return e.zeitraumListe()
+	case listeKopfAnfang, listeKopfEnde:
+		return e.kopfListe(i == listeKopfAnfang)
 	}
 	return nil
 }
@@ -832,6 +836,13 @@ func (e *editor) fussAuswerten(gtx layout.Context) {
 func (e *editor) listenAnker(i int) image.Rectangle {
 	if i == listeZeitraum { // Zeitraum der Ansicht der Bibliothek: am Feld im Kopf (ADR-0036)
 		return e.bibl.zeitRahmen
+	}
+	if i == listeKopfAnfang || i == listeKopfEnde { // Spitze des Pfeils: am Feld der rechten Leiste (Inhaltskoordinaten)
+		r := e.pfeilform.rahm[i-listeKopfAnfang]
+		if r.Empty() {
+			return image.Rectangle{}
+		}
+		return r.Sub(image.Pt(0, e.seite.roll.rollen))
 	}
 	if i == listeEinstellung { // Auswahl der Einstellungstafel: am Feld (ADR-0034)
 		if z := e.einst.listeZeile; z >= 0 && z < len(tafelZeilen) {

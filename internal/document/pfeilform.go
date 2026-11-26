@@ -7,36 +7,60 @@ import (
 	"math"
 )
 
-// Kopfart ist die Form der Spitze eines Pfeils (ADR-0021 Nachtrag 19). Der Nullwert ist das gefüllte Dreieck.
+// Kopfart ist die Form der Spitze an einem Ende eines Pfeils (ADR-0021 Nachträge 19 und 20). Der Nullwert ist das
+// gefüllte Dreieck; KopfKeine ist ein Ende ohne Spitze.
 type Kopfart uint8
 
 const (
-	KopfDreieck Kopfart = iota // gefülltes Dreieck (Voreinstellung)
+	KopfDreieck Kopfart = iota // gefülltes Dreieck (Voreinstellung am Ende B)
+	KopfSchlank                // schmales, langes Dreieck
+	KopfKerbe                  // Dreieck mit Kerbe hinten (Stealth)
 	KopfWinkel                 // offene Spitze: Umriss des Dreiecks, Schenkel so dick wie der Strich
+	KopfHalb                   // halbe Spitze: ein Widerhaken links der Richtung
 	KopfPunkt                  // Scheibe um das Ende
+	KopfRaute                  // Raute mit der Spitze am Ende
+	KopfQuadrat                // Quadrat um das Ende
 	KopfQuer                   // Balken quer zur Richtung
+	KopfKeine                  // keine Spitze
 )
 
-// Kopfarten sind alle Spitzenarten in der Reihenfolge der Bedienung.
-var Kopfarten = []Kopfart{KopfDreieck, KopfWinkel, KopfPunkt, KopfQuer}
+// Kopfarten sind alle Wahlen eines Endes in der Reihenfolge der Bedienung.
+var Kopfarten = []Kopfart{KopfKeine, KopfDreieck, KopfSchlank, KopfKerbe, KopfWinkel, KopfHalb, KopfPunkt, KopfRaute,
+	KopfQuadrat, KopfQuer}
 
-// PfeilEnden sagt, an welchen Enden ein Pfeil eine Spitze trägt. Der Nullwert ist die Spitze bei B.
-type PfeilEnden uint8
+// Anfangskopf ist die Spitzenart am Anfang A, um eins verschoben: Der Nullwert ist „keine“, damit ein Pfeil ohne Angabe
+// nur bei B eine Spitze trägt (wie vor Nachtrag 20). Lesen und Setzen über Pfeil.KopfAnfang und Pfeil.MitKoepfen.
+type Anfangskopf uint8
 
-const (
-	EndenEnde   PfeilEnden = iota // Spitze bei B (Voreinstellung)
-	EndenAnfang                   // Spitze bei A
-	EndenBeide                    // an beiden Enden
-	EndenKeine                    // keine Spitze: eine Linie
-)
+// AnfangMit verschiebt die Spitzenart k für das Feld Pfeil.Anfang.
+func AnfangMit(k Kopfart) Anfangskopf {
+	if k >= KopfKeine {
+		return 0
+	}
+	return Anfangskopf(k) + 1
+}
 
-// PfeilEndenAlle sind alle Möglichkeiten in der Reihenfolge der Bedienung.
-var PfeilEndenAlle = []PfeilEnden{EndenKeine, EndenEnde, EndenAnfang, EndenBeide}
+// Art ist die Spitzenart, die a trägt.
+func (a Anfangskopf) Art() Kopfart {
+	if a == 0 || Kopfart(a-1) >= KopfKeine {
+		return KopfKeine
+	}
+	return Kopfart(a - 1)
+}
 
-// pruefeForm meldet unbekannte Werte von Kopf und Enden.
+// KopfAnfang ist die Spitzenart bei A.
+func (p Pfeil) KopfAnfang() Kopfart { return p.Anfang.Art() }
+
+// MitKoepfen liefert p mit den Spitzenarten anfang (bei A) und ende (bei B).
+func (p Pfeil) MitKoepfen(anfang, ende Kopfart) Pfeil {
+	p.Anfang, p.Ende = AnfangMit(anfang), ende
+	return p
+}
+
+// pruefeForm meldet unbekannte Spitzenarten.
 func (p Pfeil) pruefeForm() error {
-	if p.Kopf > KopfQuer || p.Enden > EndenKeine {
-		return fmt.Errorf("document: Pfeil mit unbekannter Spitze %d/%d", p.Kopf, p.Enden)
+	if p.Ende > KopfKeine || Kopfart(p.Anfang) > KopfKeine {
+		return fmt.Errorf("document: Pfeil mit unbekannter Spitze %d/%d", p.Anfang, p.Ende)
 	}
 	return nil
 }
@@ -77,21 +101,68 @@ const pfeilSchritte = 48
 // links ist die Normale links der Richtung r (wie die Normale des Linienstrichs, ADR-0023 Nachtrag 22).
 func links(r Punkt) Punkt { return Pt(-r.Y, r.X) }
 
-// KopfRueckstand ist der Abstand vom Ende des Pfeils bis zum Ende des Schafts bei Strichstärke w.
+// Maße der Spitzen zur Strichstärke w (ADR-0021 Nachträge 19 und 20), alles in Pixeln des Originals: Länge l und halbe
+// Breite h der Dreiecke, Radius des Punkts, halbe Seite des Quadrats, halbe Länge des Balkens.
+func dreieckMass(art Kopfart, w float64) (l, h float64) {
+	switch art {
+	case KopfSchlank:
+		return 4*w + 7, (3*w + 4) / 2
+	case KopfKerbe:
+		return 3.5*w + 7, (4.5*w + 7) / 2
+	case KopfRaute:
+		return 4*w + 8, (3*w + 6) / 2
+	}
+	return 3*w + 5, (4.5*w + 6) / 2
+}
+
+// kerbeTiefe ist der Anteil der Länge, um den die Kerbe hinten in die Spitze schneidet.
+const kerbeTiefe = 0.35
+
+func punktRadius(w float64) float64     { return 1.5*w + 3 }
+func quadratHalbe(w float64) float64    { return 1.3*w + 2.5 }
+func querHalbeLaenge(w float64) float64 { return 2.5*w + 3 }
+
+// KopfRueckstand ist der Abstand vom Ende des Pfeils bis zum Ende des Schafts bei Strichstärke w; 0 ohne Spitze.
 func KopfRueckstand(art Kopfart, w float64) float64 {
 	hw := w / 2
 	switch art {
+	case KopfKeine:
+		return 0
 	case KopfWinkel:
-		l, h := 3*w+5, (4.5*w+6)/2
+		l, h := dreieckMass(art, w)
 		sin, tan := h/math.Hypot(l, h), h/l
 		return w/sin + hw/tan
+	case KopfKerbe:
+		l, h := dreieckMass(art, w)
+		k := kerbeTiefe * l
+		return l - k + k*hw/h // dort liegen die Schaftpunkte auf den Kanten der Kerbe
+	case KopfRaute:
+		l, h := dreieckMass(art, w)
+		return l - l/2*hw/h // die Schaftpunkte liegen auf den hinteren Kanten
 	case KopfPunkt:
-		r := 1.5*w + 3
+		r := punktRadius(w)
 		return math.Sqrt(max(0, r*r-hw*hw))
+	case KopfQuadrat:
+		return quadratHalbe(w)
 	case KopfQuer:
 		return hw
 	}
-	return 3*w + 5
+	l, _ := dreieckMass(art, w)
+	return l
+}
+
+// KopfUeberstand ist, wie weit eine Spitze über das Ende des Pfeils hinausragt (Punkt, Quadrat, Balken); die
+// Vorschau der Leiste rückt um so viel ein.
+func KopfUeberstand(art Kopfart, w float64) float64 {
+	switch art {
+	case KopfPunkt:
+		return punktRadius(w)
+	case KopfQuadrat:
+		return quadratHalbe(w)
+	case KopfQuer:
+		return w / 2
+	}
+	return 0
 }
 
 // Form liefert Schaft und Köpfe des Pfeils p (ADR-0021 Nachtrag 19). Der Schaft endet unter jedem Kopf auf der Kurve;
@@ -99,19 +170,21 @@ func KopfRueckstand(art Kopfart, w float64) float64 {
 // der Schaft am anderen Ende bzw. entfällt.
 func (p Pfeil) Form() PfeilForm {
 	w := p.Strich.Breite
-	rueck := KopfRueckstand(p.Kopf, w)
 	ta, tb := 0.0, 1.0
 	var koepfe []Kopfform
-	if p.Enden == EndenEnde || p.Enden == EndenBeide {
-		t := p.suchePunkt(true, rueck)
-		koepfe = append(koepfe, p.kopf(p.B, p.Punkt(t), w))
+	var rueck []float64 // je Kopf
+	if art := p.Ende; art != KopfKeine {
+		r := KopfRueckstand(art, w)
+		t := p.suchePunkt(true, r)
+		koepfe, rueck = append(koepfe, p.kopf(art, p.B, p.Punkt(t), w)), append(rueck, r)
 		tb = t
 	}
-	if p.Enden == EndenAnfang || p.Enden == EndenBeide {
-		t := p.suchePunkt(false, rueck)
-		k := p.kopf(p.A, p.Punkt(t), w)
+	if art := p.KopfAnfang(); art != KopfKeine {
+		r := KopfRueckstand(art, w)
+		t := p.suchePunkt(false, r)
+		k := p.kopf(art, p.A, p.Punkt(t), w)
 		k.AmAnfang = true
-		koepfe = append(koepfe, k)
+		koepfe, rueck = append(koepfe, k), append(rueck, r)
 		ta = t
 	}
 	if tb <= ta && len(koepfe) > 0 {
@@ -124,7 +197,11 @@ func (p Pfeil) Form() PfeilForm {
 			} else {
 				r = Pt(1, 0)
 			}
-			neu := p.kopf(k.Spitze, k.Spitze.Minus(r.Mal(rueck)), w)
+			art := p.Ende
+			if k.AmAnfang {
+				art = p.KopfAnfang()
+			}
+			neu := p.kopf(art, k.Spitze, k.Spitze.Minus(r.Mal(rueck[i])), w)
 			neu.AmAnfang = k.AmAnfang
 			koepfe[i] = neu
 		}
@@ -219,8 +296,8 @@ func (p Pfeil) suchePunkt(amEnde bool, abstand float64) float64 {
 	return 1 - t0
 }
 
-// kopf baut die Spitze am Ende e mit dem Schaftende s (auf der Kurve) zur Strichstärke w.
-func (p Pfeil) kopf(e, s Punkt, w float64) Kopfform {
+// kopf baut die Spitze der Art art am Ende e mit dem Schaftende s (auf der Kurve) zur Strichstärke w.
+func (p Pfeil) kopf(art Kopfart, e, s Punkt, w float64) Kopfform {
 	r := e.Minus(s)
 	if l := r.Laenge(); l >= 1e-9 {
 		r = r.Mal(1 / l)
@@ -232,15 +309,19 @@ func (p Pfeil) kopf(e, s Punkt, w float64) Kopfform {
 	n := links(r)
 	hw := w / 2
 	k := Kopfform{Spitze: e, Richtung: r, Schaftende: s}
-	switch p.Kopf {
+	switch art {
 	case KopfWinkel:
-		l, h := 3*w+5, (4.5*w+6)/2
+		l, h := dreieckMass(art, w)
 		d := w / (h / math.Hypot(l, h)) // Versatz des inneren Dreiecks: Schenkel senkrecht w dick
 		fuss := e.Minus(r.Mal(l))
 		re, li := fuss.Minus(n.Mal(h)), fuss.Plus(n.Mal(h))
 		k.Kontur = []Punkt{re.Minus(r.Mal(d)), re, e, li, li.Minus(r.Mal(d))}
+	case KopfHalb:
+		// Rechts läuft die Kante vom Schaft gerade zur Spitze, links steht der Widerhaken.
+		l, h := dreieckMass(KopfDreieck, w)
+		k.Kontur = []Punkt{e, e.Minus(r.Mal(l)).Plus(n.Mal(h))}
 	case KopfPunkt:
-		rad := 1.5*w + 3
+		rad := punktRadius(w)
 		// Bogen um e von rechts über vorn nach links; Anfang und Ende sind genau die Schaftpunkte s ∓ n·hw.
 		von, bis := s.Minus(n.Mal(hw)).Minus(e), s.Plus(n.Mal(hw)).Minus(e)
 		a0, a1 := math.Atan2(von.Y, von.X), math.Atan2(bis.Y, bis.X)
@@ -261,12 +342,20 @@ func (p Pfeil) kopf(e, s Punkt, w float64) Kopfform {
 			a := a0 + bw*float64(j)/float64(schritte)
 			k.Kontur = append(k.Kontur, Pt(e.X+rad*math.Cos(a), e.Y+rad*math.Sin(a)))
 		}
+	case KopfRaute:
+		l, h := dreieckMass(art, w)
+		mitte := e.Minus(r.Mal(l / 2))
+		k.Kontur = []Punkt{mitte.Minus(n.Mal(h)), e, mitte.Plus(n.Mal(h))}
+	case KopfQuadrat:
+		a := quadratHalbe(w)
+		hinten, vorn := e.Minus(r.Mal(a)), e.Plus(r.Mal(a))
+		k.Kontur = []Punkt{hinten.Minus(n.Mal(a)), vorn.Minus(n.Mal(a)), vorn.Plus(n.Mal(a)), hinten.Plus(n.Mal(a))}
 	case KopfQuer:
-		q := 2.5*w + 3
+		q := querHalbeLaenge(w)
 		vorn := e.Plus(r.Mal(hw))
 		k.Kontur = []Punkt{s.Minus(n.Mal(q)), vorn.Minus(n.Mal(q)), vorn.Plus(n.Mal(q)), s.Plus(n.Mal(q))}
-	default:
-		l, h := 3*w+5, (4.5*w+6)/2
+	default: // Dreieck, schlank, mit Kerbe: die Kerbe entsteht, weil der Schaft vor den hinteren Ecken endet
+		l, h := dreieckMass(art, w)
 		fuss := e.Minus(r.Mal(l))
 		k.Kontur = []Punkt{fuss.Minus(n.Mal(h)), e, fuss.Plus(n.Mal(h))}
 	}
@@ -300,10 +389,9 @@ func (f PfeilForm) Huelle(w float64) Rechteck {
 	return h
 }
 
-var kopfNamen = [...]string{"triangle", "open", "dot", "bar"}
-var endenNamen = [...]string{"end", "start", "both", "none"}
+var kopfNamen = [...]string{"triangle", "narrow", "notched", "open", "half", "dot", "diamond", "square", "bar", "none"}
 
-// Name ist der Name der Spitzenart in Datei, --annotate und MCP (triangle, open, dot, bar).
+// Name ist der Name der Spitzenart in Datei, --annotate und MCP.
 func (k Kopfart) Name() string {
 	if int(k) < len(kopfNamen) {
 		return kopfNamen[k]
@@ -321,23 +409,8 @@ func KopfartAus(s string) (Kopfart, bool) {
 	return KopfDreieck, false
 }
 
-// Name ist der Name der Enden in Datei, --annotate und MCP (end, start, both, none).
-func (e PfeilEnden) Name() string {
-	if int(e) < len(endenNamen) {
-		return endenNamen[e]
-	}
-	return endenNamen[0]
-}
-
-// PfeilEndenAus liest einen Namen; unbekannt: Ende, false.
-func PfeilEndenAus(s string) (PfeilEnden, bool) {
-	for i, n := range endenNamen {
-		if n == s {
-			return PfeilEnden(i), true
-		}
-	}
-	return EndenEnde, false
-}
+// KopfNamen sind die Namen aller Spitzenarten (für Hilfe und Fehlertexte von --annotate).
+func KopfNamen() []string { return kopfNamen[:] }
 
 // Teilstueck liefert Anfang, Kontrollpunkt und Ende der Kurve zwischen den Parametern ta und tb: wieder eine
 // quadratische Bézier-Kurve (Polarform). Der SVG-Export schreibt damit den gekürzten Schaft.

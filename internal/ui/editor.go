@@ -2467,6 +2467,7 @@ func (e *editor) leertastenZiele() []event.Tag {
 	}
 	z = append(z, e.schnell.ziele()...)
 	z = append(z, e.unten.ziele()...)
+	z = append(z, &e.pfeilform.feld[0], &e.pfeilform.feld[1])
 	return append(z, &e.knoepfe.fussFarbe, &e.knoepfe.fussZoom, &e.knoepfe.farbe, &e.knoepfe.fuellung)
 }
 
@@ -2675,6 +2676,7 @@ func (e *editor) fokussierterKnopf(gtx layout.Context) *widget.Clickable {
 	alle = append(alle, e.ebenen.alleKnoepfe()...)
 	alle = append(alle, e.lupe.alle()...)
 	alle = append(alle, &e.spitze.knopf)
+	alle = append(alle, e.pfeilform.alle()...)
 	alle = append(alle, e.schnell.alle()...)
 	alle = append(alle, e.unten.alle()...) // Vorschauen der Leiste (ADR-0036)
 	for i := range e.menue.titel {
@@ -2792,7 +2794,7 @@ func (e *editor) hinweis() string {
 	if e.schnell.hinweis != "" { // Name der Kachel mit Fokus oder Zeiger (ADR-0037 Punkt 2)
 		return e.schnell.hinweis
 	}
-	if e.pfeilform.hinweis != "" { // Knopf für Spitze oder Enden (ADR-0021 Nachtrag 19)
+	if e.pfeilform.hinweis != "" { // Feld der Spitze am Anfang oder Ende (ADR-0021 Nachtrag 20)
 		return e.pfeilform.hinweis
 	}
 	if e.unten.hinweis != "" { // Vorschau der Leiste mit Fokus oder Zeiger (ADR-0036)

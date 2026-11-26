@@ -17,124 +17,162 @@ import (
 	"github.com/Andiministrator/schnapp/internal/render"
 )
 
-// pfeilformLeiste sind die Zeilen „Head“ und „Ends“ der rechten Leiste (ADR-0021 Nachtrag 19): je vier Symbolknöpfe,
-// die Spitzenart und Enden des gewählten Pfeils bzw. folgender Pfeile setzen. Jeder Knopf zeigt einen kleinen Pfeil aus
-// derselben Zerlegung wie Leinwand und Export.
+// pfeilformLeiste ist der Abschnitt „Arrow style“ der rechten Leiste (ADR-0021 Nachträge 19 und 20): je Ende ein
+// Klappfeld mit einem kleinen Pfeil als Vorschau und dem Namen der Spitze. Ein Klick (Enter, Leertaste) öffnet die
+// Liste aller Spitzenarten über die Menü-Mechanik (listeKopfAnfang, listeKopfEnde), jede mit ihrer Vorschau. Die Wahl
+// gilt für den gewählten Pfeil bzw. folgende Pfeile. Jede Vorschau kommt aus derselben Zerlegung wie Leinwand und
+// Export.
 type pfeilformLeiste struct {
-	kopf      [4]widget.Clickable
-	enden     [4]widget.Clickable
-	kopfRahm  [4]image.Rectangle // Lagen beim letzten Zeichnen (Inhaltskoordinaten der Leiste), leer: nicht gezeigt
-	endenRahm [4]image.Rectangle
-	hinweis   string // Name des Knopfs unter dem Zeiger oder mit Fokus, für die Statuszeile
+	feld    [2]widget.Clickable // 0: Anfang (bei A), 1: Ende (bei B)
+	rahm    [2]image.Rectangle  // Lagen beim letzten Zeichnen (Inhaltskoordinaten der Leiste), leer: nicht gezeigt
+	hinweis string              // Text für die Statuszeile zum Feld unter dem Zeiger oder mit Fokus
 }
 
-// kopfName ist der Name einer Spitzenart für Hinweis und Statuszeile.
+// alle sind die Felder in Tab-Reihenfolge (fokussierterKnopf).
+func (k *pfeilformLeiste) alle() []*widget.Clickable {
+	var a []*widget.Clickable
+	for j := range k.feld {
+		if !k.rahm[j].Empty() {
+			a = append(a, &k.feld[j])
+		}
+	}
+	return a
+}
+
+// kopfName ist der Name einer Spitzenart für Feld, Liste und Statuszeile.
 func kopfName(k document.Kopfart) string {
 	switch k {
+	case document.KopfKeine:
+		return i18n.T("None")
+	case document.KopfSchlank:
+		return i18n.T("Narrow")
+	case document.KopfKerbe:
+		return i18n.T("Notched")
 	case document.KopfWinkel:
 		return i18n.T("Open head")
+	case document.KopfHalb:
+		return i18n.T("Half head")
 	case document.KopfPunkt:
 		return i18n.T("Dot")
+	case document.KopfRaute:
+		return i18n.T("Diamond")
+	case document.KopfQuadrat:
+		return i18n.T("Square")
 	case document.KopfQuer:
 		return i18n.T("Bar")
 	}
 	return i18n.T("Filled triangle")
 }
 
-// endenName ist der Name einer Wahl der Enden.
-func endenName(e document.PfeilEnden) string {
-	switch e {
-	case document.EndenKeine:
-		return i18n.T("No head (line)")
-	case document.EndenAnfang:
-		return i18n.T("Head at the start")
-	case document.EndenBeide:
-		return i18n.T("Heads at both ends")
+// kopfListe ist die Liste der Spitzenarten für das Klappfeld am Anfang bzw. Ende (menueEintraegeVon).
+func (e *editor) kopfListe(amAnfang bool) []menueEintrag {
+	anfang, ende := e.s.Pfeilform()
+	jetzt := ende
+	if amAnfang {
+		jetzt = anfang
 	}
-	return i18n.T("Head at the end")
+	var en []menueEintrag
+	for _, art := range document.Kopfarten {
+		en = append(en, menueEintrag{hatKopf: true, kopf: art, kopfAnfang: amAnfang, text: kopfName(art), an: true,
+			aktiv: art == jetzt})
+	}
+	return en
 }
 
-// pfeilformAuswerten verarbeitet Klicks; während des Speicherns ruht das Bearbeiten (seiteAn).
+// kopfListeOeffnen öffnet die Liste am Feld j (0 Anfang, 1 Ende); per Tastatur steht der Fokus auf der gewählten Art.
+func (e *editor) kopfListeOeffnen(j int, perTaste bool) {
+	liste := listeKopfEnde
+	if j == 0 {
+		liste = listeKopfAnfang
+	}
+	e.menueOeffne(liste, perTaste)
+	if !perTaste || !e.menue.offen {
+		return
+	}
+	for i, en := range e.menueEintraege() {
+		if en.aktiv {
+			e.menue.cursor, e.menue.fokusNach = i, &e.menue.eintraege[i]
+		}
+	}
+}
+
+// pfeilformAuswerten verarbeitet Klicks auf die Felder; während des Speicherns ruht das Bearbeiten (seiteAn).
 func (e *editor) pfeilformAuswerten(gtx layout.Context) {
 	k := &e.pfeilform
-	for j, art := range document.Kopfarten {
-		if k.kopf[j].Clicked(gtx) && e.seiteAn() {
-			e.s.SetzeKopf(art)
-		}
-	}
-	for j, en := range document.PfeilEndenAlle {
-		if k.enden[j].Clicked(gtx) && e.seiteAn() {
-			e.s.SetzeEnden(en)
+	for j := range k.feld {
+		if k.feld[j].Clicked(gtx) && e.seiteAn() {
+			e.kopfListeOeffnen(j, false)
 		}
 	}
 }
 
-// zeichnePfeilform zeichnet die beiden Zeilen bei y und liefert das neue y.
+// zeichnePfeilform zeichnet Überschrift und die beiden Felder bei y und liefert das neue y.
 func (e *editor) zeichnePfeilform(gtx layout.Context, x, y, breite, spalte int) int {
 	k := &e.pfeilform
-	kopf, enden := e.s.Pfeilform()
-	hoch, luecke := gtx.Dp(26), gtx.Dp(4)
-	kb := (breite - spalte - 3*luecke) / 4
-	zeile := func(titel string, knoepfe []widget.Clickable, rahmen []image.Rectangle, n int, gewaehlt func(int) bool,
-		name func(int) string, muster func(int) document.Pfeil) {
-		e.seiteText(gtx, titel, 13, farbeNebentext, image.Pt(x, y+gtx.Dp(4)), spalte-gtx.Dp(4), 1)
-		for j := range n {
-			r := image.Rect(x+spalte+j*(kb+luecke), y, x+spalte+j*(kb+luecke)+kb, y+hoch)
-			rahmen[j] = r
-			grund, rnd, tinte := farbeGrund, farbeLinie, farbeText
-			switch {
-			case gewaehlt(j):
-				grund, rnd = farbeAuswahl, farbeAuswahl
-			case knoepfe[j].Hovered():
-				rnd = farbeNebentext
-			}
-			paint.FillShape(gtx.Ops, grund, clip.Rect(r).Op())
-			paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
-			zeichnePfeilMuster(gtx, muster(j), r.Inset(gtx.Dp(5)), tinte)
-			e.knopfAn(gtx, &knoepfe[j], r)
-			if knoepfe[j].Hovered() || gtx.Focused(&knoepfe[j]) {
-				k.hinweis = name(j)
+	anfang, ende := e.s.Pfeilform()
+	y += e.seiteText(gtx, i18n.T("Arrow style"), 12, farbeNebentext, image.Pt(x, y), breite, 1) + gtx.Dp(4)
+	hoch := gtx.Dp(28)
+	for j, art := range []document.Kopfart{anfang, ende} {
+		titel := i18n.T("Start")
+		if j == 1 {
+			titel = i18n.T("End")
+		}
+		e.seiteText(gtx, titel, 13, farbeNebentext, image.Pt(x, y+gtx.Dp(5)), spalte-gtx.Dp(4), 1)
+		r := image.Rect(x+spalte, y, x+breite, y+hoch)
+		k.rahm[j] = r
+		rnd := farbeLinie
+		offen := e.menue.offen && e.menue.welches == []int{listeKopfAnfang, listeKopfEnde}[j]
+		switch {
+		case offen:
+			rnd = farbeAuswahl
+		case k.feld[j].Hovered():
+			rnd = farbeNebentext
+		}
+		paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(r).Op())
+		paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
+		// Vorschau links, Name daneben, Aufklapp-Pfeil rechts (wie die Felder der Fußzeile).
+		vorschau := image.Rect(r.Min.X+gtx.Dp(6), r.Min.Y+gtx.Dp(4), r.Min.X+gtx.Dp(50), r.Max.Y-gtx.Dp(4))
+		zeichneKopfMuster(gtx, art, j == 0, vorschau, farbeText)
+		textX := vorschau.Max.X + gtx.Dp(8)
+		e.seiteText(gtx, kopfName(art), 13, farbeText, image.Pt(textX, y+gtx.Dp(5)), r.Max.X-textX-gtx.Dp(18), 1)
+		zeichneAufklappPfeil(gtx, image.Pt(r.Max.X-gtx.Dp(10), (r.Min.Y+r.Max.Y)/2), farbeNebentext)
+		e.knopfAn(gtx, &k.feld[j], r)
+		if k.feld[j].Hovered() || gtx.Focused(&k.feld[j]) {
+			if j == 0 {
+				k.hinweis = i18n.T("Arrow style at the start") + ": " + kopfName(art)
+			} else {
+				k.hinweis = i18n.T("Arrow style at the end") + ": " + kopfName(art)
 			}
 		}
-		y += hoch + gtx.Dp(8)
+		y += hoch + gtx.Dp(6)
 	}
-	zeile(i18n.T("Head"), k.kopf[:], k.kopfRahm[:], len(document.Kopfarten),
-		func(j int) bool { return document.Kopfarten[j] == kopf },
-		func(j int) string { return kopfName(document.Kopfarten[j]) },
-		func(j int) document.Pfeil {
-			return document.Pfeil{Kopf: document.Kopfarten[j], Enden: document.EndenEnde}
-		})
-	zeile(i18n.T("Ends"), k.enden[:], k.endenRahm[:], len(document.PfeilEndenAlle),
-		func(j int) bool { return document.PfeilEndenAlle[j] == enden },
-		func(j int) string { return endenName(document.PfeilEndenAlle[j]) },
-		func(j int) document.Pfeil {
-			return document.Pfeil{Kopf: kopf, Enden: document.PfeilEndenAlle[j]}
-		})
-	return y + gtx.Dp(2)
+	return y + gtx.Dp(4)
 }
 
-// zeichnePfeilMuster zeichnet einen waagerechten Pfeil mit Kopf und Enden von p in r (Strich 2 dp).
-func zeichnePfeilMuster(gtx layout.Context, p document.Pfeil, r image.Rectangle, farbe color.NRGBA) {
-	w := float64(gtx.Dp(2))
-	ym := float64(r.Min.Y+r.Max.Y) / 2
-	a, b := document.Pt(float64(r.Min.X), ym), document.Pt(float64(r.Max.X), ym)
-	// Die Köpfe ragen nach außen nicht über die Enden hinaus, außer Punkt und Balken: dort um ihr Maß einrücken.
-	rein := 0.0
-	switch p.Kopf {
-	case document.KopfPunkt:
-		rein = 1.5*w + 3
-	case document.KopfQuer:
-		rein = w / 2
+// zeichneKopfMuster zeichnet in r einen waagerechten Pfeil mit der Spitze art am linken (amAnfang) bzw. rechten Ende
+// und ohne Spitze am anderen (Strich 2 dp).
+func zeichneKopfMuster(gtx layout.Context, art document.Kopfart, amAnfang bool, r image.Rectangle, farbe color.NRGBA) {
+	anfang, ende := document.KopfKeine, art
+	if amAnfang {
+		anfang, ende = art, document.KopfKeine
 	}
-	if p.Enden != document.EndenKeine && p.Enden != document.EndenAnfang {
-		b.X -= rein
-	}
-	if p.Enden == document.EndenAnfang || p.Enden == document.EndenBeide {
-		a.X += rein
-	}
-	pf := document.GeraderPfeil(a, b, document.Strich{Farbe: farbe, Breite: w})
-	pf.Kopf, pf.Enden = p.Kopf, p.Enden
+	zeichnePfeilMuster(gtx, anfang, ende, r, farbe)
+}
+
+// zeichnePfeilMuster zeichnet einen waagerechten Pfeil mit den Spitzen anfang (links) und ende (rechts) in r
+// (Strich 2 dp).
+func zeichnePfeilMuster(gtx layout.Context, anfang, ende document.Kopfart, r image.Rectangle, farbe color.NRGBA) {
+	pf := musterPfeil(anfang, ende, r, float64(gtx.Dp(2)), farbe)
 	pz := render.ZerlegePfeil(pf)
 	an := func(q document.Punkt) f32.Point { return f32.Pt(float32(q.X), float32(q.Y)) }
 	fuelleTeile(gtx, append(pz.Teile, pz.Einzeln...), farbe, an)
+}
+
+// musterPfeil ist der waagerechte Pfeil der Vorschau in r mit Strichstärke w. Punkt, Quadrat und Balken ragen über das
+// Ende hinaus: Das Ende rückt um ihr Maß ein.
+func musterPfeil(anfang, ende document.Kopfart, r image.Rectangle, w float64, farbe color.NRGBA) document.Pfeil {
+	ym := float64(r.Min.Y+r.Max.Y) / 2
+	a := document.Pt(float64(r.Min.X)+document.KopfUeberstand(anfang, w), ym)
+	b := document.Pt(float64(r.Max.X)-document.KopfUeberstand(ende, w), ym)
+	return document.GeraderPfeil(a, b, document.Strich{Farbe: farbe, Breite: w}).MitKoepfen(anfang, ende)
 }

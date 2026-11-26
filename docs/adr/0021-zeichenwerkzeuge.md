@@ -658,6 +658,8 @@ Ob er jetzt in der echten Sitzung wechselt, zeigt Andis nächster Echtlauf.
 
 ## Nachtrag 19 (26.11.2026): Pfeilspitze neu, Spitzenarten und Enden (Karte #315)
 
+*Punkt 1 (Kopf/Enden), Punkt 4 (Format, FormatVersion 1), Punkt 5 (Bedienung), Punkt 7 (`head`/`ends`) und das „Verworfen“ zu Spitzen je Ende sind durch Nachtrag 20 abgelöst.*
+
 **Status:** Akzeptiert (Claude Opus 5.5).
 
 Andi (25.11.2026, Foto an der Karte): Die Spitze wirkt schmal, der Strich läuft sichtbar in sie hinein. Gewünscht:
@@ -710,3 +712,48 @@ Dreieck, offene Spitze, Punkt, Strich quer); Enden keine (= Linie), Ende, Anfang
 
 Verworfen: je Ende eine eigene Spitzenart (mehr Knöpfe, selten gebraucht); ein eigenes Werkzeug „Linie“ (die Wahl
 „keine“ ist kürzer und behält alles andere); FormatVersion 2 (würde alte Leser ohne Not aussperren).
+
+## Nachtrag 20 (26.11.2026): Pfeil-Stil je Ende, mehr Spitzenarten, Klappfelder (Karte #351, F-830)
+
+**Status:** Akzeptiert (Andi, 26.11.2026 nach dem Echtlauf: „pfeilspitzen würde ich eher als Pfeil-Stil bezeichnen -
+und können wir da noch ein paar cool aussehende arten einfügen? wäre Pfeil-Stil und Pfeil-Ende als Klappmenu
+besser/flexibler (würde das überhaupt gehen mit dem Vorschaubild)?“; Ausgestaltung Claude Opus 5.5, Andi: „arbeite
+selbstständig“).
+
+1. **Je Ende eine Spitzenart** (ersetzt `Kopf` und `Enden`): `document.Pfeil.Ende` (Spitze bei B, `Kopfart`, Nullwert
+   Dreieck) und `Anfang` (bei A, Typ `Anfangskopf`: die Art um eins verschoben, damit der Nullwert „keine“ ist; lesen mit
+   `KopfAnfang()`, setzen mit `MitKoepfen(anfang, ende)`). Ein Pfeil ohne Angabe sieht aus wie vorher: Dreieck bei B.
+   Keine Spitze an beiden Enden ist die Linie (bleibt das Objekt Pfeil).
+2. **Arten** (`document.Kopfarten`, Reihenfolge der Bedienung; Name in Datei, `--annotate` und MCP): keine (`none`),
+   gefülltes Dreieck (`triangle`), schlank (`narrow`, `4w+7` lang, `3w+4` breit), eingekerbt (`notched`, Stealth:
+   `3,5w+7` lang, `4,5w+7` breit, Kerbe 35 % der Länge), offen (`open`), halbe Spitze (`half`, nur der Widerhaken links
+   der Richtung), Punkt (`dot`), Raute (`diamond`, `4w+8` lang, `3w+6` breit, vordere Ecke am Ende), Quadrat (`square`,
+   Seite `2,6w+5`, um das Ende), Querstrich (`bar`). Bei Kerbe und Raute endet der Schaft dort, wo seine Kanten die
+   hinteren Kanten der Spitze treffen (`KopfRueckstand`): Der Umriss schließt ohne Lücke und ohne Zipfel an die
+   Schaftpunkte an. Ein Ring (offener Kreis) ist verworfen: Er hätte ein Loch, der Umriss eines Kopfs ist ein Vieleck.
+3. **Bedienung:** Der Abschnitt heißt „Arrow style“ (deutsch „Pfeil-Stil“) mit zwei Klappfeldern „Start“ und „End“. Jedes
+   zeigt einen kleinen Pfeil mit der gewählten Spitze, ihren Namen und den Aufklapp-Pfeil der Fußzeilenfelder. Klick,
+   Enter oder Leertaste öffnen eine Liste aller zehn Arten über die Menü-Mechanik (`listeKopfAnfang`, `listeKopfEnde`;
+   Tastatur, Klick daneben, Sperre beim Speichern wie bei den Listen der Fußzeile), unter dem Feld; jede Zeile zeigt
+   vor dem Namen eine Vorschau aus derselben Zerlegung wie die Leinwand (`zeichneKopfMuster`, `musterPfeil`; Punkt,
+   Quadrat und Querstrich rücken um ihren Überstand ein, `KopfUeberstand`). Per Tastatur steht der Fokus auf der
+   gewählten Art. Wie bisher gilt die Wahl ohne Auswahl für folgende Pfeile (`canvas.Stil.KopfEnde`/`KopfAnfang`), mit
+   gewähltem Pfeil ändert sie ihn als einen Rückgängig-Schritt (`SetzeKopf(amAnfang, art)`). Die Statuszeile nennt
+   „Arrow style at the start/end: …“. Die Leiste wird dadurch etwas höher; `farbwaehler-189.txt` ist nachgemessen.
+4. **Format (F-830): FormatVersion 2.** Attribute `s:ende` (fehlt bei `triangle`) und `s:anfang` (fehlt bei `none`) am
+   `<g s:typ="pfeil">`; `s:kopf`/`s:enden` aus Nachtrag 19 entfallen (nie in einem Release geschrieben, v0.7.0 kannte
+   sie nicht). Weicht ein Pfeil von der Voreinstellung ab, schreibt der Schreiber `s:format="2"` (`schreibVersion`,
+   `versionPfeilKoepfe`), wie bei Lupe und Sprechblasen-Spitze: Ein älterer Leser meldet die Datei als neuer, statt
+   einen anderen Pfeil zu zeigen und die Attribute beim Speichern zu verlieren (Kritik K-12). In Version 1 sind die
+   Attribute unbekannter Inhalt und gelten nicht; unbekannte Werte gelten als Voreinstellung. Beispiel
+   `testdata/format/arrow-heads` (jetzt Version 2), `docs/format.md` §8.1.
+5. **`--annotate` und MCP:** beim Typ `arrow` die freiwilligen Schlüssel `start_head` (Voreinstellung `none`) und
+   `end_head` (Voreinstellung `triangle`) mit den Namen aus Punkt 2; `head`/`ends` entfallen.
+6. Schnellstile tragen die Spitzen weiter nicht (Nachtrag 19 Punkt 6).
+
+Tests: `internal/document/pfeilform_test.go` (Nullwerte, Maße, Kerbe und Raute schließen an den Schaft),
+`internal/render/pfeil_test.go` (jede Art an jedem Ende deckt einmal), `internal/canvas/pfeilform_test.go`,
+`internal/ui/pfeilform_test.go` (Klappfelder, Liste, Tastatur, Vorschau im Feld), `internal/fileformat/pfeilform_test.go`
+(Version 2, Version 1 ignoriert), `internal/annotate`; Mutanten `scripts/mutanten/pfeilform.json` (PF1–PF28); Sichtprobe
+`scripts/drehbuecher/pfeilform-351.txt` (ersetzt `pfeilform-315.txt`).
+

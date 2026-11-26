@@ -7,29 +7,43 @@ import (
 	"testing"
 )
 
-// ADR-0021 Nachtrag 19: Schaft und Köpfe eines Pfeils je Spitzenart und Enden.
+// ADR-0021 Nachträge 19 und 20: Schaft und Köpfe eines Pfeils je Spitzenart am Anfang und am Ende.
 
-func pfeilFuer(k Kopfart, e PfeilEnden) Pfeil {
-	return Pfeil{A: Pt(10, 100), B: Pt(210, 100), K: Pt(110, 20), Strich: Strich{Breite: 6}, Kopf: k, Enden: e}
+func pfeilFuer(anfang, ende Kopfart) Pfeil {
+	return Pfeil{A: Pt(10, 100), B: Pt(210, 100), K: Pt(110, 20), Strich: Strich{Breite: 6}}.MitKoepfen(anfang, ende)
+}
+
+// Ohne Angabe trägt ein Pfeil das Dreieck bei B und keine Spitze bei A (Nullwerte, alte Dateien und Objekte).
+func TestPfeilNullwerte(t *testing.T) {
+	p := Pfeil{A: Pt(0, 0), B: Pt(100, 0)}
+	if p.Ende != KopfDreieck || p.KopfAnfang() != KopfKeine {
+		t.Errorf("Nullwerte: Ende %v, Anfang %v", p.Ende, p.KopfAnfang())
+	}
+	for _, k := range Kopfarten {
+		if AnfangMit(k).Art() != k {
+			t.Errorf("Anfang %v kommt als %v zurück", k, AnfangMit(k).Art())
+		}
+	}
 }
 
 func TestPfeilFormEnden(t *testing.T) {
 	for _, fall := range []struct {
-		e      PfeilEnden
-		koepfe int
-		anfang bool // ein Kopf bei A
-		ende   bool // ein Kopf bei B
+		name          string
+		anfang, ende  Kopfart
+		koepfe        int
+		kAnfang, kEnd bool // ein Kopf bei A bzw. B
 	}{
-		{EndenEnde, 1, false, true}, {EndenAnfang, 1, true, false}, {EndenBeide, 2, true, true}, {EndenKeine, 0, false, false},
+		{"ende", KopfKeine, KopfDreieck, 1, false, true}, {"anfang", KopfDreieck, KopfKeine, 1, true, false},
+		{"beide", KopfDreieck, KopfDreieck, 2, true, true}, {"keine", KopfKeine, KopfKeine, 0, false, false},
 	} {
-		p := pfeilFuer(KopfDreieck, fall.e)
+		p := pfeilFuer(fall.anfang, fall.ende)
 		f := p.Form()
 		if len(f.Koepfe) != fall.koepfe {
-			t.Fatalf("%s: %d Köpfe", fall.e.Name(), len(f.Koepfe))
+			t.Fatalf("%s: %d Köpfe", fall.name, len(f.Koepfe))
 		}
 		erster, letzter := f.Schaft[0], f.Schaft[len(f.Schaft)-1]
-		if !fall.anfang && erster != p.A || !fall.ende && letzter != p.B {
-			t.Errorf("%s: Schaft ohne Kopf endet nicht am Ende: %v … %v", fall.e.Name(), erster, letzter)
+		if !fall.kAnfang && erster != p.A || !fall.kEnd && letzter != p.B {
+			t.Errorf("%s: Schaft ohne Kopf endet nicht am Ende: %v … %v", fall.name, erster, letzter)
 		}
 		for _, k := range f.Koepfe {
 			ende, schaftEnde := p.B, letzter
@@ -37,15 +51,15 @@ func TestPfeilFormEnden(t *testing.T) {
 				ende, schaftEnde = p.A, erster
 			}
 			if k.Spitze != ende || k.Schaftende != schaftEnde {
-				t.Errorf("%s: Kopf bei %v mit Schaftende %v, Schaft endet bei %v", fall.e.Name(), k.Spitze, k.Schaftende, schaftEnde)
+				t.Errorf("%s: Kopf bei %v mit Schaftende %v, Schaft endet bei %v", fall.name, k.Spitze, k.Schaftende, schaftEnde)
 			}
 			// Der Schaft endet KopfRueckstand vor dem Ende, auf der Kurve.
 			if d := k.Schaftende.Minus(ende).Laenge(); math.Abs(d-KopfRueckstand(KopfDreieck, 6)) > 1e-6 {
-				t.Errorf("%s: Rückstand %v, Soll %v", fall.e.Name(), d, KopfRueckstand(KopfDreieck, 6))
+				t.Errorf("%s: Rückstand %v, Soll %v", fall.name, d, KopfRueckstand(KopfDreieck, 6))
 			}
 			// Die Richtung zeigt vom Schaft nach außen.
 			if r := k.Spitze.Minus(k.Schaftende); r.X*k.Richtung.X+r.Y*k.Richtung.Y <= 0 {
-				t.Errorf("%s: Richtung %v zeigt nach innen", fall.e.Name(), k.Richtung)
+				t.Errorf("%s: Richtung %v zeigt nach innen", fall.name, k.Richtung)
 			}
 		}
 	}
@@ -54,7 +68,10 @@ func TestPfeilFormEnden(t *testing.T) {
 // Der Umriss beginnt und endet an den Schaftpunkten ∓ Normale·hw, die Normale ist die der äußersten Schaftstrecke.
 func TestPfeilKopfUmrissSchliesstAmSchaft(t *testing.T) {
 	for _, art := range Kopfarten {
-		p := pfeilFuer(art, EndenBeide)
+		if art == KopfKeine {
+			continue
+		}
+		p := pfeilFuer(art, art)
 		f := p.Form()
 		hw := p.Strich.Breite / 2
 		for _, k := range f.Koepfe {
@@ -77,7 +94,7 @@ func TestPfeilKopfMasse(t *testing.T) {
 	p := GeraderPfeil(Pt(0, 0), Pt(200, 0), Strich{Breite: 6})
 	kopf := func(art Kopfart) Kopfform {
 		q := p
-		q.Kopf = art
+		q.Ende = art
 		return q.Form().Koepfe[0]
 	}
 	d := kopf(KopfDreieck)
@@ -106,12 +123,57 @@ func TestPfeilKopfMasse(t *testing.T) {
 	if l := qu.Kontur[1].Minus(qu.Kontur[2]).Laenge(); math.Abs(l-36) > 1e-9 || qu.Kontur[1].X != 203 {
 		t.Errorf("Balken: %v", qu.Kontur)
 	}
+	// Nachtrag 20: schlank 31 lang, 22 breit; Raute 32 lang, 24 breit, Spitze am Ende; Quadrat Seite 2·10,3 um das Ende.
+	sl := kopf(KopfSchlank)
+	if sl.Kontur[1] != Pt(200, 0) || math.Abs(sl.Kontur[0].X-169) > 1e-9 || math.Abs(math.Abs(sl.Kontur[0].Y)-11) > 1e-9 {
+		t.Errorf("schlank %v", sl.Kontur)
+	}
+	ra := kopf(KopfRaute)
+	if ra.Kontur[1] != Pt(200, 0) || math.Abs(ra.Kontur[0].X-184) > 1e-9 || math.Abs(math.Abs(ra.Kontur[0].Y)-12) > 1e-9 {
+		t.Errorf("Raute %v", ra.Kontur)
+	}
+	qd := kopf(KopfQuadrat)
+	if math.Abs(qd.Kontur[1].X-210.3) > 1e-9 || math.Abs(qd.Kontur[0].X-189.7) > 1e-9 || math.Abs(math.Abs(qd.Kontur[0].Y)-10.3) > 1e-9 {
+		t.Errorf("Quadrat %v", qd.Kontur)
+	}
+	ha := kopf(KopfHalb)
+	if len(ha.Kontur) != 2 || ha.Kontur[0] != Pt(200, 0) || math.Abs(ha.Kontur[1].X-177) > 1e-9 {
+		t.Errorf("halbe Spitze %v", ha.Kontur)
+	}
+}
+
+// Kerbe und Raute: Die Schaftpunkte liegen auf den hinteren Kanten der Spitze (sonst bliebe zwischen Schaft und Spitze
+// eine Lücke oder ein Zipfel), die Spitze der Kerbe liegt vor dem Schaftende.
+func TestPfeilKerbeUndRauteSchliessenAnDenSchaft(t *testing.T) {
+	p := GeraderPfeil(Pt(0, 0), Pt(200, 0), Strich{Breite: 6})
+	for _, art := range []Kopfart{KopfKerbe, KopfRaute} {
+		q := p
+		q.Ende = art
+		k := q.Form().Koepfe[0]
+		u := k.Umriss(3)
+		l, h := dreieckMass(art, 6)
+		ecke, innen := Pt(200-l, -h), Pt(200-l+kerbeTiefe*l, 0) // hintere Ecke rechts und Spitze der Kerbe
+		if art == KopfRaute {
+			ecke, innen = Pt(200-l/2, -h), Pt(200-l, 0)
+		}
+		if u[1].Y > 0 { // Kontur beginnt je nach Normale oben oder unten
+			ecke.Y = -ecke.Y
+		}
+		// u[0] (Schaftpunkt) liegt auf der Strecke ecke–innen.
+		d := innen.Minus(ecke)
+		abstand := math.Abs(d.X*(u[0].Y-ecke.Y)-d.Y*(u[0].X-ecke.X)) / d.Laenge()
+		if abstand > 1e-9 {
+			t.Errorf("%s: Schaftpunkt %v liegt %v neben der Kante %v–%v", art.Name(), u[0], abstand, ecke, innen)
+		}
+		if art == KopfKerbe && innen.X <= k.Schaftende.X {
+			t.Errorf("Kerbe: Spitze der Kerbe %v hinter dem Schaftende %v", innen, k.Schaftende)
+		}
+	}
 }
 
 // Kürzer als die Köpfe: kein Schaft, die Köpfe bleiben; Grenzen der Prüfung.
 func TestPfeilKurzUndPruefung(t *testing.T) {
-	p := GeraderPfeil(Pt(0, 0), Pt(10, 0), Strich{Breite: 6})
-	p.Enden = EndenBeide
+	p := GeraderPfeil(Pt(0, 0), Pt(10, 0), Strich{Breite: 6}).MitKoepfen(KopfDreieck, KopfDreieck)
 	f := p.Form()
 	if len(f.Schaft) != 0 || len(f.Koepfe) != 2 {
 		t.Fatalf("kurzer Pfeil: Schaft %d Punkte, %d Köpfe", len(f.Schaft), len(f.Koepfe))
@@ -123,32 +185,30 @@ func TestPfeilKurzUndPruefung(t *testing.T) {
 			t.Errorf("Kopf bei %v: Schaftende %v, %v entfernt, Soll 23", k.Spitze, k.Schaftende, d)
 		}
 	}
-	p.Kopf = KopfQuer + 1
+	p.Ende = KopfKeine + 1
 	if p.pruefe() == nil {
-		t.Error("unbekannte Spitzenart angenommen")
+		t.Error("unbekannte Spitzenart am Ende angenommen")
 	}
-	p.Kopf, p.Enden = KopfDreieck, EndenKeine+1
+	p.Ende, p.Anfang = KopfDreieck, Anfangskopf(KopfKeine)+1
 	if p.pruefe() == nil {
-		t.Error("unbekannte Enden angenommen")
+		t.Error("unbekannte Spitzenart am Anfang angenommen")
 	}
-	for _, n := range []string{"triangle", "open", "dot", "bar"} {
+	for _, n := range []string{"triangle", "narrow", "notched", "open", "half", "dot", "diamond", "square", "bar", "none"} {
 		if k, ok := KopfartAus(n); !ok || k.Name() != n {
 			t.Errorf("Name %q", n)
 		}
 	}
+	if len(KopfNamen()) != len(Kopfarten) {
+		t.Errorf("%d Namen für %d Arten", len(KopfNamen()), len(Kopfarten))
+	}
 	if k, ok := KopfartAus("arrow"); ok || k != KopfDreieck {
 		t.Error("unbekannter Name")
-	}
-	for _, n := range []string{"end", "start", "both", "none"} {
-		if e, ok := PfeilEndenAus(n); !ok || e.Name() != n {
-			t.Errorf("Name %q", n)
-		}
 	}
 }
 
 // Teilstueck: Die Teilkurve deckt sich mit der Kurve zwischen ta und tb.
 func TestPfeilTeilstueck(t *testing.T) {
-	p := pfeilFuer(KopfDreieck, EndenEnde)
+	p := pfeilFuer(KopfKeine, KopfDreieck)
 	a, k, b := p.Teilstueck(0.2, 0.7)
 	teil := Pfeil{A: a, K: k, B: b}
 	for _, s := range []float64{0, 0.3, 0.5, 1} {

@@ -124,27 +124,33 @@ func TestWendeAngaben(t *testing.T) {
 	}
 }
 
-// ADR-0021 Nachtrag 19 Punkt 7: head und ends beim Pfeil; ohne sie Dreieck am Ende; bei rect sind sie unbekannt.
+// ADR-0021 Nachtrag 20: start_head und end_head beim Pfeil; ohne sie Dreieck am Ende und keine Spitze am Anfang; bei
+// rect sind sie unbekannt, unbekannte Arten ein Fehler mit der Liste der Namen.
 func TestWendePfeilform(t *testing.T) {
 	d := dokument(t, 200, 100)
 	es := lies(t, `{"annotations":[
-		{"type":"arrow","from":[10,10],"to":[60,40],"head":"dot","ends":"both"},
-		{"type":"arrow","from":[10,60],"to":[60,90],"ends":"none"},
+		{"type":"arrow","from":[10,10],"to":[60,40],"start_head":"dot","end_head":"notched"},
+		{"type":"arrow","from":[10,60],"to":[60,90],"end_head":"none"},
 		{"type":"arrow","from":[100,10],"to":[150,40]}]}`)
 	if _, err := Wende(context.Background(), d, es); err != nil {
 		t.Fatal(err)
 	}
 	o := d.Objekte()
-	for i, soll := range []struct {
-		k document.Kopfart
-		e document.PfeilEnden
-	}{{document.KopfPunkt, document.EndenBeide}, {document.KopfDreieck, document.EndenKeine}, {document.KopfDreieck, document.EndenEnde}} {
-		if p := o[i].(document.Pfeil); p.Kopf != soll.k || p.Enden != soll.e {
-			t.Errorf("Pfeil %d: %v %v, Soll %v %v", i, p.Kopf, p.Enden, soll.k, soll.e)
+	for i, soll := range []struct{ anfang, ende document.Kopfart }{
+		{document.KopfPunkt, document.KopfKerbe}, {document.KopfKeine, document.KopfKeine},
+		{document.KopfKeine, document.KopfDreieck},
+	} {
+		if p := o[i].(document.Pfeil); p.KopfAnfang() != soll.anfang || p.Ende != soll.ende {
+			t.Errorf("Pfeil %d: %v %v, Soll %v %v", i, p.KopfAnfang(), p.Ende, soll.anfang, soll.ende)
 		}
 	}
-	if _, err := Lies(strings.NewReader(`{"annotations":[{"type":"rect","from":[1,1],"to":[9,9],"head":"dot"}]}`)); err == nil {
-		t.Error("head bei rect angenommen")
+	if _, err := Lies(strings.NewReader(`{"annotations":[{"type":"rect","from":[1,1],"to":[9,9],"end_head":"dot"}]}`)); err == nil {
+		t.Error("end_head bei rect angenommen")
+	}
+	falsch := lies(t, `{"annotations":[{"type":"arrow","from":[10,10],"to":[60,40],"start_head":"spear"}]}`)
+	if _, err := Wende(context.Background(), dokument(t, 200, 100), falsch); err == nil ||
+		!strings.Contains(err.Error(), `"start_head" must be one of "triangle"`) || !strings.Contains(err.Error(), `or "none"`) {
+		t.Errorf("unbekannte Spitze: %v", err)
 	}
 }
 
@@ -162,8 +168,8 @@ func TestWendeFehler(t *testing.T) {
 		{`{"type":"text","at":[10,10],"text":"  "}`, "must not be empty"},
 		{`{"type":"text","at":[10,10],"text":"x","align":"middle"}`, `"align"`},
 		{`{"type":"redact","from":[10,10],"to":[10,50]}`, "empty"},
-		{`{"type":"arrow","from":[10,10],"to":[20,20],"head":"arrow"}`, `"head"`},
-		{`{"type":"arrow","from":[10,10],"to":[20,20],"ends":"tip"}`, `"ends"`},
+		{`{"type":"arrow","from":[10,10],"to":[20,20],"end_head":"arrow"}`, `"end_head"`},
+		{`{"type":"arrow","from":[10,10],"to":[20,20],"start_head":"tip"}`, `"start_head"`},
 	} {
 		d := dokument(t, 200, 100)
 		_, err := Wende(context.Background(), d, lies(t, `{"annotations":[{"type":"step","at":[5,5]},`+tc.eintrag+`]}`))

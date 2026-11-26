@@ -75,9 +75,9 @@ type Stil struct {
 	Unterstrichen   bool
 	Durchgestrichen bool
 	Ausrichtung     document.Ausrichtung
-	// Spitzenart und Enden neuer Pfeile (ADR-0021 Nachtrag 19); Nullwerte: Dreieck bei B.
-	Kopf  document.Kopfart
-	Enden document.PfeilEnden
+	// Spitzenarten neuer Pfeile je Ende (ADR-0021 Nachträge 19 und 20); Nullwerte: Dreieck bei B, keine bei A.
+	KopfEnde   document.Kopfart
+	KopfAnfang document.Anfangskopf
 }
 
 // StandardStil ist die Voreinstellung (ADR-0021 Punkt 4, Strich seit Nachtrag 16).
@@ -361,7 +361,7 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 			b, s.linien = s.rastePunkt(b, s.neuID) // Umschalt hat Vorrang: 45° und Quadrat bleiben genau
 		}
 		pf := document.GeraderPfeil(a, b, s.Stil.strich())
-		pf.Kopf, pf.Enden = s.Stil.Kopf, s.Stil.Enden
+		pf.Ende, pf.Anfang = s.Stil.KopfEnde, s.Stil.KopfAnfang
 		pf.ID = s.neuID
 		o = pf
 	case WerkzeugKasten:

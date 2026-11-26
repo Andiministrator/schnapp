@@ -4,7 +4,7 @@ package canvas
 
 import "github.com/Andiministrator/schnapp/internal/document"
 
-// Spitzenart und Enden des Pfeils (ADR-0021 Nachtrag 19): Die rechte Leiste zeigt die des gewählten Pfeils, sonst die des
+// Spitzenarten des Pfeils je Ende (ADR-0021 Nachträge 19 und 20): Die rechte Leiste zeigt die des gewählten Pfeils, sonst die des
 // Werkzeugs; Setzen ändert einen gewählten Pfeil als einen Rückgängig-Schritt und merkt die Wahl für folgende Pfeile,
 // wie die Strichstärke (SetzeBreite).
 
@@ -18,22 +18,21 @@ func (s *Sitzung) gewaehlterPfeil() (document.Pfeil, bool) {
 	return p, ok
 }
 
-// Pfeilform liefert Spitzenart und Enden, die die rechte Leiste zeigt.
-func (s *Sitzung) Pfeilform() (document.Kopfart, document.PfeilEnden) {
+// Pfeilform liefert die Spitzenarten bei A und B, die die rechte Leiste zeigt.
+func (s *Sitzung) Pfeilform() (anfang, ende document.Kopfart) {
 	if p, ok := s.gewaehlterPfeil(); ok {
-		return p.Kopf, p.Enden
+		return p.KopfAnfang(), p.Ende
 	}
-	return s.Stil.Kopf, s.Stil.Enden
+	return s.Stil.KopfAnfang.Art(), s.Stil.KopfEnde
 }
 
-// SetzeKopf setzt die Spitzenart k. Liefert, ob sich das Dokument geändert hat.
-func (s *Sitzung) SetzeKopf(k document.Kopfart) bool {
-	return s.setzePfeilform(func(p *document.Pfeil) { p.Kopf = k }, func() { s.Stil.Kopf = k })
-}
-
-// SetzeEnden setzt die Enden e. Liefert, ob sich das Dokument geändert hat.
-func (s *Sitzung) SetzeEnden(e document.PfeilEnden) bool {
-	return s.setzePfeilform(func(p *document.Pfeil) { p.Enden = e }, func() { s.Stil.Enden = e })
+// SetzeKopf setzt die Spitzenart k am Anfang (bei A) bzw. am Ende (bei B). Liefert, ob sich das Dokument geändert hat.
+func (s *Sitzung) SetzeKopf(amAnfang bool, k document.Kopfart) bool {
+	if amAnfang {
+		a := document.AnfangMit(k)
+		return s.setzePfeilform(func(p *document.Pfeil) { p.Anfang = a }, func() { s.Stil.KopfAnfang = a })
+	}
+	return s.setzePfeilform(func(p *document.Pfeil) { p.Ende = k }, func() { s.Stil.KopfEnde = k })
 }
 
 func (s *Sitzung) setzePfeilform(aendere func(*document.Pfeil), merke func()) bool {

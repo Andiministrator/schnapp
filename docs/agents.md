@@ -132,7 +132,7 @@ stays unchanged and the result becomes a new screenshot in the library. `LIST` i
 
 | `type` | Keys (required **bold**) |
 |---|---|
-| `arrow` | **`from`**, **`to`**, `color`, `width`, `head` (`triangle`, `open`, `dot`, `bar`), `ends` (`end` at `to`, `start` at `from`, `both`, `none` for a plain line) |
+| `arrow` | **`from`**, **`to`**, `color`, `width`, `start_head` (head at `from`, default `none`), `end_head` (head at `to`, default `triangle`); heads: `triangle`, `narrow`, `notched`, `open`, `half`, `dot`, `diamond`, `square`, `bar`, `none` (both `none`: a plain line) |
 | `rect` | **`from`**, **`to`** (opposite corners), `color` (line), `fill`, `width` |
 | `text` | **`at`** (top left), **`text`** (`\n` for a new line), `size`, `color` (letters), `fill` (label), `font`, `bold`, `italic`, `underline`, `strikethrough`, `align` (`left`, `center`, `right`), `tip` (makes a speech bubble: a point the label points at, same coordinates as `at`) |
 | `step` | **`at`** (centre), `color`, `radius` — the number is the next free one |

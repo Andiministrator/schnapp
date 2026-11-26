@@ -19,15 +19,18 @@ import (
 
 // FormatVersion ist die höchste Version des SVG-Blocks, die dieser Stand liest und schreibt (ADR-0006, ADR-0008).
 // Ältere Versionen müssen lesbar bleiben. Geschrieben wird die kleinste Version, die den Inhalt trägt (schreibVersion):
-// 2 nur mit einer Lupe (ADR-0033 Punkt 5) oder einer Sprechblasen-Spitze (ADR-0021 Nachtrag 13 Punkt 7), sonst 1 —
-// Dateien ohne beides bleiben für ältere Leser lesbar.
+// 2 nur mit einer Lupe (ADR-0033 Punkt 5), einer Sprechblasen-Spitze (ADR-0021 Nachtrag 13 Punkt 7) oder einem Pfeil,
+// dessen Spitzen von der Voreinstellung abweichen (ADR-0021 Nachtrag 20), sonst 1 — Dateien ohne all das bleiben für
+// ältere Leser lesbar.
 const FormatVersion = 2
 
 // versionLupe ist die erste Formatversion mit dem Objekttyp „lupe“ (ADR-0033 Punkt 5); versionSpitze die erste mit
-// dem Attribut s:spitze am Text (ADR-0021 Nachtrag 13 Punkt 7). Beide sind Version 2.
+// dem Attribut s:spitze am Text (ADR-0021 Nachtrag 13 Punkt 7); versionPfeilKoepfe die erste mit s:ende/s:anfang am
+// Pfeil (ADR-0021 Nachtrag 20). Alle sind Version 2.
 const (
-	versionLupe   = 2
-	versionSpitze = 2
+	versionLupe        = 2
+	versionSpitze      = 2
+	versionPfeilKoepfe = 2
 )
 
 // schreibVersion ist die Version, die der Schreiber für die Objekte objekte angibt.
@@ -39,6 +42,10 @@ func schreibVersion(objekte []document.Objekt) int {
 		case document.Text:
 			if v.Spitze != nil {
 				return versionSpitze
+			}
+		case document.Pfeil:
+			if v.Ende != document.KopfDreieck || v.KopfAnfang() != document.KopfKeine {
+				return versionPfeilKoepfe
 			}
 		}
 	}
@@ -261,11 +268,12 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			s.attr("s:b", punkt(o.B))
 			s.attr("s:k", punkt(o.K))
 			s.attr("s:strich", strich(o.Strich))
-			if o.Kopf != document.KopfDreieck { // freiwillig, fehlt bei Voreinstellung (docs/format.md 8.1)
-				s.attr("s:kopf", o.Kopf.Name())
+			// Freiwillig, fehlen bei Voreinstellung (Dreieck bei B, keine bei A; docs/format.md 8.1); sonst Version 2.
+			if o.Ende != document.KopfDreieck {
+				s.attr("s:ende", o.Ende.Name())
 			}
-			if o.Enden != document.EndenEnde {
-				s.attr("s:enden", o.Enden.Name())
+			if a := o.KopfAnfang(); a != document.KopfKeine {
+				s.attr("s:anfang", a.Name())
 			}
 			s.WriteString(`>`)
 			s.pfeilDarstellung(o)
@@ -633,11 +641,24 @@ func (l *leser) objekt(typ string) document.Objekt {
 func (l *leser) objektOhneEbene(typ string) document.Objekt {
 	switch typ {
 	case "pfeil":
-		// s:kopf und s:enden freiwillig; fehlend oder unbekannt: Dreieck bei B (ADR-0021 Nachtrag 19, kein Schaden).
-		kopf, _ := document.KopfartAus(l.a["kopf"])
-		enden, _ := document.PfeilEndenAus(l.a["enden"])
-		return document.Pfeil{A: l.punkt("a"), B: l.punkt("b"), K: l.punkt("k"), Strich: l.strich("strich"), Kopf: kopf,
-			Enden: enden}
+		// s:ende und s:anfang gibt es erst ab Version 2 (ADR-0021 Nachtrag 20); fehlend oder unbekannt: Dreieck bei B,
+		// keine bei A. In Version 1 sind sie unbekannter Inhalt (docs/format.md 11, Regel 3).
+		p := document.Pfeil{A: l.punkt("a"), B: l.punkt("b"), K: l.punkt("k"), Strich: l.strich("strich")}
+		if l.version >= versionPfeilKoepfe {
+			ende, anfang := document.KopfDreieck, document.KopfKeine
+			if v, da := l.a["ende"]; da {
+				if k, ok := document.KopfartAus(v); ok {
+					ende = k
+				}
+			}
+			if v, da := l.a["anfang"]; da {
+				if k, ok := document.KopfartAus(v); ok {
+					anfang = k
+				}
+			}
+			p = p.MitKoepfen(anfang, ende)
+		}
+		return p
 	case "kasten":
 		return document.Kasten{Bereich: l.bereich("bereich"), Strich: l.strich("strich"), Fuellung: l.farbe("fuellung"),
 			Eckradius: l.zahl("eckradius")}

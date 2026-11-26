@@ -51,6 +51,11 @@ type menueEintrag struct {
 	// Auswahl des Zeitraums in der vollen Ansicht der Bibliothek (ADR-0036 Punkt 3).
 	zeitraum    libview.Zeitraum
 	hatZeitraum bool
+	// Spitzenart eines Pfeils (ADR-0021 Nachtrag 20): für das Ende bei A (kopfAnfang) bzw. bei B; die Zeile zeigt davor
+	// eine Vorschau.
+	kopf       document.Kopfart
+	hatKopf    bool
+	kopfAnfang bool
 	// kuerzel zeigt ein Kürzel, das nicht in der Tastentabelle steht, weil ein eigener Bereich es abholt (Menü
 	// Bearbeiten der vollen Ansicht, ADR-0026 Nachtrag 10).
 	kuerzel string
@@ -457,6 +462,12 @@ func (e *editor) knopfPerTaste(c *widget.Clickable) {
 	case &e.knoepfe.fussZoom:
 		e.menueOeffne(listeZoom, true)
 		return
+	case &e.pfeilform.feld[0]:
+		e.kopfListeOeffnen(0, true)
+		return
+	case &e.pfeilform.feld[1]:
+		e.kopfListeOeffnen(1, true)
+		return
 	case &e.knoepfe.farbe, &e.knoepfe.fuellung:
 		// Per Tastatur öffnet ein Farbfeld der Werkzeugleiste immer die Liste für sein Feld; die rechte Leiste klappt
 		// Strg+Umschalt+B auf. Das graue Feld Füllung tut nichts (ADR-0021 Nachtrag 11).
@@ -491,6 +502,8 @@ func (e *editor) listenKnopf(i int) *widget.Clickable {
 		return &e.einst.feldKnopf[max(0, e.einst.listeZeile)]
 	case listeZeitraum:
 		return &e.bibl.zeitraumKnopf
+	case listeKopfAnfang, listeKopfEnde:
+		return &e.pfeilform.feld[i-listeKopfAnfang]
 	}
 	return &e.menue.titel[i]
 }
@@ -564,6 +577,9 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 			case en.hatZeitraum:
 				e.bibSetzeZeitraum(en.zeitraum)
 				continue
+			case en.hatKopf:
+				e.s.SetzeKopf(en.kopfAnfang, en.kopf)
+				continue
 			}
 			e.fuehreAus(gtx, en.akt, true)
 		}
@@ -617,6 +633,10 @@ func (e *editor) zeichneMenue(gtx layout.Context) {
 	farbFeld := 0
 	if liste && m.welches == listeFarbe {
 		farbFeld = gtx.Dp(14 + 10) // Farbquadrat vor dem Namen
+		breite += farbFeld
+	}
+	if liste && (m.welches == listeKopfAnfang || m.welches == listeKopfEnde) {
+		farbFeld = gtx.Dp(44 + 12) // Vorschau der Spitze vor dem Namen
 		breite += farbFeld
 	}
 	if liste {
@@ -725,6 +745,12 @@ func (e *editor) menueZeile(gtx layout.Context, c *widget.Clickable, en menueEin
 		fr := image.Rect(innen, (groesse.Y-q)/2, innen+q, (groesse.Y-q)/2+q)
 		paint.FillShape(gtx.Ops, en.farbe, clip.Rect(fr).Op())
 		paint.FillShape(gtx.Ops, farbeText, clip.Stroke{Path: clip.Rect(fr).Path(), Width: float32(gtx.Dp(1))}.Op())
+		textX += farbFeld
+	}
+	if farbFeld > 0 && en.hatKopf {
+		h := gtx.Dp(16)
+		vr := image.Rect(innen, (groesse.Y-h)/2, innen+gtx.Dp(44), (groesse.Y-h)/2+h)
+		zeichneKopfMuster(gtx, en.kopf, en.kopfAnfang, vr, farbe)
 		textX += farbFeld
 	}
 	schreibe(en.text, farbe, false)

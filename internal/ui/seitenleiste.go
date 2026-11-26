@@ -225,7 +225,7 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	k := &e.seite
 	k.kopf, k.farbeGezeigt, k.sw.gezeigt = "", false, false
 	e.spitze.rahmen = image.Rectangle{}
-	e.pfeilform.kopfRahm, e.pfeilform.endenRahm, e.pfeilform.hinweis = [4]image.Rectangle{}, [4]image.Rectangle{}, ""
+	e.pfeilform.rahm, e.pfeilform.hinweis = [2]image.Rectangle{}, ""
 	e.schnell.gezeigt, e.schnell.hinweis = false, ""
 	k.farbRahmen, k.kantRahmen, k.strRahmen = [farbPlaetze]image.Rectangle{}, [3]image.Rectangle{}, [2]image.Rectangle{}
 	k.fw.flaeche, k.fw.ton, k.fw.deck, k.fw.pipRahmen = image.Rectangle{}, image.Rectangle{}, image.Rectangle{}, image.Rectangle{}

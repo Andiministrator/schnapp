@@ -1569,7 +1569,7 @@ msgstr ""
 msgid "Hex"
 msgstr ""
 
-#: internal/ui/farbwaehler.go
+#: internal/ui/farbwaehler.go internal/ui/pfeilform.go
 msgid "None"
 msgstr ""
 
@@ -2016,11 +2016,31 @@ msgid "Drag an area · Enter: whole monitor under the pointer · Esc or right-cl
 msgstr ""
 
 #: internal/ui/pfeilform.go
+msgid "Narrow"
+msgstr ""
+
+#: internal/ui/pfeilform.go
+msgid "Notched"
+msgstr ""
+
+#: internal/ui/pfeilform.go
 msgid "Open head"
 msgstr ""
 
 #: internal/ui/pfeilform.go
+msgid "Half head"
+msgstr ""
+
+#: internal/ui/pfeilform.go
 msgid "Dot"
+msgstr ""
+
+#: internal/ui/pfeilform.go
+msgid "Diamond"
+msgstr ""
+
+#: internal/ui/pfeilform.go
+msgid "Square"
 msgstr ""
 
 #: internal/ui/pfeilform.go
@@ -2032,27 +2052,23 @@ msgid "Filled triangle"
 msgstr ""
 
 #: internal/ui/pfeilform.go
-msgid "No head (line)"
+msgid "Arrow style"
 msgstr ""
 
 #: internal/ui/pfeilform.go
-msgid "Head at the start"
+msgid "Start"
 msgstr ""
 
 #: internal/ui/pfeilform.go
-msgid "Heads at both ends"
+msgid "End"
 msgstr ""
 
 #: internal/ui/pfeilform.go
-msgid "Head at the end"
+msgid "Arrow style at the start"
 msgstr ""
 
 #: internal/ui/pfeilform.go
-msgid "Head"
-msgstr ""
-
-#: internal/ui/pfeilform.go
-msgid "Ends"
+msgid "Arrow style at the end"
 msgstr ""
 
 #: internal/ui/schnellstile.go
