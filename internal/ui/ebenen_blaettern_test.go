@@ -57,9 +57,13 @@ func (l *menueLauf) loslassenBei(p image.Point) {
 // Verify V23-5: Wer eine Zeile am oberen oder unteren Rand einer langen Liste hält, blättert sie um je ein Drittel
 // Zeile pro Zeigerereignis; in der Mitte der Liste bleibt sie stehen.
 func TestEbenenListeBlaettertBeimZiehenAmRand(t *testing.T) {
-	l, _ := ebenenLauf(t)
+	l, k := ebenenLauf(t)
 	langeListe(t, l, 12)
 	eb := &l.e.ebenen
+	// Ein Kasten ist schon gewählt: Der Druck auf eine Zeile wählt einen Kasten, und dessen Eigenschaften (seit #363 auch
+	// der Abschnitt „Shadow“) verschöben sonst die Liste nach dem Merken ihrer Lage.
+	l.e.s.WaehleEbene(k)
+	l.setle()
 	liste := eb.liste
 	drittel := eb.zeileH / 3
 

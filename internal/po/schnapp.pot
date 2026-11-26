@@ -1633,6 +1633,11 @@ msgstr ""
 msgid "Hex"
 msgstr ""
 
+#: internal/ui/farbwaehler.go
+msgctxt "color field"
+msgid "Shadow"
+msgstr ""
+
 #: internal/ui/farbwaehler.go internal/ui/oberflaeche.go
 msgctxt "color field"
 msgid "Color"
@@ -2002,7 +2007,7 @@ msgctxt "status bar"
 msgid "#%02X%02X%02X · %d%%"
 msgstr ""
 
-#: internal/ui/oberflaeche.go internal/ui/schriftwahl.go internal/ui/seitenleiste.go
+#: internal/ui/oberflaeche.go internal/ui/schattenleiste.go internal/ui/schriftwahl.go internal/ui/seitenleiste.go
 msgctxt "status bar"
 msgid "%d px"
 msgstr ""
@@ -2185,6 +2190,36 @@ msgstr ""
 
 #: internal/ui/pfeilform.go
 msgid "Arrow style at the end"
+msgstr ""
+
+#: internal/ui/schattenleiste.go
+msgctxt "shadow"
+msgid "Shadow"
+msgstr ""
+
+#: internal/ui/schattenleiste.go
+msgctxt "shadow"
+msgid "Direction"
+msgstr ""
+
+#: internal/ui/schattenleiste.go
+msgctxt "shadow"
+msgid "%d°"
+msgstr ""
+
+#: internal/ui/schattenleiste.go
+msgctxt "shadow"
+msgid "Distance"
+msgstr ""
+
+#: internal/ui/schattenleiste.go
+msgctxt "shadow"
+msgid "Softness"
+msgstr ""
+
+#: internal/ui/schattenleiste.go
+msgctxt "shadow"
+msgid "Color"
 msgstr ""
 
 #: internal/ui/schnellstile.go

@@ -162,6 +162,11 @@ func (s *Sitzung) SetzeWerkzeug(w Werkzeug) bool {
 	if ohneGriffe(w) {
 		s.Auswahl = 0 // F-174: sonst zöge ein Zug nahe einem Griff den Griff statt den Rahmen
 	}
+	if s.feld == FeldSchatten && w != s.Werkzeug {
+		// Das Feld Schatten wählt man bewusst am Farbfeld der Leiste; mit einem anderen Werkzeug färbte die Farbwahl
+		// sonst unerwartet den Schatten statt der Beschriftung (Sichtprobe #363).
+		s.feld, s.hsvGemerkt = FeldVordergrund, false
+	}
 	vorher := s.zuschnittModus()
 	s.Werkzeug = w
 	s.wechslePaar(w)

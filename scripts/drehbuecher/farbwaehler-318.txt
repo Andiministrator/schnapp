@@ -4,6 +4,8 @@
 # Seit Karte #362 (Feld „Line style“ unter dem Regler, ADR-0021 Nachtrag 25) liegt alles darunter 38 px tiefer; die
 # Klicks sind verschoben; die Maße in den folgenden Zeilen stammen vom Stand vor Karte #352 und liegen jetzt 60 px tiefer
 # (22 px Regler der Strichstärke, 38 px „Line style“).
+# Seit Karte #363 (Abschnitt „Shadow“ unter den Eigenschaften, ADR-0021 Nachtrag 26) liegt der Abschnitt Farbe weitere
+# 36 px tiefer; die Klicks sind verschoben, die Maße im Text nicht.
 # Bei 1600 × 1000, Skala 1: Deckkraft-Feld bei (1530,513)–(1584,539).
 # Erwartet: 01 Kasten gewählt, Pipette mit Spitze unten links und orangem Tropfen am rechten Ende der Zeile des Farbpaars; 02 Deckkraft
 # 74 %, Hex zeigt weiter #D93A33 (sechs Ziffern); 03 Pipette aktiv (grün).
@@ -12,13 +14,13 @@ taste R
 ziehe 300 300 600 450
 warte 300
 foto 01-kasten
-doppelklick 1556 586
+doppelklick 1556 622
 taste Strg+A
 schreibe 74
 taste Enter
 warte 300
 foto 02-deckkraft-74
-klick 1572 376
+klick 1572 412
 warte 300
 foto 03-pipette-an
 taste Esc

@@ -177,3 +177,67 @@ func TestSchattenZugOhneSchatten(t *testing.T) {
 		t.Errorf("Werkzeug merkt %v", s.Stil.Schatten.Laenge)
 	}
 }
+
+// ADR-0021 Nachtrag 26 Punkt 7: − / + an „Direction“ gehen in 15°-Schritten über 0/360 hinweg, ein Winkel zwischen den
+// Stufen springt erst auf das Raster; die Regler bilden 0 bis 40 bzw. 20 px (mal Faktor) ab, Größeres steht am Ende.
+func TestSchattenRichtungUndRegler(t *testing.T) {
+	for _, f := range []struct {
+		w    float64
+		dir  int
+		soll float64
+	}{
+		{135, 1, 150}, {135, -1, 120}, {345, 1, 0}, {0, -1, 345}, {137, 1, 150}, {137, -1, 135}, {359.9, 1, 0},
+		{0.5, -1, 0}, {-15, 1, 0},
+	} {
+		if g := NaechsteSchattenRichtung(f.w, f.dir); g != f.soll {
+			t.Errorf("%v %+d: %v, Soll %v", f.w, f.dir, g, f.soll)
+		}
+	}
+	for _, f := range []struct{ w, bis, soll float64 }{{0, 40, 0}, {10, 40, 0.25}, {40, 40, 1}, {90, 40, 1}, {-3, 40, 0}, {5, 0, 0}} {
+		if g := SchattenReglerLage(f.w, f.bis); g != f.soll {
+			t.Errorf("Lage %v/%v: %v, Soll %v", f.w, f.bis, g, f.soll)
+		}
+	}
+	for _, f := range []struct{ lage, bis, soll float64 }{{0.5, 40, 20}, {-1, 40, 0}, {2, 20, 20}, {0.26, 20, 5}} {
+		if g := SchattenAusRegler(f.lage, f.bis); g != f.soll {
+			t.Errorf("Wert %v/%v: %v, Soll %v", f.lage, f.bis, g, f.soll)
+		}
+	}
+
+	s, _, _ := sitzung(t)
+	if l, w := s.SchattenReglerMax(); l != SchattenLaengeRegler || w != SchattenWeichRegler {
+		t.Errorf("Regler bei Faktor 1: %v %v", l, w)
+	}
+	s.SetzeWerkzeug(WerkzeugKasten)
+	if w := s.Schatten().Winkel; s.SchattenRichtungStufe(1) || s.Schatten().Winkel != w {
+		t.Error("Richtung ändert sich bei ausgeschaltetem Schatten")
+	}
+	s.SchalteSchatten()
+	zieh(s, f(20, 20), f(120, 80))
+	vor := s.D.Stand()
+	if !s.SchattenRichtungStufe(1) || letztes(t, s).Ebenenwerte().Schatten.Winkel != 150 || s.D.Stand() == vor {
+		t.Errorf("Richtung am gewählten Objekt: %+v", letztes(t, s).Ebenenwerte().Schatten)
+	}
+	if s.Stil.Schatten.Winkel != 150 {
+		t.Errorf("Werkzeug behält die Richtung nicht: %v", s.Stil.Schatten.Winkel)
+	}
+}
+
+// Sichtprobe #363: Ein Werkzeugwechsel gibt das Feld Schatten auf, die Farbwahl wirkt wieder auf den Vordergrund;
+// dasselbe Werkzeug noch einmal wählen lässt es stehen.
+func TestSchattenFeldEndetBeimWerkzeugwechsel(t *testing.T) {
+	s, _, _ := sitzung(t)
+	s.SetzeWerkzeug(WerkzeugKasten)
+	s.SchalteSchatten()
+	if !s.SetzeFeld(FeldSchatten) {
+		t.Fatal("Feld Schatten nicht wählbar")
+	}
+	s.SetzeWerkzeug(WerkzeugKasten)
+	if s.AktivesFeld() != FeldSchatten {
+		t.Error("dasselbe Werkzeug beendet das Feld Schatten")
+	}
+	s.SetzeWerkzeug(WerkzeugText)
+	if s.AktivesFeld() != FeldVordergrund {
+		t.Errorf("nach dem Wechsel zum Text: Feld %v", s.AktivesFeld())
+	}
+}

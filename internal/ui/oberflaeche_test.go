@@ -375,7 +375,7 @@ func TestFarbHinweisNichtUeberOffenerListe(t *testing.T) {
 // (ADR-0031 Nachtrag 3), Pipette, Hex und Deckkraft (Nachtrag 5) zu den klickbaren Feldern der Fußzeile von links nach
 // rechts: erst Farbe, dann Zoom.
 func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
-	l := neuerMenueLauf(t, image.Pt(1200, 960)) // hoch genug für Schnellstile (ADR-0037), Farbe und Ebenen zugleich
+	l := neuerMenueLauf(t, image.Pt(1200, 1000)) // hoch genug für Schnellstile (ADR-0037), Schatten (#363), Farbe und Ebenen zugleich
 	l.fokusiere(&l.e.knoepfe.farbe)
 	// Farbpaar der Werkzeugleiste: Vordergrund, Füllung, Tauschen (ADR-0021 Nachtrag 11).
 	for i, k := range []*widget.Clickable{&l.e.knoepfe.fuellung, &l.e.knoepfe.tausch} {
@@ -414,6 +414,12 @@ func TestTabFolgtDerReihenfolgeDerFussfelder(t *testing.T) {
 	l.setle()
 	if !l.fokus(&l.e.spitze.knopf) {
 		t.Fatalf("Tab nach der Schrift: Fokus nicht auf dem Schalter Spitze (%s)", menueFokusName(l))
+	}
+	// Darunter der Schalter „Shadow“ (ADR-0021 Nachtrag 26 Punkt 7), bei ausgeschaltetem Schatten allein.
+	l.r.MoveFocus(key.FocusForward)
+	l.setle()
+	if !l.fokus(&l.e.schattenL.schalter) {
+		t.Fatalf("Tab nach Spitze: Fokus nicht auf dem Schalter Shadow (%s)", menueFokusName(l))
 	}
 	// Die Überschrift „Farbe“ klappt den Abschnitt ein und aus (ADR-0032 Punkt 6).
 	l.r.MoveFocus(key.FocusForward)

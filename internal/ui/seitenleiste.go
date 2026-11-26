@@ -175,6 +175,7 @@ func (e *editor) seiteAuswerten(gtx layout.Context) {
 	e.ebenenAuswerten(gtx)
 	e.lupeAuswerten(gtx)
 	e.spitzeAuswerten(gtx)
+	e.schattenAuswerten(gtx)
 	e.pfeilformAuswerten(gtx)
 	e.strichartAuswerten(gtx)
 	for j, f := range kantenFormen {
@@ -234,6 +235,7 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	k := &e.seite
 	k.kopf, k.farbeGezeigt, k.sw.gezeigt = "", false, false
 	e.spitze.rahmen = image.Rectangle{}
+	e.schattenL.leeren()
 	e.pfeilform.rahm, e.pfeilform.hinweis = [2]image.Rectangle{}, ""
 	e.strichart.rahm, e.strichart.hinweis = image.Rectangle{}, ""
 	e.schnell.gezeigt, e.schnell.hinweis = false, ""
@@ -343,6 +345,9 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	}
 	if inhalt.Vergroesserung { // gewählte Lupe (ADR-0033 Punkt 8)
 		y = e.zeichneVergroesserung(gtx, x, y, spalte)
+	}
+	if inhalt.Farbe { // Schatten je Objekt (ADR-0021 Nachtrag 26 Punkt 7)
+		y = e.zeichneSchattenLeiste(gtx, x, y, breite, spalte)
 	}
 	if t := seitenHinweisText(inhalt.Hinweis); t != "" {
 		y += e.seiteText(gtx, t, 12, farbeNebentext, image.Pt(x, y), breite, 4)

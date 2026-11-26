@@ -1016,5 +1016,16 @@ Feld Schatten, `--annotate`/MCP) mit Tests `internal/document/schatten_test.go`,
 `internal/ui/schatten_test.go` (Editor gegen Renderer), `internal/annotate`, Mutanten `scripts/mutanten/schatten.json`
 (SH1–SH25); Teil 2 die rechte Leiste (Punkt 7) und die Schnellstile (Punkt 8).
 
+**Teil 2 umgesetzt (26.11.2026):** Abschnitt „Shadow“ der rechten Leiste unter den übrigen Eigenschaften
+(`internal/ui/schattenleiste.go`; Rechnungen der Regler und der Richtung in `canvas`: `SchattenReglerMax`,
+`SchattenReglerLage`, `SchattenAusRegler`, `NaechsteSchattenRichtung` — ein Winkel zwischen den Stufen springt erst auf
+das Raster —, `SchattenRichtungStufe`); ein Klick auf das Farbfeld macht den Schatten zum aktiven Feld, klappt
+„Farbe“ auf und rollt ihn ins Bild wie ein Klick aufs Farbpaar links; das Feld heißt dann „Shadow“ (`farbfeldName`). Ein Wechsel des Werkzeugs gibt das Feld Schatten auf (wieder
+Vordergrund): Sonst färbte die Farbwahl mit dem nächsten Werkzeug unerwartet den Schatten (Sichtprobe).
+Bei ausgeschaltetem Schatten steht nur der Schalter da (eine Zeile, 36 dp): Die Leiste ist dadurch so viel höher;
+das Startfenster 1200×800 rollt mit gewähltem Kasten und offenen Ebenen um wenige Pixel. Schnellstile: ADR-0037
+Nachtrag 1. Tests `internal/ui/schattenleiste_test.go`, `internal/canvas/schatten_test.go`
+(`TestSchattenRichtungUndRegler`).
+
 Verworfen: Schatten als eigenes Objekt (ginge beim Verschieben verloren); `feDropShadow` (jünger, nicht überall
 unterstützt); Farbe über eine feste Liste (Andi: Farbe frei wählbar).

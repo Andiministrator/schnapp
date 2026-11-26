@@ -3,6 +3,8 @@
 # Seit Karte #362 (Feld „Line style“ unter dem Regler, ADR-0021 Nachtrag 25) liegt alles darunter 38 px tiefer; die
 # Klicks sind verschoben; die Maße in den folgenden Zeilen stammen vom Stand vor Karte #352 und liegen jetzt 60 px tiefer
 # (22 px Regler der Strichstärke, 38 px „Line style“).
+# Seit Karte #363 (Abschnitt „Shadow“ unter den Eigenschaften, ADR-0021 Nachtrag 26) liegt der Abschnitt Farbe weitere
+# 36 px tiefer; die Klicks sind verschoben, die Maße im Text nicht.
 # Bei 1600 × 1000, Skala 1, Werkzeug Pfeil: Farbfläche x 1316–1520, y 428–542; Felder 1530–1584 (seit Karte #318 ohne Pipette;
 # die Pipette liegt in der Zeile des Farbpaars bei x 1560–1584, y 394–418); Farbton-Regler y 554–566, Deckkraft-Regler y 577–589 (x 1316–1584); Hex-Feld x 1352–1452, y 603–627
 # (nach den Schnellstilen, ADR-0037, dem Farbpaar, #219, und dem Abschnitt Pfeil-Stil, ADR-0021 Nachtrag 20; nachgemessen
@@ -17,22 +19,22 @@ warte 300
 ziehe 400 300 700 500
 warte 400
 foto 01-pfeil-rot
-ziehe 1330 619 1460 619
+ziehe 1330 655 1460 655
 warte 300
 foto 02-farbton-blau
-ziehe 1500 504 1450 534
+ziehe 1500 540 1450 570
 warte 300
 foto 03-flaeche
-ziehe 1580 641 1450 641
+ziehe 1580 677 1450 677
 warte 300
 foto 04-deckkraft-halb
-klick 1400 675
+klick 1400 711
 warte 150
 schreibe ff8800
 taste Enter
 warte 300
 foto 05-hex-orange
-klick 1572 466
+klick 1572 502
 warte 200
 foto 06a-pipette-an
 klick 700 750

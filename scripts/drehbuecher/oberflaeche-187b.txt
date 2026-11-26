@@ -2,6 +2,8 @@
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/oberflaeche-187b.txt --bild scripts/drehbuecher/testbild-1200x800.png
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen. Bei 1600 × 1000, Skala 1: rechte Leiste ab x = 1300,
 # Palette der Beschriftungsfarben 2 × 2 rechts neben der Farbfläche (beim gewählten Text Blau bei 1572,488; nach ADR-0037 und #219).
+# Seit Karte #364 steht Blau in den eigenen Farbfeldern unter Hex (das Raster rechts zeigt nur zuletzt benutzte Farben),
+# seit Karte #363 (Abschnitt „Shadow“) liegt der Abschnitt Farbe 36 px tiefer: beim gewählten Text Blau bei (1352, 729).
 warte 800
 foto 01-start
 taste T
@@ -10,7 +12,7 @@ warte 200
 schreibe Hallo
 warte 300
 foto 02-text-ausgewaehlt
-klick 1572 488
+klick 1352 729
 warte 300
 foto 03-blau
 klick 1478 985

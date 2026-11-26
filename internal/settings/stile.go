@@ -81,19 +81,22 @@ type Stil struct {
 	Unterstr    bool
 	Durchgestr  bool
 	Ausrichtung document.Ausrichtung
+	// Schatten (ADR-0021 Nachtrag 26 Punkt 8, ADR-0037 Nachtrag 1): An = der Stil trägt einen; Länge und Weich auf
+	// Faktor 1. Schlüssel shadow = WINKEL LÄNGE WEICH #RRGGBBAA, nur geschrieben, wenn An.
+	Schatten document.Schatten
 }
 
 // Schluessel je Art, in der Reihenfolge, in der sie geschrieben werden.
 func schluesselFuer(art string) []string {
 	switch art {
 	case ArtPfeil, ArtLupe:
-		return []string{"color", "width"}
+		return []string{"color", "width", "shadow"}
 	case ArtKasten:
-		return []string{"color", "fill", "width"}
+		return []string{"color", "fill", "width", "shadow"}
 	case ArtText, ArtSprechblase:
-		return []string{"color", "fill", "font", "size", "bold", "italic", "underline", "strike", "align"}
+		return []string{"color", "fill", "font", "size", "bold", "italic", "underline", "strike", "align", "shadow"}
 	case ArtNummer:
-		return []string{"color", "radius"}
+		return []string{"color", "radius", "shadow"}
 	}
 	return nil
 }
@@ -309,6 +312,10 @@ func setzeStilWert(s *Stil, k, wert string) bool {
 			s.Durchgestr = b
 		}
 		return true
+	case "shadow":
+		sch, ok := schattenAus(wert)
+		s.Schatten = pick(ok, sch, s.Schatten)
+		return ok
 	case "align":
 		switch wert {
 		case "left":
@@ -354,6 +361,33 @@ func farbeAus(w string) (color.NRGBA, bool) {
 
 func farbeText(c color.NRGBA) string {
 	return fmt.Sprintf("#%02X%02X%02X%02X", c.R, c.G, c.B, c.A)
+}
+
+// schattenAus liest „WINKEL LÄNGE WEICH #RRGGBBAA“ (Leerraum getrennt): Winkel endlich (auf 0 bis 360 gebracht), Länge
+// und Weich endlich von 0 bis zu den Grenzen des Dokuments.
+func schattenAus(w string) (document.Schatten, bool) {
+	teile := strings.Fields(w)
+	if len(teile) != 4 {
+		return document.Schatten{}, false
+	}
+	var z [3]float64
+	for i, t := range teile[:3] {
+		g, err := strconv.ParseFloat(t, 64)
+		if err != nil || math.IsNaN(g) || math.IsInf(g, 0) {
+			return document.Schatten{}, false
+		}
+		z[i] = g
+	}
+	c, ok := farbeAus(teile[3])
+	if !ok || z[1] < 0 || z[1] > document.MaxSchattenLaenge || z[2] < 0 || z[2] > document.MaxSchattenWeich {
+		return document.Schatten{}, false
+	}
+	return document.Schatten{An: true, Winkel: document.NormWinkel(z[0]), Laenge: z[1], Weich: z[2], Farbe: c}, true
+}
+
+// schattenText ist die Form von schattenAus.
+func schattenText(sch document.Schatten) string {
+	return zahlText(sch.Winkel) + " " + zahlText(sch.Laenge) + " " + zahlText(sch.Weich) + " " + farbeText(sch.Farbe)
 }
 
 // groesseAus liest eine endliche Zahl 0 < g ≤ max.
@@ -402,9 +436,17 @@ func pruefeStil(s Stil) error {
 			return fmt.Errorf("style [%s]: invalid font name", s.Art)
 		case k == "align" && s.Ausrichtung > document.AusrichtungRechts:
 			return fmt.Errorf("style [%s]: invalid alignment", s.Art)
+		case k == "shadow" && s.Schatten.An && !schattenGueltig(s.Schatten):
+			return fmt.Errorf("style [%s]: invalid shadow", s.Art)
 		}
 	}
 	return nil
+}
+
+// schattenGueltig meldet, ob sch so geschrieben und wieder gelesen werden kann (schattenAus).
+func schattenGueltig(sch document.Schatten) bool {
+	_, ok := schattenAus(schattenText(sch))
+	return ok && sch.Winkel >= 0 && sch.Winkel < 360
 }
 
 // FormatStile liefert den Inhalt der Datei für stile (ohne zu prüfen, ob die Zahl je Art in Ordnung ist).
@@ -417,8 +459,13 @@ func FormatStile(stile []Stil) (string, error) {
 		}
 		b.WriteString("\n[" + s.Art + "]\n")
 		for _, k := range schluesselFuer(s.Art) {
+			if k == "shadow" && !s.Schatten.An {
+				continue // ohne Schatten fehlt der Schlüssel
+			}
 			var w string
 			switch k {
+			case "shadow":
+				w = schattenText(s.Schatten)
 			case "color":
 				w = farbeText(s.Farbe)
 			case "fill":
@@ -531,6 +578,9 @@ func bereinigt(s Stil) Stil {
 	if hat["font"] {
 		r.Schrift, r.Fett, r.Kursiv, r.Unterstr, r.Durchgestr = s.Schrift, s.Fett, s.Kursiv, s.Unterstr, s.Durchgestr
 		r.Ausrichtung = s.Ausrichtung
+	}
+	if hat["shadow"] && s.Schatten.An {
+		r.Schatten = s.Schatten
 	}
 	return r
 }

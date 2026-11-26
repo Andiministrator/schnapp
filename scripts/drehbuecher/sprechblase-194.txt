@@ -2,6 +2,8 @@
 # Schalter „Spitze“ aus und an, Ebene mit Deckkraft 50 %, Klick-Blase, ohne Füllung.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/sprechblase-194.txt --bild scripts/drehbuecher/testbild-1200x800.png
 # Bei 1600 × 1000, Skala 1: das Bild liegt bei (76,100)–(1276,900), Zoom 1 (Original = Bildschirm − (76,100)).
+# Seit Karte #363 (Abschnitt „Shadow“ unter den Eigenschaften, ADR-0021 Nachtrag 26) liegt der Abschnitt Farbe 36 px
+# tiefer; die Klicks dorthin sind verschoben.
 # Erwartet:
 #  01 Taste K, Aufziehen von (400,700) nach (560,520): Blase mit Spitze am Druckpunkt, Text darin, nach Enter gewählt;
 #     Kopf der Leiste „AUSWAHL: SPRECHBLASE“, Schalter „Spitze“ an, Griff (Quadrat) an der Spitze.
@@ -52,8 +54,8 @@ schreibe Klick
 taste Return
 warte 500
 foto 07-klick-blase
-klick 1360 457
+klick 1360 493
 warte 200
-klick 1424 456
+klick 1424 492
 warte 400
 foto 08-ohne-fuellung

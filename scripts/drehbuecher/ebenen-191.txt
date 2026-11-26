@@ -12,6 +12,9 @@
 # Seit Karte #362 (Feld „Line style“, ADR-0021 Nachtrag 25) reicht die Leiste beim gewählten Rechteck nicht mehr: Der
 # Abschnitt beginnt direkt unter der Farbe, Feld „Deckkraft“ y 681–707, Zeilen ab y 716 je 34 (die Kopie in Zeile 4,
 # y 818–852); die Klicks ab 06 sind so gesetzt, die Zeilenangaben bei 08 und 09 gelten davor.
+# Seit Karte #363 (Abschnitt „Shadow“) wird die Liste beim gewählten Rechteck noch enger: Nach 05 klappt ein Klick auf
+# die Überschrift „Schnellstile“ (1370, 80) sie ein (05b), dann hängt der Abschnitt Ebenen wieder ganz am unteren Rand
+# und es gelten die Maße vom Anfang (Deckkraft y 667–693, Zeilen ab y 703, nach dem Doppeln 34 höher).
 warte 800
 taste A
 ziehe 300 300 600 420
@@ -47,7 +50,10 @@ taste Strg+L
 taste Strg+BildAb
 warte 300
 foto 05-rechteck-hinten
-klick 1440 694
+klick 1370 80
+warte 300
+foto 05b-schnellstile-zu
+klick 1440 680
 schreibe 50
 taste Enter
 warte 300
@@ -55,9 +61,9 @@ foto 06-deckkraft-50
 taste Strg+D
 warte 400
 foto 07-doppeln
-ziehe 1450 835 1450 699 12
+ziehe 1450 788 1450 680 12
 warte 400
 foto 08-pfeil-nach-oben
-klick 1322 767
+klick 1322 720
 warte 300
 foto 09-text-eingeblendet

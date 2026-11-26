@@ -24,6 +24,8 @@ func beispielStile() []Stil {
 		{Art: ArtSprechblase, Farbe: color.NRGBA{A: 0xFF}, Schriftgrad: 20, Ausrichtung: document.AusrichtungRechts},
 		{Art: ArtNummer, Farbe: color.NRGBA{R: 0x2F, G: 0x6F, B: 0xDB, A: 0xFF}, Radius: 14},
 		{Art: ArtLupe, Farbe: color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}, Breite: 4},
+		{Art: ArtKasten, Farbe: color.NRGBA{R: 0x11, A: 0xFF}, Breite: 6, // mit Schatten (ADR-0021 Nachtrag 26 Punkt 8)
+			Schatten: document.Schatten{An: true, Winkel: 112.5, Laenge: 6, Weich: 0, Farbe: color.NRGBA{B: 0x40, A: 0x66}}},
 	}
 }
 
@@ -41,10 +43,14 @@ func TestStileRundlauf(t *testing.T) {
 	if !reflect.DeepEqual(aus, ein) {
 		t.Errorf("Rundlauf: %+v, Soll %+v", aus, ein)
 	}
-	for _, s := range []string{"color = #D93A33FF", "fill = #FFD60A66", "size = 24.5", "align = center", "font = Test Sans"} {
+	for _, s := range []string{"color = #D93A33FF", "fill = #FFD60A66", "size = 24.5", "align = center", "font = Test Sans",
+		"shadow = 112.5 6 0 #00004066"} {
 		if !strings.Contains(text, s) {
 			t.Errorf("Datei ohne %q:\n%s", s, text)
 		}
+	}
+	if strings.Count(text, "shadow =") != 1 {
+		t.Errorf("shadow steht an Stilen ohne Schatten:\n%s", text)
 	}
 	if !strings.HasPrefix(text, "# Quick styles") {
 		t.Errorf("Kopfkommentar fehlt")
@@ -77,6 +83,14 @@ func TestStileParseRegeln(t *testing.T) {
 		{"kaputter Kopf", "[arrow\ncolor = #112233\n", 0, "Broken section header"},
 		{"Schlüssel vor jedem Abschnitt", "color = #112233\n[arrow]\ncolor = #112233\n", 1, "outside of any section"},
 		{"ein kaputter Stil lässt die anderen stehen", "[arrow]\ncolor = x\n[box]\ncolor = #112233\n[step]\ncolor = #112233\n", 2, "invalid value"},
+		{"Schatten", "[step]\ncolor = #112233\nshadow = 135 6 8 #00000066\n", 1, ""},
+		{"Schatten mit Winkel über 360", "[arrow]\ncolor = #112233\nshadow = 495 0 0 #000000\n", 1, ""},
+		{"Schatten mit drei Werten", "[arrow]\ncolor = #112233\nshadow = 135 6 #00000066\n", 0, "invalid value"},
+		{"Schatten negativ", "[box]\ncolor = #112233\nshadow = 135 -1 8 #00000066\n", 0, "invalid value"},
+		{"Schatten zu lang", "[box]\ncolor = #112233\nshadow = 135 1001 8 #00000066\n", 0, "invalid value"},
+		{"Schatten zu weich", "[box]\ncolor = #112233\nshadow = 135 6 201 #00000066\n", 0, "invalid value"},
+		{"Schatten NaN", "[box]\ncolor = #112233\nshadow = NaN 6 8 #00000066\n", 0, "invalid value"},
+		{"Schatten ohne Farbe", "[box]\ncolor = #112233\nshadow = 135 6 8 schwarz\n", 0, "invalid value"},
 		{"Kommentare, Leerzeilen, Byte-Marke", "\xef\xbb\xbf# k\n; k\n\n[step]\n color = #112233 \n radius = 10\n", 1, ""},
 	}
 	for _, f := range fall {
@@ -272,5 +286,22 @@ func TestStilePfadFehlerPraefix(t *testing.T) {
 	}
 	if _, warn := LadeStile(); len(warn) != 1 || strings.Contains(warn[0], "settings:") {
 		t.Errorf("Warnung %q", warn)
+	}
+}
+
+// Ein Winkel über 360 kommt auf 0 bis 360; ein Schatten, der sich nicht schreiben ließe, lehnt PruefeStil ab.
+func TestStileSchattenGrenzen(t *testing.T) {
+	aus, _ := ParseStile("x.ini", "[arrow]\ncolor = #112233\nshadow = 495 0 0 #000000\n")
+	if len(aus) != 1 || aus[0].Schatten != (document.Schatten{An: true, Winkel: 135, Farbe: color.NRGBA{A: 0xFF}}) {
+		t.Fatalf("gelesen %+v", aus)
+	}
+	for _, sch := range []document.Schatten{{An: true, Laenge: -1}, {An: true, Weich: 500}, {An: true, Winkel: 400}} {
+		if PruefeStil(Stil{Art: ArtPfeil, Breite: 4, Schatten: sch}) == nil {
+			t.Errorf("Schatten %+v angenommen", sch)
+		}
+	}
+	// Ausgeschaltet zählt der Schatten nicht: Er fällt beim Bereinigen weg und wird nicht geschrieben.
+	if s := (Stil{Art: ArtPfeil, Breite: 4, Schatten: document.Schatten{Laenge: -1}}); PruefeStil(s) != nil || s.Bereinigt().Schatten != (document.Schatten{}) {
+		t.Error("ausgeschalteter Schatten stört")
 	}
 }

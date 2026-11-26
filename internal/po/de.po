@@ -1834,3 +1834,33 @@ msgstr "Gestrichelt"
 msgctxt "line style"
 msgid "Dotted"
 msgstr "Gepunktet"
+
+# Abschnitt „Shadow“ der rechten Leiste (ADR-0021 Nachtrag 26 Punkt 7, Karte #363)
+
+msgctxt "shadow"
+msgid "Shadow"
+msgstr "Schatten"
+
+msgctxt "shadow"
+msgid "Direction"
+msgstr "Richtung"
+
+msgctxt "shadow"
+msgid "Distance"
+msgstr "Abstand"
+
+msgctxt "shadow"
+msgid "Softness"
+msgstr "Weichheit"
+
+msgctxt "shadow"
+msgid "Color"
+msgstr "Farbe"
+
+msgctxt "shadow"
+msgid "%d°"
+msgstr "%d°"
+
+msgctxt "color field"
+msgid "Shadow"
+msgstr "Schatten"

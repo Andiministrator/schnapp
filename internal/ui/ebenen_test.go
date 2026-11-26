@@ -220,12 +220,13 @@ func TestEbenenAusblendenMeldungUndNiedrigesFenster(t *testing.T) {
 			t.Errorf("Fenster %d: Farbe gezeigt %v, Ebenen gezeigt %v, Knöpfe %v", h, seite.farbeGezeigt, eb.gezeigt, eb.knopfRahmen)
 		}
 	}
-	// Klick auf „Ebenen“ gibt ihnen den Vorrang: Ebenen offen, Farbe eingeklappt, Knöpfe in der Leiste.
-	l.fenst = image.Pt(1200, 560)
+	// Klick auf „Ebenen“ gibt ihnen den Vorrang: Ebenen offen, Farbe eingeklappt, Knöpfe in der Leiste (600 seit dem
+	// Abschnitt „Shadow“, Karte #363: eine Zeile mehr über den Ebenen).
+	l.fenst = image.Pt(1200, 600)
 	l.setle()
 	l.fokusiere(&eb.kopf)
 	l.taste(key.NameReturn, 0)
-	if !eb.gezeigt || seite.farbeGezeigt || eb.knopfRahmen[ebKnopfLoeschen].Max.Y > 560-fusszeileDp {
+	if !eb.gezeigt || seite.farbeGezeigt || eb.knopfRahmen[ebKnopfLoeschen].Max.Y > 600-fusszeileDp {
 		t.Errorf("Vorrang Ebenen: Ebenen %v, Farbe %v, Knöpfe %v", eb.gezeigt, seite.farbeGezeigt, eb.knopfRahmen)
 	}
 	// Klick auf „Farbe“ gibt ihn zurück; im hohen Fenster ist danach beides offen (kein verdeckter Zustand).

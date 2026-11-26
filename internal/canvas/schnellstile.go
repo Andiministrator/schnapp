@@ -57,6 +57,9 @@ type Schnellstil struct {
 	Unterstrichen   bool
 	Durchgestrichen bool
 	Ausrichtung     document.Ausrichtung
+	// Schatten (ADR-0021 Nachtrag 26 Punkt 8, ADR-0037 Nachtrag 1): An = der Stil trägt einen (Länge und Weich auf
+	// Faktor 1); ohne lässt der Stil den Schatten des Objekts stehen und passt unabhängig davon.
+	Schatten document.Schatten
 }
 
 // Eigen meldet, ob der Stil ein eigener ist (graue Ecke, entfernbar).
@@ -148,6 +151,9 @@ func (st Schnellstil) bereinigt() Schnellstil {
 	case SchnellNummer:
 		r.Radius = st.Radius
 	}
+	if st.Schatten.An {
+		r.Schatten = st.Schatten
+	}
 	return r
 }
 
@@ -171,6 +177,8 @@ func (st Schnellstil) mal(f float64) Schnellstil {
 	st.Breite = math.Min(st.Breite*f, document.MaxGroesse)
 	st.Schriftgrad = math.Min(st.Schriftgrad*f, document.MaxSchrift)
 	st.Radius = math.Min(st.Radius*f, document.MaxSchrift)
+	st.Schatten.Laenge = math.Min(st.Schatten.Laenge*f, document.MaxSchattenLaenge)
+	st.Schatten.Weich = math.Min(st.Schatten.Weich*f, document.MaxSchattenWeich)
 	return st
 }
 
@@ -179,6 +187,8 @@ func (st Schnellstil) durch(f float64) Schnellstil {
 	st.Breite /= f
 	st.Schriftgrad /= f
 	st.Radius /= f
+	st.Schatten.Laenge /= f
+	st.Schatten.Weich /= f
 	return st
 }
 
@@ -192,9 +202,18 @@ func (st Schnellstil) gleichWie(o Schnellstil) bool {
 	if !gleichNah(a.Breite, b.Breite) || !gleichNah(a.Schriftgrad, b.Schriftgrad) || !gleichNah(a.Radius, b.Radius) {
 		return false
 	}
-	a.Breite, a.Schriftgrad, a.Radius = 0, 0, 0
-	b.Breite, b.Schriftgrad, b.Radius = 0, 0, 0
+	if !gleicherSchatten(a.Schatten, b.Schatten) {
+		return false
+	}
+	a.Breite, a.Schriftgrad, a.Radius, a.Schatten = 0, 0, 0, document.Schatten{}
+	b.Breite, b.Schriftgrad, b.Radius, b.Schatten = 0, 0, 0, document.Schatten{}
 	return a == b
+}
+
+// gleicherSchatten vergleicht zwei Schatten (Farbe genau, Zahlen mit der Genauigkeit der Rechnung).
+func gleicherSchatten(a, b document.Schatten) bool {
+	return a.An == b.An && a.Farbe == b.Farbe && gleichNah(a.Winkel, b.Winkel) && gleichNah(a.Laenge, b.Laenge) &&
+		gleichNah(a.Weich, b.Weich)
 }
 
 // --- Tabelle der eingebauten Stile (ADR-0037 Punkt 4), Größen auf Faktor 1 ---
@@ -266,7 +285,7 @@ func EingebauteSchnellstile(a SchnellArt) []Schnellstil {
 func (st Schnellstil) Einstellung() settings.Stil {
 	return settings.Stil{Art: artNamen[st.Art], Farbe: st.Farbe, Fuellung: st.Fuellung, Breite: st.Breite,
 		Schriftgrad: st.Schriftgrad, Radius: st.Radius, Schrift: st.Schrift, Fett: st.Fett, Kursiv: st.Kursiv,
-		Unterstr: st.Unterstrichen, Durchgestr: st.Durchgestrichen, Ausrichtung: st.Ausrichtung}.Bereinigt()
+		Unterstr: st.Unterstrichen, Durchgestr: st.Durchgestrichen, Ausrichtung: st.Ausrichtung, Schatten: st.Schatten}.Bereinigt()
 }
 
 // SchnellstilAus wandelt einen Stil der Datei in einen eigenen Stil (false: unbekannte Art).
@@ -277,7 +296,7 @@ func SchnellstilAus(e settings.Stil) (Schnellstil, bool) {
 	}
 	return Schnellstil{Art: SchnellArt(i), Farbe: e.Farbe, Fuellung: e.Fuellung, Breite: e.Breite, Schriftgrad: e.Schriftgrad,
 		Radius: e.Radius, Schrift: e.Schrift, Fett: e.Fett, Kursiv: e.Kursiv, Unterstrichen: e.Unterstr,
-		Durchgestrichen: e.Durchgestr, Ausrichtung: e.Ausrichtung}.bereinigt(), true
+		Durchgestrichen: e.Durchgestr, Ausrichtung: e.Ausrichtung, Schatten: e.Schatten}.bereinigt(), true
 }
 
 // --- Stand der Sitzung ---
@@ -329,8 +348,17 @@ func (s *Sitzung) Schnellstile(a SchnellArt) []Schnellstil {
 	return r
 }
 
-// objektStand ist der Stil, den o trägt, in den Größen des Objekts (nicht durch den Faktor geteilt).
+// objektStand ist der Stil, den o trägt, in den Größen des Objekts (nicht durch den Faktor geteilt), mit seinem
+// Schatten, wenn er einen hat.
 func objektStand(o document.Objekt) (Schnellstil, bool) {
+	st, ok := objektStandOhneSchatten(o)
+	if ok && o.Ebenenwerte().Schatten.An {
+		st.Schatten = o.Ebenenwerte().Schatten
+	}
+	return st, ok
+}
+
+func objektStandOhneSchatten(o document.Objekt) (Schnellstil, bool) {
 	switch v := o.(type) {
 	case document.Pfeil:
 		return Schnellstil{Art: SchnellPfeil, Farbe: v.Strich.Farbe, Breite: v.Strich.Breite}, true
@@ -366,13 +394,21 @@ func (s *Sitzung) stand(a SchnellArt) (Schnellstil, bool) {
 	st := Schnellstil{Art: a, Farbe: p.vorn, Fuellung: p.fuellung, Breite: s.Stil.Breite, Schriftgrad: s.Stil.Schriftgrad,
 		Radius: s.Stil.Radius, Schrift: s.Stil.Schrift, Fett: s.Stil.Fett, Kursiv: s.Stil.Kursiv,
 		Unterstrichen: s.Stil.Unterstrichen, Durchgestrichen: s.Stil.Durchgestrichen, Ausrichtung: s.Stil.Ausrichtung}
+	if s.Stil.Schatten.An {
+		st.Schatten = s.Stil.Schatten
+	}
 	return st, true
 }
 
 // SchnellstilPasst meldet, ob st zum aktuellen Stand passt (gleiche Werte, ADR-0037 Punkt 2): die Kachel bekommt dann
 // den orangen Rand.
+//
+// Ein Stil ohne Schatten passt unabhängig vom Schatten des Stands (ADR-0021 Nachtrag 26 Punkt 8).
 func (s *Sitzung) SchnellstilPasst(st Schnellstil) bool {
 	ist, ok := s.stand(st.Art)
+	if ok && !st.Schatten.An {
+		ist.Schatten = document.Schatten{}
+	}
 	return ok && ist.gleichWie(st.mal(s.faktor()))
 }
 
@@ -455,11 +491,17 @@ func (s *Sitzung) WendeSchnellstilAn(st Schnellstil) bool {
 	case SchnellNummer:
 		s.Stil.Radius = g.Radius
 	}
+	if g.Schatten.An { // ein Stil ohne Schatten lässt den des Werkzeugs und des Objekts stehen
+		s.Stil.Schatten = g.Schatten
+	}
 	o, ok := s.stilObjekt(st.Art)
 	if !ok {
 		return false
 	}
 	neu := mitSchnellstil(o, g)
+	if g.Schatten.An {
+		neu = mitSchatten(neu, g.Schatten)
+	}
 	if s.zug == zugText {
 		_ = s.D.ZugSetze(neu)
 		return false

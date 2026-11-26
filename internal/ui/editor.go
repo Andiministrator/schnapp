@@ -346,7 +346,9 @@ type editor struct {
 	// lupe: Abschnitt „Vergrößerung“ der rechten Leiste und gemerkte Bilder der Lupen (ADR-0033, lupe.go).
 	lupe lupenLeiste
 	// spitze: Schalter „Spitze“ der rechten Leiste (ADR-0021 Nachtrag 13, spitze.go).
-	spitze    spitzenLeiste
+	spitze spitzenLeiste
+	// schattenL: Abschnitt „Shadow“ der rechten Leiste (ADR-0021 Nachtrag 26 Punkt 7, schattenleiste.go).
+	schattenL schattenLeiste
 	pfeilform pfeilformLeiste
 	strichart strichartLeiste // Klappfeld „Line style“ (ADR-0021 Nachtrag 25, strichart.go)
 	// schatten: gemerkte Schattenbilder je Objekt (ADR-0021 Nachtrag 26, schatten.go).
@@ -2741,6 +2743,7 @@ func (e *editor) fokussierterKnopf(gtx layout.Context) *widget.Clickable {
 	alle = append(alle, e.ebenen.alleKnoepfe()...)
 	alle = append(alle, e.lupe.alle()...)
 	alle = append(alle, &e.spitze.knopf)
+	alle = append(alle, e.schattenL.alle()...)
 	alle = append(alle, e.strichart.alle()...)
 	alle = append(alle, e.pfeilform.alle()...)
 	alle = append(alle, e.schnell.alle()...)

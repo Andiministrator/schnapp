@@ -713,9 +713,11 @@ func (e *editor) feldTextBreite(gtx layout.Context, text string, sp float32) int
 }
 
 // farbfeldName ist der Name des aktiven Felds neben dem Farbpaar (Karte #359): ohne Füllung schlicht „Farbe“, sonst
-// „Farbe“ oder „Füllung“, eine durchsichtige Füllung als „Füllung: keine“.
+// „Farbe“ oder „Füllung“, eine durchsichtige Füllung als „Füllung: keine“, der Schatten als „Schatten“.
 func farbfeldName(fuellbar bool, aktiv canvas.Farbfeld, fuellung color.NRGBA) string {
 	switch {
+	case aktiv == canvas.FeldSchatten: // der Farbwähler färbt den Schatten (ADR-0021 Nachtrag 26 Punkt 7)
+		return i18n.TK("color field", "Shadow")
 	case !fuellbar || aktiv != canvas.FeldFuellung:
 		return i18n.TK("color field", "Color")
 	case fuellung.A == 0:

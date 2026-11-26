@@ -229,5 +229,187 @@
     "paket": "./internal/canvas",
     "alt": "\tif !sch.An {\n\t\tsch = document.Schatten{} // am Objekt wie in SetzeSchatten der Nullwert (V-4)",
     "neu": "\tif false {\n\t\tsch = document.Schatten{} // am Objekt wie in SetzeSchatten der Nullwert (V-4)"
+  },
+  {
+    "name": "SH34 Richtung + ohne Rastersprung",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "n = math.Floor(q+1e-9) + 1",
+    "neu": "n = q + 1"
+  },
+  {
+    "name": "SH35 Richtung − ohne Rastersprung",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "n = math.Ceil(q-1e-9) - 1",
+    "neu": "n = math.Floor(q) - 1"
+  },
+  {
+    "name": "SH36 Richtung nicht normiert",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "return document.NormWinkel(n * SchattenRichtungSchritt)",
+    "neu": "return n * SchattenRichtungSchritt"
+  },
+  {
+    "name": "SH37 Richtung wirkt ohne Schatten",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif !sch.An {\n\t\treturn false\n\t}",
+    "neu": ""
+  },
+  {
+    "name": "SH38 Reglerlage nicht gekappt",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "return min(1, w/bis)",
+    "neu": "return w / bis"
+  },
+  {
+    "name": "SH39 Regler ohne Runden",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "return math.Round(max(0, min(1, f)) * bis)",
+    "neu": "return max(0, min(1, f)) * bis"
+  },
+  {
+    "name": "SH40 Regler ohne Faktor",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "return SchattenLaengeRegler * f, SchattenWeichRegler * f",
+    "neu": "_ = f\n\treturn SchattenLaengeRegler, SchattenWeichRegler"
+  },
+  {
+    "name": "SH41 Schalter der Leiste wirkungslos",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\tif k.schalter.Clicked(gtx) && e.seiteAn() {\n\t\te.s.SchalteSchatten()",
+    "neu": "\tif k.schalter.Clicked(gtx) && e.seiteAn() {\n\t\t_ = e.s"
+  },
+  {
+    "name": "SH42 Farbfeld klappt Farbe nicht auf",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "e.seite.farbeZu, e.ebenen.vorrang, e.seite.farbeZeigen = false, false, true",
+    "neu": "e.seite.farbeZeigen = true"
+  },
+  {
+    "name": "SH43 Regler Softness setzt die Länge",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "sch.Weich = canvas.SchattenAusRegler(lage, weichBis)",
+    "neu": "sch.Laenge = canvas.SchattenAusRegler(lage, weichBis)"
+  },
+  {
+    "name": "SH44 Reglerzug endet nicht",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\te.s.BeendeBreiteZug()\n",
+    "neu": ""
+  },
+  {
+    "name": "SH45 Einstellungen auch ohne Schatten",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !sch.An {\n\t\treturn y\n\t}",
+    "neu": ""
+  },
+  {
+    "name": "SH46 Feldname ohne Schatten",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase aktiv == canvas.FeldSchatten: // der Farbwähler färbt den Schatten (ADR-0021 Nachtrag 26 Punkt 7)\n\t\treturn i18n.TK(\"color field\", \"Shadow\")\n",
+    "neu": ""
+  },
+  {
+    "name": "SH47 Leiste ohne Abschnitt Shadow",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\tif inhalt.Farbe { // Schatten je Objekt",
+    "neu": "\tif false { // Schatten je Objekt"
+  },
+  {
+    "name": "SH48 styles.ini schreibt den Schatten leer",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "w = schattenText(s.Schatten)",
+    "neu": "w = \"\""
+  },
+  {
+    "name": "SH49 styles.ini schreibt shadow immer",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "\t\t\tif k == \"shadow\" && !s.Schatten.An {\n\t\t\t\tcontinue // ohne Schatten fehlt der Schlüssel\n\t\t\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "SH50 styles.ini Länge ungeprüft",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "z[1] < 0 || z[1] > document.MaxSchattenLaenge || ",
+    "neu": ""
+  },
+  {
+    "name": "SH51 styles.ini Winkel nicht normiert",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "Winkel: document.NormWinkel(z[0])",
+    "neu": "Winkel: z[0]"
+  },
+  {
+    "name": "SH52 styles.ini Bereinigen verliert den Schatten",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "if hat[\"shadow\"] && s.Schatten.An {",
+    "neu": "if false {"
+  },
+  {
+    "name": "SH53 Schnellstil bereinigt ohne Schatten",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif st.Schatten.An {\n\t\tr.Schatten = st.Schatten\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "SH54 Schnellstil Schatten ohne Faktor",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\tst.Schatten.Laenge = math.Min(st.Schatten.Laenge*f, document.MaxSchattenLaenge)\n",
+    "neu": ""
+  },
+  {
+    "name": "SH55 Stil ohne Schatten passt nicht mehr",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif ok && !st.Schatten.An {\n\t\tist.Schatten = document.Schatten{}\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "SH56 Anwenden lässt den Schatten am Objekt weg",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "neu = mitSchatten(neu, g.Schatten)",
+    "neu": "_ = neu"
+  },
+  {
+    "name": "SH57 Stand des Objekts ohne Schatten",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "if ok && o.Ebenenwerte().Schatten.An {",
+    "neu": "if false {"
+  },
+  {
+    "name": "SH58 Stand des Werkzeugs ohne Schatten",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.Stil.Schatten.An {\n\t\tst.Schatten = s.Stil.Schatten\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "SH59 Feld Schatten bleibt beim Werkzeugwechsel",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.feld == FeldSchatten && w != s.Werkzeug {",
+    "neu": "if false {"
   }
 ]

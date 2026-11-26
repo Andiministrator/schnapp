@@ -98,11 +98,12 @@ func TestFarbwaehlerErreichbarInNiedrigenFenstern(t *testing.T) {
 	}
 }
 
-// Ein hohes Fenster rollt nicht: kein Überstand, das Mausrad bleibt ohne Wirkung, ganz oben.
+// Ein hohes Fenster rollt nicht: kein Überstand, das Mausrad bleibt ohne Wirkung, ganz oben. Seit dem Abschnitt
+// „Shadow“ (Karte #363, eine Zeile mehr) rollt das Startfenster 1200×800 mit offenen Ebenen um wenige Pixel; ab 850 nicht.
 func TestHohesFensterRolltNicht(t *testing.T) {
 	l, _ := ebenenLauf(t)
 	roll := &l.e.seite.roll
-	for _, h := range []int{800, 1000, 1200} {
+	for _, h := range []int{850, 1000, 1200} {
 		l.fenst = image.Pt(1200, h)
 		l.setle()
 		l.rolle(500)

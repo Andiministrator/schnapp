@@ -100,3 +100,28 @@ gelbe Markierung), stellt heute Farbe, Füllung, Strich und Schrift jedes Mal ei
 - **Zusammenführen statt Ersetzen (F-627):** „+“ und Entfernen schreiben nicht mehr die Sitzungsliste, sondern lesen `styles.ini` unter einer flock-Sperre (`styles.ini.lock` im selben Ordner, 0600, ohne flock-Unterstützung ohne Sperre, Wartezeit höchstens 3 s) neu und wenden nur die eigene Änderung an (`settings.AendereStile`, `StilHinzu`: anhängen, wenn kein gleicher Stil da ist und die Art Platz hat; `StilEntfernt`: genau diesen Stil). Danach gilt in der Sitzung der Stand der Datei. Zwei Fenster überschreiben einander also nicht, und ein entfernter Stil kommt nicht zurück. Die Sperrdatei bleibt liegen (kein Löschen, keine Wettlauf-Prüfung nötig).
 - **Nur speicherbare Stände (F-628):** `neuerStil` prüft mit demselben `settings.PruefeStil` wie der Schreiber; ein Stand mit Strich 0 oder einem Schriftnamen mit Leerraum am Rand wird abgelehnt (`HinzuUnbrauchbar`), „+“ ist grau, die Statuszeile erklärt es. Abgelehnt, nicht gekürzt: Der Stil soll den Stand wiedergeben, den man sieht.
 - **Unlesbare Datei (F-629 b):** Ist `styles.ini` nicht lesbar (keine reguläre Datei, über 64 KiB, Lesefehler), bleibt sie unberührt und die Fußzeile nennt den Fehler. Hat das Lesen Stile oder Zeilen verworfen, legt der erste Schreibzug zuerst `styles.ini.bak` an (exklusiv, 0600) und sagt es einmal in der Fußzeile; gibt es die Sicherung schon, wird **nichts** geschrieben (`ErrStileSicherung`). Gewählt statt „immer verweigern“, weil der Nutzer so mit einer lesbaren Datei weiterarbeiten kann, ohne dass etwas verloren geht; gewählt statt „Sicherung überschreiben“, weil die erste Sicherung das Einzige sein kann, was von handgeschriebenen Stilen übrig ist. Der Teil a von F-629 (Ergebnisgröße von `settings.ini`) gehört zu einem anderen Strang.
+
+## Nachtrag 1 (26.11.2026): Schatten und Strichart in Schnellstilen (Karte #363 Teil 2)
+
+**Status:** Akzeptiert (Claude Opus 5.5, im Auftrag Andis: „arbeite selbstständig“). Setzt ADR-0021 Nachtrag 26 Punkt 8
+um und entscheidet die offene Frage aus ADR-0021 Nachtrag 25 Punkt 8.
+
+1. **Schatten:** Ein Schnellstil trägt einen Schatten, wenn er einen hat (`canvas.Schnellstil.Schatten`, `An` = ja;
+   Länge und Weich auf Faktor 1, beim Anwenden mal Faktor, gedeckelt auf die Grenzen des Dokuments). Er entsteht nur
+   über „+“ aus einem Stand mit Schatten (Objekt mit Schatten oder Werkzeug mit eingeschaltetem Schatten). Anwenden setzt
+   ihn am Werkzeug und am gewählten Objekt, im selben Rückgängig-Schritt wie die übrigen Werte. Ein Stil **ohne**
+   Schatten lässt den des Werkzeugs und des Objekts stehen und **passt unabhängig davon** (`SchnellstilPasst` sieht den
+   Schatten des Stands dann nicht an); sonst verlöre ein Objekt mit Schatten den orangen Rand seiner eingebauten Kachel.
+   Für „schon vorhanden“ (`HinzuDoppelt`) zählt der Schatten dagegen mit: ein Stand mit Schatten neben einer
+   eingebauten Kachel ohne ist ein neuer Stil. Die eingebauten Stile haben keinen Schatten.
+2. **`styles.ini`:** freiwilliger Schlüssel `shadow = WINKEL LÄNGE WEICH #RRGGBBAA` bei jeder Art, nur geschrieben, wenn
+   der Stil einen Schatten hat. Lesen: vier Werte, Zahlen endlich, Länge 0 bis 1000, Weich 0 bis 200, der Winkel wird
+   auf 0 bis 360 gebracht; sonst ist der Stil ungültig wie bei jedem anderen kaputten Wert. `PruefeStil` lehnt einen
+   Schatten ab, der sich so nicht schreiben ließe.
+3. **Strichart:** Schnellstile tragen sie weiterhin nicht (wie die Spitzen des Pfeils): Sie ist eine Eigenschaft der
+   Form, nicht der Ansicht, und eine gestrichelte Kachel neben einer durchgezogenen verdoppelte die Reihe für wenig
+   Nutzen. Wer sie braucht, wählt sie im Klappfeld; ein späterer Wunsch kann sie wie den Schatten freiwillig aufnehmen.
+4. **Kacheln:** Die Mini-Darstellung zeigt den Schatten nicht; der Hinweis in der Statuszeile bleibt der Name.
+
+Tests: `internal/canvas/schnellstile_test.go` (`TestSchnellstilSchatten`), `internal/settings/stile_test.go`
+(Rundlauf, Parse-Regeln, `TestStileSchattenGrenzen`).

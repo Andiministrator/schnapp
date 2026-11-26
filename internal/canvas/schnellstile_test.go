@@ -521,3 +521,72 @@ func TestSchnellWerkzeugJeArt(t *testing.T) {
 		}
 	}
 }
+
+// ADR-0021 Nachtrag 26 Punkt 8: „+“ aus einem Stand mit Schatten nimmt ihn mit (auf Faktor 1); ein solcher Stil setzt
+// ihn beim Anwenden (mal Faktor) in einem Rückgängig-Schritt, ein Stil ohne Schatten lässt den des Objekts stehen und
+// passt unabhängig davon; die Umwandlung für styles.ini trägt ihn.
+func TestSchnellstilSchatten(t *testing.T) {
+	s, ids := stilSitzung(t, image.Pt(2400, 2160))
+	s.SetzeWerkzeug(WerkzeugAuswahl)
+	s.Auswahl = ids[1] // Kasten
+	s.SchalteSchatten()
+	s.SchattenRichtungStufe(1) // 150°
+	o, _ := s.D.Objekt(ids[1])
+	objSchatten := o.Ebenenwerte().Schatten
+	if !objSchatten.An || objSchatten.Laenge != 12 || objSchatten.Winkel != 150 {
+		t.Fatalf("Schatten des Kastens bei Faktor 2: %+v", objSchatten)
+	}
+	// Ein eingebauter Stil (ohne Schatten) passt weiter und lässt den Schatten stehen.
+	rot := schnell(t, SchnellKasten, "red")
+	if !s.SchnellstilPasst(rot) {
+		t.Error("Stil ohne Schatten passt nicht mehr, weil das Objekt einen hat")
+	}
+	s.WendeSchnellstilAn(schnell(t, SchnellKasten, "marker"))
+	if o, _ := s.D.Objekt(ids[1]); o.Ebenenwerte().Schatten != objSchatten {
+		t.Errorf("Stil ohne Schatten nahm den Schatten weg: %+v", o.Ebenenwerte().Schatten)
+	}
+	// „+“: der eigene Stil trägt den Schatten auf Faktor 1.
+	st, r := s.FuegeSchnellstilHinzu(SchnellKasten)
+	if r != HinzuOK || !st.Schatten.An || st.Schatten.Laenge != 6 || st.Schatten.Weich != 8 || st.Schatten.Winkel != 150 {
+		t.Fatalf("eigener Stil %+v (%v)", st, r)
+	}
+	if _, r := s.FuegeSchnellstilHinzu(SchnellKasten); r != HinzuDoppelt {
+		t.Errorf("derselbe Stand zweimal: %v", r)
+	}
+	// Ohne Schatten am Objekt passt der Stil mit Schatten nicht; Anwenden setzt ihn als einen Schritt.
+	s.SchalteSchatten()
+	if s.SchnellstilPasst(st) {
+		t.Error("Stil mit Schatten passt zu einem Kasten ohne")
+	}
+	vorN := schritte(t, s)
+	if !s.WendeSchnellstilAn(st) || schritte(t, s)-vorN != 1 {
+		t.Fatal("Stil mit Schatten: kein Rückgängig-Schritt")
+	}
+	if o, _ := s.D.Objekt(ids[1]); o.Ebenenwerte().Schatten != objSchatten || !s.SchnellstilPasst(st) {
+		t.Errorf("nach dem Anwenden %+v, Soll %+v", o.Ebenenwerte().Schatten, objSchatten)
+	}
+	if s.Stil.Schatten != objSchatten {
+		t.Errorf("Werkzeug übernimmt den Schatten nicht: %+v", s.Stil.Schatten)
+	}
+	// Ohne Auswahl passt der Stil zum Stand des Werkzeugs, der den Schatten jetzt trägt.
+	s.Auswahl = 0
+	s.SetzeWerkzeug(WerkzeugKasten)
+	if !s.SchnellstilPasst(st) {
+		t.Error("Stand des Werkzeugs ohne Schatten")
+	}
+	// Die Regler der Leiste reichen bei Faktor 2 doppelt so weit.
+	if l, w := s.SchattenReglerMax(); l != 2*SchattenLaengeRegler || w != 2*SchattenWeichRegler {
+		t.Errorf("Regler bei Faktor 2: %v %v", l, w)
+	}
+	// Umwandlung für styles.ini hin und zurück.
+	e := st.Einstellung()
+	if e.Schatten != st.Schatten {
+		t.Errorf("Einstellung ohne Schatten: %+v", e)
+	}
+	if z, ok := SchnellstilAus(e); !ok || !z.gleichWie(st) {
+		t.Errorf("Rundlauf %+v", z)
+	}
+	if err := settings.PruefeStil(e); err != nil {
+		t.Errorf("styles.ini nimmt den Stil nicht: %v", err)
+	}
+}

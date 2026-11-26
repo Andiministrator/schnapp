@@ -2,7 +2,11 @@
 
 package canvas
 
-import "github.com/Andiministrator/schnapp/internal/document"
+import (
+	"math"
+
+	"github.com/Andiministrator/schnapp/internal/document"
+)
 
 // Schatten je Objekt (ADR-0021 Nachtrag 26 Punkt 7): Die rechte Leiste zeigt den des gewählten Objekts, sonst den des
 // Werkzeugs (Stil.Schatten, ein Wert für alle Werkzeuge wie die Strichstärke). Setzen ändert ein gewähltes Objekt als
@@ -130,4 +134,57 @@ func (s *Sitzung) SchattenZugSetze(sch document.Schatten) {
 			_ = s.D.ZugSetze(mitSchatten(o, sch))
 		}
 	}
+}
+
+// Bereich der Regler „Distance“ und „Softness“ der rechten Leiste bei Faktor 1 (ADR-0021 Nachtrag 26 Punkt 7); beide
+// mal Faktor des Bilds. Größere Werte aus einer Datei stehen am Ende des Reglers.
+const (
+	SchattenLaengeRegler = 40.0
+	SchattenWeichRegler  = 20.0
+	// SchattenRichtungSchritt ist der Schritt von − / + an „Direction“ in Grad.
+	SchattenRichtungSchritt = 15.0
+)
+
+// SchattenReglerMax liefert das Ende der Regler für Länge und Weich zum Faktor des Bilds.
+func (s *Sitzung) SchattenReglerMax() (laenge, weich float64) {
+	f := s.faktor()
+	return SchattenLaengeRegler * f, SchattenWeichRegler * f
+}
+
+// SchattenReglerLage ist die Lage (0 bis 1) des Werts w an einem Regler bis bis; außerhalb am Rand.
+func SchattenReglerLage(w, bis float64) float64 {
+	if !(bis > 0) || !(w > 0) {
+		return 0
+	}
+	return min(1, w/bis)
+}
+
+// SchattenAusRegler ist der Wert an der Lage f (0 bis 1) eines Reglers bis bis, auf ganze Pixel gerundet.
+func SchattenAusRegler(f, bis float64) float64 {
+	return math.Round(max(0, min(1, f)) * bis)
+}
+
+// NaechsteSchattenRichtung ist die Richtung nach einem Schritt dir (−1, +1) von w: auf das nächste Vielfache von
+// SchattenRichtungSchritt in dieser Richtung (ein Winkel dazwischen springt erst auf das Raster), 0 bis 360.
+func NaechsteSchattenRichtung(w float64, dir int) float64 {
+	w = document.NormWinkel(w)
+	q := w / SchattenRichtungSchritt
+	var n float64
+	if dir > 0 {
+		n = math.Floor(q+1e-9) + 1
+	} else {
+		n = math.Ceil(q-1e-9) - 1
+	}
+	return document.NormWinkel(n * SchattenRichtungSchritt)
+}
+
+// SchattenRichtungStufe dreht die Richtung des Schattens um einen Schritt (− / + der Leiste). Liefert, ob sich das
+// Dokument geändert hat.
+func (s *Sitzung) SchattenRichtungStufe(dir int) bool {
+	sch := s.Schatten()
+	if !sch.An {
+		return false
+	}
+	sch.Winkel = NaechsteSchattenRichtung(sch.Winkel, dir)
+	return s.SetzeSchatten(sch)
 }
