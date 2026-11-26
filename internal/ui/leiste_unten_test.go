@@ -161,7 +161,11 @@ func (l *leistenLauf) warte(f func() bool) {
 // ruhig wartet, bis weder Speichern noch Wechsel noch Lesen des Index laufen.
 func (l *leistenLauf) ruhig() {
 	l.t.Helper()
-	l.warte(func() bool { return !l.e.s.SpeichernLaeuft() && !l.e.wechsel.laedt && !l.e.unten.indexLaeuft })
+	// Auch auf die Arbeit der Bibliothek (Papierkorb, Schlagworte) warten: sonst schreibt InPapierkorb nach Testende noch
+	// in daten/Trash, und das Aufräumen von t.TempDir scheitert (CI 2524242, TestPapierkorbNichtOffeneVergisst).
+	l.warte(func() bool {
+		return !l.e.s.SpeichernLaeuft() && !l.e.wechsel.laedt && !l.e.unten.indexLaeuft && !l.e.bibl.arbeitLaeuft
+	})
 	l.e.rettungEndenAbwarten(5 * time.Second) // Rettung.Ende läuft beim Wechsel im Hintergrund (F-637)
 }
 
