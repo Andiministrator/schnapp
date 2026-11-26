@@ -1024,6 +1024,10 @@ msgstr "Farben tauschen"
 msgid "None"
 msgstr "Keine"
 
+msgctxt "arrow head"
+msgid "None"
+msgstr "Keine"
+
 msgid "Cannot annotate %s: %s"
 msgstr "%s lässt sich nicht beschriften: %s"
 
@@ -1694,15 +1698,19 @@ msgstr "Nur lokale Dateien lassen sich öffnen."
 msgid "The chosen file was not opened yet: open it again with Ctrl+O."
 msgstr "Die gewählte Datei ist noch nicht geöffnet: mit Strg+O erneut öffnen."
 
+msgctxt "arrow head"
 msgid "Filled triangle"
 msgstr "Gefülltes Dreieck"
 
+msgctxt "arrow head"
 msgid "Open head"
 msgstr "Offene Spitze"
 
+msgctxt "arrow head"
 msgid "Dot"
 msgstr "Punkt"
 
+msgctxt "arrow head"
 msgid "Bar"
 msgstr "Querstrich"
 
@@ -1718,24 +1726,31 @@ msgstr "Pfeil-Stil am Anfang"
 msgid "Arrow style at the end"
 msgstr "Pfeil-Stil am Ende"
 
+msgctxt "arrow end"
 msgid "Start"
 msgstr "Anfang"
 
+msgctxt "arrow end"
 msgid "End"
 msgstr "Ende"
 
+msgctxt "arrow head"
 msgid "Narrow"
 msgstr "Schlank"
 
+msgctxt "arrow head"
 msgid "Notched"
 msgstr "Eingekerbt"
 
+msgctxt "arrow head"
 msgid "Half head"
 msgstr "Halbe Spitze"
 
+msgctxt "arrow head"
 msgid "Diamond"
 msgstr "Raute"
 
+msgctxt "arrow head"
 msgid "Square"
 msgstr "Quadrat"
 

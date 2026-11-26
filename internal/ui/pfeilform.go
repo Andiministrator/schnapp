@@ -43,25 +43,25 @@ func (k *pfeilformLeiste) alle() []*widget.Clickable {
 func kopfName(k document.Kopfart) string {
 	switch k {
 	case document.KopfKeine:
-		return i18n.T("None")
+		return i18n.TK("arrow head", "None")
 	case document.KopfSchlank:
-		return i18n.T("Narrow")
+		return i18n.TK("arrow head", "Narrow")
 	case document.KopfKerbe:
-		return i18n.T("Notched")
+		return i18n.TK("arrow head", "Notched")
 	case document.KopfWinkel:
-		return i18n.T("Open head")
+		return i18n.TK("arrow head", "Open head")
 	case document.KopfHalb:
-		return i18n.T("Half head")
+		return i18n.TK("arrow head", "Half head")
 	case document.KopfPunkt:
-		return i18n.T("Dot")
+		return i18n.TK("arrow head", "Dot")
 	case document.KopfRaute:
-		return i18n.T("Diamond")
+		return i18n.TK("arrow head", "Diamond")
 	case document.KopfQuadrat:
-		return i18n.T("Square")
+		return i18n.TK("arrow head", "Square")
 	case document.KopfQuer:
-		return i18n.T("Bar")
+		return i18n.TK("arrow head", "Bar")
 	}
-	return i18n.T("Filled triangle")
+	return i18n.TK("arrow head", "Filled triangle")
 }
 
 // kopfListe ist die Liste der Spitzenarten für das Klappfeld am Anfang bzw. Ende (menueEintraegeVon).
@@ -113,9 +113,9 @@ func (e *editor) zeichnePfeilform(gtx layout.Context, x, y, breite, spalte int) 
 	y += e.seiteText(gtx, i18n.T("Arrow style"), 12, farbeNebentext, image.Pt(x, y), breite, 1) + gtx.Dp(4)
 	hoch := gtx.Dp(28)
 	for j, art := range []document.Kopfart{anfang, ende} {
-		titel := i18n.T("Start")
+		titel := i18n.TK("arrow end", "Start")
 		if j == 1 {
-			titel = i18n.T("End")
+			titel = i18n.TK("arrow end", "End")
 		}
 		e.seiteText(gtx, titel, 13, farbeNebentext, image.Pt(x, y+gtx.Dp(5)), spalte-gtx.Dp(4), 1)
 		r := image.Rect(x+spalte, y, x+breite, y+hoch)
