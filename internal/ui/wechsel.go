@@ -55,7 +55,10 @@ type wechselZustand struct {
 	// gewählte Datei nicht geöffnet ist (Kritik K-4): Anders als in der Leiste gibt es keinen zweiten Klick auf dasselbe.
 	ausDialog bool
 	laedt     bool // die Ladefunktion läuft
-	antwort   chan wechselErgebnis
+	// papierkorb: Die bisher offene Aufnahme geht nach der Übernahme des Ziels in den Papierkorb (✕ oder Entf an der
+	// offenen, Karte #347). Scheitert Speichern oder Laden, bleibt sie offen und liegt nicht im Papierkorb.
+	papierkorb bool
+	antwort    chan wechselErgebnis
 }
 
 type wechselErgebnis struct {
@@ -96,7 +99,7 @@ func (e *editor) wechselAnfrage(abs string) {
 		e.melde(i18n.T("Text recognition is running. Press Esc to cancel it first."), false)
 		return
 	}
-	e.wechsel.ziel, e.wechsel.ausDialog = abs, false
+	e.wechsel.ziel, e.wechsel.ausDialog, e.wechsel.papierkorb = abs, false, false
 	abzug, err := e.s.SpeichernJetzt()
 	switch {
 	case errors.Is(err, canvas.ErrNichtsZuSpeichern):
@@ -125,6 +128,9 @@ func (e *editor) wechselNachSpeichern(r speicherErgebnis, ende canvas.Ende) {
 		e.wechsel.ziel = "" // der Hinweis bleibt stehen; ein weiterer Klick wechselt (gespeichert ist nichts mehr offen)
 		if e.wechsel.ausDialog {
 			e.meldung.Text += " " + i18n.T("The chosen file was not opened yet: open it again with Ctrl+O.")
+		}
+		if e.wechsel.papierkorb {
+			e.meldung.Text += " " + i18n.T("The capture was not moved to the trash.")
 		}
 	default:
 		e.wechselLaden()
@@ -168,12 +174,16 @@ func (e *editor) wechselAbholen() bool {
 	default:
 		return false
 	}
+	papierkorb := e.wechsel.papierkorb
 	e.wechsel = wechselZustand{}
 	e.s.SetzeRuhe(false)
 	switch {
 	case r.err != nil:
 		// Die Ladefunktion übersetzt bekannte Fehler; was sie nicht kennt, verliert hier Paketpräfix und Pfad (F-663).
 		e.melde(fmt.Sprintf(i18n.T("Could not open the capture: %v"), fehlerGrund(r.err)), true)
+		if papierkorb {
+			e.meldung.Text += " " + i18n.T("The capture was not moved to the trash.")
+		}
 		// Fehlt die Datei (im Dateimanager gelöscht, verschoben), verschwindet ihr Eintrag nach dem Abgleich aus Leiste
 		// und Ansicht (F-672); bei anderen Fehlern ändert der Abgleich nichts.
 		e.abgleichAnfordern()
@@ -195,6 +205,19 @@ func (e *editor) wechselAbholen() bool {
 			e.melde(i18n.T("The other capture was not opened: the export is still open."), false)
 		default:
 			e.melde(i18n.T("The other capture was not opened: this one was changed meanwhile."), false)
+		}
+	case papierkorb:
+		// Die bisher offene ist gespeichert und nicht mehr offen: jetzt in den Papierkorb, die volle Ansicht bleibt offen
+		// (Karte #347). Der Pfad ist der der Datei, die den Stand trägt (nach einem Speichern als neue Aufnahme die neue).
+		alt := ""
+		if e.pfad != nil {
+			alt = e.pfad()
+		}
+		e.wechselBehaeltAnsicht = true
+		e.uebernimm(r.g)
+		e.wechselBehaeltAnsicht = false
+		if rel, ok := e.bib.Bibliothek.Relativ(alt); ok && alt != "" {
+			e.papierkorbAnfrage(rel, false, "")
 		}
 	default:
 		e.uebernimm(r.g)
@@ -242,7 +265,11 @@ func (e *editor) uebernimm(g Geoeffnet) {
 	e.bildStand = e.s.BildAenderung()
 	e.bildNeu()
 	e.leisteNachWechsel()
-	e.bibliothekNachWechsel() // aus der vollen Ansicht geöffnet: sie schließt (ADR-0036 Punkt 4)
+	if e.wechselBehaeltAnsicht {
+		e.bibliothekAktuell() // die offene aus der Ansicht weggeworfen: die Ansicht bleibt (Karte #347)
+	} else {
+		e.bibliothekNachWechsel() // aus der vollen Ansicht geöffnet: sie schließt (ADR-0036 Punkt 4)
+	}
 	diagnoseEditor("Wechsel zu %s", g.Titel)
 	if e.w != nil {
 		e.w.Invalidate()

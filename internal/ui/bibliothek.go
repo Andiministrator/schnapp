@@ -212,10 +212,15 @@ func (e *editor) bibliothekSchliessen(gtx *layout.Context) {
 
 // bibliothekNachWechsel: Eine Aufnahme aus der Ansicht ist geöffnet; die Ansicht schließt (ADR-0036 Punkt 4).
 func (e *editor) bibliothekNachWechsel() {
+	e.bibliothekAktuell()
+	e.bibliothekSchliessen(nil)
+}
+
+// bibliothekAktuell setzt den grünen Rand der Ansicht auf die offene Aufnahme.
+func (e *editor) bibliothekAktuell() {
 	if e.bibl.r != nil {
 		e.bibl.r.SetzeAktuell(e.offenRel())
 	}
-	e.bibliothekSchliessen(nil)
 }
 
 // bibliothekNachSpeichern: Nach einem eigenen Speichern kann die offene Aufnahme eine neue sein (grüner Rand).
@@ -371,18 +376,48 @@ func (e *editor) bibPapierkorb() {
 	if i < 0 || i >= len(b.r.Eintraege()) {
 		return
 	}
-	e.papierkorbAnfrage(b.r.Eintraege()[i].Pfad, e.bibIstOffen(i))
+	nachbar := ""
+	if j := nachbarStelle(i, len(b.r.Eintraege())); j >= 0 {
+		nachbar = e.bibAbs(j)
+	}
+	e.papierkorbAnfrage(b.r.Eintraege()[i].Pfad, e.bibIstOffen(i), nachbar)
+}
+
+// nachbarStelle ist die Aufnahme, die nach dem Wegwerfen der Stelle i von n gezeigt wird: die nächst ältere (rechts
+// davon), an der ältesten die nächst jüngere; −1, wenn es keine andere gibt (Karte #347).
+func nachbarStelle(i, n int) int {
+	switch {
+	case i+1 < n:
+		return i + 1
+	case i > 0:
+		return i - 1
+	}
+	return -1
 }
 
 // papierkorbAnfrage legt die Aufnahme rel (relativ zur Ablage) im Hintergrund in den freedesktop-Papierkorb — für die
-// volle Ansicht und die Leiste (Entf und ✕, Karte #312). Die offene Aufnahme ist ausgenommen; während Speichern,
-// Wechsel oder einer anderen Arbeit der Ansicht geschieht nichts, die Fußzeile sagt warum.
-func (e *editor) papierkorbAnfrage(rel string, offen bool) {
+// volle Ansicht und die Leiste (Entf und ✕, Karte #312). Während Speichern, Wechsel oder einer anderen Arbeit der
+// Ansicht geschieht nichts, die Fußzeile sagt warum.
+//
+// Die offene Aufnahme (offen) geht den Weg eines Wechsels zur Aufnahme nachbar (absolut): erst Speichern wie Strg+S,
+// dann Laden und Übernehmen, erst danach in den Papierkorb (wechselAbholen). So liegt der letzte Stand samt
+// Beschriftungen im Papierkorb, und das Fenster zeigt nie eine weggeworfene Datei. Die Zwischenablage berührt das
+// nicht: Der Halter (wlclip) und das Fenster halten die kopierten Bytes, nicht die Datei (ADR-0036 Zusatz Karte #347).
+// Ohne Nachbarn bleibt die einzige Aufnahme offen.
+func (e *editor) papierkorbAnfrage(rel string, offen bool, nachbar string) {
 	if rel == "" {
 		return
 	}
 	if offen {
-		e.melde(i18n.T("The open capture cannot be moved to the trash. Open another one first."), false)
+		if nachbar == "" {
+			e.melde(i18n.T("This is the only capture: it stays open and is not moved to the trash."), false)
+			return
+		}
+		e.wechselAnfrage(nachbar)
+		if e.wechsel.ziel == nachbar {
+			e.wechsel.papierkorb = true
+			e.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)
+		}
 		return
 	}
 	switch {
@@ -411,6 +446,14 @@ const loeschRuhe = doppelklickZeit + 200*time.Millisecond
 
 // loeschRuht meldet, ob ein ✕ gerade nicht gilt (kurz nach einem Löschen).
 func (e *editor) loeschRuht() bool { return leisteUhr().Before(e.bibl.loeschRuheBis) }
+
+// loeschRuheWecken bestellt ein Bild für das Ende der Ruhe: Sonst erschiene das ✕ der nachgerückten Aufnahme unter dem
+// stehenden Zeiger erst mit der nächsten Mausbewegung (Andi, 26.11.2026, Karte #347).
+func (e *editor) loeschRuheWecken(gtx layout.Context) {
+	if e.loeschRuht() {
+		gtx.Execute(op.InvalidateCmd{At: e.bibl.loeschRuheBis})
+	}
+}
 
 // loeschRahmen ist das ✕ oben rechts in der Vorschau br.
 func loeschRahmen(gtx layout.Context, br image.Rectangle) image.Rectangle {
@@ -577,11 +620,16 @@ func (e *editor) bibliothekBearbeiten() []menueEintrag {
 	if offen {
 		grau = i18n.T("This is the open capture. Open another one first.")
 	}
+	einzigGrau := ""
+	if offen && nachbarStelle(i, len(b.r.Eintraege())) < 0 {
+		einzigGrau = i18n.T("This is the only capture: it stays open and is not moved to the trash.")
+	}
 	return []menueEintrag{
 		{akt: aktBibOeffnen, text: i18n.T("Open"), an: da, kuerzel: tastenName(key.Filter{Name: key.NameReturn})},
 		{akt: aktBibSchlagworte, text: i18n.T("Edit keywords"), an: da && !offen, erklaerung: grau,
 			kuerzel: tastenName(key.Filter{Name: key.NameF2}), gruppe: true},
-		{akt: aktBibPapierkorb, text: i18n.T("Move to trash"), an: da && !offen, erklaerung: grau,
+		// Die offene geht mit Wechsel zur Nachbarin in den Papierkorb (Karte #347); nur die einzige bleibt.
+		{akt: aktBibPapierkorb, text: i18n.T("Move to trash"), an: da && (!offen || einzigGrau == ""), erklaerung: einzigGrau,
 			kuerzel: tastenName(key.Filter{Name: key.NameDeleteForward})},
 		{akt: aktBibSuchen, text: i18n.T("Search by keyword"), an: true,
 			kuerzel: tastenName(key.Filter{Name: "F", Required: key.ModShortcut}), gruppe: true},
@@ -1042,6 +1090,7 @@ func (e *editor) zeichneBibliothekRaster(gtx layout.Context) {
 	}
 	fokus := b.r.Fokus()
 	b.loesch = b.loesch[:0]
+	e.loeschRuheWecken(gtx)
 	for i := b.von; i < b.bis; i++ {
 		kr := b.r.Lage(i, m).Add(sicht.Min)
 		br := image.Rect(kr.Min.X, kr.Min.Y, kr.Max.X, kr.Min.Y+dp(bibBildH))
@@ -1059,9 +1108,9 @@ func (e *editor) zeichneBibliothekRaster(gtx layout.Context) {
 		if i == fokus && b.ziel == bibZielRaster {
 			bibRing(gtx, br)
 		}
-		// ✕ oben rechts unter dem Zeiger oder nach langem Druck; nicht an der offenen Aufnahme (Karte #312).
+		// ✕ oben rechts unter dem Zeiger oder nach langem Druck, auch an der offenen Aufnahme (Karten #312, #347).
 		var lr image.Rectangle
-		if (i == b.ueber || i == b.langDruck) && !e.bibIstOffen(i) && b.bearbeite != eintrag.Pfad && !e.loeschRuht() {
+		if (i == b.ueber || i == b.langDruck) && b.bearbeite != eintrag.Pfad && !e.loeschRuht() {
 			lr = loeschRahmen(gtx, br)
 			zeichneLoeschX(gtx, lr, b.zeiger.In(lr))
 		}

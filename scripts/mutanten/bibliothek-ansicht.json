@@ -196,11 +196,11 @@
     "neu": "aktBibOeffnen, aktBibSchlagworte, aktBibPapierkorb, aktBibSuchen:\n\t\treturn true\n\t}\n\treturn true"
   },
   {
-    "name": "BV4 Entf legt die offene Aufnahme in den Papierkorb",
+    "name": "BV4 Entf legt die offene Aufnahme ohne Wechsel in den Papierkorb",
     "datei": "internal/ui/bibliothek.go",
     "paket": "./internal/ui",
-    "alt": "\te.papierkorbAnfrage(b.r.Eintraege()[i].Pfad, e.bibIstOffen(i))",
-    "neu": "\te.papierkorbAnfrage(b.r.Eintraege()[i].Pfad, false)"
+    "alt": "\te.papierkorbAnfrage(b.r.Eintraege()[i].Pfad, e.bibIstOffen(i), nachbar)",
+    "neu": "\te.papierkorbAnfrage(b.r.Eintraege()[i].Pfad, false, nachbar)"
   },
   {
     "name": "BV5 F2 an der offenen Aufnahme",

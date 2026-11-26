@@ -373,14 +373,19 @@ func langerDruck(h []widget.Press) bool {
 	return !p.Cancelled && !p.End.IsZero() && p.End.Sub(p.Start) >= langDruckZeit
 }
 
-// leistePapierkorb legt die Aufnahme an der Stelle i in den Papierkorb (✕, Entf); die offene ist ausgenommen.
+// leistePapierkorb legt die Aufnahme an der Stelle i in den Papierkorb (✕, Entf); an der offenen wechselt der Editor
+// vorher zur Nachbarin (papierkorbAnfrage, Karte #347).
 func (e *editor) leistePapierkorb(i int) {
 	k := &e.unten
 	if i < 0 || i >= len(k.gezeigt) || k.gezeigt[i] == "" {
 		return
 	}
 	abs := filepath.Join(e.bib.Bibliothek.Orte.Ablage, filepath.FromSlash(k.gezeigt[i]))
-	e.papierkorbAnfrage(k.gezeigt[i], k.l.IstAktuell(i) || e.istOffen(abs))
+	nachbar := ""
+	if j := nachbarStelle(i, len(k.gezeigt)); j >= 0 && k.gezeigt[j] != "" {
+		nachbar = filepath.Join(e.bib.Bibliothek.Orte.Ablage, filepath.FromSlash(k.gezeigt[j]))
+	}
+	e.papierkorbAnfrage(k.gezeigt[i], k.l.IstAktuell(i) || e.istOffen(abs), nachbar)
 }
 
 // leisteOeffne öffnet die Aufnahme an der Stelle i, wie sie beim letzten Zeichnen stand. Die offene übergeht
@@ -482,6 +487,7 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 		e.unten.v.Runde() // Aufträge weggerollter Vorschauen verfallen (F-669)
 	}
 	y0 := r.Min.Y + gtx.Dp(leisteObenDp)
+	e.loeschRuheWecken(gtx)
 	for i := k.von; i < k.bis; i++ {
 		x0, x1 := k.l.Lage(i, k.masse)
 		kr := image.Rect(r.Min.X+x0, y0, r.Min.X+x1, y0+gtx.Dp(leisteKachelH))
@@ -499,7 +505,7 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 		seiteKnopf(gtx, &k.knoepfe[i], kr)
 		// ✕ oben rechts (Karte #312), über der Vorschau angemeldet, damit es den Klick bekommt.
 		var lr image.Rectangle
-		if !aktuell && !e.loeschRuht() && (k.knoepfe[i].Hovered() || k.loesch[i].Hovered() || k.langDruck == i) {
+		if !e.loeschRuht() && (k.knoepfe[i].Hovered() || k.loesch[i].Hovered() || k.langDruck == i) {
 			lr = loeschRahmen(gtx, kr)
 			zeichneLoeschX(gtx, lr, k.loesch[i].Hovered())
 			seiteKnopf(gtx, &k.loesch[i], lr)

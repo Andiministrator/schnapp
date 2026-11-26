@@ -1642,8 +1642,11 @@ msgstr "In der Bibliothek nicht verfügbar. Esc führt zurück zum Bild."
 msgid "The keywords of the open capture cannot be changed here. Open another one first."
 msgstr "Die Schlagworte der offenen Aufnahme lassen sich hier nicht ändern. Erst eine andere öffnen."
 
-msgid "The open capture cannot be moved to the trash. Open another one first."
-msgstr "Die offene Aufnahme kann nicht in den Papierkorb. Erst eine andere öffnen."
+msgid "This is the only capture: it stays open and is not moved to the trash."
+msgstr "Das ist die einzige Aufnahme: Sie bleibt offen und kommt nicht in den Papierkorb."
+
+msgid "The capture was not moved to the trash."
+msgstr "Die Aufnahme liegt nicht im Papierkorb."
 
 msgid "This is the open capture. Open another one first."
 msgstr "Das ist die offene Aufnahme. Erst eine andere öffnen."

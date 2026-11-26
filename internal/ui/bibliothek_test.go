@@ -162,13 +162,20 @@ func TestBibliothekSperrtDasBild(t *testing.T) {
 		l.taste(k.n, k.m)
 	}
 	l.tippe("Rx")
-	l.taste(key.NameDeleteForward, 0) // Fokus auf der offenen Aufnahme: nur ein Hinweis
+	// Entf an der offenen Aufnahme wechselt seit Karte #347 zur Nachbarin (TestBibliothekPapierkorb); hier zählt nur, dass
+	// es das gewählte Objekt nicht trifft — an einer anderen Kachel.
+	l.taste(key.NameRightArrow, 0)
+	l.e.bibl.loeschRuheBis = leisteUhr().Add(time.Hour) // das ✕ ruht: Entf legt nichts in den Papierkorb
+	l.e.bibl.arbeitLaeuft = true
+	l.taste(key.NameDeleteForward, 0)
+	l.e.bibl.arbeitLaeuft = false
+	l.taste(key.NameLeftArrow, 0)
 	if l.e.s.Werkzeug != canvas.WerkzeugAuswahl || len(l.e.s.D.Objekte()) != vorher || l.e.s.Auswahl != l.id ||
 		l.inhalt() != "Hallo" || l.e.seiteZu || !l.e.unten.an {
 		t.Errorf("Bild verändert: Werkzeug %v, Objekte %d, Auswahl %d, Inhalt %q, Seite zu %v, Leiste %v",
 			l.e.s.Werkzeug, len(l.e.s.D.Objekte()), l.e.s.Auswahl, l.inhalt(), l.e.seiteZu, l.e.unten.an)
 	}
-	if !l.e.bibl.offen || !strings.Contains(l.e.meldung.Text, "cannot be moved") {
+	if !l.e.bibl.offen || !strings.Contains(l.e.meldung.Text, "still working") {
 		t.Errorf("offen %v, Meldung %q", l.e.bibl.offen, l.e.meldung.Text)
 	}
 	for _, d := range l.pfade {
@@ -222,10 +229,13 @@ func TestBibliothekSperrtDasBild(t *testing.T) {
 			t.Errorf("Datei, %s: an %v", en.text, en.an)
 		}
 	}
-	// Papierkorb und Schlagworte sind an der offenen Aufnahme grau mit Erklärung.
+	// Schlagworte sind an der offenen Aufnahme grau mit Erklärung; der Papierkorb geht über den Wechsel (Karte #347).
 	for _, en := range l.e.menueEintraegeVon(menueBearbeiten) {
-		if (en.akt == aktBibPapierkorb || en.akt == aktBibSchlagworte) && (en.an || en.erklaerung == "") {
+		if en.akt == aktBibSchlagworte && (en.an || en.erklaerung == "") {
 			t.Errorf("%s an der offenen Aufnahme: an %v", en.text, en.an)
+		}
+		if en.akt == aktBibPapierkorb && !en.an {
+			t.Errorf("%s an der offenen Aufnahme grau", en.text)
 		}
 	}
 	// F10 öffnet das Menü, Esc schließt es; der Fokus kehrt in die Ansicht zurück.
@@ -320,12 +330,21 @@ func TestBibliothekPapierkorb(t *testing.T) {
 	if len(l.e.unten.l.Eintraege()) != 3 {
 		t.Errorf("Leiste nicht neu gelesen: %d", len(l.e.unten.l.Eintraege()))
 	}
-	// Die offene Aufnahme (Stelle 1) bleibt.
+	// Die offene Aufnahme (Stelle 1): erst Wechsel zur nächst älteren (jetzt Stelle 2), dann Papierkorb; die Ansicht
+	// bleibt offen (Karte #347).
+	b.loeschRuheBis = time.Time{}
 	l.taste(key.NameLeftArrow, 0)
 	l.taste(key.NameDeleteForward, 0)
+	l.warte(func() bool { return !l.e.wechsel.laedt })
 	l.bibRuhig()
-	if _, err := os.Stat(l.pfade[1]); err != nil || len(b.r.Eintraege()) != 3 {
-		t.Errorf("offene Aufnahme verschoben: %v", err)
+	if _, err := os.Stat(l.pfade[1]); !os.IsNotExist(err) || len(b.r.Eintraege()) != 2 {
+		t.Errorf("offene Aufnahme nicht im Papierkorb: %v, %d Einträge", err, len(b.r.Eintraege()))
+	}
+	if a := l.aufrufe(); len(a) != 1 || a[0] != l.pfade[3] {
+		t.Errorf("geladen %v, Soll %s", a, l.pfade[3])
+	}
+	if !b.offen || l.e.pfad() != l.pfade[3] {
+		t.Errorf("Ansicht offen %v, offen ist %s", b.offen, l.e.pfad())
 	}
 }
 

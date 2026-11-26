@@ -945,7 +945,7 @@ msgid "Keywords saved."
 msgstr ""
 
 #: internal/ui/bibliothek.go
-msgid "The open capture cannot be moved to the trash. Open another one first."
+msgid "This is the only capture: it stays open and is not moved to the trash."
 msgstr ""
 
 #: internal/ui/bibliothek.go internal/ui/wechsel.go
@@ -2169,6 +2169,10 @@ msgstr ""
 
 #: internal/ui/wechsel.go
 msgid "The chosen file was not opened yet: open it again with Ctrl+O."
+msgstr ""
+
+#: internal/ui/wechsel.go
+msgid "The capture was not moved to the trash."
 msgstr ""
 
 #: internal/ui/wechsel.go

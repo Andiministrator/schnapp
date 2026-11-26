@@ -17,8 +17,8 @@
     "name": "KS14-3 keine Ruhe nach dem ✕",
     "datei": "internal/ui/bibliothek.go",
     "paket": "./internal/ui",
-    "alt": "\te.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)\n",
-    "neu": ""
+    "alt": "\te.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)\n\te.bibArbeiten(",
+    "neu": "\te.bibArbeiten("
   },
   {
     "name": "KS14-5 Öffnen ohne Hinweis auf erneutes Öffnen",

@@ -278,6 +278,9 @@ type editor struct {
 	// fensterHaeltKopie: Die Zwischenablage trägt das Bild nur über dieses Fenster (kein Halter möglich, Rückfall,
 	// ADR-0015 Nachtrag 2); fensterWarnung: Das Schließen wurde deswegen schon einmal angehalten (F-295).
 	fensterHaeltKopie, fensterWarnung bool
+	// wechselBehaeltAnsicht: uebernimm lässt die volle Ansicht der Bibliothek offen (die offene Aufnahme wurde aus ihr
+	// weggeworfen, Karte #347).
+	wechselBehaeltAnsicht bool
 	// kopieIstText: Die Kopie, die das Fenster hält, ist Text (Text aus dem Bild, ADR-0024 Nachtrag 9); die Warnung sagt das.
 	kopieIstText bool
 	// ocr: Text aus dem Bild kopieren (ocr.go, ADR-0035).

@@ -1,10 +1,10 @@
 [
   {
-    "name": "PK1 ✕ auch an der offenen Aufnahme (Leiste)",
+    "name": "PK1 kein ✕ an der offenen Aufnahme (Leiste, Karte #347)",
     "datei": "internal/ui/leiste_unten.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif !aktuell && !e.loeschRuht() && (k.knoepfe[i].Hovered()",
-    "neu": "\t\tif !e.loeschRuht() && (k.knoepfe[i].Hovered()"
+    "alt": "\t\tif !e.loeschRuht() && (k.knoepfe[i].Hovered()",
+    "neu": "\t\tif !aktuell && !e.loeschRuht() && (k.knoepfe[i].Hovered()"
   },
   {
     "name": "PK2 ✕-Klick öffnet nur",
@@ -21,11 +21,11 @@
     "neu": ""
   },
   {
-    "name": "PK4 offene Aufnahme nicht geschützt",
+    "name": "PK4 offene Aufnahme ohne Wechsel in den Papierkorb",
     "datei": "internal/ui/bibliothek.go",
     "paket": "./internal/ui",
-    "alt": "\tif offen {\n\t\te.melde(i18n.T(\"The open capture cannot be moved to the trash. Open another one first.\"), false)\n\t\treturn\n\t}\n\tswitch {",
-    "neu": "\tswitch {"
+    "alt": "\t\te.wechselAnfrage(nachbar)\n\t\tif e.wechsel.ziel == nachbar {\n\t\t\te.wechsel.papierkorb = true\n\t\t\te.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)\n\t\t}\n\t\treturn\n",
+    "neu": ""
   },
   {
     "name": "PK5 langer Druck ab jeder Dauer",
@@ -61,5 +61,54 @@
     "paket": "./internal/ui",
     "alt": "\tif i >= 0 && e.bibLoeschTreffer(i, b.zeiger) {\n\t\treturn loeschHinweis()\n\t}\n",
     "neu": ""
+  },
+  {
+    "name": "PK10 Wechsel merkt den Papierkorb nicht",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.wechsel.papierkorb = true\n",
+    "neu": ""
+  },
+  {
+    "name": "PK11 Nachbarin ist die jüngere",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase i+1 < n:\n\t\treturn i + 1\n\tcase i > 0:\n\t\treturn i - 1\n",
+    "neu": "\tcase i > 0:\n\t\treturn i - 1\n\tcase i+1 < n:\n\t\treturn i + 1\n"
+  },
+  {
+    "name": "PK12 kein Bild zum Ende der Ruhe",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tgtx.Execute(op.InvalidateCmd{At: e.bibl.loeschRuheBis})\n",
+    "neu": ""
+  },
+  {
+    "name": "PK13 Ansicht schließt nach dem Wegwerfen der offenen",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.wechselBehaeltAnsicht = true\n\t\te.uebernimm(r.g)",
+    "neu": "\t\te.uebernimm(r.g)"
+  },
+  {
+    "name": "PK14 gescheitertes Laden sagt nichts zum Papierkorb",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif papierkorb {\n\t\t\te.meldung.Text += \" \" + i18n.T(\"The capture was not moved to the trash.\")\n\t\t}",
+    "neu": ""
+  },
+  {
+    "name": "PK15 Papierkorb nach Übernahme fehlt",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.papierkorbAnfrage(rel, false, \"\")\n",
+    "neu": "\t\t\t_ = rel\n"
+  },
+  {
+    "name": "PK16 einzige Aufnahme ohne Schutz",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif nachbar == \"\" {\n\t\t\te.melde(",
+    "neu": "\t\tif false {\n\t\t\te.melde("
   }
 ]

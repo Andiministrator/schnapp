@@ -3,10 +3,12 @@
 package ui
 
 // Karte #312 (ADR-0036 Zusatz): Ein ✕ oben rechts in der Vorschau legt die Aufnahme in den Papierkorb — sichtbar unter
-// dem Zeiger oder nach langem Druck, in der Leiste und in der vollen Ansicht; nie an der offenen Aufnahme. Entf an einer
-// Vorschau der Leiste tut dasselbe.
+// dem Zeiger oder nach langem Druck, in der Leiste und in der vollen Ansicht. Entf an einer Vorschau der Leiste tut
+// dasselbe. Karte #347: auch an der offenen Aufnahme — der Editor wechselt erst zur Nachbarin, dann geht sie in den
+// Papierkorb; die Zwischenablage bleibt.
 
 import (
+	"errors"
 	"image"
 	"os"
 	"path/filepath"
@@ -38,11 +40,11 @@ func TestLeisteKreuzLegtInDenPapierkorb(t *testing.T) {
 			t.Fatalf("✕ an Stelle %d ohne Zeiger", i)
 		}
 	}
-	// Zeiger über der offenen: kein ✕.
+	// Zeiger über der offenen: auch dort das ✕ (Karte #347).
 	l.maus(pointer.Move, l.kachel(1), 0)
 	l.setle()
-	if !k.loeschRahmen[1].Empty() {
-		t.Error("✕ an der offenen Aufnahme")
+	if k.loeschRahmen[1].Empty() {
+		t.Error("kein ✕ an der offenen Aufnahme")
 	}
 	// Zeiger über Stelle 2: ✕ oben rechts in der Vorschau.
 	l.maus(pointer.Move, l.kachel(2), 0)
@@ -84,17 +86,17 @@ func TestLeisteEntfLegtInDenPapierkorb(t *testing.T) {
 	if _, err := os.Stat(l.pfade[2]); !os.IsNotExist(err) {
 		t.Fatalf("Entf an der Vorschau: Datei noch da (%v)", err)
 	}
-	// An der offenen Aufnahme nur ein Hinweis.
+	// An der offenen Aufnahme: Wechsel zur Nachbarin (die jüngere, die ältere ist weg), dann Papierkorb (Karte #347).
 	l.warte(func() bool { return len(k.l.Eintraege()) == 2 })
 	l.setle()
 	l.fokusiere(&k.knoepfe[1])
 	l.taste(key.NameDeleteForward, 0)
-	l.warte(func() bool { return !l.e.bibl.arbeitLaeuft })
-	if _, err := os.Stat(l.pfade[1]); err != nil {
-		t.Errorf("offene Aufnahme verschoben: %v", err)
+	l.warte(func() bool { return !l.e.wechsel.laedt && !l.e.bibl.arbeitLaeuft && !k.indexLaeuft })
+	if _, err := os.Stat(l.pfade[1]); !os.IsNotExist(err) {
+		t.Errorf("Entf an der offenen: Datei noch da (%v)", err)
 	}
-	if !strings.Contains(l.e.meldung.Text, "open capture") {
-		t.Errorf("Meldung an der offenen: %q", l.e.meldung.Text)
+	if a := l.aufrufe(); len(a) != 1 || a[0] != l.pfade[0] {
+		t.Errorf("geladen: %v, Soll %s", a, l.pfade[0])
 	}
 }
 
@@ -120,11 +122,11 @@ func TestLangerDruck(t *testing.T) {
 func TestAnsichtKreuzUndLangerDruck(t *testing.T) {
 	l := bibLauf(t, 4)
 	b := &l.e.bibl
-	// Zeiger über Stelle 2: ✕; über der offenen (1) keins.
+	// Zeiger über Stelle 2: ✕; über der offenen (1) auch (Karte #347).
 	l.maus(pointer.Move, l.bibKachel(1), 0)
 	l.setle()
-	if !b.loesch[1-b.von].Empty() {
-		t.Error("✕ an der offenen Aufnahme")
+	if b.loesch[1-b.von].Empty() {
+		t.Error("kein ✕ an der offenen Aufnahme")
 	}
 	l.maus(pointer.Move, l.bibKachel(2), 0)
 	l.setle()
@@ -200,5 +202,119 @@ func TestAnsichtOhneZeigerOhneKreuz(t *testing.T) {
 		if !r.Empty() {
 			t.Errorf("✕ an Stelle %d ohne Zeiger", i+l.e.bibl.von)
 		}
+	}
+}
+
+// Karte #347: Das ✕ an der offenen Aufnahme speichert (hier unverändert: nichts zu tun), lädt die nächst ältere und legt
+// erst danach die bisher offene in den Papierkorb. Die Kopie, die das Fenster hält (Rückfall ohne Halter), bleibt.
+func TestLeisteKreuzAnDerOffenen(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 4)
+	k := &l.e.unten
+	l.e.fensterHaeltKopie = true // Strg+C vorher, ohne Halter: das Fenster bietet die Kopie an
+	l.tor = make(chan struct{})
+	l.maus(pointer.Move, l.kachel(1), 0)
+	l.setle()
+	lr := k.loeschRahmen[1]
+	l.maus(pointer.Move, mittenPunkt(lr), 0)
+	l.setle()
+	l.klick(mittenPunkt(lr))
+	l.warte(func() bool { return len(l.aufrufe()) == 1 })
+	// Während des Ladens liegt die offene noch an ihrem Platz.
+	if _, err := os.Stat(l.pfade[1]); err != nil {
+		t.Fatalf("offene vor der Übernahme verschoben: %v", err)
+	}
+	close(l.tor)
+	l.warte(func() bool {
+		return !l.e.wechsel.laedt && !l.e.bibl.arbeitLaeuft && !k.indexLaeuft && len(k.l.Eintraege()) == 3
+	})
+	if a := l.aufrufe(); a[0] != l.pfade[2] {
+		t.Errorf("geladen %s, Soll die nächst ältere %s", a[0], l.pfade[2])
+	}
+	if _, err := os.Stat(l.pfade[1]); !os.IsNotExist(err) {
+		t.Errorf("bisher offene noch da: %v", err)
+	}
+	if n := papierkorbDateien(t, l); n != 1 {
+		t.Errorf("Papierkorb hat %d Dateien", n)
+	}
+	if l.e.pfad() != l.pfade[2] {
+		t.Errorf("offen ist %s", l.e.pfad())
+	}
+	if !l.e.fensterHaeltKopie {
+		t.Error("die Kopie des Fensters ging verloren")
+	}
+	if l.alt.verworfen == 0 {
+		t.Error("Rettungskopie der weggeworfenen nicht verworfen")
+	}
+}
+
+// Die älteste offene: Nachbarin ist die jüngere; scheitert das Laden, bleibt sie offen und im Bestand.
+func TestLeisteKreuzAnDerOffenenLadenScheitert(t *testing.T) {
+	if nachbarStelle(2, 3) != 1 || nachbarStelle(0, 3) != 1 || nachbarStelle(0, 1) != -1 {
+		t.Fatal("nachbarStelle")
+	}
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	k := &l.e.unten
+	l.fehler = errors.New("kaputt")
+	l.e.leistePapierkorb(1)
+	l.warte(func() bool { return !l.e.wechsel.laedt && !l.e.bibl.arbeitLaeuft && !k.indexLaeuft })
+	if _, err := os.Stat(l.pfade[1]); err != nil {
+		t.Errorf("offene trotz gescheitertem Laden verschoben: %v", err)
+	}
+	if !strings.Contains(l.e.meldung.Text, "not moved to the trash") {
+		t.Errorf("Meldung %q", l.e.meldung.Text)
+	}
+	// Der nächste Wechsel ohne ✕ wirft nichts weg.
+	l.fehler = nil
+	l.e.leisteOeffne(0)
+	l.warte(func() bool { return !l.e.wechsel.laedt && !l.e.bibl.arbeitLaeuft && !k.indexLaeuft })
+	if _, err := os.Stat(l.pfade[1]); err != nil {
+		t.Errorf("gewöhnlicher Wechsel verschob die alte: %v", err)
+	}
+}
+
+// Die einzige Aufnahme bleibt offen; das Menü der Ansicht ist dann grau mit Erklärung.
+func TestLeisteKreuzEinzigeBleibt(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 1)
+	l.e.pfad = func() string { return l.pfade[0] }
+	l.setle()
+	l.e.leistePapierkorb(0)
+	l.warte(func() bool { return !l.e.bibl.arbeitLaeuft })
+	if _, err := os.Stat(l.pfade[0]); err != nil {
+		t.Errorf("einzige verschoben: %v", err)
+	}
+	if len(l.aufrufe()) != 0 || !strings.Contains(l.e.meldung.Text, "only capture") {
+		t.Errorf("Aufrufe %v, Meldung %q", l.aufrufe(), l.e.meldung.Text)
+	}
+}
+
+// Andi, 26.11.2026: Nach dem Löschen rückt die nächste Aufnahme unter den stehenden Zeiger; ihr ✕ erscheint am Ende
+// der Ruhe ohne Mausbewegung — das Fenster bestellt dafür ein Bild.
+func TestLeisteKreuzNachRuheOhneBewegung(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 4)
+	k := &l.e.unten
+	l.maus(pointer.Move, l.kachel(2), 0)
+	l.setle()
+	lr := k.loeschRahmen[2]
+	l.maus(pointer.Move, mittenPunkt(lr), 0)
+	l.setle()
+	l.klick(mittenPunkt(lr))
+	l.warte(func() bool { return !l.e.bibl.arbeitLaeuft && !k.indexLaeuft && len(k.l.Eintraege()) == 3 })
+	// Die Ruhe auf eine feste, ferne Zeit legen, damit ein langsamer Lauf sie nicht schon hinter sich hat.
+	l.e.bibl.loeschRuheBis = leisteUhr().Add(time.Hour).Round(0)
+	l.setle()
+	if !k.loeschRahmen[2].Empty() {
+		t.Error("✕ während der Ruhe")
+	}
+	wann, ok := l.r.WakeupTime()
+	for range 20 { // Vorschauen laden noch und bestellen sofortige Bilder
+		if !ok || !wann.IsZero() {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+		l.bild()
+		wann, ok = l.r.WakeupTime()
+	}
+	if !ok || !wann.Equal(l.e.bibl.loeschRuheBis) {
+		t.Errorf("kein Bild zum Ende der Ruhe bestellt: %v %v, Soll %v", wann, ok, l.e.bibl.loeschRuheBis)
 	}
 }

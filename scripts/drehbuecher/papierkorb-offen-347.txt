@@ -1,0 +1,34 @@
+# Sichtprobe Karte #347: ✕ an der offenen Aufnahme; ✕ der nachgerückten Vorschau ohne Mausbewegung.
+# Vorbereitung wie bibliothek-174-leiste.txt (Probe-Bibliothek):
+#   bild=$(go run ./scripts/probelibrary -heim tmp/probe/home)
+#   scripts/probe.sh --drehbuch scripts/drehbuecher/papierkorb-offen-347.txt --ende 60 --bild "$bild"
+# Danach tmp/probe/home neu anlegen: die Probe legt zwei Aufnahmen in den Papierkorb.
+# Bei 1600 × 1000, Skala 1: Vorschau i der Leiste hat die Mitte x = 174 + 132·i, y = 894, ihr ✕ liegt oben rechts
+# (x0+96..x0+116, 864..884 mit x0 = 114 + 132·i).
+# Erwartet:
+#  01 Zeiger über der offenen (zweiten, grüner Rand) Vorschau: ✕ oben rechts auch dort.
+#  02 Klick aufs ✕ der dritten, Zeiger bleibt stehen: nach der Ruhe zeigt die nachgerückte dritte ihr ✕ (rot).
+#  03 Klick aufs ✕ der offenen: der Editor zeigt die nächst ältere (grüner Rand jetzt an ihr), die bisher offene ist
+#     weg, Meldung „In den Papierkorb gelegt …“.
+warte 1500
+taste Strg+Umschalt+R
+warte 2500
+zeiger 306 894
+warte 400
+foto 01-kreuz-offen
+zeiger 438 894
+warte 400
+zeiger 480 874
+warte 400
+klick 480 874
+warte 2500
+foto 02-nachgerueckt
+zeiger 306 894
+warte 400
+zeiger 348 874
+warte 400
+klick 348 874
+warte 3500
+zeiger 900 400
+warte 400
+foto 03-offen-weg

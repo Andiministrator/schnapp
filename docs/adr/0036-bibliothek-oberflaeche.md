@@ -292,7 +292,7 @@ bibliotheks-ansicht selbst so sein.“
   Zeiger darüber steht oder nach einem **langen Druck** (`langDruckZeit` 500 ms, Finger oder Maus; in der Leiste über die
   Druck-Historie des Knopfs, der lange Druck öffnet dann nicht). Rot unter dem Zeiger, Hinweis „Move to trash (Del)“.
 - **Löschen heißt Papierkorb** wie Entf in der vollen Ansicht (Punkt 4): `library.InPapierkorb`, rückholbar; ein
-  gemeinsamer Weg `papierkorbAnfrage` für Ansicht und Leiste. Die **offene Aufnahme** zeigt kein ✕, Entf an ihr meldet
+  gemeinsamer Weg `papierkorbAnfrage` für Ansicht und Leiste. Die **offene Aufnahme** zeigt kein ✕, Entf an ihr meldet (abgelöst durch den Zusatz zu Karte #347)
   nur. Während Speichern, Wechsel oder einer Arbeit der Ansicht wartet die Anfrage nicht, die Fußzeile sagt warum.
 - **Entf an einer Vorschau der Leiste** legt sie ebenfalls in den Papierkorb (vorher wirkungslos).
 - *Kritik Fable 25.11. (K-2, K-3):* Nach einem Löschen gilt `loeschRuhe` (Doppelklickzeit + 200 ms) kein ✕ und kein
@@ -300,3 +300,30 @@ bibliotheks-ansicht selbst so sein.“
   `langDruck` beginnt bei −1 und fällt nach jedem Neulesen der Liste weg.
 - Tests `internal/ui/papierkorb_kreuz_test.go`, Mutanten `scripts/mutanten/papierkorb-kreuz.json` (PK1–PK9), Sichtprobe
   `scripts/drehbuecher/papierkorb-kreuz-312.txt`.
+
+## Zusatz (26.11.2026, Karte #347, Claude Opus 5.5)
+
+Andi (26.11.2026): „das x in der bibliothek(sleiste) sollte auch beim aktuellen bild da sein - ein strg-c (was ich
+vorher gedrückt habe) soll dadurch aber nicht das bild in der zwischenablage verlieren“ und „wenn ich ein bild lösche in
+der leiste, rückt das nächste nach - dort ist das x erst da, wenn ich die maus weg und wieder auf das bild bewege“.
+Löst die Ausnahme der offenen Aufnahme aus dem Zusatz zu Karte #312 ab (dort „Die offene Aufnahme zeigt kein ✕“).
+
+- **✕, Entf und Bearbeiten → „Move to trash“ gelten auch an der offenen Aufnahme**, in Leiste und voller Ansicht. Der Weg
+  ist ein Wechsel (Punkt 5) mit Merker `wechselZustand.papierkorb`: erst Speichern wie Strg+S (der letzte Stand samt
+  Beschriftungen landet im Papierkorb und ist rückholbar), dann Laden der **Nachbarin** (`nachbarStelle`: die nächst
+  ältere, an der ältesten die nächst jüngere), Übernehmen, erst dann `papierkorbAnfrage` für die Datei, die den Stand
+  trug (`Geoeffnet.Pfad` vor der Übernahme, nach einem Speichern als neue Aufnahme die neue). Das Fenster zeigt so nie
+  eine weggeworfene Datei, und ein Schließen mitten im Ablauf speichert nicht in den Papierkorb hinein.
+- Scheitert Speichern oder Laden, oder hält ein Speicher-Hinweis den Wechsel auf, bleibt die Aufnahme offen und im
+  Bestand; die Meldung sagt zusätzlich „The capture was not moved to the trash.“ Die **einzige** Aufnahme bleibt offen
+  (Meldung, Menüeintrag grau mit Erklärung): Der Editor hat keinen leeren Zustand.
+- Aus der **vollen Ansicht** weggeworfen, bleibt die Ansicht offen (`editor.wechselBehaeltAnsicht`, grüner Rand über
+  `bibliothekAktuell`); ein gewöhnlicher Wechsel schließt sie weiter.
+- **Zwischenablage:** Kopiert hält der Halter `wlclip` die Bytes in einem eigenen Prozess (ADR-0024), im Rückfall das
+  Fenster (`fensterHaeltKopie`); beide hängen nicht an der Datei, und der Wechsel fasst sie nicht an. Ein laufendes
+  Kopieren sperrt den Wechsel wie bisher (F-710).
+- **Ruhe-Ende weckt:** Während `loeschRuhe` bestellt das Zeichnen von Leiste und Ansicht ein Bild zu
+  `loeschRuheBis` (`loeschRuheWecken`); vorher erschien das ✕ der nachgerückten Aufnahme unter dem stehenden Zeiger erst
+  mit der nächsten Mausbewegung.
+- Tests `internal/ui/papierkorb_kreuz_test.go` (`TestLeisteKreuzAnDerOffenen`, `…LadenScheitert`, `…EinzigeBleibt`,
+  `…NachRuheOhneBewegung`), `TestBibliothekPapierkorb`; Mutanten PK1, PK4, PK10–PK16.
