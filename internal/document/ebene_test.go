@@ -4,6 +4,7 @@ package document
 
 import (
 	"image"
+	"math"
 	"strings"
 	"testing"
 )
@@ -149,5 +150,14 @@ func TestEbenenAngaben(t *testing.T) {
 	}
 	if MitEbene(nil, neu) != nil {
 		t.Error("MitEbene(nil)")
+	}
+}
+
+// F-874: −0 (etwa aus der Richtungsscheibe) wird +0; Datei und styles.ini schrieben sonst „-0“.
+func TestNormWinkelOhneMinusNull(t *testing.T) {
+	for _, w := range []float64{math.Copysign(0, -1), -360, 360, -720} {
+		if n := NormWinkel(w); n != 0 || math.Signbit(n) {
+			t.Errorf("NormWinkel(%v) = %v (Vorzeichen %v)", w, n, math.Signbit(n))
+		}
 	}
 }

@@ -210,6 +210,26 @@ func (e *editor) menueTaste(gtx layout.Context, name key.Name) {
 	}
 }
 
+// menueKnopf meldet, ob c zur offenen Liste gehört: ein Eintrag, ein Menütitel oder der Knopf, der die Liste öffnet
+// (F-873).
+func (e *editor) menueKnopf(c *widget.Clickable) bool {
+	m := &e.menue
+	if c == nil {
+		return false
+	}
+	for i := range m.eintraege {
+		if c == &m.eintraege[i] {
+			return true
+		}
+	}
+	for i := range m.titel {
+		if c == &m.titel[i] {
+			return true
+		}
+	}
+	return m.welches != listeKontext && c == e.listenKnopf(m.welches)
+}
+
 // menueSchliesse schließt die Liste und gibt den Fokus zurück: per Esc an den Menütitel, nach einer Handlung oder
 // einem Klick daneben an die Leinwand (F-255; sonst fiele der Fokus auf nil, getippter Text ginge verloren).
 func (e *editor) menueSchliesse(gtx layout.Context, zuKnopf bool) {

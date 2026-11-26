@@ -61,9 +61,10 @@ type seitenKnoepfe struct {
 	farbeZeigen  bool // nächstes Bild: den Abschnitt Farbe ins Bild rollen (Klick aufs Farbpaar links, F-817)
 	// Reiter über dem Farbwähler (ADR-0031 Nachtrag 13): Vordergrund, Füllung, Tauschen, Keine (vorn in den
 	// Farbfeldern), Schatten; Rahmen für Tests (leer: nicht gezeigt).
-	paar       [5]widget.Clickable
-	paarRahmen [5]image.Rectangle
-	roll       rollZustand // Rollen der Leiste bei wenig Höhe (ADR-0031 Nachtrag 8, F-598)
+	paar        [5]widget.Clickable
+	paarRahmen  [5]image.Rectangle
+	reiterAktiv image.Rectangle // hervorgehobener Reiter beim letzten Zeichnen (Tests, F-879)
+	roll        rollZustand     // Rollen der Leiste bei wenig Höhe (ADR-0031 Nachtrag 8, F-598)
 }
 
 // Plätze in seitenKnoepfe.paar.

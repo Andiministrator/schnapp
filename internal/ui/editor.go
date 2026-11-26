@@ -2660,6 +2660,9 @@ func (e *editor) tasten(gtx layout.Context) {
 			continue
 		}
 		if k.Name == key.NameSpace { // nur an den Menütiteln und den Feldern mit Liste angemeldet; wirkt wie Enter
+			if e.menue.offen && !e.menueKnopf(e.fokussierterKnopf(gtx)) && e.menueTitelFokus(gtx) < 0 {
+				continue // hinter einer offenen Liste wirkt die Leertaste nicht (F-873, F-257)
+			}
 			if i := e.menueTitelFokus(gtx); i >= 0 {
 				e.menueOeffne(i, true)
 			} else if c := e.fokussierterKnopf(gtx); c == &e.knoepfe.fussFarbe || c == &e.knoepfe.fussZoom ||
@@ -2705,7 +2708,9 @@ func (e *editor) tasten(gtx layout.Context) {
 				e.menueWechsel(1)
 			case key.NameReturn, key.NameEnter:
 				// Nach einem Menüwechsel im selben Bild liegt der Fokus noch im alten Menü (F-512).
-				if c := e.fokussierterKnopf(gtx); c != nil && !e.menue.gewechselt {
+				// Nur Einträge, Menütitel und das Feld der Liste: Ein Knopf hinter der Liste (etwa die Vorschau, auf die der
+				// Rechtsklick den Fokus gab) wirkt nicht (F-873, F-257).
+				if c := e.fokussierterKnopf(gtx); c != nil && !e.menue.gewechselt && e.menueKnopf(c) {
 					e.knopfPerTaste(c)
 				}
 			}

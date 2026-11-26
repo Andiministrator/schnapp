@@ -74,14 +74,14 @@ func (s Schatten) Rand() float64 {
 // Sichtbar meldet, ob der Schatten gezeichnet wird: an und nicht ganz durchsichtig.
 func (s Schatten) Sichtbar() bool { return s.An && s.Farbe.A > 0 }
 
-// NormWinkel bringt einen Winkel auf [0, 360).
+// NormWinkel bringt einen Winkel auf [0, 360), ohne −0.
 func NormWinkel(w float64) float64 {
 	w = math.Mod(w, 360)
 	if w < 0 {
 		w += 360
 	}
-	if w >= 360 {
-		w = 0
+	if w >= 360 || w == 0 {
+		w = 0 // auch −0 (math.Mod behält das Vorzeichen): sonst stünde „-0“ in Datei und styles.ini (F-874)
 	}
 	return w
 }

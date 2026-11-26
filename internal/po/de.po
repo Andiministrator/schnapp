@@ -1889,3 +1889,6 @@ msgstr "Kein Dateimanager, der die Datei zeigen kann (org.freedesktop.FileManage
 
 msgid "Could not show the file in the file manager."
 msgstr "Die Datei ließ sich nicht im Dateimanager zeigen."
+
+msgid "Not available right now. Please wait a moment, then try again."
+msgstr "Gerade nicht möglich. Bitte einen Moment warten und dann noch einmal versuchen."

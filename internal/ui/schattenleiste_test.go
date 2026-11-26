@@ -243,3 +243,47 @@ func TestSchattenScheibeZiehenUndUmschalt(t *testing.T) {
 		t.Errorf("ein Rückgängig nach dem Ziehen: %v, Soll 135", sch.Winkel)
 	}
 }
+
+// F-875: Ein Klick auf die Scheibe gibt ihr den Tastaturfokus; danach drehen Pfeile ±15° (rechts/hoch mehr,
+// links/runter weniger), mit Umschalter nicht; ohne Fokus wirken sie nicht. Ein Umschalt-Klick ohne Bewegung ist frei.
+func TestSchattenScheibeKlickFokus(t *testing.T) {
+	l, id := schattenLauf(t)
+	k := &l.e.schattenL
+	l.klick(mitte(k.schalterRahmen))
+	l.setle()
+	m, d := mitte(k.scheibeRahmen), k.scheibeRahmen.Dx()/3
+	l.klick(m.Add(image.Pt(d, 0))) // 180°
+	l.setle()
+	if !l.fokus(&k.scheibe) {
+		t.Fatal("die Scheibe hat nach dem Klick keinen Fokus")
+	}
+	for _, f := range []struct {
+		n    key.Name
+		mod  key.Modifiers
+		soll float64
+	}{
+		{key.NameUpArrow, 0, 195}, {key.NameLeftArrow, 0, 180}, {key.NameDownArrow, 0, 165},
+		{key.NameRightArrow, key.ModShift, 165},
+	} {
+		l.taste(f.n, f.mod)
+		l.setle()
+		if w := schattenVon(t, l, id).Winkel; w != f.soll {
+			t.Errorf("%s (Umschalter %v): %v, Soll %v", f.n, f.mod, w, f.soll)
+		}
+	}
+	l.fokusiere(&k.stufe[0][0])
+	l.taste(key.NameRightArrow, 0)
+	l.setle()
+	if w := schattenVon(t, l, id).Winkel; w != 165 {
+		t.Errorf("Pfeil ohne Fokus auf der Scheibe drehte auf %v", w)
+	}
+	// Umschalt-Klick ohne Bewegung: frei, nicht gerastet.
+	mf := f32.Pt(float32(m.X+d), float32(m.Y)+float32(d)*0.2)
+	l.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: mf})
+	l.r.Queue(pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Buttons: pointer.ButtonPrimary, Position: mf, Modifiers: key.ModShift})
+	l.r.Queue(pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: mf, Modifiers: key.ModShift})
+	l.setle()
+	if w := schattenVon(t, l, id).Winkel; w != 169 {
+		t.Errorf("Umschalt-Klick: %v, Soll 169", w)
+	}
+}

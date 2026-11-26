@@ -622,6 +622,7 @@ func (e *editor) zeichneFarbpaarZeile(gtx layout.Context, x, y, breite, q int) i
 	for i := range k.paarRahmen {
 		k.paarRahmen[i] = image.Rectangle{}
 	}
+	k.reiterAktiv = image.Rectangle{}
 	fw := &k.fw
 	fw.pipRahmen = image.Rect(x+breite-q, y+(h-q)/2, x+breite, y+(h-q)/2+q)
 	ende := fw.pipRahmen.Min.X - gtx.Dp(8)
@@ -691,6 +692,7 @@ func (e *editor) zeichneFarbReiter(gtx layout.Context, c *widget.Clickable, r im
 	paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
 	if aktiv {
 		paint.FillShape(gtx.Ops, farbeAuswahl, clip.Rect(image.Rect(r.Min.X, r.Max.Y-gtx.Dp(3), r.Max.X, r.Max.Y)).Op())
+		e.seite.reiterAktiv = r
 	}
 	sq := gtx.Dp(12)
 	mr := image.Rect(r.Min.X+gtx.Dp(5), r.Min.Y+(r.Dy()-sq)/2, r.Min.X+gtx.Dp(5)+sq, r.Min.Y+(r.Dy()-sq)/2+sq)

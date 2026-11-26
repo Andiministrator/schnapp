@@ -10,6 +10,7 @@ import (
 	"slices"
 	"sync"
 	"testing"
+	"time"
 
 	"gioui.org/io/key"
 
@@ -337,4 +338,122 @@ func TestKontextVorschauAnsichtLeer(t *testing.T) {
 	if l.e.menue.offen {
 		t.Errorf("Menü %d offen", l.e.menue.welches)
 	}
+}
+
+// F-873: Hinter einem per Maus geöffneten Kontextmenü wirken Enter und Leertaste nicht auf die Vorschau, der der
+// Rechtsklick den Fokus gab — auch nicht hinter dem Menü der Leinwand nach einem zweiten Rechtsklick.
+func TestKontextVorschauEnterHinterDemMenue(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	l.rechtsklick(l.kachel(0))
+	for _, n := range []key.Name{key.NameReturn, key.NameSpace} {
+		l.taste(n, 0)
+		l.setle()
+		if a := l.aufrufe(); len(a) != 0 {
+			t.Fatalf("%s hinter dem Menü öffnete %q", n, a)
+		}
+	}
+	if !l.e.menue.offen {
+		t.Fatal("das Menü schloss sich")
+	}
+	l.rechtsklick(l.e.leinwandRahmen.Max.Sub(image.Pt(5, 5)))
+	l.taste(key.NameReturn, 0)
+	l.setle()
+	if a := l.aufrufe(); len(a) != 0 {
+		t.Errorf("Enter hinter dem Menü der Leinwand öffnete %q", a)
+	}
+	// Per Tastatur gesteuert wirkt Enter auf den Eintrag.
+	l.taste(key.NameEscape, 0)
+	l.rechtsklick(l.kachel(0))
+	l.taste(key.NameDownArrow, 0)
+	l.setle()
+	l.taste(key.NameReturn, 0)
+	l.ruhig()
+	if a := l.aufrufe(); len(a) != 1 || a[0] != l.pfade[0] {
+		t.Errorf("Pfeil runter und Enter auf „Open“: %q", a)
+	}
+}
+
+// F-876: An der Kachel, deren Schlagworte gerade bearbeitet werden, öffnet ein Rechtsklick kein Menü (wie
+// Umschalt+F10); an einer anderen bricht er die Bearbeitung ab und öffnet es.
+func TestKontextVorschauNichtBeimBearbeiten(t *testing.T) {
+	l := bibLauf(t, 3)
+	b := &l.e.bibl
+	b.r.SetzeFokus(2)
+	l.e.bibSchlagworteBeginnen()
+	l.tippe("neu")
+	l.setle()
+	l.rechtsklick(l.bibKachel(2))
+	if l.e.menue.offen || b.bearbeite != l.rel(2) || b.worte != "neu" {
+		t.Fatalf("Menü %v, Bearbeitung %q, Worte %q", l.e.menue.offen, b.bearbeite, b.worte)
+	}
+	l.rechtsklick(l.bibKachel(0))
+	if !l.e.menue.offen || b.bearbeite != "" || l.e.kontext.vorschau != l.rel(0) {
+		t.Errorf("andere Kachel: Menü %v, Bearbeitung %q", l.e.menue.offen, b.bearbeite)
+	}
+}
+
+// F-877: Ist die Leiste gesperrt (hier: ein Wechsel lädt), sind alle Einträge grau mit Grund; kurz nach einem Löschen
+// ist „Move to trash“ grau, in Leiste und Ansicht gleich.
+func TestKontextVorschauGrauMitGrund(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	l.rechtsklick(l.kachel(2))
+	l.e.wechsel.laedt = true
+	for _, en := range l.e.menueEintraege() {
+		if en.an || en.erklaerung == "" {
+			t.Errorf("beim Laden: %q an %v, Erklärung %q", en.text, en.an, en.erklaerung)
+		}
+	}
+	l.e.wechsel.laedt = false
+	l.e.bibl.loeschRuheBis = leisteUhr().Add(time.Hour)
+	if i := l.eintragMit(aktVorschauPapierkorb); l.e.menueEintraege()[i].an {
+		t.Error("„Move to trash“ an, während die Löschruhe gilt")
+	}
+	l.e.vorschauWirkung(aktVorschauPapierkorb)(l.gtx())
+	l.ruhig()
+	if n := papierkorbDateien(t, l); n != 0 {
+		t.Errorf("Papierkorb während der Löschruhe: %d Dateien", n)
+	}
+}
+
+// F-878: Ein Rechtsklick auf eine Vorschau beendet die Pipette wie auf der Leinwand.
+func TestKontextVorschauBeendetPipette(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	l.e.s.SchaltePipette()
+	if !l.e.s.PipetteLaeuft() {
+		t.Fatal("Vorbedingung: Pipette an")
+	}
+	l.rechtsklick(l.kachel(0))
+	if l.e.s.PipetteLaeuft() || !l.e.menue.offen {
+		t.Errorf("Pipette %v, Menü %v", l.e.s.PipetteLaeuft(), l.e.menue.offen)
+	}
+}
+
+// F-879 (V-1): Zweiter Rechtsklick in der vollen Ansicht öffnet das Menü an der neuen Kachel und dem neuen Punkt; der
+// Anker eines Rechtsklicks ist der Klickpunkt.
+func TestKontextVorschauAnsichtZweiterRechtsklick(t *testing.T) {
+	l := bibLauf(t, 3)
+	p := l.bibKachel(0).Add(image.Pt(9, 4))
+	l.rechtsklick(p)
+	if l.e.kontext.anker.Min != p {
+		t.Errorf("Anker %v, Soll %v", l.e.kontext.anker.Min, p)
+	}
+	q := l.bibKachel(2)
+	l.rechtsklick(q)
+	if !l.e.menue.offen || l.e.kontext.vorschau != l.rel(2) || l.e.kontext.anker.Min != q || l.e.bibl.r.Fokus() != 2 {
+		t.Errorf("offen %v, Vorschau %q (Soll %q), Anker %v, Fokus %d", l.e.menue.offen, l.e.kontext.vorschau, l.rel(2),
+			l.e.kontext.anker.Min, l.e.bibl.r.Fokus())
+	}
+}
+
+// F-879 (V-1): Nach einem Eintrag des Menüs der Leiste liegt der Fokus wieder auf der Vorschau.
+func TestKontextVorschauFokusNachEintrag(t *testing.T) {
+	mitDateimanager(t, nil)
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	l.rechtsklick(l.kachel(2))
+	l.eintragKlick(aktVorschauZeigen)
+	l.setle()
+	if l.e.menue.offen || !l.fokus(&l.e.unten.knoepfe[2]) {
+		t.Errorf("Menü %v, Fokus an der Vorschau %v", l.e.menue.offen, l.fokus(&l.e.unten.knoepfe[2]))
+	}
+	l.warte(func() bool { return l.e.dateimanagerAbholen() })
 }

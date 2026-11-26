@@ -131,5 +131,58 @@
     "paket": "./internal/ui",
     "alt": "\t\ta = append(a, &k.scheibe, &k.stufe[0][0]",
     "neu": "\t\ta = append(a, &k.stufe[0][0]"
+  },
+  {
+    "name": "FZ20 −0 bleibt (F-874)",
+    "datei": "internal/document/ebene.go",
+    "paket": "./internal/document",
+    "alt": "\tif w >= 360 || w == 0 {",
+    "neu": "\tif w >= 360 {"
+  },
+  {
+    "name": "FZ21 Klick gibt der Scheibe keinen Fokus (F-875)",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tgtx.Execute(key.FocusCmd{Tag: &k.scheibe})\n",
+    "neu": ""
+  },
+  {
+    "name": "FZ22 Pfeil links dreht nicht zurück",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase key.NameLeftArrow, key.NameDownArrow:\n\t\te.s.SchattenRichtungStufe(-1)",
+    "neu": "\tcase key.NameLeftArrow, key.NameDownArrow:\n\t\te.s.SchattenRichtungStufe(1)"
+  },
+  {
+    "name": "FZ23 Pfeile mit Umschalter",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "!gtx.Focused(&k.scheibe) || taste.Modifiers != 0 {",
+    "neu": "!gtx.Focused(&k.scheibe) {",
+    "aequivalent": true,
+    "grund": "Pfeiltasten mit Umschalter erreichen tasten nicht: kein Tastenfilter für Pfeile lässt Umschalt zu (menueNavigationsFilter ohne Optional); die Prüfung ist eine Absicherung gegen künftige Filter."
+  },
+  {
+    "name": "FZ24 Pfeile ohne Fokus",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "if k.scheibeRahmen.Empty() || !gtx.Focused(&k.scheibe) ||",
+    "neu": "if k.scheibeRahmen.Empty() ||"
+  },
+  {
+    "name": "FZ25 Umschalt beim Druck nicht frei",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tk.zieht = art\n\t\t\t\te.schattenZiehen(art, pe.Position, pe.Modifiers.Contain(key.ModShift))",
+    "neu": "\t\t\t\tk.zieht = art\n\t\t\t\te.schattenZiehen(art, pe.Position, false)",
+    "aequivalent": true,
+    "grund": "Das Loslassen setzt den Winkel aus demselben Punkt mit seinem eigenen Umschalter erneut; der Druck bestimmt nur den Zwischenstand bis zum Loslassen."
+  },
+  {
+    "name": "FZ26 Reiter nie hervorgehoben",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "e.zeichneFarbReiter(gtx, &k.paar[i], r, e.s.Farbe(f), farbReiterName(f), aktiv == f)",
+    "neu": "e.zeichneFarbReiter(gtx, &k.paar[i], r, e.s.Farbe(f), farbReiterName(f), aktiv == f && false)"
   }
 ]

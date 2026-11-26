@@ -213,8 +213,8 @@
     "name": "KV10 Leiste: Papierkorb an der Stelle mit Fokus",
     "datei": "internal/ui/kontext_vorschau.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\t\t\te.leistePapierkorb(i)\n",
-    "neu": "\t\t\t\t\te.leistePapierkorb(e.unten.l.Fokus())\n"
+    "alt": "\t\t\t\te.leistePapierkorb(i)\n\t\t\t\treturn",
+    "neu": "\t\t\t\te.leistePapierkorb(e.unten.l.Fokus())\n\t\t\t\treturn"
   },
   {
     "name": "KV11 verschwundene Vorschau nicht erkannt",
@@ -292,5 +292,68 @@
     "paket": "./internal/portal",
     "alt": "\treturn (&url.URL{Scheme: \"file\", Path: filepath.Clean(pfad)}).String(), nil",
     "neu": "\t_ = url.URL{}\n\treturn \"file://\" + pfad, nil"
+  },
+  {
+    "name": "KV22 Enter hinter dem Menü (F-873)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "c != nil && !e.menue.gewechselt && e.menueKnopf(c) {",
+    "neu": "c != nil && !e.menue.gewechselt {"
+  },
+  {
+    "name": "KV23 Leertaste hinter dem Menü (F-873)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif e.menue.offen && !e.menueKnopf(e.fokussierterKnopf(gtx)) && e.menueTitelFokus(gtx) < 0 {",
+    "neu": "\t\t\tif false {"
+  },
+  {
+    "name": "KV24 Menü an der bearbeiteten Kachel (F-876)",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\treturn // an der Kachel im Schlagwortfeld kein Menü",
+    "neu": "\t\tb.bearbeite = \"\" // an der Kachel im Schlagwortfeld kein Menü"
+  },
+  {
+    "name": "KV25 gesperrt ohne Grund (F-877)",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\ten[j].an, en[j].erklaerung = false, grund",
+    "neu": "\t\t\ten[j].an = false"
+  },
+  {
+    "name": "KV26 Papierkorb während der Löschruhe an (F-877)",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tan: da && (!offen || einzigGrau == \"\") && !e.loeschRuht(), erklaerung: einzigGrau,",
+    "neu": "\t\tan: da && (!offen || einzigGrau == \"\"), erklaerung: einzigGrau,"
+  },
+  {
+    "name": "KV27 Löschruhe nur in der Leiste (F-877)",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif e.loeschRuht() { // für Leiste und Ansicht gleich (F-877)\n\t\t\t\treturn\n\t\t\t}",
+    "neu": ""
+  },
+  {
+    "name": "KV28 Pipette bleibt beim Rechtsklick auf eine Vorschau (F-878)",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.s.PipetteLaeuft() {\n\t\te.s.SchaltePipette()\n\t}\n\te.s.BeendeTextBereich()",
+    "neu": "\te.s.BeendeTextBereich()"
+  },
+  {
+    "name": "KV29 zweiter Rechtsklick in der Ansicht schließt nur",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif i := e.bibStelleBei(q); i >= 0 {\n\t\t\te.bibKontext(gtx, i, q, false)",
+    "neu": "\t\tif i := e.bibStelleBei(q); i >= 0 && false {\n\t\t\te.bibKontext(gtx, i, q, false)"
+  },
+  {
+    "name": "KV30 Anker der Ansicht ohne Klickpunkt",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\te.bibKontext(gtx, stelle, pe.Position.Round(), false)",
+    "neu": "\t\t\t\te.bibKontext(gtx, stelle, image.Point{}, false)"
   }
 ]

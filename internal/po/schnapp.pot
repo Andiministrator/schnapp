@@ -980,15 +980,15 @@ msgstr ""
 msgid "This is the only capture: it stays open and is not moved to the trash."
 msgstr ""
 
-#: internal/ui/bibliothek.go internal/ui/wechsel.go
+#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go internal/ui/wechsel.go
 msgid "Saving is still running. Please wait a moment, then try again."
 msgstr ""
 
-#: internal/ui/bibliothek.go internal/ui/wechsel.go
+#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go internal/ui/wechsel.go
 msgid "Another capture is still loading. Please wait a moment, then try again."
 msgstr ""
 
-#: internal/ui/bibliothek.go internal/ui/wechsel.go
+#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go internal/ui/wechsel.go
 msgid "The library is still working. Please wait a moment, then try again."
 msgstr ""
 
@@ -1858,6 +1858,10 @@ msgstr ""
 
 #: internal/ui/kontext.go internal/ui/schnellstile.go
 msgid "Style saved"
+msgstr ""
+
+#: internal/ui/kontext_vorschau.go
+msgid "Not available right now. Please wait a moment, then try again."
 msgstr ""
 
 #: internal/ui/kontext_vorschau.go

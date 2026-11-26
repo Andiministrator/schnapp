@@ -40,7 +40,8 @@ Pfeil-Stil, Strichart) samt Tastatur, Klick daneben und Sperre beim Speichern.
 5. **Kein „Umbenennen“ in der Bibliothek:** Die Dateinamen sind Zeitstempel und bleiben es (ADR-0016); was eine Aufnahme
    benennt, sind ihre Schlagworte. „Umbenennen“ im Kontextmenü der Leinwand benennt die Ebene (ADR-0032).
 6. **Tastatur:** Umschalt+F10 öffnet das Kontextmenü für die Auswahl (Anker: Mitte ihres Rahmens, sonst Mitte der
-   Leinwand) bzw. in der vollen Ansicht für die Vorschau mit Fokus. Die Menütaste der Tastatur meldet Gio unter
+   Leinwand) bzw. in der vollen Ansicht für die Vorschau mit Fokus und, hat eine Vorschau der Leiste den Fokus, für sie
+   (Umsetzung Teil 2). Die Menütaste der Tastatur meldet Gio unter
    Wayland nicht (`xkb_unix.go` kennt `XKB_KEY_Menu` nicht); sie kommt mit einem Gio-Patch dazu, wenn es sich lohnt.
 7. **Bestehende Rechtsklicks bleiben:** An Schnellstil-Kacheln und eigenen Farbfeldern entfernt der Rechtsklick weiter
    einen eigenen Eintrag (ADR-0037, ADR-0021 Nachtrag 24) — dort gibt es keine weiteren Handlungen, ein Menü mit einem
@@ -84,3 +85,7 @@ Entscheidungen im Rahmen des Auftrags:
 Tests `internal/ui/kontext_vorschau_test.go`, `internal/portal/dateimanager_test.go`, Mutanten KV1–KV21 in
 `scripts/mutanten/kontextmenue.json`, Sichtprobe `scripts/drehbuecher/kontextmenue-313-bibliothek.txt`. Gegen einen echten
 Dolphin ist ShowItems noch ungeprüft (Echtlauf Andi).
+
+Nacharbeit nach Sitzungs-QA 26.11. (8) (F-873 bis F-880): Enter und Leertaste wirken bei offener Liste nur auf ihre
+Einträge, Titel und ihr Feld (`menueKnopf`), nie auf die Vorschau dahinter; an der Kachel im Schlagwortfeld öffnet kein
+Menü; gesperrte Einträge sind grau mit Grund; ein Rechtsklick auf eine Vorschau beendet Pipette und Bereichsmodus.

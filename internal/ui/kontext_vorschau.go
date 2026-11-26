@@ -35,11 +35,16 @@ type dateimanagerZustand struct {
 }
 
 // vorschauKontext öffnet das Kontextmenü für die Vorschau rel am Fensterpunkt p. inLeiste: Vorschau der Leiste unten,
-// sonst der vollen Ansicht.
+// sonst der vollen Ansicht. Pipette und Bereichsmodus der Texterkennung enden wie beim Rechtsklick auf die Leinwand
+// (F-878, F-862).
 func (e *editor) vorschauKontext(rel string, inLeiste bool, p image.Point, perTaste bool) {
 	if rel == "" {
 		return
 	}
+	if e.s.PipetteLaeuft() {
+		e.s.SchaltePipette()
+	}
+	e.s.BeendeTextBereich()
 	e.kontextOeffnen(kontextMenue{anker: image.Rectangle{Min: p, Max: p.Add(image.Pt(1, 1))}, vorschau: rel,
 		inLeiste: inLeiste}, perTaste)
 }
@@ -61,7 +66,10 @@ func (e *editor) bibKontext(gtx layout.Context, i int, p image.Point, perTaste b
 	if !b.offen || i < 0 || i >= len(b.r.Eintraege()) || !e.bibliothekFrei() {
 		return
 	}
-	if b.bearbeite != "" && b.r.Eintraege()[i].Pfad != b.bearbeite {
+	if b.bearbeite != "" && b.r.Eintraege()[i].Pfad == b.bearbeite {
+		return // an der Kachel im Schlagwortfeld kein Menü, wie bei Umschalt+F10 (F-876)
+	}
+	if b.bearbeite != "" {
 		b.bearbeite = "" // wie ein Linksklick woanders: bricht die Bearbeitung der Schlagworte ab
 	}
 	b.r.SetzeFokus(i)
@@ -179,9 +187,37 @@ func (e *editor) vorschauNachbarn(i int) []string {
 	return e.bibNachbarn(i)
 }
 
+// vorschauGrund sagt, warum Leiste bzw. Ansicht gerade nicht bedienbar sind (leer: sie sind es), mit den Texten von
+// papierkorbAnfrage (F-877).
+func (e *editor) vorschauGrund() string {
+	switch {
+	case e.s.SpeichernLaeuft():
+		return i18n.T("Saving is still running. Please wait a moment, then try again.")
+	case e.wechsel.laedt:
+		return i18n.T("Another capture is still loading. Please wait a moment, then try again.")
+	case e.bibl.arbeitLaeuft:
+		return i18n.T("The library is still working. Please wait a moment, then try again.")
+	case !e.vorschauFrei():
+		return i18n.T("Not available right now. Please wait a moment, then try again.")
+	}
+	return ""
+}
+
 // vorschauEintraege sind die Einträge des Kontextmenüs einer Vorschau (ADR-0038 Punkt 3): Öffnen · Im Dateimanager
-// zeigen │ Schlagworte… (nur volle Ansicht) │ In den Papierkorb.
+// zeigen │ Schlagworte… (nur volle Ansicht) │ In den Papierkorb. Sind Leiste oder Ansicht gesperrt, sind alle grau mit
+// dem Grund (F-877).
 func (e *editor) vorschauEintraege() []menueEintrag {
+	en := e.vorschauEintraegeRoh()
+	if grund := e.vorschauGrund(); grund != "" && e.vorschauStelle() >= 0 {
+		for j := range en {
+			en[j].an, en[j].erklaerung = false, grund
+		}
+	}
+	return en
+}
+
+// vorschauEintraegeRoh sind die Einträge ohne die Sperre von Leiste und Ansicht.
+func (e *editor) vorschauEintraegeRoh() []menueEintrag {
 	i := e.vorschauStelle()
 	da := i >= 0 && e.vorschauFrei()
 	offen := da && e.vorschauOffen(i)
@@ -206,8 +242,9 @@ func (e *editor) vorschauEintraege() []menueEintrag {
 	if offen && len(e.vorschauNachbarn(i)) == 0 {
 		einzigGrau = e.einzigText()
 	}
+	// Kurz nach einem Löschen gilt kein Papierkorb (loeschRuht, Kritik K-2 #312): grau statt still (F-877).
 	return append(en, menueEintrag{akt: aktVorschauPapierkorb, text: i18n.T("Move to trash"),
-		an: da && (!offen || einzigGrau == ""), erklaerung: einzigGrau,
+		an: da && (!offen || einzigGrau == "") && !e.loeschRuht(), erklaerung: einzigGrau,
 		kuerzel: tastenName(key.Filter{Name: key.NameDeleteForward}), gruppe: true})
 }
 
@@ -235,10 +272,11 @@ func (e *editor) vorschauWirkung(a aktion) func(gtx layout.Context) {
 				e.bibSchlagworteBeginnen()
 			}
 		case aktVorschauPapierkorb:
+			if e.loeschRuht() { // für Leiste und Ansicht gleich (F-877)
+				return
+			}
 			if e.kontext.inLeiste {
-				if !e.loeschRuht() {
-					e.leistePapierkorb(i)
-				}
+				e.leistePapierkorb(i)
 				return
 			}
 			e.bibl.r.SetzeFokus(i)

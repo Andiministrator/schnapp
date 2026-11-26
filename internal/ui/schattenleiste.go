@@ -135,6 +135,10 @@ func (e *editor) schattenReglerAuswerten(gtx layout.Context, ziel *image.Rectang
 			if pe.Buttons != pointer.ButtonPrimary || k.zieht != schattenReglerKeiner || !e.seiteAn() {
 				continue
 			}
+			if art == schattenReglerRichtung {
+				// Ein Klick gibt der Scheibe den Tastaturfokus: danach drehen die Pfeile (F-875).
+				gtx.Execute(key.FocusCmd{Tag: &k.scheibe})
+			}
 			if e.s.BeginneSchattenZug() {
 				k.zieht = art
 				e.schattenZiehen(art, pe.Position, pe.Modifiers.Contain(key.ModShift))

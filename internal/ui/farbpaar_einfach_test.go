@@ -158,3 +158,19 @@ func TestFarbReiterBreiten(t *testing.T) {
 		t.Errorf("zu eng: %v, Soll gleich breit 50", b)
 	}
 }
+
+// F-879 (V-2): Hervorgehoben ist genau der Reiter des Felds, das der Farbwähler bearbeitet.
+func TestFarbReiterHervorgehoben(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	k := &l.e.seite
+	for _, f := range []struct {
+		platz int
+		feld  canvas.Farbfeld
+	}{{paarVorn, canvas.FeldVordergrund}, {paarFuellung, canvas.FeldFuellung}} {
+		l.klick(mittenPunkt(k.paarRahmen[f.platz]))
+		l.setle()
+		if l.e.s.AktivesFeld() != f.feld || k.reiterAktiv != k.paarRahmen[f.platz] {
+			t.Errorf("Feld %v: hervorgehoben %v, Soll %v", f.feld, k.reiterAktiv, k.paarRahmen[f.platz])
+		}
+	}
+}
