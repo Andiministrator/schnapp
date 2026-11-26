@@ -356,8 +356,8 @@ type editor struct {
 	leinwandRahmen   image.Rectangle // Fläche der Leinwand im Fenster (zweiter Rechtsklick, Kritik K-6 #313a)
 	// dateimanager: „Im Dateimanager zeigen“ aus dem Kontextmenü einer Vorschau (ADR-0038 Punkt 3, kontext_vorschau.go).
 	dateimanager dateimanagerZustand
-	pfeilform        pfeilformLeiste
-	strichart        strichartLeiste // Klappfeld „Line style“ (ADR-0021 Nachtrag 25, strichart.go)
+	pfeilform    pfeilformLeiste
+	strichart    strichartLeiste // Klappfeld „Line style“ (ADR-0021 Nachtrag 25, strichart.go)
 	// schatten: gemerkte Schattenbilder je Objekt (ADR-0021 Nachtrag 26, schatten.go).
 	schatten      map[int]schattenBild
 	schattenBytes int
