@@ -217,3 +217,31 @@ Tests in `internal/library/index_zweiter_prozess_test.go`, Mutanten HB32 bis HB3
 
 - **Ergänzt Nachtrag 8.** Doppelte Zeilen, die `haengeAn` vor F-755 hinterlassen hat, blieben stehen: `Abgleich` stieg ohne Fehlendes früh aus, und `ersetzeImIndexGesperrt` ersetzt beide Doppel gleich. `Abgleich` erkennt nun mehrfach vorkommende Pfade, behält unter der Index-Sperre je Pfad nur die **letzte** Zeile (die jüngste Fassung) und schreibt den Index neu; `lade` bleibt lesend. Ein zweiter Abgleich findet nichts mehr zu tun.
 - Test `internal/library/abgleich_doppel_test.go`, Mutanten HB36 bis HB38 in `scripts/mutanten/bibliothek-haertung.json`.
+
+## Nachtrag 10 (26.11.2026): Eine Datei von außen wird beim Öffnen eine Aufnahme (Karte #345)
+
+**Status:** Akzeptiert (Claude Opus 5.5, Andi: „arbeite selbstständig“).
+
+Andi (25.11.2026, nach Datei → Öffnen…, Karte #326): „sie sollte aber dann auch unten in der bibliotheksleiste
+auftauchen.“ Bisher wurde eine Datei außerhalb der Ablage erst beim ersten Speichern eine neue Aufnahme (Punkt 5,
+E-16); bis dahin fehlte sie in der Leiste, und die Leiste umrandete nichts.
+
+1. **Übernahme beim Öffnen:** Öffnet der Editor eine Datei außerhalb der Ablage (`schnapp DATEI`, „Öffnen mit“,
+   Datei → Öffnen…), legt Schnapp zuerst eine Kopie als Aufnahme der Bibliothek ab und öffnet diese (`importiere` in
+   `cmd/schnapp/importieren.go`). Zeitpunkt der Aufnahme ist der des Öffnens, sie steht also vorn in der Leiste und ist
+   grün umrandet. Ein einfaches Bild bekommt die Kantenform aus `[capture] seam`; eine Arbeitsdatei behält Objekte,
+   Kantenform und Schlagworte. **Die Datei von außen bleibt unberührt**, wie bisher.
+2. **Keine Doppelten:** Die Bibliothek merkt sich je übernommene Datei die SHA-256-Summe ihres Inhalts und den Pfad
+   der Aufnahme (`imports.jsonl` neben dem Index, 0600, nur lokal, nie in einer Bilddatei). Öffnet man dieselbe
+   unveränderte Datei wieder, öffnet Schnapp die vorhandene Aufnahme samt ihren Beschriftungen, solange sie noch in der
+   Ablage liegt; sonst wird neu übernommen. Geht die Liste verloren, entsteht höchstens eine weitere Kopie.
+3. **Scheitert die Übernahme** (Ablage nicht beschreibbar, Datei über dem Rechenbudget, unlesbar), öffnet der Editor die
+   Datei wie bisher; das erste Speichern legt sie dann ab (Punkt 5 bleibt als Rückfall, auch für eine Aufnahme, die
+   sich nicht zurückschreiben lässt). Einen Lade- oder Budgetfehler meldet der gewöhnliche Weg.
+4. Die Rettungskopie einer früher außerhalb bearbeiteten Datei (ADR-0029) wird beim Übernehmen nicht angewandt; sie
+   bleibt liegen und verfällt nach 30 Tagen. Neue Arbeit läuft immer an der Aufnahme.
+5. Agenten-Wege (`--export`, `--annotate`, MCP) öffnen keinen Editor und übernehmen nichts.
+
+Verworfen: die Datei nur als Verweis in der Leiste zeigen (die Leiste liest den Index der Ablage; ein Verweis bräuchte
+eine zweite Liste und verschwände beim nächsten Start); die übernommene Kopie beim Schließen ohne Änderung wieder
+entfernen (Andi hat sie geöffnet, um damit zu arbeiten; Löschen geht über ✕, Karte #347).

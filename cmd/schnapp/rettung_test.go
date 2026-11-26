@@ -20,6 +20,9 @@ import (
 // Kein Test dieses Pakets berührt den echten Zustandsordner: Die Rettungskopien liegen in einem eigenen Ordner.
 func TestMain(m *testing.M) {
 	dialogKindAttrappe() // als Dialog-Kind gestartet: endet hier (mcp_kind_test.go, F-471)
+	// Die Tests der Dateien von außen prüfen den Rückfall „erstes Speichern legt ab“ (ADR-0016 Punkt 5); die Übernahme
+	// beim Öffnen (Nachtrag 10) schalten nur ihre eigenen Tests ein (importieren_test.go).
+	importBeimOeffnen = false
 	ort, err := os.MkdirTemp("", "schnapp-state-")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

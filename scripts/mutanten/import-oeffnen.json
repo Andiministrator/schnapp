@@ -1,0 +1,58 @@
+[
+  {
+    "name": "IM1 keine Übernahme beim Öffnen",
+    "datei": "cmd/schnapp/importieren.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif !importBeimOeffnen || b == nil {",
+    "neu": "\tif true || !importBeimOeffnen || b == nil {"
+  },
+  {
+    "name": "IM2 Doppelte: vorhandene Aufnahme übergangen",
+    "datei": "cmd/schnapp/importieren.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif rel, ok := b.Importiert(summe); ok {",
+    "neu": "\tif rel, ok := b.Importiert(summe); false && ok {"
+  },
+  {
+    "name": "IM3 Übernahme nicht gemerkt",
+    "datei": "cmd/schnapp/importieren.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif err := b.MerkeImport(summe, e.Pfad); err != nil {",
+    "neu": "\tif err := error(nil); err != nil {"
+  },
+  {
+    "name": "IM4 Aufnahme der Ablage noch einmal übernommen",
+    "datei": "cmd/schnapp/importieren.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif _, ok := b.Relativ(abs); ok {\n\t\treturn pfad\n\t}",
+    "neu": "\tif _, ok := b.Relativ(abs); false && ok {\n\t\treturn pfad\n\t}"
+  },
+  {
+    "name": "IM5 Datei → Öffnen… übernimmt nicht",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tpfad = importiere(b, pfad, false, kante) //",
+    "neu": "\t\t_ = importiere //"
+  },
+  {
+    "name": "IM6 Liste: erste statt letzte Zeile",
+    "datei": "internal/library/importe.go",
+    "paket": "./internal/library",
+    "alt": "\t\tif json.Unmarshal(sc.Bytes(), &z) == nil && z.Summe == suche && z.Pfad != \"\" {",
+    "neu": "\t\tif json.Unmarshal(sc.Bytes(), &z) == nil && z.Summe == suche && z.Pfad != \"\" && gefunden == \"\" {"
+  },
+  {
+    "name": "IM7 Liste: Pfad aus der Ablage hinaus",
+    "datei": "internal/library/importe.go",
+    "paket": "./internal/library",
+    "alt": "\tif gefunden == \"\" || strings.HasPrefix(gefunden, \"/\") || strings.Contains(\"/\"+gefunden+\"/\", \"/../\") {",
+    "neu": "\tif gefunden == \"\" || strings.HasPrefix(gefunden, \"\\x00\") {"
+  },
+  {
+    "name": "IM8 Liste: fehlende Datei gilt",
+    "datei": "internal/library/importe.go",
+    "paket": "./internal/library",
+    "alt": "\tif err != nil || !fi.Mode().IsRegular() {",
+    "neu": "\tif false && (err != nil || !fi.Mode().IsRegular()) {"
+  }
+]

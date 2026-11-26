@@ -27,10 +27,11 @@ import (
 // Speicherfunktion prüfen können, die oeffneImEditor und bearbeiteNeu dem Editor übergeben (F-282).
 var editorStarten = ui.EditorMit
 
-// oeffneImEditor öffnet eine Datei im Editor (ADR-0020). Speichern schreibt eine Aufnahme der Bibliothek an ihren
-// Platz zurück; alles andere (Datei außerhalb, fremdes oder beschädigtes Bild, neuere Fassung) kommt beim ersten
-// Speichern als neue Aufnahme in die Bibliothek, danach wird diese fortgeschrieben. Die geöffnete Datei selbst bleibt
-// dann unberührt.
+// oeffneImEditor öffnet eine Datei im Editor (ADR-0020). Eine Datei außerhalb der Ablage wird zuerst als Aufnahme
+// übernommen und diese geöffnet (ADR-0016 Nachtrag 10). Speichern schreibt eine Aufnahme der Bibliothek an ihren
+// Platz zurück; alles andere (scheiterte die Übernahme, fremdes oder beschädigtes Bild, neuere Fassung) kommt beim
+// ersten Speichern als neue Aufnahme in die Bibliothek, danach wird diese fortgeschrieben. Die geöffnete Datei selbst
+// bleibt unberührt.
 //
 // ohneGrenze ist --ignore-limit (ADR-0017 Nachtrag 6): Die Datei wird auch über dem Rechenbudget geöffnet. kante ist
 // [capture] seam (ADR-0023 Nachtrag 6): Ein einfaches PNG/JPEG (auch eine beschädigte oder neuere Arbeitsdatei, die als
@@ -40,6 +41,9 @@ func oeffneImEditor(pfad string, ohneGrenze bool, kante document.Kante) error {
 	if err != nil {
 		return err
 	}
+	b := library.Neu(orte)
+	// Eine Datei von außen wird zuerst eine Aufnahme der Bibliothek (ADR-0016 Nachtrag 10).
+	pfad = importiere(b, pfad, ohneGrenze, kante)
 	// Erst auf ein laufendes UmDatei warten, dann laden, dann die Rettung (F-769, F-770).
 	abs, g, stand, r, err := ladeMitRettung(pfad, ohneGrenze, ladeFuerEditor)
 	if err != nil {
@@ -51,7 +55,6 @@ func oeffneImEditor(pfad string, ohneGrenze bool, kante document.Kante) error {
 			return err
 		}
 	}
-	b := library.Neu(orte)
 	ui.SetzeExportOhneGrenze(ohneGrenze) // auch der Export aus dem Editor prüft das Budget dann nicht (ADR-0033 Nachtrag 4)
 	return editorStarten(geoeffnetFuer(b, abs, g, stand, r, ohneGrenze), anbindungFuer(b, kante))
 }
@@ -100,6 +103,7 @@ func rettungUmDatei(pfad string, aendere func() error) error {
 // übersetzt wie beim Öffnen von der Kommandozeile.
 func oeffnerFuer(b *library.Bibliothek, kante document.Kante) ui.Oeffnen {
 	return func(pfad string) (ui.Geoeffnet, error) {
+		pfad = importiere(b, pfad, false, kante)                       // Datei → Öffnen…: von außen erst übernehmen (ADR-0016 Nachtrag 10)
 		abs, g, stand, r, err := ladeMitRettung(pfad, false, ladeFuer) // wartet vor dem Laden (F-769)
 		if err != nil {
 			return ui.Geoeffnet{}, errors.New(nutzerFehler(err))
