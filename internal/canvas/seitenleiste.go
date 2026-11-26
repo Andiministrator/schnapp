@@ -31,6 +31,7 @@ type SeitenInhalt struct {
 	KanteAn        bool // die Knöpfe der Kantenform wirken (KannKanteWechseln)
 	Spitze         bool // Schalter „Spitze“ (gewählter Text oder Sprechblase, ADR-0021 Nachtrag 13 Punkt 6)
 	Vergroesserung bool // Vergrößerung wählbar (gewählte Lupe, ADR-0033 Punkt 8)
+	Pfeilform      bool // Spitzenart und Enden wählbar (Werkzeug oder gewählter Pfeil, ADR-0021 Nachtrag 19)
 	Hinweis        SeitenHinweis
 }
 
@@ -75,12 +76,13 @@ func (s *Sitzung) Seitenleiste() SeitenInhalt {
 		if o, ok := s.D.Objekt(s.Auswahl); ok {
 			if w, ok := objektWerkzeug(o); ok {
 				return SeitenInhalt{Auswahl: true, Werkzeug: w, Farbe: true,
-					Strich: strichWerkzeug(w), Text: textWerkzeug(w), Spitze: textWerkzeug(w), Vergroesserung: w == WerkzeugLupe}
+					Strich: strichWerkzeug(w), Text: textWerkzeug(w), Spitze: textWerkzeug(w), Vergroesserung: w == WerkzeugLupe,
+					Pfeilform: w == WerkzeugPfeil}
 			}
 		}
 	}
 	i := SeitenInhalt{Werkzeug: s.Werkzeug, Farbe: farbWerkzeug(s.Werkzeug),
-		Strich: strichWerkzeug(s.Werkzeug), Text: textWerkzeug(s.Werkzeug)}
+		Strich: strichWerkzeug(s.Werkzeug), Text: textWerkzeug(s.Werkzeug), Pfeilform: s.Werkzeug == WerkzeugPfeil}
 	switch s.Werkzeug {
 	case WerkzeugAuswahl:
 		i.Hinweis = SeitenHinweisNichts

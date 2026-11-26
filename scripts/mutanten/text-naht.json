@@ -193,18 +193,18 @@
     "timeout": "5m"
   },
   {
-    "name": "P2 Renderer: Spitze über abgebildete Ecken (F-748)",
-    "datei": "internal/render/render.go",
+    "name": "P2 Renderer: Köpfe nur so weit gesucht wie der Schaft (F-748, ADR-0021 Nachtrag 19)",
+    "datei": "internal/render/pfeil.go",
     "paket": "./internal/render",
-    "alt": "zs.fuelle([][]document.Punkt{{abb(spitze[0]), abb(spitze[1]), abb(spitze[2])}}, nil, v.Strich.Farbe)",
-    "neu": "zs.fuelle([][]document.Punkt{{z.ansicht(spitze[0]), z.ansicht(spitze[1]), z.ansicht(spitze[2])}}, nil, v.Strich.Farbe)",
+    "alt": "\tz.strichJeStueckMit(pz.ls, v.Strich, pz.Suche)",
+    "neu": "\tz.strichJeStueckMit(pz.ls, v.Strich, v.Strich.Breite/2+1)",
     "timeout": "5m"
   },
   {
     "name": "P3 Renderer: Strecken ohne Strichbreite zugeordnet (F-748)",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "z.d.StreckenStuecke(pts, geschlossen, hw+1)",
+    "alt": "z.d.StreckenStuecke(pts, geschlossen, suche)",
     "neu": "z.d.StreckenStuecke(pts, geschlossen, 0)",
     "timeout": "5m"
   },
@@ -220,8 +220,8 @@
     "name": "P5 Editor: Pfeil über die Abbildung statt je Bereich (F-748)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "e.jeStueckIn(gtx, stuecke, an, vorschau, func(abb func(document.Punkt) f32.Point) {\n\t\t\tvar pfad clip.Path",
-    "neu": "e.jeStueckIn(gtx, stuecke, an, true, func(abb func(document.Punkt) f32.Point) {\n\t\t\tvar pfad clip.Path",
+    "alt": "e.jeStueckIn(gtx, stuecke, an, vorschau, func(abb func(document.Punkt) f32.Point) {\n\t\t\tfuelleTeile(gtx, pz.Teile",
+    "neu": "e.jeStueckIn(gtx, stuecke, an, true, func(abb func(document.Punkt) f32.Point) {\n\t\t\tfuelleTeile(gtx, pz.Teile",
     "timeout": "5m"
   },
   {

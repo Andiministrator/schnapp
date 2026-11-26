@@ -138,6 +138,20 @@ func beispiele() []beispiel {
 			fuege(t, d, document.Nummer{Mitte: document.Pt(52, 10), Wert: 1, Radius: 6, Farbe: color.NRGBA{217, 58, 51, 255}})
 			return d
 		}, Metadaten{}, false},
+		{"arrow-heads", func(t *testing.T) *document.Dokument { // Spitzenarten und Enden (ADR-0021 Nachtrag 19)
+			d := beispielDok(t, 64, 48)
+			strich := document.Strich{Farbe: color.NRGBA{220, 30, 30, 255}, Breite: 2}
+			fuege(t, d,
+				document.Pfeil{A: document.Pt(4, 10), B: document.Pt(28, 10), K: document.Pt(16, 10), Strich: strich,
+					Kopf: document.KopfWinkel},
+				document.Pfeil{A: document.Pt(36, 6), B: document.Pt(60, 14), K: document.Pt(50, 2), Strich: strich,
+					Kopf: document.KopfPunkt, Enden: document.EndenAnfang},
+				document.Pfeil{A: document.Pt(6, 24), B: document.Pt(58, 24), K: document.Pt(32, 24), Strich: strich,
+					Kopf: document.KopfQuer, Enden: document.EndenBeide},
+				document.Pfeil{A: document.Pt(6, 40), B: document.Pt(58, 36), K: document.Pt(32, 46), Strich: strich,
+					Enden: document.EndenKeine})
+			return d
+		}, Metadaten{}, false},
 		{"callout", func(t *testing.T) *document.Dokument { // Sprechblase mit und ohne Füllung, Formatversion 2 (ADR-0021 Nachtrag 13)
 			d := beispielDok(t, 64, 48)
 			fuege(t, d, document.Text{Ort: document.Pt(4, 4), Inhalt: "Look", Schriftgrad: 9, Farbe: color.NRGBA{0, 0, 0, 255},
@@ -714,7 +728,7 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 		"kante",
 		"streifen", "zeilen", "von", "bis", "ebene", "typ", "a", "b", "k", "strich", "bereich", "fuellung", "eckradius",
 		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "schrift", "stil", "ausrichtung", "spitze", "mitte", "wert", "radius",
-		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel"}
+		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel", "kopf", "enden"}
 	for _, w := range wortliste {
 		if !gesehen[w] {
 			t.Errorf("Beispiele enthalten s:%s nicht (Beispielabdeckung)", w)

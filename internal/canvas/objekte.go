@@ -22,22 +22,23 @@ func Treffer(objekte []document.Objekt, p document.Punkt, toleranz float64) (int
 func trifft(o document.Objekt, p document.Punkt, tol float64) bool {
 	switch v := o.(type) {
 	case document.Pfeil:
-		halb := v.Strich.Breite/2 + tol
-		if abstandZurKurve(v, p) <= halb {
+		// Schaft und Köpfe wie gezeichnet (document.Pfeil.Form, ADR-0021 Nachtrag 19).
+		f := v.Form()
+		hw := v.Strich.Breite / 2
+		for i := 1; i < len(f.Schaft); i++ {
+			if abstandZurStrecke(p, f.Schaft[i-1], f.Schaft[i]) <= hw+tol {
+				return true
+			}
+		}
+		if len(f.Schaft) == 1 && p.Minus(f.Schaft[0]).Laenge() <= hw+tol {
 			return true
 		}
-		// Die Spitze ragt über B hinaus (Länge wie beim Zeichnen, mindestens 8 px).
-		g := spitzenLaenge(v.Strich.Breite)
-		if p.Minus(v.B).Laenge() <= g+tol {
-			return true
+		for _, k := range f.Koepfe {
+			if imVieleck(p, k.Umriss(hw), tol) {
+				return true
+			}
 		}
-		// Die Ecken der Spitze liegen bis g·√5/2 von B: die Kanten des Dreiecks zählen mit.
-		r := v.RichtungAmEnde()
-		n := document.Pt(-r.Y, r.X)
-		fuss := v.B.Minus(r.Mal(g))
-		e1, e2 := fuss.Plus(n.Mal(g/2)), fuss.Minus(n.Mal(g/2))
-		return abstandZurStrecke(p, v.B, e1) <= tol || abstandZurStrecke(p, v.B, e2) <= tol ||
-			abstandZurStrecke(p, e1, e2) <= tol
+		return false
 	case document.Kasten:
 		r := v.Bereich
 		halb := v.Strich.Breite/2 + tol
@@ -75,20 +76,19 @@ func trifft(o document.Objekt, p document.Punkt, tol float64) bool {
 	}
 }
 
-// spitzenLaenge ist die Länge der Pfeilspitze: 4·Breite, mindestens 8 Pixel.
-func spitzenLaenge(breite float64) float64 { return math.Max(8, 4*breite) }
-
-// abstandZurKurve nähert den Abstand von p zur Bézier-Kurve über 32 Strecken an.
-func abstandZurKurve(pf document.Pfeil, p document.Punkt) float64 {
-	const n = 32
-	best := math.Inf(1)
-	a := pf.Punkt(0)
-	for i := 1; i <= n; i++ {
-		b := pf.Punkt(float64(i) / n)
-		best = math.Min(best, abstandZurStrecke(p, a, b))
-		a = b
+// imVieleck meldet, ob p im einfachen Vieleck u liegt oder höchstens tol von seinem Rand.
+func imVieleck(p document.Punkt, u []document.Punkt, tol float64) bool {
+	innen := false
+	for i, j := 0, len(u)-1; i < len(u); j, i = i, i+1 {
+		a, b := u[i], u[j]
+		if (a.Y > p.Y) != (b.Y > p.Y) && p.X < (b.X-a.X)*(p.Y-a.Y)/(b.Y-a.Y)+a.X {
+			innen = !innen
+		}
+		if abstandZurStrecke(p, a, b) <= tol {
+			return true
+		}
 	}
-	return best
+	return innen
 }
 
 func abstandZurStrecke(p, a, b document.Punkt) float64 {

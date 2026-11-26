@@ -1,0 +1,142 @@
+[
+  {
+    "name": "PF1 Schaft läuft bis unter die Spitze",
+    "datei": "internal/document/pfeilform.go",
+    "paket": "./internal/document",
+    "alt": "\t\tkoepfe = append(koepfe, p.kopf(p.B, p.Punkt(t), w))\n\t\ttb = t\n",
+    "neu": "\t\tkoepfe = append(koepfe, p.kopf(p.B, p.Punkt(t), w))\n"
+  },
+  {
+    "name": "PF2 Enden Anfang ohne Kopf",
+    "datei": "internal/document/pfeilform.go",
+    "paket": "./internal/document",
+    "alt": "\tif p.Enden == EndenAnfang || p.Enden == EndenBeide {",
+    "neu": "\tif p.Enden == EndenBeide {"
+  },
+  {
+    "name": "PF3 Dreieck schmal wie früher",
+    "datei": "internal/document/pfeilform.go",
+    "paket": "./internal/document",
+    "alt": "\t\tl, h := 3*w+5, (4.5*w+6)/2\n\t\tfuss := e.Minus(r.Mal(l))\n\t\tk.Kontur = []Punkt{fuss.Minus(n.Mal(h)), e, fuss.Plus(n.Mal(h))}",
+    "neu": "\t\tl, h := 3*w+5, (3*w+5)/2\n\t\tfuss := e.Minus(r.Mal(l))\n\t\tk.Kontur = []Punkt{fuss.Minus(n.Mal(h)), e, fuss.Plus(n.Mal(h))}"
+  },
+  {
+    "name": "PF4 offene Spitze: Schenkel zu dünn",
+    "datei": "internal/document/pfeilform.go",
+    "paket": "./internal/document",
+    "alt": "\t\td := w / (h / math.Hypot(l, h))",
+    "neu": "\t\td := w"
+  },
+  {
+    "name": "PF5 kein Schaft: Kopf ohne volle Form",
+    "datei": "internal/document/pfeilform.go",
+    "paket": "./internal/document",
+    "alt": "\tif tb <= ta && len(koepfe) > 0 {",
+    "neu": "\tif false && tb <= ta && len(koepfe) > 0 {"
+  },
+  {
+    "name": "PF6 Umriss mit der Sehne statt der Schaftstrecke",
+    "datei": "internal/document/pfeilform.go",
+    "paket": "./internal/document",
+    "alt": "\tif !gefunden {\n\t\treturn links(k.Richtung)",
+    "neu": "\tif !gefunden || true {\n\t\treturn links(k.Richtung)"
+  },
+  {
+    "name": "PF7 Punkt: Bogen hinten herum",
+    "datei": "internal/document/pfeilform.go",
+    "paket": "./internal/document",
+    "alt": "\t\tif vorn > bw {",
+    "neu": "\t\tif vorn < bw {"
+  },
+  {
+    "name": "PF8 unbekannte Spitze angenommen",
+    "datei": "internal/document/pfeilform.go",
+    "paket": "./internal/document",
+    "alt": "\tif p.Kopf > KopfQuer || p.Enden > EndenKeine {",
+    "neu": "\tif p.Enden > EndenKeine {"
+  },
+  {
+    "name": "PF9 Renderer: Kappe statt Kopf",
+    "datei": "internal/render/pfeil.go",
+    "paket": "./internal/render",
+    "alt": "\t\tls.teile[g] = append(neu, kappe[len(kappe)-1])\n",
+    "neu": "\t\t_ = append(neu, kappe[len(kappe)-1])\n\t\tz.Einzeln = append(z.Einzeln, k.Umriss(hw))\n"
+  },
+  {
+    "name": "PF10 SVG schreibt die Voreinstellung",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\t\tif o.Kopf != document.KopfDreieck { // freiwillig",
+    "neu": "\t\t\tif true { // freiwillig"
+  },
+  {
+    "name": "PF11 SVG liest s:kopf nicht",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "Strich: l.strich(\"strich\"), Kopf: kopf,",
+    "neu": "Strich: l.strich(\"strich\"), Kopf: 0*kopf,"
+  },
+  {
+    "name": "PF12 Leiste merkt die Wahl fürs Werkzeug nicht",
+    "datei": "internal/canvas/pfeilform.go",
+    "paket": "./internal/canvas",
+    "alt": "\tmerke()\n\tp, ok := s.gewaehlterPfeil()",
+    "neu": "\tp, ok := s.gewaehlterPfeil()"
+  },
+  {
+    "name": "PF13 Treffer übergeht den Kopf",
+    "datei": "internal/canvas/objekte.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\tif imVieleck(p, k.Umriss(hw), tol) {",
+    "neu": "\t\t\tif false && imVieleck(p, k.Umriss(hw), tol) {"
+  },
+  {
+    "name": "PF14 neuer Pfeil ohne Wahl der Leiste",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tpf.Kopf, pf.Enden = s.Stil.Kopf, s.Stil.Enden\n",
+    "neu": ""
+  },
+  {
+    "name": "PF15 Leiste ohne Pfeilform beim Werkzeug",
+    "datei": "internal/canvas/seitenleiste.go",
+    "paket": "./internal/canvas",
+    "alt": "Text: textWerkzeug(s.Werkzeug), Pfeilform: s.Werkzeug == WerkzeugPfeil}",
+    "neu": "Text: textWerkzeug(s.Werkzeug), Pfeilform: false}"
+  },
+  {
+    "name": "PF16 annotate übergeht head",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\t\t\t\tpf.Kopf = k\n",
+    "neu": "\t\t\t\t\t_ = k\n"
+  },
+  {
+    "name": "PF17 Knopf Spitzenart wirkungslos",
+    "datei": "internal/ui/pfeilform.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.s.SetzeKopf(art)\n",
+    "neu": "\t\t\t_ = art\n"
+  },
+  {
+    "name": "PF18 kein Name in der Statuszeile",
+    "datei": "internal/ui/pfeilform.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tk.hinweis = name(j)\n",
+    "neu": "\t\t\t\t_ = name(j)\n"
+  },
+  {
+    "name": "PF19 Knopf Enden wirkungslos",
+    "datei": "internal/ui/pfeilform.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.s.SetzeEnden(en)\n",
+    "neu": "\t\t\t_ = en\n"
+  },
+  {
+    "name": "PF20 Reichweite ohne Köpfe",
+    "datei": "internal/document/naht.go",
+    "paket": "./internal/document",
+    "alt": "\t\th := v.Form().Huelle(v.Strich.Breite)\n",
+    "neu": "\t\th := PfeilForm{Schaft: v.Form().Schaft}.Huelle(v.Strich.Breite)\n"
+  }
+]

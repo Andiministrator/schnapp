@@ -43,13 +43,16 @@ func (s Strich) pruefe() error {
 	return nil
 }
 
-// Pfeil ist eine quadratische Bézier-Kurve von A nach B mit Kontrollpunkt K; die Spitze sitzt bei B. Gerade ist er,
-// wenn K auf der Mitte liegt. Der Nutzer zieht am Griff (Kurvenpunkt bei t = 0,5), nicht an K.
+// Pfeil ist eine quadratische Bézier-Kurve von A nach B mit Kontrollpunkt K; die Spitze sitzt nach Enden bei B, A,
+// beiden oder keinem (dann eine Linie), in der Form Kopf (ADR-0021 Nachtrag 19; Gestalt über Form). Gerade ist er, wenn
+// K auf der Mitte liegt. Der Nutzer zieht am Griff (Kurvenpunkt bei t = 0,5), nicht an K.
 type Pfeil struct {
 	Ebene
 	ID      int
 	A, B, K Punkt
 	Strich  Strich
+	Kopf    Kopfart
+	Enden   PfeilEnden
 }
 
 // GeraderPfeil liefert einen ungebogenen Pfeil von a nach b.
@@ -95,6 +98,9 @@ func (p Pfeil) pruefe() error {
 		return fmt.Errorf("document: Pfeil mit ungültigen Koordinaten")
 	}
 	if err := p.Ebene.pruefe(); err != nil {
+		return err
+	}
+	if err := p.pruefeForm(); err != nil {
 		return err
 	}
 	return p.Strich.pruefe()

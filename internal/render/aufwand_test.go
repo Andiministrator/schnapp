@@ -227,8 +227,9 @@ func TestKostenmodellLueckenF132(t *testing.T) {
 		t.Errorf("100 winzige Glyphen kosten %v, Soll %v", a.glyph, 100*glyphGrund)
 	}
 	e := weissesDokument(t, 10, 10)
+	// Als Linie (ohne Kopf, ADR-0021 Nachtrag 19): Ein Kopf dieser Breite verdrängte den ganzen Schaft.
 	hinzu(t, e, document.Pfeil{A: document.Pt(-50, -50), B: document.Pt(70, 70), K: document.Pt(35, 3),
-		Strich: document.Strich{Farbe: rot, Breite: 1e5}})
+		Strich: document.Strich{Farbe: rot, Breite: 1e5}, Enden: document.EndenKeine})
 	a := trockenlauf(e, false)
 	// Gemessen (Messtest Karte #71): rund 9 ms Rechenzeit je solchem Pfeil, also über 1e7 Einheiten, fast alles Kanten.
 	if a.kanten < 1e7 || a.flaeche > 1e5 {

@@ -124,6 +124,30 @@ func TestWendeAngaben(t *testing.T) {
 	}
 }
 
+// ADR-0021 Nachtrag 19 Punkt 7: head und ends beim Pfeil; ohne sie Dreieck am Ende; bei rect sind sie unbekannt.
+func TestWendePfeilform(t *testing.T) {
+	d := dokument(t, 200, 100)
+	es := lies(t, `{"annotations":[
+		{"type":"arrow","from":[10,10],"to":[60,40],"head":"dot","ends":"both"},
+		{"type":"arrow","from":[10,60],"to":[60,90],"ends":"none"},
+		{"type":"arrow","from":[100,10],"to":[150,40]}]}`)
+	if _, err := Wende(context.Background(), d, es); err != nil {
+		t.Fatal(err)
+	}
+	o := d.Objekte()
+	for i, soll := range []struct {
+		k document.Kopfart
+		e document.PfeilEnden
+	}{{document.KopfPunkt, document.EndenBeide}, {document.KopfDreieck, document.EndenKeine}, {document.KopfDreieck, document.EndenEnde}} {
+		if p := o[i].(document.Pfeil); p.Kopf != soll.k || p.Enden != soll.e {
+			t.Errorf("Pfeil %d: %v %v, Soll %v %v", i, p.Kopf, p.Enden, soll.k, soll.e)
+		}
+	}
+	if _, err := Lies(strings.NewReader(`{"annotations":[{"type":"rect","from":[1,1],"to":[9,9],"head":"dot"}]}`)); err == nil {
+		t.Error("head bei rect angenommen")
+	}
+}
+
 // TestWendeFehler: Werte außerhalb, falsche Farben, leerer Text, gleiche Punkte — mit Index; der Fehler nennt den
 // Eintrag.
 func TestWendeFehler(t *testing.T) {
@@ -138,6 +162,8 @@ func TestWendeFehler(t *testing.T) {
 		{`{"type":"text","at":[10,10],"text":"  "}`, "must not be empty"},
 		{`{"type":"text","at":[10,10],"text":"x","align":"middle"}`, `"align"`},
 		{`{"type":"redact","from":[10,10],"to":[10,50]}`, "empty"},
+		{`{"type":"arrow","from":[10,10],"to":[20,20],"head":"arrow"}`, `"head"`},
+		{`{"type":"arrow","from":[10,10],"to":[20,20],"ends":"tip"}`, `"ends"`},
 	} {
 		d := dokument(t, 200, 100)
 		_, err := Wende(context.Background(), d, lies(t, `{"annotations":[{"type":"step","at":[5,5]},`+tc.eintrag+`]}`))

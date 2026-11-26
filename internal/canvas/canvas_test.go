@@ -85,7 +85,10 @@ func TestTreffer(t *testing.T) {
 	}{
 		{"Bogen des Pfeils (Scheitel bei y=50)", document.Pt(50, 51), 1},
 		{"Sehne des gebogenen Pfeils liegt daneben", document.Pt(50, 0), 0},
-		{"Spitze ragt über B hinaus", document.Pt(110, 0), 1},
+		// Der Kopf trifft in seiner Fläche, abseits des Schafts (ADR-0021 Nachtrag 19): 8 Pixel vor B auf der Achse und
+		// 5 Pixel seitlich; vor der Spitze (über B hinaus) trifft nichts mehr, früher ein Kreis um B.
+		{"Fläche der Spitze", document.Pt(100.9, 9.4), 1},
+		{"vor der Spitze ist nichts", document.Pt(110, 0), 0},
 		{"Rand des leeren Kastens", document.Pt(201, 250), 2},
 		{"Inneres des leeren Kastens ist durchlässig", document.Pt(250, 250), 0},
 		{"Inneres des gefüllten Kastens", document.Pt(450, 450), 3},

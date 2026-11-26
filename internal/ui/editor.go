@@ -330,8 +330,9 @@ type editor struct {
 	// lupe: Abschnitt „Vergrößerung“ der rechten Leiste und gemerkte Bilder der Lupen (ADR-0033, lupe.go).
 	lupe lupenLeiste
 	// spitze: Schalter „Spitze“ der rechten Leiste (ADR-0021 Nachtrag 13, spitze.go).
-	spitze spitzenLeiste
-	satz   textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
+	spitze    spitzenLeiste
+	pfeilform pfeilformLeiste
+	satz      textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
 	// nav: Zustand des Navigators auf der Leinwand (navigator.go, ADR-0031 Nachtrag 9); die Adresse ist das Zeigerziel.
 	nav navigatorZustand
 	// fussFeldRahmen: Lage der Felder Farbe und Zoom beim letzten Zeichnen (leer: nicht gezeigt), farbKnopfRahmen die des
@@ -1821,45 +1822,28 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 	switch v := o.(type) {
 	case document.Pfeil:
 		// Abgeschnitten wie Renderer und SVG-Export (F-748, ADR-0023 Nachtrag 17): einmal im Original aufgezeichnet und in
-		// jedem Bereich abgespielt, den eine Strecke berührt (document.StreckenStuecke), die Spitze ebenso.
-		const n = 48
-		pts := make([]document.Punkt, 0, n+1)
-		for i := 0; i <= n; i++ {
-			pts = append(pts, v.Punkt(float64(i)/n))
-		}
+		// jedem Bereich abgespielt, den eine Strecke samt Kopf berührt (document.StreckenStuecke). Dieselben
+		// überlappungsfreien Teile wie der Renderer (render.ZerlegePfeil, ADR-0021 Nachtrag 19): Gios Strich hätte nur
+		// runde Enden, der Schaft endet aber unter dem Kopf.
+		pz := render.ZerlegePfeil(v)
 		var stuecke []document.Stueck
-		if !vorschau {
-			for _, st := range e.s.D.StreckenStuecke(pts, false, v.Strich.Breite/2+1) {
+		if !vorschau && len(pz.Schaft) > 0 {
+			for _, st := range e.s.D.StreckenStuecke(pz.Schaft, false, pz.Suche) {
 				stuecke = append(stuecke, st.Stueck)
 			}
 		}
 		e.jeStueckIn(gtx, stuecke, an, vorschau, func(abb func(document.Punkt) f32.Point) {
-			var pfad clip.Path
-			pfad.Begin(gtx.Ops)
-			pfad.MoveTo(abb(pts[0]))
-			for _, p := range pts[1:] {
-				pfad.LineTo(abb(p))
+			fuelleTeile(gtx, pz.Teile, v.Strich.Farbe, abb)
+		})
+		for _, k := range pz.Einzeln {
+			h := document.Rechteck{Min: k[0], Max: k[0]}
+			for _, q := range k[1:] {
+				h = h.Vereint(document.Rechteck{Min: q, Max: q})
 			}
-			paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Stroke{Path: pfad.End(), Width: float32(v.Strich.Breite)}.Op())
-		})
-		r := v.RichtungAmEnde()
-		gl := math.Max(8, 4*v.Strich.Breite)
-		nrm := document.Pt(-r.Y, r.X)
-		fuss := v.B.Minus(r.Mal(gl))
-		spitze := []document.Punkt{v.B, fuss.Plus(nrm.Mal(gl / 2)), fuss.Minus(nrm.Mal(gl / 2))}
-		h := document.Rechteck{Min: spitze[0], Max: spitze[0]}
-		for _, p := range spitze[1:] {
-			h = h.Vereint(document.Rechteck{Min: p, Max: p})
+			e.jeStueck(gtx, h, 1, an, vorschau, func(abb func(document.Punkt) f32.Point) {
+				fuelleTeile(gtx, [][]document.Punkt{k}, v.Strich.Farbe, abb)
+			})
 		}
-		e.jeStueck(gtx, h, 1, an, vorschau, func(abb func(document.Punkt) f32.Point) {
-			var sp clip.Path
-			sp.Begin(gtx.Ops)
-			sp.MoveTo(abb(spitze[0]))
-			sp.LineTo(abb(spitze[1]))
-			sp.LineTo(abb(spitze[2]))
-			sp.Close()
-			paint.FillShape(gtx.Ops, v.Strich.Farbe, clip.Outline{Path: sp.End()}.Op())
-		})
 	case document.Kasten:
 		rechteck := func(abb func(document.Punkt) f32.Point) (image.Rectangle, clip.RRect) {
 			min, max := abb(v.Bereich.Min), abb(v.Bereich.Max)
@@ -2081,6 +2065,24 @@ func (e *editor) jeStueckIn(gtx layout.Context, stuecke []document.Stueck, an fu
 		t.Pop()
 		schnitt.Pop()
 	}
+}
+
+// fuelleTeile füllt die Vielecke teile (Original, über abb ins Fenster) als einen Pfad: Überlappungsfreie Teile mit
+// gemeinsamen Kanten decken dann lückenlos (wie kastenStrichVorschau).
+func fuelleTeile(gtx layout.Context, teile [][]document.Punkt, farbe color.NRGBA, abb func(document.Punkt) f32.Point) {
+	var pfad clip.Path
+	pfad.Begin(gtx.Ops)
+	for _, t := range teile {
+		if len(t) < 3 {
+			continue
+		}
+		pfad.MoveTo(abb(t[0]))
+		for _, q := range t[1:] {
+			pfad.LineTo(abb(q))
+		}
+		pfad.Close()
+	}
+	paint.FillShape(gtx.Ops, farbe, clip.Outline{Path: pfad.End()}.Op())
 }
 
 // kastenStrichVorschau füllt die Teile des Strichs eines runden Kastens (document.NeuerKastenStrich) als einen Pfad, mit
@@ -2782,6 +2784,9 @@ func (e *editor) hinweis() string {
 	}
 	if e.schnell.hinweis != "" { // Name der Kachel mit Fokus oder Zeiger (ADR-0037 Punkt 2)
 		return e.schnell.hinweis
+	}
+	if e.pfeilform.hinweis != "" { // Knopf für Spitze oder Enden (ADR-0021 Nachtrag 19)
+		return e.pfeilform.hinweis
 	}
 	if e.unten.hinweis != "" { // Vorschau der Leiste mit Fokus oder Zeiger (ADR-0036)
 		return e.unten.hinweis

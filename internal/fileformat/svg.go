@@ -261,20 +261,15 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			s.attr("s:b", punkt(o.B))
 			s.attr("s:k", punkt(o.K))
 			s.attr("s:strich", strich(o.Strich))
-			s.WriteString(`><path`)
-			s.attr("d", "M"+punkt(o.A)+" Q"+punkt(o.K)+" "+punkt(o.B))
-			s.attr("fill", "none")
-			s.farbeSVG("stroke", o.Strich.Farbe)
-			s.attr("stroke-width", zahl(o.Strich.Breite))
-			s.attr("stroke-linecap", "round")
-			s.WriteString(`/><path`)
-			r := o.RichtungAmEnde()
-			g := math.Max(8, 4*o.Strich.Breite)
-			n := document.Pt(-r.Y, r.X)
-			fuss := o.B.Minus(r.Mal(g))
-			s.attr("d", "M"+punkt(o.B)+" L"+punkt(fuss.Plus(n.Mal(g/2)))+" L"+punkt(fuss.Minus(n.Mal(g/2)))+" Z")
-			s.farbeSVG("fill", o.Strich.Farbe)
-			s.WriteString(`/></g>`)
+			if o.Kopf != document.KopfDreieck { // freiwillig, fehlt bei Voreinstellung (docs/format.md 8.1)
+				s.attr("s:kopf", o.Kopf.Name())
+			}
+			if o.Enden != document.EndenEnde {
+				s.attr("s:enden", o.Enden.Name())
+			}
+			s.WriteString(`>`)
+			s.pfeilDarstellung(o)
+			s.WriteString(`</g>`)
 		case document.Kasten:
 			b := o.Bereich
 			if b.Breite() == 0 || b.Hoehe() == 0 {
@@ -638,7 +633,11 @@ func (l *leser) objekt(typ string) document.Objekt {
 func (l *leser) objektOhneEbene(typ string) document.Objekt {
 	switch typ {
 	case "pfeil":
-		return document.Pfeil{A: l.punkt("a"), B: l.punkt("b"), K: l.punkt("k"), Strich: l.strich("strich")}
+		// s:kopf und s:enden freiwillig; fehlend oder unbekannt: Dreieck bei B (ADR-0021 Nachtrag 19, kein Schaden).
+		kopf, _ := document.KopfartAus(l.a["kopf"])
+		enden, _ := document.PfeilEndenAus(l.a["enden"])
+		return document.Pfeil{A: l.punkt("a"), B: l.punkt("b"), K: l.punkt("k"), Strich: l.strich("strich"), Kopf: kopf,
+			Enden: enden}
 	case "kasten":
 		return document.Kasten{Bereich: l.bereich("bereich"), Strich: l.strich("strich"), Fuellung: l.farbe("fuellung"),
 			Eckradius: l.zahl("eckradius")}
@@ -797,4 +796,70 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 		return nil, fmt.Errorf("%w: Ansicht fehlt", ErrBeschaedigt)
 	}
 	return &in, nil
+}
+
+// pfeilDarstellung schreibt die sichtbare Gestalt eines Pfeils (ADR-0021 Nachtrag 19): ohne Kopf die Kurve als Strich mit
+// runden Enden; mit Kopf den gekürzten Schaft als Strich mit geraden Enden, je Kopf ein gefülltes Vieleck und an einem
+// Ende ohne Kopf eine halbe Scheibe.
+func (s *schreiber) pfeilDarstellung(o document.Pfeil) {
+	f := o.Form()
+	hw := o.Strich.Breite / 2
+	if len(f.Koepfe) == 0 {
+		s.WriteString(`<path`)
+		s.attr("d", "M"+punkt(o.A)+" Q"+punkt(o.K)+" "+punkt(o.B))
+		s.attr("fill", "none")
+		s.farbeSVG("stroke", o.Strich.Farbe)
+		s.attr("stroke-width", zahl(o.Strich.Breite))
+		s.attr("stroke-linecap", "round")
+		s.WriteString(`/>`)
+		return
+	}
+	if f.TB > f.TA {
+		a, k, b := o.Teilstueck(f.TA, f.TB)
+		s.WriteString(`<path`)
+		s.attr("d", "M"+punkt(a)+" Q"+punkt(k)+" "+punkt(b))
+		s.attr("fill", "none")
+		s.farbeSVG("stroke", o.Strich.Farbe)
+		s.attr("stroke-width", zahl(o.Strich.Breite))
+		s.WriteString(`/>`)
+		if len(f.Koepfe) == 1 && len(f.Schaft) >= 2 { // das andere Ende rund
+			ende, nach := f.Schaft[0], f.Schaft[1]
+			if f.Koepfe[0].AmAnfang {
+				ende, nach = f.Schaft[len(f.Schaft)-1], f.Schaft[len(f.Schaft)-2]
+			}
+			s.halbeScheibe(ende, nach, hw, o.Strich.Farbe)
+		}
+	}
+	for _, k := range f.Koepfe {
+		u := k.Umriss(hw)
+		d := "M" + punkt(u[0])
+		for _, q := range u[1:] {
+			d += " L" + punkt(q)
+		}
+		s.WriteString(`<path`)
+		s.attr("d", d+" Z")
+		s.farbeSVG("fill", o.Strich.Farbe)
+		s.WriteString(`/>`)
+	}
+}
+
+// halbeScheibe schreibt die runde Kappe am Ende ende eines Strichs der halben Breite hw, dessen Nachbarpunkt nach ist.
+func (s *schreiber) halbeScheibe(ende, nach document.Punkt, hw float64, farbe color.NRGBA) {
+	d := ende.Minus(nach)
+	l := d.Laenge()
+	if l < 1e-9 || !(hw > 0) {
+		return
+	}
+	r := d.Mal(1 / l)
+	n := document.Pt(-r.Y, r.X)
+	von, bis := ende.Minus(n.Mal(hw)), ende.Plus(n.Mal(hw))
+	// Der Bogen läuft über die Außenseite ende + r·hw: Drehsinn aus dem Kreuzprodukt (SVG-Flag 1 = wachsender Winkel).
+	sweep := "0"
+	if (von.X-ende.X)*r.Y-(von.Y-ende.Y)*r.X > 0 {
+		sweep = "1"
+	}
+	s.WriteString(`<path`)
+	s.attr("d", "M"+punkt(von)+" A"+zahl(hw)+" "+zahl(hw)+" 0 0 "+sweep+" "+punkt(bis)+" Z")
+	s.farbeSVG("fill", farbe)
+	s.WriteString(`/>`)
 }

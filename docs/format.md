@@ -264,16 +264,23 @@ damaged. Sizes and widths are numbers with `0 <= value <= max_size`.
 
 ### 8.1 `"pfeil"` arrow
 
-A quadratic Bézier curve from `A` to `B` with control point `K`; the tip is at `B`. A straight arrow has `K` at the
-midpoint of `A` and `B`.
+A quadratic Bézier curve from `A` to `B` with control point `K`. A straight arrow has `K` at the midpoint of `A` and
+`B`. By default the head sits at `B`; `s:enden` moves it, doubles it or removes it (a plain line).
 
 | Attribute | Value |
 |---|---|
-| `s:a`, `s:b`, `s:k` | points: start, tip, control point |
-| `s:strich` | stroke: colour and width of the line and the head |
+| `s:a`, `s:b`, `s:k` | points: start, end, control point |
+| `s:strich` | stroke: colour and width of the line and the heads |
+| `s:kopf` | OPTIONAL. Head style: `triangle` (filled), `open` (outline of the triangle), `dot` (disc) or `bar` (cross bar). Missing or any other value: `triangle`; writers omit it for `triangle` |
+| `s:enden` | OPTIONAL. Which ends carry a head: `end` (at `B`), `start` (at `A`), `both` or `none` (a line). Missing or any other value: `end`; writers omit it for `end` |
 
-Informative: the head is a filled triangle at `B`, of length `max(8, 4 x width)` and the same base width, aligned with
-the curve's tangent at `B` (direction `B - K`, or `B - A` if `K` equals `B`).
+Both attributes keep format version 1: an older reader shows an ordinary arrow, which loses no content.
+
+Informative (w = stroke width, all in original pixels): the triangle is `3w + 5` long and `4.5w + 6` wide at its base;
+`open` is the same triangle as an outline whose legs are w thick; `dot` is a disc of radius `1.5w + 3` centred on the
+end; `bar` is w thick and `5w + 6` long, centred on the end and across the direction. The line stops under the head, at
+the point of the curve whose distance from the end equals the head's setback (triangle: its length); the head's
+direction is the chord from that point to the end. If the curve is shorter than a head, the line is left out.
 
 ### 8.2 `"kasten"` box
 
@@ -561,6 +568,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `redaction` | one filled and one pixelated redaction, applied to the pixels |
 | `text-style` | one text with all optional text attributes: a family that is not installed, `bold italic underline strike`, `center` |
 | `layers` | three objects with layer attributes: a named, half-opaque box, a hidden and locked arrow, a step number without them |
+| `arrow-heads` | four arrows: `open` head at `B`, `dot` at `A` on a curve, `bar` at both ends, and a curved line without heads |
 | `callout` | format version 2: two texts with `s:spitze`, one with a label (filled polygon) and one without (legs as a line) |
 | `magnifier` | format version 2: one magnifier with a non-integer source over a column strip (the strip drops out of the magnified view, 8.7); the visible image shows no annotations, as in all examples |
 

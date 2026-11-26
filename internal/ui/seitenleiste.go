@@ -168,6 +168,7 @@ func (e *editor) seiteAuswerten(gtx layout.Context) {
 	e.ebenenAuswerten(gtx)
 	e.lupeAuswerten(gtx)
 	e.spitzeAuswerten(gtx)
+	e.pfeilformAuswerten(gtx)
 	for j, f := range kantenFormen {
 		if k.kanten[j].Clicked(gtx) && an() && e.s.SetzeKante(f) {
 			e.melde(kantenMeldung(f), false)
@@ -224,6 +225,7 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	k := &e.seite
 	k.kopf, k.farbeGezeigt, k.sw.gezeigt = "", false, false
 	e.spitze.rahmen = image.Rectangle{}
+	e.pfeilform.kopfRahm, e.pfeilform.endenRahm, e.pfeilform.hinweis = [4]image.Rectangle{}, [4]image.Rectangle{}, ""
 	e.schnell.gezeigt, e.schnell.hinweis = false, ""
 	k.farbRahmen, k.kantRahmen, k.strRahmen = [farbPlaetze]image.Rectangle{}, [3]image.Rectangle{}, [2]image.Rectangle{}
 	k.fw.flaeche, k.fw.ton, k.fw.deck, k.fw.pipRahmen = image.Rectangle{}, image.Rectangle{}, image.Rectangle{}, image.Rectangle{}
@@ -321,6 +323,9 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 		k.strichText = fmt.Sprintf(i18n.TK("status bar", "%d px"), int(math.Round(e.s.Breite())))
 		e.textMittig(gtx, k.strichText, 13, farbeText, wert)
 		y += hoch + gtx.Dp(10)
+	}
+	if inhalt.Pfeilform { // Spitzenart und Enden (ADR-0021 Nachtrag 19)
+		y = e.zeichnePfeilform(gtx, x, y, breite, spalte)
 	}
 	if inhalt.Vergroesserung { // gewählte Lupe (ADR-0033 Punkt 8)
 		y = e.zeichneVergroesserung(gtx, x, y, spalte)

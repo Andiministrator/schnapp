@@ -1683,3 +1683,33 @@ msgstr "Nur lokale Dateien lassen sich öffnen."
 
 msgid "The chosen file was not opened yet: open it again with Ctrl+O."
 msgstr "Die gewählte Datei ist noch nicht geöffnet: mit Strg+O erneut öffnen."
+
+msgid "Head"
+msgstr "Pfeilspitze"
+
+msgid "Ends"
+msgstr "Enden"
+
+msgid "Filled triangle"
+msgstr "Gefülltes Dreieck"
+
+msgid "Open head"
+msgstr "Offene Spitze"
+
+msgid "Dot"
+msgstr "Punkt"
+
+msgid "Bar"
+msgstr "Querstrich"
+
+msgid "No head (line)"
+msgstr "Keine Spitze (Linie)"
+
+msgid "Head at the end"
+msgstr "Spitze am Ende"
+
+msgid "Head at the start"
+msgstr "Spitze am Anfang"
+
+msgid "Heads at both ends"
+msgstr "Spitzen an beiden Enden"

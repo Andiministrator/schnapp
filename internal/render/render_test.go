@@ -79,7 +79,7 @@ func TestKasten(t *testing.T) {
 func TestPfeilMitSpitze(t *testing.T) {
 	d := weissesDokument(t, 60, 40)
 	hinzu(t, d, document.GeraderPfeil(document.Pt(5, 20), document.Pt(55, 20), document.Strich{Farbe: rot, Breite: 2}))
-	// Spitze: Länge max(8, 4·2) = 8, halbe Breite 4 am Fuß bei x = 47.
+	// Spitze (ADR-0021 Nachtrag 19): Länge 3·2+5 = 11, halbe Breite 7,5 am Fuß bei x = 44.
 	pruefe(t, bild(t, d), map[image.Point]color.NRGBA{
 		{20, 20}: rot, {20, 23}: weiss, // Schaft 2 px breit
 		{48, 22}: rot, {48, 17}: rot, // Spitze breiter als der Schaft

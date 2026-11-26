@@ -68,6 +68,8 @@ type Eintrag struct {
 	Underline     *bool    `json:"underline,omitempty"`
 	Strikethrough *bool    `json:"strikethrough,omitempty"`
 	Align         *string  `json:"align,omitempty"`
+	Head          *string  `json:"head,omitempty"` // arrow: triangle, open, dot, bar (ADR-0021 Nachtrag 19)
+	Ends          *string  `json:"ends,omitempty"` // arrow: end, start, both, none
 }
 
 // Punkt ist ein Punkt [x, y] im sichtbaren Bild; genau zwei Zahlen (encoding/json füllte ein kürzeres Array still mit
@@ -89,7 +91,7 @@ func (p *Punkt) UnmarshalJSON(b []byte) error {
 // erlaubt sind die Schlüssel je Typ; Pflicht die, ohne die ein Eintrag nicht geht.
 var (
 	erlaubt = map[string][]string{
-		"arrow":    {"from", "to", "color", "width"},
+		"arrow":    {"from", "to", "color", "width", "head", "ends"},
 		"rect":     {"from", "to", "color", "fill", "width"},
 		"text":     {"at", "text", "size", "color", "fill", "font", "bold", "italic", "underline", "strikethrough", "align", "tip"},
 		"step":     {"at", "color", "radius"},
@@ -367,7 +369,22 @@ func Wende(ctx context.Context, d *document.Dokument, es []Eintrag) (Ergebnis, e
 			}
 			strich := document.Strich{Farbe: c, Breite: breite}
 			if e.Type == "arrow" {
-				o = document.GeraderPfeil(a, b, strich)
+				pf := document.GeraderPfeil(a, b, strich)
+				if e.Head != nil {
+					k, ok := document.KopfartAus(*e.Head)
+					if !ok {
+						return erg, f(`"head" must be "triangle", "open", "dot" or "bar"`)
+					}
+					pf.Kopf = k
+				}
+				if e.Ends != nil {
+					en, ok := document.PfeilEndenAus(*e.Ends)
+					if !ok {
+						return erg, f(`"ends" must be "end", "start", "both" or "none"`)
+					}
+					pf.Enden = en
+				}
+				o = pf
 				break
 			}
 			fuellung, err := farbe("fill", e.Fill, fuel, true)

@@ -5,7 +5,6 @@ package document
 import (
 	"fmt"
 	"image"
-	"math"
 )
 
 // Naht ist eine Stauch-Naht in der Ansicht (ADR-0023 Punkt 6): bei Zeilen eine waagrechte Linie in Höhe Lage (dort
@@ -94,20 +93,10 @@ func Reichweite(o Objekt) Rechteck {
 		}
 		return g
 	case Pfeil:
-		// Die Ecken der Spitze genau wie Renderer und SVG: B, Fuß ± Normale·g/2 mit Fuß = B − r·g (g = max(8, 4·Breite)).
-		// Dazu die halbe Strichbreite (Rand der gefüllten Fläche, Kantenglättung) und 1 Pixel Reserve.
-		gr := math.Max(8, 4*v.Strich.Breite)
-		r := v.RichtungAmEnde()
-		n := Pt(-r.Y, r.X)
-		fuss := v.B.Minus(r.Mal(gr))
-		rand := v.Strich.Breite/2 + 1
-		sp := Rechteck{Min: v.B, Max: v.B}
-		for _, e := range []Punkt{fuss.Plus(n.Mal(gr / 2)), fuss.Minus(n.Mal(gr / 2))} {
-			sp.Min = Punkt{math.Min(sp.Min.X, e.X), math.Min(sp.Min.Y, e.Y)}
-			sp.Max = Punkt{math.Max(sp.Max.X, e.X), math.Max(sp.Max.Y, e.Y)}
-		}
-		sp = Rechteck{Min: sp.Min.Minus(Pt(rand, rand)), Max: sp.Max.Plus(Pt(rand, rand))}
-		return g.Vereint(sp)
+		// Schaft und Köpfe genau wie Renderer und SVG (Pfeil.Form, ADR-0021 Nachtrag 19), dazu 1 Pixel Reserve für die
+		// Kantenglättung.
+		h := v.Form().Huelle(v.Strich.Breite)
+		return g.Vereint(Rechteck{Min: h.Min.Minus(Pt(1, 1)), Max: h.Max.Plus(Pt(1, 1))})
 	}
 	return g
 }

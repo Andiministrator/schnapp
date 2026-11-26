@@ -655,3 +655,55 @@ belegt über den Gio-Router (`TestZeigerFormErreichtDenRouter`, `TestZeigerHandU
 einige X11-Namen nicht: Ausweichliste im Gio-Patch (ADR-0015 Nachtrag 5). (3) Während Speichern oder Laden zeigt der
 Zeiger keine Griffe (`gesperrt`, Kritik K-5); die Form wird je Bewegung einmal gerechnet (`editor.zeigerForm`).
 Ob er jetzt in der echten Sitzung wechselt, zeigt Andis nächster Echtlauf.
+
+## Nachtrag 19 (26.11.2026): Pfeilspitze neu, Spitzenarten und Enden (Karte #315)
+
+**Status:** Akzeptiert (Claude Opus 5.5).
+
+Andi (25.11.2026, Foto an der Karte): Die Spitze wirkt schmal, der Strich läuft sichtbar in sie hinein. Gewünscht:
+breiter und kürzer im Verhältnis zur Strichstärke, der Strich endet unter der Spitze; Spitzenarten wählbar (gefülltes
+Dreieck, offene Spitze, Punkt, Strich quer); Enden keine (= Linie), Ende, Anfang, beide.
+
+1. **Zwei neue Felder am Pfeil** (`document.Pfeil`): `Kopf` (`KopfDreieck`, `KopfWinkel`, `KopfPunkt`, `KopfQuer`) und
+   `Enden` (`EndenEnde` = Spitze bei B, `EndenAnfang` bei A, `EndenBeide`, `EndenKeine` = Linie). Beide Nullwerte sind
+   das bisherige Verhalten (Dreieck bei B), alte Dateien und Objekte bleiben Pfeile. Eine Spitzenart gilt für beide
+   Enden. Eine Linie bleibt das Objekt Pfeil (Griffe, Bogen, Einrasten wie bisher), kein neues Werkzeug.
+2. **Maße** (w = Strichstärke, alles in Pixeln des Originals; eine Rechnung `document.Pfeil.Form` für Renderer, Editor,
+   SVG-Export, Treffer und Reichweite):
+   - Dreieck: Länge `3w + 5`, Breite `4,5w + 6` (vorher Länge = Breite = `max(8, 4w)`): breiter und etwas kürzer,
+     Öffnungswinkel rund 70°.
+   - Winkel (offene Spitze): dasselbe Dreieck als Umriss, Schenkel w dick, hinten gerade abgeschnitten.
+   - Punkt: Scheibe vom Radius `1,5w + 3` um das Ende.
+   - Quer: Balken w dick, `5w + 6` lang, mittig auf dem Ende, senkrecht zur Richtung.
+   Die Richtung ist die Sehne vom Ende des Schafts zum Ende des Pfeils; der Schaftpunkt liegt auf der Kurve. Bei einem
+   gebogenen Pfeil sitzt die Spitze so auf der Kurve, nicht auf der Tangente am Ende. Der Umriss des Kopfs schließt an
+   die Normale der letzten Schaftstrecke an (`Kopfform.SchaftNormale`); bei starker Krümmung und großem Kopf weicht sie
+   von der Sehne ab, die Fuge bleibt trotzdem dicht. Ohne Schaft bekommt jeder Kopf ein gedachtes Schaftende auf der
+   Sehne und so seine volle Form.
+3. **Der Schaft endet unter der Spitze** (`PfeilForm.Schaft`, gekürzte Kurve). Der Kopf schließt den Schaft genau an
+   seinem Ende ab: Der Renderer ersetzt die runde Kappe des Linienstrichs durch den Umriss des Kopfs (gemeinsame Kante aus
+   denselben Punkten wie die Kappe, ADR-0023 Nachtrag 22). So überlappen Schaft und Kopf nicht, auch eine halbdurchsichtige
+   Farbe deckt gleichmäßig. Der Editor füllt dieselben Teile (`render.PfeilTeile`); Gios Strich hätte nur runde Enden.
+   Ist der Pfeil kürzer als seine Köpfe, entfällt der Schaft, die Köpfe bleiben.
+4. **SVG-Export:** Linie ohne Kopf wie bisher als Strich mit runden Enden; mit Kopf der Schaft als Strich mit geraden
+   Enden, je Kopf ein gefülltes Vieleck, an einem offenen Ende eine halbe Scheibe. Format: freiwillige Attribute
+   `s:kopf` (`open`, `dot`, `bar`; fehlt bei `triangle`) und `s:enden` (`start`, `both`, `none`; fehlt bei `end`) am
+   `<g s:typ="pfeil">`, Werte englisch wie bei `s:kante` und `s:stil`, dieselben Namen wie bei `--annotate`. **FormatVersion bleibt 1:** Ein älterer Leser zeigt einen gewöhnlichen Pfeil, das ist kein
+   Schaden (wie `s:kante`). Unbekannte Werte gelten als Voreinstellung. Beispiel `testdata/format/arrow-heads`.
+5. **Bedienung:** Die rechte Leiste zeigt beim Werkzeug Pfeil und bei einem gewählten Pfeil zwei Zeilen „Head“ (vier
+   Symbolknöpfe) und „Ends“ (vier Symbolknöpfe), Name im Hinweis der Statuszeile. Ohne Auswahl gilt die Wahl für
+   folgende Pfeile (`canvas.Stil.Kopf`/`Enden`), mit Auswahl ändert sie den Pfeil als einen Rückgängig-Schritt
+   (`SetzeKopf`, `SetzeEnden`) und merkt sie fürs Werkzeug, wie die Strichstärke. Jeder Knopf zeigt einen kleinen Pfeil
+   aus derselben Zerlegung wie die Leinwand (`internal/ui/pfeilform.go`).
+6. **Schnellstile** tragen weiter nur Farbe und Strichstärke: Spitzenart und Enden sind Form, nicht Stil. Ein Schnellstil
+   macht aus einer Linie keinen Pfeil.
+7. **`--annotate` und MCP:** beim Typ `arrow` die freiwilligen Schlüssel `head` (`triangle`, `open`, `dot`, `bar`) und
+   `ends` (`end`, `start`, `both`, `none`).
+8. **Treffer** folgen der Gestalt: Schaft mit halber Strichstärke, Köpfe als Fläche (`canvas.trifft`); vorher galt ein
+   Kreis um B, der auch vor der Spitze traf. Tests `internal/document/pfeilform_test.go`, `internal/render/pfeil_test.go`
+   (halbdurchsichtig: kein Pixel doppelt gedeckt), `internal/canvas/pfeilform_test.go`, `internal/ui/pfeilform_test.go`,
+   `internal/fileformat/pfeilform_test.go`; Mutanten `scripts/mutanten/pfeilform.json`; Sichtprobe
+   `scripts/drehbuecher/pfeilform-315.txt`.
+
+Verworfen: je Ende eine eigene Spitzenart (mehr Knöpfe, selten gebraucht); ein eigenes Werkzeug „Linie“ (die Wahl
+„keine“ ist kürzer und behält alles andere); FormatVersion 2 (würde alte Leser ohne Not aussperren).

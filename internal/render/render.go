@@ -2,7 +2,8 @@
 
 // Package render setzt Ansichtsbild und Objekte eines Dokuments zu fertigen Pixeln zusammen (ADR-0020 Punkt 3):
 // für das sichtbare Bild der Arbeitsdatei, PNG/JPG-Export und Zwischenablage. Ohne GPU, ohne Gio. Maße wie im
-// SVG-Export (internal/fileformat/svg.go), damit Datei, Export und Bildschirm übereinstimmen: Pfeilspitze max(8, 4·Breite),
+// SVG-Export (internal/fileformat/svg.go), damit Datei, Export und Bildschirm übereinstimmen: Pfeilspitzen aus
+// document.Pfeil.Form (ADR-0021 Nachtrag 19),
 // Textzeilen im Abstand 1,3 × Schriftgrad, Nummer mit Schriftgrad 1,2 × Radius. Text wird wie im SVG-Export nicht
 // umbrochen (F-70).
 package render
@@ -552,22 +553,9 @@ func (z zeichner) objekt(o document.Objekt) error {
 	switch v := o.(type) {
 	case document.Pfeil:
 		// Abgeschnitten wie im SVG-Export (F-748, ADR-0023 Nachtrag 17): Jeder sichtbare Bereich zeichnet die Strecken in
-		// seiner Nähe um seinen Versatz verschoben und auf sich beschnitten (strichJeStueck), die Spitze ebenso. Über vielen
-		// Nähten baut so kein Bereich den ganzen Pfeil (F-136).
-		const n = 48
-		pts := make([]document.Punkt, 0, n+1)
-		for i := 0; i <= n; i++ {
-			pts = append(pts, v.Punkt(float64(i)/n))
-		}
-		z.strichJeStueck(pts, false, v.Strich)
-		r := v.RichtungAmEnde()
-		g := math.Max(8, 4*v.Strich.Breite)
-		nrm := document.Pt(-r.Y, r.X)
-		fuss := v.B.Minus(r.Mal(g))
-		spitze := []document.Punkt{v.B, fuss.Plus(nrm.Mal(g / 2)), fuss.Minus(nrm.Mal(g / 2))}
-		z.jeStueck(huelleVon(spitze, 1), func(zs zeichner, abb func(document.Punkt) document.Punkt) {
-			zs.fuelle([][]document.Punkt{{abb(spitze[0]), abb(spitze[1]), abb(spitze[2])}}, nil, v.Strich.Farbe)
-		})
+		// seiner Nähe um seinen Versatz verschoben und auf sich beschnitten (strichJeStueck). Über vielen Nähten baut so
+		// kein Bereich den ganzen Pfeil (F-136). Die Köpfe ersetzen die runden Kappen des Schafts (ADR-0021 Nachtrag 19).
+		z.pfeil(v)
 	case document.Kasten:
 		if b := document.R(v.Bereich.Min, v.Bereich.Max); document.WirksamerEckradius(v.Eckradius, b.Breite(), b.Hoehe()) > 0 {
 			// Gerundet: je Bereich abgeschnitten wie im SVG-Export, nicht über die abgebildeten Ecken neu gerundet (F-749,
@@ -1044,12 +1032,16 @@ func (z zeichner) strich(pts []document.Punkt, geschlossen bool, s document.Stri
 // ADR-0023 Nachtrag 17); ohne Naht ist es eine Füllung aller Teile wie strich. Jeder Teil liegt höchstens hw von seiner
 // Strecke entfernt; die Suche mit hw+1 findet also jeden Bereich, den er berührt.
 func (z zeichner) strichJeStueck(pts []document.Punkt, geschlossen bool, s document.Strich) {
-	hw := s.Breite / 2
-	ls := neuerLinienStrich(pts, geschlossen, hw)
+	z.strichJeStueckMit(neuerLinienStrich(pts, geschlossen, s.Breite/2), s, s.Breite/2+1)
+}
+
+// strichJeStueckMit ist strichJeStueck für den fertig zerlegten Strich ls; suche ist der Abstand, bis zu dem ein Teil von
+// seiner Strecke reicht, plus 1 (bei Köpfen eines Pfeils größer als die halbe Breite).
+func (z zeichner) strichJeStueckMit(ls linienStrich, s document.Strich, suche float64) {
 	if len(ls.teile) == 0 {
 		return
 	}
-	pts, geschlossen = ls.pts, ls.zu // ohne doppelte Punkte; die Strecken zählen wie ls.strecke
+	pts, geschlossen := ls.pts, ls.zu // ohne doppelte Punkte; die Strecken zählen wie ls.strecke
 	n := len(pts)
 	gesehen, marke := make([]int, n), 0
 	// Ein Puffer für die verschobenen Ecken, für jeden Bereich wiederverwendet (über vielen Nähten sonst eine Zuweisung je
@@ -1061,7 +1053,7 @@ func (z zeichner) strichJeStueck(pts []document.Punkt, geschlossen bool, s docum
 	}
 	punkte := make([]document.Punkt, 0, gesamt)
 	var polys [][]document.Punkt
-	for _, st := range z.d.StreckenStuecke(pts, geschlossen, hw+1) {
+	for _, st := range z.d.StreckenStuecke(pts, geschlossen, suche) {
 		zs, ok := z.aufStueck(st.Stueck)
 		if !ok {
 			continue

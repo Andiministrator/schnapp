@@ -2015,6 +2015,46 @@ msgstr ""
 msgid "Drag an area · Enter: whole monitor under the pointer · Esc or right-click: cancel"
 msgstr ""
 
+#: internal/ui/pfeilform.go
+msgid "Open head"
+msgstr ""
+
+#: internal/ui/pfeilform.go
+msgid "Dot"
+msgstr ""
+
+#: internal/ui/pfeilform.go
+msgid "Bar"
+msgstr ""
+
+#: internal/ui/pfeilform.go
+msgid "Filled triangle"
+msgstr ""
+
+#: internal/ui/pfeilform.go
+msgid "No head (line)"
+msgstr ""
+
+#: internal/ui/pfeilform.go
+msgid "Head at the start"
+msgstr ""
+
+#: internal/ui/pfeilform.go
+msgid "Heads at both ends"
+msgstr ""
+
+#: internal/ui/pfeilform.go
+msgid "Head at the end"
+msgstr ""
+
+#: internal/ui/pfeilform.go
+msgid "Head"
+msgstr ""
+
+#: internal/ui/pfeilform.go
+msgid "Ends"
+msgstr ""
+
 #: internal/ui/schnellstile.go
 msgid "Could not save the styles: %v"
 msgstr ""

@@ -119,20 +119,37 @@ func abstandZumDreieck(p, a, b, c document.Punkt) float64 {
 	return abstandZumUmriss(p, []document.Punkt{a, b, c})
 }
 
-// pfeilLinie ist der Linienzug, den Renderer und Editor für den Schaft von v ziehen (48 Strecken), und eine Prüfung, ob
-// ein Punkt höchstens 2 Pixel von der Spitze entfernt liegt (dort deckt die Spitze in einer eigenen Füllung).
+// pfeilLinie ist der Schaft von v (document.Pfeil.Form) und eine Prüfung, ob ein Punkt höchstens 2 Pixel von einem Kopf
+// entfernt liegt (dort deckt der Kopf statt der runden Kappe, ADR-0021 Nachtrag 19).
 func pfeilLinie(v document.Pfeil) ([]document.Punkt, func(document.Punkt) bool) {
-	const n = 48
-	pts := make([]document.Punkt, 0, n+1)
-	for i := 0; i <= n; i++ {
-		pts = append(pts, v.Punkt(float64(i)/n))
+	f := v.Form()
+	var umrisse [][]document.Punkt
+	for _, k := range f.Koepfe {
+		umrisse = append(umrisse, k.Umriss(v.Strich.Breite/2))
 	}
-	r := v.RichtungAmEnde()
-	g := math.Max(8, 4*v.Strich.Breite)
-	nrm := document.Pt(-r.Y, r.X)
-	fuss := v.B.Minus(r.Mal(g))
-	a, b, c := v.B, fuss.Plus(nrm.Mal(g/2)), fuss.Minus(nrm.Mal(g/2))
-	return pts, func(p document.Punkt) bool { return abstandZumDreieck(p, a, b, c) <= 2 }
+	return f.Schaft, func(p document.Punkt) bool {
+		for _, u := range umrisse {
+			if abstandZumVieleck(p, u) <= 2 {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+// abstandZumVieleck ist 0 im (einfachen) Vieleck u, sonst der Abstand zu seinem Rand.
+func abstandZumVieleck(p document.Punkt, u []document.Punkt) float64 {
+	innen := false
+	for i, j := 0, len(u)-1; i < len(u); j, i = i, i+1 {
+		a, b := u[i], u[j]
+		if (a.Y > p.Y) != (b.Y > p.Y) && p.X < (b.X-a.X)*(p.Y-a.Y)/(b.Y-a.Y)+a.X {
+			innen = !innen
+		}
+	}
+	if innen {
+		return 0
+	}
+	return abstandZumUmriss(p, u)
 }
 
 // F-796 (ADR-0023 Nachtrag 22): Der Schaft eines Pfeils, gerade und gebogen, deckt jedes Pixel so, wie die Fläche aller
