@@ -1875,3 +1875,6 @@ msgstr "Stil als Schnellstil sichern"
 
 msgid "This object has no quick styles."
 msgstr "Für dieses Objekt gibt es keine Schnellstile."
+
+msgid "Context menu"
+msgstr "Kontextmenü"

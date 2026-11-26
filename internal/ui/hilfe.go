@@ -53,6 +53,7 @@ func (e *editor) hilfeZeilen() []hilfeZeile {
 	return append(z,
 		hilfeZeile{text: i18n.T("Other keys"), ueberschrift: true},
 		hilfeZeile{text: i18n.T("Menu bar"), taste: "F10"},
+		hilfeZeile{text: i18n.T("Context menu"), taste: i18n.T("Shift") + "+F10"},
 		hilfeZeile{text: i18n.T("Cancel, deselect, Select tool"), taste: "Esc"},
 		hilfeZeile{text: i18n.T("New line in a text"), taste: i18n.T("Shift") + "+" + i18n.T("Enter")},
 		hilfeZeile{text: i18n.T("Snapping off while dragging"), taste: "Alt"},

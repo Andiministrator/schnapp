@@ -6,9 +6,11 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"strings"
 	"testing"
 
 	"gioui.org/io/key"
+	"gioui.org/io/pointer"
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -125,5 +127,65 @@ func TestKontextmenueSchnellstilGrau(t *testing.T) {
 	en := l.e.menueEintraege()[i]
 	if en.an == (en.erklaerung != "") {
 		t.Errorf("an %v, Erklärung %q", en.an, en.erklaerung)
+	}
+}
+
+// Kritik K-1 #313a: In der vollen Ansicht der Bibliothek öffnet Umschalt+F10 (bis ADR-0038 Teil 2) nichts, F10 allein
+// weiter das Menü Datei.
+func TestKontextmenueBibliothekUmschaltF10(t *testing.T) {
+	l := bibLauf(t, 3)
+	l.taste(key.NameF10, key.ModShift)
+	if l.e.menue.offen {
+		t.Errorf("Umschalt+F10 in der Bibliothek öffnet Menü %d", l.e.menue.welches)
+	}
+	l.taste(key.NameF10, 0)
+	if !l.e.menue.offen || l.e.menue.welches != menueDatei {
+		t.Errorf("F10 in der Bibliothek: offen %v, Menü %d", l.e.menue.offen, l.e.menue.welches)
+	}
+}
+
+// Kritik K-2 #313a: Die Übersicht F1 nennt Umschalt+F10.
+func TestKontextmenueInDerUebersicht(t *testing.T) {
+	e := testEditor(t)
+	for _, z := range e.hilfeZeilen() {
+		if z.text == "Context menu" && strings.HasSuffix(z.taste, "+F10") {
+			return
+		}
+	}
+	t.Error("Übersicht ohne Zeile „Context menu“ mit Umschalt+F10")
+}
+
+// Kritik K-4 #313a: Ein Linksdruck bei gehaltener rechter Taste zieht nicht unter dem offenen Kontextmenü.
+func TestKontextmenueKeinZugDahinter(t *testing.T) {
+	l, id, p := kontextLauf(t)
+	l.maus(pointer.Move, p, 0)
+	l.setle()
+	l.maus(pointer.Press, p, pointer.ButtonSecondary)
+	l.setle()
+	l.maus(pointer.Press, p, pointer.ButtonSecondary|pointer.ButtonPrimary)
+	l.setle()
+	if !l.e.menue.offen || l.e.s.Zieht() {
+		t.Fatalf("offen %v, Zug %v", l.e.menue.offen, l.e.s.Zieht())
+	}
+	vorher, _ := l.e.s.D.Objekt(id)
+	l.maus(pointer.Move, p.Add(image.Pt(30, 0)), pointer.ButtonSecondary|pointer.ButtonPrimary)
+	l.maus(pointer.Release, p.Add(image.Pt(30, 0)), 0)
+	l.setle()
+	if o, _ := l.e.s.D.Objekt(id); !document.Gleich(o, vorher) {
+		t.Error("das Objekt hat sich hinter dem Menü bewegt")
+	}
+}
+
+// Kritik K-6 #313a: Ein zweiter Rechtsklick bei offenem Kontextmenü öffnet es am neuen Punkt für das neue Ziel.
+func TestKontextmenueZweiterRechtsklick(t *testing.T) {
+	l, id, p := kontextLauf(t)
+	l.rechtsklick(l.fensterVon(document.Pt(36, 1)))
+	if !l.e.menue.offen || l.e.kontext.objekt {
+		t.Fatal("Kontrolle: Menü für das Bild nicht offen")
+	}
+	l.rechtsklick(p)
+	if !l.e.menue.offen || l.e.s.Auswahl != id || !l.e.kontext.objekt || l.e.kontext.anker.Min != p {
+		t.Errorf("offen %v, Auswahl %d (Soll %d), objekt %v, Anker %v (Soll %v)", l.e.menue.offen, l.e.s.Auswahl, id,
+			l.e.kontext.objekt, l.e.kontext.anker.Min, p)
 	}
 }

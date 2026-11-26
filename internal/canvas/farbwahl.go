@@ -194,6 +194,7 @@ func (s *Sitzung) BeginneFarbZug() bool {
 	if s.Zieht() || s.gesperrt() {
 		return false
 	}
+	s.feldAufgeben()
 	s.hsv, s.hsvGemerkt = s.FarbeHSV(), true
 	s.farbZug, s.farbZugObjekt, s.farbZugText = true, false, nil
 	if s.zug == zugText {

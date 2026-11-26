@@ -28,7 +28,7 @@ type kontextMenue struct {
 // kontextAmPunkt öffnet das Kontextmenü am Fensterpunkt p (Leinwandkoordinaten plus Ursprung der Leinwand).
 func (e *editor) kontextAmPunkt(p image.Point, objekt, perTaste bool) {
 	e.kontext = kontextMenue{anker: image.Rectangle{Min: p, Max: p.Add(image.Pt(1, 1))}, objekt: objekt}
-	e.menue.offen = false // ein offenes Menü schließt; menueOeffne öffnet sonst nicht neu
+	e.menue.offen = false // ein offenes Kontextmenü (zweiter Rechtsklick, menueAuswerten) öffnet am neuen Punkt neu
 	e.menueOeffne(listeKontext, perTaste)
 }
 
@@ -47,6 +47,10 @@ func (e *editor) kontextPerTaste() {
 		return
 	}
 	e.s.TextBestaetigen()
+	if e.s.PipetteLaeuft() {
+		e.s.SchaltePipette() // wie beim Rechtsklick (Kritik K-3 #313a)
+	}
+	e.s.BeendeTextBereich()
 	q, objekt := e.s.KontextAnker()
 	p := image.Pt(int(math.Round(q.X)), int(math.Round(q.Y)))
 	e.kontextAmPunkt(p.Add(e.leinwandUrsprung), objekt, true)

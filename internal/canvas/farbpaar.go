@@ -247,6 +247,14 @@ func (s *Sitzung) Fuellbar() bool {
 	return fuellWerkzeug(s.Werkzeug)
 }
 
+// feldAufgeben gibt das Feld Schatten auf, wenn mit einem anderen Ziel gefärbt wird als dem, für das es gewählt wurde:
+// Sonst kehrte es beim ursprünglichen Ziel ohne Klick zurück (Verify V-1 #363b, Rest F-855).
+func (s *Sitzung) feldAufgeben() {
+	if s.feld == FeldSchatten && s.schattenZiel() != s.feldSchattenID {
+		s.feld, s.hsvGemerkt = FeldVordergrund, false
+	}
+}
+
 // AktivesFeld ist das Feld, auf das die Farbwahl wirkt; ohne Füllung immer der Vordergrund.
 func (s *Sitzung) AktivesFeld() Farbfeld {
 	if s.feld == FeldFuellung && s.Fuellbar() {

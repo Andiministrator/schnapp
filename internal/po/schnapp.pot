@@ -1742,15 +1742,19 @@ msgid "Menu bar"
 msgstr ""
 
 #: internal/ui/hilfe.go
+msgid "Context menu"
+msgstr ""
+
+#: internal/ui/hilfe.go internal/ui/kuerzel.go
+msgid "Shift"
+msgstr ""
+
+#: internal/ui/hilfe.go
 msgid "Cancel, deselect, Select tool"
 msgstr ""
 
 #: internal/ui/hilfe.go
 msgid "New line in a text"
-msgstr ""
-
-#: internal/ui/hilfe.go internal/ui/kuerzel.go
-msgid "Shift"
 msgstr ""
 
 #: internal/ui/hilfe.go internal/ui/kuerzel.go

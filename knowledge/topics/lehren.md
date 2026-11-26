@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karte #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karte #313 Teil 1 und Sitzungs-QA (F-860 bis F-872); davor #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -1290,3 +1290,15 @@ Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karte #363 Teil 2 und Si
 - **Eine neue Zeile in der rechten Leiste verschiebt alle Drehbücher darunter** — und kann Abschnitte in den Platzmangel
   schieben (Ebenen). Nach jeder Höhenänderung die Drehbücher mit Leistenkoordinaten fahren, nicht nur umrechnen: Ein
   verschobener Klick traf bei `ebenen-191` die Überschrift und klappte den Abschnitt zu.
+
+## Sprint 14, Karte #313 Teil 1 und Sitzungs-QA (26.11.2026, F-860 bis F-872)
+
+- **Ein neuer Eingabeweg erbt nicht die Wächter der alten** (F-862, F-863, F-864): Der Linksdruck beendet Pipette,
+  Bereichsmodus und Ablehnung in `Druecken`; ein Rechtsklick, der daneben einsteigt, muss dieselben Modi selbst
+  beenden, sonst wirkt der nächste Klick im alten Modus auf das neue Ziel. Und ein Zeiger, den die Leinwand vom
+  Rechtsklick noch hält, liefert einen Linksdruck an die Leinwand, auch wenn die Liste offen ist.
+- **Ein neuer Tastenfilter mit Umschalter trifft auch ältere Zweige, die den Namen ohne Umschalter prüfen** (F-860):
+  `k.Name == key.NameF10` im Zweig der Bibliothek fing Umschalt+F10 ab, sobald der Filter dafür existierte. Beim
+  Hinzufügen einer Tastenkombination alle Stellen suchen, die nur den Namen vergleichen.
+- **Testhelfer, die „Ruhe“ abwarten, brauchen jede Hintergrundarbeit** (F-871): eine fehlende Flagge lässt eine
+  Goroutine nach Testende in `t.TempDir` schreiben, und das Aufräumen scheitert nur gelegentlich (CI, 59515e4).

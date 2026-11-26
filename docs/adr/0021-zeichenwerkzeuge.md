@@ -1025,7 +1025,10 @@ Vordergrund): Sonst färbte die Farbwahl mit dem nächsten Werkzeug unerwartet d
 Nach der Sitzungs-Kritik (F-854 bis F-859): Das Feld Schatten gehört dem Objekt (bzw. dem Stand des Werkzeugs), für das
 es gewählt wurde; ein anderes erbt es nicht, auch nicht nach dem Einschalten seines Schattens (`feldSchattenID`). Die
 Regler wirken auch in der Texteingabe, als Teil der Eingabe wie der Farbzug (Abbruch stellt den Text her). Neben jedem
-Regler stehen − und + (ein Pixel, Tastaturweg). Die Richtung zeigt die Leiste modulo 360 (nie „360°“).
+Regler stehen − und + (ein Pixel, Tastaturweg). Die Richtung zeigt die Leiste modulo 360 (nie „360°“). Ein Stil ohne
+Schatten passt nur, solange kein eigener Stil mit Schatten genau passt (F-856, ADR-0037 Nachtrag 1); der Schalter prüft
+die Sperre, bevor er das Feld zurücknimmt (F-858). Wer mit einem anderen Ziel färbt, gibt das Feld Schatten auf
+(Verify V-1, F-867). Mutanten SH34–SH69.
 Bei ausgeschaltetem Schatten steht nur der Schalter da (eine Zeile, 36 dp): Die Leiste ist dadurch so viel höher;
 das Startfenster 1200×800 rollt mit gewähltem Kasten und offenen Ebenen um wenige Pixel. Schnellstile: ADR-0037
 Nachtrag 1. Tests `internal/ui/schattenleiste_test.go`, `internal/canvas/schatten_test.go`

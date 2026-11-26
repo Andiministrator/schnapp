@@ -188,6 +188,7 @@ func (s *Sitzung) SetzeFarbe(c color.NRGBA) bool {
 	if s.Zieht() || s.gesperrt() { // während des Speicherns auch keine neue Farbe (F-280): Bearbeiten ruht ganz
 		return false
 	}
+	s.feldAufgeben()
 	f := s.AktivesFeld()
 	s.merkePaarFarbe(s.zielWerkzeug(), f, c)
 	o, ok := s.farbObjekt()

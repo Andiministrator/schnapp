@@ -8,16 +8,22 @@ import "github.com/Andiministrator/schnapp/internal/document"
 
 // KontextBei bereitet das Kontextmenü am Fensterpunkt p vor: Eine laufende Texteingabe wird bestätigt, das Objekt unter
 // dem Zeiger gewählt (dieselbe Trefferregel wie das Auswählen, gleich welches Werkzeug aktiv ist), sonst die Auswahl
-// aufgehoben. offen: das Menü darf aufgehen (nicht während eines Zugs, des Speicherns oder der Ruhe beim Wechsel);
-// objekt: es gilt einem Objekt. Zuschneiden und Stauchen wählen keine Objekte (ohneGriffe), dort gilt es dem Bild.
+// aufgehoben; Pipette und Bereichsmodus der Texterkennung enden. offen: das Menü darf aufgehen (nicht während eines
+// Zugs, des Speicherns oder der Ruhe beim Wechsel);
+// objekt: es gilt einem Objekt. Zuschneiden und Stauchen wählen keine Objekte (ohneGriffe), dort gilt es dem Bild und
+// die Auswahl bleibt.
 func (s *Sitzung) KontextBei(p document.Punkt) (offen, objekt bool) {
 	if s.Zieht() || s.gesperrt() {
 		return false, false
 	}
 	s.TextBestaetigen()
+	// Pipette und Bereichsmodus der Texterkennung enden wie mit Esc: Sonst wirkte der nächste Linksklick als Pipette auf
+	// das per Rechtsklick gewählte Objekt bzw. zöge einen Bereich hinter dem Menü (Kritik K-3 #313a).
+	s.pipette = false
+	s.BeendeTextBereich()
+	s.abgelehnt = AblehnungKeine // keine alte Ablehnungsmeldung wiederholen (K-5)
 	if ohneGriffe(s.Werkzeug) {
-		s.Auswahl = 0
-		return true, false
+		return true, false // die Auswahl bleibt, wie bei KontextAnker (K-7)
 	}
 	if id, ok := Treffer(s.sichtbareObjekte(), s.original(p), s.toleranz()); ok {
 		s.Auswahl, s.lupenTeil = id, LupeGanz

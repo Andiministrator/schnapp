@@ -19,7 +19,10 @@ Pfeil-Stil, Strichart) samt Tastatur, Klick daneben und Sperre beim Speichern.
    Rechtsklicks; die Liste klappt rechts unten davon auf und rückt ins Fenster, wenn sie nicht passt.
 2. **Leinwand (Teil 1):** Ein Rechtsklick bestätigt eine laufende Texteingabe und wählt das Objekt unter dem Zeiger mit
    derselben Trefferregel wie das Auswählen (sichtbar, nicht gesperrt; unabhängig vom aktiven Werkzeug, das Werkzeug
-   bleibt). Trifft er nichts, hebt er die Auswahl auf. Während eines Zugs (Ziehen, Regler, Farbzug) wirkt er nicht.
+   bleibt; Zuschneiden und Stauchen wählen nie, dort gilt das Menü dem Bild und die Auswahl bleibt). Trifft er nichts,
+   hebt er die Auswahl auf. Während eines Zugs (Ziehen, Regler, Farbzug) wirkt er nicht. Pipette und Bereichsmodus der
+   Texterkennung enden wie mit Esc. Ein zweiter Rechtsklick bei offenem Kontextmenü öffnet es am neuen Punkt für das
+   neue Ziel (wie Qt/KDE); ein Linksdruck hinter der offenen Liste wirkt nicht.
    - **Mit Objekt:** Text bearbeiten (nur Text und Sprechblase) · Doppeln · Löschen │ Eine Ebene nach vorn · Eine Ebene
      nach hinten │ Ausblenden · Sperren · Umbenennen │ Als Schnellstil sichern (grau mit Erklärung, wenn „+“ der
      Schnellstile grau wäre) │ Farben tauschen (nur mit Füllung).
@@ -54,3 +57,9 @@ Pfeil-Stil, Strichart) samt Tastatur, Klick daneben und Sperre beim Speichern.
   mit Anker am Klickpunkt und die Einträge je Ziel.
 - Tests: Treffer und Auswahl (canvas), Einträge je Ziel, Rechtsklick öffnet am Punkt, Umschalt+F10, Wirkung eines
   Eintrags (ui), Mutanten, Sichtprobe.
+
+## Umsetzung Teil 1 (26.11.2026, 5052dae, Nacharbeit nach Sitzungs-Kritik F-860 bis F-866)
+Leinwand umgesetzt wie Punkte 1, 2, 6 und 7. In der vollen Ansicht der Bibliothek ist Umschalt+F10 bis Teil 2
+wirkungslos (öffnet nicht das Menü Datei, F-860). Die Übersicht F1 nennt Umschalt+F10 unter „Other keys“ (F-861).
+Punkte 3 bis 5 (Bibliothek) folgen mit Teil 2. Tests `internal/canvas/kontext_test.go`, `internal/ui/kontext_test.go`,
+Mutanten `scripts/mutanten/kontextmenue.json` (KM1–KM21), Sichtprobe `scripts/drehbuecher/kontextmenue-313.txt`.

@@ -9,7 +9,7 @@ import (
 )
 
 // ADR-0038 Punkt 2: KontextBei wählt das Objekt unter dem Zeiger gleich welchen Werkzeugs (das Werkzeug bleibt), hebt
-// sonst die Auswahl auf; Zuschneiden wählt nichts; eine Texteingabe wird bestätigt; gesperrt öffnet es nicht.
+// sonst die Auswahl auf; Zuschneiden wählt nichts (und lässt die Auswahl); eine Texteingabe wird bestätigt; gesperrt öffnet es nicht.
 func TestKontextBei(t *testing.T) {
 	s, k, _ := sitzung(t) // Bild bei (24,24), Zoom 1 (f rechnet den Versatz ein): Kasten (10,10)–(50,50) gefüllt
 	s.SetzeWerkzeug(WerkzeugPfeil)
@@ -19,7 +19,14 @@ func TestKontextBei(t *testing.T) {
 	if offen, obj := s.KontextBei(f(150, 30)); !offen || obj || s.Auswahl != 0 {
 		t.Errorf("leer: offen %v, objekt %v, Auswahl %d", offen, obj, s.Auswahl)
 	}
+	// Zuschneiden wählt nichts und lässt die Auswahl stehen (Kritik K-7 #313a): ohneGriffe hebt sie beim
+	// Werkzeugwechsel ohnehin auf, also hier eine gesetzte Auswahl prüfen.
 	s.SetzeWerkzeug(WerkzeugZuschneiden)
+	s.Auswahl = k
+	if _, obj := s.KontextBei(f(150, 30)); obj || s.Auswahl != k {
+		t.Errorf("Zuschneiden: objekt %v, Auswahl %d (Soll %d)", obj, s.Auswahl, k)
+	}
+	s.Auswahl = 0
 	if _, obj := s.KontextBei(f(30, 30)); obj || s.Auswahl != 0 {
 		t.Errorf("Zuschneiden wählt den Kasten (%v)", obj)
 	}
@@ -51,5 +58,27 @@ func TestKontextAnker(t *testing.T) {
 	s.Auswahl = 0
 	if p, obj := s.KontextAnker(); obj || !nah(p, document.Pt(124, 74)) {
 		t.Errorf("ohne Auswahl: %v %v, Soll (124,74)", p, obj)
+	}
+}
+
+// Kritik K-3/K-5 #313a: Der Rechtsklick beendet Pipette und Bereichsmodus der Texterkennung und löscht eine alte
+// Ablehnung, damit die Oberfläche sie nicht noch einmal meldet.
+func TestKontextBeiBeendetModi(t *testing.T) {
+	s, _, _ := sitzung(t)
+	s.SetzeWerkzeug(WerkzeugAuswahl)
+	if !s.SchaltePipette() || !s.PipetteLaeuft() {
+		t.Fatal("Kontrolle: Pipette nicht an")
+	}
+	s.abgelehnt = AblehnungTextVerborgen
+	s.KontextBei(f(150, 30))
+	if s.PipetteLaeuft() || s.Abgelehnt() != AblehnungKeine {
+		t.Errorf("Pipette %v, Ablehnung %v", s.PipetteLaeuft(), s.Abgelehnt())
+	}
+	if !s.BeginneTextBereich() || !s.TextBereichLaeuft() {
+		t.Fatal("Kontrolle: Bereichsmodus nicht an")
+	}
+	s.KontextBei(f(150, 30))
+	if s.TextBereichLaeuft() {
+		t.Error("Bereichsmodus läuft nach dem Rechtsklick weiter")
 	}
 }

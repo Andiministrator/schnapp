@@ -329,3 +329,21 @@ func TestSchattenWertStufe(t *testing.T) {
 		t.Errorf("Länge unter 0: %v", s.Schatten().Laenge)
 	}
 }
+
+// Verify V-1 #363b (Rest F-855): Wer mit einem anderen Ziel färbt, gibt das Feld Schatten auf; zurück beim
+// ursprünglichen Ziel wirkt die Farbwahl wieder auf den Vordergrund.
+func TestSchattenFeldKehrtNachZielwechselNichtZurueck(t *testing.T) {
+	s, ids := stilSitzung(t, image.Pt(200, 100))
+	s.SetzeWerkzeug(WerkzeugKasten)
+	s.Auswahl = 0
+	s.SchalteSchatten()
+	if !s.SetzeFeld(FeldSchatten) || s.AktivesFeld() != FeldSchatten {
+		t.Fatal("Feld Schatten am Werkzeug nicht aktiv")
+	}
+	s.Auswahl = ids[1]
+	s.SetzeFarbe(color.NRGBA{R: 255, A: 255})
+	s.Auswahl = 0
+	if s.AktivesFeld() == FeldSchatten {
+		t.Error("Feld Schatten kehrt nach dem Färben eines anderen Ziels ohne Klick zurück")
+	}
+}

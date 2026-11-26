@@ -548,6 +548,12 @@ func (e *editor) menueAuswerten(gtx layout.Context) {
 		}
 		if p, ok := ev.(pointer.Event); ok && p.Kind == pointer.Press && m.offen {
 			e.menueSchliesse(gtx, false)
+			// Ein zweiter Rechtsklick auf die Leinwand öffnet das Kontextmenü am neuen Punkt für das neue Ziel, wie in
+			// Qt/KDE (Kritik K-6 #313a); sonst bräuchte es drei Klicks.
+			q := image.Pt(int(p.Position.X), int(p.Position.Y))
+			if m.welches == listeKontext && p.Buttons == pointer.ButtonSecondary && q.In(e.leinwandRahmen) {
+				e.kontextRechtsklick(q.Sub(e.leinwandUrsprung))
+			}
 		}
 	}
 	for { // Klick in die Menüzeile abseits der Titel („s“, leere Fläche, Dateiname): wie ein Klick daneben

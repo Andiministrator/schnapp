@@ -26,7 +26,7 @@
 | **Vollansicht** | Das ganze Original mit denselben Stauch-Streifen, ohne Zuschnitt; nur beim Werkzeug Zuschneiden gezeigt. Die Ansicht liegt darin bei `VollVersatz` (ADR-0023 Nachtrag 5). |
 | **Schritt-Nummer** | Nummerierter Kreis, der beim Setzen selbst hochzählt. |
 | **Stempel** | Fertiges Symbol aus einer durchsuchbaren Sammlung (Icon-Sets oder eigene). |
-| **Schnellstil** | Gespeicherter Satz aus Farbe, Strichstärke, Schrift für ein Werkzeug. Eingebaute stehen fest im Programm, eigene (höchstens 16 je Art) in `styles.ini` (ADR-0037). |
+| **Schnellstil** | Gespeicherter Satz aus Farbe, Strichstärke, Schrift und, bei eigenen, Schatten für ein Werkzeug. Eingebaute stehen fest im Programm, eigene (höchstens 16 je Art) in `styles.ini` (ADR-0037). |
 | **Sprechblase** | Text mit Spitze (`document.Text.Spitze`), kein eigenes Objekt; Werkzeug K. Ohne Füllung zwei Schenkel statt Fläche (ADR-0021 Nachtrag 13). |
 | **Spitze (Sprechblase)** | Punkt im Original, auf den die Sprechblase zeigt; nicht die Pfeilspitze. |
 | **Pfeil-Stil, Pfeilspitze (Kopf), Linie** | Pfeil-Stil heißt die Wahl der Spitze je Ende eines Pfeils (Anfang bei A, Ende bei B): gefülltes Dreieck, schlank, eingekerbt, offen, halb, Punkt, Raute, Quadrat, Querstrich oder keine; in Datei und Agenten-Schnittstelle `triangle`, `narrow`, `notched`, `open`, `half`, `dot`, `diamond`, `square`, `bar`, `none`. Keine an beiden Enden ist die **Linie**; sie bleibt das Objekt Pfeil (ADR-0021 Nachträge 19 und 20). |

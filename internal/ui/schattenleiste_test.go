@@ -5,7 +5,10 @@ package ui
 import (
 	"image"
 	"image/color"
+	"strings"
 	"testing"
+
+	"gioui.org/io/key"
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -172,5 +175,33 @@ func TestSchattenLeisteStufenUndAnzeige(t *testing.T) {
 	l.setle()
 	if k.richtText != "0°" {
 		t.Errorf("Anzeige %q, Soll 0°", k.richtText)
+	}
+}
+
+// Verify V-2 #363b: Enter am fokussierten + neben „Distance“ macht genau einen Schritt.
+func TestSchattenStufePerTastatur(t *testing.T) {
+	l, id := schattenLauf(t)
+	k := &l.e.schattenL
+	l.klick(mitte(k.schalterRahmen))
+	l.setle()
+	l.fokusiere(&k.stufe[0][1])
+	if !l.fokus(&k.stufe[0][1]) {
+		t.Fatal("+ neben Distance nimmt keinen Fokus")
+	}
+	l.taste(key.NameReturn, 0)
+	if sch := schattenVon(t, l, id); sch.Laenge != 7 {
+		t.Errorf("Enter am +: Länge %v, Soll 7 (genau ein Schritt)", sch.Laenge)
+	}
+}
+
+// Verify V-3 #363b: Ein eigener Stil mit Schatten sagt es im Hinweis der Statuszeile.
+func TestSchnellNameMitSchatten(t *testing.T) {
+	st := canvas.Schnellstil{Art: canvas.SchnellKasten, Breite: 4, Schatten: document.StandardSchatten(1)}
+	if !strings.Contains(schnellName(st), "drop shadow") {
+		t.Errorf("Hinweis %q ohne Schatten", schnellName(st))
+	}
+	st.Schatten = document.Schatten{}
+	if strings.Contains(schnellName(st), "drop shadow") {
+		t.Errorf("Hinweis %q nennt einen Schatten, den es nicht gibt", schnellName(st))
 	}
 }

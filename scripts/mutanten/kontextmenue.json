@@ -17,15 +17,15 @@
     "name": "KM3 Zuschneiden wählt Objekte",
     "datei": "internal/canvas/kontext.go",
     "paket": "./internal/canvas",
-    "alt": "\tif ohneGriffe(s.Werkzeug) {\n\t\ts.Auswahl = 0\n\t\treturn true, false\n\t}\n",
+    "alt": "\tif ohneGriffe(s.Werkzeug) {\n\t\treturn true, false // die Auswahl bleibt, wie bei KontextAnker (K-7)\n\t}\n",
     "neu": ""
   },
   {
     "name": "KM4 Texteingabe nicht bestätigt",
     "datei": "internal/canvas/kontext.go",
     "paket": "./internal/canvas",
-    "alt": "\ts.TextBestaetigen()\n\tif ohneGriffe",
-    "neu": "\tif ohneGriffe"
+    "alt": "\ts.TextBestaetigen()\n\t// Pipette und Bereichsmodus",
+    "neu": "\t// Pipette und Bereichsmodus"
   },
   {
     "name": "KM5 gesperrt geöffnet",
@@ -89,5 +89,61 @@
     "paket": "./internal/ui",
     "alt": "\tif i == listeKontext { // Kontextmenü: am Punkt des Rechtsklicks (ADR-0038)\n\t\treturn e.kontext.anker\n\t}\n",
     "neu": ""
+  },
+  {
+    "name": "KM14 Umschalt+F10 in der Bibliothek öffnet Datei",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "case k.Name == key.NameF10 && !k.Modifiers.Contain(key.ModShift):",
+    "neu": "case k.Name == key.NameF10:"
+  },
+  {
+    "name": "KM15 Übersicht ohne Kontextmenü",
+    "datei": "internal/ui/hilfe.go",
+    "paket": "./internal/ui",
+    "alt": "\t\thilfeZeile{text: i18n.T(\"Context menu\"), taste: i18n.T(\"Shift\") + \"+F10\"},\n",
+    "neu": ""
+  },
+  {
+    "name": "KM16 Pipette bleibt an",
+    "datei": "internal/canvas/kontext.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.pipette = false\n\ts.BeendeTextBereich()",
+    "neu": "\ts.BeendeTextBereich()"
+  },
+  {
+    "name": "KM17 Bereichsmodus bleibt an",
+    "datei": "internal/canvas/kontext.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.pipette = false\n\ts.BeendeTextBereich()",
+    "neu": "\ts.pipette = false"
+  },
+  {
+    "name": "KM18 alte Ablehnung bleibt",
+    "datei": "internal/canvas/kontext.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.abgelehnt = AblehnungKeine // keine alte Ablehnungsmeldung wiederholen (K-5)\n",
+    "neu": ""
+  },
+  {
+    "name": "KM19 Zug hinter dem offenen Menü",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif e.menue.offen {\n\t\t\t\t// Hält",
+    "neu": "\t\t\tif false {\n\t\t\t\t// Hält"
+  },
+  {
+    "name": "KM20 zweiter Rechtsklick schließt nur",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "e.kontextRechtsklick(q.Sub(e.leinwandUrsprung))",
+    "neu": "_ = q"
+  },
+  {
+    "name": "KM21 Zuschneiden löscht die Auswahl",
+    "datei": "internal/canvas/kontext.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\treturn true, false // die Auswahl bleibt",
+    "neu": "\t\ts.Auswahl = 0\n\t\treturn true, false // die Auswahl bleibt"
   }
 ]

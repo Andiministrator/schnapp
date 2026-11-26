@@ -467,5 +467,19 @@
     "paket": "./internal/ui",
     "alt": "e.s.SchattenWertStufe(i == 1, dir)",
     "neu": "_ = dir"
+  },
+  {
+    "name": "SH68 Feld Schatten bleibt nach Zielwechsel",
+    "datei": "internal/canvas/farbpaar.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.feld == FeldSchatten && s.schattenZiel() != s.feldSchattenID {",
+    "neu": "if false {"
+  },
+  {
+    "name": "SH69 Hinweis ohne Schatten",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif st.Schatten.An {\n\t\t\tt = i18n.T(\"Custom style with drop shadow. Right-click or Del removes it.\")\n\t\t}\n",
+    "neu": ""
   }
 ]

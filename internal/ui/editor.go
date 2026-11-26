@@ -353,6 +353,7 @@ type editor struct {
 	// Fenster beim letzten Zeichnen (Rechtsklicks kommen in Leinwandkoordinaten).
 	kontext          kontextMenue
 	leinwandUrsprung image.Point
+	leinwandRahmen   image.Rectangle // Fläche der Leinwand im Fenster (zweiter Rechtsklick, Kritik K-6 #313a)
 	pfeilform        pfeilformLeiste
 	strichart        strichartLeiste // Klappfeld „Line style“ (ADR-0021 Nachtrag 25, strichart.go)
 	// schatten: gemerkte Schattenbilder je Objekt (ADR-0021 Nachtrag 26, schatten.go).
@@ -1517,7 +1518,7 @@ func (e *editor) frame(gtx layout.Context) {
 		flaeche := e.leinwandFlaeche(gtx) // zwischen Menüzeile, Werkzeugleiste, Fußzeile und rechter Leiste (ADR-0031)
 
 		// Leinwand: eigener Ursprung, damit Zeigerpositionen schon Leinwandkoordinaten sind.
-		e.leinwandUrsprung = flaeche.Min // Anker des Kontextmenüs (ADR-0038)
+		e.leinwandUrsprung, e.leinwandRahmen = flaeche.Min, flaeche // Anker des Kontextmenüs (ADR-0038)
 		t := op.Offset(flaeche.Min).Push(gtx.Ops)
 		g := gtx
 		g.Constraints = layout.Exact(flaeche.Size())
@@ -1696,6 +1697,11 @@ func (e *editor) zeiger(gtx layout.Context) {
 		e.s.SetzeAlt(pe.Modifiers.Contain(key.ModAlt))    // Alt schaltet das Einrasten ab (ADR-0021 Nachtrag 12)
 		switch pe.Kind {
 		case pointer.Press:
+			if e.menue.offen {
+				// Hält die Leinwand den Zeiger noch vom Rechtsklick, käme ein Linksdruck hier an und zöge unter dem
+				// offenen Kontextmenü (Kritik K-4 #313a); wie bei Tasten (F-257) wirkt hinter einer offenen Liste nichts.
+				continue
+			}
 			if os.Getenv("SCHNAPP_DEBUG") != "" {
 				e.zug.beginne() // Bildzeiten dieses Zugs sammeln (F-250)
 			}
@@ -2588,7 +2594,8 @@ func (e *editor) tasten(gtx layout.Context) {
 			if k, ok := ev.(key.Event); ok && k.State == key.Press {
 				t, ok := findeTaste(k.Name, k.Modifiers, false)
 				switch {
-				case k.Name == key.NameF10:
+				case k.Name == key.NameF10 && !k.Modifiers.Contain(key.ModShift):
+					// Umschalt+F10 ist hier bis ADR-0038 Teil 2 wirkungslos, öffnet nicht das Menü Datei (Kritik K-1 #313a).
 					e.menueOeffne(menueDatei, true)
 				case ok && !t.hatWerkzeug && bibliothekErlaubt(t.akt):
 					e.fuehreAus(gtx, t.akt, false)

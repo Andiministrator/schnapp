@@ -126,5 +126,5 @@ um und entscheidet die offene Frage aus ADR-0021 Nachtrag 25 Punkt 8.
 4. **Kacheln:** Die Mini-Darstellung zeigt den Schatten nicht; eine Kachel mit Schatten trägt unten rechts einen dunklen
    Winkel, der Hinweis in der Statuszeile sagt „mit Schatten“ (F-856).
 
-Tests: `internal/canvas/schnellstile_test.go` (`TestSchnellstilSchatten`), `internal/settings/stile_test.go`
+Tests: `internal/canvas/schnellstile_test.go` (`TestSchnellstilSchatten`, `TestSchnellstilGenauEinePassendeMitSchatten`), `internal/settings/stile_test.go`
 (Rundlauf, Parse-Regeln, `TestStileSchattenGrenzen`).
