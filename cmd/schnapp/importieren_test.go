@@ -188,3 +188,53 @@ func TestUebernahmeNurRegulaereDatei(t *testing.T) {
 		t.Fatal("vorOeffnen blockiert an einer FIFO")
 	}
 }
+
+// F-828: Die Zuordnung für Datei → Öffnen… findet die Aufnahme einer früher übernommenen Datei, ohne etwas zu merken;
+// andere Dateien bleiben sie selbst, Aufnahmen der Ablage ebenso, ohne Übernahme der Pfad unverändert.
+func TestZuordnerFindetUebernommeneAufnahme(t *testing.T) {
+	_, g, b := importLauf(t)
+	d0, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 40, 30)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	mitKasten(t, d0)
+	ordner := t.TempDir()
+	arbeit := schreibeDatei(t, ordner, "aussen.png", d0)
+	abs, _ := filepath.Abs(arbeit)
+	if anbindungFuer(b, document.KanteWelle).Zuordnen == nil {
+		t.Error("Anbindung ohne Zuordnung")
+	}
+	zu := zuordnerFuer(b)
+	if z := zu(arbeit); z != abs {
+		t.Errorf("vor der Übernahme: %q, Soll die Datei selbst %q", z, abs)
+	}
+	if err := oeffneImEditor(arbeit, false, document.KanteWelle); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.speichern(g.dok); err != nil {
+		t.Fatal(err)
+	}
+	aufnahme := g.geoeffnet.Pfad()
+	g.rettung.Ende()
+	if _, ok := b.Relativ(aufnahme); !ok {
+		t.Fatalf("nicht übernommen: %q", aufnahme)
+	}
+	if z := zu(arbeit); z != aufnahme {
+		t.Errorf("nach der Übernahme: %q, Soll die Aufnahme %q", z, aufnahme)
+	}
+	if z := zu(aufnahme); z != aufnahme {
+		t.Errorf("Aufnahme der Ablage: %q", z)
+	}
+	anders := schreibeEinfachesPNG(t, ordner, "anders.png")
+	andersAbs, _ := filepath.Abs(anders)
+	if z := zu(anders); z != andersAbs {
+		t.Errorf("andere Datei: %q, Soll %q", z, andersAbs)
+	}
+	if n := aufnahmen(t, b); n != 1 {
+		t.Errorf("die Zuordnung legte etwas ab: %d Aufnahmen", n)
+	}
+	importBeimOeffnen = false
+	if z := zu(arbeit); z != arbeit {
+		t.Errorf("ohne Übernahme: %q, Soll unverändert %q", z, arbeit)
+	}
+}

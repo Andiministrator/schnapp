@@ -45,14 +45,49 @@ func vorOeffnen(b *library.Bibliothek, pfad string) (ziel string, aussen bool) {
 		summen.Store(abs, []byte(nil)) // übernommen wird trotzdem, nur später nicht wiedergefunden
 		return pfad, true
 	}
-	if rel, ok := b.Importiert(summe); ok {
-		diagnoseImport("schon übernommen: %s", rel)
-		ziel := filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel))
+	if ziel, ok := uebernommeneAufnahme(b, summe); ok {
+		diagnoseImport("schon übernommen: %s", ziel)
 		merkeHerkunft(ziel, abs)
 		return ziel, false
 	}
 	summen.Store(abs, summe)
 	return pfad, true
+}
+
+// uebernommeneAufnahme ist die Aufnahme (absolut), die einen Inhalt mit der Summe summe schon übernommen hat.
+func uebernommeneAufnahme(b *library.Bibliothek, summe []byte) (string, bool) {
+	rel, ok := b.Importiert(summe)
+	if !ok {
+		return "", false
+	}
+	return filepath.Join(b.Orte.Ablage, filepath.FromSlash(rel)), true
+}
+
+// zuordnerFuer bildet eine in Datei → Öffnen… gewählte Datei auf die Aufnahme ab, die sie öffnen wird (F-828): eine
+// früher übernommene Datei von außen auf ihre Aufnahme, alles andere auf sich selbst (absolut). Ohne Nebenwirkung,
+// anders als vorOeffnen; so erkennt der Editor eine Wahl der offenen Aufnahme, bevor er speichert und neu lädt.
+func zuordnerFuer(b *library.Bibliothek) func(pfad string) string {
+	return func(pfad string) string {
+		abs, err := filepath.Abs(pfad)
+		if err != nil || !importBeimOeffnen || b == nil {
+			return pfad
+		}
+		if _, ok := b.Relativ(abs); ok {
+			return abs
+		}
+		fi, err := os.Stat(abs)
+		if err != nil || !fi.Mode().IsRegular() || fi.Size() > fileformat.MaxDatei {
+			return abs
+		}
+		summe, err := dateiSumme(abs)
+		if err != nil {
+			return abs
+		}
+		if ziel, ok := uebernommeneAufnahme(b, summe); ok {
+			return ziel
+		}
+		return abs
+	}
 }
 
 // summen merkt je geöffneter Datei von außen (absoluter Pfad) die SHA-256-Summe ihres Inhalts beim Öffnen, bis das

@@ -111,3 +111,34 @@ func TestOeffnenNachSpeicherHinweis(t *testing.T) {
 		t.Errorf("Meldung %q", l.e.meldung.Text)
 	}
 }
+
+// F-828: Bildet die Zuordnung die gewählte Datei auf die offene Aufnahme ab (früher übernommen), lädt der Editor nichts
+// neu und sagt, dass sie schon offen ist; eine andere Zuordnung wechselt wie gewohnt.
+func TestOeffnenDerOffenenUeberZuordnung(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	ziel := filepath.Join(t.TempDir(), "schon-uebernommen.png")
+	mitOeffnenDialog(t, portal.Ergebnis{URI: "file://" + ziel}, nil)
+	var gefragt []string
+	l.e.bib.Zuordnen = func(p string) string {
+		gefragt = append(gefragt, p)
+		return l.pfade[1] // die offene
+	}
+	l.taste("O", key.ModShortcut)
+	l.warte(func() bool { return !l.e.oeffnenOffen && l.e.wechsel.ziel == "" && !l.e.wechsel.laedt })
+	if len(gefragt) != 1 || gefragt[0] != ziel {
+		t.Errorf("zugeordnet %v, Soll %s", gefragt, ziel)
+	}
+	if a := l.aufrufe(); len(a) != 0 {
+		t.Errorf("neu geladen: %v", a)
+	}
+	if !strings.Contains(l.e.meldung.Text, "already open") {
+		t.Errorf("Meldung %q", l.e.meldung.Text)
+	}
+	// Eine andere Aufnahme: Wechsel mit dem gewählten Pfad (die Ladefunktion ordnet selbst zu).
+	l.e.bib.Zuordnen = func(string) string { return l.pfade[0] }
+	l.taste("O", key.ModShortcut)
+	l.warte(func() bool { return !l.e.oeffnenOffen && !l.e.wechsel.laedt && len(l.aufrufe()) > 0 })
+	if a := l.aufrufe(); a[len(a)-1] != ziel {
+		t.Errorf("geladen %v, Soll %s", a, ziel)
+	}
+}

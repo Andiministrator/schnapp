@@ -199,8 +199,8 @@
     "name": "BV4 Entf legt die offene Aufnahme ohne Wechsel in den Papierkorb",
     "datei": "internal/ui/bibliothek.go",
     "paket": "./internal/ui",
-    "alt": "\te.papierkorbAnfrage(b.r.Eintraege()[i].Pfad, e.bibIstOffen(i), nachbar)",
-    "neu": "\te.papierkorbAnfrage(b.r.Eintraege()[i].Pfad, false, nachbar)"
+    "alt": "\toffen := e.bibIstOffen(i)\n\tvar nachbarn []string",
+    "neu": "\toffen := false\n\tvar nachbarn []string"
   },
   {
     "name": "BV5 F2 an der offenen Aufnahme",
@@ -319,7 +319,9 @@
     "datei": "internal/ui/oberflaeche.go",
     "paket": "./internal/ui",
     "alt": "return !e.s.SpeichernLaeuft() && !e.bibl.offen }",
-    "neu": "return !e.s.SpeichernLaeuft() }"
+    "neu": "return !e.s.SpeichernLaeuft() }",
+    "aequivalent": true,
+    "grund": "menueOeffne sperrt listeFarbe/listeZoom bei offener Ansicht selbst (F-674, jeder Weg); die Bedingung in fussAuswerten ist ein zweiter Schutz. Der Mausklick ist in TestBibliothekFusslistenGesperrt geprüft (26.11.)."
   },
   {
     "name": "BV22 Menü Bearbeiten bedient in der Ansicht das Bild",

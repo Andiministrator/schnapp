@@ -1645,6 +1645,9 @@ msgstr "Die Schlagworte der offenen Aufnahme lassen sich hier nicht ändern. Ers
 msgid "This is the only capture: it stays open and is not moved to the trash."
 msgstr "Das ist die einzige Aufnahme: Sie bleibt offen und kommt nicht in den Papierkorb."
 
+msgid "No other capture to switch to: clear the search and the period, then try again."
+msgstr "Keine andere Aufnahme zum Wechseln: Suche und Zeitraum leeren, dann noch einmal versuchen."
+
 msgid "The capture was not moved to the trash."
 msgstr "Die Aufnahme wurde nicht in den Papierkorb gelegt."
 
@@ -1728,3 +1731,6 @@ msgstr "Raute"
 
 msgid "Square"
 msgstr "Quadrat"
+
+msgid "This file is already open."
+msgstr "Diese Datei ist schon offen."

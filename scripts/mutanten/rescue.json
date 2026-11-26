@@ -865,8 +865,8 @@
     "name": "N5 F-703 Anbindung ohne UmDatei",
     "datei": "cmd/schnapp/editor.go",
     "paket": "./cmd/schnapp",
-    "alt": ", UmDatei: rettungUmDatei}",
-    "neu": "}"
+    "alt": ", UmDatei: rettungUmDatei, Zuordnen",
+    "neu": ", Zuordnen"
   },
   {
     "name": "N6 F-757 UmDatei zieht ohne bestätigten Stand nach",

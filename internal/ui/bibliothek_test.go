@@ -605,6 +605,19 @@ func TestBibliothekFusslistenGesperrt(t *testing.T) {
 			t.Errorf("Liste %d bei offener Ansicht geöffnet", e.menue.welches)
 		}
 	}
+	// Auch ein Mausklick auf die Felder öffnet nichts (fussAuswerten; Mutant BV21).
+	for _, art := range []canvas.FeldArt{canvas.FeldFarbe, canvas.FeldZoom} {
+		l.setle()
+		r, ok := e.fussFeldRahmen[art]
+		if !ok || r.Empty() {
+			t.Fatalf("Feld %v der Fußzeile nicht gezeichnet", art)
+		}
+		l.klick(mittenPunkt(r))
+		l.setle()
+		if e.menue.offen && (e.menue.welches == listeFarbe || e.menue.welches == listeZoom) {
+			t.Errorf("Klick auf Feld %v öffnet Liste %d bei offener Ansicht", art, e.menue.welches)
+		}
+	}
 	l.taste(key.NameEscape, 0)
 	l.bibRuhig()
 	e.knopfPerTaste(&e.knoepfe.fussZoom) // ohne Ansicht geht es wie immer

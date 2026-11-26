@@ -50,13 +50,19 @@ func (e *editor) oeffnenStarten() {
 			{Name: i18n.T("Images"), Globs: []string{"*.png", "*.jpg", "*.jpeg"}, MIMEs: []string{"image/png", "image/jpeg"}},
 		},
 	}
-	ctx, ch, wecker := e.exportCtx, e.oeffnenAntwort, e.wecker
+	ctx, ch, wecker, zuordnen := e.exportCtx, e.oeffnenAntwort, e.wecker, e.bib.Zuordnen
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	go func() {
 		var r exportErgebnis
 		r.ergebnis, r.err = oeffnenDialog(ctx, anfrage)
+		if r.err == nil && zuordnen != nil {
+			// Hier und nicht in der Ereignisschleife: Die Zuordnung liest die Datei (Summe).
+			if pfad, err := portal.URIZuPfad(r.ergebnis.URI); err == nil {
+				r.zugeordnet = zuordnen(pfad)
+			}
+		}
 		ch <- r
 		if wecker != nil {
 			wecker.Anfordern() // erst nach dem Ablegen der Antwort (F-231)
@@ -93,6 +99,12 @@ func (e *editor) oeffnenFertig(r exportErgebnis) {
 	pfad, err := portal.URIZuPfad(r.ergebnis.URI)
 	if err != nil {
 		e.meldeNebenbei(i18n.T("Only local files can be opened."), true)
+		return
+	}
+	if r.zugeordnet != "" && e.istOffen(r.zugeordnet) {
+		// Die gewählte Datei ist die offene Aufnahme (früher übernommen, F-828): nicht speichern und neu laden, der
+		// Rückgängig-Verlauf bliebe sonst nicht.
+		e.meldeNebenbei(i18n.T("This file is already open."), false)
 		return
 	}
 	e.wechselAnfrage(pfad)

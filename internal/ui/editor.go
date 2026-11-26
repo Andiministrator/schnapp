@@ -139,6 +139,15 @@ func Editor(titel string, d *document.Dokument, speichern Speichern, rettung Ret
 	return EditorMit(Geoeffnet{Titel: titel, Dokument: d, Speichern: speichern, Rettung: rettung, OhneGrenze: exportOhneGrenze.Load()}, nil)
 }
 
+// editorFuer baut den Editor für g ohne Fenster: Sitzung, Pfad, Anbindung und der Merker für eine Datei von außen
+// (ADR-0016 Nachtrag 11; eigene Funktion, damit Tests die Verdrahtung ohne Fenster prüfen, F-832).
+func editorFuer(g Geoeffnet, bib *Anbindung) *editor {
+	e := neuerEditor(g.Titel, g.Dokument, g.Speichern, g.Rettung)
+	e.pfad, e.bib = g.Pfad, bib
+	e.aussenSetzen(g.Aussen)
+	return e
+}
+
 // EditorMit ist Editor mit der Anbindung an die Bibliothek (ADR-0036): Leiste der letzten Aufnahmen und Wechsel im
 // selben Fenster. bib nil: ohne Leiste. g.OhneGrenze gilt für den Export (ADR-0033 Nachtrag 4).
 func EditorMit(g Geoeffnet, bib *Anbindung) error {
@@ -154,9 +163,7 @@ func EditorMit(g Geoeffnet, bib *Anbindung) error {
 		zwischenablageFehlt.Store(true)
 	}
 	exportOhneGrenze.Store(g.OhneGrenze)
-	e := neuerEditor(g.Titel, g.Dokument, g.Speichern, g.Rettung)
-	e.pfad, e.bib = g.Pfad, bib
-	e.aussenSetzen(g.Aussen)
+	e := editorFuer(g, bib)
 	// Wecker statt einzelnem Invalidate: Gio verwirft ein Invalidate nach einem schon angenommenen (F-231).
 	e.wecker = canvas.NeuerWecker(e.w.Invalidate, weckTakt, weckGrenze)
 	defer e.wecker.Ende()
@@ -1196,6 +1203,9 @@ func (e *editor) kopierenAbwarten() {
 type exportErgebnis struct {
 	ergebnis portal.Ergebnis
 	err      error
+	// zugeordnet: beim Öffnen die Aufnahme, die die gewählte Datei öffnen würde (Anbindung.Zuordnen); leer: keine
+	// Zuordnung.
+	zugeordnet string
 }
 
 // exportStarten öffnet den Dateidialog des Desktop-Portals (ADR-0025). Er läuft in einer eigenen Goroutine, denn die

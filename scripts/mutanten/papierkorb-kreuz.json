@@ -24,7 +24,7 @@
     "name": "PK4 offene Aufnahme ohne Wechsel in den Papierkorb",
     "datei": "internal/ui/bibliothek.go",
     "paket": "./internal/ui",
-    "alt": "\t\te.wechselAnfrage(nachbar)\n\t\tif e.wechsel.ziel == nachbar {\n\t\t\te.wechsel.papierkorb = true\n\t\t\te.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)\n\t\t}\n\t\treturn\n",
+    "alt": "\t\te.wechselAnfrage(nachbarn[0])\n\t\tif e.wechsel.ziel == nachbarn[0] {\n\t\t\te.wechsel.papierkorb, e.wechsel.weitere = true, nachbarn[1:]\n\t\t\te.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)\n\t\t}\n\t\treturn\n",
     "neu": ""
   },
   {
@@ -66,15 +66,15 @@
     "name": "PK10 Wechsel merkt den Papierkorb nicht",
     "datei": "internal/ui/bibliothek.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\te.wechsel.papierkorb = true\n",
-    "neu": ""
+    "alt": "\t\t\te.wechsel.papierkorb, e.wechsel.weitere = true, nachbarn[1:]\n",
+    "neu": "\t\t\te.wechsel.weitere = nachbarn[1:]\n"
   },
   {
     "name": "PK11 Nachbarin ist die jüngere",
     "datei": "internal/ui/bibliothek.go",
     "paket": "./internal/ui",
-    "alt": "\tcase i+1 < n:\n\t\treturn i + 1\n\tcase i > 0:\n\t\treturn i - 1\n",
-    "neu": "\tcase i > 0:\n\t\treturn i - 1\n\tcase i+1 < n:\n\t\treturn i + 1\n"
+    "alt": "\t\tif i+d < n {\n\t\t\taus = append(aus, i+d)\n\t\t}\n\t\tif i-d >= 0 && len(aus) < nachbarGrenze {\n\t\t\taus = append(aus, i-d)\n\t\t}\n",
+    "neu": "\t\tif i-d >= 0 {\n\t\t\taus = append(aus, i-d)\n\t\t}\n\t\tif i+d < n && len(aus) < nachbarGrenze {\n\t\t\taus = append(aus, i+d)\n\t\t}\n"
   },
   {
     "name": "PK12 kein Bild zum Ende der Ruhe",
@@ -101,14 +101,56 @@
     "name": "PK15 Papierkorb nach Übernahme fehlt",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\te.papierkorbAnfrage(rel, false, \"\")\n",
+    "alt": "\t\t\te.papierkorbAnfrage(rel, false, nil)\n",
     "neu": "\t\t\t_ = rel\n"
   },
   {
     "name": "PK16 einzige Aufnahme ohne Schutz",
     "datei": "internal/ui/bibliothek.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif nachbar == \"\" {\n\t\t\te.melde(",
+    "alt": "\t\tif len(nachbarn) == 0 {\n\t\t\te.melde(",
     "neu": "\t\tif false {\n\t\t\te.melde("
+  },
+  {
+    "name": "PK-N1 keine zweite Nachbarin (F-827)",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif len(weitere) > 0 {\n\t\t\te.wechsel.ziel",
+    "neu": "\t\tif false && len(weitere) > 0 {\n\t\t\te.wechsel.ziel"
+  },
+  {
+    "name": "PK-N2 zweite Nachbarin trotz Änderung (F-827)",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": " && !e.s.SignalVorgemerkt() && !e.s.Geaendert() {",
+    "neu": " && !e.s.SignalVorgemerkt() {"
+  },
+  {
+    "name": "PK-N3 gefilterte Ansicht ohne Leiste als Ersatz (F-827)",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "len(n) > 0 || !e.bibGefiltert() {",
+    "neu": "len(n) > 0 || true {"
+  },
+  {
+    "name": "PK-N4 Filter-Meldung fehlt (F-827)",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.bibl.offen && e.bibGefiltert() {",
+    "neu": "\tif false {"
+  },
+  {
+    "name": "PK-N5 nur eine Nachbarin (F-827)",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "for d := 1; len(aus) < nachbarGrenze &&",
+    "neu": "for d := 1; len(aus) < 1 &&"
+  },
+  {
+    "name": "PK-N6 offene unter den Nachbarinnen (F-827)",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif !e.istOffen(abs) {\n\t\t\taus = append(aus, abs)",
+    "neu": "\t\tif true {\n\t\t\taus = append(aus, abs)"
   }
 ]

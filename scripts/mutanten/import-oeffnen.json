@@ -10,8 +10,8 @@
     "name": "IM2 Doppelte: vorhandene Aufnahme übergangen",
     "datei": "cmd/schnapp/importieren.go",
     "paket": "./cmd/schnapp",
-    "alt": "\tif rel, ok := b.Importiert(summe); ok {",
-    "neu": "\tif rel, ok := b.Importiert(summe); false && ok {"
+    "alt": "\tif ziel, ok := uebernommeneAufnahme(b, summe); ok {\n\t\tdiagnoseImport",
+    "neu": "\tif ziel, ok := uebernommeneAufnahme(b, summe); false && ok {\n\t\tdiagnoseImport"
   },
   {
     "name": "IM3 Übernahme nicht gemerkt",
@@ -131,5 +131,98 @@
     "paket": "./internal/ui",
     "alt": "\tif aussen && e.meldung.Text == \"\" {",
     "neu": "\tif aussen {"
+  },
+  {
+    "name": "IO-F828-1 Zuordnung findet die Aufnahme nicht",
+    "datei": "cmd/schnapp/importieren.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif ziel, ok := uebernommeneAufnahme(b, summe); ok {\n\t\t\treturn ziel\n",
+    "neu": "\t\tif ziel, ok := uebernommeneAufnahme(b, summe); false && ok {\n\t\t\treturn ziel\n"
+  },
+  {
+    "name": "IO-F828-2 Anbindung ohne Zuordnung",
+    "datei": "cmd/schnapp/editor.go",
+    "paket": "./cmd/schnapp",
+    "alt": ", Zuordnen: zuordnerFuer(b)}",
+    "neu": "}"
+  },
+  {
+    "name": "IO-F828-3 Zuordnung trotz abgeschalteter Übernahme",
+    "datei": "cmd/schnapp/importieren.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif err != nil || !importBeimOeffnen || b == nil {\n\t\t\treturn pfad",
+    "neu": "\t\tif err != nil || b == nil {\n\t\t\treturn pfad"
+  },
+  {
+    "name": "UE-F832-1 Textbereich hält nicht auf",
+    "datei": "internal/ui/uebernahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.s.Zieht() || e.s.TextLaeuft() || e.s.TextBereichLaeuft() || e.s.SpeichernLaeuft() || e.s.Ruht() ||\n\t\te.s.SignalVorgemerkt() || e.speichernAufgegeben || e.erzwungen || e.wechsel.ziel != \"\" {",
+    "neu": "\tif e.s.Zieht() || e.s.TextLaeuft() || e.s.SpeichernLaeuft() || e.s.Ruht() ||\n\t\te.s.SignalVorgemerkt() || e.speichernAufgegeben || e.erzwungen || e.wechsel.ziel != \"\" {"
+  },
+  {
+    "name": "UE-F832-2 Speichern hält nicht auf",
+    "datei": "internal/ui/uebernahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.s.Zieht() || e.s.TextLaeuft() || e.s.TextBereichLaeuft() || e.s.SpeichernLaeuft() || e.s.Ruht() ||\n\t\te.s.SignalVorgemerkt() || e.speichernAufgegeben || e.erzwungen || e.wechsel.ziel != \"\" {",
+    "neu": "\tif e.s.Zieht() || e.s.TextLaeuft() || e.s.TextBereichLaeuft() || e.s.Ruht() ||\n\t\te.s.SignalVorgemerkt() || e.speichernAufgegeben || e.erzwungen || e.wechsel.ziel != \"\" {"
+  },
+  {
+    "name": "UE-F832-3 Ruhe hält nicht auf",
+    "datei": "internal/ui/uebernahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.s.Zieht() || e.s.TextLaeuft() || e.s.TextBereichLaeuft() || e.s.SpeichernLaeuft() || e.s.Ruht() ||\n\t\te.s.SignalVorgemerkt() || e.speichernAufgegeben || e.erzwungen || e.wechsel.ziel != \"\" {",
+    "neu": "\tif e.s.Zieht() || e.s.TextLaeuft() || e.s.TextBereichLaeuft() || e.s.SpeichernLaeuft() ||\n\t\te.s.SignalVorgemerkt() || e.speichernAufgegeben || e.erzwungen || e.wechsel.ziel != \"\" {"
+  },
+  {
+    "name": "UE-F832-4 Signal hält nicht auf",
+    "datei": "internal/ui/uebernahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.s.Zieht() || e.s.TextLaeuft() || e.s.TextBereichLaeuft() || e.s.SpeichernLaeuft() || e.s.Ruht() ||\n\t\te.s.SignalVorgemerkt() || e.speichernAufgegeben || e.erzwungen || e.wechsel.ziel != \"\" {",
+    "neu": "\tif e.s.Zieht() || e.s.TextLaeuft() || e.s.TextBereichLaeuft() || e.s.SpeichernLaeuft() || e.s.Ruht() ||\n\t\te.speichernAufgegeben || e.erzwungen || e.wechsel.ziel != \"\" {",
+    "aequivalent": true,
+    "grund": "SignalAnfrage beginnt mit Änderungen selbst ein Speichern (SpeichernLaeuft hält auf) und hat ohne Änderungen nichts zu speichern (Geaendert); vorgemerkt ohne laufendes Speichern heißt, das Fenster schließt im selben Durchlauf. Zweiter Schutz (26.11.)."
+  },
+  {
+    "name": "UE-F832-5 aufgegebenes Speichern hält nicht auf",
+    "datei": "internal/ui/uebernahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.s.Zieht() || e.s.TextLaeuft() || e.s.TextBereichLaeuft() || e.s.SpeichernLaeuft() || e.s.Ruht() ||\n\t\te.s.SignalVorgemerkt() || e.speichernAufgegeben || e.erzwungen || e.wechsel.ziel != \"\" {",
+    "neu": "\tif e.s.Zieht() || e.s.TextLaeuft() || e.s.TextBereichLaeuft() || e.s.SpeichernLaeuft() || e.s.Ruht() ||\n\t\te.s.SignalVorgemerkt() || e.erzwungen || e.wechsel.ziel != \"\" {"
+  },
+  {
+    "name": "UE-F832-6 erzwungenes Schließen hält nicht auf",
+    "datei": "internal/ui/uebernahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.s.Zieht() || e.s.TextLaeuft() || e.s.TextBereichLaeuft() || e.s.SpeichernLaeuft() || e.s.Ruht() ||\n\t\te.s.SignalVorgemerkt() || e.speichernAufgegeben || e.erzwungen || e.wechsel.ziel != \"\" {",
+    "neu": "\tif e.s.Zieht() || e.s.TextLaeuft() || e.s.TextBereichLaeuft() || e.s.SpeichernLaeuft() || e.s.Ruht() ||\n\t\te.s.SignalVorgemerkt() || e.speichernAufgegeben || e.wechsel.ziel != \"\" {"
+  },
+  {
+    "name": "UE-F832-7 Wechsel hält nicht auf",
+    "datei": "internal/ui/uebernahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.s.Zieht() || e.s.TextLaeuft() || e.s.TextBereichLaeuft() || e.s.SpeichernLaeuft() || e.s.Ruht() ||\n\t\te.s.SignalVorgemerkt() || e.speichernAufgegeben || e.erzwungen || e.wechsel.ziel != \"\" {",
+    "neu": "\tif e.s.Zieht() || e.s.TextLaeuft() || e.s.TextBereichLaeuft() || e.s.SpeichernLaeuft() || e.s.Ruht() ||\n\t\te.s.SignalVorgemerkt() || e.speichernAufgegeben || e.erzwungen {"
+  },
+  {
+    "name": "UE-F832-8 nachEreignis prüft nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.uebernahmePruefen() {\n\t\te.wecker.Anfordern()\n\t}",
+    "neu": "\tif false && e.uebernahmePruefen() {\n\t\te.wecker.Anfordern()\n\t}"
+  },
+  {
+    "name": "UE-F832-9 Start merkt Aussen nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.aussenSetzen(g.Aussen)\n\treturn e",
+    "neu": "\treturn e"
+  },
+  {
+    "name": "IO-F831-1 Summe beim Öffnen nicht gemerkt",
+    "datei": "cmd/schnapp/importieren.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tsummen.Store(abs, summe)\n\treturn pfad, true",
+    "neu": "\treturn pfad, true"
   }
 ]

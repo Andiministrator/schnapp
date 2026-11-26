@@ -10,8 +10,8 @@
     "name": "KS0126-2 Übernahme hasht auch Nicht-Dateien",
     "datei": "cmd/schnapp/importieren.go",
     "paket": "./cmd/schnapp",
-    "alt": "\tif err != nil || !fi.Mode().IsRegular() || fi.Size() > fileformat.MaxDatei {",
-    "neu": "\tif err != nil || fi.Size() > fileformat.MaxDatei {"
+    "alt": "\tif err != nil || !fi.Mode().IsRegular() || fi.Size() > fileformat.MaxDatei {\n\t\treturn pfad, false",
+    "neu": "\tif err != nil || fi.Size() > fileformat.MaxDatei {\n\t\treturn pfad, false"
   },
   {
     "name": "KS0126-3 Haarnadel ohne Schaft",

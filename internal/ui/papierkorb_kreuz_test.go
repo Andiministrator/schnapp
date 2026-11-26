@@ -10,8 +10,10 @@ package ui
 import (
 	"errors"
 	"image"
+	"image/color"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -20,6 +22,10 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/widget"
+
+	"github.com/Andiministrator/schnapp/internal/document"
+	"github.com/Andiministrator/schnapp/internal/library"
+	"github.com/Andiministrator/schnapp/internal/libview"
 )
 
 func papierkorbDateien(t *testing.T, l *leistenLauf) int {
@@ -249,14 +255,22 @@ func TestLeisteKreuzAnDerOffenen(t *testing.T) {
 
 // Die älteste offene: Nachbarin ist die jüngere; scheitert das Laden, bleibt sie offen und im Bestand.
 func TestLeisteKreuzAnDerOffenenLadenScheitert(t *testing.T) {
-	if nachbarStelle(2, 3) != 1 || nachbarStelle(0, 3) != 1 || nachbarStelle(0, 1) != -1 {
-		t.Fatal("nachbarStelle")
+	if !slices.Equal(nachbarStellen(2, 3), []int{1, 0}) || !slices.Equal(nachbarStellen(0, 3), []int{1, 2}) ||
+		len(nachbarStellen(0, 1)) != 0 || !slices.Equal(nachbarStellen(2, 5), []int{3, 1, 4, 0}) ||
+		len(nachbarStellen(50, 100)) != nachbarGrenze {
+		t.Fatal("nachbarStellen")
 	}
 	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
 	k := &l.e.unten
 	l.fehler = errors.New("kaputt")
 	l.e.leistePapierkorb(1)
-	l.warte(func() bool { return !l.e.wechsel.laedt && !l.e.bibl.arbeitLaeuft && !k.indexLaeuft })
+	// Erst speichert der Editor, dann lädt er die Nachbarinnen: fertig ist der Wechsel, wenn kein Ziel mehr ansteht.
+	l.warte(func() bool {
+		return l.e.wechsel.ziel == "" && !l.e.wechsel.laedt && !l.e.bibl.arbeitLaeuft && !k.indexLaeuft
+	})
+	if a := l.aufrufe(); len(a) != 2 {
+		t.Errorf("geladen %v, Soll beide Nachbarinnen versucht", a)
+	}
 	if _, err := os.Stat(l.pfade[1]); err != nil {
 		t.Errorf("offene trotz gescheitertem Laden verschoben: %v", err)
 	}
@@ -336,5 +350,100 @@ func TestLeisteKreuzAnDerOffenenAbbruch(t *testing.T) {
 	}
 	if !strings.Contains(l.e.meldung.Text, "export") || !strings.Contains(l.e.meldung.Text, "not moved to the trash") {
 		t.Errorf("Meldung %q", l.e.meldung.Text)
+	}
+}
+
+// F-827: Lässt sich die nächst ältere Nachbarin nicht laden, versucht das ✕ an der offenen die nächst neuere; erst
+// nach deren Übernahme liegt die bisher offene im Papierkorb.
+func TestLeisteKreuzAnDerOffenenZweiteNachbarin(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 4)
+	k := &l.e.unten
+	l.fehlerFuer = map[string]error{l.pfade[2]: errors.New("kaputt")}
+	l.e.leistePapierkorb(1)
+	l.warte(func() bool {
+		return l.e.wechsel.ziel == "" && !l.e.wechsel.laedt && !l.e.bibl.arbeitLaeuft && !k.indexLaeuft &&
+			len(k.l.Eintraege()) == 3
+	})
+	if a := l.aufrufe(); !slices.Equal(a, []string{l.pfade[2], l.pfade[0]}) {
+		t.Errorf("geladen %v, Soll erst die ältere, dann die neuere", a)
+	}
+	if _, err := os.Stat(l.pfade[1]); !os.IsNotExist(err) {
+		t.Errorf("bisher offene noch da: %v", err)
+	}
+	if l.e.pfad() != l.pfade[0] {
+		t.Errorf("offen ist %s, Soll %s", l.e.pfad(), l.pfade[0])
+	}
+}
+
+// F-827: Wird während des Ladens der ersten Nachbarin geändert (an der Ruhe vorbei), versucht der Editor keine weitere
+// und wirft nichts weg.
+func TestLeisteKreuzZweiteNachbarinNichtNachAenderung(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 4)
+	k := &l.e.unten
+	l.fehlerFuer = map[string]error{l.pfade[2]: errors.New("kaputt")}
+	l.tor = make(chan struct{})
+	l.e.leistePapierkorb(1)
+	l.warte(func() bool { return len(l.aufrufe()) == 1 })
+	l.e.s.SetzeRuhe(false)
+	if _, err := l.e.s.D.Hinzufuegen(document.Kasten{Bereich: document.R(document.Pt(1, 1), document.Pt(9, 9)),
+		Strich: document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 2}}); err != nil {
+		t.Fatal(err)
+	}
+	l.e.s.SetzeRuhe(true)
+	close(l.tor)
+	l.warte(func() bool {
+		return l.e.wechsel.ziel == "" && !l.e.wechsel.laedt && !l.e.bibl.arbeitLaeuft && !k.indexLaeuft
+	})
+	if a := l.aufrufe(); len(a) != 1 {
+		t.Errorf("geladen %v, Soll nur die erste Nachbarin", a)
+	}
+	if _, err := os.Stat(l.pfade[1]); err != nil {
+		t.Errorf("offene trotz Änderung verschoben: %v", err)
+	}
+}
+
+// F-827: In der vollen Ansicht mit Suche zeigt das Raster nur die offene; Nachbarin ist dann die der Leiste, nicht
+// „einzige Aufnahme“. Ohne Leiste sagt die Meldung, dass der Filter schuld ist.
+func TestAnsichtGefiltertNimmtNachbarinDerLeiste(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	l.e.bibl.offen, l.e.bibl.suche = true, "gibt-es-nicht"
+	if !l.e.bibGefiltert() {
+		t.Fatal("Suche gilt nicht als Filter")
+	}
+	rels := l.e.unten.l.Eintraege()
+	if n := l.e.nachbarnIn([]string{rels[1].Pfad}, 0); len(n) != 0 { // gefiltertes Raster: nur die offene
+		t.Fatalf("Nachbarinnen im gefilterten Raster %v", n)
+	}
+	// bibNachbarn mit einem Raster, das nur die offene zeigt: über die Leiste die nächst ältere zuerst.
+	l.e.bibl.r = libview.NeuesRaster(time.UTC)
+	l.e.bibl.r.Setze([]library.Eintrag{rels[1]})
+	if n := l.e.bibNachbarn(0); len(n) != 2 || n[0] != l.pfade[2] {
+		t.Errorf("Nachbarinnen %v, Soll zuerst %s", n, l.pfade[2])
+	}
+	l.e.unten.l = nil
+	if n := l.e.bibNachbarn(0); len(n) != 0 {
+		t.Errorf("ohne Leiste Nachbarinnen %v", n)
+	}
+	if !strings.Contains(l.e.einzigText(), "clear the search") {
+		t.Errorf("Meldung %q", l.e.einzigText())
+	}
+	l.e.bibl.suche = ""
+	if !strings.Contains(l.e.einzigText(), "only capture") {
+		t.Errorf("ohne Filter: %q", l.e.einzigText())
+	}
+}
+
+// F-827: Die offene Aufnahme ist nie ihre eigene Nachbarin, auch wenn sie in der Liste zweimal steht (Verweis-Ordner):
+// sonst bliebe die Anfrage still liegen, weil ein Wechsel zur offenen nichts tut.
+func TestNachbarinnenOhneOffene(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	rels := make([]string, 0, 4)
+	for _, e := range l.e.unten.l.Eintraege() {
+		rels = append(rels, e.Pfad)
+	}
+	rels = append(rels, rels[1]) // die offene noch einmal am Ende
+	n := l.e.nachbarnIn(rels, 1)
+	if !slices.Equal(n, []string{l.pfade[2], l.pfade[0]}) {
+		t.Errorf("Nachbarinnen %v, Soll ohne die offene", n)
 	}
 }

@@ -381,11 +381,12 @@ func (e *editor) leistePapierkorb(i int) {
 		return
 	}
 	abs := filepath.Join(e.bib.Bibliothek.Orte.Ablage, filepath.FromSlash(k.gezeigt[i]))
-	nachbar := ""
-	if j := nachbarStelle(i, len(k.gezeigt)); j >= 0 && k.gezeigt[j] != "" {
-		nachbar = filepath.Join(e.bib.Bibliothek.Orte.Ablage, filepath.FromSlash(k.gezeigt[j]))
+	offen := k.l.IstAktuell(i) || e.istOffen(abs)
+	var nachbarn []string
+	if offen {
+		nachbarn = e.nachbarnIn(k.gezeigt, i)
 	}
-	e.papierkorbAnfrage(k.gezeigt[i], k.l.IstAktuell(i) || e.istOffen(abs), nachbar)
+	e.papierkorbAnfrage(k.gezeigt[i], offen, nachbarn)
 }
 
 // leisteOeffne öffnet die Aufnahme an der Stelle i, wie sie beim letzten Zeichnen stand. Die offene übergeht

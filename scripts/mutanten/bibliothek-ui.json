@@ -474,8 +474,8 @@
     "name": "WS3 Ruhe bleibt nach dem Abholen",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "\te.wechsel = wechselZustand{}\n\te.s.SetzeRuhe(false)\n\tswitch {",
-    "neu": "\te.wechsel = wechselZustand{}\n\tswitch {"
+    "alt": "\te.wechsel = wechselZustand{}\n\te.s.SetzeRuhe(false)\n\tif r.err != nil",
+    "neu": "\te.wechsel = wechselZustand{}\n\tif r.err != nil"
   },
   {
     "name": "WS4 Abholen übersieht den offenen Export-Dialog",

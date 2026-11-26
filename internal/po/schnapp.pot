@@ -945,6 +945,10 @@ msgid "Keywords saved."
 msgstr ""
 
 #: internal/ui/bibliothek.go
+msgid "No other capture to switch to: clear the search and the period, then try again."
+msgstr ""
+
+#: internal/ui/bibliothek.go
 msgid "This is the only capture: it stays open and is not moved to the trash."
 msgstr ""
 
@@ -2005,6 +2009,10 @@ msgstr ""
 
 #: internal/ui/oeffnen.go
 msgid "Only local files can be opened."
+msgstr ""
+
+#: internal/ui/oeffnen.go
+msgid "This file is already open."
 msgstr ""
 
 #: internal/ui/overlay.go

@@ -20,6 +20,7 @@ import (
 	"image"
 	"image/color"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"gioui.org/f32"
@@ -369,30 +370,100 @@ func (e *editor) bibOeffne(gtx layout.Context, i int) {
 	e.wechselAnfrage(e.bibAbs(i))
 }
 
-// bibPapierkorb legt die Aufnahme mit Fokus in den Papierkorb (Entf, ✕); die offene ist ausgenommen.
+// bibPapierkorb legt die Aufnahme mit Fokus in den Papierkorb (Entf, ✕); an der offenen wechselt der Editor vorher zu
+// einer Nachbarin (papierkorbAnfrage).
 func (e *editor) bibPapierkorb() {
 	b := &e.bibl
 	i := b.r.Fokus()
 	if i < 0 || i >= len(b.r.Eintraege()) {
 		return
 	}
-	nachbar := ""
-	if j := nachbarStelle(i, len(b.r.Eintraege())); j >= 0 {
-		nachbar = e.bibAbs(j)
+	offen := e.bibIstOffen(i)
+	var nachbarn []string
+	if offen {
+		nachbarn = e.bibNachbarn(i)
 	}
-	e.papierkorbAnfrage(b.r.Eintraege()[i].Pfad, e.bibIstOffen(i), nachbar)
+	e.papierkorbAnfrage(b.r.Eintraege()[i].Pfad, offen, nachbarn)
 }
 
-// nachbarStelle ist die Aufnahme, die nach dem Wegwerfen der Stelle i von n gezeigt wird: die nächst ältere (rechts
-// davon), an der ältesten die nächst jüngere; −1, wenn es keine andere gibt (Karte #347).
-func nachbarStelle(i, n int) int {
-	switch {
-	case i+1 < n:
-		return i + 1
-	case i > 0:
-		return i - 1
+// bibNachbarn sind die Aufnahmen, zu denen der Editor wechseln kann, bevor die offene an der Stelle i der vollen Ansicht
+// in den Papierkorb geht: die Nachbarinnen in der Ansicht, nach Abstand (nachbarStellen). Zeigt die Ansicht wegen Suche
+// oder Zeitraum keine andere, die der Leiste der letzten Aufnahmen (ungefiltert, F-827).
+func (e *editor) bibNachbarn(i int) []string {
+	b := &e.bibl
+	es := b.r.Eintraege()
+	rels := make([]string, len(es))
+	for j, eintrag := range es {
+		rels[j] = eintrag.Pfad
 	}
-	return -1
+	if n := e.nachbarnIn(rels, i); len(n) > 0 || !e.bibGefiltert() {
+		return n
+	}
+	if e.unten.l == nil {
+		return nil
+	}
+	alle := e.unten.l.Eintraege()
+	rels = rels[:0]
+	k := -1
+	for j, eintrag := range alle {
+		rels = append(rels, eintrag.Pfad)
+		if e.istOffen(filepath.Join(e.bib.Bibliothek.Orte.Ablage, filepath.FromSlash(eintrag.Pfad))) {
+			k = j
+		}
+	}
+	if k < 0 {
+		return nil
+	}
+	return e.nachbarnIn(rels, k)
+}
+
+// einzigText sagt, warum die offene Aufnahme nicht in den Papierkorb geht: Es gibt keine andere — oder die volle
+// Ansicht zeigt wegen Suche oder Zeitraum keine, und die Leiste kennt keine (F-827).
+func (e *editor) einzigText() string {
+	if e.bibl.offen && e.bibGefiltert() {
+		return i18n.T("No other capture to switch to: clear the search and the period, then try again.")
+	}
+	return i18n.T("This is the only capture: it stays open and is not moved to the trash.")
+}
+
+// bibGefiltert meldet, ob Suche oder Zeitraum die volle Ansicht einschränken.
+func (e *editor) bibGefiltert() bool {
+	return strings.TrimSpace(e.bibl.suche) != "" || e.bibl.zeitraum != libview.ZeitraumAlle
+}
+
+// nachbarGrenze ist, wie viele Nachbarinnen der Editor nacheinander zu laden versucht, bevor er die offene Aufnahme
+// in den Papierkorb legt (F-827: eine beschädigte oder zu große Nachbarin hält das Wegwerfen sonst auf).
+const nachbarGrenze = 8
+
+// nachbarStellen sind die Stellen, die nach dem Wegwerfen der Stelle i von n gezeigt werden können, in dieser
+// Reihenfolge: die nächst ältere (rechts davon), dann die nächst neuere, dann die übernächsten, höchstens nachbarGrenze.
+func nachbarStellen(i, n int) []int {
+	var aus []int
+	for d := 1; len(aus) < nachbarGrenze && (i+d < n || i-d >= 0); d++ {
+		if i+d < n {
+			aus = append(aus, i+d)
+		}
+		if i-d >= 0 && len(aus) < nachbarGrenze {
+			aus = append(aus, i-d)
+		}
+	}
+	return aus
+}
+
+// nachbarnIn liefert die absoluten Pfade der Nachbarinnen der Stelle i in rels (relativ zur Ablage, leer: keine
+// Aufnahme), ohne die offene.
+func (e *editor) nachbarnIn(rels []string, i int) []string {
+	var aus []string
+	for _, j := range nachbarStellen(i, len(rels)) {
+		if rels[j] == "" {
+			continue
+		}
+		abs := filepath.Join(e.bib.Bibliothek.Orte.Ablage, filepath.FromSlash(rels[j]))
+		if !e.istOffen(abs) {
+			aus = append(aus, abs)
+		}
+	}
+	return aus
 }
 
 // papierkorbAnfrage legt die Aufnahme rel (relativ zur Ablage) im Hintergrund in den freedesktop-Papierkorb — für die
@@ -404,18 +475,18 @@ func nachbarStelle(i, n int) int {
 // Beschriftungen im Papierkorb, und das Fenster zeigt nie eine weggeworfene Datei. Die Zwischenablage berührt das
 // nicht: Der Halter (wlclip) und das Fenster halten die kopierten Bytes, nicht die Datei (ADR-0036 Zusatz Karte #347).
 // Ohne Nachbarn bleibt die einzige Aufnahme offen.
-func (e *editor) papierkorbAnfrage(rel string, offen bool, nachbar string) {
+func (e *editor) papierkorbAnfrage(rel string, offen bool, nachbarn []string) {
 	if rel == "" {
 		return
 	}
 	if offen {
-		if nachbar == "" {
-			e.melde(i18n.T("This is the only capture: it stays open and is not moved to the trash."), false)
+		if len(nachbarn) == 0 {
+			e.melde(e.einzigText(), false)
 			return
 		}
-		e.wechselAnfrage(nachbar)
-		if e.wechsel.ziel == nachbar {
-			e.wechsel.papierkorb = true
+		e.wechselAnfrage(nachbarn[0])
+		if e.wechsel.ziel == nachbarn[0] {
+			e.wechsel.papierkorb, e.wechsel.weitere = true, nachbarn[1:]
 			e.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)
 		}
 		return
@@ -621,8 +692,8 @@ func (e *editor) bibliothekBearbeiten() []menueEintrag {
 		grau = i18n.T("This is the open capture. Open another one first.")
 	}
 	einzigGrau := ""
-	if offen && nachbarStelle(i, len(b.r.Eintraege())) < 0 {
-		einzigGrau = i18n.T("This is the only capture: it stays open and is not moved to the trash.")
+	if offen && len(e.bibNachbarn(i)) == 0 {
+		einzigGrau = e.einzigText()
 	}
 	return []menueEintrag{
 		{akt: aktBibOeffnen, text: i18n.T("Open"), an: da, kuerzel: tastenName(key.Filter{Name: key.NameReturn})},

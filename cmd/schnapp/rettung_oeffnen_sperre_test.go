@@ -25,6 +25,9 @@ func TestWechselWartetAufUmDatei(t *testing.T) {
 	b, rel, abs, _ := umDateiUmgebung(t)
 
 	um := anbindungFuer(b, document.KanteAbriss).UmDatei
+	if um == nil {
+		t.Fatal("Anbindung ohne UmDatei") // sonst endete der Test mit einer Panik ohne Namen (Mutant N5)
+	}
 	drin, weiter := make(chan struct{}), make(chan struct{})
 	fertig := make(chan error, 1)
 	go func() {

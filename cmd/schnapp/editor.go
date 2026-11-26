@@ -80,7 +80,7 @@ func geoeffnetFuer(b *library.Bibliothek, abs string, g *fileformat.Gelesen, sta
 // anbindungFuer verbindet den Editor mit der Bibliothek b (ADR-0036): Die Leiste liest Index und Vorschauen, ein Klick
 // auf eine Vorschau lädt die Aufnahme über oeffnerFuer.
 func anbindungFuer(b *library.Bibliothek, kante document.Kante) *ui.Anbindung {
-	return &ui.Anbindung{Bibliothek: b, Oeffnen: oeffnerFuer(b, kante), UmDatei: rettungUmDatei}
+	return &ui.Anbindung{Bibliothek: b, Oeffnen: oeffnerFuer(b, kante), UmDatei: rettungUmDatei, Zuordnen: zuordnerFuer(b)}
 }
 
 // rettungUmDatei hält die Rettungskopie einer Aufnahme anwendbar, während ihre Metadaten neu geschrieben werden

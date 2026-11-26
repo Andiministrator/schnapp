@@ -47,5 +47,19 @@
     "paket": "./internal/portal",
     "alt": "\treturn d.dialog(ctx, \"OpenFile\", a,",
     "neu": "\treturn d.dialog(ctx, \"SaveFile\", a,"
+  },
+  {
+    "name": "OE-F828-1 Öffnen der offenen lädt neu",
+    "datei": "internal/ui/oeffnen.go",
+    "paket": "./internal/ui",
+    "alt": "\tif r.zugeordnet != \"\" && e.istOffen(r.zugeordnet) {",
+    "neu": "\tif false && r.zugeordnet != \"\" && e.istOffen(r.zugeordnet) {"
+  },
+  {
+    "name": "OE-F828-2 keine Zuordnung im Dialog",
+    "datei": "internal/ui/oeffnen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif r.err == nil && zuordnen != nil {",
+    "neu": "\t\tif false {"
   }
 ]

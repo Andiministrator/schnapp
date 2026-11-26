@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -202,5 +203,100 @@ func TestUebernahmeHinweisVerdraengtRettungNicht(t *testing.T) {
 	e.aussenSetzen(true)
 	if e.meldung.Text != "Restored unsaved changes" || !e.aussen {
 		t.Errorf("Meldung %q, aussen %v", e.meldung.Text, e.aussen)
+	}
+}
+
+// F-832: Die Verdrahtung trägt — editorFuer setzt den Merker aus Geoeffnet.Aussen, und nachEreignis stößt nach der
+// ersten Änderung das Speichern an.
+func TestUebernahmeVerdrahtung(t *testing.T) {
+	i18n.Setze(nil)
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 200, 150)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := new(atomic.Int32)
+	speichern := func(*document.Dokument) (Gespeichert, error) { n.Add(1); return Gespeichert{}, nil }
+	if e := editorFuer(Geoeffnet{Titel: "x.png", Dokument: d, Speichern: speichern}, nil); e.aussen {
+		t.Fatal("ohne Aussen als Datei von außen gemerkt")
+	}
+	e := editorFuer(Geoeffnet{Titel: "bild.png", Dokument: d, Speichern: speichern, Aussen: true}, nil)
+	if !e.aussen {
+		t.Fatal("Aussen nicht übernommen")
+	}
+	e.s.SetzeFenster(image.Pt(400, 300))
+	nachEreignisBereit(t, e)
+	e.wecker = canvas.NeuerWecker(func() {}, time.Hour, time.Hour)
+	t.Cleanup(e.wecker.Ende)
+	e.nachEreignis()
+	if e.s.SpeichernLaeuft() || !e.aussen {
+		t.Fatal("ohne Änderung gespeichert")
+	}
+	kastenZiehen(e)
+	e.nachEreignis()
+	if e.aussen || !e.s.SpeichernLaeuft() {
+		t.Fatalf("nachEreignis stößt nach der ersten Änderung nichts an (aussen %v)", e.aussen)
+	}
+	warteSpeichern(t, e)
+	if n.Load() != 1 {
+		t.Errorf("Speicherfunktion %d mal gerufen, Soll 1", n.Load())
+	}
+}
+
+// kastenZiehen zieht mit dem Kastenwerkzeug einen Kasten auf (eine Änderung).
+func kastenZiehen(e *editor) {
+	e.s.SetzeWerkzeug(canvas.WerkzeugKasten)
+	e.s.Druecken(e.s.Abb.ZuFenster(document.Pt(50, 50)), canvas.TastePrimaer)
+	e.s.Ziehen(e.s.Abb.ZuFenster(document.Pt(120, 110)))
+	e.s.Loslassen(e.s.Abb.ZuFenster(document.Pt(120, 110)))
+}
+
+// F-832: Jede Bedingung, die das Anstoßen aufschiebt, hält es allein auf; ist sie weg, stößt die Prüfung an.
+func TestUebernahmeWartetJeBedingung(t *testing.T) {
+	for name, fall := range map[string]struct{ setze, loese func(e *editor) }{
+		"Bereich für Text aus dem Bild": {
+			func(e *editor) { e.s.BeginneTextBereich() }, func(e *editor) { e.s.BeendeTextBereich() }},
+		"Ruhe (Wechsel lädt)": {
+			func(e *editor) { e.s.SetzeRuhe(true) }, func(e *editor) { e.s.SetzeRuhe(false) }},
+		"Speichern aufgegeben": {
+			func(e *editor) { e.speichernAufgegeben = true }, func(e *editor) { e.speichernAufgegeben = false }},
+		"Schließen erzwungen": {
+			func(e *editor) { e.erzwungen = true }, func(e *editor) { e.erzwungen = false }},
+		"Wechsel angefragt": {
+			func(e *editor) { e.wechsel.ziel = "/anders.png" }, func(e *editor) { e.wechsel.ziel = "" }},
+	} {
+		e, n := uebernahmeEditor(t)
+		kastenZiehen(e)
+		fall.setze(e)
+		if e.uebernahmePruefen() || !e.aussen {
+			t.Errorf("%s: trotzdem angestoßen", name)
+			continue
+		}
+		fall.loese(e)
+		if !e.uebernahmePruefen() {
+			t.Errorf("%s: nach dem Ende nicht angestoßen", name)
+			continue
+		}
+		warteSpeichern(t, e)
+		if n.Load() != 1 {
+			t.Errorf("%s: Speicherfunktion %d mal gerufen", name, n.Load())
+		}
+	}
+}
+
+// F-832: Läuft schon ein Speichern (Strg+S vor der Prüfung), verbraucht die Prüfung den Merker nicht; das Ende jenes
+// Speicherns hebt ihn auf (ADR-0016 Nachtrag 11 Punkt 8).
+func TestUebernahmeNichtWaehrendSpeichern(t *testing.T) {
+	e, n := uebernahmeEditor(t)
+	kastenZiehen(e)
+	e.speichernJetzt()
+	if !e.s.SpeichernLaeuft() {
+		t.Fatal("Strg+S speichert nicht")
+	}
+	if e.uebernahmePruefen() || !e.aussen {
+		t.Fatalf("während des Speicherns angestoßen (aussen %v)", e.aussen)
+	}
+	warteSpeichern(t, e)
+	if e.aussen || n.Load() != 1 {
+		t.Errorf("nach dem Speichern: aussen %v, %d Aufrufe", e.aussen, n.Load())
 	}
 }

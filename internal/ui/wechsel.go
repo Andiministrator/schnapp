@@ -49,6 +49,9 @@ type Anbindung struct {
 	// UmDatei führt aendere aus, das nur Metadaten der Datei pfad (absolut) ändert (Schlagworte der Ansicht), und hält
 	// dabei eine liegende Rettungskopie dieser Datei anwendbar (rescue.UmDatei, F-703). nil: aendere läuft unverändert.
 	UmDatei func(pfad string, aendere func() error) error
+	// Zuordnen bildet eine in Datei → Öffnen… gewählte Datei auf die Aufnahme ab, die Oeffnen laden würde (eine früher
+	// übernommene Datei von außen auf ihre Aufnahme, F-828). Läuft in der Goroutine des Dialogs. nil: der Pfad selbst.
+	Zuordnen func(pfad string) string
 }
 
 // wechselZustand ist ein laufender Wechsel.
@@ -61,7 +64,10 @@ type wechselZustand struct {
 	// papierkorb: Die bisher offene Aufnahme geht nach der Übernahme des Ziels in den Papierkorb (✕ oder Entf an der
 	// offenen, Karte #347). Scheitert Speichern oder Laden, bleibt sie offen und liegt nicht im Papierkorb.
 	papierkorb bool
-	antwort    chan wechselErgebnis
+	// weitere: Aufnahmen, die nach einem gescheiterten Laden des Ziels der Reihe nach versucht werden, solange papierkorb
+	// gilt (F-827: eine beschädigte Nachbarin hält das Wegwerfen der offenen sonst auf).
+	weitere []string
+	antwort chan wechselErgebnis
 }
 
 type wechselErgebnis struct {
@@ -102,7 +108,7 @@ func (e *editor) wechselAnfrage(abs string) {
 		e.melde(i18n.T("Text recognition is running. Press Esc to cancel it first."), false)
 		return
 	}
-	e.wechsel.ziel, e.wechsel.ausDialog, e.wechsel.papierkorb = abs, false, false
+	e.wechsel.ziel, e.wechsel.ausDialog, e.wechsel.papierkorb, e.wechsel.weitere = abs, false, false, nil
 	abzug, err := e.s.SpeichernJetzt()
 	switch {
 	case errors.Is(err, canvas.ErrNichtsZuSpeichern):
@@ -177,9 +183,20 @@ func (e *editor) wechselAbholen() bool {
 	default:
 		return false
 	}
-	papierkorb := e.wechsel.papierkorb
+	papierkorb, weitere := e.wechsel.papierkorb, e.wechsel.weitere
 	e.wechsel = wechselZustand{}
 	e.s.SetzeRuhe(false)
+	if r.err != nil && papierkorb && !e.erzwungen && !e.s.SignalVorgemerkt() && !e.s.Geaendert() {
+		// Die Nachbarin lässt sich nicht laden: die nächste versuchen, die offene ist schon gespeichert (F-827).
+		for len(weitere) > 0 && e.istOffen(weitere[0]) {
+			weitere = weitere[1:]
+		}
+		if len(weitere) > 0 {
+			e.wechsel.ziel, e.wechsel.papierkorb, e.wechsel.weitere = weitere[0], true, weitere[1:]
+			e.wechselLaden()
+			return true
+		}
+	}
 	switch {
 	case r.err != nil:
 		// Die Ladefunktion übersetzt bekannte Fehler; was sie nicht kennt, verliert hier Paketpräfix und Pfad (F-663).
@@ -223,7 +240,7 @@ func (e *editor) wechselAbholen() bool {
 		e.uebernimm(r.g)
 		e.wechselBehaeltAnsicht = false
 		if rel, ok := e.bib.Bibliothek.Relativ(alt); ok && alt != "" {
-			e.papierkorbAnfrage(rel, false, "")
+			e.papierkorbAnfrage(rel, false, nil)
 		}
 	default:
 		e.uebernimm(r.g)

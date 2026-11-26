@@ -327,3 +327,26 @@ Löst die Ausnahme der offenen Aufnahme aus dem Zusatz zu Karte #312 ab (dort �
   mit der nächsten Mausbewegung.
 - Tests `internal/ui/papierkorb_kreuz_test.go` (`TestLeisteKreuzAnDerOffenen`, `…LadenScheitert`, `…EinzigeBleibt`,
   `…NachRuheOhneBewegung`), `TestBibliothekPapierkorb`; Mutanten PK1, PK4, PK10–PK16.
+
+## Zusatz (26.11.2026, Karte #350, F-827, F-828, Claude Opus 5.5)
+
+Sitzungs-Kritik 26.11. K-9 und K-10.
+
+- **Mehrere Nachbarinnen (F-827).** Statt einer Nachbarin (`nachbarStelle`) gibt es eine Reihe nach Abstand
+  (`nachbarStellen`: die nächst ältere, die nächst jüngere, dann die übernächsten; höchstens `nachbarGrenze` = 8; die offene
+  selbst nie, auch wenn sie über einen Verweis-Ordner zweimal in der Liste steht, `nachbarnIn`). Lässt sich die erste
+  nicht laden (beschädigt, über dem Budget), lädt der Editor die nächste (`wechselZustand.weitere`); die offene ist dann
+  schon gespeichert. Nicht weiter versucht wird nach einer Änderung während des Ladens, bei erzwungenem Schließen und nach
+  einem Signal. Erst wenn alle scheitern, sagt die Meldung „The capture was not moved to the trash.“
+- **Gefilterte Ansicht (F-827).** Zeigt die volle Ansicht wegen Suche oder Zeitraum keine andere Aufnahme, gelten die
+  Nachbarinnen der Leiste der letzten Aufnahmen (ungefiltert, `bibNachbarn`). Gibt es auch dort keine, sagt die Meldung
+  „No other capture to switch to: clear the search and the period, then try again.“ statt „only capture“ (`einzigText`).
+- **Öffnen… der offenen Aufnahme (F-828).** `Anbindung.Zuordnen` (`cmd/schnapp` `zuordnerFuer`, ohne Nebenwirkung) bildet
+  die im Dateidialog gewählte Datei in dessen Goroutine auf die Aufnahme ab, die das Laden öffnen würde: eine früher
+  übernommene Datei von außen auf ihre Aufnahme (ADR-0016 Nachtrag 10 Punkt 2). Ist das die offene, wird weder gespeichert
+  noch neu geladen (der Rückgängig-Verlauf bleibt); die Fußzeile sagt „This file is already open.“
+
+Tests `TestLeisteKreuzAnDerOffenenZweiteNachbarin`, `TestLeisteKreuzZweiteNachbarinNichtNachAenderung`,
+`TestAnsichtGefiltertNimmtNachbarinDerLeiste`, `TestNachbarinnenOhneOffene`, `TestOeffnenDerOffenenUeberZuordnung`
+(`internal/ui`), `TestZuordnerFindetUebernommeneAufnahme` (`cmd/schnapp`); Mutanten PK-N1–PK-N6, OE-F828-1/2,
+IO-F828-1–3.

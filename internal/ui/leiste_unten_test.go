@@ -47,16 +47,17 @@ func (r *leistenRettung) Lage() (string, bool, uint64) { return "", false, 0 }
 // leistenLauf ist ein Editor mit Bibliothek in einem Testordner und einer Ladefunktion, die mitschreibt.
 type leistenLauf struct {
 	*menueLauf
-	b       *library.Bibliothek
-	pfade   []string // absolute Pfade der Aufnahmen, neueste zuerst (ohne Agenten-Aufnahme)
-	mu      sync.Mutex
-	offen   []string // Aufrufe der Ladefunktion
-	fehler  error    // Ladefunktion scheitert
-	tor     chan struct{}
-	neu     map[string]*document.Dokument // geladene Dokumente je Pfad
-	rett    map[string]*leistenRettung
-	alt     *leistenRettung // Rettung des ersten Dokuments
-	endeTor chan struct{}   // Ende der geladenen Rettungen wartet darauf (nil: sofort)
+	b          *library.Bibliothek
+	pfade      []string // absolute Pfade der Aufnahmen, neueste zuerst (ohne Agenten-Aufnahme)
+	mu         sync.Mutex
+	offen      []string         // Aufrufe der Ladefunktion
+	fehler     error            // Ladefunktion scheitert
+	fehlerFuer map[string]error // Ladefunktion scheitert nur für diesen Pfad (F-827)
+	tor        chan struct{}
+	neu        map[string]*document.Dokument // geladene Dokumente je Pfad
+	rett       map[string]*leistenRettung
+	alt        *leistenRettung // Rettung des ersten Dokuments
+	endeTor    chan struct{}   // Ende der geladenen Rettungen wartet darauf (nil: sofort)
 }
 
 // legeAufnahmeAb legt eine Aufnahme 40 × 30 in der Farbe c mit Zeit zeit ab und liefert den absoluten Pfad.
@@ -115,6 +116,9 @@ func (l *leistenLauf) oeffnen(pfad string) (Geoeffnet, error) {
 	l.mu.Lock()
 	l.offen = append(l.offen, pfad)
 	tor, fehler := l.tor, l.fehler
+	if f, ok := l.fehlerFuer[pfad]; ok {
+		fehler = f
+	}
 	l.mu.Unlock()
 	if tor != nil {
 		<-tor
