@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karte #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -1276,3 +1276,17 @@ Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #353 bis #364 und
   Stücke, eckige Rahmen nicht, weil `fuelle` nur Teile im Bild zählt. Beim Schließen einer Budgetlücke alle Aufrufer der
   vervielfachenden Rechnung durchgehen (hier `RahmenTeile`: Kasten, beide Lupenrahmen, Editor).
 
+
+## Sprint 14, Karte #363 Teil 2 und Sitzungs-Kritik (6) (26.11.2026, F-854 bis F-859)
+
+- **Eine übernommene Sperrbedingung gilt nur für die Fälle des Vorbilds** (F-854): `zug == zugText` im Strichregler war
+  harmlos, weil Text keinen Strich hat; im Schattenregler machte dieselbe Zeile den Regler beim Text stumm. Wer ein Muster
+  kopiert, prüft jede Sperre gegen die Arten, für die das neue Element gilt.
+- **Ein gemerkter Modus gehört dem Ziel, für das er gewählt wurde** (F-855): Ein Feld wie „Schatten“, das nur unter einer
+  Bedingung wirkt, kehrt sonst bei einem anderen Objekt ungefragt zurück, sobald die Bedingung dort eintritt. Das Ziel
+  mitmerken (`feldSchattenID`), statt nur den Modus.
+- **Vor einer Teiländerung die Sperre prüfen** (F-858): Wer erst eine Nebenwirkung setzt (Feld zurück) und dann die
+  eigentliche Änderung versucht, die abgelehnt wird, lässt Anzeige und Zustand auseinanderlaufen.
+- **Eine neue Zeile in der rechten Leiste verschiebt alle Drehbücher darunter** — und kann Abschnitte in den Platzmangel
+  schieben (Ebenen). Nach jeder Höhenänderung die Drehbücher mit Leistenkoordinaten fahren, nicht nur umrechnen: Ein
+  verschobener Klick traf bei `ebenen-191` die Überschrift und klappte den Abschnitt zu.
