@@ -486,8 +486,12 @@ func (e *editor) farbKnopf(gtx layout.Context, r image.Rectangle) {
 	vorn, fuel, tausch := farbpaarRahmen(r)
 	aktiv := e.s.AktivesFeld()
 	e.paarFeld(gtx, &k.farbe, vorn, e.s.Farbe(canvas.FeldVordergrund), true, aktiv == canvas.FeldVordergrund)
-	e.paarFeld(gtx, &k.fuellung, fuel, e.s.Farbe(canvas.FeldFuellung), e.s.Fuellbar(), aktiv == canvas.FeldFuellung)
-	e.tauschKnopf(gtx, &k.tausch, tausch)
+	// Ohne Füllung (Pfeil, Lupe, Nummer, Werkzeuge ohne Farbe) nur das eine Feld: kein graues Füllfeld, kein ⇄, die
+	// verwirrten (Karte #359, ADR-0021 Nachtrag 23). Nicht angemeldet, also auch nicht per Tab erreichbar.
+	if e.s.Fuellbar() {
+		e.paarFeld(gtx, &k.fuellung, fuel, e.s.Farbe(canvas.FeldFuellung), true, aktiv == canvas.FeldFuellung)
+		e.tauschKnopf(gtx, &k.tausch, tausch)
+	}
 	if !e.farbHinweisZeigen(gtx) {
 		return
 	}
@@ -496,7 +500,11 @@ func (e *editor) farbKnopf(gtx layout.Context, r image.Rectangle) {
 			e.zeichneHinweis(gtx, text, image.Pt(r.Max.X+gtx.Dp(8), q.Min.Y+gtx.Dp(4)))
 		}
 	}
-	hinweis(&k.farbe, i18n.T("Foreground"), vorn)
+	vornName := i18n.T("Foreground")
+	if !e.s.Fuellbar() {
+		vornName = i18n.TK("color field", "Color")
+	}
+	hinweis(&k.farbe, vornName, vorn)
 	hinweis(&k.fuellung, i18n.T("Fill"), fuel)
 	hinweis(&k.tausch, tauschHinweis(), tausch)
 }

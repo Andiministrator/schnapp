@@ -1021,9 +1021,6 @@ msgstr "Füllung"
 msgid "Swap colors"
 msgstr "Farben tauschen"
 
-msgid "None"
-msgstr "Keine"
-
 msgctxt "arrow head"
 msgid "None"
 msgstr "Keine"
@@ -1756,3 +1753,15 @@ msgstr "Quadrat"
 
 msgid "This file is already open."
 msgstr "Diese Datei ist schon offen."
+
+msgctxt "color field"
+msgid "Color"
+msgstr "Farbe"
+
+msgctxt "color field"
+msgid "Fill"
+msgstr "Füllung"
+
+msgctxt "color field"
+msgid "Fill: none"
+msgstr "Füllung: keine"

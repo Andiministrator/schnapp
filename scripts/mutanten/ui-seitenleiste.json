@@ -318,8 +318,8 @@
     "name": "U219-3 Keine in der rechten Leiste ohne Wirkung",
     "datei": "internal/ui/seitenleiste.go",
     "paket": "./internal/ui",
-    "alt": "\tif k.paar[paarKeine].Clicked(gtx) && an() {\n\t\te.s.KeineFuellung()",
-    "neu": "\tif k.paar[paarKeine].Clicked(gtx) && an() {\n\t\t_ = 0"
+    "alt": "\tif k.paar[paarKeine].Clicked(gtx) && an() && e.s.SetzeFeld(canvas.FeldFuellung) {\n\t\te.s.KeineFuellung()",
+    "neu": "\tif k.paar[paarKeine].Clicked(gtx) && an() && e.s.SetzeFeld(canvas.FeldFuellung) {\n\t\t_ = 0"
   },
   {
     "name": "U219-4 Ziehen auf durchsichtiger Farbe bleibt durchsichtig",

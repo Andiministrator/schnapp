@@ -602,40 +602,43 @@ func (e *editor) zeichneFarbwaehler(gtx layout.Context, x, y, breite, spalte int
 	return y + fh
 }
 
-// zeichneFarbpaarZeile zeichnet über dem Farbwähler die Zeile des Farbpaars (ADR-0021 Nachtrag 11): Vordergrund,
-// Füllung (grau ohne Füllung), Tauschen und „Keine“ (nur bei aktiver Füllung an). Liefert das neue y.
+// zeichneFarbpaarZeile zeichnet über dem Farbwähler die Zeile des Farbpaars (ADR-0021 Nachtrag 11, vereinfacht in
+// Nachtrag 23, Karte #359): mit Füllung Vordergrund, Füllung, Tauschen und das Feld „keine Füllung“ (Schrägstrich),
+// ohne Füllung nur das eine Farbfeld; daneben der Name des aktiven Felds, rechts die Pipette. Liefert das neue y.
 func (e *editor) zeichneFarbpaarZeile(gtx layout.Context, x, y, breite, q int) int {
 	k := &e.seite
 	aktiv := e.s.AktivesFeld()
+	fuellbar := e.s.Fuellbar()
 	abst := gtx.Dp(8)
 	k.paarRahmen[paarVorn] = image.Rect(x, y, x+q, y+q)
-	k.paarRahmen[paarFuellung] = k.paarRahmen[paarVorn].Add(image.Pt(q+abst, 0))
-	k.paarRahmen[paarTausch] = k.paarRahmen[paarFuellung].Add(image.Pt(q+abst, 0))
-	keineX := k.paarRahmen[paarTausch].Max.X + abst
-	k.paarRahmen[paarKeine] = image.Rect(keineX, y, min(x+breite, keineX+gtx.Dp(72)), y+q)
+	k.paarRahmen[paarFuellung], k.paarRahmen[paarTausch], k.paarRahmen[paarKeine] = image.Rectangle{}, image.Rectangle{}, image.Rectangle{}
 	e.paarFeld(gtx, &k.paar[paarVorn], k.paarRahmen[paarVorn], e.s.Farbe(canvas.FeldVordergrund), true,
 		aktiv == canvas.FeldVordergrund)
-	e.paarFeld(gtx, &k.paar[paarFuellung], k.paarRahmen[paarFuellung], e.s.Farbe(canvas.FeldFuellung), e.s.Fuellbar(),
-		aktiv == canvas.FeldFuellung)
-	e.tauschKnopf(gtx, &k.paar[paarTausch], k.paarRahmen[paarTausch])
-	{
+	rechts := k.paarRahmen[paarVorn].Max.X
+	if fuellbar {
+		k.paarRahmen[paarFuellung] = k.paarRahmen[paarVorn].Add(image.Pt(q+abst, 0))
+		k.paarRahmen[paarTausch] = k.paarRahmen[paarFuellung].Add(image.Pt(q+abst, 0))
+		k.paarRahmen[paarKeine] = k.paarRahmen[paarTausch].Add(image.Pt(q+abst, 0))
+		e.paarFeld(gtx, &k.paar[paarFuellung], k.paarRahmen[paarFuellung], e.s.Farbe(canvas.FeldFuellung), true,
+			aktiv == canvas.FeldFuellung)
+		e.tauschKnopf(gtx, &k.paar[paarTausch], k.paarRahmen[paarTausch])
+		// „keine Füllung“ als Farbfeld (weiß mit rotem Schrägstrich, wie Inkscape/Photoshop) statt eines Textknopfs:
+		// Ein Klick macht die Füllung aktiv und durchsichtig.
 		rk, c := k.paarRahmen[paarKeine], &k.paar[paarKeine]
-		an := aktiv == canvas.FeldFuellung
-		text, rnd := farbeText, farbeLinie
-		switch {
-		case !an:
-			text = farbeNebentext
-		case c.Hovered():
-			rnd = farbeNebentext
-		}
-		paint.FillShape(gtx.Ops, farbeGrund, clip.Rect(rk).Op())
-		paint.FillShape(gtx.Ops, rnd, clip.Stroke{Path: clip.Rect(rk).Path(), Width: float32(gtx.Dp(1))}.Op())
-		e.textMittig(gtx, i18n.T("None"), 12, text, rk)
+		keine := aktiv == canvas.FeldFuellung && e.s.Farbe(canvas.FeldFuellung).A == 0
+		e.farbFeld(gtx, farbeText, rk, keine, c.Hovered())
+		zeichneKeine(gtx, rk)
 		e.knopfAn(gtx, c, rk)
+		rechts = rk.Max.X
 	}
-	// Pipette rechts in der Zeile (Karte #318): Sie holt eine Farbe für das aktive Feld, gehört also zum Farbpaar.
+	// Name des aktiven Felds, damit klar ist, worauf Farbfläche, Hex und Deckkraft wirken.
 	fw := &k.fw
 	fw.pipRahmen = image.Rect(x+breite-q, y, x+breite, y+q)
+	if nx := rechts + gtx.Dp(10); fw.pipRahmen.Min.X-gtx.Dp(6) > nx {
+		e.seiteText(gtx, farbfeldName(fuellbar, aktiv, e.s.Farbe(canvas.FeldFuellung)), 12, farbeNebentext,
+			image.Pt(nx, y+(q-gtx.Dp(16))/2), fw.pipRahmen.Min.X-gtx.Dp(6)-nx, 1)
+	}
+	// Pipette rechts in der Zeile (Karte #318): Sie holt eine Farbe für das aktive Feld, gehört also zum Farbpaar.
 	{
 		r, an := fw.pipRahmen, e.s.PipetteLaeuft()
 		grund, rnd := farbeGrund, farbeLinie
@@ -701,4 +704,16 @@ func (e *editor) feldTextBreite(gtx layout.Context, text string, sp float32) int
 	d := lbl.Layout(g)
 	m.Stop()
 	return d.Size.X
+}
+
+// farbfeldName ist der Name des aktiven Felds neben dem Farbpaar (Karte #359): ohne Füllung schlicht „Farbe“, sonst
+// „Farbe“ oder „Füllung“, eine durchsichtige Füllung als „Füllung: keine“.
+func farbfeldName(fuellbar bool, aktiv canvas.Farbfeld, fuellung color.NRGBA) string {
+	switch {
+	case !fuellbar || aktiv != canvas.FeldFuellung:
+		return i18n.TK("color field", "Color")
+	case fuellung.A == 0:
+		return i18n.TK("color field", "Fill: none")
+	}
+	return i18n.TK("color field", "Fill")
 }

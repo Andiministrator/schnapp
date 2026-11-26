@@ -155,7 +155,7 @@ func (e *editor) seiteAuswerten(gtx layout.Context) {
 	if k.paar[paarTausch].Clicked(gtx) && an() {
 		e.s.TauscheFarben()
 	}
-	if k.paar[paarKeine].Clicked(gtx) && an() {
+	if k.paar[paarKeine].Clicked(gtx) && an() && e.s.SetzeFeld(canvas.FeldFuellung) {
 		e.s.KeineFuellung()
 	}
 	if k.farbeKopf.Clicked(gtx) {

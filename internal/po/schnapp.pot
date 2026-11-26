@@ -1573,8 +1573,19 @@ msgstr ""
 msgid "Hex"
 msgstr ""
 
+#: internal/ui/farbwaehler.go internal/ui/oberflaeche.go
+msgctxt "color field"
+msgid "Color"
+msgstr ""
+
 #: internal/ui/farbwaehler.go
-msgid "None"
+msgctxt "color field"
+msgid "Fill: none"
+msgstr ""
+
+#: internal/ui/farbwaehler.go
+msgctxt "color field"
+msgid "Fill"
 msgstr ""
 
 #: internal/ui/fehlergruende.go

@@ -1,0 +1,44 @@
+[
+  {
+    "name": "F359-1 Füllfeld rechts auch ohne Füllung",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\trechts := k.paarRahmen[paarVorn].Max.X\n\tif fuellbar {\n",
+    "neu": "\trechts := k.paarRahmen[paarVorn].Max.X\n\tif true {\n"
+  },
+  {
+    "name": "F359-2 Füllfeld links auch ohne Füllung",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.s.Fuellbar() {\n\t\te.paarFeld(gtx, &k.fuellung",
+    "neu": "\tif true {\n\t\te.paarFeld(gtx, &k.fuellung"
+  },
+  {
+    "name": "F359-3 keine ohne Feldwechsel",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\tif k.paar[paarKeine].Clicked(gtx) && an() && e.s.SetzeFeld(canvas.FeldFuellung) {",
+    "neu": "\tif k.paar[paarKeine].Clicked(gtx) && an() {"
+  },
+  {
+    "name": "F359-4 Name ohne keine",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase fuellung.A == 0:\n\t\treturn i18n.TK(\"color field\", \"Fill: none\")\n",
+    "neu": ""
+  },
+  {
+    "name": "F359-5 Name immer Farbe",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase !fuellbar || aktiv != canvas.FeldFuellung:\n",
+    "neu": "\tcase true:\n"
+  },
+  {
+    "name": "F359-6 keine nicht angemeldet",
+    "datei": "internal/ui/farbwaehler.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tzeichneKeine(gtx, rk)\n\t\te.knopfAn(gtx, c, rk)\n",
+    "neu": "\t\tzeichneKeine(gtx, rk)\n"
+  }
+]

@@ -813,3 +813,29 @@ nicht?“; Ausgestaltung Claude Opus 5.5, Andi: „arbeite selbstständig“).
 
 Tests `internal/canvas/breitezug_test.go`, `internal/ui/strichregler_test.go`; Mutanten `scripts/mutanten/strichregler.json`
 (SR1–SR14); Sichtprobe `scripts/drehbuecher/strichregler-352.txt`.
+
+## Nachtrag 23 (26.11.2026): Farbpaar vereinfacht (Karte #359)
+
+**Status:** Akzeptiert (Andi, 26.11.2026, Foto beim Pfeil: „wenn man keine hintergrundfarbe einstellen kann, wie z.B.
+bei Pfeile – dann verwirrt das symbol mit der hg-farbe und auch das farbe tauschen symbol … was bedeutet das „keine“ …
+überleg mal, ob man den farb-bereich nicht prinzipiell einfacher/userfreundlicher machen könnte“; Ausgestaltung Claude
+Opus 5.5, Andi: „arbeite selbstständig“).
+
+Ändert Nachtrag 11 Punkte 4 und 9 für die Oberfläche; Logik (`canvas.Fuellbar`, `AktivesFeld`, `KeineFuellung`) bleibt.
+
+1. **Ohne Füllung nur ein Feld.** Wo `Fuellbar` nicht gilt (Pfeil, Lupe, Nummer, Werkzeuge ohne Farbe), zeigen die Zeile
+   über dem Farbwähler und das Paar unter der Werkzeugleiste nur das Farbfeld. Füllfeld, ⇄ und „keine“ werden weder
+   gezeichnet noch angemeldet (kein graues Feld, kein grauer Pfeil, nicht per Tab erreichbar). Der Hinweis am Feld
+   unter der Werkzeugleiste heißt dann „Color“ statt „Foreground“. Menü und Strg+Umschalt+X bleiben grau bzw. wirkungslos
+   wie bisher.
+2. **„Keine“ ist ein Farbfeld,** kein Textknopf: weiß mit rotem Schrägstrich (dasselbe Zeichen wie auf einer
+   durchsichtigen Füllung, `zeichneKeine`), nach ⇄. Ein Klick macht die Füllung zum aktiven Feld **und** durchsichtig
+   (vorher wirkte der Knopf nur bei schon aktiver Füllung und war sonst grau). Grün umrandet, wenn die aktive Füllung
+   durchsichtig ist.
+3. **Name des aktiven Felds** neben dem Paar (`farbfeldName`, Kontext `color field`): „Color“, „Fill“ oder „Fill: none“.
+   So ist ohne Hinweis zu sehen, worauf Farbfläche, Hex und Deckkraft wirken. Die Zeile wird nicht höher, die Lage der
+   Elemente darunter bleibt; Drehbücher mit Leistenkoordinaten gelten weiter.
+4. Offen für #317 (Farbschemata) und #344 (Farbwähler als Aufklapper am Paar): Die Beschriftung je Art („Line“/„Fill“,
+   „Text“/„Label“) wäre genauer, braucht aber Platz; erst mit dem neuen Muster von #317 entscheiden.
+
+Tests `internal/ui/farbpaar_einfach_test.go`; Mutanten `scripts/mutanten/farbpaar-einfach.json`, U219-3 nachgezogen.
