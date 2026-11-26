@@ -21,6 +21,7 @@
 | **Stauchen** | Aus der Mitte eines Bildes einen Streifen ausblenden (Header und Footer bleiben), nicht zerstörend, mit Kante an der Naht (Kantenform). Snagit: „Cut Out". |
 | **Stauchnaht** | Die Stelle, an der gestaucht wird; Schnapp kann eine vorschlagen (Bildvergleich). |
 | **Zackenkante** | Gezackter Rand an einer Stauchnaht oder Bildkante, zeigt „hier fehlt etwas"; heute eine der drei Kantenformen (`zigzag`). |
+| **Kontextmenü** | Liste auf Rechtsklick (oder Umschalt+F10) mit den Handlungen für das Ziel unter dem Zeiger: Objekt der Leinwand oder Bild; läuft über die Menü-Mechanik als `listeKontext` (`internal/ui/kontext.go`, Wahl über `canvas.KontextBei`). Vorschauen der Bibliothek folgen (Teil 2). ADR-0038. |
 | **Kantenform** | Form der Kante an Stauch-Nähten, je Dokument: Abriss (`tear`, Voreinstellung), Welle (`wave`), Zacken (`zigzag`); dazwischen ein durchsichtiger Spalt, die Kanten als Papier-Abriss angedeutet. Einstellung `[capture] seam`, Menüeintrag „Kantenform“ (grau ohne Naht; ADR-0023 Nachträge 6 und 7). |
 | **Vollansicht** | Das ganze Original mit denselben Stauch-Streifen, ohne Zuschnitt; nur beim Werkzeug Zuschneiden gezeigt. Die Ansicht liegt darin bei `VollVersatz` (ADR-0023 Nachtrag 5). |
 | **Schritt-Nummer** | Nummerierter Kreis, der beim Setzen selbst hochzählt. |

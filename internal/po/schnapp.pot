@@ -1117,11 +1117,11 @@ msgstr ""
 msgid "Image"
 msgstr ""
 
-#: internal/ui/ebenen.go internal/ui/oberflaeche.go
+#: internal/ui/ebenen.go internal/ui/kontext.go internal/ui/oberflaeche.go
 msgid "Duplicate"
 msgstr ""
 
-#: internal/ui/ebenen.go internal/ui/oberflaeche.go
+#: internal/ui/ebenen.go internal/ui/kontext.go internal/ui/oberflaeche.go
 msgid "Delete"
 msgstr ""
 
@@ -1777,6 +1777,86 @@ msgstr ""
 msgid "click or Esc to close"
 msgstr ""
 
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Copy"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Export…"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Copy text from image"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Fit"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Whole image"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Hide layer"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Lock layer"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Show layer"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Unlock layer"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Edit text"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Bring forward"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Send backward"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Rename…"
+msgstr ""
+
+#: internal/ui/kontext.go
+msgid "Save style as quick style"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Swap colors"
+msgstr ""
+
+#: internal/ui/kontext.go
+msgid "This object has no quick styles."
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/schnellstile.go
+msgid "The current settings cannot be saved as a style (stroke width, font name)."
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/schnellstile.go
+msgid "At most %d custom styles per kind."
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/schnellstile.go
+msgid "The current settings are already a style."
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/schnellstile.go
+msgid "Style saved"
+msgstr ""
+
 #: internal/ui/kuerzel.go
 msgid "Ctrl"
 msgstr ""
@@ -1881,14 +1961,6 @@ msgid "Open…"
 msgstr ""
 
 #: internal/ui/oberflaeche.go
-msgid "Export…"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
-msgid "Copy"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
 msgid "Settings…"
 msgstr ""
 
@@ -1905,22 +1977,6 @@ msgid "Redo"
 msgstr ""
 
 #: internal/ui/oberflaeche.go
-msgid "Edit text"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
-msgid "Swap colors"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
-msgid "Copy text from image"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
-msgid "Fit"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
 msgid "Sidebar"
 msgstr ""
 
@@ -1933,39 +1989,7 @@ msgid "Navigator"
 msgstr ""
 
 #: internal/ui/oberflaeche.go
-msgid "Whole image"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
 msgid "Restore cut-out areas"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
-msgid "Hide layer"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
-msgid "Lock layer"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
-msgid "Show layer"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
-msgid "Unlock layer"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
-msgid "Rename…"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
-msgid "Bring forward"
-msgstr ""
-
-#: internal/ui/oberflaeche.go
-msgid "Send backward"
 msgstr ""
 
 #: internal/ui/oberflaeche.go
@@ -2231,10 +2255,6 @@ msgid "Style saved. Unreadable parts of the old styles file are kept in styles.i
 msgstr ""
 
 #: internal/ui/schnellstile.go
-msgid "Style saved"
-msgstr ""
-
-#: internal/ui/schnellstile.go
 msgid "Style removed"
 msgstr ""
 
@@ -2252,18 +2272,6 @@ msgstr ""
 
 #: internal/ui/schnellstile.go
 msgid "Save the current settings as a custom style"
-msgstr ""
-
-#: internal/ui/schnellstile.go
-msgid "The current settings cannot be saved as a style (stroke width, font name)."
-msgstr ""
-
-#: internal/ui/schnellstile.go
-msgid "At most %d custom styles per kind."
-msgstr ""
-
-#: internal/ui/schnellstile.go
-msgid "The current settings are already a style."
 msgstr ""
 
 #: internal/ui/schnellstile.go

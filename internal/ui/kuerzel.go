@@ -59,7 +59,8 @@ const (
 	aktBibSchlagworte
 	aktBibPapierkorb
 	aktBibSuchen
-	aktOeffnen // Menü Datei: Öffnen… (Strg+O, ADR-0026 Nachtrag 11)
+	aktOeffnen            // Menü Datei: Öffnen… (Strg+O, ADR-0026 Nachtrag 11)
+	aktSchnellstilSichern // Kontextmenü: Stil des Objekts als Schnellstil sichern (ADR-0038 Punkt 2)
 )
 
 // taste ist ein Tastenkürzel des Editors. Genau eines gilt: akt (Handlung), werkzeug (wählt ein Werkzeug, hatWerkzeug)
@@ -115,6 +116,8 @@ func tastenTabelle() []taste {
 		strg("W", aktSchliessen),
 		strg(",", aktEinstellungen), // Komma: in Bildprogrammen und Editoren üblich (ADR-0034 Punkt 1)
 		{filter: key.Filter{Name: key.NameF1}, akt: aktTastenkuerzel},
+		{filter: key.Filter{Name: key.NameF10, Required: key.ModShift},
+			ausnahme: "öffnet das Kontextmenü der Auswahl (ADR-0038 Punkt 6); dasselbe Menü öffnet der Rechtsklick"},
 		strg("D", aktDoppeln),
 		{filter: key.Filter{Name: key.NameF2}, akt: aktUmbenennen},
 		strg("H", aktAusblenden),

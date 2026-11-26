@@ -1,0 +1,35 @@
+# Sichtprobe ADR-0038 Teil 1 (Karte #313): Kontextmenü der Leinwand.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/kontextmenue-313.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1: das Bild liegt bei (76,100)–(1276,900), Zoom 1.
+# Erwartet:
+#  01 Rechtsklick auf den gezeichneten Kasten (Werkzeug Kasten bleibt): Kasten gewählt, Liste rechts unten vom Zeiger mit
+#     Doppeln, Löschen │ Eine Ebene nach vorn/hinten │ Ausblenden, Sperren, Umbenennen │ Als Schnellstil sichern (grau,
+#     der Stil ist schon eine Kachel) │ Farben tauschen; Kürzel rechts.
+#  02 nach „Doppeln“ (per Pfeil runter auf den ersten Eintrag und Enter): zwei Kästen, die Kopie versetzt und gewählt.
+#  03 Rechtsklick auf leere Fläche: keine Auswahl, Liste mit Kopieren, Exportieren…, Text aus dem Bild kopieren │
+#     Einpassen, 1:1.
+#  04 Esc schließt die Liste; Umschalt+F10 nach Klick auf den Kasten: Liste an der Mitte des Kastens, erster Eintrag mit
+#     orangem Fokusring.
+warte 1500
+taste R
+ziehe 960 300 1200 500 10
+warte 300
+taste Esc
+rechtsklick 960 400
+warte 400
+foto 01-kontext-objekt
+taste Runter
+taste Enter
+warte 400
+foto 02-gedoppelt
+rechtsklick 600 700
+warte 400
+foto 03-kontext-bild
+taste Esc
+taste V
+klick 960 400
+warte 200
+taste Umschalt+F10
+warte 400
+foto 04-umschalt-f10
+taste Esc

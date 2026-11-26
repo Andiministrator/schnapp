@@ -223,7 +223,7 @@ func (e *editor) menueSchliesse(gtx layout.Context, zuKnopf bool) {
 		gtx.Execute(key.FocusCmd{Tag: &e.bibl})
 		return
 	}
-	if zuKnopf {
+	if zuKnopf && m.welches != listeKontext { // das Kontextmenü hat keinen Knopf: Fokus an die Leinwand (ADR-0038)
 		gtx.Execute(key.FocusCmd{Tag: e.listenKnopf(m.welches)})
 	} else {
 		gtx.Execute(key.FocusCmd{Tag: e})
@@ -360,6 +360,8 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 		}
 	case aktDoppeln:
 		return func(layout.Context) { e.s.Doppeln() }
+	case aktSchnellstilSichern:
+		return e.schnellstilSichernAktion
 	case aktUmbenennen:
 		return func(gtx layout.Context) { e.umbenennenBeginnen(gtx) }
 	case aktAusblenden:

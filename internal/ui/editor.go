@@ -349,8 +349,12 @@ type editor struct {
 	spitze spitzenLeiste
 	// schattenL: Abschnitt „Shadow“ der rechten Leiste (ADR-0021 Nachtrag 26 Punkt 7, schattenleiste.go).
 	schattenL schattenLeiste
-	pfeilform pfeilformLeiste
-	strichart strichartLeiste // Klappfeld „Line style“ (ADR-0021 Nachtrag 25, strichart.go)
+	// kontext: Kontextmenü der Leinwand (ADR-0038, kontext.go); leinwandUrsprung ist die linke obere Ecke der Leinwand im
+	// Fenster beim letzten Zeichnen (Rechtsklicks kommen in Leinwandkoordinaten).
+	kontext          kontextMenue
+	leinwandUrsprung image.Point
+	pfeilform        pfeilformLeiste
+	strichart        strichartLeiste // Klappfeld „Line style“ (ADR-0021 Nachtrag 25, strichart.go)
 	// schatten: gemerkte Schattenbilder je Objekt (ADR-0021 Nachtrag 26, schatten.go).
 	schatten      map[int]schattenBild
 	schattenBytes int
@@ -1513,6 +1517,7 @@ func (e *editor) frame(gtx layout.Context) {
 		flaeche := e.leinwandFlaeche(gtx) // zwischen Menüzeile, Werkzeugleiste, Fußzeile und rechter Leiste (ADR-0031)
 
 		// Leinwand: eigener Ursprung, damit Zeigerpositionen schon Leinwandkoordinaten sind.
+		e.leinwandUrsprung = flaeche.Min // Anker des Kontextmenüs (ADR-0038)
 		t := op.Offset(flaeche.Min).Push(gtx.Ops)
 		g := gtx
 		g.Constraints = layout.Exact(flaeche.Size())
@@ -1697,6 +1702,8 @@ func (e *editor) zeiger(gtx layout.Context) {
 			switch {
 			case pe.Buttons.Contain(pointer.ButtonTertiary):
 				e.s.Druecken(p, canvas.TasteMitte)
+			case pe.Buttons == pointer.ButtonSecondary: // Kontextmenü (ADR-0038 Punkt 2)
+				e.kontextRechtsklick(image.Pt(int(math.Round(float64(pe.Position.X))), int(math.Round(float64(pe.Position.Y)))))
 			case pe.Buttons.Contain(pointer.ButtonPrimary):
 				if e.hatDruck && pe.Time-e.letzterDruck <= doppelklickZeit &&
 					p.Minus(e.letzterOrt).Laenge() <= doppelklickAbstand {
@@ -2648,6 +2655,10 @@ func (e *editor) tasten(gtx layout.Context) {
 			} else if c != nil && c == &e.unten.bibKnopf { // Knopf „Library“ der Leiste (ADR-0036 Punkt 1)
 				e.knopfPerTaste(c)
 			}
+			continue
+		}
+		if k.Name == key.NameF10 && k.Modifiers.Contain(key.ModShift) && !e.menue.offen && !e.bibl.offen {
+			e.kontextPerTaste() // Kontextmenü der Auswahl (ADR-0038 Punkt 6)
 			continue
 		}
 		if k.Name == key.NameF10 { // öffnet das erste Menü bzw. schließt das offene (ADR-0031 Punkt 1)

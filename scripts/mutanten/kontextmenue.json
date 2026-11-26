@@ -1,0 +1,93 @@
+[
+  {
+    "name": "KM1 Rechtsklick wählt nicht",
+    "datei": "internal/canvas/kontext.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.Auswahl, s.lupenTeil = id, LupeGanz\n",
+    "neu": "\t\t_ = id\n"
+  },
+  {
+    "name": "KM2 leer hebt die Auswahl nicht auf",
+    "datei": "internal/canvas/kontext.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.Auswahl = 0\n\treturn true, false\n}",
+    "neu": "\treturn true, false\n}"
+  },
+  {
+    "name": "KM3 Zuschneiden wählt Objekte",
+    "datei": "internal/canvas/kontext.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif ohneGriffe(s.Werkzeug) {\n\t\ts.Auswahl = 0\n\t\treturn true, false\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "KM4 Texteingabe nicht bestätigt",
+    "datei": "internal/canvas/kontext.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.TextBestaetigen()\n\tif ohneGriffe",
+    "neu": "\tif ohneGriffe"
+  },
+  {
+    "name": "KM5 gesperrt geöffnet",
+    "datei": "internal/canvas/kontext.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.Zieht() || s.gesperrt() {\n\t\treturn false, false",
+    "neu": "if s.Zieht() {\n\t\treturn false, false"
+  },
+  {
+    "name": "KM6 Anker ohne Abbildung",
+    "datei": "internal/canvas/kontext.go",
+    "paket": "./internal/canvas",
+    "alt": "return s.Abb.ZuFenster(s.D.ZuAnsicht(m)), true",
+    "neu": "return m, true"
+  },
+  {
+    "name": "KM7 Rechtsklick ohne Wirkung",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "case pe.Buttons == pointer.ButtonSecondary: // Kontextmenü (ADR-0038 Punkt 2)",
+    "neu": "case false: // Kontextmenü (ADR-0038 Punkt 2)"
+  },
+  {
+    "name": "KM8 Esc gibt den Fokus an einen Menütitel",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "if zuKnopf && m.welches != listeKontext {",
+    "neu": "if zuKnopf {"
+  },
+  {
+    "name": "KM9 Umschalt+F10 wirkungslos",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "e.kontextPerTaste() // Kontextmenü der Auswahl (ADR-0038 Punkt 6)",
+    "neu": "_ = 0"
+  },
+  {
+    "name": "KM10 immer die Einträge für das Bild",
+    "datei": "internal/ui/kontext.go",
+    "paket": "./internal/ui",
+    "alt": "if !e.kontext.objekt || s.Auswahl == 0 {",
+    "neu": "if true {"
+  },
+  {
+    "name": "KM11 Anker ohne Ursprung der Leinwand",
+    "datei": "internal/ui/kontext.go",
+    "paket": "./internal/ui",
+    "alt": "e.kontextAmPunkt(p.Add(e.leinwandUrsprung), objekt, false)",
+    "neu": "e.kontextAmPunkt(p, objekt, false)"
+  },
+  {
+    "name": "KM12 F10 allein öffnet das Kontextmenü",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if k.Name == key.NameF10 && k.Modifiers.Contain(key.ModShift) && ",
+    "neu": "if k.Name == key.NameF10 && "
+  },
+  {
+    "name": "KM13 Liste ohne Anker am Klick",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "\tif i == listeKontext { // Kontextmenü: am Punkt des Rechtsklicks (ADR-0038)\n\t\treturn e.kontext.anker\n\t}\n",
+    "neu": ""
+  }
+]

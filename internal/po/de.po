@@ -1867,3 +1867,11 @@ msgstr "Schatten"
 
 msgid "Custom style with drop shadow. Right-click or Del removes it."
 msgstr "Eigener Stil mit Schatten. Rechtsklick oder Entf entfernt ihn."
+
+# Kontextmenü (ADR-0038)
+
+msgid "Save style as quick style"
+msgstr "Stil als Schnellstil sichern"
+
+msgid "This object has no quick styles."
+msgstr "Für dieses Objekt gibt es keine Schnellstile."

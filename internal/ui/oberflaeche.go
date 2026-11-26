@@ -64,6 +64,7 @@ const (
 	listeKopfAnfang  // Spitze am Anfang des Pfeils (ADR-0021 Nachtrag 20), Anker am Feld der rechten Leiste
 	listeKopfEnde    // Spitze am Ende des Pfeils
 	listeStrichart   // Strichart (ADR-0021 Nachtrag 25), Anker am Feld der rechten Leiste
+	listeKontext     // Kontextmenü der Leinwand (ADR-0038), Anker am Punkt des Rechtsklicks
 )
 
 // istListe meldet, ob i eine Aufklappliste der Fußzeile ist (kein Menü der Zeile).
@@ -195,6 +196,8 @@ func (e *editor) menueEintraegeRoh(i int) []menueEintrag {
 		return e.kopfListe(i == listeKopfAnfang)
 	case listeStrichart:
 		return e.strichartListe()
+	case listeKontext:
+		return e.kontextEintraege()
 	}
 	return nil
 }
@@ -845,6 +848,9 @@ func (e *editor) fussAuswerten(gtx layout.Context) {
 // listenAnker ist das Rechteck, an dem die Liste i aufklappt: das Feld der Fußzeile; fehlt es (schmales Fenster), bei
 // der Farbe das Farbfeld der Werkzeugleiste, sonst die rechte untere Ecke über der Fußzeile.
 func (e *editor) listenAnker(i int) image.Rectangle {
+	if i == listeKontext { // Kontextmenü: am Punkt des Rechtsklicks (ADR-0038)
+		return e.kontext.anker
+	}
 	if i == listeZeitraum { // Zeitraum der Ansicht der Bibliothek: am Feld im Kopf (ADR-0036)
 		return e.bibl.zeitRahmen
 	}
