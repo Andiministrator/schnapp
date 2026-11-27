@@ -388,8 +388,8 @@
     "name": "SH56 Anwenden lässt den Schatten am Objekt weg",
     "datei": "internal/canvas/schnellstile.go",
     "paket": "./internal/canvas",
-    "alt": "neu = mitSchatten(neu, g.Schatten)",
-    "neu": "_ = neu"
+    "alt": "\t\tneu = mitSchatten(neu, g.Schatten)\n\t}\n\tif s.zug == zugText",
+    "neu": "\t\t_ = neu\n\t}\n\tif s.zug == zugText"
   },
   {
     "name": "SH57 Stand des Objekts ohne Schatten",

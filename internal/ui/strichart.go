@@ -11,6 +11,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/widget"
 
+	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/i18n"
 	"github.com/Andiministrator/schnapp/internal/render"
@@ -96,11 +97,15 @@ func (e *editor) zeichneStrichart(gtx layout.Context, x, y, breite, spalte int) 
 	vorschau := image.Rect(r.Min.X+gtx.Dp(6), r.Min.Y+gtx.Dp(4), r.Min.X+gtx.Dp(50), r.Max.Y-gtx.Dp(4))
 	zeichneStrichMuster(gtx, art, vorschau, farbeText)
 	textX := vorschau.Max.X + gtx.Dp(8)
-	e.seiteText(gtx, strichartName(art), 13, farbeText, image.Pt(textX, y+gtx.Dp(5)), r.Max.X-textX-gtx.Dp(18), 1)
+	name := strichartName(art)
+	if e.s.Gemischt(canvas.EigStrichart) {
+		name = gemischtText()
+	}
+	e.seiteText(gtx, name, 13, farbeText, image.Pt(textX, y+gtx.Dp(5)), r.Max.X-textX-gtx.Dp(18), 1)
 	zeichneAufklappPfeil(gtx, image.Pt(r.Max.X-gtx.Dp(10), (r.Min.Y+r.Max.Y)/2), farbeNebentext)
 	e.knopfAn(gtx, &k.feld, r)
 	if k.feld.Hovered() || gtx.Focused(&k.feld) {
-		k.hinweis = i18n.T("Line style") + ": " + strichartName(art)
+		k.hinweis = i18n.T("Line style") + ": " + name
 	}
 	return y + hoch + gtx.Dp(10)
 }

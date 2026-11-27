@@ -521,6 +521,19 @@ func (s *Sitzung) WendeSchnellstilAn(st Schnellstil) bool {
 			z.Schatten = g.Schatten
 		}
 	})
+	if s.stilMehrere() { // alle gewählten derselben Art (ADR-0039 Nachtrag 4)
+		return s.setzeMehrere(func(o document.Objekt) (document.Objekt, bool) {
+			ow, ok := objektWerkzeug(o)
+			if a, ok2 := werkzeugArt(ow); !ok || !ok2 || a != st.Art {
+				return o, false
+			}
+			neu := mitSchnellstil(o, g)
+			if g.Schatten.An {
+				neu = mitSchatten(neu, g.Schatten)
+			}
+			return neu, true
+		}, nil)
+	}
 	o, ok := s.stilObjekt(st.Art)
 	if !ok {
 		return false

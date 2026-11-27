@@ -180,8 +180,8 @@
     "name": "FZ26 Reiter nie hervorgehoben",
     "datei": "internal/ui/farbwaehler.go",
     "paket": "./internal/ui",
-    "alt": "e.zeichneFarbReiter(gtx, &k.paar[i], r, e.s.Farbe(f), farbReiterName(f), aktiv == f)",
-    "neu": "e.zeichneFarbReiter(gtx, &k.paar[i], r, e.s.Farbe(f), farbReiterName(f), aktiv == f && false)"
+    "alt": "e.zeichneFarbReiter(gtx, &k.paar[i], r, f, farbReiterName(f), aktiv == f)",
+    "neu": "e.zeichneFarbReiter(gtx, &k.paar[i], r, f, farbReiterName(f), aktiv == f && false)"
   },
   {
     "name": "FZ27 Scheibenklick nimmt der Texteingabe die Tastatur (F-881)",

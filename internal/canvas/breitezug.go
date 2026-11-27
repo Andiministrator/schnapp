@@ -46,6 +46,12 @@ func (s *Sitzung) BeginneBreiteZug() bool {
 		return false
 	}
 	s.breiteZug, s.breiteZugObj = true, false
+	if s.stilMehrere() { // Zug über alle gewählten mit Strich (ADR-0039 Nachtrag 4)
+		if s.beginneMehrZug(traegtStrich) {
+			s.breiteZugObj, s.breiteZugVor = true, s.D.Stand()
+		}
+		return true
+	}
 	s.merkeZugStil(s.stilZiel())
 	if o, ok := s.strichObjekt(); ok && s.D.BeginneZug(o.Kennung()) == nil {
 		s.breiteZugObj, s.breiteZugVor = true, s.D.Stand()
@@ -56,6 +62,11 @@ func (s *Sitzung) BeginneBreiteZug() bool {
 // BreiteZugSetze setzt während des Ziehens die Strichstärke b für folgende Objekte und das gewählte.
 func (s *Sitzung) BreiteZugSetze(b float64) {
 	if !s.breiteZug || !(b > 0) || b > document.MaxGroesse {
+		return
+	}
+	if s.mehrZug != nil {
+		s.mehrZugSetze(func(o document.Objekt) document.Objekt { return mitBreite(o, b) },
+			func(w Werkzeug) { s.aendereStil(w, func(st *Stil) { st.Breite = b }) })
 		return
 	}
 	s.aendereZielStil(func(st *Stil) { st.Breite = b })
@@ -71,7 +82,7 @@ func (s *Sitzung) BeendeBreiteZug() {
 	if !s.breiteZug {
 		return
 	}
-	s.breiteZug, s.schattenZugText = false, nil
+	s.breiteZug, s.schattenZugText, s.mehrZug = false, nil, nil
 	if s.breiteZugObj {
 		s.breiteZugObj = false
 		_ = s.D.BeendeZug()
@@ -85,7 +96,7 @@ func (s *Sitzung) BrecheBreiteZugAb() {
 	if !s.breiteZug {
 		return
 	}
-	s.breiteZug = false
+	s.breiteZug, s.mehrZug = false, nil
 	s.zugStilZurueck()
 	if s.schattenZugText != nil { // Schattenzug in der Texteingabe: Text wie vor dem Ziehen (Kritik K-1 #363b)
 		if s.zug == zugText {

@@ -2591,11 +2591,22 @@ msgid "Torn edge"
 msgstr ""
 
 #: internal/ui/seitenleiste.go
+msgid "Selection: %d object"
+msgid_plural "Selection: %d objects"
+msgstr[0] ""
+msgstr[1] ""
+
+#: internal/ui/seitenleiste.go
 msgid "Tool: %s"
 msgstr ""
 
 #: internal/ui/seitenleiste.go
 msgid "Selection: %s"
+msgstr ""
+
+#: internal/ui/seitenleiste.go
+msgctxt "mixed values"
+msgid "Mixed"
 msgstr ""
 
 #: internal/ui/seitenleiste.go

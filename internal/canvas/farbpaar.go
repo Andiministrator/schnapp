@@ -206,6 +206,10 @@ func (s *Sitzung) zielWerkzeug() Werkzeug {
 // das Paar des zuletzt benutzten Farbwerkzeugs trägt: Tauschen und „Keine“ wirkten sonst unsichtbar darauf
 // (ADR-0021 Nachtrag 11 Punkt 9, Kritik B-4). Einzige Quelle für Feld Füllung, „Keine“ und Tauschen.
 func (s *Sitzung) Fuellbar() bool {
+	if s.stilMehrere() { // eines der gewählten hat eine Füllung (ADR-0039 Nachtrag 4)
+		_, ok := s.traeger(EigFuellung)
+		return ok
+	}
 	if o, ok := s.farbObjekt(); ok {
 		return hatFuellung(o)
 	}
@@ -248,6 +252,12 @@ func (s *Sitzung) SetzeFeld(f Farbfeld) bool {
 
 // Farbe ist die Farbe des Felds f: die des Objekts, auf das die Farbwahl wirkt, sonst die des Paars in Stil.
 func (s *Sitzung) Farbe(f Farbfeld) color.NRGBA {
+	if s.stilMehrere() { // die Hauptauswahl oder das oberste gewählte mit diesem Feld (ADR-0039 Nachtrag 4 Punkt 4)
+		if o, ok := s.traeger(feldEigenschaft(f)); ok {
+			c, _ := objektFarbe(o, f)
+			return c
+		}
+	}
 	if o, ok := s.farbObjekt(); ok {
 		if c, ok := objektFarbe(o, f); ok {
 			return c
@@ -285,6 +295,10 @@ func (s *Sitzung) TauscheFarben() bool {
 		return false
 	}
 	s.hsvGemerkt = false
+	if s.stilMehrere() { // alle gewählten mit Füllung (ADR-0039 Nachtrag 4); das Werkzeug merkt den Tausch nicht
+		s.setzeMehrere(func(o document.Objekt) (document.Objekt, bool) { return Getauscht(o), hatFuellung(o) }, nil)
+		return true
+	}
 	o, ok := s.farbObjekt()
 	if !ok {
 		s.Stil.Farbe, s.Stil.Fuellung = s.Stil.Fuellung, s.Stil.Farbe

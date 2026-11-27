@@ -14,6 +14,11 @@ import (
 
 // SchattenObjekt liefert das gewählte Objekt (jede Art trägt einen Schatten).
 func (s *Sitzung) schattenObjekt() (document.Objekt, bool) {
+	if s.stilMehrere() { // die Hauptauswahl, hat sie keinen Schatten, das oberste gewählte mit Schatten
+		if o, ok := s.traeger(EigSchattenFarbe); ok {
+			return o, true
+		}
+	}
 	id := s.Auswahl
 	if s.zug == zugText {
 		id = s.textID
@@ -69,6 +74,9 @@ func (s *Sitzung) SetzeSchatten(sch document.Schatten) bool {
 		return false
 	}
 	sch = gueltigerSchatten(sch)
+	if s.stilMehrere() { // was sich an der Leiste geändert hat, an allen gewählten (ADR-0039 Nachtrag 4 Punkt 3)
+		return s.setzeSchattenMehrere(s.Schatten(), sch)
+	}
 	s.aendereZielStil(func(st *Stil) { st.Schatten = sch }) // das Werkzeug behält die Werte auch ausgeschaltet
 	o, ok := s.schattenObjekt()
 	if !ok {
@@ -99,6 +107,9 @@ func (s *Sitzung) SchalteSchatten() bool {
 	if s.Zieht() || s.gesperrt() { // vor jeder Änderung am Feld: sonst liefen Schalter und Feld auseinander (K-5 #363b)
 		return false
 	}
+	if s.stilMehrere() {
+		return s.schalteSchattenMehrere()
+	}
 	sch := s.Schatten()
 	if sch.An {
 		sch.An = false
@@ -128,6 +139,13 @@ func (s *Sitzung) BeginneSchattenZug() bool {
 		return false
 	}
 	s.breiteZug, s.breiteZugObj, s.schattenZugText = true, false, nil
+	if s.stilMehrere() { // Zug über alle gewählten (ADR-0039 Nachtrag 4)
+		s.schattenZugBasis = s.Schatten()
+		if s.beginneMehrZug(func(document.Objekt) bool { return true }) {
+			s.breiteZugObj, s.breiteZugVor = true, s.D.Stand()
+		}
+		return true
+	}
 	s.merkeZugStil(s.stilZiel())
 	if s.zug == zugText {
 		if o, ok := s.D.Objekt(s.textID); ok {
@@ -147,6 +165,12 @@ func (s *Sitzung) SchattenZugSetze(sch document.Schatten) {
 		return
 	}
 	sch = gueltigerSchatten(sch)
+	if s.mehrZug != nil {
+		basis := s.schattenZugBasis
+		s.mehrZugSetze(func(o document.Objekt) document.Objekt { return s.objektMitSchatten(o, basis, sch) },
+			func(w Werkzeug) { s.merkeSchatten(w, s.zugStil.vor[paarSchluessel(w)], basis, sch) })
+		return
+	}
 	s.aendereZielStil(func(st *Stil) { st.Schatten = sch })
 	if !sch.An {
 		sch = document.Schatten{} // am Objekt wie in SetzeSchatten der Nullwert (V-4)

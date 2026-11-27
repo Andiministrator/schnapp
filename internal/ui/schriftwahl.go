@@ -296,6 +296,9 @@ func (e *editor) zeichneSchriftwahl(gtx layout.Context, x, y, breite, spalte int
 	if st.Fehlt {
 		sw.feldText = fmt.Sprintf(i18n.T("%s (missing)"), sw.feldText)
 	}
+	if e.s.Gemischt(canvas.EigSchrift) { // ADR-0039 Nachtrag 4 Punkt 4
+		sw.feldText = gemischtText()
+	}
 	e.knopfFlaeche(gtx, &sw.feld, sw.feldRahmen, sw.offen, true)
 	e.seiteText(gtx, sw.feldText, 13, farbeText, sw.feldRahmen.Min.Add(image.Pt(gtx.Dp(6), gtx.Dp(4))),
 		sw.feldRahmen.Dx()-gtx.Dp(26), 1)
@@ -324,6 +327,9 @@ func (e *editor) zeichneSchriftwahl(gtx layout.Context, x, y, breite, spalte int
 		e.knopfAn(gtx, &sw.groesse[j], r) // auch grau angemeldet, wie die Strichstärke (Sitzungs-QA A-5)
 	}
 	sw.grText = fmt.Sprintf(i18n.TK("status bar", "%d px"), int(math.Round(st.Grad)))
+	if e.s.Gemischt(canvas.EigGrad) {
+		sw.grText = gemischtText()
+	}
 	e.textMittig(gtx, sw.grText, 13, farbeText, wert)
 	y += hoch + gtx.Dp(8)
 

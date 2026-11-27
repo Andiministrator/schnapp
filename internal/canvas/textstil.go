@@ -58,7 +58,11 @@ func (s *Sitzung) textZiel() (document.Text, bool, bool) {
 	if t, ok := s.TextObjekt(); ok {
 		return t, true, true
 	}
-	if o, ok := s.D.Objekt(s.Auswahl); ok {
+	o, ok := s.D.Objekt(s.Auswahl)
+	if s.stilMehrere() { // die Hauptauswahl oder der oberste gewählte Text (ADR-0039 Nachtrag 4 Punkt 4)
+		o, ok = s.traeger(EigSchrift)
+	}
+	if ok {
 		if t, ok := o.(document.Text); ok {
 			return t, false, true
 		}
@@ -86,6 +90,15 @@ func (s *Sitzung) AktuellerTextStil() TextStil {
 func (s *Sitzung) textAendern(werkzeug func(*Stil), text func(*document.Text)) bool {
 	if s.Zieht() || s.gesperrt() {
 		return false
+	}
+	if s.stilMehrere() { // alle gewählten Texte und Sprechblasen (ADR-0039 Nachtrag 4)
+		return s.setzeMehrere(func(o document.Objekt) (document.Objekt, bool) {
+			t, ok := o.(document.Text)
+			if ok {
+				text(&t)
+			}
+			return t, ok
+		}, func(w Werkzeug) { s.aendereStil(w, werkzeug) })
 	}
 	s.aendereZielStil(werkzeug)
 	t, eingabe, ok := s.textZiel()

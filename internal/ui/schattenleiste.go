@@ -206,7 +206,11 @@ func (e *editor) zeichneSchattenLeiste(gtx layout.Context, x, y, breite, spalte 
 	// sind eine Klickfläche.
 	q := gtx.Dp(18)
 	kr := image.Rect(x, y+(hoch-q)/2, x+q, y+(hoch-q)/2+q)
-	zeichneKaestchen(gtx, kr, sch.An)
+	if e.s.Gemischt(canvas.EigSchatten) { // nur ein Teil der gewählten hat einen Schatten (ADR-0039 Nachtrag 4)
+		zeichneKaestchenTeils(gtx, kr)
+	} else {
+		zeichneKaestchen(gtx, kr, sch.An)
+	}
 	e.seiteText(gtx, i18n.TK("shadow", "Shadow"), 13, farbeText, image.Pt(kr.Max.X+gtx.Dp(8), y+gtx.Dp(4)),
 		breite-q-gtx.Dp(8), 1)
 	r := image.Rect(x, y, x+spalte+gtx.Dp(40), y+hoch)
@@ -240,6 +244,7 @@ func (e *editor) zeichneSchattenLeiste(gtx layout.Context, x, y, breite, spalte 
 	r = image.Rect(x+spalte, y, x+spalte+hoch, y+hoch)
 	k.farbRahmen = r
 	e.farbFeld(gtx, e.s.Farbe(canvas.FeldSchatten), r, e.s.AktivesFeld() == canvas.FeldSchatten, k.farbe.Hovered())
+	e.zweiteFarbe(gtx, canvas.FeldSchatten, r)
 	e.knopfAn(gtx, &k.farbe, r)
 	return y + hoch + gtx.Dp(10)
 }
@@ -311,4 +316,13 @@ func (e *editor) zeichneScheibe(gtx layout.Context, r image.Rectangle, w float64
 	paint.FillShape(gtx.Ops, schatten, clip.Rect(quadrat(m.Add(richt.Mul(float32(gtx.Dp(6)))))).Op())
 	paint.FillShape(gtx.Ops, farbeText, clip.Rect(quadrat(m)).Op())
 	paint.FillShape(gtx.Ops, farbeAkzent, kreis(m.Add(richt.Mul(rad-float32(gtx.Dp(8)))), float32(gtx.Dp(3))).Op(gtx.Ops))
+}
+
+// zeichneKaestchenTeils zeichnet ein Kästchen im Zwischenstand: grün mit einem waagerechten Strich statt des Hakens
+// (ein Teil der gewählten Objekte an, ein Teil aus).
+func zeichneKaestchenTeils(gtx layout.Context, r image.Rectangle) {
+	paint.FillShape(gtx.Ops, farbeAuswahl, clip.Rect(r).Op())
+	m := (r.Min.Y + r.Max.Y) / 2
+	h := max(1, gtx.Dp(1))
+	paint.FillShape(gtx.Ops, farbeWeiss, clip.Rect(image.Rect(r.Min.X+r.Dx()/4, m-h, r.Max.X-r.Dx()/4, m+h)).Op())
 }

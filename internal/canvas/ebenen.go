@@ -3,6 +3,7 @@
 package canvas
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 
@@ -28,7 +29,7 @@ func (s *Sitzung) Ebenen() []EbenenZeile {
 	for i := len(o) - 1; i >= 0; i-- {
 		w, _ := objektWerkzeug(o[i])
 		z = append(z, EbenenZeile{ID: o[i].Kennung(), Art: w, Ebene: o[i].Ebenenwerte(), Objekt: o[i],
-			Gewaehlt: o[i].Kennung() == s.Auswahl})
+			Gewaehlt: s.IstGewaehlt(o[i].Kennung())})
 	}
 	return z
 }
@@ -52,6 +53,38 @@ func (s *Sitzung) WaehleEbene(id int) bool {
 	}
 	s.pipette = false
 	s.waehleNur(id) // auch eine frühere Hauptauswahl steht danach allein (F-895)
+	return true
+}
+
+// WaehleEbeneMehr wählt aus der Ebenenliste mit Strg (strg: dazu oder heraus, wie Umschalt+Klick auf der Leinwand)
+// bzw. Umschalt (sonst: alle wählbaren Zeilen zwischen der Hauptauswahl und id; ADR-0039 Nachtrag 4 Punkt 5). Ein
+// gesperrtes oder ausgeblendetes Objekt lässt sich nicht dazunehmen und ist danach allein gewählt wie nach WaehleEbene;
+// ebenso ohne Hauptauswahl.
+func (s *Sitzung) WaehleEbeneMehr(id int, strg bool) bool {
+	if _, ok := s.D.Objekt(id); !ok || !s.ebenenBereit() {
+		return false
+	}
+	if !s.waehlbar(id) || !s.waehlbar(s.Auswahl) {
+		return s.WaehleEbene(id)
+	}
+	if s.Werkzeug != WerkzeugAuswahl {
+		s.SetzeWerkzeug(WerkzeugAuswahl) // behält die Hauptauswahl (ADR-0039 Nachtrag 3 Punkt 2)
+	}
+	s.pipette = false
+	if strg {
+		return s.SchalteGewaehlt(id)
+	}
+	a, b := s.D.Stelle(s.Auswahl), s.D.Stelle(id)
+	if a > b {
+		a, b = b, a
+	}
+	alle := s.Gewaehlt()
+	for _, o := range s.D.ObjekteOhneZug()[a : b+1] {
+		if k := o.Kennung(); s.waehlbar(k) && !slices.Contains(alle, k) {
+			alle = append(alle, k)
+		}
+	}
+	s.setzeAuswahl(id, alle)
 	return true
 }
 

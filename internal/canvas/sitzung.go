@@ -107,8 +107,13 @@ type Sitzung struct {
 	farbZugObjekt   bool // der Farbzug läuft als Zug des Dokuments am gewählten Objekt
 	farbZugVor      uint64
 	farbZugText     document.Objekt // Text der Eingabe vor dem Farbzug (Abbruch stellt ihn her, Verify V-3)
-	zuletzt         []color.NRGBA
-	pipette         bool // der nächste Klick ins Bild nimmt eine Farbe auf
+	// mehrZug: die beteiligten Objekte beim Beginn eines Regler- oder Farbzugs über mehrere gewählte (ADR-0039
+	// Nachtrag 4, mehrfachstil.go), nil sonst; schattenZugBasis ist der Schatten der Leiste beim Beginn eines solchen
+	// Schattenzugs (geändert wird, was davon abweicht).
+	mehrZug          []document.Objekt
+	schattenZugBasis document.Schatten
+	zuletzt          []color.NRGBA
+	pipette          bool // der nächste Klick ins Bild nimmt eine Farbe auf
 	// Stil je Werkzeug (ADR-0041, werkzeugstil.go; davor nur das Farbpaar, ADR-0021 Nachtrag 11): paarW ist das
 	// Werkzeug, dessen Stil in Stil steht; stile hält die Stile der anderen Werkzeuge; feld ist das gewählte Farbfeld
 	// (wirksam nur mit Füllung, AktivesFeld).

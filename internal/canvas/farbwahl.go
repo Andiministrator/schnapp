@@ -197,6 +197,13 @@ func (s *Sitzung) BeginneFarbZug() bool {
 	s.feldAufgeben()
 	s.hsv, s.hsvGemerkt = s.FarbeHSV(), true
 	s.farbZug, s.farbZugObjekt, s.farbZugText = true, false, nil
+	if s.stilMehrere() { // Zug über alle gewählten mit diesem Feld (ADR-0039 Nachtrag 4)
+		f := s.AktivesFeld()
+		if s.beginneMehrZug(func(o document.Objekt) bool { return traegtFeld(o, f) }) {
+			s.farbZugObjekt, s.farbZugVor = true, s.D.Stand()
+		}
+		return true
+	}
 	s.merkeZugStil(s.zielWerkzeug())
 	if s.zug == zugText {
 		if o, ok := s.D.Objekt(s.textID); ok {
@@ -216,6 +223,11 @@ func (s *Sitzung) FarbZugHSV(h HSV, a uint8) {
 	s.hsv, s.hsvGemerkt = h, true
 	c := h.Farbe(a)
 	f := s.AktivesFeld()
+	if s.mehrZug != nil {
+		s.mehrZugSetze(func(o document.Objekt) document.Objekt { return UmgefaerbtIn(o, f, c) },
+			func(w Werkzeug) { s.merkePaarFarbe(w, f, c) })
+		return
+	}
 	s.merkePaarFarbe(s.zielWerkzeug(), f, c)
 	switch {
 	case s.zug == zugText:
@@ -235,7 +247,7 @@ func (s *Sitzung) BeendeFarbZug() {
 	if !s.farbZug {
 		return
 	}
-	s.farbZug = false
+	s.farbZug, s.mehrZug = false, nil
 	if s.farbZugObjekt {
 		s.farbZugObjekt = false
 		_ = s.D.BeendeZug()
@@ -250,7 +262,7 @@ func (s *Sitzung) BrecheFarbZugAb() {
 	if !s.farbZug {
 		return
 	}
-	s.farbZug = false
+	s.farbZug, s.mehrZug = false, nil
 	s.zugStilZurueck()
 	if s.farbZugObjekt {
 		s.farbZugObjekt = false

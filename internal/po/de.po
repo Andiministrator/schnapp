@@ -2071,3 +2071,12 @@ msgstr "--cursor und --no-cursor gehen für eine einzelne Aufnahme vor."
 
 msgid "Include the mouse pointer or not (default: as set in the settings, off)"
 msgstr "Mauszeiger mit aufnehmen oder nicht (Voreinstellung: laut Einstellung, aus)"
+
+msgid "Selection: %d object"
+msgid_plural "Selection: %d objects"
+msgstr[0] "Auswahl: %d Objekt"
+msgstr[1] "Auswahl: %d Objekte"
+
+msgctxt "mixed values"
+msgid "Mixed"
+msgstr "Gemischt"

@@ -116,12 +116,19 @@ func (e *editor) werkzeugName(w canvas.Werkzeug) string {
 
 // seitenKopf ist die Überschrift oben in der Leiste: „Werkzeug: Text“ bzw. „Auswahl: Pfeil“, in Versalien gesetzt.
 func (e *editor) seitenKopf(i canvas.SeitenInhalt) string {
+	if i.Anzahl > 1 { // mehrere gewählt (ADR-0039 Nachtrag 4 Punkt 4)
+		return strings.ToUpper(fmt.Sprintf(i18n.N("Selection: %d object", "Selection: %d objects", i.Anzahl), i.Anzahl))
+	}
 	f := i18n.T("Tool: %s")
 	if i.Auswahl {
 		f = i18n.T("Selection: %s")
 	}
 	return strings.ToUpper(fmt.Sprintf(f, e.werkzeugName(i.Werkzeug)))
 }
+
+// gemischtText steht in einem Feld der Leiste, wenn die gewählten Objekte darin verschiedene Werte haben (ADR-0039
+// Nachtrag 4 Punkt 4).
+func gemischtText() string { return i18n.TK("mixed values", "Mixed") }
 
 // seitenHinweisText ist der Nebentext unter den Eigenschaften.
 func seitenHinweisText(h canvas.SeitenHinweis) string {
@@ -341,6 +348,9 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 			e.knopfAn(gtx, &k.strich[j], r)
 		}
 		k.strichText = fmt.Sprintf(i18n.TK("status bar", "%d px"), int(math.Round(e.s.Breite())))
+		if e.s.Gemischt(canvas.EigBreite) {
+			k.strichText = gemischtText()
+		}
 		e.textMittig(gtx, k.strichText, 13, farbeText, wert)
 		y += hoch + gtx.Dp(6)
 		y = e.zeichneStrichRegler(gtx, x, y, breite) + gtx.Dp(10)

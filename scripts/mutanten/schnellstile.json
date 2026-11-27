@@ -31,8 +31,8 @@
     "name": "SQ5 gewähltes Objekt bleibt unverändert",
     "datei": "internal/canvas/schnellstile.go",
     "paket": "./internal/canvas",
-    "alt": "neu := mitSchnellstil(o, g)",
-    "neu": "neu := o"
+    "alt": "\tneu := mitSchnellstil(o, g)\n\tif g.Schatten.An {",
+    "neu": "\tneu := o\n\tif g.Schatten.An {"
   },
   {
     "name": "SQ6 Texteingabe übernimmt den Stil nicht",

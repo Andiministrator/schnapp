@@ -52,8 +52,8 @@ func (s *Sitzung) stileAngleichen() {
 	for w, st := range s.stile {
 		s.stile[w] = stilMal(st, k)
 	}
-	if s.zugStil.gilt {
-		s.zugStil.vor = stilMal(s.zugStil.vor, k)
+	for w, st := range s.zugStil.vor {
+		s.zugStil.vor[w] = stilMal(st, k)
 	}
 	s.stilFaktor = f
 }
@@ -263,24 +263,27 @@ func (s *Sitzung) SetzeWerkzeugStile(liste []settings.WerkzeugStil) {
 	}
 }
 
-// zugStilStand merkt den Stil des Werkzeugs w vor einem Zug (Regler, Farbwähler).
+// zugStilStand merkt die Stile der Werkzeuge vor einem Zug (Regler, Farbwähler); an einem Zug über mehrere gewählte
+// sind es die Werkzeuge aller beteiligten (ADR-0039 Nachtrag 4 Punkt 2).
 type zugStilStand struct {
-	w    Werkzeug
-	vor  Stil
-	gilt bool
+	vor map[Werkzeug]Stil
 }
 
-// merkeZugStil hält den Stil des Werkzeugs w vor einem Zug fest.
-func (s *Sitzung) merkeZugStil(w Werkzeug) {
-	s.zugStil = zugStilStand{w: paarSchluessel(w), vor: s.stilVon(w), gilt: true}
+// merkeZugStil hält die Stile der Werkzeuge ws vor einem Zug fest.
+func (s *Sitzung) merkeZugStil(ws ...Werkzeug) {
+	vor := map[Werkzeug]Stil{}
+	for _, w := range ws {
+		vor[paarSchluessel(w)] = s.stilVon(w)
+	}
+	s.zugStil = zugStilStand{vor: vor}
 }
 
-// zugStilZurueck stellt beim Abbruch eines Zugs den gemerkten Stil wieder her (F-931: abgebrochen heißt, nichts ist
+// zugStilZurueck stellt beim Abbruch eines Zugs die gemerkten Stile wieder her (F-931: abgebrochen heißt, nichts ist
 // geschehen — auch nicht in tools.ini). Nach einem abgeschlossenen Zug bleibt der Merker stehen; jeder neue Zug
 // überschreibt ihn, und nur ein laufender Zug lässt sich abbrechen.
 func (s *Sitzung) zugStilZurueck() {
-	if z := s.zugStil; z.gilt {
-		s.aendereStil(z.w, func(st *Stil) { *st = z.vor })
+	for w, vor := range s.zugStil.vor {
+		s.aendereStil(w, func(st *Stil) { *st = vor })
 	}
 	s.zugStil = zugStilStand{}
 }

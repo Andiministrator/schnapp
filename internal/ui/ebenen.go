@@ -18,6 +18,7 @@ import (
 
 	"gioui.org/f32"
 	"gioui.org/io/event"
+	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -275,6 +276,11 @@ func (e *editor) ebenenZeiger(gtx layout.Context, pe pointer.Event, an bool) {
 			e.schalteAusgeblendet(z.id)
 		case p.X >= k.liste.Max.X-k.augeB:
 			e.s.SchalteGesperrt(z.id)
+		case pe.Modifiers.Contain(key.ModShortcut) || pe.Modifiers.Contain(key.ModShift):
+			// Strg: dazu oder heraus, Umschalt: Bereich bis zur Hauptauswahl (ADR-0039 Nachtrag 4 Punkt 5); kein Ziehen,
+			// kein Doppelklick.
+			k.letzter.id, k.letzter.zeit = 0, 0
+			e.s.WaehleEbeneMehr(z.id, pe.Modifiers.Contain(key.ModShortcut))
 		default:
 			doppel := k.letzter.id == z.id && pe.Time-k.letzter.zeit < doppelklickZeit // dieselbe Grenze wie auf der Leinwand
 			k.letzter.id, k.letzter.zeit = z.id, pe.Time

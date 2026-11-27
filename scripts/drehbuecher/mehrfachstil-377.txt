@@ -1,0 +1,59 @@
+# Sichtprobe ADR-0039 Nachtrag 4 (Karte #377): Stil für alle gewählten, gemischte Werte, Ebenenliste mit Strg/Umschalt.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/mehrfachstil-377.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1, deutsche Oberfläche. Feste Koordinaten der rechten Leiste: drei gewählt (Pfeil, Kasten,
+# Nummer) bzw. der Pfeil allein (zweite Spalte).
+# Erwartet:
+#  01 Pfeil, Kasten und Nummer gewählt: Kopf „AUSWAHL: 3 OBJEKTE“, Abschnitte Strichstärke, Strichart, Pfeil-Stil,
+#     Schatten, Farbe mit Füllung (der Kasten hat eine); Fußzeile „3 Objekte gewählt …“.
+#  02 nach „+“ an der Strichstärke: Pfeil und Kasten dicker, die Nummer unverändert.
+#  03 nach dem blauen Farbfeld: alle drei blau.
+#  04 Pfeil allein dicker, rot und mit Schatten, dann Strg+A: Strichstärke „Gemischt“, das Farbfeld „Farbe“ (Reiter und
+#     Farbpaar links) diagonal geteilt blau/rot, Kästchen „Schatten“ grün mit Strich (Zwischenstand).
+#  05 Klick aufs Kästchen: alle drei mit Schatten, Kästchen mit Haken.
+#  06 Strg+Z: nur der Pfeil hat wieder einen Schatten (ein Schritt), Auswahl bleibt.
+#  07 Klick auf die Nummer: allein gewählt, Ebenenliste mit vier Zeilen (Nummer hervorgehoben, Rechteck y 770–804).
+#  08 Strg+Klick auf die Zeile „Rechteck“: Kopf „AUSWAHL: 2 OBJEKTE“, auf der Leinwand die Nummer mit Rahmen und der
+#     Kasten mit Griffen (Hauptauswahl); Strichstärke und Farbe „Gemischt“ bzw. geteilt sind es nicht (beide blau).
+warte 800
+taste A
+ziehe 300 300 600 420
+warte 200
+taste R
+ziehe 650 250 900 450
+warte 200
+taste N
+klick 520 620
+warte 200
+taste V
+taste Strg+A
+warte 400
+foto 01-alle-gewaehlt
+klick 1512 181
+warte 300
+foto 02-strich-dicker
+klick 1351 702
+warte 300
+foto 03-alle-blau
+klick 450 360
+warte 300
+klick 1512 226
+klick 1325 747
+klick 1325 412
+warte 200
+taste Strg+A
+warte 400
+foto 04-gemischt
+klick 1325 367
+warte 300
+foto 05-alle-schatten
+taste Strg+Z
+warte 300
+foto 06-rueckgaengig
+klick 520 620
+warte 300
+foto 07-nummer
+taste-halten Strg
+klick 1400 787
+taste-loslassen Strg
+warte 300
+foto 08-strg-in-der-liste

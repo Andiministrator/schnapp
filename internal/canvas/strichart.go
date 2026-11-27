@@ -28,6 +28,10 @@ func (s *Sitzung) SetzeStrichart(a document.Strichart) bool {
 	if s.Zieht() || s.gesperrt() || int(a) >= len(document.Stricharten) {
 		return false
 	}
+	if s.stilMehrere() {
+		return s.setzeMehrere(func(o document.Objekt) (document.Objekt, bool) { return mitStrichart(o, a), traegtStrich(o) },
+			func(w Werkzeug) { s.aendereStil(w, func(st *Stil) { st.Strichart = a }) })
+	}
 	s.aendereZielStil(func(st *Stil) { st.Strichart = a })
 	o, ok := s.strichObjekt()
 	if !ok {

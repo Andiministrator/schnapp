@@ -97,8 +97,13 @@ Auswählen nimmt **Umschalt+Klick** eine Beschriftung zur Auswahl hinzu oder wie
 Bild zieht einen Auswahlrahmen auf (gewählt ist alles, was ganz darin liegt; mit **Umschalt** kommt es dazu), und
 **Strg+A** (*Bearbeiten → Alles auswählen*) wählt alle sichtbaren, nicht gesperrten Beschriftungen. Eine davon ziehen
 verschiebt alle, **Entf** löscht alle, **Strg+D** doppelt alle, jeweils als ein Rückgängig-Schritt. Das Menü *Ebene*
-richtet sie aus (links, Mitten, rechts, oben, unten; ab zwei) und verteilt sie gleichmäßig (ab drei). Leiste, Griffe und
-Farben wirken weiter auf die zuletzt gewählte; die übrigen tragen einen schlichten Rahmen, die Fußzeile nennt die Zahl.
+richtet sie aus (links, Mitten, rechts, oben, unten; ab zwei) und verteilt sie gleichmäßig (ab drei). Die rechte
+Leiste ändert dann alle gewählten, die die Einstellung haben — Farbe, Füllung, Strichstärke, Strichart, Pfeilspitzen,
+Schatten, Schrift und Schnellstile (ein Schnellstil nur die seiner Art), als ein Rückgängig-Schritt —, und jedes
+Werkzeug merkt sich den neuen Wert. Wo die gewählten sich unterscheiden, steht in der Leiste *Gemischt*, ein Farbfeld ist
+diagonal geteilt, und das Kästchen *Schatten* zeigt einen Strich. Die Griffe bleiben an der zuletzt gewählten; die
+übrigen tragen einen schlichten Rahmen, Kopf der Leiste und Fußzeile nennen die Zahl. In der Ebenenliste nimmt
+**Strg+Klick** eine Zeile zur Auswahl hinzu oder heraus, **Umschalt+Klick** wählt den Bereich bis zur zuletzt gewählten.
 Das Mausrad rollt die Ansicht (mit **Umschalt** waagerecht; am Touchpad zwei Finger schieben), **Strg**+Mausrad zoomt zum
 Zeiger (am Touchpad Strg und zwei Finger); über dem Navigator zoomt das Mausrad ohne Strg. Die Ansicht verschiebst du mit gehaltener **Leertaste** und Ziehen (in jedem Werkzeug, auch
 am Touchpad ohne mittlere Taste), mit der mittleren Taste, durch Ziehen auf dem leeren Rand um das Bild oder im

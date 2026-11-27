@@ -80,7 +80,7 @@
     "name": "PF12 Leiste merkt die Wahl fürs Werkzeug nicht",
     "datei": "internal/canvas/pfeilform.go",
     "paket": "./internal/canvas",
-    "alt": "\tmerke()\n\tp, ok := s.gewaehlterPfeil()",
+    "alt": "\ts.aendereZielStil(stil)\n\tp, ok := s.gewaehlterPfeil()",
     "neu": "\tp, ok := s.gewaehlterPfeil()"
   },
   {
@@ -122,8 +122,8 @@
     "name": "PF18 kein Name in der Statuszeile",
     "datei": "internal/ui/pfeilform.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\t\tk.hinweis = i18n.T(\"Arrow style at the end\") + \": \" + kopfName(art)\n",
-    "neu": "\t\t\t\t_ = art\n"
+    "alt": "\t\t\t\tk.hinweis = i18n.T(\"Arrow style at the end\") + \": \" + name\n",
+    "neu": "\t\t\t\t_ = name\n"
   },
   {
     "name": "PF19 Feld öffnet keine Liste",

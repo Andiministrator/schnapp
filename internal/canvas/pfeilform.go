@@ -11,6 +11,9 @@ import "github.com/Andiministrator/schnapp/internal/document"
 // gewaehlterPfeil liefert den gewählten Pfeil.
 func (s *Sitzung) gewaehlterPfeil() (document.Pfeil, bool) {
 	o, ok := s.D.Objekt(s.Auswahl)
+	if s.stilMehrere() { // die Hauptauswahl oder der oberste gewählte Pfeil (ADR-0039 Nachtrag 4 Punkt 4)
+		o, ok = s.traeger(EigKopfEnde)
+	}
 	if !ok {
 		return document.Pfeil{}, false
 	}
@@ -30,16 +33,25 @@ func (s *Sitzung) Pfeilform() (anfang, ende document.Kopfart) {
 func (s *Sitzung) SetzeKopf(amAnfang bool, k document.Kopfart) bool {
 	if amAnfang {
 		a := document.AnfangMit(k)
-		return s.setzePfeilform(func(p *document.Pfeil) { p.Anfang = a }, func() { s.aendereZielStil(func(st *Stil) { st.KopfAnfang = a }) })
+		return s.setzePfeilform(func(p *document.Pfeil) { p.Anfang = a }, func(st *Stil) { st.KopfAnfang = a })
 	}
-	return s.setzePfeilform(func(p *document.Pfeil) { p.Ende = k }, func() { s.aendereZielStil(func(st *Stil) { st.KopfEnde = k }) })
+	return s.setzePfeilform(func(p *document.Pfeil) { p.Ende = k }, func(st *Stil) { st.KopfEnde = k })
 }
 
-func (s *Sitzung) setzePfeilform(aendere func(*document.Pfeil), merke func()) bool {
+func (s *Sitzung) setzePfeilform(aendere func(*document.Pfeil), stil func(*Stil)) bool {
 	if s.Zieht() || s.gesperrt() {
 		return false
 	}
-	merke()
+	if s.stilMehrere() { // alle gewählten Pfeile (ADR-0039 Nachtrag 4)
+		return s.setzeMehrere(func(o document.Objekt) (document.Objekt, bool) {
+			p, ok := o.(document.Pfeil)
+			if ok {
+				aendere(&p)
+			}
+			return p, ok
+		}, func(w Werkzeug) { s.aendereStil(w, stil) })
+	}
+	s.aendereZielStil(stil)
 	p, ok := s.gewaehlterPfeil()
 	if !ok {
 		return false

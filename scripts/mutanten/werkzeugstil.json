@@ -122,8 +122,8 @@
     "name": "WS20 Abbruch lässt den gezogenen Stil",
     "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
-    "alt": "\t\ts.aendereStil(z.w, func(st *Stil) { *st = z.vor })\n",
-    "neu": ""
+    "alt": "\t\ts.aendereStil(w, func(st *Stil) { *st = vor })\n",
+    "neu": "\t\t_, _ = w, vor\n"
   },
   {
     "name": "WS21 Schatten an aus dem aktiven Werkzeug",
@@ -136,15 +136,15 @@
     "name": "WS23 Schattenzug merkt den Stil nicht",
     "datei": "internal/canvas/schatten.go",
     "paket": "./internal/canvas",
-    "alt": "\ts.breiteZug, s.breiteZugObj, s.schattenZugText = true, false, nil\n\ts.merkeZugStil(s.stilZiel())\n",
-    "neu": "\ts.breiteZug, s.breiteZugObj, s.schattenZugText = true, false, nil\n"
+    "alt": "\ts.merkeZugStil(s.stilZiel())\n\tif s.zug == zugText {",
+    "neu": "\tif s.zug == zugText {"
   },
   {
     "name": "WS24 Farbzug-Abbruch lässt den Stil",
     "datei": "internal/canvas/farbwahl.go",
     "paket": "./internal/canvas",
-    "alt": "\ts.farbZug = false\n\ts.zugStilZurueck()\n",
-    "neu": "\ts.farbZug = false\n"
+    "alt": "\ts.farbZug, s.mehrZug = false, nil\n\ts.zugStilZurueck()\n",
+    "neu": "\ts.farbZug, s.mehrZug = false, nil\n"
   },
   {
     "name": "WS25 Radius nicht begrenzt",
@@ -171,8 +171,8 @@
     "name": "WS29 Zugstil merkt das aktive Werkzeug",
     "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
-    "alt": "s.zugStil = zugStilStand{w: paarSchluessel(w), vor: s.stilVon(w), gilt: true}",
-    "neu": "s.zugStil = zugStilStand{w: s.paarWerkzeug(), vor: s.Stil, gilt: true}"
+    "alt": "vor[paarSchluessel(w)] = s.stilVon(w)",
+    "neu": "vor[s.paarWerkzeug()], _ = s.Stil, w"
   },
   {
     "name": "WS30 Stile folgen dem Faktor nicht",

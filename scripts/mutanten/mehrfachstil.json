@@ -1,0 +1,177 @@
+[
+  {
+    "name": "MS1 mehrere gelten nie",
+    "datei": "internal/canvas/mehrfachstil.go",
+    "paket": "./internal/canvas",
+    "alt": "s.AnzahlGewaehlt() > 1 }",
+    "neu": "s.AnzahlGewaehlt() > 99 }"
+  },
+  {
+    "name": "MS2 mehrere auch in der Texteingabe",
+    "datei": "internal/canvas/mehrfachstil.go",
+    "paket": "./internal/canvas",
+    "alt": "return s.zug != zugText && s.AnzahlGewaehlt() > 1",
+    "neu": "return s.AnzahlGewaehlt() > 1"
+  },
+  {
+    "name": "MS3 Werkzeuge merken die Änderung nicht",
+    "datei": "internal/canvas/mehrfachstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif merke != nil {\n\t\tmerkeWerkzeuge(alt, merke)\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "MS4 Gemischt sieht keine Abweichung",
+    "datei": "internal/canvas/mehrfachstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tcase v != erst:\n",
+    "neu": "\t\tcase v != erst && false:\n"
+  },
+  {
+    "name": "MS5 Träger nur die Hauptauswahl",
+    "datei": "internal/canvas/mehrfachstil.go",
+    "paket": "./internal/canvas",
+    "alt": "for i := len(ids) - 1; i >= 0; i-- {",
+    "neu": "for i := len(ids) - 1; i >= len(ids); i-- {"
+  },
+  {
+    "name": "MS6 Leiste ohne Abschnitte der übrigen",
+    "datei": "internal/canvas/seitenleiste.go",
+    "paket": "./internal/canvas",
+    "alt": "i.Text = i.Text || textWerkzeug(gw)",
+    "neu": "i.Text = i.Text"
+  },
+  {
+    "name": "MS7 Leiste ohne Anzahl",
+    "datei": "internal/canvas/seitenleiste.go",
+    "paket": "./internal/canvas",
+    "alt": "i.Anzahl = s.AnzahlGewaehlt()",
+    "neu": "i.Anzahl = 0"
+  },
+  {
+    "name": "MS8 Strichstärke auch für Objekte ohne Strich gemerkt",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "return mitBreite(o, b), traegtStrich(o) }",
+    "neu": "return mitBreite(o, b), true }"
+  },
+  {
+    "name": "MS9 Schatten überschreibt unveränderte Länge",
+    "datei": "internal/canvas/mehrfachstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif neu.Laenge != vorher.Laenge {\n",
+    "neu": "\tif true {\n"
+  },
+  {
+    "name": "MS10 ausgeschalteter Schatten behält Werte am Objekt",
+    "datei": "internal/canvas/mehrfachstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tcase !neu.An && amObjekt:\n\t\t\tcur = document.Schatten{}\n",
+    "neu": "\t\tcase !neu.An && amObjekt:\n\t\t\tcur.An = false\n"
+  },
+  {
+    "name": "MS11 Schalter schaltet bei teils aus nicht ein",
+    "datei": "internal/canvas/mehrfachstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif !o.Ebenenwerte().Schatten.An {\n\t\t\tan = true\n",
+    "neu": "\t\tif !o.Ebenenwerte().Schatten.An {\n\t\t\tan = false\n"
+  },
+  {
+    "name": "MS12 Breitenzug über mehrere fehlt",
+    "datei": "internal/canvas/breitezug.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.beginneMehrZug(traegtStrich) {",
+    "neu": "if false && s.beginneMehrZug(traegtStrich) {"
+  },
+  {
+    "name": "MS13 Zug über mehrere merkt die Stile nicht",
+    "datei": "internal/canvas/mehrfachstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\tmerkeWerkzeuge(s.mehrZug, merke)\n\tneu :=",
+    "neu": "\tneu :="
+  },
+  {
+    "name": "MS14 Schnellstil trifft andere Arten",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "if a, ok2 := werkzeugArt(ow); !ok || !ok2 || a != st.Art {",
+    "neu": "if _, ok2 := werkzeugArt(ow); !ok || !ok2 {"
+  },
+  {
+    "name": "MS15 Umschalt in der Ebenenliste nimmt Gesperrtes",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "if k := o.Kennung(); s.waehlbar(k) && !slices.Contains(alle, k) {",
+    "neu": "if k := o.Kennung(); !slices.Contains(alle, k) {"
+  },
+  {
+    "name": "MS16 Strg in der Ebenenliste wählt Bereich",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif strg {\n\t\treturn s.SchalteGewaehlt(id)\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "MS17 Gesperrtes per Strg nicht allein gewählt",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "if !s.waehlbar(id) || !s.waehlbar(s.Auswahl) {",
+    "neu": "if !s.waehlbar(s.Auswahl) {"
+  },
+  {
+    "name": "MS18 Ebenenliste hebt nur die Hauptauswahl hervor",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "Gewaehlt: s.IstGewaehlt(o[i].Kennung())})",
+    "neu": "Gewaehlt: o[i].Kennung() == s.Auswahl})"
+  },
+  {
+    "name": "MS19 Text-Stil zeigt die Hauptauswahl ohne Schrift",
+    "datei": "internal/canvas/textstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\to, ok = s.traeger(EigSchrift)\n",
+    "neu": "\t\to, ok = s.D.Objekt(s.Auswahl)\n"
+  },
+  {
+    "name": "MS20 Füllung bei mehreren nicht wählbar",
+    "datei": "internal/canvas/farbpaar.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t_, ok := s.traeger(EigFuellung)\n\t\treturn ok\n",
+    "neu": "\t\treturn false\n"
+  },
+  {
+    "name": "MS21 Kopf ohne Zahl",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "if i.Anzahl > 1 {",
+    "neu": "if i.Anzahl > 99 {"
+  },
+  {
+    "name": "MS22 Strichstärke nicht als gemischt gezeigt",
+    "datei": "internal/ui/seitenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "if e.s.Gemischt(canvas.EigBreite) {",
+    "neu": "if false {"
+  },
+  {
+    "name": "MS23 Ebenenliste übergeht Strg und Umschalt",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "case pe.Modifiers.Contain(key.ModShortcut) || pe.Modifiers.Contain(key.ModShift):",
+    "neu": "case false:"
+  },
+  {
+    "name": "MS24 Farbzug über mehrere fehlt",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.beginneMehrZug(func(o document.Objekt) bool { return traegtFeld(o, f) }) {",
+    "neu": "if false && s.beginneMehrZug(func(o document.Objekt) bool { return traegtFeld(o, f) }) {"
+  },
+  {
+    "name": "MS25 Schattenzug über mehrere setzt alles",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.mehrZugSetze(func(o document.Objekt) document.Objekt { return s.objektMitSchatten(o, basis, sch) },",
+    "neu": "\t\ts.mehrZugSetze(func(o document.Objekt) document.Objekt { return mitSchatten(o, sch) },"
+  }
+]

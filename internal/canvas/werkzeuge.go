@@ -197,6 +197,11 @@ func (s *Sitzung) SetzeFarbe(c color.NRGBA) bool {
 	}
 	s.feldAufgeben()
 	f := s.AktivesFeld()
+	if s.stilMehrere() { // alle gewählten mit diesem Feld (ADR-0039 Nachtrag 4)
+		return s.setzeMehrere(func(o document.Objekt) (document.Objekt, bool) {
+			return UmgefaerbtIn(o, f, c), traegtFeld(o, f)
+		}, func(w Werkzeug) { s.merkePaarFarbe(w, f, c) })
+	}
 	s.merkePaarFarbe(s.zielWerkzeug(), f, c)
 	o, ok := s.farbObjekt()
 	if !ok {
@@ -218,6 +223,9 @@ func (s *Sitzung) SetzeFarbe(c color.NRGBA) bool {
 
 // strichObjekt liefert das gewählte Objekt, wenn es einen Strich hat (Pfeil, Kasten).
 func (s *Sitzung) strichObjekt() (document.Objekt, bool) {
+	if s.stilMehrere() { // die Hauptauswahl oder das oberste gewählte mit Strich (ADR-0039 Nachtrag 4 Punkt 4)
+		return s.traeger(EigBreite)
+	}
 	o, ok := s.D.Objekt(s.Auswahl)
 	if !ok {
 		return nil, false
@@ -251,6 +259,10 @@ func (s *Sitzung) Breite() float64 {
 func (s *Sitzung) SetzeBreite(b float64) bool {
 	if s.Zieht() || s.gesperrt() || !(b > 0) || b > document.MaxGroesse {
 		return false
+	}
+	if s.stilMehrere() {
+		return s.setzeMehrere(func(o document.Objekt) (document.Objekt, bool) { return mitBreite(o, b), traegtStrich(o) },
+			func(w Werkzeug) { s.aendereStil(w, func(st *Stil) { st.Breite = b }) })
 	}
 	s.aendereZielStil(func(st *Stil) { st.Breite = b })
 	o, ok := s.strichObjekt()

@@ -111,8 +111,12 @@ out again, dragging on an empty spot inside the image draws a selection frame (e
 selected; with **Shift** it adds to the selection), and **Ctrl+A** (*Edit → Select all*) selects every visible, unlocked
 annotation. Dragging one of them moves all, **Del** deletes all, **Ctrl+D** duplicates all, each as one undo step. The
 *Layer* menu aligns them (left, centres, right, top, bottom; from two) and distributes them evenly (from three). The
-sidebar, handles and colours still act on the last one selected; the others show a plain frame, and the footer says how
-many are selected.
+right sidebar then changes all selected annotations that have the setting — colour, fill, stroke width, line style,
+arrow heads, shadow, font and quick styles (a quick style only those of its kind), as one undo step — and each tool
+remembers the new value. Where the selected ones differ, the sidebar says *Mixed*, a colour swatch is split diagonally
+and the *Shadow* box shows a dash. The handles stay on the last one selected; the others show a plain frame, the
+sidebar heading and the footer say how many are selected. In the layer list, **Ctrl+click** adds a row to the selection
+or takes it out, **Shift+click** selects the range up to the last one selected.
 The mouse wheel scrolls the view (with **Shift** sideways; on a touchpad, slide two fingers), **Ctrl**+wheel zooms at
 the pointer (on a touchpad, Ctrl and two fingers); over the navigator the wheel zooms without Ctrl. To move the view, hold **Space** and drag (with every tool, also on a touchpad
 without a middle button), drag with the middle button, drag the empty margin around the image, or use the navigator.

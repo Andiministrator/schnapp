@@ -12,6 +12,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/widget"
 
+	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/i18n"
 	"github.com/Andiministrator/schnapp/internal/render"
@@ -134,14 +135,18 @@ func (e *editor) zeichnePfeilform(gtx layout.Context, x, y, breite, spalte int) 
 		vorschau := image.Rect(r.Min.X+gtx.Dp(6), r.Min.Y+gtx.Dp(4), r.Min.X+gtx.Dp(50), r.Max.Y-gtx.Dp(4))
 		zeichneKopfMuster(gtx, art, j == 0, vorschau, farbeText)
 		textX := vorschau.Max.X + gtx.Dp(8)
-		e.seiteText(gtx, kopfName(art), 13, farbeText, image.Pt(textX, y+gtx.Dp(5)), r.Max.X-textX-gtx.Dp(18), 1)
+		name := kopfName(art)
+		if e.s.Gemischt([]canvas.Eigenschaft{canvas.EigKopfAnfang, canvas.EigKopfEnde}[j]) { // ADR-0039 Nachtrag 4
+			name = gemischtText()
+		}
+		e.seiteText(gtx, name, 13, farbeText, image.Pt(textX, y+gtx.Dp(5)), r.Max.X-textX-gtx.Dp(18), 1)
 		zeichneAufklappPfeil(gtx, image.Pt(r.Max.X-gtx.Dp(10), (r.Min.Y+r.Max.Y)/2), farbeNebentext)
 		e.knopfAn(gtx, &k.feld[j], r)
 		if k.feld[j].Hovered() || gtx.Focused(&k.feld[j]) {
 			if j == 0 {
-				k.hinweis = i18n.T("Arrow style at the start") + ": " + kopfName(art)
+				k.hinweis = i18n.T("Arrow style at the start") + ": " + name
 			} else {
-				k.hinweis = i18n.T("Arrow style at the end") + ": " + kopfName(art)
+				k.hinweis = i18n.T("Arrow style at the end") + ": " + name
 			}
 		}
 		y += hoch + gtx.Dp(6)

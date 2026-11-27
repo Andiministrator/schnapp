@@ -532,6 +532,32 @@ func (e *editor) farbFeld(gtx layout.Context, c color.NRGBA, r image.Rectangle, 
 	paint.FillShape(gtx.Ops, farbeNebentext, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
 }
 
+// zweiteFarbe legt bei gemischten Farben im Feld f (mehrere gewählte, ADR-0039 Nachtrag 4 Punkt 4) die nächste andere
+// Farbe als Dreieck unten rechts über das Farbmuster r; oben links bleibt die gezeigte.
+func (e *editor) zweiteFarbe(gtx layout.Context, f canvas.Farbfeld, r image.Rectangle) {
+	c, ok := e.s.ZweiteFarbe(f)
+	if !ok {
+		return
+	}
+	var p clip.Path
+	p.Begin(gtx.Ops)
+	p.MoveTo(f32.Pt(float32(r.Max.X), float32(r.Min.Y)))
+	p.LineTo(f32.Pt(float32(r.Max.X), float32(r.Max.Y)))
+	p.LineTo(f32.Pt(float32(r.Min.X), float32(r.Max.Y)))
+	p.Close()
+	dreieck := clip.Outline{Path: p.End()}.Op()
+	if c.A < 255 {
+		st := dreieck.Push(gtx.Ops)
+		e.seite.fw.schachIn(gtx, r, gtx.Dp(6))
+		st.Pop()
+	}
+	paint.FillShape(gtx.Ops, c, dreieck)
+	if c.A == 0 {
+		zeichneKeine(gtx, r)
+	}
+	paint.FillShape(gtx.Ops, farbeNebentext, clip.Stroke{Path: clip.Rect(r).Path(), Width: float32(gtx.Dp(1))}.Op())
+}
+
 // zeichneFarbwaehler zeichnet den Farbwähler ab y in der Breite breite bei x und liefert das neue y.
 func (e *editor) zeichneFarbwaehler(gtx layout.Context, x, y, breite, spalte int) int {
 	k := &e.seite
@@ -645,7 +671,7 @@ func (e *editor) zeichneFarbpaarZeile(gtx layout.Context, x, y, breite, q int) i
 		w := breiten[slices.Index(felder, f)]
 		r := image.Rect(px, y, px+w, y+h)
 		k.paarRahmen[i] = r
-		e.zeichneFarbReiter(gtx, &k.paar[i], r, e.s.Farbe(f), farbReiterName(f), aktiv == f)
+		e.zeichneFarbReiter(gtx, &k.paar[i], r, f, farbReiterName(f), aktiv == f)
 		px = r.Max.X + abst
 	}
 	reiter(paarVorn, canvas.FeldVordergrund)
@@ -680,7 +706,8 @@ func (e *editor) zeichneFarbpaarZeile(gtx layout.Context, x, y, breite, q int) i
 // zeichneFarbReiter zeichnet einen Reiter des Farbziels in r: Farbmuster (Schachbrett unter Durchsichtigem, roter
 // Schrägstrich bei „keine“) und Name; aktiv mit heller Fläche, grünem Rand und grüner Unterkante (Grün heißt aktiv,
 // Orange bleibt dem Fokus).
-func (e *editor) zeichneFarbReiter(gtx layout.Context, c *widget.Clickable, r image.Rectangle, farbe color.NRGBA, name string, aktiv bool) {
+func (e *editor) zeichneFarbReiter(gtx layout.Context, c *widget.Clickable, r image.Rectangle, feld canvas.Farbfeld, name string, aktiv bool) {
+	farbe := e.s.Farbe(feld)
 	rnd, text := farbeLinie, farbeNebentext
 	switch {
 	case aktiv:
@@ -700,6 +727,7 @@ func (e *editor) zeichneFarbReiter(gtx layout.Context, c *widget.Clickable, r im
 	if farbe.A == 0 {
 		zeichneKeine(gtx, mr)
 	}
+	e.zweiteFarbe(gtx, feld, mr)
 	tx := mr.Max.X + gtx.Dp(4)
 	e.seiteText(gtx, name, 12, text, image.Pt(tx, r.Min.Y+(r.Dy()-gtx.Dp(16))/2), max(0, r.Max.X-gtx.Dp(2)-tx), 1)
 	e.knopfAn(gtx, c, r)

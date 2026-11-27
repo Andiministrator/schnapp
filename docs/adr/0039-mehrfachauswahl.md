@@ -124,3 +124,35 @@ rechts die details zum neuen werkzeug angezeigt werden“. Ändert Punkt 6:
 4. Zuschneiden und Stauchen heben die Auswahl weiter immer auf (F-174).
 
 Test `internal/canvas/werkzeugwechsel_test.go`, Mutanten `scripts/mutanten/werkzeugwechsel.json` (WW1–WW3; die weiteren beim Wechsel zu Auswählen hält MA18 in `mehrfachauswahl.json`).
+
+## Nachtrag 4 (27.11.2026, Claude Opus 5.5 im Auftrag Andis: „arbeite selbstständig und ziehe auch selbstständig karten“; Karte #377)
+Ersetzt Punkt 4 für den Stil und die Ebenenliste (Teil 2 der Mehrfachauswahl).
+1. **Stil für alle gewählten:** Sind mehrere Objekte gewählt (und läuft keine Texteingabe), wirkt jede Änderung der
+   rechten Leiste auf **alle gewählten, die die Eigenschaft tragen** — Farbe, Füllung und Schattenfarbe, Strichstärke
+   (Pfeil, Kasten, Lupe), Strichart, Spitzen (Pfeil), Schatten, Schrift, Größe, Schnitt und Ausrichtung (Text,
+   Sprechblase), Farben tauschen (Kasten, Text), Schnellstil (nur die gewählten derselben Art wie der Stil). Objekte
+   ohne die Eigenschaft bleiben unverändert. Jede Handlung ist **ein** Rückgängig-Schritt, das Ziehen an einem Regler
+   oder in der Farbfläche ebenso (Zug über mehrere, `BeginneZugMehrere`).
+2. **Gemerkt (ADR-0041 Punkt 2):** Jedes geänderte Objekt gibt die Änderung an sein Werkzeug weiter — wer einen Pfeil
+   und einen Kasten gemeinsam auf 12 px stellt, zeichnet danach Pfeile und Kästen mit 12 px; ein mitgewählter Text
+   ändert den Text-Stil dabei nicht. Ein abgebrochener Zug stellt alle beteiligten Werkzeug-Stile wieder her.
+3. **Schatten:** Geändert wird, was sich an der Leiste geändert hat, nicht der ganze Schatten: Wer an der Scheibe die
+   Richtung dreht, dreht sie an allen gewählten mit Schatten und lässt deren Länge, Weichheit und Farbe stehen;
+   Objekte ohne Schatten bleiben ohne. Das Kästchen „Shadow“ schaltet alle ein, wenn mindestens einer aus ist, sonst
+   alle aus; ein Objekt ohne eigene Werte bekommt beim Einschalten die seines Werkzeugs.
+4. **Was die Leiste zeigt:** Sie zeigt die Abschnitte aller gewählten Arten (ein Pfeil und ein Text: Strich, Spitzen
+   und Schrift). Der Kopf nennt die Zahl („Selection: 3 objects“). Spitze und Vergrößerung (Eigenschaften eines
+   einzelnen Objekts, keine Stilwerte) und die Schnellstile gelten weiter der Hauptauswahl. Die Werte kommen von der
+   Hauptauswahl, trägt sie eine Eigenschaft nicht, vom obersten gewählten, das sie trägt. **Gemischte Werte** zeigt die
+   Leiste erkennbar: Strichstärke, Strichart, Spitzen und Schrift nennen statt des Werts „mixed“ (Vorschau der
+   Hauptauswahl bleibt), ein Farbfeld mit verschiedenen Farben ist diagonal geteilt (Hauptauswahl oben links, die
+   nächste andere unten rechts), das Kästchen „Shadow“ zeigt einen Strich statt des Hakens, wenn nur ein Teil einen
+   Schatten hat. Schnitt (fett, kursiv …) und Ausrichtung zeigen den Stand der Hauptauswahl.
+5. **Ebenenliste:** Jede gewählte Zeile ist hervorgehoben. **Strg+Klick** nimmt eine Zeile zur Auswahl hinzu (sie wird
+   Hauptauswahl) oder heraus, wie Umschalt+Klick auf der Leinwand; **Umschalt+Klick** wählt alle wählbaren Zeilen
+   zwischen der Hauptauswahl und der geklickten (die geklickte wird Hauptauswahl). Gesperrte und ausgeblendete Zeilen
+   lassen sich nicht dazunehmen (Punkt 1); ein Strg- oder Umschalt-Klick auf sie wählt sie allein wie ein einfacher
+   Klick, damit Strg+L und Strg+H sie freigeben. Ziehen mit Strg oder Umschalt ordnet nicht um, und es gibt keinen
+   Doppelklick zum Umbenennen.
+6. **Bleibt an der Hauptauswahl:** Griffe, Texteingabe, Ebenen-Handlungen außer Doppeln und Löschen (Ausblenden,
+   Sperren, Umbenennen, vor/zurück, Deckkraft) und „Save style as quick style“.
