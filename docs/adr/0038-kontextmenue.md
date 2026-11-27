@@ -94,3 +94,9 @@ Nacharbeit nach Sitzungs-QA 27.11. (9) (F-882, F-883, F-885): Ein Rechtsklick au
 Texteingabe und beendet den Bereichsmodus (wie auf der Leinwand). Die Leertaste bedient Gio an jedem fokussierten Knopf
 selbst; der Editor erreicht sie nur an den Knöpfen in `leertastenZiele`. Deshalb gibt eine per Maus geöffnete Liste
 jedem anderen fokussierten Knopf den Fokus ab (an die Leinwand).
+
+Nachtrag Karte #361 (27.11.2026): Die Mehrfachmarkierung erweitert die Liste wie in Punkt 3 vorgesehen. An einer
+markierten Vorschau unter mehreren zeigt sie „Show N captures in file manager“ (ein `ShowItems` mit allen) und „Move N
+captures to trash“; ein Rechtsklick auf eine nicht markierte hebt die Markierung auf (ADR-0036 Zusatz Karte #361).
+Kopieren und Exportieren — einzeln für eine nicht offene Aufnahme und für mehrere — sowie Schlagworte für mehrere folgen
+mit Karte #373, nie als Weitergabe der Arbeitsdateien.
