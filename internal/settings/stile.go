@@ -524,13 +524,20 @@ func schreibeStileDatei(pfad string, stile []Stil) error {
 	if err != nil {
 		return err
 	}
+	return schreibeEigeneDatei(pfad, inhalt, ErrStileVerweis, ErrStileKeineDatei)
+}
+
+// schreibeEigeneDatei schreibt eine Datei, die dem Programm gehört (styles.ini, tools.ini), ganz neu: Ordner 0700,
+// Datei 0600, atomar; ein Verweis bleibt und sein Ziel wird geschrieben (errVerweis: Ziel fehlt), ein anderes als
+// reguläres Ziel ist errKeineDatei.
+func schreibeEigeneDatei(pfad, inhalt string, errVerweis, errKeineDatei error) error {
 	ziel := pfad
 	if info, err := os.Lstat(pfad); err == nil {
 		if info.Mode()&os.ModeSymlink != 0 {
 			z, err := filepath.EvalSymlinks(pfad)
 			if err != nil {
 				if os.IsNotExist(err) {
-					return ErrStileVerweis
+					return errVerweis
 				}
 				return err
 			}
@@ -540,7 +547,7 @@ func schreibeStileDatei(pfad string, stile []Stil) error {
 			}
 		}
 		if !info.Mode().IsRegular() {
-			return ErrStileKeineDatei
+			return errKeineDatei
 		}
 	} else if !os.IsNotExist(err) {
 		return err

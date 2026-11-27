@@ -565,8 +565,8 @@ func TestSchnellstilSchatten(t *testing.T) {
 	if o, _ := s.D.Objekt(ids[1]); o.Ebenenwerte().Schatten != objSchatten || !s.SchnellstilPasst(st) {
 		t.Errorf("nach dem Anwenden %+v, Soll %+v", o.Ebenenwerte().Schatten, objSchatten)
 	}
-	if s.Stil.Schatten != objSchatten {
-		t.Errorf("Werkzeug übernimmt den Schatten nicht: %+v", s.Stil.Schatten)
+	if sch := s.stilVon(WerkzeugKasten).Schatten; sch != objSchatten { // das Werkzeug des Kastens (ADR-0041 Punkt 2)
+		t.Errorf("Werkzeug übernimmt den Schatten nicht: %+v", sch)
 	}
 	// Ohne Auswahl passt der Stil zum Stand des Werkzeugs, der den Schatten jetzt trägt.
 	s.Auswahl = 0

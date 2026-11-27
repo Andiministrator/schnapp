@@ -1,0 +1,26 @@
+# Sichtprobe ADR-0041 (Karte #383): Jedes Werkzeug merkt seinen Stil, ein Wechsel nimmt nichts mit.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/stil-je-werkzeug-383.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 1600 --hoehe 1000
+# Lagen wie schatten-schwarz-381.txt (1600 × 1000, Skala 1): Strichstärke „+“ bei (1512, 226), Kästchen „Schatten“ bei
+# (1325, 321) (beim Pfeil liegen Spitzen dazwischen: das Kästchen wird hier nicht geklickt).
+# Erwartet:
+#  01 Pfeil: Strichstärke nach zweimal „+“ 12 px, ein dicker Pfeil auf Grün.
+#  02 Kasten: Strichstärke 6 px (Voreinstellung), nicht 12; ein dünner Kasten auf Blau.
+#  03 zurück zum Pfeil: Strichstärke wieder 12 px.
+warte 1500
+taste A
+warte 400
+klick 1512 226
+warte 200
+klick 1512 226
+warte 300
+ziehe 520 300 760 420 10
+warte 300
+foto 01-pfeil-12
+taste R
+warte 400
+ziehe 950 200 1200 400 10
+warte 300
+foto 02-kasten-6
+taste A
+warte 400
+foto 03-pfeil-wieder-12

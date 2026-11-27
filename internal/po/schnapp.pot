@@ -834,27 +834,27 @@ msgstr ""
 msgid "%s: the settings file is larger than 64 KiB; using the defaults."
 msgstr ""
 
-#: internal/settings/einstellungen.go internal/settings/stile.go
+#: internal/settings/einstellungen.go internal/settings/stile.go internal/settings/werkzeugstile.go
 msgid "Broken section header; its settings up to the next section are ignored."
 msgstr ""
 
-#: internal/settings/einstellungen.go internal/settings/stile.go
+#: internal/settings/einstellungen.go internal/settings/stile.go internal/settings/werkzeugstile.go
 msgid "Unknown section [%s]; its keys are ignored."
 msgstr ""
 
-#: internal/settings/einstellungen.go internal/settings/stile.go
+#: internal/settings/einstellungen.go internal/settings/stile.go internal/settings/werkzeugstile.go
 msgid "Line is neither a section, a comment nor \"key = value\"; ignored."
 msgstr ""
 
-#: internal/settings/einstellungen.go internal/settings/stile.go
+#: internal/settings/einstellungen.go internal/settings/stile.go internal/settings/werkzeugstile.go
 msgid "Setting %q is outside of any section; ignored."
 msgstr ""
 
-#: internal/settings/einstellungen.go
+#: internal/settings/einstellungen.go internal/settings/werkzeugstile.go
 msgid "Unknown key %q in section [%s]; ignored."
 msgstr ""
 
-#: internal/settings/einstellungen.go
+#: internal/settings/einstellungen.go internal/settings/werkzeugstile.go
 msgid "Invalid value %q for key %q in section [%s]; ignored."
 msgstr ""
 
@@ -862,7 +862,7 @@ msgstr ""
 msgid "Key %q in section [%s] is set again; the last value counts."
 msgstr ""
 
-#: internal/settings/einstellungen.go internal/settings/stile.go
+#: internal/settings/einstellungen.go internal/settings/stile.go internal/settings/werkzeugstile.go
 msgid "… and %d more warning"
 msgid_plural "… and %d more warnings"
 msgstr[0] ""
@@ -930,6 +930,30 @@ msgstr ""
 
 #: internal/settings/stile.go
 msgid "Style [%s] ignored: invalid value %q for key %q."
+msgstr ""
+
+#: internal/settings/werkzeugstile.go
+msgid "Cannot locate the tools file (%v); tools start with their defaults."
+msgstr ""
+
+#: internal/settings/werkzeugstile.go
+msgid "%s: cannot read the tools file (%v); tools start with their defaults."
+msgstr ""
+
+#: internal/settings/werkzeugstile.go
+msgid "%s: the tools file is not a regular file; tools start with their defaults."
+msgstr ""
+
+#: internal/settings/werkzeugstile.go
+msgid "%s: the tools file is larger than 64 KiB; tools start with their defaults."
+msgstr ""
+
+#: internal/settings/werkzeugstile.go
+msgid "Section [%s] appears twice; the second one is ignored."
+msgstr ""
+
+#: internal/settings/werkzeugstile.go
+msgid "Key %q is set twice in section [%s]; the second one is ignored."
 msgstr ""
 
 #: internal/ui/bestaetigen.go

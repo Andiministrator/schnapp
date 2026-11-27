@@ -30,9 +30,9 @@ func (s *Sitzung) Pfeilform() (anfang, ende document.Kopfart) {
 func (s *Sitzung) SetzeKopf(amAnfang bool, k document.Kopfart) bool {
 	if amAnfang {
 		a := document.AnfangMit(k)
-		return s.setzePfeilform(func(p *document.Pfeil) { p.Anfang = a }, func() { s.Stil.KopfAnfang = a })
+		return s.setzePfeilform(func(p *document.Pfeil) { p.Anfang = a }, func() { s.aendereZielStil(func(st *Stil) { st.KopfAnfang = a }) })
 	}
-	return s.setzePfeilform(func(p *document.Pfeil) { p.Ende = k }, func() { s.Stil.KopfEnde = k })
+	return s.setzePfeilform(func(p *document.Pfeil) { p.Ende = k }, func() { s.aendereZielStil(func(st *Stil) { st.KopfEnde = k }) })
 }
 
 func (s *Sitzung) setzePfeilform(aendere func(*document.Pfeil), merke func()) bool {

@@ -176,24 +176,24 @@
   },
   {
     "name": "UB26 Paar der Sprechblase wird nicht aus dem Text gelesen",
-    "datei": "internal/canvas/farbpaar.go",
+    "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
-    "alt": "func (s *Sitzung) paar(w Werkzeug) farbpaar {\n\tw = paarSchluessel(w)\n",
-    "neu": "func (s *Sitzung) paar(w Werkzeug) farbpaar {\n"
+    "alt": "func (s *Sitzung) stilVon(w Werkzeug) Stil {\n\tw = paarSchluessel(w)\n",
+    "neu": "func (s *Sitzung) stilVon(w Werkzeug) Stil {\n"
   },
   {
     "name": "UB27 Werkzeugwechsel zur Sprechblase legt das Paar nicht ein",
-    "datei": "internal/canvas/farbpaar.go",
+    "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
-    "alt": "func (s *Sitzung) wechslePaar(w Werkzeug) {\n\tw = paarSchluessel(w)\n",
-    "neu": "func (s *Sitzung) wechslePaar(w Werkzeug) {\n"
+    "alt": "func (s *Sitzung) wechsleStil(w Werkzeug) {\n\tw = paarSchluessel(w)\n",
+    "neu": "func (s *Sitzung) wechsleStil(w Werkzeug) {\n"
   },
   {
     "name": "UB28 Farbe der Sprechblase landet nicht im Paar des Texts",
-    "datei": "internal/canvas/farbpaar.go",
+    "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
-    "alt": "\t\treturn\n\t}\n\tw = paarSchluessel(w)\n",
-    "neu": "\t\treturn\n\t}\n"
+    "alt": "func (s *Sitzung) aendereStil(w Werkzeug, f func(*Stil)) {\n\tw = paarSchluessel(w)\n",
+    "neu": "func (s *Sitzung) aendereStil(w Werkzeug, f func(*Stil)) {\n"
   },
   {
     "name": "UB29 Text mit Spitze zählt als Text",
@@ -241,8 +241,8 @@
     "name": "UB35 Stil der Sprechblase setzt die Schrift des Werkzeugs nicht",
     "datei": "internal/canvas/schnellstile.go",
     "paket": "./internal/canvas",
-    "alt": "\tcase SchnellText, SchnellSprechblase:\n\t\ts.Stil.Schriftgrad",
-    "neu": "\tcase SchnellText:\n\t\ts.Stil.Schriftgrad"
+    "alt": "\t\tcase SchnellText, SchnellSprechblase:\n\t\t\tz.Schriftgrad",
+    "neu": "\t\tcase SchnellText:\n\t\t\tz.Schriftgrad"
   },
   {
     "name": "UB36 Die Art Sprechblase hat kein Werkzeug",

@@ -10,7 +10,7 @@ import (
 
 // ADR-0021 Nachtrag 25 Punkte 7 und 8: Ohne Auswahl gilt die Strichart für folgende Pfeile, Kästen und Lupen; mit
 // gewähltem Objekt ändert sie es als einen Rückgängig-Schritt und merkt sie fürs Werkzeug. Ein Schnellstil lässt sie
-// stehen.
+// stehen. Seit ADR-0041 merkt jedes Werkzeug seine eigene.
 func TestStrichartWerkzeugUndAuswahl(t *testing.T) {
 	s, _, _ := sitzung(t)
 	if s.Strichart() != document.StrichVoll {
@@ -25,6 +25,7 @@ func TestStrichartWerkzeugUndAuswahl(t *testing.T) {
 	}
 	for _, w := range []Werkzeug{WerkzeugPfeil, WerkzeugKasten, WerkzeugLupe} {
 		s.SetzeWerkzeug(w)
+		s.SetzeStrichart(document.StrichGestrichelt) // seit ADR-0041 je Werkzeug
 		if !s.Seitenleiste().Strich {
 			t.Errorf("Werkzeug %v ohne Strich in der Leiste", w)
 		}

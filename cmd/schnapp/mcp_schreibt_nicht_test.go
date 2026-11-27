@@ -31,12 +31,12 @@ const (
 //     nicht ui.Editor — nur der Editor öffnet die Tafel, die schreibt.
 //  3. Gegenprobe: Von main aus ist ui.Editor erreichbar (sonst prüfte 2 nichts).
 //  4. Im Paket ui ruft nur die Tafel (einstellungen.go) den Schreiber (und schnellstile.go SchreibeStile für
-//     styles.ini, farbfelder.go AendereFarben für colors.ini), und ui.Bestaetige (der Dialog des MCP-Servers) steht in einer Datei ohne Bezug auf die Tafel.
+//     styles.ini, farbfelder.go AendereFarben für colors.ini, werkzeugstile.go SchreibeWerkzeugStile für tools.ini), und ui.Bestaetige (der Dialog des MCP-Servers) steht in einer Datei ohne Bezug auf die Tafel.
 //     merkeEinstellung (schreibt einen Schlüssel mit dem Schreiber der Tafel, nur library.bar, F-658) nennen genau
 //     einstellungen.go und leiste_unten.go, nie die Datei von Bestaetige.
 //  5. Über alle Pakete des Moduls (F-630): Ein Selektor auf das Paket …/internal/settings, dessen Name mit „Schreibe“
 //     oder „Aendere“ beginnt, steht nur in internal/ui/einstellungen.go, (nur SchreibeStile) internal/ui/schnellstile.go und (nur
-//     AendereFarben) internal/ui/farbfelder.go; einen
+//     AendereFarben) internal/ui/farbfelder.go und (nur SchreibeWerkzeugStile) internal/ui/werkzeugstile.go; einen
 //     Punkt-Import des Pakets gibt es nicht.
 //
 // Die Pakete settings und ui erkennt der Test an den Importen jeder Datei (importNamen), nicht am Bezeichner im
@@ -165,8 +165,10 @@ func TestMCPErreichtDenSchreiberNicht(t *testing.T) {
 					// Ausnahme: styles.ini, die eigenen Schnellstile des Editors (ADR-0037 Punkt 6): keine Einstellung und
 					// keine Einwilligung eines Agenten, nur Farben und Maße.
 					// Ebenso colors.ini, die eigenen Farbfelder (ADR-0021 Nachtrag 24): nur Farben.
+					// Ebenso tools.ini, der Stil je Werkzeug (ADR-0041): nur Farben, Maße und Schriftnamen.
 					if filepath.Base(d) != "einstellungen.go" && !(filepath.Base(d) == "schnellstile.go" && stileSchreiber(x.Sel.Name)) &&
-						!(filepath.Base(d) == "farbfelder.go" && x.Sel.Name == "AendereFarben") {
+						!(filepath.Base(d) == "farbfelder.go" && x.Sel.Name == "AendereFarben") &&
+						!(filepath.Base(d) == "werkzeugstile.go" && x.Sel.Name == "SchreibeWerkzeugStile") {
 						t.Errorf("%s ruft settings.%s", filepath.Base(d), x.Sel.Name)
 					}
 				}
@@ -207,7 +209,8 @@ func TestMCPErreichtDenSchreiberNicht(t *testing.T) {
 		switch {
 		case a.datei == "internal/ui/einstellungen.go",
 			a.datei == "internal/ui/schnellstile.go" && stileSchreiber(a.name),
-			a.datei == "internal/ui/farbfelder.go" && a.name == "AendereFarben":
+			a.datei == "internal/ui/farbfelder.go" && a.name == "AendereFarben",
+			a.datei == "internal/ui/werkzeugstile.go" && a.name == "SchreibeWerkzeugStile":
 			erlaubt++
 		default:
 			t.Errorf("%s ruft settings.%s (nur die Einstellungstafel schreibt, ADR-0034 Punkt 6)", a.datei, a.name)

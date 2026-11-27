@@ -109,10 +109,11 @@ type Sitzung struct {
 	farbZugText     document.Objekt // Text der Eingabe vor dem Farbzug (Abbruch stellt ihn her, Verify V-3)
 	zuletzt         []color.NRGBA
 	pipette         bool // der nächste Klick ins Bild nimmt eine Farbe auf
-	// Farbpaare (ADR-0021 Nachtrag 11, farbpaar.go): paarW ist das Werkzeug, dessen Paar in Stil steht; paare hält die
-	// Paare der anderen Werkzeuge; feld ist das gewählte Feld (wirksam nur mit Füllung, AktivesFeld).
+	// Stil je Werkzeug (ADR-0041, werkzeugstil.go; davor nur das Farbpaar, ADR-0021 Nachtrag 11): paarW ist das
+	// Werkzeug, dessen Stil in Stil steht; stile hält die Stile der anderen Werkzeuge; feld ist das gewählte Farbfeld
+	// (wirksam nur mit Füllung, AktivesFeld).
 	paarW Werkzeug
-	paare map[Werkzeug]farbpaar
+	stile map[Werkzeug]Stil
 	feld  Farbfeld
 	// feldSchattenID ist das Objekt (0: der Stand des Werkzeugs), für das das Feld Schatten gewählt wurde: Ein anderes
 	// erbt es nicht (Kritik K-2 #363b).

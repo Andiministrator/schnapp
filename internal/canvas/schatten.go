@@ -68,7 +68,7 @@ func (s *Sitzung) SetzeSchatten(sch document.Schatten) bool {
 		return false
 	}
 	sch = gueltigerSchatten(sch)
-	s.Stil.Schatten = sch // das Werkzeug behält die Werte auch ausgeschaltet
+	s.aendereZielStil(func(st *Stil) { st.Schatten = sch }) // das Werkzeug behält die Werte auch ausgeschaltet
 	o, ok := s.schattenObjekt()
 	if !ok {
 		return false
@@ -145,7 +145,7 @@ func (s *Sitzung) SchattenZugSetze(sch document.Schatten) {
 		return
 	}
 	sch = gueltigerSchatten(sch)
-	s.Stil.Schatten = sch
+	s.aendereZielStil(func(st *Stil) { st.Schatten = sch })
 	if !sch.An {
 		sch = document.Schatten{} // am Objekt wie in SetzeSchatten der Nullwert (V-4)
 	}

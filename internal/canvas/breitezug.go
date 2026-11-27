@@ -57,7 +57,7 @@ func (s *Sitzung) BreiteZugSetze(b float64) {
 	if !s.breiteZug || !(b > 0) || b > document.MaxGroesse {
 		return
 	}
-	s.Stil.Breite = b
+	s.aendereZielStil(func(st *Stil) { st.Breite = b })
 	if s.breiteZugObj {
 		if o, ok := s.D.Objekt(s.Auswahl); ok {
 			_ = s.D.ZugSetze(mitBreite(o, b))

@@ -204,7 +204,7 @@
   },
   {
     "name": "P219-1 Werkzeugwechsel lädt das Paar nicht",
-    "datei": "internal/canvas/farbpaar.go",
+    "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
     "alt": "\talt := s.paarWerkzeug()\n\tif !farbWerkzeug(w) || w == alt {",
     "neu": "\talt := s.paarWerkzeug()\n\tif true || !farbWerkzeug(w) || w == alt {"

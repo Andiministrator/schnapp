@@ -4,8 +4,8 @@ package canvas
 
 // Zwei Farben je Beschriftung (ADR-0021 Nachtrag 11): Vordergrund (Linie von Pfeil und Kasten, Schrift des Texts,
 // Kreis der Nummer) und Füllung (Fläche des Kastens, Schild des Texts). Jedes Zeichenwerkzeug mit Farbe merkt sich
-// sein eigenes Paar, solange die Sitzung läuft; das Paar des zuletzt gewählten solchen Werkzeugs steht in Stil.Farbe
-// und Stil.Fuellung. Farbwähler, Farbfelder, Hex, Deckkraft und Pipette wirken auf das aktive Feld.
+// sein eigenes Paar als Teil seines Stils (ADR-0041, werkzeugstil.go); das Paar des zuletzt gewählten solchen
+// Werkzeugs steht in Stil.Farbe und Stil.Fuellung. Farbwähler, Farbfelder, Hex, Deckkraft und Pipette wirken auf das aktive Feld.
 
 import (
 	"image/color"
@@ -150,63 +150,28 @@ func (s *Sitzung) paarWerkzeug() Werkzeug {
 	return WerkzeugPfeil
 }
 
-// paar liefert das gemerkte Paar des Werkzeugs w.
+// paar liefert das gemerkte Paar des Werkzeugs w (aus seinem Stil, ADR-0041).
 func (s *Sitzung) paar(w Werkzeug) farbpaar {
-	w = paarSchluessel(w)
-	if w == s.paarWerkzeug() {
-		return farbpaar{vorn: s.Stil.Farbe, fuellung: s.Stil.Fuellung}
-	}
-	if p, ok := s.paare[w]; ok {
-		return p
-	}
-	return standardPaar(w)
+	st := s.stilVon(w)
+	return farbpaar{vorn: st.Farbe, fuellung: st.Fuellung}
 }
 
-// wechslePaar legt das Paar des Werkzeugs w in Stil (beim Wechsel auf ein Werkzeug mit Farbe).
-func (s *Sitzung) wechslePaar(w Werkzeug) {
-	w = paarSchluessel(w)
-	alt := s.paarWerkzeug()
-	if !farbWerkzeug(w) || w == alt {
-		return
-	}
-	if s.paare == nil {
-		s.paare = map[Werkzeug]farbpaar{}
-	}
-	s.paare[alt] = farbpaar{vorn: s.Stil.Farbe, fuellung: s.Stil.Fuellung}
-	p := s.paar(w)
-	s.paarW = w
-	s.Stil.Farbe, s.Stil.Fuellung = p.vorn, p.fuellung
-	s.hsvGemerkt = false
-}
-
-// merkePaarFarbe setzt die Farbe c im Feld f des Paars von w (ohne Füllung beim Pfeil und der Nummer).
+// merkePaarFarbe setzt die Farbe c im Feld f des Stils von w (ohne Füllung beim Pfeil und der Nummer); das Feld
+// Schatten färbt den Schatten des Werkzeugs (seit ADR-0041 je Werkzeug).
 func (s *Sitzung) merkePaarFarbe(w Werkzeug, f Farbfeld, c color.NRGBA) {
-	if f == FeldSchatten { // ein Schatten für alle Werkzeuge
-		s.Stil.Schatten.Farbe = c
+	if f == FeldFuellung && !fuellWerkzeug(paarSchluessel(w)) {
 		return
 	}
-	w = paarSchluessel(w)
-	if f == FeldFuellung && !fuellWerkzeug(w) {
-		return
-	}
-	if w == s.paarWerkzeug() {
-		if f == FeldFuellung {
-			s.Stil.Fuellung = c
-		} else {
-			s.Stil.Farbe = c
+	s.aendereStil(w, func(st *Stil) {
+		switch f {
+		case FeldSchatten:
+			st.Schatten.Farbe = c
+		case FeldFuellung:
+			st.Fuellung = c
+		default:
+			st.Farbe = c
 		}
-		return
-	}
-	p := s.paar(w)
-	if f == FeldFuellung {
-		p.fuellung = c
-	} else {
-		p.vorn = c
-	}
-	if s.paare == nil {
-		s.paare = map[Werkzeug]farbpaar{}
-	}
-	s.paare[w] = p
+	})
 }
 
 // farbObjekt ist das Objekt, auf das die Farbwahl wirkt: der Text in der Eingabe, sonst das gewählte Objekt mit Farbe.

@@ -185,7 +185,7 @@
     "name": "ST27 Wahl nicht fürs Werkzeug gemerkt",
     "datei": "internal/canvas/strichart.go",
     "paket": "./internal/canvas",
-    "alt": "\ts.Stil.Strichart = a\n",
+    "alt": "\ts.aendereZielStil(func(st *Stil) { st.Strichart = a })\n",
     "neu": ""
   },
   {

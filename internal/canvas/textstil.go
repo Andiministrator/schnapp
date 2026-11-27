@@ -86,7 +86,7 @@ func (s *Sitzung) textAendern(werkzeug func(*Stil), text func(*document.Text)) b
 	if s.Zieht() || s.gesperrt() {
 		return false
 	}
-	werkzeug(&s.Stil)
+	s.aendereZielStil(werkzeug)
 	t, eingabe, ok := s.textZiel()
 	if !ok {
 		return false

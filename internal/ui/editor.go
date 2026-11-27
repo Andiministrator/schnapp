@@ -194,7 +194,8 @@ func neuerEditor(titel string, d *document.Dokument, speichern Speichern, rettun
 	fonts.StarteSuche(e.w.Invalidate)
 	e.stileLaden()
 	e.farbfelderLaden()
-	e.rettungStart() // vor dem ersten Bild: Wiederholte Schwärzungen ändern die Pixel
+	e.werkzeugStileLaden() // Stil je Werkzeug aus tools.ini (ADR-0041)
+	e.rettungStart()       // vor dem ersten Bild: Wiederholte Schwärzungen ändern die Pixel
 	e.bildNeu()
 	return e
 }
@@ -402,6 +403,10 @@ type editor struct {
 	// rad merkt die Art der laufenden Rad-Geste (ADR-0040 Risiko 1): Nachlauf-Ereignisse des Touchpads tragen die Zeit
 	// des letzten echten Ereignisses, aber die Umschalter zum Zeitpunkt des Ticks.
 	rad radGeste
+
+	// werkzeugStand ist tools.ini, wie sie nach dem Lesen aussähe (werkzeugstile.go, ADR-0041): beim Schließen wird nur
+	// geschrieben, wenn sich etwas geändert hat.
+	werkzeugStand string
 
 	// objEbene: über bereichGrenze zeigt der Editor die Objekte aus der Objektebene des Renderers (objektebene.go,
 	// ADR-0023 Nachtrag 20, F-787); bereiche zählt die abgespielten Bereiche des laufenden eigenen Zeichnens.
@@ -672,6 +677,7 @@ func (e *editor) zerstoert(fensterErr error) error {
 	}
 	e.rettungEnde()
 	e.rettungEndenAbwarten(wechselFrist) // Rettungskopien früherer Aufnahmen dieses Fensters (F-637)
+	e.werkzeugStileSchreiben()           // Stil je Werkzeug für das nächste Fenster (ADR-0041 Punkt 4)
 	return errors.Join(fensterErr, e.schlussErr, err)
 }
 

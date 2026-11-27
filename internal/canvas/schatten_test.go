@@ -97,11 +97,17 @@ func TestSchattenWerkzeugUndAuswahl(t *testing.T) {
 
 // F-847: Jeder Anlegeweg gibt einem neuen Objekt den Schatten des Werkzeugs — Pfeil, Lupe, Nummer, Text, Sprechblase
 // per Klick und per Ziehen; in der Texteingabe gehört eine Änderung zur Eingabe; ein abgebrochener Reglerzug stellt das
-// Objekt wieder her.
+// Objekt wieder her. Seit ADR-0041 hat jedes Werkzeug seinen eigenen Schatten: er wird je Werkzeug eingeschaltet.
 func TestSchattenAlleAnlegewege(t *testing.T) {
 	s := blasenSitzung(t)
-	s.SetzeWerkzeug(WerkzeugPfeil)
-	s.SchalteSchatten()
+	werkzeug := func(w Werkzeug) {
+		t.Helper()
+		s.SetzeWerkzeug(w)
+		if !s.Schatten().An {
+			s.SchalteSchatten()
+		}
+	}
+	werkzeug(WerkzeugPfeil)
 	hat := func(name string) {
 		t.Helper()
 		if o := letztes(t, s); !o.Ebenenwerte().Schatten.An {
@@ -110,14 +116,14 @@ func TestSchattenAlleAnlegewege(t *testing.T) {
 	}
 	zieh(s, f(20, 20), f(120, 60))
 	hat("Pfeil")
-	s.SetzeWerkzeug(WerkzeugLupe)
+	werkzeug(WerkzeugLupe)
 	zieh(s, f(20, 120), f(60, 150))
 	hat("Lupe")
-	s.SetzeWerkzeug(WerkzeugNummer)
+	werkzeug(WerkzeugNummer)
 	s.Druecken(f(300, 40), TastePrimaer)
 	s.Loslassen(f(300, 40))
 	hat("Nummer")
-	s.SetzeWerkzeug(WerkzeugText)
+	werkzeug(WerkzeugText)
 	s.Druecken(f(300, 200), TastePrimaer)
 	s.Loslassen(f(300, 200))
 	s.Tippe("Hi")
@@ -134,12 +140,12 @@ func TestSchattenAlleAnlegewege(t *testing.T) {
 	if o := letztes(t, s); o.Ebenenwerte().Schatten.Laenge != 3 {
 		t.Errorf("Text: Länge %v", o.Ebenenwerte().Schatten.Laenge)
 	}
-	s.SetzeWerkzeug(WerkzeugSprechblase)
+	werkzeug(WerkzeugSprechblase)
 	s.Druecken(f(200, 100), TastePrimaer)
 	s.Loslassen(f(200, 100))
 	bestaetigeBlase(t, s, "Klick")
 	hat("Sprechblase per Klick")
-	s.SetzeWerkzeug(WerkzeugSprechblase)
+	werkzeug(WerkzeugSprechblase)
 	zieh(s, f(100, 250), f(200, 200))
 	bestaetigeBlase(t, s, "Zug")
 	hat("Sprechblase per Ziehen")
@@ -174,8 +180,8 @@ func TestSchattenZugOhneSchatten(t *testing.T) {
 	if o, _ := s.D.Objekt(k); o.Ebenenwerte().Schatten != (document.Schatten{}) {
 		t.Errorf("am Objekt %+v", o.Ebenenwerte().Schatten)
 	}
-	if s.Stil.Schatten.Laenge != 12 {
-		t.Errorf("Werkzeug merkt %v", s.Stil.Schatten.Laenge)
+	if l := s.stilVon(WerkzeugKasten).Schatten.Laenge; l != 12 { // das Werkzeug des Objekts merkt (ADR-0041 Punkt 2)
+		t.Errorf("Werkzeug merkt %v", l)
 	}
 }
 

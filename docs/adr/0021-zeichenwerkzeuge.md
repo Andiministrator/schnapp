@@ -1053,3 +1053,9 @@ dunklem Grund wirkt als Leuchten, nicht als Schatten. Ein Leuchten (Glow) wäre 
 Gespeicherte Dateien und Schnellstile behalten ihre Farbe; das Format-Beispiel `testdata/format/shadow` hält die alte
 Voreinstellung fest im Testcode (`format_konform_test.go`), damit es sich nicht ändert. Sichtprobe
 `scripts/drehbuecher/schatten-schwarz-381.txt`.
+
+## Nachtrag 28 (27.11.2026): Verweis auf ADR-0041 (Karte #383)
+
+ADR-0041 ersetzt das Farbpaar je Werkzeug (Nachtrag 11) durch einen vollständigen Stil je Werkzeug, der über
+Sitzungen in `tools.ini` gemerkt wird. Damit sind auch Strichstärke, Strichart (Nachtrag 25), Spitzen (Nachträge 19
+bis 21) und Schatten (Nachtrag 26: dort „ein Wert für alle Werkzeuge“) je Werkzeug.

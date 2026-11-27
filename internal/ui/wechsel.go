@@ -316,7 +316,9 @@ func (e *editor) uebernimm(g Geoeffnet) {
 		e.rettungEndeImHintergrund(e.rettung)
 	}
 	einrasten, navigator := e.s.EinrastenAn(), e.s.NavigatorAn()
+	alt := e.s
 	e.s = canvas.NeueSitzung(g.Dokument)
+	e.werkzeugStileMitnehmen(alt) // Stil je Werkzeug bleibt beim Wechsel (ADR-0041 Punkt 4)
 	// Die neue Aufnahme hat den Tastaturfokus (F-907), außer der Wechsel kam per Taste aus der Leiste: dort bleibt er
 	// (F-912, F-918). Die volle Ansicht hält ihn, solange sie offen ist.
 	e.fokusHolen, e.fokusBleibt = !e.fokusBleibt, false

@@ -176,7 +176,7 @@ func (s *Sitzung) SetzeWerkzeug(w Werkzeug) bool {
 	}
 	vorher := s.zuschnittModus()
 	s.Werkzeug = w
-	s.wechslePaar(w)
+	s.wechsleStil(w)
 	if s.zuschnittModus() != vorher {
 		// Vollansicht an oder aus (ADR-0023 Nachtrag 5): anderes Bild; die Ansichtskoordinaten bleiben, neu eingepasst
 		// wird nur, wenn der Nutzer nicht selbst gezoomt oder verschoben hat.
@@ -251,7 +251,7 @@ func (s *Sitzung) SetzeBreite(b float64) bool {
 	if s.Zieht() || s.gesperrt() || !(b > 0) || b > document.MaxGroesse {
 		return false
 	}
-	s.Stil.Breite = b
+	s.aendereZielStil(func(st *Stil) { st.Breite = b })
 	o, ok := s.strichObjekt()
 	if !ok {
 		return false

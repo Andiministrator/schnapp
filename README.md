@@ -96,7 +96,10 @@ while the fill is chosen, the first swatch, with a red slash, leaves it empty). 
 the colour section of the sidebar starts with one tab per colour — *Color*, *Fill* (only where there is one) and
 *Shadow* (only while the shadow is on) — and the highlighted tab is the one the colour picker below changes; click a
 tab or a swatch below the tools to choose it (a click on a swatch below the tools also opens the colour section of the sidebar), **⇄** (*Edit → Swap colors*, **Ctrl+Shift+X**) swaps them. Each drawing
-tool keeps its own pair while the window is open: new text starts white on red, the other tools red without fill.
+tool keeps all of its own settings — colours, line width and style, arrow heads, font, shadow — and they carry over to
+the next editor window (`~/.config/schnapp/tools.ini`, written when a window closes): switching tools never passes one
+tool's settings on to another. Changing a selected annotation also changes the settings of its tool. Out of the box,
+new text is white on red, the other tools red without fill.
 Redaction always stays opaque. For text, the sidebar picks the font (the built-in Go and Go Mono or a font
 installed in the usual font folders with a regular, bold or italic face), the size, bold, italic, underline, strike-through and the alignment of the lines; a file
 that names a font missing on another computer shows the text in Go there and keeps the name. On large screenshots (4K and up) lines, text and step numbers start thicker and larger. A drawing tool stays active; **Esc** steps back: text input → drag → selection →

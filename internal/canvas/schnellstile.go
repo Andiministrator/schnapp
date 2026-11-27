@@ -498,19 +498,21 @@ func (s *Sitzung) WendeSchnellstilAn(st Schnellstil) bool {
 		s.merkePaarFarbe(w, FeldFuellung, g.Fuellung)
 	}
 	s.hsvGemerkt = false
-	switch st.Art {
-	case SchnellPfeil, SchnellKasten, SchnellLupe:
-		s.Stil.Breite = g.Breite
-	case SchnellText, SchnellSprechblase:
-		s.Stil.Schriftgrad, s.Stil.Schrift = g.Schriftgrad, g.Schrift
-		s.Stil.Fett, s.Stil.Kursiv = g.Fett, g.Kursiv
-		s.Stil.Unterstrichen, s.Stil.Durchgestrichen, s.Stil.Ausrichtung = g.Unterstrichen, g.Durchgestrichen, g.Ausrichtung
-	case SchnellNummer:
-		s.Stil.Radius = g.Radius
-	}
-	if g.Schatten.An { // ein Stil ohne Schatten lässt den des Werkzeugs und des Objekts stehen
-		s.Stil.Schatten = g.Schatten
-	}
+	s.aendereStil(w, func(z *Stil) {
+		switch st.Art {
+		case SchnellPfeil, SchnellKasten, SchnellLupe:
+			z.Breite = g.Breite
+		case SchnellText, SchnellSprechblase:
+			z.Schriftgrad, z.Schrift = g.Schriftgrad, g.Schrift
+			z.Fett, z.Kursiv = g.Fett, g.Kursiv
+			z.Unterstrichen, z.Durchgestrichen, z.Ausrichtung = g.Unterstrichen, g.Durchgestrichen, g.Ausrichtung
+		case SchnellNummer:
+			z.Radius = g.Radius
+		}
+		if g.Schatten.An { // ein Stil ohne Schatten lässt den des Werkzeugs und des Objekts stehen
+			z.Schatten = g.Schatten
+		}
+	})
 	o, ok := s.stilObjekt(st.Art)
 	if !ok {
 		return false

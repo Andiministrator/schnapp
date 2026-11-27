@@ -2009,3 +2009,21 @@ msgstr "Mausrad"
 
 msgid "Zoom at the pointer"
 msgstr "Zum Zeiger zoomen"
+
+msgid "Cannot locate the tools file (%v); tools start with their defaults."
+msgstr "Die Werkzeugdatei ist nicht auffindbar (%v); die Werkzeuge beginnen mit ihrer Voreinstellung."
+
+msgid "%s: cannot read the tools file (%v); tools start with their defaults."
+msgstr "%s: Die Werkzeugdatei lässt sich nicht lesen (%v); die Werkzeuge beginnen mit ihrer Voreinstellung."
+
+msgid "%s: the tools file is not a regular file; tools start with their defaults."
+msgstr "%s: Die Werkzeugdatei ist keine gewöhnliche Datei; die Werkzeuge beginnen mit ihrer Voreinstellung."
+
+msgid "%s: the tools file is larger than 64 KiB; tools start with their defaults."
+msgstr "%s: Die Werkzeugdatei ist größer als 64 KiB; die Werkzeuge beginnen mit ihrer Voreinstellung."
+
+msgid "Section [%s] appears twice; the second one is ignored."
+msgstr "Abschnitt [%s] steht doppelt; der zweite wird übergangen."
+
+msgid "Key %q is set twice in section [%s]; the second one is ignored."
+msgstr "Schlüssel %q steht im Abschnitt [%s] doppelt; der zweite wird übergangen."

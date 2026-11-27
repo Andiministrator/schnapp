@@ -283,7 +283,7 @@
     "name": "U8 Editor ruft rettungStart nicht",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\te.rettungStart() // vor dem ersten Bild: Wiederholte Schwärzungen ändern die Pixel\n",
+    "alt": "\te.rettungStart()       // vor dem ersten Bild: Wiederholte Schwärzungen ändern die Pixel\n",
     "neu": ""
   },
   {

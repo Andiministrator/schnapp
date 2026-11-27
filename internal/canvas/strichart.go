@@ -28,7 +28,7 @@ func (s *Sitzung) SetzeStrichart(a document.Strichart) bool {
 	if s.Zieht() || s.gesperrt() || int(a) >= len(document.Stricharten) {
 		return false
 	}
-	s.Stil.Strichart = a
+	s.aendereZielStil(func(st *Stil) { st.Strichart = a })
 	o, ok := s.strichObjekt()
 	if !ok {
 		return false

@@ -1,0 +1,107 @@
+[
+  {
+    "name": "WS1 Wechsel holt den Stil nicht",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.Stil = s.stilVon(w)\n\tdelete(s.stile, w)\n",
+    "neu": "\tdelete(s.stile, w)\n"
+  },
+  {
+    "name": "WS2 Wechsel merkt den alten nicht",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.stile[alt] = s.Stil\n",
+    "neu": ""
+  },
+  {
+    "name": "WS3 Änderung am Objekt geht ins aktive Werkzeug",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "func (s *Sitzung) aendereZielStil(f func(*Stil)) { s.aendereStil(s.stilZiel(), f) }",
+    "neu": "func (s *Sitzung) aendereZielStil(f func(*Stil)) { s.aendereStil(s.paarWerkzeug(), f) }"
+  },
+  {
+    "name": "WS4 Laden ohne Faktor",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\tf := s.faktor()\n\tfor _, e := range liste {",
+    "neu": "\tf := 1.0\n\tfor _, e := range liste {"
+  },
+  {
+    "name": "WS5 Speichern ohne Faktor",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "st = stilMal(st, 1/s.faktor())",
+    "neu": "st = stilMal(st, 1)"
+  },
+  {
+    "name": "WS6 Gesetzt übergangen",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "gilt := func(k string) bool { return e.Gesetzt == nil || e.Gesetzt[k] }",
+    "neu": "gilt := func(k string) bool { return true }"
+  },
+  {
+    "name": "WS8 zu große Breite angenommen",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "if gilt(\"width\") && e.Breite > 0 && e.Breite*f <= document.MaxGroesse {",
+    "neu": "if gilt(\"width\") && e.Breite > 0 {"
+  },
+  {
+    "name": "WS9 Schreiben immer",
+    "datei": "internal/ui/werkzeugstile.go",
+    "paket": "./internal/ui",
+    "alt": "\tif werkzeugStand(e.s) == e.werkzeugStand {\n\t\treturn\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "WS10 Schreiben nie",
+    "datei": "internal/ui/werkzeugstile.go",
+    "paket": "./internal/ui",
+    "alt": "\tif werkzeugStand(e.s) == e.werkzeugStand {",
+    "neu": "\tif true {"
+  },
+  {
+    "name": "WS11 Laden übergangen",
+    "datei": "internal/ui/werkzeugstile.go",
+    "paket": "./internal/ui",
+    "alt": "\te.s.SetzeWerkzeugStile(roh)\n",
+    "neu": "\t_ = roh\n"
+  },
+  {
+    "name": "WS12 Wechsel nimmt nicht mit",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\te.werkzeugStileMitnehmen(alt) // Stil je Werkzeug bleibt beim Wechsel (ADR-0041 Punkt 4)\n",
+    "neu": "\t_ = alt\n"
+  },
+  {
+    "name": "WS13 Schließen schreibt nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.werkzeugStileSchreiben()           // Stil je Werkzeug",
+    "neu": "\t// e.werkzeugStileSchreiben()           // Stil je Werkzeug"
+  },
+  {
+    "name": "WS14 ungültiger Schlüssel verwirft nichts",
+    "datei": "internal/settings/werkzeugstile.go",
+    "paket": "./internal/settings",
+    "alt": "\t\tcase !setzeWerkzeugWert(cur, schluessel, wert):",
+    "neu": "\t\tcase !setzeWerkzeugWert(cur, schluessel, wert) && false:"
+  },
+  {
+    "name": "WS15 doppelter Abschnitt gilt",
+    "datei": "internal/settings/werkzeugstile.go",
+    "paket": "./internal/settings",
+    "alt": "\t\t\tcase da[art]:",
+    "neu": "\t\t\tcase false:"
+  },
+  {
+    "name": "WS16 shadow_on überschrieben von shadow",
+    "datei": "internal/settings/werkzeugstile.go",
+    "paket": "./internal/settings",
+    "alt": "\t\t\tan := s.Schatten.An // shadow_on davor gelesen\n\t\t\ts.Schatten = sch\n\t\t\ts.Schatten.An = an\n",
+    "neu": "\t\t\ts.Schatten = sch\n"
+  }
+]
