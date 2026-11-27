@@ -2510,7 +2510,7 @@ func (e *editor) zeichneAuswahl(gtx layout.Context) {
 		if w, ok := e.s.D.Objekt(id); ok {
 			for _, g := range auswahlRechtecke(w) {
 				r := image.Rectangle{Min: fe(g.Min), Max: fe(g.Max)}.Canon()
-				rahmen(gtx.Ops, r.Inset(-gtx.Dp(2)), gtx.Dp(1), farbeAuswahl)
+				auswahlLinie(gtx, r.Inset(-gtx.Dp(2)))
 			}
 		}
 	}
@@ -2518,7 +2518,7 @@ func (e *editor) zeichneAuswahl(gtx layout.Context) {
 		q := image.Rect(int(math.Round(r.Min.X)), int(math.Round(r.Min.Y)), int(math.Round(r.Max.X)),
 			int(math.Round(r.Max.Y))).Canon()
 		paint.FillShape(gtx.Ops, farbeAuswahlFlaeche, clip.Rect(q).Op())
-		rahmen(gtx.Ops, q, gtx.Dp(1), farbeAuswahl)
+		auswahlLinie(gtx, q)
 	}
 	o, ok := e.s.D.Objekt(e.s.Auswahl)
 	if !ok || o.Ebenenwerte().Ausgeblendet { // Ausgeblendetes zeigt keinen Rahmen (ADR-0032 Punkt 4)
@@ -2526,7 +2526,7 @@ func (e *editor) zeichneAuswahl(gtx layout.Context) {
 	}
 	for _, g := range auswahlRechtecke(o) {
 		r := image.Rectangle{Min: fe(g.Min), Max: fe(g.Max)}.Canon()
-		rahmen(gtx.Ops, r.Inset(-gtx.Dp(2)), gtx.Dp(1), farbeAuswahl)
+		auswahlLinie(gtx, r.Inset(-gtx.Dp(2)))
 	}
 	h := gtx.Dp(5)
 	if o.Ebenenwerte().Gesperrt {
@@ -2538,6 +2538,13 @@ func (e *editor) zeichneAuswahl(gtx layout.Context) {
 		paint.FillShape(gtx.Ops, farbeText, clip.Rect(q).Op())
 		rahmen(gtx.Ops, q, gtx.Dp(1), farbeAuswahl)
 	}
+}
+
+// auswahlLinie zeichnet einen Auswahlrahmen: die grüne Linie mit einer dunklen Kontur außen, damit er auch auf grünem
+// oder hellem Bildgrund zu sehen ist (Sichtprobe #334).
+func auswahlLinie(gtx layout.Context, r image.Rectangle) {
+	rahmen(gtx.Ops, r.Inset(-gtx.Dp(1)), gtx.Dp(1), farbeAuswahlKontur)
+	rahmen(gtx.Ops, r, gtx.Dp(1), farbeAuswahl)
 }
 
 // --- Tasten ---

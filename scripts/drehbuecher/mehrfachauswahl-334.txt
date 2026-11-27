@@ -1,0 +1,78 @@
+# Sichtprobe ADR-0039 mit Nachtrag 1 (Karte #334): Mehrfachauswahl, Ausrichten, Verteilen, Leertaste+Ziehen.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/mehrfachauswahl-334.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1. Nutzt „druecke“, „bewege“, „loslassen“, „taste-halten“, „taste-loslassen“ der
+# Fernbedienung: Rahmen und Ansicht werden mitten im Zug fotografiert.
+# Erwartet:
+#  01 drei rote Kästen auf verschiedener Höhe, keiner gewählt.
+#  02 mitten im Zug: grüner, dünner Auswahlrahmen mit dunkler Kontur über leicht grün getönter Fläche um alle drei.
+#  03 nach dem Loslassen alle drei gewählt: der oberste (rechts) mit Griffen, die beiden anderen mit grünem Rahmen (dunkle Kontur,
+#     auch auf dem grünen Grund zu sehen) ohne Griffe; Fußzeile „3 objects selected. Drag one to move all; Layer menu: align, distribute.“
+#  04 Menü „Layer“ offen, Eintrag „Align top“ hervorgehoben; Ausrichten und Verteilen sind nicht grau.
+#  05 alle drei oben bündig (Oberkante des höchsten), Auswahl bleibt.
+#  06 nach „Distribute horizontally“: der mittlere steht mit gleich großen Lücken zwischen den äußeren.
+#  07 Umschalt+Klick auf den linken Rand des linken (das leere Innere eines ungefüllten Kastens trifft nichts): er ist nicht mehr gewählt (kein Rahmen), Fußzeile „2 objects selected …“.
+#  08 Leertaste gehalten, mitten im Ziehen: Zeiger greifende Hand (nur sichtbar, wenn das Foto den Zeiger trägt), das
+#     Bild ist nach links oben verschoben, keine neue Auswahl, kein Rahmen.
+#  09 nach dem Loslassen: Ansicht bleibt verschoben, die Auswahl der zwei ist unverändert.
+warte 800
+taste R
+ziehe 300 300 450 400
+warte 200
+taste R
+ziehe 600 380 700 520
+warte 200
+taste R
+ziehe 850 250 1000 350
+warte 200
+taste V
+taste Esc
+warte 300
+foto 01-drei-kaesten
+druecke 250 220
+bewege 1050 560 20
+warte 300
+foto 02-rahmen-im-zug
+loslassen
+warte 300
+foto 03-drei-gewaehlt
+taste F10
+taste Rechts
+taste Rechts
+taste Rechts
+taste Rechts
+taste Rechts
+taste Ende
+taste Hoch
+taste Hoch
+taste Hoch
+taste Hoch
+warte 300
+foto 04-menue-ebene
+taste Enter
+warte 300
+foto 05-oben-ausgerichtet
+taste F10
+taste Rechts
+taste Rechts
+taste Rechts
+taste Rechts
+taste Rechts
+taste Ende
+taste Hoch
+taste Enter
+warte 300
+foto 06-verteilt
+taste-halten Umschalt
+klick 298 300
+taste-loslassen Umschalt
+warte 300
+foto 07-umschalt-klick
+taste-halten Leertaste
+druecke 800 700
+bewege 600 600 10
+warte 300
+foto 08-leertaste-im-zug
+loslassen
+taste-loslassen Leertaste
+warte 300
+foto 09-ansicht-verschoben
