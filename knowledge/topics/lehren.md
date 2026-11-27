@@ -1374,3 +1374,10 @@ Stand: 2026-11-27 (laufend ergänzt, zuletzt Sprint 14, Karten #361 und #334 Tei
 - **Eine Entscheidung „bevor sich etwas ändert“ als Parameter durchreichen** (F-914): `Doppelklick` bestätigte erst
   die Texteingabe und rief dann `Druecken`, das die Lage neu bewertete. `druecken(p, t, leertaste)` nimmt die
   Entscheidung vom Aufrufer.
+- **Eine Mindeststufe je Ereignis vervielfacht sich am Touchpad** (F-923): `radSchritt` hob jedes Rad-Ereignis auf
+  eine Viertelstufe — fürs Rad harmlos, am Touchpad (rund 100 kleine Ereignisse je Sekunde) elffacher Zoom je Sekunde.
+  Umrechnungen von Eingabestrecken skalieren linear; nur eine Obergrenze gegen Ausreißer.
+- **Nachlauf von Gio erkennt man an der Zeit** (ADR-0040 Nachtrag 1): `flushScroll` gibt Nachlauf-Ticks die Zeit des
+  letzten echten Ereignisses, aber die Umschalter zum Zeitpunkt des Ticks; Art einer Geste daher über die Zeit merken.
+- **Ein Test, der einen Vorzustand annimmt, erst gegen den Code prüfen** (#382): „das gerade gezeichnete Objekt ist
+  gewählt“ stimmte nicht; der Test scheiterte an der Kontrolle, nicht an der neuen Regel.
