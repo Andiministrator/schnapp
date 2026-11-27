@@ -58,6 +58,11 @@ func (e *editor) hilfeZeilen() []hilfeZeile {
 		hilfeZeile{text: i18n.T("New line in a text"), taste: i18n.T("Shift") + "+" + i18n.T("Enter")},
 		hilfeZeile{text: i18n.T("Snapping off while dragging"), taste: "Alt"},
 		hilfeZeile{text: i18n.T("Move the view in the navigator"), taste: i18n.T("Click, drag")},
+		// Mausrad auf der Leinwand (ADR-0040): rollt, mit Umschalt waagerecht, mit Strg zoomt es. Nur zwei Zeilen: mit einer
+		// eigenen Zeile für Umschalt oder den Navigator (Rad zoomt dort, steht in der README) rollte die Übersicht im
+		// Startfenster (F-705).
+		hilfeZeile{text: i18n.T("Scroll the view (Shift: sideways)"), taste: i18n.T("Wheel")},
+		hilfeZeile{text: i18n.T("Zoom at the pointer"), taste: i18n.T("Ctrl") + "+" + i18n.T("Wheel")},
 		// Mehrfachauswahl auf der Leinwand und Ansicht verschieben (ADR-0039 mit Nachtrag 1)
 		hilfeZeile{text: i18n.T("Add or remove an object"), taste: i18n.T("Shift") + "+" + i18n.T("Click")},
 		hilfeZeile{text: i18n.T("Select several objects"), taste: i18n.T("Drag in the image")},

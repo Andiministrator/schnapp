@@ -29,7 +29,8 @@ type menueLauf struct {
 	r     *input.Router
 	ops   *op.Ops
 	fenst image.Point
-	id    int // Text-Objekt „Hallo“, ausgewählt
+	id    int     // Text-Objekt „Hallo“, ausgewählt
+	skala float32 // PxPerDp der Bilder; 0 heißt 1
 }
 
 func neuerMenueLauf(t *testing.T, fenster image.Point) *menueLauf {
@@ -55,7 +56,11 @@ func neuerMenueLauf(t *testing.T, fenster image.Point) *menueLauf {
 }
 
 func (l *menueLauf) gtx() layout.Context {
-	return layout.Context{Ops: l.ops, Source: l.r.Source(), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1},
+	k := l.skala
+	if k == 0 {
+		k = 1
+	}
+	return layout.Context{Ops: l.ops, Source: l.r.Source(), Metric: unit.Metric{PxPerDp: k, PxPerSp: k},
 		Constraints: layout.Exact(l.fenst)}
 }
 

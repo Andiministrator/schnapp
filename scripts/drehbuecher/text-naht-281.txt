@@ -24,6 +24,8 @@ taste X
 ziehe 406 700 556 700 12
 warte 500
 foto 02-naht
+taste-halten Strg
 rad 406 500 -3
+taste-loslassen Strg
 warte 400
 foto 03-naht-gross

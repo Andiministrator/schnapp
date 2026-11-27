@@ -108,7 +108,8 @@ annotation. Dragging one of them moves all, **Del** deletes all, **Ctrl+D** dupl
 *Layer* menu aligns them (left, centres, right, top, bottom; from two) and distributes them evenly (from three). The
 sidebar, handles and colours still act on the last one selected; the others show a plain frame, and the footer says how
 many are selected.
-The mouse wheel zooms at the pointer. To move the view, hold **Space** and drag (with every tool, also on a touchpad
+The mouse wheel scrolls the view (with **Shift** sideways; on a touchpad, slide two fingers), **Ctrl**+wheel zooms at
+the pointer (on a touchpad, Ctrl and two fingers); over the navigator the wheel zooms without Ctrl. To move the view, hold **Space** and drag (with every tool, also on a touchpad
 without a middle button), drag with the middle button, drag the empty margin around the image, or use the navigator.
 Keys: **Ctrl+O** (*File → Open…*) opens another PNG or JPEG in the same window through the desktop file dialog (the open screenshot is saved first; a file from outside the library is copied into it with its first change), **Ctrl+Z** undo, **Ctrl+Shift+Z**/**Ctrl+Y** redo, **Del** delete, **Ctrl+S** save,
 **Ctrl+Shift+E** (*File → Export…*) export as PNG, JPG or SVG through the desktop file dialog (no editing data inside, redacted content stays gone; if replacing an existing file fails halfway and the old content cannot be restored, the footer names the file as damaged),

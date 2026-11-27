@@ -2000,3 +2000,12 @@ msgstr "Ansicht verschieben"
 
 msgid "Drag"
 msgstr "Ziehen"
+
+msgid "Scroll the view (Shift: sideways)"
+msgstr "Ansicht rollen (Umschalt: waagerecht)"
+
+msgid "Wheel"
+msgstr "Mausrad"
+
+msgid "Zoom at the pointer"
+msgstr "Zum Zeiger zoomen"

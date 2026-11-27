@@ -1,0 +1,37 @@
+# Sichtprobe ADR-0040 (Karte #375): Mausrad rollt die Ansicht, Strg+Rad zoomt zum Zeiger.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rad-375.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1, rechte Leiste eingeklappt. Die Fernbedienung sendet je Rastschritt 15 px ohne
+# axis_discrete (ein echtes Rad kommt bei Gio als 150 px an): 10 Schritte rollen 150 px, also wie ein echter Rastschritt.
+# Erwartet:
+#  01 eingepasst: ganzes Bild.
+#  02 Strg+Rad hoch (30 Schritte) über der Bildmitte: vergrößert um die Mitte, Navigator unten rechts.
+#  03 Rad runter (10 Schritte): Inhalt wandert um 150 px nach oben, Zoom unverändert (Fußzeile), Navigator-Rahmen tiefer.
+#  04 Umschalt+Rad runter (10 Schritte): Inhalt wandert um 150 px nach links.
+#  05 Rad hoch (10) und Umschalt+Rad hoch (10): wieder Stand 02.
+#  06 Strg+0: eingepasst wie 01.
+warte 1500
+taste Strg+Umschalt+B
+warte 400
+foto 01-eingepasst
+taste-halten Strg
+rad 700 500 -30
+taste-loslassen Strg
+warte 400
+foto 02-strg-rad-gezoomt
+rad 700 500 10
+warte 400
+foto 03-rad-runter-gerollt
+taste-halten Umschalt
+rad 700 500 10
+taste-loslassen Umschalt
+warte 400
+foto 04-umschalt-rad-waagerecht
+rad 700 500 -10
+taste-halten Umschalt
+rad 700 500 -10
+taste-loslassen Umschalt
+warte 400
+foto 05-zurueck
+taste Strg+0
+warte 400
+foto 06-eingepasst

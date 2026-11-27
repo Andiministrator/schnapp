@@ -61,5 +61,54 @@
     "paket": "./internal/canvas",
     "alt": "\ts.eingepasst = false\n\ts.Abb = s.Abb.Verschoben",
     "neu": "\ts.Abb = s.Abb.Verschoben"
+  },
+  {
+    "name": "RU1 Rad zoomt ohne Strg (alte Belegung)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if e.rad.zoomt(pe.Time, pe.Modifiers.Contain(key.ModShortcut)) {",
+    "neu": "if !e.rad.zoomt(pe.Time, pe.Modifiers.Contain(key.ModShortcut)) {"
+  },
+  {
+    "name": "RU2 ScrollX nicht angemeldet",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tScrollX: pointer.ScrollRange{Min: -1e6, Max: 1e6},\n",
+    "neu": ""
+  },
+  {
+    "name": "RU3 waagerecht verworfen",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "e.s.Rollen(float64(pe.Scroll.X)*k, float64(pe.Scroll.Y)*k)",
+    "neu": "e.s.Rollen(0, float64(pe.Scroll.Y)*k)"
+  },
+  {
+    "name": "RU4 ohne Skala",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "k := float64(gtx.Metric.PxPerDp)",
+    "neu": "k := 1.0"
+  },
+  {
+    "name": "RU5 Geste ohne Gedächtnis",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !r.gilt || t < r.zeit || t-r.zeit > radGesteZeit {\n\t\tr.zoom = strg\n\t}",
+    "neu": "\tr.zoom = strg"
+  },
+  {
+    "name": "RU6 frühere Zeit bleibt in der Geste",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "!r.gilt || t < r.zeit || t-r.zeit > radGesteZeit",
+    "neu": "!r.gilt || t-r.zeit > radGesteZeit"
+  },
+  {
+    "name": "RU7 erste Geste ohne Strg-Abfrage",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "!r.gilt || t < r.zeit",
+    "neu": "t < r.zeit"
   }
 ]

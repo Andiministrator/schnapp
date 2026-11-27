@@ -1,7 +1,7 @@
 # Sichtprobe ADR-0031 Nachtrag 9 (Karte #197): Navigator, die Mini-Übersicht unten rechts auf der Leinwand.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/navigator-197.txt --bild scripts/drehbuecher/testbild-1200x800.png
 # Bei 1600 × 1000, Skala 1: Die Leinwand liegt bei (52,30)–(1300,970); eingepasst liegt das Bild bei (76,100)–(1276,900).
-# 30 Rastschritte des Mausrads zoomen auf rund 292 %; der Navigator liegt dann bei (1128,851)–(1288,958), 12 px von den
+# 30 Rastschritte mit Strg (ADR-0040) zoomen auf rund 292 %; der Navigator liegt dann bei (1128,851)–(1288,958), 12 px von den
 # Kanten der Leinwand (Kasten 160 × 107, Seitenverhältnis des Bilds).
 # Erwartet:
 #  01 eingepasst: kein Navigator.
@@ -19,7 +19,9 @@
 #  10 Strg+0 (Einpassen): Kasten weg.
 warte 1500
 foto 01-eingepasst-ohne-navigator
+taste-halten Strg
 rad 600 450 -30
+taste-loslassen Strg
 warte 400
 foto 02-gezoomt-mit-navigator
 taste R

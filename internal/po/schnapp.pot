@@ -1793,6 +1793,22 @@ msgid "Click, drag"
 msgstr ""
 
 #: internal/ui/hilfe.go
+msgid "Scroll the view (Shift: sideways)"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Wheel"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Zoom at the pointer"
+msgstr ""
+
+#: internal/ui/hilfe.go internal/ui/kuerzel.go
+msgid "Ctrl"
+msgstr ""
+
+#: internal/ui/hilfe.go
 msgid "Add or remove an object"
 msgstr ""
 
@@ -1830,10 +1846,6 @@ msgstr ""
 
 #: internal/ui/hilfe.go
 msgid "Select a capture"
-msgstr ""
-
-#: internal/ui/hilfe.go internal/ui/kuerzel.go
-msgid "Ctrl"
 msgstr ""
 
 #: internal/ui/hilfe.go

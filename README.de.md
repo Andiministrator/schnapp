@@ -97,7 +97,8 @@ Bild zieht einen Auswahlrahmen auf (gewählt ist alles, was ganz darin liegt; mi
 verschiebt alle, **Entf** löscht alle, **Strg+D** doppelt alle, jeweils als ein Rückgängig-Schritt. Das Menü *Ebene*
 richtet sie aus (links, Mitten, rechts, oben, unten; ab zwei) und verteilt sie gleichmäßig (ab drei). Leiste, Griffe und
 Farben wirken weiter auf die zuletzt gewählte; die übrigen tragen einen schlichten Rahmen, die Fußzeile nennt die Zahl.
-Das Mausrad zoomt zum Zeiger. Die Ansicht verschiebst du mit gehaltener **Leertaste** und Ziehen (in jedem Werkzeug, auch
+Das Mausrad rollt die Ansicht (mit **Umschalt** waagerecht; am Touchpad zwei Finger schieben), **Strg**+Mausrad zoomt zum
+Zeiger (am Touchpad Strg und zwei Finger); über dem Navigator zoomt das Mausrad ohne Strg. Die Ansicht verschiebst du mit gehaltener **Leertaste** und Ziehen (in jedem Werkzeug, auch
 am Touchpad ohne mittlere Taste), mit der mittleren Taste, durch Ziehen auf dem leeren Rand um das Bild oder im
 Navigator. Tasten: **Strg+O** (*Datei → Öffnen …*) öffnet ein anderes PNG oder JPEG über den Dateidialog im selben Fenster (das offene Bildschirmfoto wird vorher gespeichert; eine Datei von außerhalb der Bibliothek wird mit ihrer ersten Änderung hineinkopiert), **Strg+Z**
 rückgängig, **Strg+Umschalt+Z**/**Strg+Y** wiederholen, **Entf** löschen, **Strg+S** speichern,

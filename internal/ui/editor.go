@@ -399,6 +399,10 @@ type editor struct {
 	letzterOrt   document.Punkt
 	hatDruck     bool
 
+	// rad merkt die Art der laufenden Rad-Geste (ADR-0040 Risiko 1): Nachlauf-Ereignisse des Touchpads tragen die Zeit
+	// des letzten echten Ereignisses, aber die Umschalter zum Zeitpunkt des Ticks.
+	rad radGeste
+
 	// objEbene: über bereichGrenze zeigt der Editor die Objekte aus der Objektebene des Renderers (objektebene.go,
 	// ADR-0023 Nachtrag 20, F-787); bereiche zählt die abgespielten Bereiche des laufenden eigenen Zeichnens.
 	objEbene objektEbene
@@ -1679,6 +1683,7 @@ func (e *editor) zeiger(gtx layout.Context) {
 		ev, ok := gtx.Event(pointer.Filter{
 			Target:  e,
 			Kinds:   pointer.Press | pointer.Drag | pointer.Release | pointer.Cancel | pointer.Scroll | pointer.Move | pointer.Leave,
+			ScrollX: pointer.ScrollRange{Min: -1e6, Max: 1e6},
 			ScrollY: pointer.ScrollRange{Min: -1e6, Max: 1e6},
 		})
 		if !ok {
@@ -1759,9 +1764,37 @@ func (e *editor) zeiger(gtx layout.Context) {
 		case pointer.Cancel:
 			e.s.Abbrechen()
 		case pointer.Scroll:
-			e.s.Scrollen(p, radSchritt(pe.Scroll.Y))
+			// ADR-0040: Strg+Rad zoomt zum Zeiger, das Rad allein rollt die Ansicht.
+			if e.rad.zoomt(pe.Time, pe.Modifiers.Contain(key.ModShortcut)) {
+				e.s.Scrollen(p, radSchritt(pe.Scroll.Y))
+			} else {
+				// Gio meldet Scroll in logischen Pixeln, Positionen in Fensterpixeln: mit der Skala malnehmen, damit
+				// der Inhalt dem Finger folgt (ADR-0040 Risiko 2).
+				k := float64(gtx.Metric.PxPerDp)
+				e.s.Rollen(float64(pe.Scroll.X)*k, float64(pe.Scroll.Y)*k)
+			}
 		}
 	}
+}
+
+// radGeste hält die Art einer Rad-Geste fest. Ein Ereignis, das höchstens radGesteZeit nach dem vorigen kommt (oder
+// dieselbe Zeit trägt wie der Nachlauf von Gio), gehört zur selben Geste und behält ihre Art; erst eine neue Geste
+// fragt Strg neu ab. So wird aus einem Nachlauf des Touchpads kein Zoomen, wenn Strg mittendrin gedrückt wird.
+type radGeste struct {
+	zeit time.Duration
+	zoom bool
+	gilt bool
+}
+
+const radGesteZeit = 150 * time.Millisecond
+
+// zoomt entscheidet für ein Rad-Ereignis zur Zeit t mit gedrücktem Strg (strg), ob es zoomt.
+func (r *radGeste) zoomt(t time.Duration, strg bool) bool {
+	if !r.gilt || t < r.zeit || t-r.zeit > radGesteZeit {
+		r.zoom = strg
+	}
+	r.zeit, r.gilt = t, true
+	return r.zoom
 }
 
 // radSchritt rechnet das Mausrad in Rastschritte um. Gio liefert Pixel; ein Rastschritt des Mausrads ergibt je nach

@@ -7,7 +7,9 @@
 #  03 Klick in die linke Kastenhälfte (auch ober- oder unterhalb des Bildstreifens): Ansicht springt dorthin.
 warte 1500
 foto 01-eingepasst-ohne-navigator
+taste-halten Strg
 rad 600 450 -30
+taste-loslassen Strg
 warte 400
 foto 02-gezoomt-flacher-kasten
 klick 1140 910

@@ -58,3 +58,22 @@ mit Nachlauf (Gio-`fling`). Umschalt allein macht aus dem senkrechten Rad ein wa
   `Modifiers` am `pointer.Event` selbst.
 - **Navigator:** Rad zoomt dort weiter ohne Strg, Umschalt+Rad wirkt dort nicht (kein `ScrollX`); in README und F1 sagen.
 - **Zeigerform:** Nach dem Rollen ohne Mausbewegung kann die Zeigerform veralten.
+
+## Nachtrag 1 — Umsetzung der Oberfläche (Claude Opus 5.5, 27.11.2026, Karte #375 Teil 2)
+1. **Nachlauf und Strg (Risiko 1):** Die Art (rollen oder zoomen) gilt je Geste (`radGeste` in `internal/ui/editor.go`).
+   Ein Ereignis, das höchstens 150 ms nach dem vorigen kommt, gehört zur selben Geste; Gio gibt Nachlauf-Ereignissen die
+   Zeit des letzten echten Ereignisses, sie bleiben also immer in der Geste. Eine frühere Zeit als die vorige beginnt eine
+   neue Geste. Wer mitten im Drehen Strg drückt, muss kurz absetzen — das gilt in Browsern ähnlich.
+2. **Skala (Risiko 2):** Die Strecke wird mit `PxPerDp` malgenommen; der Inhalt folgt dem Finger auch bei Skala 2.
+   Strg+Rad bleibt ohne Skala (`radSchritt`), wie vorher.
+3. **Gebrochener Versatz (Risiko 3):** nicht gerundet. In der Sichtprobe (`rad-375.txt`, 292 %) sind die Kanten scharf;
+   bei 1:1 mit dem Touchpad bleibt es in der echten Sitzung zu prüfen.
+4. **Einpassen (Risiko 4):** Rollen beendet das Einpassen auch dann, wenn das Bild ganz ins Fenster passt (wie Inkscape);
+   Strg+0 passt wieder ein. Eine Sperre bei passendem Bild wäre eine zweite Regel neben Punkt 5 der Entscheidung.
+5. **Rastschritt (F-921):** Gio bindet `wl_seat` in Version 5, ein Rastschritt kommt mit `axis_discrete` als 15 × 10 =
+   150 px — rollt 150 px, zoomt mit Strg drei Stufen (wie bisher das Rad allein). Die Fernbedienung der Probe sendet
+   15 px ohne `axis_discrete`; zehn ihrer Schritte entsprechen einem echten Rastschritt.
+6. **Übersicht F1:** zwei Zeilen („Scroll the view (Shift: sideways)“ — Wheel, „Zoom at the pointer“ — Ctrl+Wheel); der
+   Navigator steht nur in der README, eine dritte Zeile ließe die Übersicht im Startfenster rollen (F-705).
+7. **Zeigerform (Risiko 7):** Rad-Ereignisse gehen wie andere Zeigerereignisse durch `merkeZeiger` und fordern ein
+   Folgebild an; die Form wird damit am neuen Ort neu bestimmt.

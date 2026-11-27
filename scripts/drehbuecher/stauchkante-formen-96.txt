@@ -36,8 +36,10 @@ foto 02-abriss
 ziehe 526 586 726 586 12
 warte 400
 foto 03-abriss-beide-naehte
-# Vergrößert an der Kreuzung der Nähte (Mausrad hoch zoomt zum Zeiger)
+# Vergrößert an der Kreuzung der Nähte (Strg+Mausrad hoch zoomt zum Zeiger, ADR-0040)
+taste-halten Strg
 rad 626 486 -4
+taste-loslassen Strg
 warte 400
 foto 04-abriss-zoom
 taste Strg+0
@@ -55,7 +57,9 @@ foto 05-menue-kantenform
 taste Enter
 warte 400
 foto 06-welle
+taste-halten Strg
 rad 626 486 -4
+taste-loslassen Strg
 warte 400
 foto 07-welle-zoom
 taste Strg+0
@@ -71,7 +75,9 @@ warte 300
 taste Enter
 warte 400
 foto 08-zacken
+taste-halten Strg
 rad 626 486 -4
+taste-loslassen Strg
 warte 400
 foto 09-zacken-zoom
 taste Strg+0

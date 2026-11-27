@@ -115,6 +115,7 @@ func TestSperreZeigerKnoepfeMenue(t *testing.T) {
 	n1 := len(l.e.s.D.Objekte())
 	stand := l.e.s.D.Stand()
 	zoom := l.e.s.Abb.Zoom
+	versatz := l.e.s.Abb.Versatz
 
 	l.taste("S", key.ModShortcut)
 	if !l.e.s.SpeichernLaeuft() {
@@ -124,7 +125,11 @@ func TestSperreZeigerKnoepfeMenue(t *testing.T) {
 	l.klick(l.bildPt(image.Pt(10, 22)))
 	l.klick(l.bildPt(image.Pt(10, 22))) // Doppelklick auf den Text
 	sp := l.bildPt(image.Pt(10, 22))
+	// Rad rollt, Strg+Rad zoomt (ADR-0040); beides ruht während des Speicherns.
 	l.r.Queue(pointer.Event{Kind: pointer.Scroll, Source: pointer.Mouse, Position: f32.Pt(float32(sp.X), float32(sp.Y)), Scroll: f32.Pt(0, 120)})
+	l.setle()
+	l.r.Queue(pointer.Event{Kind: pointer.Scroll, Source: pointer.Mouse, Position: f32.Pt(float32(sp.X), float32(sp.Y)), Scroll: f32.Pt(0, 120),
+		Time: time.Second, Modifiers: key.ModShortcut})
 	l.setle()
 	for _, c := range []interface{ Click() }{&l.e.knoepfe.farbe, &l.e.knoepfe.fussFarbe, &l.e.knoepfe.fussZoom} {
 		c.Click()
@@ -147,7 +152,7 @@ func TestSperreZeigerKnoepfeMenue(t *testing.T) {
 	l.taste("Z", key.ModShortcut)
 	l.taste("E", key.ModShortcut|key.ModShift)
 	l.taste(key.NameEscape, 0)
-	if len(l.e.s.D.Objekte()) != n1 || l.e.s.D.Stand() != stand || l.e.s.Abb.Zoom != zoom ||
+	if len(l.e.s.D.Objekte()) != n1 || l.e.s.D.Stand() != stand || l.e.s.Abb.Zoom != zoom || l.e.s.Abb.Versatz != versatz ||
 		l.e.s.Werkzeug != canvas.WerkzeugKasten || l.e.s.Zieht() || l.e.exportOffen || l.e.exportAntwort != nil {
 		t.Errorf("während des Speicherns: Objekte %d (Soll %d), Stand %d/%d, Zoom %v/%v, Werkzeug %v, zieht %v, Export %v",
 			len(l.e.s.D.Objekte()), n1, l.e.s.D.Stand(), stand, l.e.s.Abb.Zoom, zoom, l.e.s.Werkzeug, l.e.s.Zieht(), l.e.exportOffen || l.e.exportAntwort != nil)
