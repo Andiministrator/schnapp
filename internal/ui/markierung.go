@@ -126,7 +126,8 @@ func (e *editor) leisteMarkierTaste(gtx layout.Context, i int, t key.Event) bool
 // bisher. Ein laufender Bereichsmodus, Zug, eine Texteingabe oder Pipette gehen vor, sie beendet Esc wie bisher zuerst.
 func (e *editor) leisteMarkierungEsc() bool {
 	k := &e.unten
-	if k.l == nil || k.l.Markierung().Anzahl() == 0 ||
+	// Nur eine sichtbare Markierung verbraucht Esc (Verify N-2): Bei ausgeblendeter Leiste wirkt Esc auf die Leinwand.
+	if k.l == nil || k.rahmen.Empty() || k.l.Markierung().Anzahl() == 0 ||
 		e.s.TextBereichLaeuft() || e.s.Zieht() || e.s.TextLaeuft() || e.s.PipetteLaeuft() {
 		return false
 	}

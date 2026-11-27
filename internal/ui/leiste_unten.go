@@ -300,6 +300,7 @@ func (e *editor) schalteLeiste(gtx layout.Context) {
 	}
 	k.an = !k.an
 	if !k.an {
+		k.l.Markierung().Leere() // eine unsichtbare Markierung nähme ein späteres Entf mit (Verify N-2)
 		for _, c := range k.alle() {
 			if gtx.Focused(c) {
 				gtx.Execute(key.FocusCmd{Tag: e}) // der Knopf mit Fokus verschwindet

@@ -459,8 +459,11 @@ Mehrfachmarkierung erweitert dieselbe Liste des Kontextmenüs.
    markierte, bleibt die offene, die übrigen gehen, und die Meldung sagt es. Scheitert der Wechsel, geht keine.
    **Nachgeschärft nach der Kritik 27.11. (F-887):** Die übrigen markierten gehen erst nach der Übernahme mit, und nur,
    soweit sie dann in der auslösenden Liste (Leiste oder Ansicht) noch gezeigt und markiert sind: Esc oder eine andere
-   Suche während Speichern und Laden nehmen sie heraus. Die bisher offene geht in jedem Fall, der Wechsel ist dann schon
-   geschehen.
+   Suche während Speichern und Laden nehmen sie heraus. Die bisher offene geht in jedem Fall, sobald die Nachbarin
+   übernommen ist: Esc hebt nur die Markierung auf, es bricht den Wechsel nicht ab (bewusst; die Aufnahme ist aus dem
+   Papierkorb rückholbar). Esc wirkt dafür in der Speicher- und in der Lade-Phase, auch mit Fokus auf der Leinwand;
+   eine Markierung der ausgeblendeten Leiste verbraucht kein Esc, Ausschalten der Leiste leert sie (Verify 27.11.,
+   N-1 bis N-4).
 8. **Nicht in diesem Teil (Folgekarte):** Exportieren mehrerer in einen Ordner, Kopieren mehrerer, Schlagworte für
    mehrere. **Abweichung von der Karte:** Kopieren mehrerer als `text/uri-list` der Arbeitsdateien ist verworfen. Die
    Arbeitsdatei trägt das Original ohne Zuschnitt und Stauchen (ADR-0008); wer Dateien weitergibt, gäbe weg, was er

@@ -425,5 +425,33 @@
     "paket": "./internal/ui",
     "alt": "\tif e.wechsel.ziel == \"\" { // abgebrochen",
     "neu": "\tif false { // abgebrochen"
+  },
+  {
+    "name": "MK62 Esc während des Speicherns erreicht die Markierung nicht (Verify N-1)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "} else if k.Name == key.NameEscape && k.Modifiers == 0 && e.leisteMarkierungEsc() {",
+    "neu": "} else if false && k.Name == key.NameEscape && k.Modifiers == 0 && e.leisteMarkierungEsc() {"
+  },
+  {
+    "name": "MK63 unsichtbare Markierung verbraucht Esc (Verify N-2)",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "if k.l == nil || k.rahmen.Empty() || k.l.Markierung().Anzahl() == 0 ||",
+    "neu": "if k.l == nil || k.l.Markierung().Anzahl() == 0 ||"
+  },
+  {
+    "name": "MK64 Ausschalten der Leiste leert die Markierung nicht (Verify N-2)",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tk.l.Markierung().Leere() // eine unsichtbare Markierung",
+    "neu": "\t\t// eine unsichtbare Markierung"
+  },
+  {
+    "name": "MK65 Esc-Vorrang der Texteingabe entfernt (Verify N-3)",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.s.TextBereichLaeuft() || e.s.Zieht() || e.s.TextLaeuft() || e.s.PipetteLaeuft() {",
+    "neu": "\t\tfalse {"
   }
 ]

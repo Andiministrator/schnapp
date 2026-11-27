@@ -2629,6 +2629,9 @@ func (e *editor) tasten(gtx layout.Context) {
 							e.knopfPerTaste(c)
 						}
 					}
+				} else if k.Name == key.NameEscape && k.Modifiers == 0 && e.leisteMarkierungEsc() {
+					// Esc hebt die Markierung der Leiste auch während des Speicherns auf, das einem Papierkorb-Wechsel
+					// vorausgeht: Sonst nähme der Wechsel die übrigen markierten trotz Esc mit (Verify N-1 zu F-887).
 				} else if t, ok := findeTaste(k.Name, k.Modifiers, e.s.TextLaeuft()); ok && !t.hatWerkzeug &&
 					((t.akt == aktKopieren && !e.bibl.offen) || t.akt == aktSchliessen) { // Strg+C nicht an der Ansicht vorbei (F-678 Punkt 3)
 					e.fuehreAus(gtx, t.akt, false)
