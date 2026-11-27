@@ -268,6 +268,9 @@ func TestEditorZeichnetAuswahlrahmenAnDerRichtigenStelle(t *testing.T) {
 	if p := b.RGBAAt(r2.Min.X+(r2.Dx())/4, r2.Min.Y-3); !gleich(p, farbeAuswahlKontur) {
 		t.Errorf("Hauptauswahl: Pixel oben 3 außen %v, Soll Kontur", p)
 	}
+	if p := b.RGBAAt(r2.Min.X-2, r2.Min.Y+(r2.Dy())/4); !gleich(p, farbeAuswahl) {
+		t.Errorf("Hauptauswahl: Pixel links 2 außen %v, Soll Auswahlfarbe", p)
+	}
 	// Aufgezogener Rahmen (auf freier Fläche: der zweite Kasten weicht vorher).
 	l.e.s.Abwaehlen()
 	if err := l.e.s.D.Entfernen(k2); err != nil {

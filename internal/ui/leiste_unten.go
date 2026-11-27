@@ -411,6 +411,7 @@ func (e *editor) leistePapierkorb(i int) {
 	if offen {
 		nachbarn = e.nachbarnIn(k.gezeigt, i)
 	}
+	e.fokusBleibt = offen && k.fokusHier == i // per Taste an der offenen: der Fokus bleibt in der Leiste (F-912, F-918)
 	e.papierkorbAnfrage(k.gezeigt[i], offen, nachbarn)
 }
 
@@ -421,7 +422,10 @@ func (e *editor) leisteOeffne(i int) {
 	if i < 0 || i >= len(k.gezeigt) || k.gezeigt[i] == "" {
 		return
 	}
-	e.wechselAnfrage(filepath.Join(e.bib.Bibliothek.Orte.Ablage, filepath.FromSlash(k.gezeigt[i])))
+	e.fokusBleibt = k.fokusHier == i // per Taste an dieser Vorschau: der Fokus bleibt in der Leiste (F-912, F-918)
+	if !e.wechselAnfrage(filepath.Join(e.bib.Bibliothek.Orte.Ablage, filepath.FromSlash(k.gezeigt[i]))) {
+		e.fokusBleibt = false // kein Wechsel (offene Aufnahme, gesperrt): der Merker gilt keinem späteren
+	}
 }
 
 // leisteTaste behandelt Pfeile links und rechts, Pos1 und Ende, solange eine Vorschau den Fokus hat; Enter und

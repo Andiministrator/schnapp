@@ -1361,3 +1361,16 @@ Stand: 2026-11-27 (laufend ergänzt, zuletzt Sprint 14, Karten #361 und #334 Tei
   Klick. Ein Kürzel an `Focus: e` braucht einen Anfangsfokus beim Öffnen und nach jedem Dokumentwechsel.
 - **Zeichentests prüfen den Ort, nicht nur die Farbe** (F-909): Ein Pixelzähler übersieht versetzte Rahmen und eine
   fehlende Kontur; ein Pixel an der erwarteten Stelle fängt beides.
+
+## Sprint 14, Sitzungs-QA (13) und (14) (27.11.2026, F-912 bis F-922)
+- **Fokus nach einem Merker nicht nach der Fokuslage entscheiden, sondern nach dem Auslöser** (F-912, F-918): „Hält
+  ein Knopf der Leiste den Fokus?“ ist auch wahr, wenn er dort nur geparkt war und ein Mausklick den Wechsel auslöste.
+  Der Auslöser (Taste an genau dieser Vorschau) gehört gemerkt und beim Verbrauch geprüft; Gio-Knöpfe nehmen bei
+  Mausklick keinen Fokus.
+- **Ein überlebender Mutant wird nicht still gestrichen** (MU43): Entweder fehlt ein Test, oder der Code ist überflüssig
+  — dann Code und Mutant zusammen entfernen und den Grund in Doku oder Commit festhalten.
+- **Python-Einzeiler: nie `open(p, 'w')` vor dem Lesen derselben Datei** — `open(p,'w').write(open(p).read()+…)`
+  leert die Datei, bevor sie gelesen wird (Archiv einmal geleert, aus HEAD wiederhergestellt).
+- **Eine Entscheidung „bevor sich etwas ändert“ als Parameter durchreichen** (F-914): `Doppelklick` bestätigte erst
+  die Texteingabe und rief dann `Druecken`, das die Lage neu bewertete. `druecken(p, t, leertaste)` nimmt die
+  Entscheidung vom Aufrufer.

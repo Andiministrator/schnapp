@@ -46,3 +46,44 @@ func TestRollenGrenzen(t *testing.T) {
 	}
 	s.Loslassen(f(170, 90))
 }
+
+// Kritik 2 B-3 (F-922): Klemme in beide Richtungen und für dx, NaN auch in dy, Rollen während der Texteingabe (ADR-0040
+// Punkt 1), nichts während die mittlere Taste die Ansicht verschiebt.
+func TestRollenGrenzfaelle(t *testing.T) {
+	s := dreiKaesten(t)
+	null := s.Abb.ZuFenster(document.Pt(0, 0))
+	weg := func() document.Punkt { return s.Abb.ZuFenster(document.Pt(0, 0)).Minus(null) }
+	s.Rollen(-1e9, 0)
+	if d := weg(); d.X != RollGrenze || d.Y != 0 {
+		t.Errorf("negativer Ausreißer in dx: %v, Soll (%v, 0)", d, RollGrenze)
+	}
+	s.Rollen(1e9, -1e9)
+	if d := weg(); d.X != 0 || d.Y != RollGrenze {
+		t.Errorf("Ausreißer in dx und negativ in dy: %v, Soll (0, %v)", d, RollGrenze)
+	}
+	vor := s.Abb
+	s.Rollen(5, math.NaN())
+	if s.Abb != vor {
+		t.Error("NaN in dy änderte die Ansicht")
+	}
+	s = dreiKaesten(t) // frisch: die Ansicht oben ist weggerollt
+	s.SetzeWerkzeug(WerkzeugText)
+	klick(s, f(50, 60), false)
+	if !s.TextLaeuft() {
+		t.Fatal("keine Texteingabe")
+	}
+	vor = s.Abb
+	s.Rollen(0, 40)
+	if s.Abb == vor {
+		t.Error("Rollen während der Texteingabe wirkt nicht")
+	}
+	s.TextBestaetigen()
+	s.Druecken(f(5, 5), TasteMitte)
+	s.Ziehen(f(15, 15))
+	vor = s.Abb
+	s.Rollen(0, 40)
+	if s.Abb != vor {
+		t.Error("Rollen während die mittlere Taste zieht")
+	}
+	s.Loslassen(f(15, 15))
+}

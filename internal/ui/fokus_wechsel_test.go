@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"gioui.org/io/key"
+
+	"github.com/Andiministrator/schnapp/internal/canvas"
 )
 
 // F-912 (Verify zu F-907): Enter an einer Vorschau der Leiste öffnet sie; der Tastaturfokus bleibt in der Leiste, damit
@@ -86,5 +88,57 @@ func TestFokusHolenNichtHinterTafeln(t *testing.T) {
 		if l.e.fokusHolen || !l.fokus(l.e) {
 			t.Errorf("%s: nach dem Schließen kein Fokus auf der Leinwand (Merker %v)", fall.name, l.e.fokusHolen)
 		}
+	}
+}
+
+// F-918 (Kritik 2 A-1, A-2): Nur ein Wechsel per Taste an der Vorschau mit Fokus lässt den Fokus in der Leiste. Ein
+// Mausklick auf eine andere Vorschau, während eine Vorschau den Fokus geparkt hält, und ein Wechsel, während der Knopf
+// „Library“ ihn hält, geben ihn der Leinwand; Leertaste+Ziehen verschiebt danach, statt eine Vorschau zu öffnen.
+func TestFokusNachMausklickUndLibraryKnopf(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	l.e.s.Gespeichert()
+	l.e.fokusHolen = false
+	k := &l.e.unten
+	l.fokusiere(&k.knoepfe[0])
+	l.klick(l.kachel(2))
+	l.ruhig()
+	l.setle()
+	if !l.fokus(l.e) || l.e.fokusBleibt {
+		t.Fatalf("Mausklick bei geparktem Fokus: Leinwand %v, Merker %v; Soll Fokus auf der Leinwand", l.fokus(l.e),
+			l.e.fokusBleibt)
+	}
+	l.e.s.SetzeWerkzeug(canvas.WerkzeugKasten)
+	l.r.Queue(key.Event{Name: key.NameSpace, State: key.Press})
+	l.setle()
+	zahl, aufrufe := len(l.e.s.D.Objekte()), len(l.aufrufe())
+	f := l.e.leinwandFlaeche(l.gtx())
+	l.zug(f.Min.Add(image.Pt(105, 105)), f.Min.Add(image.Pt(130, 125)))
+	l.r.Queue(key.Event{Name: key.NameSpace, State: key.Release})
+	l.setle()
+	l.ruhig()
+	if len(l.e.s.D.Objekte()) != zahl || len(l.aufrufe()) != aufrufe {
+		t.Errorf("Leertaste+Ziehen: Objekte %d→%d, Öffnen %d→%d; Soll unverändert", zahl, len(l.e.s.D.Objekte()),
+			aufrufe, len(l.aufrufe()))
+	}
+	// Knopf „Library“ hält den Fokus, Wechsel aus dem Code (wie Strg+O): die Leinwand bekommt ihn.
+	l.fokusiere(&k.bibKnopf)
+	l.e.wechselAnfrage(l.pfade[0])
+	l.ruhig()
+	l.setle()
+	if !l.fokus(l.e) {
+		t.Error("Wechsel bei Fokus auf „Library“: Leinwand ohne Fokus")
+	}
+}
+
+// Enter an der offenen Aufnahme wechselt nicht; der Merker fokusBleibt darf dann keinem späteren Wechsel gelten.
+func TestFokusMerkerOhneWechsel(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	l.e.s.Gespeichert()
+	k := &l.e.unten
+	l.fokusiere(&k.knoepfe[1]) // die offene
+	l.taste(key.NameReturn, 0)
+	l.ruhig()
+	if l.e.fokusBleibt {
+		t.Error("Merker bleibt nach Enter an der offenen Aufnahme stehen")
 	}
 }

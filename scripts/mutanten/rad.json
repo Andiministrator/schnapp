@@ -1,0 +1,65 @@
+[
+  {
+    "name": "RD1 untere Klemme fehlt",
+    "datei": "internal/canvas/rollen.go",
+    "paket": "./internal/canvas",
+    "alt": "math.Max(-RollGrenze, math.Min(RollGrenze, v))",
+    "neu": "math.Min(RollGrenze, v)"
+  },
+  {
+    "name": "RD2 obere Klemme fehlt",
+    "datei": "internal/canvas/rollen.go",
+    "paket": "./internal/canvas",
+    "alt": "math.Max(-RollGrenze, math.Min(RollGrenze, v))",
+    "neu": "math.Max(-RollGrenze, v)"
+  },
+  {
+    "name": "RD3 dx ungeklemmt",
+    "datei": "internal/canvas/rollen.go",
+    "paket": "./internal/canvas",
+    "alt": "document.Pt(-klemme(dx), -klemme(dy))",
+    "neu": "document.Pt(-dx, -klemme(dy))"
+  },
+  {
+    "name": "RD4 NaN in dy ungeprüft",
+    "datei": "internal/canvas/rollen.go",
+    "paket": "./internal/canvas",
+    "alt": "math.IsNaN(dx) || math.IsNaN(dy) ||",
+    "neu": "math.IsNaN(dx) ||"
+  },
+  {
+    "name": "RD5 Inf ungeprüft",
+    "datei": "internal/canvas/rollen.go",
+    "paket": "./internal/canvas",
+    "alt": "|| math.IsInf(dx, 0) || math.IsInf(dy, 0) ||",
+    "neu": "||"
+  },
+  {
+    "name": "RD6 rollt während eines Zugs",
+    "datei": "internal/canvas/rollen.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.Zieht() || math.IsNaN(dx)",
+    "neu": "\tif math.IsNaN(dx)"
+  },
+  {
+    "name": "RD7 ruht in der Texteingabe",
+    "datei": "internal/canvas/rollen.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.Zieht() || math.IsNaN(dx)",
+    "neu": "\tif s.Zieht() || s.TextLaeuft() || math.IsNaN(dx)"
+  },
+  {
+    "name": "RD8 Vorzeichen falsch",
+    "datei": "internal/canvas/rollen.go",
+    "paket": "./internal/canvas",
+    "alt": "document.Pt(-klemme(dx), -klemme(dy))",
+    "neu": "document.Pt(klemme(dx), klemme(dy))"
+  },
+  {
+    "name": "RD9 Einpassen bleibt",
+    "datei": "internal/canvas/rollen.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.eingepasst = false\n\ts.Abb = s.Abb.Verschoben",
+    "neu": "\ts.Abb = s.Abb.Verschoben"
+  }
+]

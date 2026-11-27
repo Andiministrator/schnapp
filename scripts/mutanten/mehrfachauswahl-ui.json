@@ -262,8 +262,8 @@
     "name": "MU38 Wechsel holt der Leinwand keinen Fokus (Verify N1, F-913)",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "\te.fokusHolen = true // die neue Aufnahme",
-    "neu": "\te.fokusHolen = false // die neue Aufnahme"
+    "alt": "\te.fokusHolen, e.fokusBleibt = !e.fokusBleibt, false",
+    "neu": "\te.fokusHolen, e.fokusBleibt = false, false"
   },
   {
     "name": "MU39 Fokus holen hinter dem Menü (N2)",
@@ -288,10 +288,10 @@
   },
   {
     "name": "MU42 Leinwand nimmt der Leiste den Fokus (F-912)",
-    "datei": "internal/ui/editor.go",
+    "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif !e.leisteHaeltFokus(gtx) {\n\t\t\tgtx.Execute(key.FocusCmd{Tag: e})",
-    "neu": "\t\tif true {\n\t\t\tgtx.Execute(key.FocusCmd{Tag: e})"
+    "alt": "\te.fokusHolen, e.fokusBleibt = !e.fokusBleibt, false",
+    "neu": "\te.fokusHolen, e.fokusBleibt = true, false"
   },
   {
     "name": "MU44 Alt+Leertaste hält (N5)",
@@ -334,5 +334,26 @@
     "paket": "./internal/ui",
     "alt": "\t\tauswahlLinie(gtx, r.Inset(-gtx.Dp(2)))\n\t}\n\th := gtx.Dp(5)",
     "neu": "\t\tauswahlLinie(gtx, r.Inset(-gtx.Dp(2)).Add(image.Pt(0, 3)))\n\t}\n\th := gtx.Dp(5)"
+  },
+  {
+    "name": "MU50 Mausklick lässt den Fokus in der Leiste (F-918)",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\te.fokusBleibt = k.fokusHier == i // per Taste an dieser Vorschau",
+    "neu": "\te.fokusBleibt = true // per Taste an dieser Vorschau"
+  },
+  {
+    "name": "MU51 Merker bleibt ohne Wechsel stehen (F-918)",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.fokusBleibt = false // kein Wechsel",
+    "neu": "\t\t_ = e // kein Wechsel"
+  },
+  {
+    "name": "MU52 Rahmen der Hauptauswahl waagerecht versetzt (Kritik 2 A-3)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tauswahlLinie(gtx, r.Inset(-gtx.Dp(2)))\n\t}\n\th := gtx.Dp(5)",
+    "neu": "\t\tauswahlLinie(gtx, r.Inset(-gtx.Dp(2)).Add(image.Pt(3, 0)))\n\t}\n\th := gtx.Dp(5)"
   }
 ]

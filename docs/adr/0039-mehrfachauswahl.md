@@ -78,7 +78,7 @@ und Rahmen. Das Dokument kennt nur Züge und Befehle an einem Objekt.
   enthaltene.
 
 ## Konsequenzen
-- `internal/document`: Zug und Befehle über mehrere Objekte; `internal/canvas`: `Mehr`, `Gewaehlt`, Rahmen-Zug,
+- `internal/document`: Zug und Befehle über mehrere Objekte; `internal/canvas`: `mehrfach` (Feld `Sitzung.mf`), `Gewaehlt`, Rahmen-Zug,
   Ausrichten und Verteilen (`mehrfach.go`); `internal/ui`: Umschalt-Klick, Rahmen zeichnen, Menüeinträge (Bearbeiten →
   „Select all“ Strg+A, Ebene → Ausrichten/Verteilen), Darstellung der weiteren Auswahl.
 - Tests, Mutanten, Sichtprobe; README en/de (Ziehen im Bild wählt jetzt, statt die Ansicht zu verschieben).
@@ -106,7 +106,8 @@ Ansicht auch am Touchpad ohne mittlere Taste. „Mausrad rollt, Strg+Rad zoomt�
    Verschiebe-Druck zählt nicht für einen folgenden Doppelklick; ein Doppelklick aus einer Texteingabe heraus
    bestätigt sie und wirkt danach wie ohne Leertaste (F-914). Die Leinwand holt sich beim Öffnen und nach jedem
    Wechsel der Aufnahme den Tastaturfokus, damit Leertaste+Ziehen ohne vorherigen Klick ins Bild wirkt. Liegen Menü,
-   Übersicht, Einstellungstafel oder volle Ansicht der Bibliothek davor, wartet das, bis sie geschlossen sind; hält
-   eine Vorschau der Leiste der letzten Aufnahmen den Fokus (Enter oder Entf an ihr), bleibt er
-   dort — Pfeile und Enter bedienen die Leiste weiter (ADR-0036 Punkt 1, F-912). Menü, Übersicht, Tafel, volle Ansicht,
+   Übersicht, Einstellungstafel oder volle Ansicht der Bibliothek davor, wartet das, bis sie geschlossen sind; kam der
+   Wechsel per Taste (Enter oder Entf) an der Vorschau der Leiste der letzten Aufnahmen, die den Fokus hatte, bleibt
+   er dort — Pfeile und Enter bedienen die Leiste weiter (ADR-0036 Punkt 1, F-912). Ein Mausklick auf eine Vorschau
+   oder ein Wechsel aus dem Menü gibt ihn der Leinwand, auch wenn ein Knopf der Leiste ihn vorher hielt (F-918). Menü, Übersicht, Tafel, volle Ansicht,
    Texteingabe, Fokusverlust der Leinwand und des Fensters lassen eine gehaltene Leertaste los.

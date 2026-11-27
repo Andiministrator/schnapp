@@ -236,8 +236,9 @@ type editor struct {
 	meldung   canvas.Meldung // Zeile in der Fußzeile (Speichern, Hinweis, Fehler); Vorrang regelt canvas.StatusZeile (F-151)
 	titelSet  string
 
-	// fokusHolen: die Leinwand holt sich beim nächsten Bild den Tastaturfokus (Öffnen, Wechsel; F-907).
-	fokusHolen bool
+	// fokusHolen: die Leinwand holt sich beim nächsten Bild den Tastaturfokus (Öffnen, Wechsel; F-907). fokusBleibt:
+	// der laufende Wechsel kam per Taste an einer Vorschau der Leiste, der Fokus bleibt dort (F-912, F-918).
+	fokusHolen, fokusBleibt bool
 
 	wache *canvas.Signalwache // nimmt Signale an (eigene Goroutine), Ereignisschleife fragt Angekommen
 	// wecker weckt die Ereignisschleife für Signal und Dateidialog, bis sie ein Ereignis bearbeitet (F-231).
@@ -2586,16 +2587,6 @@ func (e *editor) alleTastenFilter() []event.Filter {
 	return filter
 }
 
-// leisteHaeltFokus meldet, ob ein Knopf der Leiste der letzten Aufnahmen den Tastaturfokus hat (F-912).
-func (e *editor) leisteHaeltFokus(gtx layout.Context) bool {
-	for _, z := range e.unten.ziele() {
-		if gtx.Focused(z) {
-			return true
-		}
-	}
-	return false
-}
-
 // fensterFokus folgt dem Fokus des Fensters: Verliert es ihn, käme das Loslassen der Leertaste nicht mehr an, sie gilt
 // als losgelassen (ADR-0039 Nachtrag 1).
 func (e *editor) fensterFokus(an bool) {
@@ -2626,12 +2617,9 @@ func (e *editor) leertastenZiele() []event.Tag {
 func (e *editor) tasten(gtx layout.Context) {
 	e.menue.gewechselt = false
 	if e.fokusHolen && !e.menue.offen && !e.hilfeOffen && !e.einst.offen && !e.bibl.offen {
-		// Ohne Fokus auf der Leinwand kämen weder Leertaste+Ziehen noch Kürzel an, bis man ins Bild klickt (F-907). Hält
-		// eine Vorschau der Leiste den Fokus (Enter oder Entf an ihr), bleibt er dort (F-912).
+		// Ohne Fokus auf der Leinwand kämen weder Leertaste+Ziehen noch Kürzel an, bis man ins Bild klickt (F-907).
 		e.fokusHolen = false
-		if !e.leisteHaeltFokus(gtx) {
-			gtx.Execute(key.FocusCmd{Tag: e})
-		}
+		gtx.Execute(key.FocusCmd{Tag: e})
 	}
 	if e.s.Leertaste() && !e.leertasteGilt(gtx) {
 		e.s.SetzeLeertaste(false) // Fokus weg, Texteingabe, Menü oder Tafel: das Loslassen käme nicht an

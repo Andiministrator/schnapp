@@ -317,7 +317,9 @@ func (e *editor) uebernimm(g Geoeffnet) {
 	}
 	einrasten, navigator := e.s.EinrastenAn(), e.s.NavigatorAn()
 	e.s = canvas.NeueSitzung(g.Dokument)
-	e.fokusHolen = true // die neue Aufnahme hat den Tastaturfokus (F-907); die volle Ansicht hält ihn, solange sie offen ist
+	// Die neue Aufnahme hat den Tastaturfokus (F-907), außer der Wechsel kam per Taste aus der Leiste: dort bleibt er
+	// (F-912, F-918). Die volle Ansicht hält ihn, solange sie offen ist.
+	e.fokusHolen, e.fokusBleibt = !e.fokusBleibt, false
 	if einrasten != e.s.EinrastenAn() {
 		e.s.SchalteEinrasten()
 	}
