@@ -98,17 +98,16 @@ func feldEigenschaft(f Farbfeld) Eigenschaft {
 // traegerReihe sind die gewählten Objekte in der Reihenfolge, in der die Leiste ihre Werte sucht: die Hauptauswahl,
 // dann die übrigen von oben nach unten.
 func (s *Sitzung) traegerReihe() []document.Objekt {
-	ids := s.Gewaehlt()
-	r := make([]document.Objekt, 0, len(ids))
-	if o, ok := s.D.Objekt(s.Auswahl); ok {
-		r = append(r, o)
-	}
-	for i := len(ids) - 1; i >= 0; i-- {
-		if ids[i] == s.Auswahl {
-			continue
-		}
-		if o, ok := s.D.Objekt(ids[i]); ok {
+	os := s.gewaehlteObjekte()
+	r := make([]document.Objekt, 0, len(os))
+	for _, o := range os {
+		if o.Kennung() == s.Auswahl {
 			r = append(r, o)
+		}
+	}
+	for i := len(os) - 1; i >= 0; i-- {
+		if os[i].Kennung() != s.Auswahl {
+			r = append(r, os[i])
 		}
 	}
 	return r
@@ -253,12 +252,43 @@ func (s *Sitzung) mehrZugSetze(f func(document.Objekt) document.Objekt, merke fu
 
 // --- Schatten ---
 
-// schattenUebertrag überträgt die Änderung von vorher nach neu (an der Leiste) auf den Schatten cur (ADR-0039 Nachtrag 4
-// Punkt 3): An/Aus, wenn es sich geändert hat (beim Einschalten ohne eigene Werte die aus ersatz), dann jeder geänderte
-// Wert, wenn der Schatten an ist. amObjekt: Ein ausgeschalteter Schatten am Objekt ist der Nullwert; das Werkzeug
-// behält seine Werte auch aus.
-func schattenUebertrag(cur, vorher, neu document.Schatten, ersatz func() document.Schatten, amObjekt bool) document.Schatten {
+// schattenTeil ist eine Menge von Bestandteilen des Schattens, die eine Änderung an der Leiste setzt.
+type schattenTeil uint8
+
+const (
+	teilAn schattenTeil = 1 << iota
+	teilWinkel
+	teilLaenge
+	teilWeich
+	teilFarbe
+)
+
+// geaenderteTeile sind die Bestandteile, in denen sich neu von vorher unterscheidet.
+func geaenderteTeile(vorher, neu document.Schatten) schattenTeil {
+	var t schattenTeil
 	if neu.An != vorher.An {
+		t |= teilAn
+	}
+	if neu.Winkel != vorher.Winkel {
+		t |= teilWinkel
+	}
+	if neu.Laenge != vorher.Laenge {
+		t |= teilLaenge
+	}
+	if neu.Weich != vorher.Weich {
+		t |= teilWeich
+	}
+	if neu.Farbe != vorher.Farbe {
+		t |= teilFarbe
+	}
+	return t
+}
+
+// schattenUebertrag setzt die Bestandteile teile von neu auf den Schatten cur (ADR-0039 Nachtrag 4 Punkt 3): An/Aus
+// (beim Einschalten ohne eigene Werte die aus ersatz), dann jeden Wert, wenn der Schatten an ist. amObjekt: Ein
+// ausgeschalteter Schatten am Objekt ist der Nullwert; das Werkzeug behält seine Werte auch aus.
+func schattenUebertrag(cur, neu document.Schatten, teile schattenTeil, ersatz func() document.Schatten, amObjekt bool) document.Schatten {
+	if teile&teilAn != 0 {
 		switch {
 		case neu.An && !cur.An:
 			if cur.Laenge == 0 && cur.Weich == 0 && cur.Farbe == (color.NRGBA{}) {
@@ -274,16 +304,16 @@ func schattenUebertrag(cur, vorher, neu document.Schatten, ersatz func() documen
 	if !cur.An && amObjekt {
 		return cur
 	}
-	if neu.Winkel != vorher.Winkel {
+	if teile&teilWinkel != 0 {
 		cur.Winkel = neu.Winkel
 	}
-	if neu.Laenge != vorher.Laenge {
+	if teile&teilLaenge != 0 {
 		cur.Laenge = neu.Laenge
 	}
-	if neu.Weich != vorher.Weich {
+	if teile&teilWeich != 0 {
 		cur.Weich = neu.Weich
 	}
-	if neu.Farbe != vorher.Farbe {
+	if teile&teilFarbe != 0 {
 		cur.Farbe = neu.Farbe
 	}
 	return gueltigerSchatten(cur)
@@ -301,27 +331,44 @@ func (s *Sitzung) schattenErsatz(w Werkzeug) func() document.Schatten {
 	}
 }
 
-// objektMitSchatten ist o mit dem übertragenen Schatten.
-func (s *Sitzung) objektMitSchatten(o document.Objekt, vorher, neu document.Schatten) document.Objekt {
+// objektMitSchatten ist o mit den übertragenen Bestandteilen; false, wenn sich o dadurch nicht ändert (F-943: dann
+// merkt sein Werkzeug auch nichts).
+func (s *Sitzung) objektMitSchatten(o document.Objekt, neu document.Schatten, teile schattenTeil) (document.Objekt, bool) {
 	w, _ := objektWerkzeug(o)
-	return mitSchatten(o, schattenUebertrag(o.Ebenenwerte().Schatten, vorher, neu, s.schattenErsatz(w), true))
+	n := mitSchatten(o, schattenUebertrag(o.Ebenenwerte().Schatten, neu, teile, s.schattenErsatz(w), true))
+	return n, !document.Gleich(n, o)
 }
 
-// merkeSchatten überträgt die Änderung auf den Schatten des Werkzeugs w, ausgehend von basis.
-func (s *Sitzung) merkeSchatten(w Werkzeug, basis Stil, vorher, neu document.Schatten) {
+// merkeSchatten überträgt die Bestandteile auf den Schatten des Werkzeugs w, ausgehend von basis.
+func (s *Sitzung) merkeSchatten(w Werkzeug, basis Stil, neu document.Schatten, teile schattenTeil) {
 	s.aendereStil(w, func(st *Stil) {
 		*st = basis
-		st.Schatten = schattenUebertrag(basis.Schatten, vorher, neu, func() document.Schatten {
+		st.Schatten = schattenUebertrag(basis.Schatten, neu, teile, func() document.Schatten {
 			return document.StandardSchatten(s.faktor())
 		}, false)
 	})
 }
 
-// setzeSchattenMehrere überträgt die Änderung von vorher nach neu auf alle gewählten und ihre Werkzeuge.
+// feldSchattenNachfuehren hält das Feld Schatten beim Schatten der gewählten, wenn sich der Träger geändert hat
+// (F-950: sonst fiele es still auf den Vordergrund zurück und der Farbwähler färbte die Striche aller gewählten).
+func (s *Sitzung) feldSchattenNachfuehren() {
+	if s.feld == FeldSchatten && s.Schatten().An {
+		s.feldSchattenID = s.schattenZiel()
+	}
+}
+
+// setzeSchattenMehrere überträgt die Änderung von vorher nach neu auf alle gewählten, die sich dadurch ändern, und
+// deren Werkzeuge.
 func (s *Sitzung) setzeSchattenMehrere(vorher, neu document.Schatten) bool {
-	return s.setzeMehrere(func(o document.Objekt) (document.Objekt, bool) {
-		return s.objektMitSchatten(o, vorher, neu), true
-	}, func(w Werkzeug) { s.merkeSchatten(w, s.stilVon(w), vorher, neu) })
+	feldVor := s.AktivesFeld()
+	teile := geaenderteTeile(vorher, neu)
+	ok := s.setzeMehrere(func(o document.Objekt) (document.Objekt, bool) {
+		return s.objektMitSchatten(o, neu, teile)
+	}, func(w Werkzeug) { s.merkeSchatten(w, s.stilVon(w), neu, teile) })
+	if feldVor == FeldSchatten {
+		s.feldSchattenNachfuehren()
+	}
+	return ok
 }
 
 // schalteSchattenMehrere schaltet den Schatten aller gewählten ein, wenn mindestens einer aus ist, sonst alle aus.
@@ -341,3 +388,6 @@ func (s *Sitzung) schalteSchattenMehrere() bool {
 	}
 	return s.setzeSchattenMehrere(vorher, neu)
 }
+
+// hatSchatten meldet, ob o einen eingeschalteten Schatten trägt (Teilnehmer eines Schattenzugs über mehrere).
+func hatSchatten(o document.Objekt) bool { return o.Ebenenwerte().Schatten.An }

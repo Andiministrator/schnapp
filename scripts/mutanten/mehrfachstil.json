@@ -31,8 +31,8 @@
     "name": "MS5 Träger nur die Hauptauswahl",
     "datei": "internal/canvas/mehrfachstil.go",
     "paket": "./internal/canvas",
-    "alt": "for i := len(ids) - 1; i >= 0; i-- {",
-    "neu": "for i := len(ids) - 1; i >= len(ids); i-- {"
+    "alt": "for i := len(os) - 1; i >= 0; i-- {",
+    "neu": "for i := len(os) - 1; i >= len(os); i-- {"
   },
   {
     "name": "MS6 Leiste ohne Abschnitte der übrigen",
@@ -80,8 +80,8 @@
     "name": "MS12 Breitenzug über mehrere fehlt",
     "datei": "internal/canvas/breitezug.go",
     "paket": "./internal/canvas",
-    "alt": "if s.beginneMehrZug(traegtStrich) {",
-    "neu": "if false && s.beginneMehrZug(traegtStrich) {"
+    "alt": "if !s.beginneMehrZug(traegtStrich) {",
+    "neu": "if true {"
   },
   {
     "name": "MS13 Zug über mehrere merkt die Stile nicht",
@@ -94,21 +94,21 @@
     "name": "MS14 Schnellstil trifft andere Arten",
     "datei": "internal/canvas/schnellstile.go",
     "paket": "./internal/canvas",
-    "alt": "if a, ok2 := werkzeugArt(ow); !ok || !ok2 || a != st.Art {",
-    "neu": "if _, ok2 := werkzeugArt(ow); !ok || !ok2 {"
+    "alt": "paarSchluessel(ow) != paarSchluessel(w)",
+    "neu": "false && ow != w"
   },
   {
     "name": "MS15 Umschalt in der Ebenenliste nimmt Gesperrtes",
     "datei": "internal/canvas/ebenen.go",
     "paket": "./internal/canvas",
-    "alt": "if k := o.Kennung(); s.waehlbar(k) && !slices.Contains(alle, k) {",
-    "neu": "if k := o.Kennung(); !slices.Contains(alle, k) {"
+    "alt": "if k := o.Kennung(); s.waehlbar(k) && !slices.Contains(bereich, k) {",
+    "neu": "if k := o.Kennung(); !slices.Contains(bereich, k) {"
   },
   {
     "name": "MS16 Strg in der Ebenenliste wählt Bereich",
     "datei": "internal/canvas/ebenen.go",
     "paket": "./internal/canvas",
-    "alt": "\tif strg {\n\t\treturn s.SchalteGewaehlt(id)\n\t}\n",
+    "alt": "\tif strg {\n\t\ts.mf.anker = id\n\t\treturn s.SchalteGewaehlt(id)\n\t}\n",
     "neu": ""
   },
   {
@@ -122,8 +122,8 @@
     "name": "MS18 Ebenenliste hebt nur die Hauptauswahl hervor",
     "datei": "internal/canvas/ebenen.go",
     "paket": "./internal/canvas",
-    "alt": "Gewaehlt: s.IstGewaehlt(o[i].Kennung())})",
-    "neu": "Gewaehlt: o[i].Kennung() == s.Auswahl})"
+    "alt": "Gewaehlt: menge[o[i].Kennung()]",
+    "neu": "Gewaehlt: menge[o[i].Kennung()] && o[i].Kennung() == s.Auswahl"
   },
   {
     "name": "MS19 Text-Stil zeigt die Hauptauswahl ohne Schrift",
@@ -164,14 +164,91 @@
     "name": "MS24 Farbzug über mehrere fehlt",
     "datei": "internal/canvas/farbwahl.go",
     "paket": "./internal/canvas",
-    "alt": "if s.beginneMehrZug(func(o document.Objekt) bool { return traegtFeld(o, f) }) {",
-    "neu": "if false && s.beginneMehrZug(func(o document.Objekt) bool { return traegtFeld(o, f) }) {"
+    "alt": "if !s.beginneMehrZug(func(o document.Objekt) bool { return traegtFeld(o, f) }) {",
+    "neu": "if true || !s.beginneMehrZug(func(o document.Objekt) bool { return traegtFeld(o, f) }) {"
   },
   {
     "name": "MS25 Schattenzug über mehrere setzt alles",
     "datei": "internal/canvas/schatten.go",
     "paket": "./internal/canvas",
-    "alt": "\t\ts.mehrZugSetze(func(o document.Objekt) document.Objekt { return s.objektMitSchatten(o, basis, sch) },",
-    "neu": "\t\ts.mehrZugSetze(func(o document.Objekt) document.Objekt { return mitSchatten(o, sch) },"
+    "alt": "n, _ := s.objektMitSchatten(o, sch, teile); return n",
+    "neu": "_ = teile; return mitSchatten(o, sch)"
+  },
+  {
+    "name": "MS26 Schatten merkt auch unveränderte (F-943)",
+    "datei": "internal/canvas/mehrfachstil.go",
+    "paket": "./internal/canvas",
+    "alt": "return n, !document.Gleich(n, o)",
+    "neu": "return n, true"
+  },
+  {
+    "name": "MS27 Schattenzug vergisst gezogene Teile (F-947)",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "s.schattenZugTeile |= geaenderteTeile",
+    "neu": "s.schattenZugTeile = geaenderteTeile"
+  },
+  {
+    "name": "MS28 Feld Schatten nicht nachgeführt (F-950)",
+    "datei": "internal/canvas/mehrfachstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.feldSchattenID = s.schattenZiel()\n",
+    "neu": ""
+  },
+  {
+    "name": "MS29 Keine überschreibt den Farbton (F-948)",
+    "datei": "internal/canvas/farbpaar.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.stilMehrere() { // je Objekt nur die Deckkraft",
+    "neu": "if false { // je Objekt nur die Deckkraft"
+  },
+  {
+    "name": "MS30 Schnellstil trennt Text und Sprechblase (F-949)",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "paarSchluessel(ow) != paarSchluessel(w)",
+    "neu": "ow != w"
+  },
+  {
+    "name": "MS31 Breitenzug ohne Träger läuft (F-951)",
+    "datei": "internal/canvas/breitezug.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\ts.breiteZug = false // ohne Träger kein Zug, auch nicht der einzelne (F-951)\n\t\t\treturn false\n",
+    "neu": "\t\t\treturn true\n"
+  },
+  {
+    "name": "MS32 Umschalt ohne Anker (F-946)",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "\tanker := s.mf.anker\n",
+    "neu": "\tanker := s.Auswahl\n"
+  },
+  {
+    "name": "MS33 Umschalt vergrößert nur (F-946)",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "\tvar bereich []int\n",
+    "neu": "\tbereich := s.Gewaehlt()\n"
+  },
+  {
+    "name": "MS34 keine Hauptzeile in der Liste (F-945)",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "Haupt: o[i].Kennung() == s.Auswahl",
+    "neu": "Haupt: false"
+  },
+  {
+    "name": "MS35 Merker übersieht Änderungen am Dokument (F-944)",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "m.stand == s.D.Stand() && ",
+    "neu": ""
+  },
+  {
+    "name": "MS36 Merker übersieht neue Auswahl (F-944)",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "s.Auswahl, s.mf.fuer, s.mf.mehr, s.mf.gen = haupt, haupt, mehr, s.mf.gen+1",
+    "neu": "s.Auswahl, s.mf.fuer, s.mf.mehr = haupt, haupt, mehr"
   }
 ]

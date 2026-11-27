@@ -20,16 +20,18 @@ type EbenenZeile struct {
 	Ebene    document.Ebene
 	Objekt   document.Objekt // für Vorschau und Namen aus dem Inhalt
 	Gewaehlt bool
+	Haupt    bool // die Hauptauswahl (unter mehreren gewählten kräftiger gezeigt, F-945)
 }
 
 // Ebenen liefert die Zeilen der Liste von oben (vorderste Ebene) nach unten; das Bild steht nicht darin.
 func (s *Sitzung) Ebenen() []EbenenZeile {
 	o := s.D.ObjekteOhneZug()
 	z := make([]EbenenZeile, 0, len(o))
+	menge := s.gewaehltMerker().menge // einmal statt je Zeile (F-944)
 	for i := len(o) - 1; i >= 0; i-- {
 		w, _ := objektWerkzeug(o[i])
 		z = append(z, EbenenZeile{ID: o[i].Kennung(), Art: w, Ebene: o[i].Ebenenwerte(), Objekt: o[i],
-			Gewaehlt: s.IstGewaehlt(o[i].Kennung())})
+			Gewaehlt: menge[o[i].Kennung()], Haupt: o[i].Kennung() == s.Auswahl})
 	}
 	return z
 }
@@ -53,6 +55,7 @@ func (s *Sitzung) WaehleEbene(id int) bool {
 	}
 	s.pipette = false
 	s.waehleNur(id) // auch eine frühere Hauptauswahl steht danach allein (F-895)
+	s.mf.anker = id
 	return true
 }
 
@@ -72,19 +75,27 @@ func (s *Sitzung) WaehleEbeneMehr(id int, strg bool) bool {
 	}
 	s.pipette = false
 	if strg {
+		s.mf.anker = id
 		return s.SchalteGewaehlt(id)
 	}
-	a, b := s.D.Stelle(s.Auswahl), s.D.Stelle(id)
+	// Bereich vom Anker (letzter Klick ohne Umschalt) bis id; er ersetzt die bisherige Auswahl, ein zweiter Umschalt+Klick
+	// verkleinert ihn also auch (F-946). Ohne gültigen Anker gilt die Hauptauswahl.
+	anker := s.mf.anker
+	if !s.IstGewaehlt(anker) {
+		anker = s.Auswahl
+	}
+	a, b := s.D.Stelle(anker), s.D.Stelle(id)
 	if a > b {
 		a, b = b, a
 	}
-	alle := s.Gewaehlt()
+	var bereich []int
 	for _, o := range s.D.ObjekteOhneZug()[a : b+1] {
-		if k := o.Kennung(); s.waehlbar(k) && !slices.Contains(alle, k) {
-			alle = append(alle, k)
+		if k := o.Kennung(); s.waehlbar(k) && !slices.Contains(bereich, k) {
+			bereich = append(bereich, k)
 		}
 	}
-	s.setzeAuswahl(id, alle)
+	s.setzeAuswahl(id, bereich)
+	s.mf.anker = anker
 	return true
 }
 

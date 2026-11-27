@@ -130,16 +130,22 @@ Ersetzt Punkt 4 für den Stil und die Ebenenliste (Teil 2 der Mehrfachauswahl).
 1. **Stil für alle gewählten:** Sind mehrere Objekte gewählt (und läuft keine Texteingabe), wirkt jede Änderung der
    rechten Leiste auf **alle gewählten, die die Eigenschaft tragen** — Farbe, Füllung und Schattenfarbe, Strichstärke
    (Pfeil, Kasten, Lupe), Strichart, Spitzen (Pfeil), Schatten, Schrift, Größe, Schnitt und Ausrichtung (Text,
-   Sprechblase), Farben tauschen (Kasten, Text), Schnellstil (nur die gewählten derselben Art wie der Stil). Objekte
+   Sprechblase), Farben tauschen (Kasten, Text), „Keine“ Füllung (je Objekt nur die Deckkraft, der Farbton bleibt,
+   F-948), Schnellstil (nur die gewählten, die das Werkzeug des Stils zeichnet; Text und Sprechblase teilen sich eines,
+   F-949). Objekte
    ohne die Eigenschaft bleiben unverändert. Jede Handlung ist **ein** Rückgängig-Schritt, das Ziehen an einem Regler
-   oder in der Farbfläche ebenso (Zug über mehrere, `BeginneZugMehrere`).
+   oder in der Farbfläche ebenso (Zug über mehrere, `BeginneZugMehrere`). Trägt kein gewähltes die Eigenschaft,
+   beginnt kein Zug (F-951).
 2. **Gemerkt (ADR-0041 Punkt 2):** Jedes geänderte Objekt gibt die Änderung an sein Werkzeug weiter — wer einen Pfeil
    und einen Kasten gemeinsam auf 12 px stellt, zeichnet danach Pfeile und Kästen mit 12 px; ein mitgewählter Text
    ändert den Text-Stil dabei nicht. Ein abgebrochener Zug stellt alle beteiligten Werkzeug-Stile wieder her.
 3. **Schatten:** Geändert wird, was sich an der Leiste geändert hat, nicht der ganze Schatten: Wer an der Scheibe die
    Richtung dreht, dreht sie an allen gewählten mit Schatten und lässt deren Länge, Weichheit und Farbe stehen;
-   Objekte ohne Schatten bleiben ohne. Das Kästchen „Shadow“ schaltet alle ein, wenn mindestens einer aus ist, sonst
-   alle aus; ein Objekt ohne eigene Werte bekommt beim Einschalten die seines Werkzeugs.
+   Objekte ohne Schatten bleiben ohne. Ein Bestandteil, der in einem Zug einmal gezogen wurde, gilt bis zum Loslassen
+   für alle, auch wenn er zum Ausgangswert zurückkehrt (F-947). Das Kästchen „Shadow“ schaltet alle ein, wenn
+   mindestens einer aus ist, sonst alle aus; ein Objekt ohne eigene Werte bekommt beim Einschalten die seines Werkzeugs.
+   Nur ein Objekt, das sich dabei ändert, gibt die Änderung an sein Werkzeug (F-943), und ein gewähltes Feld „Shadow“
+   bleibt gewählt, auch wenn der Träger wechselt (F-950).
 4. **Was die Leiste zeigt:** Sie zeigt die Abschnitte aller gewählten Arten (ein Pfeil und ein Text: Strich, Spitzen
    und Schrift). Der Kopf nennt die Zahl („Selection: 3 objects“). Spitze und Vergrößerung (Eigenschaften eines
    einzelnen Objekts, keine Stilwerte) und die Schnellstile gelten weiter der Hauptauswahl. Die Werte kommen von der
@@ -148,11 +154,16 @@ Ersetzt Punkt 4 für den Stil und die Ebenenliste (Teil 2 der Mehrfachauswahl).
    Hauptauswahl bleibt), ein Farbfeld mit verschiedenen Farben ist diagonal geteilt (Hauptauswahl oben links, die
    nächste andere unten rechts), das Kästchen „Shadow“ zeigt einen Strich statt des Hakens, wenn nur ein Teil einen
    Schatten hat. Schnitt (fett, kursiv …) und Ausrichtung zeigen den Stand der Hauptauswahl.
-5. **Ebenenliste:** Jede gewählte Zeile ist hervorgehoben. **Strg+Klick** nimmt eine Zeile zur Auswahl hinzu (sie wird
-   Hauptauswahl) oder heraus, wie Umschalt+Klick auf der Leinwand; **Umschalt+Klick** wählt alle wählbaren Zeilen
-   zwischen der Hauptauswahl und der geklickten (die geklickte wird Hauptauswahl). Gesperrte und ausgeblendete Zeilen
+5. **Ebenenliste:** Jede gewählte Zeile ist hervorgehoben, die Hauptauswahl kräftig, die weiteren schwächer (F-945);
+   die Liste blättert zur Hauptauswahl. **Strg+Klick** nimmt eine Zeile zur Auswahl hinzu (sie wird Hauptauswahl) oder
+   heraus, wie Umschalt+Klick auf der Leinwand; **Umschalt+Klick** wählt alle wählbaren Zeilen zwischen dem Anker (der
+   zuletzt ohne Umschalt geklickten Zeile, sonst der Hauptauswahl) und der geklickten, die Hauptauswahl wird; der
+   Bereich ersetzt die bisherige Auswahl, ein zweiter Umschalt+Klick verkleinert ihn also auch (wie in Dateimanagern,
+   F-946). Gesperrte und ausgeblendete Zeilen
    lassen sich nicht dazunehmen (Punkt 1); ein Strg- oder Umschalt-Klick auf sie wählt sie allein wie ein einfacher
    Klick, damit Strg+L und Strg+H sie freigeben. Ziehen mit Strg oder Umschalt ordnet nicht um, und es gibt keinen
    Doppelklick zum Umbenennen.
 6. **Bleibt an der Hauptauswahl:** Griffe, Texteingabe, Ebenen-Handlungen außer Doppeln und Löschen (Ausblenden,
    Sperren, Umbenennen, vor/zurück, Deckkraft) und „Save style as quick style“.
+7. **Aufwand (F-944):** Die gewählte Menge rechnet die Sitzung einmal je Stand von Dokument und Auswahl (ein Durchgang
+   durch den Stapel); Leiste und Ebenenliste fragen den Merker. 2000 gewählte Objekte bleiben bedienbar.

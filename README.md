@@ -116,7 +116,8 @@ arrow heads, shadow, font and quick styles (a quick style only those of its kind
 remembers the new value. Where the selected ones differ, the sidebar says *Mixed*, a colour swatch is split diagonally
 and the *Shadow* box shows a dash. The handles stay on the last one selected; the others show a plain frame, the
 sidebar heading and the footer say how many are selected. In the layer list, **Ctrl+click** adds a row to the selection
-or takes it out, **Shift+click** selects the range up to the last one selected.
+or takes it out, **Shift+click** selects the range from the row you last clicked without Shift; the row of the last
+one selected is highlighted more strongly.
 The mouse wheel scrolls the view (with **Shift** sideways; on a touchpad, slide two fingers), **Ctrl**+wheel zooms at
 the pointer (on a touchpad, Ctrl and two fingers); over the navigator the wheel zooms without Ctrl. To move the view, hold **Space** and drag (with every tool, also on a touchpad
 without a middle button), drag with the middle button, drag the empty margin around the image, or use the navigator.

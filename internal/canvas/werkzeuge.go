@@ -167,7 +167,7 @@ func (s *Sitzung) SetzeWerkzeug(w Werkzeug) bool {
 		// Andi 27.11.2026); zu Auswählen (V, Esc, Ebenenliste, Strg+A) bleibt sie.
 		s.waehleNur(0)
 	case w != s.Werkzeug:
-		s.mf.mehr = nil // ein Wechsel zu Auswählen hebt die weiteren gewählten auf, die Hauptauswahl bleibt (ADR-0039 Punkt 6)
+		s.mf.mehr, s.mf.gen = nil, s.mf.gen+1 // ein Wechsel zu Auswählen hebt die weiteren gewählten auf, die Hauptauswahl bleibt (ADR-0039 Punkt 6)
 	}
 	if s.feld == FeldSchatten && w != s.Werkzeug {
 		// Das Feld Schatten wählt man bewusst am Farbfeld der Leiste; mit einem anderen Werkzeug färbte die Farbwahl

@@ -199,9 +199,11 @@ func (s *Sitzung) BeginneFarbZug() bool {
 	s.farbZug, s.farbZugObjekt, s.farbZugText = true, false, nil
 	if s.stilMehrere() { // Zug über alle gewählten mit diesem Feld (ADR-0039 Nachtrag 4)
 		f := s.AktivesFeld()
-		if s.beginneMehrZug(func(o document.Objekt) bool { return traegtFeld(o, f) }) {
-			s.farbZugObjekt, s.farbZugVor = true, s.D.Stand()
+		if !s.beginneMehrZug(func(o document.Objekt) bool { return traegtFeld(o, f) }) {
+			s.farbZug = false // ohne Träger kein Zug, auch nicht der einzelne (F-951)
+			return false
 		}
+		s.farbZugObjekt, s.farbZugVor = true, s.D.Stand()
 		return true
 	}
 	s.merkeZugStil(s.zielWerkzeug())

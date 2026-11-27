@@ -434,7 +434,7 @@ func (e *editor) zeichneEbenen(gtx layout.Context, x, y, breite, spalte, unten i
 	if k.zeigeGewaehlte {
 		k.zeigeGewaehlte = false
 		for i, z := range zeilen {
-			if z.Gewaehlt {
+			if z.Haupt { // zur Hauptauswahl, nicht zur untersten gewählten (F-945)
 				oben, unten := i*k.zeileH, (i+1)*k.zeileH
 				if oben < k.versatz {
 					k.versatz = oben
@@ -524,11 +524,17 @@ func (e *editor) zeichneEbenen(gtx layout.Context, x, y, breite, spalte, unten i
 	return y
 }
 
+// farbeAuswahlWeitere ist der Grund weiterer gewählter Zeilen: das Grün der Auswahl, halb durchscheinend.
+var farbeAuswahlWeitere = color.NRGBA{R: farbeAuswahl.R, G: farbeAuswahl.G, B: farbeAuswahl.B, A: 0x70}
+
 // zeichneEbenenZeile zeichnet eine Ebene: Grund (gewählt grün), Auge, Vorschau, Name, Schloss.
 func (e *editor) zeichneEbenenZeile(gtx layout.Context, z canvas.EbenenZeile, name string, r image.Rectangle) {
 	k := &e.ebenen
-	if z.Gewaehlt {
+	switch {
+	case z.Haupt && z.Gewaehlt:
 		paint.FillShape(gtx.Ops, farbeAuswahl, clip.Rect(r).Op())
+	case z.Gewaehlt: // weitere gewählte schwächer, damit die Hauptauswahl erkennbar bleibt (F-945)
+		paint.FillShape(gtx.Ops, farbeAuswahlWeitere, clip.Rect(r).Op())
 	}
 	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(image.Rect(r.Min.X, r.Max.Y-gtx.Dp(1), r.Max.X, r.Max.Y)).Op())
 	vorn := farbeText

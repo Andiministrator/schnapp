@@ -13,7 +13,7 @@
 #  06 Strg+Z: nur der Pfeil hat wieder einen Schatten (ein Schritt), Auswahl bleibt.
 #  07 Klick auf die Nummer: allein gewählt, Ebenenliste mit vier Zeilen (Nummer hervorgehoben, Rechteck y 770–804).
 #  08 Strg+Klick auf die Zeile „Rechteck“: Kopf „AUSWAHL: 2 OBJEKTE“, auf der Leinwand die Nummer mit Rahmen und der
-#     Kasten mit Griffen (Hauptauswahl); Strichstärke und Farbe „Gemischt“ bzw. geteilt sind es nicht (beide blau).
+#     Kasten mit Griffen (Hauptauswahl); die Zeile „Rechteck“ kräftig grün, „Nummer 1“ schwächer (F-945).
 warte 800
 taste A
 ziehe 300 300 600 420

@@ -47,9 +47,11 @@ func (s *Sitzung) BeginneBreiteZug() bool {
 	}
 	s.breiteZug, s.breiteZugObj = true, false
 	if s.stilMehrere() { // Zug über alle gewählten mit Strich (ADR-0039 Nachtrag 4)
-		if s.beginneMehrZug(traegtStrich) {
-			s.breiteZugObj, s.breiteZugVor = true, s.D.Stand()
+		if !s.beginneMehrZug(traegtStrich) {
+			s.breiteZug = false // ohne Träger kein Zug, auch nicht der einzelne (F-951)
+			return false
 		}
+		s.breiteZugObj, s.breiteZugVor = true, s.D.Stand()
 		return true
 	}
 	s.merkeZugStil(s.stilZiel())

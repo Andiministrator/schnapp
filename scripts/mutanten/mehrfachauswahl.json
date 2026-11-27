@@ -122,7 +122,7 @@
     "name": "MA18 Werkzeugwechsel behält die weiteren",
     "datei": "internal/canvas/werkzeuge.go",
     "paket": "./internal/canvas",
-    "alt": "\t\ts.mf.mehr = nil // ein Wechsel zu Auswählen",
+    "alt": "\t\ts.mf.mehr, s.mf.gen = nil, s.mf.gen+1 // ein Wechsel zu Auswählen",
     "neu": "\t\t// ein Wechsel zu Auswählen"
   },
   {

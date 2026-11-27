@@ -278,6 +278,17 @@ func (s *Sitzung) KeineFuellung() bool {
 	if s.Zieht() || s.gesperrt() || s.AktivesFeld() != FeldFuellung {
 		return false
 	}
+	if s.stilMehrere() { // je Objekt nur die Deckkraft, der Farbton bleibt (F-948)
+		s.hsvGemerkt = false
+		s.setzeMehrere(func(o document.Objekt) (document.Objekt, bool) {
+			c, ok := objektFarbe(o, FeldFuellung)
+			c.A = 0
+			return UmgefaerbtIn(o, FeldFuellung, c), ok
+		}, func(w Werkzeug) {
+			s.aendereStil(w, func(st *Stil) { st.Fuellung.A = 0 })
+		})
+		return true
+	}
 	c := s.Farbe(FeldFuellung)
 	c.A = 0
 	s.SetzeFarbe(c)

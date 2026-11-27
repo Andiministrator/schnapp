@@ -523,8 +523,8 @@ func (s *Sitzung) WendeSchnellstilAn(st Schnellstil) bool {
 	})
 	if s.stilMehrere() { // alle gewählten derselben Art (ADR-0039 Nachtrag 4)
 		return s.setzeMehrere(func(o document.Objekt) (document.Objekt, bool) {
-			ow, ok := objektWerkzeug(o)
-			if a, ok2 := werkzeugArt(ow); !ok || !ok2 || a != st.Art {
+			// Werkzeug des Stils: Text und Sprechblase teilen sich einen (paarSchluessel, F-949).
+			if ow, ok := objektWerkzeug(o); !ok || paarSchluessel(ow) != paarSchluessel(w) {
 				return o, false
 			}
 			neu := mitSchnellstil(o, g)

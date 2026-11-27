@@ -140,10 +140,13 @@ func (s *Sitzung) BeginneSchattenZug() bool {
 	}
 	s.breiteZug, s.breiteZugObj, s.schattenZugText = true, false, nil
 	if s.stilMehrere() { // Zug über alle gewählten (ADR-0039 Nachtrag 4)
-		s.schattenZugBasis = s.Schatten()
-		if s.beginneMehrZug(func(document.Objekt) bool { return true }) {
-			s.breiteZugObj, s.breiteZugVor = true, s.D.Stand()
+		// Teilnehmer sind die gewählten mit Schatten (F-943): Ein Zug ändert nur Werte, nie An/Aus.
+		s.schattenZugBasis, s.schattenZugTeile = s.Schatten(), 0
+		if !s.beginneMehrZug(hatSchatten) {
+			s.breiteZug = false // ohne Träger kein Zug, auch nicht der einzelne (F-951)
+			return false
 		}
+		s.breiteZugObj, s.breiteZugVor = true, s.D.Stand()
 		return true
 	}
 	s.merkeZugStil(s.stilZiel())
@@ -166,9 +169,11 @@ func (s *Sitzung) SchattenZugSetze(sch document.Schatten) {
 	}
 	sch = gueltigerSchatten(sch)
 	if s.mehrZug != nil {
-		basis := s.schattenZugBasis
-		s.mehrZugSetze(func(o document.Objekt) document.Objekt { return s.objektMitSchatten(o, basis, sch) },
-			func(w Werkzeug) { s.merkeSchatten(w, s.zugStil.vor[paarSchluessel(w)], basis, sch) })
+		// Einmal gezogene Bestandteile gelten bis zum Ende des Zugs, auch zurück beim Ausgangswert (F-947).
+		s.schattenZugTeile |= geaenderteTeile(s.schattenZugBasis, sch) &^ teilAn
+		teile := s.schattenZugTeile
+		s.mehrZugSetze(func(o document.Objekt) document.Objekt { n, _ := s.objektMitSchatten(o, sch, teile); return n },
+			func(w Werkzeug) { s.merkeSchatten(w, s.zugStil.vor[paarSchluessel(w)], sch, teile) })
 		return
 	}
 	s.aendereZielStil(func(st *Stil) { st.Schatten = sch })

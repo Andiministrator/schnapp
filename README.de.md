@@ -103,7 +103,8 @@ Schatten, Schrift und Schnellstile (ein Schnellstil nur die seiner Art), als ein
 Werkzeug merkt sich den neuen Wert. Wo die gewählten sich unterscheiden, steht in der Leiste *Gemischt*, ein Farbfeld ist
 diagonal geteilt, und das Kästchen *Schatten* zeigt einen Strich. Die Griffe bleiben an der zuletzt gewählten; die
 übrigen tragen einen schlichten Rahmen, Kopf der Leiste und Fußzeile nennen die Zahl. In der Ebenenliste nimmt
-**Strg+Klick** eine Zeile zur Auswahl hinzu oder heraus, **Umschalt+Klick** wählt den Bereich bis zur zuletzt gewählten.
+**Strg+Klick** eine Zeile zur Auswahl hinzu oder heraus, **Umschalt+Klick** wählt den Bereich ab der zuletzt ohne
+Umschalt angeklickten Zeile; die Zeile der zuletzt gewählten ist kräftiger hervorgehoben.
 Das Mausrad rollt die Ansicht (mit **Umschalt** waagerecht; am Touchpad zwei Finger schieben), **Strg**+Mausrad zoomt zum
 Zeiger (am Touchpad Strg und zwei Finger); über dem Navigator zoomt das Mausrad ohne Strg. Die Ansicht verschiebst du mit gehaltener **Leertaste** und Ziehen (in jedem Werkzeug, auch
 am Touchpad ohne mittlere Taste), mit der mittleren Taste, durch Ziehen auf dem leeren Rand um das Bild oder im

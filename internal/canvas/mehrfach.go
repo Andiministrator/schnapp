@@ -30,6 +30,21 @@ type mehrfach struct {
 	// gewählt bleibt.
 	startObjs []document.Objekt
 	klick     int
+	// gen zählt jede Änderung von mehr; merker hält Gewaehlt für einen Stand von Dokument und Auswahl (F-944: die Leiste
+	// fragt je Bild Dutzende Male, die Ebenenliste je Zeile).
+	gen    int
+	merker auswahlMerker
+	// anker ist die Zeile der Ebenenliste, ab der Umschalt+Klick den Bereich wählt (letzter Klick ohne Umschalt, F-946).
+	anker int
+}
+
+// auswahlMerker ist Gewaehlt zu einem Schlüssel aus Stand des Dokuments, Hauptauswahl, fuer und gen.
+type auswahlMerker struct {
+	gilt             bool
+	stand            uint64
+	haupt, fuer, gen int
+	ids              []int
+	menge            map[int]bool
 }
 
 // waehlbar meldet, ob das Objekt id gewählt sein kann: vorhanden, sichtbar, nicht gesperrt (wie Treffer).
@@ -62,21 +77,68 @@ func (s *Sitzung) weitereRoh() []int {
 }
 
 // Gewaehlt liefert alle gewählten Objekte (Hauptauswahl und weitere) in der Reihenfolge des Stapels, unten zuerst.
-func (s *Sitzung) Gewaehlt() []int {
+func (s *Sitzung) Gewaehlt() []int { return slices.Clone(s.gewaehltMerker().ids) }
+
+// gewaehltMerker liefert Gewaehlt als Merker samt Menge; während eines Zugs des Dokuments (Stand ändert sich dann nicht)
+// wird jedes Mal neu gerechnet.
+func (s *Sitzung) gewaehltMerker() *auswahlMerker {
+	m := &s.mf.merker
+	if !s.D.ZugLaeuft() && m.gilt && m.stand == s.D.Stand() && m.haupt == s.Auswahl && m.fuer == s.mf.fuer &&
+		m.gen == s.mf.gen {
+		return m
+	}
+	ids := s.gewaehltBerechnen()
+	menge := make(map[int]bool, len(ids))
+	for _, id := range ids {
+		menge[id] = true
+	}
+	*m = auswahlMerker{gilt: !s.D.ZugLaeuft(), stand: s.D.Stand(), haupt: s.Auswahl, fuer: s.mf.fuer, gen: s.mf.gen,
+		ids: ids, menge: menge}
+	return m
+}
+
+// gewaehltBerechnen geht die Objekte einmal in Stapelreihenfolge durch (F-944: vorher je Kennung eine lineare Suche
+// und ein Sortieren über Stelle). Eine Hauptauswahl, die fehlt oder nicht wählbar ist, steht allein (F-896).
+func (s *Sitzung) gewaehltBerechnen() []int {
 	if s.Auswahl == 0 {
 		return nil
 	}
-	ids := append(s.weitere(), s.Auswahl)
-	slices.SortFunc(ids, func(a, b int) int { return s.D.Stelle(a) - s.D.Stelle(b) })
+	kand := map[int]bool{s.Auswahl: true}
+	if s.mf.fuer == s.Auswahl {
+		for _, id := range s.mf.mehr {
+			kand[id] = true
+		}
+	}
+	var ids []int
+	haupt := false
+	for _, o := range s.D.Objekte() {
+		k := o.Kennung()
+		if !kand[k] {
+			continue
+		}
+		w := s.D.ObjektSichtbar(o) && o.Ebenenwerte().Bearbeitbar()
+		if k == s.Auswahl {
+			if !w {
+				return []int{s.Auswahl}
+			}
+			haupt = true
+		}
+		if w {
+			ids = append(ids, k)
+		}
+	}
+	if !haupt {
+		return []int{s.Auswahl}
+	}
 	return ids
 }
 
 // AnzahlGewaehlt ist die Zahl der gewählten Objekte.
-func (s *Sitzung) AnzahlGewaehlt() int { return len(s.Gewaehlt()) }
+func (s *Sitzung) AnzahlGewaehlt() int { return len(s.gewaehltMerker().ids) }
 
 // IstGewaehlt meldet, ob das Objekt id gewählt ist (Hauptauswahl oder weiteres).
 func (s *Sitzung) IstGewaehlt(id int) bool {
-	return id != 0 && (id == s.Auswahl || slices.Contains(s.weitere(), id))
+	return id != 0 && s.gewaehltMerker().menge[id]
 }
 
 // setzeAuswahl macht haupt zur Hauptauswahl und weitere zu den weiteren gewählten.
@@ -87,7 +149,7 @@ func (s *Sitzung) setzeAuswahl(haupt int, weitere []int) {
 			mehr = append(mehr, id)
 		}
 	}
-	s.Auswahl, s.mf.fuer, s.mf.mehr = haupt, haupt, mehr
+	s.Auswahl, s.mf.fuer, s.mf.mehr, s.mf.gen = haupt, haupt, mehr, s.mf.gen+1
 }
 
 // waehleNur wählt genau das Objekt id (0: keins).
@@ -370,11 +432,12 @@ func (s *Sitzung) mehrereBereit(n int) bool {
 	return s.zug == keinZug && !s.D.ZugLaeuft() && !s.gesperrt() && s.AnzahlGewaehlt() >= n
 }
 
-// gewaehlteObjekte liefert die gewählten Objekte in Stapelreihenfolge.
+// gewaehlteObjekte liefert die gewählten Objekte in Stapelreihenfolge (ein Durchgang, F-944).
 func (s *Sitzung) gewaehlteObjekte() []document.Objekt {
+	menge := s.gewaehltMerker().menge
 	var os []document.Objekt
-	for _, id := range s.Gewaehlt() {
-		if o, ok := s.D.Objekt(id); ok {
+	for _, o := range s.D.Objekte() {
+		if menge[o.Kennung()] {
 			os = append(os, o)
 		}
 	}

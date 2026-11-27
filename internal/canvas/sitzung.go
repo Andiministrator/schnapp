@@ -112,6 +112,7 @@ type Sitzung struct {
 	// Schattenzugs (geändert wird, was davon abweicht).
 	mehrZug          []document.Objekt
 	schattenZugBasis document.Schatten
+	schattenZugTeile schattenTeil // im laufenden Schattenzug über mehrere schon gezogene Bestandteile (F-947)
 	zuletzt          []color.NRGBA
 	pipette          bool // der nächste Klick ins Bild nimmt eine Farbe auf
 	// Stil je Werkzeug (ADR-0041, werkzeugstil.go; davor nur das Farbpaar, ADR-0021 Nachtrag 11): paarW ist das
