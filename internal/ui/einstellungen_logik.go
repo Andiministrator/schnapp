@@ -62,6 +62,7 @@ var tafelZeilen = [...]tafelZeile{
 	{reiterAufnahme, "capture", "open-editor", artSchalter},
 	{reiterAufnahme, "capture", "seam", artAuswahl},
 	{reiterAufnahme, "capture", "delay", artAuswahl},
+	{reiterAufnahme, "capture", "cursor", artSchalter},
 	{reiterBibliothek, "library", "bar", artSchalter},
 	{reiterBibliothek, "library", "cleanup", artSchalter},
 	{reiterBibliothek, "library", "cleanup-days", artZahl},
@@ -274,6 +275,8 @@ func (t *tafel) schalte(z int) {
 	switch tafelZeilen[z].abschnitt + "." + tafelZeilen[z].schluessel {
 	case "capture.open-editor":
 		w.Editor = !w.Editor
+	case "capture.cursor":
+		w.Mauszeiger = !w.Mauszeiger
 	case "library.bar":
 		w.Leiste = !w.Leiste
 	case "library.cleanup":
@@ -604,6 +607,8 @@ func zeileTitel(z int) string {
 		return i18n.T("Seam edge")
 	case "capture.delay":
 		return i18n.T("Delay")
+	case "capture.cursor":
+		return i18n.T("Mouse pointer")
 	case "library.bar":
 		return i18n.T("Recent captures")
 	case "library.cleanup":
@@ -626,6 +631,8 @@ func zeileSchalterText(z int) string {
 	switch tafelZeilen[z].abschnitt + "." + tafelZeilen[z].schluessel {
 	case "capture.open-editor":
 		return i18n.T("Open the editor")
+	case "capture.cursor":
+		return i18n.T("Include in the screenshot")
 	case "library.bar":
 		return i18n.T("Show below the image")
 	case "library.cleanup":
@@ -646,6 +653,8 @@ func zeileErklaerung(z int) string {
 		return i18n.T("What “Capture screen” does without a monitor name: pick by clicking, the monitor under the pointer or all monitors.")
 	case "capture.seam":
 		return i18n.T("Applies to new captures and opened images; a working file keeps its edge.")
+	case "capture.cursor":
+		return i18n.T("--cursor and --no-cursor override it for one capture.")
 	case "capture.delay":
 		return i18n.T("Wait before each capture, for example to open a menu; a notification counts down. --delay=SECONDS overrides it.")
 	case "library.bar":

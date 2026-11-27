@@ -23,3 +23,18 @@ func TestParseVerzoegerung(t *testing.T) {
 		t.Error("Voreinstellung nicht 0")
 	}
 }
+
+// ADR-0043: [capture] cursor yes/no (auch true/false), Voreinstellung no.
+func TestParseMauszeiger(t *testing.T) {
+	for wert, soll := range map[string]bool{"yes": true, "true": true, "no": false, "false": false} {
+		if e, warn := Parse("settings.ini", "[capture]\ncursor = "+wert+"\n"); e.Mauszeiger != soll || len(warn) > 0 {
+			t.Errorf("cursor = %s: %v, %q", wert, e.Mauszeiger, warn)
+		}
+	}
+	if e, warn := Parse("settings.ini", "[capture]\ncursor = vielleicht\n"); e.Mauszeiger || len(warn) != 1 {
+		t.Errorf("ungültig: %v, %q", e.Mauszeiger, warn)
+	}
+	if Voreinstellungen().Mauszeiger {
+		t.Error("Voreinstellung an")
+	}
+}

@@ -42,10 +42,12 @@ type quelleAttrappe struct {
 	fensterErr  error
 	aufrufe     []string
 	geschlossen bool
-	skala       float64 // 0 = 1
+	skala       float64            // 0 = 1
+	optionen    []capture.Optionen // je Aufruf (ADR-0043)
 }
 
-func (q *quelleAttrappe) Bildschirm(_ context.Context, name string, _ capture.Optionen) (*capture.Bild, error) {
+func (q *quelleAttrappe) Bildschirm(_ context.Context, name string, opt capture.Optionen) (*capture.Bild, error) {
+	q.optionen = append(q.optionen, opt)
 	q.aufrufe = append(q.aufrufe, "Bildschirm "+name)
 	b, ok := q.bilder[name]
 	if !ok {
@@ -58,12 +60,14 @@ func (q *quelleAttrappe) Bildschirm(_ context.Context, name string, _ capture.Op
 	return &capture.Bild{Pixel: b, Skala: skala, Bildschirm: name}, nil
 }
 
-func (q *quelleAttrappe) AktiverBildschirm(context.Context, capture.Optionen) (*capture.Bild, error) {
+func (q *quelleAttrappe) AktiverBildschirm(_ context.Context, opt capture.Optionen) (*capture.Bild, error) {
+	q.optionen = append(q.optionen, opt)
 	q.aufrufe = append(q.aufrufe, "Aktiv")
 	return &capture.Bild{Pixel: q.aktiv, Skala: 1}, nil
 }
 
-func (q *quelleAttrappe) Alle(context.Context, capture.Optionen) (*capture.Bild, error) {
+func (q *quelleAttrappe) Alle(_ context.Context, opt capture.Optionen) (*capture.Bild, error) {
+	q.optionen = append(q.optionen, opt)
 	q.aufrufe = append(q.aufrufe, "Alle")
 	if q.alleErr != nil {
 		return nil, q.alleErr
@@ -71,7 +75,8 @@ func (q *quelleAttrappe) Alle(context.Context, capture.Optionen) (*capture.Bild,
 	return &capture.Bild{Pixel: q.alle, Skala: 1}, nil
 }
 
-func (q *quelleAttrappe) Fenster(context.Context, capture.Optionen) (*capture.Bild, error) {
+func (q *quelleAttrappe) Fenster(_ context.Context, opt capture.Optionen) (*capture.Bild, error) {
+	q.optionen = append(q.optionen, opt)
 	q.aufrufe = append(q.aufrufe, "Fenster")
 	if q.fensterErr != nil {
 		return nil, q.fensterErr

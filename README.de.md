@@ -58,6 +58,7 @@ Vorhanden ist:
 | `schnapp --window` | ein Fenster wählen |
 | `schnapp --repeat` | den letzten Bereich noch einmal aufnehmen |
 | `schnapp --no-editor …` | aufnehmen, ohne danach den Editor zu öffnen |
+| `schnapp --cursor …` | den Mauszeiger mit aufnehmen (`--no-cursor`: ohne; `[capture] cursor = yes` macht es zur Voreinstellung) |
 | `schnapp --delay=5 …` | vor der Aufnahme 5 Sekunden warten (0 bis 60), mit Countdown als Benachrichtigung — etwa für ein aufgeklapptes Menü; `[capture] delay = 5` gilt für jede Aufnahme, `--delay=0` hebt das auf |
 | `schnapp DATEI` | ein PNG oder JPEG im Editor öffnen (das startet auch „Öffnen mit“ im Dateimanager; ein JPEG mit EXIF-Ausrichtung wird gedreht oder gespiegelt, wie Bildbetrachter es zeigen, die EXIF-Angabe selbst bleibt nicht erhalten) |
 | `schnapp --ignore-limit DATEI` | die Datei auch öffnen, wenn ihre Beschriftungen so zahlreich oder groß sind, dass das Rendern das Rechenbudget überschreitet (für eigene Arbeit, die darüber hinausgewachsen ist) |

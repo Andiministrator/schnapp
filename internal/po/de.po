@@ -2059,3 +2059,15 @@ msgstr[1] "Aufnahme in %d Sekunden"
 msgctxt "delay"
 msgid "None"
 msgstr "Keine"
+
+msgid "Mouse pointer"
+msgstr "Mauszeiger"
+
+msgid "Include in the screenshot"
+msgstr "Mit aufnehmen"
+
+msgid "--cursor and --no-cursor override it for one capture."
+msgstr "--cursor und --no-cursor gelten für eine Aufnahme davor."
+
+msgid "Include the mouse pointer or not (default: as set in the settings, off)"
+msgstr "Mauszeiger mit aufnehmen oder nicht (Voreinstellung: laut Einstellung, aus)"

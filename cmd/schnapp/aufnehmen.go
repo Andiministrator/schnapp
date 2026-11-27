@@ -169,10 +169,11 @@ func (an anschluesse) aufnehmen(t Auftrag, aus, fehler io.Writer) (int, *abgeleg
 	}
 	defer q.Close()
 	ctx := context.Background()
+	opt := capture.Optionen{Mauszeiger: t.Mauszeiger} // [capture] cursor, --cursor (ADR-0043)
 
 	switch {
 	case t.Modus == ModusFenster:
-		b, err := q.Fenster(ctx, capture.Optionen{})
+		b, err := q.Fenster(ctx, opt)
 		if err != nil {
 			return meldeFehler(fehler, err), nil
 		}
@@ -191,7 +192,7 @@ func (an anschluesse) aufnehmen(t Auftrag, aus, fehler io.Writer) (int, *abgeleg
 			}
 			return meldeFehler(fehler, err), nil
 		}
-		b, err := q.Bildschirm(ctx, l.Monitor, capture.Optionen{})
+		b, err := q.Bildschirm(ctx, l.Monitor, opt)
 		if err != nil {
 			return meldeFehler(fehler, err), nil
 		}
@@ -202,7 +203,7 @@ func (an anschluesse) aufnehmen(t Auftrag, aus, fehler io.Writer) (int, *abgeleg
 		return an.speichere(b.Pixel, l.Bereich, t, aus, fehler)
 
 	case t.Modus == ModusBildschirm && t.Ziel.Name != "":
-		b, err := q.Bildschirm(ctx, t.Ziel.Name, capture.Optionen{})
+		b, err := q.Bildschirm(ctx, t.Ziel.Name, opt)
 		if err != nil {
 			return meldeFehler(fehler, err), nil
 		}
@@ -210,7 +211,7 @@ func (an anschluesse) aufnehmen(t Auftrag, aus, fehler io.Writer) (int, *abgeleg
 		return an.speichere(b.Pixel, b.Pixel.Bounds(), t, aus, fehler)
 
 	case t.Modus == ModusBildschirm && t.Ziel.Wahl == settings.WahlZeiger:
-		b, err := q.AktiverBildschirm(ctx, capture.Optionen{})
+		b, err := q.AktiverBildschirm(ctx, opt)
 		if err != nil {
 			return meldeFehler(fehler, err), nil
 		}
@@ -218,7 +219,7 @@ func (an anschluesse) aufnehmen(t Auftrag, aus, fehler io.Writer) (int, *abgeleg
 
 	case t.Modus == ModusBildschirm && t.Ziel.Wahl == settings.WahlAlle:
 		// Alle Monitore zusammengesetzt (CaptureWorkspace). Ohne Monitorname gibt es keinen „letzten Bereich“ zu merken.
-		b, err := q.Alle(ctx, capture.Optionen{})
+		b, err := q.Alle(ctx, opt)
 		if err != nil {
 			return meldeFehler(fehler, err), nil
 		}
@@ -245,7 +246,7 @@ func (an anschluesse) aufnehmen(t Auftrag, aus, fehler io.Writer) (int, *abgeleg
 	pixel := make([]*image.NRGBA, 0, len(monitore))
 	skalen := make([]float64, 0, len(monitore))
 	for _, m := range monitore {
-		b, err := q.Bildschirm(ctx, m.Name, capture.Optionen{})
+		b, err := q.Bildschirm(ctx, m.Name, opt)
 		if err != nil {
 			return meldeFehler(fehler, err), nil
 		}

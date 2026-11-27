@@ -54,6 +54,8 @@ type Aufruf struct {
 	// stand (auch --delay=0, das [capture] delay aufhebt).
 	Verzoegerung        int
 	VerzoegerungGesetzt bool
+	// Mauszeiger ist --cursor (1) oder --no-cursor (-1), 0 ohne Angabe: dann gilt [capture] cursor (ADR-0043).
+	Mauszeiger int
 }
 
 // Aufnahme meldet, ob der Modus eine Aufnahme ist (nur diese öffnen danach den Editor und vertragen --no-editor).
@@ -107,8 +109,20 @@ func Auswerten(args []string) (Aufruf, error) {
 		exportZiel string
 		spez       string
 		warte      = -1 // --delay; -1: nicht angegeben
+		zeiger     int  // --cursor 1, --no-cursor -1
 	)
 	for _, arg := range args {
+		if arg == "--cursor" || arg == "--no-cursor" {
+			w := 1
+			if arg == "--no-cursor" {
+				w = -1
+			}
+			if zeiger != 0 && zeiger != w {
+				return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Options %s and %s cannot be combined."), "--cursor", "--no-cursor")}
+			}
+			zeiger = w
+			continue
+		}
 		if name, wert, hatWert := strings.Cut(arg, "="); name == "--delay" {
 			// ADR-0042: nur mit Gleichheitszeichen, ganze Sekunden 0 bis settings.MaxVerzoegerung.
 			n, err := strconv.Atoi(wert)
@@ -249,6 +263,16 @@ func Auswerten(args []string) (Aufruf, error) {
 			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Options %s and %s cannot be combined."), a.Modus.Option(), "--annotate")}
 		}
 		a.Modus, a.Spez = ModusBeschriften, spez
+	}
+	if zeiger != 0 {
+		if !a.Modus.Aufnahme() {
+			o := "--cursor"
+			if zeiger < 0 {
+				o = "--no-cursor"
+			}
+			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Options %s and %s cannot be combined."), a.Modus.Option(), o)}
+		}
+		a.Mauszeiger = zeiger
 	}
 	if warte >= 0 {
 		if !a.Modus.Aufnahme() {

@@ -114,6 +114,7 @@ func TestWerteDeckenParse(t *testing.T) {
 	anders.Editor = false
 	anders.Kante = 2
 	anders.Verzoegerung = 10
+	anders.Mauszeiger = true
 	anders.Bibliothek.An, anders.Bibliothek.Tage = false, 7
 	anders.Leiste = false
 	anders.Agenten = Agenten{Aufnehmen: true, Bibliothek: true, Bestaetigen: false, Bild: false, Bearbeiten: true}

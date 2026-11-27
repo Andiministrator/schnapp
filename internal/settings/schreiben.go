@@ -57,6 +57,7 @@ func Werte(e Einstellungen) []Aenderung {
 		{"capture", "open-editor", wahr(e.Editor)},
 		{"capture", "seam", e.Kante.Name()},
 		{"capture", "delay", strconv.Itoa(e.Verzoegerung)},
+		{"capture", "cursor", ja(e.Mauszeiger)},
 		{"library", "bar", ja(e.Leiste)},
 		{"library", "cleanup", wahr(e.Bibliothek.An)},
 		{"library", "cleanup-days", strconv.Itoa(e.Bibliothek.Tage)},

@@ -158,6 +158,8 @@ type Auftrag struct {
 	Kante document.Kante
 	// Verzoegerung: Sekunden vor der Aufnahme, --delay=SEK vor [capture] delay (ADR-0042).
 	Verzoegerung int
+	// Mauszeiger: den Mauszeiger mit aufnehmen, --cursor/--no-cursor vor [capture] cursor (ADR-0043).
+	Mauszeiger bool
 }
 
 // Bildschirmziel sagt, welcher Monitor aufgenommen wird.
@@ -177,6 +179,7 @@ func plane(a Aufruf, e settings.Einstellungen) Auftrag {
 		if a.VerzoegerungGesetzt {
 			t.Verzoegerung = a.Verzoegerung
 		}
+		t.Mauszeiger = e.Mauszeiger && a.Mauszeiger >= 0 || a.Mauszeiger > 0
 	}
 	if a.Modus == ModusBildschirm {
 		if a.Bildschirm != "" {
@@ -200,6 +203,7 @@ func hilfe() string {
 		"  --repeat       " + i18n.T("Repeat the last area") + "\n" +
 		"  --no-editor    " + i18n.T("Do not open the editor after capturing") + "\n" +
 		"  --delay=SEC    " + i18n.T("Wait SEC seconds before capturing (0 to 60), with a countdown notification") + "\n" +
+		"  --cursor, --no-cursor " + i18n.T("Include the mouse pointer or not (default: as set in the settings, off)") + "\n" +
 		"  --output=FILE  " + i18n.T("Write the screenshot to FILE (.png, .jpg, .svg) instead of the library") + "\n" +
 		"  --json         " + i18n.T("Print the result as one line of JSON") + "\n" +
 		"  FILE           " + i18n.T("Open FILE in the editor") + "\n" +

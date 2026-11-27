@@ -104,7 +104,9 @@ type Einstellungen struct {
 	// Verzoegerung ist [capture] delay: Sekunden Wartezeit vor jeder Aufnahme, 0 bis MaxVerzoegerung (Voreinstellung 0,
 	// ADR-0042).
 	Verzoegerung int
-	Bibliothek   library.Einstellung // [library] cleanup, cleanup-days
+	// Mauszeiger ist [capture] cursor: den Mauszeiger mit aufnehmen, yes oder no (Voreinstellung, ADR-0043).
+	Mauszeiger bool
+	Bibliothek library.Einstellung // [library] cleanup, cleanup-days
 	// Leiste ist [library] bar: die Leiste der letzten Aufnahmen unter dem Bild (ADR-0036 Punkt 2, ADR-0018 Nachtrag 6),
 	// yes (Voreinstellung) oder no; true/false gelten auch.
 	Leiste  bool
@@ -325,6 +327,11 @@ func Parse(name, inhalt string) (Einstellungen, []string) {
 			bekannterSchluessel = true
 			if n, err := strconv.Atoi(wert); err == nil && n >= 0 && n <= MaxVerzoegerung {
 				e.Verzoegerung, gueltig = n, true
+			}
+		case "capture.cursor":
+			bekannterSchluessel = true
+			if w, ok := janein(wert); ok {
+				e.Mauszeiger, gueltig = w, true
 			}
 		case "capture.open-editor":
 			bekannterSchluessel = true

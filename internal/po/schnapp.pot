@@ -60,6 +60,10 @@ msgid "Show the version"
 msgstr ""
 
 #: cmd/schnapp/argumente.go
+msgid "Options %s and %s cannot be combined."
+msgstr ""
+
+#: cmd/schnapp/argumente.go
 msgid "Option --delay needs whole seconds from 0 to %d after an equals sign: --delay=5."
 msgstr ""
 
@@ -109,10 +113,6 @@ msgstr ""
 
 #: cmd/schnapp/argumente.go
 msgid "Option --screen cannot be given more than once with different monitor names."
-msgstr ""
-
-#: cmd/schnapp/argumente.go
-msgid "Options %s and %s cannot be combined."
 msgstr ""
 
 #: cmd/schnapp/argumente.go
@@ -457,6 +457,10 @@ msgstr ""
 
 #: cmd/schnapp/main.go
 msgid "Wait SEC seconds before capturing (0 to 60), with a countdown notification"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Include the mouse pointer or not (default: as set in the settings, off)"
 msgstr ""
 
 #: cmd/schnapp/main.go
@@ -1568,6 +1572,10 @@ msgstr ""
 msgid "Delay"
 msgstr ""
 
+#: internal/ui/einstellungen_logik.go
+msgid "Mouse pointer"
+msgstr ""
+
 #: internal/ui/einstellungen_logik.go internal/ui/oberflaeche.go
 msgid "Recent captures"
 msgstr ""
@@ -1601,6 +1609,10 @@ msgid "Open the editor"
 msgstr ""
 
 #: internal/ui/einstellungen_logik.go
+msgid "Include in the screenshot"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
 msgid "Show below the image"
 msgstr ""
 
@@ -1626,6 +1638,10 @@ msgstr ""
 
 #: internal/ui/einstellungen_logik.go
 msgid "Applies to new captures and opened images; a working file keeps its edge."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "--cursor and --no-cursor override it for one capture."
 msgstr ""
 
 #: internal/ui/einstellungen_logik.go

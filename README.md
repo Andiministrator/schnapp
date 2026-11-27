@@ -57,6 +57,7 @@ What exists:
 | `schnapp --window` | select a window |
 | `schnapp --repeat` | capture the last area again |
 | `schnapp --no-editor …` | capture without opening the editor afterwards |
+| `schnapp --cursor …` | include the mouse pointer (`--no-cursor`: without; `[capture] cursor = yes` makes it the default) |
 | `schnapp --delay=5 …` | wait 5 seconds (0 to 60) before capturing, with a countdown notification — to catch an open menu; `[capture] delay = 5` sets it for every capture, `--delay=0` overrides that |
 | `schnapp FILE` | open a PNG or JPEG in the editor (also what "Open with" in a file manager runs; a JPEG with EXIF orientation is rotated or mirrored as image viewers show it, the EXIF data itself is not kept) |
 | `schnapp --ignore-limit FILE` | open the file even if it has so many or such large annotations that rendering exceeds the compute budget (for your own work that grew past it) |

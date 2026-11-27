@@ -1,0 +1,44 @@
+[
+  {
+    "name": "MZ1 Option geht nicht an KWin",
+    "datei": "cmd/schnapp/aufnehmen.go",
+    "paket": "./cmd/schnapp",
+    "alt": "opt := capture.Optionen{Mauszeiger: t.Mauszeiger}",
+    "neu": "opt := capture.Optionen{}"
+  },
+  {
+    "name": "MZ2 --no-cursor hebt die Einstellung nicht auf",
+    "datei": "cmd/schnapp/main.go",
+    "paket": "./cmd/schnapp",
+    "alt": "t.Mauszeiger = e.Mauszeiger && a.Mauszeiger >= 0 || a.Mauszeiger > 0",
+    "neu": "t.Mauszeiger = e.Mauszeiger || a.Mauszeiger > 0"
+  },
+  {
+    "name": "MZ3 --cursor wirkt nicht",
+    "datei": "cmd/schnapp/main.go",
+    "paket": "./cmd/schnapp",
+    "alt": "t.Mauszeiger = e.Mauszeiger && a.Mauszeiger >= 0 || a.Mauszeiger > 0",
+    "neu": "t.Mauszeiger = e.Mauszeiger && a.Mauszeiger >= 0"
+  },
+  {
+    "name": "MZ4 --cursor und --no-cursor zusammen erlaubt",
+    "datei": "cmd/schnapp/argumente.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\tif zeiger != 0 && zeiger != w {",
+    "neu": "\t\t\tif false {"
+  },
+  {
+    "name": "MZ5 --cursor mit Datei erlaubt",
+    "datei": "cmd/schnapp/argumente.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif zeiger != 0 {\n\t\tif !a.Modus.Aufnahme() {",
+    "neu": "\tif zeiger != 0 {\n\t\tif false {"
+  },
+  {
+    "name": "MZ6 Einstellung nicht gelesen",
+    "datei": "internal/settings/einstellungen.go",
+    "paket": "./internal/settings",
+    "alt": "\t\t\t\te.Mauszeiger, gueltig = w, true",
+    "neu": "\t\t\t\t_, gueltig = w, true"
+  }
+]
