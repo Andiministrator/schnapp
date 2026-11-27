@@ -1,0 +1,22 @@
+# Sichtprobe ADR-0021 Nachtrag 27 (Karte #381): Voreinstellung des Schattens Schwarz deckend, weich auslaufend.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/schatten-schwarz-381.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 1600 --hoehe 1000
+# Lagen wie schatten-363.txt (1600 × 1000, Skala 1, Werkzeug Kasten): Kästchen „Schatten“ bei (1325, 321).
+# Erwartet:
+#  01 Kästchen an: Farbfeld „Farbe“ des Schattens schwarz (kein Schachbrett).
+#  02 Kasten auf Blau und Kasten auf Grün mit Schatten nach rechts unten: dunkel am Kasten, nach außen weich ins
+#     Durchsichtige auslaufend, keine harte Kante.
+#  03 Strg+1 (100 %) und Esc: die Kästen ohne Auswahl zum Ansehen.
+warte 1500
+taste R
+warte 400
+klick 1325 321
+warte 400
+foto 01-schalter
+ziehe 950 200 1200 400 10
+warte 300
+ziehe 600 250 760 380 10
+warte 300
+foto 02-kaesten
+taste Esc
+warte 300
+foto 03-ohne-auswahl

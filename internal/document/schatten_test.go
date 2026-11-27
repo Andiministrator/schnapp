@@ -18,7 +18,7 @@ func TestSchattenWerte(t *testing.T) {
 	if v := (Schatten{An: true, Winkel: 90, Laenge: 5}).Versatz(); math.Abs(v.X) > 1e-9 || math.Abs(v.Y-5) > 1e-9 {
 		t.Errorf("90° (Licht von oben): %v", v)
 	}
-	if s := StandardSchatten(2); !s.An || s.Winkel != 135 || s.Laenge != 12 || s.Weich != 16 || s.Farbe != (color.NRGBA{A: 102}) {
+	if s := StandardSchatten(2); !s.An || s.Winkel != 135 || s.Laenge != 12 || s.Weich != 16 || s.Farbe != (color.NRGBA{A: 255}) {
 		t.Errorf("Voreinstellung Faktor 2: %+v", s)
 	}
 	for w, soll := range map[float64]float64{-45: 315, 360: 0, 725: 5, 0: 0, -720: 0} {

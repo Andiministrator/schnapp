@@ -139,7 +139,7 @@ stays unchanged and the result becomes a new screenshot in the library. `LIST` i
 | `redact`, `pixelate` | **`from`**, **`to`** — overwrites the pixels for good; an area too narrow to pixelate is blacked out |
 
 `arrow`, `rect`, `text` and `step` also take `shadow`: `true` for the default drop shadow (light from the top left,
-shadow down and to the right, soft, black at 40 %), `false` for none, or an object with any of `angle` (direction the
+shadow down and to the right, soft, black), `false` for none, or an object with any of `angle` (direction the
 light comes from, degrees, 0 = from the right, counter-clockwise, default 135), `distance` (0 to 1000, default 6),
 `softness` (blur radius, 0 to 200, default 8; both in pixels and, like widths, larger on large screenshots) and `color`
 (`#RRGGBB` or `#RRGGBBAA`).

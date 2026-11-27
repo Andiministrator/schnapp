@@ -170,7 +170,8 @@ func beispiele() []beispiel {
 			d := beispielDok(t, 64, 48)
 			k := document.Kasten{Bereich: document.R(document.Pt(6, 6), document.Pt(34, 30)), Fuellung: color.NRGBA{255, 255, 255, 255},
 				Strich: document.Strich{Farbe: color.NRGBA{220, 30, 30, 255}, Breite: 2}}
-			k.Ebene.Schatten = document.StandardSchatten(1)
+			// Fest die Voreinstellung bis ADR-0021 Nachtrag 27 (Schwarz 40 %): das Beispiel ändert sich nicht mit ihr.
+			k.Ebene.Schatten = document.Schatten{An: true, Winkel: 135, Laenge: 6, Weich: 8, Farbe: color.NRGBA{A: 102}}
 			p := document.GeraderPfeil(document.Pt(10, 40), document.Pt(56, 38), document.Strich{Farbe: color.NRGBA{220, 30, 30, 255}, Breite: 2})
 			p.Ebene.Schatten = document.Schatten{An: true, Winkel: 180, Laenge: 3, Farbe: color.NRGBA{30, 60, 220, 255}}
 			fuege(t, d, k, p)

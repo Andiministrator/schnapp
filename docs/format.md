@@ -631,7 +631,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `layers` | three objects with layer attributes: a named, half-opaque box, a hidden and locked arrow, a step number without them |
 | `arrow-heads` | format version 2: four arrows: `open` head at `B`, `dot` at `A` only on a curve, `diamond` at `A` and `notched` at `B`, and a curved line without heads |
 | `line-styles` | format version 2: a `dashed` arrow with the default head, a curved `dotted` line, a `dotted` square box and a `dashed` box with rounded corners |
-| `shadow` | format version 2: a filled box with the default shadow (down and to the right, soft, black at 40 %) and an arrow with a sharp blue shadow 3 pixels to the right (light from the left, angle 180) |
+| `shadow` | format version 2: a filled box with a soft black shadow at 40 % opacity down and to the right and an arrow with a sharp blue shadow 3 pixels to the right (light from the left, angle 180) |
 | `callout` | format version 2: two texts with `s:spitze`, one with a label (filled polygon) and one without (legs as a line) |
 | `magnifier` | format version 2: one magnifier with a non-integer source over a column strip (the strip drops out of the magnified view, 8.7); the visible image shows no annotations, as in all examples |
 

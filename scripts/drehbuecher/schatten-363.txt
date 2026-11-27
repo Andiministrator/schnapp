@@ -6,7 +6,7 @@
 # x 1404–1426, Regler x 1432–1512, + bei x 1518–1540, Wert rechts daneben; Farbfeld „Farbe“ bei (1417, 488). Die
 # eigenen Farbfelder stehen dann bei y 821 (Orange bei x 1482).
 # Erwartet:
-#  01 Kästchen an: darunter Richtung 135°, Abstand 6 px, Weichheit 8 px, Farbfeld schwarz-durchscheinend.
+#  01 Kästchen an: darunter Richtung 135°, Abstand 6 px, Weichheit 8 px, Farbfeld schwarz (seit Karte #381 deckend).
 #  02 ein Kasten auf Blau mit Schatten, Richtung 165° (Klick auf die Scheibe rechts, etwas unten), Abstand etwa 34 px:
 #     der Schatten liegt deutlich rechts und ein wenig unten; nach dem Klick aufs Farbfeld ist der Reiter „Schatten“
 #     im Abschnitt Farbe hervorgehoben.

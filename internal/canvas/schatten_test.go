@@ -22,7 +22,7 @@ func TestSchattenWerkzeugUndAuswahl(t *testing.T) {
 	if s.SchalteSchatten() || s.D.Stand() != vor {
 		t.Error("ohne Auswahl ein Rückgängig-Schritt")
 	}
-	if sch := s.Schatten(); !sch.An || sch.Winkel != 135 || sch.Laenge == 0 || sch.Farbe.A != 102 {
+	if sch := s.Schatten(); !sch.An || sch.Winkel != 135 || sch.Laenge == 0 || sch.Farbe != (color.NRGBA{A: 255}) {
 		t.Fatalf("Voreinstellung %+v", sch)
 	}
 	zieh(s, f(20, 20), f(120, 80))

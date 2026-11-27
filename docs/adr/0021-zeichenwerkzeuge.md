@@ -1036,3 +1036,20 @@ Nachtrag 1. Tests `internal/ui/schattenleiste_test.go`, `internal/canvas/schatte
 
 Verworfen: Schatten als eigenes Objekt (ginge beim Verschieben verloren); `feDropShadow` (jünger, nicht überall
 unterstützt); Farbe über eine feste Liste (Andi: Farbe frei wählbar).
+
+## Nachtrag 27 (27.11.2026): Schatten-Voreinstellung Schwarz deckend (Karte #381)
+
+Andi, 27.11.2026: „die defaultfarbe für den schatten durchsichtig zu machen, halte ich für keine gute idee. entweder wir
+machen sie schwarz oder invertierend zum (haupt)hintergrund“. Entscheidung (Claude): **Schwarz, deckend** (`#000000`,
+100 %) statt Schwarz mit 40 % Deckkraft; Länge 6 und Weich 8 bleiben. Das Auslaufen ins Durchsichtige leistet die
+Weichheit (drei Kastenfilter, nahe am Gauß mit σ = Weich/2; unter σ = 2 ein echter Gaußkern, F-846): Der Schatten ist
+am Objekt am dunkelsten und wird nach außen über etwa 3 σ durchsichtig. Wer ihn heller will, stellt die Deckkraft im
+Farbwähler (Reiter „Schatten“) ein.
+
+Verworfen: **invertierend zum Hintergrund** — der Hintergrund eines Bildschirmfotos ist selten einheitlich (eine Farbe
+je Objekt müsste aus dem Bild unter ihm geschätzt werden und spränge beim Verschieben), und ein heller Schatten auf
+dunklem Grund wirkt als Leuchten, nicht als Schatten. Ein Leuchten (Glow) wäre ein eigener Effekt.
+
+Gespeicherte Dateien und Schnellstile behalten ihre Farbe; das Format-Beispiel `testdata/format/shadow` hält die alte
+Voreinstellung fest im Testcode (`format_konform_test.go`), damit es sich nicht ändert. Sichtprobe
+`scripts/drehbuecher/schatten-schwarz-381.txt`.

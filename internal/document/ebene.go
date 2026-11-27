@@ -51,10 +51,10 @@ const (
 )
 
 // StandardSchatten ist die Voreinstellung zum Faktor f (document.KantenFaktor): nach rechts unten, Länge 6, Weich 8,
-// Schwarz mit 40 % Deckkraft.
+// Schwarz deckend — ins Durchsichtige läuft der Schatten über die Weichheit aus (ADR-0021 Nachtrag 27, Andi 27.11.2026).
 func StandardSchatten(f float64) Schatten {
 	f = max(f, 1)
-	return Schatten{An: true, Winkel: 135, Laenge: 6 * f, Weich: 8 * f, Farbe: color.NRGBA{A: 102}}
+	return Schatten{An: true, Winkel: 135, Laenge: 6 * f, Weich: 8 * f, Farbe: color.NRGBA{A: 255}}
 }
 
 // Versatz ist die Verschiebung des Schattens im Bild (y nach unten): entgegen der Richtung des Lichts.
