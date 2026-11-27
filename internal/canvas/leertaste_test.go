@@ -3,6 +3,7 @@
 package canvas
 
 import (
+	"image"
 	"testing"
 
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -80,5 +81,56 @@ func TestLeertasteNichtInTexteingabe(t *testing.T) {
 	s.Loslassen(f(170, 90))
 	if s.Abb.ZuFenster(document.Pt(0, 0)) != start {
 		t.Error("Ansicht verschoben aus der Texteingabe heraus")
+	}
+}
+
+// F-906: Auch ein Doppelklick verschiebt bei gehaltener Leertaste nur die Ansicht: Er hebt keinen Zuschnitt auf und
+// beginnt keine Texteingabe.
+func TestLeertasteDoppelklickVerschiebt(t *testing.T) {
+	s := dreiKaesten(t)
+	if err := s.D.SetzeZuschnitt(image.Rect(0, 0, 150, 80)); err != nil {
+		t.Fatal(err)
+	}
+	s.SetzeWerkzeug(WerkzeugZuschneiden)
+	s.SetzeLeertaste(true)
+	vor, start := s.D.Stand(), s.Abb.ZuFenster(document.Pt(0, 0))
+	s.Doppelklick(f(5, 5))
+	s.Ziehen(f(25, 15))
+	s.Loslassen(f(25, 15))
+	if s.D.Stand() != vor {
+		t.Error("Doppelklick mit Leertaste änderte das Dokument")
+	}
+	if d := s.Abb.ZuFenster(document.Pt(0, 0)).Minus(start); d.X != 20 || d.Y != 10 {
+		t.Errorf("Ansicht um %v verschoben, Soll (20, 10)", d)
+	}
+}
+
+// Zeiger mit gehaltener Leertaste (Kritik #334, F-911): Hand auch gedrückt unter der Ziehschwelle, keine Hand ohne
+// Zeiger über der Leinwand, während der Ruhe (Speichern, Laden) und im Zug des Bereichsmodus.
+func TestLeertasteZeigerGrenzfaelle(t *testing.T) {
+	s := dreiKaesten(t)
+	s.SetzeLeertaste(true)
+	p := f(150, 80)
+	s.Druecken(p, TastePrimaer)
+	if z := s.Zeiger(&p); z != ZeigerGreifen {
+		t.Errorf("gedrückt, unter der Ziehschwelle: %v, Soll greifen", z)
+	}
+	s.Loslassen(p)
+	if z := s.Zeiger(nil); z == ZeigerGreifen {
+		t.Error("Hand ohne Zeiger über der Leinwand")
+	}
+	s.SetzeRuhe(true)
+	if z := s.Zeiger(&p); z == ZeigerGreifen {
+		t.Error("Hand während der Ruhe")
+	}
+	s.SetzeRuhe(false)
+	s.SetzeLeertaste(false)
+	if !s.BeginneTextBereich() {
+		t.Fatal("Bereichsmodus")
+	}
+	s.Druecken(p, TastePrimaer)
+	s.SetzeLeertaste(true)
+	if z := s.Zeiger(&p); z == ZeigerGreifen {
+		t.Error("Hand im Zug des Bereichsmodus")
 	}
 }

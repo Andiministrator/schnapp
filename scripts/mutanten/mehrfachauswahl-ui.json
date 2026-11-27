@@ -45,8 +45,8 @@
     "name": "MU7 Loslassen der Leertaste wird übergangen",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\te.s.SetzeLeertaste(k.State == key.Press && e.leertasteGilt(gtx))",
-    "neu": "\t\t\te.s.SetzeLeertaste(true)"
+    "alt": "\t\t\te.s.SetzeLeertaste(k.State == key.Press && e.leertasteGilt(gtx) &&",
+    "neu": "\t\t\te.s.SetzeLeertaste(true || k.State == key.Press && e.leertasteGilt(gtx) &&"
   },
   {
     "name": "MU8 gehaltene Leertaste bleibt ohne Fokus",
@@ -89,5 +89,173 @@
     "paket": "./internal/ui",
     "alt": "\tcase canvas.AblehnungSichtbar:\n\t\te.melde(",
     "neu": "\tcase canvas.AblehnungSichtbar + 100:\n\t\te.melde("
+  },
+  {
+    "name": "MU14 Leertaste: Loslassen mit Strg kommt nicht an (F-905)",
+    "datei": "internal/ui/kuerzel.go",
+    "paket": "./internal/ui",
+    "alt": "Optional: key.ModShift | key.ModCtrl | key.ModAlt | key.ModSuper},",
+    "neu": "Optional: key.ModShift},"
+  },
+  {
+    "name": "MU15 Strg+Leertaste hält die Leertaste (F-905)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\t!k.Modifiers.Contain(key.ModCtrl) && !k.Modifiers.Contain(key.ModAlt)",
+    "neu": "\t\t\t\ttrue && !k.Modifiers.Contain(key.ModAlt)"
+  },
+  {
+    "name": "MU16 Doppelklick trotz Leertaste in der Oberfläche (F-906)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tcase pe.Buttons.Contain(pointer.ButtonPrimary) && e.s.Leertaste():",
+    "neu": "\t\t\tcase pe.Buttons.Contain(pointer.ButtonPrimary) && false && e.s.Leertaste():"
+  },
+  {
+    "name": "MU17 Verschiebe-Druck zählt für den Doppelklick (F-906)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\te.hatDruck = false\n\t\t\t\te.s.Druecken(p, canvas.TastePrimaer)",
+    "neu": "\t\t\t\te.hatDruck = true\n\t\t\t\te.s.Druecken(p, canvas.TastePrimaer)"
+  },
+  {
+    "name": "MU18 Doppelklick in der Sitzung übergeht die Leertaste (F-906)",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.leertaste && s.zug != zugText {\n\t\ts.Druecken(p, TastePrimaer) // Leertaste",
+    "neu": "\tif false && s.leertaste && s.zug != zugText {\n\t\ts.Druecken(p, TastePrimaer) // Leertaste"
+  },
+  {
+    "name": "MU19 Leinwand holt den Fokus nicht (F-907)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.fokusHolen && !e.menue.offen",
+    "neu": "\tif false && e.fokusHolen && !e.menue.offen"
+  },
+  {
+    "name": "MU20 Leinwand holt den Fokus hinter der Übersicht (F-907)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.fokusHolen && !e.menue.offen && !e.hilfeOffen",
+    "neu": "\tif e.fokusHolen && !e.menue.offen"
+  },
+  {
+    "name": "MU21 neuerEditor ohne fokusHolen (F-907)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "exportOhneGrenze.Load(), fokusHolen: true}",
+    "neu": "exportOhneGrenze.Load(), fokusHolen: false}"
+  },
+  {
+    "name": "MU22 leertasteGilt ohne Menü (K5)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn gtx.Focused(e) && !e.s.TextLaeuft() && !e.menue.offen && !e.hilfeOffen && !e.einst.offen && !e.bibl.offen",
+    "neu": "\treturn gtx.Focused(e) && !e.s.TextLaeuft() && !e.hilfeOffen && !e.einst.offen && !e.bibl.offen"
+  },
+  {
+    "name": "MU23 leertasteGilt ohne Übersicht (K6)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn gtx.Focused(e) && !e.s.TextLaeuft() && !e.menue.offen && !e.hilfeOffen && !e.einst.offen && !e.bibl.offen",
+    "neu": "\treturn gtx.Focused(e) && !e.s.TextLaeuft() && !e.menue.offen && !e.einst.offen && !e.bibl.offen"
+  },
+  {
+    "name": "MU24 leertasteGilt ohne Tafel (K7)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn gtx.Focused(e) && !e.s.TextLaeuft() && !e.menue.offen && !e.hilfeOffen && !e.einst.offen && !e.bibl.offen",
+    "neu": "\treturn gtx.Focused(e) && !e.s.TextLaeuft() && !e.menue.offen && !e.hilfeOffen && !e.bibl.offen"
+  },
+  {
+    "name": "MU25 leertasteGilt ohne Bibliothek (K7)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn gtx.Focused(e) && !e.s.TextLaeuft() && !e.menue.offen && !e.hilfeOffen && !e.einst.offen && !e.bibl.offen",
+    "neu": "\treturn gtx.Focused(e) && !e.s.TextLaeuft() && !e.menue.offen && !e.hilfeOffen && !e.einst.offen"
+  },
+  {
+    "name": "MU26 leertasteGilt ohne Texteingabe (K8)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn gtx.Focused(e) && !e.s.TextLaeuft() && !e.menue.offen && !e.hilfeOffen && !e.einst.offen && !e.bibl.offen",
+    "neu": "\treturn gtx.Focused(e) && !e.menue.offen && !e.hilfeOffen && !e.einst.offen && !e.bibl.offen"
+  },
+  {
+    "name": "MU27 Fensterfokus lässt nicht los (K9)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !an {\n\t\te.s.SetzeLeertaste(false)",
+    "neu": "\tif false {\n\t\te.s.SetzeLeertaste(false)"
+  },
+  {
+    "name": "MU28 Druck der Leertaste ohne leertasteGilt (K16)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.s.SetzeLeertaste(k.State == key.Press && e.leertasteGilt(gtx) &&",
+    "neu": "\t\t\te.s.SetzeLeertaste(k.State == key.Press &&"
+  },
+  {
+    "name": "MU29 Rahmen weiterer versetzt (K14)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tauswahlLinie(gtx, r.Inset(-gtx.Dp(2)))",
+    "neu": "\t\t\t\tauswahlLinie(gtx, r.Inset(-gtx.Dp(2)).Add(image.Pt(50, 50)))"
+  },
+  {
+    "name": "MU30 aufgezogener Rahmen versetzt (K15)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tauswahlLinie(gtx, q)",
+    "neu": "\t\tauswahlLinie(gtx, q.Add(image.Pt(40, 40)))"
+  },
+  {
+    "name": "MU31 Auswahlrahmen ohne Kontur (K10)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\trahmen(gtx.Ops, r.Inset(-gtx.Dp(1)), gtx.Dp(1), farbeAuswahlKontur)\n",
+    "neu": "\n"
+  },
+  {
+    "name": "MU32 keine Hand unter der Ziehschwelle (K1)",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase s.zug == zugAnsicht && s.leertaste:",
+    "neu": "\tcase false && s.zug == zugAnsicht && s.leertaste:"
+  },
+  {
+    "name": "MU33 Hand auch ohne Zeiger (K4)",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase s.leertaste && p != nil && !s.pan",
+    "neu": "\tcase s.leertaste && !s.pan"
+  },
+  {
+    "name": "MU34 Hand auch in der Ruhe (K2)",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "!s.pan && !s.gesperrt() && !s.tb.zieht && s.zug == keinZug:",
+    "neu": "!s.pan && !s.tb.zieht && s.zug == keinZug:"
+  },
+  {
+    "name": "MU35 Hand im Zug des Bereichsmodus (K3)",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "!s.pan && !s.gesperrt() && !s.tb.zieht && s.zug == keinZug:",
+    "neu": "!s.pan && !s.gesperrt() && s.zug == keinZug:"
+  },
+  {
+    "name": "MU36 Hinweis Auswählen fehlt (K13)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase canvas.WerkzeugAuswahl:\n\t\treturn i18n.T(\"Click to select,",
+    "neu": "\tcase canvas.WerkzeugAuswahl + 100:\n\t\treturn i18n.T(\"Click to select,"
+  },
+  {
+    "name": "MU37 Hilfezeile Ansicht verschieben fehlt (K17)",
+    "datei": "internal/ui/hilfe.go",
+    "paket": "./internal/ui",
+    "alt": "\t\thilfeZeile{text: i18n.T(\"Move the view\"), taste: i18n.T(\"Space\") + \"+\" + i18n.T(\"Drag\")},\n",
+    "neu": "\n"
   }
 ]

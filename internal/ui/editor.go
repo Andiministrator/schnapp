@@ -189,7 +189,7 @@ func neuerEditor(titel string, d *document.Dokument, speichern Speichern, rettun
 	// gespeicherten Datei als Kästchen erscheinen (Kritik A-3).
 	th.Shaper = text.NewShaper(text.NoSystemFonts(), text.WithCollection(gofont.Collection()))
 	e := &editor{w: new(app.Window), thema: th, s: canvas.NeueSitzung(d), titel: titel, speichern: speichern, rettung: rettung,
-		ohneGrenze: exportOhneGrenze.Load()}
+		ohneGrenze: exportOhneGrenze.Load(), fokusHolen: true}
 	// Systemschriften im Hintergrund suchen, damit die Schriftliste sie kennt (ADR-0021 Nachtrag 10 Punkt 3).
 	fonts.StarteSuche(e.w.Invalidate)
 	e.stileLaden()
@@ -235,6 +235,9 @@ type editor struct {
 	schnell   schnellLeiste  // Abschnitt „Schnellstile“ der rechten Leiste (ADR-0037)
 	meldung   canvas.Meldung // Zeile in der Fußzeile (Speichern, Hinweis, Fehler); Vorrang regelt canvas.StatusZeile (F-151)
 	titelSet  string
+
+	// fokusHolen: die Leinwand holt sich beim nächsten Bild den Tastaturfokus (Öffnen, Wechsel; F-907).
+	fokusHolen bool
 
 	wache *canvas.Signalwache // nimmt Signale an (eigene Goroutine), Ereignisschleife fragt Angekommen
 	// wecker weckt die Ereignisschleife für Signal und Dateidialog, bis sie ein Ereignis bearbeitet (F-231).
@@ -505,10 +508,7 @@ func (e *editor) laufen() error {
 				ev.Abort()
 			}
 		case app.ConfigEvent:
-			if !ev.Config.Focused {
-				// Fenster verliert den Fokus: das Loslassen der Leertaste käme nicht mehr an (ADR-0039 Nachtrag 1).
-				e.s.SetzeLeertaste(false)
-			}
+			e.fensterFokus(ev.Config.Focused)
 		case app.FrameEvent:
 			e.bilder++
 			var bildStart time.Time
@@ -1722,6 +1722,10 @@ func (e *editor) zeiger(gtx layout.Context) {
 				e.s.Druecken(p, canvas.TasteMitte)
 			case pe.Buttons == pointer.ButtonSecondary: // Kontextmenü (ADR-0038 Punkt 2)
 				e.kontextRechtsklick(image.Pt(int(math.Round(float64(pe.Position.X))), int(math.Round(float64(pe.Position.Y)))))
+			case pe.Buttons.Contain(pointer.ButtonPrimary) && e.s.Leertaste():
+				// Leertaste gehalten: jeder Druck verschiebt die Ansicht, keiner zählt für einen Doppelklick (F-906).
+				e.hatDruck = false
+				e.s.Druecken(p, canvas.TastePrimaer)
 			case pe.Buttons.Contain(pointer.ButtonPrimary):
 				if e.hatDruck && pe.Time-e.letzterDruck <= doppelklickZeit &&
 					p.Minus(e.letzterOrt).Laenge() <= doppelklickAbstand {
@@ -2582,6 +2586,14 @@ func (e *editor) alleTastenFilter() []event.Filter {
 	return filter
 }
 
+// fensterFokus folgt dem Fokus des Fensters: Verliert es ihn, käme das Loslassen der Leertaste nicht mehr an, sie gilt
+// als losgelassen (ADR-0039 Nachtrag 1).
+func (e *editor) fensterFokus(an bool) {
+	if !an {
+		e.s.SetzeLeertaste(false)
+	}
+}
+
 // leertasteGilt meldet, ob die gehaltene Leertaste die Ansicht verschieben darf: Fokus auf der Leinwand, keine
 // Texteingabe, kein offenes Menü, keine Tafel und keine volle Ansicht der Bibliothek darüber (ADR-0039 Nachtrag 1).
 func (e *editor) leertasteGilt(gtx layout.Context) bool {
@@ -2603,6 +2615,11 @@ func (e *editor) leertastenZiele() []event.Tag {
 
 func (e *editor) tasten(gtx layout.Context) {
 	e.menue.gewechselt = false
+	if e.fokusHolen && !e.menue.offen && !e.hilfeOffen && !e.einst.offen && !e.bibl.offen {
+		// Ohne Fokus auf der Leinwand kämen weder Leertaste+Ziehen noch Kürzel an, bis man ins Bild klickt (F-907).
+		e.fokusHolen = false
+		gtx.Execute(key.FocusCmd{Tag: e})
+	}
 	if e.s.Leertaste() && !e.leertasteGilt(gtx) {
 		e.s.SetzeLeertaste(false) // Fokus weg, Texteingabe, Menü oder Tafel: das Loslassen käme nicht an
 	}
@@ -2627,7 +2644,9 @@ func (e *editor) tasten(gtx layout.Context) {
 		if k, ok := ev.(key.Event); ok && k.Name == key.NameSpace && gtx.Focused(e) && !e.s.TextLaeuft() {
 			// Leertaste an der Leinwand (ADR-0039 Nachtrag 1): solange gehalten, verschiebt Ziehen die Ansicht. Andere
 			// Ziele der Leertaste (Menütitel, Felder mit Liste) haben eigene Filter mit eigenem Fokus.
-			e.s.SetzeLeertaste(k.State == key.Press && e.leertasteGilt(gtx))
+			// Loslassen gilt immer, Drücken nur ohne Strg, Alt und Super (die sind Kürzel, nicht Verschieben; F-905).
+			e.s.SetzeLeertaste(k.State == key.Press && e.leertasteGilt(gtx) &&
+				!k.Modifiers.Contain(key.ModCtrl) && !k.Modifiers.Contain(key.ModAlt) && !k.Modifiers.Contain(key.ModSuper))
 			gtx.Execute(op.InvalidateCmd{})
 			continue
 		}

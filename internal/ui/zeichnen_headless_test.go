@@ -5,6 +5,7 @@ package ui
 import (
 	"image"
 	"image/color"
+	"math"
 	"os"
 	"testing"
 
@@ -218,4 +219,59 @@ func TestEditorZeichnetMehrfachauswahlUndRahmen(t *testing.T) {
 		t.Errorf("aufgezogener Rahmen: %d Linien-, %d getönte Pixel, Soll beide über 0", r3, t3)
 	}
 	l.e.s.Loslassen(b)
+}
+
+// Lage und Kontur (Kritik #334, F-909): Der Rahmen eines weiteren gewählten Objekts liegt 2 dp außen um seine Grenzen,
+// die dunkle Kontur 1 dp weiter außen; der aufgezogene Rahmen liegt auf den Ecken des Zugs, die Kontur außen daneben.
+func TestEditorZeichnetAuswahlrahmenAnDerRichtigenStelle(t *testing.T) {
+	l, k := zeichenLauf(t)
+	flaeche := image.Pt(1200, 800)
+	// Zweiter Kasten abseits als Hauptauswahl (seine Griffe liegen weit weg), der erste ist ein weiteres gewähltes.
+	k2, err := l.e.s.D.Hinzufuegen(document.Kasten{Bereich: document.R(document.Pt(30, 2), document.Pt(38, 10)),
+		Fuellung: color.NRGBA{B: 255, A: 255}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	l.e.s.WaehleEbene(k)
+	if !l.e.s.SchalteGewaehlt(k2) || l.e.s.Auswahl != k2 || !l.e.s.IstGewaehlt(k) {
+		t.Fatalf("Auswahl %d, gewählt %v", l.e.s.Auswahl, l.e.s.Gewaehlt())
+	}
+	o, _ := l.e.s.D.Objekt(k)
+	g := o.Grenzen()
+	fe := func(p document.Punkt) image.Point {
+		q := l.e.s.Abb.ZuFenster(l.e.s.D.ZuAnsicht(p))
+		return image.Pt(int(math.Round(q.X)), int(math.Round(q.Y)))
+	}
+	r := image.Rectangle{Min: fe(g.Min), Max: fe(g.Max)}.Canon()
+	gleich := func(p color.RGBA, c color.NRGBA) bool { return p.R == c.R && p.G == c.G && p.B == c.B && p.A == c.A }
+	b := headlessBild(t, flaeche, func(gtx layout.Context) { l.e.zeichneAuswahl(gtx) })
+	mitteY := (r.Min.Y + r.Max.Y) / 2
+	if p := b.RGBAAt(r.Min.X-2, mitteY); !gleich(p, farbeAuswahl) {
+		t.Errorf("weiteres Objekt: Pixel links 2 außen %v, Soll Auswahlfarbe", p)
+	}
+	if p := b.RGBAAt(r.Min.X-3, mitteY); !gleich(p, farbeAuswahlKontur) {
+		t.Errorf("weiteres Objekt: Pixel links 3 außen %v, Soll Kontur", p)
+	}
+	// Aufgezogener Rahmen (auf freier Fläche: der zweite Kasten weicht vorher).
+	l.e.s.Abwaehlen()
+	if err := l.e.s.D.Entfernen(k2); err != nil {
+		t.Fatal(err)
+	}
+	a := l.e.s.Abb.ZuFenster(document.Pt(31, 1))
+	z := l.e.s.Abb.ZuFenster(document.Pt(39.5, 8))
+	l.e.s.Druecken(a, canvas.TastePrimaer)
+	l.e.s.Ziehen(z)
+	rr, ok := l.e.s.AuswahlRahmen()
+	if !ok {
+		t.Fatal("kein Auswahlrahmen")
+	}
+	b = headlessBild(t, flaeche, func(gtx layout.Context) { l.e.zeichneAuswahl(gtx) })
+	x0, y := int(math.Round(rr.Min.X)), int(math.Round((rr.Min.Y+rr.Max.Y)/2))
+	if p := b.RGBAAt(x0, y); !gleich(p, farbeAuswahl) {
+		t.Errorf("aufgezogener Rahmen: Pixel an der linken Kante %v, Soll Auswahlfarbe", p)
+	}
+	if p := b.RGBAAt(x0-1, y); !gleich(p, farbeAuswahlKontur) {
+		t.Errorf("aufgezogener Rahmen: Pixel links daneben %v, Soll Kontur", p)
+	}
+	l.e.s.Loslassen(z)
 }

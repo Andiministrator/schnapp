@@ -119,7 +119,8 @@ func tastenTabelle() []taste {
 			ausnahme: "Zustand während des Ziehens, kein Kürzel: Einrasten aus, solange gehalten (Menü Ansicht → „Snap to objects“)"},
 		// Leertaste gehalten (ADR-0039 Nachtrag 1): nur mit Fokus auf der Leinwand und außerhalb der Texteingabe angemeldet
 		// (alleTastenFilter), dort bleibt sie ein Zeichen.
-		{filter: key.Filter{Name: key.NameSpace, Optional: key.ModShift},
+		// Alle Umschalter erlaubt: Gio prüft sie auch beim Loslassen, sonst käme ein Loslassen mit Strg nicht an (F-905).
+		{filter: key.Filter{Name: key.NameSpace, Optional: key.ModShift | key.ModCtrl | key.ModAlt | key.ModSuper},
 			ausnahme: "Zustand während des Ziehens, kein Kürzel: Ziehen verschiebt die Ansicht, solange gehalten (wie die mittlere Taste)"},
 		{filter: key.Filter{Name: key.NameDeleteForward}, akt: aktLoeschen},
 		{filter: key.Filter{Name: key.NameDeleteBackward}, akt: aktLoeschen},

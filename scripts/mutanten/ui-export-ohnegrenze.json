@@ -17,8 +17,8 @@
     "name": "X3 Editor übernimmt den Schalter nicht (F-610)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "ohneGrenze: exportOhneGrenze.Load()}",
-    "neu": "ohneGrenze: false}"
+    "alt": "ohneGrenze: exportOhneGrenze.Load(),",
+    "neu": "ohneGrenze: false,"
   },
   {
     "name": "X4 Hinweis auf die Dauer fehlt nach dem Export über dem Budget (F-610)",

@@ -3,6 +3,9 @@
 # Bei 1600 × 1000, Skala 1. Nutzt „druecke“, „bewege“, „loslassen“, „taste-halten“, „taste-loslassen“ der
 # Fernbedienung: Rahmen und Ansicht werden mitten im Zug fotografiert.
 # Erwartet:
+#  00 direkt nach dem Öffnen, ohne Klick ins Bild, Werkzeug Kasten, Leertaste gehalten und gezogen: das Bild ist nach
+#     rechts unten verschoben, es entstand kein Kasten (F-907: die Leinwand hat den Fokus von Anfang an); Strg+0 passt
+#     danach wieder ein.
 #  01 drei rote Kästen auf verschiedener Höhe, keiner gewählt.
 #  02 mitten im Zug: grüner, dünner Auswahlrahmen mit dunkler Kontur über leicht grün getönter Fläche um alle drei.
 #  03 nach dem Loslassen alle drei gewählt: der oberste (rechts) mit Griffen, die beiden anderen mit grünem Rahmen (dunkle Kontur,
@@ -16,6 +19,15 @@
 #  09 nach dem Loslassen: Ansicht bleibt verschoben, die Auswahl der zwei ist unverändert.
 warte 800
 taste R
+taste-halten Leertaste
+druecke 600 500
+bewege 700 560 10
+loslassen
+taste-loslassen Leertaste
+warte 300
+foto 00-leertaste-nach-dem-oeffnen
+taste Strg+0
+warte 300
 ziehe 300 300 450 400
 warte 200
 taste R

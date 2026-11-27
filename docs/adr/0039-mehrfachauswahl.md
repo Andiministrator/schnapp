@@ -86,6 +86,24 @@ und Rahmen. Das Dokument kennt nur Züge und Befehle an einem Objekt.
 ## Nachtrag 1 (27.11.2026, Andi: „ja, finde ich gut“)
 Auf Andis Frage nach dem Vorbild der anderen (Inkscape, Krita, GIMP, Photoshop, Figma: Rahmen ohne Umschalt, Ansicht
 mit Leertaste+Ziehen): **Leertaste halten + Ziehen verschiebt die Ansicht**, in jedem Werkzeug; der Zeiger zeigt
-solange die greifende Hand. Während einer Texteingabe ist die Leertaste Text, dort bleibt die mittlere Taste. Rahmen
+solange die offene Hand, beim Ziehen die greifende (Korrektur F-908). Während einer Texteingabe ist die Leertaste Text, dort bleibt die mittlere Taste. Rahmen
 ohne Umschalt (Punkt 2) bleibt; mittlere Taste, Ziehen neben dem Bild und Navigator bleiben. Damit verschiebt man die
 Ansicht auch am Touchpad ohne mittlere Taste. „Mausrad rollt, Strg+Rad zoomt“ ist eine eigene Karte, nicht Teil von #334.
+
+## Nachtrag 2 (27.11.2026, Claude Opus 5.5 im Auftrag Andis: „arbeite selbstständig“; Umsetzung Karte #334)
+1. **Rückgängig und Auswahl (F-900):** Rückgängig und Wiederholen stellen die Auswahl nicht wieder her — weder nach
+   dem Löschen oder Doppeln mehrerer noch nach dem eines einzelnen Objekts (dort wählt Rückgängig schon heute nichts
+   neu). Die Regel aus Punkt 1 („was herausgefallen ist, kommt nicht zurück“) gilt damit ohne Ausnahme; ein Verlauf
+   der Auswahl je Schritt wäre ein eigenes Konzept für alle Handlungen, nicht nur die mehrerer. Strg+A oder ein
+   Rahmen wählt die zurückgeholten Objekte in einem Schritt wieder.
+2. **Darstellung (zu Punkt 5):** Alle Auswahlrahmen (Hauptauswahl, weitere, aufgezogener Rahmen) tragen außen eine
+   dunkle Kontur von 1 dp; die Sichtprobe zeigte den grünen Rahmen auf grünem Bildgrund sonst nicht.
+3. **Treffer:** Das leere Innere eines ungefüllten Kastens trifft wie bisher nichts; Umschalt+Klick dorthin beginnt
+   einen Rahmen (mit Umschalt: zur Auswahl dazu) und ändert ohne Ziehen nichts.
+4. **Leertaste, Ergänzungen aus der Kritik (F-905 bis F-907):** Das Loslassen der Leertaste gilt mit jedem Umschalter
+   (Gio prüft Umschalter auch beim Loslassen); ein Druck mit Strg, Alt oder Super hält sie nicht. Bei gehaltener
+   Leertaste ist ein zweiter Druck kein Doppelklick (kein Aufheben von Zuschnitt oder Naht, keine Texteingabe), und ein
+   Verschiebe-Druck zählt nicht für einen folgenden Doppelklick. Die Leinwand holt sich beim Öffnen und nach jedem
+   Wechsel der Aufnahme den Tastaturfokus (nicht hinter Menü, Übersicht, Einstellungstafel oder voller Ansicht der
+   Bibliothek), damit Leertaste+Ziehen ohne vorherigen Klick ins Bild wirkt. Menü, Übersicht, Tafel, volle Ansicht,
+   Texteingabe, Fokusverlust der Leinwand und des Fensters lassen eine gehaltene Leertaste los.

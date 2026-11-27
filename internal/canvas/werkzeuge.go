@@ -798,6 +798,10 @@ func (s *Sitzung) Doppelklick(p document.Punkt) {
 	if s.gesperrt() {
 		return
 	}
+	if s.leertaste && s.zug != zugText {
+		s.Druecken(p, TastePrimaer) // Leertaste gehalten: verschiebt die Ansicht wie jeder Druck (F-906)
+		return
+	}
 	if s.textBereichDruck(p, TastePrimaer) { // im Bereichsmodus beginnt auch der zweite Druck nur einen Zug
 		return
 	}
