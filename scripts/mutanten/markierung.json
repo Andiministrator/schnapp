@@ -80,14 +80,14 @@
     "name": "MK12 Esc lässt die Markierung der Leiste stehen",
     "datei": "internal/ui/markierung.go",
     "paket": "./internal/ui",
-    "alt": "\tcase t.Name == key.NameEscape && t.Modifiers == 0 && m.Anzahl() > 0:\n\t\tm.Leere()\n",
-    "neu": ""
+    "alt": "\tk.l.Markierung().Leere()\n\treturn true",
+    "neu": "\treturn true"
   },
   {
     "name": "MK13 Umschalt+Pfeil der Leiste ohne Anker vom Fokus",
     "datei": "internal/ui/markierung.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif m.Anker() == \"\" {\n\t\t\tm.SetzeAnker(es[i].Pfad)\n\t\t}",
+    "alt": "\t\tif m.Anker() == \"\" {\n\t\t\tm.SetzeAnker(rel)\n\t\t}",
     "neu": ""
   },
   {
@@ -115,8 +115,8 @@
     "name": "MK17 Mitnehmen nach dem Wechsel entfällt",
     "datei": "internal/ui/markierung.go",
     "paket": "./internal/ui",
-    "alt": "e.wechsel.papierkorb, e.wechsel.weitere, e.wechsel.mitnehmen = true, nachbarn[1:], rest",
-    "neu": "e.wechsel.papierkorb, e.wechsel.weitere = true, nachbarn[1:]"
+    "alt": "e.wechsel.papierkorb, e.wechsel.weitere, e.wechsel.mitnehmen, e.wechsel.ausLeiste = true, nachbarn[1:], rest, inLeiste",
+    "neu": "e.wechsel.papierkorb, e.wechsel.weitere, e.wechsel.ausLeiste = true, nachbarn[1:], inLeiste"
   },
   {
     "name": "MK18 offene bleibt ohne Hinweis",
@@ -208,5 +208,222 @@
     "paket": "./internal/portal",
     "alt": "\t\turis = append(uris, uri)",
     "neu": "\t\turis = append(uris[:0], uri)"
+  },
+  {
+    "name": "MK31 Kette der Nachbarinnen verliert mitnehmen",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "weitere: weitere[1:], mitnehmen: mitnehmen,",
+    "neu": "weitere: weitere[1:],"
+  },
+  {
+    "name": "MK32 gefilterte Ansicht: kein Rückgriff auf die Leiste",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "if len(nachbarn) == 0 && !inLeiste && e.bibGefiltert() && e.unten.l != nil {",
+    "neu": "if false {"
+  },
+  {
+    "name": "MK33 papierkorbMehrere ohne Sperrprüfung",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\tif grund := e.papierkorbGesperrt(); grund != \"\" {\n\t\te.meldeNebenbei(grund, false)\n\t\treturn\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "MK34 Teilfehler als Erfolg gemeldet",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\tif r.anzahl < n {",
+    "neu": "\tif false {"
+  },
+  {
+    "name": "MK35 kein Abgleich nach Teil- oder Indexfehler",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\tif r.index || r.anzahl < n {\n\t\te.abgleichAnfordern()",
+    "neu": "\tif false {\n\t\te.abgleichAnfordern()"
+  },
+  {
+    "name": "MK36 Verlauf der mehreren bleibt gemerkt",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.verlaeufe.vergiss(e.absVon(rel)) // F-838 je Aufnahme",
+    "neu": "\t\t_ = rel"
+  },
+  {
+    "name": "MK37 Speichern scheitert: Meldung ohne Papierkorb-Zusatz",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif e.wechsel.papierkorb {\n\t\t\te.meldung.Text += \" \" + nichtWeggeworfen(e.wechsel.mitnehmen)\n\t\t}\n\tcase r.g.HaeltOffen():",
+    "neu": "\tcase r.g.HaeltOffen():"
+  },
+  {
+    "name": "MK38 Speicher-Hinweis: Meldung in der Einzahl",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif e.wechsel.papierkorb {\n\t\t\te.meldung.Text += \" \" + nichtWeggeworfen(e.wechsel.mitnehmen)\n\t\t}\n\tdefault:",
+    "neu": "\t\tif e.wechsel.papierkorb {\n\t\t\te.meldung.Text += \" \" + nichtWeggeworfen(nil)\n\t\t}\n\tdefault:"
+  },
+  {
+    "name": "MK39 geändert während des Ladens: Meldung in der Einzahl",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.meldung.Text += \" \" + nichtWeggeworfen(mitnehmen)\n\t\t}\n\tcase papierkorb:",
+    "neu": "\t\t\te.meldung.Text += \" \" + nichtWeggeworfen(nil)\n\t\t}\n\tcase papierkorb:"
+  },
+  {
+    "name": "MK40 Ansicht: Rechtsklick kennt die Markierung nicht",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "e.vorschauKontext(rel, false, p, perTaste, kontextMarkierung(b.r.Markierung(), b.r.Eintraege(), rel))",
+    "neu": "e.vorschauKontext(rel, false, p, perTaste, nil)"
+  },
+  {
+    "name": "MK41 Leiste: Hinweis der Markierung fehlt",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif markiert {\n\t\t\t\tk.hinweis = markHinweis(",
+    "neu": "\t\t\tif false {\n\t\t\t\tk.hinweis = markHinweis("
+  },
+  {
+    "name": "MK42 Ansicht: Öffnen behält den Anker",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\tb.r.Markierung().SetzeAnker(\"\") // ohne Markierung beginnt sie",
+    "neu": "\t_ = 0 // ohne Markierung beginnt sie"
+  },
+  {
+    "name": "MK43 Ansicht: Pfeil ohne Umschalt setzt keinen Anker",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t} else {\n\t\t\tm.SetzeAnker(es[ziel].Pfad)\n\t\t}",
+    "neu": "\t\t}"
+  },
+  {
+    "name": "MK44 Ansicht: Umschalt+Pfeil ohne Anker nicht ab Fokus",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif m.Anker() == \"\" && b.r.Fokus() >= 0 {\n\t\t\t\tm.SetzeAnker(es[b.r.Fokus()].Pfad)\n\t\t\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "MK45 Kontextmenü mehrerer: Papierkorb trotz Löschruhe",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tif !e.loeschRuht() {\n\t\t\t\t\te.papierkorbMarkiert(e.kontext.inLeiste)\n\t\t\t\t}",
+    "neu": "\t\t\t\te.papierkorbMarkiert(e.kontext.inLeiste)"
+  },
+  {
+    "name": "MK46 Kontextmenü mehrerer: Zahl vom Öffnen statt vom Auslösen",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tn := len(e.vorschauMarkiert())",
+    "neu": "\t\tn := len(e.kontext.mehrere)"
+  },
+  {
+    "name": "MK47 Ansicht: das ✕ nimmt alle markierten",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\te.bibPapierkorbEine() // das ✕ gilt nur seiner Vorschau",
+    "neu": "\t\t\t\te.bibPapierkorb() // das ✕ gilt nur seiner Vorschau"
+  },
+  {
+    "name": "MK48 unmarkierteNachbarn sucht nur Abstand 1",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\tfor d := 1; len(aus) < nachbarGrenze && (i+d < len(es) || i-d >= 0); d++ {",
+    "neu": "\tfor d := 1; d <= 1 && (i+d < len(es) || i-d >= 0); d++ {"
+  },
+  {
+    "name": "MK49 Leiste: Umschalt+Pfeil bewegt den Fokus nicht",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif ziel != i {\n\t\t\tk.l.SetzeFokus(ziel)",
+    "neu": "\t\tif false {\n\t\t\tk.l.SetzeFokus(ziel)"
+  },
+  {
+    "name": "MK50 Wechsel-Papierkorb: keine Ruhe nach dem Löschen beim Start",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)\n\t\t}\n\t\treturn",
+    "neu": "\t\t}\n\t\treturn"
+  },
+  {
+    "name": "MK51 Leiste: Umschalt+F10 ohne Markierung",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\te.leisteKontext(i, mitteVon(k.kacheln[j]), true)",
+    "neu": "\t\t\t\te.vorschauKontext(k.gezeigt[i], true, mitteVon(k.kacheln[j]), true, nil)"
+  },
+  {
+    "name": "MK52 Ansicht: Umschalt+F10 ohne Markierung",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.bibKontext(gtx, i, mitteVon(b.kacheln[i-b.von]), true)",
+    "neu": "\t\te.vorschauKontext(b.r.Eintraege()[i].Pfad, false, mitteVon(b.kacheln[i-b.von]), true, nil)"
+  },
+  {
+    "name": "MK53 F-887 mitnehmen ungeprüft (Markierung beim Auslösen)",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tmitnehmen = e.nochMarkiert(mitnehmen, ausLeiste)",
+    "neu": "\t\t_ = ausLeiste"
+  },
+  {
+    "name": "MK54 F-887 Liste des Auslösers nicht gemerkt",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "e.wechsel.mitnehmen, e.wechsel.ausLeiste = true, nachbarn[1:], rest, inLeiste",
+    "neu": "e.wechsel.mitnehmen = true, nachbarn[1:], rest"
+  },
+  {
+    "name": "MK55 F-887 Kette vergisst die Liste des Auslösers",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tausLeiste: ausLeiste}",
+    "neu": "\t\t\t}"
+  },
+  {
+    "name": "MK56 F-887 nochMarkiert prüft nicht",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif slices.Contains(jetzt, rel) {",
+    "neu": "\t\tif true || slices.Contains(jetzt, rel) {"
+  },
+  {
+    "name": "MK57 F-888 Taste nimmt Eintraege()[i] statt der gezeigten",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\trel := k.gezeigt[i]\n",
+    "neu": "\trel := es[min(i, len(es)-1)].Pfad\n"
+  },
+  {
+    "name": "MK58 F-890 Esc außerhalb der Leiste hebt nicht auf",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif e.leisteMarkierungEsc() {",
+    "neu": "\t\t\tif false && e.leisteMarkierungEsc() {"
+  },
+  {
+    "name": "MK59 F-891 Leiste: Hinweis nennt Entf auch unter dem Zeiger",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "markHinweis(k.l.Markierung().Anzahl(), fokus)",
+    "neu": "markHinweis(k.l.Markierung().Anzahl(), true)"
+  },
+  {
+    "name": "MK60 F-891 Ansicht: Hinweis nennt Entf auch unter dem Zeiger",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "markHinweis(m.Anzahl(), b.ziel == bibZielRaster && i == b.r.Fokus())",
+    "neu": "markHinweis(m.Anzahl(), true)"
+  },
+  {
+    "name": "MK61 F-893 Abbruch leert nur das Ziel",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.wechsel.ziel == \"\" { // abgebrochen",
+    "neu": "\tif false { // abgebrochen"
   }
 ]

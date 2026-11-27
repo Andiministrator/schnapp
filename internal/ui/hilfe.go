@@ -60,10 +60,14 @@ func (e *editor) hilfeZeilen() []hilfeZeile {
 		hilfeZeile{text: i18n.T("Move the view in the navigator"), taste: i18n.T("Click, drag")},
 		// Mehrere Vorschauen der Bibliothek markieren (ADR-0036 Zusatz Karte #361)
 		hilfeZeile{text: i18n.T("Select several captures"), taste: i18n.T("Ctrl/Shift+Click")},
+		// … und per Tastatur an einer Vorschau mit Fokus (F-891); je Taste eine Zeile, eine passte nicht in die Spalte.
+		hilfeZeile{text: i18n.T("Select a capture"), taste: i18n.T("Ctrl") + "+" + i18n.T("Space")},
+		hilfeZeile{text: i18n.T("Extend the selection"), taste: i18n.T("Shift") + "+" + i18n.T("Arrow")},
+		hilfeZeile{text: i18n.T("Select all captures"), taste: i18n.T("Ctrl") + "+A"},
 	)
 }
 
-// Maße der Übersicht in dp (F-705: so, dass die 48 Zeilen im Startfenster ohne Rollen in zwei Spalten stehen).
+// Maße der Übersicht in dp (F-705: so, dass alle Zeilen im Startfenster ohne Rollen in zwei Spalten stehen).
 const (
 	hilfeZeileDp = 20
 	hilfeTextDp  = 220

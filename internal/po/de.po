@@ -1927,3 +1927,20 @@ msgstr "Mehrere Aufnahmen markieren"
 
 msgid "Ctrl/Shift+Click"
 msgstr "Strg/Umschalt+Klick"
+
+msgid "Select a capture"
+msgstr "Aufnahme markieren"
+
+msgid "Space"
+msgstr "Leertaste"
+
+msgid "Extend the selection"
+msgstr "Markierung erweitern"
+
+msgid "Select all captures"
+msgstr "Alle Aufnahmen markieren"
+
+msgid "%d capture selected — Esc clears the selection"
+msgid_plural "%d captures selected — Esc clears the selection"
+msgstr[0] "%d Aufnahme markiert — Esc hebt die Markierung auf"
+msgstr[1] "%d Aufnahmen markiert — Esc hebt die Markierung auf"

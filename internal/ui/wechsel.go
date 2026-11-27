@@ -81,6 +81,9 @@ type wechselZustand struct {
 	// mitnehmen: weitere markierte Aufnahmen (relativ zur Ablage), die nach der Übernahme mit der bisher offenen in den
 	// Papierkorb gehen (ADR-0036 Zusatz Karte #361 Punkt 7). Scheitert der Wechsel, geht keine.
 	mitnehmen []string
+	// ausLeiste: Die Markierung, aus der mitnehmen stammt, ist die der Leiste (sonst die der vollen Ansicht). Vor dem
+	// Papierkorb gehen nur die mit, die dort dann noch gezeigt und markiert sind (F-887).
+	ausLeiste bool
 	antwort   chan wechselErgebnis
 }
 
@@ -124,13 +127,13 @@ func (e *editor) wechselAnfrage(abs string) bool {
 		e.melde(i18n.T("Text recognition is running. Press Esc to cancel it first."), false)
 		return false
 	}
-	e.wechsel.ziel, e.wechsel.ausDialog, e.wechsel.papierkorb, e.wechsel.weitere, e.wechsel.mitnehmen = abs, false, false, nil, nil
+	e.wechsel = wechselZustand{ziel: abs}
 	abzug, err := e.s.SpeichernJetzt()
 	switch {
 	case errors.Is(err, canvas.ErrNichtsZuSpeichern):
 		e.wechselLaden()
 	case err != nil:
-		e.wechsel.ziel = "" // Ziehen läuft: der Klick gilt nicht
+		e.wechsel = wechselZustand{} // Ziehen läuft: der Klick gilt nicht
 		return false
 	default:
 		e.speichernStarten(abzug)
@@ -140,7 +143,8 @@ func (e *editor) wechselAnfrage(abs string) bool {
 
 // wechselNachSpeichern läuft nach der Antwort des Speicherns (speichernFertig): Wartet ein Wechsel, lädt er nach einem
 // gelungenen Speichern ohne Hinweis die gewählte Aufnahme; sonst bleibt die offene, und die Statuszeile sagt warum.
-// Schließt das Fenster (Signal, Schließen-Anfrage), entfällt der Wechsel.
+// Schließt das Fenster (Signal, Schließen-Anfrage), entfällt der Wechsel. Jeder Abbruch leert danach alle Merker des
+// Wechsels (Papierkorb, weitere, mitnehmen, Dialog; F-893), damit kein späterer Wechsel sie erbt.
 func (e *editor) wechselNachSpeichern(r speicherErgebnis, ende canvas.Ende) {
 	if e.wechsel.ziel == "" || e.wechsel.laedt {
 		return
@@ -151,6 +155,9 @@ func (e *editor) wechselNachSpeichern(r speicherErgebnis, ende canvas.Ende) {
 	case r.err != nil:
 		e.wechsel.ziel = ""
 		e.melde(fmt.Sprintf(i18n.T("Could not save: %v. The other capture was not opened."), ohnePaketpraefix(r.err.Error())), true)
+		if e.wechsel.papierkorb {
+			e.meldung.Text += " " + nichtWeggeworfen(e.wechsel.mitnehmen)
+		}
 	case r.g.HaeltOffen():
 		e.wechsel.ziel = "" // der Hinweis bleibt stehen; ein weiterer Klick wechselt (gespeichert ist nichts mehr offen)
 		if e.wechsel.ausDialog {
@@ -161,6 +168,9 @@ func (e *editor) wechselNachSpeichern(r speicherErgebnis, ende canvas.Ende) {
 		}
 	default:
 		e.wechselLaden()
+	}
+	if e.wechsel.ziel == "" { // abgebrochen: auch die übrigen Merker (F-893)
+		e.wechsel = wechselZustand{}
 	}
 }
 
@@ -208,7 +218,7 @@ func (e *editor) wechselAbholen() bool {
 	default:
 		return false
 	}
-	papierkorb, weitere, mitnehmen := e.wechsel.papierkorb, e.wechsel.weitere, e.wechsel.mitnehmen
+	papierkorb, weitere, mitnehmen, ausLeiste := e.wechsel.papierkorb, e.wechsel.weitere, e.wechsel.mitnehmen, e.wechsel.ausLeiste
 	e.wechsel = wechselZustand{}
 	e.s.SetzeRuhe(false)
 	if r.err != nil && papierkorb && !e.erzwungen && !e.s.SignalVorgemerkt() && !e.s.Geaendert() {
@@ -221,7 +231,8 @@ func (e *editor) wechselAbholen() bool {
 			// wenn eine spätere Nachbarin lädt (F-672; Kritik 26.11. K-5).
 			diagnoseEditor("Wechsel: Nachbarin nicht geladen (%v), nächste", r.err)
 			e.abgleichAnfordern()
-			e.wechsel.ziel, e.wechsel.papierkorb, e.wechsel.weitere, e.wechsel.mitnehmen = weitere[0], true, weitere[1:], mitnehmen
+			e.wechsel = wechselZustand{ziel: weitere[0], papierkorb: true, weitere: weitere[1:], mitnehmen: mitnehmen,
+				ausLeiste: ausLeiste}
 			e.wechselLaden()
 			return true
 		}
@@ -265,6 +276,9 @@ func (e *editor) wechselAbholen() bool {
 		if e.pfad != nil {
 			alt = e.pfad()
 		}
+		// Nur, was jetzt noch gezeigt und markiert ist: Esc, Strg+Klick oder eine andere Suche während Speichern und
+		// Laden nehmen eine Aufnahme wieder heraus (F-887).
+		mitnehmen = e.nochMarkiert(mitnehmen, ausLeiste)
 		e.wechselBehaeltAnsicht = true
 		e.uebernimm(r.g)
 		e.wechselBehaeltAnsicht = false

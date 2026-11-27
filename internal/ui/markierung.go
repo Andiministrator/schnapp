@@ -14,6 +14,7 @@ import (
 	"image"
 	"image/color"
 	"path/filepath"
+	"slices"
 
 	"gioui.org/f32"
 	"gioui.org/io/event"
@@ -76,32 +77,36 @@ func (k *untenLeiste) markierTasten() []key.Filter {
 	return f
 }
 
-// leisteMarkierTaste behandelt die Tasten der Markierung an der Vorschau i der Leiste; liefert, ob die Taste verbraucht
-// ist. Esc hebt nur eine vorhandene Markierung auf, sonst geht es weiter an die Leinwand.
+// leisteMarkierTaste behandelt die Tasten der Markierung an der Vorschau i der Leiste (Stelle beim letzten Zeichnen);
+// liefert, ob die Taste verbraucht ist. Esc behandelt sie nicht: Es geht wie von der Leinwand über tasten an
+// leisteMarkierungEsc (F-890), ein Weg für beide Fälle. Wie der Klick gilt die Taste der gezeigten Aufnahme gezeigt[i],
+// nicht Eintraege()[i]: Liest die Leiste zwischen Zeichnen und Taste neu, stünde dort die Nachbarin (F-888).
 func (e *editor) leisteMarkierTaste(gtx layout.Context, i int, t key.Event) bool {
 	k := &e.unten
 	m, es := k.l.Markierung(), k.l.Eintraege()
-	if i < 0 || i >= len(es) {
+	if i < 0 || i >= len(k.gezeigt) || k.gezeigt[i] == "" {
 		return false
 	}
+	rel := k.gezeigt[i]
+	i = slices.IndexFunc(es, func(x library.Eintrag) bool { return x.Pfad == rel }) // Stelle im jetzigen Stand
 	switch {
 	case t.Name == key.NameSpace && t.Modifiers == key.ModShortcut:
-		m.Umschalte(es[i].Pfad)
+		if i >= 0 {
+			m.Umschalte(rel)
+		}
 	case t.Name == "A" && t.Modifiers == key.ModShortcut:
 		m.Alle(es)
-	case t.Name == key.NameEscape && t.Modifiers == 0 && m.Anzahl() > 0:
-		m.Leere()
 	case t.Modifiers == key.ModShift:
 		s, ok := pfeilSchritt(t.Name)
-		if !ok {
-			return false
+		if !ok || i < 0 {
+			return ok // verschwunden: die Taste wirkt nicht, geht aber auch nicht an die Leinwand
 		}
 		ziel := k.l.Bewege(i, s)
 		if ziel < 0 {
 			return true
 		}
 		if m.Anker() == "" {
-			m.SetzeAnker(es[i].Pfad)
+			m.SetzeAnker(rel)
 		}
 		m.Bereich(es, es[ziel].Pfad, false)
 		if ziel != i {
@@ -113,6 +118,19 @@ func (e *editor) leisteMarkierTaste(gtx layout.Context, i int, t key.Event) bool
 		return false
 	}
 	gtx.Execute(op.InvalidateCmd{})
+	return true
+}
+
+// leisteMarkierungEsc hebt beim Esc eine Markierung der Leiste auf, gleich wo der Tastaturfokus liegt (Vorschau,
+// Leinwand, rechte Leiste), und liefert, ob es das tat (ADR-0036 Zusatz Karte #361 Punkt 3, F-890): Esc in Stufen, erst die Markierung, dann wie
+// bisher. Ein laufender Bereichsmodus, Zug, eine Texteingabe oder Pipette gehen vor, sie beendet Esc wie bisher zuerst.
+func (e *editor) leisteMarkierungEsc() bool {
+	k := &e.unten
+	if k.l == nil || k.l.Markierung().Anzahl() == 0 ||
+		e.s.TextBereichLaeuft() || e.s.Zieht() || e.s.TextLaeuft() || e.s.PipetteLaeuft() {
+		return false
+	}
+	k.l.Markierung().Leere()
 	return true
 }
 
@@ -166,7 +184,30 @@ func (e *editor) papierkorbMarkiert(inLeiste bool) {
 			nachbarn = e.unmarkierteNachbarn(e.unten.l.Eintraege(), m, offen)
 		}
 	}
-	e.papierkorbMehrere(rels, offen, nachbarn)
+	e.papierkorbMehrere(rels, offen, nachbarn, inLeiste)
+}
+
+// nochMarkiert sind die Aufnahmen aus rels, die in der Leiste (inLeiste) bzw. der vollen Ansicht jetzt noch gezeigt und
+// markiert sind, in der Reihenfolge von rels (F-887).
+func (e *editor) nochMarkiert(rels []string, inLeiste bool) []string {
+	var m *libview.Markierung
+	var es []library.Eintrag
+	switch {
+	case inLeiste && e.unten.l != nil:
+		m, es = e.unten.l.Markierung(), e.unten.l.Eintraege()
+	case !inLeiste && e.bibl.r != nil:
+		m, es = e.bibl.r.Markierung(), e.bibl.r.Eintraege()
+	default:
+		return nil
+	}
+	jetzt := m.Pfade(es)
+	var aus []string
+	for _, rel := range rels {
+		if slices.Contains(jetzt, rel) {
+			aus = append(aus, rel)
+		}
+	}
+	return aus
 }
 
 // absVon ist der absolute Pfad der Aufnahme rel.
@@ -208,8 +249,9 @@ func (e *editor) unmarkierteNachbarn(es []library.Eintrag, m *libview.Markierung
 // papierkorbMehrere legt die Aufnahmen rels (relativ zur Ablage) in den Papierkorb. offen ist die offene darunter (leer:
 // keine), nachbarn die Aufnahmen, zu denen der Editor vorher wechseln kann. Eine einzige geht den bisherigen Weg
 // (papierkorbAnfrage). Mit der offenen wechselt der Editor zuerst (wie Karte #347) und nimmt die übrigen nach der
-// Übernahme mit; ohne Nachbarin bleibt die offene, die übrigen gehen.
-func (e *editor) papierkorbMehrere(rels []string, offen string, nachbarn []string) {
+// Übernahme mit, soweit sie dann in der Liste (inLeiste: Leiste, sonst volle Ansicht) noch gezeigt und markiert sind
+// (F-887); ohne Nachbarin bleibt die offene, die übrigen gehen.
+func (e *editor) papierkorbMehrere(rels []string, offen string, nachbarn []string, inLeiste bool) {
 	if len(rels) == 1 {
 		e.papierkorbAnfrage(rels[0], offen != "", nachbarn)
 		return
@@ -222,7 +264,7 @@ func (e *editor) papierkorbMehrere(rels []string, offen string, nachbarn []strin
 	}
 	if offen != "" && len(nachbarn) > 0 {
 		if e.wechselAnfrage(nachbarn[0]) {
-			e.wechsel.papierkorb, e.wechsel.weitere, e.wechsel.mitnehmen = true, nachbarn[1:], rest
+			e.wechsel.papierkorb, e.wechsel.weitere, e.wechsel.mitnehmen, e.wechsel.ausLeiste = true, nachbarn[1:], rest, inLeiste
 			e.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)
 		}
 		return
@@ -249,12 +291,11 @@ func (e *editor) papierkorbGesperrt() string {
 }
 
 // papierkorbArbeit verschiebt rels im Hintergrund nacheinander in den Papierkorb (library.InPapierkorb, je Aufnahme
-// unter der Index-Sperre). offenBleibt: Die offene Aufnahme war markiert und bleibt, die Meldung sagt es.
+// unter der Index-Sperre). offenBleibt: Die offene Aufnahme war markiert und bleibt, die Meldung sagt es. Ohne rels
+// tut sie nichts: Beide Aufrufer geben mindestens eine (papierkorbMehrere mit zwei oder mehr markierten ohne die offene,
+// wechselAbholen nur mit mitnehmen), eine eigene Meldung für „nur die offene“ gibt es daher nicht (F-893).
 func (e *editor) papierkorbArbeit(rels []string, offenBleibt bool) {
 	if len(rels) == 0 {
-		if offenBleibt {
-			e.melde(e.einzigText(), false)
-		}
 		return
 	}
 	e.bibl.loeschRuheBis = leisteUhr().Add(loeschRuhe)
@@ -341,8 +382,13 @@ func zeichneHakenFeld(gtx layout.Context, r image.Rectangle, grund, haken color.
 	paint.FillShape(gtx.Ops, haken, clip.Stroke{Path: p.End(), Width: float32(gtx.Dp(2))}.Op())
 }
 
-// markHinweis ist der Text der Statuszeile zu einer markierten Vorschau.
-func markHinweis(n int) string {
+// markHinweis ist der Text der Statuszeile zu einer markierten Vorschau. Entf nennt er nur, wenn die Vorschau den
+// Tastaturfokus hat (mitEntf): Über dem bloßen Zeiger wirkt Entf nicht auf sie (F-891).
+func markHinweis(n int, mitEntf bool) string {
+	if !mitEntf {
+		return fmt.Sprintf(i18n.N("%d capture selected — Esc clears the selection",
+			"%d captures selected — Esc clears the selection", n), n)
+	}
 	return fmt.Sprintf(i18n.N("%d capture selected — Del moves it to the trash, Esc clears the selection",
 		"%d captures selected — Del moves them to the trash, Esc clears the selection", n), n)
 }

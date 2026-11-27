@@ -1289,7 +1289,7 @@ msgstr ""
 msgid "Select"
 msgstr ""
 
-#: internal/ui/editor.go
+#: internal/ui/editor.go internal/ui/hilfe.go
 msgid "Arrow"
 msgstr ""
 
@@ -1786,6 +1786,26 @@ msgstr ""
 msgid "Ctrl/Shift+Click"
 msgstr ""
 
+#: internal/ui/hilfe.go
+msgid "Select a capture"
+msgstr ""
+
+#: internal/ui/hilfe.go internal/ui/kuerzel.go
+msgid "Ctrl"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Space"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Extend the selection"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Select all captures"
+msgstr ""
+
 #: internal/ui/hilfe.go internal/ui/oberflaeche.go
 msgid "Keyboard shortcuts"
 msgstr ""
@@ -1901,10 +1921,6 @@ msgid "Could not show the file in the file manager."
 msgstr ""
 
 #: internal/ui/kuerzel.go
-msgid "Ctrl"
-msgstr ""
-
-#: internal/ui/kuerzel.go
 msgid "Del"
 msgstr ""
 
@@ -1980,6 +1996,12 @@ msgstr ""
 #: internal/ui/markierung.go
 msgid "The capture was not moved to the trash."
 msgstr ""
+
+#: internal/ui/markierung.go
+msgid "%d capture selected — Esc clears the selection"
+msgid_plural "%d captures selected — Esc clears the selection"
+msgstr[0] ""
+msgstr[1] ""
 
 #: internal/ui/markierung.go
 msgid "%d capture selected — Del moves it to the trash, Esc clears the selection"

@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #313 Teil 2 und #369 mit Sitzungs-QA (F-873 bis F-880); davor #313 Teil 1 und Sitzungs-QA (F-860 bis F-872); davor #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-27 (laufend ergänzt, zuletzt Sprint 14, Karten #361 und #334 Teil 1 mit Kritik (F-887 bis F-893); davor Karten #313 Teil 2 und #369 mit Sitzungs-QA (F-873 bis F-880); davor #313 Teil 1 und Sitzungs-QA (F-860 bis F-872); davor #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -15,6 +15,31 @@ Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #313 Teil 2 und #
   Build-Reste gehören in `.gitignore`.
 - **`git filter-branch` hinterlässt `refs/original/…`** mit der alten Geschichte (F-2). Push-Varianten `--all`,
   `--mirror`, `--tags`, Force und Refspecs sind in `.claude/settings.json` gesperrt (F-3).
+
+## Sitzung 27.11. (#361, #334 Teil 1, Kritik F-887 bis F-893)
+
+- **Was ein asynchroner Ablauf beim Auslösen einfriert, wird beim Abholen gegen den aktuellen Stand geschnitten**
+  (F-887): Der Papierkorb mehrerer merkte die übrigen markierten beim Entf und warf sie nach Speichern und Laden der
+  Nachbarin weg — auch wenn der Nutzer die Markierung inzwischen mit Esc aufgehoben hatte. Jede Liste, die über einen
+  Wechsel (Speichern, Laden, Goroutine) getragen wird, beim Abholen mit dem gezeigten Stand schneiden oder die Eingabe
+  so lange sperren.
+- **Tasten und Klicks an derselben Stelle über dieselbe Quelle führen** (F-888): Der Klick nahm `gezeigt[i]` (Stand
+  des letzten Bilds), die Taste `Eintraege()[i]` (Stand nach dem Neulesen); zwischen beiden kann der Index neu gelesen
+  sein.
+- **Gios `widget.Clickable.Update` liefert die Umschalter** (`Click.Modifiers`), `Clicked` nicht. Wer Strg/Umschalt am
+  Knopf braucht, liest `Update` in einer Schleife. Und: Der Leertasten-Zweig in `tasten` muss Umschalter ausschließen,
+  sonst wirkt Strg+Leertaste wie Enter.
+- **Doppelter Schutz macht einen Mutanten grün** (MK25): Die Markierung der Ansicht wurde beim Öffnen und beim Schließen
+  geleert; der Mutant „Öffnen leert nicht“ überlebte. Einen der beiden Wege streichen oder den Test über den anderen Weg
+  führen (hier: Schließen per Strg+Umschalt+L statt Esc, weil Esc die Markierung zuerst leert).
+- **Ein Mutant mit unbenutzter Variable baut nicht** (MA21, MK4): `x + 0*luecke` bzw. `false && …` statt die Zeile zu
+  streichen.
+- **Bevor eine gewohnte Bedienung kippt, die Vorbilder nennen** (ADR-0039 Nachtrag 1): Ziehen im Bild wurde zum
+  Auswahlrahmen; Inkscape, Krita, GIMP, Photoshop und Figma verschieben die Ansicht dann mit Leertaste+Ziehen. Andi
+  entschied nach dem Vergleich in einem Satz.
+- **Halbe Arbeit über einen Chat-Wechsel auf einem eigenen Zweig sichern** (`wip-334-mehrfachauswahl`), nicht halb auf
+  main: Die Logik veränderte schon das Ziehen im Bild, das Zeichnen des Rahmens fehlte noch — auf main wäre das ein
+  sichtbarer Rückschritt gewesen.
 
 ## Sitzung 26.11. spät (#313 Teil 2, #369, F-873 bis F-880)
 

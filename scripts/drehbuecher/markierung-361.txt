@@ -11,6 +11,10 @@
 #  02 Umschalt+Klick auf die fünfte: markiert sind die dritte bis fünfte (Anker die dritte), die erste nicht mehr.
 #  03 Rechtsklick auf die vierte (markiert): Liste „Show 3 captures in file manager“ │ „Move 3 captures to trash (Del)“.
 #  04 Esc (Liste zu), Esc (Markierung weg): keine Tönung mehr.
+#  04a Tastatur an der vierten (Fokus dort nach dem Kontextmenü): Strg+Leertaste markiert sie, Umschalt+Rechts dazu die
+#     fünfte, der Fokusring wandert an die fünfte; Statuszeile „2 captures selected — Del moves them …“.
+#  04b Klick auf die Leinwand (Fokus dort): beide bleiben markiert.
+#  04c Esc mit Fokus auf der Leinwand: Markierung weg (F-890).
 #  05 volle Ansicht (Strg+Umschalt+L), Strg+Klick auf die erste und zweite Kachel, Umschalt+Klick auf die dritte:
 #     markiert sind die zweite (offene, grüner Rahmen bleibt sichtbar) und dritte — Umschalt ersetzt, Anker die zweite;
 #     Fokusring an der dritten.
@@ -41,6 +45,17 @@ warte 200
 taste Esc
 warte 300
 foto 04-leiste-esc
+taste Strg+Leertaste
+warte 200
+taste Umschalt+Rechts
+warte 400
+foto 04a-leiste-tasten
+klick 700 400
+warte 300
+foto 04b-leinwand-fokus
+taste Esc
+warte 300
+foto 04c-leinwand-esc
 taste Strg+Umschalt+L
 warte 2500
 taste-halten Strg

@@ -1329,7 +1329,8 @@ func (e *editor) bibliothekHinweis() string {
 		return ""
 	}
 	if m := b.r.Markierung(); m.Enthaelt(es[i].Pfad) {
-		return markHinweis(m.Anzahl())
+		// Entf gilt der Kachel mit Fokus, nicht der unter dem Zeiger (F-891).
+		return markHinweis(m.Anzahl(), b.ziel == bibZielRaster && i == b.r.Fokus())
 	}
 	zeit := es[i].Erstellt.Local().Format(i18n.TK("date format", "2006-01-02 15:04"))
 	if b.r.IstAktuell(i) {

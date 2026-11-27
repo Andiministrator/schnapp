@@ -2757,6 +2757,9 @@ func (e *editor) tasten(gtx layout.Context) {
 			if e.ocrEsc() { // zuerst eine laufende Texterkennung (ADR-0035 Punkt 5)
 				continue
 			}
+			if e.leisteMarkierungEsc() { // dann die Markierung der Leiste, auch ohne Fokus an einer Vorschau (F-890)
+				continue
+			}
 			e.s.Esc() // in Stufen: Text verwerfen, Ziehen abbrechen, abwählen, zurück zu Auswählen
 		case t.akt == aktEnter:
 			// Ohne Texteingabe löst Enter einen per Tastatur fokussierten Knopf aus, statt von der Leinwand

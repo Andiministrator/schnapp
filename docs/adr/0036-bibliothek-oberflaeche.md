@@ -437,6 +437,12 @@ Mehrfachmarkierung erweitert dieselbe Liste des Kontextmenüs.
    bewegen den Fokus und markieren den Bereich vom Anker bis zum Fokus. Strg+A markiert alle gezeigten (Leiste: wenn eine
    Vorschau den Fokus hat). Esc hebt eine Markierung auf; erst ein weiteres Esc schließt die Ansicht. Diese Tasten sind
    Bedienung der Liste wie die Menünavigation (ADR-0026 Nachtrag 4), keine Kürzel der Tabelle.
+   **Nachgeschärft nach der Kritik 27.11. (F-890):** Esc hebt die Markierung der Leiste auch auf, wenn keine Vorschau
+   den Tastaturfokus hat (Leinwand, rechte Leiste): Esc wirkt in Stufen, zuerst ein laufender Bereichsmodus, Zug, eine
+   Texteingabe, Pipette oder Texterkennung, dann die Markierung der Leiste, erst danach wie bisher auf der Leinwand
+   (abwählen, zurück zum Auswählen). Sonst nähme ein späteres Entf an einer markierten Vorschau eine vergessene
+   Markierung mit. Die Statuszeile nennt Entf nur an der Vorschau mit Tastaturfokus; unter dem bloßen Zeiger sagt sie Zahl
+   und Esc (F-891).
 4. **Darstellung:** Eine markierte Vorschau ist orange getönt und trägt unten links ein angehaktes Kästchen (oben links
    steht der Punkt „ungesichert“, oben rechts das ✕); einen eigenen Rand hat sie nicht, damit der grüne Rahmen der
    offenen und der Fokusring sichtbar bleiben. Die Statuszeile nennt die Zahl („3 captures selected — Del moves
@@ -451,11 +457,15 @@ Mehrfachmarkierung erweitert dieselbe Liste des Kontextmenüs.
    Ist die offene Aufnahme markiert, wechselt der Editor zuerst zur nächsten **nicht markierten** Nachbarin (Weg des
    Zusatzes zu Karte #347) und legt danach die offene und die übrigen markierten in den Papierkorb. Gibt es keine nicht
    markierte, bleibt die offene, die übrigen gehen, und die Meldung sagt es. Scheitert der Wechsel, geht keine.
+   **Nachgeschärft nach der Kritik 27.11. (F-887):** Die übrigen markierten gehen erst nach der Übernahme mit, und nur,
+   soweit sie dann in der auslösenden Liste (Leiste oder Ansicht) noch gezeigt und markiert sind: Esc oder eine andere
+   Suche während Speichern und Laden nehmen sie heraus. Die bisher offene geht in jedem Fall, der Wechsel ist dann schon
+   geschehen.
 8. **Nicht in diesem Teil (Folgekarte):** Exportieren mehrerer in einen Ordner, Kopieren mehrerer, Schlagworte für
    mehrere. **Abweichung von der Karte:** Kopieren mehrerer als `text/uri-list` der Arbeitsdateien ist verworfen. Die
    Arbeitsdatei trägt das Original ohne Zuschnitt und Stauchen (ADR-0008); wer Dateien weitergibt, gäbe weg, was er
    abgeschnitten hat. Kopieren und Teilen laufen deshalb über gerenderte Exporte (Folgekarte), nie über die Arbeitsdateien.
 
 Tests `internal/libview/markierung_test.go`, `internal/ui/markierung_test.go`, `internal/portal/dateimanager_test.go`;
-Mutanten `scripts/mutanten/markierung.json` (MK1–MK30); Sichtprobe `scripts/drehbuecher/markierung-361.txt`
+Mutanten `scripts/mutanten/markierung.json` (MK1–MK61, MK31 ff. nach der Kritik); Sichtprobe `scripts/drehbuecher/markierung-361.txt`
 (Probe-Bibliothek, legt nichts in den Papierkorb).

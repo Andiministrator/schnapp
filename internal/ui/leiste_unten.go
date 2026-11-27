@@ -587,7 +587,7 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 		if fokus || (k.hinweis == "" && k.knoepfe[i].Hovered()) {
 			k.hinweis = leisteHinweis(eintrag, aktuell, ungesichert)
 			if markiert {
-				k.hinweis = markHinweis(k.l.Markierung().Anzahl())
+				k.hinweis = markHinweis(k.l.Markierung().Anzahl(), fokus) // Entf wirkt nur an der Vorschau mit Fokus (F-891)
 			}
 		}
 	}
