@@ -480,8 +480,10 @@ verstellt man nur mit − / + in 15°.
    Leiste. Ein Ziehen ist ein Rückgängig-Schritt (`BeginneSchattenZug`), die Rechnung `canvas.SchattenWinkelZu`.
    Daneben steht die Zahl; sie bleibt der Winkel des Lichts wie in Photoshop und im Format (`s:schatten`), also Fallrichtung + 180°. Die Knöpfe
    − / + der Richtung entfallen.
-4. **Feinabstimmung** (Andis Frage, ob ein Kästchen „Feinabstimmung“ bei vielen Werkzeugen hilft): offen bis zu Andis
-   Antwort, siehe Karte.
+4. **Feinabstimmung** (Andis Frage, ob ein Kästchen „Feinabstimmung“ bei vielen Werkzeugen hilft): entschieden von
+   Andi am 27.11.2026 („a“): ein Kästchen „Mehr Einstellungen“ je Werkzeug, das seltene Optionen (etwa Strichart,
+   Pfeil-Stil, Weichheit und Abstand des Schattens) ein- und ausblendet; Muster und eigener Nachtrag folgen mit Karte
+   #371.
 
 Tests `internal/ui/farbpaar_einfach_test.go`, `schattenleiste_test.go`, `internal/canvas/schatten_test.go`
 (`TestSchattenWinkelZu`), Mutanten `scripts/mutanten/farbziel-369.json` (FZ1–FZ19), Sichtprobe
