@@ -154,10 +154,12 @@ func TestLeertasteLoslassenMitUmschaltern(t *testing.T) {
 			t.Errorf("Loslassen mit %v kommt nicht an, Leertaste hängt", m)
 		}
 	}
-	l.r.Queue(key.Event{Name: key.NameSpace, State: key.Press, Modifiers: key.ModCtrl})
-	l.setle()
-	if l.e.s.Leertaste() {
-		t.Error("Strg+Leertaste hält die Leertaste")
+	for _, m := range []key.Modifiers{key.ModCtrl, key.ModAlt, key.ModSuper} {
+		l.r.Queue(key.Event{Name: key.NameSpace, State: key.Press, Modifiers: m})
+		l.setle()
+		if l.e.s.Leertaste() {
+			t.Errorf("%v+Leertaste hält die Leertaste", m)
+		}
 	}
 	l.r.Queue(key.Event{Name: key.NameSpace, State: key.Press, Modifiers: key.ModShift})
 	l.setle()

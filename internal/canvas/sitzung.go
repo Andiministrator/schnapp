@@ -243,6 +243,12 @@ func (s *Sitzung) toleranz() float64 { return Toleranz / s.Abb.Zoom }
 // Eine laufende Texteingabe wird vorher bestätigt. Während eines Zugs ist ein weiterer Druck wirkungslos, ebenso
 // während des Speicherns (F-280).
 func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
+	s.druecken(p, t, s.leertaste && s.zug != zugText)
+}
+
+// druecken ist Druecken; leertaste sagt, ob eine gehaltene Leertaste den Druck zum Verschieben der Ansicht macht. Der
+// Aufrufer entscheidet das vor jeder Änderung (Doppelklick bestätigt vorher eine Texteingabe, F-914).
+func (s *Sitzung) druecken(p document.Punkt, t Taste, leertaste bool) {
 	if s.gesperrt() {
 		return
 	}
@@ -250,7 +256,7 @@ func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
 	if s.pan {
 		return
 	}
-	if s.leertaste && t == TastePrimaer && s.zug != zugText {
+	if leertaste && t == TastePrimaer {
 		// Leertaste+Ziehen verschiebt die Ansicht in jedem Werkzeug, wie die mittlere Taste (ADR-0039 Nachtrag 1).
 		t = TasteMitte
 	}

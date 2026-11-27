@@ -2586,6 +2586,16 @@ func (e *editor) alleTastenFilter() []event.Filter {
 	return filter
 }
 
+// leisteHaeltFokus meldet, ob ein Knopf der Leiste der letzten Aufnahmen den Tastaturfokus hat (F-912).
+func (e *editor) leisteHaeltFokus(gtx layout.Context) bool {
+	for _, z := range e.unten.ziele() {
+		if gtx.Focused(z) {
+			return true
+		}
+	}
+	return false
+}
+
 // fensterFokus folgt dem Fokus des Fensters: Verliert es ihn, käme das Loslassen der Leertaste nicht mehr an, sie gilt
 // als losgelassen (ADR-0039 Nachtrag 1).
 func (e *editor) fensterFokus(an bool) {
@@ -2616,9 +2626,12 @@ func (e *editor) leertastenZiele() []event.Tag {
 func (e *editor) tasten(gtx layout.Context) {
 	e.menue.gewechselt = false
 	if e.fokusHolen && !e.menue.offen && !e.hilfeOffen && !e.einst.offen && !e.bibl.offen {
-		// Ohne Fokus auf der Leinwand kämen weder Leertaste+Ziehen noch Kürzel an, bis man ins Bild klickt (F-907).
+		// Ohne Fokus auf der Leinwand kämen weder Leertaste+Ziehen noch Kürzel an, bis man ins Bild klickt (F-907). Hält
+		// eine Vorschau der Leiste den Fokus (Enter oder Entf an ihr), bleibt er dort (F-912).
 		e.fokusHolen = false
-		gtx.Execute(key.FocusCmd{Tag: e})
+		if !e.leisteHaeltFokus(gtx) {
+			gtx.Execute(key.FocusCmd{Tag: e})
+		}
 	}
 	if e.s.Leertaste() && !e.leertasteGilt(gtx) {
 		e.s.SetzeLeertaste(false) // Fokus weg, Texteingabe, Menü oder Tafel: das Loslassen käme nicht an

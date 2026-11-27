@@ -134,3 +134,21 @@ func TestLeertasteZeigerGrenzfaelle(t *testing.T) {
 		t.Error("Hand im Zug des Bereichsmodus")
 	}
 }
+
+// F-914: Während der Texteingabe ist die Leertaste Text; auch ein Doppelklick verschiebt dann nicht die Ansicht.
+func TestLeertasteDoppelklickInTexteingabe(t *testing.T) {
+	s := dreiKaesten(t)
+	s.SetzeWerkzeug(WerkzeugText)
+	klick(s, f(50, 60), false)
+	if !s.TextLaeuft() {
+		t.Fatal("keine Texteingabe")
+	}
+	s.SetzeLeertaste(true)
+	start := s.Abb.ZuFenster(document.Pt(0, 0))
+	s.Doppelklick(f(150, 80))
+	s.Ziehen(f(170, 90))
+	s.Loslassen(f(170, 90))
+	if s.Abb.ZuFenster(document.Pt(0, 0)) != start {
+		t.Error("Doppelklick aus der Texteingabe verschob die Ansicht")
+	}
+}

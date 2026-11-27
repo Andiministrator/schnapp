@@ -103,7 +103,10 @@ Ansicht auch am Touchpad ohne mittlere Taste. „Mausrad rollt, Strg+Rad zoomt�
 4. **Leertaste, Ergänzungen aus der Kritik (F-905 bis F-907):** Das Loslassen der Leertaste gilt mit jedem Umschalter
    (Gio prüft Umschalter auch beim Loslassen); ein Druck mit Strg, Alt oder Super hält sie nicht. Bei gehaltener
    Leertaste ist ein zweiter Druck kein Doppelklick (kein Aufheben von Zuschnitt oder Naht, keine Texteingabe), und ein
-   Verschiebe-Druck zählt nicht für einen folgenden Doppelklick. Die Leinwand holt sich beim Öffnen und nach jedem
-   Wechsel der Aufnahme den Tastaturfokus (nicht hinter Menü, Übersicht, Einstellungstafel oder voller Ansicht der
-   Bibliothek), damit Leertaste+Ziehen ohne vorherigen Klick ins Bild wirkt. Menü, Übersicht, Tafel, volle Ansicht,
+   Verschiebe-Druck zählt nicht für einen folgenden Doppelklick; ein Doppelklick aus einer Texteingabe heraus
+   bestätigt sie und wirkt danach wie ohne Leertaste (F-914). Die Leinwand holt sich beim Öffnen und nach jedem
+   Wechsel der Aufnahme den Tastaturfokus, damit Leertaste+Ziehen ohne vorherigen Klick ins Bild wirkt. Liegen Menü,
+   Übersicht, Einstellungstafel oder volle Ansicht der Bibliothek davor, wartet das, bis sie geschlossen sind; hält
+   eine Vorschau der Leiste der letzten Aufnahmen den Fokus (Enter oder Entf an ihr), bleibt er
+   dort — Pfeile und Enter bedienen die Leiste weiter (ADR-0036 Punkt 1, F-912). Menü, Übersicht, Tafel, volle Ansicht,
    Texteingabe, Fokusverlust der Leinwand und des Fensters lassen eine gehaltene Leertaste los.

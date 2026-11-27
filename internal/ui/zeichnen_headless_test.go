@@ -236,6 +236,8 @@ func TestEditorZeichnetAuswahlrahmenAnDerRichtigenStelle(t *testing.T) {
 	if !l.e.s.SchalteGewaehlt(k2) || l.e.s.Auswahl != k2 || !l.e.s.IstGewaehlt(k) {
 		t.Fatalf("Auswahl %d, gewählt %v", l.e.s.Auswahl, l.e.s.Gewaehlt())
 	}
+	// Zoom 8: Der zweite Kasten ist 64 Fensterpixel groß, seine Griffe (10 dp) lassen Rand zwischen sich frei.
+	l.e.s.Abb = l.e.s.Abb.ZoomUm(l.e.s.Abb.ZuFenster(document.Pt(0, 0)), 8/l.e.s.Abb.Zoom)
 	o, _ := l.e.s.D.Objekt(k)
 	g := o.Grenzen()
 	fe := func(p document.Punkt) image.Point {
@@ -251,6 +253,20 @@ func TestEditorZeichnetAuswahlrahmenAnDerRichtigenStelle(t *testing.T) {
 	}
 	if p := b.RGBAAt(r.Min.X-3, mitteY); !gleich(p, farbeAuswahlKontur) {
 		t.Errorf("weiteres Objekt: Pixel links 3 außen %v, Soll Kontur", p)
+	}
+	mitteX := (r.Min.X + r.Max.X) / 2
+	if p := b.RGBAAt(mitteX, r.Min.Y-2); !gleich(p, farbeAuswahl) {
+		t.Errorf("weiteres Objekt: Pixel oben 2 außen %v, Soll Auswahlfarbe", p)
+	}
+	// Hauptauswahl (zweiter Kasten): Rahmen ebenso 2 dp außen, oben auf halber Breite zwischen den Griffen.
+	o2, _ := l.e.s.D.Objekt(k2)
+	g2 := o2.Grenzen()
+	r2 := image.Rectangle{Min: fe(g2.Min), Max: fe(g2.Max)}.Canon()
+	if p := b.RGBAAt(r2.Min.X+(r2.Dx())/4, r2.Min.Y-2); !gleich(p, farbeAuswahl) {
+		t.Errorf("Hauptauswahl: Pixel oben 2 außen %v, Soll Auswahlfarbe", p)
+	}
+	if p := b.RGBAAt(r2.Min.X+(r2.Dx())/4, r2.Min.Y-3); !gleich(p, farbeAuswahlKontur) {
+		t.Errorf("Hauptauswahl: Pixel oben 3 außen %v, Soll Kontur", p)
 	}
 	// Aufgezogener Rahmen (auf freier Fläche: der zweite Kasten weicht vorher).
 	l.e.s.Abwaehlen()
@@ -272,6 +288,10 @@ func TestEditorZeichnetAuswahlrahmenAnDerRichtigenStelle(t *testing.T) {
 	}
 	if p := b.RGBAAt(x0-1, y); !gleich(p, farbeAuswahlKontur) {
 		t.Errorf("aufgezogener Rahmen: Pixel links daneben %v, Soll Kontur", p)
+	}
+	x, y0 := int(math.Round((rr.Min.X+rr.Max.X)/2)), int(math.Round(rr.Min.Y))
+	if p := b.RGBAAt(x, y0); !gleich(p, farbeAuswahl) {
+		t.Errorf("aufgezogener Rahmen: Pixel an der oberen Kante %v, Soll Auswahlfarbe", p)
 	}
 	l.e.s.Loslassen(z)
 }

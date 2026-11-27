@@ -799,7 +799,7 @@ func (s *Sitzung) Doppelklick(p document.Punkt) {
 		return
 	}
 	if s.leertaste && s.zug != zugText {
-		s.Druecken(p, TastePrimaer) // Leertaste gehalten: verschiebt die Ansicht wie jeder Druck (F-906)
+		s.druecken(p, TastePrimaer, true) // Leertaste gehalten: verschiebt die Ansicht wie jeder Druck (F-906)
 		return
 	}
 	if s.textBereichDruck(p, TastePrimaer) { // im Bereichsmodus beginnt auch der zweite Druck nur einen Zug
@@ -822,5 +822,5 @@ func (s *Sitzung) Doppelklick(p document.Punkt) {
 			}
 		}
 	}
-	s.Druecken(p, TastePrimaer)
+	s.druecken(p, TastePrimaer, false) // hier nie Verschieben: aus der Texteingabe heraus ist die Leertaste Text (F-914)
 }

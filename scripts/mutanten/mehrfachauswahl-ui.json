@@ -3,15 +3,15 @@
     "name": "MU1 Leertaste lenkt den Druck nicht um",
     "datei": "internal/canvas/sitzung.go",
     "paket": "./internal/canvas",
-    "alt": "\tif s.leertaste && t == TastePrimaer && s.zug != zugText {",
-    "neu": "\tif false && s.leertaste && t == TastePrimaer && s.zug != zugText {"
+    "alt": "\tif leertaste && t == TastePrimaer {",
+    "neu": "\tif false && leertaste && t == TastePrimaer {"
   },
   {
     "name": "MU2 Leertaste wirkt auch in der Texteingabe",
     "datei": "internal/canvas/sitzung.go",
     "paket": "./internal/canvas",
-    "alt": "\tif s.leertaste && t == TastePrimaer && s.zug != zugText {",
-    "neu": "\tif s.leertaste && t == TastePrimaer {"
+    "alt": "\ts.druecken(p, t, s.leertaste && s.zug != zugText)",
+    "neu": "\ts.druecken(p, t, s.leertaste)"
   },
   {
     "name": "MU3 Zeiger ohne Hand bei gehaltener Leertaste",
@@ -122,8 +122,8 @@
     "name": "MU18 Doppelklick in der Sitzung übergeht die Leertaste (F-906)",
     "datei": "internal/canvas/werkzeuge.go",
     "paket": "./internal/canvas",
-    "alt": "\tif s.leertaste && s.zug != zugText {\n\t\ts.Druecken(p, TastePrimaer) // Leertaste",
-    "neu": "\tif false && s.leertaste && s.zug != zugText {\n\t\ts.Druecken(p, TastePrimaer) // Leertaste"
+    "alt": "\tif s.leertaste && s.zug != zugText {\n\t\ts.druecken(p, TastePrimaer, true)",
+    "neu": "\tif false && s.leertaste && s.zug != zugText {\n\t\ts.druecken(p, TastePrimaer, true)"
   },
   {
     "name": "MU19 Leinwand holt den Fokus nicht (F-907)",
@@ -257,5 +257,82 @@
     "paket": "./internal/ui",
     "alt": "\t\thilfeZeile{text: i18n.T(\"Move the view\"), taste: i18n.T(\"Space\") + \"+\" + i18n.T(\"Drag\")},\n",
     "neu": "\n"
+  },
+  {
+    "name": "MU38 Wechsel holt der Leinwand keinen Fokus (Verify N1, F-913)",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\te.fokusHolen = true // die neue Aufnahme",
+    "neu": "\te.fokusHolen = false // die neue Aufnahme"
+  },
+  {
+    "name": "MU39 Fokus holen hinter dem Menü (N2)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.fokusHolen && !e.menue.offen && !e.hilfeOffen && !e.einst.offen && !e.bibl.offen {",
+    "neu": "\tif e.fokusHolen && !e.hilfeOffen && !e.einst.offen && !e.bibl.offen {"
+  },
+  {
+    "name": "MU40 Fokus holen hinter der Tafel (N3)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.fokusHolen && !e.menue.offen && !e.hilfeOffen && !e.einst.offen && !e.bibl.offen {",
+    "neu": "\tif e.fokusHolen && !e.menue.offen && !e.hilfeOffen && !e.bibl.offen {"
+  },
+  {
+    "name": "MU41 Fokus holen hinter der Bibliothek (N4)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.fokusHolen && !e.menue.offen && !e.hilfeOffen && !e.einst.offen && !e.bibl.offen {",
+    "neu": "\tif e.fokusHolen && !e.menue.offen && !e.hilfeOffen && !e.einst.offen {"
+  },
+  {
+    "name": "MU42 Leinwand nimmt der Leiste den Fokus (F-912)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif !e.leisteHaeltFokus(gtx) {\n\t\t\tgtx.Execute(key.FocusCmd{Tag: e})",
+    "neu": "\t\tif true {\n\t\t\tgtx.Execute(key.FocusCmd{Tag: e})"
+  },
+  {
+    "name": "MU44 Alt+Leertaste hält (N5)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "!k.Modifiers.Contain(key.ModCtrl) && !k.Modifiers.Contain(key.ModAlt) && !k.Modifiers.Contain(key.ModSuper)",
+    "neu": "!k.Modifiers.Contain(key.ModCtrl) && !k.Modifiers.Contain(key.ModSuper)"
+  },
+  {
+    "name": "MU45 Super+Leertaste hält (N6)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "!k.Modifiers.Contain(key.ModCtrl) && !k.Modifiers.Contain(key.ModAlt) && !k.Modifiers.Contain(key.ModSuper)",
+    "neu": "!k.Modifiers.Contain(key.ModCtrl) && !k.Modifiers.Contain(key.ModAlt)"
+  },
+  {
+    "name": "MU46 Doppelklick aus der Texteingabe verschiebt (F-914)",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.druecken(p, TastePrimaer, false) // hier nie Verschieben",
+    "neu": "\ts.druecken(p, TastePrimaer, s.leertaste) // hier nie Verschieben"
+  },
+  {
+    "name": "MU47 Rahmen weiterer senkrecht versetzt (N9)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tauswahlLinie(gtx, r.Inset(-gtx.Dp(2)))",
+    "neu": "\t\t\t\tauswahlLinie(gtx, r.Inset(-gtx.Dp(2)).Add(image.Pt(0, 3)))"
+  },
+  {
+    "name": "MU48 aufgezogener Rahmen senkrecht versetzt (N10)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tauswahlLinie(gtx, q)",
+    "neu": "\t\tauswahlLinie(gtx, q.Add(image.Pt(0, 3)))"
+  },
+  {
+    "name": "MU49 Rahmen der Hauptauswahl versetzt (N9)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tauswahlLinie(gtx, r.Inset(-gtx.Dp(2)))\n\t}\n\th := gtx.Dp(5)",
+    "neu": "\t\tauswahlLinie(gtx, r.Inset(-gtx.Dp(2)).Add(image.Pt(0, 3)))\n\t}\n\th := gtx.Dp(5)"
   }
 ]
