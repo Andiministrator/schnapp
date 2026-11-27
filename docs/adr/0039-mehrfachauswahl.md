@@ -67,3 +67,10 @@ und Rahmen. Das Dokument kennt nur Züge und Befehle an einem Objekt.
   Ausrichten und Verteilen (`ausrichten.go`); `internal/ui`: Umschalt-Klick, Rahmen zeichnen, Menüeinträge (Bearbeiten →
   „Select all“ Strg+A, Ebene → Ausrichten/Verteilen), Darstellung der weiteren Auswahl.
 - Tests, Mutanten, Sichtprobe; README en/de (Ziehen im Bild wählt jetzt, statt die Ansicht zu verschieben).
+
+## Nachtrag 1 (27.11.2026, Andi: „ja, finde ich gut“)
+Auf Andis Frage nach dem Vorbild der anderen (Inkscape, Krita, GIMP, Photoshop, Figma: Rahmen ohne Umschalt, Ansicht
+mit Leertaste+Ziehen): **Leertaste halten + Ziehen verschiebt die Ansicht**, in jedem Werkzeug; der Zeiger zeigt
+solange die greifende Hand. Während einer Texteingabe ist die Leertaste Text, dort bleibt die mittlere Taste. Rahmen
+ohne Umschalt (Punkt 2) bleibt; mittlere Taste, Ziehen neben dem Bild und Navigator bleiben. Damit verschiebt man die
+Ansicht auch am Touchpad ohne mittlere Taste. „Mausrad rollt, Strg+Rad zoomt“ ist eine eigene Karte, nicht Teil von #334.
