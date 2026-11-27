@@ -390,12 +390,12 @@ func (s *Sitzung) stand(a SchnellArt) (Schnellstil, bool) {
 	if !ok {
 		return Schnellstil{}, false
 	}
-	p := s.paar(w)
-	st := Schnellstil{Art: a, Farbe: p.vorn, Fuellung: p.fuellung, Breite: s.Stil.Breite, Schriftgrad: s.Stil.Schriftgrad,
-		Radius: s.Stil.Radius, Schrift: s.Stil.Schrift, Fett: s.Stil.Fett, Kursiv: s.Stil.Kursiv,
-		Unterstrichen: s.Stil.Unterstrichen, Durchgestrichen: s.Stil.Durchgestrichen, Ausrichtung: s.Stil.Ausrichtung}
-	if s.Stil.Schatten.An {
-		st.Schatten = s.Stil.Schatten
+	z := s.stilVon(w) // der Stil dieses Werkzeugs, nicht des aktiven (ADR-0041, F-928)
+	st := Schnellstil{Art: a, Farbe: z.Farbe, Fuellung: z.Fuellung, Breite: z.Breite, Schriftgrad: z.Schriftgrad,
+		Radius: z.Radius, Schrift: z.Schrift, Fett: z.Fett, Kursiv: z.Kursiv,
+		Unterstrichen: z.Unterstrichen, Durchgestrichen: z.Durchgestrichen, Ausrichtung: z.Ausrichtung}
+	if z.Schatten.An {
+		st.Schatten = z.Schatten
 	}
 	return st, true
 }

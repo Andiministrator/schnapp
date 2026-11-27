@@ -94,8 +94,8 @@
     "name": "S216-2 neue Sitzung ohne Stil nach Bildgröße",
     "datei": "internal/canvas/sitzung.go",
     "paket": "./internal/canvas",
-    "alt": "\t\tStil: StilMitFaktor(d.KantenFaktor())}",
-    "neu": "\t\tStil: StandardStil()}"
+    "alt": "\t\tStil: StilMitFaktor(d.KantenFaktor()),",
+    "neu": "\t\tStil: StandardStil(),"
   },
   {
     "name": "S216-3 SetzeBreite ändert das gewählte Objekt nicht",
@@ -283,8 +283,8 @@
     "name": "N7 Faktor ungedeckelt (Sitzungs-QA N-7)",
     "datei": "internal/canvas/sitzung.go",
     "paket": "./internal/canvas",
-    "alt": "\t\tStil: StilMitFaktor(d.KantenFaktor())}",
-    "neu": "\t\tStil: StilFuer(d.OriginalGroesse())}"
+    "alt": "\t\tStil: StilMitFaktor(d.KantenFaktor()),",
+    "neu": "\t\tStil: StilFuer(d.OriginalGroesse()),"
   },
   {
     "name": "N8 Leertaste nur am Zoomfeld (Sitzungs-QA N-8)",

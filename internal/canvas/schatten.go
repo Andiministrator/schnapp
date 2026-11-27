@@ -9,7 +9,7 @@ import (
 )
 
 // Schatten je Objekt (ADR-0021 Nachtrag 26 Punkt 7): Die rechte Leiste zeigt den des gewählten Objekts, sonst den des
-// Werkzeugs (Stil.Schatten, ein Wert für alle Werkzeuge wie die Strichstärke). Setzen ändert ein gewähltes Objekt als
+// Werkzeugs (Stil.Schatten, je Werkzeug wie die Strichstärke, ADR-0041). Setzen ändert ein gewähltes Objekt als
 // einen Rückgängig-Schritt; Ziehen an einem Regler ist einer (Zug wie am Regler der Strichstärke).
 
 // SchattenObjekt liefert das gewählte Objekt (jede Art trägt einen Schatten).
@@ -107,7 +107,7 @@ func (s *Sitzung) SchalteSchatten() bool {
 		return s.SetzeSchatten(sch)
 	}
 	if sch == (document.Schatten{}) {
-		sch = s.Stil.Schatten
+		sch = s.stilVon(s.stilZiel()).Schatten // die Werte des Werkzeugs dieses Objekts (ADR-0041 Punkt 2, F-928)
 		if sch.Laenge == 0 && sch.Weich == 0 && sch.Farbe == (document.Schatten{}).Farbe {
 			sch = document.StandardSchatten(s.faktor())
 		}
@@ -127,6 +127,7 @@ func (s *Sitzung) BeginneSchattenZug() bool {
 		return false
 	}
 	s.breiteZug, s.breiteZugObj, s.schattenZugText = true, false, nil
+	s.merkeZugStil(s.stilZiel())
 	if s.zug == zugText {
 		if o, ok := s.D.Objekt(s.textID); ok {
 			s.schattenZugText = o

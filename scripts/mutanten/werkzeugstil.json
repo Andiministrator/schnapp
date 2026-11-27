@@ -24,15 +24,15 @@
     "name": "WS4 Laden ohne Faktor",
     "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
-    "alt": "\tf := s.faktor()\n\tfor _, e := range liste {",
-    "neu": "\tf := 1.0\n\tfor _, e := range liste {"
+    "alt": "\tf := s.faktorDerStile()\n",
+    "neu": "\tf := 1.0\n"
   },
   {
     "name": "WS5 Speichern ohne Faktor",
     "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
-    "alt": "st = stilMal(st, 1/s.faktor())",
-    "neu": "st = stilMal(st, 1)"
+    "alt": "st = gerundet(stilMal(st, 1/s.faktorDerStile()))",
+    "neu": "st = gerundet(stilMal(st, 1))"
   },
   {
     "name": "WS6 Gesetzt übergangen",
@@ -45,22 +45,22 @@
     "name": "WS8 zu große Breite angenommen",
     "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
-    "alt": "if gilt(\"width\") && e.Breite > 0 && e.Breite*f <= document.MaxGroesse {",
-    "neu": "if gilt(\"width\") && e.Breite > 0 {"
+    "alt": "st.Breite = begrenze(e.Breite, document.MaxGroesse)",
+    "neu": "st.Breite = e.Breite * f"
   },
   {
     "name": "WS9 Schreiben immer",
     "datei": "internal/ui/werkzeugstile.go",
     "paket": "./internal/ui",
-    "alt": "\tif werkzeugStand(e.s) == e.werkzeugStand {\n\t\treturn\n\t}\n",
-    "neu": ""
+    "alt": "if probeLeisteAus || werkzeugStand(e.s) == e.werkzeugStand {",
+    "neu": "if probeLeisteAus {"
   },
   {
     "name": "WS10 Schreiben nie",
     "datei": "internal/ui/werkzeugstile.go",
     "paket": "./internal/ui",
-    "alt": "\tif werkzeugStand(e.s) == e.werkzeugStand {",
-    "neu": "\tif true {"
+    "alt": "if probeLeisteAus || werkzeugStand(e.s) == e.werkzeugStand {",
+    "neu": "if true {"
   },
   {
     "name": "WS11 Laden übergangen",
@@ -103,5 +103,75 @@
     "paket": "./internal/settings",
     "alt": "\t\t\tan := s.Schatten.An // shadow_on davor gelesen\n\t\t\ts.Schatten = sch\n\t\t\ts.Schatten.An = an\n",
     "neu": "\t\t\ts.Schatten = sch\n"
+  },
+  {
+    "name": "WS17 Stile durch den aktuellen Faktor geteilt",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "st = gerundet(stilMal(st, 1/s.faktorDerStile()))",
+    "neu": "st = gerundet(stilMal(st, 1/s.faktor()))"
+  },
+  {
+    "name": "WS18 ohne Rundung",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "st = gerundet(stilMal(st, 1/s.faktorDerStile()))",
+    "neu": "st = stilMal(st, 1/s.faktorDerStile())"
+  },
+  {
+    "name": "WS19 Grenze verwirft statt zu begrenzen",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "if gilt(\"size\") && e.Schriftgrad > 0 && e.Schriftgrad <= document.MaxSchrift {",
+    "neu": "if gilt(\"size\") && e.Schriftgrad > 0 && e.Schriftgrad*f <= document.MaxSchrift {"
+  },
+  {
+    "name": "WS20 Abbruch lässt den gezogenen Stil",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.aendereStil(z.w, func(st *Stil) { *st = z.vor })\n",
+    "neu": ""
+  },
+  {
+    "name": "WS21 Schatten an aus dem aktiven Werkzeug",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "sch = s.stilVon(s.stilZiel()).Schatten",
+    "neu": "sch = s.Stil.Schatten"
+  },
+  {
+    "name": "WS23 Schattenzug merkt den Stil nicht",
+    "datei": "internal/canvas/schatten.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.breiteZug, s.breiteZugObj, s.schattenZugText = true, false, nil\n\ts.merkeZugStil(s.stilZiel())\n",
+    "neu": "\ts.breiteZug, s.breiteZugObj, s.schattenZugText = true, false, nil\n"
+  },
+  {
+    "name": "WS24 Farbzug-Abbruch lässt den Stil",
+    "datei": "internal/canvas/farbwahl.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.farbZug = false\n\ts.zugStilZurueck()\n",
+    "neu": "\ts.farbZug = false\n"
+  },
+  {
+    "name": "WS25 Radius nicht begrenzt",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "st.Radius = begrenze(e.Radius, document.MaxSchrift)",
+    "neu": "st.Radius = e.Radius * f"
+  },
+  {
+    "name": "WS26 Schatten nicht mal Faktor",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\tsch.Laenge *= f\n",
+    "neu": "\n"
+  },
+  {
+    "name": "WS27 Füllung auch ohne Füllwerkzeug",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "if gilt(\"fill\") && fuellWerkzeug(w) {",
+    "neu": "if gilt(\"fill\") {"
   }
 ]

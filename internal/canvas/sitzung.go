@@ -114,7 +114,12 @@ type Sitzung struct {
 	// (wirksam nur mit Füllung, AktivesFeld).
 	paarW Werkzeug
 	stile map[Werkzeug]Stil
-	feld  Farbfeld
+	// stilFaktor ist der Faktor, zu dem die Stile gerechnet sind (KantenFaktor beim Anlegen der Sitzung): Zuschneiden
+	// oder Stauchen ändert den Faktor des Dokuments, nicht die gemerkten Stile (F-927).
+	stilFaktor float64
+	// zugStil ist der Stil eines Werkzeugs vor einem Regler- oder Farbzug; ein Abbruch stellt ihn her (F-931).
+	zugStil zugStilStand
+	feld    Farbfeld
 	// feldSchattenID ist das Objekt (0: der Stand des Werkzeugs), für das das Feld Schatten gewählt wurde: Ein anderes
 	// erbt es nicht (Kritik K-2 #363b).
 	feldSchattenID int
@@ -141,7 +146,7 @@ type Sitzung struct {
 // NeueSitzung beginnt mit eingepasster Ansicht, ohne Auswahl, mit dem Werkzeug Auswählen und dem Standardstil.
 func NeueSitzung(d *document.Dokument) *Sitzung {
 	return &Sitzung{D: d, Abb: Abbildung{Zoom: 1}, eingepasst: true, gespeichert: d.Stand(),
-		Stil: StilMitFaktor(d.KantenFaktor())}
+		Stil: StilMitFaktor(d.KantenFaktor()), stilFaktor: float64(max(1, d.KantenFaktor()))}
 }
 
 // Geaendert meldet, ob der Verlaufsstand vom gespeicherten abweicht (F-109): Rückgängig bis zum gespeicherten Stand

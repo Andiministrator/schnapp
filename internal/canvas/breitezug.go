@@ -46,6 +46,7 @@ func (s *Sitzung) BeginneBreiteZug() bool {
 		return false
 	}
 	s.breiteZug, s.breiteZugObj = true, false
+	s.merkeZugStil(s.stilZiel())
 	if o, ok := s.strichObjekt(); ok && s.D.BeginneZug(o.Kennung()) == nil {
 		s.breiteZugObj, s.breiteZugVor = true, s.D.Stand()
 	}
@@ -78,13 +79,14 @@ func (s *Sitzung) BeendeBreiteZug() {
 	}
 }
 
-// BrecheBreiteZugAb stellt das Objekt wie vor dem Ziehen her (Esc, Zeiger-Cancel); die Stärke des Werkzeugs bleibt die
-// zuletzt gezogene, wie beim Farbwähler.
+// BrecheBreiteZugAb stellt das Objekt und den Stil seines Werkzeugs wie vor dem Ziehen her (Esc, Zeiger-Cancel; seit
+// F-931 auch den Stil, der über Sitzungen gemerkt wird).
 func (s *Sitzung) BrecheBreiteZugAb() {
 	if !s.breiteZug {
 		return
 	}
 	s.breiteZug = false
+	s.zugStilZurueck()
 	if s.schattenZugText != nil { // Schattenzug in der Texteingabe: Text wie vor dem Ziehen (Kritik K-1 #363b)
 		if s.zug == zugText {
 			_ = s.D.ZugSetze(s.schattenZugText)

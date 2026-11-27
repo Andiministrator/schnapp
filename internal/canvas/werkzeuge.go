@@ -86,9 +86,9 @@ type Stil struct {
 	// Spitzenarten neuer Pfeile je Ende (ADR-0021 Nachträge 19 und 20); Nullwerte: Dreieck bei B, keine bei A.
 	KopfEnde   document.Kopfart
 	KopfAnfang document.Anfangskopf
-	// Strichart neuer Pfeile, Kästen und Lupen (ADR-0021 Nachtrag 25), wie die Breite ein Wert für alle drei.
+	// Strichart neuer Pfeile, Kästen und Lupen (ADR-0021 Nachtrag 25); je Werkzeug wie alle Felder (ADR-0041).
 	Strichart document.Strichart
-	// Schatten neuer Objekte (ADR-0021 Nachtrag 26), ein Wert für alle Werkzeuge; aus, mit der Voreinstellung als Werten.
+	// Schatten neuer Objekte (ADR-0021 Nachtrag 26), je Werkzeug (ADR-0041); aus, mit der Voreinstellung als Werten.
 	Schatten document.Schatten
 }
 

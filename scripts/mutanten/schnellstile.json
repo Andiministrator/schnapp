@@ -129,7 +129,7 @@
     "name": "SQ19 Nummer ohne Radius im Stand",
     "datei": "internal/canvas/schnellstile.go",
     "paket": "./internal/canvas",
-    "alt": "Radius: s.Stil.Radius, Schrift:",
+    "alt": "Radius: z.Radius, Schrift:",
     "neu": "Radius: 0, Schrift:"
   },
   {

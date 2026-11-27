@@ -20,4 +20,5 @@ var probeOhneFolgebildBeiZug = os.Getenv("SCHNAPP_PROBE_OHNE_FOLGEBILD") != ""
 // probeLeisteAus: Im Drehbuch-Lauf (scripts/probe.sh setzt SCHNAPP_PROBE_LEISTE_AUS=1) startet die Leiste der letzten
 // Aufnahmen ausgeschaltet, und ihr Schalter wird nicht in settings.ini gemerkt (ADR-0036 Punkt 2, Lehre aus F-539):
 // Drehbücher mit festen Leinwandkoordinaten bleiben gültig, und ein Umschalten kippt den nächsten Lauf nicht.
+// Derselbe Schalter hält im Drehbuch-Lauf tools.ini aus dem Spiel (werkzeugstile.go, F-932).
 var probeLeisteAus = os.Getenv("SCHNAPP_PROBE_LEISTE_AUS") != ""

@@ -57,3 +57,19 @@ Greenshot und Photoshop merken die Werkzeugoptionen je Werkzeug über Sitzungen 
 - `internal/settings/werkzeugstile.go` (`LadeWerkzeugStile`, `SchreibeWerkzeugStile`), der Graph-Test
   `TestMCPErreichtDenSchreiberNicht` führt den neuen Schreiber als Ausnahme für die Datei, die ihn ruft.
 - README en/de, CLAUDE.md; Tests und Mutanten.
+
+## Nachtrag 1 (27.11.2026, Kritik #383, F-927 bis F-933)
+1. **Faktor der Stile (F-927):** Die Sitzung merkt den Faktor, zu dem ihre Stile gerechnet sind (`stilFaktor`,
+   `KantenFaktor` beim Anlegen). Zuschneiden und Stauchen ändern den Faktor des Dokuments, nicht die gemerkten Stile;
+   `WerkzeugStile` teilt durch `stilFaktor`. Vorher schrieb ein Zuschnitt einer 4K-Aufnahme `width = 12` statt 6.
+2. **Schatten einschalten an einem Objekt (F-928)** nimmt die Werte des Werkzeugs dieses Objekts, nicht die des aktiven;
+   ebenso der Stand der Schnellstile.
+3. **Grenzen (F-929):** Ein Wert aus `tools.ini`, der mal dem Faktor eine Grenze überschritte, wird auf die Grenze
+   begrenzt statt verworfen.
+4. **Rundung (F-930):** `WerkzeugStile` rundet Größen auf Tausendstel, damit ein Wechsel zwischen Faktoren die Datei
+   nicht ohne Änderung neu schreibt.
+5. **Abbruch eines Zugs (F-931):** Ein mit Esc oder Zeiger-Cancel abgebrochener Regler- oder Farbzug stellt auch den
+   Stil des Werkzeugs her (vorher behielt das Werkzeug den gezogenen Wert). Abgebrochen heißt: nichts geschehen, auch
+   nicht in `tools.ini`.
+6. **Probe-Läufe (F-932):** Im Drehbuch-Lauf (`SCHNAPP_PROBE_LEISTE_AUS`, nur Probe-Build) wird `tools.ini` weder
+   gelesen noch geschrieben.

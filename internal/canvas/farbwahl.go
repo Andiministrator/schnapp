@@ -197,6 +197,7 @@ func (s *Sitzung) BeginneFarbZug() bool {
 	s.feldAufgeben()
 	s.hsv, s.hsvGemerkt = s.FarbeHSV(), true
 	s.farbZug, s.farbZugObjekt, s.farbZugText = true, false, nil
+	s.merkeZugStil(s.zielWerkzeug())
 	if s.zug == zugText {
 		if o, ok := s.D.Objekt(s.textID); ok {
 			s.farbZugText = o
@@ -243,13 +244,14 @@ func (s *Sitzung) BeendeFarbZug() {
 	s.merkeZuletzt(s.AktuelleFarbe())
 }
 
-// BrecheFarbZugAb stellt das Objekt wie vor dem Ziehen her (Zeiger-Cancel); die Farbe des Werkzeugs bleibt die zuletzt
-// gezogene.
+// BrecheFarbZugAb stellt das Objekt und den Stil seines Werkzeugs wie vor dem Ziehen her (Zeiger-Cancel; der Stil seit
+// F-931, er wird über Sitzungen gemerkt).
 func (s *Sitzung) BrecheFarbZugAb() {
 	if !s.farbZug {
 		return
 	}
 	s.farbZug = false
+	s.zugStilZurueck()
 	if s.farbZugObjekt {
 		s.farbZugObjekt = false
 		_ = s.D.BrecheZugAb()

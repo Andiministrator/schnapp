@@ -138,3 +138,145 @@ func TestWerkzeugStileFaktor(t *testing.T) {
 		}
 	}
 }
+
+func werkzeugStand(t *testing.T, s *Sitzung) string {
+	t.Helper()
+	inhalt, err := settings.FormatWerkzeugStile(s.WerkzeugStile())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return inhalt
+}
+
+// F-927 (Kritik #383 K-1): Zuschneiden ändert den Faktor des Dokuments, nicht die gemerkten Stile.
+func TestZuschnittAendertGemerktenStilNicht(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 3840, 2160))) // Faktor 2
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := NeueSitzung(d)
+	s.SetzeWerkzeugStile(nil)
+	vor := werkzeugStand(t, s)
+	if err := d.SetzeZuschnitt(image.Rect(0, 0, 500, 200)); err != nil {
+		t.Fatal(err)
+	}
+	if d.KantenFaktor() != 1 {
+		t.Fatalf("Kontrolle: Faktor nach dem Zuschnitt %d", d.KantenFaktor())
+	}
+	if nach := werkzeugStand(t, s); vor != nach {
+		t.Errorf("Zuschneiden allein ändert tools.ini:\nvorher:\n%s\nnachher:\n%s", vor, nach)
+	}
+}
+
+// F-928 (Kritik #383 K-2): Schatten einschalten an einem Objekt nimmt die Werte seines Werkzeugs, nicht des aktiven.
+func TestSchattenAnFremdemObjekt(t *testing.T) {
+	s, k, _ := sitzung(t)
+	s.SetzeWerkzeug(WerkzeugKasten)
+	sch := s.Stil.Schatten
+	sch.An, sch.Laenge = true, 3
+	s.SetzeSchatten(sch)
+	sch.An = false
+	s.SetzeSchatten(sch)
+	s.SetzeWerkzeug(WerkzeugPfeil)
+	sp := s.Stil.Schatten
+	sp.An, sp.Laenge = true, 33
+	s.SetzeSchatten(sp)
+	s.SetzeWerkzeug(WerkzeugAuswahl)
+	s.Auswahl = k
+	s.SchalteSchatten()
+	o, _ := s.D.Objekt(k)
+	if l := o.Ebenenwerte().Schatten.Laenge; l != 3 {
+		t.Errorf("Kasten bekommt Länge %v, Soll 3 (die des Kasten-Werkzeugs)", l)
+	}
+	if l := s.stilVon(WerkzeugKasten).Schatten.Laenge; l != 3 {
+		t.Errorf("Kasten-Werkzeug merkt Länge %v, Soll 3", l)
+	}
+	if l := s.stilVon(WerkzeugPfeil).Schatten.Laenge; l != 33 {
+		t.Errorf("Pfeil-Werkzeug verliert seine Länge: %v", l)
+	}
+}
+
+// F-930 (Kritik #383 K-4): Hin und zurück über Faktor 2, 3, 5, 7 gibt dieselben Werte (auf Tausendstel).
+func TestWerkzeugStileFaktorRundung(t *testing.T) {
+	for _, gr := range []image.Point{{2400, 2160}, {4000, 3240}, {6000, 5400}, {8000, 7560}} {
+		d, _ := document.Neu(image.NewNRGBA(image.Rectangle{Max: gr}))
+		s := NeueSitzung(d)
+		for _, b := range []float64{0.1, 0.7, 1.1, 2.3, 4.35, 7.7} {
+			s.SetzeWerkzeugStile([]settings.WerkzeugStil{{Stil: settings.Stil{Art: settings.ArtPfeil, Breite: b},
+				Gesetzt: map[string]bool{"width": true}}})
+			if aus := s.WerkzeugStile(); aus[0].Breite != b {
+				t.Errorf("Faktor %v: Breite %v wird %v", s.faktor(), b, aus[0].Breite)
+			}
+		}
+	}
+}
+
+// F-929 (Kritik #383 K-3): Ein Wert, der mal dem Faktor die Grenze überschritte, wird begrenzt, nicht verworfen.
+func TestWerkzeugStileGrenzeBegrenzt(t *testing.T) {
+	d, _ := document.Neu(image.NewNRGBA(image.Rect(0, 0, 2400, 2160))) // Faktor 2
+	s := NeueSitzung(d)
+	s.SetzeWerkzeugStile([]settings.WerkzeugStil{
+		{Stil: settings.Stil{Art: settings.ArtText, Schriftgrad: 3000}, Gesetzt: map[string]bool{"size": true}},
+		{Stil: settings.Stil{Art: settings.ArtNummer, Radius: 3000}, Gesetzt: map[string]bool{"radius": true}},
+		{Stil: settings.Stil{Art: settings.ArtPfeil, Breite: document.MaxGroesse}, Gesetzt: map[string]bool{"width": true}},
+		{Stil: settings.Stil{Art: settings.ArtKasten}, Eckradius: document.MaxGroesse, Gesetzt: map[string]bool{"corner_radius": true}},
+	})
+	if g := s.stilVon(WerkzeugText).Schriftgrad; g != document.MaxSchrift {
+		t.Errorf("Text: %v, Soll %v", g, document.MaxSchrift)
+	}
+	if r := s.stilVon(WerkzeugNummer).Radius; r != document.MaxSchrift {
+		t.Errorf("Nummer: %v, Soll %v", r, document.MaxSchrift)
+	}
+	if b := s.stilVon(WerkzeugPfeil).Breite; b != document.MaxGroesse {
+		t.Errorf("Pfeil: %v, Soll %v", b, document.MaxGroesse)
+	}
+	if e := s.stilVon(WerkzeugKasten).Eckradius; e != document.MaxGroesse {
+		t.Errorf("Kasten: %v, Soll %v", e, document.MaxGroesse)
+	}
+	// Schatten mal Faktor, Füllung nur, wo es eine gibt, Strichart nur gültig.
+	s.SetzeWerkzeugStile([]settings.WerkzeugStil{
+		{Stil: settings.Stil{Art: settings.ArtLupe, Fuellung: Beschriftungsfarben[1],
+			Schatten: document.Schatten{An: true, Winkel: 90, Laenge: 5, Weich: 4}}, Strichart: document.Strichart(9),
+			Gesetzt: map[string]bool{"fill": true, "shadow": true, "shadow_on": true, "line_style": true}},
+	})
+	if st := s.stilVon(WerkzeugLupe); st.Fuellung == Beschriftungsfarben[1] || st.Schatten.Laenge != 10 ||
+		st.Schatten.Weich != 8 || !st.Schatten.An || st.Strichart != document.StrichVoll {
+		t.Errorf("Lupe: %+v", st)
+	}
+}
+
+// F-931 (Kritik #383 K-5): Ein abgebrochener Regler-, Schatten- oder Farbzug lässt auch den Stil des Werkzeugs, wie er
+// war; ein abgeschlossener merkt ihn.
+func TestAbgebrochenerZugLaesstStil(t *testing.T) {
+	s, _, p := sitzung(t)
+	s.SetzeWerkzeug(WerkzeugAuswahl)
+	s.Auswahl = p
+	vor := s.stilVon(WerkzeugPfeil)
+	s.BeginneBreiteZug()
+	s.BreiteZugSetze(31)
+	s.BrecheBreiteZugAb()
+	if b := s.stilVon(WerkzeugPfeil).Breite; b != vor.Breite {
+		t.Errorf("Breitenzug abgebrochen: merkt %v statt %v", b, vor.Breite)
+	}
+	s.BeginneSchattenZug()
+	sch := s.Schatten()
+	sch.An, sch.Laenge = true, 25
+	s.SchattenZugSetze(sch)
+	s.BrecheBreiteZugAb()
+	if l := s.stilVon(WerkzeugPfeil).Schatten; l != vor.Schatten {
+		t.Errorf("Schattenzug abgebrochen: %+v statt %+v", l, vor.Schatten)
+	}
+	s.BeginneFarbZug()
+	s.FarbZugHSV(HSV{H: 200, S: 1, V: 1}, 255)
+	s.BrecheFarbZugAb()
+	if f := s.stilVon(WerkzeugPfeil).Farbe; f != vor.Farbe {
+		t.Errorf("Farbzug abgebrochen: %v statt %v", f, vor.Farbe)
+	}
+	// Abgeschlossen: gemerkt.
+	s.BeginneBreiteZug()
+	s.BreiteZugSetze(31)
+	s.BeendeBreiteZug()
+	if b := s.stilVon(WerkzeugPfeil).Breite; b != 31 {
+		t.Errorf("Breitenzug abgeschlossen: %v", b)
+	}
+}

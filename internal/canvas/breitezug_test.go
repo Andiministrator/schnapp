@@ -76,11 +76,11 @@ func TestBreiteZug(t *testing.T) {
 	if s.D.Stand() != nach {
 		t.Error("gleiche Stärke ist ein Schritt")
 	}
-	// Esc bricht ab: Objekt wie vorher, Werkzeug behält die gezogene Stärke.
+	// Esc bricht ab: Objekt und Stil des Werkzeugs wie vorher (F-931; vorher behielt das Werkzeug die gezogene Stärke).
 	s.BeginneBreiteZug()
 	s.BreiteZugSetze(24)
 	s.Esc()
-	if s.BreiteZugLaeuft() || s.Breite() != 5 || s.Stil.Breite != 24 || s.D.Stand() != nach {
+	if s.BreiteZugLaeuft() || s.Breite() != 5 || s.Stil.Breite != 5 || s.D.Stand() != nach {
 		t.Errorf("nach Esc: läuft %v, Objekt %v, Stil %v", s.BreiteZugLaeuft(), s.Breite(), s.Stil.Breite)
 	}
 	// Abbrechen (Zeiger-Cancel) ebenso.

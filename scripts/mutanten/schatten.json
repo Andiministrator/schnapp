@@ -402,7 +402,7 @@
     "name": "SH58 Stand des Werkzeugs ohne Schatten",
     "datei": "internal/canvas/schnellstile.go",
     "paket": "./internal/canvas",
-    "alt": "\tif s.Stil.Schatten.An {\n\t\tst.Schatten = s.Stil.Schatten\n\t}\n",
+    "alt": "\tif z.Schatten.An {\n\t\tst.Schatten = z.Schatten\n\t}\n",
     "neu": ""
   },
   {

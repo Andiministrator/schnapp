@@ -30,6 +30,12 @@ func werkzeugStand(s *canvas.Sitzung) string {
 
 // werkzeugStileLaden liest tools.ini beim Öffnen; Warnungen gehen auf die Fehlerausgabe wie bei styles.ini.
 func (e *editor) werkzeugStileLaden() {
+	if probeLeisteAus {
+		// Drehbuch-Lauf (scripts/probe.sh): kein Lauf erbt Werkzeugstile des vorigen, sonst stimmten feste Erwartungen
+		// wie „12 px nach zweimal +“ nur beim ersten Mal (F-932, Lehre F-539).
+		e.werkzeugStand = werkzeugStand(e.s)
+		return
+	}
 	roh, warn := ladeWerkzeugStile()
 	for _, w := range warn {
 		fmt.Fprintln(fehlerAusgabe, w)
@@ -47,7 +53,7 @@ func (e *editor) werkzeugStileMitnehmen(alt *canvas.Sitzung) {
 // werkzeugStileSchreiben schreibt tools.ini beim Schließen, wenn sich seit dem Lesen etwas geändert hat. Ein Fehler
 // geht auf die Fehlerausgabe; das Fenster schließt trotzdem (ADR-0041 Punkt 4).
 func (e *editor) werkzeugStileSchreiben() {
-	if werkzeugStand(e.s) == e.werkzeugStand {
+	if probeLeisteAus || werkzeugStand(e.s) == e.werkzeugStand { // Drehbuch-Lauf: nichts merken (F-932)
 		return
 	}
 	if err := schreibeWerkzeugStile(e.s.WerkzeugStile()); err != nil {

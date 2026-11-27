@@ -74,4 +74,22 @@ func TestWerkzeugStileUeberSitzungen(t *testing.T) {
 	if e2.s.Stil.Breite != 14 {
 		t.Fatalf("Pfeil nach dem Wechsel: %v", e2.s.Stil.Breite)
 	}
+	// Wechsel auf eine 4K-Aufnahme (Faktor 2) und zurück: 28 px dort, wieder 14 hier, die Datei unverändert.
+	d4, _ := document.Neu(image.NewNRGBA(image.Rect(0, 0, 3840, 2160)))
+	e2.uebernimm(Geoeffnet{Titel: "gross.png", Dokument: d4})
+	e2.s.SetzeWerkzeug(canvas.WerkzeugPfeil)
+	if e2.s.Stil.Breite != 28 {
+		t.Fatalf("Pfeil auf 4K: %v, Soll 28", e2.s.Stil.Breite)
+	}
+	d1, _ := document.Neu(image.NewNRGBA(image.Rect(0, 0, 200, 100)))
+	e2.uebernimm(Geoeffnet{Titel: "klein.png", Dokument: d1})
+	e2.s.SetzeWerkzeug(canvas.WerkzeugPfeil)
+	if e2.s.Stil.Breite != 14 {
+		t.Fatalf("Pfeil zurück auf Faktor 1: %v", e2.s.Stil.Breite)
+	}
+	vorher, _ = os.Stat(pfad)
+	e2.werkzeugStileSchreiben()
+	if nachher, err := os.Stat(pfad); err != nil || !os.SameFile(vorher, nachher) {
+		t.Fatalf("Wechsel über Faktoren schreibt tools.ini neu (%v)", err)
+	}
 }

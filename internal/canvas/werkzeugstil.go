@@ -7,6 +7,8 @@ package canvas
 // Das Farbpaar je Werkzeug (ADR-0021 Nachtrag 11) ist ein Teil davon.
 
 import (
+	"math"
+
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/settings"
 )
@@ -31,9 +33,18 @@ func werkzeugAbschnitt(w Werkzeug) string {
 	return ""
 }
 
-// standardStilFuer ist die Voreinstellung des Werkzeugs w zum Faktor des Dokuments.
+// faktorDerStile ist der Faktor, zu dem die Stile der Sitzung gerechnet sind (stilFaktor, F-927); ohne NeueSitzung
+// der des Dokuments.
+func (s *Sitzung) faktorDerStile() float64 {
+	if s.stilFaktor >= 1 {
+		return s.stilFaktor
+	}
+	return s.faktor()
+}
+
+// standardStilFuer ist die Voreinstellung des Werkzeugs w zum Faktor der Stile.
 func (s *Sitzung) standardStilFuer(w Werkzeug) Stil {
-	st := StilMitFaktor(s.D.KantenFaktor())
+	st := StilMitFaktor(int(s.faktorDerStile()))
 	p := standardPaar(w)
 	st.Farbe, st.Fuellung = p.vorn, p.fuellung
 	return st
@@ -109,6 +120,15 @@ func stilMal(st Stil, f float64) Stil {
 	return st
 }
 
+// gerundet rundet die Größen auf Tausendstel (F-930): Hin und zurück über einen Faktor 3, 5 oder 7 bliebe sonst ein
+// Rest in der letzten Stelle, und tools.ini würde ohne Änderung neu geschrieben.
+func gerundet(st Stil) Stil {
+	r := func(v float64) float64 { return math.Round(v*1000) / 1000 }
+	st.Breite, st.Schriftgrad, st.Radius, st.Eckradius = r(st.Breite), r(st.Schriftgrad), r(st.Radius), r(st.Eckradius)
+	st.Schatten.Laenge, st.Schatten.Weich = r(st.Schatten.Laenge), r(st.Schatten.Weich)
+	return st
+}
+
 // WerkzeugStile sind die Stile der Werkzeuge, die einen haben (benutzt oder geladen), auf Faktor 1 für tools.ini.
 func (s *Sitzung) WerkzeugStile() []settings.WerkzeugStil {
 	var r []settings.WerkzeugStil
@@ -120,7 +140,7 @@ func (s *Sitzung) WerkzeugStile() []settings.WerkzeugStil {
 		if !ok {
 			continue
 		}
-		st = stilMal(st, 1/s.faktor())
+		st = gerundet(stilMal(st, 1/s.faktorDerStile()))
 		r = append(r, settings.WerkzeugStil{
 			Stil: settings.Stil{Art: werkzeugAbschnitt(w), Farbe: st.Farbe, Fuellung: st.Fuellung, Breite: st.Breite,
 				Schriftgrad: st.Schriftgrad, Radius: st.Radius, Schrift: st.Schrift, Fett: st.Fett, Kursiv: st.Kursiv,
@@ -136,7 +156,9 @@ func (s *Sitzung) WerkzeugStile() []settings.WerkzeugStil {
 // nicht gesetzt sind, behalten die Voreinstellung des Werkzeugs; ein Wert, der mal dem Faktor die Grenzen sprengt,
 // ebenso.
 func (s *Sitzung) SetzeWerkzeugStile(liste []settings.WerkzeugStil) {
-	f := s.faktor()
+	f := s.faktorDerStile()
+	// begrenze nimmt einen Wert der Datei mal f, höchstens bis zur Grenze (F-929: nicht still die Voreinstellung).
+	begrenze := func(v, grenze float64) float64 { return math.Min(v*f, grenze) }
 	for _, e := range liste {
 		var w Werkzeug
 		ok := false
@@ -156,17 +178,17 @@ func (s *Sitzung) SetzeWerkzeugStile(liste []settings.WerkzeugStil) {
 		if gilt("fill") && fuellWerkzeug(w) {
 			st.Fuellung = e.Fuellung
 		}
-		if gilt("width") && e.Breite > 0 && e.Breite*f <= document.MaxGroesse {
-			st.Breite = e.Breite * f
+		if gilt("width") && e.Breite > 0 && e.Breite <= document.MaxGroesse {
+			st.Breite = begrenze(e.Breite, document.MaxGroesse)
 		}
-		if gilt("size") && e.Schriftgrad > 0 && e.Schriftgrad*f <= document.MaxSchrift {
-			st.Schriftgrad = e.Schriftgrad * f
+		if gilt("size") && e.Schriftgrad > 0 && e.Schriftgrad <= document.MaxSchrift {
+			st.Schriftgrad = begrenze(e.Schriftgrad, document.MaxSchrift)
 		}
-		if gilt("radius") && e.Radius > 0 && e.Radius*f <= document.MaxSchrift {
-			st.Radius = e.Radius * f
+		if gilt("radius") && e.Radius > 0 && e.Radius <= document.MaxSchrift {
+			st.Radius = begrenze(e.Radius, document.MaxSchrift)
 		}
-		if gilt("corner_radius") && e.Eckradius >= 0 && e.Eckradius*f <= document.MaxGroesse {
-			st.Eckradius = e.Eckradius * f
+		if gilt("corner_radius") && e.Eckradius >= 0 && e.Eckradius <= document.MaxGroesse {
+			st.Eckradius = begrenze(e.Eckradius, document.MaxGroesse)
 		}
 		if gilt("font") {
 			st.Schrift = e.Schrift
@@ -216,4 +238,26 @@ func (s *Sitzung) SetzeWerkzeugStile(liste []settings.WerkzeugStil) {
 		}
 		s.stile[paarSchluessel(w)] = st
 	}
+}
+
+// zugStilStand merkt den Stil des Werkzeugs w vor einem Zug (Regler, Farbwähler).
+type zugStilStand struct {
+	w    Werkzeug
+	vor  Stil
+	gilt bool
+}
+
+// merkeZugStil hält den Stil des Werkzeugs w vor einem Zug fest.
+func (s *Sitzung) merkeZugStil(w Werkzeug) {
+	s.zugStil = zugStilStand{w: paarSchluessel(w), vor: s.stilVon(w), gilt: true}
+}
+
+// zugStilZurueck stellt beim Abbruch eines Zugs den gemerkten Stil wieder her (F-931: abgebrochen heißt, nichts ist
+// geschehen — auch nicht in tools.ini). Nach einem abgeschlossenen Zug bleibt der Merker stehen; jeder neue Zug
+// überschreibt ihn, und nur ein laufender Zug lässt sich abbrechen.
+func (s *Sitzung) zugStilZurueck() {
+	if z := s.zugStil; z.gilt {
+		s.aendereStil(z.w, func(st *Stil) { *st = z.vor })
+	}
+	s.zugStil = zugStilStand{}
 }
