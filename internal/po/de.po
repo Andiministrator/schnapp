@@ -985,6 +985,33 @@ msgstr "Nach vorn"
 msgid "Send backward"
 msgstr "Nach hinten"
 
+msgid "Select all"
+msgstr "Alles auswählen"
+
+msgid "Align left"
+msgstr "Links ausrichten"
+
+msgid "Align centers horizontally"
+msgstr "Waagerecht mittig ausrichten"
+
+msgid "Align right"
+msgstr "Rechts ausrichten"
+
+msgid "Align top"
+msgstr "Oben ausrichten"
+
+msgid "Align centers vertically"
+msgstr "Senkrecht mittig ausrichten"
+
+msgid "Align bottom"
+msgstr "Unten ausrichten"
+
+msgid "Distribute horizontally"
+msgstr "Waagerecht verteilen"
+
+msgid "Distribute vertically"
+msgstr "Senkrecht verteilen"
+
 msgid "Select layer above"
 msgstr "Ebene darüber wählen"
 

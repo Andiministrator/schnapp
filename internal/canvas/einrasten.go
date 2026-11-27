@@ -35,7 +35,7 @@ func (s *Sitzung) AltTaste(an bool) {
 		return
 	}
 	s.alt = an
-	if s.bewegt && !s.pan && (s.zug == zugObjekt || s.zug == zugGriff || s.zug == zugNeu) {
+	if s.bewegt && !s.pan && (s.zug == zugObjekt || s.zug == zugGriff || s.zug == zugNeu || s.zug == zugMehrere) {
 		s.Ziehen(s.zugOrt)
 	}
 }

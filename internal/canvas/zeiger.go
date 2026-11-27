@@ -62,7 +62,7 @@ func (s *Sitzung) Zeiger(p *document.Punkt) ZeigerArt {
 		return ZeigerGreifend
 	case s.zug == zugGriff, s.zug == zugZuschnitt:
 		return griffZeiger(s.griff)
-	case s.zug == zugObjekt:
+	case s.zug == zugObjekt, s.zug == zugMehrere: // auch beim Ziehen mehrerer gewählter (F-898)
 		return ZeigerVerschieben
 	case s.zug != keinZug, p == nil:
 		return s.werkzeugZeiger()

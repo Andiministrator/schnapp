@@ -236,7 +236,7 @@ func TestWeitereEnden(t *testing.T) {
 	klick(s, f(15, 15), true)
 	if !s.WaehleEbene(2) || s.AnzahlGewaehlt() != 1 {
 		t.Errorf("Ebenenliste: %v", s.Gewaehlt())
-	}	// Ein gewähltes, das gesperrt wird, fällt aus der Auswahl (Punkt 1).
+	} // Ein gewähltes, das gesperrt wird, fällt aus der Auswahl (Punkt 1).
 	klick(s, f(15, 15), false)
 	klick(s, f(125, 15), true)
 	if !s.SchalteGesperrt(1) || s.IstGewaehlt(1) || !s.IstGewaehlt(3) {

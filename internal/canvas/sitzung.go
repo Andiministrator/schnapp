@@ -469,6 +469,8 @@ func (s *Sitzung) Abbrechen() {
 		s.rahmen = false
 	case zugAnsicht:
 		s.Abb = s.startAbb
+	case zugRahmen:
+		s.brecheRahmenAb()
 	}
 	s.zug = keinZug
 }
@@ -494,9 +496,7 @@ func (s *Sitzung) verlauf(f func() error) bool {
 	if f() != nil {
 		return false
 	}
-	if _, ok := s.D.Objekt(s.Auswahl); !ok {
-		s.nachruecken() // ADR-0039 Punkt 1: das oberste übrige gewählte wird Hauptauswahl
-	}
+	s.bereinigeAuswahl() // ADR-0039 Punkt 1: Verschwundenes fällt heraus, das oberste übrige rückt nach
 	if s.D.Zuschnitt() != z || s.D.Groesse() != g || !slices.Equal(s.D.Streifen(), st) {
 		// Zuschnitt oder Streifen zurückgenommen bzw. wiederholt: neu einpassen (ADR-0023 Punkt 5), wie nach dem
 		// Zuschneiden melden, wenn mehr verborgen ist (F-184).
@@ -518,7 +518,7 @@ func (s *Sitzung) Loeschen() bool {
 		return false
 	}
 	s.merkeAenderung(vor)
-	s.Auswahl = 0
+	s.waehleNur(0)
 	return true
 }
 

@@ -129,8 +129,8 @@
     "name": "MA19 Rückgängig: kein Nachrücken",
     "datei": "internal/canvas/sitzung.go",
     "paket": "./internal/canvas",
-    "alt": "\t\ts.nachruecken() // ADR-0039 Punkt 1",
-    "neu": "\t\ts.Auswahl = 0 // ADR-0039 Punkt 1"
+    "alt": "\ts.bereinigeAuswahl() // ADR-0039 Punkt 1: Verschwundenes",
+    "neu": "\tif _, ok := s.D.Objekt(s.Auswahl); !ok {\n\t\ts.waehleNur(0)\n\t} // ADR-0039 Punkt 1: Verschwundenes"
   },
   {
     "name": "MA20 Ziehen im Bild verschiebt die Ansicht",
@@ -173,5 +173,110 @@
     "paket": "./internal/canvas",
     "alt": " && s.zug != zugMehrere) {",
     "neu": ") {"
+  },
+  {
+    "name": "MA26 F-895 Ebenenliste setzt die Auswahl direkt (weitere leben wieder auf)",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.waehleNur(id) // auch eine frühere Hauptauswahl",
+    "neu": "\ts.Auswahl = id // auch eine frühere Hauptauswahl"
+  },
+  {
+    "name": "MA27 F-895 Ausblenden/Sperren bereinigt die Auswahl nicht",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.bereinigeAuswahl() // gesperrt oder ausgeblendet",
+    "neu": "\t_ = 0 // gesperrt oder ausgeblendet"
+  },
+  {
+    "name": "MA28 F-896 gesperrte Hauptauswahl rückt nicht nach",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "!ok || (len(rest) > 0 && !s.waehlbar(s.Auswahl))",
+    "neu": "!ok"
+  },
+  {
+    "name": "MA29 F-896 Gewaehlt prüft die Hauptauswahl nicht",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif !s.waehlbar(s.Auswahl) {\n\t\treturn nil\n\t}\n\treturn s.weitereRoh()",
+    "neu": "\treturn s.weitereRoh()"
+  },
+  {
+    "name": "MA30 F-897 hinten bleibt das letzte nach der linken Kante",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif bis(os[i].Grenzen()) >= bis(os[hinten].Grenzen()) {",
+    "neu": "\t\tif true || bis(os[i].Grenzen()) >= bis(os[hinten].Grenzen()) {"
+  },
+  {
+    "name": "MA31 F-898 Strg+A in Zuschneiden und Stauchen",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": " && !ohneGriffe(s.Werkzeug) && len(s.sichtbareObjekte()) > 0",
+    "neu": " && len(s.sichtbareObjekte()) > 0"
+  },
+  {
+    "name": "MA32 F-898 Strg+A bleibt im Zeichenwerkzeug",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.Werkzeug != WerkzeugAuswahl {\n\t\ts.SetzeWerkzeug(WerkzeugAuswahl)\n\t}\n\ts.pipette = false\n\tvar ids",
+    "neu": "\ts.pipette = false\n\tvar ids"
+  },
+  {
+    "name": "MA33 F-898 Strg+A während der Texteingabe",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif !s.KannAlleWaehlen() {\n\t\treturn false\n\t}\n\tif s.Werkzeug",
+    "neu": "\tif s.Zieht() || s.gesperrt() {\n\t\treturn false\n\t}\n\tif s.Werkzeug"
+  },
+  {
+    "name": "MA34 F-898 Rechtsklick auf ein weiteres löst die Mehrfachauswahl auf",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.IstGewaehlt(id) {\n\t\ts.setzeAuswahl(id, s.Gewaehlt())",
+    "neu": "\tif false && s.IstGewaehlt(id) {\n\t\ts.setzeAuswahl(id, s.Gewaehlt())"
+  },
+  {
+    "name": "MA35 F-895 Bestätigen der Texteingabe hebt die weiteren auf",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\ts.waehleHaupt(s.textID)",
+    "neu": "\t\t\ts.waehleNur(s.textID)"
+  },
+  {
+    "name": "MA36 F-898 Rahmen vergleicht ungekürzte Grenzen",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tg := s.sichtbareGrenzen(o)",
+    "neu": "\t\tg := document.R(s.D.ZuAnsicht(o.Grenzen().Min), s.D.ZuAnsicht(o.Grenzen().Max))"
+  },
+  {
+    "name": "MA37 F-898 Esc im Rahmen stellt die Auswahl nicht her",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase zugRahmen:\n\t\ts.brecheRahmenAb()\n",
+    "neu": ""
+  },
+  {
+    "name": "MA38 F-898 leeres FuegeEinMehrere legt einen Schritt an",
+    "datei": "internal/document/mehrere.go",
+    "paket": "./internal/document",
+    "alt": "\tif len(os) == 0 {\n\t\treturn nil, nil // nichts",
+    "neu": "\tif false && len(os) == 0 {\n\t\treturn nil, nil // nichts"
+  },
+  {
+    "name": "MA39 F-898 Alt rechnet den Zug über mehrere nicht neu",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": " || s.zug == zugNeu || s.zug == zugMehrere) {\n\t\ts.Ziehen(s.zugOrt)",
+    "neu": " || s.zug == zugNeu) {\n\t\ts.Ziehen(s.zugOrt)"
+  },
+  {
+    "name": "MA40 F-898 Zeiger beim Zug über mehrere nicht Verschieben",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase s.zug == zugObjekt, s.zug == zugMehrere:",
+    "neu": "\tcase s.zug == zugObjekt:"
   }
 ]

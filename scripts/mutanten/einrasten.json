@@ -52,15 +52,15 @@
     "name": "E8 Ausgeblendete Ebene bleibt Ziel",
     "datei": "internal/canvas/einrasten.go",
     "paket": "./internal/canvas",
-    "alt": "if o.Kennung() == ohne || o.Ebenenwerte().Ausgeblendet || !s.D.ObjektSichtbar(o) {",
-    "neu": "if o.Kennung() == ohne || !s.D.ObjektSichtbar(o) {"
+    "alt": "if slices.Contains(ohne, o.Kennung()) || o.Ebenenwerte().Ausgeblendet || !s.D.ObjektSichtbar(o) {",
+    "neu": "if slices.Contains(ohne, o.Kennung()) || !s.D.ObjektSichtbar(o) {"
   },
   {
     "name": "E9 Das gezogene Objekt ist sein eigenes Ziel",
     "datei": "internal/canvas/einrasten.go",
     "paket": "./internal/canvas",
-    "alt": "if o.Kennung() == ohne || o.Ebenenwerte().Ausgeblendet",
-    "neu": "if o.Ebenenwerte().Ausgeblendet"
+    "alt": "if slices.Contains(ohne, o.Kennung()) || o.Ebenenwerte().Ausgeblendet",
+    "neu": "if false && slices.Contains(ohne, o.Kennung()) || o.Ebenenwerte().Ausgeblendet"
   },
   {
     "name": "E10 Kantengriff zeigt auch die fremde Achse",
@@ -199,15 +199,15 @@
     "name": "E29 Linien bleiben nach Abbruch oder Loslassen stehen",
     "datei": "internal/canvas/einrasten.go",
     "paket": "./internal/canvas",
-    "alt": "if !s.bewegt || (s.zug != zugObjekt && s.zug != zugGriff && s.zug != zugNeu) {",
+    "alt": "if !s.bewegt || (s.zug != zugObjekt && s.zug != zugGriff && s.zug != zugNeu && s.zug != zugMehrere) {",
     "neu": "if !s.bewegt {"
   },
   {
     "name": "E30 Linien des alten Zugs vor der ersten Bewegung",
     "datei": "internal/canvas/einrasten.go",
     "paket": "./internal/canvas",
-    "alt": "if !s.bewegt || (s.zug != zugObjekt && s.zug != zugGriff && s.zug != zugNeu) {",
-    "neu": "if s.zug != zugObjekt && s.zug != zugGriff && s.zug != zugNeu {"
+    "alt": "if !s.bewegt || (s.zug != zugObjekt && s.zug != zugGriff && s.zug != zugNeu && s.zug != zugMehrere) {",
+    "neu": "if s.zug != zugObjekt && s.zug != zugGriff && s.zug != zugNeu && s.zug != zugMehrere {"
   },
   {
     "name": "E31 Alt-Tastenereignis kommt nicht in der Sitzung an",

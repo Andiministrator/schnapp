@@ -51,7 +51,7 @@ func (s *Sitzung) WaehleEbene(id int) bool {
 		s.SetzeWerkzeug(WerkzeugAuswahl)
 	}
 	s.pipette = false
-	s.Auswahl = id
+	s.waehleNur(id) // auch eine frühere Hauptauswahl steht danach allein (F-895)
 	return true
 }
 
@@ -108,6 +108,7 @@ func (s *Sitzung) aendereEbene(id int, f func(document.Ebene) document.Ebene) bo
 		return false
 	}
 	s.merkeAenderung(vor)
+	s.bereinigeAuswahl() // gesperrt oder ausgeblendet: fällt aus der Mehrfachauswahl (ADR-0039 Punkt 1, F-896)
 	return true
 }
 
@@ -201,6 +202,6 @@ func (s *Sitzung) Doppeln() bool {
 		return false
 	}
 	s.merkeAenderung(vor)
-	s.Auswahl = id
+	s.waehleNur(id)
 	return true
 }

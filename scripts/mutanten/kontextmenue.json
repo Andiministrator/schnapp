@@ -3,14 +3,14 @@
     "name": "KM1 Rechtsklick wählt nicht",
     "datei": "internal/canvas/kontext.go",
     "paket": "./internal/canvas",
-    "alt": "\t\ts.Auswahl, s.lupenTeil = id, LupeGanz\n",
+    "alt": "\t\ts.waehleHaupt(id)\n",
     "neu": "\t\t_ = id\n"
   },
   {
     "name": "KM2 leer hebt die Auswahl nicht auf",
     "datei": "internal/canvas/kontext.go",
     "paket": "./internal/canvas",
-    "alt": "\ts.Auswahl = 0\n\treturn true, false\n}",
+    "alt": "\ts.waehleNur(0)\n\treturn true, false\n}",
     "neu": "\treturn true, false\n}"
   },
   {

@@ -163,7 +163,7 @@ func (s *Sitzung) SetzeWerkzeug(w Werkzeug) bool {
 		s.mf.mehr = nil // ein Werkzeugwechsel hebt die weiteren gewählten auf, die Hauptauswahl bleibt (ADR-0039 Punkt 6)
 	}
 	if ohneGriffe(w) {
-		s.Auswahl = 0 // F-174: sonst zöge ein Zug nahe einem Griff den Griff statt den Rahmen
+		s.waehleNur(0) // F-174: sonst zöge ein Zug nahe einem Griff den Griff statt den Rahmen
 	}
 	if s.feld == FeldSchatten && w != s.Werkzeug {
 		// Das Feld Schatten wählt man bewusst am Farbfeld der Leiste; mit einem anderen Werkzeug färbte die Farbwahl
@@ -308,7 +308,7 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 	if s.Werkzeug == WerkzeugText || s.Werkzeug == WerkzeugSprechblase {
 		if id, ok := Treffer(s.sichtbareObjekte(), q, s.toleranz()); ok {
 			if o, _ := s.D.Objekt(id); isText(o) {
-				s.Auswahl = id
+				s.waehleNur(id)
 				s.TextBearbeiten() // bei verborgener Schrift nur Auswahl und Meldung (F-740)
 				return
 			}
@@ -339,7 +339,8 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 		if err != nil {
 			return
 		}
-		s.zug, s.textID, s.textNeu, s.Auswahl = zugText, id, true, id
+		s.zug, s.textID, s.textNeu = zugText, id, true
+		s.waehleNur(id)
 	}
 }
 
@@ -519,7 +520,7 @@ func (s *Sitzung) beendeNeu() {
 		return
 	}
 	if s.D.BeendeZug() == nil {
-		s.Auswahl = s.neuID
+		s.waehleNur(s.neuID)
 	}
 }
 
@@ -720,7 +721,7 @@ func (s *Sitzung) TextBestaetigen() bool {
 	defer s.merkeAenderung(vor)
 	if strings.TrimSpace(t.Inhalt) != "" {
 		if s.D.BeendeZug() == nil {
-			s.Auswahl = s.textID
+			s.waehleHaupt(s.textID) // Text der Hauptauswahl: die weiteren bleiben gewählt
 		}
 		return true
 	}
@@ -728,7 +729,7 @@ func (s *Sitzung) TextBestaetigen() bool {
 	if !s.textNeu {
 		_ = s.D.Entfernen(s.textID)
 	}
-	s.Auswahl = 0
+	s.waehleNur(0)
 	return true
 }
 
@@ -740,7 +741,7 @@ func (s *Sitzung) TextAbbrechen() bool {
 	s.zug = keinZug
 	_ = s.D.BrecheZugAb()
 	if s.textNeu {
-		s.Auswahl = 0
+		s.waehleNur(0)
 	}
 	return true
 }
@@ -767,7 +768,7 @@ func (s *Sitzung) Esc() {
 	case s.zug != keinZug:
 		s.Abbrechen()
 	case s.Auswahl != 0:
-		s.Auswahl = 0
+		s.waehleNur(0) // die weiteren enden mit (F-895)
 	default:
 		s.SetzeWerkzeug(WerkzeugAuswahl) // über den gemeinsamen Weg: Vollansicht aus, Bild neu, Einpassen (KA-1)
 	}
@@ -811,7 +812,7 @@ func (s *Sitzung) Doppelklick(p document.Punkt) {
 	if s.Werkzeug == WerkzeugAuswahl && s.zug == keinZug && !s.D.ZugLaeuft() {
 		if id, ok := Treffer(s.sichtbareObjekte(), s.original(p), s.toleranz()); ok {
 			if o, _ := s.D.Objekt(id); isText(o) {
-				s.Auswahl = id
+				s.waehleNur(id)
 				s.TextBearbeiten()
 				return
 			}

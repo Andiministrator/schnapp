@@ -71,7 +71,8 @@ func (s *Sitzung) beendeBlase() {
 		}
 		s.neuID = id
 	}
-	s.zug, s.textID, s.textNeu, s.Auswahl = zugText, s.neuID, true, s.neuID
+	s.zug, s.textID, s.textNeu = zugText, s.neuID, true
+	s.waehleNur(s.neuID)
 }
 
 // spitzeText ist der Text, dessen Spitze der Schalter der rechten Leiste ändert: der in der Eingabe, sonst der

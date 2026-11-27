@@ -87,8 +87,9 @@ func (s *Sitzung) ansichtGeaendert(vorher ansichtVorher) {
 		s.eingepasst = true
 		s.Abb = s.einpassAbb()
 	}
+	s.bereinigeAuswahl() // verborgen neben weiteren: das oberste übrige rückt nach (ADR-0039 Punkt 1)
 	if o, ok := s.D.Objekt(s.Auswahl); ok && !s.D.ObjektSichtbar(o) {
-		s.Auswahl = 0
+		s.waehleNur(0)
 	}
 	if s.VerborgeneObjekte() > vorher.verborgen {
 		s.ansichtMeldung = AnsichtVerborgen

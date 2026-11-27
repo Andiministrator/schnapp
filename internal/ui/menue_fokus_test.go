@@ -136,11 +136,18 @@ func TestMenueFokussierterEintragWirdGrau(t *testing.T) {
 		t.Errorf("Enter auf grau gewordenem Eintrag wirkt: offen %v, Text %v", l.e.menue.offen, l.e.s.TextLaeuft())
 	}
 	l.taste(key.NameDownArrow, 0)
-	// Nächster erreichbarer Eintrag im Menü „Bearbeiten“: Löschen und Farben tauschen sind ohne Auswahl grau; „Text aus
-	// dem Bild kopieren“ ist ohne Suchergebnis grau, aber mit Erklärung erreichbar (ADR-0026 Nachtrag 8).
-	if i := menueFokusNr(l); i != l.index(aktTextKopieren) {
-		t.Errorf("Runter nach Grauwerden: Fokus %d (%s), soll Text aus dem Bild kopieren", i, menueFokusName(l))
+	// Nächster erreichbarer Eintrag im Menü „Bearbeiten“: Löschen ist ohne Auswahl grau und wird übersprungen; „Alles
+	// auswählen“ ist an, solange es Objekte gibt (ADR-0039 Punkt 2).
+	if i := menueFokusNr(l); i != l.index(aktAllesWaehlen) {
+		t.Errorf("Runter nach Grauwerden: Fokus %d (%s), soll Alles auswählen", i, menueFokusName(l))
 	}
+	// Danach: Farben tauschen ist ohne Auswahl grau; „Text aus dem Bild kopieren“ ist ohne Suchergebnis grau, aber mit
+	// Erklärung erreichbar (ADR-0026 Nachtrag 8).
+	l.taste(key.NameDownArrow, 0)
+	if i := menueFokusNr(l); i != l.index(aktTextKopieren) {
+		t.Errorf("Runter: Fokus %d (%s), soll Text aus dem Bild kopieren", i, menueFokusName(l))
+	}
+	l.taste(key.NameUpArrow, 0)
 	l.taste(key.NameUpArrow, 0)
 	if i := menueFokusNr(l); i != l.index(aktRueckgaengig) {
 		t.Errorf("Hoch: Fokus %d (%s)", i, menueFokusName(l))

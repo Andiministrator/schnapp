@@ -173,7 +173,8 @@ func TestEbenenKuerzel(t *testing.T) {
 		t.Error("Strg+D doppelt nicht")
 	}
 	en := l.e.menueEintraegeVon(menueEbene)
-	if len(en) != 8 || !en[0].an {
+	// Acht Ebenen-Einträge, dazu sechs Mal Ausrichten und zwei Mal Verteilen (ADR-0039 Punkt 3).
+	if len(en) != 16 || !en[0].an {
 		t.Errorf("Menü Ebene: %d Einträge", len(en))
 	}
 }

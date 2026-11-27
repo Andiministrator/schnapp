@@ -26,10 +26,13 @@ func (s *Sitzung) KontextBei(p document.Punkt) (offen, objekt bool) {
 		return true, false // die Auswahl bleibt, wie bei KontextAnker (K-7)
 	}
 	if id, ok := Treffer(s.sichtbareObjekte(), s.original(p), s.toleranz()); ok {
-		s.Auswahl, s.lupenTeil = id, LupeGanz
+		// Ein schon gewähltes wird Hauptauswahl, die übrigen bleiben gewählt (ADR-0039 Punkt 3, F-898); ein anderes
+		// steht danach allein, auch wenn es früher Hauptauswahl war (F-895).
+		s.waehleHaupt(id)
+		s.lupenTeil = LupeGanz
 		return true, true
 	}
-	s.Auswahl = 0
+	s.waehleNur(0)
 	return true, false
 }
 

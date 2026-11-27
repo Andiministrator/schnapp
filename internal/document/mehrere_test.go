@@ -170,3 +170,15 @@ func TestFuegeEinMehrere(t *testing.T) {
 		t.Errorf("unbekanntes Original: %v", err)
 	}
 }
+
+// Leeres Doppeln und Löschen legen keinen Schritt an (F-898).
+func TestMehrereLeerOhneSchritt(t *testing.T) {
+	d := drei(t)
+	vor := d.Stand()
+	if ids, err := d.FuegeEinMehrere(nil, nil); err != nil || ids != nil || d.Stand() != vor {
+		t.Errorf("FuegeEinMehrere leer: %v %v, Schritt %v", ids, err, d.Stand() != vor)
+	}
+	if err := d.EntferneMehrere(nil); err != nil || d.Stand() != vor {
+		t.Errorf("EntferneMehrere leer: %v, Schritt %v", err, d.Stand() != vor)
+	}
+}

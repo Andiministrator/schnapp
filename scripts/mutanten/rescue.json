@@ -446,14 +446,14 @@
     "name": "Z3 F-409 neues Objekt im Zug nicht ausgelassen",
     "datei": "internal/document/angaben.go",
     "paket": "./internal/rescue",
-    "alt": "\t\t\tif d.zug.alt == nil {\n\t\t\t\tcontinue\n\t\t\t}\n",
-    "neu": "\t\t\tif d.zug.alt == nil {\n\t\t\t\tliste = append(liste, o)\n\t\t\t\tcontinue\n\t\t\t}\n"
+    "alt": "\t\t\tif alt == nil {\n\t\t\t\tcontinue // neues Objekt im Zug\n\t\t\t}\n",
+    "neu": "\t\t\tif alt == nil {\n\t\t\t\tliste = append(liste, o)\n\t\t\t\tcontinue // neues Objekt im Zug\n\t\t\t}\n"
   },
   {
     "name": "Z4 F-409 gezogenes Objekt ohne Stand vor dem Zug",
     "datei": "internal/document/angaben.go",
     "paket": "./internal/rescue",
-    "alt": "\t\t\to = d.zug.alt\n",
+    "alt": "\t\t\to = alt\n",
     "neu": ""
   },
   {

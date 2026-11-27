@@ -17,15 +17,24 @@ und Rahmen. Das Dokument kennt nur Züge und Befehle an einem Objekt.
    Leiste, Farbe, Kontextmenü und Texteingabe wie bisher wirken. Neu ist `Sitzung.Mehr`: die weiteren gewählten
    Objekte (Kennungen, ohne die Hauptauswahl). `Gewaehlt()` liefert alle in Stapelreihenfolge. Verschwindet ein Objekt
    (Rückgängig, Löschen, Ausblenden, Sperren), fällt es aus der Auswahl; fällt die Hauptauswahl weg, rückt das oberste
-   übrige nach.
+   übrige nach. Das gilt auch für die Hauptauswahl: Wird sie neben weiteren gesperrt oder ausgeblendet, fällt sie heraus,
+   und nichts Gesperrtes wird mitverschoben, ausgerichtet, gedoppelt oder gelöscht. Allein gewählt (etwa per
+   Ebenenliste) bleibt eine gesperrte oder ausgeblendete Hauptauswahl, damit Strg+L und Strg+H sie wieder freigeben.
+   Was einmal aus der Auswahl gefallen ist, kommt nicht zurück — auch nicht, wenn Rückgängig es wieder sichtbar macht
+   oder die frühere Hauptauswahl wieder gewählt wird (F-895, F-896).
 2. **Wählen (Werkzeug Auswählen):**
    - **Umschalt+Klick** auf ein Objekt nimmt es zur Auswahl hinzu (es wird Hauptauswahl) oder, ist es schon gewählt,
      heraus. Ein Klick ohne Umschalt wählt nur das getroffene (wie bisher), ein Klick auf freie Fläche hebt alles auf.
    - **Rahmen:** Ziehen ab einer freien Stelle **im Bild** zieht einen Rahmen; beim Loslassen ist jedes sichtbare, nicht
      gesperrte Objekt gewählt, dessen Grenzen ganz im Rahmen liegen (wie Inkscape; ein Streifen über ein großes Bild
-     wählt nicht alles). Mit Umschalt kommen sie zur bisherigen Auswahl hinzu. Hauptauswahl wird das oberste.
-   - **Strg+A** (Menü Bearbeiten → „Select all“) wählt alle sichtbaren, nicht gesperrten Objekte. **Esc** hebt die
-     Auswahl auf (Stufe „abwählen“ wie bisher).
+     wählt nicht alles). Verglichen werden die aufs sichtbare Bild begrenzten Grenzen: Ein Objekt, das über den
+     Bildrand oder in den weggeschnittenen Teil ragt, ist mit einem Rahmen über seinen sichtbaren Teil gewählt. Mit
+     Umschalt kommen sie zur bisherigen Auswahl hinzu. Hauptauswahl wird das oberste. Esc während des Rahmens bricht
+     ihn ab und stellt die Auswahl von vorher her.
+   - **Strg+A** (Menü Bearbeiten → „Select all“) wählt alle sichtbaren, nicht gesperrten Objekte. Mit einem
+     Zeichenwerkzeug wechselt es dabei zu Auswählen, wie ein Klick in die Ebenenliste; in Zuschneiden und Stauchen
+     und während der Texteingabe wirkt es nicht (der Menüeintrag ist grau). **Esc** hebt die Auswahl auf (Stufe
+     „abwählen“ wie bisher).
    - **Ansicht verschieben:** Ziehen ab einer freien Stelle **außerhalb des Bilds** (Rand der Leinwand) verschiebt
      weiter die Ansicht, die mittlere Taste überall, der Navigator bei Vergrößerung. Vorher verschob jedes Ziehen auf
      freier Fläche die Ansicht; im Bild wird daraus der Rahmen. Abweichung vom Kartenwunsch keine; die Änderung ist im
@@ -39,7 +48,13 @@ und Rahmen. Das Dokument kennt nur Züge und Befehle an einem Objekt.
      werden die Auswahl.
    - **Ausrichten** (Menü „Ebene“): links, waagerecht mittig, rechts, oben, senkrecht mittig, unten — an den Grenzen
      des Rahmens um alle gewählten; ab zwei gewählten. **Verteilen** waagerecht bzw. senkrecht: die äußeren bleiben,
-     dazwischen gleich große Lücken (nach Lage der linken bzw. oberen Kante sortiert); ab drei gewählten. Ein Objekt,
+     dazwischen gleich große Lücken (nach Lage der linken bzw. oberen Kante sortiert); ab drei gewählten. Äußere sind
+     das Objekt mit der kleinsten linken und das übrige mit der größten rechten Kante (senkrecht: oberen, unteren);
+     die anderen kommen nach ihrer linken Kante geordnet dazwischen, und gleich sind die Lücken zwischen der rechten
+     Kante des einen und der linken des nächsten — so überlappt nach dem Verteilen nichts, was zwischen den äußeren
+     Platz hat; reicht der Platz nicht, werden es gleich große Überlappungen (F-897).
+   - **Rechtsklick** auf ein gewähltes Objekt macht es zur Hauptauswahl, die übrigen bleiben gewählt (das
+     Kontextmenü wirkt dann auf alle, wo Punkt 3 das vorsieht); auf ein nicht gewähltes wählt er nur dieses. Ein Objekt,
      das dabei aus dem sichtbaren Bild fiele, macht die Handlung nicht (Meldung in der Statuszeile).
    - Das Dokument bekommt dafür einen Zug über mehrere Objekte (`BeginneZugMehrere`, `ZugSetzeMehrere`) und Befehle
      über mehrere (`ErsetzeMehrere`, `EntferneMehrere`), die als **ein** Befehl im Verlauf landen.
@@ -64,7 +79,7 @@ und Rahmen. Das Dokument kennt nur Züge und Befehle an einem Objekt.
 
 ## Konsequenzen
 - `internal/document`: Zug und Befehle über mehrere Objekte; `internal/canvas`: `Mehr`, `Gewaehlt`, Rahmen-Zug,
-  Ausrichten und Verteilen (`ausrichten.go`); `internal/ui`: Umschalt-Klick, Rahmen zeichnen, Menüeinträge (Bearbeiten →
+  Ausrichten und Verteilen (`mehrfach.go`); `internal/ui`: Umschalt-Klick, Rahmen zeichnen, Menüeinträge (Bearbeiten →
   „Select all“ Strg+A, Ebene → Ausrichten/Verteilen), Darstellung der weiteren Auswahl.
 - Tests, Mutanten, Sichtprobe; README en/de (Ziehen im Bild wählt jetzt, statt die Ansicht zu verschieben).
 

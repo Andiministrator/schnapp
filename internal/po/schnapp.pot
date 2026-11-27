@@ -2070,6 +2070,10 @@ msgid "Redo"
 msgstr ""
 
 #: internal/ui/oberflaeche.go
+msgid "Select all"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
 msgid "Sidebar"
 msgstr ""
 
@@ -2091,6 +2095,38 @@ msgstr ""
 
 #: internal/ui/oberflaeche.go
 msgid "Select layer below"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Align left"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Align centers horizontally"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Align right"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Align top"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Align centers vertically"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Align bottom"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Distribute horizontally"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Distribute vertically"
 msgstr ""
 
 #: internal/ui/oberflaeche.go

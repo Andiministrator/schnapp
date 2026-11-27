@@ -15,13 +15,17 @@ import (
 
 // mehrfach ist der Zustand der Mehrfachauswahl in der Sitzung.
 type mehrfach struct {
-	// mehr sind die weiteren gewählten Kennungen; sie gelten nur, solange Auswahl == fuer. Setzt eine andere Stelle die
-	// Auswahl (Ebenenliste, neues Objekt, Abwählen), sind die weiteren damit hinfällig, ohne dass jede Stelle sie leert.
+	// mehr sind die weiteren gewählten Kennungen; sie gelten nur, solange Auswahl == fuer. Jede Stelle im Paket setzt die
+	// Auswahl über setzeAuswahl bzw. waehleNur (F-895), die mehr neu setzen; fuer schützt nur noch vor einer Zuweisung
+	// von außen (Tests, Oberfläche), nach der die weiteren hinfällig sind.
 	mehr []int
 	fuer int
 	// Rahmen (zugRahmen): Ecken in Fensterpunkten; dazu: mit Umschalt begonnen, die bisherige Auswahl bleibt.
 	rahmenA, rahmenB document.Punkt
 	dazu             bool
+	// vorHaupt, vorMehr: die Auswahl vor dem Rahmen; Abbrechen (Esc) stellt sie her (F-898).
+	vorHaupt int
+	vorMehr  []int
 	// Zug über mehrere (zugMehrere): ihre Stände beim Drücken; klick ist das angeklickte Objekt, das ohne Bewegung allein
 	// gewählt bleibt.
 	startObjs []document.Objekt
@@ -34,8 +38,17 @@ func (s *Sitzung) waehlbar(id int) bool {
 	return ok && s.D.ObjektSichtbar(o) && o.Ebenenwerte().Bearbeitbar()
 }
 
-// weitere sind die gewählten Objekte außer der Hauptauswahl, soweit sie noch wählbar sind.
+// weitere sind die gewählten Objekte außer der Hauptauswahl, soweit sie noch wählbar sind. Eine Hauptauswahl, die selbst
+// nicht wählbar ist (gesperrt oder ausgeblendet, etwa per Ebenenliste gewählt), steht allein (F-896).
 func (s *Sitzung) weitere() []int {
+	if !s.waehlbar(s.Auswahl) {
+		return nil
+	}
+	return s.weitereRoh()
+}
+
+// weitereRoh sind die noch wählbaren weiteren, ohne die Hauptauswahl zu prüfen (bereinigeAuswahl).
+func (s *Sitzung) weitereRoh() []int {
 	if s.Auswahl == 0 || s.mf.fuer != s.Auswahl {
 		return nil
 	}
@@ -68,17 +81,27 @@ func (s *Sitzung) IstGewaehlt(id int) bool {
 
 // setzeAuswahl macht haupt zur Hauptauswahl und weitere zu den weiteren gewählten.
 func (s *Sitzung) setzeAuswahl(haupt int, weitere []int) {
-	s.Auswahl, s.mf.fuer = haupt, haupt
-	s.mf.mehr = s.mf.mehr[:0]
+	var mehr []int // neu angelegt: weitere darf ein Teil des alten mehr sein
 	for _, id := range weitere {
-		if id != haupt && !slices.Contains(s.mf.mehr, id) {
-			s.mf.mehr = append(s.mf.mehr, id)
+		if id != haupt && !slices.Contains(mehr, id) {
+			mehr = append(mehr, id)
 		}
 	}
+	s.Auswahl, s.mf.fuer, s.mf.mehr = haupt, haupt, mehr
 }
 
 // waehleNur wählt genau das Objekt id (0: keins).
 func (s *Sitzung) waehleNur(id int) { s.setzeAuswahl(id, nil) }
+
+// waehleHaupt macht id zur Hauptauswahl: Ist es schon gewählt, bleiben die übrigen gewählt (Rechtsklick auf ein
+// weiteres gewähltes, ADR-0039 Punkt 3; Bestätigen der Texteingabe an der Hauptauswahl), sonst ist es allein gewählt.
+func (s *Sitzung) waehleHaupt(id int) {
+	if s.IstGewaehlt(id) {
+		s.setzeAuswahl(id, s.Gewaehlt())
+		return
+	}
+	s.waehleNur(id)
+}
 
 // obersteVon ist das oberste Objekt aus ids im Stapel (0 ohne).
 func (s *Sitzung) obersteVon(ids []int) int {
@@ -91,18 +114,18 @@ func (s *Sitzung) obersteVon(ids []int) int {
 	return best
 }
 
-// nachruecken: Fällt die Hauptauswahl weg (Rückgängig, Löschen von außen), wird das oberste übrige gewählte
-// Hauptauswahl (ADR-0039 Punkt 1).
-func (s *Sitzung) nachruecken() {
-	var rest []int
-	if s.mf.fuer == s.Auswahl {
-		for _, id := range s.mf.mehr {
-			if s.waehlbar(id) {
-				rest = append(rest, id)
-			}
-		}
+// bereinigeAuswahl folgt einer Änderung am Dokument (Rückgängig, Wiederholen, Sperren, Ausblenden, Zuschneiden; ADR-0039
+// Punkt 1): Weitere, die nicht mehr wählbar sind, fallen endgültig heraus — bringt ein Rückgängig sie zurück, sind sie
+// nicht wieder gewählt (F-895). Ist die Hauptauswahl verschwunden, oder neben weiteren gesperrt, ausgeblendet oder
+// verborgen, rückt das oberste übrige nach (F-896). Eine einzelne gesperrte oder ausgeblendete Hauptauswahl bleibt
+// (die Ebenenliste wählt auch solche, damit Strg+L und Strg+H sie wieder freigeben).
+func (s *Sitzung) bereinigeAuswahl() {
+	rest := s.weitereRoh()
+	if _, ok := s.D.Objekt(s.Auswahl); !ok || (len(rest) > 0 && !s.waehlbar(s.Auswahl)) {
+		s.setzeAuswahl(s.obersteVon(rest), rest)
+		return
 	}
-	s.setzeAuswahl(s.obersteVon(rest), rest)
+	s.setzeAuswahl(s.Auswahl, rest)
 }
 
 // SchalteGewaehlt nimmt das Objekt id zur Auswahl hinzu (es wird Hauptauswahl) oder heraus (Umschalt+Klick, ADR-0039
@@ -121,18 +144,22 @@ func (s *Sitzung) SchalteGewaehlt(id int) bool {
 	return true
 }
 
-// KannAlleWaehlen meldet, ob Strg+A etwas zu wählen hat.
+// KannAlleWaehlen meldet, ob Strg+A etwas zu wählen hat: kein Zug, keine Texteingabe, nicht Zuschneiden oder Stauchen
+// (sie wählen nie, ADR-0039 Punkt 6), mindestens ein wählbares Objekt.
 func (s *Sitzung) KannAlleWaehlen() bool {
-	return s.zug == keinZug && !s.gesperrt() && len(s.sichtbareObjekte()) > 0
+	return s.zug == keinZug && !s.gesperrt() && !ohneGriffe(s.Werkzeug) && len(s.sichtbareObjekte()) > 0
 }
 
-// WaehleAlle wählt alle sichtbaren, nicht gesperrten Objekte (Strg+A); Hauptauswahl wird das oberste. Eine
-// Texteingabe wird vorher bestätigt.
+// WaehleAlle wählt alle sichtbaren, nicht gesperrten Objekte (Strg+A); Hauptauswahl wird das oberste. Mit einem
+// Zeichenwerkzeug wechselt es vorher zu Auswählen wie die Ebenenliste (ADR-0039 Punkt 6).
 func (s *Sitzung) WaehleAlle() bool {
-	if s.Zieht() || s.gesperrt() {
+	if !s.KannAlleWaehlen() {
 		return false
 	}
-	s.TextBestaetigen()
+	if s.Werkzeug != WerkzeugAuswahl {
+		s.SetzeWerkzeug(WerkzeugAuswahl)
+	}
+	s.pipette = false
 	var ids []int
 	for _, o := range s.sichtbareObjekte() {
 		ids = append(ids, o.Kennung())
@@ -158,21 +185,39 @@ func (s *Sitzung) AuswahlRahmen() (document.Rechteck, bool) {
 // Leere hebt sie auf).
 func (s *Sitzung) beginneRahmen(p document.Punkt) {
 	s.mf.rahmenA, s.mf.rahmenB, s.mf.dazu = p, p, s.Umschalt
+	s.mf.vorHaupt, s.mf.vorMehr = s.Auswahl, s.weitere()
 	if !s.mf.dazu {
 		s.waehleNur(0)
 	}
 	s.zug = zugRahmen
 }
 
-// beendeRahmen wählt die Objekte ganz im Rahmen (Original), mit Umschalt dazu.
+// brecheRahmenAb stellt die Auswahl von vor dem Rahmen her (Esc, Zeiger-Cancel; F-898).
+func (s *Sitzung) brecheRahmenAb() {
+	s.setzeAuswahl(s.mf.vorHaupt, s.mf.vorMehr)
+	s.bereinigeAuswahl()
+}
+
+// sichtbareGrenzen sind die Grenzen von o in der Ansicht, auf das sichtbare Bild begrenzt: Ragt ein Objekt über den
+// Bildrand oder in den weggeschnittenen Teil, zählt für den Rahmen nur, was zu sehen ist (F-898).
+func (s *Sitzung) sichtbareGrenzen(o document.Objekt) document.Rechteck {
+	g, gr := o.Grenzen(), s.D.Groesse()
+	r := document.R(s.D.ZuAnsicht(g.Min), s.D.ZuAnsicht(g.Max))
+	klemme := func(v, hi float64) float64 { return math.Max(0, math.Min(hi, v)) }
+	r.Min.X, r.Max.X = klemme(r.Min.X, float64(gr.X)), klemme(r.Max.X, float64(gr.X))
+	r.Min.Y, r.Max.Y = klemme(r.Min.Y, float64(gr.Y)), klemme(r.Max.Y, float64(gr.Y))
+	return r
+}
+
+// beendeRahmen wählt die Objekte, deren sichtbarer Teil ganz im Rahmen liegt (Ansicht), mit Umschalt dazu.
 func (s *Sitzung) beendeRahmen() {
 	if !s.bewegt {
 		return
 	}
-	r := document.R(s.original(s.mf.rahmenA), s.original(s.mf.rahmenB))
+	r := document.R(s.Abb.ZuAnsicht(s.mf.rahmenA), s.Abb.ZuAnsicht(s.mf.rahmenB))
 	var neu []int
 	for _, o := range s.sichtbareObjekte() {
-		g := o.Grenzen()
+		g := s.sichtbareGrenzen(o)
 		if g.Min.X >= r.Min.X && g.Min.Y >= r.Min.Y && g.Max.X <= r.Max.X && g.Max.Y <= r.Max.Y {
 			neu = append(neu, o.Kennung())
 		}
@@ -358,8 +403,9 @@ func (s *Sitzung) Ausrichten(a Ausrichtung) bool {
 	return s.ersetzeGewaehlte(neu)
 }
 
-// Verteilen verteilt die gewählten Objekte waagerecht bzw. senkrecht: die äußeren bleiben, dazwischen gleich große
-// Lücken, nach Lage der linken bzw. oberen Kante sortiert. Ein Schritt.
+// Verteilen verteilt die gewählten Objekte waagerecht bzw. senkrecht (ADR-0039 Punkt 3): Das Objekt mit der kleinsten
+// linken (oberen) Kante bleibt vorn, das übrige mit der größten rechten (unteren) Kante bleibt hinten; die anderen
+// kommen nach ihrer linken (oberen) Kante geordnet dazwischen, mit gleich großen Lücken (F-897). Ein Schritt.
 func (s *Sitzung) Verteilen(waagerecht bool) bool {
 	if !s.KannVerteilen() {
 		return false
@@ -388,26 +434,33 @@ func (s *Sitzung) Verteilen(waagerecht bool) bool {
 		}
 		return 0
 	})
-	h := huelle(os)
+	// Hinten bleibt das mit der größten rechten Kante (bei Gleichstand das spätere); es rückt ans Ende der Reihe.
+	hinten := 1
+	for i := 2; i < len(os); i++ {
+		if bis(os[i].Grenzen()) >= bis(os[hinten].Grenzen()) {
+			hinten = i
+		}
+	}
+	os = append(slices.Delete(slices.Clone(os), hinten, hinten+1), os[hinten])
 	summe := 0.0
-	for _, o := range os {
+	for _, o := range os[1 : len(os)-1] {
 		summe += bis(o.Grenzen()) - von(o.Grenzen())
 	}
-	luecke := (bis(h) - von(h) - summe) / float64(len(os)-1)
+	vorn, letzt := os[0].Grenzen(), os[len(os)-1].Grenzen()
+	luecke := (von(letzt) - bis(vorn) - summe) / float64(len(os)-1)
 	neu := make([]document.Objekt, len(os))
-	ort := von(h)
-	for i, o := range os {
-		g := o.Grenzen()
+	neu[0], neu[len(os)-1] = os[0], os[len(os)-1] // die äußeren bleiben genau, wo sie waren
+	ort := bis(vorn) + luecke
+	for i := 1; i < len(os)-1; i++ {
+		g := os[i].Grenzen()
 		v := ort - von(g)
 		if waagerecht {
-			neu[i] = Verschiebe(o, document.Pt(v, 0))
+			neu[i] = Verschiebe(os[i], document.Pt(v, 0))
 		} else {
-			neu[i] = Verschiebe(o, document.Pt(0, v))
+			neu[i] = Verschiebe(os[i], document.Pt(0, v))
 		}
 		ort += bis(g) - von(g) + luecke
 	}
-	// Die äußeren bleiben genau, wo sie waren (Rundung).
-	neu[0], neu[len(os)-1] = os[0], os[len(os)-1]
 	return s.ersetzeGewaehlte(neu)
 }
 

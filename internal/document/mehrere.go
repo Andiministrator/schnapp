@@ -96,6 +96,9 @@ func (d *Dokument) FuegeEinMehrere(os []Objekt, ueber []int) ([]int, error) {
 	if len(os) != len(ueber) {
 		return nil, ErrUnbekannt
 	}
+	if len(os) == 0 {
+		return nil, nil // nichts einzufügen: kein leerer Schritt im Verlauf (F-898)
+	}
 	if len(d.objekte)+len(os) > MaxObjekte {
 		return nil, fmt.Errorf("document: mehr als %d Objekte", MaxObjekte)
 	}
