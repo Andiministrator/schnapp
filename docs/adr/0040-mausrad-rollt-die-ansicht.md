@@ -63,9 +63,14 @@ mit Nachlauf (Gio-`fling`). Umschalt allein macht aus dem senkrechten Rad ein wa
 1. **Nachlauf und Strg (Risiko 1):** Die Art (rollen oder zoomen) gilt je Geste (`radGeste` in `internal/ui/editor.go`).
    Ein Ereignis, das höchstens 150 ms nach dem vorigen kommt, gehört zur selben Geste; Gio gibt Nachlauf-Ereignissen die
    Zeit des letzten echten Ereignisses, sie bleiben also immer in der Geste. Eine frühere Zeit als die vorige beginnt eine
-   neue Geste. Wer mitten im Drehen Strg drückt, muss kurz absetzen — das gilt in Browsern ähnlich.
+   neue Geste. Das Fenster gleitet: jedes Ereignis verlängert die Geste um 150 ms. Wer mitten im Drehen Strg drückt,
+   muss also kurz absetzen; umgekehrt zoomt das Rad nach dem Loslassen von Strg noch bis 150 ms nach dem letzten
+   Ereignis weiter. Das ist die gewählte Regel (Kritik #375 D-1).
 2. **Skala (Risiko 2):** Die Strecke wird mit `PxPerDp` malgenommen; der Inhalt folgt dem Finger auch bei Skala 2.
-   Strg+Rad bleibt ohne Skala (`radSchritt`), wie vorher.
+   Strg+Rad bleibt ohne Skala (`radSchritt`), wie vorher. Grenze (F-925): Gio rechnet in `PxPerDp` auch die
+   Textskalierung des Desktops ein (`ppdp`, aus `text-scaling-factor`), Positionen aber nur mit der Fensterskala;
+   weicht die Textskalierung von 1 ab, rollt die Ansicht um diesen Faktor weiter als der Finger. Genau ginge es erst
+   mit der Fensterskala aus dem Gio-Patch.
 3. **Gebrochener Versatz (Risiko 3):** nicht gerundet. In der Sichtprobe (`rad-375.txt`, 292 %) sind die Kanten scharf;
    bei 1:1 mit dem Touchpad bleibt es in der echten Sitzung zu prüfen.
 4. **Einpassen (Risiko 4):** Rollen beendet das Einpassen auch dann, wenn das Bild ganz ins Fenster passt (wie Inkscape);
@@ -75,5 +80,11 @@ mit Nachlauf (Gio-`fling`). Umschalt allein macht aus dem senkrechten Rad ein wa
    15 px ohne `axis_discrete`; zehn ihrer Schritte entsprechen einem echten Rastschritt.
 6. **Übersicht F1:** zwei Zeilen („Scroll the view (Shift: sideways)“ — Wheel, „Zoom at the pointer“ — Ctrl+Wheel); der
    Navigator steht nur in der README, eine dritte Zeile ließe die Übersicht im Startfenster rollen (F-705).
-7. **Zeigerform (Risiko 7):** Rad-Ereignisse gehen wie andere Zeigerereignisse durch `merkeZeiger` und fordern ein
-   Folgebild an; die Form wird damit am neuen Ort neu bestimmt.
+7. **Zeigerform (Risiko 7):** Das Rad-Ereignis fordert ein Folgebild an, und der Editor bestimmt die Zeigerform in
+   jedem Bild aus der aktuellen Abbildung neu (`merkeZeiger` läuft dagegen vor dem Rollen mit der alten; Berichtigung
+   Kritik #375 D-1).
+8. **Zoomen am Touchpad (F-923, Kritik #375 K-1):** `radSchritt` hat keine untere Grenze mehr — vorher hob sie jedes
+   Ereignis auf mindestens eine Viertelstufe (2,4 %), bei rund 100 Touchpad-Ereignissen je Sekunde also etwa elffach je
+   Sekunde, gleich wie langsam der Finger war. Der Zoom folgt jetzt der Strecke (40 px = 10 %). Nachlauf-Ereignisse
+   (gleiche Zeit wie das vorige) zoomen nicht; das Zoomen endet, wenn die Finger ruhen. Rad und Fernbedienung bleiben
+   gleich (150 px → 3 Stufen, 15 px → 0,375). Am echten Touchpad noch nicht gemessen.

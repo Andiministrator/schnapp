@@ -91,7 +91,7 @@ ruft `schnapp --screen` ohne Wert. Was dieser Aufruf tut, legt eine **Einstellun
 
 Strg+Z rückgängig; Strg+Umschalt+Z und Strg+Y wiederholen; Entf und Rücktaste löschen die Auswahl; Esc bricht einen
 Zug ab, sonst hebt es die Auswahl auf; Strg+S speichern; Strg+0 einpassen; Strg+1 100 %; Strg+W schließen. Maus: Rad
-zoomt zum Zeiger, Ziehen auf freier Fläche oder mit der mittleren Taste verschiebt die Ansicht. Während eines Zugs
+zoomt zum Zeiger (geändert durch ADR-0040: Rad rollt, Strg+Rad zoomt), Ziehen auf freier Fläche oder mit der mittleren Taste verschiebt die Ansicht. Während eines Zugs
 sind Rückgängig, Löschen, Speichern und Zoomen gesperrt (F-18, Kritik A-6). Nutzer-Doku: README.md/README.de.md.
 
 *Ergänzt durch ADR-0021: Werkzeugkürzel V/A/R/T/N, Esc in Stufen, Tab und Enter bei Texteingabe (Nachtrag 1).*

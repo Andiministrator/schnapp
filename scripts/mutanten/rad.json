@@ -66,8 +66,8 @@
     "name": "RU1 Rad zoomt ohne Strg (alte Belegung)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "if e.rad.zoomt(pe.Time, pe.Modifiers.Contain(key.ModShortcut)) {",
-    "neu": "if !e.rad.zoomt(pe.Time, pe.Modifiers.Contain(key.ModShortcut)) {"
+    "alt": "zoom, nachlauf := e.rad.art(pe.Time, pe.Modifiers.Contain(key.ModShortcut))",
+    "neu": "zoom, nachlauf := e.rad.art(pe.Time, !pe.Modifiers.Contain(key.ModShortcut))"
   },
   {
     "name": "RU2 ScrollX nicht angemeldet",
@@ -110,5 +110,68 @@
     "paket": "./internal/ui",
     "alt": "!r.gilt || t < r.zeit",
     "neu": "t < r.zeit"
+  },
+  {
+    "name": "RU8 Geste gleitet nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tr.zeit, r.gilt = t, true\n\treturn r.zoom, nachlauf",
+    "neu": "\tif !r.gilt || t-r.zeit > radGesteZeit {\n\t\tr.zeit = t\n\t}\n\tr.gilt = true\n\treturn r.zoom, nachlauf"
+  },
+  {
+    "name": "RU9 Gestenzeit 60 ms",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "const radGesteZeit = 150 * time.Millisecond",
+    "neu": "const radGesteZeit = 60 * time.Millisecond"
+  },
+  {
+    "name": "RU10 Gestenzeit 900 ms",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "const radGesteZeit = 150 * time.Millisecond",
+    "neu": "const radGesteZeit = 900 * time.Millisecond"
+  },
+  {
+    "name": "RU11 Grenze >= statt >",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "t-r.zeit > radGesteZeit",
+    "neu": "t-r.zeit >= radGesteZeit"
+  },
+  {
+    "name": "RU12 Zoom mit Skala",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\te.s.Scrollen(p, radSchritt(pe.Scroll.Y))",
+    "neu": "\t\t\t\te.s.Scrollen(p, radSchritt(pe.Scroll.Y*gtx.Metric.PxPerDp))"
+  },
+  {
+    "name": "RU13 Alt zoomt auch",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "e.rad.art(pe.Time, pe.Modifiers.Contain(key.ModShortcut))",
+    "neu": "e.rad.art(pe.Time, pe.Modifiers.Contain(key.ModShortcut) || pe.Modifiers.Contain(key.ModAlt))"
+  },
+  {
+    "name": "RU14 untere Klemme zurück",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "return math.Copysign(math.Min(3, math.Abs(dy)), dy)",
+    "neu": "return math.Copysign(math.Min(3, math.Max(0.25, math.Abs(dy))), dy)"
+  },
+  {
+    "name": "RU15 Nachlauf zoomt weiter",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase zoom && nachlauf:\n",
+    "neu": "\tcase false && nachlauf:\n"
+  },
+  {
+    "name": "RU16 Nachlauf immer erkannt",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "nachlauf = r.gilt && t == r.zeit",
+    "neu": "nachlauf = r.gilt"
   }
 ]

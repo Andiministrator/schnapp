@@ -358,7 +358,8 @@ im Fenster liegt, und sich per Klick und Ziehen verschieben lassen. Entscheidung
 - **Bedienung:** Klick zentriert die Ansicht auf die Stelle, Ziehen führt die Mitte des Ausschnitts live mit dem Zeiger
   (der Zeiger darf den Kasten verlassen, die Stelle wird auf den Kasten begrenzt); die Ansicht bleibt dabei so
   begrenzt, dass der Ausschnitt im Bild liegt (ist das Bild in einer Achse kleiner als das Fenster, steht es dort
-  mittig). Das Mausrad über dem Navigator zoomt wie über der Leinwand, nur um die Fenstermitte statt um den Zeiger (der
+  mittig). Das Mausrad über dem Navigator zoomt wie über der Leinwand (seit ADR-0040 dort nur noch mit Strg; über dem
+  Navigator weiter ohne), nur um die Fenstermitte statt um den Zeiger (der
   Zeiger steht in der Ecke, ein Zoom um ihn schöbe das Bild aus dem Fenster). Der Navigator meldet sich mit eigenem
   Zeigerziel über der Leinwand an: Klicks, Ziehen und Rad erreichen die Werkzeuge nicht. Ein Klick darin nimmt dem
   laufenden Zug nichts weg; während eines Zugs (Ziehen eines Objekts, Zuschneiden, Verschieben mit der mittleren

@@ -1765,11 +1765,18 @@ func (e *editor) zeiger(gtx layout.Context) {
 			e.s.Abbrechen()
 		case pointer.Scroll:
 			// ADR-0040: Strg+Rad zoomt zum Zeiger, das Rad allein rollt die Ansicht.
-			if e.rad.zoomt(pe.Time, pe.Modifiers.Contain(key.ModShortcut)) {
+			zoom, nachlauf := e.rad.art(pe.Time, pe.Modifiers.Contain(key.ModShortcut))
+			switch {
+			case zoom && nachlauf:
+				// Der Nachlauf des Touchpads zoomt nicht weiter (ADR-0040 Nachtrag 1 Punkt 8, F-923): Zoomen endet,
+				// wenn die Finger ruhen.
+			case zoom:
 				e.s.Scrollen(p, radSchritt(pe.Scroll.Y))
-			} else {
+			default:
 				// Gio meldet Scroll in logischen Pixeln, Positionen in Fensterpixeln: mit der Skala malnehmen, damit
-				// der Inhalt dem Finger folgt (ADR-0040 Risiko 2).
+				// der Inhalt dem Finger folgt (ADR-0040 Risiko 2). PxPerDp enthält auch die Textskalierung des
+				// Desktops (Gio: ppdp × Skala); weicht sie von 1 ab, rollt die Ansicht um diesen Faktor weiter als der
+				// Finger (F-925, bewusste Grenze bis der Gio-Patch die Fensterskala allein liefert).
 				k := float64(gtx.Metric.PxPerDp)
 				e.s.Rollen(float64(pe.Scroll.X)*k, float64(pe.Scroll.Y)*k)
 			}
@@ -1788,23 +1795,24 @@ type radGeste struct {
 
 const radGesteZeit = 150 * time.Millisecond
 
-// zoomt entscheidet für ein Rad-Ereignis zur Zeit t mit gedrücktem Strg (strg), ob es zoomt.
-func (r *radGeste) zoomt(t time.Duration, strg bool) bool {
+// art entscheidet für ein Rad-Ereignis zur Zeit t mit gedrücktem Strg (strg), ob es zoomt, und ob es Nachlauf ist
+// (dieselbe Zeit wie das vorige Ereignis der Geste: Gio gibt Nachlauf-Ticks die Zeit des letzten echten Ereignisses).
+// Das Fenster gleitet: Jedes Ereignis der Geste verlängert sie um radGesteZeit.
+func (r *radGeste) art(t time.Duration, strg bool) (zoom, nachlauf bool) {
+	nachlauf = r.gilt && t == r.zeit
 	if !r.gilt || t < r.zeit || t-r.zeit > radGesteZeit {
 		r.zoom = strg
 	}
 	r.zeit, r.gilt = t, true
-	return r.zoom
+	return r.zoom, nachlauf
 }
 
-// radSchritt rechnet das Mausrad in Rastschritte um. Gio liefert Pixel; ein Rastschritt des Mausrads ergibt je nach
-// System 10–120. Auf Schritte von etwa 10 % umrechnen und begrenzen, damit ein Touchpad nicht springt.
+// radSchritt rechnet das Mausrad in Zoomschritte zu 10 % um. Gio liefert Pixel; ein Rastschritt des Mausrads kommt
+// als 150 px (3 Schritte, Obergrenze). Eine untere Grenze gibt es nicht (F-923): Das Touchpad meldet viele kleine
+// Strecken, und der Zoom folgt dann der Strecke des Fingers statt je Ereignis mindestens 2,4 %.
 func radSchritt(scrollY float32) float64 {
 	dy := float64(scrollY) / 40
-	if dy != 0 {
-		dy = math.Copysign(math.Min(3, math.Max(0.25, math.Abs(dy))), dy)
-	}
-	return dy
+	return math.Copysign(math.Min(3, math.Abs(dy)), dy)
 }
 
 // zeigerAnsicht ist der Zeigerort in Ansichtskoordinaten für die Fußzeile (nil: Zeiger nicht im Fenster). Er wird aus

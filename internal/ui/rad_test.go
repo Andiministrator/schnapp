@@ -91,11 +91,17 @@ func TestRadGesteBehaeltIhreArt(t *testing.T) {
 	if l.e.s.Abb.Zoom <= z {
 		t.Fatalf("neue Geste mit Strg zoomt nicht: %v → %v", z, l.e.s.Abb.Zoom)
 	}
-	// Umgekehrt: Strg im Nachlauf losgelassen, die Geste zoomt weiter und rollt nicht.
-	z = l.e.s.Abb.Zoom
+	// Nachlauf einer zoomenden Geste (gleiche Zeit, Strg inzwischen losgelassen): weder zoomen noch rollen (F-923).
+	abb := l.e.s.Abb
 	l.rad(p, f32.Pt(0, -60), 2*time.Second, 0)
+	if l.e.s.Abb != abb {
+		t.Fatalf("Nachlauf der Zoom-Geste ändert die Ansicht: %+v → %+v", abb, l.e.s.Abb)
+	}
+	// Ein echtes Ereignis kurz danach ohne Strg gehört noch zur Geste: es zoomt, statt zu rollen.
+	z = l.e.s.Abb.Zoom
+	l.rad(p, f32.Pt(0, -60), 2*time.Second+50*time.Millisecond, 0)
 	if l.e.s.Abb.Zoom <= z {
-		t.Fatal("Nachlauf nach losgelassenem Strg zoomt nicht weiter")
+		t.Fatal("Ereignis 50 ms nach losgelassenem Strg zoomt nicht weiter")
 	}
 	// Ein Ereignis mit kleinerer Zeit (Zeitquelle springt) beginnt eine neue Geste.
 	z = l.e.s.Abb.Zoom
@@ -138,5 +144,68 @@ func TestRadImZugTutNichts(t *testing.T) {
 	l.rad(a, f32.Pt(0, -120), 2*time.Second, key.ModShortcut)
 	if l.e.s.Abb != abb {
 		t.Fatalf("Rad im Zug ändert die Ansicht: %+v → %+v", abb, l.e.s.Abb)
+	}
+}
+
+// TestRadGesteGleitet prüft F-924 (Kritik #375 V-1): das Fenster der Geste gleitet mit jedem Ereignis, die Grenze liegt
+// bei 150 ms nach dem vorigen Ereignis.
+func TestRadGesteGleitet(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1000, 700))
+	p := l.bildPt(image.Pt(10, 22))
+	// Lange rollende Geste: fünf Ereignisse im 100-ms-Abstand, dann Strg — alles noch dieselbe Geste.
+	for i := range 6 {
+		l.rad(p, f32.Pt(0, 5), time.Second+time.Duration(i)*100*time.Millisecond, 0)
+	}
+	z := l.e.s.Abb.Zoom
+	l.rad(p, f32.Pt(0, -40), 1600*time.Millisecond, key.ModShortcut)
+	if l.e.s.Abb.Zoom != z {
+		t.Fatalf("Strg mitten in einer langen Geste zoomt: %v → %v", z, l.e.s.Abb.Zoom)
+	}
+	// Genau 150 ms danach: noch dieselbe Geste (rollt); 151 ms nach dem vorigen: neue Geste, Strg zählt.
+	l.rad(p, f32.Pt(0, -40), 1750*time.Millisecond, key.ModShortcut)
+	if l.e.s.Abb.Zoom != z {
+		t.Fatalf("150 ms nach dem vorigen Ereignis beginnt schon eine neue Geste: %v → %v", z, l.e.s.Abb.Zoom)
+	}
+	l.rad(p, f32.Pt(0, -40), 1901*time.Millisecond, key.ModShortcut)
+	if l.e.s.Abb.Zoom <= z {
+		t.Fatalf("151 ms nach dem vorigen Ereignis gilt Strg nicht: %v → %v", z, l.e.s.Abb.Zoom)
+	}
+}
+
+// TestRadUmschalterUndSkala prüft F-924 (Kritik #375 V-1): Alt (oder ein anderer Umschalter außer Strg) zoomt nicht;
+// Strg+Rad zoomt ohne die Skala (ADR-0040 Nachtrag 1 Punkt 2): 40 px sind genau ein Schritt.
+func TestRadUmschalterUndSkala(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1000, 700))
+	p := l.bildPt(image.Pt(10, 22))
+	z := l.e.s.Abb.Zoom
+	v := l.e.s.Abb.Versatz
+	l.rad(p, f32.Pt(0, 120), time.Second, key.ModAlt)
+	if l.e.s.Abb.Zoom != z || l.e.s.Abb.Versatz == v {
+		t.Fatalf("Alt+Rad: Zoom %v → %v, Versatz %v → %v (Soll: rollt)", z, l.e.s.Abb.Zoom, v, l.e.s.Abb.Versatz)
+	}
+	l.skala = 2
+	l.setle()
+	z = l.e.s.Abb.Zoom
+	l.rad(p, f32.Pt(0, -40), 2*time.Second, key.ModShortcut)
+	if f := l.e.s.Abb.Zoom / z; math.Abs(f-1.1) > 1e-6 {
+		t.Fatalf("Strg+Rad 40 px bei Skala 2: Faktor %v, Soll 1,1", f)
+	}
+}
+
+// TestStrgTouchpadZoomFolgtDerStrecke prüft F-923 (Kritik #375 K-1): viele kleine Strecken des Touchpads zoomen
+// zusammen so weit wie ihre Summe, nicht je Ereignis mindestens eine Viertelstufe.
+func TestStrgTouchpadZoomFolgtDerStrecke(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1000, 700))
+	p := l.bildPt(image.Pt(10, 22))
+	z := l.e.s.Abb.Zoom
+	for i := range 100 {
+		l.r.Queue(pointer.Event{Kind: pointer.Scroll, Source: pointer.Mouse, Position: f32.Pt(float32(p.X), float32(p.Y)),
+			Scroll: f32.Pt(0, -1), Time: time.Second + time.Duration(i)*10*time.Millisecond, Modifiers: key.ModShortcut})
+		l.bild()
+	}
+	l.setle()
+	// 100 px = 2,5 Schritte zu 10 %.
+	if f := l.e.s.Abb.Zoom / z; f > math.Pow(1.1, 2.5)*1.001 || f < math.Pow(1.1, 2.5)/1.001 {
+		t.Fatalf("100 × 1 px mit Strg: Faktor %v, Soll %v", f, math.Pow(1.1, 2.5))
 	}
 }
