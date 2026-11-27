@@ -1,0 +1,23 @@
+[
+  {
+    "name": "WW1 Wechsel hebt die Auswahl nicht auf",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase w != s.Werkzeug && w != WerkzeugAuswahl:\n",
+    "neu": "\tcase false:\n"
+  },
+  {
+    "name": "WW2 auch Auswählen hebt auf",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "case w != s.Werkzeug && w != WerkzeugAuswahl:",
+    "neu": "case w != s.Werkzeug:"
+  },
+  {
+    "name": "WW3 dasselbe Werkzeug hebt auf",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "case w != s.Werkzeug && w != WerkzeugAuswahl:",
+    "neu": "case w != WerkzeugAuswahl:"
+  }
+]

@@ -122,8 +122,8 @@
     "name": "MA18 Werkzeugwechsel behält die weiteren",
     "datei": "internal/canvas/werkzeuge.go",
     "paket": "./internal/canvas",
-    "alt": "\t\ts.mf.mehr = nil // ein Werkzeugwechsel",
-    "neu": "\t\t// ein Werkzeugwechsel"
+    "alt": "\t\ts.mf.mehr = nil // ein Wechsel zu Auswählen",
+    "neu": "\t\t// ein Wechsel zu Auswählen"
   },
   {
     "name": "MA19 Rückgängig: kein Nachrücken",

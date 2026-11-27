@@ -159,11 +159,15 @@ func (s *Sitzung) SetzeWerkzeug(w Werkzeug) bool {
 	s.TextBestaetigen()
 	s.pipette = false
 	s.tb = textBereich{} // ein Werkzeugwechsel beendet den Bereichsmodus (ADR-0035)
-	if w != s.Werkzeug {
-		s.mf.mehr = nil // ein Werkzeugwechsel hebt die weiteren gewählten auf, die Hauptauswahl bleibt (ADR-0039 Punkt 6)
-	}
-	if ohneGriffe(w) {
+	switch {
+	case ohneGriffe(w):
 		s.waehleNur(0) // F-174: sonst zöge ein Zug nahe einem Griff den Griff statt den Rahmen
+	case w != s.Werkzeug && w != WerkzeugAuswahl:
+		// Ein anderes Werkzeug hebt jede Auswahl auf, die rechte Leiste zeigt dann das Werkzeug (ADR-0039 Nachtrag 3,
+		// Andi 27.11.2026); zu Auswählen (V, Esc, Ebenenliste, Strg+A) bleibt sie.
+		s.waehleNur(0)
+	case w != s.Werkzeug:
+		s.mf.mehr = nil // ein Wechsel zu Auswählen hebt die weiteren gewählten auf, die Hauptauswahl bleibt (ADR-0039 Punkt 6)
 	}
 	if s.feld == FeldSchatten && w != s.Werkzeug {
 		// Das Feld Schatten wählt man bewusst am Farbfeld der Leiste; mit einem anderen Werkzeug färbte die Farbwahl

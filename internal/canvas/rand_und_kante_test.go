@@ -136,8 +136,10 @@ func TestGriffImRandBleibtGreifbar(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.Auswahl = id
+	// Erst das Werkzeug, dann die Auswahl: ein Werkzeugwechsel hebt sie auf (ADR-0039 Nachtrag 3); gewählt mit einem
+	// Zeichenwerkzeug ist etwa das gerade gezeichnete Objekt.
 	s.SetzeWerkzeug(WerkzeugNummer)
+	s.Auswahl = id
 	vor := len(s.D.Objekte())
 	s.Druecken(f(204, 30), TastePrimaer) // 4 px hinter dem Bildrand, am Endgriff
 	if !s.Zieht() {

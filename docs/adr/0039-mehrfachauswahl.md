@@ -111,3 +111,16 @@ Ansicht auch am Touchpad ohne mittlere Taste. „Mausrad rollt, Strg+Rad zoomt�
    er dort — Pfeile und Enter bedienen die Leiste weiter (ADR-0036 Punkt 1, F-912). Ein Mausklick auf eine Vorschau
    oder ein Wechsel aus dem Menü gibt ihn der Leinwand, auch wenn ein Knopf der Leiste ihn vorher hielt (F-918). Menü, Übersicht, Tafel, volle Ansicht,
    Texteingabe, Fokusverlust der Leinwand und des Fensters lassen eine gehaltene Leertaste los.
+
+## Nachtrag 3 (27.11.2026, Andi; Umsetzung Claude Opus 5.5, Karte #382)
+Andi, 27.11.2026: „wenn ich links ein neues werkzeug auswähle, sollte die markierung des alten objekts verschwinden und
+rechts die details zum neuen werkzeug angezeigt werden“. Ändert Punkt 6:
+1. **Wechsel zu einem anderen Werkzeug als Auswählen** (Werkzeugleiste, Taste, Menü Werkzeuge) hebt jede Auswahl auf,
+   Haupt- wie weitere; die rechte Leiste zeigt danach das Werkzeug mit seinen Einstellungen, Änderungen dort gelten nur
+   für die nächsten Objekte. Vorher blieb die Hauptauswahl und die Leiste zeigte weiter das alte Objekt, sodass eine
+   Änderung für das neue Werkzeug das alte Objekt traf.
+2. **Wechsel zu Auswählen** (V, Esc, Ebenenliste, Strg+A) behält die Hauptauswahl wie bisher; die weiteren fallen weg.
+3. **Dasselbe Werkzeug noch einmal** ändert die Auswahl nicht (etwa ein per Rechtsklick gewähltes Objekt).
+4. Zuschneiden und Stauchen heben die Auswahl weiter immer auf (F-174).
+
+Test `internal/canvas/werkzeugwechsel_test.go`, Mutanten `scripts/mutanten/werkzeugwechsel.json` (WW1–WW3; die weiteren beim Wechsel zu Auswählen hält MA18 in `mehrfachauswahl.json`).
