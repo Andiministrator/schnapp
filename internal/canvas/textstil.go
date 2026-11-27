@@ -69,6 +69,7 @@ func (s *Sitzung) textZiel() (document.Text, bool, bool) {
 // AktuellerTextStil ist, was die Leiste zeigt: die Angaben des Texts in der Eingabe oder des gewählten Texts, sonst die
 // des Werkzeugs.
 func (s *Sitzung) AktuellerTextStil() TextStil {
+	s.stileAngleichen()
 	if t, _, ok := s.textZiel(); ok {
 		return TextStil{Schrift: t.Schrift, Grad: t.Schriftgrad, Fett: t.Fett, Kursiv: t.Kursiv,
 			Unterstrichen: t.Unterstrichen, Durchgestrichen: t.Durchgestrichen, Ausrichtung: t.Ausrichtung,

@@ -178,22 +178,22 @@
     "name": "UB26 Paar der Sprechblase wird nicht aus dem Text gelesen",
     "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
-    "alt": "func (s *Sitzung) stilVon(w Werkzeug) Stil {\n\tw = paarSchluessel(w)\n",
-    "neu": "func (s *Sitzung) stilVon(w Werkzeug) Stil {\n"
+    "alt": "func (s *Sitzung) stilVon(w Werkzeug) Stil {\n\ts.stileAngleichen()\n\tw = paarSchluessel(w)\n",
+    "neu": "func (s *Sitzung) stilVon(w Werkzeug) Stil {\n\ts.stileAngleichen()\n"
   },
   {
     "name": "UB27 Werkzeugwechsel zur Sprechblase legt das Paar nicht ein",
     "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
-    "alt": "func (s *Sitzung) wechsleStil(w Werkzeug) {\n\tw = paarSchluessel(w)\n",
-    "neu": "func (s *Sitzung) wechsleStil(w Werkzeug) {\n"
+    "alt": "func (s *Sitzung) wechsleStil(w Werkzeug) {\n\ts.stileAngleichen()\n\tw = paarSchluessel(w)\n",
+    "neu": "func (s *Sitzung) wechsleStil(w Werkzeug) {\n\ts.stileAngleichen()\n"
   },
   {
     "name": "UB28 Farbe der Sprechblase landet nicht im Paar des Texts",
     "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
-    "alt": "func (s *Sitzung) aendereStil(w Werkzeug, f func(*Stil)) {\n\tw = paarSchluessel(w)\n",
-    "neu": "func (s *Sitzung) aendereStil(w Werkzeug, f func(*Stil)) {\n"
+    "alt": "func (s *Sitzung) aendereStil(w Werkzeug, f func(*Stil)) {\n\ts.stileAngleichen()\n\tw = paarSchluessel(w)\n",
+    "neu": "func (s *Sitzung) aendereStil(w Werkzeug, f func(*Stil)) {\n\ts.stileAngleichen()\n"
   },
   {
     "name": "UB29 Text mit Spitze zählt als Text",

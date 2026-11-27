@@ -114,8 +114,8 @@ type Sitzung struct {
 	// (wirksam nur mit Füllung, AktivesFeld).
 	paarW Werkzeug
 	stile map[Werkzeug]Stil
-	// stilFaktor ist der Faktor, zu dem die Stile gerechnet sind (KantenFaktor beim Anlegen der Sitzung): Zuschneiden
-	// oder Stauchen ändert den Faktor des Dokuments, nicht die gemerkten Stile (F-927).
+	// stilFaktor ist der Faktor, zu dem die Stile gerechnet sind; ändert sich der des Dokuments (Zuschnitt, Stauchen,
+	// Rückgängig), rechnet stileAngleichen alle Stile um (F-927, F-934).
 	stilFaktor float64
 	// zugStil ist der Stil eines Werkzeugs vor einem Regler- oder Farbzug; ein Abbruch stellt ihn her (F-931).
 	zugStil zugStilStand
@@ -249,6 +249,7 @@ func (s *Sitzung) toleranz() float64 { return Toleranz / s.Abb.Zoom }
 // Eine laufende Texteingabe wird vorher bestätigt. Während eines Zugs ist ein weiterer Druck wirkungslos, ebenso
 // während des Speicherns (F-280).
 func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
+	s.stileAngleichen() // neue Objekte nehmen s.Stil: zum aktuellen Faktor (F-934)
 	s.druecken(p, t, s.leertaste && s.zug != zugText)
 }
 

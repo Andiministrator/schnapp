@@ -31,22 +31,22 @@
     "name": "VZ5 Countdown schließt den Hinweis nicht",
     "datei": "cmd/schnapp/countdown.go",
     "paket": "./cmd/schnapp",
-    "alt": "\tif id != 0 {\n\t\tif err := countdownSchliesse(ctx, id)",
-    "neu": "\tif false {\n\t\tif err := countdownSchliesse(ctx, id)"
+    "alt": "\tif id != 0 {\n\t\tctx, abbrechen",
+    "neu": "\tif false {\n\t\tctx, abbrechen"
   },
   {
     "name": "VZ6 letzter Hinweis bleibt bis zum Ende",
     "datei": "cmd/schnapp/countdown.go",
     "paket": "./cmd/schnapp",
-    "alt": "\t\t\tbis = ende.Add(-hinweisWeg)",
-    "neu": "\t\t\tbis = ende"
+    "alt": "\tschluss := ende.Add(-hinweisWeg)\n",
+    "neu": "\tschluss := ende\n"
   },
   {
     "name": "VZ7 Countdown ersetzt nicht",
     "datei": "cmd/schnapp/countdown.go",
     "paket": "./cmd/schnapp",
-    "alt": "\t\t\tid = neu\n",
-    "neu": "\t\t\t_ = neu\n"
+    "alt": "\t\t\t\tid, gezeigt = neu, n\n",
+    "neu": "\t\t\t\t_, gezeigt = neu, n\n"
   },
   {
     "name": "VZ8 Einstellung ohne Obergrenze",
@@ -68,5 +68,47 @@
     "paket": "./internal/notify",
     "alt": "\treturn schicke(ctx, ersetzt, titel, text, 1, kurz)",
     "neu": "\treturn schicke(ctx, ersetzt, titel, text, 2, kurz)"
+  },
+  {
+    "name": "VZ11 Countdown vergisst die Kennung nach einem Fehler",
+    "datei": "cmd/schnapp/countdown.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\t\tdiagnose(fehler, \"Countdown-Hinweis: %v\", err)\n\t\t\t\taufgegeben = true\n",
+    "neu": "\t\t\t\tdiagnose(fehler, \"Countdown-Hinweis: %v\", err)\n\t\t\t\taufgegeben, id = true, 0\n"
+  },
+  {
+    "name": "VZ12 hängender Dienst wird weiter gefragt",
+    "datei": "cmd/schnapp/countdown.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\t\taufgegeben = true\n",
+    "neu": "\t\t\t\t_ = aufgegeben\n"
+  },
+  {
+    "name": "VZ13 kein Abstand nach spätem Schließen",
+    "datei": "cmd/schnapp/countdown.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif weg := countdownJetzt().Add(hinweisWeg); weg.After(ende) {",
+    "neu": "\t\tif weg := countdownJetzt(); weg.After(ende) {"
+  },
+  {
+    "name": "VZ14 Zahl aus einem Zähler statt der Restzeit",
+    "datei": "cmd/schnapp/countdown.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif !aufgegeben && n != gezeigt {",
+    "neu": "\t\tif !aufgegeben && gezeigt == 0 {"
+  },
+  {
+    "name": "VZ15 Hilfe ohne --delay",
+    "datei": "cmd/schnapp/main.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\"  --delay=SEC    \" + i18n.T(\"Wait SEC seconds before capturing (0 to 60), with a countdown notification\") + \"\\n\" +\n",
+    "neu": ""
+  },
+  {
+    "name": "VZ16 Tafel ohne Stufe 10",
+    "datei": "internal/ui/einstellungen_logik.go",
+    "paket": "./internal/ui",
+    "alt": "var verzoegerungStufen = []int{3, 5, 10}",
+    "neu": "var verzoegerungStufen = []int{3, 5}"
   }
 ]

@@ -126,10 +126,17 @@ func TestCountdown(t *testing.T) {
 
 	// Ohne Dienst: kein Schließen, trotzdem volle Wartezeit.
 	start = jetzt
-	countdownErsetze = func(context.Context, uint32, string, string) (uint32, error) { return 0, errors.New("kein Dienst") }
+	aufrufe := 0
+	countdownErsetze = func(context.Context, uint32, string, string) (uint32, error) {
+		aufrufe++
+		return 0, errors.New("kein Dienst")
+	}
 	countdownSchliesse = func(context.Context, uint32) error { t.Error("schließt ohne Hinweis"); return nil }
 	countdown(2, io.Discard)
 	if jetzt.Sub(start) != 2*time.Second {
 		t.Errorf("ohne Dienst wartete %v", jetzt.Sub(start))
+	}
+	if aufrufe != 1 { // nach dem ersten Fehler keine weiteren Versuche (F-938)
+		t.Errorf("ohne Dienst %d Versuche, Soll 1", aufrufe)
 	}
 }

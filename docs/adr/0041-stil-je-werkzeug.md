@@ -73,3 +73,15 @@ Greenshot und Photoshop merken die Werkzeugoptionen je Werkzeug über Sitzungen 
    nicht in `tools.ini`.
 6. **Probe-Läufe (F-932):** Im Drehbuch-Lauf (`SCHNAPP_PROBE_LEISTE_AUS`, nur Probe-Build) wird `tools.ini` weder
    gelesen noch geschrieben.
+
+## Nachtrag 2 (27.11.2026, Verify #383, F-934 bis F-937)
+1. **Ein Faktor je Sitzung (F-934, Variante A):** Ändert sich der Faktor des Dokuments (Zuschnitt, Stauchen, Rückgängig,
+   „Ganzes Bild“), rechnet die Sitzung beim nächsten Zugriff alle Stile um (`stileAngleichen`: `Stil`, `stile`, der
+   Merker eines laufenden Zugs, `stilFaktor`). Schnellstile, Regler, Schatten und `tools.ini` rechnen damit alle mit
+   demselben Faktor; die Strichstärke eines Werkzeugs folgt dem Bild wie die Voreinstellung (4K mit 12 px, auf
+   500×200 zugeschnitten: 6 px). `tools.ini` ändert sich durch einen Zuschnitt weiter nicht (F-927). Verworfen:
+   Variante B (Stile bleiben beim Anfangsfaktor, nur Schnellstile angeglichen) — der Regler bliebe eine Ausnahme.
+2. **Rundung beim Laden (F-935):** nach dem Malnehmen auf Hundertstel; 2.333 bei Faktor 3 wird wieder 7.
+3. **Texteingabe mit Esc (F-937):** Wer in der Texteingabe Schrift, Farbe oder Schatten ändert und den Text dann mit Esc
+   verwirft, behält die Änderung im Stil des Werkzeugs (und in `tools.ini`). Die Wahl galt dem Werkzeug, nicht dem
+   verworfenen Text; anders als ein abgebrochener Regler-Zug (Nachtrag 1 Punkt 5) ist sie abgeschlossen.

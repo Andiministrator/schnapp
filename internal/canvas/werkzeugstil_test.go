@@ -280,3 +280,25 @@ func TestAbgebrochenerZugLaesstStil(t *testing.T) {
 		t.Errorf("Breitenzug abgeschlossen: %v", b)
 	}
 }
+
+// F-934 (Verify #383 N-1, Variante A): Ändert der Zuschnitt den Faktor, rechnet die Sitzung auch die gemerkten Stile
+// der nicht aktiven Werkzeuge um; tools.ini bleibt gleich.
+func TestZuschnittRechnetGemerkteStileUm(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 3840, 2160))) // Faktor 2
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := NeueSitzung(d)
+	s.SetzeWerkzeug(WerkzeugKasten)
+	s.SetzeBreite(20)
+	s.SetzeWerkzeug(WerkzeugPfeil)
+	if err := d.SetzeZuschnitt(image.Rect(0, 0, 500, 200)); err != nil {
+		t.Fatal(err)
+	}
+	if b := s.stilVon(WerkzeugKasten).Breite; b != 10 {
+		t.Errorf("Kasten nach dem Zuschnitt: %v, Soll 10", b)
+	}
+	if b := s.Breite(); b != StandardStil().Breite {
+		t.Errorf("aktiver Pfeil nach dem Zuschnitt: %v, Soll %v", b, StandardStil().Breite)
+	}
+}

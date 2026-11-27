@@ -2067,7 +2067,7 @@ msgid "Include in the screenshot"
 msgstr "Mit aufnehmen"
 
 msgid "--cursor and --no-cursor override it for one capture."
-msgstr "--cursor und --no-cursor gelten für eine Aufnahme davor."
+msgstr "--cursor und --no-cursor gehen für eine einzelne Aufnahme vor."
 
 msgid "Include the mouse pointer or not (default: as set in the settings, off)"
 msgstr "Mauszeiger mit aufnehmen oder nicht (Voreinstellung: laut Einstellung, aus)"

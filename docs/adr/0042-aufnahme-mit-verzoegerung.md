@@ -34,3 +34,13 @@ klickt. Snagit, Spectacle und Flameshot bieten deshalb eine Wartezeit vor der Au
 `internal/notify` (`Ersetze`); `internal/settings` (`Verzoegerung`, `MaxVerzoegerung`); Tafel
 `internal/ui/einstellungen_logik.go`. Tests und Mutanten `scripts/mutanten/verzoegerung.json`. Echtlauf mit
 Benachrichtigung in der Plasma-Sitzung offen.
+
+## Nachtrag 1 (27.11.2026, Kritik #338, F-938, F-939, F-941)
+1. **Wartezeit hängt nur an der Uhr (F-938):** Jeder Hinweis hat eine Frist von 800 ms; nach dem ersten Fehler gibt der
+   Countdown die Hinweise auf und wartet nur noch. Die angezeigte Zahl ist die aufgerundete Restzeit, ein Hinweis wird
+   nur ersetzt, wenn sie sich ändert. Vorher verlängerte ein hängender Dienst `--delay=3` auf 15 s.
+2. **Abstand zum Schließen (F-939):** Kam das Schließen des letzten Hinweises später als 600 ms vor dem Ende (langsamer
+   Dienst), wartet der Countdown 600 ms ab dem Schließen; ein sauberes Bild geht vor der genauen Gesamtzeit.
+3. **Abbrechen (F-941, Entscheidung Claude):** Ein laufender Countdown lässt sich nur mit Strg+C im Terminal abbrechen;
+   vom Tastenkürzel gestartet wartet er ab, beim Bereich führt Esc im Overlay heraus. Eine Aktion „Abbrechen“ am
+   Hinweis (`ActionInvoked`) kommt erst mit dem Menü „Neue Aufnahme“ (#341) in Betracht; bis dahin bleibt es so.

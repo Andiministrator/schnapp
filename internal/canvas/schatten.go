@@ -31,6 +31,7 @@ func (s *Sitzung) schattenZiel() int {
 
 // Schatten ist der Schatten, den die rechte Leiste zeigt.
 func (s *Sitzung) Schatten() document.Schatten {
+	s.stileAngleichen()
 	if o, ok := s.schattenObjekt(); ok {
 		return o.Ebenenwerte().Schatten
 	}

@@ -33,18 +33,34 @@ func werkzeugAbschnitt(w Werkzeug) string {
 	return ""
 }
 
-// faktorDerStile ist der Faktor, zu dem die Stile der Sitzung gerechnet sind (stilFaktor, F-927); ohne NeueSitzung
-// der des Dokuments.
-func (s *Sitzung) faktorDerStile() float64 {
-	if s.stilFaktor >= 1 {
-		return s.stilFaktor
+// stileAngleichen rechnet alle Stile der Sitzung (Stil, stile, der Merker eines laufenden Zugs) um, wenn sich der
+// Faktor des Dokuments seit dem letzten Abgleich geändert hat (Zuschnitt, Stauchen, Rückgängig; ADR-0041 Nachtrag 2,
+// F-934). Damit gilt in der Sitzung immer ein Faktor: Schnellstile, Regler und tools.ini rechnen gleich, und die
+// Strichstärke eines Werkzeugs folgt dem Bild wie die Voreinstellung (F-927 bleibt behoben: tools.ini ändert sich
+// durch einen Zuschnitt nicht).
+func (s *Sitzung) stileAngleichen() {
+	f := s.dokFaktor()
+	if s.stilFaktor < 1 {
+		s.stilFaktor = f
+		return
 	}
-	return s.faktor()
+	if f == s.stilFaktor {
+		return
+	}
+	k := f / s.stilFaktor
+	s.Stil = stilMal(s.Stil, k)
+	for w, st := range s.stile {
+		s.stile[w] = stilMal(st, k)
+	}
+	if s.zugStil.gilt {
+		s.zugStil.vor = stilMal(s.zugStil.vor, k)
+	}
+	s.stilFaktor = f
 }
 
-// standardStilFuer ist die Voreinstellung des Werkzeugs w zum Faktor der Stile.
+// standardStilFuer ist die Voreinstellung des Werkzeugs w zum Faktor des Dokuments.
 func (s *Sitzung) standardStilFuer(w Werkzeug) Stil {
-	st := StilMitFaktor(int(s.faktorDerStile()))
+	st := StilMitFaktor(int(s.faktor()))
 	p := standardPaar(w)
 	st.Farbe, st.Fuellung = p.vorn, p.fuellung
 	return st
@@ -52,6 +68,7 @@ func (s *Sitzung) standardStilFuer(w Werkzeug) Stil {
 
 // stilVon ist der gemerkte Stil des Werkzeugs w (Voreinstellung, wenn es noch keinen hat).
 func (s *Sitzung) stilVon(w Werkzeug) Stil {
+	s.stileAngleichen()
 	w = paarSchluessel(w)
 	if w == s.paarWerkzeug() {
 		return s.Stil
@@ -64,6 +81,7 @@ func (s *Sitzung) stilVon(w Werkzeug) Stil {
 
 // aendereStil ändert den Stil des Werkzeugs w: Sitzung.Stil, wenn w das aktive ist, sonst den gemerkten.
 func (s *Sitzung) aendereStil(w Werkzeug, f func(*Stil)) {
+	s.stileAngleichen()
 	w = paarSchluessel(w)
 	if w == s.paarWerkzeug() || !farbWerkzeug(w) {
 		f(&s.Stil)
@@ -94,6 +112,7 @@ func (s *Sitzung) aendereZielStil(f func(*Stil)) { s.aendereStil(s.stilZiel(), f
 // wechsleStil legt den Stil des Werkzeugs w in Stil (beim Wechsel auf ein Werkzeug mit Stil); der bisherige wird
 // gemerkt.
 func (s *Sitzung) wechsleStil(w Werkzeug) {
+	s.stileAngleichen()
 	w = paarSchluessel(w)
 	alt := s.paarWerkzeug()
 	if !farbWerkzeug(w) || w == alt {
@@ -131,6 +150,7 @@ func gerundet(st Stil) Stil {
 
 // WerkzeugStile sind die Stile der Werkzeuge, die einen haben (benutzt oder geladen), auf Faktor 1 für tools.ini.
 func (s *Sitzung) WerkzeugStile() []settings.WerkzeugStil {
+	s.stileAngleichen()
 	var r []settings.WerkzeugStil
 	for _, w := range stilWerkzeuge {
 		st, ok := s.stile[w]
@@ -140,7 +160,7 @@ func (s *Sitzung) WerkzeugStile() []settings.WerkzeugStil {
 		if !ok {
 			continue
 		}
-		st = gerundet(stilMal(st, 1/s.faktorDerStile()))
+		st = gerundet(stilMal(st, 1/s.faktor()))
 		r = append(r, settings.WerkzeugStil{
 			Stil: settings.Stil{Art: werkzeugAbschnitt(w), Farbe: st.Farbe, Fuellung: st.Fuellung, Breite: st.Breite,
 				Schriftgrad: st.Schriftgrad, Radius: st.Radius, Schrift: st.Schrift, Fett: st.Fett, Kursiv: st.Kursiv,
@@ -153,12 +173,15 @@ func (s *Sitzung) WerkzeugStile() []settings.WerkzeugStil {
 }
 
 // SetzeWerkzeugStile übernimmt gemerkte Stile (Faktor 1, aus tools.ini oder einer vorigen Sitzung): Schlüssel, die
-// nicht gesetzt sind, behalten die Voreinstellung des Werkzeugs; ein Wert, der mal dem Faktor die Grenzen sprengt,
-// ebenso.
+// nicht gesetzt sind, behalten die Voreinstellung des Werkzeugs; ein Wert, der mal dem Faktor eine Grenze sprengte,
+// wird auf sie begrenzt (F-929).
 func (s *Sitzung) SetzeWerkzeugStile(liste []settings.WerkzeugStil) {
-	f := s.faktorDerStile()
+	s.stileAngleichen()
+	f := s.faktor()
 	// begrenze nimmt einen Wert der Datei mal f, höchstens bis zur Grenze (F-929: nicht still die Voreinstellung).
-	begrenze := func(v, grenze float64) float64 { return math.Min(v*f, grenze) }
+	// Nach dem Malnehmen auf Hundertstel gerundet (F-935): 7 px bei Faktor 3 stehen als 2.333 in der Datei und werden
+	// wieder 7, nicht 6,999.
+	begrenze := func(v, grenze float64) float64 { return math.Min(math.Round(v*f*100)/100, grenze) }
 	for _, e := range liste {
 		var w Werkzeug
 		ok := false
@@ -220,8 +243,8 @@ func (s *Sitzung) SetzeWerkzeugStile(liste []settings.WerkzeugStil) {
 		if gilt("shadow") {
 			an := st.Schatten.An
 			sch := e.Schatten
-			sch.Laenge *= f
-			sch.Weich *= f
+			sch.Laenge = math.Round(sch.Laenge*f*100) / 100
+			sch.Weich = math.Round(sch.Weich*f*100) / 100
 			st.Schatten = gueltigerSchatten(sch)
 			st.Schatten.An = an
 		}

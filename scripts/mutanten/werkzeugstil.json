@@ -24,14 +24,14 @@
     "name": "WS4 Laden ohne Faktor",
     "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
-    "alt": "\tf := s.faktorDerStile()\n",
+    "alt": "\tf := s.faktor()\n",
     "neu": "\tf := 1.0\n"
   },
   {
     "name": "WS5 Speichern ohne Faktor",
     "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
-    "alt": "st = gerundet(stilMal(st, 1/s.faktorDerStile()))",
+    "alt": "st = gerundet(stilMal(st, 1/s.faktor()))",
     "neu": "st = gerundet(stilMal(st, 1))"
   },
   {
@@ -105,18 +105,11 @@
     "neu": "\t\t\ts.Schatten = sch\n"
   },
   {
-    "name": "WS17 Stile durch den aktuellen Faktor geteilt",
-    "datei": "internal/canvas/werkzeugstil.go",
-    "paket": "./internal/canvas",
-    "alt": "st = gerundet(stilMal(st, 1/s.faktorDerStile()))",
-    "neu": "st = gerundet(stilMal(st, 1/s.faktor()))"
-  },
-  {
     "name": "WS18 ohne Rundung",
     "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
-    "alt": "st = gerundet(stilMal(st, 1/s.faktorDerStile()))",
-    "neu": "st = stilMal(st, 1/s.faktorDerStile())"
+    "alt": "r := func(v float64) float64 { return math.Round(v*1000) / 1000 }",
+    "neu": "r := func(v float64) float64 { return v }"
   },
   {
     "name": "WS19 Grenze verwirft statt zu begrenzen",
@@ -164,7 +157,7 @@
     "name": "WS26 Schatten nicht mal Faktor",
     "datei": "internal/canvas/werkzeugstil.go",
     "paket": "./internal/canvas",
-    "alt": "\t\t\tsch.Laenge *= f\n",
+    "alt": "\t\t\tsch.Laenge = math.Round(sch.Laenge*f*100) / 100\n",
     "neu": "\n"
   },
   {
@@ -173,5 +166,47 @@
     "paket": "./internal/canvas",
     "alt": "if gilt(\"fill\") && fuellWerkzeug(w) {",
     "neu": "if gilt(\"fill\") {"
+  },
+  {
+    "name": "WS29 Zugstil merkt das aktive Werkzeug",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "s.zugStil = zugStilStand{w: paarSchluessel(w), vor: s.stilVon(w), gilt: true}",
+    "neu": "s.zugStil = zugStilStand{w: s.paarWerkzeug(), vor: s.Stil, gilt: true}"
+  },
+  {
+    "name": "WS30 Stile folgen dem Faktor nicht",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\tk := f / s.stilFaktor\n",
+    "neu": "\tk := 1.0\n"
+  },
+  {
+    "name": "WS31 Abgleich nur einmal",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif f == s.stilFaktor {\n\t\treturn\n\t}\n",
+    "neu": "\tif true {\n\t\treturn\n\t}\n"
+  },
+  {
+    "name": "WS32 gemerkte Stile anderer Werkzeuge nicht umgerechnet",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.stile[w] = stilMal(st, k)\n",
+    "neu": "\t\t_, _ = w, st\n"
+  },
+  {
+    "name": "WS33 ohne Rundung beim Laden",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "return math.Min(math.Round(v*f*100)/100, grenze)",
+    "neu": "return math.Min(v*f, grenze)"
+  },
+  {
+    "name": "WS34 WerkzeugStile ohne Abgleich",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "func (s *Sitzung) WerkzeugStile() []settings.WerkzeugStil {\n\ts.stileAngleichen()\n",
+    "neu": "func (s *Sitzung) WerkzeugStile() []settings.WerkzeugStil {\n"
   }
 ]

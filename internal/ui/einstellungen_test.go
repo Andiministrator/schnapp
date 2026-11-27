@@ -658,3 +658,24 @@ func TestTafelZeichnet(t *testing.T) {
 		t.Errorf("nicht abgedunkelt: %v", a)
 	}
 }
+
+// ADR-0042 Punkt 2 (Kritik #338 T-3, F-940): Die Tafel bietet Keine/3/5/10 s; ein anderer Wert aus der Datei steht als
+// Zahl und bleibt, bis eine Stufe gewählt wird.
+func TestTafelVerzoegerungStufen(t *testing.T) {
+	tf := offeneTafel(t, "[capture]\ndelay = 7\n")
+	z := slices.IndexFunc(tafelZeilen[:], func(z tafelZeile) bool { return z.schluessel == "delay" })
+	var werte []string
+	for _, o := range tf.optionen(z) {
+		werte = append(werte, o.wert)
+	}
+	if strings.Join(werte, ",") != "0,3,5,10" {
+		t.Errorf("Stufen %v", werte)
+	}
+	if tf.optionText(z) != "7" || tf.gewaehlt(z) != -1 {
+		t.Errorf("Wert 7 aus der Datei: %q, Stelle %d", tf.optionText(z), tf.gewaehlt(z))
+	}
+	tf.waehle(z, 3)
+	if tf.wert.Verzoegerung != 10 {
+		t.Errorf("Stufe 10 gewählt: %d", tf.wert.Verzoegerung)
+	}
+}

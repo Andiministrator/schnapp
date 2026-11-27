@@ -232,6 +232,7 @@ func (s *Sitzung) strichObjekt() (document.Objekt, bool) {
 // Breite ist die Strichstärke, die die rechte Leiste zeigt: die des gewählten Pfeils oder Kastens, sonst die des
 // Werkzeugs.
 func (s *Sitzung) Breite() float64 {
+	s.stileAngleichen()
 	o, _ := s.strichObjekt()
 	switch v := o.(type) {
 	case document.Pfeil:

@@ -1381,3 +1381,11 @@ Stand: 2026-11-27 (laufend ergänzt, zuletzt Sprint 14, Karten #361 und #334 Tei
   letzten echten Ereignisses, aber die Umschalter zum Zeitpunkt des Ticks; Art einer Geste daher über die Zeit merken.
 - **Ein Test, der einen Vorzustand annimmt, erst gegen den Code prüfen** (#382): „das gerade gezeichnete Objekt ist
   gewählt“ stimmte nicht; der Test scheiterte an der Kontrolle, nicht an der neuen Regel.
+- **Ein festgehaltener Faktor löst nicht, was an anderen Stellen weiter mit dem aktuellen rechnet** (F-934): F-927 hielt
+  den Faktor der Stile fest, Schnellstile und Regler rechneten weiter mit dem des Dokuments. Bei zwei Größen, die
+  auseinanderlaufen können, eine Quelle schaffen (Abgleich beim Zugriff), statt eine Seite einzufrieren.
+- **Wartezeiten nur an der Uhr festmachen, nie an der Zahl der Runden** (F-938): Der Countdown lief `sek` Runden mit je
+  einem synchronen D-Bus-Aufruf; ein hängender Dienst machte aus 3 s 15 s. Restzeit aus der Uhr, kurze Frist je Aufruf,
+  nach dem ersten Fehler aufgeben.
+- **Testdateien nach dem Gegenstand benennen, nicht nach dem Lauf** (`repo_regeln_test.go`): übernommene Kritik- und
+  Verify-Tests vor dem Einchecken umbenennen (`…_kritik_test.go` → `…_dienst_test.go`).

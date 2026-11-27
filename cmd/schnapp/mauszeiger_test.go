@@ -3,9 +3,13 @@
 package main
 
 import (
+	"image"
+	"strings"
 	"testing"
 
+	"github.com/Andiministrator/schnapp/internal/selection"
 	"github.com/Andiministrator/schnapp/internal/settings"
+	"github.com/Andiministrator/schnapp/internal/ui"
 )
 
 // ADR-0043: --cursor und --no-cursor nur bei Aufnahmen, nicht zusammen; mehrfach dasselbe ist erlaubt.
@@ -50,18 +54,72 @@ func TestPlaneMauszeiger(t *testing.T) {
 	}
 }
 
-// ADR-0043: Jede Aufnahmeart reicht die Wahl an KWin weiter (include-cursor).
+// ADR-0043 Punkt 3: Jede Aufnahmeart reicht die Wahl an KWin weiter (include-cursor), bei jedem Aufruf (Kritik #338
+// T-1, F-940: Bereich, Wiederholen, Monitor unter dem Zeiger, alle Monitore, Fenster, benannter Monitor).
 func TestAufnahmeReichtMauszeigerWeiter(t *testing.T) {
-	for _, m := range []Modus{ModusFenster, ModusBildschirm} {
-		l := neuerLauf(t)
-		t.Setenv("XDG_STATE_HOME", t.TempDir())
-		ziel := Bildschirmziel{}
-		if m == ModusBildschirm {
-			ziel = Bildschirmziel{Name: "A"}
+	for _, f := range []struct {
+		name string
+		a    Auftrag
+		vor  func(l *lauf)
+	}{
+		{"Fenster", Auftrag{Modus: ModusFenster}, nil},
+		{"benannter Monitor", Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Name: "A"}}, nil},
+		{"Monitor unter dem Zeiger", Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Wahl: settings.WahlZeiger}}, nil},
+		{"alle Monitore", Auftrag{Modus: ModusBildschirm, Ziel: Bildschirmziel{Wahl: settings.WahlAlle}}, nil},
+		{"Bereich", Auftrag{Modus: ModusBereich}, func(l *lauf) {
+			l.overlayErg = ui.OverlayErgebnis{Monitor: 1, Bereich: image.Rect(1, 1, 4, 3)}
+		}},
+		{"Wiederholen", Auftrag{Modus: ModusWiederholen}, func(l *lauf) {
+			if err := selection.SpeichereLetzten(l.an.letzterPfad, selection.Letzter{Monitor: "B", Groesse: image.Pt(6, 4),
+				Skala: 1, Bereich: image.Rect(2, 0, 5, 2)}); err != nil {
+				t.Fatal(err)
+			}
+		}},
+	} {
+		for _, zeiger := range []bool{true, false} {
+			l := neuerLauf(t)
+			if f.vor != nil {
+				f.vor(l)
+			}
+			a := f.a
+			a.Mauszeiger = zeiger
+			l.fuehre(a)
+			if len(l.q.optionen) == 0 {
+				t.Errorf("%s: keine Aufnahme", f.name)
+			}
+			for i, o := range l.q.optionen {
+				if o.Mauszeiger != zeiger {
+					t.Errorf("%s (Zeiger %v): Aufruf %d mit %+v", f.name, zeiger, i, o)
+				}
+			}
 		}
-		l.fuehre(Auftrag{Modus: m, Ziel: ziel, Mauszeiger: true})
-		if len(l.q.optionen) == 0 || !l.q.optionen[0].Mauszeiger {
-			t.Errorf("Modus %v: Optionen %+v", m, l.q.optionen)
+	}
+}
+
+// Kritik #338 T-3 (F-940): Die Hilfe nennt --delay und --cursor/--no-cursor.
+func TestHilfeNenntDelayUndCursor(t *testing.T) {
+	for _, o := range []string{"--delay=SEC", "--cursor, --no-cursor"} {
+		if !strings.Contains(hilfe(), o) {
+			t.Errorf("Hilfe ohne %s", o)
+		}
+	}
+}
+
+// ADR-0043 Punkt 4 (Kritik #338 T-2, F-940): Der MCP-Server nimmt nie mit Zeiger auf, auf keinem Weg (benannter
+// Monitor, aktiver, alle). Eine Verzögerung kennt er nicht: er geht nicht über plane/anschluesse.aufnehmen.
+func TestMcpOhneZeiger(t *testing.T) {
+	l := neuerMcpLauf(t)
+	for _, args := range []string{`{"screen":"DP-1"}`, `{}`, `{"all":true}`} {
+		if e := l.rufe(t, "capture_screen", args); e.Fehler {
+			t.Fatalf("%s: %+v", args, e)
+		}
+	}
+	if len(l.q.optionen) < 3 {
+		t.Fatalf("Kontrolle: %d Aufnahmen", len(l.q.optionen))
+	}
+	for i, o := range l.q.optionen {
+		if o.Mauszeiger {
+			t.Errorf("MCP-Aufnahme %d mit Zeiger", i)
 		}
 	}
 }

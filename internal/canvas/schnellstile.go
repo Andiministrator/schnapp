@@ -301,8 +301,16 @@ func SchnellstilAus(e settings.Stil) (Schnellstil, bool) {
 
 // --- Stand der Sitzung ---
 
-// faktor ist der Größenfaktor des Bilds (document.KantenFaktor, wie StilMitFaktor).
-func (s *Sitzung) faktor() float64 { return float64(max(1, s.D.KantenFaktor())) }
+// faktor ist der Größenfaktor des Bilds (document.KantenFaktor, wie StilMitFaktor). Wer ihn liest, rechnet mit dem
+// Stil: hat er sich seit dem letzten Zugriff geändert (Zuschnitt, Stauchen, Rückgängig), werden die Stile vorher
+// umgerechnet (stileAngleichen, F-934).
+func (s *Sitzung) faktor() float64 {
+	s.stileAngleichen()
+	return s.dokFaktor()
+}
+
+// dokFaktor ist der Faktor des Dokuments ohne Abgleich der Stile.
+func (s *Sitzung) dokFaktor() float64 { return float64(max(1, s.D.KantenFaktor())) }
 
 // stilObjektID ist das Objekt, das ein Stil ändert: der Text in der Eingabe, sonst die Auswahl.
 func (s *Sitzung) stilObjektID() int {

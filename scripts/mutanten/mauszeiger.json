@@ -40,5 +40,54 @@
     "paket": "./internal/settings",
     "alt": "\t\t\t\te.Mauszeiger, gueltig = w, true",
     "neu": "\t\t\t\t_, gueltig = w, true"
+  },
+  {
+    "name": "MZ7 Bereich ohne Zeiger-Option",
+    "datei": "cmd/schnapp/aufnehmen.go",
+    "paket": "./cmd/schnapp",
+    "alt": "b, err := q.Bildschirm(ctx, m.Name, opt)",
+    "neu": "b, err := q.Bildschirm(ctx, m.Name, capture.Optionen{})"
+  },
+  {
+    "name": "MZ8 Wiederholen ohne Zeiger-Option",
+    "datei": "cmd/schnapp/aufnehmen.go",
+    "paket": "./cmd/schnapp",
+    "alt": "b, err := q.Bildschirm(ctx, l.Monitor, opt)",
+    "neu": "b, err := q.Bildschirm(ctx, l.Monitor, capture.Optionen{})"
+  },
+  {
+    "name": "MZ9 Monitor unter dem Zeiger ohne Zeiger-Option",
+    "datei": "cmd/schnapp/aufnehmen.go",
+    "paket": "./cmd/schnapp",
+    "alt": "b, err := q.AktiverBildschirm(ctx, opt)",
+    "neu": "b, err := q.AktiverBildschirm(ctx, capture.Optionen{})"
+  },
+  {
+    "name": "MZ10 alle Monitore ohne Zeiger-Option",
+    "datei": "cmd/schnapp/aufnehmen.go",
+    "paket": "./cmd/schnapp",
+    "alt": "b, err := q.Alle(ctx, opt)",
+    "neu": "b, err := q.Alle(ctx, capture.Optionen{})"
+  },
+  {
+    "name": "MZ11 MCP aktiver Monitor mit Zeiger",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "b, err = q.AktiverBildschirm(ctx, capture.Optionen{})",
+    "neu": "b, err = q.AktiverBildschirm(ctx, capture.Optionen{Mauszeiger: true})"
+  },
+  {
+    "name": "MZ12 MCP benannter Monitor mit Zeiger",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "b, err = q.Bildschirm(ctx, a.monitor, capture.Optionen{})",
+    "neu": "b, err = q.Bildschirm(ctx, a.monitor, capture.Optionen{Mauszeiger: true})"
+  },
+  {
+    "name": "MZ13 Hilfe ohne --cursor",
+    "datei": "cmd/schnapp/main.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\"  --cursor, --no-cursor \" + i18n.T(\"Include the mouse pointer or not (default: as set in the settings, off)\") + \"\\n\" +\n",
+    "neu": ""
   }
 ]
