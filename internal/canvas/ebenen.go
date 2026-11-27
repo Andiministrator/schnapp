@@ -55,12 +55,13 @@ func (s *Sitzung) WaehleEbene(id int) bool {
 	}
 	s.pipette = false
 	s.waehleNur(id) // auch eine frühere Hauptauswahl steht danach allein (F-895)
-	s.mf.anker = id
+	s.mf.anker, s.mf.ankerGen = id, s.mf.gen
 	return true
 }
 
 // WaehleEbeneMehr wählt aus der Ebenenliste mit Strg (strg: dazu oder heraus, wie Umschalt+Klick auf der Leinwand)
-// bzw. Umschalt (sonst: alle wählbaren Zeilen zwischen der Hauptauswahl und id; ADR-0039 Nachtrag 4 Punkt 5). Ein
+// bzw. Umschalt (sonst: alle wählbaren Zeilen zwischen dem Anker und id, sie ersetzen die Auswahl; ADR-0039 Nachtrag 4
+// Punkt 5). Ein
 // gesperrtes oder ausgeblendetes Objekt lässt sich nicht dazunehmen und ist danach allein gewählt wie nach WaehleEbene;
 // ebenso ohne Hauptauswahl.
 func (s *Sitzung) WaehleEbeneMehr(id int, strg bool) bool {
@@ -75,13 +76,15 @@ func (s *Sitzung) WaehleEbeneMehr(id int, strg bool) bool {
 	}
 	s.pipette = false
 	if strg {
-		s.mf.anker = id
-		return s.SchalteGewaehlt(id)
+		ok := s.SchalteGewaehlt(id)
+		s.mf.anker, s.mf.ankerGen = id, s.mf.gen
+		return ok
 	}
 	// Bereich vom Anker (letzter Klick ohne Umschalt) bis id; er ersetzt die bisherige Auswahl, ein zweiter Umschalt+Klick
-	// verkleinert ihn also auch (F-946). Ohne gültigen Anker gilt die Hauptauswahl.
+	// verkleinert ihn also auch (F-946). Ohne gültigen Anker (seither anders gewählt, etwa Strg+A oder ein Rahmen im
+	// Bild, F-954) gilt die Hauptauswahl.
 	anker := s.mf.anker
-	if !s.IstGewaehlt(anker) {
+	if s.mf.ankerGen != s.mf.gen || !s.IstGewaehlt(anker) {
 		anker = s.Auswahl
 	}
 	a, b := s.D.Stelle(anker), s.D.Stelle(id)
@@ -95,7 +98,7 @@ func (s *Sitzung) WaehleEbeneMehr(id int, strg bool) bool {
 		}
 	}
 	s.setzeAuswahl(id, bereich)
-	s.mf.anker = anker
+	s.mf.anker, s.mf.ankerGen = anker, s.mf.gen
 	return true
 }
 

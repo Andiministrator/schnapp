@@ -277,7 +277,7 @@ func (e *editor) ebenenZeiger(gtx layout.Context, pe pointer.Event, an bool) {
 		case p.X >= k.liste.Max.X-k.augeB:
 			e.s.SchalteGesperrt(z.id)
 		case pe.Modifiers.Contain(key.ModShortcut) || pe.Modifiers.Contain(key.ModShift):
-			// Strg: dazu oder heraus, Umschalt: Bereich bis zur Hauptauswahl (ADR-0039 Nachtrag 4 Punkt 5); kein Ziehen,
+			// Strg: dazu oder heraus, Umschalt: Bereich ab dem Anker (ADR-0039 Nachtrag 4 Punkt 5); kein Ziehen,
 			// kein Doppelklick.
 			k.letzter.id, k.letzter.zeit = 0, 0
 			e.s.WaehleEbeneMehr(z.id, pe.Modifiers.Contain(key.ModShortcut))
@@ -433,14 +433,12 @@ func (e *editor) zeichneEbenen(gtx layout.Context, x, y, breite, spalte, unten i
 	// Wahl per Tastatur oder Knopf: zur gewählten Zeile blättern.
 	if k.zeigeGewaehlte {
 		k.zeigeGewaehlte = false
-		for i, z := range zeilen {
-			if z.Haupt { // zur Hauptauswahl, nicht zur untersten gewählten (F-945)
-				oben, unten := i*k.zeileH, (i+1)*k.zeileH
-				if oben < k.versatz {
-					k.versatz = oben
-				} else if unten > k.versatz+k.liste.Dy() {
-					k.versatz = unten - k.liste.Dy()
-				}
+		if i := zeileZumZeigen(zeilen); i >= 0 { // zur Hauptauswahl, nicht zur untersten gewählten (F-945)
+			oben, unten := i*k.zeileH, (i+1)*k.zeileH
+			if oben < k.versatz {
+				k.versatz = oben
+			} else if unten > k.versatz+k.liste.Dy() {
+				k.versatz = unten - k.liste.Dy()
 			}
 		}
 	}
@@ -527,14 +525,33 @@ func (e *editor) zeichneEbenen(gtx layout.Context, x, y, breite, spalte, unten i
 // farbeAuswahlWeitere ist der Grund weiterer gewählter Zeilen: das Grün der Auswahl, halb durchscheinend.
 var farbeAuswahlWeitere = color.NRGBA{R: farbeAuswahl.R, G: farbeAuswahl.G, B: farbeAuswahl.B, A: 0x70}
 
+// ebenenZeilenGrund ist der Grund einer gewählten Zeile: die Hauptauswahl kräftig, weitere gewählte schwächer, damit
+// die Hauptauswahl erkennbar bleibt (F-945); false für nicht gewählte.
+func ebenenZeilenGrund(z canvas.EbenenZeile) (color.NRGBA, bool) {
+	switch {
+	case z.Gewaehlt && z.Haupt:
+		return farbeAuswahl, true
+	case z.Gewaehlt:
+		return farbeAuswahlWeitere, true
+	}
+	return color.NRGBA{}, false
+}
+
+// zeileZumZeigen ist die Zeile, zu der die Liste nach einer Wahl per Tastatur blättert: die der Hauptauswahl (-1: keine).
+func zeileZumZeigen(zeilen []canvas.EbenenZeile) int {
+	for i, z := range zeilen {
+		if z.Haupt {
+			return i
+		}
+	}
+	return -1
+}
+
 // zeichneEbenenZeile zeichnet eine Ebene: Grund (gewählt grün), Auge, Vorschau, Name, Schloss.
 func (e *editor) zeichneEbenenZeile(gtx layout.Context, z canvas.EbenenZeile, name string, r image.Rectangle) {
 	k := &e.ebenen
-	switch {
-	case z.Haupt && z.Gewaehlt:
-		paint.FillShape(gtx.Ops, farbeAuswahl, clip.Rect(r).Op())
-	case z.Gewaehlt: // weitere gewählte schwächer, damit die Hauptauswahl erkennbar bleibt (F-945)
-		paint.FillShape(gtx.Ops, farbeAuswahlWeitere, clip.Rect(r).Op())
+	if grund, ok := ebenenZeilenGrund(z); ok {
+		paint.FillShape(gtx.Ops, grund, clip.Rect(r).Op())
 	}
 	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(image.Rect(r.Min.X, r.Max.Y-gtx.Dp(1), r.Max.X, r.Max.Y)).Op())
 	vorn := farbeText

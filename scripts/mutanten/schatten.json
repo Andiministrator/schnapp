@@ -430,7 +430,7 @@
     "name": "SH62 Feld Schatten ohne Objektbindung",
     "datei": "internal/canvas/farbpaar.go",
     "paket": "./internal/canvas",
-    "alt": " && s.schattenZiel() == s.feldSchattenID",
+    "alt": " && s.feldZiel() == s.feldSchattenID",
     "neu": ""
   },
   {
@@ -472,7 +472,7 @@
     "name": "SH68 Feld Schatten bleibt nach Zielwechsel",
     "datei": "internal/canvas/farbpaar.go",
     "paket": "./internal/canvas",
-    "alt": "if s.feld == FeldSchatten && s.schattenZiel() != s.feldSchattenID {",
+    "alt": "if s.feld == FeldSchatten && s.feldZiel() != s.feldSchattenID {",
     "neu": "if false {"
   },
   {

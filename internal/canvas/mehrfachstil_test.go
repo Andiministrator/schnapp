@@ -585,4 +585,56 @@ func TestMehrereVieleObjekteSchnell(t *testing.T) {
 	if d := time.Since(start); d > 3*time.Second {
 		t.Errorf("20 Bilder mit 2000 gewählten dauerten %v", d)
 	}
+	// Im Breitenzug (F-953): gemerkt, nicht je Abfrage neu.
+	start = time.Now()
+	if !s.BeginneBreiteZug() {
+		t.Fatal("kein Breitenzug")
+	}
+	for i := 0; i < 20; i++ {
+		s.BreiteZugSetze(float64(2 + i%5))
+		_ = s.Ebenen()
+		_ = s.Seitenleiste()
+		_ = s.Gemischt(EigBreite)
+		_ = s.Breite()
+	}
+	s.BeendeBreiteZug()
+	if d := time.Since(start); d > 5*time.Second {
+		t.Errorf("Breitenzug über 2000 gewählte dauerte %v", d)
+	}
+}
+
+// F-952: Das Feld Schatten bleibt nach einem Schnellstil mit Schatten und nach Rückgängig gewählt.
+func TestMehrereFeldSchattenNachSchnellstil(t *testing.T) {
+	s := gemischt(t)
+	s.setzeAuswahl(1, []int{2}) // Pfeil (Haupt, ohne Schatten), Kasten mit Schatten
+	if err := s.D.Ersetzen(mitSchatten(objekt(t, s, 2), document.StandardSchatten(1))); err != nil {
+		t.Fatal(err)
+	}
+	if !s.SetzeFeld(FeldSchatten) {
+		t.Fatal("Feld Schatten nicht wählbar")
+	}
+	st := EingebauteSchnellstile(SchnellPfeil)[1]
+	st.Schatten = document.StandardSchatten(1)
+	s.WendeSchnellstilAn(st)
+	if !objekt(t, s, 1).Ebenenwerte().Schatten.An {
+		t.Fatal("Pfeil ohne Schatten")
+	}
+	if f := s.AktivesFeld(); f != FeldSchatten {
+		t.Errorf("nach Schnellstil Feld %v", f)
+	}
+	s.Rueckgaengig()
+	if f := s.AktivesFeld(); f != FeldSchatten {
+		t.Errorf("nach Rückgängig Feld %v", f)
+	}
+}
+
+// F-954: Nach einer Auswahl im Bild gilt der alte Anker der Ebenenliste nicht mehr.
+func TestEbenenlisteAnkerNachStrgA(t *testing.T) {
+	s := gemischt(t)
+	s.WaehleEbene(1)
+	s.WaehleAlle() // Hauptauswahl 3 (oberstes)
+	s.WaehleEbeneMehr(2, false)
+	if got := s.Gewaehlt(); !slices.Equal(got, []int{2, 3}) {
+		t.Errorf("gewählt %v, Soll [2 3] ab der Hauptauswahl", got)
+	}
 }

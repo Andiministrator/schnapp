@@ -108,7 +108,7 @@
     "name": "MS16 Strg in der Ebenenliste wählt Bereich",
     "datei": "internal/canvas/ebenen.go",
     "paket": "./internal/canvas",
-    "alt": "\tif strg {\n\t\ts.mf.anker = id\n\t\treturn s.SchalteGewaehlt(id)\n\t}\n",
+    "alt": "\tif strg {\n\t\tok := s.SchalteGewaehlt(id)\n\t\ts.mf.anker, s.mf.ankerGen = id, s.mf.gen\n\t\treturn ok\n\t}\n",
     "neu": ""
   },
   {
@@ -189,13 +189,6 @@
     "neu": "s.schattenZugTeile = geaenderteTeile"
   },
   {
-    "name": "MS28 Feld Schatten nicht nachgeführt (F-950)",
-    "datei": "internal/canvas/mehrfachstil.go",
-    "paket": "./internal/canvas",
-    "alt": "\t\ts.feldSchattenID = s.schattenZiel()\n",
-    "neu": ""
-  },
-  {
     "name": "MS29 Keine überschreibt den Farbton (F-948)",
     "datei": "internal/canvas/farbpaar.go",
     "paket": "./internal/canvas",
@@ -250,5 +243,33 @@
     "paket": "./internal/canvas",
     "alt": "s.Auswahl, s.mf.fuer, s.mf.mehr, s.mf.gen = haupt, haupt, mehr, s.mf.gen+1",
     "neu": "s.Auswahl, s.mf.fuer, s.mf.mehr = haupt, haupt, mehr"
+  },
+  {
+    "name": "MS37 Feld Schatten am Träger statt an der Hauptauswahl (F-952)",
+    "datei": "internal/canvas/farbpaar.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.stilMehrere() {\n\t\treturn s.Auswahl\n\t}\n\treturn s.schattenZiel()",
+    "neu": "\treturn s.schattenZiel()"
+  },
+  {
+    "name": "MS38 Anker überlebt Auswahl im Bild (F-954)",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "if s.mf.ankerGen != s.mf.gen || !s.IstGewaehlt(anker) {",
+    "neu": "if !s.IstGewaehlt(anker) {"
+  },
+  {
+    "name": "MS39 Hauptzeile gleich wie weitere (F-956)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\treturn farbeAuswahlWeitere, true\n",
+    "neu": "\t\treturn farbeAuswahl, true\n"
+  },
+  {
+    "name": "MS40 Blättern zur ersten gewählten (F-956)",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif z.Haupt {\n\t\t\treturn i\n",
+    "neu": "\t\tif z.Gewaehlt {\n\t\t\treturn i\n"
   }
 ]

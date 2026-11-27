@@ -206,15 +206,15 @@
     "name": "E32 Blättern nach oben fehlt (F-593)",
     "datei": "internal/ui/ebenen.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\t\tif oben < k.versatz {",
-    "neu": "\t\t\t\tif false {"
+    "alt": "\t\t\tif oben < k.versatz {",
+    "neu": "\t\t\tif false {"
   },
   {
     "name": "E33 Blättern nach unten fehlt (F-593)",
     "datei": "internal/ui/ebenen.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\t\t} else if unten > k.versatz+k.liste.Dy() {",
-    "neu": "\t\t\t\t} else if false {"
+    "alt": "\t\t\t} else if unten > k.versatz+k.liste.Dy() {",
+    "neu": "\t\t\t} else if false {"
   },
   {
     "name": "E34 Doppelklick öffnet das Umbenennen nicht (F-593)",

@@ -63,3 +63,19 @@ func TestEbenenlisteMehrfachUndKopf(t *testing.T) {
 		t.Errorf("Kasten %v", o.(document.Kasten).Strich.Breite)
 	}
 }
+
+// F-945/F-956: Die Hauptzeile hat einen anderen Grund als weitere gewählte; die Liste blättert zur Hauptauswahl.
+func TestEbenenZeileHaupt(t *testing.T) {
+	haupt, ok1 := ebenenZeilenGrund(canvas.EbenenZeile{Gewaehlt: true, Haupt: true})
+	weitere, ok2 := ebenenZeilenGrund(canvas.EbenenZeile{Gewaehlt: true})
+	if _, ok := ebenenZeilenGrund(canvas.EbenenZeile{}); ok || !ok1 || !ok2 || haupt == weitere {
+		t.Errorf("Grund Haupt %v, weitere %v", haupt, weitere)
+	}
+	zeilen := []canvas.EbenenZeile{{Gewaehlt: true}, {Gewaehlt: true, Haupt: true}, {Gewaehlt: true}}
+	if i := zeileZumZeigen(zeilen); i != 1 {
+		t.Errorf("Blättern zu Zeile %d, Soll 1", i)
+	}
+	if i := zeileZumZeigen(zeilen[:1]); i != -1 {
+		t.Errorf("ohne Hauptzeile %d", i)
+	}
+}

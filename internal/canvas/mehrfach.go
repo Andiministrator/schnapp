@@ -34,8 +34,9 @@ type mehrfach struct {
 	// fragt je Bild Dutzende Male, die Ebenenliste je Zeile).
 	gen    int
 	merker auswahlMerker
-	// anker ist die Zeile der Ebenenliste, ab der Umschalt+Klick den Bereich wählt (letzter Klick ohne Umschalt, F-946).
-	anker int
+	// anker ist die Zeile der Ebenenliste, ab der Umschalt+Klick den Bereich wählt (letzter Klick ohne Umschalt, F-946);
+	// er gilt nur, solange seit dem Setzen die Auswahl nicht anders geändert wurde (ankerGen == gen, F-954).
+	anker, ankerGen int
 }
 
 // auswahlMerker ist Gewaehlt zu einem Schlüssel aus Stand des Dokuments, Hauptauswahl, fuer und gen.
@@ -83,7 +84,7 @@ func (s *Sitzung) Gewaehlt() []int { return slices.Clone(s.gewaehltMerker().ids)
 // wird jedes Mal neu gerechnet.
 func (s *Sitzung) gewaehltMerker() *auswahlMerker {
 	m := &s.mf.merker
-	if !s.D.ZugLaeuft() && m.gilt && m.stand == s.D.Stand() && m.haupt == s.Auswahl && m.fuer == s.mf.fuer &&
+	if s.merkerGilt() && m.gilt && m.stand == s.D.Stand() && m.haupt == s.Auswahl && m.fuer == s.mf.fuer &&
 		m.gen == s.mf.gen {
 		return m
 	}
@@ -92,9 +93,17 @@ func (s *Sitzung) gewaehltMerker() *auswahlMerker {
 	for _, id := range ids {
 		menge[id] = true
 	}
-	*m = auswahlMerker{gilt: !s.D.ZugLaeuft(), stand: s.D.Stand(), haupt: s.Auswahl, fuer: s.mf.fuer, gen: s.mf.gen,
+	*m = auswahlMerker{gilt: s.merkerGilt(), stand: s.D.Stand(), haupt: s.Auswahl, fuer: s.mf.fuer, gen: s.mf.gen,
 		ids: ids, menge: menge}
 	return m
+}
+
+// merkerGilt meldet, ob der Merker gelten darf: ohne Zug des Dokuments (dort ändert sich der Stand nicht), und in einem
+// Zug, der die gewählten Objekte nur im Stil ändert oder gemeinsam im sichtbaren Bild verschiebt (Regler, Farbfläche,
+// Ziehen mehrerer): Ihre Wählbarkeit ändert sich dabei nicht, und gerade diese Züge fragen bei vielen gewählten je Bild
+// oft (F-953).
+func (s *Sitzung) merkerGilt() bool {
+	return !s.D.ZugLaeuft() || s.mehrZug != nil || s.zug == zugMehrere
 }
 
 // gewaehltBerechnen geht die Objekte einmal in Stapelreihenfolge durch (F-944: vorher je Kennung eine lineare Suche

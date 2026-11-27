@@ -216,10 +216,20 @@ func (s *Sitzung) Fuellbar() bool {
 	return fuellWerkzeug(s.Werkzeug)
 }
 
+// feldZiel ist, wofür das Feld Schatten gilt: bei mehreren gewählten die Hauptauswahl (der Träger des gezeigten
+// Schattens wechselt mit Schnellstil, Rückgängig oder „alle ein“, die Auswahl nicht, F-952), sonst das Objekt des
+// gezeigten Schattens (schattenZiel).
+func (s *Sitzung) feldZiel() int {
+	if s.stilMehrere() {
+		return s.Auswahl
+	}
+	return s.schattenZiel()
+}
+
 // feldAufgeben gibt das Feld Schatten auf, wenn mit einem anderen Ziel gefärbt wird als dem, für das es gewählt wurde:
 // Sonst kehrte es beim ursprünglichen Ziel ohne Klick zurück (Verify V-1 #363b, Rest F-855).
 func (s *Sitzung) feldAufgeben() {
-	if s.feld == FeldSchatten && s.schattenZiel() != s.feldSchattenID {
+	if s.feld == FeldSchatten && s.feldZiel() != s.feldSchattenID {
 		s.feld, s.hsvGemerkt = FeldVordergrund, false
 	}
 }
@@ -229,7 +239,7 @@ func (s *Sitzung) AktivesFeld() Farbfeld {
 	if s.feld == FeldFuellung && s.Fuellbar() {
 		return FeldFuellung
 	}
-	if s.feld == FeldSchatten && s.Schatten().An && s.schattenZiel() == s.feldSchattenID {
+	if s.feld == FeldSchatten && s.Schatten().An && s.feldZiel() == s.feldSchattenID {
 		return FeldSchatten
 	}
 	return FeldVordergrund
@@ -242,7 +252,7 @@ func (s *Sitzung) SetzeFeld(f Farbfeld) bool {
 		return false
 	}
 	if f == FeldSchatten {
-		s.feldSchattenID = s.schattenZiel()
+		s.feldSchattenID = s.feldZiel()
 	}
 	if s.feld != f {
 		s.feld, s.hsvGemerkt = f, false

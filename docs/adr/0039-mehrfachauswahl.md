@@ -145,7 +145,8 @@ Ersetzt Punkt 4 für den Stil und die Ebenenliste (Teil 2 der Mehrfachauswahl).
    für alle, auch wenn er zum Ausgangswert zurückkehrt (F-947). Das Kästchen „Shadow“ schaltet alle ein, wenn
    mindestens einer aus ist, sonst alle aus; ein Objekt ohne eigene Werte bekommt beim Einschalten die seines Werkzeugs.
    Nur ein Objekt, das sich dabei ändert, gibt die Änderung an sein Werkzeug (F-943), und ein gewähltes Feld „Shadow“
-   bleibt gewählt, auch wenn der Träger wechselt (F-950).
+   bleibt gewählt, auch wenn der Träger wechselt (F-950): Bei mehreren gewählten gehört es der Hauptauswahl, nicht dem
+   Träger des gezeigten Schattens, und übersteht so Schnellstil und Rückgängig (F-952).
 4. **Was die Leiste zeigt:** Sie zeigt die Abschnitte aller gewählten Arten (ein Pfeil und ein Text: Strich, Spitzen
    und Schrift). Der Kopf nennt die Zahl („Selection: 3 objects“). Spitze und Vergrößerung (Eigenschaften eines
    einzelnen Objekts, keine Stilwerte) und die Schnellstile gelten weiter der Hauptauswahl. Die Werte kommen von der
@@ -159,11 +160,12 @@ Ersetzt Punkt 4 für den Stil und die Ebenenliste (Teil 2 der Mehrfachauswahl).
    heraus, wie Umschalt+Klick auf der Leinwand; **Umschalt+Klick** wählt alle wählbaren Zeilen zwischen dem Anker (der
    zuletzt ohne Umschalt geklickten Zeile, sonst der Hauptauswahl) und der geklickten, die Hauptauswahl wird; der
    Bereich ersetzt die bisherige Auswahl, ein zweiter Umschalt+Klick verkleinert ihn also auch (wie in Dateimanagern,
-   F-946). Gesperrte und ausgeblendete Zeilen
+   F-946). Wurde seither anders gewählt (Strg+A, Rahmen oder Klick im Bild), gilt der Anker nicht mehr (F-954). Gesperrte und ausgeblendete Zeilen
    lassen sich nicht dazunehmen (Punkt 1); ein Strg- oder Umschalt-Klick auf sie wählt sie allein wie ein einfacher
    Klick, damit Strg+L und Strg+H sie freigeben. Ziehen mit Strg oder Umschalt ordnet nicht um, und es gibt keinen
    Doppelklick zum Umbenennen.
 6. **Bleibt an der Hauptauswahl:** Griffe, Texteingabe, Ebenen-Handlungen außer Doppeln und Löschen (Ausblenden,
    Sperren, Umbenennen, vor/zurück, Deckkraft) und „Save style as quick style“.
 7. **Aufwand (F-944):** Die gewählte Menge rechnet die Sitzung einmal je Stand von Dokument und Auswahl (ein Durchgang
-   durch den Stapel); Leiste und Ebenenliste fragen den Merker. 2000 gewählte Objekte bleiben bedienbar.
+   durch den Stapel); Leiste und Ebenenliste fragen den Merker, auch während Regler-, Farb- und Verschiebezügen
+   (F-953). 2000 gewählte Objekte bleiben bedienbar.

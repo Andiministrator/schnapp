@@ -349,26 +349,13 @@ func (s *Sitzung) merkeSchatten(w Werkzeug, basis Stil, neu document.Schatten, t
 	})
 }
 
-// feldSchattenNachfuehren hält das Feld Schatten beim Schatten der gewählten, wenn sich der Träger geändert hat
-// (F-950: sonst fiele es still auf den Vordergrund zurück und der Farbwähler färbte die Striche aller gewählten).
-func (s *Sitzung) feldSchattenNachfuehren() {
-	if s.feld == FeldSchatten && s.Schatten().An {
-		s.feldSchattenID = s.schattenZiel()
-	}
-}
-
 // setzeSchattenMehrere überträgt die Änderung von vorher nach neu auf alle gewählten, die sich dadurch ändern, und
 // deren Werkzeuge.
 func (s *Sitzung) setzeSchattenMehrere(vorher, neu document.Schatten) bool {
-	feldVor := s.AktivesFeld()
 	teile := geaenderteTeile(vorher, neu)
-	ok := s.setzeMehrere(func(o document.Objekt) (document.Objekt, bool) {
+	return s.setzeMehrere(func(o document.Objekt) (document.Objekt, bool) {
 		return s.objektMitSchatten(o, neu, teile)
 	}, func(w Werkzeug) { s.merkeSchatten(w, s.stilVon(w), neu, teile) })
-	if feldVor == FeldSchatten {
-		s.feldSchattenNachfuehren()
-	}
-	return ok
 }
 
 // schalteSchattenMehrere schaltet den Schatten aller gewählten ein, wenn mindestens einer aus ist, sonst alle aus.
