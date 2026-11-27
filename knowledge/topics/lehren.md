@@ -1349,3 +1349,15 @@ Stand: 2026-11-27 (laufend ergänzt, zuletzt Sprint 14, Karten #361 und #334 Tei
   Hinzufügen einer Tastenkombination alle Stellen suchen, die nur den Namen vergleichen.
 - **Testhelfer, die „Ruhe“ abwarten, brauchen jede Hintergrundarbeit** (F-871): eine fehlende Flagge lässt eine
   Goroutine nach Testende in `t.TempDir` schreiben, und das Aufräumen scheitert nur gelegentlich (CI, 59515e4).
+
+## Sprint 14, Karte #334 Oberfläche und Sitzungs-QA (12) (27.11.2026, F-905 bis F-911)
+- **Gio prüft die Umschalter eines `key.Filter` auch beim Loslassen** (F-905): Wer einen Zustand „Taste gehalten“
+  über Press/Release führt, erlaubt im Filter alle Umschalter (`Optional`), wertet Release immer und filtert erst beim
+  Press. Sonst bleibt der Zustand hängen, sobald jemand beim Loslassen Strg hält.
+- **Ein gehaltener Zustand muss jeden Eingabeweg umlenken, nicht nur den Hauptweg** (F-906): `Druecken` kannte die
+  Leertaste, `Doppelklick` nicht — ein zweiter Druck hob einen Zuschnitt auf. Beim Einführen eines Modus alle Aufrufer
+  der Zeigerbehandlung ablaufen (Druck, Doppelklick, Merker für den nächsten Doppelklick).
+- **Fokusgebundene Filter wirken erst, wenn jemand den Fokus setzt** (F-907): Die Leinwand bekam ihn bisher nur per
+  Klick. Ein Kürzel an `Focus: e` braucht einen Anfangsfokus beim Öffnen und nach jedem Dokumentwechsel.
+- **Zeichentests prüfen den Ort, nicht nur die Farbe** (F-909): Ein Pixelzähler übersieht versetzte Rahmen und eine
+  fehlende Kontur; ein Pixel an der erwarteten Stelle fängt beides.
