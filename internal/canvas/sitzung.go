@@ -90,6 +90,7 @@ type Sitzung struct {
 	textID     int       // Kennung des Texts in der Eingabe
 	textNeu    bool      // die Eingabe gilt einem neuen Text (Abbrechen entfernt ihn)
 	pan        bool      // mittlere Taste verschiebt die Ansicht, während die Texteingabe weiterläuft (F-154)
+	leertaste  bool      // Leertaste gehalten: ein Druck verschiebt die Ansicht (ADR-0039 Nachtrag 1, SetzeLeertaste)
 	lupenTeil  LupenTeil // beim Verschieben einer Lupe: Quelle, Ziel oder beide (ADR-0033 Punkt 8)
 	abgelehnt  Ablehnung
 
@@ -248,6 +249,10 @@ func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
 	s.abgelehnt, s.ersatzSchwarz, s.rahmenZuKlein, s.ansichtMeldung = AblehnungKeine, false, false, AnsichtKeine
 	if s.pan {
 		return
+	}
+	if s.leertaste && t == TastePrimaer && s.zug != zugText {
+		// Leertaste+Ziehen verschiebt die Ansicht in jedem Werkzeug, wie die mittlere Taste (ADR-0039 Nachtrag 1).
+		t = TasteMitte
 	}
 	if t == TasteMitte && s.zug == zugText {
 		// Die mittlere Taste verschiebt nur die Ansicht, die Texteingabe läuft weiter (ADR-0021 Punkt 1, F-154).

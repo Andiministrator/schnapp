@@ -504,6 +504,11 @@ func (e *editor) laufen() error {
 			if !e.erzwungen && !e.schliessen() {
 				ev.Abort()
 			}
+		case app.ConfigEvent:
+			if !ev.Config.Focused {
+				// Fenster verliert den Fokus: das Loslassen der Leertaste käme nicht mehr an (ADR-0039 Nachtrag 1).
+				e.s.SetzeLeertaste(false)
+			}
 		case app.FrameEvent:
 			e.bilder++
 			var bildStart time.Time
@@ -1470,6 +1475,8 @@ func (e *editor) meldeAbgelehnt() {
 		e.melde(e.grenzText(canvas.AblehnungNummer), true)
 	case canvas.AblehnungTextVerborgen:
 		e.melde(i18n.T("This text lies in a compressed area. Restore cut-out areas (Image menu) to edit it."), false)
+	case canvas.AblehnungSichtbar:
+		e.melde(i18n.T("Not done: an object would leave the visible image."), false)
 	}
 }
 
@@ -2489,15 +2496,33 @@ func textEcke(p f32.Point, dims layout.Dimensions, mitte bool) f32.Point {
 	return ecke
 }
 
-// zeichneAuswahl zeichnet Rahmen und Griffe des ausgewählten Objekts in Fensterpixeln (unabhängig vom Zoom).
+// zeichneAuswahl zeichnet Rahmen und Griffe des ausgewählten Objekts in Fensterpixeln (unabhängig vom Zoom), dazu den
+// Rahmen jedes weiteren gewählten Objekts ohne Griffe und einen aufgezogenen Auswahlrahmen (ADR-0039 Punkt 5).
 func (e *editor) zeichneAuswahl(gtx layout.Context) {
-	o, ok := e.s.D.Objekt(e.s.Auswahl)
-	if !ok || o.Ebenenwerte().Ausgeblendet { // Ausgeblendetes zeigt keinen Rahmen (ADR-0032 Punkt 4)
-		return
-	}
 	fe := func(p document.Punkt) image.Point {
 		q := e.s.Abb.ZuFenster(e.s.D.ZuAnsicht(p))
 		return image.Pt(int(math.Round(q.X)), int(math.Round(q.Y)))
+	}
+	for _, id := range e.s.Gewaehlt() {
+		if id == e.s.Auswahl {
+			continue
+		}
+		if w, ok := e.s.D.Objekt(id); ok {
+			for _, g := range auswahlRechtecke(w) {
+				r := image.Rectangle{Min: fe(g.Min), Max: fe(g.Max)}.Canon()
+				rahmen(gtx.Ops, r.Inset(-gtx.Dp(2)), gtx.Dp(1), farbeAuswahl)
+			}
+		}
+	}
+	if r, ok := e.s.AuswahlRahmen(); ok {
+		q := image.Rect(int(math.Round(r.Min.X)), int(math.Round(r.Min.Y)), int(math.Round(r.Max.X)),
+			int(math.Round(r.Max.Y))).Canon()
+		paint.FillShape(gtx.Ops, farbeAuswahlFlaeche, clip.Rect(q).Op())
+		rahmen(gtx.Ops, q, gtx.Dp(1), farbeAuswahl)
+	}
+	o, ok := e.s.D.Objekt(e.s.Auswahl)
+	if !ok || o.Ebenenwerte().Ausgeblendet { // Ausgeblendetes zeigt keinen Rahmen (ADR-0032 Punkt 4)
+		return
 	}
 	for _, g := range auswahlRechtecke(o) {
 		r := image.Rectangle{Min: fe(g.Min), Max: fe(g.Max)}.Canon()
@@ -2522,11 +2547,18 @@ func (e *editor) zeichneAuswahl(gtx layout.Context) {
 // TestTastenfilterNurTabelleUndMenueNavigation hält das fest.
 func (e *editor) alleTastenFilter() []event.Filter {
 	var filter []event.Filter
-	for _, f := range tastenFilter(e.s.TextLaeuft()) {
+	textLaeuft := e.s.TextLaeuft()
+	for _, f := range tastenFilter(textLaeuft) {
 		if f.Name == key.NameTab {
 			// Tab fängt nur ab, solange die Leinwand den Fokus hat; in einem Eingabefeld der Leiste bleibt es die
 			// Fokusfahrt (Karte #220, F-574): Sonst käme man aus Hex und Deckkraft während einer Texteingabe nicht heraus.
 			f.Focus = e
+		}
+		if f.Name == key.NameSpace {
+			if textLaeuft {
+				continue // in der Texteingabe ist die Leertaste ein Zeichen (EditEvent)
+			}
+			f.Focus = e // nur mit Fokus auf der Leinwand; Knöpfe behalten ihre Leertaste
 		}
 		filter = append(filter, f)
 	}
@@ -2541,6 +2573,12 @@ func (e *editor) alleTastenFilter() []event.Filter {
 		filter = append(filter, f)
 	}
 	return filter
+}
+
+// leertasteGilt meldet, ob die gehaltene Leertaste die Ansicht verschieben darf: Fokus auf der Leinwand, keine
+// Texteingabe, kein offenes Menü, keine Tafel und keine volle Ansicht der Bibliothek darüber (ADR-0039 Nachtrag 1).
+func (e *editor) leertasteGilt(gtx layout.Context) bool {
+	return gtx.Focused(e) && !e.s.TextLaeuft() && !e.menue.offen && !e.hilfeOffen && !e.einst.offen && !e.bibl.offen
 }
 
 // leertastenZiele sind die Knöpfe, an denen die Leertaste wie Enter ein Menü oder eine Liste mit Fokus auf dem ersten
@@ -2558,6 +2596,9 @@ func (e *editor) leertastenZiele() []event.Tag {
 
 func (e *editor) tasten(gtx layout.Context) {
 	e.menue.gewechselt = false
+	if e.s.Leertaste() && !e.leertasteGilt(gtx) {
+		e.s.SetzeLeertaste(false) // Fokus weg, Texteingabe, Menü oder Tafel: das Loslassen käme nicht an
+	}
 	for {
 		// Die Tasten stehen in tastenTabelle (ADR-0026): Jede hat einen Knopf, einen Menüeintrag oder eine begründete
 		// Ausnahme. Während der Texteingabe fängt der Editor Tab ab (ohne Wirkung, ADR-0021 Nachtrag 1): Sonst wanderte
@@ -2573,6 +2614,13 @@ func (e *editor) tasten(gtx layout.Context) {
 			// laufender Zug rastet sofort nicht mehr bzw. wieder ein. Ohne Zug merkt die Sitzung nur den Zustand; das
 			// nächste Zeigerereignis setzt ihn ohnehin neu. Während des Speicherns ruht der Zug (Sitzung.Ziehen).
 			e.s.AltTaste(k.State == key.Press)
+			gtx.Execute(op.InvalidateCmd{})
+			continue
+		}
+		if k, ok := ev.(key.Event); ok && k.Name == key.NameSpace && gtx.Focused(e) && !e.s.TextLaeuft() {
+			// Leertaste an der Leinwand (ADR-0039 Nachtrag 1): solange gehalten, verschiebt Ziehen die Ansicht. Andere
+			// Ziele der Leertaste (Menütitel, Felder mit Liste) haben eigene Filter mit eigenem Fokus.
+			e.s.SetzeLeertaste(k.State == key.Press && e.leertasteGilt(gtx))
 			gtx.Execute(op.InvalidateCmd{})
 			continue
 		}
@@ -2927,7 +2975,13 @@ func (e *editor) hinweis() string {
 	if e.s.TextLaeuft() {
 		return i18n.T("Type the text. Enter: done, Shift+Enter: new line, Esc: discard.")
 	}
+	if n := e.s.AnzahlGewaehlt(); n > 1 { // Mehrfachauswahl (ADR-0039 Punkt 5)
+		return fmt.Sprintf(i18n.N("%d object selected. Drag one to move all; Layer menu: align, distribute.",
+			"%d objects selected. Drag one to move all; Layer menu: align, distribute.", n), n)
+	}
 	switch e.s.Werkzeug {
+	case canvas.WerkzeugAuswahl:
+		return i18n.T("Click to select, Shift+click to add. Drag in the image to select several. Space+drag moves the view.")
 	case canvas.WerkzeugPfeil:
 		return i18n.T("Drag to draw an arrow. Shift: 45° steps. Drag the middle handle to bend it.")
 	case canvas.WerkzeugKasten:

@@ -79,6 +79,7 @@ var (
 	farbeLinie           = color.NRGBA{R: 0x3A, G: 0x3F, B: 0x45, A: 0xFF}           // grau-700
 	farbeText            = color.NRGBA{R: 0xEC, G: 0xEA, B: 0xE5, A: 0xFF}           // grau-100
 	farbeAuswahl         = color.NRGBA{R: 0x4F, G: 0x94, B: 0x79, A: 0xFF}           // gruen-500
+	farbeAuswahlFlaeche  = color.NRGBA{R: 0x4F, G: 0x94, B: 0x79, A: 0x22}           // gruen-500, leicht getönt (ADR-0039)
 	farbeAkzent          = color.NRGBA{R: 0xF5, G: 0xA6, B: 0x5B, A: 0xFF}           // orange-500
 	farbeGrund           = color.NRGBA{R: 0x16, G: 0x18, B: 0x1B, A: 0xFF}           // grau-950
 )

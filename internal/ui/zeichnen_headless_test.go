@@ -169,3 +169,53 @@ func TestEditorZeichnetSprechblaseImStreifenNurDreieck(t *testing.T) {
 		t.Error("Dreieck fehlt")
 	}
 }
+
+// Mehrfachauswahl (ADR-0039 Punkt 5): Jedes weitere gewählte Objekt trägt einen Rahmen ohne Griffe, die Hauptauswahl
+// Rahmen und Griffe; ein aufgezogener Auswahlrahmen ist eine Linie in der Auswahlfarbe über einer getönten Fläche.
+func TestEditorZeichnetMehrfachauswahlUndRahmen(t *testing.T) {
+	l, k := zeichenLauf(t)
+	flaeche := image.Pt(1200, 800)
+	zaehle := func() (rahmen, griffe, getoent int) {
+		b := headlessBild(t, flaeche, func(gtx layout.Context) { l.e.zeichneAuswahl(gtx) })
+		for y := 0; y < flaeche.Y; y++ {
+			for x := 0; x < flaeche.X; x++ {
+				if p := b.RGBAAt(x, y); p.A > 0 && p.A < 0x40 && p.G > p.R {
+					getoent++
+				}
+			}
+		}
+		return zaehleFarbe(b, farbeAuswahl), zaehleFarbe(b, farbeText), getoent
+	}
+	l.e.s.WaehleEbene(k)
+	r1, g1, _ := zaehle()
+	if !l.e.s.WaehleAlle() || l.e.s.AnzahlGewaehlt() != 2 {
+		t.Fatalf("Strg+A wählt %d, Soll 2", l.e.s.AnzahlGewaehlt())
+	}
+	haupt := l.e.s.Auswahl
+	l.e.s.WaehleEbene(haupt) // nur die Hauptauswahl, zum Vergleich der Griffe
+	_, gHaupt, _ := zaehle()
+	l.e.s.WaehleAlle()
+	r2, g2, _ := zaehle()
+	if r2 <= r1 || g2 != gHaupt {
+		t.Errorf("zwei gewählt: %d Rahmenpixel (einer: %d), %d Griffpixel (nur Hauptauswahl: %d); Soll mehr Rahmen, gleiche Griffe",
+			r2, r1, g2, gHaupt)
+	}
+	_ = g1
+	// Rahmen aufziehen: im Bild auf freier Fläche (rechts oben, neben Text und Kasten).
+	l.e.s.Abwaehlen()
+	a := l.e.s.Abb.ZuFenster(document.Pt(31, 1))
+	b := l.e.s.Abb.ZuFenster(document.Pt(39.5, 8))
+	l.e.s.Druecken(a, canvas.TastePrimaer)
+	l.e.s.Ziehen(b)
+	if _, ok := l.e.s.AuswahlRahmen(); !ok {
+		for _, o := range l.e.s.D.Objekte() {
+			t.Logf("Objekt %d Grenzen %v", o.Kennung(), o.Grenzen())
+		}
+		t.Fatalf("kein Auswahlrahmen beim Ziehen (Werkzeug %v, zieht %v, Auswahl %d, a %v b %v, Zoom %v)", l.e.s.Werkzeug, l.e.s.Zieht(), l.e.s.Auswahl, a, b, l.e.s.Abb.Zoom)
+	}
+	r3, _, t3 := zaehle()
+	if r3 == 0 || t3 == 0 {
+		t.Errorf("aufgezogener Rahmen: %d Linien-, %d getönte Pixel, Soll beide über 0", r3, t3)
+	}
+	l.e.s.Loslassen(b)
+}

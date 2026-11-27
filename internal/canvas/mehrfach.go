@@ -171,6 +171,16 @@ func (s *Sitzung) WaehleAlle() bool {
 	return true
 }
 
+// --- Leertaste+Ziehen (ADR-0039 Nachtrag 1) ---
+
+// SetzeLeertaste merkt, ob die Leertaste gehalten wird: Solange verschiebt ein Druck mit der linken Taste die Ansicht wie
+// die mittlere, in jedem Werkzeug, und der Zeiger zeigt die Hand. Während einer Texteingabe ist die Leertaste Text; die
+// Oberfläche meldet sie dann nicht, und Druecken übergeht den Zustand.
+func (s *Sitzung) SetzeLeertaste(an bool) { s.leertaste = an }
+
+// Leertaste meldet, ob die Leertaste als gehalten gilt.
+func (s *Sitzung) Leertaste() bool { return s.leertaste }
+
 // --- Rahmen (ADR-0039 Punkt 2) ---
 
 // AuswahlRahmen liefert den aufgezogenen Rahmen in Fensterpunkten, solange er gezogen wird.

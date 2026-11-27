@@ -51,6 +51,9 @@ func TestTastenfilterNurTabelleUndMenueNavigation(t *testing.T) {
 	for _, f := range e.alleTastenFilter() {
 		switch f := f.(type) {
 		case key.Filter:
+			if f.Name == key.NameSpace && f.Focus == e { // Leertaste der Leinwand: Tabelleneintrag mit Fokus (ADR-0039 Nachtrag 1)
+				f.Focus = nil
+			}
 			if !tabelle[f] && !nav[f] {
 				t.Errorf("Filter %q weder in der Tabelle noch Menü-Navigation", tastenName(f))
 			}

@@ -1252,6 +1252,10 @@ msgid "This text lies in a compressed area. Restore cut-out areas (Image menu) t
 msgstr ""
 
 #: internal/ui/editor.go
+msgid "Not done: an object would leave the visible image."
+msgstr ""
+
+#: internal/ui/editor.go
 msgid "The limit of %d annotations is reached. Delete some to add more."
 msgstr ""
 
@@ -1339,6 +1343,16 @@ msgstr ""
 
 #: internal/ui/editor.go
 msgid "Type the text. Enter: done, Shift+Enter: new line, Esc: discard."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "%d object selected. Drag one to move all; Layer menu: align, distribute."
+msgid_plural "%d objects selected. Drag one to move all; Layer menu: align, distribute."
+msgstr[0] ""
+msgstr[1] ""
+
+#: internal/ui/editor.go
+msgid "Click to select, Shift+click to add. Drag in the image to select several. Space+drag moves the view."
 msgstr ""
 
 #: internal/ui/editor.go
@@ -1779,6 +1793,34 @@ msgid "Click, drag"
 msgstr ""
 
 #: internal/ui/hilfe.go
+msgid "Add or remove an object"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Click"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Select several objects"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Drag in the image"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Move the view"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Space"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Drag"
+msgstr ""
+
+#: internal/ui/hilfe.go
 msgid "Select several captures"
 msgstr ""
 
@@ -1792,10 +1834,6 @@ msgstr ""
 
 #: internal/ui/hilfe.go internal/ui/kuerzel.go
 msgid "Ctrl"
-msgstr ""
-
-#: internal/ui/hilfe.go
-msgid "Space"
 msgstr ""
 
 #: internal/ui/hilfe.go

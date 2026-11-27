@@ -1971,3 +1971,32 @@ msgid "%d capture selected — Esc clears the selection"
 msgid_plural "%d captures selected — Esc clears the selection"
 msgstr[0] "%d Aufnahme markiert — Esc hebt die Markierung auf"
 msgstr[1] "%d Aufnahmen markiert — Esc hebt die Markierung auf"
+
+msgid "Not done: an object would leave the visible image."
+msgstr "Nicht ausgeführt: Ein Objekt würde das sichtbare Bild verlassen."
+
+msgid "%d object selected. Drag one to move all; Layer menu: align, distribute."
+msgid_plural "%d objects selected. Drag one to move all; Layer menu: align, distribute."
+msgstr[0] "%d Objekt gewählt. Eines ziehen verschiebt alle; Menü Ebene: ausrichten, verteilen."
+msgstr[1] "%d Objekte gewählt. Eines ziehen verschiebt alle; Menü Ebene: ausrichten, verteilen."
+
+msgid "Click to select, Shift+click to add. Drag in the image to select several. Space+drag moves the view."
+msgstr "Klicken wählt, Umschalt+Klick fügt hinzu. Im Bild ziehen wählt mehrere. Leertaste+Ziehen verschiebt die Ansicht."
+
+msgid "Add or remove an object"
+msgstr "Objekt hinzufügen oder herausnehmen"
+
+msgid "Click"
+msgstr "Klick"
+
+msgid "Select several objects"
+msgstr "Mehrere Objekte wählen"
+
+msgid "Drag in the image"
+msgstr "Im Bild ziehen"
+
+msgid "Move the view"
+msgstr "Ansicht verschieben"
+
+msgid "Drag"
+msgstr "Ziehen"

@@ -54,12 +54,18 @@ func (s *Sitzung) werkzeugZeiger() ZeigerArt {
 // behält seine Form, auch wenn der Zeiger dabei den Griff verlässt.
 func (s *Sitzung) Zeiger(p *document.Punkt) ZeigerArt {
 	switch {
+	case s.leertaste && p != nil && !s.pan && !s.gesperrt() && !s.tb.zieht && s.zug == keinZug:
+		// Leertaste gehalten: ein Druck verschiebt die Ansicht, vor Pipette und Werkzeug (ADR-0039 Nachtrag 1); beim
+		// Ziehen selbst greift die Hand unten (zugAnsicht).
+		return ZeigerGreifen
 	case s.pipette || s.TextBereichLaeuft():
 		return ZeigerFadenkreuz
 	case s.gesperrt():
 		return s.werkzeugZeiger() // Speichern oder Laden: Griffe und Objekte reagieren nicht (Kritik K-5)
 	case s.pan && s.bewegt, s.zug == zugAnsicht && s.bewegt:
 		return ZeigerGreifend
+	case s.zug == zugAnsicht && s.leertaste: // gedrückt, noch unter der Ziehschwelle
+		return ZeigerGreifen
 	case s.zug == zugGriff, s.zug == zugZuschnitt:
 		return griffZeiger(s.griff)
 	case s.zug == zugObjekt, s.zug == zugMehrere: // auch beim Ziehen mehrerer gewählter (F-898)

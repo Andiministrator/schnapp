@@ -58,6 +58,10 @@ func (e *editor) hilfeZeilen() []hilfeZeile {
 		hilfeZeile{text: i18n.T("New line in a text"), taste: i18n.T("Shift") + "+" + i18n.T("Enter")},
 		hilfeZeile{text: i18n.T("Snapping off while dragging"), taste: "Alt"},
 		hilfeZeile{text: i18n.T("Move the view in the navigator"), taste: i18n.T("Click, drag")},
+		// Mehrfachauswahl auf der Leinwand und Ansicht verschieben (ADR-0039 mit Nachtrag 1)
+		hilfeZeile{text: i18n.T("Add or remove an object"), taste: i18n.T("Shift") + "+" + i18n.T("Click")},
+		hilfeZeile{text: i18n.T("Select several objects"), taste: i18n.T("Drag in the image")},
+		hilfeZeile{text: i18n.T("Move the view"), taste: i18n.T("Space") + "+" + i18n.T("Drag")},
 		// Mehrere Vorschauen der Bibliothek markieren (ADR-0036 Zusatz Karte #361)
 		hilfeZeile{text: i18n.T("Select several captures"), taste: i18n.T("Ctrl/Shift+Click")},
 		// … und per Tastatur an einer Vorschau mit Fokus (F-891); je Taste eine Zeile, eine passte nicht in die Spalte.

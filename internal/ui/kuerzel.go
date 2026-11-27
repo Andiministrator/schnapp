@@ -117,6 +117,10 @@ func tastenTabelle() []taste {
 		// Tastendruck selbst je nach Reihenfolge mit oder ohne ModAlt ankommt.
 		{filter: key.Filter{Name: key.NameAlt, Optional: key.ModAlt | key.ModShift | key.ModCtrl | key.ModSuper},
 			ausnahme: "Zustand während des Ziehens, kein Kürzel: Einrasten aus, solange gehalten (Menü Ansicht → „Snap to objects“)"},
+		// Leertaste gehalten (ADR-0039 Nachtrag 1): nur mit Fokus auf der Leinwand und außerhalb der Texteingabe angemeldet
+		// (alleTastenFilter), dort bleibt sie ein Zeichen.
+		{filter: key.Filter{Name: key.NameSpace, Optional: key.ModShift},
+			ausnahme: "Zustand während des Ziehens, kein Kürzel: Ziehen verschiebt die Ansicht, solange gehalten (wie die mittlere Taste)"},
 		{filter: key.Filter{Name: key.NameDeleteForward}, akt: aktLoeschen},
 		{filter: key.Filter{Name: key.NameDeleteBackward}, akt: aktLoeschen},
 		strg("Z", aktRueckgaengig),

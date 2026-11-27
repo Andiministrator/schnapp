@@ -1,0 +1,93 @@
+[
+  {
+    "name": "MU1 Leertaste lenkt den Druck nicht um",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.leertaste && t == TastePrimaer && s.zug != zugText {",
+    "neu": "\tif false && s.leertaste && t == TastePrimaer && s.zug != zugText {"
+  },
+  {
+    "name": "MU2 Leertaste wirkt auch in der Texteingabe",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.leertaste && t == TastePrimaer && s.zug != zugText {",
+    "neu": "\tif s.leertaste && t == TastePrimaer {"
+  },
+  {
+    "name": "MU3 Zeiger ohne Hand bei gehaltener Leertaste",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase s.leertaste && p != nil && !s.pan && !s.gesperrt() && !s.tb.zieht && s.zug == keinZug:",
+    "neu": "\tcase false && s.leertaste && p != nil && !s.pan && !s.gesperrt() && !s.tb.zieht && s.zug == keinZug:"
+  },
+  {
+    "name": "MU4 Zeiger mit Hand auch in der Texteingabe",
+    "datei": "internal/canvas/zeiger.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase s.leertaste && p != nil && !s.pan && !s.gesperrt() && !s.tb.zieht && s.zug == keinZug:",
+    "neu": "\tcase s.leertaste && p != nil && !s.pan && !s.gesperrt() && !s.tb.zieht:"
+  },
+  {
+    "name": "MU5 Leertaste in der Texteingabe angemeldet",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif textLaeuft {\n\t\t\t\tcontinue // in der Texteingabe",
+    "neu": "\t\t\tif false {\n\t\t\t\tcontinue // in der Texteingabe"
+  },
+  {
+    "name": "MU6 Leertaste ohne Fokus der Leinwand",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tf.Focus = e // nur mit Fokus auf der Leinwand",
+    "neu": "\t\t\t_ = e // nur mit Fokus auf der Leinwand"
+  },
+  {
+    "name": "MU7 Loslassen der Leertaste wird übergangen",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.s.SetzeLeertaste(k.State == key.Press && e.leertasteGilt(gtx))",
+    "neu": "\t\t\te.s.SetzeLeertaste(true)"
+  },
+  {
+    "name": "MU8 gehaltene Leertaste bleibt ohne Fokus",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.s.Leertaste() && !e.leertasteGilt(gtx) {",
+    "neu": "\tif false {"
+  },
+  {
+    "name": "MU9 weitere Gewählte ohne Rahmen",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif id == e.s.Auswahl {\n\t\t\tcontinue\n\t\t}\n\t\tif w, ok := e.s.D.Objekt(id); ok {",
+    "neu": "\t\tif true {\n\t\t\tcontinue\n\t\t}\n\t\tif w, ok := e.s.D.Objekt(id); ok {"
+  },
+  {
+    "name": "MU10 aufgezogener Rahmen nicht gezeichnet",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif r, ok := e.s.AuswahlRahmen(); ok {",
+    "neu": "\tif r, ok := e.s.AuswahlRahmen(); ok && false {"
+  },
+  {
+    "name": "MU11 Rahmen ohne getönte Fläche",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tpaint.FillShape(gtx.Ops, farbeAuswahlFlaeche, clip.Rect(q).Op())\n",
+    "neu": "\n"
+  },
+  {
+    "name": "MU12 Fußzeile ohne Zahl der Gewählten",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif n := e.s.AnzahlGewaehlt(); n > 1 {",
+    "neu": "\tif n := e.s.AnzahlGewaehlt(); n > 99 {"
+  },
+  {
+    "name": "MU13 Ablehnung Sichtbar ohne Meldung",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase canvas.AblehnungSichtbar:\n\t\te.melde(",
+    "neu": "\tcase canvas.AblehnungSichtbar + 100:\n\t\te.melde("
+  }
+]
