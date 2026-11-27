@@ -1,0 +1,72 @@
+[
+  {
+    "name": "VZ1 Wartezeit übergangen",
+    "datei": "cmd/schnapp/aufnehmen.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif t.Verzoegerung > 0 && an.warte != nil {",
+    "neu": "\tif false && an.warte != nil {"
+  },
+  {
+    "name": "VZ2 Kommandozeile geht nicht vor",
+    "datei": "cmd/schnapp/main.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\tif a.VerzoegerungGesetzt {\n\t\t\tt.Verzoegerung = a.Verzoegerung\n\t\t}",
+    "neu": "\t\tif a.VerzoegerungGesetzt && a.Verzoegerung > 0 {\n\t\t\tt.Verzoegerung = a.Verzoegerung\n\t\t}"
+  },
+  {
+    "name": "VZ3 Obergrenze fehlt",
+    "datei": "cmd/schnapp/argumente.go",
+    "paket": "./cmd/schnapp",
+    "alt": "n < 0 || n > settings.MaxVerzoegerung {",
+    "neu": "n < 0 {"
+  },
+  {
+    "name": "VZ4 --delay bei Datei erlaubt",
+    "datei": "cmd/schnapp/argumente.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif warte >= 0 {\n\t\tif !a.Modus.Aufnahme() {",
+    "neu": "\tif warte >= 0 {\n\t\tif false {"
+  },
+  {
+    "name": "VZ5 Countdown schließt den Hinweis nicht",
+    "datei": "cmd/schnapp/countdown.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tif id != 0 {\n\t\tif err := countdownSchliesse(ctx, id)",
+    "neu": "\tif false {\n\t\tif err := countdownSchliesse(ctx, id)"
+  },
+  {
+    "name": "VZ6 letzter Hinweis bleibt bis zum Ende",
+    "datei": "cmd/schnapp/countdown.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\tbis = ende.Add(-hinweisWeg)",
+    "neu": "\t\t\tbis = ende"
+  },
+  {
+    "name": "VZ7 Countdown ersetzt nicht",
+    "datei": "cmd/schnapp/countdown.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\tid = neu\n",
+    "neu": "\t\t\t_ = neu\n"
+  },
+  {
+    "name": "VZ8 Einstellung ohne Obergrenze",
+    "datei": "internal/settings/einstellungen.go",
+    "paket": "./internal/settings",
+    "alt": "n >= 0 && n <= MaxVerzoegerung {\n\t\t\t\te.Verzoegerung",
+    "neu": "n >= 0 {\n\t\t\t\te.Verzoegerung"
+  },
+  {
+    "name": "VZ9 Ersetze schickt Kennung nicht",
+    "datei": "internal/notify/notify.go",
+    "paket": "./internal/notify",
+    "alt": "\treturn schicke(ctx, ersetzt, titel, text, 1, kurz)",
+    "neu": "\treturn schicke(ctx, 0, titel, text, 1, kurz)"
+  },
+  {
+    "name": "VZ10 Ersetze dringend",
+    "datei": "internal/notify/notify.go",
+    "paket": "./internal/notify",
+    "alt": "\treturn schicke(ctx, ersetzt, titel, text, 1, kurz)",
+    "neu": "\treturn schicke(ctx, ersetzt, titel, text, 2, kurz)"
+  }
+]

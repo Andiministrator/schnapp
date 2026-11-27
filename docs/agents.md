@@ -21,7 +21,8 @@ Schnapp runs on Linux with Wayland (KDE Plasma/KWin). Capturing talks to KWin di
 | `schnapp --version --json` | Prints the version |
 
 Without `--output`, a capture is stored in the library (`~/Pictures/schnapp/YYYY-MM/…`, see the README) and the
-editor opens unless `--no-editor` is given or the setting `[capture] open-editor` is off.
+editor opens unless `--no-editor` is given or the setting `[capture] open-editor` is off. `--delay=SEC` (0 to 60) waits
+before capturing and shows a countdown notification; `[capture] delay` does the same for every capture.
 
 Rules:
 

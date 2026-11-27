@@ -61,6 +61,7 @@ var tafelZeilen = [...]tafelZeile{
 	{reiterAufnahme, "capture", "screen", artAuswahl},
 	{reiterAufnahme, "capture", "open-editor", artSchalter},
 	{reiterAufnahme, "capture", "seam", artAuswahl},
+	{reiterAufnahme, "capture", "delay", artAuswahl},
 	{reiterBibliothek, "library", "bar", artSchalter},
 	{reiterBibliothek, "library", "cleanup", artSchalter},
 	{reiterBibliothek, "library", "cleanup-days", artZahl},
@@ -309,6 +310,12 @@ func (t *tafel) optionen(z int) []tafelOption {
 			o = append(o, tafelOption{k.Name(), kantenName(k)})
 		}
 		return o
+	case "delay": // ADR-0042: die Stufen der Karte; ein anderer Wert aus der Datei steht als Zahl (optionText)
+		o := []tafelOption{{"0", i18n.TK("delay", "None")}}
+		for _, n := range verzoegerungStufen {
+			o = append(o, tafelOption{strconv.Itoa(n), fmt.Sprintf(i18n.N("%d second", "%d seconds", n), n)})
+		}
+		return o
 	}
 	return nil
 }
@@ -343,8 +350,15 @@ func (t *tafel) waehle(z, i int) {
 		if k, ok := document.KanteAus(w); ok {
 			t.wert.Kante = k
 		}
+	case "delay":
+		if n, err := strconv.Atoi(w); err == nil {
+			t.wert.Verzoegerung = n
+		}
 	}
 }
+
+// verzoegerungStufen sind die Wartezeiten der Auswahl in Sekunden (Karte #338).
+var verzoegerungStufen = []int{3, 5, 10}
 
 // gewaehlt ist die Stelle des aktuellen Werts in den Optionen der Zeile z (-1: keine).
 func (t *tafel) gewaehlt(z int) int {
@@ -588,6 +602,8 @@ func zeileTitel(z int) string {
 		return i18n.T("After capture")
 	case "capture.seam":
 		return i18n.T("Seam edge")
+	case "capture.delay":
+		return i18n.T("Delay")
 	case "library.bar":
 		return i18n.T("Recent captures")
 	case "library.cleanup":
@@ -630,6 +646,8 @@ func zeileErklaerung(z int) string {
 		return i18n.T("What “Capture screen” does without a monitor name: pick by clicking, the monitor under the pointer or all monitors.")
 	case "capture.seam":
 		return i18n.T("Applies to new captures and opened images; a working file keeps its edge.")
+	case "capture.delay":
+		return i18n.T("Wait before each capture, for example to open a menu; a notification counts down. --delay=SECONDS overrides it.")
 	case "library.bar":
 		return i18n.T("The bar with the latest captures; also View → Recent captures.")
 	case "library.cleanup-days":

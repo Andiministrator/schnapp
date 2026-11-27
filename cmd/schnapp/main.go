@@ -156,6 +156,8 @@ type Auftrag struct {
 	// Kante: [capture] seam, die Form der Stauch-Kante für neue Dokumente — die Aufnahme und ein einfaches PNG/JPEG,
 	// das ModusOeffnen öffnet (ADR-0023 Nachtrag 6). Eine Arbeitsdatei behält ihre eigene.
 	Kante document.Kante
+	// Verzoegerung: Sekunden vor der Aufnahme, --delay=SEK vor [capture] delay (ADR-0042).
+	Verzoegerung int
 }
 
 // Bildschirmziel sagt, welcher Monitor aufgenommen wird.
@@ -170,6 +172,12 @@ func plane(a Aufruf, e settings.Einstellungen) Auftrag {
 	t := Auftrag{Modus: a.Modus, Aufraeumen: e.Bibliothek,
 		Editor: a.Modus.Aufnahme() && e.Editor && !a.OhneEditor && a.Ausgabe == "",
 		Datei:  a.Datei, OhneGrenze: a.OhneGrenze, Ausgabe: a.Ausgabe, JSON: a.JSON, Kante: e.Kante}
+	if a.Modus.Aufnahme() {
+		t.Verzoegerung = e.Verzoegerung
+		if a.VerzoegerungGesetzt {
+			t.Verzoegerung = a.Verzoegerung
+		}
+	}
 	if a.Modus == ModusBildschirm {
 		if a.Bildschirm != "" {
 			t.Ziel = Bildschirmziel{Name: a.Bildschirm}
@@ -191,6 +199,7 @@ func hilfe() string {
 		"  --window       " + i18n.T("Select a window") + "\n" +
 		"  --repeat       " + i18n.T("Repeat the last area") + "\n" +
 		"  --no-editor    " + i18n.T("Do not open the editor after capturing") + "\n" +
+		"  --delay=SEC    " + i18n.T("Wait SEC seconds before capturing (0 to 60), with a countdown notification") + "\n" +
 		"  --output=FILE  " + i18n.T("Write the screenshot to FILE (.png, .jpg, .svg) instead of the library") + "\n" +
 		"  --json         " + i18n.T("Print the result as one line of JSON") + "\n" +
 		"  FILE           " + i18n.T("Open FILE in the editor") + "\n" +

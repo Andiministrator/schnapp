@@ -2027,3 +2027,35 @@ msgstr "Abschnitt [%s] steht doppelt; der zweite wird übergangen."
 
 msgid "Key %q is set twice in section [%s]; the second one is ignored."
 msgstr "Schlüssel %q steht im Abschnitt [%s] doppelt; der zweite wird übergangen."
+
+msgid "Delay"
+msgstr "Verzögerung"
+
+msgid "Screenshot"
+msgstr "Bildschirmfoto"
+
+msgid "Option --delay cannot be given more than once with different values."
+msgstr "Die Option --delay darf nicht mehrfach mit verschiedenen Werten stehen."
+
+msgid "Option --delay needs whole seconds from 0 to %d after an equals sign: --delay=5."
+msgstr "Die Option --delay braucht ganze Sekunden von 0 bis %d nach einem Gleichheitszeichen: --delay=5."
+
+msgid "Wait SEC seconds before capturing (0 to 60), with a countdown notification"
+msgstr "Vor der Aufnahme SEK Sekunden warten (0 bis 60), mit Countdown als Benachrichtigung"
+
+msgid "Wait before each capture, for example to open a menu; a notification counts down. --delay=SECONDS overrides it."
+msgstr "Wartezeit vor jeder Aufnahme, etwa um ein Menü aufzuklappen; eine Benachrichtigung zählt herunter. --delay=SEKUNDEN geht vor."
+
+msgid "%d second"
+msgid_plural "%d seconds"
+msgstr[0] "%d Sekunde"
+msgstr[1] "%d Sekunden"
+
+msgid "Capturing in %d second"
+msgid_plural "Capturing in %d seconds"
+msgstr[0] "Aufnahme in %d Sekunde"
+msgstr[1] "Aufnahme in %d Sekunden"
+
+msgctxt "delay"
+msgid "None"
+msgstr "Keine"

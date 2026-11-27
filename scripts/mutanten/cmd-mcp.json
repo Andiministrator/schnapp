@@ -354,8 +354,8 @@
     "name": "M51 Hinweis mit Dringlichkeit normal (F-466)",
     "datei": "internal/notify/notify.go",
     "paket": "./internal/notify",
-    "alt": "dbus.MakeVariant(byte(2))",
-    "neu": "dbus.MakeVariant(byte(1))"
+    "alt": "\treturn schicke(ctx, 0, titel, text, 2, dauer)",
+    "neu": "\treturn schicke(ctx, 0, titel, text, 1, dauer)"
   },
   {
     "name": "M52 Drücken in der Sperre zählt (F-464)",

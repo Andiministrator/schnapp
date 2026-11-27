@@ -60,6 +60,14 @@ msgid "Show the version"
 msgstr ""
 
 #: cmd/schnapp/argumente.go
+msgid "Option --delay needs whole seconds from 0 to %d after an equals sign: --delay=5."
+msgstr ""
+
+#: cmd/schnapp/argumente.go
+msgid "Option --delay cannot be given more than once with different values."
+msgstr ""
+
+#: cmd/schnapp/argumente.go
 msgid "Option --export needs a target file after an equals sign: --export=TARGET FILE."
 msgstr ""
 
@@ -224,6 +232,16 @@ msgstr ""
 #: cmd/schnapp/beschriften.go
 msgid "Cannot read the annotation list %s: %s"
 msgstr ""
+
+#: cmd/schnapp/countdown.go
+msgid "Screenshot"
+msgstr ""
+
+#: cmd/schnapp/countdown.go
+msgid "Capturing in %d second"
+msgid_plural "Capturing in %d seconds"
+msgstr[0] ""
+msgstr[1] ""
 
 #: cmd/schnapp/editor.go
 msgid "Saved, but the file has too many or too large annotations to be opened again. Remove some before closing."
@@ -435,6 +453,10 @@ msgstr ""
 
 #: cmd/schnapp/main.go
 msgid "Do not open the editor after capturing"
+msgstr ""
+
+#: cmd/schnapp/main.go
+msgid "Wait SEC seconds before capturing (0 to 60), with a countdown notification"
 msgstr ""
 
 #: cmd/schnapp/main.go
@@ -1460,6 +1482,17 @@ msgid "All monitors"
 msgstr ""
 
 #: internal/ui/einstellungen_logik.go
+msgctxt "delay"
+msgid "None"
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "%d second"
+msgid_plural "%d seconds"
+msgstr[0] ""
+msgstr[1] ""
+
+#: internal/ui/einstellungen_logik.go
 msgid "Could not save the settings: “%s” must be a number from 1 to %d."
 msgstr ""
 
@@ -1531,6 +1564,10 @@ msgstr ""
 msgid "Seam edge"
 msgstr ""
 
+#: internal/ui/einstellungen_logik.go
+msgid "Delay"
+msgstr ""
+
 #: internal/ui/einstellungen_logik.go internal/ui/oberflaeche.go
 msgid "Recent captures"
 msgstr ""
@@ -1589,6 +1626,10 @@ msgstr ""
 
 #: internal/ui/einstellungen_logik.go
 msgid "Applies to new captures and opened images; a working file keeps its edge."
+msgstr ""
+
+#: internal/ui/einstellungen_logik.go
+msgid "Wait before each capture, for example to open a menu; a notification counts down. --delay=SECONDS overrides it."
 msgstr ""
 
 #: internal/ui/einstellungen_logik.go

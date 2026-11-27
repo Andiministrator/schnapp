@@ -37,14 +37,28 @@ var rufe func(ctx context.Context, methode string, args []any) ([]any, error)
 // ist „Schnapp“, das Symbol `schnapp`.
 func Zeige(ctx context.Context, titel, text string) (id uint32, fehler error) {
 	defer errprefix.Defer("notify", &fehler)
+	// critical: auch bei „Nicht stören“ sichtbar (Plasma-Voreinstellung); der Hinweis ist der einzige sichtbare
+	// Rest einer Aufnahme ohne Dialog (ADR-0030 Nachtrag 4 Punkt 8, F-466).
+	return schicke(ctx, 0, titel, text, 2, dauer)
+}
+
+// Ersetze zeigt einen gewöhnlichen Hinweis (Dringlichkeit normal, 2 s) oder ersetzt den mit der Kennung ersetzt
+// (0: neu), etwa für den Countdown vor einer verzögerten Aufnahme (ADR-0042). Liefert die Kennung des Hinweises.
+func Ersetze(ctx context.Context, ersetzt uint32, titel, text string) (id uint32, fehler error) {
+	defer errprefix.Defer("notify", &fehler)
+	return schicke(ctx, ersetzt, titel, text, 1, kurz)
+}
+
+// kurz ist die Anzeigedauer eines Hinweises, den Ersetze jede Sekunde erneuert.
+const kurz int32 = 2000
+
+func schicke(ctx context.Context, ersetzt uint32, titel, text string, dringlich byte, ms int32) (uint32, error) {
 	ctx, ende := context.WithTimeout(ctx, frist)
 	defer ende()
-	args := []any{"Schnapp", uint32(0), "schnapp", titel, text, []string{}, map[string]dbus.Variant{
-		// critical: auch bei „Nicht stören“ sichtbar (Plasma-Voreinstellung); der Hinweis ist der einzige sichtbare
-		// Rest einer Aufnahme ohne Dialog (ADR-0030 Nachtrag 4 Punkt 8, F-466).
-		"urgency":       dbus.MakeVariant(byte(2)),
+	args := []any{"Schnapp", ersetzt, "schnapp", titel, text, []string{}, map[string]dbus.Variant{
+		"urgency":       dbus.MakeVariant(dringlich),
 		"desktop-entry": dbus.MakeVariant("schnapp"),
-	}, dauer}
+	}, ms}
 	body, err := ruf(ctx, methode, args)
 	if err != nil {
 		return 0, err

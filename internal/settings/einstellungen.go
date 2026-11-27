@@ -100,8 +100,11 @@ type Einstellungen struct {
 	Editor     bool           // [capture] open-editor: Editor nach der Aufnahme öffnen (ADR-0020)
 	// Kante ist [capture] seam: Form der Stauch-Kante neuer Dokumente (Aufnahme, Öffnen eines einfachen PNG/JPEG),
 	// tear (Voreinstellung), wave oder zigzag (ADR-0023 Nachtrag 6, ADR-0018 Nachtrag 3).
-	Kante      document.Kante
-	Bibliothek library.Einstellung // [library] cleanup, cleanup-days
+	Kante document.Kante
+	// Verzoegerung ist [capture] delay: Sekunden Wartezeit vor jeder Aufnahme, 0 bis MaxVerzoegerung (Voreinstellung 0,
+	// ADR-0042).
+	Verzoegerung int
+	Bibliothek   library.Einstellung // [library] cleanup, cleanup-days
 	// Leiste ist [library] bar: die Leiste der letzten Aufnahmen unter dem Bild (ADR-0036 Punkt 2, ADR-0018 Nachtrag 6),
 	// yes (Voreinstellung) oder no; true/false gelten auch.
 	Leiste  bool
@@ -129,6 +132,9 @@ func janein(w string) (wert, ok bool) {
 	}
 	return false, false
 }
+
+// MaxVerzoegerung ist die größte Wartezeit vor einer Aufnahme in Sekunden ([capture] delay, --delay, ADR-0042).
+const MaxVerzoegerung = 60
 
 // Voreinstellungen liefert die Werte, die gelten, wenn nichts eingestellt ist.
 func Voreinstellungen() Einstellungen {
@@ -314,6 +320,11 @@ func Parse(name, inhalt string) (Einstellungen, []string) {
 			bekannterSchluessel = true
 			if k, ok := document.KanteAus(wert); ok {
 				e.Kante, gueltig = k, true
+			}
+		case "capture.delay":
+			bekannterSchluessel = true
+			if n, err := strconv.Atoi(wert); err == nil && n >= 0 && n <= MaxVerzoegerung {
+				e.Verzoegerung, gueltig = n, true
 			}
 		case "capture.open-editor":
 			bekannterSchluessel = true

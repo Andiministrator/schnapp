@@ -135,7 +135,7 @@ func TestTafelFokusUndReiter(t *testing.T) {
 	}
 	tf.taste(key.NamePageUp, key.ModShortcut)
 	tf.taste(key.NamePageUp, key.ModShortcut)
-	if tf.reiter != reiterAgenten || tf.ziel() != 7 {
+	if tf.reiter != reiterAgenten || tf.ziel() != 8 { // erste Zeile der Agenten (seit capture.delay, ADR-0042)
 		t.Errorf("Strg+Bild↑ läuft nicht um: Reiter %d, Ziel %d", tf.reiter, tf.ziel())
 	}
 	tf.taste(key.NamePageDown, 0) // ohne Strg: nichts
@@ -294,7 +294,7 @@ func TestTafelSchalterAuswahlWarnung(t *testing.T) {
 			tf.schalte(z)
 		}
 	}
-	for _, z := range []int{2, 4} {
+	for _, z := range []int{2, 5} { // capture.open-editor, library.bar
 		vorher := tf.schalter(z)
 		tf.schalte(z)
 		if tf.schalter(z) == vorher || tf.warnungSichtbar(z) {
@@ -382,7 +382,7 @@ func TestTafelSpeichern(t *testing.T) {
 	if err := os.MkdirAll(p, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	tf.schalte(7) // agents.capture
+	tf.schalte(8) // agents.capture
 	geschrieben, ok = tf.speichere(settings.SchreibeDatei)
 	if ok || geschrieben || !strings.HasSuffix(tf.fehler, ": the settings file is not a regular file") || strings.Contains(tf.fehler, ": settings: ") {
 		t.Errorf("Fehler: %v %v %q", geschrieben, ok, tf.fehler)

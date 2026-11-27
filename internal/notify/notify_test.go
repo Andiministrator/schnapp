@@ -112,3 +112,21 @@ func TestSchliesseRuftCloseNotification(t *testing.T) {
 		t.Errorf("Busfehler: %v", err)
 	}
 }
+
+// ADR-0042: Ersetze schickt die Kennung des ersetzten Hinweises, Dringlichkeit normal und eine kurze Anzeigedauer.
+func TestErsetzeSchicktKennungUndNormal(t *testing.T) {
+	var gesehen []any
+	mitAttrappe(t, func(_ context.Context, args []any) ([]any, error) {
+		gesehen = args
+		return []any{uint32(9)}, nil
+	})
+	if id, err := Ersetze(context.Background(), 5, "Titel", "noch 3"); err != nil || id != 9 {
+		t.Fatalf("Kennung %d, Fehler %v", id, err)
+	}
+	if gesehen[1] != uint32(5) || gesehen[4] != "noch 3" || gesehen[7] != kurz {
+		t.Errorf("Argumente %v", gesehen)
+	}
+	if h, ok := gesehen[6].(map[string]dbus.Variant); !ok || h["urgency"].Value() != byte(1) {
+		t.Errorf("Hinweise %v", gesehen[6])
+	}
+}

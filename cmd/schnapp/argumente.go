@@ -4,11 +4,13 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/Andiministrator/schnapp/internal/export"
 	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/settings"
 )
 
 // Modus ist, was der Aufruf verlangt.
@@ -48,6 +50,10 @@ type Aufruf struct {
 	Ziel string
 	// Spez ist bei ModusBeschriften die Liste von --annotate=SPEC, „-“ = stdin (ADR-0030 Nachtrag 10).
 	Spez string
+	// Verzoegerung ist --delay=SEK: Sekunden vor der Aufnahme (ADR-0042); VerzoegerungGesetzt sagt, dass die Option
+	// stand (auch --delay=0, das [capture] delay aufhebt).
+	Verzoegerung        int
+	VerzoegerungGesetzt bool
 }
 
 // Aufnahme meldet, ob der Modus eine Aufnahme ist (nur diese öffnen danach den Editor und vertragen --no-editor).
@@ -100,8 +106,21 @@ func Auswerten(args []string) (Aufruf, error) {
 		ausgabe    string
 		exportZiel string
 		spez       string
+		warte      = -1 // --delay; -1: nicht angegeben
 	)
 	for _, arg := range args {
+		if name, wert, hatWert := strings.Cut(arg, "="); name == "--delay" {
+			// ADR-0042: nur mit Gleichheitszeichen, ganze Sekunden 0 bis settings.MaxVerzoegerung.
+			n, err := strconv.Atoi(wert)
+			if !hatWert || err != nil || n < 0 || n > settings.MaxVerzoegerung {
+				return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Option --delay needs whole seconds from 0 to %d after an equals sign: --delay=5."), settings.MaxVerzoegerung)}
+			}
+			if warte >= 0 && warte != n {
+				return Aufruf{}, &Fehler{i18n.T("Option --delay cannot be given more than once with different values.")}
+			}
+			warte = n
+			continue
+		}
 		if arg == "--ignore-limit" {
 			ohneGrenze = true
 			continue
@@ -230,6 +249,12 @@ func Auswerten(args []string) (Aufruf, error) {
 			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Options %s and %s cannot be combined."), a.Modus.Option(), "--annotate")}
 		}
 		a.Modus, a.Spez = ModusBeschriften, spez
+	}
+	if warte >= 0 {
+		if !a.Modus.Aufnahme() {
+			return Aufruf{}, &Fehler{fmt.Sprintf(i18n.T("Options %s and %s cannot be combined."), a.Modus.Option(), "--delay")}
+		}
+		a.Verzoegerung, a.VerzoegerungGesetzt = warte, true
 	}
 	if ausgabe != "" {
 		if !a.Modus.Aufnahme() {
