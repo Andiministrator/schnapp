@@ -122,6 +122,7 @@ func (e *editor) menueEintraegeRoh(i int) []menueEintrag {
 			{akt: aktWiederholen, text: i18n.T("Redo"), an: s.D.KannWiederholen()},
 			{akt: aktTextBearbeiten, text: i18n.T("Edit text"), an: s.KannTextBearbeiten(), gruppe: true},
 			{akt: aktLoeschen, text: i18n.T("Delete"), an: s.KannLoeschen()},
+			{akt: aktAllesWaehlen, text: i18n.T("Select all"), an: s.KannAlleWaehlen()},
 			{akt: aktFarbenTauschen, text: i18n.T("Swap colors"), an: s.KannTauschen(), gruppe: true},
 			{akt: aktTextKopieren, text: i18n.T("Copy text from image"), an: e.ocrGrau() == "", erklaerung: e.ocrGrau(),
 				gruppe: true},
@@ -168,6 +169,15 @@ func (e *editor) menueEintraegeRoh(i int) []menueEintrag {
 			{akt: aktEbeneZurueck, text: i18n.T("Send backward"), an: s.KannEbeneSchritt(-1)},
 			{akt: aktEbeneDarueber, text: i18n.T("Select layer above"), an: len(s.D.Objekte()) > 0, gruppe: true},
 			{akt: aktEbeneDarunter, text: i18n.T("Select layer below"), an: len(s.D.Objekte()) > 0},
+			// Ausrichten und Verteilen der Mehrfachauswahl (ADR-0039 Punkt 3)
+			{akt: aktAusrichtenLinks, text: i18n.T("Align left"), an: s.KannAusrichten(), gruppe: true},
+			{akt: aktAusrichtenMitteWaagerecht, text: i18n.T("Align centers horizontally"), an: s.KannAusrichten()},
+			{akt: aktAusrichtenRechts, text: i18n.T("Align right"), an: s.KannAusrichten()},
+			{akt: aktAusrichtenOben, text: i18n.T("Align top"), an: s.KannAusrichten()},
+			{akt: aktAusrichtenMitteSenkrecht, text: i18n.T("Align centers vertically"), an: s.KannAusrichten()},
+			{akt: aktAusrichtenUnten, text: i18n.T("Align bottom"), an: s.KannAusrichten()},
+			{akt: aktVerteilenWaagerecht, text: i18n.T("Distribute horizontally"), an: s.KannVerteilen(), gruppe: true},
+			{akt: aktVerteilenSenkrecht, text: i18n.T("Distribute vertically"), an: s.KannVerteilen()},
 		}
 	case menueHilfe:
 		return []menueEintrag{

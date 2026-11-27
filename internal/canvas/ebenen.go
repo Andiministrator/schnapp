@@ -186,6 +186,9 @@ func (s *Sitzung) Doppeln() bool {
 	if !s.ebenenBereit() {
 		return false
 	}
+	if s.AnzahlGewaehlt() > 1 {
+		return s.doppleMehrere() // alle gewählten in einem Schritt (ADR-0039 Punkt 3)
+	}
 	o, ok := s.D.Objekt(s.Auswahl)
 	if !ok {
 		return false

@@ -1,0 +1,177 @@
+[
+  {
+    "name": "MA1 Gruppe nimmt nicht rückwärts zurück",
+    "datei": "internal/document/mehrere.go",
+    "paket": "./internal/document",
+    "alt": "\tfor i := len(g) - 1; i >= 0; i-- {\n\t\tg[i].zuruecknehmen(d)\n\t}",
+    "neu": "\tfor i := range g {\n\t\tg[i].zuruecknehmen(d)\n\t}"
+  },
+  {
+    "name": "MA2 EntferneMehrere von vorn nach hinten",
+    "datei": "internal/document/mehrere.go",
+    "paket": "./internal/document",
+    "alt": "\tslices.Sort(stellen)\n\tslices.Reverse(stellen)",
+    "neu": "\tslices.Sort(stellen)"
+  },
+  {
+    "name": "MA3 ErsetzeMehrere: unveränderte zählen",
+    "datei": "internal/document/mehrere.go",
+    "paket": "./internal/document",
+    "alt": "\t\tif !Gleich(o, d.objekte[i]) {\n\t\t\tg = append(g, ersetzen{d.objekte[i], o})\n\t\t}",
+    "neu": "\t\tg = append(g, ersetzen{d.objekte[i], o})"
+  },
+  {
+    "name": "MA4 ZugSetzeMehrere nimmt fremde Objekte",
+    "datei": "internal/document/mehrere.go",
+    "paket": "./internal/document",
+    "alt": "\t\tif o == nil || !d.zug.gehoert(o.Kennung()) {",
+    "neu": "\t\tif o == nil {"
+  },
+  {
+    "name": "MA5 ObjekteOhneZug trägt den Zug über mehrere",
+    "datei": "internal/document/mehrere.go",
+    "paket": "./internal/document",
+    "alt": "\tif z.mehrere != nil {\n\t\tfor _, a := range z.mehrere {\n\t\t\tif a.Kennung() == id {\n\t\t\t\treturn a, true",
+    "neu": "\tif z.mehrere != nil {\n\t\tfor _, a := range z.mehrere {\n\t\t\tif false && a.Kennung() == id {\n\t\t\t\treturn a, true"
+  },
+  {
+    "name": "MA6 Abbrechen über mehrere stellt nicht her",
+    "datei": "internal/document/mehrere.go",
+    "paket": "./internal/document",
+    "alt": "\tfor _, a := range z.mehrere {\n\t\td.objekte[d.index(a.Kennung())] = a\n\t}\n}",
+    "neu": "\tfor range z.mehrere {\n\t}\n}"
+  },
+  {
+    "name": "MA7 FuegeEinMehrere: Kopie unter dem Original",
+    "datei": "internal/document/mehrere.go",
+    "paket": "./internal/document",
+    "alt": "\t\tg = append(g, einfuegen{o, t.stelle + 1})",
+    "neu": "\t\tg = append(g, einfuegen{o, t.stelle})"
+  },
+  {
+    "name": "MA8 weitere gelten trotz anderer Hauptauswahl",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.Auswahl == 0 || s.mf.fuer != s.Auswahl {\n\t\treturn nil\n\t}",
+    "neu": "\tif s.Auswahl == 0 {\n\t\treturn nil\n\t}"
+  },
+  {
+    "name": "MA9 Umschalt-Klick nimmt nicht heraus",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif slices.Contains(alle, id) {\n\t\talle = slices.DeleteFunc",
+    "neu": "\tif false && slices.Contains(alle, id) {\n\t\talle = slices.DeleteFunc"
+  },
+  {
+    "name": "MA10 Rahmen wählt berührte",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif g.Min.X >= r.Min.X && g.Min.Y >= r.Min.Y && g.Max.X <= r.Max.X && g.Max.Y <= r.Max.Y {",
+    "neu": "\t\tif g.Max.X >= r.Min.X && g.Max.Y >= r.Min.Y && g.Min.X <= r.Max.X && g.Min.Y <= r.Max.Y {"
+  },
+  {
+    "name": "MA11 Rahmen mit Umschalt ersetzt",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.mf.dazu {\n\t\talle = append(s.Gewaehlt(), neu...)\n\t}",
+    "neu": ""
+  },
+  {
+    "name": "MA12 Klick ins Leere behält die Auswahl",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif !s.mf.dazu {\n\t\ts.waehleNur(0)\n\t}\n\ts.zug = zugRahmen",
+    "neu": "\ts.zug = zugRahmen"
+  },
+  {
+    "name": "MA13 Begrenzen nimmt das erste statt des kleinsten",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif math.Abs(b.X) < math.Abs(e.X) {",
+    "neu": "\t\tif false && math.Abs(b.X) < math.Abs(e.X) {"
+  },
+  {
+    "name": "MA14 Einrasten an den gewählten selbst",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\td, linien := s.rasteRechteck(huelle(s.mf.startObjs), d, ohne...)",
+    "neu": "\td, linien := s.rasteRechteck(huelle(s.mf.startObjs), d)"
+  },
+  {
+    "name": "MA15 Klick ohne Bewegung lässt alle gewählt",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\t_ = s.D.BrecheZugAb()\n\ts.waehleNur(s.mf.klick)",
+    "neu": "\t_ = s.D.BrecheZugAb()"
+  },
+  {
+    "name": "MA16 Löschen nur der Hauptauswahl",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.AnzahlGewaehlt() > 1 {\n\t\treturn s.loescheMehrere()",
+    "neu": "\tif false {\n\t\treturn s.loescheMehrere()"
+  },
+  {
+    "name": "MA17 Doppeln nur der Hauptauswahl",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.AnzahlGewaehlt() > 1 {\n\t\treturn s.doppleMehrere()",
+    "neu": "\tif false {\n\t\treturn s.doppleMehrere()"
+  },
+  {
+    "name": "MA18 Werkzeugwechsel behält die weiteren",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.mf.mehr = nil // ein Werkzeugwechsel",
+    "neu": "\t\t// ein Werkzeugwechsel"
+  },
+  {
+    "name": "MA19 Rückgängig: kein Nachrücken",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.nachruecken() // ADR-0039 Punkt 1",
+    "neu": "\t\ts.Auswahl = 0 // ADR-0039 Punkt 1"
+  },
+  {
+    "name": "MA20 Ziehen im Bild verschiebt die Ansicht",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif s.imBild(p) { // Ziehen auf freier Fläche im Bild zieht einen Rahmen",
+    "neu": "\tif false { // Ziehen auf freier Fläche im Bild zieht einen Rahmen"
+  },
+  {
+    "name": "MA21 Verteilen ohne gleiche Lücken",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tort += bis(g) - von(g) + luecke",
+    "neu": "\t\tort += bis(g) - von(g) + 0*luecke"
+  },
+  {
+    "name": "MA22 Ausrichten ohne Sichtprüfung",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif x, y := s.sichtbarIn(o); !x || !y {",
+    "neu": "\t\tif x, y := s.sichtbarIn(o); false && (!x || !y) {"
+  },
+  {
+    "name": "MA23 Ausrichten rechts an der linken Kante",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\td.X = h.Max.X - g.Max.X",
+    "neu": "\t\t\td.X = h.Min.X - g.Min.X"
+  },
+  {
+    "name": "MA24 Strg+A nimmt gesperrte",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\treturn ok && s.D.ObjektSichtbar(o) && o.Ebenenwerte().Bearbeitbar()",
+    "neu": "\treturn ok && s.D.ObjektSichtbar(o)"
+  },
+  {
+    "name": "MA25 Hilfslinien fehlen beim Zug über mehrere",
+    "datei": "internal/canvas/einrasten.go",
+    "paket": "./internal/canvas",
+    "alt": " && s.zug != zugMehrere) {",
+    "neu": ") {"
+  }
+]

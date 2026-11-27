@@ -99,11 +99,12 @@ func TestGriffZiehenUndKeinRueckgaengigImZug(t *testing.T) {
 	}
 }
 
-// Ziehen auf leerer Fläche verschiebt die Ansicht, nicht das Dokument; Esc stellt sie wieder her.
+// Ziehen auf leerer Fläche neben dem Bild verschiebt die Ansicht, nicht das Dokument; Esc stellt sie wieder her. Im
+// Bild zieht dasselbe einen Rahmen der Mehrfachauswahl (ADR-0039 Punkt 2, TestRahmenWaehlt).
 func TestAnsichtVerschiebenUndAbbrechen(t *testing.T) {
 	s, _, _ := sitzung(t)
-	s.Druecken(f(190, 90), TastePrimaer)
-	s.Ziehen(f(170, 80))
+	s.Druecken(f(-14, -14), TastePrimaer)
+	s.Ziehen(f(-34, -24))
 	if !nah(s.Abb.Versatz, document.Pt(4, 14)) {
 		t.Errorf("Versatz %v", s.Abb.Versatz)
 	}

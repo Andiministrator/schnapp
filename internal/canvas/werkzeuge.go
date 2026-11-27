@@ -159,6 +159,9 @@ func (s *Sitzung) SetzeWerkzeug(w Werkzeug) bool {
 	s.TextBestaetigen()
 	s.pipette = false
 	s.tb = textBereich{} // ein Werkzeugwechsel beendet den Bereichsmodus (ADR-0035)
+	if w != s.Werkzeug {
+		s.mf.mehr = nil // ein Werkzeugwechsel hebt die weiteren gewählten auf, die Hauptauswahl bleibt (ADR-0039 Punkt 6)
+	}
 	if ohneGriffe(w) {
 		s.Auswahl = 0 // F-174: sonst zöge ein Zug nahe einem Griff den Griff statt den Rahmen
 	}
@@ -352,6 +355,8 @@ const (
 	// AblehnungTextVerborgen: Der angeklickte Text liegt ganz in einem Stauch-Streifen, nur das Dreieck seiner Sprechblase
 	// ist zu sehen; er wird nicht zum Bearbeiten geöffnet (F-740).
 	AblehnungTextVerborgen
+	// AblehnungSichtbar: Ausrichten oder Verteilen hätte ein Objekt aus dem sichtbaren Bild geschoben (ADR-0039 Punkt 3).
+	AblehnungSichtbar
 )
 
 // Voll meldet, warum das aktive Zeichenwerkzeug jetzt kein neues Objekt anlegen kann (AblehnungKeine, wenn es geht).

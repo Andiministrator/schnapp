@@ -4,6 +4,7 @@ package canvas
 
 import (
 	"math"
+	"slices"
 
 	"github.com/Andiministrator/schnapp/internal/document"
 )
@@ -47,7 +48,7 @@ func (s *Sitzung) SchalteEinrasten() { s.einrastenAus = !s.einrastenAus }
 
 // Hilfslinien liefert die Linien, an denen der laufende Zug gerade einrastet (nur während des Ziehens, sonst nil).
 func (s *Sitzung) Hilfslinien() []Hilfslinie {
-	if !s.bewegt || (s.zug != zugObjekt && s.zug != zugGriff && s.zug != zugNeu) {
+	if !s.bewegt || (s.zug != zugObjekt && s.zug != zugGriff && s.zug != zugNeu && s.zug != zugMehrere) {
 		return nil
 	}
 	return append([]Hilfslinie(nil), s.linien...)
@@ -62,14 +63,14 @@ func (s *Sitzung) einrastenAktiv() bool { return !s.einrastenAus && !s.alt && !s
 // Verborgenen liegen, zählen nicht; von den übrigen Objekten zählen nur die Linien, die selbst zu sehen sind
 // (linieSichtbar). Die Mitte des Bilds ist die Mitte der Ansicht, ins Original zurückgerechnet: Bei gestauchten
 // Bildern liegt die Mitte zwischen den Rändern des Originals woanders, womöglich in einem herausgeschnittenen Streifen.
-func (s *Sitzung) rastZiele(ohne int) (xs, ys []float64) {
+func (s *Sitzung) rastZiele(ohne ...int) (xs, ys []float64) {
 	g := s.D.Groesse()
 	a, b := s.D.ZuOriginal(document.Pt(0, 0)), s.D.ZuOriginal(document.Pt(float64(g.X), float64(g.Y)))
 	m := s.D.ZuOriginal(document.Pt(float64(g.X)/2, float64(g.Y)/2))
 	xs = []float64{a.X, m.X, b.X}
 	ys = []float64{a.Y, m.Y, b.Y}
 	for _, o := range s.D.Objekte() {
-		if o.Kennung() == ohne || o.Ebenenwerte().Ausgeblendet || !s.D.ObjektSichtbar(o) {
+		if slices.Contains(ohne, o.Kennung()) || o.Ebenenwerte().Ausgeblendet || !s.D.ObjektSichtbar(o) {
 			continue
 		}
 		rs := []document.Rechteck{o.Grenzen()}
@@ -128,11 +129,11 @@ func rasteAchse(mv, ziele []float64, weite float64) (versatz, lage float64, ok b
 
 // rasteRechteck rastet das um d verschobene Rechteck g (Kanten und Mitten) ein und liefert den neuen Versatz und
 // die Linien.
-func (s *Sitzung) rasteRechteck(g document.Rechteck, d document.Punkt, ohne int) (document.Punkt, []Hilfslinie) {
+func (s *Sitzung) rasteRechteck(g document.Rechteck, d document.Punkt, ohne ...int) (document.Punkt, []Hilfslinie) {
 	if !s.einrastenAktiv() {
 		return d, nil
 	}
-	xs, ys := s.rastZiele(ohne)
+	xs, ys := s.rastZiele(ohne...)
 	weite := FangWeite / s.Abb.Zoom
 	var linien []Hilfslinie
 	if v, l, ok := rasteAchse([]float64{g.Min.X + d.X, (g.Min.X+g.Max.X)/2 + d.X, g.Max.X + d.X}, xs, weite); ok {

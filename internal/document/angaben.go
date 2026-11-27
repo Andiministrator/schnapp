@@ -40,11 +40,11 @@ func (d *Dokument) ObjekteOhneZug() []Objekt {
 	}
 	liste := make([]Objekt, 0, len(d.objekte))
 	for _, o := range d.objekte {
-		if o.Kennung() == d.zug.id {
-			if d.zug.alt == nil {
-				continue
+		if alt, ok := d.zug.altVon(o.Kennung()); ok {
+			if alt == nil {
+				continue // neues Objekt im Zug
 			}
-			o = d.zug.alt
+			o = alt
 		}
 		liste = append(liste, o)
 	}

@@ -111,7 +111,7 @@ func TestZeigerImZug(t *testing.T) {
 	}
 	s.Loslassen(f(35, 35))
 	s.Auswahl = 0
-	s.Druecken(f(5, 95), TastePrimaer) // leere Fläche: Ansicht ziehen
+	s.Druecken(f(-10, 95), TastePrimaer) // leere Fläche neben dem Bild: Ansicht ziehen (im Bild: Rahmen, ADR-0039)
 	s.Ziehen(f(40, 120))
 	if z := zeigerBei(s, f(40, 120)); z != ZeigerGreifend {
 		t.Errorf("Ansicht ziehen: %v", z)

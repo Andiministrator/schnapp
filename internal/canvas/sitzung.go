@@ -41,6 +41,10 @@ const (
 	// zugZuschnitt: Griff oder Kante des Zuschnittrahmens (Werkzeug Zuschneiden, ADR-0023 Nachtrag 5); der Rahmen
 	// steht in rahmenA/rahmenB, der Griff in griff.
 	zugZuschnitt
+	// zugRahmen: Rahmen der Mehrfachauswahl auf freier Fläche im Bild (ADR-0039 Punkt 2, mehrfach.go).
+	zugRahmen
+	// zugMehrere: gemeinsames Verschieben der gewählten Objekte (ADR-0039 Punkt 3).
+	zugMehrere
 )
 
 // Sitzung ist der Zustand des Editors ohne Gio (ADR-0020 Punkt 2): Dokument, Abbildung, Auswahl und laufender Zug.
@@ -128,6 +132,8 @@ type Sitzung struct {
 	ruht bool
 	// tb ist der Bereichsmodus „Text aus dem Bild kopieren“ (textbereich.go, ADR-0035 Punkt 5).
 	tb textBereich
+	// mf ist die Mehrfachauswahl (mehrfach.go, ADR-0039).
+	mf mehrfach
 }
 
 // NeueSitzung beginnt mit eingepasster Ansicht, ohne Auswahl, mit dem Werkzeug Auswählen und dem Standardstil.
@@ -290,7 +296,14 @@ func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
 		return
 	}
 	if id, ok := Treffer(o, q, s.toleranz()); ok {
-		s.Auswahl = id
+		if s.Umschalt { // Umschalt+Klick nimmt hinzu oder heraus (ADR-0039 Punkt 2)
+			s.SchalteGewaehlt(id)
+			return
+		}
+		if s.IstGewaehlt(id) && s.AnzahlGewaehlt() > 1 && s.beginneMehrere(id) {
+			return // Ziehen an einem gewählten verschiebt alle gewählten (Punkt 3)
+		}
+		s.waehleNur(id)
 		obj, _ := s.D.Objekt(id)
 		s.lupenTeil = LupeGanz
 		if l, ist := obj.(document.Lupe); ist {
@@ -301,7 +314,13 @@ func (s *Sitzung) Druecken(p document.Punkt, t Taste) {
 		}
 		return
 	}
-	s.Auswahl = 0
+	if s.imBild(p) { // Ziehen auf freier Fläche im Bild zieht einen Rahmen (ADR-0039 Punkt 2)
+		s.beginneRahmen(p)
+		return
+	}
+	if !s.Umschalt {
+		s.waehleNur(0)
+	}
 	s.zug = zugAnsicht
 }
 
@@ -350,6 +369,10 @@ func (s *Sitzung) Ziehen(p document.Punkt) {
 		s.zieheNeu(p)
 	case zugZuschnitt:
 		s.zieheZuschnitt(p)
+	case zugRahmen:
+		s.mf.rahmenB = p
+	case zugMehrere:
+		s.zieheMehrere(p)
 	}
 }
 
@@ -380,6 +403,10 @@ func (s *Sitzung) Loslassen(p document.Punkt) {
 		s.beendeNeu()
 	case zugZuschnitt:
 		s.zuschneideRahmen()
+	case zugRahmen:
+		s.beendeRahmen()
+	case zugMehrere:
+		s.loslassenMehrere()
 	}
 	s.merkeAenderung(vor)
 	if s.zug != zugText { // eine aufgezogene Sprechblase geht in die Texteingabe über (beendeBlase)
@@ -431,7 +458,7 @@ func (s *Sitzung) Abbrechen() {
 	switch s.zug {
 	case zugText:
 		return
-	case zugObjekt, zugGriff:
+	case zugObjekt, zugGriff, zugMehrere:
 		_ = s.D.BrecheZugAb()
 	case zugNeu:
 		if s.neuID != 0 {
@@ -468,7 +495,7 @@ func (s *Sitzung) verlauf(f func() error) bool {
 		return false
 	}
 	if _, ok := s.D.Objekt(s.Auswahl); !ok {
-		s.Auswahl = 0
+		s.nachruecken() // ADR-0039 Punkt 1: das oberste übrige gewählte wird Hauptauswahl
 	}
 	if s.D.Zuschnitt() != z || s.D.Groesse() != g || !slices.Equal(s.D.Streifen(), st) {
 		// Zuschnitt oder Streifen zurückgenommen bzw. wiederholt: neu einpassen (ADR-0023 Punkt 5), wie nach dem
@@ -483,6 +510,9 @@ func (s *Sitzung) Loeschen() bool {
 	if s.zug != keinZug || s.Auswahl == 0 || s.gesperrt() {
 		return false
 	}
+	if s.AnzahlGewaehlt() > 1 {
+		return s.loescheMehrere() // alle gewählten in einem Schritt (ADR-0039 Punkt 3)
+	}
 	vor := s.D.Stand()
 	if s.D.Entfernen(s.Auswahl) != nil {
 		return false
@@ -493,7 +523,7 @@ func (s *Sitzung) Loeschen() bool {
 }
 
 // Abwaehlen hebt die Auswahl auf (Esc ohne Zug).
-func (s *Sitzung) Abwaehlen() { s.Auswahl = 0 }
+func (s *Sitzung) Abwaehlen() { s.waehleNur(0) }
 
 // Gespeichert meldet, dass der aktuelle Stand gespeichert ist. Hält der Verlauf eine Schwärzung, wird er geleert:
 // Nach dem Speichern holt kein Rückgängig ungeschwärzte Pixel zurück, die ein weiteres Speichern auf die Platte

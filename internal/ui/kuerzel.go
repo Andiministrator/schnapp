@@ -67,6 +67,16 @@ const (
 	aktVorschauZeigen
 	aktVorschauSchlagworte
 	aktVorschauPapierkorb
+	// Mehrfachauswahl (ADR-0039): Menü Bearbeiten → „Select all“ (Strg+A), Menü Ebene → Ausrichten und Verteilen.
+	aktAllesWaehlen
+	aktAusrichtenLinks
+	aktAusrichtenMitteWaagerecht
+	aktAusrichtenRechts
+	aktAusrichtenOben
+	aktAusrichtenMitteSenkrecht
+	aktAusrichtenUnten
+	aktVerteilenWaagerecht
+	aktVerteilenSenkrecht
 )
 
 // taste ist ein Tastenkürzel des Editors. Genau eines gilt: akt (Handlung), werkzeug (wählt ein Werkzeug, hatWerkzeug)
@@ -125,6 +135,7 @@ func tastenTabelle() []taste {
 		{filter: key.Filter{Name: key.NameF10, Required: key.ModShift},
 			ausnahme: "öffnet das Kontextmenü der Auswahl (ADR-0038 Punkt 6); dasselbe Menü öffnet der Rechtsklick"},
 		strg("D", aktDoppeln),
+		strg("A", aktAllesWaehlen), // A allein ist das Werkzeug Pfeil; Strg+A war frei (ADR-0039 Punkt 2)
 		{filter: key.Filter{Name: key.NameF2}, akt: aktUmbenennen},
 		strg("H", aktAusblenden),
 		strg("L", aktSperren),

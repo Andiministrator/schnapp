@@ -390,6 +390,23 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 		}
 	case aktDoppeln:
 		return func(layout.Context) { e.s.Doppeln() }
+	case aktAllesWaehlen:
+		return func(layout.Context) { e.s.WaehleAlle() }
+	case aktAusrichtenLinks, aktAusrichtenMitteWaagerecht, aktAusrichtenRechts, aktAusrichtenOben,
+		aktAusrichtenMitteSenkrecht, aktAusrichtenUnten:
+		ausr := canvas.Ausrichtungen[a-aktAusrichtenLinks]
+		return func(layout.Context) {
+			if !e.s.Ausrichten(ausr) {
+				e.meldeAbgelehnt()
+			}
+		}
+	case aktVerteilenWaagerecht, aktVerteilenSenkrecht:
+		waagerecht := a == aktVerteilenWaagerecht
+		return func(layout.Context) {
+			if !e.s.Verteilen(waagerecht) {
+				e.meldeAbgelehnt()
+			}
+		}
 	case aktSchnellstilSichern:
 		return e.schnellstilSichernAktion
 	case aktVorschauOeffnen, aktVorschauZeigen, aktVorschauSchlagworte, aktVorschauPapierkorb:

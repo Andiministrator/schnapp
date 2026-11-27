@@ -284,6 +284,8 @@ func (d *Dokument) Ersetzen(neu Objekt) error {
 type zug struct {
 	alt Objekt // Stand vor dem Zug; nil bei einem neuen Objekt
 	id  int
+	// mehrere: Zug über mehrere Objekte (gemeinsam verschieben, ADR-0039), je ihr Stand davor; nil: ein Objekt (alt, id).
+	mehrere []Objekt
 }
 
 // BeginneNeuenZug fügt o für die Dauer des Zugs ein (z. B. einen Pfeil, der gerade aufgezogen wird) und liefert
@@ -329,7 +331,7 @@ func (d *Dokument) ZugSetze(o Objekt) error {
 	if d.zug == nil {
 		return ErrKeinZug
 	}
-	if o.Kennung() != d.zug.id {
+	if d.zug.mehrere != nil || o.Kennung() != d.zug.id {
 		return fmt.Errorf("document: Zug gilt Objekt %d, nicht %d", d.zug.id, o.Kennung())
 	}
 	if err := o.pruefe(); err != nil {
@@ -347,6 +349,10 @@ func (d *Dokument) BeendeZug() error {
 	}
 	z := d.zug
 	d.zug = nil
+	if z.mehrere != nil {
+		d.beendeMehrere(z)
+		return nil
+	}
 	i := d.index(z.id)
 	neu := d.objekte[i]
 	if z.alt == nil {
@@ -369,6 +375,10 @@ func (d *Dokument) BrecheZugAb() error {
 	}
 	z := d.zug
 	d.zug = nil
+	if z.mehrere != nil {
+		d.brecheMehrereAb(z)
+		return nil
+	}
 	i := d.index(z.id)
 	if z.alt == nil {
 		d.objekte = append(d.objekte[:i], d.objekte[i+1:]...)
