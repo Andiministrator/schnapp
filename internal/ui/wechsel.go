@@ -78,7 +78,10 @@ type wechselZustand struct {
 	// weitere: Aufnahmen, die nach einem gescheiterten Laden des Ziels der Reihe nach versucht werden, solange papierkorb
 	// gilt (F-827: eine beschädigte Nachbarin hält das Wegwerfen der offenen sonst auf).
 	weitere []string
-	antwort chan wechselErgebnis
+	// mitnehmen: weitere markierte Aufnahmen (relativ zur Ablage), die nach der Übernahme mit der bisher offenen in den
+	// Papierkorb gehen (ADR-0036 Zusatz Karte #361 Punkt 7). Scheitert der Wechsel, geht keine.
+	mitnehmen []string
+	antwort   chan wechselErgebnis
 }
 
 type wechselErgebnis struct {
@@ -121,7 +124,7 @@ func (e *editor) wechselAnfrage(abs string) bool {
 		e.melde(i18n.T("Text recognition is running. Press Esc to cancel it first."), false)
 		return false
 	}
-	e.wechsel.ziel, e.wechsel.ausDialog, e.wechsel.papierkorb, e.wechsel.weitere = abs, false, false, nil
+	e.wechsel.ziel, e.wechsel.ausDialog, e.wechsel.papierkorb, e.wechsel.weitere, e.wechsel.mitnehmen = abs, false, false, nil, nil
 	abzug, err := e.s.SpeichernJetzt()
 	switch {
 	case errors.Is(err, canvas.ErrNichtsZuSpeichern):
@@ -154,7 +157,7 @@ func (e *editor) wechselNachSpeichern(r speicherErgebnis, ende canvas.Ende) {
 			e.meldung.Text += " " + i18n.T("The chosen file was not opened yet: open it again with Ctrl+O.")
 		}
 		if e.wechsel.papierkorb {
-			e.meldung.Text += " " + i18n.T("The capture was not moved to the trash.")
+			e.meldung.Text += " " + nichtWeggeworfen(e.wechsel.mitnehmen)
 		}
 	default:
 		e.wechselLaden()
@@ -205,7 +208,7 @@ func (e *editor) wechselAbholen() bool {
 	default:
 		return false
 	}
-	papierkorb, weitere := e.wechsel.papierkorb, e.wechsel.weitere
+	papierkorb, weitere, mitnehmen := e.wechsel.papierkorb, e.wechsel.weitere, e.wechsel.mitnehmen
 	e.wechsel = wechselZustand{}
 	e.s.SetzeRuhe(false)
 	if r.err != nil && papierkorb && !e.erzwungen && !e.s.SignalVorgemerkt() && !e.s.Geaendert() {
@@ -218,7 +221,7 @@ func (e *editor) wechselAbholen() bool {
 			// wenn eine spätere Nachbarin lädt (F-672; Kritik 26.11. K-5).
 			diagnoseEditor("Wechsel: Nachbarin nicht geladen (%v), nächste", r.err)
 			e.abgleichAnfordern()
-			e.wechsel.ziel, e.wechsel.papierkorb, e.wechsel.weitere = weitere[0], true, weitere[1:]
+			e.wechsel.ziel, e.wechsel.papierkorb, e.wechsel.weitere, e.wechsel.mitnehmen = weitere[0], true, weitere[1:], mitnehmen
 			e.wechselLaden()
 			return true
 		}
@@ -228,7 +231,7 @@ func (e *editor) wechselAbholen() bool {
 		// Die Ladefunktion übersetzt bekannte Fehler; was sie nicht kennt, verliert hier Paketpräfix und Pfad (F-663).
 		e.melde(fmt.Sprintf(i18n.T("Could not open the capture: %v"), fehlerGrund(r.err)), true)
 		if papierkorb {
-			e.meldung.Text += " " + i18n.T("The capture was not moved to the trash.")
+			e.meldung.Text += " " + nichtWeggeworfen(mitnehmen)
 		}
 		// Fehlt die Datei (im Dateimanager gelöscht, verschoben), verschwindet ihr Eintrag nach dem Abgleich aus Leiste
 		// und Ansicht (F-672); bei anderen Fehlern ändert der Abgleich nichts.
@@ -253,7 +256,7 @@ func (e *editor) wechselAbholen() bool {
 			e.melde(i18n.T("The other capture was not opened: this one was changed meanwhile."), false)
 		}
 		if papierkorb && e.meldung.Text != "" { // Kritik K-9: auch hier sagen, dass nichts weggeworfen wurde
-			e.meldung.Text += " " + i18n.T("The capture was not moved to the trash.")
+			e.meldung.Text += " " + nichtWeggeworfen(mitnehmen)
 		}
 	case papierkorb:
 		// Die bisher offene ist gespeichert und nicht mehr offen: jetzt in den Papierkorb, die volle Ansicht bleibt offen
@@ -265,8 +268,15 @@ func (e *editor) wechselAbholen() bool {
 		e.wechselBehaeltAnsicht = true
 		e.uebernimm(r.g)
 		e.wechselBehaeltAnsicht = false
+		var rels []string
 		if rel, ok := e.bib.Bibliothek.Relativ(alt); ok && alt != "" {
-			e.papierkorbAnfrage(rel, false, nil)
+			rels = append(rels, rel)
+		}
+		switch {
+		case len(mitnehmen) > 0: // mit den übrigen markierten in einer Arbeit (Karte #361)
+			e.papierkorbArbeit(append(rels, mitnehmen...), false)
+		case len(rels) == 1:
+			e.papierkorbAnfrage(rels[0], false, nil)
 		}
 	default:
 		e.uebernimm(r.g)

@@ -45,14 +45,22 @@ var dateimanagerRuf = func(ctx context.Context, uris []string) error {
 	return c.Object(dateimanagerDienst, dateimanagerObjekt).CallWithContext(ctx, dateimanagerMethode, 0, uris, "").Err
 }
 
-// ZeigeImDateimanager öffnet den Ordner der Datei pfad im Dateimanager und markiert sie. Fehlt der Dienst, liefert sie
-// ErrKeinDateimanager.
-func ZeigeImDateimanager(ctx context.Context, pfad string) error {
-	uri, err := PfadZuURI(pfad)
-	if err != nil {
-		return err
+// ZeigeImDateimanager öffnet den Ordner der Dateien pfade im Dateimanager und markiert sie, in einem Aufruf (mehrere
+// markierte Vorschauen, ADR-0036 Zusatz Karte #361). Ohne Pfad oder mit einem relativen geschieht nichts
+// (ErrKeineDatei). Fehlt der Dienst, liefert sie ErrKeinDateimanager.
+func ZeigeImDateimanager(ctx context.Context, pfade ...string) error {
+	if len(pfade) == 0 {
+		return ErrKeineDatei
 	}
-	err = dateimanagerRuf(ctx, []string{uri})
+	uris := make([]string, 0, len(pfade))
+	for _, pfad := range pfade {
+		uri, err := PfadZuURI(pfad)
+		if err != nil {
+			return err
+		}
+		uris = append(uris, uri)
+	}
+	err := dateimanagerRuf(ctx, uris)
 	if err != nil && keinDienst(err) {
 		return fmt.Errorf("%w: %v", ErrKeinDateimanager, err)
 	}

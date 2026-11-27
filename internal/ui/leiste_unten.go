@@ -365,12 +365,24 @@ func (e *editor) leisteAuswerten(gtx layout.Context) {
 			e.leistePapierkorb(i)
 			continue
 		}
-		if k.knoepfe[i].Clicked(gtx) && e.leisteAn() && !e.loeschRuht() { // zweiter Klick nach dem ✕ öffnet nichts (K-2)
+		for {
+			c, ok := k.knoepfe[i].Update(gtx)
+			if !ok {
+				break
+			}
+			if !e.leisteAn() || e.loeschRuht() { // zweiter Klick nach dem ✕ öffnet nichts (K-2)
+				continue
+			}
 			if langerDruck(k.knoepfe[i].History()) {
 				k.langDruck = i // zeigt das ✕, statt zu öffnen
 				continue
 			}
 			k.langDruck = -1
+			// Strg/Umschalt markieren statt zu öffnen; ein Klick ohne hebt die Markierung auf (Karte #361 Punkt 2).
+			if e.leisteMarkiereKlick(i, c.Modifiers) {
+				gtx.Execute(op.InvalidateCmd{})
+				continue
+			}
 			e.leisteOeffne(i)
 		}
 	}
@@ -415,7 +427,7 @@ func (e *editor) leisteOeffne(i int) {
 // Leertaste laufen über knopfPerTaste. Liefert, ob die Taste verbraucht ist.
 func (e *editor) leisteTaste(gtx layout.Context, taste key.Event) bool {
 	k := &e.unten
-	if k.l == nil || taste.Modifiers != 0 {
+	if k.l == nil {
 		return false
 	}
 	i := -1
@@ -427,9 +439,19 @@ func (e *editor) leisteTaste(gtx layout.Context, taste key.Event) bool {
 	if i < 0 {
 		return false
 	}
+	if e.leisteMarkierTaste(gtx, i, taste) { // Strg+Leertaste, Umschalt+Pfeile, Strg+A, Esc (Karte #361)
+		return true
+	}
+	if taste.Modifiers != 0 {
+		return false
+	}
 	var s libview.Schritt
 	switch taste.Name {
-	case key.NameDeleteForward: // in den Papierkorb, wie in der vollen Ansicht (Karte #312)
+	case key.NameDeleteForward: // in den Papierkorb, wie in der vollen Ansicht (Karte #312); markiert: alle (#361)
+		if i < len(k.gezeigt) && mehrereMarkiert(k.l.Markierung(), k.l.Eintraege(), k.gezeigt[i]) != nil {
+			e.papierkorbMarkiert(true)
+			return true
+		}
 		e.leistePapierkorb(i)
 		return true
 	case key.NameLeftArrow:
@@ -444,6 +466,9 @@ func (e *editor) leisteTaste(gtx layout.Context, taste key.Event) bool {
 		return false
 	}
 	ziel := k.l.Bewege(i, s)
+	if ziel >= 0 && ziel < len(k.l.Eintraege()) {
+		k.l.Markierung().SetzeAnker(k.l.Eintraege()[ziel].Pfad) // Umschalt+Pfeil misst ab hier
+	}
 	if ziel >= 0 && ziel != i {
 		k.l.SetzeFokus(ziel)
 		k.l.Zeige(ziel, k.masse)
@@ -516,6 +541,10 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 		case k.knoepfe[i].Hovered():
 			paint.FillShape(gtx.Ops, farbeNebentext, clip.Stroke{Path: clip.Rect(kr).Path(), Width: float32(gtx.Dp(1))}.Op())
 		}
+		markiert := k.l.Markierung().Enthaelt(eintrag.Pfad)
+		if markiert {
+			zeichneMarkiert(gtx, kr) // Karte #361 Punkt 4
+		}
 		ungesichert := aktuell && e.s.Ungesichert()
 		if ungesichert {
 			k.punkt = zeichneUngesichertPunkt(gtx, kr)
@@ -557,6 +586,9 @@ func (e *editor) zeichneLeisteUnten(gtx layout.Context, r image.Rectangle) {
 		e.leisteZeile(gtx, eintrag, jetzt, kr, farbe == farbeText)
 		if fokus || (k.hinweis == "" && k.knoepfe[i].Hovered()) {
 			k.hinweis = leisteHinweis(eintrag, aktuell, ungesichert)
+			if markiert {
+				k.hinweis = markHinweis(k.l.Markierung().Anzahl())
+			}
 		}
 	}
 	cs.Pop()

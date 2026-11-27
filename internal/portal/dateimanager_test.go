@@ -70,4 +70,19 @@ func TestZeigeImDateimanager(t *testing.T) {
 	if err := ZeigeImDateimanager(context.Background(), "relativ.png"); !errors.Is(err, ErrKeineDatei) || gerufen != nil {
 		t.Errorf("relativer Pfad: %v, gerufen %q", err, gerufen)
 	}
+	// Mehrere Dateien gehen in einem Aufruf (ADR-0036 Zusatz Karte #361); ein relativer Pfad darunter verhindert ihn.
+	antwort = nil
+	if err := ZeigeImDateimanager(context.Background(), "/a.png", "/b/c.png"); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(gerufen, []string{"file:///a.png", "file:///b/c.png"}) {
+		t.Errorf("mehrere: gerufen %q", gerufen)
+	}
+	gerufen = nil
+	if err := ZeigeImDateimanager(context.Background(), "/a.png", "b.png"); !errors.Is(err, ErrKeineDatei) || gerufen != nil {
+		t.Errorf("mehrere mit relativem: %v, gerufen %q", err, gerufen)
+	}
+	if err := ZeigeImDateimanager(context.Background()); !errors.Is(err, ErrKeineDatei) || gerufen != nil {
+		t.Errorf("ohne Pfad: %v, gerufen %q", err, gerufen)
+	}
 }

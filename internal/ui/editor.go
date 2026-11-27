@@ -2537,6 +2537,9 @@ func (e *editor) alleTastenFilter() []event.Filter {
 	for _, f := range menueNavigationsFilter(e.leertastenZiele()...) {
 		filter = append(filter, f)
 	}
+	for _, f := range e.unten.markierTasten() { // Markierung an einer Vorschau der Leiste (Karte #361)
+		filter = append(filter, f)
+	}
 	return filter
 }
 
@@ -2659,7 +2662,7 @@ func (e *editor) tasten(gtx layout.Context) {
 		if !ok || k.State != key.Press {
 			continue
 		}
-		if k.Name == key.NameSpace { // nur an den Menütiteln und den Feldern mit Liste angemeldet; wirkt wie Enter
+		if k.Name == key.NameSpace && k.Modifiers == 0 { // nur an den Menütiteln und den Feldern mit Liste angemeldet; wirkt wie Enter
 			if e.menue.offen && !e.menueKnopf(e.fokussierterKnopf(gtx)) && e.menueTitelFokus(gtx) < 0 {
 				continue // hinter einer offenen Liste wirkt die Leertaste nicht (F-873, F-257)
 			}

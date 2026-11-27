@@ -417,3 +417,45 @@ der Verlauf beginnt leer.
    zurückgeschrieben ([S], F-834). Der Eintrag wird erst verbraucht, wenn `uebernimm` die Aufnahme zeigt; scheitert das
    Laden oder lehnt der Editor die Übernahme ab, bleibt er gemerkt. Geht eine gemerkte, nicht offene Aufnahme in den
    Papierkorb, wird sie vergessen (F-838).
+
+## Zusatz (27.11.2026, Karte #361, Teil 1: Markieren, Papierkorb, Dateimanager; Claude Opus 5.5)
+
+Andi (26.11.2026): „ich möchte dort auch mehrere vorschaubilder markieren können (mit shift- bzw. strg-taste), um diese
+dann zusammen löschen, teilen, usw. zu können.“ Löst „mehrere auswählen“ aus Punkt 8 ein; ADR-0038 Punkt 3 sagte, die
+Mehrfachmarkierung erweitert dieselbe Liste des Kontextmenüs.
+
+1. **Markierung** gibt es in der Leiste und in der vollen Ansicht, je eine eigene (`libview.Markierung`: Menge von Pfaden
+   relativ zur Ablage plus Anker; Logik ohne Gio). Sie gilt nur für Gezeigtes: Liest der Index neu oder ändern Suche,
+   Zeitraum oder Schalter das Raster, fallen Markierungen weg, deren Aufnahme nicht mehr gezeigt wird. So geht nie eine
+   Aufnahme in den Papierkorb, die der Nutzer nicht sieht. Die Ansicht beginnt bei jedem Öffnen ohne Markierung.
+2. **Maus:** Strg+Klick schaltet eine Vorschau in die Markierung oder heraus (öffnet nicht) und setzt den Anker.
+   Umschalt+Klick markiert den Bereich vom Anker bis zur Vorschau und ersetzt die bisherige Markierung;
+   Strg+Umschalt+Klick fügt den Bereich hinzu. Ohne Anker markiert Umschalt+Klick nur die Vorschau. Ein Klick ohne Taste
+   wirkt wie bisher (Leiste: öffnen, Ansicht: Fokus, Doppelklick öffnet) und hebt die Markierung auf.
+3. **Tastatur:** Strg+Leertaste schaltet die Vorschau mit Fokus (wie in KDE-Listen; die Leertaste allein bedient Gio an
+   den Knöpfen der Leiste selbst wie Enter, F-883). Umschalt+Pfeile (in der Ansicht auch Umschalt+Pos1/Ende/Bild↑/↓)
+   bewegen den Fokus und markieren den Bereich vom Anker bis zum Fokus. Strg+A markiert alle gezeigten (Leiste: wenn eine
+   Vorschau den Fokus hat). Esc hebt eine Markierung auf; erst ein weiteres Esc schließt die Ansicht. Diese Tasten sind
+   Bedienung der Liste wie die Menünavigation (ADR-0026 Nachtrag 4), keine Kürzel der Tabelle.
+4. **Darstellung:** Eine markierte Vorschau ist orange getönt und trägt unten links ein angehaktes Kästchen (oben links
+   steht der Punkt „ungesichert“, oben rechts das ✕); einen eigenen Rand hat sie nicht, damit der grüne Rahmen der
+   offenen und der Fokusring sichtbar bleiben. Die Statuszeile nennt die Zahl („3 captures selected — Del moves
+   them to the trash, Esc clears the selection“).
+5. **Wofür die Markierung gilt:** Entf, Umschalt+F10 und das Kontextmenü gelten der Markierung, wenn die Vorschau mit Fokus
+   bzw. unter dem Rechtsklick markiert ist; sonst nur dieser einen. Ein Rechtsklick auf eine nicht markierte Vorschau hebt
+   die Markierung auf (wie Dolphin). Das ✕ gilt immer nur seiner Vorschau.
+6. **Kontextmenü mit mehreren:** „Show N captures in file manager“ (ein Aufruf `ShowItems` mit allen) · „Move N captures
+   to trash“. Öffnen und Schlagworte entfallen bei mehreren.
+7. **Papierkorb mehrerer:** eine Arbeit im Hintergrund (`bibArbeiten`), die Aufnahmen nacheinander über
+   `library.InPapierkorb` (je Aufnahme unter der Index-Sperre); die Meldung nennt, wie viele gingen und warum eine nicht.
+   Ist die offene Aufnahme markiert, wechselt der Editor zuerst zur nächsten **nicht markierten** Nachbarin (Weg des
+   Zusatzes zu Karte #347) und legt danach die offene und die übrigen markierten in den Papierkorb. Gibt es keine nicht
+   markierte, bleibt die offene, die übrigen gehen, und die Meldung sagt es. Scheitert der Wechsel, geht keine.
+8. **Nicht in diesem Teil (Folgekarte):** Exportieren mehrerer in einen Ordner, Kopieren mehrerer, Schlagworte für
+   mehrere. **Abweichung von der Karte:** Kopieren mehrerer als `text/uri-list` der Arbeitsdateien ist verworfen. Die
+   Arbeitsdatei trägt das Original ohne Zuschnitt und Stauchen (ADR-0008); wer Dateien weitergibt, gäbe weg, was er
+   abgeschnitten hat. Kopieren und Teilen laufen deshalb über gerenderte Exporte (Folgekarte), nie über die Arbeitsdateien.
+
+Tests `internal/libview/markierung_test.go`, `internal/ui/markierung_test.go`, `internal/portal/dateimanager_test.go`;
+Mutanten `scripts/mutanten/markierung.json` (MK1–MK30); Sichtprobe `scripts/drehbuecher/markierung-361.txt`
+(Probe-Bibliothek, legt nichts in den Papierkorb).

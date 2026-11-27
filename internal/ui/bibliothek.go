@@ -131,7 +131,14 @@ type bibAnsicht struct {
 type bibArbeit struct {
 	papierkorb bool // sonst Schlagworte
 	rel        string
-	err        error
+	err        error // bei mehreren: der erste Fehler
+	// Papierkorb mehrerer markierter Aufnahmen (ADR-0036 Zusatz Karte #361): rels die Aufnahmen, anzahl die verschobenen,
+	// index: mindestens eine ist verschoben, aber der Index nicht nachgeführt; offenBleibt: die offene war markiert und
+	// bleibt.
+	rels        []string
+	anzahl      int
+	index       bool
+	offenBleibt bool
 }
 
 // bibliothekStart legt den Zustand an (mit der Leiste, nur mit Bibliothek).
@@ -182,6 +189,7 @@ func (e *editor) bibliothekOeffnen(gtx layout.Context) {
 	b.ziel, b.bearbeite, b.worte, b.hinweis = bibZielRaster, "", "", ""
 	b.ueber, b.letzteKachel, b.langDruck, b.druckStelle = -1, -1, -1, -1 // Kritik K-3: 0 wäre Kachel 0
 	b.r.SetzeFokus(-1)
+	b.r.Markierung().SetzeAnker("") // ohne Markierung beginnt sie, weil bibliothekSchliessen sie leert (Karte #361 Punkt 1)
 	b.r.SetzeRollen(0)
 	b.r.SetzeAktuell(e.offenRel())
 	b.fokusAnfang = true
@@ -201,6 +209,9 @@ func (e *editor) bibliothekSchliessen(gtx *layout.Context) {
 	}
 	b.offen, b.bearbeite, b.hinweis, b.ueber, b.langDruck, b.druckStelle = false, "", "", -1, -1, -1
 	b.kacheln, b.von, b.bis = nil, 0, 0
+	if b.r != nil {
+		b.r.Markierung().Leere() // das nächste Öffnen beginnt ohne Markierung (Karte #361 Punkt 1)
+	}
 	if e.menue.offen && e.menue.welches == listeZeitraum {
 		e.menue.offen, e.menue.fokusNach = false, nil
 	}
@@ -319,6 +330,8 @@ func (e *editor) bibliothekAbholen() bool {
 // bibliothekArbeitFertig meldet das Ende von Papierkorb bzw. Schlagworten und liest Ansicht und Leiste neu.
 func (e *editor) bibliothekArbeitFertig(r bibArbeit) {
 	switch {
+	case len(r.rels) > 0:
+		e.papierkorbMehrereFertig(r)
 	case r.papierkorb && errors.Is(r.err, library.ErrIndex):
 		// Die Datei liegt im Papierkorb, nur der Index ist nicht nachgeführt (ADR-0016 Nachtrag 6, F-678 Punkt 2): Erfolg
 		// melden, beim nächsten Lesen abgleichen.
@@ -370,9 +383,23 @@ func (e *editor) bibOeffne(gtx layout.Context, i int) {
 	e.wechselAnfrage(e.bibAbs(i))
 }
 
-// bibPapierkorb legt die Aufnahme mit Fokus in den Papierkorb (Entf, ✕); an der offenen wechselt der Editor vorher zu
-// einer Nachbarin (papierkorbAnfrage).
+// bibPapierkorb legt die Aufnahme mit Fokus in den Papierkorb (Entf); an der offenen wechselt der Editor vorher zu
+// einer Nachbarin (papierkorbAnfrage). Ist sie markiert und sind es mehrere, gehen alle markierten (Karte #361).
 func (e *editor) bibPapierkorb() {
+	b := &e.bibl
+	i := b.r.Fokus()
+	if i < 0 || i >= len(b.r.Eintraege()) {
+		return
+	}
+	if mehrereMarkiert(b.r.Markierung(), b.r.Eintraege(), b.r.Eintraege()[i].Pfad) != nil {
+		e.papierkorbMarkiert(false)
+		return
+	}
+	e.bibPapierkorbEine()
+}
+
+// bibPapierkorbEine legt nur die Aufnahme mit Fokus in den Papierkorb (das ✕ gilt immer nur seiner Vorschau).
+func (e *editor) bibPapierkorbEine() {
 	b := &e.bibl
 	i := b.r.Fokus()
 	if i < 0 || i >= len(b.r.Eintraege()) {
@@ -594,6 +621,11 @@ func (e *editor) bibSchlagworteUebernehmen() {
 
 // bibArbeiten führt f in einer Goroutine aus; das Ergebnis holt bibliothekAbholen.
 func (e *editor) bibArbeiten(a bibArbeit, f func() error) {
+	e.bibArbeitenMit(a, func(a *bibArbeit) { a.err = f() })
+}
+
+// bibArbeitenMit führt f in einer Goroutine aus; f trägt sein Ergebnis in a ein (Papierkorb mehrerer, Karte #361).
+func (e *editor) bibArbeitenMit(a bibArbeit, f func(*bibArbeit)) {
 	b := &e.bibl
 	if b.arbeit == nil {
 		b.arbeit = make(chan bibArbeit, 1)
@@ -601,7 +633,7 @@ func (e *editor) bibArbeiten(a bibArbeit, f func() error) {
 	b.arbeitLaeuft = true
 	ch, wecker := b.arbeit, e.wecker
 	go func() {
-		a.err = f()
+		f(&a)
 		ch <- a
 		if wecker != nil {
 			wecker.Anfordern()
@@ -694,7 +726,15 @@ func (e *editor) bibliothekBearbeiten() []menueEintrag {
 		grau = i18n.T("This is the open capture. Open another one first.")
 	}
 	einzigGrau := ""
-	if offen && len(e.bibNachbarn(i)) == 0 {
+	papierkorb, offenPK := i18n.T("Move to trash"), offen
+	if da {
+		if mehrere := mehrereMarkiert(b.r.Markierung(), b.r.Eintraege(), b.r.Eintraege()[i].Pfad); mehrere != nil {
+			// Die Markierung geht als Ganzes (Karte #361 Punkt 5); bleibt die offene als einzige, gehen die übrigen.
+			papierkorb = fmt.Sprintf(i18n.N("Move %d capture to trash", "Move %d captures to trash", len(mehrere)), len(mehrere))
+			offenPK = false
+		}
+	}
+	if offenPK && len(e.bibNachbarn(i)) == 0 {
 		einzigGrau = e.einzigText()
 	}
 	return []menueEintrag{
@@ -702,7 +742,7 @@ func (e *editor) bibliothekBearbeiten() []menueEintrag {
 		{akt: aktBibSchlagworte, text: i18n.T("Edit keywords"), an: da && !offen, erklaerung: grau,
 			kuerzel: tastenName(key.Filter{Name: key.NameF2}), gruppe: true},
 		// Die offene geht mit Wechsel zur Nachbarin in den Papierkorb (Karte #347); nur die einzige bleibt.
-		{akt: aktBibPapierkorb, text: i18n.T("Move to trash"), an: da && (!offen || einzigGrau == ""), erklaerung: einzigGrau,
+		{akt: aktBibPapierkorb, text: papierkorb, an: da && (!offenPK || einzigGrau == ""), erklaerung: einzigGrau,
 			kuerzel: tastenName(key.Filter{Name: key.NameDeleteForward})},
 		{akt: aktBibSuchen, text: i18n.T("Search by keyword"), an: true,
 			kuerzel: tastenName(key.Filter{Name: "F", Required: key.ModShortcut}), gruppe: true},
@@ -716,12 +756,16 @@ func (e *editor) bibliothekFilter() []event.Filter {
 	for _, n := range []key.Name{key.NameEscape, key.NameReturn, key.NameEnter, key.NameTab} {
 		f = append(f, key.Filter{Name: n, Optional: key.ModShift})
 	}
+	// Pfeile, Pos1, Ende und Bild↑/↓ auch mit Umschalt: Bereich markieren (Karte #361 Punkt 3).
 	for _, n := range []key.Name{key.NameUpArrow, key.NameDownArrow, key.NameLeftArrow, key.NameRightArrow,
-		key.NameHome, key.NameEnd, key.NamePageUp, key.NamePageDown, key.NameDeleteForward, key.NameDeleteBackward,
-		key.NameF2} {
+		key.NameHome, key.NameEnd, key.NamePageUp, key.NamePageDown} {
+		f = append(f, key.Filter{Name: n, Optional: key.ModShift})
+	}
+	for _, n := range []key.Name{key.NameDeleteForward, key.NameDeleteBackward, key.NameF2} {
 		f = append(f, key.Filter{Name: n})
 	}
-	return append(f, key.Filter{Name: "F", Required: key.ModShortcut})
+	return append(f, key.Filter{Name: "F", Required: key.ModShortcut},
+		key.Filter{Name: key.NameSpace, Required: key.ModShortcut}, key.Filter{Name: "A", Required: key.ModShortcut})
 }
 
 // bibliothekAuswerten verarbeitet Klicks, Mausrad und Tasten der offenen Ansicht; läuft im Bild vor feldTasten und
@@ -829,7 +873,7 @@ func (e *editor) bibliothekZeiger(gtx layout.Context) {
 			if stelle >= 0 && e.bibLoeschTreffer(stelle, pe.Position.Round()) && !e.loeschRuht() {
 				b.r.SetzeFokus(stelle)
 				b.langDruck, b.letzteKachel = -1, -1
-				e.bibPapierkorb()
+				e.bibPapierkorbEine() // das ✕ gilt nur seiner Vorschau, auch wenn sie markiert ist (Karte #361 Punkt 5)
 				continue
 			}
 			b.druckStelle, b.druckZeit = stelle, pe.Time
@@ -839,6 +883,15 @@ func (e *editor) bibliothekZeiger(gtx layout.Context) {
 			b.ziel = bibZielRaster
 			gtx.Execute(key.FocusCmd{Tag: b})
 			if stelle < 0 {
+				if pe.Modifiers&(key.ModShortcut|key.ModShift) == 0 {
+					b.r.Markierung().Leere() // Klick ins Leere hebt die Markierung auf
+				}
+				continue
+			}
+			if markiereKlick(b.r.Markierung(), b.r.Eintraege(), b.r.Eintraege()[stelle].Pfad, pe.Modifiers) {
+				// Strg/Umschalt markiert und öffnet nie, auch nicht als zweiter Druck (Karte #361 Punkt 2).
+				b.r.SetzeFokus(stelle)
+				b.letzteKachel = -1
 				continue
 			}
 			b.r.SetzeFokus(stelle)
@@ -904,6 +957,10 @@ func (e *editor) bibliothekTaste(gtx layout.Context, k key.Event) {
 		}
 		return
 	case k.Name == key.NameEscape:
+		if b.r.Markierung().Anzahl() > 0 { // erst die Markierung, ein weiteres Esc schließt (Karte #361 Punkt 3)
+			b.r.Markierung().Leere()
+			return
+		}
 		e.bibliothekSchliessen(&gtx)
 		return
 	}
@@ -943,6 +1000,9 @@ func (e *editor) bibliothekTaste(gtx layout.Context, k key.Event) {
 // die Schlagworte.
 func (e *editor) bibliothekRasterTaste(gtx layout.Context, k key.Event) {
 	b := &e.bibl
+	if e.bibMarkierTaste(k) {
+		return
+	}
 	var s libview.Schritt
 	switch k.Name {
 	case key.NameReturn, key.NameEnter:
@@ -974,9 +1034,35 @@ func (e *editor) bibliothekRasterTaste(gtx layout.Context, k key.Event) {
 		return
 	}
 	if ziel := b.r.Bewege(b.r.Fokus(), s, b.masse); ziel >= 0 {
+		m, es := b.r.Markierung(), b.r.Eintraege()
+		if k.Modifiers == key.ModShift { // Umschalt+Pfeil markiert vom Anker bis zum Fokus (Karte #361 Punkt 3)
+			if m.Anker() == "" && b.r.Fokus() >= 0 {
+				m.SetzeAnker(es[b.r.Fokus()].Pfad)
+			}
+			m.Bereich(es, es[ziel].Pfad, false)
+		} else {
+			m.SetzeAnker(es[ziel].Pfad)
+		}
 		b.r.SetzeFokus(ziel)
 		b.r.Zeige(ziel, b.masse)
 	}
+}
+
+// bibMarkierTaste: Strg+Leertaste schaltet die Kachel mit Fokus, Strg+A markiert alle gezeigten (Karte #361 Punkt 3).
+func (e *editor) bibMarkierTaste(k key.Event) bool {
+	b := &e.bibl
+	es := b.r.Eintraege()
+	switch {
+	case k.Name == key.NameSpace && k.Modifiers == key.ModShortcut:
+		if i := b.r.Fokus(); i >= 0 && i < len(es) {
+			b.r.Markierung().Umschalte(es[i].Pfad)
+		}
+	case k.Name == "A" && k.Modifiers == key.ModShortcut:
+		b.r.Markierung().Alle(es)
+	default:
+		return false
+	}
+	return true
 }
 
 // --- Zeichnen ---
@@ -1182,6 +1268,9 @@ func (e *editor) zeichneBibliothekRaster(gtx layout.Context) {
 		case i == b.ueber:
 			paint.FillShape(gtx.Ops, farbeNebentext, clip.Stroke{Path: clip.Rect(br).Path(), Width: float32(dp(1))}.Op())
 		}
+		if b.r.Markierung().Enthaelt(eintrag.Pfad) {
+			zeichneMarkiert(gtx, br)
+		}
 		if i == fokus && b.ziel == bibZielRaster {
 			bibRing(gtx, br)
 		}
@@ -1238,6 +1327,9 @@ func (e *editor) bibliothekHinweis() string {
 	}
 	if i < 0 || i >= len(es) {
 		return ""
+	}
+	if m := b.r.Markierung(); m.Enthaelt(es[i].Pfad) {
+		return markHinweis(m.Anzahl())
 	}
 	zeit := es[i].Erstellt.Local().Format(i18n.TK("date format", "2006-01-02 15:04"))
 	if b.r.IstAktuell(i) {

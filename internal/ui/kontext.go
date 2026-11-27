@@ -27,6 +27,9 @@ type kontextMenue struct {
 	// leer: der Leinwand. inLeiste: Vorschau der Leiste unten, sonst der vollen Ansicht.
 	vorschau string
 	inLeiste bool
+	// mehrere: Die Vorschau ist markiert und mit ihr weitere (ADR-0036 Zusatz Karte #361 Punkt 6); die Liste gilt dann der
+	// Markierung. Gemerkt sind die Pfade beim Öffnen; die Einträge nehmen die Markierung, wie sie beim Auslösen steht.
+	mehrere []string
 }
 
 // kontextAmPunkt öffnet das Kontextmenü der Leinwand am Fensterpunkt p (Leinwandkoordinaten plus Ursprung der Leinwand).

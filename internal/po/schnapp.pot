@@ -980,15 +980,15 @@ msgstr ""
 msgid "This is the only capture: it stays open and is not moved to the trash."
 msgstr ""
 
-#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go internal/ui/wechsel.go
+#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go internal/ui/markierung.go internal/ui/wechsel.go
 msgid "Saving is still running. Please wait a moment, then try again."
 msgstr ""
 
-#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go internal/ui/wechsel.go
+#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go internal/ui/markierung.go internal/ui/wechsel.go
 msgid "Another capture is still loading. Please wait a moment, then try again."
 msgstr ""
 
-#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go internal/ui/wechsel.go
+#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go internal/ui/markierung.go internal/ui/wechsel.go
 msgid "The library is still working. Please wait a moment, then try again."
 msgstr ""
 
@@ -1012,16 +1012,22 @@ msgstr ""
 msgid "This is the open capture. Open another one first."
 msgstr ""
 
+#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go
+msgid "Move to trash"
+msgstr ""
+
+#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go
+msgid "Move %d capture to trash"
+msgid_plural "Move %d captures to trash"
+msgstr[0] ""
+msgstr[1] ""
+
 #: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go internal/ui/oeffnen.go
 msgid "Open"
 msgstr ""
 
 #: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go
 msgid "Edit keywords"
-msgstr ""
-
-#: internal/ui/bibliothek.go internal/ui/kontext_vorschau.go
-msgid "Move to trash"
 msgstr ""
 
 #: internal/ui/bibliothek.go
@@ -1772,6 +1778,14 @@ msgstr ""
 msgid "Click, drag"
 msgstr ""
 
+#: internal/ui/hilfe.go
+msgid "Select several captures"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Ctrl/Shift+Click"
+msgstr ""
+
 #: internal/ui/hilfe.go internal/ui/oberflaeche.go
 msgid "Keyboard shortcuts"
 msgstr ""
@@ -1865,6 +1879,12 @@ msgid "Not available right now. Please wait a moment, then try again."
 msgstr ""
 
 #: internal/ui/kontext_vorschau.go
+msgid "Show %d capture in file manager"
+msgid_plural "Show %d captures in file manager"
+msgstr[0] ""
+msgstr[1] ""
+
+#: internal/ui/kontext_vorschau.go
 msgid "This capture is already open."
 msgstr ""
 
@@ -1938,6 +1958,34 @@ msgstr ""
 #: internal/ui/lupe.go
 msgid "Magnification"
 msgstr ""
+
+#: internal/ui/markierung.go
+msgid "Moved %d capture to the trash. It can be restored from there."
+msgid_plural "Moved %d captures to the trash. They can be restored from there."
+msgstr[0] ""
+msgstr[1] ""
+
+#: internal/ui/markierung.go
+msgid "Moved %d of %d captures to the trash. Could not move the others: %v"
+msgstr ""
+
+#: internal/ui/markierung.go
+msgid "The open capture stays: there is no unselected capture to switch to."
+msgstr ""
+
+#: internal/ui/markierung.go
+msgid "The selected captures were not moved to the trash."
+msgstr ""
+
+#: internal/ui/markierung.go
+msgid "The capture was not moved to the trash."
+msgstr ""
+
+#: internal/ui/markierung.go
+msgid "%d capture selected — Del moves it to the trash, Esc clears the selection"
+msgid_plural "%d captures selected — Del moves them to the trash, Esc clears the selection"
+msgstr[0] ""
+msgstr[1] ""
 
 #: internal/ui/menue.go
 msgid "Seam style: wave"
@@ -2434,10 +2482,6 @@ msgstr ""
 
 #: internal/ui/wechsel.go
 msgid "The chosen file was not opened yet: open it again with Ctrl+O."
-msgstr ""
-
-#: internal/ui/wechsel.go
-msgid "The capture was not moved to the trash."
 msgstr ""
 
 #: internal/ui/wechsel.go

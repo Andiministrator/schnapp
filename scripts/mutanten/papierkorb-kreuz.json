@@ -17,8 +17,8 @@
     "name": "PK3 Entf an der Vorschau wirkungslos",
     "datei": "internal/ui/leiste_unten.go",
     "paket": "./internal/ui",
-    "alt": "\tcase key.NameDeleteForward: // in den Papierkorb, wie in der vollen Ansicht (Karte #312)\n\t\te.leistePapierkorb(i)\n\t\treturn true\n",
-    "neu": ""
+    "alt": "\t\te.leistePapierkorb(i)\n\t\treturn true\n\tcase key.NameLeftArrow:",
+    "neu": "\t\treturn true\n\tcase key.NameLeftArrow:"
   },
   {
     "name": "PK4 offene Aufnahme ohne Wechsel in den Papierkorb",
@@ -94,15 +94,15 @@
     "name": "PK14 gescheitertes Laden sagt nichts zum Papierkorb",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif papierkorb {\n\t\t\te.meldung.Text += \" \" + i18n.T(\"The capture was not moved to the trash.\")\n\t\t}",
-    "neu": ""
+    "alt": "\t\tif papierkorb {\n\t\t\te.meldung.Text += \" \" + nichtWeggeworfen(mitnehmen)\n\t\t}\n\t\t// Fehlt die Datei",
+    "neu": "\t\t// Fehlt die Datei"
   },
   {
     "name": "PK15 Papierkorb nach Übernahme fehlt",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\te.papierkorbAnfrage(rel, false, nil)\n",
-    "neu": "\t\t\t_ = rel\n"
+    "alt": "\t\t\te.papierkorbAnfrage(rels[0], false, nil)\n",
+    "neu": ""
   },
   {
     "name": "PK16 einzige Aufnahme ohne Schutz",

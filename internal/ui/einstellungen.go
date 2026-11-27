@@ -550,15 +550,7 @@ func zeichneKaestchen(gtx layout.Context, r image.Rectangle, an bool) {
 			Width: float32(gtx.Dp(1)) * 1.5}.Op())
 		return
 	}
-	paint.FillShape(gtx.Ops, farbeAuswahl, clip.Rect(r).Op())
-	w, h := float32(r.Dx()), float32(r.Dy())
-	o := f32.Pt(float32(r.Min.X), float32(r.Min.Y))
-	var p clip.Path
-	p.Begin(gtx.Ops)
-	p.MoveTo(o.Add(f32.Pt(w*0.22, h*0.52)))
-	p.LineTo(o.Add(f32.Pt(w*0.42, h*0.72)))
-	p.LineTo(o.Add(f32.Pt(w*0.78, h*0.30)))
-	paint.FillShape(gtx.Ops, farbeWeiss, clip.Stroke{Path: p.End(), Width: float32(gtx.Dp(2))}.Op())
+	zeichneHakenFeld(gtx, r, farbeAuswahl, farbeWeiss)
 }
 
 // zeichneKreuz zeichnet ein Kreuz der Kantenlänge a mittig in r.

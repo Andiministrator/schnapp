@@ -1,0 +1,212 @@
+[
+  {
+    "name": "MK1 Bereich ersetzt nie (dazu immer)",
+    "datei": "internal/libview/markierung.go",
+    "paket": "./internal/libview",
+    "alt": "\tif !dazu {\n\t\tm.pfade = nil\n\t}",
+    "neu": ""
+  },
+  {
+    "name": "MK2 Bereich ohne Anker setzt keinen Anker",
+    "datei": "internal/libview/markierung.go",
+    "paket": "./internal/libview",
+    "alt": "\t\ta, m.anker = z, ziel",
+    "neu": "\t\ta = z"
+  },
+  {
+    "name": "MK3 Umschalte setzt keinen Anker",
+    "datei": "internal/libview/markierung.go",
+    "paket": "./internal/libview",
+    "alt": "\t\tm.setze(rel)\n\t}\n\tm.anker = rel",
+    "neu": "\t\tm.setze(rel)\n\t}"
+  },
+  {
+    "name": "MK4 Bereinige behält Verschwundene",
+    "datei": "internal/libview/markierung.go",
+    "paket": "./internal/libview",
+    "alt": "\t\tif !da[p] {\n\t\t\tdelete(m.pfade, p)",
+    "neu": "\t\tif false && !da[p] {\n\t\t\tdelete(m.pfade, p)"
+  },
+  {
+    "name": "MK5 Leiste bereinigt nicht beim Neulesen",
+    "datei": "internal/libview/leiste.go",
+    "paket": "./internal/libview",
+    "alt": "\tl.mark.Bereinige(neu)\n",
+    "neu": ""
+  },
+  {
+    "name": "MK6 Raster bereinigt nicht beim Neulesen",
+    "datei": "internal/libview/raster.go",
+    "paket": "./internal/libview",
+    "alt": "\tr.mark.Bereinige(r.eintraege)\n",
+    "neu": ""
+  },
+  {
+    "name": "MK7 Strg+Klick in der Leiste öffnet trotzdem",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif e.leisteMarkiereKlick(i, c.Modifiers) {\n\t\t\t\tgtx.Execute(op.InvalidateCmd{})\n\t\t\t\tcontinue\n\t\t\t}",
+    "neu": "\t\t\te.leisteMarkiereKlick(i, c.Modifiers)"
+  },
+  {
+    "name": "MK8 Klick ohne Taste hebt die Markierung nicht auf",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\tdefault:\n\t\tm.Leere()\n\t\tm.SetzeAnker(rel)\n\t\treturn false",
+    "neu": "\tdefault:\n\t\tm.SetzeAnker(rel)\n\t\treturn false"
+  },
+  {
+    "name": "MK9 Umschalt+Klick schaltet nur",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase umsch:\n\t\tm.Bereich(es, rel, strg)",
+    "neu": "\tcase umsch:\n\t\tm.Umschalte(rel)"
+  },
+  {
+    "name": "MK10 Strg+Umschalt ersetzt statt hinzuzufügen",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tm.Bereich(es, rel, strg)",
+    "neu": "\t\tm.Bereich(es, rel, false)"
+  },
+  {
+    "name": "MK11 Strg+Leertaste öffnet wie die Leertaste",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "if k.Name == key.NameSpace && k.Modifiers == 0 {",
+    "neu": "if k.Name == key.NameSpace {"
+  },
+  {
+    "name": "MK12 Esc lässt die Markierung der Leiste stehen",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase t.Name == key.NameEscape && t.Modifiers == 0 && m.Anzahl() > 0:\n\t\tm.Leere()\n",
+    "neu": ""
+  },
+  {
+    "name": "MK13 Umschalt+Pfeil der Leiste ohne Anker vom Fokus",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif m.Anker() == \"\" {\n\t\t\tm.SetzeAnker(es[i].Pfad)\n\t\t}",
+    "neu": ""
+  },
+  {
+    "name": "MK14 Pfeil der Leiste setzt keinen Anker",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tk.l.Markierung().SetzeAnker(k.l.Eintraege()[ziel].Pfad) // Umschalt+Pfeil misst ab hier",
+    "neu": ""
+  },
+  {
+    "name": "MK15 Entf an markierter Vorschau der Leiste nimmt nur eine",
+    "datei": "internal/ui/leiste_unten.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.papierkorbMarkiert(true)\n\t\t\treturn true",
+    "neu": "\t\t\te.leistePapierkorb(i)\n\t\t\treturn true"
+  },
+  {
+    "name": "MK16 Nachbarin darf markiert sein",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "len(aus) >= nachbarGrenze || m.Enthaelt(es[j].Pfad) {",
+    "neu": "len(aus) >= nachbarGrenze {"
+  },
+  {
+    "name": "MK17 Mitnehmen nach dem Wechsel entfällt",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "e.wechsel.papierkorb, e.wechsel.weitere, e.wechsel.mitnehmen = true, nachbarn[1:], rest",
+    "neu": "e.wechsel.papierkorb, e.wechsel.weitere = true, nachbarn[1:]"
+  },
+  {
+    "name": "MK18 offene bleibt ohne Hinweis",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\tif r.offenBleibt {\n\t\ttext += ",
+    "neu": "\tif false {\n\t\ttext += "
+  },
+  {
+    "name": "MK19 Papierkorb zählt nicht",
+    "datei": "internal/ui/markierung.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tcase err == nil:\n\t\t\t\ta.anzahl++",
+    "neu": "\t\t\tcase err == nil:"
+  },
+  {
+    "name": "MK20 Kontextmenü an nicht markierter hebt nicht auf",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !m.Enthaelt(rel) {\n\t\tm.Leere()\n",
+    "neu": "\tif !m.Enthaelt(rel) {\n"
+  },
+  {
+    "name": "MK21 Dateimanager nur mit der ersten",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\te.dateimanagerStarten(abs...)",
+    "neu": "\t\t\t\te.dateimanagerStarten(abs[0])"
+  },
+  {
+    "name": "MK22 Ansicht: Strg-Druck öffnet als Doppelklick",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tb.r.SetzeFokus(stelle)\n\t\t\t\tb.letzteKachel = -1\n\t\t\t\tcontinue",
+    "neu": "\t\t\t\tb.r.SetzeFokus(stelle)"
+  },
+  {
+    "name": "MK23 Ansicht: Esc schließt trotz Markierung",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif b.r.Markierung().Anzahl() > 0 { // erst die Markierung",
+    "neu": "\t\tif false { // erst die Markierung"
+  },
+  {
+    "name": "MK24 Ansicht: Entf nimmt nur die Kachel mit Fokus",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.papierkorbMarkiert(false)\n\t\treturn",
+    "neu": "\t\te.bibPapierkorbEine()\n\t\treturn"
+  },
+  {
+    "name": "MK25 Ansicht: Schließen behält die Markierung",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tb.r.Markierung().Leere() // das nächste Öffnen beginnt ohne Markierung",
+    "neu": "\t\t// das nächste Öffnen beginnt ohne Markierung"
+  },
+  {
+    "name": "MK26 Ansicht: Klick ins Leere hebt nicht auf",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\t\tb.r.Markierung().Leere() // Klick ins Leere hebt die Markierung auf",
+    "neu": ""
+  },
+  {
+    "name": "MK27 Ansicht: Strg+A wirkungslos",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tb.r.Markierung().Alle(es)",
+    "neu": ""
+  },
+  {
+    "name": "MK28 Ansicht: Menü ohne Zahl",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tpapierkorb = fmt.Sprintf(",
+    "neu": "\t\t\t_ = fmt.Sprintf("
+  },
+  {
+    "name": "MK29 Wechsel scheitert: Meldung in der Einzahl",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif papierkorb {\n\t\t\te.meldung.Text += \" \" + nichtWeggeworfen(mitnehmen)",
+    "neu": "\t\tif papierkorb {\n\t\t\te.meldung.Text += \" \" + nichtWeggeworfen(nil)"
+  },
+  {
+    "name": "MK30 Dateimanager mehrere: nur der erste Pfad",
+    "datei": "internal/portal/dateimanager.go",
+    "paket": "./internal/portal",
+    "alt": "\t\turis = append(uris, uri)",
+    "neu": "\t\turis = append(uris[:0], uri)"
+  }
+]

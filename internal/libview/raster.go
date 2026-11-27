@@ -52,6 +52,7 @@ type Raster struct {
 	fokus     int     // Stelle mit Tastaturfokus; -1: keine
 	rollen    int     // Versatz in Pixeln, 0 = ganz oben
 	rest      float32 // Radweg unter einem Pixel (Touchpad)
+	mark      Markierung
 
 	// Anordnung für masse (gueltig), neu gerechnet nach Setze oder anderen Maßen.
 	masse   RasterMasse
@@ -88,6 +89,7 @@ func (r *Raster) Setze(es []library.Eintrag) {
 		r.gruppen[len(r.gruppen)-1].Bis = i + 1
 	}
 	r.gueltig = false
+	r.mark.Bereinige(r.eintraege)
 	if r.fokus < 0 {
 		return
 	}
@@ -97,6 +99,9 @@ func (r *Raster) Setze(es []library.Eintrag) {
 	}
 	r.fokus = min(r.fokus, len(r.eintraege)-1)
 }
+
+// Markierung sind die markierten Vorschauen der Ansicht (ADR-0036 Zusatz Karte #361).
+func (r *Raster) Markierung() *Markierung { return &r.mark }
 
 // Eintraege sind die gezeigten Aufnahmen, neueste zuerst.
 func (r *Raster) Eintraege() []library.Eintrag { return r.eintraege }

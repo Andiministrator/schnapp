@@ -39,7 +39,11 @@ type Leiste struct {
 	fokus     int     // Stelle mit Tastaturfokus; -1: keine
 	rollen    int     // Versatz der Spur in Pixeln, 0 = ganz links
 	rest      float32 // Radweg unter einem Pixel (Touchpad)
+	mark      Markierung
 }
+
+// Markierung sind die markierten Vorschauen der Leiste (ADR-0036 Zusatz Karte #361).
+func (l *Leiste) Markierung() *Markierung { return &l.mark }
 
 // NeueLeiste liefert eine leere Leiste ohne Fokus.
 func NeueLeiste() *Leiste { return &Leiste{fokus: -1} }
@@ -63,6 +67,7 @@ func (l *Leiste) Setze(es []library.Eintrag) {
 		neu = append(neu, e)
 	}
 	l.eintraege = neu
+	l.mark.Bereinige(neu)
 	if l.fokus < 0 {
 		return
 	}

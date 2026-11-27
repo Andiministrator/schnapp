@@ -41,6 +41,7 @@ func (l *menueLauf) eintragKlick(a aktion) {
 type dateimanagerAttrappe struct {
 	mu     sync.Mutex
 	pfade  []string
+	rufe   int // Zahl der Aufrufe (mehrere Pfade gehen in einem, Karte #361)
 	fehler error
 }
 
@@ -53,10 +54,11 @@ func (d *dateimanagerAttrappe) gerufen() []string {
 func mitDateimanager(t *testing.T, fehler error) *dateimanagerAttrappe {
 	d := &dateimanagerAttrappe{fehler: fehler}
 	alt := dateimanagerZeigen
-	dateimanagerZeigen = func(_ context.Context, pfad string) error {
+	dateimanagerZeigen = func(_ context.Context, pfade ...string) error {
 		d.mu.Lock()
 		defer d.mu.Unlock()
-		d.pfade = append(d.pfade, pfad)
+		d.pfade = append(d.pfade, pfade...)
+		d.rufe++
 		return d.fehler
 	}
 	t.Cleanup(func() { dateimanagerZeigen = alt })
@@ -157,7 +159,7 @@ func TestKontextVorschauDateimanagerEinmal(t *testing.T) {
 	var n int
 	var mu sync.Mutex
 	alt := dateimanagerZeigen
-	dateimanagerZeigen = func(context.Context, string) error {
+	dateimanagerZeigen = func(context.Context, ...string) error {
 		mu.Lock()
 		n++
 		mu.Unlock()

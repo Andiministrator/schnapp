@@ -11,6 +11,7 @@ package ui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"image"
 	"path/filepath"
 	"time"
@@ -19,6 +20,8 @@ import (
 	"gioui.org/layout"
 
 	"github.com/Andiministrator/schnapp/internal/i18n"
+	"github.com/Andiministrator/schnapp/internal/library"
+	"github.com/Andiministrator/schnapp/internal/libview"
 	"github.com/Andiministrator/schnapp/internal/portal"
 )
 
@@ -37,7 +40,7 @@ type dateimanagerZustand struct {
 // vorschauKontext öffnet das Kontextmenü für die Vorschau rel am Fensterpunkt p. inLeiste: Vorschau der Leiste unten,
 // sonst der vollen Ansicht. Eine Texteingabe wird bestätigt, Pipette und Bereichsmodus der Texterkennung enden wie beim
 // Rechtsklick auf die Leinwand (F-882, F-878, F-862).
-func (e *editor) vorschauKontext(rel string, inLeiste bool, p image.Point, perTaste bool) {
+func (e *editor) vorschauKontext(rel string, inLeiste bool, p image.Point, perTaste bool, mehrere []string) {
 	if rel == "" {
 		return
 	}
@@ -47,7 +50,7 @@ func (e *editor) vorschauKontext(rel string, inLeiste bool, p image.Point, perTa
 	}
 	e.s.BeendeTextBereich()
 	e.kontextOeffnen(kontextMenue{anker: image.Rectangle{Min: p, Max: p.Add(image.Pt(1, 1))}, vorschau: rel,
-		inLeiste: inLeiste}, perTaste)
+		inLeiste: inLeiste, mehrere: mehrere}, perTaste)
 }
 
 // leisteKontext öffnet das Kontextmenü für die Stelle i der Leiste am Fensterpunkt p und gibt ihr den Fokus.
@@ -58,7 +61,7 @@ func (e *editor) leisteKontext(i int, p image.Point, perTaste bool) {
 	}
 	k.l.SetzeFokus(i)
 	k.fokusSoll, k.langDruck = i, -1
-	e.vorschauKontext(k.gezeigt[i], true, p, perTaste)
+	e.vorschauKontext(k.gezeigt[i], true, p, perTaste, kontextMarkierung(k.l.Markierung(), k.l.Eintraege(), k.gezeigt[i]))
 }
 
 // bibKontext öffnet das Kontextmenü für die Stelle i der vollen Ansicht am Fensterpunkt p und gibt ihr den Fokus.
@@ -76,7 +79,8 @@ func (e *editor) bibKontext(gtx layout.Context, i int, p image.Point, perTaste b
 	b.r.SetzeFokus(i)
 	b.ziel, b.langDruck, b.letzteKachel = bibZielRaster, -1, -1
 	gtx.Execute(key.FocusCmd{Tag: b})
-	e.vorschauKontext(b.r.Eintraege()[i].Pfad, false, p, perTaste)
+	rel := b.r.Eintraege()[i].Pfad
+	e.vorschauKontext(rel, false, p, perTaste, kontextMarkierung(b.r.Markierung(), b.r.Eintraege(), rel))
 }
 
 // leisteStelleBei ist die Stelle der Leiste, deren Vorschau beim letzten Zeichnen am Fensterpunkt p lag (-1: keine).
@@ -124,6 +128,17 @@ func (e *editor) vorschauKontextPerTaste(gtx layout.Context) bool {
 		}
 	}
 	return false
+}
+
+// kontextMarkierung: Ein Kontextmenü an einer nicht markierten Vorschau hebt die Markierung auf (wie Dolphin); an einer
+// markierten unter mehreren gilt es der Markierung (ADR-0036 Zusatz Karte #361 Punkt 5).
+func kontextMarkierung(m *libview.Markierung, es []library.Eintrag, rel string) []string {
+	if !m.Enthaelt(rel) {
+		m.Leere()
+		m.SetzeAnker(rel)
+		return nil
+	}
+	return mehrereMarkiert(m, es, rel)
 }
 
 // mitteVon ist die Mitte von r.
@@ -221,6 +236,16 @@ func (e *editor) vorschauEintraege() []menueEintrag {
 func (e *editor) vorschauEintraegeRoh() []menueEintrag {
 	i := e.vorschauStelle()
 	da := i >= 0 && e.vorschauFrei()
+	if len(e.kontext.mehrere) > 1 {
+		// Mehrere markiert (Karte #361 Punkt 6): Dateimanager und Papierkorb für alle; Öffnen und Schlagworte entfallen.
+		n := len(e.vorschauMarkiert())
+		return []menueEintrag{
+			{akt: aktVorschauZeigen, text: fmt.Sprintf(i18n.N("Show %d capture in file manager",
+				"Show %d captures in file manager", n), n), an: da && n > 0 && !e.dateimanager.laeuft},
+			{akt: aktVorschauPapierkorb, text: fmt.Sprintf(i18n.N("Move %d capture to trash", "Move %d captures to trash", n), n),
+				an: da && n > 0 && !e.loeschRuht(), kuerzel: tastenName(key.Filter{Name: key.NameDeleteForward}), gruppe: true},
+		}
+	}
 	offen := da && e.vorschauOffen(i)
 	oeffnenGrau := ""
 	if offen && e.kontext.inLeiste { // in der vollen Ansicht führt Öffnen der offenen zurück zum Bild (wie Enter)
@@ -256,6 +281,21 @@ func (e *editor) vorschauWirkung(a aktion) func(gtx layout.Context) {
 		if i < 0 || !e.vorschauFrei() {
 			return
 		}
+		if len(e.kontext.mehrere) > 1 {
+			switch a {
+			case aktVorschauZeigen:
+				var abs []string
+				for _, rel := range e.vorschauMarkiert() {
+					abs = append(abs, e.absVon(rel))
+				}
+				e.dateimanagerStarten(abs...)
+			case aktVorschauPapierkorb:
+				if !e.loeschRuht() {
+					e.papierkorbMarkiert(e.kontext.inLeiste)
+				}
+			}
+			return
+		}
 		switch a {
 		case aktVorschauOeffnen:
 			if e.kontext.inLeiste {
@@ -286,11 +326,26 @@ func (e *editor) vorschauWirkung(a aktion) func(gtx layout.Context) {
 	}
 }
 
-// dateimanagerStarten zeigt die Datei abs im Dateimanager, in einer Goroutine (der Busaufruf wartet, bis der
+// vorschauMarkiert sind die markierten Aufnahmen der Liste des Kontextmenüs, wie sie jetzt stehen (ein Neulesen kann
+// welche ausgetragen haben).
+func (e *editor) vorschauMarkiert() []string {
+	if e.kontext.inLeiste {
+		if e.unten.l == nil {
+			return nil
+		}
+		return e.unten.l.Markierung().Pfade(e.unten.l.Eintraege())
+	}
+	if e.bibl.r == nil {
+		return nil
+	}
+	return e.bibl.r.Markierung().Pfade(e.bibl.r.Eintraege())
+}
+
+// dateimanagerStarten zeigt die Dateien abs im Dateimanager, in einer Goroutine (der Busaufruf wartet, bis der
 // Dateimanager antwortet). Ein zweiter Aufruf während eines laufenden tut nichts.
-func (e *editor) dateimanagerStarten(abs string) {
+func (e *editor) dateimanagerStarten(abs ...string) {
 	d := &e.dateimanager
-	if abs == "" || d.laeuft {
+	if len(abs) == 0 || abs[0] == "" || d.laeuft {
 		return
 	}
 	if d.antwort == nil {
@@ -301,7 +356,7 @@ func (e *editor) dateimanagerStarten(abs string) {
 	go func() {
 		ctx, ende := context.WithTimeout(context.Background(), dateimanagerFrist)
 		defer ende()
-		ch <- dateimanagerZeigen(ctx, abs)
+		ch <- dateimanagerZeigen(ctx, abs...)
 		if wecker != nil {
 			wecker.Anfordern() // erst nach dem Ablegen der Antwort (F-231)
 		}

@@ -1892,3 +1892,38 @@ msgstr "Die Datei ließ sich nicht im Dateimanager zeigen."
 
 msgid "Not available right now. Please wait a moment, then try again."
 msgstr "Gerade nicht möglich. Bitte einen Moment warten und dann noch einmal versuchen."
+
+msgid "Moved %d capture to the trash. It can be restored from there."
+msgid_plural "Moved %d captures to the trash. They can be restored from there."
+msgstr[0] "%d Aufnahme in den Papierkorb gelegt. Von dort lässt sie sich wiederherstellen."
+msgstr[1] "%d Aufnahmen in den Papierkorb gelegt. Von dort lassen sie sich wiederherstellen."
+
+msgid "Moved %d of %d captures to the trash. Could not move the others: %v"
+msgstr "%d von %d Aufnahmen in den Papierkorb gelegt. Die übrigen ließen sich nicht verschieben: %v"
+
+msgid "The open capture stays: there is no unselected capture to switch to."
+msgstr "Die offene Aufnahme bleibt: Es gibt keine nicht markierte, zu der gewechselt werden kann."
+
+msgid "The selected captures were not moved to the trash."
+msgstr "Die markierten Aufnahmen wurden nicht in den Papierkorb gelegt."
+
+msgid "%d capture selected — Del moves it to the trash, Esc clears the selection"
+msgid_plural "%d captures selected — Del moves them to the trash, Esc clears the selection"
+msgstr[0] "%d Aufnahme markiert — Entf legt sie in den Papierkorb, Esc hebt die Markierung auf"
+msgstr[1] "%d Aufnahmen markiert — Entf legt sie in den Papierkorb, Esc hebt die Markierung auf"
+
+msgid "Move %d capture to trash"
+msgid_plural "Move %d captures to trash"
+msgstr[0] "%d Aufnahme in den Papierkorb"
+msgstr[1] "%d Aufnahmen in den Papierkorb"
+
+msgid "Show %d capture in file manager"
+msgid_plural "Show %d captures in file manager"
+msgstr[0] "%d Aufnahme im Dateimanager zeigen"
+msgstr[1] "%d Aufnahmen im Dateimanager zeigen"
+
+msgid "Select several captures"
+msgstr "Mehrere Aufnahmen markieren"
+
+msgid "Ctrl/Shift+Click"
+msgstr "Strg/Umschalt+Klick"

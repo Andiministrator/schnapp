@@ -1,0 +1,62 @@
+# Sichtprobe ADR-0036 Zusatz Karte #361: mehrere Vorschauen markieren in der Leiste und der vollen Ansicht.
+# Vorbereitung wie bibliothek-174-leiste.txt, auf einer frischen Probe-Umgebung aus der Wurzel des Repos:
+#   bild=$(go run ./scripts/probelibrary -heim tmp/probe/home)
+#   scripts/probe.sh --drehbuch scripts/drehbuecher/markierung-361.txt --ende 60 --bild "$bild"
+# Legt nichts in den Papierkorb (die Probe-Bibliothek bleibt, wie sie ist).
+# Bei 1600 × 1000, Skala 1: Leiste (52,866)–(1300,970), Mitte der Vorschau i bei x = 174 + 132·i, y = 908.
+# Erwartet:
+#  01 Strg+Klick auf die erste und dritte Vorschau: beide orange getönt mit angehaktem Kästchen unten links (kein
+#     eigener Rand); keine öffnet sich; die Statuszeile sagt „2 captures selected — Del moves them to the trash, Esc clears
+#     the selection“.
+#  02 Umschalt+Klick auf die fünfte: markiert sind die dritte bis fünfte (Anker die dritte), die erste nicht mehr.
+#  03 Rechtsklick auf die vierte (markiert): Liste „Show 3 captures in file manager“ │ „Move 3 captures to trash (Del)“.
+#  04 Esc (Liste zu), Esc (Markierung weg): keine Tönung mehr.
+#  05 volle Ansicht (Strg+Umschalt+L), Strg+Klick auf die erste und zweite Kachel, Umschalt+Klick auf die dritte:
+#     markiert sind die zweite (offene, grüner Rahmen bleibt sichtbar) und dritte — Umschalt ersetzt, Anker die zweite;
+#     Fokusring an der dritten.
+#  06 Strg+A: alle gezeigten Kacheln getönt.
+#  07 Esc: Markierung weg, Ansicht bleibt offen; ein weiteres Esc schließt sie.
+warte 1500
+taste Strg+Umschalt+R
+warte 2500
+taste-halten Strg
+klick 174 908
+warte 200
+klick 438 908
+taste-loslassen Strg
+warte 400
+zeiger 438 908
+warte 300
+foto 01-leiste-strg
+taste-halten Umschalt
+klick 702 908
+taste-loslassen Umschalt
+warte 400
+foto 02-leiste-umschalt
+rechtsklick 570 908
+warte 400
+foto 03-leiste-kontext
+taste Esc
+warte 200
+taste Esc
+warte 300
+foto 04-leiste-esc
+taste Strg+Umschalt+L
+warte 2500
+taste-halten Strg
+klick 130 300
+warte 200
+klick 350 300
+taste-loslassen Strg
+taste-halten Umschalt
+klick 570 300
+taste-loslassen Umschalt
+warte 400
+foto 05-ansicht-markiert
+taste Strg+A
+warte 400
+foto 06-ansicht-alle
+taste Esc
+warte 400
+foto 07-ansicht-esc
+taste Esc

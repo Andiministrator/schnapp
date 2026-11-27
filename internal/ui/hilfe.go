@@ -58,6 +58,8 @@ func (e *editor) hilfeZeilen() []hilfeZeile {
 		hilfeZeile{text: i18n.T("New line in a text"), taste: i18n.T("Shift") + "+" + i18n.T("Enter")},
 		hilfeZeile{text: i18n.T("Snapping off while dragging"), taste: "Alt"},
 		hilfeZeile{text: i18n.T("Move the view in the navigator"), taste: i18n.T("Click, drag")},
+		// Mehrere Vorschauen der Bibliothek markieren (ADR-0036 Zusatz Karte #361)
+		hilfeZeile{text: i18n.T("Select several captures"), taste: i18n.T("Ctrl/Shift+Click")},
 	)
 }
 
