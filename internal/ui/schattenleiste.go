@@ -135,8 +135,9 @@ func (e *editor) schattenReglerAuswerten(gtx layout.Context, ziel *image.Rectang
 			if pe.Buttons != pointer.ButtonPrimary || k.zieht != schattenReglerKeiner || !e.seiteAn() {
 				continue
 			}
-			if art == schattenReglerRichtung {
-				// Ein Klick gibt der Scheibe den Tastaturfokus: danach drehen die Pfeile (F-875).
+			if art == schattenReglerRichtung && !e.s.TextLaeuft() {
+				// Ein Klick gibt der Scheibe den Tastaturfokus: danach drehen die Pfeile (F-875). Nicht in der Texteingabe:
+				// Dort sind die Pfeile Teil des Texts, und getippte Zeichen gingen sonst verloren (F-881).
 				gtx.Execute(key.FocusCmd{Tag: &k.scheibe})
 			}
 			if e.s.BeginneSchattenZug() {

@@ -19,18 +19,24 @@ Stand: 2026-11-26 (laufend ergänzt, zuletzt Sprint 14, Karten #313 Teil 2 und #
 ## Sitzung 26.11. spät (#313 Teil 2, #369, F-873 bis F-880)
 
 - **`gofmt -l` vor jedem Commit.** Ein neues Feld in einem ausgerichteten Struct-Block (`editor`) verschiebt die
-  Spalten; `go vet` und `go test` merken das nicht, die CI bricht im ersten Schritt ab (47a0c1e). Die Prüfliste vor dem
+  Spalten; `go vet` und `go test` merken das nicht, die CI bricht im ersten Schritt ab (f4c6b9e, rot gemeldet an 47a0c1e). Die Prüfliste vor dem
   Commit beginnt mit `gofmt -l $(git ls-files '*.go' | grep -v '^third_party/')`.
 - **Ein Rechtsklick, der Fokus setzt, und eine offene Liste vertragen sich nur, wenn Enter/Leertaste bei offener Liste
-  auf deren Knöpfe beschränkt sind** (F-873). Wer einem Knopf hinter einer Liste den Fokus gibt, prüft, was Enter dann
-  auslöst.
+  auf deren Knöpfe beschränkt sind** (F-873). Die Leertaste bedient Gio an jedem fokussierten `widget.Clickable` selbst;
+  der Editor erreicht sie nur an den Knöpfen in `leertastenZiele`. Deshalb nimmt eine per Maus geöffnete Liste anderen
+  Knöpfen den Fokus (F-883). Wer einem Knopf hinter einer Liste den Fokus gibt, prüft Enter und Leertaste.
 - **Mutanten auf Platzrechnungen überleben, wenn kein Test die Lage misst** (FZ13, F359-1): Ein unsichtbarer Reiter
   nahm nur Breite weg. Bei neuen Zeilen der Leiste eine Lage-Prüfung (füllt die Zeile, endet vor X) mitschreiben.
-- **Ein Kontrollkästchen, das man anklickt, sollte auch den Fokus bekommen**, wenn danach Tasten wirken sollen:
-  Ein Zeigerziel ohne PassOp über einem `widget.Clickable` nimmt diesem jeden Druck (F-875).
+- **Gios `widget.Clickable` setzt bei einem Mausklick nie den Tastaturfokus**; wer nach einem Klick Tasten erwartet (die
+  Richtungsscheibe, F-875), schickt `key.FocusCmd` selbst — aber **nie während einer Texteingabe**: Dann landen getippte
+  Zeichen beim Knopf und gehen verloren (F-881). Ebenso bestätigt jeder Rechtsklick, der ein Menü öffnet, die
+  Texteingabe (F-882).
 - **`math.Mod` und `math.Round` behalten −0**; was in eine Datei geschrieben wird, vorher auf +0 bringen (F-874).
 - **Kritiker-Gegenproben laufen zuverlässig über „sichern → anhängen → testen → zurückkopieren“**; ein Mutantenlauf
   zeigt dagegen nur, was die Mutantenliste kennt — die Kritik fand fünf Zweige ohne Mutanten.
+- **Verify nach jeder Nacharbeit lohnt sich auch bei P3** (Sitzungs-QA (9)): Der Fix F-875 (Fokus per Klick) brachte
+  den P2-Rückschritt F-881; ein „gleichwertig“ markierter Mutant (FZ25) war es nicht, weil der Zwischenstand während des
+  Ziehens sichtbar ist. „Gleichwertig“ erst nach einem Gegenbeispiel-Versuch am Zwischenzustand setzen.
 
 ## Go-Tests
 

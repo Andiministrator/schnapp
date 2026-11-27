@@ -355,5 +355,26 @@
     "paket": "./internal/ui",
     "alt": "\t\t\t\te.bibKontext(gtx, stelle, pe.Position.Round(), false)",
     "neu": "\t\t\t\te.bibKontext(gtx, stelle, image.Point{}, false)"
+  },
+  {
+    "name": "KV31 Bereichsmodus bleibt beim Rechtsklick auf eine Vorschau (F-885)",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.s.SchaltePipette()\n\t}\n\te.s.BeendeTextBereich()",
+    "neu": "\t\te.s.SchaltePipette()\n\t}"
+  },
+  {
+    "name": "KV32 Texteingabe läuft beim Rechtsklick auf eine Vorschau weiter (F-882)",
+    "datei": "internal/ui/kontext_vorschau.go",
+    "paket": "./internal/ui",
+    "alt": "\te.s.TextBestaetigen() // wie der Rechtsklick auf die Leinwand",
+    "neu": "\t// wie der Rechtsklick auf die Leinwand"
+  },
+  {
+    "name": "KV33 Leertaste hinter der Liste erreicht Gio-Knöpfe (F-883)",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "event.Tag(c)) {\n\t\t\tgtx.Execute(key.FocusCmd{Tag: e})\n\t\t}",
+    "neu": "event.Tag(c)) {\n\t\t}"
   }
 ]

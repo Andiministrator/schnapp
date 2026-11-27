@@ -35,12 +35,13 @@ type dateimanagerZustand struct {
 }
 
 // vorschauKontext öffnet das Kontextmenü für die Vorschau rel am Fensterpunkt p. inLeiste: Vorschau der Leiste unten,
-// sonst der vollen Ansicht. Pipette und Bereichsmodus der Texterkennung enden wie beim Rechtsklick auf die Leinwand
-// (F-878, F-862).
+// sonst der vollen Ansicht. Eine Texteingabe wird bestätigt, Pipette und Bereichsmodus der Texterkennung enden wie beim
+// Rechtsklick auf die Leinwand (F-882, F-878, F-862).
 func (e *editor) vorschauKontext(rel string, inLeiste bool, p image.Point, perTaste bool) {
 	if rel == "" {
 		return
 	}
+	e.s.TextBestaetigen() // wie der Rechtsklick auf die Leinwand: sonst liefe die Eingabe ohne Tastatur weiter (F-882)
 	if e.s.PipetteLaeuft() {
 		e.s.SchaltePipette()
 	}

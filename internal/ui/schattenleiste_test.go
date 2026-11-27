@@ -287,3 +287,39 @@ func TestSchattenScheibeKlickFokus(t *testing.T) {
 		t.Errorf("Umschalt-Klick: %v, Soll 169", w)
 	}
 }
+
+// F-881: In der Texteingabe nimmt ein Klick auf die Scheibe der Leinwand nicht die Tastatur; Getipptes kommt weiter im
+// Text an.
+func TestSchattenScheibeKlickInTexteingabe(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 1000))
+	l.textEingabeStarten()
+	k := &l.e.schattenL
+	l.klick(mitte(k.schalterRahmen))
+	l.setle()
+	if k.scheibeRahmen.Empty() {
+		t.Fatal("Vorbedingung: Scheibe gezeigt")
+	}
+	l.klick(mitte(k.scheibeRahmen).Add(image.Pt(k.scheibeRahmen.Dx()/3, 0)))
+	l.tippe("c")
+	if !l.e.s.TextLaeuft() || l.fokus(&k.scheibe) || !strings.HasSuffix(l.text().Inhalt, "c") {
+		t.Errorf("Text läuft %v, Fokus Scheibe %v, Text %q", l.e.s.TextLaeuft(), l.fokus(&k.scheibe), l.text().Inhalt)
+	}
+}
+
+// F-884: Schon der Druck mit Umschalt setzt die Richtung frei, vor dem Loslassen (Zwischenstand während des Ziehens).
+func TestSchattenScheibeUmschaltDruck(t *testing.T) {
+	l, id := schattenLauf(t)
+	k := &l.e.schattenL
+	l.klick(mitte(k.schalterRahmen))
+	l.setle()
+	m, d := mitte(k.scheibeRahmen), float32(k.scheibeRahmen.Dx()/3)
+	mf := f32.Pt(float32(m.X)+d, float32(m.Y)+d*0.2)
+	l.r.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: mf})
+	l.r.Queue(pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Buttons: pointer.ButtonPrimary, Position: mf, Modifiers: key.ModShift})
+	l.setle()
+	if w := schattenVon(t, l, id).Winkel; w != 169 { // während des Zugs der laufende Stand
+		t.Errorf("nach dem Umschalt-Druck: %v, Soll 169", w)
+	}
+	l.r.Queue(pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: mf, Modifiers: key.ModShift})
+	l.setle()
+}

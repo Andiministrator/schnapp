@@ -1,9 +1,9 @@
-# Sichtprobe ADR-0021 Nachtrag 26 Punkt 7 (Karte #363 Teil 2): Abschnitt „Shadow“ der rechten Leiste; Lagen seit Karte #369
+# Sichtprobe ADR-0021 Nachtrag 26 Punkt 7 (Karte #363 Teil 2): Abschnitt „Schatten“ (englisch „Shadow“) der rechten Leiste; Lagen seit Karte #369
 # (ADR-0031 Nachtrag 13: Kästchen, Richtungsscheibe, Reiter im Abschnitt Farbe), nachgefahren am 26.11.2026.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/schatten-363.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 1600 --hoehe 1000
-# Bei 1600 × 1000, Skala 1, Werkzeug Kasten (R): Kästchen „Shadow“ bei (1325, 321) unter „Line style“. Bei an:
-# Scheibe „Direction“ (1404,344)–(1460,400), Mitte (1432, 372); Zeilen „Distance“ y 424 und „Softness“ y 456: − bei
-# x 1404–1426, Regler x 1432–1512, + bei x 1518–1540, Wert rechts daneben; Farbfeld „Color“ bei (1417, 488). Die
+# Bei 1600 × 1000, Skala 1, Werkzeug Kasten (R): Kästchen „Schatten“ bei (1325, 321) unter „Line style“. Bei an:
+# Scheibe „Richtung“ (1404,344)–(1460,400), Mitte (1432, 372); Zeilen „Abstand“ y 424 und „Weichheit“ y 456: − bei
+# x 1404–1426, Regler x 1432–1512, + bei x 1518–1540, Wert rechts daneben; Farbfeld „Farbe“ bei (1417, 488). Die
 # eigenen Farbfelder stehen dann bei y 821 (Orange bei x 1482).
 # Erwartet:
 #  01 Kästchen an: darunter Richtung 135°, Abstand 6 px, Weichheit 8 px, Farbfeld schwarz-durchscheinend.

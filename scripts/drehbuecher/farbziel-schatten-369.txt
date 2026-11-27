@@ -8,7 +8,7 @@
 #     „Schatten“ leer, darunter nichts.
 #  02 Kästchen an (grün mit Haken): Scheibe mit kleinem Quadrat, sein Schatten und der orange Punkt zeigen nach rechts
 #     unten, daneben 135°; Abstand, Weichheit, Farbe darunter; oben ein dritter Reiter „Schatten“.
-#  03 Klick rechts auf die Scheibe: Schatten und Punkt zeigen nach rechts, 180°; der Kasten wirft den Schatten nach
+#  03 Klick rechts auf die Scheibe: Schatten und Punkt zeigen nach rechts, 180°, die Scheibe trägt den orangen Fokusring (F-875); der Kasten wirft den Schatten nach
 #     rechts.
 #  04 Reiter „Schatten“ geklickt: er ist grün, Hex zeigt #000000 und 40 %; dann Orange aus den Farbfeldern: der
 #     Schatten des Kastens ist orange, der Rahmen bleibt rot, der Reiter zeigt Orange.

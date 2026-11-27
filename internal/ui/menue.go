@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"slices"
 
 	"gioui.org/io/event"
 	"gioui.org/io/key"
@@ -552,6 +553,13 @@ func (e *editor) listenKnopf(i int) *widget.Clickable {
 // menueAuswerten verarbeitet Klicks auf den Menütitel, die Einträge und daneben.
 func (e *editor) menueAuswerten(gtx layout.Context) {
 	m := &e.menue
+	if m.offen && !m.perTasteOffen {
+		// Per Maus geöffnet: Hält ein Knopf hinter der Liste den Fokus, den Gio selbst per Leertaste auslöst (nicht in
+		// leertastenZiele, etwa ein Werkzeug), bekommt die Leinwand ihn (F-883, F-257).
+		if c := e.fokussierterKnopf(gtx); c != nil && !e.menueKnopf(c) && !slices.Contains(e.leertastenZiele(), event.Tag(c)) {
+			gtx.Execute(key.FocusCmd{Tag: e})
+		}
+	}
 	// Während des Speicherns ruht das Bearbeiten (ADR-0020 Nachtrag 6); je Klick neu gefragt, denn ein Eintrag im selben
 	// Bild kann das Speichern starten (F-280).
 	an := func() bool { return !e.s.SpeichernLaeuft() }

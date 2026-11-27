@@ -174,9 +174,7 @@
     "datei": "internal/ui/schattenleiste.go",
     "paket": "./internal/ui",
     "alt": "\t\t\t\tk.zieht = art\n\t\t\t\te.schattenZiehen(art, pe.Position, pe.Modifiers.Contain(key.ModShift))",
-    "neu": "\t\t\t\tk.zieht = art\n\t\t\t\te.schattenZiehen(art, pe.Position, false)",
-    "aequivalent": true,
-    "grund": "Das Loslassen setzt den Winkel aus demselben Punkt mit seinem eigenen Umschalter erneut; der Druck bestimmt nur den Zwischenstand bis zum Loslassen."
+    "neu": "\t\t\t\tk.zieht = art\n\t\t\t\te.schattenZiehen(art, pe.Position, false)"
   },
   {
     "name": "FZ26 Reiter nie hervorgehoben",
@@ -184,5 +182,12 @@
     "paket": "./internal/ui",
     "alt": "e.zeichneFarbReiter(gtx, &k.paar[i], r, e.s.Farbe(f), farbReiterName(f), aktiv == f)",
     "neu": "e.zeichneFarbReiter(gtx, &k.paar[i], r, e.s.Farbe(f), farbReiterName(f), aktiv == f && false)"
+  },
+  {
+    "name": "FZ27 Scheibenklick nimmt der Texteingabe die Tastatur (F-881)",
+    "datei": "internal/ui/schattenleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif art == schattenReglerRichtung && !e.s.TextLaeuft() {",
+    "neu": "\t\t\tif art == schattenReglerRichtung {"
   }
 ]

@@ -14,6 +14,7 @@ import (
 
 	"gioui.org/io/key"
 
+	"github.com/Andiministrator/schnapp/internal/canvas"
 	"github.com/Andiministrator/schnapp/internal/portal"
 )
 
@@ -456,4 +457,56 @@ func TestKontextVorschauFokusNachEintrag(t *testing.T) {
 		t.Errorf("Menü %v, Fokus an der Vorschau %v", l.e.menue.offen, l.fokus(&l.e.unten.knoepfe[2]))
 	}
 	l.warte(func() bool { return l.e.dateimanagerAbholen() })
+}
+
+// F-882: Ein Rechtsklick auf eine Vorschau bestätigt eine laufende Texteingabe wie der Rechtsklick auf die Leinwand;
+// sonst liefe sie ohne Tastatur weiter.
+func TestKontextVorschauBestaetigtText(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	l.textEingabeStarten()
+	l.rechtsklick(l.kachel(0))
+	if l.e.s.TextLaeuft() || !l.e.menue.offen {
+		t.Errorf("Texteingabe läuft %v, Menü %v", l.e.s.TextLaeuft(), l.e.menue.offen)
+	}
+	if got := l.text().Inhalt; got != "Halloa" {
+		t.Errorf("Text %q, Soll „Halloa“", got)
+	}
+}
+
+// F-885: Ein Rechtsklick auf eine Vorschau beendet den Bereichsmodus der Texterkennung, in der Leiste und in der vollen
+// Ansicht.
+func TestKontextVorschauBeendetBereichsmodus(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	if !l.e.s.BeginneTextBereich() {
+		t.Fatal("Vorbedingung: Bereichsmodus")
+	}
+	l.rechtsklick(l.kachel(0))
+	if l.e.s.TextBereichLaeuft() {
+		t.Error("Leiste: Bereichsmodus läuft weiter")
+	}
+	b := bibLauf(t, 3)
+	if !b.e.s.BeginneTextBereich() {
+		t.Fatal("Vorbedingung: Bereichsmodus in der Ansicht")
+	}
+	b.rechtsklick(b.bibKachel(1))
+	if b.e.s.TextBereichLaeuft() {
+		t.Error("volle Ansicht: Bereichsmodus läuft weiter")
+	}
+}
+
+// F-883: Hinter einer per Maus geöffneten Liste löst die Leertaste keinen Knopf aus, den Gio selbst bedient (hier das
+// Werkzeug Kasten mit Tastaturfokus).
+func TestLeertasteHinterOffenerListe(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	l.e.s.SetzeWerkzeug(canvas.WerkzeugAuswahl)
+	l.fokusiere(&l.e.knoepfe.kasten)
+	l.klick(mitte(l.e.menue.titelRahmen[menueDatei]))
+	if !l.e.menue.offen {
+		t.Fatal("Vorbedingung: Menü Datei offen")
+	}
+	l.r.Queue(key.Event{Name: key.NameSpace, State: key.Press}, key.Event{Name: key.NameSpace, State: key.Release})
+	l.setle()
+	if l.e.s.Werkzeug != canvas.WerkzeugAuswahl {
+		t.Errorf("Leertaste hinter der Liste wählte Werkzeug %v", l.e.s.Werkzeug)
+	}
 }

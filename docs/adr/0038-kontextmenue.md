@@ -89,3 +89,8 @@ Dolphin ist ShowItems noch ungeprüft (Echtlauf Andi).
 Nacharbeit nach Sitzungs-QA 26.11. (8) (F-873 bis F-880): Enter und Leertaste wirken bei offener Liste nur auf ihre
 Einträge, Titel und ihr Feld (`menueKnopf`), nie auf die Vorschau dahinter; an der Kachel im Schlagwortfeld öffnet kein
 Menü; gesperrte Einträge sind grau mit Grund; ein Rechtsklick auf eine Vorschau beendet Pipette und Bereichsmodus.
+
+Nacharbeit nach Sitzungs-QA 27.11. (9) (F-882, F-883, F-885): Ein Rechtsklick auf eine Vorschau bestätigt eine laufende
+Texteingabe und beendet den Bereichsmodus (wie auf der Leinwand). Die Leertaste bedient Gio an jedem fokussierten Knopf
+selbst; der Editor erreicht sie nur an den Knöpfen in `leertastenZiele`. Deshalb gibt eine per Maus geöffnete Liste
+jedem anderen fokussierten Knopf den Fokus ab (an die Leinwand).

@@ -486,8 +486,12 @@ verstellt man nur mit − / + in 15°.
    #371.
 
 Tests `internal/ui/farbpaar_einfach_test.go`, `schattenleiste_test.go`, `internal/canvas/schatten_test.go`
-(`TestSchattenWinkelZu`), Mutanten `scripts/mutanten/farbziel-369.json` (FZ1–FZ19), Sichtprobe
+(`TestSchattenWinkelZu`), Mutanten `scripts/mutanten/farbziel-369.json` (FZ1–FZ27), Sichtprobe
 `scripts/drehbuecher/farbziel-schatten-369.txt`; `farbwaehlerHoeheDp` 238 (Reiterzeile 28 + 10).
+
+Nacharbeit nach Sitzungs-QA 26.11. (8) und 27.11. (9) (F-874, F-875, F-881, F-884): Ein Klick auf die Scheibe gibt ihr
+den Tastaturfokus, aber nie während einer Texteingabe (dort sind Pfeile Teil des Texts); ein Winkel −0 wird +0
+(`document.NormWinkel`); schon der Druck mit Umschalt setzt die Richtung frei.
 
 **Erwogene Alternativen.** Farbwähler je Feld in jedem Abschnitt (doppelter Platz, drei Hex-Felder); Ziel nur über das
 Farbpaar links (unsichtbar, wenn die Leiste offen ist); Richtung als Liste von acht Pfeilen (kein Zwischenwinkel).
