@@ -41,16 +41,24 @@ type freihandBild struct {
 }
 
 // freihandFuer liefert den gemerkten Strich von v und zerlegt ihn neu, wenn er sich geändert hat.
-func (e *editor) freihandFuer(gtx layout.Context, v document.Freihand) *freihandBild {
+// freihandSchluessel trennt Leinwand und Vorschau der Ebenenliste: Die Vorschau zeichnet denselben Strich mit
+// Mindestbreite (F-1042) und verdrängte sonst in jedem Bild den Eintrag der Leinwand (Verify #333).
+type freihandSchluessel struct {
+	id       int
+	vorschau bool
+}
+
+func (e *editor) freihandFuer(gtx layout.Context, v document.Freihand, vorschau bool) *freihandBild {
+	schl := freihandSchluessel{v.ID, vorschau}
 	if e.freihand == nil {
-		e.freihand = map[int]*freihandBild{}
+		e.freihand = map[freihandSchluessel]*freihandBild{}
 	}
-	if b, ok := e.freihand[v.ID]; ok && document.Gleich(b.o, v) {
+	if b, ok := e.freihand[schl]; ok && document.Gleich(b.o, v) {
 		b.runde = e.freihandRunde
 		return b
 	} else if ok {
 		e.freihandBytes -= b.bytes
-		delete(e.freihand, v.ID)
+		delete(e.freihand, schl)
 	}
 	e.freihandNeu++
 	b := &freihandBild{o: v, sz: render.ZerlegeStrich(v.Punkte(), v.Strich), runde: e.freihandRunde}
@@ -63,7 +71,7 @@ func (e *editor) freihandFuer(gtx layout.Context, v document.Freihand) *freihand
 		b.bytes += len(t) * freihandBytesJePunkt
 	}
 	e.freihandVerdraengen(b.bytes)
-	e.freihand[v.ID] = b
+	e.freihand[schl] = b
 	e.freihandBytes += b.bytes
 	return b
 }
@@ -90,13 +98,13 @@ func (e *editor) freihandVerdraengen(neu int) {
 	if e.freihandBytes+neu <= freihandSpeicher {
 		return
 	}
-	alt := make([]int, 0, len(e.freihand))
+	alt := make([]freihandSchluessel, 0, len(e.freihand))
 	for id, b := range e.freihand {
 		if b.runde < e.freihandRunde {
 			alt = append(alt, id)
 		}
 	}
-	slices.SortFunc(alt, func(a, b int) int { return e.freihand[a].runde - e.freihand[b].runde })
+	slices.SortFunc(alt, func(a, b freihandSchluessel) int { return e.freihand[a].runde - e.freihand[b].runde })
 	for _, id := range alt {
 		if e.freihandBytes+neu <= freihandSpeicher {
 			break
@@ -111,7 +119,7 @@ func (e *editor) freihandVerdraengen(neu int) {
 func (e *editor) freihandAufraeumen() {
 	e.freihandRunde++
 	for id, b := range e.freihand {
-		if _, ok := e.s.D.Objekt(id); !ok {
+		if _, ok := e.s.D.Objekt(id.id); !ok {
 			e.freihandBytes -= b.bytes
 			delete(e.freihand, id)
 		}

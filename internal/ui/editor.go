@@ -378,7 +378,7 @@ type editor struct {
 	schattenNeu   int // Zahl der neu gerechneten Schattenbilder (für Tests)
 	schattenRunde int // zählt die gezeichneten Bilder (Verdrängen, V-3)
 	// freihand: gemerkte Zerlegungen der Freihand-Striche je Objekt (F-1038, freihandmerker.go).
-	freihand      map[int]*freihandBild
+	freihand      map[freihandSchluessel]*freihandBild
 	freihandBytes int
 	freihandNeu   int // Zahl der neu zerlegten Striche (für Tests)
 	freihandRunde int
@@ -1980,7 +1980,7 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 	switch v := o.(type) {
 	case document.Freihand: // dieselben Teile wie der Renderer, je Bereich abgespielt (ADR-0049 Punkt 2), gemerkt (F-1038)
 		if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
-			b := e.freihandFuer(gtx, v)
+			b := e.freihandFuer(gtx, v, vorschau)
 			if vorschau {
 				fuelleTeile(gtx, b.sz.Teile, v.Strich.Farbe, an)
 			} else {

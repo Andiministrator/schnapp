@@ -40,12 +40,17 @@ func (f Freihand) MitPunkten(pts []Punkt) Freihand {
 	return f
 }
 
-// Verschoben liefert f um d verschoben (neuer Zug), auf 1/100 px gerundet wie beim Anlegen (F-1036: ein Zoom wie 0,73
-// macht sonst aus jeder Lage wieder eine Zahl mit 17 Stellen).
+// Verschoben liefert f um d verschoben (neuer Zug). Gerundet wird nur d auf 1/100 px (F-1036: ein Zoom wie 0,73
+// macht sonst aus jeder Lage eine Zahl mit 17 Stellen); die Punkte wandern starr, damit ein sehr kurzer Strich aus einer
+// Datei seine Länge behält und Verschieben um 0 nichts ändert (Verify #333).
 func (f Freihand) Verschoben(d Punkt) Freihand {
+	d = aufHundertstel(d)
+	if d == (Punkt{}) {
+		return f
+	}
 	pts := slices.Clone(f.Punkte())
 	for i := range pts {
-		pts[i] = aufHundertstel(pts[i].Plus(d))
+		pts[i] = pts[i].Plus(d)
 	}
 	f.Zug = &pts
 	return f

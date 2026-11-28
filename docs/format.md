@@ -272,9 +272,9 @@ either end the arrow is a plain line.
 |---|---|
 | `s:a`, `s:b`, `s:k` | points: start, end, control point |
 | `s:strich` | stroke: colour and width of the line and the heads |
-| `s:ende` | OPTIONAL, format version 2 only. Head at `B`: `triangle`, `narrow`, `notched`, `open`, `half`, `dot`, `diamond`, `square`, `bar` or `none`. Missing or any other value: `triangle`; writers omit it for `triangle` |
-| `s:anfang` | OPTIONAL, format version 2 only. Head at `A`, same values. Missing or any other value: `none`; writers omit it for `none` |
-| `s:strichart` | OPTIONAL, format version 2 only: line style of the line (8.8); the heads stay solid |
+| `s:ende` | OPTIONAL, format version 2 and later. Head at `B`: `triangle`, `narrow`, `notched`, `open`, `half`, `dot`, `diamond`, `square`, `bar` or `none`. Missing or any other value: `triangle`; writers omit it for `triangle` |
+| `s:anfang` | OPTIONAL, format version 2 and later. Head at `A`, same values. Missing or any other value: `none`; writers omit it for `none` |
+| `s:strichart` | OPTIONAL, format version 2 and later: line style of the line (8.8); the heads stay solid |
 
 `s:ende` and `s:anfang` are part of format version 2: a writer emits `s:format="2"` if an arrow has a head other than
 the defaults (section 12), so that a version-1 reader reports the file as newer instead of showing a different arrow. In
@@ -307,8 +307,8 @@ inside a group with `opacity`, so the overlap is covered once.
 | `s:strich` | stroke of the outline, centred on the edge |
 | `s:fuellung` | fill colour; alpha `00` means no fill |
 | `s:eckradius` | corner radius, number `>= 0` |
-| `s:strichart` | OPTIONAL, format version 2 only: line style of the outline (8.8) |
-| `s:form` | OPTIONAL, format version 2 only: `ellipse` makes the box the ellipse inscribed in `s:bereich` (corner radius does not apply). Missing, any other value or in a version-1 file: a rectangle. Writers emit it only for `ellipse` |
+| `s:strichart` | OPTIONAL, format version 2 and later: line style of the outline (8.8) |
+| `s:form` | OPTIONAL, format version 2 and later: `ellipse` makes the box the ellipse inscribed in `s:bereich` (corner radius does not apply). Missing, any other value or in a version-1 file: a rectangle. Writers emit it only for `ellipse` |
 
 Informative: the effective radius is `min(radius, min(w, h) / 2)`, and below 0.5 pixel the corners are square; the
 rounding is circular, never elliptic.
@@ -333,7 +333,7 @@ outline is laid out per quarter from vertex to vertex with half a dash, or a dot
 | `s:schrift` | OPTIONAL. Font family name: 1 to 128 Unicode scalar values, not only white space, no control characters (Unicode category Cc: U+0000 to U+001F, U+007F to U+009F) and none of U+FFFD, U+FFFE, U+FFFF. Missing, empty, `Go`, or not a valid name: the built-in family Go; writers omit it for Go |
 | `s:stil` | OPTIONAL. Words separated by spaces from `bold`, `italic`, `underline`, `strike`; unknown words are ignored. Missing: none |
 | `s:ausrichtung` | OPTIONAL. Alignment of each line: `left`, `center` or `right`. Missing or any other value: `left` |
-| `s:spitze` | OPTIONAL, format version 2 only. Point (5.2): the tip of a speech bubble, in original pixels, which makes the text a callout (below). Missing: a plain text. In a file with `s:format="1"` the attribute is unknown content (section 11, rule 3) and is ignored, whatever it holds |
+| `s:spitze` | OPTIONAL, format version 2 and later. Point (5.2): the tip of a speech bubble, in original pixels, which makes the text a callout (below). Missing: a plain text. In a file with `s:format="1"` the attribute is unknown content (section 11, rule 3) and is ignored, whatever it holds |
 
 `s:inhalt` is the text as typed. Line feed (U+000A) separates lines. The value MUST be valid UTF-8 with at most
 `max_text_chars` characters (Unicode scalar values) and MUST NOT contain control characters below U+0020 other than
@@ -401,9 +401,9 @@ appear on the element of any object type:
 | `s:ausgeblendet` | `true`: the layer is hidden. Any other value or missing: visible |
 | `s:gesperrt` | `true`: the layer is locked against changes with the pointer. Any other value or missing: not locked |
 | `s:deckkraft` | Layer opacity in percent, integer `0` to `100` (syntax of 5.2). Missing or invalid: `100` |
-| `s:schatten` | Drop shadow, format version 2 only: `ANGLE DISTANCE SOFTNESS COLOUR`, three numbers and a colour (5.2) separated by single spaces. Missing, invalid or in a version-1 file: no shadow (see below) |
-| `s:gruppe` | Group, format version 2 only: an integer `1` to `1073741824` (syntax of 5.2). Objects with the same value form one group. Missing, invalid or in a version-1 file: no group (see below) |
-| `s:mischung` | Blend mode, format version 2 only: `multiply` or `normal`. Missing, any other value or in a version-1 file: `normal` (see below) |
+| `s:schatten` | Drop shadow, format version 2 and later: `ANGLE DISTANCE SOFTNESS COLOUR`, three numbers and a colour (5.2) separated by single spaces. Missing, invalid or in a version-1 file: no shadow (see below) |
+| `s:gruppe` | Group, format version 2 and later: an integer `1` to `1073741824` (syntax of 5.2). Objects with the same value form one group. Missing, invalid or in a version-1 file: no group (see below) |
+| `s:mischung` | Blend mode, format version 2 and later: `multiply` or `normal`. Missing, any other value or in a version-1 file: `normal` (see below) |
 
 Writers emit them only when they differ from the default. The first four were added without changing the format
 version (like the text attributes of 8.3): a reader that does not know them ignores them (section 11, rule 3) and shows
@@ -544,7 +544,7 @@ A freehand stroke is an open polyline in original pixels.
 
 | Attribute | Value |
 |---|---|
-| `s:punkte` | REQUIRED. 2 to 4096 points (5.2), separated by single spaces, in drawing order |
+| `s:punkte` | REQUIRED. 2 to 4096 points (5.2), separated by single spaces, in drawing order; not all equal |
 | `s:strich` | REQUIRED. Stroke colour and width as for the arrow (8.1) |
 | `s:strichart` | OPTIONAL, as in 8.8 (the pattern runs along the whole polyline, a whole dash or a dot at both ends) |
 
@@ -552,8 +552,8 @@ The stroke has round ends and round joins and is drawn so that every pixel is co
 crosses itself or turns back (a translucent colour does not get darker there). Layer attributes (8.5) apply, including
 `s:mischung` (Schnapp's free highlighter). The object type exists from format version 3 on: in a file with
 `s:format="1"` or `"2"` it is an unknown object type (8.6), and the file is damaged; a writer emits `s:format="3"` if the
-document contains one (section 12). Fewer than 2 or more than 4096 points, or a point that does not parse, make the file
-damaged. Informative: Schnapp smooths and thins a stroke when the pointer is released and stores the result; the points
+document contains one (section 12). Fewer than 2 or more than 4096 points, a point that does not parse, or a polyline of zero length (all points equal)
+make the file damaged. Informative: Schnapp smooths and thins a stroke when the pointer is released and stores the result; the points
 are not control points of a curve. The presentation is a `path`: `M` with the first point, then `l` with the others
 relative to their predecessor, both rounded to hundredths of a pixel. Example:
 `testdata/format/freehand`.

@@ -69,9 +69,7 @@
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
     "alt": "\tif n := strings.Count(text, \" \") + 1; n < 2 || n > document.MaxFreihandPunkte {",
-    "neu": "\tif n := strings.Count(text, \" \") + 1; n < 2 {",
-    "aequivalent": true,
-    "grund": "doppelter Schutz: document.Freihand.pruefe lehnt mehr als MaxFreihandPunkte beim Einlesen ebenso ab (beschädigt); die Grenze im Leser spart nur das Anlegen des Felds, maxSVG begrenzt dessen Größe"
+    "neu": "\tif n := strings.Count(text, \" \") + 1; n < 2 {"
   },
   {
     "name": "FH11 Umschalt nicht gerade",
@@ -358,11 +356,11 @@
     "neu": "\tif false {"
   },
   {
-    "name": "FH51 Verschieben rundet nicht (F-1036)",
+    "name": "FH51 Verschieben rundet d nicht (F-1036)",
     "datei": "internal/document/freihand.go",
     "paket": "./internal/document",
-    "alt": "\t\tpts[i] = aufHundertstel(pts[i].Plus(d))",
-    "neu": "\t\tpts[i] = pts[i].Plus(d)"
+    "alt": "\td = aufHundertstel(d)\n\tif d == (Punkt{}) {",
+    "neu": "\tif d == (Punkt{}) {"
   },
   {
     "name": "FH52 langer Zug wieder gleichmäßig ausgedünnt (F-1037)",
@@ -445,8 +443,8 @@
     "name": "FH63 Merker räumt entfernte Striche nicht ab (F-1038)",
     "datei": "internal/ui/freihandmerker.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif _, ok := e.s.D.Objekt(id); !ok {\n\t\t\te.freihandBytes -= b.bytes",
-    "neu": "\t\tif _, ok := e.s.D.Objekt(id); !ok && false {\n\t\t\te.freihandBytes -= b.bytes"
+    "alt": "\t\tif _, ok := e.s.D.Objekt(id.id); !ok {\n\t\t\te.freihandBytes -= b.bytes",
+    "neu": "\t\tif _, ok := e.s.D.Objekt(id.id); !ok && false {\n\t\t\te.freihandBytes -= b.bytes"
   },
   {
     "name": "FH64 Wechsel der Aufnahme leert den Merker nicht (F-1038)",
@@ -482,5 +480,19 @@
     "paket": "./internal/ui",
     "alt": "\t} else if ok {\n\t\te.freihandBytes -= b.bytes\n",
     "neu": "\t} else if ok {\n"
+  },
+  {
+    "name": "FH69 Merker teilt Leinwand und Vorschau (Verify #333)",
+    "datei": "internal/ui/freihandmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\tschl := freihandSchluessel{v.ID, vorschau}",
+    "neu": "\tschl := freihandSchluessel{v.ID, false}"
+  },
+  {
+    "name": "FH70 Verschoben rundet jeden Punkt (Verify #333)",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tpts[i] = pts[i].Plus(d)\n",
+    "neu": "\t\tpts[i] = aufHundertstel(pts[i].Plus(d))\n"
   }
 ]

@@ -83,7 +83,7 @@ func TestFreihandMerkerZweitesBild(t *testing.T) {
 		t.Fatal(err)
 	}
 	headlessBild(t, image.Pt(1200, 800), func(gtx layout.Context) { e.zeichneObjekte(gtx) })
-	if _, ok := e.freihand[ids[0]]; ok || len(e.freihand) != 19 {
+	if _, ok := e.freihand[freihandSchluessel{id: ids[0]}]; ok || len(e.freihand) != 19 {
 		t.Errorf("nach dem Entfernen: %d Striche gemerkt, der entfernte noch da: %v", len(e.freihand), ok)
 	}
 }
@@ -104,7 +104,7 @@ func TestFreihandMerkerBereicheFolgenDerAnsicht(t *testing.T) {
 	gtx := layout.Context{Ops: new(op.Ops)}
 	zahl := func() int {
 		o, _ := d.Objekt(id)
-		return len(e.stueckeFuer(e.freihandFuer(gtx, o.(document.Freihand))))
+		return len(e.stueckeFuer(e.freihandFuer(gtx, o.(document.Freihand), false)))
 	}
 	if n := zahl(); n != 1 {
 		t.Fatalf("ohne Naht: %d Bereiche", n)
@@ -125,7 +125,7 @@ func TestFreihandMerkerBereicheFolgenDerAnsicht(t *testing.T) {
 		t.Fatal(err)
 	}
 	o, _ := d.Objekt(id)
-	b := e.freihandFuer(gtx, o.(document.Freihand))
+	b := e.freihandFuer(gtx, o.(document.Freihand), false)
 	if st := e.stueckeFuer(b); len(st) != 1 || st[0].Quelle.Max.X > 120.5 {
 		t.Errorf("Zuschnitt: %+v", st)
 	}
@@ -146,7 +146,7 @@ func TestFreihandMerkerVerdraengtUndRaeumtAuf(t *testing.T) {
 	gtx := layout.Context{Ops: new(op.Ops)}
 	fuer := func(id int) *freihandBild {
 		o, _ := d.Objekt(id)
-		return e.freihandFuer(gtx, o.(document.Freihand))
+		return e.freihandFuer(gtx, o.(document.Freihand), false)
 	}
 	eins := fuer(ids[0]).bytes
 	if eins <= 0 || e.freihandBytes != eins {
@@ -170,14 +170,14 @@ func TestFreihandMerkerVerdraengtUndRaeumtAuf(t *testing.T) {
 		t.Fatal(err)
 	}
 	fuer(ids[2]) // geändert: neu, die nicht gezeichneten der vorigen Runde machen Platz
-	if _, ok := e.freihand[ids[3]]; ok || len(e.freihand) != 3 || e.freihandBytes != 3*eins {
+	if _, ok := e.freihand[freihandSchluessel{id: ids[3]}]; ok || len(e.freihand) != 3 || e.freihandBytes != 3*eins {
 		t.Errorf("%d Striche, %d Bytes (Soll 3, %d)", len(e.freihand), e.freihandBytes, 3*eins)
 	}
 	if err := d.Entfernen(ids[0]); err != nil {
 		t.Fatal(err)
 	}
 	e.freihandAufraeumen()
-	if _, ok := e.freihand[ids[0]]; ok || e.freihandBytes != 2*eins {
+	if _, ok := e.freihand[freihandSchluessel{id: ids[0]}]; ok || e.freihandBytes != 2*eins {
 		t.Errorf("entfernter Strich bleibt gemerkt: %d Bytes", e.freihandBytes)
 	}
 

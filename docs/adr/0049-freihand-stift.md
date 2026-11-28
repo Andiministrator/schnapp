@@ -78,4 +78,7 @@ Gemessen (langer Zug, 4096 Rohpunkte, Zoom 1 und 0,73, mit und ohne Zittern): vo
 Punkt, 130 bzw. 306 KB je Strich; nachher 1142 bis 2189 Punkte, 25 bis 27 Byte je Punkt, höchstens 58 KB je Strich.
 Unter 20 Byte je Punkt ginge nur mit einer einzigen Kopie der Punkte (heute `s:punkte` und der Pfad); das wäre eine
 Änderung des Formats und ist nicht Teil dieses Nachtrags.
-
+- Nach dem Verify (28.11.2026): Punkt 1 — ein Strich aus lauter gleichen Punkten ist ungültig (Datei beschädigt,
+  `--annotate` lehnt ab, F-1040); Verschieben rundet nur den Versatz, die Punkte wandern starr. Punkt 2 — der Editor
+  merkt Zerlegung und Pfad je Strich, getrennt für Leinwand und Vorschau der Ebenenliste (`internal/ui/freihandmerker.go`,
+  F-1038).
