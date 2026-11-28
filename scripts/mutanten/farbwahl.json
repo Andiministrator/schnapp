@@ -80,8 +80,8 @@
     "name": "F189-13 Buchstaben im Hex-Feld wechseln das Werkzeug",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif e.fokusFeld(gtx) != nil && ((ok && t.hatWerkzeug)",
-    "neu": "\t\tif false && ((ok && t.hatWerkzeug)"
+    "alt": "\t\tif e.fokusFeld(gtx) != nil && ((ok && (t.hatWerkzeug",
+    "neu": "\t\tif false && ((ok && (t.hatWerkzeug"
   },
   {
     "name": "F189-14 Felder nach den Kürzeln ausgewertet (Rücktaste löscht das Objekt)",

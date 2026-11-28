@@ -1234,6 +1234,10 @@ msgid "Could not copy: %v"
 msgstr ""
 
 #: internal/ui/editor.go
+msgid "Copied to the clipboard; the objects were not removed because the image changed meanwhile."
+msgstr ""
+
+#: internal/ui/editor.go
 msgid "Copied to clipboard"
 msgstr ""
 
@@ -1479,6 +1483,22 @@ msgstr ""
 
 #: internal/ui/einfuegen.go
 msgid "The image is saved in the library as a new capture."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "Close the library to paste into the image."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "Reading the clipboard cancelled."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "The image from the clipboard is saved as a new capture: %s"
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "Creating a capture from the clipboard was not finished when the window closed."
 msgstr ""
 
 #: internal/ui/einfuegen.go
@@ -2816,6 +2836,10 @@ msgstr ""
 
 #: internal/ui/wechsel.go
 msgid "Copying is still running. Please wait a moment, then try again."
+msgstr ""
+
+#: internal/ui/wechsel.go
+msgid "Reading the clipboard is still running. Please wait a moment, then try again."
 msgstr ""
 
 #: internal/ui/wechsel.go

@@ -4,15 +4,18 @@ package ui
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"image"
 	"image/color"
+	"image/jpeg"
 	"image/png"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 
+	"gioui.org/io/key"
 	"gioui.org/layout"
 
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -43,7 +46,7 @@ func leserAttrappe(t *testing.T, inhalt map[string][]byte, typen ...string) *int
 	n := 0
 	alt := liesZwischenablage
 	t.Cleanup(func() { liesZwischenablage = alt })
-	liesZwischenablage = func(wahl func([]string) string, max int64) (wlclip.Gelesen, error) {
+	liesZwischenablage = func(_ context.Context, wahl func([]string) string, max int64) (wlclip.Gelesen, error) {
 		n++
 		g := wlclip.Gelesen{Typen: typen}
 		g.Typ = wahl(typen)
@@ -301,8 +304,228 @@ func TestEinfuegenPrueftBudget(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	e.einfuegenAnwenden(q)
+	e.einfuegenAnwenden(q, einfuegeErgebnis{})
 	if len(e.s.D.Objekte()) != 0 || e.meldung.Text != i18n.T("Could not paste: the objects would take too long to draw.") {
 		t.Errorf("%d Objekte, Meldung %q", len(e.s.D.Objekte()), e.meldung.Text)
+	}
+}
+
+// F-984: Hält das Fenster selbst eine Objekt-Kopie (Halter gescheitert, Lesen aber möglich), nimmt Strg+V die
+// gemerkten Objekte, ohne zu lesen.
+func TestEinfuegenGemerktTrotzLesen(t *testing.T) {
+	halterAttrappe(t, errors.New("keine Meldung des Halters"))
+	n := leserAttrappe(t, map[string][]byte{wlclip.MIME: {1}}, wlclip.MIME)
+	e, _ := editorMitKasten(t)
+	gtx := layout.Context{}
+	e.fuehreAus(gtx, aktKopieren, true)
+	warteKopieren(t, e, gtx)
+	if !e.lesenMoeglich() || !e.fensterHaeltKopie {
+		t.Fatalf("Vorbedingung: lesbar %v, Fenster hält %v", e.lesenMoeglich(), e.fensterHaeltKopie)
+	}
+	e.fuehreAus(gtx, aktEinfuegen, true)
+	if *n != 0 || len(e.s.D.Objekte()) != 2 || e.einf.laeuft {
+		t.Errorf("gelesen %d, %d Objekte, läuft %v", *n, len(e.s.D.Objekte()), e.einf.laeuft)
+	}
+}
+
+// F-989: Strg+X löscht erst nach gelungenem Kopieren; scheitert das Kopieren oder ändert sich das Bild dazwischen,
+// bleiben die Objekte.
+func TestAusschneidenErstNachErfolg(t *testing.T) {
+	halterAttrappe(t, nil)
+	e, _ := editorMitKasten(t)
+	gtx := layout.Context{}
+	e.fuehreAus(gtx, aktAusschneiden, true)
+	if len(e.s.D.Objekte()) != 1 {
+		t.Error("vor der Antwort gelöscht")
+	}
+	if _, err := e.s.D.Hinzufuegen(document.Kasten{Bereich: document.R(document.Pt(1, 1), document.Pt(2, 2))}); err != nil {
+		t.Fatal(err)
+	}
+	warteKopieren(t, e, gtx)
+	want := i18n.T("Copied to the clipboard; the objects were not removed because the image changed meanwhile.")
+	if len(e.s.D.Objekte()) != 2 || e.meldung.Text != want {
+		t.Errorf("%d Objekte, Meldung %q", len(e.s.D.Objekte()), e.meldung.Text)
+	}
+	// gescheitertes Kopieren: nichts löschen
+	e.einf.schneide, e.einf.schneideStand = []int{1}, e.s.D.Stand()
+	e.kopierLaeuft = true
+	e.kopierAntwort = make(chan kopierErgebnis, 1)
+	e.kopierAntwort <- kopierErgebnis{err: errors.New("kaputt")}
+	e.kopierenAbholen(gtx)
+	if len(e.s.D.Objekte()) != 2 || e.einf.schneide != nil {
+		t.Errorf("nach Fehler %d Objekte, Merker %v", len(e.s.D.Objekte()), e.einf.schneide)
+	}
+}
+
+// F-987, F-988: Esc bricht ein Lesen ab; Schließen bricht Strg+V ab und wartet auf ein laufendes Ablegen.
+func TestEinfuegenAbbruchUndSchliessen(t *testing.T) {
+	t.Setenv("WAYLAND_SOCKET", "")
+	alt := liesZwischenablage
+	t.Cleanup(func() { liesZwischenablage = alt })
+	abgebrochen := make(chan struct{})
+	liesZwischenablage = func(ctx context.Context, _ func([]string) string, _ int64) (wlclip.Gelesen, error) {
+		<-ctx.Done()
+		close(abgebrochen)
+		return wlclip.Gelesen{}, ctx.Err()
+	}
+	e := testEditor(t)
+	e.fuehreAus(layout.Context{}, aktEinfuegen, true)
+	if !e.einfuegenEsc() || e.einf.laeuft {
+		t.Fatal("Esc bricht nicht ab")
+	}
+	select {
+	case <-abgebrochen:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Kontext nicht abgebrochen")
+	}
+	if e.meldung.Text != i18n.T("Reading the clipboard cancelled.") {
+		t.Errorf("Meldung %q", e.meldung.Text)
+	}
+
+	// Ablegen läuft beim Schließen: abwarten, Ort nennen.
+	var aus bytes.Buffer
+	altAus := fehlerAusgabe
+	t.Cleanup(func() { fehlerAusgabe = altAus })
+	fehlerAusgabe = &aus
+	ch := make(chan einfuegeErgebnis, 1)
+	e.einf.laeuft, e.einf.neu, e.einf.antwort = true, true, ch
+	go func() { time.Sleep(50 * time.Millisecond); ch <- einfuegeErgebnis{neu: true, pfad: "/ablage/neu.png"} }()
+	e.einfuegenAbwarten(5 * time.Second)
+	if !strings.Contains(aus.String(), "/ablage/neu.png") || e.einf.laeuft {
+		t.Errorf("Ausgabe %q, läuft %v", aus.String(), e.einf.laeuft)
+	}
+}
+
+// F-991: Solange Strg+V liest, wechselt die Aufnahme nicht; bei offener Bibliothek fügt die Antwort nicht ein.
+func TestEinfuegenSperrtWechsel(t *testing.T) {
+	e, id := editorMitKasten(t)
+	e.bib = &Anbindung{Oeffnen: func(string) (Geoeffnet, error) { return Geoeffnet{}, nil }}
+	e.einf.laeuft = true
+	if e.wechselAnfrage("/ablage/andere.png") {
+		t.Error("Wechsel während des Lesens angenommen")
+	}
+	e.einf.laeuft = false
+	q, _ := e.s.D.NurObjekte([]int{id})
+	ch := make(chan einfuegeErgebnis, 1)
+	ch <- einfuegeErgebnis{q: q, gelesen: true}
+	e.einf.laeuft, e.einf.antwort = true, ch
+	e.bibl.offen = true
+	e.einfuegenAbholen()
+	if len(e.s.D.Objekte()) != 1 || e.meldung.Text != i18n.T("Close the library to paste into the image.") {
+		t.Errorf("%d Objekte, Meldung %q", len(e.s.D.Objekte()), e.meldung.Text)
+	}
+}
+
+// F-990: Mit --ignore-limit über dem Budget nimmt Einfügen trotzdem an; die Prüfung der Goroutine gilt nur für ihren
+// Stand.
+func TestEinfuegenOhneGrenze(t *testing.T) {
+	SetzeExportOhneGrenze(true)
+	t.Cleanup(func() { SetzeExportOhneGrenze(false) })
+	e := testEditor(t)
+	q, _ := document.OhnePixel(image.Pt(40, 30), image.Rect(0, 0, 40, 30), nil, document.KanteAbriss)
+	for range 101 {
+		_, _ = q.Hinzufuegen(document.Text{Ort: document.Pt(1, 10), Inhalt: strings.Repeat("x", 10_000), Schriftgrad: 8,
+			Farbe: color.NRGBA{A: 255}})
+	}
+	e.einfuegenAnwenden(q, einfuegeErgebnis{})
+	if len(e.s.D.Objekte()) != 101 {
+		t.Errorf("%d Objekte, Meldung %q", len(e.s.D.Objekte()), e.meldung.Text)
+	}
+	SetzeExportOhneGrenze(false)
+	e2 := testEditor(t)
+	e2.einfuegenAnwenden(q, einfuegeErgebnis{geprueft: true, stand: e2.s.D.Stand() + 1}) // alter Stand: neu prüfen
+	if len(e2.s.D.Objekte()) != 0 {
+		t.Error("Prüfung eines alten Stands übernommen")
+	}
+}
+
+// F-986: Mit Fokus im Eingabefeld der Leiste (Hex) wirken Strg+X, Strg+V und Strg+C nicht auf die Objekte.
+func TestZwischenablageNichtAusEingabefeld(t *testing.T) {
+	halterAttrappe(t, nil)
+	n := leserAttrappe(t, nil, wlclip.MIMEObjekte)
+	l := neuerMenueLauf(t, image.Pt(1200, 800)) // Text „Hallo“ ist gewählt
+	vorher := len(l.e.s.D.Objekte())
+	l.klick(mittenPunkt(l.e.seite.fw.hex.rahmen))
+	if l.e.fokusFeld(l.gtx()) == nil {
+		t.Fatal("Vorbedingung: Fokus im Hex-Feld")
+	}
+	for _, k := range []key.Name{"X", "V", "C"} {
+		l.taste(k, key.ModShortcut)
+	}
+	if len(l.e.s.D.Objekte()) != vorher || l.e.kopierLaeuft || l.e.einf.laeuft || *n != 0 {
+		t.Errorf("%d Objekte (vorher %d), Kopieren %v, Lesen %v/%d", len(l.e.s.D.Objekte()), vorher, l.e.kopierLaeuft,
+			l.e.einf.laeuft, *n)
+	}
+}
+
+// F-993: Rundlauf Strg+C → Halter → Strg+V mit Lupe und Gruppe in eine andere Aufnahme; JPEG allein für „New from
+// clipboard“.
+func TestRundlaufLupeUndGruppe(t *testing.T) {
+	_, daten := halterAttrappe(t, nil)
+	e := testEditor(t)
+	e.s.SetzeFenster(image.Pt(400, 300))
+	for _, o := range []document.Objekt{
+		document.Lupe{Quelle: document.R(document.Pt(2, 2), document.Pt(8, 8)), Ziel: document.R(document.Pt(20, 2), document.Pt(32, 14)),
+			Strich: document.Strich{Breite: 1, Farbe: color.NRGBA{A: 255}}},
+		document.Kasten{Ebene: document.Ebene{Gruppe: 3}, Bereich: document.R(document.Pt(2, 18), document.Pt(6, 22))},
+		document.Kasten{Ebene: document.Ebene{Gruppe: 3}, Bereich: document.R(document.Pt(8, 18), document.Pt(12, 22))},
+	} {
+		if _, err := e.s.D.Hinzufuegen(o); err != nil {
+			t.Fatal(err)
+		}
+	}
+	e.s.WaehleAlle()
+	gtx := layout.Context{}
+	e.fuehreAus(gtx, aktKopieren, true)
+	warteKopieren(t, e, gtx)
+	svg, _, err := wlclip.Entpacke(*daten)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ziel := testEditor(t)
+	ziel.s.SetzeFenster(image.Pt(400, 300))
+	leserAttrappe(t, map[string][]byte{wlclip.MIMEObjekte: svg}, wlclip.MIMEObjekte)
+	ziel.fuehreAus(gtx, aktEinfuegen, true)
+	warteEinfuegen(t, ziel)
+	os := ziel.s.D.Objekte()
+	if len(os) != 3 {
+		t.Fatalf("%d Objekte, Meldung %q", len(os), ziel.meldung.Text)
+	}
+	if _, ok := os[0].(document.Lupe); !ok {
+		t.Errorf("erstes %T, erwartet Lupe", os[0])
+	}
+	if g1, g2 := os[1].Ebenenwerte().Gruppe, os[2].Ebenenwerte().Gruppe; g1 == 0 || g1 != g2 {
+		t.Errorf("Gruppen %d %d", g1, g2)
+	}
+}
+
+func TestNeuAusZwischenablageJPEG(t *testing.T) {
+	var j bytes.Buffer
+	_ = jpeg.Encode(&j, image.NewNRGBA(image.Rect(0, 0, 5, 6)), nil)
+	leserAttrappe(t, map[string][]byte{"image/jpeg": j.Bytes()}, "text/plain", "image/jpeg")
+	t.Setenv("WAYLAND_SOCKET", "")
+	e := testEditor(t)
+	var abgelegt *document.Dokument
+	e.bib = &Anbindung{
+		Ablegen: func(d *document.Dokument) (string, error) { abgelegt = d; return "/ablage/j.png", nil },
+		Oeffnen: func(string) (Geoeffnet, error) { return Geoeffnet{}, errors.New("nicht hier") },
+	}
+	e.fuehreAus(layout.Context{}, aktNeuAusZwischenablage, true)
+	warteEinfuegen(t, e)
+	if abgelegt == nil || abgelegt.Groesse() != image.Pt(5, 6) {
+		t.Errorf("abgelegt %v, Meldung %q", abgelegt, e.meldung.Text)
+	}
+}
+
+// F-987: Die Taste Esc bricht ein laufendes Lesen ab (über die Tastentabelle, nicht nur die Funktion).
+func TestEscBrichtLesenAb(t *testing.T) {
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	l.fokusiere(l.e)
+	abgebrochen := false
+	ch := make(chan einfuegeErgebnis, 1)
+	l.e.einf.laeuft, l.e.einf.antwort, l.e.einf.abbruch = true, ch, func() { abgebrochen = true }
+	l.taste(key.NameEscape, 0)
+	if !abgebrochen || l.e.einf.laeuft {
+		t.Errorf("abgebrochen %v, läuft %v", abgebrochen, l.e.einf.laeuft)
 	}
 }

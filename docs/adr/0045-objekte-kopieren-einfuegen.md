@@ -79,3 +79,23 @@ lesen kann, ohne Fokus und ohne Gio.
 Zwischenablage über `ui.Anbindung.Ablegen`, Halter-Argument). Format: docs/format.md bekommt einen informativen
 Abschnitt zum Typ der Zwischenablage; FormatVersion unverändert. Sichtprobe im virtuellen KWin (Kopieren und Einfügen
 zwischen zwei Aufnahmen über die Leiste); Klipper und fremde Programme prüft Andi.
+
+## Nachtrag 1 (28.11.2026, Kritik Fable zu 6dbfaea, F-984 bis F-993, Karte #393)
+1. **Gemerkte Objekte zuerst (F-984):** Hält das Fenster selbst eine Objekt-Kopie (kein Halter, aus welchem Grund
+   auch immer), nimmt Strg+V die gemerkten Objekte, ohne zu lesen — gelesen würde sonst nur ihr Bild.
+2. **Streifen im Ziel (F-985):** Die alte Lage gilt nur, wenn das Eingefügte dort keinen Stauch-Streifen des Ziels
+   überdeckt (die Ecken liegen in der Ansicht so weit auseinander wie im Original); sonst die Mitte, und überdeckt
+   auch die einen Streifen, die nächste Lage direkt vor oder hinter einer Naht.
+3. **Eingabefelder (F-986):** Mit Fokus in einem Eingabefeld der Leiste wirken Strg+C, Strg+X und Strg+V nicht auf die
+   Leinwand.
+4. **Gesamtfrist und Abbruch (F-987):** `wlclip.Lies` liest höchstens `LeseFrist` = 60 s und nimmt einen Kontext; Esc
+   bricht ein laufendes Lesen ab, das Schließen ebenso.
+5. **Schließen (F-988):** Ein laufendes „New from clipboard“ wird beim Schließen abgebrochen; ein schon begonnenes
+   Ablegen wird höchstens `wechselFrist` abgewartet, sein Ort steht auf der Fehlerausgabe.
+6. **Ausschneiden erst nach Erfolg (F-989):** Strg+X löscht, wenn die Antwort des Kopierens ohne Fehler kommt und das
+   Dokument seitdem unverändert ist; sonst bleiben die Objekte, und die Fußzeile sagt es.
+7. **Budget (F-990):** Die Prüfung läuft in der Lese-Goroutine gegen die Objekte beim Tastendruck; hat sich das
+   Dokument bis zur Antwort geändert, prüft das Einfügen neu. Mit `--ignore-limit` geöffnet gilt keine Grenze (wie beim
+   Export, ADR-0033 Nachtrag 4).
+8. **Wechsel (F-991):** Solange gelesen wird, nimmt die Leiste keinen Wechsel an; bei offener Bibliothek fügt eine
+   Antwort nicht ins verdeckte Bild ein.

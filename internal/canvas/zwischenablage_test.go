@@ -230,9 +230,82 @@ func TestAusschneidenNichtWaehrendSpeichern(t *testing.T) {
 	if !s.KannAusschneiden() {
 		t.Fatal("Vorbedingung")
 	}
+	stand := s.D.Stand()
 	s.hg.laeuft = true
+	if s.Ausschneiden([]int{1}, stand) {
+		t.Error("Ausschneiden während des Speicherns")
+	}
 	if !s.KannObjekteKopieren() || s.KannAusschneiden() || s.KannEinfuegen() {
 		t.Errorf("während des Speicherns: kopieren %v, ausschneiden %v, einfügen %v", s.KannObjekteKopieren(),
 			s.KannAusschneiden(), s.KannEinfuegen())
+	}
+}
+
+// F-985: Ein Stauch-Streifen des Ziels unter der alten Lage zählt als unsichtbar; das Eingefügte landet ganz sichtbar
+// neben der Naht.
+func TestEinfuegenMeidetStreifenDesZiels(t *testing.T) {
+	quelle := dreiKaesten(t)
+	q := kopiere(t, quelle, 1) // x 10 … 30
+
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 400, 100)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := d.SetzeStreifen([]document.Streifen{{Von: 11, Bis: 300}}); err != nil {
+		t.Fatal(err)
+	}
+	ziel := NeueSitzung(d)
+	ziel.SetzeFenster(image.Pt(400, 200))
+	ids, err := ziel.Einfuegen(q, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	o, _ := ziel.D.Objekt(ids[0])
+	g := o.Grenzen()
+	a, e := ziel.D.ZuAnsicht(g.Min), ziel.D.ZuAnsicht(g.Max)
+	if e.X-a.X != g.Breite() || a.X < 0 || e.X > float64(ziel.D.Groesse().X) {
+		t.Errorf("Grenzen %v, in der Ansicht %v … %v: nicht ganz sichtbar", g, a, e)
+	}
+}
+
+// F-989: Ausschneiden löscht nur bei unverändertem Stand, in einem Schritt.
+func TestAusschneidenMitStand(t *testing.T) {
+	s := dreiKaesten(t)
+	stand := s.D.Stand()
+	if s.Ausschneiden([]int{1, 2}, stand+1) || len(s.D.Objekte()) != 3 {
+		t.Error("bei geändertem Stand gelöscht")
+	}
+	if !s.Ausschneiden([]int{1, 2}, stand) || len(s.D.Objekte()) != 1 || s.AnzahlGewaehlt() != 0 {
+		t.Fatalf("%d Objekte, %d gewählt", len(s.D.Objekte()), s.AnzahlGewaehlt())
+	}
+	if err := s.D.Rueckgaengig(); err != nil || len(s.D.Objekte()) != 3 {
+		t.Errorf("Rückgängig: %v, %d Objekte", err, len(s.D.Objekte()))
+	}
+}
+
+// F-985: Liegt auch die Mitte des Fensters über einer Naht, rückt das Eingefügte direkt daneben.
+func TestEinfuegenMitteNebenDerNaht(t *testing.T) {
+	quelle := dreiKaesten(t)
+	q := kopiere(t, quelle, 3) // x 120 … 140
+
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 400, 100)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := d.SetzeStreifen([]document.Streifen{{Von: 130, Bis: 230}}); err != nil { // Naht bei x 130 der Ansicht
+		t.Fatal(err)
+	}
+	ziel := NeueSitzung(d)
+	ziel.SetzeFenster(image.Pt(260, 100))
+	ziel.Abb = Abbildung{Zoom: 1} // Mitte des Fensters x 130: genau auf der Naht
+	ids, err := ziel.Einfuegen(q, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	o, _ := ziel.D.Objekt(ids[0])
+	g := o.Grenzen()
+	a, e := ziel.D.ZuAnsicht(g.Min), ziel.D.ZuAnsicht(g.Max)
+	if e.X-a.X != g.Breite() {
+		t.Errorf("Grenzen %v, in der Ansicht %v … %v: überdeckt den Streifen", g, a, e)
 	}
 }

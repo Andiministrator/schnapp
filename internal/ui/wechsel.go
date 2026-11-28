@@ -122,6 +122,10 @@ func (e *editor) wechselAnfrage(abs string) bool {
 		// (F-759); eine haltende Meldung bleibt stehen (meldeNebenbei).
 		e.meldeNebenbei(i18n.T("Copying is still running. Please wait a moment, then try again."), false)
 		return false
+	case e.einf.laeuft:
+		// Die Antwort eines Strg+V träfe sonst die neue Aufnahme (F-991).
+		e.meldeNebenbei(i18n.T("Reading the clipboard is still running. Please wait a moment, then try again."), false)
+		return false
 	case e.bibl.arbeitLaeuft:
 		// Die Ansicht schreibt gerade Schlagworte oder verschiebt in den Papierkorb: erst danach laden, sonst hielte der
 		// Editor einen veralteten Stand oder eine Datei im Papierkorb (F-676); der Klick sagt es (F-775).

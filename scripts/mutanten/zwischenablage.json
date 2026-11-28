@@ -17,7 +17,7 @@
     "name": "Z3 immer alte Lage",
     "datei": "internal/canvas/zwischenablage.go",
     "paket": "./internal/canvas",
-    "alt": "if innerhalb(ansicht, b, g) {",
+    "alt": "if innerhalb(ansicht, b, g) && s.ohneStreifen(ansicht, b) {",
     "neu": "if true {"
   },
   {
@@ -240,10 +240,10 @@
   },
   {
     "name": "U2 Ausschneiden löscht nicht",
-    "datei": "internal/ui/einfuegen.go",
+    "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\tif ausschneiden {\n\t\te.s.Ausschneiden()\n\t}\n",
-    "neu": ""
+    "alt": "\t\t\tif !e.s.Ausschneiden(ids, e.einf.schneideStand) {",
+    "neu": "\t\t\tif false {"
   },
   {
     "name": "U3 Fenster merkt die Objekte nicht",
@@ -305,8 +305,8 @@
     "name": "U11 ohne Budget",
     "datei": "internal/ui/einfuegen.go",
     "paket": "./internal/ui",
-    "alt": "e.s.Einfuegen(q, render.Pruefe)",
-    "neu": "e.s.Einfuegen(q, nil)"
+    "alt": "\tpruefe := render.Pruefe\n",
+    "neu": "\tvar pruefe func(*document.Dokument) error\n"
   },
   {
     "name": "U12 Halter mit Art Bild",
@@ -314,5 +314,103 @@
     "paket": "./internal/ui",
     "alt": "wlclip.Packe(svg, png), wlclip.ArtObjekte)",
     "neu": "wlclip.Packe(svg, png), wlclip.ArtBild)"
+  },
+  {
+    "name": "Z16 Streifen des Ziels übersehen",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "if innerhalb(ansicht, b, g) && s.ohneStreifen(ansicht, b) {",
+    "neu": "if innerhalb(ansicht, b, g) {"
+  },
+  {
+    "name": "Z17 Mitte nicht neben die Naht",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "return s.D.ZuOriginal(s.nebenNaht(ecke, b, g)).Minus(b.Min)",
+    "neu": "return s.D.ZuOriginal(ecke).Minus(b.Min)"
+  },
+  {
+    "name": "Z18 Ausschneiden ohne Standprüfung",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "|| s.D.Stand() != stand ||",
+    "neu": "||"
+  },
+  {
+    "name": "W9 Lesen ohne Kontext",
+    "datei": "internal/wlclip/lesen.go",
+    "paket": "./internal/wlclip",
+    "alt": "\t\tif err := ctx.Err(); err != nil {\n\t\t\treturn nil, fmt.Errorf(\"wlclip: Lesen der Zwischenablage abgebrochen: %w\", err)\n\t\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "U13 gemerkte erst ohne Lesen",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.fensterHaeltKopie && e.einf.kopie != nil {\n\t\te.einfuegenAnwenden(e.einf.kopie, einfuegeErgebnis{})",
+    "neu": "\tif e.fensterHaeltKopie && e.einf.kopie != nil && !e.lesenMoeglich() {\n\t\te.einfuegenAnwenden(e.einf.kopie, einfuegeErgebnis{})"
+  },
+  {
+    "name": "U14 Strg+X im Eingabefeld",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "return a == aktKopieren || a == aktAusschneiden || a == aktEinfuegen",
+    "neu": "return a == aktKopieren"
+  },
+  {
+    "name": "U15 Esc bricht nicht ab",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif e.einfuegenEsc() { // zuerst ein laufendes Lesen",
+    "neu": "\t\t\tif false && e.einfuegenEsc() { // zuerst ein laufendes Lesen"
+  },
+  {
+    "name": "U16 Schließen wartet nicht",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !neu {\n\t\treturn\n\t}\n\tt := time.NewTimer(frist)",
+    "neu": "\tif !neu || true {\n\t\treturn\n\t}\n\tt := time.NewTimer(frist)"
+  },
+  {
+    "name": "U17 Ausschneiden sofort",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.einf.schneide, e.einf.schneideStand = ids, e.s.D.Stand()\n",
+    "neu": "\t\te.s.Ausschneiden(ids, e.s.D.Stand())\n"
+  },
+  {
+    "name": "U18 Fehler löscht Merker nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.einf.schneide = nil // nichts kopiert",
+    "neu": "\t\t\t_ = 0 // nichts kopiert"
+  },
+  {
+    "name": "U19 ignore-limit unbeachtet",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "if exportOhneGrenze.Load() || (r.geprueft && r.stand == e.s.D.Stand()) {",
+    "neu": "if r.geprueft && r.stand == e.s.D.Stand() {"
+  },
+  {
+    "name": "U20 alte Prüfung übernommen",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "(r.geprueft && r.stand == e.s.D.Stand())",
+    "neu": "r.geprueft"
+  },
+  {
+    "name": "U21 Wechsel während des Lesens",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase e.einf.laeuft:\n\t\t// Die Antwort eines Strg+V",
+    "neu": "\tcase false:\n\t\t// Die Antwort eines Strg+V"
+  },
+  {
+    "name": "U22 Einfügen bei offener Bibliothek",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase e.bibl.offen:\n\t\te.melde(i18n.T(\"Close the library",
+    "neu": "\tcase false:\n\t\te.melde(i18n.T(\"Close the library"
   }
 ]

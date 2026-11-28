@@ -1424,3 +1424,18 @@ Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #377/#389 und #35
   sein Krümmungsgriff (Ziehen dort biegt, statt zu verschieben). Leistenkoordinaten hängen an der Art der Auswahl —
   vorher ein Foto der Lage machen.
 
+
+## Zwischenablage für Objekte (28.11.2026, Sprint 14, ADR-0045, F-984 bis F-993)
+
+- **Ein Rückfall hat mehr als eine Ursache** (F-984): „kein Halter“ hieß beim Entwurf „kein data-control“; der Halter
+  scheitert aber auch an Frist, Start oder Ablösung, während Lesen geht. Ein Merker für den Rückfall gilt nach seinem
+  eigenen Zustand (`fensterHaeltKopie`), nicht nach einer vermuteten Ursache.
+- **Zerstörendes erst nach dem asynchronen Erfolg** (F-989): Strg+X löscht erst, wenn die Antwort des Kopierens ohne
+  Fehler da ist, und nur bei unverändertem Stand — sonst wären die Objekte weg und nirgends.
+- **Lage „im sichtbaren Bild“ heißt auch: nicht in einem Streifen** (F-985). Größenvergleiche gegen die Ansichtsgröße
+  übersehen Streifen; die Probe ist, ob zwei Ecken in der Ansicht so weit auseinander liegen wie im Original.
+- **Frist je Stück ist keine Gesamtfrist** (F-987): Ein tröpfelnder Lieferant hält ein „je 64 KiB höchstens 10 s“ ewig
+  am Leben; Lesen braucht Kontext und Gesamtfrist, und die Oberfläche einen Abbruch.
+- **Jede neue Goroutine der Oberfläche gehört in Esc, Wechsel und Schließen** (F-988, F-991): Was eine Antwort in die
+  Sitzung schreibt, sperrt den Wechsel oder verwirft die Antwort danach, und `zerstoert` wartet auf alles, was Dateien
+  schreibt.

@@ -4,6 +4,7 @@ package wlclip
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"os"
 	"slices"
@@ -88,7 +89,7 @@ func TestLies(t *testing.T) {
 		c.erwarte(0xff000001, opOfferDestroy, "Auswahl freigeben")
 	}()
 	var gesehen []string
-	g, err := lies(client, func(t []string) string { gesehen = t; return MIMEObjekte }, 1<<20, 5*time.Second)
+	g, err := lies(context.Background(), client, func(t []string) string { gesehen = t; return MIMEObjekte }, 1<<20, 5*time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +113,7 @@ func TestLiesNichtsGewaehlt(t *testing.T) {
 		c.leseAnmeldung(reg, ManagerExt, func(g uint32) { c.biete(g, 0xff000001, []string{"text/plain"}, true) })
 		c.erwarte(0xff000001, opOfferDestroy, "Auswahl freigeben")
 	}()
-	g, err := lies(client, func([]string) string { return "" }, 1<<20, 5*time.Second)
+	g, err := lies(context.Background(), client, func([]string) string { return "" }, 1<<20, 5*time.Second)
 	if err != nil || g.Typ != "" || g.Daten != nil || !slices.Equal(g.Typen, []string{"text/plain"}) {
 		t.Errorf("Ergebnis %+v, %v", g, err)
 	}
@@ -129,14 +130,14 @@ func TestLiesLeer(t *testing.T) {
 			c.Sende(g, evDeviceSelection, new(wlwire.Nachricht).U32(0))
 		})
 	}()
-	if _, err := lies(client, func([]string) string { return MIME }, 1<<20, 5*time.Second); !errors.Is(err, ErrLeer) {
+	if _, err := lies(context.Background(), client, func([]string) string { return MIME }, 1<<20, 5*time.Second); !errors.Is(err, ErrLeer) {
 		t.Errorf("Fehler %v, erwartet ErrLeer", err)
 	}
 
 	client, server = paar(t)
 	c = &compositor{t: t, v: server}
 	go c.anmeldung([]globalImTest{{3, "wl_seat", 9}})
-	if _, err := lies(client, func([]string) string { return MIME }, 1<<20, 5*time.Second); !errors.Is(err, ErrKeinDataControl) {
+	if _, err := lies(context.Background(), client, func([]string) string { return MIME }, 1<<20, 5*time.Second); !errors.Is(err, ErrKeinDataControl) {
 		t.Errorf("Fehler %v, erwartet ErrKeinDataControl", err)
 	}
 }
@@ -150,7 +151,7 @@ func TestLiesZuGross(t *testing.T) {
 		c.leseAnmeldung(reg, ManagerExt, func(g uint32) { c.biete(g, 0xff000001, []string{MIME}, true) })
 		c.liefere(0xff000001, MIME, zufall(1000))
 	}()
-	if _, err := lies(client, func([]string) string { return MIME }, 999, 5*time.Second); !errors.Is(err, ErrZuGross) {
+	if _, err := lies(context.Background(), client, func([]string) string { return MIME }, 999, 5*time.Second); !errors.Is(err, ErrZuGross) {
 		t.Errorf("Fehler %v, erwartet ErrZuGross", err)
 	}
 }
@@ -169,7 +170,7 @@ func TestLiesStockt(t *testing.T) {
 		<-halt // Deskriptor offen halten
 		os.NewFile(uintptr(fd), "stockt").Close()
 	}()
-	_, err := lies(client, func([]string) string { return MIME }, 1<<20, 200*time.Millisecond)
+	_, err := lies(context.Background(), client, func([]string) string { return MIME }, 1<<20, 200*time.Millisecond)
 	if err == nil {
 		t.Error("kein Fehler bei stockendem Lieferanten")
 	}
@@ -238,5 +239,58 @@ func TestArgumentObjekte(t *testing.T) {
 		if b, ok := ArtVon(a.Argument()); !ok || b != a {
 			t.Errorf("ArtVon(%q) = %v, %v", a.Argument(), b, ok)
 		}
+	}
+}
+
+// F-987: Ein tröpfelnder Lieferant endet mit dem Kontext (Gesamtfrist oder Abbruch), nicht erst mit der Frist je Stück.
+func TestLiesTroepfeltAbbruch(t *testing.T) {
+	client, server := paar(t)
+	c := &compositor{t: t, v: server}
+	halt := make(chan struct{})
+	defer close(halt)
+	go func() {
+		reg := c.anmeldung(normaleGlobals)
+		c.leseAnmeldung(reg, ManagerExt, func(g uint32) { c.biete(g, 0xff000001, []string{MIME}, true) })
+		c.erwarte(0xff000001, opOfferReceive, "receive")
+		fd, _ := c.v.NimmFD()
+		f := os.NewFile(uintptr(fd), "troepfelt")
+		defer f.Close()
+		for {
+			select {
+			case <-halt:
+				return
+			case <-time.After(20 * time.Millisecond):
+				f.Write([]byte{1})
+			}
+		}
+	}()
+	ctx, ende := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer ende()
+	start := time.Now()
+	_, err := lies(ctx, client, func([]string) string { return MIME }, 1<<20, 5*time.Second)
+	if !errors.Is(err, context.DeadlineExceeded) || time.Since(start) > 3*time.Second {
+		t.Errorf("Fehler %v nach %v, erwartet Abbruch durch den Kontext", err, time.Since(start))
+	}
+}
+
+// F-987: Ein schon abgebrochener Kontext beendet liesBis, auch wenn der Lieferant ohne Pause liefert.
+func TestLiesBisAbgebrochen(t *testing.T) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	go func() {
+		defer w.Close()
+		for range 64 {
+			if _, err := w.Write(make([]byte, 4096)); err != nil {
+				return
+			}
+		}
+	}()
+	ctx, ende := context.WithCancel(context.Background())
+	ende()
+	if _, err := liesBis(ctx, r, 1<<20, 5*time.Second); !errors.Is(err, context.Canceled) {
+		t.Errorf("Fehler %v, erwartet Abbruch", err)
 	}
 }

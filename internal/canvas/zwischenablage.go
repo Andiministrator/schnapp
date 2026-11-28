@@ -31,7 +31,7 @@ const einfuegeVersuche = 64
 // weiter, statt bei Tausenden Objekten spürbar zu stocken.
 const vergleichGrenze = 200_000
 
-// kopierBereit meldet, ob Kopieren von Objekten jetzt geht: kein Zug, keine Texteingabe. Während des Speicherns geht
+// kopierBereit meldet, ob Kopieren von Objekten jetzt geht: kein Zug, keine Texteingabe (sie ist der Zug zugText). Während des Speicherns geht
 // es wie das Kopieren des Bilds (F-285): Es ändert nichts am Dokument.
 func (s *Sitzung) kopierBereit() bool { return s.zug == keinZug && !s.D.ZugLaeuft() }
 
@@ -61,8 +61,21 @@ func (s *Sitzung) KopierObjekte() (*document.Dokument, error) {
 	return s.D.NurObjekte(ids)
 }
 
-// Ausschneiden löscht die gewählten Objekte nach einem gelungenen Kopieren (ein Rückgängig-Schritt, wie Entf).
-func (s *Sitzung) Ausschneiden() bool { return s.Loeschen() }
+// Ausschneiden löscht nach einem gelungenen Kopieren die Objekte ids in einem Rückgängig-Schritt (ADR-0045 Punkt 1).
+// Hat sich das Dokument seit dem Kopieren geändert (stand) oder geht Löschen gerade nicht, löscht es nichts und meldet
+// false: Dann wäre unklar, ob ids noch das Kopierte sind (F-989).
+func (s *Sitzung) Ausschneiden(ids []int, stand uint64) bool {
+	if !s.zwischenablageBereit() || s.TextLaeuft() || s.D.Stand() != stand || len(ids) == 0 {
+		return false
+	}
+	vor := s.D.Stand()
+	if s.D.EntferneMehrere(ids) != nil {
+		return false
+	}
+	s.merkeAenderung(vor)
+	s.waehleNur(0)
+	return true
+}
 
 // Einfuegen fügt die Objekte aus q (Dokument ohne Pixel aus der Zwischenablage, KopierObjekte) zuoberst ein, als ein
 // Schritt, und wählt sie (ADR-0045 Punkt 3). Die Lage im sichtbaren Bild bleibt, sonst Mitte des Fensterausschnitts;
@@ -138,7 +151,7 @@ func gemeinsameGrenzen(os []document.Objekt) document.Rechteck {
 func (s *Sitzung) einfuegeVersatz(q *document.Dokument, b document.Rechteck) document.Punkt {
 	g := s.D.Groesse()
 	ansicht := q.ZuAnsicht(b.Min)
-	if innerhalb(ansicht, b, g) {
+	if innerhalb(ansicht, b, g) && s.ohneStreifen(ansicht, b) {
 		return s.D.ZuOriginal(ansicht).Minus(b.Min)
 	}
 	mitte := document.Pt(float64(g.X)/2, float64(g.Y)/2)
@@ -148,11 +161,47 @@ func (s *Sitzung) einfuegeVersatz(q *document.Dokument, b document.Rechteck) doc
 	ecke := document.Pt(
 		inBereich(mitte.X-b.Breite()/2, 0, float64(g.X)-b.Breite()),
 		inBereich(mitte.Y-b.Hoehe()/2, 0, float64(g.Y)-b.Hoehe()))
-	return s.D.ZuOriginal(ecke).Minus(b.Min)
+	return s.D.ZuOriginal(s.nebenNaht(ecke, b, g)).Minus(b.Min)
+}
+
+// nebenNaht liefert ecke, wenn das Eingefügte dort keinen Streifen überdeckt; sonst die nächste Lage direkt vor oder
+// hinter einer Naht, die im Bild bleibt und keinen überdeckt (F-985). Gibt es keine (breiter als jeder Abschnitt),
+// bleibt ecke.
+func (s *Sitzung) nebenNaht(ecke document.Punkt, b document.Rechteck, g image.Point) document.Punkt {
+	if s.ohneStreifen(ecke, b) {
+		return ecke
+	}
+	xs, ys := []float64{ecke.X}, []float64{ecke.Y}
+	for _, n := range s.D.Naehte() {
+		if n.Zeilen {
+			ys = append(ys, float64(n.Lage), float64(n.Lage)-b.Hoehe())
+		} else {
+			xs = append(xs, float64(n.Lage), float64(n.Lage)-b.Breite())
+		}
+	}
+	beste, abstand := ecke, math.Inf(1)
+	for _, x := range xs {
+		for _, y := range ys {
+			p := document.Pt(x, y)
+			if d := p.Minus(ecke).Laenge(); d < abstand && innerhalb(p, b, g) && s.ohneStreifen(p, b) {
+				beste, abstand = p, d
+			}
+		}
+	}
+	return beste
+}
+
+// ohneStreifen meldet, ob Grenzen der Größe von b, mit der linken oberen Ecke bei ecke (Ansicht) ins Original dieser
+// Aufnahme gelegt, keinen Stauch-Streifen überdecken: Ihre Ecken liegen in der Ansicht dann genau so weit auseinander
+// wie im Original (F-985). Sonst verschwände ein Teil im Streifen.
+func (s *Sitzung) ohneStreifen(ecke document.Punkt, b document.Rechteck) bool {
+	o := s.D.ZuOriginal(ecke)
+	d := s.D.ZuAnsicht(o.Plus(document.Pt(b.Breite(), b.Hoehe()))).Minus(s.D.ZuAnsicht(o))
+	return math.Abs(d.X-b.Breite()) < 0.5 && math.Abs(d.Y-b.Hoehe()) < 0.5
 }
 
 // innerhalb meldet, ob Grenzen der Größe von b mit der linken oberen Ecke bei ecke (Ansicht) ganz in einer Ansicht der
-// Größe g liegen. Die Größe gilt wie im Original; ein Streifen innerhalb der Grenzen ändert sie nur in der Quelle.
+// Größe g liegen (Größe wie im Original; Streifen des Ziels prüft ohneStreifen).
 func innerhalb(ecke document.Punkt, b document.Rechteck, g image.Point) bool {
 	return ecke.X >= 0 && ecke.Y >= 0 && ecke.X+b.Breite() <= float64(g.X) && ecke.Y+b.Hoehe() <= float64(g.Y)
 }

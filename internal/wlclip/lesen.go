@@ -3,6 +3,7 @@
 package wlclip
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -30,6 +31,10 @@ var (
 	ErrZuGross = errors.New("wlclip: Inhalt der Zwischenablage zu groß")
 )
 
+// LeseFrist ist die Gesamtfrist eines Lesens (F-987): Ein Lieferant, der nur tröpfelnd liefert, hält Schnapp nicht
+// länger fest.
+const LeseFrist = 60 * time.Second
+
 // Gelesen ist das Ergebnis von Lies.
 type Gelesen struct {
 	Typen []string // alle angebotenen Typen in der Reihenfolge des Angebots
@@ -38,10 +43,10 @@ type Gelesen struct {
 }
 
 // Lies verbindet sich mit dem Compositor der Sitzung, fragt die Typen der Zwischenablage ab und liest den Typ, den
-// wahl aus ihnen wählt (leer: nichts lesen). Mehr als max Byte sind ErrZuGross. Jeder Schritt hat die Frist Stau; beim
-// Lesen gilt sie je Stück, ein langsamer, aber stetiger Lieferant darf also länger brauchen. Mit WAYLAND_SOCKET oder
-// ohne data-control liefert Lies den Fehler von HalterMoeglich bzw. ErrKeinDataControl.
-func Lies(wahl func(typen []string) string, max int64) (Gelesen, error) {
+// wahl aus ihnen wählt (leer: nichts lesen). Mehr als max Byte sind ErrZuGross. Jeder Schritt hat die Frist Stau, das
+// Ganze höchstens LeseFrist; ctx bricht ab (Esc, Schließen, F-987). Mit WAYLAND_SOCKET oder ohne data-control liefert
+// Lies den Fehler von HalterMoeglich bzw. ErrKeinDataControl.
+func Lies(ctx context.Context, wahl func(typen []string) string, max int64) (Gelesen, error) {
 	if err := HalterMoeglich(os.Getenv); err != nil {
 		return Gelesen{}, err
 	}
@@ -50,10 +55,15 @@ func Lies(wahl func(typen []string) string, max int64) (Gelesen, error) {
 		return Gelesen{}, err
 	}
 	defer v.Close()
-	return lies(v, wahl, max, Stau)
+	ctx, ende := context.WithTimeout(ctx, LeseFrist)
+	defer ende()
+	return lies(ctx, v, wahl, max, Stau)
 }
 
-func lies(v *wlwire.Verbindung, wahl func([]string) string, max int64, stau time.Duration) (Gelesen, error) {
+func lies(ctx context.Context, v *wlwire.Verbindung, wahl func([]string) string, max int64, stau time.Duration) (Gelesen, error) {
+	// Ein Abbruch weckt jedes wartende Lesen der Verbindung sofort (die Fristen danach prüfen ctx).
+	stop := context.AfterFunc(ctx, func() { _ = v.SetDeadline(time.Now()) })
+	defer stop()
 	registry, globale, err := v.Globale(stau)
 	if err != nil {
 		return Gelesen{}, err
@@ -146,15 +156,20 @@ func lies(v *wlwire.Verbindung, wahl func([]string) string, max int64, stau time
 	if err != nil {
 		return g, err
 	}
-	g.Daten, err = liesBis(r, max, stau)
+	stopR := context.AfterFunc(ctx, func() { _ = r.SetReadDeadline(time.Now()) })
+	defer stopR()
+	g.Daten, err = liesBis(ctx, r, max, stau)
 	return g, err
 }
 
-// liesBis liest r bis zum Ende, höchstens max Byte, mit der Frist stau je Stück.
-func liesBis(r *os.File, max int64, stau time.Duration) ([]byte, error) {
+// liesBis liest r bis zum Ende, höchstens max Byte, mit der Frist stau je Stück; ctx beendet es (Gesamtfrist, Abbruch).
+func liesBis(ctx context.Context, r *os.File, max int64, stau time.Duration) ([]byte, error) {
 	var daten []byte
 	puffer := make([]byte, 64<<10)
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("wlclip: Lesen der Zwischenablage abgebrochen: %w", err)
+		}
 		if err := r.SetReadDeadline(time.Now().Add(stau)); err != nil {
 			return nil, err
 		}
@@ -167,6 +182,9 @@ func liesBis(r *os.File, max int64, stau time.Duration) ([]byte, error) {
 			return daten, nil
 		}
 		if err != nil {
+			if ctx.Err() != nil {
+				return nil, fmt.Errorf("wlclip: Lesen der Zwischenablage abgebrochen: %w", ctx.Err())
+			}
 			if errors.Is(err, os.ErrDeadlineExceeded) {
 				return nil, fmt.Errorf("wlclip: Zwischenablage liefert nicht (keine Daten seit %v)", stau)
 			}

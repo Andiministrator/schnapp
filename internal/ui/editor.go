@@ -657,6 +657,7 @@ func (e *editor) zerstoert(fensterErr error) error {
 		}
 	}
 	e.kopierenAbwarten()
+	e.einfuegenAbwarten(wechselFrist)        // ein laufendes „New from clipboard“ legt zu Ende ab (F-988)
 	e.bibliothekArbeitAbwarten(wechselFrist) // Schlagworte/Papierkorb der Ansicht schreiben zu Ende (F-708)
 	e.s.TextBestaetigen()                    // getippter Text geht nicht verloren (ADR-0021 Punkt 6)
 	if e.s.Zieht() {
@@ -1125,6 +1126,7 @@ func (e *editor) kopierenAbholen(gtx layout.Context) {
 	case r := <-e.kopierAntwort:
 		e.kopierLaeuft = false
 		if r.err != nil {
+			e.einf.schneide = nil // nichts kopiert: nichts ausschneiden (F-989)
 			e.kopierFehlerText = fmt.Sprintf(i18n.T("Could not copy: %v"), ohnePaketpraefix(r.err.Error()))
 			if e.schliessenNachKopie || e.schliessenNachSpeichern || e.s.SignalVorgemerkt() {
 				// Ein Schließen hat auf dieses Kopieren gewartet (F-337) oder steht nach dem Speichern an, das noch
@@ -1140,6 +1142,13 @@ func (e *editor) kopierenAbholen(gtx layout.Context) {
 			// Fehlerausgabe (F-356).
 			e.meldeNebenbei(e.kopierFehlerText, true)
 			return
+		}
+		// Ausschneiden: erst jetzt löschen, nach gelungenem Kopieren und nur bei unverändertem Stand (F-989).
+		if ids := e.einf.schneide; ids != nil {
+			e.einf.schneide = nil
+			if !e.s.Ausschneiden(ids, e.einf.schneideStand) {
+				r.meldung = i18n.T("Copied to the clipboard; the objects were not removed because the image changed meanwhile.")
+			}
 		}
 		// Die jüngste Antwort entscheidet: Ein früherer Kopierfehler hält das Fenster nicht mehr (F-354).
 		e.kopierFehlerHaelt = false
@@ -2863,9 +2872,10 @@ func (e *editor) tasten(gtx layout.Context) {
 			continue // Pfeile, Pos1 und Ende an einer Vorschau der Leiste (ADR-0036 Punkt 1)
 		}
 		t, ok := findeTaste(k.Name, k.Modifiers, e.s.TextLaeuft())
-		if e.fokusFeld(gtx) != nil && ((ok && t.hatWerkzeug) || k.Name == key.NameDeleteForward) {
+		if e.fokusFeld(gtx) != nil && ((ok && (t.hatWerkzeug || zwischenablageAktion(t.akt))) || k.Name == key.NameDeleteForward) {
 			// Im Eingabefeld der Leiste (Hex, Deckkraft) sind Buchstaben und Ziffern Eingabe (kommt als EditEvent), keine
 			// Kürzel; Entf wirkt dort nicht (ADR-0031 Nachtrag 5). Enter, Esc und die Rücktaste holt feldTasten vorher ab.
+			// Strg+C/X/V gelten dort dem Feld, nie den Objekten der Leinwand (F-986).
 			continue
 		}
 		if e.s.TextLaeuft() {
@@ -2885,6 +2895,9 @@ func (e *editor) tasten(gtx layout.Context) {
 		case t.hatWerkzeug:
 			e.s.SetzeWerkzeug(t.werkzeug)
 		case t.akt == aktEsc:
+			if e.einfuegenEsc() { // zuerst ein laufendes Lesen der Zwischenablage (F-987)
+				continue
+			}
 			if e.ocrEsc() { // zuerst eine laufende Texterkennung (ADR-0035 Punkt 5)
 				continue
 			}

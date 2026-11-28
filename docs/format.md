@@ -627,11 +627,11 @@ Original width and height are at least 1.
 ### 13.1 Annotations on the clipboard (informative)
 
 Copied annotations (ADR-0045) travel under the MIME type `application/x-schnapp-objects`: an SVG document exactly like
-the `snAP` document of section 7 and 8 — same namespace, `s:format`, size, `s:ansicht` with crop, strips and edge style
+the `snAP` document (section 5, with the view of section 7 and the objects of section 8) — same namespace, `s:format`, size, `s:ansicht` with crop, strips and edge style
 of the source screenshot — that contains only the copied objects in stacking order and no metadata (`s:meta` is
 present but empty apart from `s:bearbeitet`). It carries no pixels; the `image` element is the usual placeholder. A
 reader applies the limits of section 10 and the rules of section 11 as for a working file; the format version rule
-(12.7) is the same. A PNG of the annotations on a transparent background is offered alongside under `image/png`.
+(section 12, rule 7) is the same. A PNG of the annotations on a transparent background is offered alongside under `image/png`.
 
 ## 14. Examples and conformance
 
