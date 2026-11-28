@@ -18,6 +18,12 @@ Im selben Zug gefundene und behobene Befunde brauchen beides nicht; dort steht d
 
 | ID | Typ | P | Sprint | Beschreibung | Status |
 |---|---|---|---|---|---|
+| F-964 | [K] | P2 | Sprint 14 | **Strg+H/L bei Gruppe plus weiterem Objekt: die Gruppe kommt nicht zurück** (Verify #390 V-1): nach dem Ausblenden wird das Fremdobjekt Hauptauswahl, weitere Drücke schalten nur es. **Prüfbefehl:** Test `setzeAuswahl(1,{2,3})`, zweimal Strg+H → 1 und 2 sichtbar, Auswahl wie vorher. | offen (Karte #390) |
+| F-965 | [K] | P3 | Sprint 14 | **Nach Strg+H, Rückgängig, Wiederholen blendet Strg+H nur die Hauptauswahl ein** (Verify #390 V-2). **Prüfbefehl:** Test Strg+H, Rückgängig, Wiederholen, Strg+H → 2 sichtbar. | offen (Karte #390) |
+| F-966 | [V] | P3 | Sprint 14 | **Zweimal Schalten macht ein vorher einzeln ausgeblendetes oder gesperrtes Mitglied sichtbar bzw. offen** (Verify #390 V-3). **Prüfbefehl:** Test Gruppe {1,2,3}, 3 ausgeblendet, zweimal Strg+H → 3 bleibt ausgeblendet. | offen (Karte #390) |
+| F-967 | [D] | P3 | Sprint 14 | **CLAUDE.md nennt die Gruppen-Mutanten als GR1–GR19** (Verify #390 V-4). | offen (Karte #390) |
+| F-968 | [D] | P3 | Sprint 14 | **docs/format.md sagt nicht, dass Schreiber `s:gruppe` eines einzelnen Mitglieds weglassen** (Verify #390 V-5). | offen (Karte #390) |
+| F-969 | [B] | P3 | Sprint 14 | **Test „einzelne Kennung nicht geschrieben“ prüft nicht den echten Schreibweg** (Verify #390 V-6): `schreiber` mit `gruppen == nil`. **Prüfbefehl:** Test über `AngabenSVG`: ein Objekt mit Kennung → kein `s:gruppe`, `s:format="1"`. | offen (Karte #390) |
 | F-958 | [K] | P2 | Sprint 14 | **Strg+H/Strg+L an einer Gruppe schalten nicht symmetrisch** (Kritik #354 K-1): nach Ausblenden fallen die Mitglieder aus der Auswahl; der dritte Druck schaltet nur noch die Hauptauswahl. **Prüfbefehl:** Test „Strg+H viermal, Zustand von 2 folgt 1“ in `internal/canvas/gruppe_test.go`. | offen (Karte #390) |
 | F-959 | [K] | P2 | Sprint 14 | **Einzeln per Ebenenliste gewähltes Mitglied: Strg+H/L trifft gesperrte oder ausgeblendete Partner** (Kritik #354 K-2): `gewaehlteGruppe` prüft nur wählbare Mitglieder. **Prüfbefehl:** Test Partner gesperrt, Zeile 1 gewählt, Strg+H → nur 1 ausgeblendet. | offen (Karte #390) |
 | F-960 | [K] | P2 | Sprint 14 | **„Gruppieren“ spaltet eine ganz gewählte Gruppe mit gesperrtem Mitglied** (Kritik #354 K-3): `KannGruppieren` vergleicht alle Mitglieder mit den wählbaren. **Prüfbefehl:** Test Gruppe {1,2,3}, 3 gesperrt, Klick auf 1 → `KannGruppieren()` falsch. | offen (Karte #390) |

@@ -426,7 +426,8 @@ Gaussian with three box filters; the SVG export and the presentation in a workin
 them as one unit. Groups are flat (no nesting) and do not change drawing: stacking order, opacity, shadow and
 visibility stay per object, and members need not be adjacent in document order. The value only identifies the group
 within one file; it has no other meaning, and a writer MAY renumber groups. A group with a single member behaves like
-an ungrouped object. The attribute belongs to format version 2: a writer emits `s:format="2"` if any object has it
+an ungrouped object; a writer SHOULD omit the attribute on it (the reference writer does, so such a file stays version
+`1` if nothing else needs version `2`). The attribute belongs to format version 2: a writer emits `s:format="2"` if any object has it
 (section 12), and in a version-1 file it is ignored. Example: `testdata/format/groups`.
 
 ### 8.6 Unknown object types

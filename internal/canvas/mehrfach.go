@@ -37,9 +37,13 @@ type mehrfach struct {
 	// anker ist die Zeile der Ebenenliste, ab der Umschalt+Klick den Bereich wählt (letzter Klick ohne Umschalt, F-946);
 	// er gilt nur, solange seit dem Setzen die Auswahl nicht anders geändert wurde (ankerGen == gen, F-954).
 	anker, ankerGen int
-	// gruppeGeschaltet ist die Gruppe, die Strg+H/L zuletzt geschaltet hat; sie gilt weiter als gewählt, solange die
-	// Auswahl seither nicht geändert wurde (gruppeGen == gen, F-958).
-	gruppeGeschaltet, gruppeGen int
+	// geschaltet sind die Objekte, die Strg+H bzw. Strg+L (schaltArt) zuletzt als Gruppe ausgeblendet bzw. gesperrt
+	// hat; der nächste Druck schaltet genau sie zurück, solange die Auswahl seither nicht anders geändert wurde
+	// (schaltGen == gen), und stellt die Auswahl von davor her (schaltVorHaupt, schaltVorMehr; F-958, F-964, F-966).
+	geschaltet                []int
+	schaltArt                 Ebenenschalter
+	schaltGen, schaltVorHaupt int
+	schaltVorMehr             []int
 }
 
 // auswahlMerker ist Gewaehlt zu einem Schlüssel aus Stand des Dokuments, Hauptauswahl, fuer und gen.

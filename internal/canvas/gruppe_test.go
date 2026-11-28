@@ -202,7 +202,7 @@ func TestGruppeSchalterSymmetrisch(t *testing.T) {
 				t.Errorf("%s, Druck %d: gewählt %v", fall.name, i, s.Gewaehlt())
 			}
 		}
-		if !s.GruppeGewaehlt() {
+		if s.gewaehlteGruppe(s.Auswahl) == 0 {
 			t.Errorf("%s: nach vier Drücken ist die Gruppe nicht gewählt: %v", fall.name, s.Gewaehlt())
 		}
 	}
@@ -213,7 +213,7 @@ func TestGruppeEinzelwahlMitGesperrtemPartner(t *testing.T) {
 	s := gruppiert(t)
 	s.SchalteGesperrt(2)
 	s.WaehleEbene(1)
-	if s.GruppeGewaehlt() {
+	if s.GruppeSchaltet(SchalterAusblenden) {
 		t.Fatal("Einzelwahl gilt als Gruppenwahl")
 	}
 	s.SchalteAusgeblendetGruppe(1)
@@ -320,7 +320,7 @@ func TestGruppeVieleObjekteSchnell(t *testing.T) {
 	for i := 0; i < 20; i++ {
 		_ = s.KannGruppieren()
 		_ = s.KannGruppierungAufheben()
-		_ = s.GruppeGewaehlt()
+		_ = s.GruppeSchaltet(SchalterAusblenden)
 	}
 	if d := time.Since(start); d > 3*time.Second {
 		t.Errorf("2000 Objekte in einer Gruppe dauerten %v", d)
@@ -343,5 +343,74 @@ func TestGruppeRestNachLoeschen(t *testing.T) {
 	}
 	if s.KannGruppierungAufheben() {
 		t.Error("Aufheben an einem Restmitglied")
+	}
+}
+
+func ausgeblendet(t *testing.T, s *Sitzung, id int) bool {
+	t.Helper()
+	o, ok := s.D.Objekt(id)
+	if !ok {
+		t.Fatalf("Objekt %d fehlt", id)
+	}
+	return o.Ebenenwerte().Ausgeblendet
+}
+
+// F-964: Gruppe plus Fremdobjekt — zweimal Strg+H stellt Sichtbarkeit und Auswahl von vorher her.
+func TestGruppeSchalterMitFremdobjekt(t *testing.T) {
+	s := gruppiert(t)
+	s.setzeAuswahl(1, []int{2, 3})
+	s.SchalteAusgeblendetGruppe(s.Auswahl)
+	if !ausgeblendet(t, s, 1) || !ausgeblendet(t, s, 2) || ausgeblendet(t, s, 3) {
+		t.Fatalf("erster Druck: %v %v %v", ausgeblendet(t, s, 1), ausgeblendet(t, s, 2), ausgeblendet(t, s, 3))
+	}
+	if !s.GruppeSchaltet(SchalterAusblenden) {
+		t.Error("Menü nennt nach dem ersten Druck keine Gruppe")
+	}
+	s.SchalteAusgeblendetGruppe(s.Auswahl)
+	if ausgeblendet(t, s, 1) || ausgeblendet(t, s, 2) || ausgeblendet(t, s, 3) {
+		t.Errorf("zweiter Druck: %v %v %v", ausgeblendet(t, s, 1), ausgeblendet(t, s, 2), ausgeblendet(t, s, 3))
+	}
+	if got := s.Gewaehlt(); !slices.Equal(got, []int{1, 2, 3}) || s.Auswahl != 1 {
+		t.Errorf("Auswahl nach dem Zurückschalten: %v Haupt %d", got, s.Auswahl)
+	}
+}
+
+// F-965: Nach Strg+H, Rückgängig, Wiederholen blendet Strg+H die ganze Gruppe wieder ein.
+func TestGruppeSchalterNachWiederholen(t *testing.T) {
+	s := gruppiert(t)
+	klick(s, f(15, 15), false)
+	s.SchalteAusgeblendetGruppe(s.Auswahl)
+	s.Rueckgaengig()
+	s.Wiederholen()
+	if !ausgeblendet(t, s, 1) || !ausgeblendet(t, s, 2) {
+		t.Fatal("Wiederholen blendet nicht wieder aus")
+	}
+	s.SchalteAusgeblendetGruppe(s.Auswahl)
+	if ausgeblendet(t, s, 1) || ausgeblendet(t, s, 2) {
+		t.Errorf("Strg+H nach Wiederholen: %v %v", ausgeblendet(t, s, 1), ausgeblendet(t, s, 2))
+	}
+	if got := s.Gewaehlt(); !slices.Equal(got, []int{1, 2}) {
+		t.Errorf("nach dem Einblenden gewählt %v, Soll die Gruppe", got)
+	}
+	// Das Gedächtnis gilt je Schalter: Strg+H, dann Strg+L sperrt nur die (ausgeblendete) Hauptauswahl.
+	s.SchalteAusgeblendetGruppe(s.Auswahl)
+	s.SchalteGesperrtGruppe(s.Auswahl)
+	if o, _ := s.D.Objekt(2); o.Ebenenwerte().Gesperrt {
+		t.Error("Strg+L nutzt das Gedächtnis von Strg+H")
+	}
+}
+
+// F-966: Ein vorher einzeln ausgeblendetes Mitglied bleibt nach zweimal Strg+H ausgeblendet.
+func TestGruppeSchalterLaesstEinzelnAusgeblendetes(t *testing.T) {
+	s := dreiKaesten(t)
+	s.WaehleAlle()
+	s.Gruppieren()
+	s.SchalteAusgeblendet(3)
+	s.waehleNur(0)
+	klick(s, f(15, 15), false)
+	s.SchalteAusgeblendetGruppe(s.Auswahl)
+	s.SchalteAusgeblendetGruppe(s.Auswahl)
+	if ausgeblendet(t, s, 1) || ausgeblendet(t, s, 2) || !ausgeblendet(t, s, 3) {
+		t.Errorf("nach zwei Drücken: %v %v %v", ausgeblendet(t, s, 1), ausgeblendet(t, s, 2), ausgeblendet(t, s, 3))
 	}
 }

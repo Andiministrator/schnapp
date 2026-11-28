@@ -71,7 +71,7 @@ func (e *editor) kontextPerTaste() {
 // ebenenSchalterTexte sind die Texte von Ausblenden und Sperren: für die Ebene oder, ist die Gruppe gewählt, für die
 // ganze Gruppe (ADR-0044 Punkt 4, F-963).
 func ebenenSchalterTexte(s *canvas.Sitzung, eb document.Ebene) (aus, sperr string) {
-	gruppe := s.GruppeGewaehlt()
+	gruppe := s.GruppeSchaltet(canvas.SchalterAusblenden)
 	switch {
 	case gruppe && eb.Ausgeblendet:
 		aus = i18n.T("Show group")
@@ -82,6 +82,7 @@ func ebenenSchalterTexte(s *canvas.Sitzung, eb document.Ebene) (aus, sperr strin
 	default:
 		aus = i18n.T("Hide layer")
 	}
+	gruppe = s.GruppeSchaltet(canvas.SchalterSperren)
 	switch {
 	case gruppe && eb.Gesperrt:
 		sperr = i18n.T("Unlock group")

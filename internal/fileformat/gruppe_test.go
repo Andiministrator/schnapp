@@ -67,3 +67,27 @@ func TestGruppeRundlaufAngaben(t *testing.T) {
 		t.Errorf("Gruppe nach dem Rundlauf: %+v", a.Objekte)
 	}
 }
+
+// F-969: Über den echten Schreibweg — ein einzelnes Objekt mit Kennung schreibt kein s:gruppe und bleibt Version 1.
+func TestGruppeEinzelneKennungSchreibweg(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 40, 40)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	k := document.Kasten{Ebene: document.Ebene{Gruppe: 3}, Bereich: document.R(document.Pt(2, 2), document.Pt(10, 10)),
+		Strich: document.Strich{Breite: 1}}
+	if _, err := d.Hinzufuegen(k); err != nil {
+		t.Fatal(err)
+	}
+	svg := string(AngabenSVG(d))
+	if strings.Contains(svg, "s:gruppe") || !strings.Contains(svg, `s:format="1"`) {
+		t.Errorf("einzelne Kennung im Schreibweg: %s", svg)
+	}
+	if _, err := d.Hinzufuegen(k); err != nil {
+		t.Fatal(err)
+	}
+	svg = string(AngabenSVG(d))
+	if strings.Count(svg, `s:gruppe="3"`) != 2 || !strings.Contains(svg, `s:format="2"`) {
+		t.Errorf("wirksame Gruppe im Schreibweg: %s", svg)
+	}
+}

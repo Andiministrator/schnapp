@@ -72,3 +72,15 @@ Inkscape, Photoshop und Krita verschachteln Gruppen als eigene Knoten mit Kinder
 5. **Grenzen (F-963):** Ein einzelnes Mitglied lässt sich auf der Leinwand nicht allein verschieben (ein Druck wählt die
    Gruppe); dafür die Gruppierung aufheben. Ein Doppelklick auf einen Text der Gruppe öffnet die Texteingabe und wählt
    nur diesen Text.
+
+## Nachtrag 2 (28.11.2026, Verify #390, F-964 bis F-969)
+Ersetzt Nachtrag 1 Punkt 1 für Strg+H und Strg+L:
+1. **Was ein Druck schaltet:** Ist die Gruppe der Hauptauswahl gewählt, ihre Mitglieder, die noch nicht im Ziel sind
+   (ein vorher einzeln ausgeblendetes oder gesperrtes Mitglied bleibt, wie es ist, F-966). Ist die Hauptauswahl selbst
+   ausgeblendet bzw. gesperrt und alle Mitglieder ihrer Gruppe sind es auch (etwa nach Rückgängig und Wiederholen),
+   alle Mitglieder zurück (F-965). Sonst nur die Hauptauswahl.
+2. **Zurückschalten:** Der nächste Druck desselben Schalters schaltet genau die eben geschaltete Menge zurück und stellt
+   die Auswahl von davor her, solange die Auswahl seither nicht anders geändert wurde — auch wenn die Hauptauswahl beim
+   Ausblenden auf ein mitgewähltes Fremdobjekt rückte (F-964). Das Fremdobjekt selbst schaltet Strg+H nicht mit
+   (Ebenen-Handlungen bleiben an der Hauptauswahl, ADR-0039 Nachtrag 4 Punkt 6).
+3. Das Format lässt `s:gruppe` an einem einzelnen Mitglied weg (§8.5, SHOULD; F-968).

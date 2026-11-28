@@ -59,8 +59,8 @@
     "name": "GR9 Sperren nur das Mitglied",
     "datei": "internal/canvas/gruppe.go",
     "paket": "./internal/canvas",
-    "alt": "\tg := s.gewaehlteGruppe(id)\n\tif g == 0 {\n\t\treturn einzeln(id)\n\t}\n",
-    "neu": "\treturn einzeln(id)\n\tg := 0\n"
+    "alt": "\tids, ziel, ok := s.gruppenSchaltung(id, a)\n\tif !ok {",
+    "neu": "\tids, ziel, ok := s.gruppenSchaltung(id, a)\n\tif true || !ok {"
   },
   {
     "name": "GR10 Kopien behalten die alte Gruppe",
@@ -136,15 +136,15 @@
     "name": "GR20 Schalter merkt die Gruppe nicht (F-958)",
     "datei": "internal/canvas/gruppe.go",
     "paket": "./internal/canvas",
-    "alt": "\ts.mf.gruppeGeschaltet, s.mf.gruppeGen = g, s.mf.gen\n",
-    "neu": ""
+    "alt": "\t\tm.geschaltet, m.schaltArt, m.schaltGen = ids, a, m.gen\n",
+    "neu": "\t\t_ = ids\n"
   },
   {
     "name": "GR21 Einblenden wählt die Gruppe nicht wieder (F-958)",
     "datei": "internal/canvas/gruppe.go",
     "paket": "./internal/canvas",
-    "alt": "\t\ts.waehleGruppe(id) // wieder sichtbar bzw. offen",
-    "neu": "\t\ts.bereinigeAuswahl() // wieder sichtbar bzw. offen"
+    "alt": "\t\ts.waehleGruppe(id)\n\tdefault:",
+    "neu": "\t\ts.bereinigeAuswahl()\n\tdefault:"
   },
   {
     "name": "GR22 Einzelwahl gilt als Gruppe (F-959)",
@@ -173,5 +173,33 @@
     "paket": "./internal/fileformat",
     "alt": "\tif s.gruppen[e.Gruppe] { // ADR-0044",
     "neu": "\tif e.Gruppe != 0 { // ADR-0044"
+  },
+  {
+    "name": "GR26 Zurückschalten ohne alte Auswahl (F-964)",
+    "datei": "internal/canvas/gruppe.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.setzeAuswahl(m.schaltVorHaupt, m.schaltVorMehr)\n",
+    "neu": ""
+  },
+  {
+    "name": "GR27 Ausgeschaltete Gruppe nach Wiederholen nur einzeln (F-965)",
+    "datei": "internal/canvas/gruppe.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif !gruppe && stand {",
+    "neu": "\tif false {"
+  },
+  {
+    "name": "GR28 Schalter nimmt schon geschaltete Mitglieder mit (F-966)",
+    "datei": "internal/canvas/gruppe.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif xe := x.Ebenenwerte(); xe.Gruppe == g && *a.feld(&xe) != ziel {",
+    "neu": "\t\tif xe := x.Ebenenwerte(); xe.Gruppe == g {"
+  },
+  {
+    "name": "GR29 Gedächtnis gilt auch für den anderen Schalter",
+    "datei": "internal/canvas/gruppe.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif m.schaltArt == a && m.schaltGen == m.gen && len(m.geschaltet) > 0 {\n\t\tif o, ok",
+    "neu": "\tif m.schaltGen == m.gen && len(m.geschaltet) > 0 {\n\t\tif o, ok"
   }
 ]

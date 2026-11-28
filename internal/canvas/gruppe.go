@@ -233,16 +233,11 @@ func (s *Sitzung) ersetzeAlsSchritt(neu []document.Objekt) bool {
 }
 
 // gewaehlteGruppe ist die Gruppe von id, wenn sie als Gruppe gewählt ist, sonst 0: mindestens zwei Mitglieder und alle
-// wählbaren gewählt (F-959: ein einzeln per Liste gewähltes Mitglied ist es nicht, auch wenn die übrigen gesperrt sind),
-// oder sie wurde eben über Strg+H/L geschaltet und die Auswahl hat sich seither nicht geändert (F-958: nach dem
-// Ausblenden ist nur noch die Hauptauswahl gewählt).
+// wählbaren gewählt (F-959: ein einzeln per Liste gewähltes Mitglied ist es nicht, auch wenn die übrigen gesperrt sind).
 func (s *Sitzung) gewaehlteGruppe(id int) int {
 	g := s.GruppeVon(id)
 	if g == 0 || !s.IstGewaehlt(id) {
 		return 0
-	}
-	if s.mf.gruppeGeschaltet == g && s.mf.gruppeGen == s.mf.gen {
-		return g
 	}
 	n := 0
 	for _, o := range s.gewaehlteObjekte() {
@@ -256,50 +251,123 @@ func (s *Sitzung) gewaehlteGruppe(id int) int {
 	return 0
 }
 
-// GruppeGewaehlt meldet, ob die Hauptauswahl als Gruppe gewählt ist (Menütext „Gruppe ausblenden“, F-963).
-func (s *Sitzung) GruppeGewaehlt() bool { return s.gewaehlteGruppe(s.Auswahl) != 0 }
+// Ebenenschalter ist Ausblenden (Strg+H) oder Sperren (Strg+L).
+type Ebenenschalter int
 
-// SchalteAusgeblendetGruppe blendet id aus bzw. ein; ist seine Gruppe gewählt, alle Mitglieder mit (Strg+H, ADR-0044
-// Punkt 4). Ziel ist der umgekehrte Stand von id. Ein Schritt.
+const (
+	SchalterAusblenden Ebenenschalter = iota + 1
+	SchalterSperren
+)
+
+// feld ist der Schalter an der Ebene e.
+func (a Ebenenschalter) feld(e *document.Ebene) *bool {
+	if a == SchalterSperren {
+		return &e.Gesperrt
+	}
+	return &e.Ausgeblendet
+}
+
+// gruppenSchaltung sind die Objekte, die Strg+H bzw. Strg+L an der Hauptauswahl id als Gruppe schaltet (ADR-0044
+// Punkt 4, Nachtrag 2), mit dem Ziel; false: es gilt nur id.
+//   - Hat derselbe Schalter eben eine Menge geschaltet und wurde die Auswahl seither nicht anders geändert, schaltet er
+//     genau diese Menge zurück (F-958, F-964: auch wenn die Hauptauswahl dabei auf ein Fremdobjekt rückte; F-966: ein
+//     vorher einzeln ausgeblendetes Mitglied gehört nicht dazu).
+//   - Ist die Gruppe gewählt (gewaehlteGruppe), schaltet er ihre Mitglieder, die noch nicht im Ziel sind.
+//   - Ist die Hauptauswahl selbst ausgeblendet bzw. gesperrt und alle Mitglieder ihrer Gruppe sind es auch (etwa nach
+//     Rückgängig und Wiederholen, F-965), schaltet er sie alle zurück.
+func (s *Sitzung) gruppenSchaltung(id int, a Ebenenschalter) ([]int, bool, bool) {
+	m := &s.mf
+	if m.schaltArt == a && m.schaltGen == m.gen && len(m.geschaltet) > 0 {
+		if o, ok := s.D.Objekt(m.geschaltet[0]); ok {
+			e := o.Ebenenwerte()
+			return m.geschaltet, !*a.feld(&e), true
+		}
+	}
+	o, ok := s.D.Objekt(id)
+	g := s.GruppeVon(id)
+	if !ok || g == 0 {
+		return nil, false, false
+	}
+	e := o.Ebenenwerte()
+	stand := *a.feld(&e)
+	ziel := !stand
+	gruppe := s.gewaehlteGruppe(id) != 0
+	if !gruppe && stand {
+		gruppe = true
+		for _, x := range s.D.Objekte() {
+			if xe := x.Ebenenwerte(); xe.Gruppe == g && *a.feld(&xe) != stand {
+				gruppe = false
+			}
+		}
+	}
+	if !gruppe {
+		return nil, false, false
+	}
+	var ids []int
+	for _, x := range s.D.Objekte() {
+		if xe := x.Ebenenwerte(); xe.Gruppe == g && *a.feld(&xe) != ziel {
+			ids = append(ids, x.Kennung())
+		}
+	}
+	return ids, ziel, len(ids) > 0
+}
+
+// GruppeSchaltet meldet, ob Strg+H bzw. Strg+L an der Hauptauswahl eine Gruppe schaltet (Menütext „Hide group“,
+// F-963).
+func (s *Sitzung) GruppeSchaltet(a Ebenenschalter) bool {
+	_, _, ok := s.gruppenSchaltung(s.Auswahl, a)
+	return ok
+}
+
+// SchalteAusgeblendetGruppe blendet id aus bzw. ein, als Gruppe nach gruppenSchaltung (Strg+H). Ein Schritt.
 func (s *Sitzung) SchalteAusgeblendetGruppe(id int) bool {
-	return s.schalteGruppeEbene(id, s.SchalteAusgeblendet, func(e *document.Ebene) *bool { return &e.Ausgeblendet })
+	return s.schalteGruppeEbene(id, SchalterAusblenden, s.SchalteAusgeblendet)
 }
 
-// SchalteGesperrtGruppe sperrt id bzw. gibt es frei; ist seine Gruppe gewählt, alle Mitglieder mit (Strg+L).
+// SchalteGesperrtGruppe sperrt id bzw. gibt es frei, als Gruppe nach gruppenSchaltung (Strg+L). Ein Schritt.
 func (s *Sitzung) SchalteGesperrtGruppe(id int) bool {
-	return s.schalteGruppeEbene(id, s.SchalteGesperrt, func(e *document.Ebene) *bool { return &e.Gesperrt })
+	return s.schalteGruppeEbene(id, SchalterSperren, s.SchalteGesperrt)
 }
 
-func (s *Sitzung) schalteGruppeEbene(id int, einzeln func(int) bool, feld func(*document.Ebene) *bool) bool {
-	g := s.gewaehlteGruppe(id)
-	if g == 0 {
+func (s *Sitzung) schalteGruppeEbene(id int, a Ebenenschalter, einzeln func(int) bool) bool {
+	ids, ziel, ok := s.gruppenSchaltung(id, a)
+	if !ok {
+		s.mf.geschaltet = nil
 		return einzeln(id)
 	}
 	if !s.ebenenBereit() {
 		return false
 	}
-	o, ok := s.D.Objekt(id)
-	if !ok {
-		return false
-	}
-	e := o.Ebenenwerte()
-	ziel := !*feld(&e)
+	m := &s.mf
+	zurueck := m.schaltArt == a && m.schaltGen == m.gen && len(m.geschaltet) > 0
+	vorHaupt, vorMehr := s.Auswahl, s.Gewaehlt()
 	var neu []document.Objekt
-	for _, m := range s.D.Objekte() {
-		if m.Ebenenwerte().Gruppe == g {
-			me := m.Ebenenwerte()
-			*feld(&me) = ziel
-			neu = append(neu, document.MitEbene(m, me))
+	for _, k := range ids {
+		if o, ok := s.D.Objekt(k); ok {
+			e := o.Ebenenwerte()
+			*a.feld(&e) = ziel
+			neu = append(neu, document.MitEbene(o, e))
 		}
 	}
-	ok = s.ersetzeAlsSchritt(neu)
-	if ziel {
-		s.bereinigeAuswahl() // ausgeblendete und gesperrte fallen heraus, die Hauptauswahl bleibt
-	} else {
-		s.waehleGruppe(id) // wieder sichtbar bzw. offen: die ganze Gruppe gewählt (F-958)
+	if !s.ersetzeAlsSchritt(neu) {
+		return false
 	}
-	s.mf.gruppeGeschaltet, s.mf.gruppeGen = g, s.mf.gen
-	return ok
+	switch {
+	case zurueck && !ziel: // zurückgeschaltet: die Auswahl von vor dem Hinschalten (F-964)
+		s.setzeAuswahl(m.schaltVorHaupt, m.schaltVorMehr)
+		s.bereinigeAuswahl()
+	case !ziel: // sichtbar bzw. offen: die Gruppe wählen (F-965)
+		s.waehleGruppe(id)
+	default: // ausgeblendet bzw. gesperrt: sie fallen aus der Auswahl, die Hauptauswahl bleibt
+		m.schaltVorHaupt, m.schaltVorMehr = vorHaupt, vorMehr
+		s.bereinigeAuswahl()
+	}
+	if ziel {
+		m.geschaltet, m.schaltArt, m.schaltGen = ids, a, m.gen
+	} else {
+		m.geschaltet = nil
+	}
+	return true
 }
 
 // neueGruppenFuer gibt den Kopien os (Doppeln mehrerer) neue Gruppen: dieselbe Aufteilung, andere Kennungen
