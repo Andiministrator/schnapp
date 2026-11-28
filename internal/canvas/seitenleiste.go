@@ -32,7 +32,7 @@ type SeitenInhalt struct {
 	Spitze         bool // Schalter „Spitze“ (gewählter Text oder Sprechblase, ADR-0021 Nachtrag 13 Punkt 6)
 	Vergroesserung bool // Vergrößerung wählbar (gewählte Lupe, ADR-0033 Punkt 8)
 	Pfeilform      bool // Spitzenart und Enden wählbar (Werkzeug oder gewählter Pfeil, ADR-0021 Nachtrag 19)
-	Freihand       bool // Kästchen „Freehand“ (Werkzeug Textmarker ohne gewähltes Objekt, ADR-0049 Punkt 5)
+	Freihand       bool // Kästchen „Freehand“ (Werkzeug Textmarker, auch mit gewähltem Textmarker, ADR-0049 Punkt 5)
 	// Anzahl ist die Zahl der gewählten Objekte, wenn mehrere gewählt sind (sonst 0): Der Kopf nennt sie, und die
 	// Abschnitte sind die aller gewählten Arten (ADR-0039 Nachtrag 4 Punkt 4); Werkzeug ist das der Hauptauswahl.
 	Anzahl  int
@@ -93,7 +93,10 @@ func (s *Sitzung) Seitenleiste() SeitenInhalt {
 			if w, ok := objektWerkzeug(o); ok {
 				i := SeitenInhalt{Auswahl: true, Werkzeug: w, Farbe: true,
 					Strich: strichWerkzeug(w), Text: textWerkzeug(w), Spitze: textWerkzeug(w), Vergroesserung: w == WerkzeugLupe,
-					Pfeilform: w == WerkzeugPfeil}
+					Pfeilform: w == WerkzeugPfeil,
+					// Das Kästchen gehört dem Werkzeug Textmarker; es bleibt, solange ein Textmarker gewählt ist, also auch
+					// nach einem Strich, der sich selbst wählt (F-1039).
+					Freihand: s.Werkzeug == WerkzeugTextmarker && w == WerkzeugTextmarker}
 				if s.stilMehrere() { // Abschnitte aller gewählten Arten; Spitze und Vergrößerung bleiben der Hauptauswahl
 					i.Anzahl = s.AnzahlGewaehlt()
 					for _, g := range s.gewaehlteObjekte() {

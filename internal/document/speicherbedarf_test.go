@@ -37,3 +37,17 @@ func TestSpeicherbedarf(t *testing.T) {
 		t.Errorf("zurückgenommen: %d, Soll %d (die Kopie bleibt für Wiederholen)", b, 16*4*4+16)
 	}
 }
+
+// F-1041: Die Punkte eines Freihand-Strichs zählen mit, 16 Byte je Punkt.
+func TestSpeicherbedarfFreihand(t *testing.T) {
+	d, err := Neu(image.NewNRGBA(image.Rect(0, 0, 16, 4)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.Hinzufuegen(NeuerFreihand([]Punkt{Pt(1, 1), Pt(5, 2), Pt(9, 1)}, Strich{Farbe: color.NRGBA{A: 255}, Breite: 1})); err != nil {
+		t.Fatal(err)
+	}
+	if b, soll := d.Speicherbedarf(), int64(16*4*4+3*16); b != soll {
+		t.Errorf("mit Freihand: %d, Soll %d", b, soll)
+	}
+}

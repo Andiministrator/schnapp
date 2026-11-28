@@ -78,6 +78,10 @@ func (f Freihand) pruefe() error {
 			return fmt.Errorf("document: Freihand-Strich mit ungültigen Koordinaten")
 		}
 	}
+	// Lauter gleiche Punkte sind ein Strich ohne Länge: gestrichelt unsichtbar, aber treffbar (F-1040).
+	if f.Laenge() <= 0 {
+		return fmt.Errorf("document: Freihand-Strich ohne Länge")
+	}
 	if err := f.Ebene.pruefe(); err != nil {
 		return err
 	}

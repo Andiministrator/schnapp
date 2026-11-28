@@ -504,3 +504,34 @@ func TestZerstoerenMitFrist(t *testing.T) {
 		t.Errorf("Rückgabe %v, Aufrufe %d", err, v.aufrufe.Load())
 	}
 }
+
+// F-1043 (Kritik #333 K-18, Mutant FH39): Das Kästchen „Freehand“ des Textmarkers ruht während des Speicherns.
+func TestSperreKaestchenFreihand(t *testing.T) {
+	t.Setenv("WAYLAND_SOCKET", "1")
+	i18n.Setze(nil)
+	l := neuerMenueLauf(t, image.Pt(1200, 800))
+	v := neuerSperrSpeicher()
+	l.e.speichern = v.speichern
+	l.fokusiere(l.e)
+	l.e.wecker = canvas.NeuerWecker(func() {}, weckTakt, weckGrenze)
+	defer l.e.wecker.Ende()
+	l.e.s.SetzeWerkzeug(canvas.WerkzeugKasten)
+	l.zug(image.Pt(22, 18), image.Pt(34, 27)) // etwas zu speichern
+	l.e.s.SetzeWerkzeug(canvas.WerkzeugTextmarker)
+	l.setle()
+	r := l.e.frei.rahmen
+	if r.Empty() {
+		t.Fatal("kein Kästchen beim Textmarker")
+	}
+	l.taste("S", key.ModShortcut)
+	if !l.e.s.SpeichernLaeuft() {
+		t.Fatal("Speichern läuft nicht")
+	}
+	l.e.frei.knopf.Click()
+	l.setle()
+	if l.e.s.TextmarkerFrei() {
+		t.Error("Kästchen schaltet während des Speicherns")
+	}
+	close(v.frei)
+	l.warteBis(t, "Speichern", func() bool { return !l.e.s.SpeichernLaeuft() })
+}

@@ -117,8 +117,40 @@ func TestTasteFUndKaestchenFreihand(t *testing.T) {
 	if !l.e.s.TextmarkerFrei() {
 		t.Error("Klick auf das Kästchen schaltet nicht")
 	}
+	if h := l.e.hinweis(); h != i18n.T("Drag along the text to highlight it freely. Shift: horizontal line.") { // F-1039
+		t.Errorf("Hinweis im freien Modus: %q", h)
+	}
 	l.klick(r.Min.Add(r.Max).Div(2))
 	if l.e.s.TextmarkerFrei() {
 		t.Error("zweiter Klick schaltet nicht zurück")
+	}
+}
+
+// F-1042 (Kritik #333 K-8, Mutant FH42): Die Vorschau der Ebenenliste zeichnet auch einen sehr dünnen Strich auf großer
+// Fläche mit mindestens 1,5 Pixeln der Vorschau, wie Pfeil, Kasten und Lupe.
+func TestEbenenVorschauFreihandMindeststrich(t *testing.T) {
+	i18n.Setze(nil)
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 2000, 2000)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	o := document.NeuerFreihand([]document.Punkt{document.Pt(0, 0), document.Pt(1000, 1000), document.Pt(2000, 2000)},
+		document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 1})
+	if _, err := d.Hinzufuegen(o); err != nil {
+		t.Fatal(err)
+	}
+	e := &editor{s: canvas.NeueSitzung(d)}
+	v := image.Rect(0, 0, 46, 46)
+	ist := headlessBild(t, v.Size(), func(gtx layout.Context) {
+		e.zeichneVorschau(gtx, o, v)
+	})
+	dunkel := 0
+	for i := 4; i < 42; i++ { // entlang der Diagonale
+		if c := ist.RGBAAt(i, i); c.A > 100 && c.R < 100 {
+			dunkel++
+		}
+	}
+	if dunkel < 30 {
+		t.Errorf("nur %d von 38 Diagonalpunkten gezeichnet; der dünne Strich fehlt in der Vorschau", dunkel)
 	}
 }

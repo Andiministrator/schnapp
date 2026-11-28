@@ -43,6 +43,9 @@ func TestFreihandPruefung(t *testing.T) {
 	if NeuerFreihand(viele, st).pruefe() == nil {
 		t.Error("zu viele Punkte angenommen")
 	}
+	if NeuerFreihand([]Punkt{Pt(5, 5), Pt(5, 5), Pt(5, 5)}, st).pruefe() == nil { // F-1040
+		t.Error("Strich ohne Länge angenommen")
+	}
 	if NeuerFreihand([]Punkt{Pt(0, 0), Pt(math.NaN(), 1)}, st).pruefe() == nil {
 		t.Error("NaN angenommen")
 	}
@@ -84,5 +87,13 @@ func TestVereinfachenGlaettenAusduennen(t *testing.T) {
 	}
 	if f := FreihandAusZug(viele, 0.01); len(f) > MaxFreihandPunkte || len(f) < 2 {
 		t.Errorf("FreihandAusZug: %d Punkte", len(f))
+	}
+}
+
+// F-1043 (Kritik #333 K-3, Mutant FH30): Die Reichweite trägt einen Pixel Reserve für die Kantenglättung über die Grenzen.
+func TestFreihandReichweiteMitReserve(t *testing.T) {
+	a := NeuerFreihand([]Punkt{Pt(0, 0), Pt(10, 5), Pt(20, 0)}, Strich{Farbe: color.NRGBA{R: 200, A: 255}, Breite: 4})
+	if r, w := Reichweite(a), R(Pt(-3, -3), Pt(23, 8)); r != w {
+		t.Errorf("Reichweite %v, erwartet %v", r, w)
 	}
 }

@@ -13,6 +13,9 @@ import (
 // leseSchatten liest s:schatten „WINKEL LÄNGE WEICH #RRGGBBAA“ (docs/format.md 8.5); ein unlesbarer oder ungültiger Wert
 // ist kein Schatten (ADR-0021 Nachtrag 26 Punkt 6).
 func leseSchatten(v string) document.Schatten {
+	if len(v) > maxListeAttr { // gültig sind nur wenige Dutzend Zeichen (F-1035)
+		return document.Schatten{}
+	}
 	teile := strings.Fields(v)
 	if len(teile) != 4 {
 		return document.Schatten{}

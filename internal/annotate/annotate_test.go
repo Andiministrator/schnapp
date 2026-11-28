@@ -424,6 +424,7 @@ func TestWendeFreihand(t *testing.T) {
 		`{"annotations":[{"type":"highlight","from":[1,1],"to":[5,5],"points":[[1,1],[2,2]]}]}`,
 		`{"annotations":[{"type":"highlight","to":[5,5]}]}`,
 		`{"annotations":[{"type":"freehand","points":[[1,1],[500,5]]}]}`,
+		`{"annotations":[{"type":"freehand","points":[[5,5],[5,5]],"line_style":"dashed"}]}`, // ohne Länge (F-1040)
 	} {
 		es, err := Lies(strings.NewReader(j))
 		if err == nil {

@@ -341,13 +341,20 @@ func textAnker(a document.Ausrichtung) (string, float64) {
 	return "", 0
 }
 
+// maxListeAttr begrenzt Attribute, die mit strings.Fields in Wörter zerlegt werden (F-1035).
+const maxListeAttr = 256
+
 // leseTextStil übernimmt s:schrift, s:stil und s:ausrichtung. Alle drei sind freiwillig: fehlend, ungültig oder
 // unbekannt heißt Go, normal, links — kein Schaden (wie s:kante); unbekannte Stil-Wörter werden übergangen.
 func leseTextStil(t *document.Text, a map[string]string) {
 	if n := a["schrift"]; n != fonts.Go && fonts.NameGueltig(n) {
 		t.Schrift = n
 	}
-	for _, w := range strings.Fields(a["stil"]) {
+	stil := a["stil"]
+	if len(stil) > maxListeAttr { // kein gültiger Wert ist so lang; nicht in unbegrenzt viele Wörter zerlegen (F-1035)
+		stil = stil[:maxListeAttr]
+	}
+	for _, w := range strings.Fields(stil) {
 		switch w {
 		case "bold":
 			t.Fett = true
@@ -746,11 +753,13 @@ func (l *leser) punkt(name string) document.Punkt {
 // punkte liest eine Liste von Punkten, durch einzelne Leerzeichen getrennt (docs/format.md 8.9), höchstens
 // document.MaxFreihandPunkte; mehr oder ein ungültiger Punkt beschädigen die Datei.
 func (l *leser) punkte(name string) []document.Punkt {
-	teile := strings.Split(l.text(name), " ")
-	if len(teile) < 2 || len(teile) > document.MaxFreihandPunkte {
-		l.fehler("Punkte %s: %d (2 bis %d)", name, len(teile), document.MaxFreihandPunkte)
+	text := l.text(name)
+	// Erst zählen, dann teilen: strings.Split legt sonst ein Feld je Leerzeichen an (F-1035).
+	if n := strings.Count(text, " ") + 1; n < 2 || n > document.MaxFreihandPunkte {
+		l.fehler("Punkte %s: %d (2 bis %d)", name, n, document.MaxFreihandPunkte)
 		return nil
 	}
+	teile := strings.Split(text, " ")
 	pts := make([]document.Punkt, 0, len(teile))
 	for _, t := range teile {
 		x, y, ok := strings.Cut(t, ",")
@@ -992,7 +1001,11 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 			case t.Name.Space == ns && t.Name.Local == "ansicht":
 				// vier ganze Zahlen, einzelne Leerzeichen, nichts davor oder danach (docs/format.md 5.2)
 				var z [4]int
-				teile := strings.Split(l.text("zuschnitt"), " ")
+				zText := l.text("zuschnitt")
+				var teile []string
+				if strings.Count(zText, " ") == 3 { // erst zählen, dann teilen (F-1035)
+					teile = strings.Split(zText, " ")
+				}
 				if len(teile) != 4 {
 					l.fehler("Zuschnitt ungültig")
 				} else {

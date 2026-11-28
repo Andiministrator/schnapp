@@ -11,7 +11,9 @@
     "datei": "internal/document/freihand.go",
     "paket": "./internal/document",
     "alt": "\tif len(pts) < 2 || len(pts) > MaxFreihandPunkte {",
-    "neu": "\tif len(pts) < 1 || len(pts) > MaxFreihandPunkte {"
+    "neu": "\tif len(pts) < 1 || len(pts) > MaxFreihandPunkte {",
+    "aequivalent": true,
+    "grund": "Seit F-1040 lehnt pruefe einen Strich ohne Länge ab; ein einzelner Punkt hat keine Länge, die Zeile für weniger als 2 Punkte ist für 1 Punkt doppelt gesichert."
   },
   {
     "name": "FH3 Vereinfachen ohne Toleranz",
@@ -66,8 +68,8 @@
     "name": "FH10 Punktgrenze nicht geprüft",
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
-    "alt": "\tif len(teile) < 2 || len(teile) > document.MaxFreihandPunkte {",
-    "neu": "\tif len(teile) < 2 {",
+    "alt": "\tif n := strings.Count(text, \" \") + 1; n < 2 || n > document.MaxFreihandPunkte {",
+    "neu": "\tif n := strings.Count(text, \" \") + 1; n < 2 {",
     "aequivalent": true,
     "grund": "doppelter Schutz: document.Freihand.pruefe lehnt mehr als MaxFreihandPunkte beim Einlesen ebenso ab (beschädigt); die Grenze im Leser spart nur das Anlegen des Felds, maxSVG begrenzt dessen Größe"
   },
@@ -189,5 +191,128 @@
     "paket": "./internal/canvas",
     "alt": "\t\tif letzter := pts[len(pts)-1]; b != letzter {",
     "neu": "\t\tif letzter := pts[len(pts)-1]; false && b != letzter {"
+  },
+  {
+    "name": "FH28 Trockenlauf zählt Freihand nicht",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\tz.ellipsenKosten(len(v.Punkte()) + len(sz.Teile)) // Punkte und Teile zählen wie bei der Ellipse (F-1023)\n",
+    "neu": ""
+  },
+  {
+    "name": "FH29 ebenenRahmen ohne Freihand",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\tcase document.Freihand: // Grenzen tragen die halbe Breite schon; starr verschobene Teile an einer Naht ragen darüber\n\t\trand += 0.5 * v.Strich.Breite\n",
+    "neu": "",
+    "aequivalent": true,
+    "grund": "Der Renderer beschneidet jedes Stück auf seinen Bereich; die Teile liegen schon innerhalb der abgebildeten Grenzen, der Zusatzrand gegen starr verschobene Teile (Kasten, Lupe) wird bei Freihand nie gebraucht (TestFreihandDeckkraftRandAnNaht über Breiten und Lagen)."
+  },
+  {
+    "name": "FH30 Reichweite ohne Freihand",
+    "datei": "internal/document/naht.go",
+    "paket": "./internal/document",
+    "alt": "\t\treturn Rechteck{Min: g.Min.Minus(Pt(1, 1)), Max: g.Max.Plus(Pt(1, 1))}\n\tcase Pfeil:",
+    "neu": "\t\treturn g\n\tcase Pfeil:"
+  },
+  {
+    "name": "FH31 freiRoh ohne Grenze",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\tif len(s.freiRoh) >= document.MaxFreihandPunkte {",
+    "neu": "\t\t\tif false {"
+  },
+  {
+    "name": "FH32 Mehrfachstil kennt Freihand nicht",
+    "datei": "internal/canvas/mehrfachstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase document.Freihand:\n\t\tswitch e {\n\t\tcase EigBreite:\n\t\t\treturn v.Strich.Breite, true\n\t\tcase EigStrichart:\n\t\t\treturn v.Strich.Art, true\n\t\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "FH33 Abstand neuer Punkte 0",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tfreiAbstand  = 2   // ein neuer Punkt",
+    "neu": "\tfreiAbstand  = 0   // ein neuer Punkt"
+  },
+  {
+    "name": "FH34 Toleranz ohne Zoom",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "document.FreihandAusZug(v.Punkte(), freiToleranz/s.Abb.Zoom)",
+    "neu": "document.FreihandAusZug(v.Punkte(), freiToleranz)"
+  },
+  {
+    "name": "FH35 Abstand ohne Zoom",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "Laenge()*s.Abb.Zoom >= freiAbstand",
+    "neu": "Laenge() >= freiAbstand"
+  },
+  {
+    "name": "FH36 Export gemustert als voller Pfad",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\tif o.Strich.Art != document.StrichVoll && !s.rundlauf {\n\t\ts.musterSVG(document.StrichAbschnitte(pts, o.Strich.Art, o.Strich.Breite), o.Strich.Breite, o.Strich.Farbe)\n\t\treturn\n\t}\n\tvar d strings.Builder",
+    "neu": "\tvar d strings.Builder"
+  },
+  {
+    "name": "FH37 Schalter während des Zugs",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "func (s *Sitzung) SchalteTextmarkerFrei() bool {\n\tif s.Zieht() || s.gesperrt() {",
+    "neu": "func (s *Sitzung) SchalteTextmarkerFrei() bool {\n\tif false {"
+  },
+  {
+    "name": "FH38 Breite liest Freihand nicht",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase document.Lupe:\n\t\treturn v.Strich.Breite\n\tcase document.Freihand:\n\t\treturn v.Strich.Breite\n",
+    "neu": "\tcase document.Lupe:\n\t\treturn v.Strich.Breite\n"
+  },
+  {
+    "name": "FH39 Kästchen ruht nicht beim Speichern",
+    "datei": "internal/ui/freihandleiste.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.frei.knopf.Clicked(gtx) && e.seiteAn() {",
+    "neu": "\tif e.frei.knopf.Clicked(gtx) {",
+    "aequivalent": true,
+    "grund": "SchalteTextmarkerFrei lehnt selbst ab, solange gespeichert wird (gesperrt, enthält SpeichernLaeuft); die Hilfe ist modal und lässt keinen Klick durch. Die Prüfung seiteAn ist doppelt (TestSperreKaestchenFreihand)."
+  },
+  {
+    "name": "FH40 tools.ini freehand an jedem Werkzeug",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif gilt(\"freehand\") && w == WerkzeugTextmarker {",
+    "neu": "\t\tif gilt(\"freehand\") {"
+  },
+  {
+    "name": "FH41 Kästchen nur ohne Auswahl",
+    "datei": "internal/canvas/seitenleiste.go",
+    "paket": "./internal/canvas",
+    "alt": "Freihand: s.Werkzeug == WerkzeugTextmarker && w == WerkzeugTextmarker}",
+    "neu": "Freihand: false}"
+  },
+  {
+    "name": "FH42 Vorschau ohne Mindeststrich für Freihand",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase document.Freihand: // Punkte bleiben dieselben (Zeiger), nur die Breite ändert sich (F-1042)\n\t\tw.Strich.Breite = math.Max(w.Strich.Breite, 1.5/f)\n\t\to = w\n",
+    "neu": "\tcase document.Freihand:\n"
+  },
+  {
+    "name": "FH43 Speicherbedarf zählt Freihand-Punkte nicht",
+    "datei": "internal/document/verlauf.go",
+    "paket": "./internal/document",
+    "alt": "\t\t\tsumme += int64(len(f.Punkte())) * 16\n",
+    "neu": "\t\t\t_ = f\n"
+  },
+  {
+    "name": "FH44 Freihand ohne Länge angenommen",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/document",
+    "alt": "\tif f.Laenge() <= 0 {",
+    "neu": "\tif f.Laenge() < 0 {"
   }
 ]

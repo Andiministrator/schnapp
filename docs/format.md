@@ -607,6 +607,7 @@ value here and to the code must happen in the same commit.
 | `max_size` | 100000 | largest width, radius or corner radius |
 | `max_font_size` | 4096 | largest `s:grad` and `s:radius` |
 | `max_number` | 1000000 | largest `s:wert` |
+| `max_freehand_points` | 4096 | most points of one `freihand` (8.9) |
 
 Original width and height are at least 1.
 
@@ -619,7 +620,7 @@ Original width and height are at least 1.
    that is missing, not an integer, or less than 1 is damaged. Older supported versions MUST be read. The version is
    decided before any other content is judged, so a newer file that also contains an object type unknown to the
    reader is reported as newer, not as damaged. Within a supported version, only the object types of that version
-   exist: a `lupe` (8.7) in a file of version 1 is an unknown object type, and the file is damaged.
+   exist: a `lupe` (8.7) in a file of version 1, or a `freihand` (8.9) in a file of version 1 or 2, is an unknown object type, and the file is damaged.
 3. **Unknown content.** Attributes or elements that are not defined here and are not an object (`s:typ`) MUST be
    ignored, whatever their namespace; so are the presentation elements and attributes. Position matters for two elements: `s:streifen` counts only as a direct child of `s:ansicht`, and `s:schlagwort` only as a direct child of `s:meta`; anywhere else they are unknown content and have no effect (they are neither data nor damage). Readers MUST NOT accept them elsewhere, so that all readers see the same strips and keywords. Unknown *object types* are not
    ignored (8.6). Unknown content is not preserved when the reader saves the file.

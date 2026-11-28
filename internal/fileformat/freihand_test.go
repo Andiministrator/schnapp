@@ -70,3 +70,25 @@ func TestFreihandRundlauf(t *testing.T) {
 		t.Errorf("Export: %s", e)
 	}
 }
+
+// F-1043 (Kritik #333 K-13, Mutant FH36): Der Export schreibt einen gemusterten Freihand-Strich als ausdrückliche
+// Stücke (mehrere Teilpfade, stumpfe Enden, kein stroke-dasharray), die Arbeitsdatei als ein Pfad mit Näherung.
+func TestFreihandExportGemustertAlsStuecke(t *testing.T) {
+	d := beispielDok(t, 200, 60)
+	fuege(t, d, document.NeuerFreihand([]document.Punkt{document.Pt(10, 30), document.Pt(100, 20), document.Pt(190, 30)},
+		document.Strich{Farbe: color.NRGBA{R: 200, A: 255}, Breite: 4, Art: document.StrichGestrichelt}))
+	var ex bytes.Buffer
+	if err := ExportiereSVG(&ex, d); err != nil {
+		t.Fatal(err)
+	}
+	svg := ex.String()
+	if strings.Contains(svg, "dasharray") || !strings.Contains(svg, `stroke-linecap="butt"`) || strings.Count(svg, " M") < 3 {
+		t.Errorf("Export ohne ausdrückliche Stücke: %s", svg)
+	}
+	if strings.Contains(svg, `stroke-linecap="round"`) {
+		t.Error("Export trägt den vollen Pfad mit runden Enden")
+	}
+	if a := string(AngabenSVG(d)); !strings.Contains(a, "stroke-dasharray") {
+		t.Errorf("Arbeitsdatei ohne Näherung: %s", a)
+	}
+}

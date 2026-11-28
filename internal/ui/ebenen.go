@@ -666,6 +666,9 @@ func (e *editor) zeichneVorschau(gtx layout.Context, o document.Objekt, v image.
 	case document.Lupe:
 		w.Strich.Breite = math.Max(w.Strich.Breite, 1.5/f)
 		o = w
+	case document.Freihand: // Punkte bleiben dieselben (Zeiger), nur die Breite ändert sich (F-1042)
+		w.Strich.Breite = math.Max(w.Strich.Breite, 1.5/f)
+		o = w
 	}
 	c := clip.Rect(v).Push(gtx.Ops)
 	t := op.Affine(f32.Affine2D{}.Scale(f32.Point{}, f32.Pt(float32(f), float32(f))).

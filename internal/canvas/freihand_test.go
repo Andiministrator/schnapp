@@ -90,6 +90,9 @@ func TestTextmarkerFrei(t *testing.T) {
 	if w, _ := objektWerkzeug(fh); w != WerkzeugTextmarker {
 		t.Errorf("objektWerkzeug %v", w)
 	}
+	if !s.Seitenleiste().Freihand { // F-1039: der Strich wählt sich selbst, das Kästchen bleibt
+		t.Error("Kästchen weg nach dem Strich")
+	}
 	if st, _ := objektStandOhneSchatten(fh); st.Art != SchnellTextmarker {
 		t.Errorf("Schnellstil-Art %v", st.Art)
 	}
@@ -154,5 +157,151 @@ func TestFreihandBearbeiten(t *testing.T) {
 	}
 	if w, _ := objektWerkzeug(fh); w != WerkzeugFreihand || !strichWerkzeug(w) || fuellWerkzeug(w) {
 		t.Errorf("Werkzeug %v", w)
+	}
+}
+
+// F-1043 (Kritik #333): Ungedeckte Zeilen des Freihand-Strichs.
+
+// freiPunkt rechnet einen Ansichtspunkt in Fensterkoordinaten bei beliebigem Zoom.
+func freiPunkt(s *Sitzung, x, y float64) document.Punkt { return s.Abb.ZuFenster(document.Pt(x, y)) }
+
+// K-10 und K-12 (Mutanten FH33, FH35): Ein neuer Roh-Punkt kommt erst ab freiAbstand Fensterpixeln zum letzten dazu,
+// gemessen in Fensterpixeln, nicht im Original: bei Zoom 1 und bei Zoom 0,5 (Schritte von 1 Fensterpixel = 2 Originalpixel).
+func TestFreihandRohpunktAbstandInFensterpixeln(t *testing.T) {
+	for _, prozent := range []int{100, 50} {
+		s, _, _ := sitzung(t)
+		s.SetzeZoom(prozent)
+		s.SetzeWerkzeug(WerkzeugFreihand)
+		start := freiPunkt(s, 60, 50)
+		s.Druecken(start, TastePrimaer)
+		for i := 1; i <= 40; i++ { // 40 Schritte zu 1 Fensterpixel
+			s.Ziehen(start.Plus(document.Pt(float64(i), 0)))
+		}
+		// Alle 2 Fensterpixel ein Punkt: 1 + 20; ohne Abstand oder im Original gemessen bei Zoom 0,5 alle 41.
+		if n := len(s.freiRoh); n < 19 || n > 22 {
+			t.Errorf("Zoom %d %%: %d Roh-Punkte, erwartet rund 21", prozent, n)
+		}
+		s.Loslassen(start.Plus(document.Pt(40, 0)))
+	}
+}
+
+// K-4 (Mutant FH31): Die Roh-Punkte eines sehr langen Zugs bleiben unter der Grenze; das Ergebnis ist gültig.
+func TestFreihandRohpunkteBegrenzt(t *testing.T) {
+	s, _, _ := sitzung(t)
+	s.SetzeWerkzeug(WerkzeugFreihand)
+	s.Druecken(f(10, 10), TastePrimaer)
+	hoechst := 0
+	for i := 1; i <= 3*document.MaxFreihandPunkte; i++ {
+		x := 10 + float64(i%2)*150
+		s.Ziehen(f(x, 10+float64(i%80)))
+		hoechst = max(hoechst, len(s.freiRoh))
+	}
+	if hoechst > document.MaxFreihandPunkte {
+		t.Errorf("%d Roh-Punkte, Grenze %d", hoechst, document.MaxFreihandPunkte)
+	}
+	s.Loslassen(f(100, 50))
+	if fh, ok := letztes(t, s).(document.Freihand); !ok || len(fh.Punkte()) > document.MaxFreihandPunkte {
+		t.Errorf("Ergebnis %T", letztes(t, s))
+	}
+}
+
+// K-11 (Mutant FH34): Die Vereinfachungs-Toleranz gilt in Fensterpixeln. Ein Zickzack mit 1,2 Fensterpixeln Ausschlag
+// bleibt bei Zoom 4 erhalten (im Original 0,3 Pixel); ohne Teilen durch den Zoom ginge er verloren.
+func TestFreihandToleranzFolgtDemZoom(t *testing.T) {
+	zahl := func(prozent int) int {
+		s, _, _ := sitzung(t)
+		s.SetzeZoom(prozent)
+		s.SetzeWerkzeug(WerkzeugFreihand)
+		s.Druecken(freiPunkt(s, 60, 50), TastePrimaer)
+		var letzter document.Punkt
+		for i := 1; i <= 40; i++ {
+			letzter = freiPunkt(s, 60, 50).Plus(document.Pt(float64(i)*3, float64(i%2)*1.2))
+			s.Ziehen(letzter)
+		}
+		s.Loslassen(letzter)
+		return len(letztes(t, s).(document.Freihand).Punkte())
+	}
+	eins, vier := zahl(100), zahl(400)
+	if eins < 20 || vier < eins*3/4 {
+		t.Errorf("Punkte bei Zoom 1: %d, bei Zoom 4: %d (gleichen Zug erwartet, nicht weniger als 3/4)", eins, vier)
+	}
+}
+
+// K-15 (Mutant FH37): Der Schalter „Freehand“ wirkt nicht während eines Zugs.
+func TestSchalteTextmarkerFreiNichtImZug(t *testing.T) {
+	s, _, _ := sitzung(t)
+	s.SetzeWerkzeug(WerkzeugTextmarker)
+	s.Druecken(f(20, 20), TastePrimaer)
+	if !s.Zieht() {
+		t.Fatal("kein Zug")
+	}
+	if s.SchalteTextmarkerFrei() || s.TextmarkerFrei() {
+		t.Error("Schalter wirkt im Zug")
+	}
+	s.Loslassen(f(80, 20))
+}
+
+// K-16 (Mutant FH38): Breite() liest die Strichstärke des gewählten Freihand-Strichs, nicht die des Werkzeugs.
+func TestBreiteLiestFreihand(t *testing.T) {
+	s, _, _ := sitzung(t)
+	id, err := s.D.Hinzufuegen(document.NeuerFreihand([]document.Punkt{document.Pt(20, 80), document.Pt(60, 90)},
+		document.Strich{Farbe: rot.Farbe, Breite: 9}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.SetzeWerkzeug(WerkzeugAuswahl)
+	s.waehleNur(id)
+	if b := s.Breite(); b != 9 {
+		t.Errorf("Breite %v, erwartet 9", b)
+	}
+}
+
+// K-9 (Mutant FH32): Bei mehreren gewählten Freihand-Strichen wirken Breite und Strichart auf alle, und gemischte
+// Breiten werden erkannt.
+func TestMehrereFreihandStil(t *testing.T) {
+	s, _, _ := sitzung(t)
+	var ids [2]int
+	for i := range ids {
+		id, err := s.D.Hinzufuegen(document.NeuerFreihand([]document.Punkt{document.Pt(20, float64(60+10*i)), document.Pt(80, float64(65+10*i))},
+			document.Strich{Farbe: rot.Farbe, Breite: float64(4 + 2*i)}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids[i] = id
+	}
+	s.SetzeWerkzeug(WerkzeugAuswahl)
+	s.waehleNur(ids[0])
+	s.SchalteGewaehlt(ids[1])
+	if s.AnzahlGewaehlt() != 2 || !s.Gemischt(EigBreite) {
+		t.Fatalf("Anzahl %d, Breite gemischt: %v", s.AnzahlGewaehlt(), s.Gemischt(EigBreite))
+	}
+	if !s.SetzeBreite(11) || s.Gemischt(EigBreite) {
+		t.Fatal("SetzeBreite")
+	}
+	for _, id := range ids {
+		if b := objekt(t, s, id).(document.Freihand).Strich.Breite; b != 11 {
+			t.Errorf("Freihand %d: Breite %v", id, b)
+		}
+	}
+}
+
+// K-19 (Mutant FH40): Der Schalter „freehand“ aus tools.ini gilt nur für den Textmarker; bei einem anderen Werkzeug
+// (hier der Pfeil) bleibt er ohne Wirkung.
+func TestFreihandSchalterNurBeimTextmarker(t *testing.T) {
+	s, _, _ := sitzung(t)
+	s.SetzeWerkzeug(WerkzeugTextmarker) // beide Werkzeuge haben danach einen Stil
+	s.SetzeWerkzeug(WerkzeugPfeil)
+	var liste []settings.WerkzeugStil
+	for _, e := range s.WerkzeugStile() {
+		e.Freihand = true // in jedem Abschnitt gesetzt
+		liste = append(liste, e)
+	}
+	s.SetzeWerkzeugStile(liste)
+	s.SetzeWerkzeug(WerkzeugPfeil)
+	if s.stilVon(WerkzeugPfeil).Freihand {
+		t.Error("Pfeil trägt den Schalter Freihand")
+	}
+	if !s.stilVon(WerkzeugTextmarker).Freihand {
+		t.Error("Textmarker trägt ihn nicht")
 	}
 }

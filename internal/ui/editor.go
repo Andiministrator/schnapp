@@ -3157,6 +3157,9 @@ func (e *editor) hinweis() string {
 	case canvas.WerkzeugEllipse:
 		return i18n.T("Drag to draw an ellipse. Shift: circle.")
 	case canvas.WerkzeugTextmarker:
+		if e.s.TextmarkerFrei() { // im freien Modus ist Umschalt eine waagerechte Linie (F-1039)
+			return i18n.T("Drag along the text to highlight it freely. Shift: horizontal line.")
+		}
 		return i18n.T("Drag along the text to highlight it. Shift: horizontal.")
 	case canvas.WerkzeugFreihand:
 		return i18n.T("Drag to draw freely; the line is smoothed when you let go. Shift: straight line.")

@@ -2303,6 +2303,9 @@ msgstr "Gruppieren / aufheben"
 msgid "Drag along the text to highlight it. Shift: horizontal."
 msgstr "Am Text entlang ziehen markiert ihn. Umschalt: waagerecht."
 
+msgid "Drag along the text to highlight it freely. Shift: horizontal line."
+msgstr "Am Text entlang ziehen markiert ihn frei. Umschalt: waagerechte Linie."
+
 msgid "Yellow"
 msgstr "Gelb"
 

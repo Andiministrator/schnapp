@@ -100,7 +100,8 @@ func (d *Dokument) VerlaufPlatz() int64 {
 
 // Speicherbedarf schätzt, wie viel Speicher das Dokument hält: Pixel des Originals plus die Pixelkopien im
 // Rückgängig-Verlauf (erledigt und zurückgenommen). Grundlage der Grenze für gemerkte Aufnahmen beim Wechsel im selben
-// Fenster (ADR-0036 Zusatz Karte #356); Objekte und Verwaltung zählen nicht, sie sind klein dagegen.
+// Fenster (ADR-0036 Zusatz Karte #356); Objekte und Verwaltung zählen nicht, sie sind klein dagegen — bis auf die
+// Punkte der Freihand-Striche (16 Byte je Punkt, bis zu 4096 je Strich, F-1041).
 func (d *Dokument) Speicherbedarf() int64 {
 	summe := int64(len(d.original.Pix))
 	for _, l := range [][]schritt{d.verlauf.erledigt, d.verlauf.zurueckgenommen} {
@@ -108,6 +109,11 @@ func (d *Dokument) Speicherbedarf() int64 {
 			if g, ok := s.b.(groessenBefehl); ok {
 				summe += g.pixelBytes()
 			}
+		}
+	}
+	for _, o := range d.objekte {
+		if f, ok := o.(Freihand); ok {
+			summe += int64(len(f.Punkte())) * 16
 		}
 	}
 	return summe
@@ -185,7 +191,7 @@ func (d *Dokument) Abzug() (*Dokument, error) {
 	}
 	a := &Dokument{
 		original:          d.Original(),
-		objekte:           append([]Objekt(nil), d.objekte...), // Objekte sind Werte; einziger geteilter Zeiger ist Text.Spitze, durch den nie geschrieben wird (neu setzen, ADR-0021 Nachtrag 13)
+		objekte:           append([]Objekt(nil), d.objekte...), // Objekte sind Werte; geteilte Zeiger sind Text.Spitze und Freihand.Zug, durch die nie geschrieben wird (neu setzen, ADR-0021 Nachtrag 13, ADR-0049)
 		naechsteID:        d.naechsteID,
 		kante:             d.kante,
 		geschwaerzt:       d.geschwaerzt,
