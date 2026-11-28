@@ -107,14 +107,23 @@ func TestKritikKennungBleibtNachFehler(t *testing.T) {
 // beim n-ten Schlaf (ab 1) die Aktion a.
 func abbruchAttrappe(t *testing.T, jetzt *time.Time, n int, a notify.Aktion) (schlaefe *int) {
 	t.Helper()
+	var aboCtx context.Context
 	altA, altW := countdownAbo, countdownWarte
 	t.Cleanup(func() { countdownAbo, countdownWarte = altA, altW })
 	k := make(chan notify.Aktion)
-	countdownAbo = func(context.Context) (<-chan notify.Aktion, error) { return k, nil }
+	countdownAbo = func(ctx context.Context, _ time.Duration) (<-chan notify.Aktion, error) {
+		aboCtx = ctx
+		return k, nil
+	}
 	z := 0
 	countdownWarte = func(d time.Duration, ab <-chan notify.Aktion) (notify.Aktion, bool) {
 		if ab != k {
 			t.Error("Schlaf ohne das Abonnement")
+		}
+		// Wie das echte Abonnement verstummt die Attrappe, sobald ihr Kontext endet (F-1052): Er muss den ganzen
+		// Countdown leben.
+		if aboCtx == nil || aboCtx.Err() != nil {
+			t.Error("Abonnement schon beendet, während der Countdown wartet")
 		}
 		z++
 		if z == n {
@@ -176,7 +185,7 @@ func TestCountdownOhneAbo(t *testing.T) {
 	start := *jetzt
 	alt := countdownAbo
 	t.Cleanup(func() { countdownAbo = alt })
-	countdownAbo = func(context.Context) (<-chan notify.Aktion, error) { return nil, errors.New("kein Bus") }
+	countdownAbo = func(context.Context, time.Duration) (<-chan notify.Aktion, error) { return nil, errors.New("kein Bus") }
 	countdownErsetze = func(context.Context, uint32, string, string) (uint32, error) { return 7, nil }
 	countdownSchliesse = func(context.Context, uint32) error { return nil }
 	if countdown(2, io.Discard) || jetzt.Sub(start) < 2*time.Second {

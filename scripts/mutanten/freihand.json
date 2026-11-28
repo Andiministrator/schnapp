@@ -489,12 +489,5 @@
     "paket": "./internal/ui",
     "alt": "\tschl := freihandSchluessel{v.ID, vorschau}",
     "neu": "\tschl := freihandSchluessel{v.ID, false}"
-  },
-  {
-    "name": "FH70 Verschoben rundet jeden Punkt (Verify #333)",
-    "datei": "internal/document/freihand.go",
-    "paket": "./internal/canvas",
-    "alt": "\t\tpts[i] = pts[i].Plus(d)\n",
-    "neu": "\t\tpts[i] = aufHundertstel(pts[i].Plus(d))\n"
   }
 ]

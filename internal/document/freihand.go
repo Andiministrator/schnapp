@@ -34,6 +34,15 @@ func (d *Dokument) pruefeFreihandDazu(neu ...Objekt) error {
 	return nil
 }
 
+// pruefeFreihandStatt lehnt ab, wenn neu an der Stelle von alt mehr Freihand-Punkte trüge, als Platz ist (Kritik
+// F-1055: Ersetzen und Zug); weniger oder gleich viele gehen immer. Gezählt über alle Objekte wird nur bei einem Zuwachs.
+func (d *Dokument) pruefeFreihandStatt(alt, neu []Objekt) error {
+	if dazu := FreihandPunkteGesamt(neu) - FreihandPunkteGesamt(alt); dazu > 0 && dazu > d.FreihandPlatz() {
+		return fmt.Errorf("%w: %d Punkte mehr, Platz für %d", ErrFreihandVoll, dazu, max(d.FreihandPlatz(), 0))
+	}
+	return nil
+}
+
 // FreihandPunkteGesamt zählt die Punkte aller Freihand-Striche in objekte.
 func FreihandPunkteGesamt(objekte []Objekt) int {
 	n := 0
@@ -80,8 +89,9 @@ func (f Freihand) MitPunkten(pts []Punkt) Freihand {
 }
 
 // Verschoben liefert f um d verschoben (neuer Zug). Gerundet wird nur d auf 1/100 px (F-1036: ein Zoom wie 0,73
-// macht sonst aus jeder Lage eine Zahl mit 17 Stellen); die Punkte liegen schon auf Hundertsteln (MitPunkten) und wandern
-// starr, damit Verschieben um 0 nichts ändert (Verify #333).
+// macht sonst aus jeder Lage eine Zahl mit 17 Stellen); die Punkte liegen auf Hundertsteln (MitPunkten), jede neue Lage
+// wird wieder auf Hundertstel gerundet, damit Speichern und Lesen sie gleich zurückgeben (F-1053); Verschieben um 0 ändert
+// nichts (Verify #333).
 func (f Freihand) Verschoben(d Punkt) Freihand {
 	d = aufHundertstel(d)
 	if d == (Punkt{}) {
@@ -89,7 +99,9 @@ func (f Freihand) Verschoben(d Punkt) Freihand {
 	}
 	pts := slices.Clone(f.Punkte())
 	for i := range pts {
-		pts[i] = pts[i].Plus(d)
+		// Auf Hundertsteln plus Hundertstel bleibt auf Hundertsteln, nur das Gleitkomma nicht (0,1 + 0,2): jede Lage
+		// runden, die Bewegung bleibt starr (Kritik F-1053).
+		pts[i] = aufHundertstel(pts[i].Plus(d))
 	}
 	f.Zug = &pts
 	return f

@@ -60,11 +60,10 @@ const hinweisFrist = 800 * time.Millisecond
 func countdown(sek int, fehler io.Writer) (abgebrochen bool) {
 	ende := countdownJetzt().Add(time.Duration(sek) * time.Second)
 	schluss := ende.Add(-hinweisWeg)
+	// Das Abonnement lebt bis zum Ende des Countdowns; hinweisFrist gilt nur für das Anmelden (F-1052).
 	abo, aboEnde := context.WithCancel(context.Background())
 	defer aboEnde()
-	aboCtx, aboFrist := context.WithTimeout(abo, hinweisFrist)
-	knoepfe, err := countdownAbo(aboCtx)
-	aboFrist()
+	knoepfe, err := countdownAbo(abo, hinweisFrist)
 	if err != nil {
 		diagnose(fehler, "Countdown ohne Abbrechen: %v", err)
 		knoepfe = nil

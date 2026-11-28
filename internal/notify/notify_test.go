@@ -7,6 +7,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/godbus/dbus/v5"
 )
@@ -178,16 +179,21 @@ func TestAktionAus(t *testing.T) {
 func TestAktionenAbonniert(t *testing.T) {
 	alt := abonniere
 	t.Cleanup(func() { abonniere = alt })
-	abonniere = func(_ context.Context, aus chan<- Aktion) error {
+	var aufbau time.Duration
+	abonniere = func(_ context.Context, a time.Duration, aus chan<- Aktion) error {
+		aufbau = a
 		aus <- Aktion{ID: 1, Schluessel: "cancel"}
 		return nil
 	}
-	k, err := Aktionen(context.Background())
+	k, err := Aktionen(context.Background(), 700*time.Millisecond)
+	if aufbau != 700*time.Millisecond {
+		t.Errorf("Aufbaufrist %v", aufbau)
+	}
 	if err != nil || (<-k) != (Aktion{ID: 1, Schluessel: "cancel"}) {
 		t.Errorf("Fehler %v", err)
 	}
-	abonniere = func(context.Context, chan<- Aktion) error { return errors.New("kein Bus") }
-	if _, err := Aktionen(context.Background()); err == nil || err.Error() != "notify: kein Bus" {
+	abonniere = func(context.Context, time.Duration, chan<- Aktion) error { return errors.New("kein Bus") }
+	if _, err := Aktionen(context.Background(), time.Second); err == nil || err.Error() != "notify: kein Bus" {
 		t.Errorf("Fehler %v", err)
 	}
 }

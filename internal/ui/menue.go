@@ -408,7 +408,7 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 			}
 		}
 	case aktDoppeln:
-		return func(layout.Context) { e.s.Doppeln() }
+		return func(layout.Context) { e.doppeln() }
 	case aktAllesWaehlen:
 		return func(layout.Context) { e.s.WaehleAlle() }
 	case aktGruppieren:

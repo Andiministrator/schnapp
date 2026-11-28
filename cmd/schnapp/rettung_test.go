@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/fileformat"
@@ -28,7 +29,9 @@ func TestMain(m *testing.M) {
 	importBeimOeffnen = false
 	// Kein Test abonniert die Knöpfe echter Hinweise auf dem Session-Bus (ADR-0042 Nachtrag 2); die eigenen Tests des
 	// Abbrechens setzen eine Attrappe.
-	countdownAbo = func(context.Context) (<-chan notify.Aktion, error) { return nil, errors.New("kein Abo im Test") }
+	countdownAbo = func(context.Context, time.Duration) (<-chan notify.Aktion, error) {
+		return nil, errors.New("kein Abo im Test")
+	}
 	ort, err := os.MkdirTemp("", "schnapp-state-")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

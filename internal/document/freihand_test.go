@@ -166,4 +166,9 @@ func TestFreihandPunkteAufHundertsteln(t *testing.T) {
 	if g := f.MitPunkten([]Punkt{Pt(0.001, 0), Pt(7.777, 0)}).Punkte(); g[0] != Pt(0, 0) || g[1] != Pt(7.78, 0) {
 		t.Errorf("MitPunkten: %v", g)
 	}
+	// F-1053: Auch nach dem Verschieben liegt jede Lage auf Hundertsteln (0,1 + 0,2 ist im Gleitkomma nicht 0,3).
+	v := NeuerFreihand([]Punkt{Pt(0.1, 0.1), Pt(10.7, 20.3)}, Strich{Breite: 1}).Verschoben(Pt(0.2, 0.2))
+	if p := v.Punkte(); p[0] != Pt(0.3, 0.3) || p[1] != Pt(10.9, 20.5) {
+		t.Errorf("Verschoben: %v", p)
+	}
 }

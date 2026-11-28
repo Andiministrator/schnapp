@@ -101,6 +101,13 @@ Punkt 6 (Format) ändert sich, solange FormatVersion 3 nicht ausgeliefert ist (k
   (`BeginneNeuenZug`) braucht Platz für einen ganzen Strich (`MaxFreihandPunkte`), weil er bis dahin wächst. Freihand
   und freier Textmarker melden das vor dem Druck (`canvas.AblehnungFreihand`), Einfügen und `--annotate` scheitern mit
   Meldung. So kann kein Bild entstehen, das Speichern oder Rettungskopie nicht mehr tragen.
+- **Nach der Kritik der Sitzung (28.11.2026, Fable):** `Ersetzen`, `ErsetzeMehrere`, `ZugSetze` und
+  `ZugSetzeMehrere` lehnen einen Zuwachs über die Grenze ebenso ab (`pruefeFreihandStatt`, F-1055); erst damit hält die
+  Grenze für jedes Dokument, nicht nur für die heutigen Aufrufer. **Verschieben rundet jede Lage** auf 1/100 px
+  (F-1053): Zwei Hundertstel-Zahlen ergeben im Gleitkomma nicht immer wieder eine (0,1 + 0,2), und ein verschobener
+  Strich kam nach Speichern und Lesen nicht gleich zurück. Weil alle Punkte auf Hundertsteln liegen, bleibt die
+  Bewegung starr; der Grund aus Nachtrag 1 (ein Strich aus einer Datei mit feineren Lagen) entfällt. Doppeln an der
+  Grenze meldet sich in der Fußzeile, und der Hinweis von Freihand und freiem Textmarker nennt die Grenze (F-1056).
 
 Gemessen (derselbe lange Zug wie in Nachtrag 1): im SVG 21 bis 23 statt 25 bis 27 Byte je Punkt, im komprimierten
 `snAP` 3,5 bis 4,7 statt 8,7 bis 10,8 Byte je Punkt. Beide Kopien lauten gleich, zlib verweist die zweite auf die erste.

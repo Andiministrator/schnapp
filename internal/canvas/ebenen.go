@@ -3,6 +3,7 @@
 package canvas
 
 import (
+	"errors"
 	"slices"
 	"strconv"
 	"strings"
@@ -234,9 +235,19 @@ func (s *Sitzung) KannEbeneSchritt(dir int) bool {
 // DoppelVersatz ist der Versatz einer Kopie in Fensterpixeln (ADR-0032 Punkt 7).
 const DoppelVersatz = 10.0
 
+// grenzAblehnung übersetzt einen Fehler beim Einfügen in die Ablehnung, die die Oberfläche meldet (F-1056).
+func grenzAblehnung(err error) Ablehnung {
+	if errors.Is(err, document.ErrFreihandVoll) {
+		return AblehnungFreihand
+	}
+	return AblehnungKeine
+}
+
 // Doppeln legt eine Kopie der gewählten Ebene direkt darüber, um DoppelVersatz Fensterpixel nach rechts unten
 // versetzt, und wählt sie.
+// Scheitert es an einer Grenze des Dokuments, nennt Abgelehnt den Grund (F-1056).
 func (s *Sitzung) Doppeln() bool {
+	s.abgelehnt = AblehnungKeine
 	if !s.ebenenBereit() {
 		return false
 	}
@@ -252,6 +263,7 @@ func (s *Sitzung) Doppeln() bool {
 	vor := s.D.Stand()
 	id, err := s.D.FuegeEin(kopie, s.D.Stelle(o.Kennung())+1)
 	if err != nil {
+		s.abgelehnt = grenzAblehnung(err)
 		return false
 	}
 	s.merkeAenderung(vor)

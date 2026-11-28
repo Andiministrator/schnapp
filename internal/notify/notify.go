@@ -101,33 +101,37 @@ type Aktion struct {
 	Schluessel string
 }
 
-// abonniere ist die Naht für Tests: meldet ActionInvoked auf aus, bis ctx endet. nil = echter Session-Bus.
-var abonniere func(ctx context.Context, aus chan<- Aktion) error
+// abonniere ist die Naht für Tests: meldet ActionInvoked auf aus, bis ctx endet; der Aufbau hat höchstens aufbau.
+// nil = echter Session-Bus.
+var abonniere func(ctx context.Context, aufbau time.Duration, aus chan<- Aktion) error
 
 // Aktionen abonniert ActionInvoked des Benachrichtigungsdienstes (ADR-0042 Nachtrag 2) und liefert die Klicks auf
 // Knöpfe aller Hinweise; wer nur seine eigenen will, vergleicht die Kennung. Das Abonnement steht, wenn Aktionen ohne
-// Fehler zurückkehrt, und endet mit ctx; danach kommt nichts mehr, der Kanal bleibt offen.
-func Aktionen(ctx context.Context) (aus <-chan Aktion, fehler error) {
+// Fehler zurückkehrt, und lebt, bis ctx endet (danach kommt nichts mehr, der Kanal bleibt offen). aufbau begrenzt nur
+// das Anmelden beim Bus, nicht die Lebensdauer (Kritik F-1052: mit der Frist als Lebensdauer kam kein Klick an).
+func Aktionen(ctx context.Context, aufbau time.Duration) (aus <-chan Aktion, fehler error) {
 	defer errprefix.Defer("notify", &fehler)
 	k := make(chan Aktion, 4)
 	f := abonniere
 	if f == nil {
 		f = echtAbonniere
 	}
-	if err := f(ctx, k); err != nil {
+	if err := f(ctx, aufbau, k); err != nil {
 		return nil, err
 	}
 	return k, nil
 }
 
-func echtAbonniere(ctx context.Context, aus chan<- Aktion) error {
+func echtAbonniere(ctx context.Context, aufbau time.Duration, aus chan<- Aktion) error {
 	c, err := dbus.SessionBus()
 	if err != nil {
 		return err
 	}
-	regel := []dbus.MatchOption{dbus.WithMatchObjectPath(pfad), dbus.WithMatchInterface(dienst),
-		dbus.WithMatchMember("ActionInvoked")}
-	fctx, ende := context.WithTimeout(ctx, frist)
+	// Nur Signale des Benachrichtigungsdienstes: Der Bus vergleicht den Absender mit dem Inhaber des Namens; ein
+	// anderes Programm kann den Countdown so nicht abbrechen (Kritik F-1054).
+	regel := []dbus.MatchOption{dbus.WithMatchSender(dienst), dbus.WithMatchObjectPath(pfad),
+		dbus.WithMatchInterface(dienst), dbus.WithMatchMember("ActionInvoked")}
+	fctx, ende := context.WithTimeout(ctx, aufbau)
 	defer ende()
 	if err := c.AddMatchSignalContext(fctx, regel...); err != nil { // kehrt erst zurück, wenn der Bus die Regel kennt
 		return err

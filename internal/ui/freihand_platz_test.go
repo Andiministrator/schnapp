@@ -48,6 +48,30 @@ func TestFreihandGesamtgrenzeMeldung(t *testing.T) {
 		t.Error("kein Grenztext für AblehnungFreihand")
 	}
 	e.s.SetzeWerkzeug(canvas.WerkzeugFreihand)
+	if h := e.hinweis(); h != e.grenzText(canvas.AblehnungFreihand) { // F-1056: kein Strich versprochen
+		t.Errorf("Hinweis Freihand: %q", h)
+	}
+	e.s.SetzeWerkzeug(canvas.WerkzeugTextmarker)
+	if !e.s.TextmarkerFrei() {
+		e.s.SchalteTextmarkerFrei()
+	}
+	if h := e.hinweis(); h != e.grenzText(canvas.AblehnungFreihand) {
+		t.Errorf("Hinweis freier Textmarker: %q", h)
+	}
+	e.s.SchalteTextmarkerFrei()
+	if h := e.hinweis(); h == e.grenzText(canvas.AblehnungFreihand) {
+		t.Error("gerader Textmarker meldet die Freihand-Grenze")
+	}
+	e.s.SetzeWerkzeug(canvas.WerkzeugAuswahl)
+	if !e.s.WaehleAlle() {
+		t.Fatal("nichts gewählt")
+	}
+	e.meldung.Text = ""
+	e.doppeln() // F-1056: Meldung statt still
+	if e.meldung.Text != e.grenzText(canvas.AblehnungFreihand) {
+		t.Errorf("Doppeln an der Grenze: Meldung %q", e.meldung.Text)
+	}
+	e.s.SetzeWerkzeug(canvas.WerkzeugFreihand)
 	e.s.SetzeFenster(image.Pt(88, 78))
 	e.s.Druecken(document.Pt(30, 30), canvas.TastePrimaer)
 	e.s.Loslassen(document.Pt(40, 40))

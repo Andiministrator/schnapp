@@ -240,7 +240,7 @@ func (e *editor) ebenenAuswerten(gtx layout.Context) {
 		case ebKnopfRunter:
 			e.s.EbeneSchritt(-1)
 		case ebKnopfDoppeln:
-			e.s.Doppeln()
+			e.doppeln()
 		case ebKnopfLoeschen:
 			e.s.Loeschen()
 		}

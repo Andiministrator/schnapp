@@ -67,3 +67,42 @@ func TestFreihandGesamtgrenzeImWerkzeug(t *testing.T) {
 		t.Errorf("Pfeil: %v", a)
 	}
 }
+
+// F-1056 (Kritik der Sitzung 28.11., K-5): Doppeln an der Grenze scheitert nicht still, sondern nennt den Grund; ein
+// gelungenes Doppeln setzt ihn zurück.
+func TestFreihandGesamtgrenzeBeimDoppeln(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 200, 100)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pts := make([]document.Punkt, document.MaxFreihandPunkte)
+	for i := range pts {
+		pts[i] = document.Pt(float64(i%100), float64(i%2))
+	}
+	var os []document.Objekt
+	for range document.MaxFreihandGesamt / document.MaxFreihandPunkte {
+		os = append(os, document.NeuerFreihand(pts, document.Strich{Breite: 2}))
+	}
+	ids, err := d.HinzufuegenMehrere(os)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pid, err := d.Hinzufuegen(document.GeraderPfeil(document.Pt(1, 1), document.Pt(9, 9), document.Strich{Breite: 2}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := NeueSitzung(d)
+	s.SetzeFenster(image.Pt(248, 148))
+	s.waehleNur(ids[0])
+	if s.Doppeln() || s.Abgelehnt() != AblehnungFreihand {
+		t.Errorf("Doppeln eines Strichs an der Grenze: Ablehnung %v", s.Abgelehnt())
+	}
+	s.setzeAuswahl(ids[0], []int{ids[0], ids[1]})
+	if s.Doppeln() || s.Abgelehnt() != AblehnungFreihand {
+		t.Errorf("Doppeln mehrerer an der Grenze: Ablehnung %v", s.Abgelehnt())
+	}
+	s.waehleNur(pid)
+	if !s.Doppeln() || s.Abgelehnt() != AblehnungKeine {
+		t.Errorf("Doppeln des Pfeils: Ablehnung %v", s.Abgelehnt())
+	}
+}

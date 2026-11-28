@@ -1533,6 +1533,13 @@ func (e *editor) meldeAbgelehnt() {
 	}
 }
 
+// doppeln doppelt die Auswahl; scheitert es an einer Grenze, sagt es die Fußzeile (F-1056).
+func (e *editor) doppeln() {
+	if !e.s.Doppeln() {
+		e.meldeAbgelehnt()
+	}
+}
+
 // grenzText ist die Meldung zu einer Grenze des Dokuments.
 func (e *editor) grenzText(a canvas.Ablehnung) string {
 	switch a {
@@ -3168,11 +3175,17 @@ func (e *editor) hinweis() string {
 	case canvas.WerkzeugEllipse:
 		return i18n.T("Drag to draw an ellipse. Shift: circle.")
 	case canvas.WerkzeugTextmarker:
+		if a := e.s.Voll(); a != canvas.AblehnungKeine {
+			return e.grenzText(a) // keinen Strich versprechen, der nicht kommt (F-154, F-1056)
+		}
 		if e.s.TextmarkerFrei() { // im freien Modus ist Umschalt eine waagerechte Linie (F-1039)
 			return i18n.T("Drag along the text to highlight it freely. Shift: horizontal line.")
 		}
 		return i18n.T("Drag along the text to highlight it. Shift: horizontal.")
 	case canvas.WerkzeugFreihand:
+		if a := e.s.Voll(); a != canvas.AblehnungKeine {
+			return e.grenzText(a) // F-154, F-1056
+		}
 		return i18n.T("Drag to draw freely; the line is smoothed when you let go. Shift: straight line.")
 	case canvas.WerkzeugText:
 		return i18n.T("Click to place text, or click a text to edit it.")

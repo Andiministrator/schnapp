@@ -60,3 +60,8 @@ Benachrichtigung in der Plasma-Sitzung offen.
    endet wie ein Abbruch im Overlay (Exit 3, nichts abgelegt, kein Editor). Gelingt das Abonnement nicht (kein Dienst,
    Frist), wartet der Countdown wie bisher; Strg+C im Terminal bleibt. Das gilt für jeden Countdown, auch vom
    Tastenkürzel oder aus dem Terminal.
+4. **Nach der Kritik der Sitzung (28.11.2026, Fable):** Das Abonnement lebt bis zum Ende des Countdowns; die Frist von
+   800 ms gilt nur für das Anmelden beim Bus (`notify.Aktionen(ctx, aufbau)`). Die erste Fassung band die Lebensdauer
+   an die Frist, und kein Klick kam an (F-1052). Die Regel nimmt nur Signale des Inhabers von
+   `org.freedesktop.Notifications` an (`WithMatchSender`), ein anderes Programm bricht nichts ab (F-1054). Geprüft auf
+   einem eigenen, leeren Bus (`internal/notify/abo_bus_test.go`, startet `dbus-daemon`).

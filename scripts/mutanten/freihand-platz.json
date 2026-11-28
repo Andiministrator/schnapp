@@ -75,5 +75,89 @@
     "paket": "./internal/ui",
     "alt": "\tcase errors.Is(err, document.ErrFreihandVoll):",
     "neu": "\tcase false:"
+  },
+  {
+    "name": "FP12 Ersetzen ohne Grenze",
+    "datei": "internal/document/verlauf.go",
+    "paket": "./internal/document",
+    "alt": "\tif err := d.pruefeFreihandStatt([]Objekt{d.objekte[i]}, []Objekt{neu}); err != nil {\n\t\treturn err\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "FP13 ZugSetze ohne Grenze",
+    "datei": "internal/document/verlauf.go",
+    "paket": "./internal/document",
+    "alt": "\tif err := d.pruefeFreihandStatt([]Objekt{d.objekte[d.index(d.zug.id)]}, []Objekt{o}); err != nil {\n\t\treturn err\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "FP14 ZugSetzeMehrere ohne Grenze",
+    "datei": "internal/document/mehrere.go",
+    "paket": "./internal/document",
+    "alt": "\tif err := d.pruefeFreihandStatt(alt, os); err != nil {\n\t\treturn err\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "FP15 ErsetzeMehrere ohne Grenze",
+    "datei": "internal/document/mehrere.go",
+    "paket": "./internal/document",
+    "alt": "\tif err := d.pruefeFreihandStatt(alt, neuO); err != nil {\n\t\treturn err\n\t}\n",
+    "neu": "\t_ = alt\n"
+  },
+  {
+    "name": "FP16 Ersetzen um einen Punkt zu eng",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/document",
+    "alt": "dazu > 0 && dazu > d.FreihandPlatz()",
+    "neu": "dazu > 0 && dazu >= d.FreihandPlatz()"
+  },
+  {
+    "name": "FP17 Verschoben rundet nicht",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/document",
+    "alt": "\t\tpts[i] = aufHundertstel(pts[i].Plus(d))",
+    "neu": "\t\tpts[i] = pts[i].Plus(d)"
+  },
+  {
+    "name": "FP18 Doppeln ohne Ablehnung",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.abgelehnt = grenzAblehnung(err)\n",
+    "neu": ""
+  },
+  {
+    "name": "FP19 Doppeln mehrerer ohne Ablehnung",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.abgelehnt = grenzAblehnung(err)\n",
+    "neu": ""
+  },
+  {
+    "name": "FP20 Grenzfehler nicht erkannt",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\treturn AblehnungFreihand\n\t}\n\treturn AblehnungKeine",
+    "neu": "\t\treturn AblehnungKeine\n\t}\n\treturn AblehnungKeine"
+  },
+  {
+    "name": "FP21 alte Ablehnung bleibt nach Doppeln",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "func (s *Sitzung) Doppeln() bool {\n\ts.abgelehnt = AblehnungKeine\n",
+    "neu": "func (s *Sitzung) Doppeln() bool {\n"
+  },
+  {
+    "name": "FP22 Hinweis verspricht Freihand an der Grenze",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase canvas.WerkzeugFreihand:\n\t\tif a := e.s.Voll(); a != canvas.AblehnungKeine {\n\t\t\treturn e.grenzText(a) // F-154, F-1056\n\t\t}\n",
+    "neu": "\tcase canvas.WerkzeugFreihand:\n"
+  },
+  {
+    "name": "FP23 Doppeln im Editor still",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.s.Doppeln() {\n\t\te.meldeAbgelehnt()\n\t}",
+    "neu": "\te.s.Doppeln()"
   }
 ]

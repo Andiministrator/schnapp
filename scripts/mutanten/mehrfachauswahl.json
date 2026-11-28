@@ -17,8 +17,8 @@
     "name": "MA3 ErsetzeMehrere: unveränderte zählen",
     "datei": "internal/document/mehrere.go",
     "paket": "./internal/document",
-    "alt": "\t\tif !Gleich(o, d.objekte[i]) {\n\t\t\tg = append(g, ersetzen{d.objekte[i], o})\n\t\t}",
-    "neu": "\t\tg = append(g, ersetzen{d.objekte[i], o})"
+    "alt": "\t\tif !Gleich(o, d.objekte[i]) {\n\t\t\tg = append(g, ersetzen{d.objekte[i], o})\n\t\t\talt, neuO = append(alt, d.objekte[i]), append(neuO, o)\n\t\t}",
+    "neu": "\t\tg = append(g, ersetzen{d.objekte[i], o})\n\t\talt, neuO = append(alt, d.objekte[i]), append(neuO, o)"
   },
   {
     "name": "MA4 ZugSetzeMehrere nimmt fremde Objekte",

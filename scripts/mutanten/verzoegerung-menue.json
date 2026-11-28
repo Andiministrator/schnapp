@@ -90,5 +90,26 @@
     "timeout": "120s",
     "alt": "\t\tif ab == nil {\n\t\t\tcountdownSchlaf(d)",
     "neu": "\t\tif ab == nil {\n\t\t\t_ = d"
+  },
+  {
+    "name": "VM14 Abonnement lebt nur die Aufbaufrist (F-1052)",
+    "datei": "cmd/schnapp/countdown.go",
+    "paket": "./cmd/schnapp",
+    "alt": "knoepfe, err := countdownAbo(abo, hinweisFrist)",
+    "neu": "knoepfe, err := countdownAbo(func() context.Context { c, x := context.WithTimeout(abo, hinweisFrist); x(); return c }(), hinweisFrist)"
+  },
+  {
+    "name": "VM15 Signale fremder Absender (F-1054)",
+    "datei": "internal/notify/notify.go",
+    "paket": "./internal/notify",
+    "alt": "dbus.WithMatchSender(dienst), ",
+    "neu": ""
+  },
+  {
+    "name": "VM16 Abonnement endet mit der Aufbaufrist (F-1052)",
+    "datei": "internal/notify/notify.go",
+    "paket": "./internal/notify",
+    "alt": "\t\t\tcase <-ctx.Done():\n\t\t\t\treturn",
+    "neu": "\t\t\tcase <-fctx.Done():\n\t\t\t\treturn"
   }
 ]

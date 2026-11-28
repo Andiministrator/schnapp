@@ -34,6 +34,7 @@ func (d *Dokument) ErsetzeMehrere(neu []Objekt) error {
 		return ErrZugLaeuft
 	}
 	var g gruppe
+	var alt, neuO []Objekt // die geänderten, für die Gesamtgrenze der Freihand-Punkte (F-1055)
 	gesehen := map[int]bool{}
 	for _, o := range neu {
 		if o == nil || o.Kennung() == 0 || gesehen[o.Kennung()] {
@@ -49,7 +50,11 @@ func (d *Dokument) ErsetzeMehrere(neu []Objekt) error {
 		}
 		if !Gleich(o, d.objekte[i]) {
 			g = append(g, ersetzen{d.objekte[i], o})
+			alt, neuO = append(alt, d.objekte[i]), append(neuO, o)
 		}
+	}
+	if err := d.pruefeFreihandStatt(alt, neuO); err != nil {
+		return err
 	}
 	if len(g) > 0 {
 		d.fuehreAus(g)
@@ -179,6 +184,13 @@ func (d *Dokument) ZugSetzeMehrere(os []Objekt) error {
 		if err := o.pruefe(); err != nil {
 			return err
 		}
+	}
+	alt := make([]Objekt, len(os))
+	for k, o := range os {
+		alt[k] = d.objekte[d.index(o.Kennung())]
+	}
+	if err := d.pruefeFreihandStatt(alt, os); err != nil {
+		return err
 	}
 	for _, o := range os {
 		d.objekte[d.index(o.Kennung())] = o

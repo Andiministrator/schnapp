@@ -431,6 +431,7 @@ func (s *Sitzung) doppleMehrere() bool {
 	vor := s.D.Stand()
 	neu, err := s.D.FuegeEinMehrere(kopien, ids)
 	if err != nil {
+		s.abgelehnt = grenzAblehnung(err)
 		return false
 	}
 	s.merkeAenderung(vor)

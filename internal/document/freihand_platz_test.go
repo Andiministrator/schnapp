@@ -102,3 +102,56 @@ func TestFreihandGesamtgrenzeBeimHinzufuegen(t *testing.T) {
 		t.Errorf("PruefeInhalt über der Grenze: %v", err)
 	}
 }
+
+// F-1055 (Kritik der Sitzung 28.11., K-4): Auch Ersetzen und Züge lehnen einen Zuwachs über die Gesamtgrenze ab;
+// gleich viele oder weniger Punkte gehen immer.
+func TestFreihandGesamtgrenzeBeimErsetzen(t *testing.T) {
+	voll := func(err error) bool { return errors.Is(err, ErrFreihandVoll) }
+	d := fastVoll(t, 10)
+	pid, err := d.Hinzufuegen(GeraderPfeil(Pt(1, 1), Pt(9, 9), Strich{Breite: 2}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gross := vollerStrich(11)
+	if err := d.Ersetzen(mitKennung(gross, pid)); !voll(err) {
+		t.Errorf("Ersetzen Pfeil → 11 Punkte bei Platz 10: %v", err)
+	}
+	if err := d.ErsetzeMehrere([]Objekt{mitKennung(gross, pid)}); !voll(err) {
+		t.Errorf("ErsetzeMehrere: %v", err)
+	}
+	if err := d.Ersetzen(mitKennung(vollerStrich(10), pid)); err != nil {
+		t.Errorf("Ersetzen genau bis an die Grenze: %v", err)
+	}
+	// Ein vorhandener Strich darf schrumpfen oder gleich bleiben, auch ohne Platz.
+	fid := d.Objekte()[0].Kennung()
+	if err := d.Ersetzen(mitKennung(vollerStrich(MaxFreihandPunkte-1), fid)); err != nil {
+		t.Errorf("Schrumpfen ohne Platz: %v", err)
+	}
+	if err := d.BeginneZug(fid); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.ZugSetze(mitKennung(vollerStrich(MaxFreihandPunkte), fid)); err != nil {
+		t.Errorf("ZugSetze zurück auf die alte Zahl (1 Punkt Platz): %v", err)
+	}
+	if err := d.ZugSetze(mitKennung(vollerStrich(MaxFreihandPunkte), fid)); err != nil {
+		t.Errorf("ZugSetze gleich: %v", err)
+	}
+	d.BrecheZugAb()
+	if err := d.BeginneZug(pid); err != nil { // pid trägt 10 Punkte, Platz ist 1
+		t.Fatal(err)
+	}
+	if err := d.ZugSetze(mitKennung(vollerStrich(12), pid)); !voll(err) {
+		t.Errorf("ZugSetze über der Grenze: %v", err)
+	}
+	d.BrecheZugAb()
+	if err := d.BeginneZugMehrere([]int{fid, pid}); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.ZugSetzeMehrere([]Objekt{mitKennung(vollerStrich(MaxFreihandPunkte), fid), mitKennung(vollerStrich(12), pid)}); !voll(err) {
+		t.Errorf("ZugSetzeMehrere über der Grenze: %v", err)
+	}
+	d.BrecheZugAb()
+}
+
+// mitKennung setzt die Kennung id an o (wie das Dokument beim Hinzufügen).
+func mitKennung(o Objekt, id int) Objekt { return o.mitKennung(id) }

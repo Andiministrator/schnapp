@@ -200,3 +200,25 @@ func TestFreihandPunkteRelativLesen(t *testing.T) {
 		t.Errorf("Überlauf: %v, Soll beschädigt", err)
 	}
 }
+
+// F-1053 (Kritik der Sitzung 28.11., K-2): Ein verschobener Strich bleibt auf Hundertsteln (0,1 + 0,2 ist im
+// Gleitkomma nicht 0,3) und kommt nach Schreiben und Lesen gleich zurück.
+func TestFreihandVerschobenRundlauf(t *testing.T) {
+	d := beispielDok(t, 64, 64)
+	f := document.NeuerFreihand([]document.Punkt{document.Pt(0.1, 0.1), document.Pt(10.7, 20.3), document.Pt(30.1, 5.6)},
+		document.Strich{Farbe: color.NRGBA{R: 255, A: 255}, Breite: 2})
+	f = f.Verschoben(document.Pt(0.2, 0.2))
+	for _, p := range f.Punkte() {
+		if p.X != math.Round(p.X*100)/100 || p.Y != math.Round(p.Y*100)/100 {
+			t.Errorf("Punkt %v nicht auf Hundertsteln", p)
+		}
+	}
+	fuege(t, d, f)
+	q, err := LeseObjekte(bytes.NewReader(AngabenSVG(d)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !document.Gleich(q.Objekte()[0], d.Objekte()[0]) {
+		t.Errorf("nach Schreiben und Lesen: %v, Soll %v", q.Objekte()[0].(document.Freihand).Punkte(), f.Punkte())
+	}
+}

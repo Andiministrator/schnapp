@@ -281,6 +281,9 @@ func (d *Dokument) Ersetzen(neu Objekt) error {
 	if err := neu.pruefe(); err != nil {
 		return err
 	}
+	if err := d.pruefeFreihandStatt([]Objekt{d.objekte[i]}, []Objekt{neu}); err != nil {
+		return err
+	}
 	d.fuehreAus(ersetzen{d.objekte[i], neu})
 	return nil
 }
@@ -348,6 +351,9 @@ func (d *Dokument) ZugSetze(o Objekt) error {
 		return fmt.Errorf("document: Zug gilt Objekt %d, nicht %d", d.zug.id, o.Kennung())
 	}
 	if err := o.pruefe(); err != nil {
+		return err
+	}
+	if err := d.pruefeFreihandStatt([]Objekt{d.objekte[d.index(d.zug.id)]}, []Objekt{o}); err != nil {
 		return err
 	}
 	d.objekte[d.index(d.zug.id)] = o
