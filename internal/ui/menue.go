@@ -305,6 +305,10 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 		return func(layout.Context) { e.speichernJetzt() }
 	case aktOeffnen:
 		return func(layout.Context) { e.oeffnenStarten() }
+	case aktSpeichernUnter:
+		return func(layout.Context) { e.speichernUnterStarten() }
+	case aktNeueAufnahme:
+		return func(layout.Context) { e.neueAufnahme() }
 	case aktRueckgaengig:
 		return func(layout.Context) { e.rueckgaengig() }
 	case aktWiederholen:

@@ -266,7 +266,7 @@ func (e *editor) wechselAbholen() bool {
 			e.bibliothekNeuLesen()
 		}
 	case e.s.Geaendert() || e.s.SpeichernLaeuft() || e.erzwungen || e.s.SignalVorgemerkt() ||
-		e.exportOffen || e.s.TextLaeuft() || e.s.Zieht():
+		e.exportOffen || e.unter.offen || e.s.TextLaeuft() || e.s.Zieht():
 		// Während des Ladens bearbeitet, gespeichert oder zum Schließen freigegeben, oder ein Export-Dialog, eine
 		// Texteingabe oder ein Zug ist offen (an der Ruhe vorbei, F-652, F-653): die offene Aufnahme nicht verlassen.
 		// Die geladene gibt ihre Rettungskopie frei.

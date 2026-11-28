@@ -1,0 +1,37 @@
+# Sichtprobe ADR-0046 (Karte #341): Menü Datei mit „Neue Aufnahme“ und „Speichern unter …“, Übersicht F1, Strg+N.
+# Aufruf: scripts/probe.sh --sprache de --ende 30 --drehbuch scripts/drehbuecher/speichern-unter-341.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 1200 --hoehe 800
+# Erwartet:
+#  01 Menü Datei offen: „Öffnen …“ (Strg+O), „Neue Aufnahme“ (Strg+N), „Neu aus Zwischenablage“ (Strg+Umschalt+V) │
+#     „Speichern“ (Strg+S), „Speichern unter …“ (Strg+Umschalt+S) │ „Exportieren …“, „Bild kopieren“ │ „Einstellungen …“,
+#     „Bibliothek“ │ „Schließen“.
+#  02 Strg+Umschalt+S im virtuellen KWin (kein Portal): Fußzeile „Kein Dateidialog verfügbar (Desktop-Portal fehlt).“
+#     Die Antwort „kein Portal“ braucht im virtuellen KWin rund 3 s (D-Bus sucht die Schnittstelle).
+#  03 Übersicht F1: Zeilen „Öffnen / neue Aufnahme“ (Strg+O / Strg+N) und „Speichern / speichern unter“
+#     (Strg+S/Umschalt+S o. ä.); alle Zeilen ohne Rollbalken im Fenster 1200 × 800.
+#  04 Strg+N: Fußzeile „Neue Aufnahme startet …“. Ein zweiter Schnapp-Prozess nimmt auf (im Probe-Build wählt das
+#     Overlay sofort den ersten Monitor), legt in der Bibliothek ab und öffnet ein eigenes Editorfenster.
+#  05 Das neue Fenster: Titel mit Datum und Uhrzeit, im Bild das erste Editorfenster samt Fußzeile „Neue Aufnahme
+#     startet …“. Legt eine Aufnahme in tmp/probe/home ab.
+warte 800
+taste F10
+warte 300
+taste Runter
+warte 400
+foto 01-menue-datei
+taste Escape
+warte 200
+taste Escape
+warte 200
+taste Strg+Umschalt+S
+warte 3500
+foto 02-speichern-unter-ohne-portal
+taste F1
+warte 500
+foto 03-uebersicht
+taste Escape
+warte 300
+taste Strg+N
+warte 300
+foto 04-neue-aufnahme-startet
+warte 4000
+foto 05-neues-fenster

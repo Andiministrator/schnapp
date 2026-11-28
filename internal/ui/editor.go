@@ -256,6 +256,8 @@ type editor struct {
 	// Dialog Öffnen (Karte #326): wie der Export, eigene Antwort; nur die Ereignisschleife liest und setzt es.
 	oeffnenOffen   bool
 	oeffnenAntwort chan exportErgebnis
+	// Speichern unter (ADR-0046): Dialog und Schreiben in Goroutinen, Antworten in die Ereignisschleife.
+	unter unterZustand
 
 	// perform setzt eine Fensteraktion ab; nil heißt e.w.Perform. Naht für Tests ohne Fenster (F-299).
 	perform func(system.Action)
@@ -564,6 +566,9 @@ func (e *editor) nachEreignis() {
 	if e.oeffnenAbholen() {
 		e.wecker.Anfordern()
 	}
+	if e.speichernUnterAbholen() {
+		e.wecker.Anfordern()
+	}
 	if e.exportAbholen() {
 		e.wecker.Anfordern()
 	}
@@ -657,6 +662,7 @@ func (e *editor) zerstoert(fensterErr error) error {
 		}
 	}
 	e.kopierenAbwarten()
+	e.speichernUnterAbwarten(wechselFrist)   // eine laufende Kopie (Speichern unter) schreibt zu Ende (ADR-0046 Punkt 6)
 	e.einfuegenAbwarten(wechselFrist)        // ein laufendes „New from clipboard“ legt zu Ende ab (F-988)
 	e.bibliothekArbeitAbwarten(wechselFrist) // Schlagworte/Papierkorb der Ansicht schreiben zu Ende (F-708)
 	e.s.TextBestaetigen()                    // getippter Text geht nicht verloren (ADR-0021 Punkt 6)
@@ -1265,7 +1271,7 @@ type exportErgebnis struct {
 // Antwort kommt erst nach der Wahl des Nutzers; sie weckt das Fenster, geschrieben wird in der Ereignisschleife
 // (exportAbholen), wie bei der Signalwache (F-77). Nur ein Dialog zugleich.
 func (e *editor) exportStarten() {
-	if e.exportOffen || e.s.Zieht() || e.wechsel.laedt { // während des Ladens einer anderen Aufnahme nicht (F-652)
+	if e.exportOffen || e.unter.offen || e.s.Zieht() || e.wechsel.laedt { // während des Ladens einer anderen Aufnahme nicht (F-652)
 		return
 	}
 	e.exportOffen = true
@@ -1524,6 +1530,7 @@ func (e *editor) frame(gtx layout.Context) {
 	// Ereignis sie annimmt (F-231).
 	_ = e.exportAbholen()
 	_ = e.oeffnenAbholen()
+	_ = e.speichernUnterAbholen()
 	_ = e.speichernAbholen() // ebenso die Antwort des Speicherns und des Kopierens (ADR-0020 Nachtrag 6)
 	_ = e.wechselAbholen()   // und des Wechsels der Aufnahme und des Index der Leiste (ADR-0036)
 	_ = e.leisteIndexAbholen()

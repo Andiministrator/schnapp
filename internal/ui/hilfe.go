@@ -98,6 +98,9 @@ var hilfePaare = map[aktion]hilfePaar{
 	aktAusschneiden: {aktKopieren, func() string { return i18n.T("Cut / copy") }},
 	aktEinfuegen:    {aktNeuAusZwischenablage, func() string { return i18n.T("Paste / new from clipboard") }},
 	aktEinpassen:    {aktEins, func() string { return i18n.T("Fit / 1:1") }},
+	// Menü Datei (ADR-0046 Punkt 8): zwei Einträge mehr, zwei Paare.
+	aktOeffnen:   {aktNeueAufnahme, func() string { return i18n.T("Open / new capture") }},
+	aktSpeichern: {aktSpeichernUnter, func() string { return i18n.T("Save / save as") }},
 }
 
 // hilfePaarZweite sind die zweiten Handlungen der Paare.

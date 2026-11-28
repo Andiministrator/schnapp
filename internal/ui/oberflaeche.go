@@ -107,11 +107,14 @@ func (e *editor) menueEintraegeRoh(i int) []menueEintrag {
 	switch i {
 	case menueDatei:
 		return []menueEintrag{
-			{akt: aktOeffnen, text: i18n.T("Open…"), an: e.oeffnenGrau() == "" && !e.oeffnenOffen && !e.exportOffen, erklaerung: e.oeffnenGrau()},
+			{akt: aktOeffnen, text: i18n.T("Open…"), an: e.oeffnenGrau() == "" && !e.oeffnenOffen && !e.exportOffen && !e.unter.offen,
+				erklaerung: e.oeffnenGrau()},
+			{akt: aktNeueAufnahme, text: i18n.T("New capture"), an: neueAufnahmeGrau() == "", erklaerung: neueAufnahmeGrau()},
 			{akt: aktNeuAusZwischenablage, text: i18n.T("New from clipboard"), an: e.neuGrau() == "" && !e.einf.laeuft,
 				erklaerung: e.neuGrau()},
 			{akt: aktSpeichern, text: i18n.T("Save"), an: true, gruppe: true},
-			{akt: aktExport, text: i18n.T("Export…"), an: !e.exportOffen, gruppe: true},
+			{akt: aktSpeichernUnter, text: i18n.T("Save As…"), an: !e.unter.offen && !e.unter.laeuft && !e.exportOffen && !e.oeffnenOffen},
+			{akt: aktExport, text: i18n.T("Export…"), an: !e.exportOffen && !e.unter.offen, gruppe: true},
 			{akt: aktBildKopieren, text: i18n.T("Copy image"), an: true},
 			{akt: aktEinstellungen, text: i18n.T("Settings…"), an: true, gruppe: true},
 			{akt: aktBibliothek, text: i18n.T("Library"), aktiv: e.bibl.offen, an: e.unten.l != nil,

@@ -2215,3 +2215,57 @@ msgstr "In die Zwischenablage kopiert; die Objekte sind noch da. Strg+X erneut d
 
 msgid "The image from the clipboard is being saved as a new capture."
 msgstr "Das Bild aus der Zwischenablage wird gerade als neue Aufnahme gespeichert."
+
+msgid "Save As…"
+msgstr "Speichern unter …"
+
+msgid "Save As"
+msgstr "Speichern unter"
+
+msgid "New capture"
+msgstr "Neue Aufnahme"
+
+msgid "Open / new capture"
+msgstr "Öffnen / neue Aufnahme"
+
+msgid "Save / save as"
+msgstr "Speichern / speichern unter"
+
+msgid "Schnapp image"
+msgstr "Schnapp-Bild"
+
+msgid "Could not save: only local files can be written."
+msgstr "Speichern nicht möglich: Es lassen sich nur lokale Dateien schreiben."
+
+msgid "This is the open capture itself. Save it with Ctrl+S."
+msgstr "Das ist die offene Aufnahme selbst. Speichern mit Strg+S."
+
+msgid "Could not save: finish the current action first."
+msgstr "Speichern nicht möglich: Erst die laufende Aktion beenden."
+
+msgid "Saving a copy…"
+msgstr "Kopie wird gespeichert …"
+
+msgid "Could not save a copy: %v"
+msgstr "Kopie nicht gespeichert: %v"
+
+msgid "Saved a copy as %s. This window keeps editing the capture in the library."
+msgstr "Kopie als %s gespeichert. Dieses Fenster bearbeitet weiter die Aufnahme in der Bibliothek."
+
+msgid "The copy contains the whole original; to share only the visible image, use Export."
+msgstr "Die Kopie enthält das ganze Original; wer nur das sichtbare Bild weitergeben will, nimmt Exportieren."
+
+msgid "It has too many or too large annotations to be opened again."
+msgstr "Sie hat zu viele oder zu große Beschriftungen, um wieder geöffnet zu werden."
+
+msgid "Saving a copy was not finished when the window closed; the copy may be missing."
+msgstr "Die Kopie war beim Schließen des Fensters nicht fertig gespeichert; sie fehlt womöglich."
+
+msgid "Not available: this window was started on an inherited Wayland connection."
+msgstr "Nicht verfügbar: Dieses Fenster läuft über eine geerbte Wayland-Verbindung."
+
+msgid "Could not start a new capture."
+msgstr "Neue Aufnahme ließ sich nicht starten."
+
+msgid "Starting a new capture…"
+msgstr "Neue Aufnahme startet …"

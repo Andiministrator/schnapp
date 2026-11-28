@@ -1,0 +1,158 @@
+[
+  {
+    "name": "SU1 Strg+Umschalt+S fehlt",
+    "datei": "internal/ui/kuerzel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t{filter: key.Filter{Name: \"S\", Required: key.ModShortcut | key.ModShift}, akt: aktSpeichernUnter},\n",
+    "neu": ""
+  },
+  {
+    "name": "SU2 Endung nicht angehängt",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tpfad, angehaengt = pfad+arbeitsdateiEndung, true",
+    "neu": "\t\tangehaengt = false"
+  },
+  {
+    "name": "SU3 angehängte Endung ersetzt still",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\tif err := export.PruefeAngehaengt(pfad, angehaengt); err != nil {",
+    "neu": "\tif err := export.PruefeAngehaengt(pfad, false); err != nil {",
+    "aequivalent": true,
+    "grund": "Doppelte Sicherung: Ohne die Vorprüfung schreibt export.SchreibeOhneErsetzen bei angehängter Endung und lehnt das vorhandene Ziel selbst ab (ErrZielVorhanden, gleiche Meldung, Datei unverändert); die Vorprüfung spart nur das Rendern."
+  },
+  {
+    "name": "SU4 offene Aufnahme wird überschrieben",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\tif gleicheDatei(quelle, pfad) || selbeDatei(quelle, pfad) {",
+    "neu": "\tif false {"
+  },
+  {
+    "name": "SU5 harter Verweis nicht erkannt",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn err == nil && os.SameFile(sa, sb)",
+    "neu": "\treturn false && err == nil && os.SameFile(sa, sb)"
+  },
+  {
+    "name": "SU6 Abbruch meldet Fehler",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase errors.Is(r.err, portal.ErrAbgebrochen), errors.Is(r.err, context.Canceled):\n\t\treturn\n\tcase errors.Is(r.err, portal.ErrKeinPortal):\n\t\tdiagnoseEditor(\"Speichern unter",
+    "neu": "\tcase errors.Is(r.err, portal.ErrKeinPortal):\n\t\tdiagnoseEditor(\"Speichern unter"
+  },
+  {
+    "name": "SU7 entfernte Adresse geschrieben",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\tpfad, err := portal.URIZuPfad(r.ergebnis.URI)\n\tif err != nil {",
+    "neu": "\tpfad, err := portal.URIZuPfad(r.ergebnis.URI)\n\tif err != nil && false {"
+  },
+  {
+    "name": "SU8 Metadaten der Quelle fehlen",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif g, err := fileformat.LeseMetadaten(f); err == nil && !g.Fremd {",
+    "neu": "\t\t\tif g, err := fileformat.LeseMetadaten(f); false && err == nil && !g.Fremd {"
+  },
+  {
+    "name": "SU9 nicht bearbeitet",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\tm.Bearbeitet = true\n",
+    "neu": "\tm.Bearbeitet = false\n"
+  },
+  {
+    "name": "SU10 kein Hinweis bei Zuschnitt",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn len(d.Streifen()) > 0 || d.Zuschnitt() != d.OriginalBild().Rect",
+    "neu": "\treturn len(d.Streifen()) > 0"
+  },
+  {
+    "name": "SU11 Hinweis immer",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\tif r.ganz {\n",
+    "neu": "\tif true {\n"
+  },
+  {
+    "name": "SU12 Schreibfehler still",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\tif r.err != nil {\n\t\te.meldeNebenbei(fmt.Sprintf(i18n.T(\"Could not save a copy: %v\")",
+    "neu": "\tif false {\n\t\te.meldeNebenbei(fmt.Sprintf(i18n.T(\"Could not save a copy: %v\")"
+  },
+  {
+    "name": "SU13 zweites Speichern unter während des Schreibens",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.unter.offen || e.unter.laeuft || e.exportOffen",
+    "neu": "\tif e.unter.offen || e.exportOffen"
+  },
+  {
+    "name": "SU14 Schließen wartet nicht",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.unter.laeuft {\n\t\treturn\n\t}\n\tt := time.NewTimer(frist)",
+    "neu": "\tif true {\n\t\treturn\n\t}\n\tt := time.NewTimer(frist)"
+  },
+  {
+    "name": "SU15 Kopie aus dem Live-Dokument statt Abzug",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tch <- schreibeKopie(abzug, quelle, pfad, angehaengt)",
+    "neu": "\t\t_ = abzug\n\t\tch <- schreibeKopie(e.s.D, quelle, pfad, angehaengt)"
+  },
+  {
+    "name": "SU16 bei offener Ansicht grau",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase aktSpeichern, aktSpeichernUnter, aktNeueAufnahme, aktEinstellungen,",
+    "neu": "\tcase aktSpeichern, aktEinstellungen,"
+  },
+  {
+    "name": "NA1 Strg+N fehlt",
+    "datei": "internal/ui/kuerzel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tstrg(\"N\", aktNeueAufnahme), // N allein ist das Werkzeug Schritt-Nummer (ADR-0046 Punkt 8)\n",
+    "neu": ""
+  },
+  {
+    "name": "NA2 Start nicht aufgerufen",
+    "datei": "internal/ui/neueaufnahme.go",
+    "paket": "./internal/ui",
+    "alt": "\t\terr = neueAufnahmeStart(programm)",
+    "neu": "\t\t_ = programm"
+  },
+  {
+    "name": "NA3 Startfehler still",
+    "datei": "internal/ui/neueaufnahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif err != nil {\n\t\tdiagnoseEditor(\"Neue Aufnahme: %v\", err)",
+    "neu": "\tif false {\n\t\tdiagnoseEditor(\"Neue Aufnahme: %v\", err)"
+  },
+  {
+    "name": "NA4 geerbter Socket nicht grau",
+    "datei": "internal/ui/neueaufnahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif wlclip.HalterMoeglich(os.Getenv) != nil {",
+    "neu": "\tif false && wlclip.HalterMoeglich(os.Getenv) != nil {"
+  },
+  {
+    "name": "NA5 Menüeintrag fehlt",
+    "datei": "internal/ui/oberflaeche.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t{akt: aktNeueAufnahme, text: i18n.T(\"New capture\"), an: neueAufnahmeGrau() == \"\", erklaerung: neueAufnahmeGrau()},\n",
+    "neu": ""
+  },
+  {
+    "name": "SU17 Wechsel trotz offenem Dialog",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.exportOffen || e.unter.offen || e.s.TextLaeuft() || e.s.Zieht():",
+    "neu": "\t\te.exportOffen || e.s.TextLaeuft() || e.s.Zieht():"
+  }
+]

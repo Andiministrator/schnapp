@@ -253,3 +253,14 @@ Andi (25.11.2026): „es gibt im menu keinen punkt, um eine datei zu öffnen und
 
 Tests `internal/ui/oeffnen_test.go`, `internal/portal/portal_test.go` (`TestOeffnenRuftOpenFile`), Mutanten
 `scripts/mutanten/oeffnen.json` (OF1–OF7). Den echten Dialog prüft Andi im Echtlauf (der virtuelle KWin hat kein Portal).
+
+## Nachtrag 12 (28.11.2026): „Save As…“ (Strg+Umschalt+S) und „New capture“ (Strg+N) im Menü Datei (ADR-0046, Karte #341)
+
+**Status:** Akzeptiert (Claude Opus 5.5).
+
+- Menü Datei: Open…, **New capture**, New from clipboard │ Save, **Save As…** │ Export…, Copy image │ Settings…, Library
+  │ Close. Beide Kürzel waren frei (N allein bleibt das Werkzeug Schritt-Nummer).
+- Was die Einträge tun, steht in ADR-0046: Speichern unter schreibt eine Kopie als Arbeitsdatei, das Fenster bleibt bei
+  der Aufnahme in der Bibliothek; Neue Aufnahme startet einen eigenen Prozess mit eigenem Fenster.
+- Beide wirken auch bei offener Bibliotheksansicht (`bibliothekErlaubt`). Die Übersicht F1 fasst sie mit Speichern bzw.
+  Öffnen auf je eine Zeile (`hilfePaare`).

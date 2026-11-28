@@ -86,6 +86,10 @@ const (
 	aktEinfuegen
 	aktBildKopieren
 	aktNeuAusZwischenablage
+	// Menü Datei (ADR-0046): „Save As…“ (Strg+Umschalt+S) schreibt eine Kopie als Arbeitsdatei, „New capture“ (Strg+N)
+	// startet eine Aufnahme in einem eigenen Prozess.
+	aktSpeichernUnter
+	aktNeueAufnahme
 )
 
 // taste ist ein Tastenkürzel des Editors. Genau eines gilt: akt (Handlung), werkzeug (wählt ein Werkzeug, hatWerkzeug)
@@ -137,8 +141,10 @@ func tastenTabelle() []taste {
 		{filter: key.Filter{Name: "Z", Required: key.ModShortcut | key.ModShift}, akt: aktWiederholen},
 		strg("Y", aktWiederholen),
 		strg("S", aktSpeichern),
+		{filter: key.Filter{Name: "S", Required: key.ModShortcut | key.ModShift}, akt: aktSpeichernUnter},
 		strg("O", aktOeffnen),
-		strg("C", aktKopieren), // mit Auswahl die Objekte, sonst das Bild (ADR-0045 Punkt 1)
+		strg("N", aktNeueAufnahme), // N allein ist das Werkzeug Schritt-Nummer (ADR-0046 Punkt 8)
+		strg("C", aktKopieren),     // mit Auswahl die Objekte, sonst das Bild (ADR-0045 Punkt 1)
 		{filter: key.Filter{Name: "C", Required: key.ModShortcut | key.ModShift}, akt: aktBildKopieren},
 		strg("X", aktAusschneiden), // X allein ist Stauchen; Strg+X war frei (ADR-0045 Punkt 1)
 		strg("V", aktEinfuegen),    // V allein ist Auswählen; Strg+V war frei

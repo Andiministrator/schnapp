@@ -37,7 +37,7 @@ func (e *editor) oeffnenGrau() string {
 // oeffnenStarten öffnet den Dialog; nur einer zugleich, nicht während eines Zugs, Exports oder Wechsels (das Speichern
 // sperrt erst die Wahl, über wechselAnfrage).
 func (e *editor) oeffnenStarten() {
-	if e.oeffnenGrau() != "" || e.oeffnenOffen || e.exportOffen || e.s.Zieht() || e.wechsel.laedt {
+	if e.oeffnenGrau() != "" || e.oeffnenOffen || e.exportOffen || e.unter.offen || e.s.Zieht() || e.wechsel.laedt {
 		return
 	}
 	e.oeffnenOffen = true

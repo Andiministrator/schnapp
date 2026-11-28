@@ -225,7 +225,8 @@ func TestBibliothekSperrtDasBild(t *testing.T) {
 		t.Errorf("Bearbeiten: %v", akt)
 	}
 	for _, en := range l.e.menueEintraegeVon(menueDatei) {
-		if gilt := en.akt == aktEinstellungen || en.akt == aktSchliessen || en.akt == aktSpeichern || en.akt == aktBibliothek; gilt != en.an {
+		if gilt := en.akt == aktEinstellungen || en.akt == aktSchliessen || en.akt == aktSpeichern || en.akt == aktBibliothek ||
+			en.akt == aktSpeichernUnter || en.akt == aktNeueAufnahme; gilt != en.an { // ADR-0046 Punkte 6 und 7
 			t.Errorf("Datei, %s: an %v", en.text, en.an)
 		}
 	}

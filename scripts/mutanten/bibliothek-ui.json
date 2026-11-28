@@ -460,8 +460,8 @@
     "name": "WS1 Export-Dialog während des Ladens",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "if e.exportOffen || e.s.Zieht() || e.wechsel.laedt {",
-    "neu": "if e.exportOffen || e.s.Zieht() {"
+    "alt": "if e.exportOffen || e.unter.offen || e.s.Zieht() || e.wechsel.laedt {",
+    "neu": "if e.exportOffen || e.unter.offen || e.s.Zieht() {"
   },
   {
     "name": "WS2 Bearbeiten ruht während des Ladens nicht",
@@ -481,22 +481,22 @@
     "name": "WS4 Abholen übersieht den offenen Export-Dialog",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "e.exportOffen || e.s.TextLaeuft() || e.s.Zieht():",
-    "neu": "e.s.TextLaeuft() || e.s.Zieht():"
+    "alt": "e.exportOffen || e.unter.offen || e.s.TextLaeuft() || e.s.Zieht():",
+    "neu": "e.unter.offen || e.s.TextLaeuft() || e.s.Zieht():"
   },
   {
     "name": "WS5 Abholen übersieht eine laufende Texteingabe",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "e.exportOffen || e.s.TextLaeuft() || e.s.Zieht():",
-    "neu": "e.exportOffen || e.s.Zieht():"
+    "alt": "e.exportOffen || e.unter.offen || e.s.TextLaeuft() || e.s.Zieht():",
+    "neu": "e.exportOffen || e.unter.offen || e.s.Zieht():"
   },
   {
     "name": "WS6 Abholen übersieht einen laufenden Zug",
     "datei": "internal/ui/wechsel.go",
     "paket": "./internal/ui",
-    "alt": "e.exportOffen || e.s.TextLaeuft() || e.s.Zieht():",
-    "neu": "e.exportOffen || e.s.TextLaeuft():"
+    "alt": "e.exportOffen || e.unter.offen || e.s.TextLaeuft() || e.s.Zieht():",
+    "neu": "e.exportOffen || e.unter.offen || e.s.TextLaeuft():"
   },
   {
     "name": "WS7 Sitzung sperrt bei Ruhe nicht",

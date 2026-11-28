@@ -1265,7 +1265,7 @@ msgstr ""
 msgid "SVG image"
 msgstr ""
 
-#: internal/ui/editor.go internal/ui/oeffnen.go
+#: internal/ui/editor.go internal/ui/oeffnen.go internal/ui/speichernunter.go
 msgid "No file dialog available (desktop portal missing)."
 msgstr ""
 
@@ -2071,6 +2071,14 @@ msgstr ""
 msgid "Fit / 1:1"
 msgstr ""
 
+#: internal/ui/hilfe.go
+msgid "Open / new capture"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Save / save as"
+msgstr ""
+
 #: internal/ui/hilfe.go internal/ui/oberflaeche.go
 msgid "Keyboard shortcuts"
 msgstr ""
@@ -2322,6 +2330,18 @@ msgstr ""
 msgid "Schnapp %s — screenshots and annotations for Linux. Free software under the GPL 3.0 or later."
 msgstr ""
 
+#: internal/ui/neueaufnahme.go
+msgid "Not available: this window was started on an inherited Wayland connection."
+msgstr ""
+
+#: internal/ui/neueaufnahme.go
+msgid "Could not start a new capture."
+msgstr ""
+
+#: internal/ui/neueaufnahme.go
+msgid "Starting a new capture…"
+msgstr ""
+
 #: internal/ui/oberflaeche.go
 msgid "File"
 msgstr ""
@@ -2351,7 +2371,15 @@ msgid "Open…"
 msgstr ""
 
 #: internal/ui/oberflaeche.go
+msgid "New capture"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
 msgid "New from clipboard"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Save As…"
 msgstr ""
 
 #: internal/ui/oberflaeche.go
@@ -2558,7 +2586,7 @@ msgstr[1] ""
 msgid "Images"
 msgstr ""
 
-#: internal/ui/oeffnen.go
+#: internal/ui/oeffnen.go internal/ui/speichernunter.go
 msgid "Could not show the file dialog."
 msgstr ""
 
@@ -2809,6 +2837,50 @@ msgstr ""
 
 #: internal/ui/seitenleiste.go
 msgid "Color"
+msgstr ""
+
+#: internal/ui/speichernunter.go
+msgid "Save As"
+msgstr ""
+
+#: internal/ui/speichernunter.go
+msgid "Schnapp image"
+msgstr ""
+
+#: internal/ui/speichernunter.go
+msgid "Could not save: only local files can be written."
+msgstr ""
+
+#: internal/ui/speichernunter.go
+msgid "This is the open capture itself. Save it with Ctrl+S."
+msgstr ""
+
+#: internal/ui/speichernunter.go
+msgid "Could not save: finish the current action first."
+msgstr ""
+
+#: internal/ui/speichernunter.go
+msgid "Saving a copy…"
+msgstr ""
+
+#: internal/ui/speichernunter.go
+msgid "Could not save a copy: %v"
+msgstr ""
+
+#: internal/ui/speichernunter.go
+msgid "Saved a copy as %s. This window keeps editing the capture in the library."
+msgstr ""
+
+#: internal/ui/speichernunter.go
+msgid "The copy contains the whole original; to share only the visible image, use Export."
+msgstr ""
+
+#: internal/ui/speichernunter.go
+msgid "It has too many or too large annotations to be opened again."
+msgstr ""
+
+#: internal/ui/speichernunter.go
+msgid "Saving a copy was not finished when the window closed; the copy may be missing."
 msgstr ""
 
 #: internal/ui/spitze.go
