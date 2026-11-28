@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #329 und #333 mit Kritik (F-1029 bis F-1044); davor Karten #341 und #328 mit Kritik, Verify und Doku-QA (F-1007 bis F-1028); davor Karten #335/#393 mit Kritik (F-984 bis F-993); davor Karten #377/#389 und #354/#390 mit Kritik und Verify (F-943 bis F-969); davor Karten #361 und #334 Teil 1 mit Kritik (F-887 bis F-893); davor Karten #313 Teil 2 und #369 mit Sitzungs-QA (F-873 bis F-880); davor #313 Teil 1 und Sitzungs-QA (F-860 bis F-872); davor #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #329 und #333 mit Kritik, Verify und Doku-QA (F-1029 bis F-1050); davor Karten #341 und #328 mit Kritik, Verify und Doku-QA (F-1007 bis F-1028); davor Karten #335/#393 mit Kritik (F-984 bis F-993); davor Karten #377/#389 und #354/#390 mit Kritik und Verify (F-943 bis F-969); davor Karten #361 und #334 Teil 1 mit Kritik (F-887 bis F-893); davor Karten #313 Teil 2 und #369 mit Sitzungs-QA (F-873 bis F-880); davor #313 Teil 1 und Sitzungs-QA (F-860 bis F-872); davor #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 
 ## Textmarker und Freihand (28.11.2026, Karten #329, #333, F-1029 bis F-1044)
@@ -18,6 +18,13 @@ Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #329 und #333 mit
   die gespeicherten Punkte gegen die rohen und die Bytes je Punkt.
 - **Listen aus Dateiwerten erst zählen, dann teilen (F-1035).** `strings.Split`/`Fields` legen das Feld vor jeder
   Prüfung an; eine kleine Datei aus Leerzeichen fordert Gigabytes.
+- **Ein Merker braucht im Schlüssel jeden Aufrufer, der anders zeichnet (F-1046).** Leinwand und Ebenen-Vorschau
+  reichten denselben Strich mit verschiedener Breite hinein und verdrängten sich gegenseitig in jedem Bild; der Test,
+  der nur die Leinwand zeichnete, sah es nicht.
+- **„Gleichwertig“ an einem Mutanten erst nach dem Gegenversuch (F-1047).** FH10 war als doppelter Schutz markiert, war
+  aber genau die Regression des [S]-Fix; der Test hätte ihn getötet, die Probe fuhr ihn nie.
+- **Runden beim Ändern nur am Versatz, nicht an den Daten (F-1048).** Punktweises Runden machte sehr kurze Striche
+  ungültig und Verschieben um 0 zu einer Änderung.
 - **Tests nur bei Zoom 1 decken keine Umrechnung (F-1043).** Wer in Fensterpixeln misst und im Original speichert,
   braucht einen Testfall mit anderem Zoom.
 
