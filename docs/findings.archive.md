@@ -906,6 +906,19 @@ Ausgelagerte Findings aus `docs/findings.md`. Einträge hier sind abgeschlossen 
 | F-992 | [D] | P3 | Sprint 14 | **Doku ADR-0045 nachziehen** (Kritik #335 B-9): format.md §13.1 Abschnittsverweise (5 statt 7/8, Regel 12 Punkt 7), README-Satzbruch bei Strg+C, Haltedauer auch für Objekte, „anderes Fenster nur mit data-control“, Kommentar `kopierBereit`. **Prüfbefehl:** `grep -n 'section 7 and 8' docs/format.md` leer. | behoben 45d2fdb (Karte #393) |
 | F-993 | [V] | P3 | Sprint 14 | **Testlücken ADR-0045** (Kritik #335 B-10): Streifen im Ziel, Halter-Fehler bei lesbarer Zwischenablage, Eingabefeld, Wechsel, Lupe/Gruppe im ui-Rundlauf, JPEG allein. **Prüfbefehl:** Tests vorhanden und grün; Mutanten in `zwischenablage.json` dazu rot. | behoben 45d2fdb (Karte #393) |
 | F-974 | [B] | P3 | Sprint 14 | **Testlücken Mehrfachstil/Gruppen** (Sitzungs-Kritik K-5): Merker im Zug nur über Zeit geprüft, Anker nach Strg-Klick, `geschaltet = nil`, Blättern der Liste. **Prüfbefehl:** Zähltest `TestMerkerImZugEinmal`, Mutanten MS41ff./GR30ff. | behoben 2797543 (Schalter, Anker) und fe75252 (Merker im Zug, Blättern; Karte #392) |
+| F-994 | [S] | P2 | Sprint 14 | **Budget beim Einfügen an der Lage der Quelle geprüft** (Verify V-1): Vorprüfung in der Lese-Goroutine ließ zu teure Objekte durch, die im Ziel mittig landeten. Geprüft wird jetzt an der Ziellage (ADR-0045 Nachtrag 2). Test `TestEinfuegenBudgetAnDerZiellage`. | behoben 01b93b7 (Karte #394) |
+| F-995 | [K] | P3 | Sprint 14 | **Esc während des Ablegens aus der Zwischenablage** (Verify V-2): meldete Abbruch, Aufnahme entstand trotzdem, Schließen wartete nicht. Phase lesen/ablegen/abgebrochen. Test `TestEscWaehrendAblegen`. | behoben 01b93b7 (Karte #394) |
+| F-996 | [K] | P3 | Sprint 14 | **Meldung nach Strg+X nannte falschen Grund** (Verify V-3): „image changed“ auch beim Speichern. Neutraler Text. | behoben 01b93b7 (Karte #394) |
+| F-997 | [V] | P3 | Sprint 14 | **Testlücken Nachtrag 1** (Verify V-4): zerstoert mit laufendem Ablegen, Abbruch vor dem Ablegen, Budget-Weg der Goroutine. Tests und Mutanten U23–U25. | behoben 01b93b7 (Karte #394) |
+| F-998 | [V] | P3 | Sprint 14 | **wlclip-Tests: Goroutine überlebt Test, NimmFD-Fehler ungeprüft** (Verify V-5). | behoben 01b93b7 (Karte #394) |
+| F-999 | [D] | P3 | Sprint 14 | **Kontextmenü in README/CLAUDE.md ohne Ausschneiden/Kopieren/Einfügen** (Doku-QA D-1). | behoben 01b93b7 (Karte #394) |
+| F-1000 | [D] | P3 | Sprint 14 | **„Ausgeblendete Ebenen fehlen in der Zwischenablage“ gilt für die Objekt-Kopie nicht** (Doku-QA D-2): README en/de, Glossar präzisiert. | behoben 01b93b7 (Karte #394) |
+| F-1001 | [D] | P3 | Sprint 14 | **Glossar ohne Begriffe ADR-0045, Halter veraltet** (Doku-QA D-3). | behoben 01b93b7 (Karte #394) |
+| F-1002 | [D] | P3 | Sprint 14 | **ADR-0045 Punkt 6 mit Trennlinie vor Library, die es nicht gibt** (Doku-QA D-4). | behoben 01b93b7 (Karte #394) |
+| F-1003 | [D] | P3 | Sprint 14 | **CLAUDE.md-Kopf nannte ADRs 0001–0044** (Doku-QA D-5). | behoben 01b93b7 (Karte #394) |
+| F-1004 | [D] | P3 | Sprint 14 | **Index und Stand-Zeile der Lehren ohne Abschnitt Zwischenablage** (Doku-QA D-6). | behoben 01b93b7 (Karte #394) |
+| F-1005 | [D] | P3 | Sprint 14 | **Drehbuch zwischenablage-335 zählte eine statt zwei Aufnahmen** (Doku-QA D-7). | behoben 01b93b7 (Karte #394) |
+| F-1006 | [D] | P3 | Sprint 14 | **Kommentar in wlclip.lies versprach sofortigen Abbruch** (Doku-QA D-8): ctx jetzt vor jedem Schritt geprüft, Kommentar berichtigt. | behoben 01b93b7 (Karte #394) |
 
 ## Archiviert (aus Sektion "Behoben / Akzeptiert")
 
