@@ -1,0 +1,193 @@
+[
+  {
+    "name": "FH1 Gleich vergleicht die Adresse",
+    "datei": "internal/document/objekte.go",
+    "paket": "./internal/document",
+    "alt": "\tif fa, ok := a.(Freihand); ok { // Punkte dem Wert nach",
+    "neu": "\tif fa, ok := a.(Freihand); ok && false { // Punkte dem Wert nach"
+  },
+  {
+    "name": "FH2 ein Punkt reicht",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/document",
+    "alt": "\tif len(pts) < 2 || len(pts) > MaxFreihandPunkte {",
+    "neu": "\tif len(pts) < 1 || len(pts) > MaxFreihandPunkte {"
+  },
+  {
+    "name": "FH3 Vereinfachen ohne Toleranz",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif wo >= 0 && weit > tol {",
+    "neu": "\t\tif wo >= 0 && weit > 0 {"
+  },
+  {
+    "name": "FH4 Glätten halbiert",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/document",
+    "alt": "\t\t\tq := a.Mal(0.75).Plus(b.Mal(0.25))",
+    "neu": "\t\t\tq := a.Mal(0.5).Plus(b.Mal(0.5))"
+  },
+  {
+    "name": "FH5 Ausdünnen verliert das Ende",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/document",
+    "alt": "\t\tr[i] = pts[i*(len(pts)-1)/(max-1)]",
+    "neu": "\t\tr[i] = pts[i*(len(pts)-1)/max]"
+  },
+  {
+    "name": "FH6 Renderer zeichnet Freihand nicht",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\tz.strichJeStueckMit(sz.ls, v.Strich, sz.Suche)\n\t\t}\n\tcase document.Kasten:",
+    "neu": "\t\t}\n\tcase document.Kasten:"
+  },
+  {
+    "name": "FH7 Editor zeichnet Freihand nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tfuelleTeile(gtx, sz.Teile, v.Strich.Farbe, abb)\n\t\t\t})\n\t\t}\n\tcase document.Pfeil:",
+    "neu": "\t\t\t})\n\t\t}\n\tcase document.Pfeil:"
+  },
+  {
+    "name": "FH8 Version ohne Freihand",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\tif _, ok := o.(document.Freihand); ok {\n\t\t\treturn versionFreihand",
+    "neu": "\t\tif _, ok := o.(document.Freihand); ok && false {\n\t\t\treturn versionFreihand"
+  },
+  {
+    "name": "FH9 Freihand in Version 2 gelesen",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\t\t\tif l.a[\"typ\"] == \"freihand\" && version < versionFreihand {",
+    "neu": "\t\t\t\tif l.a[\"typ\"] == \"freihand\" && false {"
+  },
+  {
+    "name": "FH10 Punktgrenze nicht geprüft",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\tif len(teile) < 2 || len(teile) > document.MaxFreihandPunkte {",
+    "neu": "\tif len(teile) < 2 {",
+    "aequivalent": true,
+    "grund": "doppelter Schutz: document.Freihand.pruefe lehnt mehr als MaxFreihandPunkte beim Einlesen ebenso ab (beschädigt); die Grenze im Leser spart nur das Anlegen des Felds, maxSVG begrenzt dessen Größe"
+  },
+  {
+    "name": "FH11 Umschalt nicht gerade",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase s.Umschalt:\n\t\tpts = []document.Punkt{a, b}",
+    "neu": "\tcase false:\n\t\tpts = []document.Punkt{a, b}"
+  },
+  {
+    "name": "FH12 Loslassen glättet nicht",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\t\t_ = s.D.ZugSetze(v.MitPunkten(pts))",
+    "neu": "\t\t\t\t_ = pts"
+  },
+  {
+    "name": "FH13 kurzer Zug bleibt",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tgross = v.Laenge() >= min",
+    "neu": "\t\tgross = true"
+  },
+  {
+    "name": "FH14 freier Textmarker ohne Mischung",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif mult {\n\t\tf.Mischung = document.MischMultiplizieren",
+    "neu": "\tif false {\n\t\tf.Mischung = document.MischMultiplizieren"
+  },
+  {
+    "name": "FH15 Textmarker ignoriert Freihand",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif s.Stil.Freihand { // freier Textmarker",
+    "neu": "\t\tif false { // freier Textmarker"
+  },
+  {
+    "name": "FH16 freier Textmarker als Freihand erkannt",
+    "datei": "internal/canvas/seitenleiste.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif v.Multipliziert() { // freier Textmarker (ADR-0049 Punkt 5)",
+    "neu": "\t\tif false { // freier Textmarker (ADR-0049 Punkt 5)"
+  },
+  {
+    "name": "FH17 Treffer ohne Freihand",
+    "datei": "internal/canvas/objekte.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\tif abstandZurStrecke(p, pts[i-1], pts[i]) <= hw+tol {\n\t\t\t\treturn true",
+    "neu": "\t\t\tif abstandZurStrecke(p, pts[i-1], pts[i]) < -hw {\n\t\t\t\treturn true"
+  },
+  {
+    "name": "FH18 Verschiebe ohne Freihand",
+    "datei": "internal/canvas/objekte.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\treturn v.Verschoben(d)",
+    "neu": "\t\treturn v"
+  },
+  {
+    "name": "FH19 Breite ohne Freihand",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase document.Freihand:\n\t\tv.Strich.Breite = b\n\t\treturn v",
+    "neu": "\tcase document.Freihand:\n\t\treturn v"
+  },
+  {
+    "name": "FH20 tools.ini ohne freehand",
+    "datei": "internal/settings/werkzeugstile.go",
+    "paket": "./internal/settings",
+    "alt": "\t\treturn []string{\"color\", \"width\", \"line_style\", \"freehand\", \"shadow_on\", \"shadow\"}",
+    "neu": "\t\treturn []string{\"color\", \"width\", \"line_style\", \"shadow_on\", \"shadow\"}"
+  },
+  {
+    "name": "FH21 Werkzeugstil übernimmt freehand nicht",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\tst.Freihand = e.Freihand",
+    "neu": "\t\t\t_ = e.Freihand"
+  },
+  {
+    "name": "FH22 annotate: highlight mit points ohne Mischung",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\t\tif e.Type == \"highlight\" {\n\t\t\t\tfh.Mischung = document.MischMultiplizieren",
+    "neu": "\t\t\tif false {\n\t\t\t\tfh.Mischung = document.MischMultiplizieren"
+  },
+  {
+    "name": "FH23 annotate: highlight mit beidem",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\t\tif pts == (von || bis) || (!pts && !(von && bis)) {",
+    "neu": "\t\t\tif !pts && !(von && bis) {"
+  },
+  {
+    "name": "FH24 Taste F fehlt",
+    "datei": "internal/ui/kuerzel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\twz(\"F\", canvas.WerkzeugFreihand),",
+    "neu": "\t\twz(\"J\", canvas.WerkzeugFreihand),"
+  },
+  {
+    "name": "FH25 Kästchen fehlt",
+    "datei": "internal/canvas/seitenleiste.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tFreihand: s.Werkzeug == WerkzeugTextmarker}",
+    "neu": "\t\tFreihand: false}"
+  },
+  {
+    "name": "FH26 Kästchen bei jedem Werkzeug",
+    "datei": "internal/canvas/seitenleiste.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tFreihand: s.Werkzeug == WerkzeugTextmarker}",
+    "neu": "\t\tFreihand: true}"
+  },
+  {
+    "name": "FH27 Endpunkt nicht im Zug",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif letzter := pts[len(pts)-1]; b != letzter {",
+    "neu": "\t\tif letzter := pts[len(pts)-1]; false && b != letzter {"
+  }
+]

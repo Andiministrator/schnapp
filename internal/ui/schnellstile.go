@@ -449,6 +449,13 @@ func (e *editor) zeichneMini(gtx layout.Context, st canvas.Schnellstil, r image.
 			flaeche(a, b, st.Fuellung)
 		}
 		rahmen(a, b, st.Farbe, w)
+	case canvas.SchnellFreihand: // ADR-0049 Punkt 4: geschwungene Linie
+		var p clip.Path
+		p.Begin(gtx.Ops)
+		p.MoveTo(pt(7, 28))
+		p.CubeTo(pt(12, 6), pt(20, 34), pt(26, 14))
+		p.QuadTo(pt(30, 6), pt(33, 12))
+		paint.FillShape(gtx.Ops, st.Farbe, clip.Stroke{Path: p.End(), Width: w}.Op())
 	case canvas.SchnellTextmarker: // ADR-0048 Punkt 6: zwei dunkle „Zeilen“, darüber der Strich multiplizierend
 		flaeche(pt(8, 13), pt(32, 16), color.NRGBA{R: 0x20, G: 0x20, B: 0x20, A: 0xFF})
 		flaeche(pt(8, 24), pt(26, 27), color.NRGBA{R: 0x20, G: 0x20, B: 0x20, A: 0xFF})

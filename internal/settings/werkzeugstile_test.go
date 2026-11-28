@@ -28,7 +28,9 @@ func TestWerkzeugStileHinUndZurueck(t *testing.T) {
 		{Stil: Stil{Art: ArtEllipse, Farbe: color.NRGBA{G: 7, A: 255}, Fuellung: color.NRGBA{B: 9, A: 50}, Breite: 5},
 			Strichart: document.StrichGepunktet}, // ADR-0047 Punkt 4
 		{Stil: Stil{Art: ArtTextmarker, Farbe: color.NRGBA{R: 255, G: 230, B: 40, A: 255}, Breite: 24},
-			Strichart: document.StrichGestrichelt}, // ADR-0048 Punkt 5
+			Strichart: document.StrichGestrichelt, Freihand: true}, // ADR-0048 Punkt 5, ADR-0049 Punkt 5
+		{Stil: Stil{Art: ArtFreihand, Farbe: color.NRGBA{B: 90, A: 255}, Breite: 4},
+			Strichart: document.StrichGepunktet}, // ADR-0049 Punkt 4
 	}
 	pfad := filepath.Join(t.TempDir(), "konfig", "tools.ini")
 	if err := SchreibeWerkzeugStileDatei(pfad, rein); err != nil {
@@ -49,7 +51,7 @@ func TestWerkzeugStileHinUndZurueck(t *testing.T) {
 			(r.Art == ArtPfeil && r.KopfAnfang != rein[i].KopfAnfang) ||
 			r.Eckradius != rein[i].Eckradius || r.Schriftgrad != rein[i].Schriftgrad || r.Schrift != rein[i].Schrift ||
 			r.Fett != rein[i].Fett || r.Durchgestr != rein[i].Durchgestr || r.Ausrichtung != rein[i].Ausrichtung ||
-			r.Radius != rein[i].Radius || r.Fuellung != rein[i].Fuellung {
+			r.Radius != rein[i].Radius || r.Fuellung != rein[i].Fuellung || r.Freihand != rein[i].Freihand {
 			t.Errorf("[%s] gelesen %+v, geschrieben %+v", rein[i].Art, r, rein[i])
 		}
 		if r.Art != ArtPfeil && r.KopfAnfang != document.KopfKeine { // ohne Spitzen: keine am Anfang

@@ -85,13 +85,14 @@ type Sitzung struct {
 	startObj   document.Objekt // Objekt beim Drücken (ZieheGriff/Verschiebe wirken immer darauf)
 	startAbb   Abbildung
 	bewegt     bool
-	neuArt     Werkzeug  // Werkzeug beim Beginn eines zugNeu
-	neuID      int       // Kennung des neuen Objekts im Zug, 0 = noch nicht angelegt (unter der Ziehschwelle)
-	textID     int       // Kennung des Texts in der Eingabe
-	textNeu    bool      // die Eingabe gilt einem neuen Text (Abbrechen entfernt ihn)
-	pan        bool      // mittlere Taste verschiebt die Ansicht, während die Texteingabe weiterläuft (F-154)
-	leertaste  bool      // Leertaste gehalten: ein Druck verschiebt die Ansicht (ADR-0039 Nachtrag 1, SetzeLeertaste)
-	lupenTeil  LupenTeil // beim Verschieben einer Lupe: Quelle, Ziel oder beide (ADR-0033 Punkt 8)
+	neuArt     Werkzeug         // Werkzeug beim Beginn eines zugNeu
+	neuID      int              // Kennung des neuen Objekts im Zug, 0 = noch nicht angelegt (unter der Ziehschwelle)
+	freiRoh    []document.Punkt // rohe Punkte eines Freihand-Zugs (Original, ADR-0049 Punkt 3)
+	textID     int              // Kennung des Texts in der Eingabe
+	textNeu    bool             // die Eingabe gilt einem neuen Text (Abbrechen entfernt ihn)
+	pan        bool             // mittlere Taste verschiebt die Ansicht, während die Texteingabe weiterläuft (F-154)
+	leertaste  bool             // Leertaste gehalten: ein Druck verschiebt die Ansicht (ADR-0039 Nachtrag 1, SetzeLeertaste)
+	lupenTeil  LupenTeil        // beim Verschieben einer Lupe: Quelle, Ziel oder beide (ADR-0033 Punkt 8)
 	abgelehnt  Ablehnung
 
 	// Farbwahl (ADR-0021 Nachtrag 9, farbwahl.go)

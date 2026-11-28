@@ -1,7 +1,7 @@
 # Sichtprobe ADR-0031 Schritt (a) (Karte #187): Menüzeile, Werkzeugleiste links, Fußzeile.
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/oberflaeche-187.txt --bild scripts/drehbuecher/testbild-1200x800.png
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen. Bei 1600 × 1000, Skala 1: Menüzeile 30 px hoch,
-# Werkzeugleiste 52 px breit (Knöpfe 40 px ab y = 38, Text seit dem Textmarker, ADR-0048, bei y = 266–306), Fußzeile 30 px.
+# Werkzeugleiste 52 px breit (Knöpfe 40 px ab y = 38, Text seit Textmarker und Freihand, ADR-0048/0049, bei y = 310–350), Fußzeile 30 px.
 warte 800
 # Rechte Leiste einklappen (ADR-0031 Nachtrag 3): Die Koordinaten unten gelten für die Leinwand ohne sie.
 taste Strg+Umschalt+B
@@ -10,10 +10,10 @@ foto 01-start
 zeiger 600 400
 warte 200
 foto 02-zeiger-ueber-bild
-zeiger 26 286
+zeiger 26 330
 warte 300
 foto 03-hinweis-text
-klick 26 286
+klick 26 330
 warte 200
 klick 600 400
 warte 300

@@ -33,6 +33,7 @@ const (
 	SchnellLupe
 	SchnellEllipse    // Kasten mit Form Ellipse (ADR-0047 Punkt 5); eingebaute Stile = die des Kastens
 	SchnellTextmarker // multiplizierender Pfeil (ADR-0048 Punkt 6)
+	SchnellFreihand   // freier Strich (ADR-0049 Punkt 4); eingebaute Stile = die des Pfeils
 )
 
 // MaxEigeneSchnellstile ist die Grenze eigener Stile je Objektart (ADR-0037 Punkt 5).
@@ -40,7 +41,8 @@ const MaxEigeneSchnellstile = settings.MaxEigeneStile
 
 // artNamen sind die Abschnittsnamen der Datei, in der Reihenfolge von SchnellArt.
 var artNamen = [...]string{settings.ArtPfeil, settings.ArtKasten, settings.ArtText, settings.ArtSprechblase,
-	settings.ArtNummer, settings.ArtLupe, settings.ArtEllipse, settings.ArtTextmarker}
+	settings.ArtNummer, settings.ArtLupe, settings.ArtEllipse, settings.ArtTextmarker,
+	settings.ArtFreihand}
 
 // Schnellstil ist ein Stil einer Objektart. Nicht jedes Feld gilt für jede Art: Pfeil und Lupe Farbe und Breite, Kasten
 // dazu Füllung, Text und Sprechblase Farbe (Schrift), Füllung (Schild), Schrift, Schriftgrad, Stil und Ausrichtung,
@@ -123,6 +125,8 @@ func schnellWerkzeug(a SchnellArt) (Werkzeug, bool) {
 		return WerkzeugEllipse, true
 	case SchnellTextmarker:
 		return WerkzeugTextmarker, true
+	case SchnellFreihand:
+		return WerkzeugFreihand, true
 	}
 	return WerkzeugAuswahl, false
 }
@@ -146,6 +150,8 @@ func werkzeugArt(w Werkzeug) (SchnellArt, bool) {
 		return SchnellEllipse, true
 	case WerkzeugTextmarker:
 		return SchnellTextmarker, true
+	case WerkzeugFreihand:
+		return SchnellFreihand, true
 	}
 	return 0, false
 }
@@ -154,7 +160,7 @@ func werkzeugArt(w Werkzeug) (SchnellArt, bool) {
 func (st Schnellstil) bereinigt() Schnellstil {
 	r := Schnellstil{Art: st.Art, Farbe: st.Farbe}
 	switch st.Art {
-	case SchnellPfeil, SchnellLupe, SchnellTextmarker:
+	case SchnellPfeil, SchnellLupe, SchnellTextmarker, SchnellFreihand:
 		r.Breite = st.Breite
 	case SchnellKasten, SchnellEllipse:
 		r.Fuellung, r.Breite = st.Fuellung, st.Breite
@@ -175,7 +181,7 @@ func (st Schnellstil) bereinigt() Schnellstil {
 // Ausrichtung.
 func (st Schnellstil) gueltig() bool {
 	switch st.Art {
-	case SchnellPfeil, SchnellKasten, SchnellLupe, SchnellEllipse, SchnellTextmarker:
+	case SchnellPfeil, SchnellKasten, SchnellLupe, SchnellEllipse, SchnellTextmarker, SchnellFreihand:
 		return st.Breite > 0
 	case SchnellText, SchnellSprechblase:
 		return st.Schriftgrad > 0 && st.Ausrichtung <= document.AusrichtungRechts &&
@@ -290,6 +296,8 @@ func EingebauteSchnellstile(a SchnellArt) []Schnellstil {
 		quelle = SchnellText
 	case SchnellEllipse:
 		quelle = SchnellKasten
+	case SchnellFreihand:
+		quelle = SchnellPfeil
 	}
 	var r []Schnellstil
 	for _, st := range eingebaut {
@@ -414,6 +422,12 @@ func objektStandOhneSchatten(o document.Objekt) (Schnellstil, bool) {
 		return Schnellstil{Art: SchnellNummer, Farbe: v.Farbe, Radius: v.Radius}, true
 	case document.Lupe:
 		return Schnellstil{Art: SchnellLupe, Farbe: v.Strich.Farbe, Breite: v.Strich.Breite}, true
+	case document.Freihand:
+		art := SchnellFreihand
+		if v.Multipliziert() {
+			art = SchnellTextmarker
+		}
+		return Schnellstil{Art: art, Farbe: v.Strich.Farbe, Breite: v.Strich.Breite}, true
 	}
 	return Schnellstil{}, false
 }
@@ -507,6 +521,9 @@ func mitSchnellstil(o document.Objekt, st Schnellstil) document.Objekt {
 	case document.Lupe:
 		v.Strich.Farbe, v.Strich.Breite = st.Farbe, st.Breite // die Strichart bleibt (ADR-0021 Nachtrag 25 Punkt 8)
 		return v
+	case document.Freihand:
+		v.Strich.Farbe, v.Strich.Breite = st.Farbe, st.Breite
+		return v
 	}
 	return o
 }
@@ -538,7 +555,7 @@ func (s *Sitzung) WendeSchnellstilAn(st Schnellstil) bool {
 	s.hsvGemerkt = false
 	s.aendereStil(w, func(z *Stil) {
 		switch st.Art {
-		case SchnellPfeil, SchnellKasten, SchnellLupe, SchnellEllipse, SchnellTextmarker:
+		case SchnellPfeil, SchnellKasten, SchnellLupe, SchnellEllipse, SchnellTextmarker, SchnellFreihand:
 			z.Breite = g.Breite
 		case SchnellText, SchnellSprechblase:
 			z.Schriftgrad, z.Schrift = g.Schriftgrad, g.Schrift

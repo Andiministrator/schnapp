@@ -188,6 +188,7 @@ func (e *editor) seiteAuswerten(gtx layout.Context) {
 	e.ebenenAuswerten(gtx)
 	e.lupeAuswerten(gtx)
 	e.spitzeAuswerten(gtx)
+	e.freihandAuswerten(gtx)
 	e.schattenAuswerten(gtx)
 	e.pfeilformAuswerten(gtx)
 	e.strichartAuswerten(gtx)
@@ -247,7 +248,7 @@ func handZeiger(gtx layout.Context, groesse image.Point) {
 func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	k := &e.seite
 	k.kopf, k.farbeGezeigt, k.sw.gezeigt = "", false, false
-	e.spitze.rahmen = image.Rectangle{}
+	e.spitze.rahmen, e.frei.rahmen = image.Rectangle{}, image.Rectangle{}
 	e.schattenL.leeren()
 	e.pfeilform.rahm, e.pfeilform.hinweis = [2]image.Rectangle{}, ""
 	e.strichart.rahm, e.strichart.hinweis = image.Rectangle{}, ""
@@ -358,6 +359,9 @@ func (e *editor) zeichneSeitenleiste(gtx layout.Context) {
 	}
 	if inhalt.Pfeilform { // Spitzenart und Enden (ADR-0021 Nachtrag 19)
 		y = e.zeichnePfeilform(gtx, x, y, breite, spalte)
+	}
+	if inhalt.Freihand { // freier Textmarker (ADR-0049 Punkt 5)
+		y = e.zeichneFreihand(gtx, x, y, spalte)
 	}
 	if inhalt.Vergroesserung { // gewählte Lupe (ADR-0033 Punkt 8)
 		y = e.zeichneVergroesserung(gtx, x, y, spalte)

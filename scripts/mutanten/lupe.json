@@ -269,8 +269,8 @@
     "name": "K19 Gruppendeckkraft: Rand der Lupe ohne halben Strich",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "rand += 0.5 * v.Strich.Breite",
-    "neu": "rand += 0 * v.Strich.Breite"
+    "alt": "\tcase document.Lupe: // Rahmen wie beim Kasten (ADR-0033 Punkt 4)\n\t\trand += 0.5 * v.Strich.Breite",
+    "neu": "\tcase document.Lupe: // Rahmen wie beim Kasten (ADR-0033 Punkt 4)\n\t\trand += 0 * v.Strich.Breite"
   },
   {
     "name": "K20 Auswahl der Lupe: eine Hülle über beide Rechtecke statt je Rechteck ein Rahmen (F-606)",

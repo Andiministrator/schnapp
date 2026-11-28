@@ -344,6 +344,7 @@ type editor struct {
 		lupe                                         widget.Clickable // Werkzeug Lupe (ADR-0033)
 		ellipse                                      widget.Clickable // Werkzeug Ellipse (ADR-0047)
 		textmarker                                   widget.Clickable // Werkzeug Textmarker (ADR-0048)
+		freihand                                     widget.Clickable // Werkzeug Freihand (ADR-0049)
 		fuellung, tausch                             widget.Clickable // Farbpaar der Werkzeugleiste (ADR-0021 Nachtrag 11)
 		schwaerzen, verpixeln, zuschneiden, stauchen widget.Clickable
 		fussFarbe, fussZoom                          widget.Clickable
@@ -359,6 +360,7 @@ type editor struct {
 	lupe lupenLeiste
 	// spitze: Schalter „Spitze“ der rechten Leiste (ADR-0021 Nachtrag 13, spitze.go).
 	spitze spitzenLeiste
+	frei   freihandLeiste // Kästchen „Freehand“ des Textmarkers (ADR-0049 Punkt 5)
 	// schattenL: Abschnitt „Shadow“ der rechten Leiste (ADR-0021 Nachtrag 26 Punkt 7, schattenleiste.go).
 	schattenL schattenLeiste
 	// kontext: Kontextmenü der Leinwand (ADR-0038, kontext.go); leinwandUrsprung ist die linke obere Ecke der Leinwand im
@@ -1970,6 +1972,19 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 		e.zeichneSchatten(gtx, o)
 	}
 	switch v := o.(type) {
+	case document.Freihand: // dieselben Teile wie der Renderer, je Bereich abgespielt (ADR-0049 Punkt 2)
+		if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
+			sz := render.ZerlegeStrich(v.Punkte(), v.Strich)
+			var stuecke []document.Stueck
+			if !vorschau && len(sz.Zug) > 0 {
+				for _, st := range e.s.D.StreckenStuecke(sz.Zug, sz.Zu, sz.Suche) {
+					stuecke = append(stuecke, st.Stueck)
+				}
+			}
+			e.jeStueckIn(gtx, stuecke, an, vorschau, func(abb func(document.Punkt) f32.Point) {
+				fuelleTeile(gtx, sz.Teile, v.Strich.Farbe, abb)
+			})
+		}
 	case document.Pfeil:
 		// Abgeschnitten wie Renderer und SVG-Export (F-748, ADR-0023 Nachtrag 17): einmal im Original aufgezeichnet und in
 		// jedem Bereich abgespielt, den eine Strecke samt Kopf berührt (document.StreckenStuecke). Dieselben
@@ -2956,7 +2971,7 @@ func (e *editor) fokussierterKnopf(gtx layout.Context) *widget.Clickable {
 	alle = append(alle, e.seite.alle()...)
 	alle = append(alle, e.ebenen.alleKnoepfe()...)
 	alle = append(alle, e.lupe.alle()...)
-	alle = append(alle, &e.spitze.knopf)
+	alle = append(alle, &e.spitze.knopf, &e.frei.knopf)
 	alle = append(alle, e.schattenL.alle()...)
 	alle = append(alle, e.strichart.alle()...)
 	alle = append(alle, e.pfeilform.alle()...)
@@ -3074,14 +3089,15 @@ func (e *editor) zeichneEllipse(gtx layout.Context, v document.Kasten, an func(d
 	}
 }
 
-// werkzeugKnoepfe sind die Knöpfe der Werkzeuggruppe in Reihenfolge der Leiste (Kürzel V, A, H, R, E, T, K, N, M, B, P,
-// C, X; ADR-0021, ADR-0022, ADR-0023, ADR-0033, ADR-0047, ADR-0048).
+// werkzeugKnoepfe sind die Knöpfe der Werkzeuggruppe in Reihenfolge der Leiste (Kürzel V, A, H, F, R, E, T, K, N, M, B,
+// P, C, X; ADR-0021, ADR-0022, ADR-0023, ADR-0033, ADR-0047, ADR-0048, ADR-0049).
 func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
 	k := &e.knoepfe
 	return []werkzeugKnopf{
 		{&k.auswahl, canvas.WerkzeugAuswahl, i18n.T("Select")},
 		{&k.pfeil, canvas.WerkzeugPfeil, i18n.T("Arrow")},
 		{&k.textmarker, canvas.WerkzeugTextmarker, i18n.T("Highlighter")},
+		{&k.freihand, canvas.WerkzeugFreihand, i18n.T("Freehand")},
 		{&k.kasten, canvas.WerkzeugKasten, i18n.T("Rectangle")},
 		{&k.ellipse, canvas.WerkzeugEllipse, i18n.T("Ellipse")},
 		{&k.text, canvas.WerkzeugText, i18n.T("Text")},
@@ -3142,6 +3158,8 @@ func (e *editor) hinweis() string {
 		return i18n.T("Drag to draw an ellipse. Shift: circle.")
 	case canvas.WerkzeugTextmarker:
 		return i18n.T("Drag along the text to highlight it. Shift: horizontal.")
+	case canvas.WerkzeugFreihand:
+		return i18n.T("Drag to draw freely; the line is smoothed when you let go. Shift: straight line.")
 	case canvas.WerkzeugText:
 		return i18n.T("Click to place text, or click a text to edit it.")
 	case canvas.WerkzeugSprechblase:

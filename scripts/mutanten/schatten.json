@@ -171,8 +171,8 @@
     "name": "SH25 annotate ohne Schatten",
     "datei": "internal/annotate/annotate.go",
     "paket": "./internal/annotate",
-    "alt": "\t\t\to = document.MitEbene(o, document.Ebene{Schatten: sch})",
-    "neu": "\t\t\t_ = sch"
+    "alt": "\t\t\teb.Schatten = sch\n",
+    "neu": "\t\t\t_ = sch\n"
   },
   {
     "name": "SH26 Filterfläche mit Schild (F-842)",

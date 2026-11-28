@@ -3,8 +3,8 @@
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-leiste-schmal.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 480 --hoehe 800
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
 # Die alte Knopfleiste, die in mehrere Zeilen umbrach, gibt es nicht mehr: Die Werkzeugleiste links ist 52 breit und
-# umbricht nie, die Menüzeile ist 30 hoch. Koordinaten bei 480 x 800: Werkzeugknöpfe x = 26, Stauchen y = 610,
-# Schwärzen y = 470 (seit Karte #329 dreizehn Werkzeuge); Menü Datei (62,15), Eintrag „Exportieren“ (100,230; seit den
+# umbricht nie, die Menüzeile ist 30 hoch. Koordinaten bei 480 x 800: Werkzeugknöpfe x = 26, Stauchen y = 654,
+# Schwärzen y = 514 (seit Karte #333 vierzehn Werkzeuge); Menü Datei (62,15), Eintrag „Exportieren“ (100,230; seit den
 # Karten #326, #335 und #341 stehen Öffnen, Neue Aufnahme, Neu aus Zwischenablage, Speichern und Speichern unter davor).
 # Lauf 8 (480x800): Werkzeugknopf weit unten klickbar (Stauchen), Hinweis in der Fußzeile gekürzt, Export per Menü ohne Portal
 warte 800
@@ -12,14 +12,14 @@ warte 800
 taste Strg+Umschalt+B
 warte 200
 foto 00-start
-zeiger 26 610
+zeiger 26 654
 warte 200
-klick 26 610
+klick 26 654
 warte 300
 foto 01-stauchen-per-knopf
-zeiger 26 470
+zeiger 26 514
 warte 200
-klick 26 470
+klick 26 514
 warte 300
 foto 02-schwaerzen-per-knopf
 zeiger 62 15

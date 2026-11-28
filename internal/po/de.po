@@ -2288,8 +2288,17 @@ msgstr "Ziehen zeichnet eine Ellipse. Umschalt: Kreis."
 msgid "Highlighter"
 msgstr "Textmarker"
 
+msgid "Freehand"
+msgstr "Freihand"
+
+msgid "Drag to draw freely; the line is smoothed when you let go. Shift: straight line."
+msgstr "Ziehen zeichnet frei; beim Loslassen wird die Linie geglättet. Umschalt: gerade Linie."
+
 msgid "Hide / lock layer"
 msgstr "Ebene ausblenden / sperren"
+
+msgid "Group / ungroup"
+msgstr "Gruppieren / aufheben"
 
 msgid "Drag along the text to highlight it. Shift: horizontal."
 msgstr "Am Text entlang ziehen markiert ihn. Umschalt: waagerecht."

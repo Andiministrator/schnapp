@@ -1363,6 +1363,10 @@ msgstr ""
 msgid "Highlighter"
 msgstr ""
 
+#: internal/ui/editor.go internal/ui/freihandleiste.go
+msgid "Freehand"
+msgstr ""
+
 #: internal/ui/editor.go
 msgid "Rectangle"
 msgstr ""
@@ -1439,6 +1443,10 @@ msgstr ""
 
 #: internal/ui/editor.go
 msgid "Drag along the text to highlight it. Shift: horizontal."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Drag to draw freely; the line is smoothed when you let go. Shift: straight line."
 msgstr ""
 
 #: internal/ui/editor.go
@@ -2109,6 +2117,10 @@ msgstr ""
 
 #: internal/ui/hilfe.go
 msgid "Hide / lock layer"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Group / ungroup"
 msgstr ""
 
 #: internal/ui/hilfe.go internal/ui/oberflaeche.go

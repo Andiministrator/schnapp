@@ -1,0 +1,191 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package document
+
+import (
+	"fmt"
+	"math"
+	"slices"
+)
+
+// MaxFreihandPunkte begrenzt die Punkte eines Freihand-Strichs (ADR-0049 Punkt 1).
+const MaxFreihandPunkte = 4096
+
+// Freihand ist ein freier Strich: ein offener Linienzug im Original (ADR-0049). Zug zeigt auf die Punkte; wie die Spitze
+// der Sprechblase wird er nie durchgeschrieben, sondern neu gesetzt (MitPunkten), damit Objekte Werte bleiben.
+type Freihand struct {
+	Ebene
+	ID     int
+	Zug    *[]Punkt
+	Strich Strich
+}
+
+// NeuerFreihand liefert einen Freihand-Strich mit einer eigenen Kopie der Punkte.
+func NeuerFreihand(pts []Punkt, s Strich) Freihand {
+	return Freihand{Strich: s}.MitPunkten(pts)
+}
+
+// Punkte liefert die Punkte (nicht verändern; nil bei leerem Zug).
+func (f Freihand) Punkte() []Punkt {
+	if f.Zug == nil {
+		return nil
+	}
+	return *f.Zug
+}
+
+// MitPunkten liefert f mit einer eigenen Kopie von pts.
+func (f Freihand) MitPunkten(pts []Punkt) Freihand {
+	k := slices.Clone(pts)
+	f.Zug = &k
+	return f
+}
+
+// Verschoben liefert f um d verschoben (neuer Zug).
+func (f Freihand) Verschoben(d Punkt) Freihand {
+	pts := slices.Clone(f.Punkte())
+	for i := range pts {
+		pts[i] = pts[i].Plus(d)
+	}
+	f.Zug = &pts
+	return f
+}
+
+func (f Freihand) Kennung() int { return f.ID }
+
+// Grenzen ist die Hülle der Punkte um die halbe Strichbreite.
+func (f Freihand) Grenzen() Rechteck {
+	pts := f.Punkte()
+	if len(pts) == 0 {
+		return Rechteck{}
+	}
+	r := Rechteck{Min: pts[0], Max: pts[0]}
+	for _, p := range pts[1:] {
+		r = r.Vereint(Rechteck{Min: p, Max: p})
+	}
+	return aufgeweitet(r, f.Strich.Breite)
+}
+
+func (f Freihand) mitKennung(id int) Objekt { f.ID = id; return f }
+func (f Freihand) mitEbene(e Ebene) Objekt  { f.Ebene = e; return f }
+
+func (f Freihand) pruefe() error {
+	pts := f.Punkte()
+	if len(pts) < 2 || len(pts) > MaxFreihandPunkte {
+		return fmt.Errorf("document: Freihand-Strich mit %d Punkten (2 bis %d)", len(pts), MaxFreihandPunkte)
+	}
+	for _, p := range pts {
+		if !endlich(p.X, p.Y) {
+			return fmt.Errorf("document: Freihand-Strich mit ungültigen Koordinaten")
+		}
+	}
+	if err := f.Ebene.pruefe(); err != nil {
+		return err
+	}
+	return f.Strich.pruefe()
+}
+
+// gleicheFreihand vergleicht zwei Freihand-Striche dem Wert nach (Punkte statt Adresse, wie die Spitze, F-694).
+func gleicheFreihand(a, b Freihand) bool {
+	if !slices.Equal(a.Punkte(), b.Punkte()) {
+		return false
+	}
+	a.Zug, b.Zug = nil, nil
+	return a == b
+}
+
+// Laenge ist die Länge des Linienzugs.
+func (f Freihand) Laenge() float64 {
+	pts := f.Punkte()
+	var l float64
+	for i := 1; i < len(pts); i++ {
+		l += pts[i].Minus(pts[i-1]).Laenge()
+	}
+	return l
+}
+
+// --- Glätten (ADR-0049 Punkt 3) ---
+
+// Vereinfacht liefert pts nach Ramer–Douglas–Peucker mit der Toleranz tol (Anfang und Ende bleiben).
+func Vereinfacht(pts []Punkt, tol float64) []Punkt {
+	if len(pts) < 3 {
+		return slices.Clone(pts)
+	}
+	behalten := make([]bool, len(pts))
+	behalten[0], behalten[len(pts)-1] = true, true
+	type spanne struct{ a, b int }
+	stapel := []spanne{{0, len(pts) - 1}}
+	for len(stapel) > 0 {
+		s := stapel[len(stapel)-1]
+		stapel = stapel[:len(stapel)-1]
+		weit, wo := 0.0, -1
+		for i := s.a + 1; i < s.b; i++ {
+			if d := abstandStrecke(pts[i], pts[s.a], pts[s.b]); d > weit {
+				weit, wo = d, i
+			}
+		}
+		if wo >= 0 && weit > tol {
+			behalten[wo] = true
+			stapel = append(stapel, spanne{s.a, wo}, spanne{wo, s.b})
+		}
+	}
+	var r []Punkt
+	for i, b := range behalten {
+		if b {
+			r = append(r, pts[i])
+		}
+	}
+	return r
+}
+
+// abstandStrecke ist der Abstand von p zur Strecke a–b.
+func abstandStrecke(p, a, b Punkt) float64 {
+	d := b.Minus(a)
+	l2 := d.X*d.X + d.Y*d.Y
+	if l2 == 0 {
+		return p.Minus(a).Laenge()
+	}
+	t := math.Max(0, math.Min(1, ((p.X-a.X)*d.X+(p.Y-a.Y)*d.Y)/l2))
+	return p.Minus(a.Plus(d.Mal(t))).Laenge()
+}
+
+// Geglaettet liefert pts nach n Runden Chaikin: Jede Strecke wird durch die Punkte bei 1/4 und 3/4 ersetzt, Anfang und
+// Ende bleiben. Ecken werden rund, gerade Stücke bleiben gerade.
+func Geglaettet(pts []Punkt, n int) []Punkt {
+	r := slices.Clone(pts)
+	for ; n > 0 && len(r) >= 3; n-- {
+		neu := make([]Punkt, 0, 2*len(r))
+		neu = append(neu, r[0])
+		for i := 0; i+1 < len(r); i++ {
+			a, b := r[i], r[i+1]
+			q := a.Mal(0.75).Plus(b.Mal(0.25))
+			s := a.Mal(0.25).Plus(b.Mal(0.75))
+			if i > 0 {
+				neu = append(neu, q)
+			}
+			if i+2 < len(r) {
+				neu = append(neu, s)
+			}
+		}
+		neu = append(neu, r[len(r)-1])
+		r = neu
+	}
+	return r
+}
+
+// Ausgeduennt liefert höchstens max Punkte: gleichmäßig ausgewählt, Anfang und Ende bleiben.
+func Ausgeduennt(pts []Punkt, max int) []Punkt {
+	if len(pts) <= max || max < 2 {
+		return slices.Clone(pts)
+	}
+	r := make([]Punkt, max)
+	for i := range r {
+		r[i] = pts[i*(len(pts)-1)/(max-1)]
+	}
+	return r
+}
+
+// FreihandAusZug macht aus den rohen Punkten eines Zugs den gespeicherten Linienzug (ADR-0049 Punkt 3): vereinfachen
+// mit der Toleranz tol (Original), zweimal glätten, auf MaxFreihandPunkte begrenzen.
+func FreihandAusZug(roh []Punkt, tol float64) []Punkt {
+	return Ausgeduennt(Geglaettet(Vereinfacht(roh, tol), 2), MaxFreihandPunkte)
+}

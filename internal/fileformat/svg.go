@@ -22,14 +22,15 @@ import (
 // 2 nur mit einer Lupe (ADR-0033 Punkt 5), einer Sprechblasen-Spitze (ADR-0021 Nachtrag 13 Punkt 7), einem Pfeil,
 // dessen Spitzen von der Voreinstellung abweichen (ADR-0021 Nachtrag 20), einem gemusterten Strich (ADR-0021
 // Nachtrag 25) oder einem Schatten (ADR-0021 Nachtrag 26), sonst 1 — Dateien ohne all das bleiben für ältere Leser lesbar.
-const FormatVersion = 2
+const FormatVersion = 3
 
 // versionLupe ist die erste Formatversion mit dem Objekttyp „lupe“ (ADR-0033 Punkt 5); versionSpitze die erste mit
 // dem Attribut s:spitze am Text (ADR-0021 Nachtrag 13 Punkt 7); versionPfeilKoepfe die erste mit s:ende/s:anfang am
 // Pfeil (ADR-0021 Nachtrag 20); versionStrichart die erste mit s:strichart an Pfeil, Kasten und Lupe (ADR-0021
 // Nachtrag 25); versionSchatten die erste mit s:schatten an jeder Ebene (ADR-0021 Nachtrag 26 Punkt 6); versionGruppe
 // die erste mit s:gruppe (ADR-0044 Punkt 6); versionEllipse die erste mit s:form am Kasten (ADR-0047 Punkt 6);
-// versionMischung die erste mit s:mischung an jeder Ebene (ADR-0048 Punkt 7). Alle sind Version 2.
+// versionMischung die erste mit s:mischung an jeder Ebene (ADR-0048 Punkt 7). Alle sind Version 2. versionFreihand ist
+// die erste mit dem Objekttyp „freihand“ (ADR-0049 Punkt 6): Version 3.
 const (
 	versionLupe        = 2
 	versionSpitze      = 2
@@ -39,10 +40,16 @@ const (
 	versionGruppe      = 2
 	versionEllipse     = 2
 	versionMischung    = 2
+	versionFreihand    = 3
 )
 
 // schreibVersion ist die Version, die der Schreiber für die Objekte objekte angibt.
 func schreibVersion(objekte []document.Objekt) int {
+	for _, o := range objekte { // die höchste zuerst: ein neuer Objekttyp braucht Version 3 (ADR-0049 Punkt 6)
+		if _, ok := o.(document.Freihand); ok {
+			return versionFreihand
+		}
+	}
 	gruppen := wirksameGruppen(objekte)
 	for _, o := range objekte {
 		if o.Ebenenwerte().Schatten.An {
@@ -392,6 +399,16 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			s.WriteString(`>`)
 			s.pfeilDarstellung(o)
 			s.WriteString(`</g>`)
+		case document.Freihand: // ADR-0049 Punkt 6
+			s.WriteString(`<g`)
+			s.attr("s:typ", "freihand")
+			s.ebene(o.Ebenenwerte())
+			s.attr("s:punkte", punkteText(o.Punkte()))
+			s.attr("s:strich", strich(o.Strich))
+			s.strichart(o.Strich)
+			s.WriteString(`>`)
+			s.freihandDarstellung(o)
+			s.WriteString(`</g>`)
 		case document.Kasten:
 			b := o.Bereich
 			if b.Breite() == 0 || b.Hoehe() == 0 {
@@ -726,6 +743,67 @@ func (l *leser) punkt(name string) document.Punkt {
 	return document.Pt(fx, fy)
 }
 
+// punkte liest eine Liste von Punkten, durch einzelne Leerzeichen getrennt (docs/format.md 8.9), höchstens
+// document.MaxFreihandPunkte; mehr oder ein ungültiger Punkt beschädigen die Datei.
+func (l *leser) punkte(name string) []document.Punkt {
+	teile := strings.Split(l.text(name), " ")
+	if len(teile) < 2 || len(teile) > document.MaxFreihandPunkte {
+		l.fehler("Punkte %s: %d (2 bis %d)", name, len(teile), document.MaxFreihandPunkte)
+		return nil
+	}
+	pts := make([]document.Punkt, 0, len(teile))
+	for _, t := range teile {
+		x, y, ok := strings.Cut(t, ",")
+		fx, ok1 := parseZahl(x)
+		fy, ok2 := parseZahl(y)
+		if !ok || !ok1 || !ok2 {
+			l.fehler("Punkte %s ungültig", name)
+			return nil
+		}
+		pts = append(pts, document.Pt(fx, fy))
+	}
+	return pts
+}
+
+// punkteText schreibt Punkte für s:punkte.
+func punkteText(pts []document.Punkt) string {
+	var b strings.Builder
+	for i, p := range pts {
+		if i > 0 {
+			b.WriteByte(' ')
+		}
+		b.WriteString(punkt(p))
+	}
+	return b.String()
+}
+
+// freihandDarstellung zeichnet den freien Strich für Betrachter: ein Pfad mit runden Enden und Ecken, gemustert im
+// Export als ausdrückliche Stücke wie der Pfeilschaft (ADR-0021 Nachtrag 25), in der Arbeitsdatei als Näherung.
+func (s *schreiber) freihandDarstellung(o document.Freihand) {
+	pts := o.Punkte()
+	if o.Strich.Art != document.StrichVoll && !s.rundlauf {
+		s.musterSVG(document.StrichAbschnitte(pts, o.Strich.Art, o.Strich.Breite), o.Strich.Breite, o.Strich.Farbe)
+		return
+	}
+	var d strings.Builder
+	for i, p := range pts {
+		if i == 0 {
+			d.WriteString("M" + punkt(p))
+		} else {
+			d.WriteString(" L" + punkt(p))
+		}
+	}
+	s.WriteString(`<path`)
+	s.attr("d", d.String())
+	s.attr("fill", "none")
+	s.farbeSVG("stroke", o.Strich.Farbe)
+	s.attr("stroke-width", zahl(o.Strich.Breite))
+	s.attr("stroke-linecap", "round")
+	s.attr("stroke-linejoin", "round")
+	s.strichNaeherung(o.Strich, true)
+	s.WriteString(`/>`)
+}
+
 func (l *leser) farbe(name string) color.NRGBA {
 	v := l.text(name)
 	// genau `#` und acht Hexziffern, in beiden Schreibweisen (docs/format.md 5.2); kein Leerraum, kein Vorzeichen
@@ -825,6 +903,8 @@ func (l *leser) objektOhneEbene(typ string) document.Objekt {
 			Farbe: l.farbe("farbe")}
 	case "lupe":
 		return document.Lupe{Quelle: l.bereich("quelle"), Ziel: l.bereich("ziel"), Strich: l.strichMitArt("strich")}
+	case "freihand": // ADR-0049 Punkt 6
+		return document.NeuerFreihand(l.punkte("punkte"), l.strichMitArt("strich"))
 	}
 	// Unbekannte Objekttypen aus neueren Fassungen: als Fehler melden statt still verlieren.
 	l.fehler("unbekannter Objekttyp %q", typ)
@@ -935,6 +1015,9 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 				// unbekannter Objekttyp, wie für einen Leser dieser Version.
 				if l.a["typ"] == "lupe" && version < versionLupe {
 					return nil, fmt.Errorf("%w: Objekttyp \"lupe\" erst ab Formatversion %d", ErrBeschaedigt, versionLupe)
+				}
+				if l.a["typ"] == "freihand" && version < versionFreihand {
+					return nil, fmt.Errorf("%w: Objekttyp \"freihand\" erst ab Formatversion %d", ErrBeschaedigt, versionFreihand)
 				}
 				if o := l.objekt(l.a["typ"]); o != nil {
 					in.objekte = append(in.objekte, o)

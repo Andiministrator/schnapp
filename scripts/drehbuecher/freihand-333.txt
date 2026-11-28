@@ -1,0 +1,44 @@
+# Sichtprobe ADR-0049 (Karte #333): Werkzeug Freihand (F), Glätten beim Loslassen, Umschalt = gerade, freier Textmarker.
+# Aufruf: scripts/probe.sh --sprache de --ende 30 --drehbuch scripts/drehbuecher/freihand-333.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 1200 --hoehe 800
+# Bei 1200 × 800 mit rechter Leiste liegt das Bild bei x = 76–876, y = 133–666 (Zoom 67 %).
+# Erwartet:
+#  01 Werkzeug Freihand aktiv (vierter Knopf), eine rote geglättete Wellenlinie, gewählt; Leiste „Auswahl: Freihand“
+#     mit Strichstärke, Strichart, Schatten, ohne Pfeilstil.
+#  02 Mit Umschalt: eine gerade rote Linie.
+#  03a Textmarker (H): Kästchen „Freihand“ bei (925, 276), aus.
+#  03 Textmarker (H) mit Kästchen „Freihand“ angehakt: ein freier gelber Strich über dem weißen und schwarzen Balken;
+#     Weiß wird gelb, Schwarz bleibt schwarz.
+#  04 Übersicht F1: „Freihand F“, keine Rollleiste.
+warte 800
+taste F
+warte 200
+druecke 450 300
+bewege 500 260 6
+bewege 560 330 6
+bewege 620 260 6
+bewege 680 330 6
+loslassen
+warte 400
+foto 01-freihand
+taste-halten Umschalt
+ziehe 450 420 700 480
+taste-loslassen Umschalt
+warte 400
+foto 02-gerade
+taste H
+warte 300
+foto 03a-textmarker-leiste
+klick 925 276
+warte 300
+druecke 130 215
+bewege 200 225 6
+bewege 280 245 6
+bewege 230 270 6
+bewege 150 280 6
+loslassen
+warte 400
+foto 03-textmarker-frei
+taste F1
+warte 500
+foto 04-uebersicht
+taste Escape

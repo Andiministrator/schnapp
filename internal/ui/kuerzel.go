@@ -181,6 +181,7 @@ func tastenTabelle() []taste {
 		wz("V", canvas.WerkzeugAuswahl),
 		wz("A", canvas.WerkzeugPfeil),
 		wz("H", canvas.WerkzeugTextmarker), // H wie highlighter; allein frei, Strg+H bleibt Ausblenden (ADR-0048 Punkt 4)
+		wz("F", canvas.WerkzeugFreihand),   // F wie freehand; allein frei, Strg+F sucht in der Bibliothek (ADR-0049 Punkt 4)
 		wz("R", canvas.WerkzeugKasten),
 		wz("E", canvas.WerkzeugEllipse), // E allein war frei, Strg+Umschalt+E ist Export (ADR-0047 Punkt 4)
 		wz("T", canvas.WerkzeugText),

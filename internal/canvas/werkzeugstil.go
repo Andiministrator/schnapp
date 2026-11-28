@@ -15,7 +15,7 @@ import (
 
 // stilWerkzeuge sind die Werkzeuge mit eigenem Stil, in der Reihenfolge von tools.ini.
 var stilWerkzeuge = []Werkzeug{WerkzeugPfeil, WerkzeugKasten, WerkzeugText, WerkzeugNummer, WerkzeugLupe, WerkzeugEllipse,
-	WerkzeugTextmarker}
+	WerkzeugTextmarker, WerkzeugFreihand}
 
 // werkzeugAbschnitt ist der Abschnitt von w in tools.ini.
 func werkzeugAbschnitt(w Werkzeug) string {
@@ -34,6 +34,8 @@ func werkzeugAbschnitt(w Werkzeug) string {
 		return settings.ArtEllipse
 	case WerkzeugTextmarker:
 		return settings.ArtTextmarker
+	case WerkzeugFreihand:
+		return settings.ArtFreihand
 	}
 	return ""
 }
@@ -175,6 +177,7 @@ func (s *Sitzung) WerkzeugStile() []settings.WerkzeugStil {
 				Unterstr: st.Unterstrichen, Durchgestr: st.Durchgestrichen, Ausrichtung: st.Ausrichtung,
 				Schatten: st.Schatten},
 			Strichart: st.Strichart, KopfEnde: st.KopfEnde, KopfAnfang: st.KopfAnfang.Art(), Eckradius: st.Eckradius,
+			Freihand: st.Freihand,
 		})
 	}
 	return r
@@ -244,6 +247,9 @@ func (s *Sitzung) SetzeWerkzeugStile(liste []settings.WerkzeugStil) {
 		}
 		if gilt("end_head") {
 			st.KopfEnde = e.KopfEnde
+		}
+		if gilt("freehand") && w == WerkzeugTextmarker {
+			st.Freihand = e.Freihand
 		}
 		if gilt("start_head") {
 			st.KopfAnfang = document.AnfangMit(e.KopfAnfang)

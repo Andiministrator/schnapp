@@ -72,6 +72,7 @@ type Eintrag struct {
 	StartHead     *string  `json:"start_head,omitempty"` // arrow: head at "from" (default none; ADR-0021 Nachtrag 20)
 	EndHead       *string  `json:"end_head,omitempty"`   // arrow: head at "to" (default triangle)
 	LineStyle     *string  `json:"line_style,omitempty"` // arrow, rect, ellipse: solid, dashed, dotted (ADR-0021 Nachtrag 25)
+	Points        []Punkt  `json:"points,omitempty"`     // freehand, highlight: Linienzug (ADR-0049 Punkt 7)
 	// Shadow: true, false oder {"angle", "distance", "softness", "color"} (ADR-0021 Nachtrag 26 Punkt 9).
 	Shadow json.RawMessage `json:"shadow,omitempty"`
 }
@@ -105,15 +106,16 @@ var (
 	erlaubt = map[string][]string{
 		"arrow":     {"from", "to", "color", "width", "start_head", "end_head", "line_style", "shadow"},
 		"rect":      {"from", "to", "color", "fill", "width", "line_style", "shadow"},
-		"ellipse":   {"from", "to", "color", "fill", "width", "line_style", "shadow"}, // ADR-0047 Punkt 7
-		"highlight": {"from", "to", "color", "width", "line_style", "shadow"},         // ADR-0048 Punkt 8
+		"ellipse":   {"from", "to", "color", "fill", "width", "line_style", "shadow"},   // ADR-0047 Punkt 7
+		"highlight": {"from", "to", "points", "color", "width", "line_style", "shadow"}, // ADR-0048 Punkt 8, ADR-0049 Punkt 7
+		"freehand":  {"points", "color", "width", "line_style", "shadow"},               // ADR-0049 Punkt 7
 		"text":      {"at", "text", "size", "color", "fill", "font", "bold", "italic", "underline", "strikethrough", "align", "tip", "shadow"},
 		"step":      {"at", "color", "radius", "shadow"},
 		"redact":    {"from", "to"},
 		"pixelate":  {"from", "to"},
 	}
 	pflicht = map[string][]string{
-		"arrow": {"from", "to"}, "rect": {"from", "to"}, "ellipse": {"from", "to"}, "highlight": {"from", "to"},
+		"arrow": {"from", "to"}, "rect": {"from", "to"}, "ellipse": {"from", "to"}, "freehand": {"points"},
 		"text": {"at", "text"}, "step": {"at"},
 		"redact": {"from", "to"}, "pixelate": {"from", "to"},
 	}
@@ -185,7 +187,7 @@ func Lies(r io.Reader) ([]Eintrag, error) {
 		}
 		ok, bekannt := erlaubt[e.Type]
 		if !bekannt {
-			return nil, &Fehler{i, fmt.Sprintf("unknown type %q (arrow, highlight, rect, ellipse, text, step, redact, pixelate)", e.Type)}
+			return nil, &Fehler{i, fmt.Sprintf("unknown type %q (arrow, highlight, freehand, rect, ellipse, text, step, redact, pixelate)", e.Type)}
 		}
 		for k, v := range schluessel {
 			if k == "type" {
@@ -201,6 +203,14 @@ func Lies(r io.Reader) ([]Eintrag, error) {
 		for _, k := range pflicht[e.Type] {
 			if _, da := schluessel[k]; !da {
 				return nil, &Fehler{i, fmt.Sprintf("type %q needs key %q", e.Type, k)}
+			}
+		}
+		if e.Type == "highlight" { // gerade (from, to) oder frei (points), nicht beides (ADR-0049 Punkt 7)
+			_, von := schluessel["from"]
+			_, bis := schluessel["to"]
+			_, pts := schluessel["points"]
+			if pts == (von || bis) || (!pts && !(von && bis)) {
+				return nil, &Fehler{i, `type "highlight" needs either "from" and "to" or "points"`}
 			}
 		}
 		es = append(es, e)
@@ -366,7 +376,49 @@ func Wende(ctx context.Context, d *document.Dokument, es []Eintrag) (Ergebnis, e
 			return *v, nil
 		}
 		var o document.Objekt
-		switch e.Type {
+		typ := e.Type
+		if typ == "highlight" && e.Points != nil {
+			typ = "freehand" // freier Textmarker (ADR-0049 Punkt 7)
+		}
+		switch typ {
+		case "freehand": // ADR-0049 Punkt 7: Punkte übernommen, nicht geglättet
+			if len(e.Points) < 2 || len(e.Points) > document.MaxFreihandPunkte {
+				return erg, f(`"points" needs 2 to %d points`, document.MaxFreihandPunkte)
+			}
+			w, vorBreite := canvas.WerkzeugFreihand, st.Breite
+			if e.Type == "highlight" {
+				w, vorBreite = canvas.WerkzeugTextmarker, canvas.TextmarkerBreite*st.Breite/canvas.StandardStil().Breite
+			}
+			vorn, _ := canvas.StandardPaar(w)
+			pts := make([]document.Punkt, len(e.Points))
+			for j := range e.Points {
+				p, err := punkt("points", &e.Points[j])
+				if err != nil {
+					return erg, err
+				}
+				pts[j] = p
+			}
+			c, err := farbe("color", e.Color, vorn, false)
+			if err != nil {
+				return erg, err
+			}
+			breite, err := groesse("width", e.Width, vorBreite)
+			if err != nil {
+				return erg, err
+			}
+			strich := document.Strich{Farbe: c, Breite: breite}
+			if e.LineStyle != nil {
+				art, ok := document.StrichartAus(*e.LineStyle)
+				if !ok {
+					return erg, f(`"line_style" must be one of %s`, namenListe(document.StrichartNamen()))
+				}
+				strich.Art = art
+			}
+			fh := document.NeuerFreihand(pts, strich)
+			if e.Type == "highlight" {
+				fh.Mischung = document.MischMultiplizieren
+			}
+			o = fh
 		case "arrow", "rect", "ellipse", "highlight":
 			w := canvas.WerkzeugPfeil
 			vorBreite := st.Breite

@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -30,6 +31,7 @@ const (
 	WerkzeugSprechblase                 // Spitze setzen, zum Ort des Texts ziehen, tippen (ADR-0021 Nachtrag 13)
 	WerkzeugEllipse                     // Ziehen von Ecke zu Ecke, Umschalt = Kreis (ADR-0047)
 	WerkzeugTextmarker                  // Ziehen wie der Pfeil, multiplizierend, Umschalt = waagerecht (ADR-0048)
+	WerkzeugFreihand                    // freier Strich, beim Loslassen geglättet, Umschalt = gerade (ADR-0049)
 )
 
 // Werte des Verpixelns (ADR-0022 Nachtrag 1), Größen in Pixeln des Originals. Die Blockgröße ist nur noch Optik: Die
@@ -102,6 +104,8 @@ type Stil struct {
 	Strichart document.Strichart
 	// Schatten neuer Objekte (ADR-0021 Nachtrag 26), je Werkzeug (ADR-0041); aus, mit der Voreinstellung als Werten.
 	Schatten document.Schatten
+	// Freihand: der Textmarker zieht einen freien Strich statt einer Strecke (ADR-0049 Punkt 5).
+	Freihand bool
 }
 
 // StandardStil ist die Voreinstellung (ADR-0021 Punkt 4, Strich seit Nachtrag 16).
@@ -253,7 +257,7 @@ func (s *Sitzung) strichObjekt() (document.Objekt, bool) {
 		return nil, false
 	}
 	switch o.(type) {
-	case document.Pfeil, document.Kasten, document.Lupe:
+	case document.Pfeil, document.Kasten, document.Lupe, document.Freihand:
 		return o, true
 	}
 	return nil, false
@@ -270,6 +274,8 @@ func (s *Sitzung) Breite() float64 {
 	case document.Kasten:
 		return v.Strich.Breite
 	case document.Lupe:
+		return v.Strich.Breite
+	case document.Freihand:
 		return v.Strich.Breite
 	}
 	return s.Stil.Breite
@@ -324,6 +330,9 @@ func (s *Sitzung) BreiteStufe(dir int) (float64, bool) {
 // mitBreite liefert Pfeil oder Kasten o mit der Strichstärke b; andere Objekte unverändert.
 func mitBreite(o document.Objekt, b float64) document.Objekt {
 	switch v := o.(type) {
+	case document.Freihand:
+		v.Strich.Breite = b
+		return v
 	case document.Pfeil:
 		v.Strich.Breite = b
 		return v
@@ -342,7 +351,7 @@ func mitBreite(o document.Objekt, b float64) document.Objekt {
 // beginneNeu startet mit einem Zeichenwerkzeug an q (Original). Pfeil und Kasten entstehen erst beim Ziehen über die
 // Schwelle, Nummer und Text sofort.
 func (s *Sitzung) beginneNeu(q document.Punkt) {
-	s.neuArt, s.neuID = s.Werkzeug, 0
+	s.neuArt, s.neuID, s.freiRoh = s.Werkzeug, 0, nil
 	// Klick auf einen vorhandenen Text bearbeitet ihn auch bei vollem Dokument (kein neues Objekt nötig).
 	if s.Werkzeug == WerkzeugText || s.Werkzeug == WerkzeugSprechblase {
 		if id, ok := Treffer(s.sichtbareObjekte(), q, s.toleranz()); ok {
@@ -358,7 +367,8 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 		return
 	}
 	switch s.Werkzeug {
-	case WerkzeugPfeil, WerkzeugKasten, WerkzeugEllipse, WerkzeugLupe, WerkzeugSprechblase, WerkzeugTextmarker:
+	case WerkzeugPfeil, WerkzeugKasten, WerkzeugEllipse, WerkzeugLupe, WerkzeugSprechblase, WerkzeugTextmarker,
+		WerkzeugFreihand:
 		s.zug = zugNeu
 	case WerkzeugSchwaerzen, WerkzeugVerpixeln, WerkzeugZuschneiden, WerkzeugStauchen:
 		s.zug, s.rahmen = zugNeu, false
@@ -434,7 +444,13 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 		pf.Ende, pf.Anfang = s.Stil.KopfEnde, s.Stil.KopfAnfang
 		pf.ID = s.neuID
 		o = pf
+	case WerkzeugFreihand: // ADR-0049 Punkte 3 und 4
+		o = s.zieheFrei(a, b, p, false)
 	case WerkzeugTextmarker: // ein Pfeil ohne Köpfe, multiplizierend (ADR-0048 Punkte 2 und 4)
+		if s.Stil.Freihand { // freier Textmarker (ADR-0049 Punkt 5)
+			o = s.zieheFrei(a, b, p, true)
+			break
+		}
 		if s.Umschalt {
 			b = s.umschaltEnde(WerkzeugTextmarker, p)
 		} else {
@@ -492,6 +508,59 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 		return
 	}
 	_ = s.D.ZugSetze(o)
+}
+
+// TextmarkerFrei meldet, ob das Werkzeug Textmarker einen freien Strich zieht (ADR-0049 Punkt 5).
+func (s *Sitzung) TextmarkerFrei() bool { return s.stilVon(WerkzeugTextmarker).Freihand }
+
+// SchalteTextmarkerFrei schaltet zwischen freiem und geradem Textmarker. Es gilt für folgende Textmarker (Stil des
+// Werkzeugs), nicht für vorhandene; während eines Zugs geschieht nichts.
+func (s *Sitzung) SchalteTextmarkerFrei() bool {
+	if s.Zieht() || s.gesperrt() {
+		return false
+	}
+	s.aendereStil(WerkzeugTextmarker, func(st *Stil) { st.Freihand = !st.Freihand })
+	return true
+}
+
+// Aufnehmen eines freien Strichs (ADR-0049 Punkt 3), Maße in Fensterpixeln.
+const (
+	freiAbstand  = 2   // ein neuer Punkt erst ab diesem Abstand zum letzten
+	freiToleranz = 0.5 // Vereinfachen beim Loslassen
+)
+
+// zieheFrei liefert den Freihand-Strich des laufenden Zugs: a ist der Anfang, b der Zeigerpunkt (Original, im Bild
+// gehalten), p der Fensterpunkt. Mit Umschalt eine gerade Strecke von a nach b, beim Textmarker (mult) waagerecht.
+func (s *Sitzung) zieheFrei(a, b, p document.Punkt, mult bool) document.Objekt {
+	if len(s.freiRoh) == 0 {
+		s.freiRoh = []document.Punkt{a}
+	}
+	pts := s.freiRoh
+	switch {
+	case s.Umschalt && mult:
+		pts = []document.Punkt{a, s.umschaltEnde(WerkzeugTextmarker, p)}
+	case s.Umschalt:
+		pts = []document.Punkt{a, b}
+	default:
+		if b.Minus(s.freiRoh[len(s.freiRoh)-1]).Laenge()*s.Abb.Zoom >= freiAbstand {
+			if len(s.freiRoh) >= document.MaxFreihandPunkte {
+				s.freiRoh = document.Ausgeduennt(s.freiRoh, document.MaxFreihandPunkte/2)
+			}
+			s.freiRoh = append(s.freiRoh, b)
+		}
+		pts = s.freiRoh
+		if letzter := pts[len(pts)-1]; b != letzter { // der Zeiger selbst gehört immer dazu, auch näher als freiAbstand
+			pts = append(slices.Clip(pts), b)
+		} else if len(pts) == 1 {
+			pts = []document.Punkt{a, a}
+		}
+	}
+	f := document.NeuerFreihand(pts, s.Stil.strich())
+	f.ID = s.neuID
+	if mult {
+		f.Mischung = document.MischMultiplizieren
+	}
+	return f
 }
 
 // umschaltEnde liefert den Endpunkt (Original) eines Pfeils oder Kastens mit gedrückter Umschalttaste. Gerastet wird in
@@ -567,6 +636,13 @@ func (s *Sitzung) beendeNeu() {
 		gross = v.Bereich.Breite() >= min && v.Bereich.Hoehe() >= min
 	case document.Lupe:
 		gross = v.Quelle.Breite() >= min && v.Quelle.Hoehe() >= min
+	case document.Freihand: // erst prüfen, dann glätten (ADR-0049 Punkt 3)
+		gross = v.Laenge() >= min
+		if gross {
+			if pts := document.FreihandAusZug(v.Punkte(), freiToleranz/s.Abb.Zoom); len(pts) >= 2 {
+				_ = s.D.ZugSetze(v.MitPunkten(pts))
+			}
+		}
 	}
 	if !gross {
 		_ = s.D.BrecheZugAb()

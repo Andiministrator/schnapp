@@ -105,6 +105,8 @@ var hilfePaare = map[aktion]hilfePaar{
 	aktSeitenleiste: {aktLeiste, func() string { return i18n.T("Sidebar / recent captures") }},
 	// Werkzeug Textmarker (ADR-0048): eine Zeile mehr, ein Paar im Menü Ebene.
 	aktAusblenden: {aktSperren, func() string { return i18n.T("Hide / lock layer") }},
+	// Werkzeug Freihand (ADR-0049): noch eine Zeile, noch ein Paar.
+	aktGruppieren: {aktGruppierungAufheben, func() string { return i18n.T("Group / ungroup") }},
 }
 
 // hilfePaarZweite sind die zweiten Handlungen der Paare.

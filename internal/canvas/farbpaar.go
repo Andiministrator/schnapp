@@ -69,6 +69,10 @@ func objektFarbe(o document.Objekt, f Farbfeld) (color.NRGBA, bool) {
 		if f == FeldVordergrund {
 			return v.Strich.Farbe, true
 		}
+	case document.Freihand:
+		if f == FeldVordergrund {
+			return v.Strich.Farbe, true
+		}
 	case document.Kasten:
 		if f == FeldFuellung {
 			return v.Fuellung, true
@@ -100,6 +104,11 @@ func UmgefaerbtIn(o document.Objekt, f Farbfeld, c color.NRGBA) document.Objekt 
 	}
 	switch v := o.(type) {
 	case document.Pfeil:
+		if f == FeldVordergrund {
+			v.Strich.Farbe = c
+		}
+		return v
+	case document.Freihand:
 		if f == FeldVordergrund {
 			v.Strich.Farbe = c
 		}

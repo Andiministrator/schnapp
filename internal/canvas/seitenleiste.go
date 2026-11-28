@@ -32,6 +32,7 @@ type SeitenInhalt struct {
 	Spitze         bool // Schalter „Spitze“ (gewählter Text oder Sprechblase, ADR-0021 Nachtrag 13 Punkt 6)
 	Vergroesserung bool // Vergrößerung wählbar (gewählte Lupe, ADR-0033 Punkt 8)
 	Pfeilform      bool // Spitzenart und Enden wählbar (Werkzeug oder gewählter Pfeil, ADR-0021 Nachtrag 19)
+	Freihand       bool // Kästchen „Freehand“ (Werkzeug Textmarker ohne gewähltes Objekt, ADR-0049 Punkt 5)
 	// Anzahl ist die Zahl der gewählten Objekte, wenn mehrere gewählt sind (sonst 0): Der Kopf nennt sie, und die
 	// Abschnitte sind die aller gewählten Arten (ADR-0039 Nachtrag 4 Punkt 4); Werkzeug ist das der Hauptauswahl.
 	Anzahl  int
@@ -46,6 +47,11 @@ func objektWerkzeug(o document.Objekt) (Werkzeug, bool) {
 			return WerkzeugTextmarker, true
 		}
 		return WerkzeugPfeil, true
+	case document.Freihand:
+		if v.Multipliziert() { // freier Textmarker (ADR-0049 Punkt 5)
+			return WerkzeugTextmarker, true
+		}
+		return WerkzeugFreihand, true
 	case document.Kasten:
 		if v.Form == document.FormEllipse {
 			return WerkzeugEllipse, true
@@ -67,7 +73,7 @@ func objektWerkzeug(o document.Objekt) (Werkzeug, bool) {
 // farbWerkzeug meldet, ob ein Werkzeug eine Beschriftungsfarbe verwendet.
 func farbWerkzeug(w Werkzeug) bool {
 	return w == WerkzeugPfeil || w == WerkzeugKasten || w == WerkzeugText || w == WerkzeugNummer || w == WerkzeugLupe ||
-		w == WerkzeugSprechblase || w == WerkzeugEllipse || w == WerkzeugTextmarker
+		w == WerkzeugSprechblase || w == WerkzeugEllipse || w == WerkzeugTextmarker || w == WerkzeugFreihand
 }
 
 // textWerkzeug meldet, ob w Text setzt (Text, Sprechblase): Schrift, Größe, Stil und Ausrichtung gelten dafür.
@@ -76,7 +82,7 @@ func textWerkzeug(w Werkzeug) bool { return w == WerkzeugText || w == WerkzeugSp
 // strichWerkzeug meldet, ob ein Werkzeug einen Strich zeichnet (Pfeil, Kasten, Ellipse, Lupe, Textmarker).
 func strichWerkzeug(w Werkzeug) bool {
 	return w == WerkzeugPfeil || w == WerkzeugKasten || w == WerkzeugEllipse || w == WerkzeugLupe ||
-		w == WerkzeugTextmarker
+		w == WerkzeugTextmarker || w == WerkzeugFreihand
 }
 
 // Seitenleiste liefert den Inhalt der rechten Leiste. Ein gewähltes Objekt geht dem Werkzeug vor: Seine Farbe ändert
@@ -103,7 +109,8 @@ func (s *Sitzung) Seitenleiste() SeitenInhalt {
 		}
 	}
 	i := SeitenInhalt{Werkzeug: s.Werkzeug, Farbe: farbWerkzeug(s.Werkzeug),
-		Strich: strichWerkzeug(s.Werkzeug), Text: textWerkzeug(s.Werkzeug), Pfeilform: s.Werkzeug == WerkzeugPfeil}
+		Strich: strichWerkzeug(s.Werkzeug), Text: textWerkzeug(s.Werkzeug), Pfeilform: s.Werkzeug == WerkzeugPfeil,
+		Freihand: s.Werkzeug == WerkzeugTextmarker}
 	switch s.Werkzeug {
 	case WerkzeugAuswahl:
 		i.Hinweis = SeitenHinweisNichts

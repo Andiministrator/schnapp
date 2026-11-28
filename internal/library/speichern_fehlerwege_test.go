@@ -13,6 +13,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/Andiministrator/schnapp/internal/fileformat"
@@ -39,7 +40,7 @@ func neuereFassung(t *testing.T, daten []byte) []byte {
 			if err != nil {
 				t.Fatal(err)
 			}
-			neu := bytes.Replace(svg, []byte(`s:format="1"`), []byte(`s:format="3"`), 1) // 3: neuer als jede lesbare Version (ADR-0033: 2 ist die Lupe)
+			neu := bytes.Replace(svg, []byte(`s:format="1"`), []byte(`s:format="`+strconv.Itoa(fileformat.FormatVersion+1)+`"`), 1) // neuer als jede lesbare Version
 			if bytes.Equal(neu, svg) {
 				t.Fatalf("Formatversion nicht im SVG gefunden: %s", svg)
 			}

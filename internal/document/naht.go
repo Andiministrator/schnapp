@@ -92,6 +92,8 @@ func Reichweite(o Objekt) Rechteck {
 			return g.Vereint(r)
 		}
 		return g
+	case Freihand: // Hülle um die halbe Breite (Grenzen) und 1 Pixel für die Kantenglättung (ADR-0049 Punkt 2)
+		return Rechteck{Min: g.Min.Minus(Pt(1, 1)), Max: g.Max.Plus(Pt(1, 1))}
 	case Pfeil:
 		// Schaft und Köpfe genau wie Renderer und SVG (Pfeil.Form, ADR-0021 Nachtrag 19), dazu 1 Pixel Reserve für die
 		// Kantenglättung.

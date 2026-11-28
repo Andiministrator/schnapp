@@ -313,7 +313,7 @@ func (an mcpAnschluesse) werkzeuge() []mcp.Werkzeug {
 				`"required":["file","target"],"additionalProperties":false}`),
 			Aufruf: an.exportiere},
 		{Name: "annotate", Titel: "Annotate or redact a file",
-			Beschreibung: "Adds arrows, highlighter strokes, rectangles, ellipses, text and step numbers to a Schnapp file, PNG or JPEG (file, absolute " +
+			Beschreibung: "Adds arrows, highlighter and freehand strokes, rectangles, ellipses, text and step numbers to a Schnapp file, PNG or JPEG (file, absolute " +
 				"path) and redacts or pixelates areas for good, then saves like the Schnapp editor: a library screenshot " +
 				"is updated, any other file stays unchanged and the result becomes a new library screenshot. Coordinates " +
 				"are pixels of the visible image (width and height as export reports them). All or nothing: one invalid " +
@@ -321,15 +321,16 @@ func (an mcpAnschluesse) werkzeuge() []mcp.Werkzeug {
 				"[agents] library = yes.",
 			Eingabe: schema(`{"type":"object","properties":{"file":{"type":"string"},` +
 				`"annotations":{"type":"array","items":{"type":"object","properties":{` +
-				`"type":{"enum":["arrow","highlight","rect","ellipse","text","step","redact","pixelate"]},` +
+				`"type":{"enum":["arrow","highlight","freehand","rect","ellipse","text","step","redact","pixelate"]},` +
 				`"from":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},` +
 				`"to":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},` +
 				`"at":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},` +
+				`"points":{"type":"array","items":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},"minItems":2,"maxItems":4096,"description":"freehand, and highlight instead of from/to: the stroke as a polyline"},` +
 				`"tip":{"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2,"description":"text only: makes a speech bubble pointing at this point"},` +
 				`"start_head":{"enum":["triangle","narrow","notched","open","half","dot","diamond","square","bar","none"],"description":"arrow only: head at from (default none)"},` +
 				`"end_head":{"enum":["triangle","narrow","notched","open","half","dot","diamond","square","bar","none"],"description":"arrow only: head at to (default triangle; none at both ends draws a line)"},` +
-				`"line_style":{"enum":["solid","dashed","dotted"],"description":"arrow, highlight, rect and ellipse only (default solid)"},` +
-				`"shadow":{"description":"arrow, highlight, rect, ellipse, text, step: true for the default drop shadow, or {angle (light direction in degrees, default 135), distance, softness, color}"},` +
+				`"line_style":{"enum":["solid","dashed","dotted"],"description":"arrow, highlight, freehand, rect and ellipse only (default solid)"},` +
+				`"shadow":{"description":"arrow, highlight, freehand, rect, ellipse, text, step: true for the default drop shadow, or {angle (light direction in degrees, default 135), distance, softness, color}"},` +
 				`"text":{"type":"string"},"color":{"type":"string","description":"#RRGGBB or #RRGGBBAA"},` +
 				`"fill":{"type":"string","description":"#RRGGBB, #RRGGBBAA or none"},` +
 				`"width":{"type":"number"},"size":{"type":"number"},"radius":{"type":"number"},"font":{"type":"string"},` +

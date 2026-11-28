@@ -186,6 +186,16 @@ func beispiele() []beispiel {
 					Strich: document.Strich{Farbe: color.NRGBA{30, 60, 220, 255}, Breite: 2, Art: document.StrichGestrichelt}})
 			return d
 		}, Metadaten{}, false},
+		{"freehand", func(t *testing.T) *document.Dokument { // freier Strich, Formatversion 3 (ADR-0049)
+			d := beispielDok(t, 64, 48)
+			f := document.NeuerFreihand([]document.Punkt{document.Pt(6, 30), document.Pt(14, 12), document.Pt(24, 8),
+				document.Pt(32, 14), document.Pt(36, 30), document.Pt(20, 40)}, document.Strich{Farbe: color.NRGBA{220, 30, 30, 255}, Breite: 3})
+			m := document.NeuerFreihand([]document.Punkt{document.Pt(40, 10), document.Pt(48, 12), document.Pt(58, 11)},
+				document.Strich{Farbe: color.NRGBA{255, 230, 40, 255}, Breite: 8})
+			m.Ebene.Mischung = document.MischMultiplizieren
+			fuege(t, d, f, m)
+			return d
+		}, Metadaten{}, false},
 		{"highlighter", func(t *testing.T) *document.Dokument { // Textmarker: Mischung an der Ebene, Formatversion 2 (ADR-0048)
 			d := beispielDok(t, 64, 48)
 			m := document.GeraderPfeil(document.Pt(6, 14), document.Pt(58, 14), document.Strich{Farbe: color.NRGBA{255, 230, 40, 255}, Breite: 10})
@@ -781,7 +791,7 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 		"kante",
 		"streifen", "zeilen", "von", "bis", "ebene", "typ", "a", "b", "k", "strich", "bereich", "fuellung", "eckradius",
 		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "schrift", "stil", "ausrichtung", "spitze", "mitte", "wert", "radius",
-		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel", "ende", "anfang", "strichart", "schatten", "gruppe", "form", "mischung"}
+		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel", "ende", "anfang", "strichart", "schatten", "gruppe", "form", "mischung", "punkte"}
 	for _, w := range wortliste {
 		if !gesehen[w] {
 			t.Errorf("Beispiele enthalten s:%s nicht (Beispielabdeckung)", w)
@@ -804,7 +814,7 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 			t.Errorf("docs/format.md beschreibt s:%s nicht", n)
 		}
 	}
-	for _, n := range []string{"pfeil", "kasten", "text", "nummer", "lupe"} {
+	for _, n := range []string{"pfeil", "kasten", "text", "nummer", "lupe", "freihand"} {
 		if !strings.Contains(spez, `"`+n+`"`) {
 			t.Errorf("docs/format.md nennt den Objekttyp %q nicht", n)
 		}

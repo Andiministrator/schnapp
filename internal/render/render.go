@@ -519,6 +519,8 @@ func (z zeichner) ebenenRahmen(o document.Objekt) image.Rectangle {
 		rand += v.Strich.Breite / 2
 	case document.Lupe: // Rahmen wie beim Kasten (ADR-0033 Punkt 4)
 		rand += 0.5 * v.Strich.Breite
+	case document.Freihand: // Grenzen tragen die halbe Breite schon; starr verschobene Teile an einer Naht ragen darüber
+		rand += 0.5 * v.Strich.Breite
 	}
 	r := document.R(z.ansicht(g.Min), z.ansicht(g.Max))
 	starr := func(anker document.Punkt) {
@@ -595,6 +597,12 @@ func (z zeichner) objekt(o document.Objekt) error {
 		// seiner Nähe um seinen Versatz verschoben und auf sich beschnitten (strichJeStueck). Über vielen Nähten baut so
 		// kein Bereich den ganzen Pfeil (F-136). Die Köpfe ersetzen die runden Kappen des Schafts (ADR-0021 Nachtrag 19).
 		z.pfeil(v)
+	case document.Freihand: // offener Linienzug wie der Pfeilschaft, je Bereich beschnitten (ADR-0049 Punkt 2)
+		if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
+			sz := ZerlegeStrich(v.Punkte(), v.Strich)
+			z.ellipsenKosten(len(v.Punkte()) + len(sz.Teile)) // Punkte und Teile zählen wie bei der Ellipse (F-1023)
+			z.strichJeStueckMit(sz.ls, v.Strich, sz.Suche)
+		}
 	case document.Kasten:
 		if v.Ellipse() {
 			// Ellipse (ADR-0047 Punkt 2): je Bereich abgeschnitten wie der runde Kasten; Füllung im abgetasteten Umriss,

@@ -57,6 +57,20 @@ func trifft(o document.Objekt, p document.Punkt, tol float64) bool {
 	case document.Lupe: // Quelle, Ziel oder Verbindungslinie (ADR-0033 Punkt 8)
 		_, ok := lupenTeil(v, p, tol)
 		return ok
+	case document.Freihand: // auf dem Strich (ADR-0049)
+		pts, hw := v.Punkte(), v.Strich.Breite/2
+		if !v.Grenzen().Enthaelt(p) && len(pts) > 0 {
+			r := v.Grenzen()
+			if p.X < r.Min.X-tol || p.X > r.Max.X+tol || p.Y < r.Min.Y-tol || p.Y > r.Max.Y+tol {
+				return false
+			}
+		}
+		for i := 1; i < len(pts); i++ {
+			if abstandZurStrecke(p, pts[i-1], pts[i]) <= hw+tol {
+				return true
+			}
+		}
+		return false
 	case document.Nummer:
 		if p.Minus(v.Mitte).Laenge() <= v.Radius+tol {
 			return true
@@ -145,6 +159,8 @@ func Verschiebe(o document.Objekt, d document.Punkt) document.Objekt {
 	case document.Nummer:
 		v.Mitte = v.Mitte.Plus(d)
 		return v
+	case document.Freihand: // ein neuer Zug, der alte gehört dem Rückgängig-Stand
+		return v.Verschoben(d)
 	case document.Lupe: // beide Rechtecke; einen Teil allein verschiebt zieheLupenTeil
 		v.Quelle = document.Rechteck{Min: v.Quelle.Min.Plus(d), Max: v.Quelle.Max.Plus(d)}
 		v.Ziel = document.Rechteck{Min: v.Ziel.Min.Plus(d), Max: v.Ziel.Max.Plus(d)}

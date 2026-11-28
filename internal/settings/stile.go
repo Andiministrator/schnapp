@@ -45,6 +45,7 @@ const (
 	ArtLupe        = "magnifier"
 	ArtEllipse     = "ellipse"     // ADR-0047 Punkte 4 und 5
 	ArtTextmarker  = "highlighter" // ADR-0048 Punkte 5 und 6
+	ArtFreihand    = "freehand"    // ADR-0049 Punkt 4
 )
 
 // MaxEigeneStile ist die Grenze eigener Stile je Objektart (ADR-0037 Punkt 5).
@@ -93,7 +94,7 @@ type Stil struct {
 // Schluessel je Art, in der Reihenfolge, in der sie geschrieben werden.
 func schluesselFuer(art string) []string {
 	switch art {
-	case ArtPfeil, ArtLupe, ArtTextmarker:
+	case ArtPfeil, ArtLupe, ArtTextmarker, ArtFreihand:
 		return []string{"color", "width", "shadow"}
 	case ArtKasten, ArtEllipse:
 		return []string{"color", "fill", "width", "shadow"}

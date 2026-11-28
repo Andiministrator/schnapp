@@ -101,8 +101,8 @@
     "name": "PF15 Leiste ohne Pfeilform beim Werkzeug",
     "datei": "internal/canvas/seitenleiste.go",
     "paket": "./internal/canvas",
-    "alt": "Text: textWerkzeug(s.Werkzeug), Pfeilform: s.Werkzeug == WerkzeugPfeil}",
-    "neu": "Text: textWerkzeug(s.Werkzeug), Pfeilform: false}"
+    "alt": "Text: textWerkzeug(s.Werkzeug), Pfeilform: s.Werkzeug == WerkzeugPfeil,",
+    "neu": "Text: textWerkzeug(s.Werkzeug), Pfeilform: false,"
   },
   {
     "name": "PF16 annotate übergeht die Spitzen",

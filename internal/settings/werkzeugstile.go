@@ -44,6 +44,7 @@ type WerkzeugStil struct {
 	KopfEnde   document.Kopfart
 	KopfAnfang document.Kopfart // KopfKeine = keine Spitze am Anfang
 	Eckradius  float64
+	Freihand   bool // Textmarker: freier Strich (ADR-0049 Punkt 5)
 	// Gesetzt sind die Schlüssel, die beim Lesen gültig in der Datei standen (nil beim Schreiben: alle).
 	Gesetzt map[string]bool
 }
@@ -63,7 +64,9 @@ func werkzeugSchluessel(art string) []string {
 		return []string{"color", "width", "line_style", "shadow_on", "shadow"}
 	case ArtEllipse: // wie der Kasten ohne Eckradius (ADR-0047 Punkt 4)
 		return []string{"color", "fill", "width", "line_style", "shadow_on", "shadow"}
-	case ArtTextmarker: // wie der Pfeil ohne Köpfe (ADR-0048 Punkt 5)
+	case ArtTextmarker: // wie der Pfeil ohne Köpfe (ADR-0048 Punkt 5), dazu frei oder gerade (ADR-0049 Punkt 5)
+		return []string{"color", "width", "line_style", "freehand", "shadow_on", "shadow"}
+	case ArtFreihand: // ADR-0049 Punkt 4
 		return []string{"color", "width", "line_style", "shadow_on", "shadow"}
 	}
 	return nil
@@ -223,6 +226,12 @@ func setzeWerkzeugWert(s *WerkzeugStil, k, wert string) bool {
 			s.Schatten.An = b
 		}
 		return ok
+	case "freehand":
+		b, ok := janein(wert)
+		if ok {
+			s.Freihand = b
+		}
+		return ok
 	case "shadow":
 		sch, ok := schattenAus(wert)
 		if ok {
@@ -266,6 +275,8 @@ func FormatWerkzeugStile(stile []WerkzeugStil) (string, error) {
 				w = zahlText(s.Eckradius)
 			case "shadow_on":
 				w = jaNein(s.Schatten.An)
+			case "freehand":
+				w = jaNein(s.Freihand)
 			case "shadow":
 				w = schattenText(s.Schatten)
 			case "color":

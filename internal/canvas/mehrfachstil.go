@@ -70,6 +70,13 @@ func eigenschaftWert(o document.Objekt, e Eigenschaft) (any, bool) {
 		case EigStrichart:
 			return v.Strich.Art, true
 		}
+	case document.Freihand:
+		switch e {
+		case EigBreite:
+			return v.Strich.Breite, true
+		case EigStrichart:
+			return v.Strich.Art, true
+		}
 	case document.Lupe:
 		switch e {
 		case EigBreite:

@@ -18,6 +18,8 @@ func (s *Sitzung) Strichart() document.Strichart {
 		return v.Strich.Art
 	case document.Lupe:
 		return v.Strich.Art
+	case document.Freihand:
+		return v.Strich.Art
 	}
 	return s.Stil.Strichart
 }
@@ -57,6 +59,9 @@ func mitStrichart(o document.Objekt, a document.Strichart) document.Objekt {
 		v.Strich.Art = a
 		return v
 	case document.Lupe:
+		v.Strich.Art = a
+		return v
+	case document.Freihand:
 		v.Strich.Art = a
 		return v
 	}

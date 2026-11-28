@@ -11,6 +11,7 @@ import (
 	"image/png"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -115,9 +116,9 @@ func TestLupeLeserRegeln(t *testing.T) {
 			t.Errorf("%s: %v (erwartet beschädigt mit %q)", f.name, err, f.teil)
 		}
 	}
-	// Eine Datei der Version 3 bleibt „neuer“, auch mit Lupe.
-	if err := lies(ersetze(`s:format="2"`, `s:format="3"`)); !errors.Is(err, ErrFormatNeuer) {
-		t.Errorf("Version 3: %v", err)
+	// Eine Datei einer neueren Version bleibt „neuer“, auch mit Lupe.
+	if err := lies(ersetze(`s:format="2"`, `s:format="`+strconv.Itoa(FormatVersion+1)+`"`)); !errors.Is(err, ErrFormatNeuer) {
+		t.Errorf("Version %d: %v", FormatVersion+1, err)
 	}
 }
 

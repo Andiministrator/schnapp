@@ -223,6 +223,10 @@ type Text struct {
 // Sprechblase dem Wert nach, nicht ihre Adresse: Wer die Spitze ändert, setzt einen neuen Zeiger (auch bei gleichem
 // Punkt), und das darf nicht als Änderung zählen (F-694). Wer Objekte auf Gleichheit prüft, nimmt diese Funktion.
 func Gleich(a, b Objekt) bool {
+	if fa, ok := a.(Freihand); ok { // Punkte dem Wert nach (ADR-0049 Punkt 1)
+		fb, ok := b.(Freihand)
+		return ok && gleicheFreihand(fa, fb)
+	}
 	ta, okA := a.(Text)
 	tb, okB := b.(Text)
 	if !okA || !okB {

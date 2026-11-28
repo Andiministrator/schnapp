@@ -399,3 +399,38 @@ func TestHighlightMitSchattenBleibtTextmarker(t *testing.T) {
 		t.Errorf("Schatten %v, Mischung %v", m.Ebenenwerte().Schatten.An, m.Ebenenwerte().Mischung)
 	}
 }
+
+// ADR-0049 Punkt 7: freehand mit points (übernommen, nicht geglättet); highlight mit points ist ein freier Textmarker;
+// highlight braucht from und to oder points, nicht beides.
+func TestWendeFreihand(t *testing.T) {
+	d := dokument(t, 200, 100)
+	es := lies(t, `{"annotations":[
+		{"type":"freehand","points":[[10,10],[30,40],[60,20]],"width":5,"line_style":"dashed"},
+		{"type":"highlight","points":[[10,60],[80,62],[150,58]]}]}`)
+	if _, err := Wende(context.Background(), d, es); err != nil {
+		t.Fatal(err)
+	}
+	o := d.Objekte()
+	f0, f1 := o[0].(document.Freihand), o[1].(document.Freihand)
+	if len(f0.Punkte()) != 3 || f0.Strich.Breite != 5 || f0.Strich.Art != document.StrichGestrichelt || f0.Multipliziert() {
+		t.Errorf("freehand: %+v %v", f0, f0.Punkte())
+	}
+	if !f1.Multipliziert() || f1.Strich.Farbe != canvas.TextmarkerGelb || f1.Strich.Breite != canvas.TextmarkerBreite {
+		t.Errorf("highlight mit points: %+v", f1)
+	}
+	for _, j := range []string{
+		`{"annotations":[{"type":"freehand","points":[[1,1]]}]}`,
+		`{"annotations":[{"type":"freehand","from":[1,1],"to":[5,5]}]}`,
+		`{"annotations":[{"type":"highlight","from":[1,1],"to":[5,5],"points":[[1,1],[2,2]]}]}`,
+		`{"annotations":[{"type":"highlight","to":[5,5]}]}`,
+		`{"annotations":[{"type":"freehand","points":[[1,1],[500,5]]}]}`,
+	} {
+		es, err := Lies(strings.NewReader(j))
+		if err == nil {
+			_, err = Wende(context.Background(), dokument(t, 200, 100), es)
+		}
+		if err == nil {
+			t.Errorf("angenommen: %s", j)
+		}
+	}
+}

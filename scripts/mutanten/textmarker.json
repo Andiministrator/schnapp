@@ -192,15 +192,15 @@
     "name": "TM28 Schnellstil-Art des Objekts Pfeil",
     "datei": "internal/canvas/schnellstile.go",
     "paket": "./internal/canvas",
-    "alt": "\t\tif v.Multipliziert() {\n\t\t\tart = SchnellTextmarker",
-    "neu": "\t\tif false {\n\t\t\tart = SchnellTextmarker"
+    "alt": "\t\tart := SchnellPfeil\n\t\tif v.Multipliziert() {\n\t\t\tart = SchnellTextmarker",
+    "neu": "\t\tart := SchnellPfeil\n\t\tif false {\n\t\t\tart = SchnellTextmarker"
   },
   {
     "name": "TM29 Schnellstil des Textmarkers ohne Breite",
     "datei": "internal/canvas/schnellstile.go",
     "paket": "./internal/canvas",
-    "alt": "\tcase SchnellPfeil, SchnellLupe, SchnellTextmarker:\n\t\tr.Breite = st.Breite",
-    "neu": "\tcase SchnellPfeil, SchnellLupe:\n\t\tr.Breite = st.Breite"
+    "alt": "\tcase SchnellPfeil, SchnellLupe, SchnellTextmarker, SchnellFreihand:\n\t\tr.Breite = st.Breite",
+    "neu": "\tcase SchnellPfeil, SchnellLupe, SchnellFreihand:\n\t\tr.Breite = st.Breite"
   },
   {
     "name": "TM30 styles.ini ohne Breite: 6",
@@ -269,7 +269,7 @@
     "name": "TM39 MCP-Schema ohne highlight",
     "datei": "cmd/schnapp/mcp.go",
     "paket": "./cmd/schnapp",
-    "alt": "\"enum\":[\"arrow\",\"highlight\",\"rect\"",
-    "neu": "\"enum\":[\"arrow\",\"rect\""
+    "alt": "\"enum\":[\"arrow\",\"highlight\",\"freehand\",\"rect\"",
+    "neu": "\"enum\":[\"arrow\",\"freehand\",\"rect\""
   }
 ]

@@ -234,8 +234,8 @@
     "name": "ST34 line_style ignoriert",
     "datei": "internal/annotate/annotate.go",
     "paket": "./internal/annotate",
-    "alt": "\t\t\t\tstrich.Art = art\n",
-    "neu": "\t\t\t\t_ = art\n"
+    "alt": "\t\t\t\tstrich.Art = art\n\t\t\t}\n\t\t\tif e.Type == \"highlight\" {\n\t\t\t\to = canvas.NeuerTextmarker",
+    "neu": "\t\t\t\t_ = art\n\t\t\t}\n\t\t\tif e.Type == \"highlight\" {\n\t\t\t\to = canvas.NeuerTextmarker"
   },
   {
     "name": "ST35 Muster ohne Obergrenze (F-840)",

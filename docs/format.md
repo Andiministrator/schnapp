@@ -1,6 +1,6 @@
 # Schnapp working file format
 
-**Format version: 2**
+**Format version: 3**
 
 This document specifies the working file written and read by Schnapp: a PNG image that looks like a finished
 screenshot in every viewer and carries all editable layers (annotations, crop and squeeze, the unmodified original) in
@@ -144,7 +144,7 @@ Root element `svg`:
 
 | Attribute | Value | Required |
 |---|---|---|
-| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7, the attribute `s:spitze` of the text, 8.3, the attributes `s:ende`/`s:anfang` of the arrow, 8.1, the attribute `s:strichart` of arrow, box and magnifier, 8.8, the layer attributes `s:schatten`, `s:gruppe` and `s:mischung`, 8.5, and the attribute `s:form` of the box, 8.2; writers use the lowest version that carries the content, section 12) | MUST |
+| `s:format` | format version, a decimal integer; this document describes `1`, `2` and `3` (version `3` only adds the object type `freihand`, 8.9; version `2` only adds the object type `lupe`, 8.7, the attribute `s:spitze` of the text, 8.3, the attributes `s:ende`/`s:anfang` of the arrow, 8.1, the attribute `s:strichart` of arrow, box and magnifier, 8.8, the layer attributes `s:schatten`, `s:gruppe` and `s:mischung`, 8.5, and the attribute `s:form` of the box, 8.2; writers use the lowest version that carries the content, section 12) | MUST |
 | `width`, `height` | size of the original in pixels, plain decimal integers without unit | MUST |
 | `viewBox` | `0 0 <width> <height>` | writer MUST, reader ignores |
 | `xmlns`, `xmlns:s` | the namespaces above | writer MUST |
@@ -538,6 +538,25 @@ pieces explicitly (dashes as one path, dots as circles), not with `stroke-dashar
 only approximates the pattern with `stroke-dasharray` on the solid shape (magnifier frames solid), which keeps `snAP`
 small — readers use `s:strichart` alone.
 
+### 8.9 `"freihand"` freehand stroke (format version 3)
+
+A freehand stroke is an open polyline in original pixels.
+
+| Attribute | Value |
+|---|---|
+| `s:punkte` | REQUIRED. 2 to 4096 points (5.2), separated by single spaces, in drawing order |
+| `s:strich` | REQUIRED. Stroke colour and width as for the arrow (8.1) |
+| `s:strichart` | OPTIONAL, as in 8.8 (the pattern runs along the whole polyline, a whole dash or a dot at both ends) |
+
+The stroke has round ends and round joins and is drawn so that every pixel is covered once, also where the line
+crosses itself or turns back (a translucent colour does not get darker there). Layer attributes (8.5) apply, including
+`s:mischung` (Schnapp's free highlighter). The object type exists from format version 3 on: in a file with
+`s:format="1"` or `"2"` it is an unknown object type (8.6), and the file is damaged; a writer emits `s:format="3"` if the
+document contains one (section 12). Fewer than 2 or more than 4096 points, or a point that does not parse, make the file
+damaged. Informative: Schnapp smooths and thins a stroke when the pointer is released and stores the result; the points
+are not control points of a curve. The presentation is a `path` with `M`/`L` commands. Example:
+`testdata/format/freehand`.
+
 ## 9. Redaction
 
 Redacting (blacking out or pixelating) is **not** an object. It overwrites pixels of the original, and the result is
@@ -568,7 +587,7 @@ value here and to the code must happen in the same commit.
 
 | Key | Value | Meaning |
 |---|---|---|
-| `format_version` | 2 | highest value of `s:format` read and written by this version (`2` only with a `lupe`, an `s:spitze`, an arrow head other than the defaults, an `s:strichart`, an `s:form`, an `s:schatten`, an `s:gruppe` or an `s:mischung`, section 12) |
+| `format_version` | 3 | highest value of `s:format` read and written by this version (`3` only with a `freihand`, 8.9; `2` only with a `lupe`, an `s:spitze`, an arrow head other than the defaults, an `s:strichart`, an `s:form`, an `s:schatten`, an `s:gruppe` or an `s:mischung`, section 12) |
 | `namespace` | `urn:x-schnapp:1` | Schnapp XML namespace |
 | `chunk_svg` | `snAP` | chunk with the compressed SVG |
 | `chunk_orig` | `snAO` | chunk with the original PNG |
@@ -627,7 +646,8 @@ Original width and height are at least 1.
 5. Write objects in stacking order, bottom first.
 6. A program that stores a changed view of the file SHOULD rewrite all of it (visible image, `snAP`, `snAO`) rather
    than patch single chunks.
-7. Write the lowest format version that carries the content: `s:format="2"` if and only if the document contains a
+7. Write the lowest format version that carries the content: `s:format="3"` if and only if the document contains a
+   `freihand` (8.9); otherwise `s:format="2"` if and only if the document contains a
    `lupe` (8.7), a text with `s:spitze` (8.3), an arrow with `s:ende` or `s:anfang` (8.1), a box with `s:form` (8.2) or
    an object with `s:strichart` (8.8), `s:schatten`, `s:gruppe` or `s:mischung` (8.5), otherwise `1`. A reader that knows only version 1 then still reads
    every file without them, and reports a file with one as newer instead of damaged.
@@ -672,6 +692,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `line-styles` | format version 2: a `dashed` arrow with the default head, a curved `dotted` line, a `dotted` square box and a `dashed` box with rounded corners |
 | `ellipse` | format version 2: a filled ellipse with a solid outline and a circle with a `dashed` outline |
 | `groups` | format version 2: a box and an arrow forming one group (`s:gruppe="1"`) and a step number without group |
+| `freehand` | format version 3: a red freehand stroke with a curve and a sharp turn, and a free highlighter with `s:mischung="multiply"` |
 | `highlighter` | format version 2: a yellow arrow without heads blended with `s:mischung="multiply"` (a highlighter) |
 | `shadow` | format version 2: a filled box with a soft black shadow at 40 % opacity down and to the right and an arrow with a sharp blue shadow 3 pixels to the right (light from the left, angle 180) |
 | `callout` | format version 2: two texts with `s:spitze`, one with a label (filled polygon) and one without (legs as a line) |

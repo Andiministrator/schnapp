@@ -17,7 +17,7 @@ Schnapp runs on Linux with Wayland (KDE Plasma/KWin). Capturing talks to KWin di
 | `schnapp --region --output=shot.png` | Lets the user drag an area (interactive) |
 | `schnapp --list-screens --json` | Lists the monitors |
 | `schnapp --export=out.png FILE` | Renders FILE (a Schnapp working file, PNG or JPEG) with its crop, annotations and redactions into `out.png`, without a window; FILE stays unchanged |
-| `schnapp --annotate=list.json FILE` | Adds the arrows, highlighter strokes, rectangles, ellipses, text, step numbers and redactions from `list.json` (`-` reads standard input) to FILE and saves as the editor does — see [Annotating and redacting](#annotating-and-redacting) |
+| `schnapp --annotate=list.json FILE` | Adds the arrows, highlighter and freehand strokes, rectangles, ellipses, text, step numbers and redactions from `list.json` (`-` reads standard input) to FILE and saves as the editor does — see [Annotating and redacting](#annotating-and-redacting) |
 | `schnapp --version --json` | Prints the version |
 
 Without `--output`, a capture is stored in the library (`~/Pictures/schnapp/YYYY-MM/…`, see the README) and the
@@ -135,14 +135,15 @@ stays unchanged and the result becomes a new screenshot in the library. `LIST` i
 | `type` | Keys (required **bold**) |
 |---|---|
 | `arrow` | **`from`**, **`to`**, `color`, `width`, `start_head` (head at `from`, default `none`), `end_head` (head at `to`, default `triangle`); heads: `triangle`, `narrow`, `notched`, `open`, `half`, `dot`, `diamond`, `square`, `bar`, `none` (both `none`: a plain line); `line_style`: `solid` (default), `dashed`, `dotted` (heads stay solid) |
-| `highlight` | **`from`**, **`to`**, `color` (default yellow `#FFE628`), `width` (default 20, larger on large screenshots), `line_style` — a highlighter stroke: the colour multiplies the image below, so dark text stays dark |
+| `freehand` | **`points`** (2 to 4096 points `[x, y]`, taken as given), `color`, `width`, `line_style` — a free line with round ends and joins |
+| `highlight` | **`from`**, **`to`** or **`points`** (a free highlighter; not both), `color` (default yellow `#FFE628`), `width` (default 20, larger on large screenshots), `line_style` — a highlighter stroke: the colour multiplies the image below, so dark text stays dark |
 | `rect` | **`from`**, **`to`** (opposite corners), `color` (line), `fill`, `width`, `line_style` (`solid`, `dashed`, `dotted`) |
 | `ellipse` | same keys as `rect`: the ellipse inside the rectangle `from`–`to` (equal sides: a circle) |
 | `text` | **`at`** (top left), **`text`** (`\n` for a new line), `size`, `color` (letters), `fill` (label), `font`, `bold`, `italic`, `underline`, `strikethrough`, `align` (`left`, `center`, `right`), `tip` (makes a speech bubble: a point the label points at, same coordinates as `at`) |
 | `step` | **`at`** (centre), `color`, `radius` — the number is the next free one |
 | `redact`, `pixelate` | **`from`**, **`to`** — overwrites the pixels for good; an area too narrow to pixelate is blacked out |
 
-`arrow`, `highlight`, `rect`, `ellipse`, `text` and `step` also take `shadow`: `true` for the default drop shadow (light from the top left,
+`arrow`, `highlight`, `freehand`, `rect`, `ellipse`, `text` and `step` also take `shadow`: `true` for the default drop shadow (light from the top left,
 shadow down and to the right, soft, black), `false` for none, or an object with any of `angle` (direction the
 light comes from, degrees, 0 = from the right, counter-clockwise, default 135), `distance` (0 to 1000, default 6),
 `softness` (blur radius, 0 to 200, default 8; both in pixels and, like widths, larger on large screenshots) and `color`
