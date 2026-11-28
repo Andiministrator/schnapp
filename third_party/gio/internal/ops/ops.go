@@ -128,7 +128,7 @@ const (
 	TypeDeferLen            = 1
 	TypeTransformLen        = 1 + 1 + 4*6
 	TypePopTransformLen     = 1
-	TypePushOpacityLen      = 1 + 4
+	TypePushOpacityLen      = 1 + 4 + 1
 	TypePopOpacityLen       = 1
 	TypeRedrawLen           = 1 + 8
 	TypeImageLen            = 1 + 1
@@ -365,12 +365,14 @@ func DecodeTransform(data []byte) (t f32.Affine2D, push bool) {
 	return f32.NewAffine2D(a, b, c, d, e, f), push
 }
 
-func DecodeOpacity(data []byte) float32 {
+// DecodeOpacity liefert die Deckkraft und ob die Ebene multiplizierend eingemischt wird (Schnapp-Patch,
+// Textmarker).
+func DecodeOpacity(data []byte) (float32, bool) {
 	if OpType(data[0]) != TypePushOpacity {
 		panic("invalid op")
 	}
 	bo := binary.LittleEndian
-	return math.Float32frombits(bo.Uint32(data[1:]))
+	return math.Float32frombits(bo.Uint32(data[1:])), data[5] == 1
 }
 
 // DecodeSave decodes the state id of a save op.

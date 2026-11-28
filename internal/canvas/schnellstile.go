@@ -31,7 +31,8 @@ const (
 	SchnellSprechblase // Text mit Spitze (Werkzeug Sprechblase, ADR-0021 Nachtrag 13); eingebaute Stile = die des Texts
 	SchnellNummer
 	SchnellLupe
-	SchnellEllipse // Kasten mit Form Ellipse (ADR-0047 Punkt 5); eingebaute Stile = die des Kastens
+	SchnellEllipse    // Kasten mit Form Ellipse (ADR-0047 Punkt 5); eingebaute Stile = die des Kastens
+	SchnellTextmarker // multiplizierender Pfeil (ADR-0048 Punkt 6)
 )
 
 // MaxEigeneSchnellstile ist die Grenze eigener Stile je Objektart (ADR-0037 Punkt 5).
@@ -39,7 +40,7 @@ const MaxEigeneSchnellstile = settings.MaxEigeneStile
 
 // artNamen sind die Abschnittsnamen der Datei, in der Reihenfolge von SchnellArt.
 var artNamen = [...]string{settings.ArtPfeil, settings.ArtKasten, settings.ArtText, settings.ArtSprechblase,
-	settings.ArtNummer, settings.ArtLupe, settings.ArtEllipse}
+	settings.ArtNummer, settings.ArtLupe, settings.ArtEllipse, settings.ArtTextmarker}
 
 // Schnellstil ist ein Stil einer Objektart. Nicht jedes Feld gilt für jede Art: Pfeil und Lupe Farbe und Breite, Kasten
 // dazu Füllung, Text und Sprechblase Farbe (Schrift), Füllung (Schild), Schrift, Schriftgrad, Stil und Ausrichtung,
@@ -85,6 +86,10 @@ func (st Schnellstil) Name() string {
 		return i18n.T("White on black")
 	case "marker":
 		return i18n.T("Marker")
+	case "yellow":
+		return i18n.T("Yellow")
+	case "pink":
+		return i18n.T("Pink")
 	case "white-on-red":
 		return i18n.T("White on red")
 	case "black-on-yellow":
@@ -116,6 +121,8 @@ func schnellWerkzeug(a SchnellArt) (Werkzeug, bool) {
 		return WerkzeugLupe, true
 	case SchnellEllipse:
 		return WerkzeugEllipse, true
+	case SchnellTextmarker:
+		return WerkzeugTextmarker, true
 	}
 	return WerkzeugAuswahl, false
 }
@@ -137,6 +144,8 @@ func werkzeugArt(w Werkzeug) (SchnellArt, bool) {
 		return SchnellLupe, true
 	case WerkzeugEllipse:
 		return SchnellEllipse, true
+	case WerkzeugTextmarker:
+		return SchnellTextmarker, true
 	}
 	return 0, false
 }
@@ -145,7 +154,7 @@ func werkzeugArt(w Werkzeug) (SchnellArt, bool) {
 func (st Schnellstil) bereinigt() Schnellstil {
 	r := Schnellstil{Art: st.Art, Farbe: st.Farbe}
 	switch st.Art {
-	case SchnellPfeil, SchnellLupe:
+	case SchnellPfeil, SchnellLupe, SchnellTextmarker:
 		r.Breite = st.Breite
 	case SchnellKasten, SchnellEllipse:
 		r.Fuellung, r.Breite = st.Fuellung, st.Breite
@@ -166,7 +175,7 @@ func (st Schnellstil) bereinigt() Schnellstil {
 // Ausrichtung.
 func (st Schnellstil) gueltig() bool {
 	switch st.Art {
-	case SchnellPfeil, SchnellKasten, SchnellLupe, SchnellEllipse:
+	case SchnellPfeil, SchnellKasten, SchnellLupe, SchnellEllipse, SchnellTextmarker:
 		return st.Breite > 0
 	case SchnellText, SchnellSprechblase:
 		return st.Schriftgrad > 0 && st.Ausrichtung <= document.AusrichtungRechts &&
@@ -265,6 +274,10 @@ var eingebaut = []Schnellstil{
 	{Art: SchnellLupe, Kennung: "red", Farbe: stilRot, Breite: 6},
 	{Art: SchnellLupe, Kennung: "black", Farbe: stilDunkl, Breite: 6},
 	{Art: SchnellLupe, Kennung: "white", Farbe: Weiss, Breite: 6},
+	// Textmarker (ADR-0048 Punkt 6)
+	{Art: SchnellTextmarker, Kennung: "yellow", Farbe: TextmarkerGelb, Breite: TextmarkerBreite},
+	{Art: SchnellTextmarker, Kennung: "green", Farbe: TextmarkerGruen, Breite: TextmarkerBreite},
+	{Art: SchnellTextmarker, Kennung: "pink", Farbe: TextmarkerRosa, Breite: TextmarkerBreite},
 }
 
 // EingebauteSchnellstile liefert die eingebauten Stile der Art a in der Reihenfolge der Kacheln (eine Kopie). Die
@@ -378,7 +391,11 @@ func objektStand(o document.Objekt) (Schnellstil, bool) {
 func objektStandOhneSchatten(o document.Objekt) (Schnellstil, bool) {
 	switch v := o.(type) {
 	case document.Pfeil:
-		return Schnellstil{Art: SchnellPfeil, Farbe: v.Strich.Farbe, Breite: v.Strich.Breite}, true
+		art := SchnellPfeil
+		if v.Multipliziert() {
+			art = SchnellTextmarker
+		}
+		return Schnellstil{Art: art, Farbe: v.Strich.Farbe, Breite: v.Strich.Breite}, true
 	case document.Kasten:
 		art := SchnellKasten
 		if v.Form == document.FormEllipse {
@@ -521,7 +538,7 @@ func (s *Sitzung) WendeSchnellstilAn(st Schnellstil) bool {
 	s.hsvGemerkt = false
 	s.aendereStil(w, func(z *Stil) {
 		switch st.Art {
-		case SchnellPfeil, SchnellKasten, SchnellLupe, SchnellEllipse:
+		case SchnellPfeil, SchnellKasten, SchnellLupe, SchnellEllipse, SchnellTextmarker:
 			z.Breite = g.Breite
 		case SchnellText, SchnellSprechblase:
 			z.Schriftgrad, z.Schrift = g.Schriftgrad, g.Schrift

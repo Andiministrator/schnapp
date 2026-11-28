@@ -659,6 +659,14 @@ msgid "Marker"
 msgstr ""
 
 #: internal/canvas/schnellstile.go
+msgid "Yellow"
+msgstr ""
+
+#: internal/canvas/schnellstile.go
+msgid "Pink"
+msgstr ""
+
+#: internal/canvas/schnellstile.go
 msgid "White on red"
 msgstr ""
 
@@ -1352,6 +1360,10 @@ msgid "Arrow"
 msgstr ""
 
 #: internal/ui/editor.go
+msgid "Highlighter"
+msgstr ""
+
+#: internal/ui/editor.go
 msgid "Rectangle"
 msgstr ""
 
@@ -1423,6 +1435,10 @@ msgstr ""
 
 #: internal/ui/editor.go
 msgid "Drag to draw an ellipse. Shift: circle."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Drag along the text to highlight it. Shift: horizontal."
 msgstr ""
 
 #: internal/ui/editor.go
@@ -2089,6 +2105,10 @@ msgstr ""
 
 #: internal/ui/hilfe.go
 msgid "Sidebar / recent captures"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Hide / lock layer"
 msgstr ""
 
 #: internal/ui/hilfe.go internal/ui/oberflaeche.go

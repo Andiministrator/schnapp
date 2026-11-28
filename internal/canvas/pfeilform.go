@@ -18,7 +18,7 @@ func (s *Sitzung) gewaehlterPfeil() (document.Pfeil, bool) {
 		return document.Pfeil{}, false
 	}
 	p, ok := o.(document.Pfeil)
-	return p, ok
+	return p, ok && !p.Multipliziert() // der Textmarker hat keine Köpfe (ADR-0048 Punkt 2)
 }
 
 // Pfeilform liefert die Spitzenarten bei A und B, die die rechte Leiste zeigt.
@@ -45,11 +45,17 @@ func (s *Sitzung) setzePfeilform(aendere func(*document.Pfeil), stil func(*Stil)
 	if s.stilMehrere() { // alle gewählten Pfeile (ADR-0039 Nachtrag 4)
 		return s.setzeMehrere(func(o document.Objekt) (document.Objekt, bool) {
 			p, ok := o.(document.Pfeil)
-			if ok {
-				aendere(&p)
+			if !ok || p.Multipliziert() { // Textmarker übergehen (ADR-0048 Punkt 2)
+				return o, false
 			}
-			return p, ok
+			aendere(&p)
+			return p, true
 		}, func(w Werkzeug) { s.aendereStil(w, stil) })
+	}
+	if o, ok := s.D.Objekt(s.Auswahl); ok {
+		if p, ok := o.(document.Pfeil); ok && p.Multipliziert() {
+			return false // gewählter Textmarker: weder Objekt noch Stil eines Werkzeugs ändern
+		}
 	}
 	s.aendereZielStil(stil)
 	p, ok := s.gewaehlterPfeil()

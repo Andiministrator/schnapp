@@ -27,6 +27,8 @@ func TestWerkzeugStileHinUndZurueck(t *testing.T) {
 		{Stil: Stil{Art: ArtLupe, Farbe: color.NRGBA{R: 7, A: 255}, Breite: 3}, Strichart: document.StrichGestrichelt},
 		{Stil: Stil{Art: ArtEllipse, Farbe: color.NRGBA{G: 7, A: 255}, Fuellung: color.NRGBA{B: 9, A: 50}, Breite: 5},
 			Strichart: document.StrichGepunktet}, // ADR-0047 Punkt 4
+		{Stil: Stil{Art: ArtTextmarker, Farbe: color.NRGBA{R: 255, G: 230, B: 40, A: 255}, Breite: 24},
+			Strichart: document.StrichGestrichelt}, // ADR-0048 Punkt 5
 	}
 	pfad := filepath.Join(t.TempDir(), "konfig", "tools.ini")
 	if err := SchreibeWerkzeugStileDatei(pfad, rein); err != nil {

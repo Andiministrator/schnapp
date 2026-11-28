@@ -109,8 +109,9 @@ func TestStileParseRegeln(t *testing.T) {
 }
 
 func TestStileVorgabenBeiFehlendemSchluessel(t *testing.T) {
-	got, _ := ParseStile("x", "[text]\ncolor = #112233\n[step]\ncolor = #112233\n[arrow]\ncolor = #112233\n")
-	if len(got) != 3 || got[0].Schriftgrad != 20 || got[1].Radius != 14 || got[2].Breite != 6 {
+	got, _ := ParseStile("x", "[text]\ncolor = #112233\n[step]\ncolor = #112233\n[arrow]\ncolor = #112233\n"+
+		"[highlighter]\ncolor = #ffe628\n")
+	if len(got) != 4 || got[0].Schriftgrad != 20 || got[1].Radius != 14 || got[2].Breite != 6 || got[3].Breite != 20 {
 		t.Errorf("Vorgaben: %+v", got)
 	}
 	if got[0].Fuellung.A != 0 {

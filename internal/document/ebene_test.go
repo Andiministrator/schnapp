@@ -161,3 +161,25 @@ func TestNormWinkelOhneMinusNull(t *testing.T) {
 		}
 	}
 }
+
+// ADR-0048 Punkt 1: Mischart mit Namen im Format; ein unbekannter Wert ist ungültig.
+func TestMischart(t *testing.T) {
+	for _, m := range []Mischart{MischNormal, MischMultiplizieren} {
+		if g, ok := MischartAus(m.Name()); !ok || g != m {
+			t.Errorf("%v: Name %q, zurück %v", m, m.Name(), g)
+		}
+	}
+	if MischMultiplizieren.Name() != "multiply" || Mischart(9).Name() != "" {
+		t.Error("Namen")
+	}
+	if _, ok := MischartAus("screen"); ok {
+		t.Error("unbekannter Name angenommen")
+	}
+	e := Ebene{Mischung: MischMultiplizieren}
+	if !e.Multipliziert() || e.pruefe() != nil {
+		t.Error("Multiplizieren")
+	}
+	if (Ebene{Mischung: 2}).pruefe() == nil {
+		t.Error("ungültige Mischung angenommen")
+	}
+}

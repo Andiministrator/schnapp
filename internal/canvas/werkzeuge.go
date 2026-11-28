@@ -29,6 +29,7 @@ const (
 	WerkzeugLupe                        // Quelle aufziehen, das Ziel erscheint vergrößert daneben (ADR-0033)
 	WerkzeugSprechblase                 // Spitze setzen, zum Ort des Texts ziehen, tippen (ADR-0021 Nachtrag 13)
 	WerkzeugEllipse                     // Ziehen von Ecke zu Ecke, Umschalt = Kreis (ADR-0047)
+	WerkzeugTextmarker                  // Ziehen wie der Pfeil, multiplizierend, Umschalt = waagerecht (ADR-0048)
 )
 
 // Werte des Verpixelns (ADR-0022 Nachtrag 1), Größen in Pixeln des Originals. Die Blockgröße ist nur noch Optik: Die
@@ -67,6 +68,16 @@ var StandardFarbfelder = append(append([]color.NRGBA(nil), Beschriftungsfarben..
 
 // Weiss ist die Schriftfarbe auf Text-Schildern (Nummern zeichnen Renderer und Export ohnehin weiß).
 var Weiss = color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
+
+// Farben und Breite des Textmarkers (ADR-0048 Punkte 5 und 6): deckend, durchsichtig wirkt er durch das Multiplizieren.
+var (
+	TextmarkerGelb  = color.NRGBA{R: 0xFF, G: 0xE6, B: 0x28, A: 0xFF}
+	TextmarkerGruen = color.NRGBA{R: 0x7C, G: 0xFC, B: 0x6B, A: 0xFF}
+	TextmarkerRosa  = color.NRGBA{R: 0xFF, G: 0x8A, B: 0xD8, A: 0xFF}
+)
+
+// TextmarkerBreite ist der Strich eines neuen Textmarkers bei Faktor 1 (ADR-0048 Punkt 5).
+const TextmarkerBreite = 20.0
 
 // Stil sind die Eigenschaften neuer Objekte, Größen in Pixeln des Originals.
 type Stil struct {
@@ -124,6 +135,16 @@ var StrichStufen = []float64{1, 2, 3, 4, 6, 8, 12, 16, 24, 32}
 
 func (st Stil) strich() document.Strich {
 	return document.Strich{Farbe: st.Farbe, Breite: st.Breite, Art: st.Strichart}
+}
+
+// NeuerTextmarker ist ein gerader Textmarker von a nach b mit dem Strich st und der Kennung id: ein Pfeil ohne Köpfe,
+// der multiplizierend gemischt wird (ADR-0048 Punkt 2).
+func NeuerTextmarker(a, b document.Punkt, st document.Strich, id int) document.Pfeil {
+	pf := document.GeraderPfeil(a, b, st)
+	pf.Ende, pf.Anfang = document.KopfKeine, 0
+	pf.Mischung = document.MischMultiplizieren
+	pf.ID = id
+	return pf
 }
 
 // Rasten45 liefert b so gedreht um a, dass die Richtung a→b ein Vielfaches von 45° ist; die Länge bleibt.
@@ -337,7 +358,7 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 		return
 	}
 	switch s.Werkzeug {
-	case WerkzeugPfeil, WerkzeugKasten, WerkzeugEllipse, WerkzeugLupe, WerkzeugSprechblase:
+	case WerkzeugPfeil, WerkzeugKasten, WerkzeugEllipse, WerkzeugLupe, WerkzeugSprechblase, WerkzeugTextmarker:
 		s.zug = zugNeu
 	case WerkzeugSchwaerzen, WerkzeugVerpixeln, WerkzeugZuschneiden, WerkzeugStauchen:
 		s.zug, s.rahmen = zugNeu, false
@@ -413,6 +434,13 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 		pf.Ende, pf.Anfang = s.Stil.KopfEnde, s.Stil.KopfAnfang
 		pf.ID = s.neuID
 		o = pf
+	case WerkzeugTextmarker: // ein Pfeil ohne Köpfe, multiplizierend (ADR-0048 Punkte 2 und 4)
+		if s.Umschalt {
+			b = s.umschaltEnde(WerkzeugTextmarker, p)
+		} else {
+			b, s.linien = s.rastePunkt(b, s.neuID)
+		}
+		o = NeuerTextmarker(a, b, s.Stil.strich(), s.neuID)
 	case WerkzeugKasten, WerkzeugEllipse:
 		if s.Umschalt { // Quadrat bzw. Kreis (ADR-0047 Punkt 4)
 			b = s.umschaltEnde(WerkzeugKasten, p)
@@ -476,6 +504,9 @@ func (s *Sitzung) umschaltEnde(art Werkzeug, p document.Punkt) document.Punkt {
 	a := s.klemmeAnsicht(s.Abb.ZuAnsicht(s.start))
 	b := s.klemmeAnsicht(s.Abb.ZuAnsicht(p))
 	var e document.Punkt
+	if art == WerkzeugTextmarker { // waagerecht: das Ende auf der Höhe des Anfangs (ADR-0048 Punkt 4)
+		return s.D.ZuOriginal(document.Pt(b.X, a.Y))
+	}
 	if art == WerkzeugPfeil {
 		e = Rasten45(a, b)
 		d := e.Minus(a)

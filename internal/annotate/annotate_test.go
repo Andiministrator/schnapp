@@ -355,3 +355,34 @@ func TestWendeEllipse(t *testing.T) {
 		t.Error("start_head bei ellipse angenommen")
 	}
 }
+
+// ADR-0048 Punkt 8: Typ highlight ist ein Textmarker (multiplizierender Pfeil ohne Köpfe) mit Gelb und Breite 20 als
+// Voreinstellung; Köpfe und Füllung gibt es dort nicht.
+func TestWendeTextmarker(t *testing.T) {
+	d := dokument(t, 200, 100)
+	es := lies(t, `{"annotations":[
+		{"type":"highlight","from":[10,20],"to":[150,20]},
+		{"type":"highlight","from":[10,60],"to":[150,70],"color":"#ff8ad8","width":12,"line_style":"dotted"}]}`)
+	if _, err := Wende(context.Background(), d, es); err != nil {
+		t.Fatal(err)
+	}
+	o := d.Objekte()
+	m0, m1 := o[0].(document.Pfeil), o[1].(document.Pfeil)
+	if !m0.Multipliziert() || m0.Ende != document.KopfKeine || m0.KopfAnfang() != document.KopfKeine ||
+		m0.Strich.Farbe != canvas.TextmarkerGelb || m0.Strich.Breite != canvas.TextmarkerBreite {
+		t.Errorf("Textmarker: %+v", m0)
+	}
+	if !m1.Multipliziert() || m1.Strich.Farbe != (color.NRGBA{R: 0xff, G: 0x8a, B: 0xd8, A: 0xff}) || m1.Strich.Breite != 12 ||
+		m1.Strich.Art != document.StrichGepunktet {
+		t.Errorf("Textmarker mit Angaben: %+v", m1)
+	}
+	for _, j := range []string{
+		`{"annotations":[{"type":"highlight","from":[1,1],"to":[5,5],"end_head":"dot"}]}`,
+		`{"annotations":[{"type":"highlight","from":[1,1],"to":[5,5],"fill":"#ffffff"}]}`,
+		`{"annotations":[{"type":"highlight","from":[1,1]}]}`,
+	} {
+		if _, err := Lies(strings.NewReader(j)); err == nil {
+			t.Errorf("angenommen: %s", j)
+		}
+	}
+}

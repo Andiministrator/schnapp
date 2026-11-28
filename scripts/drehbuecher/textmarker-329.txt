@@ -1,0 +1,30 @@
+# Sichtprobe ADR-0048 (Karte #329): Werkzeug Textmarker (H), Mischung „Multiplizieren“, Umschalt = waagerecht.
+# Aufruf: scripts/probe.sh --sprache de --ende 30 --drehbuch scripts/drehbuecher/textmarker-329.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 1200 --hoehe 800
+# Bei 1200 × 800 mit rechter Leiste liegt das Bild eingepasst bei x = 76–876, y = 133–666 (Zoom 67 %): der weiße
+# Balken oben links bei x = 143–276, y = 200–240, der schwarze bei y = 253–293.
+# Erwartet:
+#  01 Werkzeug Textmarker aktiv (dritter Knopf, nach dem Pfeil, grün); ein gelber Strich quer über den weißen Balken und
+#     das Rot: über Weiß reines Gelb, über Rot ein dunkleres Orange-Rot (multipliziert), runde Enden, gewählt mit Griffen.
+#     Rechte Leiste: Kopf „Auswahl: Textmarker“, Schnellstile Gelb/Grün/Rosa (Kacheln mit dunklen „Zeilen“),
+#     Strichstärke 20 px, Strichart, Schatten, kein Abschnitt „Pfeilstil“.
+#  02 Mit Umschalt schräg gezogen: der Strich liegt waagerecht über dem schwarzen Balken; der Balken bleibt schwarz.
+#  03 Ebenen aufgeklappt: zwei Zeilen „Textmarker“.
+#  04 Übersicht F1: Werkzeuge mit „Textmarker H“; „Ebene ausblenden / sperren“ als eine Zeile; keine Rollleiste.
+warte 800
+taste H
+warte 200
+ziehe 120 220 420 220
+warte 400
+foto 01-textmarker
+taste-halten Umschalt
+ziehe 120 273 420 300
+taste-loslassen Umschalt
+warte 400
+foto 02-waagerecht
+klick 955 741
+warte 400
+foto 03-ebenen
+taste F1
+warte 500
+foto 04-uebersicht
+taste Escape

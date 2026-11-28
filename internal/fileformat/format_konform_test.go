@@ -186,6 +186,14 @@ func beispiele() []beispiel {
 					Strich: document.Strich{Farbe: color.NRGBA{30, 60, 220, 255}, Breite: 2, Art: document.StrichGestrichelt}})
 			return d
 		}, Metadaten{}, false},
+		{"highlighter", func(t *testing.T) *document.Dokument { // Textmarker: Mischung an der Ebene, Formatversion 2 (ADR-0048)
+			d := beispielDok(t, 64, 48)
+			m := document.GeraderPfeil(document.Pt(6, 14), document.Pt(58, 14), document.Strich{Farbe: color.NRGBA{255, 230, 40, 255}, Breite: 10})
+			m.Ende = document.KopfKeine
+			m.Ebene.Mischung = document.MischMultiplizieren
+			fuege(t, d, m)
+			return d
+		}, Metadaten{}, false},
 		{"groups", func(t *testing.T) *document.Dokument { // flache Gruppen, Formatversion 2 (ADR-0044)
 			d := beispielDok(t, 64, 48)
 			rot := document.Strich{Farbe: color.NRGBA{220, 30, 30, 255}, Breite: 2}
@@ -773,7 +781,7 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 		"kante",
 		"streifen", "zeilen", "von", "bis", "ebene", "typ", "a", "b", "k", "strich", "bereich", "fuellung", "eckradius",
 		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "schrift", "stil", "ausrichtung", "spitze", "mitte", "wert", "radius",
-		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel", "ende", "anfang", "strichart", "schatten", "gruppe", "form"}
+		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel", "ende", "anfang", "strichart", "schatten", "gruppe", "form", "mischung"}
 	for _, w := range wortliste {
 		if !gesehen[w] {
 			t.Errorf("Beispiele enthalten s:%s nicht (Beispielabdeckung)", w)

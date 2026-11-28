@@ -129,8 +129,11 @@ func TestWerkzeugleisteKlick(t *testing.T) {
 	if !l.e.menue.offen || l.e.menue.welches != listeFarbe {
 		t.Fatalf("Klick auf das Farbfeld im schmalen Fenster: Liste offen %v (%d)", l.e.menue.offen, l.e.menue.welches)
 	}
-	if r := l.e.menue.rahmen[0]; r.Min.Y < farbe.Max.Y || r.Min.X != farbe.Min.X {
-		t.Errorf("Farbliste hängt nicht unter dem Farbfeld: %v, Farbfeld %v", r, farbe)
+	// Unter dem Farbfeld, oder darüber, wenn unten der Platz fehlt (seit dem Textmarker, ADR-0048, liegt das Farbfeld
+	// in 700 × 800 so tief, dass die Liste nach oben aufklappt).
+	r, letzte := l.e.menue.rahmen[0], l.e.menue.rahmen[len(l.e.menue.rahmen)-1]
+	if (r.Min.Y < farbe.Max.Y && letzte.Max.Y > farbe.Min.Y) || r.Min.X != farbe.Min.X {
+		t.Errorf("Farbliste hängt nicht am Farbfeld: %v bis %v, Farbfeld %v", r, letzte, farbe)
 	}
 	l.e.s.Auswahl = 0
 	l.klick(l.e.menue.rahmen[2].Min.Add(l.e.menue.rahmen[2].Max).Div(2))

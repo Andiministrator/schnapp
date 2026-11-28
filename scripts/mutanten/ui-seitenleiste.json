@@ -129,7 +129,7 @@
     "name": "S216-7 Text zeigt Strichstärke",
     "datei": "internal/canvas/seitenleiste.go",
     "paket": "./internal/canvas",
-    "alt": "func strichWerkzeug(w Werkzeug) bool {\n\treturn w == WerkzeugPfeil || w == WerkzeugKasten || w == WerkzeugEllipse || w == WerkzeugLupe\n}",
+    "alt": "func strichWerkzeug(w Werkzeug) bool {\n\treturn w == WerkzeugPfeil || w == WerkzeugKasten || w == WerkzeugEllipse || w == WerkzeugLupe ||\n\t\tw == WerkzeugTextmarker\n}",
     "neu": "func strichWerkzeug(w Werkzeug) bool {\n\treturn w != WerkzeugAuswahl\n}"
   },
   {

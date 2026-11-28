@@ -30,6 +30,13 @@ Gio-Quelltext im Go-Modulcache (`go list -m -f '{{.Dir}}' gioui.org`) und eigene
 - Zeigerbild bei wechselnder Skala neu laden (F-78, ADR-0015 Nachtrag 1; jeder Skalenwechsel läuft über `updateOutputs` → `updateCursor`, auch bei ruhendem Zeiger im Fenster); ein Thema-Bild, dessen Größe nicht durch die Puffer-Skala teilbar ist, zeigt der Zeiger über einen eigenen `wp_viewport` in logischer Größe statt doppelt groß (F-123, Sprint 10; ohne Viewporter bleibt Puffer-Skala 1); `wp_viewporter` und `wp_fractional_scale_manager_v1` werden mit der Verbindung zerstört (F-42); Bild-MIME-Typen in der Zwischenablage
   (`writeClipboard` bietet bei `image/…` genau diesen Typ an, `gio_onDataSourceSend` schreibt in einer Schleife bis
   alles übergeben ist, ADR-0015 Nachtrag 2).
+- **Multiplizieren (ADR-0048, 28.11.2026):** Gio mischt nur „über“. Eine Deckkraft-Ebene (`paint.PushOpacity`) zeichnet
+  Gio aber erst in eine eigene Textur und blittet sie dann (`drawLayers` ersetzt die Ops der Ebene durch ein
+  Textur-Op). Dort setzt der Patch an: `paint.PushMultiply` schreibt ein Byte mehr an den Deckkraft-Op
+  (`TypePushOpacityLen` 1+4+1), `gpu` merkt es an der Ebene und blittet mit `BlendDesc{DstColor, OneMinusSrcAlpha}`
+  — mit vormultiplizierter Quelle genau `dst·(1 − a·(1 − c))`. Der Treiber kennt `DstColor` schon (Schnittmasken in
+  `path.go`), kein Shader nötig. Auf durchsichtigem Ziel ergibt das 0 (W3C wäre „über“); im Editor liegt immer ein
+  deckender Grund darunter. Prüfung ohne Fenster: `internal/ui/textmarker_test.go`.
 - Umfang (Stand 20.11.2026): von Hand 5 Dateien +465/−39 Zeilen (einschließlich 123 Zeilen Test in
   `app/os_wayland_test.go`), erzeugt 4 Dateien +811 Zeilen — zählen mit `git apply --numstat third_party/gio-ausgabe.patch`.
 - Ablage (ADR-0015, seit 19.11.2026): gepatchte Kopie als Modul `third_party/gio/` im Repo, `replace gioui.org =>

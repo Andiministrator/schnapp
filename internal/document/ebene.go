@@ -34,7 +34,41 @@ type Ebene struct {
 	// Gruppe ist die Kennung einer flachen Gruppe (ADR-0044): Objekte mit derselben Zahl werden zusammen gewählt;
 	// 0 = keine Gruppe. Nur innerhalb eines Dokuments bedeutsam.
 	Gruppe int
+	// Mischung ist die Art, wie das Objekt als Ganzes in den Untergrund gemischt wird (ADR-0048); Nullwert: normal.
+	Mischung Mischart
 }
+
+// Mischart ist die Mischung einer Ebene (ADR-0048 Punkt 1).
+type Mischart uint8
+
+const (
+	MischNormal         Mischart = iota // über den Untergrund (src-over)
+	MischMultiplizieren                 // jeder Kanal des Untergrunds mal dem Kanal der Ebene (Textmarker)
+)
+
+// mischartNamen sind die Werte im Format (s:mischung, §8.5); der Nullwert wird nicht geschrieben.
+var mischartNamen = [...]string{MischNormal: "normal", MischMultiplizieren: "multiply"}
+
+// Name ist der Wert im Format.
+func (m Mischart) Name() string {
+	if int(m) < len(mischartNamen) {
+		return mischartNamen[m]
+	}
+	return ""
+}
+
+// MischartAus liest den Wert aus dem Format (false: unbekannt).
+func MischartAus(n string) (Mischart, bool) {
+	for i, s := range mischartNamen {
+		if s == n {
+			return Mischart(i), true
+		}
+	}
+	return MischNormal, false
+}
+
+// Multipliziert meldet, ob die Ebene multiplizierend gemischt wird.
+func (e Ebene) Multipliziert() bool { return e.Mischung == MischMultiplizieren }
 
 // MaxGruppe begrenzt die Kennung einer Gruppe (ADR-0044 Punkt 6).
 const MaxGruppe = 1 << 30
@@ -141,6 +175,9 @@ func (e Ebene) pruefe() error {
 	}
 	if e.Gruppe < 0 || e.Gruppe > MaxGruppe {
 		return fmt.Errorf("document: Gruppe der Ebene ungültig")
+	}
+	if int(e.Mischung) >= len(mischartNamen) {
+		return fmt.Errorf("document: Mischung der Ebene ungültig")
 	}
 	return e.Schatten.pruefe()
 }

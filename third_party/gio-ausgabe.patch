@@ -1876,10 +1876,45 @@ index a5558f7..f030bfc 100644
  // for drawing window decorations. Providing false indicates that
  // the application will either be undecorated or will draw its own decorations.
 diff --git a/gpu/gpu.go b/gpu/gpu.go
-index bd8950f..e6b02a3 100644
+index bd8950f..88fa656 100644
 --- a/gpu/gpu.go
 +++ b/gpu/gpu.go
-@@ -345,7 +345,7 @@ func NewWithDevice(d driver.Device) (GPU, error) {
+@@ -87,7 +87,9 @@ type drawOps struct {
+ 
+ type opacityLayer struct {
+ 	opacity float32
+-	parent  int
++	// multiply blends the layer with the multiply blend mode (Schnapp patch).
++	multiply bool
++	parent   int
+ 	// depth of the opacity stack. Layers of equal depth are
+ 	// independent and may be packed into one atlas.
+ 	depth int
+@@ -175,6 +177,8 @@ type material struct {
+ 	color1  f32color.RGBA
+ 	color2  f32color.RGBA
+ 	opacity float32
++	// multiply blends a layer texture with the multiply blend mode (Schnapp patch).
++	multiply bool
+ 	// For materialTypeTexture.
+ 	data    imageOpData
+ 	tex     driver.Texture
+@@ -259,9 +263,11 @@ type texture struct {
+ }
+ 
+ type blitter struct {
+-	ctx                    driver.Device
+-	viewport               image.Point
+-	pipelines              [2][3]*pipeline
++	ctx       driver.Device
++	viewport  image.Point
++	pipelines [2][3]*pipeline
++	// multiply are texture pipelines with the multiply blend mode (Schnapp patch).
++	multiply               [2]*pipeline
+ 	colUniforms            *blitColUniforms
+ 	texUniforms            *blitTexUniforms
+ 	linearGradientUniforms *blitLinearGradientUniforms
+@@ -345,7 +351,7 @@ func NewWithDevice(d driver.Device) (GPU, error) {
  	defer d.EndFrame()
  	feats := d.Caps().Features
  	switch {
@@ -1888,7 +1923,7 @@ index bd8950f..e6b02a3 100644
  		return newGPU(d), nil
  	}
  	return nil, errors.New("no available GPU driver")
-@@ -363,7 +363,7 @@ func newGPU(ctx driver.Device) *gpu {
+@@ -363,7 +369,7 @@ func newGPU(ctx driver.Device) *gpu {
  
  func (g *gpu) Clear(col color.NRGBA) {
  	g.drawOps.clear = true
@@ -1897,7 +1932,7 @@ index bd8950f..e6b02a3 100644
  }
  
  func (g *gpu) Release() {
-@@ -474,7 +474,7 @@ func (r *renderer) texHandle(cache *textureCache, data imageOpData) driver.Textu
+@@ -474,7 +480,7 @@ func (r *renderer) texHandle(cache *textureCache, data imageOpData) driver.Textu
  		minFilter, magFilter = driver.FilterNearest, driver.FilterNearest
  	}
  
@@ -1906,7 +1941,65 @@ index bd8950f..e6b02a3 100644
  		data.src.Bounds().Dx(), data.src.Bounds().Dy(),
  		minFilter, magFilter,
  		driver.BufferBindingTexture,
-@@ -590,7 +590,7 @@ func createColorPrograms(b driver.Device, vsSrc shader.Sources, fsSrc [3]shader.
+@@ -550,6 +556,26 @@ func newBlitter(ctx driver.Device) *blitter {
+ 		panic(err)
+ 	}
+ 	b.pipelines = pipelines
++	// Multiply: src·dst + dst·(1−srcA) mit vormultiplizierter Quelle ergibt dst·(1 − a·(1 − c)).
++	multiply, err := createColorProgramsBlend(ctx, gio.Shader_blit_vert, gio.Shader_blit_frag,
++		[...][]byte{
++			byteslice.View(b.colUniforms),
++			byteslice.View(b.linearGradientUniforms),
++			byteslice.View(b.texUniforms),
++		},
++		driver.BlendDesc{SrcFactor: driver.BlendFactorDstColor, DstFactor: driver.BlendFactorOneMinusSrcAlpha},
++	)
++	if err != nil {
++		panic(err)
++	}
++	for i := range multiply {
++		b.multiply[i] = multiply[i][materialTexture]
++		for j, p := range multiply[i] {
++			if j != int(materialTexture) {
++				p.Release()
++			}
++		}
++	}
+ 	return b
+ }
+ 
+@@ -560,9 +586,19 @@ func (b *blitter) release() {
+ 			p.Release()
+ 		}
+ 	}
++	for _, p := range b.multiply {
++		p.Release()
++	}
+ }
+ 
+ func createColorPrograms(b driver.Device, vsSrc shader.Sources, fsSrc [3]shader.Sources, uniforms [3][]byte) (pipelines [2][3]*pipeline, err error) {
++	return createColorProgramsBlend(b, vsSrc, fsSrc, uniforms, driver.BlendDesc{
++		SrcFactor: driver.BlendFactorOne,
++		DstFactor: driver.BlendFactorOneMinusSrcAlpha,
++	})
++}
++
++func createColorProgramsBlend(b driver.Device, vsSrc shader.Sources, fsSrc [3]shader.Sources, uniforms [3][]byte, blend driver.BlendDesc) (pipelines [2][3]*pipeline, err error) {
+ 	defer func() {
+ 		if err != nil {
+ 			for _, p := range pipelines {
+@@ -574,10 +610,6 @@ func createColorPrograms(b driver.Device, vsSrc shader.Sources, fsSrc [3]shader.
+ 			}
+ 		}
+ 	}()
+-	blend := driver.BlendDesc{
+-		SrcFactor: driver.BlendFactorOne,
+-		DstFactor: driver.BlendFactorOneMinusSrcAlpha,
+-	}
+ 	layout := driver.VertexLayout{
+ 		Inputs: []driver.InputDesc{
+ 			{Type: shader.DataTypeFloat, Size: 2, Offset: 0},
+@@ -590,7 +622,7 @@ func createColorPrograms(b driver.Device, vsSrc shader.Sources, fsSrc [3]shader.
  		return pipelines, err
  	}
  	defer vsh.Release()
@@ -1915,7 +2008,7 @@ index bd8950f..e6b02a3 100644
  		{
  			fsh, err := b.NewFragmentShader(fsSrc[materialTexture])
  			if err != nil {
-@@ -846,7 +846,7 @@ func (r *renderer) drawLayers(layers []opacityLayer, ops []imageOp) {
+@@ -846,7 +878,7 @@ func (r *renderer) drawLayers(layers []opacityLayer, ops []imageOp) {
  		return
  	}
  	fbo := -1
@@ -1924,7 +2017,40 @@ index bd8950f..e6b02a3 100644
  	for _, l := range slices.Backward(layers) {
  
  		if fbo != l.place.Idx {
-@@ -1166,13 +1166,13 @@ func (d *drawState) materialFor(rect f32.Rectangle, off f32.Point, partTrans f32
+@@ -876,6 +908,7 @@ func (r *renderer) drawLayers(layers []opacityLayer, ops []imageOp) {
+ 				tex:      f.tex,
+ 				uvTrans:  uvTrans,
+ 				opacity:  l.opacity,
++				multiply: l.multiply,
+ 			},
+ 			layerOps: l.opEnd - l.opStart - 1,
+ 		}
+@@ -995,7 +1028,7 @@ loop:
+ 			d.transStack = d.transStack[:n-1]
+ 
+ 		case ops.TypePushOpacity:
+-			opacity := ops.DecodeOpacity(encOp.Data)
++			opacity, multiply := ops.DecodeOpacity(encOp.Data)
+ 			parent := -1
+ 			depth := len(d.opacityStack)
+ 			if depth > 0 {
+@@ -1003,10 +1036,11 @@ loop:
+ 			}
+ 			lidx := len(d.layers)
+ 			d.layers = append(d.layers, opacityLayer{
+-				opacity: opacity,
+-				parent:  parent,
+-				depth:   depth,
+-				opStart: len(d.imageOps),
++				opacity:  opacity,
++				multiply: multiply,
++				parent:   parent,
++				depth:    depth,
++				opStart:  len(d.imageOps),
+ 			})
+ 			d.opacityStack = append(d.opacityStack, lidx)
+ 		case ops.TypePopOpacity:
+@@ -1166,13 +1200,13 @@ func (d *drawState) materialFor(rect f32.Rectangle, off f32.Point, partTrans f32
  	switch d.matType {
  	case materialColor:
  		m.material = materialColor
@@ -1941,6 +2067,42 @@ index bd8950f..e6b02a3 100644
  		m.opaque = m.color1.A == 1.0 && m.color2.A == 1.0
  
  		m.uvTrans = partTrans.Mul(gradientSpaceTransform(clip, off, d.stop1, d.stop2))
+@@ -1252,10 +1286,10 @@ func (r *renderer) drawOps(isFBO bool, opOff, viewport image.Point, ops []imageO
+ 		}
+ 		switch img.clipType {
+ 		case clipTypeNone:
+-			p := r.blitter.pipelines[fboIdx][m.material]
++			p := r.blitter.pipeline(fboIdx, m.material, m.multiply)
+ 			r.ctx.BindPipeline(p.pipeline)
+ 			r.ctx.BindVertexBuffer(r.blitter.quadVerts, 0)
+-			r.blitter.blit(m.material, isFBO, m.color, m.color1, m.color2, scale, off, m.opacity, m.uvTrans)
++			r.blitter.blit(m.material, isFBO, m.multiply, m.color, m.color1, m.color2, scale, off, m.opacity, m.uvTrans)
+ 			continue
+ 		case clipTypePath:
+ 			fbo = r.pather.stenciler.cover(img.place.Idx)
+@@ -1278,12 +1312,20 @@ func (r *renderer) drawOps(isFBO bool, opOff, viewport image.Point, ops []imageO
+ 	}
+ }
+ 
+-func (b *blitter) blit(mat materialType, fbo bool, col f32color.RGBA, col1, col2 f32color.RGBA, scale, off f32.Point, opacity float32, uvTrans f32.Affine2D) {
++// pipeline liefert die Pipeline für mat; multiply nur für Ebenen-Texturen (Schnapp-Patch).
++func (b *blitter) pipeline(fboIdx int, mat materialType, multiply bool) *pipeline {
++	if multiply && mat == materialTexture {
++		return b.multiply[fboIdx]
++	}
++	return b.pipelines[fboIdx][mat]
++}
++
++func (b *blitter) blit(mat materialType, fbo bool, multiply bool, col f32color.RGBA, col1, col2 f32color.RGBA, scale, off f32.Point, opacity float32, uvTrans f32.Affine2D) {
+ 	fboIdx := 0
+ 	if fbo {
+ 		fboIdx = 1
+ 	}
+-	p := b.pipelines[fboIdx][mat]
++	p := b.pipeline(fboIdx, mat, multiply)
+ 	b.ctx.BindPipeline(p.pipeline)
+ 	var uniforms *blitUniforms
+ 	switch mat {
 diff --git a/gpu/headless/headless.go b/gpu/headless/headless.go
 index 08a51d6..3baebd3 100644
 --- a/gpu/headless/headless.go
@@ -2075,3 +2237,67 @@ index 5488a0c..41b08a7 100644
  // NRGBAToRGBA converts from non-premultiplied sRGB color to premultiplied sRGB color.
  //
  // Each component in the result is `sRGBToLinear(c * alpha)`, where `c`
+diff --git a/internal/ops/ops.go b/internal/ops/ops.go
+index 182b753..f497556 100644
+--- a/internal/ops/ops.go
++++ b/internal/ops/ops.go
+@@ -128,7 +128,7 @@ const (
+ 	TypeDeferLen            = 1
+ 	TypeTransformLen        = 1 + 1 + 4*6
+ 	TypePopTransformLen     = 1
+-	TypePushOpacityLen      = 1 + 4
++	TypePushOpacityLen      = 1 + 4 + 1
+ 	TypePopOpacityLen       = 1
+ 	TypeRedrawLen           = 1 + 8
+ 	TypeImageLen            = 1 + 1
+@@ -365,12 +365,14 @@ func DecodeTransform(data []byte) (t f32.Affine2D, push bool) {
+ 	return f32.NewAffine2D(a, b, c, d, e, f), push
+ }
+ 
+-func DecodeOpacity(data []byte) float32 {
++// DecodeOpacity liefert die Deckkraft und ob die Ebene multiplizierend eingemischt wird (Schnapp-Patch,
++// Textmarker).
++func DecodeOpacity(data []byte) (float32, bool) {
+ 	if OpType(data[0]) != TypePushOpacity {
+ 		panic("invalid op")
+ 	}
+ 	bo := binary.LittleEndian
+-	return math.Float32frombits(bo.Uint32(data[1:]))
++	return math.Float32frombits(bo.Uint32(data[1:])), data[5] == 1
+ }
+ 
+ // DecodeSave decodes the state id of a save op.
+diff --git a/op/paint/paint.go b/op/paint/paint.go
+index e3afc93..afec5c4 100644
+--- a/op/paint/paint.go
++++ b/op/paint/paint.go
+@@ -174,6 +174,19 @@ func Fill(ops *op.Ops, c color.NRGBA) {
+ // drawn to a separate image. Then, the image is blended on top of
+ // the frame, with the opacity used as the blending factor.
+ func PushOpacity(o *op.Ops, opacity float32) OpacityStack {
++	return pushOpacity(o, opacity, false)
++}
++
++// PushMultiply creates a drawing layer like [PushOpacity], but blends the
++// layer image onto the frame with the multiply blend mode: every color
++// channel of the frame is multiplied by the layer color, weighted by the
++// layer alpha times opacity. Colors are mixed in the space of the frame
++// (Schnapp patch, highlighter).
++func PushMultiply(o *op.Ops, opacity float32) OpacityStack {
++	return pushOpacity(o, opacity, true)
++}
++
++func pushOpacity(o *op.Ops, opacity float32, multiply bool) OpacityStack {
+ 	if opacity > 1 {
+ 		opacity = 1
+ 	}
+@@ -185,6 +198,9 @@ func PushOpacity(o *op.Ops, opacity float32) OpacityStack {
+ 	bo := binary.LittleEndian
+ 	data[0] = byte(ops.TypePushOpacity)
+ 	bo.PutUint32(data[1:], math.Float32bits(opacity))
++	if multiply {
++		data[5] = 1
++	}
+ 	return OpacityStack{ops: &o.Internal, id: id, macroID: macroID}
+ }
+ 

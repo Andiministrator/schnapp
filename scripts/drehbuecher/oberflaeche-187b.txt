@@ -29,6 +29,6 @@ warte 200
 taste X
 warte 300
 foto 06-stauchen
-klick 16 611
+klick 16 655
 warte 300
 foto 07-farbliste-links

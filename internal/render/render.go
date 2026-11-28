@@ -462,14 +462,15 @@ func huelleVon(pts []document.Punkt, rand float64) document.Rechteck {
 	return document.Rechteck{Min: r.Min.Minus(document.Pt(rand, rand)), Max: r.Max.Plus(document.Pt(rand, rand))}
 }
 
-// ebene zeichnet o. Ist die Deckkraft der Ebene unter 100 %, entsteht das Objekt erst in einem durchsichtigen
-// Zwischenbild in der Größe seines Umrisses und wird dann als Ganzes mit der Deckkraft eingemischt (Gruppendeckkraft,
-// ADR-0032 Punkte 2 und 10): Schaft und Spitze, Schild und Schrift überlagern sich nicht doppelt. Im Trockenlauf zählt
-// das Einmischen wie eine Füllung über dem Umriss.
+// ebene zeichnet o. Ist die Deckkraft der Ebene unter 100 % oder mischt sie multiplizierend (ADR-0048), entsteht das
+// Objekt erst in einem durchsichtigen Zwischenbild in der Größe seines Umrisses und wird dann als Ganzes mit der
+// Deckkraft eingemischt (Gruppendeckkraft, ADR-0032 Punkte 2 und 10): Schaft und Spitze, Schild und Schrift überlagern
+// sich nicht doppelt. Im Trockenlauf zählt das Einmischen wie eine Füllung über dem Umriss.
 func (z zeichner) ebene(o document.Objekt) error {
 	p := o.Ebenenwerte().Deckkraft()
 	schatten := o.Ebenenwerte().Schatten.Sichtbar()
-	if p >= 100 && !schatten {
+	mult := o.Ebenenwerte().Multipliziert()
+	if p >= 100 && !schatten && !mult {
 		return z.objekt(o)
 	}
 	r := z.ebenenRahmen(o)
@@ -490,7 +491,7 @@ func (z zeichner) ebene(o document.Objekt) error {
 	if err := zw.objekt(o); err != nil {
 		return err
 	}
-	mischeEbene(z.bild, zw.bild, p)
+	mischeEbene(z.bild, zw.bild, p, mult)
 	return nil
 }
 
@@ -538,7 +539,8 @@ func (z zeichner) ebenenRahmen(o document.Objekt) image.Rectangle {
 
 // mischeEbene mischt das Zwischenbild q mit der Deckkraft p (Prozent) über bild, Pixel für Pixel mit derselben Formel
 // wie jede Füllung (einmischer.misch, draw.Over in 16 Bit): das Pixel von q ist die Quelle, die Deckkraft die Deckung.
-func mischeEbene(bild, q *image.NRGBA, p int) {
+// mult mischt multiplizierend (ADR-0048 Punkt 1, mischeMultipliziert).
+func mischeEbene(bild, q *image.NRGBA, p int, mult bool) {
 	ma := uint32(p) * 0xffff / 100
 	r := q.Rect.Intersect(bild.Rect)
 	for y := r.Min.Y; y < r.Max.Y; y++ {
@@ -549,9 +551,40 @@ func mischeEbene(bild, q *image.NRGBA, p int) {
 			if s[3] == 0 {
 				continue
 			}
+			if mult {
+				mischeMultipliziert(bild.Pix[bi+4*x:bi+4*x+4:bi+4*x+4], color.NRGBA{R: s[0], G: s[1], B: s[2], A: s[3]}, ma)
+				continue
+			}
 			e := neuerEinmischer(bild, color.NRGBA{R: s[0], G: s[1], B: s[2], A: s[3]})
 			e.misch(bild.Pix[bi+4*x:bi+4*x+4:bi+4*x+4], ma)
 		}
+	}
+}
+
+// mischeMultipliziert mischt die Quelle s mit der Deckung ma (16 Bit) multiplizierend in das Pixel p (NRGBA), in
+// sRGB-Werten wie jede Mischung (ADR-0048 Punkt 1, W3C Compositing „multiply“ mit source-over). Vormultipliziert und
+// auf 0xffff bezogen: co = cs·(1−ab) + cb·(1−as) + cs·cb, ao = as + ab − as·ab. Auf deckendem Grund ist das
+// cb·(1 − as·(1 − Cs)) — dasselbe wie Gios Mischung src·DstColor + dst·(1 − srcA) (paint.PushMultiply).
+func mischeMultipliziert(p []byte, s color.NRGBA, ma uint32) {
+	sr, sg, sb, sa := s.RGBA()
+	sr, sg, sb, sa = sr*ma/0xffff, sg*ma/0xffff, sb*ma/0xffff, sa*ma/0xffff
+	if sa == 0 {
+		return
+	}
+	dr, dg, db, da := color.NRGBA{R: p[0], G: p[1], B: p[2], A: p[3]}.RGBA()
+	kanal := func(cs, cb uint32) uint32 {
+		return (cs*(0xffff-da) + cb*(0xffff-sa) + cs*cb) / 0xffff
+	}
+	r, g, b := kanal(sr, dr), kanal(sg, dg), kanal(sb, db)
+	al := sa + da - sa*da/0xffff
+	r, g, b, al = min(r, al), min(g, al), min(b, al), min(al, 0xffff)
+	switch al {
+	case 0xffff:
+		p[0], p[1], p[2], p[3] = uint8(r>>8), uint8(g>>8), uint8(b>>8), 0xff
+	case 0:
+		p[0], p[1], p[2], p[3] = 0, 0, 0, 0
+	default:
+		p[0], p[1], p[2], p[3] = uint8((r*0xffff/al)>>8), uint8((g*0xffff/al)>>8), uint8((b*0xffff/al)>>8), uint8(al>>8)
 	}
 }
 

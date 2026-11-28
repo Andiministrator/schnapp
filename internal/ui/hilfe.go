@@ -103,6 +103,8 @@ var hilfePaare = map[aktion]hilfePaar{
 	aktSpeichern: {aktSpeichernUnter, func() string { return i18n.T("Save / save as") }},
 	// Werkzeug Ellipse (ADR-0047): eine Zeile mehr, ein Paar im Menü Ansicht.
 	aktSeitenleiste: {aktLeiste, func() string { return i18n.T("Sidebar / recent captures") }},
+	// Werkzeug Textmarker (ADR-0048): eine Zeile mehr, ein Paar im Menü Ebene.
+	aktAusblenden: {aktSperren, func() string { return i18n.T("Hide / lock layer") }},
 }
 
 // hilfePaarZweite sind die zweiten Handlungen der Paare.

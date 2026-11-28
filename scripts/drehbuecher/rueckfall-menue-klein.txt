@@ -3,7 +3,7 @@
 # Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/rueckfall-menue-klein.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 480 --hoehe 320
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
 # Neue Oberfläche (Karte #210, ADR-0031): Menüzeile oben (Titel bei y = 15: Datei x 62, Werkzeuge x 336), Fußzeile unten
-# (y 290..320). Seit Karte #328 hat „Werkzeuge“ zwölf Einträge (im 320 hohen Fenster Auswählen y 19 … Stauchen y 294), „Datei“
+# (y 290..320). Seit Karte #329 hat „Werkzeuge“ dreizehn Einträge (im 320 hohen Fenster über der Menüzeile: Auswählen y 18 … Stauchen y 294), „Datei“
 # zehn (Schließen y 291). Früher: „Werkzeuge“ mit neun Einträgen (im großen Fenster Auswählen y 52 … Stauchen y 308, im 320 hohen Fenster rückt die Liste hoch: Auswählen y 42 … Stauchen y 298).
 # Erst Werkzeuge öffnen und den untersten Eintrag „Stauchen“ anklicken (Foto 02: Werkzeug Stauchen aktiv), dann Datei
 # öffnen und „Schließen“ (y 291) anklicken: Der Editor beendet sich (Probe-Skript meldet Exit 0) oder zeigt den Hinweis.

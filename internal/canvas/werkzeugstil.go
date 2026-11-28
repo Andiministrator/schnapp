@@ -14,7 +14,8 @@ import (
 )
 
 // stilWerkzeuge sind die Werkzeuge mit eigenem Stil, in der Reihenfolge von tools.ini.
-var stilWerkzeuge = []Werkzeug{WerkzeugPfeil, WerkzeugKasten, WerkzeugText, WerkzeugNummer, WerkzeugLupe, WerkzeugEllipse}
+var stilWerkzeuge = []Werkzeug{WerkzeugPfeil, WerkzeugKasten, WerkzeugText, WerkzeugNummer, WerkzeugLupe, WerkzeugEllipse,
+	WerkzeugTextmarker}
 
 // werkzeugAbschnitt ist der Abschnitt von w in tools.ini.
 func werkzeugAbschnitt(w Werkzeug) string {
@@ -31,6 +32,8 @@ func werkzeugAbschnitt(w Werkzeug) string {
 		return settings.ArtLupe
 	case WerkzeugEllipse:
 		return settings.ArtEllipse
+	case WerkzeugTextmarker:
+		return settings.ArtTextmarker
 	}
 	return ""
 }
@@ -65,6 +68,9 @@ func (s *Sitzung) standardStilFuer(w Werkzeug) Stil {
 	st := StilMitFaktor(int(s.faktor()))
 	p := standardPaar(w)
 	st.Farbe, st.Fuellung = p.vorn, p.fuellung
+	if paarSchluessel(w) == WerkzeugTextmarker { // ADR-0048 Punkt 5
+		st.Breite = TextmarkerBreite * st.Breite / StandardStil().Breite
+	}
 	return st
 }
 

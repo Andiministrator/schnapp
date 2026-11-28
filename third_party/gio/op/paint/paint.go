@@ -174,6 +174,19 @@ func Fill(ops *op.Ops, c color.NRGBA) {
 // drawn to a separate image. Then, the image is blended on top of
 // the frame, with the opacity used as the blending factor.
 func PushOpacity(o *op.Ops, opacity float32) OpacityStack {
+	return pushOpacity(o, opacity, false)
+}
+
+// PushMultiply creates a drawing layer like [PushOpacity], but blends the
+// layer image onto the frame with the multiply blend mode: every color
+// channel of the frame is multiplied by the layer color, weighted by the
+// layer alpha times opacity. Colors are mixed in the space of the frame
+// (Schnapp patch, highlighter).
+func PushMultiply(o *op.Ops, opacity float32) OpacityStack {
+	return pushOpacity(o, opacity, true)
+}
+
+func pushOpacity(o *op.Ops, opacity float32, multiply bool) OpacityStack {
 	if opacity > 1 {
 		opacity = 1
 	}
@@ -185,6 +198,9 @@ func PushOpacity(o *op.Ops, opacity float32) OpacityStack {
 	bo := binary.LittleEndian
 	data[0] = byte(ops.TypePushOpacity)
 	bo.PutUint32(data[1:], math.Float32bits(opacity))
+	if multiply {
+		data[5] = 1
+	}
 	return OpacityStack{ops: &o.Internal, id: id, macroID: macroID}
 }
 

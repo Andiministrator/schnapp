@@ -102,16 +102,18 @@ func (p *Punkt) UnmarshalJSON(b []byte) error {
 // erlaubt sind die Schlüssel je Typ; Pflicht die, ohne die ein Eintrag nicht geht.
 var (
 	erlaubt = map[string][]string{
-		"arrow":    {"from", "to", "color", "width", "start_head", "end_head", "line_style", "shadow"},
-		"rect":     {"from", "to", "color", "fill", "width", "line_style", "shadow"},
-		"ellipse":  {"from", "to", "color", "fill", "width", "line_style", "shadow"}, // ADR-0047 Punkt 7
-		"text":     {"at", "text", "size", "color", "fill", "font", "bold", "italic", "underline", "strikethrough", "align", "tip", "shadow"},
-		"step":     {"at", "color", "radius", "shadow"},
-		"redact":   {"from", "to"},
-		"pixelate": {"from", "to"},
+		"arrow":     {"from", "to", "color", "width", "start_head", "end_head", "line_style", "shadow"},
+		"rect":      {"from", "to", "color", "fill", "width", "line_style", "shadow"},
+		"ellipse":   {"from", "to", "color", "fill", "width", "line_style", "shadow"}, // ADR-0047 Punkt 7
+		"highlight": {"from", "to", "color", "width", "line_style", "shadow"},         // ADR-0048 Punkt 8
+		"text":      {"at", "text", "size", "color", "fill", "font", "bold", "italic", "underline", "strikethrough", "align", "tip", "shadow"},
+		"step":      {"at", "color", "radius", "shadow"},
+		"redact":    {"from", "to"},
+		"pixelate":  {"from", "to"},
 	}
 	pflicht = map[string][]string{
-		"arrow": {"from", "to"}, "rect": {"from", "to"}, "ellipse": {"from", "to"}, "text": {"at", "text"}, "step": {"at"},
+		"arrow": {"from", "to"}, "rect": {"from", "to"}, "ellipse": {"from", "to"}, "highlight": {"from", "to"},
+		"text": {"at", "text"}, "step": {"at"},
 		"redact": {"from", "to"}, "pixelate": {"from", "to"},
 	}
 )
@@ -172,7 +174,7 @@ func Lies(r io.Reader) ([]Eintrag, error) {
 		}
 		ok, bekannt := erlaubt[e.Type]
 		if !bekannt {
-			return nil, &Fehler{i, fmt.Sprintf("unknown type %q (arrow, rect, ellipse, text, step, redact, pixelate)", e.Type)}
+			return nil, &Fehler{i, fmt.Sprintf("unknown type %q (arrow, highlight, rect, ellipse, text, step, redact, pixelate)", e.Type)}
 		}
 		for k, v := range schluessel {
 			if k == "type" {
@@ -354,13 +356,17 @@ func Wende(ctx context.Context, d *document.Dokument, es []Eintrag) (Ergebnis, e
 		}
 		var o document.Objekt
 		switch e.Type {
-		case "arrow", "rect", "ellipse":
+		case "arrow", "rect", "ellipse", "highlight":
 			w := canvas.WerkzeugPfeil
+			vorBreite := st.Breite
 			switch e.Type {
 			case "rect":
 				w = canvas.WerkzeugKasten
 			case "ellipse":
 				w = canvas.WerkzeugEllipse
+			case "highlight": // ADR-0048 Punkte 5 und 8
+				w = canvas.WerkzeugTextmarker
+				vorBreite = canvas.TextmarkerBreite * st.Breite / canvas.StandardStil().Breite
 			}
 			vorn, fuel := canvas.StandardPaar(w)
 			a, err := punkt("from", e.From)
@@ -378,7 +384,7 @@ func Wende(ctx context.Context, d *document.Dokument, es []Eintrag) (Ergebnis, e
 			if err != nil {
 				return erg, err
 			}
-			breite, err := groesse("width", e.Width, st.Breite)
+			breite, err := groesse("width", e.Width, vorBreite)
 			if err != nil {
 				return erg, err
 			}
@@ -389,6 +395,10 @@ func Wende(ctx context.Context, d *document.Dokument, es []Eintrag) (Ergebnis, e
 					return erg, f(`"line_style" must be one of %s`, namenListe(document.StrichartNamen()))
 				}
 				strich.Art = art
+			}
+			if e.Type == "highlight" {
+				o = canvas.NeuerTextmarker(a, b, strich, 0)
+				break
 			}
 			if e.Type == "arrow" {
 				pf := document.GeraderPfeil(a, b, strich)

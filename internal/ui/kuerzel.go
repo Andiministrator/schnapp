@@ -180,6 +180,7 @@ func tastenTabelle() []taste {
 		{filter: key.Filter{Name: "L", Required: key.ModShortcut | key.ModShift}, akt: aktBibliothek},
 		wz("V", canvas.WerkzeugAuswahl),
 		wz("A", canvas.WerkzeugPfeil),
+		wz("H", canvas.WerkzeugTextmarker), // H wie highlighter; allein frei, Strg+H bleibt Ausblenden (ADR-0048 Punkt 4)
 		wz("R", canvas.WerkzeugKasten),
 		wz("E", canvas.WerkzeugEllipse), // E allein war frei, Strg+Umschalt+E ist Export (ADR-0047 Punkt 4)
 		wz("T", canvas.WerkzeugText),

@@ -219,6 +219,6 @@ func (z zeichner) schattenEbene(o document.Objekt, r image.Rectangle, p int) err
 	if err := zo.objekt(o); err != nil {
 		return err
 	}
-	mischeEbene(z.bild, schattenUnter(zo.bild, s, ziel, true), p)
+	mischeEbene(z.bild, schattenUnter(zo.bild, s, ziel, true), p, o.Ebenenwerte().Multipliziert())
 	return nil
 }

@@ -144,7 +144,7 @@ Root element `svg`:
 
 | Attribute | Value | Required |
 |---|---|---|
-| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7, the attribute `s:spitze` of the text, 8.3, the attributes `s:ende`/`s:anfang` of the arrow, 8.1, the attribute `s:strichart` of arrow, box and magnifier, 8.8, the layer attributes `s:schatten` and `s:gruppe`, 8.5, and the attribute `s:form` of the box, 8.2; writers use the lowest version that carries the content, section 12) | MUST |
+| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7, the attribute `s:spitze` of the text, 8.3, the attributes `s:ende`/`s:anfang` of the arrow, 8.1, the attribute `s:strichart` of arrow, box and magnifier, 8.8, the layer attributes `s:schatten`, `s:gruppe` and `s:mischung`, 8.5, and the attribute `s:form` of the box, 8.2; writers use the lowest version that carries the content, section 12) | MUST |
 | `width`, `height` | size of the original in pixels, plain decimal integers without unit | MUST |
 | `viewBox` | `0 0 <width> <height>` | writer MUST, reader ignores |
 | `xmlns`, `xmlns:s` | the namespaces above | writer MUST |
@@ -363,7 +363,7 @@ left-aligned text has no `text-anchor` and `x` at the line start. Like all prese
 **Callout (speech bubble).** A text with `s:spitze` is a callout; there is no separate object type. The tip may lie
 anywhere inside the coordinate range (inside or outside the image and the label). `s:spitze` is part of format version
 2: a writer emits `s:format="2"` if the document contains a magnifier, a text with `s:spitze`, an arrow with
-`s:ende`/`s:anfang`, a stroke with `s:strichart`, a box with `s:form` or an object with `s:schatten` or `s:gruppe` (section 12), and a
+`s:ende`/`s:anfang`, a stroke with `s:strichart`, a box with `s:form` or an object with `s:schatten`, `s:gruppe` or `s:mischung` (section 12), and a
 version-1 reader that meets a version-2 file reports it as newer instead of dropping the tip silently. A value that
 does not parse as a point makes a version-2 file damaged (section 11, rule 4).
 
@@ -403,10 +403,11 @@ appear on the element of any object type:
 | `s:deckkraft` | Layer opacity in percent, integer `0` to `100` (syntax of 5.2). Missing or invalid: `100` |
 | `s:schatten` | Drop shadow, format version 2 only: `ANGLE DISTANCE SOFTNESS COLOUR`, three numbers and a colour (5.2) separated by single spaces. Missing, invalid or in a version-1 file: no shadow (see below) |
 | `s:gruppe` | Group, format version 2 only: an integer `1` to `1073741824` (syntax of 5.2). Objects with the same value form one group. Missing, invalid or in a version-1 file: no group (see below) |
+| `s:mischung` | Blend mode, format version 2 only: `multiply` or `normal`. Missing, any other value or in a version-1 file: `normal` (see below) |
 
 Writers emit them only when they differ from the default. The first four were added without changing the format
 version (like the text attributes of 8.3): a reader that does not know them ignores them (section 11, rule 3) and shows
-every object visible, unlocked and opaque. `s:schatten` and `s:gruppe` belong to format version 2 (below). No value of any of them
+every object visible, unlocked and opaque. `s:schatten`, `s:gruppe` and `s:mischung` belong to format version 2 (below). No value of any of them
 makes a file damaged.
 
 A hidden layer is **kept** in the working file but drawn nowhere: not in the visible image, the exports, the
@@ -437,6 +438,17 @@ within one file; it has no other meaning, and a writer MAY renumber groups. A gr
 an ungrouped object; a writer SHOULD omit the attribute on it (the reference writer does, so such a file stays version
 `1` if nothing else needs version `2`). The attribute belongs to format version 2: a writer emits `s:format="2"` if any object has it
 (section 12), and in a version-1 file it is ignored. Example: `testdata/format/groups`.
+
+**Blend mode (`s:mischung`).** `multiply` blends the object as a whole (with its shadow and the layer opacity, like the
+group opacity above) into what lies below by multiplying colour channels: with the object's pixel `Cs`, its coverage
+`as` (alpha times layer opacity) and the backdrop `Cb` with alpha `ab`, the result is
+`co = as·(1−ab)·Cs + as·ab·Cs·Cb + (1−as)·ab·Cb` and `ao = as + ab·(1−as)` (W3C Compositing, `multiply` with
+source-over), computed on sRGB values like every blend in this format. On an opaque backdrop dark content stays dark and
+white takes the object's colour — a highlighter. Writers emit the attribute only for `multiply`. It belongs to format
+version 2: a writer emits `s:format="2"` if any object has it (section 12), and in a version-1 file it is ignored.
+Informative: Schnapp's highlighter is an arrow without heads carrying `s:mischung="multiply"`; the reference writer adds
+`style="mix-blend-mode:multiply"` for viewers, in the working file and in the SVG export. Example:
+`testdata/format/highlighter`.
 
 ### 8.6 Unknown object types
 
@@ -555,7 +567,7 @@ value here and to the code must happen in the same commit.
 
 | Key | Value | Meaning |
 |---|---|---|
-| `format_version` | 2 | highest value of `s:format` read and written by this version (`2` only with a `lupe`, an `s:spitze`, an arrow head other than the defaults, an `s:strichart`, an `s:form`, an `s:schatten` or an `s:gruppe`, section 12) |
+| `format_version` | 2 | highest value of `s:format` read and written by this version (`2` only with a `lupe`, an `s:spitze`, an arrow head other than the defaults, an `s:strichart`, an `s:form`, an `s:schatten`, an `s:gruppe` or an `s:mischung`, section 12) |
 | `namespace` | `urn:x-schnapp:1` | Schnapp XML namespace |
 | `chunk_svg` | `snAP` | chunk with the compressed SVG |
 | `chunk_orig` | `snAO` | chunk with the original PNG |
@@ -616,7 +628,7 @@ Original width and height are at least 1.
    than patch single chunks.
 7. Write the lowest format version that carries the content: `s:format="2"` if and only if the document contains a
    `lupe` (8.7), a text with `s:spitze` (8.3), an arrow with `s:ende` or `s:anfang` (8.1), a box with `s:form` (8.2) or
-   an object with `s:strichart` (8.8), `s:schatten` or `s:gruppe` (8.5), otherwise `1`. A reader that knows only version 1 then still reads
+   an object with `s:strichart` (8.8), `s:schatten`, `s:gruppe` or `s:mischung` (8.5), otherwise `1`. A reader that knows only version 1 then still reads
    every file without them, and reports a file with one as newer instead of damaged.
 
 ## 13. What is not stored
@@ -659,6 +671,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `line-styles` | format version 2: a `dashed` arrow with the default head, a curved `dotted` line, a `dotted` square box and a `dashed` box with rounded corners |
 | `ellipse` | format version 2: a filled ellipse with a solid outline and a circle with a `dashed` outline |
 | `groups` | format version 2: a box and an arrow forming one group (`s:gruppe="1"`) and a step number without group |
+| `highlighter` | format version 2: a yellow arrow without heads blended with `s:mischung="multiply"` (a highlighter) |
 | `shadow` | format version 2: a filled box with a soft black shadow at 40 % opacity down and to the right and an arrow with a sharp blue shadow 3 pixels to the right (light from the left, angle 180) |
 | `callout` | format version 2: two texts with `s:spitze`, one with a label (filled polygon) and one without (legs as a line) |
 | `magnifier` | format version 2: one magnifier with a non-integer source over a column strip (the strip drops out of the magnified view, 8.7); the visible image shows no annotations, as in all examples |

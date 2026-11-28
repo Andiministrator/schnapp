@@ -449,6 +449,16 @@ func (e *editor) zeichneMini(gtx layout.Context, st canvas.Schnellstil, r image.
 			flaeche(a, b, st.Fuellung)
 		}
 		rahmen(a, b, st.Farbe, w)
+	case canvas.SchnellTextmarker: // ADR-0048 Punkt 6: zwei dunkle „Zeilen“, darüber der Strich multiplizierend
+		flaeche(pt(8, 13), pt(32, 16), color.NRGBA{R: 0x20, G: 0x20, B: 0x20, A: 0xFF})
+		flaeche(pt(8, 24), pt(26, 27), color.NRGBA{R: 0x20, G: 0x20, B: 0x20, A: 0xFF})
+		m := paint.PushMultiply(gtx.Ops, 1)
+		var p clip.Path
+		p.Begin(gtx.Ops)
+		p.MoveTo(pt(6, 20))
+		p.LineTo(pt(34, 20))
+		paint.FillShape(gtx.Ops, st.Farbe, clip.Stroke{Path: p.End(), Width: max(w, d(10))}.Op())
+		m.Pop()
 	case canvas.SchnellEllipse: // ADR-0047 Punkt 5
 		a, b := pt(6, 10), pt(34, 30)
 		oval := clip.Ellipse{Min: image.Pt(int(a.X), int(a.Y)), Max: image.Pt(int(b.X), int(b.Y))}

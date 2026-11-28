@@ -54,9 +54,13 @@ func eigenschaftWert(o document.Objekt, e Eigenschaft) (any, bool) {
 			return v.Strich.Breite, true
 		case EigStrichart:
 			return v.Strich.Art, true
-		case EigKopfAnfang:
-			return v.KopfAnfang(), true
-		case EigKopfEnde:
+		case EigKopfAnfang, EigKopfEnde:
+			if v.Multipliziert() { // der Textmarker hat keine Köpfe (ADR-0048 Punkt 2)
+				return nil, false
+			}
+			if e == EigKopfAnfang {
+				return v.KopfAnfang(), true
+			}
 			return v.Ende, true
 		}
 	case document.Kasten:

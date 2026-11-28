@@ -32,6 +32,9 @@ func standardPaar(w Werkzeug) farbpaar {
 	if w == WerkzeugText {
 		return farbpaar{vorn: Weiss, fuellung: rot}
 	}
+	if w == WerkzeugTextmarker {
+		return farbpaar{vorn: TextmarkerGelb}
+	}
 	return farbpaar{vorn: rot}
 }
 

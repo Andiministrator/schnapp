@@ -199,15 +199,15 @@
     "name": "EL29 Schnellstil setzt die Breite der Ellipse nicht",
     "datei": "internal/canvas/schnellstile.go",
     "paket": "./internal/canvas",
-    "alt": "\t\tcase SchnellPfeil, SchnellKasten, SchnellLupe, SchnellEllipse:\n\t\t\tz.Breite = g.Breite",
-    "neu": "\t\tcase SchnellPfeil, SchnellKasten, SchnellLupe:\n\t\t\tz.Breite = g.Breite"
+    "alt": "\t\tcase SchnellPfeil, SchnellKasten, SchnellLupe, SchnellEllipse, SchnellTextmarker:\n\t\t\tz.Breite = g.Breite",
+    "neu": "\t\tcase SchnellPfeil, SchnellKasten, SchnellLupe, SchnellTextmarker:\n\t\t\tz.Breite = g.Breite"
   },
   {
     "name": "EL30 Ellipsen-Schnellstil ungültig",
     "datei": "internal/canvas/schnellstile.go",
     "paket": "./internal/canvas",
-    "alt": "\tcase SchnellPfeil, SchnellKasten, SchnellLupe, SchnellEllipse:\n\t\treturn st.Breite > 0",
-    "neu": "\tcase SchnellPfeil, SchnellKasten, SchnellLupe:\n\t\treturn st.Breite > 0"
+    "alt": "\tcase SchnellPfeil, SchnellKasten, SchnellLupe, SchnellEllipse, SchnellTextmarker:\n\t\treturn st.Breite > 0",
+    "neu": "\tcase SchnellPfeil, SchnellKasten, SchnellLupe, SchnellTextmarker:\n\t\treturn st.Breite > 0"
   },
   {
     "name": "EL31 bereinigt verliert Füllung und Breite",

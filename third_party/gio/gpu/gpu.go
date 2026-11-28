@@ -87,7 +87,9 @@ type drawOps struct {
 
 type opacityLayer struct {
 	opacity float32
-	parent  int
+	// multiply blends the layer with the multiply blend mode (Schnapp patch).
+	multiply bool
+	parent   int
 	// depth of the opacity stack. Layers of equal depth are
 	// independent and may be packed into one atlas.
 	depth int
@@ -175,6 +177,8 @@ type material struct {
 	color1  f32color.RGBA
 	color2  f32color.RGBA
 	opacity float32
+	// multiply blends a layer texture with the multiply blend mode (Schnapp patch).
+	multiply bool
 	// For materialTypeTexture.
 	data    imageOpData
 	tex     driver.Texture
@@ -259,9 +263,11 @@ type texture struct {
 }
 
 type blitter struct {
-	ctx                    driver.Device
-	viewport               image.Point
-	pipelines              [2][3]*pipeline
+	ctx       driver.Device
+	viewport  image.Point
+	pipelines [2][3]*pipeline
+	// multiply are texture pipelines with the multiply blend mode (Schnapp patch).
+	multiply               [2]*pipeline
 	colUniforms            *blitColUniforms
 	texUniforms            *blitTexUniforms
 	linearGradientUniforms *blitLinearGradientUniforms
@@ -550,6 +556,26 @@ func newBlitter(ctx driver.Device) *blitter {
 		panic(err)
 	}
 	b.pipelines = pipelines
+	// Multiply: src·dst + dst·(1−srcA) mit vormultiplizierter Quelle ergibt dst·(1 − a·(1 − c)).
+	multiply, err := createColorProgramsBlend(ctx, gio.Shader_blit_vert, gio.Shader_blit_frag,
+		[...][]byte{
+			byteslice.View(b.colUniforms),
+			byteslice.View(b.linearGradientUniforms),
+			byteslice.View(b.texUniforms),
+		},
+		driver.BlendDesc{SrcFactor: driver.BlendFactorDstColor, DstFactor: driver.BlendFactorOneMinusSrcAlpha},
+	)
+	if err != nil {
+		panic(err)
+	}
+	for i := range multiply {
+		b.multiply[i] = multiply[i][materialTexture]
+		for j, p := range multiply[i] {
+			if j != int(materialTexture) {
+				p.Release()
+			}
+		}
+	}
 	return b
 }
 
@@ -560,9 +586,19 @@ func (b *blitter) release() {
 			p.Release()
 		}
 	}
+	for _, p := range b.multiply {
+		p.Release()
+	}
 }
 
 func createColorPrograms(b driver.Device, vsSrc shader.Sources, fsSrc [3]shader.Sources, uniforms [3][]byte) (pipelines [2][3]*pipeline, err error) {
+	return createColorProgramsBlend(b, vsSrc, fsSrc, uniforms, driver.BlendDesc{
+		SrcFactor: driver.BlendFactorOne,
+		DstFactor: driver.BlendFactorOneMinusSrcAlpha,
+	})
+}
+
+func createColorProgramsBlend(b driver.Device, vsSrc shader.Sources, fsSrc [3]shader.Sources, uniforms [3][]byte, blend driver.BlendDesc) (pipelines [2][3]*pipeline, err error) {
 	defer func() {
 		if err != nil {
 			for _, p := range pipelines {
@@ -574,10 +610,6 @@ func createColorPrograms(b driver.Device, vsSrc shader.Sources, fsSrc [3]shader.
 			}
 		}
 	}()
-	blend := driver.BlendDesc{
-		SrcFactor: driver.BlendFactorOne,
-		DstFactor: driver.BlendFactorOneMinusSrcAlpha,
-	}
 	layout := driver.VertexLayout{
 		Inputs: []driver.InputDesc{
 			{Type: shader.DataTypeFloat, Size: 2, Offset: 0},
@@ -876,6 +908,7 @@ func (r *renderer) drawLayers(layers []opacityLayer, ops []imageOp) {
 				tex:      f.tex,
 				uvTrans:  uvTrans,
 				opacity:  l.opacity,
+				multiply: l.multiply,
 			},
 			layerOps: l.opEnd - l.opStart - 1,
 		}
@@ -995,7 +1028,7 @@ loop:
 			d.transStack = d.transStack[:n-1]
 
 		case ops.TypePushOpacity:
-			opacity := ops.DecodeOpacity(encOp.Data)
+			opacity, multiply := ops.DecodeOpacity(encOp.Data)
 			parent := -1
 			depth := len(d.opacityStack)
 			if depth > 0 {
@@ -1003,10 +1036,11 @@ loop:
 			}
 			lidx := len(d.layers)
 			d.layers = append(d.layers, opacityLayer{
-				opacity: opacity,
-				parent:  parent,
-				depth:   depth,
-				opStart: len(d.imageOps),
+				opacity:  opacity,
+				multiply: multiply,
+				parent:   parent,
+				depth:    depth,
+				opStart:  len(d.imageOps),
 			})
 			d.opacityStack = append(d.opacityStack, lidx)
 		case ops.TypePopOpacity:
@@ -1252,10 +1286,10 @@ func (r *renderer) drawOps(isFBO bool, opOff, viewport image.Point, ops []imageO
 		}
 		switch img.clipType {
 		case clipTypeNone:
-			p := r.blitter.pipelines[fboIdx][m.material]
+			p := r.blitter.pipeline(fboIdx, m.material, m.multiply)
 			r.ctx.BindPipeline(p.pipeline)
 			r.ctx.BindVertexBuffer(r.blitter.quadVerts, 0)
-			r.blitter.blit(m.material, isFBO, m.color, m.color1, m.color2, scale, off, m.opacity, m.uvTrans)
+			r.blitter.blit(m.material, isFBO, m.multiply, m.color, m.color1, m.color2, scale, off, m.opacity, m.uvTrans)
 			continue
 		case clipTypePath:
 			fbo = r.pather.stenciler.cover(img.place.Idx)
@@ -1278,12 +1312,20 @@ func (r *renderer) drawOps(isFBO bool, opOff, viewport image.Point, ops []imageO
 	}
 }
 
-func (b *blitter) blit(mat materialType, fbo bool, col f32color.RGBA, col1, col2 f32color.RGBA, scale, off f32.Point, opacity float32, uvTrans f32.Affine2D) {
+// pipeline liefert die Pipeline für mat; multiply nur für Ebenen-Texturen (Schnapp-Patch).
+func (b *blitter) pipeline(fboIdx int, mat materialType, multiply bool) *pipeline {
+	if multiply && mat == materialTexture {
+		return b.multiply[fboIdx]
+	}
+	return b.pipelines[fboIdx][mat]
+}
+
+func (b *blitter) blit(mat materialType, fbo bool, multiply bool, col f32color.RGBA, col1, col2 f32color.RGBA, scale, off f32.Point, opacity float32, uvTrans f32.Affine2D) {
 	fboIdx := 0
 	if fbo {
 		fboIdx = 1
 	}
-	p := b.pipelines[fboIdx][mat]
+	p := b.pipeline(fboIdx, mat, multiply)
 	b.ctx.BindPipeline(p.pipeline)
 	var uniforms *blitUniforms
 	switch mat {

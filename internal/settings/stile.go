@@ -43,7 +43,8 @@ const (
 	ArtSprechblase = "callout"
 	ArtNummer      = "step"
 	ArtLupe        = "magnifier"
-	ArtEllipse     = "ellipse" // ADR-0047 Punkte 4 und 5
+	ArtEllipse     = "ellipse"     // ADR-0047 Punkte 4 und 5
+	ArtTextmarker  = "highlighter" // ADR-0048 Punkte 5 und 6
 )
 
 // MaxEigeneStile ist die Grenze eigener Stile je Objektart (ADR-0037 Punkt 5).
@@ -54,6 +55,8 @@ const (
 	stilBreite      = 6.0
 	stilSchriftgrad = 20.0
 	stilRadius      = 14.0
+	// textmarkerBreite ist canvas.TextmarkerBreite (ADR-0048 Punkt 5).
+	textmarkerBreite = 20.0
 )
 
 // Fehler des Schreibens (der Leser meldet Warnungen statt Fehler).
@@ -90,7 +93,7 @@ type Stil struct {
 // Schluessel je Art, in der Reihenfolge, in der sie geschrieben werden.
 func schluesselFuer(art string) []string {
 	switch art {
-	case ArtPfeil, ArtLupe:
+	case ArtPfeil, ArtLupe, ArtTextmarker:
 		return []string{"color", "width", "shadow"}
 	case ArtKasten, ArtEllipse:
 		return []string{"color", "fill", "width", "shadow"}
@@ -221,6 +224,9 @@ func ParseStile(name, inhalt string) ([]Stil, []string) {
 				continue
 			}
 			cur = Stil{Art: art, Breite: stilBreite, Schriftgrad: stilSchriftgrad, Radius: stilRadius}
+			if art == ArtTextmarker {
+				cur.Breite = textmarkerBreite // ADR-0048 Punkt 5
+			}
 			offen, verworfen, kopfZeile, gesehen = true, false, nr, map[string]bool{}
 			continue
 		}

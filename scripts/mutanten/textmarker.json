@@ -1,0 +1,254 @@
+[
+  {
+    "name": "TM1 Renderer mischt Textmarker ohne Zwischenbild",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\tif p >= 100 && !schatten && !mult {",
+    "neu": "\tif p >= 100 && !schatten {"
+  },
+  {
+    "name": "TM2 Multiplizieren ohne Produkt",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\treturn (cs*(0xffff-da) + cb*(0xffff-sa) + cs*cb) / 0xffff",
+    "neu": "\t\treturn (cs*(0xffff-da) + cb*(0xffff-sa) + cs) / 0xffff"
+  },
+  {
+    "name": "TM3 Multiplizieren ohne Rest des Grunds",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\treturn (cs*(0xffff-da) + cb*(0xffff-sa) + cs*cb) / 0xffff",
+    "neu": "\t\treturn (cs*(0xffff-da) + cs*cb) / 0xffff"
+  },
+  {
+    "name": "TM4 Multiplizieren auf durchsichtigem Grund ohne Quelle",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\treturn (cs*(0xffff-da) + cb*(0xffff-sa) + cs*cb) / 0xffff",
+    "neu": "\t\treturn (cb*(0xffff-sa) + cs*cb) / 0xffff"
+  },
+  {
+    "name": "TM5 mischeEbene mischt normal",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\tif mult {\n\t\t\t\tmischeMultipliziert(",
+    "neu": "\t\t\tif false {\n\t\t\t\tmischeMultipliziert("
+  },
+  {
+    "name": "TM6 Schatten-Ebene mischt normal",
+    "datei": "internal/render/schatten.go",
+    "paket": "./internal/render",
+    "alt": "p, o.Ebenenwerte().Multipliziert())",
+    "neu": "p, false)"
+  },
+  {
+    "name": "TM7 Deckung nicht angewandt",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\tsr, sg, sb, sa = sr*ma/0xffff, sg*ma/0xffff, sb*ma/0xffff, sa*ma/0xffff",
+    "neu": "\t_ = ma"
+  },
+  {
+    "name": "TM8 Version ohne Mischung",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\tif o.Ebenenwerte().Mischung != document.MischNormal {\n\t\t\treturn versionMischung",
+    "neu": "\t\tif false {\n\t\t\treturn versionMischung"
+  },
+  {
+    "name": "TM9 s:mischung nicht geschrieben",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\ts.attr(\"s:mischung\", e.Mischung.Name())\n",
+    "neu": "\n"
+  },
+  {
+    "name": "TM10 mix-blend-mode nicht geschrieben",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\ts.attr(\"style\", \"mix-blend-mode:\"+e.Mischung.Name())\n",
+    "neu": "\n"
+  },
+  {
+    "name": "TM11 s:mischung in Version 1 gelesen",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "ok && version >= versionMischung {",
+    "neu": "ok {"
+  },
+  {
+    "name": "TM12 Editor mischt Textmarker normal",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tdefer paint.PushMultiply(gtx.Ops, float32(p)/100).Pop()",
+    "neu": "\t\tdefer paint.PushOpacity(gtx.Ops, float32(p)/100).Pop()"
+  },
+  {
+    "name": "TM13 Gio nimmt die Pipeline ohne Multiplizieren",
+    "datei": "third_party/gio/gpu/gpu.go",
+    "paket": "./internal/ui",
+    "alt": "\tif multiply && mat == materialTexture {\n\t\treturn b.multiply[fboIdx]",
+    "neu": "\tif false && mat == materialTexture {\n\t\treturn b.multiply[fboIdx]"
+  },
+  {
+    "name": "TM14 Gio vergisst das Multiplizieren der Ebene",
+    "datei": "third_party/gio/gpu/gpu.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tmultiply: l.multiply,\n",
+    "neu": "\n"
+  },
+  {
+    "name": "TM15 Gio liest das Byte nicht",
+    "datei": "third_party/gio/internal/ops/ops.go",
+    "paket": "./internal/ui",
+    "alt": "data[5] == 1",
+    "neu": "false"
+  },
+  {
+    "name": "TM16 Gio schreibt das Byte nicht",
+    "datei": "third_party/gio/op/paint/paint.go",
+    "paket": "./internal/ui",
+    "alt": "\tif multiply {\n\t\tdata[5] = 1\n\t}",
+    "neu": "\t_ = multiply"
+  },
+  {
+    "name": "TM17 Gio mischt über statt mal",
+    "datei": "third_party/gio/gpu/gpu.go",
+    "paket": "./internal/ui",
+    "alt": "driver.BlendDesc{SrcFactor: driver.BlendFactorDstColor, DstFactor: driver.BlendFactorOneMinusSrcAlpha}",
+    "neu": "driver.BlendDesc{SrcFactor: driver.BlendFactorOne, DstFactor: driver.BlendFactorOneMinusSrcAlpha}"
+  },
+  {
+    "name": "TM18 Textmarker als Pfeil erkannt",
+    "datei": "internal/canvas/seitenleiste.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif v.Multipliziert() { // ein multiplizierender Pfeil ist ein Textmarker",
+    "neu": "\t\tif false { // ein multiplizierender Pfeil ist ein Textmarker"
+  },
+  {
+    "name": "TM19 Umschalt nicht waagerecht",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\treturn s.D.ZuOriginal(document.Pt(b.X, a.Y))",
+    "neu": "\t\treturn s.D.ZuOriginal(b)"
+  },
+  {
+    "name": "TM20 neuer Textmarker ohne Mischung",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tpf.Mischung = document.MischMultiplizieren\n",
+    "neu": "\n"
+  },
+  {
+    "name": "TM21 neuer Textmarker mit Spitze",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\tpf.Ende, pf.Anfang = document.KopfKeine, 0",
+    "neu": "\tpf.Anfang = 0"
+  },
+  {
+    "name": "TM22 Breite des Textmarkers wie der Pfeil",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tst.Breite = TextmarkerBreite * st.Breite / StandardStil().Breite",
+    "neu": "\t\tst.Breite = st.Breite"
+  },
+  {
+    "name": "TM23 Breite ohne Faktor",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tst.Breite = TextmarkerBreite * st.Breite / StandardStil().Breite",
+    "neu": "\t\tst.Breite = TextmarkerBreite"
+  },
+  {
+    "name": "TM24 Farbe des Textmarkers rot",
+    "datei": "internal/canvas/farbpaar.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\treturn farbpaar{vorn: TextmarkerGelb}",
+    "neu": "\t\treturn farbpaar{vorn: rot}"
+  },
+  {
+    "name": "TM25 Textmarker trägt Köpfe",
+    "datei": "internal/canvas/mehrfachstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\tif v.Multipliziert() { // der Textmarker hat keine Köpfe",
+    "neu": "\t\t\tif false { // der Textmarker hat keine Köpfe"
+  },
+  {
+    "name": "TM26 Köpfe mehrerer auch am Textmarker",
+    "datei": "internal/canvas/pfeilform.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\tif !ok || p.Multipliziert() { // Textmarker übergehen",
+    "neu": "\t\t\tif !ok { // Textmarker übergehen"
+  },
+  {
+    "name": "TM27 Kopf am gewählten Textmarker",
+    "datei": "internal/canvas/pfeilform.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif p, ok := o.(document.Pfeil); ok && p.Multipliziert() {\n\t\t\treturn false",
+    "neu": "\t\tif p, ok := o.(document.Pfeil); ok && p.Multipliziert() && false {\n\t\t\treturn false"
+  },
+  {
+    "name": "TM28 Schnellstil-Art des Objekts Pfeil",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif v.Multipliziert() {\n\t\t\tart = SchnellTextmarker",
+    "neu": "\t\tif false {\n\t\t\tart = SchnellTextmarker"
+  },
+  {
+    "name": "TM29 Schnellstil des Textmarkers ohne Breite",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase SchnellPfeil, SchnellLupe, SchnellTextmarker:\n\t\tr.Breite = st.Breite",
+    "neu": "\tcase SchnellPfeil, SchnellLupe:\n\t\tr.Breite = st.Breite"
+  },
+  {
+    "name": "TM30 styles.ini ohne Breite: 6",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "\t\t\t\tcur.Breite = textmarkerBreite",
+    "neu": "\t\t\t\tcur.Breite = stilBreite"
+  },
+  {
+    "name": "TM31 tools.ini ohne Abschnitt highlighter",
+    "datei": "internal/settings/werkzeugstile.go",
+    "paket": "./internal/settings",
+    "alt": "\tcase ArtTextmarker: // wie der Pfeil ohne Köpfe",
+    "neu": "\tcase \"x\": // wie der Pfeil ohne Köpfe"
+  },
+  {
+    "name": "TM32 annotate: Breite des Pfeils",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\t\t\tvorBreite = canvas.TextmarkerBreite * st.Breite / canvas.StandardStil().Breite",
+    "neu": "\t\t\t\t_ = vorBreite"
+  },
+  {
+    "name": "TM33 annotate: highlight als Pfeil",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\t\tif e.Type == \"highlight\" {\n\t\t\t\to = canvas.NeuerTextmarker",
+    "neu": "\t\t\tif false {\n\t\t\t\to = canvas.NeuerTextmarker"
+  },
+  {
+    "name": "TM34 Taste H fehlt",
+    "datei": "internal/ui/kuerzel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\twz(\"H\", canvas.WerkzeugTextmarker),",
+    "neu": "\t\twz(\"J\", canvas.WerkzeugTextmarker),"
+  },
+  {
+    "name": "TM35 Mischung ungeprüft",
+    "datei": "internal/document/ebene.go",
+    "paket": "./internal/document",
+    "alt": "\tif int(e.Mischung) >= len(mischartNamen) {",
+    "neu": "\tif false {"
+  },
+  {
+    "name": "TM36 Tile multipliziert nicht",
+    "datei": "internal/ui/schnellstile.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tm := paint.PushMultiply(gtx.Ops, 1)",
+    "neu": "\t\tm := paint.PushOpacity(gtx.Ops, 1)"
+  }
+]

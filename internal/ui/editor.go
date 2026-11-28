@@ -343,6 +343,7 @@ type editor struct {
 		sprechblase                                  widget.Clickable // Werkzeug Sprechblase (ADR-0021 Nachtrag 13)
 		lupe                                         widget.Clickable // Werkzeug Lupe (ADR-0033)
 		ellipse                                      widget.Clickable // Werkzeug Ellipse (ADR-0047)
+		textmarker                                   widget.Clickable // Werkzeug Textmarker (ADR-0048)
 		fuellung, tausch                             widget.Clickable // Farbpaar der Werkzeugleiste (ADR-0021 Nachtrag 11)
 		schwaerzen, verpixeln, zuschneiden, stauchen widget.Clickable
 		fussFarbe, fussZoom                          widget.Clickable
@@ -1959,7 +1960,10 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 // ohne Ansicht abbildet (das Bild einer Lupe liegt dann nicht in Ansichtskoordinaten, ADR-0033).
 func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(document.Punkt) f32.Point, sicht image.Rectangle,
 	vorschau bool) {
-	if p := o.Ebenenwerte().Deckkraft(); p < 100 {
+	if p := o.Ebenenwerte().Deckkraft(); o.Ebenenwerte().Multipliziert() {
+		// Textmarker: Gios Ebene, multiplizierend eingemischt (Gio-Patch, ADR-0048 Punkt 3)
+		defer paint.PushMultiply(gtx.Ops, float32(p)/100).Pop()
+	} else if p < 100 {
 		defer paint.PushOpacity(gtx.Ops, float32(p)/100).Pop()
 	}
 	if !vorschau { // Schatten unter dem Objekt, in der Deckkraft der Ebene (ADR-0021 Nachtrag 26 Punkt 4)
@@ -3070,13 +3074,14 @@ func (e *editor) zeichneEllipse(gtx layout.Context, v document.Kasten, an func(d
 	}
 }
 
-// werkzeugKnoepfe sind die Knöpfe der Werkzeuggruppe in Reihenfolge der Leiste (Kürzel V, A, R, E, T, K, N, M, B, P, C,
-// X; ADR-0021, ADR-0022, ADR-0023, ADR-0033, ADR-0047).
+// werkzeugKnoepfe sind die Knöpfe der Werkzeuggruppe in Reihenfolge der Leiste (Kürzel V, A, H, R, E, T, K, N, M, B, P,
+// C, X; ADR-0021, ADR-0022, ADR-0023, ADR-0033, ADR-0047, ADR-0048).
 func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
 	k := &e.knoepfe
 	return []werkzeugKnopf{
 		{&k.auswahl, canvas.WerkzeugAuswahl, i18n.T("Select")},
 		{&k.pfeil, canvas.WerkzeugPfeil, i18n.T("Arrow")},
+		{&k.textmarker, canvas.WerkzeugTextmarker, i18n.T("Highlighter")},
 		{&k.kasten, canvas.WerkzeugKasten, i18n.T("Rectangle")},
 		{&k.ellipse, canvas.WerkzeugEllipse, i18n.T("Ellipse")},
 		{&k.text, canvas.WerkzeugText, i18n.T("Text")},
@@ -3135,6 +3140,8 @@ func (e *editor) hinweis() string {
 		return i18n.T("Drag to draw a rectangle. Shift: square.")
 	case canvas.WerkzeugEllipse:
 		return i18n.T("Drag to draw an ellipse. Shift: circle.")
+	case canvas.WerkzeugTextmarker:
+		return i18n.T("Drag along the text to highlight it. Shift: horizontal.")
 	case canvas.WerkzeugText:
 		return i18n.T("Click to place text, or click a text to edit it.")
 	case canvas.WerkzeugSprechblase:

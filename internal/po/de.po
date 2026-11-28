@@ -2285,5 +2285,20 @@ msgstr "Ellipse"
 msgid "Drag to draw an ellipse. Shift: circle."
 msgstr "Ziehen zeichnet eine Ellipse. Umschalt: Kreis."
 
+msgid "Highlighter"
+msgstr "Textmarker"
+
+msgid "Hide / lock layer"
+msgstr "Ebene ausblenden / sperren"
+
+msgid "Drag along the text to highlight it. Shift: horizontal."
+msgstr "Am Text entlang ziehen markiert ihn. Umschalt: waagerecht."
+
+msgid "Yellow"
+msgstr "Gelb"
+
+msgid "Pink"
+msgstr "Rosa"
+
 msgid "Sidebar / recent captures"
 msgstr "Seitenleiste / letzte Aufnahmen"

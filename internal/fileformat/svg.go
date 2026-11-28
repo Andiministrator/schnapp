@@ -28,8 +28,8 @@ const FormatVersion = 2
 // dem Attribut s:spitze am Text (ADR-0021 Nachtrag 13 Punkt 7); versionPfeilKoepfe die erste mit s:ende/s:anfang am
 // Pfeil (ADR-0021 Nachtrag 20); versionStrichart die erste mit s:strichart an Pfeil, Kasten und Lupe (ADR-0021
 // Nachtrag 25); versionSchatten die erste mit s:schatten an jeder Ebene (ADR-0021 Nachtrag 26 Punkt 6); versionGruppe
-// die erste mit s:gruppe (ADR-0044 Punkt 6); versionEllipse die erste mit s:form am Kasten (ADR-0047 Punkt 6). Alle
-// sind Version 2.
+// die erste mit s:gruppe (ADR-0044 Punkt 6); versionEllipse die erste mit s:form am Kasten (ADR-0047 Punkt 6);
+// versionMischung die erste mit s:mischung an jeder Ebene (ADR-0048 Punkt 7). Alle sind Version 2.
 const (
 	versionLupe        = 2
 	versionSpitze      = 2
@@ -38,6 +38,7 @@ const (
 	versionSchatten    = 2
 	versionGruppe      = 2
 	versionEllipse     = 2
+	versionMischung    = 2
 )
 
 // schreibVersion ist die Version, die der Schreiber für die Objekte objekte angibt.
@@ -49,6 +50,9 @@ func schreibVersion(objekte []document.Objekt) int {
 		}
 		if gruppen[o.Ebenenwerte().Gruppe] {
 			return versionGruppe
+		}
+		if o.Ebenenwerte().Mischung != document.MischNormal {
+			return versionMischung
 		}
 		switch v := o.(type) {
 		case document.Lupe:
@@ -243,13 +247,18 @@ func (s *schreiber) ebene(e document.Ebene) {
 	if s.gruppen[e.Gruppe] { // ADR-0044 Punkt 6, docs/format.md 8.5; nur wirksame (F-962)
 		s.attr("s:gruppe", strconv.Itoa(e.Gruppe))
 	}
+	if e.Mischung != document.MischNormal { // ADR-0048 Punkt 7, docs/format.md 8.5
+		s.attr("s:mischung", e.Mischung.Name())
+		s.attr("style", "mix-blend-mode:"+e.Mischung.Name())
+	}
 	if s.schattenID != "" {
 		s.attr("filter", "url(#"+s.schattenID+")")
 		s.schattenID = ""
 	}
 }
 
-// leseEbene übernimmt s:name, s:ausgeblendet, s:gesperrt, s:deckkraft und (ab Version 2) s:schatten und s:gruppe. Alle sind
+// leseEbene übernimmt s:name, s:ausgeblendet, s:gesperrt, s:deckkraft und (ab Version 2) s:schatten, s:gruppe und
+// s:mischung. Alle sind
 // freiwillig: fehlend oder ungültig heißt kein Name, sichtbar, offen, deckend, kein Schatten — kein Schaden (wie
 // s:schrift).
 func leseEbene(a map[string]string, version int) document.Ebene {
@@ -267,6 +276,9 @@ func leseEbene(a map[string]string, version int) document.Ebene {
 	}
 	if g, ok := parseGanz(a["gruppe"]); ok && g >= 1 && g <= document.MaxGruppe && version >= versionGruppe {
 		e.Gruppe = g
+	}
+	if m, ok := document.MischartAus(a["mischung"]); ok && version >= versionMischung {
+		e.Mischung = m
 	}
 	return e
 }

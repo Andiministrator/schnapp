@@ -3,7 +3,7 @@
     "name": "E1 Deckkraft der Ebene wirkt im Renderer nicht",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "\tif p >= 100 && !schatten {\n\t\treturn z.objekt(o)",
+    "alt": "\tif p >= 100 && !schatten && !mult {\n\t\treturn z.objekt(o)",
     "neu": "\tif true {\n\t\treturn z.objekt(o)"
   },
   {
@@ -248,8 +248,8 @@
     "name": "E38 Editor zeichnet die Deckkraft der Ebene nicht (F-593)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\tif p := o.Ebenenwerte().Deckkraft(); p < 100 {",
-    "neu": "\tif p := o.Ebenenwerte().Deckkraft(); p < 0 {"
+    "alt": "\t} else if p < 100 {\n\t\tdefer paint.PushOpacity",
+    "neu": "\t} else if p < 0 {\n\t\tdefer paint.PushOpacity"
   },
   {
     "name": "E39 Editor zeigt Rahmen und Griffe einer ausgeblendeten Ebene (F-593)",

@@ -42,6 +42,9 @@ type SeitenInhalt struct {
 func objektWerkzeug(o document.Objekt) (Werkzeug, bool) {
 	switch v := o.(type) {
 	case document.Pfeil:
+		if v.Multipliziert() { // ein multiplizierender Pfeil ist ein Textmarker (ADR-0048 Punkt 2)
+			return WerkzeugTextmarker, true
+		}
 		return WerkzeugPfeil, true
 	case document.Kasten:
 		if v.Form == document.FormEllipse {
@@ -64,15 +67,16 @@ func objektWerkzeug(o document.Objekt) (Werkzeug, bool) {
 // farbWerkzeug meldet, ob ein Werkzeug eine Beschriftungsfarbe verwendet.
 func farbWerkzeug(w Werkzeug) bool {
 	return w == WerkzeugPfeil || w == WerkzeugKasten || w == WerkzeugText || w == WerkzeugNummer || w == WerkzeugLupe ||
-		w == WerkzeugSprechblase || w == WerkzeugEllipse
+		w == WerkzeugSprechblase || w == WerkzeugEllipse || w == WerkzeugTextmarker
 }
 
 // textWerkzeug meldet, ob w Text setzt (Text, Sprechblase): Schrift, Größe, Stil und Ausrichtung gelten dafür.
 func textWerkzeug(w Werkzeug) bool { return w == WerkzeugText || w == WerkzeugSprechblase }
 
-// strichWerkzeug meldet, ob ein Werkzeug einen Strich zeichnet (Pfeil, Kasten, Ellipse, Lupe).
+// strichWerkzeug meldet, ob ein Werkzeug einen Strich zeichnet (Pfeil, Kasten, Ellipse, Lupe, Textmarker).
 func strichWerkzeug(w Werkzeug) bool {
-	return w == WerkzeugPfeil || w == WerkzeugKasten || w == WerkzeugEllipse || w == WerkzeugLupe
+	return w == WerkzeugPfeil || w == WerkzeugKasten || w == WerkzeugEllipse || w == WerkzeugLupe ||
+		w == WerkzeugTextmarker
 }
 
 // Seitenleiste liefert den Inhalt der rechten Leiste. Ein gewähltes Objekt geht dem Werkzeug vor: Seine Farbe ändert

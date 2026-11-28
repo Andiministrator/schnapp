@@ -135,8 +135,11 @@ var (
 	Pfeil   = Symbol{"arrow", teile(linie(5, 19, 15.5, 8.5), vieleck(20, 4, 20, 13, 11, 4))}
 	Kasten  = Symbol{"rectangle", rahmen(3, 6, 18, 12)}
 	Ellipse = Symbol{"ellipse", ellipsenRing(12, 12, 9, 6.5, 24)} // ADR-0047
-	Text    = Symbol{"text", teile(flaeche(5, 4, 14, 3), flaeche(10.5, 4, 3, 16), flaeche(8, 18, 8, 2))}
-	Nummer  = Symbol{"step", teile(rahmen(3, 3, 18, 18), flaeche(11, 7, 2.5, 10), flaeche(8.5, 7, 3, 2.5),
+	// Textmarker: schräger Stift mit Keilspitze über einem Balken in Akzentfarbe (ADR-0048).
+	Textmarker = Symbol{"highlighter", teile(ring(11, 11, 17, 5, 21, 9, 15, 15), vieleck(10.5, 12.5, 13.5, 15.5, 10, 19, 7, 16),
+		akzent(flaeche(2, 19.5, 10, 2.5)))}
+	Text   = Symbol{"text", teile(flaeche(5, 4, 14, 3), flaeche(10.5, 4, 3, 16), flaeche(8, 18, 8, 2))}
+	Nummer = Symbol{"step", teile(rahmen(3, 3, 18, 18), flaeche(11, 7, 2.5, 10), flaeche(8.5, 7, 3, 2.5),
 		flaeche(8.5, 15, 7.5, 2))}
 
 	// Sprechblase: Rahmen mit Textzeile und Spitze unten links (ADR-0021 Nachtrag 13).
