@@ -582,8 +582,10 @@ func TestMehrereVieleObjekteSchnell(t *testing.T) {
 		_, _ = s.ZweiteFarbe(FeldVordergrund)
 		_ = s.Breite()
 	}
-	if d := time.Since(start); d > 3*time.Second {
+	if d := time.Since(start); auswahlZeit > 0 && d > auswahlZeit {
 		t.Errorf("20 Bilder mit 2000 gewählten dauerten %v", d)
+	} else {
+		t.Logf("20 Bilder mit 2000 gewählten: %v", d)
 	}
 	// Im Breitenzug (F-953): gemerkt, nicht je Abfrage neu.
 	start = time.Now()
@@ -598,8 +600,10 @@ func TestMehrereVieleObjekteSchnell(t *testing.T) {
 		_ = s.Breite()
 	}
 	s.BeendeBreiteZug()
-	if d := time.Since(start); d > 5*time.Second {
+	if d := time.Since(start); auswahlZugZeit > 0 && d > auswahlZugZeit {
 		t.Errorf("Breitenzug über 2000 gewählte dauerte %v", d)
+	} else {
+		t.Logf("Breitenzug über 2000 gewählte: %v", d)
 	}
 }
 

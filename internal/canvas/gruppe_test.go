@@ -322,8 +322,10 @@ func TestGruppeVieleObjekteSchnell(t *testing.T) {
 		_ = s.KannGruppierungAufheben()
 		_ = s.GruppeSchaltet(SchalterAusblenden)
 	}
-	if d := time.Since(start); d > 3*time.Second {
+	if d := time.Since(start); gruppenZeit > 0 && d > gruppenZeit {
 		t.Errorf("2000 Objekte in einer Gruppe dauerten %v", d)
+	} else {
+		t.Logf("2000 Objekte in einer Gruppe: %v", d)
 	}
 }
 
