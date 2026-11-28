@@ -444,6 +444,9 @@ msgstr "Die Grenze von %d Beschriftungen ist erreicht. Zum Hinzufügen erst eini
 msgid "Step numbers end at %d; no further number can be placed."
 msgstr "Die Schritt-Nummern enden bei %d; eine weitere Nummer lässt sich nicht setzen."
 
+msgid "Freehand strokes in this image have reached the limit of %d points. Delete some to draw more."
+msgstr "Die Freihand-Striche dieses Bilds haben die Grenze von %d Punkten erreicht. Zum Weiterzeichnen erst einige löschen."
+
 msgid "The editor could not be opened or saved: %v"
 msgstr "Der Editor ließ sich nicht öffnen oder nicht speichern: %v"
 
@@ -2140,6 +2143,9 @@ msgstr "Einfügen nicht möglich: erst die laufende Aktion abschließen."
 
 msgid "Could not paste: the objects would take too long to draw."
 msgstr "Einfügen nicht möglich: Die Objekte wären zu aufwendig zu zeichnen."
+
+msgid "Could not paste: freehand strokes in this image would exceed %d points."
+msgstr "Einfügen nicht möglich: Die Freihand-Striche dieses Bilds hätten mehr als %d Punkte."
 
 msgid "Could not paste: %v"
 msgstr "Einfügen nicht möglich: %v"

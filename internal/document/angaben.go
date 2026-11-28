@@ -81,6 +81,9 @@ func (d *Dokument) SetzeAngaben(objekte []Objekt, z image.Rectangle, st []Streif
 	if len(objekte) > MaxObjekte {
 		return fmt.Errorf("document: mehr als %d Objekte", MaxObjekte)
 	}
+	if n := FreihandPunkteGesamt(objekte); n > MaxFreihandGesamt {
+		return fmt.Errorf("%w: %d Punkte", ErrFreihandVoll, n)
+	}
 	if err := pruefeKante(k); err != nil {
 		return err
 	}

@@ -1,0 +1,79 @@
+[
+  {
+    "name": "FP1 Hinzufuegen ohne Freihand-Grenze",
+    "datei": "internal/document/verlauf.go",
+    "paket": "./internal/document",
+    "alt": "\tif err := d.pruefeFreihandDazu(o); err != nil {\n\t\treturn 0, err\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "FP2 FuegeEin ohne Freihand-Grenze",
+    "datei": "internal/document/ebene.go",
+    "paket": "./internal/document",
+    "alt": "\tif err := d.pruefeFreihandDazu(o); err != nil {\n\t\treturn 0, err\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "FP3 FuegeEinMehrere ohne Freihand-Grenze",
+    "datei": "internal/document/mehrere.go",
+    "paket": "./internal/document",
+    "alt": "\tif err := d.pruefeFreihandDazu(os...); err != nil {\n\t\treturn nil, err\n\t}\n\ttype teil struct {",
+    "neu": "\ttype teil struct {"
+  },
+  {
+    "name": "FP4 HinzufuegenMehrere ohne Freihand-Grenze",
+    "datei": "internal/document/mehrere.go",
+    "paket": "./internal/document",
+    "alt": "\tif err := d.pruefeFreihandDazu(os...); err != nil {\n\t\treturn nil, err\n\t}\n\tfor _, o := range os {",
+    "neu": "\tfor _, o := range os {"
+  },
+  {
+    "name": "FP5 neuer Zug ohne Platz für einen ganzen Strich",
+    "datei": "internal/document/verlauf.go",
+    "paket": "./internal/document",
+    "alt": "ok && d.FreihandPlatz() < MaxFreihandPunkte {",
+    "neu": "ok && d.FreihandPlatz() < 0 {"
+  },
+  {
+    "name": "FP6 SetzeAngaben ohne Freihand-Grenze",
+    "datei": "internal/document/angaben.go",
+    "paket": "./internal/document",
+    "alt": "if n := FreihandPunkteGesamt(objekte); n > MaxFreihandGesamt {",
+    "neu": "if n := FreihandPunkteGesamt(objekte); n > 2*MaxFreihandGesamt {"
+  },
+  {
+    "name": "FP7 Grenze um einen Punkt zu eng",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/document",
+    "alt": "n > 0 && n > d.FreihandPlatz()",
+    "neu": "n > 0 && n >= d.FreihandPlatz()"
+  },
+  {
+    "name": "FP8 Werkzeug lehnt ohne Platz nicht ab",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.D.FreihandPlatz() < document.MaxFreihandPunkte:",
+    "neu": "\t\ts.D.FreihandPlatz() < 0:"
+  },
+  {
+    "name": "FP9 gerader Textmarker abgelehnt",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "s.Werkzeug == WerkzeugTextmarker && s.TextmarkerFrei()",
+    "neu": "s.Werkzeug == WerkzeugTextmarker"
+  },
+  {
+    "name": "FP10 Ablehnung ohne Meldung",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase canvas.AblehnungFreihand:\n\t\te.melde(e.grenzText(canvas.AblehnungFreihand), true)\n",
+    "neu": ""
+  },
+  {
+    "name": "FP11 Einfügen ohne eigene Meldung",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase errors.Is(err, document.ErrFreihandVoll):",
+    "neu": "\tcase false:"
+  }
+]

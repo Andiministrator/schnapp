@@ -407,6 +407,9 @@ const (
 	AblehnungTextVerborgen
 	// AblehnungSichtbar: Ausrichten oder Verteilen hätte ein Objekt aus dem sichtbaren Bild geschoben (ADR-0039 Punkt 3).
 	AblehnungSichtbar
+	// AblehnungFreihand: Für einen ganzen Freihand-Strich (MaxFreihandPunkte) ist unter document.MaxFreihandGesamt kein
+	// Platz mehr (F-1051).
+	AblehnungFreihand
 )
 
 // Voll meldet, warum das aktive Zeichenwerkzeug jetzt kein neues Objekt anlegen kann (AblehnungKeine, wenn es geht).
@@ -419,6 +422,9 @@ func (s *Sitzung) Voll() Ablehnung {
 		return AblehnungObjekte
 	case s.Werkzeug == WerkzeugNummer && s.D.NaechsteNummer() > document.MaxNummer:
 		return AblehnungNummer
+	case (s.Werkzeug == WerkzeugFreihand || s.Werkzeug == WerkzeugTextmarker && s.TextmarkerFrei()) &&
+		s.D.FreihandPlatz() < document.MaxFreihandPunkte:
+		return AblehnungFreihand
 	}
 	return AblehnungKeine
 }

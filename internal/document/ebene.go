@@ -241,6 +241,9 @@ func (d *Dokument) FuegeEin(o Objekt, stelle int) (int, error) {
 	if len(d.objekte) >= MaxObjekte {
 		return 0, fmt.Errorf("document: mehr als %d Objekte", MaxObjekte)
 	}
+	if err := d.pruefeFreihandDazu(o); err != nil {
+		return 0, err
+	}
 	if err := o.pruefe(); err != nil {
 		return 0, err
 	}

@@ -436,3 +436,28 @@ func TestWendeFreihand(t *testing.T) {
 		}
 	}
 }
+
+// F-1051: Hat das Bild keinen Platz mehr für die Freihand-Punkte der Liste, lehnt --annotate ab (alles oder nichts),
+// statt eine Datei zu speichern, die der Leser verwirft.
+func TestFreihandGesamtgrenze(t *testing.T) {
+	d := dokument(t, 200, 100)
+	pts := make([]document.Punkt, document.MaxFreihandPunkte)
+	for i := range pts {
+		pts[i] = document.Pt(float64(i%100), float64(i%2))
+	}
+	var os []document.Objekt
+	for range document.MaxFreihandGesamt / document.MaxFreihandPunkte {
+		os = append(os, document.NeuerFreihand(pts, document.Strich{Breite: 2}))
+	}
+	if _, err := d.HinzufuegenMehrere(os); err != nil {
+		t.Fatal(err)
+	}
+	es, err := Lies(strings.NewReader(`{"annotations":[{"type":"freehand","points":[[5,5],[50,5]]}]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := len(d.Objekte())
+	if _, err := Wende(context.Background(), d, es); err == nil || len(d.Objekte()) != n {
+		t.Errorf("Fehler %v, %d Objekte (vorher %d)", err, len(d.Objekte()), n)
+	}
+}

@@ -1326,6 +1326,10 @@ msgid "Step numbers end at %d; no further number can be placed."
 msgstr ""
 
 #: internal/ui/editor.go
+msgid "Freehand strokes in this image have reached the limit of %d points. Delete some to draw more."
+msgstr ""
+
+#: internal/ui/editor.go
 msgid "Too narrow to pixelate; the area was blacked out instead."
 msgstr ""
 
@@ -1547,6 +1551,10 @@ msgstr ""
 
 #: internal/ui/einfuegen.go
 msgid "The clipboard holds nothing to paste."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "Could not paste: freehand strokes in this image would exceed %d points."
 msgstr ""
 
 #: internal/ui/einfuegen.go

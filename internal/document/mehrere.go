@@ -102,6 +102,9 @@ func (d *Dokument) FuegeEinMehrere(os []Objekt, ueber []int) ([]int, error) {
 	if len(d.objekte)+len(os) > MaxObjekte {
 		return nil, fmt.Errorf("document: mehr als %d Objekte", MaxObjekte)
 	}
+	if err := d.pruefeFreihandDazu(os...); err != nil {
+		return nil, err
+	}
 	type teil struct {
 		o      Objekt
 		stelle int // Stelle des Originals vor allen Einfügungen
@@ -243,6 +246,9 @@ func (d *Dokument) HinzufuegenMehrere(os []Objekt) ([]int, error) {
 	}
 	if len(d.objekte)+len(os) > MaxObjekte {
 		return nil, fmt.Errorf("document: mehr als %d Objekte", MaxObjekte)
+	}
+	if err := d.pruefeFreihandDazu(os...); err != nil {
+		return nil, err
 	}
 	for _, o := range os {
 		if o == nil {

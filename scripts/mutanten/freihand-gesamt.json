@@ -28,17 +28,12 @@
     "neu": "version: version, freiRest: func() *int { x := freiRest; return &x }()}"
   },
   {
-    "name": "FG5 Schreiber prüft die Gesamtpunkte nicht",
-    "datei": "internal/fileformat/arbeitsdatei.go",
-    "paket": "./internal/fileformat",
-    "alt": "n > document.MaxFreihandGesamt {\n\t\t// Der Leser",
-    "neu": "n > 1<<40 {\n\t\t// Der Leser"
-  },
-  {
     "name": "FG6 PruefeInhalt prüft die Gesamtpunkte nicht",
     "datei": "internal/document/pruefen.go",
     "paket": "./internal/fileformat",
     "alt": "n > MaxFreihandGesamt {",
-    "neu": "n > 1<<40 {"
+    "neu": "n > 1<<40 {",
+    "aequivalent": true,
+    "grund": "Seit F-1051 fügt PruefeInhalt jedes Objekt über Dokument.Hinzufuegen ein, das die Gesamtgrenze selbst prüft (mutiert in freihand-platz.json FP1); die frühe Prüfung in PruefeInhalt spart nur das Einfügen bis zur Grenze."
   }
 ]

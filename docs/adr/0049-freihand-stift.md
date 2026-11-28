@@ -94,7 +94,13 @@ Punkt 6 (Format) ändert sich, solange FormatVersion 3 nicht ausgeliefert ist (k
   gleich gewordene Nachbarn bleiben stehen. So sind Schreiben und Lesen verlustfrei und deckungsgleich; ein Strich unter
   1/100 px Länge (auch aus `--annotate`/MCP) ist ein Strich ohne Länge und wird abgelehnt (F-1040).
 - **Gesamtgrenze** `MaxFreihandGesamt` = 1 048 576 Punkte je Datei (F-1049, docs/format.md §10), im Leser vor dem
-  Teilen gezählt; `SchreibeArbeitsdatei` und `PruefeInhalt` prüfen dieselbe Grenze.
+  Teilen gezählt; `PruefeInhalt` prüft dieselbe Grenze. (Eine eigene Prüfung in `SchreibeArbeitsdatei` aus
+  aef7250 ist mit dem nächsten Punkt entfallen: kein Dokument kommt mehr über die Grenze.)
+- **Beim Hinzufügen** (F-1051): `Hinzufuegen`, `FuegeEin`, `HinzufuegenMehrere`, `FuegeEinMehrere` und `SetzeAngaben`
+  lehnen Objekte ab, deren Freihand-Punkte nicht mehr passen (`ErrFreihandVoll`); ein neuer Freihand-Zug
+  (`BeginneNeuenZug`) braucht Platz für einen ganzen Strich (`MaxFreihandPunkte`), weil er bis dahin wächst. Freihand
+  und freier Textmarker melden das vor dem Druck (`canvas.AblehnungFreihand`), Einfügen und `--annotate` scheitern mit
+  Meldung. So kann kein Bild entstehen, das Speichern oder Rettungskopie nicht mehr tragen.
 
 Gemessen (derselbe lange Zug wie in Nachtrag 1): im SVG 21 bis 23 statt 25 bis 27 Byte je Punkt, im komprimierten
 `snAP` 3,5 bis 4,7 statt 8,7 bis 10,8 Byte je Punkt. Beide Kopien lauten gleich, zlib verweist die zweite auf die erste.

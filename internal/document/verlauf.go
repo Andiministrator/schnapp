@@ -241,6 +241,9 @@ func (d *Dokument) Hinzufuegen(o Objekt) (int, error) {
 	if len(d.objekte) >= MaxObjekte {
 		return 0, fmt.Errorf("document: mehr als %d Objekte", MaxObjekte)
 	}
+	if err := d.pruefeFreihandDazu(o); err != nil {
+		return 0, err
+	}
 	if err := o.pruefe(); err != nil {
 		return 0, err
 	}
@@ -305,6 +308,10 @@ func (d *Dokument) BeginneNeuenZug(o Objekt) (int, error) {
 	}
 	if len(d.objekte) >= MaxObjekte {
 		return 0, fmt.Errorf("document: mehr als %d Objekte", MaxObjekte)
+	}
+	if _, ok := o.(Freihand); ok && d.FreihandPlatz() < MaxFreihandPunkte {
+		// Der Zug wächst bis MaxFreihandPunkte; Platz für einen ganzen Strich muss da sein (F-1051).
+		return 0, fmt.Errorf("%w: Platz für %d Punkte", ErrFreihandVoll, max(d.FreihandPlatz(), 0))
 	}
 	if err := o.pruefe(); err != nil {
 		return 0, err

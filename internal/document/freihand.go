@@ -3,6 +3,7 @@
 package document
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"slices"
@@ -15,6 +16,23 @@ const MaxFreihandPunkte = 4096
 // MaxObjekte Strichen ergäben über 40 Mio. Punkte (16 Byte je Punkt); eine stark komprimierbare Datei aus „0,0 “
 // forderte beim Lesen über 800 MiB an. Echte Striche sind vereinfacht (einige Hundert Punkte).
 const MaxFreihandGesamt = 1 << 20
+
+// ErrFreihandVoll meldet, dass ein Objekt die Gesamtgrenze der Freihand-Punkte überschritte (F-1051).
+var ErrFreihandVoll = errors.New("document: Grenze der Freihand-Punkte erreicht")
+
+// FreihandPlatz liefert, wie viele Freihand-Punkte das Dokument noch aufnimmt (MaxFreihandGesamt, F-1051).
+func (d *Dokument) FreihandPlatz() int { return MaxFreihandGesamt - FreihandPunkteGesamt(d.objekte) }
+
+// pruefeFreihandDazu lehnt neue Objekte ab, deren Freihand-Punkte nicht mehr ins Dokument passen (F-1051): Doppeln,
+// Einfügen und --annotate scheitern so beim Hinzufügen, nicht erst beim Speichern oder Lesen der Rettungskopie.
+// Gezählt wird nur, wenn Freihand dazukommt, dann über alle Objekte: Wer 10 000 Freihand-Striche einzeln hinzufügt
+// (Laden an der Objektgrenze), zahlt quadratisch, gemessen 0,22 s; echte Bilder tragen einige Hundert Striche.
+func (d *Dokument) pruefeFreihandDazu(neu ...Objekt) error {
+	if n := FreihandPunkteGesamt(neu); n > 0 && n > d.FreihandPlatz() {
+		return fmt.Errorf("%w: %d Punkte mehr, Platz für %d", ErrFreihandVoll, n, max(d.FreihandPlatz(), 0))
+	}
+	return nil
+}
 
 // FreihandPunkteGesamt zählt die Punkte aller Freihand-Striche in objekte.
 func FreihandPunkteGesamt(objekte []Objekt) int {

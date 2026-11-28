@@ -4,6 +4,7 @@ package fileformat
 
 import (
 	"bytes"
+	"errors"
 	"image/color"
 	"runtime"
 	"strings"
@@ -89,7 +90,8 @@ func TestFreihandGesamtgrenzeRand(t *testing.T) {
 	}
 }
 
-// Der Schreiber erzeugt keine Datei, die der Leser ablehnt (F-1049), und document.PruefeInhalt urteilt gleich.
+// Keine Datei über der Grenze entsteht (F-1049): document.PruefeInhalt urteilt wie der Leser, und ein Dokument nimmt
+// keine Freihand-Punkte über die Grenze an (F-1051).
 func TestFreihandGesamtgrenzeSchreiber(t *testing.T) {
 	d := beispielDok(t, 120, 90)
 	pts := make([]document.Punkt, document.MaxFreihandPunkte)
@@ -104,9 +106,9 @@ func TestFreihandGesamtgrenzeSchreiber(t *testing.T) {
 	if _, err := document.PruefeInhalt(d.Groesse(), d.Zuschnitt(), nil, os); err == nil {
 		t.Error("PruefeInhalt nimmt zu viele Freihand-Punkte an")
 	}
-	fuege(t, d, os...)
-	var buf bytes.Buffer
-	if err := SchreibeArbeitsdatei(&buf, d, d.Ansichtsbild(), Metadaten{}); err == nil {
-		t.Error("SchreibeArbeitsdatei schreibt zu viele Freihand-Punkte")
+	// Ein Dokument über der Grenze gibt es nicht (F-1051: jedes Hinzufügen prüft sie), der Schreiber braucht keine
+	// eigene Prüfung.
+	if _, err := d.HinzufuegenMehrere(os); !errors.Is(err, document.ErrFreihandVoll) {
+		t.Errorf("HinzufuegenMehrere über der Grenze: %v", err)
 	}
 }

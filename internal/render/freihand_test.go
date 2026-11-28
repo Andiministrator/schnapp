@@ -48,18 +48,22 @@ func TestFreihandZeichnetUeberlappungsfrei(t *testing.T) {
 
 // F-1043 (Kritik #333 K-1, Mutant FH28): Der Trockenlauf zählt Punkte und Teile eines Freihand-Strichs im Aufwand der
 // Kanten. Ein gepunkteter Zickzack zu 4096 Punkten (8189 Teile) kostet gemessen 2,9e7 Kanten-Aufwand, davon 1,2e7 aus
-// dieser Zeile; 450 Striche liegen mit ihr über KantenBudget (1e10), ohne sie (1,7e7 je Strich) darunter.
+// dieser Zeile. Seit F-1051 trägt ein Dokument höchstens 256 solcher Striche (MaxFreihandGesamt); der Test setzt die
+// Kantengrenze deshalb auf 4,6e9: 200 Striche liegen mit der Zeile darüber (5,8e9), ohne sie (3,4e9) darunter.
 func TestFreihandTrockenlaufZaehlt(t *testing.T) {
+	alt := grenzen.kanten
+	grenzen.kanten = 4.6e9
+	t.Cleanup(func() { grenzen.kanten = alt })
 	d := weissesDokument(t, 300, 200)
 	pts := make([]document.Punkt, document.MaxFreihandPunkte)
 	for i := range pts {
 		pts[i] = document.Pt(float64(i%2)*290+5, float64(i%190)+5)
 	}
-	for range 450 {
+	for range 200 {
 		hinzu(t, d, document.NeuerFreihand(pts, document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 4, Art: document.StrichGepunktet}))
 	}
 	if err := Pruefe(d); err == nil {
-		t.Error("450 Freihand-Striche zu 4096 Punkten ohne Budgetfehler")
+		t.Errorf("200 Freihand-Striche zu 4096 Punkten ohne Budgetfehler (Kanten %.3g)", trockenlauf(d, false).kanten)
 	}
 }
 

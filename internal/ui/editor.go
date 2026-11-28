@@ -1524,6 +1524,8 @@ func (e *editor) meldeAbgelehnt() {
 		e.melde(e.grenzText(canvas.AblehnungObjekte), true)
 	case canvas.AblehnungNummer:
 		e.melde(e.grenzText(canvas.AblehnungNummer), true)
+	case canvas.AblehnungFreihand:
+		e.melde(e.grenzText(canvas.AblehnungFreihand), true)
 	case canvas.AblehnungTextVerborgen:
 		e.melde(i18n.T("This text lies in a compressed area. Restore cut-out areas (Image menu) to edit it."), false)
 	case canvas.AblehnungSichtbar:
@@ -1538,6 +1540,9 @@ func (e *editor) grenzText(a canvas.Ablehnung) string {
 		return fmt.Sprintf(i18n.T("The limit of %d annotations is reached. Delete some to add more."), document.MaxObjekte)
 	case canvas.AblehnungNummer:
 		return fmt.Sprintf(i18n.T("Step numbers end at %d; no further number can be placed."), document.MaxNummer)
+	case canvas.AblehnungFreihand:
+		return fmt.Sprintf(i18n.T("Freehand strokes in this image have reached the limit of %d points. Delete some to draw more."),
+			document.MaxFreihandGesamt)
 	}
 	return ""
 }

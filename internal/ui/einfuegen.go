@@ -354,6 +354,9 @@ func (e *editor) einfuegenAnwenden(q *document.Dokument) {
 		e.melde(i18n.T("Could not paste: finish the current action first."), false)
 	case errors.Is(err, canvas.ErrNichtsEinzufuegen):
 		e.melde(i18n.T("The clipboard holds nothing to paste."), false)
+	case errors.Is(err, document.ErrFreihandVoll):
+		e.melde(fmt.Sprintf(i18n.T("Could not paste: freehand strokes in this image would exceed %d points."),
+			document.MaxFreihandGesamt), true)
 	case err != nil:
 		diagnoseEditor("Einfügen: %v", err)
 		e.melde(fmt.Sprintf(i18n.T("Could not paste: %v"), ohnePaketpraefix(err.Error())), true)
