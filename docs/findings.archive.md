@@ -919,6 +919,17 @@ Ausgelagerte Findings aus `docs/findings.md`. Einträge hier sind abgeschlossen 
 | F-1004 | [D] | P3 | Sprint 14 | **Index und Stand-Zeile der Lehren ohne Abschnitt Zwischenablage** (Doku-QA D-6). | behoben 01b93b7 (Karte #394) |
 | F-1005 | [D] | P3 | Sprint 14 | **Drehbuch zwischenablage-335 zählte eine statt zwei Aufnahmen** (Doku-QA D-7). | behoben 01b93b7 (Karte #394) |
 | F-1006 | [D] | P3 | Sprint 14 | **Kommentar in wlclip.lies versprach sofortigen Abbruch** (Doku-QA D-8): ctx jetzt vor jedem Schritt geprüft, Kommentar berichtigt. | behoben 01b93b7 (Karte #394) |
+| F-1007 | [S] | P2 | Sprint 14 | **Speichern unter: Kopie mit umask-Rechten, obwohl sie das ganze Original trägt** (Kritik Fable #341 K-1). | behoben eb64415: neue Datei 0600 über `export.SchreibeAtomarPrivat`/`SchreibeOhneErsetzenPrivat`, `TestSpeichernUnterSchreibtKopie…`, Mutant SU18 (Karte #341) |
+| F-1008 | [B] | P2 | Sprint 14 | **Neue Aufnahme: gehaltenes Strg+N oder Doppelklick startet viele Prozesse** (K-2). | behoben eb64415: 3 s Sperre `neueAufnahmeSperre`, `TestNeueAufnahmeNurEinmal`, Mutant NA6 (Karte #341) |
+| F-1009 | [B] | P2 | Sprint 14 | **Schließen nach 5 s ließ eine halbe Kopie bzw. im Rückfall ein gekürztes Ziel liegen** (K-3). | behoben eb64415: `zerstoert` wartet nach dem Notspeichern bis `unterFrist` (2 min), ADR-0046 Nachtrag 1 Punkt 2 (Karte #341) |
+| F-1010 | [B] | P3 | Sprint 14 | **„Saving a copy…“ verdrängte eine haltende Meldung** (K-4). | behoben eb64415: `meldeNebenbei`, `TestSpeichernUnterSperren`, Mutant SU20 (Karte #341) |
+| F-1011 | [B] | P3 | Sprint 14 | **Wechsel bei offenem Dialog oder laufendem Schreiben: falsche Meldung, keine Sperre** (K-5). | behoben eb64415: Sperre in `wechselAnfrage`, eigener Text in `wechselAbholen`, Mutanten SU17, SU21 (Karte #341) |
+| F-1012 | [B] | P3 | Sprint 14 | **Neue Aufnahme erbte mit SCHNAPP_DEBUG stderr auch als Pipe** (K-6). | behoben eb64415: `wlclip.IstPipe` wie beim Halter (F-325) (Karte #341) |
+| F-1013 | [V] | P3 | Sprint 14 | **Neue Aufnahme erbte Deskriptoren ohne CLOEXEC** (K-7; im virtuellen KWin gemessen: 3). | behoben eb64415: internes Argument `--internal-new-capture`, `neueAufnahmeArgs` schließt ab 3 über `wlclip.SchliesseGeerbteAb`, Tests `TestNeueAufnahmeArgs`, `TestSchliesseOhneCloexecAbGrenze`, Mutanten NA7–NA9 (Karte #341) |
+| F-1014 | [V] | P3 | Sprint 14 | **Testlücken Speichern unter / Neue Aufnahme** (K-8): Pfadtest auf komprimiertem Block wirkungslos, Metadaten, Dialogsperren, große Endung, echter Start ungetestet. | behoben eb64415: `TestKopieMetadatenAusQuelle`, `TestSpeichernUnterSperren`, `TestSpeichernUnterGrosseEndung`, `TestNeueAufnahmeStartEcht`, Mutanten SU22–SU26 (Karte #341) |
+| F-1015 | [D] | P3 | Sprint 14 | **ADR und README nannten nicht, welche Metadaten in die Kopie gehen; `s:quelle` ging mit** (K-9). | behoben eb64415: `Quelle` geleert, ADR-0046 Nachtrag 1 Punkt 6, README beider Sprachen (Karte #341) |
+| F-1016 | [K] | P3 | Sprint 14 | **Zerstören wartete auf die Kopie vor dem Notspeichern** (K-10). | behoben eb64415: Reihenfolge getauscht (Nachtrag 1 Punkt 2); Metadaten-Fenster durch die Wechselsperre geschlossen (Punkt 3) (Karte #341) |
+| F-1017 | [K] | P3 | Sprint 14 | **Ziel in der Ablage der Bibliothek nicht geregelt; Text verwies bei einer Datei von außen auf Strg+S** (K-11). | behoben eb64415: `inOrdner` lehnt Ziele unter der Ablage ab, neuer Text, `TestSpeichernUnterNichtInDieBibliothek`, Mutant SU19 (Karte #341) |
 
 ## Archiviert (aus Sektion "Behoben / Akzeptiert")
 
