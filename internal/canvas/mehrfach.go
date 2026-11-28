@@ -95,6 +95,9 @@ func (s *Sitzung) gewaehltMerker() *auswahlMerker {
 		m.gen == s.mf.gen {
 		return m
 	}
+	if merkerRechnet != nil {
+		merkerRechnet()
+	}
 	ids := s.gewaehltBerechnen()
 	menge := make(map[int]bool, len(ids))
 	for _, id := range ids {
@@ -104,6 +107,9 @@ func (s *Sitzung) gewaehltMerker() *auswahlMerker {
 		ids: ids, menge: menge}
 	return m
 }
+
+// merkerRechnet zählt im Test jede Neuberechnung des Merkers (F-974); in Produktion nil.
+var merkerRechnet func()
 
 // merkerGilt meldet, ob der Merker gelten darf: ohne Zug des Dokuments (dort ändert sich der Stand nicht), und in einem
 // Zug, der die gewählten Objekte nur im Stil ändert oder gemeinsam im sichtbaren Bild verschiebt (Regler, Farbfläche,

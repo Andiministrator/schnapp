@@ -446,12 +446,7 @@ func (e *editor) zeichneEbenen(gtx layout.Context, x, y, breite, spalte, unten i
 	if k.zeigeGewaehlte {
 		k.zeigeGewaehlte = false
 		if i := zeileZumZeigen(zeilen); i >= 0 { // zur Hauptauswahl, nicht zur untersten gewählten (F-945)
-			oben, unten := i*k.zeileH, (i+1)*k.zeileH
-			if oben < k.versatz {
-				k.versatz = oben
-			} else if unten > k.versatz+k.liste.Dy() {
-				k.versatz = unten - k.liste.Dy()
-			}
+			k.versatz = blaetternZu(k.versatz, i, k.zeileH, k.liste.Dy())
 		}
 	}
 	k.versatz = max(0, min(k.versatz, k.inhaltH-k.liste.Dy()))
@@ -560,6 +555,19 @@ func ebenenZeilenGrund(z canvas.EbenenZeile) (color.NRGBA, bool) {
 }
 
 // zeileZumZeigen ist die Zeile, zu der die Liste nach einer Wahl per Tastatur blättert: die der Hauptauswahl (-1: keine).
+// blaetternZu liefert den Versatz der Ebenenliste (Höhe hoehe, Zeilen zu zeileH), bei dem Zeile i ganz sichtbar ist:
+// unverändert, wenn sie es schon ist, sonst so wenig wie möglich verschoben (F-974).
+func blaetternZu(versatz, i, zeileH, hoehe int) int {
+	oben, unten := i*zeileH, (i+1)*zeileH
+	switch {
+	case oben < versatz:
+		return oben
+	case unten > versatz+hoehe:
+		return unten - hoehe
+	}
+	return versatz
+}
+
 func zeileZumZeigen(zeilen []canvas.EbenenZeile) int {
 	for i, z := range zeilen {
 		if z.Haupt {

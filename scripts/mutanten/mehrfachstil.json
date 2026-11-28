@@ -271,5 +271,26 @@
     "paket": "./internal/ui",
     "alt": "\t\tif z.Haupt {\n\t\t\treturn i\n",
     "neu": "\t\tif z.Gewaehlt {\n\t\t\treturn i\n"
+  },
+  {
+    "name": "MS41 Merker gilt im Zug mehrerer nicht",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "return !s.D.ZugLaeuft() || s.mehrZug != nil || s.zug == zugMehrere",
+    "neu": "return !s.D.ZugLaeuft() || s.mehrZug != nil"
+  },
+  {
+    "name": "MS42 Merker gilt im Stilzug nicht",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "return !s.D.ZugLaeuft() || s.mehrZug != nil || s.zug == zugMehrere",
+    "neu": "return !s.D.ZugLaeuft() || s.zug == zugMehrere"
+  },
+  {
+    "name": "MS45 Blättern zur ersten gewählten",
+    "datei": "internal/ui/ebenen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif z.Haupt {\n\t\t\treturn i\n",
+    "neu": "\t\tif z.Gewaehlt {\n\t\t\treturn i\n"
   }
 ]
