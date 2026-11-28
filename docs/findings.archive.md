@@ -905,6 +905,7 @@ Ausgelagerte Findings aus `docs/findings.md`. Einträge hier sind abgeschlossen 
 | F-991 | [K] | P3 | Sprint 14 | **Antwort des Lesens trifft nach Aufnahmewechsel die neue Aufnahme bzw. das verdeckte Bild** (Kritik #335 B-8). **Prüfbefehl:** Test: Wechsel gesperrt, solange `einf.laeuft`; bei offener Bibliothek kein Einfügen. **Widerlegung:** — | behoben 45d2fdb (Karte #393) |
 | F-992 | [D] | P3 | Sprint 14 | **Doku ADR-0045 nachziehen** (Kritik #335 B-9): format.md §13.1 Abschnittsverweise (5 statt 7/8, Regel 12 Punkt 7), README-Satzbruch bei Strg+C, Haltedauer auch für Objekte, „anderes Fenster nur mit data-control“, Kommentar `kopierBereit`. **Prüfbefehl:** `grep -n 'section 7 and 8' docs/format.md` leer. | behoben 45d2fdb (Karte #393) |
 | F-993 | [V] | P3 | Sprint 14 | **Testlücken ADR-0045** (Kritik #335 B-10): Streifen im Ziel, Halter-Fehler bei lesbarer Zwischenablage, Eingabefeld, Wechsel, Lupe/Gruppe im ui-Rundlauf, JPEG allein. **Prüfbefehl:** Tests vorhanden und grün; Mutanten in `zwischenablage.json` dazu rot. | behoben 45d2fdb (Karte #393) |
+| F-974 | [B] | P3 | Sprint 14 | **Testlücken Mehrfachstil/Gruppen** (Sitzungs-Kritik K-5): Merker im Zug nur über Zeit geprüft, Anker nach Strg-Klick, `geschaltet = nil`, Blättern der Liste. **Prüfbefehl:** Zähltest `TestMerkerImZugEinmal`, Mutanten MS41ff./GR30ff. | behoben 2797543 (Schalter, Anker) und fe75252 (Merker im Zug, Blättern; Karte #392) |
 
 ## Archiviert (aus Sektion "Behoben / Akzeptiert")
 
