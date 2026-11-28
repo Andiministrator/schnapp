@@ -134,6 +134,10 @@ func (e *editor) wechselAnfrage(abs string) bool {
 	case e.exportOffen:
 		e.melde(i18n.T("Finish the export first."), false)
 		return false
+	case e.unter.offen || e.unter.laeuft:
+		// Die Kopie gehört der offenen Aufnahme; ihre Antwort stünde sonst unter der neuen (wie F-710, Kritik K-5).
+		e.meldeNebenbei(i18n.T("Saving a copy is still running. Please wait a moment, then try again."), false)
+		return false
 	case e.ocr.laeuft:
 		e.melde(i18n.T("Text recognition is running. Press Esc to cancel it first."), false)
 		return false
@@ -277,6 +281,8 @@ func (e *editor) wechselAbholen() bool {
 		case e.erzwungen || e.s.SignalVorgemerkt():
 		case e.exportOffen:
 			e.melde(i18n.T("The other capture was not opened: the export is still open."), false)
+		case e.unter.offen:
+			e.melde(i18n.T("The other capture was not opened: the Save As dialog is still open."), false)
 		default:
 			e.melde(i18n.T("The other capture was not opened: this one was changed meanwhile."), false)
 		}

@@ -154,5 +154,96 @@
     "paket": "./internal/ui",
     "alt": "\t\te.exportOffen || e.unter.offen || e.s.TextLaeuft() || e.s.Zieht():",
     "neu": "\t\te.exportOffen || e.s.TextLaeuft() || e.s.Zieht():"
+  },
+  {
+    "name": "SU18 Kopie mit umask-Rechten",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\t\treturn export.SchreibeOhneErsetzenPrivat(pfad, schreibe)\n\t}\n\treturn export.SchreibeAtomarPrivat(pfad, schreibe)",
+    "neu": "\t\treturn export.SchreibeOhneErsetzen(pfad, schreibe)\n\t}\n\treturn export.SchreibeAtomar(pfad, schreibe)"
+  },
+  {
+    "name": "SU19 Ziel in der Bibliothek erlaubt",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif inOrdner(e.bib.Bibliothek.Orte.Ablage, pfad) {",
+    "neu": "\t\tif false && inOrdner(e.bib.Bibliothek.Orte.Ablage, pfad) {"
+  },
+  {
+    "name": "SU20 Hinweis verdrängt haltende Meldung",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\te.meldeNebenbei(i18n.T(\"Saving a copy…\"), false)",
+    "neu": "\te.melde(i18n.T(\"Saving a copy…\"), false)"
+  },
+  {
+    "name": "SU21 Wechsel während des Schreibens",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase e.unter.offen || e.unter.laeuft:\n",
+    "neu": "\tcase e.unter.offen:\n"
+  },
+  {
+    "name": "SU22 Quellprogramm in der Kopie",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\tm.Quelle = \"\"\n",
+    "neu": ""
+  },
+  {
+    "name": "SU23 Export-Dialog neben Speichern unter",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.exportOffen || e.unter.offen || e.s.Zieht() || e.wechsel.laedt {",
+    "neu": "\tif e.exportOffen || e.s.Zieht() || e.wechsel.laedt {"
+  },
+  {
+    "name": "SU24 Öffnen-Dialog neben Speichern unter",
+    "datei": "internal/ui/oeffnen.go",
+    "paket": "./internal/ui",
+    "alt": "e.oeffnenOffen || e.exportOffen || e.unter.offen || e.s.Zieht()",
+    "neu": "e.oeffnenOffen || e.exportOffen || e.s.Zieht()"
+  },
+  {
+    "name": "SU25 Speichern unter neben Export-Dialog",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.unter.offen || e.unter.laeuft || e.exportOffen || e.oeffnenOffen",
+    "neu": "\tif e.unter.offen || e.unter.laeuft || e.oeffnenOffen"
+  },
+  {
+    "name": "SU26 große Endung bekommt .png angehängt",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !strings.EqualFold(filepath.Ext(pfad), arbeitsdateiEndung) {",
+    "neu": "\tif filepath.Ext(pfad) != arbeitsdateiEndung {"
+  },
+  {
+    "name": "NA6 Mehrfachstart",
+    "datei": "internal/ui/neueaufnahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.neuGestartet.IsZero() && time.Since(e.neuGestartet) < neueAufnahmeSperre {",
+    "neu": "\tif false && !e.neuGestartet.IsZero() && time.Since(e.neuGestartet) < neueAufnahmeSperre {"
+  },
+  {
+    "name": "NA7 Start ohne internes Argument",
+    "datei": "internal/ui/neueaufnahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tc := exec.Command(programm, NeueAufnahmeArgument)",
+    "neu": "\tc := exec.Command(programm)"
+  },
+  {
+    "name": "NA8 internes Argument schließt nichts",
+    "datei": "cmd/schnapp/main.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\tzu := schliesse(3)\n",
+    "neu": "\tvar zu []int\n"
+  },
+  {
+    "name": "NA9 Grenze der Deskriptoren falsch",
+    "datei": "internal/wlclip/helfer.go",
+    "paket": "./internal/wlclip",
+    "alt": "\t\tif fd < ab {",
+    "neu": "\t\tif fd < ab-1 {"
   }
 ]

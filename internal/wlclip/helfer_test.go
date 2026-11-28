@@ -349,3 +349,24 @@ func TestSchliesseOhneCloexecZaehlt(t *testing.T) {
 		t.Errorf("Deskriptor mit CLOEXEC wurde geschlossen: %v", errno)
 	}
 }
+
+// SchliesseGeerbteAb (Neue Aufnahme, ADR-0046 Kritik K-7): Die Grenze gilt, und unter 3 wird nie geschlossen.
+func TestSchliesseOhneCloexecAbGrenze(t *testing.T) {
+	var p [2]int
+	if err := syscall.Pipe2(p[:], 0); err != nil {
+		t.Fatal(err)
+	}
+	ohne, _, errno := syscall.Syscall(syscall.SYS_FCNTL, uintptr(p[0]), syscall.F_DUPFD, 10)
+	syscall.Close(p[0])
+	defer syscall.Close(p[1])
+	if errno != 0 {
+		t.Fatal(errno)
+	}
+	fd := int(ohne)
+	if zu := schliesseOhneCloexecAb([]int{fd}, fd+1); len(zu) != 0 {
+		t.Fatalf("unter der Grenze geschlossen: %v", zu)
+	}
+	if zu := schliesseOhneCloexecAb([]int{fd}, fd); len(zu) != 1 || zu[0] != fd {
+		t.Fatalf("an der Grenze: %v", zu)
+	}
+}

@@ -258,6 +258,8 @@ type editor struct {
 	oeffnenAntwort chan exportErgebnis
 	// Speichern unter (ADR-0046): Dialog und Schreiben in Goroutinen, Antworten in die Ereignisschleife.
 	unter unterZustand
+	// neuGestartet: Zeit des letzten Starts einer Neuen Aufnahme (Sperre gegen Mehrfachstart, Kritik K-2).
+	neuGestartet time.Time
 
 	// perform setzt eine Fensteraktion ab; nil heißt e.w.Perform. Naht für Tests ohne Fenster (F-299).
 	perform func(system.Action)
@@ -662,7 +664,6 @@ func (e *editor) zerstoert(fensterErr error) error {
 		}
 	}
 	e.kopierenAbwarten()
-	e.speichernUnterAbwarten(wechselFrist)   // eine laufende Kopie (Speichern unter) schreibt zu Ende (ADR-0046 Punkt 6)
 	e.einfuegenAbwarten(wechselFrist)        // ein laufendes „New from clipboard“ legt zu Ende ab (F-988)
 	e.bibliothekArbeitAbwarten(wechselFrist) // Schlagworte/Papierkorb der Ansicht schreiben zu Ende (F-708)
 	e.s.TextBestaetigen()                    // getippter Text geht nicht verloren (ADR-0021 Punkt 6)
@@ -683,6 +684,9 @@ func (e *editor) zerstoert(fensterErr error) error {
 			hinweisAufStderr(g)
 		}
 	}
+	// Erst nach dem Notspeichern (Kritik K-10): Eine laufende Kopie (Speichern unter) schreibt zu Ende, sonst blieben eine
+	// halbe temporäre Datei oder im Rückfall ein gekürztes Ziel liegen (ADR-0046 Punkt 6, Kritik K-3).
+	e.speichernUnterAbwarten(unterFrist)
 	e.rettungEnde()
 	e.rettungEndenAbwarten(wechselFrist) // Rettungskopien früherer Aufnahmen dieses Fensters (F-637)
 	e.werkzeugStileSchreiben()           // Stil je Werkzeug für das nächste Fenster (ADR-0041 Punkt 4)
@@ -1297,16 +1301,22 @@ func (e *editor) exportStarten() {
 	ctx, ch, wecker := e.exportCtx, e.exportAntwort, e.wecker
 	go func() {
 		var r exportErgebnis
-		d, err := portal.Neu()
-		if err == nil {
-			r.ergebnis, r.err = d.Speichern(ctx, anfrage)
-			d.Close()
-		} else {
-			r.err = err
-		}
+		r.ergebnis, r.err = exportDialog(ctx, anfrage)
 		ch <- r
-		wecker.Anfordern() // erst nach dem Ablegen der Antwort (F-231)
+		if wecker != nil {
+			wecker.Anfordern() // erst nach dem Ablegen der Antwort (F-231)
+		}
 	}()
+}
+
+// exportDialog zeigt den Speichern-Dialog des Exports; Naht für Tests (wie oeffnenDialog und unterDialog).
+var exportDialog = func(ctx context.Context, a portal.Anfrage) (portal.Ergebnis, error) {
+	d, err := portal.Neu()
+	if err != nil {
+		return portal.Ergebnis{}, err
+	}
+	defer d.Close()
+	return d.Speichern(ctx, a)
 }
 
 // dialogFilter beschreibt den Filter eines Formats (Glob und MIME-Typ).

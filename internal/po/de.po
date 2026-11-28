@@ -2237,8 +2237,17 @@ msgstr "Schnapp-Bild"
 msgid "Could not save: only local files can be written."
 msgstr "Speichern nicht möglich: Es lassen sich nur lokale Dateien schreiben."
 
-msgid "This is the open capture itself. Save it with Ctrl+S."
-msgstr "Das ist die offene Aufnahme selbst. Speichern mit Strg+S."
+msgid "This is the file open in this window. Choose another name."
+msgstr "Das ist die Datei, die in diesem Fenster offen ist. Bitte einen anderen Namen wählen."
+
+msgid "Choose a place outside the library; the library keeps its captures itself."
+msgstr "Bitte einen Ort außerhalb der Bibliothek wählen; die Bibliothek verwaltet ihre Aufnahmen selbst."
+
+msgid "Saving a copy is still running. Please wait a moment, then try again."
+msgstr "Die Kopie wird noch gespeichert. Bitte kurz warten, dann erneut versuchen."
+
+msgid "The other capture was not opened: the Save As dialog is still open."
+msgstr "Die andere Aufnahme wurde nicht geöffnet: Der Dialog „Speichern unter“ ist noch offen."
 
 msgid "Could not save: finish the current action first."
 msgstr "Speichern nicht möglich: Erst die laufende Aktion beenden."

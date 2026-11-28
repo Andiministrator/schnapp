@@ -2852,7 +2852,11 @@ msgid "Could not save: only local files can be written."
 msgstr ""
 
 #: internal/ui/speichernunter.go
-msgid "This is the open capture itself. Save it with Ctrl+S."
+msgid "This is the file open in this window. Choose another name."
+msgstr ""
+
+#: internal/ui/speichernunter.go
+msgid "Choose a place outside the library; the library keeps its captures itself."
 msgstr ""
 
 #: internal/ui/speichernunter.go
@@ -2923,6 +2927,10 @@ msgid "Finish the export first."
 msgstr ""
 
 #: internal/ui/wechsel.go
+msgid "Saving a copy is still running. Please wait a moment, then try again."
+msgstr ""
+
+#: internal/ui/wechsel.go
 msgid "Text recognition is running. Press Esc to cancel it first."
 msgstr ""
 
@@ -2944,6 +2952,10 @@ msgstr ""
 
 #: internal/ui/wechsel.go
 msgid "The other capture was not opened: the export is still open."
+msgstr ""
+
+#: internal/ui/wechsel.go
+msgid "The other capture was not opened: the Save As dialog is still open."
 msgstr ""
 
 #: internal/ui/wechsel.go

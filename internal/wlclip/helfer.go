@@ -128,10 +128,24 @@ func schliesseGeerbte() []int {
 
 // schliesseOhneCloexec schließt aus fds alle Deskriptoren ab 4 ohne FD_CLOEXEC und gibt deren Nummern zurück.
 // Getrennt von schliesseGeerbte, damit die Zählung ohne Vorgeschichte im Prozess testbar ist.
-func schliesseOhneCloexec(fds []int) []int {
+func schliesseOhneCloexec(fds []int) []int { return schliesseOhneCloexecAb(fds, 4) }
+
+// SchliesseGeerbteAb schließt alle ohne FD_CLOEXEC geerbten Deskriptoren ab ab (mindestens 3) und gibt ihre Nummern
+// zurück: für einen Prozess, den der Editor abgelöst startet und der lange lebt (Neue Aufnahme, ADR-0046 Punkt 7);
+// Gründe wie beim Halter (F-189).
+func SchliesseGeerbteAb(ab int) []int {
+	return schliesseOhneCloexecAb(offeneDeskriptoren(), max(ab, 3))
+}
+
+// IstPipe meldet, ob der Deskriptor fd eine Pipe ist: Ein lange lebender Kindprozess bekommt die Fehlerausgabe nie als
+// Pipe, sonst endete ein `schnapp 2>&1 | tee` erst mit ihm (F-325).
+func IstPipe(fd int) bool { return istPipe(fd) }
+
+// schliesseOhneCloexecAb ist schliesseOhneCloexec ab dem Deskriptor ab.
+func schliesseOhneCloexecAb(fds []int, ab int) []int {
 	var zu []int
 	for _, fd := range fds {
-		if fd < 4 {
+		if fd < ab {
 			continue
 		}
 		flags, _, errno := syscall.Syscall(syscall.SYS_FCNTL, uintptr(fd), syscall.F_GETFD, 0)

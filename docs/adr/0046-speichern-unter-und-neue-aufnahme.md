@@ -77,3 +77,34 @@ entsteht je Monitor vor dem Editor, danach legt `cmd/schnapp` ab und öffnet den
   nebeneinander (Rettungskopie mit Sperre je Datei, ADR-0029).
 - Den Portal-Dialog und den Start des neuen Prozesses aus der echten Plasma-Sitzung prüft Andi am Sprintende
   (Echtprobenliste an der Abschlusskarte); der virtuelle KWin hat kein Portal.
+
+## Nachtrag 1 (28.11.2026): Kritik Fable zu a6adc91 (F-1007 bis F-1017)
+
+**Status:** Akzeptiert (Claude Opus 5.5).
+
+1. **Rechte:** Eine neue Kopie entsteht mit 0600 wie die Bibliothek (`export.SchreibeAtomarPrivat`,
+   `SchreibeOhneErsetzenPrivat`), denn sie trägt das ganze Original samt Weggeschnittenem; ein ersetztes Ziel behält
+   seine Rechte (F-1007).
+2. **Schließen:** Das Zerstören wartet erst **nach** dem Notspeichern und bis zu `unterFrist` = 2 min auf ein laufendes
+   Schreiben (wie die Frist eines Speicherns), damit keine halbe temporäre Datei und im Rückfall kein gekürztes Ziel
+   liegen bleiben; das Fenster ist dann schon zu, der Prozess endet danach (F-1009, F-1016). Ersetzt die 5 s aus
+   Punkt 6.
+3. **Wechsel:** Solange Dialog oder Schreiben laufen, nimmt die Leiste keinen Wechsel an und sagt es in der Fußzeile;
+   kam der Dialog an der Sperre vorbei, nennt die Meldung ihn (F-1011). Damit liest das Schreiben die Metadaten immer
+   von der Aufnahme, für die der Dialog aufging.
+4. **Meldung:** „Saving a copy…“ geht über `meldeNebenbei` und verdrängt keine haltende Meldung (F-1010).
+5. **Ziel:** Abgelehnt werden die Datei, die das Fenster offen hat (Text ohne Verweis auf Strg+S, der bei einer Datei
+   von außen nicht dorthin schreibt), und jeder Ort unter der Ablage der Bibliothek (`inOrdner`, nach Auflösen von
+   Verweisen): Dort verwaltet die Bibliothek Index, Vorschau und Rettung selbst (F-1017).
+6. **Metadaten:** Autor, Aufnahmezeit und Schlagworte gehen mit, das Quellprogramm (`s:quelle`) nicht; README sagt,
+   dass Autor und Schlagworte in der Kopie stehen (F-1015).
+7. **Neue Aufnahme:** Nach einem Start nimmt Strg+N 3 s lang keinen weiteren an (Tastenwiederholung, Doppelklick;
+   F-1008). Der neue Prozess bekommt das interne Argument `--internal-new-capture`: `cmd/schnapp` schließt damit vor
+   allem anderen die ohne CLOEXEC geerbten Deskriptoren ab 3 (`wlclip.SchliesseGeerbteAb`, wie der Halter, F-189) und
+   nimmt dann auf wie ohne Argumente (F-1013). Die Fehlerausgabe erbt er nur mit `SCHNAPP_DEBUG` und nie als Pipe
+   (`wlclip.IstPipe`, F-325, F-1012). Er bleibt in der systemd-Scope des ersten Fensters (wie der Halter, F-320).
+8. **Tests** (F-1014): Rechte, Metadaten aus der Quelle, große Endung, Ziel in der Ablage, gegenseitige Dialogsperren,
+   haltende Meldung, Wechsel während des Schreibens, Mehrfachstart, echter Start ohne Fenster, internes Argument.
+9. **Offen (eigene Karte):** Die Wahl der Verzögerung beim Start aus dem Menü (ADR-0042 Punkt 5) und eine Aktion
+   „Abbrechen“ am Countdown-Hinweis (ADR-0042 Nachtrag 1 Punkt 3, F-941) kommen nicht mit dieser Karte; heute gilt
+   `[capture] delay`.

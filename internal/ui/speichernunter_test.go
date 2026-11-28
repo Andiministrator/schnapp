@@ -108,8 +108,9 @@ func TestSpeichernUnterSchreibtKopieUndBleibtBeiDerAufnahme(t *testing.T) {
 		!strings.Contains(l.e.meldung.Text, "keeps editing") || strings.Contains(l.e.meldung.Text, "whole original") {
 		t.Errorf("Meldung %q", l.e.meldung.Text)
 	}
-	if strings.Contains(string(mustLesen(t, ziel)), ordner) {
-		t.Error("die Kopie trägt einen Pfad")
+	// Die Kopie trägt das ganze Original: nur für den Eigentümer lesbar wie die Bibliothek (Kritik K-1).
+	if fi, err := os.Stat(ziel); err != nil || fi.Mode().Perm() != 0o600 {
+		t.Errorf("Rechte der Kopie: %v %v", fi.Mode().Perm(), err)
 	}
 }
 
@@ -157,7 +158,7 @@ func TestSpeichernUnterLehntDieOffeneAb(t *testing.T) {
 	if geschrieben || !bytes.Equal(vorher, mustLesen(t, quelle)) {
 		t.Error("die offene Aufnahme wurde überschrieben")
 	}
-	if !l.e.meldung.Fehler || !strings.Contains(l.e.meldung.Text, "Ctrl+S") {
+	if !l.e.meldung.Fehler || !strings.Contains(l.e.meldung.Text, "open in this window") {
 		t.Errorf("Meldung %q", l.e.meldung.Text)
 	}
 	// Auch über einen harten Verweis (anderer Name, dieselbe Datei).
@@ -342,6 +343,7 @@ func TestNeueAufnahmeStartetEigenenProzess(t *testing.T) {
 	if !l.e.bibl.offen {
 		t.Fatal("Ansicht nicht offen")
 	}
+	l.e.neuGestartet = time.Time{} // Sperre gegen Mehrfachstart (Kritik K-2) hier nicht prüfen
 	l.taste("N", key.ModShortcut)
 	l.bild()
 	if len(*gestartet) != 2 {
@@ -416,5 +418,158 @@ func TestWechselSpeichernUnterOffenBeimAbholen(t *testing.T) {
 	}
 	if r := l.rett[l.pfade[0]]; r == nil || r.ende != 1 {
 		t.Errorf("Rettung der geladenen: %+v", r)
+	}
+}
+
+// Punkt 2 (Kritik K-8, K-9): Autor, Aufnahmezeit und Schlagworte aus der Quelle, das Quellprogramm nicht.
+func TestKopieMetadatenAusQuelle(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 8, 6)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	quelle := filepath.Join(t.TempDir(), "quelle.png")
+	zeit := time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)
+	var b bytes.Buffer
+	if err := fileformat.SchreibeArbeitsdatei(&b, d, d.Original(), fileformat.Metadaten{Autor: "Jo", Erstellt: zeit,
+		Quelle: "browser", Schlagworte: []string{"rechnung"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(quelle, b.Bytes(), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	m := kopieMetadaten(quelle)
+	if m.Autor != "Jo" || !m.Erstellt.Equal(zeit) || len(m.Schlagworte) != 1 || m.Schlagworte[0] != "rechnung" ||
+		m.Quelle != "" || !m.Bearbeitet {
+		t.Errorf("Metadaten %+v", m)
+	}
+}
+
+// Punkt 4 (Kritik K-11): kein Ziel in der Ablage der Bibliothek, auch nicht unter neuem Namen.
+func TestSpeichernUnterNichtInDieBibliothek(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 2)
+	geschrieben := false
+	alt := unterSchreiben
+	unterSchreiben = func(string, bool, func(io.Writer) error) error { geschrieben = true; return nil }
+	t.Cleanup(func() { unterSchreiben = alt })
+	ziel := filepath.Join(filepath.Dir(l.e.pfad()), "neu-in-der-ablage.png")
+	mitUnterDialog(t, portal.Ergebnis{URI: "file://" + ziel}, nil)
+	l.taste("S", key.ModShortcut|key.ModShift)
+	l.unterFertig()
+	if geschrieben || !l.e.meldung.Fehler || !strings.Contains(l.e.meldung.Text, "outside the library") {
+		t.Errorf("geschrieben %v, Meldung %q", geschrieben, l.e.meldung.Text)
+	}
+	if inOrdner(l.b.Orte.Ablage, filepath.Join(t.TempDir(), "x.png")) || !inOrdner(l.b.Orte.Ablage, ziel) {
+		t.Error("inOrdner")
+	}
+}
+
+// Punkt 3: Eine großgeschriebene Endung gilt, es wird nichts angehängt.
+func TestSpeichernUnterGrosseEndung(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 2)
+	ziel := filepath.Join(t.TempDir(), "GROSS.PNG")
+	mitUnterDialog(t, portal.Ergebnis{URI: "file://" + ziel}, nil)
+	l.taste("S", key.ModShortcut|key.ModShift)
+	l.unterFertig()
+	if g := liesArbeitsdatei(t, ziel); g.Fremd || l.e.meldung.Fehler {
+		t.Errorf("fremd %v, Meldung %q", g.Fremd, l.e.meldung.Text)
+	}
+}
+
+// Punkt 6: Die Dialoge sperren sich gegenseitig; „Saving a copy…“ verdrängt keine haltende Meldung (Kritik K-4); ein
+// Wechsel wartet auf das Schreiben (Kritik K-5).
+func TestSpeichernUnterSperren(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	anfragen := mitUnterDialog(t, portal.Ergebnis{}, portal.ErrAbgebrochen)
+	l.e.exportOffen = true
+	l.taste("S", key.ModShortcut|key.ModShift)
+	l.e.exportOffen = false
+	l.e.oeffnenOffen = true
+	l.taste("S", key.ModShortcut|key.ModShift)
+	l.e.oeffnenOffen = false
+	if len(*anfragen) != 0 || l.e.unter.offen {
+		t.Fatalf("Dialog neben Export/Öffnen: %d", len(*anfragen))
+	}
+	exportAnfragen := 0
+	altExport := exportDialog
+	exportDialog = func(context.Context, portal.Anfrage) (portal.Ergebnis, error) {
+		exportAnfragen++
+		return portal.Ergebnis{}, portal.ErrAbgebrochen
+	}
+	t.Cleanup(func() { exportDialog = altExport })
+	oeffnenAnfragen := mitOeffnenDialog(t, portal.Ergebnis{}, portal.ErrAbgebrochen)
+	l.e.unter.offen = true
+	for _, a := range []aktion{aktExport, aktOeffnen} {
+		if eintragVon(l.e.menueEintraegeRoh(menueDatei), a).an {
+			t.Errorf("%v bei offenem Dialog an", a)
+		}
+	}
+	l.taste("E", key.ModShortcut|key.ModShift)
+	l.taste("O", key.ModShortcut)
+	l.bild()
+	if l.e.exportOffen || l.e.oeffnenOffen || exportAnfragen != 0 || len(*oeffnenAnfragen) != 0 {
+		t.Error("Export- oder Öffnen-Dialog neben Speichern unter")
+	}
+	l.e.unter.offen = false
+	l.warte(func() bool { return !l.e.exportOffen && !l.e.oeffnenOffen })
+
+	tor := make(chan struct{})
+	alt := unterSchreiben
+	unterSchreiben = func(p string, ohne bool, s func(io.Writer) error) error { <-tor; return alt(p, ohne, s) }
+	t.Cleanup(func() { unterSchreiben = alt })
+	mitUnterDialog(t, portal.Ergebnis{URI: "file://" + filepath.Join(t.TempDir(), "k.png")}, nil)
+	l.e.meldeHaltend(haltVerwerfen, "Verwerfen-Warnung", true)
+	l.taste("S", key.ModShortcut|key.ModShift)
+	l.warte(func() bool { return !l.e.unter.offen && l.e.unter.laeuft })
+	if l.e.meldung.Text != "Verwerfen-Warnung" || l.e.meldungHaelt != haltVerwerfen {
+		t.Errorf("haltende Meldung verdrängt: %q", l.e.meldung.Text)
+	}
+	if l.e.wechselAnfrage(l.pfade[0]) || len(l.aufrufe()) != 0 {
+		t.Error("Wechsel während des Schreibens")
+	}
+	close(tor)
+	l.unterFertig()
+}
+
+// Kritik K-2: Gehaltenes Strg+N (Tastenwiederholung) oder ein Doppelklick startet nur eine Aufnahme.
+func TestNeueAufnahmeNurEinmal(t *testing.T) {
+	t.Setenv("WAYLAND_SOCKET", "")
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 2)
+	gestartet := mitNeuerAufnahme(t, nil)
+	for range 3 {
+		l.taste("N", key.ModShortcut)
+	}
+	if len(*gestartet) != 1 {
+		t.Fatalf("%d Starts", len(*gestartet))
+	}
+	l.e.neuGestartet = time.Now().Add(-neueAufnahmeSperre)
+	l.taste("N", key.ModShortcut)
+	if len(*gestartet) != 2 {
+		t.Errorf("nach der Sperre: %d Starts", len(*gestartet))
+	}
+}
+
+// Der echte Start (Setsid, Argument, Abholen) ohne Fenster: ein Programm, das sofort endet; ein fehlendes scheitert.
+func TestNeueAufnahmeStartEcht(t *testing.T) {
+	ordner := t.TempDir()
+	marke := filepath.Join(ordner, "argument")
+	skript := filepath.Join(ordner, "prog")
+	if err := os.WriteFile(skript, []byte("#!/bin/sh\nprintf %s \"$1\" > "+marke+"\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := neueAufnahmeStart(skript); err != nil {
+		t.Fatal(err)
+	}
+	ende := time.Now().Add(5 * time.Second)
+	for {
+		if b, err := os.ReadFile(marke); err == nil && string(b) == NeueAufnahmeArgument {
+			break
+		}
+		if time.Now().After(ende) {
+			t.Fatal("Programm nicht mit dem Argument gestartet")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if err := neueAufnahmeStart(filepath.Join(ordner, "fehlt")); err == nil {
+		t.Error("fehlendes Programm ohne Fehler")
 	}
 }

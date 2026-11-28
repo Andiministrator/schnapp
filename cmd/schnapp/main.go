@@ -42,7 +42,8 @@ const (
 )
 
 func main() {
-	if code, ok := halter(os.Args[1:], os.Stderr, wlclip.HelferLauf); ok { // Bild oder Text (ADR-0024 Nachtrag 9)
+	args := neueAufnahmeArgs(os.Args[1:], wlclip.SchliesseGeerbteAb)
+	if code, ok := halter(args, os.Stderr, wlclip.HelferLauf); ok { // Bild oder Text (ADR-0024 Nachtrag 9)
 		os.Exit(code)
 	}
 	starteSprache(settings.Lade)
@@ -51,7 +52,7 @@ func main() {
 	ui.Starte(func() int {
 		// MCP-Server und sein Bestätigungsdialog (ADR-0030 Nachtrag 2): nur genau so aufgerufen, ohne weitere
 		// Argumente; der Dialog braucht die Gio-Hauptschleife, der Server die Monitorabfrage.
-		switch args := os.Args[1:]; {
+		switch {
 		case len(args) == 1 && args[0] == mcpArgument:
 			an := echteMcpAnschluesse(os.Stderr)
 			mcpSprache = starteSprache(an.lade) // auch die Sprache aus dem echten Heim (ADR-0030 Nachtrag 4 Punkt 1)
@@ -59,8 +60,22 @@ func main() {
 		case len(args) == 1 && args[0] == bestaetigenArgument:
 			return laufeBestaetigung(os.Stdin, os.Stderr)
 		}
-		return laufe(os.Args[1:], os.Stdout, os.Stderr, ui.MonitoreMitSkala, settings.Lade, echteAnschluesse().Ausfuehren)
+		return laufe(args, os.Stdout, os.Stderr, ui.MonitoreMitSkala, settings.Lade, echteAnschluesse().Ausfuehren)
 	})
+}
+
+// neueAufnahmeArgs: Mit genau ui.NeueAufnahmeArgument (Strg+N im Editor, ADR-0046 Punkt 7) schließt der neue Prozess
+// vor allem anderen die vom Editor ohne CLOEXEC geerbten Deskriptoren ab 3 (wie der Halter, F-189) und nimmt dann auf
+// wie ohne Argumente. Jede andere Liste bleibt, wie sie ist.
+func neueAufnahmeArgs(args []string, schliesse func(ab int) []int) []string {
+	if len(args) != 1 || args[0] != ui.NeueAufnahmeArgument {
+		return args
+	}
+	zu := schliesse(3)
+	if os.Getenv("SCHNAPP_DEBUG") != "" {
+		fmt.Fprintf(os.Stderr, "[schnapp] Neue Aufnahme: %d geerbte Deskriptoren ohne CLOEXEC geschlossen: %v\n", len(zu), zu)
+	}
+	return nil
 }
 
 // starteSprache setzt die Sprache der Oberfläche: aus [general] language, sonst aus der Umgebung (ADR-0014 Nachtrag

@@ -53,13 +53,18 @@ var unterDialog = func(ctx context.Context, a portal.Anfrage) (portal.Ergebnis, 
 }
 
 // unterSchreiben schreibt die Arbeitsdatei mit dem Inhalt schreibe nach pfad; ohneErsetzen: ein vorhandenes Ziel
-// bleibt (angehängte Endung). Naht für Tests.
+// bleibt (angehängte Endung). Eine neue Datei bekommt 0600 wie die Bibliothek, denn sie trägt das ganze Original samt
+// Weggeschnittenem (Kritik K-1); ein ersetztes Ziel behält seine Rechte. Naht für Tests.
 var unterSchreiben = func(pfad string, ohneErsetzen bool, schreibe func(io.Writer) error) error {
 	if ohneErsetzen {
-		return export.SchreibeOhneErsetzen(pfad, schreibe)
+		return export.SchreibeOhneErsetzenPrivat(pfad, schreibe)
 	}
-	return export.SchreibeAtomar(pfad, schreibe)
+	return export.SchreibeAtomarPrivat(pfad, schreibe)
 }
+
+// unterFrist: so lange wartet das Zerstören auf ein laufendes Schreiben (wie die Frist eines Speicherns beim
+// Schließen); danach endet der Prozess, und eine halbe Kopie kann liegen bleiben (Kritik K-3).
+var unterFrist = 2 * time.Minute
 
 // arbeitsdateiEndung ist die Endung einer Arbeitsdatei (ADR-0008: PNG mit eigenen Blöcken).
 const arbeitsdateiEndung = ".png"
@@ -146,8 +151,15 @@ func (e *editor) speichernUnterGewaehlt(r exportErgebnis) {
 	}
 	if gleicheDatei(quelle, pfad) || selbeDatei(quelle, pfad) {
 		// An der Speicherfunktion vorbei geschrieben, sähe das nächste Speichern eine Änderung von außen (Punkt 4).
-		e.meldeNebenbei(i18n.T("This is the open capture itself. Save it with Ctrl+S."), true)
+		e.meldeNebenbei(i18n.T("This is the file open in this window. Choose another name."), true)
 		return
+	}
+	if e.bib != nil && e.bib.Bibliothek != nil {
+		if inOrdner(e.bib.Bibliothek.Orte.Ablage, pfad) {
+			// In der Ablage verwaltet die Bibliothek Index, Vorschau und Rettung selbst (Punkt 4, Kritik K-11).
+			e.meldeNebenbei(i18n.T("Choose a place outside the library; the library keeps its captures itself."), true)
+			return
+		}
 	}
 	// Wie beim Export: ein laufender Text gehört mit in die Datei, ein laufendes Ziehen verschiebt das Schreiben.
 	e.s.TextBestaetigen()
@@ -160,7 +172,7 @@ func (e *editor) speichernUnterGewaehlt(r exportErgebnis) {
 	if e.unter.antwort == nil {
 		e.unter.antwort = make(chan unterErgebnis, 1)
 	}
-	e.melde(i18n.T("Saving a copy…"), false)
+	e.meldeNebenbei(i18n.T("Saving a copy…"), false) // eine haltende Meldung bleibt stehen (Kritik K-4)
 	ch, wecker := e.unter.antwort, e.wecker
 	go func() {
 		ch <- schreibeKopie(abzug, quelle, pfad, angehaengt)
@@ -184,6 +196,21 @@ func selbeDatei(a, b string) bool {
 	return err == nil && os.SameFile(sa, sb)
 }
 
+// inOrdner meldet, ob die (womöglich noch fehlende) Datei pfad unter dem Ordner ordner liegt, nach Auflösen von
+// Verweisen in beiden Ordnern. Unauflösbares gilt als außerhalb (dann schreibt der Export-Weg und meldet selbst).
+func inOrdner(ordner, pfad string) bool {
+	o, err := filepath.EvalSymlinks(ordner)
+	if err != nil {
+		return false
+	}
+	d, err := filepath.EvalSymlinks(filepath.Dir(pfad))
+	if err != nil {
+		return false
+	}
+	r, err := filepath.Rel(o, d)
+	return err == nil && r != ".." && !strings.HasPrefix(r, ".."+string(filepath.Separator))
+}
+
 // schreibeKopie rendert den Abzug d und schreibt ihn als Arbeitsdatei nach pfad; Metadaten aus quelle (ADR-0046
 // Punkt 2). Läuft in einer Goroutine.
 func schreibeKopie(d *document.Dokument, quelle, pfad string, ohneErsetzen bool) unterErgebnis {
@@ -202,7 +229,8 @@ func schreibeKopie(d *document.Dokument, quelle, pfad string, ohneErsetzen bool)
 }
 
 // kopieMetadaten liest Autor, Aufnahmezeit und Schlagworte der Datei quelle; ist sie keine lesbare Arbeitsdatei, ohne
-// Autor und Schlagworte mit der Zeit des Schreibens. Immer „bearbeitet“, nie ein Pfad (Kernprinzip 3).
+// Autor und Schlagworte mit der Zeit des Schreibens. Immer „bearbeitet“, nie ein Pfad, nie das Quellprogramm
+// (Kernprinzip 3: die Kopie geht nach außen; Kritik K-9).
 func kopieMetadaten(quelle string) fileformat.Metadaten {
 	var m fileformat.Metadaten
 	if quelle != "" {
@@ -214,6 +242,7 @@ func kopieMetadaten(quelle string) fileformat.Metadaten {
 		}
 	}
 	m.Bearbeitet = true
+	m.Quelle = ""
 	if m.Erstellt.IsZero() {
 		m.Erstellt = time.Now().UTC().Truncate(time.Second)
 	}
