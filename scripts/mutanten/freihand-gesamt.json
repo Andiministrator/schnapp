@@ -1,0 +1,44 @@
+[
+  {
+    "name": "FG1 Leser zählt die Gesamtpunkte nicht",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "if *l.freiRest -= n; *l.freiRest < 0 {",
+    "neu": "if *l.freiRest -= n; *l.freiRest < -1<<40 {"
+  },
+  {
+    "name": "FG2 Leser lässt doppelt so viele Punkte zu",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\tfreiRest        = document.MaxFreihandGesamt\n",
+    "neu": "\t\tfreiRest        = 2 * document.MaxFreihandGesamt\n"
+  },
+  {
+    "name": "FG3 Grenze um einen Punkt zu eng",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "if *l.freiRest -= n; *l.freiRest < 0 {",
+    "neu": "if *l.freiRest -= n; *l.freiRest <= 0 {"
+  },
+  {
+    "name": "FG4 Zähler beginnt je Element neu",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "version: version, freiRest: &freiRest}",
+    "neu": "version: version, freiRest: func() *int { x := freiRest; return &x }()}"
+  },
+  {
+    "name": "FG5 Schreiber prüft die Gesamtpunkte nicht",
+    "datei": "internal/fileformat/arbeitsdatei.go",
+    "paket": "./internal/fileformat",
+    "alt": "n > document.MaxFreihandGesamt {\n\t\t// Der Leser",
+    "neu": "n > 1<<40 {\n\t\t// Der Leser"
+  },
+  {
+    "name": "FG6 PruefeInhalt prüft die Gesamtpunkte nicht",
+    "datei": "internal/document/pruefen.go",
+    "paket": "./internal/fileformat",
+    "alt": "n > MaxFreihandGesamt {",
+    "neu": "n > 1<<40 {"
+  }
+]

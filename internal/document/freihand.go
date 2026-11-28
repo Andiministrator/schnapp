@@ -11,6 +11,22 @@ import (
 // MaxFreihandPunkte begrenzt die Punkte eines Freihand-Strichs (ADR-0049 Punkt 1).
 const MaxFreihandPunkte = 4096
 
+// MaxFreihandGesamt begrenzt die Punkte aller Freihand-Striche eines Dokuments (F-1049): Je Strich 4096 bei bis zu
+// MaxObjekte Strichen ergäben über 40 Mio. Punkte (16 Byte je Punkt); eine stark komprimierbare Datei aus „0,0 “
+// forderte beim Lesen über 800 MiB an. Echte Striche sind vereinfacht (einige Hundert Punkte).
+const MaxFreihandGesamt = 1 << 20
+
+// FreihandPunkteGesamt zählt die Punkte aller Freihand-Striche in objekte.
+func FreihandPunkteGesamt(objekte []Objekt) int {
+	n := 0
+	for _, o := range objekte {
+		if f, ok := o.(Freihand); ok {
+			n += len(f.Punkte())
+		}
+	}
+	return n
+}
+
 // Freihand ist ein freier Strich: ein offener Linienzug im Original (ADR-0049). Zug zeigt auf die Punkte; wie die Spitze
 // der Sprechblase wird er nie durchgeschrieben, sondern neu gesetzt (MitPunkten), damit Objekte Werte bleiben.
 type Freihand struct {

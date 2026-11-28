@@ -609,6 +609,7 @@ value here and to the code must happen in the same commit.
 | `max_font_size` | 4096 | largest `s:grad` and `s:radius` |
 | `max_number` | 1000000 | largest `s:wert` |
 | `max_freehand_points` | 4096 | most points of one `freihand` (8.9) |
+| `max_freehand_total` | 1048576 | most points of all `freihand` objects of one file; a reader MUST count them before allocating the list of a stroke |
 
 Original width and height are at least 1.
 

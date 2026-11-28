@@ -68,8 +68,10 @@
     "name": "FH10 Punktgrenze nicht geprüft",
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
-    "alt": "\tif n := strings.Count(text, \" \") + 1; n < 2 || n > document.MaxFreihandPunkte {",
-    "neu": "\tif n := strings.Count(text, \" \") + 1; n < 2 {"
+    "alt": "\tn := strings.Count(text, \" \") + 1\n\tif n < 2 || n > document.MaxFreihandPunkte {",
+    "neu": "\tn := strings.Count(text, \" \") + 1\n\tif n < 2 {",
+    "aequivalent": true,
+    "grund": "Seit F-1049 zieht der Leser n vor dem Teilen von der Gesamtgrenze ab (document.MaxFreihandGesamt) und document.pruefe lehnt mehr als MaxFreihandPunkte je Strich ab: die Grenze je Strich im Leser ist doppelt gesichert; der Speicherschutz (F-1035) liegt bei der Gesamtgrenze, mutiert in freihand-gesamt.json (FG1)."
   },
   {
     "name": "FH11 Umschalt nicht gerade",

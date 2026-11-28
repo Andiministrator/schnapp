@@ -16,6 +16,9 @@ func PruefeInhalt(groesse image.Point, zuschnitt image.Rectangle, streifen []Str
 	if groesse.X < 1 || groesse.Y < 1 || groesse.X > MaxSeite || groesse.Y > MaxSeite || groesse.X*groesse.Y > MaxPixel {
 		return image.Point{}, fmt.Errorf("%w: %dx%d", ErrBildGroesse, groesse.X, groesse.Y)
 	}
+	if n := FreihandPunkteGesamt(objekte); n > MaxFreihandGesamt {
+		return image.Point{}, fmt.Errorf("document: %d Freihand-Punkte, mehr als %d", n, MaxFreihandGesamt)
+	}
 	// Ein Dokument ohne Pixel: die Prüfungen lesen nur die Größe des Originals.
 	r := image.Rect(0, 0, groesse.X, groesse.Y)
 	d := &Dokument{original: &image.NRGBA{Rect: r}, naechsteID: 1}

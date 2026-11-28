@@ -46,6 +46,11 @@ var schreibGrenzeSVG = maxSVG
 
 func SchreibeArbeitsdatei(w io.Writer, d *document.Dokument, sichtbar image.Image, m Metadaten) (fehler error) {
 	defer errprefix.Defer("fileformat", &fehler)
+	if n := document.FreihandPunkteGesamt(d.Objekte()); n > document.MaxFreihandGesamt {
+		// Der Leser lehnte die Datei ab (F-1049); lieber jetzt scheitern, solange die alte Datei noch steht.
+		return fmt.Errorf("die Freihand-Striche haben %d Punkte, mehr als die %d, die eine Arbeitsdatei tragen darf",
+			n, document.MaxFreihandGesamt)
+	}
 	var sicht, orig bytes.Buffer
 	// Beide PNG-Kodierungen laufen nebenläufig (F-310): Sie lesen nur ihr Bild und schreiben je in einen eigenen
 	// Puffer; zwei gleichzeitige Kodierungen kosten kaum mehr als eine. Über saveprogress.Schreiber meldet jede

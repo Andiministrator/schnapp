@@ -735,6 +735,7 @@ func TestFormatSpezifikationKonstanten(t *testing.T) {
 		"max_tiles":           document.MaxKacheln,
 		"max_coordinate":      document.MaxKoordinate,
 		"max_freehand_points": document.MaxFreihandPunkte,
+		"max_freehand_total":  document.MaxFreihandGesamt,
 		"max_size":            document.MaxGroesse,
 		"max_font_size":       document.MaxSchrift,
 		"max_number":          document.MaxNummer,

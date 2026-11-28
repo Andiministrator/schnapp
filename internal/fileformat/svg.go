@@ -672,6 +672,9 @@ type leser struct {
 	a       map[string]string
 	err     error
 	version int // Formatversion der Datei; 0 = unbekannt (nur für Angaben, die erst ab einer Version gelten)
+	// freiRest zählt die Freihand-Punkte, die der Leser der ganzen Datei noch annimmt (document.MaxFreihandGesamt,
+	// F-1049); nil = ohne Zählung (Werte außerhalb einer Datei).
+	freiRest *int
 }
 
 func (l *leser) fehler(format string, args ...any) {
@@ -755,9 +758,17 @@ func (l *leser) punkt(name string) document.Punkt {
 func (l *leser) punkte(name string) []document.Punkt {
 	text := l.text(name)
 	// Erst zählen, dann teilen: strings.Split legt sonst ein Feld je Leerzeichen an (F-1035).
-	if n := strings.Count(text, " ") + 1; n < 2 || n > document.MaxFreihandPunkte {
+	n := strings.Count(text, " ") + 1
+	if n < 2 || n > document.MaxFreihandPunkte {
 		l.fehler("Punkte %s: %d (2 bis %d)", name, n, document.MaxFreihandPunkte)
 		return nil
+	}
+	if l.freiRest != nil {
+		// Vor dem Teilen und Anlegen abziehen (F-1049): die Summe über alle Striche, nicht nur je Strich.
+		if *l.freiRest -= n; *l.freiRest < 0 {
+			l.fehler("mehr als %d Freihand-Punkte in der Datei", document.MaxFreihandGesamt)
+			return nil
+		}
 	}
 	teile := strings.Split(text, " ")
 	pts := make([]document.Punkt, 0, len(teile))
@@ -946,6 +957,7 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 		in              inhalt
 		tiefe, elemente int
 		version         = -1
+		freiRest        = document.MaxFreihandGesamt
 		hatZuschnitt    bool
 		inSchlagwort    bool
 		inObjekt        int        // Tiefe des aktuellen Objekts, 0 = keins
@@ -973,7 +985,7 @@ func leseSVG(r io.Reader) (*inhalt, error) {
 			if inObjekt > 0 {
 				continue // Darstellung eines Objekts
 			}
-			l := &leser{a: attrs(t), version: version}
+			l := &leser{a: attrs(t), version: version, freiRest: &freiRest}
 			// Ein Element mit s:typ ist ein Objekt (docs/format.md 8); die Strukturelemente tragen es nie, auch nicht
 			// leer. Ein leeres s:typ ist ebenfalls beschädigt, nicht „kein Objekt“.
 			_, hatTyp := l.a["typ"]
