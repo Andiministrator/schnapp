@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-27 (laufend ergänzt, zuletzt Sprint 14, Karten #361 und #334 Teil 1 mit Kritik (F-887 bis F-893); davor Karten #313 Teil 2 und #369 mit Sitzungs-QA (F-873 bis F-880); davor #313 Teil 1 und Sitzungs-QA (F-860 bis F-872); davor #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #377/#389 und #354/#390 mit Kritik und Verify (F-943 bis F-969); davor Karten #361 und #334 Teil 1 mit Kritik (F-887 bis F-893); davor Karten #313 Teil 2 und #369 mit Sitzungs-QA (F-873 bis F-880); davor #313 Teil 1 und Sitzungs-QA (F-860 bis F-872); davor #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -1389,3 +1389,38 @@ Stand: 2026-11-27 (laufend ergänzt, zuletzt Sprint 14, Karten #361 und #334 Tei
   nach dem ersten Fehler aufgeben.
 - **Testdateien nach dem Gegenstand benennen, nicht nach dem Lauf** (`repo_regeln_test.go`): übernommene Kritik- und
   Verify-Tests vor dem Einchecken umbenennen (`…_kritik_test.go` → `…_dienst_test.go`).
+
+## Sprint 14, Karten #377/#389 und #354/#390 mit Kritik und Verify (28.11.2026, F-943 bis F-969)
+
+- **Eine Änderung an mehreren merkt nur das Werkzeug eines Objekts, das sich tatsächlich ändert** (F-943): Wer
+  „setze X an allen gewählten“ baut, filtert die Träger über „ändert sich das Objekt?“, nicht über „gehört es zur
+  Auswahl?“. Sonst schreibt ein unbeteiligtes Objekt seinem Werkzeug Werte in `tools.ini`.
+- **Bestandteile statt Ganzes übertragen** (F-943, F-947): Am Schatten mehrerer setzt eine Änderung an der Leiste nur
+  den gezogenen Bestandteil; im Zug gilt ein einmal gezogener Bestandteil bis zum Ende, auch zurück beim Ausgangswert.
+  Ein Vergleich „neu ≠ vorher“ je Schritt verliert sonst den Ausgangswert.
+- **Abfragen, die die Leiste je Bild Dutzende Male stellt, gehören in einen Merker** (F-944, F-953, F-961): Auswahl
+  und Gruppen über einen Schlüssel aus Stand des Dokuments und einem Zähler je Auswahländerung; ein Durchgang durch
+  den Stapel statt einer Suche je Kennung. Ein Zeittest mit 2000 Objekten deckt kubische Fälle auf.
+- **Zeitgrenzen gelten nie unter `-race`** (Lauf eb7d08d bis 48778ea rot): Jeder neue Zeittest nimmt seine Grenze aus
+  `zeitgrenze_test.go` (`//go:build !race`) und loggt unter `-race` nur (`zeitgrenze_race_test.go`). In `internal/ui`
+  seit F-791, in `internal/canvas` seit 4303b6d. Lokal 4,2 s gegen 5 s Grenze hieß auf dem Runner rot.
+- **Ein Schalter, der Objekte aus der Auswahl wirft, braucht ein Gedächtnis für den Rückweg** (F-958, F-964 bis
+  F-966): Strg+H an einer Gruppe blendet aus, die Mitglieder fallen aus der Auswahl — der nächste Druck sieht nur noch
+  die Hauptauswahl. Lösung: die geschaltete Menge und die Auswahl davor merken, solange die Auswahl sich nicht anders
+  ändert, und genau sie zurückschalten (nie mehr: ein vorher einzeln ausgeblendetes Objekt bleibt).
+- **„Gilt als gewählt“ nicht nur an wählbaren Objekten messen** (F-959, F-960): Sind die übrigen Mitglieder gesperrt
+  oder ausgeblendet, sieht eine Einzelwahl wie eine Gruppenwahl aus. Mindestens zwei gewählte verlangen und beim
+  Vergleich „ganze Gruppe“ dieselbe Menge (wählbare) auf beiden Seiten zählen.
+- **Keine verwaisten Kennungen** (F-962): Wer eine Beziehung über eine geteilte Kennung führt, räumt im selben Schritt
+  das letzte verbliebene Mitglied mit auf und schreibt in die Datei nur wirksame Kennungen — sonst hebt eine wirkungslose
+  Angabe die Formatversion.
+- **Ein Test über einen leeren Hilfszustand prüft nichts** (F-969): `schreiber{}` ohne `gruppen` ließ den Test
+  „einzelne Kennung nicht geschrieben“ trivial bestehen. Schreibtests über den echten Weg (`AngabenSVG`) führen.
+- **Mutanten müssen kompilieren**: Ein Mutant, der eine Zeile streicht oder `if false` setzt, lässt Variablen
+  unbenutzt („declared and not used“) — das ist FEHLER, nicht ROT. `if false && <alte Bedingung>` oder `_ = x` erhält
+  die Benutzung. Nach jedem Umbau den Trockenlauf aller Gruppen fahren: umgebaute Zeilen lassen Muster anderer Gruppen
+  ins Leere laufen.
+- **Drehbücher:** Esc schließt erst das offene Menü, ein zweites Esc hebt die Auswahl auf; die Mitte eines Pfeils ist
+  sein Krümmungsgriff (Ziehen dort biegt, statt zu verschieben). Leistenkoordinaten hängen an der Art der Auswahl —
+  vorher ein Foto der Lage machen.
+
