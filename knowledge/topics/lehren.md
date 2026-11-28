@@ -1445,3 +1445,20 @@ Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #335/#393 mit Kri
 - **Abbrechen braucht eine Phase** (F-995): „Abbrechen“ ohne Wissen, ob das Schreiben schon begonnen hat, meldet einen
   Abbruch, während die Datei doch entsteht. Ein atomarer Wechsel (lesen → ablegen bzw. → abgebrochen) entscheidet
   genau einmal.
+
+## Speichern unter und Neue Aufnahme (28.11.2026, Sprint 14, ADR-0046, F-1007 bis F-1017)
+
+- **Jeder lange lebende Kindprozess des Editors schließt geerbte Deskriptoren** (F-1013): Strg+N erbte im virtuellen
+  KWin drei Deskriptoren ohne CLOEXEC (aus cgo-Bibliotheken; Go selbst setzt CLOEXEC). `exec` schließt sie nicht.
+  Weg: internes Argument, und der neue Prozess schließt vor allem anderen ab 3 (`wlclip.SchliesseGeerbteAb`), wie
+  der Halter (F-189). Und die Fehlerausgabe nie als Pipe weitergeben (F-325, F-1012).
+- **Ein Menüpunkt, der einen Prozess startet, braucht eine Sperre** (F-1008): Gio wiederholt gehaltene Tasten als
+  `key.Press`; ohne Zustand startet jede Wiederholung einen Prozess.
+- **Eine Kopie mit dem ganzen Original ist privat** (F-1007): Was die Arbeitsdatei nach außen schreibt, bekommt 0600
+  wie die Bibliothek (`export.…Privat`), der Export eines flachen Bilds bleibt bei der umask.
+- **Ein Test, der Klartext in komprimierten Blöcken sucht, wird nie rot** (F-1014): Felder nach dem Lesen prüfen.
+- **Jeder Dialog bekommt eine Naht** (Mutant SU23): Der Export rief das Portal direkt; ein Mutant, der ihn trotz Sperre
+  startet, stürzte im Test ab (nil-Kontext, nil-Wecker) statt rot zu werden. Mit Naht `exportDialog` prüft der Test
+  die Sperre wirklich.
+- **Warten beim Schließen nach dem Wichtigen** (F-1016): Erst das ungesicherte Dokument notspeichern, dann auf
+  Nebenarbeiten (Kopie) warten, mit einer Frist, die zur Arbeit passt (2 min wie das Speichern, nicht 5 s).
