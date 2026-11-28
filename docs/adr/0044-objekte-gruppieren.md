@@ -106,3 +106,6 @@ Ersetzt Nachtrag 1 Punkt 1 für Strg+H und Strg+L:
    rechnen. Das Gedächtnis gilt je Schalter: Ein Druck des anderen Schalters löscht es nicht.
 6. **Grenze (F-973):** Nach Strg+H und Rückgängig ist nur die Hauptauswahl gewählt (Rückgängig stellt keine Auswahl
    her, ADR-0039 Nachtrag 2); ein weiteres Strg+H schaltet dann nur sie. Wer die Gruppe meint, klickt sie erneut an.
+   **Entschieden** (Claude Opus 5.5 im Auftrag Andis, 28.11.2026: „entscheide du das“): so bleiben. Strg+H wirkt auf
+   das, was gewählt ist, und das Menü sagt es („Hide layer“); ein Rückgängig, das stillschweigend wieder eine Gruppe
+   wählt, wiche von ADR-0039 Nachtrag 2 ab (Rückgängig stellt keine Auswahl her) und wäre schwerer vorherzusehen.
