@@ -554,7 +554,8 @@ crosses itself or turns back (a translucent colour does not get darker there). L
 `s:format="1"` or `"2"` it is an unknown object type (8.6), and the file is damaged; a writer emits `s:format="3"` if the
 document contains one (section 12). Fewer than 2 or more than 4096 points, or a point that does not parse, make the file
 damaged. Informative: Schnapp smooths and thins a stroke when the pointer is released and stores the result; the points
-are not control points of a curve. The presentation is a `path` with `M`/`L` commands. Example:
+are not control points of a curve. The presentation is a `path`: `M` with the first point, then `l` with the others
+relative to their predecessor, both rounded to hundredths of a pixel. Example:
 `testdata/format/freehand`.
 
 ## 9. Redaction

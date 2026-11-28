@@ -3,6 +3,7 @@
 package canvas
 
 import (
+	"image"
 	"math"
 	"testing"
 
@@ -41,10 +42,21 @@ func TestFreihandZiehen(t *testing.T) {
 		t.Fatalf("kein Freihand-Strich: %+v", letztes(t, s))
 	}
 	pts := fh.Punkte()
-	// Roh rund 48 Punkte (alle 2 Pixel), vereinfacht rund 16, zweimal geglättet 58 (gemessen 28.11.2026): ohne
-	// Glätten oder ohne Vereinfachen fiele die Zahl aus dem Band.
-	if len(pts) < 52 || len(pts) > 64 {
-		t.Errorf("Punkte nach dem Glätten: %d, Soll 52 bis 64", len(pts))
+	// Roh rund 48 Punkte (alle 2 Pixel), vereinfacht rund 16, zweimal geglättet 58, wieder vereinfacht rund 17
+	// (ADR-0049 Nachtrag 1, F-1036): höchstens so viele wie roh, und geglättet heißt, die inneren Punkte sind keine
+	// Rohpunkte mehr (ohne Glätten oder mit dem Rückfall auf den ungeglätteten Zug wären sie es alle).
+	roh := map[document.Punkt]bool{}
+	for _, p := range zug {
+		roh[document.Pt(math.Round(s.original(p).X*100)/100, math.Round(s.original(p).Y*100)/100)] = true
+	}
+	auf := 0
+	for _, p := range pts[1 : len(pts)-1] {
+		if roh[p] {
+			auf++
+		}
+	}
+	if len(pts) < 10 || len(pts) > 48 || auf > len(pts)/4 {
+		t.Errorf("Punkte nach dem Glätten: %d (Soll 10 bis 48), davon %d innere auf Rohpunkten", len(pts), auf)
 	}
 	if pts[0] != s.original(zug[0]) || pts[len(pts)-1] != s.original(zug[len(zug)-1]) {
 		t.Errorf("Anfang/Ende %v %v", pts[0], pts[len(pts)-1])
@@ -203,6 +215,69 @@ func TestFreihandRohpunkteBegrenzt(t *testing.T) {
 	if fh, ok := letztes(t, s).(document.Freihand); !ok || len(fh.Punkte()) > document.MaxFreihandPunkte {
 		t.Errorf("Ergebnis %T", letztes(t, s))
 	}
+}
+
+// F-1037 (Kritik #333 K-3): Ein sehr langer Zug (weit über MaxFreihandPunkte Rohpunkte) behält auch am Anfang seine
+// Form. Gleichmäßiges Ausdünnen halbierte den Anfang bei jeder Runde wieder: dort lagen die gespeicherten Punkte rund
+// 56 px auseinander und die Linie wich um Pixel von der gezogenen Spirale ab, am Ende 11 px.
+func TestFreihandLangerZugBehaeltDenAnfang(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 1600, 1000)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := NeueSitzung(d)
+	s.SetzeFenster(image.Pt(1648, 1048))
+	s.SetzeWerkzeug(WerkzeugFreihand)
+	spirale := func(i int) document.Punkt {
+		a := float64(i) * 0.01
+		return s.Abb.ZuFenster(document.Pt(800+(20+float64(i)*0.02)*math.Cos(a), 500+(20+float64(i)*0.015)*math.Sin(a)))
+	}
+	const n = 30000 // je Schritt rund 3 Fensterpixel: rund 15000 Rohpunkte
+	s.Druecken(spirale(0), TastePrimaer)
+	for i := 1; i <= n; i++ {
+		s.Ziehen(spirale(i))
+	}
+	s.Loslassen(spirale(n))
+	fh, ok := letztes(t, s).(document.Freihand)
+	if !ok {
+		t.Fatalf("kein Freihand-Strich: %T", letztes(t, s))
+	}
+	pts := fh.Punkte()
+	abstand := func(von, bis int) float64 {
+		var l float64
+		for i := von + 1; i < bis; i++ {
+			l += pts[i].Minus(pts[i-1]).Laenge()
+		}
+		return l / float64(bis-von-1)
+	}
+	anfang, ende := abstand(0, len(pts)/10), abstand(len(pts)*9/10, len(pts))
+	if anfang > 2*ende || ende > 2*anfang {
+		t.Errorf("mittlerer Abstand erstes Zehntel %.1f, letztes Zehntel %.1f: nicht gleicher Größenordnung", anfang, ende)
+	}
+	// Die gezogene Spirale im ersten Zehntel liegt dicht an der gespeicherten Linie. Gemessen 28.11.2026: 2,0 px (so
+	// viel Weg passt erst bei rund 1 px Toleranz in die Rohpunkte, dazu Glätten), gleichmäßig ausgedünnt 42 px.
+	weit := 0.0
+	for i := 0; i <= n/10; i += 7 {
+		q, best := s.original(spirale(i)), math.Inf(1)
+		for j := 1; j < len(pts); j++ {
+			best = math.Min(best, strecke(q, pts[j-1], pts[j]))
+		}
+		weit = math.Max(weit, best)
+	}
+	if weit > 3 {
+		t.Errorf("Anfang weicht bis %.2f px von der gezogenen Spirale ab", weit)
+	}
+}
+
+// strecke ist der Abstand von p zur Strecke a–b.
+func strecke(p, a, b document.Punkt) float64 {
+	d := b.Minus(a)
+	l2 := d.X*d.X + d.Y*d.Y
+	if l2 == 0 {
+		return p.Minus(a).Laenge()
+	}
+	u := math.Max(0, math.Min(1, ((p.X-a.X)*d.X+(p.Y-a.Y)*d.Y)/l2))
+	return p.Minus(a.Plus(d.Mal(u))).Laenge()
 }
 
 // K-11 (Mutant FH34): Die Vereinfachungs-Toleranz gilt in Fensterpixeln. Ein Zickzack mit 1,2 Fensterpixeln Ausschlag

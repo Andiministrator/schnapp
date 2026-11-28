@@ -40,11 +40,12 @@ func (f Freihand) MitPunkten(pts []Punkt) Freihand {
 	return f
 }
 
-// Verschoben liefert f um d verschoben (neuer Zug).
+// Verschoben liefert f um d verschoben (neuer Zug), auf 1/100 px gerundet wie beim Anlegen (F-1036: ein Zoom wie 0,73
+// macht sonst aus jeder Lage wieder eine Zahl mit 17 Stellen).
 func (f Freihand) Verschoben(d Punkt) Freihand {
 	pts := slices.Clone(f.Punkte())
 	for i := range pts {
-		pts[i] = pts[i].Plus(d)
+		pts[i] = aufHundertstel(pts[i].Plus(d))
 	}
 	f.Zug = &pts
 	return f
@@ -188,8 +189,36 @@ func Ausgeduennt(pts []Punkt, max int) []Punkt {
 	return r
 }
 
-// FreihandAusZug macht aus den rohen Punkten eines Zugs den gespeicherten Linienzug (ADR-0049 Punkt 3): vereinfachen
-// mit der Toleranz tol (Original), zweimal glätten, auf MaxFreihandPunkte begrenzen.
+// FreihandAusZug macht aus den rohen Punkten eines Zugs den gespeicherten Linienzug (ADR-0049 Punkt 3, Nachtrag 1):
+// vereinfachen mit der Toleranz tol (Original), zweimal glätten, danach noch einmal mit tol/2 vereinfachen (Chaikin
+// vervierfacht die Punkte, auf flachen Stücken liegen sie fast auf einer Geraden, F-1036) und auf 1/100 px runden.
+// Gespeichert werden höchstens so viele Punkte wie roh, sonst bleibt der ungeglättete Linienzug; MaxFreihandPunkte
+// begrenzt zuletzt.
 func FreihandAusZug(roh []Punkt, tol float64) []Punkt {
-	return Ausgeduennt(Geglaettet(Vereinfacht(roh, tol), 2), MaxFreihandPunkte)
+	v := Vereinfacht(roh, tol)
+	g := Gerundet(Vereinfacht(Geglaettet(v, 2), tol/2))
+	if len(g) > len(roh) {
+		g = Gerundet(v)
+	}
+	return Ausgeduennt(g, MaxFreihandPunkte)
 }
+
+// Gerundet liefert pts auf 1/100 px gerundet; dabei gleich gewordene Nachbarn fallen weg, mindestens zwei Punkte
+// bleiben (F-1036: kurze Zahlen in der Datei).
+func Gerundet(pts []Punkt) []Punkt {
+	r := make([]Punkt, 0, len(pts))
+	for _, p := range pts {
+		q := aufHundertstel(p)
+		if len(r) > 0 && r[len(r)-1] == q {
+			continue
+		}
+		r = append(r, q)
+	}
+	if len(r) == 1 && len(pts) >= 2 {
+		r = append(r, r[0])
+	}
+	return r
+}
+
+// aufHundertstel rundet p auf 1/100 px.
+func aufHundertstel(p Punkt) Punkt { return Pt(math.Round(p.X*100)/100, math.Round(p.Y*100)/100) }

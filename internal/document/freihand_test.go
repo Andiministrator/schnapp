@@ -97,3 +97,59 @@ func TestFreihandReichweiteMitReserve(t *testing.T) {
 		t.Errorf("Reichweite %v, erwartet %v", r, w)
 	}
 }
+
+// F-1036 (Kritik #333 K-2, ADR-0049 Nachtrag 1): Nach dem Glätten wird noch einmal vereinfacht und auf 1/100 px
+// gerundet. Gespeichert werden nie mehr Punkte als roh; wo Glätten mehr ergäbe, bleibt der ungeglättete Zug.
+func TestFreihandAusZugHoechstensRohUndGerundet(t *testing.T) {
+	// Zickzack mit spitzen Ecken: geglättet und wieder vereinfacht wären es 10 Punkte, roh sind es 4.
+	zick := []Punkt{Pt(0, 0), Pt(20.123, 30), Pt(40, 0.004), Pt(60, 30)}
+	if f := FreihandAusZug(zick, 0.5); len(f) > len(zick) || f[1] != Pt(20.12, 30) || f[2] != Pt(40, 0) {
+		t.Errorf("Zickzack: %v", f)
+	}
+	// Ein Kreisbogen aus vielen Rohpunkten: geglättet, wieder vereinfacht, jede Zahl ein Vielfaches von 1/100.
+	var bogen []Punkt
+	for i := 0; i <= 300; i++ {
+		w := math.Pi * float64(i) / 300
+		bogen = append(bogen, Pt(100.3+80*math.Cos(w), 90.7-80*math.Sin(w)))
+	}
+	f := FreihandAusZug(bogen, 0.5)
+	if len(f) < 10 || len(f) > 40 {
+		t.Errorf("Bogen: %d Punkte, erwartet rund 20 (vereinfacht, geglättet, wieder vereinfacht)", len(f))
+	}
+	for _, p := range f {
+		if p != aufHundertstel(p) || math.Abs(p.X*100-math.Round(p.X*100)) > 1e-6 {
+			t.Fatalf("Punkt %v nicht auf 1/100 gerundet", p)
+		}
+		if r := p.Minus(Pt(100.3, 90.7)).Laenge(); r > 80.01 || r < 79 {
+			t.Errorf("Punkt %v mit Radius %.2f", p, r)
+			break
+		}
+	}
+	// Das zweite Vereinfachen nimmt die halbe Toleranz: Der geglättete Zug liegt höchstens 0,25 px (plus Rundung)
+	// neben dem gespeicherten.
+	for _, p := range Geglaettet(Vereinfacht(bogen, 0.5), 2) {
+		best := math.Inf(1)
+		for i := 1; i < len(f); i++ {
+			best = math.Min(best, abstandStrecke(p, f[i-1], f[i]))
+		}
+		if best > 0.26 {
+			t.Errorf("geglätteter Punkt %v liegt %.3f px neben dem gespeicherten Zug", p, best)
+			break
+		}
+	}
+	if f[0] != aufHundertstel(bogen[0]) || f[len(f)-1] != aufHundertstel(bogen[300]) {
+		t.Errorf("Anfang/Ende %v %v", f[0], f[len(f)-1])
+	}
+	// Runden lässt gleich gewordene Nachbarn weg, zwei Punkte bleiben.
+	if g := Gerundet([]Punkt{Pt(1, 1), Pt(1.001, 1), Pt(2, 2)}); len(g) != 2 {
+		t.Errorf("Gerundet: %v", g)
+	}
+	if g := Gerundet([]Punkt{Pt(1, 1), Pt(1.001, 1.002)}); len(g) != 2 || g[0] != g[1] {
+		t.Errorf("Gerundet zwei gleiche: %v", g)
+	}
+	// Verschieben rundet wie das Anlegen.
+	v := NeuerFreihand([]Punkt{Pt(1, 2), Pt(3.5, 4)}, Strich{Breite: 2}).Verschoben(Pt(1/0.73, 0.1234))
+	if p := v.Punkte(); p[0] != Pt(2.37, 2.12) || p[1] != Pt(4.87, 4.12) {
+		t.Errorf("Verschoben: %v", p)
+	}
+}

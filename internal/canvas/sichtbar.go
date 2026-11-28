@@ -15,8 +15,11 @@ const MinSichtbar = 8.0
 
 // sichtbarIn meldet je Achse, ob die Gestalt von o das sichtbare Bild (Ansicht) um mindestens MinSichtbar Fensterpixel
 // schneidet (bei kleineren Objekten: um ihre ganze Ausdehnung).
-func (s *Sitzung) sichtbarIn(o document.Objekt) (x, y bool) {
-	g, gr := gestalt(o), s.D.Groesse()
+func (s *Sitzung) sichtbarIn(o document.Objekt) (x, y bool) { return s.gestaltSichtbar(gestalt(o)) }
+
+// gestaltSichtbar ist sichtbarIn für die Gestalt g (Original).
+func (s *Sitzung) gestaltSichtbar(g document.Rechteck) (x, y bool) {
+	gr := s.D.Groesse()
 	lo, hi := s.D.ZuAnsicht(g.Min), s.D.ZuAnsicht(g.Max)
 	mind := MinSichtbar / s.Abb.Zoom
 	ok := func(lo, hi, max float64) bool {
@@ -55,13 +58,19 @@ func begrenzeSichtbar(ok func(t float64) bool) float64 {
 }
 
 // begrenzeVerschieben kürzt die Verschiebung d (Original) des Objekts o je Achse so, dass es im Bild sichtbar bleibt.
+// Verschieben verschiebt die Gestalt mit: Sie wird einmal gerechnet und je Versuch der Bisektion nur das Rechteck
+// verschoben, nicht das Objekt (F-1038: ein Freihand-Strich kopierte sonst bis zu 80-mal je Ereignis seine Punkte).
 func (s *Sitzung) begrenzeVerschieben(o document.Objekt, d document.Punkt) document.Punkt {
+	g := gestalt(o)
+	um := func(v document.Punkt) document.Rechteck {
+		return document.Rechteck{Min: g.Min.Plus(v), Max: g.Max.Plus(v)}
+	}
 	tx := begrenzeSichtbar(func(t float64) bool {
-		x, _ := s.sichtbarIn(Verschiebe(o, document.Pt(d.X*t, 0)))
+		x, _ := s.gestaltSichtbar(um(document.Pt(d.X*t, 0)))
 		return x
 	})
 	ty := begrenzeSichtbar(func(t float64) bool {
-		_, y := s.sichtbarIn(Verschiebe(o, document.Pt(0, d.Y*t)))
+		_, y := s.gestaltSichtbar(um(document.Pt(0, d.Y*t)))
 		return y
 	})
 	return document.Pt(d.X*tx, d.Y*ty)

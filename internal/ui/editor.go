@@ -375,8 +375,13 @@ type editor struct {
 	// schatten: gemerkte Schattenbilder je Objekt (ADR-0021 Nachtrag 26, schatten.go).
 	schatten      map[int]schattenBild
 	schattenBytes int
-	schattenNeu   int      // Zahl der neu gerechneten Schattenbilder (für Tests)
-	schattenRunde int      // zählt die gezeichneten Bilder (Verdrängen, V-3)
+	schattenNeu   int // Zahl der neu gerechneten Schattenbilder (für Tests)
+	schattenRunde int // zählt die gezeichneten Bilder (Verdrängen, V-3)
+	// freihand: gemerkte Zerlegungen der Freihand-Striche je Objekt (F-1038, freihandmerker.go).
+	freihand      map[int]*freihandBild
+	freihandBytes int
+	freihandNeu   int // Zahl der neu zerlegten Striche (für Tests)
+	freihandRunde int
 	satz          textsatz // Glyphenumrisse der Beschriftungen (textsatz.go)
 	// nav: Zustand des Navigators auf der Leinwand (navigator.go, ADR-0031 Nachtrag 9); die Adresse ist das Zeigerziel.
 	nav navigatorZustand
@@ -1927,6 +1932,7 @@ func (e *editor) zeichneObjekte(gtx layout.Context) {
 	sicht := image.Rectangle{Max: d.Groesse()}
 	defer e.lupenAufraeumen()
 	defer e.schattenAufraeumen()
+	defer e.freihandAufraeumen()
 	// Über vielen Nähten zeigt der Editor ab bereichGrenze abgespielten Bereichen die Objektebene des Renderers statt
 	// eigener Pfade (ADR-0023 Nachtrag 20, F-787): Gio rastert jedes Bild alle Bereiche neu, an der Grenze von
 	// render.Pruefe rund 500 000 (120 gefüllte runde Kästen über 4096 Kacheln: 1,7 s je Bild mit llvmpipe, Dateien über
@@ -1972,18 +1978,14 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 		e.zeichneSchatten(gtx, o)
 	}
 	switch v := o.(type) {
-	case document.Freihand: // dieselben Teile wie der Renderer, je Bereich abgespielt (ADR-0049 Punkt 2)
+	case document.Freihand: // dieselben Teile wie der Renderer, je Bereich abgespielt (ADR-0049 Punkt 2), gemerkt (F-1038)
 		if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
-			sz := render.ZerlegeStrich(v.Punkte(), v.Strich)
-			var stuecke []document.Stueck
-			if !vorschau && len(sz.Zug) > 0 {
-				for _, st := range e.s.D.StreckenStuecke(sz.Zug, sz.Zu, sz.Suche) {
-					stuecke = append(stuecke, st.Stueck)
-				}
+			b := e.freihandFuer(gtx, v)
+			if vorschau {
+				fuelleTeile(gtx, b.sz.Teile, v.Strich.Farbe, an)
+			} else {
+				e.spieleJeStueck(gtx, e.stueckeFuer(b), b.aufruf)
 			}
-			e.jeStueckIn(gtx, stuecke, an, vorschau, func(abb func(document.Punkt) f32.Point) {
-				fuelleTeile(gtx, sz.Teile, v.Strich.Farbe, abb)
-			})
 		}
 	case document.Pfeil:
 		// Abgeschnitten wie Renderer und SVG-Export (F-748, ADR-0023 Nachtrag 17): einmal im Original aufgezeichnet und in
@@ -2246,7 +2248,11 @@ func (e *editor) jeStueckIn(gtx layout.Context, stuecke []document.Stueck, an fu
 	}
 	m := op.Record(gtx.Ops)
 	f(func(p document.Punkt) f32.Point { return f32.Pt(float32(p.X), float32(p.Y)) })
-	aufruf := m.Stop()
+	e.spieleJeStueck(gtx, stuecke, m.Stop())
+}
+
+// spieleJeStueck spielt die Aufzeichnung aufruf (Original) in jedem Bereich stuecke ab, beschnitten auf sein Ziel.
+func (e *editor) spieleJeStueck(gtx layout.Context, stuecke []document.Stueck, aufruf op.CallOp) {
 	e.bereiche += len(stuecke)
 	for _, st := range stuecke {
 		z := st.Ziel()

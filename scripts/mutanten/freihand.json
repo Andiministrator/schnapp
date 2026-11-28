@@ -47,8 +47,8 @@
     "name": "FH7 Editor zeichnet Freihand nicht",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\t\t\t\tfuelleTeile(gtx, sz.Teile, v.Strich.Farbe, abb)\n\t\t\t})\n\t\t}\n\tcase document.Pfeil:",
-    "neu": "\t\t\t})\n\t\t}\n\tcase document.Pfeil:"
+    "alt": "\t\t\t\te.spieleJeStueck(gtx, e.stueckeFuer(b), b.aufruf)\n",
+    "neu": "\t\t\t\t_ = e.stueckeFuer(b)\n"
   },
   {
     "name": "FH8 Version ohne Freihand",
@@ -254,8 +254,8 @@
     "name": "FH36 Export gemustert als voller Pfad",
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
-    "alt": "\tif o.Strich.Art != document.StrichVoll && !s.rundlauf {\n\t\ts.musterSVG(document.StrichAbschnitte(pts, o.Strich.Art, o.Strich.Breite), o.Strich.Breite, o.Strich.Farbe)\n\t\treturn\n\t}\n\tvar d strings.Builder",
-    "neu": "\tvar d strings.Builder"
+    "alt": "\tif o.Strich.Art != document.StrichVoll && !s.rundlauf {\n\t\ts.musterSVG(document.StrichAbschnitte(pts, o.Strich.Art, o.Strich.Breite), o.Strich.Breite, o.Strich.Farbe)\n\t\treturn\n\t}\n\ts.WriteString(`<path`)",
+    "neu": "\ts.WriteString(`<path`)"
   },
   {
     "name": "FH37 Schalter während des Zugs",
@@ -314,5 +314,173 @@
     "paket": "./internal/document",
     "alt": "\tif f.Laenge() <= 0 {",
     "neu": "\tif f.Laenge() < 0 {"
+  },
+  {
+    "name": "FH45 nach dem Glätten nicht wieder vereinfacht (F-1036)",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/document",
+    "alt": "\tg := Gerundet(Vereinfacht(Geglaettet(v, 2), tol/2))\n",
+    "neu": "\tg := Gerundet(Geglaettet(v, 2))\n"
+  },
+  {
+    "name": "FH46 nicht auf 1/100 gerundet (F-1036)",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/document",
+    "alt": "\tg := Gerundet(Vereinfacht(Geglaettet(v, 2), tol/2))\n",
+    "neu": "\tg := Vereinfacht(Geglaettet(v, 2), tol/2)\n"
+  },
+  {
+    "name": "FH47 mehr Punkte als roh gespeichert (F-1036)",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/document",
+    "alt": "\tif len(g) > len(roh) {\n\t\tg = Gerundet(v)\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "FH48 zweites Vereinfachen mit voller Toleranz (F-1036)",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/document",
+    "alt": "Geglaettet(v, 2), tol/2))",
+    "neu": "Geglaettet(v, 2), tol))"
+  },
+  {
+    "name": "FH49 Runden behält gleich gewordene Nachbarn (F-1036)",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/document",
+    "alt": "\t\tif len(r) > 0 && r[len(r)-1] == q {\n\t\t\tcontinue\n\t\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "FH50 Runden lässt einen Punkt übrig (F-1036)",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/document",
+    "alt": "\tif len(r) == 1 && len(pts) >= 2 {",
+    "neu": "\tif false {"
+  },
+  {
+    "name": "FH51 Verschieben rundet nicht (F-1036)",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/document",
+    "alt": "\t\tpts[i] = aufHundertstel(pts[i].Plus(d))",
+    "neu": "\t\tpts[i] = pts[i].Plus(d)"
+  },
+  {
+    "name": "FH52 langer Zug wieder gleichmäßig ausgedünnt (F-1037)",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "s.freiRoh = rohVerdichtet(s.freiRoh, freiToleranz/4/s.Abb.Zoom)",
+    "neu": "s.freiRoh = document.Ausgeduennt(s.freiRoh, document.MaxFreihandPunkte/2)"
+  },
+  {
+    "name": "FH53 Verdichten nicht bis zur Hälfte (F-1037)",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif len(v) <= document.MaxFreihandPunkte/2 {",
+    "neu": "\t\tif len(v) <= document.MaxFreihandPunkte {"
+  },
+  {
+    "name": "FH54 Pfad absolut statt relativ (F-1036)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\t\td.WriteString(\" \" + hundertstelText(x-vx) + \",\" + hundertstelText(y-vy))",
+    "neu": "\t\t\td.WriteString(\" \" + hundertstelText(x) + \",\" + hundertstelText(y))"
+  },
+  {
+    "name": "FH55 erster Pfadpunkt ungerundet (F-1036)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\t\td.WriteString(\"M\" + hundertstelText(x) + \",\" + hundertstelText(y))",
+    "neu": "\t\t\td.WriteString(\"M\" + punkt(p))"
+  },
+  {
+    "name": "FH56 Pfad relativ zum ersten statt zum Vorgänger (F-1036)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\tvx, vy = x, y\n",
+    "neu": "\t\tif i == 0 {\n\t\t\tvx, vy = x, y\n\t\t}\n"
+  },
+  {
+    "name": "FH57 Bisektion verschiebt die Gestalt nicht (F-1038)",
+    "datei": "internal/canvas/sichtbar.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\treturn document.Rechteck{Min: g.Min.Plus(v), Max: g.Max.Plus(v)}",
+    "neu": "\t\treturn document.Rechteck{Min: g.Min, Max: g.Max}"
+  },
+  {
+    "name": "FH58 Merker zerlegt jedes Bild neu (F-1038)",
+    "datei": "internal/ui/freihandmerker.go",
+    "paket": "./internal/ui",
+    "alt": "ok && document.Gleich(b.o, v) {",
+    "neu": "ok && false {"
+  },
+  {
+    "name": "FH59 Merker übersieht Änderungen (F-1038)",
+    "datei": "internal/ui/freihandmerker.go",
+    "paket": "./internal/ui",
+    "alt": "ok && document.Gleich(b.o, v) {",
+    "neu": "ok {"
+  },
+  {
+    "name": "FH60 Bereiche gelten für jede Ansicht (F-1038)",
+    "datei": "internal/ui/freihandmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\tif b.stueckeDa && b.ansicht.gleich(ansicht) {",
+    "neu": "\tif b.stueckeDa {"
+  },
+  {
+    "name": "FH61 Merker verdrängt nie (F-1038)",
+    "datei": "internal/ui/freihandmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.freihandBytes+neu <= freihandSpeicher {\n\t\treturn\n\t}\n\talt :=",
+    "neu": "\tif true {\n\t\treturn\n\t}\n\talt :="
+  },
+  {
+    "name": "FH62 Merker verdrängt auch die laufende Runde (F-1038)",
+    "datei": "internal/ui/freihandmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif b.runde < e.freihandRunde {",
+    "neu": "\t\tif b.runde <= e.freihandRunde {"
+  },
+  {
+    "name": "FH63 Merker räumt entfernte Striche nicht ab (F-1038)",
+    "datei": "internal/ui/freihandmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif _, ok := e.s.D.Objekt(id); !ok {\n\t\t\te.freihandBytes -= b.bytes",
+    "neu": "\t\tif _, ok := e.s.D.Objekt(id); !ok && false {\n\t\t\te.freihandBytes -= b.bytes"
+  },
+  {
+    "name": "FH64 Wechsel der Aufnahme leert den Merker nicht (F-1038)",
+    "datei": "internal/ui/wechsel.go",
+    "paket": "./internal/ui",
+    "alt": "\te.freihand, e.freihandBytes = nil, 0\n",
+    "neu": ""
+  },
+  {
+    "name": "FH65 Bild räumt den Merker nicht ab (F-1038)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\tdefer e.freihandAufraeumen()\n",
+    "neu": ""
+  },
+  {
+    "name": "FH66 Vorschau zeichnet den gemerkten Strich nicht (F-1038)",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\t\tfuelleTeile(gtx, b.sz.Teile, v.Strich.Farbe, an)\n",
+    "neu": "\t\t\t\t_ = an\n"
+  },
+  {
+    "name": "FH67 Merker zählt keine Bytes (F-1038)",
+    "datei": "internal/ui/freihandmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tb.bytes += len(t) * freihandBytesJePunkt",
+    "neu": "\t\tb.bytes += 0 * len(t)"
+  },
+  {
+    "name": "FH68 Merker zieht die Bytes eines geänderten Strichs nicht ab (F-1038)",
+    "datei": "internal/ui/freihandmerker.go",
+    "paket": "./internal/ui",
+    "alt": "\t} else if ok {\n\t\te.freihandBytes -= b.bytes\n",
+    "neu": "\t} else if ok {\n"
   }
 ]

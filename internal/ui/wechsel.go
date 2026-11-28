@@ -359,6 +359,8 @@ func (e *editor) uebernimm(g Geoeffnet) {
 	e.naht.gueltig = false
 	// Die Schattenbilder gehören der alten Aufnahme (F-843).
 	e.schatten, e.schattenBytes = nil, 0
+	// Ebenso die gemerkten Freihand-Striche (F-1038).
+	e.freihand, e.freihandBytes = nil, 0
 	e.objEbene.frei() // die Objektebene gehört der alten Aufnahme (F-799)
 	e.ebenen.umbenennen, e.ebenen.umbenennenFokus, e.ebenen.nameHatteFokus = 0, false, false
 	e.hatDruck, e.letzterDruck = false, 0

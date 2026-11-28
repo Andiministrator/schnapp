@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"errors"
 	"image/color"
+	"math"
 	"strings"
 	"testing"
 
@@ -90,5 +91,53 @@ func TestFreihandExportGemustertAlsStuecke(t *testing.T) {
 	}
 	if a := string(AngabenSVG(d)); !strings.Contains(a, "stroke-dasharray") {
 		t.Errorf("Arbeitsdatei ohne Näherung: %s", a)
+	}
+}
+
+// F-1036 (Kritik #333 K-2): Ein langer, wirklichkeitsnaher Zug (ganze Fensterpixel im Abstand von rund 2 px, Zoom 1 und
+// 0,73, mit und ohne Zittern) wird gespeichert mit höchstens so vielen Punkten wie roh und kurzen Zahlen. Vorher: 4096
+// Punkte (Chaikin vervierfachte), 32 bzw. 75 Byte je Punkt, 130 bzw. 306 KB je Strich. Gemessen 28.11.2026 nach
+// ADR-0049 Nachtrag 1: 1142 bis 2189 Punkte, 25 bis 27 Byte je Punkt (s:punkte absolut und der Pfad relativ, je auf
+// 1/100 px), höchstens 60 KB je Strich.
+func TestFreihandGroesseJeStrich(t *testing.T) {
+	for _, zoom := range []float64{1, 0.73} {
+		for _, zittern := range []float64{0, 1} {
+			var roh []document.Punkt
+			var letzter document.Punkt
+			for i := 0; len(roh) < document.MaxFreihandPunkte; i++ {
+				a := float64(i) * 0.002
+				r := 50 + 20*a
+				z := zittern * math.Sin(float64(i)*0.37)
+				p := document.Pt(math.Round(1000+(r+z)*math.Cos(a)), math.Round(1000+(r+z)*math.Sin(a)))
+				if len(roh) == 0 || p.Minus(letzter).Laenge() >= 2 {
+					roh = append(roh, document.Pt(p.X/zoom, p.Y/zoom))
+					letzter = p
+				}
+			}
+			pts := document.FreihandAusZug(roh, 0.5/zoom)
+			d := beispielDok(t, 3000, 3000)
+			fuege(t, d, document.NeuerFreihand(pts, document.Strich{Farbe: color.NRGBA{R: 200, A: 255}, Breite: 3}))
+			svg := AngabenSVG(d)
+			jePunkt := float64(len(svg)) / float64(len(pts))
+			t.Logf("Zoom %.2f Zittern %.0f: roh %d, gespeichert %d Punkte, SVG %d Bytes (%.1f je Punkt)",
+				zoom, zittern, len(roh), len(pts), len(svg), jePunkt)
+			if len(pts) > len(roh) || jePunkt > 28 || len(svg) > 64<<10 {
+				t.Errorf("Zoom %.2f Zittern %.0f: %d Punkte (roh %d), %.1f Byte je Punkt, %d Bytes", zoom, zittern,
+					len(pts), len(roh), jePunkt, len(svg))
+			}
+		}
+	}
+}
+
+// F-1036: Die Darstellung schreibt den ersten Punkt absolut, die übrigen relativ in Hundertsteln, gerechnet aus den
+// gerundeten Lagen (keine Rundungsfehler, die sich ansammeln).
+func TestFreihandPfadRelativ(t *testing.T) {
+	pts := []document.Punkt{document.Pt(10.5, 20.0004), document.Pt(13.71, 18.9), document.Pt(13.71, 18.9),
+		document.Pt(0.004, 120.006)}
+	if p, soll := freihandPfad(pts), "M10.5,20l3.21,-1.1 0,0 -13.71,101.11"; p != soll {
+		t.Errorf("Pfad %q, Soll %q", p, soll)
+	}
+	if p := freihandPfad(pts[:1]); p != "M10.5,20" {
+		t.Errorf("ein Punkt: %q", p)
 	}
 }

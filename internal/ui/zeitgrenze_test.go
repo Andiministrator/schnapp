@@ -20,4 +20,7 @@ const (
 	// 0,7 bis 1,9 s auf 16 Kernen (2 Kerne: 2,3 s; F-801), der Renderer rastert auf bis zu acht. Großzügig für
 	// Runner mit wenigen Kernen.
 	ebeneAufbauZeit = 10 * time.Second
+	// freihandZweitesBildZeit: Befehlsaufbau eines zweiten Bilds ohne Änderung mit 20 Freihand-Strichen zu 4096
+	// Punkten (F-1038; ohne Merker 56 ms).
+	freihandZweitesBildZeit = 10 * time.Millisecond
 )

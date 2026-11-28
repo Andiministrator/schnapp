@@ -14,4 +14,6 @@ const (
 	editorGrenzBildZeit time.Duration = 0 // dort der Fall knapp unter bereichGrenze (F-812)
 	editorAufbauZeit    time.Duration = 0 // TestEditorBildUeberVielenNaehten (Befehlsaufbau)
 	ebeneAufbauZeit     time.Duration = 0 // erstes Bild mit Objektebene (F-787)
+	// TestFreihandMerkerZweitesBild (F-1038)
+	freihandZweitesBildZeit time.Duration = 0
 )

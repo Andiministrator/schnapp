@@ -54,3 +54,28 @@ vergleichbare Werte (`==`, `document.Gleich`); ein Feld mit einer Slice ginge ni
 ## Konsequenzen
 - Schnapp liest und schreibt Version 3; Dateien ohne Freihand-Strich bleiben bei 1 oder 2.
 - Punktgriffe (einzelne Punkte ziehen) wären eine eigene Karte.
+
+## Nachtrag 1 (28.11.2026, Kritik #333, F-1036, F-1037)
+
+Punkt 3 ändert sich:
+
+- **Beim Loslassen:** vereinfachen (Toleranz 0,5 Fensterpixel, im Original durch den Zoom geteilt), zweimal nach
+  Chaikin glätten, **danach noch einmal vereinfachen mit der halben Toleranz** und **auf 1/100 px runden**
+  (`document.FreihandAusZug`, `document.Gerundet`; gleich gewordene Nachbarn fallen weg). Chaikin vervierfacht die
+  Punkte, auf flachen Stücken liegen sie fast auf einer Geraden; das zweite Vereinfachen nimmt sie wieder heraus, die
+  Linie weicht um höchstens 0,25 Fensterpixel vom geglätteten Zug ab. Gespeichert werden **höchstens so viele Punkte
+  wie roh**; ergäbe das Glätten mehr (kurze Züge mit spitzen Ecken), bleibt der vereinfachte, ungeglättete Zug.
+  `MaxFreihandPunkte` begrenzt zuletzt wie bisher.
+- **Verschieben** rundet ebenfalls auf 1/100 px (`Freihand.Verschoben`), sonst trüge ein Zoom wie 0,73 wieder Zahlen
+  mit 17 Stellen in die Datei.
+- **Während eines sehr langen Zugs** werden die Rohpunkte bei `MaxFreihandPunkte` nicht mehr gleichmäßig ausgedünnt,
+  sondern auf höchstens die Hälfte vereinfacht (`canvas.rohVerdichtet`: Toleranz 1/8 Fensterpixel, verdoppelt, bis es
+  reicht). Gleichmäßiges Ausdünnen nahm dem Anfang bei jeder Runde wieder die Hälfte seiner Punkte.
+- **Darstellung im SVG** (informativ, docs/format.md §8.9): `M` mit dem ersten Punkt, dann `l` mit den übrigen relativ
+  zum Vorgänger, alles in Hundertsteln aus den gerundeten Lagen (`fileformat.freihandPfad`).
+
+Gemessen (langer Zug, 4096 Rohpunkte, Zoom 1 und 0,73, mit und ohne Zittern): vorher 4096 Punkte, 32 bzw. 75 Byte je
+Punkt, 130 bzw. 306 KB je Strich; nachher 1142 bis 2189 Punkte, 25 bis 27 Byte je Punkt, höchstens 58 KB je Strich.
+Unter 20 Byte je Punkt ginge nur mit einer einzigen Kopie der Punkte (heute `s:punkte` und der Pfad); das wäre eine
+Änderung des Formats und ist nicht Teil dieses Nachtrags.
+

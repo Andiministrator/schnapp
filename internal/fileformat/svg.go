@@ -794,16 +794,8 @@ func (s *schreiber) freihandDarstellung(o document.Freihand) {
 		s.musterSVG(document.StrichAbschnitte(pts, o.Strich.Art, o.Strich.Breite), o.Strich.Breite, o.Strich.Farbe)
 		return
 	}
-	var d strings.Builder
-	for i, p := range pts {
-		if i == 0 {
-			d.WriteString("M" + punkt(p))
-		} else {
-			d.WriteString(" L" + punkt(p))
-		}
-	}
 	s.WriteString(`<path`)
-	s.attr("d", d.String())
+	s.attr("d", freihandPfad(pts))
 	s.attr("fill", "none")
 	s.farbeSVG("stroke", o.Strich.Farbe)
 	s.attr("stroke-width", zahl(o.Strich.Breite))
@@ -812,6 +804,31 @@ func (s *schreiber) freihandDarstellung(o document.Freihand) {
 	s.strichNaeherung(o.Strich, true)
 	s.WriteString(`/>`)
 }
+
+// freihandPfad schreibt den Linienzug als Pfad für Betrachter: der erste Punkt absolut, die übrigen relativ (`l`), alle
+// in ganzen Hundertsteln, gerechnet aus den auf 1/100 px gerundeten Lagen (kein Fehler sammelt sich an). Die Darstellung
+// ist informativ; s:punkte trägt die Lagen (F-1036: kürzere Zahlen als zweimal absolut).
+func freihandPfad(pts []document.Punkt) string {
+	var d strings.Builder
+	hundertstel := func(f float64) int64 { return int64(math.Round(f * 100)) }
+	var vx, vy int64
+	for i, p := range pts {
+		x, y := hundertstel(p.X), hundertstel(p.Y)
+		switch i {
+		case 0:
+			d.WriteString("M" + hundertstelText(x) + "," + hundertstelText(y))
+		case 1:
+			d.WriteString("l" + hundertstelText(x-vx) + "," + hundertstelText(y-vy))
+		default:
+			d.WriteString(" " + hundertstelText(x-vx) + "," + hundertstelText(y-vy))
+		}
+		vx, vy = x, y
+	}
+	return d.String()
+}
+
+// hundertstelText schreibt n/100 in der kürzesten Form (-210 → -2.1).
+func hundertstelText(n int64) string { return strconv.FormatFloat(float64(n)/100, 'f', -1, 64) }
 
 func (l *leser) farbe(name string) color.NRGBA {
 	v := l.text(name)

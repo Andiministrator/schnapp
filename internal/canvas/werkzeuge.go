@@ -544,7 +544,7 @@ func (s *Sitzung) zieheFrei(a, b, p document.Punkt, mult bool) document.Objekt {
 	default:
 		if b.Minus(s.freiRoh[len(s.freiRoh)-1]).Laenge()*s.Abb.Zoom >= freiAbstand {
 			if len(s.freiRoh) >= document.MaxFreihandPunkte {
-				s.freiRoh = document.Ausgeduennt(s.freiRoh, document.MaxFreihandPunkte/2)
+				s.freiRoh = rohVerdichtet(s.freiRoh, freiToleranz/4/s.Abb.Zoom)
 			}
 			s.freiRoh = append(s.freiRoh, b)
 		}
@@ -561,6 +561,20 @@ func (s *Sitzung) zieheFrei(a, b, p document.Punkt, mult bool) document.Objekt {
 		f.Mischung = document.MischMultiplizieren
 	}
 	return f
+}
+
+// rohVerdichtet bringt die rohen Punkte eines sehr langen Zugs auf höchstens MaxFreihandPunkte/2: vereinfachen mit der
+// Toleranz tol (Original), die sich verdoppelt, bis es reicht. Die Form bleibt überall gleich gut erhalten; gleichmäßiges
+// Ausdünnen nahm dem Anfang bei jeder Runde wieder die Hälfte (F-1037). Weil jede Runde mindestens halbiert, bleibt der
+// Aufwand je Ereignis im Mittel klein.
+func rohVerdichtet(roh []document.Punkt, tol float64) []document.Punkt {
+	for {
+		v := document.Vereinfacht(roh, tol)
+		if len(v) <= document.MaxFreihandPunkte/2 {
+			return v
+		}
+		tol *= 2
+	}
 }
 
 // umschaltEnde liefert den Endpunkt (Original) eines Pfeils oder Kastens mit gedrückter Umschalttaste. Gerastet wird in
