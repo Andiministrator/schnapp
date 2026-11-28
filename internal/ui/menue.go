@@ -308,7 +308,10 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 	case aktSpeichernUnter:
 		return func(layout.Context) { e.speichernUnterStarten() }
 	case aktNeueAufnahme:
-		return func(layout.Context) { e.neueAufnahme() }
+		return func(layout.Context) { e.neueAufnahme(0) }
+	case aktNeueAufnahme3, aktNeueAufnahme5, aktNeueAufnahme10:
+		sek := neueAufnahmeStufen[a-aktNeueAufnahme3]
+		return func(layout.Context) { e.neueAufnahme(sek) }
 	case aktRueckgaengig:
 		return func(layout.Context) { e.rueckgaengig() }
 	case aktWiederholen:

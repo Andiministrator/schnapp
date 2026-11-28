@@ -1,0 +1,26 @@
+# Sichtprobe ADR-0042 Nachtrag 2 (Karte #396): Menü Datei mit „Neue Aufnahme in 3 s / 5 s / 10 s“, Start mit Verzögerung.
+# Aufruf: scripts/probe.sh --sprache de --ende 30 --drehbuch scripts/drehbuecher/neue-aufnahme-verzoegert-396.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 1200 --hoehe 800
+# Erwartet:
+#  01 Menü Datei offen: unter „Neue Aufnahme“ (Strg+N) die Einträge „Neue Aufnahme in 3 s“, „… 5 s“, „… 10 s“ ohne Kürzel,
+#     danach „Neu aus Zwischenablage“.
+#  02 „Neue Aufnahme in 5 s“ per Tastatur gewählt (der Cursor steht nach dem Öffnen auf „Neue Aufnahme“): Fußzeile
+#     „Neue Aufnahme startet …“; noch kein zweites Fenster. stderr.txt: „Countdown-Hinweis: … deadline exceeded“ (kein
+#     Benachrichtigungsdienst im virtuellen KWin), der Countdown wartet trotzdem.
+#  03 Rund 7 s später: ein zweites Editorfenster mit der Aufnahme (im Probe-Build wählt das Overlay sofort den ersten
+#     Monitor). Den Countdown-Hinweis und „Abbrechen“ zeigt nur eine echte Plasma-Sitzung (Echtprobe am Sprintende).
+#     Legt eine Aufnahme in tmp/probe/home ab.
+warte 800
+taste F10
+warte 300
+taste Runter
+warte 400
+foto 01-menue-datei
+taste Runter
+warte 150
+taste Runter
+warte 150
+taste Return
+warte 600
+foto 02-gestartet
+warte 7000
+foto 03-neues-fenster

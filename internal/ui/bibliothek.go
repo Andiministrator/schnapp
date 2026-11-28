@@ -693,7 +693,7 @@ func (e *editor) bibSetzeZeitraum(z libview.Zeitraum) {
 // Leisten darunter ändert, wirkt nicht (ADR-0036 Punkt 4).
 func bibliothekErlaubt(a aktion) bool {
 	switch a {
-	case aktSpeichern, aktSpeichernUnter, aktNeueAufnahme, aktEinstellungen, aktSchliessen, aktBibliothek, aktTastenkuerzel, aktUeber, aktNeuAusZwischenablage,
+	case aktSpeichern, aktSpeichernUnter, aktNeueAufnahme, aktNeueAufnahme3, aktNeueAufnahme5, aktNeueAufnahme10, aktEinstellungen, aktSchliessen, aktBibliothek, aktTastenkuerzel, aktUeber, aktNeuAusZwischenablage,
 		aktBibOeffnen, aktBibSchlagworte, aktBibPapierkorb, aktBibSuchen:
 		return true
 	}

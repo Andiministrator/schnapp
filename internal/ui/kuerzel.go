@@ -90,6 +90,10 @@ const (
 	// startet eine Aufnahme in einem eigenen Prozess.
 	aktSpeichernUnter
 	aktNeueAufnahme
+	// „New capture in 3 s / 5 s / 10 s“ (ADR-0042 Nachtrag 2): wie aktNeueAufnahme mit Verzögerung, ohne Kürzel.
+	aktNeueAufnahme3
+	aktNeueAufnahme5
+	aktNeueAufnahme10
 )
 
 // taste ist ein Tastenkürzel des Editors. Genau eines gilt: akt (Handlung), werkzeug (wählt ein Werkzeug, hatWerkzeug)

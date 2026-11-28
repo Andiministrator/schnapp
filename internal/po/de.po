@@ -2231,6 +2231,9 @@ msgstr "Speichern unter"
 msgid "New capture"
 msgstr "Neue Aufnahme"
 
+msgid "New capture in %d s"
+msgstr "Neue Aufnahme in %d s"
+
 msgid "Open / new capture"
 msgstr "Öffnen / neue Aufnahme"
 

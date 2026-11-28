@@ -9,11 +9,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"gioui.org/layout"
 	"image"
 	"image/color"
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -305,13 +308,21 @@ func TestKopieMetadatenOhneArbeitsdatei(t *testing.T) {
 
 // --- Neue Aufnahme (Punkt 7) ---
 
-// mitNeuerAufnahme ersetzt Programm und Start; die gestarteten Programme werden gesammelt.
+// mitNeuerAufnahme ersetzt Programm und Start; die gestarteten Programme werden gesammelt, ihre Argumente in
+// neueAufnahmeGesehen.
+var neueAufnahmeGesehen [][]string
+
 func mitNeuerAufnahme(t *testing.T, startFehler error) *[]string {
 	t.Helper()
 	var gestartet []string
+	neueAufnahmeGesehen = nil
 	altP, altS := neueAufnahmeProgramm, neueAufnahmeStart
 	neueAufnahmeProgramm = func() (string, error) { return "/pfad/zu/schnapp", nil }
-	neueAufnahmeStart = func(p string) error { gestartet = append(gestartet, p); return startFehler }
+	neueAufnahmeStart = func(p string, args []string) error {
+		gestartet = append(gestartet, p)
+		neueAufnahmeGesehen = append(neueAufnahmeGesehen, args)
+		return startFehler
+	}
 	t.Cleanup(func() { neueAufnahmeProgramm, neueAufnahmeStart = altP, altS })
 	return &gestartet
 }
@@ -391,7 +402,8 @@ func TestMenueDateiReihenfolge(t *testing.T) {
 	for _, en := range l.e.menueEintraegeRoh(menueDatei) {
 		akt = append(akt, en.akt)
 	}
-	soll := []aktion{aktOeffnen, aktNeueAufnahme, aktNeuAusZwischenablage, aktSpeichern, aktSpeichernUnter, aktExport,
+	soll := []aktion{aktOeffnen, aktNeueAufnahme, aktNeueAufnahme3, aktNeueAufnahme5, aktNeueAufnahme10,
+		aktNeuAusZwischenablage, aktSpeichern, aktSpeichernUnter, aktExport,
 		aktBildKopieren, aktEinstellungen, aktBibliothek, aktSchliessen}
 	if len(akt) != len(soll) {
 		t.Fatalf("Datei: %v", akt)
@@ -567,7 +579,7 @@ func TestNeueAufnahmeStartEcht(t *testing.T) {
 	if err := os.WriteFile(skript, []byte("#!/bin/sh\nprintf %s \"$1\" > "+marke+"\n"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := neueAufnahmeStart(skript); err != nil {
+	if err := neueAufnahmeStart(skript, neueAufnahmeArgumente(0)); err != nil {
 		t.Fatal(err)
 	}
 	ende := time.Now().Add(5 * time.Second)
@@ -580,7 +592,7 @@ func TestNeueAufnahmeStartEcht(t *testing.T) {
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	if err := neueAufnahmeStart(filepath.Join(ordner, "fehlt")); err == nil {
+	if err := neueAufnahmeStart(filepath.Join(ordner, "fehlt"), neueAufnahmeArgumente(0)); err == nil {
 		t.Error("fehlendes Programm ohne Fehler")
 	}
 }
@@ -705,6 +717,37 @@ func TestStderrWeitergeben(t *testing.T) {
 	for _, f := range []struct{ debug, pipe, soll bool }{{false, false, false}, {true, false, true}, {true, true, false}, {false, true, false}} {
 		if g := stderrWeitergeben(f.debug, f.pipe); g != f.soll {
 			t.Errorf("%+v: %v", f, g)
+		}
+	}
+}
+
+// ADR-0042 Nachtrag 2: Die Einträge „New capture in 3/5/10 s“ starten den neuen Prozess mit --delay; „New capture“
+// ohne, dann gilt [capture] delay. Graue Einträge folgen „New capture“.
+func TestNeueAufnahmeMitVerzoegerung(t *testing.T) {
+	t.Setenv("WAYLAND_SOCKET", "")
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 2)
+	mitNeuerAufnahme(t, nil)
+	alt := neueAufnahmeSperre
+	neueAufnahmeSperre = 0
+	t.Cleanup(func() { neueAufnahmeSperre = alt })
+	for i, a := range []aktion{aktNeueAufnahme, aktNeueAufnahme3, aktNeueAufnahme5, aktNeueAufnahme10} {
+		l.e.neuGestartet = time.Time{}
+		l.e.fuehreAus(layout.Context{}, a, true)
+		soll := []string{NeueAufnahmeArgument}
+		if i > 0 {
+			soll = append(soll, fmt.Sprintf("--delay=%d", neueAufnahmeStufen[i-1]))
+		}
+		if len(neueAufnahmeGesehen) != i+1 || !slices.Equal(neueAufnahmeGesehen[i], soll) {
+			t.Fatalf("%v: Argumente %v, Soll %v", a, neueAufnahmeGesehen, soll)
+		}
+	}
+	if s := neueAufnahmeStufen; s != [3]int{3, 5, 10} {
+		t.Errorf("Stufen %v", s)
+	}
+	t.Setenv("WAYLAND_SOCKET", "7")
+	for _, a := range []aktion{aktNeueAufnahme3, aktNeueAufnahme5, aktNeueAufnahme10} {
+		if en := eintragVon(l.e.menueEintraegeRoh(menueDatei), a); en.an || en.erklaerung == "" {
+			t.Errorf("%v mit geerbtem Socket: an %v, Erklärung %q", a, en.an, en.erklaerung)
 		}
 	}
 }

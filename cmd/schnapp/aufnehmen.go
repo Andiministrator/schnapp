@@ -53,8 +53,9 @@ type anschluesse struct {
 	// schutz prüft vor jeder Aufnahme und vor dem Editor, ob der Lauf erlaubt ist (Probe-Build nur im virtuellen KWin,
 	// F-229); ein Fehler beendet den Lauf mit exitFehler, bevor etwas aufgenommen oder geöffnet wird. nil = keine Prüfung.
 	schutz func() error
-	// warte wartet vor der Aufnahme sek Sekunden mit sichtbarem Countdown (ADR-0042); nil = nicht warten.
-	warte func(sek int, fehler io.Writer)
+	// warte wartet vor der Aufnahme sek Sekunden mit sichtbarem Countdown (ADR-0042); nil = nicht warten. true heißt
+	// abgebrochen (Knopf „Cancel“ am Hinweis, ADR-0042 Nachtrag 2).
+	warte func(sek int, fehler io.Writer) bool
 }
 
 func echteAnschluesse() anschluesse {
@@ -161,7 +162,10 @@ type abgelegt struct {
 // Aufnahme. Alles, was die Aufnahme braucht (Verbindung zu KWin, Bilder aller Monitore), lebt nur bis zur Rückkehr.
 func (an anschluesse) aufnehmen(t Auftrag, aus, fehler io.Writer) (int, *abgelegt) {
 	if t.Verzoegerung > 0 && an.warte != nil {
-		an.warte(t.Verzoegerung, fehler) // vor der Verbindung zu KWin: das Bild entsteht erst nach dem Warten
+		// vor der Verbindung zu KWin: das Bild entsteht erst nach dem Warten
+		if an.warte(t.Verzoegerung, fehler) {
+			return exitAbgebrochen, nil // wie Esc im Overlay: nichts abgelegt, kein Editor
+		}
 	}
 	q, err := an.quelle()
 	if err != nil {

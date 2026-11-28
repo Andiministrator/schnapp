@@ -49,13 +49,24 @@ func Ersetze(ctx context.Context, ersetzt uint32, titel, text string) (id uint32
 	return schicke(ctx, ersetzt, titel, text, 1, kurz)
 }
 
+// ErsetzeMitAktion ist Ersetze mit einem Knopf am Hinweis: schluessel ist die Kennung der Aktion, die ActionInvoked
+// meldet (Aktionen), beschriftung der sichtbare Text (ADR-0042 Nachtrag 2: „Cancel“ am Countdown).
+func ErsetzeMitAktion(ctx context.Context, ersetzt uint32, titel, text, schluessel, beschriftung string) (id uint32, fehler error) {
+	defer errprefix.Defer("notify", &fehler)
+	return schicke(ctx, ersetzt, titel, text, 1, kurz, schluessel, beschriftung)
+}
+
 // kurz ist die Anzeigedauer eines Hinweises, den Ersetze jede Sekunde erneuert.
 const kurz int32 = 2000
 
-func schicke(ctx context.Context, ersetzt uint32, titel, text string, dringlich byte, ms int32) (uint32, error) {
+// schicke ruft Notify; aktionen sind Paare aus Kennung und Beschriftung (Spezifikation: actions).
+func schicke(ctx context.Context, ersetzt uint32, titel, text string, dringlich byte, ms int32, aktionen ...string) (uint32, error) {
 	ctx, ende := context.WithTimeout(ctx, frist)
 	defer ende()
-	args := []any{"Schnapp", ersetzt, "schnapp", titel, text, []string{}, map[string]dbus.Variant{
+	if aktionen == nil {
+		aktionen = []string{}
+	}
+	args := []any{"Schnapp", ersetzt, "schnapp", titel, text, aktionen, map[string]dbus.Variant{
 		"urgency":       dbus.MakeVariant(dringlich),
 		"desktop-entry": dbus.MakeVariant("schnapp"),
 	}, ms}
@@ -82,6 +93,82 @@ func Schliesse(ctx context.Context, id uint32) (fehler error) {
 	defer ende()
 	_, err := ruf(ctx, schliessen, []any{id})
 	return err
+}
+
+// Aktion ist ein gemeldeter Klick auf einen Knopf eines Hinweises (Signal ActionInvoked).
+type Aktion struct {
+	ID         uint32
+	Schluessel string
+}
+
+// abonniere ist die Naht für Tests: meldet ActionInvoked auf aus, bis ctx endet. nil = echter Session-Bus.
+var abonniere func(ctx context.Context, aus chan<- Aktion) error
+
+// Aktionen abonniert ActionInvoked des Benachrichtigungsdienstes (ADR-0042 Nachtrag 2) und liefert die Klicks auf
+// Knöpfe aller Hinweise; wer nur seine eigenen will, vergleicht die Kennung. Das Abonnement steht, wenn Aktionen ohne
+// Fehler zurückkehrt, und endet mit ctx; danach kommt nichts mehr, der Kanal bleibt offen.
+func Aktionen(ctx context.Context) (aus <-chan Aktion, fehler error) {
+	defer errprefix.Defer("notify", &fehler)
+	k := make(chan Aktion, 4)
+	f := abonniere
+	if f == nil {
+		f = echtAbonniere
+	}
+	if err := f(ctx, k); err != nil {
+		return nil, err
+	}
+	return k, nil
+}
+
+func echtAbonniere(ctx context.Context, aus chan<- Aktion) error {
+	c, err := dbus.SessionBus()
+	if err != nil {
+		return err
+	}
+	regel := []dbus.MatchOption{dbus.WithMatchObjectPath(pfad), dbus.WithMatchInterface(dienst),
+		dbus.WithMatchMember("ActionInvoked")}
+	fctx, ende := context.WithTimeout(ctx, frist)
+	defer ende()
+	if err := c.AddMatchSignalContext(fctx, regel...); err != nil { // kehrt erst zurück, wenn der Bus die Regel kennt
+		return err
+	}
+	roh := make(chan *dbus.Signal, 16)
+	c.Signal(roh)
+	go func() {
+		defer func() {
+			c.RemoveSignal(roh)
+			_ = c.RemoveMatchSignal(regel...)
+		}()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case sig := <-roh:
+				a, ok := aktionAus(sig)
+				if !ok {
+					continue
+				}
+				select {
+				case aus <- a:
+				default: // niemand liest: verwerfen statt den Bus zu blockieren
+				}
+			}
+		}
+	}()
+	return nil
+}
+
+// aktionAus liest ein Signal ActionInvoked (Kennung uint32, Schlüssel string); alles andere zählt nicht.
+func aktionAus(sig *dbus.Signal) (Aktion, bool) {
+	if sig == nil || sig.Name != dienst+".ActionInvoked" || len(sig.Body) != 2 {
+		return Aktion{}, false
+	}
+	id, ok1 := sig.Body[0].(uint32)
+	sch, ok2 := sig.Body[1].(string)
+	if !ok1 || !ok2 {
+		return Aktion{}, false
+	}
+	return Aktion{ID: id, Schluessel: sch}, true
 }
 
 func ruf(ctx context.Context, m string, args []any) ([]any, error) {

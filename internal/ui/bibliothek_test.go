@@ -226,7 +226,8 @@ func TestBibliothekSperrtDasBild(t *testing.T) {
 	}
 	for _, en := range l.e.menueEintraegeVon(menueDatei) {
 		if gilt := en.akt == aktEinstellungen || en.akt == aktSchliessen || en.akt == aktSpeichern || en.akt == aktBibliothek ||
-			en.akt == aktSpeichernUnter || en.akt == aktNeueAufnahme; gilt != en.an { // ADR-0046 Punkte 6 und 7
+			en.akt == aktSpeichernUnter || en.akt == aktNeueAufnahme || en.akt == aktNeueAufnahme3 || en.akt == aktNeueAufnahme5 ||
+			en.akt == aktNeueAufnahme10; gilt != en.an { // ADR-0046 Punkte 6 und 7, ADR-0042 Nachtrag 2
 			t.Errorf("Datei, %s: an %v", en.text, en.an)
 		}
 	}

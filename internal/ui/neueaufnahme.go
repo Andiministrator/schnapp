@@ -10,6 +10,7 @@ package ui
 import (
 	"os"
 	"os/exec"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -28,9 +29,22 @@ var neueAufnahmeSperre = 3 * time.Second
 // neueAufnahmeProgramm liefert das eigene Programm; Naht für Tests.
 var neueAufnahmeProgramm = os.Executable
 
-// neueAufnahmeStart startet programm abgelöst und holt es nach dem Ende ab (kein Zombie); Naht für Tests.
-var neueAufnahmeStart = func(programm string) error {
-	c := exec.Command(programm, NeueAufnahmeArgument)
+// neueAufnahmeStufen sind die Verzögerungen der Einträge „New capture in N s“ im Menü Datei, wie die Stufen der
+// Einstellungstafel (ADR-0042 Nachtrag 2).
+var neueAufnahmeStufen = [...]int{3, 5, 10}
+
+// neueAufnahmeArgumente liefert die Argumente des neuen Prozesses: sek > 0 gibt --delay=SEK mit (vor [capture] delay),
+// sonst gilt die Einstellung (ADR-0042 Nachtrag 2 Punkt 2).
+func neueAufnahmeArgumente(sek int) []string {
+	if sek > 0 {
+		return []string{NeueAufnahmeArgument, "--delay=" + strconv.Itoa(sek)}
+	}
+	return []string{NeueAufnahmeArgument}
+}
+
+// neueAufnahmeStart startet programm abgelöst mit args und holt es nach dem Ende ab (kein Zombie); Naht für Tests.
+var neueAufnahmeStart = func(programm string, args []string) error {
+	c := exec.Command(programm, args...)
 	c.Dir = "/"
 	// Eigene Sitzung: Ein Strg+C im Terminal dieses Fensters trifft die neue Aufnahme nicht, und sie überlebt das
 	// Schließen dieses Fensters. Ein- und Ausgabe leer (der neue Prozess schreibt den Pfad der Aufnahme auf stdout);
@@ -59,8 +73,9 @@ func neueAufnahmeGrau() string {
 	return ""
 }
 
-// neueAufnahme startet die neue Aufnahme; scheitert der Start, sagt es die Fußzeile.
-func (e *editor) neueAufnahme() {
+// neueAufnahme startet die neue Aufnahme, mit sek > 0 nach so vielen Sekunden (sonst nach [capture] delay); scheitert
+// der Start, sagt es die Fußzeile.
+func (e *editor) neueAufnahme(sek int) {
 	if neueAufnahmeGrau() != "" || e.erzwungen || e.s.SignalVorgemerkt() {
 		return
 	}
@@ -69,7 +84,7 @@ func (e *editor) neueAufnahme() {
 	}
 	programm, err := neueAufnahmeProgramm()
 	if err == nil {
-		err = neueAufnahmeStart(programm)
+		err = neueAufnahmeStart(programm, neueAufnahmeArgumente(sek))
 	}
 	if err != nil {
 		diagnoseEditor("Neue Aufnahme: %v", err)

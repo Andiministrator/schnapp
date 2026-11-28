@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/i18n"
@@ -64,18 +65,20 @@ func main() {
 	})
 }
 
-// neueAufnahmeArgs: Mit genau ui.NeueAufnahmeArgument (Strg+N im Editor, ADR-0046 Punkt 7) schließt der neue Prozess
+// neueAufnahmeArgs: Mit ui.NeueAufnahmeArgument (Strg+N im Editor, ADR-0046 Punkt 7) schließt der neue Prozess
 // vor allem anderen die vom Editor ohne CLOEXEC geerbten Deskriptoren ab 3 (wie der Halter, F-189) und nimmt dann auf
-// wie ohne Argumente. Jede andere Liste bleibt, wie sie ist.
+// wie ohne Argumente; folgt genau ein --delay=…, nimmt er damit auf (ADR-0042 Nachtrag 2, geprüft wie jede
+// Befehlszeile). Jede andere Liste bleibt, wie sie ist.
 func neueAufnahmeArgs(args []string, schliesse func(ab int) []int) []string {
-	if len(args) != 1 || args[0] != ui.NeueAufnahmeArgument {
+	if len(args) == 0 || args[0] != ui.NeueAufnahmeArgument ||
+		len(args) > 2 || len(args) == 2 && !strings.HasPrefix(args[1], "--delay=") {
 		return args
 	}
 	zu := schliesse(3)
 	if os.Getenv("SCHNAPP_DEBUG") != "" {
 		fmt.Fprintf(os.Stderr, "[schnapp] Neue Aufnahme: %d geerbte Deskriptoren ohne CLOEXEC geschlossen: %v\n", len(zu), zu)
 	}
-	return nil
+	return args[1:]
 }
 
 // starteSprache setzt die Sprache der Oberfläche: aus [general] language, sonst aus der Umgebung (ADR-0014 Nachtrag

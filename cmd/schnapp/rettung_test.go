@@ -3,7 +3,10 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"github.com/Andiministrator/schnapp/internal/notify"
 	"image"
 	"os"
 	"path/filepath"
@@ -23,6 +26,9 @@ func TestMain(m *testing.M) {
 	// Die Tests der Dateien von außen prüfen den Rückfall „erstes Speichern legt ab“ (ADR-0016 Punkt 5); die Übernahme
 	// beim Öffnen (Nachtrag 10) schalten nur ihre eigenen Tests ein (importieren_test.go).
 	importBeimOeffnen = false
+	// Kein Test abonniert die Knöpfe echter Hinweise auf dem Session-Bus (ADR-0042 Nachtrag 2); die eigenen Tests des
+	// Abbrechens setzen eine Attrappe.
+	countdownAbo = func(context.Context) (<-chan notify.Aktion, error) { return nil, errors.New("kein Abo im Test") }
 	ort, err := os.MkdirTemp("", "schnapp-state-")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

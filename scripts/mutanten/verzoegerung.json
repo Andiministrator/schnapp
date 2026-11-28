@@ -31,8 +31,8 @@
     "name": "VZ5 Countdown schließt den Hinweis nicht",
     "datei": "cmd/schnapp/countdown.go",
     "paket": "./cmd/schnapp",
-    "alt": "\tif id != 0 {\n\t\tctx, abbrechen",
-    "neu": "\tif false {\n\t\tctx, abbrechen"
+    "alt": "\tif id != 0 {\n\t\tschliessen()",
+    "neu": "\tif false {\n\t\tschliessen()"
   },
   {
     "name": "VZ6 letzter Hinweis bleibt bis zum Ende",

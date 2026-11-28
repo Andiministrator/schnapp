@@ -233,6 +233,10 @@ msgstr ""
 msgid "Cannot read the annotation list %s: %s"
 msgstr ""
 
+#: cmd/schnapp/countdown.go internal/ui/einstellungen.go
+msgid "Cancel"
+msgstr ""
+
 #: cmd/schnapp/countdown.go
 msgid "Screenshot"
 msgstr ""
@@ -1607,10 +1611,6 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
-#: internal/ui/einstellungen.go
-msgid "Cancel"
-msgstr ""
-
 #: internal/ui/einstellungen.go internal/ui/oberflaeche.go
 msgid "Save"
 msgstr ""
@@ -2428,6 +2428,10 @@ msgstr ""
 
 #: internal/ui/oberflaeche.go
 msgid "New capture"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "New capture in %d s"
 msgstr ""
 
 #: internal/ui/oberflaeche.go

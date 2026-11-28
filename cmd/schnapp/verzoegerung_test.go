@@ -74,7 +74,7 @@ func TestAufnahmeWartetVorDerQuelle(t *testing.T) {
 	var folge []string
 	q := l.an.quelle
 	l.an.quelle = func() (capture.Quelle, error) { folge = append(folge, "quelle"); return q() }
-	l.an.warte = func(sek int, _ io.Writer) { folge = append(folge, "warte "+string(rune('0'+sek))) }
+	l.an.warte = func(sek int, _ io.Writer) bool { folge = append(folge, "warte "+string(rune('0'+sek))); return false }
 	l.fuehre(Auftrag{Modus: ModusFenster, Verzoegerung: 3})
 	if strings.Join(folge, ",") != "warte 3,quelle" {
 		t.Errorf("Reihenfolge %v", folge)
@@ -138,5 +138,19 @@ func TestCountdown(t *testing.T) {
 	}
 	if aufrufe != 1 { // nach dem ersten Fehler keine weiteren Versuche (F-938)
 		t.Errorf("ohne Dienst %d Versuche, Soll 1", aufrufe)
+	}
+}
+
+// ADR-0042 Nachtrag 2: Bricht der Countdown ab („Cancel“ am Hinweis), endet die Aufnahme wie ein Abbruch im Overlay:
+// Exit 3, keine Verbindung zu KWin, nichts ausgegeben.
+func TestAufnahmeNachAbbruchImCountdown(t *testing.T) {
+	l := neuerLauf(t)
+	quelle := false
+	q := l.an.quelle
+	l.an.quelle = func() (capture.Quelle, error) { quelle = true; return q() }
+	l.an.warte = func(int, io.Writer) bool { return true }
+	code, aus, _ := l.fuehre(Auftrag{Modus: ModusFenster, Verzoegerung: 3})
+	if code != exitAbgebrochen || quelle || aus != "" {
+		t.Errorf("Exit %d, Quelle %v, Ausgabe %q", code, quelle, aus)
 	}
 }

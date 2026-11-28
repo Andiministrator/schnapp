@@ -130,3 +130,64 @@ func TestErsetzeSchicktKennungUndNormal(t *testing.T) {
 		t.Errorf("Hinweise %v", gesehen[6])
 	}
 }
+
+// ADR-0042 Nachtrag 2: ErsetzeMitAktion schickt den Knopf als Paar aus Kennung und Beschriftung, sonst wie Ersetze;
+// Ersetze selbst schickt keine Aktion.
+func TestErsetzeMitAktion(t *testing.T) {
+	var gesehen []any
+	mitAttrappe(t, func(_ context.Context, args []any) ([]any, error) {
+		gesehen = args
+		return []any{uint32(4)}, nil
+	})
+	if id, err := ErsetzeMitAktion(context.Background(), 3, "T", "noch 2", "cancel", "Abbrechen"); err != nil || id != 4 {
+		t.Fatalf("Kennung %d, Fehler %v", id, err)
+	}
+	if a, ok := gesehen[5].([]string); !ok || len(a) != 2 || a[0] != "cancel" || a[1] != "Abbrechen" {
+		t.Errorf("Aktionen %v", gesehen[5])
+	}
+	if gesehen[1] != uint32(3) || gesehen[7] != kurz {
+		t.Errorf("Argumente %v", gesehen)
+	}
+	if _, err := Ersetze(context.Background(), 3, "T", "x"); err != nil {
+		t.Fatal(err)
+	}
+	if a, ok := gesehen[5].([]string); !ok || len(a) != 0 {
+		t.Errorf("Ersetze mit Aktionen %v", gesehen[5])
+	}
+}
+
+// ADR-0042 Nachtrag 2: Nur ActionInvoked mit Kennung und Schlüssel zählt.
+func TestAktionAus(t *testing.T) {
+	gut := &dbus.Signal{Name: dienst + ".ActionInvoked", Body: []any{uint32(7), "cancel"}}
+	if a, ok := aktionAus(gut); !ok || a != (Aktion{ID: 7, Schluessel: "cancel"}) {
+		t.Errorf("gut: %v %v", a, ok)
+	}
+	for name, sig := range map[string]*dbus.Signal{
+		"nil":          nil,
+		"anderes":      {Name: dienst + ".NotificationClosed", Body: []any{uint32(7), "cancel"}},
+		"kurz":         {Name: dienst + ".ActionInvoked", Body: []any{uint32(7)}},
+		"falscher Typ": {Name: dienst + ".ActionInvoked", Body: []any{int32(7), "cancel"}},
+	} {
+		if _, ok := aktionAus(sig); ok {
+			t.Errorf("%s angenommen", name)
+		}
+	}
+}
+
+// Aktionen reicht das Abonnement durch und liefert seinen Kanal; ein Fehler kommt mit Paketpräfix zurück.
+func TestAktionenAbonniert(t *testing.T) {
+	alt := abonniere
+	t.Cleanup(func() { abonniere = alt })
+	abonniere = func(_ context.Context, aus chan<- Aktion) error {
+		aus <- Aktion{ID: 1, Schluessel: "cancel"}
+		return nil
+	}
+	k, err := Aktionen(context.Background())
+	if err != nil || (<-k) != (Aktion{ID: 1, Schluessel: "cancel"}) {
+		t.Errorf("Fehler %v", err)
+	}
+	abonniere = func(context.Context, chan<- Aktion) error { return errors.New("kein Bus") }
+	if _, err := Aktionen(context.Background()); err == nil || err.Error() != "notify: kein Bus" {
+		t.Errorf("Fehler %v", err)
+	}
+}

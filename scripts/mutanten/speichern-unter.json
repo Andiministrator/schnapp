@@ -110,8 +110,8 @@
     "name": "SU16 bei offener Ansicht grau",
     "datei": "internal/ui/bibliothek.go",
     "paket": "./internal/ui",
-    "alt": "\tcase aktSpeichern, aktSpeichernUnter, aktNeueAufnahme, aktEinstellungen,",
-    "neu": "\tcase aktSpeichern, aktEinstellungen,"
+    "alt": "\tcase aktSpeichern, aktSpeichernUnter, aktNeueAufnahme, aktNeueAufnahme3, aktNeueAufnahme5, aktNeueAufnahme10, aktEinstellungen,",
+    "neu": "\tcase aktSpeichern, aktNeueAufnahme3, aktNeueAufnahme5, aktNeueAufnahme10, aktEinstellungen,"
   },
   {
     "name": "NA1 Strg+N fehlt",
@@ -124,7 +124,7 @@
     "name": "NA2 Start nicht aufgerufen",
     "datei": "internal/ui/neueaufnahme.go",
     "paket": "./internal/ui",
-    "alt": "\t\terr = neueAufnahmeStart(programm)",
+    "alt": "\t\terr = neueAufnahmeStart(programm, neueAufnahmeArgumente(sek))",
     "neu": "\t\t_ = programm"
   },
   {
@@ -229,8 +229,8 @@
     "name": "NA7 Start ohne internes Argument",
     "datei": "internal/ui/neueaufnahme.go",
     "paket": "./internal/ui",
-    "alt": "\tc := exec.Command(programm, NeueAufnahmeArgument)",
-    "neu": "\tc := exec.Command(programm)"
+    "alt": "\tc := exec.Command(programm, args...)",
+    "neu": "\tc := exec.Command(programm, args[1:]...)"
   },
   {
     "name": "NA8 internes Argument schließt nichts",

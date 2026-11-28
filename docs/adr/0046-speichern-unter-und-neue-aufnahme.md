@@ -111,7 +111,7 @@ entsteht je Monitor vor dem Editor, danach legt `cmd/schnapp` ab und öffnet den
    haltende Meldung, Wechsel während des Schreibens, Mehrfachstart, echter Start ohne Fenster, internes Argument.
 9. **Offen (eigene Karte):** Die Wahl der Verzögerung beim Start aus dem Menü (ADR-0042 Punkt 5) und eine Aktion
    „Abbrechen“ am Countdown-Hinweis (ADR-0042 Nachtrag 1 Punkt 3, F-941) kommen nicht mit dieser Karte; heute gilt
-   `[capture] delay`.
+   `[capture] delay`. — Erledigt mit Karte #396, ADR-0042 Nachtrag 2.
 
 ## Nachtrag 2 (28.11.2026): Verify und Doku-QA der Sitzung (F-1018 bis F-1022)
 

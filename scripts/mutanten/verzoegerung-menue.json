@@ -1,0 +1,94 @@
+[
+  {
+    "name": "VM1 Start ohne --delay",
+    "datei": "internal/ui/neueaufnahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tif sek > 0 {\n\t\treturn []string{NeueAufnahmeArgument",
+    "neu": "\tif false {\n\t\treturn []string{NeueAufnahmeArgument"
+  },
+  {
+    "name": "VM2 Menü nimmt immer die erste Stufe",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "sek := neueAufnahmeStufen[a-aktNeueAufnahme3]",
+    "neu": "sek := neueAufnahmeStufen[0]"
+  },
+  {
+    "name": "VM3 Kind verwirft --delay",
+    "datei": "cmd/schnapp/main.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\treturn args[1:]\n}",
+    "neu": "\treturn nil\n}"
+  },
+  {
+    "name": "VM4 Kind nimmt jedes zweite Argument",
+    "datei": "cmd/schnapp/main.go",
+    "paket": "./cmd/schnapp",
+    "alt": "len(args) == 2 && !strings.HasPrefix(args[1], \"--delay=\")",
+    "neu": "len(args) == 2 && !strings.HasPrefix(args[1], \"\")"
+  },
+  {
+    "name": "VM5 Countdown überhört Abbrechen",
+    "datei": "cmd/schnapp/countdown.go",
+    "paket": "./cmd/schnapp",
+    "alt": "if id != 0 && a.ID == id && a.Schluessel == aktionAbbrechen {",
+    "neu": "if id != 0 && a.ID == id && a.Schluessel == \"\" {"
+  },
+  {
+    "name": "VM6 Abbrechen eines fremden Hinweises zählt",
+    "datei": "cmd/schnapp/countdown.go",
+    "paket": "./cmd/schnapp",
+    "alt": "if id != 0 && a.ID == id && a.Schluessel == aktionAbbrechen {",
+    "neu": "if id != 0 && a.Schluessel == aktionAbbrechen {"
+  },
+  {
+    "name": "VM7 Aufnahme nach Abbruch",
+    "datei": "cmd/schnapp/aufnehmen.go",
+    "paket": "./cmd/schnapp",
+    "alt": "if an.warte(t.Verzoegerung, fehler) {",
+    "neu": "if an.warte(t.Verzoegerung, fehler) && false {"
+  },
+  {
+    "name": "VM8 Hinweis bleibt nach Abbruch",
+    "datei": "cmd/schnapp/countdown.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\t\t\tschliessen()\n\t\t\treturn true",
+    "neu": "\t\t\treturn true"
+  },
+  {
+    "name": "VM9 Hinweis ohne Knopf",
+    "datei": "cmd/schnapp/countdown.go",
+    "paket": "./cmd/schnapp",
+    "alt": "return countdownMitKnopf(ctx, id, titel, text, aktionAbbrechen, i18n.T(\"Cancel\"))",
+    "neu": "return countdownMitKnopf(ctx, id, titel, text, \"\", i18n.T(\"Cancel\"))"
+  },
+  {
+    "name": "VM10 Notify ohne Aktionen",
+    "datei": "internal/notify/notify.go",
+    "paket": "./internal/notify",
+    "alt": "\targs := []any{\"Schnapp\", ersetzt, \"schnapp\", titel, text, aktionen,",
+    "neu": "\targs := []any{\"Schnapp\", ersetzt, \"schnapp\", titel, text, []string{},"
+  },
+  {
+    "name": "VM11 fremdes Signal als Aktion",
+    "datei": "internal/notify/notify.go",
+    "paket": "./internal/notify",
+    "alt": "if sig == nil || sig.Name != dienst+\".ActionInvoked\" || len(sig.Body) != 2 {",
+    "neu": "if sig == nil || len(sig.Body) != 2 {"
+  },
+  {
+    "name": "VM12 verzögerte Aufnahme in der Bibliothek grau",
+    "datei": "internal/ui/bibliothek.go",
+    "paket": "./internal/ui",
+    "alt": "aktNeueAufnahme, aktNeueAufnahme3, aktNeueAufnahme5, aktNeueAufnahme10, aktEinstellungen,",
+    "neu": "aktNeueAufnahme, aktEinstellungen,"
+  },
+  {
+    "name": "VM13 Ohne Abo kein Countdown-Schlaf",
+    "datei": "cmd/schnapp/countdown.go",
+    "paket": "./cmd/schnapp",
+    "timeout": "120s",
+    "alt": "\t\tif ab == nil {\n\t\t\tcountdownSchlaf(d)",
+    "neu": "\t\tif ab == nil {\n\t\t\t_ = d"
+  }
+]

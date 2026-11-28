@@ -44,3 +44,19 @@ Benachrichtigung in der Plasma-Sitzung offen.
 3. **Abbrechen (F-941, Entscheidung Claude):** Ein laufender Countdown lässt sich nur mit Strg+C im Terminal abbrechen;
    vom Tastenkürzel gestartet wartet er ab, beim Bereich führt Esc im Overlay heraus. Eine Aktion „Abbrechen“ am
    Hinweis (`ActionInvoked`) kommt erst mit dem Menü „Neue Aufnahme“ (#341) in Betracht; bis dahin bleibt es so.
+
+## Nachtrag 2 (28.11.2026, Karte #396; ADR-0046 Nachtrag 1 Punkt 9, F-941)
+1. **Verzögerung im Menü:** Datei → „New capture“ (Strg+N) nimmt wie bisher mit `[capture] delay` auf. Darunter stehen
+   drei Einträge „New capture in 3 s“, „… 5 s“, „… 10 s“ (ohne Kürzel, grau wie „New capture“). Die Menüzeile kennt
+   keine Untermenüs; drei Einträge bleiben per Tastatur und Maus gleich erreichbar, und die Stufen sind die der
+   Einstellungstafel (Punkt 2).
+2. **Übergabe an den neuen Prozess:** Der Editor startet das eigene Programm mit `--internal-new-capture --delay=SEK`.
+   `cmd/schnapp` nimmt nach dem Schließen der geerbten Deskriptoren genau diese zweite Form an und reicht sie an die
+   gewöhnliche Prüfung der Befehlszeile weiter (`--delay` geht vor `[capture] delay`, Punkt 2); jedes andere zweite
+   Argument bleibt ein gewöhnlicher Aufruf (kein Schließen).
+3. **„Abbrechen“ am Hinweis (löst Nachtrag 1 Punkt 3 ab):** Der Countdown-Hinweis trägt die Aktion `cancel` mit der
+   Beschriftung „Cancel“. Der Countdown abonniert vor dem ersten Hinweis das Signal `ActionInvoked` des
+   Benachrichtigungsdienstes; kommt es für einen seiner Hinweise mit `cancel`, schließt er den Hinweis und die Aufnahme
+   endet wie ein Abbruch im Overlay (Exit 3, nichts abgelegt, kein Editor). Gelingt das Abonnement nicht (kein Dienst,
+   Frist), wartet der Countdown wie bisher; Strg+C im Terminal bleibt. Das gilt für jeden Countdown, auch vom
+   Tastenkürzel oder aus dem Terminal.
