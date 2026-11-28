@@ -135,6 +135,16 @@ func TestWerkzeugleisteKlick(t *testing.T) {
 	if (r.Min.Y < farbe.Max.Y && letzte.Max.Y > farbe.Min.Y) || r.Min.X != farbe.Min.X {
 		t.Errorf("Farbliste hängt nicht am Farbfeld: %v bis %v, Farbfeld %v", r, letzte, farbe)
 	}
+	if r.Min.Y < farbe.Max.Y { // oben: dann nur, weil unten der Platz fehlt — in einem höheren Fenster hängt sie unten
+		l.taste(key.NameEscape, 0)
+		l.fenst = image.Pt(700, 1000)
+		l.setle()
+		_, hoch := werkzeugRahmen(l.gtx(), ws)
+		l.klick(mittenPunkt(vornVon(hoch)))
+		if r := l.e.menue.rahmen[0]; !l.e.menue.offen || r.Min.Y < hoch.Max.Y || r.Min.X != hoch.Min.X {
+			t.Errorf("700 × 1000: Farbliste hängt nicht unter dem Farbfeld: %v, Farbfeld %v", r, hoch)
+		}
+	}
 	l.e.s.Auswahl = 0
 	l.klick(l.e.menue.rahmen[2].Min.Add(l.e.menue.rahmen[2].Max).Div(2))
 	if l.e.menue.offen || l.e.s.Stil.Farbe != canvas.Beschriftungsfarben[2] {

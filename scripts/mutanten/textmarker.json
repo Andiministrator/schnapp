@@ -250,5 +250,26 @@
     "paket": "./internal/ui",
     "alt": "\t\tm := paint.PushMultiply(gtx.Ops, 1)",
     "neu": "\t\tm := paint.PushOpacity(gtx.Ops, 1)"
+  },
+  {
+    "name": "TM37 Textmarker rastet nicht ein",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\tb, s.linien = s.rastePunkt(b, s.neuID)\n\t\t}\n\t\to = NeuerTextmarker(",
+    "neu": "\t\t}\n\t\to = NeuerTextmarker("
+  },
+  {
+    "name": "TM38 annotate ersetzt die Ebene beim Schatten",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\t\teb := o.Ebenenwerte()",
+    "neu": "\t\t\teb := document.Ebene{}"
+  },
+  {
+    "name": "TM39 MCP-Schema ohne highlight",
+    "datei": "cmd/schnapp/mcp.go",
+    "paket": "./cmd/schnapp",
+    "alt": "\"enum\":[\"arrow\",\"highlight\",\"rect\"",
+    "neu": "\"enum\":[\"arrow\",\"rect\""
   }
 ]

@@ -386,3 +386,16 @@ func TestWendeTextmarker(t *testing.T) {
 		}
 	}
 }
+
+// F-1029 (Kritik #329 K-1): highlight mit shadow bleibt ein Textmarker (MitEbene ersetzte die ganze Ebene).
+func TestHighlightMitSchattenBleibtTextmarker(t *testing.T) {
+	d := dokument(t, 200, 100)
+	es := lies(t, `{"annotations":[{"type":"highlight","from":[10,20],"to":[150,20],"shadow":true}]}`)
+	if _, err := Wende(context.Background(), d, es); err != nil {
+		t.Fatal(err)
+	}
+	m := d.Objekte()[0].(document.Pfeil)
+	if !m.Ebenenwerte().Schatten.An || !m.Multipliziert() {
+		t.Errorf("Schatten %v, Mischung %v", m.Ebenenwerte().Schatten.An, m.Ebenenwerte().Mischung)
+	}
+}

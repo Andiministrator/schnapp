@@ -446,7 +446,8 @@ group opacity above) into what lies below by multiplying colour channels: with t
 source-over), computed on sRGB values like every blend in this format. On an opaque backdrop dark content stays dark and
 white takes the object's colour — a highlighter. Writers emit the attribute only for `multiply`. It belongs to format
 version 2: a writer emits `s:format="2"` if any object has it (section 12), and in a version-1 file it is ignored.
-Informative: Schnapp's highlighter is an arrow without heads carrying `s:mischung="multiply"`; the reference writer adds
+Informative: Schnapp's highlighter is an arrow without heads carrying `s:mischung="multiply"` (an arrow with heads and this
+attribute is shown as a highlighter too; Schnapp writes `s:ende="none"` for it); the reference writer adds
 `style="mix-blend-mode:multiply"` for viewers, in the working file and in the SVG export. Example:
 `testdata/format/highlighter`.
 

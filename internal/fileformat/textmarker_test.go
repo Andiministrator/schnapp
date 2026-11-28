@@ -66,3 +66,23 @@ func TestMischungRundlauf(t *testing.T) {
 		t.Errorf("Export ohne mix-blend-mode oder mit s:-Attribut: %s", e)
 	}
 }
+
+// F-1030 (Kritik #329 K-2): Kopieren als Objekte (AngabenSVG/LeseObjekte, ADR-0045) behält die Mischung.
+func TestMischungInDerZwischenablage(t *testing.T) {
+	d := beispielDok(t, 80, 60)
+	m := document.GeraderPfeil(document.Pt(4, 20), document.Pt(70, 20), document.Strich{Farbe: color.NRGBA{R: 255, G: 230, B: 40, A: 255}, Breite: 12})
+	m.Ende = document.KopfKeine
+	m.Ebene.Mischung = document.MischMultiplizieren
+	fuege(t, d, m)
+	n, err := d.NurObjekte([]int{d.Objekte()[0].Kennung()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, err := LeseObjekte(bytes.NewReader(AngabenSVG(n)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if o := g.Objekte(); len(o) != 1 || !o[0].Ebenenwerte().Multipliziert() {
+		t.Errorf("nach dem Einlesen: %+v", o)
+	}
+}

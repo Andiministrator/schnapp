@@ -172,3 +172,23 @@ func mustObjekt(t *testing.T, s *Sitzung, id int) document.Objekt {
 	}
 	return o
 }
+
+// F-1030 (Kritik #329 K-2): Der neue Textmarker rastet an Kanten ein (der Kasten der Sitzung endet bei 50) wie der
+// Pfeil (rastePunkt); Doppeln behält die Mischung.
+func TestTextmarkerRastetEinUndDoppeln(t *testing.T) {
+	s, _, _ := sitzung(t)
+	s.SetzeWerkzeug(WerkzeugTextmarker)
+	zieh(s, f(120, 90), f(52, 52))
+	m := letztes(t, s).(document.Pfeil)
+	if m.B.X != 50 {
+		t.Errorf("Ende %v, Soll an der rechten Kante des Kastens (x = 50)", m.B)
+	}
+	s.SetzeWerkzeug(WerkzeugAuswahl)
+	s.waehleNur(m.ID)
+	if !s.Doppeln() {
+		t.Fatal("Doppeln ohne Wirkung")
+	}
+	if k := letztes(t, s); k.Kennung() == m.ID || !k.Ebenenwerte().Multipliziert() {
+		t.Errorf("Kopie %+v", k)
+	}
+}

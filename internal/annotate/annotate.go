@@ -16,6 +16,7 @@ import (
 	"image/color"
 	"io"
 	"math"
+	"slices"
 	"strings"
 
 	"github.com/Andiministrator/schnapp/internal/canvas"
@@ -117,6 +118,16 @@ var (
 		"redact": {"from", "to"}, "pixelate": {"from", "to"},
 	}
 )
+
+// Typen liefert die bekannten Typen sortiert (für das Schema des MCP-Werkzeugs, Kritik #329 K-2).
+func Typen() []string {
+	var t []string
+	for k := range erlaubt {
+		t = append(t, k)
+	}
+	slices.Sort(t)
+	return t
+}
 
 // Lies liest die Liste aus r: ein Objekt mit genau dem Schlüssel "annotations" (ein nicht leeres Array). Unbekannte
 // Schlüssel und Typen, fehlende Pflichtwerte, Schlüssel, die zum Typ nicht passen, und doppelte Schlüssel sind Fehler —
@@ -520,7 +531,9 @@ func Wende(ctx context.Context, d *document.Dokument, es []Eintrag) (Ergebnis, e
 			if err != nil {
 				return erg, f("%s", err.Error())
 			}
-			o = document.MitEbene(o, document.Ebene{Schatten: sch})
+			eb := o.Ebenenwerte() // nur den Schatten setzen: die Mischung des Textmarkers bleibt (Kritik #329 K-1, F-1029)
+			eb.Schatten = sch
+			o = document.MitEbene(o, eb)
 		}
 		if _, err := d.Hinzufuegen(o); err != nil {
 			return erg, f("rejected by the document (values or limits out of range)")

@@ -181,7 +181,9 @@ func PushOpacity(o *op.Ops, opacity float32) OpacityStack {
 // layer image onto the frame with the multiply blend mode: every color
 // channel of the frame is multiplied by the layer color, weighted by the
 // layer alpha times opacity. Colors are mixed in the space of the frame
-// (Schnapp patch, highlighter).
+// (Schnapp patch, highlighter). Inside another layer the multiply layer
+// blends with that layer's transparent background and leaves nothing
+// there; draw it outside of other layers.
 func PushMultiply(o *op.Ops, opacity float32) OpacityStack {
 	return pushOpacity(o, opacity, true)
 }

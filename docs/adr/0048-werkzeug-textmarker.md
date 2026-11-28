@@ -70,3 +70,25 @@ Bild und mischt es dann ein — genau die Stelle, an der eine andere Mischung an
 ## Konsequenzen
 - Ältere Schnapp-Stände (Version 1) lehnen Dateien mit Textmarker ab, wie bei Lupe und Ellipse.
 - Der Gio-Patch wächst um eine Funktion; sie ist kein Teil der Gio-PRs #204/#205.
+
+## Nachtrag 1 (28.11.2026): Kritik Fable zu babccc0 (F-1029 bis F-1034)
+
+**Status:** Akzeptiert (Claude Opus 5.5).
+
+1. **`--annotate`/MCP mit `shadow` (F-1029):** Der Schatten wird an die vorhandene Ebene gesetzt, statt sie zu ersetzen;
+   ein `highlight` mit `shadow` bleibt ein Textmarker.
+2. **Tests (F-1030):** Einrasten und Doppeln des Textmarkers, Schema des MCP-Werkzeugs gegen `annotate.Typen`, der
+   SVG-Export gerastert mit rsvg-convert, Kopieren als Objekte, die Farbliste am Farbfeld streng unten im hohen Fenster.
+3. **Grenze des Gio-Patches (F-1031):** `paint.PushMultiply` innerhalb einer anderen Deckkraft-Ebene mischt mit deren
+   durchsichtigem Grund und ergibt dort nichts (W3C wäre „über“); über deckendem Inhalt derselben Ebene multipliziert
+   sie. Schnapp verschachtelt nicht; wer es künftig tut (Gruppen mit Deckkraft, Freihand), muss den Textmarker außerhalb
+   der umgebenden Ebene zeichnen. Ein Test hält das Verhalten fest.
+4. **Kopie als Bild (F-1032):** Das PNG der kopierten Objekte (`render.ObjektePNG`, ADR-0045) liegt auf durchsichtigem
+   Grund; dort wirkt Multiplizieren wie „über“, ein Textmarker kommt in fremden Programmen als deckender Strich an. Das
+   bleibt so: ohne Untergrund gibt es nichts zu multiplizieren, und eine geratene Deckkraft wäre in Schnapp selbst falsch.
+   Innerhalb von Schnapp trägt die Kopie die Mischung (`application/x-schnapp-objects`).
+5. **Fremde Dateien (F-1033):** Ein Pfeil mit `s:mischung="multiply"` und Köpfen (etwa ohne `s:ende`, dann gilt das
+   Dreieck) gilt als Textmarker; die Leiste bietet keinen Pfeilstil an, die Köpfe bleiben, wie sie sind. Schnapp selbst
+   schreibt Textmarker immer mit `s:ende="none"`.
+6. **Menü „Werkzeuge“ im kleinsten Fenster (F-1034):** Mit dreizehn Einträgen deckt die Liste in 480 × 320 Menü- und
+   Fußzeile ab; Menülisten rollen nicht. Gehört zu Karte #223 (Werkzeuge als Gruppen).

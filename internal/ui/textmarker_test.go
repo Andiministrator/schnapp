@@ -228,3 +228,30 @@ func TestTextmarkerKachelMultipliziert(t *testing.T) {
 		t.Errorf("Strich über Weiß: %v, Soll gelb", c)
 	}
 }
+
+// F-1031 (Kritik #329 K-3), festgehaltene Grenze des Gio-Patches: Eine multiplizierende Ebene innerhalb einer
+// Deckkraft-Ebene mischt mit deren durchsichtigem Grund und ergibt dort nichts (W3C wäre „über“); über deckendem Inhalt
+// derselben Ebene multipliziert sie. Schnapp verschachtelt nicht (ADR-0048 Nachtrag 1).
+func TestPushMultiplyInDeckkraftEbene(t *testing.T) {
+	gelb := color.NRGBA{R: 0xFF, G: 0xE6, B: 0x28, A: 0xFF}
+	ist := headlessBild(t, image.Pt(40, 20), func(gtx layout.Context) {
+		paint.Fill(gtx.Ops, color.NRGBA{R: 255, G: 255, B: 255, A: 255})
+		o := paint.PushOpacity(gtx.Ops, 1)
+		m := paint.PushMultiply(gtx.Ops, 1)
+		paint.FillShape(gtx.Ops, gelb, clip.Rect(image.Rect(0, 0, 20, 20)).Op())
+		m.Pop()
+		o.Pop()
+		o2 := paint.PushOpacity(gtx.Ops, 1)
+		paint.FillShape(gtx.Ops, color.NRGBA{R: 128, G: 128, B: 128, A: 255}, clip.Rect(image.Rect(20, 0, 40, 20)).Op())
+		m2 := paint.PushMultiply(gtx.Ops, 1)
+		paint.FillShape(gtx.Ops, gelb, clip.Rect(image.Rect(20, 0, 40, 20)).Op())
+		m2.Pop()
+		o2.Pop()
+	})
+	if c := ist.RGBAAt(10, 10); c.R != 255 || c.G != 255 || c.B != 255 {
+		t.Errorf("in leerer Deckkraft-Ebene: %v, festgehalten Weiß", c)
+	}
+	if c := ist.RGBAAt(30, 10); absInt(int(c.R)-128) > 2 || absInt(int(c.G)-115) > 2 || absInt(int(c.B)-20) > 2 {
+		t.Errorf("über Grau in derselben Ebene: %v, Soll (128,115,20)", c)
+	}
+}

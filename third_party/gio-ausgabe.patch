@@ -2268,10 +2268,10 @@ index 182b753..f497556 100644
  
  // DecodeSave decodes the state id of a save op.
 diff --git a/op/paint/paint.go b/op/paint/paint.go
-index e3afc93..afec5c4 100644
+index e3afc93..594e410 100644
 --- a/op/paint/paint.go
 +++ b/op/paint/paint.go
-@@ -174,6 +174,19 @@ func Fill(ops *op.Ops, c color.NRGBA) {
+@@ -174,6 +174,21 @@ func Fill(ops *op.Ops, c color.NRGBA) {
  // drawn to a separate image. Then, the image is blended on top of
  // the frame, with the opacity used as the blending factor.
  func PushOpacity(o *op.Ops, opacity float32) OpacityStack {
@@ -2282,7 +2282,9 @@ index e3afc93..afec5c4 100644
 +// layer image onto the frame with the multiply blend mode: every color
 +// channel of the frame is multiplied by the layer color, weighted by the
 +// layer alpha times opacity. Colors are mixed in the space of the frame
-+// (Schnapp patch, highlighter).
++// (Schnapp patch, highlighter). Inside another layer the multiply layer
++// blends with that layer's transparent background and leaves nothing
++// there; draw it outside of other layers.
 +func PushMultiply(o *op.Ops, opacity float32) OpacityStack {
 +	return pushOpacity(o, opacity, true)
 +}
@@ -2291,7 +2293,7 @@ index e3afc93..afec5c4 100644
  	if opacity > 1 {
  		opacity = 1
  	}
-@@ -185,6 +198,9 @@ func PushOpacity(o *op.Ops, opacity float32) OpacityStack {
+@@ -185,6 +200,9 @@ func PushOpacity(o *op.Ops, opacity float32) OpacityStack {
  	bo := binary.LittleEndian
  	data[0] = byte(ops.TypePushOpacity)
  	bo.PutUint32(data[1:], math.Float32bits(opacity))

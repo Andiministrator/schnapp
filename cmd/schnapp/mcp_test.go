@@ -13,10 +13,12 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/Andiministrator/schnapp/internal/annotate"
 	"github.com/Andiministrator/schnapp/internal/capture"
 	"github.com/Andiministrator/schnapp/internal/document"
 	"github.com/Andiministrator/schnapp/internal/fileformat"
@@ -787,4 +789,37 @@ func TestMcpMonitoreMitSkalaNurFuerListe(t *testing.T) {
 	if liste != 1 || pruefung != 1 {
 		t.Errorf("capture_screen: Liste %d, Prüfung %d", liste, pruefung)
 	}
+}
+
+// Kritik #329 K-2 (F-1030): Das Schema von annotate nennt genau die Typen, die internal/annotate kennt.
+func TestMcpAnnotateTypenWieAnnotate(t *testing.T) {
+	l := neuerMcpLauf(t)
+	for _, w := range l.an.werkzeuge() {
+		if w.Name != "annotate" {
+			continue
+		}
+		var s struct {
+			Properties struct {
+				Annotations struct {
+					Items struct {
+						Properties struct {
+							Type struct {
+								Enum []string `json:"enum"`
+							} `json:"type"`
+						} `json:"properties"`
+					} `json:"items"`
+				} `json:"annotations"`
+			} `json:"properties"`
+		}
+		if err := json.Unmarshal(w.Eingabe, &s); err != nil {
+			t.Fatal(err)
+		}
+		enum := slices.Clone(s.Properties.Annotations.Items.Properties.Type.Enum)
+		slices.Sort(enum)
+		if got, soll := strings.Join(enum, ","), strings.Join(annotate.Typen(), ","); got != soll {
+			t.Errorf("Schema: %s, annotate: %s", got, soll)
+		}
+		return
+	}
+	t.Fatal("kein Werkzeug annotate")
 }
