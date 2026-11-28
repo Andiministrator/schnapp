@@ -135,7 +135,7 @@ stays unchanged and the result becomes a new screenshot in the library. `LIST` i
 | `type` | Keys (required **bold**) |
 |---|---|
 | `arrow` | **`from`**, **`to`**, `color`, `width`, `start_head` (head at `from`, default `none`), `end_head` (head at `to`, default `triangle`); heads: `triangle`, `narrow`, `notched`, `open`, `half`, `dot`, `diamond`, `square`, `bar`, `none` (both `none`: a plain line); `line_style`: `solid` (default), `dashed`, `dotted` (heads stay solid) |
-| `freehand` | **`points`** (2 to 4096 points `[x, y]`, taken as given; at least two must differ), `color`, `width`, `line_style` — a free line with round ends and joins |
+| `freehand` | **`points`** (2 to 4096 points `[x, y]`, taken as given and rounded to 1/100 pixel; at least two must differ after rounding), `color`, `width`, `line_style` — a free line with round ends and joins |
 | `highlight` | **`from`**, **`to`** or **`points`** (a free highlighter; not both), `color` (default yellow `#FFE628`), `width` (default 20, larger on large screenshots), `line_style` — a highlighter stroke: the colour multiplies the image below, so dark text stays dark |
 | `rect` | **`from`**, **`to`** (opposite corners), `color` (line), `fill`, `width`, `line_style` (`solid`, `dashed`, `dotted`) |
 | `ellipse` | same keys as `rect`: the ellipse inside the rectangle `from`–`to` (equal sides: a circle) |

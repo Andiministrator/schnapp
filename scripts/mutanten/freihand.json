@@ -382,15 +382,15 @@
     "name": "FH54 Pfad absolut statt relativ (F-1036)",
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
-    "alt": "\t\t\td.WriteString(\" \" + hundertstelText(x-vx) + \",\" + hundertstelText(y-vy))",
-    "neu": "\t\t\td.WriteString(\" \" + hundertstelText(x) + \",\" + hundertstelText(y))"
+    "alt": "\t\tteile[i] = hundertstelText(x-vx) + \",\" + hundertstelText(y-vy)",
+    "neu": "\t\tteile[i] = hundertstelText(x+0*vx) + \",\" + hundertstelText(y+0*vy)"
   },
   {
-    "name": "FH55 erster Pfadpunkt ungerundet (F-1036)",
+    "name": "FH55 Hundertstel abgeschnitten statt gerundet (F-1036)",
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
-    "alt": "\t\t\td.WriteString(\"M\" + hundertstelText(x) + \",\" + hundertstelText(y))",
-    "neu": "\t\t\td.WriteString(\"M\" + punkt(p))"
+    "alt": "\thundertstel := func(f float64) int64 { return int64(math.Round(f * 100)) }\n\tteile := make([]string, len(pts))",
+    "neu": "\thundertstel := func(f float64) int64 { return int64(f * 100) }\n\tteile := make([]string, len(pts))"
   },
   {
     "name": "FH56 Pfad relativ zum ersten statt zum Vorgänger (F-1036)",

@@ -17,8 +17,13 @@ func TestQARundenMachtStrichOhneLaenge(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 6}
-	// Ein Punkt-Tupfer, wie ihn --annotate/MCP oder eine fremde Datei liefern darf (Länge 0,003 > 0).
-	id, err := d.Hinzufuegen(document.NeuerFreihand([]document.Punkt{document.Pt(50.001, 50), document.Pt(50.004, 50)}, st))
+	// Ein Tupfer unter 1/100 px fällt beim Anlegen auf einen Punkt zusammen und wird abgelehnt (F-1045: Punkte liegen auf
+	// Hundertsteln); vorher entstand er und scheiterte erst beim Verschieben.
+	if _, err := d.Hinzufuegen(document.NeuerFreihand([]document.Punkt{document.Pt(50.001, 50), document.Pt(50.004, 50)}, st)); err == nil {
+		t.Error("Tupfer unter 1/100 px angenommen")
+	}
+	// Der kürzeste mögliche Tupfer (Länge 0,01) lässt sich verschieben.
+	id, err := d.Hinzufuegen(document.NeuerFreihand([]document.Punkt{document.Pt(50.01, 50), document.Pt(50.02, 50)}, st))
 	if err != nil {
 		t.Fatalf("Tupfer wird schon beim Anlegen abgelehnt: %v", err)
 	}

@@ -153,3 +153,17 @@ func TestFreihandAusZugHoechstensRohUndGerundet(t *testing.T) {
 		t.Errorf("Verschoben: %v", p)
 	}
 }
+
+// F-1045: Freihand-Punkte liegen immer auf 1/100 px; gleich gewordene Nachbarn bleiben stehen.
+func TestFreihandPunkteAufHundertsteln(t *testing.T) {
+	f := NeuerFreihand([]Punkt{Pt(1.234, 5.678), Pt(1.2349, 5.6751), Pt(-0.006, 3)}, Strich{Breite: 1})
+	soll := []Punkt{Pt(1.23, 5.68), Pt(1.23, 5.68), Pt(-0.01, 3)}
+	for i, p := range f.Punkte() {
+		if p != soll[i] {
+			t.Errorf("Punkt %d: %v, Soll %v", i, p, soll[i])
+		}
+	}
+	if g := f.MitPunkten([]Punkt{Pt(0.001, 0), Pt(7.777, 0)}).Punkte(); g[0] != Pt(0, 0) || g[1] != Pt(7.78, 0) {
+		t.Errorf("MitPunkten: %v", g)
+	}
+}

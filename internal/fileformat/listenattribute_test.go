@@ -25,7 +25,7 @@ func TestListenAttributeOhneRiesenFeld(t *testing.T) {
 	}
 	svg := string(entpackeSVG(t, buf.Bytes()))
 	leer := strings.Repeat(" ", 8<<20)
-	fremd := strings.Replace(svg, `s:punkte="5,40 100,50"`, `s:punkte="`+leer+`"`, 1)
+	fremd := strings.Replace(svg, `s:punkte="5,40 95,10"`, `s:punkte="`+leer+`"`, 1)
 	if fremd == svg {
 		t.Fatal("Ersetzung ohne Wirkung")
 	}

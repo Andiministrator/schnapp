@@ -82,3 +82,24 @@ Unter 20 Byte je Punkt ginge nur mit einer einzigen Kopie der Punkte (heute `s:p
   `--annotate` lehnt ab, F-1040); Verschieben rundet nur den Versatz, die Punkte wandern starr. Punkt 2 — der Editor
   merkt Zerlegung und Pfad je Strich, getrennt für Leinwand und Vorschau der Ebenenliste (`internal/ui/freihandmerker.go`,
   F-1038).
+
+## Nachtrag 2 (28.11.2026, F-1045, F-1049)
+
+Punkt 6 (Format) ändert sich, solange FormatVersion 3 nicht ausgeliefert ist (kein `v*`-Tag seit 2c48ba8):
+
+- **`s:punkte` relativ:** der erste Punkt absolut, jeder weitere als Abstand zu seinem Vorgänger, in ganzen
+  Hundertsteln (`fileformat.punkteRelativ`); die Darstellung `M`/`l` trägt dieselben Zahlen. Der Leser summiert die
+  Abstände ungerundet; jede Lage wird auf 1/100 px gerundet.
+- **Freihand-Punkte liegen immer auf 1/100 px:** `Freihand.MitPunkten` (und damit `NeuerFreihand`) rundet jede Lage,
+  gleich gewordene Nachbarn bleiben stehen. So sind Schreiben und Lesen verlustfrei und deckungsgleich; ein Strich unter
+  1/100 px Länge (auch aus `--annotate`/MCP) ist ein Strich ohne Länge und wird abgelehnt (F-1040).
+- **Gesamtgrenze** `MaxFreihandGesamt` = 1 048 576 Punkte je Datei (F-1049, docs/format.md §10), im Leser vor dem
+  Teilen gezählt; `SchreibeArbeitsdatei` und `PruefeInhalt` prüfen dieselbe Grenze.
+
+Gemessen (derselbe lange Zug wie in Nachtrag 1): im SVG 21 bis 23 statt 25 bis 27 Byte je Punkt, im komprimierten
+`snAP` 3,5 bis 4,7 statt 8,7 bis 10,8 Byte je Punkt. Beide Kopien lauten gleich, zlib verweist die zweite auf die erste.
+
+Erwogen: nur eine Kopie (die Punkte allein im Pfad oder kein Pfad). Daten stehen im Format sonst immer in
+`s:`-Attributen, die Darstellung ist informativ und für Betrachter da; komprimiert kostet die zweite Kopie unter
+1 Byte je Punkt. Verworfen.
+

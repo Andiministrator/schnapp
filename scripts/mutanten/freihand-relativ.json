@@ -1,0 +1,30 @@
+[
+  {
+    "name": "FR1 Leser summiert die Abstände nicht (F-1045)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\tsx, sy = sx+fx, sy+fy\n",
+    "neu": "\t\tsx, sy = fx, fy\n"
+  },
+  {
+    "name": "FR3 Überlauf der Summe nicht geprüft (F-1045)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\tif math.IsInf(sx, 0) || math.IsInf(sy, 0) {\n",
+    "neu": "\t\tif false {\n"
+  },
+  {
+    "name": "FR4 Freihand-Punkte nicht auf Hundertstel (F-1045)",
+    "datei": "internal/document/freihand.go",
+    "paket": "./internal/document",
+    "alt": "\t\tk[i] = aufHundertstel(p)\n",
+    "neu": "\t\tk[i] = p\n"
+  },
+  {
+    "name": "FR5 Pfad ohne l (F-1045)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\td += \"l\" + strings.Join(teile[1:], \" \")\n",
+    "neu": "\t\td += \" \" + strings.Join(teile[1:], \" \")\n"
+  }
+]

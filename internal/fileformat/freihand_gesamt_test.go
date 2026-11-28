@@ -31,7 +31,7 @@ func freihandRiese(t *testing.T, n int) (svg, png []byte) {
 	}
 	el := s[von:bis]
 	punkte := strings.TrimSuffix(strings.Repeat("0,0 ", document.MaxFreihandPunkte), " ")
-	el = strings.Replace(el, `s:punkte="5,40 100,50"`, `s:punkte="`+punkte+`"`, 1)
+	el = strings.Replace(el, `s:punkte="5,40 95,10"`, `s:punkte="`+punkte+`"`, 1)
 	// Darstellung (Pfad) des Elements klein halten, sie zählt nicht zu den Punkten.
 	fremd := s[:von] + strings.Repeat(el, n) + s[bis:]
 	return []byte(fremd), pngMitSVG(t, buf.Bytes(), fremd)

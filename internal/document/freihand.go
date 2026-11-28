@@ -49,16 +49,21 @@ func (f Freihand) Punkte() []Punkt {
 	return *f.Zug
 }
 
-// MitPunkten liefert f mit einer eigenen Kopie von pts.
+// MitPunkten liefert f mit einer eigenen Kopie von pts, jede Lage auf 1/100 px gerundet (F-1045): Freihand-Punkte liegen
+// immer auf ganzen Hundertsteln, damit die Datei sie als Abstände in Hundertsteln verlustfrei trägt (docs/format.md
+// 8.9). Gleich gewordene Nachbarn bleiben stehen; wer sie loswerden will, nimmt Gerundet.
 func (f Freihand) MitPunkten(pts []Punkt) Freihand {
-	k := slices.Clone(pts)
+	k := make([]Punkt, len(pts))
+	for i, p := range pts {
+		k[i] = aufHundertstel(p)
+	}
 	f.Zug = &k
 	return f
 }
 
 // Verschoben liefert f um d verschoben (neuer Zug). Gerundet wird nur d auf 1/100 px (F-1036: ein Zoom wie 0,73
-// macht sonst aus jeder Lage eine Zahl mit 17 Stellen); die Punkte wandern starr, damit ein sehr kurzer Strich aus einer
-// Datei seine Länge behält und Verschieben um 0 nichts ändert (Verify #333).
+// macht sonst aus jeder Lage eine Zahl mit 17 Stellen); die Punkte liegen schon auf Hundertsteln (MitPunkten) und wandern
+// starr, damit Verschieben um 0 nichts ändert (Verify #333).
 func (f Freihand) Verschoben(d Punkt) Freihand {
 	d = aufHundertstel(d)
 	if d == (Punkt{}) {

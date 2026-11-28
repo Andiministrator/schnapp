@@ -544,7 +544,7 @@ A freehand stroke is an open polyline in original pixels.
 
 | Attribute | Value |
 |---|---|
-| `s:punkte` | REQUIRED. 2 to 4096 points (5.2), separated by single spaces, in drawing order; not all equal |
+| `s:punkte` | REQUIRED. 2 to 4096 entries `x,y` (point syntax, 5.2), separated by single spaces, in drawing order: the first is the first point, every further one the offset from its predecessor. A reader adds the offsets and rounds every resulting point to 1/100 pixel; writers SHOULD write offsets in whole hundredths. Not all points equal |
 | `s:strich` | REQUIRED. Stroke colour and width as for the arrow (8.1) |
 | `s:strichart` | OPTIONAL, as in 8.8 (the pattern runs along the whole polyline, a whole dash or a dot at both ends) |
 
@@ -552,10 +552,10 @@ The stroke has round ends and round joins and is drawn so that every pixel is co
 crosses itself or turns back (a translucent colour does not get darker there). Layer attributes (8.5) apply, including
 `s:mischung` (Schnapp's free highlighter). The object type exists from format version 3 on: in a file with
 `s:format="1"` or `"2"` it is an unknown object type (8.6), and the file is damaged; a writer emits `s:format="3"` if the
-document contains one (section 12). Fewer than 2 or more than 4096 points, a point that does not parse, or a polyline of zero length (all points equal)
-make the file damaged. Informative: Schnapp smooths and thins a stroke when the pointer is released and stores the result; the points
-are not control points of a curve. The presentation is a `path`: `M` with the first point, then `l` with the others
-relative to their predecessor, both rounded to hundredths of a pixel. Example:
+document contains one (section 12). Fewer than 2 or more than 4096 points, an entry that does not parse, a sum that is not finite, or a polyline of zero length
+(all points equal after rounding) make the file damaged. Informative: Schnapp smooths and thins a stroke when the pointer is released and stores the result; the points
+are not control points of a curve. The presentation is a `path` with the same numbers: `M` with the first point, then
+`l` with the offsets. Example:
 `testdata/format/freehand`.
 
 ## 9. Redaction

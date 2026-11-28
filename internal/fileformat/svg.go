@@ -410,7 +410,7 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			s.WriteString(`<g`)
 			s.attr("s:typ", "freihand")
 			s.ebene(o.Ebenenwerte())
-			s.attr("s:punkte", punkteText(o.Punkte()))
+			s.attr("s:punkte", strings.Join(punkteRelativ(o.Punkte()), " "))
 			s.attr("s:strich", strich(o.Strich))
 			s.strichart(o.Strich)
 			s.WriteString(`>`)
@@ -772,6 +772,9 @@ func (l *leser) punkte(name string) []document.Punkt {
 	}
 	teile := strings.Split(text, " ")
 	pts := make([]document.Punkt, 0, len(teile))
+	// Der erste Punkt steht absolut, jeder weitere als Abstand zu seinem Vorgänger (F-1045). Die Summe läuft ungerundet
+	// weiter; auf 1/100 px rundet jede Lage document.NeuerFreihand: so sammelt sich kein Rundungsfehler an.
+	var sx, sy float64
 	for _, t := range teile {
 		x, y, ok := strings.Cut(t, ",")
 		fx, ok1 := parseZahl(x)
@@ -780,21 +783,29 @@ func (l *leser) punkte(name string) []document.Punkt {
 			l.fehler("Punkte %s ungültig", name)
 			return nil
 		}
-		pts = append(pts, document.Pt(fx, fy))
+		sx, sy = sx+fx, sy+fy
+		if math.IsInf(sx, 0) || math.IsInf(sy, 0) {
+			l.fehler("Punkte %s ungültig", name)
+			return nil
+		}
+		pts = append(pts, document.Pt(sx, sy))
 	}
 	return pts
 }
 
-// punkteText schreibt Punkte für s:punkte.
-func punkteText(pts []document.Punkt) string {
-	var b strings.Builder
+// punkteRelativ schreibt Punkte für s:punkte (docs/format.md 8.9): der erste absolut, die übrigen als Abstand zum
+// Vorgänger, alle in ganzen Hundertsteln, gerechnet aus den auf 1/100 px gerundeten Lagen (kein Fehler sammelt sich an).
+// Freihand-Punkte liegen schon auf Hundertsteln (document.Freihand.MitPunkten), die Rundung hier ändert dann nichts.
+func punkteRelativ(pts []document.Punkt) []string {
+	hundertstel := func(f float64) int64 { return int64(math.Round(f * 100)) }
+	teile := make([]string, len(pts))
+	var vx, vy int64
 	for i, p := range pts {
-		if i > 0 {
-			b.WriteByte(' ')
-		}
-		b.WriteString(punkt(p))
+		x, y := hundertstel(p.X), hundertstel(p.Y)
+		teile[i] = hundertstelText(x-vx) + "," + hundertstelText(y-vy)
+		vx, vy = x, y
 	}
-	return b.String()
+	return teile
 }
 
 // freihandDarstellung zeichnet den freien Strich für Betrachter: ein Pfad mit runden Enden und Ecken, gemustert im
@@ -816,26 +827,18 @@ func (s *schreiber) freihandDarstellung(o document.Freihand) {
 	s.WriteString(`/>`)
 }
 
-// freihandPfad schreibt den Linienzug als Pfad für Betrachter: der erste Punkt absolut, die übrigen relativ (`l`), alle
-// in ganzen Hundertsteln, gerechnet aus den auf 1/100 px gerundeten Lagen (kein Fehler sammelt sich an). Die Darstellung
-// ist informativ; s:punkte trägt die Lagen (F-1036: kürzere Zahlen als zweimal absolut).
+// freihandPfad schreibt den Linienzug als Pfad für Betrachter: `M` mit dem ersten Punkt, `l` mit den übrigen relativ zum
+// Vorgänger, dieselben Zahlen wie s:punkte (F-1036, F-1045). Die Darstellung ist informativ.
 func freihandPfad(pts []document.Punkt) string {
-	var d strings.Builder
-	hundertstel := func(f float64) int64 { return int64(math.Round(f * 100)) }
-	var vx, vy int64
-	for i, p := range pts {
-		x, y := hundertstel(p.X), hundertstel(p.Y)
-		switch i {
-		case 0:
-			d.WriteString("M" + hundertstelText(x) + "," + hundertstelText(y))
-		case 1:
-			d.WriteString("l" + hundertstelText(x-vx) + "," + hundertstelText(y-vy))
-		default:
-			d.WriteString(" " + hundertstelText(x-vx) + "," + hundertstelText(y-vy))
-		}
-		vx, vy = x, y
+	teile := punkteRelativ(pts)
+	if len(teile) == 0 {
+		return ""
 	}
-	return d.String()
+	d := "M" + teile[0]
+	if len(teile) > 1 {
+		d += "l" + strings.Join(teile[1:], " ")
+	}
+	return d
 }
 
 // hundertstelText schreibt n/100 in der kürzesten Form (-210 → -2.1).

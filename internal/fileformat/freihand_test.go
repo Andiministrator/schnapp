@@ -4,9 +4,12 @@ package fileformat
 
 import (
 	"bytes"
+	"compress/zlib"
 	"errors"
 	"image/color"
 	"math"
+	"math/rand/v2"
+	"slices"
 	"strings"
 	"testing"
 
@@ -46,9 +49,9 @@ func TestFreihandRundlauf(t *testing.T) {
 	}
 	for name, fremd := range map[string]string{
 		"Version 2":    strings.Replace(svg, `s:format="3"`, `s:format="2"`, 1),
-		"ein Punkt":    strings.Replace(svg, `s:punkte="5,40 100,50"`, `s:punkte="5,40"`, 1),
-		"Punkt kaputt": strings.Replace(svg, `s:punkte="5,40 100,50"`, `s:punkte="5,40 x,50"`, 1),
-		"Doppelraum":   strings.Replace(svg, `s:punkte="5,40 100,50"`, `s:punkte="5,40  100,50"`, 1),
+		"ein Punkt":    strings.Replace(svg, `s:punkte="5,40 95,10"`, `s:punkte="5,40"`, 1),
+		"Punkt kaputt": strings.Replace(svg, `s:punkte="5,40 95,10"`, `s:punkte="5,40 x,50"`, 1),
+		"Doppelraum":   strings.Replace(svg, `s:punkte="5,40 95,10"`, `s:punkte="5,40  100,50"`, 1),
 	} {
 		if _, err := LeseArbeitsdatei(bytes.NewReader(pngMitSVG(t, buf.Bytes(), fremd))); !errors.Is(err, ErrBeschaedigt) {
 			t.Errorf("%s: %v, Soll beschädigt", name, err)
@@ -58,7 +61,7 @@ func TestFreihandRundlauf(t *testing.T) {
 	for i := range viele {
 		viele[i] = "1,1"
 	}
-	zuviel := strings.Replace(svg, `s:punkte="5,40 100,50"`, `s:punkte="`+strings.Join(viele, " ")+`"`, 1)
+	zuviel := strings.Replace(svg, `s:punkte="5,40 95,10"`, `s:punkte="`+strings.Join(viele, " ")+`"`, 1)
 	if _, err := LeseArbeitsdatei(bytes.NewReader(pngMitSVG(t, buf.Bytes(), zuviel))); !errors.Is(err, ErrBeschaedigt) {
 		t.Errorf("zu viele Punkte: %v", err)
 	}
@@ -98,7 +101,8 @@ func TestFreihandExportGemustertAlsStuecke(t *testing.T) {
 // 0,73, mit und ohne Zittern) wird gespeichert mit höchstens so vielen Punkten wie roh und kurzen Zahlen. Vorher: 4096
 // Punkte (Chaikin vervierfachte), 32 bzw. 75 Byte je Punkt, 130 bzw. 306 KB je Strich. Gemessen 28.11.2026 nach
 // ADR-0049 Nachtrag 1: 1142 bis 2189 Punkte, 25 bis 27 Byte je Punkt (s:punkte absolut und der Pfad relativ, je auf
-// 1/100 px), höchstens 60 KB je Strich.
+// 1/100 px), höchstens 60 KB je Strich. F-1045 (ADR-0049 Nachtrag 2): s:punkte relativ wie der Pfad, 21 bis 23 Byte je
+// Punkt im SVG, im komprimierten snAP 3,5 bis 4,7 statt 8,7 bis 10,8 (beide Kopien gleichlautend).
 func TestFreihandGroesseJeStrich(t *testing.T) {
 	for _, zoom := range []float64{1, 0.73} {
 		for _, zittern := range []float64{0, 1} {
@@ -119,9 +123,13 @@ func TestFreihandGroesseJeStrich(t *testing.T) {
 			fuege(t, d, document.NeuerFreihand(pts, document.Strich{Farbe: color.NRGBA{R: 200, A: 255}, Breite: 3}))
 			svg := AngabenSVG(d)
 			jePunkt := float64(len(svg)) / float64(len(pts))
-			t.Logf("Zoom %.2f Zittern %.0f: roh %d, gespeichert %d Punkte, SVG %d Bytes (%.1f je Punkt)",
-				zoom, zittern, len(roh), len(pts), len(svg), jePunkt)
-			if len(pts) > len(roh) || jePunkt > 28 || len(svg) > 64<<10 {
+			var z bytes.Buffer
+			zw, _ := zlib.NewWriterLevel(&z, zlib.BestCompression) // wie snAP (docs/format.md 4)
+			_, _ = zw.Write([]byte(svg))
+			_ = zw.Close()
+			t.Logf("Zoom %.2f Zittern %.0f: roh %d, gespeichert %d Punkte, SVG %d Bytes (%.1f je Punkt), snAP %d Bytes (%.1f je Punkt)",
+				zoom, zittern, len(roh), len(pts), len(svg), jePunkt, z.Len(), float64(z.Len())/float64(len(pts)))
+			if len(pts) > len(roh) || jePunkt > 24 || float64(z.Len())/float64(len(pts)) > 6 || len(svg) > 64<<10 {
 				t.Errorf("Zoom %.2f Zittern %.0f: %d Punkte (roh %d), %.1f Byte je Punkt, %d Bytes", zoom, zittern,
 					len(pts), len(roh), jePunkt, len(svg))
 			}
@@ -139,5 +147,56 @@ func TestFreihandPfadRelativ(t *testing.T) {
 	}
 	if p := freihandPfad(pts[:1]); p != "M10.5,20" {
 		t.Errorf("ein Punkt: %q", p)
+	}
+}
+
+// F-1045: s:punkte trägt den ersten Punkt absolut, die übrigen als Abstand; ein langer Zug kommt ohne angesammelten
+// Rundungsfehler zurück, auch fern vom Ursprung.
+func TestFreihandPunkteRelativRundlauf(t *testing.T) {
+	r := rand.New(rand.NewPCG(1045, 7))
+	pts := make([]document.Punkt, document.MaxFreihandPunkte)
+	for i := range pts {
+		pts[i] = document.Pt(20000+float64(r.IntN(200000))/100, float64(r.IntN(300000))/100)
+	}
+	d := beispielDok(t, 30000, 3000)
+	soll := document.NeuerFreihand(pts, document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 2})
+	fuege(t, d, soll)
+	svg := string(AngabenSVG(d))
+	if !strings.Contains(svg, `s:punkte="`+punkt(pts[0])+" ") {
+		t.Fatalf("erster Punkt nicht absolut")
+	}
+	g, err := LeseAngaben(strings.NewReader(svg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ist := g.Objekte[0].(document.Freihand).Punkte()
+	for i := range pts {
+		if ist[i] != pts[i] {
+			t.Fatalf("Punkt %d: %v, Soll %v", i, ist[i], pts[i])
+		}
+	}
+}
+
+// F-1045: Der Leser summiert die Abstände ungerundet und rundet jede Lage auf 1/100 px; eine Summe über die
+// Gleitkommagrenze beschädigt die Datei.
+func TestFreihandPunkteRelativLesen(t *testing.T) {
+	d := beispielDok(t, 100, 100)
+	fuege(t, d, document.NeuerFreihand([]document.Punkt{document.Pt(5, 40), document.Pt(100, 50)},
+		document.Strich{Farbe: color.NRGBA{A: 255}, Breite: 2}))
+	svg := string(AngabenSVG(d))
+	if !strings.Contains(svg, `s:punkte="5,40 95,10"`) {
+		t.Fatalf("SVG: %s", svg)
+	}
+	g, err := LeseAngaben(strings.NewReader(strings.Replace(svg, `s:punkte="5,40 95,10"`, `s:punkte="1.234,2 1.004,0.001 0.004,-1"`, 1)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	soll := []document.Punkt{document.Pt(1.23, 2), document.Pt(2.24, 2), document.Pt(2.24, 1)}
+	if ist := g.Objekte[0].(document.Freihand).Punkte(); !slices.Equal(ist, soll) {
+		t.Errorf("Punkte %v, Soll %v", ist, soll)
+	}
+	_, err = LeseAngaben(strings.NewReader(strings.Replace(svg, `s:punkte="5,40 95,10"`, `s:punkte="1e308,0 1e308,0"`, 1)))
+	if !errors.Is(err, ErrBeschaedigt) {
+		t.Errorf("Überlauf: %v, Soll beschädigt", err)
 	}
 }
