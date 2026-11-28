@@ -125,7 +125,7 @@ type menue struct {
 	titelRahmen [menueAnzahl]image.Rectangle
 	welches     int
 	offen       bool
-	eintraege   [16]widget.Clickable // je Eintrag einer; mehr als genug für menueEintraege
+	eintraege   [24]widget.Clickable // je Eintrag einer; mehr als genug für menueEintraege (Ebene: 18)
 	aussen      int                  // Ziel für Klicks neben die offene Liste (schließt sie)
 	zeile       int                  // Ziel für Klicks in die Menüzeile abseits der Titel (schließt die Liste, F-515)
 
@@ -142,7 +142,7 @@ type menue struct {
 	gewechselt bool
 
 	// rahmen: Lage der Zeilen im Fenster beim letzten Zeichnen (Tests und Drehbuch-Koordinaten, F-265).
-	rahmen [16]image.Rectangle
+	rahmen [24]image.Rectangle
 }
 
 // menueNaechster liefert den Index des nächsten bedienbaren Eintrags von von aus in Richtung dir (+1 abwärts, -1
@@ -392,6 +392,10 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 		return func(layout.Context) { e.s.Doppeln() }
 	case aktAllesWaehlen:
 		return func(layout.Context) { e.s.WaehleAlle() }
+	case aktGruppieren:
+		return func(layout.Context) { e.s.Gruppieren() }
+	case aktGruppierungAufheben:
+		return func(layout.Context) { e.s.GruppierungAufheben() }
 	case aktAusrichtenLinks, aktAusrichtenMitteWaagerecht, aktAusrichtenRechts, aktAusrichtenOben,
 		aktAusrichtenMitteSenkrecht, aktAusrichtenUnten:
 		ausr := canvas.Ausrichtungen[a-aktAusrichtenLinks]
@@ -414,9 +418,9 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 	case aktUmbenennen:
 		return func(gtx layout.Context) { e.umbenennenBeginnen(gtx) }
 	case aktAusblenden:
-		return func(layout.Context) { e.schalteAusgeblendet(e.s.Auswahl) }
+		return func(layout.Context) { e.schalteAusgeblendetGruppe(e.s.Auswahl) }
 	case aktSperren:
-		return func(layout.Context) { e.s.SchalteGesperrt(e.s.Auswahl) }
+		return func(layout.Context) { e.s.SchalteGesperrtGruppe(e.s.Auswahl) } // mit der gewählten Gruppe (ADR-0044)
 	case aktEbeneVor:
 		return func(layout.Context) { e.s.EbeneSchritt(1) }
 	case aktEbeneZurueck:

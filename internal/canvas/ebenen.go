@@ -21,6 +21,7 @@ type EbenenZeile struct {
 	Objekt   document.Objekt // für Vorschau und Namen aus dem Inhalt
 	Gewaehlt bool
 	Haupt    bool // die Hauptauswahl (unter mehreren gewählten kräftiger gezeigt, F-945)
+	Gruppe   int  // wirksame Gruppe (ADR-0044 Punkt 5), 0 ohne
 }
 
 // Ebenen liefert die Zeilen der Liste von oben (vorderste Ebene) nach unten; das Bild steht nicht darin.
@@ -28,10 +29,15 @@ func (s *Sitzung) Ebenen() []EbenenZeile {
 	o := s.D.ObjekteOhneZug()
 	z := make([]EbenenZeile, 0, len(o))
 	menge := s.gewaehltMerker().menge // einmal statt je Zeile (F-944)
+	groesse := s.gruppenGroesse()
 	for i := len(o) - 1; i >= 0; i-- {
 		w, _ := objektWerkzeug(o[i])
+		g := o[i].Ebenenwerte().Gruppe
+		if groesse[g] < 2 {
+			g = 0
+		}
 		z = append(z, EbenenZeile{ID: o[i].Kennung(), Art: w, Ebene: o[i].Ebenenwerte(), Objekt: o[i],
-			Gewaehlt: menge[o[i].Kennung()], Haupt: o[i].Kennung() == s.Auswahl})
+			Gewaehlt: menge[o[i].Kennung()], Haupt: o[i].Kennung() == s.Auswahl, Gruppe: g})
 	}
 	return z
 }
@@ -242,7 +248,7 @@ func (s *Sitzung) Doppeln() bool {
 		return false
 	}
 	v := DoppelVersatz / s.Abb.Zoom
-	kopie := Verschiebe(o, document.Pt(v, v))
+	kopie := mitGruppe(Verschiebe(o, document.Pt(v, v)), 0) // die Kopie eines Mitglieds steht allein (ADR-0044)
 	vor := s.D.Stand()
 	id, err := s.D.FuegeEin(kopie, s.D.Stelle(o.Kennung())+1)
 	if err != nil {

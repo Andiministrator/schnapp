@@ -320,12 +320,18 @@ func (s *Sitzung) druecken(p document.Punkt, t Taste, leertaste bool) {
 		return
 	}
 	if id, ok := Treffer(o, q, s.toleranz()); ok {
-		if s.Umschalt { // Umschalt+Klick nimmt hinzu oder heraus (ADR-0039 Punkt 2)
-			s.SchalteGewaehlt(id)
+		if s.Umschalt { // Umschalt+Klick nimmt hinzu oder heraus (ADR-0039 Punkt 2), mit seiner Gruppe (ADR-0044)
+			s.schalteGruppe(id)
 			return
 		}
 		if s.IstGewaehlt(id) && s.AnzahlGewaehlt() > 1 && s.beginneMehrere(id) {
 			return // Ziehen an einem gewählten verschiebt alle gewählten (Punkt 3)
+		}
+		if mit := s.gruppenMitglieder(id); len(mit) > 1 { // ein Mitglied wählt die ganze Gruppe (ADR-0044 Punkt 3)
+			s.setzeAuswahl(id, mit)
+			if s.beginneMehrere(id) {
+				return
+			}
 		}
 		s.waehleNur(id)
 		obj, _ := s.D.Objekt(id)

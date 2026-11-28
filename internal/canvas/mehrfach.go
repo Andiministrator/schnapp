@@ -171,7 +171,7 @@ func (s *Sitzung) waehleHaupt(id int) {
 		s.setzeAuswahl(id, s.Gewaehlt())
 		return
 	}
-	s.waehleNur(id)
+	s.waehleGruppe(id) // mit seiner Gruppe (ADR-0044 Punkt 3)
 }
 
 // obersteVon ist das oberste Objekt aus ids im Stapel (0 ohne).
@@ -303,6 +303,7 @@ func (s *Sitzung) beendeRahmen() {
 			neu = append(neu, o.Kennung())
 		}
 	}
+	neu = s.nurGanzeGruppen(neu) // eine Gruppe nur ganz (ADR-0044 Punkt 3)
 	if len(neu) == 0 {
 		return
 	}
@@ -377,7 +378,7 @@ func (s *Sitzung) loslassenMehrere() {
 		return
 	}
 	_ = s.D.BrecheZugAb()
-	s.waehleNur(s.mf.klick)
+	s.waehleGruppe(s.mf.klick) // ein Klick ohne Bewegung: das angeklickte mit seiner Gruppe (ADR-0044)
 }
 
 // --- Löschen und Doppeln mehrerer ---
@@ -403,6 +404,7 @@ func (s *Sitzung) doppleMehrere() bool {
 		o, _ := s.D.Objekt(id)
 		kopien = append(kopien, Verschiebe(o, document.Pt(v, v)))
 	}
+	kopien = s.neueGruppenFuer(kopien) // eigene Gruppen der Kopien (ADR-0044 Punkt 4)
 	vor := s.D.Stand()
 	neu, err := s.D.FuegeEinMehrere(kopien, ids)
 	if err != nil {

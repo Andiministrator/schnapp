@@ -27,7 +27,8 @@ const FormatVersion = 2
 // versionLupe ist die erste Formatversion mit dem Objekttyp „lupe“ (ADR-0033 Punkt 5); versionSpitze die erste mit
 // dem Attribut s:spitze am Text (ADR-0021 Nachtrag 13 Punkt 7); versionPfeilKoepfe die erste mit s:ende/s:anfang am
 // Pfeil (ADR-0021 Nachtrag 20); versionStrichart die erste mit s:strichart an Pfeil, Kasten und Lupe (ADR-0021
-// Nachtrag 25); versionSchatten die erste mit s:schatten an jeder Ebene (ADR-0021 Nachtrag 26 Punkt 6). Alle sind
+// Nachtrag 25); versionSchatten die erste mit s:schatten an jeder Ebene (ADR-0021 Nachtrag 26 Punkt 6); versionGruppe
+// die erste mit s:gruppe (ADR-0044 Punkt 6). Alle sind
 // Version 2.
 const (
 	versionLupe        = 2
@@ -35,6 +36,7 @@ const (
 	versionPfeilKoepfe = 2
 	versionStrichart   = 2
 	versionSchatten    = 2
+	versionGruppe      = 2
 )
 
 // schreibVersion ist die Version, die der Schreiber für die Objekte objekte angibt.
@@ -42,6 +44,9 @@ func schreibVersion(objekte []document.Objekt) int {
 	for _, o := range objekte {
 		if o.Ebenenwerte().Schatten.An {
 			return versionSchatten
+		}
+		if o.Ebenenwerte().Gruppe != 0 {
+			return versionGruppe
 		}
 		switch v := o.(type) {
 		case document.Lupe:
@@ -177,13 +182,16 @@ func (s *schreiber) ebene(e document.Ebene) {
 	if sch := e.Schatten; sch.An { // ADR-0021 Nachtrag 26 Punkt 6, docs/format.md 8.5
 		s.attr("s:schatten", zahl(sch.Winkel)+" "+zahl(sch.Laenge)+" "+zahl(sch.Weich)+" "+farbeHex(sch.Farbe))
 	}
+	if e.Gruppe != 0 { // ADR-0044 Punkt 6, docs/format.md 8.5
+		s.attr("s:gruppe", strconv.Itoa(e.Gruppe))
+	}
 	if s.schattenID != "" {
 		s.attr("filter", "url(#"+s.schattenID+")")
 		s.schattenID = ""
 	}
 }
 
-// leseEbene übernimmt s:name, s:ausgeblendet, s:gesperrt, s:deckkraft und (ab Version 2) s:schatten. Alle sind
+// leseEbene übernimmt s:name, s:ausgeblendet, s:gesperrt, s:deckkraft und (ab Version 2) s:schatten und s:gruppe. Alle sind
 // freiwillig: fehlend oder ungültig heißt kein Name, sichtbar, offen, deckend, kein Schatten — kein Schaden (wie
 // s:schrift).
 func leseEbene(a map[string]string, version int) document.Ebene {
@@ -198,6 +206,9 @@ func leseEbene(a map[string]string, version int) document.Ebene {
 	}
 	if v, da := a["schatten"]; da && version >= versionSchatten {
 		e.Schatten = leseSchatten(v)
+	}
+	if g, ok := parseGanz(a["gruppe"]); ok && g >= 1 && g <= document.MaxGruppe && version >= versionGruppe {
+		e.Gruppe = g
 	}
 	return e
 }

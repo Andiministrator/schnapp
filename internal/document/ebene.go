@@ -31,7 +31,13 @@ type Ebene struct {
 	Transparenz uint8
 	// Schatten der Ebene (ADR-0021 Nachtrag 26); Nullwert: keiner.
 	Schatten Schatten
+	// Gruppe ist die Kennung einer flachen Gruppe (ADR-0044): Objekte mit derselben Zahl werden zusammen gewählt;
+	// 0 = keine Gruppe. Nur innerhalb eines Dokuments bedeutsam.
+	Gruppe int
 }
+
+// MaxGruppe begrenzt die Kennung einer Gruppe (ADR-0044 Punkt 6).
+const MaxGruppe = 1 << 30
 
 // Schatten ist der Schatten einer Ebene (ADR-0021 Nachtrag 26): Winkel ist die Richtung, aus der das Licht kommt (Grad,
 // 0° von rechts, gegen den Uhrzeigersinn), Laenge der Versatz und Weich der Radius der Unschärfe (σ = Weich/2), beide in
@@ -132,6 +138,9 @@ func (e Ebene) pruefe() error {
 	}
 	if e.Transparenz > 100 {
 		return fmt.Errorf("document: Deckkraft der Ebene ungültig")
+	}
+	if e.Gruppe < 0 || e.Gruppe > MaxGruppe {
+		return fmt.Errorf("document: Gruppe der Ebene ungültig")
 	}
 	return e.Schatten.pruefe()
 }

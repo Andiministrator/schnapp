@@ -37,9 +37,16 @@ func (e *editor) hilfeZeilen() []hilfeZeile {
 	for i := 0; i < menueAnzahl; i++ {
 		var teil []hilfeZeile
 		for _, en := range e.menueEintraegeVon(i) {
+			if _, zweite := hilfePaarZweite[en.akt]; zweite {
+				continue // steht mit der ersten auf einer Zeile
+			}
 			k := menueKuerzel(en)
 			if !en.hatWerkzeug && en.akt != aktTextBearbeiten {
 				k = strings.Join(alleKuerzel(en.akt), ", ") // auch die zweite Taste (Strg+Y, Rücktaste)
+			}
+			if p, ok := hilfePaare[en.akt]; ok && k != "" {
+				teil = append(teil, hilfeZeile{text: p.text(), taste: paarTaste(k, strings.Join(alleKuerzel(p.zweite), ", "))})
+				continue
 			}
 			if k != "" {
 				teil = append(teil, hilfeZeile{text: en.text, taste: k})
@@ -74,6 +81,36 @@ func (e *editor) hilfeZeilen() []hilfeZeile {
 		hilfeZeile{text: i18n.T("Extend the selection"), taste: i18n.T("Shift") + "+" + i18n.T("Arrow")},
 		hilfeZeile{text: i18n.T("Select all captures"), taste: i18n.T("Ctrl") + "+A"},
 	)
+}
+
+// hilfePaar legt zwei Gegenstücke auf eine Zeile der Übersicht (F-705: sonst rollte sie im Startfenster, seit den
+// Gruppen, ADR-0044, zwei Zeilen mehr).
+type hilfePaar struct {
+	zweite aktion
+	text   func() string
+}
+
+var hilfePaare = map[aktion]hilfePaar{
+	aktEbeneVor:      {aktEbeneZurueck, func() string { return i18n.T("Bring forward / send backward") }},
+	aktEbeneDarueber: {aktEbeneDarunter, func() string { return i18n.T("Select layer above / below") }},
+}
+
+// hilfePaarZweite sind die zweiten Handlungen der Paare.
+var hilfePaarZweite = func() map[aktion]bool {
+	m := map[aktion]bool{}
+	for _, p := range hilfePaare {
+		m[p.zweite] = true
+	}
+	return m
+}()
+
+// paarTaste fasst zwei Kürzel zusammen: gleicher Umschalter → „Strg+Bild↑/Bild↓“, sonst „a / b“.
+func paarTaste(a, b string) string {
+	ia, ib := strings.LastIndex(a, "+"), strings.LastIndex(b, "+")
+	if ia >= 0 && ib >= 0 && a[:ia] == b[:ib] {
+		return a + "/" + b[ib+1:]
+	}
+	return a + " / " + b
 }
 
 // Maße der Übersicht in dp (F-705: so, dass alle Zeilen im Startfenster ohne Rollen in zwei Spalten stehen).

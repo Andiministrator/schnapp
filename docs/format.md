@@ -144,7 +144,7 @@ Root element `svg`:
 
 | Attribute | Value | Required |
 |---|---|---|
-| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7, the attribute `s:spitze` of the text, 8.3, the attributes `s:ende`/`s:anfang` of the arrow, 8.1, the attribute `s:strichart` of arrow, box and magnifier, 8.8, and the layer attribute `s:schatten`, 8.5; writers use the lowest version that carries the content, section 12) | MUST |
+| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7, the attribute `s:spitze` of the text, 8.3, the attributes `s:ende`/`s:anfang` of the arrow, 8.1, the attribute `s:strichart` of arrow, box and magnifier, 8.8, and the layer attributes `s:schatten` and `s:gruppe`, 8.5; writers use the lowest version that carries the content, section 12) | MUST |
 | `width`, `height` | size of the original in pixels, plain decimal integers without unit | MUST |
 | `viewBox` | `0 0 <width> <height>` | writer MUST, reader ignores |
 | `xmlns`, `xmlns:s` | the namespaces above | writer MUST |
@@ -384,7 +384,7 @@ Informative: the number is drawn in bold white, centred, with font size `1.2 x r
 
 ### 8.5 Layer attributes (all object types)
 
-Every object is a layer above the image; stacking order is document order (section 8). Five OPTIONAL attributes may
+Every object is a layer above the image; stacking order is document order (section 8). Six OPTIONAL attributes may
 appear on the element of any object type:
 
 | Attribute | Value |
@@ -394,10 +394,11 @@ appear on the element of any object type:
 | `s:gesperrt` | `true`: the layer is locked against changes with the pointer. Any other value or missing: not locked |
 | `s:deckkraft` | Layer opacity in percent, integer `0` to `100` (syntax of 5.2). Missing or invalid: `100` |
 | `s:schatten` | Drop shadow, format version 2 only: `ANGLE DISTANCE SOFTNESS COLOUR`, three numbers and a colour (5.2) separated by single spaces. Missing, invalid or in a version-1 file: no shadow (see below) |
+| `s:gruppe` | Group, format version 2 only: an integer `1` to `1073741824` (syntax of 5.2). Objects with the same value form one group. Missing, invalid or in a version-1 file: no group (see below) |
 
 Writers emit them only when they differ from the default. The first four were added without changing the format
 version (like the text attributes of 8.3): a reader that does not know them ignores them (section 11, rule 3) and shows
-every object visible, unlocked and opaque. `s:schatten` belongs to format version 2 (below). No value of any of them
+every object visible, unlocked and opaque. `s:schatten` and `s:gruppe` belong to format version 2 (below). No value of any of them
 makes a file damaged.
 
 A hidden layer is **kept** in the working file but drawn nowhere: not in the visible image, the exports, the
@@ -420,6 +421,13 @@ is ignored. Informative: the reference renderer moves the coverage by whole pixe
 Gaussian with three box filters; the SVG export and the presentation in a working file use a `filter` element
 (`feGaussianBlur`, `feOffset`, `feFlood`, `feComposite`, `feMerge`) referenced from the object. Example:
 `testdata/format/shadow`.
+
+**Group (`s:gruppe`).** Objects carrying the same value belong together: a program selects, moves, hides and locks
+them as one unit. Groups are flat (no nesting) and do not change drawing: stacking order, opacity, shadow and
+visibility stay per object, and members need not be adjacent in document order. The value only identifies the group
+within one file; it has no other meaning, and a writer MAY renumber groups. A group with a single member behaves like
+an ungrouped object. The attribute belongs to format version 2: a writer emits `s:format="2"` if any object has it
+(section 12), and in a version-1 file it is ignored. Example: `testdata/format/groups`.
 
 ### 8.6 Unknown object types
 
@@ -599,7 +607,7 @@ Original width and height are at least 1.
    than patch single chunks.
 7. Write the lowest format version that carries the content: `s:format="2"` if and only if the document contains a
    `lupe` (8.7), a text with `s:spitze` (8.3), an arrow with `s:ende` or `s:anfang` (8.1) or an object with
-   `s:strichart` (8.8) or `s:schatten` (8.5), otherwise `1`. A reader that knows only version 1 then still reads
+   `s:strichart` (8.8), `s:schatten` or `s:gruppe` (8.5), otherwise `1`. A reader that knows only version 1 then still reads
    every file without them, and reports a file with one as newer instead of damaged.
 
 ## 13. What is not stored

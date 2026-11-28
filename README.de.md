@@ -105,6 +105,11 @@ diagonal geteilt, und das Kästchen *Schatten* zeigt einen Strich. Die Griffe bl
 übrigen tragen einen schlichten Rahmen, Kopf der Leiste und Fußzeile nennen die Zahl. In der Ebenenliste nimmt
 **Strg+Klick** eine Zeile zur Auswahl hinzu oder heraus, **Umschalt+Klick** wählt den Bereich ab der zuletzt ohne
 Umschalt angeklickten Zeile; die Zeile der zuletzt gewählten ist kräftiger hervorgehoben.
+**Gruppen:** **Strg+G** (*Ebene → Gruppieren*) gruppiert die gewählten Beschriftungen, **Strg+Umschalt+G** hebt die
+Gruppierung auf. Ein Klick auf ein Mitglied wählt dann die ganze Gruppe (Umschalt+Klick nimmt die ganze Gruppe dazu
+oder heraus, der Auswahlrahmen nimmt eine Gruppe nur, wenn er sie ganz umschließt), so dass Pfeil, Text und Nummer
+gemeinsam wandern, sich ausblenden (**Strg+H**), sperren (**Strg+L**) und doppeln lassen. Ein einzelnes Mitglied
+änderst du über seine Zeile in der Ebenenliste; Mitglieder tragen dort einen farbigen Streifen.
 Das Mausrad rollt die Ansicht (mit **Umschalt** waagerecht; am Touchpad zwei Finger schieben), **Strg**+Mausrad zoomt zum
 Zeiger (am Touchpad Strg und zwei Finger); über dem Navigator zoomt das Mausrad ohne Strg. Die Ansicht verschiebst du mit gehaltener **Leertaste** und Ziehen (in jedem Werkzeug, auch
 am Touchpad ohne mittlere Taste), mit der mittleren Taste, durch Ziehen auf dem leeren Rand um das Bild oder im

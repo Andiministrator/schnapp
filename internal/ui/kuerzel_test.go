@@ -72,7 +72,8 @@ func TestMenueZeigtKuerzel(t *testing.T) {
 		aktSperren: "Ctrl+L", aktEbeneVor: "Ctrl+PgUp", aktEbeneZurueck: "Ctrl+PgDn", aktEbeneDarueber: "Alt+PgUp",
 		aktEbeneDarunter: "Alt+PgDn", aktFarbenTauschen: "Ctrl+Shift+X", aktEinrasten: "", aktNavigator: "",
 		aktEinstellungen: "Ctrl+,", aktTextKopieren: "Ctrl+Shift+T", aktLeiste: "Ctrl+Shift+R",
-		aktBibliothek: "Ctrl+Shift+L", aktOeffnen: "Ctrl+O", aktAllesWaehlen: "Ctrl+A"}
+		aktBibliothek: "Ctrl+Shift+L", aktOeffnen: "Ctrl+O", aktAllesWaehlen: "Ctrl+A", aktGruppieren: "Ctrl+G",
+		aktGruppierungAufheben: "Ctrl+Shift+G"}
 	// Ausrichten und Verteilen (ADR-0039) haben kein Kürzel; die Nullwerte der Abbildung sagen das.
 	for i := 0; i < menueAnzahl; i++ {
 		for _, en := range e.menueEintraegeVon(i) {

@@ -1,0 +1,135 @@
+[
+  {
+    "name": "GR1 Gruppe mit einem Mitglied wirkt",
+    "datei": "internal/canvas/gruppe.go",
+    "paket": "./internal/canvas",
+    "alt": "if g == 0 || s.gruppenGroesse()[g] < 2 {",
+    "neu": "if g == 0 {"
+  },
+  {
+    "name": "GR2 Klick wählt nur das Mitglied",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "if mit := s.gruppenMitglieder(id); len(mit) > 1 {",
+    "neu": "if mit := s.gruppenMitglieder(id); len(mit) > 99 {"
+  },
+  {
+    "name": "GR3 Klick ohne Bewegung verliert die Gruppe",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "s.waehleGruppe(s.mf.klick)",
+    "neu": "s.waehleNur(s.mf.klick)"
+  },
+  {
+    "name": "GR4 Umschalt nimmt nur das Mitglied",
+    "datei": "internal/canvas/sitzung.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\t\ts.schalteGruppe(id)\n",
+    "neu": "\t\t\ts.SchalteGewaehlt(id)\n"
+  },
+  {
+    "name": "GR5 Rahmen nimmt halbe Gruppen",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\tneu = s.nurGanzeGruppen(neu)",
+    "neu": "\t_ = s.nurGanzeGruppen"
+  },
+  {
+    "name": "GR6 Gruppieren vergibt belegte Kennung",
+    "datei": "internal/canvas/gruppe.go",
+    "paket": "./internal/canvas",
+    "alt": "if !belegt[g] && !auch[g] {",
+    "neu": "if !auch[g] {"
+  },
+  {
+    "name": "GR7 ganze Gruppe erneut gruppierbar",
+    "datei": "internal/canvas/gruppe.go",
+    "paket": "./internal/canvas",
+    "alt": "return s.gruppenGroesse()[g] != len(ids)",
+    "neu": "return true"
+  },
+  {
+    "name": "GR8 Aufheben lässt die Kennung",
+    "datei": "internal/canvas/gruppe.go",
+    "paket": "./internal/canvas",
+    "alt": "neu = append(neu, mitGruppe(o, 0))",
+    "neu": "neu = append(neu, o)"
+  },
+  {
+    "name": "GR9 Sperren nur das Mitglied",
+    "datei": "internal/canvas/gruppe.go",
+    "paket": "./internal/canvas",
+    "alt": "\tg := s.gewaehlteGruppe(id)\n\tif g == 0 {\n\t\treturn einzeln(id)\n\t}\n",
+    "neu": "\treturn einzeln(id)\n\tg := 0\n"
+  },
+  {
+    "name": "GR10 Kopien behalten die alte Gruppe",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\tkopien = s.neueGruppenFuer(kopien)",
+    "neu": "\t_ = s.neueGruppenFuer"
+  },
+  {
+    "name": "GR11 Kopie eines Mitglieds bleibt in der Gruppe",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "kopie := mitGruppe(Verschiebe(o, document.Pt(v, v)), 0)",
+    "neu": "kopie := Verschiebe(o, document.Pt(v, v))"
+  },
+  {
+    "name": "GR12 Ebenenliste ohne Gruppe",
+    "datei": "internal/canvas/ebenen.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif groesse[g] < 2 {\n\t\t\tg = 0\n",
+    "neu": "\t\tif true || groesse[g] < 2 {\n\t\t\tg = 0\n"
+  },
+  {
+    "name": "GR13 Rechtsklick wählt nur das Mitglied",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.waehleGruppe(id) // mit seiner Gruppe (ADR-0044 Punkt 3)",
+    "neu": "\ts.waehleNur(id)"
+  },
+  {
+    "name": "GR14 Format schreibt keine Gruppe",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\ts.attr(\"s:gruppe\", strconv.Itoa(e.Gruppe))\n",
+    "neu": ""
+  },
+  {
+    "name": "GR15 Format liest Gruppe in Version 1",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "g <= document.MaxGruppe && version >= versionGruppe {",
+    "neu": "g <= document.MaxGruppe {"
+  },
+  {
+    "name": "GR16 Version 1 trotz Gruppe",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\tif o.Ebenenwerte().Gruppe != 0 {\n\t\t\treturn versionGruppe\n\t\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "GR17 Dokument prüft die Gruppe nicht",
+    "datei": "internal/document/ebene.go",
+    "paket": "./internal/document",
+    "alt": "\tif e.Gruppe < 0 || e.Gruppe > MaxGruppe {",
+    "neu": "\tif false {"
+  },
+  {
+    "name": "GR18 Strg+G ohne Handlung",
+    "datei": "internal/ui/menue.go",
+    "paket": "./internal/ui",
+    "alt": "\t\treturn func(layout.Context) { e.s.Gruppieren() }",
+    "neu": "\t\treturn func(layout.Context) {}"
+  },
+  {
+    "name": "GR19 Paar ohne gemeinsame Umschalter",
+    "datei": "internal/ui/hilfe.go",
+    "paket": "./internal/ui",
+    "alt": "\tif ia >= 0 && ib >= 0 && a[:ia] == b[:ib] {",
+    "neu": "\tif false && ia >= 0 && ib >= 0 && a[:ia] == b[:ib] {"
+  }
+]

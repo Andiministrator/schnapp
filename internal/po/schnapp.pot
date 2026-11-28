@@ -1937,6 +1937,14 @@ msgstr ""
 msgid "Select all captures"
 msgstr ""
 
+#: internal/ui/hilfe.go
+msgid "Bring forward / send backward"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Select layer above / below"
+msgstr ""
+
 #: internal/ui/hilfe.go internal/ui/oberflaeche.go
 msgid "Keyboard shortcuts"
 msgstr ""
@@ -1995,6 +2003,14 @@ msgstr ""
 
 #: internal/ui/kontext.go internal/ui/oberflaeche.go
 msgid "Rename…"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Group"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Ungroup"
 msgstr ""
 
 #: internal/ui/kontext.go

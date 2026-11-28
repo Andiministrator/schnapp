@@ -165,6 +165,9 @@ func (e *editor) menueEintraegeRoh(i int) []menueEintrag {
 			{akt: aktUmbenennen, text: i18n.T("Rename…"), an: an},
 			{akt: aktAusblenden, text: aus, an: an},
 			{akt: aktSperren, text: sperr, an: an},
+			// Gruppen (ADR-0044 Punkt 2)
+			{akt: aktGruppieren, text: i18n.T("Group"), an: s.KannGruppieren(), gruppe: true},
+			{akt: aktGruppierungAufheben, text: i18n.T("Ungroup"), an: s.KannGruppierungAufheben()},
 			{akt: aktEbeneVor, text: i18n.T("Bring forward"), an: s.KannEbeneSchritt(1), gruppe: true},
 			{akt: aktEbeneZurueck, text: i18n.T("Send backward"), an: s.KannEbeneSchritt(-1)},
 			{akt: aktEbeneDarueber, text: i18n.T("Select layer above"), an: len(s.D.Objekte()) > 0, gruppe: true},

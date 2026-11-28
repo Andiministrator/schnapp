@@ -2080,3 +2080,15 @@ msgstr[1] "Auswahl: %d Objekte"
 msgctxt "mixed values"
 msgid "Mixed"
 msgstr "Gemischt"
+
+msgid "Group"
+msgstr "Gruppieren"
+
+msgid "Ungroup"
+msgstr "Gruppierung aufheben"
+
+msgid "Bring forward / send backward"
+msgstr "Nach vorn / nach hinten"
+
+msgid "Select layer above / below"
+msgstr "Ebene darüber / darunter wählen"

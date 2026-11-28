@@ -177,6 +177,17 @@ func beispiele() []beispiel {
 			fuege(t, d, k, p)
 			return d
 		}, Metadaten{}, false},
+		{"groups", func(t *testing.T) *document.Dokument { // flache Gruppen, Formatversion 2 (ADR-0044)
+			d := beispielDok(t, 64, 48)
+			rot := document.Strich{Farbe: color.NRGBA{220, 30, 30, 255}, Breite: 2}
+			k := document.Kasten{Bereich: document.R(document.Pt(4, 4), document.Pt(28, 24)), Strich: rot}
+			k.Ebene.Gruppe = 1
+			p := document.GeraderPfeil(document.Pt(30, 14), document.Pt(58, 30), rot)
+			p.Ebene.Gruppe = 1
+			n := document.Nummer{Mitte: document.Pt(12, 38), Radius: 6, Wert: 1, Farbe: color.NRGBA{220, 30, 30, 255}}
+			fuege(t, d, k, p, n)
+			return d
+		}, Metadaten{}, false},
 		{"callout", func(t *testing.T) *document.Dokument { // Sprechblase mit und ohne Füllung, Formatversion 2 (ADR-0021 Nachtrag 13)
 			d := beispielDok(t, 64, 48)
 			fuege(t, d, document.Text{Ort: document.Pt(4, 4), Inhalt: "Look", Schriftgrad: 9, Farbe: color.NRGBA{0, 0, 0, 255},
@@ -753,7 +764,7 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 		"kante",
 		"streifen", "zeilen", "von", "bis", "ebene", "typ", "a", "b", "k", "strich", "bereich", "fuellung", "eckradius",
 		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "schrift", "stil", "ausrichtung", "spitze", "mitte", "wert", "radius",
-		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel", "ende", "anfang", "strichart", "schatten"}
+		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel", "ende", "anfang", "strichart", "schatten", "gruppe"}
 	for _, w := range wortliste {
 		if !gesehen[w] {
 			t.Errorf("Beispiele enthalten s:%s nicht (Beispielabdeckung)", w)

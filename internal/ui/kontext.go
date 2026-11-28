@@ -109,6 +109,13 @@ func (e *editor) kontextEintraege() []menueEintrag {
 		menueEintrag{akt: aktSperren, text: sperr, an: an},
 		menueEintrag{akt: aktUmbenennen, text: i18n.T("Rename…"), an: an},
 	)
+	if s.KannGruppieren() { // Gruppen nur, wo sie wirken (ADR-0044 Punkt 2)
+		en = append(en, menueEintrag{akt: aktGruppieren, text: i18n.T("Group"), an: true, gruppe: true})
+	}
+	if s.KannGruppierungAufheben() {
+		en = append(en, menueEintrag{akt: aktGruppierungAufheben, text: i18n.T("Ungroup"), an: true,
+			gruppe: !s.KannGruppieren()})
+	}
 	grau := e.schnellstilSichernGrau()
 	en = append(en, menueEintrag{akt: aktSchnellstilSichern, text: i18n.T("Save style as quick style"), an: grau == "",
 		erklaerung: grau, gruppe: true})

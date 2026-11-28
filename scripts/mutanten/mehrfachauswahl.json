@@ -101,7 +101,7 @@
     "name": "MA15 Klick ohne Bewegung lässt alle gewählt",
     "datei": "internal/canvas/mehrfach.go",
     "paket": "./internal/canvas",
-    "alt": "\t_ = s.D.BrecheZugAb()\n\ts.waehleNur(s.mf.klick)",
+    "alt": "\t_ = s.D.BrecheZugAb()\n\ts.waehleGruppe(s.mf.klick)",
     "neu": "\t_ = s.D.BrecheZugAb()"
   },
   {

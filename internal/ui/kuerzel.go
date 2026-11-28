@@ -77,6 +77,9 @@ const (
 	aktAusrichtenUnten
 	aktVerteilenWaagerecht
 	aktVerteilenSenkrecht
+	// Gruppen (ADR-0044): Menü Ebene → „Group“ (Strg+G), „Ungroup“ (Strg+Umschalt+G).
+	aktGruppieren
+	aktGruppierungAufheben
 )
 
 // taste ist ein Tastenkürzel des Editors. Genau eines gilt: akt (Handlung), werkzeug (wählt ein Werkzeug, hatWerkzeug)
@@ -144,6 +147,8 @@ func tastenTabelle() []taste {
 		{filter: key.Filter{Name: key.NameF2}, akt: aktUmbenennen},
 		strg("H", aktAusblenden),
 		strg("L", aktSperren),
+		strg("G", aktGruppieren), // G allein ist frei; Strg+G wie in Snagit, Inkscape, Office (ADR-0044 Punkt 2)
+		{filter: key.Filter{Name: "G", Required: key.ModShortcut | key.ModShift}, akt: aktGruppierungAufheben},
 		strg(key.NamePageUp, aktEbeneVor),
 		strg(key.NamePageDown, aktEbeneZurueck),
 		{filter: key.Filter{Name: key.NamePageUp, Required: key.ModAlt}, akt: aktEbeneDarueber},

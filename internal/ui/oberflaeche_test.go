@@ -221,8 +221,12 @@ func TestHilfeTastenkuerzel(t *testing.T) {
 	}
 	tasten := map[string]bool{}
 	for _, z := range l.e.hilfeZeilen() {
-		for _, k := range strings.Split(z.taste, ", ") {
+		for _, k := range strings.Split(strings.ReplaceAll(z.taste, " / ", ", "), ", ") {
 			tasten[k] = true
+			// Paar auf einer Zeile (hilfePaare): „Ctrl+PgUp/PgDn“ steht für Ctrl+PgUp und Ctrl+PgDn.
+			if i, j := strings.LastIndex(k, "+"), strings.LastIndex(k, "/"); i >= 0 && j > i {
+				tasten[k[:j]], tasten[k[:i+1]+k[j+1:]] = true, true
+			}
 		}
 	}
 	for _, ta := range tastenTabelle() {

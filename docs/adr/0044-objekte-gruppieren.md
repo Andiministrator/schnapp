@@ -32,8 +32,8 @@ Inkscape, Photoshop und Krita verschachteln Gruppen als eigene Knoten mit Kinder
    Zeile. **Doppeln** gibt den Kopien eine neue Gruppe (dieselbe Aufteilung, andere Kennungen).
 5. **Ebenenliste:** Mitglieder einer Gruppe tragen links an der Zeile einen farbigen Streifen (eine Farbe je Gruppe aus
    einer festen Reihe); der Name bleibt. Keine Aufklapp-Knoten (keine Verschachtelung).
-6. **Format:** `s:gruppe="N"` (ganze Zahl ≥ 1) als Ebenen-Attribut am Element (§8.5). Die Kennungen gelten nur in der
-   Datei; beim Laden werden sie neu vergeben (Lesen über `document.Ebene.Gruppe`, Zuordnung je Zahl). Eine Datei mit
+6. **Format:** `s:gruppe="N"` (ganze Zahl 1 bis 2³⁰) als Ebenen-Attribut am Element (§8.5). Die Zahl bedeutet nur
+   innerhalb der Datei etwas; Schnapp übernimmt sie beim Laden, eine neue Gruppe bekommt die kleinste freie Zahl. Eine Datei mit
    Gruppe schreibt **FormatVersion 2** (wie Lupe, Spitze, Schatten); ein Leser der Version 1 ignoriert das Attribut,
    die Objekte bleiben ungruppiert und sonst unverändert. Beispiel `testdata/format/groups`.
 7. **Nicht Teil dieser Entscheidung:** verschachtelte Gruppen, Gruppendeckkraft, Skalieren der Gruppe als Ganzes

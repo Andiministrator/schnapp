@@ -1,0 +1,55 @@
+# Sichtprobe ADR-0044 (Karte #354): Objekte gruppieren, als Ganzes wählen und verschieben, Streifen in der Ebenenliste.
+# Aufruf: scripts/probe.sh --drehbuch scripts/drehbuecher/gruppen-354.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1, deutsche Oberfläche.
+# Erwartet:
+#  01 Pfeil und Kasten gewählt (Umschalt+Klick), Menü „Ebene“ offen: „Gruppieren“ (Strg+G) wählbar,
+#     „Gruppierung aufheben“ grau.
+#  02 nach Strg+G und Klick ins Leere, dann Klick auf den Schaft des Pfeils (nicht auf den mittleren Griff) und Klick
+#     auf die Überschrift „Farbe“ (klappt ein): Pfeil (Griffe) und Kasten (Rahmen) gewählt, Kopf
+#     „AUSWAHL: 2 OBJEKTE“; in der Ebenenliste tragen „Rechteck“ und „Pfeil“ links einen orangen Streifen,
+#     „Nummer 1“ keinen.
+#  03 Pfeil nach rechts unten gezogen: der Kasten ist mitgewandert, die Nummer nicht.
+#  04 Übersicht F1 im Startfenster: alle Zeilen ohne Rollbalken, „Gruppieren“ Strg+G, „Gruppierung aufheben“
+#     Strg+Umschalt+G, „Nach vorn / nach hinten“ Strg+Bild↑/Bild↓ (je nach Sprache der Tastennamen).
+warte 800
+taste A
+ziehe 300 300 600 420
+warte 200
+taste R
+ziehe 650 250 900 450
+warte 200
+taste N
+klick 520 620
+warte 200
+taste V
+klick 450 360
+taste-halten Umschalt
+klick 652 350
+taste-loslassen Umschalt
+warte 200
+taste F10
+taste Rechts
+taste Rechts
+taste Rechts
+taste Rechts
+taste Rechts
+warte 300
+foto 01-menue-ebene
+taste Esc
+warte 200
+taste Strg+G
+warte 200
+klick 1100 800
+warte 200
+klick 375 330
+warte 200
+klick 1350 471
+warte 300
+foto 02-gruppe-gewaehlt
+ziehe 375 330 475 390
+warte 300
+foto 03-gruppe-verschoben
+taste F1
+warte 400
+foto 04-uebersicht
+taste Esc

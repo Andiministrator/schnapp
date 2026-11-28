@@ -157,11 +157,23 @@ func (e *editor) ebenenNameUnveraendert(text string) bool {
 // schalteAusgeblendet blendet id aus bzw. ein und meldet beim Ausblenden, dass der Inhalt in der Arbeitsdatei bleibt
 // (F-586: der Hinweis der Leiste ist nicht immer zu sehen).
 func (e *editor) schalteAusgeblendet(id int) {
-	if !e.s.SchalteAusgeblendet(id) {
-		return
+	if e.s.SchalteAusgeblendet(id) {
+		e.meldeAusgeblendet(id)
 	}
+}
+
+// meldeAusgeblendet sagt nach dem Ausblenden von id, dass der Inhalt in der Arbeitsdatei bleibt.
+func (e *editor) meldeAusgeblendet(id int) {
 	if o, ok := e.s.D.Objekt(id); ok && o.Ebenenwerte().Ausgeblendet {
 		e.melde(i18n.T("Layer hidden. It stays in the working file; redact to remove content for good."), false)
+	}
+}
+
+// schalteAusgeblendetGruppe ist schalteAusgeblendet über Menü und Strg+H: Ist die Gruppe von id gewählt, alle Mitglieder
+// (ADR-0044 Punkt 4); Auge und Schloss der Liste bleiben zeilenweise.
+func (e *editor) schalteAusgeblendetGruppe(id int) {
+	if e.s.SchalteAusgeblendetGruppe(id) {
+		e.meldeAusgeblendet(id)
 	}
 }
 
@@ -525,6 +537,16 @@ func (e *editor) zeichneEbenen(gtx layout.Context, x, y, breite, spalte, unten i
 // farbeAuswahlWeitere ist der Grund weiterer gewählter Zeilen: das Grün der Auswahl, halb durchscheinend.
 var farbeAuswahlWeitere = color.NRGBA{R: farbeAuswahl.R, G: farbeAuswahl.G, B: farbeAuswahl.B, A: 0x70}
 
+// gruppenFarben sind die Farben der Gruppenstreifen, reihum nach der Kennung (deutlich auf dem dunklen Grund und neben
+// dem Grün der Auswahl).
+var gruppenFarben = []color.NRGBA{
+	{R: 0xF2, G: 0x8C, B: 0x28, A: 0xFF}, {R: 0x4A, G: 0x9E, B: 0xF0, A: 0xFF}, {R: 0xD0, G: 0x5C, B: 0xE3, A: 0xFF},
+	{R: 0xF2, G: 0xC9, B: 0x4C, A: 0xFF}, {R: 0xEF, G: 0x5B, B: 0x5B, A: 0xFF}, {R: 0x5F, G: 0xD3, B: 0xC4, A: 0xFF},
+}
+
+// gruppenFarbe ist die Farbe des Streifens der Gruppe g (g ≥ 1).
+func gruppenFarbe(g int) color.NRGBA { return gruppenFarben[(g-1)%len(gruppenFarben)] }
+
 // ebenenZeilenGrund ist der Grund einer gewählten Zeile: die Hauptauswahl kräftig, weitere gewählte schwächer, damit
 // die Hauptauswahl erkennbar bleibt (F-945); false für nicht gewählte.
 func ebenenZeilenGrund(z canvas.EbenenZeile) (color.NRGBA, bool) {
@@ -552,6 +574,9 @@ func (e *editor) zeichneEbenenZeile(gtx layout.Context, z canvas.EbenenZeile, na
 	k := &e.ebenen
 	if grund, ok := ebenenZeilenGrund(z); ok {
 		paint.FillShape(gtx.Ops, grund, clip.Rect(r).Op())
+	}
+	if z.Gruppe != 0 { // Mitglied einer Gruppe: farbiger Streifen am linken Rand (ADR-0044 Punkt 5)
+		paint.FillShape(gtx.Ops, gruppenFarbe(z.Gruppe), clip.Rect(image.Rect(r.Min.X, r.Min.Y, r.Min.X+gtx.Dp(3), r.Max.Y)).Op())
 	}
 	paint.FillShape(gtx.Ops, farbeLinie, clip.Rect(image.Rect(r.Min.X, r.Max.Y-gtx.Dp(1), r.Max.X, r.Max.Y)).Op())
 	vorn := farbeText

@@ -118,6 +118,10 @@ and the *Shadow* box shows a dash. The handles stay on the last one selected; th
 sidebar heading and the footer say how many are selected. In the layer list, **Ctrl+click** adds a row to the selection
 or takes it out, **Shift+click** selects the range from the row you last clicked without Shift; the row of the last
 one selected is highlighted more strongly.
+**Groups:** **Ctrl+G** (*Layer → Group*) groups the selected annotations, **Ctrl+Shift+G** ungroups them. A click on
+any member then selects the whole group (Shift+click adds or removes the whole group, the selection frame takes a group
+only if it encloses all of it), so arrow, text and number move, hide (**Ctrl+H**), lock (**Ctrl+L**) and duplicate as
+one. To change a single member, click its row in the layer list; members carry a coloured stripe there.
 The mouse wheel scrolls the view (with **Shift** sideways; on a touchpad, slide two fingers), **Ctrl**+wheel zooms at
 the pointer (on a touchpad, Ctrl and two fingers); over the navigator the wheel zooms without Ctrl. To move the view, hold **Space** and drag (with every tool, also on a touchpad
 without a middle button), drag with the middle button, drag the empty margin around the image, or use the navigator.
