@@ -17,7 +17,7 @@ Schnapp runs on Linux with Wayland (KDE Plasma/KWin). Capturing talks to KWin di
 | `schnapp --region --output=shot.png` | Lets the user drag an area (interactive) |
 | `schnapp --list-screens --json` | Lists the monitors |
 | `schnapp --export=out.png FILE` | Renders FILE (a Schnapp working file, PNG or JPEG) with its crop, annotations and redactions into `out.png`, without a window; FILE stays unchanged |
-| `schnapp --annotate=list.json FILE` | Adds the arrows, rectangles, text, step numbers and redactions from `list.json` (`-` reads standard input) to FILE and saves as the editor does — see [Annotating and redacting](#annotating-and-redacting) |
+| `schnapp --annotate=list.json FILE` | Adds the arrows, rectangles, ellipses, text, step numbers and redactions from `list.json` (`-` reads standard input) to FILE and saves as the editor does — see [Annotating and redacting](#annotating-and-redacting) |
 | `schnapp --version --json` | Prints the version |
 
 Without `--output`, a capture is stored in the library (`~/Pictures/schnapp/YYYY-MM/…`, see the README) and the

@@ -24,6 +24,20 @@ func (z zeichner) musterKosten(s document.Strich, teile int) {
 	}
 }
 
+// ellipsenKosten zählt das Abtasten und Zerlegen einer Ellipse (n Punkte bzw. Teile) im Aufwand, wie ein Musterstück
+// (F-1023, Kritik #328 E-1): Auch ein voller Strich einer riesigen Ellipse hat Tausende Teile.
+func (z zeichner) ellipsenKosten(n int) {
+	if !z.ohneZaehlen {
+		z.auf.kanten += musterGewicht * float64(n)
+	}
+}
+
+// originalRahmen ist das ganze Original als Rechteck (Koordinaten der Objekte).
+func (z zeichner) originalRahmen() document.Rechteck {
+	r := z.d.OriginalBild().Rect
+	return document.R(document.Pt(float64(r.Min.X), float64(r.Min.Y)), document.Pt(float64(r.Max.X), float64(r.Max.Y)))
+}
+
 // rahmen zeichnet den eckigen Rahmen um r (Ansicht) mit dem Strich s (RahmenTeile). Liegt er ganz außerhalb des Bilds,
 // wird er nicht zerlegt; ein gemusterter zählt seine Stücke im Aufwand, auch wenn nur ein Teil ins Bild reicht (V-1 der
 // Sitzungs-Kritik 26.11. (5), Rest von F-840: fuelle zählt nur Teile im Bild).

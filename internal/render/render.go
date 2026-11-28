@@ -567,7 +567,16 @@ func (z zeichner) objekt(o document.Objekt) error {
 			// Ellipse (ADR-0047 Punkt 2): je Bereich abgeschnitten wie der runde Kasten; Füllung im abgetasteten Umriss,
 			// Strich als überlappungsfreie Teile des geschlossenen Linienzugs.
 			b := v.Bereich
+			strich := v.Strich.Breite > 0 && v.Strich.Farbe.A > 0
+			hw := 0.0
+			if strich {
+				hw = v.Strich.Breite / 2
+			}
+			if !document.EllipseSichtbar(v, z.originalRahmen()) {
+				break // Ring und Füllung berühren das Bild nicht: nicht abtasten (F-1023)
+			}
 			umriss := document.EllipsenUmriss(b)
+			z.ellipsenKosten(len(umriss))
 			if v.Fuellung.A > 0 {
 				z.jeStueck(huelleVon(umriss, 1), func(zs zeichner, abb func(document.Punkt) document.Punkt) {
 					pts := make([]document.Punkt, len(umriss))
@@ -577,11 +586,9 @@ func (z zeichner) objekt(o document.Objekt) error {
 					zs.fuelle([][]document.Punkt{pts}, nil, v.Fuellung)
 				})
 			}
-			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
+			if strich && document.EllipsenRingSichtbar(b, hw+1, z.originalRahmen()) {
 				sz := ZerlegeEllipse(b, v.Strich)
-				if v.Strich.Art != document.StrichVoll {
-					z.musterKosten(v.Strich, len(sz.Teile))
-				}
+				z.ellipsenKosten(len(sz.Teile)) // auch beim vollen Strich: das Zerlegen kostet je Teil (F-1023)
 				z.strichJeStueckMit(sz.ls, v.Strich, sz.Suche)
 			}
 			break

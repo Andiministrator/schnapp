@@ -419,6 +419,9 @@ func TestWechselSpeichernUnterOffenBeimAbholen(t *testing.T) {
 	if r := l.rett[l.pfade[0]]; r == nil || r.ende != 1 {
 		t.Errorf("Rettung der geladenen: %+v", r)
 	}
+	if !strings.Contains(l.e.meldung.Text, "Save As dialog") {
+		t.Errorf("Meldung %q", l.e.meldung.Text) // V-3 m4
+	}
 }
 
 // Punkt 2 (Kritik K-8, K-9): Autor, Aufnahmezeit und Schlagworte aus der Quelle, das Quellprogramm nicht.
@@ -473,6 +476,10 @@ func TestSpeichernUnterGrosseEndung(t *testing.T) {
 	if g := liesArbeitsdatei(t, ziel); g.Fremd || l.e.meldung.Fehler {
 		t.Errorf("fremd %v, Meldung %q", g.Fremd, l.e.meldung.Text)
 	}
+	// Bestätigte Endung (der Regelfall, SchreibeAtomarPrivat): auch 0600 (V-3).
+	if fi, err := os.Stat(ziel); err != nil || fi.Mode().Perm() != 0o600 {
+		t.Errorf("Rechte %v %v", fi.Mode().Perm(), err)
+	}
 }
 
 // Punkt 6: Die Dialoge sperren sich gegenseitig; „Saving a copy…“ verdrängt keine haltende Meldung (Kritik K-4); ein
@@ -526,6 +533,9 @@ func TestSpeichernUnterSperren(t *testing.T) {
 	if l.e.wechselAnfrage(l.pfade[0]) || len(l.aufrufe()) != 0 {
 		t.Error("Wechsel während des Schreibens")
 	}
+	if l.e.meldung.Text != "Verwerfen-Warnung" { // die Sperrmeldung geht nebenbei (V-3 m8)
+		t.Errorf("Sperrmeldung verdrängt die haltende: %q", l.e.meldung.Text)
+	}
 	close(tor)
 	l.unterFertig()
 }
@@ -548,7 +558,8 @@ func TestNeueAufnahmeNurEinmal(t *testing.T) {
 	}
 }
 
-// Der echte Start (Setsid, Argument, Abholen) ohne Fenster: ein Programm, das sofort endet; ein fehlendes scheitert.
+// Der echte Start ohne Fenster: das Programm bekommt das interne Argument; ein fehlendes scheitert (Setsid prüft der
+// Test nicht, das bleibt der Echtprobe).
 func TestNeueAufnahmeStartEcht(t *testing.T) {
 	ordner := t.TempDir()
 	marke := filepath.Join(ordner, "argument")
@@ -571,5 +582,129 @@ func TestNeueAufnahmeStartEcht(t *testing.T) {
 	}
 	if err := neueAufnahmeStart(filepath.Join(ordner, "fehlt")); err == nil {
 		t.Error("fehlendes Programm ohne Fehler")
+	}
+}
+
+// V-1: Ein Verweis von außen auf eine andere Aufnahme der Ablage ist kein Ziel; die Aufnahme bleibt unverändert.
+func TestSpeichernUnterSymlinkInDieAblage(t *testing.T) {
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 3)
+	kastenDazu(t, l.e.s.D)
+	andere := l.pfade[2] // offen ist pfade[1]
+	vorher := mustLesen(t, andere)
+	link := filepath.Join(t.TempDir(), "link.png")
+	if err := os.Symlink(andere, link); err != nil {
+		t.Skip(err)
+	}
+	mitUnterDialog(t, portal.Ergebnis{URI: "file://" + link}, nil)
+	l.taste("S", key.ModShortcut|key.ModShift)
+	l.unterFertig()
+	if !bytes.Equal(vorher, mustLesen(t, andere)) || !strings.Contains(l.e.meldung.Text, "outside the library") {
+		t.Errorf("über den Verweis geschrieben oder falsche Meldung: %q", l.e.meldung.Text)
+	}
+}
+
+// inOrdner mit Verweisen (Verify #341).
+func TestInOrdnerVerweise(t *testing.T) {
+	wurzel := t.TempDir()
+	ablage := filepath.Join(wurzel, "ablage")
+	monat := filepath.Join(ablage, "2026-11")
+	aussen := filepath.Join(wurzel, "aussen")
+	for _, o := range []string{monat, aussen, filepath.Join(ablage, "..x")} {
+		if err := os.MkdirAll(o, 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	hinein, ablageLink, hinaus := filepath.Join(aussen, "hinein"), filepath.Join(wurzel, "ablage-link"), filepath.Join(ablage, "hinaus")
+	for _, v := range [][2]string{{monat, hinein}, {ablage, ablageLink}, {aussen, hinaus}} {
+		if err := os.Symlink(v[0], v[1]); err != nil {
+			t.Skip(err)
+		}
+	}
+	for _, f := range []struct {
+		name, ordner, pfad string
+		soll               bool
+	}{
+		{"direkt", ablage, filepath.Join(ablage, "x.png"), true},
+		{"monat", ablage, filepath.Join(monat, "x.png"), true},
+		{"außen", ablage, filepath.Join(aussen, "x.png"), false},
+		{"Ordnerverweis hinein", ablage, filepath.Join(hinein, "x.png"), true},
+		{"Ablage als Verweis", ablageLink, filepath.Join(monat, "x.png"), true},
+		{"Verweis hinaus", ablage, filepath.Join(hinaus, "x.png"), false},
+		{"Präfix-Nachbar", ablage, filepath.Join(wurzel, "ablage2", "x.png"), false},
+		{"Ordner ..x", ablage, filepath.Join(ablage, "..x", "y.png"), true},
+	} {
+		if g := inOrdner(f.ordner, f.pfad); g != f.soll {
+			t.Errorf("%s: %v, Soll %v", f.name, g, f.soll)
+		}
+	}
+}
+
+// F-1008: Nach einem gescheiterten Start greift die Sperre nicht (Verify V-3 m5).
+func TestNeueAufnahmeSperreNichtNachFehler(t *testing.T) {
+	t.Setenv("WAYLAND_SOCKET", "")
+	l := neuerLeistenLauf(t, image.Pt(1200, 800), 2)
+	mitNeuerAufnahme(t, errors.New("kein exec"))
+	l.taste("N", key.ModShortcut)
+	if !l.e.neuGestartet.IsZero() {
+		t.Errorf("Sperre nach Fehlstart gesetzt")
+	}
+	gestartet := mitNeuerAufnahme(t, nil)
+	l.taste("N", key.ModShortcut)
+	if len(*gestartet) != 1 {
+		t.Errorf("nach Fehlstart kein neuer Versuch: %d", len(*gestartet))
+	}
+}
+
+// F-1009/F-1016: zerstoert wartet auf die Kopie, und zwar nach dem Notspeichern (Verify V-3 m1).
+func TestZerstoertWartetNachNotspeichernAufKopie(t *testing.T) {
+	var aus bytes.Buffer
+	altAus, altFrist := fehlerAusgabe, unterFrist
+	fehlerAusgabe, unterFrist = &aus, 300*time.Millisecond
+	t.Cleanup(func() { fehlerAusgabe, unterFrist = altAus, altFrist })
+	e := testEditor(t)
+	n := 0
+	e.unter.laeuft, e.unter.antwort = true, make(chan unterErgebnis, 1)
+	e.speichern = func(*document.Dokument) (Gespeichert, error) {
+		n++
+		e.unter.antwort <- unterErgebnis{name: "x.png"} // die Kopie wird erst während des Notspeicherns fertig
+		return Gespeichert{}, nil
+	}
+	kastenDazu(t, e.s.D)
+	_ = e.zerstoert(nil)
+	if n != 1 || e.unter.laeuft || aus.Len() != 0 {
+		t.Errorf("Notspeichern %d, läuft %v, Ausgabe %q", n, e.unter.laeuft, aus.String())
+	}
+}
+
+// V-2: Ein weiteres Signal beendet das Warten sofort; die Frist zählt ab Beginn des Schreibens.
+func TestSpeichernUnterAbwartenSignalUndFrist(t *testing.T) {
+	var aus bytes.Buffer
+	altAus := fehlerAusgabe
+	fehlerAusgabe = &aus
+	t.Cleanup(func() { fehlerAusgabe = altAus })
+	e := testEditor(t)
+	e.weitereSignale = make(chan struct{}, 1)
+	e.weitereSignale <- struct{}{}
+	e.unter.laeuft, e.unter.antwort = true, make(chan unterErgebnis, 1)
+	start := time.Now()
+	e.speichernUnterAbwarten(3 * time.Second) // ohne Signal-Ausweg dauerte es die ganze Frist (Mutant SU29)
+	if time.Since(start) > 2*time.Second || !strings.Contains(aus.String(), "not finished") {
+		t.Errorf("Signal: %v, %q", time.Since(start), aus.String())
+	}
+	aus.Reset()
+	e.unter.start = time.Now().Add(-time.Hour) // längst über der Frist
+	start = time.Now()
+	e.speichernUnterAbwarten(time.Minute)
+	if time.Since(start) > 2*time.Second || !strings.Contains(aus.String(), "not finished") {
+		t.Errorf("Frist ab Beginn: %v, %q", time.Since(start), aus.String())
+	}
+}
+
+// F-1012: Fehlerausgabe nur zur Diagnose und nie als Pipe (Verify V-3 m3).
+func TestStderrWeitergeben(t *testing.T) {
+	for _, f := range []struct{ debug, pipe, soll bool }{{false, false, false}, {true, false, true}, {true, true, false}, {false, true, false}} {
+		if g := stderrWeitergeben(f.debug, f.pipe); g != f.soll {
+			t.Errorf("%+v: %v", f, g)
+		}
 	}
 }

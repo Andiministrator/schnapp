@@ -37,7 +37,7 @@ var neueAufnahmeStart = func(programm string) error {
 	// die Fehlerausgabe nur zur Diagnose, sonst schriebe er nach dem Schließen des Terminals ins Leere, und nie in eine
 	// Pipe: `schnapp 2>&1 | tee` endete sonst erst mit dem zweiten Fenster (wie beim Halter, F-325; Kritik K-6).
 	c.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
-	if os.Getenv("SCHNAPP_DEBUG") != "" && !wlclip.IstPipe(2) {
+	if stderrWeitergeben(os.Getenv("SCHNAPP_DEBUG") != "", wlclip.IstPipe(2)) {
 		c.Stderr = os.Stderr
 	}
 	if err := c.Start(); err != nil {
@@ -46,6 +46,9 @@ var neueAufnahmeStart = func(programm string) error {
 	go func() { _ = c.Wait() }() // Ende abholen; Abbruch im Overlay (Exit 3) ist kein Fehler dieses Fensters
 	return nil
 }
+
+// stderrWeitergeben entscheidet, ob die neue Aufnahme die Fehlerausgabe erbt: nur zur Diagnose und nie als Pipe (F-1012).
+func stderrWeitergeben(debug, pipe bool) bool { return debug && !pipe }
 
 // neueAufnahmeGrau ist der Grund, warum „New capture“ nicht geht (leer: geht): Mit geerbtem WAYLAND_SOCKET fände der
 // neue Prozess den Compositor nicht sicher (wie der Halter der Zwischenablage, ADR-0024 Nachtrag 5).

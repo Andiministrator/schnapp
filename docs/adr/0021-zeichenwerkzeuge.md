@@ -81,7 +81,7 @@ Bedienung vor Funktionsfülle).
   Textereignisse (`key.EditEvent` an den fokussierten Editor) und eine Einfügemarke.
 - Neue Oberflächentexte (Werkzeugnamen, Hinweise in der Statusleiste) laufen über `i18n` mit Einträgen in `po/de.po`.
 - Ein Objekt verschieben heißt bei aktivem Zeichenwerkzeug: erst `V`. Das ist der Preis von Punkt 3.
-- **Später** (eigene Karten): Ellipse, Linie, Freihand, Textmarker, Sprechblasen (Rest von A-20/A-21); Wahl von
+- **Später** (eigene Karten): ~~Ellipse~~ (umgesetzt, ADR-0047), Linie, Freihand, Textmarker, Sprechblasen (Rest von A-20/A-21); Wahl von
   Strichstärke, Schriftgrad, Füllung und „Text ohne Schild“; Schnellstile (A-22); Einfügemarke in der Zeile
   (Pfeiltasten, Auswahl im Text), Einfügen aus der Zwischenablage; Umnummerieren; Open Sans ausliefern (eigenes Thema,
   seit Nachtrag 3 nicht mehr F-108).
@@ -532,7 +532,8 @@ Nachtrag 4 (eckig), Nachtrag 10 (Schrift) und Nachtrag 11 (Farbpaar) auf.
 - **Schalter (Punkt 6):** „Spitze“/„Tail“ in der rechten Leiste unter der Schrift, nur bei einem gewählten oder gerade
   eingegebenen Text; in der Eingabe gehört er zur Eingabe, sonst ein Rückgängig-Schritt.
 - **Werkzeugleiste:** Mit elf Werkzeugen und dem Farbfeld passt die Leiste in 480 × 320 nur, wenn die Knöpfe bis auf 18 dp
-  schrumpfen (vorher 20 dp, ADR-0031 Nachtrag 3, `werkzeugKnopfMinDp`).
+  schrumpfen (vorher 20 dp, ADR-0031 Nachtrag 3, `werkzeugKnopfMinDp`). *Seit Karte #328 (zwölf Werkzeuge mit der
+  Ellipse, ADR-0047) bis zu 16 dp.*
 
 **Ergänzt (F-634, 24.11.2026):** Die Standard-Spitze (Klick und Schalter „Spitze“) versucht nach dem Begrenzen auf das Bild die Ecken der Reihe nach — links unten, rechts unten, links oben, rechts oben, jeweils 3 Schriftgrade vom Schild weg —, bis `Text.Spitzendreieck` ein Dreieck liefert. Sitzt das Schild in einer Bildecke, fällt die Spitze sonst ins Schild oder an dessen Rand und die Blase bliebe ohne Dreieck. Geht keine Ecke, bleibt die erste.
 

@@ -81,7 +81,6 @@ func rahmen(x, y, b, h float64) []Teil {
 	}
 }
 
-// flaeche ist ein gefülltes Rechteck.
 // ellipsenRing ist der Ring um die Ellipse mit Mitte (cx, cy) und Halbachsen rx, ry als Vieleck mit n Ecken.
 func ellipsenRing(cx, cy, rx, ry float64, n int) []Teil {
 	p := make([]float64, 0, 2*n)
@@ -92,6 +91,7 @@ func ellipsenRing(cx, cy, rx, ry float64, n int) []Teil {
 	return ring(p...)
 }
 
+// flaeche ist ein gefülltes Rechteck.
 func flaeche(x, y, b, h float64) Teil {
 	return Teil{Punkte: []Punkt{{x, y}, {x + b, y}, {x + b, y + h}, {x, y + h}}}
 }

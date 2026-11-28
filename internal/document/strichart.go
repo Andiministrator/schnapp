@@ -2,7 +2,10 @@
 
 package document
 
-import "math"
+import (
+	"math"
+	"sort"
+)
 
 // Strichart ist das Muster eines Strichs (ADR-0021 Nachtrag 25): voll (Nullwert), gestrichelt oder gepunktet. Sie gilt
 // für den Schaft des Pfeils, den Strich des Kastens und Rahmen samt Linie der Lupe; Spitzen bleiben voll.
@@ -136,28 +139,35 @@ func zugLaengen(pts []Punkt) []float64 {
 	return l
 }
 
-// zugPunkt ist der Punkt des Linienzugs pts bei Bogenlänge s (cum aus zugLaengen).
+// zugPunkt ist der Punkt des Linienzugs pts bei Bogenlänge s (cum aus zugLaengen). Binär gesucht: Eine Ellipse hat bis
+// zu 1024 Punkte je Viertel und bis zu MaxMusterStuecke Stücke (F-1023, Kritik #328 E-1).
 func zugPunkt(pts []Punkt, cum []float64, s float64) Punkt {
-	for i := 1; i < len(pts); i++ {
-		if s <= cum[i] || i == len(pts)-1 {
-			d := cum[i] - cum[i-1]
-			if d <= 0 {
-				return pts[i]
-			}
-			t := min(max((s-cum[i-1])/d, 0), 1)
-			return pts[i-1].Plus(pts[i].Minus(pts[i-1]).Mal(t))
+	if len(pts) < 2 {
+		if len(pts) == 1 {
+			return pts[0]
 		}
+		return Punkt{}
 	}
-	return pts[0]
+	// kleinstes i ≥ 1 mit s <= cum[i], sonst der letzte Punkt
+	i := 1 + sort.Search(len(pts)-1, func(k int) bool { return s <= cum[k+1] })
+	if i >= len(pts) {
+		i = len(pts) - 1
+	}
+	d := cum[i] - cum[i-1]
+	if d <= 0 {
+		return pts[i]
+	}
+	t := min(max((s-cum[i-1])/d, 0), 1)
+	return pts[i-1].Plus(pts[i].Minus(pts[i-1]).Mal(t))
 }
 
-// teilzug ist der Linienzug pts zwischen den Bogenlängen von und bis, samt der Punkte dazwischen.
+// teilzug ist der Linienzug pts zwischen den Bogenlängen von und bis, samt der Punkte dazwischen (binär gesucht wie
+// zugPunkt).
 func teilzug(pts []Punkt, cum []float64, von, bis float64) []Punkt {
 	out := []Punkt{zugPunkt(pts, cum, von)}
-	for i := 1; i < len(pts)-1; i++ {
-		if cum[i] > von && cum[i] < bis {
-			out = append(out, pts[i])
-		}
+	i := max(1, sort.Search(len(cum), func(k int) bool { return cum[k] > von }))
+	for ; i < len(pts)-1 && cum[i] < bis; i++ {
+		out = append(out, pts[i])
 	}
 	return append(out, zugPunkt(pts, cum, bis))
 }

@@ -12,7 +12,9 @@ import (
 )
 
 // ADR-0047: Die Ellipse als Form des Kastens. Füllung nur im Oval, der Strich auf dem Umriss deckt halbdurchsichtig jedes
-// Pixel höchstens einmal (voll und gemustert, auch flach mit dickem Strich), gemustert gibt es Lücken.
+// Pixel höchstens einmal (voll und gemustert, auch flach mit dickem Strich), gemustert gibt es Lücken. Eine Füllung
+// sättigt im Rasterkern: geprüft wird so, dass der Strich in einem Aufruf gefüllt wird (getrennte Füllungen je Teil
+// deckten doppelt), nicht die Überlappungsfreiheit der Teile selbst (Kritik #328 E-4).
 
 func TestEllipseFuelltNurDasOval(t *testing.T) {
 	rot := color.NRGBA{R: 220, A: 255}
@@ -54,7 +56,7 @@ func TestEllipseStrichDecktEinmal(t *testing.T) {
 			hinzu(t, d, k)
 			b := bild(t, d)
 			if g := dunkelstesPixel(b); g < 125 {
-				t.Errorf("%s: dunkelstes Pixel %d: Teile überlappen", name, g)
+				t.Errorf("%s: dunkelstes Pixel %d: doppelt gedeckt", name, g)
 			}
 			// Am rechten Scheitel liegt Strich (voll und an jedem Scheitel ein halber Strich bzw. ein Punkt).
 			x, y := int(math.Floor(fall.r.Max.X)), int(math.Floor((fall.r.Min.Y+fall.r.Max.Y)/2))

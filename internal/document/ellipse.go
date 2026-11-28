@@ -21,7 +21,8 @@ func (k Kasten) Ellipse() bool {
 }
 
 // Grenzen der Abtastung (ADR-0047 Punkt 2): Sehne höchstens ellipseSehne vom Bogen, höchstens ellipseViertelMax Punkte
-// je Viertel (ein Viertel mit Halbachse 32767 bräuchte rund 1000).
+// je Viertel (ein Viertel mit Halbachse 32767 braucht rund 711; die Grenze greift ab rund 68 000 px, darüber weicht die
+// Sehne mehr ab, ADR-0047 Nachtrag 1 Punkt 2).
 const (
 	ellipseSehne      = 0.02
 	ellipseViertelMax = 1024
@@ -101,4 +102,34 @@ func EllipseEnthaelt(r Rechteck, p Punkt) bool {
 	}
 	x, y := (p.X-(r.Min.X+a))/a, (p.Y-(r.Min.Y+b))/b
 	return x*x+y*y <= 1
+}
+
+// EllipsenRingSichtbar meldet, ob der Ring um die Ellipse in b mit halber Strichbreite hw das Rechteck r berührt
+// (alle Werte im Original). Konservativ: false nur, wenn r ganz außerhalb des um hw geweiteten Bereichs liegt oder ganz
+// innerhalb der um hw verkleinerten Ellipse. Renderer und Editor tasten eine riesige Ellipse dann gar nicht erst ab
+// (F-1023, Kritik #328 E-1).
+func EllipsenRingSichtbar(b Rechteck, hw float64, r Rechteck) bool {
+	if r.Max.X < b.Min.X-hw || r.Min.X > b.Max.X+hw || r.Max.Y < b.Min.Y-hw || r.Min.Y > b.Max.Y+hw {
+		return false
+	}
+	innen := Rechteck{Min: b.Min.Plus(Pt(hw, hw)), Max: b.Max.Minus(Pt(hw, hw))}
+	if innen.Breite() <= 0 || innen.Hoehe() <= 0 {
+		return true
+	}
+	for _, p := range []Punkt{r.Min, Pt(r.Max.X, r.Min.Y), r.Max, Pt(r.Min.X, r.Max.Y)} {
+		if !EllipseEnthaelt(innen, p) {
+			return true
+		}
+	}
+	return false
+}
+
+// EllipseSichtbar meldet, ob Strich oder Füllung der Ellipse k das Rechteck r (Original) berühren: der Ring (Strich,
+// sonst nur der Rand, Saum 1 px für die Kantenglättung) oder bei Füllung das Innere, das r dann ganz enthält.
+func EllipseSichtbar(k Kasten, r Rechteck) bool {
+	hw := 0.0
+	if k.Strich.Breite > 0 && k.Strich.Farbe.A > 0 {
+		hw = k.Strich.Breite / 2
+	}
+	return EllipsenRingSichtbar(k.Bereich, hw+1, r) || k.Fuellung.A > 0 && EllipseEnthaelt(k.Bereich, r.Min)
 }

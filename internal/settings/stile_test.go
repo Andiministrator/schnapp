@@ -24,6 +24,7 @@ func beispielStile() []Stil {
 		{Art: ArtSprechblase, Farbe: color.NRGBA{A: 0xFF}, Schriftgrad: 20, Ausrichtung: document.AusrichtungRechts},
 		{Art: ArtNummer, Farbe: color.NRGBA{R: 0x2F, G: 0x6F, B: 0xDB, A: 0xFF}, Radius: 14},
 		{Art: ArtLupe, Farbe: color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}, Breite: 4},
+		{Art: ArtEllipse, Farbe: color.NRGBA{R: 0x2F, A: 0xFF}, Fuellung: color.NRGBA{B: 0x40, A: 0x80}, Breite: 5}, // ADR-0047
 		{Art: ArtKasten, Farbe: color.NRGBA{R: 0x11, A: 0xFF}, Breite: 6, // mit Schatten (ADR-0021 Nachtrag 26 Punkt 8)
 			Schatten: document.Schatten{An: true, Winkel: 112.5, Laenge: 6, Weich: 0, Farbe: color.NRGBA{B: 0x40, A: 0x66}}},
 	}

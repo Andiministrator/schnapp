@@ -144,7 +144,7 @@ Root element `svg`:
 
 | Attribute | Value | Required |
 |---|---|---|
-| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7, the attribute `s:spitze` of the text, 8.3, the attributes `s:ende`/`s:anfang` of the arrow, 8.1, the attribute `s:strichart` of arrow, box and magnifier, 8.8, and the layer attributes `s:schatten` and `s:gruppe`, 8.5; writers use the lowest version that carries the content, section 12) | MUST |
+| `s:format` | format version, a decimal integer; this document describes `1` and `2` (version `2` only adds the object type `lupe`, 8.7, the attribute `s:spitze` of the text, 8.3, the attributes `s:ende`/`s:anfang` of the arrow, 8.1, the attribute `s:strichart` of arrow, box and magnifier, 8.8, the layer attributes `s:schatten` and `s:gruppe`, 8.5, and the attribute `s:form` of the box, 8.2; writers use the lowest version that carries the content, section 12) | MUST |
 | `width`, `height` | size of the original in pixels, plain decimal integers without unit | MUST |
 | `viewBox` | `0 0 <width> <height>` | writer MUST, reader ignores |
 | `xmlns`, `xmlns:s` | the namespaces above | writer MUST |
@@ -363,7 +363,7 @@ left-aligned text has no `text-anchor` and `x` at the line start. Like all prese
 **Callout (speech bubble).** A text with `s:spitze` is a callout; there is no separate object type. The tip may lie
 anywhere inside the coordinate range (inside or outside the image and the label). `s:spitze` is part of format version
 2: a writer emits `s:format="2"` if the document contains a magnifier, a text with `s:spitze`, an arrow with
-`s:ende`/`s:anfang`, a stroke with `s:strichart` or an object with `s:schatten` or `s:gruppe` (section 12), and a
+`s:ende`/`s:anfang`, a stroke with `s:strichart`, a box with `s:form` or an object with `s:schatten` or `s:gruppe` (section 12), and a
 version-1 reader that meets a version-2 file reports it as newer instead of dropping the tip silently. A value that
 does not parse as a point makes a version-2 file damaged (section 11, rule 4).
 
@@ -555,7 +555,7 @@ value here and to the code must happen in the same commit.
 
 | Key | Value | Meaning |
 |---|---|---|
-| `format_version` | 2 | highest value of `s:format` read and written by this version (`2` only with a `lupe`, an `s:spitze`, an arrow head other than the defaults, an `s:strichart`, an `s:schatten` or an `s:gruppe`, section 12) |
+| `format_version` | 2 | highest value of `s:format` read and written by this version (`2` only with a `lupe`, an `s:spitze`, an arrow head other than the defaults, an `s:strichart`, an `s:form`, an `s:schatten` or an `s:gruppe`, section 12) |
 | `namespace` | `urn:x-schnapp:1` | Schnapp XML namespace |
 | `chunk_svg` | `snAP` | chunk with the compressed SVG |
 | `chunk_orig` | `snAO` | chunk with the original PNG |
@@ -615,8 +615,8 @@ Original width and height are at least 1.
 6. A program that stores a changed view of the file SHOULD rewrite all of it (visible image, `snAP`, `snAO`) rather
    than patch single chunks.
 7. Write the lowest format version that carries the content: `s:format="2"` if and only if the document contains a
-   `lupe` (8.7), a text with `s:spitze` (8.3), an arrow with `s:ende` or `s:anfang` (8.1) or an object with
-   `s:strichart` (8.8), `s:schatten` or `s:gruppe` (8.5), otherwise `1`. A reader that knows only version 1 then still reads
+   `lupe` (8.7), a text with `s:spitze` (8.3), an arrow with `s:ende` or `s:anfang` (8.1), a box with `s:form` (8.2) or
+   an object with `s:strichart` (8.8), `s:schatten` or `s:gruppe` (8.5), otherwise `1`. A reader that knows only version 1 then still reads
    every file without them, and reports a file with one as newer instead of damaged.
 
 ## 13. What is not stored

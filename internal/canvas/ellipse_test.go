@@ -117,3 +117,42 @@ func TestEllipseTreffer(t *testing.T) {
 		}
 	}
 }
+
+// ADR-0047 Punkt 5 (Kritik #328 E-2): Ein Schnellstil der Ellipse ist gültig, behält Füllung und Breite, setzt den Stil
+// des Werkzeugs Ellipse (nicht den des Kastens) und ändert eine gewählte Ellipse; ein eigener lässt sich anlegen.
+func TestEllipseSchnellstile(t *testing.T) {
+	s, _, _ := sitzung(t)
+	st := EingebauteSchnellstile(SchnellEllipse)[4] // „red-thick“: Breite 12
+	if b := st.bereinigt(); !b.gueltig() || b.Breite != 12 || b.Fuellung != st.Fuellung {
+		t.Fatalf("bereinigt %+v", b)
+	}
+	s.SetzeWerkzeug(WerkzeugEllipse)
+	s.WendeSchnellstilAn(st) // ohne gewähltes Objekt ändert sich das Dokument nicht (Rückgabe false)
+	if s.Stil.Breite != 12 {
+		t.Fatalf("Werkzeug: Breite %v", s.Stil.Breite)
+	}
+	s.SetzeWerkzeug(WerkzeugKasten)
+	if s.Stil.Breite == 12 {
+		t.Error("Schnellstil der Ellipse am Kasten")
+	}
+	s.SetzeWerkzeug(WerkzeugEllipse)
+	zieh(s, f(60, 60), f(90, 80))
+	if k := letztes(t, s).(document.Kasten); k.Strich.Breite != 12 || !s.SchnellstilPasst(st) {
+		t.Errorf("neue Ellipse %+v, passt %v", k, s.SchnellstilPasst(st))
+	}
+	if !s.WendeSchnellstilAn(EingebauteSchnellstile(SchnellEllipse)[0]) {
+		t.Fatal("auf gewählte Ellipse")
+	}
+	if k := letztes(t, s).(document.Kasten); k.Strich.Breite != 6 || k.Form != document.FormEllipse {
+		t.Errorf("gewählte Ellipse nach dem Stil %+v", k)
+	}
+	s.SetzeBreite(9) // sonst gleicht der Stand dem eingebauten Stil (HinzuDoppelt)
+	if neu, r := s.FuegeSchnellstilHinzu(SchnellEllipse); r != HinzuOK || neu.Art != SchnellEllipse || neu.Breite != 9 {
+		t.Errorf("eigener Stil: %+v, %v", neu, r)
+	}
+	// Ein Stil des Kastens wirkt nicht auf die gewählte Ellipse.
+	s.WendeSchnellstilAn(EingebauteSchnellstile(SchnellKasten)[4])
+	if k := letztes(t, s).(document.Kasten); k.Strich.Breite == 12 {
+		t.Error("Kastenstil auf die Ellipse angewandt")
+	}
+}

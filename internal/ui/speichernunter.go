@@ -31,6 +31,7 @@ type unterZustand struct {
 	offen   bool                // der Dialog läuft
 	dialog  chan exportErgebnis // Antwort des Dialogs
 	laeuft  bool                // das Schreiben läuft
+	start   time.Time           // Beginn des Schreibens (die Frist beim Schließen zählt ab hier, V-2)
 	antwort chan unterErgebnis  // Antwort des Schreibens
 }
 
@@ -154,8 +155,13 @@ func (e *editor) speichernUnterGewaehlt(r exportErgebnis) {
 		e.meldeNebenbei(i18n.T("This is the file open in this window. Choose another name."), true)
 		return
 	}
+	// Ein vorhandenes Ziel kann ein Verweis von außen in die Ablage sein: geschrieben würde durch ihn hindurch (V-1).
+	echt := pfad
+	if r, err := filepath.EvalSymlinks(pfad); err == nil {
+		echt = r
+	}
 	if e.bib != nil && e.bib.Bibliothek != nil {
-		if inOrdner(e.bib.Bibliothek.Orte.Ablage, pfad) {
+		if inOrdner(e.bib.Bibliothek.Orte.Ablage, pfad) || inOrdner(e.bib.Bibliothek.Orte.Ablage, echt) {
 			// In der Ablage verwaltet die Bibliothek Index, Vorschau und Rettung selbst (Punkt 4, Kritik K-11).
 			e.meldeNebenbei(i18n.T("Choose a place outside the library; the library keeps its captures itself."), true)
 			return
@@ -168,7 +174,7 @@ func (e *editor) speichernUnterGewaehlt(r exportErgebnis) {
 		e.meldeNebenbei(i18n.T("Could not save: finish the current action first."), true)
 		return
 	}
-	e.unter.laeuft = true
+	e.unter.laeuft, e.unter.start = true, time.Now()
 	if e.unter.antwort == nil {
 		e.unter.antwort = make(chan unterErgebnis, 1)
 	}
@@ -270,15 +276,22 @@ func (e *editor) speichernUnterFertig(r unterErgebnis) {
 	e.meldeNebenbei(text, r.ueberBudget)
 }
 
-// speichernUnterAbwarten läuft beim Zerstören: Ein laufendes Schreiben bekommt höchstens frist (ADR-0046 Punkt 6),
-// danach steht ein Hinweis auf der Fehlerausgabe; die Fußzeile gibt es dann nicht mehr.
+// speichernUnterAbwarten läuft beim Zerstören: Ein laufendes Schreiben bekommt höchstens frist ab seinem Beginn
+// (ADR-0046 Punkt 6, Nachtrag 2), ein weiteres Signal beendet das Warten sofort (V-2); danach steht ein Hinweis auf der
+// Fehlerausgabe, die Fußzeile gibt es dann nicht mehr.
 func (e *editor) speichernUnterAbwarten(frist time.Duration) {
 	if !e.unter.laeuft {
 		return
 	}
-	t := time.NewTimer(frist)
+	rest := frist
+	if !e.unter.start.IsZero() {
+		rest = max(0, time.Until(e.unter.start.Add(frist)))
+	}
+	t := time.NewTimer(rest)
 	defer t.Stop()
 	select {
+	case <-e.weitereSignale: // nil-Kanal (Tests ohne Signalwache): wartet nie
+		fmt.Fprintln(fehlerAusgabe, i18n.T("Saving a copy was not finished when the window closed; the copy may be missing."))
 	case r := <-e.unter.antwort:
 		e.unter.laeuft = false
 		if r.err != nil {

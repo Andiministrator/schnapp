@@ -45,8 +45,8 @@
     "name": "EL7 Renderer ohne Füllung",
     "datei": "internal/render/render.go",
     "paket": "./internal/render",
-    "alt": "\t\t\tumriss := document.EllipsenUmriss(b)\n\t\t\tif v.Fuellung.A > 0 {",
-    "neu": "\t\t\tumriss := document.EllipsenUmriss(b)\n\t\t\tif false && v.Fuellung.A > 0 {"
+    "alt": "\t\t\tumriss := document.EllipsenUmriss(b)\n\t\t\tz.ellipsenKosten(len(umriss))\n\t\t\tif v.Fuellung.A > 0 {",
+    "neu": "\t\t\tumriss := document.EllipsenUmriss(b)\n\t\t\tz.ellipsenKosten(len(umriss))\n\t\t\tif false && v.Fuellung.A > 0 {"
   },
   {
     "name": "EL8 Strich offen statt geschlossen",
@@ -187,5 +187,75 @@
     "paket": "./internal/document",
     "alt": "\t\tk.Form > FormEllipse {",
     "neu": "\t\tfalse {"
+  },
+  {
+    "name": "EL28 styles.ini kennt [ellipse] nicht",
+    "datei": "internal/settings/stile.go",
+    "paket": "./internal/settings",
+    "alt": "\tcase ArtKasten, ArtEllipse:\n\t\treturn []string{\"color\", \"fill\", \"width\", \"shadow\"}",
+    "neu": "\tcase ArtKasten:\n\t\treturn []string{\"color\", \"fill\", \"width\", \"shadow\"}"
+  },
+  {
+    "name": "EL29 Schnellstil setzt die Breite der Ellipse nicht",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tcase SchnellPfeil, SchnellKasten, SchnellLupe, SchnellEllipse:\n\t\t\tz.Breite = g.Breite",
+    "neu": "\t\tcase SchnellPfeil, SchnellKasten, SchnellLupe:\n\t\t\tz.Breite = g.Breite"
+  },
+  {
+    "name": "EL30 Ellipsen-Schnellstil ungültig",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase SchnellPfeil, SchnellKasten, SchnellLupe, SchnellEllipse:\n\t\treturn st.Breite > 0",
+    "neu": "\tcase SchnellPfeil, SchnellKasten, SchnellLupe:\n\t\treturn st.Breite > 0"
+  },
+  {
+    "name": "EL31 bereinigt verliert Füllung und Breite",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase SchnellKasten, SchnellEllipse:\n\t\tr.Fuellung, r.Breite = st.Fuellung, st.Breite",
+    "neu": "\tcase SchnellKasten:\n\t\tr.Fuellung, r.Breite = st.Fuellung, st.Breite"
+  },
+  {
+    "name": "EL32 Muster nicht je Viertel",
+    "datei": "internal/document/ellipse.go",
+    "paket": "./internal/document",
+    "alt": "\treturn rahmenMuster(EllipsenViertel(r), a, w)",
+    "neu": "\treturn StrichAbschnitte(append(EllipsenUmriss(r), EllipsenUmriss(r)[0]), a, w)"
+  },
+  {
+    "name": "EL33 Kosten der Ellipse nicht gezählt",
+    "datei": "internal/render/strichart.go",
+    "paket": "./internal/render",
+    "alt": "\tif !z.ohneZaehlen {\n\t\tz.auf.kanten += musterGewicht * float64(n)",
+    "neu": "\tif false && !z.ohneZaehlen {\n\t\tz.auf.kanten += musterGewicht * float64(n)"
+  },
+  {
+    "name": "EL34 unsichtbare Ellipse abgetastet",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\tif !document.EllipseSichtbar(v, z.originalRahmen()) {",
+    "neu": "\t\t\tif false && !document.EllipseSichtbar(v, z.originalRahmen()) {"
+  },
+  {
+    "name": "EL35 Sichtbarkeit zu streng",
+    "datei": "internal/document/ellipse.go",
+    "paket": "./internal/document",
+    "alt": "\tfor _, p := range []Punkt{r.Min, Pt(r.Max.X, r.Min.Y), r.Max, Pt(r.Min.X, r.Max.Y)} {\n\t\tif !EllipseEnthaelt(innen, p) {\n\t\t\treturn true",
+    "neu": "\tfor _, p := range []Punkt{r.Min} {\n\t\tif !EllipseEnthaelt(innen, p) {\n\t\t\treturn true"
+  },
+  {
+    "name": "EL36 zugPunkt am falschen Segment",
+    "datei": "internal/document/strichart.go",
+    "paket": "./internal/document",
+    "alt": "\ti := 1 + sort.Search(len(pts)-1, func(k int) bool { return s <= cum[k+1] })",
+    "neu": "\ti := 1 + sort.Search(len(pts)-1, func(k int) bool { return s < cum[k] })"
+  },
+  {
+    "name": "EL37 Editor zeichnet den Strich nur im ersten Bereich",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tfor _, st := range e.s.D.StreckenStuecke(sz.Zug, sz.Zu, sz.Suche) {\n\t\t\t\tstuecke = append(stuecke, st.Stueck)\n\t\t\t}\n\t\t}\n\t\te.jeStueckIn(gtx, stuecke, an, vorschau, func(abb func(document.Punkt) f32.Point) {\n\t\t\tfuelleTeile(gtx, sz.Teile, v.Strich.Farbe, abb)",
+    "neu": "\t\t\tfor _, st := range e.s.D.StreckenStuecke(sz.Zug, sz.Zu, sz.Suche) {\n\t\t\t\tstuecke = append(stuecke, st.Stueck)\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\te.jeStueckIn(gtx, stuecke, an, vorschau, func(abb func(document.Punkt) f32.Point) {\n\t\t\tfuelleTeile(gtx, sz.Teile, v.Strich.Farbe, abb)"
   }
 ]

@@ -38,7 +38,8 @@ entsteht je Monitor vor dem Editor, danach legt `cmd/schnapp` ab und öffnet den
    (`export.SchreibeAtomar` samt Rückfall ohne Schreibrecht im Ordner, ADR-0025 Nachträge 3 und 4).
 4. **Nicht die offene Aufnahme selbst.** Ist das Ziel dieselbe Datei wie die, die den Stand trägt (`os.SameFile`),
    wird abgelehnt mit Verweis auf Strg+S: Ein Schreiben an der Speicherfunktion vorbei sähe beim nächsten Speichern wie
-   eine Änderung von außen aus (`library.ErrGeaendert`).
+   eine Änderung von außen aus (`library.ErrGeaendert`). *(Der Verweis auf Strg+S entfällt seit Nachtrag 1 Punkt 5;
+   dazu kommen Ziele unter der Ablage.)*
 5. **Zuschnitt und Stauchen bleiben in der Kopie umkehrbar** (Kernprinzip 1): Die Arbeitsdatei trägt das ganze
    Original. Hat das Dokument einen Zuschnitt oder Streifen, hängt die Fußzeile an: „The copy contains the whole
    original; to share only the visible image, use Export.“ Schwärzungen sind in jedem Fall endgültig (Kernprinzip 2).
@@ -46,10 +47,13 @@ entsteht je Monitor vor dem Editor, danach legt `cmd/schnapp` ab und öffnet den
    Bearbeiten läuft weiter. Ein laufender Zug oder eine Texteingabe wird wie beim Export vorher bestätigt bzw.
    verschiebt das Schreiben. Über dem Rechenbudget wird geschrieben und gewarnt wie beim Speichern (Speichern bricht
    nie ab). Nur ein Speichern unter zugleich; nicht während Export- oder Öffnen-Dialog und nicht während eine andere
-   Aufnahme lädt. Das Schließen wartet höchstens `wechselFrist` (5 s) auf ein laufendes Schreiben, danach steht ein
+   Aufnahme lädt. Das Schließen wartet auf ein laufendes Schreiben (*seit Nachtrag 1 Punkt 2 nach dem
+   Notspeichern bis `unterFrist` = 2 min ab Beginn, Nachtrag 2: ein weiteres Signal beendet das Warten; zuerst waren
+   es `wechselFrist`, 5 s*), danach steht ein
    Hinweis auf der Fehlerausgabe. Bei offener Bibliotheksansicht geht es wie Speichern.
 7. **Neue Aufnahme startet einen eigenen Prozess.** Datei → „New capture“ (deutsch „Neue Aufnahme“), **Strg+N**,
-   startet dasselbe Programm ohne Argumente (`os.Executable`), abgelöst (eigene Sitzung, Standardein- und -ausgabe
+   startet dasselbe Programm (`os.Executable`; *seit Nachtrag 1 mit dem internen Argument `--internal-new-capture`*),
+   abgelöst (eigene Sitzung, Standardein- und -ausgabe
    leer, Fehlerausgabe nur mit `SCHNAPP_DEBUG`). Es nimmt wie der globale Kurzbefehl auf — Bereich als Voreinstellung,
    `[capture] delay` (ADR-0042) und `[capture] cursor` (ADR-0043) gelten, weil der neue Prozess die Einstellungen
    selbst liest — legt in der Bibliothek ab und öffnet ein **eigenes Editorfenster**. Das bisherige Fenster bleibt
@@ -65,7 +69,7 @@ entsteht je Monitor vor dem Editor, danach legt `cmd/schnapp` ab und öffnet den
      Fußzeile. Bei offener Bibliotheksansicht geht es.
 8. **Menü und Kürzel** (ADR-0026 Nachtrag 12): Datei = Öffnen…, Neue Aufnahme, Neu aus der Zwischenablage │ Speichern,
    Speichern unter… │ Export…, Bild kopieren │ Einstellungen…, Bibliothek │ Schließen. Die Übersicht F1 fasst
-   „Speichern / Speichern unter“ und „Neue Aufnahme / Öffnen“ je auf eine Zeile (`hilfePaare`), damit sie weiter ins
+   „Speichern / Speichern unter“ und „Öffnen / Neue Aufnahme“ je auf eine Zeile (`hilfePaare`), damit sie weiter ins
    Startfenster passt (F-705).
 
 ## Konsequenzen
@@ -108,3 +112,17 @@ entsteht je Monitor vor dem Editor, danach legt `cmd/schnapp` ab und öffnet den
 9. **Offen (eigene Karte):** Die Wahl der Verzögerung beim Start aus dem Menü (ADR-0042 Punkt 5) und eine Aktion
    „Abbrechen“ am Countdown-Hinweis (ADR-0042 Nachtrag 1 Punkt 3, F-941) kommen nicht mit dieser Karte; heute gilt
    `[capture] delay`.
+
+## Nachtrag 2 (28.11.2026): Verify und Doku-QA der Sitzung (F-1018 bis F-1022)
+
+**Status:** Akzeptiert (Claude Opus 5.5).
+
+1. **Verweis als Ziel (F-1018):** Ein vorhandenes Ziel wird vor der Prüfung auf die Ablage aufgelöst
+   (`filepath.EvalSymlinks`); ein Verweis von außen auf eine Aufnahme der Bibliothek wird abgelehnt wie ein Ziel in der
+   Ablage selbst.
+2. **Warten beim Schließen (F-1019):** Notspeichern, Rettung und Werkzeugstile kommen vor dem Warten auf die Kopie;
+   die Frist `unterFrist` zählt ab Beginn des Schreibens (`unterZustand.start`), ein weiteres Signal beendet das
+   Warten sofort mit dem Hinweis auf der Fehlerausgabe.
+3. **Rechte (F-1021):** Eine neue Kopie entsteht mit 0600; ein bestätigt ersetztes Ziel behält seine Rechte. Das README
+   sagt beides.
+4. Testlücken des Verify (F-1020) und Doku-Nachzug (F-1022) — ohne Änderung der Entscheidung.

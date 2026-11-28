@@ -96,8 +96,8 @@
     "name": "SU14 Schließen wartet nicht",
     "datei": "internal/ui/speichernunter.go",
     "paket": "./internal/ui",
-    "alt": "\tif !e.unter.laeuft {\n\t\treturn\n\t}\n\tt := time.NewTimer(frist)",
-    "neu": "\tif true {\n\t\treturn\n\t}\n\tt := time.NewTimer(frist)"
+    "alt": "\tif !e.unter.laeuft {\n\t\treturn\n\t}\n\trest := frist",
+    "neu": "\tif true {\n\t\treturn\n\t}\n\trest := frist"
   },
   {
     "name": "SU15 Kopie aus dem Live-Dokument statt Abzug",
@@ -156,18 +156,18 @@
     "neu": "\t\te.exportOffen || e.s.TextLaeuft() || e.s.Zieht():"
   },
   {
-    "name": "SU18 Kopie mit umask-Rechten",
+    "name": "SU18 neue Kopie mit umask-Rechten (bestätigte Endung)",
     "datei": "internal/ui/speichernunter.go",
     "paket": "./internal/ui",
-    "alt": "\t\treturn export.SchreibeOhneErsetzenPrivat(pfad, schreibe)\n\t}\n\treturn export.SchreibeAtomarPrivat(pfad, schreibe)",
-    "neu": "\t\treturn export.SchreibeOhneErsetzen(pfad, schreibe)\n\t}\n\treturn export.SchreibeAtomar(pfad, schreibe)"
+    "alt": "\treturn export.SchreibeAtomarPrivat(pfad, schreibe)",
+    "neu": "\treturn export.SchreibeAtomar(pfad, schreibe)"
   },
   {
     "name": "SU19 Ziel in der Bibliothek erlaubt",
     "datei": "internal/ui/speichernunter.go",
     "paket": "./internal/ui",
-    "alt": "\t\tif inOrdner(e.bib.Bibliothek.Orte.Ablage, pfad) {",
-    "neu": "\t\tif false && inOrdner(e.bib.Bibliothek.Orte.Ablage, pfad) {"
+    "alt": "\t\tif inOrdner(e.bib.Bibliothek.Orte.Ablage, pfad) || inOrdner(e.bib.Bibliothek.Orte.Ablage, echt) {",
+    "neu": "\t\tif false && (inOrdner(e.bib.Bibliothek.Orte.Ablage, pfad) || inOrdner(e.bib.Bibliothek.Orte.Ablage, echt)) {"
   },
   {
     "name": "SU20 Hinweis verdrängt haltende Meldung",
@@ -245,5 +245,54 @@
     "paket": "./internal/wlclip",
     "alt": "\t\tif fd < ab {",
     "neu": "\t\tif fd < ab-1 {"
+  },
+  {
+    "name": "SU27 angehängte Endung mit umask-Rechten",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\t\treturn export.SchreibeOhneErsetzenPrivat(pfad, schreibe)",
+    "neu": "\t\treturn export.SchreibeOhneErsetzen(pfad, schreibe)"
+  },
+  {
+    "name": "SU28 Verweis in die Ablage nicht aufgelöst",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\tif r, err := filepath.EvalSymlinks(pfad); err == nil {\n\t\techt = r",
+    "neu": "\tif r, err := filepath.EvalSymlinks(pfad); false && err == nil {\n\t\techt = r"
+  },
+  {
+    "name": "SU29 Signal beendet das Warten nicht",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase <-e.weitereSignale: // nil-Kanal (Tests ohne Signalwache): wartet nie\n",
+    "neu": "\tcase <-make(chan struct{}): // nil-Kanal (Tests ohne Signalwache): wartet nie\n"
+  },
+  {
+    "name": "SU30 Frist ab Aufruf statt ab Beginn",
+    "datei": "internal/ui/speichernunter.go",
+    "paket": "./internal/ui",
+    "alt": "\tif !e.unter.start.IsZero() {\n\t\trest = max(0, time.Until(e.unter.start.Add(frist)))",
+    "neu": "\tif false && !e.unter.start.IsZero() {\n\t\trest = max(0, time.Until(e.unter.start.Add(frist)))"
+  },
+  {
+    "name": "SU31 zerstoert wartet nicht auf die Kopie",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.speichernUnterAbwarten(unterFrist)\n",
+    "neu": ""
+  },
+  {
+    "name": "NA10 Sperre auch nach Fehlstart",
+    "datei": "internal/ui/neueaufnahme.go",
+    "paket": "./internal/ui",
+    "alt": "\tprogramm, err := neueAufnahmeProgramm()\n",
+    "neu": "\te.neuGestartet = time.Now()\n\tprogramm, err := neueAufnahmeProgramm()\n"
+  },
+  {
+    "name": "NA11 stderr auch als Pipe",
+    "datei": "internal/ui/neueaufnahme.go",
+    "paket": "./internal/ui",
+    "alt": "func stderrWeitergeben(debug, pipe bool) bool { return debug && !pipe }",
+    "neu": "func stderrWeitergeben(debug, pipe bool) bool { return debug }"
   }
 ]

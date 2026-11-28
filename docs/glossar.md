@@ -46,7 +46,7 @@
 | **Gemerkte Objekte** | Objekt-Kopie, die das Fenster im Prozess behält, wenn kein Halter läuft (es bietet dann nur das PNG an); Strg+V im selben Fenster nimmt sie, solange das Fenster die Zwischenablage hält. ADR-0045 Punkt 2, Nachtrag 1 Punkt 1. |
 | **Neu aus Zwischenablage** | Englisch „New from clipboard“, Strg+Umschalt+V, Menü Datei: legt ein Bild der Zwischenablage (PNG, sonst JPEG) als neue Aufnahme ab und wechselt dorthin. ADR-0045 Punkt 4. |
 | **Ellipse** | Werkzeug (Taste E): ein Kasten mit Form Ellipse (`Kastenform`), das Oval im Bereich; Umschalt = Kreis. ADR-0047. |
-| **Neue Aufnahme** | Englisch „New capture“, Strg+N, Menü Datei: startet das eigene Programm ohne Argumente als eigenen Prozess; er nimmt auf wie der globale Kurzbefehl und öffnet ein eigenes Fenster. ADR-0046 Punkt 7. |
+| **Neue Aufnahme** | Englisch „New capture“, Strg+N, Menü Datei: startet das eigene Programm abgelöst mit dem internen Argument `--internal-new-capture` (sonst wie ohne Argumente) als eigenen Prozess; er nimmt auf wie der globale Kurzbefehl und öffnet ein eigenes Fenster. ADR-0046 Punkt 7 mit Nachtrag 1. |
 | **Speichern unter** | Englisch „Save As…“, Strg+Umschalt+S, Menü Datei: schreibt eine **Kopie** als Arbeitsdatei an einen frei gewählten Ort; das Fenster bleibt bei der Aufnahme in der Bibliothek. Anders als der Export bearbeitbar und mit ganzem Original. ADR-0046 Punkte 1 bis 6. |
 | **schnapp-ocr** | Eigenes Hilfsprogramm (Modul `ocr/`): tesseract als WebAssembly mit eingebautem Deutsch und Englisch, springt ein, wenn kein `tesseract` installiert ist; langsamer, eine Sprache je Lauf (ADR-0035 Nachtrag 1). |
 | **Bereichsmodus** | Einmaliger Zustand nach Strg+Umschalt+T: Ziehen wählt den Bereich der Texterkennung, das Werkzeug bleibt. |

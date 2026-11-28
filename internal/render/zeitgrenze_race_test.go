@@ -21,3 +21,6 @@ const (
 	musterZerlegZeit time.Duration = 0
 	musterPruefeZeit time.Duration = 0
 )
+
+// ellipseZeitPruefen: die Zeittests der Ellipse (F-1023) prüfen ihre Grenzen; unter dem Race-Detektor nur das Ergebnis.
+const ellipseZeitPruefen = 0 == 1

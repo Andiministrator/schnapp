@@ -40,7 +40,7 @@ klick 267 15
 klick 300 52
 warte 300
 foto nach-klick-4
-# Zusätzlich ein Werkzeugknopf der linken Leiste ohne Zeigerbewegung davor: Verpixeln (26,338) muss aktiv werden (Stauchen ist schon gewählt).
-klick 26 338
+# Zusätzlich ein Werkzeugknopf der linken Leiste ohne Zeigerbewegung davor: Verpixeln (26,470, seit Karte #328) muss aktiv werden (Stauchen ist schon gewählt).
+klick 26 470
 warte 300
 foto nach-klick-knopf-verpixeln

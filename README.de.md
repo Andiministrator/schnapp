@@ -64,7 +64,7 @@ Vorhanden ist:
 | `schnapp --ignore-limit DATEI` | die Datei auch öffnen, wenn ihre Beschriftungen so zahlreich oder groß sind, dass das Rendern das Rechenbudget überschreitet (für eigene Arbeit, die darüber hinausgewachsen ist) |
 | `schnapp … --output=bild.png` | die Aufnahme nach `bild.png` (oder `.jpg`, `.svg`) schreiben statt in die Bibliothek, ohne Editor |
 | `schnapp --export=aus.png DATEI` | DATEI so exportieren, wie der Editor sie zeigt, ohne Fenster |
-| `schnapp --annotate=liste.json DATEI` | Pfeile, Kästen, Text, Schritt-Nummern und Schwärzungen aus einer JSON-Liste auf DATEI legen und wie der Editor speichern, ohne Fenster (siehe [`docs/agents.md`](docs/agents.md), englisch) |
+| `schnapp --annotate=liste.json DATEI` | Pfeile, Kästen, Ellipsen, Text, Schritt-Nummern und Schwärzungen aus einer JSON-Liste auf DATEI legen und wie der Editor speichern, ohne Fenster (siehe [`docs/agents.md`](docs/agents.md), englisch) |
 | `schnapp --list-screens` | die Monitore mit Name, Größe und Skalierung auflisten |
 | `schnapp mcp` | als MCP-Server für KI-Agenten laufen (aus, bis unter `[agents]` erlaubt, siehe [`docs/agents.md`](docs/agents.md)) |
 | `schnapp … --json` | das Ergebnis (Pfad und Größe oder die Monitorliste) als eine Zeile JSON ausgeben |
@@ -115,7 +115,7 @@ Zeiger (am Touchpad Strg und zwei Finger); über dem Navigator zoomt das Mausrad
 am Touchpad ohne mittlere Taste), mit der mittleren Taste, durch Ziehen auf dem leeren Rand um das Bild oder im
 Navigator. Tasten: **Strg+O** (*Datei → Öffnen …*) öffnet ein anderes PNG oder JPEG über den Dateidialog im selben Fenster (das offene Bildschirmfoto wird vorher gespeichert; eine Datei von außerhalb der Bibliothek wird mit ihrer ersten Änderung hineinkopiert), **Strg+Z**
 rückgängig, **Strg+Umschalt+Z**/**Strg+Y** wiederholen, **Entf** löschen, **Strg+S** speichern,
-**Strg+Umschalt+S** (*Datei → Speichern unter …*) legt eine bearbeitbare Kopie (PNG mit den Bearbeitungsdaten von Schnapp, samt ganzem Original, Autor und Schlagworten, nur für den Eigentümer lesbar) an einem frei gewählten Ort außerhalb der Bibliothek ab; das Fenster arbeitet weiter an der Aufnahme in der Bibliothek, spätere Änderungen erreichen die Kopie nicht — wer nur das sichtbare Bild weitergeben will, exportiert,
+**Strg+Umschalt+S** (*Datei → Speichern unter …*) legt eine bearbeitbare Kopie (PNG mit den Bearbeitungsdaten von Schnapp, samt ganzem Original, Autor und Schlagworten; eine neue Datei ist nur für den Eigentümer lesbar, eine ersetzte behält ihre Rechte) an einem frei gewählten Ort außerhalb der Bibliothek ab; das Fenster arbeitet weiter an der Aufnahme in der Bibliothek, spätere Änderungen erreichen die Kopie nicht — wer nur das sichtbare Bild weitergeben will, exportiert,
 **Strg+N** (*Datei → Neue Aufnahme*) startet eine neue Aufnahme in einem eigenen Fenster, wie der globale Kurzbefehl (das offene Fenster bleibt, wie es ist, und kann mit im Bild sein; die Verzögerung hilft),
 **Strg+Umschalt+E** (*Datei → Exportieren …*) als PNG, JPG oder SVG über den Dateidialog des Desktops weitergeben (ohne Bearbeitungsdaten, Geschwärztes bleibt weg; scheitert das Ersetzen einer vorhandenen Datei auf halbem Weg und lässt sich der alte Inhalt nicht wiederherstellen, nennt die Fußzeile die Datei als beschädigt),
 **Strg+C** die gewählten Beschriftungen, ohne Auswahl das fertige Bild in die Zwischenablage (**Strg+Umschalt+C**, *Datei → Bild kopieren*, kopiert immer das Bild; mit dem data-control-Protokoll, etwa unter KDE Plasma, bleibt

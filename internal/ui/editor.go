@@ -685,12 +685,13 @@ func (e *editor) zerstoert(fensterErr error) error {
 			hinweisAufStderr(g)
 		}
 	}
-	// Erst nach dem Notspeichern (Kritik K-10): Eine laufende Kopie (Speichern unter) schreibt zu Ende, sonst blieben eine
-	// halbe temporäre Datei oder im Rückfall ein gekürztes Ziel liegen (ADR-0046 Punkt 6, Kritik K-3).
-	e.speichernUnterAbwarten(unterFrist)
 	e.rettungEnde()
 	e.rettungEndenAbwarten(wechselFrist) // Rettungskopien früherer Aufnahmen dieses Fensters (F-637)
 	e.werkzeugStileSchreiben()           // Stil je Werkzeug für das nächste Fenster (ADR-0041 Punkt 4)
+	// Zuletzt, nach Notspeichern und Aufräumen (F-1016, Verify V-2): Eine laufende Kopie (Speichern unter) schreibt zu
+	// Ende, sonst blieben eine halbe temporäre Datei oder im Rückfall ein gekürztes Ziel liegen (ADR-0046 Punkt 6, F-1009);
+	// ein weiteres Signal beendet das Warten.
+	e.speichernUnterAbwarten(unterFrist)
 	return errors.Join(fensterErr, e.schlussErr, err)
 }
 
@@ -3044,6 +3045,11 @@ type werkzeugKnopf struct {
 // die der Umriss bzw. seine Stücke berühren — wie der runde Kasten (ADR-0023 Nachträge 17 bis 21).
 func (e *editor) zeichneEllipse(gtx layout.Context, v document.Kasten, an func(document.Punkt) f32.Point, vorschau bool) {
 	b := v.Bereich
+	o := e.s.D.OriginalBild().Rect
+	bild := document.R(document.Pt(float64(o.Min.X), float64(o.Min.Y)), document.Pt(float64(o.Max.X), float64(o.Max.Y)))
+	if !vorschau && !document.EllipseSichtbar(v, bild) {
+		return // berührt das Bild nicht: nicht abtasten (F-1023, wie der Renderer)
+	}
 	if v.Fuellung.A > 0 {
 		umriss := [][]document.Punkt{document.EllipsenUmriss(b)}
 		e.jeStueck(gtx, b, 1, an, vorschau, func(abb func(document.Punkt) f32.Point) {

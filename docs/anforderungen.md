@@ -25,7 +25,7 @@ das auch als einfaches Bildbearbeitungsprogramm taugt. ksnip und Spectacle sind 
 
 ## Beschriften
 
-- **A-20** Pfeile gerade und **gebogen** (um etwas herum), Kästen, Ellipsen, Linien, Textmarker, Freihand. (Linien: umgesetzt als Pfeil ohne Spitze, ADR-0021 Nachträge 19 und 20.)
+- **A-20** Pfeile gerade und **gebogen** (um etwas herum), Kästen, Ellipsen, Linien, Textmarker, Freihand. (Linien: umgesetzt als Pfeil ohne Spitze, ADR-0021 Nachträge 19 und 20. Ellipse: umgesetzt, ADR-0047.)
 - **A-21** Schritt-Nummern, die selbst hochzählen; Sprechblasen; Text mit Hintergrund.
 - **A-22** Lupe (Ausschnitt vergrößert daneben), Spotlight (Rest abdunkeln), Schnellstile (gespeicherte Farb- und
   Strichsätze).

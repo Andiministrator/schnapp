@@ -191,7 +191,7 @@ in `internal/ui/hilfe.go`; Tastentabelle in `internal/ui/kuerzel.go`; Logik der 
 - **Kleine Fenster (F-516):** Passt die Werkzeugleiste nicht zwischen Menüzeile und Fußzeile, werden Knöpfe, Abstände,
   Symbol und Farbquadrat gleichmäßig kleiner, bis zu Knöpfen von 20 dp; bei 480 × 320 passen damit alle neun Werkzeuge
   und das Farbfeld. *Seit Karte #194 (elf Werkzeuge mit Lupe und Sprechblase) bis zu 18 dp (`werkzeugKnopfMinDp`),
-  ADR-0021 Nachtrag 13 „Ergänzt (Teil 2)“.* Erst unter 244 dp Leistenhöhe (Fenster unter 304 dp hoch, also unter der Mindesthöhe von 320 dp, F-252) schneidet sie unten ab; Werkzeuge und Farbe bleiben dann über das
+  ADR-0021 Nachtrag 13 „Ergänzt (Teil 2)“; seit Karte #328 (zwölf Werkzeuge mit der Ellipse, ADR-0047) bis zu 16 dp.* Erst unter 244 dp Leistenhöhe (Fenster unter 304 dp hoch, also unter der Mindesthöhe von 320 dp, F-252) schneidet sie unten ab; Werkzeuge und Farbe bleiben dann über das
   Menü „Werkzeuge“, die Buchstaben und die Fußzeile erreichbar. Hohe Fenster behalten die Maße aus Schritt (a).
 - **Drehbücher:** Die Drehbücher mit festen Koordinaten klappen die Leiste am Anfang mit Strg+Umschalt+B ein; damit gilt
   die Lage der Leinwand aus Schritt (a) weiter. Sichtprobe von Schritt (b): `scripts/drehbuecher/oberflaeche-187b.txt`

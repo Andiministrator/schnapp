@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #335/#393 mit Kritik (F-984 bis F-993); davor Karten #377/#389 und #354/#390 mit Kritik und Verify (F-943 bis F-969); davor Karten #361 und #334 Teil 1 mit Kritik (F-887 bis F-893); davor Karten #313 Teil 2 und #369 mit Sitzungs-QA (F-873 bis F-880); davor #313 Teil 1 und Sitzungs-QA (F-860 bis F-872); davor #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #341 und #328 mit Kritik, Verify und Doku-QA (F-1007 bis F-1028); davor Karten #335/#393 mit Kritik (F-984 bis F-993); davor Karten #377/#389 und #354/#390 mit Kritik und Verify (F-943 bis F-969); davor Karten #361 und #334 Teil 1 mit Kritik (F-887 bis F-893); davor Karten #313 Teil 2 und #369 mit Sitzungs-QA (F-873 bis F-880); davor #313 Teil 1 und Sitzungs-QA (F-860 bis F-872); davor #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -1462,3 +1462,18 @@ Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #335/#393 mit Kri
   die Sperre wirklich.
 - **Warten beim Schließen nach dem Wichtigen** (F-1016): Erst das ungesicherte Dokument notspeichern, dann auf
   Nebenarbeiten (Kopie) warten, mit einer Frist, die zur Arbeit passt (2 min wie das Speichern, nicht 5 s).
+
+## Verify, Kritik und Doku-QA zu Speichern unter und Ellipse (28.11.2026, F-1018 bis F-1028)
+
+- **Ein Abtasten ist Aufwand, auch wenn nichts sichtbar wird** (F-1023): Eine Form aus Tausenden Punkten kostet beim
+  Zerlegen, nicht erst beim Füllen. Erst prüfen, ob sie das Bild berührt, dann zerlegen, und jedes Teil im Trockenlauf
+  zählen — auch beim vollen Strich.
+- **Suche im Linienzug binär** (F-1023): `teilzug`/`zugPunkt` liefen je Stück über alle Punkte; bei 14 Punkten des
+  runden Kastens egal, bei 1024 je Viertel quadratisch.
+- **Ein Ziel kann ein Verweis sein** (F-1018): Wer Orte ablehnt, löst vorhandene Ziele auf, bevor er prüft.
+- **Warten beim Schließen braucht einen Ausweg und gehört ans Ende** (F-1019): Erst sichern, was verloren ginge, dann
+  warten — und ein weiteres Signal beendet das Warten.
+- **Ein neuer Menüeintrag verschiebt Koordinaten in Drehbüchern** (F-1028): Nach neuen Werkzeugen oder Menüeinträgen die
+  Drehbücher mit festen Koordinaten nachziehen (`grep -n "klick 62 15\|klick 26 " scripts/drehbuecher/*.txt`).
+- **Normative Aufzählungen mitpflegen** (F-1022, F-1025): Ein neues Attribut, das die Version hebt, gehört in jede
+  Aufzählung von format.md, nicht nur in seinen Abschnitt.

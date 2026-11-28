@@ -3,8 +3,8 @@
 # Fotos unter tmp/probe/fotos/<Zeitstempel>/ mit Read ansehen.
 # Neue Oberfläche (Karte #210, ADR-0031), 1600 x 1000, Skala 1: Menüzeile oben (y 0..30), Titel bei y = 15: Datei x 62,
 # Bearbeiten 134, Ansicht 212, Bild 267, Werkzeuge 336, Hilfe 406. Einträge ab y = 52 im Abstand 32 (Gruppentrenner
-# schiebt weiter): Datei (seit Karte #326 mit „Öffnen“): Öffnen 52, Speichern 93, Exportieren 125, Kopieren 157,
-# Einstellungen 198, Bibliothek 230, Schließen 271. Bearbeiten: Rückgängig 52,
+# schiebt weiter): Datei (seit den Karten #326, #335, #341): Öffnen 52, Neue Aufnahme 84, Neu aus Zwischenablage
+# 116, Speichern 157, Speichern unter 189, Exportieren 230, Bild kopieren 262, Einstellungen 303, Bibliothek 335, Schließen 376. Bearbeiten: Rückgängig 52,
 # Wiederholen 84, Text bearbeiten 125, Löschen 157. Bild: Ganzes Bild 52, Gestauchtes zurückholen 84, Kantenform 125.
 # Das Bild 1200x800 liegt bei 100 % ab (226,100); Bildschirmpunkt = Bildpunkt + (226,100).
 # Schließen hält das Fenster beim ersten Mal offen (Hinweis zum Ablageort, F-158), probe.sh beendet danach per SIGTERM.
@@ -34,11 +34,11 @@ warte 400
 foto 03-geloescht
 klick 62 15
 warte 300
-klick 100 157
+klick 100 262
 warte 1500
 foto 04-kopiert
 klick 62 15
 warte 300
-klick 100 271
+klick 100 376
 warte 1500
 foto 05-nach-schliessen

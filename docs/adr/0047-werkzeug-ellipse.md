@@ -36,9 +36,12 @@ Die Werkzeugleiste mit Varianten je Werkzeug (#223) braucht erst ein Muster.
    Ellipse (`versionEllipse`); in Version 1 ist `s:form` unbekannt und wird ignoriert (Regel 3, §11). Die Arbeitsdatei
    schreibt das Element `<ellipse cx cy rx ry>` (der Leser unterscheidet die Elemente nicht), der Export ebenso, gemustert
    als Gruppe mit Füllung und Stücken wie der gemusterte Kasten.
-7. **Bedienung ohne Fenster:** `--annotate`/MCP kennen den Typ `ellipse` mit denselben Feldern wie `box` (ohne
-   `corner_radius`).
+7. **Bedienung ohne Fenster:** `--annotate`/MCP kennen den Typ `ellipse` mit denselben Feldern wie `rect`.
 8. **Ebenenliste und Leiste** nennen das Objekt „Ellipse“; Vorschau in der Liste als Ellipse.
+
+9. **Werkzeugleiste und Übersicht:** Mit zwölf Werkzeugen schrumpfen die Knöpfe in niedrigen Fenstern bis auf 16 dp
+   (`werkzeugKnopfMinDp`, vorher 18 dp, ADR-0031 Nachtrag 3); die Übersicht F1 fasst „Seitenleiste / letzte
+   Aufnahmen“ zu einem Paar zusammen (`hilfePaare`, F-705).
 
 ## Erwogene Alternativen
 - **Eigener Objekttyp `document.Ellipse`:** sauber getrennt, aber jede Stelle, die heute den Kasten kennt (Griffe,
@@ -51,3 +54,16 @@ Die Werkzeugleiste mit Varianten je Werkzeug (#223) braucht erst ein Muster.
 - Neue Formen des Kastens (später etwa Raute) kommen als weiterer Wert von `Kastenform`.
 - Ältere Schnapp-Stände (Version 1) zeigen eine Ellipse aus einer Datei der Version 2 nicht; sie lehnen Version 2 ab,
   wie bei Lupe und Sprechblase.
+
+## Nachtrag 1 (28.11.2026): Kritik Fable zu f2ffa0d (F-1023 bis F-1028)
+
+**Status:** Akzeptiert (Claude Opus 5.5).
+
+1. **Aufwand präparierter Dateien (F-1023):** Renderer und Editor tasten eine Ellipse nur ab, wenn ihr Ring (bzw. bei
+   Füllung ihr Inneres) das Original berührt (`document.EllipseSichtbar`, `EllipsenRingSichtbar`); der Trockenlauf
+   zählt Punkte des Umrisses und Teile des Strichs, auch beim vollen Strich, wie Musterstücke (`render.ellipsenKosten`).
+   `zugPunkt`/`teilzug` suchen binär, ein gemusterter Strich kostet damit rund O(Punkte + Stücke) statt ihrem Produkt.
+2. **Grenze der Abtastung:** Ab Halbachsen von rund 68 000 px greift `ellipseViertelMax`; die Sehne weicht dann mehr
+   als 0,02 px ab (bei 1e6 rund 0,3 px) — nur bei Ellipsen, die weit über jedes Bild reichen.
+3. Tests und Mutanten für Schnellstile, Viertel-Muster, Naht und Zuschnitt, Aufwand (F-1024), Spezifikation §12 und
+   Nebenstellen (F-1025), Doku (F-1027), Drehbuch (F-1028).
