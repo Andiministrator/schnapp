@@ -50,13 +50,31 @@ func Oeffne(pfad string) (_ *Gelesen, fehler error) {
 	if len(daten) > MaxDatei {
 		return nil, fmt.Errorf("%w: Datei größer als %d Bytes", ErrZuGross, MaxDatei)
 	}
+	return oeffneDaten(daten, false)
+}
+
+// OeffneBild liest ein Bild aus daten (PNG oder JPEG) wie Oeffne eine fremde Datei: mit denselben Grenzen für Größe
+// und JPEG-Bedarf und der EXIF-Ausrichtung, aber immer als einfaches Bild (Fremd), auch wenn daten Schnapp-Blöcke
+// tragen. Für ein Bild aus der Zwischenablage (ADR-0045 Punkt 4).
+func OeffneBild(daten []byte) (_ *Gelesen, fehler error) {
+	defer errprefix.Defer("fileformat", &fehler)
+	if len(daten) > MaxDatei {
+		return nil, fmt.Errorf("%w: Bild größer als %d Bytes", ErrZuGross, MaxDatei)
+	}
+	return oeffneDaten(daten, true)
+}
+
+// oeffneDaten ist der Teil von Oeffne nach dem Lesen; nurBild übergeht die Schnapp-Blöcke eines PNG.
+func oeffneDaten(daten []byte, nurBild bool) (*Gelesen, error) {
 	if bytes.HasPrefix(daten, pngSignatur) {
-		g, err := LeseArbeitsdatei(bytes.NewReader(daten))
-		if err == nil {
-			return g, nil
-		}
-		if !IstBeschaedigt(err) && !errors.Is(err, ErrFormatNeuer) {
-			return nil, err
+		if !nurBild {
+			g, err := LeseArbeitsdatei(bytes.NewReader(daten))
+			if err == nil {
+				return g, nil
+			}
+			if !IstBeschaedigt(err) && !errors.Is(err, ErrFormatNeuer) {
+				return nil, err
+			}
 		}
 		bild, err2 := LeseBild(bytes.NewReader(daten))
 		if err2 != nil {

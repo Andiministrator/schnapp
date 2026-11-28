@@ -85,7 +85,27 @@ func geoeffnetFuer(b *library.Bibliothek, abs string, g *fileformat.Gelesen, sta
 // auf eine Vorschau lädt die Aufnahme über oeffnerFuer.
 func anbindungFuer(b *library.Bibliothek, kante document.Kante) *ui.Anbindung {
 	return &ui.Anbindung{Bibliothek: b, Oeffnen: oeffnerFuer(b, kante), UmDatei: rettungUmDatei, Zuordnen: zuordnerFuer(b),
-		Fortsetzen: fortsetzerFuer(b, kante)}
+		Fortsetzen: fortsetzerFuer(b, kante), Ablegen: ablegerFuer(b, kante)}
+}
+
+// ablegerFuer legt ein Bild aus der Zwischenablage als neue Aufnahme in b ab (ADR-0045 Punkt 4), wie eine Aufnahme:
+// Kantenform aus [capture] seam, ohne Metadaten. Liefert den absoluten Pfad. Index oder Vorschau gescheitert heißt
+// wie beim Aufnehmen trotzdem Erfolg; die Leiste gleicht den Index beim Wechsel ab.
+func ablegerFuer(b *library.Bibliothek, kante document.Kante) func(*document.Dokument) (string, error) {
+	return func(d *document.Dokument) (string, error) {
+		if err := d.VorgabeKante(kante); err != nil {
+			diagnose(os.Stderr, "Kantenform %v nicht gesetzt: %v", kante, err)
+		}
+		sichtbar, err := render.Bild(d)
+		if err != nil {
+			return "", err
+		}
+		e, err := b.Ablegen(d, sichtbar, fileformat.Metadaten{})
+		if e.Pfad == "" {
+			return "", err
+		}
+		return filepath.Join(b.Orte.Ablage, filepath.FromSlash(e.Pfad)), nil
+	}
 }
 
 // rettungUmDatei hält die Rettungskopie einer Aufnahme anwendbar, während ihre Metadaten neu geschrieben werden

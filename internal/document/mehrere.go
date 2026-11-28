@@ -231,3 +231,35 @@ func (d *Dokument) brecheMehrereAb(z *zug) {
 		d.objekte[d.index(a.Kennung())] = a
 	}
 }
+
+// HinzufuegenMehrere legt alle Objekte aus os in dieser Reihenfolge zuoberst ab (Einfügen aus der Zwischenablage,
+// ADR-0045 Punkt 3), als ein Schritt, und liefert die neuen Kennungen in der Reihenfolge von os.
+func (d *Dokument) HinzufuegenMehrere(os []Objekt) ([]int, error) {
+	if d.zug != nil {
+		return nil, ErrZugLaeuft
+	}
+	if len(os) == 0 {
+		return nil, nil // kein leerer Schritt im Verlauf
+	}
+	if len(d.objekte)+len(os) > MaxObjekte {
+		return nil, fmt.Errorf("document: mehr als %d Objekte", MaxObjekte)
+	}
+	for _, o := range os {
+		if o == nil {
+			return nil, ErrUnbekannt
+		}
+		if err := o.pruefe(); err != nil {
+			return nil, err
+		}
+	}
+	ids := make([]int, len(os))
+	g := make(gruppe, 0, len(os))
+	for i, o := range os {
+		o = o.mitKennung(d.naechsteID)
+		d.naechsteID++
+		ids[i] = o.Kennung()
+		g = append(g, einfuegen{o, len(d.objekte) + i})
+	}
+	d.fuehreAus(g)
+	return ids, nil
+}

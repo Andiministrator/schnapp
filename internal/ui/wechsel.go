@@ -63,6 +63,9 @@ type Anbindung struct {
 	// Fortsetzen lädt eine früher verlassene Aufnahme mit ihrem gemerkten Dokument samt Verlauf, wenn die Datei
 	// unverändert ist (ADR-0036 Zusatz Karte #356). nil: Ein Wechsel lädt immer neu, der Verlauf beginnt leer.
 	Fortsetzen Fortsetzen
+	// Ablegen legt ein Dokument (Bild aus der Zwischenablage) als neue Aufnahme in der Bibliothek ab und liefert ihren
+	// absoluten Pfad (ADR-0045 Punkt 4). Läuft in einer Goroutine. nil: „New from clipboard“ ist grau.
+	Ablegen func(d *document.Dokument) (string, error)
 }
 
 // wechselZustand ist ein laufender Wechsel.
@@ -71,7 +74,11 @@ type wechselZustand struct {
 	// ausDialog: Das Ziel kam aus Datei → Öffnen… Hält ein Speicher-Hinweis den Wechsel auf, sagt die Meldung, dass die
 	// gewählte Datei nicht geöffnet ist (Kritik K-4): Anders als in der Leiste gibt es keinen zweiten Klick auf dasselbe.
 	ausDialog bool
-	laedt     bool // die Ladefunktion läuft
+	// ausZwischenablage: Das Ziel ist eine eben aus der Zwischenablage angelegte Aufnahme (ADR-0045 Punkt 4). Hält ein
+	// Speicher-Hinweis den Wechsel auf, sagt die Meldung, wo sie liegt; ein zweites Strg+Umschalt+V legte sonst eine
+	// zweite an.
+	ausZwischenablage bool
+	laedt             bool // die Ladefunktion läuft
 	// papierkorb: Die bisher offene Aufnahme geht nach der Übernahme des Ziels in den Papierkorb (✕ oder Entf an der
 	// offenen, Karte #347). Scheitert Speichern oder Laden, bleibt sie offen und liegt nicht im Papierkorb.
 	papierkorb bool
@@ -162,6 +169,9 @@ func (e *editor) wechselNachSpeichern(r speicherErgebnis, ende canvas.Ende) {
 		e.wechsel.ziel = "" // der Hinweis bleibt stehen; ein weiterer Klick wechselt (gespeichert ist nichts mehr offen)
 		if e.wechsel.ausDialog {
 			e.meldung.Text += " " + i18n.T("The chosen file was not opened yet: open it again with Ctrl+O.")
+		}
+		if e.wechsel.ausZwischenablage {
+			e.meldung.Text += " " + i18n.T("The image from the clipboard is saved as a new capture; open it from the library.")
 		}
 		if e.wechsel.papierkorb {
 			e.meldung.Text += " " + nichtWeggeworfen(e.wechsel.mitnehmen)

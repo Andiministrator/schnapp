@@ -93,6 +93,11 @@ type hilfePaar struct {
 var hilfePaare = map[aktion]hilfePaar{
 	aktEbeneVor:      {aktEbeneZurueck, func() string { return i18n.T("Bring forward / send backward") }},
 	aktEbeneDarueber: {aktEbeneDarunter, func() string { return i18n.T("Select layer above / below") }},
+	// Zwischenablage (ADR-0045): vier Zeilen mehr, deshalb vier Paare, sonst rollte die Übersicht im Startfenster.
+	aktExport:       {aktBildKopieren, func() string { return i18n.T("Export / copy image") }},
+	aktAusschneiden: {aktKopieren, func() string { return i18n.T("Cut / copy") }},
+	aktEinfuegen:    {aktNeuAusZwischenablage, func() string { return i18n.T("Paste / new from clipboard") }},
+	aktEinpassen:    {aktEins, func() string { return i18n.T("Fit / 1:1") }},
 }
 
 // hilfePaarZweite sind die zweiten Handlungen der Paare.

@@ -2104,3 +2104,93 @@ msgstr "Gruppe entsperren"
 
 msgid "Lock group"
 msgstr "Gruppe sperren"
+
+msgid "Copied %d object to the clipboard"
+msgid_plural "Copied %d objects to the clipboard"
+msgstr[0] "%d Objekt in die Zwischenablage kopiert"
+msgstr[1] "%d Objekte in die Zwischenablage kopiert"
+
+msgid "Cut %d object to the clipboard"
+msgid_plural "Cut %d objects to the clipboard"
+msgstr[0] "%d Objekt ausgeschnitten"
+msgstr[1] "%d Objekte ausgeschnitten"
+
+msgid "Pasted %d object"
+msgid_plural "Pasted %d objects"
+msgstr[0] "%d Objekt eingefügt"
+msgstr[1] "%d Objekte eingefügt"
+
+msgid "Copy image"
+msgstr "Bild kopieren"
+
+msgid "Cut"
+msgstr "Ausschneiden"
+
+msgid "Paste"
+msgstr "Einfügen"
+
+msgid "New from clipboard"
+msgstr "Neu aus Zwischenablage"
+
+msgid "Could not create a capture from the clipboard: %v"
+msgstr "Aus der Zwischenablage ließ sich keine Aufnahme anlegen: %v"
+
+msgid "Could not paste: finish the current action first."
+msgstr "Einfügen nicht möglich: erst die laufende Aktion abschließen."
+
+msgid "Could not paste: the objects would take too long to draw."
+msgstr "Einfügen nicht möglich: Die Objekte wären zu aufwendig zu zeichnen."
+
+msgid "Could not paste: %v"
+msgstr "Einfügen nicht möglich: %v"
+
+msgid "Could not read the clipboard: %v"
+msgstr "Die Zwischenablage ließ sich nicht lesen: %v"
+
+msgid "Not available here: no library is connected."
+msgstr "Hier nicht verfügbar: keine Bibliothek angebunden."
+
+msgid "Reading the clipboard…"
+msgstr "Zwischenablage wird gelesen …"
+
+msgid "The clipboard holds an image. File → New from clipboard (Ctrl+Shift+V) opens it as a new capture."
+msgstr "Die Zwischenablage enthält ein Bild. Datei → Neu aus Zwischenablage (Strg+Umschalt+V) öffnet es als neue Aufnahme."
+
+msgid "The clipboard holds no image."
+msgstr "Die Zwischenablage enthält kein Bild."
+
+msgid "The clipboard holds nothing to paste."
+msgstr "Die Zwischenablage enthält nichts zum Einfügen."
+
+msgid "The clipboard is empty."
+msgstr "Die Zwischenablage ist leer."
+
+msgid "The content of the clipboard is too large."
+msgstr "Der Inhalt der Zwischenablage ist zu groß."
+
+msgid "The image in the clipboard could not be read."
+msgstr "Das Bild in der Zwischenablage ließ sich nicht lesen."
+
+msgid "The image is saved in the library as a new capture."
+msgstr "Das Bild liegt als neue Aufnahme in der Bibliothek."
+
+msgid "The objects in the clipboard could not be read."
+msgstr "Die Objekte in der Zwischenablage ließen sich nicht lesen."
+
+msgid "This desktop does not let Schnapp read the clipboard."
+msgstr "Diese Arbeitsumgebung lässt Schnapp die Zwischenablage nicht lesen."
+
+msgid "Export / copy image"
+msgstr "Exportieren / Bild kopieren"
+
+msgid "Cut / copy"
+msgstr "Ausschneiden / kopieren"
+
+msgid "Paste / new from clipboard"
+msgstr "Einfügen / neu aus Zwischenablage"
+
+msgid "Fit / 1:1"
+msgstr "Einpassen / 1:1"
+
+msgid "The image from the clipboard is saved as a new capture; open it from the library."
+msgstr "Das Bild aus der Zwischenablage liegt als neue Aufnahme in der Bibliothek; dort öffnen."

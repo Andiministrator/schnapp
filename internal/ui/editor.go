@@ -271,6 +271,7 @@ type editor struct {
 	// führt das Speichern, kopierLaeuft das Kopieren).
 	speicherAntwort chan speicherErgebnis
 	kopierAntwort   chan kopierErgebnis
+	einf            einfuegeZustand // Lesen der Zwischenablage (ADR-0045)
 	kopierLaeuft    bool
 	kopierStart     time.Time // Beginn des laufenden Kopierens (Frist beim Schließen, F-281)
 	kopierStand     uint64    // Dokumentstand des Abzugs, den das laufende Kopieren ablegt (Meldung, F-285)
@@ -1068,8 +1069,11 @@ type kopierErgebnis struct {
 	daten []byte
 	err   error
 	// typ ist der Typ, unter dem das Fenster selbst anbietet (leer: wlclip.MIME); meldung ersetzt „Copied to clipboard“.
-	// Beides setzt nur textKopieren (ocr.go).
+	// Beides setzen textKopieren (ocr.go) und objekteKopieren (einfuegen.go).
 	typ, meldung string
+	// objekte: kopierte Objekte, die das Fenster selbst anbietet (nur ihr Bild, ADR-0045 Punkt 2); Strg+V nimmt sie,
+	// solange das Fenster die Zwischenablage hält.
+	objekte *document.Dokument
 }
 
 // kopieren legt das fertig gerenderte Bild als PNG (ohne Bearbeitungsdaten) in die Zwischenablage (Karte #39). Rendern,
@@ -1142,7 +1146,8 @@ func (e *editor) kopierenAbholen(gtx layout.Context) {
 		// Ein Abbruch bis hierher betraf eine ältere Quelle; er darf die neue Kopie nicht abräumen (F-328, QA-5).
 		zwischenablageUebernommen.Store(false)
 		e.fensterHaeltKopie, e.fensterWarnung = r.daten != nil, false
-		e.kopieIstText = r.typ != "" // Text aus dem Bild: die Warnung beim Schließen sagt „Text“
+		e.kopieIstText = r.typ != "" && r.objekte == nil // Text aus dem Bild: die Warnung beim Schließen sagt „Text“
+		e.einf.kopie = r.objekte                         // nur gültig, solange das Fenster die Kopie hält
 		if r.daten != nil {
 			typ := wlclip.MIME
 			if r.typ != "" {
@@ -1515,7 +1520,8 @@ func (e *editor) frame(gtx layout.Context) {
 	_ = e.leisteIndexAbholen()
 	_ = e.bibliothekAbholen()
 	e.kopierenAbholen(gtx)
-	e.ocrAbholen() // Suche und Texterkennung (ADR-0035), nach dem Kopieren
+	e.einfuegenAbholen() // Lesen der Zwischenablage (ADR-0045), nach dem Kopieren
+	e.ocrAbholen()       // Suche und Texterkennung (ADR-0035), nach dem Kopieren
 	// Vor allen anderen: Klicks und Tasten der offenen Einstellungstafel (ADR-0034).
 	e.einstellungenAuswerten(gtx)
 	// Ebenso die volle Ansicht der Bibliothek: ihre Tasten vor feldTasten und tasten (ADR-0036).

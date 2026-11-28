@@ -27,10 +27,16 @@ const HelferArgument = "--internal-keep-clipboard"
 // HelferArgumentText startet den Halter im Textmodus (ArtText, ADR-0024 Nachtrag 9); sonst wie HelferArgument.
 const HelferArgumentText = "--internal-keep-clipboard-text"
 
+// HelferArgumentObjekte startet den Halter für kopierte Objekte (ArtObjekte, ADR-0045 Punkt 2); sonst wie HelferArgument.
+const HelferArgumentObjekte = "--internal-keep-clipboard-objects"
+
 // Argument ist das Helfer-Argument der Art.
 func (a Art) Argument() string {
-	if a == ArtText {
+	switch a {
+	case ArtText:
 		return HelferArgumentText
+	case ArtObjekte:
+		return HelferArgumentObjekte
 	}
 	return HelferArgument
 }
@@ -42,6 +48,8 @@ func ArtVon(argument string) (a Art, ok bool) {
 		return ArtBild, true
 	case HelferArgumentText:
 		return ArtText, true
+	case HelferArgumentObjekte:
+		return ArtObjekte, true
 	}
 	return ArtBild, false
 }

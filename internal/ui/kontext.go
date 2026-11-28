@@ -105,6 +105,7 @@ func (e *editor) kontextEintraege() []menueEintrag {
 	if !e.kontext.objekt || s.Auswahl == 0 {
 		en := []menueEintrag{
 			{akt: aktKopieren, text: i18n.T("Copy"), an: true},
+			{akt: aktEinfuegen, text: i18n.T("Paste"), an: s.KannEinfuegen() && !e.einf.laeuft},
 			{akt: aktExport, text: i18n.T("Export…"), an: !e.exportOffen},
 			{akt: aktTextKopieren, text: i18n.T("Copy text from image"), an: e.ocrGrau() == "", erklaerung: e.ocrGrau()},
 			{akt: aktEinpassen, text: i18n.T("Fit"), an: true, gruppe: true},
@@ -123,7 +124,9 @@ func (e *editor) kontextEintraege() []menueEintrag {
 		en = append(en, menueEintrag{akt: aktTextBearbeiten, text: i18n.T("Edit text"), an: true})
 	}
 	en = append(en,
-		menueEintrag{akt: aktDoppeln, text: i18n.T("Duplicate"), an: an},
+		menueEintrag{akt: aktAusschneiden, text: i18n.T("Cut"), an: s.KannAusschneiden()},
+		menueEintrag{akt: aktKopieren, text: i18n.T("Copy"), an: s.KannObjekteKopieren()},
+		menueEintrag{akt: aktDoppeln, text: i18n.T("Duplicate"), an: an, gruppe: true},
 		menueEintrag{akt: aktLoeschen, text: i18n.T("Delete"), an: s.KannLoeschen()},
 		menueEintrag{akt: aktEbeneVor, text: i18n.T("Bring forward"), an: s.KannEbeneSchritt(1), gruppe: true},
 		menueEintrag{akt: aktEbeneZurueck, text: i18n.T("Send backward"), an: s.KannEbeneSchritt(-1)},

@@ -280,9 +280,21 @@ func (e *editor) wirkung(a aktion) func(gtx layout.Context) {
 	case aktKopieren:
 		return func(gtx layout.Context) {
 			if e.s.KopierenErlaubt() {
+				e.kopierenOderObjekte(gtx) // mit Auswahl die Objekte (ADR-0045 Punkt 1)
+			}
+		}
+	case aktBildKopieren:
+		return func(gtx layout.Context) {
+			if e.s.KopierenErlaubt() {
 				e.kopieren(gtx)
 			}
 		}
+	case aktAusschneiden:
+		return func(layout.Context) { e.objekteKopieren(true) }
+	case aktEinfuegen:
+		return func(layout.Context) { e.einfuegenStarten() }
+	case aktNeuAusZwischenablage:
+		return func(layout.Context) { e.neuAusZwischenablage() }
 	case aktExport:
 		return func(layout.Context) {
 			if e.s.KopierenErlaubt() {

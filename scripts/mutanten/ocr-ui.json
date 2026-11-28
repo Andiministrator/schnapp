@@ -185,7 +185,7 @@
     "name": "U12 Warnung beim Schließen spricht beim Text vom Bild (Karte #195)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\t\te.kopieIstText = r.typ != \"\" // Text",
+    "alt": "\t\te.kopieIstText = r.typ != \"\" && r.objekte == nil // Text",
     "neu": "\t\te.kopieIstText = false // Text"
   },
   {
@@ -206,8 +206,8 @@
     "name": "U15 Antwort der Erkennung wird im Bild nicht abgeholt (Karte #195)",
     "datei": "internal/ui/editor.go",
     "paket": "./internal/ui",
-    "alt": "\te.ocrAbholen() // Suche und Texterkennung",
-    "neu": "\t// e.ocrAbholen() // Suche und Texterkennung"
+    "alt": "\te.ocrAbholen()       // Suche und Texterkennung",
+    "neu": "\t// e.ocrAbholen()       // Suche und Texterkennung"
   },
   {
     "name": "U16 gezogener Bereich wird nicht gezeichnet (Karte #195)",
@@ -304,8 +304,8 @@
     "name": "L3 nur der erste Typ bekommt die Bytes (ADR-0024 Nachtrag 9)",
     "datei": "internal/wlclip/halter.go",
     "paket": "./internal/wlclip",
-    "alt": "\t\tif !slices.Contains(h.typen, mime) {",
-    "neu": "\t\tif !slices.Contains(h.typen[:1], mime) {"
+    "alt": "\tfor _, t := range a.typen() {\n\t\tm[t] = daten",
+    "neu": "\tfor _, t := range a.typen()[:1] {\n\t\tm[t] = daten"
   },
   {
     "name": "L4 Textmodus startet mit dem Bild-Argument (ADR-0024 Nachtrag 9)",

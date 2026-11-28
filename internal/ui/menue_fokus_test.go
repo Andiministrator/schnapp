@@ -147,8 +147,11 @@ func TestMenueFokussierterEintragWirdGrau(t *testing.T) {
 	if i := menueFokusNr(l); i != l.index(aktTextKopieren) {
 		t.Errorf("Runter: Fokus %d (%s), soll Text aus dem Bild kopieren", i, menueFokusName(l))
 	}
-	l.taste(key.NameUpArrow, 0)
-	l.taste(key.NameUpArrow, 0)
+	// Hoch: Alles auswählen, Einfügen, Kopieren, dann über die grauen Ausschneiden und Wiederholen auf Rückgängig
+	// (ADR-0045 Punkt 6).
+	for range 4 {
+		l.taste(key.NameUpArrow, 0)
+	}
 	if i := menueFokusNr(l); i != l.index(aktRueckgaengig) {
 		t.Errorf("Hoch: Fokus %d (%s)", i, menueFokusName(l))
 	}

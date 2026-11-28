@@ -5,6 +5,7 @@ package ui
 import (
 	"context"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"sync/atomic"
@@ -157,9 +158,13 @@ func TestSperreZeigerKnoepfeMenue(t *testing.T) {
 		t.Errorf("während des Speicherns: Objekte %d (Soll %d), Stand %d/%d, Zoom %v/%v, Werkzeug %v, zieht %v, Export %v",
 			len(l.e.s.D.Objekte()), n1, l.e.s.D.Stand(), stand, l.e.s.Abb.Zoom, zoom, l.e.s.Werkzeug, l.e.s.Zieht(), l.e.exportOffen || l.e.exportAntwort != nil)
 	}
-	// Strg+C wirkt auch während des Speicherns (F-285).
+	// Strg+C wirkt auch während des Speicherns (F-285); mit Auswahl kopiert es die Objekte (ADR-0045 Punkt 1).
 	l.taste("C", key.ModShortcut)
-	if m := l.e.meldung.Text; !l.e.kopierLaeuft && m != i18n.T("Copied to clipboard") || l.e.kopierLaeuft && m != i18n.T("Copying…") {
+	fertig := i18n.T("Copied to clipboard")
+	if n := l.e.s.AnzahlGewaehlt(); n > 0 {
+		fertig = fmt.Sprintf(i18n.N("Copied %d object to the clipboard", "Copied %d objects to the clipboard", n), n)
+	}
+	if m := l.e.meldung.Text; !l.e.kopierLaeuft && m != fertig || l.e.kopierLaeuft && m != i18n.T("Copying…") {
 		t.Errorf("Strg+C während des Speicherns: läuft %v, Meldung %q", l.e.kopierLaeuft, l.e.meldung.Text)
 	}
 	l.warteBis(t, "Kopieren", func() bool { return !l.e.kopierLaeuft })

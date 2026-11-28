@@ -624,6 +624,15 @@ Original width and height are at least 1.
 * Exports are different files: a flat PNG or JPG carries only pixels, and the SVG export contains no `s:` attributes
   and no namespace of Schnapp at all.
 
+### 13.1 Annotations on the clipboard (informative)
+
+Copied annotations (ADR-0045) travel under the MIME type `application/x-schnapp-objects`: an SVG document exactly like
+the `snAP` document of section 7 and 8 — same namespace, `s:format`, size, `s:ansicht` with crop, strips and edge style
+of the source screenshot — that contains only the copied objects in stacking order and no metadata (`s:meta` is
+present but empty apart from `s:bearbeitet`). It carries no pixels; the `image` element is the usual placeholder. A
+reader applies the limits of section 10 and the rules of section 11 as for a working file; the format version rule
+(12.7) is the same. A PNG of the annotations on a transparent background is offered alongside under `image/png`.
+
 ## 14. Examples and conformance
 
 The directory [`testdata/format/`](../testdata/format/) contains synthetic examples (64 x 48 pixels, `minimal` 32 x 24; generated, no real

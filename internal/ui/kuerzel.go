@@ -80,6 +80,12 @@ const (
 	// Gruppen (ADR-0044): Menü Ebene → „Group“ (Strg+G), „Ungroup“ (Strg+Umschalt+G).
 	aktGruppieren
 	aktGruppierungAufheben
+	// Zwischenablage (ADR-0045): Menü Bearbeiten → „Cut“ (Strg+X), „Paste“ (Strg+V); Menü Datei → „Copy image“
+	// (Strg+Umschalt+C), „New from clipboard“ (Strg+Umschalt+V). Strg+C (aktKopieren) kopiert die Auswahl, sonst das Bild.
+	aktAusschneiden
+	aktEinfuegen
+	aktBildKopieren
+	aktNeuAusZwischenablage
 )
 
 // taste ist ein Tastenkürzel des Editors. Genau eines gilt: akt (Handlung), werkzeug (wählt ein Werkzeug, hatWerkzeug)
@@ -132,7 +138,12 @@ func tastenTabelle() []taste {
 		strg("Y", aktWiederholen),
 		strg("S", aktSpeichern),
 		strg("O", aktOeffnen),
-		strg("C", aktKopieren),
+		strg("C", aktKopieren), // mit Auswahl die Objekte, sonst das Bild (ADR-0045 Punkt 1)
+		{filter: key.Filter{Name: "C", Required: key.ModShortcut | key.ModShift}, akt: aktBildKopieren},
+		strg("X", aktAusschneiden), // X allein ist Stauchen; Strg+X war frei (ADR-0045 Punkt 1)
+		strg("V", aktEinfuegen),    // V allein ist Auswählen; Strg+V war frei
+		// wie „Als neues Bild einfügen“ in GIMP (ADR-0045 Punkt 4)
+		{filter: key.Filter{Name: "V", Required: key.ModShortcut | key.ModShift}, akt: aktNeuAusZwischenablage},
 		{filter: key.Filter{Name: "E", Required: key.ModShortcut | key.ModShift}, akt: aktExport},
 		strg("0", aktEinpassen),
 		strg("1", aktEins),

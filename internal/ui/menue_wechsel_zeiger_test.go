@@ -25,16 +25,18 @@ func TestEnterNachMenuewechselImSelbenBild(t *testing.T) {
 	if l.e.menue.welches != menueDatei || menueFokusNr(l) != 2 {
 		t.Fatalf("Vorbedingung: Menü %d, Fokus %d", l.e.menue.welches, menueFokusNr(l))
 	}
-	if en := l.e.menueEintraegeVon(menueBearbeiten); !en[2].an || en[2].akt != aktTextBearbeiten {
+	// Seit ADR-0045 steht dort „Ausschneiden“ (bedienbar, der Text ist gewählt); vorher „Text bearbeiten“.
+	if en := l.e.menueEintraegeVon(menueBearbeiten); !en[2].an || en[2].akt != aktAusschneiden {
 		t.Fatalf("Vorbedingung: dritter Eintrag von Bearbeiten ist %+v", en[2])
 	}
+	n := len(l.e.s.D.Objekte())
 	l.r.Queue(key.Event{Name: key.NameRightArrow, State: key.Press})
 	l.r.Queue(key.Event{Name: key.NameReturn, State: key.Press})
 	l.setle()
 	if !l.e.menue.offen || l.e.menue.welches != menueBearbeiten {
 		t.Errorf("nach Rechts und Enter: Menü offen %v (%d), soll Bearbeiten offen", l.e.menue.offen, l.e.menue.welches)
 	}
-	if l.e.s.TextLaeuft() {
+	if l.e.s.TextLaeuft() || len(l.e.s.D.Objekte()) != n || l.e.kopierLaeuft {
 		t.Error("Enter im selben Bild wie Pfeil rechts hat den Eintrag des Nachbarmenüs ausgelöst")
 	}
 	// Im Folgebild gilt Enter wieder: Es löst den Eintrag mit Fokus (Rückgängig) aus und schließt die Liste.

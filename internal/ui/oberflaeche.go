@@ -108,9 +108,11 @@ func (e *editor) menueEintraegeRoh(i int) []menueEintrag {
 	case menueDatei:
 		return []menueEintrag{
 			{akt: aktOeffnen, text: i18n.T("Open…"), an: e.oeffnenGrau() == "" && !e.oeffnenOffen && !e.exportOffen, erklaerung: e.oeffnenGrau()},
+			{akt: aktNeuAusZwischenablage, text: i18n.T("New from clipboard"), an: e.neuGrau() == "" && !e.einf.laeuft,
+				erklaerung: e.neuGrau()},
 			{akt: aktSpeichern, text: i18n.T("Save"), an: true, gruppe: true},
-			{akt: aktExport, text: i18n.T("Export…"), an: !e.exportOffen},
-			{akt: aktKopieren, text: i18n.T("Copy"), an: true},
+			{akt: aktExport, text: i18n.T("Export…"), an: !e.exportOffen, gruppe: true},
+			{akt: aktBildKopieren, text: i18n.T("Copy image"), an: true},
 			{akt: aktEinstellungen, text: i18n.T("Settings…"), an: true, gruppe: true},
 			{akt: aktBibliothek, text: i18n.T("Library"), aktiv: e.bibl.offen, an: e.unten.l != nil,
 				erklaerung: e.bibliothekGrau()},
@@ -120,6 +122,9 @@ func (e *editor) menueEintraegeRoh(i int) []menueEintrag {
 		return []menueEintrag{
 			{akt: aktRueckgaengig, text: i18n.T("Undo"), an: s.D.KannRueckgaengig()},
 			{akt: aktWiederholen, text: i18n.T("Redo"), an: s.D.KannWiederholen()},
+			{akt: aktAusschneiden, text: i18n.T("Cut"), an: s.KannAusschneiden(), gruppe: true},
+			{akt: aktKopieren, text: i18n.T("Copy"), an: s.KopierenErlaubt()},
+			{akt: aktEinfuegen, text: i18n.T("Paste"), an: s.KannEinfuegen() && !s.TextLaeuft() && !e.einf.laeuft},
 			{akt: aktTextBearbeiten, text: i18n.T("Edit text"), an: s.KannTextBearbeiten(), gruppe: true},
 			{akt: aktLoeschen, text: i18n.T("Delete"), an: s.KannLoeschen()},
 			{akt: aktAllesWaehlen, text: i18n.T("Select all"), an: s.KannAlleWaehlen()},

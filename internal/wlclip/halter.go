@@ -13,7 +13,6 @@ package wlclip
 import (
 	"errors"
 	"os"
-	"slices"
 	"sync"
 	"syscall"
 	"time"
@@ -96,7 +95,13 @@ type Art int
 const (
 	ArtBild Art = iota
 	ArtText
+	// ArtObjekte: Objekte des Editors (MIMEObjekte) und dazu ihr Bild (MIME), ADR-0045 Punkt 2. Die Daten sind ein
+	// Rahmen aus Packe.
+	ArtObjekte
 )
+
+// MIMEObjekte ist der Typ kopierter Objekte: SVG wie der Block snAP, ohne Pixel (ADR-0045 Punkt 2).
+const MIMEObjekte = "application/x-schnapp-objects"
 
 // TextTypen sind die MIME-Typen, unter denen der Halter Text anbietet, in dieser Reihenfolge: UTF-8 ausdrücklich, dann
 // die Namen, die ältere und X11-nahe Programme erfragen (Xwayland, Qt, GTK).
@@ -104,17 +109,38 @@ var TextTypen = []string{"text/plain;charset=utf-8", "text/plain", "UTF8_STRING"
 
 // typen sind die Typen, für die der Halter die Bytes liefert; marken die zusätzlich angebotenen leeren Typen.
 func (a Art) typen() []string {
-	if a == ArtText {
+	switch a {
+	case ArtText:
 		return TextTypen
+	case ArtObjekte:
+		return []string{MIMEObjekte, MIME}
 	}
 	return []string{MIME}
 }
 
 func (a Art) marken() []string {
-	if a == ArtText {
+	if a == ArtText { // ArtObjekte trägt ein Bild und bekommt die Marke wie ArtBild
 		return nil // die Klipper-Marke gilt nur Bildern (Nachtrag 2)
 	}
 	return []string{MarkeKlipper}
+}
+
+// inhalt ordnet daten den Typen der Art zu: ArtObjekte entpackt den Rahmen, jede andere Art gibt allen Typen dieselben
+// Bytes.
+func (a Art) inhalt(daten []byte) (map[string][]byte, error) {
+	m := map[string][]byte{}
+	if a == ArtObjekte {
+		svg, png, err := Entpacke(daten)
+		if err != nil {
+			return nil, err
+		}
+		m[MIMEObjekte], m[MIME] = svg, png
+		return m, nil
+	}
+	for _, t := range a.typen() {
+		m[t] = daten
+	}
+	return m, nil
 }
 
 // angebot sind alle angebotenen Typen in der Reihenfolge der offer-Anfragen.
@@ -123,8 +149,7 @@ func (a Art) angebot() []string { return append(append([]string(nil), a.typen().
 // Halter bietet einen Inhalt in der Zwischenablage an.
 type Halter struct {
 	v       *wlwire.Verbindung
-	daten   []byte
-	typen   []string // Typen, die die Bytes bekommen
+	inhalt  map[string][]byte // Bytes je Typ; Typen ohne Eintrag (Marken) bekommen nichts
 	quelle  uint32
 	geraet  uint32
 	Manager string // benutzte Manager-Schnittstelle (ManagerExt oder ManagerWlr)
@@ -147,6 +172,10 @@ func Biete(daten []byte, a Art) (*Halter, error) {
 }
 
 func biete(v *wlwire.Verbindung, daten []byte, a Art) (*Halter, error) {
+	inhalt, err := a.inhalt(daten) // ein kaputter Rahmen kostet keine Verbindung
+	if err != nil {
+		return nil, err
+	}
 	registry := v.NeueID()
 	if err := v.Sende(idDisplay, opDisplayGetRegistry, new(wlwire.Nachricht).U32(registry)); err != nil {
 		return nil, err
@@ -157,7 +186,7 @@ func biete(v *wlwire.Verbindung, daten []byte, a Art) (*Halter, error) {
 	globals := map[string]global{}
 	sitzGefunden := false
 	var sitz global
-	err := v.Rundlauf(Stau, func(e wlwire.Ereignis) error {
+	err = v.Rundlauf(Stau, func(e wlwire.Ereignis) error {
 		if e.Obj == registry && e.Op == evRegistryGlobal {
 			l := wlwire.Leser{B: e.Args}
 			name, schnitt, version := l.U32(), l.Str(), l.U32()
@@ -177,7 +206,7 @@ func biete(v *wlwire.Verbindung, daten []byte, a Art) (*Halter, error) {
 	if err != nil {
 		return nil, err
 	}
-	h := &Halter{v: v, daten: daten, typen: a.typen()}
+	h := &Halter{v: v, inhalt: inhalt}
 	var mgr global
 	for _, kandidat := range []string{ManagerExt, ManagerWlr} {
 		if g, ok := globals[kandidat]; ok {
@@ -245,14 +274,15 @@ func (h *Halter) verarbeite(e wlwire.Ereignis) (ende bool, err error) {
 		if err != nil {
 			return false, err
 		}
-		if !slices.Contains(h.typen, mime) { // auch MarkeKlipper: leer, der Leser sieht sofort das Ende
+		daten, ok := h.inhalt[mime]
+		if !ok { // auch MarkeKlipper: leer, der Leser sieht sofort das Ende
 			syscall.Close(fd)
 			return false, nil
 		}
 		h.senden.Add(1)
 		go func() {
 			defer h.senden.Done()
-			_ = schreibe(fd, h.daten, Stau)
+			_ = schreibe(fd, daten, Stau)
 		}()
 	case e.Obj == h.quelle && e.Op == evSourceCancel:
 		return true, nil

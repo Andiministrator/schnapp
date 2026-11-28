@@ -1,0 +1,318 @@
+[
+  {
+    "name": "Z1 Einfügen im Zug",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "if !s.zwischenablageBereit() || s.TextLaeuft() {",
+    "neu": "if s.TextLaeuft() {"
+  },
+  {
+    "name": "Z2 Schalter bleiben",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tos[i] = document.OhneSchalter(o)\n",
+    "neu": "\t\tos[i] = o\n"
+  },
+  {
+    "name": "Z3 immer alte Lage",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "if innerhalb(ansicht, b, g) {",
+    "neu": "if true {"
+  },
+  {
+    "name": "Z4 Ansicht nicht ins Ziel-Original",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "return s.D.ZuOriginal(ansicht).Minus(b.Min)",
+    "neu": "return ansicht.Minus(b.Min)"
+  },
+  {
+    "name": "Z5 Quelle nicht in die Ansicht",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "ansicht := q.ZuAnsicht(b.Min)",
+    "neu": "ansicht := b.Min"
+  },
+  {
+    "name": "Z6 rückt nur einmal",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "k < einfuegeVersuche &&",
+    "neu": "k < 1 &&"
+  },
+  {
+    "name": "Z7 alte Gruppen",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "\tos = s.neueGruppenFuer(os) // eigene Gruppen der Eingefügten (ADR-0044 Punkt 4)\n",
+    "neu": "\t_ = s.neueGruppenFuer\n"
+  },
+  {
+    "name": "Z8 Werkzeug bleibt",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.SetzeWerkzeug(WerkzeugAuswahl) // sonst",
+    "neu": "\t\t_ = WerkzeugAuswahl // sonst"
+  },
+  {
+    "name": "Z9 nur eins gewählt",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "s.setzeAuswahl(ids[len(ids)-1], ids)",
+    "neu": "s.setzeAuswahl(ids[len(ids)-1], nil)"
+  },
+  {
+    "name": "Z10 Prüfung ohne Wirkung",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "if err := pruefe(probe); err != nil {",
+    "neu": "if err := pruefe(probe); err != nil && false {"
+  },
+  {
+    "name": "Z11 kopierbar ohne Auswahl",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "return s.kopierBereit() && s.AnzahlGewaehlt() > 0",
+    "neu": "return s.kopierBereit()"
+  },
+  {
+    "name": "Z12 Mitte ohne halbe Breite",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "inBereich(mitte.X-b.Breite()/2,",
+    "neu": "inBereich(mitte.X,"
+  },
+  {
+    "name": "Z13 Mitte des Bilds statt des Fensters",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tmitte = s.Abb.ZuAnsicht(document.Pt(float64(s.fenster.X)/2, float64(s.fenster.Y)/2))\n",
+    "neu": "\t\t_ = s.fenster\n"
+  },
+  {
+    "name": "Z14 ausschneiden während des Speicherns",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "return s.KannObjekteKopieren() && s.KannLoeschen()",
+    "neu": "return s.KannObjekteKopieren()"
+  },
+  {
+    "name": "Z15 kopieren während des Speicherns gesperrt",
+    "datei": "internal/canvas/zwischenablage.go",
+    "paket": "./internal/canvas",
+    "alt": "func (s *Sitzung) kopierBereit() bool { return s.zug == keinZug && !s.D.ZugLaeuft() }",
+    "neu": "func (s *Sitzung) kopierBereit() bool { return s.zug == keinZug && !s.D.ZugLaeuft() && !s.gesperrt() }"
+  },
+  {
+    "name": "D1 Verlauf der Kopie bleibt",
+    "datei": "internal/document/ohnepixel.go",
+    "paket": "./internal/document",
+    "alt": "\td.verlauf = verlauf{} // die Schritte oben gehören nicht zum Inhalt\n",
+    "neu": "\n"
+  },
+  {
+    "name": "D2 alle Objekte kopiert",
+    "datei": "internal/document/ohnepixel.go",
+    "paket": "./internal/fileformat",
+    "alt": "if !slices.Contains(ids, o.Kennung()) {",
+    "neu": "if !slices.Contains(ids, o.Kennung()) && false {"
+  },
+  {
+    "name": "D3 Einfügen in umgekehrter Reihenfolge",
+    "datei": "internal/document/mehrere.go",
+    "paket": "./internal/document",
+    "alt": "g = append(g, einfuegen{o, len(d.objekte) + i})",
+    "neu": "g = append(g, einfuegen{o, len(d.objekte)})"
+  },
+  {
+    "name": "D4 Ausgeblendet bleibt",
+    "datei": "internal/document/ohnepixel.go",
+    "paket": "./internal/canvas",
+    "alt": "e.Ausgeblendet, e.Gesperrt = false, false",
+    "neu": "e.Gesperrt = false"
+  },
+  {
+    "name": "D5 Vergleich mit Kennung",
+    "datei": "internal/document/ohnepixel.go",
+    "paket": "./internal/canvas",
+    "alt": "return Gleich(a.mitKennung(0), b.mitKennung(0))",
+    "neu": "return Gleich(a, b)"
+  },
+  {
+    "name": "D6 Zuschnitt fehlt",
+    "datei": "internal/document/ohnepixel.go",
+    "paket": "./internal/document",
+    "alt": "\tif zuschnitt != d.Zuschnitt() {\n\t\tif err := d.SetzeZuschnitt(zuschnitt); err != nil {",
+    "neu": "\tif false {\n\t\tif err := d.SetzeZuschnitt(zuschnitt); err != nil {"
+  },
+  {
+    "name": "W1 leere Teile angenommen",
+    "datei": "internal/wlclip/rahmen.go",
+    "paket": "./internal/wlclip",
+    "alt": "if n == 0 || n >= uint64(len(rest)) {",
+    "neu": "if n > uint64(len(rest)) {"
+  },
+  {
+    "name": "W2 PNG-Typ bekommt das SVG",
+    "datei": "internal/wlclip/halter.go",
+    "paket": "./internal/wlclip",
+    "alt": "m[MIMEObjekte], m[MIME] = svg, png",
+    "neu": "m[MIMEObjekte], m[MIME] = svg, append(svg, png[:0]...)"
+  },
+  {
+    "name": "W3 Objekt-Typ nicht angeboten",
+    "datei": "internal/wlclip/halter.go",
+    "paket": "./internal/wlclip",
+    "alt": "return []string{MIMEObjekte, MIME}",
+    "neu": "return []string{MIME}"
+  },
+  {
+    "name": "W4 fremdes Angebot nicht freigegeben",
+    "datei": "internal/wlclip/lesen.go",
+    "paket": "./internal/wlclip",
+    "alt": "\t\tif id != auswahl {\n",
+    "neu": "\t\tif false {\n"
+  },
+  {
+    "name": "W5 Grenze beim Lesen fehlt",
+    "datei": "internal/wlclip/lesen.go",
+    "paket": "./internal/wlclip",
+    "alt": "\t\tif int64(len(daten)) > max {\n",
+    "neu": "\t\tif false {\n"
+  },
+  {
+    "name": "W6 Schreibende bleibt offen",
+    "datei": "internal/wlclip/lesen.go",
+    "paket": "./internal/wlclip",
+    "alt": "\tw.Close() // die Nachricht trägt eine Kopie",
+    "neu": "\tdefer w.Close() // die Nachricht trägt eine Kopie"
+  },
+  {
+    "name": "W7 Argument der Objekte unbekannt",
+    "datei": "internal/wlclip/helfer.go",
+    "paket": "./internal/wlclip",
+    "alt": "\tcase HelferArgumentObjekte:\n\t\treturn ArtObjekte, true\n",
+    "neu": ""
+  },
+  {
+    "name": "W8 Lesen ohne Frist",
+    "datei": "internal/wlclip/lesen.go",
+    "paket": "./internal/wlclip",
+    "alt": "if err := r.SetReadDeadline(time.Now().Add(stau)); err != nil {",
+    "neu": "if err := r.SetReadDeadline(time.Time{}); err != nil {",
+    "timeout": "90s"
+  },
+  {
+    "name": "R1 alle Objekte im PNG",
+    "datei": "internal/render/objektepng.go",
+    "paket": "./internal/render",
+    "alt": "\t\tif !slices.Contains(ids, o.Kennung()) {\n",
+    "neu": "\t\tif !slices.Contains(ids, o.Kennung()) && false {\n"
+  },
+  {
+    "name": "R2 PNG nicht zugeschnitten",
+    "datei": "internal/render/objektepng.go",
+    "paket": "./internal/render",
+    "alt": "b.SubImage(deckung(b))",
+    "neu": "b.SubImage(b.Rect)"
+  },
+  {
+    "name": "F1 Schnapp-Blöcke gelesen",
+    "datei": "internal/fileformat/oeffnen.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\tif !nurBild {\n",
+    "neu": "\t\tif true {\n"
+  },
+  {
+    "name": "F2 Kopie mit Verlauf",
+    "datei": "internal/fileformat/angaben.go",
+    "paket": "./internal/fileformat",
+    "alt": "return d, d.VergissVerlauf() // die Kopie hat keine Geschichte",
+    "neu": "return d, nil"
+  },
+  {
+    "name": "U1 Strg+C kopiert immer das Bild",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "\tif e.s.KannObjekteKopieren() {\n\t\te.objekteKopieren(false)",
+    "neu": "\tif false {\n\t\te.objekteKopieren(false)"
+  },
+  {
+    "name": "U2 Ausschneiden löscht nicht",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "\tif ausschneiden {\n\t\te.s.Ausschneiden()\n\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "U3 Fenster merkt die Objekte nicht",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "r.daten, r.typ, r.objekte = png, wlclip.MIME, q",
+    "neu": "r.daten, r.typ = png, wlclip.MIME"
+  },
+  {
+    "name": "U4 Merker nicht übernommen",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\te.einf.kopie = r.objekte ",
+    "neu": "\t\t_ = r.objekte "
+  },
+  {
+    "name": "U5 Merker auch ohne Fensterkopie",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "if e.fensterHaeltKopie && e.einf.kopie != nil {",
+    "neu": "if e.einf.kopie != nil {"
+  },
+  {
+    "name": "U6 Objekt-Typ nicht gewählt",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\tif slices.Contains(typen, wlclip.MIMEObjekte) {\n\t\t\t\treturn wlclip.MIMEObjekte\n\t\t\t}\n",
+    "neu": ""
+  },
+  {
+    "name": "U7 kein Hinweis auf New from clipboard",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "\tcase bild:\n",
+    "neu": "\tcase bild && false:\n"
+  },
+  {
+    "name": "U8 nicht abgelegt",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "r.pfad, r.err = ablegen(gel.Dokument)",
+    "neu": "r.pfad, _ = \"/x\", ablegen != nil && gel != nil"
+  },
+  {
+    "name": "U9 Merker des Wechsels fehlt",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "\t\t\te.wechsel.ausZwischenablage = true ",
+    "neu": "\t\t\t_ = 0 "
+  },
+  {
+    "name": "U10 JPEG vor PNG",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "var bildTypen = []string{wlclip.MIME, \"image/jpeg\"}",
+    "neu": "var bildTypen = []string{\"image/jpeg\", wlclip.MIME}"
+  },
+  {
+    "name": "U11 ohne Budget",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "e.s.Einfuegen(q, render.Pruefe)",
+    "neu": "e.s.Einfuegen(q, nil)"
+  },
+  {
+    "name": "U12 Halter mit Art Bild",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "wlclip.Packe(svg, png), wlclip.ArtObjekte)",
+    "neu": "wlclip.Packe(svg, png), wlclip.ArtBild)"
+  }
+]

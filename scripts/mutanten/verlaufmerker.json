@@ -94,8 +94,8 @@
     "name": "V15 Anbindung ohne Fortsetzen",
     "datei": "cmd/schnapp/editor.go",
     "paket": "./cmd/schnapp",
-    "alt": "\t\tFortsetzen: fortsetzerFuer(b, kante)}",
-    "neu": "\t}"
+    "alt": "\t\tFortsetzen: fortsetzerFuer(b, kante), Ablegen:",
+    "neu": "\t\tAblegen:"
   },
   {
     "name": "V16 Fortsetzen nie fortgesetzt",

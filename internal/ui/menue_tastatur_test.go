@@ -230,7 +230,7 @@ func TestMenuePfeiltasten(t *testing.T) {
 	}
 	zu(aktRueckgaengig, "nach dem Öffnen")
 	l.taste(key.NameDownArrow, 0)
-	zu(aktTextBearbeiten, "runter über den grauen Eintrag Wiederholen")
+	zu(aktAusschneiden, "runter über den grauen Eintrag Wiederholen") // der Text ist gewählt (ADR-0045 Punkt 6)
 	l.taste(key.NameUpArrow, 0)
 	zu(aktRueckgaengig, "hoch über den grauen Eintrag Wiederholen")
 	l.taste(key.NameEnd, 0)
@@ -374,8 +374,8 @@ func TestMenueAuswertenKlicks(t *testing.T) {
 		l := neuerMenueLauf(t, image.Pt(1200, 800))
 		l.titel().Click()
 		l.setle()
-		// Trennlinie zwischen „Kopieren“ und „Einstellungen…“ im Menü Datei (Gruppenabstand, seit ADR-0034).
-		a, b := l.e.menue.rahmen[l.index(aktKopieren)], l.e.menue.rahmen[l.index(aktEinstellungen)]
+		// Trennlinie zwischen „Bild kopieren“ und „Einstellungen…“ im Menü Datei (Gruppenabstand, seit ADR-0034).
+		a, b := l.e.menue.rahmen[l.index(aktBildKopieren)], l.e.menue.rahmen[l.index(aktEinstellungen)]
 		l.klick(image.Pt(a.Min.X+5, (a.Max.Y+b.Min.Y)/2))
 		if !l.e.menue.offen {
 			t.Error("Klick zwischen Einträgen schließt das Menü")
@@ -449,7 +449,7 @@ func TestMenueEintraegeVerhalten(t *testing.T) {
 	}
 	t.Run("Kopieren", func(t *testing.T) {
 		e, _ := neu(t)
-		e.fuehreAus(gtx, aktKopieren, true)
+		e.fuehreAus(gtx, aktBildKopieren, true) // aktKopieren kopierte den gewählten Text als Objekt (ADR-0045)
 		warteKopieren(t, e, gtx)
 		if e.meldung.Text != i18n.T("Copied to clipboard") {
 			t.Errorf("Meldung %q", e.meldung.Text)

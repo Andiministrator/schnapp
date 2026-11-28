@@ -1217,15 +1217,15 @@ msgstr ""
 msgid "No changes to save."
 msgstr ""
 
-#: internal/ui/editor.go
+#: internal/ui/editor.go internal/ui/einfuegen.go
 msgid "Copying is already in progress."
 msgstr ""
 
-#: internal/ui/editor.go
+#: internal/ui/editor.go internal/ui/einfuegen.go
 msgid "Could not copy: finish the current action first."
 msgstr ""
 
-#: internal/ui/editor.go
+#: internal/ui/editor.go internal/ui/einfuegen.go
 msgid "Copying…"
 msgstr ""
 
@@ -1443,6 +1443,92 @@ msgstr ""
 
 #: internal/ui/editor.go
 msgid "Drag across the part to cut out: vertically for rows, horizontally for columns. Double-click a seam to restore it. Cut-out parts stay in the working file; redact what must go."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "Copied %d object to the clipboard"
+msgid_plural "Copied %d objects to the clipboard"
+msgstr[0] ""
+msgstr[1] ""
+
+#: internal/ui/einfuegen.go
+msgid "Cut %d object to the clipboard"
+msgid_plural "Cut %d objects to the clipboard"
+msgstr[0] ""
+msgstr[1] ""
+
+#: internal/ui/einfuegen.go
+msgid "Reading the clipboard…"
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "Could not paste: finish the current action first."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "This desktop does not let Schnapp read the clipboard."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "Not available here: no library is connected."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "The clipboard is empty."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "The image is saved in the library as a new capture."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "Could not paste: the objects would take too long to draw."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "The clipboard holds nothing to paste."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "Could not paste: %v"
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "Pasted %d object"
+msgid_plural "Pasted %d objects"
+msgstr[0] ""
+msgstr[1] ""
+
+#: internal/ui/einfuegen.go
+msgid "The clipboard holds no image."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "The clipboard holds an image. File → New from clipboard (Ctrl+Shift+V) opens it as a new capture."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "The content of the clipboard is too large."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "The image in the clipboard could not be read."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "The objects in the clipboard could not be read."
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "Could not create a capture from the clipboard: %v"
+msgstr ""
+
+#: internal/ui/einfuegen.go
+msgid "Could not read the clipboard: %v"
+msgstr ""
+
+#: internal/ui/wechsel.go
+msgid "The image from the clipboard is saved as a new capture; open it from the library."
 msgstr ""
 
 #: internal/ui/einstellungen.go
@@ -1945,6 +2031,22 @@ msgstr ""
 msgid "Select layer above / below"
 msgstr ""
 
+#: internal/ui/hilfe.go
+msgid "Export / copy image"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Cut / copy"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Paste / new from clipboard"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Fit / 1:1"
+msgstr ""
+
 #: internal/ui/hilfe.go internal/ui/oberflaeche.go
 msgid "Keyboard shortcuts"
 msgstr ""
@@ -1990,6 +2092,10 @@ msgid "Copy"
 msgstr ""
 
 #: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Paste"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
 msgid "Export…"
 msgstr ""
 
@@ -2007,6 +2113,10 @@ msgstr ""
 
 #: internal/ui/kontext.go internal/ui/oberflaeche.go
 msgid "Edit text"
+msgstr ""
+
+#: internal/ui/kontext.go internal/ui/oberflaeche.go
+msgid "Cut"
 msgstr ""
 
 #: internal/ui/kontext.go internal/ui/oberflaeche.go
@@ -2214,6 +2324,14 @@ msgstr ""
 
 #: internal/ui/oberflaeche.go
 msgid "Open…"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "New from clipboard"
+msgstr ""
+
+#: internal/ui/oberflaeche.go
+msgid "Copy image"
 msgstr ""
 
 #: internal/ui/oberflaeche.go

@@ -63,7 +63,7 @@ func TestKontextmenueAmObjekt(t *testing.T) {
 		t.Errorf("erste Zeile bei %v, Klick bei %v", r, p)
 	}
 	i := l.eintragMit(aktDoppeln)
-	if i < 0 || l.eintragMit(aktKopieren) >= 0 {
+	if i < 0 || l.eintragMit(aktKopieren) < 0 || l.eintragMit(aktEinfuegen) >= 0 { // Kopieren gilt dem Objekt (ADR-0045)
 		t.Fatalf("Einträge für ein Objekt falsch: Doppeln %d, Kopieren %d", i, l.eintragMit(aktKopieren))
 	}
 	n := len(l.e.s.D.Objekte())

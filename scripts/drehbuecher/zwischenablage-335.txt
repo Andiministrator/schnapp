@@ -1,0 +1,60 @@
+# Sichtprobe ADR-0045 (Karte #335): Objekte kopieren, einfügen, ausschneiden; neue Aufnahme aus der Zwischenablage und
+# Einfügen in eine andere Aufnahme.
+# Aufruf: scripts/probe.sh --sprache de --ende 30 --drehbuch scripts/drehbuecher/zwischenablage-335.txt --bild scripts/drehbuecher/testbild-1200x800.png
+# Bei 1600 × 1000, Skala 1, deutsche Oberfläche. Legt eine Aufnahme in der Probe-Bibliothek (tmp/probe/home) an.
+# Erwartet:
+#  01 Pfeil und Kasten gewählt (Strg+A), Strg+C: Fußzeile „2 Objekte in die Zwischenablage kopiert“.
+#  02 Strg+V: Kopien 10 Fensterpixel nach rechts unten versetzt, gewählt; Fußzeile „2 Objekte eingefügt“.
+#  03 Strg+V noch einmal: dritte Kopie wieder 10 Pixel weiter.
+#  04 Strg+X: die dritte Kopie ist weg, Fußzeile „2 Objekte ausgeschnitten“.
+#  05 Menü Datei: „Öffnen…“, „Neu aus Zwischenablage“ (Strg+Umschalt+V) │ „Speichern“ │ „Exportieren…“, „Bild kopieren“
+#     (Strg+Umschalt+C) │ …; Menü Bearbeiten (06): „Ausschneiden“, „Kopieren“, „Einfügen“ mit Strg+X/C/V.
+#  07 Strg+S, dann Strg+Umschalt+V: neue Aufnahme 606 × 206 aus dem Bild der ausgeschnittenen Objekte (Pfeil und Kasten,
+#     durchsichtiger Grund, die Leinwand scheint durch), Titel wechselt.
+#  08 Strg+V in der neuen Aufnahme: die Objekte erscheinen mittig (ihre alte Lage liegt außerhalb des kleinen Bilds),
+#     gewählt.
+#  09 Strg+Umschalt+R: Leiste mit der neuen Aufnahme vorn (offen, grün umrandet) und der Testbild-Aufnahme.
+warte 800
+taste A
+ziehe 300 300 600 420
+warte 200
+taste R
+ziehe 650 250 900 450
+warte 200
+taste V
+taste Strg+A
+taste Strg+C
+warte 1500
+foto 01-kopiert
+taste Strg+V
+warte 1500
+foto 02-eingefuegt
+taste Strg+V
+warte 1500
+foto 03-nochmal
+taste Strg+X
+warte 1500
+foto 04-ausgeschnitten
+taste F10
+warte 400
+foto 05-menue-datei
+taste Rechts
+warte 400
+foto 06-menue-bearbeiten
+taste Esc
+taste Esc
+warte 200
+# Erst speichern: Das Testbild ist eine Datei von außen; ihr erstes Speichern legt sie als Aufnahme ab und hält mit
+# diesem Hinweis jeden Wechsel einmal an (dann sagt die Fußzeile, dass das Bild aus der Zwischenablage in der
+# Bibliothek liegt).
+taste Strg+S
+warte 3000
+taste Strg+Umschalt+V
+warte 5000
+foto 07-neu-aus-zwischenablage
+taste Strg+V
+warte 1500
+foto 08-eingefuegt-in-neue
+taste Strg+Umschalt+R
+warte 2500
+foto 09-leiste
