@@ -124,7 +124,10 @@ func TestLiesNichtsGewaehlt(t *testing.T) {
 func TestLiesLeer(t *testing.T) {
 	client, server := paar(t)
 	c := &compositor{t: t, v: server}
+	fertig := make(chan struct{})
+	defer func() { <-fertig }()
 	go func() {
+		defer close(fertig)
 		reg := c.anmeldung([]globalImTest{{3, "wl_seat", 9}, {4, ManagerWlr, 2}})
 		c.leseAnmeldung(reg, ManagerWlr, func(g uint32) {
 			c.Sende(g, evDeviceSelection, new(wlwire.Nachricht).U32(0))
@@ -134,10 +137,12 @@ func TestLiesLeer(t *testing.T) {
 		t.Errorf("Fehler %v, erwartet ErrLeer", err)
 	}
 
-	client, server = paar(t)
-	c = &compositor{t: t, v: server}
-	go c.anmeldung([]globalImTest{{3, "wl_seat", 9}})
-	if _, err := lies(context.Background(), client, func([]string) string { return MIME }, 1<<20, 5*time.Second); !errors.Is(err, ErrKeinDataControl) {
+	client2, server2 := paar(t)
+	c2 := &compositor{t: t, v: server2} // eigene Variablen: die Goroutine oben liest c noch (Race, CI 6dbfaea)
+	fertig2 := make(chan struct{})
+	defer func() { <-fertig2 }()
+	go func() { defer close(fertig2); c2.anmeldung([]globalImTest{{3, "wl_seat", 9}}) }()
+	if _, err := lies(context.Background(), client2, func([]string) string { return MIME }, 1<<20, 5*time.Second); !errors.Is(err, ErrKeinDataControl) {
 		t.Errorf("Fehler %v, erwartet ErrKeinDataControl", err)
 	}
 }
@@ -146,7 +151,10 @@ func TestLiesLeer(t *testing.T) {
 func TestLiesZuGross(t *testing.T) {
 	client, server := paar(t)
 	c := &compositor{t: t, v: server}
+	fertig := make(chan struct{})
+	defer func() { <-fertig }()
 	go func() {
+		defer close(fertig)
 		reg := c.anmeldung(normaleGlobals)
 		c.leseAnmeldung(reg, ManagerExt, func(g uint32) { c.biete(g, 0xff000001, []string{MIME}, true) })
 		c.liefere(0xff000001, MIME, zufall(1000))
@@ -160,9 +168,10 @@ func TestLiesZuGross(t *testing.T) {
 func TestLiesStockt(t *testing.T) {
 	client, server := paar(t)
 	c := &compositor{t: t, v: server}
-	halt := make(chan struct{})
-	defer close(halt)
+	halt, fertig := make(chan struct{}), make(chan struct{})
+	defer func() { close(halt); <-fertig }() // vor dem Schließen der Verbindung (t.Cleanup) enden
 	go func() {
+		defer close(fertig)
 		reg := c.anmeldung(normaleGlobals)
 		c.leseAnmeldung(reg, ManagerExt, func(g uint32) { c.biete(g, 0xff000001, []string{MIME}, true) })
 		c.erwarte(0xff000001, opOfferReceive, "receive")
@@ -246,9 +255,10 @@ func TestArgumentObjekte(t *testing.T) {
 func TestLiesTroepfeltAbbruch(t *testing.T) {
 	client, server := paar(t)
 	c := &compositor{t: t, v: server}
-	halt := make(chan struct{})
-	defer close(halt)
+	halt, fertig := make(chan struct{}), make(chan struct{})
+	defer func() { close(halt); <-fertig }()
 	go func() {
+		defer close(fertig)
 		reg := c.anmeldung(normaleGlobals)
 		c.leseAnmeldung(reg, ManagerExt, func(g uint32) { c.biete(g, 0xff000001, []string{MIME}, true) })
 		c.erwarte(0xff000001, opOfferReceive, "receive")
