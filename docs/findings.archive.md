@@ -946,6 +946,7 @@ Ausgelagerte Findings aus `docs/findings.md`. Einträge hier sind abgeschlossen 
 | F-1031 | [V] | P3 | Sprint 14 | **`PushMultiply` in einer Deckkraft-Ebene zeichnet auf leerem Grund nichts** (Kritik #329 K-3). | akzeptiert 2357ed8: Grenze in ADR-0048 Nachtrag 1 Punkt 3 und am Gio-Patch dokumentiert, `TestPushMultiplyInDeckkraftEbene` hält sie fest; Schnapp verschachtelt nicht (Karte #329) |
 | F-1032 | [D] | P3 | Sprint 14 | **Kopie als Bild zeigt den Textmarker deckend** (Kritik #329 K-4, `render.ObjektePNG` auf durchsichtigem Grund). | akzeptiert 2357ed8: Entscheidung in ADR-0048 Nachtrag 1 Punkt 4 (ohne Untergrund nichts zu multiplizieren; in Schnapp trägt die Objekt-Kopie die Mischung) (Karte #329) |
 | F-1033 | [D] | P3 | Sprint 14 | **Multiplizierender Pfeil mit Köpfen aus fremder Datei nicht bedienbar** (Kritik #329 K-5). | akzeptiert 2357ed8: ADR-0048 Nachtrag 1 Punkt 5 und docs/format.md §8.5 (informativ) (Karte #329) |
+| F-1044 | [V] | P2 | Sprint 14 | **CI rot nach 2357ed8: Mutanten-Muster SH25 gebrochen** (eigener Befund 28.11.): Die Nacharbeit zu F-1029 änderte die Zeile, auf die `schatten.json` SH25 zeigt; `scripts/mutanten -trocken` lief vor dem Commit nicht, Job `wurzel` rot für 2357ed8 bis 766d0bb. | behoben 2c48ba8: elf Muster nachgezogen, alle elf Mutanten rot gefahren; Lehre in knowledge/topics/lehren.md (Karte #333) |
 
 ## Archiviert (aus Sektion "Behoben / Akzeptiert")
 

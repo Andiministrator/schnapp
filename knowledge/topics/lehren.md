@@ -1,6 +1,25 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #341 und #328 mit Kritik, Verify und Doku-QA (F-1007 bis F-1028); davor Karten #335/#393 mit Kritik (F-984 bis F-993); davor Karten #377/#389 und #354/#390 mit Kritik und Verify (F-943 bis F-969); davor Karten #361 und #334 Teil 1 mit Kritik (F-887 bis F-893); davor Karten #313 Teil 2 und #369 mit Sitzungs-QA (F-873 bis F-880); davor #313 Teil 1 und Sitzungs-QA (F-860 bis F-872); davor #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #329 und #333 mit Kritik (F-1029 bis F-1044); davor Karten #341 und #328 mit Kritik, Verify und Doku-QA (F-1007 bis F-1028); davor Karten #335/#393 mit Kritik (F-984 bis F-993); davor Karten #377/#389 und #354/#390 mit Kritik und Verify (F-943 bis F-969); davor Karten #361 und #334 Teil 1 mit Kritik (F-887 bis F-893); davor Karten #313 Teil 2 und #369 mit Sitzungs-QA (F-873 bis F-880); davor #313 Teil 1 und Sitzungs-QA (F-860 bis F-872); davor #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+
+
+## Textmarker und Freihand (28.11.2026, Karten #329, #333, F-1029 bis F-1044)
+
+- **Mutanten-Muster nach jeder Änderung trocken prüfen, auch nach einer kleinen Nacharbeit (F-1044).** Die Nacharbeit
+  zu F-1029 änderte eine Zeile, auf die ein fremder Mutant (SH25) zeigte; ohne `cd scripts/mutanten && GOFLAGS= go run
+  . -wurzel ../.. -trocken` vor dem Commit blieb die CI zwei Commits lang rot. Jede neue Fallunterscheidung (ein
+  weiteres `case` in einer Liste, eine zweite gleiche Zeile) bricht Muster anderer Gruppen.
+- **Eine Ebene neu bauen löscht ihre übrigen Felder (F-1029).** `MitEbene(o, Ebene{Schatten: sch})` verlor die Mischung;
+  immer `o.Ebenenwerte()` kopieren und ein Feld setzen.
+- **Gio kann mischen, was sein Treiber kann.** Deckkraft-Ebenen laufen über eine eigene Textur; dort ergibt
+  `BlendDesc{DstColor, OneMinusSrcAlpha}` Multiplizieren ohne neuen Shader (`knowledge/topics/gio-wayland.md`). In einer
+  anderen Ebene ist der Grund durchsichtig — dort ergibt es nichts (F-1031).
+- **Glätten ist kein Vereinfachen (F-1036).** Chaikin vervierfacht die Punkte; wer „Punktzahl begrenzt“ verspricht, misst
+  die gespeicherten Punkte gegen die rohen und die Bytes je Punkt.
+- **Listen aus Dateiwerten erst zählen, dann teilen (F-1035).** `strings.Split`/`Fields` legen das Feld vor jeder
+  Prüfung an; eine kleine Datei aus Leerzeichen fordert Gigabytes.
+- **Tests nur bei Zoom 1 decken keine Umrechnung (F-1043).** Wer in Fensterpixeln misst und im Original speichert,
+  braucht einen Testfall mit anderem Zoom.
 
 ## Öffentliches Repo
 
