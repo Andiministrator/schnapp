@@ -135,7 +135,7 @@ func TestWerkzeugleisteKlick(t *testing.T) {
 	if (r.Min.Y < farbe.Max.Y && letzte.Max.Y > farbe.Min.Y) || r.Min.X != farbe.Min.X {
 		t.Errorf("Farbliste hängt nicht am Farbfeld: %v bis %v, Farbfeld %v", r, letzte, farbe)
 	}
-	if r.Min.Y < farbe.Max.Y { // oben: dann nur, weil unten der Platz fehlt — in einem höheren Fenster hängt sie unten
+	{ // oben nur, weil unten der Platz fehlt — in einem höheren Fenster hängt sie immer unten (Verify #329)
 		l.taste(key.NameEscape, 0)
 		l.fenst = image.Pt(700, 1000)
 		l.setle()
