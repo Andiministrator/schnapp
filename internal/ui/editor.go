@@ -342,6 +342,7 @@ type editor struct {
 		auswahl, pfeil, kasten, text, nummer, farbe  widget.Clickable
 		sprechblase                                  widget.Clickable // Werkzeug Sprechblase (ADR-0021 Nachtrag 13)
 		lupe                                         widget.Clickable // Werkzeug Lupe (ADR-0033)
+		ellipse                                      widget.Clickable // Werkzeug Ellipse (ADR-0047)
 		fuellung, tausch                             widget.Clickable // Farbpaar der Werkzeugleiste (ADR-0021 Nachtrag 11)
 		schwaerzen, verpixeln, zuschneiden, stauchen widget.Clickable
 		fussFarbe, fussZoom                          widget.Clickable
@@ -1993,6 +1994,10 @@ func (e *editor) zeichneObjekt(gtx layout.Context, o document.Objekt, an func(do
 			})
 		}
 	case document.Kasten:
+		if v.Ellipse() {
+			e.zeichneEllipse(gtx, v, an, vorschau)
+			break
+		}
 		rechteck := func(abb func(document.Punkt) f32.Point) (image.Rectangle, clip.RRect) {
 			min, max := abb(v.Bereich.Min), abb(v.Bereich.Max)
 			r := image.Rect(int(math.Round(float64(min.X))), int(math.Round(float64(min.Y))),
@@ -3034,14 +3039,40 @@ type werkzeugKnopf struct {
 	text string
 }
 
-// werkzeugKnoepfe sind die Knöpfe der Werkzeuggruppe in Reihenfolge der Leiste (Kürzel V, A, R, T, N, M, B, P, C, X;
-// ADR-0021, ADR-0022, ADR-0023, ADR-0033).
+// zeichneEllipse zeichnet einen Kasten mit Form Ellipse (ADR-0047 Punkt 2) aus denselben Teilen wie der Renderer: die
+// Füllung im abgetasteten Umriss in jedem Bereich der Ellipse, der Strich (render.ZerlegeEllipse) nur in den Bereichen,
+// die der Umriss bzw. seine Stücke berühren — wie der runde Kasten (ADR-0023 Nachträge 17 bis 21).
+func (e *editor) zeichneEllipse(gtx layout.Context, v document.Kasten, an func(document.Punkt) f32.Point, vorschau bool) {
+	b := v.Bereich
+	if v.Fuellung.A > 0 {
+		umriss := [][]document.Punkt{document.EllipsenUmriss(b)}
+		e.jeStueck(gtx, b, 1, an, vorschau, func(abb func(document.Punkt) f32.Point) {
+			fuelleTeile(gtx, umriss, v.Fuellung, abb)
+		})
+	}
+	if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
+		sz := render.ZerlegeEllipse(b, v.Strich)
+		var stuecke []document.Stueck
+		if !vorschau {
+			for _, st := range e.s.D.StreckenStuecke(sz.Zug, sz.Zu, sz.Suche) {
+				stuecke = append(stuecke, st.Stueck)
+			}
+		}
+		e.jeStueckIn(gtx, stuecke, an, vorschau, func(abb func(document.Punkt) f32.Point) {
+			fuelleTeile(gtx, sz.Teile, v.Strich.Farbe, abb)
+		})
+	}
+}
+
+// werkzeugKnoepfe sind die Knöpfe der Werkzeuggruppe in Reihenfolge der Leiste (Kürzel V, A, R, E, T, K, N, M, B, P, C,
+// X; ADR-0021, ADR-0022, ADR-0023, ADR-0033, ADR-0047).
 func (e *editor) werkzeugKnoepfe() []werkzeugKnopf {
 	k := &e.knoepfe
 	return []werkzeugKnopf{
 		{&k.auswahl, canvas.WerkzeugAuswahl, i18n.T("Select")},
 		{&k.pfeil, canvas.WerkzeugPfeil, i18n.T("Arrow")},
 		{&k.kasten, canvas.WerkzeugKasten, i18n.T("Rectangle")},
+		{&k.ellipse, canvas.WerkzeugEllipse, i18n.T("Ellipse")},
 		{&k.text, canvas.WerkzeugText, i18n.T("Text")},
 		{&k.sprechblase, canvas.WerkzeugSprechblase, i18n.T("Speech bubble")},
 		{&k.nummer, canvas.WerkzeugNummer, i18n.T("Step")},
@@ -3096,6 +3127,8 @@ func (e *editor) hinweis() string {
 		return i18n.T("Drag to draw an arrow. Shift: 45° steps. Drag the middle handle to bend it.")
 	case canvas.WerkzeugKasten:
 		return i18n.T("Drag to draw a rectangle. Shift: square.")
+	case canvas.WerkzeugEllipse:
+		return i18n.T("Drag to draw an ellipse. Shift: circle.")
 	case canvas.WerkzeugText:
 		return i18n.T("Click to place text, or click a text to edit it.")
 	case canvas.WerkzeugSprechblase:

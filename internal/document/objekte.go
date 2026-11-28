@@ -112,7 +112,8 @@ func (p Pfeil) pruefe() error {
 	return p.Strich.pruefe()
 }
 
-// Kasten ist ein Rechteck mit Rand, wahlweise gefüllt (Fuellung.A > 0) und mit runden Ecken.
+// Kasten ist ein Rechteck mit Rand, wahlweise gefüllt (Fuellung.A > 0) und mit runden Ecken, oder mit Form FormEllipse
+// die Ellipse in Bereich (ADR-0047; Eckradius gilt dann nicht).
 type Kasten struct {
 	Ebene
 	ID        int
@@ -120,6 +121,7 @@ type Kasten struct {
 	Strich    Strich
 	Fuellung  color.NRGBA
 	Eckradius float64
+	Form      Kastenform
 }
 
 // WirksamerEckradius ist der Radius, mit dem Renderer, Editor und SVG-Export eine Ecke wirklich runden: höchstens die
@@ -184,7 +186,8 @@ func (k Kasten) Grenzen() Rechteck        { return aufgeweitet(k.Bereich, k.Stri
 func (k Kasten) mitKennung(id int) Objekt { k.ID = id; return k }
 func (k Kasten) pruefe() error {
 	b := k.Bereich
-	if !endlich(b.Min.X, b.Min.Y, b.Max.X, b.Max.Y) || !groesse(k.Eckradius) || b.Max.X < b.Min.X || b.Max.Y < b.Min.Y {
+	if !endlich(b.Min.X, b.Min.Y, b.Max.X, b.Max.Y) || !groesse(k.Eckradius) || b.Max.X < b.Min.X || b.Max.Y < b.Min.Y ||
+		k.Form > FormEllipse {
 		return fmt.Errorf("document: Kasten mit ungültigen Werten")
 	}
 	if err := k.Ebene.pruefe(); err != nil {

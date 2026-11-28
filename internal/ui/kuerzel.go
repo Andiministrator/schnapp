@@ -181,6 +181,7 @@ func tastenTabelle() []taste {
 		wz("V", canvas.WerkzeugAuswahl),
 		wz("A", canvas.WerkzeugPfeil),
 		wz("R", canvas.WerkzeugKasten),
+		wz("E", canvas.WerkzeugEllipse), // E allein war frei, Strg+Umschalt+E ist Export (ADR-0047 Punkt 4)
 		wz("T", canvas.WerkzeugText),
 		wz("K", canvas.WerkzeugSprechblase), // K wie Kommentar-Blase; frei (ADR-0021 Nachtrag 13 Punkt 5)
 		wz("N", canvas.WerkzeugNummer),

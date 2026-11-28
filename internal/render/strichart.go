@@ -111,6 +111,16 @@ func ZerlegeRundenRahmen(b document.Rechteck, radius float64, s document.Strich)
 	return zerlegungAus(musterLinie(document.RundRahmenAbschnitte(b, radius, s.Art, s.Breite), hw), hw)
 }
 
+// ZerlegeEllipse zerlegt den Strich der Ellipse in b (Original; ADR-0047 Punkt 2): voll als geschlossener Linienzug um
+// document.EllipsenUmriss, gemustert nach document.EllipsenAbschnitte.
+func ZerlegeEllipse(b document.Rechteck, s document.Strich) StrichZerlegung {
+	hw := s.Breite / 2
+	if s.Art == document.StrichVoll || !(hw > 0) {
+		return zerlegungAus(neuerLinienStrich(document.EllipsenUmriss(b), true, hw), hw)
+	}
+	return zerlegungAus(musterLinie(document.EllipsenAbschnitte(b, s.Art, s.Breite), hw), hw)
+}
+
 // RahmenTeile sind die Teile des eckigen Rahmens um r mit dem Strich s (Kasten ohne Rundung, Rahmen der Lupe): Rechtecke
 // (voll und gestrichelt, document.EckigerRahmenMuster) bzw. Scheiben (gepunktet), alle gleich herum.
 func RahmenTeile(r document.Rechteck, s document.Strich) [][]document.Punkt {

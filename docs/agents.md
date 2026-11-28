@@ -135,11 +135,12 @@ stays unchanged and the result becomes a new screenshot in the library. `LIST` i
 |---|---|
 | `arrow` | **`from`**, **`to`**, `color`, `width`, `start_head` (head at `from`, default `none`), `end_head` (head at `to`, default `triangle`); heads: `triangle`, `narrow`, `notched`, `open`, `half`, `dot`, `diamond`, `square`, `bar`, `none` (both `none`: a plain line); `line_style`: `solid` (default), `dashed`, `dotted` (heads stay solid) |
 | `rect` | **`from`**, **`to`** (opposite corners), `color` (line), `fill`, `width`, `line_style` (`solid`, `dashed`, `dotted`) |
+| `ellipse` | same keys as `rect`: the ellipse inside the rectangle `from`–`to` (equal sides: a circle) |
 | `text` | **`at`** (top left), **`text`** (`\n` for a new line), `size`, `color` (letters), `fill` (label), `font`, `bold`, `italic`, `underline`, `strikethrough`, `align` (`left`, `center`, `right`), `tip` (makes a speech bubble: a point the label points at, same coordinates as `at`) |
 | `step` | **`at`** (centre), `color`, `radius` — the number is the next free one |
 | `redact`, `pixelate` | **`from`**, **`to`** — overwrites the pixels for good; an area too narrow to pixelate is blacked out |
 
-`arrow`, `rect`, `text` and `step` also take `shadow`: `true` for the default drop shadow (light from the top left,
+`arrow`, `rect`, `ellipse`, `text` and `step` also take `shadow`: `true` for the default drop shadow (light from the top left,
 shadow down and to the right, soft, black), `false` for none, or an object with any of `angle` (direction the
 light comes from, degrees, 0 = from the right, counter-clockwise, default 135), `distance` (0 to 1000, default 6),
 `softness` (blur radius, 0 to 200, default 8; both in pixels and, like widths, larger on large screenshots) and `color`

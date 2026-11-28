@@ -328,3 +328,30 @@ func TestWendeGrenze(t *testing.T) {
 		t.Errorf("über der Objektgrenze: %v", err)
 	}
 }
+
+// ADR-0047 Punkt 7: Typ ellipse mit den Feldern des Rechtecks, Form Ellipse, Voreinstellungen wie das Werkzeug.
+func TestWendeEllipse(t *testing.T) {
+	d := dokument(t, 200, 100)
+	es := lies(t, `{"annotations":[
+		{"type":"ellipse","from":[10,10],"to":[60,40]},
+		{"type":"ellipse","from":[70,10],"to":[120,40],"fill":"#00ff0080","line_style":"dashed","width":4,"shadow":true},
+		{"type":"rect","from":[130,10],"to":[180,40]}]}`)
+	if _, err := Wende(context.Background(), d, es); err != nil {
+		t.Fatal(err)
+	}
+	o := d.Objekte()
+	k0, k1, k2 := o[0].(document.Kasten), o[1].(document.Kasten), o[2].(document.Kasten)
+	if k0.Form != document.FormEllipse || k0.Fuellung.A != 0 || k0.Bereich != document.R(document.Pt(10, 10), document.Pt(60, 40)) {
+		t.Errorf("Ellipse: %+v", k0)
+	}
+	if k1.Form != document.FormEllipse || k1.Fuellung.A != 0x80 || k1.Strich.Art != document.StrichGestrichelt ||
+		k1.Strich.Breite != 4 || !k1.Ebene.Schatten.An {
+		t.Errorf("Ellipse mit Angaben: %+v", k1)
+	}
+	if k2.Form != document.FormRechteck {
+		t.Errorf("Rechteck: %+v", k2)
+	}
+	if _, err := Lies(strings.NewReader(`{"annotations":[{"type":"ellipse","from":[1,1],"to":[5,5],"start_head":"dot"}]}`)); err == nil {
+		t.Error("start_head bei ellipse angenommen")
+	}
+}

@@ -82,6 +82,16 @@ func rahmen(x, y, b, h float64) []Teil {
 }
 
 // flaeche ist ein gefülltes Rechteck.
+// ellipsenRing ist der Ring um die Ellipse mit Mitte (cx, cy) und Halbachsen rx, ry als Vieleck mit n Ecken.
+func ellipsenRing(cx, cy, rx, ry float64, n int) []Teil {
+	p := make([]float64, 0, 2*n)
+	for i := range n {
+		t := 2 * math.Pi * float64(i) / float64(n)
+		p = append(p, math.Round((cx+rx*math.Cos(t))*100)/100, math.Round((cy+ry*math.Sin(t))*100)/100)
+	}
+	return ring(p...)
+}
+
 func flaeche(x, y, b, h float64) Teil {
 	return Teil{Punkte: []Punkt{{x, y}, {x + b, y}, {x + b, y + h}, {x, y + h}}}
 }
@@ -124,6 +134,7 @@ var (
 	Auswahl = Symbol{"select", teile(vieleck(6, 3, 6, 19, 10, 15.5, 12.5, 21, 15.5, 19.6, 13, 14, 18.5, 14))}
 	Pfeil   = Symbol{"arrow", teile(linie(5, 19, 15.5, 8.5), vieleck(20, 4, 20, 13, 11, 4))}
 	Kasten  = Symbol{"rectangle", rahmen(3, 6, 18, 12)}
+	Ellipse = Symbol{"ellipse", ellipsenRing(12, 12, 9, 6.5, 24)} // ADR-0047
 	Text    = Symbol{"text", teile(flaeche(5, 4, 14, 3), flaeche(10.5, 4, 3, 16), flaeche(8, 18, 8, 2))}
 	Nummer  = Symbol{"step", teile(rahmen(3, 3, 18, 18), flaeche(11, 7, 2.5, 10), flaeche(8.5, 7, 3, 2.5),
 		flaeche(8.5, 15, 7.5, 2))}

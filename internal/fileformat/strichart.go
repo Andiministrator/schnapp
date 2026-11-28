@@ -125,8 +125,25 @@ func (s *schreiber) kastenGemustert(o document.Kasten) {
 	s.attr("s:strich", strich(o.Strich))
 	s.attr("s:fuellung", farbeHex(o.Fuellung))
 	s.attr("s:eckradius", zahl(o.Eckradius))
+	s.kastenForm(o)
 	s.strichart(o.Strich)
 	s.WriteString(`>`)
+	if o.Ellipse() { // ADR-0047 Punkt 6: Füllung als Ellipse, Strich in Stücken wie der Renderer
+		if o.Fuellung.A > 0 {
+			s.WriteString(`<ellipse`)
+			s.attr("cx", zahl((b.Min.X+b.Max.X)/2))
+			s.attr("cy", zahl((b.Min.Y+b.Max.Y)/2))
+			s.attr("rx", zahl(b.Breite()/2))
+			s.attr("ry", zahl(b.Hoehe()/2))
+			s.farbeSVG("fill", o.Fuellung)
+			s.WriteString(`/>`)
+		}
+		if o.Strich.Breite > 0 && o.Strich.Farbe.A > 0 {
+			s.musterSVG(document.EllipsenAbschnitte(b, o.Strich.Art, o.Strich.Breite), o.Strich.Breite, o.Strich.Farbe)
+		}
+		s.WriteString(`</g>`)
+		return
+	}
 	if o.Fuellung.A > 0 {
 		s.WriteString(`<rect`)
 		s.attr("x", zahl(b.Min.X))

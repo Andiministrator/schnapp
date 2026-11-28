@@ -177,6 +177,15 @@ func beispiele() []beispiel {
 			fuege(t, d, k, p)
 			return d
 		}, Metadaten{}, false},
+		{"ellipse", func(t *testing.T) *document.Dokument { // Ellipse als Form des Kastens, Formatversion 2 (ADR-0047)
+			d := beispielDok(t, 64, 48)
+			fuege(t, d,
+				document.Kasten{Bereich: document.R(document.Pt(4, 6), document.Pt(36, 26)), Form: document.FormEllipse,
+					Fuellung: color.NRGBA{255, 255, 255, 255}, Strich: document.Strich{Farbe: color.NRGBA{220, 30, 30, 255}, Breite: 2}},
+				document.Kasten{Bereich: document.R(document.Pt(38, 22), document.Pt(60, 44)), Form: document.FormEllipse,
+					Strich: document.Strich{Farbe: color.NRGBA{30, 60, 220, 255}, Breite: 2, Art: document.StrichGestrichelt}})
+			return d
+		}, Metadaten{}, false},
 		{"groups", func(t *testing.T) *document.Dokument { // flache Gruppen, Formatversion 2 (ADR-0044)
 			d := beispielDok(t, 64, 48)
 			rot := document.Strich{Farbe: color.NRGBA{220, 30, 30, 255}, Breite: 2}
@@ -764,7 +773,7 @@ func TestFormatSpezifikationAttribute(t *testing.T) {
 		"kante",
 		"streifen", "zeilen", "von", "bis", "ebene", "typ", "a", "b", "k", "strich", "bereich", "fuellung", "eckradius",
 		"ort", "inhalt", "grad", "farbe", "hintergrund", "umbruch", "schrift", "stil", "ausrichtung", "spitze", "mitte", "wert", "radius",
-		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel", "ende", "anfang", "strichart", "schatten", "gruppe"}
+		"name", "ausgeblendet", "gesperrt", "deckkraft", "ziel", "ende", "anfang", "strichart", "schatten", "gruppe", "form"}
 	for _, w := range wortliste {
 		if !gesehen[w] {
 			t.Errorf("Beispiele enthalten s:%s nicht (Beispielabdeckung)", w)

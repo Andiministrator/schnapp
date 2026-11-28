@@ -449,6 +449,13 @@ func (e *editor) zeichneMini(gtx layout.Context, st canvas.Schnellstil, r image.
 			flaeche(a, b, st.Fuellung)
 		}
 		rahmen(a, b, st.Farbe, w)
+	case canvas.SchnellEllipse: // ADR-0047 Punkt 5
+		a, b := pt(6, 10), pt(34, 30)
+		oval := clip.Ellipse{Min: image.Pt(int(a.X), int(a.Y)), Max: image.Pt(int(b.X), int(b.Y))}
+		if st.Fuellung.A > 0 {
+			paint.FillShape(gtx.Ops, st.Fuellung, oval.Op(gtx.Ops))
+		}
+		paint.FillShape(gtx.Ops, st.Farbe, clip.Stroke{Path: oval.Path(gtx.Ops), Width: w}.Op())
 	case canvas.SchnellText, canvas.SchnellSprechblase:
 		a, b := pt(6, 9), pt(34, 29)
 		if st.Art == canvas.SchnellSprechblase {

@@ -40,6 +40,9 @@ func trifft(o document.Objekt, p document.Punkt, tol float64) bool {
 		}
 		return false
 	case document.Kasten:
+		if v.Ellipse() { // ADR-0047 Punkt 3: mit Füllung im Oval, sonst auf dem Strich
+			return trifftEllipse(v, p, tol)
+		}
 		r := v.Bereich
 		halb := v.Strich.Breite/2 + tol
 		aussen := document.Rechteck{Min: r.Min.Minus(document.Pt(halb, halb)), Max: r.Max.Plus(document.Pt(halb, halb))}
@@ -74,6 +77,27 @@ func trifft(o document.Objekt, p document.Punkt, tol float64) bool {
 		g := o.Grenzen()
 		return document.Rechteck{Min: g.Min.Minus(document.Pt(tol, tol)), Max: g.Max.Plus(document.Pt(tol, tol))}.Enthaelt(p)
 	}
+}
+
+// trifftEllipse: mit Füllung im Umriss (oder höchstens halbe Strichbreite plus tol davon), ohne Füllung nur in diesem
+// Abstand vom Umriss (ADR-0047 Punkt 3).
+func trifftEllipse(k document.Kasten, p document.Punkt, tol float64) bool {
+	halb := k.Strich.Breite/2 + tol
+	r := k.Bereich
+	aussen := document.Rechteck{Min: r.Min.Minus(document.Pt(halb, halb)), Max: r.Max.Plus(document.Pt(halb, halb))}
+	if !aussen.Enthaelt(p) {
+		return false
+	}
+	if k.Fuellung.A > 0 && document.EllipseEnthaelt(r, p) {
+		return true
+	}
+	u := document.EllipsenUmriss(r)
+	for i := range u {
+		if abstandZurStrecke(p, u[i], u[(i+1)%len(u)]) <= halb {
+			return true
+		}
+	}
+	return false
 }
 
 // imVieleck meldet, ob p im einfachen Vieleck u liegt oder höchstens tol von seinem Rand.

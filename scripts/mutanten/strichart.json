@@ -143,8 +143,8 @@
     "name": "ST21 gemusterter Kasten hebt die Version nicht",
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
-    "alt": "case document.Kasten:\n\t\t\tif v.Strich.Art != document.StrichVoll {\n\t\t\t\treturn versionStrichart",
-    "neu": "case document.Kasten:\n\t\t\tif false {\n\t\t\t\treturn versionStrichart"
+    "alt": "\t\t\tif v.Form != document.FormRechteck {\n\t\t\t\treturn versionEllipse\n\t\t\t}\n\t\t\tif v.Strich.Art != document.StrichVoll {\n\t\t\t\treturn versionStrichart",
+    "neu": "\t\t\tif v.Form != document.FormRechteck {\n\t\t\t\treturn versionEllipse\n\t\t\t}\n\t\t\tif false {\n\t\t\t\treturn versionStrichart"
   },
   {
     "name": "ST22 Leser auch in Version 1",

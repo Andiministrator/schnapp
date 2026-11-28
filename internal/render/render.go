@@ -563,6 +563,29 @@ func (z zeichner) objekt(o document.Objekt) error {
 		// kein Bereich den ganzen Pfeil (F-136). Die Köpfe ersetzen die runden Kappen des Schafts (ADR-0021 Nachtrag 19).
 		z.pfeil(v)
 	case document.Kasten:
+		if v.Ellipse() {
+			// Ellipse (ADR-0047 Punkt 2): je Bereich abgeschnitten wie der runde Kasten; Füllung im abgetasteten Umriss,
+			// Strich als überlappungsfreie Teile des geschlossenen Linienzugs.
+			b := v.Bereich
+			umriss := document.EllipsenUmriss(b)
+			if v.Fuellung.A > 0 {
+				z.jeStueck(huelleVon(umriss, 1), func(zs zeichner, abb func(document.Punkt) document.Punkt) {
+					pts := make([]document.Punkt, len(umriss))
+					for i, p := range umriss {
+						pts[i] = abb(p)
+					}
+					zs.fuelle([][]document.Punkt{pts}, nil, v.Fuellung)
+				})
+			}
+			if v.Strich.Breite > 0 && v.Strich.Farbe.A > 0 {
+				sz := ZerlegeEllipse(b, v.Strich)
+				if v.Strich.Art != document.StrichVoll {
+					z.musterKosten(v.Strich, len(sz.Teile))
+				}
+				z.strichJeStueckMit(sz.ls, v.Strich, sz.Suche)
+			}
+			break
+		}
 		if b := document.R(v.Bereich.Min, v.Bereich.Max); document.WirksamerEckradius(v.Eckradius, b.Breite(), b.Hoehe()) > 0 {
 			// Gerundet: je Bereich abgeschnitten wie im SVG-Export, nicht über die abgebildeten Ecken neu gerundet (F-749,
 			// ADR-0023 Nachtrag 17). Ohne Naht ist das dasselbe.

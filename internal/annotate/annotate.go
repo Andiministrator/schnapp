@@ -70,7 +70,7 @@ type Eintrag struct {
 	Align         *string  `json:"align,omitempty"`
 	StartHead     *string  `json:"start_head,omitempty"` // arrow: head at "from" (default none; ADR-0021 Nachtrag 20)
 	EndHead       *string  `json:"end_head,omitempty"`   // arrow: head at "to" (default triangle)
-	LineStyle     *string  `json:"line_style,omitempty"` // arrow, rect: solid, dashed, dotted (ADR-0021 Nachtrag 25)
+	LineStyle     *string  `json:"line_style,omitempty"` // arrow, rect, ellipse: solid, dashed, dotted (ADR-0021 Nachtrag 25)
 	// Shadow: true, false oder {"angle", "distance", "softness", "color"} (ADR-0021 Nachtrag 26 Punkt 9).
 	Shadow json.RawMessage `json:"shadow,omitempty"`
 }
@@ -104,13 +104,14 @@ var (
 	erlaubt = map[string][]string{
 		"arrow":    {"from", "to", "color", "width", "start_head", "end_head", "line_style", "shadow"},
 		"rect":     {"from", "to", "color", "fill", "width", "line_style", "shadow"},
+		"ellipse":  {"from", "to", "color", "fill", "width", "line_style", "shadow"}, // ADR-0047 Punkt 7
 		"text":     {"at", "text", "size", "color", "fill", "font", "bold", "italic", "underline", "strikethrough", "align", "tip", "shadow"},
 		"step":     {"at", "color", "radius", "shadow"},
 		"redact":   {"from", "to"},
 		"pixelate": {"from", "to"},
 	}
 	pflicht = map[string][]string{
-		"arrow": {"from", "to"}, "rect": {"from", "to"}, "text": {"at", "text"}, "step": {"at"},
+		"arrow": {"from", "to"}, "rect": {"from", "to"}, "ellipse": {"from", "to"}, "text": {"at", "text"}, "step": {"at"},
 		"redact": {"from", "to"}, "pixelate": {"from", "to"},
 	}
 )
@@ -171,7 +172,7 @@ func Lies(r io.Reader) ([]Eintrag, error) {
 		}
 		ok, bekannt := erlaubt[e.Type]
 		if !bekannt {
-			return nil, &Fehler{i, fmt.Sprintf("unknown type %q (arrow, rect, text, step, redact, pixelate)", e.Type)}
+			return nil, &Fehler{i, fmt.Sprintf("unknown type %q (arrow, rect, ellipse, text, step, redact, pixelate)", e.Type)}
 		}
 		for k, v := range schluessel {
 			if k == "type" {
@@ -353,10 +354,13 @@ func Wende(ctx context.Context, d *document.Dokument, es []Eintrag) (Ergebnis, e
 		}
 		var o document.Objekt
 		switch e.Type {
-		case "arrow", "rect":
+		case "arrow", "rect", "ellipse":
 			w := canvas.WerkzeugPfeil
-			if e.Type == "rect" {
+			switch e.Type {
+			case "rect":
 				w = canvas.WerkzeugKasten
+			case "ellipse":
+				w = canvas.WerkzeugEllipse
 			}
 			vorn, fuel := canvas.StandardPaar(w)
 			a, err := punkt("from", e.From)
@@ -411,7 +415,11 @@ func Wende(ctx context.Context, d *document.Dokument, es []Eintrag) (Ergebnis, e
 			if err != nil {
 				return erg, err
 			}
-			o = document.Kasten{Bereich: document.R(a, b), Strich: strich, Fuellung: fuellung, Eckradius: st.Eckradius}
+			k := document.Kasten{Bereich: document.R(a, b), Strich: strich, Fuellung: fuellung, Eckradius: st.Eckradius}
+			if e.Type == "ellipse" {
+				k.Form = document.FormEllipse
+			}
+			o = k
 		case "text":
 			vorn, fuel := canvas.StandardPaar(canvas.WerkzeugText)
 			p, err := punkt("at", e.At)

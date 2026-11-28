@@ -294,11 +294,11 @@
     "neu": "return icons.Text"
   },
   {
-    "name": "UB43 Werkzeugleiste schrumpft nur bis 20 dp",
+    "name": "UB43 Werkzeugleiste schrumpft nur bis 18 dp",
     "datei": "internal/ui/oberflaeche.go",
     "paket": "./internal/ui",
-    "alt": "werkzeugKnopfMinDp = 18",
-    "neu": "werkzeugKnopfMinDp = 20"
+    "alt": "werkzeugKnopfMinDp = 16",
+    "neu": "werkzeugKnopfMinDp = 18"
   },
   {
     "name": "UB44 Auswahlrahmen nur ums Schild",

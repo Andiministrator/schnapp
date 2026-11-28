@@ -61,6 +61,8 @@ func werkzeugSchluessel(art string) []string {
 		return []string{"color", "radius", "shadow_on", "shadow"}
 	case ArtLupe:
 		return []string{"color", "width", "line_style", "shadow_on", "shadow"}
+	case ArtEllipse: // wie der Kasten ohne Eckradius (ADR-0047 Punkt 4)
+		return []string{"color", "fill", "width", "line_style", "shadow_on", "shadow"}
 	}
 	return nil
 }

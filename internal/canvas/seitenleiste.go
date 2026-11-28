@@ -44,6 +44,9 @@ func objektWerkzeug(o document.Objekt) (Werkzeug, bool) {
 	case document.Pfeil:
 		return WerkzeugPfeil, true
 	case document.Kasten:
+		if v.Form == document.FormEllipse {
+			return WerkzeugEllipse, true
+		}
 		return WerkzeugKasten, true
 	case document.Text:
 		if v.Spitze != nil { // ein Text mit Spitze ist eine Sprechblase (ADR-0021 Nachtrag 13)
@@ -61,15 +64,15 @@ func objektWerkzeug(o document.Objekt) (Werkzeug, bool) {
 // farbWerkzeug meldet, ob ein Werkzeug eine Beschriftungsfarbe verwendet.
 func farbWerkzeug(w Werkzeug) bool {
 	return w == WerkzeugPfeil || w == WerkzeugKasten || w == WerkzeugText || w == WerkzeugNummer || w == WerkzeugLupe ||
-		w == WerkzeugSprechblase
+		w == WerkzeugSprechblase || w == WerkzeugEllipse
 }
 
 // textWerkzeug meldet, ob w Text setzt (Text, Sprechblase): Schrift, Größe, Stil und Ausrichtung gelten dafür.
 func textWerkzeug(w Werkzeug) bool { return w == WerkzeugText || w == WerkzeugSprechblase }
 
-// strichWerkzeug meldet, ob ein Werkzeug einen Strich zeichnet (Pfeil, Kasten, Lupe).
+// strichWerkzeug meldet, ob ein Werkzeug einen Strich zeichnet (Pfeil, Kasten, Ellipse, Lupe).
 func strichWerkzeug(w Werkzeug) bool {
-	return w == WerkzeugPfeil || w == WerkzeugKasten || w == WerkzeugLupe
+	return w == WerkzeugPfeil || w == WerkzeugKasten || w == WerkzeugEllipse || w == WerkzeugLupe
 }
 
 // Seitenleiste liefert den Inhalt der rechten Leiste. Ein gewähltes Objekt geht dem Werkzeug vor: Seine Farbe ändert

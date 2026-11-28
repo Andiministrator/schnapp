@@ -101,6 +101,8 @@ var hilfePaare = map[aktion]hilfePaar{
 	// Menü Datei (ADR-0046 Punkt 8): zwei Einträge mehr, zwei Paare.
 	aktOeffnen:   {aktNeueAufnahme, func() string { return i18n.T("Open / new capture") }},
 	aktSpeichern: {aktSpeichernUnter, func() string { return i18n.T("Save / save as") }},
+	// Werkzeug Ellipse (ADR-0047): eine Zeile mehr, ein Paar im Menü Ansicht.
+	aktSeitenleiste: {aktLeiste, func() string { return i18n.T("Sidebar / recent captures") }},
 }
 
 // hilfePaarZweite sind die zweiten Handlungen der Paare.

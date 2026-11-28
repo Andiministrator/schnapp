@@ -1,0 +1,33 @@
+# Sichtprobe ADR-0047 (Karte #328): Werkzeug Ellipse, Umschalt = Kreis, Leiste, Schnellstile und Ebenenliste.
+# Aufruf: scripts/probe.sh --sprache de --ende 30 --drehbuch scripts/drehbuecher/ellipse-328.txt --bild scripts/drehbuecher/testbild-1200x800.png --breite 1200 --hoehe 800
+# Erwartet:
+#  01 Werkzeug Ellipse aktiv (Knopf nach dem Rechteck grün), neue rote Ellipse über Rot und Grün, gewählt mit acht
+#     Griffen am umschließenden Rechteck; rechte Leiste: Kopf „Ellipse“, Schnellstile als Ellipsen-Kacheln.
+#  02 Mit Umschalt gezogen: ein Kreis (gleiche Breite und Höhe) über Grün und Blau.
+#  03 Auswählen (V), Klick in die Mitte der ersten Ellipse (ohne Füllung): nichts gewählt; Klick auf ihren Rand: gewählt.
+#  04 Übersicht F1: Werkzeuge mit „Ellipse E“; „Seitenleiste / letzte Aufnahmen“ als eine Zeile; keine Rollleiste.
+warte 800
+taste E
+warte 200
+ziehe 150 220 420 380
+warte 400
+foto 01-ellipse
+taste-halten Umschalt
+ziehe 470 200 620 260
+taste-loslassen Umschalt
+warte 400
+foto 02-kreis
+taste V
+warte 200
+klick 900 720
+warte 200
+klick 285 300
+warte 300
+foto 03a-mitte-ohne-fuellung
+klick 420 300
+warte 300
+foto 03b-rand
+taste F1
+warte 500
+foto 04-uebersicht
+taste Escape

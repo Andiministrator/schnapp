@@ -43,6 +43,7 @@ const (
 	ArtSprechblase = "callout"
 	ArtNummer      = "step"
 	ArtLupe        = "magnifier"
+	ArtEllipse     = "ellipse" // ADR-0047 Punkte 4 und 5
 )
 
 // MaxEigeneStile ist die Grenze eigener Stile je Objektart (ADR-0037 Punkt 5).
@@ -91,7 +92,7 @@ func schluesselFuer(art string) []string {
 	switch art {
 	case ArtPfeil, ArtLupe:
 		return []string{"color", "width", "shadow"}
-	case ArtKasten:
+	case ArtKasten, ArtEllipse:
 		return []string{"color", "fill", "width", "shadow"}
 	case ArtText, ArtSprechblase:
 		return []string{"color", "fill", "font", "size", "bold", "italic", "underline", "strike", "align", "shadow"}

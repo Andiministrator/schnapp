@@ -28,6 +28,7 @@ const (
 	WerkzeugStauchen                    // Band ziehen: Zeilen oder Spalten herausnehmen (ADR-0023)
 	WerkzeugLupe                        // Quelle aufziehen, das Ziel erscheint vergrößert daneben (ADR-0033)
 	WerkzeugSprechblase                 // Spitze setzen, zum Ort des Texts ziehen, tippen (ADR-0021 Nachtrag 13)
+	WerkzeugEllipse                     // Ziehen von Ecke zu Ecke, Umschalt = Kreis (ADR-0047)
 )
 
 // Werte des Verpixelns (ADR-0022 Nachtrag 1), Größen in Pixeln des Originals. Die Blockgröße ist nur noch Optik: Die
@@ -336,7 +337,7 @@ func (s *Sitzung) beginneNeu(q document.Punkt) {
 		return
 	}
 	switch s.Werkzeug {
-	case WerkzeugPfeil, WerkzeugKasten, WerkzeugLupe, WerkzeugSprechblase:
+	case WerkzeugPfeil, WerkzeugKasten, WerkzeugEllipse, WerkzeugLupe, WerkzeugSprechblase:
 		s.zug = zugNeu
 	case WerkzeugSchwaerzen, WerkzeugVerpixeln, WerkzeugZuschneiden, WerkzeugStauchen:
 		s.zug, s.rahmen = zugNeu, false
@@ -412,14 +413,18 @@ func (s *Sitzung) zieheNeu(p document.Punkt) {
 		pf.Ende, pf.Anfang = s.Stil.KopfEnde, s.Stil.KopfAnfang
 		pf.ID = s.neuID
 		o = pf
-	case WerkzeugKasten:
-		if s.Umschalt {
+	case WerkzeugKasten, WerkzeugEllipse:
+		if s.Umschalt { // Quadrat bzw. Kreis (ADR-0047 Punkt 4)
 			b = s.umschaltEnde(WerkzeugKasten, p)
 		} else {
 			b, s.linien = s.rastePunkt(b, s.neuID)
 		}
-		o = document.Kasten{ID: s.neuID, Bereich: document.R(a, b), Strich: s.Stil.strich(), Fuellung: s.Stil.Fuellung,
+		k := document.Kasten{ID: s.neuID, Bereich: document.R(a, b), Strich: s.Stil.strich(), Fuellung: s.Stil.Fuellung,
 			Eckradius: s.Stil.Eckradius}
+		if s.Werkzeug == WerkzeugEllipse {
+			k.Form = document.FormEllipse
+		}
+		o = k
 	case WerkzeugLupe: // Aufziehen wählt die Quelle wie einen Kasten, das Ziel liegt daneben (ADR-0033 Punkt 8)
 		if !s.Umschalt {
 			b, s.linien = s.rastePunkt(b, s.neuID)

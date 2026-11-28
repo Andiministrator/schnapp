@@ -308,9 +308,17 @@ inside a group with `opacity`, so the overlap is covered once.
 | `s:fuellung` | fill colour; alpha `00` means no fill |
 | `s:eckradius` | corner radius, number `>= 0` |
 | `s:strichart` | OPTIONAL, format version 2 only: line style of the outline (8.8) |
+| `s:form` | OPTIONAL, format version 2 only: `ellipse` makes the box the ellipse inscribed in `s:bereich` (corner radius does not apply). Missing, any other value or in a version-1 file: a rectangle. Writers emit it only for `ellipse` |
 
 Informative: the effective radius is `min(radius, min(w, h) / 2)`, and below 0.5 pixel the corners are square; the
 rounding is circular, never elliptic.
+
+`s:form` belongs to format version 2: a writer emits `s:format="2"` if any box has `s:form="ellipse"` (section 12). In a
+version-1 file it is unknown content (section 11, rule 3) and is ignored. Informative: Schnapp writes an ellipse as an
+`<ellipse>` element (`cx`, `cy`, `rx`, `ry`); readers take the data from the `s:` attributes and do not depend on the
+element name. An ellipse whose area has no width or height is drawn like such a box (a bar). Schnapp draws the outline
+from the ellipse sampled as a closed polyline, the chord deviating at most 0.02 pixel from the curve; a dashed or dotted
+outline is laid out per quarter from vertex to vertex with half a dash, or a dot, at each vertex.
 
 ### 8.3 `"text"` text
 
@@ -649,6 +657,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `layers` | three objects with layer attributes: a named, half-opaque box, a hidden and locked arrow, a step number without them |
 | `arrow-heads` | format version 2: four arrows: `open` head at `B`, `dot` at `A` only on a curve, `diamond` at `A` and `notched` at `B`, and a curved line without heads |
 | `line-styles` | format version 2: a `dashed` arrow with the default head, a curved `dotted` line, a `dotted` square box and a `dashed` box with rounded corners |
+| `ellipse` | format version 2: a filled ellipse with a solid outline and a circle with a `dashed` outline |
 | `groups` | format version 2: a box and an arrow forming one group (`s:gruppe="1"`) and a step number without group |
 | `shadow` | format version 2: a filled box with a soft black shadow at 40 % opacity down and to the right and an arrow with a sharp blue shadow 3 pixels to the right (light from the left, angle 180) |
 | `callout` | format version 2: two texts with `s:spitze`, one with a label (filled polygon) and one without (legs as a line) |

@@ -31,7 +31,7 @@ const (
 	werkzeugeDp     = 52 // Breite der Werkzeugleiste
 	werkzeugKnopfDp = 40 // Kantenlänge eines Werkzeugknopfs
 	// werkzeugKnopfMinDp: kleinste Kantenlänge, wenn die Leiste in niedrigen Fenstern schrumpft (F-516).
-	werkzeugKnopfMinDp = 18 // 20 bis zur Lupe; mit der Sprechblase passen elf Werkzeuge und das Farbfeld nur mit 18 in 480 × 320
+	werkzeugKnopfMinDp = 16 // 20 bis zur Lupe, 18 ab der Sprechblase; mit der Ellipse (ADR-0047) passen zwölf Werkzeuge und das Farbfeld nur mit 16 in 480 × 320, bis die Leiste zweispaltig wird (#223)
 	fusszeileDp        = 30
 	seiteDp            = 300 // Breite der rechten Leiste (ADR-0031 Punkt 3)
 	// minLeinwandDp: Die rechte Leiste erscheint nur, wenn daneben mindestens so viel Leinwand bleibt (ADR-0031
@@ -371,6 +371,8 @@ func werkzeugSymbol(w canvas.Werkzeug) icons.Symbol {
 		return icons.Pfeil
 	case canvas.WerkzeugKasten:
 		return icons.Kasten
+	case canvas.WerkzeugEllipse:
+		return icons.Ellipse
 	case canvas.WerkzeugText:
 		return icons.Text
 	case canvas.WerkzeugSprechblase:

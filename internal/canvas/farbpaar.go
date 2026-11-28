@@ -42,9 +42,9 @@ func StandardPaar(w Werkzeug) (vorn, fuellung color.NRGBA) {
 	return p.vorn, p.fuellung
 }
 
-// fuellWerkzeug meldet, ob ein Werkzeug eine Füllung zeichnet (Kasten, Text).
+// fuellWerkzeug meldet, ob ein Werkzeug eine Füllung zeichnet (Kasten, Ellipse, Text).
 func fuellWerkzeug(w Werkzeug) bool {
-	return w == WerkzeugKasten || w == WerkzeugText || w == WerkzeugSprechblase
+	return w == WerkzeugKasten || w == WerkzeugEllipse || w == WerkzeugText || w == WerkzeugSprechblase
 }
 
 // hatFuellung meldet, ob o eine Füllung hat (Kasten, Text).

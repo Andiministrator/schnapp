@@ -2278,3 +2278,12 @@ msgstr "Neue Aufnahme ließ sich nicht starten."
 
 msgid "Starting a new capture…"
 msgstr "Neue Aufnahme startet …"
+
+msgid "Ellipse"
+msgstr "Ellipse"
+
+msgid "Drag to draw an ellipse. Shift: circle."
+msgstr "Ziehen zeichnet eine Ellipse. Umschalt: Kreis."
+
+msgid "Sidebar / recent captures"
+msgstr "Seitenleiste / letzte Aufnahmen"

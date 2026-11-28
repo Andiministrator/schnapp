@@ -1356,6 +1356,10 @@ msgid "Rectangle"
 msgstr ""
 
 #: internal/ui/editor.go
+msgid "Ellipse"
+msgstr ""
+
+#: internal/ui/editor.go
 msgid "Text"
 msgstr ""
 
@@ -1415,6 +1419,10 @@ msgstr ""
 
 #: internal/ui/editor.go
 msgid "Drag to draw a rectangle. Shift: square."
+msgstr ""
+
+#: internal/ui/editor.go
+msgid "Drag to draw an ellipse. Shift: circle."
 msgstr ""
 
 #: internal/ui/editor.go
@@ -2077,6 +2085,10 @@ msgstr ""
 
 #: internal/ui/hilfe.go
 msgid "Save / save as"
+msgstr ""
+
+#: internal/ui/hilfe.go
+msgid "Sidebar / recent captures"
 msgstr ""
 
 #: internal/ui/hilfe.go internal/ui/oberflaeche.go

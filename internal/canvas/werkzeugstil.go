@@ -14,7 +14,7 @@ import (
 )
 
 // stilWerkzeuge sind die Werkzeuge mit eigenem Stil, in der Reihenfolge von tools.ini.
-var stilWerkzeuge = []Werkzeug{WerkzeugPfeil, WerkzeugKasten, WerkzeugText, WerkzeugNummer, WerkzeugLupe}
+var stilWerkzeuge = []Werkzeug{WerkzeugPfeil, WerkzeugKasten, WerkzeugText, WerkzeugNummer, WerkzeugLupe, WerkzeugEllipse}
 
 // werkzeugAbschnitt ist der Abschnitt von w in tools.ini.
 func werkzeugAbschnitt(w Werkzeug) string {
@@ -29,6 +29,8 @@ func werkzeugAbschnitt(w Werkzeug) string {
 		return settings.ArtNummer
 	case WerkzeugLupe:
 		return settings.ArtLupe
+	case WerkzeugEllipse:
+		return settings.ArtEllipse
 	}
 	return ""
 }

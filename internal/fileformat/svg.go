@@ -28,8 +28,8 @@ const FormatVersion = 2
 // dem Attribut s:spitze am Text (ADR-0021 Nachtrag 13 Punkt 7); versionPfeilKoepfe die erste mit s:ende/s:anfang am
 // Pfeil (ADR-0021 Nachtrag 20); versionStrichart die erste mit s:strichart an Pfeil, Kasten und Lupe (ADR-0021
 // Nachtrag 25); versionSchatten die erste mit s:schatten an jeder Ebene (ADR-0021 Nachtrag 26 Punkt 6); versionGruppe
-// die erste mit s:gruppe (ADR-0044 Punkt 6). Alle sind
-// Version 2.
+// die erste mit s:gruppe (ADR-0044 Punkt 6); versionEllipse die erste mit s:form am Kasten (ADR-0047 Punkt 6). Alle
+// sind Version 2.
 const (
 	versionLupe        = 2
 	versionSpitze      = 2
@@ -37,6 +37,7 @@ const (
 	versionStrichart   = 2
 	versionSchatten    = 2
 	versionGruppe      = 2
+	versionEllipse     = 2
 )
 
 // schreibVersion ist die Version, die der Schreiber für die Objekte objekte angibt.
@@ -64,6 +65,9 @@ func schreibVersion(objekte []document.Objekt) int {
 				return versionStrichart
 			}
 		case document.Kasten:
+			if v.Form != document.FormRechteck {
+				return versionEllipse
+			}
 			if v.Strich.Art != document.StrichVoll {
 				return versionStrichart
 			}
@@ -166,6 +170,7 @@ func (s *schreiber) kastenOhneFlaeche(o document.Kasten) {
 	s.attr("s:strich", strich(o.Strich))
 	s.attr("s:fuellung", farbeHex(o.Fuellung))
 	s.attr("s:eckradius", zahl(o.Eckradius))
+	s.kastenForm(o)
 	s.strichart(o.Strich)
 	s.WriteString(`>`)
 	if o.Strich.Breite > 0 && o.Strich.Farbe.A > 0 {
@@ -180,6 +185,38 @@ func (s *schreiber) kastenOhneFlaeche(o document.Kasten) {
 		s.WriteString(`/>`)
 	}
 	s.WriteString(`</g>`)
+}
+
+// kastenForm schreibt s:form, nur bei einer anderen Form als dem Rechteck (ADR-0047 Punkt 6).
+func (s *schreiber) kastenForm(o document.Kasten) {
+	if o.Form == document.FormEllipse {
+		s.attr("s:form", "ellipse")
+	}
+}
+
+// ellipse schreibt einen Kasten mit Form Ellipse als `<ellipse>` (ADR-0047 Punkt 6): dieselben Daten wie das Rechteck,
+// der Leser unterscheidet die Elemente nicht. Der Strich ist SVGs eigener (in der Arbeitsdatei bei einem Muster
+// genähert wie beim Kasten); gemustert im Export schreibt kastenGemustert die Stücke.
+func (s *schreiber) ellipse(o document.Kasten) {
+	b := o.Bereich
+	s.WriteString(`<ellipse`)
+	s.attr("s:typ", "kasten")
+	s.ebene(o.Ebenenwerte())
+	s.attr("s:bereich", punkt(b.Min)+" "+punkt(b.Max))
+	s.attr("s:strich", strich(o.Strich))
+	s.attr("s:fuellung", farbeHex(o.Fuellung))
+	s.attr("s:eckradius", zahl(o.Eckradius))
+	s.kastenForm(o)
+	s.strichart(o.Strich)
+	s.attr("cx", zahl((b.Min.X+b.Max.X)/2))
+	s.attr("cy", zahl((b.Min.Y+b.Max.Y)/2))
+	s.attr("rx", zahl(b.Breite()/2))
+	s.attr("ry", zahl(b.Hoehe()/2))
+	s.farbeSVG("fill", o.Fuellung)
+	s.farbeSVG("stroke", o.Strich.Farbe)
+	s.attr("stroke-width", zahl(o.Strich.Breite))
+	s.strichNaeherung(o.Strich, false)
+	s.WriteString(`/>`)
 }
 
 // ebene schreibt die Angaben der Ebene (ADR-0032 Punkt 9, docs/format.md 8.5): die Daten nur, wo sie von der
@@ -351,6 +388,10 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 			}
 			if o.Strich.Art != document.StrichVoll && !s.rundlauf {
 				s.kastenGemustert(o)
+				break
+			}
+			if o.Ellipse() {
+				s.ellipse(o)
 				break
 			}
 			s.WriteString(`<rect`)
@@ -749,8 +790,13 @@ func (l *leser) objektOhneEbene(typ string) document.Objekt {
 		p.Strich.Art = l.strichart()
 		return p
 	case "kasten":
-		return document.Kasten{Bereich: l.bereich("bereich"), Strich: l.strichMitArt("strich"), Fuellung: l.farbe("fuellung"),
+		k := document.Kasten{Bereich: l.bereich("bereich"), Strich: l.strichMitArt("strich"), Fuellung: l.farbe("fuellung"),
 			Eckradius: l.zahl("eckradius")}
+		// s:form gibt es erst ab Version 2 (ADR-0047 Punkt 6); ein unbekannter Wert ist ein Rechteck (Regel 3, §11).
+		if l.version >= versionEllipse && l.a["form"] == "ellipse" {
+			k.Form = document.FormEllipse
+		}
+		return k
 	case "text":
 		t := document.Text{Ort: l.punkt("ort"), Inhalt: l.text("inhalt"), Schriftgrad: l.zahl("grad"),
 			Farbe: l.farbe("farbe"), Hintergrund: l.farbe("hintergrund"), BreiteGrenze: l.zahl("umbruch")}

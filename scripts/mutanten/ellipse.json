@@ -1,0 +1,191 @@
+[
+  {
+    "name": "EL1 Ellipse ohne Fläche gezeichnet",
+    "datei": "internal/document/ellipse.go",
+    "paket": "./internal/render",
+    "alt": "\treturn k.Form == FormEllipse && k.Bereich.Breite() > 0 && k.Bereich.Hoehe() > 0",
+    "neu": "\treturn k.Form == FormEllipse"
+  },
+  {
+    "name": "EL2 Scheitel nicht exakt",
+    "datei": "internal/document/ellipse.go",
+    "paket": "./internal/document",
+    "alt": "\t\t\tcase i == 0: // Scheitel exakt\n\t\t\t\tcos, sin = scheitel(q)\n",
+    "neu": "\t\t\tcase i == -1:\n\t\t\t\tcos, sin = scheitel(q)\n"
+  },
+  {
+    "name": "EL3 zu grob abgetastet",
+    "datei": "internal/document/ellipse.go",
+    "paket": "./internal/render",
+    "alt": "\tn := int(math.Ceil((math.Pi / 2) / math.Sqrt(8*ellipseSehne/r)))",
+    "neu": "\tn := int(math.Ceil((math.Pi / 2) / math.Sqrt(8*ellipseSehne*400/r)))"
+  },
+  {
+    "name": "EL4 Halbachsen vertauscht",
+    "datei": "internal/document/ellipse.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\tpts = append(pts, Pt(c.X+a*cos, c.Y+b*sin))",
+    "neu": "\t\t\tpts = append(pts, Pt(c.X+b*cos, c.Y+a*sin))"
+  },
+  {
+    "name": "EL5 Enthaelt falsch",
+    "datei": "internal/document/ellipse.go",
+    "paket": "./internal/canvas",
+    "alt": "\treturn x*x+y*y <= 1",
+    "neu": "\treturn x*x+y*y <= 2"
+  },
+  {
+    "name": "EL6 Renderer zeichnet Ellipse als Rechteck",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\tif v.Ellipse() {\n\t\t\t// Ellipse (ADR-0047 Punkt 2)",
+    "neu": "\t\tif false && v.Ellipse() {\n\t\t\t// Ellipse (ADR-0047 Punkt 2)"
+  },
+  {
+    "name": "EL7 Renderer ohne Füllung",
+    "datei": "internal/render/render.go",
+    "paket": "./internal/render",
+    "alt": "\t\t\tumriss := document.EllipsenUmriss(b)\n\t\t\tif v.Fuellung.A > 0 {",
+    "neu": "\t\t\tumriss := document.EllipsenUmriss(b)\n\t\t\tif false && v.Fuellung.A > 0 {"
+  },
+  {
+    "name": "EL8 Strich offen statt geschlossen",
+    "datei": "internal/render/strichart.go",
+    "paket": "./internal/render",
+    "alt": "\t\treturn zerlegungAus(neuerLinienStrich(document.EllipsenUmriss(b), true, hw), hw)",
+    "neu": "\t\treturn zerlegungAus(neuerLinienStrich(document.EllipsenUmriss(b), false, hw), hw)"
+  },
+  {
+    "name": "EL9 gemustert voll",
+    "datei": "internal/render/strichart.go",
+    "paket": "./internal/render",
+    "alt": "\tif s.Art == document.StrichVoll || !(hw > 0) {\n\t\treturn zerlegungAus(neuerLinienStrich(document.EllipsenUmriss(b), true, hw), hw)",
+    "neu": "\tif true || !(hw > 0) {\n\t\treturn zerlegungAus(neuerLinienStrich(document.EllipsenUmriss(b), true, hw), hw)"
+  },
+  {
+    "name": "EL10 Version nicht gehoben",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\t\tif v.Form != document.FormRechteck {\n\t\t\t\treturn versionEllipse",
+    "neu": "\t\t\tif false && v.Form != document.FormRechteck {\n\t\t\t\treturn versionEllipse"
+  },
+  {
+    "name": "EL11 s:form nicht geschrieben",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\tif o.Form == document.FormEllipse {\n\t\ts.attr(\"s:form\", \"ellipse\")",
+    "neu": "\tif false && o.Form == document.FormEllipse {\n\t\ts.attr(\"s:form\", \"ellipse\")"
+  },
+  {
+    "name": "EL12 s:form in Version 1 gelesen",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\tif l.version >= versionEllipse && l.a[\"form\"] == \"ellipse\" {",
+    "neu": "\t\tif l.a[\"form\"] == \"ellipse\" {"
+  },
+  {
+    "name": "EL13 Export als Rechteck",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\t\t\tif o.Ellipse() {\n\t\t\t\ts.ellipse(o)",
+    "neu": "\t\t\tif false && o.Ellipse() {\n\t\t\t\ts.ellipse(o)"
+  },
+  {
+    "name": "EL14 gemusterter Export als Rechteck",
+    "datei": "internal/fileformat/strichart.go",
+    "paket": "./internal/fileformat",
+    "alt": "\tif o.Ellipse() { // ADR-0047 Punkt 6",
+    "neu": "\tif false && o.Ellipse() { // ADR-0047 Punkt 6"
+  },
+  {
+    "name": "EL15 Werkzeug legt Rechteck an",
+    "datei": "internal/canvas/werkzeuge.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif s.Werkzeug == WerkzeugEllipse {\n\t\t\tk.Form = document.FormEllipse",
+    "neu": "\t\tif false && s.Werkzeug == WerkzeugEllipse {\n\t\t\tk.Form = document.FormEllipse"
+  },
+  {
+    "name": "EL16 Ellipse gilt als Kasten",
+    "datei": "internal/canvas/seitenleiste.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif v.Form == document.FormEllipse {\n\t\t\treturn WerkzeugEllipse, true",
+    "neu": "\t\tif false && v.Form == document.FormEllipse {\n\t\t\treturn WerkzeugEllipse, true"
+  },
+  {
+    "name": "EL17 Ellipse ohne Füllfeld",
+    "datei": "internal/canvas/farbpaar.go",
+    "paket": "./internal/canvas",
+    "alt": "\treturn w == WerkzeugKasten || w == WerkzeugEllipse || w == WerkzeugText || w == WerkzeugSprechblase",
+    "neu": "\treturn w == WerkzeugKasten || w == WerkzeugText || w == WerkzeugSprechblase"
+  },
+  {
+    "name": "EL18 eigener Stil fehlt",
+    "datei": "internal/canvas/werkzeugstil.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase WerkzeugEllipse:\n\t\treturn settings.ArtEllipse",
+    "neu": "\tcase WerkzeugEllipse:\n\t\treturn settings.ArtKasten"
+  },
+  {
+    "name": "EL19 eingebaute Stile fehlen",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\tcase SchnellEllipse:\n\t\tquelle = SchnellKasten",
+    "neu": "\tcase SchnellEllipse:\n\t\tquelle = SchnellEllipse"
+  },
+  {
+    "name": "EL20 Stand der Ellipse als Kasten",
+    "datei": "internal/canvas/schnellstile.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif v.Form == document.FormEllipse {\n\t\t\tart = SchnellEllipse",
+    "neu": "\t\tif false && v.Form == document.FormEllipse {\n\t\t\tart = SchnellEllipse"
+  },
+  {
+    "name": "EL21 Treffer wie Rechteck",
+    "datei": "internal/canvas/objekte.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif v.Ellipse() { // ADR-0047 Punkt 3",
+    "neu": "\t\tif false && v.Ellipse() { // ADR-0047 Punkt 3"
+  },
+  {
+    "name": "EL22 Treffer ohne Füllung in der Mitte",
+    "datei": "internal/canvas/objekte.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif k.Fuellung.A > 0 && document.EllipseEnthaelt(r, p) {",
+    "neu": "\tif document.EllipseEnthaelt(r, p) {"
+  },
+  {
+    "name": "EL23 Editor zeichnet Rechteck",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\t\tif v.Ellipse() {\n\t\t\te.zeichneEllipse(gtx, v, an, vorschau)",
+    "neu": "\t\tif false && v.Ellipse() {\n\t\t\te.zeichneEllipse(gtx, v, an, vorschau)"
+  },
+  {
+    "name": "EL24 Taste E fehlt",
+    "datei": "internal/ui/kuerzel.go",
+    "paket": "./internal/ui",
+    "alt": "\t\twz(\"E\", canvas.WerkzeugEllipse), // E allein war frei, Strg+Umschalt+E ist Export (ADR-0047 Punkt 4)\n",
+    "neu": ""
+  },
+  {
+    "name": "EL25 annotate legt Rechteck an",
+    "datei": "internal/annotate/annotate.go",
+    "paket": "./internal/annotate",
+    "alt": "\t\t\tif e.Type == \"ellipse\" {\n\t\t\t\tk.Form = document.FormEllipse",
+    "neu": "\t\t\tif false && e.Type == \"ellipse\" {\n\t\t\t\tk.Form = document.FormEllipse"
+  },
+  {
+    "name": "EL26 tools.ini ohne Ellipse",
+    "datei": "internal/settings/werkzeugstile.go",
+    "paket": "./internal/settings",
+    "alt": "\tcase ArtEllipse: // wie der Kasten ohne Eckradius (ADR-0047 Punkt 4)\n\t\treturn []string{\"color\", \"fill\", \"width\", \"line_style\", \"shadow_on\", \"shadow\"}\n",
+    "neu": ""
+  },
+  {
+    "name": "EL27 Pruefe nimmt unbekannte Form an",
+    "datei": "internal/document/objekte.go",
+    "paket": "./internal/document",
+    "alt": "\t\tk.Form > FormEllipse {",
+    "neu": "\t\tfalse {"
+  }
+]
