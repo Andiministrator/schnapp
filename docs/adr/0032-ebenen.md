@@ -101,3 +101,6 @@ der Farbe? Folgen für Dokumentmodell, Rückgängig, Arbeitsdatei und Rettungsko
 - Sichtprobe: `scripts/drehbuecher/ebenen-191.txt`. Drehbücher mit festen
   Leisten-Koordinaten (`farbwaehler-189.txt`, `schrift-190.txt`) verschieben sich nicht, weil Ebenen unter der Farbe
   stehen.
+
+## Verweis (28.11.2026)
+ADR-0039 Nachtrag 4 Punkt 5 erweitert die Ebenenliste um Strg-/Umschalt-Klick (mehrere Zeilen, Hauptauswahl kräftig, weitere schwächer); ADR-0044 (Gruppen) lässt Strg+H und Strg+L an einer gewählten Gruppe auf alle Mitglieder wirken (Auge und Schloss der Liste bleiben zeilenweise) und zeigt Mitglieder mit einem farbigen Streifen.

@@ -1059,3 +1059,6 @@ Voreinstellung fest im Testcode (`format_konform_test.go`), damit es sich nicht 
 ADR-0041 ersetzt das Farbpaar je Werkzeug (Nachtrag 11) durch einen vollständigen Stil je Werkzeug, der über
 Sitzungen in `tools.ini` gemerkt wird. Damit sind auch Strichstärke, Strichart (Nachtrag 25), Spitzen (Nachträge 19
 bis 21) und Schatten (Nachtrag 26: dort „ein Wert für alle Werkzeuge“) je Werkzeug.
+
+## Verweis (28.11.2026, ADR-0039 Nachtrag 4)
+Bei mehreren gewählten Objekten gehört das Feld Schatten (Nachtrag 26) der Auswahl, nicht einem einzelnen Objekt; Farbe, Füllung und Schattenfarbe wirken auf alle gewählten Träger.

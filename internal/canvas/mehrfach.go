@@ -165,7 +165,17 @@ func (s *Sitzung) setzeAuswahl(haupt int, weitere []int) {
 			mehr = append(mehr, id)
 		}
 	}
-	s.Auswahl, s.mf.fuer, s.mf.mehr, s.mf.gen = haupt, haupt, mehr, s.mf.gen+1
+	// gen zählt nur echte Änderungen (F-971): Ein Bereinigen ohne Wirkung (Deckkraft, Umbenennen, Bestätigen der
+	// Texteingabe) lässt Anker der Ebenenliste und Gedächtnis von Strg+H/L stehen. Der Merker bleibt richtig, weil sein
+	// Schlüssel auch den Stand des Dokuments trägt.
+	gleich := haupt == s.Auswahl && s.mf.fuer == haupt && len(mehr) == len(s.mf.mehr)
+	for _, id := range mehr {
+		gleich = gleich && slices.Contains(s.mf.mehr, id)
+	}
+	s.Auswahl, s.mf.fuer, s.mf.mehr = haupt, haupt, mehr
+	if !gleich {
+		s.mf.gen++
+	}
 }
 
 // waehleNur wählt genau das Objekt id (0: keins).

@@ -241,15 +241,15 @@
     "name": "MS36 Merker übersieht neue Auswahl (F-944)",
     "datei": "internal/canvas/mehrfach.go",
     "paket": "./internal/canvas",
-    "alt": "s.Auswahl, s.mf.fuer, s.mf.mehr, s.mf.gen = haupt, haupt, mehr, s.mf.gen+1",
-    "neu": "s.Auswahl, s.mf.fuer, s.mf.mehr = haupt, haupt, mehr"
+    "alt": "\tif !gleich {\n\t\ts.mf.gen++\n\t}\n",
+    "neu": ""
   },
   {
     "name": "MS37 Feld Schatten am Träger statt an der Hauptauswahl (F-952)",
     "datei": "internal/canvas/farbpaar.go",
     "paket": "./internal/canvas",
-    "alt": "\tif s.stilMehrere() {\n\t\treturn s.Auswahl\n\t}\n\treturn s.schattenZiel()",
-    "neu": "\treturn s.schattenZiel()"
+    "alt": "\t\treturn -s.Auswahl\n\t}\n\treturn s.schattenZiel()",
+    "neu": "\t\treturn s.schattenZiel()\n\t}\n\treturn s.schattenZiel()"
   },
   {
     "name": "MS38 Anker überlebt Auswahl im Bild (F-954)",

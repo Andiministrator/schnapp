@@ -129,7 +129,7 @@
     "name": "MA19 Rückgängig: kein Nachrücken",
     "datei": "internal/canvas/sitzung.go",
     "paket": "./internal/canvas",
-    "alt": "\ts.bereinigeAuswahl() // ADR-0039 Punkt 1: Verschwundenes",
+    "alt": "\ts.bereinigeAuswahl()  // ADR-0039 Punkt 1: Verschwundenes",
     "neu": "\tif _, ok := s.D.Objekt(s.Auswahl); !ok {\n\t\ts.waehleNur(0)\n\t} // ADR-0039 Punkt 1: Verschwundenes"
   },
   {

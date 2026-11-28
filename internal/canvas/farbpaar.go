@@ -221,7 +221,10 @@ func (s *Sitzung) Fuellbar() bool {
 // gezeigten Schattens (schattenZiel).
 func (s *Sitzung) feldZiel() int {
 	if s.stilMehrere() {
-		return s.Auswahl
+		// Negativ: ein Ziel „mehrere mit dieser Hauptauswahl“, das nie mit dem Ziel eines einzelnen Objekts (positiv)
+		// oder des Werkzeugs (0) zusammenfällt — sonst kehrte das Feld nach Texteingabe oder Einzelauswahl ohne Klick
+		// zurück (F-970).
+		return -s.Auswahl
 	}
 	return s.schattenZiel()
 }

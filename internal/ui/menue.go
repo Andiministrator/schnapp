@@ -125,7 +125,7 @@ type menue struct {
 	titelRahmen [menueAnzahl]image.Rectangle
 	welches     int
 	offen       bool
-	eintraege   [24]widget.Clickable // je Eintrag einer; mehr als genug für menueEintraege (Ebene: 18)
+	eintraege   [24]widget.Clickable // je Eintrag einer; mehr als genug für menueEintraege (Ebene: 20)
 	aussen      int                  // Ziel für Klicks neben die offene Liste (schließt sie)
 	zeile       int                  // Ziel für Klicks in die Menüzeile abseits der Titel (schließt die Liste, F-515)
 

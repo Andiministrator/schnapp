@@ -128,3 +128,6 @@ um und entscheidet die offene Frage aus ADR-0021 Nachtrag 25 Punkt 8.
 
 Tests: `internal/canvas/schnellstile_test.go` (`TestSchnellstilSchatten`, `TestSchnellstilGenauEinePassendeMitSchatten`), `internal/settings/stile_test.go`
 (Rundlauf, Parse-Regeln, `TestStileSchattenGrenzen`).
+
+## Verweis (28.11.2026)
+Sind mehrere Objekte gewählt, ändert ein Schnellstil alle gewählten, die das Werkzeug des Stils zeichnet (Text und Sprechblase gemeinsam), als einen Schritt (ADR-0039 Nachtrag 4 Punkt 1, F-949).

@@ -100,3 +100,6 @@ markierten Vorschau unter mehreren zeigt sie „Show N captures in file manager�
 captures to trash“; ein Rechtsklick auf eine nicht markierte hebt die Markierung auf (ADR-0036 Zusatz Karte #361).
 Kopieren und Exportieren — einzeln für eine nicht offene Aufnahme und für mehrere — sowie Schlagworte für mehrere folgen
 mit Karte #373, nie als Weitergabe der Arbeitsdateien.
+
+## Verweis (28.11.2026)
+Das Kontextmenü eines Objekts trägt „Group“/„Ungroup“, wo sie wirken, und bei gewählter Gruppe „Hide/Show group“, „Lock/Unlock group“ (ADR-0044 mit Nachträgen).

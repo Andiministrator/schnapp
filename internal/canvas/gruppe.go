@@ -330,16 +330,22 @@ func (s *Sitzung) SchalteGesperrtGruppe(id int) bool {
 }
 
 func (s *Sitzung) schalteGruppeEbene(id int, a Ebenenschalter, einzeln func(int) bool) bool {
-	ids, ziel, ok := s.gruppenSchaltung(id, a)
-	if !ok {
-		s.mf.geschaltet = nil
-		return einzeln(id)
-	}
+	// Erst die Texteingabe bestätigen (sie kann das Objekt löschen und die Auswahl ändern), dann rechnen (F-972).
 	if !s.ebenenBereit() {
 		return false
 	}
+	if _, da := s.D.Objekt(id); !da {
+		id = s.Auswahl
+	}
 	m := &s.mf
 	zurueck := m.schaltArt == a && m.schaltGen == m.gen && len(m.geschaltet) > 0
+	ids, ziel, ok := s.gruppenSchaltung(id, a)
+	if !ok {
+		if m.schaltArt == a { // das Gedächtnis des anderen Schalters bleibt (F-973)
+			m.geschaltet = nil
+		}
+		return einzeln(id)
+	}
 	vorHaupt, vorMehr := s.Auswahl, s.Gewaehlt()
 	var neu []document.Objekt
 	for _, k := range ids {

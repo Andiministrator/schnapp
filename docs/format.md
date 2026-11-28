@@ -355,7 +355,7 @@ left-aligned text has no `text-anchor` and `x` at the line start. Like all prese
 **Callout (speech bubble).** A text with `s:spitze` is a callout; there is no separate object type. The tip may lie
 anywhere inside the coordinate range (inside or outside the image and the label). `s:spitze` is part of format version
 2: a writer emits `s:format="2"` if the document contains a magnifier, a text with `s:spitze`, an arrow with
-`s:ende`/`s:anfang`, a stroke with `s:strichart` or an object with `s:schatten` (section 12), and a
+`s:ende`/`s:anfang`, a stroke with `s:strichart` or an object with `s:schatten` or `s:gruppe` (section 12), and a
 version-1 reader that meets a version-2 file reports it as newer instead of dropping the tip silently. A value that
 does not parse as a point makes a version-2 file damaged (section 11, rule 4).
 
@@ -547,7 +547,7 @@ value here and to the code must happen in the same commit.
 
 | Key | Value | Meaning |
 |---|---|---|
-| `format_version` | 2 | highest value of `s:format` read and written by this version (`2` only with a `lupe`, an `s:spitze`, an arrow head other than the defaults, an `s:strichart` or an `s:schatten`, section 12) |
+| `format_version` | 2 | highest value of `s:format` read and written by this version (`2` only with a `lupe`, an `s:spitze`, an arrow head other than the defaults, an `s:strichart`, an `s:schatten` or an `s:gruppe`, section 12) |
 | `namespace` | `urn:x-schnapp:1` | Schnapp XML namespace |
 | `chunk_svg` | `snAP` | chunk with the compressed SVG |
 | `chunk_orig` | `snAO` | chunk with the original PNG |
@@ -640,6 +640,7 @@ screenshots). For each there is the working file `NAME.png` and the decompressed
 | `layers` | three objects with layer attributes: a named, half-opaque box, a hidden and locked arrow, a step number without them |
 | `arrow-heads` | format version 2: four arrows: `open` head at `B`, `dot` at `A` only on a curve, `diamond` at `A` and `notched` at `B`, and a curved line without heads |
 | `line-styles` | format version 2: a `dashed` arrow with the default head, a curved `dotted` line, a `dotted` square box and a `dashed` box with rounded corners |
+| `groups` | format version 2: a box and an arrow forming one group (`s:gruppe="1"`) and a step number without group |
 | `shadow` | format version 2: a filled box with a soft black shadow at 40 % opacity down and to the right and an arrow with a sharp blue shadow 3 pixels to the right (light from the left, angle 180) |
 | `callout` | format version 2: two texts with `s:spitze`, one with a label (filled polygon) and one without (legs as a line) |
 | `magnifier` | format version 2: one magnifier with a non-integer source over a column strip (the strip drops out of the magnified view, 8.7); the visible image shows no annotations, as in all examples |

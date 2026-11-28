@@ -201,5 +201,26 @@
     "paket": "./internal/canvas",
     "alt": "\tif m.schaltArt == a && m.schaltGen == m.gen && len(m.geschaltet) > 0 {\n\t\tif o, ok",
     "neu": "\tif m.schaltGen == m.gen && len(m.geschaltet) > 0 {\n\t\tif o, ok"
+  },
+  {
+    "name": "GR30 Feld Schatten bei mehreren positiv (F-970)",
+    "datei": "internal/canvas/farbpaar.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\treturn -s.Auswahl\n",
+    "neu": "\t\treturn s.Auswahl\n"
+  },
+  {
+    "name": "GR31 gen zählt auch ohne Änderung (F-971)",
+    "datei": "internal/canvas/mehrfach.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif !gleich {\n\t\ts.mf.gen++",
+    "neu": "\tif true {\n\t\ts.mf.gen++"
+  },
+  {
+    "name": "GR33 Einzelschalter löscht das Gedächtnis des anderen (F-973)",
+    "datei": "internal/canvas/gruppe.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif m.schaltArt == a { // das Gedächtnis des anderen Schalters bleibt (F-973)",
+    "neu": "\t\tif true { // das Gedächtnis des anderen Schalters bleibt (F-973)"
   }
 ]

@@ -84,3 +84,25 @@ Ersetzt Nachtrag 1 Punkt 1 für Strg+H und Strg+L:
    Ausblenden auf ein mitgewähltes Fremdobjekt rückte (F-964). Das Fremdobjekt selbst schaltet Strg+H nicht mit
    (Ebenen-Handlungen bleiben an der Hauptauswahl, ADR-0039 Nachtrag 4 Punkt 6).
 3. Das Format lässt `s:gruppe` an einem einzelnen Mitglied weg (§8.5, SHOULD; F-968).
+
+## Nachtrag 3 (28.11.2026, Sitzungs-QA, F-978, F-981, F-983)
+1. **Verhältnis der Nachträge (F-981):** Von Nachtrag 1 Punkt 1 bleiben die Bedingung „mindestens zwei und alle
+   wählbaren Mitglieder gewählt“ (F-959) und die Menütexte „Hide/Show/Lock/Unlock group“; überholt durch Nachtrag 2
+   sind nur „oder wenn Strg+H/Strg+L sie eben geschaltet hat“ und „Einblenden wählt sie wieder ganz“ (jetzt: genau die
+   geschaltete Menge zurück, mit der Auswahl von davor; bei einer ganz ausgeschalteten Gruppe ohne Gedächtnis wird sie
+   wieder ganz gewählt).
+2. **Ergänzungen zu Punkt 2 und 4:** „Group“/„Ungroup“ stehen auch im Kontextmenü eines Objekts, dort nur, wo sie
+   wirken. Die Kopie eines einzelnen Mitglieds (Doppeln über die Ebenenliste) steht allein, ohne Gruppe.
+3. **Vorbilder (F-983):** Die Angaben zu Snagit, Google Slides, PowerPoint, Inkscape, Photoshop und Krita im Kontext
+   stammen aus allgemeiner Kenntnis der Programme, nicht aus einer nachgeschlagenen Quelle; sie begründen nur die Wahl
+   flacher Gruppen mit Strg+G und sind keine Spezifikation.
+4. **Verweise:** ADR-0032 (Strg+H/L, Ebenenliste), ADR-0037 (Schnellstil an mehreren), ADR-0038 (Kontextmenü) und
+   ADR-0021 Nachtrag 26 (Feld Schatten) tragen je einen Verweis auf diese ADR bzw. ADR-0039 Nachtrag 4.
+5. **Sitzungs-Kritik (F-970 bis F-973):** Das Feld Schatten gehört bei mehreren gewählten einem eigenen Ziel „mehrere
+   mit dieser Hauptauswahl“, das nie mit dem eines einzelnen Objekts zusammenfällt; nach Texteingabe oder
+   Einzelauswahl kehrt es nicht ohne Klick zurück. Der Auswahl-Zähler zählt nur echte Auswahländerungen, so überstehen
+   Anker der Ebenenliste und Gedächtnis von Strg+H/L Deckkraft, Umbenennen und das Bestätigen einer Texteingabe;
+   Rückgängig/Wiederholen verwerfen das Gedächtnis ausdrücklich. Strg+H/L bestätigen eine Texteingabe, bevor sie
+   rechnen. Das Gedächtnis gilt je Schalter: Ein Druck des anderen Schalters löscht es nicht.
+6. **Grenze (F-973):** Nach Strg+H und Rückgängig ist nur die Hauptauswahl gewählt (Rückgängig stellt keine Auswahl
+   her, ADR-0039 Nachtrag 2); ein weiteres Strg+H schaltet dann nur sie. Wer die Gruppe meint, klickt sie erneut an.

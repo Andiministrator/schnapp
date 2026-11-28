@@ -526,7 +526,8 @@ func (s *Sitzung) verlauf(f func() error) bool {
 	if f() != nil {
 		return false
 	}
-	s.bereinigeAuswahl() // ADR-0039 Punkt 1: Verschwundenes fällt heraus, das oberste übrige rückt nach
+	s.bereinigeAuswahl()  // ADR-0039 Punkt 1: Verschwundenes fällt heraus, das oberste übrige rückt nach
+	s.mf.geschaltet = nil // Rückgängig/Wiederholen verwerfen das Gedächtnis von Strg+H/L ausdrücklich (F-971)
 	if s.D.Zuschnitt() != z || s.D.Groesse() != g || !slices.Equal(s.D.Streifen(), st) {
 		// Zuschnitt oder Streifen zurückgenommen bzw. wiederholt: neu einpassen (ADR-0023 Punkt 5), wie nach dem
 		// Zuschneiden melden, wenn mehr verborgen ist (F-184).
