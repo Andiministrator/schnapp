@@ -2195,9 +2195,6 @@ msgstr "Einpassen / 1:1"
 msgid "The image from the clipboard is saved as a new capture; open it from the library."
 msgstr "Das Bild aus der Zwischenablage liegt als neue Aufnahme in der Bibliothek; dort öffnen."
 
-msgid "Copied to the clipboard; the objects were not removed because the image changed meanwhile."
-msgstr "In die Zwischenablage kopiert; die Objekte bleiben, weil sich das Bild inzwischen geändert hat."
-
 msgid "Reading the clipboard cancelled."
 msgstr "Lesen der Zwischenablage abgebrochen."
 
@@ -2212,3 +2209,9 @@ msgstr "Zum Einfügen ins Bild erst die Bibliothek schließen."
 
 msgid "Reading the clipboard is still running. Please wait a moment, then try again."
 msgstr "Die Zwischenablage wird noch gelesen. Bitte kurz warten und dann erneut versuchen."
+
+msgid "Copied to the clipboard; the objects were not removed. Press Ctrl+X again to remove them."
+msgstr "In die Zwischenablage kopiert; die Objekte sind noch da. Strg+X erneut drücken, um sie zu entfernen."
+
+msgid "The image from the clipboard is being saved as a new capture."
+msgstr "Das Bild aus der Zwischenablage wird gerade als neue Aufnahme gespeichert."

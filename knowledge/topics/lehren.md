@@ -1,6 +1,6 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #377/#389 und #354/#390 mit Kritik und Verify (F-943 bis F-969); davor Karten #361 und #334 Teil 1 mit Kritik (F-887 bis F-893); davor Karten #313 Teil 2 und #369 mit Sitzungs-QA (F-873 bis F-880); davor #313 Teil 1 und Sitzungs-QA (F-860 bis F-872); davor #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #335/#393 mit Kritik (F-984 bis F-993); davor Karten #377/#389 und #354/#390 mit Kritik und Verify (F-943 bis F-969); davor Karten #361 und #334 Teil 1 mit Kritik (F-887 bis F-893); davor Karten #313 Teil 2 und #369 mit Sitzungs-QA (F-873 bis F-880); davor #313 Teil 1 und Sitzungs-QA (F-860 bis F-872); davor #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
 ## Öffentliches Repo
 
@@ -1439,3 +1439,9 @@ Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #377/#389 und #35
 - **Jede neue Goroutine der Oberfläche gehört in Esc, Wechsel und Schließen** (F-988, F-991): Was eine Antwort in die
   Sitzung schreibt, sperrt den Wechsel oder verwirft die Antwort danach, und `zerstoert` wartet auf alles, was Dateien
   schreibt.
+- **Prüfen, wo es wirkt** (F-994, Verify): Eine Vorprüfung in der Goroutine kannte die Ziellage nicht und ließ zu
+  teure Objekte durch, die erst beim Einfügen verschoben wurden. Eine Prüfung gilt nur für den Zustand, an dem sie
+  gemacht wurde — Lage eingeschlossen, nicht nur der Stand des Dokuments.
+- **Abbrechen braucht eine Phase** (F-995): „Abbrechen“ ohne Wissen, ob das Schreiben schon begonnen hat, meldet einen
+  Abbruch, während die Datei doch entsteht. Ein atomarer Wechsel (lesen → ablegen bzw. → abgebrochen) entscheidet
+  genau einmal.

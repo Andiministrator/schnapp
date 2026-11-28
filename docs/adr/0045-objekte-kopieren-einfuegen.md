@@ -58,7 +58,7 @@ lesen kann, ohne Fokus und ohne Gio.
    `fileformat.MaxDatei` Byte, Frist 10 s ohne Fortschritt.
 5. **Ohne data-control** (oder mit `WAYLAND_SOCKET`) gibt es kein Lesen: Strg+V nimmt nur die im Prozess gemerkten
    Objekte (Punkt 2), „New from clipboard“ meldet den Grund in der Fußzeile.
-6. **Menü:** Datei: Open…, New from clipboard │ Save │ Export…, Copy image │ Settings… │ Library │ Close.
+6. **Menü:** Datei: Open…, New from clipboard │ Save │ Export…, Copy image │ Settings…, Library │ Close.
    Bearbeiten: Undo, Redo │ Cut, Copy, Paste │ Edit text, Delete, Select all │ Swap colors │ Copy text from image.
    Kontextmenü eines Objekts: Cut und Copy vor Doppeln; Kontextmenü des Bilds: Paste nach Copy.
 
@@ -99,3 +99,16 @@ zwischen zwei Aufnahmen über die Leiste); Klipper und fremde Programme prüft A
    Export, ADR-0033 Nachtrag 4).
 8. **Wechsel (F-991):** Solange gelesen wird, nimmt die Leiste keinen Wechsel an; bei offener Bibliothek fügt eine
    Antwort nicht ins verdeckte Bild ein.
+
+## Nachtrag 2 (28.11.2026, Verify und Doku-QA der Sitzung, F-994 bis F-1006)
+1. **Budget an der Ziellage (F-994, berichtigt Nachtrag 1 Punkt 7):** Die Vorprüfung in der Lese-Goroutine prüfte an
+   der Lage der Quelle; lagen die Objekte dort außerhalb des Ziels, kosteten sie nichts, eingefügt wurden sie mittig.
+   Sie entfällt: Geprüft wird beim Einfügen in der Ereignisschleife an der Ziellage (der Trockenlauf bricht ab, sobald
+   eine Grenze überschritten ist). `--ignore-limit` gilt weiter.
+2. **Esc und Schließen während des Ablegens (F-995):** „New from clipboard“ hat eine Phase (lesen, ablegen,
+   abgebrochen); wer den Wechsel zuerst macht, gilt. Hat das Ablegen begonnen, bricht Esc nicht ab, die Fußzeile sagt,
+   dass gespeichert wird, und das Schließen wartet weiter; vorher legt nach Esc oder Schließen nichts mehr ab.
+3. **Meldung nach Strg+X (F-996):** Löscht das Ausschneiden nicht (Stand geändert, Speichern, Zug), sagt die Fußzeile
+   neutral, dass die Objekte noch da sind und Strg+X sie entfernt.
+4. Menü und Kontextmenü wirken auch mit Fokus in einem Eingabefeld auf die Leinwand; nur die Tasten gelten dem Feld
+   (Nachtrag 1 Punkt 3).

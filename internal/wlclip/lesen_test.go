@@ -262,7 +262,11 @@ func TestLiesTroepfeltAbbruch(t *testing.T) {
 		reg := c.anmeldung(normaleGlobals)
 		c.leseAnmeldung(reg, ManagerExt, func(g uint32) { c.biete(g, 0xff000001, []string{MIME}, true) })
 		c.erwarte(0xff000001, opOfferReceive, "receive")
-		fd, _ := c.v.NimmFD()
+		fd, err := c.v.NimmFD()
+		if err != nil { // sonst schlösse os.NewFile(0) stdin (V-5)
+			t.Errorf("NimmFD: %v", err)
+			return
+		}
 		f := os.NewFile(uintptr(fd), "troepfelt")
 		defer f.Close()
 		for {
@@ -290,7 +294,10 @@ func TestLiesBisAbgebrochen(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer r.Close()
+	schreiber := make(chan struct{})
+	defer func() { r.Close(); <-schreiber }() // die Schreib-Goroutine endet vor dem Test (V-5)
 	go func() {
+		defer close(schreiber)
 		defer w.Close()
 		for range 64 {
 			if _, err := w.Write(make([]byte, 4096)); err != nil {

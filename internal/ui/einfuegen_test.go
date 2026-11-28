@@ -12,6 +12,7 @@ import (
 	"image/png"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -304,7 +305,7 @@ func TestEinfuegenPrueftBudget(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	e.einfuegenAnwenden(q, einfuegeErgebnis{})
+	e.einfuegenAnwenden(q)
 	if len(e.s.D.Objekte()) != 0 || e.meldung.Text != i18n.T("Could not paste: the objects would take too long to draw.") {
 		t.Errorf("%d Objekte, Meldung %q", len(e.s.D.Objekte()), e.meldung.Text)
 	}
@@ -342,7 +343,7 @@ func TestAusschneidenErstNachErfolg(t *testing.T) {
 		t.Fatal(err)
 	}
 	warteKopieren(t, e, gtx)
-	want := i18n.T("Copied to the clipboard; the objects were not removed because the image changed meanwhile.")
+	want := i18n.T("Copied to the clipboard; the objects were not removed. Press Ctrl+X again to remove them.")
 	if len(e.s.D.Objekte()) != 2 || e.meldung.Text != want {
 		t.Errorf("%d Objekte, Meldung %q", len(e.s.D.Objekte()), e.meldung.Text)
 	}
@@ -416,8 +417,7 @@ func TestEinfuegenSperrtWechsel(t *testing.T) {
 	}
 }
 
-// F-990: Mit --ignore-limit über dem Budget nimmt Einfügen trotzdem an; die Prüfung der Goroutine gilt nur für ihren
-// Stand.
+// F-990: Mit --ignore-limit über dem Budget nimmt Einfügen trotzdem an.
 func TestEinfuegenOhneGrenze(t *testing.T) {
 	SetzeExportOhneGrenze(true)
 	t.Cleanup(func() { SetzeExportOhneGrenze(false) })
@@ -427,15 +427,9 @@ func TestEinfuegenOhneGrenze(t *testing.T) {
 		_, _ = q.Hinzufuegen(document.Text{Ort: document.Pt(1, 10), Inhalt: strings.Repeat("x", 10_000), Schriftgrad: 8,
 			Farbe: color.NRGBA{A: 255}})
 	}
-	e.einfuegenAnwenden(q, einfuegeErgebnis{})
+	e.einfuegenAnwenden(q)
 	if len(e.s.D.Objekte()) != 101 {
 		t.Errorf("%d Objekte, Meldung %q", len(e.s.D.Objekte()), e.meldung.Text)
-	}
-	SetzeExportOhneGrenze(false)
-	e2 := testEditor(t)
-	e2.einfuegenAnwenden(q, einfuegeErgebnis{geprueft: true, stand: e2.s.D.Stand() + 1}) // alter Stand: neu prüfen
-	if len(e2.s.D.Objekte()) != 0 {
-		t.Error("Prüfung eines alten Stands übernommen")
 	}
 }
 
@@ -527,5 +521,103 @@ func TestEscBrichtLesenAb(t *testing.T) {
 	l.taste(key.NameEscape, 0)
 	if !abgebrochen || l.e.einf.laeuft {
 		t.Errorf("abgebrochen %v, läuft %v", abgebrochen, l.e.einf.laeuft)
+	}
+}
+
+// V-1: Das Budget gilt an der Ziellage. Objekte, die in der Quelle außerhalb des kleinen Ziels lagen und deshalb mittig
+// eingefügt würden, werden dort geprüft und abgelehnt.
+func TestEinfuegenBudgetAnDerZiellage(t *testing.T) {
+	t.Setenv("WAYLAND_SOCKET", "")
+	q, _ := document.OhnePixel(image.Pt(4000, 30), image.Rect(0, 0, 4000, 30), nil, document.KanteAbriss)
+	for range 101 {
+		_, _ = q.Hinzufuegen(document.Text{Ort: document.Pt(3000, 10), Inhalt: strings.Repeat("x", 10_000),
+			Schriftgrad: 8, Farbe: color.NRGBA{A: 255}})
+	}
+	leserAttrappe(t, map[string][]byte{wlclip.MIMEObjekte: fileformat.AngabenSVG(q)}, wlclip.MIMEObjekte)
+	e := testEditor(t)
+	e.s.SetzeFenster(image.Pt(400, 300))
+	e.fuehreAus(layout.Context{}, aktEinfuegen, true)
+	warteEinfuegen(t, e)
+	if len(e.s.D.Objekte()) != 0 || e.meldung.Text != i18n.T("Could not paste: the objects would take too long to draw.") {
+		t.Errorf("%d Objekte, Meldung %q", len(e.s.D.Objekte()), e.meldung.Text)
+	}
+}
+
+// V-2: Esc während des Ablegens bricht nicht ab (die Aufnahme entsteht), vorher schon; Schließen wartet danach weiter.
+func TestEscWaehrendAblegen(t *testing.T) {
+	b := image.NewNRGBA(image.Rect(0, 0, 3, 3))
+	var p bytes.Buffer
+	_ = png.Encode(&p, b)
+	leserAttrappe(t, map[string][]byte{wlclip.MIME: p.Bytes()}, wlclip.MIME)
+	t.Setenv("WAYLAND_SOCKET", "")
+	e := testEditor(t)
+	im, weiter := make(chan struct{}), make(chan struct{})
+	abgelegt := 0
+	e.bib = &Anbindung{
+		Ablegen: func(*document.Dokument) (string, error) {
+			close(im)
+			<-weiter
+			abgelegt++
+			return "/ablage/neu.png", nil
+		},
+		Oeffnen: func(string) (Geoeffnet, error) { return Geoeffnet{}, errors.New("nicht hier") },
+	}
+	e.fuehreAus(layout.Context{}, aktNeuAusZwischenablage, true)
+	<-im
+	if !e.einfuegenEsc() || !e.einf.laeuft {
+		t.Fatalf("Esc während des Ablegens: läuft %v", e.einf.laeuft)
+	}
+	if e.meldung.Text != i18n.T("The image from the clipboard is being saved as a new capture.") {
+		t.Errorf("Meldung %q", e.meldung.Text)
+	}
+	var aus bytes.Buffer
+	alt := fehlerAusgabe
+	t.Cleanup(func() { fehlerAusgabe = alt })
+	fehlerAusgabe = &aus
+	go func() { time.Sleep(30 * time.Millisecond); close(weiter) }()
+	e.einfuegenAbwarten(5 * time.Second)
+	if abgelegt != 1 || !strings.Contains(aus.String(), "/ablage/neu.png") {
+		t.Errorf("abgelegt %d, Ausgabe %q", abgelegt, aus.String())
+	}
+
+	// vor dem Ablegen: Esc bricht ab, nichts wird abgelegt
+	e2 := testEditor(t)
+	e2.bib = &Anbindung{
+		Ablegen: func(*document.Dokument) (string, error) { t.Error("abgelegt trotz Esc"); return "", nil },
+		Oeffnen: func(string) (Geoeffnet, error) { return Geoeffnet{}, nil },
+	}
+	altL := liesZwischenablage
+	t.Cleanup(func() { liesZwischenablage = altL })
+	frei := make(chan struct{})
+	liesZwischenablage = func(_ context.Context, wahl func([]string) string, _ int64) (wlclip.Gelesen, error) {
+		<-frei
+		return wlclip.Gelesen{Typen: []string{wlclip.MIME}, Typ: wahl([]string{wlclip.MIME}), Daten: p.Bytes()}, nil
+	}
+	e2.fuehreAus(layout.Context{}, aktNeuAusZwischenablage, true)
+	ch := e2.einf.antwort
+	if !e2.einfuegenEsc() || e2.einf.laeuft {
+		t.Fatal("Esc vor dem Ablegen bricht nicht ab")
+	}
+	close(frei)
+	if r := <-ch; !errors.Is(r.err, context.Canceled) {
+		t.Errorf("Ergebnis nach Esc: %v", r.err)
+	}
+}
+
+// F-988, V-4: zerstoert wartet auf ein laufendes „New from clipboard“ und nennt den Ort.
+func TestZerstoertWartetAufAblegen(t *testing.T) {
+	e := testEditor(t)
+	var aus bytes.Buffer
+	alt := fehlerAusgabe
+	t.Cleanup(func() { fehlerAusgabe = alt })
+	fehlerAusgabe = &aus
+	ch := make(chan einfuegeErgebnis, 1)
+	phase := new(atomic.Int32)
+	phase.Store(phaseAblegen)
+	e.einf.laeuft, e.einf.neu, e.einf.antwort, e.einf.phase = true, true, ch, phase
+	go func() { time.Sleep(30 * time.Millisecond); ch <- einfuegeErgebnis{neu: true, pfad: "/ablage/z.png"} }()
+	_ = e.zerstoert(nil)
+	if !strings.Contains(aus.String(), "/ablage/z.png") {
+		t.Errorf("Ausgabe %q", aus.String())
 	}
 }

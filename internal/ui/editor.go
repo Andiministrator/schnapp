@@ -1147,7 +1147,7 @@ func (e *editor) kopierenAbholen(gtx layout.Context) {
 		if ids := e.einf.schneide; ids != nil {
 			e.einf.schneide = nil
 			if !e.s.Ausschneiden(ids, e.einf.schneideStand) {
-				r.meldung = i18n.T("Copied to the clipboard; the objects were not removed because the image changed meanwhile.")
+				r.meldung = i18n.T("Copied to the clipboard; the objects were not removed. Press Ctrl+X again to remove them.")
 			}
 		}
 		// Die jüngste Antwort entscheidet: Ein früherer Kopierfehler hält das Fenster nicht mehr (F-354).

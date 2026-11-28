@@ -61,7 +61,8 @@ func Lies(ctx context.Context, wahl func(typen []string) string, max int64) (Gel
 }
 
 func lies(ctx context.Context, v *wlwire.Verbindung, wahl func([]string) string, max int64, stau time.Duration) (Gelesen, error) {
-	// Ein Abbruch weckt jedes wartende Lesen der Verbindung sofort (die Fristen danach prüfen ctx).
+	// Ein Abbruch weckt ein gerade wartendes Lesen der Verbindung sofort; vor jedem weiteren Schritt prüft lies ctx, und
+	// liesBis prüft ihn je Stück (D-8). Ein Rundlauf setzt seine Frist selbst neu und endet spätestens nach stau.
 	stop := context.AfterFunc(ctx, func() { _ = v.SetDeadline(time.Now()) })
 	defer stop()
 	registry, globale, err := v.Globale(stau)
@@ -93,6 +94,9 @@ func lies(ctx context.Context, v *wlwire.Verbindung, wahl func([]string) string,
 	}
 	geraet := v.NeueID()
 	if err := v.Sende(mgrID, opManagerGetDevice, new(wlwire.Nachricht).U32(geraet).U32(sitzID)); err != nil {
+		return Gelesen{}, err
+	}
+	if err := ctx.Err(); err != nil {
 		return Gelesen{}, err
 	}
 	angebote := map[uint32][]string{}
@@ -145,6 +149,9 @@ func lies(ctx context.Context, v *wlwire.Verbindung, wahl func([]string) string,
 	g.Typ = wahl(typen)
 	if g.Typ == "" {
 		return g, nil
+	}
+	if err := ctx.Err(); err != nil {
+		return g, err
 	}
 	r, w, err := os.Pipe()
 	if err != nil {

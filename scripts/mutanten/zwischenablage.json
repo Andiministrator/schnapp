@@ -347,8 +347,8 @@
     "name": "U13 gemerkte erst ohne Lesen",
     "datei": "internal/ui/einfuegen.go",
     "paket": "./internal/ui",
-    "alt": "\tif e.fensterHaeltKopie && e.einf.kopie != nil {\n\t\te.einfuegenAnwenden(e.einf.kopie, einfuegeErgebnis{})",
-    "neu": "\tif e.fensterHaeltKopie && e.einf.kopie != nil && !e.lesenMoeglich() {\n\t\te.einfuegenAnwenden(e.einf.kopie, einfuegeErgebnis{})"
+    "alt": "\tif e.fensterHaeltKopie && e.einf.kopie != nil {\n\t\te.einfuegenAnwenden(e.einf.kopie)",
+    "neu": "\tif e.fensterHaeltKopie && e.einf.kopie != nil && !e.lesenMoeglich() {\n\t\te.einfuegenAnwenden(e.einf.kopie)"
   },
   {
     "name": "U14 Strg+X im Eingabefeld",
@@ -389,15 +389,8 @@
     "name": "U19 ignore-limit unbeachtet",
     "datei": "internal/ui/einfuegen.go",
     "paket": "./internal/ui",
-    "alt": "if exportOhneGrenze.Load() || (r.geprueft && r.stand == e.s.D.Stand()) {",
-    "neu": "if r.geprueft && r.stand == e.s.D.Stand() {"
-  },
-  {
-    "name": "U20 alte Prüfung übernommen",
-    "datei": "internal/ui/einfuegen.go",
-    "paket": "./internal/ui",
-    "alt": "(r.geprueft && r.stand == e.s.D.Stand())",
-    "neu": "r.geprueft"
+    "alt": "\tif exportOhneGrenze.Load() {\n\t\tpruefe = nil\n",
+    "neu": "\tif false {\n\t\tpruefe = nil\n"
   },
   {
     "name": "U21 Wechsel während des Lesens",
@@ -412,5 +405,26 @@
     "paket": "./internal/ui",
     "alt": "\tcase e.bibl.offen:\n\t\te.melde(i18n.T(\"Close the library",
     "neu": "\tcase false:\n\t\te.melde(i18n.T(\"Close the library"
+  },
+  {
+    "name": "U23 Ablegen trotz Abbruch",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "if err == nil && !phase.CompareAndSwap(phaseLesen, phaseAblegen) {",
+    "neu": "if false && !phase.CompareAndSwap(phaseLesen, phaseAblegen) {"
+  },
+  {
+    "name": "U24 Esc bricht Ablegen ab",
+    "datei": "internal/ui/einfuegen.go",
+    "paket": "./internal/ui",
+    "alt": "\treturn e.einf.phase == nil || e.einf.phase.CompareAndSwap(phaseLesen, phaseAbgebrochen) ||",
+    "neu": "\treturn true || e.einf.phase.CompareAndSwap(phaseLesen, phaseAbgebrochen) ||"
+  },
+  {
+    "name": "U25 zerstoert wartet nicht",
+    "datei": "internal/ui/editor.go",
+    "paket": "./internal/ui",
+    "alt": "\te.einfuegenAbwarten(wechselFrist) ",
+    "neu": "\t_ = wechselFrist "
   }
 ]

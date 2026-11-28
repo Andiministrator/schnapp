@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"gioui.org/layout"
@@ -38,6 +39,9 @@ type einfuegeZustand struct {
 	laeuft  bool
 	neu     bool               // das laufende Lesen ist „New from clipboard“ (Schließen wartet aufs Ablegen, F-988)
 	abbruch context.CancelFunc // beendet das Lesen (Esc, Schließen, F-987)
+	// phase: bei „New from clipboard“ phaseLesen, bis die Goroutine mit dem Ablegen beginnt (phaseAblegen); Esc und
+	// Schließen setzen vorher phaseAbgebrochen. Wer den Wechsel gewinnt, entscheidet: kein halbes Abbrechen (V-2).
+	phase   *atomic.Int32
 	antwort chan einfuegeErgebnis
 	// schneide: Kennungen und Stand eines Ausschneidens; gelöscht wird erst, wenn das Kopieren gelungen ist (F-989).
 	schneide      []int
@@ -47,6 +51,12 @@ type einfuegeZustand struct {
 	kopie *document.Dokument
 }
 
+const (
+	phaseLesen int32 = iota
+	phaseAblegen
+	phaseAbgebrochen
+)
+
 // einfuegeErgebnis ist die Antwort des Lesens.
 type einfuegeErgebnis struct {
 	neu     bool               // „New from clipboard“: pfad der neuen Aufnahme
@@ -55,9 +65,6 @@ type einfuegeErgebnis struct {
 	typen   []string           // angebotene Typen (für die Meldung, wenn nichts passte)
 	err     error
 	gelesen bool // es gab etwas zu lesen (sonst bestimmen typen die Meldung)
-	// geprueft: Das Budget ist in der Goroutine für den Stand stand geprüft (F-990); gilt nur, wenn er noch gilt.
-	geprueft bool
-	stand    uint64
 }
 
 // zwischenablageAktion meldet die Handlungen der Zwischenablage, die im Eingabefeld der Leiste nicht wirken (F-986).
@@ -146,23 +153,13 @@ func (e *editor) einfuegenStarten() {
 		return
 	}
 	if e.fensterHaeltKopie && e.einf.kopie != nil {
-		e.einfuegenAnwenden(e.einf.kopie, einfuegeErgebnis{})
+		e.einfuegenAnwenden(e.einf.kopie)
 		return
 	}
 	if !e.lesenMoeglich() {
 		e.melde(i18n.T("This desktop does not let Schnapp read the clipboard."), false)
 		return
 	}
-	// Grundlage der Budgetprüfung in der Goroutine (F-990): die Objekte jetzt, ohne Pixel.
-	var basis *document.Dokument
-	if !exportOhneGrenze.Load() {
-		var ids []int
-		for _, o := range e.s.D.ObjekteOhneZug() {
-			ids = append(ids, o.Kennung())
-		}
-		basis, _ = e.s.D.NurObjekte(ids)
-	}
-	stand := e.s.D.Stand()
 	e.einfuegenLesen(false, func(ctx context.Context) einfuegeErgebnis {
 		g, err := liesZwischenablage(ctx, func(typen []string) string {
 			if slices.Contains(typen, wlclip.MIMEObjekte) {
@@ -170,32 +167,12 @@ func (e *editor) einfuegenStarten() {
 			}
 			return ""
 		}, maxObjekteDaten)
-		r := einfuegeErgebnis{typen: g.Typen, err: err, gelesen: g.Typ != "", stand: stand}
+		r := einfuegeErgebnis{typen: g.Typen, err: err, gelesen: g.Typ != ""}
 		if err == nil && r.gelesen {
 			r.q, r.err = fileformat.LeseObjekte(bytes.NewReader(g.Daten))
 		}
-		if r.err == nil && r.q != nil && basis != nil {
-			r.err = budgetMit(basis, r.q)
-			r.geprueft = r.err == nil
-		}
 		return r
 	})
-}
-
-// budgetMit prüft das Budget des Öffnens (render.Pruefe) für die Objekte von basis und q zusammen, ohne Pixel.
-func budgetMit(basis, q *document.Dokument) error {
-	alle := append(basis.Objekte(), q.Objekte()...)
-	if len(alle) > document.MaxObjekte {
-		return fmt.Errorf("ui: mehr als %d Objekte", document.MaxObjekte)
-	}
-	probe, err := basis.NurObjekte(nil)
-	if err != nil {
-		return err
-	}
-	if _, err := probe.HinzufuegenMehrere(alle); err != nil {
-		return err
-	}
-	return render.Pruefe(probe)
 }
 
 // neuAusZwischenablage ist Datei → „New from clipboard“ (ADR-0045 Punkt 4): Bild lesen, als Aufnahme ablegen, dann
@@ -210,6 +187,7 @@ func (e *editor) neuAusZwischenablage() {
 		return
 	}
 	ablegen := e.bib.Ablegen
+	phase := new(atomic.Int32)
 	e.einfuegenLesen(true, func(ctx context.Context) einfuegeErgebnis {
 		g, err := liesZwischenablage(ctx, func(typen []string) string {
 			for _, t := range bildTypen {
@@ -224,8 +202,8 @@ func (e *editor) neuAusZwischenablage() {
 			return r
 		}
 		gel, err := fileformat.OeffneBild(g.Daten)
-		if err == nil {
-			err = ctx.Err() // abgebrochen (Esc, Schließen): nichts ablegen
+		if err == nil && !phase.CompareAndSwap(phaseLesen, phaseAblegen) {
+			err = context.Canceled // abgebrochen (Esc, Schließen): nichts ablegen
 		}
 		if err != nil {
 			r.err = err
@@ -234,6 +212,7 @@ func (e *editor) neuAusZwischenablage() {
 		r.pfad, r.err = ablegen(gel.Dokument)
 		return r
 	})
+	e.einf.phase = phase // nach einfuegenLesen, das den Zustand neu setzt
 }
 
 // neuGrau ist der Grund, warum „New from clipboard“ nicht geht (leer: geht).
@@ -256,7 +235,7 @@ func (e *editor) lesenMoeglich() bool {
 func (e *editor) einfuegenLesen(neu bool, lies func(context.Context) einfuegeErgebnis) {
 	ctx, abbruch := context.WithCancel(context.Background())
 	ch := make(chan einfuegeErgebnis, 1)
-	e.einf.laeuft, e.einf.neu, e.einf.abbruch, e.einf.antwort = true, neu, abbruch, ch
+	e.einf.laeuft, e.einf.neu, e.einf.abbruch, e.einf.antwort, e.einf.phase = true, neu, abbruch, ch, nil
 	wecker := e.wecker
 	e.meldeNebenbei(i18n.T("Reading the clipboard…"), false)
 	go func() {
@@ -299,7 +278,7 @@ func (e *editor) einfuegenAbholen() {
 	case e.bibl.offen:
 		e.melde(i18n.T("Close the library to paste into the image."), false) // nicht ins verdeckte Bild (F-991)
 	default:
-		e.einfuegenAnwenden(r.q, r)
+		e.einfuegenAnwenden(r.q)
 	}
 }
 
@@ -308,13 +287,24 @@ func (e *editor) einfuegenEnde() {
 	if e.einf.abbruch != nil {
 		e.einf.abbruch()
 	}
-	e.einf.laeuft, e.einf.neu, e.einf.abbruch, e.einf.antwort = false, false, nil, nil
+	e.einf.laeuft, e.einf.neu, e.einf.abbruch, e.einf.antwort, e.einf.phase = false, false, nil, nil, nil
+}
+
+// abbrechbar setzt bei „New from clipboard“ die Phase auf abgebrochen, wenn das Ablegen noch nicht begonnen hat; false:
+// Es läuft schon, abbrechen ließe die Aufnahme halb gemeldet entstehen (V-2). Bei Strg+V immer true.
+func (e *editor) abbrechbar() bool {
+	return e.einf.phase == nil || e.einf.phase.CompareAndSwap(phaseLesen, phaseAbgebrochen) ||
+		e.einf.phase.Load() == phaseAbgebrochen
 }
 
 // einfuegenEsc bricht mit Esc ein laufendes Lesen ab (F-987); true: Esc ist verbraucht.
 func (e *editor) einfuegenEsc() bool {
 	if !e.einf.laeuft || e.s.Zieht() || e.s.TextLaeuft() {
 		return false
+	}
+	if !e.abbrechbar() {
+		e.melde(i18n.T("The image from the clipboard is being saved as a new capture."), false)
+		return true
 	}
 	e.einfuegenEnde()
 	e.melde(i18n.T("Reading the clipboard cancelled."), false)
@@ -328,10 +318,11 @@ func (e *editor) einfuegenAbwarten(frist time.Duration) {
 		return
 	}
 	ch, neu := e.einf.antwort, e.einf.neu
+	_ = e.abbrechbar() // vor dem Ablegen: keins mehr beginnen; schon begonnen: abwarten
 	if e.einf.abbruch != nil {
 		e.einf.abbruch()
 	}
-	e.einf.laeuft, e.einf.neu, e.einf.abbruch, e.einf.antwort = false, false, nil, nil
+	e.einf.laeuft, e.einf.neu, e.einf.abbruch, e.einf.antwort, e.einf.phase = false, false, nil, nil, nil
 	if !neu {
 		return
 	}
@@ -347,11 +338,12 @@ func (e *editor) einfuegenAbwarten(frist time.Duration) {
 	}
 }
 
-// einfuegenAnwenden fügt q ein (canvas.Einfuegen mit dem Budget des Öffnens) und meldet das Ergebnis. r sagt, ob das
-// Budget schon in der Goroutine für den jetzigen Stand geprüft ist (F-990); mit --ignore-limit gilt keins.
-func (e *editor) einfuegenAnwenden(q *document.Dokument, r einfuegeErgebnis) {
+// einfuegenAnwenden fügt q ein (canvas.Einfuegen mit dem Budget des Öffnens) und meldet das Ergebnis. Geprüft wird
+// an der Ziellage, die erst hier feststeht (V-1: eine Prüfung in der Goroutine an der Lage der Quelle ließ zu teure
+// Objekte durch, die außerhalb des Ziels lagen und mittig eingefügt wurden); mit --ignore-limit gilt keine Grenze.
+func (e *editor) einfuegenAnwenden(q *document.Dokument) {
 	pruefe := render.Pruefe
-	if exportOhneGrenze.Load() || (r.geprueft && r.stand == e.s.D.Stand()) {
+	if exportOhneGrenze.Load() {
 		pruefe = nil
 	}
 	ids, err := e.s.Einfuegen(q, pruefe)

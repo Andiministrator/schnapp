@@ -1,7 +1,8 @@
 # Sichtprobe ADR-0045 (Karte #335): Objekte kopieren, einfügen, ausschneiden; neue Aufnahme aus der Zwischenablage und
 # Einfügen in eine andere Aufnahme.
 # Aufruf: scripts/probe.sh --sprache de --ende 30 --drehbuch scripts/drehbuecher/zwischenablage-335.txt --bild scripts/drehbuecher/testbild-1200x800.png
-# Bei 1600 × 1000, Skala 1, deutsche Oberfläche. Legt eine Aufnahme in der Probe-Bibliothek (tmp/probe/home) an.
+# Bei 1600 × 1000, Skala 1, deutsche Oberfläche. Legt zwei Aufnahmen in der Probe-Bibliothek (tmp/probe/home) an (das Testbild
+# beim Strg+S und das Bild aus der Zwischenablage); danach tmp/probe/home neu anlegen.
 # Erwartet:
 #  01 Pfeil und Kasten gewählt (Strg+A), Strg+C: Fußzeile „2 Objekte in die Zwischenablage kopiert“.
 #  02 Strg+V: Kopien 10 Fensterpixel nach rechts unten versetzt, gewählt; Fußzeile „2 Objekte eingefügt“.
