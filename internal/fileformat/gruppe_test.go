@@ -3,6 +3,9 @@
 package fileformat
 
 import (
+	"bytes"
+	"image"
+	"strings"
 	"testing"
 
 	"github.com/Andiministrator/schnapp/internal/document"
@@ -22,8 +25,45 @@ func TestLeseEbeneGruppe(t *testing.T) {
 			t.Errorf("s:gruppe=%q Version %d: %d, Soll %d", f.wert, f.version, g, f.soll)
 		}
 	}
-	if v := schreibVersion([]document.Objekt{document.Kasten{Ebene: document.Ebene{Gruppe: 2},
-		Bereich: document.R(document.Pt(0, 0), document.Pt(4, 4)), Strich: document.Strich{Breite: 1}}}); v != 2 {
+	k := document.Kasten{Ebene: document.Ebene{Gruppe: 2}, Bereich: document.R(document.Pt(0, 0), document.Pt(4, 4)),
+		Strich: document.Strich{Breite: 1}}
+	if v := schreibVersion([]document.Objekt{k, k}); v != 2 {
 		t.Errorf("Version mit Gruppe %d, Soll 2", v)
+	}
+	// Ein einzelnes Restmitglied ist keine Gruppe: Version 1, kein s:gruppe (F-962).
+	if v := schreibVersion([]document.Objekt{k}); v != 1 {
+		t.Errorf("Version mit einzelner Kennung %d, Soll 1", v)
+	}
+	s := schreiber{rundlauf: true}
+	s.ebene(k.Ebene)
+	if strings.Contains(s.String(), "s:gruppe") {
+		t.Errorf("einzelne Kennung geschrieben: %s", s.String())
+	}
+	s = schreiber{rundlauf: true, gruppen: wirksameGruppen([]document.Objekt{k, k})}
+	s.ebene(k.Ebene)
+	if !strings.Contains(s.String(), `s:gruppe="2"`) {
+		t.Errorf("wirksame Gruppe nicht geschrieben: %s", s.String())
+	}
+}
+
+// F-963: Die Gruppe überlebt die Angaben der Rettungskopie (AngabenSVG → LeseAngaben).
+func TestGruppeRundlaufAngaben(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 40, 40)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	k := document.Kasten{Ebene: document.Ebene{Gruppe: 7}, Bereich: document.R(document.Pt(2, 2), document.Pt(10, 10)),
+		Strich: document.Strich{Breite: 1}}
+	for i := 0; i < 2; i++ {
+		if _, err := d.Hinzufuegen(k); err != nil {
+			t.Fatal(err)
+		}
+	}
+	a, err := LeseAngaben(bytes.NewReader(AngabenSVG(d)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(a.Objekte) != 2 || a.Objekte[0].Ebenenwerte().Gruppe != 7 || a.Objekte[1].Ebenenwerte().Gruppe != 7 {
+		t.Errorf("Gruppe nach dem Rundlauf: %+v", a.Objekte)
 	}
 }

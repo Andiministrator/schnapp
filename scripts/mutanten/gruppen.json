@@ -3,8 +3,8 @@
     "name": "GR1 Gruppe mit einem Mitglied wirkt",
     "datei": "internal/canvas/gruppe.go",
     "paket": "./internal/canvas",
-    "alt": "if g == 0 || s.gruppenGroesse()[g] < 2 {",
-    "neu": "if g == 0 {"
+    "alt": "\tif g == 0 || s.gruppenGroesse()[g] < 2 {\n\t\treturn 0\n\t}\n\treturn g",
+    "neu": "\tif g == 0 {\n\t\treturn 0\n\t}\n\treturn g"
   },
   {
     "name": "GR2 Klick wählt nur das Mitglied",
@@ -45,15 +45,15 @@
     "name": "GR7 ganze Gruppe erneut gruppierbar",
     "datei": "internal/canvas/gruppe.go",
     "paket": "./internal/canvas",
-    "alt": "return s.gruppenGroesse()[g] != len(ids)",
+    "alt": "return s.waehlbareJeGruppe()[g] != len(os)",
     "neu": "return true"
   },
   {
     "name": "GR8 Aufheben lässt die Kennung",
     "datei": "internal/canvas/gruppe.go",
     "paket": "./internal/canvas",
-    "alt": "neu = append(neu, mitGruppe(o, 0))",
-    "neu": "neu = append(neu, o)"
+    "alt": "\t\t\tneu = append(neu, mitGruppe(o, 0))\n\t\t}\n\t}\n\treturn s.ersetzeAlsSchritt(s.mitAufgeraeumt(neu))",
+    "neu": "\t\t\tneu = append(neu, o)\n\t\t}\n\t}\n\treturn s.ersetzeAlsSchritt(s.mitAufgeraeumt(neu))"
   },
   {
     "name": "GR9 Sperren nur das Mitglied",
@@ -108,8 +108,8 @@
     "name": "GR16 Version 1 trotz Gruppe",
     "datei": "internal/fileformat/svg.go",
     "paket": "./internal/fileformat",
-    "alt": "\t\tif o.Ebenenwerte().Gruppe != 0 {\n\t\t\treturn versionGruppe\n\t\t}\n",
-    "neu": ""
+    "alt": "\t\tif gruppen[o.Ebenenwerte().Gruppe] {",
+    "neu": "\t\tif gruppen[o.Ebenenwerte().Gruppe] && false {"
   },
   {
     "name": "GR17 Dokument prüft die Gruppe nicht",
@@ -131,5 +131,47 @@
     "paket": "./internal/ui",
     "alt": "\tif ia >= 0 && ib >= 0 && a[:ia] == b[:ib] {",
     "neu": "\tif false && ia >= 0 && ib >= 0 && a[:ia] == b[:ib] {"
+  },
+  {
+    "name": "GR20 Schalter merkt die Gruppe nicht (F-958)",
+    "datei": "internal/canvas/gruppe.go",
+    "paket": "./internal/canvas",
+    "alt": "\ts.mf.gruppeGeschaltet, s.mf.gruppeGen = g, s.mf.gen\n",
+    "neu": ""
+  },
+  {
+    "name": "GR21 Einblenden wählt die Gruppe nicht wieder (F-958)",
+    "datei": "internal/canvas/gruppe.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\ts.waehleGruppe(id) // wieder sichtbar bzw. offen",
+    "neu": "\t\ts.bereinigeAuswahl() // wieder sichtbar bzw. offen"
+  },
+  {
+    "name": "GR22 Einzelwahl gilt als Gruppe (F-959)",
+    "datei": "internal/canvas/gruppe.go",
+    "paket": "./internal/canvas",
+    "alt": "\tif n >= 2 && n == s.waehlbareJeGruppe()[g] {",
+    "neu": "\tif n == s.waehlbareJeGruppe()[g] {"
+  },
+  {
+    "name": "GR23 keine verwaiste Kennung aufgeräumt (F-962)",
+    "datei": "internal/canvas/gruppe.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif g := o.Ebenenwerte().Gruppe; g != 0 && zahl[g] == 1 {",
+    "neu": "\t\tif g := o.Ebenenwerte().Gruppe; g != 0 && zahl[g] == -1 {"
+  },
+  {
+    "name": "GR24 Aufheben an unwirksamer Kennung (F-962)",
+    "datei": "internal/canvas/gruppe.go",
+    "paket": "./internal/canvas",
+    "alt": "\t\tif g := o.Ebenenwerte().Gruppe; g != 0 && groesse[g] >= 2 {",
+    "neu": "\t\tif g := o.Ebenenwerte().Gruppe; g != 0 && groesse[g] >= 0 {"
+  },
+  {
+    "name": "GR25 Format schreibt einzelne Kennung (F-962)",
+    "datei": "internal/fileformat/svg.go",
+    "paket": "./internal/fileformat",
+    "alt": "\tif s.gruppen[e.Gruppe] { // ADR-0044",
+    "neu": "\tif e.Gruppe != 0 { // ADR-0044"
   }
 ]

@@ -153,13 +153,7 @@ func (e *editor) menueEintraegeRoh(i int) []menueEintrag {
 	case menueEbene:
 		eb, _ := s.GewaehlteEbene()
 		an := s.KannEbene()
-		aus, sperr := i18n.T("Hide layer"), i18n.T("Lock layer")
-		if eb.Ausgeblendet {
-			aus = i18n.T("Show layer")
-		}
-		if eb.Gesperrt {
-			sperr = i18n.T("Unlock layer")
-		}
+		aus, sperr := ebenenSchalterTexte(s, eb)
 		return []menueEintrag{
 			{akt: aktDoppeln, text: i18n.T("Duplicate"), an: an},
 			{akt: aktUmbenennen, text: i18n.T("Rename…"), an: an},

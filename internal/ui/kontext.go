@@ -68,6 +68,33 @@ func (e *editor) kontextPerTaste() {
 	e.kontextAmPunkt(p.Add(e.leinwandUrsprung), objekt, true)
 }
 
+// ebenenSchalterTexte sind die Texte von Ausblenden und Sperren: für die Ebene oder, ist die Gruppe gewählt, für die
+// ganze Gruppe (ADR-0044 Punkt 4, F-963).
+func ebenenSchalterTexte(s *canvas.Sitzung, eb document.Ebene) (aus, sperr string) {
+	gruppe := s.GruppeGewaehlt()
+	switch {
+	case gruppe && eb.Ausgeblendet:
+		aus = i18n.T("Show group")
+	case gruppe:
+		aus = i18n.T("Hide group")
+	case eb.Ausgeblendet:
+		aus = i18n.T("Show layer")
+	default:
+		aus = i18n.T("Hide layer")
+	}
+	switch {
+	case gruppe && eb.Gesperrt:
+		sperr = i18n.T("Unlock group")
+	case gruppe:
+		sperr = i18n.T("Lock group")
+	case eb.Gesperrt:
+		sperr = i18n.T("Unlock layer")
+	default:
+		sperr = i18n.T("Lock layer")
+	}
+	return aus, sperr
+}
+
 // kontextEintraege sind die Einträge der Liste (ADR-0038 Punkt 2), je nachdem, ob sie einem Objekt gilt.
 func (e *editor) kontextEintraege() []menueEintrag {
 	if e.kontext.vorschau != "" {
@@ -89,13 +116,7 @@ func (e *editor) kontextEintraege() []menueEintrag {
 	}
 	eb, _ := s.GewaehlteEbene()
 	an := s.KannEbene()
-	aus, sperr := i18n.T("Hide layer"), i18n.T("Lock layer")
-	if eb.Ausgeblendet {
-		aus = i18n.T("Show layer")
-	}
-	if eb.Gesperrt {
-		sperr = i18n.T("Unlock layer")
-	}
+	aus, sperr := ebenenSchalterTexte(s, eb)
 	var en []menueEintrag
 	if s.KannTextBearbeiten() {
 		en = append(en, menueEintrag{akt: aktTextBearbeiten, text: i18n.T("Edit text"), an: true})

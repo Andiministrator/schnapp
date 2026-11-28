@@ -37,7 +37,8 @@ func (s *Sitzung) GruppeVon(id int) int {
 	return g
 }
 
-// gruppenMitglieder sind die wählbaren Objekte der Gruppe von id, mit id selbst; ohne wirksame Gruppe nur id.
+// gruppenMitglieder sind die wählbaren Objekte der Gruppe von id, mit id selbst; ohne wirksame Gruppe nur id. Zwei
+// Durchgänge durch den Stapel, ohne Suche je Kennung (F-961).
 func (s *Sitzung) gruppenMitglieder(id int) []int {
 	g := s.GruppeVon(id)
 	if g == 0 {
@@ -45,11 +46,27 @@ func (s *Sitzung) gruppenMitglieder(id int) []int {
 	}
 	ids := []int{id}
 	for _, o := range s.D.Objekte() {
-		if k := o.Kennung(); k != id && o.Ebenenwerte().Gruppe == g && s.waehlbar(k) {
+		if k := o.Kennung(); k != id && o.Ebenenwerte().Gruppe == g && s.waehlbarObjekt(o) {
 			ids = append(ids, k)
 		}
 	}
 	return ids
+}
+
+// waehlbarObjekt ist waehlbar ohne Suche: sichtbar, nicht gesperrt.
+func (s *Sitzung) waehlbarObjekt(o document.Objekt) bool {
+	return s.D.ObjektSichtbar(o) && o.Ebenenwerte().Bearbeitbar()
+}
+
+// waehlbareJeGruppe zählt die wählbaren Mitglieder je Kennung (ein Durchgang).
+func (s *Sitzung) waehlbareJeGruppe() map[int]int {
+	n := map[int]int{}
+	for _, o := range s.D.Objekte() {
+		if g := o.Ebenenwerte().Gruppe; g != 0 && s.waehlbarObjekt(o) {
+			n[g]++
+		}
+	}
+	return n
 }
 
 // waehleGruppe wählt das Objekt id mit seiner Gruppe; id wird Hauptauswahl.
@@ -73,18 +90,23 @@ func (s *Sitzung) schalteGruppe(id int) bool {
 }
 
 // nurGanzeGruppen lässt aus ids die Mitglieder von Gruppen weg, deren wählbare Mitglieder nicht alle in ids stehen
-// (Rahmen, ADR-0044 Punkt 3).
+// (Rahmen, ADR-0044 Punkt 3). Ein Durchgang durch den Stapel (F-961: vorher je Kennung einer).
 func (s *Sitzung) nurGanzeGruppen(ids []int) []int {
+	in := make(map[int]bool, len(ids))
+	for _, id := range ids {
+		in[id] = true
+	}
+	groesse, waehlbar := s.gruppenGroesse(), s.waehlbareJeGruppe()
+	gruppeVon, drin := map[int]int{}, map[int]int{}
+	for _, o := range s.D.Objekte() {
+		if g := o.Ebenenwerte().Gruppe; in[o.Kennung()] && g != 0 && groesse[g] >= 2 {
+			gruppeVon[o.Kennung()] = g
+			drin[g]++
+		}
+	}
 	var r []int
 	for _, id := range ids {
-		ganz := true
-		for _, m := range s.gruppenMitglieder(id) {
-			if !slices.Contains(ids, m) {
-				ganz = false
-				break
-			}
-		}
-		if ganz {
+		if g, ok := gruppeVon[id]; !ok || drin[g] == waehlbar[g] {
 			r = append(r, id)
 		}
 	}
@@ -111,22 +133,23 @@ func mitGruppe(o document.Objekt, g int) document.Objekt {
 	return document.MitEbene(o, e)
 }
 
-// KannGruppieren meldet, ob Strg+G wirkt: mindestens zwei gewählt, und sie sind nicht schon genau eine Gruppe.
+// KannGruppieren meldet, ob Strg+G wirkt: mindestens zwei gewählt, und sie sind nicht schon genau die wählbaren
+// Mitglieder einer Gruppe (F-960: gesperrte oder ausgeblendete Mitglieder zählen dafür nicht).
 func (s *Sitzung) KannGruppieren() bool {
 	if !s.mehrereBereit(2) {
 		return false
 	}
-	ids := s.Gewaehlt()
-	g := s.GruppeVon(ids[0])
-	if g == 0 {
+	os := s.gewaehlteObjekte()
+	g := os[0].Ebenenwerte().Gruppe
+	if g == 0 || s.gruppenGroesse()[g] < 2 {
 		return true
 	}
-	for _, id := range ids[1:] {
-		if s.GruppeVon(id) != g {
+	for _, o := range os[1:] {
+		if o.Ebenenwerte().Gruppe != g {
 			return true
 		}
 	}
-	return s.gruppenGroesse()[g] != len(ids) // ein Teil einer größeren Gruppe wird eine eigene
+	return s.waehlbareJeGruppe()[g] != len(os) // ein Teil einer größeren Gruppe wird eine eigene
 }
 
 // Gruppieren macht alle gewählten zu einer neuen Gruppe, als einen Schritt (Strg+G, ADR-0044 Punkt 2).
@@ -141,16 +164,17 @@ func (s *Sitzung) Gruppieren() bool {
 	for i, o := range os {
 		neu[i] = mitGruppe(o, g)
 	}
-	return s.ersetzeAlsSchritt(neu)
+	return s.ersetzeAlsSchritt(s.mitAufgeraeumt(neu))
 }
 
-// KannGruppierungAufheben meldet, ob Strg+Umschalt+G wirkt: ein gewähltes gehört zu einer Gruppe.
+// KannGruppierungAufheben meldet, ob Strg+Umschalt+G wirkt: ein gewähltes gehört zu einer wirksamen Gruppe (F-962).
 func (s *Sitzung) KannGruppierungAufheben() bool {
 	if s.zug != keinZug || s.D.ZugLaeuft() || s.gesperrt() {
 		return false
 	}
+	groesse := s.gruppenGroesse()
 	for _, o := range s.gewaehlteObjekte() {
-		if o.Ebenenwerte().Gruppe != 0 {
+		if g := o.Ebenenwerte().Gruppe; g != 0 && groesse[g] >= 2 {
 			return true
 		}
 	}
@@ -168,7 +192,34 @@ func (s *Sitzung) GruppierungAufheben() bool {
 			neu = append(neu, mitGruppe(o, 0))
 		}
 	}
-	return s.ersetzeAlsSchritt(neu)
+	return s.ersetzeAlsSchritt(s.mitAufgeraeumt(neu))
+}
+
+// mitAufgeraeumt ergänzt die Änderungen neu um die Objekte, die danach als einziges ihre Kennung trügen: Sie verlieren
+// sie im selben Schritt (F-962: keine verwaiste Kennung, kein „Ungroup“ ohne Wirkung).
+func (s *Sitzung) mitAufgeraeumt(neu []document.Objekt) []document.Objekt {
+	geaendert := make(map[int]document.Objekt, len(neu))
+	for _, o := range neu {
+		geaendert[o.Kennung()] = o
+	}
+	zahl := map[int]int{}
+	for _, o := range s.D.Objekte() {
+		if n, ok := geaendert[o.Kennung()]; ok {
+			o = n
+		}
+		if g := o.Ebenenwerte().Gruppe; g != 0 {
+			zahl[g]++
+		}
+	}
+	for _, o := range s.D.Objekte() {
+		if _, ok := geaendert[o.Kennung()]; ok {
+			continue
+		}
+		if g := o.Ebenenwerte().Gruppe; g != 0 && zahl[g] == 1 {
+			neu = append(neu, mitGruppe(o, 0))
+		}
+	}
+	return neu
 }
 
 // ersetzeAlsSchritt setzt neu als einen Rückgängig-Schritt (ohne Prüfung der Sichtbarkeit: nur Ebenenangaben).
@@ -181,19 +232,32 @@ func (s *Sitzung) ersetzeAlsSchritt(neu []document.Objekt) bool {
 	return s.D.Stand() != vor
 }
 
-// gewaehlteGruppe ist die Gruppe von id, wenn sie ganz gewählt ist (alle wählbaren Mitglieder), sonst 0.
+// gewaehlteGruppe ist die Gruppe von id, wenn sie als Gruppe gewählt ist, sonst 0: mindestens zwei Mitglieder und alle
+// wählbaren gewählt (F-959: ein einzeln per Liste gewähltes Mitglied ist es nicht, auch wenn die übrigen gesperrt sind),
+// oder sie wurde eben über Strg+H/L geschaltet und die Auswahl hat sich seither nicht geändert (F-958: nach dem
+// Ausblenden ist nur noch die Hauptauswahl gewählt).
 func (s *Sitzung) gewaehlteGruppe(id int) int {
 	g := s.GruppeVon(id)
 	if g == 0 || !s.IstGewaehlt(id) {
 		return 0
 	}
-	for _, m := range s.gruppenMitglieder(id) {
-		if !s.IstGewaehlt(m) {
-			return 0
+	if s.mf.gruppeGeschaltet == g && s.mf.gruppeGen == s.mf.gen {
+		return g
+	}
+	n := 0
+	for _, o := range s.gewaehlteObjekte() {
+		if o.Ebenenwerte().Gruppe == g {
+			n++
 		}
 	}
-	return g
+	if n >= 2 && n == s.waehlbareJeGruppe()[g] {
+		return g
+	}
+	return 0
 }
+
+// GruppeGewaehlt meldet, ob die Hauptauswahl als Gruppe gewählt ist (Menütext „Gruppe ausblenden“, F-963).
+func (s *Sitzung) GruppeGewaehlt() bool { return s.gewaehlteGruppe(s.Auswahl) != 0 }
 
 // SchalteAusgeblendetGruppe blendet id aus bzw. ein; ist seine Gruppe gewählt, alle Mitglieder mit (Strg+H, ADR-0044
 // Punkt 4). Ziel ist der umgekehrte Stand von id. Ein Schritt.
@@ -229,7 +293,12 @@ func (s *Sitzung) schalteGruppeEbene(id int, einzeln func(int) bool, feld func(*
 		}
 	}
 	ok = s.ersetzeAlsSchritt(neu)
-	s.bereinigeAuswahl()
+	if ziel {
+		s.bereinigeAuswahl() // ausgeblendete und gesperrte fallen heraus, die Hauptauswahl bleibt
+	} else {
+		s.waehleGruppe(id) // wieder sichtbar bzw. offen: die ganze Gruppe gewählt (F-958)
+	}
+	s.mf.gruppeGeschaltet, s.mf.gruppeGen = g, s.mf.gen
 	return ok
 }
 

@@ -1953,6 +1953,38 @@ msgstr ""
 msgid "click or Esc to close"
 msgstr ""
 
+#: internal/ui/kontext.go
+msgid "Show group"
+msgstr ""
+
+#: internal/ui/kontext.go
+msgid "Hide group"
+msgstr ""
+
+#: internal/ui/kontext.go
+msgid "Show layer"
+msgstr ""
+
+#: internal/ui/kontext.go
+msgid "Hide layer"
+msgstr ""
+
+#: internal/ui/kontext.go
+msgid "Unlock group"
+msgstr ""
+
+#: internal/ui/kontext.go
+msgid "Lock group"
+msgstr ""
+
+#: internal/ui/kontext.go
+msgid "Unlock layer"
+msgstr ""
+
+#: internal/ui/kontext.go
+msgid "Lock layer"
+msgstr ""
+
 #: internal/ui/kontext.go internal/ui/oberflaeche.go
 msgid "Copy"
 msgstr ""
@@ -1971,22 +2003,6 @@ msgstr ""
 
 #: internal/ui/kontext.go internal/ui/oberflaeche.go
 msgid "Whole image"
-msgstr ""
-
-#: internal/ui/kontext.go internal/ui/oberflaeche.go
-msgid "Hide layer"
-msgstr ""
-
-#: internal/ui/kontext.go internal/ui/oberflaeche.go
-msgid "Lock layer"
-msgstr ""
-
-#: internal/ui/kontext.go internal/ui/oberflaeche.go
-msgid "Show layer"
-msgstr ""
-
-#: internal/ui/kontext.go internal/ui/oberflaeche.go
-msgid "Unlock layer"
 msgstr ""
 
 #: internal/ui/kontext.go internal/ui/oberflaeche.go

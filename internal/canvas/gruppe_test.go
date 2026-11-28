@@ -3,8 +3,12 @@
 package canvas
 
 import (
+	"image"
 	"slices"
 	"testing"
+	"time"
+
+	"github.com/Andiministrator/schnapp/internal/document"
 )
 
 // gruppiert sind dreiKaesten mit 1 und 2 als Gruppe (Strg+G über die Mehrfachauswahl).
@@ -168,5 +172,176 @@ func TestGruppeRechtsklick(t *testing.T) {
 	}
 	if got := s.Gewaehlt(); !slices.Equal(got, []int{1, 2}) || s.Auswahl != 1 {
 		t.Errorf("Rechtsklick: %v Haupt %d", got, s.Auswahl)
+	}
+}
+
+// F-958: Strg+H viermal an einer Gruppe — der Zustand von 2 folgt immer dem von 1; ebenso Strg+L.
+func TestGruppeSchalterSymmetrisch(t *testing.T) {
+	for _, fall := range []struct {
+		name    string
+		schalte func(*Sitzung, int) bool
+		wert    func(*Sitzung, int) bool
+	}{
+		{"ausblenden", (*Sitzung).SchalteAusgeblendetGruppe, func(s *Sitzung, id int) bool {
+			o, _ := s.D.Objekt(id)
+			return o.Ebenenwerte().Ausgeblendet
+		}},
+		{"sperren", (*Sitzung).SchalteGesperrtGruppe, func(s *Sitzung, id int) bool {
+			o, _ := s.D.Objekt(id)
+			return o.Ebenenwerte().Gesperrt
+		}},
+	} {
+		s := gruppiert(t)
+		klick(s, f(15, 15), false)
+		for i := 1; i <= 4; i++ {
+			fall.schalte(s, s.Auswahl)
+			if a, b := fall.wert(s, 1), fall.wert(s, 2); a != b || a != (i%2 == 1) {
+				t.Errorf("%s, Druck %d: 1=%v 2=%v", fall.name, i, a, b)
+			}
+			if i%2 == 0 && !slices.Equal(s.Gewaehlt(), []int{1, 2}) { // wieder sichtbar/offen: ganze Gruppe gewählt
+				t.Errorf("%s, Druck %d: gewählt %v", fall.name, i, s.Gewaehlt())
+			}
+		}
+		if !s.GruppeGewaehlt() {
+			t.Errorf("%s: nach vier Drücken ist die Gruppe nicht gewählt: %v", fall.name, s.Gewaehlt())
+		}
+	}
+}
+
+// F-959: Ein einzeln per Liste gewähltes Mitglied schaltet nur sich, auch wenn der Partner gesperrt ist.
+func TestGruppeEinzelwahlMitGesperrtemPartner(t *testing.T) {
+	s := gruppiert(t)
+	s.SchalteGesperrt(2)
+	s.WaehleEbene(1)
+	if s.GruppeGewaehlt() {
+		t.Fatal("Einzelwahl gilt als Gruppenwahl")
+	}
+	s.SchalteAusgeblendetGruppe(1)
+	if o, _ := s.D.Objekt(2); o.Ebenenwerte().Ausgeblendet {
+		t.Error("gesperrter Partner mit ausgeblendet")
+	}
+}
+
+// F-960: Eine ganz gewählte Gruppe mit gesperrtem Mitglied lässt sich nicht noch einmal gruppieren.
+func TestGruppeMitGesperrtemNichtSpalten(t *testing.T) {
+	s := dreiKaesten(t)
+	s.WaehleAlle()
+	s.Gruppieren()
+	s.SchalteGesperrt(3)
+	s.waehleNur(0)
+	klick(s, f(15, 15), false)
+	if got := s.Gewaehlt(); !slices.Equal(got, []int{1, 2}) {
+		t.Fatalf("Klick: %v", got)
+	}
+	if s.KannGruppieren() {
+		t.Error("Gruppieren spaltet die Gruppe")
+	}
+	if !s.KannGruppierungAufheben() {
+		t.Error("Aufheben nicht möglich")
+	}
+}
+
+// F-962: Aufheben räumt die Kennung eines einzelnen Restmitglieds mit auf; Gruppieren eines Teils ebenso.
+func TestGruppeKeineVerwaisteKennung(t *testing.T) {
+	s := gruppiert(t)
+	s.WaehleEbene(1)
+	s.GruppierungAufheben()
+	if o, _ := s.D.Objekt(2); o.Ebenenwerte().Gruppe != 0 {
+		t.Errorf("Restmitglied trägt noch Kennung %d", o.Ebenenwerte().Gruppe)
+	}
+	s.Rueckgaengig()
+	if s.GruppeVon(2) == 0 {
+		t.Fatal("Rückgängig stellt die Gruppe nicht her (ein Schritt)")
+	}
+	// Gruppe {1,2}; 2 und 3 neu gruppieren: 1 bliebe allein mit der alten Kennung.
+	s.setzeAuswahl(3, []int{2})
+	s.Gruppieren()
+	if o, _ := s.D.Objekt(1); o.Ebenenwerte().Gruppe != 0 {
+		t.Errorf("alte Kennung an 1: %d", o.Ebenenwerte().Gruppe)
+	}
+	s.WaehleEbene(1)
+	if s.KannGruppierungAufheben() {
+		t.Error("Aufheben an einem ungruppierten Objekt")
+	}
+}
+
+// F-963: Mitglieder, die im Stapel nicht benachbart sind; die Gruppe überlebt Abzug und Rettungs-Angaben.
+func TestGruppeNichtBenachbartUndAbzug(t *testing.T) {
+	s := dreiKaesten(t)
+	s.setzeAuswahl(3, []int{1})
+	s.Gruppieren()
+	s.waehleNur(0)
+	klick(s, f(125, 15), false)
+	if got := s.Gewaehlt(); !slices.Equal(got, []int{1, 3}) {
+		t.Errorf("nicht benachbarte Gruppe: %v", got)
+	}
+	a, err := s.D.Abzug()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []int{1, 3} {
+		o, ok := a.Objekt(id)
+		if !ok || o.Ebenenwerte().Gruppe != s.GruppeVon(1) {
+			t.Errorf("Abzug verliert die Gruppe von %d", id)
+		}
+	}
+}
+
+// F-961: Rahmen und KannGruppieren bleiben bei einer großen Gruppe schnell.
+func TestGruppeVieleObjekteSchnell(t *testing.T) {
+	d, err := document.Neu(image.NewNRGBA(image.Rect(0, 0, 2000, 2000)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2000; i++ {
+		x, y := float64(i%40)*48, float64(i/40)*38
+		k := document.Kasten{Bereich: document.R(document.Pt(x, y), document.Pt(x+20, y+20)),
+			Strich: document.Strich{Breite: 1}}
+		k.Gruppe = 1
+		if _, err := d.Hinzufuegen(k); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_ = d.VergissVerlauf()
+	s := NeueSitzung(d)
+	s.SetzeFenster(image.Pt(800, 600))
+	ids := make([]int, 0, 2000)
+	for _, o := range d.Objekte() {
+		ids = append(ids, o.Kennung())
+	}
+	start := time.Now()
+	if got := s.nurGanzeGruppen(ids); len(got) != 2000 {
+		t.Errorf("ganze Gruppe: %d", len(got))
+	}
+	if got := s.nurGanzeGruppen(ids[1:]); len(got) != 0 {
+		t.Errorf("halbe Gruppe: %d", len(got))
+	}
+	s.WaehleAlle()
+	for i := 0; i < 20; i++ {
+		_ = s.KannGruppieren()
+		_ = s.KannGruppierungAufheben()
+		_ = s.GruppeGewaehlt()
+	}
+	if d := time.Since(start); d > 3*time.Second {
+		t.Errorf("2000 Objekte in einer Gruppe dauerten %v", d)
+	}
+}
+
+// Ein Restmitglied nach dem Löschen des Partners verhält sich ungruppiert (ADR-0044 Punkt 1).
+func TestGruppeRestNachLoeschen(t *testing.T) {
+	s := gruppiert(t)
+	s.WaehleEbene(2)
+	if !s.Loeschen() {
+		t.Fatal("Löschen")
+	}
+	if s.GruppeVon(1) != 0 {
+		t.Errorf("Restmitglied in Gruppe %d", s.GruppeVon(1))
+	}
+	klick(s, f(15, 15), false)
+	if got := s.Gewaehlt(); !slices.Equal(got, []int{1}) {
+		t.Errorf("Klick auf das Restmitglied: %v", got)
+	}
+	if s.KannGruppierungAufheben() {
+		t.Error("Aufheben an einem Restmitglied")
 	}
 }

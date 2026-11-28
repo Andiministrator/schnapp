@@ -41,11 +41,12 @@ const (
 
 // schreibVersion ist die Version, die der Schreiber für die Objekte objekte angibt.
 func schreibVersion(objekte []document.Objekt) int {
+	gruppen := wirksameGruppen(objekte)
 	for _, o := range objekte {
 		if o.Ebenenwerte().Schatten.An {
 			return versionSchatten
 		}
-		if o.Ebenenwerte().Gruppe != 0 {
+		if gruppen[o.Ebenenwerte().Gruppe] {
 			return versionGruppe
 		}
 		switch v := o.(type) {
@@ -69,6 +70,24 @@ func schreibVersion(objekte []document.Objekt) int {
 		}
 	}
 	return 1
+}
+
+// wirksameGruppen sind die Gruppen mit mindestens zwei Mitgliedern (ADR-0044 Punkt 1): Nur sie stehen in der Datei;
+// die Kennung eines einzelnen Restmitglieds bleibt weg und hebt die Formatversion nicht (F-962).
+func wirksameGruppen(objekte []document.Objekt) map[int]bool {
+	n := map[int]int{}
+	for _, o := range objekte {
+		if g := o.Ebenenwerte().Gruppe; g != 0 {
+			n[g]++
+		}
+	}
+	r := map[int]bool{}
+	for g, k := range n {
+		if k >= 2 {
+			r[g] = true
+		}
+	}
+	return r
 }
 
 // ns ist der Namensraum der Schnapp-Attribute. Er kennzeichnet das Format, nicht den Rechner oder Nutzer.
@@ -104,6 +123,8 @@ type schreiber struct {
 	// (ADR-0021 Nachtrag 26 Punkt 5); ebene setzt ihn als filter-Attribut.
 	schattenNr int
 	schattenID string
+	// gruppen sind die wirksamen Gruppen des Dokuments (wirksameGruppen), gesetzt in objekte.
+	gruppen map[int]bool
 }
 
 func (s *schreiber) attr(name, wert string) {
@@ -182,7 +203,7 @@ func (s *schreiber) ebene(e document.Ebene) {
 	if sch := e.Schatten; sch.An { // ADR-0021 Nachtrag 26 Punkt 6, docs/format.md 8.5
 		s.attr("s:schatten", zahl(sch.Winkel)+" "+zahl(sch.Laenge)+" "+zahl(sch.Weich)+" "+farbeHex(sch.Farbe))
 	}
-	if e.Gruppe != 0 { // ADR-0044 Punkt 6, docs/format.md 8.5
+	if s.gruppen[e.Gruppe] { // ADR-0044 Punkt 6, docs/format.md 8.5; nur wirksame (F-962)
 		s.attr("s:gruppe", strconv.Itoa(e.Gruppe))
 	}
 	if s.schattenID != "" {
@@ -296,6 +317,7 @@ func (s *schreiber) objekte(d *document.Dokument, behalten func(document.Objekt)
 	s.WriteString(`<g`)
 	s.attr("s:ebene", "objekte")
 	s.WriteString(`>`)
+	s.gruppen = wirksameGruppen(d.ObjekteOhneZug())
 	for _, o := range d.ObjekteOhneZug() { // ein laufender Zug zählt nicht (F-409)
 		if behalten != nil && !behalten(o) {
 			continue

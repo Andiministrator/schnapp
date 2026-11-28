@@ -56,3 +56,19 @@ Inkscape, Photoshop und Krita verschachteln Gruppen als eigene Knoten mit Kinder
   Ausblenden/Sperren der Gruppe, Doppeln mit neuen Kennungen; `internal/ui`: Menüeinträge und Kürzel
   (Tastentabelle, Übersicht F1), Streifen in der Ebenenliste.
 - Tests, Mutanten, Sichtprobe; README en/de.
+
+## Nachtrag 1 (28.11.2026, Kritik #354, F-958 bis F-963)
+1. **Wann eine Gruppe als gewählt gilt (F-958, F-959):** wenn mindestens zwei Mitglieder und alle wählbaren gewählt
+   sind, oder wenn Strg+H/Strg+L sie eben geschaltet hat und die Auswahl seither nicht anders geändert wurde. Ein
+   einzeln über die Ebenenliste gewähltes Mitglied ist keine gewählte Gruppe, auch wenn die übrigen gesperrt oder
+   ausgeblendet sind. Einblenden bzw. Entsperren der Gruppe wählt sie wieder ganz; so wechselt jeder Druck den
+   Zustand aller Mitglieder. Menü und Kontextmenü heißen dann „Hide group“/„Show group“, „Lock group“/„Unlock group“.
+2. **Gruppieren** vergleicht die gewählten mit den wählbaren Mitgliedern: Eine ganz gewählte Gruppe mit gesperrtem
+   Mitglied lässt sich nicht erneut gruppieren (F-960).
+3. **Keine verwaiste Kennung (F-962):** Gruppieren und Aufheben nehmen einem Objekt, das danach als einziges seine
+   Kennung trüge, die Kennung im selben Schritt; „Ungroup“ wirkt nur an wirksamen Gruppen; die Datei schreibt
+   `s:gruppe` nur für Gruppen mit mindestens zwei Mitgliedern (sonst bliebe sie ohne Grund Version 2).
+4. **Aufwand (F-961):** Rahmen und Menüzustand gehen den Stapel je Frage höchstens zweimal durch.
+5. **Grenzen (F-963):** Ein einzelnes Mitglied lässt sich auf der Leinwand nicht allein verschieben (ein Druck wählt die
+   Gruppe); dafür die Gruppierung aufheben. Ein Doppelklick auf einen Text der Gruppe öffnet die Texteingabe und wählt
+   nur diesen Text.
