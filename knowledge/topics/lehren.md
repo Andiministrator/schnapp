@@ -1,7 +1,22 @@
 # Lehren aus der Arbeit an Schnapp
 
-Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #329 und #333 mit Kritik, Verify und Doku-QA (F-1029 bis F-1050); davor Karten #341 und #328 mit Kritik, Verify und Doku-QA (F-1007 bis F-1028); davor Karten #335/#393 mit Kritik (F-984 bis F-993); davor Karten #377/#389 und #354/#390 mit Kritik und Verify (F-943 bis F-969); davor Karten #361 und #334 Teil 1 mit Kritik (F-887 bis F-893); davor Karten #313 Teil 2 und #369 mit Sitzungs-QA (F-873 bis F-880); davor #313 Teil 1 und Sitzungs-QA (F-860 bis F-872); davor #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
+Stand: 2026-11-28 (laufend ergänzt, zuletzt Sprint 14, Karten #403 bis #405 und #396 mit Kritik (F-1052 bis F-1056); davor Karten #329 und #333 mit Kritik, Verify und Doku-QA (F-1029 bis F-1050); davor Karten #341 und #328 mit Kritik, Verify und Doku-QA (F-1007 bis F-1028); davor Karten #335/#393 mit Kritik (F-984 bis F-993); davor Karten #377/#389 und #354/#390 mit Kritik und Verify (F-943 bis F-969); davor Karten #361 und #334 Teil 1 mit Kritik (F-887 bis F-893); davor Karten #313 Teil 2 und #369 mit Sitzungs-QA (F-873 bis F-880); davor #313 Teil 1 und Sitzungs-QA (F-860 bis F-872); davor #363 Teil 2 und Sitzungs-Kritik (6); davor #353 bis #364 und Sitzungs-Kritik (4); davor #349 bis #352, #358). Kurze Regeln aus Fehlern und Befunden; Einzelheiten in `docs/findings.md`.
 
+
+## Freihand-Grenzen und Countdown (28.11.2026 abends, Karten #403 bis #405, #396, Kritik F-1052 bis F-1056)
+
+- **Eine Testattrappe muss die Lebensdauer des Echten nachbilden (F-1052).** Der Countdown übergab dem Abonnement
+  einen Kontext mit 800 ms Frist und beendete ihn sofort; das echte Abo hängt seine Lebensdauer an diesen Kontext,
+  „Cancel“ kam nie an. Alle Tests liefen mit einer Attrappe, die den Kontext ignorierte. Abhilfe: Frist für den Aufbau
+  und Lebensdauer getrennt übergeben, die Attrappe prüft den lebenden Kontext, und ein Test fährt den echten Weg auf
+  einem eigenen, leeren Bus (`dbus-daemon --session --nofork --print-address=1`, nie der Bus der Sitzung).
+- **Hundertstel plus Hundertstel ist im Gleitkomma kein Hundertstel (F-1053).** Wer eine Invariante „liegt auf
+  1/100 px“ verspricht, rundet nach jeder Rechnung, nicht nur beim Anlegen; sonst ist das Objekt nach Speichern und
+  Lesen nicht mehr `Gleich`.
+- **Eine Grenze gilt erst, wenn jeder Weg sie prüft, der die Größe ändern kann (F-1055)** — Hinzufügen reicht nicht,
+  Ersetzen und Züge gehören dazu. Erst dann darf eine Prüfung weiter hinten (Schreiber) entfallen.
+- **`grep … | head -1 || sed …` ergänzt nie etwas:** Der Status der Pipe ist der von `head` (immer 0). Für „fehlt,
+  dann ergänzen“ `grep -q … || …` ohne Pipe.
 
 ## Textmarker und Freihand (28.11.2026, Karten #329, #333, F-1029 bis F-1044)
 
